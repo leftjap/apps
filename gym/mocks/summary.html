@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Gym · 운동 완료</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f5; --surface: #ffffff; --bg-warm: #f5f0ea;
+    --text: #3d3929; --text-strong: #141413; --text-muted: #8a8475; --text-faint: #b5ad9e;
+    --accent: #d97757; --accent-hover: #c4623f; --accent-rgb: 217, 119, 87;
+    --sage: #788c5d; --blue: #6a9bcc; --amber: #c4973b; --danger: #b44d3b;
+    --border: #e8e4dc; --border-light: #f0ece4;
+    --font-display: 'Poppins', system-ui, sans-serif;
+    --font-body: 'Noto Sans KR', system-ui, sans-serif;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+    --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+    --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+    --shadow-lg: 0 4px 12px rgba(20,20,19,0.06), 0 24px 48px rgba(55,45,30,0.08);
+    --shadow-modal: 0 24px 48px rgba(55,45,30,0.18), 0 8px 16px rgba(20,20,19,0.08);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-body); color: var(--text); background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 256px 256px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .phone {
+    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
+    display: flex; flex-direction: column; position: relative;
+    overflow: hidden; background: var(--bg);
+  }
+  @media (min-width: 376px) {
+    body { padding: var(--s-8) 0; }
+    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
+  }
+  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
+
+  /* 배경 세션 skeleton */
+  .bg-skeleton {
+    flex: 1; padding: var(--s-4) var(--s-5);
+    opacity: 0.28; pointer-events: none;
+  }
+  .sk-row { height: 12px; background: var(--border); border-radius: var(--r-sm); margin-bottom: var(--s-3); }
+  .sk-row.w-40 { width: 40%; } .sk-row.w-60 { width: 60%; }
+  .sk-card { height: 220px; background: var(--surface); border: 1px solid var(--border-light);
+             border-radius: var(--r-lg); margin: var(--s-6) 0; }
+
+  /* Backdrop */
+  .backdrop {
+    position: absolute; inset: 0;
+    background: rgba(20,20,19,0.46);
+    z-index: 40;
+    animation: fadeIn 320ms var(--ease) forwards;
+    opacity: 0;
+  }
+  @keyframes fadeIn { to { opacity: 1; } }
+
+  /* ============ MODAL — 중앙 팝업 (ceremony) ============ */
+  .modal-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: var(--s-5);
+    z-index: 50;
+    pointer-events: none;
+  }
+  .modal {
+    width: 100%; max-width: 335px;
+    background: var(--surface);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-modal);
+    padding: var(--s-6) var(--s-5) var(--s-5);
+    pointer-events: auto;
+    position: relative;
+    animation: modalRise 420ms var(--ease-out) forwards;
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    max-height: calc(100% - var(--s-10));
+    display: flex; flex-direction: column;
+  }
+  @keyframes modalRise { to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  /* 상단 축하 레이블 */
+  .m-label {
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-align: center;
+    margin-bottom: var(--s-2);
+  }
+  .m-title {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 600;
+    color: var(--text-strong);
+    text-align: center;
+    letter-spacing: -0.015em;
+    line-height: 1.25;
+  }
+  .m-subtitle {
+    font-family: var(--font-body);
+    font-size: 12px; color: var(--text-muted);
+    text-align: center;
+    margin-top: var(--s-1);
+  }
+
+  /* 주인공 — 총 볼륨 (대형 숫자 + radial halo) */
+  .hero {
+    margin: var(--s-6) auto var(--s-5);
+    text-align: center;
+    position: relative;
+  }
+  .hero-label {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: var(--s-2);
+  }
+  .hero-display {
+    display: inline-flex;
+    align-items: baseline;
+    position: relative;
+  }
+  .hero-num {
+    font-family: var(--font-display);
+    font-size: 56px; font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+  }
+  .hero-num::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.22) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .hero-unit {
+    font-family: var(--font-display);
+    font-size: 16px; font-weight: 400;
+    color: var(--text-muted);
+    margin-left: var(--s-2);
+    letter-spacing: 0.01em;
+  }
+
+  /* 부 지표 (시간 · PR · 칼로리) — 3분할 */
+  .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: var(--s-4);
+    padding: var(--s-4) var(--s-2);
+    border-top: 1px solid var(--border-light);
+    border-bottom: 1px solid var(--border-light);
+    margin-bottom: var(--s-4);
+  }
+  .stat {
+    text-align: center;
+    display: flex; flex-direction: column; gap: var(--s-1);
+  }
+  .stat-val {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat.has-pr .stat-val { color: var(--accent); }
+  .stat.no-pr .stat-val { color: var(--text-faint); font-weight: 400; }
+  .stat-label {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* 종목별 요약 리스트 */
+  .ex-list {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: var(--s-4);
+    min-height: 0;
+  }
+  .ex-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .ex-item:last-child { border-bottom: none; }
+  .ex-item .name {
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: -0.005em;
+  }
+  .ex-item .pr-mark {
+    display: inline-block;
+    margin-left: var(--s-2);
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.06em;
+    vertical-align: middle;
+  }
+  .ex-item .sets {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* 하단 액션 */
+  .actions {
+    display: flex; gap: var(--s-3);
+    flex-shrink: 0;
+  }
+  .btn {
+    flex: 1;
+    height: 46px;
+    border: none;
+    border-radius: var(--r-sm);
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 150ms var(--ease), transform 100ms var(--ease), border-color 150ms var(--ease);
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+  }
+  .btn-primary:active { background: var(--accent-hover); transform: scale(0.98); }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:active { color: var(--text-strong); border-color: var(--text-muted); transform: scale(0.98); }
+
+  /* Clawd (축하) — 우상단 작은 accent spark */
+  .modal-spark {
+    position: absolute;
+    top: -6px;
+    right: var(--s-4);
+    width: 14px; height: 14px;
+    color: var(--accent);
+    animation: sparkle 1.8s ease infinite;
+  }
+  .modal-spark svg { width: 100%; height: 100%; display: block; }
+  @keyframes sparkle {
+    0%, 100% { opacity: 0; transform: scale(0.6) rotate(0deg); }
+    50% { opacity: 0.9; transform: scale(1.2) rotate(30deg); }
+  }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
+    transform: translate(-50%, 20px);
+    background: rgba(20,20,19,0.9); color: #fff;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-pill);
+    font-family: var(--font-body);
+    font-size: 12px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+    z-index: 90;
+    box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <symbol id="spark-star" viewBox="0 0 10 10">
+    <path d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4 Z" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="phone" id="app">
+  <div class="safe-top"></div>
+
+  <!-- 배경 세션 skeleton -->
+  <div class="bg-skeleton">
+    <div class="sk-row w-40"></div>
+    <div class="sk-card"></div>
+    <div class="sk-row w-60"></div>
+    <div class="sk-row w-40"></div>
+  </div>
+
+  <div class="backdrop"></div>
+
+  <div class="modal-wrap">
+    <div class="modal" id="modal">
+      <span class="modal-spark" aria-hidden="true"><svg viewBox="0 0 10 10"><use href="#spark-star"/></svg></span>
+
+      <div class="m-label" id="mLabel">운동 완료</div>
+      <p class="m-subtitle" id="mSubtitle">2026-04-22 · 수요일</p>
+
+      <div class="hero">
+        <div class="hero-label">총 볼륨</div>
+        <div class="hero-display">
+          <span class="hero-num" id="hNum">8,240</span>
+          <span class="hero-unit">kg</span>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-val" id="sTime">58</span>
+          <span class="stat-label">분</span>
+        </div>
+        <div class="stat has-pr" id="sPRCell">
+          <span class="stat-val" id="sPR">2</span>
+          <span class="stat-label">PR</span>
+        </div>
+        <div class="stat">
+          <span class="stat-val" id="sKcal">423</span>
+          <span class="stat-label">kcal</span>
+        </div>
+      </div>
+
+      <div class="ex-list" id="exList"></div>
+
+      <div class="actions">
+        <button class="btn btn-primary" data-act="home">홈으로</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const VARIANTS = {
+  pr: {
+    label: '운동 완료',
+    title: '잘 끝냈다',
+    subtitle: '2026-04-22 · 수요일',
+    volume: '8,240', time: 58, pr: 2, kcal: 423,
+    exercises: [
+      { name: '벤치프레스',       sets: '5세트 · 850kg', pr: true },
+      { name: '인클라인 벤치프레스', sets: '4세트 · 640kg', pr: false },
+      { name: '덤벨 플라이',       sets: '4세트 · 280kg', pr: false },
+      { name: '케이블 크로스오버',  sets: '3세트 · 180kg', pr: true },
+      { name: '숄더 프레스',       sets: '4세트 · 540kg', pr: false },
+      { name: '트라이셉 익스텐션',  sets: '3세트 · 140kg', pr: false },
+    ],
+  },
+  nopr: {
+    label: '운동 완료',
+    title: '꾸준히 이어감',
+    subtitle: '2026-04-22 · 수요일',
+    volume: '6,120', time: 44, pr: 0, kcal: 318,
+    exercises: [
+      { name: '스쿼트',       sets: '5세트 · 1,450kg', pr: false },
+      { name: '레그 프레스',   sets: '4세트 · 1,880kg', pr: false },
+      { name: '런지',         sets: '3세트 · 780kg',   pr: false },
+      { name: '레그 컬',      sets: '3세트 · 540kg',   pr: false },
+      { name: '힙 쓰러스트',   sets: '3세트 · 1,470kg', pr: false },
+    ],
+  },
+  short: {
+    label: '운동 완료',
+    title: '짧고 굵게',
+    subtitle: '2026-04-22 · 수요일',
+    volume: '2,840', time: 22, pr: 1, kcal: 148,
+    exercises: [
+      { name: '바이셉 컬',    sets: '4세트 · 320kg', pr: true },
+      { name: '해머 컬',      sets: '3세트 · 240kg', pr: false },
+      { name: '케이블 푸시다운', sets: '4세트 · 420kg', pr: false },
+    ],
+  }
+};
+
+function render(v) {
+  document.getElementById('mLabel').textContent = v.label;
+  document.getElementById('mSubtitle').textContent = v.subtitle;
+  document.getElementById('hNum').textContent = v.volume;
+  document.getElementById('sTime').textContent = v.time;
+  document.getElementById('sPR').textContent = v.pr;
+  document.getElementById('sKcal').textContent = v.kcal;
+  const prCell = document.getElementById('sPRCell');
+  prCell.classList.toggle('has-pr', v.pr > 0);
+  prCell.classList.toggle('no-pr', v.pr === 0);
+
+  const list = document.getElementById('exList');
+  list.innerHTML = v.exercises.map(e => `
+    <div class="ex-item">
+      <span class="name">${e.name}${e.pr ? '<span class="pr-mark">PR</span>' : ''}</span>
+      <span class="sets">${e.sets}</span>
+    </div>
+  `).join('');
+
+  // modal 재애니메이션
+  const modal = document.getElementById('modal');
+  modal.style.animation = 'none';
+  void modal.offsetWidth;
+  modal.style.animation = '';
+}
+
+function applyVariant(name) {
+  render(VARIANTS[name]);
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1600);
+}
+
+document.querySelectorAll('[data-act]').forEach(b => {
+  b.addEventListener('click', () => {
+    window.location.href = b.dataset.act === 'home' ? 'home.html' : 'stats.html';
+  });
+});
+
+/* Wave 11.6E — session 완료 직후 sessionStorage.gymLastSessionId 있으면 실 DB 세션 로드.
+   없으면 VARIANTS.pr fallback. */
+function sessionToVariant(session) {
+  const exercises = (session.blocks || []).flatMap(b => b.exercises || []);
+  const exList = exercises.map(e => {
+    const firstSet = e.sets?.[0];
+    if (firstSet && firstSet.duration != null) {
+      const min = Math.round(firstSet.duration / 60);
+      const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
+      return { name: e.exerciseName, sets: `${min}분${km}`, pr: false };
+    }
+    const total = (e.sets || []).reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
+    return {
+      name: e.exerciseName,
+      sets: `${e.sets?.length || 0}세트 · ${total.toLocaleString()}kg`,
+      pr: false,
+    };
+  });
+  const d = new Date(`${session.date}T00:00:00`);
+  const wd = ['일','월','화','수','목','금','토'][d.getDay()];
+  return {
+    label: '운동 완료',
+    title: '잘 끝냈다',
+    subtitle: `${session.date} · ${wd}요일`,
+    volume: (session.totalVolume || 0).toLocaleString(),
+    time: session.durationMin || 0,
+    pr: 0,          // 실 PR 계산은 Wave 11.7 (spec §6-11)
+    kcal: session.totalCalories || 0,
+    exercises: exList,
+  };
+}
+
+async function loadFromLastSession() {
+  if (!window.gymQueries) return null;
+  let id = null;
+  try { id = sessionStorage.getItem('gymLastSessionId'); } catch (_) {}
+  if (!id) return null;
+  try {
+    const session = await window.gymQueries.getSessionById(id);
+    if (!session) return null;
+    // Wave 11.9.6 — SPA summarizeSession 우선 (영문→한국어 + spec §12 형식). 미노출 시 mocks fallback.
+    if (window.gymSessionSummary?.summarizeSession) {
+      return window.gymSessionSummary.summarizeSession(session);
+    }
+    return sessionToVariant(session);
+  } catch (err) {
+    console.warn('[summary] load failed', err);
+    return null;
+  }
+}
+
+(async () => {
+  const v = await loadFromLastSession();
+  if (v) {
+    render(v);
+  } else {
+    applyVariant('pr');
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+name: read-user-context
+
+# spec §5-0 단계 3-4 SELECT 자동화. seed-supabase.yml 과 짝.
+# Claude Code 가 "공부하자" 트리거 시 호출 → 4 테이블 SELECT → JSON logs 출력.
+# Claude 는 `gh run view --log` 로 결과 회수 → i+1 알고리즘 입력으로 사용.
+on:
+  workflow_dispatch:
+    inputs:
+      user_id:
+        description: "대상 user_id (Supabase auth.users.id UUID)"
+        required: true
+        type: string
+      lang:
+        description: "필터 lang"
+        required: false
+        default: "both"
+        type: choice
+        options: ["both", "en", "ja"]
+      days:
+        description: "최근 N일 SELECT 범위"
+        required: false
+        default: "30"
+        type: string
+
+jobs:
+  read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run read-user-context
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node scripts/read-user-context.mjs \
+            --user-id "${{ inputs.user_id }}" \
+            --lang "${{ inputs.lang }}" \
+            --days "${{ inputs.days }}"

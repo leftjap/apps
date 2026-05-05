@@ -1,0 +1,7 @@
+{
+  "cleanUrls": false,
+  "trailingSlash": false,
+  "rewrites": [
+    { "source": "/mocks/:name", "destination": "/mocks/:name.html" }
+  ]
+}

@@ -1,0 +1,54 @@
+name: seed-supabase
+
+# Manual trigger only — Claude Code 가 gh workflow run 으로 호출.
+# 정본 경로: study-app-spec.md §5-0 (자연어 트리거 시 처리 로직 8단계)
+# 안전장치: scripts/seed-supabase.mjs 의 dry-run, count cap, lang 검증, post-check.
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: "Payload JSON 경로 (repo 상대 경로 — 예: seeds/ja-2026-05-04.json)"
+        required: true
+        type: string
+      user_id:
+        description: "대상 user_id (Supabase auth.users.id UUID)"
+        required: true
+        type: string
+      dry_run:
+        description: "Dry run (INSERT 없이 SELECT 카운트만)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 추가 패키지 install 안 함 — script 는 Node 22 fetch 내장 사용
+
+      - name: Validate payload exists
+        run: |
+          if [ ! -f "${{ inputs.payload }}" ]; then
+            echo "ERROR: payload file not found: ${{ inputs.payload }}"
+            exit 1
+          fi
+          echo "Payload contents (first 30 lines):"
+          head -30 "${{ inputs.payload }}"
+
+      - name: Run seed script
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node scripts/seed-supabase.mjs \
+            --payload "${{ inputs.payload }}" \
+            --user-id "${{ inputs.user_id }}" \
+            ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}

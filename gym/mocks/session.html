@@ -1,0 +1,3691 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Gym · 세션</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============ TOKENS (DESIGN.md §2-6) ============ */
+  :root {
+    --bg: #faf9f5;
+    --surface: #ffffff;
+    --bg-warm: #f5f0ea;
+    --text: #3d3929;
+    --text-strong: #141413;
+    --text-muted: #8a8475;
+    --text-faint: #b5ad9e;
+    --text-faint-rgb: 181 173 158;
+    --accent: #d97757;
+    --accent-rgb: 217 119 87;
+    --accent-hover: #c4623f;
+    --sage: #788c5d;
+    --border: #e8e4dc;
+    --border-rgb: 232 228 220;
+    --border-light: #f0ece4;
+    --danger: #b44d3b;
+    --danger-hover: #8f3d2e;
+
+    --font-display: 'Poppins', system-ui, sans-serif;
+    --font-body: 'Noto Sans KR', system-ui, sans-serif;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
+
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+    --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+    --s-12: 48px; --s-16: 64px;
+
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+
+    --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+    --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+    --shadow-lg: 0 4px 12px rgba(20,20,19,0.06), 0 24px 48px rgba(55,45,30,0.08);
+    --shadow-card: 0 2px 6px rgba(20,20,19,0.04), 0 20px 48px rgba(55,45,30,0.08);
+    --shadow-footer: 0 -1px 0 var(--border-light), 0 -10px 28px rgba(20,20,19,0.025);
+
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  /* --t (카드 활성도, 0~1) 를 숫자 타입으로 등록 → CSS transition 가능.
+     inherits: true 로 설정해야 .set-dots 등 자식에서 var(--t) 접근 가능 */
+  @property --t {
+    syntax: '<number>';
+    inherits: true;
+    initial-value: 0;
+  }
+
+  html, body {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
+  }
+  body {
+    font-family: var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ============ APP CONTAINER (iPhone 세로 고정) ============ */
+  .app {
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    height: 100svh;
+    /* footer-nav 가 fixed 라 flex 흐름에서 빠짐 — 컨텐츠가 footer 뒤에 가려지지 않도록 자리 reserve.
+       footer height = padding-top(s-4) + nav-add(44) + padding-bottom(s-3 + env + 16) = 72 + env. */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ============ STAGGERED REVEAL (legacy — 신 DESIGN.md 미수록) ============ */
+  .reveal { opacity: 0; transform: translateY(12px); animation: revealUp 0.5s var(--ease-out) forwards; }
+  .reveal-1 { animation-delay: 0ms; }
+  .reveal-2 { animation-delay: 50ms; }
+  .reveal-3 { animation-delay: 100ms; }
+  .reveal-4 { animation-delay: 150ms; }
+  @keyframes revealUp { to { opacity: 1; transform: translateY(0); } }
+
+  /* ============ HEADER (운동시간 중앙, 좌·우 icon/text ghost) ============ */
+  .session-header {
+    flex-shrink: 0;
+    display: grid;
+    grid-template-columns: 44px 1fr 56px;
+    align-items: center;
+    padding: var(--s-3) var(--s-4);
+    padding-top: calc(var(--s-3) + env(safe-area-inset-top));
+    gap: var(--s-2);
+  }
+
+  .icon-btn {
+    width: 44px; height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: color 150ms var(--ease), background 150ms var(--ease);
+  }
+  @media (hover: hover) { .icon-btn:hover { color: var(--text-strong); background: rgba(20,20,19,0.03); } }
+  .icon-btn svg { width: 20px; height: 20px; }
+
+  /* 시간 — 헤더의 주인공 */
+  .session-time {
+    font-family: var(--font-display);
+    font-size: 30px;
+    font-weight: 300;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-2);
+    min-width: 0;
+  }
+  .session-time.is-idle { color: var(--text-faint); font-weight: 300; }
+  .session-time .pulse-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.6s var(--ease) infinite;
+    opacity: 0;
+    transition: opacity 300ms var(--ease);
+  }
+  .session-time.is-running .pulse-dot { opacity: 1; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.85); } }
+
+  .end-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-sm);
+    transition: color 150ms var(--ease), background 150ms var(--ease), transform 100ms var(--ease);
+    height: 44px;
+    justify-self: end;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  @media (hover: hover) { .end-btn:hover { color: var(--danger); } }
+  .end-btn:active { transform: scale(0.96); color: var(--danger); }
+
+  /* ============ EXERCISE HEAD — 운동명 + 우측 볼륨 숫자 한 줄
+     progress-row 제거. Clawd/세그먼트는 card-viewport 상단으로 이동 */
+  .exercise-head {
+    flex-shrink: 0;
+    padding: var(--s-4) var(--s-5) var(--s-2);
+  }
+  .exercise-name-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+  .exercise-name {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    /* margin-bottom 제거 — 플렉스 라인 안으로 들어감 */
+  }
+  /* 볼륨 라벨 — ui §1 typography-driven: 크기·가중치·색만으로 3단 위계.
+     현재볼륨(강조) : 구분자(연결) : 이전볼륨+단위(보조). */
+  .volume-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .volume-label .vol-now {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-strong);
+  }
+  .volume-label .vol-sep {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--text-faint);
+    padding: 0 2px;
+  }
+  .volume-label .vol-prev {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+  }
+  .volume-label .vol-unit {
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: 1px;
+    letter-spacing: 0.04em;
+  }
+  /* 읽기 전용 뱃지 (§6-8 완료 운동 탭 시 표시) */
+  .readonly-badge {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--sage);
+    border: 1px solid rgba(120,140,93,0.42);
+    padding: 3px 9px;
+    border-radius: var(--r-pill);
+    margin-left: 10px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    vertical-align: middle;
+  }
+  .readonly-badge[hidden] { display: none; }
+  /* Clawd — 세그먼트 바 위에 서있음. 위치 컨테이너(.set-nav)가 만들고,
+     left % 는 JS 가 현재 세트 세그먼트의 실측 중앙 좌표로 세팅 */
+  .progress-clawd {
+    position: absolute;
+    bottom: 3px;    /* 2px 세그먼트 바로 위에 발 딛음 */
+    left: 0%;
+    transform: translateX(-50%);
+    transition: left 500ms var(--ease-out);
+    width: 34px;
+    height: 28px;
+    pointer-events: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    z-index: 4;
+  }
+  .progress-clawd.is-celebrate {
+    filter: drop-shadow(0 0 6px rgb(var(--accent-rgb) / 0.5));
+  }
+  .progress-clawd svg {
+    image-rendering: pixelated;
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .progress-clawd[data-pose="idle"] { animation: pose-idle-bob 2.5s var(--ease) infinite; }
+  .progress-clawd[data-pose="run"] { animation: pose-run-bounce 0.5s var(--ease) infinite; }
+  .progress-clawd[data-pose="press"] { animation: pose-press-beat 0.9s var(--ease) infinite; }
+  .progress-clawd[data-pose="curl"] { animation: pose-curl-lift 0.85s var(--ease) infinite; }
+  .progress-clawd[data-pose="squat"] { animation: pose-squat-bob 1s var(--ease) infinite; }
+  .progress-clawd[data-pose="pull"] { animation: pose-pull-up 1s var(--ease) infinite; }
+  .progress-clawd[data-pose="deadlift"] { animation: pose-dead-beat 0.9s var(--ease) infinite; }
+  .progress-clawd[data-pose="lift"] { animation: pose-lift-bounce 0.6s var(--ease) infinite; }
+
+  @keyframes pose-idle-bob  { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-1.5px)} }
+  @keyframes pose-run-bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-3px)} }
+  @keyframes pose-press-beat { 0%,100%{transform:translateX(-50%) translateY(-1.5px)} 50%{transform:translateX(-50%) translateY(1.5px)} }
+  @keyframes pose-curl-lift  { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(-2px)} }
+  @keyframes pose-squat-bob  { 0%,100%{transform:translateX(-50%) translateY(-1px)} 50%{transform:translateX(-50%) translateY(2px)} }
+  @keyframes pose-pull-up    { 0%,100%{transform:translateX(-50%) translateY(2px)} 50%{transform:translateX(-50%) translateY(-1.5px)} }
+  @keyframes pose-dead-beat  { 0%,100%{transform:translateX(-50%) translateY(1px)} 50%{transform:translateX(-50%) translateY(-2px)} }
+  @keyframes pose-lift-bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 40%{transform:translateX(-50%) translateY(-4px)} }
+
+  /* 2-frame swap */
+  .progress-clawd .fr-a, .progress-clawd .fr-b { animation-duration: 0.5s; animation-iteration-count: infinite; animation-timing-function: steps(1, end); }
+  .progress-clawd .fr-a { animation-name: fr-a; }
+  .progress-clawd .fr-b { animation-name: fr-b; }
+  @keyframes fr-a { 0%,49.99% { opacity: 1; } 50%,100% { opacity: 0; } }
+  @keyframes fr-b { 0%,49.99% { opacity: 0; } 50%,100% { opacity: 1; } }
+
+  .progress-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ============ CARD VIEWPORT ============ */
+  .card-viewport {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* set-nav(34px@top 8px) + set-history(absolute@top 50px, ~26px) 영역 확보 —
+       세트 카드가 두 행 아래에서 시작하도록 */
+    padding-top: 90px;
+  }
+  .card-viewport[hidden] { display: none; }
+
+  /* ============ SET NAV — Clawd + 세그먼트 바 합친 상단 네비
+     card-viewport 상단에 absolute. Clawd 는 세그먼트 위에 "서있음".
+     2px 세그먼트 바 + 28px Clawd 공간. 총 ~32px 높이 확보 */
+  .set-nav {
+    position: absolute;
+    top: var(--s-2);
+    left: var(--s-5);
+    right: var(--s-5);
+    height: 34px;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .set-segments {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: 4px;
+  }
+  .set-segments .seg {
+    flex: 1;
+    height: 2px;
+    border-radius: var(--r-pill);
+    background: var(--border-light);
+    transition: background 260ms var(--ease), opacity 260ms var(--ease);
+  }
+  .set-segments .seg.done { background: var(--accent); opacity: 0.55; }
+  .set-segments .seg.current {
+    background: var(--accent);
+    box-shadow: 0 0 0 2px rgb(var(--accent-rgb) / 0.12);
+  }
+  .set-segments .seg.pending { background: var(--border-light); }
+
+  /* 세트 히스토리 — 세그먼트바 아래 chip (Wave 11.6.3).
+     세그먼트와 1:1 위치 정렬 (grid 균등 분할 + 같은 left/right inset + 같은 gap).
+     완료(done)=sage chip, PR=accent chip, current/pending=빈 셀 (위치 보존). */
+  .set-history {
+    position: absolute;
+    top: 50px;  /* set-nav top 8 + height 34 + 8 spacing */
+    left: var(--s-5);   /* set-nav 와 동일 inset */
+    right: var(--s-5);
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    gap: 4px;            /* set-segments gap 과 동일 — 1:1 정렬 */
+    z-index: 3;
+  }
+  .set-history .h-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 22px;
+  }
+  .set-history .h-chip {
+    padding: 2px 8px;
+    background: rgba(120, 140, 93, 0.06);
+    border: 1px solid rgba(120, 140, 93, 0.20);
+    border-radius: var(--r-pill);
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--sage);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    line-height: 1.4;
+  }
+  .set-history .h-chip .h-x {
+    color: var(--text-faint);
+    margin: 0 2px;
+    font-weight: 400;
+  }
+  .set-history .h-chip.is-pr {
+    background: rgba(217, 119, 87, 0.08);
+    border-color: rgba(var(--accent-rgb), 0.30);
+    color: var(--accent);
+  }
+
+  /* SET DOTS — deprecated. set-segments(card-viewport 상단) 로 대체됨.
+     CSS 는 롤백 대비 남겨둠 (DOM 에 주입 안 됨) */
+  .set-dots {
+    position: absolute;
+    top: var(--s-4);
+    right: var(--s-4);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    opacity: var(--t);
+    transition: opacity 200ms var(--ease);
+    pointer-events: none;
+  }
+  .set-dots .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    transition: background 260ms var(--ease-out),
+                width 260ms var(--ease-out),
+                height 260ms var(--ease-out),
+                box-shadow 260ms var(--ease-out),
+                opacity 260ms var(--ease-out);
+  }
+  .set-dots .dot.done { background: var(--sage); opacity: 0.85; }
+  .set-dots .dot.current {
+    background: var(--accent);
+    width: 8px;
+    height: 8px;
+    box-shadow: 0 0 0 3px rgb(var(--accent-rgb) / 0.15);
+  }
+  .set-dots .dot.pending { background: var(--border); opacity: 1; }
+
+  /* PR 팝 (§6-11) */
+  .pr-pop {
+    position: absolute;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    pointer-events: none;
+    opacity: 0;
+    z-index: 4;
+  }
+  .pr-pop.pop { animation: pr-pop-anim 1.2s var(--ease-out) forwards; }
+  @keyframes pr-pop-anim {
+    0% { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    70% { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+  }
+
+  /* ============ CARD TRACK ============ */
+  .card-track {
+    display: flex;
+    gap: var(--s-3);
+    align-items: center;
+    padding-left: 20px;
+    padding-right: 20px;
+    transition: transform 420ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform;
+    touch-action: pan-y;
+  }
+  /* 드래그 중에는 트랙/카드 transition 전부 off — rAF 로 매 프레임 동기화 */
+  .card-track.is-dragging { transition: none !important; }
+  .card-track.is-dragging .set-card { transition: none !important; }
+
+  /* ============ SET CARD — --t (0 peek ↔ 1 active) 로 전 속성 보간 ============
+     주크박스 morph: 드래그 진행률을 --t 로 받아 양쪽 카드가 동시에 역할 교차.
+     값은 peek 기준에서 delta × --t 만큼 더해 active 로 수렴.
+     ----------------------------------------------------------------------
+     peek     : width 140, height 340(min), pad 20/12, radius 10, opacity 0.52
+     active   : width 240, height 400(min), pad 48/20, radius 20, opacity 1, lift -14
+     primary  : 40px → 72px   (delta 32)
+     secondary: 22px → 36px   (delta 14)
+     gap      : 24 → 48       (delta 24)
+     ---------------------------------------------------------------------- */
+  .set-card {
+    --t: 0;  /* 기본 peek. is-active 에서 1, 드래그 중 JS 가 분수값 주입 */
+    flex-shrink: 0;
+    flex-basis: calc(140px + 100px * var(--t));
+    /* height: peek min(400, 100dvh-330) · active min(440, 100dvh-310)
+       --t 로 보간: 상한 400→440, vh 차감 330→310
+       (SE 667px: active 357 / Pro 852: active 440 상한) */
+    height: min(calc(400px + 40px * var(--t)), calc(100dvh - 330px + 20px * var(--t)));
+    min-height: 300px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    position: relative;
+
+    /* 배경: peek(차가운 회색-베이지) → active(surface warm + accent glow + 좌상단 sheen)
+       좌상단 sheen (흰 빛) × 우상단 accent glow 로 대각 빛 방향 연출 */
+    background:
+      radial-gradient(ellipse at 18% -4%, rgba(255,255,255, calc(0.32 * var(--t))), transparent 48%),
+      radial-gradient(circle at 88% -8%, rgb(var(--accent-rgb) / calc(0.05 * var(--t))), transparent 58%),
+      linear-gradient(165deg,
+        rgba(255,255,255, var(--t)) 0%,
+        rgba(255,255,255, calc(var(--t) * 0.85)) 55%,
+        rgba(245,240,234, calc(0.4 + var(--t) * 0.6)) 100%);
+
+    border: 1px solid rgb(var(--border-rgb) / calc(0.3 + var(--t) * 0.7));
+    border-radius: calc(var(--r-md) + (var(--r-lg) - var(--r-md)) * var(--t));
+    padding: calc(20px + 28px * var(--t)) calc(12px + 8px * var(--t));
+
+    /* 위계 강화: peek opacity 0.35 → active 1 (격차 0.65) */
+    opacity: calc(0.35 + 0.65 * var(--t));
+
+    /* peek 은 살짝 desaturate — 색이 죽으며 뒤로 물러남. active 가까워질수록 복귀 */
+    filter: saturate(calc(0.4 + var(--t) * 0.6));
+
+    /* active 는 떠오르고, peek 은 미세하게 scale-down (주크박스 전경/배경 분리) */
+    transform:
+      translate(calc(4px * var(--t)), calc(-14px * var(--t)))
+      scale(calc(0.94 + var(--t) * 0.06));
+
+    /* box-shadow — t 가 0 이면 투명. 6중 구성:
+       1~2: 지면 가까운 soft drop (카드 존재감)
+       3:   accent warm glow (우측 하단 분위기)
+       4:   멀리 fade (T6: 기존 대비 약 40% 축소, "너무 떠있음" 해소)
+       5:   hard-edge slab (T2: y-offset 으로 4px 옆면 = 두께감)
+       6:   inset 상단 edge highlight (T3: 1px 흰 모서리 광) */
+    box-shadow:
+      0 1px 2px rgba(20,20,19, calc(0.04 * var(--t))),
+      0 10px 24px rgba(20,20,19, calc(0.08 * var(--t))),
+      0 32px 64px -8px rgb(var(--accent-rgb) / calc(0.22 * var(--t))),
+      0 32px 72px -14px rgba(55,45,30, calc(0.14 * var(--t))),
+      0 calc(4px * var(--t)) 0 -1px color-mix(in srgb, var(--bg-warm) 55%, var(--text-faint) 18%),
+      inset 0 1px 0 rgba(255,255,255, calc(0.65 * var(--t)));
+
+    z-index: 1;
+    overflow: visible;
+
+    transition:
+      --t 380ms cubic-bezier(0.32, 0.72, 0, 1),
+      flex-basis 420ms cubic-bezier(0.32, 0.72, 0, 1),
+      height 420ms cubic-bezier(0.32, 0.72, 0, 1),
+      transform 420ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 340ms cubic-bezier(0.32, 0.72, 0, 1),
+      background 280ms var(--ease),
+      box-shadow 420ms cubic-bezier(0.32, 0.72, 0, 1),
+      padding 420ms cubic-bezier(0.32, 0.72, 0, 1),
+      border-radius 280ms var(--ease),
+      border-color 280ms var(--ease),
+      filter 340ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: transform, opacity, flex-basis;
+  }
+  .set-card.is-active { --t: 1; z-index: 2; }
+
+  /* 세트 번호 pop — active 로 진입할 때마다 한 번 튀어오름.
+     새 DOM 이 is-active 로 마운트 = 새 세트로 전환. 매번 animation 리셋. */
+  @keyframes set-num-pop {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.28); }
+    60%  { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+  .set-card.is-active .set-label .num {
+    display: inline-block;
+    animation: set-num-pop 0.5s var(--ease) both;
+  }
+
+  /* 배경 워터마크 세트 숫자 제거 — §1 one bold element 정합 강화.
+     세그먼트바 + 우상단 라벨 + 중앙 stat-value 만으로 세트 식별 충분.
+     세트 히스토리(card-viewport 아래 chip 리스트) 가 누적 시각화 담당. */
+
+  /* done peek — sage wash. t=0 에서만 보이고 active 되면서 페이드 */
+  .set-card.is-done-set::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, transparent 0%, rgba(120,140,93,0.08) 100%);
+    opacity: calc(1 - var(--t));
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* is-distant — current±1 외. morph 대상 아님 (항상 숨김) */
+  .set-card.is-distant {
+    flex-basis: 0;
+    padding-left: 0;
+    padding-right: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    border-color: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+
+  /* 상단 accent glow line — t 에 비례해 페이드 인 */
+  /* 상단 accent glow line 제거 — §1 one bold element 원칙 복원.
+     기존: linear-gradient accent 50% + opacity 0.35*t → accent 장식 과다 정리. */
+  /* 세트번호 라벨 — 우상단 pill (톤다운).
+     기존 radial glow / accent 배경 / 다층 box-shadow 제거 → 1px border + transparent.
+     active 강조는 color/weight 미세 변화로만 (§1 one bold element — 카드 자체가 bold). */
+  .set-label {
+    position: absolute;
+    top: var(--s-4);
+    right: var(--s-4);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: calc(400 + 100 * var(--t));
+    color: color-mix(in srgb,
+      var(--text-faint) calc((1 - var(--t)) * 100%),
+      var(--text-muted) calc(var(--t) * 100%));
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 1px;
+    padding: 4px 9px;
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-pill);
+    background: transparent;
+    opacity: calc(0.6 + 0.4 * var(--t));
+    /* active 카드에서만 클릭 가능 — 세트 메뉴(수정/삭제) 진입점 */
+    pointer-events: none;
+    cursor: default;
+    transition:
+      font-weight 380ms cubic-bezier(0.32, 0.72, 0, 1),
+      opacity 340ms cubic-bezier(0.32, 0.72, 0, 1),
+      color 280ms var(--ease),
+      border-color 280ms var(--ease);
+  }
+  .set-card.is-active .set-label {
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .set-card.is-active .set-label:active {
+    transform: scale(0.96);
+  }
+  .set-card.is-done-set .set-label {
+    color: color-mix(in srgb, var(--sage) calc((1 - var(--t)) * 100%), var(--text-muted) calc(var(--t) * 100%));
+  }
+  .set-label .denom {
+    font-size: 0.72em;
+    font-weight: 500;
+    color: color-mix(in srgb,
+      var(--text-faint) calc((1 - var(--t)) * 100%),
+      color-mix(in srgb, var(--accent) 65%, var(--text-muted)) calc(var(--t) * 100%));
+    letter-spacing: 0;
+    margin-left: 1px;
+  }
+  .set-label .check {
+    width: 10px; height: 10px;
+    display: inline-block;
+  }
+  .set-label .check svg { width: 100%; height: 100%; color: var(--sage); }
+
+  /* 비활성 카드의 stat-stack 은 '있지만 비대화형' — tap-zone·stat-value 클릭 무시 */
+  .set-card:not(.is-active) .tap-zone { pointer-events: none; }
+  .set-card:not(.is-active) .stat-value { cursor: default; }
+
+  /* ============ STAT STACK (--t 로 gap 보간, peek 24px → active 48px) ============ */
+  .stat-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: calc(24px + 24px * var(--t));
+    width: 100%;
+  }
+  .stat-row {
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 2px;
+    min-height: calc(40px + 32px * var(--t));
+  }
+  /* 투명 탭 영역: 좌 40% / 우 40% */
+  .tap-zone {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    width: 40%;
+    z-index: 0;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .tap-zone.tap-left { left: 0; }
+  .tap-zone.tap-right { right: 0; }
+
+  .stat-value {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    cursor: pointer;
+    padding: var(--s-2) 6px;
+    border-radius: var(--r-sm);
+    transition: background 180ms var(--ease);
+    font-weight: 300;
+    letter-spacing: -0.02em;
+  }
+  .stat-unit {
+    position: relative;
+    z-index: 1;
+    font-family: var(--font-display);
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    pointer-events: none;
+  }
+
+  /* primary 숫자: peek 40px muted → active 72px strong.
+     color 는 color-mix 로 --t 에 비례해 전환 */
+  .stat-row.primary .stat-value {
+    font-size: calc(40px + 32px * var(--t));
+    letter-spacing: calc(-0.02em + -0.02em * var(--t));
+    color: color-mix(in srgb, var(--text-muted) calc((1 - var(--t)) * 100%), var(--text-strong) calc(var(--t) * 100%));
+  }
+  .stat-row.primary .stat-unit {
+    font-size: calc(11px + 4px * var(--t));
+    font-weight: 400;
+  }
+
+  /* secondary 숫자: peek 22px faint → active 36px muted */
+  .stat-row.secondary .stat-value {
+    font-size: calc(22px + 14px * var(--t));
+    color: color-mix(in srgb, var(--text-faint) calc((1 - var(--t)) * 100%), var(--text-muted) calc(var(--t) * 100%));
+  }
+  .stat-row.secondary .stat-unit {
+    font-size: calc(10px + 2px * var(--t));
+    color: color-mix(in srgb, var(--text-faint) calc((1 - var(--t)) * 100%), var(--text-muted) calc(var(--t) * 100%));
+  }
+
+  /* 완료된 세트 — sage 톤. t=0(peek) 에서 진하게, active 가까워지면 일반 색으로 복귀
+     (active 가 된 done 세트는 '편집 모드 진입' 이므로 sage 일관성보다 active 룩 우선) */
+  .set-card.is-done-set .stat-row.primary .stat-value,
+  .set-card.is-done-set .stat-row.secondary .stat-value {
+    color: color-mix(in srgb, var(--sage) calc((1 - var(--t)) * 100%),
+           color-mix(in srgb, var(--text-strong) calc(var(--t) * 100%), var(--text-muted)) calc(var(--t) * 100%));
+  }
+
+  .stat-value.is-preset { color: var(--text-faint) !important; }
+  .stat-row.is-pr .stat-value { color: var(--accent) !important; }
+  .stat-value.is-flash { background: rgb(var(--accent-rgb) / 0.08); color: var(--accent) !important; }
+
+  /* 비활성(t < 1) 카드: tap-zone 비활성, stat-value 기본 커서 — 드래그 중 오탭 방지 */
+  .set-card:not(.is-active) .tap-zone { pointer-events: none; }
+  .set-card:not(.is-active) .stat-value { cursor: default; }
+
+  @media (min-width: 600px) {
+    .set-card { flex-basis: calc(160px + 120px * var(--t)); }
+    .stat-row.primary .stat-value { font-size: calc(40px + 40px * var(--t)); }
+    .stat-row.secondary .stat-value { font-size: calc(22px + 18px * var(--t)); }
+  }
+
+  /* ============ FOOTER NAV — pill current + checkmark done ============
+     viewport 끝 강제 고정 (fixed) — Chrome 자동화 banner / Safari URL 바 / iPhone home indicator 등
+     viewport-fit 단위 차이와 무관하게 항상 viewport 하단에 안착.
+     home indicator 영역은 padding-bottom 의 env() 로 처리. */
+  .footer-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    padding: var(--s-4) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom) + 16px);
+    background: var(--bg);
+    box-shadow: var(--shadow-footer);
+    gap: var(--s-2);
+    overflow: hidden;
+  }
+  .nav-track {
+    flex: 1;
+    min-width: 0; /* flex item 축소 허용 — nav-add 가 footer 안에 안착 */
+    display: flex;
+    gap: var(--s-1);
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: visible; /* underline 하단 2px 여유 */
+    scrollbar-width: none;
+    /* Wave 11.6.1 v3: 좌우 50% spacer — 모든 item 이 viewport 중앙으로 올 수 있게.
+       기존 padding: 2px 50% 4px 50% 는 nav-track 자기 width 의 50% 로 평가되어
+       큰 viewport (PC Chrome max-width 430 footer) 에서 nav-add 를 footer 밖으로 밀어냄.
+       pseudo-element flex spacer 로 대체 → 자기 width 무관, flex-basis 만 차지. */
+    padding: 2px 0 4px 0;
+  }
+  .nav-track::before,
+  .nav-track::after {
+    content: '';
+    flex: 0 0 50%;
+  }
+  .nav-track::-webkit-scrollbar { display: none; }
+  .nav-track:empty { padding: 0; }
+
+  /* Wave 11.18 — 빈 세션 placeholder + 메인 영역 hide.
+     첫 진입 (또는 nav-item 클릭 전까지) 메인 카드/볼륨/clawd 모두 hide,
+     안내 문구만 표시. nav-item 클릭 (loadExercise) 시 emptySession 해제. */
+  .session-placeholder {
+    display: none;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--s-5);
+    color: var(--text-faint);
+    font-family: var(--font-display);
+    font-size: var(--fs-md);
+    font-weight: 400;
+    letter-spacing: 0.005em;
+    text-align: center;
+  }
+  #sessionApp[data-empty-session="1"] .exercise-head,
+  #sessionApp[data-empty-session="1"] .card-viewport,
+  #sessionApp[data-empty-session="1"] .cardio-viewport { display: none !important; }
+  #sessionApp[data-empty-session="1"] .session-placeholder { display: flex; }
+
+  .nav-item {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    padding: var(--s-2) var(--s-3);
+    font-family: var(--font-display);
+    font-size: var(--fs-sm);
+    font-weight: 400;
+    color: var(--text-faint);
+    cursor: pointer;
+    transition: color 220ms var(--ease), background 220ms var(--ease),
+                box-shadow 220ms var(--ease), padding 220ms var(--ease),
+                font-weight 220ms var(--ease), font-size 220ms var(--ease);
+    white-space: nowrap;
+    letter-spacing: 0.005em;
+    border-radius: var(--r-pill);
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 44px;
+  }
+
+  /* 완료 — sage ✓ prefix, line-through 제거 */
+  .nav-item.is-done { color: var(--text-muted); }
+  .nav-item.is-done::before {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background-color: var(--sage);
+    -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+    flex-shrink: 0;
+  }
+
+  /* 보류 — "N/M" 부가. Wave 11.6.1: 운동명 옆에 바짝 붙이기 (margin 3→1px, font 11→10px) */
+  .nav-item.is-hold { color: var(--text-muted); }
+  .nav-item.is-hold::after {
+    content: attr(data-hold);
+    margin-left: 1px;
+    font-size: 10px;
+    color: var(--text-faint);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+  }
+
+  /* 현재 — typography-driven (pill 배경 제거) · 하단 underline 로 카드 연결
+     size bump: 13 → 17px (scale+color+weight+underline 4중 마커) */
+  .nav-item.is-current {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 17px;
+    padding: var(--s-2) var(--s-3);
+    letter-spacing: -0.005em;
+  }
+  .nav-item.is-current::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 12%;
+    right: 12%;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 1.5px;
+    opacity: 0.85;
+  }
+
+  .nav-item.is-pending { color: var(--text-faint); }
+
+  /* 이동 모드 (§6-9) — 선택된 item shadow 승격 + scale 1.02 + 약한 wiggle.
+     ui §7 과장 금지 → ±0.8° 수준만. 드래그 시작 시 is-drag-active 로 animation 정지. */
+  /* 꾹누르기 500ms 완료 시각 피드백 (§6-9 "scale 0.98") */
+  .nav-item.is-pressed {
+    transform: scale(0.96);
+    transition: transform 140ms var(--ease);
+  }
+  .nav-item.is-moving {
+    z-index: 5;
+    background: var(--surface);
+    box-shadow: 0 6px 16px rgba(55,45,30,0.18), 0 1px 3px rgba(20,20,19,0.06);
+    animation: navWiggle 420ms ease-in-out infinite alternate;
+    transform-origin: center center;
+  }
+  .nav-item.is-moving.is-drag-active {
+    animation: none;
+    transition: none !important;
+  }
+  @keyframes navWiggle {
+    from { transform: scale(1.02) rotate(-0.8deg); }
+    to   { transform: scale(1.02) rotate(0.8deg); }
+  }
+  /* 이동 모드 중 다른 nav-item 들은 살짝 dim */
+  .nav-track.move-mode .nav-item:not(.is-moving) {
+    opacity: 0.55;
+    transition: opacity 200ms var(--ease);
+  }
+
+  /* 운동 추가 버튼 — ui §6 Secondary 분류 · Apple HIG 44pt 타깃 */
+  .nav-add {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: transparent;
+    border: 1.5px solid rgb(var(--accent-rgb) / 0.32);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 300;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 200ms var(--ease);
+  }
+  @media (hover: hover) {
+    .nav-add:hover {
+      border-color: var(--accent);
+      background: rgb(var(--accent-rgb) / 0.06);
+    }
+  }
+  .nav-add:active {
+    transform: scale(0.94);
+    background: rgb(var(--accent-rgb) / 0.1);
+    border-color: var(--accent);
+  }
+
+  /* ============ BOTTOM SHEETS (DOM 상주) ============
+     position: absolute + phone 컨테이너(position:relative) 기준.
+     데스크톱 프리뷰에서도 phone 액자 밖으로 나가지 않음. */
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20,20,19,0.28);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 260ms var(--ease);
+    z-index: 40;
+  }
+  .sheet-backdrop.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    background: var(--surface);
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    box-shadow: var(--shadow-lg);
+    padding: var(--s-4) var(--s-5) calc(var(--s-5) + env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 320ms var(--ease-out);
+    z-index: 41;
+    max-height: 85%;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .sheet.show { transform: translateY(0); }
+  .sheet-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: var(--r-pill);
+    margin: 0 auto var(--s-4);
+  }
+
+  /* Keypad */
+  .keypad-display {
+    font-family: var(--font-display);
+    font-size: 44px;
+    font-weight: 300;
+    color: var(--text-strong);
+    text-align: center;
+    padding: var(--s-3) 0 var(--s-5);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .keypad-display .unit {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-left: var(--s-2);
+    letter-spacing: 0.02em;
+  }
+  .keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+    margin-bottom: var(--s-4);
+  }
+  .keypad-key {
+    background: transparent;
+    border: none;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 300;
+    color: var(--text-strong);
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background 120ms var(--ease);
+    min-height: 54px;
+  }
+  .keypad-key:active { background: var(--bg-warm); }
+  .keypad-key.fn { color: var(--text-muted); font-size: 18px; }
+  /* 소수점 버튼 — 기본 비활성(보이지만 탭 불가). distance 입력 시 is-on 으로 활성화. */
+  .keypad-dot { opacity: 0.15; pointer-events: none; }
+  .keypad-dot.is-on { opacity: 1; pointer-events: auto; color: var(--text-strong); }
+  .keypad-done {
+    width: 100%;
+    background: var(--accent);
+    color: var(--surface);
+    border: none;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 500;
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: background 150ms var(--ease);
+  }
+  .keypad-done:active { background: var(--accent-hover); }
+
+  /* Long-press menu */
+  .menu-title {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-align: center;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: var(--s-4);
+  }
+  .menu-list { display: flex; flex-direction: column; gap: var(--s-1); }
+  .menu-item {
+    background: transparent;
+    border: none;
+    text-align: left;
+    padding: var(--s-4);
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-strong);
+    cursor: pointer;
+    border-radius: var(--r-md);
+    transition: background 120ms var(--ease);
+  }
+  .menu-item:active { background: var(--bg-warm); }
+  .menu-item.danger  { color: var(--danger); }
+  /* 긍정 액션 (완료 등) — semantic sage. ui §2 semantic 일관성 */
+  .menu-item.success { color: var(--sage); }
+  /* 1차/2차 액션 위계: Primary(success/danger) 는 본색, 보조(수정/이동 등) 는 text-strong.
+     동일 메뉴 내 파괴/긍정 두 가지가 공존할 때 시각 위계로 혼동 방지 */
+
+  /* End confirm */
+  .end-confirm h3 {
+    font-family: var(--font-display);
+    font-size: 17px;
+    font-weight: 500;
+    color: var(--text-strong);
+    text-align: center;
+    margin-bottom: var(--s-2);
+  }
+  .end-confirm p {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: var(--s-5);
+  }
+  .end-confirm-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-2);
+  }
+  .end-confirm-actions button {
+    padding: var(--s-4);
+    border-radius: var(--r-md);
+    border: none;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .btn-cancel { background: var(--bg-warm); color: var(--text-strong); }
+  .btn-cancel:active { background: var(--border-light); }
+  .btn-confirm { background: var(--danger); color: var(--surface); }
+  .btn-confirm:active { background: var(--danger-hover); }
+  /* ============ CARDIO CARD (§6-4) ============
+     유산소 운동 — 시간(필수) · 거리(선택) · 페이스 자동 계산. 세트 없음. */
+  .cardio-viewport {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    padding: var(--s-6) var(--s-5);
+  }
+  .cardio-viewport[hidden] { display: none; }
+  .cardio-card {
+    background:
+      radial-gradient(circle at 88% -8%, rgb(var(--accent-rgb) / 0.08), transparent 58%),
+      linear-gradient(165deg, var(--surface) 0%, var(--surface) 55%, var(--bg-warm) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    padding: var(--s-6) var(--s-5);
+    box-shadow: 0 10px 24px rgba(20,20,19,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+  }
+  .cardio-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+  .cardio-label {
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    flex-shrink: 0;
+    width: 44px;
+  }
+  .cardio-value {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 300;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+    padding: 4px 10px;
+    min-width: 70px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: border-color 180ms var(--ease);
+  }
+  .cardio-value:active { border-color: var(--accent); }
+  /* 프리셋 (이전 세션 값 표시) — 일반 set-card 프리셋과 동일 시각 언어: 흐리게 */
+  .cardio-value.is-preset { color: var(--text-faint); }
+  /* 플랭크 등 시간 단독 운동 — 거리 행·페이스 숨김 */
+  .cardio-card.is-time-only .cardio-row-distance,
+  .cardio-card.is-time-only .cardio-pace { display: none; }
+  .cardio-unit {
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .cardio-optional {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-faint);
+    margin-left: auto;
+  }
+  .cardio-pace {
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--accent);
+    text-align: center;
+    letter-spacing: 0.02em;
+    min-height: 1.2em;
+    padding: var(--s-2) 0;
+  }
+  .cardio-done-btn {
+    background: var(--accent);
+    color: var(--surface);
+    border: none;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding: 14px;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    min-height: 44px;
+    transition: background 150ms var(--ease);
+  }
+  .cardio-done-btn:active { background: var(--accent-hover); }
+  /* 프리셋 상태(=사용자 입력 전) 완료 버튼 비활성 — 스펙 §6-4 시간 필수 입력 */
+  .cardio-done-btn:disabled {
+    background: var(--border);
+    color: var(--text-faint);
+    cursor: default;
+  }
+
+  /* ============ ADD-EX SHEET (§6-2 운동 추가) ============
+     부위 chip 1줄 horizontal scroll + 종목 리스트.
+     §6-10: DOM 1회 생성, hidden 토글만. */
+  .addex-header {
+    margin-bottom: var(--s-3);
+  }
+  .addex-header-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .addex-chips {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: var(--s-1);
+    padding: 2px 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 4px;
+    /* iOS 표준 가로 스크롤 chip 패턴 — 우측 fade mask 로 "더 있음" 힌트.
+       사용자 요구(2026-04-23): 2줄 wrap 대신 1줄 유지 + 좌우 스크롤. */
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+            mask-image: linear-gradient(to right, black calc(100% - 24px), transparent 100%);
+  }
+  .addex-chips::-webkit-scrollbar { display: none; }
+  /* 스크롤 끝까지 간 상태에선 우측 fade 제거 (더 이상 가려질 내용 없음) */
+  .addex-chips.is-scroll-end {
+    -webkit-mask-image: none;
+            mask-image: none;
+  }
+  .addex-chip {
+    flex-shrink: 0;
+    scroll-snap-align: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 400;
+    padding: 8px 14px;
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 160ms var(--ease), border-color 160ms var(--ease), background 160ms var(--ease);
+    letter-spacing: 0.01em;
+    min-height: 32px;
+  }
+  .addex-chip:active { background: var(--bg-warm); }
+  .addex-chip.is-active {
+    color: var(--accent);
+    border-color: rgb(var(--accent-rgb) / 0.55);
+    font-weight: 500;
+  }
+  /* 종목 리스트 — 부위별 그룹을 모두 렌더 후 hidden 토글 (§6-10 언마운트 금지) */
+  .addex-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 48vh;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .addex-list::-webkit-scrollbar { display: none; }
+  .addex-group { display: flex; flex-direction: column; gap: var(--s-1); }
+  .addex-group[hidden] { display: none; }
+  .addex-item {
+    background: transparent;
+    border: 1px solid transparent;
+    text-align: left;
+    padding: 14px var(--s-3);
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-strong);
+    cursor: pointer;
+    border-radius: var(--r-md);
+    transition: background 120ms var(--ease), border-color 160ms var(--ease);
+    min-height: 48px;
+  }
+  .addex-item:active { background: var(--bg-warm); }
+  .addex-item.is-selected {
+    border-color: rgb(var(--accent-rgb) / 0.55);
+    color: var(--accent);
+  }
+  /* 추가 토글 — iOS 스타일 switch. track + thumb. accent=on, border=off. */
+  .addex-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+  .addex-item .ex-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+  .addex-item .ex-meta {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ex-toggle {
+    flex-shrink: 0;
+    width: 40px;
+    height: 24px;
+    background: var(--border);
+    border-radius: var(--r-pill);
+    position: relative;
+    transition: background 200ms var(--ease);
+  }
+  .ex-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: var(--surface);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(20,20,19,0.15);
+    transition: transform 220ms var(--ease);
+  }
+  .addex-item.is-added .ex-toggle { background: var(--accent); }
+  .addex-item.is-added .ex-toggle::after { transform: translateX(16px); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(90px + env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--text-strong);
+    color: var(--bg);
+    font-family: var(--font-display);
+    font-size: 13px;
+    padding: 10px 18px;
+    border-radius: var(--r-pill);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease);
+    z-index: 60;
+    letter-spacing: 0.02em;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- ============ CLAWD SYMBOLS (clawd test.html 기반 11종) ============ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+  <symbol id="c-idle" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-lift" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="1" width="11" height="1" fill="#b5ad9e"/>
+    <rect x="13" y="0" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="11" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="2" y="3" width="11" height="7" fill="#d97757"/>
+    <rect x="4" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-press1" viewBox="0 0 15 12">
+    <rect x="0" y="1" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="2" width="11" height="1" fill="#b5ad9e"/>
+    <rect x="13" y="1" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="2" width="2" height="2" fill="#d97757"/>
+    <rect x="11" y="2" width="2" height="2" fill="#d97757"/>
+    <rect x="2" y="4" width="11" height="6" fill="#d97757"/>
+    <rect x="4" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-curl1" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="0" y="6" width="2" height="2" fill="#8a8475"/>
+    <rect x="13" y="6" width="2" height="2" fill="#8a8475"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-curl2" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="1" width="2" height="2" fill="#8a8475"/>
+    <rect x="13" y="1" width="2" height="2" fill="#8a8475"/>
+    <rect x="0" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-squat2" viewBox="0 0 15 9">
+    <rect x="2" y="1" width="11" height="6" fill="#d97757"/>
+    <rect x="0" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="3" width="1" height="1" fill="#141413"/>
+    <rect x="10" y="3" width="1" height="1" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-pull1" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="1" y="2" width="1" height="2" fill="#d97757"/>
+    <rect x="13" y="2" width="1" height="2" fill="#d97757"/>
+    <rect x="2" y="4" width="11" height="6" fill="#d97757"/>
+    <rect x="4" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-pull2" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="1" y="2" width="1" height="1" fill="#d97757"/>
+    <rect x="13" y="2" width="1" height="1" fill="#d97757"/>
+    <rect x="2" y="2" width="11" height="6" fill="#d97757"/>
+    <rect x="4" y="4" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="4" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="8" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="8" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="8" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="8" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-run1" viewBox="0 0 15 11">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="5" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="4" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="1" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-run2" viewBox="0 0 15 11">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="5" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="1" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="4" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="c-dead1" viewBox="-1 0 17 13">
+    <rect x="2" y="4" width="11" height="6" fill="#d97757"/>
+    <rect x="0" y="9" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="9" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="7" width="1" height="1" fill="#141413"/>
+    <rect x="10" y="7" width="1" height="1" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="-1" y="11" width="2" height="2" fill="#8a8475"/>
+    <rect x="1" y="11" width="13" height="1" fill="#b5ad9e"/>
+    <rect x="14" y="11" width="2" height="2" fill="#8a8475"/>
+  </symbol>
+  <symbol id="c-dead2" viewBox="-1 0 17 13">
+    <rect x="2" y="1" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="7" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="7" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="3" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="3" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="5" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="9" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="11" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="-1" y="9" width="2" height="2" fill="#8a8475"/>
+    <rect x="1" y="9" width="13" height="1" fill="#b5ad9e"/>
+    <rect x="14" y="9" width="2" height="2" fill="#8a8475"/>
+  </symbol>
+</svg>
+
+<div class="app" id="sessionApp">
+
+  <!-- HEADER — 운동시간 중앙 -->
+  <header class="session-header reveal reveal-1">
+    <button class="icon-btn" aria-label="홈으로" onclick="window.location.href='home.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 12L12 4l9 8"/>
+        <path d="M5 10v10h14V10"/>
+      </svg>
+    </button>
+    <div class="session-time is-idle" id="sessionTime">
+      <span class="pulse-dot"></span>
+      <span id="sessionTimeText">00:00</span>
+    </div>
+    <button class="end-btn" id="endBtn">종료</button>
+  </header>
+
+  <!-- Wave 11.18 — 빈 세션 placeholder. data-empty-session="1" 일 때만 표시 -->
+  <div class="session-placeholder">종목을 추가하세요</div>
+
+  <!-- EXERCISE HEAD — 운동명 + 우측 볼륨 라벨 한 줄 -->
+  <section class="exercise-head reveal reveal-2">
+    <div class="exercise-name-row">
+      <div class="exercise-name" id="exerciseName">벤치프레스<span class="readonly-badge" id="readonlyBadge" hidden>읽기 전용</span></div>
+      <div class="volume-label" id="volumeLabel">
+        <span class="vol-now">0</span><span class="vol-sep">/</span><span class="vol-prev">2,880<span class="vol-unit">kg</span></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARD VIEWPORT -->
+  <div class="card-viewport reveal reveal-3" id="cardViewport">
+    <div class="set-nav">
+      <div class="progress-clawd" id="progClawd" data-pose="idle"></div>
+      <div class="set-segments" id="setSegments"></div>
+    </div>
+    <div class="set-history" id="setHistory"></div>
+    <div class="pr-pop" id="prPop">PR</div>
+    <div class="card-track" id="cardTrack"></div>
+  </div>
+
+  <!-- CARDIO VIEWPORT (§6-4) — 유산소·시간기반 운동(플랭크) 공용. hideDistance 시 is-time-only 클래스로 거리/페이스 숨김 -->
+  <div class="cardio-viewport reveal reveal-3" id="cardioViewport" hidden>
+    <div class="cardio-card">
+      <div class="cardio-row">
+        <span class="cardio-label">시간</span>
+        <button class="cardio-value" id="cardioTimeBtn" data-field="time">0</button>
+        <span class="cardio-unit">분</span>
+      </div>
+      <div class="cardio-row cardio-row-distance">
+        <span class="cardio-label">거리</span>
+        <button class="cardio-value" id="cardioDistBtn" data-field="distance">0</button>
+        <span class="cardio-unit">km</span>
+        <span class="cardio-optional">(선택)</span>
+      </div>
+      <div class="cardio-pace" id="cardioPace">&nbsp;</div>
+      <button class="cardio-done-btn" id="cardioDoneBtn">완료</button>
+    </div>
+  </div>
+
+  <!-- FOOTER NAV (reveal 제거 — animation transform 이 fixed translateX(-50%) override) -->
+  <footer class="footer-nav">
+    <div class="nav-track" id="navTrack"></div>
+    <button class="nav-add" id="navAdd" aria-label="운동 추가">+</button>
+  </footer>
+</div>
+
+<!-- BOTTOM SHEETS -->
+<div class="sheet-backdrop" id="backdrop"></div>
+
+<div class="sheet" id="keypadSheet" role="dialog" aria-label="숫자 입력">
+  <div class="sheet-handle"></div>
+  <div class="keypad-display">
+    <span id="keypadValue">0</span><span class="unit" id="keypadUnit">kg</span>
+  </div>
+  <div class="keypad-grid">
+    <button class="keypad-key" data-k="1">1</button>
+    <button class="keypad-key" data-k="2">2</button>
+    <button class="keypad-key" data-k="3">3</button>
+    <button class="keypad-key" data-k="4">4</button>
+    <button class="keypad-key" data-k="5">5</button>
+    <button class="keypad-key" data-k="6">6</button>
+    <button class="keypad-key" data-k="7">7</button>
+    <button class="keypad-key" data-k="8">8</button>
+    <button class="keypad-key" data-k="9">9</button>
+    <button class="keypad-key keypad-dot" id="keypadDot" data-k="dot">.</button>
+    <button class="keypad-key" data-k="0">0</button>
+    <button class="keypad-key fn" data-k="back">⌫</button>
+  </div>
+  <button class="keypad-done" id="keypadDone">완료</button>
+</div>
+
+<div class="sheet" id="menuSheet" role="dialog" aria-label="세트 메뉴">
+  <div class="sheet-handle"></div>
+  <div class="menu-title" id="menuTitle">세트</div>
+  <div class="menu-list" id="menuList"></div>
+</div>
+
+<div class="sheet end-confirm" id="endSheet" role="dialog" aria-label="세션 종료">
+  <div class="sheet-handle"></div>
+  <h3>세션을 어떻게 할까요?</h3>
+  <p id="endSheetMeta">완료한 세트 3개 · 볼륨 1,800kg</p>
+  <div class="end-confirm-actions">
+    <button class="btn-cancel" id="endCancel">취소</button>
+    <button class="btn-confirm" id="endConfirm">종료</button>
+  </div>
+</div>
+
+<!-- nav-item 꾹누르기 컨텍스트 메뉴 (§6-9). DOM 1회 생성, 내용만 renderNavMenu 로 갱신 -->
+<div class="sheet" id="navActionSheet" role="dialog" aria-label="운동 메뉴">
+  <div class="sheet-handle"></div>
+  <div class="menu-title" id="navMenuTitle">운동</div>
+  <div class="menu-list" id="navMenuList"></div>
+</div>
+
+<!-- 파괴적/상태전환 액션 2단계 확인 시트 (§6-9) -->
+<div class="sheet end-confirm" id="confirmSheet" role="dialog" aria-label="확인">
+  <div class="sheet-handle"></div>
+  <h3 id="confirmTitle">진행할까요?</h3>
+  <p id="confirmMsg">이 동작은 되돌릴 수 없을 수도 있습니다.</p>
+  <div class="end-confirm-actions">
+    <button class="btn-cancel" id="confirmCancel">취소</button>
+    <button class="btn-confirm" id="confirmOk">확인</button>
+  </div>
+</div>
+
+<!-- 운동 추가 바텀시트 (§6-2). DOM 1회 생성, class/hidden 토글만 (§6-10) -->
+<div class="sheet" id="addExSheet" role="dialog" aria-label="운동 추가">
+  <div class="sheet-handle"></div>
+  <div class="addex-header">
+    <div class="addex-header-row">
+      <!-- chip 은 JS 에서 주입 (7 부위: 가슴·등·어깨·하체·팔·코어·유산소) -->
+      <div class="addex-chips" id="addexChips"></div>
+    </div>
+  </div>
+  <div class="addex-list" id="addexList"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STATE ============ */
+const EXERCISES = {
+  '스쿼트':        { equipIncrement: 5,  defaultSets: 5, defaultReps: 10, defaultWeight: 80 },
+  '데드리프트':    { equipIncrement: 5,  defaultSets: 5, defaultReps: 8,  defaultWeight: 100 },
+  '벤치프레스':    { equipIncrement: 5,  defaultSets: 5, defaultReps: 10, defaultWeight: 60 },
+  '덤벨컬':        { equipIncrement: 2,  defaultSets: 4, defaultReps: 12, defaultWeight: 12 },
+  '랫풀다운':      { equipIncrement: 5,  defaultSets: 4, defaultReps: 12, defaultWeight: 50 },
+};
+
+const state = {
+  exerciseName: '벤치프레스',
+  prevExerciseVolume: 2880,           // 직전 세션 볼륨 (프로그레스바 기준)
+  prevBestE1rm: 70,                    // 역대 최고 e1RM (PR 판정)
+  sets: [
+    { weight: 60, reps: 12, done: true,  preset: true, pr: false },
+    { weight: 60, reps: 12, done: true,  preset: true, pr: false },
+    { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    { weight: 60, reps: 10, done: false, preset: true, pr: false },
+  ],
+  currentIdx: 2,
+  sessionStartedAt: null,
+  sessionEnded: false,
+  /* 운동별 세션 상태 스냅샷 (§6-8: 다른 운동 탭 = 이동, 완료 아님). key=운동명 */
+  exerciseStates: {},
+  /* 읽기 전용 모드 (§6-8: 완료 운동 탭 → 카드 읽기 전용 펼침).
+     true 면 tap-zone/키패드/좌스와이프 커밋 비활성. idx 이동(세트 탐색)은 허용. */
+  readonly: false,
+};
+
+/* ============ CLAWD POSE MAPPING ============ */
+function poseFor(name) {
+  if (/벤치|인클라인|숄더|밀리터리|덤벨플라이|체스트프레스/.test(name)) return 'press';
+  if (/컬|curl/i.test(name)) return 'curl';
+  if (/스쿼트|런지|레그프레스|힙쓰러스트|스플릿/.test(name)) return 'squat';
+  if (/데드|굿모닝|로우|시티드로우|케이블로우/.test(name)) return 'deadlift';
+  if (/풀업|랫풀|친업/.test(name)) return 'pull';
+  if (/트레드밀|사이클|로잉|엘립티컬|러닝/.test(name)) return 'run';
+  return 'idle';
+}
+
+function clawdMarkup(pose) {
+  // 2x scale (원본 15px 그리드 → 30px). 식별성 확보 + pixel-perfect
+  const mk = (a, b, vb, w, h) => `
+    <svg class="fr-a" viewBox="${vb}" width="${w}" height="${h}" style="position:absolute;bottom:0"><use href="#${a}"/></svg>
+    <svg class="fr-b" viewBox="${vb}" width="${w}" height="${h}" style="position:absolute;bottom:0"><use href="#${b}"/></svg>`;
+  switch (pose) {
+    case 'press':    return mk('c-press1', 'c-lift', '0 0 15 12', 30, 24);
+    case 'curl':     return mk('c-curl1', 'c-curl2', '0 0 15 9', 30, 18);
+    case 'squat':    return mk('c-idle', 'c-squat2', '0 0 15 9', 30, 18);
+    case 'pull':     return mk('c-pull1', 'c-pull2', '0 0 15 12', 30, 24);
+    case 'run':      return mk('c-run1', 'c-run2', '0 0 15 11', 30, 22);
+    case 'deadlift': return mk('c-dead1', 'c-dead2', '-1 0 17 13', 34, 26);
+    case 'lift':     return `<svg viewBox="0 0 15 12" width="30" height="24" style="position:absolute;bottom:0"><use href="#c-lift"/></svg>`;
+    default:         return `<svg viewBox="0 0 15 9" width="30" height="18" style="position:absolute;bottom:0"><use href="#c-idle"/></svg>`;
+  }
+}
+
+/* ============ RENDER CARDS ============ */
+const track = document.getElementById('cardTrack');
+const prPop = document.getElementById('prPop');
+
+/* 세트 네비게이션 — card-viewport 상단 세그먼트 바.
+   카드 내부 우상단 도트 대신 카드 외부 고정 위치로 이동 (시선이 헤더로 모임).
+   완료/현재/예정 3상태. Instagram 스토리 메타포 - 학습 비용 없음. */
+const segmentsEl = document.getElementById('setSegments');
+const historyEl = document.getElementById('setHistory');
+function renderSegments() {
+  segmentsEl.innerHTML = state.sets.map((s, i) => {
+    const cls = i === state.currentIdx ? 'current' : (s.done ? 'done' : 'pending');
+    return `<span class="seg ${cls}"></span>`;
+  }).join('');
+  renderHistory();
+}
+
+/* 세트 히스토리 — 완료한 세트(weight × reps) 를 sage chip 으로 누적 시각화.
+   PR 세트는 accent. cardio(weight=null) 는 제외. */
+function renderHistory() {
+  if (!historyEl) return;
+  // sets.length 만큼 셀 생성 → 세그먼트와 1:1 위치 정렬. done 만 chip, 나머지는 빈 셀.
+  historyEl.innerHTML = state.sets.map(s => {
+    if (!s.done || s.weight == null) {
+      return '<span class="h-cell"></span>';
+    }
+    const cls = s.pr ? 'h-chip is-pr' : 'h-chip';
+    return `<span class="h-cell"><span class="${cls}">${s.weight}<span class="h-x">×</span>${s.reps}</span></span>`;
+  }).join('');
+}
+
+function renderCards(opts = {}) {
+  track.innerHTML = '';
+  state.sets.forEach((s, i) => {
+    const isActive = i === state.currentIdx;
+    const isPreset = s.preset;
+    const isDistant = Math.abs(i - state.currentIdx) > 1;
+    const card = document.createElement('div');
+    const cls = ['set-card'];
+    if (isActive) cls.push('is-active');
+    if (s.done) cls.push('is-done-set');
+    if (isDistant) cls.push('is-distant');
+    card.className = cls.join(' ');
+    card.dataset.idx = i;
+    /* 모든 카드 동일 구조 렌더 — morphing 시 DOM 변경 없이 --t 만 바뀌도록.
+       tap-zone/stat-value 인터랙션은 CSS(.set-card:not(.is-active))로 비활성화됨 */
+    const isBodyweight = s.weight == null;
+    /* 맨몸 운동 — 중량 개념 없음. 횟수만 primary 큰 폰트로 승격 */
+    const statRows = isBodyweight
+      ? `<div class="stat-row primary bodyweight${s.pr ? ' is-pr' : ''}">
+          <div class="tap-zone tap-left" data-field="reps" data-dir="-1"></div>
+          <span class="stat-value${isPreset ? ' is-preset' : ''}" data-field="reps">${s.reps}</span>
+          <span class="stat-unit">회</span>
+          <div class="tap-zone tap-right" data-field="reps" data-dir="1"></div>
+        </div>`
+      : `<div class="stat-row primary${s.pr ? ' is-pr' : ''}">
+          <div class="tap-zone tap-left" data-field="weight" data-dir="-1"></div>
+          <span class="stat-value${isPreset ? ' is-preset' : ''}" data-field="weight">${fmt(s.weight)}</span>
+          <span class="stat-unit">kg</span>
+          <div class="tap-zone tap-right" data-field="weight" data-dir="1"></div>
+        </div>
+        <div class="stat-row secondary">
+          <div class="tap-zone tap-left" data-field="reps" data-dir="-1"></div>
+          <span class="stat-value${isPreset ? ' is-preset' : ''}" data-field="reps">${s.reps}</span>
+          <span class="stat-unit">회</span>
+          <div class="tap-zone tap-right" data-field="reps" data-dir="1"></div>
+        </div>`;
+    card.innerHTML = `
+      <div class="set-label"><span class="num">${String(i + 1).padStart(2, '0')}</span><span class="denom">/${String(state.sets.length).padStart(2, '0')}</span></div>
+      <div class="stat-stack">${statRows}</div>
+    `;
+    track.appendChild(card);
+  });
+  /* T-B4: 세트 진행도 → --progress-ratio 주입 (배경 accent glow 점진 변화 훅) */
+  const total = Math.max(1, state.sets.length - 1);
+  const progressRatio = total > 0 ? (state.currentIdx / total) : 0;
+  track.style.setProperty('--progress-ratio', progressRatio.toFixed(3));
+  renderSegments();
+  if (!opts.skipShift) shiftTrack();
+  bindCardInteractions();
+}
+
+function fmt(n) { return Math.round(n); } /* 중량·회수 정수 표시: 0.5 금지 (증감·키패드 일관성) */
+
+/* ============ TRACK SHIFT — active 카드 중심을 viewport 중앙에 동적 정렬
+   (active 와 peek 의 flex-basis 가 달라도 카드 크기 상관없이 정확히 가운데) */
+function shiftTrack() {
+  /* renderCards 직후 layout 확정되지 않았을 수 있어 rAF 로 한 프레임 양보.
+     rAF 가 실행 안 되는 엣지(탭 inactive, iframe 등) 대비 setTimeout fallback 병행.
+     초기 정렬은 transition 일시 비활성 → 즉시 jump → 복원 패턴 (preview 환경 rAF 멈춤 대응). */
+  const doShift = () => {
+    const active = track.querySelector('.set-card.is-active');
+    if (!active) return;
+    const viewport = track.parentElement.clientWidth;
+    const activeCenter = active.offsetLeft + active.offsetWidth / 2;
+    const offset = viewport / 2 - activeCenter;
+    const prev = track.style.transition;
+    track.style.transition = 'none';
+    track.style.transform = `translateX(${offset}px)`;
+    track.offsetWidth;  // force reflow → transition 복원 전에 jump 확정
+    track.style.transition = prev;
+  };
+  requestAnimationFrame(doShift);
+  setTimeout(doShift, 50);
+}
+function getTranslateX(el) {
+  const m = (el.style.transform || '').match(/translateX\((-?\d+\.?\d*)px\)/);
+  return m ? parseFloat(m[1]) : 0;
+}
+
+/* ============ TAP ZONES & NUMBER TAP — active 카드에만 바인딩 ============ */
+function bindCardInteractions() {
+  /* readonly: 편집 인터랙션 바인딩 자체 skip (§6-8 완료 운동 읽기 전용) */
+  if (state.readonly) return;
+  track.querySelectorAll('.set-card.is-active .tap-zone').forEach(z => {
+    z.addEventListener('click', (e) => {
+      e.stopPropagation();
+      startSessionIfNeeded();
+      const field = z.dataset.field;
+      const dir = parseInt(z.dataset.dir);
+      const step = field === 'weight' ? EXERCISES[state.exerciseName]?.equipIncrement || 5 : 1;
+      const s = state.sets[state.currentIdx];
+      s[field] = Math.max(0, Math.round(s[field] + dir * step));
+      s.preset = false;
+      // 미세 플래시 — 숫자 자체에만
+      const valEl = z.parentElement.querySelector('.stat-value');
+      if (valEl) {
+        valEl.classList.add('is-flash');
+        setTimeout(() => valEl.classList.remove('is-flash'), 150);
+      }
+      renderCards();
+      updateProgress();
+      haptic('light');
+    });
+  });
+  track.querySelectorAll('.set-card.is-active .stat-value').forEach(v => {
+    v.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openKeypad(v.dataset.field);
+    });
+    attachLongPress(v, () => openSetMenu(v.dataset.field));
+  });
+  /* 세트 라벨 pill 탭 → 세트 메뉴 (수정·삭제) — 발견성 개선 */
+  const lbl = track.querySelector('.set-card.is-active .set-label');
+  if (lbl) {
+    lbl.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openSetMenu(null);
+    });
+  }
+}
+
+/* ============ SWIPE — 주크박스 morph ============
+   - 드래그 진행률 p = |delta|/stride (0~1 clamp) 로 양쪽 카드의 --t 보간.
+     현재 카드: --t = 1 - p (커지다 줄어듦)
+     인접(들어오는) 카드: --t = p (피어올라 active 로)
+     반대쪽(멀어지는) peek: --t = 0 유지 (더 흐려지진 않고 제자리)
+   - threshold (stride × 0.6) 넘겨야 커밋. 미만이면 spring 복귀.
+   - 트랙 translateX 도 p 에 비례해 보간 (shiftTrack 수식과 동일 기준).
+   - 첫 세트 우스와이프 / 마지막 경계는 rubber-band 감쇠 */
+
+let dragging = false, dragStartX = 0, dragStartY = 0, dragDelta = 0, locked = null;
+let dragStartTime = 0;     // velocity 계산용 (빠른 플릭 판정)
+let thresholdFired = false;
+let stride = 200;
+let threshold = 120;
+let baseTranslate = 0;     // 드래그 시작 시점의 트랙 translateX
+let targetTranslate = 0;   // 드래그 방향 커밋 시 도달할 translateX
+let dragDir = 0;           // -1: 왼쪽 이동(다음 세트 방향) · +1: 오른쪽(이전 세트)
+let neighborIdx = -1;      // 드래그 방향의 인접 카드 인덱스
+let boundaryResist = false;
+let trackDurTimer = null;  // 커밋 transition 인라인 제거 타이머 (연속 스와이프 시 취소용)
+
+function getCardCenter(el) {
+  return el.offsetLeft + el.offsetWidth / 2;
+}
+
+/* 커밋 직후 연속감 보정:
+   renderCards 로 새 DOM 이 된 후, "이전 active" 와 "새 active" 카드에
+   드래그 종료 시점의 --t 값을 잠깐 인라인으로 넣고 → rAF 두 번 뒤 제거.
+   rAF 두 번: 한 번은 스타일 flush, 두 번째 프레임부터 transition 시작 시점이 됨.
+   인라인 제거 시 CSS 규칙값(active=1, 그 외=0) 으로 transition 보간. */
+function primeCommitTransition(prevActiveIdx, newActiveIdx, prevT, newT) {
+  const prev = track.querySelector(`.set-card[data-idx="${prevActiveIdx}"]`);
+  const neu  = track.querySelector(`.set-card[data-idx="${newActiveIdx}"]`);
+  if (prev) prev.style.setProperty('--t', String(prevT));
+  if (neu)  neu.style.setProperty('--t',  String(newT));
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (prev) prev.style.removeProperty('--t');
+      if (neu)  neu.style.removeProperty('--t');
+    });
+  });
+}
+
+function measureSwipe(dir) {
+  /* dir: -1(왼쪽 드래그=다음 세트로) · +1(오른쪽 드래그=이전 세트로)
+     해당 방향의 인접 카드를 찾아 stride 계산 + target translate 미리 잡기 */
+  const activeEl = track.querySelector('.set-card.is-active');
+  if (!activeEl) return;
+  const idx = state.currentIdx;
+  const wantIdx = dir < 0 ? idx + 1 : idx - 1;
+
+  /* 경계: 왼쪽 끝에서 우스와이프 or 마지막 카드에서 좌스와이프 시 인접 없음 */
+  if (wantIdx < 0 || wantIdx >= state.sets.length) {
+    neighborIdx = -1;
+    stride = activeEl.offsetWidth * 0.8;
+    threshold = stride * 0.6;
+    return;
+  }
+
+  const neighborEl = track.querySelector(`.set-card[data-idx="${wantIdx}"]`);
+  if (!neighborEl) {
+    neighborIdx = -1;
+    stride = 200;
+    threshold = 120;
+    return;
+  }
+  neighborIdx = wantIdx;
+
+  /* active 중심과 neighbor 중심 간 거리. morph 후 neighbor 는 더 커지지만
+     stride 는 시작 시점의 실제 거리를 기준으로 — UX 일관성. */
+  const activeCenter = getCardCenter(activeEl);
+  const neighborCenter = getCardCenter(neighborEl);
+  stride = Math.max(80, Math.abs(neighborCenter - activeCenter));
+  threshold = stride * 0.6;
+}
+
+track.addEventListener('pointerdown', (e) => {
+  if (e.target.closest('.tap-zone') || e.target.closest('.stat-value')) return;
+  if (state.sessionEnded) return;
+  /* 이전 커밋 인라인 transition 이 남아있으면 정리 — is-dragging 의 transition:none 이
+     우선적용되지만, pointerup 후 미커밋 복귀 경로에서 인라인 잔재로 이전 duration 이
+     의도치 않게 사용되는 엣지 케이스 방지. */
+  if (trackDurTimer) {
+    clearTimeout(trackDurTimer);
+    trackDurTimer = null;
+    track.style.transition = '';
+  }
+  dragging = true;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  dragStartTime = Date.now();
+  dragDelta = 0;
+  locked = null;
+  thresholdFired = false;
+  boundaryResist = false;
+  dragDir = 0;
+  neighborIdx = -1;
+  baseTranslate = getTranslateX(track);
+  track.classList.add('is-dragging');
+});
+
+window.addEventListener('pointermove', (e) => {
+  if (!dragging) return;
+  const dx = e.clientX - dragStartX;
+  const dy = e.clientY - dragStartY;
+  if (locked == null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+    locked = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+    if (locked === 'x') {
+      dragDir = Math.sign(dx);
+      measureSwipe(dragDir);
+    }
+  }
+  if (locked !== 'x') return;
+
+  /* 방향 바뀜 — 재측정 (예: 오른쪽 살짝 갔다가 왼쪽으로 전환) */
+  const newDir = Math.sign(dx);
+  if (newDir !== 0 && newDir !== dragDir) {
+    dragDir = newDir;
+    /* 이전 인접 카드 --t 초기화 */
+    track.querySelectorAll('.set-card:not(.is-active)').forEach(c => {
+      c.style.setProperty('--t', '0');
+    });
+    measureSwipe(dragDir);
+  }
+
+  const abs = Math.abs(dx);
+  const sign = Math.sign(dx);
+  let clamped;
+
+  /* 경계 저항 — 해당 방향에 인접 카드가 없음.
+     지수 감쇠: asymptotic 수렴으로 maxRubber(80px)를 절대 넘지 않음 */
+  if (neighborIdx === -1) {
+    const maxRubber = 80;
+    clamped = maxRubber * (1 - Math.exp(-abs / maxRubber));
+    boundaryResist = true;
+  } else if (abs > stride) {
+    /* rubber-band 지수 감쇠 — stride 초과분에만 적용.
+       maxOver = stride * 0.3 → 최대 30% 만 초과 허용 (과거 선형 0.28 × 초과분보다
+       멀리 갈수록 더 강하게 수렴). 목표값 초과 최소화 → 커밋 시 역방향 튕김 제거. */
+    const over = abs - stride;
+    const maxOver = stride * 0.3;
+    clamped = stride + maxOver * (1 - Math.exp(-over / maxOver));
+  } else {
+    clamped = abs;
+  }
+
+  dragDelta = sign * clamped;
+
+  /* 트랙 translateX — neighbor 방향으로 delta 만큼 따라감 */
+  track.style.transform = `translateX(${baseTranslate + dragDelta}px)`;
+
+  /* --t 주입: morph 진행률 p (0~1) */
+  const p = Math.min(1, Math.abs(dragDelta) / stride);
+  const activeEl = track.querySelector('.set-card.is-active');
+  if (activeEl) activeEl.style.setProperty('--t', String(1 - p));
+
+  if (neighborIdx !== -1) {
+    const neighborEl = track.querySelector(`.set-card[data-idx="${neighborIdx}"]`);
+    if (neighborEl) neighborEl.style.setProperty('--t', String(p));
+  }
+
+  /* threshold crossing 햅틱 */
+  if (neighborIdx !== -1 && Math.abs(dragDelta) >= threshold && !thresholdFired) {
+    thresholdFired = true;
+    haptic('light');
+  } else if (Math.abs(dragDelta) < threshold && thresholdFired) {
+    thresholdFired = false;
+  }
+});
+
+window.addEventListener('pointerup', () => {
+  if (!dragging) return;
+  dragging = false;
+  track.classList.remove('is-dragging');  /* transition 복원 → spring 받음 */
+
+  /* 커밋 판정 — 거리 40% OR (속도 0.5px/ms 이상 AND 거리 20% 이상).
+     기존 "거리 60% 단일조건"만으로는 빠른 플릭(짧은 거리+빠른 속도)을 놓쳐
+     사용자가 같은 제스처를 두 번 해야 하는 UX 이슈가 있었음. 속도 조건을 병행해 해결.
+     threshold 자체(햅틱 crossing 기준, stride*0.6)는 유지. */
+  const elapsed = Math.max(1, Date.now() - dragStartTime);
+  const velocity = Math.abs(dragDelta) / elapsed; /* px/ms */
+  const pctMoved = stride > 0 ? Math.abs(dragDelta) / stride : 0;
+  const commitReady = locked === 'x' && neighborIdx !== -1 &&
+    (pctMoved > 0.4 || (velocity > 0.5 && pctMoved > 0.2));
+
+  /* §6-3-1 "마지막 세트에서 좌 스와이프 → 세트 6 추가 모드" —
+     neighborIdx === -1 인 경계에서도 isLastSet + 충분한 좌 이동 충족 시 세트 추가. */
+  const isLastSet = state.currentIdx === state.sets.length - 1;
+  const addSetReady = locked === 'x' && neighborIdx === -1 && dragDir < 0 && isLastSet &&
+    (Math.abs(dragDelta) > 40 || (velocity > 0.5 && Math.abs(dragDelta) > 24));
+
+  if (commitReady) {
+    /* 커밋 경로 — "transition=none 상태에서 현재 시각 위치 고정 → rAF 에서 transition 복원 +
+       최종 위치 세팅" 패턴. shiftTrack rAF 와 커밋 rAF 가 경합하던 문제(기본 420ms transition 이
+       startTranslate 전환을 타고 발동 → 인라인 300ms 와 겹쳐 점프) 를 근본 해결.
+       - renderCards 는 skipShift 로 내부 shiftTrack 을 건너뛴다 (우리가 직접 세팅).
+       - --t 인라인을 드래그 종료 시점 크기로 주입 → reflow → 이 상태가 "점프 없는 출발점". */
+    const p = Math.min(1, Math.abs(dragDelta) / stride);
+    const prevActiveIdx = state.currentIdx;
+    const newActiveIdx  = neighborIdx;
+
+    /* ① 교체 전 구 DOM 의 neighbor(곧 new active) 화면 위치 실측 */
+    const oldNeighborEl = track.querySelector(`.set-card[data-idx="${newActiveIdx}"]`);
+    const oldNeuRect    = oldNeighborEl ? oldNeighborEl.getBoundingClientRect() : null;
+    const oldNeuCenter  = oldNeuRect ? oldNeuRect.left + oldNeuRect.width / 2 : null;
+
+    /* ② 상태 변경 + renderCards — shiftTrack 건너뛰기 (커밋 rAF 와 경합 방지) */
+    if (dragDir < 0) {
+      completeCurrentSet({ skipShift: true });
+    } else {
+      state.currentIdx--;
+      renderCards({ skipShift: true });
+      updateProgress();
+      haptic('light');
+    }
+
+    /* ③ 새 DOM prev/neu 에 --t 인라인 주입 — 드래그 종료 시점 크기 유지 */
+    const prevEl = track.querySelector(`.set-card[data-idx="${prevActiveIdx}"]`);
+    const neuEl  = track.querySelector(`.set-card[data-idx="${newActiveIdx}"]`);
+    if (prevEl) prevEl.style.setProperty('--t', String(1 - p));
+    if (neuEl)  neuEl.style.setProperty('--t',  String(p));
+
+    /* ④ 트랙 transition 을 강제로 none — CSS 기본 420ms 가 startTranslate 전환을 타고
+       발동하지 않도록 차단. 참조 gesture.js 의 cleanStyles / animateBack 패턴과 동일 원칙.
+       이전 커밋 인라인 transition 타이머가 남아 있으면 취소. */
+    if (trackDurTimer) { clearTimeout(trackDurTimer); trackDurTimer = null; }
+    track.style.transition = 'none';
+
+    /* ⑤ reflow — 새 DOM + 인라인 --t + transition=none 상태로 layout 확정 */
+    void track.offsetHeight;
+
+    /* ⑥ 새 DOM neu 위치 실측 → shift 계산 → startTranslate 세팅.
+       이 시점 transition=none 이므로 어떤 transition 도 발동하지 않고 순수 위치 고정. */
+    let shift = 0;
+    if (oldNeuCenter !== null && neuEl) {
+      const newRect = neuEl.getBoundingClientRect();
+      const newNeuCenter = newRect.left + newRect.width / 2;
+      shift = newNeuCenter - oldNeuCenter;
+    }
+    const startTranslate = baseTranslate + dragDelta - shift;
+    track.style.transform = `translateX(${startTranslate}px)`;
+
+    /* ⑦ 두 번째 reflow — startTranslate 상태를 "시작 스타일" 로 커밋 */
+    void track.offsetHeight;
+
+    /* 트랙 transition duration — 속도 기반 */
+    let baseDur;
+    if (velocity > 0.8)      baseDur = 300;
+    else if (velocity > 0.4) baseDur = 360;
+    else if (velocity > 0.2) baseDur = 410;
+    else                     baseDur = 450;
+    const trackDur   = baseDur;
+    const trackCurve = 'cubic-bezier(0.32, 0.72, 0, 1)';
+
+    /* ⑧ rAF — transition 복원 + 최종 위치 계산·세팅. 단일 transition 만 발동. */
+    requestAnimationFrame(() => {
+      track.style.transition = `transform ${trackDur}ms ${trackCurve}`;
+      const active = track.querySelector('.set-card.is-active');
+      if (active) {
+        const viewport     = track.parentElement.clientWidth;
+        const activeCenter = active.offsetLeft + active.offsetWidth / 2;
+        const finalOffset  = viewport / 2 - activeCenter;
+        track.style.transform = `translateX(${finalOffset}px)`;
+      }
+      /* 다음 프레임에 --t 인라인 제거 → CSS 규칙(active=1, peek=0) 로 380ms 수렴 */
+      requestAnimationFrame(() => {
+        if (prevEl) prevEl.style.removeProperty('--t');
+        if (neuEl)  neuEl.style.removeProperty('--t');
+      });
+    });
+
+    /* transition 이 멈추는 엣지(preview iframe / 탭 inactive) 대비 — trackDur 후 현재 위치가
+       finalOffset 근처가 아니면 transition 없이 강제 jump */
+    setTimeout(() => {
+      const active = track.querySelector('.set-card.is-active');
+      if (!active) return;
+      const viewport = track.parentElement.clientWidth;
+      const finalOffset = viewport / 2 - (active.offsetLeft + active.offsetWidth / 2);
+      const match = (track.style.transform || '').match(/translateX\((-?\d+\.?\d*)px\)/);
+      const currentX = match ? parseFloat(match[1]) : 0;
+      if (Math.abs(currentX - finalOffset) > 1) {
+        track.style.transition = 'none';
+        track.style.transform = `translateX(${finalOffset}px)`;
+        void track.offsetWidth;
+        track.style.transition = '';
+      }
+      if (prevEl) prevEl.style.removeProperty('--t');
+      if (neuEl)  neuEl.style.removeProperty('--t');
+    }, trackDur + 60);
+
+    /* ⑨ 트랙 transition 인라인 제거 타이머 (연속 스와이프 경합 방어) */
+    trackDurTimer = setTimeout(() => {
+      track.style.transition = '';
+      trackDurTimer = null;
+    }, trackDur + 30);
+  } else if (addSetReady) {
+    /* 마지막 세트 좌 스와이프 — 새 세트 추가 (§6-3-1).
+       completeCurrentSet 내부에서 state.sets.push + currentIdx++ + renderCards + updateProgress
+       (dots-pill segmentsEl 자동 갱신).
+       인라인 --t 제거 후 renderCards 가 새 DOM 세팅 + shiftTrack 으로 위치 복구. */
+    track.querySelectorAll('.set-card').forEach(c => c.style.removeProperty('--t'));
+    completeCurrentSet();
+    haptic('medium');
+  } else {
+    /* 미커밋 복귀 — 인라인 --t 를 목표치로 세팅해서 transition 받게 함.
+       (지우기만 하면 CSS 규칙값으로 "점프" 복귀됨) */
+    const activeEl = track.querySelector('.set-card.is-active');
+    if (activeEl) activeEl.style.setProperty('--t', '1');
+    track.querySelectorAll('.set-card:not(.is-active)').forEach(c => {
+      c.style.setProperty('--t', '0');
+    });
+    /* 트랙도 원위치로 — transition 이 받아 스프링 복귀 */
+    track.style.transform = `translateX(${baseTranslate}px)`;
+
+    /* 보간 끝나면 인라인값 제거 (CSS 규칙 기본값으로 돌아가 상속/디폴트 일관성 확보) */
+    setTimeout(() => {
+      if (!dragging) {
+        track.querySelectorAll('.set-card').forEach(c => c.style.removeProperty('--t'));
+      }
+    }, 450);
+  }
+
+  locked = null;
+  thresholdFired = false;
+  boundaryResist = false;
+  dragDir = 0;
+  neighborIdx = -1;
+});
+
+function completeCurrentSet(opts = {}) {
+  const s = state.sets[state.currentIdx];
+  if (!s) return;
+  /* readonly: 완료 판정·PR·세트 추가 모두 skip. idx 이동만 허용해 세트 탐색 가능. */
+  if (state.readonly) {
+    if (state.currentIdx < state.sets.length - 1) {
+      state.currentIdx++;
+      renderCards(opts);
+      updateProgress();
+    }
+    return;
+  }
+  startSessionIfNeeded();
+  /* 이미 완료된 세트(우스와이프로 돌아와 편집 후 재완료)는 PR 재판정 생략.
+     값 변경 없어도 다음 세트로 전환하는 "확인" 성격. */
+  const wasNewCompletion = !s.done;
+  s.done = true;
+  if (wasNewCompletion) {
+    const e1rm = s.weight * (1 + s.reps / 30);
+    if (e1rm > state.prevBestE1rm) {
+      s.pr = true;
+      state.prevBestE1rm = e1rm;
+      triggerPrPop();
+    }
+    // Wave 11.7.3b — SPA 환경 영속화 (fire-and-forget). mocks 허브에선 no-op.
+    if (window.gymSessionPR && s.weight != null && s.reps != null) {
+      const sessionId = state.sessionStartedAt ? `sess-${state.sessionStartedAt}` : null;
+      const dateISO = window.gymQueries
+        ? window.gymQueries.toISODate(new Date(state.sessionStartedAt || Date.now()))
+        : null;
+      window.gymSessionPR.persistSetPR({
+        exerciseName: state.exerciseName,
+        weight: s.weight,
+        reps: s.reps,
+        sessionId,
+        date: dateISO,
+      }).catch(e => console.error('[gym] persistSetPR', e));
+    }
+    // Wave 11.9.3 — Dexie blocks[i].sets[currentIdx] 동기화 (fire-and-forget)
+    if (window.gymSession?.persistSetCommit) {
+      window.gymSession.persistSetCommit({
+        exerciseName: state.exerciseName,
+        setIdx: state.currentIdx,
+        set: { weight: s.weight, reps: s.reps, done: true, pr: !!s.pr },
+      }).catch(e => console.error('[gym] persistSetCommit', e));
+    }
+  }
+  if (state.currentIdx < state.sets.length - 1) {
+    state.currentIdx++;
+    const next = state.sets[state.currentIdx];
+    if (next.preset) { next.weight = s.weight; next.reps = s.reps; }
+  } else {
+    state.sets.push({ weight: s.weight, reps: s.reps, done: false, preset: true, pr: false });
+    state.currentIdx++;
+  }
+  renderCards(opts);
+  updateProgress();
+  haptic('medium');
+}
+
+function triggerPrPop() {
+  prPop.classList.remove('pop');
+  void prPop.offsetWidth;
+  prPop.classList.add('pop');
+  // PR 시 Clawd 도 lift(Happy Barbell Raise)로 잠깐 전환
+  const c = document.getElementById('progClawd');
+  const originalPose = c.dataset.pose;
+  c.dataset.pose = 'lift';
+  c.innerHTML = clawdMarkup('lift');
+  c.classList.add('is-celebrate');
+  setTimeout(() => {
+    c.classList.remove('is-celebrate');
+    updateProgress();
+  }, 1400);
+}
+
+/* ============ PROGRESS + CLAWD ============
+   Clawd 위치: 현재 활성 세트(state.currentIdx) 세그먼트의 정중앙.
+   - Clawd 는 세그먼트 바 위에 "서있음". 스와이프/세트 완료/되돌리기 시 해당 세그먼트 중앙으로 이동.
+   - 포즈 결정은 완료 비율(setPct) 기준 유지.
+   볼륨 라벨: 운동명 라인 우측에 "완료 볼륨 / 직전 볼륨" 표시 (세트 완료 전엔 "직전 N kg"). */
+function updateProgress() {
+  const vol = state.sets.filter(s => s.done).reduce((sum, s) => sum + s.weight * s.reps, 0);
+  const volPct = state.prevExerciseVolume > 0 ? (vol / state.prevExerciseVolume) * 100 : 0;
+
+  /* Clawd 위치 — 현재 활성 세트 세그먼트의 정중앙.
+     세그먼트 DOM을 직접 측정해 gap(4px)이 반영된 실제 중앙 좌표를 %로 변환.
+     스와이프/완료/되돌리기 모두 updateProgress() 호출 → Clawd 이동. */
+  const doneCount = state.sets.filter(s => s.done).length;
+  const totalSets = state.sets.length;
+  const setPct = totalSets > 0 ? (doneCount / totalSets) * 100 : 0; /* 포즈 결정용 유지 */
+
+  const c = document.getElementById('progClawd');
+  const navEl = c.parentElement; /* .set-nav */
+  const curSeg = segmentsEl.children[state.currentIdx];
+  if (curSeg && navEl) {
+    const navW = navEl.clientWidth;
+    if (navW > 0) {
+      const segCenter = curSeg.offsetLeft + curSeg.offsetWidth / 2;
+      c.style.left = (segCenter / navW) * 100 + '%';
+    }
+  }
+
+  /* 포즈 결정: 세트 기준. 모두 완료(100%) lift, 절반 이상(50%+) run, 그 외 운동별.
+     볼륨이 직전 세션 초과하면(볼륨 100%+) 추가 축하 조건 — lift 우선 */
+  let pose;
+  if (setPct >= 100 || volPct >= 100) {
+    pose = 'lift';
+    c.classList.add('is-celebrate');
+  } else if (setPct >= 50) {
+    pose = 'run';
+    c.classList.remove('is-celebrate');
+  } else {
+    pose = poseFor(state.exerciseName);
+    c.classList.remove('is-celebrate');
+  }
+  c.dataset.pose = pose;
+  c.innerHTML = clawdMarkup(pose);
+
+  /* 볼륨 라벨 — 구조화 (vol-now 강조) */
+  setVolumeLabel(vol, state.prevExerciseVolume, doneCount === 0);
+}
+
+/* 볼륨 라벨 3단 구조 세팅 — ui §1 typography-driven 위계 유지.
+   맨몸 운동(state.sets[0].weight==null)은 kg 볼륨 개념 없음 → 총 횟수 표기. */
+function setVolumeLabel(nowVol, prevVol, isInitial) {
+  const el = document.getElementById('volumeLabel');
+  const isBodyweight = state.sets.length > 0 && state.sets[0].weight == null;
+  if (isBodyweight) {
+    const totalReps = state.sets.filter(s => s.done).reduce((sum, s) => sum + s.reps, 0);
+    const maxReps = state.sets.reduce((sum, s) => sum + s.reps, 0);
+    el.innerHTML = totalReps > 0
+      ? `<span class="vol-now">${totalReps}</span><span class="vol-sep">/</span><span class="vol-prev">${maxReps}<span class="vol-unit">회</span></span>`
+      : `<span class="vol-prev">목표 ${maxReps}<span class="vol-unit">회</span></span>`;
+    return;
+  }
+  if (isInitial) {
+    /* 첫 세트 전 — "직전 N,NNNkg" 단일 톤 */
+    el.innerHTML = `<span class="vol-prev">직전 ${prevVol.toLocaleString()}<span class="vol-unit">kg</span></span>`;
+    return;
+  }
+  el.innerHTML = `<span class="vol-now">${nowVol.toLocaleString()}</span><span class="vol-sep">/</span><span class="vol-prev">${prevVol.toLocaleString()}<span class="vol-unit">kg</span></span>`;
+}
+
+/* ============ KEYPAD ============ */
+const backdrop = document.getElementById('backdrop');
+const keypadSheet = document.getElementById('keypadSheet');
+const keypadValueEl = document.getElementById('keypadValue');
+const keypadUnitEl = document.getElementById('keypadUnit');
+let keypadField = null, keypadBuffer = '', keypadDirty = false;
+
+function openKeypad(field) {
+  startSessionIfNeeded();
+  keypadField = field;
+  const s = state.sets[state.currentIdx];
+  keypadBuffer = String(s[field]);
+  /* 첫 숫자 입력 시 기존 값 덮어쓰기. ⌫ 는 기존 값 수정 의도로 즉시 dirty */
+  keypadDirty = false;
+  keypadValueEl.textContent = keypadBuffer;
+  keypadUnitEl.textContent = field === 'weight' ? 'kg' : '회';
+  /* 중량/회수 — 정수 입력 (소수점 비활성, §6-3 정수 표시 원칙) */
+  document.getElementById('keypadDot').classList.remove('is-on');
+  showSheet(keypadSheet);
+}
+function closeKeypad() {
+  hideSheet(keypadSheet);
+  keypadField = null;
+}
+document.querySelectorAll('.keypad-key[data-k]').forEach(k => {
+  k.addEventListener('click', () => {
+    const v = k.dataset.k;
+    if (v === 'back') {
+      keypadBuffer = keypadBuffer.slice(0, -1) || '0';
+      keypadDirty = true;
+    } else if (v === 'dot') {
+      /* 소수점 — distance 전용 (openCardioKeypad 에서 is-on 토글) */
+      if (!keypadDirty) {
+        keypadBuffer = '0.'; keypadDirty = true;
+      } else if (!keypadBuffer.includes('.')) {
+        keypadBuffer = keypadBuffer === '0' ? '0.' : keypadBuffer + '.';
+      }
+    } else {
+      /* §6-3-2 기존값 덮어쓰기: 첫 숫자 = clear + new, 이후 = append.
+         "0" 인 기존값도 첫 숫자로 덮어쓰기 동작 동일 */
+      if (!keypadDirty) {
+        keypadBuffer = v;
+        keypadDirty = true;
+      } else {
+        keypadBuffer = keypadBuffer === '0' ? v : keypadBuffer + v;
+      }
+    }
+    keypadValueEl.textContent = keypadBuffer;
+  });
+});
+document.getElementById('keypadDone').addEventListener('click', () => {
+  if (keypadField === 'weight' || keypadField === 'reps') {
+    const num = parseInt(keypadBuffer, 10) || 0;
+    const s = state.sets[state.currentIdx];
+    s[keypadField] = num;
+    s.preset = false;
+    // Wave 11.12 — Dexie blocks[i].sets[currentIdx] 의 단일 필드 동기화 (fire-and-forget)
+    if (window.gymSession?.persistKeypadEdit) {
+      window.gymSession.persistKeypadEdit({
+        exerciseName: state.exerciseName,
+        setIdx: state.currentIdx,
+        field: keypadField,
+        value: num,
+      }).catch(e => console.error('[gym] persistKeypadEdit', e));
+    }
+    closeKeypad();
+    renderCards();
+    updateProgress();
+    return;
+  }
+  if (keypadField === 'time' || keypadField === 'distance') {
+    const num = keypadField === 'distance' ? (parseFloat(keypadBuffer) || 0) : (parseInt(keypadBuffer, 10) || 0);
+    const snap = state.cardioStates[state.exerciseName];
+    snap[keypadField] = num;
+    delete snap.isPreset; // 사용자 입력 커밋 → 프리셋 해제
+    cardioTimeBtn.textContent = fmtCardio(snap.time);
+    cardioDistBtn.textContent = fmtCardio(snap.distance);
+    cardioTimeBtn.classList.remove('is-preset');
+    cardioDistBtn.classList.remove('is-preset');
+    updateCardioPace();
+    cardioDoneBtn.disabled = state.readonly; // 프리셋 해제로 활성 가능
+    document.getElementById('volumeLabel').textContent = snap.time > 0 ? `${fmtCardio(snap.time)}분` : '유산소';
+    closeKeypad();
+    return;
+  }
+  closeKeypad();
+});
+
+/* ============ LONG-PRESS ============ */
+const menuSheet = document.getElementById('menuSheet');
+function attachLongPress(el, handler, ms = 500) {
+  let timer = null, startX = 0, startY = 0, cancelled = false;
+  const clear = () => { if (timer) { clearTimeout(timer); timer = null; } el.style.transform = ''; };
+  el.addEventListener('pointerdown', (e) => {
+    cancelled = false;
+    startX = e.clientX; startY = e.clientY;
+    el.style.transition = 'transform 200ms var(--ease)';
+    timer = setTimeout(() => {
+      if (cancelled) return;
+      el.style.transform = 'scale(0.96)';
+      haptic('medium');
+      handler();
+      setTimeout(() => el.style.transform = '', 200);
+    }, ms);
+  });
+  el.addEventListener('pointermove', (e) => {
+    if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+      cancelled = true; clear();
+    }
+  });
+  el.addEventListener('pointerup', clear);
+  el.addEventListener('pointercancel', clear);
+}
+
+function openSetMenu(field) {
+  /* field null 이면 pill 탭 경로 — 세트 삭제 전용.
+     (Wave 11.6.2: 중량/횟수 수정은 카드 내부 tap-zone/키패드로 가능하므로 메뉴에서 제거).
+     field 지정이면 꾹누르기 경로 — 단일 필드 편집/삭제. */
+  let menuHTML;
+  if (field === null) {
+    document.getElementById('menuTitle').textContent = `세트 ${state.currentIdx + 1}`;
+    menuHTML = `<button class="menu-item danger" data-act="delete">세트 삭제</button>`;
+  } else {
+    document.getElementById('menuTitle').textContent = (field === 'weight' ? '중량' : '횟수') + ' 편집';
+    menuHTML = `<button class="menu-item" data-act="edit-${field === 'weight' ? 'weight' : 'reps'}">키패드로 수정</button>
+                <button class="menu-item danger" data-act="delete">세트 삭제</button>`;
+  }
+  const list = document.getElementById('menuList');
+  list.innerHTML = menuHTML;
+  list.querySelectorAll('.menu-item').forEach(b => {
+    b.addEventListener('click', () => {
+      const act = b.dataset.act;
+      hideSheet(menuSheet);
+      if (act === 'edit-weight') setTimeout(() => openKeypad('weight'), 240);
+      if (act === 'edit-reps')   setTimeout(() => openKeypad('reps'),   240);
+      if (act === 'delete') {
+        state.sets.splice(state.currentIdx, 1);
+        if (state.currentIdx >= state.sets.length) state.currentIdx = Math.max(0, state.sets.length - 1);
+        renderCards(); updateProgress();
+        toast('세트 삭제됨');
+      }
+    });
+  });
+  showSheet(menuSheet);
+}
+
+/* ============ END CONFIRM ============ */
+const endBtn = document.getElementById('endBtn');
+const endSheet = document.getElementById('endSheet');
+
+endBtn.addEventListener('click', () => {
+  const done = state.sets.filter(s => s.done).length;
+  const vol = state.sets.filter(s => s.done).reduce((sum, s) => sum + s.weight * s.reps, 0);
+  document.getElementById('endSheetMeta').textContent = `완료한 세트 ${done}개 · 볼륨 ${vol.toLocaleString()}kg`;
+  showSheet(endSheet);
+});
+
+document.getElementById('endCancel').addEventListener('click', () => {
+  hideSheet(endSheet);
+});
+/* Wave 11.6D — 운동명 → 부위 약어 매핑 (tag 추론용) */
+function partOfExercise(name) {
+  if (/벤치|인클라인|덤벨플라이|체스트|플라이/.test(name)) return '가';
+  if (/스쿼트|런지|레그|힙/.test(name)) return '하';
+  if (/데드|바벨로우|랫풀|풀업|시티드로우/.test(name)) return '등';
+  if (/숄더|밀리터리|오버헤드|사이드레터럴/.test(name)) return '어';
+  if (/컬|curl|킥백|익스텐션/i.test(name)) return '팔';
+  if (/트레드밀|사이클|로잉|엘립티컬|러닝|스텝퍼/.test(name)) return '유';
+  return '기타';
+}
+
+/** state + exerciseStates → Dexie sessions row 구성 (spec §4, §12).
+    완료 세트 없으면 null 반환 (빈 세션 저장 방지) */
+function buildSessionFromState() {
+  const now = Date.now();
+  const startTime = state.sessionStartedAt || now;
+  const durationMin = Math.max(1, Math.round((now - startTime) / 60_000));
+  const dateISO = new Date(startTime).toISOString().slice(0, 10);
+
+  /* 모든 운동 병합: exerciseStates + 현재 운동 snapshot */
+  const allStates = { ...(state.exerciseStates || {}) };
+  allStates[state.exerciseName] = { sets: state.sets };
+
+  /* footer nav 순서대로 수집 (사용자 실 운동 순서 유지) */
+  const navNames = Array.from(document.querySelectorAll('.nav-item[data-name]'))
+    .map(el => el.dataset.name);
+  const exercises = [];
+  navNames.forEach(name => {
+    const snap = allStates[name];
+    if (!snap || !Array.isArray(snap.sets)) return;
+    const completedSets = snap.sets
+      .filter(s => s.done)
+      .map(s => ({
+        weight: s.weight ?? null,
+        reps: s.reps ?? null,
+        done: true,
+      }));
+    if (completedSets.length === 0) return;
+    exercises.push({
+      exerciseId: name,
+      exerciseName: name,
+      equipment: 'unknown',  // Wave 11.7 관리 화면 바인딩 시 실 equipment 매핑
+      sets: completedSets,
+    });
+  });
+
+  if (exercises.length === 0) return null;
+
+  const totalVolume = exercises
+    .flatMap(e => e.sets)
+    .reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
+  const tagSet = [...new Set(exercises.map(e => partOfExercise(e.exerciseName)))];
+  const tag = tagSet.length > 1 ? tagSet.join('·') : tagSet[0];
+
+  return {
+    id: `sess-${dateISO.replaceAll('-', '')}-${Date.now().toString().slice(-4)}`,
+    date: dateISO,
+    startTime,
+    endTime: now,
+    blocks: [{ type: 'single', exercises }],
+    tags: [tag],
+    totalVolume,
+    totalCalories: Math.round(durationMin * 5.5),
+    durationMin,
+    status: 'completed',
+  };
+}
+
+document.getElementById('endConfirm').addEventListener('click', async () => {
+  hideSheet(endSheet);
+  if (timerInterval) clearInterval(timerInterval);
+  if (window.__gymTimerInterval) { clearInterval(window.__gymTimerInterval); window.__gymTimerInterval = null; }
+  state.sessionEnded = true;
+  const t = document.getElementById('sessionTime');
+  t.classList.remove('is-running');
+
+  /* Wave 11.9.5 — SPA finalizeActiveSession 우선 (spec §12 정합 형식 보존).
+     Wave 11.9.1 의 active row (id=session_<ts>, blocks=[{type:'single',exerciseId:'영문',sets}])
+     를 status='completed' + endTime + 합계 마킹. 미노출 환경 (mocks 허브 iframe) 은
+     기존 Wave 11.6D fallback (buildSessionFromState 새 row 생성). */
+  if (window.gymSession?.finalizeActiveSession) {
+    try {
+      const r = await window.gymSession.finalizeActiveSession();
+      if (r?.ok && r.session?.id) {
+        try { sessionStorage.setItem('gymLastSessionId', r.session.id); } catch (_) {}
+      } else if (window.gymQueries) {
+        // active 없음 또는 finalize 실패 — fallback 시도
+        const session = buildSessionFromState();
+        if (session) {
+          await window.gymQueries.upsertSession(session);
+          try { sessionStorage.setItem('gymLastSessionId', session.id); } catch (_) {}
+        }
+      }
+    } catch (err) {
+      console.warn('[session] finalize failed', err);
+    }
+  } else if (window.gymQueries) {
+    try {
+      const session = buildSessionFromState();
+      if (session) {
+        await window.gymQueries.upsertSession(session);
+        try { sessionStorage.setItem('gymLastSessionId', session.id); } catch (_) {}
+      }
+    } catch (err) {
+      console.warn('[session] upsert failed', err);
+    }
+  }
+
+  // 프로토타입: 종료 → 요약 화면
+  setTimeout(() => { window.location.href = 'summary.html'; }, 400);
+});
+
+/* ============ SHEET HELPERS ============ */
+function showSheet(sheet) {
+  backdrop.classList.add('show');
+  sheet.classList.add('show');
+}
+function hideSheet(sheet) {
+  sheet.classList.remove('show');
+  if (!document.querySelector('.sheet.show')) backdrop.classList.remove('show');
+}
+backdrop.addEventListener('click', () => {
+  document.querySelectorAll('.sheet.show').forEach(s => s.classList.remove('show'));
+  backdrop.classList.remove('show');
+});
+
+/* ============ TIMER ============ */
+let timerInterval = null;
+/* Wave C (2026-05-05) — SPA hashchange 시 app.js 가 script 를 재실행 → 이전 IIFE
+   의 setInterval 핸들 참조를 잃음. 새 setInterval 시작 전 window 글로벌에 보관된
+   이전 핸들을 clear 해서 multi-interval race 로 인한 비단조 표시 방지. */
+function startSessionIfNeeded() {
+  if (state.sessionStartedAt || state.sessionEnded) return;
+  state.sessionStartedAt = Date.now();
+  const t = document.getElementById('sessionTime');
+  t.classList.remove('is-idle');
+  t.classList.add('is-running');
+  if (window.__gymTimerInterval) clearInterval(window.__gymTimerInterval);
+  timerInterval = setInterval(updateTimer, 1000);
+  window.__gymTimerInterval = timerInterval;
+  updateTimer();
+}
+function updateTimer() {
+  if (!state.sessionStartedAt) return;
+  const elapsed = Math.floor((Date.now() - state.sessionStartedAt) / 1000);
+  const h = Math.floor(elapsed / 3600);
+  /* h > 0 구간에서도 m 은 "시간 내 분" (0~59) 이어야. 전체 분으로 계산하면 "3:214:44" 처럼 분이 60 을 초과 */
+  const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+  const s = String(elapsed % 60).padStart(2, '0');
+  document.getElementById('sessionTimeText').textContent = h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
+}
+
+/* ============ NAV (footer) — §6-8 "다른 운동 탭 = 이동, 완료 아님" ============ */
+function snapshotCurrentExercise() {
+  /* 시간 기반(유산소·플랭크)은 cardioStates 에 이미 저장됨 — skip */
+  const curDef = EX_DEFAULTS[state.exerciseName] || {};
+  if (EX_BY_PART['유산소'].includes(state.exerciseName) || curDef.isTime) return;
+  state.exerciseStates[state.exerciseName] = {
+    sets: state.sets.map(s => ({ ...s })),
+    currentIdx: state.currentIdx,
+    prevExerciseVolume: state.prevExerciseVolume,
+    prevBestE1rm: state.prevBestE1rm,
+    readonly: state.readonly,
+  };
+}
+
+/* nav-item is-hold 상태의 메타 레이블 계산 (§6-4 유산소·플랭크 = 분, 일반 = 세트 N/M) */
+function formatNavHold(navItem) {
+  const name = navItem.dataset.name;
+  const def = EX_DEFAULTS[name] || {};
+  const isTimeBased = EX_BY_PART['유산소'].includes(name) || def.isTime;
+  if (isTimeBased) {
+    const snap = state.cardioStates?.[name];
+    /* 프리셋 상태(사용자 입력 전) 은 메타 비움 — 입력 커밋 후에만 표기 */
+    if (snap && !snap.isPreset && snap.time) return `${fmtCardio(snap.time)}분`;
+    return '';
+  }
+  /* 일반 운동 — 현재 운동인지 기억된 snapshot 인지 구분 */
+  if (name === state.exerciseName) {
+    const doneCount = state.sets.filter(s => s.done).length;
+    return `${doneCount}/${state.sets.length}`;
+  }
+  const snap = state.exerciseStates[name];
+  if (snap?.sets?.length) {
+    const doneCount = snap.sets.filter(s => s.done).length;
+    return `${doneCount}/${snap.sets.length}`;
+  }
+  return '';
+}
+
+function applyNavHoldLabel(navItem) {
+  const label = formatNavHold(navItem);
+  if (label) navItem.dataset.hold = label;
+  else delete navItem.dataset.hold;
+}
+function loadExercise(name, opts = {}) {
+  /* 유산소 분기 (§6-4) — 별도 뷰 */
+  /* 시간 기반 운동(유산소 부위 + 플랭크 등 isTime flag) 은 cardio 카드 재활용.
+     플랭크는 거리 필드 숨김 옵션으로 분기. */
+  const def = EX_DEFAULTS[name] || {};
+  if (EX_BY_PART['유산소'].includes(name)) {
+    return loadCardio(name, opts);
+  }
+  if (def.isTime) {
+    return loadCardio(name, { ...opts, hideDistance: true });
+  }
+  /* 유산소 뷰가 열려있었다면 닫고 일반 카드 복원 */
+  cardViewportEl.hidden = false;
+  if (typeof cardioViewportEl !== 'undefined') cardioViewportEl.hidden = true;
+  const snap = state.exerciseStates[name];
+  const readonly = opts.readonly != null
+    ? opts.readonly
+    : (snap ? !!snap.readonly : false);
+  if (snap) {
+    state.sets = snap.sets.map(s => ({ ...s }));
+    state.currentIdx = snap.currentIdx;
+    state.prevExerciseVolume = snap.prevExerciseVolume;
+    state.prevBestE1rm = snap.prevBestE1rm;
+  } else {
+    /* snap 없음 — EX_DEFAULTS 기반 세트 생성. 맨몸(w:null)은 weight=null 유지. */
+    const defs = EX_DEFAULTS[name] || {};
+    const defaultSets = 5;
+    const defaultReps = defs.r ?? 10;
+    const defaultWeight = defs.w ?? null;
+    const preDone = !!opts.readonly;
+    state.sets = Array.from({ length: defaultSets }, () => ({
+      weight: defaultWeight,
+      reps: defaultReps,
+      done: preDone,
+      preset: !preDone,
+      pr: false,
+    }));
+    state.currentIdx = 0;
+    state.prevExerciseVolume = defaultWeight != null ? defaultSets * defaultReps * defaultWeight : 0;
+    state.prevBestE1rm = defaultWeight != null ? defaultWeight * (1 + defaultReps / 30) : 0;
+  }
+  state.exerciseName = name;
+  state.readonly = readonly;
+  document.getElementById('exerciseName').childNodes[0].nodeValue = name;
+  document.getElementById('readonlyBadge').hidden = !readonly;
+  renderCards();
+  updateProgress();
+}
+/* nav-item 클릭 로직 — 신규 동적 추가 item 에도 동일 바인딩 위해 공통 함수. */
+function bindNavItem(item) {
+  item.addEventListener('click', () => {
+    /* Wave 11.18 — 첫 nav-item 클릭으로 빈 세션 모드 해제 (placeholder → 메인 카드). */
+    const appEl = document.getElementById('sessionApp');
+    if (appEl?.dataset.emptySession) delete appEl.dataset.emptySession;
+    if (item.classList.contains('is-current')) return;
+    const isDone = item.classList.contains('is-done');
+    /* 이전 current → is-hold + data-hold (§6-8) */
+    const oldCurrent = document.querySelector('.nav-item.is-current');
+    if (oldCurrent && !state.readonly) {
+      /* readonly 모드에서 이동할 때는 이전 current 가 readonly 운동이므로 snapshot 만 하고
+         is-current 를 유지 — nav 표시는 원래 current 그대로, 카드만 전환되는 구조.
+         대신 mocks 단순화 위해 readonly 에서 이동 시 은 snapshot 만 저장하고 is-current 유지 */
+      snapshotCurrentExercise();
+      oldCurrent.classList.remove('is-current');
+      oldCurrent.classList.add('is-hold');
+      applyNavHoldLabel(oldCurrent);
+    } else if (oldCurrent && state.readonly) {
+      /* readonly 에서 다른 nav 로 이동 — snapshot 만, oldCurrent 의 nav 클래스는 바꾸지 않음 */
+      snapshotCurrentExercise();
+    }
+    if (isDone) {
+      /* done 탭 — 카드만 readonly 로 펼침. nav 상태는 그대로 (is-done 유지, is-current 로 바꾸지 않음) */
+      loadExercise(item.dataset.name, { readonly: true });
+      /* Wave 11.6.1: 탭한 item 이 중앙으로 오도록 스크롤 (done 탭은 is-current 변경 없음 → 수동 scroll) */
+      scrollNavTo(item);
+      return;
+    }
+    /* 일반 이동 — 새 current */
+    item.classList.remove('is-pending', 'is-hold');
+    delete item.dataset.hold;
+    item.classList.add('is-current');
+    loadExercise(item.dataset.name, { readonly: false });
+    startSessionIfNeeded();
+    /* Wave 11.6.1: is-current 전환 후 중앙으로 스크롤 */
+    scrollNavToCurrent();
+  });
+}
+document.querySelectorAll('.nav-item').forEach(bindNavItem);
+
+/* ============ CARDIO · SHARED VIEWPORT 참조 (§6-4) ============
+   card-viewport 와 배타 토글. loadExercise 가 종목 타입 보고 적절한 뷰로 swap. */
+const cardViewportEl = document.getElementById('cardViewport');
+const cardioViewportEl = document.getElementById('cardioViewport');
+
+/* ============ CARDIO (§6-4) ============
+   유산소 = 시간·거리·페이스. state.cardio 에 현재 종목 상태. 키패드 재사용(소수점 허용). */
+state.cardioStates = state.cardioStates || {};
+const cardioTimeBtn = document.getElementById('cardioTimeBtn');
+const cardioDistBtn = document.getElementById('cardioDistBtn');
+const cardioPaceEl = document.getElementById('cardioPace');
+const cardioDoneBtn = document.getElementById('cardioDoneBtn');
+
+function loadCardio(name, opts = {}) {
+  const readonly = !!opts.readonly;
+  const hideDistance = !!opts.hideDistance;
+  cardViewportEl.hidden = true;
+  cardioViewportEl.hidden = false;
+  /* 플랭크(시간 단독) — 거리 행·페이스 숨김. 유산소(트레드밀 등) 는 전부 표시. */
+  const cardioBody = cardioViewportEl.querySelector('.cardio-card');
+  if (cardioBody) {
+    cardioBody.classList.toggle('is-time-only', hideDistance);
+  }
+  state.exerciseName = name;
+  state.readonly = readonly;
+  document.getElementById('exerciseName').childNodes[0].nodeValue = name;
+  document.getElementById('readonlyBadge').hidden = !readonly;
+  /* 이전 세션 값이 없으면 EX_DEFAULTS (프리셋) 사용 — 일반 카드 §6-3-3 프리셋 패턴 대응.
+     프리셋은 cardioStates 에 즉시 저장하되 isPreset 플래그 유지 → formatNavHold 가 메타 제외, 완료 버튼 disabled. */
+  if (!state.cardioStates[name]) {
+    const defaults = EX_DEFAULTS[name] || {};
+    state.cardioStates[name] = {
+      time: defaults.d || 0,
+      distance: defaults.km || 0,
+      done: false,
+      isPreset: true,
+    };
+  }
+  const snap = state.cardioStates[name];
+  cardioTimeBtn.textContent = fmtCardio(snap.time);
+  cardioDistBtn.textContent = fmtCardio(snap.distance);
+  /* 프리셋 상태일 때 흐리게 표기 — 사용자가 이전값임을 인지 (일반 카드 프리셋과 동일 시각 언어) */
+  cardioTimeBtn.classList.toggle('is-preset', !!snap.isPreset);
+  cardioDistBtn.classList.toggle('is-preset', !!snap.isPreset);
+  updateCardioPace();
+  cardioDoneBtn.textContent = snap.done ? '완료됨' : '완료';
+  cardioDoneBtn.disabled = readonly || !!snap.isPreset;
+  /* volumeLabel 재활용 — 값 입력 후 "N분", 프리셋 상태는 부위명 placeholder */
+  const def = EX_DEFAULTS[name] || {};
+  const partLabel = def.isTime ? '코어' : '유산소';
+  document.getElementById('volumeLabel').textContent = (!snap.isPreset && snap.time > 0) ? `${fmtCardio(snap.time)}분` : partLabel;
+}
+
+function fmtCardio(v) {
+  if (!v) return '0';
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+function updateCardioPace() {
+  const t = parseFloat(cardioTimeBtn.textContent) || 0;
+  const d = parseFloat(cardioDistBtn.textContent) || 0;
+  if (t > 0 && d > 0) {
+    const paceMinPerKm = t / d;
+    let m = Math.floor(paceMinPerKm);
+    let s = Math.round((paceMinPerKm - m) * 60);
+    if (s === 60) { m += 1; s = 0; }
+    cardioPaceEl.textContent = `${m}:${String(s).padStart(2, '0')} min/km`;
+  } else {
+    cardioPaceEl.innerHTML = '&nbsp;';
+  }
+}
+
+/* 유산소 값 탭 → 기존 keypadSheet 재활용. keypadField = 'time'/'distance' 로 분기. */
+function openCardioKeypad(field) {
+  startSessionIfNeeded();
+  keypadField = field;
+  const name = state.exerciseName;
+  const saved = state.cardioStates[name];
+  const defaults = EX_DEFAULTS[name] || {};
+  /* saved 없으면 defaults 값이 프리셋. 첫 숫자 입력 시 keypadDirty 패턴으로 덮어쓰기. */
+  const snap = saved || { time: defaults.d || 0, distance: defaults.km || 0, done: false, isPreset: true };
+  state.cardioStates[name] = snap;
+  keypadBuffer = String(snap[field] || 0);
+  keypadDirty = false; // 프리셋/저장값 모두 첫 입력 시 덮어쓰기 (Wave 11.3 isDirty 패턴)
+  document.getElementById('keypadValue').textContent = keypadBuffer;
+  document.getElementById('keypadUnit').textContent = field === 'time' ? '분' : 'km';
+  /* 소수점 버튼 활성화 — distance 만 */
+  document.getElementById('keypadDot').classList.toggle('is-on', field === 'distance');
+  showSheet(keypadSheet);
+}
+
+cardioTimeBtn.addEventListener('click', () => openCardioKeypad('time'));
+cardioDistBtn.addEventListener('click', () => openCardioKeypad('distance'));
+cardioDoneBtn.addEventListener('click', () => {
+  const snap = state.cardioStates[state.exerciseName] || { time: 0, distance: 0 };
+  if (!snap.time) { toast('시간을 입력해 주세요'); return; }
+  snap.done = true;
+  state.cardioStates[state.exerciseName] = snap;
+  const nav = Array.from(document.querySelectorAll('.nav-item')).find(el => el.dataset.name === state.exerciseName);
+  if (nav) {
+    nav.classList.remove('is-current', 'is-pending', 'is-hold');
+    nav.classList.add('is-done');
+  }
+  /* 다음 운동 승계 */
+  const next = document.querySelector('.nav-item.is-hold, .nav-item.is-pending');
+  if (next) {
+    next.classList.remove('is-pending', 'is-hold');
+    delete next.dataset.hold;
+    next.classList.add('is-current');
+    loadExercise(next.dataset.name, { readonly: false });
+  }
+  toast(`${snap.time}분 완료`);
+  haptic('medium');
+});
+
+/* ============ NAV PRESS-AND-DRAG (§6-9 이동) ============
+   사용자 피드백 (2026-04-22): "꾹누르기 후 이동은 메뉴 경유 없이 바로 드래그".
+   → 500ms 홀드 완료 = 이동 모드 진입(wiggle), 이어지는 pointermove = 드래그, pointerup = drop.
+   홀드 중 너무 일찍 움직이거나 뗌 = 일반 탭. 완료/삭제 메뉴 로직은 다른 진입점용으로 유지. */
+const navActionSheet = document.getElementById('navActionSheet');
+const confirmSheet = document.getElementById('confirmSheet');
+
+function attachNavPressAndDrag(item) {
+  let pressTimer = null;
+  let sx = 0, sy = 0;
+  let primed = false;   // 500ms 홀드 완료 후 true
+  let dragging = false;
+  let moveHandler = null;
+  let upHandler = null;
+
+  item.addEventListener('pointerdown', (e) => {
+    /* 이미 다른 item 이 이동 모드 중이거나 본 item 이 이미 그 대상이면 무시 */
+    if (navMoveState && navMoveState.item !== item) return;
+    if (navMoveState && navMoveState.item === item) return; /* 메뉴→이동 경로 (onMovePointerDown) 가 담당 */
+    sx = e.clientX; sy = e.clientY;
+    primed = false; dragging = false;
+    pressTimer = setTimeout(() => {
+      pressTimer = null;
+      primed = true;
+      haptic('medium');
+      /* 스펙 §6-9: 500ms 홀드 → scale 0.98 시각 피드백. 이동 모드 진입은 실제 드래그 시점으로 지연 */
+      item.classList.add('is-pressed');
+    }, 500);
+
+    moveHandler = (ev) => {
+      /* T-B5: 다른 item 이 이동 모드 중이면 이 item 의 press-and-drag 경로 무시 (중첩 방지) */
+      if (navMoveState && navMoveState.item !== item) return;
+      const dx = ev.clientX - sx;
+      const dy = ev.clientY - sy;
+      if (!primed) {
+        /* 500ms 전 움직임 → 홀드 취소 (일반 스크롤·탭으로 처리) */
+        if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+          if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+        }
+        return;
+      }
+      /* primed 상태 — 움직임 감지 시 드래그 전환 → 이동 모드 진입 */
+      if (!dragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+        dragging = true;
+        item.classList.remove('is-pressed');
+        enterNavMoveModePrimed(item);
+        item.classList.add('is-drag-active');
+      }
+      if (dragging) {
+        /* 인접 item 중심 통과 시 swap (기존 onMovePointerMove 로직 재사용) */
+        item.style.transform = `translate3d(${ev.clientX - sx}px,0,0) scale(1.02)`;
+        performNavSwap(ev.clientX, item, (deltaSx) => { sx += deltaSx; });
+        /* swap 후 transform 재계산 */
+        item.style.transform = `translate3d(${ev.clientX - sx}px,0,0) scale(1.02)`;
+      }
+    };
+    upHandler = () => {
+      window.removeEventListener('pointermove', moveHandler);
+      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+      if (!primed) {
+        /* 일반 탭 — click 이벤트는 별도 핸들러 (bindNavItem) 가 처리 */
+        return;
+      }
+      if (dragging) {
+        /* drop 애니메이션 — 현재 순서 확정, transform 원복 */
+        item.style.transition = 'transform 220ms var(--ease)';
+        item.classList.remove('is-drag-active');
+        item.style.transform = '';
+        setTimeout(() => exitNavMoveMode(), 240);
+      } else {
+        /* 스펙 §6-9: 홀드 완료 + 움직임 없이 뗌 → 컨텍스트 메뉴 (완료/삭제/…) */
+        item.classList.remove('is-pressed');
+        openNavMenu(item);
+      }
+      primed = false; dragging = false;
+    };
+    window.addEventListener('pointermove', moveHandler);
+    window.addEventListener('pointerup', upHandler, { once: true });
+    window.addEventListener('pointercancel', upHandler, { once: true });
+  });
+}
+
+/* 이동 모드 시각만 켜기 (pointer down 상태에서 호출) */
+function enterNavMoveModePrimed(item) {
+  if (navMoveState) return;
+  navMoveState = { item, dragStartX: 0, dragging: true, pointerId: null };
+  item.classList.add('is-moving');
+  navTrackEl.classList.add('move-mode');
+}
+
+/* 드래그 중 인접 item 과 swap — press-and-drag / 메뉴→이동 경로 공용 */
+function performNavSwap(clientX, item, onSxAdjust) {
+  const items = Array.from(navTrackEl.children);
+  const idx = items.indexOf(item);
+  const prev = items[idx - 1];
+  const next = items[idx + 1];
+  if (prev) {
+    const pr = prev.getBoundingClientRect();
+    if (clientX < pr.left + pr.width / 2) {
+      const before = item.getBoundingClientRect().left;
+      navTrackEl.insertBefore(item, prev);
+      const after = item.getBoundingClientRect().left;
+      onSxAdjust(after - before);
+      haptic('light');
+      return;
+    }
+  }
+  if (next) {
+    const nr = next.getBoundingClientRect();
+    if (clientX > nr.left + nr.width / 2) {
+      const before = item.getBoundingClientRect().left;
+      navTrackEl.insertBefore(next, item);
+      const after = item.getBoundingClientRect().left;
+      onSxAdjust(after - before);
+      haptic('light');
+    }
+  }
+}
+
+/* 중복 바인딩 방지 플래그 버전 */
+function attachNavLongPressOnce(item) {
+  if (item.dataset.lpBound === '1') return;
+  item.dataset.lpBound = '1';
+  attachNavPressAndDrag(item);
+}
+/* 초기 nav-item 5개 바인딩 */
+document.querySelectorAll('.nav-item').forEach(attachNavLongPressOnce);
+
+function navMenuSpec(item) {
+  const name = item.dataset.name;
+  const isCurrent = item.classList.contains('is-current');
+  const isHold    = item.classList.contains('is-hold');
+  const isDone    = item.classList.contains('is-done');
+  /* "이동" 은 nav-item 꾹누르기+드래그로 이동 (§6-9) — 메뉴 항목에서 제거됨. */
+  if (isDone) {
+    return {
+      title: name,
+      actions: [
+        { act: 'edit-done', label: '수정 (편집 모드)' },
+        { act: 'delete',    label: '삭제', destructive: true },
+      ],
+    };
+  }
+  if (isCurrent || isHold) {
+    /* 완료 세트 0개 = 기록 없음 → 삭제만 노출 (완료 카드 제거) */
+    const setsSrc = name === state.exerciseName
+      ? state.sets
+      : (state.exerciseStates[name]?.sets || []);
+    const hasDoneSet = setsSrc.some(s => s.done);
+    const actions = [];
+    if (hasDoneSet) actions.push({ act: 'complete', label: '완료', success: true });
+    actions.push({ act: 'delete', label: '삭제', destructive: true });
+    return { title: name, actions };
+  }
+  /* is-pending */
+  return {
+    title: name,
+    actions: [
+      { act: 'delete', label: '삭제', destructive: true },
+    ],
+  };
+}
+
+function openNavMenu(item) {
+  /* 이동 모드 중엔 long-press 타이머가 다시 발동해도 메뉴 열지 않음 */
+  if (navMoveState) return;
+  const spec = navMenuSpec(item);
+  document.getElementById('navMenuTitle').textContent = spec.title;
+  const list = document.getElementById('navMenuList');
+  list.innerHTML = '';
+  spec.actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'menu-item'
+      + (a.destructive ? ' danger'  : '')
+      + (a.success     ? ' success' : '');
+    b.dataset.act = a.act;
+    b.textContent = a.label;
+    b.addEventListener('click', () => {
+      hideSheet(navActionSheet);
+      /* 시트 닫힘 애니메이션 대기 후 액션 수행 */
+      setTimeout(() => handleNavAction(a.act, item), 240);
+    });
+    list.appendChild(b);
+  });
+  haptic('medium');
+  showSheet(navActionSheet);
+}
+
+function openConfirm(title, msg, onOk, okLabel = '확인') {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  const okBtn = document.getElementById('confirmOk');
+  okBtn.textContent = okLabel;
+  /* 기존 리스너 제거 — cloneNode 로 깨끗이 */
+  const fresh = okBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(fresh, okBtn);
+  fresh.addEventListener('click', () => {
+    hideSheet(confirmSheet);
+    setTimeout(onOk, 240);
+  });
+  showSheet(confirmSheet);
+}
+document.getElementById('confirmCancel').addEventListener('click', () => hideSheet(confirmSheet));
+
+function handleNavAction(act, item) {
+  if (act === 'complete') {
+    openConfirm(
+      `${item.dataset.name} 완료`,
+      '이 운동을 완료 처리합니다. 남은 세트도 완료로 기록됩니다.',
+      () => performComplete(item),
+      '완료'
+    );
+    return;
+  }
+  if (act === 'delete') {
+    openConfirm(
+      '이 운동을 삭제할까요?',
+      '기록과 설정이 함께 삭제됩니다.',
+      () => performDelete(item),
+      '삭제'
+    );
+    return;
+  }
+  if (act === 'edit-done') {
+    performEditDone(item);
+    return;
+  }
+  /* 'move' 액션은 메뉴에서 제거됨 — nav-item 꾹누르기+드래그로 직접 수행 */
+}
+
+/* ============ NAV MOVE MODE (§6-9) ============
+   이동 선택 → 해당 item scale 1.02 + wiggle + shadow. 사용자가 item 을 다시 pointerdown 해
+   드래그 시작 → pointermove 로 위치 따라 transform + 주변 item 과 자동 swap (insertBefore).
+   pointerup → 원 위치 복귀 transform + 이동 모드 종료. 외부 탭 / ESC 도 종료. */
+const navTrackEl = document.getElementById('navTrack');
+let navMoveState = null;
+
+function enterNavMoveMode(item) {
+  if (navMoveState) return;
+  navMoveState = { item, dragStartX: 0, dragging: false, pointerId: null };
+  item.classList.add('is-moving');
+  navTrackEl.classList.add('move-mode');
+  haptic('medium');
+  toast('드래그해서 순서 이동 · 바깥 탭으로 완료');
+  item.addEventListener('pointerdown', onMovePointerDown);
+  /* 외부 탭 감지 (한 프레임 후 등록해 현재 이벤트 루프와 충돌 방지) */
+  setTimeout(() => {
+    document.addEventListener('pointerdown', onMoveOutsideTap, true);
+  }, 0);
+}
+
+function exitNavMoveMode() {
+  if (!navMoveState) return;
+  const { item } = navMoveState;
+  item.classList.remove('is-moving', 'is-drag-active');
+  item.style.transform = '';
+  item.style.transition = '';
+  item.removeEventListener('pointerdown', onMovePointerDown);
+  navTrackEl.classList.remove('move-mode');
+  document.removeEventListener('pointerdown', onMoveOutsideTap, true);
+  window.removeEventListener('pointermove', onMovePointerMove);
+  window.removeEventListener('pointerup', onMovePointerUp);
+  navMoveState = null;
+}
+
+function onMoveOutsideTap(e) {
+  if (!navMoveState) return;
+  /* 이동 중인 item 또는 그 자식이면 통과 */
+  if (navMoveState.item.contains(e.target)) return;
+  exitNavMoveMode();
+}
+
+function onMovePointerDown(e) {
+  if (!navMoveState) return;
+  e.preventDefault();
+  e.stopPropagation();
+  navMoveState.dragStartX = e.clientX;
+  navMoveState.pointerId = e.pointerId;
+  navMoveState.dragging = true;
+  navMoveState.item.classList.add('is-drag-active');
+  window.addEventListener('pointermove', onMovePointerMove);
+  window.addEventListener('pointerup', onMovePointerUp, { once: true });
+}
+
+function onMovePointerMove(e) {
+  if (!navMoveState || !navMoveState.dragging) return;
+  const item = navMoveState.item;
+  item.style.transform = `translate3d(${e.clientX - navMoveState.dragStartX}px,0,0) scale(1.02)`;
+  performNavSwap(e.clientX, item, (delta) => { navMoveState.dragStartX += delta; });
+  item.style.transform = `translate3d(${e.clientX - navMoveState.dragStartX}px,0,0) scale(1.02)`;
+}
+
+function onMovePointerUp() {
+  if (!navMoveState) return;
+  window.removeEventListener('pointermove', onMovePointerMove);
+  /* 드롭 애니메이션 — 원래 위치 (transform none) 로 부드럽게 */
+  const item = navMoveState.item;
+  item.style.transition = 'transform 220ms var(--ease)';
+  item.classList.remove('is-drag-active');
+  item.style.transform = '';
+  navMoveState.dragging = false;
+  setTimeout(() => {
+    /* 드롭 후 이동 모드 자동 종료 (사용자 체감: "한 번 드래그 = 한 번 reorder") */
+    exitNavMoveMode();
+  }, 240);
+}
+
+function performComplete(item) {
+  /* is-current 이거나 is-hold → 해당 운동의 모든 세트를 done 처리 + nav 를 is-done 으로.
+     snapshot 에도 반영. 현재 표시 중이었으면 loadExercise 로 readonly 전환도 가능하지만,
+     §6-8 "다른 운동 탭 = 이동, 완료 아님" 반대 방향이므로 완료 후 nav 만 is-done 으로 두고
+     카드는 다음 is-pending 또는 남은 is-hold 로 자동 전환. */
+  const name = item.dataset.name;
+  const snap = state.exerciseStates[name];
+  if (name === state.exerciseName) {
+    /* 현재 active 운동 — sets 를 전부 done 으로 */
+    state.sets.forEach(s => { s.done = true; });
+    snapshotCurrentExercise();
+    /* 다음 이동 대상 — 첫 번째 is-pending 또는 is-hold */
+    const next = document.querySelector('.nav-item.is-pending, .nav-item.is-hold');
+    item.classList.remove('is-current', 'is-hold');
+    item.classList.add('is-done');
+    delete item.dataset.hold;
+    if (next) {
+      next.classList.remove('is-pending', 'is-hold');
+      delete next.dataset.hold;
+      next.classList.add('is-current');
+      loadExercise(next.dataset.name, { readonly: false });
+    } else {
+      /* 다른 운동 없음 — 그냥 done 표시된 현재 카드 읽기 전용 */
+      loadExercise(name, { readonly: true });
+    }
+  } else if (snap) {
+    /* 다른 nav (보류) — snapshot 데이터 전체 done */
+    snap.sets.forEach(s => { s.done = true; });
+    item.classList.remove('is-hold', 'is-current', 'is-pending');
+    item.classList.add('is-done');
+    delete item.dataset.hold;
+  } else {
+    /* snapshot 없으면 기본값으로 done 처리 (is-pending 이었던 경우는 애초에 완료 메뉴 없음 — 방어적) */
+    item.classList.remove('is-current', 'is-hold', 'is-pending');
+    item.classList.add('is-done');
+  }
+  toast(`${name} 완료`);
+  haptic('medium');
+}
+
+function performDelete(item) {
+  const name = item.dataset.name;
+  const wasCurrent = item.classList.contains('is-current');
+  /* snapshot 제거 */
+  if (state.exerciseStates[name]) delete state.exerciseStates[name];
+  item.remove();
+  if (wasCurrent) {
+    /* 다음 운동으로 자동 이동 — 우선순위: 첫 번째 is-hold > is-pending > is-done(readonly) */
+    const nextHold    = document.querySelector('.nav-item.is-hold');
+    const nextPending = document.querySelector('.nav-item.is-pending');
+    const nextDone    = document.querySelector('.nav-item.is-done');
+    const next = nextHold || nextPending || nextDone;
+    if (next) {
+      if (next.classList.contains('is-done')) {
+        loadExercise(next.dataset.name, { readonly: true });
+      } else {
+        next.classList.remove('is-pending', 'is-hold');
+        delete next.dataset.hold;
+        next.classList.add('is-current');
+        loadExercise(next.dataset.name, { readonly: false });
+      }
+    }
+  }
+  toast(`${name} 삭제됨`);
+  haptic('medium');
+}
+
+function performEditDone(item) {
+  /* is-done → is-current 로 승격 + readonly off. 이전 current 는 is-hold 로. */
+  const name = item.dataset.name;
+  const oldCurrent = document.querySelector('.nav-item.is-current');
+  if (oldCurrent && oldCurrent !== item) {
+    snapshotCurrentExercise();
+    oldCurrent.classList.remove('is-current');
+    oldCurrent.classList.add('is-hold');
+    applyNavHoldLabel(oldCurrent);
+  }
+  item.classList.remove('is-done');
+  item.classList.add('is-current');
+  loadExercise(name, { readonly: false });
+  toast(`${name} 편집 모드`);
+}
+
+/* 동적 추가 경로의 long-press 바인딩은 원 함수를 직접 수정 (아래 참조) */
+
+/* ============ ADD-EX SHEET (§6-2) ============
+   부위 chip 7개 · 부위별 종목 리스트.
+   §6-10 준수: DOM 1회 렌더 후 hidden/class 토글만. 재마운트 없음. */
+const BODY_PARTS = ['가슴', '등', '어깨', '하체', '팔', '코어', '유산소'];
+const EX_BY_PART = {
+  '가슴':   ['벤치프레스', '인클라인 벤치', '덤벨플라이', '딥스'],
+  '등':     ['데드리프트', '풀업', '바벨로우', '랫풀다운'],
+  '어깨':   ['오버헤드프레스', '사이드레터럴', '페이스풀'],
+  '하체':   ['스쿼트', '레그프레스', '레그컬', '카프레이즈'],
+  '팔':     ['바벨컬', '덤벨컬', '트라이셉스 익스텐션'],
+  '코어':   ['싯업', '레그 레이즈', '플랭크'],
+  '유산소': ['트레드밀', '사이클']
+};
+/* 운동별 이전 세션 기본값 (프로토타입) — 실 앱에선 마지막 기록에서 로드.
+   w: 중량(kg), r: 횟수, d: 시간(분). w: null 은 맨몸.
+   isTime: true 는 시간 단독 운동 (플랭크 등) — cardio 카드 재활용 + 거리 필드 숨김. */
+const EX_DEFAULTS = {
+  '벤치프레스':        { w: 60, r: 10 },
+  '인클라인 벤치':     { w: 50, r: 10 },
+  '덤벨플라이':        { w: 14, r: 12 },
+  '딥스':              { w: null, r: 10 },
+  '데드리프트':        { w: 100, r: 8 },
+  '풀업':              { w: null, r: 8 },
+  '바벨로우':          { w: 60, r: 10 },
+  '랫풀다운':          { w: 50, r: 12 },
+  '오버헤드프레스':    { w: 40, r: 10 },
+  '사이드레터럴':      { w: 8, r: 15 },
+  '페이스풀':          { w: 20, r: 12 },
+  '스쿼트':            { w: 80, r: 10 },
+  '레그프레스':        { w: 120, r: 12 },
+  '레그컬':            { w: 40, r: 15 },
+  '카프레이즈':        { w: 60, r: 15 },
+  '바벨컬':            { w: 30, r: 10 },
+  '덤벨컬':            { w: 12, r: 12 },
+  '트라이셉스 익스텐션': { w: 12, r: 10 },
+  '싯업':              { w: null, r: 15 },
+  '레그 레이즈':       { w: null, r: 15 },
+  '플랭크':            { d: 2, isTime: true },
+  '트레드밀':          { d: 30, km: 3.2 },
+  '사이클':            { d: 30, km: 10 },
+};
+function exMetaString(name) {
+  const d = EX_DEFAULTS[name];
+  if (!d) return '';
+  if (d.d != null) return `${d.d}분`;
+  if (d.w == null) return `맨몸 · ${d.r}회`;
+  return `${d.w}kg × ${d.r}회`;
+}
+
+const addExSheet = document.getElementById('addExSheet');
+const addexChipsEl = document.getElementById('addexChips');
+const addexListEl = document.getElementById('addexList');
+
+/* 세션 내 상태: 현재 선택된 부위 */
+const addExState = {
+  activePart: '가슴',
+};
+
+/* 초기 1회 렌더 — chip 7개 + 부위별 그룹 7개 모두 DOM 에 생성 */
+(function initAddExSheet() {
+  /* chip — chips 컨테이너에 append */
+  BODY_PARTS.forEach(part => {
+    const btn = document.createElement('button');
+    btn.className = 'addex-chip';
+    btn.dataset.part = part;
+    btn.textContent = part;
+    btn.addEventListener('click', () => setActivePart(part));
+    addexChipsEl.appendChild(btn);
+  });
+
+  /* 가로 스크롤 fade 힌트 토글 — 스크롤 끝까지 가면 mask 제거 */
+  const updateScrollEnd = () => {
+    const maxScroll = addexChipsEl.scrollWidth - addexChipsEl.clientWidth;
+    const atEnd = maxScroll <= 1 || addexChipsEl.scrollLeft >= maxScroll - 1;
+    addexChipsEl.classList.toggle('is-scroll-end', atEnd);
+  };
+  addexChipsEl.addEventListener('scroll', updateScrollEnd, { passive: true });
+  /* 초기 상태 + 리사이즈 대응 */
+  window.addEventListener('resize', updateScrollEnd);
+  requestAnimationFrame(updateScrollEnd);
+
+  /* 부위별 종목 그룹 (전부 pre-render, hidden 토글만) */
+  BODY_PARTS.forEach(part => {
+    const group = document.createElement('div');
+    group.className = 'addex-group';
+    group.dataset.part = part;
+    EX_BY_PART[part].forEach(ex => {
+      const item = document.createElement('button');
+      item.className = 'addex-item';
+      item.dataset.ex = ex;
+      item.innerHTML = `
+        <span class="ex-main">
+          <span class="ex-name">${ex}</span>
+          <span class="ex-meta">${exMetaString(ex)}</span>
+        </span>
+        <span class="ex-toggle" aria-hidden="true"></span>
+      `;
+      item.addEventListener('click', () => onAddExItemTap(ex, item));
+      group.appendChild(item);
+    });
+    addexListEl.appendChild(group);
+  });
+})();
+
+function setActivePart(part) {
+  addExState.activePart = part;
+  /* chip active 클래스 토글 */
+  let activeBtn = null;
+  addexChipsEl.querySelectorAll('.addex-chip').forEach(c => {
+    const isActive = c.dataset.part === part;
+    c.classList.toggle('is-active', isActive);
+    if (isActive) activeBtn = c;
+  });
+  /* active chip 이 가로 스크롤 영역 밖이면 chips 컨테이너만 내부 스크롤.
+     scrollIntoView 는 ancestor 전부 스크롤해서 sheet transform 전환을 끊어버리므로 사용 금지. */
+  if (activeBtn) {
+    const cRect = addexChipsEl.getBoundingClientRect();
+    const bRect = activeBtn.getBoundingClientRect();
+    const bLeftIn = bRect.left - cRect.left + addexChipsEl.scrollLeft;
+    const target = bLeftIn - (cRect.width - bRect.width) / 2;
+    addexChipsEl.scrollTo({ left: Math.max(0, target), behavior: 'smooth' });
+  }
+  /* 그룹 hidden 토글 */
+  addexListEl.querySelectorAll('.addex-group').forEach(g => {
+    g.hidden = g.dataset.part !== part;
+  });
+}
+
+function isExerciseInSession(name) {
+  return Array.from(document.querySelectorAll('.nav-item'))
+    .some(el => el.dataset.name === name);
+}
+
+function onAddExItemTap(ex, itemEl) {
+  if (itemEl.classList.contains('is-added')) {
+    /* 제거 요청 — 진행/완료 기록 있으면 2단계 확인, 없으면 즉시 */
+    if (hasExerciseProgress(ex)) {
+      openConfirm(
+        `${ex} 제거`,
+        '이미 기록된 세트가 있습니다. 제거하면 함께 삭제됩니다.',
+        () => removeExerciseFromSession(ex, itemEl),
+        '제거'
+      );
+    } else {
+      removeExerciseFromSession(ex, itemEl);
+    }
+    return;
+  }
+  /* 추가 — addExerciseToSession 내부에서 유산소·중복 체크 */
+  const added = addExerciseToSession(ex);
+  if (added) {
+    itemEl.classList.add('is-added');
+    /* 시트 닫지 않음 — 다중 추가 자유 (사용자 피드백 2026-04-22) */
+  }
+}
+
+/* 해당 운동에 세트 기록이 있는지 — 제거 confirm 판정용 */
+function hasExerciseProgress(name) {
+  if (name === state.exerciseName) {
+    return state.sets.some(s => s.done);
+  }
+  const snap = state.exerciseStates[name];
+  return !!(snap && snap.sets && snap.sets.some(s => s.done));
+}
+
+/* 토글 경로의 제거 — nav-item + snapshot 정리 + is-added 해제 */
+function removeExerciseFromSession(name, itemEl) {
+  const navItem = Array.from(document.querySelectorAll('.nav-item'))
+    .find(el => el.dataset.name === name);
+  if (navItem) {
+    const wasCurrent = navItem.classList.contains('is-current');
+    if (state.exerciseStates[name]) delete state.exerciseStates[name];
+    navItem.remove();
+    if (wasCurrent) {
+      /* 다음 운동 승계 — performDelete 와 동일 규칙 */
+      const next = document.querySelector('.nav-item.is-hold')
+                || document.querySelector('.nav-item.is-pending')
+                || document.querySelector('.nav-item.is-done');
+      if (next) {
+        if (next.classList.contains('is-done')) {
+          loadExercise(next.dataset.name, { readonly: true });
+        } else {
+          next.classList.remove('is-pending', 'is-hold');
+          delete next.dataset.hold;
+          next.classList.add('is-current');
+          loadExercise(next.dataset.name, { readonly: false });
+        }
+      }
+    }
+  }
+  if (itemEl) itemEl.classList.remove('is-added');
+  toast(`${name} 제거됨`);
+  haptic('medium');
+}
+
+/* 종목을 세션 nav 에 추가. 성공 시 true, 스킵 시 false.
+   Wave 11.18 — SPA hijack 시 IIFE 로 wrap 되므로 외부(session.js) 호출 위해 window 노출. */
+window.addExerciseToSession = addExerciseToSession;
+window.removeExerciseFromSession = removeExerciseFromSession;
+function addExerciseToSession(name) {
+  /* 중복 방지 */
+  const exists = Array.from(document.querySelectorAll('.nav-item'))
+    .some(el => el.dataset.name === name);
+  if (exists) {
+    toast(`이미 추가됨: ${name}`);
+    return false;
+  }
+  /* 유산소 종목은 별도 카드(§6-4) — 기본 중량/세트 없이 nav 에만 is-pending 으로 추가 */
+  /* nav 에 is-pending 으로 추가 — "+" 앞에 삽입.
+     단 빈 세션 상태 (navTrack 비어있음) 에서 첫 추가는 즉시 is-current 승격 +
+     placeholder 해제 + 카드 로드 + 세션 시작 (spec §6-1 "첫 운동 = startTime"). */
+  const navTrack = document.getElementById('navTrack');
+  const isFirstAdd = navTrack.children.length === 0;
+  const item = document.createElement('button');
+  item.className = isFirstAdd ? 'nav-item is-current' : 'nav-item is-pending';
+  item.dataset.name = name;
+  item.textContent = name;
+  navTrack.appendChild(item);
+  bindNavItem(item);
+  if (typeof attachNavLongPressOnce === 'function') attachNavLongPressOnce(item);
+  if (isFirstAdd) {
+    const appEl = document.getElementById('sessionApp');
+    if (appEl?.dataset.emptySession) delete appEl.dataset.emptySession;
+    loadExercise(name, { readonly: false });
+    startSessionIfNeeded();
+  }
+  /* Wave D — 첫·둘째 모두 새 item 을 nav 가운데 정렬 (이전: 둘째+ 는 우측 끝 스크롤로 잘림). */
+  scrollNavTo(item);
+  toast(`추가됨: ${name}`);
+  return true;
+}
+
+/* 세션에 이미 있는 종목 반영 — 시트 열릴 때마다 재계산.
+   SPA 모드: addex-item data-ex=영문ID + data-name=한국어, nav-item data-name=한국어 → data-name 으로 매칭.
+   mocks-only 모드: addex-item data-ex=한국어 (data-name 없음) → fallback. */
+function syncAddExAddedUI() {
+  addexListEl.querySelectorAll('.addex-item').forEach(item => {
+    const matchKey = item.dataset.name || item.dataset.ex;
+    item.classList.toggle('is-added', isExerciseInSession(matchKey));
+  });
+}
+
+function openAddExSheet() {
+  resetAddExState();
+  syncAddExAddedUI();
+  showSheet(addExSheet);
+}
+
+function resetAddExState() {
+  addExState.activePart = '가슴';
+  setActivePart('가슴');
+}
+
+// 프로토타입: 내장 바텀시트 사용 (§6-2). 독립 picker.html 은 레퍼런스로 별도 유지
+document.getElementById('navAdd').addEventListener('click', openAddExSheet);
+
+/* ============ TOAST / HAPTIC ============ */
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+function haptic(strength) {
+  if (navigator.vibrate) navigator.vibrate(strength === 'medium' ? 12 : 6);
+}
+
+/* ============ NAV CURRENT AUTO-SCROLL ============
+   scrollIntoView 는 ancestor 전부 스크롤 (§6-10 sheet transform 깨짐) → track 수평만 조작.
+   실기 iOS Safari 는 scrollTo smooth 지원, preview iframe 은 smooth 작동 안 함 → fallback 병행.
+   Wave 11.6.1: 중앙 기준을 footer-nav 전체 (nav-add 포함) 로 계산 → nav-add 좌측 shift 보정. */
+function scrollNavTo(item) {
+  if (!item) return;
+  const track = document.getElementById('navTrack');
+  if (!track) return;
+  const footer = track.parentElement; // .footer-nav (nav-add 포함 영역)
+  const footerRect = footer.getBoundingClientRect();
+  const trackRect = track.getBoundingClientRect();
+  const itRect = item.getBoundingClientRect();
+  /* getBoundingClientRect 기반 계산 — offsetLeft 는 position:static track 에서 ancestor 기준이라 부정확.
+     item 의 현재 track 내부 offset = (itRect - trackRect) + 현재 scrollLeft (scroll 반영) */
+  const itemCenterInTrack = (itRect.left - trackRect.left + track.scrollLeft) + itRect.width / 2;
+  const centerInTrack = (footerRect.left + footerRect.width / 2) - trackRect.left;
+  const desired = itemCenterInTrack - centerInTrack;
+  const max = track.scrollWidth - track.clientWidth;
+  const clamped = Math.max(0, Math.min(max, desired));
+  const before = track.scrollLeft;
+  try { track.scrollTo({ left: clamped, behavior: 'smooth' }); } catch (_) {}
+  /* 200ms 후에도 이동 없으면 instant 할당 (preview fallback) */
+  setTimeout(() => {
+    if (Math.abs(track.scrollLeft - before) < 1 && Math.abs(track.scrollLeft - clamped) > 1) {
+      track.scrollLeft = clamped;
+    }
+  }, 200);
+}
+
+function scrollNavToCurrent() {
+  scrollNavTo(document.querySelector('.nav-item.is-current'));
+}
+
+/* ============ INIT ============ */
+/* SPA·일반 진입 시 정적 demo state 무효화. 디자이너 검토는 #design hash 로 demo 보존. */
+const _designMode = location.hash === '#design';
+if (!_designMode) {
+  state.exerciseName = '';
+  state.sets = [];
+  state.currentIdx = 0;
+  state.exerciseStates = {};
+}
+if (_designMode) {
+  /* nav 정적 마크업 (스쿼트=done, 데드=hold ·3/5) 과 일치하도록 pre-seed */
+  state.exerciseStates['데드리프트'] = {
+    sets: [
+      { weight: 100, reps: 8, done: true,  preset: false, pr: false },
+      { weight: 100, reps: 8, done: true,  preset: false, pr: false },
+      { weight: 100, reps: 8, done: true,  preset: false, pr: false },
+      { weight: 100, reps: 8, done: false, preset: true,  pr: false },
+      { weight: 100, reps: 8, done: false, preset: true,  pr: false },
+    ],
+    currentIdx: 3,
+    prevExerciseVolume: 3200,
+    prevBestE1rm: 140,
+  };
+}
+renderCards();
+updateProgress();
+scrollNavToCurrent();
+
+/* Wave 11.9.1 — SPA hijack (window.gymSession 노출 시 admin/profile 패턴 답습) */
+if (window.gymSession) {
+  window.gymSession.mountSessionView().catch(e => console.error('[gym] mountSessionView init', e));
+}
+
+/* Wave 11.18 — active session blocks 로 nav-item hydrate.
+   blocks 가 비어있으면 부위 선택 시트 자동 open (사용자 요구 박제 — spec §6-1 보강 예정).
+   mocks 단독 (window.gymQueries 미노출) 환경은 빈 nav 로 시작 + 시트 자동 open. */
+(async () => {
+  let blocks = [];
+  if (window.gymQueries?.getActiveSession) {
+    try {
+      const session = await window.gymQueries.getActiveSession();
+      blocks = (session?.blocks || []).filter(b => b && b.type === 'single' && b.exerciseId);
+      if (blocks.length) {
+        const customs = window.gymQueries.listCustomExercises
+          ? await window.gymQueries.listCustomExercises()
+          : [];
+        for (const block of blocks) {
+          const builtin = window.gymExercises?.getBuiltinExercise?.(block.exerciseId);
+          const c = customs.find(x => x.id === block.exerciseId);
+          const name = builtin?.name || c?.name;
+          if (name) addExerciseToSession(name);
+        }
+      }
+    } catch (e) {
+      console.error('[mocks/session] hydrateNav', e);
+    }
+  }
+  if (!blocks.length) {
+    /* Wave 11.18 — 빈 세션: 메인 영역 hide + placeholder 노출 + 부위 시트 자동 open. */
+    const appEl = document.getElementById('sessionApp');
+    if (appEl) appEl.dataset.emptySession = '1';
+    if (typeof openAddExSheet === 'function') openAddExSheet();
+  }
+})();
+
+/* Wave 11.16 — §8 30초 timer + visibilitychange auto-save (좌 스와이프/키패드 hook 외 변경 backstop) */
+function dumpStateToSPA() {
+  if (!window.gymSession?.dumpActiveSessionFromState) return;
+  if (state.sessionEnded) return; // 종료 후엔 dump 의도 없음
+  window.gymSession.dumpActiveSessionFromState({
+    exerciseName: state.exerciseName,
+    sets: state.sets,
+    exerciseStates: state.exerciseStates,
+  }).catch(e => console.error('[gym] dumpActiveSessionFromState', e));
+}
+/* Wave C — 동일하게 autoSave interval 도 mount 누적 방지. */
+if (window.__gymAutoSaveInterval) clearInterval(window.__gymAutoSaveInterval);
+window.__gymAutoSaveInterval = setInterval(dumpStateToSPA, 30_000);
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') dumpStateToSPA();
+});
+</script>
+</body>
+</html>

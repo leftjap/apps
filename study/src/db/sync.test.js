@@ -1,0 +1,1738 @@
+/**
+ * sync.test.js — Wave 11.13.1 다운로드 + Wave 11.13.2 업로드 단위 테스트.
+ *
+ * 검증 범위:
+ *  - 11.13.1: TABLE_MAP 4 테이블 / startSync 가드 / stopSync / 인터페이스
+ *  - 11.13.2: pushTable 가드·정상·error / queueUpload·flush 동작 / startSync hook 통합
+ *
+ * Mock 전략:
+ *  - 기본 describe: supabase=null (env 미설정 환경) — 가드 검증
+ *  - 정상 동작 describe: vi.doMock + vi.resetModules 로 supabase mock 객체 주입
+ */
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+vi.mock('../services/supabase.js', () => ({
+  supabase: null,
+  isSupabaseConfigured: false,
+}));
+
+describe('sync — Wave 11.13.1 다운로드', () => {
+  beforeEach(async () => {
+    vi.resetModules();
+    if (typeof globalThis.window === 'undefined') {
+      globalThis.window = {};
+    }
+    globalThis.window.studyDB = null;
+  });
+
+  afterEach(() => {
+    if (globalThis.window) {
+      globalThis.window.studyDB = null;
+    }
+  });
+
+  it('TABLE_MAP — 4 테이블 (review/today/session/pronunciation), daily_stats/meta 미포함', async () => {
+    const { Sync } = await import('./sync.js');
+    expect(Sync.TABLE_MAP.length).toBe(4);
+    const dexieNames = Sync.TABLE_MAP.map((m) => m.dexie);
+    expect(dexieNames).toEqual(
+      expect.arrayContaining(['reviewQueue', 'todayLessons', 'sessionLogs', 'pronunciationLog']),
+    );
+    expect(dexieNames).not.toContain('dailyStats');
+    expect(dexieNames).not.toContain('meta');
+  });
+
+  it('TABLE_MAP — supabase 테이블 이름 study_ 접두사 + dexie 와 1:1', async () => {
+    const { Sync } = await import('./sync.js');
+    for (const m of Sync.TABLE_MAP) {
+      expect(m.supabase.startsWith('study_')).toBe(true);
+      expect(typeof m.dexie).toBe('string');
+      expect(m.dexie.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('startSync(null) → ok=false, reason=no_user', async () => {
+    const { startSync } = await import('./sync.js');
+    const result = await startSync(null);
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('no_user');
+  });
+
+  it('startSync — window.studyDB null 시 ok=false, reason=no_db', async () => {
+    const { startSync } = await import('./sync.js');
+    const result = await startSync({ id: '11111111-2222-3333-4444-555555555555' });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('no_db');
+  });
+
+  it('startSync — supabase null + db 있으면 pullAll reason=no_supabase', async () => {
+    // top-level vi.mock 이 다른 describe 의 vi.unmock/doMock 영향으로 새지 않게 명시
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: null,
+      isSupabaseConfigured: false,
+    }));
+    const { startSync } = await import('./sync.js');
+    globalThis.window.studyDB = {
+      reviewQueue: { bulkPut: vi.fn() },
+      todayLessons: { bulkPut: vi.fn() },
+      sessionLogs: { bulkPut: vi.fn() },
+      pronunciationLog: { bulkPut: vi.fn() },
+    };
+    const result = await startSync({ id: '11111111-2222-3333-4444-555555555555' });
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('no_supabase');
+  });
+
+  it('stopSync → isSyncActive false', async () => {
+    const { stopSync, isSyncActive } = await import('./sync.js');
+    await stopSync();
+    expect(isSyncActive()).toBe(false);
+  });
+
+  it('Sync 인터페이스 노출 (Wave 11.13.1 + 11.13.2 + 11.13.3 + 11.13.x)', async () => {
+    const { Sync } = await import('./sync.js');
+    expect(typeof Sync.startSync).toBe('function');
+    expect(typeof Sync.stopSync).toBe('function');
+    expect(typeof Sync.isSyncActive).toBe('function');
+    expect(typeof Sync.pullTable).toBe('function');
+    expect(typeof Sync.pullAll).toBe('function');
+    expect(typeof Sync.pushTable).toBe('function');
+    expect(typeof Sync.pushAll).toBe('function');
+    expect(typeof Sync.queueUpload).toBe('function');
+    expect(typeof Sync.flushPendingUploads).toBe('function');
+    expect(typeof Sync.resolveConflict).toBe('function');
+    expect(typeof Sync.allowEmptyServerPush).toBe('function');
+    expect(typeof Sync.dailyStatsDexieToSupabase).toBe('function');
+    expect(typeof Sync.dailyStatsSupabaseToDexie).toBe('function');
+    expect(typeof Sync.pullDailyStats).toBe('function');
+    expect(typeof Sync.pushDailyStats).toBe('function');
+    expect(typeof Sync.userMetaDexieToSupabase).toBe('function');
+    expect(typeof Sync.userMetaSupabaseToDexie).toBe('function');
+    expect(typeof Sync.pullUserMeta).toBe('function');
+    expect(typeof Sync.pushUserMeta).toBe('function');
+    expect(Array.isArray(Sync.TABLE_MAP)).toBe(true);
+    expect(Array.isArray(Sync.USER_META_KEY_MAP)).toBe(true);
+    expect(Sync.USER_META_KEY_MAP.length).toBe(4);
+    expect(Sync.DEBOUNCE_MS).toBe(3000);
+  });
+});
+
+describe('sync — Wave 11.13.2 업로드 가드 (supabase=null)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    // vi.unmock 호출한 다른 describe 영향 방지 — supabase=null 명시 도입
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: null,
+      isSupabaseConfigured: false,
+    }));
+    if (typeof globalThis.window === 'undefined') globalThis.window = {};
+    globalThis.window.studyDB = null;
+  });
+
+  it('pushTable — supabase null → skipped/no_supabase', async () => {
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const result = await pushTable(TABLE_MAP[0], {}, 'user-1');
+    expect(result.status).toBe('skipped');
+    expect(result.reason).toBe('no_supabase');
+  });
+
+  it('pushAll — supabase null → ok=false/no_supabase', async () => {
+    const { pushAll } = await import('./sync.js');
+    const result = await pushAll({}, 'user-1');
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('no_supabase');
+  });
+});
+
+/**
+ * supabase mock chain. from() 호출 시 select-eq (pull) / upsert (push) 양쪽 지원.
+ * 호출 결과를 spy 로 추적 가능하도록 outer 변수에 binding.
+ */
+function makeSupabaseChainMock() {
+  const upsertCalls = [];
+  const fromMock = vi.fn(() => {
+    // builder 자체를 thenable 화 — await builder → { data: [], error: null }.
+    // pullTable 의 select-eq await 패턴 + pullUserMeta 의 select-eq-maybeSingle 패턴 둘 다 지원.
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => builder),
+      upsert: vi.fn((rows, opts) => {
+        upsertCalls.push({ rows, opts });
+        return Promise.resolve({ error: null });
+      }),
+      maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+      then: (resolve, reject) =>
+        Promise.resolve({ data: [], error: null }).then(resolve, reject),
+    };
+    return builder;
+  });
+  return { fromMock, upsertCalls };
+}
+
+describe('sync — Wave 11.13.2 pushTable 정상 동작 (supabase mock)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.unmock('../services/supabase.js');
+  });
+
+  it('pushTable — db null → skipped/no_db', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const result = await pushTable(TABLE_MAP[0], null, 'user-1');
+    expect(result.status).toBe('skipped');
+    expect(result.reason).toBe('no_db');
+  });
+
+  it('pushTable — userId null → skipped/no_user', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const result = await pushTable(TABLE_MAP[0], {}, null);
+    expect(result.status).toBe('skipped');
+    expect(result.reason).toBe('no_user');
+  });
+
+  it('pushTable — ids=[] → empty (upsert 호출 X)', async () => {
+    const { fromMock, upsertCalls } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const db = { reviewQueue: { bulkGet: vi.fn(), toArray: vi.fn() } };
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', []);
+    expect(result.status).toBe('empty');
+    expect(upsertCalls.length).toBe(0);
+  });
+
+  it('pushTable — ids 지정: bulkGet → toSupabase 변환 → upsert(onConflict=id)', async () => {
+    // Wave 11.20 — reviewQueue 의 camelCase → snake_case 변환 + user_id 주입.
+    const { fromMock, upsertCalls } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const dexieRowA = {
+      id: 'a',
+      lang: 'en',
+      sentence: 'Hi',
+      meaning: '안녕',
+      reading: null,
+      explanation: null,
+      interval: 2,
+      nextReview: '2026-05-01',
+      consecutivePass: 1,
+      lastResult: 'O',
+      category: 'session',
+    };
+    const dexieRowC = {
+      id: 'c',
+      lang: 'en',
+      sentence: 'Bye',
+      meaning: '잘가',
+      reading: null,
+      explanation: null,
+      interval: 1,
+      nextReview: '2026-04-30',
+      consecutivePass: 0,
+      lastResult: null,
+      category: null,
+    };
+    const db = {
+      reviewQueue: {
+        // bulkGet missing key 는 undefined 반환 — 그 사이 삭제된 row 보호 검증
+        bulkGet: vi.fn().mockResolvedValue([dexieRowA, undefined, dexieRowC]),
+      },
+    };
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['a', 'b', 'c']);
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(2);
+    expect(db.reviewQueue.bulkGet).toHaveBeenCalledWith(['a', 'b', 'c']);
+    expect(fromMock).toHaveBeenCalledWith('study_review_queue');
+    expect(upsertCalls.length).toBe(1);
+    expect(upsertCalls[0].opts).toEqual({ onConflict: 'id' });
+    expect(upsertCalls[0].rows).toEqual([
+      {
+        id: 'a',
+        user_id: 'user-1',
+        lang: 'en',
+        sentence: 'Hi',
+        meaning: '안녕',
+        reading: null,
+        explanation: null,
+        interval: 2,
+        next_review: '2026-05-01',
+        consecutive_pass: 1,
+        last_result: 'O',
+        category: 'session',
+      },
+      {
+        id: 'c',
+        user_id: 'user-1',
+        lang: 'en',
+        sentence: 'Bye',
+        meaning: '잘가',
+        reading: null,
+        explanation: null,
+        interval: 1,
+        next_review: '2026-04-30',
+        consecutive_pass: 0,
+        last_result: null,
+        category: null,
+      },
+    ]);
+  });
+
+  it('pushTable — ids=null + 빈 store → empty', async () => {
+    const { fromMock, upsertCalls } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const db = { reviewQueue: { toArray: vi.fn().mockResolvedValue([]) } };
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', null);
+    expect(result.status).toBe('empty');
+    expect(upsertCalls.length).toBe(0);
+  });
+
+  it('pushTable — upsert error → status=error', async () => {
+    const fromMock = vi.fn(() => ({
+      select: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      upsert: vi.fn().mockResolvedValue({ error: { message: 'rls violation' } }),
+    }));
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    // captureConsoleIntegration 정합 — error 로그 의도적 (테스트 노이즈 억제)
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const db = { reviewQueue: { bulkGet: vi.fn().mockResolvedValue([{ id: 'a' }]) } };
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['a']);
+    expect(result.status).toBe('error');
+    errSpy.mockRestore();
+  });
+});
+
+describe('sync — Wave 11.13.2 queueUpload + flushPendingUploads', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    if (typeof globalThis.window === 'undefined') globalThis.window = {};
+    globalThis.window.studyDB = null;
+  });
+
+  it('queueUpload — falsy id 무시 (flush 시 큐 빈 상태)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { queueUpload, flushPendingUploads } = await import('./sync.js');
+    queueUpload('reviewQueue', null);
+    queueUpload('reviewQueue', undefined);
+    queueUpload('reviewQueue', 0);
+    queueUpload('reviewQueue', '');
+    const result = await flushPendingUploads();
+    expect(result.ok).toBe(true);
+    expect(result.results).toEqual([]);
+  });
+
+  it('flushPendingUploads — 큐 빈 상태 즉시 ok=true', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { flushPendingUploads } = await import('./sync.js');
+    const result = await flushPendingUploads();
+    expect(result.ok).toBe(true);
+    expect(result.results).toEqual([]);
+  });
+
+  it('queueUpload — 유효 id 적재, 컨텍스트 없으면 flush 시 no_session', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { queueUpload, flushPendingUploads } = await import('./sync.js');
+    queueUpload('reviewQueue', 'id-1');
+    const result = await flushPendingUploads();
+    expect(result.ok).toBe(false);
+    expect(result.reason).toBe('no_session');
+  });
+
+  it('queueUpload — no_session 케이스에선 flush 후에도 큐 보존 (sync.js L195 race 방지)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { queueUpload, flushPendingUploads } = await import('./sync.js');
+    queueUpload('reviewQueue', 'id-1');
+    queueUpload('reviewQueue', 'id-1');
+    queueUpload('reviewQueue', 'id-1');
+    const r1 = await flushPendingUploads();
+    expect(r1.reason).toBe('no_session');
+    // 큐 보존 — 다음 flush 도 같은 결과 (다음 startSync 가 컨텍스트 잡으면 flush 가능 설계)
+    const r2 = await flushPendingUploads();
+    expect(r2.reason).toBe('no_session');
+  });
+});
+
+describe('sync — Wave 11.13.2 startSync hook 통합', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    if (typeof globalThis.window === 'undefined') globalThis.window = {};
+    globalThis.window.studyDB = null;
+  });
+
+  afterEach(async () => {
+    // 모듈 상태 리셋 — startSync 가 _syncActive 잡으므로 다음 테스트에서 stopSync
+    try {
+      const { stopSync } = await import('./sync.js');
+      await stopSync();
+    } catch {
+      // ignore
+    }
+    if (globalThis.window) globalThis.window.studyDB = null;
+  });
+
+  it('startSync — pullAll 후 6 테이블 × creating+updating = 12회 hook 등록 (Wave 11.14)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const hookSpy = vi.fn(() => ({ unsubscribe: vi.fn() }));
+    globalThis.window.studyDB = {
+      reviewQueue: { bulkPut: vi.fn(), hook: hookSpy },
+      todayLessons: { bulkPut: vi.fn(), hook: hookSpy },
+      sessionLogs: { bulkPut: vi.fn(), hook: hookSpy },
+      pronunciationLog: { bulkPut: vi.fn(), hook: hookSpy },
+      dailyStats: { bulkPut: vi.fn(), hook: hookSpy },
+      meta: { bulkPut: vi.fn(), hook: hookSpy },
+    };
+    const { startSync, stopSync } = await import('./sync.js');
+    await startSync({ id: 'user-1' });
+    // attach 시 hook(event, fn) 호출 — creating × 6 + updating × 6 = 12
+    const attachCalls = hookSpy.mock.calls.filter((args) => args.length === 2);
+    expect(attachCalls.length).toBe(12);
+    const events = attachCalls.map((c) => c[0]);
+    expect(events.filter((e) => e === 'creating').length).toBe(6);
+    expect(events.filter((e) => e === 'updating').length).toBe(6);
+    await stopSync();
+  });
+
+  it('startSync — 이미 활성이면 already_active (재진입 차단)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const hookSpy = vi.fn(() => ({ unsubscribe: vi.fn() }));
+    globalThis.window.studyDB = {
+      reviewQueue: { bulkPut: vi.fn(), hook: hookSpy },
+      todayLessons: { bulkPut: vi.fn(), hook: hookSpy },
+      sessionLogs: { bulkPut: vi.fn(), hook: hookSpy },
+      pronunciationLog: { bulkPut: vi.fn(), hook: hookSpy },
+    };
+    const { startSync, stopSync, isSyncActive } = await import('./sync.js');
+    await startSync({ id: 'user-1' });
+    expect(isSyncActive()).toBe(true);
+    const second = await startSync({ id: 'user-1' });
+    expect(second.ok).toBe(true);
+    expect(second.reason).toBe('already_active');
+    await stopSync();
+  });
+
+  it('stopSync — hook detach + isSyncActive false (Wave 11.14, 6 테이블 × 2 = 12 unsubscribe)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const unsubscribeSpy = vi.fn();
+    const hookSpy = vi.fn(() => ({ unsubscribe: unsubscribeSpy }));
+    globalThis.window.studyDB = {
+      reviewQueue: { bulkPut: vi.fn(), hook: hookSpy },
+      todayLessons: { bulkPut: vi.fn(), hook: hookSpy },
+      sessionLogs: { bulkPut: vi.fn(), hook: hookSpy },
+      pronunciationLog: { bulkPut: vi.fn(), hook: hookSpy },
+      dailyStats: { bulkPut: vi.fn(), hook: hookSpy },
+      meta: { bulkPut: vi.fn(), hook: hookSpy },
+    };
+    const { startSync, stopSync, isSyncActive } = await import('./sync.js');
+    await startSync({ id: 'user-1' });
+    await stopSync();
+    expect(isSyncActive()).toBe(false);
+    // detach: hook('creating').unsubscribe(fn) + hook('updating').unsubscribe(fn) — 6 테이블 × 2 = 12 unsubscribe
+    expect(unsubscribeSpy).toHaveBeenCalledTimes(12);
+  });
+});
+
+describe('sync — Wave 11.14 attachHooks 6 테이블 + meta key 필터', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    if (typeof globalThis.window === 'undefined') globalThis.window = {};
+    globalThis.window.studyDB = null;
+  });
+
+  afterEach(async () => {
+    try {
+      const { stopSync } = await import('./sync.js');
+      await stopSync();
+    } catch {
+      /* noop */
+    }
+    if (globalThis.window) globalThis.window.studyDB = null;
+  });
+
+  it('meta hook — USER_META_KEY_MAP 4 keys 만 queueUpload (다른 keys 필터)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    // meta store 만 callback 캡처
+    let metaOnCreating = null;
+    const metaHookSpy = vi.fn((event, fn) => {
+      if (event === 'creating') metaOnCreating = fn;
+      return { unsubscribe: vi.fn() };
+    });
+    const otherHookSpy = vi.fn(() => ({ unsubscribe: vi.fn() }));
+    const metaBulkGetSpy = vi
+      .fn()
+      .mockResolvedValue([
+        { key: 'lang_en', value: { level: 'B1' } },
+        undefined,
+        { key: 'weakPhonemes_en', value: { ɹ: 5 } },
+        undefined,
+      ]);
+    globalThis.window.studyDB = {
+      reviewQueue: { bulkPut: vi.fn(), hook: otherHookSpy },
+      todayLessons: { bulkPut: vi.fn(), hook: otherHookSpy },
+      sessionLogs: { bulkPut: vi.fn(), hook: otherHookSpy },
+      pronunciationLog: { bulkPut: vi.fn(), hook: otherHookSpy },
+      dailyStats: { bulkPut: vi.fn(), hook: otherHookSpy },
+      meta: { bulkGet: metaBulkGetSpy, hook: metaHookSpy },
+    };
+    const { startSync, flushPendingUploads, stopSync, allowEmptyServerPush } = await import(
+      './sync.js'
+    );
+    await startSync({ id: 'user-1' });
+    // pullAll 모두 empty → _serverCounts.meta=0 마킹 → 신규 사용자 시나리오 차단 회피
+    allowEmptyServerPush();
+    expect(metaOnCreating).toBeTruthy();
+
+    // USER_META_KEY_MAP 매칭 키
+    metaOnCreating('weakPhonemes_en', { key: 'weakPhonemes_en', value: { ɹ: 5 } });
+    // 비매칭 키 (studySettings) — 큐 추가 안 됨
+    metaOnCreating('studySettings', { key: 'studySettings', value: {} });
+    metaOnCreating('activeSession', { key: 'activeSession', value: {} });
+
+    const result = await flushPendingUploads();
+    // meta 큐 → pushUserMeta 호출 → bulkGet(USER_META_KEY_MAP keys)
+    expect(metaBulkGetSpy).toHaveBeenCalledWith([
+      'lang_en',
+      'lang_ja',
+      'weakPhonemes_en',
+      'weakPhonemes_ja',
+    ]);
+    // result.results 에 meta 항목 (status='ok')
+    const metaResult = result.results.find((r) => r.table === 'meta');
+    expect(metaResult).toBeDefined();
+    expect(metaResult.status).toBe('ok');
+    await stopSync();
+  });
+
+  it('flushPendingUploads — byTable.dailyStats 있으면 pushDailyStats 호출 (bulkGet dates)', async () => {
+    const { fromMock } = makeSupabaseChainMock();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    let dailyOnCreating = null;
+    const dailyHookSpy = vi.fn((event, fn) => {
+      if (event === 'creating') dailyOnCreating = fn;
+      return { unsubscribe: vi.fn() };
+    });
+    const otherHookSpy = vi.fn(() => ({ unsubscribe: vi.fn() }));
+    const dailyBulkGetSpy = vi.fn().mockResolvedValue([
+      {
+        date: '2026-04-30',
+        lang: 'en',
+        utteranceCount: 12,
+        studyTimeSec: 600,
+        newSentences: 5,
+        reviewCount: 8,
+      },
+    ]);
+    globalThis.window.studyDB = {
+      reviewQueue: { bulkPut: vi.fn(), hook: otherHookSpy },
+      todayLessons: { bulkPut: vi.fn(), hook: otherHookSpy },
+      sessionLogs: { bulkPut: vi.fn(), hook: otherHookSpy },
+      pronunciationLog: { bulkPut: vi.fn(), hook: otherHookSpy },
+      dailyStats: { bulkGet: dailyBulkGetSpy, hook: dailyHookSpy },
+      meta: { bulkPut: vi.fn(), hook: otherHookSpy },
+    };
+    const { startSync, flushPendingUploads, stopSync, allowEmptyServerPush } = await import(
+      './sync.js'
+    );
+    await startSync({ id: 'user-1' });
+    // pullAll 가 모두 empty 마킹 → 차단됨. unlock 으로 회피.
+    allowEmptyServerPush();
+    expect(dailyOnCreating).toBeTruthy();
+    dailyOnCreating('2026-04-30', { date: '2026-04-30' });
+
+    const result = await flushPendingUploads();
+    expect(dailyBulkGetSpy).toHaveBeenCalledWith(['2026-04-30']);
+    const dailyResult = result.results.find((r) => r.table === 'dailyStats');
+    expect(dailyResult).toBeDefined();
+    expect(dailyResult.status).toBe('ok');
+    await stopSync();
+  });
+});
+
+describe('sync — Wave 11.13.3 resolveConflict (순수 함수)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('local null → server 반환', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const server = { id: 'a', lastResult: 'O', nextReview: '2026-05-01' };
+    expect(resolveConflict(null, server)).toBe(server);
+    expect(resolveConflict(undefined, server)).toBe(server);
+  });
+
+  it('server null → local 반환', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const local = { id: 'a', lastResult: 'X', nextReview: '2026-04-30' };
+    expect(resolveConflict(local, null)).toBe(local);
+    expect(resolveConflict(local, undefined)).toBe(local);
+  });
+
+  it('"No"(X) 우선 — local X / server O → local', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const local = { id: 'a', lastResult: 'X', nextReview: '2026-04-30' };
+    const server = { id: 'a', lastResult: 'O', nextReview: '2026-05-10' }; // 더 먼 nextReview 라도
+    expect(resolveConflict(local, server)).toBe(local);
+  });
+
+  it('"No"(X) 우선 — server X / local O → server', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const local = { id: 'a', lastResult: 'O', nextReview: '2026-05-10' };
+    const server = { id: 'a', lastResult: 'X', nextReview: '2026-04-30' };
+    expect(resolveConflict(local, server)).toBe(server);
+  });
+
+  it('둘 다 X — nextReview 큰(먼) 쪽 우선', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const local = { id: 'a', lastResult: 'X', nextReview: '2026-05-15' };
+    const server = { id: 'a', lastResult: 'X', nextReview: '2026-05-01' };
+    expect(resolveConflict(local, server)).toBe(local);
+    const local2 = { id: 'a', lastResult: 'X', nextReview: '2026-04-20' };
+    const server2 = { id: 'a', lastResult: 'X', nextReview: '2026-05-10' };
+    expect(resolveConflict(local2, server2)).toBe(server2);
+  });
+
+  it('둘 다 O + 같은 nextReview → server 우선 (동률 일관성)', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const local = { id: 'a', lastResult: 'O', nextReview: '2026-05-01' };
+    const server = { id: 'a', lastResult: 'O', nextReview: '2026-05-01' };
+    expect(resolveConflict(local, server)).toBe(server);
+  });
+
+  it('lastResult null (신규 카드) — nextReview 기준만 적용', async () => {
+    const { resolveConflict } = await import('./sync.js');
+    const local = { id: 'a', lastResult: null, nextReview: '2026-05-15' };
+    const server = { id: 'a', lastResult: null, nextReview: '2026-05-01' };
+    expect(resolveConflict(local, server)).toBe(local);
+  });
+});
+
+describe('sync — Wave 11.13.3 pullTable reviewQueue 충돌 해결 통합', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('reviewQueue pull — bulkGet 호출 + resolveConflict 결과로 bulkPut', async () => {
+    // 서버 row: lastResult='O', nextReview='2026-05-01'
+    // 로컬 row: lastResult='X', nextReview='2026-04-30' → "No" 우선 → local 보존
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({
+          data: [{ id: 'card-1', lastResult: 'O', nextReview: '2026-05-01', user_id: 'u' }],
+          error: null,
+        }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const reviewMapping = TABLE_MAP.find((m) => m.dexie === 'reviewQueue');
+    const bulkPutSpy = vi.fn().mockResolvedValue();
+    const bulkGetSpy = vi
+      .fn()
+      .mockResolvedValue([{ id: 'card-1', lastResult: 'X', nextReview: '2026-04-30' }]);
+    const db = { reviewQueue: { bulkPut: bulkPutSpy, bulkGet: bulkGetSpy } };
+    const result = await pullTable(reviewMapping, db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(bulkGetSpy).toHaveBeenCalledWith(['card-1']);
+    // bulkPut 가 local row (lastResult='X') 로 호출됐는지 검증
+    expect(bulkPutSpy).toHaveBeenCalledWith([
+      { id: 'card-1', lastResult: 'X', nextReview: '2026-04-30' },
+    ]);
+  });
+
+  it('todayLessons pull — bulkGet 호출 안 함 (toDexie 변환 후 단순 bulkPut)', async () => {
+    // Wave 11.20 — Supabase row (snake_case) → Dexie (camelCase) 변환 검증.
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({
+          data: [{
+            id: 'lesson-1',
+            user_id: 'u',
+            lang: 'en',
+            date: '2026-04-15',
+            sentence: 'Hi',
+            meaning: '안녕',
+            reading: null,
+            explanation: { foo: 'bar' },
+            phonetic_kr: null,
+            audio_url: null,
+            completed: false,
+            order_index: 0,
+            created_at: '2026-04-15T00:00:00Z',
+          }],
+          error: null,
+        }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const lessonMapping = TABLE_MAP.find((m) => m.dexie === 'todayLessons');
+    const bulkPutSpy = vi.fn().mockResolvedValue();
+    const bulkGetSpy = vi.fn();
+    const db = { todayLessons: { bulkPut: bulkPutSpy, bulkGet: bulkGetSpy } };
+    const result = await pullTable(lessonMapping, db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(bulkGetSpy).not.toHaveBeenCalled();
+    expect(bulkPutSpy).toHaveBeenCalledWith([
+      {
+        id: 'lesson-1',
+        lang: 'en',
+        date: '2026-04-15',
+        sentence: 'Hi',
+        meaning: '안녕',
+        reading: null,
+        explanation: { foo: 'bar' },
+        phoneticKr: null,
+        audioUrl: null,
+        completed: false,
+        orderIndex: 0,
+        createdAt: '2026-04-15T00:00:00Z',
+      },
+    ]);
+  });
+});
+
+describe('sync — Wave 11.13.3 급감 차단 + unlock', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('pullAll 후 마킹 0 + pushTable 시 로컬 row > 0 → status=blocked', async () => {
+    // pullAll: 4 테이블 모두 빈 결과 → _serverCounts 모두 0
+    // pushTable: 로컬 row 있음 → 차단
+    const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+    const fromMock = vi.fn(() => {
+      // thenable builder — pullTable 의 await eq() + pullUserMeta 의 .maybeSingle() 둘 다 지원
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => builder),
+        upsert: upsertSpy,
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        then: (resolve, reject) =>
+          Promise.resolve({ data: [], error: null }).then(resolve, reject),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullAll, pushTable, TABLE_MAP } = await import('./sync.js');
+    const db = {
+      reviewQueue: {
+        bulkPut: vi.fn(),
+        bulkGet: vi.fn().mockResolvedValue([{ id: 'card-1', lastResult: 'O' }]),
+      },
+      todayLessons: { bulkPut: vi.fn() },
+      sessionLogs: { bulkPut: vi.fn() },
+      pronunciationLog: { bulkPut: vi.fn() },
+    };
+    await pullAll(db, 'user-1'); // 마킹 0
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['card-1']);
+    expect(result.status).toBe('blocked');
+    expect(result.reason).toBe('server_empty_local_nonempty');
+    expect(result.count).toBe(1);
+    expect(upsertSpy).not.toHaveBeenCalled();
+  });
+
+  it('pullAll 전 (마킹 없음) → push 차단 안 함', async () => {
+    const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => builder),
+        upsert: upsertSpy,
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        then: (resolve, reject) =>
+          Promise.resolve({ data: [], error: null }).then(resolve, reject),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const db = {
+      reviewQueue: { bulkGet: vi.fn().mockResolvedValue([{ id: 'card-1' }]) },
+    };
+    // pullAll 호출 안 함 → _serverCounts 비어있음 → has() false → 차단 안 함
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['card-1']);
+    expect(result.status).toBe('ok');
+    expect(upsertSpy).toHaveBeenCalled();
+  });
+
+  it('pullAll 마킹 N>0 + pushTable → 차단 안 함', async () => {
+    const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => builder),
+        upsert: upsertSpy,
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        then: (resolve, reject) =>
+          Promise.resolve({
+            data: [{ id: 'card-1', lastResult: 'O', user_id: 'u' }],
+            error: null,
+          }).then(resolve, reject),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullAll, pushTable, TABLE_MAP } = await import('./sync.js');
+    const db = {
+      reviewQueue: {
+        bulkPut: vi.fn(),
+        bulkGet: vi
+          .fn()
+          .mockResolvedValueOnce([undefined]) // pullTable 충돌 해결: local 없음
+          .mockResolvedValueOnce([{ id: 'card-1', lastResult: 'O' }]), // pushTable bulkGet
+      },
+      todayLessons: { bulkPut: vi.fn() },
+      sessionLogs: { bulkPut: vi.fn() },
+      pronunciationLog: { bulkPut: vi.fn() },
+    };
+    await pullAll(db, 'user-1'); // reviewQueue=1, 나머지=0 마킹
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['card-1']);
+    expect(result.status).toBe('ok');
+    expect(upsertSpy).toHaveBeenCalled();
+  });
+
+  it('allowEmptyServerPush — 차단 해제 후 push 정상 ok', async () => {
+    const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => builder),
+        upsert: upsertSpy,
+        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
+        then: (resolve, reject) =>
+          Promise.resolve({ data: [], error: null }).then(resolve, reject),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullAll, pushTable, allowEmptyServerPush, TABLE_MAP } = await import('./sync.js');
+    const db = {
+      reviewQueue: { bulkGet: vi.fn().mockResolvedValue([{ id: 'card-1' }]) },
+      todayLessons: { bulkPut: vi.fn() },
+      sessionLogs: { bulkPut: vi.fn() },
+      pronunciationLog: { bulkPut: vi.fn() },
+    };
+    await pullAll(db, 'user-1'); // 마킹 0
+    allowEmptyServerPush(); // 차단 해제
+    const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['card-1']);
+    expect(result.status).toBe('ok');
+    expect(upsertSpy).toHaveBeenCalled();
+  });
+});
+
+describe('sync — Wave 11.13.x dailyStats 변환 헬퍼 (순수 함수)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('dailyStatsDexieToSupabase — 정상 (id 생성 + snake_case)', async () => {
+    const { dailyStatsDexieToSupabase } = await import('./sync.js');
+    const dexieRow = {
+      date: '2026-04-30',
+      lang: 'en',
+      utteranceCount: 12,
+      studyTimeSec: 600,
+      newSentences: 5,
+      reviewCount: 8,
+    };
+    const result = dailyStatsDexieToSupabase(dexieRow, 'user-1');
+    expect(result).toEqual({
+      id: '2026-04-30_en_user-1',
+      user_id: 'user-1',
+      date: '2026-04-30',
+      lang: 'en',
+      utterance_count: 12,
+      study_time_sec: 600,
+      new_sentences: 5,
+      review_count: 8,
+    });
+  });
+
+  it('dailyStatsDexieToSupabase — row null → null', async () => {
+    const { dailyStatsDexieToSupabase } = await import('./sync.js');
+    expect(dailyStatsDexieToSupabase(null, 'user-1')).toBeNull();
+  });
+
+  it('dailyStatsDexieToSupabase — userId null → null', async () => {
+    const { dailyStatsDexieToSupabase } = await import('./sync.js');
+    expect(dailyStatsDexieToSupabase({ date: '2026-04-30', lang: 'en' }, null)).toBeNull();
+  });
+
+  it('dailyStatsDexieToSupabase — 누락 컬럼 0 fallback', async () => {
+    const { dailyStatsDexieToSupabase } = await import('./sync.js');
+    const result = dailyStatsDexieToSupabase({ date: '2026-04-30', lang: 'en' }, 'user-1');
+    expect(result.utterance_count).toBe(0);
+    expect(result.study_time_sec).toBe(0);
+    expect(result.new_sentences).toBe(0);
+    expect(result.review_count).toBe(0);
+  });
+
+  it('dailyStatsSupabaseToDexie — 정상 (id 제거 + camelCase)', async () => {
+    const { dailyStatsSupabaseToDexie } = await import('./sync.js');
+    const supRow = {
+      id: '2026-04-30_en_user-1',
+      user_id: 'user-1',
+      date: '2026-04-30',
+      lang: 'en',
+      utterance_count: 12,
+      study_time_sec: 600,
+      new_sentences: 5,
+      review_count: 8,
+    };
+    const result = dailyStatsSupabaseToDexie(supRow);
+    expect(result).toEqual({
+      date: '2026-04-30',
+      lang: 'en',
+      utteranceCount: 12,
+      studyTimeSec: 600,
+      newSentences: 5,
+      reviewCount: 8,
+    });
+    expect(result.id).toBeUndefined();
+    expect(result.user_id).toBeUndefined();
+  });
+
+  it('dailyStatsSupabaseToDexie — row null → null', async () => {
+    const { dailyStatsSupabaseToDexie } = await import('./sync.js');
+    expect(dailyStatsSupabaseToDexie(null)).toBeNull();
+  });
+});
+
+describe('sync — Wave 11.13.x pullDailyStats / pushDailyStats 통합', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('pullDailyStats — 정상 select → 변환 후 bulkPut', async () => {
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: '2026-04-30_en_u',
+              user_id: 'u',
+              date: '2026-04-30',
+              lang: 'en',
+              utterance_count: 10,
+              study_time_sec: 300,
+              new_sentences: 3,
+              review_count: 5,
+            },
+          ],
+          error: null,
+        }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullDailyStats } = await import('./sync.js');
+    const bulkPutSpy = vi.fn().mockResolvedValue();
+    const db = { dailyStats: { bulkPut: bulkPutSpy } };
+    const result = await pullDailyStats(db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(1);
+    expect(bulkPutSpy).toHaveBeenCalledWith([
+      {
+        date: '2026-04-30',
+        lang: 'en',
+        utteranceCount: 10,
+        studyTimeSec: 300,
+        newSentences: 3,
+        reviewCount: 5,
+      },
+    ]);
+    expect(fromMock).toHaveBeenCalledWith('study_daily_stats');
+  });
+
+  it('pushDailyStats — toArray → 변환 (id 생성 + snake_case) → upsert(onConflict=id)', async () => {
+    const upsertCalls = [];
+    const fromMock = vi.fn(() => ({
+      upsert: vi.fn((rows, opts) => {
+        upsertCalls.push({ rows, opts });
+        return Promise.resolve({ error: null });
+      }),
+    }));
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushDailyStats } = await import('./sync.js');
+    const db = {
+      dailyStats: {
+        toArray: vi.fn().mockResolvedValue([
+          {
+            date: '2026-04-30',
+            lang: 'en',
+            utteranceCount: 10,
+            studyTimeSec: 300,
+            newSentences: 3,
+            reviewCount: 5,
+          },
+        ]),
+      },
+    };
+    const result = await pushDailyStats(db, 'user-1', null);
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(1);
+    expect(fromMock).toHaveBeenCalledWith('study_daily_stats');
+    expect(upsertCalls.length).toBe(1);
+    expect(upsertCalls[0].opts).toEqual({ onConflict: 'id' });
+    expect(upsertCalls[0].rows[0]).toEqual({
+      id: '2026-04-30_en_user-1',
+      user_id: 'user-1',
+      date: '2026-04-30',
+      lang: 'en',
+      utterance_count: 10,
+      study_time_sec: 300,
+      new_sentences: 3,
+      review_count: 5,
+    });
+  });
+});
+
+describe('sync — Wave 11.13.x user_meta 변환 헬퍼 (순수 함수)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('userMetaDexieToSupabase — 4 rows → 1 row 합산', async () => {
+    const { userMetaDexieToSupabase } = await import('./sync.js');
+    const rows = [
+      { key: 'lang_en', value: { level: 'B1' } },
+      { key: 'lang_ja', value: { level: 'A2' } },
+      { key: 'weakPhonemes_en', value: { 'ɹ': 5 } },
+      { key: 'weakPhonemes_ja', value: { ら: 3 } },
+    ];
+    const result = userMetaDexieToSupabase(rows, 'user-1');
+    expect(result).toEqual({
+      user_id: 'user-1',
+      lang_en: { level: 'B1' },
+      lang_ja: { level: 'A2' },
+      weak_phonemes_en: { 'ɹ': 5 },
+      weak_phonemes_ja: { ら: 3 },
+    });
+  });
+
+  it('userMetaDexieToSupabase — 일부 누락 → null fallback', async () => {
+    const { userMetaDexieToSupabase } = await import('./sync.js');
+    const rows = [
+      { key: 'lang_en', value: { level: 'B1' } },
+      { key: 'weakPhonemes_en', value: { 'ɹ': 5 } },
+    ];
+    const result = userMetaDexieToSupabase(rows, 'user-1');
+    expect(result.user_id).toBe('user-1');
+    expect(result.lang_en).toEqual({ level: 'B1' });
+    expect(result.lang_ja).toBeNull();
+    expect(result.weak_phonemes_en).toEqual({ 'ɹ': 5 });
+    expect(result.weak_phonemes_ja).toBeNull();
+  });
+
+  it('userMetaDexieToSupabase — 다른 keys 무시 (studySettings 등)', async () => {
+    const { userMetaDexieToSupabase } = await import('./sync.js');
+    const rows = [
+      { key: 'studySettings', value: { dailyNewCount: 10 } },
+      { key: 'activeSession', value: { snapshot: '...' } },
+      { key: 'lang_en', value: { level: 'B1' } },
+    ];
+    const result = userMetaDexieToSupabase(rows, 'user-1');
+    expect(result).toEqual({
+      user_id: 'user-1',
+      lang_en: { level: 'B1' },
+      lang_ja: null,
+      weak_phonemes_en: null,
+      weak_phonemes_ja: null,
+    });
+  });
+
+  it('userMetaDexieToSupabase — userId null → null', async () => {
+    const { userMetaDexieToSupabase } = await import('./sync.js');
+    expect(userMetaDexieToSupabase([], null)).toBeNull();
+  });
+
+  it('userMetaSupabaseToDexie — 4 컬럼 → 4 rows', async () => {
+    const { userMetaSupabaseToDexie } = await import('./sync.js');
+    const supRow = {
+      user_id: 'user-1',
+      lang_en: { level: 'B1' },
+      lang_ja: { level: 'A2' },
+      weak_phonemes_en: { 'ɹ': 5 },
+      weak_phonemes_ja: { ら: 3 },
+    };
+    const rows = userMetaSupabaseToDexie(supRow);
+    expect(rows.length).toBe(4);
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+    expect(map.get('lang_en')).toEqual({ level: 'B1' });
+    expect(map.get('lang_ja')).toEqual({ level: 'A2' });
+    expect(map.get('weakPhonemes_en')).toEqual({ 'ɹ': 5 });
+    expect(map.get('weakPhonemes_ja')).toEqual({ ら: 3 });
+    for (const r of rows) {
+      expect(typeof r.at).toBe('number');
+    }
+  });
+
+  it('userMetaSupabaseToDexie — null 컬럼 → row 안 만듦', async () => {
+    const { userMetaSupabaseToDexie } = await import('./sync.js');
+    const supRow = {
+      user_id: 'user-1',
+      lang_en: { level: 'B1' },
+      lang_ja: null,
+      weak_phonemes_en: null,
+      weak_phonemes_ja: null,
+    };
+    const rows = userMetaSupabaseToDexie(supRow);
+    expect(rows.length).toBe(1);
+    expect(rows[0].key).toBe('lang_en');
+  });
+
+  it('userMetaSupabaseToDexie — row null → []', async () => {
+    const { userMetaSupabaseToDexie } = await import('./sync.js');
+    expect(userMetaSupabaseToDexie(null)).toEqual([]);
+  });
+});
+
+describe('sync — Wave 11.13.x pullUserMeta / pushUserMeta 통합', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('pullUserMeta — eq + data[0] (Wave 11.15) → 4 컬럼 → 4 dexie rows bulkPut', async () => {
+    // Wave 11.15: .maybeSingle() 제거 → 일반 eq 결과 배열의 [0] 사용
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({
+          data: [
+            {
+              user_id: 'u',
+              lang_en: { level: 'B1' },
+              lang_ja: { level: 'A2' },
+              weak_phonemes_en: { 'ɹ': 5 },
+              weak_phonemes_ja: { ら: 3 },
+            },
+          ],
+          error: null,
+        }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullUserMeta } = await import('./sync.js');
+    const bulkPutSpy = vi.fn().mockResolvedValue();
+    const db = { meta: { bulkPut: bulkPutSpy } };
+    const result = await pullUserMeta(db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(4);
+    expect(bulkPutSpy).toHaveBeenCalledTimes(1);
+    const putArg = bulkPutSpy.mock.calls[0][0];
+    expect(putArg.length).toBe(4);
+    expect(fromMock).toHaveBeenCalledWith('study_user_meta');
+  });
+
+  it('pullUserMeta — data 빈 배열 → status=empty (Wave 11.15, 서버 row 없음)', async () => {
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullUserMeta } = await import('./sync.js');
+    const db = { meta: { bulkPut: vi.fn() } };
+    const result = await pullUserMeta(db, 'user-1');
+    expect(result.status).toBe('empty');
+    expect(result.count).toBe(0);
+  });
+
+  it('pushUserMeta — bulkGet 4 keys → 합산 → upsert(onConflict=user_id)', async () => {
+    const upsertCalls = [];
+    const fromMock = vi.fn(() => ({
+      upsert: vi.fn((rows, opts) => {
+        upsertCalls.push({ rows, opts });
+        return Promise.resolve({ error: null });
+      }),
+    }));
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushUserMeta } = await import('./sync.js');
+    const bulkGetSpy = vi.fn().mockResolvedValue([
+      { key: 'lang_en', value: { level: 'B1' } },
+      undefined, // lang_ja 없음
+      { key: 'weakPhonemes_en', value: { 'ɹ': 5 } },
+      undefined, // weakPhonemes_ja 없음
+    ]);
+    const db = { meta: { bulkGet: bulkGetSpy } };
+    const result = await pushUserMeta(db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(2);
+    expect(bulkGetSpy).toHaveBeenCalledWith([
+      'lang_en',
+      'lang_ja',
+      'weakPhonemes_en',
+      'weakPhonemes_ja',
+    ]);
+    expect(fromMock).toHaveBeenCalledWith('study_user_meta');
+    expect(upsertCalls.length).toBe(1);
+    expect(upsertCalls[0].opts).toEqual({ onConflict: 'user_id' });
+    expect(upsertCalls[0].rows[0]).toEqual({
+      user_id: 'user-1',
+      lang_en: { level: 'B1' },
+      lang_ja: null,
+      weak_phonemes_en: { 'ɹ': 5 },
+      weak_phonemes_ja: null,
+    });
+  });
+
+  it('pushUserMeta — 4 keys 모두 없음 → status=empty (push skip)', async () => {
+    const fromMock = vi.fn(() => ({ upsert: vi.fn() }));
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pushUserMeta } = await import('./sync.js');
+    const bulkGetSpy = vi.fn().mockResolvedValue([undefined, undefined, undefined, undefined]);
+    const db = { meta: { bulkGet: bulkGetSpy } };
+    const result = await pushUserMeta(db, 'user-1');
+    expect(result.status).toBe('empty');
+    expect(fromMock).not.toHaveBeenCalled(); // upsert 안 호출
+  });
+});
+
+describe('sync — Wave 11.13.x pullAll 확장 (4 + dailyStats + user_meta)', () => {
+  beforeEach(() => {
+    vi.resetModules();
+  });
+
+  it('pullAll — 6 results (4 테이블 + dailyStats + user_meta), _serverCounts 마킹', async () => {
+    // Wave 11.15 — 모든 테이블 .eq + 빈 배열 패턴 (user_meta 도 .maybeSingle 대신 [0] 사용)
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: { from: fromMock },
+      isSupabaseConfigured: true,
+    }));
+    const { pullAll } = await import('./sync.js');
+    const db = {
+      reviewQueue: { bulkPut: vi.fn(), bulkGet: vi.fn() },
+      todayLessons: { bulkPut: vi.fn() },
+      sessionLogs: { bulkPut: vi.fn() },
+      pronunciationLog: { bulkPut: vi.fn() },
+      dailyStats: { bulkPut: vi.fn() },
+      meta: { bulkPut: vi.fn() },
+    };
+    const result = await pullAll(db, 'user-1');
+    // Wave 11.68-a — 7 results (4 테이블 + dailyStats + user_meta + pr_records)
+    expect(result.results.length).toBe(7);
+    expect(result.failed).toBe(0);
+    const tables = result.results.map((r) => r.table).sort();
+    expect(tables).toEqual(
+      ['dailyStats', 'meta', 'prRecords', 'pronunciationLog', 'reviewQueue', 'sessionLogs', 'todayLessons'],
+    );
+  });
+});
+
+// ============================================================
+// Wave 11.68-a — pr_records 매퍼 + pullPrRecords/pushPrRecords (user_meta 패턴 답습)
+// ============================================================
+describe('sync — Wave 11.68-a pr_records 매퍼', () => {
+  it('PR_RECORDS_KEY_MAP — 5 keys (daily*/weekly*/history)', async () => {
+    const { PR_RECORDS_KEY_MAP } = await import('./sync.js');
+    expect(PR_RECORDS_KEY_MAP.length).toBe(5);
+    const dexieKeys = PR_RECORDS_KEY_MAP.map((m) => m.dexieKey);
+    expect(dexieKeys).toEqual([
+      'prDailyUtterance',
+      'prDailyStudyTime',
+      'prWeeklyUtterance',
+      'prWeeklyPass',
+      'prHistory',
+    ]);
+    const supabaseCols = PR_RECORDS_KEY_MAP.map((m) => m.supabaseCol);
+    expect(supabaseCols).toEqual([
+      'daily_utterance',
+      'daily_study_time',
+      'weekly_utterance',
+      'weekly_pass',
+      'history',
+    ]);
+  });
+
+  it('prRecordsDexieToSupabase — 5 rows → 1 row, user_id 주입', async () => {
+    const { prRecordsDexieToSupabase } = await import('./sync.js');
+    const rows = [
+      { key: 'prDailyUtterance', value: { value: 50, achieved_at: '2026-05-01', lang: 'en' } },
+      { key: 'prHistory', value: [{ type: 'daily_utterance', value: 30, achieved_at: '2026-04-01', lang: 'en' }] },
+    ];
+    const out = prRecordsDexieToSupabase(rows, 'user-1');
+    expect(out.user_id).toBe('user-1');
+    expect(out.daily_utterance).toEqual({ value: 50, achieved_at: '2026-05-01', lang: 'en' });
+    expect(out.history.length).toBe(1);
+    // 누락된 keys 는 null
+    expect(out.daily_study_time).toBeNull();
+    expect(out.weekly_utterance).toBeNull();
+    expect(out.weekly_pass).toBeNull();
+  });
+
+  it('prRecordsDexieToSupabase — userId 없으면 null', async () => {
+    const { prRecordsDexieToSupabase } = await import('./sync.js');
+    expect(prRecordsDexieToSupabase([], null)).toBeNull();
+    expect(prRecordsDexieToSupabase([], '')).toBeNull();
+  });
+
+  it('prRecordsSupabaseToDexie — 1 row → N Dexie rows (null 제외)', async () => {
+    const { prRecordsSupabaseToDexie } = await import('./sync.js');
+    const row = {
+      user_id: 'user-1',
+      daily_utterance: { value: 50, achieved_at: '2026-05-01', lang: 'en' },
+      daily_study_time: null,
+      weekly_utterance: { value: 200, week_start: '2026-04-27', lang: 'en' },
+      weekly_pass: null,
+      history: [],
+    };
+    const out = prRecordsSupabaseToDexie(row);
+    expect(out.length).toBe(3); // null 2개 제외
+    const keys = out.map((r) => r.key);
+    expect(keys).toEqual(['prDailyUtterance', 'prWeeklyUtterance', 'prHistory']);
+    expect(out[0].value).toEqual({ value: 50, achieved_at: '2026-05-01', lang: 'en' });
+    expect(out.every((r) => typeof r.at === 'number')).toBe(true);
+  });
+
+  it('prRecordsSupabaseToDexie — null row → 빈 배열', async () => {
+    const { prRecordsSupabaseToDexie } = await import('./sync.js');
+    expect(prRecordsSupabaseToDexie(null)).toEqual([]);
+  });
+});
+
+// ============================================================
+// Wave 11.20 — 단순 4 테이블 camelCase ↔ snake_case 변환 함수 단위
+// dailyStats/userMeta 의 Wave 11.13.x 케이스 패턴 답습.
+// ============================================================
+describe('sync — Wave 11.20 reviewQueue 변환', () => {
+  it('reviewQueueDexieToSupabase — 정상 row', async () => {
+    const { reviewQueueDexieToSupabase } = await import('./sync.js');
+    expect(
+      reviewQueueDexieToSupabase(
+        {
+          id: 'r1',
+          lang: 'en',
+          sentence: 'Hi',
+          meaning: '안녕',
+          reading: null,
+          explanation: { foo: 'bar' },
+          interval: 2,
+          nextReview: '2026-05-01',
+          consecutivePass: 1,
+          lastResult: 'O',
+          category: 'session',
+        },
+        'u1',
+      ),
+    ).toEqual({
+      id: 'r1',
+      user_id: 'u1',
+      lang: 'en',
+      sentence: 'Hi',
+      meaning: '안녕',
+      reading: null,
+      explanation: { foo: 'bar' },
+      interval: 2,
+      next_review: '2026-05-01',
+      consecutive_pass: 1,
+      last_result: 'O',
+      category: 'session',
+    });
+  });
+
+  it('reviewQueueDexieToSupabase — null row → null', async () => {
+    const { reviewQueueDexieToSupabase } = await import('./sync.js');
+    expect(reviewQueueDexieToSupabase(null, 'u1')).toBe(null);
+  });
+
+  it('reviewQueueDexieToSupabase — userId null → null', async () => {
+    const { reviewQueueDexieToSupabase } = await import('./sync.js');
+    expect(reviewQueueDexieToSupabase({ id: 'r1' }, null)).toBe(null);
+  });
+
+  it('reviewQueueDexieToSupabase — 누락 필드 default fallback', async () => {
+    const { reviewQueueDexieToSupabase } = await import('./sync.js');
+    const out = reviewQueueDexieToSupabase({ id: 'r1', lang: 'en', sentence: 'a', meaning: 'b' }, 'u1');
+    expect(out.interval).toBe(1);
+    expect(out.consecutive_pass).toBe(0);
+    expect(out.last_result).toBe(null);
+    expect(out.category).toBe(null);
+    expect(out.reading).toBe(null);
+    expect(out.explanation).toBe(null);
+  });
+
+  it('reviewQueueSupabaseToDexie — 정상 row', async () => {
+    const { reviewQueueSupabaseToDexie } = await import('./sync.js');
+    expect(
+      reviewQueueSupabaseToDexie({
+        id: 'r1',
+        user_id: 'u1',
+        lang: 'en',
+        sentence: 'Hi',
+        meaning: '안녕',
+        reading: null,
+        explanation: { foo: 'bar' },
+        interval: 2,
+        next_review: '2026-05-01',
+        consecutive_pass: 1,
+        last_result: 'O',
+        category: 'session',
+        created_at: '2026-04-15T00:00:00Z',
+        updated_at: '2026-04-15T00:00:00Z',
+      }),
+    ).toEqual({
+      id: 'r1',
+      lang: 'en',
+      sentence: 'Hi',
+      meaning: '안녕',
+      reading: null,
+      explanation: { foo: 'bar' },
+      interval: 2,
+      nextReview: '2026-05-01',
+      consecutivePass: 1,
+      lastResult: 'O',
+      category: 'session',
+      createdAt: '2026-04-15T00:00:00Z',
+      updatedAt: '2026-04-15T00:00:00Z',
+    });
+  });
+
+  it('reviewQueueSupabaseToDexie — null row → null', async () => {
+    const { reviewQueueSupabaseToDexie } = await import('./sync.js');
+    expect(reviewQueueSupabaseToDexie(null)).toBe(null);
+  });
+});
+
+describe('sync — Wave 11.20 todayLessons 변환', () => {
+  it('todayLessonsDexieToSupabase — 정상 + completedAt 무시 (SQL 컬럼 부재)', async () => {
+    const { todayLessonsDexieToSupabase } = await import('./sync.js');
+    const out = todayLessonsDexieToSupabase(
+      {
+        id: 'l1',
+        lang: 'en',
+        date: '2026-04-15',
+        sentence: 'Hi',
+        meaning: '안녕',
+        reading: null,
+        explanation: { foo: 'bar' },
+        phoneticKr: null,
+        audioUrl: null,
+        completed: true,
+        completedAt: '2026-04-15T10:00:00Z', // SQL 컬럼 부재 → 무시
+        orderIndex: 3,
+      },
+      'u1',
+    );
+    expect(out).toEqual({
+      id: 'l1',
+      user_id: 'u1',
+      lang: 'en',
+      date: '2026-04-15',
+      sentence: 'Hi',
+      meaning: '안녕',
+      reading: null,
+      explanation: { foo: 'bar' },
+      phonetic_kr: null,
+      audio_url: null,
+      completed: true,
+      order_index: 3,
+    });
+    expect(out.completed_at).toBeUndefined(); // SQL 컬럼 부재 검증
+  });
+
+  it('todayLessonsDexieToSupabase — null/userId null', async () => {
+    const { todayLessonsDexieToSupabase } = await import('./sync.js');
+    expect(todayLessonsDexieToSupabase(null, 'u1')).toBe(null);
+    expect(todayLessonsDexieToSupabase({ id: 'l1' }, null)).toBe(null);
+  });
+
+  it('todayLessonsDexieToSupabase — 누락 default', async () => {
+    const { todayLessonsDexieToSupabase } = await import('./sync.js');
+    const out = todayLessonsDexieToSupabase({ id: 'l1', lang: 'en', date: '2026-04-15', sentence: 'a', meaning: 'b' }, 'u1');
+    expect(out.completed).toBe(false);
+    expect(out.explanation).toEqual({});
+  });
+
+  it('todayLessonsSupabaseToDexie — 정상 row', async () => {
+    const { todayLessonsSupabaseToDexie } = await import('./sync.js');
+    expect(
+      todayLessonsSupabaseToDexie({
+        id: 'l1',
+        user_id: 'u1',
+        lang: 'en',
+        date: '2026-04-15',
+        sentence: 'Hi',
+        meaning: '안녕',
+        reading: null,
+        explanation: { foo: 'bar' },
+        phonetic_kr: 'pkr',
+        audio_url: 'aurl',
+        completed: false,
+        order_index: 0,
+        created_at: '2026-04-15T00:00:00Z',
+      }),
+    ).toEqual({
+      id: 'l1',
+      lang: 'en',
+      date: '2026-04-15',
+      sentence: 'Hi',
+      meaning: '안녕',
+      reading: null,
+      explanation: { foo: 'bar' },
+      phoneticKr: 'pkr',
+      audioUrl: 'aurl',
+      completed: false,
+      orderIndex: 0,
+      createdAt: '2026-04-15T00:00:00Z',
+    });
+  });
+});
+
+describe('sync — Wave 11.20 sessionLogs 변환', () => {
+  it('sessionLogsDexieToSupabase — 정상 + sentence_ids 배열', async () => {
+    const { sessionLogsDexieToSupabase } = await import('./sync.js');
+    expect(
+      sessionLogsDexieToSupabase(
+        {
+          id: 's1',
+          lang: 'en',
+          date: '2026-04-15',
+          category: 'session',
+          durationSec: 600,
+          newCount: 3,
+          reviewResults: { O: 5, '△': 2, X: 1 },
+          utteranceCount: 8,
+          passCount: 7,
+          sentenceIds: ['a', 'b', 'c'],
+          sessionType: 'normal',
+        },
+        'u1',
+      ),
+    ).toEqual({
+      id: 's1',
+      user_id: 'u1',
+      lang: 'en',
+      date: '2026-04-15',
+      category: 'session',
+      duration_sec: 600,
+      new_count: 3,
+      review_results: { O: 5, '△': 2, X: 1 },
+      utterance_count: 8,
+      pass_count: 7,
+      sentence_ids: ['a', 'b', 'c'],
+      new_sentence_ids: null,
+      session_type: 'normal',
+    });
+  });
+
+  it('sessionLogsDexieToSupabase — sentenceIds 비배열 → null', async () => {
+    const { sessionLogsDexieToSupabase } = await import('./sync.js');
+    const out = sessionLogsDexieToSupabase(
+      { id: 's1', lang: 'en', date: '2026-04-15', sentenceIds: 'not_array' },
+      'u1',
+    );
+    expect(out.sentence_ids).toBe(null);
+  });
+
+  it('sessionLogsSupabaseToDexie — 정상 round-trip', async () => {
+    const { sessionLogsDexieToSupabase, sessionLogsSupabaseToDexie } = await import('./sync.js');
+    const dexieRow = {
+      id: 's1',
+      lang: 'en',
+      date: '2026-04-15',
+      category: 'session',
+      durationSec: 600,
+      newCount: 3,
+      reviewResults: { O: 5 },
+      utteranceCount: 8,
+      passCount: 7,
+      sentenceIds: ['a', 'b'],
+      sessionType: 'normal',
+    };
+    const supabaseRow = sessionLogsDexieToSupabase(dexieRow, 'u1');
+    const back = sessionLogsSupabaseToDexie(supabaseRow);
+    // Round-trip 핵심 필드 보존 (createdAt 은 Supabase only, 무시).
+    for (const k of ['id', 'lang', 'date', 'category', 'durationSec', 'newCount', 'reviewResults', 'utteranceCount', 'passCount', 'sentenceIds', 'sessionType']) {
+      expect(back[k]).toEqual(dexieRow[k]);
+    }
+  });
+});
+
+describe('sync — Wave 11.20 pronunciationLog 변환', () => {
+  it('pronunciationLogDexieToSupabase — 정상', async () => {
+    const { pronunciationLogDexieToSupabase } = await import('./sync.js');
+    expect(
+      pronunciationLogDexieToSupabase(
+        {
+          id: 'p1',
+          lang: 'en',
+          sentenceId: 's1',
+          date: '2026-04-15',
+          overallScore: 85,
+          phonemeScores: [{ symbol: 'a', score: 90 }],
+          weakPhonemes: ['r'],
+          recognizedText: 'hello',
+        },
+        'u1',
+      ),
+    ).toEqual({
+      id: 'p1',
+      user_id: 'u1',
+      lang: 'en',
+      sentence_id: 's1',
+      date: '2026-04-15',
+      overall_score: 85,
+      phoneme_scores: [{ symbol: 'a', score: 90 }],
+      weak_phonemes: ['r'],
+      recognized_text: 'hello',
+    });
+  });
+
+  it('pronunciationLogSupabaseToDexie — 정상', async () => {
+    const { pronunciationLogSupabaseToDexie } = await import('./sync.js');
+    expect(
+      pronunciationLogSupabaseToDexie({
+        id: 'p1',
+        user_id: 'u1',
+        lang: 'en',
+        sentence_id: 's1',
+        date: '2026-04-15',
+        overall_score: 85,
+        phoneme_scores: [{ symbol: 'a', score: 90 }],
+        weak_phonemes: ['r'],
+        recognized_text: 'hello',
+        created_at: '2026-04-15T00:00:00Z',
+      }),
+    ).toEqual({
+      id: 'p1',
+      lang: 'en',
+      sentenceId: 's1',
+      date: '2026-04-15',
+      overallScore: 85,
+      phonemeScores: [{ symbol: 'a', score: 90 }],
+      weakPhonemes: ['r'],
+      recognizedText: 'hello',
+      createdAt: '2026-04-15T00:00:00Z',
+    });
+  });
+});
+
+describe('sync — Wave 11.20 TABLE_MAP 인터페이스', () => {
+  it('TABLE_MAP 4 entry 모두 toSupabase + toDexie 보유', async () => {
+    const { TABLE_MAP } = await import('./sync.js');
+    expect(TABLE_MAP.length).toBe(4);
+    for (const m of TABLE_MAP) {
+      expect(typeof m.toSupabase).toBe('function');
+      expect(typeof m.toDexie).toBe('function');
+    }
+  });
+
+  it('Sync namespace 에서 신규 변환 함수 8종 노출', async () => {
+    const { Sync } = await import('./sync.js');
+    expect(typeof Sync.reviewQueueDexieToSupabase).toBe('function');
+    expect(typeof Sync.reviewQueueSupabaseToDexie).toBe('function');
+    expect(typeof Sync.todayLessonsDexieToSupabase).toBe('function');
+    expect(typeof Sync.todayLessonsSupabaseToDexie).toBe('function');
+    expect(typeof Sync.sessionLogsDexieToSupabase).toBe('function');
+    expect(typeof Sync.sessionLogsSupabaseToDexie).toBe('function');
+    expect(typeof Sync.pronunciationLogDexieToSupabase).toBe('function');
+    expect(typeof Sync.pronunciationLogSupabaseToDexie).toBe('function');
+  });
+});

@@ -1,0 +1,37 @@
+/* Bottom Sheet — home 주간 캘린더 · stats 월간 캘린더 공용
+ * 원본: mocks/stats.html L128~160 (Wave 11.1 에서 추출)
+ * 사용처: mocks/home.html · mocks/stats.html
+ * 주입: src/app.js initApp() → <style id="bs-sheet-shared">
+ */
+.bs-overlay{position:fixed;inset:0;background:rgba(20,20,19,0.25);z-index:100;display:none;opacity:0;transition:opacity 200ms var(--ease)}
+.bs-overlay.open{display:block;opacity:1}
+.bs-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:var(--s-5) var(--s-5) calc(env(safe-area-inset-bottom, 0px) + var(--s-12));z-index:101;transform:translateY(100%);transition:transform 300ms var(--ease);max-height:65vh;overflow-y:auto;box-shadow:0 -4px 32px rgba(20,20,19,0.08);display:none}
+.bs-sheet.open{transform:translateY(0)}
+/* iPad/Mac: sheet 를 iframe 중앙에 고정 + 명시적 width (position:fixed + left:50% 만으로는 content 크기로 줄어듦) */
+@media(min-width:600px){
+  .bs-sheet{left:50%;right:auto;transform:translate(-50%,100%);width:calc(100% - var(--s-12) * 2);max-width:560px}
+  .bs-sheet.open{transform:translate(-50%,0)}
+}
+@media(min-width:1024px){
+  .bs-sheet{max-width:640px}
+}
+.bs-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto var(--s-5)}
+.bs-date{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-strong);margin-bottom:var(--s-5)}
+.bs-stats{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3) var(--s-6);margin-bottom:var(--s-5)}
+.bs-stat-label{font-size:12px;color:var(--text-faint)}
+.bs-stat-val{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-strong);margin-top:2px}
+.bs-stat-val .got{color:var(--sage)}
+.bs-stat-val .hmm{color:var(--amber)}
+.bs-stat-val .no{color:var(--danger)}
+.bs-sentences{margin-top:var(--s-4)}
+.bs-sent{display:flex;align-items:center;justify-content:space-between;padding:var(--s-3) var(--s-2);margin:0 calc(var(--s-2) * -1);border-radius:var(--r-sm);cursor:pointer;transition:background 150ms var(--ease)}
+.bs-sent+.bs-sent{border-top:1px solid var(--border-light)}
+@media(hover:hover){.bs-sent:hover{background:var(--bg-warm)}}
+.bs-sent-content{flex:1;min-width:0}
+.bs-sent-text{font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-strong);line-height:1.4}
+.bs-sent-meaning{font-size:13px;color:var(--text-muted);margin-top:2px}
+.bs-sent-score{font-family:var(--font-display);font-size:12px;font-weight:600;margin-top:var(--s-1)}
+.bs-sent-score.good{color:var(--sage)}
+.bs-sent-score.mid{color:var(--amber)}
+.bs-sent-score.low{color:var(--danger)}
+.bs-sent-chevron{flex-shrink:0;width:16px;height:16px;color:var(--text-faint);margin-left:var(--s-3);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}

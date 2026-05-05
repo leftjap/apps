@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Gym · 로그인</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f5; --surface: #ffffff; --bg-warm: #f5f0ea;
+    --text: #3d3929; --text-strong: #141413; --text-muted: #8a8475; --text-faint: #b5ad9e;
+    --accent: #d97757; --accent-hover: #c4623f; --accent-rgb: 217, 119, 87;
+    --sage: #788c5d; --blue: #6a9bcc; --amber: #c4973b; --danger: #b44d3b;
+    --border: #e8e4dc; --border-light: #f0ece4;
+    --font-display: 'Poppins', system-ui, sans-serif;
+    --font-body: 'Noto Sans KR', system-ui, sans-serif;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+    --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+    --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+    --shadow-lg: 0 4px 12px rgba(20,20,19,0.06), 0 24px 48px rgba(55,45,30,0.08);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-body); color: var(--text); background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 256px 256px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .phone {
+    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
+    display: flex; flex-direction: column; position: relative;
+    overflow: hidden; background: var(--bg);
+  }
+  @media (min-width: 376px) {
+    body { padding: var(--s-8) 0; }
+    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
+  }
+  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
+
+  /* ============ 화면 구조 — 3영역 (상단 여백 / 중앙 Clawd+타이틀 / 하단 CTA) ============ */
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 var(--s-6);
+    padding-bottom: calc(var(--s-6) + var(--safe-bottom));
+  }
+
+  /* 상단 여백 (Generous negative space · ui §1) */
+  .top-space { flex: 0.9; min-height: var(--s-12); }
+
+  /* 중앙 — Clawd + 타이틀 */
+  .hero {
+    flex: 1.3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-8);
+    text-align: center;
+  }
+
+  /* Clawd frame (§1 one bold) */
+  .clawd-stage {
+    width: 132px;
+    height: 132px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    position: relative;
+  }
+  /* 지면 그림자 */
+  .clawd-stage::before {
+    content: '';
+    position: absolute;
+    left: 20%; right: 20%;
+    bottom: 10%;
+    height: 3px;
+    background: rgba(55,45,30,0.07);
+    border-radius: 3px;
+    filter: blur(2px);
+  }
+  .clawd-wrap {
+    position: relative;
+    width: 90px;
+    aspect-ratio: 15 / 12;
+    image-rendering: pixelated;
+  }
+  .clawd-wrap svg {
+    width: 100%; height: 100%;
+    image-rendering: pixelated;
+    display: block;
+  }
+  /* radial halo — Streak pattern 재사용 (§6) */
+  .clawd-stage::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.16) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+  }
+  /* 포즈 애니메이션 */
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }
+  .a-bounce { animation: bounce 1s var(--ease) infinite; }
+
+  /* 타이틀 */
+  .brand {
+    font-family: var(--font-display);
+    font-size: 44px; font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .brand-sub {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 400;
+    color: var(--text-muted);
+    margin-top: var(--s-2);
+    letter-spacing: 0.01em;
+  }
+
+  /* 하단 — CTA + 안내 */
+  .foot {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: var(--s-4);
+  }
+
+  /* Google 버튼 (Secondary 스타일 확장 + 좌측 로고) */
+  .btn-google {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s-3);
+    width: 100%;
+    height: 52px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-pill);
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 100ms var(--ease);
+    box-shadow: var(--shadow-xs);
+  }
+  @media (hover: hover) {
+    .btn-google:hover {
+      border-color: var(--text-muted);
+      background: var(--bg-warm);
+    }
+  }
+  .btn-google:active { transform: scale(0.98); background: var(--bg-warm); }
+  .btn-google[disabled] { cursor: wait; color: var(--text-muted); }
+  .btn-google .g-logo { width: 20px; height: 20px; flex-shrink: 0; }
+
+  /* Loading 스피너 */
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    display: none;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .app[data-state="loading"] .btn-google .g-logo { display: none; }
+  .app[data-state="loading"] .btn-google .spinner { display: block; }
+  .app[data-state="loading"] .btn-google .btn-label { color: var(--text-muted); }
+
+  /* 허용 안내 */
+  .permission-note {
+    font-family: var(--font-body);
+    font-size: 11px; font-weight: 400;
+    color: var(--text-faint);
+    text-align: center;
+    letter-spacing: 0.01em;
+    line-height: 1.5;
+  }
+
+  /* 에러 배너 — danger 톤 */
+  .error-banner {
+    display: none;
+    padding: var(--s-3) var(--s-4);
+    background: rgba(180, 77, 59, 0.08);
+    border: 1px solid rgba(180, 77, 59, 0.2);
+    border-radius: var(--r-md);
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--danger);
+    text-align: center;
+    letter-spacing: -0.01em;
+    line-height: 1.5;
+  }
+  .app[data-state="error"] .error-banner { display: block; }
+
+  /* reveal */
+  .rv { opacity: 0; transform: translateY(12px); animation: rvUp 0.6s var(--ease-out) forwards; }
+  .rv-1 { animation-delay: 100ms; }
+  .rv-2 { animation-delay: 200ms; }
+  .rv-3 { animation-delay: 300ms; }
+  .rv-4 { animation-delay: 400ms; }
+  @keyframes rvUp { to { opacity: 1; transform: translateY(0); } }
+
+  /* Toast */
+  .toast {
+    position: absolute;
+    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
+    transform: translate(-50%, 20px);
+    background: rgba(20,20,19,0.9); color: #fff;
+    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
+    font-family: var(--font-body); font-size: 12px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+    z-index: 80; box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+
+</style>
+</head>
+<body>
+
+<!-- Clawd symbol (Barbell Raise) + Google logo -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <symbol id="c-lift" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="1" width="11" height="1" fill="#b5ad9e"/>
+    <rect x="13" y="0" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="11" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="2" y="3" width="11" height="7" fill="#d97757"/>
+    <rect x="4" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="g-logo" viewBox="0 0 48 48">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+  </symbol>
+</svg>
+
+<div class="phone app" id="app" data-state="default">
+  <div class="safe-top"></div>
+
+
+  <main class="screen">
+
+    <div class="top-space"></div>
+
+    <!-- Hero: Clawd + 타이틀 -->
+    <section class="hero">
+      <div class="clawd-stage rv rv-1">
+        <div class="clawd-wrap a-bounce">
+          <svg viewBox="0 0 15 12" preserveAspectRatio="xMidYMax meet">
+            <use href="#c-lift"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="rv rv-2">
+        <h1 class="brand">Gym</h1>
+        <p class="brand-sub">기록으로 이어지는 운동</p>
+      </div>
+    </section>
+
+    <!-- Foot: CTA + 안내 -->
+    <section class="foot">
+      <div class="error-banner rv rv-3" id="errorBanner">
+        허용되지 않은 계정입니다<br>
+        <span style="color:var(--text-muted); font-size:11px">leftjap@gmail.com · soyoun312@gmail.com</span>
+      </div>
+
+      <button class="btn-google rv rv-3" id="btnGoogle" type="button">
+        <svg class="g-logo" viewBox="0 0 48 48"><use href="#g-logo"/></svg>
+        <span class="spinner"></span>
+        <span class="btn-label" id="btnLabel">Google로 계속하기</span>
+      </button>
+
+      <p class="permission-note rv rv-4">
+        허용 계정으로만 로그인 가능합니다
+      </p>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const STATES = {
+  default: { label: 'Google로 계속하기', disabled: false },
+  loading: { label: '인증 중…',          disabled: true },
+  error:   { label: 'Google로 다시 시도', disabled: false }
+};
+
+function applyState(name) {
+  const s = STATES[name];
+  if (!s) return;
+  document.getElementById('app').dataset.state = name;
+  document.getElementById('btnLabel').textContent = s.label;
+  const btn = document.getElementById('btnGoogle');
+  btn.toggleAttribute('disabled', s.disabled);
+  // reveal re-trigger
+  document.querySelectorAll('.rv').forEach(el => {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  });
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1500);
+}
+
+// Wave 11.7 — AUTH_ERROR_KEY 마커 1회 소비 (allowlist 위반 등 에러 표시)
+function consumeAuthErrorMarker() {
+  try {
+    const key = (window.gymAuth && window.gymAuth.AUTH_ERROR_KEY) || 'gymAuthError';
+    const v = localStorage.getItem(key);
+    if (v === 'not_allowed') {
+      localStorage.removeItem(key);
+      return true;
+    }
+  } catch (e) { /* localStorage 차단 환경 무시 */ }
+  return false;
+}
+
+document.getElementById('btnGoogle').addEventListener('click', async () => {
+  const state = document.getElementById('app').dataset.state;
+  if (state === 'loading') return;
+  // SPA + Supabase 정상 설정: 실 OAuth (브라우저 redirect)
+  if (window.gymAuth && window.gymAuth.isSupabaseConfigured) {
+    applyState('loading');
+    const { error } = await window.gymAuth.signInWithGoogle();
+    if (error) applyState('error');
+    return; // 성공 시 페이지가 redirect 로 이탈
+  }
+  // SPA 인데 env 미설정: 즉시 error (e2e B 케이스 검증 대상)
+  if (window.gymAuth && !window.gymAuth.isSupabaseConfigured) {
+    applyState('error');
+    return;
+  }
+  // mocks 허브(iframe) 환경: 기존 prototype 흐름 유지
+  applyState('loading');
+  setTimeout(() => { window.location.href = 'home.html'; }, 700);
+});
+
+// 초기 상태: AUTH_ERROR_KEY 마커 있으면 error, 없으면 default
+applyState(consumeAuthErrorMarker() ? 'error' : 'default');
+</script>
+
+</body>
+</html>

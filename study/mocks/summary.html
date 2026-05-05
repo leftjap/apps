@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Study · 학습 완료</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#faf9f5; --surface:#fff; --bg-warm:#f5f0ea;
+  --text:#3d3929; --text-strong:#141413; --text-muted:#8a8475; --text-faint:#b5ad9e;
+  --accent:#d97757; --accent-hover:#c4623f;
+  --sage:#788c5d; --blue:#6a9bcc; --amber:#c4973b; --danger:#b44d3b;
+  --border:#e8e4dc; --border-light:#f0ece4;
+  --font-display:'Poppins',system-ui,sans-serif;
+  --font-body:'Noto Sans KR',system-ui,sans-serif;
+  --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;--s-8:32px;--s-10:40px;--s-12:48px;--s-16:64px;
+  --r-sm:6px;--r-md:10px;--r-lg:16px;--r-pill:999px;
+  --shadow-xs:0 1px 2px rgba(20,20,19,0.04);
+  --shadow-sm:0 1px 3px rgba(20,20,19,0.04),0 8px 32px rgba(20,20,19,0.06);
+  --ease:cubic-bezier(0.4,0,0.2,1);
+  --app-padding:var(--s-5);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");background-size:256px 256px;font-family:var(--font-body);color:var(--text);line-height:1.65;min-height:100dvh;display:flex;justify-content:center;-webkit-font-smoothing:antialiased}
+.app{width:100%;max-width:430px;min-height:100dvh;padding:env(safe-area-inset-top, 0px) var(--app-padding) calc(env(safe-area-inset-bottom, 0px) + var(--s-12));display:flex;flex-direction:column;margin:0 auto}
+@media(min-width:600px){:root{--app-padding:var(--s-8)}.app{max-width:560px}}
+@media(min-width:1024px){.app{max-width:640px}}
+
+/* Preview */
+.pv-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;gap:var(--s-1);justify-content:center;padding:var(--s-2) var(--s-3);background:rgba(232,228,220,0.95);backdrop-filter:blur(8px)}
+.pv-btn{font-family:var(--font-display);font-size:10px;font-weight:500;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:var(--r-pill);cursor:pointer;transition:all 150ms var(--ease)}
+.pv-btn:hover,.pv-btn.active{color:var(--accent);border-color:var(--accent)}
+.pv-spacer{height:36px}
+
+/* Title — muted, restraint */
+.summary-label{font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-faint);padding:var(--s-6) 0 var(--s-12)}
+
+/* Streak area (Clawd 제거) — 좌측 단독. 우측은 generous space */
+.streak-area{margin-bottom:var(--s-16)}
+.streak-num{font-family:var(--font-display);font-size:56px;font-weight:600;color:var(--text-strong);line-height:1;letter-spacing:-0.03em;position:relative;display:inline-block}
+@media(min-width:600px){.streak-num{font-size:64px}}
+.streak-num::after{content:'';position:absolute;inset:-14px;background:radial-gradient(circle,rgba(217,119,87,0.15) 0%,transparent 70%);border-radius:50%;z-index:-1}
+.streak-unit{font-family:var(--font-display);font-size:16px;font-weight:400;color:var(--text-muted);margin-left:5px}
+.streak-msg{font-size:13px;color:var(--text-muted);margin-top:var(--s-3)}
+
+/* Session Stats — 2순위 */
+.session-stats{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:var(--s-12);gap:var(--s-4);flex-wrap:wrap}
+.time-block{flex-shrink:0}
+.time-val{font-family:var(--font-display);font-size:32px;font-weight:600;color:var(--text-strong);line-height:1}
+.time-unit{font-family:var(--font-display);font-size:14px;font-weight:400;color:var(--text-muted);margin-left:3px}
+.time-label{font-size:12px;color:var(--text-faint);margin-top:var(--s-2)}
+.review-block{display:flex;gap:var(--s-6)}
+.review-val{font-family:var(--font-display);font-size:20px;font-weight:600;line-height:1}
+.review-val.got{color:var(--sage)}
+.review-val.hmm{color:var(--amber)}
+.review-val.no{color:var(--danger)}
+.review-label{font-family:var(--font-display);font-size:11px;font-weight:500;color:var(--text-faint);margin-top:var(--s-1)}
+
+/* Minor stats — 3순위 */
+.minor-stats{display:flex;gap:var(--s-6);flex-wrap:wrap;margin-bottom:var(--s-12);font-family:var(--font-display);font-size:13px;color:var(--text-faint)}
+.minor-stats .val{font-weight:600;color:var(--text-muted)}
+
+/* Pronunciation — 한 줄 */
+.pron-line{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap;margin-bottom:var(--s-12)}
+.pron-score{font-family:var(--font-display);font-size:20px;font-weight:600;color:var(--accent);line-height:1}
+.pron-score.sage{color:var(--sage)}
+.pron-score.amber{color:var(--amber)}
+.pron-score.danger{color:var(--danger)}
+.pron-label{font-size:13px;color:var(--text-faint)}
+.weak-tag{font-family:var(--font-display);font-size:12px;font-weight:600;color:var(--danger);padding:2px var(--s-2);border:1px solid rgba(180,77,59,0.2);border-radius:var(--r-pill)}
+
+/* CTA */
+.spacer{flex:1;min-height:var(--s-8)}
+.summary-cta{padding:0 0 var(--s-4);display:flex;flex-direction:column;gap:var(--s-2)}
+.btn-confirm{display:block;width:100%;font-family:var(--font-display);font-size:16px;font-weight:600;color:#fff;background:var(--accent);border:none;border-radius:var(--r-sm);padding:var(--s-4) var(--s-6);cursor:pointer;text-align:center;box-shadow:0 2px 8px rgba(217,119,87,0.25);transition:background 150ms var(--ease);min-height:52px}
+@media(hover:hover){.btn-confirm:hover{background:var(--accent-hover)}}
+@media(min-width:1024px){.btn-confirm{max-width:320px}}
+.btn-stats{display:block;width:100%;font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-muted);background:transparent;border:none;border-radius:var(--r-sm);padding:var(--s-3) var(--s-6);cursor:pointer;text-align:center;min-height:44px;transition:color 150ms var(--ease)}
+@media(hover:hover){.btn-stats:hover{color:var(--text)}}
+@media(min-width:1024px){.btn-stats{max-width:320px}}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(12px);animation:revealUp .5s var(--ease) forwards}
+.r1{animation-delay:0ms}.r2{animation-delay:50ms}.r3{animation-delay:100ms}.r4{animation-delay:150ms}.r5{animation-delay:200ms}.r6{animation-delay:250ms}
+@keyframes revealUp{to{opacity:1;transform:translateY(0)}}
+</style>
+</head>
+<body>
+
+<div class="pv-bar">
+  <button class="pv-btn active" onclick="ss('normal')">Normal</button>
+  <button class="pv-btn" onclick="ss('free')">Free Review</button>
+  <button class="pv-btn" onclick="ss('milestone')">Milestone</button>
+</div>
+
+<div class="app">
+  <div class="pv-spacer"></div>
+
+  <div class="summary-label reveal r1" id="title">학습 완료</div>
+
+  <!-- Streak (Clawd 제거됨 — 좌측 단독) -->
+  <div class="streak-area reveal r2">
+    <span class="streak-num" id="streakNum">13</span><span class="streak-unit" id="streakUnit">days</span>
+    <div class="streak-msg" id="streakMsg">연속 학습 기록 갱신</div>
+  </div>
+
+  <!-- Session Stats -->
+  <div class="session-stats reveal r3">
+    <div class="time-block">
+      <span class="time-val" id="timeVal">18</span><span class="time-unit">min</span>
+      <div class="time-label">학습 시간</div>
+    </div>
+    <div class="review-block" id="reviewBlock">
+      <div><div class="review-val got" id="gotN">6</div><div class="review-label">Got it</div></div>
+      <div><div class="review-val hmm" id="hmmN">1</div><div class="review-label">Hmm</div></div>
+      <div><div class="review-val no"  id="noN">1</div><div class="review-label">No</div></div>
+    </div>
+  </div>
+
+  <!-- Minor -->
+  <div class="minor-stats reveal r4" id="minorStats">
+    <span><span class="val" id="newN">3</span> 신규</span>
+    <span><span class="val" id="tryN">15</span> 발화</span>
+    <span><span class="val" id="passN">11</span> 통과</span>
+  </div>
+
+  <!-- Pronunciation -->
+  <div class="pron-line reveal r5">
+    <span class="pron-score" id="pronAvg">76</span>
+    <span class="pron-label">평균</span>
+    <span class="weak-tag">/ɹ/</span>
+    <span class="weak-tag">/θ/</span>
+    <span class="weak-tag">/ʌ/</span>
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="summary-cta reveal r6">
+    <button class="btn-confirm" id="btnDone">확인 · 홈으로</button>
+    <button class="btn-stats" id="btnStats">이번 달 통계 보기</button>
+  </div>
+</div>
+
+<script>
+/* 세션에서 넘어온 data 읽기 */
+const raw = sessionStorage.getItem('studySummary');
+let data;
+try { data = JSON.parse(raw) || null; } catch { data = null; }
+if (!data) {
+  data = { lang:'en', mode:'normal', durationSec:18*60, newCount:3, judged:{got:6,hmm:1,no:1}, tryCount:15, passCount:11, total:8 };
+}
+
+function render() {
+  const mins = Math.max(1, Math.round(data.durationSec / 60));
+  document.getElementById('timeVal').textContent = mins;
+  document.getElementById('newN').textContent = data.newCount;
+  document.getElementById('gotN').textContent = data.judged.got;
+  document.getElementById('hmmN').textContent = data.judged.hmm;
+  document.getElementById('noN').textContent  = data.judged.no;
+  document.getElementById('tryN').textContent = data.tryCount;
+  document.getElementById('passN').textContent = data.passCount;
+
+  // Wave 11.28 — 평균 발음 점수 (spec §10-1).
+  // 우선순위: data.pronAvg (SPA 모드 finish() 가 pronunciationLog 집계) > 통과율 fallback (mocks 단독 진입).
+  // tryCount 0 시 점수 hide ("—") — 발화 없으면 평균 의미 없음.
+  const avgEl = document.getElementById('pronAvg');
+  avgEl.className = 'pron-score';
+  if (data.tryCount === 0) {
+    avgEl.textContent = '—';
+  } else {
+    const avg = (typeof data.pronAvg === 'number')
+      ? data.pronAvg
+      : Math.round((data.passCount / data.tryCount) * 80 + 20);
+    avgEl.textContent = avg;
+    const cls = avg >= 90 ? 'sage' : avg >= 70 ? '' : avg >= 50 ? 'amber' : 'danger';
+    if (cls) avgEl.classList.add(cls);
+  }
+
+  // Wave 11.28 — 이번 세션 약점 음소 Top 3 (spec §10-1).
+  // data.weakTop3 (SPA 모드) 우선. 부재 시 mocks 하드코딩 weak-tag 그대로 (시안용).
+  // tryCount 0 시 모든 weak-tag hide.
+  const pronLine = document.querySelector('.pron-line');
+  if (data.tryCount === 0) {
+    pronLine.querySelectorAll('.weak-tag').forEach(t => t.remove());
+  } else if (Array.isArray(data.weakTop3)) {
+    pronLine.querySelectorAll('.weak-tag').forEach(t => t.remove());
+    for (const sym of data.weakTop3.slice(0, 3)) {
+      const tag = document.createElement('span');
+      tag.className = 'weak-tag';
+      tag.textContent = sym;
+      pronLine.appendChild(tag);
+    }
+  }
+}
+render();
+
+function ss(k) {
+  document.querySelectorAll('.pv-btn').forEach(b => b.classList.remove('active'));
+  const lbl = { normal:'Normal', free:'Free Review', milestone:'Milestone' }[k];
+  [...document.querySelectorAll('.pv-btn')].forEach(b => { if (b.textContent === lbl) b.classList.add('active'); });
+
+  const title = document.getElementById('title');
+  const msg = document.getElementById('streakMsg');
+  const sn = document.getElementById('streakNum');
+  const minor = document.getElementById('minorStats');
+  const review = document.getElementById('reviewBlock');
+
+  if (k === 'normal') {
+    title.textContent = '학습 완료';
+    sn.textContent = '13'; msg.textContent = '연속 학습 기록 갱신';
+    minor.style.display = ''; review.style.display = '';
+  } else if (k === 'free') {
+    title.textContent = '자유 복습 완료';
+    sn.textContent = '13'; msg.textContent = '스트릭 유지';
+    minor.style.display = ''; review.style.display = '';
+  } else if (k === 'milestone') {
+    title.textContent = '학습 완료';
+    sn.textContent = '7'; msg.textContent = '7일 연속, 첫 주간 달성';
+    minor.style.display = ''; review.style.display = '';
+  }
+}
+
+document.getElementById('btnDone').addEventListener('click', () => {
+  // session 이 넘겨준 returnTo 에 따라 원래 화면으로 복귀 (home · stats · stats 문장목록 탭).
+  const returnTo = data.returnTo || 'home';
+  sessionStorage.removeItem('studySummary');
+  sessionStorage.removeItem('studyReturnTo');
+  if (returnTo === 'stats') window.location.href = 'stats.html';
+  else if (returnTo === 'sentList') window.location.href = 'stats.html?tab=sent';
+  else window.location.href = 'home.html';
+});
+document.getElementById('btnStats').addEventListener('click', () => {
+  window.location.href = 'stats.html';
+});
+</script>
+</body>
+</html>

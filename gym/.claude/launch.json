@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "gym-mocks",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5174", "--directory", "mocks"],
+      "port": 5174
+    },
+    {
+      "name": "gym-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
+      "port": 5176
+    },
+    {
+      "name": "gym-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["preview", "--host", "127.0.0.1", "--port", "4173"],
+      "port": 4173
+    }
+  ]
+}

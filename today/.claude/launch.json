@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "today-mocks",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8085"],
+      "cwd": "/Users/gio_c/apps/today",
+      "port": 8085
+    },
+    {
+      "name": "today-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "cwd": "/Users/gio_c/apps/today",
+      "port": 5175
+    },
+    {
+      "name": "today-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["preview"],
+      "cwd": "/Users/gio_c/apps/today",
+      "port": 4175
+    }
+  ]
+}

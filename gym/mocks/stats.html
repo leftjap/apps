@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Gym · 통계</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f5; --surface: #ffffff; --bg-warm: #f5f0ea;
+    --text: #3d3929; --text-strong: #141413; --text-muted: #8a8475; --text-faint: #b5ad9e;
+    --accent: #d97757; --accent-hover: #c4623f; --accent-rgb: 217, 119, 87;
+    --sage: #788c5d; --blue: #6a9bcc; --amber: #c4973b; --danger: #b44d3b;
+    --border: #e8e4dc; --border-light: #f0ece4;
+    --font-display: 'Poppins', system-ui, sans-serif;
+    --font-body: 'Noto Sans KR', system-ui, sans-serif;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+    --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+    --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+    --shadow-lg: 0 4px 12px rgba(20,20,19,0.06), 0 24px 48px rgba(55,45,30,0.08);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-body); color: var(--text); background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 256px 256px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .phone {
+    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
+    display: flex; flex-direction: column; position: relative;
+    overflow: hidden; background: var(--bg);
+  }
+  @media (min-width: 376px) {
+    body { padding: var(--s-8) 0; }
+    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
+  }
+  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
+
+  /* HEADER */
+  .hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--s-4) var(--s-5) var(--s-2);
+    flex-shrink: 0;
+  }
+  .hdr-title {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+  }
+  .hdr-nav { display: flex; align-items: center; gap: var(--s-4); }
+  .hdr-link {
+    font-family: var(--font-display);
+    font-size: var(--fs-md); font-weight: 500;
+    color: var(--text-muted);
+    background: none; border: none; cursor: pointer;
+    padding: var(--s-1) var(--s-2);
+    letter-spacing: 0.01em;
+    border-radius: var(--r-sm);
+    transition: background 150ms var(--ease), color 150ms var(--ease);
+  }
+  .hdr-link.is-active { color: var(--text-strong); font-weight: 600; }
+  .hdr-link:active { background: var(--bg-warm); }
+
+  .screen {
+    flex: 1;
+    display: flex; flex-direction: column;
+    padding: 0 var(--s-5);
+    padding-bottom: calc(var(--s-6) + var(--safe-bottom));
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* ============ MONTH HERO — 볼륨 + 비교 ============ */
+  .month-hero {
+    margin-top: var(--s-6);
+    padding-bottom: var(--s-5);
+    flex-shrink: 0;
+  }
+  .mh-label {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+    margin-bottom: var(--s-2);
+  }
+  .mh-display {
+    display: flex; align-items: baseline;
+    position: relative;
+  }
+  .mh-num {
+    font-family: var(--font-display);
+    font-size: 48px; font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+  }
+  .mh-num::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 180px; height: 180px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.16) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .mh-unit {
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 400;
+    color: var(--text-muted);
+    margin-left: var(--s-2);
+    line-height: 1;
+  }
+  .mh-compare {
+    display: flex; gap: var(--s-4);
+    margin-top: var(--s-3);
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .mh-compare .delta {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+  .mh-compare .delta.up { color: var(--sage); }
+  .mh-compare .delta.down { color: var(--amber); }
+
+  /* ============ MONTH NAV ============ */
+  .month-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 var(--s-2);
+    margin-bottom: var(--s-3);
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    width: 32px; height: 32px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: none; background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: background 150ms var(--ease), color 150ms var(--ease);
+  }
+  .nav-btn:active { background: var(--bg-warm); color: var(--text-strong); }
+  .nav-btn:disabled {
+    color: var(--text-faint);
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+  .nav-btn:disabled:active { background: none; }
+  .nav-btn svg { width: 16px; height: 16px; }
+  .month-label {
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: 0.02em;
+  }
+
+  /* ============ MONTHLY CALENDAR — Typography-driven ============ */
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 0 var(--s-1);
+    margin-bottom: var(--s-2);
+    flex-shrink: 0;
+  }
+  .cal-weekday {
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 500;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-align: center;
+    padding: var(--s-1) 0;
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1px;
+    padding: 0 var(--s-1);
+    flex-shrink: 0;
+  }
+  .cal-cell {
+    aspect-ratio: 1 / 1.1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2px;
+    background: none; border: none;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    position: relative;
+    padding: 2px;
+    transition: background 120ms var(--ease);
+    font-family: inherit;
+  }
+  .cal-cell:active { background: var(--bg-warm); }
+  .cal-cell.outside { visibility: hidden; }
+  .cal-num {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 300;
+    color: var(--text-faint);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  /* 운동 강도 — Typography-driven (컬러 도트 금지) */
+  .cal-cell.w-low  .cal-num { color: var(--text); font-weight: 400; font-size: 14px; }
+  .cal-cell.w-med  .cal-num { color: var(--text-strong); font-weight: 500; font-size: 16px; }
+  .cal-cell.w-high .cal-num { color: var(--text-strong); font-weight: 600; font-size: 18px; }
+  /* 부위 약어 (운동한 날 하단) */
+  .cal-tag {
+    font-family: var(--font-body);
+    font-size: 9px;
+    color: var(--text-muted);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .cal-cell.today .cal-num::after {
+    content: '';
+    position: absolute;
+    bottom: 2px; left: 50%;
+    width: 14px; height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    transform: translateX(-50%);
+  }
+
+  /* ============ 주/월 비교 — 막대 그래프 ============ */
+  .compare-section {
+    margin: var(--s-6) var(--s-5) 0;
+    padding: var(--s-4) var(--s-5) var(--s-5);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-lg);
+    flex-shrink: 0;
+  }
+  .cs-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: var(--s-5);
+  }
+  .cs-title {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .cs-groups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-5);
+  }
+  .cs-group { display: flex; flex-direction: column; gap: var(--s-2); }
+  .cs-group-label {
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 500;
+    color: var(--text-faint);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .cs-bars { display: flex; flex-direction: column; gap: var(--s-2); }
+  .cs-bar-row {
+    display: grid;
+    grid-template-columns: 38px 1fr auto;
+    align-items: center;
+    gap: var(--s-3);
+  }
+  .cs-bar-period {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: -0.01em;
+  }
+  .cs-bar-row.current .cs-bar-period { color: var(--text-strong); font-weight: 500; }
+  .cs-bar-track {
+    height: 6px;
+    background: var(--bg-warm);
+    border-radius: var(--r-pill);
+    overflow: hidden;
+    position: relative;
+  }
+  .cs-bar-fill {
+    height: 100%;
+    border-radius: var(--r-pill);
+    background: var(--text-faint);
+    transform-origin: left;
+    transition: transform 400ms var(--ease-out);
+  }
+  .cs-bar-row.current .cs-bar-fill { background: var(--accent); }
+  .cs-bar-val {
+    display: inline-flex; align-items: baseline; gap: var(--s-2);
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .cs-bar-volume {
+    font-size: 13px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+  }
+  .cs-bar-delta {
+    font-size: 11px; font-weight: 500;
+    color: var(--sage);
+    letter-spacing: 0.02em;
+  }
+  .cs-bar-delta.down { color: var(--amber); }
+  .cs-bar-delta.flat { color: var(--text-faint); }
+
+  /* ============ Day detail sheet ============ */
+  .sheet-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(20,20,19,0.32);
+    opacity: 0; pointer-events: none;
+    transition: opacity 200ms var(--ease);
+    z-index: 50;
+  }
+  .sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    transform: translateY(100%);
+    background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transition: transform 260ms var(--ease-out);
+    padding: var(--s-4) var(--s-5) calc(var(--s-5) + var(--safe-bottom));
+    z-index: 60;
+    max-height: 70%;
+    display: flex; flex-direction: column;
+  }
+  .sheet.is-open { transform: translateY(0); }
+  .sheet-handle {
+    width: 36px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto var(--s-4);
+    flex-shrink: 0;
+  }
+  .sheet-date {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-bottom: var(--s-1);
+    text-transform: uppercase;
+  }
+  .sheet-title {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.015em;
+    margin-bottom: var(--s-3);
+  }
+  .sheet-stats {
+    display: flex; gap: var(--s-5);
+    padding-bottom: var(--s-3);
+    margin-bottom: var(--s-3);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .ss-item { display: flex; flex-direction: column; gap: 2px; }
+  .ss-val {
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ss-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .sheet-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .sheet-ex {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .sheet-ex:last-child { border-bottom: none; }
+  .sheet-ex .name {
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-strong);
+  }
+  .sheet-ex .sets {
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ============ DELETE SHEET (Wave C) ============
+     캘린더 꾹누르기 → 기록 삭제 확인. 기존 상세 sheet 와 CSS 독립. */
+  .del-sheet-title {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: var(--s-3);
+    text-align: left;
+  }
+  .del-sheet-action {
+    display: block; width: 100%;
+    background: none; border: none;
+    padding: var(--s-4) 0;
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 500;
+    color: var(--danger);
+    cursor: pointer;
+    text-align: left;
+    transition: color 120ms var(--ease);
+  }
+  .del-sheet-action:active { color: var(--accent-hover); }
+  .del-sheet-cancel {
+    margin-top: var(--s-3);
+    width: 100%;
+    background: var(--bg-warm);
+    border: none;
+    border-radius: var(--r-sm);
+    padding: var(--s-3);
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  /* reveal */
+  .rv { opacity: 0; transform: translateY(12px); animation: rvUp 0.5s var(--ease-out) forwards; }
+  .rv-1 { animation-delay: 0ms; } .rv-2 { animation-delay: 50ms; }
+  .rv-3 { animation-delay: 100ms; } .rv-4 { animation-delay: 150ms; }
+  @keyframes rvUp { to { opacity: 1; transform: translateY(0); } }
+
+  /* toast */
+  .toast {
+    position: absolute;
+    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
+    transform: translate(-50%, 20px);
+    background: rgba(20,20,19,0.9); color: #fff;
+    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
+    font-family: var(--font-body); font-size: 12px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+    z-index: 80; box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <div class="safe-top"></div>
+
+  <header class="hdr rv rv-1">
+    <h1 class="hdr-title">통계</h1>
+    <nav class="hdr-nav">
+      <button class="hdr-link" data-nav="home">홈</button>
+      <button class="hdr-link" data-nav="admin">관리</button>
+    </nav>
+  </header>
+
+  <main class="screen">
+
+    <!-- 월 이동 nav -->
+    <nav class="month-nav rv rv-2">
+      <button class="nav-btn" data-month="-1" aria-label="이전 달">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 3 5 8 10 13"/></svg>
+      </button>
+      <span class="month-label" id="monthLabel"></span>
+      <button class="nav-btn" data-month="1" aria-label="다음 달">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 3 11 8 6 13"/></svg>
+      </button>
+    </nav>
+
+    <!-- 주 헤더 -->
+    <div class="cal-weekdays rv rv-2">
+      <span class="cal-weekday">월</span>
+      <span class="cal-weekday">화</span>
+      <span class="cal-weekday">수</span>
+      <span class="cal-weekday">목</span>
+      <span class="cal-weekday">금</span>
+      <span class="cal-weekday">토</span>
+      <span class="cal-weekday">일</span>
+    </div>
+
+    <!-- 월간 캘린더 -->
+    <div class="cal-grid rv rv-3" id="calGrid"></div>
+
+    <!-- 주/월 비교 — 막대 그래프 + 숫자 -->
+    <section class="compare-section rv rv-4">
+      <div class="cs-head">
+        <span class="cs-title">볼륨 비교</span>
+      </div>
+      <div class="cs-groups">
+        <!-- 주 -->
+        <div class="cs-group">
+          <span class="cs-group-label">주</span>
+          <div class="cs-bars">
+            <div class="cs-bar-row current">
+              <span class="cs-bar-period">이번</span>
+              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(1.0)"></span></span>
+              <span class="cs-bar-val">
+                <span class="cs-bar-volume">12,450 kg</span>
+                <span class="cs-bar-delta">+8%</span>
+              </span>
+            </div>
+            <div class="cs-bar-row">
+              <span class="cs-bar-period">지난</span>
+              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(0.925)"></span></span>
+              <span class="cs-bar-val">
+                <span class="cs-bar-volume">11,520 kg</span>
+                <span class="cs-bar-delta down">−3%</span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <!-- 월 -->
+        <div class="cs-group">
+          <span class="cs-group-label">월</span>
+          <div class="cs-bars">
+            <div class="cs-bar-row current">
+              <span class="cs-bar-period">이번</span>
+              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(1.0)"></span></span>
+              <span class="cs-bar-val">
+                <span class="cs-bar-volume">48,320 kg</span>
+                <span class="cs-bar-delta">+12%</span>
+              </span>
+            </div>
+            <div class="cs-bar-row">
+              <span class="cs-bar-period">지난</span>
+              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(0.893)"></span></span>
+              <span class="cs-bar-val">
+                <span class="cs-bar-volume">43,140 kg</span>
+                <span class="cs-bar-delta flat">±0%</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 날짜 상세 바텀시트 -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <aside class="sheet" id="sheet" role="dialog" aria-label="날짜 상세">
+    <div class="sheet-handle"></div>
+    <div class="sheet-date" id="sheetDate">4월 21일 · 화</div>
+    <h3 class="sheet-title" id="sheetTitle">가슴 · 팔</h3>
+    <div class="sheet-stats">
+      <div class="ss-item"><span class="ss-val" id="ssVol">8,240 kg</span><span class="ss-label">볼륨</span></div>
+      <div class="ss-item"><span class="ss-val" id="ssMin">58분</span><span class="ss-label">시간</span></div>
+      <div class="ss-item"><span class="ss-val" id="ssPR">2</span><span class="ss-label">PR</span></div>
+    </div>
+    <div class="sheet-list" id="sheetList"></div>
+  </aside>
+
+  <!-- 캘린더 날짜 꾹누르기 → 기록 삭제 바텀시트 (Wave C) -->
+  <div class="sheet-backdrop" id="delDayBackdrop"></div>
+  <aside class="sheet" id="delDaySheet" role="dialog" aria-label="기록 삭제">
+    <div class="sheet-handle"></div>
+    <div class="del-sheet-title" id="delDayTitle">4월 22일 · 화 기록</div>
+    <button class="del-sheet-action" data-del="confirm">기록 삭제</button>
+    <button class="del-sheet-cancel" data-del="cancel">취소</button>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============ MONTH DATA — today 기준 동적 init ============
+   Wave 11.6C: workouts 는 Dexie 에서 loadMonthWorkouts() 로 채움.
+   Wave B (2026-05-05): year/month/today/startDow/daysInMonth 박힘 제거 → today 기준 동적.
+   mocks 허브(iframe · window.gymQueries 없음)에선 FALLBACK_WORKOUTS 사용 (4월 한정). */
+const _t = new Date();
+const MONTH = {
+  year: _t.getFullYear(),
+  month: _t.getMonth() + 1,
+  daysInMonth: new Date(_t.getFullYear(), _t.getMonth() + 1, 0).getDate(),
+  startDow: (new Date(_t.getFullYear(), _t.getMonth(), 1).getDay() + 6) % 7, // 0=월
+  today: _t.getDate(),
+  workouts: {},
+};
+
+/* iframe / Dexie 없음 환경 fallback — stats.html Wave 11.5 하드코딩 원본 */
+const FALLBACK_WORKOUTS = {
+  2:  { tag: '등',   vol: 5240, min: 52, pr: 0, level: 'med',  ex: [{n:'바벨 로우', s:'5세트 · 1,250kg'},{n:'랫 풀다운', s:'4세트 · 900kg'},{n:'덤벨 로우', s:'3세트 · 720kg'}] },
+  3:  { tag: '팔',   vol: 2840, min: 28, pr: 0, level: 'low',  ex: [{n:'바이셉 컬', s:'4세트 · 320kg'}, {n:'해머 컬', s:'3세트 · 240kg'}] },
+  5:  { tag: '가',   vol: 7820, min: 55, pr: 1, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 900kg'},{n:'인클라인', s:'4세트 · 640kg'}] },
+  7:  { tag: '하',   vol: 9640, min: 64, pr: 2, level: 'high', ex: [{n:'스쿼트', s:'5세트 · 1,450kg'},{n:'데드리프트', s:'4세트 · 1,600kg'}] },
+  8:  { tag: '어',   vol: 3920, min: 38, pr: 0, level: 'low',  ex: [{n:'숄더 프레스', s:'4세트 · 560kg'}] },
+  10: { tag: '등',   vol: 6140, min: 48, pr: 0, level: 'med',  ex: [{n:'바벨 로우', s:'5세트 · 1,150kg'}] },
+  11: { tag: '가',   vol: 7260, min: 54, pr: 0, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 880kg'}] },
+  13: { tag: '유',   vol: 0,    min: 30, pr: 0, level: 'low',  ex: [{n:'트레드밀', s:'30분 · 3.2km'}] },
+  14: { tag: '팔',   vol: 3480, min: 32, pr: 1, level: 'low',  ex: [{n:'바이셉 컬', s:'4세트 · 360kg'}] },
+  16: { tag: '하',   vol: 8820, min: 58, pr: 0, level: 'high', ex: [{n:'스쿼트', s:'5세트 · 1,380kg'}] },
+  18: { tag: '가',   vol: 8120, min: 60, pr: 2, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 950kg'}, {n:'인클라인', s:'4세트 · 680kg'}, {n:'덤벨 플라이', s:'3세트 · 240kg'}] },
+  19: { tag: '등',   vol: 5640, min: 46, pr: 0, level: 'med',  ex: [{n:'바벨 로우', s:'5세트 · 1,080kg'}] },
+  21: { tag: '가',   vol: 8240, min: 58, pr: 2, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 950kg'},{n:'인클라인', s:'4세트 · 680kg'},{n:'덤벨 플라이', s:'4세트 · 280kg'}] },
+  22: { tag: '가·어', vol: 6820, min: 52, pr: 1, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 850kg'},{n:'숄더 프레스', s:'4세트 · 540kg'}] },
+};
+
+/** session.blocks → MONTH.workouts[d] 구조 변환 */
+function sessionToWorkoutEntry(session) {
+  const exercises = (session.blocks || []).flatMap(b => b.exercises || []);
+  const ex = exercises.map(e => {
+    const firstSet = e.sets?.[0];
+    if (firstSet && firstSet.duration != null) {
+      const min = Math.round(firstSet.duration / 60);
+      const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
+      return { n: e.exerciseName, s: `${min}분${km}` };
+    }
+    const total = (e.sets || []).reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
+    return { n: e.exerciseName, s: `${e.sets?.length || 0}세트 · ${total.toLocaleString()}kg` };
+  });
+  const vol = session.totalVolume || 0;
+  const level = vol < 3000 ? 'low' : vol < 6000 ? 'med' : 'high';
+  return {
+    tag: session.tags?.[0] || '',
+    vol,
+    min: session.durationMin || 0,
+    pr: 0,  // 실 PR 계산은 Wave 11.7 (spec §6-11)
+    level,
+    ex,
+    sessionId: session.id,
+  };
+}
+
+/** Dexie 에서 현재 MONTH.year/month 범위 세션 로드 → MONTH.workouts 갱신 */
+async function loadMonthWorkouts() {
+  if (!window.gymQueries) {
+    /* iframe 허브 등 Dexie 접근 불가 — fallback (현재 월만 유효, 다른 월은 빈 객체) */
+    MONTH.workouts = (MONTH.year === 2026 && MONTH.month === 4) ? { ...FALLBACK_WORKOUTS } : {};
+    return;
+  }
+  try {
+    const { from, to } = window.gymQueries.monthRangeISO(MONTH.year, MONTH.month);
+    const sessions = await window.gymQueries.getSessionsByRange(from, to);
+    const map = {};
+    /* Wave 11.14 — SPA 어댑터 우선 (spec §12 형식 + 영문→한국어 매핑). 미노출 시 mocks fallback. */
+    const toEntry = window.gymStats?.sessionToWorkoutEntry || sessionToWorkoutEntry;
+    sessions.forEach(s => {
+      const day = +s.date.slice(-2);  // YYYY-MM-DD → DD
+      map[day] = toEntry(s);
+    });
+    MONTH.workouts = map;
+  } catch (err) {
+    console.warn('[stats] Dexie monthWorkouts fetch failed, using fallback', err);
+    MONTH.workouts = (MONTH.year === 2026 && MONTH.month === 4) ? { ...FALLBACK_WORKOUTS } : {};
+  }
+}
+
+function renderCal() {
+  const grid = document.getElementById('calGrid');
+  const cells = [];
+  // outside leading
+  for (let i = 0; i < MONTH.startDow; i++) {
+    cells.push(`<div class="cal-cell outside"></div>`);
+  }
+  for (let d = 1; d <= MONTH.daysInMonth; d++) {
+    const w = MONTH.workouts[d];
+    const classes = [
+      'cal-cell',
+      w ? 'worked' : '',
+      w ? 'w-' + w.level : '',
+      d === MONTH.today ? 'today' : ''
+    ].filter(Boolean).join(' ');
+    /* Wave 11.6.1: 주간 캘린더(home)와 일관성 위해 부위 약어 표시. 강도는 여전히 typography-driven.
+       상세(볼륨·종목)는 날짜 탭 → 바텀시트 */
+    const tag = w ? `<span class="cal-tag">${w.tag}</span>` : '';
+    cells.push(`
+      <button class="${classes}" data-day="${d}" type="button">
+        <span class="cal-num">${d}</span>
+        ${tag}
+      </button>
+    `);
+  }
+  grid.innerHTML = cells.join('');
+}
+
+function updateMonthLabel() {
+  document.getElementById('monthLabel').textContent = `${MONTH.year}년 ${MONTH.month}월`;
+  // 미래 월 버튼 비활성화 — 오늘(2026-04) 이후 월은 이동 불가
+  const TODAY_Y = 2026, TODAY_M = 4;
+  const isFuture = (MONTH.year > TODAY_Y) || (MONTH.year === TODAY_Y && MONTH.month >= TODAY_M);
+  document.querySelector('[data-month="1"]').disabled = isFuture;
+}
+
+/* Day sheet */
+const backdrop = document.getElementById('sheetBackdrop');
+const sheet = document.getElementById('sheet');
+function openDay(d) {
+  const w = MONTH.workouts[d];
+  if (!w) {
+    toast(`${MONTH.month}월 ${d}일 · 쉼`);
+    return;
+  }
+  document.getElementById('sheetDate').textContent =
+    `${MONTH.month}월 ${d}일 · ${['월','화','수','목','금','토','일'][(MONTH.startDow + d - 1) % 7]}`;
+  const partMap = { '가': '가슴', '등': '등', '어': '어깨', '하': '하체', '팔': '팔', '유': '유산소', '가·어': '가슴 · 어깨' };
+  document.getElementById('sheetTitle').textContent = partMap[w.tag] || w.tag;
+  document.getElementById('ssVol').textContent = w.vol.toLocaleString() + ' kg';
+  document.getElementById('ssMin').textContent = w.min + '분';
+  document.getElementById('ssPR').textContent = w.pr;
+  document.getElementById('sheetList').innerHTML = w.ex.map(e => `
+    <div class="sheet-ex">
+      <span class="name">${e.n}</span>
+      <span class="sets">${e.s}</span>
+    </div>
+  `).join('');
+  backdrop.classList.add('is-open');
+  sheet.classList.add('is-open');
+}
+function closeSheet() {
+  backdrop.classList.remove('is-open');
+  sheet.classList.remove('is-open');
+}
+
+document.getElementById('calGrid').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-day]');
+  if (!b) return;
+  openDay(+b.dataset.day);
+});
+backdrop.addEventListener('click', closeSheet);
+
+/* ============ 캘린더 꾹누르기 → 기록 삭제 (Wave C) ============
+   renderCal 이 innerHTML 재생성하므로 container delegation 패턴.
+   짧은 탭 = 기존 openDay (상세), 500ms+ = 삭제 바텀시트 */
+function bindCalendarLongPress(container, onLongPress, ms = 500) {
+  let timer = null, startX = 0, startY = 0, currentEl = null, fired = false, cancelled = false;
+  const clear = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (currentEl) currentEl.style.transform = '';
+    currentEl = null;
+  };
+  container.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('[data-day]');
+    if (!el || el.classList.contains('outside')) return;
+    currentEl = el;
+    cancelled = false; fired = false;
+    startX = e.clientX; startY = e.clientY;
+    el.style.transition = 'transform 200ms var(--ease)';
+    timer = setTimeout(() => {
+      if (cancelled || !currentEl) return;
+      fired = true;
+      const el2 = currentEl;
+      el2.style.transform = 'scale(0.96)';
+      if (navigator.vibrate) navigator.vibrate(12);
+      onLongPress(+el2.dataset.day);
+      setTimeout(() => { el2.style.transform = ''; }, 200);
+    }, ms);
+  });
+  container.addEventListener('pointermove', (e) => {
+    if (!currentEl) return;
+    if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+      cancelled = true; clear();
+    }
+  });
+  container.addEventListener('pointerup', clear);
+  container.addEventListener('pointercancel', clear);
+  /* 롱프레스 발동 시 capture phase 로 delegation click 차단 */
+  container.addEventListener('click', (e) => {
+    if (fired) { e.stopPropagation(); e.preventDefault(); fired = false; }
+  }, true);
+}
+
+const delDayBackdrop = document.getElementById('delDayBackdrop');
+const delDaySheet = document.getElementById('delDaySheet');
+let _pendingDelDay = null; // Wave 11.15 — confirm 시 활용
+function openDelDaySheet(d) {
+  _pendingDelDay = d;
+  const wd = ['월','화','수','목','금','토','일'][(MONTH.startDow + d - 1) % 7];
+  document.getElementById('delDayTitle').textContent = `${MONTH.month}월 ${d}일 · ${wd} 기록`;
+  delDayBackdrop.classList.add('is-open');
+  delDaySheet.classList.add('is-open');
+}
+function closeDelDaySheet() {
+  delDayBackdrop.classList.remove('is-open');
+  delDaySheet.classList.remove('is-open');
+}
+delDayBackdrop.addEventListener('click', closeDelDaySheet);
+delDaySheet.addEventListener('click', async (e) => {
+  const act = e.target.closest('[data-del]');
+  if (!act) return;
+  const type = act.dataset.del;
+  const day = _pendingDelDay;
+  closeDelDaySheet();
+  if (type !== 'confirm') return;
+  toast('기록 삭제됨');
+  // Wave 11.15 — Dexie 삭제 + 재렌더 (mocks IIFE 격리 우회). day 외 sessionId 우선.
+  if (window.gymStats?.deleteSessionByDay && Number.isFinite(day)) {
+    try {
+      const sessionId = MONTH.workouts?.[day]?.sessionId || null;
+      await window.gymStats.deleteSessionByDay(day, sessionId);
+      await loadMonthWorkouts();
+      renderCal();
+      if (window.gymStats?.applyTodayToCalendar) window.gymStats.applyTodayToCalendar();
+    } catch (err) {
+      console.error('[gym] deleteSessionByDay', err);
+    }
+  }
+});
+
+bindCalendarLongPress(document.getElementById('calGrid'), openDelDaySheet);
+
+/* Month nav — Wave 11.6C 월 이동 시 Dexie 재쿼리 */
+document.querySelectorAll('[data-month]').forEach(b => {
+  b.addEventListener('click', async () => {
+    if (b.disabled) return;
+    const dir = +b.dataset.month;
+    MONTH.month += dir;
+    if (MONTH.month > 12) { MONTH.month = 1; MONTH.year++; }
+    if (MONTH.month < 1) { MONTH.month = 12; MONTH.year--; }
+    /* 해당 월의 첫 요일 재계산: getDay (0=일) → (+6)%7 (0=월) */
+    MONTH.startDow = (new Date(MONTH.year, MONTH.month - 1, 1).getDay() + 6) % 7;
+    MONTH.daysInMonth = new Date(MONTH.year, MONTH.month, 0).getDate();
+    MONTH.today = (MONTH.year === 2026 && MONTH.month === 4) ? 22 : -1; // 오늘 표시는 4월에만
+    await loadMonthWorkouts();
+    renderCal();
+    updateMonthLabel();
+    // Wave 11.13 — 월 변경 후 today 클래스 SPA hijack (mocks MONTH.today 4월=22 하드코딩 우회)
+    if (window.gymStats?.applyTodayToCalendar) {
+      window.gymStats.applyTodayToCalendar();
+    }
+    const hasData = Object.keys(MONTH.workouts).length > 0;
+    if (!hasData) toast(`${MONTH.year}년 ${MONTH.month}월 — 기록 없음`);
+  });
+});
+
+document.querySelectorAll('[data-nav]').forEach(b => {
+  b.addEventListener('click', () => {
+    window.location.href = b.dataset.nav === 'home' ? 'home.html' : 'admin.html';
+  });
+});
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1500);
+}
+
+/* Init — Wave 11.6C: Dexie 로드 후 렌더. fire-and-forget (첫 프레임은 빈 그리드 → 100ms 내 갱신) */
+(async () => {
+  await loadMonthWorkouts();
+  renderCal();
+  updateMonthLabel();
+})();
+
+/* Wave 11.11 — SPA hijack: §9-2 볼륨 비교 갱신 (mocks IIFE 격리 우회) */
+if (window.gymStats) {
+  window.gymStats.mountStatsView().catch(e => console.error('[gym] mountStatsView init', e));
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,612 @@
+/**
+ * Wave 11.9.1 — 운동 세션 코어 (시작 + 운동 추가).
+ *
+ * 책임:
+ *   - createEmptySession() — 빈 active 세션 row (id 자동, status='active', startTime=null, blocks/tags 빈)
+ *   - getOrCreateActiveSession() — active 1건 보장
+ *   - addExerciseToActiveSession(exerciseId, part) — single 블록 추가, tags 누적, startTime null 이면 Date.now()
+ *   - mountSessionView() — mocks/session.html 진입 시 #addexChips/#addexList hydrate + click 위임
+ *
+ * SPA hijack 패턴은 Wave 11.7.4b exercises-admin.js 답습.
+ * mocks 의 setActivePart/onAddExItemTap 호출 안 함 (SPA 자체 listener).
+ * mocks 의 window.addExerciseToSession(name) 만 호출 (nav DOM 효과).
+ */
+
+import {
+  getActiveSession,
+  upsertSession,
+  listExercisesForUser,
+  listCustomExercises,
+  toISODate,
+} from '../db/queries.js';
+import { PART_IDS, PARTS, getBuiltinExercise } from '../db/exercises.js';
+import { mapNameToExerciseId } from './session-pr.js';
+
+const VIEW_ATTR = 'data-spa-managed';
+let _activePart = 'chest';
+
+/* ───────────────────────────── Dexie 어댑터 ───────────────────────────── */
+
+/** spec §12 — id='session_<ts>', status='active', startTime=null. blocks/tags 빈. */
+export async function createEmptySession() {
+  const now = Date.now();
+  const session = {
+    id: `session_${now}`,
+    date: toISODate(new Date(now)),
+    startTime: null,
+    endTime: null,
+    blocks: [],
+    tags: [],
+    totalVolume: 0,
+    totalCalories: 0,
+    durationMin: 0,
+    status: 'active',
+  };
+  await upsertSession(session);
+  return session;
+}
+
+/** active 1건 보장 — 있으면 반환, 없으면 createEmptySession. */
+export async function getOrCreateActiveSession() {
+  const existing = await getActiveSession();
+  if (existing) return existing;
+  return createEmptySession();
+}
+
+/**
+ * BUILTIN + customExercises 통합 조회. 누락 시 fallback (defaultSets=5/Reps=10/Weight=0, equipment=null).
+ * 반환: { id, name?, part?, equipment, defaultSets, defaultReps, defaultWeight }
+ */
+export async function getExerciseDefaults(exerciseId) {
+  if (!exerciseId) throw new Error('[gymSession] getExerciseDefaults: exerciseId 누락');
+  const builtin = getBuiltinExercise(exerciseId);
+  if (builtin) return builtin;
+  try {
+    const customs = await listCustomExercises();
+    const c = customs.find((x) => x.id === exerciseId);
+    if (c) return c;
+  } catch (_) { /* db 없음 fallback */ }
+  return {
+    id: exerciseId,
+    equipment: null,
+    defaultSets: 5,
+    defaultReps: 10,
+    defaultWeight: 0,
+  };
+}
+
+/**
+ * spec §6-3-3 ② 우선순위 — 가장 최근 completed 세션에서 같은 운동의 sets 반환.
+ *  - status='completed' 만 (active 는 진행 중).
+ *  - date 내림차순 → 같은 date 는 endTime 내림차순.
+ *  - blocks 의 type='single' && exerciseId 매치 블록의 sets (배열). 매치 없으면 null.
+ *  - circuit 블록은 본 wave 범위 외 (별 wave).
+ */
+export async function getPrevSessionLastSets(exerciseId) {
+  if (!exerciseId) throw new Error('[gymSession] getPrevSessionLastSets: exerciseId 누락');
+  try {
+    const db = (typeof window !== 'undefined' ? window.gymDB : null);
+    if (!db) return null;
+    const rows = await db.sessions.where('status').equals('completed').toArray();
+    if (!rows.length) return null;
+    rows.sort((a, b) => {
+      const da = String(a.date || ''), dbS = String(b.date || '');
+      if (da !== dbS) return da < dbS ? 1 : -1;
+      return (b.endTime || 0) - (a.endTime || 0);
+    });
+    for (const session of rows) {
+      const block = (session.blocks || []).find(
+        (b) => b && b.type === 'single' && b.exerciseId === exerciseId,
+      );
+      if (block && Array.isArray(block.sets) && block.sets.length) {
+        return block.sets;
+      }
+    }
+    return null;
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return null;
+    console.error('[gymSession] getPrevSessionLastSets', e);
+    return null;
+  }
+}
+
+/**
+ * spec §6-3-3 ③ 운동 기본값 prefill — defaultSets 개수만큼 preset:true 객체.
+ *  - cardio (equipment='cardio'): weight=null, reps=null (시간 기반은 별 wave)
+ *  - bodyweight (equipment='bodyweight'): weight=null
+ *  - 일반: weight=defaultWeight, reps=defaultReps
+ */
+export function buildPresetSets(exercise) {
+  if (!exercise) return [];
+  const count = Math.max(1, Number.isFinite(exercise.defaultSets) ? exercise.defaultSets : 5);
+  const reps = Number.isFinite(exercise.defaultReps) ? exercise.defaultReps : 10;
+  const weight = Number.isFinite(exercise.defaultWeight) ? exercise.defaultWeight : 0;
+  const isCardio = exercise.equipment === 'cardio';
+  const isBodyweight = exercise.equipment === 'bodyweight';
+  const sets = [];
+  for (let i = 0; i < count; i += 1) {
+    sets.push({
+      weight: isCardio || isBodyweight ? null : weight,
+      reps: isCardio ? null : reps,
+      done: false,
+      preset: true,
+      pr: false,
+    });
+  }
+  return sets;
+}
+
+/**
+ * 단일 운동 추가. spec §6-1 — 첫 운동 추가 순간이 startTime.
+ *  - 중복 (single 또는 circuit 의 어느 round 라도 exerciseId 매치) → added=false, reason='duplicate'
+ *  - tags 에 part 누적 (중복 방지)
+ *  - sets prefill (§6-3-3 ③) — defaultSets 개수만큼 preset:true
+ *  - 반환: { session, added: boolean, reason? }
+ */
+export async function addExerciseToActiveSession(exerciseId, part) {
+  if (!exerciseId) throw new Error('[gymSession] addExercise: exerciseId 누락');
+  const session = await getOrCreateActiveSession();
+  const exists = (session.blocks || []).some((b) => {
+    if (b.type === 'single') return b.exerciseId === exerciseId;
+    if (b.type === 'circuit') {
+      return (b.rounds || []).some((round) =>
+        (round || []).some((s) => s.exerciseId === exerciseId),
+      );
+    }
+    return false;
+  });
+  if (exists) return { session, added: false, reason: 'duplicate' };
+
+  // spec §6-3-3 — 우선순위 ② 이전 세션 → ③ 운동 기본값.
+  const prevSets = await getPrevSessionLastSets(exerciseId);
+  let sets;
+  if (prevSets && prevSets.length) {
+    // 이전 세션 sets 의 weight/reps 만 가져와 새 preset:true 객체로. done/pr 초기화.
+    sets = prevSets.map((s) => ({
+      weight: s?.weight ?? null,
+      reps: s?.reps ?? null,
+      done: false,
+      preset: true,
+      pr: false,
+    }));
+  } else {
+    const exercise = await getExerciseDefaults(exerciseId);
+    sets = buildPresetSets(exercise);
+  }
+
+  if (!session.startTime) session.startTime = Date.now();
+  session.blocks = [
+    ...(session.blocks || []),
+    { type: 'single', exerciseId, sets },
+  ];
+  if (part && !(session.tags || []).includes(part)) {
+    session.tags = [...(session.tags || []), part];
+  }
+  await upsertSession(session);
+  return { session, added: true };
+}
+
+/**
+ * 운동 제거 (토글 OFF). spec §6-2 다중 추가/제거 자유 — single 블록만 처리.
+ *  - blocks 에서 type==='single' && exerciseId 일치 첫 매치 제거
+ *  - 해당 part 의 다른 single 블록이 더 없으면 tags 에서도 part 제거
+ *  - circuit 블록 무영향 (별 Wave 처리)
+ *  - 반환: { session, removed: boolean, reason? }
+ */
+export async function removeExerciseFromActiveSession(exerciseId) {
+  if (!exerciseId) throw new Error('[gymSession] removeExercise: exerciseId 누락');
+  const session = await getOrCreateActiveSession();
+  const blocks = Array.isArray(session.blocks) ? session.blocks.slice() : [];
+  const idx = blocks.findIndex((b) => b && b.type === 'single' && b.exerciseId === exerciseId);
+  if (idx === -1) return { session, removed: false, reason: 'not_found' };
+  const removed = blocks[idx];
+  blocks.splice(idx, 1);
+  let tags = Array.isArray(session.tags) ? session.tags.slice() : [];
+  const removedPart = removed && (removed.part || (await getExerciseDefaults(exerciseId).catch(() => null))?.part);
+  if (removedPart) {
+    const stillUsed = blocks.some(
+      (b) => b && b.type === 'single' && (b.part === removedPart || (b.exerciseId && tagPartMatchHint(b.exerciseId, removedPart))),
+    );
+    if (!stillUsed) tags = tags.filter((t) => t !== removedPart);
+  }
+  const next = { ...session, blocks, tags };
+  await upsertSession(next);
+  return { session: next, removed: true };
+}
+
+function tagPartMatchHint(otherExerciseId, part) {
+  const builtin = getBuiltinExercise(otherExerciseId);
+  return builtin ? builtin.part === part : false;
+}
+
+/**
+ * 세트 완료(좌 스와이프) 시 Dexie blocks[i].sets[setIdx] 갱신. spec §6-3-1.
+ *
+ * mocks/session.html 의 completeCurrentSet 에서 fire-and-forget 호출.
+ * mapNameToExerciseId (Wave 11.7.3b) 로 한국어 exerciseName → exerciseId 매핑 후
+ * 활성 세션의 매칭 single 블록 찾아 sets[setIdx] 만 부분 갱신 (preset 강제 false).
+ *
+ * input: { exerciseName, setIdx, set: { weight, reps, done, pr } }
+ * 반환:
+ *   { ok: true, exerciseId } — 정상
+ *   { ok: false, reason: 'no_active_session'|'no_match'|'index_out_of_range'|'invalid_input'|'no_db'|'error' }
+ *
+ * setIdx 가 sets.length 초과 — 'index_out_of_range' (mocks 의 새 세트 push 는 Wave 11.9.4 책임).
+ */
+export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
+  if (!exerciseName || !Number.isFinite(setIdx) || setIdx < 0 || !set || typeof set !== 'object') {
+    return { ok: false, reason: 'invalid_input' };
+  }
+  const exerciseId = mapNameToExerciseId(exerciseName);
+  try {
+    const session = await getActiveSession();
+    if (!session) return { ok: false, reason: 'no_active_session' };
+    const blocks = session.blocks || [];
+    const blockIdx = blocks.findIndex(
+      (b) => b && b.type === 'single' && b.exerciseId === exerciseId,
+    );
+    if (blockIdx === -1) return { ok: false, reason: 'no_match', exerciseId };
+    const block = blocks[blockIdx];
+    const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
+    if (setIdx >= sets.length) {
+      return { ok: false, reason: 'index_out_of_range', exerciseId };
+    }
+    const prev = sets[setIdx] || {};
+    sets[setIdx] = {
+      weight: set.weight === undefined ? prev.weight : set.weight,
+      reps: set.reps === undefined ? prev.reps : set.reps,
+      done: set.done === undefined ? true : !!set.done,
+      preset: false,
+      pr: !!set.pr,
+    };
+    const nextBlocks = blocks.slice();
+    nextBlocks[blockIdx] = { ...block, sets };
+    const nextSession = { ...session, blocks: nextBlocks };
+    await upsertSession(nextSession);
+    return { ok: true, exerciseId };
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
+      return { ok: false, reason: 'no_db' };
+    }
+    console.error('[gymSession] persistSetCommit', e);
+    return { ok: false, reason: 'error', error: e?.message };
+  }
+}
+
+/**
+ * spec §7 종료 흐름 — active session 을 completed 로 마감.
+ *  - status='active' 1건 찾아 endTime/durationMin/totalVolume/totalCalories 계산 후 status='completed'.
+ *  - totalVolume = 모든 single 블록의 done 세트의 weight × reps 합산.
+ *  - totalCalories = durationMin × 5.5 (mocks 답습 — 평균 MET. spec §7-3 정확 공식은 체중 통합 별 wave).
+ *  - durationMin = (endTime - startTime) / 60_000, 최소 1.
+ *
+ * 반환:
+ *   { ok: true, session } — finalize 성공
+ *   { ok: false, reason: 'no_active_session'|'no_db'|'error' }
+ */
+export async function finalizeActiveSession(opts = {}) {
+  try {
+    const session = await getActiveSession();
+    if (!session) return { ok: false, reason: 'no_active_session' };
+
+    const blocks = Array.isArray(session.blocks) ? session.blocks : [];
+    const totalVolume = blocks.reduce((sum, b) => {
+      if (!b || b.type !== 'single') return sum;
+      const sets = Array.isArray(b.sets) ? b.sets : [];
+      return sum + sets.reduce((s, set) => {
+        if (!set || !set.done) return s;
+        return s + (Number(set.weight) || 0) * (Number(set.reps) || 0);
+      }, 0);
+    }, 0);
+
+    const endTime = Number.isFinite(opts.endTime) ? opts.endTime : Date.now();
+    const startTime = session.startTime || endTime;
+    const durationMin = Math.max(1, Math.round((endTime - startTime) / 60_000));
+    const totalCalories = Math.round(durationMin * 5.5);
+
+    const finalized = {
+      ...session,
+      endTime,
+      durationMin,
+      totalVolume,
+      totalCalories,
+      status: 'completed',
+    };
+    await upsertSession(finalized);
+    return { ok: true, session: finalized };
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
+      return { ok: false, reason: 'no_db' };
+    }
+    console.error('[gymSession] finalizeActiveSession', e);
+    return { ok: false, reason: 'error', error: e?.message };
+  }
+}
+
+/**
+ * spec §6-3-2 — 키패드 commit 시 sets[setIdx] 의 단일 field (weight 또는 reps) 만 갱신.
+ *
+ * persistSetCommit 와 차이: 좌 스와이프 commit (done:true) 가 아닌 키패드 입력만.
+ *   - done / pr 은 prev 그대로 보존 (commit 안 된 상태 유지)
+ *   - preset:false 강제 (사용자 입력 — placeholder 해제)
+ *
+ * input: { exerciseName, setIdx, field: 'weight'|'reps', value: number }
+ * 반환: { ok, exerciseId } 또는 { ok:false, reason: 'no_active_session'|'no_match'|'index_out_of_range'|'invalid_input'|'invalid_field'|'no_db'|'error' }
+ */
+export async function persistKeypadEdit({ exerciseName, setIdx, field, value } = {}) {
+  if (!exerciseName || !Number.isFinite(setIdx) || setIdx < 0 || !field || !Number.isFinite(value)) {
+    return { ok: false, reason: 'invalid_input' };
+  }
+  if (field !== 'weight' && field !== 'reps') {
+    return { ok: false, reason: 'invalid_field' };
+  }
+  const exerciseId = mapNameToExerciseId(exerciseName);
+  try {
+    const session = await getActiveSession();
+    if (!session) return { ok: false, reason: 'no_active_session' };
+    const blocks = session.blocks || [];
+    const blockIdx = blocks.findIndex(
+      (b) => b && b.type === 'single' && b.exerciseId === exerciseId,
+    );
+    if (blockIdx === -1) return { ok: false, reason: 'no_match', exerciseId };
+    const block = blocks[blockIdx];
+    const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
+    if (setIdx >= sets.length) {
+      return { ok: false, reason: 'index_out_of_range', exerciseId };
+    }
+    const prev = sets[setIdx] || {};
+    sets[setIdx] = {
+      ...prev,
+      [field]: value,
+      preset: false,
+    };
+    const nextBlocks = blocks.slice();
+    nextBlocks[blockIdx] = { ...block, sets };
+    await upsertSession({ ...session, blocks: nextBlocks });
+    return { ok: true, exerciseId };
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
+      return { ok: false, reason: 'no_db' };
+    }
+    console.error('[gymSession] persistKeypadEdit', e);
+    return { ok: false, reason: 'error', error: e?.message };
+  }
+}
+
+/**
+ * spec §8 — 30초 timer + visibilitychange backstop. mocks state 통째 → active session 의 blocks dump.
+ *
+ * 좌 스와이프 commit (Wave 11.9.3) / 키패드 commit (Wave 11.12) 안 거치는 변경 (예: 빈 영역 탭 증감)
+ * 의 데이터 손실 방지. 30초마다 + 백그라운드 진입 시 mocks state 전체 dump.
+ *
+ * input: { exerciseName, sets, exerciseStates }
+ *   - exerciseName: 현재 운동명 (한국어, mocks state.exerciseName)
+ *   - sets: 현재 운동 sets 배열
+ *   - exerciseStates: { [name]: { sets, ... } } — mocks 다른 운동 snapshot
+ *
+ * 처리:
+ *   - allStates = { ...exerciseStates, [exerciseName]: { sets } } (현재 운동 우선)
+ *   - mapNameToExerciseId 로 영문 매핑
+ *   - active session 의 매칭 single 블록 sets replace (preset/done/pr 은 mocks state 그대로 흐름)
+ *   - 매칭 없는 mocks 운동 무시 (Wave 11.9.1 의 addExerciseToActiveSession 가 정상 흐름 보장)
+ *
+ * 반환: { ok, dumped: count } 또는 { ok:false, reason: 'no_active_session'|'invalid_input'|'no_db'|'error' }
+ */
+export async function dumpActiveSessionFromState(stateData) {
+  if (!stateData || typeof stateData !== 'object') {
+    return { ok: false, reason: 'invalid_input' };
+  }
+  const { exerciseName, sets, exerciseStates } = stateData;
+  try {
+    const session = await getActiveSession();
+    if (!session) return { ok: false, reason: 'no_active_session' };
+
+    // 모든 운동 스냅 합치기 — 현재 운동 우선
+    const allStates = { ...(exerciseStates || {}) };
+    if (exerciseName && Array.isArray(sets)) {
+      allStates[exerciseName] = { sets };
+    }
+
+    const blocks = Array.isArray(session.blocks) ? session.blocks.slice() : [];
+    let dumpedCount = 0;
+    for (const [name, snap] of Object.entries(allStates)) {
+      if (!snap || !Array.isArray(snap.sets)) continue;
+      const exerciseId = mapNameToExerciseId(name);
+      const blockIdx = blocks.findIndex(
+        (b) => b && b.type === 'single' && b.exerciseId === exerciseId,
+      );
+      if (blockIdx === -1) continue; // 매칭 없으면 무시
+      blocks[blockIdx] = {
+        ...blocks[blockIdx],
+        sets: snap.sets.map((s) => ({
+          weight: s?.weight ?? null,
+          reps: s?.reps ?? null,
+          done: !!s?.done,
+          preset: !!s?.preset,
+          pr: !!s?.pr,
+        })),
+      };
+      dumpedCount += 1;
+    }
+
+    if (dumpedCount === 0) return { ok: true, dumped: 0 };
+
+    await upsertSession({ ...session, blocks });
+    return { ok: true, dumped: dumpedCount };
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
+      return { ok: false, reason: 'no_db' };
+    }
+    console.error('[gymSession] dumpActiveSessionFromState', e);
+    return { ok: false, reason: 'error', error: e?.message };
+  }
+}
+
+/* ───────────────────────────── DOM hijack (mocks/session.html) ───────────────────────────── */
+
+export async function mountSessionView() {
+  const doc = typeof document !== 'undefined' ? document : null;
+  if (!doc) return { skipped: 'no-document' };
+  const chipsEl = doc.getElementById('addexChips');
+  const listEl = doc.getElementById('addexList');
+  if (!chipsEl || !listEl) return { skipped: 'no-mounts' };
+  try {
+    await renderChips(chipsEl);
+    await renderList(listEl);
+    hookClicks(chipsEl, listEl);
+    return { mounted: true, part: _activePart };
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
+      return { skipped: 'no-db' };
+    }
+    console.error('[gymSession] mountSessionView', e);
+    return { error: e?.message };
+  }
+}
+
+async function renderChips(chipsEl) {
+  chipsEl.innerHTML = PART_IDS.map((id) => {
+    const isActive = id === _activePart ? ' is-active' : '';
+    return `<button class="addex-chip${isActive}" data-part="${id}" ${VIEW_ATTR}="1">${escapeHtml(PARTS[id])}</button>`;
+  }).join('');
+}
+
+async function renderList(listEl) {
+  const list = await listExercisesForUser({ part: _activePart, includeHidden: false });
+  if (!list.length) {
+    listEl.innerHTML = `<div class="addex-empty" data-empty="1" ${VIEW_ATTR}="1">이 부위에 등록된 운동이 없습니다.</div>`;
+    return;
+  }
+  listEl.innerHTML = list
+    .map((ex) => {
+      const meta = formatMeta(ex);
+      return `
+        <button class="addex-item" data-ex="${escapeHtml(ex.id)}" data-name="${escapeHtml(ex.name)}" data-part="${escapeHtml(ex.part)}" ${VIEW_ATTR}="1">
+          <span class="ex-main">
+            <span class="ex-name">${escapeHtml(ex.name)}</span>
+            <span class="ex-meta">${escapeHtml(meta)}</span>
+          </span>
+          <span class="ex-toggle" aria-hidden="true"></span>
+        </button>
+      `;
+    })
+    .join('');
+  await syncIsAddedState(listEl);
+}
+
+/** 렌더 직후 active session blocks 의 single exerciseId 와 매칭되는 버튼에 is-added 부여. */
+export async function syncIsAddedState(listEl) {
+  if (!listEl) return;
+  let activeIds = new Set();
+  try {
+    const session = await getActiveSession();
+    if (session && Array.isArray(session.blocks)) {
+      for (const b of session.blocks) {
+        if (b && b.type === 'single' && b.exerciseId) activeIds.add(b.exerciseId);
+      }
+    }
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return; // DB 미초기화 silent
+    console.error('[gymSession] syncIsAddedState', e);
+    return;
+  }
+  listEl.querySelectorAll('.addex-item').forEach((btn) => {
+    const id = btn.dataset.ex;
+    if (id && activeIds.has(id)) btn.classList.add('is-added');
+    else btn.classList.remove('is-added');
+  });
+}
+
+function formatMeta(ex) {
+  if (ex.equipment === 'cardio') return `${ex.defaultSets ?? 1}회`;
+  if (ex.equipment === 'bodyweight') return `맨몸 · ${ex.defaultReps ?? 0}회`;
+  return `${ex.defaultWeight ?? 0}kg × ${ex.defaultReps ?? 0}회`;
+}
+
+function hookClicks(chipsEl, listEl) {
+  if (chipsEl.dataset.spaHooked !== '1') {
+    chipsEl.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-part]');
+      if (!b) return;
+      _activePart = b.dataset.part;
+      await renderChips(chipsEl);
+      await renderList(listEl);
+    });
+    chipsEl.dataset.spaHooked = '1';
+  }
+  if (listEl.dataset.spaHooked === '1') return;
+  listEl.addEventListener('click', async (e) => {
+    const b = e.target.closest('[data-ex]');
+    if (!b) return;
+    const exerciseId = b.dataset.ex;
+    const exerciseName = b.dataset.name;
+    const part = b.dataset.part;
+    const isRemove = b.classList.contains('is-added');
+    if (isRemove) {
+      try {
+        await removeExerciseFromActiveSession(exerciseId);
+      } catch (err) {
+        console.error('[gymSession] removeExerciseFromActiveSession', err);
+      }
+      if (typeof window !== 'undefined' && typeof window.removeExerciseFromSession === 'function') {
+        try {
+          window.removeExerciseFromSession(exerciseName, b);
+        } catch (err) {
+          console.error('[gymSession] mocks removeExerciseFromSession 호출 실패', err);
+        }
+      }
+      b.classList.remove('is-added');
+      return;
+    }
+    try {
+      await addExerciseToActiveSession(exerciseId, part);
+    } catch (err) {
+      console.error('[gymSession] addExerciseToActiveSession', err);
+    }
+    if (typeof window !== 'undefined' && typeof window.addExerciseToSession === 'function') {
+      try {
+        window.addExerciseToSession(exerciseName);
+      } catch (err) {
+        console.error('[gymSession] mocks addExerciseToSession 호출 실패', err);
+      }
+    }
+    b.classList.add('is-added');
+  });
+  listEl.dataset.spaHooked = '1';
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (m) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[m]));
+}
+
+export function getActivePart() {
+  return _activePart;
+}
+export function setActivePart(part) {
+  if (PART_IDS.includes(part)) _activePart = part;
+}
+
+if (typeof window !== 'undefined') {
+  window.gymSession = {
+    createEmptySession,
+    getOrCreateActiveSession,
+    addExerciseToActiveSession,
+    removeExerciseFromActiveSession,
+    getExerciseDefaults,
+    buildPresetSets,
+    getPrevSessionLastSets,
+    persistSetCommit,
+    persistKeypadEdit,
+    dumpActiveSessionFromState,
+    finalizeActiveSession,
+    mountSessionView,
+    getActivePart,
+    setActivePart,
+  };
+}

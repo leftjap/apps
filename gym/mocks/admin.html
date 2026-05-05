@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Gym · 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #faf9f5; --surface: #ffffff; --bg-warm: #f5f0ea;
+    --text: #3d3929; --text-strong: #141413; --text-muted: #8a8475; --text-faint: #b5ad9e;
+    --accent: #d97757; --accent-hover: #c4623f; --accent-rgb: 217, 119, 87;
+    --sage: #788c5d; --blue: #6a9bcc; --amber: #c4973b; --danger: #b44d3b;
+    --border: #e8e4dc; --border-light: #f0ece4;
+    --font-display: 'Poppins', system-ui, sans-serif;
+    --font-body: 'Noto Sans KR', system-ui, sans-serif;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
+    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+    --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+    --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+    --shadow-lg: 0 4px 12px rgba(20,20,19,0.06), 0 24px 48px rgba(55,45,30,0.08);
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font-body); color: var(--text); background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 256px 256px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .phone {
+    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
+    display: flex; flex-direction: column; position: relative;
+    overflow: hidden; background: var(--bg);
+  }
+  @media (min-width: 376px) {
+    body { padding: var(--s-8) 0; }
+    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
+  }
+  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
+
+  /* HEADER */
+  .hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: var(--s-4) var(--s-5) var(--s-2);
+    flex-shrink: 0;
+  }
+  .hdr-title {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+  }
+  .hdr-nav { display: flex; gap: var(--s-4); }
+  .hdr-link {
+    font-family: var(--font-display);
+    font-size: var(--fs-md); font-weight: 500;
+    color: var(--text-muted);
+    background: none; border: none; cursor: pointer;
+    padding: var(--s-1) var(--s-2);
+    border-radius: var(--r-sm);
+    transition: background 150ms var(--ease), color 150ms var(--ease);
+  }
+  .hdr-link:active { background: var(--bg-warm); color: var(--text-strong); }
+
+  /* ============ SECTION TABS (운동 / 체중 / 프로필) ============ */
+  .section-tabs {
+    display: flex;
+    gap: var(--s-5);
+    padding: var(--s-3) var(--s-5) var(--s-2);
+    border-bottom: 1px solid var(--border-light);
+    flex-shrink: 0;
+  }
+  .sec-tab {
+    background: none; border: none; padding: var(--s-2) 0 var(--s-3);
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    position: relative;
+    letter-spacing: 0.01em;
+    transition: color 150ms var(--ease);
+  }
+  .sec-tab.is-active {
+    color: var(--text-strong);
+    font-weight: 600;
+  }
+  .sec-tab.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+
+  .screen {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+    padding-bottom: calc(var(--s-6) + var(--safe-bottom));
+    min-height: 0;
+  }
+  .page { display: none; }
+  .page.is-active { display: block; }
+
+  /* ============ [운동] 부위 탭 chip ============ */
+  .parts {
+    display: flex;
+    gap: var(--s-1);
+    padding: var(--s-4) var(--s-5) var(--s-3);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .parts::-webkit-scrollbar { display: none; }
+  .part-chip {
+    flex-shrink: 0;
+    background: none; border: none;
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-muted);
+    padding: 6px 12px;
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 150ms var(--ease), background 150ms var(--ease);
+  }
+  .part-chip.is-active { color: var(--text-strong); font-weight: 600; background: var(--bg-warm); }
+  .part-chip:active { background: var(--bg-warm); }
+
+  /* 종목 리스트 */
+  .ex-list {
+    padding: 0 var(--s-5);
+  }
+  .ex-row {
+    display: grid;
+    grid-template-columns: 16px 1fr auto auto;
+    gap: var(--s-3);
+    align-items: center;
+    /* Wave 11.6.1: 행 높이 확대 (s-3 → s-4). 사용자 "너무 빡빡" 피드백 */
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--border-light);
+    /* 꾹누르기 transform 대응 */
+    transition: transform 180ms var(--ease);
+  }
+  .ex-row:last-child { border-bottom: none; }
+  .ex-row.is-armed { transform: scale(0.98); transition: transform 120ms var(--ease); }
+  .ex-row.is-dragging {
+    background: var(--surface);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    border-radius: 8px;
+    z-index: 100;
+    position: relative;
+    transition: none;
+    pointer-events: none;
+    touch-action: none;
+  }
+  .ex-grip {
+    color: var(--text-faint);
+    display: inline-flex; align-items: center;
+    cursor: grab;
+    user-select: none;
+  }
+  .ex-grip svg { width: 14px; height: 14px; }
+  .ex-name {
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: -0.005em;
+  }
+  .ex-row.is-hidden .ex-name { color: var(--text-faint); font-weight: 400; text-decoration: line-through; }
+  .ex-row.is-custom .ex-name::after {
+    content: '커스텀';
+    display: inline-block;
+    margin-left: var(--s-2);
+    font-family: var(--font-display);
+    font-size: 10px; font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.04em;
+    vertical-align: middle;
+  }
+  .ex-meta {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .ex-toggle {
+    width: 36px; height: 20px;
+    border: none;
+    background: var(--border);
+    border-radius: var(--r-pill);
+    position: relative;
+    cursor: pointer;
+    transition: background 150ms var(--ease);
+  }
+  .ex-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-radius: 50%;
+    transition: left 180ms var(--ease);
+    box-shadow: 0 1px 2px rgba(20,20,19,0.1);
+  }
+  .ex-toggle.is-on {
+    background: var(--accent);
+  }
+  .ex-toggle.is-on::after { left: 18px; }
+
+  .add-custom {
+    margin: var(--s-5) var(--s-5) 0;
+    padding: var(--s-3);
+    width: calc(100% - var(--s-5) * 2);
+    background: none;
+    border: 1px dashed var(--border);
+    border-radius: var(--r-md);
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: border-color 150ms var(--ease), color 150ms var(--ease), background 150ms var(--ease);
+  }
+  .add-custom:active {
+    border-color: rgba(var(--accent-rgb), 0.4);
+    color: var(--accent);
+    background: rgba(var(--accent-rgb), 0.04);
+  }
+
+  /* ============ [체중] ============ */
+  .weight-hero {
+    padding: var(--s-6) var(--s-5) var(--s-4);
+  }
+  .wh-label {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 400;
+    color: var(--text-faint);
+    margin-bottom: var(--s-2);
+  }
+  .wh-display {
+    display: flex; align-items: baseline;
+    position: relative;
+  }
+  .wh-num {
+    font-family: var(--font-display);
+    font-size: 56px; font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1; letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    position: relative;
+  }
+  .wh-num::after {
+    content: '';
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+  }
+  .wh-unit {
+    font-family: var(--font-display);
+    font-size: 16px; font-weight: 400;
+    color: var(--text-muted);
+    margin-left: var(--s-2);
+    letter-spacing: 0.01em;
+  }
+  .wh-meta {
+    margin-top: var(--s-2);
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .wh-meta strong {
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--sage);
+    letter-spacing: 0.01em;
+  }
+
+  /* 체중 chart (간단 line) */
+  .chart {
+    padding: var(--s-2) var(--s-5) var(--s-3);
+  }
+  .chart-box {
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-lg);
+    padding: var(--s-4);
+    position: relative;
+  }
+  .chart-title {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: var(--s-3);
+  }
+  .chart-svg {
+    width: 100%;
+    height: 120px;
+    display: block;
+  }
+  .chart-goal   { stroke: var(--text-faint); }
+  .chart-weight { stroke: var(--accent); }
+  .chart-avg    { stroke: var(--text-muted); }
+  .chart-legend {
+    display: flex; justify-content: space-between;
+    margin-top: var(--s-2);
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .chart-legend strong {
+    display: block;
+    font-size: 12px; font-weight: 500;
+    color: var(--text);
+    margin-bottom: 2px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 체중 입력 row */
+  .weight-row {
+    padding: var(--s-3) var(--s-5);
+    border-bottom: 1px solid var(--border-light);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: var(--s-3);
+  }
+  .weight-row:last-of-type { border-bottom: none; }
+  .wr-date {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 400;
+    color: var(--text-muted);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .wr-val {
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 500;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+  }
+  .wr-val.pr {
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .wr-val .pr-mark {
+    margin-left: 6px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  .weight-add {
+    margin: var(--s-5) var(--s-5) 0;
+    width: calc(100% - var(--s-5) * 2);
+    padding: var(--s-3);
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
+    border-radius: var(--r-sm);
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 100ms var(--ease);
+  }
+  .weight-add:active {
+    border-color: rgba(var(--accent-rgb), 0.4);
+    background: rgba(var(--accent-rgb), 0.06);
+    transform: scale(0.98);
+  }
+
+  /* Wave 11.7.2b — inline 입력 폼 (키패드 모달은 별 wave 예정) */
+  .weight-entry-form {
+    margin: var(--s-3) var(--s-5) 0;
+    display: flex;
+    gap: var(--s-2);
+    align-items: center;
+    padding: var(--s-3);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-sm);
+  }
+  .weight-entry-form[hidden] { display: none; }
+  .weight-entry-form input {
+    flex: 1;
+    min-width: 0;
+    padding: var(--s-2) var(--s-3);
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text-strong);
+    text-align: center;
+    -moz-appearance: textfield;
+  }
+  .weight-entry-form input::-webkit-outer-spin-button,
+  .weight-entry-form input::-webkit-inner-spin-button {
+    -webkit-appearance: none; margin: 0;
+  }
+  .weight-entry-form button {
+    padding: var(--s-2) var(--s-3);
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
+    border-radius: var(--r-xs);
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  .weight-entry-form button.is-cancel { color: var(--text-faint); border-color: var(--border-light); }
+  .weight-empty {
+    padding: var(--s-5);
+    color: var(--text-faint);
+    font-size: 13px;
+    text-align: center;
+    font-weight: 400;
+  }
+
+  /* Wave 11.7.5c — 부위 선택 시트 (long-press → "부위 변경" → 6 chip) */
+  .part-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+    padding: 0 var(--s-4) var(--s-4);
+  }
+  .part-picker-chip {
+    padding: var(--s-3) var(--s-2);
+    background: var(--bg-warm);
+    color: var(--text-strong);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 100ms var(--ease), border-color 100ms var(--ease);
+  }
+  .part-picker-chip:active { transform: scale(0.97); }
+  .part-picker-chip.is-current { border-color: var(--accent); color: var(--accent); }
+
+  /* Wave 11.7.5a — 커스텀 숫자 키패드 (spec §10-2). bottom sheet 슬라이드 업.
+     transform: translateY(100%)→0. 6-3-2 키패드 패턴 (간략화: 0~9·.·← + 확인). */
+  .keypad-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(20, 20, 19, 0);
+    pointer-events: none;
+    transition: background 220ms var(--ease);
+    z-index: 30;
+  }
+  .keypad-backdrop.is-open { background: rgba(20, 20, 19, 0.35); pointer-events: auto; }
+  .keypad-sheet {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: 0 -4px 24px rgba(20,20,19,0.12);
+    transform: translateY(100%);
+    transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    padding: var(--s-5) var(--s-4) calc(var(--s-5) + env(safe-area-inset-bottom));
+    z-index: 31;
+  }
+  .keypad-sheet.is-open { transform: translateY(0); }
+  .keypad-display {
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: var(--s-4);
+    font-variant-numeric: tabular-nums;
+  }
+  .keypad-display .kp-unit {
+    font-size: 18px; font-weight: 400; color: var(--text-faint); margin-left: 4px;
+  }
+  .keypad-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--s-2);
+  }
+  .kp-key {
+    padding: var(--s-3) 0;
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 500;
+    background: var(--bg-warm);
+    color: var(--text-strong);
+    border: none;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background 100ms var(--ease), transform 80ms var(--ease);
+    font-variant-numeric: tabular-nums;
+  }
+  .kp-key:active { background: var(--border-light); transform: scale(0.97); }
+  .kp-key.is-action { color: var(--accent); font-size: 18px; }
+  .kp-key.is-confirm { background: var(--accent); color: white; grid-column: span 3; margin-top: var(--s-3); padding: var(--s-4) 0; font-size: 17px; font-weight: 600; }
+  .kp-key.is-confirm:disabled { background: var(--border-light); color: var(--text-faint); cursor: not-allowed; }
+  .kp-key.is-cancel { color: var(--text-faint); }
+
+  /* PR 팝 — accent 텍스트 짧은 페이드 (spec §6-11 동일 방식) */
+  .weight-pr-pop {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 24px;
+    letter-spacing: 0.08em;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .weight-pr-pop.is-pop {
+    animation: weight-pr-pop 1100ms var(--ease-out) both;
+  }
+  @keyframes weight-pr-pop {
+    0%   { opacity: 0; transform: translateX(-50%) translateY(8px); }
+    20%  { opacity: 1; transform: translateX(-50%) translateY(0); }
+    80%  { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+  }
+
+  /* ============ [프로필] ============ */
+  .profile {
+    padding: var(--s-5);
+  }
+  .field {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: var(--s-4) 0;
+    border-bottom: 1px solid var(--border-light);
+    cursor: pointer;
+    background: none;
+    border-top: none; border-left: none; border-right: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+  .field:last-of-type { border-bottom: none; }
+  .field:active { background: var(--bg-warm); }
+  .f-label {
+    font-family: var(--font-body);
+    font-size: 14px; color: var(--text);
+  }
+  .f-val {
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: 0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .f-val .hint {
+    color: var(--text-faint);
+    font-weight: 400;
+    margin-left: var(--s-2);
+  }
+
+  /* 동기화 상태 — Typography-driven (ui §1 / §6)
+     컬러 도트 대신 sync-title 의 semantic color (sage=정상) 로 상태 표현 */
+  .sync {
+    margin: var(--s-5) var(--s-5) 0;
+    padding: var(--s-4);
+    background: var(--surface);
+    border: 1px solid var(--border-light);
+    border-radius: var(--r-lg);
+    display: flex; flex-direction: column;
+    gap: var(--s-1);
+  }
+  .sync-title {
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 600;
+    color: var(--sage);
+    letter-spacing: 0.01em;
+  }
+  .sync-time {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .logout {
+    margin: var(--s-6) var(--s-5);
+    width: calc(100% - var(--s-5) * 2);
+    padding: var(--s-3);
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    transition: color 150ms var(--ease), border-color 150ms var(--ease);
+  }
+  .logout:active { color: var(--danger); border-color: var(--danger); }
+
+  /* reveal */
+  .rv { opacity: 0; transform: translateY(12px); animation: rvUp 0.5s var(--ease-out) forwards; }
+  .rv-1 { animation-delay: 0ms; } .rv-2 { animation-delay: 50ms; }
+  .rv-3 { animation-delay: 100ms; } .rv-4 { animation-delay: 150ms; }
+  @keyframes rvUp { to { opacity: 1; transform: translateY(0); } }
+
+  /* ============ 커스텀 운동 추가 바텀시트 (§10-1) ============ */
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20,20,19,0.38);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease);
+    z-index: 50;
+  }
+  .sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
+  .add-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    transform: translateY(100%);
+    background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transition: transform 260ms var(--ease-out);
+    padding: var(--s-4) var(--s-5) calc(var(--s-5) + var(--safe-bottom));
+    z-index: 60;
+    max-height: 85%;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .add-sheet.is-open { transform: translateY(0); }
+
+  /* 종목 삭제 시트 (Wave 11.6.1) — stats.html del-sheet-* 패턴 재사용 */
+  .del-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    transform: translateY(100%);
+    background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transition: transform 260ms var(--ease-out);
+    padding: var(--s-4) var(--s-5) calc(var(--s-5) + var(--safe-bottom));
+    z-index: 60;
+  }
+  .del-sheet.is-open { transform: translateY(0); }
+  .del-sheet-handle {
+    width: 36px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto var(--s-4);
+  }
+  .del-sheet-title {
+    font-family: var(--font-display);
+    font-size: 12px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: var(--s-3);
+    text-align: left;
+  }
+  .del-sheet-action {
+    display: block; width: 100%;
+    background: none; border: none;
+    padding: var(--s-4) 0;
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 500;
+    color: var(--danger);
+    cursor: pointer;
+    text-align: left;
+    transition: color 120ms var(--ease);
+  }
+  .del-sheet-action:active { color: var(--accent-hover); }
+  .del-sheet-cancel {
+    margin-top: var(--s-3);
+    width: 100%;
+    background: var(--bg-warm);
+    border: none;
+    border-radius: var(--r-sm);
+    padding: var(--s-3);
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .as-handle {
+    width: 36px; height: 4px; background: var(--border);
+    border-radius: 2px; margin: 0 auto var(--s-3);
+    flex-shrink: 0;
+  }
+  .as-title {
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--s-5);
+    flex-shrink: 0;
+  }
+  .as-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+    gap: var(--s-5);
+    min-height: 0;
+  }
+  .as-field { display: flex; flex-direction: column; gap: var(--s-2); }
+  .as-label {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .as-input {
+    width: 100%;
+    padding: var(--s-3) var(--s-4);
+    background: var(--bg-warm);
+    border: 1px solid transparent;
+    border-radius: var(--r-md);
+    font-family: var(--font-display);
+    font-size: 15px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: -0.005em;
+    outline: none;
+    transition: border-color 150ms var(--ease), background 150ms var(--ease);
+    font-variant-numeric: tabular-nums;
+  }
+  .as-input:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+  .as-input::placeholder { color: var(--text-faint); font-weight: 400; }
+
+  .as-chips {
+    display: flex;
+    gap: var(--s-1);
+    flex-wrap: wrap;
+  }
+  .as-chip {
+    flex-shrink: 0;
+    background: var(--bg-warm);
+    border: none;
+    font-family: var(--font-display);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-muted);
+    padding: 8px 14px;
+    border-radius: var(--r-pill);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 150ms var(--ease), background 150ms var(--ease);
+    letter-spacing: 0.01em;
+  }
+  .as-chip.is-on {
+    color: #fff;
+    background: var(--accent);
+  }
+  .as-chip:active { transform: scale(0.96); }
+
+  .as-row2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--s-3);
+  }
+
+  .as-actions {
+    display: flex; gap: var(--s-3);
+    margin-top: var(--s-5);
+    flex-shrink: 0;
+  }
+  .as-btn {
+    flex: 1;
+    height: 46px;
+    border: none;
+    border-radius: var(--r-sm);
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 150ms var(--ease), transform 100ms var(--ease), border-color 150ms var(--ease);
+  }
+  .as-btn.primary { background: var(--accent); color: #fff; }
+  .as-btn.primary:active { background: var(--accent-hover); transform: scale(0.98); }
+  .as-btn.primary:disabled {
+    background: var(--border);
+    color: var(--text-faint);
+    cursor: not-allowed;
+  }
+  .as-btn.ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .as-btn.ghost:active { color: var(--text-strong); border-color: var(--text-muted); transform: scale(0.98); }
+
+  /* toast */
+  .toast {
+    position: absolute;
+    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
+    transform: translate(-50%, 20px);
+    background: rgba(20,20,19,0.9); color: #fff;
+    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
+    font-family: var(--font-body); font-size: 12px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+    z-index: 80; box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+
+<div class="phone" id="app">
+  <div class="safe-top"></div>
+
+  <header class="hdr rv rv-1">
+    <h1 class="hdr-title">관리</h1>
+    <nav class="hdr-nav">
+      <button class="hdr-link" data-nav="home">홈</button>
+      <button class="hdr-link" data-nav="stats">통계</button>
+    </nav>
+  </header>
+
+  <nav class="section-tabs rv rv-2">
+    <button class="sec-tab is-active" data-tab="exercises">운동</button>
+    <button class="sec-tab" data-tab="weight">체중</button>
+    <button class="sec-tab" data-tab="profile">프로필</button>
+  </nav>
+
+  <main class="screen">
+
+    <!-- ============ 운동 PAGE ============ -->
+    <section class="page is-active" data-page="exercises">
+      <div class="parts" id="adminParts"></div>
+      <div class="ex-list" id="adminExList"></div>
+      <button class="add-custom" id="addCustom">+ 커스텀 운동 추가</button>
+    </section>
+
+    <!-- ============ 체중 PAGE ============ -->
+    <section class="page" data-page="weight">
+      <div class="weight-hero">
+        <div class="wh-label">현재 체중</div>
+        <div class="wh-display">
+          <span class="wh-num" data-bind="weight-hero-num">71.4</span>
+          <span class="wh-unit">kg</span>
+        </div>
+        <div class="wh-meta" data-bind="weight-hero-meta">
+          목표 69kg · <strong>−2.4kg</strong> 남음 · 약 8주
+        </div>
+      </div>
+
+      <div class="chart">
+        <div class="chart-box">
+          <div class="chart-title">최근 30일 추이</div>
+          <svg class="chart-svg" viewBox="0 0 300 120" preserveAspectRatio="none">
+            <!-- 목표선 -->
+            <line class="chart-goal" data-bind="chart-goal" x1="0" y1="80" x2="300" y2="80" stroke-width="1" stroke-dasharray="3 4"/>
+            <!-- 체중 라인 -->
+            <path class="chart-weight" data-bind="chart-weight" d="M0,40 L20,42 L40,38 L60,44 L80,42 L100,48 L120,46 L140,52 L160,50 L180,56 L200,54 L220,60 L240,58 L260,62 L280,60 L300,64"
+                  fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <!-- 7일 평균선 -->
+            <path class="chart-avg" data-bind="chart-avg" d="M0,44 L40,43 L80,45 L120,48 L160,52 L200,56 L240,60 L300,62"
+                  fill="none" stroke-width="1.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+          </svg>
+          <div class="chart-legend">
+            <span><strong>73.2 kg</strong>30일 전</span>
+            <span style="color:var(--sage)"><strong>−1.8 kg</strong>변화</span>
+            <span style="text-align:right"><strong>71.4 kg</strong>오늘</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- mocks 허브(iframe) fallback fixture — SPA 진입 시 features/weights renderWeightTab 가 덮어씀 -->
+      <div data-bind="weight-list">
+        <div class="weight-row">
+          <span class="wr-date">2026-04-22</span>
+          <span class="wr-val pr">71.4 kg<span class="pr-mark">PR</span></span>
+        </div>
+        <div class="weight-row">
+          <span class="wr-date">2026-04-20</span>
+          <span class="wr-val">71.8 kg</span>
+        </div>
+        <div class="weight-row">
+          <span class="wr-date">2026-04-18</span>
+          <span class="wr-val">72.1 kg</span>
+        </div>
+        <div class="weight-row">
+          <span class="wr-date">2026-04-15</span>
+          <span class="wr-val">72.4 kg</span>
+        </div>
+        <div class="weight-row">
+          <span class="wr-date">2026-04-12</span>
+          <span class="wr-val">72.8 kg</span>
+        </div>
+      </div>
+
+      <button class="weight-add" data-act="weight-add">+ 오늘 체중 입력</button>
+      <form class="weight-entry-form" data-bind="weight-entry-form" hidden>
+        <input type="number" inputmode="decimal" step="0.1" min="0" placeholder="73.4" data-bind="weight-entry-input" aria-label="체중 (kg)">
+        <button type="submit" data-act="weight-save">저장</button>
+        <button type="button" class="is-cancel" data-act="weight-cancel">취소</button>
+      </form>
+      <div class="weight-pr-pop" data-bind="weight-pr-pop" aria-hidden="true">PR</div>
+    </section>
+
+    <!-- Wave 11.7.5a — 커스텀 숫자 키패드 (spec §10-2). 모든 페이지 공유 — body 끝에 1회 마운트. -->
+    <div class="keypad-backdrop" data-bind="keypad-backdrop" aria-hidden="true"></div>
+    <div class="keypad-sheet" data-bind="keypad-sheet" role="dialog" aria-label="숫자 키패드" aria-hidden="true">
+      <div class="keypad-display"><span data-bind="keypad-value">0</span><span class="kp-unit" data-bind="keypad-unit">kg</span></div>
+      <div class="keypad-grid">
+        <button type="button" class="kp-key" data-key="1">1</button>
+        <button type="button" class="kp-key" data-key="2">2</button>
+        <button type="button" class="kp-key" data-key="3">3</button>
+        <button type="button" class="kp-key" data-key="4">4</button>
+        <button type="button" class="kp-key" data-key="5">5</button>
+        <button type="button" class="kp-key" data-key="6">6</button>
+        <button type="button" class="kp-key" data-key="7">7</button>
+        <button type="button" class="kp-key" data-key="8">8</button>
+        <button type="button" class="kp-key" data-key="9">9</button>
+        <button type="button" class="kp-key is-action" data-key=".">·</button>
+        <button type="button" class="kp-key" data-key="0">0</button>
+        <button type="button" class="kp-key is-action" data-key="back" aria-label="지우기">←</button>
+        <button type="button" class="kp-key is-confirm" data-bind="keypad-confirm" data-key="confirm">확인</button>
+      </div>
+    </div>
+
+    <!-- ============ 프로필 PAGE ============ -->
+    <section class="page" data-page="profile">
+      <div class="profile">
+        <button class="field" data-field="height">
+          <span class="f-label">키</span>
+          <span class="f-val">173 cm</span>
+        </button>
+        <button class="field" data-field="birthyear">
+          <span class="f-label">생년</span>
+          <span class="f-val">1976</span>
+        </button>
+        <button class="field" data-field="goal-weight">
+          <span class="f-label">목표 체중</span>
+          <span class="f-val">69 kg</span>
+        </button>
+        <button class="field" data-field="weekly-goal">
+          <span class="f-label">주간 목표</span>
+          <span class="f-val">4 회<span class="hint">1~7</span></span>
+        </button>
+      </div>
+
+      <div class="sync">
+        <span class="sync-title">동기화 정상</span>
+        <span class="sync-time" id="syncTimeProfile">2분 전 · 지오 · leftjap@gmail.com</span>
+      </div>
+
+      <button class="logout" data-act="logout">로그아웃</button>
+    </section>
+
+  </main>
+
+  <!-- ============ 커스텀 운동 추가 바텀시트 (§10-1) ============ -->
+  <div class="sheet-backdrop" id="addBackdrop"></div>
+  <aside class="add-sheet" id="addSheet" role="dialog" aria-label="커스텀 운동 추가">
+    <div class="as-handle"></div>
+    <h3 class="as-title">커스텀 운동 추가</h3>
+    <div class="as-body">
+      <div class="as-field">
+        <label class="as-label" for="asName">이름</label>
+        <input class="as-input" id="asName" type="text" placeholder="예: 핀치 컬" maxlength="20">
+      </div>
+      <div class="as-field">
+        <span class="as-label">부위</span>
+        <div class="as-chips" id="asParts"></div>
+      </div>
+      <div class="as-field">
+        <span class="as-label">장비</span>
+        <div class="as-chips" id="asEquipment"></div>
+      </div>
+      <div class="as-row2">
+        <div class="as-field">
+          <label class="as-label" for="asWeight">기본 중량 (kg)</label>
+          <input class="as-input" id="asWeight" type="number" inputmode="decimal" min="0" max="500" step="0.5" placeholder="0">
+        </div>
+        <div class="as-field">
+          <label class="as-label" for="asReps">기본 횟수</label>
+          <input class="as-input" id="asReps" type="number" inputmode="numeric" min="1" max="50" step="1" placeholder="10">
+        </div>
+      </div>
+    </div>
+    <div class="as-actions">
+      <button class="as-btn ghost" type="button" data-add-act="cancel">취소</button>
+      <button class="as-btn primary" type="button" id="asSave" disabled>저장</button>
+    </div>
+  </aside>
+
+  <!-- 종목 꾹누르기 분기: 정지 후 떼기 = 시트(부위 변경 / 종목 삭제), 이동 = 드래그 정렬. -->
+  <div class="sheet-backdrop" id="delExBackdrop"></div>
+  <aside class="del-sheet" id="delExSheet" role="dialog" aria-label="종목 작업">
+    <div class="del-sheet-handle"></div>
+    <div class="del-sheet-title" id="delExTitle">종목 작업</div>
+    <button class="del-sheet-action" data-del-ex="change-part">부위 변경</button>
+    <button class="del-sheet-action" data-del-ex="confirm">종목 삭제</button>
+    <button class="del-sheet-cancel" data-del-ex="cancel">취소</button>
+  </aside>
+
+  <!-- Wave 11.7.5c — 부위 선택 시트 (운동의 부위 변경) -->
+  <div class="sheet-backdrop" id="partPickerBackdrop"></div>
+  <aside class="del-sheet" id="partPickerSheet" role="dialog" aria-label="부위 선택">
+    <div class="del-sheet-handle"></div>
+    <div class="del-sheet-title" id="partPickerTitle">부위 선택</div>
+    <div class="part-picker-grid" data-bind="part-picker-grid"></div>
+    <button class="del-sheet-cancel" data-act="part-picker-cancel">취소</button>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============ EXERCISE DATA (관리용 — 커스텀/숨김 상태 포함)
+   spec §11 6 부위 (코어는 미정의 — 추후 spec 변경 시 재추가). */
+const PARTS = [
+  { id: 'chest',    name: '가슴' },
+  { id: 'back',     name: '등' },
+  { id: 'shoulder', name: '어깨' },
+  { id: 'legs',     name: '하체' },
+  { id: 'arms',     name: '팔' },
+  { id: 'cardio',   name: '유산소' }
+];
+
+const ADMIN_EXERCISES = [
+  // chest
+  { id: 'bench_press',     name: '벤치프레스',        part: 'chest', w: 60, r: 10, on: true,  custom: false },
+  { id: 'incline_bench',   name: '인클라인 벤치프레스', part: 'chest', w: 50, r: 10, on: true,  custom: false },
+  { id: 'dumbbell_press',  name: '덤벨 프레스',       part: 'chest', w: 22, r: 10, on: true,  custom: false },
+  { id: 'dumbbell_fly',    name: '덤벨 플라이',       part: 'chest', w: 14, r: 12, on: true,  custom: false },
+  { id: 'cable_crossover', name: '케이블 크로스오버',  part: 'chest', w: 15, r: 12, on: true,  custom: false },
+  { id: 'chest_press',     name: '체스트 프레스',     part: 'chest', w: 40, r: 10, on: false, custom: false },
+  { id: 'pushup',          name: '푸쉬업',            part: 'chest', w: null, r: 20, on: true, custom: false },
+  { id: 'svend_press',     name: '스벤드 프레스',     part: 'chest', w: 10, r: 15, on: true,  custom: true },
+  // back
+  { id: 'barbell_row',  name: '바벨 로우',   part: 'back', w: 50, r: 10, on: true,  custom: false },
+  { id: 'dumbbell_row', name: '덤벨 로우',   part: 'back', w: 20, r: 10, on: true,  custom: false },
+  { id: 'seated_row',   name: '시티드 로우', part: 'back', w: 45, r: 10, on: true,  custom: false },
+  { id: 'cable_row',    name: '케이블 로우', part: 'back', w: 45, r: 10, on: true,  custom: false },
+  { id: 'lat_pulldown', name: '랫 풀다운',   part: 'back', w: 50, r: 10, on: true,  custom: false },
+  { id: 'pullup',       name: '풀업',        part: 'back', w: null, r: 8, on: true, custom: false },
+  { id: 'chinup',       name: '친업',        part: 'back', w: null, r: 8, on: false, custom: false },
+  // shoulder
+  { id: 'shoulder_press', name: '숄더 프레스',       part: 'shoulder', w: 30, r: 10, on: true, custom: false },
+  { id: 'military_press', name: '밀리터리 프레스',    part: 'shoulder', w: 35, r: 8, on: true, custom: false },
+  { id: 'lateral_raise',  name: '덤벨 레터럴 레이즈', part: 'shoulder', w: 8, r: 12, on: true, custom: false },
+  { id: 'front_raise',    name: '프론트 레이즈',      part: 'shoulder', w: 8, r: 12, on: true, custom: false },
+  { id: 'face_pull',      name: '페이스 풀',         part: 'shoulder', w: 20, r: 12, on: true, custom: false },
+  { id: 'rear_delt_fly',  name: '리어 델트 플라이',   part: 'shoulder', w: 6, r: 12, on: true, custom: false },
+  // legs
+  { id: 'squat',         name: '스쿼트',       part: 'legs', w: 60,  r: 10, on: true, custom: false },
+  { id: 'deadlift',      name: '데드리프트',   part: 'legs', w: 80,  r: 5,  on: true, custom: false },
+  { id: 'lunge',         name: '런지',         part: 'legs', w: 20,  r: 10, on: true, custom: false },
+  { id: 'leg_press',     name: '레그 프레스',   part: 'legs', w: 100, r: 10, on: true, custom: false },
+  { id: 'hip_thrust',    name: '힙 쓰러스트',   part: 'legs', w: 50,  r: 10, on: true, custom: false },
+  { id: 'good_morning',  name: '굿모닝',       part: 'legs', w: 40,  r: 10, on: true, custom: false },
+  { id: 'leg_curl',      name: '레그 컬',      part: 'legs', w: 30,  r: 12, on: true, custom: false },
+  { id: 'leg_extension', name: '레그 익스텐션', part: 'legs', w: 35,  r: 12, on: true, custom: false },
+  // arms
+  { id: 'bicep_curl',       name: '바이셉 컬',        part: 'arms', w: 10, r: 10, on: true, custom: false },
+  { id: 'hammer_curl',      name: '해머 컬',          part: 'arms', w: 10, r: 10, on: true, custom: false },
+  { id: 'cable_curl',       name: '케이블 컬',        part: 'arms', w: 20, r: 12, on: true, custom: false },
+  { id: 'tricep_extension', name: '트라이셉 익스텐션', part: 'arms', w: 12, r: 10, on: true, custom: false },
+  { id: 'cable_pushdown',   name: '케이블 푸시다운',   part: 'arms', w: 25, r: 12, on: true, custom: false },
+  { id: 'dips',             name: '딥스',             part: 'arms', w: null, r: 10, on: true, custom: false },
+  { id: 'wrist_curl',       name: '손목 컬',          part: 'arms', w: 5, r: 15, on: true, custom: false },
+  // cardio
+  { id: 'treadmill',   name: '트레드밀',  part: 'cardio', d: 30, on: true, custom: false },
+  { id: 'cycle',       name: '사이클',    part: 'cardio', d: 30, on: true, custom: false },
+  { id: 'elliptical',  name: '엘립티컬',  part: 'cardio', d: 30, on: true, custom: false },
+];
+
+const state = { activePart: 'chest' };
+
+function renderParts() {
+  document.getElementById('adminParts').innerHTML = PARTS.map(p => `
+    <button class="part-chip${p.id === state.activePart ? ' is-active' : ''}" data-part="${p.id}">${p.name}</button>
+  `).join('');
+}
+
+function renderExList() {
+  const el = document.getElementById('adminExList');
+  const items = ADMIN_EXERCISES.filter(e => e.part === state.activePart);
+  el.innerHTML = items.map(ex => {
+    let meta = '';
+    if (ex.d != null) meta = `${ex.d}분`;
+    else if (ex.w == null) meta = `맨몸 · ${ex.r}회`;
+    else meta = `${ex.w}kg × ${ex.r}회`;
+    return `
+      <div class="ex-row${ex.on ? '' : ' is-hidden'}${ex.custom ? ' is-custom' : ''}" data-id="${ex.id}">
+        <span class="ex-grip" aria-hidden="true">
+          <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg>
+        </span>
+        <span class="ex-name">${ex.name}</span>
+        <span class="ex-meta">${meta}</span>
+        <button class="ex-toggle${ex.on ? ' is-on' : ''}" data-toggle="${ex.id}" aria-label="${ex.name} 사용 여부"></button>
+      </div>
+    `;
+  }).join('');
+}
+
+/* TABS */
+document.querySelectorAll('.sec-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const tab = t.dataset.tab;
+    document.querySelectorAll('.sec-tab').forEach(x => x.classList.toggle('is-active', x === t));
+    document.querySelectorAll('.page').forEach(p => p.classList.toggle('is-active', p.dataset.page === tab));
+    // Wave 11.7.2b — 체중 탭 진입 시 SPA 환경이면 실 데이터로 hydrate (mocks 허브에선 fixture 보존)
+    if (tab === 'weight' && window.gymWeights) {
+      window.gymWeights.renderWeightTab().catch(e => console.error('[gym] renderWeightTab', e));
+    }
+    // Wave 11.7.6 — 프로필 탭 진입 시 SPA 환경이면 실 settings 로 hydrate
+    if (tab === 'profile' && window.gymProfile) {
+      window.gymProfile.renderProfileTab().catch(e => console.error('[gym] renderProfileTab', e));
+    }
+  });
+});
+
+/* PARTS */
+document.getElementById('adminParts').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-part]');
+  if (!b) return;
+  // SPA 환경에선 features/exercises-admin 의 위임이 처리 — 여기선 mocks 허브 fallback 만 동작.
+  if (window.gymExercisesAdmin) return;
+  state.activePart = b.dataset.part;
+  renderParts();
+  renderExList();
+});
+
+/* TOGGLES */
+document.getElementById('adminExList').addEventListener('click', (e) => {
+  const t = e.target.closest('[data-toggle]');
+  if (!t) return;
+  // SPA 환경에선 features/exercises-admin 의 위임이 toggleExerciseHidden 처리.
+  if (window.gymExercisesAdmin) return;
+  const ex = ADMIN_EXERCISES.find(x => x.id === t.dataset.toggle);
+  if (!ex) return;
+  ex.on = !ex.on;
+  renderExList();
+});
+
+/* ============ Wave 11.6.1 — 종목 꾹누르기 → 삭제 시트 (spec §10-1) ============
+   spec "꾹누르기+드래그로 순서 변경" 중 순서 변경은 Wave 11.7 이관.
+   현재는 꾹누르기 = 삭제. 기본/커스텀 운동 모두 삭제 가능 (mocks 수준). */
+let pendingDeleteExId = null;
+const delExBackdrop = document.getElementById('delExBackdrop');
+const delExSheet = document.getElementById('delExSheet');
+
+function openDelExSheet(exId) {
+  const ex = ADMIN_EXERCISES.find(x => x.id === exId);
+  if (!ex) return;
+  pendingDeleteExId = exId;
+  document.getElementById('delExTitle').textContent = `"${ex.name}"`;
+  delExBackdrop.classList.add('is-open');
+  delExSheet.classList.add('is-open');
+}
+function closeDelExSheet() {
+  pendingDeleteExId = null;
+  delExBackdrop.classList.remove('is-open');
+  delExSheet.classList.remove('is-open');
+}
+delExBackdrop.addEventListener('click', closeDelExSheet);
+delExSheet.addEventListener('click', async (e) => {
+  const act = e.target.closest('[data-del-ex]');
+  if (!act) return;
+  const type = act.dataset.delEx;
+  if (type === 'change-part' && pendingDeleteExId) {
+    // Wave 11.7.5c — 부위 선택 시트로 전환 (pendingDeleteExId 보존)
+    const exId = pendingDeleteExId;
+    closeDelExSheet();
+    openPartPicker(exId);
+    return;
+  }
+  if (type === 'confirm' && pendingDeleteExId) {
+    const exId = pendingDeleteExId;
+    // Wave 11.7.5c — SPA 환경: 커스텀 운동만 deleteCustomExercise. 빌트인은 hidden 토글로 안내.
+    if (window.gymQueries && window.gymExercisesAdmin) {
+      try {
+        const customs = await window.gymQueries.listCustomExercises();
+        const isCustom = customs.some((c) => c.id === exId);
+        if (isCustom) {
+          await window.gymQueries.deleteCustomExercise(exId);
+          await window.gymExercisesAdmin.renderExercisesTab();
+          toast('삭제됨');
+        } else {
+          toast('빌트인 운동은 숨기기로 사용 (토글)');
+        }
+      } catch (err) { console.error('[gym] delete', err); toast('삭제 실패'); }
+      closeDelExSheet();
+      return;
+    }
+    // mocks 허브 fallback
+    const idx = ADMIN_EXERCISES.findIndex(x => x.id === exId);
+    if (idx >= 0) {
+      const name = ADMIN_EXERCISES[idx].name;
+      ADMIN_EXERCISES.splice(idx, 1);
+      closeDelExSheet();
+      renderExList();
+      toast(`"${name}" 삭제됨`);
+      return;
+    }
+  }
+  closeDelExSheet();
+});
+
+/* Wave 11.7.5c — 부위 선택 시트 */
+const partPickerBackdrop = document.getElementById('partPickerBackdrop');
+const partPickerSheet = document.getElementById('partPickerSheet');
+const partPickerGrid = document.querySelector('[data-bind="part-picker-grid"]');
+let pendingPartChangeExId = null;
+
+function openPartPicker(exId) {
+  pendingPartChangeExId = exId;
+  // 현재 부위 추적 — SPA 환경의 listExercisesForUser 결과 또는 mocks fallback
+  let currentPart = null;
+  if (window.gymQueries && window.gymExercisesAdmin) {
+    // 비동기: 현재 부위 표시는 best-effort. fallback 으로 ADMIN_EXERCISES 검색
+    const found = ADMIN_EXERCISES.find((x) => x.id === exId);
+    if (found) currentPart = found.part;
+  } else {
+    const found = ADMIN_EXERCISES.find((x) => x.id === exId);
+    if (found) currentPart = found.part;
+  }
+  partPickerGrid.innerHTML = PARTS.map((p) => {
+    const cls = p.id === currentPart ? 'part-picker-chip is-current' : 'part-picker-chip';
+    return `<button class="${cls}" data-part-pick="${p.id}">${p.name}</button>`;
+  }).join('');
+  partPickerBackdrop.classList.add('is-open');
+  partPickerSheet.classList.add('is-open');
+}
+function closePartPicker() {
+  pendingPartChangeExId = null;
+  partPickerBackdrop.classList.remove('is-open');
+  partPickerSheet.classList.remove('is-open');
+}
+partPickerBackdrop.addEventListener('click', closePartPicker);
+partPickerSheet.addEventListener('click', async (e) => {
+  const cancel = e.target.closest('[data-act="part-picker-cancel"]');
+  if (cancel) { closePartPicker(); return; }
+  const chip = e.target.closest('[data-part-pick]');
+  if (!chip || !pendingPartChangeExId) return;
+  const newPart = chip.dataset.partPick;
+  const exId = pendingPartChangeExId;
+  // SPA 환경: setExercisePartOverride + 재렌더
+  if (window.gymQueries && window.gymExercisesAdmin) {
+    try {
+      await window.gymQueries.setExercisePartOverride(exId, newPart);
+      window.gymExercisesAdmin.setActivePart(newPart);
+      await window.gymExercisesAdmin.renderExercisesTab();
+      toast('부위 변경됨');
+    } catch (err) { console.error('[gym] partOverride', err); toast('변경 실패'); }
+    closePartPicker();
+    return;
+  }
+  // mocks fallback
+  const found = ADMIN_EXERCISES.find((x) => x.id === exId);
+  if (found) found.part = newPart;
+  state.activePart = newPart;
+  renderParts();
+  renderExList();
+  closePartPicker();
+  toast('부위 변경됨');
+});
+
+/* 꾹누르기 분기:
+   pending(타이머) → 8px 이상 이동 = 스크롤 의도, cancel
+   armed(500ms 경과, 햅틱 + scale) → 정지 후 up = 시트 / 이동 = 드래그 정렬
+   toggle 버튼은 제외 (short tap 으로 on/off 유지). */
+window.gymAdminDragging = false;
+(function bindExLongPress() {
+  const container = document.getElementById('adminExList');
+  const ARM_MS = 500;
+  const SCROLL_CANCEL_PX = 8;
+  const DRAG_START_PX = 6;
+
+  let phase = 'idle'; // idle | pending | armed | dragging
+  let timer = null;
+  let currentEl = null;
+  let startX = 0, startY = 0;
+  let armedX = 0, armedY = 0;
+  let suppressNextClick = false;
+
+  const reset = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (currentEl) {
+      currentEl.classList.remove('is-armed', 'is-dragging');
+      currentEl.style.transform = '';
+    }
+    phase = 'idle';
+    currentEl = null;
+    window.gymAdminDragging = false;
+  };
+
+  const enterArmed = () => {
+    if (phase !== 'pending' || !currentEl) return;
+    phase = 'armed';
+    armedX = startX; armedY = startY;
+    currentEl.classList.add('is-armed');
+    if (navigator.vibrate) navigator.vibrate(12);
+  };
+
+  const enterDragging = () => {
+    if (phase !== 'armed' || !currentEl) return;
+    phase = 'dragging';
+    window.gymAdminDragging = true;
+    currentEl.classList.remove('is-armed');
+    currentEl.classList.add('is-dragging');
+    currentEl.style.transform = '';
+  };
+
+  const handleDragMove = (clientY) => {
+    if (phase !== 'dragging' || !currentEl) return;
+    const rows = [...container.querySelectorAll('.ex-row[data-id]')].filter((r) => r !== currentEl);
+    if (!rows.length) return;
+    let target = null;
+    for (const row of rows) {
+      const rect = row.getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) { target = row; break; }
+    }
+    if (!target) {
+      const firstRect = rows[0].getBoundingClientRect();
+      const lastRect = rows[rows.length - 1].getBoundingClientRect();
+      if (clientY < firstRect.top) {
+        if (currentEl !== container.firstElementChild) container.insertBefore(currentEl, rows[0]);
+      } else if (clientY > lastRect.bottom) {
+        if (currentEl !== container.lastElementChild) container.appendChild(currentEl);
+      }
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+    const before = clientY < rect.top + rect.height / 2;
+    if (before) {
+      if (target.previousElementSibling !== currentEl) container.insertBefore(currentEl, target);
+    } else {
+      if (target.nextElementSibling !== currentEl) container.insertBefore(currentEl, target.nextElementSibling);
+    }
+  };
+
+  const commitDragOrder = async () => {
+    const ids = [...container.querySelectorAll('.ex-row[data-id]')].map((el) => el.dataset.id);
+    if (window.gymQueries && window.gymExercisesAdmin) {
+      try {
+        const part = window.gymExercisesAdmin.getActivePart();
+        await window.gymQueries.setExerciseOrderForPart(part, ids);
+        await window.gymExercisesAdmin.renderExercisesTab();
+        toast('순서 변경됨');
+      } catch (err) {
+        console.error('[gym] reorder', err);
+        toast('순서 저장 실패');
+        try { await window.gymExercisesAdmin.renderExercisesTab(); } catch (_) {}
+      }
+      return;
+    }
+    const activePart = (typeof state !== 'undefined' && state && state.activePart) ? state.activePart : 'chest';
+    const samePart = ADMIN_EXERCISES.filter((x) => x.part === activePart);
+    const others = ADMIN_EXERCISES.filter((x) => x.part !== activePart);
+    const reordered = ids.map((id) => samePart.find((x) => x.id === id)).filter(Boolean);
+    ADMIN_EXERCISES.length = 0;
+    ADMIN_EXERCISES.push(...others, ...reordered);
+    renderExList();
+    toast('순서 변경됨');
+  };
+
+  container.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('[data-toggle]')) return;
+    const el = e.target.closest('[data-id]');
+    if (!el) return;
+    reset();
+    currentEl = el;
+    phase = 'pending';
+    startX = e.clientX; startY = e.clientY;
+    try { container.setPointerCapture(e.pointerId); } catch (_) {}
+    timer = setTimeout(enterArmed, ARM_MS);
+  });
+
+  container.addEventListener('pointermove', (e) => {
+    if (phase === 'pending') {
+      if (Math.abs(e.clientX - startX) > SCROLL_CANCEL_PX || Math.abs(e.clientY - startY) > SCROLL_CANCEL_PX) {
+        reset();
+      }
+      return;
+    }
+    if (phase === 'armed') {
+      const dx = e.clientX - armedX;
+      const dy = e.clientY - armedY;
+      if (Math.hypot(dx, dy) > DRAG_START_PX) {
+        enterDragging();
+        handleDragMove(e.clientY);
+        e.preventDefault();
+      }
+      return;
+    }
+    if (phase === 'dragging') {
+      handleDragMove(e.clientY);
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  container.addEventListener('pointerup', async () => {
+    if (phase === 'armed') {
+      const id = currentEl && currentEl.dataset.id;
+      suppressNextClick = true;
+      reset();
+      if (id) openDelExSheet(id);
+      return;
+    }
+    if (phase === 'dragging') {
+      const el = currentEl;
+      suppressNextClick = true;
+      if (el) { el.classList.remove('is-dragging'); el.style.transform = ''; }
+      phase = 'idle';
+      window.gymAdminDragging = false;
+      currentEl = null;
+      if (timer) { clearTimeout(timer); timer = null; }
+      await commitDragOrder();
+      return;
+    }
+    reset();
+  });
+  container.addEventListener('pointercancel', () => reset());
+
+  container.addEventListener('click', (e) => {
+    if (suppressNextClick) {
+      e.stopPropagation();
+      e.preventDefault();
+      suppressNextClick = false;
+    }
+  }, true);
+})();
+
+/* ============ 커스텀 운동 추가 바텀시트 (§10-1) ============ */
+const EQUIPMENT = [
+  { id: 'barbell',    name: '바벨' },
+  { id: 'dumbbell',   name: '덤벨' },
+  { id: 'machine',    name: '머신' },
+  { id: 'cable',      name: '케이블' },
+  { id: 'bodyweight', name: '맨몸' },
+  { id: 'cardio',     name: '유산소' },
+];
+
+const addState = {
+  name: '',
+  part: 'chest',
+  equipment: 'barbell',
+  weight: '',
+  reps: ''
+};
+
+function renderAsChips() {
+  document.getElementById('asParts').innerHTML = PARTS.map(p => `
+    <button type="button" class="as-chip${p.id === addState.part ? ' is-on' : ''}" data-as-part="${p.id}">${p.name}</button>
+  `).join('');
+  document.getElementById('asEquipment').innerHTML = EQUIPMENT.map(e => `
+    <button type="button" class="as-chip${e.id === addState.equipment ? ' is-on' : ''}" data-as-eq="${e.id}">${e.name}</button>
+  `).join('');
+}
+
+function updateAsSaveState() {
+  const nameOk = addState.name.trim().length > 0;
+  const repsOk = !!addState.reps && +addState.reps > 0;
+  document.getElementById('asSave').disabled = !(nameOk && repsOk);
+}
+
+function openAddSheet() {
+  // 현재 activePart 기본 선택
+  addState.part = state.activePart === 'cardio' ? 'cardio' : state.activePart;
+  addState.equipment = state.activePart === 'cardio' ? 'cardio' : 'barbell';
+  addState.name = '';
+  addState.weight = '';
+  addState.reps = '';
+  document.getElementById('asName').value = '';
+  document.getElementById('asWeight').value = '';
+  document.getElementById('asReps').value = '';
+  renderAsChips();
+  updateAsSaveState();
+  document.getElementById('addBackdrop').classList.add('is-open');
+  document.getElementById('addSheet').classList.add('is-open');
+  setTimeout(() => document.getElementById('asName').focus(), 280);
+}
+
+function closeAddSheet() {
+  document.getElementById('addBackdrop').classList.remove('is-open');
+  document.getElementById('addSheet').classList.remove('is-open');
+}
+
+document.getElementById('addCustom').addEventListener('click', openAddSheet);
+document.getElementById('addBackdrop').addEventListener('click', closeAddSheet);
+
+document.getElementById('asParts').addEventListener('click', (e) => {
+  const c = e.target.closest('[data-as-part]');
+  if (!c) return;
+  addState.part = c.dataset.asPart;
+  // 유산소 부위 선택 시 장비도 자동 cardio
+  if (addState.part === 'cardio') addState.equipment = 'cardio';
+  else if (addState.equipment === 'cardio') addState.equipment = 'barbell';
+  renderAsChips();
+});
+document.getElementById('asEquipment').addEventListener('click', (e) => {
+  const c = e.target.closest('[data-as-eq]');
+  if (!c) return;
+  addState.equipment = c.dataset.asEq;
+  renderAsChips();
+});
+document.getElementById('asName').addEventListener('input', (e) => {
+  addState.name = e.target.value;
+  updateAsSaveState();
+});
+document.getElementById('asWeight').addEventListener('input', (e) => {
+  addState.weight = e.target.value;
+});
+document.getElementById('asReps').addEventListener('input', (e) => {
+  addState.reps = e.target.value;
+  updateAsSaveState();
+});
+document.querySelectorAll('[data-add-act]').forEach(b => {
+  b.addEventListener('click', () => { if (b.dataset.addAct === 'cancel') closeAddSheet(); });
+});
+document.getElementById('asSave').addEventListener('click', async () => {
+  if (document.getElementById('asSave').disabled) return;
+  const isBodyweight = addState.equipment === 'bodyweight';
+  const isCardio = addState.equipment === 'cardio';
+  const name = addState.name.trim();
+  const reps = +addState.reps;
+  const weight = (isBodyweight || isCardio) ? 0 : (addState.weight ? +addState.weight : 0);
+
+  // Wave 11.7.4b — SPA 환경: createCustomExercise 로 영속화 (queries.js).
+  if (window.gymExercisesAdmin) {
+    try {
+      await window.gymExercisesAdmin.createCustomExerciseFromForm({
+        name,
+        part: addState.part === 'core' ? 'arms' : addState.part, // mocks 의 'core' 잔존 입력 보호
+        equipment: addState.equipment,
+        defaultSets: 3,
+        defaultReps: reps,
+        defaultWeight: weight,
+      });
+      closeAddSheet();
+      toast(`${name} 추가됨`);
+    } catch (e) {
+      console.error('[gym] createCustomExercise', e);
+      toast('추가 실패 — 콘솔 확인');
+    }
+    return;
+  }
+
+  // mocks 허브 fallback — 기존 in-memory ADMIN_EXERCISES push
+  const newEx = {
+    id: 'custom_' + Date.now(),
+    name,
+    part: addState.part,
+    equipment: addState.equipment,
+    w: (isBodyweight || isCardio) ? null : weight,
+    r: reps,
+    on: true,
+    custom: true,
+  };
+  if (isCardio) { newEx.d = reps; delete newEx.r; delete newEx.w; }
+  ADMIN_EXERCISES.push(newEx);
+  state.activePart = addState.part;
+  renderParts();
+  renderExList();
+  closeAddSheet();
+  toast(`${name} 추가됨`);
+});
+document.querySelectorAll('[data-nav]').forEach(b => {
+  b.addEventListener('click', () => {
+    window.location.href = b.dataset.nav === 'home' ? 'home.html' : 'stats.html';
+  });
+});
+document.querySelectorAll('[data-field]').forEach(b => {
+  b.addEventListener('click', async () => {
+    // Wave 11.7.6 — SPA 환경: editProfileField 호출 (prompt 입력)
+    if (window.gymProfile) {
+      const fieldKey = b.dataset.field;
+      const r = await window.gymProfile.editProfileField(fieldKey);
+      if (r.ok) toast(`${b.querySelector('.f-label').textContent} 변경됨`);
+      else if (r.reason === 'invalid_input') toast('입력값 범위 확인');
+      // cancelled / no-db 는 silent
+      return;
+    }
+    // mocks 허브 fallback
+    toast(`${b.querySelector('.f-label').textContent} 수정`);
+  });
+});
+document.querySelectorAll('[data-act]').forEach(b => {
+  b.addEventListener('click', () => {
+    if (b.dataset.act === 'weight-add') {
+      // Wave 11.7.5a — 커스텀 숫자 키패드 (spec §10-2). SPA 환경에선 saveWeightInput 으로 영속화.
+      openKeypadSheet({
+        unit: 'kg',
+        initial: '',
+        onConfirm: async (val) => {
+          if (window.gymWeights) {
+            const r = await window.gymWeights.saveWeightInput(val);
+            if (r?.ok) toast(r.isPR ? '체중 신기록 PR' : '저장되었습니다');
+            else toast('숫자를 다시 확인해 주세요');
+          } else {
+            toast(`체중 ${val} kg`);
+          }
+        },
+      });
+    }
+    else if (b.dataset.act === 'weight-cancel') {
+      if (window.gymWeights) window.gymWeights.toggleWeightInputForm(false);
+    }
+    else if (b.dataset.act === 'logout') {
+      // Wave 11.7 — SPA 환경: 실 signOut → onAuthStateChange 가 #/login 으로 라우팅
+      if (window.gymAuth) {
+        window.gymAuth.signOut().catch(e => console.error('[gym] signOut 실패', e));
+        return;
+      }
+      // mocks 허브(iframe) 환경 fallback: 기존 prototype redirect
+      setTimeout(() => { window.location.href = 'login.html'; }, 200);
+    }
+  });
+});
+
+// Wave 11.7.2b — 체중 입력 form submit (Enter 또는 저장 버튼)
+const weightForm = document.querySelector('[data-bind="weight-entry-form"]');
+if (weightForm) {
+  weightForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!window.gymWeights) return;
+    const input = weightForm.querySelector('[data-bind="weight-entry-input"]');
+    const result = await window.gymWeights.saveWeightInput(input?.value);
+    if (!result?.ok) {
+      toast('숫자를 다시 확인해 주세요');
+      return;
+    }
+    window.gymWeights.toggleWeightInputForm(false);
+    toast(result.isPR ? '체중 신기록 PR' : '저장되었습니다');
+  });
+}
+
+// Wave 11.7 — SPA 환경 사용자 프로필 hydrate (mocks 허브에선 window.gymAuth 부재 → 기존 텍스트 유지)
+(async function hydrateProfile() {
+  if (!window.gymAuth) return;
+  try {
+    const user = await window.gymAuth.getCurrentUser();
+    if (!user) return;
+    const meta = user.user_metadata || {};
+    const name = meta.full_name || meta.name || (user.email ? user.email.split('@')[0] : '사용자');
+    const email = user.email || '';
+    const el = document.getElementById('syncTimeProfile');
+    if (el) el.textContent = `방금 · ${name} · ${email}`;
+  } catch (e) {
+    console.error('[gym] hydrateProfile 실패', e);
+  }
+})();
+
+/* Wave 11.7.5a — 커스텀 숫자 키패드 (spec §10-2).
+   bottom sheet 슬라이드 업 + 0~9·소수점·← + 확인. 소수점 1자리 강제. */
+const _keypad = (() => {
+  const backdrop = document.querySelector('[data-bind="keypad-backdrop"]');
+  const sheet = document.querySelector('[data-bind="keypad-sheet"]');
+  const valEl = document.querySelector('[data-bind="keypad-value"]');
+  const unitEl = document.querySelector('[data-bind="keypad-unit"]');
+  const confirmBtn = document.querySelector('[data-bind="keypad-confirm"]');
+  let buf = '';
+  let onConfirm = null;
+  if (!backdrop || !sheet) return { open: () => {}, close: () => {} };
+
+  function display() {
+    valEl.textContent = buf || '0';
+    if (confirmBtn) confirmBtn.disabled = !buf || Number(buf) <= 0;
+  }
+  function append(ch) {
+    if (ch === '.') {
+      if (buf.includes('.')) return;
+      if (!buf) buf = '0';
+      buf += '.';
+    } else if (ch === 'back') {
+      buf = buf.slice(0, -1);
+    } else {
+      // 소수점 1자리 제한
+      if (buf.includes('.') && buf.split('.')[1].length >= 1) return;
+      // 정수부 4자리 제한 (체중 0~9999)
+      const intPart = buf.includes('.') ? buf.split('.')[0] : buf;
+      if (!buf.includes('.') && intPart.length >= 4) return;
+      if (buf === '0' && ch !== '.') buf = ''; // leading 0 정리
+      buf += ch;
+    }
+    display();
+  }
+  function open({ unit = 'kg', initial = '', onConfirm: cb } = {}) {
+    buf = String(initial || '');
+    onConfirm = cb;
+    if (unitEl) unitEl.textContent = unit;
+    display();
+    backdrop.classList.add('is-open');
+    sheet.classList.add('is-open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    sheet.setAttribute('aria-hidden', 'false');
+  }
+  function close() {
+    backdrop.classList.remove('is-open');
+    sheet.classList.remove('is-open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    sheet.setAttribute('aria-hidden', 'true');
+    onConfirm = null;
+    buf = '';
+  }
+  // 키 위임 등록 (1회)
+  sheet.addEventListener('click', (e) => {
+    const k = e.target.closest('[data-key]');
+    if (!k) return;
+    const v = k.dataset.key;
+    if (v === 'confirm') {
+      const cb = onConfirm;
+      const final = buf;
+      close();
+      if (cb && final) cb(final);
+      return;
+    }
+    append(v);
+  });
+  backdrop.addEventListener('click', () => close());
+  return { open, close };
+})();
+function openKeypadSheet(opts) { _keypad.open(opts); }
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1500);
+}
+
+renderParts();
+renderExList();
+
+// Wave 11.7.2b — admin 진입 시 SPA 환경 (window.gymWeights + window.gymQueries) 면 즉시 hydrate.
+//   mocks 허브(iframe) 환경에선 window.gymQueries 미초기화 → renderWeightTab 가 no-op 으로 fixture 보존.
+if (window.gymWeights) {
+  window.gymWeights.renderWeightTab().catch(e => console.error('[gym] renderWeightTab init', e));
+}
+
+// Wave 11.7.4b — SPA 환경: 운동 탭 hydrate + 위임 hook 등록 (1회).
+//   mocks 허브에선 graceful no-op (db 미초기화 → renderExercisesTab skip).
+if (window.gymExercisesAdmin) {
+  window.gymExercisesAdmin.hookExerciseTabClicks();
+  window.gymExercisesAdmin.renderExercisesTab().catch(e => console.error('[gym] renderExercisesTab init', e));
+}
+
+// Wave 11.7.6 — SPA 환경: 프로필 탭은 진입 시점 hydrate (sec-tab 클릭 핸들러 안). 첫 mount 시점에도 1회.
+if (window.gymProfile) {
+  window.gymProfile.renderProfileTab().catch(e => console.error('[gym] renderProfileTab init', e));
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "_doc": "Study 앱 자동화 (seed-supabase / read-user-context workflow) 가 사용 — 별도 user_id 명시 없을 때 default. spec §5-0 자동화 시퀀스 단계 2 (user_id 확정) 박제.",
+  "_updated": "2026-05-04",
+  "default": {
+    "email": "leftjap@gmail.com",
+    "user_id": "7bae5645-61c6-4476-9ff2-4c30a72812ff"
+  },
+  "all": [
+    {
+      "email": "leftjap@gmail.com",
+      "user_id": "7bae5645-61c6-4476-9ff2-4c30a72812ff"
+    }
+  ]
+}

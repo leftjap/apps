@@ -1,0 +1,82 @@
+{
+  "lang": "en",
+  "date": "2026-05-05",
+  "_note": "Stage 1 신규 5건 — 구어 축약/리액션 (en guide §5). drift 형식 (seeds/README.md L28).",
+  "cards": [
+    {
+      "id": "en-2026-05-05-1",
+      "order_index": 1,
+      "sentence": "I'm not gonna lie", "meaning": "솔직히 말하면", "reading": null, "phonetic_kr": "아임 나러나 라이",
+      "explanation": {
+        "key": "gonna = going to 의 구어 축약. 'I'm not gonna lie' = 솔직 토로 관용구.",
+        "situation": "친구 사이에 솔직한 의견·감정 털어놓기 직전.",
+        "grammar": [{ "struct": "I'm not gonna + V", "body": "going to 의 캐주얼 형. 'not gonna lie' = 거짓말 안 함 = 솔직히." }],
+        "chunks": [["I'm not gonna", "아임 나러나"], ["lie", "라이"]],
+        "phonemes": [["/ʌ/", "gonna 의 'gon-'"]],
+        "mistake": "단어별 끊어 읽기 → 'gonna' t 가 flap 되어 'ㄴ' 한 덩어리.",
+        "similar": "to be honest / honestly — 더 캐주얼.",
+        "stage": 1, "newElements": ["gonna"], "knownElements": [], "frequency": 10, "category": "구어/리액션"
+      }
+    },
+    {
+      "id": "en-2026-05-05-2",
+      "order_index": 2,
+      "sentence": "No way!", "meaning": "말도 안 돼! / 진짜?", "reading": null, "phonetic_kr": "노웨이",
+      "explanation": {
+        "key": "No way = 강한 부정·놀람 리액션. 단독 감탄사.",
+        "situation": "예상 밖 소식 들었을 때 즉각 반응.",
+        "grammar": [{ "struct": "관용구 (No + way)", "body": "어조에 따라 '말도 안 돼' (부정) 또는 '진짜?' (놀람) 양쪽." }],
+        "chunks": [["No way", "노웨이"]],
+        "phonemes": [["/w/", "way — 한국인 'ㅇ' 약화 주의"]],
+        "mistake": "'노 웨이' 끊지 말고 한 호흡. 'w' 입술 둥글게.",
+        "similar": "For real? / Are you serious? / You're kidding",
+        "stage": 1, "newElements": ["no way"], "knownElements": [], "frequency": 10, "category": "감탄/리액션"
+      }
+    },
+    {
+      "id": "en-2026-05-05-3",
+      "order_index": 3,
+      "sentence": "Hang on", "meaning": "잠깐만 / 잠시만", "reading": null, "phonetic_kr": "행온",
+      "explanation": {
+        "key": "Hang on = '잠깐 기다려' 의 캐주얼 신호. 직역 X.",
+        "situation": "전화·회화 중 잠시 멈춰달라 부탁. 부담 없음.",
+        "grammar": [{ "struct": "phrasal verb (hang + on)", "body": "동사+부사 관용구. 단독 명령형으로 '기다려'." }],
+        "chunks": [["Hang on", "행온"]],
+        "phonemes": [["/æ/", "hang — '애' 입 크게"]],
+        "mistake": "'행 온' 끊지 말고 '행온' 한 덩어리. g 는 비음으로.",
+        "similar": "Hold on / Wait a sec / Just a moment (정중)",
+        "stage": 1, "newElements": ["hang on"], "knownElements": [], "frequency": 9, "category": "구어/요청"
+      }
+    },
+    {
+      "id": "en-2026-05-05-4",
+      "order_index": 4,
+      "sentence": "Lemme see", "meaning": "어디 보자", "reading": null, "phonetic_kr": "레미 씨",
+      "explanation": {
+        "key": "lemme = let me 의 구어 축약. 발화 맨 앞 빈출.",
+        "situation": "잠시 생각·확인. 친구 사이 캐주얼.",
+        "grammar": [{ "struct": "Lemme + V (원형)", "body": "let me 와 의미 동일. 격식 자리에선 let me." }],
+        "chunks": [["Lemme", "레미"], ["see", "씨"]],
+        "phonemes": [["/iː/", "see — 길게"]],
+        "mistake": "'렛 미' 풀어 발음 X — 캐주얼 톤에선 'lemme' 한 덩어리. t 가 m 으로 동화.",
+        "similar": "Let me check / Hold on, let me think",
+        "stage": 1, "newElements": ["lemme"], "knownElements": [], "frequency": 9, "category": "구어/리액션"
+      }
+    },
+    {
+      "id": "en-2026-05-05-5",
+      "order_index": 5,
+      "sentence": "Oh my god", "meaning": "어머 / 세상에", "reading": null, "phonetic_kr": "오 마이 갓",
+      "explanation": {
+        "key": "Oh my god = 놀람·감탄 만능. 약어 OMG.",
+        "situation": "충격·놀람·감동 모두. 종교 색 거의 없음.",
+        "grammar": [{ "struct": "감탄사 (관용구)", "body": "어원은 종교지만 일상에선 'wow' 급. 길게 끌면 강조." }],
+        "chunks": [["Oh", "오"], ["my god", "마이 갓"]],
+        "phonemes": [["/ɑ/", "god — 입 벌려 '가' 에 가까움"]],
+        "mistake": "god 끝 d 강조 X (거의 안 들림). my 를 '미' 로 줄이지 말 것.",
+        "similar": "OMG (약어) / Jeez / Holy cow",
+        "stage": 1, "newElements": ["oh my god"], "knownElements": [], "frequency": 10, "category": "감탄/리액션"
+      }
+    }
+  ]
+}

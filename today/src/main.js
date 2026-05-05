@@ -1,0 +1,130 @@
+/**
+ * Today entry — auth 부트스트랩 + 라우터 시작 (Wave 11.4).
+ *
+ * 흐름:
+ *  1) 초기 세션 확인
+ *  2) 세션 + 허용 이메일 → ensureProfile + showAuthenticated
+ *  3) 세션 없거나 비허용 이메일 → signOut + showLogin
+ *  4) onAuthStateChange 구독 — SIGNED_IN/SIGNED_OUT 시 화면 전환
+ */
+import { Auth } from './services/auth.js';
+import { Profile } from './services/profile.js';
+import { Entries } from './features/entries.js';
+import { Editor } from './features/editor.js';
+// 가계부 분류 자산 (Keep GAS 포팅) — window.todayClassifier 노출 (mocks IIFE 접근용)
+import Classifier from './services/expense-classifier.js';
+import { Expenses } from './features/expenses.js';
+import { Notifications } from './features/notifications.js';
+import { Spotlight } from './features/spotlight.js';
+import { Account } from './features/account.js';
+import { Comments } from './features/comments.js';
+import { Sync } from './db/sync.js';
+import { DevSeed } from './db/devSeed.js';
+import { showAuthenticated, showLogin } from './app.js';
+
+// signOut 시 sync 정리 (Wave 11.5.3.1) — stopSync 가 Realtime 도 종료 (Wave 11.5.4)
+Auth.registerOnSignOut(() => Sync.stopSync());
+
+// 페이지 unload 시 pending upload flush (Wave 11.5.3.2)
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    Sync.flushPendingUploads();
+  });
+  // online 복귀 시 Dexie pending 재push (Wave 11.5.5 + 11.6.2: entries + expenses)
+  window.addEventListener('online', () => {
+    Sync.flushPendingFromDexie().catch((e) => console.warn('[main] online flush entries 실패', e));
+    Sync.flushPendingExpensesFromDexie().catch((e) =>
+      console.warn('[main] online flush expenses 실패', e),
+    );
+  });
+}
+
+async function handleSession(session) {
+  const user = session?.user;
+  if (!user) {
+    showLogin();
+    return;
+  }
+  // allowlist 검증 — 비허용 이메일은 즉시 로그아웃 + 차단 메시지
+  if (!Auth.isAllowedEmail(user.email)) {
+    localStorage.setItem(
+      Auth.AUTH_ERROR_KEY,
+      `허용되지 않은 계정입니다: ${user.email || '(이메일 없음)'}`,
+    );
+    await Auth.signOut();
+    showLogin();
+    return;
+  }
+  // Dexie DB 인스턴스 (Wave 11.5.1) — Supabase 미설정·오프라인에서도 로컬 동작 확보
+  await Auth.ensureUserDB(user);
+  // 2026-05-03 변경: Keep import 데이터 진입 후 dev fixture 시딩 비활성 + cleanup.
+  // 매 로그인마다 entry-fixture-* / tx-XX (devSeed) 를 Dexie hard-delete. 멱등.
+  // sync.js 가 비-UUID id 는 Supabase push skip (Wave 11.6.11) → 로컬 cleanup 의 Supabase 영향 0.
+  try {
+    const r = await DevSeed.cleanupDevFixtures();
+    if (r?.ok && (r.entriesRemoved || r.expensesRemoved)) {
+      console.info(`[main] devSeed cleanup: entries -${r.entriesRemoved}, expenses -${r.expensesRemoved}`);
+    }
+  } catch (e) {
+    console.warn('[main] devSeed cleanup 실패 (무시):', e?.message || e);
+  }
+  // ensureProfile 은 RLS · 네트워크 오류 시 null 반환 — 화면은 그대로 진입 (UX 우선)
+  await Profile.ensureProfile(user);
+  showAuthenticated(user);
+  // mocks DOM 마운트 후 entries / expenses / notifications 부착 (setTimeout 0 — 동일 task 안 mocks IIFE 실행 보장)
+  setTimeout(() => {
+    Entries.mountEntriesView(user);
+    Editor.mountEditorTools();
+    // 가계부 카테고리 사용자별 분리 — Keep USER_CONFIG 그대로 (leftjap 11 / soyoun 12)
+    Classifier.setCurrentEmail(user.email);
+    Expenses.mountExpensesView(user);
+    Notifications.mountNotificationsView(user).catch((e) =>
+      console.warn('[main] mountNotificationsView 실패', e?.message || e),
+    );
+    Spotlight.mountSpotlightView(user).catch((e) =>
+      console.warn('[main] mountSpotlightView 실패', e?.message || e),
+    );
+    Account.mountAccountView(user).catch((e) =>
+      console.warn('[main] mountAccountView 실패', e?.message || e),
+    );
+    Comments.mountCommentsView(user).catch((e) =>
+      console.warn('[main] mountCommentsView 실패', e?.message || e),
+    );
+  }, 0);
+  // Supabase → Dexie 다운로드 동기화 (Wave 11.5.3.1) — 백그라운드, 실패해도 화면 진입.
+  // 2026-05-04 race fix: pullAll 완료 후 active 카테고리 재렌더 (mountEntriesView/mountExpensesView 가
+  // 빈 Dexie 상태에서 초기 렌더 → mocks fixture/empty state 노출되는 문제 해결).
+  Sync.startSync(user)
+    .catch((e) => { console.warn('[main] startSync 실패', e); return null; })
+    .then(() => {
+      try {
+        Entries.rebindCategoryObserver?.();
+        Expenses.rebindCategoryObserver?.();
+        Expenses.refreshSidebarExpenseTotal?.();
+        // 회귀 3 fix — pullAll 완료 후 알림 배지 재계산 (Dexie 빈 상태 → 채워진 후 갱신)
+        Notifications.refreshAlertBadge?.();
+        // 회귀 5 fix — pullAll 완료 후 현재 article 댓글 영역 재마운트.
+        // 진짜 원인 fix (renderDocFromRow in-place patch) 후 setTimeout 우회 불필요. 즉시 호출.
+        Comments.refreshArticleComments?.()?.catch?.((e) =>
+          console.warn('[main] refreshArticleComments 실패', e?.message || e),
+        );
+      } catch (e) {
+        console.warn('[main] post-sync refresh 실패', e?.message || e);
+      }
+    });
+}
+
+async function bootstrap() {
+  const session = await Auth.getSession();
+  await handleSession(session);
+
+  Auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+      await handleSession(session);
+    } else if (event === 'SIGNED_OUT') {
+      showLogin();
+    }
+  });
+}
+
+bootstrap();

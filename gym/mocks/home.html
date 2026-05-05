@@ -1,0 +1,1130 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Gym · 홈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  /* ============ TOKENS (DESIGN.md §2-6) ============ */
+  :root {
+    --bg: #faf9f5;
+    --surface: #ffffff;
+    --bg-warm: #f5f0ea;
+    --text: #3d3929;
+    --text-strong: #141413;
+    --text-muted: #8a8475;
+    --text-faint: #b5ad9e;
+    --accent: #d97757;
+    --accent-hover: #c4623f;
+    --accent-rgb: 217, 119, 87;
+    --sage: #788c5d;
+    --blue: #6a9bcc;
+    --amber: #c4973b;
+    --danger: #b44d3b;
+    --border: #e8e4dc;
+    --border-light: #f0ece4;
+
+    --font-display: 'Poppins', system-ui, sans-serif;
+    --font-body: 'Noto Sans KR', system-ui, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
+
+    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
+    --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+    --s-12: 48px; --s-16: 64px;
+    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
+
+    --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+    --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+    --shadow-lg: 0 4px 12px rgba(20,20,19,0.06), 0 24px 48px rgba(55,45,30,0.08);
+
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--text);
+    background: var(--bg);
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ============ PHONE FRAME 375×812 · 데스크톱 프리뷰 시 액자 ============ */
+  .phone {
+    max-width: 375px;
+    height: 100dvh;
+    max-height: 812px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+  @media (min-width: 376px) {
+    body { padding: var(--s-8) 0; }
+    .phone {
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+      border-radius: var(--r-lg);
+    }
+  }
+  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
+
+  .screen {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 var(--s-5);
+    padding-bottom: calc(var(--s-6) + var(--safe-bottom));
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /* ============ HEADER (§5-1) ============ */
+  .hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--s-4) 0 var(--s-2);
+    flex-shrink: 0;
+  }
+  .hdr-title {
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+  }
+  .hdr-nav { display: flex; align-items: center; gap: var(--s-4); }
+  .hdr-link {
+    font-family: var(--font-display);
+    font-size: var(--fs-md);
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--s-1) var(--s-2);
+    letter-spacing: 0.01em;
+    border-radius: var(--r-sm);
+    transition: background-color 150ms var(--ease), color 150ms var(--ease);
+  }
+  .hdr-link:active { background: var(--bg-warm); color: var(--text-strong); }
+
+  /* ============ CALENDAR — Typography-driven (§5-2) ============ */
+  .cal {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-top: var(--s-6);
+    flex-shrink: 0;
+  }
+  .cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: var(--s-4) 0;
+    cursor: pointer;
+    background: none;
+    border: none;
+    border-radius: var(--r-sm);
+    transition: background-color 150ms var(--ease);
+    font-family: inherit;
+  }
+  .cal-day:active { background: var(--bg-warm); }
+  .cal-label {
+    font-family: var(--font-display);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-faint);
+    letter-spacing: 0.02em;
+  }
+  .cal-num {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text-faint);
+    line-height: 1.25;
+    position: relative;
+    font-variant-numeric: tabular-nums;
+  }
+  .cal-day.worked .cal-num {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-strong);
+  }
+  .cal-day.today .cal-num::after {
+    content: '';
+    position: absolute;
+    bottom: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+  }
+  .cal-part {
+    font-family: var(--font-body);
+    font-size: 10px;
+    font-weight: 400;
+    color: var(--text-muted);
+    height: 14px;
+    line-height: 14px;
+  }
+  .cal-day:not(.worked) .cal-part { visibility: hidden; }
+
+  /* ============ STREAK HERO (§5-3) — 대형 숫자 + radial halo ============ */
+  .streak-hero {
+    margin-top: var(--s-6);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: var(--s-4);
+    flex-shrink: 0;
+  }
+  .streak-info { flex: 1; min-width: 0; }
+  .streak-label {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-faint);
+    letter-spacing: 0.01em;
+    margin-bottom: var(--s-2);
+    transition: color 200ms var(--ease);
+  }
+  .app[data-state="session"] .streak-label { color: var(--accent); }
+  .app[data-state="session"] .streak-label::before {
+    content: '';
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-right: var(--s-2);
+    vertical-align: middle;
+    animation: pulse 1.6s var(--ease) infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.35; transform: scale(0.85); } }
+
+  .streak-display {
+    display: flex;
+    align-items: baseline;
+    position: relative;
+  }
+  .streak-num {
+    font-family: var(--font-display);
+    font-size: 56px;
+    font-weight: 600;
+    color: var(--text-strong);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    position: relative;
+    font-variant-numeric: tabular-nums;
+  }
+  /* radial halo — ui §6 Streak 배지 원칙 */
+  .streak-num::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.2) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    pointer-events: none;
+  }
+  /* Empty/Rest 상태는 halo 톤 더 약하게 */
+  .app[data-state="rest"] .streak-num::after {
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.08) 0%, transparent 70%);
+  }
+  .app[data-state="empty"] .streak-num::after {
+    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.06) 0%, transparent 70%);
+  }
+
+  .streak-unit {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 400;
+    color: var(--text-muted);
+    margin-left: var(--s-2);
+    line-height: 1;
+    letter-spacing: 0.01em;
+  }
+  .streak-part {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: var(--s-3);
+    letter-spacing: 0.01em;
+    min-height: 1em;
+  }
+  .streak-sub {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-faint);
+    margin-top: var(--s-1);
+  }
+
+  /* ============ CLAWD MASCOT ============ */
+  .streak-mascot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    min-height: 64px;
+    position: relative;
+  }
+  .clawd {
+    display: block;
+    image-rendering: pixelated;
+  }
+  .clawd-tall  { width: 60px; height: 48px; }
+  .clawd-short { width: 60px; height: 36px; }
+
+  /* 포즈 애니메이션 */
+  @keyframes bob      { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+  @keyframes slowbob  { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1px)} }
+  @keyframes bounce   { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }
+  @keyframes wiggle {
+    0%,100%{transform:translateY(0) rotate(0deg)}
+    20%{transform:translateY(-3px) rotate(-2deg)}
+    40%{transform:translateY(-4px) rotate(2deg)}
+    60%{transform:translateY(-2px) rotate(-1deg)}
+    80%{transform:translateY(-1px) rotate(0deg)}
+  }
+  @keyframes sparkle1 { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.85;transform:scale(1.2)} }
+  @keyframes sparkle2 { 0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.7;transform:scale(1)} }
+
+  .a-bob     { animation: bob 2.5s var(--ease) infinite; }
+  .a-slowbob { animation: slowbob 3.5s ease infinite; }
+  .a-bounce  { animation: bounce 1s var(--ease) infinite; }
+  .a-wiggle  { animation: wiggle 1.2s var(--ease) infinite; }
+
+  /* Sparkles (Session 상태 전용) */
+  .sparkles {
+    position: absolute;
+    inset: -8px;
+    pointer-events: none;
+    display: none;
+  }
+  .app[data-state="session"] .sparkles { display: block; }
+  .spark {
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    color: var(--accent);
+    transform-origin: center;
+  }
+  .spark svg { width: 100%; height: 100%; display: block; }
+  .spark.s1 { top: 4px;  left: -2px; animation: sparkle1 2s ease infinite; }
+  .spark.s2 { top: 2px;  right: -4px; animation: sparkle2 2s ease 0.8s infinite; }
+  .spark.s3 { bottom: 28px; right: -6px; animation: sparkle1 2.5s ease 1.4s infinite; }
+
+  /* ============ CTA Secondary (ui §6) — 투명 + accent 20% border ============ */
+  .btn-secondary {
+    margin-top: auto;
+    display: block;
+    width: 100%;
+    height: 48px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid rgba(var(--accent-rgb), 0.2);
+    border-radius: var(--r-sm);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: border-color 150ms var(--ease), background 150ms var(--ease), transform 100ms var(--ease);
+    flex-shrink: 0;
+    position: relative;
+  }
+  @media (hover: hover) {
+    .btn-secondary:hover {
+      border-color: rgba(var(--accent-rgb), 0.4);
+      background: rgba(var(--accent-rgb), 0.04);
+    }
+  }
+  .btn-secondary:active { transform: scale(0.98); background: rgba(var(--accent-rgb), 0.06); }
+  .btn-secondary.is-pressed { transform: scale(0.97); background: rgba(var(--accent-rgb), 0.08); }
+
+  /* ============ STAGGERED REVEAL (ui §7) ============ */
+  .rv { opacity: 0; transform: translateY(12px); animation: rvUp 0.5s var(--ease-out) forwards; }
+  .rv-1 { animation-delay: 0ms; }
+  .rv-2 { animation-delay: 50ms; }
+  .rv-3 { animation-delay: 100ms; }
+  .rv-4 { animation-delay: 150ms; }
+  @keyframes rvUp { to { opacity: 1; transform: translateY(0); } }
+
+  /* ============ BOTTOM SHEET (long-press 종료/삭제) ============ */
+  .sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20,20,19,0.32);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease);
+    z-index: 50;
+  }
+  .sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateY(100%);
+    background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transition: transform 260ms var(--ease-out);
+    padding: var(--s-4) var(--s-5) calc(var(--s-5) + var(--safe-bottom));
+    z-index: 60;
+  }
+  .sheet.is-open { transform: translateY(0); }
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto var(--s-4);
+  }
+  .sheet-title {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: var(--s-3);
+    text-align: left;
+  }
+  .sheet-action {
+    display: block;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: var(--s-4) 0;
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-strong);
+    cursor: pointer;
+    text-align: left;
+    transition: color 120ms var(--ease);
+  }
+  .sheet-action:active { color: var(--accent); }
+  .sheet-action.is-danger { color: var(--danger); }
+  .sheet-action.is-danger:active { color: var(--accent-hover); }
+  .sheet-sep { height: 1px; background: var(--border-light); }
+  .sheet-cancel {
+    margin-top: var(--s-3);
+    width: 100%;
+    background: var(--bg-warm);
+    border: none;
+    border-radius: var(--r-sm);
+    padding: var(--s-3);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  /* ============ DAY SHEET (§5-2 날짜 상세) ============
+     position: absolute + phone 컨테이너(position:relative) 기준.
+     데스크톱 프리뷰에서도 phone 액자 밖으로 나가지 않음. */
+  .day-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: translateY(100%);
+    background: var(--surface);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    box-shadow: var(--shadow-lg);
+    transition: transform 260ms var(--ease-out);
+    padding: var(--s-4) var(--s-5) calc(var(--s-5) + env(safe-area-inset-bottom));
+    z-index: 60;
+    max-height: 70%;
+    display: flex; flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .day-sheet.is-open { transform: translateY(0); }
+  .ds-date {
+    font-family: var(--font-display);
+    font-size: 11px; font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    margin-top: var(--s-2);
+    margin-bottom: var(--s-1);
+    text-transform: uppercase;
+  }
+  .ds-title {
+    font-family: var(--font-display);
+    font-size: 20px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.015em;
+    margin-bottom: var(--s-3);
+  }
+  .ds-stats {
+    display: flex; gap: var(--s-5);
+    padding-bottom: var(--s-3);
+    margin-bottom: var(--s-3);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .ds-item { display: flex; flex-direction: column; gap: 2px; }
+  .ds-val {
+    font-family: var(--font-display);
+    font-size: 18px; font-weight: 600;
+    color: var(--text-strong);
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ds-label {
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .ds-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+  .ds-ex {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--s-3);
+    align-items: baseline;
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .ds-ex:last-child { border-bottom: none; }
+  .ds-ex .name {
+    font-family: var(--font-display);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-strong);
+  }
+  .ds-ex .sets {
+    font-family: var(--font-display);
+    font-size: 12px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .ds-empty {
+    padding: var(--s-6) 0;
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+
+  /* ============ TOAST ============ */
+  .toast {
+    position: absolute;
+    left: 50%;
+    bottom: calc(var(--s-12) + var(--safe-bottom));
+    transform: translate(-50%, 20px);
+    background: rgba(20,20,19,0.9);
+    color: #fff;
+    padding: var(--s-3) var(--s-5);
+    border-radius: var(--r-pill);
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: -0.01em;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
+    z-index: 80;
+    box-shadow: var(--shadow-lg);
+    white-space: nowrap;
+  }
+  .toast.is-show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ============ CLAWD SYMBOLS ============ -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <!-- Idle: 기본 서 있는 자세 -->
+  <symbol id="c-idle" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <!-- Rest: 눈을 가로로 누움 (졸린 자세) -->
+  <symbol id="c-rest" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="3" width="2" height="1" fill="#141413"/>
+    <rect x="9" y="3" width="2" height="1" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <!-- Happy / Barbell Raise: 바벨 만세 (최근 운동 + PR + 목표 달성 톤) -->
+  <symbol id="c-happy" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="2" fill="#8a8475"/>
+    <rect x="2" y="0" width="11" height="1" fill="#b5ad9e"/>
+    <rect x="13" y="0" width="2" height="2" fill="#8a8475"/>
+    <rect x="2" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="11" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="2" y="3" width="11" height="7" fill="#d97757"/>
+    <rect x="4" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+  <symbol id="spark-star" viewBox="0 0 10 10">
+    <path d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4 Z" fill="currentColor"/>
+  </symbol>
+</svg>
+
+<div class="phone app" id="app" data-state="active">
+  <div class="safe-top"></div>
+
+  <main class="screen">
+
+    <!-- HEADER (§5-1) -->
+    <header class="hdr rv rv-1">
+      <h1 class="hdr-title">Gym</h1>
+      <nav class="hdr-nav">
+        <button class="hdr-link" type="button" data-nav="stats">통계</button>
+        <button class="hdr-link" type="button" data-nav="admin">관리</button>
+      </nav>
+    </header>
+
+    <!-- CALENDAR (§5-2) -->
+    <nav class="cal rv rv-2" id="weekCal" aria-label="주간 캘린더"></nav>
+
+    <!-- STREAK HERO (§5-3) -->
+    <div class="streak-hero rv rv-3">
+      <div class="streak-info">
+        <p class="streak-label" id="sLabel">마지막 운동</p>
+        <div class="streak-display">
+          <span class="streak-num" id="sNum">2</span>
+          <span class="streak-unit" id="sUnit">일 전</span>
+        </div>
+        <p class="streak-part" id="sPart">가슴 · 팔</p>
+        <p class="streak-sub" id="sSub">이번 주 3회 · 이번 달 9회</p>
+      </div>
+      <div class="streak-mascot">
+        <div class="clawd-anim" id="clawdAnim">
+          <svg class="clawd clawd-tall" id="clawdSvg"><use href="#c-happy"/></svg>
+        </div>
+        <div class="sparkles" aria-hidden="true">
+          <span class="spark s1"><svg viewBox="0 0 10 10"><use href="#spark-star"/></svg></span>
+          <span class="spark s2"><svg viewBox="0 0 10 10"><use href="#spark-star"/></svg></span>
+          <span class="spark s3"><svg viewBox="0 0 10 10"><use href="#spark-star"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA (§5-4) — Secondary 톤 · 각주 지시문 금지 (ui §14 / spec §6-3-1) -->
+    <button class="btn-secondary rv rv-4" id="ctaBtn" type="button">운동 시작</button>
+
+  </main>
+
+  <!-- Bottom sheet (§5-4 long-press) -->
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <aside class="sheet" id="sheet" role="dialog" aria-label="운동 관리">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">진행 중</div>
+    <button class="sheet-action" data-sheet="end">종료</button>
+    <div class="sheet-sep"></div>
+    <button class="sheet-action is-danger" data-sheet="delete">삭제</button>
+    <button class="sheet-cancel" data-sheet="cancel">취소</button>
+  </aside>
+
+  <!-- 주간 캘린더 날짜 상세 바텀시트 (§5-2 "날짜 탭 → 해당 날짜 운동 상세 바텀시트") -->
+  <div class="sheet-backdrop" id="daySheetBackdrop"></div>
+  <aside class="day-sheet" id="daySheet" role="dialog" aria-label="날짜 상세">
+    <div class="sheet-handle"></div>
+    <div class="ds-date" id="dsDate">4월 8일 · 화</div>
+    <h3 class="ds-title" id="dsTitle">가슴 · 팔</h3>
+    <div class="ds-stats">
+      <div class="ds-item"><span class="ds-val" id="dsVol">8,240 kg</span><span class="ds-label">볼륨</span></div>
+      <div class="ds-item"><span class="ds-val" id="dsMin">58분</span><span class="ds-label">시간</span></div>
+      <div class="ds-item"><span class="ds-val" id="dsPR">2</span><span class="ds-label">PR</span></div>
+    </div>
+    <div class="ds-list" id="dsList"></div>
+    <div class="ds-empty" id="dsEmpty" hidden>기록 없음</div>
+  </aside>
+
+  <!-- 캘린더 날짜 꾹누르기 → 기록 삭제 바텀시트 (Wave C) -->
+  <div class="sheet-backdrop" id="delDayBackdrop"></div>
+  <aside class="sheet" id="delDaySheet" role="dialog" aria-label="기록 삭제">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="delDayTitle">4월 8일 · 화 기록</div>
+    <button class="sheet-action is-danger" data-del="confirm">기록 삭제</button>
+    <button class="sheet-cancel" data-del="cancel">취소</button>
+  </aside>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   STATE DATA
+   오늘: 일요일 13일 (v2 참조 흐름 — 주 월7~일13, today=일13)
+   weekday index: 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일(오늘)
+   ============================================================ */
+const WEEK = ['월','화','수','목','금','토','일'];
+/* 이번 주: 2026-04-20(월) ~ 2026-04-26(일), 오늘 = 4/22 수 (stats.MONTH.today=22 와 정합).
+   Wave 11.6 Dexie seed 와 동일 기준 */
+/* Wave B (2026-05-05) — 절대 날짜 박힘 제거: today 기준 이번 주(월~일) 동적 init.
+   SPA hydrate (mountHomeView) 가 weekCal 을 덮어쓰므로 박힘 자체는 SPA 환경에선 무관하나,
+   mocks 단독 진입 + hydrate 전 1차 렌더 flash 제거 목적. */
+const _today = new Date();
+const _todayWdIdx = (_today.getDay() + 6) % 7; // 월=0, 일=6
+const _weekStart = new Date(_today);
+_weekStart.setDate(_today.getDate() - _todayWdIdx);
+_weekStart.setHours(0, 0, 0, 0);
+const _isoOf = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+};
+const DATES = Array.from({ length: 7 }, (_, i) => {
+  const d = new Date(_weekStart); d.setDate(_weekStart.getDate() + i);
+  return d.getDate();
+});
+const TODAY_IDX = _todayWdIdx;
+const WEEK_FROM_ISO = _isoOf(_weekStart);
+const _weekEnd = new Date(_weekStart); _weekEnd.setDate(_weekStart.getDate() + 6);
+const WEEK_TO_ISO = _isoOf(_weekEnd);
+const _monthOfWdIdx = (idx) => {
+  const d = new Date(_weekStart); d.setDate(_weekStart.getDate() + idx);
+  return d.getMonth() + 1;
+};
+
+const STATES = {
+  active: {
+    label: '마지막 운동',
+    num: '2', unit: '일 전',
+    part: '가슴 · 팔',
+    sub: '이번 주 3회 · 이번 달 9회',
+    /* fallback (iframe 허브 / Dexie 실패 시). Wave 11.6B 에서 active 는 실 DB 로 교체됨 */
+    calendar: [
+      { wd: 1, part: '하체' },   // 4/21 화
+      { wd: 2, part: '가·어' },  // 4/22 수 (오늘)
+    ],
+    clawd: { id: 'c-happy', anim: 'a-bounce', size: 'tall' },
+    cta: '운동 시작',
+    longPress: false,
+  },
+  gap: {
+    label: '마지막 운동',
+    num: '3', unit: '일 전',
+    part: '등',
+    sub: '이번 주 1회 · 이번 달 5회',
+    calendar: [
+      { wd: 0, part: '등' },   // 4/20 월 (시뮬)
+    ],
+    clawd: { id: 'c-idle', anim: 'a-bob', size: 'short' },
+    cta: '운동 시작',
+    longPress: false,
+  },
+  rest: {
+    label: '마지막 운동',
+    num: '7', unit: '일 전',
+    part: '하체',
+    sub: '이번 주 0회 · 이번 달 2회',
+    calendar: [],
+    clawd: { id: 'c-rest', anim: 'a-slowbob', size: 'short' },
+    cta: '운동 시작',
+    longPress: false,
+  },
+  session: {
+    label: '진행 중',
+    num: '28:42', unit: '경과',
+    part: '가슴 · 어깨',
+    sub: '2 / 4 종목',
+    calendar: [
+      { wd: 1, part: '등' },
+      { wd: 3, part: '하체' },
+      { wd: 5, part: '가슴' },
+      { wd: 6, part: '가슴·어깨' },  // 오늘
+    ],
+    clawd: { id: 'c-idle', anim: 'a-wiggle', size: 'short' },
+    cta: '이어가기',
+    longPress: true,
+    sessionNumSize: 40,
+  },
+  empty: {
+    label: '이번 달',
+    num: '0', unit: '회',
+    part: '',
+    sub: '가볍게 시작해 보세요',
+    calendar: [],
+    clawd: { id: 'c-idle', anim: 'a-bob', size: 'short' },
+    cta: '첫 운동 시작',
+    longPress: false,
+  }
+};
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+async function renderWeekCal(state, stateName) {
+  /* Wave 11.6B — active 상태는 Dexie 실 DB, 나머지 시뮬 상태는 STATES 하드코딩.
+     window.gymQueries 없음 (mocks 허브 iframe) → fallback */
+  let calendar = state.calendar;
+  if (stateName === 'active' && window.gymQueries) {
+    try {
+      const sessions = await window.gymQueries.getSessionsByRange(WEEK_FROM_ISO, WEEK_TO_ISO);
+      calendar = sessions.map(s => ({
+        wd: window.gymQueries.isoToWeekdayIdx(s.date),
+        part: (s.tags && s.tags[0]) || '',
+        sessionId: s.id,
+      }));
+    } catch (err) {
+      console.warn('[home] Dexie weekCal fetch failed, using fallback', err);
+    }
+  }
+
+  const cal = document.getElementById('weekCal');
+  const workouts = new Map();
+  calendar.forEach(c => workouts.set(c.wd, c));
+
+  const html = WEEK.map((wd, i) => {
+    const hit = workouts.get(i);
+    const isToday = i === TODAY_IDX;
+    const hasWorkout = !!(hit && hit.part);
+    const classes = [
+      'cal-day',
+      hasWorkout ? 'worked' : '',
+      isToday ? 'today' : ''
+    ].filter(Boolean).join(' ');
+    const part = hasWorkout ? hit.part : '&nbsp;';
+    return `
+      <button class="${classes}" type="button" data-day="${i}">
+        <span class="cal-label">${wd}</span>
+        <span class="cal-num">${DATES[i]}</span>
+        <span class="cal-part">${part}</span>
+      </button>
+    `;
+  }).join('');
+  cal.innerHTML = html;
+}
+
+function renderStreak(state) {
+  document.getElementById('sLabel').textContent = state.label;
+  const sNum = document.getElementById('sNum');
+  sNum.textContent = state.num;
+  sNum.style.fontSize = state.sessionNumSize ? state.sessionNumSize + 'px' : '';
+  document.getElementById('sUnit').textContent = state.unit;
+  const sPart = document.getElementById('sPart');
+  sPart.textContent = state.part || '';
+  sPart.style.display = state.part ? '' : 'none';
+  document.getElementById('sSub').textContent = state.sub;
+}
+
+function renderClawd(state) {
+  const wrap = document.getElementById('clawdAnim');
+  const svg = document.getElementById('clawdSvg');
+  wrap.className = 'clawd-anim ' + state.clawd.anim;
+  svg.setAttribute('class', 'clawd ' + (state.clawd.size === 'tall' ? 'clawd-tall' : 'clawd-short'));
+  svg.innerHTML = `<use href="#${state.clawd.id}"/>`;
+}
+
+function renderCTA(state) {
+  document.getElementById('ctaBtn').textContent = state.cta;
+}
+
+async function applyState(name) {
+  const state = STATES[name];
+  if (!state) return;
+  document.getElementById('app').dataset.state = name;
+  await renderWeekCal(state, name);
+  renderStreak(state);
+  renderClawd(state);
+  renderCTA(state);
+  document.querySelectorAll('.rv').forEach(el => {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  });
+}
+
+/* ============================================================
+   INTERACTIONS
+   ============================================================ */
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('is-show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1600);
+}
+
+/* 주간 캘린더 날짜 탭 → 상세 바텀시트 (§5-2).
+   현재 state 의 calendar 배열을 참조해 해당 요일의 운동 기록 시트 렌더. */
+const DAY_DETAILS = {
+  // wdIndex: { title, vol, min, pr, ex: [{n, s}] }
+  1: { title: '등', vol: 6140, min: 48, pr: 0,
+       ex: [{n:'바벨 로우', s:'5세트 · 1,150kg'}, {n:'랫 풀다운', s:'4세트 · 900kg'}, {n:'덤벨 로우', s:'3세트 · 720kg'}] },
+  3: { title: '하체', vol: 9640, min: 64, pr: 2,
+       ex: [{n:'스쿼트', s:'5세트 · 1,450kg'}, {n:'데드리프트', s:'4세트 · 1,600kg'}, {n:'레그 프레스', s:'3세트 · 900kg'}] },
+  5: { title: '가슴', vol: 7820, min: 55, pr: 1,
+       ex: [{n:'벤치프레스', s:'5세트 · 900kg'}, {n:'인클라인', s:'4세트 · 640kg'}, {n:'덤벨 플라이', s:'3세트 · 240kg'}] },
+  6: { title: '가슴 · 어깨', vol: 6820, min: 52, pr: 1,
+       ex: [{n:'벤치프레스', s:'5세트 · 850kg'}, {n:'숄더 프레스', s:'4세트 · 540kg'}] },
+};
+
+async function openDaySheet(wdIdx, iso) {
+  const stateName = document.getElementById('app').dataset.state;
+  const cur = STATES[stateName];
+  const workouts = new Map();
+  cur.calendar.forEach(c => workouts.set(c.wd, c));
+  const hit = workouts.get(wdIdx);
+  const wdName = WEEK[wdIdx];
+  document.getElementById('dsDate').textContent = `${_monthOfWdIdx(wdIdx)}월 ${DATES[wdIdx]}일 · ${wdName}`;
+
+  // Wave D — SPA 환경: 실 Dexie 데이터 우선 (stats 화면과 동일 source).
+  if (iso && window.gymHome?.fetchDayDetail) {
+    try {
+      const w = await window.gymHome.fetchDayDetail(iso);
+      if (w) {
+        const partMap = { '가': '가슴', '등': '등', '어': '어깨', '하': '하체', '팔': '팔', '유': '유산소', '가·어': '가슴 · 어깨' };
+        document.getElementById('dsTitle').textContent = partMap[w.tag] || w.tag || '운동';
+        document.getElementById('dsVol').textContent = (w.vol || 0).toLocaleString() + ' kg';
+        document.getElementById('dsMin').textContent = (w.min || 0) + '분';
+        document.getElementById('dsPR').textContent = w.pr || 0;
+        document.getElementById('dsList').innerHTML = (w.ex || []).map(e => `
+          <div class="ds-ex"><span class="name">${e.n}</span><span class="sets">${e.s}</span></div>
+        `).join('');
+        document.getElementById('dsList').style.display = '';
+        document.getElementById('dsEmpty').hidden = (w.ex || []).length === 0;
+        document.querySelector('.ds-stats').style.display = '';
+        document.getElementById('daySheetBackdrop').classList.add('is-open');
+        document.getElementById('daySheet').classList.add('is-open');
+        return;
+      }
+    } catch (e) {
+      console.error('[home] openDaySheet fetchDayDetail', e);
+    }
+  }
+
+  if (hit && hit.part) {
+    // 상세 데이터 — home 샘플 DAY_DETAILS 에 매핑된 경우 사용, 아니면 부위명만 렌더
+    const detail = DAY_DETAILS[wdIdx];
+    if (detail) {
+      document.getElementById('dsTitle').textContent = detail.title;
+      document.getElementById('dsVol').textContent = detail.vol.toLocaleString() + ' kg';
+      document.getElementById('dsMin').textContent = detail.min + '분';
+      document.getElementById('dsPR').textContent = detail.pr;
+      document.getElementById('dsList').innerHTML = detail.ex.map(e => `
+        <div class="ds-ex"><span class="name">${e.n}</span><span class="sets">${e.s}</span></div>
+      `).join('');
+      document.getElementById('dsList').style.display = '';
+      document.getElementById('dsEmpty').hidden = true;
+      document.querySelector('.ds-stats').style.display = '';
+    } else {
+      // fallback: 부위명만 표시 (샘플 데이터 미정의 요일)
+      document.getElementById('dsTitle').textContent = hit.part;
+      document.getElementById('dsVol').textContent = '—';
+      document.getElementById('dsMin').textContent = '—';
+      document.getElementById('dsPR').textContent = '—';
+      document.getElementById('dsList').innerHTML = '';
+      document.getElementById('dsEmpty').hidden = false;
+    }
+  } else {
+    // 쉰 날
+    document.getElementById('dsTitle').textContent = '쉼';
+    document.querySelector('.ds-stats').style.display = 'none';
+    document.getElementById('dsList').innerHTML = '';
+    document.getElementById('dsEmpty').hidden = false;
+  }
+
+  document.getElementById('daySheetBackdrop').classList.add('is-open');
+  document.getElementById('daySheet').classList.add('is-open');
+}
+function closeDaySheet() {
+  document.getElementById('daySheetBackdrop').classList.remove('is-open');
+  document.getElementById('daySheet').classList.remove('is-open');
+}
+document.getElementById('daySheetBackdrop').addEventListener('click', closeDaySheet);
+
+document.getElementById('weekCal').addEventListener('click', (e) => {
+  const d = e.target.closest('[data-day]');
+  if (!d) return;
+  openDaySheet(+d.dataset.day, d.dataset.iso || null);
+});
+
+document.querySelectorAll('[data-nav]').forEach(b => {
+  b.addEventListener('click', () => {
+    window.location.href = b.dataset.nav === 'stats' ? 'stats.html' : 'admin.html';
+  });
+});
+
+/* CTA + long-press */
+(function setupCta() {
+  const btn = document.getElementById('ctaBtn');
+  let pressTimer = null;
+  let longPressed = false;
+
+  const isSession = () => document.getElementById('app').dataset.state === 'session';
+
+  function start() {
+    longPressed = false;
+    if (!isSession()) return;
+    btn.classList.add('is-pressed');
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      btn.classList.remove('is-pressed');
+      openSheet();
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, 500);
+  }
+  function end() {
+    clearTimeout(pressTimer);
+    btn.classList.remove('is-pressed');
+  }
+
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointercancel', end);
+  btn.addEventListener('pointerleave', end);
+
+  btn.addEventListener('click', (e) => {
+    if (longPressed) { e.preventDefault(); e.stopPropagation(); return; }
+    window.location.href = 'session.html';
+  });
+})();
+
+/* Sheet */
+const backdrop = document.getElementById('sheetBackdrop');
+const sheet = document.getElementById('sheet');
+function openSheet() {
+  backdrop.classList.add('is-open');
+  sheet.classList.add('is-open');
+}
+function closeSheet() {
+  backdrop.classList.remove('is-open');
+  sheet.classList.remove('is-open');
+}
+backdrop.addEventListener('click', closeSheet);
+sheet.addEventListener('click', (e) => {
+  const act = e.target.closest('[data-sheet]');
+  if (!act) return;
+  const type = act.dataset.sheet;
+  closeSheet();
+  if (type === 'end') toast('종료 — 요약 모달');
+  else if (type === 'delete') toast('삭제됨');
+});
+
+/* ============ 캘린더 꾹누르기 → 기록 삭제 (Wave C) ============
+   renderWeekCal 이 innerHTML 재생성하므로 container delegation 방식.
+   짧은 탭 = 기존 openDaySheet (상세), 500ms+ = 삭제 바텀시트 */
+function bindCalendarLongPress(container, onLongPress, ms = 500) {
+  let timer = null, startX = 0, startY = 0, currentEl = null, fired = false, cancelled = false;
+  const clear = () => {
+    if (timer) { clearTimeout(timer); timer = null; }
+    if (currentEl) currentEl.style.transform = '';
+    currentEl = null;
+  };
+  container.addEventListener('pointerdown', (e) => {
+    const el = e.target.closest('[data-day]');
+    if (!el) return;
+    currentEl = el;
+    cancelled = false; fired = false;
+    startX = e.clientX; startY = e.clientY;
+    el.style.transition = 'transform 200ms var(--ease)';
+    timer = setTimeout(() => {
+      if (cancelled || !currentEl) return;
+      fired = true;
+      const el2 = currentEl;
+      el2.style.transform = 'scale(0.96)';
+      if (navigator.vibrate) navigator.vibrate(12);
+      onLongPress(+el2.dataset.day);
+      setTimeout(() => { el2.style.transform = ''; }, 200);
+    }, ms);
+  });
+  container.addEventListener('pointermove', (e) => {
+    if (!currentEl) return;
+    if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
+      cancelled = true; clear();
+    }
+  });
+  container.addEventListener('pointerup', clear);
+  container.addEventListener('pointercancel', clear);
+  /* 롱프레스 발동 시 capture phase 로 delegation click 차단 */
+  container.addEventListener('click', (e) => {
+    if (fired) { e.stopPropagation(); e.preventDefault(); fired = false; }
+  }, true);
+}
+
+const delDayBackdrop = document.getElementById('delDayBackdrop');
+const delDaySheet = document.getElementById('delDaySheet');
+function openDelDaySheet(wdIdx) {
+  document.getElementById('delDayTitle').textContent = `${_monthOfWdIdx(wdIdx)}월 ${DATES[wdIdx]}일 · ${WEEK[wdIdx]} 기록`;
+  delDayBackdrop.classList.add('is-open');
+  delDaySheet.classList.add('is-open');
+}
+function closeDelDaySheet() {
+  delDayBackdrop.classList.remove('is-open');
+  delDaySheet.classList.remove('is-open');
+}
+delDayBackdrop.addEventListener('click', closeDelDaySheet);
+delDaySheet.addEventListener('click', (e) => {
+  const act = e.target.closest('[data-del]');
+  if (!act) return;
+  const type = act.dataset.del;
+  closeDelDaySheet();
+  if (type === 'confirm') toast('기록 삭제됨');
+});
+
+bindCalendarLongPress(document.getElementById('weekCal'), openDelDaySheet);
+
+/* INIT */
+/* Wave D — SPA 환경에선 mountHomeView 가 자체 hydrate (active/streak/주간 캘린더 모두) 책임.
+   applyState('active') 정적 박힘이 race 로 덮어쓰는 결함 차단. mocks 단독에선 fallback 사용. */
+if (window.gymHome) {
+  window.gymHome.mountHomeView().catch(e => console.error('[gym] mountHomeView init', e));
+} else {
+  applyState('active');
+}
+</script>
+
+</body>
+</html>

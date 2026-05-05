@@ -1,0 +1,83 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "board-mockup",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "apps/board", "-l", "4200", "--no-clipboard"],
+      "port": 4200
+    },
+    {
+      "name": "notif-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", ".", "-l", "4300", "--no-clipboard"],
+      "port": 4300
+    },
+    {
+      "name": "gym-design",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "apps/gym/design", "-l", "4400", "--no-clipboard"],
+      "port": 4400
+    },
+    {
+      "name": "gym-mocks",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "../apps/gym", "-l", "4500", "--no-clipboard"],
+      "port": 4500
+    },
+    {
+      "name": "gym-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/gym && pnpm dev --port 5175"],
+      "port": 5175
+    },
+    {
+      "name": "gym-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/gym && pnpm preview --port 4173"],
+      "port": 4173
+    },
+    {
+      "name": "study-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/study && pnpm dev --port 5173"],
+      "port": 5173
+    },
+    {
+      "name": "study-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/study && pnpm preview --port 4174"],
+      "port": 4174
+    },
+    {
+      "name": "study-mocks",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "../apps/study", "-l", "4600", "--no-clipboard"],
+      "port": 4600
+    },
+    {
+      "name": "today-mocks",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "../apps/today", "-l", "4700", "--no-clipboard"],
+      "port": 4700
+    },
+    {
+      "name": "today-downloads",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/gio_c/Downloads", "-l", "4710", "--no-clipboard"],
+      "port": 4710
+    },
+    {
+      "name": "today-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/today && pnpm dev --port 5175"],
+      "port": 5175
+    },
+    {
+      "name": "today-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/today && pnpm preview --port 4175"],
+      "port": 4175
+    }
+  ]
+}

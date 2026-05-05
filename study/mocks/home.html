@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#faf9f5">
+<title>Study · 홈</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#faf9f5; --surface:#fff; --bg-warm:#f5f0ea;
+  --text:#3d3929; --text-strong:#141413; --text-muted:#8a8475; --text-faint:#b5ad9e;
+  --accent:#d97757; --accent-hover:#c4623f;
+  --sage:#788c5d; --blue:#6a9bcc; --amber:#c4973b; --danger:#b44d3b;
+  --border:#e8e4dc; --border-light:#f0ece4;
+  --font-display:'Poppins',system-ui,sans-serif;
+  --font-body:'Noto Sans KR',system-ui,sans-serif;
+  --s-1:4px;--s-2:8px;--s-3:12px;--s-4:16px;--s-5:20px;--s-6:24px;--s-8:32px;--s-10:40px;--s-12:48px;--s-16:64px;
+  --r-sm:6px; --r-md:10px; --r-lg:16px; --r-pill:999px;
+  --shadow-xs:0 1px 2px rgba(20,20,19,0.04);
+  --shadow-sm:0 1px 3px rgba(20,20,19,0.04),0 8px 32px rgba(20,20,19,0.06);
+  --ease:cubic-bezier(0.4,0,0.2,1);
+  --app-padding:var(--s-5);
+  --section-gap:var(--s-12);
+  --streak-size:56px;
+  --cal-max:30px;
+  --header-size:22px;
+  --icon-size:36px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  background:var(--bg);
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+  background-size:256px 256px;
+  font-family:var(--font-body); color:var(--text); line-height:1.65;
+  min-height:100vh; min-height:100dvh;
+  display:flex; justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+.app{
+  width:100%; max-width:430px; min-height:100vh; min-height:100dvh;
+  /* iPhone frame border-radius:44 로 하단 모서리 마스킹 → bottom padding s-12 로 본문 클리어런스 확보 */
+  padding:env(safe-area-inset-top, 0px) var(--app-padding) calc(env(safe-area-inset-bottom, 0px) + var(--s-12));
+  display:flex; flex-direction:column; margin:0 auto;
+}
+@media(min-width:600px){
+  :root{--app-padding:var(--s-8); --section-gap:var(--s-16); --streak-size:64px; --cal-max:34px; --header-size:24px; --icon-size:40px}
+  .app{max-width:560px}
+}
+@media(min-width:1024px){
+  :root{--streak-size:72px; --header-size:26px; --cal-max:36px}
+  .app{max-width:640px}
+  .cta-primary{max-width:420px;margin:0 auto}
+  .cta-free{max-width:420px;margin:0 auto}
+}
+@media(hover:hover){
+  .day-col:hover{background:rgba(20,20,19,0.02)}
+  .icon-btn:hover{background:var(--bg-warm); color:var(--text)}
+  .cta-primary:hover{background:var(--accent-hover); box-shadow:0 4px 16px rgba(217,119,87,0.3)}
+  .cta-free:hover{color:var(--text)}
+}
+
+/* Preview Switcher */
+.pv-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;gap:var(--s-1);justify-content:center;flex-wrap:wrap;padding:var(--s-2) var(--s-3);background:rgba(232,228,220,0.95);backdrop-filter:blur(8px)}
+.pv-btn{font-family:var(--font-display);font-size:10px;font-weight:500;color:var(--text-muted);background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:var(--r-pill);cursor:pointer;transition:all 150ms var(--ease)}
+.pv-btn:hover,.pv-btn.active{color:var(--accent);border-color:var(--accent)}
+.pv-spacer{height:36px}
+
+/* Header */
+.header{display:flex; justify-content:space-between; align-items:center; padding:var(--s-5) 0 var(--s-4)}
+.header-title{font-family:var(--font-display); font-size:var(--header-size); font-weight:600; color:var(--text-strong); line-height:1.25; letter-spacing:-0.01em}
+.header-icons{display:flex; gap:var(--s-3)}
+.icon-btn{
+  width:var(--icon-size); height:var(--icon-size);
+  display:flex; align-items:center; justify-content:center;
+  border:none; background:none; color:var(--text-muted); cursor:pointer;
+  border-radius:var(--r-sm);
+  transition:background 150ms var(--ease), color 150ms var(--ease);
+}
+.icon-btn svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+
+/* Language Tabs (pill) */
+.lang-tabs{display:flex; gap:var(--s-1); margin-bottom:var(--section-gap)}
+.lang-tab{
+  font-family:var(--font-display); font-size:14px; font-weight:500;
+  color:var(--text-faint); background:none; border:none;
+  padding:var(--s-2) var(--s-4); cursor:pointer; border-radius:var(--r-pill);
+  transition:all 150ms var(--ease); letter-spacing:0.01em;
+}
+.lang-tab.active{color:var(--text-strong); background:var(--surface); box-shadow:var(--shadow-xs)}
+
+/* Summary block (Wave 11.68 정정 — 마스코트 영역 제거. negative space 유지) */
+.summary-block{margin-bottom:var(--section-gap)}
+.streak-label{font-family:var(--font-display); font-size:11px; font-weight:500; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:var(--s-2); min-height:16px}
+.streak-row{display:flex; align-items:baseline}
+.streak-num{
+  font-family:var(--font-display); font-size:var(--streak-size); font-weight:600;
+  color:var(--text-strong); line-height:1; letter-spacing:-0.03em;
+  position:relative;
+}
+.streak-num.has-glow::after{
+  content:''; position:absolute; inset:-14px;
+  background:radial-gradient(circle, rgba(217,119,87,0.12) 0%, transparent 70%);
+  border-radius:50%; z-index:-1;
+}
+.streak-unit{font-family:var(--font-display); font-size:16px; font-weight:400; color:var(--text-muted); margin-left:5px}
+.streak-meta{font-size:13px; color:var(--text-muted); margin-top:var(--s-3)}
+.summary-block.gap-state .streak-num{color:var(--text-muted); font-weight:400}
+.summary-row{display:flex; gap:var(--s-5); margin-top:var(--s-4)}
+.summary-item{font-family:var(--font-display); font-size:13px; color:var(--text-faint)}
+/* Wave 11.29 — 콘텐츠 빈/완료 상태 톤 (spec §5-1). 카운트 아이템과 미세 구분, 강조 X (spec DESIGN.md restraint). */
+.summary-item-empty{color:var(--text-muted); font-style:italic}
+.summary-item-done{color:var(--sage)}
+.summary-val{font-weight:600; color:var(--text-muted)}
+
+/* Weekly Calendar */
+.weekly-cal{display:grid; grid-template-columns:repeat(7, 1fr); margin-bottom:var(--section-gap)}
+.day-col{
+  display:flex; flex-direction:column; align-items:center;
+  cursor:pointer; padding:var(--s-2) 0; border-radius:var(--r-sm);
+  transition:background 150ms var(--ease); position:relative; min-width:44px;
+}
+.day-name{font-family:var(--font-display); font-size:11px; font-weight:500; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.04em; height:16px; display:flex; align-items:center}
+.day-num-wrap{height:40px; display:flex; align-items:flex-end; justify-content:center; margin:4px 0}
+@media(min-width:600px){.day-num-wrap{height:44px}}
+@media(min-width:1024px){.day-num-wrap{height:48px}}
+.day-num{font-family:var(--font-display); line-height:1}
+.day-col[data-intensity="0"] .day-num{font-size:14px; color:var(--text-faint); font-weight:300}
+.day-col[data-intensity="1"] .day-num{font-size:18px; color:var(--text-muted); font-weight:400}
+.day-col[data-intensity="2"] .day-num{font-size:24px; color:var(--text); font-weight:500}
+.day-col[data-intensity="3"] .day-num{font-size:var(--cal-max); color:var(--text-strong); font-weight:600}
+@media(min-width:600px){
+  .day-col[data-intensity="1"] .day-num{font-size:20px}
+  .day-col[data-intensity="2"] .day-num{font-size:27px}
+}
+@media(min-width:1024px){
+  .day-name{font-size:12px}
+  .day-col[data-intensity="0"] .day-num{font-size:15px}
+  .day-col[data-intensity="1"] .day-num{font-size:21px}
+  .day-col[data-intensity="2"] .day-num{font-size:29px}
+  .day-count{font-size:11px}
+}
+.day-count{font-family:var(--font-display); font-size:10px; color:var(--text-faint); height:14px; display:flex; align-items:center}
+.day-col.today::after{content:''; position:absolute; bottom:0; left:50%; transform:translateX(-50%); width:16px; height:2px; background:var(--accent); border-radius:1px}
+.day-col.today .day-name{color:var(--accent)}
+
+/* Spacer */
+.spacer{flex:1; min-height:var(--section-gap)}
+
+/* CTA */
+.cta-area{display:flex; flex-direction:column; gap:var(--s-3); padding:0 0 var(--s-4)}
+.cta-primary{
+  display:block; width:100%;
+  padding:var(--s-4) var(--s-6);
+  font-family:var(--font-display); font-size:16px; font-weight:600;
+  color:#fff; background:var(--accent); border:none; border-radius:var(--r-sm);
+  cursor:pointer; min-height:52px; text-align:center;
+  box-shadow:0 2px 8px rgba(217,119,87,0.25);
+  transition:background 150ms var(--ease), box-shadow 150ms var(--ease);
+  letter-spacing:0.01em;
+}
+.cta-primary:active{transform:scale(0.99)}
+.cta-free{
+  display:block; width:100%;
+  padding:var(--s-3) var(--s-6);
+  font-family:var(--font-display); font-size:14px; font-weight:500;
+  color:var(--text-muted); background:transparent; border:none; border-radius:var(--r-sm);
+  cursor:pointer; min-height:44px; text-align:center;
+  transition:color 150ms var(--ease); letter-spacing:0.01em;
+}
+
+/* Reveal */
+.reveal{opacity:0; transform:translateY(12px); animation:revealUp 0.5s var(--ease) forwards}
+.r1{animation-delay:0ms}.r2{animation-delay:50ms}.r3{animation-delay:100ms}.r4{animation-delay:150ms}.r5{animation-delay:200ms}
+@keyframes revealUp{to{opacity:1;transform:translateY(0)}}
+
+/* Toast */
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + var(--s-12));transform:translate(-50%,20px);background:rgba(20,20,19,0.9);color:#fff;padding:var(--s-3) var(--s-5);border-radius:var(--r-pill);font-family:var(--font-body);font-size:12px;opacity:0;pointer-events:none;transition:opacity 200ms var(--ease), transform 200ms var(--ease);z-index:90;box-shadow:var(--shadow-sm);white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* PR Widget (Wave 11.68-c · spec §11-6) — 오늘 + 이번 주 비교 + 최근 PR.
+ * typography-driven, 컬러 박스/도트 X (DESIGN.md restraint).
+ * 0 케이스 (PR 미존재 / 7일 비활성) → display:none. */
+.pr-widget{display:none;margin-bottom:var(--section-gap);padding:var(--s-3) 0;border-top:1px solid var(--border-light);border-bottom:1px solid var(--border-light)}
+.pr-widget.is-visible{display:block}
+.pr-widget-row{display:flex;gap:var(--s-6)}
+.pr-widget-col{flex:1}
+.pr-widget-label{font-family:var(--font-display);font-size:11px;font-weight:500;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:var(--s-1)}
+.pr-widget-num{font-family:var(--font-display);font-size:28px;font-weight:600;color:var(--text-strong);line-height:1;letter-spacing:-0.02em}
+.pr-widget-unit{font-family:var(--font-display);font-size:13px;font-weight:400;color:var(--text-muted);margin-left:4px}
+.pr-widget-delta{font-family:var(--font-display);font-size:12px;color:var(--text-muted);margin-top:var(--s-2);min-height:14px}
+.pr-widget-recent{font-size:11px;color:var(--text-faint);margin-top:var(--s-3);min-height:14px}
+.pr-widget-recent.is-pr{color:var(--accent);font-weight:500}
+
+/* Bottom Sheet — stats 월간 캘린더와 공용. 정본: src/styles/bs-sheet.css.
+ * SPA 모드(app.js 경유)에선 <style id="bs-sheet-shared">가 먼저 주입되어 중복되지만 동일 CSS 라 무해.
+ * mocks 허브(iframe 직접 로드) 모드에선 app.js 를 거치지 않으므로 이 인라인 블록이 유일한 스타일 소스. */
+.bs-overlay{position:fixed;inset:0;background:rgba(20,20,19,0.25);z-index:100;display:none;opacity:0;transition:opacity 200ms var(--ease)}
+.bs-overlay.open{display:block;opacity:1}
+.bs-sheet{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-radius:var(--r-lg) var(--r-lg) 0 0;padding:var(--s-5) var(--s-5) calc(env(safe-area-inset-bottom, 0px) + var(--s-12));z-index:101;transform:translateY(100%);transition:transform 300ms var(--ease);max-height:65vh;overflow-y:auto;box-shadow:0 -4px 32px rgba(20,20,19,0.08);display:none}
+.bs-sheet.open{transform:translateY(0)}
+@media(min-width:600px){
+  .bs-sheet{left:50%;right:auto;transform:translate(-50%,100%);width:calc(100% - var(--s-12) * 2);max-width:560px}
+  .bs-sheet.open{transform:translate(-50%,0)}
+}
+@media(min-width:1024px){
+  .bs-sheet{max-width:640px}
+}
+.bs-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto var(--s-5)}
+.bs-date{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-strong);margin-bottom:var(--s-5)}
+.bs-stats{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3) var(--s-6);margin-bottom:var(--s-5)}
+.bs-stat-label{font-size:12px;color:var(--text-faint)}
+.bs-stat-val{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-strong);margin-top:2px}
+.bs-stat-val .got{color:var(--sage)}
+.bs-stat-val .hmm{color:var(--amber)}
+.bs-stat-val .no{color:var(--danger)}
+.bs-sentences{margin-top:var(--s-4)}
+.bs-sent{display:flex;align-items:center;justify-content:space-between;padding:var(--s-3) var(--s-2);margin:0 calc(var(--s-2) * -1);border-radius:var(--r-sm);cursor:pointer;transition:background 150ms var(--ease)}
+@media(hover:hover){.bs-sent:hover{background:var(--bg-warm)}}
+.bs-sent-content{flex:1;min-width:0}
+.bs-sent-text{font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-strong);line-height:1.4}
+.bs-sent-meaning{font-size:13px;color:var(--text-muted);margin-top:2px}
+.bs-sent-score{font-family:var(--font-display);font-size:12px;font-weight:600;margin-top:var(--s-1)}
+.bs-sent-score.good{color:var(--sage)}
+.bs-sent-score.mid{color:var(--amber)}
+.bs-sent-score.low{color:var(--danger)}
+.bs-sent-chevron{flex-shrink:0;width:16px;height:16px;color:var(--text-faint);margin-left:var(--s-3);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></symbol>
+  <!-- Wave 11.68 정정: c-idle (Clawd 픽셀아트) 제거 — spec §7-4 마스코트 폐기. -->
+</svg>
+
+<div class="pv-bar">
+  <button class="pv-btn active" onclick="ss('active')">Active</button>
+  <button class="pv-btn" onclick="ss('resume')">Resume</button>
+  <button class="pv-btn" onclick="ss('gap3')">Gap 3d</button>
+  <button class="pv-btn" onclick="ss('gap5')">Gap 5d+</button>
+  <button class="pv-btn" onclick="ss('first')">First</button>
+  <button class="pv-btn" onclick="ss('ja')">JA</button>
+</div>
+
+<div class="app" id="app">
+  <div class="pv-spacer"></div>
+
+  <header class="header reveal r1">
+    <h1 class="header-title">Study</h1>
+    <div class="header-icons">
+      <button class="icon-btn" id="btnStats" aria-label="통계"><svg><use href="#i-cal"/></svg></button>
+      <button class="icon-btn" id="btnSettings" aria-label="설정"><svg><use href="#i-menu"/></svg></button>
+    </div>
+  </header>
+
+  <div class="lang-tabs reveal r2">
+    <button class="lang-tab active" id="tab-en" data-lang="en">English</button>
+    <button class="lang-tab" id="tab-ja" data-lang="ja">日本語</button>
+  </div>
+
+  <!-- 좌측: streak · 우측: Clawd + 말풍선 (Wave 11.8 · spec §7-4) -->
+  <section class="summary-block reveal r3" id="summary-block">
+    <div class="streak-label" id="streak-label">streak</div>
+    <div class="streak-row">
+      <span class="streak-num has-glow" id="streak-num">13</span>
+      <span class="streak-unit" id="streak-unit">days</span>
+    </div>
+    <div class="streak-meta" id="streak-meta">1일 전 학습</div>
+    <div class="summary-row" id="summary-row"></div>
+  </section>
+
+  <div class="weekly-cal reveal r4" id="weekly-cal"></div>
+
+  <!-- Wave 11.68-c — PR 위젯 (spec §11-6). 0 케이스 hidden, 데이터 있을 때만 .is-visible 부착. -->
+  <section class="pr-widget reveal r5" id="pr-widget" aria-hidden="true">
+    <div class="pr-widget-row">
+      <div class="pr-widget-col">
+        <div class="pr-widget-label">today</div>
+        <div>
+          <span class="pr-widget-num" id="pr-today-num">0</span>
+          <span class="pr-widget-unit">발화</span>
+        </div>
+        <div class="pr-widget-delta" id="pr-today-delta"></div>
+      </div>
+      <div class="pr-widget-col">
+        <div class="pr-widget-label">this week</div>
+        <div>
+          <span class="pr-widget-num" id="pr-week-num">0</span>
+          <span class="pr-widget-unit">발화</span>
+        </div>
+        <div class="pr-widget-delta" id="pr-week-delta"></div>
+      </div>
+    </div>
+    <div class="pr-widget-recent" id="pr-widget-recent"></div>
+  </section>
+
+  <div class="spacer"></div>
+
+  <div class="cta-area reveal r5">
+    <button class="cta-primary" id="cta-primary">공부 시작</button>
+    <button class="cta-free" id="cta-free">자유 복습</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 주간 캘린더 날짜 클릭 시 바텀시트 (그날 학습 요약 + 신규 문장 목록).
+     CSS 는 src/styles/bs-sheet.css 로 공용화 (stats 월간 캘린더와 공유) -->
+<div class="bs-overlay" id="bs-overlay"></div>
+<div class="bs-sheet" id="bs-sheet">
+  <div class="bs-handle"></div>
+  <div class="bs-date" id="bs-date"></div>
+  <div class="bs-stats" id="bs-stats"></div>
+  <div class="bs-sentences" id="bs-sentences"></div>
+</div>
+
+<script>
+// 주간 캘린더 — todayISO 기준 동적 생성 (월 시작 7일 ISO 배열). iframe 허브(window.studyDay 없음)는 system date.
+const HOME_TODAY_ISO = window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10);
+function buildWeekDays(todayISO) {
+  const t = new Date(todayISO + 'T00:00:00Z');
+  const day = t.getUTCDay();
+  const monday = new Date(t);
+  monday.setUTCDate(t.getUTCDate() + (day === 0 ? -6 : 1 - day));
+  const dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + i);
+    const iso = d.toISOString().slice(0, 10);
+    out.push({ iso, d: d.getUTCDate(), m: d.getUTCMonth() + 1, dow: dowNames[i], today: iso === todayISO });
+  }
+  return out;
+}
+const WEEK_DAYS = buildWeekDays(HOME_TODAY_ISO);
+
+function intensity(v) {
+  if (!v || v === 0) return 0;
+  if (v < 10) return 1;
+  if (v < 18) return 2;
+  return 3;
+}
+
+async function renderWeek() {
+  // Dexie 우선. iframe 허브(window.studyDB 없음)는 빈 캘린더 — 4월 시안 mock fallback 제거 (시안 노출 회귀 방지).
+  const lang = getActiveLang();
+  const dayMap = await fetchSessionLogDayMap(lang);
+  const wrap = document.getElementById('weekly-cal');
+  wrap.innerHTML = '';
+  WEEK_DAYS.forEach(w => {
+    const val = dayMap ? (dayMap[w.iso] || 0) : 0;
+    const cnt = val && val > 0 ? val : '';
+    const intens = intensity(val);
+    const col = document.createElement('div');
+    col.className = 'day-col' + (w.today ? ' today' : '');
+    col.dataset.intensity = intens;
+    col.innerHTML = `
+      <span class="day-name">${w.dow}</span>
+      <div class="day-num-wrap"><span class="day-num">${w.d}</span></div>
+      <span class="day-count">${cnt}</span>
+    `;
+    col.addEventListener('click', () => openBS(w.iso));
+    wrap.appendChild(col);
+  });
+}
+
+// 상태 정의
+const STATES = {
+  active: { label:'streak', num:'13', unit:'days', meta:'1일 전 학습', glow:true, gap:false, exp:142, due:8, cta:'공부 시작', showFree:true, tab:'en' },
+  resume: { label:'streak', num:'13', unit:'days', meta:'세션 진행 중', glow:true, gap:false, exp:142, due:5, cta:'이어서 하기', showFree:false, tab:'en' },
+  gap3:   { label:'streak', num:'13', unit:'days', meta:'3일 전 학습', glow:true, gap:false, exp:142, due:15, cta:'공부 시작', showFree:true, tab:'en' },
+  gap5:   { label:'',       num:'5',  unit:'일째', meta:'마지막 학습으로부터', glow:false, gap:true, exp:142, due:23, cta:'공부 시작', showFree:true, tab:'en' },
+  first:  { label:'',       num:'',   unit:'',    meta:'첫 학습을 시작하세요', glow:false, gap:false, exp:0, due:0, cta:'공부 시작', showFree:false, tab:'en' },
+  ja:     { label:'streak', num:'13', unit:'days', meta:'1日前に学習',        glow:true, gap:false, exp:87, due:5, cta:'공부 시작', showFree:true, tab:'ja' }
+};
+
+function ss(key) {
+  const s = STATES[key]; if (!s) return;
+  document.getElementById('streak-label').textContent = s.label;
+  document.getElementById('streak-num').textContent = s.num;
+  document.getElementById('streak-unit').textContent = s.unit;
+  document.getElementById('streak-meta').textContent = s.meta;
+  document.getElementById('streak-num').classList.toggle('has-glow', s.glow);
+  document.getElementById('summary-block').classList.toggle('gap-state', s.gap);
+
+  const row = document.getElementById('summary-row');
+  let html = '';
+  if (s.exp > 0) html += `<span class="summary-item"><span class="summary-val">${s.exp}</span> expressions</span>`;
+  if (s.due > 0) html += `<span class="summary-item"><span class="summary-val">${s.due}</span> due</span>`;
+  row.innerHTML = html;
+
+  document.getElementById('cta-primary').textContent = s.cta;
+  document.getElementById('cta-free').style.display = s.showFree ? '' : 'none';
+  document.getElementById('tab-en').classList.toggle('active', s.tab === 'en');
+  document.getElementById('tab-ja').classList.toggle('active', s.tab === 'ja');
+
+  // 저장 — session 진입 시 상태 전달
+  sessionStorage.setItem('studyLang', s.tab);
+  sessionStorage.setItem('studyMode', key === 'resume' ? 'resume' : 'normal');
+
+  document.querySelectorAll('.pv-btn').forEach(b => b.classList.remove('active'));
+  const btnMap = { active:'Active', resume:'Resume', gap3:'Gap 3d', gap5:'Gap 5d+', first:'First', ja:'JA' };
+  [...document.querySelectorAll('.pv-btn')].forEach(b => { if (b.textContent === btnMap[key]) b.classList.add('active'); });
+
+  // reveal re-trigger
+  document.querySelectorAll('.reveal').forEach(el => { el.style.animation='none'; void el.offsetWidth; el.style.animation=''; });
+}
+
+// 언어 탭 클릭
+document.querySelectorAll('.lang-tab').forEach(t => {
+  t.addEventListener('click', () => {
+    const lang = t.dataset.lang;
+    ss(lang === 'ja' ? 'ja' : 'active');
+    // Wave 11.33 — Dexie 기반 stats 도 lang 별 재계산 (mocks 단독은 ss() 의 fixture 만, SPA 는 updateHomeStats)
+    updateHomeStats().catch(e => console.error('[home lang switch]', e));
+    // Wave 11.34 — 주간 캘린더도 lang 별 재렌더 (이전: lang switch 시 캘린더는 기존 lang 그대로 → ja 탭 active 라도 en 데이터 표시 회귀)
+    renderWeek().catch(e => console.error('[home lang switch][week]', e));
+  });
+});
+
+// Wave 11.33 — 현재 active lang 헬퍼 (cta 진입 시 URL ?lang= 전달).
+function getActiveLang() {
+  return document.getElementById('tab-ja')?.classList.contains('active') ? 'ja' : 'en';
+}
+
+// 네비
+document.getElementById('btnStats').addEventListener('click', () => { window.location.href = 'stats.html'; });
+document.getElementById('btnSettings').addEventListener('click', () => { window.location.href = 'settings.html'; });
+document.getElementById('cta-primary').addEventListener('click', () => {
+  // Wave 11.6B: dataset.mode 에 따라 combined (공부 시작) / resume (이어서 하기) 분기.
+  // Wave 11.33: lang param 도 전달 (en/ja).
+  const mode = document.getElementById('cta-primary').dataset.mode || 'combined';
+  const lang = getActiveLang();
+  window.location.hash = `#/session?mode=${mode}&lang=${lang}`;
+});
+document.getElementById('cta-free').addEventListener('click', () => {
+  // Wave 11.33 — 자유 복습 = mode=free (이전 'review' 는 today due 만 → due 0 시 빈 화면).
+  // mode=free → setupByMode 의 pickFreeReview (overdue → due → future 우선순위 최대 20장).
+  // spec §8-4: "복습 큐에서 최대 N장, 기한 초과 우선 정렬". lang 도 함께 전달.
+  const lang = getActiveLang();
+  window.location.hash = `#/session?mode=free&lang=${lang}`;
+});
+
+// Toast
+let toastTimer;
+function toast(m) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 1500);
+}
+
+// 주간 캘린더 바텀시트 mock data (Wave 11.71 — re1~re7 와 동기화).
+// id/문장은 session.html CARDS.en.review 의 re* 와 일치 — session adapter 가 id 로 full card 를
+// 매칭해서 해설·청크·음소 정보를 그대로 가져온다. SPA 모드에선 Dexie 로 대체.
+const HOME_DAY_DATA = {
+  14: { time:'22분', total:20, pass:14, sents:[
+    { id:'re2', en:"I'm not gonna lie, that was pretty rough.", ko:'솔직히 말하면, 꽤 힘들었어.', score:82, cls:'good' },
+    { id:'re5', en:"Could you give me a hand?",                 ko:'좀 도와줄 수 있어요?',      score:78, cls:'good' },
+    { id:'re6', en:"I have no idea.",                            ko:'전혀 모르겠어.',             score:69, cls:'mid'  }
+  ]},
+  15: { time:'14분', total:9,  pass:7,  sents:[
+    { id:'re3', en:"Take it easy.",                              ko:'잘 지내 / 진정해.',         score:84, cls:'good' },
+    { id:'re4', en:"Long time no see.",                          ko:'오랜만이야.',                score:75, cls:'good' }
+  ]}
+};
+const DOW_KO = { Mon:'월', Tue:'화', Wed:'수', Thu:'목', Fri:'금', Sat:'토', Sun:'일' };
+
+// Dexie helpers (Wave 11.3B). SPA 모드에선 window.studyDB 로 실 데이터, iframe 허브에선 null → mock fallback.
+// Wave 11.7: 홈 스텟 실 계산 (spec §7-1) — streak·총표현·오늘 복습대기·마지막 학습일
+async function computeHomeStats(lang = 'en') {
+  const db = window.studyDB;
+  if (!db) return null;
+  try {
+    const todayISO = window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10);
+    // Wave 11.33 — lang 별 분기. 이전엔 reviewDueCount 가 모든 lang 합산 → ja 탭에서도 en 카드 due 표시.
+    // lang 인덱스 단일 fetch + in-memory due 필터 (복합 [lang+nextReview] 인덱스 별 wave).
+    const allLang = await db.reviewQueue.where('lang').equals(lang).toArray();
+    const totalExpressions = allLang.length;
+    const reviewDueCount = allLang.filter((c) => !c.nextReview || c.nextReview <= todayISO).length;
+    // Wave 11.29 — 오늘 신규 콘텐츠 (spec §5 폴백 + §5-1).
+    // todayLessons 의 today 분 전체 + 미완료 (completed!==true) 분리 집계.
+    // total 0 = 콘텐츠 미생성, total>0 + remaining=0 = 모두 완료, remaining>0 = 진행 가능.
+    // Wave 11.34: 복합 인덱스 [lang+date] 미정의 → 매 호출 SchemaError 가 콘솔에 찍히던 문제 fix.
+    // 단일 lang 인덱스 + in-memory date 필터 (todayLessons 양 적어 성능 영향 미미).
+    const langLessons = await db.todayLessons.where('lang').equals(lang).toArray();
+    const todayLessonsAll = langLessons.filter(l => l.date === todayISO);
+    const todayLessonsTotal = todayLessonsAll.length;
+    const todayLessonsRemaining = todayLessonsAll.filter(l => l.completed !== true).length;
+    const logs = await db.sessionLogs.where('lang').equals(lang).toArray();
+    const dates = [...new Set(logs.map(l => l.date))].sort().reverse();
+    // streak: today 또는 어제부터 역순으로 연속 일수
+    let streak = 0, cursor = todayISO;
+    // 오늘 학습 기록 없으면 어제부터 기준으로 이어짐 여부 판정
+    if (!dates.includes(cursor)) {
+      const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
+      cursor = c.toISOString().slice(0, 10);
+    }
+    for (const d of dates) {
+      if (d === cursor) {
+        streak++;
+        const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
+        cursor = c.toISOString().slice(0, 10);
+      } else if (d < cursor) { break; }
+    }
+    const lastLearnedISO = dates[0] || null;
+    let daysAgo = null;
+    if (lastLearnedISO) {
+      const diffMs = new Date(todayISO + 'T00:00:00Z') - new Date(lastLearnedISO + 'T00:00:00Z');
+      daysAgo = Math.max(0, Math.round(diffMs / 86400000));
+    }
+    return { totalExpressions, reviewDueCount, streak, daysAgo, lastLearnedISO, todayLessonsTotal, todayLessonsRemaining };
+  } catch (e) { console.error('[computeHomeStats]', e); return null; }
+}
+
+// Wave 11.68 정정 — pickClawdState / applyClawdState 폐기 (spec §7-4 마스코트 제거).
+// 동기부여는 §11-6 PR 위젯 + §7-1 streak 큰 숫자가 정본.
+
+// Wave 11.68-c (spec §11-6) — PR 위젯 데이터 로드 + 렌더.
+// 데이터 source: dailyStats (lang 합산) + sessionLogs (sliding window) + Dexie meta 4 PR keys + history.
+// 0 케이스: PR 미존재 (첫 사용자) 또는 7일 비활성 → 위젯 hidden.
+async function updatePRWidget(lang = 'en') {
+  const widget = document.getElementById('pr-widget');
+  if (!widget) return;
+  const db = window.studyDB;
+  if (!db) { widget.classList.remove('is-visible'); return; }
+  try {
+    // 1) 오늘 / 어제 / 이번 주 / 지난 주 utterance 합산 (sessionLogs 기반).
+    const allLogs = await db.sessionLogs.where('lang').equals(lang).toArray();
+    const todayISO = window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10);
+    const yest = new Date(todayISO + 'T00:00:00Z'); yest.setUTCDate(yest.getUTCDate() - 1);
+    const yesterdayISO = yest.toISOString().slice(0, 10);
+    const sumDate = (date) => allLogs
+      .filter((l) => l.date === date)
+      .reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
+    const todayUtter = sumDate(todayISO);
+    const yesterdayUtter = sumDate(yesterdayISO);
+    // 이번 주 / 지난 주 — pr.js getMondayOf 직접 호출 안 하고 in-line 산출 (mocks 단독 진입 호환).
+    const monday = (iso) => {
+      const d = new Date(iso + 'T00:00:00Z');
+      const day = d.getUTCDay();
+      d.setUTCDate(d.getUTCDate() + (day === 0 ? -6 : 1 - day));
+      return d.toISOString().slice(0, 10);
+    };
+    const sumWeek = (weekStart) => {
+      const start = new Date(weekStart + 'T00:00:00Z');
+      const end = new Date(start); end.setUTCDate(end.getUTCDate() + 6);
+      const endISO = end.toISOString().slice(0, 10);
+      return allLogs
+        .filter((l) => l.date >= weekStart && l.date <= endISO)
+        .reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
+    };
+    const thisWeekStart = monday(todayISO);
+    const lastWeekStartD = new Date(thisWeekStart + 'T00:00:00Z');
+    lastWeekStartD.setUTCDate(lastWeekStartD.getUTCDate() - 7);
+    const lastWeekStart = lastWeekStartD.toISOString().slice(0, 10);
+    const thisWeekUtter = sumWeek(thisWeekStart);
+    const lastWeekUtter = sumWeek(lastWeekStart);
+
+    // 2) 최근 PR (4 keys + history 중 가장 최근 achieved_at).
+    const prKeys = ['prDailyUtterance', 'prDailyStudyTime', 'prWeeklyUtterance', 'prWeeklyPass'];
+    const got = await db.meta.bulkGet(prKeys);
+    const recentCandidates = [];
+    for (let i = 0; i < prKeys.length; i++) {
+      const v = got[i]?.value;
+      if (!v) continue;
+      const d = v.achieved_at || v.week_start;
+      if (d) recentCandidates.push({ type: prKeys[i], value: v.value, date: d });
+    }
+    recentCandidates.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const recent = recentCandidates[0] || null;
+
+    // 0 케이스: 모든 데이터 0 + PR 미존재 → hidden
+    if (todayUtter === 0 && thisWeekUtter === 0 && !recent) {
+      widget.classList.remove('is-visible');
+      return;
+    }
+
+    // 3) 렌더
+    const fmtDelta = (cur, prev) => {
+      if (prev === 0 && cur === 0) return '';
+      if (prev === 0) return `+${cur}`;
+      const diff = cur - prev;
+      if (diff === 0) return '=';
+      return diff > 0 ? `+${diff}` : `${diff}`;
+    };
+    const todayNumEl = document.getElementById('pr-today-num');
+    const weekNumEl = document.getElementById('pr-week-num');
+    const todayDeltaEl = document.getElementById('pr-today-delta');
+    const weekDeltaEl = document.getElementById('pr-week-delta');
+    const recentEl = document.getElementById('pr-widget-recent');
+    if (todayNumEl) todayNumEl.textContent = todayUtter;
+    if (weekNumEl) weekNumEl.textContent = thisWeekUtter;
+    if (todayDeltaEl) todayDeltaEl.textContent = fmtDelta(todayUtter, yesterdayUtter) ? `vs 어제 ${fmtDelta(todayUtter, yesterdayUtter)}` : '';
+    if (weekDeltaEl) weekDeltaEl.textContent = fmtDelta(thisWeekUtter, lastWeekUtter) ? `vs 지난주 ${fmtDelta(thisWeekUtter, lastWeekUtter)}` : '';
+    if (recentEl) {
+      // 7일 이내 PR 만 표시
+      if (recent) {
+        const daysDiff = Math.round((new Date(todayISO) - new Date(recent.date)) / 86400000);
+        if (daysDiff <= 7 && daysDiff >= 0) {
+          const labelMap = {
+            prDailyUtterance: '일 발화 PR',
+            prDailyStudyTime: '일 학습시간 PR',
+            prWeeklyUtterance: '주 발화 PR',
+            prWeeklyPass: '주 통과 PR',
+          };
+          const label = labelMap[recent.type] || 'PR';
+          recentEl.textContent = `${label} · ${recent.date} · ${recent.value}`;
+          recentEl.classList.add('is-pr');
+        } else {
+          recentEl.textContent = '';
+          recentEl.classList.remove('is-pr');
+        }
+      } else {
+        recentEl.textContent = '';
+        recentEl.classList.remove('is-pr');
+      }
+    }
+    widget.classList.add('is-visible');
+    widget.setAttribute('aria-hidden', 'false');
+  } catch (e) {
+    console.error('[updatePRWidget]', e);
+    widget.classList.remove('is-visible');
+  }
+}
+
+async function updateHomeStats() {
+  // Wave 11.33 — active 언어 탭에 따라 stats 계산 (en/ja 분기)
+  const lang = document.getElementById('tab-ja')?.classList.contains('active') ? 'ja' : 'en';
+  const s = await computeHomeStats(lang);
+  if (!s) return; // iframe 허브 fallback — ss() 의 mock 값 유지
+  const numEl = document.getElementById('streak-num');
+  const unitEl = document.getElementById('streak-unit');
+  const metaEl = document.getElementById('streak-meta');
+  const labelEl = document.getElementById('streak-label');
+  const row = document.getElementById('summary-row');
+  if (numEl) numEl.textContent = s.streak;
+  if (unitEl) unitEl.textContent = 'days';
+  if (labelEl) labelEl.textContent = s.streak > 0 ? 'streak' : '';
+  if (metaEl) {
+    metaEl.textContent = s.daysAgo === null ? '첫 학습을 시작하세요'
+      : s.daysAgo === 0 ? '오늘 학습 중'
+      : s.daysAgo === 1 ? '1일 전 학습'
+      : s.daysAgo + '일 전 학습';
+  }
+  if (row) {
+    let html = '';
+    if (s.totalExpressions > 0) html += `<span class="summary-item"><span class="summary-val">${s.totalExpressions}</span> expressions</span>`;
+    if (s.reviewDueCount > 0) html += `<span class="summary-item"><span class="summary-val">${s.reviewDueCount}</span> due</span>`;
+    // Wave 11.29 — 오늘 신규 콘텐츠 정보 (spec §5-1).
+    // 0건 (콘텐츠 미생성) → "신규 준비 중" / 진행 가능 → "N new" / 모두 완료 → "오늘 학습 완료".
+    if (s.todayLessonsTotal === 0) {
+      html += `<span class="summary-item summary-item-empty">신규 준비 중</span>`;
+    } else if (s.todayLessonsRemaining > 0) {
+      html += `<span class="summary-item"><span class="summary-val">${s.todayLessonsRemaining}</span> new</span>`;
+    } else {
+      html += `<span class="summary-item summary-item-done">오늘 학습 완료</span>`;
+    }
+    row.innerHTML = html;
+  }
+  // Wave 11.68-c — PR 위젯 갱신 (활성 언어 탭). 0 케이스 hidden 은 함수 내부 처리.
+  await updatePRWidget(lang);
+}
+
+// Wave 11.6B: 진행 중 세션 존재 여부 (TTL 1시간). home CTA "이어서 하기" 표시에 사용.
+async function hasActiveSession() {
+  const db = window.studyDB;
+  if (!db) return false;
+  try {
+    const row = await db.meta.get('activeSession');
+    if (!row || !row.value) return false;
+    if (Date.now() - (row.at || 0) > 60*60*1000) {
+      await db.meta.delete('activeSession');
+      return false;
+    }
+    return true;
+  } catch (e) { console.error('[hasActiveSession]', e); return false; }
+}
+
+async function updateResumeCta() {
+  const btn = document.getElementById('cta-primary');
+  if (!btn) return;
+  const active = await hasActiveSession();
+  if (active) {
+    btn.textContent = '이어서 하기';
+    btn.dataset.mode = 'resume';
+  } else {
+    btn.dataset.mode = 'combined';
+    // textContent 는 ss() 에서 이미 상태별로 설정됨 (공부 시작 / 이어서 하기 mock state 일 경우 등)
+  }
+}
+
+async function fetchSessionLogDayMap(lang = 'en') {
+  const db = window.studyDB;
+  if (!db) return null;
+  try {
+    const logs = await db.sessionLogs.where('lang').equals(lang).toArray();
+    const map = {};
+    for (const l of logs) {
+      if (!l.date) continue;
+      // 같은 ISO 날짜에 여러 세션 있으면 utteranceCount 합산.
+      map[l.date] = (map[l.date] || 0) + (Number(l.utteranceCount) || 0);
+    }
+    return map;
+  } catch (e) { console.error('[fetchSessionLogDayMap]', e); return null; }
+}
+
+async function fetchDayDetailFromDB(iso, lang = 'en') {
+  const db = window.studyDB;
+  if (!db) return null;
+  try {
+    const log = await db.sessionLogs.where('date').equals(iso).and(l => l.lang === lang).first();
+    if (!log) return null;
+    // Wave 11.76 — 헬퍼로 todayLessons + reviewQueue 양쪽 매칭 + newSentenceIds 우선 폴백.
+    // 이전: reviewQueue.anyOf(sentenceIds) 만 → 신규 카드 누락.
+    const cards = window.studyDay?.fetchDayLessonsForDay
+      ? await window.studyDay.fetchDayLessonsForDay(db, lang, iso)
+      : [];
+    const resultToScore = { O:85, '△':65, X:45 };
+    const resultToCls = { O:'good', '△':'mid', X:'low' };
+    return {
+      time: Math.round(log.durationSec / 60) + '분',
+      total: log.utteranceCount,
+      pass: log.passCount,
+      sents: cards.map(c => ({
+        id: c.id,
+        en: c.sentence,
+        ko: c.meaning,
+        score: resultToScore[c.lastResult] || 80,
+        cls: resultToCls[c.lastResult] || 'good',
+      })),
+    };
+  } catch (e) { console.error('[fetchDayDetailFromDB]', e); return null; }
+}
+
+async function openBS(iso) {
+  const weekItem = WEEK_DAYS.find(w => w.iso === iso);
+  const dowKo = weekItem ? DOW_KO[weekItem.dow] : '';
+  const m = weekItem ? weekItem.m : parseInt(iso.split('-')[1], 10);
+  const day = weekItem ? weekItem.d : parseInt(iso.split('-')[2], 10);
+  document.getElementById('bs-date').textContent = `${m}월 ${day}일 ${dowKo}요일`;
+
+  // Dexie 우선. Wave 11.34 — lang 별 분기 (HOME_DAY_DATA 영어 fixture 가 ja 탭 노출 회귀 방지).
+  // Wave 11.35 — HOME_DAY_DATA fallback 은 iframe 허브 시안 호환용으로만 유지 (4월 시안 day-of-month 키).
+  // SPA + db 있으면 항상 fetchDayDetailFromDB 결과 사용 → 5월 이후도 정상 매칭.
+  const lang = getActiveLang();
+  const data = (await fetchDayDetailFromDB(iso, lang)) || (lang === 'en' ? HOME_DAY_DATA[day] : null);
+  const statsEl = document.getElementById('bs-stats');
+  const sentsEl = document.getElementById('bs-sentences');
+
+  if (!data) {
+    statsEl.innerHTML = '';
+    sentsEl.innerHTML = '<div class="bs-sent-meaning" style="text-align:center;padding:var(--s-6) 0;">학습 기록이 없습니다</div>';
+  } else {
+    statsEl.innerHTML = `
+      <div><div class="bs-stat-label">학습 시간</div><div class="bs-stat-val">${data.time}</div></div>
+      <div><div class="bs-stat-label">통과 / 발화</div><div class="bs-stat-val"><span class="got">${data.pass}</span> / ${data.total}</div></div>
+    `;
+    sentsEl.innerHTML = '';
+    if (!data.sents.length) {
+      sentsEl.innerHTML = `<p style="text-align:center;padding:var(--s-6) 0;color:var(--text-muted);font-size:13px">신규 학습 없음</p>`;
+    }
+    data.sents.forEach((s, idx) => {
+      const item = document.createElement('div');
+      item.className = 'bs-sent';
+      item.innerHTML = `
+        <div class="bs-sent-content">
+          <div class="bs-sent-text">${s.en}</div>
+        </div>
+        <svg class="bs-sent-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      `;
+      item.addEventListener('click', () => {
+        // Wave 11.74 — 클릭 카드부터 시작: 큐를 idx 앞부분 잘라서 저장 (session.html 무변경).
+        sessionStorage.setItem('studyReviewQueue', JSON.stringify(data.sents.slice(idx)));
+        sessionStorage.setItem('studyReturnTo', 'home');
+        window.location.hash = `#/session?mode=review&lang=${getActiveLang()}`;
+      });
+      sentsEl.appendChild(item);
+    });
+  }
+
+  document.getElementById('bs-overlay').classList.add('open');
+  const sh = document.getElementById('bs-sheet');
+  sh.style.display = 'block';
+  // stats 패턴과 통일 (setTimeout 20ms). iframe 숨김/백그라운드 시 rAF 지연 이슈 회피.
+  setTimeout(() => sh.classList.add('open'), 20);
+}
+
+function closeBS() {
+  document.getElementById('bs-overlay').classList.remove('open');
+  const sh = document.getElementById('bs-sheet');
+  sh.classList.remove('open');
+  setTimeout(() => { sh.style.display = 'none'; }, 300);
+}
+document.getElementById('bs-overlay').addEventListener('click', closeBS);
+
+// renderWeek 는 async — fire-and-forget. 실패해도 콘솔만 남기고 나머지 UI(ss) 는 정상 진행.
+renderWeek().catch((e) => console.error('[renderWeek]', e));
+// Wave 11.34 — 진입 시 active lang 보존 (ja 학습 중 홈 이동 시 en 탭 reset 버그 fix).
+// sessionStorage 'studyLang' 우선 (lang 탭 클릭 시 set 됨, line 392). 미설정 시 default 'active' (en).
+const initialStateKey = sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'active';
+ss(initialStateKey);
+// Wave 11.6B: ss 호출 뒤에 실행되어 textContent/dataset 덮어씀. (ss 가 CTA 기본값 세팅 → resume 이면 오버라이드)
+updateResumeCta().catch((e) => console.error('[updateResumeCta]', e));
+// Wave 11.7: 홈 스텟 실 계산 (SPA 모드). ss() 가 설정한 mock 값을 Dexie 기반 실값으로 덮어씀.
+updateHomeStats().catch((e) => console.error('[updateHomeStats]', e));
+</script>
+</body>
+</html>

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Clawd — Gym Variants</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #faf9f5;
+      --surface: #ffffff;
+      --text: #3d3929;
+      --text-strong: #141413;
+      --text-muted: #8a8475;
+      --text-faint: #b5ad9e;
+      --accent: #d97757;
+      --accent-hover: #c4623f;
+      --blue: #6a9bcc;
+      --amber: #c4973b;
+      --sage: #788c5d;
+      --border: #e8e4dc;
+      --border-light: #f0ece4;
+      --font-display: 'Poppins', system-ui, sans-serif;
+      --font-body: 'Noto Sans KR', system-ui, sans-serif;
+      --r-sm: 6px; --r-md: 10px; --r-lg: 16px;
+      --shadow-xs: 0 1px 2px rgba(20,20,19,0.04);
+      --shadow-sm: 0 1px 3px rgba(20,20,19,0.04), 0 8px 32px rgba(20,20,19,0.06);
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.015'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 48px 24px; gap: 48px;
+      font-family: var(--font-display); color: var(--text); min-height: 100vh;
+    }
+    h2 { font-size: 16px; font-weight: 600; color: var(--text-strong); }
+    h3 { font-size: 13px; font-weight: 600; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+    .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .row { display: flex; gap: 56px; flex-wrap: wrap; justify-content: center; align-items: flex-end; }
+    .col { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .label { font-size: 11px; font-weight: 600; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; }
+    svg.c { image-rendering: pixelated; }
+
+    /* === 기본 애니메이션 === */
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-2px)} }
+    @keyframes blink {
+      0%,88%{transform:scaleY(1)} 92%{transform:scaleY(0.1)} 96%{transform:scaleY(1)} 100%{transform:scaleY(1)}
+    }
+    @keyframes pump { 0%,100%{transform:translateY(0)} 35%,65%{transform:translateY(-2px)} }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 40%{transform:translateY(-4px)} }
+    @keyframes drip {
+      0%,40%{opacity:0;transform:translateY(0)} 50%{opacity:.6} 100%{opacity:0;transform:translateY(4px)}
+    }
+    @keyframes zzfloat {
+      0%{opacity:0;transform:translate(0,0)} 25%{opacity:.5} 100%{opacity:0;transform:translate(1px,-5px)}
+    }
+    @keyframes slowbob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-1px)} }
+
+    /* === Happy 2종 === */
+    @keyframes wiggle {
+      0%,100%{transform:translateY(0) rotate(0deg)}
+      20%{transform:translateY(-3px) rotate(-2deg)}
+      40%{transform:translateY(-4px) rotate(2deg)}
+      60%{transform:translateY(-2px) rotate(-1deg)}
+      80%{transform:translateY(-1px) rotate(0deg)}
+    }
+    @keyframes sparkle1 {
+      0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.8;transform:scale(1.2)}
+    }
+    @keyframes sparkle2 {
+      0%,100%{opacity:0;transform:scale(0.5)} 50%{opacity:0.6;transform:scale(1)}
+    }
+
+    /* === 2프레임 교대 (0.52s, steps로 날카로운 전환) === */
+    @keyframes pose-fr-a { 0%, 49.99% { opacity: 1; } 50%, 100% { opacity: 0; } }
+    @keyframes pose-fr-b { 0%, 49.99% { opacity: 0; } 50%, 100% { opacity: 1; } }
+
+    /* === 신규 포즈 애니메이션 === */
+    /* Chalk: 짝짝 손털기 (좌우 tilt) + 파우더 터짐 */
+    @keyframes chalk-shake {
+      0%, 100% { transform: translateX(0) rotate(0deg); }
+      25% { transform: translateX(-1px) rotate(-3deg); }
+      50% { transform: translateX(0) rotate(0deg); }
+      75% { transform: translateX(1px) rotate(3deg); }
+    }
+    @keyframes chalk-puff {
+      0% { opacity: 0; transform: translate(0, 0) scale(0.5); }
+      30% { opacity: 0.7; transform: translate(var(--px, 0), var(--py, 0)) scale(1); }
+      100% { opacity: 0; transform: translate(calc(var(--px, 0) * 1.5), calc(var(--py, 0) * 1.5 - 2px)) scale(0.3); }
+    }
+
+    /* Angry/Grunt: 좌우 진동 + 약간 위아래 */
+    @keyframes grunt-shake {
+      0%, 100% { transform: translate(0, 0); }
+      20% { transform: translate(-1px, -1px); }
+      40% { transform: translate(1px, 1px); }
+      60% { transform: translate(-1px, 1px); }
+      80% { transform: translate(1px, -1px); }
+    }
+
+    /* Stretch: 천천히 좌우 기울이기 */
+    @keyframes stretch-lean {
+      0%, 100% { transform: translateY(-1px) rotate(0deg); }
+      50% { transform: translateY(-2px) rotate(0deg); }
+    }
+
+    /* Celebrate: 크게 점프 */
+    @keyframes celebrate-jump {
+      0%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-8px); }
+      60% { transform: translateY(0); }
+    }
+    @keyframes star-rotate {
+      0% { opacity: 0; transform: rotate(0deg) scale(0.3); }
+      30% { opacity: 1; transform: rotate(180deg) scale(1.2); }
+      100% { opacity: 0; transform: rotate(360deg) scale(0.5); }
+    }
+
+    /* Water: 위아래 가볍게 + 물방울 */
+    @keyframes water-sway {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-1px); }
+    }
+    @keyframes water-drop {
+      0% { opacity: 0; transform: translateY(-2px); }
+      30% { opacity: 0.7; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(5px); }
+    }
+
+    /* Flex: 알통 pulse */
+    @keyframes flex-pulse {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+    @keyframes bicep-bulge {
+      0%, 100% { transform: scaleY(1); }
+      50% { transform: scaleY(1.2); }
+    }
+
+    /* Sweat: 땀방울 똑똑 */
+    @keyframes sweat-drop1 {
+      0%, 20% { opacity: 0; transform: translateY(0); }
+      40% { opacity: 0.8; }
+      80% { opacity: 0.8; transform: translateY(3px); }
+      100% { opacity: 0; transform: translateY(5px); }
+    }
+    @keyframes sweat-drop2 {
+      0%, 60% { opacity: 0; transform: translateY(0); }
+      75% { opacity: 0.8; }
+      95% { opacity: 0.8; transform: translateY(3px); }
+      100% { opacity: 0; transform: translateY(5px); }
+    }
+
+    /* === 포즈별 미세 움직임 (원본 대비 진폭 강화) === */
+    @keyframes pose-press-beat {
+      0%, 100% { transform: translateY(-2px); }
+      50% { transform: translateY(2px); }
+    }
+    @keyframes pose-curl-lift {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2.5px); }
+    }
+    @keyframes pose-squat-bob {
+      0%, 100% { transform: translateY(-1.5px); }
+      50% { transform: translateY(2.5px); }
+    }
+    @keyframes pose-pull-up {
+      0%, 100% { transform: translateY(2.5px); }
+      50% { transform: translateY(-2px); }
+    }
+    @keyframes pose-run-bounce {
+      0%, 100% { transform: translateY(0); }
+      25% { transform: translateY(-4px) rotate(-2deg); }
+      50% { transform: translateY(0); }
+      75% { transform: translateY(-4px) rotate(2deg); }
+    }
+
+    /* 애니메이션 클래스 */
+    .a-bob { animation: bob 2.5s var(--ease) infinite; }
+    .a-pump { animation: pump 1.4s var(--ease) infinite; }
+    .a-bounce { animation: bounce 1s var(--ease) infinite; }
+    .a-slowbob { animation: slowbob 3.5s ease infinite; }
+    .a-blink { animation: blink 4s ease infinite; transform-origin: center; }
+    .a-drip { animation: drip 2.5s ease infinite; }
+    .a-zz1 { animation: zzfloat 3s ease infinite; }
+    .a-zz2 { animation: zzfloat 3s ease 1s infinite; }
+    .a-zz3 { animation: zzfloat 3s ease 2s infinite; }
+    .a-wiggle { animation: wiggle 1.2s var(--ease) infinite; }
+    .a-sparkle1 { animation: sparkle1 2s ease infinite; transform-origin: center; }
+    .a-sparkle2 { animation: sparkle2 2s ease 0.8s infinite; transform-origin: center; }
+    .a-sparkle3 { animation: sparkle1 2.5s ease 1.4s infinite; transform-origin: center; }
+
+    .pose-fr-a { animation: pose-fr-a 0.52s steps(1, end) infinite; }
+    .pose-fr-b { animation: pose-fr-b 0.52s steps(1, end) infinite; }
+
+    /* 신규 포즈 클래스 */
+    .a-chalk-shake { animation: chalk-shake 0.4s var(--ease) infinite; }
+    .a-chalk-puff1 { animation: chalk-puff 1.2s ease infinite; }
+    .a-chalk-puff2 { animation: chalk-puff 1.2s ease 0.4s infinite; }
+    .a-chalk-puff3 { animation: chalk-puff 1.5s ease 0.8s infinite; }
+    .a-grunt-shake { animation: grunt-shake 0.12s linear infinite; }
+    .a-stretch-lean { animation: stretch-lean 2s var(--ease) infinite; }
+    .a-celebrate-jump { animation: celebrate-jump 1.2s var(--ease) infinite; }
+    .a-star1 { animation: star-rotate 1.5s ease infinite; transform-origin: center; }
+    .a-star2 { animation: star-rotate 1.5s ease 0.5s infinite; transform-origin: center; }
+    .a-star3 { animation: star-rotate 1.8s ease 1s infinite; transform-origin: center; }
+    .a-water-sway { animation: water-sway 1.8s var(--ease) infinite; }
+    .a-water-drop1 { animation: water-drop 1.5s ease infinite; }
+    .a-water-drop2 { animation: water-drop 1.5s ease 0.7s infinite; }
+    .a-flex-pulse { animation: flex-pulse 1.2s var(--ease) infinite; }
+    .a-bicep { animation: bicep-bulge 1.2s var(--ease) infinite; transform-origin: center; }
+    .a-sweat1 { animation: sweat-drop1 2.5s ease infinite; }
+    .a-sweat2 { animation: sweat-drop2 2.5s ease infinite; }
+
+    /* === 동작 포즈 갤러리 === */
+    .gallery {
+      max-width: 960px; width: 100%;
+      margin: 0 auto;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .gallery-item {
+      background: var(--surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--r-md);
+      padding: 24px 16px 16px;
+      text-align: center;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 4px;
+      box-shadow: var(--shadow-xs);
+    }
+    .gallery-clawd {
+      position: relative;
+      width: 60px; height: 52px;
+      display: flex; align-items: flex-end; justify-content: center;
+      margin-bottom: 12px;
+      transform-origin: center bottom;
+    }
+    .gallery-clawd svg {
+      position: absolute; bottom: 0;
+      image-rendering: pixelated;
+      display: block;
+    }
+    .gallery-clawd[data-pose="press"] { animation: pose-press-beat 0.9s var(--ease) infinite; }
+    .gallery-clawd[data-pose="curl"]  { animation: pose-curl-lift 0.85s var(--ease) infinite; }
+    .gallery-clawd[data-pose="squat"] { animation: pose-squat-bob 1s var(--ease) infinite; }
+    .gallery-clawd[data-pose="pull"]  { animation: pose-pull-up 1s var(--ease) infinite; }
+    .gallery-clawd[data-pose="run"]   { animation: pose-run-bounce 0.52s var(--ease) infinite; }
+    .gallery-clawd[data-pose="deadlift"] { animation: pose-dead-beat 0.9s var(--ease) infinite; }
+
+    @keyframes pose-dead-beat {
+      0%, 100% { transform: translateY(1px); }
+      50% { transform: translateY(-2px); }
+    }
+    .gallery-pose-name {
+      font-family: var(--font-display); font-size: 13px; font-weight: 600;
+      color: var(--text-strong); margin-top: 4px;
+    }
+    .gallery-mapping {
+      font-family: var(--font-body); font-size: 11px; font-weight: 300;
+      color: var(--text-muted); line-height: 1.5;
+      margin-top: 6px;
+    }
+
+    .divider { width: 100%; max-width: 960px; height: 1px; background: var(--border-light); }
+    .section-intro { text-align: center; max-width: 520px; }
+  </style>
+</head>
+<body>
+
+<div class="section-intro">
+  <h2>Clawd — Gym Variants (Animated)</h2>
+  <p class="sub">Canonical 15×9 grid · 픽셀 아트 + CSS 애니메이션</p>
+</div>
+
+<!-- ===================================================================
+     재사용 symbol 정의 (정적 SVG 소스)
+     =================================================================== -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+  <!-- Idle: 기본 서 있는 자세 -->
+  <symbol id="c-idle" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Lift: 바벨 든 채 서 있음 -->
+  <symbol id="c-lift" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="1" width="11" height="1" fill="#b5ad9e"/>
+    <rect x="13" y="0" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="11" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="2" y="3" width="11" height="7" fill="#d97757"/>
+    <rect x="4" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="5" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Press frame A: 바벨 가슴 근처 -->
+  <symbol id="c-press1" viewBox="0 0 15 12">
+    <rect x="0" y="1" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="2" width="11" height="1" fill="#b5ad9e"/>
+    <rect x="13" y="1" width="2" height="3" fill="#8a8475"/>
+    <rect x="2" y="2" width="2" height="2" fill="#d97757"/>
+    <rect x="11" y="2" width="2" height="2" fill="#d97757"/>
+    <rect x="2" y="4" width="11" height="6" fill="#d97757"/>
+    <rect x="4" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Curl frame A: 덤벨 허리 옆 -->
+  <symbol id="c-curl1" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="0" y="6" width="2" height="2" fill="#8a8475"/>
+    <rect x="13" y="6" width="2" height="2" fill="#8a8475"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Curl frame B: 덤벨 어깨 옆 -->
+  <symbol id="c-curl2" viewBox="0 0 15 9">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="1" width="2" height="2" fill="#8a8475"/>
+    <rect x="13" y="1" width="2" height="2" fill="#8a8475"/>
+    <rect x="0" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="3" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Squat frame B: 앉음 -->
+  <symbol id="c-squat2" viewBox="0 0 15 9">
+    <rect x="2" y="1" width="11" height="6" fill="#d97757"/>
+    <rect x="0" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="4" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="3" width="1" height="1" fill="#141413"/>
+    <rect x="10" y="3" width="1" height="1" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Pull frame A: 매달림 -->
+  <symbol id="c-pull1" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="1" y="2" width="1" height="2" fill="#d97757"/>
+    <rect x="13" y="2" width="1" height="2" fill="#d97757"/>
+    <rect x="2" y="4" width="11" height="6" fill="#d97757"/>
+    <rect x="4" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="6" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Pull frame B: 당김 -->
+  <symbol id="c-pull2" viewBox="0 0 15 12">
+    <rect x="0" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="0" width="2" height="2" fill="#d97757"/>
+    <rect x="1" y="2" width="1" height="1" fill="#d97757"/>
+    <rect x="13" y="2" width="1" height="1" fill="#d97757"/>
+    <rect x="2" y="2" width="11" height="6" fill="#d97757"/>
+    <rect x="4" y="4" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="4" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="8" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="8" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="8" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="8" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Run frame A: 왼팔 위/오른팔 아래, 왼다리 길게 -->
+  <symbol id="c-run1" viewBox="0 0 15 11">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="5" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="4" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="1" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Run frame B: 왼팔 아래/오른팔 위, 오른다리 길게 -->
+  <symbol id="c-run2" viewBox="0 0 15 11">
+    <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="5" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="1" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="2" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="7" width="1" height="1" fill="#d97757"/>
+    <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="7" width="1" height="4" fill="#d97757"/>
+    <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+  </symbol>
+
+  <!-- Deadlift frame A: 바닥 근처 바벨 + 몸 숙임 -->
+  <symbol id="c-dead1" viewBox="-1 0 17 13">
+    <rect x="2" y="4" width="11" height="6" fill="#d97757"/>
+    <rect x="0" y="9" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="9" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="7" width="1" height="1" fill="#141413"/>
+    <rect x="10" y="7" width="1" height="1" fill="#141413"/>
+    <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+    <rect x="-1" y="11" width="2" height="2" fill="#8a8475"/>
+    <rect x="1" y="11" width="13" height="1" fill="#b5ad9e"/>
+    <rect x="14" y="11" width="2" height="2" fill="#8a8475"/>
+  </symbol>
+
+  <!-- Deadlift frame B: 바벨 허리 높이 + 몸 꼿꼿 -->
+  <symbol id="c-dead2" viewBox="-1 0 17 13">
+    <rect x="2" y="1" width="11" height="7" fill="#d97757"/>
+    <rect x="0" y="7" width="2" height="2" fill="#d97757"/>
+    <rect x="13" y="7" width="2" height="2" fill="#d97757"/>
+    <rect x="4" y="3" width="1" height="2" fill="#141413"/>
+    <rect x="10" y="3" width="1" height="2" fill="#141413"/>
+    <rect x="3" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="5" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="9" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="11" y="8" width="1" height="3" fill="#d97757"/>
+    <rect x="-1" y="9" width="2" height="2" fill="#8a8475"/>
+    <rect x="1" y="9" width="13" height="1" fill="#b5ad9e"/>
+    <rect x="14" y="9" width="2" height="2" fill="#8a8475"/>
+  </symbol>
+</svg>
+
+
+<!-- ============================================================
+     1. 기본 상태 포즈 (3종)
+     ============================================================ -->
+<div class="section-intro">
+  <h3>기본 상태 포즈</h3>
+  <p class="sub">홈 대시보드 스트릭 영역 · 사용자 상태에 따라 전환</p>
+</div>
+
+<div class="row">
+  <div class="col">
+    <span class="label">Idle (Standing)</span>
+    <div class="a-bob">
+      <svg class="c" width="195" height="117" viewBox="0 0 15 9" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+        <rect x="0" y="3" width="2" height="2" fill="#d97757"/>
+        <rect x="13" y="3" width="2" height="2" fill="#d97757"/>
+        <g class="a-blink"><rect x="4" y="2" width="1" height="2" fill="#141413"/><rect x="10" y="2" width="1" height="2" fill="#141413"/></g>
+        <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+        <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+        <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+        <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="col">
+    <span class="label">Resting (Gap)</span>
+    <div class="a-slowbob">
+      <svg class="c" width="234" height="117" viewBox="0 0 18 9" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="0" width="11" height="7" fill="#d97757"/>
+        <rect x="0" y="4" width="2" height="2" fill="#d97757"/>
+        <rect x="13" y="4" width="2" height="2" fill="#d97757"/>
+        <rect x="4" y="3" width="2" height="1" fill="#141413"/>
+        <rect x="9" y="3" width="2" height="1" fill="#141413"/>
+        <rect x="3" y="7" width="1" height="2" fill="#d97757"/>
+        <rect x="5" y="7" width="1" height="2" fill="#d97757"/>
+        <rect x="9" y="7" width="1" height="2" fill="#d97757"/>
+        <rect x="11" y="7" width="1" height="2" fill="#d97757"/>
+        <g class="a-drip"><rect x="15" y="1" width="1" height="1" fill="#6a9bcc"/><rect x="15" y="3" width="1" height="1" fill="#6a9bcc"/></g>
+        <g class="a-zz1"><rect x="15" y="0" width="1" height="1" fill="#b5ad9e"/></g>
+        <g class="a-zz2"><rect x="16" y="0" width="1" height="1" fill="#b5ad9e" opacity=".7"/></g>
+        <g class="a-zz3"><rect x="17" y="0" width="1" height="1" fill="#b5ad9e" opacity=".4"/></g>
+      </svg>
+    </div>
+  </div>
+</div>
+
+
+<div class="divider"></div>
+
+
+<!-- ============================================================
+     2. Happy · Barbell Raise — PR / 목표 달성
+     (기존 Sparkles + Wiggle 삭제: 스샷1)
+     ============================================================ -->
+<div class="section-intro">
+  <h3>Happy · Barbell Raise</h3>
+  <p class="sub">PR 축하 · 목표 달성 · 세션 진행 중</p>
+</div>
+
+<div class="row">
+  <div class="col">
+    <span class="label">Happy · Barbell Raise</span>
+    <div class="a-bounce">
+      <svg class="c" width="195" height="156" viewBox="0 0 15 12" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="2" height="2" fill="#8a8475"/>
+        <rect x="2" y="0" width="11" height="1" fill="#b5ad9e"/>
+        <rect x="13" y="0" width="2" height="2" fill="#8a8475"/>
+        <rect x="2" y="1" width="2" height="2" fill="#d97757"/>
+        <rect x="11" y="1" width="2" height="2" fill="#d97757"/>
+        <rect x="2" y="3" width="11" height="7" fill="#d97757"/>
+        <g class="a-blink">
+          <rect x="4" y="5" width="1" height="2" fill="#141413"/>
+          <rect x="10" y="5" width="1" height="2" fill="#141413"/>
+        </g>
+        <rect x="3" y="10" width="1" height="2" fill="#d97757"/>
+        <rect x="5" y="10" width="1" height="2" fill="#d97757"/>
+        <rect x="9" y="10" width="1" height="2" fill="#d97757"/>
+        <rect x="11" y="10" width="1" height="2" fill="#d97757"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+
+<div class="divider"></div>
+
+
+<!-- ============================================================
+     3. 운동 동작 포즈 (7종) — 2프레임 교대 + 포즈별 미세 움직임
+     ============================================================ -->
+<div class="section-intro">
+  <h3>운동 동작 포즈 (6종)</h3>
+  <p class="sub">세션 카드 / 프로그레스바에서 운동 종목별 전환. 2프레임 교대 애니메이션.</p>
+</div>
+
+<section class="gallery">
+  <div class="gallery-grid">
+
+    <div class="gallery-item">
+      <div class="gallery-clawd" data-pose="press">
+        <svg class="pose-fr-a" viewBox="0 0 15 12" width="60" height="48"><use href="#c-press1"/></svg>
+        <svg class="pose-fr-b" viewBox="0 0 15 12" width="60" height="48"><use href="#c-lift"/></svg>
+      </div>
+      <div class="gallery-pose-name">Press</div>
+      <div class="gallery-mapping">벤치프레스 · 인클라인<br>숄더프레스 · 밀리터리<br>덤벨플라이</div>
+    </div>
+
+    <div class="gallery-item">
+      <div class="gallery-clawd" data-pose="curl">
+        <svg class="pose-fr-a" viewBox="0 0 15 9" width="60" height="36"><use href="#c-curl1"/></svg>
+        <svg class="pose-fr-b" viewBox="0 0 15 9" width="60" height="36"><use href="#c-curl2"/></svg>
+      </div>
+      <div class="gallery-pose-name">Curl</div>
+      <div class="gallery-mapping">바이셉컬 · 해머컬<br>덤벨컬 · 케이블컬</div>
+    </div>
+
+    <div class="gallery-item">
+      <div class="gallery-clawd" data-pose="squat">
+        <svg class="pose-fr-a" viewBox="0 0 15 9" width="60" height="36"><use href="#c-idle"/></svg>
+        <svg class="pose-fr-b" viewBox="0 0 15 9" width="60" height="36"><use href="#c-squat2"/></svg>
+      </div>
+      <div class="gallery-pose-name">Squat</div>
+      <div class="gallery-mapping">스쿼트 · 런지<br>레그프레스 · 힙쓰러스트</div>
+    </div>
+
+    <div class="gallery-item">
+      <div class="gallery-clawd" data-pose="deadlift" style="width: 68px; height: 52px;">
+        <svg class="pose-fr-a" viewBox="-1 0 17 13" width="68" height="52"><use href="#c-dead1"/></svg>
+        <svg class="pose-fr-b" viewBox="-1 0 17 13" width="68" height="52"><use href="#c-dead2"/></svg>
+      </div>
+      <div class="gallery-pose-name">Deadlift</div>
+      <div class="gallery-mapping">데드리프트 · 굿모닝<br>바벨로우 · 덤벨로우<br>시티드로우 · 케이블로우</div>
+    </div>
+
+    <div class="gallery-item">
+      <div class="gallery-clawd" data-pose="pull">
+        <svg class="pose-fr-a" viewBox="0 0 15 12" width="60" height="48"><use href="#c-pull1"/></svg>
+        <svg class="pose-fr-b" viewBox="0 0 15 12" width="60" height="48"><use href="#c-pull2"/></svg>
+      </div>
+      <div class="gallery-pose-name">Pull</div>
+      <div class="gallery-mapping">풀업 · 랫풀다운<br>친업</div>
+    </div>
+
+    <div class="gallery-item">
+      <div class="gallery-clawd" data-pose="run">
+        <svg class="pose-fr-a" viewBox="0 0 15 11" width="60" height="44"><use href="#c-run1"/></svg>
+        <svg class="pose-fr-b" viewBox="0 0 15 11" width="60" height="44"><use href="#c-run2"/></svg>
+      </div>
+      <div class="gallery-pose-name">Run</div>
+      <div class="gallery-mapping">트레드밀 · 사이클<br>로잉 · 엘립티컬</div>
+    </div>
+
+  </div>
+</section>
+
+<div style="height:48px;"></div>
+</body>
+</html>
