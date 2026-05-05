@@ -80,24 +80,11 @@ Claude_Preview MCP 의 Chrome 인스턴스는 별 profile. allowed emails (leftj
 
 ## 검증 (재발 시 사인)
 
-- 응답 본문 grep: `정합 (확인|검증)|자동 해소|사용자 (입장|체감|환경) (검증|확인|테스트)|테스트 통과 ?(=|→) ?spec` → verify-claims.sh 차단 대상
-- Bash stdout grep: `head|tail` 사용 + 응답 본문에 stdout 잘린 영역 숫자 단정
+- 응답 본문 패턴: `정합 (확인|검증)|자동 해소|사용자 (입장|체감|환경) (검증|확인|테스트)|테스트 통과 ?(=|→) ?spec`
+- Bash stdout: `head|tail` 사용 + 응답 본문에 stdout 잘린 영역 숫자 단정
 - Edit + 그 파일 라인 번호 (`\.\w+:\d+`) 인용 + 그 후 Read 부재
-
-## hook 강제력 (현재)
-
-| layer | hook 강제 | 비고 |
-|---|---|---|
-| 정규식 단어 ("자동 해소", "spec 정합 확인 완료" 등) | ✅ verify-claims.sh L65 (2026-05-04 보강) | axis A |
-| Bash stdout 잘림 후 단정 | ❌ | 4자리 숫자 매칭 hook 은 false positive 위험 ↑ — 1주 운영 후 결정 |
-| Edit-after-Read 시간 순서 | ❌ | JSONL 시간 순서 hook = 복잡도 ↑ — 텍스트 규칙 우선 |
-| preview .click() / OAuth 세션 ignorance | ❌ | 도구 한계 — lesson 박제만 가능 |
-
-→ axis A hook + axis I 텍스트 규칙 + 본 lesson + G axis 자가 점검 4중 결합.
 
 ## 관련
 
-- 글로벌 `~/.claude/CLAUDE.md` "거짓말 방지 출력 규칙" axis I (본 lesson 의 텍스트 규칙 본문)
-- `~/.claude/hooks/verify-claims.sh` L65 (axis A 정규식 보강)
+- 글로벌 `~/.claude/CLAUDE.md` "거짓말 방지 출력 규칙"
 - `~/apps/lessons/chrome-devtools-mcp-autoconnect.md` (OAuth 세션 우회 대안)
-- `~/apps/lessons/hooks-supplementary-2026-05-04.md` (직전 라운드 hook 보강 박제)

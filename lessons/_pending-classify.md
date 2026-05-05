@@ -70,7 +70,7 @@
 ## Wave 11.23 + 11.24 + 11.25 autoTTS + Azure analyze + stats month cursor (Study, 2026-05-01)
 
 **핵심 교훈 (다음 세션 Claude 가 몰라도 됨 — 박제):**
-1. **Study 의 audit 정밀도 — grep 키워드 추측 금지.** 본 turn 초반 `grep "score-pop|scorePop|rpg|damage"` = 0건 → "미구현" 결론 잘못. 실제 함수명 = `showScore` / `scoreOverlay` / `applyWordHighlight` / `openWordSheet`. spec 문구 그대로 grep 하지 말고 실제 코드 함수 시그니처 read 후 결론. (verify-claims hook 발동 위험.)
+1. **Study 의 audit 정밀도 — grep 키워드 추측 금지.** 본 turn 초반 `grep "score-pop|scorePop|rpg|damage"` = 0건 → "미구현" 결론 잘못. 실제 함수명 = `showScore` / `scoreOverlay` / `applyWordHighlight` / `openWordSheet`. spec 문구 그대로 grep 하지 말고 실제 코드 함수 시그니처 read 후 결론.
 2. **mocks vs SPA 모드 분기 키 = `window.studyDB` 존재.** SPA = main.js 경유 → studyDB/studySpeech/studyAuth 등록. mocks 직접 진입 = closure local state, window 미등록. SPA 전용 동작은 `if (window.studyDB)` 가드.
 3. **speech.js analyze() 시그니처** = `await window.studySpeech.analyze(expectedText, { lang })` → `{ score, wordScores, phonemeScores, weakPhonemes, fluencyScore, completenessScore, prosodyScore }`. analyze 자체가 마이크 직접 처리 (SDK SpeechRecognizer.recognizeOnceAsync). mocks/session.html 은 호출만.
 4. **mocks/session.html toggleRec 흐름** — idle → recording (사용자 클릭) → analyzing (사용자 또 클릭) → showScore. analyzing 단계에서 analyze 호출. recording = UI 시각만.
