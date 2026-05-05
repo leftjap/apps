@@ -78,7 +78,10 @@ async function signInWithGoogle() {
   }
   // redirectTo: 같은 origin 으로 돌아옴. PWA standalone 도 manifest start_url 과 일치하므로 자동 복귀.
   // 해시 라우터 사용 → 토큰 fragment 와 충돌 없음 (Supabase 가 detectSessionInUrl 로 자동 처리 후 정리).
-  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  // base path 포함 (GitHub Pages 서브경로 배포 시 origin 만으로는 다른 앱으로 redirect 됨).
+  const redirectTo = typeof window !== 'undefined'
+    ? window.location.origin + import.meta.env.BASE_URL
+    : undefined;
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo },

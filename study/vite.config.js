@@ -2,9 +2,14 @@ import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 import { visualizer } from 'rollup-plugin-visualizer';
 
+// GitHub Pages: leftjap.github.io/apps/study/ 서브경로 배포 (workflow 가 GH_PAGES=1 주입).
+// 로컬 dev/preview 는 GH_PAGES 미설정 → / (기본 동작 유지).
+const BASE = process.env.GH_PAGES ? '/apps/study/' : '/';
+
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  base: BASE,
   // vitest 가 e2e/*.spec.js (playwright) 까지 로드 시 충돌 → 명시 exclude (Wave 11.12).
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
@@ -68,9 +73,9 @@ export default defineConfig({
             },
           },
         ],
-        navigateFallback: '/index.html',
+        navigateFallback: `${BASE}index.html`,
         // mocks/ 는 SPA fallback 대상 제외 (각 HTML 이 독립 페이지)
-        navigateFallbackDenylist: [/^\/mocks\//],
+        navigateFallbackDenylist: [new RegExp(`^${BASE.replace(/\//g, '\\/')}mocks\\/`)],
       },
     }),
     // Wave 11.18 — bundle 분석 (build 시 dist/stats.html 자동 생성).

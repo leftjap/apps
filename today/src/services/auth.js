@@ -68,7 +68,10 @@ async function signInWithGoogle() {
     warnNotConfigured('signInWithGoogle');
     return { error: new Error('Supabase 미설정') };
   }
-  const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+  // base path 포함 (GitHub Pages 서브경로 배포 시 origin 만으로는 다른 앱으로 redirect 됨).
+  const redirectTo = typeof window !== 'undefined'
+    ? window.location.origin + import.meta.env.BASE_URL
+    : undefined;
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo },

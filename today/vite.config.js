@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
+// GitHub Pages: leftjap.github.io/apps/today/ 서브경로 배포 (workflow 가 GH_PAGES=1 주입).
+// 로컬 dev/preview 는 GH_PAGES 미설정 → / (기본 동작 유지).
+const BASE = process.env.GH_PAGES ? '/apps/today/' : '/';
+
 export default defineConfig({
   root: '.',
   publicDir: 'public',
+  base: BASE,
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
   },
@@ -38,8 +43,8 @@ export default defineConfig({
         // Wave 11.9.1 — heic2any chunk (1.35 MB) 는 precache 제외 (HEIC 첨부 시점 lazy fetch).
         // 일반 사용자 (JPEG/PNG only) PWA 첫 설치 부담 1.95 → 0.6 MB.
         globIgnores: ['**/heic2any-*.js', '**/heic2any-*.js.map'],
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/mocks\//],
+        navigateFallback: `${BASE}index.html`,
+        navigateFallbackDenylist: [new RegExp(`^${BASE.replace(/\//g, '\\/')}mocks\\/`)],
         // Wave 11.10 — 새 빌드 SW 즉시 활성화 (사용자 reload 시 옛 cache 강제 폐기).
         // skipWaiting:true → 새 SW install 시 waiting 단계 스킵. clientsClaim:true → 즉시 모든 탭 제어.
         // cleanupOutdatedCaches:true → 옛 precache 자동 삭제 (해시 다른 옛 chunks 제거).
