@@ -269,6 +269,17 @@ export function patchOpenAccModalHandler({
   _openModalPatched = true;
   win.openAccModal = function patchedOpenAccModal(action) {
     orig.call(this, action);
+    if (action === 'profile') {
+      // mocks PROFILE.name (IIFE 로컬, "지오" 하드코딩) 으로 채워진 input 을 사이드바 현재값으로 덮어쓰기.
+      // 사이드바는 mountAccountView 에서 DB display_name 과 동기화됨.
+      setTimeout(() => {
+        const input = doc.getElementById?.('accProfileName');
+        const sbName = doc.querySelector?.('.sb__user-name');
+        const name = sbName?.textContent;
+        if (input && name) input.value = name;
+      }, 0);
+      return;
+    }
     if (action !== 'trash') return;
     // mocks 의 overlay 가 동기로 DOM 마운트 → microtask 후 trashBody 교체
     setTimeout(async () => {
@@ -301,11 +312,16 @@ export async function mountAccountView(user) {
   patchTrashRestoreHandler();
   patchOpenAccModalHandler();
   // Wave 11.10 — 초기 avatar 표시 (사이드바 + acc-modal). 실패는 silent (avatar 없으면 initial fallback).
+  // display_name 도 DB → 사이드바 동기화 (mocks 정적 "지오" 덮어쓰기)
   try {
     const me = await Profile.getMyProfile();
     if (me?.avatar_url) applyAvatarUrl(me.avatar_url);
+    if (me?.display_name) {
+      const sbName = document.querySelector('.sb__user-name');
+      if (sbName) sbName.textContent = me.display_name;
+    }
   } catch (err) {
-    console.warn('[account] 초기 avatar 로드 실패:', err?.message || err);
+    console.warn('[account] 초기 profile 로드 실패:', err?.message || err);
   }
 }
 
