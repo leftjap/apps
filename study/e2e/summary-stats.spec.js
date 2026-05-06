@@ -1,3 +1,6 @@
+// SKIPPED: session.html removed in design refresh wave (2026.05).
+// Rewrite for #/session-new + #/session-review routes in next wave.
+// See HANDOFF.md, design refresh PR #N.
 /**
  * Wave 11.28 — 요약 화면 발음 집계 e2e (spec §10-1).
  *
@@ -30,7 +33,7 @@ async function bootstrapAndEnterSession(page) {
 }
 
 test.describe('Wave 11.28 — Summary pronunciation aggregation', () => {
-  test('A. pronunciationLog 3건 시드 → #pronAvg 80 + Top 3 weak-tag', async ({ page }) => {
+  test.skip('A. pronunciationLog 3건 시드 → #pronAvg 80 + Top 3 weak-tag', async ({ page }) => {
     await bootstrapAndEnterSession(page);
     // pronunciationLog 직접 시드 (이번 세션 createdAt = 진입 직후 + 안전 마진)
     await page.evaluate(async () => {
@@ -59,7 +62,7 @@ test.describe('Wave 11.28 — Summary pronunciation aggregation', () => {
     expect(tagCount).toBe(0);
   });
 
-  test('B. tryCount > 0 + pronAvg null (mocks fallback) → 통과율 점수 + 하드코딩 weak-tag', async ({ page }) => {
+  test.skip('B. tryCount > 0 + pronAvg null (mocks fallback) → 통과율 점수 + 하드코딩 weak-tag', async ({ page }) => {
     // sessionStorage 직접 주입 → summary 페이지 직접 진입 (finish 우회 — fallback path 검증)
     await page.goto('/');
     await page.evaluate(async (user) => {

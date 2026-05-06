@@ -1,3 +1,6 @@
+// SKIPPED: session.html removed in design refresh wave (2026.05).
+// Rewrite for #/session-new + #/session-review routes in next wave.
+// See HANDOFF.md, design refresh PR #N.
 /**
  * Wave 11.26 — SPA 모드 세션 흐름 통합 e2e.
  *
@@ -39,7 +42,7 @@ async function bootstrapFakeUserAndSpy(page) {
 }
 
 test.describe('Wave 11.26 — SPA session flow', () => {
-  test('A. combined 모드 진입 → 첫 카드 prompt 렌더 (#btnReveal)', async ({ page }) => {
+  test.skip('A. combined 모드 진입 → 첫 카드 prompt 렌더 (#btnReveal)', async ({ page }) => {
     await bootstrapFakeUserAndSpy(page);
     await page.goto('/#/session?mode=combined');
     // setupByMode → dueToday → reviewCards.length ≥1 → renderReviewCard prompt stage
@@ -50,7 +53,7 @@ test.describe('Wave 11.26 — SPA session flow', () => {
     expect(route).toBe('session');
   });
 
-  test('B. reveal click → answer stage + judge 버튼 + sentMain 채워짐', async ({ page }) => {
+  test.skip('B. reveal click → answer stage + judge 버튼 + sentMain 채워짐', async ({ page }) => {
     await bootstrapFakeUserAndSpy(page);
     await page.goto('/#/session?mode=combined');
     await page.locator('#btnReveal').click();
@@ -63,7 +66,7 @@ test.describe('Wave 11.26 — SPA session flow', () => {
     await expect(page.locator('.judge-got')).toBeVisible();
   });
 
-  test('C. autoTTS — reveal 후 studySpeech.speak 자동 호출 (spec §8-2-1)', async ({ page }) => {
+  test.skip('C. autoTTS — reveal 후 studySpeech.speak 자동 호출 (spec §8-2-1)', async ({ page }) => {
     await bootstrapFakeUserAndSpy(page);
     // Wave 11.34 — autoTTS default=false 로 변경. settings 명시 set 후 session 진입.
     await page.evaluate(async () => {
@@ -94,7 +97,7 @@ test.describe('Wave 11.26 — SPA session flow', () => {
     expect(calls[0].text.length).toBeGreaterThan(0);
   });
 
-  test('D. judge "got" click → reviewIdx 증가 (다음 카드 진입)', async ({ page }) => {
+  test.skip('D. judge "got" click → reviewIdx 증가 (다음 카드 진입)', async ({ page }) => {
     await bootstrapFakeUserAndSpy(page);
     await page.goto('/#/session?mode=combined');
     await page.locator('#btnReveal').click();
@@ -117,7 +120,7 @@ test.describe('Wave 11.26 — SPA session flow', () => {
     }
   });
 
-  test('E. btnEnd → endModal → endConfirm → #/summary 진입', async ({ page }) => {
+  test.skip('E. btnEnd → endModal → endConfirm → #/summary 진입', async ({ page }) => {
     await bootstrapFakeUserAndSpy(page);
     await page.goto('/#/session?mode=combined');
     await page.locator('#btnEnd').click();
@@ -127,7 +130,7 @@ test.describe('Wave 11.26 — SPA session flow', () => {
     await expect(page).toHaveURL(/#\/summary/);
   });
 
-  test('F. Wave 11.34 — stats 문장 클릭 → session 진입 (홈 redirect 회귀 방지)', async ({ page }) => {
+  test.skip('F. Wave 11.34 — stats 문장 클릭 → session 진입 (홈 redirect 회귀 방지)', async ({ page }) => {
     // 회귀 시나리오: stats.html 의 goReview 가 template literal 백틱 사용 → app.js rewriteMockLinks 미매칭 →
     //   path 직접 변경 (session.html?...) → SPA hash 비어 home 라우팅 → 사용자 보고 정확
     // 본 테스트는 hash 라우팅 정상 (URL 에 #/session 포함) 검증
@@ -148,7 +151,7 @@ test.describe('Wave 11.26 — SPA session flow', () => {
     expect(route).toBe('session');
   });
 
-  test('G. Wave 11.34 — autoTTS default off (settings 미설정 시 reveal 후 speak 자동 호출 안 됨)', async ({ page }) => {
+  test.skip('G. Wave 11.34 — autoTTS default off (settings 미설정 시 reveal 후 speak 자동 호출 안 됨)', async ({ page }) => {
     // 회귀 시나리오: state.autoTTS default=false 변경했으나 사용자 db 의 studySettings.autoTTS=true 잔여 시 자동 재생.
     // 본 테스트는 db 미설정 시 default off 동작 검증.
     await bootstrapFakeUserAndSpy(page);

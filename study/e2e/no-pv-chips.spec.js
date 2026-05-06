@@ -57,7 +57,10 @@ test.describe('Wave 11.30 — SPA 모드 .pv-bar hide', () => {
     await expectHidden(page, '/#/home');
   });
 
-  test('C. /#/session?mode=combined → pv-bar hide (인라인 + app.js 둘 다)', async ({ page }) => {
+  // SKIPPED: session.html removed in design refresh wave (2026.05).
+  // Rewrite for #/session-new + #/session-review routes in next wave.
+  // See HANDOFF.md, design refresh PR #N.
+  test.skip('C. /#/session?mode=combined → pv-bar hide (인라인 + app.js 둘 다)', async ({ page }) => {
     await bootstrap(page);
     await expectHidden(page, '/#/session?mode=combined');
   });
