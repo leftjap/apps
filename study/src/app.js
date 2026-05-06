@@ -1,6 +1,8 @@
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
-import sessionHtml from '../mocks/session.html?raw';
+import sessionNewHtml from '../mocks/session-new.html?raw';
+import sessionReviewHtml from '../mocks/session-review.html?raw';
+import calendarHtml from '../mocks/calendar.html?raw';
 import summaryHtml from '../mocks/summary.html?raw';
 import statsHtml from '../mocks/stats.html?raw';
 import settingsHtml from '../mocks/settings.html?raw';
@@ -9,7 +11,9 @@ import bsSheetCss from './styles/bs-sheet.css?raw';
 const ROUTES = {
   login: loginHtml,
   home: homeHtml,
-  session: sessionHtml,
+  'session-new': sessionNewHtml,
+  'session-review': sessionReviewHtml,
+  calendar: calendarHtml,
   summary: summaryHtml,
   stats: statsHtml,
   settings: settingsHtml,
@@ -19,7 +23,7 @@ const DEFAULT_ROUTE = 'login';
 const VIEW_ATTR = 'data-study-view';
 
 // 해시 라우트 + 쿼리 파라미터 파싱.
-// 예: '#/session?mode=review&sentenceId=abc&from=stats' → { name: 'session', params: {mode, sentenceId, from} }
+// 예: '#/session-review?sentenceId=abc&from=stats' → { name: 'session-review', params: {sentenceId, from} }
 function parseRoute() {
   const hash = window.location.hash.replace(/^#\/?/, '');
   const [pathPart = '', queryPart = ''] = hash.split('?');

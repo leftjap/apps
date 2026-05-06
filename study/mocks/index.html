@@ -91,9 +91,9 @@
   <span class="dev-label">Nav</span>
   <button class="dev-btn nav-btn" data-src="login.html">Login</button>
   <button class="dev-btn nav-btn" data-src="home.html">Home</button>
-  <button class="dev-btn nav-btn" data-src="session.html?mode=combined">공부시작</button>
-  <button class="dev-btn nav-btn" data-src="session.html?mode=review">복습만</button>
-  <button class="dev-btn nav-btn" data-src="session.html?mode=new">신규만</button>
+  <button class="dev-btn nav-btn" data-src="session-new.html">신규</button>
+  <button class="dev-btn nav-btn" data-src="session-review.html">복습</button>
+  <button class="dev-btn nav-btn" data-src="calendar.html">Calendar</button>
   <button class="dev-btn nav-btn" data-src="summary.html">Summary</button>
   <button class="dev-btn nav-btn" data-src="stats.html">Stats</button>
   <button class="dev-btn nav-btn" data-src="settings.html">Settings</button>
@@ -105,7 +105,7 @@
 
 <div class="dev-note">
   Study 프로토타입 — <strong>iPhone 390×844 · iPad 820×700 · Mac 1080×700</strong>.<br>
-  Nav 버튼은 iframe 직접 전환. 세션은 <strong>mode=combined</strong>(공부 시작 · 복습→신규), <strong>mode=review</strong>(복습만), <strong>mode=new</strong>(신규 학습만). 실기 테스트는 이 파일(<code>index.html</code>) 이 아닌 각 페이지(<code>login.html</code> 등) 에 직접 접속.
+  Nav 버튼은 iframe 직접 전환. 세션은 <strong>session-new</strong>(신규 학습) · <strong>session-review</strong>(복습 + 판정 3버튼) 두 라우트로 분리. 실기 테스트는 이 파일(<code>index.html</code>) 이 아닌 각 페이지(<code>login.html</code> 등) 에 직접 접속.
 </div>
 
 <script>

@@ -235,7 +235,7 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 
 </div>
 
-<!-- Bottom Sheet (day detail) · 문장 탭 시 → #/session?mode=review 진입 -->
+<!-- Bottom Sheet (day detail) · 문장 탭 시 → #/session-review 진입 -->
 <div class="bs-overlay" id="bs-overlay"></div>
 
 <div class="bs-sheet" id="bs-sheet">
@@ -303,7 +303,7 @@ function goReview(s, from) {
   // Wave 11.34 — SPA 라우터로 직접 hash 변경 (rewriteMockLinks 의 정규식이 template literal 백틱 미매칭 → P-1 회귀 원인).
   // window.location.hash = '#/...' 패턴은 매번 SPA 라우터가 hashchange 이벤트로 mount() 호출 → 라우팅 정확.
   const lang = (typeof getStatsLang === 'function') ? getStatsLang() : 'en';
-  window.location.hash = `#/session?mode=review&lang=${lang}`;
+  window.location.hash = `#/session-review?lang=${lang}`;
 }
 
 // Dexie helpers (Wave 11.4). SPA: window.studyDB 로 실 데이터, iframe: null → mock fallback.
@@ -700,7 +700,7 @@ function renderBSSentencesFromCards(cards, lang) {
       // Wave 11.74 — 큐를 idx 앞부분 잘라서 저장 → session.html 0번부터 시작해도 클릭 카드부터.
       sessionStorage.setItem('studyReviewQueue', JSON.stringify(queue.slice(idx)));
       sessionStorage.setItem('studyReturnTo', 'stats');
-      window.location.hash = `#/session?mode=review&lang=${lang}`;
+      window.location.hash = `#/session-review?lang=${lang}`;
     });
     el.appendChild(item);
   });
