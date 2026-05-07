@@ -33,17 +33,6 @@ jobs:
             gym/pnpm-lock.yaml
             today/pnpm-lock.yaml
 
-      - name: Build study
-        env:
-          GH_PAGES: '1'
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-        run: |
-          cd study
-          pnpm install --frozen-lockfile
-          pnpm build
-          cp dist/index.html dist/404.html
-
       - name: Build gym
         env:
           GH_PAGES: '1'
@@ -55,7 +44,20 @@ jobs:
           pnpm build
           cp dist/index.html dist/404.html
 
+      - name: Build study
+        continue-on-error: true
+        env:
+          GH_PAGES: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          cd study
+          pnpm install --frozen-lockfile
+          pnpm build
+          cp dist/index.html dist/404.html
+
       - name: Build today
+        continue-on-error: true
         env:
           GH_PAGES: '1'
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
@@ -69,9 +71,9 @@ jobs:
       - name: Combine into _site
         run: |
           mkdir -p _site
-          cp -r study/dist _site/study
-          cp -r gym/dist _site/gym
-          cp -r today/dist _site/today
+          [ -d gym/dist ] && cp -r gym/dist _site/gym || echo "::warning::gym build missing — skipping"
+          [ -d study/dist ] && cp -r study/dist _site/study || echo "::warning::study build missing — skipping"
+          [ -d today/dist ] && cp -r today/dist _site/today || echo "::warning::today build missing — skipping"
           # 루트 index — leftjap.github.io/apps/ 진입 시 3 앱 링크 표시
           cat > _site/index.html <<'HTML'
           <!doctype html>
