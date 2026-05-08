@@ -122,6 +122,41 @@ export function renderRecentsFromRows(kind, rows, doc = document) {
     return `<div class="sb__item sb__item--recent" data-doc-id="${id}">${title}${labelHtml}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
+  ensureRecentsMore(kind, doc);
+  return true;
+}
+
+// spec §3.3.1 — 리센츠 30건 직하단 "전체 보기 →" 진입점 (글쓰기 4종 한정).
+// 클릭 동작은 §5.0 전체 목록 뷰 wiring 단계에서 추가.
+const WRITING_KINDS_FOR_LIST = Object.freeze(['navi', 'fiction', 'blog', 'memo']);
+
+export function ensureRecentsMore(kind, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc) return false;
+  const list = doc.getElementById('recentsList');
+  if (!list) return false;
+  const group = list.parentElement;
+  if (!group) return false;
+  const existing = group.querySelector(':scope > .sb__recents-more');
+  const shouldShow = WRITING_KINDS_FOR_LIST.includes(kind) && list.children.length > 0;
+  if (!shouldShow) {
+    if (existing) existing.remove();
+    return false;
+  }
+  if (existing) return true;
+  const btn = doc.createElement('button');
+  btn.type = 'button';
+  btn.className = 'sb__recents-more';
+  btn.dataset.action = 'show-all-list';
+  btn.textContent = '전체 보기 →';
+  list.insertAdjacentElement('afterend', btn);
+  return true;
+}
+
+export function removeRecentsMore(doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc || typeof doc.querySelector !== 'function') return false;
+  const btn = doc.querySelector('.sb__group--recents > .sb__recents-more');
+  if (!btn) return false;
+  btn.remove();
   return true;
 }
 
@@ -258,6 +293,7 @@ export function clearRecentsList(doc = (typeof document !== 'undefined' ? docume
   const list = doc.getElementById('recentsList');
   if (!list) return false;
   list.innerHTML = '';
+  removeRecentsMore(doc);
   return true;
 }
 
@@ -278,7 +314,10 @@ const KIND_LABEL_KO = Object.freeze({
 });
 
 async function handleCategoryActive(kind) {
-  if (kind === 'expense') return;
+  if (kind === 'expense') {
+    removeRecentsMore();
+    return;
+  }
   if (!Queries.ENTRY_KINDS.includes(kind)) return;
   try {
     const list = await fetchEntriesForCategory(kind);
@@ -358,6 +397,23 @@ function injectEditorStyles() {
       0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0); }
       30%, 70% { box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.45); }
     }
+    /* spec §3.3.1 — 리센츠 전체 보기 진입점 */
+    .sb__recents-more {
+      display: block;
+      width: 100%;
+      margin: 4px 0 0;
+      padding: 6px 8px;
+      background: transparent;
+      border: 0;
+      text-align: left;
+      font-family: var(--font-sans, 'Pretendard', sans-serif);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--crail-base, #d97757);
+      cursor: pointer;
+      transition: opacity 0.12s ease;
+    }
+    .sb__recents-more:hover { opacity: 0.7; }
   `;
   document.head.appendChild(style);
 }
@@ -1405,6 +1461,8 @@ export const Entries = {
   countWords,
   escapeHtml,
   renderRecentsFromRows,
+  ensureRecentsMore,
+  removeRecentsMore,
   renderDocFromRow,
   // Wave 11.5.2b — 자동저장
   getCurrentKind,
