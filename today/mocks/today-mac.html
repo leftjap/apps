@@ -218,6 +218,8 @@
     margin-bottom: 0;
     overflow-y: auto;
     scrollbar-width: none;
+    border-top: 1px solid var(--line-soft);
+    padding-top: 8px;
   }
   .sb__group--recents::-webkit-scrollbar { display: none; }
   .sb__label {
@@ -3440,7 +3442,7 @@
     <!-- Recents — active 카테고리의 최근 항목으로 동적 갱신.
          viewport 부족 시 mouse wheel/trackpad 로 자체 스크롤 (스크롤바 시각 0 — 사이드바 룩 일정). -->
     <div class="sb__group sb__group--recents">
-      <div class="sb__label" id="recentsLabel">오늘의 네비</div>
+      <div class="sb__label" id="recentsLabel">RECENTS</div>
       <div id="recentsList"></div>
     </div>
 
@@ -4011,7 +4013,6 @@
 
     function renderRecents(key) {
       const data = FIXTURE[key];
-      document.getElementById('recentsLabel').textContent = data.label;
       const list = document.getElementById('recentsList');
 
       // 가계부 — Recents 자리에 최근 거래 (Phase D — 클릭 → 일자 점프 + highlight)
