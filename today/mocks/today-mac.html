@@ -514,7 +514,22 @@
   .icon-btn:hover { background: var(--hover-bg); }
   .icon-btn .ico { width: 18px; height: 18px; opacity: 0.7; }
 
-  /* 새 글 버튼 — accent crail 사각 라운드 테두리 */
+  /* 새 글 버튼 — crail 보더 사각 라운드, .icon-btn 비의존 독립 컴포넌트 */
+  .new-doc-btn {
+    width: 28px; height: 28px;
+    border: 1px solid var(--crail-base);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--crail-base);
+    display: grid; place-items: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background .15s ease;
+  }
+  .new-doc-btn:hover { background: rgba(217, 119, 87, 0.08); }
+  .new-doc-btn .ico { width: 16px; height: 16px; }
+
+  /* 가계부 — 거래 추가 버튼 (별 컴포넌트, 그대로 유지) */
   .icon-btn--accent {
     border: 1px solid var(--crail-base);
     color: var(--crail-base);
@@ -3510,8 +3525,8 @@
           <button id="editTrigger" class="edit-trigger" title="편집 도구" aria-pressed="false">
             <span class="edit-trigger__label" aria-hidden="true">Aa</span>
           </button>
-          <button class="icon-btn icon-btn--accent" id="newDocBtn" title="새 글">
-            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round">
+          <button class="new-doc-btn" id="newDocBtn" title="새 글">
+            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
               <path d="M8 3.5v9M3.5 8h9"/>
             </svg>
           </button>
