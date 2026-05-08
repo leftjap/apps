@@ -1,10 +1,10 @@
 /* SessionNew page — 신규 학습 (NEW)
  * 정본: ~/Downloads/_ _ _/variants/session-new-v2-tried-passed.jsx
  *
- * 본 wave 범위 (plan §데이터 매핑):
- * - 시안 fallback 문장 ("I could use a coffee.") 노출
- * - 점수 = random 60-100 stub. TODO(별 wave): services/speech.js Azure pronunciation assessment 매핑
- * - PASS_THRESHOLD = 80
+ * Wave A.1 (카드 로드):
+ * - todayLessons 의 미완료 신규 카드 비동기 로드 → 첫 카드 표시
+ * - 0장 시 empty 상태 (sentence 빈 문자열, total=0, step=0)
+ * 다음 sub-wave: 다음 카드 전환 / 발음 평가 / 타이머 / 종료 저장
  */
 
 import {
@@ -16,35 +16,159 @@ import {
   pickSize,
   watchSize,
 } from '../components/session/index.js';
+import { loadNewCards, pickCardFields, advanceCard } from './cardLoader.js';
+import { formatElapsed } from '../utils/elapsed.js';
+import { finishSession } from '../services/sessionFinish.js';
+import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
+import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
+import { buildSummaryData, persistSummary } from '../services/summaryData.js';
+import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
+import { showEndConfirm } from '../components/session/endConfirm.js';
 
 const PASS_THRESHOLD = 80;
-const FALLBACK = { en: 'I could use a coffee.', pron: '아이 쿠 쥬즈 어 커피', ko: '커피 한잔 마시고 싶다.' };
+const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
+
+function getStoredLang() {
+  try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; }
+  catch { return 'en'; }
+}
+
+function getTodayISO() {
+  return window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10);
+}
 
 export function mountSessionNew(host) {
   const state = {
     size: pickSize(),
-    recording: true,
-    tried: 7,
-    passed: 5,
-    lastScore: 82,
+    recording: false, // Wave A.7.1 — idle 초기 상태. 클릭 → mic 시작
+    tried: 0,
+    passed: 0,
+    lastScore: null,
     step: 1,
-    total: 3,
-    time: '00:08',
-    sentence: FALLBACK,
+    total: 0,
+    time: '00:00',
+    sentence: EMPTY_SENTENCE,
+    cards: [],
+    loaded: false,
+    recCtrl: null,
+    pronScores: [],
+    weakInSession: {},
+    ended: false,
   };
 
-  let cleanup = render(host, state);
+  const saveSnapshot = () => {
+    if (state.ended || !window.studyDB || !state.loaded) return;
+    saveActiveSession(window.studyDB, {
+      mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime,
+      step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
+      pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
+      cardIds: state.cards.map((c) => c.id),
+    }).catch((e) => console.error('[session-new] saveActiveSession', e));
+  };
+  const onVis = () => { if (document.hidden) saveSnapshot(); };
+
+  const endSession = async (finishedAll) => {
+    state.ended = true;
+    const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
+    const durationSec = Math.floor((Date.now() - startTime) / 1000);
+    try {
+      await finishSession(window.studyDB, {
+        mode: 'new',
+        lang: getStoredLang(),
+        date: getTodayISO(),
+        durationSec,
+        tried: state.tried,
+        passed: state.passed,
+        completedNewCards: state.cards.slice(0, completedCount),
+      });
+    } catch (e) {
+      console.error('[session-new] finishSession', e);
+    }
+    persistSummary(buildSummaryData({
+      mode: 'new', state, durationSec, completedNewCount: completedCount, returnTo: 'home',
+    }));
+    try { await clearActiveSession(window.studyDB); }
+    catch (e) { console.error('[session-new] clearActiveSession', e); }
+    window.location.hash = '#/summary';
+  };
+
+  const handlers = {
+    onNext: () => {
+      const r = advanceCard(state.cards, state.step);
+      if (r.done) { endSession(true); return; }
+      state.step = r.step;
+      state.sentence = r.sentence || EMPTY_SENTENCE;
+      state.recording = false;
+      state.lastScore = null;
+      rerender();
+      saveSnapshot();
+    },
+    onEnd: () => showEndConfirm({ onConfirm: () => endSession(false) }),
+    saveSnapshot,
+  };
+
+  let r = render(host, state, handlers);
+  let cleanup = r.cleanup;
+  let layoutRef = r.layout;
+  const rerender = () => {
+    cleanup();
+    const next = render(host, state, handlers);
+    cleanup = next.cleanup;
+    layoutRef = next.layout;
+  };
+
+  let startTime = Date.now();
+  document.addEventListener('visibilitychange', onVis);
+  const tickId = setInterval(() => {
+    state.time = formatElapsed(Date.now() - startTime);
+    layoutRef?.update({ time: state.time });
+  }, 1000);
+
   const stop = watchSize((s) => {
     if (s !== state.size) {
       state.size = s;
-      cleanup();
-      cleanup = render(host, state);
+      rerender();
     }
   });
-  return () => { cleanup(); stop(); };
+
+  Promise.all([
+    loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
+    loadActiveSession(window.studyDB),
+  ])
+    .then(([cards, snapshot]) => {
+      state.cards = cards;
+      state.total = cards.length;
+      const restore = restoreFromSnapshot(snapshot, cards, 'new');
+      if (restore) {
+        Object.assign(state, restore);
+        startTime = restore.startTime;
+        const idx = Math.max(0, restore.step - 1);
+        state.sentence = pickCardFields(cards[idx]) || EMPTY_SENTENCE;
+      } else {
+        state.step = cards.length === 0 ? 0 : 1;
+        state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
+        // mode 일치하나 cardIds 불일치 → 스테일 snapshot 정리
+        if (snapshot && snapshot.mode === 'new') clearActiveSession(window.studyDB).catch(() => {});
+      }
+      state.loaded = true;
+      rerender();
+    })
+    .catch((e) => {
+      console.error('[session-new] load + restore', e);
+      state.loaded = true;
+      rerender();
+    });
+
+  return () => {
+    cleanup(); stop(); clearInterval(tickId);
+    document.removeEventListener('visibilitychange', onVis);
+    if (!state.ended) saveSnapshot();
+    if (state.recCtrl?.stop) { try { state.recCtrl.stop(); } catch { /* noop */ } state.recCtrl = null; }
+  };
 }
 
-function render(host, state) {
+function render(host, state, handlers = {}) {
   host.innerHTML = '';
 
   const layout = createSessionLayout({
@@ -57,7 +181,7 @@ function render(host, state) {
     recording: state.recording,
     time: state.time,
     onHome: () => { window.location.hash = '#/home'; },
-    onEnd: () => { window.location.hash = '#/home'; },
+    onEnd: handlers.onEnd || (() => { window.location.hash = '#/home'; }),
   });
 
   const large = state.size !== 'phone';
@@ -75,20 +199,40 @@ function render(host, state) {
   const recordCmp = createRecordButton({
     recording: state.recording,
     large,
-    onToggle: () => {
-      if (state.recording) {
-        const score = Math.floor(60 + Math.random() * 40); // TODO(별 wave): Azure
+    onToggle: async () => {
+      if (!state.recording) {
+        state.recording = true;
+        recordCmp.update({ recording: true });
+        layout.update({ recording: true });
+        applyExclusive(true, state.lastScore, wave.el, pillWrap);
+        state.recCtrl = await startMicRecording();
+      } else {
+        const ctrl = state.recCtrl;
+        state.recCtrl = null;
+        const result = await stopAndAnalyze(ctrl, state.sentence.sentence, state.sentence);
+        const score = Number(result?.score) || 0;
         state.lastScore = score;
         state.tried += 1;
         if (score >= PASS_THRESHOLD) state.passed += 1;
+        state.pronScores.push(score);
+        if (Array.isArray(result?.weakPhonemes)) {
+          for (const ph of result.weakPhonemes) {
+            if (typeof ph === 'string' && ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1;
+          }
+        }
         state.recording = false;
         pillCmp.update({ score, passed: score >= PASS_THRESHOLD });
-      } else {
-        state.recording = true;
+        recordCmp.update({ recording: false });
+        layout.update({ tried: state.tried, passed: state.passed, recording: false });
+        applyExclusive(false, state.lastScore, wave.el, pillWrap);
+        try {
+          await savePronunciationLog(window.studyDB, {
+            result, sentenceId: state.sentence.id, lang: getStoredLang(), date: getTodayISO(),
+          });
+          await applyWeakPhonemesUpdate(window.studyDB, getStoredLang(), result?.weakPhonemes);
+        } catch (e) { console.error('[session-new] pron persist', e); }
+        handlers.saveSnapshot?.();
       }
-      recordCmp.update({ recording: state.recording });
-      layout.update({ tried: state.tried, passed: state.passed, recording: state.recording });
-      applyExclusive(state.recording, state.lastScore, wave.el, pillWrap);
     },
   });
 
@@ -98,7 +242,7 @@ function render(host, state) {
   applyExclusive(state.recording, state.lastScore, wave.el, pillWrap);
 
   // 다음 문장 버튼
-  const nextWrap = makeNextBtn(state.size);
+  const nextWrap = makeNextBtn(state.size, handlers.onNext);
   if (state.size === 'desktop') {
     main.appendChild(nextWrap); // main 안 footer (margin-top:auto)
   } else {
@@ -106,7 +250,7 @@ function render(host, state) {
   }
 
   host.appendChild(layout.el);
-  return () => { host.innerHTML = ''; };
+  return { cleanup: () => { host.innerHTML = ''; }, layout };
 }
 
 function buildMain(state, ctrl) {
@@ -120,8 +264,7 @@ function buildMain(state, ctrl) {
   const h1 = document.createElement('h1');
   h1.className = 'poppins';
   h1.style.cssText = `font-size:${sizeMap[state.size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.04em;line-height:${state.size === 'phone' ? 1.2 : 1.05};margin:0;`;
-  if (state.size === 'desktop') h1.innerHTML = 'I could use<br/>a coffee.';
-  else h1.textContent = state.sentence.en;
+  h1.textContent = state.sentence.sentence;
   wrap.appendChild(h1);
 
   const pron = document.createElement('div');
@@ -157,7 +300,7 @@ function buildMain(state, ctrl) {
   return wrap;
 }
 
-function makeNextBtn(size) {
+function makeNextBtn(size, onNext) {
   const btn = document.createElement('button');
   btn.type = 'button';
   const padding = size === 'desktop' ? '18px 36px' : (size === 'tablet' ? '18px 0' : '14px');
@@ -165,7 +308,7 @@ function makeNextBtn(size) {
   const width = size === 'desktop' ? 'auto' : '100%';
   btn.style.cssText = `background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r-md);padding:${padding};font-size:${fontSize}px;font-family:var(--font-body);cursor:pointer;width:${width};`;
   btn.textContent = '다음 문장 →';
-  btn.addEventListener('click', () => console.warn('[next] stub — Wave N'));
+  if (typeof onNext === 'function') btn.addEventListener('click', onNext);
 
   if (size === 'desktop') {
     const wrap = document.createElement('div');

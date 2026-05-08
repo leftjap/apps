@@ -441,7 +441,8 @@ export function normalizeReferenceText(text) {
     // 따옴표류 — 단어 안에 있을 수 있어 빈 문자열 제거 (it's→its, 「行く」→行く).
     .replace(/['""„""''「」『』]/g, '')
     // 단어 구분 punctuation — 공백 치환 (영문은 자연 분리, 일문 'A、B、C' 같은 약자 나열도).
-    .replace(/[.,!?;:、。]/g, ' ')
+    // 풀-와이드 일본어 문장부호 (！？：；，．・) 포함 (Wave A.7.1 검증 중 누락 발견).
+    .replace(/[.,!?;:、。！？：；，．・]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }

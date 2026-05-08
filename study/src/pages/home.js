@@ -14,6 +14,7 @@
  */
 
 import { pickSize, watchSize } from '../components/session/index.js';
+import { loadActiveSession } from '../services/activeSession.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -46,25 +47,44 @@ export function mountHome(host) {
     weekUtter: demo ? DEMO_FIXTURES.weekUtter : 0,
     weekPass: demo ? DEMO_FIXTURES.weekPass : 0,
     todayISO: demo ? DEMO_FIXTURES.todayISO : (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10)),
+    resume: null, // 'new' | 'review' | null — activeSession 매치 시
   };
 
   let cleanup = render(host, state);
+  const rerender = () => { cleanup(); cleanup = render(host, state); };
   const stop = watchSize((s) => {
-    if (s !== state.size) {
-      state.size = s;
-      cleanup();
-      cleanup = render(host, state);
-    }
+    if (s !== state.size) { state.size = s; rerender(); }
   });
 
-  if (!demo) {
+  const refreshStats = () => {
+    if (demo) return;
     loadStats(state).then((updated) => {
-      if (updated) {
-        Object.assign(state, updated);
-        cleanup();
-        cleanup = render(host, state);
-      }
+      if (updated) { Object.assign(state, updated); rerender(); }
     }).catch((e) => console.error('[home] loadStats', e));
+  };
+
+  state.onLangChange = (newLang) => {
+    if (newLang !== 'en' && newLang !== 'ja') return;
+    if (newLang === state.lang) return;
+    try { sessionStorage.setItem('studyLang', newLang); } catch { /* noop */ }
+    state.lang = newLang;
+    state.newCount = 0; state.reviewCount = 0;
+    state.tried = 0; state.passed = 0;
+    state.weekUtter = 0; state.weekPass = 0;
+    rerender();
+    refreshStats();
+  };
+
+  refreshStats();
+
+  // Wave A.9.2.b — 진행 중 세션 표시 (홈 sessionCard 라벨 변경)
+  if (!demo) {
+    loadActiveSession(window.studyDB).then((snapshot) => {
+      if (snapshot?.mode === 'new' || snapshot?.mode === 'review') {
+        state.resume = snapshot.mode;
+        rerender();
+      }
+    }).catch((e) => console.error('[home] loadActiveSession', e));
   }
 
   return () => { cleanup(); stop(); };
@@ -169,7 +189,7 @@ function renderPhone(state) {
   root.appendChild(sec1);
 
   const sec2 = el('section', { style: 'padding:32px 24px 0;display:flex;flex-direction:column;gap:12px;' });
-  sec2.append(sessionCard('new', state.newCount, false, true), sessionCard('review', state.reviewCount, false, true));
+  sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new'), sessionCard('review', state.reviewCount, false, true, state.resume === 'review'));
   root.appendChild(sec2);
 
   const sec3 = el('section', { style: 'padding:32px 24px 32px;display:flex;gap:32px;' });
@@ -198,7 +218,7 @@ function renderTablet(state) {
   root.appendChild(sec1);
 
   const grid = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:16px;' });
-  grid.append(sessionCard('new', state.newCount, true, false), sessionCard('review', state.reviewCount, true, false));
+  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new'), sessionCard('review', state.reviewCount, true, false, state.resume === 'review'));
   root.appendChild(grid);
 
   const sec3 = el('section', { style: 'margin-top:48px;display:flex;gap:48px;padding-bottom:48px;' });
@@ -247,7 +267,7 @@ function renderDesktop(state) {
   main.appendChild(heroBlk);
 
   const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;' });
-  grid.append(sessionCard('new', state.newCount, true, false), sessionCard('review', state.reviewCount, true, false));
+  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new'), sessionCard('review', state.reviewCount, true, false, state.resume === 'review'));
   main.appendChild(grid);
 
   const meta = el('div', { style: 'margin-top:auto;font-size:12px;color:var(--text-muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:0.12em;' });
@@ -291,8 +311,11 @@ function langPair(state, fontSize, enLabel, jaLabel, underline) {
     b.style.cssText = `background:none;border:none;cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:${underline ? '0 0 4px' : '0'};font-weight:${active ? 700 : 400};color:${active ? 'var(--text-strong)' : 'var(--text-faint)'};${underline && active ? 'border-bottom:2px solid var(--accent);' : ''}`;
     b.textContent = label;
     b.addEventListener('click', () => {
-      console.warn(`[lang] toggle stub — Wave N. requested=${lang}`);
-      try { sessionStorage.setItem('studyLang', lang); } catch {}
+      if (typeof state.onLangChange === 'function') {
+        state.onLangChange(lang);
+      } else {
+        try { sessionStorage.setItem('studyLang', lang); } catch { /* noop */ }
+      }
     });
     return b;
   };
@@ -385,7 +408,7 @@ function statBlock(label, value, fontSize, isPassed, ls) {
   return wrap;
 }
 
-function sessionCard(kind, count, large, full) {
+function sessionCard(kind, count, large, full, isResume = false) {
   const isNew = kind === 'new';
   const color = isNew ? 'var(--accent)' : 'var(--sage)';
   const tint = isNew ? 'rgba(180, 77, 59, 0.08)' : 'rgba(120, 140, 93, 0.10)';
@@ -419,7 +442,7 @@ function sessionCard(kind, count, large, full) {
   btn.appendChild(numRow);
 
   const desc = el('div', { style: `font-size:${large ? 15 : 13}px;color:var(--text-muted);margin-top:auto;` });
-  desc.textContent = isNew ? '오늘의 새 표현 학습' : '복습 대기 중';
+  desc.textContent = isResume ? '이어서 하기' : (isNew ? '오늘의 새 표현 학습' : '복습 대기 중');
   btn.appendChild(desc);
 
   return btn;

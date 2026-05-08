@@ -530,6 +530,13 @@ describe('normalizeReferenceText — Wave 11.36', () => {
     expect(normalizeReferenceText('A、B、C')).toBe('A B C');
   });
 
+  it('일본어 풀-와이드 문장부호 (！？：；，．・) 제거 — Wave A.7.1 보강', () => {
+    expect(normalizeReferenceText('行ってきます！')).toBe('行ってきます');
+    expect(normalizeReferenceText('元気ですか？')).toBe('元気ですか');
+    expect(normalizeReferenceText('A・B・C')).toBe('A B C');
+    expect(normalizeReferenceText('注意：危険')).toBe('注意 危険');
+  });
+
   it('공백 정리 (다중 공백 → 단일)', () => {
     expect(normalizeReferenceText('  hello   world  ')).toBe('hello world');
   });

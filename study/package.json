@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.49.1",
+    "fake-indexeddb": "^6.2.5",
     "rollup-plugin-visualizer": "^7.0.1",
     "vite": "^6.0.7",
     "vite-plugin-pwa": "^0.21.1",

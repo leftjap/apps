@@ -9,6 +9,7 @@ import bsSheetCss from './styles/bs-sheet.css?raw';
 import { mountHome } from './pages/home.js';
 import { mountSessionNew } from './pages/session-new.js';
 import { mountSessionReview } from './pages/session-review.js';
+import { mountSummary } from './pages/summary.js';
 
 const ROUTES = {
   login: loginHtml,
@@ -27,6 +28,7 @@ const PAGE_MOUNTS = {
   home: mountHome,
   'session-new': mountSessionNew,
   'session-review': mountSessionReview,
+  summary: mountSummary,
 };
 
 const DEFAULT_ROUTE = 'login';
@@ -162,8 +164,8 @@ function mount(route) {
   // src 속성 없는 module 스크립트만 제거 — 외부 src 의존 (Azure SDK 등) 은 보존.
   const pageMount = PAGE_MOUNTS[route.name];
   if (pageMount) {
-    // mocks/*.html 의 인라인 module mount 스크립트 제거 (PAGE_MOUNTS 가 대체).
-    doc.body.querySelectorAll('script[type="module"]:not([src])').forEach((s) => s.remove());
+    // mocks/*.html 의 인라인 스크립트 제거 (PAGE_MOUNTS 가 대체). external src 는 보존 (Azure SDK 등).
+    doc.body.querySelectorAll('script:not([src])').forEach((s) => s.remove());
     // mocks/*.html 의 /src/styles/*.css 링크 제거 — main.js 가 동일 CSS 를 번들링.
     // prod 에서 /src/* 절대경로는 404. injectHeadAssets 가 이걸 head 로 복제하기 전에 제거.
     doc.head
@@ -177,8 +179,9 @@ function mount(route) {
   document.body.dataset.route = route.name;
   reExecuteScripts();
   if (pageMount) {
-    const root = document.getElementById('root');
-    if (root) pageMount(root);
+    // home / session-* 은 #root 에 빌드. summary 등은 body 에 직접 DOM (mocks 원본 보존).
+    const host = document.getElementById('root') || document.body;
+    pageMount(host);
   }
   // Wave 11.30 — mocks 의 .pv-bar (Normal/Free/Milestone 등 디버그 chip) SPA 모드에서 일괄 hide.
   // mocks 단독 진입 (iframe 허브) 에서는 그대로 노출 (시안 도구). SPA = 실 앱 = 디버그 chip 노출 X.
