@@ -138,8 +138,10 @@ async function ensureUserDB(user) {
     _currentDB = createStudyDB(dbName);
     _currentDBName = dbName;
     if (typeof window !== 'undefined') window.studyDB = _currentDB;
-    try { await cleanupDummyDataIfNeeded(_currentDB, user.id); }
-    catch (e) { console.error('[cleanupDummy] failed', e); }
+    // cleanupDummyDataIfNeeded 비활성화 (2026-05-08) — 마커가 Dexie 로컬에 있어
+    // 신규 디바이스/Chrome 진입 시마다 Supabase 사용자 데이터 전체 삭제하는 회귀 발견.
+    // v11 더미는 이미 정리됐으므로 더 호출할 이유 없음. 추후 재호출 필요 시 마커를
+    // user_meta (Supabase) 로 이동하여 디바이스 무관 멱등성 확보 후 재활성화.
     try { await backfill20260504(_currentDB); }
     catch (e) { console.error('[backfill 2026-05-04] failed', e); }
     return _currentDB;
