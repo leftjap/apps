@@ -303,6 +303,7 @@ function buildDesktop(root, refs, { kind, step, total, tried, passed, recording,
   const mainPad = kind === 'new' ? '80px 80px' : '64px 80px 48px';
   const mainMax = kind === 'new' ? 880 : 920;
   main.style.cssText = `padding:${mainPad};display:flex;flex-direction:column;max-width:${mainMax}px;`;
+  contentSlot.style.cssText = 'display:flex;flex-direction:column;flex:1;';
   main.appendChild(contentSlot);
   root.appendChild(main);
 
