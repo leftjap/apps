@@ -41,6 +41,9 @@ import {
   uploadImage,
   isHeicFile,
   convertHeicToJpeg,
+  computeListStats,
+  filterListRows,
+  renderListView,
 } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
 
@@ -1109,5 +1112,148 @@ describe('clearRecentsList / clearMainViewEmpty — Wave 11.5.11', () => {
     const fakeDoc = { getElementById: () => view };
     clearMainViewEmpty('', fakeDoc);
     expect(view.innerHTML).toContain('글쓰기');
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// spec §5.0 — 전체 목록 뷰 (computeListStats / filterListRows / renderListView)
+// ───────────────────────────────────────────────────────────────────────────
+
+describe('computeListStats — 합계/연/월/단어/원고지/공유', () => {
+  const NOW = new Date('2026-04-15T12:00:00Z');
+  const userId = 'u-self';
+  const partnerId = 'u-partner';
+
+  it('빈 배열 → 0 처리', () => {
+    expect(computeListStats([], userId, NOW)).toEqual({
+      total: 0, thisYear: 0, thisMonth: 0, words: 0, sheets: 0, shared: 0, sharedSoyeon: 0,
+    });
+  });
+
+  it('연/월 카운트 + 단어/원고지 합산', () => {
+    const rows = [
+      { id: 'a', owner_id: userId, content: '<p>한국어 단어 두개입니다 추가</p>', created_at: '2026-04-10T01:00:00Z', is_shared: 1 },
+      { id: 'b', owner_id: userId, content: '<p>여섯 개의 단어 가 들어 있다</p>', created_at: '2026-02-01T01:00:00Z', is_shared: 0 },
+      { id: 'c', owner_id: userId, content: '<p>지난해 작성된 글입니다</p>', created_at: '2025-12-01T01:00:00Z', is_shared: 0 },
+      { id: 'd', owner_id: partnerId, content: '<p>파트너 공유</p>', created_at: '2026-04-12T01:00:00Z', is_shared: 1 },
+    ];
+    const s = computeListStats(rows, userId, NOW);
+    expect(s.total).toBe(4);
+    expect(s.thisYear).toBe(3);
+    expect(s.thisMonth).toBe(2);
+    expect(s.shared).toBe(2);
+    expect(s.sharedSoyeon).toBe(1);
+    expect(s.words).toBeGreaterThan(0);
+    expect(s.sheets).toBeGreaterThanOrEqual(0);
+  });
+
+  it('created_at 잘못된 값 → year/month 카운트 skip, total 만 증가', () => {
+    const rows = [{ id: 'x', owner_id: userId, content: '', created_at: 'not-a-date', is_shared: 0 }];
+    const s = computeListStats(rows, userId, NOW);
+    expect(s.total).toBe(1);
+    expect(s.thisYear).toBe(0);
+    expect(s.thisMonth).toBe(0);
+  });
+
+  it('파트너 글이지만 is_shared=0 → sharedSoyeon 미카운트', () => {
+    const rows = [{ id: 'p', owner_id: partnerId, content: '', created_at: '2026-04-01T00:00:00Z', is_shared: 0 }];
+    expect(computeListStats(rows, userId, NOW).sharedSoyeon).toBe(0);
+  });
+});
+
+describe('filterListRows — all/shared/soyeon 분기', () => {
+  const userId = 'u-self';
+  const partnerId = 'u-partner';
+  const rows = [
+    { id: 'a', owner_id: userId, is_shared: 1 },
+    { id: 'b', owner_id: userId, is_shared: 0 },
+    { id: 'c', owner_id: partnerId, is_shared: 1 },
+    { id: 'd', owner_id: partnerId, is_shared: 0 },
+  ];
+
+  it('all → 전체 반환', () => {
+    expect(filterListRows(rows, 'all', userId).map((r) => r.id)).toEqual(['a','b','c','d']);
+  });
+  it('shared → is_shared truthy 만', () => {
+    expect(filterListRows(rows, 'shared', userId).map((r) => r.id)).toEqual(['a','c']);
+  });
+  it('soyeon → 파트너 owner + is_shared', () => {
+    expect(filterListRows(rows, 'soyeon', userId).map((r) => r.id)).toEqual(['c']);
+  });
+  it('null/undefined rows → 빈 배열', () => {
+    expect(filterListRows(null, 'all', userId)).toEqual([]);
+    expect(filterListRows(undefined, 'shared', userId)).toEqual([]);
+  });
+});
+
+describe('renderListView — #mainView .doc-list 마크업 + 통계/필터/행', () => {
+  it('#mainView 부재 → false', () => {
+    const fakeDoc = { getElementById: () => null };
+    expect(renderListView('navi', [], fakeDoc)).toBe(false);
+  });
+
+  it('navi + 행 1건 → .doc-list 마크업 + 제목/단어/원고지 노출 + 소연 라벨', () => {
+    __setCurrentUserForTest({ id: '7bae5645-61c6-4476-9ff2-4c30a72812ff' }); // 지오
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: (id) => (id === 'mainView' ? view : null) };
+    const rows = [
+      {
+        id: 'aaaaaaaa-1111-2222-3333-444444444444',
+        owner_id: 'aeafd9a7-4094-4e7c-a621-188d6b2e336d', // 소연 (partner)
+        title: '소연이 쓴 글',
+        content: '<p>본문 일부 텍스트 입니다 한참을 미뤄둔 글</p>',
+        created_at: '2026-04-10T00:00:00Z',
+        is_shared: 1,
+      },
+    ];
+    renderListView('navi', rows, fakeDoc);
+    expect(view.innerHTML).toContain('class="doc-list"');
+    expect(view.innerHTML).toContain('data-list-kind="navi"');
+    expect(view.innerHTML).toContain('소연이 쓴 글');
+    expect(view.innerHTML).toContain('doc-list__share');
+    expect(view.innerHTML).toContain('소연');
+    expect(view.innerHTML).toContain('단어');
+    expect(view.innerHTML).toContain('매');
+    expect(view.innerHTML).toContain('전체');
+    expect(view.innerHTML).toContain('공유된 글');
+    expect(view.innerHTML).toContain('소연이 공유한 글');
+    __setCurrentUserForTest(null);
+  });
+
+  it('opts.filter="shared" → is_shared=0 행은 본문에서 빠짐', () => {
+    __setCurrentUserForTest({ id: 'u-self' });
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: () => view };
+    const rows = [
+      { id: 'r1', owner_id: 'u-self', title: '공유함', content: '', created_at: '2026-04-01T00:00:00Z', is_shared: 1 },
+      { id: 'r2', owner_id: 'u-self', title: '비공개야', content: '', created_at: '2026-04-02T00:00:00Z', is_shared: 0 },
+    ];
+    renderListView('memo', rows, fakeDoc, { filter: 'shared' });
+    expect(view.innerHTML).toContain('공유함');
+    expect(view.innerHTML).not.toContain('비공개야');
+    __setCurrentUserForTest(null);
+  });
+
+  it('XSS — title/excerpt escape 처리', () => {
+    __setCurrentUserForTest({ id: 'u-self' });
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: () => view };
+    renderListView('memo', [
+      { id: 'x', owner_id: 'u-self', title: '<script>x</script>', content: '<p><script>y</script></p>', created_at: '2026-04-01T00:00:00Z', is_shared: 0 },
+    ], fakeDoc);
+    expect(view.innerHTML).not.toContain('<script>x</script>');
+    expect(view.innerHTML).toContain('&lt;script&gt;x&lt;/script&gt;');
+    __setCurrentUserForTest(null);
+  });
+});
+
+describe('Entries.getActiveMainView / exitListView — public API 노출', () => {
+  it('Entries 객체에 신규 함수 노출 확인', () => {
+    expect(typeof Entries.computeListStats).toBe('function');
+    expect(typeof Entries.filterListRows).toBe('function');
+    expect(typeof Entries.renderListView).toBe('function');
+    expect(typeof Entries.enterListView).toBe('function');
+    expect(typeof Entries.exitListView).toBe('function');
+    expect(typeof Entries.getActiveMainView).toBe('function');
   });
 });

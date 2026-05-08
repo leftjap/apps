@@ -663,6 +663,160 @@
     background: rgba(217, 119, 87, 0.08);
   }
 
+  /* ============ Doc list (전체 보기 — spec §5.0.2) ============ */
+  .doc-list {
+    flex: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 28px 4px 24px;
+    display: flex;
+    flex-direction: column;
+  }
+  .doc-list__stats {
+    display: flex;
+    gap: 24px;
+    padding: 0 0 22px;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+  .doc-list__stat-lab {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .doc-list__stat-val {
+    margin-top: 8px;
+    color: var(--ink-1);
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -0.4px;
+    white-space: nowrap;
+  }
+  .doc-list__stat-suf {
+    font-size: 13px;
+    color: var(--ink-3);
+    font-weight: 400;
+    margin-left: 3px;
+  }
+  .doc-list__chips {
+    display: flex;
+    gap: 6px;
+    padding: 0 0 18px;
+    flex-wrap: wrap;
+  }
+  .doc-list__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--ink-3);
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    font-family: inherit;
+  }
+  .doc-list__chip:hover { background: var(--hover-bg); }
+  .doc-list__chip.is-active {
+    color: var(--ink-1);
+    background: var(--hover-bg);
+    border-color: var(--line);
+  }
+  .doc-list__chip-dot { width: 6px; height: 6px; border-radius: 3px; }
+  .doc-list__chip-count {
+    color: var(--ink-4);
+    font-size: 11px;
+    font-family: var(--font-mono);
+  }
+  .doc-list__head {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 10px 12px 8px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--line);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-4);
+  }
+  .doc-list__head-no { width: 56px; }
+  .doc-list__head-title { flex: 1; min-width: 0; }
+  .doc-list__head-meta { width: 200px; text-align: right; }
+
+  .doc-list__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background .1s;
+  }
+  .doc-list__row:hover { background: var(--hover-bg); }
+  .doc-list__no {
+    width: 56px;
+    flex-shrink: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-4);
+    letter-spacing: 0.02em;
+    padding-top: 1px;
+  }
+  .doc-list__main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .doc-list__line1 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+  .doc-list__title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink-1);
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  .doc-list__share {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--crail-base);
+    flex-shrink: 0;
+  }
+  .doc-list__excerpt {
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.55;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .doc-list__meta {
+    width: 200px;
+    flex-shrink: 0;
+    text-align: right;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    letter-spacing: 0.02em;
+    padding-top: 2px;
+  }
+  .doc-list__meta .sep { color: var(--ink-4); }
+
   /* ============ 가계부 거래 뷰 ============ */
   .expense-view {
     max-width: 720px;

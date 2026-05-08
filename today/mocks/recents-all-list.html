@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<title>전체 보기 시안 — 실제 프레임</title>
+<style>
+:root {
+  --tone-255: rgb(255, 255, 255);
+  --tone-253: rgb(253, 253, 253);
+  --tone-243: rgb(243, 243, 243);
+  --shell:    var(--tone-253);
+  --sidebar:  var(--tone-255);
+  --hover-bg: var(--tone-243);
+
+  --line:      oklch(92.0% 0.006 60);
+  --line-soft: oklch(94.5% 0.006 60);
+
+  --ink-1: oklch(22% 0.008 60);
+  --ink-2: oklch(38% 0.008 60);
+  --ink-3: oklch(56% 0.008 60);
+  --ink-4: oklch(72% 0.006 60);
+
+  --crail-soft: oklch(85% 0.05 50);
+  --crail-base: #d97757;
+  --crail-deep: oklch(48% 0.14 50);
+
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px;
+
+  --shadow-float:
+    0 1px 0 rgba(20, 18, 14, 0.02),
+    0 6px 14px -8px rgba(20, 18, 14, 0.08),
+    0 24px 48px -24px rgba(20, 18, 14, 0.18);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Pretendard", "SF Pro Text", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  font-family: var(--font-sans);
+  color: var(--ink-1);
+  background: var(--shell);
+  font-feature-settings: "ss01","tnum";
+  -webkit-font-smoothing: antialiased;
+}
+.mono { font-family: var(--font-mono); }
+
+.app { height: 100vh; display: flex; background: var(--shell); }
+
+.sidebar {
+  width: 252px;
+  margin: 16px 0 16px 16px;
+  background: var(--sidebar);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-float);
+  padding: 14px 12px 12px;
+  display: flex; flex-direction: column;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.sb__top { display: flex; align-items: center; gap: 4px; padding: 4px 6px 14px 6px; margin-bottom: 4px; }
+.sb__brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.sb__name { font-weight: 600; letter-spacing: -0.01em; font-size: 18px; }
+.sb__icon-btn {
+  width: 28px; height: 28px; border-radius: 7px; border: 0; background: transparent;
+  display: grid; place-items: center; cursor: pointer; color: var(--ink-1); flex-shrink: 0; position: relative;
+}
+.sb__icon-btn:hover { background: var(--hover-bg); }
+.sb__icon-btn .ico { width: 18px; height: 18px; opacity: 0.75; }
+.sb__icon-btn--has-alert .ico { opacity: 1; }
+.sb__icon-btn--has-alert .alert-dot {
+  position: absolute; top: 4px; right: 4px; width: 6px; height: 6px;
+  border-radius: 50%; background: var(--crail-base); border: 1.5px solid var(--sidebar);
+}
+
+.sb__group { margin-bottom: 24px; }
+.sb__group--recents { flex: 1; min-height: 0; margin-bottom: 0; overflow-y: auto; padding-top: 16px; scrollbar-width: none; }
+.sb__group--recents::-webkit-scrollbar { display: none; }
+.sb__label {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-3); padding: 4px 8px 8px;
+}
+.sb__item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 8px; border-radius: 8px; line-height: 1.3;
+  color: var(--ink-1); cursor: pointer;
+}
+.sb__item .ico { width: 18px; height: 18px; flex-shrink: 0; opacity: 0.75; }
+.sb__item:hover { background: var(--hover-bg); }
+.sb__item--active { background: var(--hover-bg); font-weight: 500; }
+.sb__item--active .ico { opacity: 1; color: var(--crail-base); }
+.sb__item .meta { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); letter-spacing: -0.01em; }
+.sb__item--recent { padding: 12px 8px; color: var(--ink-3); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.sb__item--recent:hover { color: var(--ink-1); }
+.sb__recents-more {
+  display: block; width: 100%; margin-top: 8px;
+  background: transparent; border: 0; cursor: pointer;
+  text-align: right; padding: 8px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--crail-base);
+  letter-spacing: -0.01em;
+}
+.sb__recents-more:hover { color: var(--crail-deep); }
+
+.sb__footer { padding: 8px 0 0; border-top: 1px solid var(--line-soft); margin-top: 6px; }
+.sb__user { display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 6px; border-radius: 8px; cursor: pointer; }
+.sb__user:hover { background: var(--hover-bg); }
+.sb__avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--crail-base); color: #fff;
+  font-family: var(--font-mono); font-weight: 600; font-size: 13px;
+  display: grid; place-items: center; flex-shrink: 0;
+}
+.sb__user-name { font-size: 13px; font-weight: 500; color: var(--ink-1); }
+
+.main { flex: 1; padding: 22px 32px 24px; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.main__view { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+.main__top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: 14px; border-bottom: 1px solid var(--line);
+  font-size: 14px; gap: 12px; min-width: 0;
+}
+.crumb { display: inline-flex; align-items: baseline; gap: 8px; font-size: 14px; color: var(--ink-3); white-space: nowrap; }
+.crumb__cat { font-weight: 500; color: var(--ink-2); letter-spacing: -0.01em; cursor: pointer; }
+.crumb__cat--active { color: var(--ink-1); cursor: default; }
+.crumb__sep { color: var(--ink-4); font-weight: 300; }
+.crumb__num {
+  display: inline-flex; align-items: baseline;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.02em; margin-left: 2px;
+}
+.crumb__num-hash { color: var(--ink-3); }
+.crumb__num-val  { color: var(--ink-2); }
+
+.col { width: 100%; max-width: 720px; margin: 0 auto; }
+
+.stats { display: flex; gap: 24px; padding: 28px 0 22px; flex-wrap: wrap; justify-content: space-between; }
+.stat-lab {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-4);
+}
+.stat-val { margin-top: 8px; color: var(--ink-1); font-size: 26px; font-weight: 500; letter-spacing: -0.4px; white-space: nowrap; }
+.stat-suf { font-size: 13px; color: var(--ink-3); font-weight: 400; margin-left: 3px; }
+
+.chips { display: flex; gap: 6px; padding: 0 0 18px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 12px; border-radius: 999px; font-size: 12px;
+  color: var(--ink-3); border: 1px solid transparent; cursor: pointer; background: transparent;
+  font-family: inherit;
+}
+.chip:hover { background: var(--hover-bg); }
+.chip.active { color: var(--ink-1); background: var(--hover-bg); border-color: var(--line); }
+.chip .dot { width: 6px; height: 6px; border-radius: 3px; }
+.chip .count { color: var(--ink-4); font-size: 11px; font-family: var(--font-mono); }
+
+.list-wrap { padding-bottom: 32px; }
+.list-head {
+  display: flex; align-items: baseline; gap: 12px;
+  padding: 10px 12px 8px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-4);
+}
+.list-head .col-no { width: 56px; }
+.list-head .col-title { flex: 1; min-width: 0; }
+.list-head .col-meta { width: 200px; text-align: right; }
+
+.row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  transition: background .1s;
+}
+.row:hover { background: var(--hover-bg); }
+.row__no {
+  width: 56px; flex-shrink: 0;
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink-4);
+  letter-spacing: 0.02em; padding-top: 1px;
+}
+.row__main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.row__line1 { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.row__title {
+  font-size: 14px; font-weight: 500; color: var(--ink-1);
+  letter-spacing: -0.01em;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.row__share {
+  font-family: var(--font-mono); font-size: 11px; color: var(--crail-base);
+  flex-shrink: 0;
+}
+.row__excerpt {
+  font-size: 12px; color: var(--ink-3); line-height: 1.55;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.row__meta {
+  width: 200px; flex-shrink: 0; text-align: right;
+  font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
+  letter-spacing: 0.02em; padding-top: 2px;
+}
+.row__meta .sep { color: var(--ink-4); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="sb__top">
+      <div class="sb__brand"><div class="sb__name">Today</div></div>
+      <button class="sb__icon-btn" title="검색">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25">
+          <circle cx="7" cy="7" r="4.5"/><path d="M10.4 10.4L13.5 13.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button class="sb__icon-btn sb__icon-btn--has-alert" title="새 알림">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2.5a3.5 3.5 0 0 0-3.5 3.5v2.5c0 1-.5 1.8-1.2 2.5h9.4c-.7-.7-1.2-1.5-1.2-2.5V6A3.5 3.5 0 0 0 8 2.5z"/>
+          <path d="M6.75 13a1.25 1.25 0 0 0 2.5 0"/>
+        </svg>
+        <span class="alert-dot"></span>
+      </button>
+      <button class="sb__icon-btn" title="사이드바 접기">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="3" width="12" height="10" rx="1.5"/><path d="M6 3v10"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="sb__group">
+      <div class="sb__item sb__item--active">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="5.5"/><path d="M10.5 5.5L8.8 8.8L5.5 10.5L7.2 7.2z" fill="currentColor" stroke="none"/>
+        </svg>오늘의 네비
+      </div>
+      <div class="sb__item">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.5 2.5h6L12.5 5.5v8h-9z"/><path d="M9 2.5V5.5h3.5"/>
+        </svg>단편
+      </div>
+      <div class="sb__item">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3a10 10 0 0 1 10 10"/><path d="M3 7.5a5.5 5.5 0 0 1 5.5 5.5"/>
+          <circle cx="3.7" cy="12.3" r="0.9" fill="currentColor" stroke="none"/>
+        </svg>블로그
+      </div>
+      <div class="sb__item">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="10" height="10" rx="1"/><path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/>
+        </svg>메모
+      </div>
+      <div class="sb__item">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <ellipse cx="8" cy="5" rx="5" ry="2"/><path d="M3 5v3c0 1.1 2.2 2 5 2s5-.9 5-2V5"/><path d="M3 8v3c0 1.1 2.2 2 5 2s5-.9 5-2V8"/>
+        </svg>가계부<span class="meta">1,284,500 원</span>
+      </div>
+    </div>
+
+    <div class="sb__group sb__group--recents">
+      <div class="sb__label">RECENTS</div>
+      <div class="sb__item sb__item--recent">멈췄던 시간을 다시 시작하기</div>
+      <div class="sb__item sb__item--recent">비 오는 화요일의 메모</div>
+      <div class="sb__item sb__item--recent">산책길에 마주친 고양이</div>
+      <div class="sb__item sb__item--recent">다 읽지 못한 책에 대하여</div>
+      <div class="sb__item sb__item--recent">오래된 노트의 첫 장</div>
+      <div class="sb__item sb__item--recent">작은 부엌의 아침</div>
+      <button class="sb__recents-more">전체 보기 →</button>
+    </div>
+
+    <div class="sb__footer">
+      <div class="sb__user">
+        <span class="sb__avatar">G</span>
+        <span class="sb__user-name">지오</span>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main__top">
+      <div class="crumb">
+        <span class="crumb__cat">오늘의 네비</span>
+        <span class="crumb__sep">/</span>
+        <span class="crumb__cat crumb__cat--active">전체 보기</span>
+        <span class="crumb__num"><span class="crumb__num-hash">총&nbsp;</span><span class="crumb__num-val" id="hdr-total"></span><span class="crumb__num-hash">편</span></span>
+      </div>
+    </div>
+
+    <div class="main__view">
+    <div class="col">
+      <div class="stats">
+        <div><div class="stat-lab">총</div><div class="stat-val"><span id="s-total"></span><span class="stat-suf">편</span></div></div>
+        <div><div class="stat-lab">올해</div><div class="stat-val"><span id="s-year"></span><span class="stat-suf">편</span></div></div>
+        <div><div class="stat-lab">이번달</div><div class="stat-val"><span id="s-month"></span><span class="stat-suf">편</span></div></div>
+        <div><div class="stat-lab">단어</div><div class="stat-val"><span id="s-words"></span></div></div>
+        <div><div class="stat-lab">원고지</div><div class="stat-val"><span id="s-sheets"></span><span class="stat-suf">매</span></div></div>
+      </div>
+
+      <div class="chips" id="chips"></div>
+
+      <div class="list-wrap">
+        <div class="list-head">
+          <span class="col-no">NO.</span>
+          <span class="col-title">TITLE</span>
+          <span class="col-meta">DATE · WORDS · 원고지</span>
+        </div>
+        <div id="list"></div>
+      </div>
+    </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const TITLES = [
+  "멈췄던 시간을 다시 시작하기","비 오는 화요일의 메모","산책길에 마주친 고양이","다 읽지 못한 책에 대하여","오래된 노트의 첫 장",
+  "작은 부엌의 아침","이름을 잃어버린 거리","겨울이 오기 전의 빛","조용한 사람들의 대화","버스 창밖으로 본 풍경",
+  "어떤 약속에 관하여","다시 쓰는 편지","낡은 우산을 버리던 날","혼자 마시는 커피의 온도","사라진 카페에 가는 길",
+  "엄마의 손글씨","낮잠과 꿈 사이","처음 본 영화의 마지막 장면","기억하지 못하는 약속","초저녁의 정류장",
+  "잊고 있던 노래가 흐르는 방","주말의 공복","오래 걸어야 보이는 것들","비밀을 적어두는 자리","낯선 도시의 첫 아침",
+  "다시 읽는 옛 일기","조금 늦게 도착한 봄","마지막 페이지를 덮으며","고요한 일요일의 베란다","모르는 번호로 온 안부",
+  "닫힌 서점 앞에서","여름이 끝나가는 속도","한 줄이면 충분한 날","흐려지는 약속들","쓰지 못한 답장",
+];
+const EXCERPTS = [
+  "한참을 미뤄둔 글을 다시 펼쳤다. 이상하게도 오랜만에 마주한 문장은 처음 쓸 때보다 더 낯설었다.",
+  "비가 쏟아졌다. 우산을 두고 나온 날일수록 비는 더 오래 내린다.",
+  "저녁 산책길에 골목 모퉁이에서 회색 고양이를 만났다. 잠깐 눈이 마주쳤을 뿐인데.",
+  "끝내 마지막 장을 넘기지 못한 책이 있다. 다 읽고 싶어서가 아니라, 끝내고 싶지 않아서.",
+  "오래된 노트의 첫 장에는 늘 같은 다짐이 적혀 있다.",
+  "물 끓는 소리, 도마 위의 칼날, 라디오에서 흘러나오는 목소리.",
+  "오랜만에 그 골목을 걸었다. 거리의 이름은 그대로였지만, 더는 같은 거리가 아니었다.",
+  "겨울이 오기 직전의 햇빛은 가장 정직하다.",
+  "그 사람들과의 대화는 조용했다. 말이 없어서가 아니라, 말 하나하나가 너무 무거워서.",
+  "버스 창밖으로 본 풍경은 영화의 한 장면 같았다.",
+  "약속이라는 말이 무거워질 때가 있다.",
+  "다시 편지를 쓰기로 했다. 누구에게 보낼지 정하지 않았지만 일단 쓰기 시작했다.",
+  "10년을 함께한 우산을 버리던 날, 비가 왔다.",
+  "혼자 마시는 커피는 식는 속도가 다르다.",
+  "그 카페는 사라졌지만, 가는 길은 여전히 익숙하다.",
+  "엄마의 손글씨는 늘 같은 기울기였다.",
+  "낮잠은 짧을수록 깊다.",
+  "그 영화의 마지막 장면을 한 번도 잊은 적이 없다.",
+  "약속을 잊는다는 건, 사람을 잊는 일과 비슷하다.",
+  "초저녁의 정류장에는 늘 누군가가 누군가를 기다리고 있다.",
+  "라디오에서 잊고 있던 노래가 흘러나왔다.",
+  "주말 아침은 왠지 조금 더 비어 있는 기분이다.",
+  "오래 걸어야 보이는 것들이 있다.",
+  "비밀은 언젠가 적어두지 않으면 잊힌다.",
+  "낯선 도시의 첫 아침에는 누구나 조금 외로워진다.",
+  "옛 일기를 다시 읽는 건 한 사람의 과거를 만나는 일이다.",
+  "올해의 봄은 조금 늦게 도착했다.",
+  "마지막 페이지를 덮을 때마다 잠시 고요해진다.",
+  "베란다에 앉아 있으면 시간이 멈춘 것 같다.",
+  "모르는 번호로 안부가 왔다.",
+  "닫힌 서점 앞에 한참을 서 있었다.",
+  "여름이 끝나가는 속도는 매년 다르다.",
+  "오늘은 한 줄이면 충분한 날이다.",
+  "약속들이 흐려지는 시기가 있다.",
+  "쓰지 못한 답장이 마음 한구석에 쌓여 있다.",
+];
+function pad(n,w){return String(n).padStart(w,"0");}
+function pseudo(s){let x=Math.sin(s)*10000;return x-Math.floor(x);}
+function buildEntries(){
+  const out=[]; let id=1336;
+  const months=[[2026,4,8],[2026,3,9],[2026,2,7],[2026,1,6],[2025,12,5],[2025,11,4],[2025,10,5],[2025,9,6],[2025,8,4],[2025,7,3],[2025,6,5]];
+  let ti=0;
+  for(const [y,m,n] of months){
+    const days=[]; for(let i=0;i<n;i++) days.push(Math.floor(pseudo(id+i)*27)+1);
+    days.sort((a,b)=>b-a);
+    for(let i=0;i<n;i++){
+      const day=days[i];
+      const wc=Math.floor(pseudo(id)*320)+80;
+      const wgj=+(wc*0.0175).toFixed(1);
+      const shared=pseudo(id+1)>0.5;
+      const sharedWithSoyeon=shared&&pseudo(id+7)>0.55;
+      out.push({id,num:id,title:TITLES[ti%TITLES.length],excerpt:EXCERPTS[ti%EXCERPTS.length],
+        year:y,month:m,day,date:`${y}.${pad(m,2)}.${pad(day,2)}`,
+        words:wc,wonGoJi:wgj,shared,sharedWithSoyeon});
+      id--; ti++;
+    }
+  }
+  return out;
+}
+const ENTRIES=buildEntries();
+const D={
+  entries:ENTRIES, total:ENTRIES.length,
+  thisYear:ENTRIES.filter(e=>e.year===2026).length,
+  thisMonth:ENTRIES.filter(e=>e.year===2026&&e.month===4).length,
+  shared:ENTRIES.filter(e=>e.shared).length,
+  sharedSoyeon:ENTRIES.filter(e=>e.sharedWithSoyeon).length,
+  totalWords:ENTRIES.reduce((s,e)=>s+e.words,0),
+  totalWonGoJi:+(ENTRIES.reduce((s,e)=>s+e.wonGoJi,0)).toFixed(1),
+};
+
+document.getElementById('hdr-total').textContent = D.total;
+document.getElementById('s-total').textContent = D.total;
+document.getElementById('s-year').textContent  = D.thisYear;
+document.getElementById('s-month').textContent = D.thisMonth;
+document.getElementById('s-words').textContent = D.totalWords.toLocaleString();
+document.getElementById('s-sheets').textContent= D.totalWonGoJi;
+
+const chipsEl = document.getElementById('chips');
+const chipDefs = [
+  {id:'all',    label:'전체',           count:D.total,         dot:null},
+  {id:'shared', label:'공유된 글',      count:D.shared,        dot:'var(--crail-base)'},
+  {id:'soyeon', label:'소연이 공유한 글', count:D.sharedSoyeon, dot:'var(--ink-2)'},
+];
+let activeFilter = 'all';
+function renderChips(){
+  chipsEl.innerHTML = chipDefs.map(c=>`
+    <button class="chip ${c.id===activeFilter?'active':''}" data-id="${c.id}">
+      ${c.dot?`<span class="dot" style="background:${c.dot}"></span>`:''}
+      ${c.label}
+      <span class="count mono">${c.count}</span>
+    </button>`).join('');
+  chipsEl.querySelectorAll('.chip').forEach(el=>{
+    el.addEventListener('click',()=>{ activeFilter = el.dataset.id; renderChips(); renderList(); });
+  });
+}
+function filtered(){
+  if(activeFilter==='shared') return D.entries.filter(e=>e.shared);
+  if(activeFilter==='soyeon') return D.entries.filter(e=>e.sharedWithSoyeon);
+  return D.entries;
+}
+function renderList(){
+  const rows = filtered().map(r=>`
+    <div class="row">
+      <span class="row__no">#${pad(r.num,4)}</span>
+      <div class="row__main">
+        <div class="row__line1">
+          <span class="row__title">${r.title}</span>
+          ${r.sharedWithSoyeon?`<span class="row__share">소연</span>`:''}
+        </div>
+        <div class="row__excerpt">${r.excerpt}</div>
+      </div>
+      <span class="row__meta">${r.date} <span class="sep">·</span> ${r.words}단어 <span class="sep">·</span> ${r.wonGoJi}매</span>
+    </div>`).join('');
+  document.getElementById('list').innerHTML = rows;
+}
+renderChips();
+renderList();
+</script>
+</body>
+</html>

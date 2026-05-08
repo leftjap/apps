@@ -314,6 +314,8 @@ const KIND_LABEL_KO = Object.freeze({
 });
 
 async function handleCategoryActive(kind) {
+  // spec §5.0.4 — 카테고리 전환 시 list 모드 자동 'article' 복귀
+  if (_activeMainView === 'list') exitListView();
   if (kind === 'expense') {
     removeRecentsMore();
     return;
@@ -397,21 +399,28 @@ function injectEditorStyles() {
       0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0); }
       30%, 70% { box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.45); }
     }
-    /* spec §3.3.1 — 리센츠 전체 보기 진입점 */
+    /* spec §3.3 — 리센츠 그룹 자체 스크롤 폐기. viewport 초과분은 clip,
+       더 보려면 §3.3.1 "전체 보기 →" 로 메인 영역 전환. mocks 의 overflow-y:auto override. */
+    .sb__group--recents { overflow: hidden !important; }
+    /* spec §3.3.1 — 리센츠 전체 보기 진입점 (sticky 하단 항상 가시) */
     .sb__recents-more {
       display: block;
       width: 100%;
-      margin: 4px 0 0;
-      padding: 6px 8px;
-      background: transparent;
+      margin: 0;
+      padding: 8px;
+      background: var(--sidebar, #fff);
       border: 0;
-      text-align: left;
+      text-align: right;
       font-family: var(--font-sans, 'Pretendard', sans-serif);
       font-size: 12px;
       font-weight: 500;
+      line-height: 1.5;
       color: var(--crail-base, #d97757);
       cursor: pointer;
       transition: opacity 0.12s ease;
+      position: sticky;
+      bottom: 0;
+      z-index: 1;
     }
     .sb__recents-more:hover { opacity: 0.7; }
   `;
@@ -686,6 +695,8 @@ function installNewDocHandler() {
   document.addEventListener('click', (e) => {
     const btn = e.target.closest?.('#newDocBtn, [data-action="new-doc"]');
     if (!btn) return;
+    // spec §5.0.4 — 새 글 시 list 모드 자동 'article' 복귀
+    if (_activeMainView === 'list') exitListView();
     // mocks 가 sync 로 article 그림 → microtask 후 SPA 가 contenteditable wrap.
     setTimeout(() => wrapNewArticle(), 0);
   });
@@ -1415,6 +1426,237 @@ function installRecentsClickHandler() {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// spec §5.0 — 전체 목록 뷰 (편집 ↔ 리스트 모드 전환).
+// ───────────────────────────────────────────────────────────────────────────
+
+let _activeMainView = 'article';
+let _listViewKind = null;
+let _listViewFilter = 'all';
+let _listViewRows = null;
+
+export function getActiveMainView() {
+  return _activeMainView;
+}
+
+function htmlToText(html) {
+  return String(html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function charCount(html) {
+  return htmlToText(html).replace(/\s/g, '').length;
+}
+
+function sheetCount(html) {
+  return Math.round((charCount(html) / 200) * 10) / 10;
+}
+
+function makeExcerpt(html, max = 80) {
+  const t = htmlToText(html);
+  if (t.length <= max) return t;
+  return t.slice(0, max) + '…';
+}
+
+function isPartnerRow(row, userId) {
+  return !!(row?.owner_id && userId && row.owner_id !== userId);
+}
+
+export function computeListStats(rows, userId, now = new Date()) {
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  let total = 0, thisYear = 0, thisMonth = 0, words = 0, sheets = 0;
+  let shared = 0, sharedSoyeon = 0;
+  for (const r of rows || []) {
+    total++;
+    const c = r.created_at ? new Date(r.created_at) : null;
+    if (c && !Number.isNaN(c.getTime())) {
+      if (c.getFullYear() === y) thisYear++;
+      if (c.getFullYear() === y && c.getMonth() + 1 === m) thisMonth++;
+    }
+    words += countWords(r.content);
+    sheets += sheetCount(r.content);
+    if (r.is_shared) shared++;
+    if (isPartnerRow(r, userId) && r.is_shared) sharedSoyeon++;
+  }
+  return {
+    total, thisYear, thisMonth,
+    words,
+    sheets: Math.round(sheets * 10) / 10,
+    shared, sharedSoyeon,
+  };
+}
+
+export function filterListRows(rows, filterId, userId) {
+  if (filterId === 'shared') return (rows || []).filter((r) => r.is_shared);
+  if (filterId === 'soyeon') return (rows || []).filter((r) => isPartnerRow(r, userId) && r.is_shared);
+  return rows || [];
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const yy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}.${mm}.${dd}`;
+}
+
+function buildListBreadcrumbExtra(doc) {
+  const top = doc.querySelector?.('.main__top .crumb');
+  if (!top) return;
+  if (top.querySelector?.('.crumb__sep--list')) return;
+  const sep = doc.createElement('span');
+  sep.className = 'crumb__sep crumb__sep--list';
+  sep.textContent = '/';
+  const active = doc.createElement('span');
+  active.className = 'crumb__cat crumb__cat--list';
+  active.textContent = '전체 보기';
+  const numEl = top.querySelector?.('#crumbNum');
+  if (numEl) {
+    top.insertBefore(sep, numEl);
+    top.insertBefore(active, numEl);
+  } else {
+    top.appendChild(sep);
+    top.appendChild(active);
+  }
+  numEl?.classList?.add('is-empty');
+}
+
+function removeListBreadcrumbExtra(doc) {
+  const top = doc.querySelector?.('.main__top .crumb');
+  if (!top) return;
+  top.querySelectorAll?.('.crumb__sep--list, .crumb__cat--list').forEach((el) => el.remove());
+  top.querySelector?.('#crumbNum')?.classList?.remove('is-empty');
+}
+
+export function renderListView(kind, rows, doc = document, opts = {}) {
+  const view = doc.getElementById('mainView');
+  if (!view) return false;
+  const userId = _currentUser?.id || null;
+  const stats = computeListStats(rows, userId);
+  const filterId = opts.filter || _listViewFilter || 'all';
+  const filtered = filterListRows(rows, filterId, userId);
+  const chip = (id, label, count, dotColor) => `
+    <button type="button" class="doc-list__chip ${id === filterId ? 'is-active' : ''}" data-list-filter="${id}">
+      ${dotColor ? `<span class="doc-list__chip-dot" style="background:${dotColor}"></span>` : ''}
+      ${escapeHtml(label)}
+      <span class="doc-list__chip-count">${count}</span>
+    </button>`;
+  const rowsHtml = filtered.map((r) => {
+    const num = (r.id || '').toString().slice(0, 4).toUpperCase();
+    const partnerShared = isPartnerRow(r, userId) && r.is_shared;
+    const meta = `${fmtDate(r.created_at)} <span class="sep">·</span> ${countWords(r.content)}단어 <span class="sep">·</span> ${sheetCount(r.content)}매`;
+    return `
+      <div class="doc-list__row" data-doc-id="${escapeHtml(r.id)}">
+        <span class="doc-list__no">#${escapeHtml(num)}</span>
+        <div class="doc-list__main">
+          <div class="doc-list__line1">
+            <span class="doc-list__title">${escapeHtml(r.title || '제목 없음')}</span>
+            ${partnerShared ? `<span class="doc-list__share">${escapeHtml(USER_ID_TO_DISPLAY_NAME[r.owner_id] || '소연')}</span>` : ''}
+          </div>
+          <div class="doc-list__excerpt">${escapeHtml(makeExcerpt(r.content))}</div>
+        </div>
+        <span class="doc-list__meta">${meta}</span>
+      </div>`;
+  }).join('');
+  view.innerHTML = `
+    <div class="doc-list" data-list-kind="${escapeHtml(kind)}">
+      <div class="doc-list__stats">
+        <div><div class="doc-list__stat-lab">총</div><div class="doc-list__stat-val">${stats.total}<span class="doc-list__stat-suf">편</span></div></div>
+        <div><div class="doc-list__stat-lab">올해</div><div class="doc-list__stat-val">${stats.thisYear}<span class="doc-list__stat-suf">편</span></div></div>
+        <div><div class="doc-list__stat-lab">이번달</div><div class="doc-list__stat-val">${stats.thisMonth}<span class="doc-list__stat-suf">편</span></div></div>
+        <div><div class="doc-list__stat-lab">단어</div><div class="doc-list__stat-val">${stats.words.toLocaleString()}</div></div>
+        <div><div class="doc-list__stat-lab">원고지</div><div class="doc-list__stat-val">${stats.sheets}<span class="doc-list__stat-suf">매</span></div></div>
+      </div>
+      <div class="doc-list__chips">
+        ${chip('all', '전체', stats.total, null)}
+        ${chip('shared', '공유된 글', stats.shared, 'var(--crail-base)')}
+        ${chip('soyeon', '소연이 공유한 글', stats.sharedSoyeon, 'var(--ink-2)')}
+      </div>
+      <div class="doc-list__head">
+        <span class="doc-list__head-no">NO.</span>
+        <span class="doc-list__head-title">TITLE</span>
+        <span class="doc-list__head-meta">DATE · WORDS · 원고지</span>
+      </div>
+      <div class="doc-list__body">${rowsHtml}</div>
+    </div>`;
+  return true;
+}
+
+export async function enterListView(kind, doc = document) {
+  if (!WRITING_KINDS_FOR_LIST.includes(kind)) return false;
+  try {
+    const rows = await fetchEntriesForCategory(kind);
+    _listViewKind = kind;
+    _listViewRows = rows;
+    _listViewFilter = 'all';
+    _activeMainView = 'list';
+    renderListView(kind, rows, doc);
+    buildListBreadcrumbExtra(doc);
+    return true;
+  } catch (e) {
+    console.warn('[entries] enterListView 실패:', e?.message || e);
+    return false;
+  }
+}
+
+export function exitListView(doc = document) {
+  _activeMainView = 'article';
+  _listViewKind = null;
+  _listViewRows = null;
+  removeListBreadcrumbExtra(doc);
+}
+
+let _listViewClickInstalled = false;
+function installListViewClickHandler() {
+  if (_listViewClickInstalled) return;
+  if (typeof document === 'undefined') return;
+  _listViewClickInstalled = true;
+  document.addEventListener('click', async (e) => {
+    const showAll = e.target.closest?.('[data-action="show-all-list"]');
+    if (showAll) {
+      const kind = getCurrentKind();
+      if (kind && WRITING_KINDS_FOR_LIST.includes(kind)) await enterListView(kind);
+      return;
+    }
+    const chipBtn = e.target.closest?.('.doc-list__chip[data-list-filter]');
+    if (chipBtn && _activeMainView === 'list' && _listViewRows) {
+      _listViewFilter = chipBtn.dataset.listFilter || 'all';
+      renderListView(_listViewKind, _listViewRows, document, { filter: _listViewFilter });
+      return;
+    }
+    const row = e.target.closest?.('.doc-list__row[data-doc-id]');
+    if (row && _activeMainView === 'list') {
+      const id = row.dataset.docId;
+      if (!id) return;
+      try {
+        const entry = await Queries.getEntry(id);
+        if (entry) {
+          exitListView();
+          renderDocFromRow(entry);
+        }
+      } catch (err) {
+        console.warn('[entries] list row click 실패:', err?.message || err);
+      }
+      return;
+    }
+    const crumbCat = e.target.closest?.('.main__top #crumbCat');
+    if (crumbCat && _activeMainView === 'list') {
+      const kind = getCurrentKind();
+      exitListView();
+      if (kind) await handleCategoryActive(kind);
+    }
+  });
+  document.addEventListener('keydown', async (e) => {
+    if (e.key !== 'Escape') return;
+    if (_activeMainView !== 'list') return;
+    const kind = getCurrentKind();
+    exitListView();
+    if (kind) await handleCategoryActive(kind);
+  });
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // public API (main.js 가 호출)
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -1426,6 +1668,7 @@ export function mountEntriesView(user) {
   clearRecentsList();
   injectEditorStyles();
   installRecentsClickHandler();
+  installListViewClickHandler();
   installNewDocHandler();
   installEditorInput();
   installPasteHandler();
@@ -1453,6 +1696,13 @@ export const Entries = {
   ENTRY_KINDS: Queries.ENTRY_KINDS,
   mountEntriesView,
   rebindCategoryObserver,
+  // spec §5.0 — 전체 목록 뷰
+  computeListStats,
+  filterListRows,
+  renderListView,
+  enterListView,
+  exitListView,
+  getActiveMainView,
   debounce,
   // Wave 11.5.2b — 어댑터 + DOM 패치
   rowToMockDoc,

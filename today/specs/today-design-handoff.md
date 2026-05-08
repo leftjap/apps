@@ -88,6 +88,7 @@ active 카테고리의 최근 항목 동적 갱신. 라벨이 카테고리 이�
 - **글쓰기 카테고리**: 글 제목 + 우측 메타(`1년 전`, `소연` 공유 등). 최대 30건 컷 — `entries.js` `rows.slice(0, 30)`.
 - **가계부**: `상호명 — 메모` + 우측 금액 (ink-3 톤, 강조 X)
 - **빈 상태**: 항목 0개면 라벨까지 숨김 또는 placeholder.
+- **자체 스크롤 폐기** — viewport 초과 항목은 clip. 더 보려면 §3.3.1 "전체 보기 →" 진입.
 
 #### 3.3.1 전체 보기 진입점 (글쓰기 4종 한정)
 
@@ -95,11 +96,13 @@ active 카테고리의 최근 항목 동적 갱신. 라벨이 카테고리 이�
 
 - 위치: `.sb__group--recents` 내부 마지막 child (그룹 외부 아님 — 시각적 한 묶음).
 - 마크업: `<button class="sb__recents-more" type="button">전체 보기 →</button>` — SPA 레이어가 mocks 출력 갱신 시 함께 주입.
-- 스타일:
-  - `color: var(--crail-base)`, `font-size: 12px`, `font-weight: 500`
-  - padding 좌우는 `.sb__item` 정렬, 상하 4–6px
+- 스타일 (DESIGN.md meta 톤 `12 / 500 / 1.5`):
+  - `color: var(--crail-base)` (DESIGN.md 점 단위 액센트), `font-size: 12px`, `font-weight: 500`, `line-height: 1.5`
+  - padding `8px` (좌우 `.sb__item` 정렬)
+  - **우측 정렬** (`text-align: right`) — 보조 진입점 위계
   - hover: `opacity` 변화만 (배경 fill 금지 — 액센트 사용 규칙)
-  - 배경 transparent, border 0
+  - 배경 `var(--sidebar)` (sticky 하단 고정 시 리스트 스크롤이 비치지 않도록), border 0
+  - **`position: sticky; bottom: 0`** — 리센츠 길이 무관 항상 가시. 사이드바 스크롤 없이 접근 가능.
 - 표시 조건: 글쓰기 4종(navi/fiction/blog/memo) 한정. 가계부는 비표시 (가계부는 §5.5 mini-tabs 로 별도 처리).
 - 빈 상태(글 0건): 라벨·리스트와 함께 진입점도 숨김.
 - 30건 미만일 때도 표시 (일관성). 1차 구현 카운트 미표시 — 단순 "전체 보기".
