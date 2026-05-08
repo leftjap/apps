@@ -360,7 +360,7 @@ function makeCalendarIcon(iconSize, padding) {
   p.setAttribute('d', 'M3 10h18M8 2v4M16 2v4');
   s.append(r, p);
   b.appendChild(s);
-  b.addEventListener('click', () => { window.location.hash = '#/calendar'; });
+  b.addEventListener('click', () => { window.location.hash = '#/stats'; });
   return b;
 }
 
