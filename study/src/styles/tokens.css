@@ -75,6 +75,7 @@
 
 /* Phone frame */
 .phone-shell {
+  box-sizing: border-box;
   position: relative;
   width: 100%;
   min-height: 100vh;
