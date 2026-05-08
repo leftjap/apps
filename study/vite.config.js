@@ -23,6 +23,12 @@ export default defineConfig({
     //   (2) PWA 의 SW precache 가 청크별 캐싱 → 코드 변경 시 의존성 청크 재다운로드 회피
     // Wave 11.19: supabase-js → auth-js + postgrest-js sub-package 직접 사용 (Realtime/Functions/Storage 제거).
     rollupOptions: {
+      input: {
+        main: 'index.html',
+        mocksHome: 'mocks/home.html',
+        mocksSessionNew: 'mocks/session-new.html',
+        mocksSessionReview: 'mocks/session-review.html',
+      },
       output: {
         // 함수 형태 — sub-path import (`@supabase/auth-js/dist/module/GoTrueClient.js` 등) 도 매치.
         // 객체 형태는 root index 만 매치해 sub-module 들이 index 청크로 흡수됨 (Wave 11.19 검증).
