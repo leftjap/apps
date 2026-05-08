@@ -245,7 +245,6 @@ export function injectNotifDropdownStyles(doc = document) {
       justify-content: space-between;
       align-items: center;
       padding: 10px 12px;
-      border-bottom: 1px solid var(--border-light, #f0ece4);
     }
     .notif-dropdown__title {
       font-size: 13px;
@@ -270,12 +269,10 @@ export function injectNotifDropdownStyles(doc = document) {
       display: flex;
       gap: 8px;
       padding: 10px 12px;
-      border-bottom: 1px solid var(--border-light, #f0ece4);
       cursor: pointer;
       transition: background 120ms;
       align-items: flex-start;
     }
-    .notif-dropdown__row:last-child { border-bottom: 0; }
     .notif-dropdown__row:hover { background: var(--bg-warm, #f5f0ea); }
     .notif-dropdown__unread-dot {
       width: 6px; height: 6px;
@@ -333,6 +330,13 @@ export function injectNotifDropdown(doc = document) {
 export function renderNotifDropdown(notifs, doc = document) {
   const list = doc.getElementById('notifDropdownList');
   if (!list) return false;
+  // unread 0 일 때 "모두 읽음" 버튼 hide — 라벨처럼 보여 헷갈리는 UX 해소
+  const action = doc.querySelector('.notif-dropdown__action[data-action="mark-all-read"]');
+  if (action) {
+    const hasUnread = (notifs || []).some((n) => !n.read_at);
+    if (hasUnread) action.removeAttribute('hidden');
+    else action.setAttribute('hidden', '');
+  }
   if (!notifs || !notifs.length) {
     list.innerHTML = '<div class="notif-dropdown__empty">새 알림 없음</div>';
     return true;
