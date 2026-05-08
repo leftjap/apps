@@ -20,8 +20,15 @@ describe('pickCardFields', () => {
     });
     expect(out).toEqual({
       id: 'c1', sentence: 'I could use a coffee.', pron: '아이 쿠 쥬즈 어 커피',
-      ko: '커피 한잔 마시고 싶다.', reading: null, lang: 'en',
+      ko: '커피 한잔 마시고 싶다.', reading: null, lang: 'en', explanation: null,
     });
+  });
+
+  it('explanation 객체 보존 (en schema.md 형식)', () => {
+    const expl = { key: 'k', situation: 's', grammar: [{ struct: 'a', body: 'b' }],
+      chunks: [['x', 'y']], phonemes: [['/p/', 'pop']], mistake: 'm', similar: 's' };
+    const out = pickCardFields({ id: 'x', lang: 'en', sentence: 'S', explanation: expl });
+    expect(out.explanation).toBe(expl);
   });
 
   it('ja card 의 reading 보존', () => {
@@ -36,7 +43,7 @@ describe('pickCardFields', () => {
   it('null/undefined 안전', () => {
     expect(pickCardFields(null)).toBeNull();
     expect(pickCardFields({})).toEqual({
-      id: undefined, sentence: '', pron: '', ko: '', reading: null, lang: null,
+      id: undefined, sentence: '', pron: '', ko: '', reading: null, lang: null, explanation: null,
     });
   });
 });

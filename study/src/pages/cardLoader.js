@@ -15,6 +15,7 @@ export function pickCardFields(card) {
     ko: card.meaning ?? '',
     reading: card.reading ?? null,
     lang: card.lang ?? null,
+    explanation: card.explanation ?? null,
   };
 }
 

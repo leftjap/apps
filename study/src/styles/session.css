@@ -188,3 +188,25 @@
 .judge-row[data-size="desktop"] .judge-btn[data-kind="got"] { padding: 28px 0; }
 .judge-row[data-size="tablet"] .judge-btn[data-kind="got"] .en,
 .judge-row[data-size="desktop"] .judge-btn[data-kind="got"] .en { font-size: 30px; }
+
+/* ── Explanation panel (A.13) — 정본: deleted mocks/session.html L166-185 (git 13018d1^) ── */
+.explain-toggle{font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:var(--s-3) 0;display:flex;align-items:center;gap:var(--s-2);transition:color 150ms var(--ease)}
+@media(hover:hover){.explain-toggle:hover{color:var(--text)}}
+.explain-toggle svg{width:16px;height:16px;transition:transform 150ms var(--ease);stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.explain-toggle.open svg{transform:rotate(180deg)}
+.explain-panel{display:none;padding-top:var(--s-4)}
+.explain-panel.open{display:block}
+.ex-section{margin-bottom:var(--s-6)}
+.ex-section:last-child{margin-bottom:0}
+.ex-label{font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:var(--s-2)}
+.ex-text{font-size:14px;color:var(--text);line-height:1.65}
+.ex-text .hl{color:var(--accent);font-weight:500}
+.chunk-row{display:flex;flex-wrap:wrap;gap:var(--s-3);margin-top:var(--s-3)}
+.chunk{display:flex;flex-direction:column;gap:2px}
+.chunk-en{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-strong)}
+.chunk-kr{font-size:12px;color:var(--text-muted)}
+.phoneme-tags{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3)}
+.phoneme-tag{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--accent);padding:var(--s-1) var(--s-3);border:1px solid rgba(217,119,87,0.25);border-radius:var(--r-pill)}
+.grammar-block{padding:var(--s-3) var(--s-4);background:var(--bg-warm);border-radius:var(--r-md);margin-top:var(--s-3);font-size:14px;line-height:1.65}
+.grammar-block+.grammar-block{margin-top:var(--s-2)}
+.grammar-block .struct{font-family:var(--font-display);font-size:13px;font-weight:500;color:var(--text-muted);margin-bottom:var(--s-2)}

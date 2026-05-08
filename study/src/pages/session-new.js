@@ -25,6 +25,7 @@ import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
+import { createExplanationPanel } from '../components/session/explanationPanel.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -185,7 +186,13 @@ function render(host, state, handlers = {}) {
   });
 
   const large = state.size !== 'phone';
-  const listen = createListenButton({ large });
+  const listen = createListenButton({
+    large,
+    onPlay: () => {
+      const lang = (state.sentence?.lang || getStoredLang()) === 'ja' ? 'ja-JP' : 'en-US';
+      window.studySpeech?.speak(state.sentence?.sentence || '', { lang });
+    },
+  });
   const wave = createWaveform({ large });
   const pillCmp = createScorePill({
     score: state.lastScore || 0,
@@ -288,14 +295,14 @@ function buildMain(state, ctrl) {
   ctrlRow.append(ctrl.listen.el, ctrl.recordCmp.el, ctrl.waveEl, ctrl.pillWrap);
   wrap.appendChild(ctrlRow);
 
-  const explain = document.createElement('button');
-  explain.type = 'button';
   const exMt = state.size === 'phone' ? 32 : 40;
-  const exFs = state.size === 'phone' ? 13 : 14;
-  explain.style.cssText = `background:none;border:none;display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:${exFs}px;padding:0;margin-top:${exMt}px;cursor:pointer;font-family:var(--font-body);align-self:flex-start;`;
-  explain.innerHTML = `해설 보기 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>`;
-  explain.addEventListener('click', () => console.warn('[explain] stub — Wave N'));
-  wrap.appendChild(explain);
+  const explain = createExplanationPanel({
+    explanation: state.sentence?.explanation,
+    lang: state.sentence?.lang,
+  });
+  explain.toggleEl.style.marginTop = `${exMt}px`;
+  explain.toggleEl.style.alignSelf = 'flex-start';
+  wrap.append(explain.toggleEl, explain.panelEl);
 
   return wrap;
 }
