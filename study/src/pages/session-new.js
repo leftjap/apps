@@ -27,6 +27,7 @@ import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSn
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
+import { showWordSheet } from '../components/session/wordSheet.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -233,7 +234,9 @@ function render(host, state, handlers = {}) {
         recordCmp.update({ recording: false });
         layout.update({ tried: state.tried, passed: state.passed, recording: false });
         applyExclusive(false, state.lastScore, wave.el, pillWrap);
-        applyWordHighlight(main, result?.wordScores);
+        applyWordHighlight(main, result?.wordScores, {
+          onBadClick: (w) => showWordSheet({ word: w, phonemeScores: result?.phonemeScores }),
+        });
         try {
           await savePronunciationLog(window.studyDB, {
             result, sentenceId: state.sentence.id, lang: getStoredLang(), date: getTodayISO(),

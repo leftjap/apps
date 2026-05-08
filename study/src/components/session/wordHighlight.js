@@ -44,25 +44,40 @@ export function wrapWords(sentence) {
 /**
  * container 내 `.word` span 들에 점수별 inline 색상 적용.
  * wordScores 부재·길이 불일치 시 처리:
- *   - wordScores 빈 배열/null → 전체 색상 reset (색 제거)
+ *   - wordScores 빈 배열/null → 전체 색상 reset (색 + 클릭 핸들러 제거)
  *   - 일부 인덱스 누락 → 해당 span 만 reset
  *
  * 옛 코드는 인덱스 매칭 (i 번째 span ↔ wordScores[i]). 동일 정책.
+ *
+ * options.onBadClick(word) — bad 클래스 (score<50) 단어 클릭 시 호출. 옛 mocks 의 openWordSheet 회귀 복원.
  */
-export function applyWordHighlight(container, wordScores) {
+export function applyWordHighlight(container, wordScores, options = {}) {
   if (!container || typeof container.querySelectorAll !== 'function') return;
   const spans = container.querySelectorAll('.word');
   if (!spans.length) return;
   const list = Array.isArray(wordScores) ? wordScores : [];
+  const onBadClick = typeof options.onBadClick === 'function' ? options.onBadClick : null;
   spans.forEach((span, i) => {
+    // 이전 호출의 click handler 제거 (멱등성)
+    if (span.__wordClickHandler) {
+      span.removeEventListener('click', span.__wordClickHandler);
+      span.__wordClickHandler = null;
+      span.style.cursor = '';
+    }
     const entry = list[i];
     if (!entry || typeof entry.score !== 'number') {
       span.style.color = '';
       span.style.textDecoration = '';
       return;
     }
-    const { color, deco } = classifyScore(entry.score);
+    const { color, deco, cls } = classifyScore(entry.score);
     span.style.color = color;
     span.style.textDecoration = deco;
+    if (cls === 'bad' && onBadClick) {
+      const handler = () => onBadClick(span.textContent || entry.word || '');
+      span.addEventListener('click', handler);
+      span.__wordClickHandler = handler;
+      span.style.cursor = 'pointer';
+    }
   });
 }

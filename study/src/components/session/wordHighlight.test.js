@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { wrapWords, applyWordHighlight, classifyScore } from './wordHighlight.js';
 
 describe('classifyScore', () => {
@@ -89,5 +89,36 @@ describe('applyWordHighlight', () => {
   it('container null/잘못된 입력 → no throw', () => {
     expect(() => applyWordHighlight(null, [])).not.toThrow();
     expect(() => applyWordHighlight({}, [])).not.toThrow();
+  });
+
+  it('onBadClick: bad 단어 클릭 시 호출, good/ok 는 무시', () => {
+    const onBadClick = vi.fn();
+    applyWordHighlight(
+      container,
+      [
+        { word: 'You', score: 100 }, // good
+        { word: 'got', score: 60 },  // ok
+        { word: 'it', score: 40 },   // bad
+      ],
+      { onBadClick },
+    );
+    const spans = container.querySelectorAll('.word');
+    spans[0].click();
+    spans[1].click();
+    expect(onBadClick).not.toHaveBeenCalled();
+    spans[2].click();
+    expect(onBadClick).toHaveBeenCalledOnce();
+    expect(onBadClick).toHaveBeenCalledWith('it');
+    expect(spans[2].style.cursor).toBe('pointer');
+  });
+
+  it('두 번째 호출 시 이전 click handler 제거 (멱등)', () => {
+    const first = vi.fn();
+    const second = vi.fn();
+    applyWordHighlight(container, [{ word: 'You', score: 40 }], { onBadClick: first });
+    applyWordHighlight(container, [{ word: 'You', score: 40 }], { onBadClick: second });
+    container.querySelectorAll('.word')[0].click();
+    expect(first).not.toHaveBeenCalled();
+    expect(second).toHaveBeenCalledOnce();
   });
 });
