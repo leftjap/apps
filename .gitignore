@@ -43,3 +43,6 @@ coverage/
 # Local Claude project settings (이미 있는 것 보존)
 .claude/.scope-approved
 .claude/.study-docs-read
+
+# Supabase CLI link cache (자동 갱신)
+**/supabase/.temp/
