@@ -77,6 +77,13 @@ export function mountHome(host) {
 
   refreshStats();
 
+  // sync 완료 후 한 번 더 갱신 (mount 시점에 sync 진행 중이었던 경우)
+  if (typeof window !== 'undefined' && window.__syncReady) {
+    window.__syncReady
+      .then(() => refreshStats())
+      .catch(() => {});
+  }
+
   // Wave A.9.2.b — 진행 중 세션 표시 (홈 sessionCard 라벨 변경)
   if (!demo) {
     loadActiveSession(window.studyDB).then((snapshot) => {

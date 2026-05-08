@@ -41,7 +41,8 @@ if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
         await Auth.ensureUserDB(session.user);
         // Wave 11.13.1 — 첫 다운로드 시작 (백그라운드, 실패 시 로컬 데이터 유지)
         // Wave 11.14 — 모든 테이블 empty 시 신규 사용자 자동 unlock (allowEmptyServerPush)
-        Sync.startSync(session.user)
+        window.__syncReady = Sync.startSync(session.user);
+        window.__syncReady
           .then((result) => {
             if (
               result?.ok &&
