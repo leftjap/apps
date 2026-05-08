@@ -17,19 +17,35 @@ import { pickSize, watchSize } from '../components/session/index.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+function isDemoMode() {
+  if (typeof window === 'undefined') return false;
+  if (window.studyDemo === true) return true;
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get('demo') === '1') return true;
+  } catch { /* noop */ }
+  return false;
+}
+
+const DEMO_FIXTURES = {
+  newCount: 5, reviewCount: 8, streak: 7, tried: 14, passed: 9,
+  bestStreak: 12, weekUtter: 108, weekPass: 72, todayISO: '2026-05-04',
+};
+
 export function mountHome(host) {
+  const demo = isDemoMode();
   const state = {
     size: pickSize(),
     lang: getStoredLang(),
-    newCount: 0,
-    reviewCount: 0,
-    streak: 0,
-    tried: 0,
-    passed: 0,
-    bestStreak: null,
-    weekUtter: 0,
-    weekPass: 0,
-    todayISO: window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10),
+    newCount: demo ? DEMO_FIXTURES.newCount : 0,
+    reviewCount: demo ? DEMO_FIXTURES.reviewCount : 0,
+    streak: demo ? DEMO_FIXTURES.streak : 0,
+    tried: demo ? DEMO_FIXTURES.tried : 0,
+    passed: demo ? DEMO_FIXTURES.passed : 0,
+    bestStreak: demo ? DEMO_FIXTURES.bestStreak : null,
+    weekUtter: demo ? DEMO_FIXTURES.weekUtter : 0,
+    weekPass: demo ? DEMO_FIXTURES.weekPass : 0,
+    todayISO: demo ? DEMO_FIXTURES.todayISO : (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10)),
   };
 
   let cleanup = render(host, state);
@@ -41,13 +57,15 @@ export function mountHome(host) {
     }
   });
 
-  loadStats(state).then((updated) => {
-    if (updated) {
-      Object.assign(state, updated);
-      cleanup();
-      cleanup = render(host, state);
-    }
-  }).catch((e) => console.error('[home] loadStats', e));
+  if (!demo) {
+    loadStats(state).then((updated) => {
+      if (updated) {
+        Object.assign(state, updated);
+        cleanup();
+        cleanup = render(host, state);
+      }
+    }).catch((e) => console.error('[home] loadStats', e));
+  }
 
   return () => { cleanup(); stop(); };
 }
