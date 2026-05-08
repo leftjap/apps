@@ -62,6 +62,12 @@
       "port": 4700
     },
     {
+      "name": "today-mocks-alt",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "../apps/today", "-l", "4711", "--no-clipboard"],
+      "port": 4711
+    },
+    {
       "name": "today-downloads",
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "/Users/gio_c/Downloads", "-l", "4710", "--no-clipboard"],
