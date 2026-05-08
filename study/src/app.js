@@ -2,7 +2,6 @@ import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionNewHtml from '../mocks/session-new.html?raw';
 import sessionReviewHtml from '../mocks/session-review.html?raw';
-import calendarHtml from '../mocks/calendar.html?raw';
 import summaryHtml from '../mocks/summary.html?raw';
 import statsHtml from '../mocks/stats.html?raw';
 import settingsHtml from '../mocks/settings.html?raw';
@@ -13,7 +12,6 @@ const ROUTES = {
   home: homeHtml,
   'session-new': sessionNewHtml,
   'session-review': sessionReviewHtml,
-  calendar: calendarHtml,
   summary: summaryHtml,
   stats: statsHtml,
   settings: settingsHtml,
