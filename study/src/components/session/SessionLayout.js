@@ -109,6 +109,7 @@ export function createSessionLayout(opts = {}) {
 /* ────────── PHONE ────────── */
 function buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot }) {
   const k = KIND[kind];
+  root.style.cssText = 'display:flex;flex-direction:column;';
 
   // status-bar
   const sb = document.createElement('div');
