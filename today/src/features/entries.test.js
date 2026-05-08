@@ -44,6 +44,8 @@ import {
   computeListStats,
   filterListRows,
   renderListView,
+  isReadOnlyRow,
+  renderDocFromRow,
 } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
 
@@ -1255,5 +1257,117 @@ describe('Entries.getActiveMainView / exitListView — public API 노출', () =>
     expect(typeof Entries.enterListView).toBe('function');
     expect(typeof Entries.exitListView).toBe('function');
     expect(typeof Entries.getActiveMainView).toBe('function');
+    expect(typeof Entries.isReadOnlyRow).toBe('function');
+  });
+});
+
+describe('renderListView — kind 별 chip 표시 분기', () => {
+  beforeEach(() => __setCurrentUserForTest({ id: 'u-self' }));
+  afterEach(() => __setCurrentUserForTest(null));
+
+  it('navi → chips 영역 노출', () => {
+    const view = { innerHTML: '' };
+    renderListView('navi', [], { getElementById: () => view });
+    expect(view.innerHTML).toContain('doc-list__chips');
+    expect(view.innerHTML).toContain('소연이 공유한 글');
+  });
+
+  it('soyoun_navi → chips 영역 노출', () => {
+    const view = { innerHTML: '' };
+    renderListView('soyoun_navi', [], { getElementById: () => view });
+    expect(view.innerHTML).toContain('doc-list__chips');
+  });
+
+  it('fiction → chips 영역 미노출', () => {
+    const view = { innerHTML: '' };
+    renderListView('fiction', [], { getElementById: () => view });
+    expect(view.innerHTML).not.toContain('doc-list__chips');
+    expect(view.innerHTML).not.toContain('공유된 글');
+  });
+
+  it('blog / memo → chips 영역 미노출', () => {
+    for (const k of ['blog', 'memo']) {
+      const view = { innerHTML: '' };
+      renderListView(k, [], { getElementById: () => view });
+      expect(view.innerHTML).not.toContain('doc-list__chips');
+    }
+  });
+});
+
+describe('isReadOnlyRow — 파트너 글 분기', () => {
+  it('owner_id 본인 → false', () => {
+    expect(isReadOnlyRow({ owner_id: 'me' }, 'me')).toBe(false);
+  });
+  it('owner_id 파트너 → true', () => {
+    expect(isReadOnlyRow({ owner_id: 'other' }, 'me')).toBe(true);
+  });
+  it('owner_id 누락 → false', () => {
+    expect(isReadOnlyRow({}, 'me')).toBe(false);
+  });
+  it('userId 없음 → false', () => {
+    expect(isReadOnlyRow({ owner_id: 'other' }, null)).toBe(false);
+  });
+});
+
+describe('renderDocFromRow — 파트너 글 read-only 마크업', () => {
+  beforeEach(() => __setCurrentUserForTest({ id: '7bae5645-61c6-4476-9ff2-4c30a72812ff' }));
+  afterEach(() => __setCurrentUserForTest(null));
+
+  it('본인 글 → contenteditable 살아있음 + read-only 라벨 미노출', () => {
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: () => view, querySelector: () => null };
+    renderDocFromRow(
+      { id: 'r1', owner_id: '7bae5645-61c6-4476-9ff2-4c30a72812ff', title: '내 글', content: '<p>본문</p>' },
+      fakeDoc,
+    );
+    expect(view.innerHTML).toContain('contenteditable');
+    expect(view.innerHTML).toContain('data-read-only=""');
+    expect(view.innerHTML).not.toContain('읽기 전용');
+  });
+
+  it('파트너 글 → contenteditable 제거 + 메타 "{이름} 작성 · 읽기 전용"', () => {
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: () => view, querySelector: () => null };
+    renderDocFromRow(
+      { id: 'r2', owner_id: 'aeafd9a7-4094-4e7c-a621-188d6b2e336d', title: '소연 글', content: '<p>본문</p>' },
+      fakeDoc,
+    );
+    expect(view.innerHTML).toContain('data-read-only="1"');
+    expect(view.innerHTML).toContain('읽기 전용');
+    expect(view.innerHTML).toContain('소연');
+    const h1Tag = view.innerHTML.match(/<h1[^>]*>/)?.[0] || '';
+    const bodyTag = view.innerHTML.match(/<div class="doc__body"[^>]*>/)?.[0] || '';
+    expect(h1Tag).not.toContain('contenteditable');
+    expect(bodyTag).not.toContain('contenteditable');
+  });
+});
+
+describe('saveArticle — read-only 보호', () => {
+  it('article.dataset.readOnly === "1" → null (저장 skip)', async () => {
+    const article = {
+      dataset: { readOnly: '1', entryId: 'r-readonly' },
+      querySelector: () => ({ textContent: '', innerHTML: '' }),
+    };
+    const r = await saveArticle(article, { id: 'me' }, 'navi');
+    expect(r).toBe(null);
+  });
+});
+
+describe('syncShareToggleFromRow — 파트너 글 share 토글 숨김 클래스', () => {
+  beforeEach(() => __setCurrentUserForTest({ id: 'me' }));
+  afterEach(() => __setCurrentUserForTest(null));
+
+  it('본인 글 → share--readonly 미부여', () => {
+    const cls = new Set();
+    const el = { classList: { toggle: (c, on) => { if (on) cls.add(c); else cls.delete(c); } } };
+    syncShareToggleFromRow({ owner_id: 'me', is_shared: 1 }, { querySelector: () => el });
+    expect(cls.has('share--readonly')).toBe(false);
+  });
+
+  it('파트너 글 → share--readonly 부여', () => {
+    const cls = new Set();
+    const el = { classList: { toggle: (c, on) => { if (on) cls.add(c); else cls.delete(c); } } };
+    syncShareToggleFromRow({ owner_id: 'partner', is_shared: 1 }, { querySelector: () => el });
+    expect(cls.has('share--readonly')).toBe(true);
   });
 });

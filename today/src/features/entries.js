@@ -164,11 +164,20 @@ export function removeRecentsMore(doc = (typeof document !== 'undefined' ? docum
  * #mainView 를 Dexie row 로 재구성 — `<article class="doc">` 패턴 (mocks renderDoc L3816-3822 답습).
  * 차이: title h1 / body 모두 contenteditable + `data-entry-id` 어트리뷰트 (자동저장 wiring 식별자).
  */
+export function isReadOnlyRow(row, userId = _currentUser?.id) {
+  if (!row || !userId) return false;
+  return !!(row.owner_id && row.owner_id !== userId);
+}
+
 export function renderDocFromRow(row, doc = document) {
   const view = doc.getElementById('mainView');
   if (!view || !row) return false;
   const titleText = row.title || '';
-  const meta = buildMockMeta(row);
+  const readOnly = isReadOnlyRow(row);
+  const partnerName = readOnly ? (USER_ID_TO_DISPLAY_NAME[row.owner_id] || '소연') : '';
+  const meta = readOnly
+    ? `${escapeHtml(partnerName)} 작성 <span class="sep">·</span> 읽기 전용 <span class="sep">·</span> ${buildMockMeta(row)}`
+    : buildMockMeta(row);
   // Wave 11.6.6 — placeholder 는 CSS `:empty::before` (injectEditorStyles) 로만 표시.
   // 본문 텍스트로 inject 시 typing 시 placeholder 가 사용자 입력과 섞여 partial 저장 → 텍스트 흐름 손상.
   const bodyInner = row.content && row.content.length ? row.content : '';
@@ -181,15 +190,25 @@ export function renderDocFromRow(row, doc = document) {
     const h1 = existing.querySelector?.('.doc__h1');
     const metaEl = existing.querySelector?.('.doc__meta');
     const body = existing.querySelector?.('.doc__body');
-    if (h1 && !dirty) h1.textContent = titleText;
+    if (h1 && !dirty) {
+      h1.textContent = titleText;
+      if (readOnly) h1.removeAttribute?.('contenteditable');
+      else h1.setAttribute?.('contenteditable', '');
+    }
     if (metaEl) metaEl.innerHTML = meta;
-    if (body && !dirty) body.innerHTML = bodyInner;
+    if (body && !dirty) {
+      body.innerHTML = bodyInner;
+      if (readOnly) body.removeAttribute?.('contenteditable');
+      else body.setAttribute?.('contenteditable', '');
+    }
+    existing.dataset.readOnly = readOnly ? '1' : '';
   } else {
+    const editableAttr = readOnly ? '' : 'contenteditable';
     view.innerHTML = `
-      <article class="doc" data-entry-id="${escapeHtml(row.id)}">
-        <h1 class="doc__h1" contenteditable spellcheck="false" data-empty-title="제목 없음">${escapeHtml(titleText)}</h1>
+      <article class="doc" data-entry-id="${escapeHtml(row.id)}" data-read-only="${readOnly ? '1' : ''}">
+        <h1 class="doc__h1" ${editableAttr} spellcheck="false" data-empty-title="제목 없음">${escapeHtml(titleText)}</h1>
         <div class="doc__meta">${meta}</div>
-        <div class="doc__body" contenteditable spellcheck="false">${bodyInner}</div>
+        <div class="doc__body" ${editableAttr} spellcheck="false">${bodyInner}</div>
       </article>
     `;
   }
@@ -206,6 +225,8 @@ export function syncShareToggleFromRow(row, doc = document) {
   const el = doc.querySelector?.('.share');
   if (!el) return false;
   el.classList.toggle('share--off', !row?.is_shared);
+  // 파트너 글은 작성자만 공유 결정 가능 → 토글 숨김.
+  el.classList.toggle('share--readonly', isReadOnlyRow(row));
   return true;
 }
 
@@ -425,6 +446,11 @@ function injectEditorStyles() {
       background: var(--hover-bg);
       color: var(--ink-1);
     }
+    /* 파트너 글 read-only — 작성자만 공유 결정 가능 + 본문 수정 불가.
+       시각: top-actions 의 share 토글 숨김. 메타에 "{이름} 작성 · 읽기 전용" 라벨 노출. */
+    .share.share--readonly { display: none; }
+    .doc[data-read-only="1"] .doc__h1,
+    .doc[data-read-only="1"] .doc__body { caret-color: transparent; }
   `;
   document.head.appendChild(style);
 }
@@ -450,6 +476,8 @@ export function setSaveStatus(article, text) {
 export async function saveArticle(article, user, kind) {
   if (!article || !user?.id) return null;
   if (!Queries.ENTRY_KINDS.includes(kind)) return null;
+  // 파트너 글 read-only 보호 — UI 차단 우회 시(devtools 등) 저장 자체 막기.
+  if (article.dataset?.readOnly === '1') return null;
   const h1 = article.querySelector('.doc__h1');
   const body = article.querySelector('.doc__body');
   const title = (h1?.textContent || '').trim() || null;
@@ -760,6 +788,8 @@ function installShareToggleHandler() {
     if (!share) return;
     const article = document.querySelector('#mainView article.doc');
     if (!article) return;
+    // 파트너 글은 share 토글 불가 (작성자만 공유 결정)
+    if (article.dataset?.readOnly === '1') return;
     let id = article.dataset.entryId;
     if (!_currentUser?.id) return;
     try {
@@ -1597,11 +1627,12 @@ export function renderListView(kind, rows, doc = document, opts = {}) {
         <div><div class="doc-list__stat-lab">단어</div><div class="doc-list__stat-val">${stats.words.toLocaleString()}</div></div>
         <div><div class="doc-list__stat-lab">원고지</div><div class="doc-list__stat-val">${stats.sheets}<span class="doc-list__stat-suf">매</span></div></div>
       </div>
+      ${(kind === 'navi' || kind === 'soyoun_navi') ? `
       <div class="doc-list__chips">
         ${chip('all', '전체', stats.total, null)}
         ${chip('shared', '공유된 글', stats.shared, 'var(--crail-base)')}
         ${chip('soyeon', '소연이 공유한 글', stats.sharedSoyeon, 'var(--ink-2)')}
-      </div>
+      </div>` : ''}
       <div class="doc-list__head">
         <span class="doc-list__head-no">NO.</span>
         <span class="doc-list__head-title">TITLE</span>
@@ -1733,6 +1764,8 @@ export const Entries = {
   enterListView,
   exitListView,
   getActiveMainView,
+  // 파트너 글 read-only
+  isReadOnlyRow,
   debounce,
   // Wave 11.5.2b — 어댑터 + DOM 패치
   rowToMockDoc,

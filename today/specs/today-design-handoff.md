@@ -192,6 +192,21 @@ active 카테고리의 최근 항목 동적 갱신. 라벨이 카테고리 이�
 - **새 글 생성("+" 버튼) 시 자동 `'article'` 복귀** — 새 글 마운트 + 다음 진입 시 리스트 갱신.
 - expense 카테고리는 영향 없음 — 기존 mini-tabs 그대로.
 
+#### 5.0.5 chip 필터 표시 분기
+
+- **navi / soyoun_navi 한정**: `전체 / 공유된 글 / 소연이 공유한 글` 3종 chip 노출. 파트너 공유 메타포는 navi 카테고리 전용.
+- **fiction / blog / memo**: chips 영역 통째로 미노출 (단일 chip 만 있어 의미 없음). stats + 리스트만.
+
+#### 5.0.6 파트너 글 read-only (navi 한정)
+
+- 파트너(`row.owner_id !== 본인`) 글 진입 시 편집 뷰는 **읽기 전용**:
+  - `<h1 class="doc__h1">` / `<div class="doc__body">` 의 `contenteditable` 속성 제거.
+  - `article.dataset.readOnly = '1'` 표식 — saveArticle 가 저장 자체 차단 (devtools 우회 방어).
+  - 메타: `{이름} 작성 · 읽기 전용 · {기존 단어/시간}` 형태.
+  - top-actions 의 `.share` 토글은 `share--readonly` 클래스로 숨김 (작성자만 공유 결정).
+  - caret-color: transparent (시각 피드백).
+- 댓글 영역은 정상 노출 (공유된 글에 한해 — 기존 동작 유지).
+
 ---
 
 ### 5.1 오늘의 네비 (`is-navi`) — 홈
