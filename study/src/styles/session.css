@@ -1,0 +1,190 @@
+/* Session components — RecordButton · ListenButton · Waveform · ScorePill · JudgeRow
+ * 정본: ~/Downloads/_ _ _/variants/session-new-v2-tried-passed.jsx + session-review-v2-tried-passed.jsx
+ * 인라인 style → 클래스 + data-attr (variant). update(state) 규약 § plan
+ */
+
+/* ────── ListenButton ────── */
+.listen-btn {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+.listen-btn[data-large="true"] {
+  padding: 18px 24px;
+  gap: 10px;
+  font-size: 16px;
+}
+.listen-btn svg { width: 14px; height: 14px; fill: currentColor; }
+.listen-btn[data-large="true"] svg { width: 16px; height: 16px; }
+
+/* ────── RecordButton ────── */
+.record-btn {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--r-md);
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 500;
+  position: relative;
+}
+.record-btn[data-large="true"] {
+  padding: 18px 28px;
+  gap: 12px;
+  font-size: 18px;
+}
+.record-btn[data-recording="true"] { background: var(--danger); }
+.record-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+.record-btn[data-large="true"] svg { width: 20px; height: 20px; }
+.record-btn .pulse-ring {
+  display: none;
+  position: absolute; inset: -6px;
+  border-radius: var(--r-md);
+  border: 2px solid var(--danger);
+  opacity: 0.4;
+  animation: pulN 1.2s ease-out infinite;
+  pointer-events: none;
+}
+.record-btn[data-recording="true"] .pulse-ring { display: block; }
+
+@keyframes pulN {
+  0% { opacity: 0.5; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.08); }
+}
+
+/* ────── Waveform ────── */
+.waveform {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  margin-left: 4px;
+}
+.waveform .bar {
+  width: 3px;
+  height: 14px;
+  background: var(--danger);
+  border-radius: 2px;
+  animation: wvN 0.6s ease-in-out infinite alternate;
+}
+.waveform[data-large="true"] .bar { width: 4px; height: 18px; }
+.waveform .bar:nth-child(1) { animation-delay: 0s; }
+.waveform .bar:nth-child(2) { animation-delay: 0.1s; }
+.waveform .bar:nth-child(3) { animation-delay: 0.2s; }
+.waveform .bar:nth-child(4) { animation-delay: 0.3s; }
+.waveform .bar:nth-child(5) { animation-delay: 0.4s; }
+
+/* phone size: 4↔16px / large: 4↔22px (HANDOFF §3.2 컴포넌트 Waveform) */
+@keyframes wvN {
+  from { height: 4px; }
+  to { height: 16px; }
+}
+.waveform[data-large="true"] .bar { animation-name: wvN-lg; }
+@keyframes wvN-lg {
+  from { height: 4px; }
+  to { height: 22px; }
+}
+
+/* ────── ScorePill ────── */
+.score-pill {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(196, 151, 59, 0.14);
+}
+.score-pill[data-large="true"] { padding: 12px 16px; }
+.score-pill[data-passed="true"] { background: rgba(120, 140, 93, 0.12); }
+.score-pill .score {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--amber);
+}
+.score-pill[data-large="true"] .score { font-size: 22px; }
+.score-pill[data-passed="true"] .score { color: var(--sage); }
+.score-pill .label {
+  font-size: 10px;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+.score-pill[data-large="true"] .label { font-size: 11px; }
+.score-pill[data-passed="true"] .label { color: var(--sage); }
+
+/* ────── JudgeRow (복습 전용) ────── */
+.judge-row {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr 1.6fr;
+  gap: 8px;
+}
+.judge-row[data-size="tablet"], .judge-row[data-size="desktop"] { gap: 12px; }
+
+.judge-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  cursor: pointer;
+  font-family: var(--font-body);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.judge-btn .ko {
+  color: var(--text-faint);
+  font-size: 9px;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.judge-row[data-size="tablet"] .judge-btn .ko,
+.judge-row[data-size="desktop"] .judge-btn .ko { font-size: 10px; }
+
+.judge-btn[data-kind="no"] {
+  border-color: rgba(180, 77, 59, 0.2);
+  padding: 14px 0;
+}
+.judge-btn[data-kind="no"] .en { color: var(--danger); font-weight: 400; font-size: 14px; }
+.judge-row[data-size="tablet"] .judge-btn[data-kind="no"],
+.judge-row[data-size="desktop"] .judge-btn[data-kind="no"] { padding: 20px 0; }
+.judge-row[data-size="tablet"] .judge-btn[data-kind="no"] .en,
+.judge-row[data-size="desktop"] .judge-btn[data-kind="no"] .en { font-size: 18px; }
+
+.judge-btn[data-kind="hmm"] {
+  border-color: rgba(196, 151, 59, 0.3);
+  padding: 16px 0;
+}
+.judge-btn[data-kind="hmm"] .en { color: var(--amber); font-weight: 500; font-size: 17px; }
+.judge-row[data-size="tablet"] .judge-btn[data-kind="hmm"],
+.judge-row[data-size="desktop"] .judge-btn[data-kind="hmm"] { padding: 24px 0; }
+.judge-row[data-size="tablet"] .judge-btn[data-kind="hmm"] .en,
+.judge-row[data-size="desktop"] .judge-btn[data-kind="hmm"] .en { font-size: 22px; }
+
+.judge-btn[data-kind="got"] {
+  background: rgba(120, 140, 93, 0.1);
+  border-color: rgba(120, 140, 93, 0.5);
+  padding: 18px 0;
+}
+.judge-btn[data-kind="got"] .en { color: var(--sage); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
+.judge-btn[data-kind="got"] .ko { color: var(--sage); opacity: 0.7; }
+.judge-row[data-size="tablet"] .judge-btn[data-kind="got"],
+.judge-row[data-size="desktop"] .judge-btn[data-kind="got"] { padding: 28px 0; }
+.judge-row[data-size="tablet"] .judge-btn[data-kind="got"] .en,
+.judge-row[data-size="desktop"] .judge-btn[data-kind="got"] .en { font-size: 30px; }
