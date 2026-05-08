@@ -223,16 +223,14 @@ export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
 
 /**
  * .exp-month-day[data-date] 의 .exp-month-day-amount 텍스트 갱신.
- * highThreshold (일평균 × 1.6) 초과 시 .high 클래스 추가, 미만 시 제거.
- * mocks renderExpense L4395-4404 패턴 답습.
+ * highThreshold = 100,000 원 고정 (사용자 정책: 10만원 이상 지출만 강조).
  */
 export function patchCalendarFromRows(rows, opts = {}, doc = document) {
   const cells = doc.querySelectorAll('.exp-month-day[data-date]');
   if (!cells.length) return false;
   if (!rows || !rows.length) return false;
   const totals = dailyTotalsFromRows(rows);
-  const { dailyAvg } = summarizeMonth(rows, opts.todayDay);
-  const highThreshold = dailyAvg * 1.6;
+  const highThreshold = 100000;
   cells.forEach((cell) => {
     const ds = cell.getAttribute('data-date');
     const total = totals[ds] || 0;
@@ -261,8 +259,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
   if (!list) return false;
   if (!rows || !rows.length) return false;
   const yr = year || new Date().getFullYear();
-  const { dailyAvg } = summarizeMonth(rows, opts.todayDay);
-  const highThreshold = dailyAvg * 1.6;
+  const highThreshold = 100000; // 10만원 이상 지출 → 오렌지 강조 (정책)
   const txByDate = {};
   for (const r of rows) {
     const d = isoToMockDate(r.spent_at);
@@ -278,7 +275,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
       const card = escapeHtml(r.card || '삼성카드 & MILEAGE PLATINUM');
-      const cat = escapeHtml(r.category || '미분류');
+      const cat = escapeHtml(toCategoryLabel(r.category) || '미분류');
       const isCont = i > 0;
       const dateCell = isCont
         ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>'
