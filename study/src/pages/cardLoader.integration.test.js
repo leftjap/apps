@@ -19,7 +19,7 @@ describe('cardLoader 통합 (real Dexie + fake-indexeddb)', () => {
     await db.delete();
   });
 
-  it('loadNewCards: 실 Dexie 에서 lang/date 매칭 + completed 제외 + order_index 정렬', async () => {
+  it('loadNewCards: 실 Dexie 에서 carry-forward (lang 매칭 + completed 제외 + 오래된 date 먼저)', async () => {
     await db.todayLessons.bulkPut([
       { id: 'a', lang: 'en', date: '2026-05-08', completed: false, order_index: 2, sentence: 'A' },
       { id: 'b', lang: 'en', date: '2026-05-08', completed: false, order_index: 1, sentence: 'B' },
@@ -28,8 +28,10 @@ describe('cardLoader 통합 (real Dexie + fake-indexeddb)', () => {
       { id: 'e', lang: 'ja', date: '2026-05-08', completed: false, order_index: 0, sentence: 'E' },
     ]);
     const out = await loadNewCards(db, 'en', '2026-05-08');
-    expect(out.map((r) => r.id)).toEqual(['b', 'a']);
-    expect(out[0].sentence).toBe('B');
+    // 미완료: a(2026-05-08, oi 2), b(2026-05-08, oi 1), d(2026-05-07, oi 0).
+    // FIFO: d (2026-05-07) 먼저 → b (2026-05-08, oi 1) → a (2026-05-08, oi 2).
+    expect(out.map((r) => r.id)).toEqual(['d', 'b', 'a']);
+    expect(out[0].sentence).toBe('D');
   });
 
   it('loadReviewCards: 실 Dexie 에서 due 필터 + 미정 nextReview 도 due + overdue 우선', async () => {

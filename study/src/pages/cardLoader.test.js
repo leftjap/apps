@@ -49,7 +49,7 @@ describe('pickCardFields', () => {
 });
 
 describe('loadNewCards', () => {
-  it('lang/date 매칭 + completed 제외 + order_index 오름차순', async () => {
+  it('carry-forward: lang 매칭 + completed 제외 + 오래된 date 먼저 (FIFO) + order_index', async () => {
     const db = createMockDB({
       todayLessons: [
         { id: 'a', lang: 'en', date: '2026-05-08', completed: false, order_index: 2 },
@@ -60,7 +60,8 @@ describe('loadNewCards', () => {
       ],
     });
     const out = await loadNewCards(db, 'en', '2026-05-08');
-    expect(out.map((r) => r.id)).toEqual(['b', 'a']);
+    // d (2026-05-07) → b (2026-05-08, oi 1) → a (2026-05-08, oi 2). c 는 completed, e 는 lang 다름.
+    expect(out.map((r) => r.id)).toEqual(['d', 'b', 'a']);
   });
 
   it('인자 누락 시 빈 배열', async () => {

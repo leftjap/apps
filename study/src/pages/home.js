@@ -111,7 +111,8 @@ async function loadStats(state) {
     const allLang = await db.reviewQueue.where('lang').equals(lang).toArray();
     const reviewCount = allLang.filter((c) => !c.nextReview || c.nextReview <= todayISO).length;
     const langLessons = await db.todayLessons.where('lang').equals(lang).toArray();
-    const newCount = langLessons.filter((l) => l.date === todayISO && l.completed !== true).length;
+    // carry-forward: 미완료 신규는 date 무관 전부 카운트 (cardLoader.loadNewCards 와 동일 정책).
+    const newCount = langLessons.filter((l) => l.completed !== true).length;
 
     const logs = await db.sessionLogs.where('lang').equals(lang).toArray();
     const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();

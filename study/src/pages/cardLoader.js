@@ -20,10 +20,17 @@ export function pickCardFields(card) {
 }
 
 export async function loadNewCards(db, lang, todayISO) {
-  if (!db || !lang || !todayISO) return [];
+  // todayISO 인자는 호환성 유지 (호출자 시그니처 변경 회피). 날짜 필터링은 안 함.
+  // carry-forward 정책: 미완료 신규는 추가된 날짜와 무관하게 다음 세션에 계속 노출.
+  if (!db || !lang) return [];
   const rows = await db.todayLessons.where('lang').equals(lang).toArray();
-  const filtered = rows.filter((r) => r.date === todayISO && r.completed !== true);
-  filtered.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  const filtered = rows.filter((r) => r.completed !== true);
+  filtered.sort((a, b) => {
+    const da = a.date || '';
+    const db_ = b.date || '';
+    if (da !== db_) return da < db_ ? -1 : 1; // 오래된 date 먼저 (FIFO)
+    return (a.order_index ?? 0) - (b.order_index ?? 0);
+  });
   return filtered;
 }
 
