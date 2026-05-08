@@ -520,7 +520,7 @@ const _workletRegistered = new WeakSet();
 export async function recordWav({
   maxSeconds = 15,
   onLevel,
-  workletUrl = '/audio-worklet/recorder-worklet.js',
+  workletUrl = `${import.meta.env.BASE_URL}audio-worklet/recorder-worklet.js`,
 } = {}) {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
     throw new Error('getUserMedia 미지원 환경');
