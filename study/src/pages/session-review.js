@@ -32,6 +32,7 @@ import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
+import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -249,6 +250,7 @@ function render(host, state, handlers = {}) {
         recordCmp.update({ recording: false });
         layout.update({ tried: state.tried, passed: state.passed, recording: false });
         applyExclusive(false, state.lastScore, wave.el, pillWrap);
+        applyWordHighlight(main, result?.wordScores);
         try {
           await savePronunciationLog(window.studyDB, {
             result, sentenceId: state.sentence.id, lang: getStoredLang(), date: getTodayISO(),
@@ -295,7 +297,7 @@ function buildMain(state, ctrl) {
   const h1 = document.createElement('h1');
   h1.className = 'poppins';
   h1.style.cssText = `font-size:${sizeMap[state.size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.04em;line-height:${state.size === 'phone' ? 1.2 : (state.size === 'tablet' ? 1.1 : 1.05)};margin:0;`;
-  h1.textContent = state.sentence.sentence;
+  h1.innerHTML = wrapWords(state.sentence.sentence);
   wrap.appendChild(h1);
 
   const pron = document.createElement('div');
