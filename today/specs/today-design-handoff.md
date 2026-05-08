@@ -88,21 +88,20 @@ active 카테고리의 최근 항목 동적 갱신. 라벨이 카테고리 이�
 - **글쓰기 카테고리**: 글 제목 + 우측 메타(`1년 전`, `소연` 공유 등). 최대 30건 컷 — `entries.js` `rows.slice(0, 30)`.
 - **가계부**: `상호명 — 메모` + 우측 금액 (ink-3 톤, 강조 X)
 - **빈 상태**: 항목 0개면 라벨까지 숨김 또는 placeholder.
-- **자체 스크롤 폐기** — viewport 초과 항목은 clip. 더 보려면 §3.3.1 "전체 보기 →" 진입.
+- **자체 스크롤 (scrollbar 시각 0)** — `overflow-y: auto` + `scrollbar-width: none`. 30건 안에서 스크롤. 사이드바 외형 변하지 않음.
 
 #### 3.3.1 전체 보기 진입점 (글쓰기 4종 한정)
 
-리센츠 30건 리스트 직하단에 "전체 보기 →" 텍스트 링크 1줄. 클릭 시 메인 영역이 §5.0 의 전체 글 목록 뷰로 전환.
+리센츠 리스트 직하단에 "전체 보기 →" inline 진입점. 클릭 시 메인 영역이 §5.0 의 전체 글 목록 뷰로 전환.
 
-- 위치: `.sb__group--recents` 내부 마지막 child (그룹 외부 아님 — 시각적 한 묶음).
+- 위치: `.sb__group--recents` 내부 마지막 child — 리스트 마지막 항목 다음 inline 배치 (sticky 폐기).
 - 마크업: `<button class="sb__recents-more" type="button">전체 보기 →</button>` — SPA 레이어가 mocks 출력 갱신 시 함께 주입.
-- 스타일 (DESIGN.md meta 톤 `12 / 500 / 1.5`):
-  - `color: var(--crail-base)` (DESIGN.md 점 단위 액센트), `font-size: 12px`, `font-weight: 500`, `line-height: 1.5`
-  - padding `8px` (좌우 `.sb__item` 정렬)
-  - **우측 정렬** (`text-align: right`) — 보조 진입점 위계
-  - hover: `opacity` 변화만 (배경 fill 금지 — 액센트 사용 규칙)
-  - 배경 `var(--sidebar)` (sticky 하단 고정 시 리스트 스크롤이 비치지 않도록), border 0
-  - **`position: sticky; bottom: 0`** — 리센츠 길이 무관 항상 가시. 사이드바 스크롤 없이 접근 가능.
+- 스타일 (DESIGN.md ghost ink-3 톤 — 액센트 점 단위 원칙 준수):
+  - `color: var(--ink-3)`, `font-size: 12px`, `font-weight: 500`, `line-height: 1.5`
+  - hover: 배경 `var(--hover-bg)` + `color: var(--ink-1)` (다른 nav 항목과 일관)
+  - **우측 정렬** (`justify-content: flex-end`) — 보조 진입점 위계
+  - 배경 transparent, border 0, border-radius 8px
+  - **sticky 폐기** — 리스트와 한 묶음으로 자연스럽게 스크롤됨. 가이드 "One bold element + restraint" 준수 (사이드바 액센트 이미 active 카테고리·알림 dot·아바타 3곳 사용 중 — orange 추가 시 과다).
 - 표시 조건: 글쓰기 4종(navi/fiction/blog/memo) 한정. 가계부는 비표시 (가계부는 §5.5 mini-tabs 로 별도 처리).
 - 빈 상태(글 0건): 라벨·리스트와 함께 진입점도 숨김.
 - 30건 미만일 때도 표시 (일관성). 1차 구현 카운트 미표시 — 단순 "전체 보기".

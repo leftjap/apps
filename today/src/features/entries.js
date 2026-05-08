@@ -399,30 +399,32 @@ function injectEditorStyles() {
       0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0); }
       30%, 70% { box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.45); }
     }
-    /* spec §3.3 — 리센츠 그룹 자체 스크롤 폐기. viewport 초과분은 clip,
-       더 보려면 §3.3.1 "전체 보기 →" 로 메인 영역 전환. mocks 의 overflow-y:auto override. */
-    .sb__group--recents { overflow: hidden !important; }
-    /* spec §3.3.1 — 리센츠 전체 보기 진입점 (sticky 하단 항상 가시) */
+    /* spec §3.3.1 — 리센츠 전체 보기 진입점.
+       DESIGN.md 준수: ghost ink-3 톤 (액센트 점 단위 원칙 — 사이드바 액센트 이미 3곳 사용 중).
+       sticky 폐기: recents 리스트 마지막 항목 다음 inline 배치 (스크롤로 자연 도달). */
     .sb__recents-more {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
       width: 100%;
       margin: 0;
-      padding: 8px;
-      background: var(--sidebar, #fff);
+      padding: 10px 8px;
+      background: transparent;
       border: 0;
-      text-align: right;
       font-family: var(--font-sans, 'Pretendard', sans-serif);
       font-size: 12px;
       font-weight: 500;
       line-height: 1.5;
-      color: var(--crail-base, #d97757);
+      color: var(--ink-3);
       cursor: pointer;
-      transition: opacity 0.12s ease;
-      position: sticky;
-      bottom: 0;
-      z-index: 1;
+      border-radius: 8px;
+      transition: background 0.12s ease, color 0.12s ease;
     }
-    .sb__recents-more:hover { opacity: 0.7; }
+    .sb__recents-more:hover {
+      background: var(--hover-bg);
+      color: var(--ink-1);
+    }
   `;
   document.head.appendChild(style);
 }
@@ -1426,6 +1428,33 @@ function installRecentsClickHandler() {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// 카테고리 클릭 위임 — mocks IIFE setCategory 가 항상 FIXTURE 재렌더하므로
+// SPA 가 클릭마다 (같은 카테고리 재클릭 포함) 진짜 데이터로 덮어씀.
+// MutationObserver 는 active class 변경 시에만 발화 → 이미 active 인 카테고리
+// 재클릭 시 미발화. 본 핸들러가 그 race 를 메움.
+// ───────────────────────────────────────────────────────────────────────────
+
+let _categoryClickInstalled = false;
+
+function installCategoryClickHandler() {
+  if (_categoryClickInstalled) return;
+  if (typeof document === 'undefined') return;
+  document.addEventListener('click', (e) => {
+    const item = e.target.closest?.('.sb__item[data-category]');
+    if (!item) return;
+    const kind = item.dataset?.category;
+    if (!kind) return;
+    // mocks IIFE setCategory 가 동기로 FIXTURE 그림 → 다음 task 에서 SPA 가 진짜 데이터로 덮어씀.
+    setTimeout(() => {
+      handleCategoryActive(kind).catch((err) =>
+        console.warn('[entries] category click reload 실패:', err?.message || err),
+      );
+    }, 0);
+  });
+  _categoryClickInstalled = true;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // spec §5.0 — 전체 목록 뷰 (편집 ↔ 리스트 모드 전환).
 // ───────────────────────────────────────────────────────────────────────────
 
@@ -1668,6 +1697,7 @@ export function mountEntriesView(user) {
   clearRecentsList();
   injectEditorStyles();
   installRecentsClickHandler();
+  installCategoryClickHandler();
   installListViewClickHandler();
   installNewDocHandler();
   installEditorInput();
