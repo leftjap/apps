@@ -6,6 +6,9 @@ import summaryHtml from '../mocks/summary.html?raw';
 import statsHtml from '../mocks/stats.html?raw';
 import settingsHtml from '../mocks/settings.html?raw';
 import bsSheetCss from './styles/bs-sheet.css?raw';
+import { mountHome } from './pages/home.js';
+import { mountSessionNew } from './pages/session-new.js';
+import { mountSessionReview } from './pages/session-review.js';
 
 const ROUTES = {
   login: loginHtml,
@@ -15,6 +18,15 @@ const ROUTES = {
   summary: summaryHtml,
   stats: statsHtml,
   settings: settingsHtml,
+};
+
+// SPA 진입 시 mocks/*.html 내부의 인라인 module mount 스크립트는 IIFE 래핑 부적합 (import 구문 SyntaxError)
+// + prod 번들에 /src/pages/*.js 절대경로 미존재 → 404. 따라서 SPA 라우터가 직접 mount 함수 호출.
+// mocks 단독 preview (multi-page input) 는 인라인 스크립트로 그대로 동작.
+const PAGE_MOUNTS = {
+  home: mountHome,
+  'session-new': mountSessionNew,
+  'session-review': mountSessionReview,
 };
 
 const DEFAULT_ROUTE = 'login';
@@ -146,11 +158,28 @@ function mount(route) {
   // 예: session.html 의 getMode() 가 window.studyRoute.params.mode 를 참조.
   window.studyRoute = route;
 
+  // mocks/*.html 의 인라인 module mount 스크립트는 SPA 진입 시 제거 (PAGE_MOUNTS 가 대체).
+  // src 속성 없는 module 스크립트만 제거 — 외부 src 의존 (Azure SDK 등) 은 보존.
+  const pageMount = PAGE_MOUNTS[route.name];
+  if (pageMount) {
+    // mocks/*.html 의 인라인 module mount 스크립트 제거 (PAGE_MOUNTS 가 대체).
+    doc.body.querySelectorAll('script[type="module"]:not([src])').forEach((s) => s.remove());
+    // mocks/*.html 의 /src/styles/*.css 링크 제거 — main.js 가 동일 CSS 를 번들링.
+    // prod 에서 /src/* 절대경로는 404. injectHeadAssets 가 이걸 head 로 복제하기 전에 제거.
+    doc.head
+      .querySelectorAll('link[rel="stylesheet"][href^="/src/"]')
+      .forEach((l) => l.remove());
+  }
+
   clearPreviousView();
   injectHeadAssets(doc);
   replaceBody(doc);
   document.body.dataset.route = route.name;
   reExecuteScripts();
+  if (pageMount) {
+    const root = document.getElementById('root');
+    if (root) pageMount(root);
+  }
   // Wave 11.30 — mocks 의 .pv-bar (Normal/Free/Milestone 등 디버그 chip) SPA 모드에서 일괄 hide.
   // mocks 단독 진입 (iframe 허브) 에서는 그대로 노출 (시안 도구). SPA = 실 앱 = 디버그 chip 노출 X.
   // session.html 의 인라인 분기 (Wave 11.22 후속 b) 는 그대로 유지 — idempotent (두 번 hide 무해).
