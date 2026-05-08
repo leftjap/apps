@@ -22,8 +22,8 @@ export function buildSessionLog({ mode, lang, date, durationSec, tried, passed, 
     id: newId(),
     lang,
     date,
-    sessionType: 'normal',
-    mode, // 'new' | 'review'
+    sessionType: mode === 'free' ? 'free_review' : 'normal',
+    mode, // 'new' | 'review' | 'free' (Wave A.14)
     utteranceCount: Number(tried) || 0,
     passCount: Number(passed) || 0,
     durationSec: Number(durationSec) || 0,
@@ -38,7 +38,7 @@ export function mergeDailyStats(prev, log) {
     utteranceCount: 0, studyTimeSec: 0, newSentences: 0, reviewCount: 0,
   };
   const newAdd = log.mode === 'new' ? log.newSentenceIds.length : 0;
-  const reviewAdd = log.mode === 'review' ? (log.completedReviewCount || 0) : 0;
+  const reviewAdd = (log.mode === 'review' || log.mode === 'free') ? (log.completedReviewCount || 0) : 0;
   return {
     date: base.date,
     lang: base.lang,

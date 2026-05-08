@@ -55,3 +55,18 @@ export async function loadReviewCards(db, lang, todayISO) {
   });
   return due;
 }
+
+/**
+ * loadFreeReviewCards — 자유 복습 (spec §8-4).
+ * reviewQueue 전체 (due 무관) → 기한 초과 우선 → 상위 limit (default 20).
+ */
+export async function loadFreeReviewCards(db, lang, limit = 20) {
+  if (!db || !lang) return [];
+  const rows = await db.reviewQueue.where('lang').equals(lang).toArray();
+  rows.sort((a, b) => {
+    const av = a.nextReview ?? '';
+    const bv = b.nextReview ?? '';
+    return av < bv ? -1 : av > bv ? 1 : 0;
+  });
+  return rows.slice(0, Math.max(0, Number(limit) || 0));
+}

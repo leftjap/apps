@@ -21,7 +21,7 @@ import {
   pickSize,
   watchSize,
 } from '../components/session/index.js';
-import { loadReviewCards, pickCardFields, advanceCard } from './cardLoader.js';
+import { loadReviewCards, loadFreeReviewCards, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
 import { applySrsUpdate } from '../services/srs.js';
 import { finishSession } from '../services/sessionFinish.js';
@@ -46,6 +46,8 @@ function getTodayISO() {
 }
 
 export function mountSessionReview(host) {
+  // Wave A.14 — '?mode=free' 인 경우 자유 복습 (spec §8-4). reviewQueue 전체 (due 무관) 최대 20장.
+  const sessionMode = window.studyRoute?.params?.mode === 'free' ? 'free' : 'review';
   const state = {
     size: pickSize(),
     recording: false, // Wave A.7.1 — idle 초기 상태
@@ -68,7 +70,7 @@ export function mountSessionReview(host) {
   const saveSnapshot = () => {
     if (state.ended || !window.studyDB || !state.loaded) return;
     saveActiveSession(window.studyDB, {
-      mode: 'review', lang: getStoredLang(), todayISO: getTodayISO(), startTime,
+      mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       judged: { ...state.judged }, cardIds: state.cards.map((c) => c.id),
@@ -82,7 +84,7 @@ export function mountSessionReview(host) {
     const durationSec = Math.floor((Date.now() - startTime) / 1000);
     try {
       await finishSession(window.studyDB, {
-        mode: 'review',
+        mode: sessionMode,
         lang: getStoredLang(),
         date: getTodayISO(),
         durationSec,
@@ -94,7 +96,7 @@ export function mountSessionReview(host) {
       console.error('[session-review] finishSession', e);
     }
     persistSummary(buildSummaryData({
-      mode: 'review', state, durationSec, completedReviewCount: completedCount, returnTo: 'home',
+      mode: sessionMode, state, durationSec, completedReviewCount: completedCount, returnTo: 'home',
     }));
     try { await clearActiveSession(window.studyDB); }
     catch (e) { console.error('[session-review] clearActiveSession', e); }
@@ -148,13 +150,15 @@ export function mountSessionReview(host) {
   });
 
   Promise.all([
-    loadReviewCards(window.studyDB, getStoredLang(), getTodayISO()),
+    sessionMode === 'free'
+      ? loadFreeReviewCards(window.studyDB, getStoredLang(), 20)
+      : loadReviewCards(window.studyDB, getStoredLang(), getTodayISO()),
     loadActiveSession(window.studyDB),
   ])
     .then(([cards, snapshot]) => {
       state.cards = cards;
       state.total = cards.length;
-      const restore = restoreFromSnapshot(snapshot, cards, 'review');
+      const restore = restoreFromSnapshot(snapshot, cards, sessionMode);
       if (restore) {
         Object.assign(state, restore);
         startTime = restore.startTime;
@@ -163,7 +167,7 @@ export function mountSessionReview(host) {
       } else {
         state.step = cards.length === 0 ? 0 : 1;
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
-        if (snapshot && snapshot.mode === 'review') clearActiveSession(window.studyDB).catch(() => {});
+        if (snapshot && snapshot.mode === sessionMode) clearActiveSession(window.studyDB).catch(() => {});
       }
       state.loaded = true;
       rerender();

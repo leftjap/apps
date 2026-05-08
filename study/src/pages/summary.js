@@ -101,4 +101,32 @@ export function mountSummary(host) {
   });
   const btnStats = host.querySelector('#btnStats');
   if (btnStats) btnStats.addEventListener('click', () => { window.location.hash = '#/stats'; });
+
+  // Wave A.14 — 정규 review 완료 시 "자유 복습" CTA. mode='free' 자체는 이미 자유복습이라 표시 X.
+  if (data.mode === 'review' && Number(data.total) > 0) {
+    mountFreeReviewCta(host).catch((e) => console.error('[summary] free cta', e));
+  }
+}
+
+async function mountFreeReviewCta(host) {
+  const db = window.studyDB;
+  if (!db?.reviewQueue) return;
+  const lang = sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en';
+  const rows = await db.reviewQueue.where('lang').equals(lang).toArray();
+  if (!Array.isArray(rows) || rows.length === 0) return;
+
+  const anchor = host.querySelector('#btnDone') || host.querySelector('#btnStats');
+  if (!anchor) return;
+  if (host.querySelector('#btnFreeReview')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btnFreeReview';
+  btn.type = 'button';
+  btn.textContent = `자유 복습 (${rows.length}장 사용 가능)`;
+  btn.style.cssText = 'display:block;margin:12px auto 0;padding:14px 28px;background:none;border:1px solid var(--sage);border-radius:var(--r-md);color:var(--sage);font-family:var(--font-display);font-size:14px;font-weight:600;cursor:pointer;';
+  btn.addEventListener('click', () => {
+    try { sessionStorage.removeItem('studySummary'); } catch { /* noop */ }
+    window.location.hash = '#/session-review?mode=free';
+  });
+  anchor.parentElement?.insertBefore(btn, anchor.nextSibling);
 }

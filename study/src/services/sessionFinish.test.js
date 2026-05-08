@@ -31,6 +31,17 @@ describe('buildSessionLog', () => {
     expect(log.passCount).toBe(0);
     expect(log.durationSec).toBe(0);
   });
+
+  it('Wave A.14 — mode="free" → sessionType="free_review"', () => {
+    const log = buildSessionLog({ mode: 'free', lang: 'en', date: '2026-05-08', durationSec: 60, tried: 5, passed: 3 });
+    expect(log.sessionType).toBe('free_review');
+    expect(log.mode).toBe('free');
+  });
+
+  it('mode="review" / "new" → sessionType="normal" 보존', () => {
+    expect(buildSessionLog({ mode: 'review', lang: 'en', date: '2026-05-08' }).sessionType).toBe('normal');
+    expect(buildSessionLog({ mode: 'new', lang: 'en', date: '2026-05-08' }).sessionType).toBe('normal');
+  });
 });
 
 describe('mergeDailyStats', () => {
@@ -61,5 +72,12 @@ describe('mergeDailyStats', () => {
     const out = mergeDailyStats(null, reviewLog);
     expect(out.newSentences).toBe(0);
     expect(out.reviewCount).toBe(3);
+  });
+
+  it('Wave A.14 — free 세션도 reviewCount 누적 (실제 SRS 영향 spec §8-4)', () => {
+    const freeLog = { ...baseLog, mode: 'free', newSentenceIds: [], completedReviewCount: 5 };
+    const out = mergeDailyStats(null, freeLog);
+    expect(out.newSentences).toBe(0);
+    expect(out.reviewCount).toBe(5);
   });
 });

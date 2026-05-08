@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { pickCardFields, loadNewCards, loadReviewCards, advanceCard } from './cardLoader.js';
+import { pickCardFields, loadNewCards, loadReviewCards, loadFreeReviewCards, advanceCard } from './cardLoader.js';
 
 function createMockDB({ todayLessons = [], reviewQueue = [] } = {}) {
   const where = (rows) => (key) => ({
@@ -110,5 +110,40 @@ describe('loadReviewCards', () => {
     });
     const out = await loadReviewCards(db, 'en', '2026-05-08');
     expect(out.map((r) => r.id)).toEqual(['r4', 'r1', 'r2']);
+  });
+});
+
+describe('loadFreeReviewCards', () => {
+  it('reviewQueue 전체 (due 무관) + lang 매칭 + overdue 우선 + limit 적용', async () => {
+    const db = createMockDB({
+      reviewQueue: [
+        { id: 'r1', lang: 'en', nextReview: '2026-05-07' }, // overdue
+        { id: 'r2', lang: 'en', nextReview: '2026-05-08' }, // today
+        { id: 'r3', lang: 'en', nextReview: '2026-05-09' }, // future (자유 복습은 포함)
+        { id: 'r4', lang: 'en' },                           // 미정 → 가장 우선
+        { id: 'r5', lang: 'ja', nextReview: '2026-05-01' }, // 다른 lang
+      ],
+    });
+    const out = await loadFreeReviewCards(db, 'en', 20);
+    expect(out.map((r) => r.id)).toEqual(['r4', 'r1', 'r2', 'r3']);
+  });
+
+  it('limit 적용 (상위 N장만)', async () => {
+    const db = createMockDB({
+      reviewQueue: [
+        { id: 'r1', lang: 'en', nextReview: '2026-05-01' },
+        { id: 'r2', lang: 'en', nextReview: '2026-05-02' },
+        { id: 'r3', lang: 'en', nextReview: '2026-05-03' },
+      ],
+    });
+    const out = await loadFreeReviewCards(db, 'en', 2);
+    expect(out.map((r) => r.id)).toEqual(['r1', 'r2']);
+  });
+
+  it('빈 큐 / 잘못된 인자 안전', async () => {
+    const db = createMockDB({ reviewQueue: [] });
+    expect(await loadFreeReviewCards(db, 'en', 20)).toEqual([]);
+    expect(await loadFreeReviewCards(null, 'en')).toEqual([]);
+    expect(await loadFreeReviewCards(db, '')).toEqual([]);
   });
 });
