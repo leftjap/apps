@@ -2723,12 +2723,13 @@
   /* 태블릿 collapse 는 .app.is-sidebar-collapsed 풀 룰셋 (위 §App shell) 을 JS 가 viewport 동기화로 강제 적용 */
 
   @media (max-width: 768px) {
-    /* 모바일 drawer — 사이드바 풀에 가깝게 (calc(100vw - 24px) ≤ 340px), 본문 우측 24px 비침 */
+    /* 모바일 drawer — keep 패턴: width calc(100% - 72px), max 340. 본문 우측 72px 비침 (≈20%) */
     .sidebar {
       position: fixed;
       left: 0; top: 0;
       height: 100vh;
-      width: min(340px, calc(100vw - 24px));
+      width: calc(100% - 72px);
+      max-width: 340px;
       margin: 0;
       border-radius: 0 var(--r-lg) var(--r-lg) 0;
       transform: translateX(-100%);
@@ -2739,8 +2740,13 @@
     body[data-drawer-open] .sidebar { transform: translateX(0); }
     body[data-drawer-open] .drawer-backdrop { opacity: 1; pointer-events: auto; }
 
-    /* 본문 풀폭 — 사이드바는 fixed (out-of-flow) */
-    .main { padding: 16px 16px 20px; min-width: 0; }
+    /* 본문 풀폭 — drawer 활성 시 keep 패턴 dim (opacity .5) + 살짝 우측 밀림 */
+    .main {
+      padding: 16px 16px 20px;
+      min-width: 0;
+      transition: opacity .22s ease, transform .22s ease;
+    }
+    body[data-drawer-open] .main { opacity: .5; pointer-events: none; }
     .main__top {
       gap: 8px;
       flex-wrap: nowrap;
