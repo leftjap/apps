@@ -1452,6 +1452,101 @@ function installImageContextMenu() {
   window.addEventListener('scroll', _hideImgCtxMenu, true);
 }
 
+// ─── recents 우클릭(데스크톱) / 롱프레스(모바일·태블릿) → 삭제 confirm 모달.
+//     기존 confirmModal (account.js) + 검증된 sub-routines (softDeleteEntry, handleCategoryActive) 재사용.
+//     라벨/메시지: 기존 doc-more 패턴 (entries.js:1610) 통일 — 휴지통 복구 안내 + "삭제" 라벨.
+let _recentsDelInstalled = false;
+let _recentsLpTimer = null;
+let _recentsLpStartX = 0;
+let _recentsLpStartY = 0;
+let _recentsSuppressNextClick = false;
+
+async function _confirmRecentsDelete(id) {
+  const customConfirm = (typeof window !== 'undefined' && window.todayAccount?.confirmModal) || null;
+  let ok = false;
+  if (customConfirm) {
+    ok = await customConfirm({
+      title: '글 삭제',
+      message: '이 글을 삭제하시겠어요? 휴지통에서 복구할 수 있습니다.',
+      confirmLabel: '삭제',
+      cancelLabel: '취소',
+      danger: true,
+    });
+  } else if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+    ok = window.confirm('이 글을 삭제하시겠어요? 휴지통에서 복구할 수 있습니다.');
+  }
+  if (!ok) return;
+  try {
+    await Queries.softDeleteEntry(id);
+    // mainView 의 article 이 같은 entry 면 함께 제거
+    const article = document.querySelector(`article.doc[data-entry-id="${id}"]`);
+    if (article) article.remove();
+    const kind = getCurrentKind(document);
+    if (kind) await handleCategoryActive(kind);
+  } catch (err) {
+    console.warn('[entries] recents 삭제 실패:', err?.message || err);
+    if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+      window.alert('삭제에 실패했습니다.');
+    }
+  }
+}
+
+function installRecentsDeleteHandler() {
+  if (_recentsDelInstalled) return;
+  if (typeof document === 'undefined') return;
+  _recentsDelInstalled = true;
+
+  // 데스크톱 우클릭
+  document.addEventListener('contextmenu', (e) => {
+    const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
+    if (!item) return;
+    e.preventDefault();
+    const id = item.dataset.docId;
+    if (id) _confirmRecentsDelete(id);
+  });
+
+  // 롱프레스 fire 후 자동 발화하는 click 1회 차단 (기존 recents click 핸들러가 모달 뒤에서 글 로드 + drawer 닫힘 회귀).
+  // capture 단계에서 stopPropagation + preventDefault.
+  document.addEventListener('click', (e) => {
+    if (!_recentsSuppressNextClick) return;
+    if (!e.target?.closest?.('.sb__item--recent[data-doc-id]')) return;
+    e.stopPropagation();
+    e.preventDefault();
+    _recentsSuppressNextClick = false;
+  }, true);
+
+  // 모바일/태블릿 롱프레스 — 500ms, 8px 이내
+  document.addEventListener('touchstart', (e) => {
+    const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
+    if (!item) return;
+    const t = e.touches?.[0];
+    if (!t) return;
+    _recentsLpStartX = t.clientX;
+    _recentsLpStartY = t.clientY;
+    clearTimeout(_recentsLpTimer);
+    _recentsLpTimer = setTimeout(() => {
+      try { navigator.vibrate?.(15); } catch (_) {}
+      _recentsSuppressNextClick = true;
+      // 안전망 — touchend 가 click 합성 안 시키는 케이스 (사용자가 손 안 뗌) 에서 플래그 누수 방지
+      setTimeout(() => { _recentsSuppressNextClick = false; }, 1000);
+      const id = item.dataset.docId;
+      if (id) _confirmRecentsDelete(id);
+    }, 500);
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    const t = e.touches?.[0];
+    if (!t || !_recentsLpTimer) return;
+    if (Math.abs(t.clientX - _recentsLpStartX) > 8 || Math.abs(t.clientY - _recentsLpStartY) > 8) {
+      clearTimeout(_recentsLpTimer);
+      _recentsLpTimer = null;
+    }
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    clearTimeout(_recentsLpTimer);
+    _recentsLpTimer = null;
+  }, { passive: true });
+}
+
 let _imageInsertInstalled = false;
 let _imageInputEl = null;
 function installImageInsertHandler() {
@@ -1937,6 +2032,7 @@ export function mountEntriesView(user) {
   installImageInsertHandler();
   installImageClickHandler();
   installImageContextMenu();
+  installRecentsDeleteHandler();
   observeCategoryChange(handleCategoryActive);
   // Wave 11.5.3.3 — Realtime listener 등록 (재마운트 시 unregister 후 재등록)
   if (_realtimeUnregister) _realtimeUnregister();
