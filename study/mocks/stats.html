@@ -34,17 +34,20 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 @media(min-width:600px){:root{--app-padding:var(--s-8);--section-gap:var(--s-16);--header-size:24px}.app{max-width:560px}}
 @media(min-width:1024px){:root{--header-size:26px}.app{max-width:640px}}
 
-/* Page Header */
-.page-hdr{display:flex;align-items:center;justify-content:space-between;padding:var(--s-4) 0 var(--s-8)}
-.page-title{font-family:var(--font-display);font-size:var(--header-size);font-weight:600;color:var(--text-strong);line-height:1.25}
+/* Page Header — grid 3-col (back · title 가운데 · lang-pair 우측). title 중앙 정렬 안정 보존. */
+.page-hdr{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:var(--s-2);padding:var(--s-4) 0 var(--s-8)}
+.page-title{font-family:var(--font-display);font-size:var(--header-size);font-weight:600;color:var(--text-strong);line-height:1.25;text-align:center}
 .btn-back{font-family:var(--font-display);font-size:13px;font-weight:500;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:var(--s-2);border-radius:var(--r-sm);display:flex;align-items:center;gap:var(--s-1);transition:color 150ms var(--ease)}
 @media(hover:hover){.btn-back:hover{color:var(--text)}}
 .btn-back svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
-/* Wave 11.34 — Language Tabs (pill) — home 과 동일 디자인. stats 화면도 lang 별 분기 (캘린더/바텀시트/문장 목록 모두 active lang 데이터). */
-.lang-tabs{display:flex; gap:var(--s-1); margin-bottom:var(--s-6)}
-.lang-tab{font-family:var(--font-display); font-size:14px; font-weight:500; color:var(--text-faint); background:none; border:none; padding:var(--s-2) var(--s-4); cursor:pointer; border-radius:var(--r-pill); transition:all 150ms var(--ease); letter-spacing:0.01em}
-.lang-tab.active{color:var(--text-strong); background:var(--surface); box-shadow:var(--shadow-xs)}
+/* Wave 11.34 v3 — Language Pair (우측 상단, mono UPPER + slash separator) — home phone 헤더 langPair 시각 차용.
+ * ID(tab-en/tab-ja) + class(.lang-tab) 보존 → 기존 sessionStorage 'studyLang' 동기화 핸들러 그대로 사용. */
+.lang-pair{display:inline-flex;align-items:baseline;gap:var(--s-2);font-family:var(--font-display);font-size:12px;letter-spacing:0.14em;text-transform:uppercase}
+.lang-tab{background:none;border:none;cursor:pointer;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;font-weight:400;color:var(--text-faint);transition:color 150ms var(--ease)}
+.lang-tab.active{font-weight:700;color:var(--text-strong)}
+.lang-pair-sep{color:var(--border);font-weight:300}
+@media(hover:hover){.lang-tab:hover:not(.active){color:var(--text-muted)}}
 
 /* Tab Toggle */
 .view-tabs{display:flex;gap:var(--s-1);margin-bottom:var(--section-gap)}
@@ -59,28 +62,28 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 .month-btn.disabled{color:var(--text-faint);pointer-events:none}
 @media(hover:hover){.month-btn:not(.disabled):hover{color:var(--text)}}
 
-/* Monthly Calendar */
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:var(--s-1);margin-bottom:var(--section-gap)}
-.cal-dow{font-family:var(--font-display);font-size:11px;font-weight:500;color:var(--text-faint);text-align:center;padding-bottom:var(--s-3)}
+/* Monthly Calendar — Wave 11.34 v3 — Today 가계부 캘린더 톤 차용 (셀 모양 r-12 + 둥둥 떠 있는 today 카드 shadow 3-stack).
+ * 숫자 위계 i1/i2/i3 (회색 4단 + size/weight) 는 학습 강도 시각화 핵심이라 보존 (DESIGN.md §1 typography-driven hierarchy).
+ * 데스크톱 aspect-ratio 1.4 (Today 의 1.7 절충) — i3 max 32-34px 가 1.7 셀 높이에 안 들어가 1.4 로 완화. */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:var(--section-gap)}
+@media(min-width:600px){.cal-grid{gap:var(--s-2)}}
+.cal-dow{font-family:var(--font-display);font-size:11px;font-weight:500;color:var(--text-muted);text-align:center;padding:var(--s-2) 0 var(--s-3);letter-spacing:0.04em}
 @media(min-width:1024px){.cal-dow{font-size:12px}}
-.cal-cell{display:flex;flex-direction:column;align-items:center;padding:var(--s-2) 0 var(--s-3);border-radius:var(--r-sm);cursor:pointer;transition:background 150ms var(--ease);min-height:56px;position:relative}
-@media(min-width:600px){.cal-cell{min-height:62px}}
-@media(min-width:1024px){.cal-cell{min-height:68px}}
-.cal-cell.empty{pointer-events:none}
-@media(hover:hover){.cal-cell:not(.empty):hover{background:var(--bg-warm)}}
+.cal-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px;cursor:pointer;transition:transform 150ms var(--ease),box-shadow 150ms var(--ease),background 150ms var(--ease);position:relative;background:transparent;aspect-ratio:1}
+@media(min-width:600px){.cal-cell{aspect-ratio:1.4}}
+.cal-cell.empty{cursor:default;pointer-events:none}
+@media(hover:hover){.cal-cell:not(.empty):not(.today):hover{background:var(--bg-warm)}}
+.cal-cell.today{background:var(--surface);border-radius:14px;box-shadow:2px 6px 10px rgba(20,20,19,0.08),4px 12px 28px rgba(20,20,19,0.10),6px 20px 40px rgba(20,20,19,0.06);transform:translate(-1px,-3px);z-index:2}
+.cal-cell.selected:not(.today){background:var(--surface);box-shadow:0 2px 8px rgba(20,20,19,0.06),0 4px 16px rgba(20,20,19,0.04);z-index:1}
 .cal-date{font-family:var(--font-display);font-size:11px;font-weight:400;color:var(--text-faint);line-height:1;margin-bottom:var(--s-1)}
 .cal-val{font-family:var(--font-display);line-height:1}
 .cal-val.i0{font-size:0;visibility:hidden}
-/* Wave 11.34 v2 — 사용자 디자인 의도 롤백 (pill → 큰 숫자 + 볼드 + 색 강조).
- * i1 색만 var(--text-faint) → var(--text-muted) 로 살짝 강화 (이전 너무 흐리다는 보고 반영). */
 .cal-val.i1{font-size:16px;font-weight:500;color:var(--text-muted)}
 .cal-val.i2{font-size:22px;font-weight:600;color:var(--text)}
 .cal-val.i3{font-size:28px;font-weight:700;color:var(--text-strong)}
 @media(min-width:600px){.cal-val.i1{font-size:18px}.cal-val.i2{font-size:25px}.cal-val.i3{font-size:32px}}
 @media(min-width:1024px){.cal-val.i1{font-size:19px}.cal-val.i2{font-size:27px}.cal-val.i3{font-size:34px}}
 .cal-cell.today .cal-date{color:var(--accent);font-weight:600}
-.cal-cell.today::after{content:'';position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:16px;height:2px;background:var(--accent);border-radius:1px}
-.cal-cell.selected{background:var(--bg-warm)}
 
 /* Monthly Summary */
 .month-summary{display:flex;align-items:flex-end;gap:var(--s-8);margin-bottom:var(--section-gap);flex-wrap:wrap}
@@ -179,21 +182,20 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 
 <div class="app">
 
+  <!-- Wave 11.34 v3 — lang 토글 우측 상단 이동 (home phone 헤더 langPair 패턴). 좌측 lang-tabs 영역 삭제 → 캘린더가 자연 압축으로 위로 올라감. -->
   <div class="page-hdr reveal r1">
     <button class="btn-back" id="btnBack">
       <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <div class="page-title" id="page-title">기록</div>
-    <div style="width:34px"></div>
+    <div class="lang-pair">
+      <button class="lang-tab" id="tab-en" data-lang="en">EN</button>
+      <span class="lang-pair-sep" aria-hidden="true">/</span>
+      <button class="lang-tab" id="tab-ja" data-lang="ja">JP</button>
+    </div>
   </div>
 
-  <!-- Wave 11.34 — lang 탭 (home 과 시각·동작 대칭). 클릭 시 sessionStorage 'studyLang' 갱신 + stats 재렌더. -->
-  <div class="lang-tabs reveal r2">
-    <button class="lang-tab" id="tab-en" data-lang="en">English</button>
-    <button class="lang-tab" id="tab-ja" data-lang="ja">日本語</button>
-  </div>
-
-  <div class="view-tabs reveal r3">
+  <div class="view-tabs reveal r2">
     <button class="view-tab active" id="tab-cal">캘린더</button>
     <button class="view-tab" id="tab-sent">문장 목록</button>
   </div>
