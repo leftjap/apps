@@ -40,6 +40,7 @@ export function mountHome(host) {
     lang: getStoredLang(),
     newCount: demo ? DEMO_FIXTURES.newCount : 0,
     reviewCount: demo ? DEMO_FIXTURES.reviewCount : 0,
+    totalReview: demo ? DEMO_FIXTURES.reviewCount : 0,
     streak: demo ? DEMO_FIXTURES.streak : 0,
     tried: demo ? DEMO_FIXTURES.tried : 0,
     passed: demo ? DEMO_FIXTURES.passed : 0,
@@ -110,6 +111,7 @@ async function loadStats(state) {
     const todayISO = state.todayISO;
     const allLang = await db.reviewQueue.where('lang').equals(lang).toArray();
     const reviewCount = allLang.filter((c) => !c.nextReview || c.nextReview <= todayISO).length;
+    const totalReview = allLang.length;
     const langLessons = await db.todayLessons.where('lang').equals(lang).toArray();
     // carry-forward: 미완료 신규는 date 무관 전부 카운트 (cardLoader.loadNewCards 와 동일 정책).
     const newCount = langLessons.filter((l) => l.completed !== true).length;
@@ -157,7 +159,7 @@ async function loadStats(state) {
       if (cands[0]?.value?.value != null) bestStreak = cands[0].value.value;
     } catch { /* meta 미존재 ok */ }
 
-    return { newCount, reviewCount, streak, tried, passed, bestStreak, weekUtter, weekPass };
+    return { newCount, reviewCount, totalReview, streak, tried, passed, bestStreak, weekUtter, weekPass };
   } catch (e) {
     console.error('[home loadStats]', e);
     return null;
@@ -197,7 +199,8 @@ function renderPhone(state) {
   root.appendChild(sec1);
 
   const sec2 = el('section', { style: 'padding:32px 24px 0;display:flex;flex-direction:column;gap:12px;' });
-  sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new'), sessionCard('review', state.reviewCount, false, true, state.resume === 'review'));
+  const ctx = { totalReview: state.totalReview };
+  sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
   root.appendChild(sec2);
 
   const sec3 = el('section', { style: 'padding:32px 24px 32px;display:flex;gap:32px;' });
@@ -226,7 +229,8 @@ function renderTablet(state) {
   root.appendChild(sec1);
 
   const grid = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:16px;' });
-  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new'), sessionCard('review', state.reviewCount, true, false, state.resume === 'review'));
+  const ctx = { totalReview: state.totalReview };
+  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
 
   const sec3 = el('section', { style: 'margin-top:48px;display:flex;gap:48px;padding-bottom:48px;' });
@@ -275,7 +279,8 @@ function renderDesktop(state) {
   main.appendChild(heroBlk);
 
   const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;' });
-  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new'), sessionCard('review', state.reviewCount, true, false, state.resume === 'review'));
+  const ctx = { totalReview: state.totalReview };
+  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   main.appendChild(grid);
 
   const meta = el('div', { style: 'margin-top:auto;font-size:12px;color:var(--text-muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:0.12em;' });
@@ -416,17 +421,23 @@ function statBlock(label, value, fontSize, isPassed, ls) {
   return wrap;
 }
 
-function sessionCard(kind, count, large, full, isResume = false) {
+function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   const isNew = kind === 'new';
   const color = isNew ? 'var(--accent)' : 'var(--sage)';
   const tint = isNew ? 'rgba(180, 77, 59, 0.08)' : 'rgba(120, 140, 93, 0.10)';
+  const totalReview = Number(ctx.totalReview) || 0;
+  // 자유 복습 진입 케이스: due=0 이지만 reviewQueue 에 카드 있음.
+  const reviewFreeCase = !isNew && count === 0 && totalReview > 0;
 
   const btn = el('button', {
     type: 'button',
     'aria-label': `${isNew ? '신규' : '복습'} ${count}문장`,
     style: `background:${tint};border:none;border-radius:var(--r-md);padding:${large ? '36px 32px' : '24px 22px'};text-align:left;cursor:pointer;font-family:var(--font-body);display:flex;flex-direction:column;gap:${large ? 24 : 14}px;width:${full ? '100%' : 'auto'};flex:${full ? 'none' : 1};min-height:${large ? 220 : 'auto'};`,
   });
-  btn.addEventListener('click', () => { window.location.hash = isNew ? '#/session-new' : '#/session-review'; });
+  btn.addEventListener('click', () => {
+    if (isNew) { window.location.hash = '#/session-new'; return; }
+    window.location.hash = reviewFreeCase ? '#/session-review?mode=free' : '#/session-review';
+  });
 
   const top = el('div', { style: 'display:flex;justify-content:space-between;align-items:flex-start;' });
   const cat = el('span', { style: `font-size:${large ? 13 : 11}px;color:${color};text-transform:uppercase;letter-spacing:0.14em;font-family:var(--font-display);font-weight:700;` });
@@ -451,9 +462,18 @@ function sessionCard(kind, count, large, full, isResume = false) {
 
   const desc = el('div', { style: `font-size:${large ? 15 : 13}px;color:var(--text-muted);margin-top:auto;` });
   let descText;
-  if (isResume) descText = '이어서 하기';
-  else if (count === 0) descText = isNew ? '오늘 학습할 신규 없음' : '오늘 복습할 카드 없음';
-  else descText = isNew ? '오늘의 새 표현 학습' : '복습 대기 중';
+  if (isResume) {
+    descText = '이어서 하기';
+  } else if (isNew) {
+    if (count >= 1) descText = '오늘의 신규 표현';
+    else if (totalReview >= 1) descText = '오늘 신규 완료';
+    else descText = '학습할 표현 없음';
+  } else {
+    // review
+    if (totalReview === 0) descText = '신규 학습 후 복습';
+    else if (count >= 1) descText = '오늘이 복습 적기';
+    else descText = `오늘 분량 완료 · 자유 복습 ${totalReview}문장 →`;
+  }
   desc.textContent = descText;
   btn.appendChild(desc);
 
