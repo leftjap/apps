@@ -193,7 +193,7 @@ function renderPhone(state) {
   root.innerHTML = `<div class="status-bar"><span>9:41</span><span class="status-icons">●●●●  ◐  ▮▮</span></div>`;
 
   const header = el('header', { style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 24px 0;' });
-  header.append(brandLangPair(state, 16, 12, 14, 'EN', 'JP'), headerIcons(16, 6));
+  header.append(brandLangPair(state, 16, 12, 14, 'EN', 'JP'), headerIcons(20, 12));
   root.appendChild(header);
 
   const sec1 = el('section', { style: 'padding:28px 24px 0;' });
@@ -229,7 +229,7 @@ function renderTablet(state) {
   const header = el('header', { style: 'display:flex;justify-content:space-between;align-items:center;padding-top:36px;' });
   const brand = el('div', { style: 'display:flex;align-items:baseline;gap:24px;' });
   brand.append(brandLogo(18), langPair(state, 13, 'English', '日本語', false));
-  header.append(brand, headerIcons(18, 8));
+  header.append(brand, headerIcons(22, 11));
   root.appendChild(header);
 
   const sec1 = el('section', { style: 'padding-top:56px;display:flex;justify-content:space-between;align-items:flex-end;' });
@@ -263,7 +263,7 @@ function renderDesktop(state) {
 
   const aside = el('aside', { style: 'padding:40px 36px;display:flex;flex-direction:column;gap:36px;background:rgba(0,0,0,0.015);' });
   const top = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' });
-  top.append(brandLogo(18), headerIcons(16, 6));
+  top.append(brandLogo(18), headerIcons(18, 7));
   aside.appendChild(top);
 
   const streakBlk = el('div', {});
