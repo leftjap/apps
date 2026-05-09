@@ -189,11 +189,14 @@ function render(host, state, handlers = {}) {
 
   const large = state.size !== 'phone';
   let playing = false;
+  // listen wave: 듣기 버튼 내부 (재생 중만 노출, accent 색)
+  const listenWave = createWaveform({ large, mode: 'listen' });
+  listenWave.el.style.display = 'none';
   const stopPlaying = () => {
     if (!playing) return;
     playing = false;
     listen.update({ playing: false });
-    applyExclusive(state.recording, playing, state.lastScore, wave, pillWrap);
+    listenWave.el.style.display = 'none';
   };
   const listen = createListenButton({
     large,
@@ -210,13 +213,16 @@ function render(host, state, handlers = {}) {
       if (!text || !window.studySpeech?.speak) return;
       playing = true;
       listen.update({ playing: true });
-      applyExclusive(state.recording, playing, state.lastScore, wave, pillWrap);
+      listenWave.el.style.display = '';
       window.studySpeech.speak(text, { lang, rate: 0.85, onEnd: stopPlaying });
       // super-edge 안전망 (onEnd 미발화 시 30s)
       setTimeout(stopPlaying, 30000);
     },
   });
-  const wave = createWaveform({ large });
+  // listen 버튼 내부에 wave 삽입 (옛 mocks/session.html 정본 정합)
+  listen.el.appendChild(listenWave.el);
+  // record wave: record 우측 (녹음 중만, danger 색)
+  const wave = createWaveform({ large, mode: 'record' });
   const pillCmp = createScorePill({
     score: state.lastScore || 0,
     passed: state.lastScore != null && state.lastScore >= PASS_THRESHOLD,
@@ -355,14 +361,11 @@ function makeNextBtn(size, onNext) {
   return sec;
 }
 
-function applyExclusive(recording, playing, lastScore, waveCmp, pillWrap) {
-  // 녹음 또는 재생 중 → wave 노출. mode 로 색상 분기 (record=danger, listen=accent).
-  const active = !!recording || !!playing;
-  if (waveCmp?.el) {
-    waveCmp.el.style.display = active ? '' : 'none';
-    if (typeof waveCmp.update === 'function') {
-      waveCmp.update({ mode: recording ? 'record' : (playing ? 'listen' : null) });
-    }
+function applyExclusive(recording, playing, lastScore, recordWaveCmp, pillWrap) {
+  // record wave: 녹음 중만 노출 (listen wave 는 듣기 버튼 내부에서 별도 제어)
+  if (recordWaveCmp?.el) {
+    recordWaveCmp.el.style.display = recording ? '' : 'none';
   }
-  pillWrap.style.display = (!active && lastScore != null) ? '' : 'none';
+  // pill: 녹음/재생 중 아니고 점수 있을 때
+  pillWrap.style.display = (!recording && !playing && lastScore != null) ? '' : 'none';
 }
