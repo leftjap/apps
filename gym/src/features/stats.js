@@ -331,6 +331,44 @@ export async function mountStatsView(now = Date.now()) {
   }
 }
 
+/**
+ * Wave v2 — 이번 달 부위별 통계 집계.
+ *
+ * sessions.tags (multiEntry) 빈도 누적. tag 영문 (chest/back/...) 우선,
+ * 한국어 1글자 약어 (가/등/...) fallback. 0 회 부위는 결과에서 제외.
+ *
+ * 반환: [{ key, name, count, color }] (count 내림차순).
+ */
+const PART_META = [
+  { key: 'chest',    name: '가슴', kr: '가', color: '#d97757' },
+  { key: 'back',     name: '등',   kr: '등', color: '#788c5d' },
+  { key: 'legs',     name: '하체', kr: '하', color: '#b85a3e' },
+  { key: 'shoulder', name: '어깨', kr: '어', color: '#c9a96e' },
+  { key: 'arms',     name: '팔',   kr: '팔', color: '#6b8a9c' },
+  { key: 'cardio',   name: '유산소', kr: '유', color: '#9b8fb0' },
+];
+
+export function summarizeBodyParts(sessions) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  const counts = new Map();
+  for (const s of list) {
+    if (!s) continue;
+    const tags = Array.isArray(s.tags) ? s.tags : [];
+    for (const tag of tags) {
+      // 영문 직접 매칭 또는 한국어 1글자 매칭
+      let meta = PART_META.find((p) => p.key === tag);
+      if (!meta) meta = PART_META.find((p) => p.kr === tag);
+      if (!meta) continue;
+      counts.set(meta.key, (counts.get(meta.key) || 0) + 1);
+    }
+  }
+  const result = PART_META
+    .map((p) => ({ key: p.key, name: p.name, count: counts.get(p.key) || 0, color: p.color }))
+    .filter((p) => p.count > 0)
+    .sort((a, b) => b.count - a.count);
+  return result;
+}
+
 if (typeof window !== 'undefined') {
   window.gymStats = {
     summarizeVolumes,
@@ -342,5 +380,6 @@ if (typeof window !== 'undefined') {
     sessionToWorkoutEntry,
     deleteSessionByDay,
     mountStatsView,
+    summarizeBodyParts,
   };
 }

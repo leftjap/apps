@@ -359,14 +359,7 @@ function applyStreakToDom(streak, doc) {
   }
   setText('sSub', streak.sub);
   setText('ctaBtn', streak.state === 'empty' ? '첫 운동 시작' : '운동 시작');
-  // Clawd
-  const wrap = doc.getElementById('clawdAnim');
-  if (wrap) wrap.className = `clawd-anim ${streak.clawd.anim}`;
-  const svg = doc.getElementById('clawdSvg');
-  if (svg) {
-    svg.setAttribute('class', `clawd ${streak.clawd.size === 'tall' ? 'clawd-tall' : 'clawd-short'}`);
-    svg.innerHTML = `<use href="#${streak.clawd.id}"/>`;
-  }
+  // Clawd — v2 다크 시안에서 캐릭터 제거. element 존재 시만 안전 가드 (구 mocks 호환).
   // Wave 11.10.4 — '운동 시작' / '첫 운동 시작' click → #/session.
   // session 화면 진입 후 사용자가 종목 클릭 시 addExerciseToActiveSession 가 active session 자동 생성 (spec §6-1).
   const cta = doc.getElementById('ctaBtn');

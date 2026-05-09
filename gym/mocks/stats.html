@@ -5,29 +5,29 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#ffffff">
+<meta name="theme-color" content="#0c0a08">
 <title>Gym · 통계</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    /* White & Claude Orange */
-    --bg: #ffffff; --surface: #fbfaf8; --bg-warm: #f4f3f1;
-    --text: #1a1a18; --text-strong: #0a0a08; --text-muted: #7a7872; --text-faint: #bdbab3;
-    --accent: #d97757; --accent-soft: #f1c4ad; --accent-deep: #c96442; --accent-hover: #c96442; --accent-rgb: 217, 119, 87;
-    --done: #d97757; --done-soft: rgba(217,119,87,0.16);
+    /* Dark v2 — Warm dark base + Claude Orange (gym only) */
+    --bg: #0c0a08; --surface: #15120e; --bg-warm: #1a1612; --bg-elevated: #1d1914;
+    --text: #f3efe6; --text-strong: #ffffff; --text-muted: rgba(243,239,230,0.6); --text-faint: rgba(243,239,230,0.4);
+    --accent: #d97757; --accent-soft: rgba(217,119,87,0.18); --accent-deep: #c96442; --accent-hover: #e58a6c; --accent-rgb: 217, 119, 87;
+    --done: #d97757; --done-soft: rgba(217,119,87,0.18);
     --sage: #d97757; --blue: #6a9bcc; --amber: #c4973b; --danger: #c94432;
-    --border: rgba(26,26,24,0.08); --border-strong: rgba(26,26,24,0.14); --border-light: rgba(26,26,24,0.05);
+    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.18); --border-light: rgba(255,255,255,0.04);
     --font-display: 'Poppins', system-ui, sans-serif;
     --font-body: 'Noto Sans KR', system-ui, sans-serif;
     --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
     --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
     --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
     --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.03);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.03), 0 8px 24px rgba(0,0,0,0.04);
-    --shadow-lg: 0 6px 14px rgba(0,0,0,0.04), 0 30px 60px rgba(0,0,0,0.06);
+    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
+    --shadow-lg: 0 6px 14px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.6);
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
     --safe-top: env(safe-area-inset-top, 0px);
@@ -471,6 +471,107 @@
     white-space: nowrap;
   }
   .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ============ STATS TABS (v2 StatsHeader) ============ */
+  .stats-tabs {
+    margin: 6px var(--s-6) 0;
+    padding: 0;
+    display: flex; gap: 22px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stats-tab {
+    background: none; border: 0; cursor: pointer;
+    padding: 8px 0 12px;
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 400;
+    color: var(--text-muted);
+    position: relative;
+    letter-spacing: -0.005em;
+  }
+  .stats-tab.is-active {
+    color: var(--text-strong); font-weight: 600;
+  }
+  .stats-tab.is-active::after {
+    content: '';
+    position: absolute; bottom: -1px; left: 0; right: 0;
+    height: 2px; background: var(--accent);
+  }
+
+  .stats-panel { flex: 1; display: flex; flex-direction: column; }
+  .stats-panel[hidden] { display: none; }
+
+  /* ============ BODY PARTS PANEL (v2 StatsC) ============ */
+  .bp-hero {
+    padding: 26px var(--s-6) 0;
+  }
+  .bp-eyebrow {
+    font-family: var(--font-body);
+    font-size: 11px; color: var(--text-muted);
+    letter-spacing: 0.06em;
+  }
+  .bp-total {
+    margin-top: 6px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .bp-total-num {
+    font-family: var(--font-display);
+    font-size: 44px; font-weight: 200;
+    color: var(--text-strong);
+    letter-spacing: -0.03em;
+    line-height: 0.9;
+  }
+  .bp-total-unit {
+    font-family: var(--font-body);
+    font-size: 13px; color: var(--text-muted);
+  }
+  .bp-stack {
+    margin: 22px var(--s-6) 0;
+    height: 10px; border-radius: 5px;
+    overflow: hidden;
+    display: flex;
+    background: rgba(255,255,255,0.06);
+  }
+  .bp-stack-seg { height: 100%; }
+  .bp-list {
+    margin: 22px 0 0;
+    padding: 0 var(--s-6);
+  }
+  .bp-row {
+    display: flex; align-items: center;
+    padding: 11px 0;
+    border-top: 1px solid var(--border-light);
+  }
+  .bp-row:first-child { border-top: 0; }
+  .bp-row-dot {
+    width: 8px; height: 8px; border-radius: 4px;
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .bp-row-name {
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 500;
+    color: var(--text-strong);
+    flex: 1;
+  }
+  .bp-row-bar {
+    flex: 2;
+    height: 4px; border-radius: 2px;
+    background: rgba(255,255,255,0.06);
+    margin-right: 14px;
+    overflow: hidden;
+  }
+  .bp-row-fill { height: 100%; transform-origin: left center; }
+  .bp-row-count {
+    font-family: var(--font-display);
+    font-size: 12px; color: var(--text-muted);
+    min-width: 36px; text-align: right;
+  }
+  .bp-row-pct {
+    font-family: var(--font-display);
+    font-size: 11px; color: var(--text-faint);
+    min-width: 38px; text-align: right;
+    margin-left: 4px;
+  }
 </style>
 </head>
 <body>
@@ -486,35 +587,46 @@
     </nav>
   </header>
 
+  <!-- 3탭 (v2 StatsHeader) — 캘린더 / 추이 / 부위 -->
+  <nav class="stats-tabs rv rv-2" role="tablist" aria-label="통계 탭">
+    <button class="stats-tab is-active" data-tab="cal" role="tab" aria-selected="true">캘린더</button>
+    <button class="stats-tab" data-tab="trend" role="tab" aria-selected="false">추이</button>
+    <button class="stats-tab" data-tab="body" role="tab" aria-selected="false">부위</button>
+  </nav>
+
   <main class="screen">
 
-    <!-- 월 이동 nav -->
-    <nav class="month-nav rv rv-2">
-      <button class="nav-btn" data-month="-1" aria-label="이전 달">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 3 5 8 10 13"/></svg>
-      </button>
-      <span class="month-label" id="monthLabel"></span>
-      <button class="nav-btn" data-month="1" aria-label="다음 달">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 3 11 8 6 13"/></svg>
-      </button>
-    </nav>
+    <!-- 패널: 캘린더 -->
+    <section class="stats-panel" data-panel="cal">
+      <!-- 월 이동 nav -->
+      <nav class="month-nav rv rv-2">
+        <button class="nav-btn" data-month="-1" aria-label="이전 달">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 3 5 8 10 13"/></svg>
+        </button>
+        <span class="month-label" id="monthLabel"></span>
+        <button class="nav-btn" data-month="1" aria-label="다음 달">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 3 11 8 6 13"/></svg>
+        </button>
+      </nav>
 
-    <!-- 주 헤더 -->
-    <div class="cal-weekdays rv rv-2">
-      <span class="cal-weekday">월</span>
-      <span class="cal-weekday">화</span>
-      <span class="cal-weekday">수</span>
-      <span class="cal-weekday">목</span>
-      <span class="cal-weekday">금</span>
-      <span class="cal-weekday">토</span>
-      <span class="cal-weekday">일</span>
-    </div>
+      <!-- 주 헤더 -->
+      <div class="cal-weekdays rv rv-2">
+        <span class="cal-weekday">월</span>
+        <span class="cal-weekday">화</span>
+        <span class="cal-weekday">수</span>
+        <span class="cal-weekday">목</span>
+        <span class="cal-weekday">금</span>
+        <span class="cal-weekday">토</span>
+        <span class="cal-weekday">일</span>
+      </div>
 
-    <!-- 월간 캘린더 -->
-    <div class="cal-grid rv rv-3" id="calGrid"></div>
+      <!-- 월간 캘린더 -->
+      <div class="cal-grid rv rv-3" id="calGrid"></div>
+    </section>
 
-    <!-- 주/월 비교 — 막대 그래프 + 숫자 -->
-    <section class="compare-section rv rv-4">
+    <!-- 패널: 추이 (주/월 비교) -->
+    <section class="stats-panel" data-panel="trend" hidden>
+      <section class="compare-section rv rv-4">
       <div class="cs-head">
         <span class="cs-title">볼륨 비교</span>
       </div>
@@ -564,6 +676,20 @@
           </div>
         </div>
       </div>
+    </section>
+    </section>
+
+    <!-- 패널: 부위 (이번 달 부위 분포) -->
+    <section class="stats-panel" data-panel="body" hidden>
+      <div class="bp-hero">
+        <div class="bp-eyebrow">이번 달 부위 분포</div>
+        <div class="bp-total">
+          <span class="bp-total-num" id="bpTotalNum">14</span>
+          <span class="bp-total-unit">회 운동</span>
+        </div>
+      </div>
+      <div class="bp-stack" id="bpStack"></div>
+      <div class="bp-list" id="bpList"></div>
     </section>
 
   </main>
@@ -880,6 +1006,79 @@ function toast(msg) {
 if (window.gymStats) {
   window.gymStats.mountStatsView().catch(e => console.error('[gym] mountStatsView init', e));
 }
+
+/* ============ Wave v2 — 3탭 전환 + 부위별 분포 ============ */
+const PARTS_FALLBACK = [
+  { key: 'chest',    name: '가슴', count: 4, color: '#d97757' },
+  { key: 'back',     name: '등',   count: 3, color: '#788c5d' },
+  { key: 'legs',     name: '하체', count: 3, color: '#b85a3e' },
+  { key: 'shoulder', name: '어깨', count: 2, color: '#c9a96e' },
+  { key: 'arms',     name: '팔',   count: 2, color: '#6b8a9c' },
+];
+
+function renderBodyParts(parts) {
+  const total = parts.reduce((s, p) => s + p.count, 0) || 1;
+  document.getElementById('bpTotalNum').textContent = String(total);
+  // 누적 막대
+  const stack = document.getElementById('bpStack');
+  stack.innerHTML = parts.map(p => {
+    const pct = (p.count / total) * 100;
+    return `<div class="bp-stack-seg" style="width:${pct.toFixed(1)}%;background:${p.color}"></div>`;
+  }).join('');
+  // 행 리스트
+  const list = document.getElementById('bpList');
+  list.innerHTML = parts.map(p => {
+    const pct = ((p.count / total) * 100).toFixed(0);
+    return `
+      <div class="bp-row">
+        <span class="bp-row-dot" style="background:${p.color}"></span>
+        <span class="bp-row-name">${p.name}</span>
+        <span class="bp-row-bar"><span class="bp-row-fill" style="width:${pct}%;background:${p.color}"></span></span>
+        <span class="bp-row-count">${p.count}<span style="font-size:10px;color:var(--text-faint);margin-left:2px">회</span></span>
+        <span class="bp-row-pct">${pct}%</span>
+      </div>
+    `;
+  }).join('');
+}
+
+async function loadBodyParts() {
+  // SPA: stats.js 의 summarizeBodyParts 사용. mocks: fallback.
+  if (window.gymStats?.summarizeBodyParts && window.gymQueries?.getSessionsByRange) {
+    try {
+      const today = new Date();
+      const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-01`;
+      const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const monthEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-${String(monthLastDay).padStart(2,'0')}`;
+      const sessions = await window.gymQueries.getSessionsByRange(monthStart, monthEnd);
+      const parts = window.gymStats.summarizeBodyParts(sessions);
+      renderBodyParts(parts.length ? parts : PARTS_FALLBACK);
+      return;
+    } catch (err) {
+      console.warn('[stats] body parts fetch failed, fallback', err);
+    }
+  }
+  renderBodyParts(PARTS_FALLBACK);
+}
+
+/* 탭 전환 — 패널 토글 */
+const tabs = document.querySelectorAll('.stats-tab');
+const panels = document.querySelectorAll('.stats-panel');
+let bodyLoaded = false;
+tabs.forEach(t => {
+  t.addEventListener('click', () => {
+    const name = t.dataset.tab;
+    tabs.forEach(x => {
+      const a = x.dataset.tab === name;
+      x.classList.toggle('is-active', a);
+      x.setAttribute('aria-selected', a ? 'true' : 'false');
+    });
+    panels.forEach(p => { p.hidden = p.dataset.panel !== name; });
+    if (name === 'body' && !bodyLoaded) {
+      loadBodyParts();
+      bodyLoaded = true;
+    }
+  });
+});
 </script>
 
 </body>
