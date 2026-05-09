@@ -271,6 +271,71 @@
   }
   .app[data-state="session"] .session-progress { display: block; }
 
+  /* v2 HomeC in-card "이어가기" CTA — session 상태에서만 노출 */
+  .session-card-cta {
+    display: none;
+    margin-top: 18px;
+    width: 100%;
+    height: 46px;
+    padding: 0 18px;
+    border-radius: 14px;
+    border: 0;
+    background: var(--accent);
+    color: #fff;
+    font-family: var(--font-body);
+    font-size: 14px; font-weight: 500;
+    align-items: center; justify-content: space-between;
+    cursor: pointer;
+    transition: transform 100ms var(--ease), background 150ms var(--ease);
+  }
+  .session-card-cta .scc-arrow { font-size: 16px; }
+  .session-card-cta:active { transform: scale(0.98); background: var(--accent-deep); }
+  .app[data-state="session"] .session-card-cta { display: flex; }
+  /* session 상태에서는 외부 .btn-secondary 숨김 (in-card CTA 가 대체) */
+  .app[data-state="session"] .cta-area { display: none; }
+
+  /* v2 HomeC "지난 세션" footer — session 외 상태 노출 */
+  .last-session {
+    margin: auto 24px 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(243,239,230,0.08);
+  }
+  .ls-eyebrow {
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .ls-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .ls-info { display: flex; flex-direction: column; gap: 2px; }
+  .ls-title {
+    font-family: var(--font-body);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-strong);
+  }
+  .ls-sub {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .ls-vol {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 200;
+    color: var(--text-strong);
+    font-variant-numeric: tabular-nums;
+  }
+  .ls-vol-unit {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 2px;
+  }
+  /* session 상태에서는 last-session 숨김 (이어가기 카드가 메인 영역 차지) */
+  .app[data-state="session"] .last-session { display: none; }
+
   /* long-press hint card (session 상태에서만 노출) */
   .longpress-hint {
     display: none;
@@ -496,11 +561,28 @@
         </div>
         <!-- session 상태에서만 표시되는 progress bar -->
         <div class="session-progress"><div></div></div>
+        <!-- v2 HomeC in-card "이어가기" CTA — session 상태에서만 노출 -->
+        <button class="session-card-cta" id="sessionCardCta" type="button">
+          <span>이어가기</span>
+          <span class="scc-arrow">→</span>
+        </button>
       </div>
       <!-- legacy mascot 영역 (Clawd 자리, v2 에서 제거 — DOM id 보존) -->
       <div class="streak-mascot">
         <div class="clawd-anim" id="clawdAnim"></div>
         <span id="clawdSvg" hidden></span>
+      </div>
+    </div>
+
+    <!-- v2 HomeC "지난 세션" footer — empty/active/gap/rest 상태에서만 노출 -->
+    <div class="last-session" id="lastSession">
+      <div class="ls-eyebrow">지난 세션</div>
+      <div class="ls-row">
+        <div class="ls-info">
+          <div class="ls-title" id="lsTitle">가슴 · 5월 5일</div>
+          <div class="ls-sub" id="lsSub">벤치프레스 60×10 · 4세트</div>
+        </div>
+        <div class="ls-vol" id="lsVol">2,400<span class="ls-vol-unit">kg</span></div>
       </div>
     </div>
 
@@ -828,39 +910,46 @@ document.querySelectorAll('[data-nav]').forEach(b => {
   });
 });
 
-/* CTA + long-press (session 상태일 때만) */
+/* CTA + long-press (session 상태일 때만). v2 HomeC in-card CTA 도 동일 동작. */
 (function setupCta() {
-  const btn = document.getElementById('ctaBtn');
-  let pressTimer = null;
-  let longPressed = false;
-
+  const ctaBtn = document.getElementById('ctaBtn');
+  const sessionCardCta = document.getElementById('sessionCardCta');
   const isSession = () => document.getElementById('app').dataset.state === 'session';
 
-  function start() {
-    longPressed = false;
-    if (!isSession()) return;
-    btn.classList.add('is-pressed');
-    pressTimer = setTimeout(() => {
-      longPressed = true;
+  function bindLongPress(btn) {
+    if (!btn) return;
+    let pressTimer = null;
+    let longPressed = false;
+
+    function start() {
+      longPressed = false;
+      if (!isSession()) return;
+      btn.classList.add('is-pressed');
+      pressTimer = setTimeout(() => {
+        longPressed = true;
+        btn.classList.remove('is-pressed');
+        openSheet();
+        if (navigator.vibrate) navigator.vibrate(12);
+      }, 500);
+    }
+    function end() {
+      clearTimeout(pressTimer);
       btn.classList.remove('is-pressed');
-      openSheet();
-      if (navigator.vibrate) navigator.vibrate(12);
-    }, 500);
-  }
-  function end() {
-    clearTimeout(pressTimer);
-    btn.classList.remove('is-pressed');
+    }
+
+    btn.addEventListener('pointerdown', start);
+    btn.addEventListener('pointerup', end);
+    btn.addEventListener('pointercancel', end);
+    btn.addEventListener('pointerleave', end);
+
+    btn.addEventListener('click', (e) => {
+      if (longPressed) { e.preventDefault(); e.stopPropagation(); return; }
+      window.location.href = 'session.html';
+    });
   }
 
-  btn.addEventListener('pointerdown', start);
-  btn.addEventListener('pointerup', end);
-  btn.addEventListener('pointercancel', end);
-  btn.addEventListener('pointerleave', end);
-
-  btn.addEventListener('click', (e) => {
-    if (longPressed) { e.preventDefault(); e.stopPropagation(); return; }
-    window.location.href = 'session.html';
-  });
+  bindLongPress(ctaBtn);
+  bindLongPress(sessionCardCta);
 })();
 
 /* Sheet — finish/pause/delete 액션 */

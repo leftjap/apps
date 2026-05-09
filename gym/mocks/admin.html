@@ -323,6 +323,7 @@
   .chart-goal   { stroke: var(--text-faint); }
   .chart-weight { stroke: var(--accent); }
   .chart-avg    { stroke: var(--text-muted); }
+  .chart-goal-label { fill: var(--text-faint); font-family: var(--font-body); }
   .chart-legend {
     display: flex; justify-content: space-between;
     margin-top: var(--s-2);
@@ -585,25 +586,46 @@
 
   /* 동기화 상태 — Typography-driven (ui §1 / §6)
      컬러 도트 대신 sync-title 의 semantic color (sage=정상) 로 상태 표현 */
+  /* v2 ManageC sage 동기화 카드 — sage dot + glow + soft 배경 */
   .sync {
     margin: var(--s-5) var(--s-5) 0;
-    padding: var(--s-4);
-    background: var(--surface);
-    border: 1px solid var(--border-light);
+    padding: 14px 18px;
+    background: rgba(217,119,87,0.10);
+    border: 1px solid rgba(217,119,87,0.25);
     border-radius: var(--r-lg);
     display: flex; flex-direction: column;
-    gap: var(--s-1);
+    gap: var(--s-2);
   }
   .sync-title {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 600;
+    font-family: var(--font-body);
+    font-size: 12px; font-weight: 600;
     color: var(--sage);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .sync-title::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 3px;
+    background: var(--sage);
+    box-shadow: 0 0 8px var(--sage);
+    flex-shrink: 0;
   }
   .sync-time {
     font-family: var(--font-body);
     font-size: 11px;
     color: var(--text-muted);
+  }
+
+  /* v2 ManageC footer — GYM · EST · 2026 */
+  .profile-footer {
+    margin-top: auto;
+    padding: var(--s-6) var(--s-5) calc(var(--s-6) + var(--safe-bottom));
+    text-align: center;
+    font-family: var(--font-body);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.16em;
   }
 
   .logout {
@@ -873,15 +895,28 @@
       <div class="chart">
         <div class="chart-box">
           <div class="chart-title">최근 30일 추이</div>
-          <svg class="chart-svg" viewBox="0 0 300 120" preserveAspectRatio="none">
-            <!-- 목표선 -->
+          <svg class="chart-svg" viewBox="0 0 300 120" preserveAspectRatio="none" style="overflow:visible">
+            <defs>
+              <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="rgba(217,119,87,0.22)"/>
+                <stop offset="100%" stop-color="rgba(217,119,87,0)"/>
+              </linearGradient>
+            </defs>
+            <!-- v2 ManageB area gradient -->
+            <path class="chart-area" data-bind="chart-area"
+                  d="M0,40 L20,42 L40,38 L60,44 L80,42 L100,48 L120,46 L140,52 L160,50 L180,56 L200,54 L220,60 L240,58 L260,62 L280,60 L300,64 L300,120 L0,120 Z"
+                  fill="url(#weightGrad)" stroke="none"/>
+            <!-- 목표선 + 라벨 -->
             <line class="chart-goal" data-bind="chart-goal" x1="0" y1="80" x2="300" y2="80" stroke-width="1" stroke-dasharray="3 4"/>
+            <text class="chart-goal-label" data-bind="chart-goal-label" x="298" y="76" text-anchor="end" font-size="9">목표 69</text>
             <!-- 체중 라인 -->
             <path class="chart-weight" data-bind="chart-weight" d="M0,40 L20,42 L40,38 L60,44 L80,42 L100,48 L120,46 L140,52 L160,50 L180,56 L200,54 L220,60 L240,58 L260,62 L280,60 L300,64"
                   fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <!-- 7일 평균선 -->
             <path class="chart-avg" data-bind="chart-avg" d="M0,44 L40,43 L80,45 L120,48 L160,52 L200,56 L240,60 L300,62"
                   fill="none" stroke-width="1.5" stroke-dasharray="4 3" stroke-linecap="round"/>
+            <!-- v2 마지막 점 강조 -->
+            <circle class="chart-last-dot" data-bind="chart-last-dot" cx="300" cy="64" r="4" fill="var(--accent)" stroke="var(--bg)" stroke-width="2"/>
           </svg>
           <div class="chart-legend">
             <span><strong>73.2 kg</strong>30일 전</span>
@@ -972,6 +1007,9 @@
       </div>
 
       <button class="logout" data-act="logout">로그아웃</button>
+
+      <!-- v2 ManageC footer -->
+      <div class="profile-footer">GYM · EST · 2026</div>
     </section>
 
   </main>

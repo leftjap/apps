@@ -407,11 +407,82 @@
     margin: 0 2px;
     font-weight: 400;
   }
+  .set-history .h-chip .h-s {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin-right: 4px;
+    opacity: 0.85;
+  }
   .set-history .h-chip.is-pr {
     background: rgb(var(--accent-rgb) / 0.16);
     border-color: rgb(var(--accent-rgb) / 0.4);
     color: var(--accent-deep);
   }
+  /* v2 SessionC current — 가운데 active set 강조 */
+  .set-history .h-chip.is-current {
+    background: rgb(var(--accent-rgb) / 0.18);
+    border-color: rgb(var(--accent-rgb) / 0.4);
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .set-history .h-chip.is-current .h-s {
+    color: var(--accent);
+    opacity: 1;
+  }
+  /* v2 SessionC pending — Sn 라벨 + dash */
+  .set-history .h-chip.is-pending {
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-faint);
+    font-weight: 400;
+    padding: 2px 6px;
+  }
+  .set-history .h-chip.is-pending .h-s {
+    color: var(--text-faint);
+    opacity: 0.7;
+  }
+
+  /* v2 SessionC — receipt swipe row + progress strip (card-viewport 밖, footer-nav 위) */
+  .session-receipt-row {
+    flex-shrink: 0;
+    padding: 0 calc(var(--s-5) + 4px);
+    display: flex; justify-content: space-between; align-items: center;
+    font-family: var(--font-body);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+    margin-bottom: 6px;
+  }
+  .session-receipt-row .srr-left { color: var(--text-faint); }
+  .session-receipt-row .srr-right { color: var(--accent); font-weight: 600; }
+
+  .session-progress-strip {
+    padding: 0 var(--s-5);
+    margin-bottom: var(--s-3);
+  }
+  .session-progress-strip .spr-bar {
+    height: 2px; width: 100%;
+    background: rgba(255,255,255,0.08);
+    overflow: hidden;
+    position: relative;
+  }
+  .session-progress-strip .spr-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width 280ms var(--ease);
+  }
+  .session-progress-strip .spr-meta {
+    margin-top: 6px;
+    display: flex; justify-content: space-between;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .session-progress-strip .spr-vol { color: var(--accent); }
+  .session-progress-strip .spr-pct { color: var(--text-faint); }
 
   /* SET DOTS — deprecated. set-segments(card-viewport 상단) 로 대체됨.
      CSS 는 롤백 대비 남겨둠 (DOM 에 주입 안 됨) */
@@ -886,12 +957,12 @@
     pointer-events: none;
   }
 
-  /* primary 숫자: peek 40px muted → active 88px strong (White&Coral spec).
-     letter-spacing -0.04em, weight 600 으로 위계 강화. */
+  /* primary 숫자: peek 40px muted → active 132px strong (v2 SessionC Receipt/Mono).
+     letter-spacing -0.05em, weight 200 (얇은 디스플레이) — v2 시안 그대로. */
   .stat-row.primary .stat-value {
-    font-size: calc(40px + 48px * var(--t));
-    font-weight: calc(300 + 300 * var(--t));
-    letter-spacing: calc(-0.02em + -0.02em * var(--t));
+    font-size: calc(40px + 92px * var(--t));
+    font-weight: calc(300 - 100 * var(--t));
+    letter-spacing: calc(-0.02em + -0.03em * var(--t));
     color: color-mix(in srgb, var(--text-muted) calc((1 - var(--t)) * 100%), var(--text-strong) calc(var(--t) * 100%));
   }
   .stat-row.primary .stat-unit {
@@ -900,15 +971,15 @@
     color: var(--text-muted);
   }
 
-  /* secondary 숫자: peek 22px faint → active 32px muted */
+  /* secondary 숫자: peek 22px faint → active 48px muted (v2 SessionC) */
   .stat-row.secondary .stat-value {
-    font-size: calc(22px + 10px * var(--t));
-    font-weight: 500;
-    color: color-mix(in srgb, var(--text-faint) calc((1 - var(--t)) * 100%), var(--text-muted) calc(var(--t) * 100%));
+    font-size: calc(22px + 26px * var(--t));
+    font-weight: calc(500 - 200 * var(--t));
+    color: color-mix(in srgb, var(--text-faint) calc((1 - var(--t)) * 100%), var(--text-strong) calc(var(--t) * 100%));
   }
   .stat-row.secondary .stat-unit {
-    font-size: calc(11px + 2px * var(--t));
-    color: var(--text-faint);
+    font-size: calc(11px + 3px * var(--t));
+    color: var(--text-muted);
   }
 
   /* 완료된 세트 — sage 톤. t=0(peek) 에서 진하게, active 가까워지면 일반 색으로 복귀
@@ -1765,6 +1836,19 @@
     <div class="card-track" id="cardTrack"></div>
   </div>
 
+  <!-- v2 SessionC Receipt swipe row + progress strip (card-viewport 밖) -->
+  <div class="session-receipt-row" aria-hidden="true">
+    <span class="srr-left">← 이전 수정</span>
+    <span class="srr-right">완료 →</span>
+  </div>
+  <div class="session-progress-strip">
+    <div class="spr-bar"><div class="spr-fill" id="sprFill"></div></div>
+    <div class="spr-meta">
+      <span class="spr-vol" id="sprVol">0 / 0kg</span>
+      <span class="spr-pct" id="sprPct">0%</span>
+    </div>
+  </div>
+
   <!-- CARDIO VIEWPORT (§6-4) — 유산소·시간기반 운동(플랭크) 공용. hideDistance 시 is-time-only 클래스로 거리/페이스 숨김 -->
   <div class="cardio-viewport reveal reveal-3" id="cardioViewport" hidden>
     <div class="cardio-card">
@@ -1947,17 +2031,24 @@ function renderSegments() {
   renderHistory();
 }
 
-/* 세트 히스토리 — 완료한 세트(weight × reps) 를 sage chip 으로 누적 시각화.
-   PR 세트는 accent. cardio(weight=null) 는 제외. */
+/* 세트 히스토리 — v2 SessionC 가로 S1·S2·S3·S4·S5 ticker.
+   done = chip (weight×reps), current = accent 강조 (현재 입력값), pending = 'Sn —'. */
 function renderHistory() {
   if (!historyEl) return;
-  // sets.length 만큼 셀 생성 → 세그먼트와 1:1 위치 정렬. done 만 chip, 나머지는 빈 셀.
-  historyEl.innerHTML = state.sets.map(s => {
-    if (!s.done || s.weight == null) {
-      return '<span class="h-cell"></span>';
+  historyEl.innerHTML = state.sets.map((s, i) => {
+    const sLabel = `S${i + 1}`;
+    const isCurrent = i === state.currentIdx;
+    const isDone = s.done && s.weight != null;
+    if (isDone) {
+      const cls = s.pr ? 'h-chip is-pr' : 'h-chip';
+      return `<span class="h-cell"><span class="${cls}"><span class="h-s">${sLabel}</span>${s.weight}<span class="h-x">·</span>${s.reps}</span></span>`;
     }
-    const cls = s.pr ? 'h-chip is-pr' : 'h-chip';
-    return `<span class="h-cell"><span class="${cls}">${s.weight}<span class="h-x">×</span>${s.reps}</span></span>`;
+    if (isCurrent) {
+      const w = s.weight != null ? s.weight : '—';
+      const r = s.reps != null ? s.reps : '—';
+      return `<span class="h-cell"><span class="h-chip is-current"><span class="h-s">${sLabel}</span>${w}<span class="h-x">·</span>${r}</span></span>`;
+    }
+    return `<span class="h-cell"><span class="h-chip is-pending"><span class="h-s">${sLabel}</span>—</span></span>`;
   }).join('');
 }
 
@@ -2615,6 +2706,32 @@ function updateProgress() {
 
   /* 볼륨 라벨 — 구조화 (vol-now 강조) */
   setVolumeLabel(vol, state.prevExerciseVolume, doneCount === 0);
+
+  /* v2 SessionC — receipt 하단 progress strip 갱신 */
+  setSessionProgressStrip(vol, state.prevExerciseVolume);
+}
+
+/* v2 SessionC progress strip — N / Mkg + bar + % */
+function setSessionProgressStrip(nowVol, prevVol) {
+  const fillEl = document.getElementById('sprFill');
+  const volEl = document.getElementById('sprVol');
+  const pctEl = document.getElementById('sprPct');
+  if (!fillEl || !volEl || !pctEl) return;
+  const isBodyweight = state.sets.length > 0 && state.sets[0].weight == null;
+  if (isBodyweight) {
+    const totalReps = state.sets.filter(s => s.done).reduce((sum, s) => sum + s.reps, 0);
+    const maxReps = state.sets.reduce((sum, s) => sum + s.reps, 0) || 1;
+    const pct = Math.min(100, Math.round((totalReps / maxReps) * 100));
+    fillEl.style.width = pct + '%';
+    volEl.textContent = `${totalReps} / ${maxReps}회`;
+    pctEl.textContent = pct + '%';
+    return;
+  }
+  const target = prevVol > 0 ? prevVol : (nowVol || 1);
+  const pct = Math.min(100, Math.round((nowVol / target) * 100));
+  fillEl.style.width = pct + '%';
+  volEl.textContent = `${(nowVol || 0).toLocaleString()} / ${(target || 0).toLocaleString()}kg`;
+  pctEl.textContent = pct + '%';
 }
 
 /* 볼륨 라벨 3단 구조 세팅 — ui §1 typography-driven 위계 유지.

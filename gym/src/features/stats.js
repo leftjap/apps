@@ -369,6 +369,28 @@ export function summarizeBodyParts(sessions) {
   return result;
 }
 
+/**
+ * Wave v2 — 최근 N주 주간 볼륨 추이 (v2 StatsB SVG 라인차트용).
+ *
+ * sessions 의 totalVolume 을 주 단위로 합산. 이번 주는 완성도 무관(현재 누적).
+ * 반환: [{ weekStart: 'YYYY-MM-DD', vol: number }] (오래된 → 최신 순, length=weeks).
+ */
+export function summarizeWeeklyTrend(sessions, weeks = 8, now = Date.now()) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  const today = new Date(now);
+  const result = [];
+  for (let i = weeks - 1; i >= 0; i -= 1) {
+    const ref = new Date(today);
+    ref.setDate(today.getDate() - i * 7);
+    const { from, to } = weekRangeISO(ref);
+    const vol = list
+      .filter((s) => s && s.date >= from && s.date <= to)
+      .reduce((sum, s) => sum + (Number(s.totalVolume) || 0), 0);
+    result.push({ weekStart: from, vol });
+  }
+  return result;
+}
+
 if (typeof window !== 'undefined') {
   window.gymStats = {
     summarizeVolumes,
@@ -381,5 +403,6 @@ if (typeof window !== 'undefined') {
     deleteSessionByDay,
     mountStatsView,
     summarizeBodyParts,
+    summarizeWeeklyTrend,
   };
 }
