@@ -77,3 +77,55 @@ export async function loadFreeReviewCards(db, lang, limit = 20) {
   });
   return rows.slice(0, Math.max(0, Number(limit) || 0));
 }
+
+/**
+ * loadQueueFromSession — stats 의 클릭 진입 큐 복원 (mocks/stats.html goReview / openBS 가 저장한 ID).
+ *
+ * 동작: sessionStorage.studyReviewQueue (JSON [{id, ...}, ...]) → ID 만 추출 →
+ *       reviewQueue + todayLessons 양쪽 bulkGet (이관된 신규는 reviewQueue, 미이관은 todayLessons).
+ *
+ * 반환: 카드 배열 (입력 ID 순서 유지) — 큐 없거나 빈 ID 면 null.
+ *       null 반환 시 호출자는 기존 loadReviewCards / loadFreeReviewCards 폴백.
+ *
+ * 클린업 책임: 세션 종료 핸들러에서 sessionStorage 삭제 (clearSessionQueue).
+ */
+export async function loadQueueFromSession(db, _lang) {
+  if (!db) return null;
+  let raw = null;
+  try { raw = sessionStorage.getItem('studyReviewQueue'); }
+  catch { return null; }
+  if (!raw) return null;
+  let queue;
+  try { queue = JSON.parse(raw); }
+  catch { return null; }
+  const ids = (Array.isArray(queue) ? queue : []).map((q) => q?.id).filter(Boolean);
+  if (!ids.length) return null;
+  const [tCards, rCards] = await Promise.all([
+    db.todayLessons.bulkGet(ids),
+    db.reviewQueue.bulkGet(ids),
+  ]);
+  return ids.map((id, i) => tCards[i] || rCards[i]).filter(Boolean);
+}
+
+/**
+ * clearSessionQueue — 세션 종료 후 sessionStorage 정리.
+ * studyReviewQueue + studyReturnTo 양쪽 (returnTo 도 1회성).
+ */
+export function clearSessionQueue() {
+  try {
+    sessionStorage.removeItem('studyReviewQueue');
+    sessionStorage.removeItem('studyReturnTo');
+  } catch { /* noop */ }
+}
+
+/**
+ * getSessionReturnTo — sessionStorage.studyReturnTo 읽어 'sentList' / 'stats' / 'home' 중 하나 반환.
+ * 미설정 시 'home'.
+ */
+export function getSessionReturnTo() {
+  let v = null;
+  try { v = sessionStorage.getItem('studyReturnTo'); }
+  catch { return 'home'; }
+  if (v === 'sentList' || v === 'stats') return v;
+  return 'home';
+}

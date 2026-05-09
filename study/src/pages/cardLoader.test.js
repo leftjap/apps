@@ -1,13 +1,16 @@
-import { describe, it, expect } from 'vitest';
-import { pickCardFields, loadNewCards, loadReviewCards, loadFreeReviewCards, advanceCard } from './cardLoader.js';
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach } from 'vitest';
+import { pickCardFields, loadNewCards, loadReviewCards, loadFreeReviewCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, advanceCard } from './cardLoader.js';
 
 function createMockDB({ todayLessons = [], reviewQueue = [] } = {}) {
   const where = (rows) => (key) => ({
     equals: (val) => ({ async toArray() { return rows.filter((r) => r[key] === val); } }),
   });
+  const tMap = new Map(todayLessons.map((c) => [c.id, c]));
+  const rMap = new Map(reviewQueue.map((c) => [c.id, c]));
   return {
-    todayLessons: { where: where(todayLessons) },
-    reviewQueue: { where: where(reviewQueue) },
+    todayLessons: { where: where(todayLessons), async bulkGet(ids) { return ids.map((id) => tMap.get(id)); } },
+    reviewQueue:  { where: where(reviewQueue),  async bulkGet(ids) { return ids.map((id) => rMap.get(id)); } },
   };
 }
 
@@ -146,5 +149,87 @@ describe('loadFreeReviewCards', () => {
     expect(await loadFreeReviewCards(db, 'en', 20)).toEqual([]);
     expect(await loadFreeReviewCards(null, 'en')).toEqual([]);
     expect(await loadFreeReviewCards(db, '')).toEqual([]);
+  });
+});
+
+describe('loadQueueFromSession', () => {
+  beforeEach(() => { sessionStorage.clear(); });
+
+  it('studyReviewQueue 미설정 시 null', async () => {
+    const db = createMockDB();
+    expect(await loadQueueFromSession(db, 'en')).toBeNull();
+  });
+
+  it('빈 배열 / 빈 ID 면 null', async () => {
+    const db = createMockDB();
+    sessionStorage.setItem('studyReviewQueue', JSON.stringify([]));
+    expect(await loadQueueFromSession(db, 'en')).toBeNull();
+    sessionStorage.setItem('studyReviewQueue', JSON.stringify([{}, { id: '' }]));
+    expect(await loadQueueFromSession(db, 'en')).toBeNull();
+  });
+
+  it('JSON 파싱 실패 시 null', async () => {
+    const db = createMockDB();
+    sessionStorage.setItem('studyReviewQueue', '{not json');
+    expect(await loadQueueFromSession(db, 'en')).toBeNull();
+  });
+
+  it('todayLessons + reviewQueue 양쪽 bulkGet, ID 순서 유지', async () => {
+    const db = createMockDB({
+      todayLessons: [{ id: 'te1', sentence: 'A' }],
+      reviewQueue: [{ id: 're1', sentence: 'B' }, { id: 're2', sentence: 'C' }],
+    });
+    // 순서: re2, te1, re1 — todayLessons 가 먼저 (te1) 면 todayLessons 우선, 아니면 reviewQueue
+    sessionStorage.setItem('studyReviewQueue', JSON.stringify([
+      { id: 're2' }, { id: 'te1' }, { id: 're1' },
+    ]));
+    const out = await loadQueueFromSession(db, 'en');
+    expect(out.map((c) => c.id)).toEqual(['re2', 'te1', 're1']);
+  });
+
+  it('매칭 실패 ID 는 제외 (filter Boolean)', async () => {
+    const db = createMockDB({ reviewQueue: [{ id: 'r1', sentence: 'A' }] });
+    sessionStorage.setItem('studyReviewQueue', JSON.stringify([
+      { id: 'r1' }, { id: 'ghost' },
+    ]));
+    const out = await loadQueueFromSession(db, 'en');
+    expect(out.map((c) => c.id)).toEqual(['r1']);
+  });
+
+  it('db 없으면 null (early return, sessionStorage 미접근)', async () => {
+    expect(await loadQueueFromSession(null, 'en')).toBeNull();
+  });
+});
+
+describe('clearSessionQueue', () => {
+  beforeEach(() => { sessionStorage.clear(); });
+
+  it('studyReviewQueue + studyReturnTo 양쪽 삭제', () => {
+    sessionStorage.setItem('studyReviewQueue', '[{"id":"x"}]');
+    sessionStorage.setItem('studyReturnTo', 'sentList');
+    clearSessionQueue();
+    expect(sessionStorage.getItem('studyReviewQueue')).toBeNull();
+    expect(sessionStorage.getItem('studyReturnTo')).toBeNull();
+  });
+
+  it('빈 상태에서도 안전 (throw X)', () => {
+    expect(() => clearSessionQueue()).not.toThrow();
+  });
+});
+
+describe('getSessionReturnTo', () => {
+  beforeEach(() => { sessionStorage.clear(); });
+
+  it('미설정 시 home', () => {
+    expect(getSessionReturnTo()).toBe('home');
+  });
+
+  it("'sentList' / 'stats' 그대로 반환, 그 외는 home", () => {
+    sessionStorage.setItem('studyReturnTo', 'sentList');
+    expect(getSessionReturnTo()).toBe('sentList');
+    sessionStorage.setItem('studyReturnTo', 'stats');
+    expect(getSessionReturnTo()).toBe('stats');
+    sessionStorage.setItem('studyReturnTo', 'malicious');
+    expect(getSessionReturnTo()).toBe('home');
   });
 });

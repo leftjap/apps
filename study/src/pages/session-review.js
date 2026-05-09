@@ -21,7 +21,7 @@ import {
   pickSize,
   watchSize,
 } from '../components/session/index.js';
-import { loadReviewCards, loadFreeReviewCards, pickCardFields, advanceCard } from './cardLoader.js';
+import { loadReviewCards, loadFreeReviewCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
 import { applySrsUpdate } from '../services/srs.js';
 import { finishSession } from '../services/sessionFinish.js';
@@ -98,11 +98,15 @@ export function mountSessionReview(host) {
     } catch (e) {
       console.error('[session-review] finishSession', e);
     }
+    // P2 — stats 진입 (goReview) 시 sessionStorage.studyReturnTo 가 'sentList' 또는 'stats' 로 설정됨.
+    // 미설정 시 'home' (일반 진입). summary.js L98-99 가 returnTo 별 stats/sentList 라우팅 처리.
+    const returnTo = (state.fromSessionQueue ? getSessionReturnTo() : 'home');
     persistSummary(buildSummaryData({
-      mode: sessionMode, state, durationSec, completedReviewCount: completedCount, returnTo: 'home',
+      mode: sessionMode, state, durationSec, completedReviewCount: completedCount, returnTo,
     }));
     try { await clearActiveSession(window.studyDB); }
     catch (e) { console.error('[session-review] clearActiveSession', e); }
+    clearSessionQueue(); // P1/P2 — 1회성 큐 + returnTo 정리
     window.location.hash = '#/summary';
   };
 
@@ -152,10 +156,19 @@ export function mountSessionReview(host) {
     }
   });
 
+  // P1 — stats 클릭 진입 (goReview 가 저장한 studyReviewQueue) 우선 시도.
+  // 큐 있으면 해당 카드만, 없으면 기존 due/free 폴백. fromSessionQueue 플래그는 endSession 의 returnTo 분기에 사용.
   Promise.all([
-    sessionMode === 'free'
-      ? loadFreeReviewCards(window.studyDB, getStoredLang(), 20)
-      : loadReviewCards(window.studyDB, getStoredLang(), getTodayISO()),
+    (async () => {
+      const queueCards = await loadQueueFromSession(window.studyDB, getStoredLang());
+      if (queueCards && queueCards.length) {
+        state.fromSessionQueue = true;
+        return queueCards;
+      }
+      return sessionMode === 'free'
+        ? loadFreeReviewCards(window.studyDB, getStoredLang(), 20)
+        : loadReviewCards(window.studyDB, getStoredLang(), getTodayISO());
+    })(),
     loadActiveSession(window.studyDB),
   ])
     .then(([cards, snapshot]) => {
