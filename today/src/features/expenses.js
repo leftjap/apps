@@ -766,6 +766,19 @@ export async function saveExpenseFromForm(opts = {}, doc = document) {
         memo: data.memo,
         merchant_url: data.merchant_url,
       });
+      // 학습: 사용자가 카테고리 수동 변경 시 user-scope 룰 upsert →
+      //       이후 같은 가맹점 SMS 가 들어오면 동일 카테고리 자동 적용
+      try {
+        if (data.category && row?.merchant_raw && _currentUser?.id) {
+          await Queries.upsertUserMerchantRule(
+            row.merchant_raw,
+            { brand: row.brand ?? null, category: data.category },
+            _currentUser.id,
+          );
+        }
+      } catch (ruleErr) {
+        console.warn('[expenses] user-rule upsert 실패 (무시)', ruleErr?.message || ruleErr);
+      }
       refreshSidebarExpenseTotal(doc);
       return { ok: true, mode: 'edit', row };
     }

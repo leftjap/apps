@@ -440,6 +440,45 @@ export async function listMerchantRules(userId) {
 }
 
 /**
+ * 사용자가 가맹점 카테고리 수동 분류 시 user-scope 룰 upsert.
+ * 동일 (user_id, pattern) 의 user 룰 있으면 brand/category 만 갱신,
+ * 없으면 새 row INSERT (priority=100 — global 보다 우선).
+ *
+ * @param {string} pattern   매칭 패턴 (보통 merchant 또는 merchant_raw)
+ * @param {{brand?:string|null, category:string}} values
+ * @param {string} userId
+ * @returns {Promise<object>} upsert 결과 row
+ */
+export async function upsertUserMerchantRule(pattern, values, userId) {
+  if (!pattern || !userId) throw new Error('[todayQueries] pattern + userId 필수');
+  const trimmed = String(pattern).trim();
+  if (!trimmed) throw new Error('[todayQueries] pattern 비어있음');
+  const existing = await db().merchant_rules
+    .where({ scope: 'user', user_id: userId })
+    .toArray();
+  const hit = existing.find((r) => r.pattern === trimmed);
+  const ts = nowIso();
+  if (hit) {
+    const patch = {
+      brand: values.brand !== undefined ? values.brand : hit.brand,
+      category: values.category !== undefined ? values.category : hit.category,
+      updated_at: ts,
+      pending_sync: 1,
+    };
+    await db().merchant_rules.update(hit.id, patch);
+    return { ...hit, ...patch };
+  }
+  return await createMerchantRule({
+    scope: 'user',
+    user_id: userId,
+    pattern: trimmed,
+    brand: values.brand ?? null,
+    category: values.category ?? null,
+    priority: 100,
+  });
+}
+
+/**
  * merchant_raw 문자열 → matching rule 1건 (가장 priority 높은).
  * 단순 substring + lowercase 비교. 정규식 지원은 향후.
  */
@@ -630,6 +669,7 @@ export const Queries = {
   // Wave 11.6.4a — merchant_rules
   RULE_SCOPES,
   createMerchantRule,
+  upsertUserMerchantRule,
   listMerchantRules,
   autoMatchMerchantRule,
   createExpenseWithAutoMatch,
