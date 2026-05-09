@@ -565,13 +565,13 @@
      secondary: 22px → 36px   (delta 14)
      gap      : 24 → 48       (delta 24)
      ---------------------------------------------------------------------- */
+  /* v2 SessionC — 카드 stack visual 제거. 인터랙션 morph 코드(--t)는 보존하되 시각만 flat.
+     peek 카드는 시각 hide (opacity 0), active 카드는 transparent flat 풀표시.
+     swipe 핸들러 selector 100% 보존 (.set-card / .is-active / data-idx). */
   .set-card {
-    --t: 0;  /* 기본 peek. is-active 에서 1, 드래그 중 JS 가 분수값 주입 */
+    --t: 0;
     flex-shrink: 0;
     flex-basis: calc(140px + 100px * var(--t));
-    /* height: peek min(400, 100dvh-330) · active min(440, 100dvh-310)
-       --t 로 보간: 상한 400→440, vh 차감 330→310
-       (SE 667px: active 357 / Pro 852: active 440 상한) */
     height: min(calc(400px + 40px * var(--t)), calc(100dvh - 330px + 20px * var(--t)));
     min-height: 300px;
     display: flex;
@@ -580,33 +580,17 @@
     align-items: stretch;
     position: relative;
 
-    /* 배경: peek(--bg-warm) → active(--surface) + 좌상단 흰 sheen + 우상단 코랄 glow.
-       White & Coral — 따뜻한 베이지 제거, 순백 surface 위에 sheen 만 얹음. */
-    background:
-      radial-gradient(ellipse 60% 40% at 0% 0%, rgba(255,255,255, calc(0.7 * var(--t))), transparent 70%),
-      radial-gradient(ellipse 50% 30% at 100% 0%, rgb(var(--accent-rgb) / calc(0.08 * var(--t))), transparent 70%),
-      linear-gradient(165deg,
-        var(--surface) 0%,
-        var(--surface) calc(40% + 30% * var(--t)) 100%),
-      var(--bg-warm);
-
-    border: 1px solid rgb(var(--border-rgb) / calc(0.06 + var(--t) * 0.08));
-    border-radius: calc(var(--r-md) + 8px * var(--t));
+    /* v2 SessionC — flat (카드 메타포 제거) */
+    background: transparent;
+    border: 0;
+    border-radius: 0;
     padding: calc(20px + 28px * var(--t)) calc(12px + 8px * var(--t));
 
-    opacity: calc(0.45 + 0.55 * var(--t));
-    filter: saturate(calc(0.4 + var(--t) * 0.6)) blur(calc((1 - var(--t)) * 2px));
-
-    transform:
-      translate(calc(4px * var(--t)), calc(-14px * var(--t)))
-      scale(calc(0.94 + var(--t) * 0.06));
-
-    /* shadow — 가벼운 2중 (활성 시에만). 코랄 glow 는 매우 옅게. */
-    box-shadow:
-      0 6px 14px rgba(0,0,0, calc(0.03 * var(--t))),
-      0 30px 60px rgba(0,0,0, calc(0.06 * var(--t))),
-      0 24px 48px -12px rgb(var(--accent-rgb) / calc(0.10 * var(--t))),
-      inset 0 1px 0 rgba(255,255,255, calc(0.65 * var(--t)));
+    /* peek 카드 hide, active 카드 풀 표시 */
+    opacity: var(--t);
+    filter: none;
+    transform: none;
+    box-shadow: none;
 
     z-index: 1;
     overflow: visible;
@@ -615,33 +599,15 @@
       --t 380ms cubic-bezier(0.32, 0.72, 0, 1),
       flex-basis 420ms cubic-bezier(0.32, 0.72, 0, 1),
       height 420ms cubic-bezier(0.32, 0.72, 0, 1),
-      transform 420ms cubic-bezier(0.32, 0.72, 0, 1),
       opacity 340ms cubic-bezier(0.32, 0.72, 0, 1),
-      background 280ms var(--ease),
-      box-shadow 420ms cubic-bezier(0.32, 0.72, 0, 1),
-      padding 420ms cubic-bezier(0.32, 0.72, 0, 1),
-      border-radius 280ms var(--ease),
-      border-color 280ms var(--ease),
-      filter 340ms cubic-bezier(0.32, 0.72, 0, 1);
-    will-change: transform, opacity, flex-basis;
+      padding 420ms cubic-bezier(0.32, 0.72, 0, 1);
+    will-change: opacity, flex-basis;
   }
   .set-card.is-active { --t: 1; z-index: 2; }
 
-  /* 스와이프 시각 피드백 — 30px+ 드래그 시 inset 강조.
-     PWA 진동 불가 환경의 보완 신호. */
-  .set-card.is-active.is-dragging-right {
-    box-shadow:
-      0 6px 14px rgba(0,0,0,0.03),
-      0 30px 60px rgba(0,0,0,0.06),
-      0 24px 48px -12px rgb(var(--accent-rgb) / 0.10),
-      inset 0 0 0 2px var(--accent-soft);
-  }
-  .set-card.is-active.is-dragging-left {
-    box-shadow:
-      0 6px 14px rgba(0,0,0,0.03),
-      0 30px 60px rgba(0,0,0,0.06),
-      inset 0 0 0 2px var(--border-strong);
-  }
+  /* v2 SessionC — 스와이프 시각 피드백 단순 (flat 톤 유지) */
+  .set-card.is-active.is-dragging-right { background: rgba(255,255,255,0.02); }
+  .set-card.is-active.is-dragging-left { background: rgba(217,119,87,0.04); }
 
   /* 세트 번호 pop — active 로 진입할 때마다 한 번 튀어오름.
      새 DOM 이 is-active 로 마운트 = 새 세트로 전환. 매번 animation 리셋. */
@@ -663,11 +629,9 @@
   /* done 카드 ::after wash — 시안: done 카드는 함몰 톤 자체로 분리, 추가 overlay 불필요 → none */
   .set-card.is-done-set::after { display: none; }
 
-  /* done 카드 (peek + active 공통) — 시안 "완료카드 시안.html" 적용.
-     원칙: 함몰된 무채색 그레이 #e6e5e0 / 외곽선·그림자 0 / accent 일체 금지.
-     peek 카드도 동일 톤이라 swipe 시 자연스럽게 연결. base .set-card 의 multi-layer 배경 모두 덮음. */
+  /* v2 SessionC — done 카드: flat 무채색 톤 (다크 환경 muted) */
   .set-card.is-done-set {
-    background: #e6e5e0 !important;
+    background: rgba(255,255,255,0.02) !important;
     border-color: transparent !important;
     box-shadow: none !important;
   }
