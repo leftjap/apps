@@ -1456,43 +1456,63 @@ function installImageContextMenu() {
   window.addEventListener('scroll', _hideImgCtxMenu, true);
 }
 
-// ─── recents 우클릭(데스크톱) / 롱프레스(모바일·태블릿) → 삭제 confirm 모달.
-//     기존 confirmModal (account.js) + 검증된 sub-routines (softDeleteEntry, handleCategoryActive) 재사용.
-//     라벨/메시지: 기존 doc-more 패턴 (entries.js:1610) 통일 — 휴지통 복구 안내 + "삭제" 라벨.
+// ─── recents 우클릭(데스크톱) / 롱프레스(모바일·태블릿) → popover 메뉴 ("삭제") → 즉시 softDelete.
+//     모달 confirm 생략 — softDelete 는 휴지통 복구 가능 (위험도 낮음).
+//     스타일은 .doc-img-ctxmenu 와 공유 (DESIGN.md popover 토큰).
 let _recentsDelInstalled = false;
 let _recentsLpTimer = null;
 let _recentsLpStartX = 0;
 let _recentsLpStartY = 0;
 let _recentsSuppressNextClick = false;
+let _recentsCtxMenu = null;
+let _recentsCtxTargetId = null;
 
-async function _confirmRecentsDelete(id) {
-  const customConfirm = (typeof window !== 'undefined' && window.todayAccount?.confirmModal) || null;
-  let ok = false;
-  if (customConfirm) {
-    ok = await customConfirm({
-      title: '글 삭제',
-      message: '이 글을 삭제하시겠어요? 휴지통에서 복구할 수 있습니다.',
-      confirmLabel: '삭제',
-      cancelLabel: '취소',
-      danger: true,
-    });
-  } else if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
-    ok = window.confirm('이 글을 삭제하시겠어요? 휴지통에서 복구할 수 있습니다.');
-  }
-  if (!ok) return;
-  try {
-    await Queries.softDeleteEntry(id);
-    // mainView 의 article 이 같은 entry 면 함께 제거
-    const article = document.querySelector(`article.doc[data-entry-id="${id}"]`);
-    if (article) article.remove();
-    const kind = getCurrentKind(document);
-    if (kind) await handleCategoryActive(kind);
-  } catch (err) {
-    console.warn('[entries] recents 삭제 실패:', err?.message || err);
-    if (typeof window !== 'undefined' && typeof window.alert === 'function') {
-      window.alert('삭제에 실패했습니다.');
+function _ensureRecentsCtxMenu() {
+  if (_recentsCtxMenu) return _recentsCtxMenu;
+  _recentsCtxMenu = document.createElement('div');
+  _recentsCtxMenu.className = 'doc-img-ctxmenu recents-ctxmenu';
+  _recentsCtxMenu.setAttribute('role', 'menu');
+  _recentsCtxMenu.innerHTML = `<button type="button" data-act="delete" role="menuitem">삭제</button>`;
+  document.body.appendChild(_recentsCtxMenu);
+  _recentsCtxMenu.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const btn = e.target?.closest?.('[data-act]');
+    if (!btn) return;
+    const id = _recentsCtxTargetId;
+    _hideRecentsCtxMenu();
+    if (!id) return;
+    try {
+      await Queries.softDeleteEntry(id);
+      const article = document.querySelector(`article.doc[data-entry-id="${id}"]`);
+      if (article) article.remove();
+      const kind = getCurrentKind(document);
+      if (kind) await handleCategoryActive(kind);
+    } catch (err) {
+      console.warn('[entries] recents 삭제 실패:', err?.message || err);
+      if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert('삭제에 실패했습니다.');
+      }
     }
-  }
+  });
+  return _recentsCtxMenu;
+}
+
+function _showRecentsCtxMenu(id, x, y) {
+  const menu = _ensureRecentsCtxMenu();
+  _recentsCtxTargetId = id;
+  menu.classList.add('open');
+  const rect = menu.getBoundingClientRect();
+  let left = Math.min(x, window.innerWidth - rect.width - 8);
+  let top = Math.min(y, window.innerHeight - rect.height - 8);
+  if (left < 8) left = 8;
+  if (top < 8) top = 8;
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+}
+
+function _hideRecentsCtxMenu() {
+  if (_recentsCtxMenu) _recentsCtxMenu.classList.remove('open');
+  _recentsCtxTargetId = null;
 }
 
 function installRecentsDeleteHandler() {
@@ -1500,17 +1520,16 @@ function installRecentsDeleteHandler() {
   if (typeof document === 'undefined') return;
   _recentsDelInstalled = true;
 
-  // 데스크톱 우클릭
+  // 데스크톱 우클릭 → 마우스 위치 popover
   document.addEventListener('contextmenu', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
     e.preventDefault();
     const id = item.dataset.docId;
-    if (id) _confirmRecentsDelete(id);
+    if (id) _showRecentsCtxMenu(id, e.clientX, e.clientY);
   });
 
-  // 롱프레스 fire 후 자동 발화하는 click 1회 차단 (기존 recents click 핸들러가 모달 뒤에서 글 로드 + drawer 닫힘 회귀).
-  // capture 단계에서 stopPropagation + preventDefault.
+  // 롱프레스 후 합성 click 1회 차단 (기존 recents click 핸들러 회귀 방지)
   document.addEventListener('click', (e) => {
     if (!_recentsSuppressNextClick) return;
     if (!e.target?.closest?.('.sb__item--recent[data-doc-id]')) return;
@@ -1519,7 +1538,7 @@ function installRecentsDeleteHandler() {
     _recentsSuppressNextClick = false;
   }, true);
 
-  // 모바일/태블릿 롱프레스 — 500ms, 8px 이내
+  // 모바일/태블릿 롱프레스 — 500ms, 8px 이내. 터치 위치 popover.
   document.addEventListener('touchstart', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
@@ -1531,10 +1550,9 @@ function installRecentsDeleteHandler() {
     _recentsLpTimer = setTimeout(() => {
       try { navigator.vibrate?.(15); } catch (_) {}
       _recentsSuppressNextClick = true;
-      // 안전망 — touchend 가 click 합성 안 시키는 케이스 (사용자가 손 안 뗌) 에서 플래그 누수 방지
       setTimeout(() => { _recentsSuppressNextClick = false; }, 1000);
       const id = item.dataset.docId;
-      if (id) _confirmRecentsDelete(id);
+      if (id) _showRecentsCtxMenu(id, _recentsLpStartX, _recentsLpStartY);
     }, 500);
   }, { passive: true });
   document.addEventListener('touchmove', (e) => {
@@ -1549,6 +1567,19 @@ function installRecentsDeleteHandler() {
     clearTimeout(_recentsLpTimer);
     _recentsLpTimer = null;
   }, { passive: true });
+
+  // 외부 클릭/터치/Esc/scroll 시 메뉴 닫기
+  const outsideClose = (e) => {
+    if (!_recentsCtxMenu?.classList.contains('open')) return;
+    if (e.target?.closest?.('.recents-ctxmenu')) return;
+    _hideRecentsCtxMenu();
+  };
+  document.addEventListener('mousedown', outsideClose, true);
+  document.addEventListener('touchstart', outsideClose, { capture: true, passive: true });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') _hideRecentsCtxMenu();
+  });
+  window.addEventListener('scroll', _hideRecentsCtxMenu, true);
 }
 
 let _imageInsertInstalled = false;
