@@ -442,14 +442,7 @@ function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   const top = el('div', { style: 'display:flex;justify-content:space-between;align-items:flex-start;' });
   const cat = el('span', { style: `font-size:${large ? 13 : 11}px;color:${color};text-transform:uppercase;letter-spacing:0.14em;font-family:var(--font-display);font-weight:700;` });
   cat.textContent = isNew ? 'NEW' : 'REVIEW';
-  const arrow = document.createElementNS(SVG_NS, 'svg');
-  arrow.setAttribute('width', large ? 20 : 14); arrow.setAttribute('height', large ? 20 : 14);
-  arrow.setAttribute('viewBox', '0 0 24 24'); arrow.setAttribute('fill', 'none');
-  arrow.setAttribute('stroke', color); arrow.setAttribute('stroke-width', '2');
-  arrow.setAttribute('aria-hidden', 'true');
-  const ap = document.createElementNS(SVG_NS, 'path'); ap.setAttribute('d', 'M5 12h14M13 5l7 7-7 7');
-  arrow.appendChild(ap);
-  top.append(cat, arrow);
+  top.appendChild(cat);
   btn.appendChild(top);
 
   const numRow = el('div', { style: 'display:flex;align-items:baseline;gap:8px;' });
