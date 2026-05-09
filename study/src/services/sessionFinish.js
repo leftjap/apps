@@ -17,7 +17,9 @@ function newId(prefix = 's') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function buildSessionLog({ mode, lang, date, durationSec, tried, passed, newSentenceIds = [] }) {
+export function buildSessionLog({ mode, lang, date, durationSec, tried, passed, newSentenceIds = [], reviewedIds = [] }) {
+  const newIds = Array.isArray(newSentenceIds) ? newSentenceIds : [];
+  const reviewIds = Array.isArray(reviewedIds) ? reviewedIds : [];
   return {
     id: newId(),
     lang,
@@ -27,7 +29,9 @@ export function buildSessionLog({ mode, lang, date, durationSec, tried, passed, 
     utteranceCount: Number(tried) || 0,
     passCount: Number(passed) || 0,
     durationSec: Number(durationSec) || 0,
-    newSentenceIds: Array.isArray(newSentenceIds) ? newSentenceIds : [],
+    newSentenceIds: newIds,
+    // sentenceIds = 이 세션에서 다룬 모든 문장 id. stats 의 fetchSentencesWithLastLearned 가 사용.
+    sentenceIds: [...new Set([...newIds, ...reviewIds])],
     createdAt: new Date().toISOString(),
   };
 }
@@ -93,6 +97,8 @@ export async function finishSession(db, params) {
         nextReview: tomorrow,
         promotedFrom: 'new',
         promotedAt: log.createdAt,
+        // stats.html fetchSentencesWithLastLearned 의 createdAt fallback 정합 (sessionLog 누락 시 reviewQueue 의 createdAt 사용).
+        createdAt: log.createdAt,
       });
     }
   }
