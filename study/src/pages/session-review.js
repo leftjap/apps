@@ -205,6 +205,13 @@ export function mountSessionReview(host) {
 function render(host, state, handlers = {}) {
   host.innerHTML = '';
 
+  // returnTo 별 좌상단 라벨 분기 — onHome 동작 (returnTo 별 라우팅) 과 일관.
+  // fromSessionQueue 미설정 (일반 home 진입) 시 default '홈으로'.
+  const renderReturnTo = state.fromSessionQueue ? getSessionReturnTo() : 'home';
+  const homeLabel = renderReturnTo === 'stats' ? '캘린더로'
+    : renderReturnTo === 'sentList' ? '문장 목록으로'
+    : '홈으로';
+
   const layout = createSessionLayout({
     size: state.size,
     kind: 'review',
@@ -214,6 +221,7 @@ function render(host, state, handlers = {}) {
     passed: state.passed,
     recording: state.recording,
     time: state.time,
+    homeLabel,
     onHome: () => {
       if (state.fromSessionQueue) {
         const rt = getSessionReturnTo();

@@ -64,6 +64,7 @@ export function createSessionLayout(opts = {}) {
     time = '00:00',
     onHome,
     onEnd,
+    homeLabel,
   } = opts;
 
   const root = document.createElement('div');
@@ -76,9 +77,9 @@ export function createSessionLayout(opts = {}) {
 
   const refs = {}; // update 가 만지는 노드 참조
 
-  if (size === 'desktop') buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot });
-  else if (size === 'tablet') buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot });
-  else buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot });
+  if (size === 'desktop') buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot });
+  else if (size === 'tablet') buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot });
+  else buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot });
 
   return {
     el: root,
@@ -107,7 +108,7 @@ export function createSessionLayout(opts = {}) {
 }
 
 /* ────────── PHONE ────────── */
-function buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot }) {
+function buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot }) {
   const k = KIND[kind];
   root.style.cssText = 'display:flex;flex-direction:column;';
 
@@ -124,7 +125,7 @@ function buildPhone(root, refs, { kind, step, total, tried, passed, recording, t
   const headRow = document.createElement('div');
   headRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
 
-  const homeBtn = makeIconLabelBtn('홈', 'M15 18l-6-6 6-6', { color: 'var(--text-muted)', fontSize: 13, padding: '8px', marginLeft: '-8px' });
+  const homeBtn = makeIconLabelBtn(homeLabel || '홈', 'M15 18l-6-6 6-6', { color: 'var(--text-muted)', fontSize: 13, padding: '8px', marginLeft: '-8px' });
   if (onHome) homeBtn.addEventListener('click', onHome);
 
   const timerEl = document.createElement('div');
@@ -180,7 +181,7 @@ function buildPhone(root, refs, { kind, step, total, tried, passed, recording, t
 }
 
 /* ────────── TABLET ────────── */
-function buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot }) {
+function buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot }) {
   const k = KIND[kind];
   root.style.cssText = 'display:flex;flex-direction:column;padding:0 56px;';
 
@@ -190,7 +191,7 @@ function buildTablet(root, refs, { kind, step, total, tried, passed, recording, 
   const headRow = document.createElement('div');
   headRow.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
 
-  const homeBtn = makeIconLabelBtn('홈', 'M15 18l-6-6 6-6', { color: 'var(--text-muted)', fontSize: 14, iconSize: 16 });
+  const homeBtn = makeIconLabelBtn(homeLabel || '홈', 'M15 18l-6-6 6-6', { color: 'var(--text-muted)', fontSize: 14, iconSize: 16 });
   if (onHome) homeBtn.addEventListener('click', onHome);
 
   const timerEl = document.createElement('div');
@@ -242,7 +243,7 @@ function buildTablet(root, refs, { kind, step, total, tried, passed, recording, 
 }
 
 /* ────────── DESKTOP ────────── */
-function buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, contentSlot }) {
+function buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel: homeLabelText, contentSlot }) {
   const k = KIND[kind];
   root.style.cssText = 'display:grid;grid-template-columns:320px 1fr;min-height:100vh;min-height:100dvh;';
 
@@ -254,9 +255,9 @@ function buildDesktop(root, refs, { kind, step, total, tried, passed, recording,
   homeBtn.type = 'button';
   homeBtn.style.cssText = 'background:none;border:none;display:flex;align-items:center;gap:6px;color:var(--text-muted);font-size:13px;padding:0;cursor:pointer;font-family:var(--font-body);align-self:flex-start;';
   homeBtn.appendChild(svgPath('0 0 24 24', 'M15 18l-6-6 6-6', { strokeWidth: 2, width: 14, height: 14 }));
-  const homeLabel = document.createElement('span');
-  homeLabel.textContent = '홈으로';
-  homeBtn.appendChild(homeLabel);
+  const homeLabelEl = document.createElement('span');
+  homeLabelEl.textContent = homeLabelText || '홈으로';
+  homeBtn.appendChild(homeLabelEl);
   if (onHome) homeBtn.addEventListener('click', onHome);
   aside.appendChild(homeBtn);
 
