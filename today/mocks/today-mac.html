@@ -2677,37 +2677,43 @@
   .exp-tl-row__amount.is-high .amt-num,
   .exp-tl-row__amount.is-high .amt-unit { color: var(--crail-base); }
 
-  /* FAB — 우하단 새 거래 입력 (가계부 view 한정) */
-  .exp-fab {
+  /* FAB — 우하단 새 글/거래 입력 (터치 디바이스 한정, 모든 라우트 노출).
+     라우트별 액션 분기는 newDoc() 안에서 activeCat 으로 처리. */
+  .t-fab {
     position: fixed;
-    bottom: 28px;
-    right: 28px;
-    width: 52px;
-    height: 52px;
+    right: 16px;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    width: 56px;
+    height: 56px;
+    padding: 0;
     border-radius: 50%;
     background: var(--crail-base);
-    color: #fff;
+    color: var(--tone-255);
     border: 0;
     cursor: pointer;
-    box-shadow: 0 4px 16px rgba(217, 119, 87, 0.32), 0 2px 6px rgba(20,18,14,0.10);
-    display: grid;
+    box-shadow: var(--shadow-float);
+    display: none;
     place-items: center;
     z-index: 100;
     transition: transform .15s ease, box-shadow .15s ease;
   }
-  .exp-fab:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(217, 119, 87, 0.40), 0 3px 8px rgba(20,18,14,0.14);
-  }
-  .exp-fab:active {
-    transform: translateY(0);
-  }
-  .exp-fab svg {
-    width: 22px;
-    height: 22px;
+  .t-fab svg {
+    width: 24px;
+    height: 24px;
     stroke-width: 2;
   }
-  body:not(.is-expense) .exp-fab { display: none; }
+  .t-fab:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-pop);
+  }
+  .t-fab:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-inset-soft);
+  }
+  /* 터치 디바이스 (모바일 + 아이패드) 한정 노출. 데스크톱은 상단 + 버튼 유지. */
+  @media (hover: none) and (pointer: coarse) {
+    .t-fab { display: grid; }
+  }
 
   /* — main__top action wrapper 토글 (글쓰기/가계부) — */
   .top-actions__navi { display: flex; align-items: center; gap: 14px; }
@@ -5100,7 +5106,7 @@
 
     function newDoc() {
       if (activeCat === 'expense') {
-        addExpenseInputRow();
+        openNewExpenseForm();
         return;
       }
       const data = FIXTURE[activeCat];
@@ -5130,6 +5136,7 @@
     // 우상단 + 새 글
     const newBtn = document.getElementById('newDocBtn');
     if (newBtn) newBtn.addEventListener('click', newDoc);
+    // 터치 디바이스 우하단 FAB 는 [data-action="new-doc"] delegation 으로 처리 (script 뒤 DOM)
 
     // 위임 — empty CTA / Recents / 가계부 캘린더 일자
     document.addEventListener('click', (e) => {
@@ -6340,6 +6347,12 @@
     </div>
   </div>
 </div>
+
+<button class="t-fab" id="tFab" type="button" data-action="new-doc" aria-label="새로 만들기" title="새로 만들기">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round">
+    <path d="M12 5v14M5 12h14"/>
+  </svg>
+</button>
 
 </body>
 </html>
