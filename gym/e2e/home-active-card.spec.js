@@ -50,14 +50,16 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       num: document.getElementById('sNum').textContent,
       unit: document.getElementById('sUnit').textContent,
       sub: document.getElementById('sSub').textContent,
+      subUnit: document.getElementById('sSubUnit').textContent,
       cta: document.getElementById('ctaBtn').textContent,
       appState: document.getElementById('app').dataset.state,
     }));
     expect(v).toEqual({
-      label: '이번 달',
-      num: '0',
-      unit: '회',
-      sub: '가볍게 시작해 보세요',
+      label: '마지막 운동',
+      num: '—',
+      unit: '',
+      sub: '0',
+      subUnit: '/4회',
       cta: '첫 운동 시작',
       appState: 'empty',
     });
@@ -98,6 +100,7 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       unit: document.getElementById('sUnit').textContent,
       part: document.getElementById('sPart').textContent,
       sub: document.getElementById('sSub').textContent,
+      subUnit: document.getElementById('sSubUnit').textContent,
       cta: document.getElementById('ctaBtn').textContent,
       appState: document.getElementById('app').dataset.state,
     }));
@@ -105,7 +108,8 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     expect(v.num).toBe('1');
     expect(v.unit).toBe('일 전');
     expect(v.part).toBe('가슴 · 팔');
-    expect(v.sub).toMatch(/^이번 주 \d+회 · 이번 달 \d+회$/);
+    expect(v.sub).toMatch(/^\d+$/);
+    expect(v.subUnit).toMatch(/^\/\d+회$/);
     expect(v.cta).toBe('운동 시작');
     expect(v.appState).toBe('active');
     /* v2 다크 시안 — Clawd 캐릭터 제거. clawdAnim/clawdHref assertion 삭제. */

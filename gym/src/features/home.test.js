@@ -128,13 +128,15 @@ describe('summarizeActiveSession', () => {
 describe('summarizeStreak', () => {
   const NOW_THU = new Date('2026-04-30T10:00:00').getTime(); // 목요일
 
-  it('빈 sessions → empty state', () => {
+  it('빈 sessions → empty state (시안 부재 → 임의 fill)', () => {
     const r = summarizeStreak([], NOW_THU);
     expect(r.state).toBe('empty');
-    expect(r.label).toBe('이번 달');
-    expect(r.num).toBe('0');
-    expect(r.unit).toBe('회');
-    expect(r.sub).toBe('가볍게 시작해 보세요');
+    expect(r.label).toBe('마지막 운동');
+    expect(r.num).toBe('—');
+    expect(r.unit).toBe('');
+    expect(r.part).toBe('');
+    expect(r.sub).toBe('0');
+    expect(r.subUnit).toBe('/4회');
     expect(r.clawd).toEqual({ id: 'c-idle', anim: 'a-bob', size: 'short' });
   });
 
@@ -178,14 +180,25 @@ describe('summarizeStreak', () => {
     expect(r.clawd).toEqual({ id: 'c-rest', anim: 'a-slowbob', size: 'short' });
   });
 
-  it('이번 주 카운트 — 4/27(월)~5/3(일) 안 sessions', () => {
+  it('이번 주 카운트 — 4/27(월)~5/3(일) 안 sessions → sub=count, subUnit=/Ngoal회', () => {
     const sessions = [
       { date: '2026-04-27', tags: ['chest'], status: 'completed' }, // 이번 주
       { date: '2026-04-29', tags: ['back'], status: 'completed' },  // 이번 주
       { date: '2026-04-25', tags: ['chest'], status: 'completed' }, // 지난 주
     ];
     const r = summarizeStreak(sessions, NOW_THU);
-    expect(r.sub).toBe('이번 주 2회 · 이번 달 3회');
+    expect(r.sub).toBe('2');
+    expect(r.subUnit).toBe('/4회');
+  });
+
+  it('weeklyGoal 인자 반영 → subUnit /N회', () => {
+    const sessions = [{ date: '2026-04-29', tags: ['chest'], status: 'completed' }];
+    expect(summarizeStreak(sessions, NOW_THU, 5).subUnit).toBe('/5회');
+    expect(summarizeStreak(sessions, NOW_THU, 7).subUnit).toBe('/7회');
+    // 범위 밖 입력 → 기본 4 fallback
+    expect(summarizeStreak(sessions, NOW_THU, 0).subUnit).toBe('/4회');
+    expect(summarizeStreak(sessions, NOW_THU, 8).subUnit).toBe('/4회');
+    expect(summarizeStreak(sessions, NOW_THU, undefined).subUnit).toBe('/4회');
   });
 
   it('multi-tag → " · " join (한국어)', () => {

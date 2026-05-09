@@ -18,11 +18,14 @@
 import {
   getActiveSession,
   getSessionsByRange,
+  getUserSettings,
   weekRangeISO,
   isoToWeekdayIdx,
   toISODate,
 } from '../db/queries.js';
 import { PARTS } from '../db/exercises.js';
+
+const DEFAULT_WEEKLY_GOAL = 4;
 
 const WEEK_LABELS_KOR = ['월', '화', '수', '목', '금', '토', '일']; // 월 시작 (isoToWeekdayIdx 와 정합)
 
@@ -81,13 +84,18 @@ export function summarizeActiveSession(session, now = Date.now()) {
 }
 
 /**
- * spec §5-3 — 마지막 completed 세션 + 이번 주/달 count → streak 정보.
+ * spec §5-3 — 마지막 completed 세션 + 이번 주 count → streak 정보 (디자인 시안 정합).
  *
- * 입력: completed sessions 배열 (date desc 무관, summarizeStreak 가 정렬), now epoch ms.
+ * 입력: completed sessions 배열 (date desc 무관, summarizeStreak 가 정렬), now epoch ms,
+ *       weeklyGoal (1~7, 기본 4 — profile.settings.weeklyGoal).
  * 반환:
  *   { state: 'empty'|'active'|'gap'|'rest',
- *     label, num, unit, part, sub,
+ *     label, num, unit, part,
+ *     sub: '<weekCount>',           // streak-week-num 표시값
+ *     subUnit: '/<weeklyGoal>회',   // streak-week-unit 접미
  *     clawd: { id, anim, size } }
+ *
+ * empty 상태(시안 부재) 임의 채움: label='마지막 운동', num='—', part='', sub='0', subUnit='/Ngoal회'.
  *
  * Clawd 매핑 (spec §5-3):
  *   - 1~2일 (오늘 0일 포함): c-happy / a-bounce / tall
@@ -95,18 +103,22 @@ export function summarizeActiveSession(session, now = Date.now()) {
  *   - 5일+: c-rest / a-slowbob / short
  *   - 세션 0: c-idle / a-bob / short (empty 라벨)
  */
-export function summarizeStreak(sessions, now = Date.now()) {
+export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT_WEEKLY_GOAL) {
+  const goal = Number.isFinite(weeklyGoal) && weeklyGoal >= 1 && weeklyGoal <= 7
+    ? Math.round(weeklyGoal) : DEFAULT_WEEKLY_GOAL;
+  const subUnit = `/${goal}회`;
   const today = new Date(now);
   const todayISO = toISODate(today);
   const list = Array.isArray(sessions) ? sessions.slice() : [];
   if (!list.length) {
     return {
       state: 'empty',
-      label: '이번 달',
-      num: '0',
-      unit: '회',
+      label: '마지막 운동',
+      num: '—',
+      unit: '',
       part: '',
-      sub: '가볍게 시작해 보세요',
+      sub: '0',
+      subUnit,
       clawd: { id: 'c-idle', anim: 'a-bob', size: 'short' },
     };
   }
@@ -125,8 +137,6 @@ export function summarizeStreak(sessions, now = Date.now()) {
 
   const { from: weekFrom, to: weekTo } = weekRangeISO(today);
   const weekCount = list.filter((s) => s.date >= weekFrom && s.date <= weekTo).length;
-  const monthFromISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
-  const monthCount = list.filter((s) => s.date >= monthFromISO && s.date <= todayISO).length;
 
   const tags = Array.isArray(last.tags) ? last.tags : [];
   const part = tags.map((t) => PARTS[t] || t).join(' · ');
@@ -149,7 +159,8 @@ export function summarizeStreak(sessions, now = Date.now()) {
     num: daysSince === 0 ? '오늘' : String(daysSince),
     unit: daysSince === 0 ? '' : '일 전',
     part,
-    sub: `이번 주 ${weekCount}회 · 이번 달 ${monthCount}회`,
+    sub: String(weekCount),
+    subUnit,
     clawd,
   };
 }
@@ -270,20 +281,26 @@ export async function mountHomeView(now = Date.now()) {
     console.error('[gymHome] mountHomeView active', e);
   }
 
-  // Wave 11.10.3 — active 없으면 streak 표시 (마지막 N일 전 + 주/월 + Clawd).
+  // Wave 11.10.3 — active 없으면 streak 표시 (마지막 N일 전 + 이번 주 + Clawd).
   if (!activeApplied) {
     try {
       const today = new Date(now);
-      const monthFromISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`;
       const todayISO = toISODate(today);
-      // 60일 전부터 today — 월 카운트 + N일 전 계산 충분 범위.
+      // 60일 전부터 today — N일 전 계산 충분 범위.
       const lookbackFrom = new Date(today);
       lookbackFrom.setDate(today.getDate() - 60);
       const lookbackFromISO = toISODate(lookbackFrom);
       const sessions = await getSessionsByRange(lookbackFromISO, todayISO);
-      // monthFromISO 활용 X — summarizeStreak 자체 계산
-      void monthFromISO;
-      const streak = summarizeStreak(sessions, now);
+      let weeklyGoal = DEFAULT_WEEKLY_GOAL;
+      try {
+        const settings = await getUserSettings();
+        if (settings && Number.isFinite(settings.weeklyGoal)) weeklyGoal = settings.weeklyGoal;
+      } catch (settingsErr) {
+        if (!(settingsErr && /window\.gymDB 미초기화/.test(String(settingsErr.message)))) {
+          console.error('[gymHome] getUserSettings', settingsErr);
+        }
+      }
+      const streak = summarizeStreak(sessions, now, weeklyGoal);
       applyStreakToDom(streak, doc);
       streakApplied = true;
     } catch (e) {
@@ -329,6 +346,8 @@ function applyToDom(v, doc) {
     sPart.style.display = v.part ? '' : 'none';
   }
   setText('sSub', v.sub);
+  // session 상태 시안은 별 wave 에서 처리 — sSubUnit 슬롯은 비워둠.
+  setText('sSubUnit', '');
   setText('ctaBtn', v.cta);
   const cta = doc.getElementById('ctaBtn');
   if (cta) {
@@ -358,6 +377,7 @@ function applyStreakToDom(streak, doc) {
     sPart.style.display = streak.part ? '' : 'none';
   }
   setText('sSub', streak.sub);
+  setText('sSubUnit', streak.subUnit || '');
   setText('ctaBtn', streak.state === 'empty' ? '첫 운동 시작' : '운동 시작');
   // Clawd — v2 다크 시안에서 캐릭터 제거. element 존재 시만 안전 가드 (구 mocks 호환).
   // Wave 11.10.4 — '운동 시작' / '첫 운동 시작' click → #/session.

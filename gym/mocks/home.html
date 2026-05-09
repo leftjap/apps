@@ -131,7 +131,8 @@
   .cal-num {
     font-family: var(--font-display);
     font-size: 15px; font-weight: 300;
-    color: var(--text-faint);
+    color: rgba(243,239,230,0.3);
+    letter-spacing: -0.02em;
   }
   .cal-part {
     font-family: var(--font-body);
@@ -145,6 +146,7 @@
   }
   .cal-day.today .cal-label { color: var(--text-strong); font-weight: 600; }
   .cal-day.today .cal-num { color: rgba(243,239,230,0.85); }
+  .cal-day.today.worked .cal-num { color: var(--text-strong); }
   .cal-day.today::after {
     content: '';
     width: 10px; height: 2px; border-radius: 1px;
@@ -172,7 +174,7 @@
   .streak-label {
     font-family: var(--font-body);
     font-size: 11px;
-    color: var(--text-faint);
+    color: rgba(243,239,230,0.45);
     letter-spacing: 0.06em;
     margin-bottom: 12px;
   }
@@ -209,11 +211,22 @@
     color: var(--text-strong);
     margin-top: 6px;
   }
-  .streak-sub {
+  /* "이번 주" 값 — 디자인 split typography (22px 숫자 + 11px 접미) */
+  .streak-week-value {
+    display: flex; align-items: baseline; gap: 2px;
+    margin-top: 4px;
+  }
+  .streak-week-num {
+    font-family: var(--font-display);
+    font-size: 22px; font-weight: 500;
+    color: var(--text-strong);
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .streak-week-unit {
     font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 12px;
+    font-size: 11px; font-weight: 400;
+    color: rgba(243,239,230,0.5);
   }
   /* legacy mascot 영역 (Clawd 캐릭터 자리) — v2 에서 제거. id 보존하지만 시각 안 보임 */
   .streak-mascot { display: none; }
@@ -270,71 +283,6 @@
     width: 55%; height: 100%; background: var(--accent);
   }
   .app[data-state="session"] .session-progress { display: block; }
-
-  /* v2 HomeC in-card "이어가기" CTA — session 상태에서만 노출 */
-  .session-card-cta {
-    display: none;
-    margin-top: 18px;
-    width: 100%;
-    height: 46px;
-    padding: 0 18px;
-    border-radius: 14px;
-    border: 0;
-    background: var(--accent);
-    color: #fff;
-    font-family: var(--font-body);
-    font-size: 14px; font-weight: 500;
-    align-items: center; justify-content: space-between;
-    cursor: pointer;
-    transition: transform 100ms var(--ease), background 150ms var(--ease);
-  }
-  .session-card-cta .scc-arrow { font-size: 16px; }
-  .session-card-cta:active { transform: scale(0.98); background: var(--accent-deep); }
-  .app[data-state="session"] .session-card-cta { display: flex; }
-  /* session 상태에서는 외부 .btn-secondary 숨김 (in-card CTA 가 대체) */
-  .app[data-state="session"] .cta-area { display: none; }
-
-  /* v2 HomeC "지난 세션" footer — session 외 상태 노출 */
-  .last-session {
-    margin: auto 24px 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(243,239,230,0.08);
-  }
-  .ls-eyebrow {
-    font-family: var(--font-body);
-    font-size: 10px;
-    color: var(--text-faint);
-    letter-spacing: 0.08em;
-    margin-bottom: 8px;
-  }
-  .ls-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-  }
-  .ls-info { display: flex; flex-direction: column; gap: 2px; }
-  .ls-title {
-    font-family: var(--font-body);
-    font-size: 13px; font-weight: 500;
-    color: var(--text-strong);
-  }
-  .ls-sub {
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-  .ls-vol {
-    font-family: var(--font-display);
-    font-size: 22px; font-weight: 200;
-    color: var(--text-strong);
-    font-variant-numeric: tabular-nums;
-  }
-  .ls-vol-unit {
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-left: 2px;
-  }
-  /* session 상태에서는 last-session 숨김 (이어가기 카드가 메인 영역 차지) */
-  .app[data-state="session"] .last-session { display: none; }
 
   /* long-press hint card (session 상태에서만 노출) */
   .longpress-hint {
@@ -545,44 +493,30 @@
       <div class="streak-info">
         <p class="streak-label" id="sLabel">마지막 운동</p>
         <div class="streak-display">
-          <span class="streak-num" id="sNum">2</span>
+          <span class="streak-num" id="sNum">1</span>
           <span class="streak-unit" id="sUnit">일 전</span>
         </div>
         <div class="streak-meta-row">
           <div>
             <p class="streak-meta-label">마지막 부위</p>
-            <p class="streak-part" id="sPart">가슴 · 팔</p>
+            <p class="streak-part" id="sPart">가슴</p>
           </div>
           <div class="streak-meta-divider"></div>
           <div>
             <p class="streak-meta-label">이번 주</p>
-            <p class="streak-sub" id="sSub" style="margin-top:6px;font-size:14px;color:var(--text-strong);font-weight:500;">3 / 4회</p>
+            <div class="streak-week-value">
+              <span class="streak-week-num" id="sSub">1</span>
+              <span class="streak-week-unit" id="sSubUnit">/4회</span>
+            </div>
           </div>
         </div>
         <!-- session 상태에서만 표시되는 progress bar -->
         <div class="session-progress"><div></div></div>
-        <!-- v2 HomeC in-card "이어가기" CTA — session 상태에서만 노출 -->
-        <button class="session-card-cta" id="sessionCardCta" type="button">
-          <span>이어가기</span>
-          <span class="scc-arrow">→</span>
-        </button>
       </div>
       <!-- legacy mascot 영역 (Clawd 자리, v2 에서 제거 — DOM id 보존) -->
       <div class="streak-mascot">
         <div class="clawd-anim" id="clawdAnim"></div>
         <span id="clawdSvg" hidden></span>
-      </div>
-    </div>
-
-    <!-- v2 HomeC "지난 세션" footer — empty/active/gap/rest 상태에서만 노출 -->
-    <div class="last-session" id="lastSession">
-      <div class="ls-eyebrow">지난 세션</div>
-      <div class="ls-row">
-        <div class="ls-info">
-          <div class="ls-title" id="lsTitle">가슴 · 5월 5일</div>
-          <div class="ls-sub" id="lsSub">벤치프레스 60×10 · 4세트</div>
-        </div>
-        <div class="ls-vol" id="lsVol">2,400<span class="ls-vol-unit">kg</span></div>
       </div>
     </div>
 
@@ -674,12 +608,12 @@ const _monthOfWdIdx = (idx) => {
 const STATES = {
   active: {
     label: '마지막 운동',
-    num: '2', unit: '일 전',
-    part: '가슴 · 팔',
-    sub: '3 / 4회',
+    num: '1', unit: '일 전',
+    part: '가슴',
+    sub: '1', subUnit: '/4회',
     calendar: [
-      { wd: 1, part: '하체' },
-      { wd: 2, part: '가·어' },
+      { wd: 0, part: '하체' },
+      { wd: 2, part: '등' },
     ],
     cta: '운동 시작',
     longPress: false,
@@ -688,7 +622,7 @@ const STATES = {
     label: '마지막 운동',
     num: '3', unit: '일 전',
     part: '등',
-    sub: '1 / 4회',
+    sub: '1', subUnit: '/4회',
     calendar: [
       { wd: 0, part: '등' },
     ],
@@ -699,7 +633,7 @@ const STATES = {
     label: '마지막 운동',
     num: '7', unit: '일 전',
     part: '하체',
-    sub: '0 / 4회',
+    sub: '0', subUnit: '/4회',
     calendar: [],
     cta: '운동 시작',
     longPress: false,
@@ -708,7 +642,7 @@ const STATES = {
     label: '진행 중',
     num: '28:42', unit: '경과',
     part: '가슴 · 어깨',
-    sub: '2 / 4 종목',
+    sub: '2', subUnit: '/4 종목',
     calendar: [
       { wd: 1, part: '등' },
       { wd: 3, part: '하체' },
@@ -720,10 +654,10 @@ const STATES = {
     sessionNumSize: 56,
   },
   empty: {
-    label: '이번 달',
-    num: '0', unit: '회',
+    label: '마지막 운동',
+    num: '—', unit: '',
     part: '',
-    sub: '가볍게 시작해 보세요',
+    sub: '0', subUnit: '/4회',
     calendar: [],
     cta: '첫 운동 시작',
     longPress: false,
@@ -783,6 +717,7 @@ function renderStreak(state) {
   sPart.textContent = state.part || '';
   sPart.style.display = state.part ? '' : 'none';
   document.getElementById('sSub').textContent = state.sub;
+  document.getElementById('sSubUnit').textContent = state.subUnit || '';
 }
 
 function renderCTA(state) {
@@ -910,46 +845,39 @@ document.querySelectorAll('[data-nav]').forEach(b => {
   });
 });
 
-/* CTA + long-press (session 상태일 때만). v2 HomeC in-card CTA 도 동일 동작. */
+/* CTA + long-press (session 상태일 때만) */
 (function setupCta() {
-  const ctaBtn = document.getElementById('ctaBtn');
-  const sessionCardCta = document.getElementById('sessionCardCta');
+  const btn = document.getElementById('ctaBtn');
+  let pressTimer = null;
+  let longPressed = false;
+
   const isSession = () => document.getElementById('app').dataset.state === 'session';
 
-  function bindLongPress(btn) {
-    if (!btn) return;
-    let pressTimer = null;
-    let longPressed = false;
-
-    function start() {
-      longPressed = false;
-      if (!isSession()) return;
-      btn.classList.add('is-pressed');
-      pressTimer = setTimeout(() => {
-        longPressed = true;
-        btn.classList.remove('is-pressed');
-        openSheet();
-        if (navigator.vibrate) navigator.vibrate(12);
-      }, 500);
-    }
-    function end() {
-      clearTimeout(pressTimer);
+  function start() {
+    longPressed = false;
+    if (!isSession()) return;
+    btn.classList.add('is-pressed');
+    pressTimer = setTimeout(() => {
+      longPressed = true;
       btn.classList.remove('is-pressed');
-    }
-
-    btn.addEventListener('pointerdown', start);
-    btn.addEventListener('pointerup', end);
-    btn.addEventListener('pointercancel', end);
-    btn.addEventListener('pointerleave', end);
-
-    btn.addEventListener('click', (e) => {
-      if (longPressed) { e.preventDefault(); e.stopPropagation(); return; }
-      window.location.href = 'session.html';
-    });
+      openSheet();
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, 500);
+  }
+  function end() {
+    clearTimeout(pressTimer);
+    btn.classList.remove('is-pressed');
   }
 
-  bindLongPress(ctaBtn);
-  bindLongPress(sessionCardCta);
+  btn.addEventListener('pointerdown', start);
+  btn.addEventListener('pointerup', end);
+  btn.addEventListener('pointercancel', end);
+  btn.addEventListener('pointerleave', end);
+
+  btn.addEventListener('click', (e) => {
+    if (longPressed) { e.preventDefault(); e.stopPropagation(); return; }
+    window.location.href = 'session.html';
+  });
 })();
 
 /* Sheet — finish/pause/delete 액션 */
