@@ -450,7 +450,11 @@ function sessionCard(kind, count, large, full, isResume = false) {
   btn.appendChild(numRow);
 
   const desc = el('div', { style: `font-size:${large ? 15 : 13}px;color:var(--text-muted);margin-top:auto;` });
-  desc.textContent = isResume ? '이어서 하기' : (isNew ? '오늘의 새 표현 학습' : '복습 대기 중');
+  let descText;
+  if (isResume) descText = '이어서 하기';
+  else if (count === 0) descText = isNew ? '오늘 학습할 신규 없음' : '오늘 복습할 카드 없음';
+  else descText = isNew ? '오늘의 새 표현 학습' : '복습 대기 중';
+  desc.textContent = descText;
   btn.appendChild(desc);
 
   return btn;
