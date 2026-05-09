@@ -155,12 +155,13 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 .bs-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto var(--s-5)}
 .bs-date{font-family:var(--font-display);font-size:16px;font-weight:600;color:var(--text-strong);margin-bottom:var(--s-5)}
 .bs-stats{display:grid;grid-template-columns:1fr 1fr;gap:var(--s-3) var(--s-6);margin-bottom:var(--s-5)}
-.bs-stat-label{font-size:12px;color:var(--text-faint)}
-.bs-stat-val{font-family:var(--font-display);font-size:15px;font-weight:600;color:var(--text-strong);margin-top:2px}
+.bs-stat-label{font-size:12px;font-weight:500;color:var(--text-faint)}
+.bs-stat-val{font-family:var(--font-display);font-feature-settings:'tnum' 1;font-size:15px;font-weight:600;color:var(--text-strong);margin-top:2px}
 .bs-stat-val .got{color:var(--sage)}
 .bs-stat-val .hmm{color:var(--amber)}
 .bs-stat-val .no{color:var(--danger)}
-.bs-sentences{margin-top:var(--s-4)}
+.bs-section-label{font-family:var(--font-display);font-size:12px;font-weight:500;color:var(--text-faint);letter-spacing:0.02em;margin-bottom:var(--s-3)}
+.bs-sentences{display:flex;flex-direction:column;gap:var(--s-2)}
 .bs-sent{display:flex;align-items:center;justify-content:space-between;padding:var(--s-3) var(--s-2);margin:0 calc(var(--s-2) * -1);border-radius:var(--r-sm);cursor:pointer;transition:background 150ms var(--ease)}
 @media(hover:hover){.bs-sent:hover{background:var(--bg-warm)}}
 .bs-sent-content{flex:1;min-width:0}
@@ -244,6 +245,7 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
   <div class="bs-handle"></div>
   <div class="bs-date" id="bs-date">4월 10일 목요일</div>
   <div class="bs-stats" id="bs-stats"></div>
+  <div class="bs-section-label">학습 문장</div>
   <div class="bs-sentences" id="bs-sentences"></div>
 </div>
 
