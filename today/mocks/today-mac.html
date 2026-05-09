@@ -6494,10 +6494,11 @@
     document.getElementById('drawerBackdrop')?.addEventListener('click', () => setOpen(false));
     // Esc → 닫기
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.dataset.drawerOpen) setOpen(false); });
-    // 사이드바 항목 클릭 → 닫기 (모바일 한정. 라우트/리센트 진입 후 본문 풀스크린)
+    // 사이드바 항목 클릭 → 닫기 (모바일 한정).
+    // 카테고리 탭은 drawer 유지 (recents 목록 노출), 실제 글 선택(.sb__item--recent)에서만 close.
     document.addEventListener('click', (e) => {
       if (!isMobile()) return;
-      const item = e.target.closest('.sb__item[data-category], .sb__item--recent');
+      const item = e.target.closest('.sb__item--recent');
       if (item) setOpen(false);
     });
     // viewport 폭 변경 시 — 데스크톱으로 넘어가면 drawer 상태 해제
