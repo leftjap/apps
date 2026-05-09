@@ -213,10 +213,10 @@ function renderPhone(state) {
   // DESIGN.md §1 typography-driven hierarchy + §2 액센트 한 화면 1-2회. 색은 위 NEW/REVIEW 카드에 이미 사용 — stat 단색.
   const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;' });
   sec3.append(
-    statBlock('New', state.todayNewDone, 22, 'strong', '0.10em'),
-    statBlock('Review', state.todayReviewDone, 22, 'strong', '0.10em'),
-    statBlock('Tried', state.tried, 22, 'strong', '0.10em'),
-    statBlock('Passed', state.passed, 22, 'strong', '0.10em'),
+    statBlock('New', state.todayNewDone, 22, 'muted', '0.10em'),
+    statBlock('Review', state.todayReviewDone, 22, 'muted', '0.10em'),
+    statBlock('Tried', state.tried, 22, 'muted', '0.10em'),
+    statBlock('Passed', state.passed, 22, 'muted', '0.10em'),
   );
   root.appendChild(sec3);
   return root;
@@ -248,10 +248,10 @@ function renderTablet(state) {
 
   const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
   sec3.append(
-    statBlock('New', state.todayNewDone, 26, 'strong', '0.12em'),
-    statBlock('Review', state.todayReviewDone, 26, 'strong', '0.12em'),
-    statBlock('Tried', state.tried, 26, 'strong', '0.12em'),
-    statBlock('Passed', state.passed, 26, 'strong', '0.12em'),
+    statBlock('New', state.todayNewDone, 26, 'muted', '0.12em'),
+    statBlock('Review', state.todayReviewDone, 26, 'muted', '0.12em'),
+    statBlock('Tried', state.tried, 26, 'muted', '0.12em'),
+    statBlock('Passed', state.passed, 26, 'muted', '0.12em'),
   );
   root.appendChild(sec3);
   return root;
@@ -281,10 +281,10 @@ function renderDesktop(state) {
   // STREAK 88px 가 단일 강조 (DESIGN.md §1). aside 폭 320 안 2x2 grid 로 시선 안정.
   const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
   stats.append(
-    statBlock('New', state.todayNewDone, 28, 'strong', '0.12em'),
-    statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
-    statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
-    statBlock('Passed', state.passed, 28, 'strong', '0.12em'),
+    statBlock('New', state.todayNewDone, 28, 'muted', '0.12em'),
+    statBlock('Review', state.todayReviewDone, 28, 'muted', '0.12em'),
+    statBlock('Tried', state.tried, 28, 'muted', '0.12em'),
+    statBlock('Passed', state.passed, 28, 'muted', '0.12em'),
   );
   aside.appendChild(stats);
 
@@ -307,9 +307,6 @@ function renderDesktop(state) {
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   main.appendChild(grid);
 
-  const meta = el('div', { style: 'margin-top:auto;font-size:12px;color:var(--text-muted);font-family:var(--font-display);text-transform:uppercase;letter-spacing:0.12em;' });
-  meta.textContent = `이번 주 ${state.weekUtter} 시도 · ${state.weekPass} 통과`;
-  main.appendChild(meta);
   root.appendChild(main);
   return root;
 }
@@ -435,9 +432,12 @@ function streakBlock(streak, fontSize, unitSize, labelSize) {
   return wrap;
 }
 
-// color: 'strong' (검정) | 'sage' (초록) | 'accent' (오렌지). 위쪽 NEW/REVIEW 카드 색과 매핑.
+// color: 'strong' (검정) | 'muted' (그레이) | 'sage' (초록) | 'accent' (오렌지).
 function statBlock(label, value, fontSize, color, ls) {
-  const colorVar = color === 'sage' ? 'var(--sage)' : color === 'accent' ? 'var(--accent)' : 'var(--text-strong)';
+  const colorVar = color === 'sage' ? 'var(--sage)'
+    : color === 'accent' ? 'var(--accent)'
+    : color === 'muted' ? 'var(--text-muted)'
+    : 'var(--text-strong)';
   const wrap = el('div', { 'aria-label': `${label} ${value}` });
   const lab = el('div', { style: `font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:${ls};font-family:var(--font-display);font-weight:600;` });
   lab.textContent = label;
