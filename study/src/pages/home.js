@@ -210,10 +210,13 @@ function renderPhone(state) {
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
   root.appendChild(sec2);
 
-  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:flex;flex-direction:column;gap:14px;' });
-  const stats3 = el('div', { style: 'display:flex;gap:32px;' });
-  stats3.append(statBlock('Tried', state.tried, 26, false, '0.12em'), statBlock('Passed', state.passed, 26, true, '0.12em'));
-  sec3.append(todayDoneMeta(state.todayNewDone, state.todayReviewDone, 12, '0.12em'), stats3);
+  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:22px;' });
+  sec3.append(
+    statBlock('New Done', state.todayNewDone, 32, 'accent', '0.12em'),
+    statBlock('Review Done', state.todayReviewDone, 32, 'sage', '0.12em'),
+    statBlock('Tried', state.tried, 32, 'strong', '0.12em'),
+    statBlock('Passed', state.passed, 32, 'sage', '0.12em'),
+  );
   root.appendChild(sec3);
   return root;
 }
@@ -242,10 +245,13 @@ function renderTablet(state) {
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
 
-  const sec3 = el('section', { style: 'margin-top:48px;display:flex;flex-direction:column;gap:18px;padding-bottom:48px;' });
-  const stats3 = el('div', { style: 'display:flex;gap:48px;' });
-  stats3.append(statBlock('Tried Today', state.tried, 32, false, '0.14em'), statBlock('Passed Today', state.passed, 32, true, '0.14em'));
-  sec3.append(todayDoneMeta(state.todayNewDone, state.todayReviewDone, 13, '0.14em'), stats3);
+  const sec3 = el('section', { style: 'margin-top:48px;display:flex;gap:48px;flex-wrap:wrap;padding-bottom:48px;' });
+  sec3.append(
+    statBlock('New Done', state.todayNewDone, 40, 'accent', '0.14em'),
+    statBlock('Review Done', state.todayReviewDone, 40, 'sage', '0.14em'),
+    statBlock('Tried Today', state.tried, 40, 'strong', '0.14em'),
+    statBlock('Passed Today', state.passed, 40, 'sage', '0.14em'),
+  );
   root.appendChild(sec3);
   return root;
 }
@@ -271,11 +277,12 @@ function renderDesktop(state) {
   }
   aside.appendChild(streakBlk);
 
-  const stats = el('div', { style: 'display:flex;flex-direction:column;gap:20px;' });
+  const stats = el('div', { style: 'display:flex;flex-direction:column;gap:22px;' });
   stats.append(
-    todayDoneMeta(state.todayNewDone, state.todayReviewDone, 13, '0.14em'),
-    statBlock('Tried Today', state.tried, 36, false, '0.14em'),
-    statBlock('Passed Today', state.passed, 36, true, '0.14em'),
+    statBlock('New Done', state.todayNewDone, 44, 'accent', '0.14em'),
+    statBlock('Review Done', state.todayReviewDone, 44, 'sage', '0.14em'),
+    statBlock('Tried Today', state.tried, 44, 'strong', '0.14em'),
+    statBlock('Passed Today', state.passed, 44, 'sage', '0.14em'),
   );
   aside.appendChild(stats);
 
@@ -426,21 +433,13 @@ function streakBlock(streak, fontSize, unitSize, labelSize) {
   return wrap;
 }
 
-// 오늘 완료 한 줄 메타 — 시도/통과 위에 배치. 톤은 desktop 하단 weekUtter 메타 (12-13px / text-muted / font-display / uppercase) 정합.
-function todayDoneMeta(newDone, reviewDone, fontSize, ls) {
-  const d = el('div', {
-    style: `font-size:${fontSize}px;color:var(--text-muted);font-family:var(--font-display);letter-spacing:${ls};text-transform:uppercase;`,
-    'aria-label': `오늘 신규 ${newDone}문장 복습 ${reviewDone}문장 완료`,
-  });
-  d.textContent = `오늘 신규 ${newDone} · 복습 ${reviewDone} 완료`;
-  return d;
-}
-
-function statBlock(label, value, fontSize, isPassed, ls) {
+// color: 'strong' (검정) | 'sage' (초록) | 'accent' (오렌지). 위쪽 NEW/REVIEW 카드 색과 매핑.
+function statBlock(label, value, fontSize, color, ls) {
+  const colorVar = color === 'sage' ? 'var(--sage)' : color === 'accent' ? 'var(--accent)' : 'var(--text-strong)';
   const wrap = el('div', { 'aria-label': `${label} ${value}` });
   const lab = el('div', { style: `font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:${ls};font-family:var(--font-display);font-weight:600;` });
   lab.textContent = label;
-  const num = el('div', { class: 'poppins', style: `font-size:${fontSize}px;font-weight:700;color:${isPassed ? 'var(--sage)' : 'var(--text-strong)'};letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums;margin-top:4px;` });
+  const num = el('div', { class: 'poppins', style: `font-size:${fontSize}px;font-weight:700;color:${colorVar};letter-spacing:-0.03em;line-height:1;font-variant-numeric:tabular-nums;margin-top:6px;` });
   num.textContent = String(value);
   wrap.append(lab, num);
   return wrap;
