@@ -1,14 +1,15 @@
 /**
  * activeSession.js — 진행 중 세션 스냅샷 영속화 (spec §8-6).
  *
- * Wave A.9.1 — save / load / clear. UI restore (A.9.2) 별 wave.
- *
  * Dexie meta key: 'activeSession'
  * value 구조: { mode, lang, todayISO, startTime, step, tried, passed, lastScore,
  *              pronScores, weakInSession, judged, cardIds, savedAt }
  *
- * 만료: savedAt 후 1시간 초과 시 load 가 null + 자동 clear.
+ * 만료 1시간 초과 시 자동 finalize (= finishSession 호출) 후 clear.
+ * 종료 버튼 미누름 + 1시간 이탈 시에도 학습 기록 (sessionLog + reviewQueue) 보존.
  */
+
+import { finishSession } from './sessionFinish.js';
 
 const KEY = 'activeSession';
 const TTL_MS = 60 * 60 * 1000; // 1시간
@@ -26,10 +27,62 @@ export async function loadActiveSession(db) {
   if (!row?.value || typeof row.value !== 'object') return null;
   const savedAt = Number(row.value.savedAt) || 0;
   if (Date.now() - savedAt > TTL_MS) {
+    // expire — 부분 학습 finalize 후 clear (학습 기록 보존)
+    try { await finalizeStaleSnapshot(db, row.value); }
+    catch (e) { console.error('[activeSession] finalize 실패', e); }
     await clearActiveSession(db);
     return null;
   }
   return row.value;
+}
+
+/**
+ * 만료된 스냅샷을 finishSession 으로 정식 영속화.
+ *  - new 모드: cardIds[0..step-2] 의 todayLessons 카드를 completedNewCards 로 finalize
+ *    → sessionLog 생성 + dailyStats merge + 완료 카드 reviewQueue promote
+ *  - review 모드: completedReviewCount = step-1 로 finalize
+ *    → sessionLog 생성 + dailyStats merge (SRS 판정은 미적용 — snapshot 에 카드별 매핑 없음)
+ *
+ * step=1 (첫 카드 진행 중, 완료 0) 시 영속화 의미 없음 → skip.
+ */
+export async function finalizeStaleSnapshot(db, snapshot) {
+  if (!db || !snapshot || typeof snapshot !== 'object') return null;
+  const step = Number(snapshot.step) || 0;
+  const completed = Math.max(0, step - 1);
+  if (completed === 0) return null; // 학습한 카드 없음
+
+  const lang = snapshot.lang;
+  const date = snapshot.todayISO;
+  if (!lang || !date) return null;
+
+  const startTime = Number(snapshot.startTime) || 0;
+  const savedAt = Number(snapshot.savedAt) || 0;
+  const durationSec = startTime > 0 && savedAt > startTime
+    ? Math.floor((savedAt - startTime) / 1000)
+    : 0;
+
+  if (snapshot.mode === 'new') {
+    const cardIds = Array.isArray(snapshot.cardIds) ? snapshot.cardIds.slice(0, completed) : [];
+    if (cardIds.length === 0) return null;
+    const cards = await db.todayLessons.bulkGet(cardIds);
+    const completedNewCards = cards.filter(Boolean);
+    return finishSession(db, {
+      mode: 'new', lang, date, durationSec,
+      tried: Number(snapshot.tried) || 0,
+      passed: Number(snapshot.passed) || 0,
+      completedNewCards,
+    });
+  }
+  if (snapshot.mode === 'review' || snapshot.mode === 'free') {
+    return finishSession(db, {
+      mode: snapshot.mode === 'free' ? 'free' : 'review',
+      lang, date, durationSec,
+      tried: Number(snapshot.tried) || 0,
+      passed: Number(snapshot.passed) || 0,
+      completedReviewCount: completed,
+    });
+  }
+  return null;
 }
 
 export async function clearActiveSession(db) {
