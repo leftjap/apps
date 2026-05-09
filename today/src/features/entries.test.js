@@ -962,6 +962,22 @@ describe('handleDeleteAction — softDeleteEntry + DOM 정리', () => {
     expect(r.reason).toBe('unsaved');
     expect(article.remove).not.toHaveBeenCalled();
   });
+
+  it('파트너 공유 글 (data-read-only=1) → reason=read_only + softDeleteEntry 호출 0회', async () => {
+    const article = {
+      dataset: { readOnly: '1', entryId: createdId },
+      remove: vi.fn(),
+    };
+    const mockDoc = { querySelector: () => null, getElementById: () => null };
+    const r = await handleDeleteAction(article, mockDoc);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('read_only');
+    expect(article.remove).not.toHaveBeenCalled();
+    // Dexie 변경 없음 — 원본 row 의 deleted_at 가 그대로 null
+    const { Queries } = await import('../db/queries.js');
+    const row = await Queries.getEntry(createdId);
+    expect(row.deleted_at).toBeFalsy();
+  });
 });
 
 describe('handleDuplicateAction — getEntry → createEntry 복제', () => {

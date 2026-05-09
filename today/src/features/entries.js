@@ -213,6 +213,9 @@ export function renderDocFromRow(row, doc = document) {
     `;
   }
   syncShareToggleFromRow(row, doc);
+  // 파트너 공유 글 — ⋯ 메뉴 wrap (article 외부, top-actions 영역) 도 readOnly 동기화
+  const moreWrap = doc.querySelector?.('.doc-more-wrap');
+  if (moreWrap) moreWrap.dataset.readOnly = readOnly ? '1' : '';
   return true;
 }
 
@@ -898,6 +901,7 @@ function safeFilename(s) {
 /** 글 삭제 — softDeleteEntry + mainView article remove + 카테고리 재로드. */
 export async function handleDeleteAction(article, doc = (typeof document !== 'undefined' ? document : null)) {
   if (!article) return { ok: false, reason: 'no_article' };
+  if (article.dataset?.readOnly === '1') return { ok: false, reason: 'read_only' };
   const id = article.dataset?.entryId;
   if (!id || id.startsWith('new-')) return { ok: false, reason: 'unsaved' };
   try {
@@ -1524,6 +1528,11 @@ function installRecentsDeleteHandler() {
   document.addEventListener('contextmenu', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
+    // 파트너 공유 글 (recent-share span 보유) 은 우클릭 메뉴 차단 — 삭제 진입점 가드
+    if (item.querySelector('.recent-share')) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     const id = item.dataset.docId;
     if (id) _showRecentsCtxMenu(id, e.clientX, e.clientY);
@@ -1542,6 +1551,8 @@ function installRecentsDeleteHandler() {
   document.addEventListener('touchstart', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
+    // 파트너 공유 글 (recent-share span 보유) 은 롱프레스 메뉴 차단
+    if (item.querySelector('.recent-share')) return;
     const t = e.touches?.[0];
     if (!t) return;
     _recentsLpStartX = t.clientX;
@@ -1731,6 +1742,12 @@ function installDocMoreActionHandler() {
       return;
     }
     if (action === 'delete') {
+      if (article.dataset?.readOnly === '1') {
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert('파트너가 공유한 글은 삭제할 수 없습니다.');
+        }
+        return;
+      }
       // Wave 11.5.10 — 커스텀 confirm modal (window.confirm fallback)
       let confirmed = true;
       const customConfirm = (typeof window !== 'undefined' && window.todayAccount?.confirmModal) || null;
