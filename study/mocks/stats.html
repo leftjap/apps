@@ -574,14 +574,20 @@ async function renderSentences(mode) {
     const intervalLbl = s.interval >= 60 ? '졸업 임박' : s.interval + 'd';
     const resultLbl = s.result === 'O' ? '' : s.result === 'X' ? ' · No' : ' · Hmm';
     const resultCls = s.result === 'X' ? 'color:var(--danger)' : s.result === '△' ? 'color:var(--amber)' : '';
+    const resultText = resultLbl ? resultLbl.replace(/^ · /, '') : '';
     item.innerHTML = `
       <div class="sl-content">
         <div class="sl-sentence">${s.en}</div>
+        <div class="sl-meaning">${s.ko}</div>
+        <div class="sl-meta">
+          <span class="score ${s.cls}">${s.score}</span>
+          <span class="interval">${intervalLbl}</span>
+          ${resultText ? `<span style="${resultCls}">${resultText}</span>` : ''}
+        </div>
       </div>
       <button class="sl-listen" aria-label="듣기" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       </button>
-      <svg class="sl-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     `;
     // Wave 11.34 — 듣기 버튼 (lang 별 speak). 클릭 시 카드 진입 안 함 (stopPropagation).
     item.querySelector('.sl-listen')?.addEventListener('click', (e) => {
