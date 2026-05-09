@@ -385,7 +385,8 @@ function injectEditorStyles() {
     .doc__body[contenteditable]:focus {
       outline: none;
     }
-    /* Wave 11.7.1 — 본문 삽입 이미지 max-width: 100% (잘림 차단) + 비율 유지 + 시각 마진 */
+    /* Wave 11.7.1 — 본문 삽입 이미지 max-width: 100% (잘림 차단) + 비율 유지 + 시각 마진.
+       iOS 롱프레스 callout/preview 차단해 커스텀 컨텍스트 메뉴 timer 살림. */
     .doc .doc__body img {
       max-width: 100%;
       height: auto;
@@ -393,6 +394,9 @@ function injectEditorStyles() {
       margin: 16px 0;
       border-radius: 8px;
       cursor: default;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
     }
     /* Wave 11.7.2 — 클릭으로 range selectNode 시 selection 시각 (브라우저 default 외 명시 outline) */
     .doc .doc__body img:focus,

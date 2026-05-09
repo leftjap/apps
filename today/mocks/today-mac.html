@@ -262,7 +262,13 @@
   }
   .sb__item--active .ico { opacity: 1; color: var(--crail-base); }
   .sb__item[data-category] { cursor: pointer; }
-  .sb__item--recent { cursor: pointer; }
+  /* recents 롱프레스 — iOS callout/텍스트 선택/preview 차단해 커스텀 timer (entries.js) 살림 */
+  .sb__item--recent {
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 
   /* — 가계부 월누적 — */
   .sb__item .meta {
