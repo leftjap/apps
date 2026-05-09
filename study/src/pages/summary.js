@@ -89,21 +89,27 @@ export function mountSummary(host) {
 
   // CTA — SPA 라우터 hash 사용 (mocks 의 .html link 는 app.js rewriteMockLinks 가 이미 변환).
   const btnDone = host.querySelector('#btnDone');
-  if (btnDone) btnDone.addEventListener('click', () => {
-    const returnTo = data.returnTo || 'home';
-    try {
-      sessionStorage.removeItem('studySummary');
-      sessionStorage.removeItem('studyReturnTo');
-    } catch { /* noop */ }
-    if (returnTo === 'stats') window.location.hash = '#/stats';
-    else if (returnTo === 'sentList') window.location.hash = '#/stats?tab=sent';
-    else window.location.hash = '#/home';
-  });
+  if (btnDone) {
+    const rt = data.returnTo || 'home';
+    if (rt === 'stats') btnDone.textContent = '확인 · 캘린더로';
+    else if (rt === 'sentList') btnDone.textContent = '확인 · 문장 목록으로';
+    btnDone.addEventListener('click', () => {
+      try {
+        sessionStorage.removeItem('studySummary');
+        sessionStorage.removeItem('studyReturnTo');
+      } catch { /* noop */ }
+      if (rt === 'stats') window.location.hash = '#/stats';
+      else if (rt === 'sentList') window.location.hash = '#/stats?tab=sent';
+      else window.location.hash = '#/home';
+    });
+  }
   const btnStats = host.querySelector('#btnStats');
   if (btnStats) btnStats.addEventListener('click', () => { window.location.hash = '#/stats'; });
 
   // Wave A.14 — 정규 review 완료 시 "자유 복습" CTA. mode='free' 자체는 이미 자유복습이라 표시 X.
-  if (data.mode === 'review' && Number(data.total) > 0) {
+  // returnTo 가 stats/sentList 면 (이미 stats 에서 진입) 자유복습 권유 어색 → home 일 때만 표시.
+  const isHomeReturn = !data.returnTo || data.returnTo === 'home';
+  if (data.mode === 'review' && Number(data.total) > 0 && isHomeReturn) {
     mountFreeReviewCta(host).catch((e) => console.error('[summary] free cta', e));
   }
 }

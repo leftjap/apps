@@ -214,7 +214,15 @@ function render(host, state, handlers = {}) {
     passed: state.passed,
     recording: state.recording,
     time: state.time,
-    onHome: () => { window.location.hash = '#/home'; },
+    onHome: () => {
+      if (state.fromSessionQueue) {
+        const rt = getSessionReturnTo();
+        clearSessionQueue();
+        if (rt === 'stats') { window.location.hash = '#/stats'; return; }
+        if (rt === 'sentList') { window.location.hash = '#/stats?tab=sent'; return; }
+      }
+      window.location.hash = '#/home';
+    },
     onEnd: handlers.onEnd || (() => { window.location.hash = '#/home'; }),
   });
 
