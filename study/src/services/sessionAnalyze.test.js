@@ -11,21 +11,29 @@ describe('startMicRecording', () => {
   beforeEach(() => { delete globalThis.window; });
   afterEach(() => { delete globalThis.window; });
 
-  it('studySpeech 부재 시 null', async () => {
+  it('studySpeech 부재 시 { error: unavailable }', async () => {
     globalThis.window = {};
-    expect(await startMicRecording()).toBeNull();
+    expect(await startMicRecording()).toEqual({ error: 'unavailable' });
   });
 
-  it('studySpeech.recordWav 정상 시 컨트롤러 반환', async () => {
+  it('studySpeech.recordWav 정상 시 { controller }', async () => {
     const ctrl = { stop: () => {}, blobPromise: Promise.resolve(new Blob()) };
     globalThis.window = { studySpeech: { recordWav: vi.fn().mockResolvedValue(ctrl) } };
-    expect(await startMicRecording()).toBe(ctrl);
+    expect(await startMicRecording()).toEqual({ controller: ctrl });
   });
 
-  it('recordWav throw 시 null + console.warn', async () => {
+  it('recordWav throw (일반) 시 { error: unavailable } + console.warn', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    globalThis.window = { studySpeech: { recordWav: vi.fn().mockRejectedValue(new Error('mic denied')) } };
-    expect(await startMicRecording()).toBeNull();
+    globalThis.window = { studySpeech: { recordWav: vi.fn().mockRejectedValue(new Error('boom')) } };
+    expect(await startMicRecording()).toEqual({ error: 'unavailable' });
+    warn.mockRestore();
+  });
+
+  it('recordWav throw (permission_denied code) 시 { error: permission_denied }', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const err = Object.assign(new Error('마이크 권한 거부'), { code: 'permission_denied' });
+    globalThis.window = { studySpeech: { recordWav: vi.fn().mockRejectedValue(err) } };
+    expect(await startMicRecording()).toEqual({ error: 'permission_denied' });
     warn.mockRestore();
   });
 });

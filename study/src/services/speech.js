@@ -543,18 +543,28 @@ export async function recordWav({
   workletUrl = `${import.meta.env.BASE_URL}audio-worklet/recorder-worklet.js`,
 } = {}) {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-    throw new Error('getUserMedia 미지원 환경');
+    throw Object.assign(new Error('getUserMedia 미지원 환경'), { code: 'unsupported' });
   }
   const AC = window.AudioContext || window.webkitAudioContext;
-  if (!AC) throw new Error('AudioContext 미지원 환경');
+  if (!AC) throw Object.assign(new Error('AudioContext 미지원 환경'), { code: 'unsupported' });
 
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    // NotAllowedError = 사용자 거부 또는 insecure context (HTTP).
+    // NotFoundError = 디바이스 없음 — 모바일에선 거의 발생 안 함.
+    if (e?.name === 'NotAllowedError') {
+      throw Object.assign(new Error('마이크 권한 거부'), { code: 'permission_denied' });
+    }
+    throw Object.assign(new Error(e?.message || 'getUserMedia 실패'), { code: 'unavailable' });
+  }
   const ac = new AC();
   if (ac.state === 'suspended') await ac.resume();
   if (!ac.audioWorklet?.addModule) {
     try { stream.getTracks().forEach((t) => t.stop()); } catch {}
     try { ac.close(); } catch {}
-    throw new Error('AudioWorklet 미지원 브라우저 (iOS Safari < 14.1 등)');
+    throw Object.assign(new Error('AudioWorklet 미지원 브라우저 (iOS Safari < 14.1 등)'), { code: 'unsupported' });
   }
   if (!_workletRegistered.has(ac)) {
     await ac.audioWorklet.addModule(workletUrl);

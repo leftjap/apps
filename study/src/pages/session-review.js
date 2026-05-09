@@ -34,6 +34,7 @@ import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
+import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -253,11 +254,29 @@ function render(host, state, handlers = {}) {
         recordCmp.update({ recording: true });
         layout.update({ recording: true });
         applyExclusive(true, playing, state.lastScore, wave, pillWrap);
-        state.recCtrl = await startMicRecording();
+        const rec = await startMicRecording();
+        if (rec.error) {
+          state.recording = false;
+          state.recCtrl = null;
+          recordCmp.update({ recording: false });
+          layout.update({ recording: false });
+          applyExclusive(false, playing, state.lastScore, wave, pillWrap);
+          showRecordToast(recordErrorMessage(rec.error));
+          return;
+        }
+        state.recCtrl = rec.controller;
       } else {
         const ctrl = state.recCtrl;
         state.recCtrl = null;
         const result = await stopAndAnalyze(ctrl, state.sentence.sentence, state.sentence);
+        if (result?.mockFallback) {
+          state.recording = false;
+          recordCmp.update({ recording: false });
+          layout.update({ recording: false });
+          applyExclusive(false, playing, state.lastScore, wave, pillWrap);
+          showRecordToast(recordErrorMessage(result.fallbackReason));
+          return;
+        }
         const score = Number(result?.score) || 0;
         state.lastScore = score;
         state.tried += 1;

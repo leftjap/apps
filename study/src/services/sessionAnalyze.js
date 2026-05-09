@@ -23,13 +23,23 @@ function mockResult(reason) {
   };
 }
 
+/**
+ * 녹음 시작.
+ * @returns {{ controller?: object, error?: 'permission_denied'|'unavailable' }}
+ *   - 정상: { controller }
+ *   - 권한 거부: { error: 'permission_denied' }
+ *   - 그 외 (미지원·앱 미주입·throw): { error: 'unavailable' }
+ */
 export async function startMicRecording() {
-  if (typeof window === 'undefined' || !window.studySpeech?.recordWav) return null;
+  if (typeof window === 'undefined' || !window.studySpeech?.recordWav) {
+    return { error: 'unavailable' };
+  }
   try {
-    return await window.studySpeech.recordWav({ maxSeconds: 15 });
+    const controller = await window.studySpeech.recordWav({ maxSeconds: 15 });
+    return { controller };
   } catch (e) {
     console.warn('[sessionAnalyze] recordWav 실패', e?.message ?? e);
-    return null;
+    return { error: e?.code === 'permission_denied' ? 'permission_denied' : 'unavailable' };
   }
 }
 
