@@ -1,11 +1,15 @@
 /**
  * Today entry — auth 부트스트랩 + 라우터 시작 (Wave 11.4).
  *
- * 흐름:
- *  1) 초기 세션 확인
+ * 흐름 (subscribe-first 패턴):
+ *  1) onAuthStateChange 즉시 구독 → supabase-js 가 INITIAL_SESSION 이벤트로 persisted session 발화
  *  2) 세션 + 허용 이메일 → ensureProfile + showAuthenticated
  *  3) 세션 없거나 비허용 이메일 → signOut + showLogin
- *  4) onAuthStateChange 구독 — SIGNED_IN/SIGNED_OUT 시 화면 전환
+ *  4) 이후 SIGNED_IN/TOKEN_REFRESHED/USER_UPDATED/SIGNED_OUT 동일 핸들러로 처리
+ *
+ * iOS Safari PWA fix: 이전 패턴은 await getSession() 후 subscribe 였는데,
+ * supabase-js #1560 (iOS WebKit getSession race) 로 mount 직후 null 반환 →
+ * 매번 login 화면 노출 + INITIAL_SESSION 이 whitelist 밖이라 회복 불가 → "자꾸 풀림".
  */
 import { Auth } from './services/auth.js';
 import { Profile } from './services/profile.js';
@@ -115,11 +119,24 @@ async function handleSession(session) {
 }
 
 async function bootstrap() {
-  const session = await Auth.getSession();
-  await handleSession(session);
+  // Storage persistence 요청 — WebKit 정책 (webkit.org/blog/14403) 상 best-effort mode 는
+  // LRU 비활성·storage pressure 시 evict 가능. persistent mode 가 명시적 eviction 면제 카테고리.
+  // Home Screen PWA 에서는 grant heuristic favorable. deny 돼도 무해.
+  if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
+    navigator.storage.persist()
+      .then((granted) => console.info('[main] storage.persist() granted:', granted))
+      .catch((e) => console.warn('[main] storage.persist() 실패', e?.message || e));
+  }
 
+  // subscribe-first — supabase-js v2 (GoTrueClient.ts:4037-4088) 가 initializePromise 후
+  // INITIAL_SESSION 이벤트로 persisted session 발화. 별도 getSession() 호출 안 함 (iOS WebKit race #1560 회피).
   Auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+    if (
+      event === 'INITIAL_SESSION'
+      || event === 'SIGNED_IN'
+      || event === 'TOKEN_REFRESHED'
+      || event === 'USER_UPDATED'
+    ) {
       await handleSession(session);
     } else if (event === 'SIGNED_OUT') {
       showLogin();
