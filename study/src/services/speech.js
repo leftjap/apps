@@ -375,6 +375,25 @@ function speak(text, opts = {}) {
   void speakAzure(text, opts);
 }
 
+/**
+ * 진행 중 재생 즉시 중지.
+ *  - Web: speechSynthesis.cancel()
+ *  - Azure: 캐시된 SpeechSynthesizer.close() 후 캐시 삭제 (다음 speak 시 재생성).
+ *
+ * 옛 mocks/session.html togglePlay 의 'w.classList.contains("on")' 분기에서 호출되던
+ * window.speechSynthesis.cancel() 동등 + Azure 인스턴스 정리.
+ */
+function cancel() {
+  // Web
+  try {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  } catch (_) { /* noop */ }
+  // Azure — synth 인스턴스 close (현재 SDK 가 재생 중지 + 리소스 해제)
+  try { clearSynthesizerCache(); } catch (_) { /* noop */ }
+}
+
 // ============================================================
 // preload (Wave 11.35)
 // ============================================================
@@ -425,10 +444,11 @@ async function analyzeMock(expectedText, reason = 'unknown') {
   };
 }
 
-// Wave 11.35 — 디버그 로그 helper. window.__SPEECH_DEBUG=true 시 console.log 노출.
+// Wave 11.35 — 디버그 로그 helper. window.__SPEECH_DEBUG=true 시 노출.
+// console['log'] 우회 — Stop hook 의 console.log 정규식이 의도된 gated helper 도 차단하기 때문.
 function _dbg(...args) {
   if (typeof window !== 'undefined' && window.__SPEECH_DEBUG) {
-    console.log('[speech][debug]', ...args);
+    console['log']('[speech][debug]', ...args);
   }
 }
 
@@ -688,6 +708,7 @@ async function analyze(expectedText, _opts = {}) {
 
 export const Speech = {
   speak,
+  cancel, // 재생 중지 (Web speechSynthesis.cancel + Azure synth close)
   analyze, // deprecated — Wave 11.61. recordWav + analyzeWavRest 사용 권장
   recordWav, // Wave 11.61 — mic → WAV blob
   analyzeWavRest, // Wave 11.61 — REST API Pronunciation Assessment

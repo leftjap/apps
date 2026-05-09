@@ -205,11 +205,30 @@ function render(host, state, handlers = {}) {
   });
 
   const large = state.size !== 'phone';
+  let playing = false;
+  const stopPlaying = () => {
+    if (!playing) return;
+    playing = false;
+    listen.update({ playing: false });
+    applyExclusive(state.recording, playing, state.lastScore, wave, pillWrap);
+  };
   const listen = createListenButton({
     large,
     onPlay: () => {
+      if (state.recording) return;
+      if (playing) {
+        try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
+        stopPlaying();
+        return;
+      }
       const lang = (state.sentence?.lang || getStoredLang()) === 'ja' ? 'ja-JP' : 'en-US';
-      window.studySpeech?.speak(state.sentence?.sentence || '', { lang });
+      const text = state.sentence?.sentence || '';
+      if (!text || !window.studySpeech?.speak) return;
+      playing = true;
+      listen.update({ playing: true });
+      applyExclusive(state.recording, playing, state.lastScore, wave, pillWrap);
+      window.studySpeech.speak(text, { lang, rate: 0.85, onEnd: stopPlaying });
+      setTimeout(stopPlaying, 30000);
     },
   });
   const wave = createWaveform({ large });
@@ -230,7 +249,7 @@ function render(host, state, handlers = {}) {
         state.recording = true;
         recordCmp.update({ recording: true });
         layout.update({ recording: true });
-        applyExclusive(true, state.lastScore, wave.el, pillWrap);
+        applyExclusive(true, playing, state.lastScore, wave, pillWrap);
         state.recCtrl = await startMicRecording();
       } else {
         const ctrl = state.recCtrl;
@@ -250,7 +269,7 @@ function render(host, state, handlers = {}) {
         pillCmp.update({ score, passed: score >= PASS_THRESHOLD });
         recordCmp.update({ recording: false });
         layout.update({ tried: state.tried, passed: state.passed, recording: false });
-        applyExclusive(false, state.lastScore, wave.el, pillWrap);
+        applyExclusive(false, playing, state.lastScore, wave, pillWrap);
         applyWordHighlight(main, result?.wordScores, {
           onBadClick: (w) => showWordSheet({ word: w, phonemeScores: result?.phonemeScores }),
         });
@@ -267,7 +286,7 @@ function render(host, state, handlers = {}) {
 
   const main = buildMain(state, { listen, recordCmp, waveEl: wave.el, pillWrap });
   layout.contentSlot.appendChild(main);
-  applyExclusive(state.recording, state.lastScore, wave.el, pillWrap);
+  applyExclusive(state.recording, playing, state.lastScore, wave, pillWrap);
 
   // JudgeRow + "판정" 라벨
   const judgeSection = buildJudgeSection(state, handlers.onJudge);
@@ -364,7 +383,13 @@ function buildJudgeSection(state, onJudge) {
   return sec;
 }
 
-function applyExclusive(recording, lastScore, waveEl, pillWrap) {
-  waveEl.style.display = recording ? '' : 'none';
-  pillWrap.style.display = (!recording && lastScore != null) ? '' : 'none';
+function applyExclusive(recording, playing, lastScore, waveCmp, pillWrap) {
+  const active = !!recording || !!playing;
+  if (waveCmp?.el) {
+    waveCmp.el.style.display = active ? '' : 'none';
+    if (typeof waveCmp.update === 'function') {
+      waveCmp.update({ mode: recording ? 'record' : (playing ? 'listen' : null) });
+    }
+  }
+  pillWrap.style.display = (!active && lastScore != null) ? '' : 'none';
 }

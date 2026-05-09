@@ -79,6 +79,8 @@
   border-radius: 2px;
   animation: wvN 0.6s ease-in-out infinite alternate;
 }
+.waveform[data-mode="listen"] .bar { background: var(--accent); }
+.waveform[data-mode="record"] .bar { background: var(--danger); }
 .waveform[data-large="true"] .bar { width: 4px; height: 18px; }
 .waveform .bar:nth-child(1) { animation-delay: 0s; }
 .waveform .bar:nth-child(2) { animation-delay: 0.1s; }

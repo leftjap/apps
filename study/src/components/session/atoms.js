@@ -62,35 +62,58 @@ export function createRecordButton({ recording = false, onToggle, large = false 
 }
 
 /* ────── ListenButton ────── */
-export function createListenButton({ onPlay, large = false } = {}) {
+export function createListenButton({ onPlay, large = false, playing = false } = {}) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'listen-btn';
   if (large) btn.dataset.large = 'true';
+  btn.dataset.playing = String(playing);
   btn.setAttribute('aria-label', '듣기');
+  btn.setAttribute('aria-pressed', String(playing));
 
   const icon = svg('0 0 24 24', ['M8 5v14l11-7z'], { fill: 'currentColor', aria: true });
   const label = document.createElement('span');
-  label.textContent = '듣기';
+  label.textContent = playing ? '재생 중' : '듣기';
 
   btn.append(icon, label);
   if (onPlay) btn.addEventListener('click', onPlay);
 
-  return { el: btn };
+  return {
+    el: btn,
+    update({ playing: p }) {
+      const next = String(!!p);
+      if (btn.dataset.playing !== next) {
+        btn.dataset.playing = next;
+        btn.setAttribute('aria-pressed', next);
+        label.textContent = p ? '재생 중' : '듣기';
+      }
+    },
+  };
 }
 
 /* ────── Waveform ────── */
-export function createWaveform({ large = false } = {}) {
+export function createWaveform({ large = false, mode = null } = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'waveform';
   if (large) wrap.dataset.large = 'true';
+  // mode: null (숨김) | 'record' (녹음 — danger 색) | 'listen' (재생 — accent 색)
+  if (mode) wrap.dataset.mode = mode;
   wrap.setAttribute('aria-hidden', 'true');
   for (let i = 0; i < 5; i++) {
     const bar = document.createElement('span');
     bar.className = 'bar';
     wrap.appendChild(bar);
   }
-  return { el: wrap };
+  return {
+    el: wrap,
+    update({ mode: m }) {
+      if (m == null) {
+        wrap.removeAttribute('data-mode');
+      } else if (wrap.dataset.mode !== m) {
+        wrap.dataset.mode = m;
+      }
+    },
+  };
 }
 
 /* ────── ScorePill ────── */
