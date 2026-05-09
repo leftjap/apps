@@ -210,13 +210,13 @@ function renderPhone(state) {
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
   root.appendChild(sec2);
 
-  // DESIGN.md §1 typography-driven hierarchy: STREAK 만 bold (한 화면 1 강조), 나머지 stat 은 절제.
-  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:flex;gap:18px;flex-wrap:wrap;' });
+  // DESIGN.md §1 typography-driven hierarchy + §2 액센트 한 화면 1-2회. 색은 위 NEW/REVIEW 카드에 이미 사용 — stat 단색.
+  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;' });
   sec3.append(
-    statBlock('Today New', state.todayNewDone, 22, 'accent', '0.12em'),
-    statBlock('Today Review', state.todayReviewDone, 22, 'sage', '0.12em'),
-    statBlock('Tried', state.tried, 22, 'strong', '0.12em'),
-    statBlock('Passed', state.passed, 22, 'sage', '0.12em'),
+    statBlock('New', state.todayNewDone, 22, 'strong', '0.10em'),
+    statBlock('Review', state.todayReviewDone, 22, 'strong', '0.10em'),
+    statBlock('Tried', state.tried, 22, 'strong', '0.10em'),
+    statBlock('Passed', state.passed, 22, 'strong', '0.10em'),
   );
   root.appendChild(sec3);
   return root;
@@ -246,12 +246,12 @@ function renderTablet(state) {
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
 
-  const sec3 = el('section', { style: 'margin-top:48px;display:flex;gap:32px;flex-wrap:wrap;padding-bottom:48px;' });
+  const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
   sec3.append(
-    statBlock('Today New', state.todayNewDone, 26, 'accent', '0.14em'),
-    statBlock('Today Review', state.todayReviewDone, 26, 'sage', '0.14em'),
-    statBlock('Tried', state.tried, 26, 'strong', '0.14em'),
-    statBlock('Passed', state.passed, 26, 'sage', '0.14em'),
+    statBlock('New', state.todayNewDone, 26, 'strong', '0.12em'),
+    statBlock('Review', state.todayReviewDone, 26, 'strong', '0.12em'),
+    statBlock('Tried', state.tried, 26, 'strong', '0.12em'),
+    statBlock('Passed', state.passed, 26, 'strong', '0.12em'),
   );
   root.appendChild(sec3);
   return root;
@@ -278,13 +278,13 @@ function renderDesktop(state) {
   }
   aside.appendChild(streakBlk);
 
-  // STREAK 88px 가 단일 강조, 아래 stat 은 절제 — 폰트 28, gap 14 로 컴팩트하게.
-  const stats = el('div', { style: 'display:flex;flex-direction:column;gap:14px;' });
+  // STREAK 88px 가 단일 강조 (DESIGN.md §1). aside 폭 320 안 2x2 grid 로 시선 안정.
+  const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
   stats.append(
-    statBlock('Today New', state.todayNewDone, 28, 'accent', '0.14em'),
-    statBlock('Today Review', state.todayReviewDone, 28, 'sage', '0.14em'),
-    statBlock('Tried', state.tried, 28, 'strong', '0.14em'),
-    statBlock('Passed', state.passed, 28, 'sage', '0.14em'),
+    statBlock('New', state.todayNewDone, 28, 'strong', '0.12em'),
+    statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
+    statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
+    statBlock('Passed', state.passed, 28, 'strong', '0.12em'),
   );
   aside.appendChild(stats);
 
