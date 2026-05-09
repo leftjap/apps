@@ -2740,13 +2740,19 @@
     body[data-drawer-open] .sidebar { transform: translateX(0); }
     body[data-drawer-open] .drawer-backdrop { opacity: 1; pointer-events: auto; }
 
-    /* 본문 풀폭 — drawer 활성 시 keep 패턴 dim (opacity .5) + 살짝 우측 밀림 */
+    /* 본문 풀폭 — drawer 활성 시 keep 패턴 (style.css L1617):
+       translateX(calc(100% - 72px)) 로 main 을 우측으로 밀어 main 의 좌측면이 우측 끝에 비침.
+       opacity .5 + pointer-events none 으로 dim. */
     .main {
       padding: 16px 16px 20px;
       min-width: 0;
       transition: opacity .22s ease, transform .22s ease;
     }
-    body[data-drawer-open] .main { opacity: .5; pointer-events: none; }
+    body[data-drawer-open] .main {
+      opacity: .5;
+      pointer-events: none;
+      transform: translateX(calc(100% - 72px));
+    }
     .main__top {
       gap: 8px;
       flex-wrap: nowrap;
