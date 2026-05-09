@@ -2766,7 +2766,16 @@
 
     /* 본문 가독성 — 모바일에선 max-width 자동, 좌우 padding 최소 */
     .doc { max-width: 100%; }
-    .doc__h1 { font-size: 22px; }
+
+    /* 폰트 — iOS HIG body 17pt 기준, 모바일 가독성 보강.
+       데스크톱 값(.doc__p 15px, .doc__meta 11px, .sb__item 14px 등)이 모바일에 그대로 적용되어 작았음. */
+    .doc__h1 { font-size: 26px; }
+    .doc__p, .doc__body { font-size: 17px; line-height: 1.7; }
+    .doc__body blockquote { font-size: 17px; }
+    .doc__meta { font-size: 12px; }
+    .sb__item { font-size: 16px; }
+    .sb__item--recent { font-size: 15px; }
+    .sb__user-name { font-size: 14px; }
 
     /* 데스크톱 collapse 토글은 모바일에선 무의미 — 숨김 */
     #sidebarToggle { display: none; }
