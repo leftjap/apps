@@ -12,7 +12,6 @@
  */
 import { supabase, isSupabaseConfigured } from './supabase.js';
 import { createStudyDB } from '../db/schema.js';
-import { cleanupDummyDataIfNeeded } from '../db/cleanupDummy.js';
 import { backfill20260504 } from '../db/backfill20260504.js';
 
 /** spec §3 — 허용 이메일 (대소문자 무관, 공백 trim) */
@@ -114,8 +113,6 @@ async function signOut() {
  * 같은 user 면 기존 인스턴스 재사용, 다른 user 면 close 후 재생성.
  * window.studyDB 동적 할당 → mocks 의 `const db = window.studyDB` 가 즉시 새 인스턴스 참조.
  *
- * 첫 로그인 (디바이스당 1회) cleanupDummyDataIfNeeded 자동 실행 — Wave 11.73 v11 더미 영구 제거 + 마커 기록. 이후 skip.
- *
  * 동시성:
  *  - 동시 호출 시 _initPromise 로 직렬화 (signOut → 즉시 재로그인 race 방지).
  *  - in-flight 중 다른 user 호출이면 첫 호출 종료 후 두 번째 실행 (lock 안 놓침).
@@ -138,10 +135,6 @@ async function ensureUserDB(user) {
     _currentDB = createStudyDB(dbName);
     _currentDBName = dbName;
     if (typeof window !== 'undefined') window.studyDB = _currentDB;
-    // cleanupDummyDataIfNeeded 비활성화 (2026-05-08) — 마커가 Dexie 로컬에 있어
-    // 신규 디바이스/Chrome 진입 시마다 Supabase 사용자 데이터 전체 삭제하는 회귀 발견.
-    // v11 더미는 이미 정리됐으므로 더 호출할 이유 없음. 추후 재호출 필요 시 마커를
-    // user_meta (Supabase) 로 이동하여 디바이스 무관 멱등성 확보 후 재활성화.
     try { await backfill20260504(_currentDB); }
     catch (e) { console.error('[backfill 2026-05-04] failed', e); }
     return _currentDB;
