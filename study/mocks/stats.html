@@ -162,11 +162,11 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 .bs-stat-val .no{color:var(--danger)}
 .bs-section-label{font-family:var(--font-display);font-size:12px;font-weight:500;color:var(--text-faint);letter-spacing:0.02em;margin-bottom:var(--s-3)}
 .bs-sentences{display:flex;flex-direction:column;gap:var(--s-2)}
-.bs-sent{display:flex;align-items:center;justify-content:space-between;padding:var(--s-3) var(--s-2);margin:0 calc(var(--s-2) * -1);border-radius:var(--r-sm);cursor:pointer;transition:background 150ms var(--ease)}
-@media(hover:hover){.bs-sent:hover{background:var(--bg-warm)}}
+.bs-sent{display:flex;align-items:flex-start;padding:var(--s-3);margin:0 calc(var(--s-2) * -1);border-radius:var(--r-md);cursor:pointer;transition:background 150ms var(--ease)}
+@media(hover:hover){.bs-sent:hover{background:rgba(20,20,19,0.025)}}
 .bs-sent-content{flex:1;min-width:0}
-.bs-sent-text{font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-strong);line-height:1.4}
-.bs-sent-meaning{font-size:13px;color:var(--text-muted);margin-top:2px}
+.bs-sent-text{font-family:var(--font-display);font-size:14px;font-weight:400;color:var(--text-strong);line-height:1.35}
+.bs-sent-meaning{font-family:var(--font-body);font-size:13px;color:var(--text-muted);line-height:1.5;margin-top:3px}
 .bs-sent-score{font-family:var(--font-display);font-size:12px;font-weight:600;margin-top:var(--s-1)}
 .bs-sent-score.good{color:var(--sage)}
 .bs-sent-score.mid{color:var(--amber)}
@@ -697,8 +697,8 @@ function renderBSSentencesFromCards(cards, lang) {
     item.innerHTML = `
       <div class="bs-sent-content">
         <div class="bs-sent-text">${s.en}</div>
+        ${s.ko ? `<div class="bs-sent-meaning">${s.ko}</div>` : ''}
       </div>
-      <svg class="bs-sent-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     `;
     item.addEventListener('click', () => {
       // Wave 11.74 — 큐를 idx 앞부분 잘라서 저장 → session.html 0번부터 시작해도 클릭 카드부터.
@@ -720,8 +720,8 @@ function renderBSSentencesFromList(sents) {
     item.innerHTML = `
       <div class="bs-sent-content">
         <div class="bs-sent-text">${s.en}</div>
+        ${s.ko ? `<div class="bs-sent-meaning">${s.ko}</div>` : ''}
       </div>
-      <svg class="bs-sent-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     `;
     item.addEventListener('click', () => { closeBS(); goReview(s, 'stats'); });
     el.appendChild(item);
@@ -740,8 +740,8 @@ function renderBSSentences(day) {
     item.innerHTML = `
       <div class="bs-sent-content">
         <div class="bs-sent-text">${s.en}</div>
+        ${s.ko ? `<div class="bs-sent-meaning">${s.ko}</div>` : ''}
       </div>
-      <svg class="bs-sent-chevron" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
     `;
     item.addEventListener('click', () => { closeBS(); goReview(s, 'stats'); });
     el.appendChild(item);
