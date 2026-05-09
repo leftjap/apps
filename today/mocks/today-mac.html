@@ -2777,6 +2777,44 @@
     .sb__item--recent { font-size: 15px; }
     .sb__user-name { font-size: 14px; }
 
+    /* doc-list — 모바일 단일 칼럼 카드 스택 (RECENTS "전체 보기" 진입 후) */
+    .doc-list {
+      padding: 16px 0 24px;
+      max-width: 100%;
+    }
+    .doc-list__stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px 12px;
+      padding: 0 0 20px;
+    }
+    .doc-list__stat-val { font-size: 22px; }
+    .doc-list__chips { gap: 8px; padding: 0 0 16px; }
+    .doc-list__head { display: none; }
+    .doc-list__no { display: none; }
+    .doc-list__row {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 4px;
+      padding: 12px;
+      min-height: 56px;
+    }
+    .doc-list__main { gap: 4px; }
+    .doc-list__title { font-size: 16px; }
+    .doc-list__excerpt {
+      font-size: 14px;
+      white-space: normal;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+    .doc-list__meta {
+      width: auto;
+      text-align: left;
+      font-size: 12px;
+      padding-top: 2px;
+    }
+
     /* 데스크톱 collapse 토글은 모바일에선 무의미 — 숨김 */
     #sidebarToggle { display: none; }
 
