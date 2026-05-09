@@ -31,6 +31,7 @@ function isDemoMode() {
 const DEMO_FIXTURES = {
   newCount: 5, reviewCount: 8, streak: 7, tried: 14, passed: 9,
   bestStreak: 12, weekUtter: 108, weekPass: 72, todayISO: '2026-05-04',
+  todayNewDone: 7, todayReviewDone: 12,
 };
 
 export function mountHome(host) {
@@ -47,6 +48,8 @@ export function mountHome(host) {
     bestStreak: demo ? DEMO_FIXTURES.bestStreak : null,
     weekUtter: demo ? DEMO_FIXTURES.weekUtter : 0,
     weekPass: demo ? DEMO_FIXTURES.weekPass : 0,
+    todayNewDone: demo ? DEMO_FIXTURES.todayNewDone : 0,
+    todayReviewDone: demo ? DEMO_FIXTURES.todayReviewDone : 0,
     todayISO: demo ? DEMO_FIXTURES.todayISO : (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10)),
     resume: null, // 'new' | 'review' | null — activeSession 매치 시
   };
@@ -72,6 +75,7 @@ export function mountHome(host) {
     state.newCount = 0; state.reviewCount = 0;
     state.tried = 0; state.passed = 0;
     state.weekUtter = 0; state.weekPass = 0;
+    state.todayNewDone = 0; state.todayReviewDone = 0;
     rerender();
     refreshStats();
   };
@@ -134,6 +138,9 @@ async function loadStats(state) {
     const todayLogs = logs.filter((l) => l.date === todayISO);
     const tried = todayLogs.reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
     const passed = todayLogs.reduce((s, l) => s + (Number(l.passCount) || 0), 0);
+    // 오늘 완료한 신규/복습 문장 수. mergeDailyStats(sessionFinish.js) 와 동일 패턴 — lang 분리 위해 sessionLogs 직접 집계.
+    const todayNewDone = todayLogs.reduce((s, l) => s + (l.mode === 'new' ? (l.newSentenceIds?.length || 0) : 0), 0);
+    const todayReviewDone = todayLogs.reduce((s, l) => s + ((l.mode === 'review' || l.mode === 'free') ? (Number(l.completedReviewCount) || 0) : 0), 0);
 
     const monday = (iso) => {
       const d = new Date(iso + 'T00:00:00Z');
@@ -159,7 +166,7 @@ async function loadStats(state) {
       if (cands[0]?.value?.value != null) bestStreak = cands[0].value.value;
     } catch { /* meta 미존재 ok */ }
 
-    return { newCount, reviewCount, totalReview, streak, tried, passed, bestStreak, weekUtter, weekPass };
+    return { newCount, reviewCount, totalReview, streak, tried, passed, bestStreak, weekUtter, weekPass, todayNewDone, todayReviewDone };
   } catch (e) {
     console.error('[home loadStats]', e);
     return null;
@@ -203,8 +210,10 @@ function renderPhone(state) {
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
   root.appendChild(sec2);
 
-  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:flex;gap:32px;' });
-  sec3.append(statBlock('Tried', state.tried, 26, false, '0.12em'), statBlock('Passed', state.passed, 26, true, '0.12em'));
+  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:flex;flex-direction:column;gap:14px;' });
+  const stats3 = el('div', { style: 'display:flex;gap:32px;' });
+  stats3.append(statBlock('Tried', state.tried, 26, false, '0.12em'), statBlock('Passed', state.passed, 26, true, '0.12em'));
+  sec3.append(todayDoneMeta(state.todayNewDone, state.todayReviewDone, 12, '0.12em'), stats3);
   root.appendChild(sec3);
   return root;
 }
@@ -233,8 +242,10 @@ function renderTablet(state) {
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
 
-  const sec3 = el('section', { style: 'margin-top:48px;display:flex;gap:48px;padding-bottom:48px;' });
-  sec3.append(statBlock('Tried Today', state.tried, 32, false, '0.14em'), statBlock('Passed Today', state.passed, 32, true, '0.14em'));
+  const sec3 = el('section', { style: 'margin-top:48px;display:flex;flex-direction:column;gap:18px;padding-bottom:48px;' });
+  const stats3 = el('div', { style: 'display:flex;gap:48px;' });
+  stats3.append(statBlock('Tried Today', state.tried, 32, false, '0.14em'), statBlock('Passed Today', state.passed, 32, true, '0.14em'));
+  sec3.append(todayDoneMeta(state.todayNewDone, state.todayReviewDone, 13, '0.14em'), stats3);
   root.appendChild(sec3);
   return root;
 }
@@ -261,7 +272,11 @@ function renderDesktop(state) {
   aside.appendChild(streakBlk);
 
   const stats = el('div', { style: 'display:flex;flex-direction:column;gap:20px;' });
-  stats.append(statBlock('Tried Today', state.tried, 36, false, '0.14em'), statBlock('Passed Today', state.passed, 36, true, '0.14em'));
+  stats.append(
+    todayDoneMeta(state.todayNewDone, state.todayReviewDone, 13, '0.14em'),
+    statBlock('Tried Today', state.tried, 36, false, '0.14em'),
+    statBlock('Passed Today', state.passed, 36, true, '0.14em'),
+  );
   aside.appendChild(stats);
 
   const lang = el('div', { style: 'margin-top:auto;display:flex;flex-direction:column;gap:14px;' });
@@ -409,6 +424,16 @@ function streakBlock(streak, fontSize, unitSize, labelSize) {
   lab.textContent = 'STREAK';
   wrap.append(num, lab);
   return wrap;
+}
+
+// 오늘 완료 한 줄 메타 — 시도/통과 위에 배치. 톤은 desktop 하단 weekUtter 메타 (12-13px / text-muted / font-display / uppercase) 정합.
+function todayDoneMeta(newDone, reviewDone, fontSize, ls) {
+  const d = el('div', {
+    style: `font-size:${fontSize}px;color:var(--text-muted);font-family:var(--font-display);letter-spacing:${ls};text-transform:uppercase;`,
+    'aria-label': `오늘 신규 ${newDone}문장 복습 ${reviewDone}문장 완료`,
+  });
+  d.textContent = `오늘 신규 ${newDone} · 복습 ${reviewDone} 완료`;
+  return d;
 }
 
 function statBlock(label, value, fontSize, isPassed, ls) {
