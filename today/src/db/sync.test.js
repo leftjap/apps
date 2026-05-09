@@ -22,18 +22,18 @@ const { Sync, TABLE_MAP, startSync, stopSync, pullTable, pullAll, isSyncActive }
   await import('./sync.js');
 
 describe('TABLE_MAP', () => {
-  it('Wave 11.7.2 — entries + expenses + comments + notifications 매핑', () => {
-    expect(TABLE_MAP).toHaveLength(4);
+  it('entries + expenses + merchant_rules + comments + notifications 매핑', () => {
+    expect(TABLE_MAP).toHaveLength(5);
     expect(TABLE_MAP[0].dexie).toBe('entries');
-    // 2026-05-05 — entries 는 RLS 가 본인 + partner.is_shared 통과 (spec L127-129).
-    // owner_id eq 강제하면 partner navi 합집합 client-side 차단 (회귀 방지).
     expect(TABLE_MAP[0].filterColumn).toBeNull();
     expect(TABLE_MAP[1].dexie).toBe('expenses');
-    expect(TABLE_MAP[1].filterColumn).toBe('owner_id'); // 가계부는 partner 공유 없음
-    expect(TABLE_MAP[2].dexie).toBe('comments');
-    expect(TABLE_MAP[2].filterColumn).toBeNull(); // comments 는 RLS 가 자동 필터
-    expect(TABLE_MAP[3].dexie).toBe('notifications');
-    expect(TABLE_MAP[3].filterColumn).toBe('recipient_id');
+    expect(TABLE_MAP[1].filterColumn).toBe('owner_id');
+    expect(TABLE_MAP[2].dexie).toBe('merchant_rules');
+    expect(TABLE_MAP[2].filterColumn).toBeNull(); // RLS 가 global+본인 user 자동 필터
+    expect(TABLE_MAP[3].dexie).toBe('comments');
+    expect(TABLE_MAP[3].filterColumn).toBeNull();
+    expect(TABLE_MAP[4].dexie).toBe('notifications');
+    expect(TABLE_MAP[4].filterColumn).toBe('recipient_id');
   });
 
   it('frozen — 런타임 변조 방지', () => {

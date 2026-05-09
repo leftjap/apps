@@ -64,6 +64,10 @@ export const TABLE_MAP = Object.freeze([
   // owner_id eq 강제 시 partner 글이 client-side 에서 차단되어 navi 합집합 (spec L127-129) 무력화.
   Object.freeze({ dexie: 'entries', supabase: 'today_entries', filterColumn: null }),
   Object.freeze({ dexie: 'expenses', supabase: 'today_expenses', filterColumn: 'owner_id' }),
+  // 사용자 학습 룰 — 수동 카테고리 변경 시 자동 INSERT/UPDATE 후 supabase 에 sync,
+  // sms-card-ingest Edge Function 이 enrichByKind 에서 user-scope 룰 조회해 자동 적용.
+  // global 룰은 RLS 가 모두에게 노출, user 룰은 본인만 (RLS 정책으로 강제).
+  Object.freeze({ dexie: 'merchant_rules', supabase: 'today_merchant_rules', filterColumn: null }),
   // Wave 11.7.2 — comments 는 본인 작성한 것 + (RLS 가) 본인 entries 에 달린 것 자동 노출.
   // 단순 user_id 필터 없음 — Supabase 가 RLS 로 처리. select * 으로 충분.
   Object.freeze({ dexie: 'comments', supabase: 'today_comments', filterColumn: null }),
