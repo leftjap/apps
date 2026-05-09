@@ -591,7 +591,7 @@
     padding: 18px 0;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
   }
   .ts-item { text-align: center; }
   .ts-val {
@@ -815,21 +815,10 @@
         </svg>
       </div>
 
-      <!-- 통계 3분할 (PR / 연속 / 평균) -->
+      <!-- 통계: 4주 평균 / 최고 주 (사용자 chat1.md 명시 — 스트릭/PR 제외) -->
       <div class="trend-stats">
-        <div class="ts-item"><div class="ts-val accent" id="tsPR">86K<span class="ts-unit">kg</span></div><div class="ts-label">볼륨 PR</div></div>
-        <div class="ts-item"><div class="ts-val" id="tsStreak">3<span class="ts-unit">주</span></div><div class="ts-label">연속</div></div>
-        <div class="ts-item"><div class="ts-val" id="tsAvg">12.4K<span class="ts-unit">kg/주</span></div><div class="ts-label">평균</div></div>
-      </div>
-
-      <!-- 주요 종목 PR -->
-      <div class="trend-pr-list">
-        <div class="trend-pr-eyebrow">주요 종목 PR</div>
-        <div id="trendPrRows">
-          <div class="tpr-row"><span class="tpr-name">벤치프레스</span><span class="tpr-val">60kg</span><span class="tpr-delta">+5</span></div>
-          <div class="tpr-row"><span class="tpr-name">스쿼트</span><span class="tpr-val">80kg</span><span class="tpr-delta">+5</span></div>
-          <div class="tpr-row"><span class="tpr-name">데드리프트</span><span class="tpr-val">100kg</span><span class="tpr-delta tpr-flat">—</span></div>
-        </div>
+        <div class="ts-item"><div class="ts-val" id="tsAvg">12.4K<span class="ts-unit">kg/주</span></div><div class="ts-label">4주 평균</div></div>
+        <div class="ts-item"><div class="ts-val" id="tsMax">14.2K<span class="ts-unit">kg</span></div><div class="ts-label">최고 주</div></div>
       </div>
 
       <!-- 기존 cs-groups 막대 비교 (보조) -->
