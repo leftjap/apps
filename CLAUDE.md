@@ -6,6 +6,7 @@
 - `~/apps/lessons/` — 환경 함정 (lazy load, 인용 시 직접 Read)
 - `~/apps/scripts/` — `claude-wip-snapshot.sh` (Stop hook 자동 호출)
 - 커밋: Conventional Commits. 마일스톤은 `git tag`.
+- **자동 push**: 의미 커밋 (feat/fix/refactor/chore/docs 등 Conventional Commits) 직후 `git push origin main` 자동 실행. 사용자 별도 지시 불필요. WIP 스냅샷 커밋은 push 금지 (로컬 누적 → 다음 의미 커밋에 squash). 롤백은 `git revert` + push.
 
 ---
 

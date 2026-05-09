@@ -400,6 +400,39 @@ function injectEditorStyles() {
       outline: 2px solid var(--crail-base, #d97757);
       outline-offset: 2px;
     }
+    /* 이미지 컨텍스트 메뉴 — DESIGN.md popover 토큰 */
+    .doc-img-ctxmenu {
+      position: fixed;
+      display: none;
+      z-index: 200;
+      background: var(--sidebar, #fff);
+      border: 1px solid var(--line, #e8e4dc);
+      border-radius: var(--r-md, 12px);
+      box-shadow: var(--shadow-pop,
+        0 1px 0 rgba(20,18,14,0.03),
+        0 8px 16px -10px rgba(20,18,14,0.18),
+        0 24px 48px -24px rgba(20,18,14,0.24));
+      padding: var(--sp-1, 4px);
+      min-width: 140px;
+      font-family: var(--font-sans, 'Pretendard', -apple-system, sans-serif);
+    }
+    .doc-img-ctxmenu.open { display: flex; flex-direction: column; }
+    .doc-img-ctxmenu button {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      text-align: left;
+      padding: var(--sp-2, 8px) var(--sp-3, 12px);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--ink-2, #38392c);
+      border-radius: var(--r-sm, 8px);
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .doc-img-ctxmenu button:hover { background: var(--hover-bg, #f3f3f3); }
+    .doc-img-ctxmenu button[data-act="delete"] { color: var(--danger, #c5544a); }
+    .doc-img-ctxmenu button[data-act="delete"]:hover { background: rgba(197, 84, 74, 0.08); }
     .server-update-badge {
       display: inline-block;
       margin-left: 8px;
@@ -699,10 +732,24 @@ function installPasteHandler() {
         }
       }
     }
-    // text 처리 — plaintext 강제
+    // text 처리 — plaintext 강제 (이미지 URL paste 시 자동 <img> 변환)
     e.preventDefault();
     const text = cd.getData('text/plain') || cd.getData('text') || '';
     if (!text) return;
+    if (isBody) {
+      const trimmed = text.trim();
+      if (
+        /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(trimmed) ||
+        /^https?:\/\/(images\.unsplash\.com|drive\.google\.com\/thumbnail)/i.test(trimmed)
+      ) {
+        try {
+          document.execCommand('insertImage', false, trimmed);
+          return;
+        } catch (err) {
+          console.warn('[entries] paste 이미지 URL insertImage 실패:', err?.message || err);
+        }
+      }
+    }
     try {
       document.execCommand('insertText', false, text);
     } catch (_) {
@@ -1255,6 +1302,156 @@ function installImageClickHandler() {
   });
 }
 
+// ─── 이미지 컨텍스트 메뉴 (keep 패턴 참조) — 모바일 롱프레스·우클릭·클릭 진입점.
+//     기존 키보드 핸들러 (Backspace/Delete/Cmd+C/Cmd+X) 와 동등 액션을 메뉴로 노출.
+let _imgCtxMenu = null;
+let _imgCtxTarget = null;
+let _imgLpTimer = null;
+let _imgLpStartX = 0;
+let _imgLpStartY = 0;
+let _imgCtxInstalled = false;
+
+function _ensureImgCtxMenu() {
+  if (_imgCtxMenu) return _imgCtxMenu;
+  _imgCtxMenu = document.createElement('div');
+  _imgCtxMenu.className = 'doc-img-ctxmenu';
+  _imgCtxMenu.setAttribute('role', 'menu');
+  _imgCtxMenu.innerHTML = `
+    <button type="button" data-act="copy" role="menuitem">복사</button>
+    <button type="button" data-act="delete" role="menuitem">삭제</button>
+  `;
+  document.body.appendChild(_imgCtxMenu);
+  _imgCtxMenu.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    const btn = e.target?.closest?.('[data-act]');
+    if (!btn) return;
+    await _imgCtxAction(btn.dataset.act);
+    _hideImgCtxMenu();
+  });
+  return _imgCtxMenu;
+}
+
+function _showImgCtxMenu(x, y) {
+  const menu = _ensureImgCtxMenu();
+  menu.classList.add('open');
+  // measure → 화면 안 클램핑
+  const rect = menu.getBoundingClientRect();
+  let left = Math.min(x, window.innerWidth - rect.width - 8);
+  let top = Math.min(y, window.innerHeight - rect.height - 8);
+  if (left < 8) left = 8;
+  if (top < 8) top = 8;
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+}
+
+function _hideImgCtxMenu() {
+  if (_imgCtxMenu) _imgCtxMenu.classList.remove('open');
+}
+
+async function _imgCtxAction(action) {
+  if (!_imgCtxTarget) return;
+  const img = _imgCtxTarget;
+  if (action === 'delete') {
+    if (_selectedImg === img) _deselectImage();
+    img.remove();
+    _imgCtxTarget = null;
+    const body = document.querySelector('article.doc .doc__body[contenteditable]');
+    body?.dispatchEvent?.(new Event('input', { bubbles: true }));
+    return;
+  }
+  if (action === 'copy') {
+    const src = img.getAttribute('src') || '';
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.write) {
+        const blob = await fetch(src).then((r) => r.blob());
+        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(src);
+      }
+    } catch (err) {
+      try {
+        await navigator.clipboard?.writeText?.(src);
+      } catch (_) {
+        console.warn('[entries] image ctx copy 실패:', err?.message || err);
+      }
+    }
+    return;
+  }
+}
+
+function installImageContextMenu() {
+  if (_imgCtxInstalled) return;
+  if (typeof document === 'undefined') return;
+  _imgCtxInstalled = true;
+
+  // 클릭 → select + 메뉴 (기존 installImageClickHandler 의 click 도 _selectImage 호출 — 여기는 메뉴 노출만)
+  document.addEventListener('click', (e) => {
+    const img = e.target?.closest?.('article.doc .doc__body img');
+    if (!img) return;
+    _imgCtxTarget = img;
+    const r = img.getBoundingClientRect();
+    let x = r.left + r.width / 2;
+    let y = r.bottom + 8;
+    if (y + 100 > window.innerHeight) y = Math.max(8, r.top - 88);
+    _showImgCtxMenu(x, y);
+  });
+
+  // 우클릭 (데스크톱)
+  document.addEventListener('contextmenu', (e) => {
+    const img = e.target?.closest?.('article.doc .doc__body img');
+    if (!img) return;
+    e.preventDefault();
+    _imgCtxTarget = img;
+    _selectImage(img);
+    _showImgCtxMenu(e.clientX, e.clientY);
+  });
+
+  // 모바일 롱프레스 — touchstart 500ms, 8px 이내 이동만
+  document.addEventListener('touchstart', (e) => {
+    const img = e.target?.closest?.('article.doc .doc__body img');
+    if (!img) return;
+    const t = e.touches?.[0];
+    if (!t) return;
+    _imgLpStartX = t.clientX;
+    _imgLpStartY = t.clientY;
+    clearTimeout(_imgLpTimer);
+    _imgLpTimer = setTimeout(() => {
+      _imgCtxTarget = img;
+      _selectImage(img);
+      try { navigator.vibrate?.(15); } catch (_) {}
+      _showImgCtxMenu(_imgLpStartX, _imgLpStartY);
+    }, 500);
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    const t = e.touches?.[0];
+    if (!t || !_imgLpTimer) return;
+    if (Math.abs(t.clientX - _imgLpStartX) > 8 || Math.abs(t.clientY - _imgLpStartY) > 8) {
+      clearTimeout(_imgLpTimer);
+      _imgLpTimer = null;
+    }
+  }, { passive: true });
+  document.addEventListener('touchend', () => {
+    clearTimeout(_imgLpTimer);
+    _imgLpTimer = null;
+  }, { passive: true });
+
+  // 외부 클릭/터치 → 닫기 (capture 단계, 메뉴/이미지 외)
+  const outsideHandler = (e) => {
+    if (!_imgCtxMenu?.classList.contains('open')) return;
+    if (e.target?.closest?.('.doc-img-ctxmenu')) return;
+    if (e.target?.closest?.('article.doc .doc__body img')) return;
+    _hideImgCtxMenu();
+  };
+  document.addEventListener('mousedown', outsideHandler, true);
+  document.addEventListener('touchstart', outsideHandler, { capture: true, passive: true });
+
+  // Esc / 스크롤 → 닫기
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') _hideImgCtxMenu();
+  });
+  window.addEventListener('scroll', _hideImgCtxMenu, true);
+}
+
 let _imageInsertInstalled = false;
 let _imageInputEl = null;
 function installImageInsertHandler() {
@@ -1739,6 +1936,7 @@ export function mountEntriesView(user) {
   installEditToolbarHandler();
   installImageInsertHandler();
   installImageClickHandler();
+  installImageContextMenu();
   observeCategoryChange(handleCategoryActive);
   // Wave 11.5.3.3 — Realtime listener 등록 (재마운트 시 unregister 후 재등록)
   if (_realtimeUnregister) _realtimeUnregister();
