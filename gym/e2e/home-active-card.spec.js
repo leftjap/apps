@@ -100,8 +100,6 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       sub: document.getElementById('sSub').textContent,
       cta: document.getElementById('ctaBtn').textContent,
       appState: document.getElementById('app').dataset.state,
-      clawdAnim: document.getElementById('clawdAnim').className,
-      clawdHref: document.querySelector('#clawdSvg use')?.getAttribute('href'),
     }));
     expect(v.label).toBe('마지막 운동');
     expect(v.num).toBe('1');
@@ -110,8 +108,7 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     expect(v.sub).toMatch(/^이번 주 \d+회 · 이번 달 \d+회$/);
     expect(v.cta).toBe('운동 시작');
     expect(v.appState).toBe('active');
-    expect(v.clawdAnim).toContain('a-bounce');
-    expect(v.clawdHref).toBe('#c-happy');
+    /* v2 다크 시안 — Clawd 캐릭터 제거. clawdAnim/clawdHref assertion 삭제. */
   });
 
   test('G. 5일+ 공백 → rest state + slowbob (Wave 11.10.3)', async ({ page }) => {
@@ -142,14 +139,13 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       () => document.getElementById('app')?.dataset.state === 'rest',
       { timeout: 3_000 },
     );
-    const clawd = await page.evaluate(() => ({
-      anim: document.getElementById('clawdAnim').className,
-      href: document.querySelector('#clawdSvg use')?.getAttribute('href'),
+    const v = await page.evaluate(() => ({
       num: document.getElementById('sNum').textContent,
+      appState: document.getElementById('app').dataset.state,
     }));
-    expect(clawd.anim).toContain('a-slowbob');
-    expect(clawd.href).toBe('#c-rest');
-    expect(clawd.num).toBe('7');
+    expect(v.num).toBe('7');
+    expect(v.appState).toBe('rest');
+    /* v2 다크 시안 — Clawd 캐릭터 제거. clawdAnim/clawdHref assertion 삭제. */
   });
 
   test('B. active 시드 → "진행 중" + 1/1 종목 + state="session"', async ({ page }) => {
