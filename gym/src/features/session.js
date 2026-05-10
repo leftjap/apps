@@ -796,6 +796,9 @@ export function openActionSheet(doc, { kind = '', title = '', items = [], onSele
   const itemsEl = doc?.getElementById?.('actionItems');
   if (!sheet || !backdrop || !itemsEl) return;
   sheet.dataset.kind = kind;
+  // (f-4) — open 마다 step='1' (메뉴) 초기화. confirmId 클리어.
+  sheet.dataset.step = '1';
+  delete sheet.dataset.confirmId;
   if (titleEl) titleEl.textContent = title;
   itemsEl.innerHTML = items.map((it) => {
     const danger = !!it.danger;
@@ -803,12 +806,32 @@ export function openActionSheet(doc, { kind = '', title = '', items = [], onSele
     const weight = danger ? 600 : 400;
     return `<button class="action-item kr" data-action-id="${escapeHtml(it.id)}" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:${color};font-size:14px;font-weight:${weight};cursor:pointer;text-align:center;">${escapeHtml(it.label)}</button>`;
   }).join('');
+  itemsEl._items = items;
   itemsEl._onSelect = typeof onSelect === 'function' ? onSelect : null;
   sheet.dataset.open = 'true';
   sheet.style.transform = 'translateY(0)';
   backdrop.dataset.open = 'true';
   backdrop.style.opacity = '1';
   backdrop.style.pointerEvents = 'auto';
+}
+
+/**
+ * spec §6-9 — 파괴 액션 (danger:true) 선택 시 자동 step 전환 (DOM 한 번 §6-10).
+ *  - title : "{label}하시겠습니까?"
+ *  - items 영역 : 단일 .action-confirm 버튼 (accent fill, 라벨 = action label).
+ *  - 시트 하단 actionCancel 그대로 노출 → 취소 버튼.
+ *  - .action-confirm click → _onSelect(actionId, kind) 호출 후 close.
+ *  - 취소 / backdrop / 아래 스와이프 → onSelect 미호출 + close.
+ */
+function showConfirmStep(doc, kind, actionId, actionLabel) {
+  const sheet = doc.getElementById('actionSheet');
+  const titleEl = doc.getElementById('actionTitle');
+  const itemsEl = doc.getElementById('actionItems');
+  if (!sheet || !titleEl || !itemsEl) return;
+  sheet.dataset.step = '2';
+  sheet.dataset.confirmId = actionId;
+  titleEl.textContent = `${actionLabel}하시겠습니까?`;
+  itemsEl.innerHTML = `<button class="action-confirm kr" data-confirm="ok" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;">${escapeHtml(actionLabel)}</button>`;
 }
 
 export function closeActionSheet(doc) {
@@ -831,13 +854,33 @@ function wireActionSheet(doc) {
   if (sheet.dataset.spaHooked === '1') return;
 
   itemsEl.addEventListener('click', (e) => {
+    // (f-4) step 2 — 파괴 액션 확인 단계
+    const confirmBtn = e.target.closest('.action-confirm');
+    if (confirmBtn) {
+      const c = confirmBtn.dataset.confirm;
+      const actionId = sheet.dataset.confirmId;
+      const kind = sheet.dataset.kind || '';
+      if (c === 'ok' && typeof itemsEl._onSelect === 'function') {
+        try { itemsEl._onSelect(actionId, kind); }
+        catch (err) { console.error('[gymSession] action confirm', err); }
+      }
+      closeActionSheet(doc);
+      return;
+    }
+    // step 1 — 일반 메뉴 항목
     const btn = e.target.closest('.action-item');
     if (!btn) return;
     const id = btn.dataset.actionId;
     const kind = sheet.dataset.kind || '';
-    const onSelect = itemsEl._onSelect;
-    if (typeof onSelect === 'function') {
-      try { onSelect(id, kind); }
+    const items = itemsEl._items || [];
+    const item = items.find((i) => i.id === id);
+    // 파괴 액션 (danger:true) → 2단계 확인 (spec §6-9)
+    if (item && item.danger) {
+      showConfirmStep(doc, kind, id, item.label);
+      return;
+    }
+    if (typeof itemsEl._onSelect === 'function') {
+      try { itemsEl._onSelect(id, kind); }
       catch (err) { console.error('[gymSession] action onSelect', err); }
     }
     closeActionSheet(doc);

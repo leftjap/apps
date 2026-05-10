@@ -1601,6 +1601,34 @@ describe('openActionSheet / closeActionSheet (spec §6-9 / §6-10)', () => {
     expect(doc._itemsEl.innerHTML).toContain('color:#fff');
     expect(doc._itemsEl.innerHTML).toContain('font-weight:400');
   });
+
+  /* (f-4) step 보관 + items 보관 */
+  it("open 시 dataset.step='1' 초기화 + items 보관 (f-4)", () => {
+    const doc = makeActionDoc();
+    const items = [{ id: 'edit', label: '수정' }, { id: 'delete', label: '삭제', danger: true }];
+    openActionSheet(doc, { kind: 'a', items });
+    expect(doc._sheet.dataset.step).toBe('1');
+    expect(doc._itemsEl._items).toEqual(items);
+  });
+
+  it("이전 confirmId 있으면 open 시 클리어", () => {
+    const doc = makeActionDoc();
+    doc._sheet.dataset.confirmId = 'old-id';
+    openActionSheet(doc, { kind: 'a', items: [] });
+    expect(doc._sheet.dataset.confirmId).toBeUndefined();
+  });
+
+  it("두 번째 open — step 다시 '1' 로 (이전 step 2 잔존 회피)", () => {
+    const doc = makeActionDoc();
+    openActionSheet(doc, { kind: 'a', items: [{ id: 'x', label: 'X', danger: true }] });
+    // 가상으로 step 2 로 전환되었다고 가정
+    doc._sheet.dataset.step = '2';
+    doc._sheet.dataset.confirmId = 'x';
+    // 다시 open
+    openActionSheet(doc, { kind: 'b', items: [{ id: 'y', label: 'Y' }] });
+    expect(doc._sheet.dataset.step).toBe('1');
+    expect(doc._sheet.dataset.confirmId).toBeUndefined();
+  });
 });
 
 /* ───────────────── wireLongPress cross-cancel (spec §6-9 — f-3a) ───────────────── */
