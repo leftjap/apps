@@ -20,6 +20,8 @@ import {
   handleLeftSwipe,
   handleRightSwipe,
   applyTapDelta,
+  updateKeypadBuf,
+  applyKeypadValue,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1194,5 +1196,143 @@ describe('applyTapDelta (spec §6-3)', () => {
 
   it('active session 부재 → no-op (예외 없음)', async () => {
     await expect(applyTapDelta('weight', +1)).resolves.toBeUndefined();
+  });
+});
+
+/* ───────────────── updateKeypadBuf (spec §6-3-2 순수함수) ───────────────── */
+
+describe('updateKeypadBuf (spec §6-3-2)', () => {
+  it("'' + '1' → '1'", () => {
+    expect(updateKeypadBuf('', '1')).toBe('1');
+  });
+  it("'12' + '5' → '125'", () => {
+    expect(updateKeypadBuf('12', '5')).toBe('125');
+  });
+  it("'12' + '.' → '12.'", () => {
+    expect(updateKeypadBuf('12', '.')).toBe('12.');
+  });
+  it("'12.' + '.' → '12.' (한 번만)", () => {
+    expect(updateKeypadBuf('12.', '.')).toBe('12.');
+  });
+  it("'' + '.' → '0.' (prefix)", () => {
+    expect(updateKeypadBuf('', '.')).toBe('0.');
+  });
+  it("'12' + 'del' → '1'", () => {
+    expect(updateKeypadBuf('12', 'del')).toBe('1');
+  });
+  it("'' + 'del' → '' (no-op)", () => {
+    expect(updateKeypadBuf('', 'del')).toBe('');
+  });
+  it("'60' + '.' + '5' → '60.5' (소수점)", () => {
+    expect(updateKeypadBuf(updateKeypadBuf('60', '.'), '5')).toBe('60.5');
+  });
+  it("invalid key → cur 그대로", () => {
+    expect(updateKeypadBuf('12', 'x')).toBe('12');
+    expect(updateKeypadBuf('12', '+')).toBe('12');
+  });
+});
+
+/* ───────────────── applyKeypadValue (spec §6-3-2 통합) ───────────────── */
+
+function makeFakeKeypadDoc({ mode, buf }) {
+  const sheet = {
+    dataset: { mode, buf, open: 'true' },
+    style: { transform: 'translateY(0)' },
+  };
+  const backdrop = {
+    dataset: { open: 'true' },
+    style: { opacity: '1', pointerEvents: 'auto' },
+  };
+  return {
+    getElementById(id) {
+      if (id === 'keypadSheet') return sheet;
+      if (id === 'keypadBackdrop') return backdrop;
+      return null;
+    },
+    _sheet: sheet,
+    _backdrop: backdrop,
+  };
+}
+
+describe('applyKeypadValue (spec §6-3-2)', () => {
+  it("weight '62.5' → set.weight 62.5 (소수 보존), 시트 close", async () => {
+    await db.sessions.put({
+      id: 'kp-test',
+      date: '2026-05-10',
+      startTime: Date.now() - 10 * 60_000,
+      endTime: null,
+      blocks: [{
+        type: 'single',
+        exerciseId: 'dumbbell_curl',
+        sets: [{ weight: 16, reps: 10, done: false, preset: true, pr: false }],
+      }],
+      tags: ['arms'],
+      totalVolume: 0,
+      totalCalories: 0,
+      durationMin: 0,
+      status: 'active',
+    });
+    const doc = makeFakeKeypadDoc({ mode: 'weight', buf: '62.5' });
+    await applyKeypadValue(doc);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    expect(rows[0].blocks[0].sets[0].weight).toBe(62.5);
+    expect(rows[0].blocks[0].sets[0].preset).toBe(false);
+    // 시트 close 확인
+    expect(doc._sheet.dataset.open).toBe('false');
+    expect(doc._sheet.style.transform).toBe('translateY(100%)');
+    expect(doc._backdrop.dataset.open).toBe('false');
+  });
+
+  it("reps '12.7' → set.reps 13 (Math.round)", async () => {
+    await db.sessions.put({
+      id: 'kp-test',
+      date: '2026-05-10',
+      startTime: Date.now() - 10 * 60_000,
+      endTime: null,
+      blocks: [{
+        type: 'single',
+        exerciseId: 'bench_press',
+        sets: [{ weight: 60, reps: 10, done: false, preset: true, pr: false }],
+      }],
+      tags: ['chest'],
+      totalVolume: 0,
+      totalCalories: 0,
+      durationMin: 0,
+      status: 'active',
+    });
+    const doc = makeFakeKeypadDoc({ mode: 'reps', buf: '12.7' });
+    await applyKeypadValue(doc);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    expect(rows[0].blocks[0].sets[0].reps).toBe(13);
+  });
+
+  it("빈 buf → DB 변화 없음, 시트 close (취소와 동등)", async () => {
+    await db.sessions.put({
+      id: 'kp-test',
+      date: '2026-05-10',
+      startTime: Date.now() - 10 * 60_000,
+      endTime: null,
+      blocks: [{
+        type: 'single',
+        exerciseId: 'bench_press',
+        sets: [{ weight: 60, reps: 10, done: false, preset: true, pr: false }],
+      }],
+      tags: ['chest'],
+      totalVolume: 0,
+      totalCalories: 0,
+      durationMin: 0,
+      status: 'active',
+    });
+    const doc = makeFakeKeypadDoc({ mode: 'weight', buf: '' });
+    await applyKeypadValue(doc);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    expect(rows[0].blocks[0].sets[0].weight).toBe(60); // 그대로
+    expect(doc._sheet.dataset.open).toBe('false');
+  });
+
+  it("active session 부재 → 시트 close 만 (예외 없음)", async () => {
+    const doc = makeFakeKeypadDoc({ mode: 'weight', buf: '70' });
+    await applyKeypadValue(doc);
+    expect(doc._sheet.dataset.open).toBe('false');
   });
 });

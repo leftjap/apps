@@ -564,6 +564,8 @@ function mountSessionActive(doc, block) {
 
   // spec §6-3-1 — 스와이프 핸들러 wire (idempotent — dataset.spaHooked guard)
   try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
+  // spec §6-3-2 — 키패드 시트 wire (idempotent — sheet.dataset.spaHooked guard)
+  try { wireKeypad(doc); } catch (e) { console.error('[gymSession] wireKeypad', e); }
 
   return { mounted: true, branch: 'active', exerciseId: block.exerciseId, currentSetIdx: cur };
 }
@@ -674,7 +676,7 @@ async function handleTap(doc, x, y) {
     const ratio = (x - r.left) / r.width;
     if (ratio < 0.3) await applyTapDelta(field, -1);
     else if (ratio > 0.7) await applyTapDelta(field, +1);
-    // 중앙 40% 는 (d) 키패드 — 본 단계 미처리
+    else openKeypad(doc, field); // spec §6-3-2 — 중앙 40% → 키패드
     return;
   }
 }
@@ -752,6 +754,153 @@ function flashElement(el) {
     el.style.opacity = '1';
     setTimeout(() => { el.style.transition = ''; }, 75);
   }, 75);
+}
+
+/* ──────────────────── 키패드 바텀시트 (spec §6-3-2 / §6-10) ──────────────────── */
+
+/**
+ * spec §6-3-2 — 키패드 buffer 갱신 순수함수.
+ *  - '0~9' : append (선행 0 은 그대로 두면 안 됨? — spec 미명시. 단순 append 후 parseFloat 가 처리)
+ *  - '.'   : 한 번만 허용. 빈 buf 면 '0.' 로 prefix.
+ *  - 'del' : 한 자리 삭제.
+ *  - 그 외 : 무시.
+ */
+export function updateKeypadBuf(buf, key) {
+  const cur = String(buf || '');
+  if (key === 'del') return cur.slice(0, -1);
+  if (key === '.') {
+    if (cur.includes('.')) return cur;
+    return cur === '' ? '0.' : cur + '.';
+  }
+  if (/^[0-9]$/.test(String(key))) return cur + String(key);
+  return cur;
+}
+
+/**
+ * spec §6-10 — DOM 한 번 생성 후 transform/opacity 토글로 키패드 노출.
+ *  - sheet : translateY(100%) → translateY(0)
+ *  - backdrop : opacity 0 → 1, pointer-events none → auto
+ *  - data-mode : 'weight'|'reps' (단위 라벨 + 적용 대상)
+ *  - data-buf  : 입력 누적 (빈 시작)
+ */
+function openKeypad(doc, field) {
+  const sheet = doc.getElementById('keypadSheet');
+  const backdrop = doc.getElementById('keypadBackdrop');
+  const value = doc.getElementById('keypadValue');
+  const unit = doc.getElementById('keypadUnit');
+  if (!sheet || !backdrop || !value || !unit) return;
+  sheet.dataset.mode = field;
+  sheet.dataset.buf = '';
+  unit.textContent = field === 'weight' ? 'kg' : '회';
+  renderKeypadValue(sheet, value);
+  sheet.dataset.open = 'true';
+  sheet.style.transform = 'translateY(0)';
+  backdrop.dataset.open = 'true';
+  backdrop.style.opacity = '1';
+  backdrop.style.pointerEvents = 'auto';
+}
+
+function closeKeypad(doc) {
+  const sheet = doc.getElementById('keypadSheet');
+  const backdrop = doc.getElementById('keypadBackdrop');
+  if (!sheet || !backdrop) return;
+  sheet.dataset.open = 'false';
+  sheet.style.transform = 'translateY(100%)';
+  backdrop.dataset.open = 'false';
+  backdrop.style.opacity = '0';
+  backdrop.style.pointerEvents = 'none';
+}
+
+function renderKeypadValue(sheet, valueEl) {
+  if (!valueEl) return;
+  const buf = sheet?.dataset?.buf || '';
+  valueEl.textContent = buf === '' ? '0' : buf;
+}
+
+/**
+ * 완료 버튼 click → buf 파싱 → persistKeypadEdit + mountSessionView.
+ *  - reps 는 정수 round, weight 는 소수 보존 (덤벨 2.5kg).
+ *  - 빈 buf 또는 invalid → 단순 close (취소와 동일).
+ */
+export async function applyKeypadValue(doc) {
+  const sheet = doc?.getElementById?.('keypadSheet');
+  if (!sheet) return;
+  const field = sheet.dataset.mode;
+  const buf = sheet.dataset.buf || '';
+  const parsed = parseFloat(buf);
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    closeKeypad(doc);
+    return;
+  }
+  const finalValue = field === 'reps' ? Math.round(parsed) : parsed;
+
+  let ctx;
+  try { ctx = await getCurrentBlockAndCursor(); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] applyKeypadValue ctx', e);
+    }
+    closeKeypad(doc);
+    return;
+  }
+  if (!ctx) { closeKeypad(doc); return; }
+
+  const { block, effectiveCur } = ctx;
+  const exerciseName = resolveExerciseName(block.exerciseId);
+  const r = await persistKeypadEdit({ exerciseName, setIdx: effectiveCur, field, value: finalValue });
+  closeKeypad(doc);
+  if (r && r.ok) await mountSessionView();
+}
+
+/**
+ * spec §6-3-2 — 키패드 시트 click + 배경 탭 + 아래 스와이프 리스너 부착.
+ *  - 1~9 / 0 / . / del click → updateKeypadBuf → 화면 갱신
+ *  - 완료 click → applyKeypadValue
+ *  - 배경 탭 → closeKeypad (취소)
+ *  - 시트 아래 60px+ 스와이프 → closeKeypad (취소)
+ */
+function wireKeypad(doc) {
+  const sheet = doc.getElementById('keypadSheet');
+  const backdrop = doc.getElementById('keypadBackdrop');
+  const done = doc.getElementById('keypadDone');
+  const value = doc.getElementById('keypadValue');
+  const grid = doc.getElementById('keypadGrid');
+  if (!sheet || !backdrop || !done || !value || !grid) return;
+  if (sheet.dataset.spaHooked === '1') return;
+
+  // 키 click — grid 위임
+  grid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.keypad-key');
+    if (!btn) return;
+    const k = btn.dataset.key;
+    sheet.dataset.buf = updateKeypadBuf(sheet.dataset.buf || '', k);
+    renderKeypadValue(sheet, value);
+  });
+
+  done.addEventListener('click', () => {
+    applyKeypadValue(doc).catch((e) => console.error('[gymSession] keypad done', e));
+  });
+
+  backdrop.addEventListener('click', () => closeKeypad(doc));
+
+  // 시트 아래 스와이프 → 취소 (60px+)
+  let downY = 0;
+  let tracking = false;
+  sheet.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    // 키 버튼 직접 클릭은 swipe 추적 안 함 (의도치 않은 close 방지)
+    if (e.target.closest('.keypad-key, #keypadDone')) return;
+    downY = e.clientY;
+    tracking = true;
+  });
+  sheet.addEventListener('pointerup', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    if (e.clientY - downY >= 60) closeKeypad(doc);
+  });
+  sheet.addEventListener('pointercancel', () => { tracking = false; });
+
+  sheet.dataset.spaHooked = '1';
 }
 
 /**
@@ -1043,6 +1192,8 @@ if (typeof window !== 'undefined') {
     handleLeftSwipe,
     handleRightSwipe,
     applyTapDelta,
+    updateKeypadBuf,
+    applyKeypadValue,
     getActivePart,
     setActivePart,
   };
