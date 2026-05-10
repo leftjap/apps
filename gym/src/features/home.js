@@ -92,16 +92,9 @@ export function summarizeActiveSession(session, now = Date.now()) {
  *   { state: 'empty'|'active'|'gap'|'rest',
  *     label, num, unit, part,
  *     sub: '<weekCount>',           // streak-week-num 표시값
- *     subUnit: '/<weeklyGoal>회',   // streak-week-unit 접미
- *     clawd: { id, anim, size } }
+ *     subUnit: '/<weeklyGoal>회' }  // streak-week-unit 접미
  *
  * empty 상태(시안 부재) 임의 채움: label='마지막 운동', num='—', part='', sub='0', subUnit='/Ngoal회'.
- *
- * Clawd 매핑 (spec §5-3):
- *   - 1~2일 (오늘 0일 포함): c-happy / a-bounce / tall
- *   - 3~4일: c-idle / a-bob / short
- *   - 5일+: c-rest / a-slowbob / short
- *   - 세션 0: c-idle / a-bob / short (empty 라벨)
  */
 export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT_WEEKLY_GOAL) {
   const goal = Number.isFinite(weeklyGoal) && weeklyGoal >= 1 && weeklyGoal <= 7
@@ -119,7 +112,6 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
       part: '',
       sub: '0',
       subUnit,
-      clawd: { id: 'c-idle', anim: 'a-bob', size: 'short' },
     };
   }
   list.sort((a, b) => {
@@ -141,17 +133,10 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
   const tags = Array.isArray(last.tags) ? last.tags : [];
   const part = tags.map((t) => PARTS[t] || t).join(' · ');
 
-  let state, clawd;
-  if (daysSince <= 2) {
-    state = 'active';
-    clawd = { id: 'c-happy', anim: 'a-bounce', size: 'tall' };
-  } else if (daysSince <= 4) {
-    state = 'gap';
-    clawd = { id: 'c-idle', anim: 'a-bob', size: 'short' };
-  } else {
-    state = 'rest';
-    clawd = { id: 'c-rest', anim: 'a-slowbob', size: 'short' };
-  }
+  let state;
+  if (daysSince <= 2) state = 'active';
+  else if (daysSince <= 4) state = 'gap';
+  else state = 'rest';
 
   return {
     state,
@@ -161,7 +146,6 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
     part,
     sub: String(weekCount),
     subUnit,
-    clawd,
   };
 }
 
@@ -281,7 +265,7 @@ export async function mountHomeView(now = Date.now()) {
     console.error('[gymHome] mountHomeView active', e);
   }
 
-  // Wave 11.10.3 — active 없으면 streak 표시 (마지막 N일 전 + 이번 주 + Clawd).
+  // Wave 11.10.3 — active 없으면 streak 표시 (마지막 N일 전 + 이번 주).
   if (!activeApplied) {
     try {
       const today = new Date(now);
@@ -358,7 +342,7 @@ function applyToDom(v, doc) {
   if (app) app.dataset.state = 'session';
 }
 
-/** Wave 11.10.3 — streak DOM 갱신 + Clawd 렌더링. Wave 11.10.4 — CTA click → #/session. */
+/** Wave 11.10.3 — streak DOM 갱신. Wave 11.10.4 — CTA click → #/session. */
 function applyStreakToDom(streak, doc) {
   const setText = (id, text) => {
     const el = doc.getElementById(id);
@@ -379,7 +363,6 @@ function applyStreakToDom(streak, doc) {
   setText('sSub', streak.sub);
   setText('sSubUnit', streak.subUnit || '');
   setText('ctaBtn', streak.state === 'empty' ? '첫 운동 시작' : '운동 시작');
-  // Clawd — v2 다크 시안에서 캐릭터 제거. element 존재 시만 안전 가드 (구 mocks 호환).
   // Wave 11.10.4 — '운동 시작' / '첫 운동 시작' click → #/session.
   // session 화면 진입 후 사용자가 종목 클릭 시 addExerciseToActiveSession 가 active session 자동 생성 (spec §6-1).
   const cta = doc.getElementById('ctaBtn');

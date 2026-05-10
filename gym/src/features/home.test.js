@@ -137,7 +137,6 @@ describe('summarizeStreak', () => {
     expect(r.part).toBe('');
     expect(r.sub).toBe('0');
     expect(r.subUnit).toBe('/4회');
-    expect(r.clawd).toEqual({ id: 'c-idle', anim: 'a-bob', size: 'short' });
   });
 
   it('null 입력 → empty', () => {
@@ -152,32 +151,28 @@ describe('summarizeStreak', () => {
     expect(r.unit).toBe('');
     expect(r.label).toBe('마지막 운동');
     expect(r.part).toBe('가슴');
-    expect(r.clawd).toEqual({ id: 'c-happy', anim: 'a-bounce', size: 'tall' });
   });
 
-  it('1~2일 → active + Barbell Raise', () => {
+  it('1~2일 → active', () => {
     const sessions = [{ date: '2026-04-29', tags: ['chest'], status: 'completed' }];
     const r = summarizeStreak(sessions, NOW_THU);
     expect(r.state).toBe('active');
     expect(r.num).toBe('1');
     expect(r.unit).toBe('일 전');
-    expect(r.clawd.anim).toBe('a-bounce');
   });
 
-  it('3~4일 → gap + bob', () => {
+  it('3~4일 → gap', () => {
     const sessions = [{ date: '2026-04-26', tags: ['back'], status: 'completed' }];
     const r = summarizeStreak(sessions, NOW_THU);
     expect(r.state).toBe('gap');
     expect(r.num).toBe('4');
-    expect(r.clawd).toEqual({ id: 'c-idle', anim: 'a-bob', size: 'short' });
   });
 
-  it('5+일 → rest + slowbob', () => {
+  it('5+일 → rest', () => {
     const sessions = [{ date: '2026-04-23', tags: ['legs'], status: 'completed' }];
     const r = summarizeStreak(sessions, NOW_THU);
     expect(r.state).toBe('rest');
     expect(r.num).toBe('7');
-    expect(r.clawd).toEqual({ id: 'c-rest', anim: 'a-slowbob', size: 'short' });
   });
 
   it('이번 주 카운트 — 4/27(월)~5/3(일) 안 sessions → sub=count, subUnit=/Ngoal회', () => {

@@ -1,17 +1,14 @@
 /**
  * exercises.js 단위 테스트 — 마스터 데이터 정합 + 헬퍼 동작.
- * spec §11 (운동 데이터) + §1 Clawd 포즈 매핑.
+ * spec §11 (운동 데이터).
  */
 import { describe, it, expect } from 'vitest';
 import {
   PARTS,
   PART_IDS,
   INCREMENT,
-  POSES,
-  EXERCISE_POSE,
   BUILTIN_EXERCISES,
   getIncrementForEquipment,
-  getPoseForExercise,
   getBuiltinExercise,
   listBuiltinByPart,
   listAllBuiltin,
@@ -45,25 +42,6 @@ describe('INCREMENT (장비별 중량 증감, spec §11)', () => {
   });
   it('frozen', () => {
     expect(Object.isFrozen(INCREMENT)).toBe(true);
-  });
-});
-
-describe('POSES / EXERCISE_POSE (spec §1 Clawd 포즈)', () => {
-  it('상태 3 + 동작 7 = 10 포즈', () => {
-    expect(POSES).toHaveLength(10);
-    expect(POSES).toContain('idle');
-    expect(POSES).toContain('happy');
-    expect(POSES).toContain('rest');
-  });
-  it('운동 매핑 포즈는 동작 7종만 사용 (상태 3종 미사용)', () => {
-    const used = new Set(Object.values(EXERCISE_POSE));
-    expect(used).not.toContain('idle');
-    expect(used).not.toContain('happy');
-    expect(used).not.toContain('rest');
-  });
-  it('frozen', () => {
-    expect(Object.isFrozen(EXERCISE_POSE)).toBe(true);
-    expect(Object.isFrozen(POSES)).toBe(true);
   });
 });
 
@@ -124,14 +102,6 @@ describe('getIncrementForEquipment', () => {
   it('dumbbell → 2', () => expect(getIncrementForEquipment('dumbbell')).toBe(2));
   it('bodyweight → 0', () => expect(getIncrementForEquipment('bodyweight')).toBe(0));
   it('알 수 없는 장비 → 0 fallback', () => expect(getIncrementForEquipment('xxx')).toBe(0));
-});
-
-describe('getPoseForExercise', () => {
-  it('bench_press → press', () => expect(getPoseForExercise('bench_press')).toBe('press'));
-  it('squat → squat', () => expect(getPoseForExercise('squat')).toBe('squat'));
-  it('deadlift → lift', () => expect(getPoseForExercise('deadlift')).toBe('lift'));
-  it('treadmill → run', () => expect(getPoseForExercise('treadmill')).toBe('run'));
-  it('알 수 없는 운동 → idle fallback', () => expect(getPoseForExercise('unknown')).toBe('idle'));
 });
 
 describe('getBuiltinExercise', () => {

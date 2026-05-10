@@ -894,3 +894,52 @@ Phase A 는 mocks/ 정합만 처리. 아래는 src/specs/e2e 잔존 — Phase B 
 - `src/features/home.test.js` `r.clawd` assertion 4건.
 - `e2e/home-active-card.spec.js` Clawd 흔적 (일부 v2 주석으로 정리됨, 잔여 정리).
 - `specs/gym-app-spec.md` §1 (Clawd 포즈 10종) · §5-3 (스트릭 + Clawd) · §6-7 (운동별 프로그레스바 + Clawd) — 본 작업지시서 §1 명시 "범위 외". v2 캐릭터 제거 반영해서 재작성 필요.
+
+---
+
+## 10. Phase B 단계 1~3 완료 + 단계 4~8 인계 (2026-05-10)
+
+Phase B 지시서 §9 8단계 중 1~3 완료. 단계 4~8 은 다음 세션.
+
+### 완료 (단계 1~3)
+
+**단계 1 — spec 갱신**: `gym-app-spec.md` §1 라인 10 / §1 Clawd 포즈 체계 표 (구 99-113) / §2 화면 구조 ASCII / §5-3 스트릭 영역 / §6-3 카드 ASCII (구 line 308 🦀) / §6-7 운동별 프로그레스바 / §6-11 PR 토스트 / §14 디자인 원칙 / §15 Phase 2 항목 11·13 갱신. §0 인덱스 행 번호 재계산 (현 grep -n 결과 기준). `rg -i 'clawd|barbell.raise|sparkle|wiggle|slowbob' specs/ DESIGN.md` → exit 1 (0건).
+
+**단계 2 — Clawd 제거 (src + e2e)**:
+- `src/db/exercises.js` — `POSES` · `EXERCISE_POSE` 상수 + `getPoseForExercise` 함수 제거. `window.gymExercises` export 정리.
+- `src/db/exercises.test.js` — `POSES / EXERCISE_POSE` describe 블록 + `getPoseForExercise` describe 블록 제거.
+- `src/features/home.js` — `summarizeStreak` 의 `clawd` 객체 반환 + JSDoc + 함수 내부 변수 제거. 주석 잔여 정리 (line 268·345·366).
+- `src/features/home.test.js` — `r.clawd` assertion 4건 제거. 1~2일 / 3~4일 / 5+일 케이스 라벨에서 "Barbell Raise" / "bob" / "slowbob" 제거.
+- `e2e/home-active-card.spec.js` — test F·G 라벨 + 주석 정리.
+- 검증: `rg -i 'clawd|EXERCISE_POSE|barbell.raise|sparkle|wiggle|slowbob' src/ e2e/` → exit 1 (0건).
+- 영향 테스트: `pnpm vitest run src/db/exercises.test.js src/features/home.test.js` → "Test Files 2 passed (2) / Tests 55 passed (55)".
+
+**단계 3 — picker 정리**: `src/app.js:4` raw import 제거 + `ROUTES.picker` 제거. `mocks/picker.html` 삭제. 외부 `#/picker` 진입 코드 grep → 0건 확인 후 제거.
+
+### 단계 4 진입 전 핵심 발견 (다음 세션 시작 시 우선 해결)
+
+**`src/app.js` 가 `mocks/*.html?raw` 를 innerHTML 로 주입하는 구조**. 즉 `src/features/*` 가 의존하는 element id (예: `sNum`·`sLabel`·`sPart`·`sSub`·`sSubUnit`·`ctaBtn` 등) 가 Phase A 의 v2 mocks 풀 리라이트 결과에는 **존재하지 않음**. 단계 4 의 본질은 단순 "v2 적용" 이 아니라:
+
+1. (옵션 A) `mocks/*.html` 의 v2 시각을 유지하면서 **id 를 추가** — 텍스트 노드 분리 + `id="sNum"` 등 부착. 시각 변경 없음.
+2. (옵션 B) `src/features/*` 의 querySelector 를 v2 마크업 구조에 맞게 재작성 — 시안 변경 시 selector 깨질 위험.
+
+권장 = (A). v2 마크업에 id 만 추가.
+
+### 단계 4~8 인계 (Phase B 지시서 §9)
+
+- **단계 4 — 화면별 src 적용**:
+  - login → `src/services/auth.js` (215). `mocks/login.html` 의 Google 버튼 click 핸들러 + 에러 메시지 영역 id 매핑 필요.
+  - home → `src/features/home.js` (이미 Clawd 제거됨, 432 → 약 410). v2 HomeA/HomeC 분기를 active session 유무로 동작. mocks 의 두 phone 마크업에 id 부착 + JS 토글 → src 가 데이터로 토글하도록.
+  - session-empty + session → `src/features/session.js` (612). spec §6-3 인터랙션 (스와이프·키패드·프리셋·꾹누르기) + v2 시각 일치. mocks/session.html 의 "← 이전 수정 / 완료 →" 가이드 텍스트 src 적용 시 제거 (spec §6-3-1 "지시문 금지"). 시안 누락분 보강 (서킷 토글, 시트 §6-2 권위).
+  - summary → `src/features/session-summary.js` (139). v2 CompleteB 영수증 모달.
+  - stats → `src/features/stats.js` (408). 3 탭 (캘린더/추이/부위) src 적용. 캘린더 날짜 탭 → 그날 운동 바텀시트 (Phase A 단계서 미구현, Phase B 에서 구현).
+  - **신설**: `src/features/manage.js` (Manage 통합 셸). exercises-admin/weights/profile 의 콘텐츠 함수만 import → 3 탭 wrapper. 기존 3 파일은 router 진입점 제거하고 render 함수만 export.
+- **단계 5 — 테스트 갱신**: `pnpm vitest run` 0 fail 목표. `session.test.js` (947) · `stats.test.js` (491) UI selector 갱신.
+- **단계 6 — 빌드**: `pnpm build` 통과.
+- **단계 7 — e2e**: `pnpm e2e` 0 fail. `e2e/` 7 spec selector 갱신.
+- **단계 8 — 자체 시각 검증**: preview screenshot 으로 `Gym App 시안 v2.html` (또는 handoff §4 JSX 명세) vs 실 src dev 서버 비교. 사용자 위임 금지.
+- **자동 commit + push**: 본 세션 편집 파일만 staging.
+
+### 본 세션 commit 예정 메시지
+
+`refactor(gym): Phase B step 1-3 — spec/Clawd cleanup + picker removal`

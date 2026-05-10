@@ -1,14 +1,11 @@
 /**
- * Gym 운동 마스터 데이터 (spec §11 + §1 Clawd 포즈 매핑).
+ * Gym 운동 마스터 데이터 (spec §11).
  *
  * BUILTIN_EXERCISES — 약 40종 기본 운동. 사용자 환경에서 마이그레이션 없이 코드 배포만으로
  * 갱신되는 정적 카탈로그. 사용자 추가 운동은 customExercises 스토어 (queries.js).
  *
  * 부위(part): chest / back / shoulder / legs / arms / cardio
  * 장비(equipment): barbell / dumbbell / machine / cable / bodyweight / cardio
- * 포즈(pose): idle / happy / rest / lift / press / curl / squat / row / pull / run
- *   - lift / press / curl / squat / row / pull / run 7종이 운동 매핑 대상
- *   - idle / happy / rest 3종은 상태 (운동 매핑 없음)
  *
  * 중량 증감: equipment 로 결정 (INCREMENT[equipment])
  *   - barbell·machine·cable: 5kg
@@ -37,66 +34,6 @@ export const INCREMENT = Object.freeze({
   cable: 5,
   bodyweight: 0,
   cardio: 0,
-});
-
-export const POSES = Object.freeze([
-  'idle', 'happy', 'rest',
-  'lift', 'press', 'curl', 'squat', 'row', 'pull', 'run',
-]);
-
-/**
- * 운동 id → Clawd 포즈. spec §1 Clawd 포즈 체계의 동작 7종 (lift·press·curl·squat·row·pull·run) 만 사용.
- * 누락된 운동은 기본 'idle' fallback (getPoseForExercise).
- */
-export const EXERCISE_POSE = Object.freeze({
-  // press
-  bench_press: 'press',
-  incline_bench: 'press',
-  decline_bench: 'press',
-  dumbbell_fly: 'press',
-  cable_crossover: 'press',
-  push_up: 'press',
-  shoulder_press: 'press',
-  military_press: 'press',
-  side_lateral: 'press',
-  front_raise: 'press',
-  rear_lateral: 'press',
-  tricep_extension: 'press',
-  tricep_pushdown: 'press',
-  dips: 'press',
-  // curl
-  bicep_curl: 'curl',
-  hammer_curl: 'curl',
-  dumbbell_curl: 'curl',
-  cable_curl: 'curl',
-  wrist_curl: 'curl',
-  // squat
-  squat: 'squat',
-  lunge: 'squat',
-  leg_press: 'squat',
-  hip_thrust: 'squat',
-  leg_extension: 'squat',
-  leg_curl: 'squat',
-  calf_raise: 'squat',
-  // row
-  barbell_row: 'row',
-  dumbbell_row: 'row',
-  seated_row: 'row',
-  cable_row: 'row',
-  t_bar_row: 'row',
-  // pull
-  pull_up: 'pull',
-  chin_up: 'pull',
-  lat_pulldown: 'pull',
-  // lift
-  deadlift: 'lift',
-  romanian_deadlift: 'lift',
-  good_morning: 'lift',
-  // run (cardio)
-  treadmill: 'run',
-  cycle: 'run',
-  rowing_machine: 'run',
-  elliptical: 'run',
 });
 
 /**
@@ -163,11 +100,6 @@ export function getIncrementForEquipment(equipment) {
   return INCREMENT[equipment] ?? 0;
 }
 
-/** 운동 id → Clawd 포즈. 매핑 없으면 'idle' fallback */
-export function getPoseForExercise(id) {
-  return EXERCISE_POSE[id] ?? 'idle';
-}
-
 /** 빌트인 운동 id → 객체 (weightIncrement 자동 합성) */
 export function getBuiltinExercise(id) {
   const ex = BUILTIN_EXERCISES.find(e => e.id === id);
@@ -196,11 +128,8 @@ if (typeof window !== 'undefined') {
     PARTS,
     PART_IDS,
     INCREMENT,
-    POSES,
-    EXERCISE_POSE,
     BUILTIN_EXERCISES,
     getIncrementForEquipment,
-    getPoseForExercise,
     getBuiltinExercise,
     listBuiltinByPart,
     listAllBuiltin,

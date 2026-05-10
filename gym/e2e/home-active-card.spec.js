@@ -65,12 +65,12 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     });
   });
 
-  test('F. completed sessions 시드 → streak state + Clawd (Wave 11.10.3)', async ({ page }) => {
+  test('F. completed sessions 시드 → streak active state (Wave 11.10.3)', async ({ page }) => {
     await bootstrapFake(page);
     const dbReady = await page.evaluate(() => !!window.gymDB);
     test.skip(!dbReady, 'fake bootstrap 환경 외');
 
-    // 어제 (1일 전) chest 시드 — 1~2일 → active state + Barbell Raise (a-bounce)
+    // 어제 (1일 전) chest 시드 — 1~2일 → active state
     await page.evaluate(async () => {
       const now = new Date();
       const yesterday = new Date(now);
@@ -112,10 +112,9 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     expect(v.subUnit).toMatch(/^\/\d+회$/);
     expect(v.cta).toBe('운동 시작');
     expect(v.appState).toBe('active');
-    /* v2 다크 시안 — Clawd 캐릭터 제거. clawdAnim/clawdHref assertion 삭제. */
   });
 
-  test('G. 5일+ 공백 → rest state + slowbob (Wave 11.10.3)', async ({ page }) => {
+  test('G. 5일+ 공백 → rest state (Wave 11.10.3)', async ({ page }) => {
     await bootstrapFake(page);
     const dbReady = await page.evaluate(() => !!window.gymDB);
     test.skip(!dbReady, 'fake bootstrap 환경 외');
@@ -149,7 +148,6 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     }));
     expect(v.num).toBe('7');
     expect(v.appState).toBe('rest');
-    /* v2 다크 시안 — Clawd 캐릭터 제거. clawdAnim/clawdHref assertion 삭제. */
   });
 
   test('B. active 시드 → "진행 중" + 1/1 종목 + state="session"', async ({ page }) => {

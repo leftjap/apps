@@ -1,7 +1,6 @@
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionHtml from '../mocks/session.html?raw';
-import pickerHtml from '../mocks/picker.html?raw';
 import summaryHtml from '../mocks/summary.html?raw';
 import statsHtml from '../mocks/stats.html?raw';
 import adminHtml from '../mocks/admin.html?raw';
@@ -10,7 +9,6 @@ const ROUTES = {
   login: loginHtml,
   home: homeHtml,
   session: sessionHtml,
-  picker: pickerHtml,
   summary: summaryHtml,
   stats: statsHtml,
   admin: adminHtml,
