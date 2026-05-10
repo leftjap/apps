@@ -616,8 +616,9 @@ function renderSetDotHtml(idx, set, isCurrent) {
   else if (isDone) { color = 'rgba(255,255,255,0.55)'; weight = '400'; }
   const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
   const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
+  // spec §6-9 — 세트 행 hold 대상 (data-longpress="set-row" + data-set-idx)
   return `
-        <div data-set-idx="${idx}" style="text-align:center;color:${color};font-weight:${weight};">
+        <div data-set-idx="${idx}" data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};cursor:pointer;">
           <div style="font-size:10px;letter-spacing:0.06em;">S${setNum}</div>
           <div style="font-size:13px;margin-top:4px;">${escapeHtml(valueText)}</div>
         </div>`;
@@ -895,6 +896,19 @@ function getActionMenuFor(kind, target) {
       onSelect: (id) => { console.log('[gymSession] action', kind, id); },
     };
   }
+  if (kind === 'set-row') {
+    // spec §6-9 — 세트 행 (완료/미완료) : 수정 / 삭제
+    const setIdx = target?.dataset?.setIdx;
+    return {
+      kind,
+      title: `세트 ${Number.isFinite(parseInt(setIdx, 10)) ? `S${parseInt(setIdx, 10) + 1}` : ''}`.trim(),
+      items: [
+        { id: 'edit', label: '수정' },
+        { id: 'delete', label: '삭제', danger: true },
+      ],
+      onSelect: (id) => { console.log('[gymSession] action', kind, setIdx, id); },
+    };
+  }
   if (kind === 'footer-exercise') {
     const state = target?.dataset?.exState || 'upcoming';
     const items = [];
@@ -958,6 +972,9 @@ export function wireLongPress(doc, opts = {}) {
 
     el.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      // bubble 방지 — 자식 longpress target (예: 세트 도트) 이 부모 (cardSwipeArea active-card) 까지
+      // 동시 hold 발화하지 않도록. swipe 는 cardSwipeArea pointerdown 별도 — 도트 영역에선 swipe 의미 없음.
+      e.stopPropagation();
       sx = e.clientX;
       sy = e.clientY;
       pid = e.pointerId;

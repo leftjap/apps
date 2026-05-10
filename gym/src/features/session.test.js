@@ -1348,7 +1348,10 @@ function makeLpEl(kind) {
     dataset: { longpress: kind },
     style: {},
     addEventListener(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
-    _fire(name, evt) { (listeners[name] || []).forEach((fn) => fn(evt)); },
+    _fire(name, evt) {
+      const event = { ...evt, stopPropagation: evt?.stopPropagation || (() => {}) };
+      (listeners[name] || []).forEach((fn) => fn(event));
+    },
     _lpCancel: undefined,
     _listeners: listeners,
   };
