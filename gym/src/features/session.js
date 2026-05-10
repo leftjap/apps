@@ -444,24 +444,187 @@ export async function dumpActiveSessionFromState(stateData) {
 
 /* ───────────────────────────── DOM hijack (mocks/session.html) ───────────────────────────── */
 
+/**
+ * Phase B 단계 4 마무리 — mocks/session.html 진입 시 active 세션 유무로 분기.
+ *  - active session + 1개 이상의 single 블록 → SessionC active 카드 정적 바인딩 (.session-active)
+ *  - 그 외 → SessionEmpty 의 addex 시트 + 서킷 토글 (.session-empty)
+ *
+ * body[data-state] 토글 ('empty'|'active') 로 가시성 제어 (home.html HomeA/HomeC 패턴).
+ * DB 미초기화·active 미존재 모두 graceful — empty branch 로 fallback.
+ */
 export async function mountSessionView() {
   const doc = typeof document !== 'undefined' ? document : null;
   if (!doc) return { skipped: 'no-document' };
+
+  const hasActiveCard = !!doc.getElementById('cardExName');
+  const hasEmptySheet = !!doc.getElementById('addexChips') && !!doc.getElementById('addexList');
+  if (!hasActiveCard && !hasEmptySheet) return { skipped: 'no-mounts' };
+
+  // active session 조회 (DB 미초기화·예외 모두 empty branch 로 fallback)
+  let session = null;
+  let dbUnavailable = false;
+  try {
+    session = await getActiveSession();
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
+      dbUnavailable = true;
+    } else {
+      console.error('[gymSession] mountSessionView getActiveSession', e);
+    }
+  }
+
+  const activeBlocks = (session && Array.isArray(session.blocks))
+    ? session.blocks.filter((b) => b && b.type === 'single')
+    : [];
+  const route = !dbUnavailable && activeBlocks.length > 0 && hasActiveCard ? 'active' : 'empty';
+
+  if (doc.body && doc.body.dataset) doc.body.dataset.state = route;
+
+  if (route === 'active') {
+    return mountSessionActive(doc, activeBlocks[activeBlocks.length - 1]);
+  }
+  return mountSessionEmpty(doc, dbUnavailable);
+}
+
+async function mountSessionEmpty(doc, dbUnavailable) {
+  // 서킷 토글은 DOM 만 의존 → DB 상태 무관 wire
+  try { wireCircuitToggle(doc); } catch (e) { console.error('[gymSession] wireCircuitToggle', e); }
+
   const chipsEl = doc.getElementById('addexChips');
   const listEl = doc.getElementById('addexList');
   if (!chipsEl || !listEl) return { skipped: 'no-mounts' };
+  if (dbUnavailable) return { skipped: 'no-db' };
+
   try {
     await renderChips(chipsEl);
     await renderList(listEl);
     hookClicks(chipsEl, listEl);
-    return { mounted: true, part: _activePart };
+    return { mounted: true, branch: 'empty', part: _activePart };
   } catch (e) {
     if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
       return { skipped: 'no-db' };
     }
-    console.error('[gymSession] mountSessionView', e);
+    console.error('[gymSession] mountSessionView empty', e);
     return { error: e?.message };
   }
+}
+
+/**
+ * SessionC active 카드 정적 바인딩.
+ *  - 운동명 / SET N/M / 중량 / 횟수 / 이전 세트 / S1..Sn 도트 / 진행바·볼륨·%
+ *  - 마지막 single 블록을 "현재 운동" 으로 사용 (단계 a — 정적).
+ *  - currentSetIdx = 첫 un-done set. 모두 done 이면 마지막 set.
+ */
+function mountSessionActive(doc, block) {
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  let cur = sets.findIndex((s) => s && !s.done);
+  if (cur === -1) cur = Math.max(0, sets.length - 1);
+  const currentSet = sets[cur] || {};
+
+  setTextById(doc, 'cardExName', resolveExerciseName(block.exerciseId));
+  setTextById(doc, 'cardSetProgress', `SET ${pad2(cur + 1)} / ${pad2(sets.length || 1)}`);
+
+  const weight = Number.isFinite(currentSet.weight) ? currentSet.weight : 0;
+  const reps = Number.isFinite(currentSet.reps) ? currentSet.reps : 0;
+  setTextById(doc, 'cardWeight', String(weight));
+  setTextById(doc, 'cardReps', String(reps));
+
+  // 이전 세트 ("55kg × 9") — 직전 set 의 weight/reps. 부재 시 hidden.
+  const prevEl = doc.getElementById('cardPrevSet');
+  if (prevEl) {
+    const prev = cur > 0 ? sets[cur - 1] : null;
+    if (prev && Number.isFinite(prev.weight) && Number.isFinite(prev.reps)) {
+      prevEl.textContent = `${prev.weight}kg × ${prev.reps}`;
+      prevEl.style.display = '';
+    } else {
+      prevEl.style.display = 'none';
+    }
+  }
+
+  // S1..Sn 도트
+  const setDotsEl = doc.getElementById('cardSetDots');
+  if (setDotsEl) {
+    setDotsEl.innerHTML = sets.map((s, idx) => renderSetDotHtml(idx, s, idx === cur)).join('');
+  }
+
+  // 진행바 + 볼륨 + %
+  let totalDone = 0;
+  let totalPlanned = 0;
+  for (const s of sets) {
+    const w = Number(s?.weight) || 0;
+    const r = Number(s?.reps) || 0;
+    totalPlanned += w * r;
+    if (s && s.done) totalDone += w * r;
+  }
+  const pct = totalPlanned > 0 ? Math.round((totalDone / totalPlanned) * 100) : 0;
+  const bar = doc.getElementById('cardProgressBar');
+  if (bar) bar.style.width = `${pct}%`;
+  setTextById(doc, 'cardProgressVol', `${totalDone.toLocaleString()} / ${totalPlanned.toLocaleString()}kg`);
+  setTextById(doc, 'cardProgressPct', `${pct}%`);
+
+  return { mounted: true, branch: 'active', exerciseId: block.exerciseId, currentSetIdx: cur };
+}
+
+function setTextById(doc, id, text) {
+  const el = doc.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function pad2(n) {
+  const v = Math.max(0, Math.floor(Number(n) || 0));
+  return String(v).padStart(2, '0');
+}
+
+function resolveExerciseName(id) {
+  if (!id) return '';
+  const builtin = getBuiltinExercise(id);
+  if (builtin?.name) return builtin.name;
+  return id;
+}
+
+function renderSetDotHtml(idx, set, isCurrent) {
+  const setNum = idx + 1;
+  const isDone = !!(set && set.done);
+  let color = 'rgba(255,255,255,0.25)';
+  let weight = '400';
+  if (isCurrent) { color = 'var(--accent)'; weight = '600'; }
+  else if (isDone) { color = 'rgba(255,255,255,0.55)'; weight = '400'; }
+  const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
+  const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
+  return `
+        <div data-set-idx="${idx}" style="text-align:center;color:${color};font-weight:${weight};">
+          <div style="font-size:10px;letter-spacing:0.06em;">S${setNum}</div>
+          <div style="font-size:13px;margin-top:4px;">${escapeHtml(valueText)}</div>
+        </div>`;
+}
+
+/**
+ * spec §6-2 — 시트 우상단 [서킷] 토글 click → data-circuit 'off'↔'on' + panel 표시 + 버튼 시각.
+ * 본 단계 (a) 는 ON/OFF 시각 토글까지만. 다중선택·"완료" 활성 조건은 다음 단계.
+ */
+function wireCircuitToggle(doc) {
+  const sheet = doc.getElementById('addexSheet');
+  const btn = doc.getElementById('addexCircuitToggle');
+  const panel = doc.getElementById('addexCircuitPanel');
+  if (!sheet || !btn || !panel) return;
+  if (btn.dataset.spaHooked === '1') return;
+  btn.addEventListener('click', () => {
+    const next = sheet.dataset.circuit === 'on' ? 'off' : 'on';
+    sheet.dataset.circuit = next;
+    btn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
+    if (next === 'on') {
+      panel.style.display = '';
+      btn.style.background = 'var(--accent)';
+      btn.style.color = '#fff';
+      btn.style.borderColor = 'transparent';
+    } else {
+      panel.style.display = 'none';
+      btn.style.background = 'transparent';
+      btn.style.color = 'rgba(255,255,255,0.55)';
+      btn.style.borderColor = 'rgba(255,255,255,0.18)';
+    }
+  });
+  btn.dataset.spaHooked = '1';
 }
 
 async function renderChips(chipsEl) {

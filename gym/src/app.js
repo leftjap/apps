@@ -106,6 +106,20 @@ function applyAuthGuard(route) {
   return route;
 }
 
+/**
+ * Phase B 단계 5 — 라우트별 feature mount 호출.
+ * mocks innerHTML 주입 + inline script 재실행 후 src/features/* 의 mountXxxView 발화.
+ *  - login : mocks/login.html inline script 가 직접 wiring (signInWithGoogle)
+ *  - summary : mocks/summary.html inline script 가 직접 wiring (홈으로 버튼)
+ *  - 그 외 : window.gymXxx.mountXxxView 호출. 미초기화·미마운트 graceful no-op.
+ */
+const ROUTE_MOUNTS = Object.freeze({
+  home: () => window.gymHome?.mountHomeView?.(),
+  session: () => window.gymSession?.mountSessionView?.(),
+  stats: () => window.gymStats?.mountStatsView?.(),
+  admin: () => window.gymManage?.mountManageView?.(),
+});
+
 function mount(route) {
   const guarded = applyAuthGuard(route);
   const raw = ROUTES[guarded];
@@ -118,6 +132,13 @@ function mount(route) {
   document.body.dataset.route = guarded;
   reExecuteScripts();
   window.scrollTo(0, 0);
+
+  const mountFn = ROUTE_MOUNTS[guarded];
+  if (typeof mountFn === 'function') {
+    Promise.resolve()
+      .then(mountFn)
+      .catch((e) => console.error('[gym] mount', guarded, e));
+  }
 }
 
 /**
