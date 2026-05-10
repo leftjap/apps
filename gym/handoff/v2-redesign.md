@@ -943,3 +943,50 @@ Phase B 지시서 §9 8단계 중 1~3 완료. 단계 4~8 은 다음 세션.
 ### 본 세션 commit 예정 메시지
 
 `refactor(gym): Phase B step 1-3 — spec/Clawd cleanup + picker removal`
+
+---
+
+## 11. Phase B 단계 4 부분 완료 + 잔여 인계 (2026-05-10)
+
+Phase B 지시서 §9 단계 4 의 0순위 (mocks id 부착) 7화면 완료. src/features/* 갱신 + HomeC active 분기·session active 카드·manage 셸 신설은 다음 세션.
+
+### 완료 — mocks id/data-bind 부착 (시각 변경 0)
+
+| 화면 | 부착 항목 | preview_eval 검증 |
+|---|---|---|
+| `login.html` | `id="googleSignInBtn"` + `id="loginError"` (display:none) + inline `<script>` (window.gymAuth.signInWithGoogle 호출, AUTH_ERROR_KEY 처리) | btn h56·bg#fff / errEl display:none / pageHeight 820 |
+| `summary.html` | `id="summaryHomeBtn"` + inline `<script>` ("홈으로" → `#/home`) | (visual diff 0) |
+| `home.html` (HomeA only) | `weekCal`·`sLabel`·`sNum`·`sUnit`·`sPart`·`sSub`·`sSubUnit`·`ctaBtn` | 8 id 모두 Phase A 측정 사이즈 일치 (sNum 88·200, sPart 16·500, ctaBtn 운동시작) |
+| `session-empty.html` | `addexChips` (6 chip + `data-part` 매핑) + `addexList` + 5 `.addex-item` (`data-ex` 매핑 — bench_press/incline_bench/decline_bench/dumbbell_fly/cable_crossover) | chip 6 / item 5 / pageHeight 820 |
+| `admin.html` 운동 탭 | `adminParts` (6 chip `data-part`) + `adminExList` | adminPartsKids 6 / parts ['chest','back','shoulder','legs','arms','cardio'] |
+| `admin.html` 체중 탭 | `[data-bind="weight-hero-num"]` "69.4"·64px / `[data-bind="weight-hero-meta"]` 메타 / SVG 안 `data-bind="chart-weight"`·`chart-avg`(display:none placeholder)·`chart-goal` (inline script 갱신) / 외부 hidden DOM: `.chart-legend`·`[data-bind="weight-list"]`·`[data-bind="weight-pr-pop"]`·`[data-bind="weight-entry-form"]` | chartWeight path stroke-width 2 / chartAvg display:none / chartGoal x2=280 stroke-dasharray "3 3" |
+| `admin.html` 프로필 탭 | 4 row 에 `data-field="height"`·`"birthyear"`·`"goal-weight"`·`"weekly-goal"` + `.f-val` wrapper + `.hint` (cm/kg/회) | 4 row 모두 found / 3 row hint (생년 제외) |
+| `stats.html` 캘린더 탭 | `id="cal-grid"` → `id="calGrid"` 변경 + `monthLabel` + 동적 셀에 `class="cal-cell"`·`data-day` (today 셀 +`today` 클래스) + 외부 hidden `.compare-section` (2 cs-group × 2 cs-bar-row) | calGrid camel / cell 31 / today day=6 1건 / cs-group 2 cs-bar-row 4 hidden |
+
+검증 방법: 각 부착 후 `preview_eval` 로 selector 존재·값·시각 메트릭 측정. pageHeight 820 동일 확인 (시각 변경 0).
+
+검증 명령:
+- `pnpm vitest run` → "Test Files 13 passed (13) / Tests 391 passed (391)" (전체 통과)
+- `pnpm build` → "✓ 71 modules transformed. ✓ built in 479ms / PWA precache 24 entries"
+
+### 잔여 — 다음 세션 작업
+
+**우선 처리 (단계 4 미완료)**:
+1. **HomeC active 분기 id 분리** — src/features/home.js 의 `applyToDom` (active session) 가 `sLabel`·`sNum`·`sPart`·`sSub`·`ctaBtn` 동일 id 사용. 두 phone 마크업에 같은 id 두면 `getElementById` 첫 매칭만 반환 → HomeC 데이터 바인딩 실패. 해결: src/features/home.js active 분기를 별도 id (`cardTime`·`cardPart`·`cardEx`·`cardVol`·`cardProgress`·`cardCta` 등) 로 재설계 + HomeC 마크업 부착. 본 세션 home.html HomeC 부착 미수행.
+2. **session active 카드 마운트 함수 신설** — src/features/session.js (612 라인) 의 직접 DOM 접근 = `addexChips`/`addexList`/`.addex-item` 3건만. SessionC active 카드 (운동명·SET 03/05·60kg·10회·S1~S5 도트·진행바) 데이터 바인딩 함수 부재. 추가 작성 필요.
+3. **session.html 가이드 텍스트 src 적용 시 제거** — "← 이전 수정 / 완료 →" (spec §6-3-1 "지시문 금지" 충돌). mocks 는 시안 비교용 보존.
+4. **manage 통합 셸 신설** — `src/features/manage.js` (3 탭 wrapper). `exercises-admin/weights/profile` 의 콘텐츠 render 함수만 export 분리. router 진입점 통합.
+5. **stats `parseMonthLabel` 정규식** — 현재 `(\d{4})년\s+(\d{1,2})월` ≠ mocks "2026 · 5월" 형식. src 갱신: `(\d{4})\s*[·년]\s*(\d{1,2})월` 등 수용.
+6. **시안 누락 §2 보강** — session-empty 시트 우상단 [서킷] 토글 + 서킷 ON 모드 (배너·체크 선택·완료 버튼). spec §6-2 권위.
+
+**단계 5 — 테스트** (분 단위, 본 세션 후 반영 필요): home.test 에서 `r.clawd` 잔여 0건 (이미 정리), stats UI selector 갱신, session UI selector 갱신.
+
+**단계 6 — e2e**: 7 spec selector 갱신 (현재 mocks 의 v2 시각·id 매핑 반영).
+
+**단계 7 — 시각 검증**: preview screenshot vs mocks/*.html 비교. 사용자 위임 금지.
+
+**단계 8 — 자동 commit + push**.
+
+### 본 세션 commit 예정 메시지
+
+`refactor(gym): Phase B step 4 (partial) — mocks id 부착 7화면 (시각 변경 0)`

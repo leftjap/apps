@@ -73,15 +73,15 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 
     <!-- Pane: 운동 -->
     <div class="tab-pane pane-ex">
-      <div style="padding:16px 16px 0;display:flex;gap:8px;overflow-x:auto;">
-        <div class="kr" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(255,255,255,0.1);color:#fff;border:0;">가슴</div>
-        <div class="kr" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);">등</div>
-        <div class="kr" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);">어깨</div>
-        <div class="kr" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);">하체</div>
-        <div class="kr" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);">팔</div>
-        <div class="kr" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);">유산소</div>
+      <div id="adminParts" style="padding:16px 16px 0;display:flex;gap:8px;overflow-x:auto;">
+        <div class="kr" data-part="chest" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:600;background:rgba(255,255,255,0.1);color:#fff;border:0;cursor:pointer;">가슴</div>
+        <div class="kr" data-part="back" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">등</div>
+        <div class="kr" data-part="shoulder" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">어깨</div>
+        <div class="kr" data-part="legs" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">하체</div>
+        <div class="kr" data-part="arms" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">팔</div>
+        <div class="kr" data-part="cardio" style="flex-shrink:0;padding:7px 14px;border-radius:999px;font-size:12px;font-weight:400;background:transparent;color:rgba(255,255,255,0.55);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">유산소</div>
       </div>
-      <div style="margin-top:8px;padding:0 8px;">
+      <div id="adminExList" style="margin-top:8px;padding:0 8px;">
         <!-- 운동 행 — on -->
         <div style="display:flex;align-items:center;padding:13px 14px;">
           <span style="display:flex;flex-direction:column;gap:2.5px;margin-right:14px;opacity:0.4;">
@@ -167,12 +167,16 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div style="padding:26px 24px 0;">
         <div class="kr" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">현재 체중</div>
         <div style="margin-top:4px;display:flex;align-items:baseline;gap:4px;">
-          <span class="num" style="font-size:64px;font-weight:200;color:#fff;letter-spacing:-0.04em;line-height:0.9;">69.4</span>
+          <span data-bind="weight-hero-num" class="num" style="font-size:64px;font-weight:200;color:#fff;letter-spacing:-0.04em;line-height:0.9;">69.4</span>
           <span class="kr" style="font-size:16px;color:rgba(255,255,255,0.5);">kg</span>
           <span class="kr" style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:600;padding:3px 8px;background:rgba(217,119,87,0.16);border-radius:999px;">↓ -3.0</span>
         </div>
-        <div class="kr" style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.45);">목표 69kg · 0.4kg 남음 · 약 5일 후 도달</div>
+        <div data-bind="weight-hero-meta" class="kr" style="margin-top:6px;font-size:11px;color:rgba(255,255,255,0.45);">목표 69kg · 0.4kg 남음 · 약 5일 후 도달</div>
         <svg id="weight-svg" viewBox="-2 -10 284 130" style="margin-top:22px;width:100%;height:130px;overflow:visible;"></svg>
+        <div class="chart-legend" style="display:none;"><span></span><span></span><span></span></div>
+        <div data-bind="weight-list" style="display:none;"></div>
+        <div data-bind="weight-pr-pop" style="display:none;"></div>
+        <form data-bind="weight-entry-form" style="display:none;"><input type="number" step="0.1"/></form>
       </div>
       <div style="margin:20px 20px 0;padding:14px 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <div style="text-align:center;">
@@ -196,31 +200,31 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- Pane: 프로필 -->
     <div class="tab-pane pane-profile">
       <div style="padding:8px 0 0;">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div data-field="height" style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
           <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.7);">키</span>
-          <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:16px;color:#fff;font-weight:500;">173</span>
-            <span class="kr" style="font-size:12px;color:rgba(255,255,255,0.45);">cm</span>
+            <span class="hint kr" style="font-size:12px;color:rgba(255,255,255,0.45);">cm</span>
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div data-field="birthyear" style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
           <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.7);">생년</span>
-          <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:16px;color:#fff;font-weight:500;">1990</span>
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div data-field="goal-weight" style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
           <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.7);">목표 체중</span>
-          <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:16px;color:#fff;font-weight:500;">69</span>
-            <span class="kr" style="font-size:12px;color:rgba(255,255,255,0.45);">kg</span>
+            <span class="hint kr" style="font-size:12px;color:rgba(255,255,255,0.45);">kg</span>
           </div>
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div data-field="weekly-goal" style="display:flex;justify-content:space-between;align-items:center;padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.04);">
           <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.7);">주간 목표</span>
-          <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:16px;color:#fff;font-weight:500;">4</span>
-            <span class="kr" style="font-size:12px;color:rgba(255,255,255,0.45);">회</span>
+            <span class="hint kr" style="font-size:12px;color:rgba(255,255,255,0.45);">회</span>
           </div>
         </div>
       </div>
@@ -254,10 +258,11 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
   const path = pts.map((p,i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
   const targetY = H - ((69 - min)/(max - min))*H;
   let svg = '<defs><linearGradient id="wgrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(217,119,87,0.22)"/><stop offset="100%" stop-color="rgba(217,119,87,0)"/></linearGradient></defs>';
-  svg += '<line x1="0" y1="' + targetY.toFixed(1) + '" x2="' + W + '" y2="' + targetY.toFixed(1) + '" stroke="rgba(120,140,93,0.6)" stroke-width="1" stroke-dasharray="3 3"/>';
+  svg += '<line data-bind="chart-goal" x1="0" y1="' + targetY.toFixed(1) + '" x2="' + W + '" y2="' + targetY.toFixed(1) + '" stroke="rgba(120,140,93,0.6)" stroke-width="1" stroke-dasharray="3 3"/>';
   svg += '<text x="' + W + '" y="' + (targetY-5).toFixed(1) + '" text-anchor="end" font-size="9" class="kr" fill="rgba(120,140,93,0.85)">목표 69</text>';
   svg += '<path d="' + path + ' L' + W + ' ' + H + ' L0 ' + H + ' Z" fill="url(#wgrad)"/>';
-  svg += '<path d="' + path + '" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  svg += '<path data-bind="chart-weight" d="' + path + '" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  svg += '<path data-bind="chart-avg" style="display:none;" d=""/>';
   const last = pts[pts.length - 1];
   svg += '<circle cx="' + last[0].toFixed(1) + '" cy="' + last[1].toFixed(1) + '" r="5" fill="var(--accent)" stroke="#0c0a08" stroke-width="2.5"/>';
   svg += '<g font-size="9" fill="rgba(255,255,255,0.35)" class="kr">';

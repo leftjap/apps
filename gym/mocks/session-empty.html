@@ -68,32 +68,32 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- 하단 시트 -->
     <div style="position:absolute;left:0;right:0;bottom:0;background:#15120e;border-top-left-radius:22px;border-top-right-radius:22px;padding:12px 0 24px;box-shadow:0 -16px 40px -10px rgba(0,0,0,0.35);">
       <div style="width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.18);margin:0 auto 18px;"></div>
-      <div style="display:flex;gap:8px;padding:0 16px;overflow-x:auto;justify-content:center;">
-        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:0;">가슴</div>
-        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">등</div>
-        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">어깨</div>
-        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">하체</div>
-        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">팔</div>
-        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">유산소</div>
+      <div id="addexChips" style="display:flex;gap:8px;padding:0 16px;overflow-x:auto;justify-content:center;">
+        <div class="kr" data-part="chest" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:0;cursor:pointer;">가슴</div>
+        <div class="kr" data-part="back" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">등</div>
+        <div class="kr" data-part="shoulder" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">어깨</div>
+        <div class="kr" data-part="legs" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">하체</div>
+        <div class="kr" data-part="arms" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">팔</div>
+        <div class="kr" data-part="cardio" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);cursor:pointer;">유산소</div>
       </div>
-      <div style="margin-top:14px;padding:0 8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+      <div id="addexList" style="margin-top:14px;padding:0 8px;">
+        <div class="addex-item" data-ex="bench_press" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;cursor:pointer;">
           <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">벤치프레스</div>
           <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">60kg × 10회</div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+        <div class="addex-item" data-ex="incline_bench" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;cursor:pointer;">
           <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">인클라인 벤치</div>
           <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">45kg × 10회</div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+        <div class="addex-item" data-ex="decline_bench" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;cursor:pointer;">
           <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">디클라인 벤치</div>
           <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">50kg × 10회</div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+        <div class="addex-item" data-ex="dumbbell_fly" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;cursor:pointer;">
           <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">덤벨 플라이</div>
           <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">18kg × 12회</div>
         </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+        <div class="addex-item" data-ex="cable_crossover" style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;cursor:pointer;">
           <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">케이블 크로스오버</div>
           <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">20kg × 12회</div>
         </div>
