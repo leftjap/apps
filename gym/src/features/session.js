@@ -574,8 +574,16 @@ function mountSessionActive(doc, block) {
   try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
   // spec §6-3-2 — 키패드 시트 wire (idempotent — sheet.dataset.spaHooked guard)
   try { wireKeypad(doc); } catch (e) { console.error('[gymSession] wireKeypad', e); }
-  // spec §6-9 — 꾹누르기 인프라 wire (인프라만 — 메뉴 open 은 후속 단계)
-  try { wireLongPress(doc); } catch (e) { console.error('[gymSession] wireLongPress', e); }
+  // spec §6-9 — 액션 시트 wire + 꾹누르기 → 액션 시트 open 연결
+  try { wireActionSheet(doc); } catch (e) { console.error('[gymSession] wireActionSheet', e); }
+  try {
+    wireLongPress(doc, {
+      onTrigger: ({ kind, target }) => {
+        const menu = getActionMenuFor(kind, target);
+        if (menu) openActionSheet(doc, menu);
+      },
+    });
+  } catch (e) { console.error('[gymSession] wireLongPress', e); }
 
   return { mounted: true, branch: 'active', exerciseId: block.exerciseId, currentSetIdx: cur };
 }
@@ -764,6 +772,129 @@ function flashElement(el) {
     el.style.opacity = '1';
     setTimeout(() => { el.style.transition = ''; }, 75);
   }, 75);
+}
+
+/* ──────────────────── 액션 시트 (spec §6-9 메뉴 / §6-10) ──────────────────── */
+
+/**
+ * spec §6-9 — 꾹누르기 메뉴 액션 시트. DOM 한 번 (mocks/session.html) + transform 토글.
+ *  - input : { kind, title, items: [{ id, label, danger? }], onSelect }
+ *  - 항목 click → onSelect(id, kind) + 자동 close
+ *  - 취소 / backdrop / 시트 아래 60px 스와이프 → close
+ *  - onSelect 는 itemsEl._onSelect 에 보관 (open 마다 교체).
+ */
+export function openActionSheet(doc, { kind = '', title = '', items = [], onSelect } = {}) {
+  const sheet = doc?.getElementById?.('actionSheet');
+  const backdrop = doc?.getElementById?.('actionBackdrop');
+  const titleEl = doc?.getElementById?.('actionTitle');
+  const itemsEl = doc?.getElementById?.('actionItems');
+  if (!sheet || !backdrop || !itemsEl) return;
+  sheet.dataset.kind = kind;
+  if (titleEl) titleEl.textContent = title;
+  itemsEl.innerHTML = items.map((it) => {
+    const danger = !!it.danger;
+    const color = danger ? 'var(--accent)' : '#fff';
+    const weight = danger ? 600 : 400;
+    return `<button class="action-item kr" data-action-id="${escapeHtml(it.id)}" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:${color};font-size:14px;font-weight:${weight};cursor:pointer;text-align:center;">${escapeHtml(it.label)}</button>`;
+  }).join('');
+  itemsEl._onSelect = typeof onSelect === 'function' ? onSelect : null;
+  sheet.dataset.open = 'true';
+  sheet.style.transform = 'translateY(0)';
+  backdrop.dataset.open = 'true';
+  backdrop.style.opacity = '1';
+  backdrop.style.pointerEvents = 'auto';
+}
+
+export function closeActionSheet(doc) {
+  const sheet = doc?.getElementById?.('actionSheet');
+  const backdrop = doc?.getElementById?.('actionBackdrop');
+  if (!sheet || !backdrop) return;
+  sheet.dataset.open = 'false';
+  sheet.style.transform = 'translateY(100%)';
+  backdrop.dataset.open = 'false';
+  backdrop.style.opacity = '0';
+  backdrop.style.pointerEvents = 'none';
+}
+
+function wireActionSheet(doc) {
+  const sheet = doc.getElementById('actionSheet');
+  const backdrop = doc.getElementById('actionBackdrop');
+  const itemsEl = doc.getElementById('actionItems');
+  const cancelBtn = doc.getElementById('actionCancel');
+  if (!sheet || !backdrop || !itemsEl || !cancelBtn) return;
+  if (sheet.dataset.spaHooked === '1') return;
+
+  itemsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.action-item');
+    if (!btn) return;
+    const id = btn.dataset.actionId;
+    const kind = sheet.dataset.kind || '';
+    const onSelect = itemsEl._onSelect;
+    if (typeof onSelect === 'function') {
+      try { onSelect(id, kind); }
+      catch (err) { console.error('[gymSession] action onSelect', err); }
+    }
+    closeActionSheet(doc);
+  });
+
+  cancelBtn.addEventListener('click', () => closeActionSheet(doc));
+  backdrop.addEventListener('click', () => closeActionSheet(doc));
+
+  // 시트 아래 60px 스와이프 → 취소 (키패드 패턴 동일)
+  let downY = 0;
+  let tracking = false;
+  sheet.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.target.closest('.action-item, #actionCancel')) return;
+    downY = e.clientY;
+    tracking = true;
+  });
+  sheet.addEventListener('pointerup', (e) => {
+    if (!tracking) return;
+    tracking = false;
+    if (e.clientY - downY >= 60) closeActionSheet(doc);
+  });
+  sheet.addEventListener('pointercancel', () => { tracking = false; });
+
+  sheet.dataset.spaHooked = '1';
+}
+
+/**
+ * spec §6-9 — kind → 데모 메뉴 매핑.
+ *  - 본 (f-2) 단계 : session-end / footer-exercise 두 종류만. (f-3) 에서 active-card / set-row /
+ *    circuit / 완료된·예정된 운동 등 다른 대상 추가 + onSelect 진짜 핸들러 연결.
+ *  - 본 단계 onSelect : console.log 뿐 (마운트 상태에서 close 만).
+ */
+function getActionMenuFor(kind, target) {
+  if (kind === 'session-end') {
+    return {
+      kind,
+      title: '세션 옵션',
+      items: [
+        { id: 'finish', label: '종료' },
+        { id: 'discard', label: '세션 삭제', danger: true },
+      ],
+      onSelect: (id) => { console.log('[gymSession] action', kind, id); },
+    };
+  }
+  if (kind === 'footer-exercise') {
+    const state = target?.dataset?.exState || 'upcoming';
+    const items = [];
+    if (state === 'active') {
+      items.push({ id: 'finish', label: '완료' });
+    } else if (state === 'completed') {
+      items.push({ id: 'edit', label: '수정' });
+    }
+    items.push({ id: 'delete', label: '삭제', danger: true });
+    items.push({ id: 'reorder', label: '이동' });
+    return {
+      kind,
+      title: '운동 옵션',
+      items,
+      onSelect: (id) => { console.log('[gymSession] action', kind, state, id); },
+    };
+  }
+  return null;
 }
 
 /* ──────────────────── 꾹누르기 인프라 (spec §6-9) ──────────────────── */
@@ -1291,6 +1422,8 @@ if (typeof window !== 'undefined') {
     updateKeypadBuf,
     applyKeypadValue,
     wireLongPress,
+    openActionSheet,
+    closeActionSheet,
     getActivePart,
     setActivePart,
   };

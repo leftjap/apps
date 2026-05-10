@@ -23,6 +23,8 @@ import {
   updateKeypadBuf,
   applyKeypadValue,
   wireLongPress,
+  openActionSheet,
+  closeActionSheet,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1500,5 +1502,100 @@ describe('wireLongPress (spec §6-9)', () => {
     // 두 번째 호출 — 그대로
     wireLongPress(doc);
     expect(doc.body.dataset.spaLpScroll).toBe('1');
+  });
+});
+
+/* ───────────────── openActionSheet / closeActionSheet (spec §6-9 / §6-10 — f-2) ───────────────── */
+
+function makeActionDoc() {
+  const sheet = { dataset: { open: 'false', kind: '', spaHooked: '0' }, style: {} };
+  const backdrop = { dataset: { open: 'false' }, style: { opacity: '0', pointerEvents: 'none' } };
+  const titleEl = { textContent: '' };
+  const itemsEl = { innerHTML: '', _onSelect: null };
+  return {
+    getElementById(id) {
+      if (id === 'actionSheet') return sheet;
+      if (id === 'actionBackdrop') return backdrop;
+      if (id === 'actionTitle') return titleEl;
+      if (id === 'actionItems') return itemsEl;
+      return null;
+    },
+    _sheet: sheet,
+    _backdrop: backdrop,
+    _titleEl: titleEl,
+    _itemsEl: itemsEl,
+  };
+}
+
+describe('openActionSheet / closeActionSheet (spec §6-9 / §6-10)', () => {
+  it("open : kind/title/items 갱신 + sheet/backdrop 보임", () => {
+    const doc = makeActionDoc();
+    openActionSheet(doc, {
+      kind: 'session-end',
+      title: '세션 옵션',
+      items: [
+        { id: 'finish', label: '종료' },
+        { id: 'discard', label: '세션 삭제', danger: true },
+      ],
+    });
+    expect(doc._sheet.dataset.open).toBe('true');
+    expect(doc._sheet.dataset.kind).toBe('session-end');
+    expect(doc._sheet.style.transform).toBe('translateY(0)');
+    expect(doc._backdrop.dataset.open).toBe('true');
+    expect(doc._backdrop.style.opacity).toBe('1');
+    expect(doc._backdrop.style.pointerEvents).toBe('auto');
+    expect(doc._titleEl.textContent).toBe('세션 옵션');
+    expect(doc._itemsEl.innerHTML).toContain('data-action-id="finish"');
+    expect(doc._itemsEl.innerHTML).toContain('data-action-id="discard"');
+    expect(doc._itemsEl.innerHTML).toContain('var(--accent)'); // danger 항목 색
+  });
+
+  it("close : sheet 내려감 + backdrop opacity 0 + pointer-events none", () => {
+    const doc = makeActionDoc();
+    openActionSheet(doc, { kind: 'k', items: [{ id: 'x', label: 'X' }] });
+    closeActionSheet(doc);
+    expect(doc._sheet.dataset.open).toBe('false');
+    expect(doc._sheet.style.transform).toBe('translateY(100%)');
+    expect(doc._backdrop.dataset.open).toBe('false');
+    expect(doc._backdrop.style.opacity).toBe('0');
+    expect(doc._backdrop.style.pointerEvents).toBe('none');
+  });
+
+  it("open 두 번 — 두 번째 items 로 교체 (DOM 한 번 §6-10)", () => {
+    const doc = makeActionDoc();
+    openActionSheet(doc, { kind: 'a', items: [{ id: '1', label: 'first' }] });
+    expect(doc._itemsEl.innerHTML).toContain('first');
+    openActionSheet(doc, { kind: 'b', items: [{ id: '2', label: 'second' }] });
+    expect(doc._itemsEl.innerHTML).not.toContain('first');
+    expect(doc._itemsEl.innerHTML).toContain('second');
+    expect(doc._sheet.dataset.kind).toBe('b');
+  });
+
+  it("onSelect 콜백 보관 (itemsEl._onSelect)", () => {
+    const doc = makeActionDoc();
+    const fn = () => {};
+    openActionSheet(doc, { kind: 'a', items: [], onSelect: fn });
+    expect(doc._itemsEl._onSelect).toBe(fn);
+    // onSelect 미지정 → null
+    openActionSheet(doc, { kind: 'a', items: [] });
+    expect(doc._itemsEl._onSelect).toBeNull();
+  });
+
+  it("doc 부재 / element 부재 → no-op", () => {
+    expect(() => openActionSheet(null, { kind: 'a', items: [] })).not.toThrow();
+    expect(() => closeActionSheet(null)).not.toThrow();
+    const partial = { getElementById: () => null };
+    expect(() => openActionSheet(partial, { kind: 'a', items: [] })).not.toThrow();
+    expect(() => closeActionSheet(partial)).not.toThrow();
+  });
+
+  it("danger 아닌 항목 — color #fff, weight 400", () => {
+    const doc = makeActionDoc();
+    openActionSheet(doc, {
+      kind: 'a',
+      items: [{ id: 'edit', label: '수정' }],
+    });
+    expect(doc._itemsEl.innerHTML).toContain('color:#fff');
+    expect(doc._itemsEl.innerHTML).toContain('font-weight:400');
   });
 });
