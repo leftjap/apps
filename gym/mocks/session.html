@@ -135,7 +135,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <span style="width:6px;height:6px;border-radius:3px;background:var(--accent);box-shadow:0 0 10px var(--accent);animation:pulse 1.6s ease-in-out infinite;"></span>
         <span id="sessionTime" class="num" style="font-size:28px;font-weight:300;letter-spacing:-0.02em;color:#fff;">18:42</span>
       </div>
-      <div style="text-align:right;font-size:12px;color:rgba(255,255,255,0.6);" class="kr">종료</div>
+      <div data-longpress="session-end" style="text-align:right;font-size:12px;color:rgba(255,255,255,0.6);cursor:pointer;" class="kr">종료</div>
     </div>
     <!-- 운동명 + 세트 -->
     <div style="padding:16px 24px 0;">
@@ -195,20 +195,20 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- SessionFooter -->
     <div id="sessionFooter" style="position:absolute;bottom:24px;left:0;right:0;padding:12px 16px 4px;display:flex;align-items:center;gap:14px;overflow:hidden;border-top:1px solid rgba(255,255,255,0.06);justify-content:center;">
       <div class="kr" style="display:flex;gap:18px;align-items:center;justify-content:center;flex:1;overflow-x:auto;">
-        <div style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;">
+        <div data-longpress="footer-exercise" data-ex-state="completed" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">
           <span style="color:var(--sage);font-size:12px;">✓</span>
           <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.5);">스쿼트</span>
         </div>
-        <div style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;">
+        <div data-longpress="footer-exercise" data-ex-state="active" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">
           <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:2px;background:var(--accent);"></span>
           <span style="font-size:13px;font-weight:600;color:var(--accent);">벤치프레스</span>
           <span style="font-size:10px;color:rgba(255,255,255,0.5);">·3/5</span>
           <span style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);"></span>
         </div>
-        <div style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;">
+        <div data-longpress="footer-exercise" data-ex-state="upcoming" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">
           <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.28);">인클라인 벤치</span>
         </div>
-        <div style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;">
+        <div data-longpress="footer-exercise" data-ex-state="upcoming" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">
           <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.28);">덤벨 플라이</span>
         </div>
       </div>

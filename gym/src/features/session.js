@@ -574,6 +574,8 @@ function mountSessionActive(doc, block) {
   try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
   // spec §6-3-2 — 키패드 시트 wire (idempotent — sheet.dataset.spaHooked guard)
   try { wireKeypad(doc); } catch (e) { console.error('[gymSession] wireKeypad', e); }
+  // spec §6-9 — 꾹누르기 인프라 wire (인프라만 — 메뉴 open 은 후속 단계)
+  try { wireLongPress(doc); } catch (e) { console.error('[gymSession] wireLongPress', e); }
 
   return { mounted: true, branch: 'active', exerciseId: block.exerciseId, currentSetIdx: cur };
 }
@@ -762,6 +764,92 @@ function flashElement(el) {
     el.style.opacity = '1';
     setTimeout(() => { el.style.transition = ''; }, 75);
   }, 75);
+}
+
+/* ──────────────────── 꾹누르기 인프라 (spec §6-9) ──────────────────── */
+
+/**
+ * spec §6-9 — 500ms 홀드 시 햅틱 + scale 0.98 + onTrigger 콜백.
+ *  - move 8px+ → 자동 취소 (실수 방지)
+ *  - 글로벌 scroll → 모든 hold 취소 (실수 방지)
+ *  - pointerup / cancel / leave → 취소
+ *  - target = `[data-longpress="<kind>"]` element. kind 는 onTrigger 인자로 전달.
+ *  - idempotent : el.dataset.spaLpHooked='1' / body.dataset.spaLpScroll='1' guard.
+ *
+ * (f-1) 인프라만. (f-2) 액션 시트 + (f-3) 대상별 wiring 은 후속.
+ */
+export function wireLongPress(doc, opts = {}) {
+  if (!doc) return { wired: 0 };
+  const { onTrigger, holdMs = 500, moveTolerance = 8 } = opts;
+
+  const cancelAll = () => {
+    doc.querySelectorAll('[data-longpress]').forEach((el) => {
+      if (typeof el._lpCancel === 'function') el._lpCancel();
+    });
+  };
+
+  let wired = 0;
+  const targets = doc.querySelectorAll('[data-longpress]');
+  for (const el of targets) {
+    if (el.dataset.spaLpHooked === '1') continue;
+    let timer = null;
+    let pid = null;
+    let sx = 0;
+    let sy = 0;
+    let triggered = false;
+
+    const cancel = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      el.style.transform = '';
+      el.style.transition = '';
+      pid = null;
+      triggered = false;
+    };
+    el._lpCancel = cancel;
+
+    el.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      sx = e.clientX;
+      sy = e.clientY;
+      pid = e.pointerId;
+      triggered = false;
+      el.style.transition = 'transform 120ms ease';
+      el.style.transform = 'scale(0.98)';
+      timer = setTimeout(() => {
+        timer = null;
+        triggered = true;
+        try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
+        if (typeof onTrigger === 'function') {
+          try { onTrigger({ kind: el.dataset.longpress, target: el }); }
+          catch (err) { console.error('[gymSession] longpress onTrigger', err); }
+        }
+        // 발화 후 200ms 뒤 scale 복원 (메뉴로 attention 이동)
+        setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 200);
+      }, holdMs);
+    });
+    el.addEventListener('pointermove', (e) => {
+      if (pid !== null && e.pointerId !== pid) return;
+      if (triggered) return; // 이미 발화 — 이동은 메뉴 처리
+      const dx = e.clientX - sx;
+      const dy = e.clientY - sy;
+      if (Math.hypot(dx, dy) > moveTolerance) cancel();
+    });
+    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointercancel', cancel);
+    el.addEventListener('pointerleave', cancel);
+
+    el.dataset.spaLpHooked = '1';
+    wired += 1;
+  }
+
+  // 글로벌 scroll cancel — 한 번만 등록
+  if (doc.body && !doc.body.dataset.spaLpScroll) {
+    if (typeof window !== 'undefined' && window.addEventListener) {
+      window.addEventListener('scroll', cancelAll, { passive: true });
+    }
+    doc.body.dataset.spaLpScroll = '1';
+  }
+  return { wired };
 }
 
 /* ──────────────────── 키패드 바텀시트 (spec §6-3-2 / §6-10) ──────────────────── */
@@ -1202,6 +1290,7 @@ if (typeof window !== 'undefined') {
     applyTapDelta,
     updateKeypadBuf,
     applyKeypadValue,
+    wireLongPress,
     getActivePart,
     setActivePart,
   };

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import 'fake-indexeddb/auto';
 import { createGymDB } from '../db/schema.js';
 import {
@@ -22,6 +22,7 @@ import {
   applyTapDelta,
   updateKeypadBuf,
   applyKeypadValue,
+  wireLongPress,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1334,5 +1335,170 @@ describe('applyKeypadValue (spec §6-3-2)', () => {
     const doc = makeFakeKeypadDoc({ mode: 'weight', buf: '70' });
     await applyKeypadValue(doc);
     expect(doc._sheet.dataset.open).toBe('false');
+  });
+});
+
+/* ───────────────── wireLongPress (spec §6-9 인프라 — f-1) ───────────────── */
+
+function makeLpEl(kind) {
+  const listeners = {};
+  return {
+    dataset: { longpress: kind },
+    style: {},
+    addEventListener(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
+    _fire(name, evt) { (listeners[name] || []).forEach((fn) => fn(evt)); },
+    _lpCancel: undefined,
+    _listeners: listeners,
+  };
+}
+
+function makeLpDoc(kinds) {
+  const elements = kinds.map(makeLpEl);
+  return {
+    body: { dataset: {} },
+    querySelectorAll(_sel) { return elements; },
+    _elements: elements,
+  };
+}
+
+describe('wireLongPress (spec §6-9)', () => {
+  it("doc 부재 → wired 0 (graceful)", () => {
+    const r = wireLongPress(null);
+    expect(r.wired).toBe(0);
+  });
+
+  it("wired 수 = [data-longpress] 수", () => {
+    const doc = makeLpDoc(['session-end', 'footer-exercise', 'footer-exercise']);
+    const r = wireLongPress(doc);
+    expect(r.wired).toBe(3);
+  });
+
+  it("idempotent — 두 번째 호출 wired 0 (spaLpHooked guard)", () => {
+    const doc = makeLpDoc(['session-end']);
+    expect(wireLongPress(doc).wired).toBe(1);
+    expect(wireLongPress(doc).wired).toBe(0);
+  });
+
+  it("500ms hold → onTrigger { kind, target } 호출", () => {
+    vi.useFakeTimers();
+    try {
+      const triggers = [];
+      const doc = makeLpDoc(['session-end']);
+      wireLongPress(doc, { onTrigger: (info) => triggers.push(info) });
+      const el = doc._elements[0];
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(1);
+      expect(triggers[0].kind).toBe('session-end');
+      expect(triggers[0].target).toBe(el);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("pointerup before 500ms → onTrigger 미호출 (취소)", () => {
+    vi.useFakeTimers();
+    try {
+      const triggers = [];
+      const doc = makeLpDoc(['session-end']);
+      wireLongPress(doc, { onTrigger: (info) => triggers.push(info) });
+      const el = doc._elements[0];
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(300);
+      el._fire('pointerup', { clientX: 0, clientY: 0, pointerId: 1 });
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("pointermove > moveTolerance(8) → 취소", () => {
+    vi.useFakeTimers();
+    try {
+      const triggers = [];
+      const doc = makeLpDoc(['session-end']);
+      wireLongPress(doc, { onTrigger: (info) => triggers.push(info) });
+      const el = doc._elements[0];
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(100);
+      el._fire('pointermove', { clientX: 10, clientY: 0, pointerId: 1 }); // 10 > 8
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(0);
+      // scale 복원
+      expect(el.style.transform).toBe('');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("pointermove ≤ moveTolerance(8) → 발화 유지", () => {
+    vi.useFakeTimers();
+    try {
+      const triggers = [];
+      const doc = makeLpDoc(['footer-exercise']);
+      wireLongPress(doc, { onTrigger: (info) => triggers.push(info) });
+      const el = doc._elements[0];
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(100);
+      el._fire('pointermove', { clientX: 5, clientY: 5, pointerId: 1 }); // hypot(5,5) ≈ 7.07 < 8
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("pointercancel → 취소", () => {
+    vi.useFakeTimers();
+    try {
+      const triggers = [];
+      const doc = makeLpDoc(['session-end']);
+      wireLongPress(doc, { onTrigger: (info) => triggers.push(info) });
+      const el = doc._elements[0];
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(100);
+      el._fire('pointercancel', {});
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("custom holdMs 동작", () => {
+    vi.useFakeTimers();
+    try {
+      const triggers = [];
+      const doc = makeLpDoc(['session-end']);
+      wireLongPress(doc, { onTrigger: (info) => triggers.push(info), holdMs: 300 });
+      const el = doc._elements[0];
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(299);
+      expect(triggers).toHaveLength(0);
+      vi.advanceTimersByTime(2);
+      expect(triggers).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("pointerdown scale 0.98 + transition 적용", () => {
+    const doc = makeLpDoc(['session-end']);
+    wireLongPress(doc);
+    const el = doc._elements[0];
+    el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+    expect(el.style.transform).toBe('scale(0.98)');
+    expect(el.style.transition).toBe('transform 120ms ease');
+  });
+
+  it("body.dataset.spaLpScroll 한 번만 등록", () => {
+    const doc = makeLpDoc(['session-end']);
+    expect(doc.body.dataset.spaLpScroll).toBeUndefined();
+    wireLongPress(doc);
+    expect(doc.body.dataset.spaLpScroll).toBe('1');
+    // 두 번째 호출 — 그대로
+    wireLongPress(doc);
+    expect(doc.body.dataset.spaLpScroll).toBe('1');
   });
 });
