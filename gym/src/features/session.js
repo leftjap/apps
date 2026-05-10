@@ -20,7 +20,7 @@ import {
   toISODate,
 } from '../db/queries.js';
 import { PART_IDS, PARTS, getBuiltinExercise } from '../db/exercises.js';
-import { mapNameToExerciseId } from './session-pr.js';
+import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
@@ -669,9 +669,12 @@ function resolveExerciseName(id) {
 function renderSetDotHtml(idx, set, isCurrent) {
   const setNum = idx + 1;
   const isDone = !!(set && set.done);
+  const isPR = !!(set && set.pr);
   let color = 'rgba(255,255,255,0.25)';
   let weight = '400';
-  if (isCurrent) { color = 'var(--accent)'; weight = '600'; }
+  // spec §6-11 — PR set 은 accent 영구 표시 (current/done 무관)
+  if (isPR) { color = 'var(--accent)'; weight = '600'; }
+  else if (isCurrent) { color = 'var(--accent)'; weight = '600'; }
   else if (isDone) { color = 'rgba(255,255,255,0.55)'; weight = '400'; }
   const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
   const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
@@ -1487,6 +1490,32 @@ export async function handleLeftSwipe() {
     }
   }
 
+  // (g) PR 판정 (spec §6-11) — cur 유효 + commit 시점만. cur===-1 (advance only) 분기는 PR 발화 없음.
+  let prResult = null;
+  if (cur !== -1) {
+    const committed = sets[cur];
+    if (committed && Number.isFinite(committed.weight) && Number.isFinite(committed.reps)
+        && committed.weight > 0 && committed.reps > 0) {
+      try {
+        prResult = await persistSetPR({
+          exerciseName: resolveExerciseName(block.exerciseId),
+          weight: committed.weight,
+          reps: committed.reps,
+          sessionId: session.id,
+          date: session.date,
+        });
+        if (prResult && prResult.isPR) {
+          // set 자체에도 pr=true 영구 마크 (renderSetDotHtml 가 accent 영구 표시)
+          sets[cur] = { ...sets[cur], pr: true };
+        }
+      } catch (e) {
+        if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+          console.error('[gymSession] handleLeftSwipe PR', e);
+        }
+      }
+    }
+  }
+
   blocks[blockIdx] = { ...block, sets };
   try { await upsertSession({ ...session, blocks }); }
   catch (e) {
@@ -1496,6 +1525,28 @@ export async function handleLeftSwipe() {
     return;
   }
   await mountSessionView();
+
+  // PR 팝 (mountSessionView 후 — 새 dot 노드에 대해 PR 표시는 이미 적용됨, pop 만 추가)
+  if (prResult && prResult.isPR && typeof document !== 'undefined') {
+    showPrPop(document);
+  }
+}
+
+/**
+ * spec §6-11 — "PR" 텍스트 1초 페이드아웃 (위로 살짝 떠오름). DOM 한 번 + opacity/transform 토글.
+ *  - opacity 0 → 1 (220ms ease, fade-in)
+ *  - transform translateY(0) → translateY(-12px) (700ms ease, 위로 떠오름)
+ *  - 800ms 후 fade-out (opacity 1 → 0, transform 복원)
+ */
+function showPrPop(doc) {
+  const el = doc.getElementById('cardPrPop');
+  if (!el) return;
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(-12px)';
+  setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(0)';
+  }, 800);
 }
 
 /**

@@ -1022,6 +1022,57 @@ describe('handleLeftSwipe (spec §6-3-1)', () => {
     // active 없음 — 그냥 통과
     await expect(handleLeftSwipe()).resolves.toBeUndefined();
   });
+
+  /* (3) PR 통합 — spec §6-11 */
+  it('첫 set commit (이전 PR 부재) → set.pr=true 마크 (PR 자동)', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    await handleLeftSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets[0].done).toBe(true);
+    expect(sets[0].pr).toBe(true);
+  });
+
+  it('새 e1RM 이 이전 PR 보다 낮음 → set.pr=false 유지', async () => {
+    // 이전 PR 시드 (e1rm = 80 × (1 + 5/30) = 93.3)
+    await db.prs.put({
+      exerciseId: 'bench_press',
+      weight: 80,
+      reps: 5,
+      e1rm: 93.3,
+      date: '2026-04-01',
+      sessionId: 'old',
+      type: 'e1rm',
+    });
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    await handleLeftSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets[0].done).toBe(true);
+    expect(sets[0].pr).toBe(false); // 60 × (1+10/30) = 80 < 93.3 → not PR
+  });
+
+  it('새 e1RM 이 이전 PR 초과 → set.pr=true', async () => {
+    await db.prs.put({
+      exerciseId: 'bench_press',
+      weight: 50,
+      reps: 5,
+      e1rm: 58.3,
+      date: '2026-04-01',
+      sessionId: 'old',
+      type: 'e1rm',
+    });
+    await seedActiveWithBenchSets([
+      { weight: 70, reps: 8, done: false, preset: true, pr: false },
+    ]);
+    await handleLeftSwipe();
+    const sets = await getActiveBenchSets();
+    // 70 × (1 + 8/30) = 88.7 > 58.3 → PR
+    expect(sets[0].pr).toBe(true);
+  });
 });
 
 describe('handleRightSwipe (spec §6-3-1)', () => {
