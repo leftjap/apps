@@ -5,6 +5,7 @@ import {
   createEmptySession,
   getOrCreateActiveSession,
   addExerciseToActiveSession,
+  addCircuitBlockToActiveSession,
   removeExerciseFromActiveSession,
   syncIsAddedState,
   getExerciseDefaults,
@@ -1718,6 +1719,70 @@ describe('discardActiveSession (spec §6-9)', () => {
     const r = await discardActiveSession();
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('no_active_session');
+  });
+});
+
+/* ───────────────── addCircuitBlockToActiveSession (spec §6-2 / §12) ───────────────── */
+
+describe('addCircuitBlockToActiveSession (spec §6-2)', () => {
+  it("2+ exerciseIds → circuit 블록 1 round 추가, 각 entry preset:true", async () => {
+    const r = await addCircuitBlockToActiveSession(['bench_press', 'incline_bench']);
+    expect(r.added).toBe(true);
+    expect(r.blockType).toBe('circuit');
+    const session = await db.sessions.where('status').equals('active').first();
+    expect(session.blocks).toHaveLength(1);
+    const block = session.blocks[0];
+    expect(block.type).toBe('circuit');
+    expect(block.rounds).toHaveLength(1);
+    expect(block.rounds[0]).toHaveLength(2);
+    expect(block.rounds[0][0]).toMatchObject({ exerciseId: 'bench_press', weight: 60, reps: 10, done: false, preset: true });
+    expect(block.rounds[0][1]).toMatchObject({ exerciseId: 'incline_bench', weight: 45, reps: 10, done: false, preset: true });
+  });
+
+  it("길이 < 2 → invalid_input", async () => {
+    expect((await addCircuitBlockToActiveSession([])).reason).toBe('invalid_input');
+    expect((await addCircuitBlockToActiveSession(['bench_press'])).reason).toBe('invalid_input');
+    expect((await addCircuitBlockToActiveSession(null)).reason).toBe('invalid_input');
+  });
+
+  it("이미 single 에 있는 운동 포함 → duplicate", async () => {
+    await addExerciseToActiveSession('bench_press', 'chest');
+    const r = await addCircuitBlockToActiveSession(['bench_press', 'incline_bench']);
+    expect(r.added).toBe(false);
+    expect(r.reason).toBe('duplicate');
+    expect(r.exerciseId).toBe('bench_press');
+  });
+
+  it("이미 다른 circuit 에 있는 운동 포함 → duplicate", async () => {
+    await addCircuitBlockToActiveSession(['bench_press', 'incline_bench']);
+    const r = await addCircuitBlockToActiveSession(['bench_press', 'decline_bench']);
+    expect(r.added).toBe(false);
+    expect(r.reason).toBe('duplicate');
+  });
+
+  it("bodyweight 운동 entry — weight=null reps=defaultReps", async () => {
+    const r = await addCircuitBlockToActiveSession(['push_up', 'pull_up']);
+    expect(r.added).toBe(true);
+    const session = await db.sessions.where('status').equals('active').first();
+    const round = session.blocks[0].rounds[0];
+    expect(round[0]).toMatchObject({ exerciseId: 'push_up', weight: null, reps: 15, preset: true });
+    expect(round[1]).toMatchObject({ exerciseId: 'pull_up', weight: null, reps: 8, preset: true });
+  });
+
+  it("tags 누적 (각 운동의 part 추가, 중복 제거)", async () => {
+    const r = await addCircuitBlockToActiveSession(['bench_press', 'pull_up']);
+    expect(r.added).toBe(true);
+    const session = await db.sessions.where('status').equals('active').first();
+    expect(session.tags).toContain('chest');
+    expect(session.tags).toContain('back');
+  });
+
+  it("startTime 갱신 (null 이었으면 Date.now)", async () => {
+    const before = Date.now();
+    const r = await addCircuitBlockToActiveSession(['bench_press', 'incline_bench']);
+    expect(r.added).toBe(true);
+    const session = await db.sessions.where('status').equals('active').first();
+    expect(session.startTime).toBeGreaterThanOrEqual(before);
   });
 });
 

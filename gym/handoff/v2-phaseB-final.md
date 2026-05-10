@@ -126,7 +126,8 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
 - [ ] SessionC 마운트 (g) PR 감지 (§6-11)
 - [x] `mocks/session.html` 가이드 텍스트 "← 이전 수정 / 완료 →" 제거 — 본 세션 (병합 시 동시 처리)
 - [x] `src/app.js` mount wiring (6 라우트) — 본 세션 (`ROUTE_MOUNTS` + mount fn 호출)
-- [x] 서킷 토글 click 핸들러 ON/OFF — 본 세션 (`wireCircuitToggle`). **다중선택·"완료" 활성 조건은 (a~g) 후속 세션**
+- [x] 서킷 토글 click 핸들러 ON/OFF — 본 세션 (`wireCircuitToggle`)
+- [x] 서킷 ON 다중선택 + "완료" 활성 조건 — 본 세션 ((2) `addCircuitBlockToActiveSession` 신설 (rounds[] data 모델, cardio/bodyweight 분기, 중복·태그 누적), wireCircuitToggle 의 ON 모드 listEl 선택 토글 + 패널 list 갱신 + "완료" 동적 disabled (선택 ≥2) + click 시 circuit 블록 1 round 추가 + OFF 복귀 초기화 + mountSessionView 재바인딩, hookClicks 의 single 핸들러는 ON 모드 시 early return + 7 신규 vitest. **참고**: circuit 블록 시각화 (active branch) 부재이므로 add 후 dataState='empty' 유지 — circuit 카드 마운트는 후속)
 - [x] `pnpm vitest run` 0 fail — 본 세션 (392 → 392)
 - [x] `pnpm build` 통과 — 본 세션 (`✓ 72 modules / 485.76 KiB`)
 - [ ] `pnpm e2e` 0 fail — 다음 세션 (selector 갱신 필요)

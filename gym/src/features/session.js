@@ -214,6 +214,60 @@ export async function removeExerciseFromActiveSession(exerciseId) {
   return { session: next, removed: true };
 }
 
+/**
+ * spec §6-2 / §12 — 서킷 블록 추가. 2+ 개 운동을 1 round 의 circuit 블록으로 묶음.
+ *  - exerciseIds 검증: 배열 + 길이 ≥ 2.
+ *  - 중복 검사: 어느 운동이라도 이미 single 또는 다른 circuit 안에 있으면 거부.
+ *  - round 1 entry : { exerciseId, weight, reps, done:false, preset:true }.
+ *    - cardio : weight=null reps=null
+ *    - bodyweight : weight=null reps=defaultReps
+ *    - 일반 : weight=defaultWeight reps=defaultReps
+ *  - tags 누적, startTime null 이면 Date.now().
+ *  - 반환 : { session, added: boolean, reason? }
+ */
+export async function addCircuitBlockToActiveSession(exerciseIds) {
+  if (!Array.isArray(exerciseIds) || exerciseIds.length < 2) {
+    return { added: false, reason: 'invalid_input' };
+  }
+  const session = await getOrCreateActiveSession();
+  for (const id of exerciseIds) {
+    const exists = (session.blocks || []).some((b) => {
+      if (!b) return false;
+      if (b.type === 'single') return b.exerciseId === id;
+      if (b.type === 'circuit') {
+        return (b.rounds || []).some((round) =>
+          (round || []).some((entry) => entry && entry.exerciseId === id),
+        );
+      }
+      return false;
+    });
+    if (exists) return { session, added: false, reason: 'duplicate', exerciseId: id };
+  }
+  const round1 = await Promise.all(exerciseIds.map(async (id) => {
+    let ex;
+    try { ex = await getExerciseDefaults(id); } catch { ex = null; }
+    const isCardio = ex?.equipment === 'cardio';
+    const isBodyweight = ex?.equipment === 'bodyweight';
+    return {
+      exerciseId: id,
+      weight: isCardio || isBodyweight ? null : (Number.isFinite(ex?.defaultWeight) ? ex.defaultWeight : 0),
+      reps: isCardio ? null : (Number.isFinite(ex?.defaultReps) ? ex.defaultReps : 10),
+      done: false,
+      preset: true,
+    };
+  }));
+  const block = { type: 'circuit', rounds: [round1] };
+  const tags = Array.isArray(session.tags) ? session.tags.slice() : [];
+  for (const id of exerciseIds) {
+    const ex = getBuiltinExercise(id);
+    if (ex?.part && !tags.includes(ex.part)) tags.push(ex.part);
+  }
+  if (!session.startTime) session.startTime = Date.now();
+  const next = { ...session, blocks: [...(session.blocks || []), block], tags };
+  await upsertSession(next);
+  return { session: next, added: true, blockType: 'circuit', exerciseIds };
+}
+
 function tagPartMatchHint(otherExerciseId, part) {
   const builtin = getBuiltinExercise(otherExerciseId);
   return builtin ? builtin.part === part : false;
@@ -1480,32 +1534,117 @@ export async function handleRightSwipe() {
 }
 
 /**
- * spec §6-2 — 시트 우상단 [서킷] 토글 click → data-circuit 'off'↔'on' + panel 표시 + 버튼 시각.
- * 본 단계 (a) 는 ON/OFF 시각 토글까지만. 다중선택·"완료" 활성 조건은 다음 단계.
+ * spec §6-2 — 서킷 토글 ON/OFF + ON 모드 다중선택 + "완료" 활성 조건.
+ *  - ON 진입 : 토글 accent + 패널 표시.
+ *  - OFF 복귀 : 패널 숨김 + 선택 초기화 (item is-selected / sheet.dataset.circuitSelected / done disabled).
+ *  - ON 모드 listEl click : 종목 선택/해제 토글. dataset.circuitSelected 누적, 패널 list 갱신.
+ *  - "완료" disabled = 선택 < 2.
+ *  - "완료" click → addCircuitBlockToActiveSession + 시트 close + ON→OFF + mountSessionView.
  */
 function wireCircuitToggle(doc) {
   const sheet = doc.getElementById('addexSheet');
   const btn = doc.getElementById('addexCircuitToggle');
   const panel = doc.getElementById('addexCircuitPanel');
+  const list = doc.getElementById('addexCircuitList');
+  const doneBtn = doc.getElementById('addexCircuitDone');
+  const listEl = doc.getElementById('addexList');
   if (!sheet || !btn || !panel) return;
-  if (btn.dataset.spaHooked === '1') return;
-  btn.addEventListener('click', () => {
-    const next = sheet.dataset.circuit === 'on' ? 'off' : 'on';
-    sheet.dataset.circuit = next;
-    btn.setAttribute('aria-pressed', next === 'on' ? 'true' : 'false');
-    if (next === 'on') {
-      panel.style.display = '';
-      btn.style.background = 'var(--accent)';
-      btn.style.color = '#fff';
-      btn.style.borderColor = 'transparent';
-    } else {
-      panel.style.display = 'none';
-      btn.style.background = 'transparent';
-      btn.style.color = 'rgba(255,255,255,0.55)';
-      btn.style.borderColor = 'rgba(255,255,255,0.18)';
+
+  const turnOff = () => {
+    sheet.dataset.circuit = 'off';
+    btn.setAttribute('aria-pressed', 'false');
+    panel.style.display = 'none';
+    btn.style.background = 'transparent';
+    btn.style.color = 'rgba(255,255,255,0.55)';
+    btn.style.borderColor = 'rgba(255,255,255,0.18)';
+    sheet.dataset.circuitSelected = '';
+    if (list) list.innerHTML = '';
+    if (doneBtn) {
+      doneBtn.disabled = true;
+      doneBtn.style.background = 'rgba(217,119,87,0.4)';
     }
-  });
-  btn.dataset.spaHooked = '1';
+    if (listEl) {
+      listEl.querySelectorAll('.addex-item.is-selected').forEach((el) => {
+        el.classList.remove('is-selected');
+        el.style.background = '';
+      });
+    }
+  };
+
+  if (btn.dataset.spaHooked !== '1') {
+    btn.addEventListener('click', () => {
+      const next = sheet.dataset.circuit === 'on' ? 'off' : 'on';
+      if (next === 'on') {
+        sheet.dataset.circuit = 'on';
+        btn.setAttribute('aria-pressed', 'true');
+        panel.style.display = '';
+        btn.style.background = 'var(--accent)';
+        btn.style.color = '#fff';
+        btn.style.borderColor = 'transparent';
+      } else {
+        turnOff();
+      }
+    });
+    btn.dataset.spaHooked = '1';
+  }
+
+  // ON 모드 listEl 선택 토글 — single 추가 핸들러 (hookClicks) 는 ON 모드 시 early return
+  if (listEl && listEl.dataset.circuitHooked !== '1') {
+    listEl.addEventListener('click', (e) => {
+      if (sheet.dataset.circuit !== 'on') return;
+      const item = e.target.closest('[data-ex]');
+      if (!item) return;
+      const exId = item.dataset.ex;
+      if (!exId) return;
+      const buf = sheet.dataset.circuitSelected || '';
+      const ids = buf ? buf.split(',') : [];
+      const idx = ids.indexOf(exId);
+      if (idx >= 0) {
+        ids.splice(idx, 1);
+        item.classList.remove('is-selected');
+        item.style.background = '';
+      } else {
+        ids.push(exId);
+        item.classList.add('is-selected');
+        item.style.background = 'rgba(217,119,87,0.18)';
+      }
+      sheet.dataset.circuitSelected = ids.join(',');
+      // 선택 목록 패널 갱신
+      if (list) {
+        list.innerHTML = ids.map((id) => {
+          const ex = getBuiltinExercise(id);
+          const name = ex?.name || id;
+          return `<span style="background:rgba(217,119,87,0.18);color:#fff;padding:3px 8px;border-radius:8px;">${escapeHtml(name)}</span>`;
+        }).join('');
+      }
+      if (doneBtn) {
+        const enabled = ids.length >= 2;
+        doneBtn.disabled = !enabled;
+        doneBtn.style.background = enabled ? 'var(--accent)' : 'rgba(217,119,87,0.4)';
+      }
+    });
+    listEl.dataset.circuitHooked = '1';
+  }
+
+  // "완료" click → 서킷 블록 추가 + 시트 close + 초기화
+  if (doneBtn && doneBtn.dataset.spaHooked !== '1') {
+    doneBtn.addEventListener('click', async () => {
+      if (doneBtn.disabled) return;
+      const ids = (sheet.dataset.circuitSelected || '').split(',').filter(Boolean);
+      if (ids.length < 2) return;
+      try {
+        await addCircuitBlockToActiveSession(ids);
+      } catch (err) {
+        if (!(err && /window\.gymDB 미초기화/.test(String(err.message)))) {
+          console.error('[gymSession] addCircuitBlock click', err);
+        }
+      }
+      turnOff();
+      // active branch 진입 (block 추가됨)
+      try { await mountSessionView(); } catch (e) { console.error('[gymSession] mountSessionView after circuit', e); }
+    });
+    doneBtn.dataset.spaHooked = '1';
+  }
 }
 
 async function renderChips(chipsEl) {
@@ -1580,6 +1719,9 @@ function hookClicks(chipsEl, listEl) {
   }
   if (listEl.dataset.spaHooked === '1') return;
   listEl.addEventListener('click', async (e) => {
+    // (2) 서킷 ON 모드는 wireCircuitToggle 의 별도 listener 가 처리 — single 추가 흐름 회피
+    const sheet = typeof document !== 'undefined' ? document.getElementById('addexSheet') : null;
+    if (sheet && sheet.dataset.circuit === 'on') return;
     const b = e.target.closest('[data-ex]');
     if (!b) return;
     const exerciseId = b.dataset.ex;
@@ -1641,6 +1783,7 @@ if (typeof window !== 'undefined') {
     createEmptySession,
     getOrCreateActiveSession,
     addExerciseToActiveSession,
+    addCircuitBlockToActiveSession,
     removeExerciseFromActiveSession,
     getExerciseDefaults,
     buildPresetSets,
