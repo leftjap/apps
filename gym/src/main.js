@@ -22,6 +22,7 @@ import './features/session.js'; // window.gymSession 노출 (Wave 11.9.1)
 import './features/session-summary.js'; // window.gymSessionSummary 노출 (Wave 11.9.6)
 import './features/home.js'; // window.gymHome 노출 (Wave 11.10.1)
 import './features/stats.js'; // window.gymStats 노출 (Wave 11.11)
+import './features/manage.js'; // window.gymManage 노출 (Phase B 단계 4)
 import { Sync } from './db/sync.js'; // window.gymSync 노출 (Wave 11.8.1)
 import { Auth } from './services/auth.js';
 import { initApp } from './app.js';

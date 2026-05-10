@@ -990,3 +990,61 @@ Phase B 지시서 §9 단계 4 의 0순위 (mocks id 부착) 7화면 완료. src
 ### 본 세션 commit 예정 메시지
 
 `refactor(gym): Phase B step 4 (partial) — mocks id 부착 7화면 (시각 변경 0)`
+
+---
+
+## 12. Phase B 단계 4 잔여 1~4 완료 (2026-05-10)
+
+지시서 §9 단계 4 잔여 5건 중 1~4 완료. 5번 (session.js SessionC active 카드 마운트) 은 다음 세션.
+
+### 1 — stats `parseMonthLabel` 정규식 갱신
+
+`src/features/stats.js:269` 정규식 `(\d{4})년\s+(\d{1,2})월` → `(\d{4})\s*[·년]\s*(\d{1,2})월`. v2 mocks "2026 · 5월" 형식 + 기존 "2026년 4월" 둘 다 수용. `src/features/stats.test.js` 에 v2 케이스 추가:
+
+```
+expect(parseMonthLabel('2026 · 5월')).toEqual({ year: 2026, month: 5 });
+```
+
+검증: `pnpm vitest run src/features/stats.test.js` → "Test Files 1 passed (1) / Tests 43 passed (43)" (42 → 43, 신규 1 케이스).
+
+### 2 — 시안 §2 보강 (서킷 토글)
+
+`mocks/session-empty.html` 시트 상단 우측에 spec §6-2 의 [서킷] 토글 + 서킷 ON 패널 (배너·선택 목록·완료 버튼) 부착. 부착:
+- `id="addexSheet"` `data-circuit="off"`
+- `id="addexCircuitToggle"` (button, 서킷)
+- `id="addexCircuitPanel"` (display:none)
+- `id="addexCircuitList"` `id="addexCircuitDone"` (disabled)
+
+시각 변경 = 시트 상단에 토글 행 ~26px 추가 (sheetTop 380 → 406). spec §6-2 명시 누락분 보강 — 의도된 변경. 동작 (toggle click) 은 다음 세션 src/features/session.js 갱신 시 처리.
+
+### 3 — `src/features/home.js applyToDom` HomeC 분기 재설계
+
+active 분기를 별도 id 로 분리. HomeA(`sLabel`·`sNum`·...) 와 충돌 회피:
+- HomeC 마크업: `cardLabel`·`cardTime`·`cardUnit`·`cardPart`·`cardEx`·`cardVol`·`cardProgress`·`cardCta` (8 id)
+- `applyToDom` 갱신: id 매핑 변경 + HomeA `display:none` / HomeC 표시 가시성 토글
+- `mountHomeView` 가드: `sLabel || cardLabel` 둘 중 하나 + `weekCal` 필요
+- CTA button: `cta.querySelector('span')` 첫 자식만 갱신 (시안 우측 화살표 보존)
+
+검증 (preview_eval `?state=active`): 8 id 모두 Phase A 측정 사이즈 일치 (cardTime 56·#fff / cardLabel 11·accent / cardCta 14·#fff). `pageHeight: 820` 동일.
+
+### 4 — `src/features/manage.js` 신설
+
+3 탭 (운동/체중/프로필) 통합 셸. 콘텐츠 = `window.gymExercisesAdmin.renderExercisesTab` / `window.gymWeights.renderWeightTab` / `window.gymProfile.renderProfileTab` 사용. 탭 전환은 mocks inline script 가 처리 → 본 셸은 `data-tab` 변경 후 활성 탭의 render 함수만 호출.
+
+`src/main.js` 에 `import './features/manage.js'` 추가. `window.gymManage = { mountManageView }` 노출.
+
+**미와이어 (다음 세션)**: `src/app.js` mount 함수가 라우트별 (#/admin → mountManageView 등) mount 함수 호출 안 함. 단계 4 src 적용 본질 일부 — 다음 세션 일괄 wiring.
+
+### 검증값 (도구 stdout)
+
+- `pnpm vitest run` → "Test Files 13 passed (13) / Tests 392 passed (392)" (391 → 392, parseMonthLabel +1)
+- `pnpm build` → "✓ built in 441ms / PWA precache 24 entries (474.85 KiB)"
+
+### 잔여 — 다음 세션 (단계 4 5번 + 5/6/7)
+
+- **5. session.js SessionC active 카드 마운트 함수 신설** — 가장 큰 작업. `mountSessionView` 가 active 세션의 운동명·SET 03/05·60kg·10회·S1~S5·진행바 데이터 바인딩 처리.
+- **mount wiring**: `src/app.js` mount 함수가 라우트별 mountXxx 호출 추가 (home/admin/session/stats/summary).
+- **session-empty 서킷 토글 동작**: src/features/session.js 가 toggle click → data-circuit 갱신 + panel display 처리.
+- **단계 5 — 테스트**: e2e selector 갱신.
+- **단계 6 — `pnpm e2e` 0 fail**.
+- **단계 7 — preview 시각 검증**: src dev 서버 vs mocks/*.html 비교.

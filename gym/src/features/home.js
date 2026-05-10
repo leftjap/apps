@@ -243,7 +243,8 @@ function renderWeekCalendarToDom(cells, doc) {
 export async function mountHomeView(now = Date.now()) {
   const doc = typeof document !== 'undefined' ? document : null;
   if (!doc) return { skipped: 'no-document' };
-  if (!doc.getElementById('sLabel') || !doc.getElementById('weekCal')) {
+  // v2 다크 시안 — HomeA(sLabel) 또는 HomeC(cardLabel) 중 하나는 존재해야 마운트 의미.
+  if ((!doc.getElementById('sLabel') && !doc.getElementById('cardLabel')) || !doc.getElementById('weekCal')) {
     return { skipped: 'no-mounts' };
   }
   let activeApplied = false;
@@ -312,32 +313,39 @@ export async function mountHomeView(now = Date.now()) {
   };
 }
 
+/**
+ * v2 다크 시안 — active session 분기는 HomeC 마크업의 별도 id 사용
+ * (HomeA idle 분기와 충돌 회피). 부위/종목/시간/CTA 만 갱신.
+ * 볼륨·진행바는 summarizeActiveSession 에 미반환 → mocks 정적값 유지.
+ */
 function applyToDom(v, doc) {
   const setText = (id, text) => {
     const el = doc.getElementById(id);
     if (el) el.textContent = text;
   };
-  setText('sLabel', v.label);
-  const sNum = doc.getElementById('sNum');
-  if (sNum) {
-    sNum.textContent = v.num;
-    sNum.style.fontSize = v.sessionNumSize ? `${v.sessionNumSize}px` : '';
+  setText('cardLabel', v.label);
+  setText('cardTime', v.num);
+  setText('cardUnit', v.unit);
+  const cardPart = doc.getElementById('cardPart');
+  if (cardPart) {
+    cardPart.textContent = v.part;
+    cardPart.style.display = v.part ? '' : 'none';
   }
-  setText('sUnit', v.unit);
-  const sPart = doc.getElementById('sPart');
-  if (sPart) {
-    sPart.textContent = v.part;
-    sPart.style.display = v.part ? '' : 'none';
-  }
-  setText('sSub', v.sub);
-  // session 상태 시안은 별 wave 에서 처리 — sSubUnit 슬롯은 비워둠.
-  setText('sSubUnit', '');
-  setText('ctaBtn', v.cta);
-  const cta = doc.getElementById('ctaBtn');
+  setText('cardEx', v.sub);
+  // CTA 버튼: textContent 갱신 시 시안 우측 화살표(span "→") 가 함께 사라지지 않도록 첫 자식 span 만 갱신
+  const cta = doc.getElementById('cardCta');
   if (cta) {
+    const labelSpan = cta.querySelector('span');
+    if (labelSpan) labelSpan.textContent = v.cta;
+    else cta.textContent = v.cta;
     cta.dataset.spaCta = '1';
     cta.addEventListener('click', goToSession, { once: true });
   }
+  // HomeA / HomeC 가시성 토글 — 같은 id 충돌 회피 + spec §5-5 진행 중 카드 노출
+  const homeA = doc.querySelector('.home-a');
+  const homeC = doc.querySelector('.home-c');
+  if (homeA) homeA.style.display = 'none';
+  if (homeC) homeC.style.display = '';
   const app = doc.getElementById('app');
   if (app) app.dataset.state = 'session';
 }

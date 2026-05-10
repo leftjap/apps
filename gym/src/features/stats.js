@@ -266,7 +266,7 @@ export function applyTodayToCalendar(now = Date.now(), doc) {
 }
 
 export function parseMonthLabel(text) {
-  const m = String(text || '').match(/(\d{4})년\s+(\d{1,2})월/);
+  const m = String(text || '').match(/(\d{4})\s*[·년]\s*(\d{1,2})월/);
   if (!m) return null;
   return { year: parseInt(m[1], 10), month: parseInt(m[2], 10) };
 }

@@ -389,6 +389,11 @@ describe('parseMonthLabel', () => {
     expect(parseMonthLabel('2026년 4월')).toEqual({ year: 2026, month: 4 });
   });
 
+  it('v2 다크 시안 형식 — "2026 · 5월"', () => {
+    expect(parseMonthLabel('2026 · 5월')).toEqual({ year: 2026, month: 5 });
+    expect(parseMonthLabel('2026·12월')).toEqual({ year: 2026, month: 12 });
+  });
+
   it('한 자리 월 — 1자리/2자리 모두', () => {
     expect(parseMonthLabel('2026년 1월')).toEqual({ year: 2026, month: 1 });
     expect(parseMonthLabel('2026년 12월')).toEqual({ year: 2026, month: 12 });
