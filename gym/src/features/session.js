@@ -582,7 +582,12 @@ function mountSessionActive(doc, block) {
         // (f-3a) 교차 취소 — hold 발화 시 같은 element 의 swipe tracking 무력화
         if (typeof target?._swipeReset === 'function') target._swipeReset();
         const menu = getActionMenuFor(kind, target);
-        if (menu) openActionSheet(doc, menu);
+        if (!menu) return;
+        // (f-3 wiring) — onSelect 를 handleActionSelect 디스패처로 교체 (진짜 핸들러)
+        openActionSheet(doc, {
+          ...menu,
+          onSelect: (actionId) => handleActionSelect(doc, kind, actionId, target),
+        });
       },
     });
   } catch (e) { console.error('[gymSession] wireLongPress', e); }
@@ -1063,6 +1068,146 @@ export function wireLongPress(doc, opts = {}) {
 
 /* ──────────────────── 키패드 바텀시트 (spec §6-3-2 / §6-10) ──────────────────── */
 
+/* ──────────────────── 액션 핸들러 (spec §6-9 진짜 핸들러 — f-3 wiring) ──────────────────── */
+
+/**
+ * spec §6-9 set-row 삭제 — block.sets[setIdx] 제거.
+ *  - sets.length === 0 이 되면 block 자체도 제거 (운동 카드 통째 삭제와 같은 의미).
+ *  - 마지막 single 블록 기준 (mountSessionActive 와 동일 정책).
+ */
+export async function persistRemoveSet(setIdx) {
+  if (!Number.isFinite(setIdx) || setIdx < 0) return { ok: false, reason: 'invalid_input' };
+  let session;
+  try { session = await getActiveSession(); }
+  catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return { ok: false, reason: 'no_db' };
+    console.error('[gymSession] persistRemoveSet getActive', e);
+    return { ok: false, reason: 'error' };
+  }
+  if (!session) return { ok: false, reason: 'no_active_session' };
+  const blocks = Array.isArray(session.blocks) ? session.blocks.slice() : [];
+  // 마지막 single 블록
+  const singles = blocks.map((b, i) => ({ b, i })).filter(({ b }) => b && b.type === 'single');
+  if (!singles.length) return { ok: false, reason: 'no_single_block' };
+  const { b: block, i: blockIdx } = singles[singles.length - 1];
+  const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
+  if (setIdx >= sets.length) return { ok: false, reason: 'index_out_of_range' };
+  sets.splice(setIdx, 1);
+  if (sets.length === 0) {
+    blocks.splice(blockIdx, 1);
+  } else {
+    blocks[blockIdx] = { ...block, sets };
+  }
+  try { await upsertSession({ ...session, blocks }); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] persistRemoveSet upsert', e);
+    }
+    return { ok: false, reason: 'error' };
+  }
+  return { ok: true };
+}
+
+/**
+ * spec §6-9 — 세션 삭제 (discard). active row 자체 DB 에서 제거.
+ *  - 사용자 명시적 결정 ("세션 삭제" 메뉴 + 확인 단계 통과).
+ *  - finalize 와 별개 (finalize = completed 마크, discard = row 제거).
+ */
+export async function discardActiveSession() {
+  let session;
+  try { session = await getActiveSession(); }
+  catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return { ok: false, reason: 'no_db' };
+    console.error('[gymSession] discardActiveSession getActive', e);
+    return { ok: false, reason: 'error' };
+  }
+  if (!session) return { ok: false, reason: 'no_active_session' };
+  try {
+    const db = (typeof window !== 'undefined' ? window.gymDB : null);
+    if (!db) return { ok: false, reason: 'no_db' };
+    await db.sessions.delete(session.id);
+  } catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] discardActiveSession delete', e);
+    }
+    return { ok: false, reason: 'error' };
+  }
+  return { ok: true, sessionId: session.id };
+}
+
+/**
+ * spec §6-9 — 액션 시트 onSelect 통합 디스패처.
+ *  - kind + actionId 별 분기. 각 액션은 DB 갱신 후 mountSessionView 재바인딩 또는 navigate.
+ *  - footer-exercise 는 mocks pill 이라 실 데이터 wiring 부분만 (후속 — handoff 메모).
+ */
+async function handleActionSelect(doc, kind, actionId, target) {
+  try {
+    if (kind === 'session-end') {
+      if (actionId === 'finish') {
+        const r = await finalizeActiveSession();
+        if (r && r.ok && typeof window !== 'undefined') {
+          window.location.hash = '#/summary';
+          return;
+        }
+        await mountSessionView();
+        return;
+      }
+      if (actionId === 'discard') {
+        await discardActiveSession();
+        if (typeof window !== 'undefined') window.location.hash = '#/home';
+        return;
+      }
+      return;
+    }
+    if (kind === 'active-card') {
+      if (actionId === 'finish') {
+        // 좌 스와이프 동작 재사용 — 현재 set commit + 다음 set 진행 (spec §6-3-1 / §6-9)
+        await handleLeftSwipe();
+        return;
+      }
+      if (actionId === 'delete') {
+        const ctx = await getCurrentBlockAndCursor();
+        if (!ctx) return;
+        await removeExerciseFromActiveSession(ctx.block.exerciseId);
+        await mountSessionView();
+        return;
+      }
+      if (actionId === 'reorder') {
+        // (f-5) 후속 — 드래그 이동
+        console.log('[gymSession] reorder — (f-5) 후속');
+        return;
+      }
+      return;
+    }
+    if (kind === 'set-row') {
+      const setIdx = parseInt(target?.dataset?.setIdx, 10);
+      if (!Number.isFinite(setIdx)) return;
+      if (actionId === 'edit') {
+        // 키패드 open with prefill (weight 모드, 해당 set 기존 값)
+        const ctx = await getCurrentBlockAndCursor();
+        if (!ctx) return;
+        const set = ctx.block.sets?.[setIdx];
+        if (!set) return;
+        openKeypad(doc, 'weight', { prefill: set.weight, setIdx });
+        return;
+      }
+      if (actionId === 'delete') {
+        await persistRemoveSet(setIdx);
+        await mountSessionView();
+        return;
+      }
+      return;
+    }
+    if (kind === 'footer-exercise') {
+      // mocks 의 정적 pill 이라 실 데이터 미바인딩. 실 데이터 wiring 후속.
+      console.log('[gymSession] footer-exercise', target?.dataset?.exState, actionId, '— mocks pill, 후속');
+      return;
+    }
+  } catch (e) {
+    console.error('[gymSession] handleActionSelect', kind, actionId, e);
+  }
+}
+
 /**
  * spec §6-3-2 — 키패드 buffer 갱신 순수함수.
  *  - '0~9' : append (선행 0 은 그대로 두면 안 됨? — spec 미명시. 단순 append 후 parseFloat 가 처리)
@@ -1088,14 +1233,22 @@ export function updateKeypadBuf(buf, key) {
  *  - data-mode : 'weight'|'reps' (단위 라벨 + 적용 대상)
  *  - data-buf  : 입력 누적 (빈 시작)
  */
-function openKeypad(doc, field) {
+function openKeypad(doc, field, opts = {}) {
   const sheet = doc.getElementById('keypadSheet');
   const backdrop = doc.getElementById('keypadBackdrop');
   const value = doc.getElementById('keypadValue');
   const unit = doc.getElementById('keypadUnit');
   if (!sheet || !backdrop || !value || !unit) return;
   sheet.dataset.mode = field;
-  sheet.dataset.buf = '';
+  // (f-3 wiring) — prefill 옵션 (set-row edit) + setIdx 보관 (특정 set 편집 모드)
+  sheet.dataset.buf = opts.prefill != null && Number.isFinite(opts.prefill)
+    ? String(opts.prefill)
+    : '';
+  if (opts.setIdx != null && Number.isFinite(opts.setIdx)) {
+    sheet.dataset.setIdx = String(opts.setIdx);
+  } else {
+    delete sheet.dataset.setIdx;
+  }
   unit.textContent = field === 'weight' ? 'kg' : '회';
   renderKeypadValue(sheet, value);
   sheet.dataset.open = 'true';
@@ -1151,8 +1304,11 @@ export async function applyKeypadValue(doc) {
   if (!ctx) { closeKeypad(doc); return; }
 
   const { block, effectiveCur } = ctx;
+  // (f-3 wiring) — sheet.dataset.setIdx 가 있으면 특정 set 편집, 없으면 effectiveCur (기본)
+  const sheetSetIdx = sheet.dataset.setIdx;
+  const targetSetIdx = sheetSetIdx ? parseInt(sheetSetIdx, 10) : effectiveCur;
   const exerciseName = resolveExerciseName(block.exerciseId);
-  const r = await persistKeypadEdit({ exerciseName, setIdx: effectiveCur, field, value: finalValue });
+  const r = await persistKeypadEdit({ exerciseName, setIdx: targetSetIdx, field, value: finalValue });
   closeKeypad(doc);
   if (r && r.ok) await mountSessionView();
 }
@@ -1502,6 +1658,8 @@ if (typeof window !== 'undefined') {
     wireLongPress,
     openActionSheet,
     closeActionSheet,
+    persistRemoveSet,
+    discardActiveSession,
     getActivePart,
     setActivePart,
   };

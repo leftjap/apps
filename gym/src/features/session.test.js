@@ -25,6 +25,8 @@ import {
   wireLongPress,
   openActionSheet,
   closeActionSheet,
+  persistRemoveSet,
+  discardActiveSession,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1628,6 +1630,94 @@ describe('openActionSheet / closeActionSheet (spec §6-9 / §6-10)', () => {
     openActionSheet(doc, { kind: 'b', items: [{ id: 'y', label: 'Y' }] });
     expect(doc._sheet.dataset.step).toBe('1');
     expect(doc._sheet.dataset.confirmId).toBeUndefined();
+  });
+});
+
+/* ───────────────── persistRemoveSet (spec §6-9 set-row delete) ───────────────── */
+
+describe('persistRemoveSet (spec §6-9)', () => {
+  async function seedActive(sets) {
+    await db.sessions.put({
+      id: 'rm-test',
+      date: '2026-05-11',
+      startTime: Date.now() - 10 * 60_000,
+      endTime: null,
+      blocks: [{ type: 'single', exerciseId: 'bench_press', sets }],
+      tags: ['chest'],
+      totalVolume: 0, totalCalories: 0, durationMin: 0,
+      status: 'active',
+    });
+  }
+
+  it("setIdx 유효 → sets[idx] 제거 + 길이 -1", async () => {
+    await seedActive([
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 65, reps: 9, done: true, preset: false, pr: false },
+      { weight: 70, reps: 8, done: false, preset: true, pr: false },
+    ]);
+    const r = await persistRemoveSet(1);
+    expect(r.ok).toBe(true);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    const sets = rows[0].blocks[0].sets;
+    expect(sets).toHaveLength(2);
+    expect(sets[0].weight).toBe(60);
+    expect(sets[1].weight).toBe(70); // idx 1 (65) 제거
+  });
+
+  it("마지막 set 제거 시 sets.length === 0 → block 자체 제거", async () => {
+    await seedActive([
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    const r = await persistRemoveSet(0);
+    expect(r.ok).toBe(true);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    expect(rows[0].blocks).toHaveLength(0);
+  });
+
+  it("setIdx 범위 초과 → index_out_of_range", async () => {
+    await seedActive([{ weight: 60, reps: 10, done: false, preset: true, pr: false }]);
+    const r = await persistRemoveSet(5);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('index_out_of_range');
+  });
+
+  it("setIdx 음수/NaN → invalid_input", async () => {
+    expect((await persistRemoveSet(-1)).reason).toBe('invalid_input');
+    expect((await persistRemoveSet(NaN)).reason).toBe('invalid_input');
+  });
+
+  it("active session 부재 → no_active_session", async () => {
+    const r = await persistRemoveSet(0);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('no_active_session');
+  });
+});
+
+/* ───────────────── discardActiveSession (spec §6-9 session-end discard) ───────────────── */
+
+describe('discardActiveSession (spec §6-9)', () => {
+  it("active session 1건 → DB 에서 row 제거", async () => {
+    await db.sessions.put({
+      id: 'discard-test',
+      date: '2026-05-11',
+      startTime: Date.now() - 5 * 60_000,
+      endTime: null,
+      blocks: [],
+      tags: [],
+      totalVolume: 0, totalCalories: 0, durationMin: 0,
+      status: 'active',
+    });
+    const r = await discardActiveSession();
+    expect(r.ok).toBe(true);
+    expect(r.sessionId).toBe('discard-test');
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    expect(rows).toHaveLength(0);
+  });
+
+  it("active session 부재 → no_active_session", async () => {
+    const r = await discardActiveSession();
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('no_active_session');
   });
 });
 
