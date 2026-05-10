@@ -1102,12 +1102,14 @@ export function wireLongPress(doc, opts = {}) {
         timer = null;
         triggered = true;
         try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
+        // scale 복원을 onTrigger 전에 (transition 으로 부드럽게). onTrigger 의 setReorderMode 등이
+        // transform 을 다시 설정해도 충돌 없음 (cleanup 이 그 후 발화하지 않음).
+        el.style.transform = '';
+        setTimeout(() => { el.style.transition = ''; }, 200);
         if (typeof onTrigger === 'function') {
           try { onTrigger({ kind: el.dataset.longpress, target: el }); }
           catch (err) { console.error('[gymSession] longpress onTrigger', err); }
         }
-        // 발화 후 200ms 뒤 scale 복원 (메뉴로 attention 이동)
-        setTimeout(() => { el.style.transform = ''; el.style.transition = ''; }, 200);
       }, holdMs);
     });
     el.addEventListener('pointermove', (e) => {
@@ -1258,12 +1260,14 @@ function renderFooterPills(doc, session, currentBlock) {
  * spec §6-8 — pill click = 다른 운동으로 이동 (완료 아님).
  *  - data-block-idx 추출 → _currentBlockIdx 갱신 → mountSessionView 재바인딩.
  *  - hold 발화 (500ms) 와 click 은 별 이벤트 — 짧은 click 만 발화. hold 완료 시 pointerup 무발생.
+ *  - reorder 모드 (pillsEl.dataset.reorder === '1') 중 일반 click 무시 (cancel 은 빈 영역).
  *  - idempotent : pillsEl.dataset.spaHooked guard.
  */
 function wireFooterPillClick(doc) {
   const pillsEl = doc.getElementById('sessionFooterPills');
   if (!pillsEl || pillsEl.dataset.spaHooked === '1') return;
   pillsEl.addEventListener('click', (e) => {
+    if (pillsEl.dataset.reorder === '1') return; // (f-5-2) reorder 모드 — pill click 무시
     const pill = e.target.closest('[data-block-idx]');
     if (!pill) return;
     const idx = parseInt(pill.dataset.blockIdx, 10);
@@ -1272,6 +1276,59 @@ function wireFooterPillClick(doc) {
     mountSessionView().catch((err) => console.error('[gymSession] pill click mount', err));
   });
   pillsEl.dataset.spaHooked = '1';
+}
+
+/**
+ * spec §6-9 — reorder 모드 진입/종료 (f-5-2 시각만, drag/drop 은 f-5-3).
+ *  - on=true + srcIdx : 선택된 pill 만 scale 1.05 + accent halo shadow + opacity 1, 다른 pill 은 scale 0.92 + opacity 0.55.
+ *  - on=false : 모든 pill 시각 복귀.
+ *  - 빈 영역 (footer 외) click → 자동 cancel (capture 단계 doc click listener).
+ */
+export function setReorderMode(doc, on, srcIdx = null) {
+  const pillsEl = doc?.getElementById?.('sessionFooterPills');
+  if (!pillsEl) return;
+  const pills = pillsEl.querySelectorAll('[data-block-idx]');
+  if (on) {
+    pillsEl.dataset.reorder = '1';
+    if (srcIdx != null) pillsEl.dataset.reorderSrc = String(srcIdx);
+    pills.forEach((p) => {
+      const idx = parseInt(p.dataset.blockIdx, 10);
+      p.style.transition = 'transform 200ms ease, opacity 200ms ease, box-shadow 200ms ease';
+      if (idx === srcIdx) {
+        p.style.transform = 'scale(1.05)';
+        p.style.opacity = '1';
+        p.style.boxShadow = '0 8px 18px -4px rgba(217,119,87,0.45), 0 4px 8px -2px rgba(0,0,0,0.5)';
+        p.style.zIndex = '10';
+      } else {
+        p.style.transform = 'scale(0.92)';
+        p.style.opacity = '0.55';
+        p.style.boxShadow = '';
+        p.style.zIndex = '';
+      }
+    });
+    // 빈 영역 click → cancel (한 번만 등록)
+    if (doc.body && !doc.body.dataset.spaReorderEsc) {
+      doc.addEventListener('click', (e) => {
+        if (pillsEl.dataset.reorder !== '1') return;
+        // pill 자체 click 은 wireFooterPillClick 가 이미 무시 — body 만 cancel
+        if (e.target.closest('[data-block-idx]')) return;
+        // 액션 시트 / backdrop click 은 closeActionSheet 만 — reorder cancel 트리거 X
+        if (e.target.closest('#actionSheet, #actionBackdrop, #keypadSheet, #keypadBackdrop')) return;
+        setReorderMode(doc, false);
+      }, true);
+      doc.body.dataset.spaReorderEsc = '1';
+    }
+  } else {
+    delete pillsEl.dataset.reorder;
+    delete pillsEl.dataset.reorderSrc;
+    pills.forEach((p) => {
+      p.style.transform = '';
+      p.style.opacity = '';
+      p.style.boxShadow = '';
+      p.style.zIndex = '';
+      setTimeout(() => { p.style.transition = ''; }, 220);
+    });
+  }
 }
 
 /* ──────────────────── 액션 핸들러 (spec §6-9 진짜 핸들러 — f-3 wiring) ──────────────────── */
@@ -1379,8 +1436,9 @@ async function handleActionSelect(doc, kind, actionId, target) {
         return;
       }
       if (actionId === 'reorder') {
-        // (f-5) 후속 — 드래그 이동
-        console.log('[gymSession] reorder — (f-5) 후속');
+        // (f-5-2) reorder 모드 진입 — 현재 currentBlock 의 idx 를 src 로
+        const ctx = await getCurrentBlockAndCursor();
+        if (ctx && Number.isFinite(ctx.blockIdx)) setReorderMode(doc, true, ctx.blockIdx);
         return;
       }
       return;
@@ -1438,7 +1496,8 @@ async function handleActionSelect(doc, kind, actionId, target) {
         return;
       }
       if (actionId === 'reorder') {
-        console.log('[gymSession] reorder — (f-5-2/3) 후속');
+        // (f-5-2) reorder 모드 진입 — 해당 block 을 src 로
+        setReorderMode(doc, true, blockIdx);
         return;
       }
       return;
@@ -2053,6 +2112,7 @@ if (typeof window !== 'undefined') {
     closeActionSheet,
     persistRemoveSet,
     discardActiveSession,
+    setReorderMode,
     getActivePart,
     setActivePart,
   };
