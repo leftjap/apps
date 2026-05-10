@@ -579,6 +579,8 @@ function mountSessionActive(doc, block) {
   try {
     wireLongPress(doc, {
       onTrigger: ({ kind, target }) => {
+        // (f-3a) 교차 취소 — hold 발화 시 같은 element 의 swipe tracking 무력화
+        if (typeof target?._swipeReset === 'function') target._swipeReset();
         const menu = getActionMenuFor(kind, target);
         if (menu) openActionSheet(doc, menu);
       },
@@ -637,6 +639,9 @@ function wireSwipeHandlers(doc) {
   let startX = 0;
   let startY = 0;
   let tracking = false;
+
+  // (f-3a) 교차 취소 — hold 발화 시 외부에서 swipe tracking 무력화 가능
+  area._swipeReset = () => { tracking = false; };
 
   const onDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -873,6 +878,19 @@ function getActionMenuFor(kind, target) {
       items: [
         { id: 'finish', label: '종료' },
         { id: 'discard', label: '세션 삭제', danger: true },
+      ],
+      onSelect: (id) => { console.log('[gymSession] action', kind, id); },
+    };
+  }
+  if (kind === 'active-card') {
+    // spec §6-9 — 진행 중 운동 카드 : 완료 / 삭제 / 이동
+    return {
+      kind,
+      title: '운동 카드',
+      items: [
+        { id: 'finish', label: '완료' },
+        { id: 'delete', label: '삭제', danger: true },
+        { id: 'reorder', label: '이동' },
       ],
       onSelect: (id) => { console.log('[gymSession] action', kind, id); },
     };

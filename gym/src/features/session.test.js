@@ -1599,3 +1599,57 @@ describe('openActionSheet / closeActionSheet (spec §6-9 / §6-10)', () => {
     expect(doc._itemsEl.innerHTML).toContain('font-weight:400');
   });
 });
+
+/* ───────────────── wireLongPress cross-cancel (spec §6-9 — f-3a) ───────────────── */
+
+describe('wireLongPress cross-cancel (f-3a)', () => {
+  it("hold 발화 시 onTrigger 가 target._swipeReset 호출 가능 (외부 hook)", () => {
+    vi.useFakeTimers();
+    try {
+      let resetCalled = 0;
+      const triggers = [];
+      const doc = makeLpDoc(['active-card']);
+      // hold target 에 _swipeReset 미리 attach (wireSwipeHandlers 가 attach 한 것과 동일 인터페이스)
+      const el = doc._elements[0];
+      el._swipeReset = () => { resetCalled += 1; };
+      wireLongPress(doc, {
+        onTrigger: ({ kind, target }) => {
+          // 사용자 코드 패턴 : 같은 element 의 _swipeReset 호출
+          if (typeof target._swipeReset === 'function') target._swipeReset();
+          triggers.push({ kind });
+        },
+      });
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(1);
+      expect(resetCalled).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("move 8px+ 시 hold cancel — onTrigger 미호출, _swipeReset 미호출", () => {
+    vi.useFakeTimers();
+    try {
+      let resetCalled = 0;
+      const triggers = [];
+      const doc = makeLpDoc(['active-card']);
+      const el = doc._elements[0];
+      el._swipeReset = () => { resetCalled += 1; };
+      wireLongPress(doc, {
+        onTrigger: ({ target }) => {
+          if (typeof target._swipeReset === 'function') target._swipeReset();
+          triggers.push(1);
+        },
+      });
+      el._fire('pointerdown', { clientX: 0, clientY: 0, pointerId: 1, pointerType: 'touch', button: 0 });
+      vi.advanceTimersByTime(100);
+      el._fire('pointermove', { clientX: 70, clientY: 0, pointerId: 1 }); // 70px (60px swipe 시뮬)
+      vi.advanceTimersByTime(500);
+      expect(triggers).toHaveLength(0); // hold 미발화
+      expect(resetCalled).toBe(0); // _swipeReset 미호출 (hold 발화 안 함)
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
