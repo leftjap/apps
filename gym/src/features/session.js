@@ -24,6 +24,8 @@ import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
+// (f-5-1) 사용자가 footer pill 탭으로 선택한 block idx (없으면 마지막 single 자동)
+let _currentBlockIdx = null;
 
 /* ───────────────────────────── Dexie 어댑터 ───────────────────────────── */
 
@@ -535,7 +537,13 @@ export async function mountSessionView() {
   if (doc.body && doc.body.dataset) doc.body.dataset.state = route;
 
   if (route === 'active') {
-    return mountSessionActive(doc, activeBlocks[activeBlocks.length - 1]);
+    // (f-5-1) — _currentBlockIdx 가 유효한 single 블록을 가리키면 그 block, 그 외 마지막 single 자동
+    let pickedBlock = activeBlocks[activeBlocks.length - 1];
+    if (_currentBlockIdx != null && _currentBlockIdx >= 0 && _currentBlockIdx < session.blocks.length) {
+      const candidate = session.blocks[_currentBlockIdx];
+      if (candidate && candidate.type === 'single') pickedBlock = candidate;
+    }
+    return mountSessionActive(doc, pickedBlock, session);
   }
   return mountSessionEmpty(doc, dbUnavailable);
 }
@@ -569,7 +577,7 @@ async function mountSessionEmpty(doc, dbUnavailable) {
  *  - 마지막 single 블록을 "현재 운동" 으로 사용 (단계 a — 정적).
  *  - currentSetIdx = 첫 un-done set. 모두 done 이면 마지막 set.
  */
-function mountSessionActive(doc, block) {
+function mountSessionActive(doc, block, session) {
   const sets = Array.isArray(block.sets) ? block.sets : [];
   let cur = sets.findIndex((s) => s && !s.done);
   if (cur === -1) cur = Math.max(0, sets.length - 1);
@@ -623,6 +631,10 @@ function mountSessionActive(doc, block) {
   if (bar) bar.style.width = `${pct}%`;
   setTextById(doc, 'cardProgressVol', `${totalDone.toLocaleString()} / ${totalPlanned.toLocaleString()}kg`);
   setTextById(doc, 'cardProgressPct', `${pct}%`);
+
+  // (f-5-1) spec §6-8 — footer nav pill 동적 렌더 + click handler
+  try { renderFooterPills(doc, session, block); } catch (e) { console.error('[gymSession] renderFooterPills', e); }
+  try { wireFooterPillClick(doc); } catch (e) { console.error('[gymSession] wireFooterPillClick', e); }
 
   // spec §6-3-1 — 스와이프 핸들러 wire (idempotent — dataset.spaHooked guard)
   try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
@@ -1125,6 +1137,143 @@ export function wireLongPress(doc, opts = {}) {
 
 /* ──────────────────── 키패드 바텀시트 (spec §6-3-2 / §6-10) ──────────────────── */
 
+/* ──────────────────── footer nav pill (spec §6-8 / f-5-1) ──────────────────── */
+
+/**
+ * spec §6-8 운동 상태 판정.
+ *  - currentBlock 과 동일 → 'current'
+ *  - single 블록의 sets 모두 done → 'done'
+ *  - single 블록의 일부 set done → 'hold' (보류)
+ *  - 그 외 (예정) → 'pending'
+ *  - circuit 블록은 본 단계 — 모든 entry done 이면 done, 일부 done 이면 hold, 그 외 pending
+ */
+function classifyBlockState(block, isCurrent) {
+  if (isCurrent) return 'current';
+  if (!block) return 'pending';
+  if (block.type === 'single') {
+    const sets = Array.isArray(block.sets) ? block.sets : [];
+    if (sets.length === 0) return 'pending';
+    const allDone = sets.every((s) => s && s.done);
+    if (allDone) return 'done';
+    const anyDone = sets.some((s) => s && s.done);
+    if (anyDone) return 'hold';
+    return 'pending';
+  }
+  if (block.type === 'circuit') {
+    const round1 = (block.rounds && block.rounds[0]) || [];
+    if (round1.length === 0) return 'pending';
+    const allDone = round1.every((e) => e && e.done);
+    if (allDone) return 'done';
+    const anyDone = round1.some((e) => e && e.done);
+    if (anyDone) return 'hold';
+    return 'pending';
+  }
+  return 'pending';
+}
+
+/**
+ * 진행도 텍스트 — current/hold/done 별 spec §6-8 footer nav 표현.
+ *  - current : "·N/M" (현재 set / 총)
+ *  - hold    : "·N/M"
+ *  - done    : "·N세트 ✓" 의 N 부분 (✓ 는 별도 prefix span 으로 렌더)
+ */
+function blockProgressText(block, state) {
+  if (!block || block.type !== 'single') return '';
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  const total = sets.length;
+  if (state === 'done') return `·${total}세트`;
+  if (state === 'current' || state === 'hold') {
+    const cur = sets.findIndex((s) => !s.done);
+    const num = cur === -1 ? total : cur + 1;
+    return `·${num}/${total}`;
+  }
+  return '';
+}
+
+function blockDisplayName(block) {
+  if (!block) return '';
+  if (block.type === 'single') return resolveExerciseName(block.exerciseId);
+  if (block.type === 'circuit') {
+    const round1 = (block.rounds && block.rounds[0]) || [];
+    return round1.length ? `서킷 (${round1.length})` : '서킷';
+  }
+  return '';
+}
+
+function renderFooterPillHtml({ blockIdx, state, name, progress }) {
+  // data-ex-state : 'active' | 'completed' | 'hold' | 'upcoming' (footer-exercise hold 메뉴와 호환)
+  const exStateAttr = state === 'current' ? 'active'
+    : state === 'done' ? 'completed'
+    : state === 'hold' ? 'hold' : 'upcoming';
+  const wrapStart = `<div data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">`;
+  const wrapEnd = `</div>`;
+  if (state === 'current') {
+    return wrapStart + `
+      <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:2px;background:var(--accent);"></span>
+      <span style="font-size:15px;font-weight:600;color:var(--accent);">${escapeHtml(name)}</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
+      <span style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);"></span>
+    ` + wrapEnd;
+  }
+  if (state === 'done') {
+    return wrapStart + `
+      <span style="color:var(--sage);font-size:12px;">✓</span>
+      <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
+    ` + wrapEnd;
+  }
+  if (state === 'hold') {
+    return wrapStart + `
+      <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
+      <span style="font-size:10px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
+    ` + wrapEnd;
+  }
+  // pending
+  return wrapStart + `<span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.28);">${escapeHtml(name)}</span>` + wrapEnd;
+}
+
+/**
+ * spec §6-8 — active session blocks → footer pill 동적 렌더.
+ *  - currentBlock 은 mountSessionActive 가 사용 중인 그 block (accent + underline + dot + 진행도).
+ *  - 다른 block 은 done/hold/pending 자동 판정.
+ */
+function renderFooterPills(doc, session, currentBlock) {
+  const pillsEl = doc.getElementById('sessionFooterPills');
+  if (!pillsEl || !session || !Array.isArray(session.blocks)) {
+    if (pillsEl) pillsEl.innerHTML = '';
+    return;
+  }
+  const html = session.blocks.map((block, i) => {
+    if (!block) return '';
+    const isCurrent = block === currentBlock;
+    const state = classifyBlockState(block, isCurrent);
+    const name = blockDisplayName(block);
+    const progress = blockProgressText(block, state);
+    return renderFooterPillHtml({ blockIdx: i, state, name, progress });
+  }).join('');
+  pillsEl.innerHTML = html;
+}
+
+/**
+ * spec §6-8 — pill click = 다른 운동으로 이동 (완료 아님).
+ *  - data-block-idx 추출 → _currentBlockIdx 갱신 → mountSessionView 재바인딩.
+ *  - hold 발화 (500ms) 와 click 은 별 이벤트 — 짧은 click 만 발화. hold 완료 시 pointerup 무발생.
+ *  - idempotent : pillsEl.dataset.spaHooked guard.
+ */
+function wireFooterPillClick(doc) {
+  const pillsEl = doc.getElementById('sessionFooterPills');
+  if (!pillsEl || pillsEl.dataset.spaHooked === '1') return;
+  pillsEl.addEventListener('click', (e) => {
+    const pill = e.target.closest('[data-block-idx]');
+    if (!pill) return;
+    const idx = parseInt(pill.dataset.blockIdx, 10);
+    if (!Number.isFinite(idx)) return;
+    _currentBlockIdx = idx;
+    mountSessionView().catch((err) => console.error('[gymSession] pill click mount', err));
+  });
+  pillsEl.dataset.spaHooked = '1';
+}
+
 /* ──────────────────── 액션 핸들러 (spec §6-9 진짜 핸들러 — f-3 wiring) ──────────────────── */
 
 /**
@@ -1256,8 +1405,42 @@ async function handleActionSelect(doc, kind, actionId, target) {
       return;
     }
     if (kind === 'footer-exercise') {
-      // mocks 의 정적 pill 이라 실 데이터 미바인딩. 실 데이터 wiring 후속.
-      console.log('[gymSession] footer-exercise', target?.dataset?.exState, actionId, '— mocks pill, 후속');
+      // (f-5-1) — 동적 pill 의 data-block-idx 기반 진짜 핸들러
+      const blockIdx = parseInt(target?.dataset?.blockIdx, 10);
+      if (!Number.isFinite(blockIdx)) return;
+      if (actionId === 'finish') {
+        // active state pill — 해당 block 을 current 로 전환 후 좌 스와이프 (현재 set commit)
+        _currentBlockIdx = blockIdx;
+        await handleLeftSwipe();
+        return;
+      }
+      if (actionId === 'edit') {
+        // completed pill — 해당 block 으로 currentBlock 전환 (읽기 전용 모드는 후속)
+        _currentBlockIdx = blockIdx;
+        await mountSessionView();
+        return;
+      }
+      if (actionId === 'delete') {
+        const session = await getActiveSession();
+        if (!session) return;
+        const block = session.blocks?.[blockIdx];
+        if (!block) return;
+        if (block.type === 'single') {
+          await removeExerciseFromActiveSession(block.exerciseId);
+        } else {
+          const blocks = session.blocks.slice();
+          blocks.splice(blockIdx, 1);
+          await upsertSession({ ...session, blocks });
+        }
+        if (_currentBlockIdx === blockIdx) _currentBlockIdx = null;
+        else if (_currentBlockIdx != null && _currentBlockIdx > blockIdx) _currentBlockIdx -= 1;
+        await mountSessionView();
+        return;
+      }
+      if (actionId === 'reorder') {
+        console.log('[gymSession] reorder — (f-5-2/3) 후속');
+        return;
+      }
       return;
     }
   } catch (e) {
@@ -1430,13 +1613,29 @@ function wireKeypad(doc) {
 async function getCurrentBlockAndCursor() {
   const session = await getActiveSession();
   if (!session || !Array.isArray(session.blocks)) return null;
-  const singles = session.blocks.filter((b) => b && b.type === 'single');
-  if (!singles.length) return null;
-  const block = singles[singles.length - 1];
+  // (f-5-1) — _currentBlockIdx 가 유효 single 블록을 가리키면 그 block, 그 외 마지막 single 자동
+  let block = null;
+  let blockIdx = -1;
+  if (_currentBlockIdx != null && _currentBlockIdx >= 0 && _currentBlockIdx < session.blocks.length) {
+    const candidate = session.blocks[_currentBlockIdx];
+    if (candidate && candidate.type === 'single') {
+      block = candidate;
+      blockIdx = _currentBlockIdx;
+    }
+  }
+  if (!block) {
+    const singles = session.blocks
+      .map((b, i) => ({ b, i }))
+      .filter(({ b }) => b && b.type === 'single');
+    if (!singles.length) return null;
+    const pick = singles[singles.length - 1];
+    block = pick.b;
+    blockIdx = pick.i;
+  }
   const sets = Array.isArray(block.sets) ? block.sets : [];
   const cur = sets.findIndex((s) => s && !s.done);
   const effectiveCur = cur === -1 ? Math.max(0, sets.length - 1) : cur;
-  return { session, block, cur, effectiveCur };
+  return { session, block, blockIdx, cur, effectiveCur };
 }
 
 /**

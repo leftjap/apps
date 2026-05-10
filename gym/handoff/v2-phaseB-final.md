@@ -124,6 +124,7 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
 - [x] SessionC 마운트 (e) 프리셋 (§6-3-3) — 본 세션 (mountSessionActive 에 preset opacity 토글 0.45/1 추가. 우선순위 ① 직전 세트 / ② 이전 세션 / ③ defaultWeight 는 기존 addExerciseToActiveSession + buildPresetSets + handleLeftSwipe push 로 자동 동작 — 기존 75+ 단위 테스트로 회귀 방지)
 - [/] SessionC 마운트 (f) 꾹누르기 (§6-9) — (f-1) 인프라 본 세션 (`wireLongPress` 500ms 타이머 + scale 0.98 + 햅틱 + move 8px 취소 + 글로벌 scroll 취소 + idempotent spaLpHooked guard. mocks 5 대상: session-end + footer-exercise × 4. 11 신규 vitest). (f-2) 액션 시트 본 세션 (`openActionSheet`/`closeActionSheet`/`wireActionSheet` + `getActionMenuFor` (session-end / footer-exercise active·completed·upcoming 분기) + onTrigger → openActionSheet 연결 + 6 신규 vitest). (f-3a) 진행 중 운동 카드 본 세션 (`cardSwipeArea` 에 `data-longpress="active-card"` 부착 + `wireSwipeHandlers` 의 `area._swipeReset` 추가 (cross-cancel) + onTrigger 에서 `target._swipeReset()` 호출 + active-card 메뉴 [완료/삭제/이동] + 2 신규 vitest). (f-3b) 세트 행 본 세션 (`renderSetDotHtml` 에 `data-longpress="set-row"` + `data-set-idx` 부착 + `getActionMenuFor` 'set-row' 메뉴 [수정/삭제] + bubble 분리 위해 `wireLongPress` pointerdown 에 `e.stopPropagation()` 추가 + mock event stopPropagation 보강). (f-3c) 서킷 카드 = mountSessionActive 가 single 블록만 처리, circuit 블록 마운트 자체 부재 → 본 세션 스킵. 후속에서 circuit 블록 시각화 + 별도 hold target 필요. (f-4) 2단계 확인 본 세션 (openActionSheet 시 step='1' 초기화 + items 보관 + showConfirmStep step='2' 전환 + actionCancel 취소 + .action-confirm "ok" 클릭 시 _onSelect 호출 후 close + 3 신규 vitest). (f-3 진짜 핸들러 wiring) 본 세션 (`handleActionSelect` 통합 디스패처 — session-end finish→`finalizeActiveSession`+#/summary / discard→`discardActiveSession`+#/home / active-card finish→`handleLeftSwipe` 재사용 / active-card delete→`removeExerciseFromActiveSession` / set-row edit→openKeypad prefill+setIdx / set-row delete→`persistRemoveSet`. 신규 헬퍼: `persistRemoveSet`(sets[idx] 제거 + sets.length=0 면 block 자체 제거) + `discardActiveSession`(DB row delete) + 7 신규 vitest. footer-exercise = mocks pill 정적 마크업이라 후속). (f-5) 이동 = 후속
 - [x] SessionC 마운트 (g) PR 감지 (§6-11) — 본 세션 (handleLeftSwipe 의 set commit 직후 `persistSetPR` 호출 + isPR 시 `set.pr=true` 마크 + DB upsertPR. mocks `cardPrPop` element 추가 (Poppins 500 accent, opacity 220ms + transform 700ms). `showPrPop` 1초 페이드아웃. `renderSetDotHtml` 의 set.pr 시 accent 영구 표시 + 3 신규 vitest. 알려진 한계 — PR 팝 위치 (top:118px) 가 운동명 영역과 약간 겹침, 후속 미세 조정)
+- [/] (f-5-1) footer pill 실 데이터 wiring — 본 세션 (mocks footer 정적 4 pill 제거 → `sessionFooterPills` 동적 영역만. session.js 에 `_currentBlockIdx` 모듈 변수 + `classifyBlockState` (current/done/hold/pending) + `blockProgressText` (·N/M / ·N세트) + `blockDisplayName` + `renderFooterPillHtml` (spec §6-8 footer nav 표현) + `renderFooterPills` (active session blocks 기반) + `wireFooterPillClick` (data-block-idx → _currentBlockIdx 갱신 + mountSessionView 재바인딩) + `getCurrentBlockAndCursor`/mountSessionView 의 active branch 가 _currentBlockIdx 우선 사용 + `handleActionSelect` 의 footer-exercise 진짜 핸들러 (active finish/completed edit/delete/reorder). circuit 블록도 round1 entry done 비율로 상태 판정. (f-5-2/3) reorder 모드 + 드래그·드롭 = 후속)
 - [x] `mocks/session.html` 가이드 텍스트 "← 이전 수정 / 완료 →" 제거 — 본 세션 (병합 시 동시 처리)
 - [x] `src/app.js` mount wiring (6 라우트) — 본 세션 (`ROUTE_MOUNTS` + mount fn 호출)
 - [x] 서킷 토글 click 핸들러 ON/OFF — 본 세션 (`wireCircuitToggle`)
@@ -153,11 +154,9 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
 
 ### 다음 세션 진입 작업
 
-- (d) 커스텀 숫자 키패드 (§6-3-2)
-- (e) 프리셋 (§6-3-3)
-- (f) 꾹누르기 (§6-9)
-- (g) PR 감지 (§6-11)
-- 서킷 ON 다중선택·"완료" 활성 조건
+- (f-5-2/3) reorder 모드 진입 (모든 pill 일괄 접힘 + 선택 lift) + 드래그·드롭 (DOM/DB blocks 순서)
+- circuit 카드 active branch 시각화 (현재 mountSessionActive 가 single 만, circuit 블록 시각 부재)
+- PR 팝 위치 미세 조정 (top:118px → 운동명 영역과 약간 겹침)
 - e2e selector 갱신 7 spec
 - session.test.js mountSessionView 분기 어설션 추가 (현재 graceful no-document 만 어설션)
 
