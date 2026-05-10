@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0c0a08">
+<title>Gym · 세션 빈 시작 (v2 · SessionEmpty)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
+  --surface: #ffffff; --surface-2: #f7f4ec;
+  --ink: #1a1714; --ink-strong: #0c0a08;
+  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
+  --line: #e6e1d4; --line-soft: #efeae0;
+  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
+  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
+  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
+  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
+  --font-display: "Poppins", "SF Pro Display", -apple-system, system-ui, sans-serif;
+  --font-body: "Noto Sans KR", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+}
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kr { font-family: var(--font-body); }
+.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
+.phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
+.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink-strong); }
+.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
+.phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
+.phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
+.phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; }
+.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
+.phone.dark { color: #f3efe6; }
+.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
+.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+</style>
+</head>
+<body>
+<div class="phone dark" style="background:#0c0a08;">
+  <div class="phone-notch"></div>
+  <div class="phone-clock num">9:41</div>
+  <div class="phone-batt"><div class="phone-batt-cell"></div></div>
+  <div class="phone-content">
+    <!-- SessionHeader (running=false, time=00:00) -->
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 22px;height:44px;">
+      <div style="display:flex;align-items:center;">
+        <button type="button" style="width:36px;height:36px;border-radius:10px;border:0;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 9l7-6 7 6v8a1 1 0 01-1 1h-3v-5h-6v5H4a1 1 0 01-1-1V9z" stroke="rgba(255,255,255,0.6)" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;justify-content:center;">
+        <span class="num" style="font-size:28px;font-weight:300;letter-spacing:-0.02em;color:#fff;">00:00</span>
+      </div>
+      <div style="text-align:right;font-size:12px;color:rgba(255,255,255,0.6);" class="kr">종료</div>
+    </div>
+    <!-- 빈 메시지 -->
+    <div style="position:absolute;top:130px;left:0;right:0;text-align:center;padding:0 32px;">
+      <div class="kr" style="font-size:11px;color:rgba(243,239,230,0.4);letter-spacing:0.16em;font-weight:600;">NEW SESSION</div>
+      <div class="kr" style="margin-top:18px;font-size:24px;color:#fff;font-weight:300;line-height:1.4;letter-spacing:-0.02em;">오늘은 어디부터<br>시작할까요?</div>
+      <div class="kr" style="margin-top:14px;font-size:12px;color:rgba(243,239,230,0.45);">아래에서 종목을 추가하세요</div>
+    </div>
+    <!-- 하단 시트 -->
+    <div style="position:absolute;left:0;right:0;bottom:0;background:#15120e;border-top-left-radius:22px;border-top-right-radius:22px;padding:12px 0 24px;box-shadow:0 -16px 40px -10px rgba(0,0,0,0.35);">
+      <div style="width:36px;height:4px;border-radius:2px;background:rgba(255,255,255,0.18);margin:0 auto 18px;"></div>
+      <div style="display:flex;gap:8px;padding:0 16px;overflow-x:auto;justify-content:center;">
+        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:600;background:var(--accent);color:#fff;border:0;">가슴</div>
+        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">등</div>
+        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">어깨</div>
+        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">하체</div>
+        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">팔</div>
+        <div class="kr" style="flex-shrink:0;padding:8px 16px;border-radius:999px;font-size:13px;font-weight:400;background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.7);border:1px solid rgba(255,255,255,0.08);">유산소</div>
+      </div>
+      <div style="margin-top:14px;padding:0 8px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+          <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">벤치프레스</div>
+          <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">60kg × 10회</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+          <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">인클라인 벤치</div>
+          <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">45kg × 10회</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+          <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">디클라인 벤치</div>
+          <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">50kg × 10회</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+          <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">덤벨 플라이</div>
+          <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">18kg × 12회</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 14px;border-radius:12px;">
+          <div class="kr" style="font-size:14px;color:#fff;font-weight:500;">케이블 크로스오버</div>
+          <div class="num" style="font-size:11px;color:rgba(255,255,255,0.45);">20kg × 12회</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="phone-home"></div>
+</div>
+</body>
+</html>

@@ -3,503 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0c0a08">
-<title>Gym · 운동 완료</title>
+<title>Gym · 운동 완료 (v2 · CompleteB)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    /* Dark v2 — Warm dark base + Claude Orange (gym only) */
-    --bg: #0c0a08; --surface: #15120e; --bg-warm: #1a1612; --bg-elevated: #1d1914;
-    --text: #f3efe6; --text-strong: #ffffff; --text-muted: rgba(243,239,230,0.6); --text-faint: rgba(243,239,230,0.4);
-    --accent: #d97757; --accent-soft: rgba(217,119,87,0.18); --accent-deep: #c96442; --accent-hover: #e58a6c; --accent-rgb: 217, 119, 87;
-    --done: #d97757; --done-soft: rgba(217,119,87,0.18);
-    --sage: #d97757; --blue: #6a9bcc; --amber: #c4973b; --danger: #c94432;
-    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.18); --border-light: rgba(255,255,255,0.04);
-    --font-display: 'Poppins', system-ui, sans-serif;
-    --font-body: 'Noto Sans KR', system-ui, sans-serif;
-    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
-    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
-    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
-    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
-    --shadow-lg: 0 6px 14px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.6);
-    --shadow-modal: 0 24px 48px rgba(0,0,0,0.6), 0 8px 16px rgba(0,0,0,0.4);
-    --ease: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    font-family: var(--font-body); color: var(--text); background: var(--bg);
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-    background-size: 256px 256px; background-blend-mode: multiply; font-variant-numeric: tabular-nums; line-height: 1.65; -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
-  .phone {
-    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
-    display: flex; flex-direction: column; position: relative;
-    overflow: hidden; background: var(--bg);
-  }
-  @media (min-width: 376px) {
-    body { padding: var(--s-8) 0; }
-    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
-  }
-  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
-
-  /* 배경 세션 skeleton */
-  .bg-skeleton {
-    flex: 1; padding: var(--s-4) var(--s-5);
-    opacity: 0.28; pointer-events: none;
-  }
-  .sk-row { height: 12px; background: var(--border); border-radius: var(--r-sm); margin-bottom: var(--s-3); }
-  .sk-row.w-40 { width: 40%; } .sk-row.w-60 { width: 60%; }
-  .sk-card { height: 220px; background: var(--surface); border: 1px solid var(--border-light);
-             border-radius: var(--r-lg); margin: var(--s-6) 0; }
-
-  /* Backdrop */
-  .backdrop {
-    position: absolute; inset: 0;
-    background: rgba(20,20,19,0.46);
-    z-index: 40;
-    animation: fadeIn 320ms var(--ease) forwards;
-    opacity: 0;
-  }
-  @keyframes fadeIn { to { opacity: 1; } }
-
-  /* ============ MODAL — v2 CompleteB · Receipt 영수증 톤 ============ */
-  .modal-wrap {
-    position: absolute; inset: 0;
-    display: flex; align-items: center; justify-content: center;
-    padding: var(--s-5);
-    z-index: 50;
-    pointer-events: none;
-  }
-  .modal {
-    width: 100%; max-width: 300px;
-    background: var(--surface);
-    border-radius: 0;
-    box-shadow: var(--shadow-modal);
-    padding: 26px 24px 18px;
-    pointer-events: auto;
-    position: relative;
-    border: 1px solid rgba(255,255,255,0.06);
-    /* 영수증 하단 톱니 */
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 95% 98%, 90% 100%, 85% 98%, 80% 100%, 75% 98%, 70% 100%, 65% 98%, 60% 100%, 55% 98%, 50% 100%, 45% 98%, 40% 100%, 35% 98%, 30% 100%, 25% 98%, 20% 100%, 15% 98%, 10% 100%, 5% 98%, 0 100%);
-    animation: modalRise 420ms var(--ease-out) forwards;
-    opacity: 0;
-    transform: translateY(16px) scale(0.97);
-    max-height: calc(100% - var(--s-10));
-    display: flex; flex-direction: column;
-  }
-  @keyframes modalRise { to { opacity: 1; transform: translateY(0) scale(1); } }
-
-  /* 영수증 헤더 (#mLabel = "GYM") */
-  .m-label {
-    font-family: var(--font-display);
-    font-size: 22px; font-weight: 600;
-    color: var(--text-strong);
-    letter-spacing: 0.08em;
-    text-align: center;
-    margin-bottom: 6px;
-  }
-  .m-receipt-row {
-    text-align: center;
-    font-family: var(--font-body);
-    font-size: 9px;
-    color: var(--text-muted);
-    letter-spacing: 0.18em;
-    margin-bottom: 6px;
-  }
-  .m-subtitle {
-    font-family: var(--font-display);
-    font-size: 10px;
-    color: var(--text-muted);
-    text-align: center;
-    padding-bottom: 16px;
-    border-bottom: 1px dashed rgba(255,255,255,0.15);
-  }
-
-  /* 종목별 요약 리스트 — 영수증 표 위치 (hero 위쪽) */
-  .ex-list {
-    flex: 1;
-    overflow-y: auto;
-    padding: 14px 0;
-    border-bottom: 1px dashed rgba(255,255,255,0.15);
-    min-height: 0;
-  }
-  .ex-item {
-    display: grid;
-    grid-template-columns: 1fr auto auto;
-    gap: 8px;
-    align-items: baseline;
-    padding: 5px 0;
-    font-family: var(--font-body);
-  }
-  .ex-item .name {
-    font-size: 12px; font-weight: 400;
-    color: var(--text-strong);
-    display: flex; align-items: center; gap: 6px;
-  }
-  .ex-item .pr-mark {
-    display: inline-block;
-    font-family: var(--font-display);
-    font-size: 8px; font-weight: 600;
-    color: var(--accent);
-    padding: 1px 5px;
-    border: 1px solid var(--accent);
-    border-radius: 3px;
-    letter-spacing: 0.04em;
-  }
-  .ex-item .sets {
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 500;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-  }
-
-  /* TOTAL — 영수증 합계 줄 */
-  .hero {
-    padding: 14px 0;
-    display: flex; justify-content: space-between; align-items: baseline;
-  }
-  .hero-label {
-    font-family: var(--font-body);
-    font-size: 11px; font-weight: 400;
-    color: var(--text-muted);
-    letter-spacing: 0.1em;
-  }
-  .hero-label::before { content: 'TOTAL'; }
-  .hero-label .legacy-text { display: none; }
-  .hero-display {
-    display: inline-flex;
-    align-items: baseline;
-  }
-  .hero-num {
-    font-family: var(--font-display);
-    font-size: 36px; font-weight: 300;
-    color: var(--text-strong);
-    line-height: 1;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-  .hero-unit {
-    font-family: var(--font-display);
-    font-size: 14px; font-weight: 400;
-    color: var(--text-muted);
-    margin-left: 4px;
-  }
-
-  /* 부 지표 — receipt 톤 mono 한 줄 */
-  .stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 8px;
-    padding-bottom: 14px;
-    border-bottom: 1px dashed rgba(255,255,255,0.15);
-  }
-  .stat {
-    text-align: left;
-    display: flex; gap: 4px; align-items: baseline;
-  }
-  .stat:nth-child(2) { justify-content: center; }
-  .stat:nth-child(3) { justify-content: flex-end; }
-  .stat-val {
-    font-family: var(--font-display);
-    font-size: 11px; font-weight: 500;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-  }
-  .stat.has-pr .stat-val { color: var(--accent); font-weight: 600; }
-  .stat.no-pr .stat-val { color: var(--text-faint); font-weight: 400; }
-  .stat-label {
-    font-family: var(--font-body);
-    font-size: 10px; font-weight: 400;
-    color: var(--text-muted);
-  }
-
-  /* 영수증 footer 메시지 */
-  .m-footer {
-    text-align: center;
-    padding: 16px 0 12px;
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-muted);
-    letter-spacing: 0.06em;
-  }
-
-  /* 하단 액션 — 영수증 톤 (흰 보더 투명) */
-  .actions {
-    display: flex; gap: 8px;
-    flex-shrink: 0;
-  }
-  .btn {
-    flex: 1;
-    height: 38px;
-    border-radius: 0;
-    font-family: var(--font-body);
-    font-size: 12px; font-weight: 500;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    transition: background 150ms var(--ease), transform 100ms var(--ease);
-  }
-  .btn-primary {
-    background: transparent;
-    color: var(--text-strong);
-    border: 1px solid var(--text-strong);
-  }
-  .btn-primary:active { background: var(--bg-warm); transform: scale(0.98); }
-  .btn-ghost {
-    background: transparent;
-    color: var(--text-muted);
-    border: 1px solid var(--border);
-  }
-  .btn-ghost:active { color: var(--text-strong); border-color: var(--text-muted); transform: scale(0.98); }
-
-  /* 영수증 톤에선 spark 제거 */
-  .modal-spark { display: none; }
-
-  /* Toast */
-  .toast {
-    position: absolute;
-    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
-    transform: translate(-50%, 20px);
-    background: rgba(20,20,19,0.9); color: #fff;
-    padding: var(--s-3) var(--s-5);
-    border-radius: var(--r-pill);
-    font-family: var(--font-body);
-    font-size: 12px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
-    z-index: 90;
-    box-shadow: var(--shadow-lg);
-    white-space: nowrap;
-  }
-  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
-
+:root {
+  --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
+  --surface: #ffffff; --surface-2: #f7f4ec;
+  --ink: #1a1714; --ink-strong: #0c0a08;
+  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
+  --line: #e6e1d4; --line-soft: #efeae0;
+  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
+  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
+  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
+  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
+  --font-display: "Poppins", "SF Pro Display", -apple-system, system-ui, sans-serif;
+  --font-body: "Noto Sans KR", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+}
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kr { font-family: var(--font-body); }
+.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
+.phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
+.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink-strong); }
+.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
+.phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
+.phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
+.phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; }
+.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
+.phone.dark { color: #f3efe6; }
+.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
+.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+.receipt { width: 280px; background: #15120e; padding: 26px 24px 18px; box-shadow: 0 30px 60px -10px rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.06); clip-path: polygon(0 0, 100% 0, 100% 100%, 95% 98%, 90% 100%, 85% 98%, 80% 100%, 75% 98%, 70% 100%, 65% 98%, 60% 100%, 55% 98%, 50% 100%, 45% 98%, 40% 100%, 35% 98%, 30% 100%, 25% 98%, 20% 100%, 15% 98%, 10% 100%, 5% 98%, 0 100%); }
 </style>
 </head>
 <body>
-
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none;" aria-hidden="true">
-  <symbol id="spark-star" viewBox="0 0 10 10">
-    <path d="M5 0 L6 4 L10 5 L6 6 L5 10 L4 6 L0 5 L4 4 Z" fill="currentColor"/>
-  </symbol>
-</svg>
-
-<div class="phone" id="app">
-  <div class="safe-top"></div>
-
-  <!-- 배경 세션 skeleton -->
-  <div class="bg-skeleton">
-    <div class="sk-row w-40"></div>
-    <div class="sk-card"></div>
-    <div class="sk-row w-60"></div>
-    <div class="sk-row w-40"></div>
-  </div>
-
-  <div class="backdrop"></div>
-
-  <div class="modal-wrap">
-    <div class="modal" id="modal">
-
-      <!-- 영수증 헤더: GYM + RECEIPT 라벨 + 날짜 -->
-      <div class="m-label" id="mLabel">GYM</div>
-      <div class="m-receipt-row">SESSION RECEIPT</div>
-      <p class="m-subtitle" id="mSubtitle">2026-04-22 · 수요일</p>
-
-      <!-- 종목별 요약 (영수증 표) -->
-      <div class="ex-list" id="exList"></div>
-
-      <!-- TOTAL — 합계 줄 -->
-      <div class="hero">
-        <div class="hero-label" aria-label="총 볼륨"></div>
-        <div class="hero-display">
-          <span class="hero-num" id="hNum">8,240</span>
-          <span class="hero-unit">kg</span>
+<div class="phone dark" style="background:rgba(8,6,4,0.78);">
+  <div class="phone-notch"></div>
+  <div class="phone-clock num">9:41</div>
+  <div class="phone-batt"><div class="phone-batt-cell"></div></div>
+  <div class="phone-content">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+      <div class="receipt">
+        <!-- 영수증 헤더 -->
+        <div style="text-align:center;padding-bottom:16px;border-bottom:1px dashed rgba(255,255,255,0.15);">
+          <div class="num" style="font-size:22px;font-weight:600;letter-spacing:0.08em;color:#fff;">GYM</div>
+          <div class="kr" style="margin-top:6px;font-size:9px;color:rgba(255,255,255,0.45);letter-spacing:0.18em;">SESSION RECEIPT · #0142</div>
+          <div class="num" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,0.45);">2026-05-06 · WED · 18:42→19:34</div>
         </div>
-      </div>
-
-      <!-- 부 지표 — 영수증 mono 한 줄 -->
-      <div class="stats">
-        <div class="stat">
-          <span class="stat-val" id="sTime">58</span>
-          <span class="stat-label">분</span>
+        <!-- 운동 행 -->
+        <div style="padding:14px 0;border-bottom:1px dashed rgba(255,255,255,0.15);">
+          <div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;">
+            <span style="font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;">벤치프레스<span style="font-size:8px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;">PR</span></span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.5);">5×</span>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;">600kg</span>
+          </div>
+          <div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;">
+            <span style="font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;">인클라인 벤치</span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.5);">4×</span>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;">180kg</span>
+          </div>
+          <div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;">
+            <span style="font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;">덤벨 플라이</span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.5);">3×</span>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;">108kg</span>
+          </div>
         </div>
-        <div class="stat has-pr" id="sPRCell">
-          <span class="stat-val" id="sPR">2</span>
-          <span class="stat-label">PR</span>
+        <!-- TOTAL -->
+        <div style="padding:14px 0;display:flex;justify-content:space-between;align-items:baseline;">
+          <span class="kr" style="font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:0.1em;">TOTAL</span>
+          <div class="num" style="font-size:36px;font-weight:300;color:#fff;letter-spacing:-0.02em;">888<span style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:4px;">kg</span></div>
         </div>
-        <div class="stat">
-          <span class="stat-val" id="sKcal">423</span>
-          <span class="stat-label">kcal</span>
+        <!-- 메타 -->
+        <div class="num" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:14px;border-bottom:1px dashed rgba(255,255,255,0.15);">
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);">52분</div>
+          <div style="font-size:11px;color:var(--accent);font-weight:600;text-align:center;">1 PR ★</div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.5);text-align:right;">286 kcal</div>
         </div>
-      </div>
-
-      <!-- footer 메시지 + 액션 -->
-      <p class="m-footer">오늘도 한 줄, 기록 완료</p>
-      <div class="actions">
-        <button class="btn btn-primary" data-act="home">홈으로</button>
+        <div class="kr" style="text-align:center;padding:16px 0 12px;font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:0.06em;">오늘도 한 줄, 기록 완료</div>
+        <button type="button" class="kr" style="width:100%;height:38px;border-radius:0;border:1px solid #fff;background:transparent;color:#fff;font-size:12px;font-weight:500;letter-spacing:0.06em;cursor:pointer;">홈으로</button>
       </div>
     </div>
   </div>
-
-  <div class="toast" id="toast"></div>
+  <div class="phone-home"></div>
 </div>
-
-<script>
-const VARIANTS = {
-  pr: {
-    label: '운동 완료',
-    title: '잘 끝냈다',
-    subtitle: '2026-04-22 · 수요일',
-    volume: '8,240', time: 58, pr: 2, kcal: 423,
-    exercises: [
-      { name: '벤치프레스',       sets: '5세트 · 850kg', pr: true },
-      { name: '인클라인 벤치프레스', sets: '4세트 · 640kg', pr: false },
-      { name: '덤벨 플라이',       sets: '4세트 · 280kg', pr: false },
-      { name: '케이블 크로스오버',  sets: '3세트 · 180kg', pr: true },
-      { name: '숄더 프레스',       sets: '4세트 · 540kg', pr: false },
-      { name: '트라이셉 익스텐션',  sets: '3세트 · 140kg', pr: false },
-    ],
-  },
-  nopr: {
-    label: '운동 완료',
-    title: '꾸준히 이어감',
-    subtitle: '2026-04-22 · 수요일',
-    volume: '6,120', time: 44, pr: 0, kcal: 318,
-    exercises: [
-      { name: '스쿼트',       sets: '5세트 · 1,450kg', pr: false },
-      { name: '레그 프레스',   sets: '4세트 · 1,880kg', pr: false },
-      { name: '런지',         sets: '3세트 · 780kg',   pr: false },
-      { name: '레그 컬',      sets: '3세트 · 540kg',   pr: false },
-      { name: '힙 쓰러스트',   sets: '3세트 · 1,470kg', pr: false },
-    ],
-  },
-  short: {
-    label: '운동 완료',
-    title: '짧고 굵게',
-    subtitle: '2026-04-22 · 수요일',
-    volume: '2,840', time: 22, pr: 1, kcal: 148,
-    exercises: [
-      { name: '바이셉 컬',    sets: '4세트 · 320kg', pr: true },
-      { name: '해머 컬',      sets: '3세트 · 240kg', pr: false },
-      { name: '케이블 푸시다운', sets: '4세트 · 420kg', pr: false },
-    ],
-  }
-};
-
-function render(v) {
-  /* v2 영수증 톤 — mLabel 은 'GYM' 고정 (영수증 헤더). v.label 은 미사용 */
-  document.getElementById('mSubtitle').textContent = v.subtitle;
-  document.getElementById('hNum').textContent = v.volume;
-  document.getElementById('sTime').textContent = v.time;
-  document.getElementById('sPR').textContent = v.pr;
-  document.getElementById('sKcal').textContent = v.kcal;
-  const prCell = document.getElementById('sPRCell');
-  prCell.classList.toggle('has-pr', v.pr > 0);
-  prCell.classList.toggle('no-pr', v.pr === 0);
-
-  const list = document.getElementById('exList');
-  list.innerHTML = v.exercises.map(e => `
-    <div class="ex-item">
-      <span class="name">${e.name}${e.pr ? '<span class="pr-mark">PR</span>' : ''}</span>
-      <span class="sets">${e.sets}</span>
-    </div>
-  `).join('');
-
-  // modal 재애니메이션
-  const modal = document.getElementById('modal');
-  modal.style.animation = 'none';
-  void modal.offsetWidth;
-  modal.style.animation = '';
-}
-
-function applyVariant(name) {
-  render(VARIANTS[name]);
-}
-
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('is-show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1600);
-}
-
-document.querySelectorAll('[data-act]').forEach(b => {
-  b.addEventListener('click', () => {
-    window.location.href = b.dataset.act === 'home' ? 'home.html' : 'stats.html';
-  });
-});
-
-/* Wave 11.6E — session 완료 직후 sessionStorage.gymLastSessionId 있으면 실 DB 세션 로드.
-   없으면 VARIANTS.pr fallback. */
-function sessionToVariant(session) {
-  const exercises = (session.blocks || []).flatMap(b => b.exercises || []);
-  const exList = exercises.map(e => {
-    const firstSet = e.sets?.[0];
-    if (firstSet && firstSet.duration != null) {
-      const min = Math.round(firstSet.duration / 60);
-      const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
-      return { name: e.exerciseName, sets: `${min}분${km}`, pr: false };
-    }
-    const total = (e.sets || []).reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
-    return {
-      name: e.exerciseName,
-      sets: `${e.sets?.length || 0}세트 · ${total.toLocaleString()}kg`,
-      pr: false,
-    };
-  });
-  const d = new Date(`${session.date}T00:00:00`);
-  const wd = ['일','월','화','수','목','금','토'][d.getDay()];
-  return {
-    label: '운동 완료',
-    title: '잘 끝냈다',
-    subtitle: `${session.date} · ${wd}요일`,
-    volume: (session.totalVolume || 0).toLocaleString(),
-    time: session.durationMin || 0,
-    pr: 0,          // 실 PR 계산은 Wave 11.7 (spec §6-11)
-    kcal: session.totalCalories || 0,
-    exercises: exList,
-  };
-}
-
-async function loadFromLastSession() {
-  if (!window.gymQueries) return null;
-  let id = null;
-  try { id = sessionStorage.getItem('gymLastSessionId'); } catch (_) {}
-  if (!id) return null;
-  try {
-    const session = await window.gymQueries.getSessionById(id);
-    if (!session) return null;
-    // Wave 11.9.6 — SPA summarizeSession 우선 (영문→한국어 + spec §12 형식). 미노출 시 mocks fallback.
-    if (window.gymSessionSummary?.summarizeSession) {
-      return window.gymSessionSummary.summarizeSession(session);
-    }
-    return sessionToVariant(session);
-  } catch (err) {
-    console.warn('[summary] load failed', err);
-    return null;
-  }
-}
-
-(async () => {
-  const v = await loadFromLastSession();
-  if (v) {
-    render(v);
-  } else {
-    applyVariant('pr');
-  }
-})();
-</script>
-
 </body>
 </html>

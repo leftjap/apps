@@ -3,1011 +3,192 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0c0a08">
-<title>Gym · 홈</title>
+<title>Gym · 홈 (v2 · HomeA/HomeC)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-  /* ============ TOKENS — Dark v2 (gym-only, DESIGN.md "Light only" 예외) ============ */
-  :root {
-    --bg: #0c0a08;
-    --surface: #15120e;
-    --bg-warm: #1a1612;
-    --bg-elevated: #1d1914;
-    --text: #f3efe6;
-    --text-strong: #ffffff;
-    --text-muted: rgba(243,239,230,0.6);
-    --text-faint: rgba(243,239,230,0.4);
-    --accent: #d97757;
-    --accent-soft: rgba(217,119,87,0.18);
-    --accent-deep: #c96442;
-    --accent-hover: #e58a6c;
-    --accent-rgb: 217, 119, 87;
-    --done: #d97757;
-    --done-soft: rgba(217,119,87,0.18);
-    --sage: #d97757;
-    --blue: #6a9bcc;
-    --amber: #c4973b;
-    --danger: #c94432;
-    --border: rgba(255,255,255,0.08);
-    --border-strong: rgba(255,255,255,0.18);
-    --border-light: rgba(255,255,255,0.04);
-
-    --font-display: 'Poppins', system-ui, sans-serif;
-    --font-body: 'Noto Sans KR', system-ui, sans-serif;
-    --font-mono: 'SF Mono', 'Fira Code', monospace;
-    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
-
-    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px;
-    --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
-    --s-12: 48px; --s-16: 64px;
-    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
-
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
-    --shadow-lg: 0 6px 14px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.6);
-    --shadow-card: 0 6px 14px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.6);
-
-    --ease: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { -webkit-text-size-adjust: 100%; }
-
-  body {
-    font-family: var(--font-body); color: var(--text); background: #fff;
-    font-variant-numeric: tabular-nums; line-height: 1.5; -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
-
-  .phone {
-    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
-    display: flex; flex-direction: column; position: relative;
-    overflow: hidden; background: var(--bg);
-    color: var(--text);
-  }
-  @media (min-width: 376px) {
-    body { padding: var(--s-8) 0; }
-    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-lg); border-radius: var(--r-lg); }
-  }
-  .safe-top { height: var(--safe-top); min-height: 54px; flex-shrink: 0; }
-
-  /* ============ HEADER ============ */
-  .hdr {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: var(--s-2) var(--s-6) 0;
-    flex-shrink: 0;
-  }
-  .hdr-title {
-    font-family: var(--font-display);
-    font-size: 22px; font-weight: 600;
-    color: var(--text-strong);
-    letter-spacing: -0.02em;
-  }
-  .hdr-nav { display: flex; gap: 18px; }
-  .hdr-link {
-    font-family: var(--font-body);
-    font-size: 12px; font-weight: 400;
-    color: var(--text-muted);
-    background: none; border: none; cursor: pointer;
-    padding: 4px 6px;
-    border-radius: var(--r-sm);
-  }
-  .hdr-link:active { background: var(--bg-warm); color: var(--text-strong); }
-
-  /* ============ SCREEN ============ */
-  .screen {
-    flex: 1;
-    display: flex; flex-direction: column;
-    padding: 0 var(--s-6);
-    padding-bottom: calc(var(--s-3) + var(--safe-bottom));
-    position: relative;
-  }
-
-  /* ============ WEEK CALENDAR (HomeA jsx 톤) ============ */
-  .cal {
-    margin-top: 26px;
-    padding: 0;
-    display: grid; grid-template-columns: repeat(7, 1fr);
-    gap: 0;
-  }
-  .cal-day {
-    background: none; border: 0; cursor: pointer;
-    display: flex; flex-direction: column; align-items: center; gap: 4px;
-    padding: 4px 2px;
-  }
-  .cal-label {
-    font-family: var(--font-body);
-    font-size: 10px;
-    color: var(--text-faint);
-    font-weight: 400;
-  }
-  .cal-num {
-    font-family: var(--font-display);
-    font-size: 15px; font-weight: 300;
-    color: rgba(243,239,230,0.3);
-    letter-spacing: -0.02em;
-  }
-  .cal-part {
-    font-family: var(--font-body);
-    font-size: 9px;
-    color: rgba(243,239,230,0.5);
-    min-height: 12px;
-  }
-  .cal-day.worked .cal-num {
-    font-size: 18px; font-weight: 500;
-    color: var(--text-strong);
-  }
-  .cal-day.today .cal-label { color: var(--text-strong); font-weight: 600; }
-  .cal-day.today .cal-num { color: rgba(243,239,230,0.85); }
-  .cal-day.today.worked .cal-num { color: var(--text-strong); }
-  .cal-day.today::after {
-    content: '';
-    width: 10px; height: 2px; border-radius: 1px;
-    background: var(--accent);
-    margin-top: 2px;
-  }
-
-  /* ============ STREAK / SESSION HERO ============ */
-  /* active/gap/rest/empty 상태: HomeA jsx 톤 — 큰 숫자 + 라벨 (마지막 운동) */
-  .streak-hero {
-    flex: 1;
-    padding: 44px 0 0;
-    position: relative;
-  }
-  .streak-hero::before {
-    content: '';
-    position: absolute;
-    top: 30px; left: -20px;
-    width: 220px; height: 220px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(217,119,87,0.22) 0%, rgba(217,119,87,0) 60%);
-    pointer-events: none;
-  }
-  .streak-info { position: relative; }
-  .streak-label {
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: rgba(243,239,230,0.45);
-    letter-spacing: 0.06em;
-    margin-bottom: 12px;
-  }
-  .streak-display {
-    display: flex; align-items: baseline; gap: 8px;
-  }
-  .streak-num {
-    font-family: var(--font-display);
-    font-size: 88px; font-weight: 200;
-    line-height: 0.85; letter-spacing: -0.05em;
-    color: var(--text-strong);
-  }
-  .streak-unit {
-    font-family: var(--font-body);
-    font-size: 18px;
-    color: var(--text-muted);
-  }
-  .streak-meta-row {
-    margin-top: 24px;
-    display: flex; gap: 32px;
-  }
-  .streak-meta-divider {
-    width: 1px; background: rgba(243,239,230,0.1);
-  }
-  .streak-meta-label {
-    font-family: var(--font-body);
-    font-size: 10px;
-    color: var(--text-faint);
-    letter-spacing: 0.06em;
-  }
-  .streak-part {
-    font-family: var(--font-body);
-    font-size: 16px; font-weight: 500;
-    color: var(--text-strong);
-    margin-top: 6px;
-  }
-  /* "이번 주" 값 — 디자인 split typography (22px 숫자 + 11px 접미) */
-  .streak-week-value {
-    display: flex; align-items: baseline; gap: 4px;
-    margin-top: 4px;
-  }
-  .streak-week-num {
-    font-family: var(--font-display);
-    font-size: 22px; font-weight: 500;
-    color: var(--text-strong);
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-  .streak-week-unit {
-    font-family: var(--font-body);
-    font-size: 11px; font-weight: 400;
-    color: rgba(243,239,230,0.5);
-  }
-  /* legacy mascot 영역 (Clawd 캐릭터 자리) — v2 에서 제거. id 보존하지만 시각 안 보임 */
-  .streak-mascot { display: none; }
-
-  /* ============ SESSION ACTIVE STATE — HomeC jsx 톤 (이어가기 카드) ============ */
-  /* data-state="session" 일 때 streak-hero 자체를 카드 형태로 변형 */
-  .app[data-state="session"] .streak-hero {
-    flex: 0 0 auto;
-    margin: 26px 0 0;
-    padding: 22px;
-    background: linear-gradient(155deg, #1a1612 0%, #1a1612 60%, #2a1d16 100%);
-    border-radius: 22px;
-    border: 1px solid rgba(217,119,87,0.18);
-    overflow: hidden;
-  }
-  .app[data-state="session"] .streak-hero::before {
-    /* glow off (카드 내 자체 색감) */
-    display: none;
-  }
-  .app[data-state="session"] .streak-label {
-    margin-bottom: 16px;
-    color: var(--accent);
-    font-weight: 600;
-    letter-spacing: 0.14em;
-  }
-  /* 진행 중 dot */
-  .app[data-state="session"] .streak-label::before {
-    content: '';
-    display: inline-block;
-    width: 6px; height: 6px;
-    border-radius: 3px;
-    background: var(--accent);
-    box-shadow: 0 0 12px var(--accent);
-    margin-right: 8px;
-    vertical-align: middle;
-    animation: pulseDot 1.6s var(--ease) infinite;
-  }
-  @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.4} }
-  .app[data-state="session"] .streak-num {
-    font-size: 56px; font-weight: 200;
-  }
-  .app[data-state="session"] .streak-unit { font-size: 13px; color: rgba(243,239,230,0.55); }
-  .app[data-state="session"] .streak-meta-row { margin-top: 18px; gap: 24px; }
-  .app[data-state="session"] .streak-part { font-size: 14px; }
-  /* 진행 바 (session 카드 하단) */
-  .session-progress {
-    display: none;
-    margin-top: 18px;
-    height: 3px; border-radius: 2px;
-    background: rgba(255,255,255,0.08);
-    overflow: hidden;
-  }
-  .session-progress > div {
-    width: 55%; height: 100%; background: var(--accent);
-  }
-  .app[data-state="session"] .session-progress { display: block; }
-
-  /* long-press hint card (session 상태에서만 노출) */
-  .longpress-hint {
-    display: none;
-    margin-top: 16px;
-    padding: 12px 16px;
-    border-radius: 14px;
-    border: 1px dashed rgba(243,239,230,0.12);
-    align-items: center; justify-content: space-between;
-    font-family: var(--font-body); font-size: 11px;
-  }
-  .longpress-hint .lh-left { color: var(--text-faint); }
-  .longpress-hint .lh-right { display: flex; gap: 14px; }
-  .longpress-hint .lh-right span { color: rgba(243,239,230,0.65); }
-  .longpress-hint .lh-right span.is-danger { color: var(--accent); }
-  .app[data-state="session"] .longpress-hint { display: flex; }
-
-  /* ============ CTA ============ */
-  .cta-area {
-    margin-top: auto;
-    padding-top: var(--s-3);
-  }
-  .cta-hint {
-    font-family: var(--font-body);
-    font-size: 11px;
-    color: var(--text-faint);
-    text-align: center;
-    margin-bottom: 12px;
-  }
-  .app[data-state="session"] .cta-hint { display: none; }
-  .btn-secondary {
-    width: 100%;
-    height: 56px;
-    border-radius: 28px;
-    border: 0;
-    background: var(--accent);
-    color: #fff;
-    font-family: var(--font-body);
-    font-size: 15px; font-weight: 500;
-    box-shadow: 0 14px 30px -8px rgba(217,119,87,0.55);
-    cursor: pointer;
-    transition: transform 100ms var(--ease), background 150ms var(--ease);
-    letter-spacing: -0.01em;
-  }
-  .btn-secondary:active { transform: scale(0.98); background: var(--accent-deep); }
-  .btn-secondary.is-pressed { transform: scale(0.98); background: var(--accent-deep); }
-
-  /* ============ BOTTOM SHEET ============ */
-  .sheet-backdrop {
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,0.46);
-    z-index: 40;
-    opacity: 0; pointer-events: none;
-    transition: opacity 200ms var(--ease);
-  }
-  .sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
-  .sheet, .day-sheet {
-    position: absolute;
-    left: 0; right: 0; bottom: 0;
-    background: #15120e;
-    border-top-left-radius: 22px; border-top-right-radius: 22px;
-    padding: 12px 0 calc(24px + var(--safe-bottom));
-    z-index: 50;
-    transform: translateY(100%);
-    transition: transform 280ms var(--ease-out);
-    box-shadow: 0 -16px 40px -10px rgba(0,0,0,0.5);
-    border-top: 1px solid var(--border);
-  }
-  .sheet.is-open, .day-sheet.is-open { transform: translateY(0); }
-  .sheet-handle {
-    width: 36px; height: 4px;
-    border-radius: 2px;
-    background: rgba(255,255,255,0.18);
-    margin: 0 auto 18px;
-  }
-  .sheet-title {
-    text-align: center;
-    font-family: var(--font-body);
-    font-size: 12px; color: var(--text-muted);
-    letter-spacing: 0.08em; font-weight: 500;
-    padding: 0 24px 8px;
-  }
-  .sheet-action {
-    width: 100%;
-    background: transparent; border: 0;
-    padding: 16px 24px;
-    font-family: var(--font-body);
-    font-size: 16px; font-weight: 500;
-    color: var(--text-strong);
-    text-align: left; cursor: pointer;
-    border-top: 1px solid var(--border);
-  }
-  .sheet-action:active { background: var(--bg-warm); }
-  .sheet-action.is-danger { color: var(--accent); }
-  .sheet-sep { height: 1px; background: var(--border); margin: 0 24px; display: none; }
-  .sheet-cancel {
-    width: calc(100% - 32px);
-    margin: 12px 16px 0;
-    padding: 14px 0;
-    border-radius: 12px;
-    background: var(--bg-warm); border: 1px solid var(--border);
-    font-family: var(--font-body);
-    font-size: 14px; color: var(--text-muted); cursor: pointer;
-  }
-
-  /* ============ DAY SHEET ============ */
-  .day-sheet { padding-top: 12px; }
-  .ds-date {
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-faint);
-    text-align: center;
-    letter-spacing: 0.06em;
-  }
-  .ds-title {
-    font-family: var(--font-body);
-    font-size: 18px; font-weight: 600;
-    color: var(--text-strong);
-    text-align: center;
-    margin-top: 6px;
-  }
-  .ds-stats {
-    display: grid; grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    padding: 18px 24px 16px;
-    border-bottom: 1px solid var(--border);
-  }
-  .ds-item {
-    text-align: center;
-    display: flex; flex-direction: column; gap: 4px;
-  }
-  .ds-val {
-    font-family: var(--font-display);
-    font-size: 18px; font-weight: 500;
-    color: var(--text-strong);
-  }
-  .ds-label {
-    font-family: var(--font-body);
-    font-size: 10px;
-    color: var(--text-faint);
-  }
-  .ds-list {
-    padding: 12px 24px 0;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-  .ds-ex {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 0;
-    font-family: var(--font-body);
-    font-size: 13px;
-    border-top: 1px solid var(--border-light);
-  }
-  .ds-ex:first-child { border-top: 0; }
-  .ds-ex .name { color: var(--text-strong); font-weight: 500; }
-  .ds-ex .sets { font-family: var(--font-display); color: var(--text-muted); font-size: 12px; }
-  .ds-empty {
-    padding: 32px 24px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 13px;
-  }
-
-  /* reveal */
-  .rv { opacity: 0; transform: translateY(8px); animation: rvUp 0.5s var(--ease-out) forwards; }
-  .rv-1 { animation-delay: 80ms; }
-  .rv-2 { animation-delay: 160ms; }
-  .rv-3 { animation-delay: 240ms; }
-  .rv-4 { animation-delay: 320ms; }
-  @keyframes rvUp { to { opacity: 1; transform: translateY(0); } }
-
-  /* Toast */
-  .toast {
-    position: absolute;
-    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
-    transform: translate(-50%, 20px);
-    background: rgba(243,239,230,0.95); color: #0f0d0a;
-    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
-    font-family: var(--font-body); font-size: 12px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
-    z-index: 80; box-shadow: var(--shadow-lg);
-    white-space: nowrap;
-  }
-  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
+:root {
+  --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
+  --surface: #ffffff; --surface-2: #f7f4ec;
+  --ink: #1a1714; --ink-strong: #0c0a08;
+  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
+  --line: #e6e1d4; --line-soft: #efeae0;
+  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
+  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
+  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
+  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
+  --font-display: "Poppins", "SF Pro Display", -apple-system, system-ui, sans-serif;
+  --font-body: "Noto Sans KR", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+}
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kr { font-family: var(--font-body); }
+.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
+.phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
+.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink-strong); }
+.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
+.phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
+.phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
+.phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; }
+.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
+.phone.dark { color: #f3efe6; }
+.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
+.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+[data-state="active"] .home-a { display: none; }
+[data-state="idle"] .home-c { display: none; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 </style>
 </head>
-<body>
-
-<div class="phone app" id="app" data-state="active">
-  <div class="safe-top"></div>
-
-  <main class="screen">
-
-    <!-- HEADER -->
-    <header class="hdr rv rv-1">
-      <h1 class="hdr-title">Gym</h1>
-      <nav class="hdr-nav">
-        <button class="hdr-link" type="button" data-nav="stats">통계</button>
-        <button class="hdr-link" type="button" data-nav="admin">관리</button>
-      </nav>
-    </header>
-
-    <!-- WEEK CALENDAR -->
-    <nav class="cal rv rv-2" id="weekCal" aria-label="주간 캘린더"></nav>
-
-    <!-- STREAK / SESSION HERO -->
-    <div class="streak-hero rv rv-3">
-      <div class="streak-info">
-        <p class="streak-label" id="sLabel">마지막 운동</p>
-        <div class="streak-display">
-          <span class="streak-num" id="sNum">1</span>
-          <span class="streak-unit" id="sUnit">일 전</span>
+<body data-state="idle">
+<!-- HomeA — idle -->
+<div class="phone dark home-a" style="background:#0f0d0a;">
+  <div class="phone-notch"></div>
+  <div class="phone-clock num">9:41</div>
+  <div class="phone-batt"><div class="phone-batt-cell"></div></div>
+  <div class="phone-content">
+    <div style="height:100%;display:flex;flex-direction:column;color:#f3efe6;padding:8px 0;">
+      <!-- HomeHeader -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
+        <div class="num" style="font-size:22px;font-weight:600;letter-spacing:-0.02em;color:#fff;">Gym</div>
+        <div style="display:flex;gap:18px;font-size:12px;color:rgba(255,255,255,0.5);" class="kr"><span>통계</span><span>관리</span></div>
+      </div>
+      <!-- 주간 캘린더 -->
+      <div style="margin-top:26px;padding:0 18px;display:grid;grid-template-columns:repeat(7,1fr);">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);font-weight:400;">월</div>
+          <div class="num" style="font-size:18px;font-weight:500;color:#fff;">4</div>
+          <div class="kr" style="font-size:9px;color:rgba(243,239,230,0.5);">가슴</div>
         </div>
-        <div class="streak-meta-row">
-          <div>
-            <p class="streak-meta-label">마지막 부위</p>
-            <p class="streak-part" id="sPart">가슴</p>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);font-weight:400;">화</div>
+          <div class="num" style="font-size:15px;font-weight:300;color:rgba(243,239,230,0.3);">5</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:#fff;font-weight:600;">수</div>
+          <div class="num" style="font-size:18px;font-weight:500;color:#fff;">6</div>
+          <div class="kr" style="font-size:9px;color:rgba(243,239,230,0.5);">등</div>
+          <div style="width:10px;height:2px;border-radius:1px;background:var(--accent);margin-top:2px;"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);font-weight:400;">목</div>
+          <div class="num" style="font-size:15px;font-weight:300;color:rgba(243,239,230,0.3);">7</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);font-weight:400;">금</div>
+          <div class="num" style="font-size:15px;font-weight:300;color:rgba(243,239,230,0.3);">8</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);font-weight:400;">토</div>
+          <div class="num" style="font-size:15px;font-weight:300;color:rgba(243,239,230,0.3);">9</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
+          <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);font-weight:400;">일</div>
+          <div class="num" style="font-size:15px;font-weight:300;color:rgba(243,239,230,0.3);">10</div>
+        </div>
+      </div>
+      <!-- 가운데 마지막 운동 정보 -->
+      <div style="flex:1;padding:44px 24px 0;position:relative;">
+        <div style="position:absolute;top:30px;left:0;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle, rgba(217,119,87,0.22) 0%, rgba(217,119,87,0) 60%);"></div>
+        <div style="position:relative;">
+          <div class="kr" style="font-size:11px;color:rgba(243,239,230,0.45);letter-spacing:0.06em;margin-bottom:12px;">마지막 운동</div>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <div class="num" style="font-size:88px;font-weight:200;line-height:0.85;letter-spacing:-0.05em;color:#fff;">1</div>
+            <div class="kr" style="font-size:18px;color:rgba(243,239,230,0.6);">일 전</div>
           </div>
-          <div class="streak-meta-divider"></div>
-          <div>
-            <p class="streak-meta-label">이번 주</p>
-            <div class="streak-week-value">
-              <span class="streak-week-num" id="sSub">1</span>
-              <span class="streak-week-unit" id="sSubUnit">/4회</span>
+          <div style="margin-top:24px;display:flex;gap:32px;">
+            <div>
+              <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">마지막 부위</div>
+              <div class="kr" style="margin-top:6px;font-size:16px;color:#fff;font-weight:500;">가슴</div>
+            </div>
+            <div style="width:1px;background:rgba(243,239,230,0.1);"></div>
+            <div>
+              <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">이번 주</div>
+              <div style="margin-top:4px;display:flex;align-items:baseline;gap:3px;">
+                <span class="num" style="font-size:22px;font-weight:500;color:#fff;">1</span>
+                <span class="kr" style="font-size:11px;color:rgba(243,239,230,0.5);">/4회</span>
+              </div>
             </div>
           </div>
         </div>
-        <!-- session 상태에서만 표시되는 progress bar -->
-        <div class="session-progress"><div></div></div>
       </div>
-      <!-- legacy mascot 영역 (Clawd 자리, v2 에서 제거 — DOM id 보존) -->
-      <div class="streak-mascot">
-        <div class="clawd-anim" id="clawdAnim"></div>
-        <span id="clawdSvg" hidden></span>
+      <!-- 하단 운동 시작 버튼 -->
+      <div style="padding:0 24px 8px;">
+        <div class="kr" style="font-size:11px;color:rgba(243,239,230,0.4);margin-bottom:12px;text-align:center;">한 세트만 더.</div>
+        <button type="button" style="width:100%;height:56px;border-radius:28px;border:0;background:var(--accent);color:#fff;font-family:var(--font-body);font-size:15px;font-weight:500;box-shadow:0 14px 30px -8px rgba(217,119,87,.55);cursor:pointer;">운동 시작</button>
       </div>
     </div>
+  </div>
+  <div class="phone-home"></div>
+</div>
 
-    <!-- LONG-PRESS HINT (session 상태에서만 노출) -->
-    <div class="longpress-hint">
-      <span class="lh-left">카드를 꾹 누르면</span>
-      <span class="lh-right">
-        <span>완료</span>
-        <span>일시정지</span>
-        <span class="is-danger">삭제</span>
-      </span>
+<!-- HomeC — active -->
+<div class="phone dark home-c" style="background:#0c0a08;">
+  <div class="phone-notch"></div>
+  <div class="phone-clock num">9:41</div>
+  <div class="phone-batt"><div class="phone-batt-cell"></div></div>
+  <div class="phone-content">
+    <div style="height:100%;display:flex;flex-direction:column;color:#f3efe6;padding:8px 0;">
+      <!-- HomeHeader -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
+        <div class="num" style="font-size:22px;font-weight:600;letter-spacing:-0.02em;color:#fff;">Gym</div>
+        <div style="display:flex;gap:18px;font-size:12px;color:rgba(255,255,255,0.5);" class="kr"><span>통계</span><span>관리</span></div>
+      </div>
+      <!-- 진행 중 카드 -->
+      <div style="margin:26px 20px 0;padding:22px;border-radius:22px;background:linear-gradient(155deg, #1a1612 0%, #1a1612 60%, #2a1d16 100%);position:relative;overflow:hidden;border:1px solid rgba(217,119,87,0.18);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+          <span style="width:6px;height:6px;border-radius:3px;background:var(--accent);box-shadow:0 0 12px var(--accent);"></span>
+          <span class="kr" style="font-size:11px;color:var(--accent);font-weight:600;letter-spacing:0.14em;">진행 중</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:6px;">
+          <div class="num" style="font-size:56px;font-weight:200;line-height:0.9;color:#fff;letter-spacing:-0.04em;">18:42</div>
+          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.5);">경과</div>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:24px;align-items:baseline;">
+          <div><div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">부위</div><div class="kr" style="margin-top:4px;font-size:14px;color:#fff;font-weight:500;">가슴</div></div>
+          <div><div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">종목</div><div class="kr" style="margin-top:4px;font-size:14px;color:#fff;font-weight:500;">1 <span style="color:rgba(243,239,230,0.4);">/ 2</span></div></div>
+          <div><div class="kr" style="font-size:10px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">볼륨</div><div class="num" style="margin-top:4px;font-size:14px;color:#fff;font-weight:500;">600<span class="kr" style="font-size:10px;color:rgba(243,239,230,0.5);margin-left:2px;">kg</span></div></div>
+        </div>
+        <div style="margin-top:18px;height:3px;border-radius:2px;background:rgba(255,255,255,0.08);overflow:hidden;">
+          <div style="width:55%;height:100%;background:var(--accent);"></div>
+        </div>
+        <button type="button" style="margin-top:18px;width:100%;height:46px;border-radius:14px;border:0;background:var(--accent);color:#fff;font-family:var(--font-body);font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:space-between;padding:0 18px;cursor:pointer;">
+          <span>이어가기</span><span style="font-size:16px;">→</span>
+        </button>
+      </div>
+      <!-- 꾹누르기 hint -->
+      <div style="margin:16px 20px 0;padding:12px 16px;border-radius:14px;border:1px dashed rgba(243,239,230,0.12);display:flex;justify-content:space-between;align-items:center;">
+        <div class="kr" style="font-size:11px;color:rgba(243,239,230,0.4);">카드를 꾹 누르면</div>
+        <div style="display:flex;gap:14px;">
+          <span class="kr" style="font-size:11px;color:rgba(243,239,230,0.65);">완료</span>
+          <span class="kr" style="font-size:11px;color:rgba(243,239,230,0.65);">일시정지</span>
+          <span class="kr" style="font-size:11px;color:var(--accent);">삭제</span>
+        </div>
+      </div>
+      <!-- 하단 지난 세션 -->
+      <div style="margin-top:auto;padding:0 24px 12px;">
+        <div class="kr" style="font-size:10px;color:rgba(243,239,230,0.35);letter-spacing:0.08em;margin-bottom:8px;">지난 세션</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:1px solid rgba(243,239,230,0.08);">
+          <div>
+            <div class="kr" style="font-size:13px;color:#fff;font-weight:500;">가슴 · 5월 5일</div>
+            <div class="kr" style="margin-top:2px;font-size:11px;color:rgba(243,239,230,0.45);">벤치프레스 60×10 · 4세트</div>
+          </div>
+          <div class="num" style="font-size:22px;font-weight:200;color:#fff;">2,400<span class="kr" style="font-size:11px;color:rgba(243,239,230,0.5);margin-left:2px;">kg</span></div>
+        </div>
+      </div>
     </div>
-
-    <!-- CTA -->
-    <div class="cta-area">
-      <p class="cta-hint">한 세트만 더.</p>
-      <button class="btn-secondary rv rv-4" id="ctaBtn" type="button">운동 시작</button>
-    </div>
-
-  </main>
-
-  <!-- Bottom sheet (session 카드 long-press 옵션) -->
-  <div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <aside class="sheet" id="sheet" role="dialog" aria-label="운동 관리">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">진행 중 세션</div>
-    <button class="sheet-action" data-sheet="finish">완료</button>
-    <button class="sheet-action" data-sheet="pause">일시정지</button>
-    <button class="sheet-action is-danger" data-sheet="delete">삭제</button>
-    <button class="sheet-cancel" data-sheet="cancel">취소</button>
-  </aside>
-
-  <!-- 주간 캘린더 날짜 상세 바텀시트 -->
-  <div class="sheet-backdrop" id="daySheetBackdrop"></div>
-  <aside class="day-sheet" id="daySheet" role="dialog" aria-label="날짜 상세">
-    <div class="sheet-handle"></div>
-    <div class="ds-date" id="dsDate">4월 8일 · 화</div>
-    <h3 class="ds-title" id="dsTitle">가슴 · 팔</h3>
-    <div class="ds-stats">
-      <div class="ds-item"><span class="ds-val" id="dsVol">8,240 kg</span><span class="ds-label">볼륨</span></div>
-      <div class="ds-item"><span class="ds-val" id="dsMin">58분</span><span class="ds-label">시간</span></div>
-      <div class="ds-item"><span class="ds-val" id="dsPR">2</span><span class="ds-label">PR</span></div>
-    </div>
-    <div class="ds-list" id="dsList"></div>
-    <div class="ds-empty" id="dsEmpty" hidden>기록 없음</div>
-  </aside>
-
-  <!-- 캘린더 날짜 꾹누르기 → 기록 삭제 바텀시트 -->
-  <div class="sheet-backdrop" id="delDayBackdrop"></div>
-  <aside class="sheet" id="delDaySheet" role="dialog" aria-label="기록 삭제">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title" id="delDayTitle">4월 8일 · 화 기록</div>
-    <button class="sheet-action is-danger" data-del="confirm">기록 삭제</button>
-    <button class="sheet-cancel" data-del="cancel">취소</button>
-  </aside>
-
-  <div class="toast" id="toast"></div>
+  </div>
+  <div class="phone-home"></div>
 </div>
 
 <script>
-/* ============================================================
-   STATE DATA — 오늘 기준 동적 init
-   ============================================================ */
-const WEEK = ['월','화','수','목','금','토','일'];
-const _today = new Date();
-const _todayWdIdx = (_today.getDay() + 6) % 7; // 월=0, 일=6
-const _weekStart = new Date(_today);
-_weekStart.setDate(_today.getDate() - _todayWdIdx);
-_weekStart.setHours(0, 0, 0, 0);
-const _isoOf = (d) => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-};
-const DATES = Array.from({ length: 7 }, (_, i) => {
-  const d = new Date(_weekStart); d.setDate(_weekStart.getDate() + i);
-  return d.getDate();
-});
-const TODAY_IDX = _todayWdIdx;
-const WEEK_FROM_ISO = _isoOf(_weekStart);
-const _weekEnd = new Date(_weekStart); _weekEnd.setDate(_weekStart.getDate() + 6);
-const WEEK_TO_ISO = _isoOf(_weekEnd);
-const _monthOfWdIdx = (idx) => {
-  const d = new Date(_weekStart); d.setDate(_weekStart.getDate() + idx);
-  return d.getMonth() + 1;
-};
-
-const STATES = {
-  active: {
-    label: '마지막 운동',
-    num: '1', unit: '일 전',
-    part: '가슴',
-    sub: '1', subUnit: '/4회',
-    calendar: [
-      { wd: 0, part: '하체' },
-      { wd: 2, part: '등' },
-    ],
-    cta: '운동 시작',
-    longPress: false,
-  },
-  gap: {
-    label: '마지막 운동',
-    num: '3', unit: '일 전',
-    part: '등',
-    sub: '1', subUnit: '/4회',
-    calendar: [
-      { wd: 0, part: '등' },
-    ],
-    cta: '운동 시작',
-    longPress: false,
-  },
-  rest: {
-    label: '마지막 운동',
-    num: '7', unit: '일 전',
-    part: '하체',
-    sub: '0', subUnit: '/4회',
-    calendar: [],
-    cta: '운동 시작',
-    longPress: false,
-  },
-  session: {
-    label: '진행 중',
-    num: '28:42', unit: '경과',
-    part: '가슴 · 어깨',
-    sub: '2', subUnit: '/4 종목',
-    calendar: [
-      { wd: 1, part: '등' },
-      { wd: 3, part: '하체' },
-      { wd: 5, part: '가슴' },
-      { wd: 6, part: '가슴·어깨' },
-    ],
-    cta: '이어가기',
-    longPress: true,
-    sessionNumSize: 56,
-  },
-  empty: {
-    label: '마지막 운동',
-    num: '—', unit: '',
-    part: '',
-    sub: '0', subUnit: '/4회',
-    calendar: [],
-    cta: '첫 운동 시작',
-    longPress: false,
-  }
-};
-
-/* ============================================================
-   RENDER
-   ============================================================ */
-async function renderWeekCal(state, stateName) {
-  let calendar = state.calendar;
-  if (stateName === 'active' && window.gymQueries) {
-    try {
-      const sessions = await window.gymQueries.getSessionsByRange(WEEK_FROM_ISO, WEEK_TO_ISO);
-      calendar = sessions.map(s => ({
-        wd: window.gymQueries.isoToWeekdayIdx(s.date),
-        part: (s.tags && s.tags[0]) || '',
-        sessionId: s.id,
-      }));
-    } catch (err) {
-      console.warn('[home] Dexie weekCal fetch failed, using fallback', err);
-    }
-  }
-
-  const cal = document.getElementById('weekCal');
-  const workouts = new Map();
-  calendar.forEach(c => workouts.set(c.wd, c));
-
-  const html = WEEK.map((wd, i) => {
-    const hit = workouts.get(i);
-    const isToday = i === TODAY_IDX;
-    const hasWorkout = !!(hit && hit.part);
-    const classes = [
-      'cal-day',
-      hasWorkout ? 'worked' : '',
-      isToday ? 'today' : ''
-    ].filter(Boolean).join(' ');
-    const part = hasWorkout ? hit.part : '&nbsp;';
-    return `
-      <button class="${classes}" type="button" data-day="${i}">
-        <span class="cal-label">${wd}</span>
-        <span class="cal-num">${DATES[i]}</span>
-        <span class="cal-part">${part}</span>
-      </button>
-    `;
-  }).join('');
-  cal.innerHTML = html;
-}
-
-function renderStreak(state) {
-  document.getElementById('sLabel').textContent = state.label;
-  const sNum = document.getElementById('sNum');
-  sNum.textContent = state.num;
-  sNum.style.fontSize = state.sessionNumSize ? state.sessionNumSize + 'px' : '';
-  document.getElementById('sUnit').textContent = state.unit;
-  const sPart = document.getElementById('sPart');
-  sPart.textContent = state.part || '';
-  sPart.style.display = state.part ? '' : 'none';
-  document.getElementById('sSub').textContent = state.sub;
-  document.getElementById('sSubUnit').textContent = state.subUnit || '';
-}
-
-function renderCTA(state) {
-  document.getElementById('ctaBtn').textContent = state.cta;
-}
-
-async function applyState(name) {
-  const state = STATES[name];
-  if (!state) return;
-  document.getElementById('app').dataset.state = name;
-  await renderWeekCal(state, name);
-  renderStreak(state);
-  renderCTA(state);
-  document.querySelectorAll('.rv').forEach(el => {
-    el.style.animation = 'none';
-    void el.offsetWidth;
-    el.style.animation = '';
-  });
-}
-
-/* ============================================================
-   INTERACTIONS
-   ============================================================ */
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('is-show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1600);
-}
-
-/* 주간 캘린더 날짜 탭 → 상세 바텀시트 (일별 상세) */
-const DAY_DETAILS = {
-  1: { title: '등', vol: 6140, min: 48, pr: 0,
-       ex: [{n:'바벨 로우', s:'5세트 · 1,150kg'}, {n:'랫 풀다운', s:'4세트 · 900kg'}, {n:'덤벨 로우', s:'3세트 · 720kg'}] },
-  3: { title: '하체', vol: 9640, min: 64, pr: 2,
-       ex: [{n:'스쿼트', s:'5세트 · 1,450kg'}, {n:'데드리프트', s:'4세트 · 1,600kg'}, {n:'레그 프레스', s:'3세트 · 900kg'}] },
-  5: { title: '가슴', vol: 7820, min: 55, pr: 1,
-       ex: [{n:'벤치프레스', s:'5세트 · 900kg'}, {n:'인클라인', s:'4세트 · 640kg'}, {n:'덤벨 플라이', s:'3세트 · 240kg'}] },
-  6: { title: '가슴 · 어깨', vol: 6820, min: 52, pr: 1,
-       ex: [{n:'벤치프레스', s:'5세트 · 850kg'}, {n:'숄더 프레스', s:'4세트 · 540kg'}] },
-};
-
-async function openDaySheet(wdIdx, iso) {
-  const stateName = document.getElementById('app').dataset.state;
-  const cur = STATES[stateName];
-  const workouts = new Map();
-  cur.calendar.forEach(c => workouts.set(c.wd, c));
-  const hit = workouts.get(wdIdx);
-  const wdName = WEEK[wdIdx];
-  document.getElementById('dsDate').textContent = `${_monthOfWdIdx(wdIdx)}월 ${DATES[wdIdx]}일 · ${wdName}`;
-
-  /* SPA 환경: 실 Dexie 데이터 우선 */
-  if (iso && window.gymHome?.fetchDayDetail) {
-    try {
-      const w = await window.gymHome.fetchDayDetail(iso);
-      if (w) {
-        const partMap = { '가': '가슴', '등': '등', '어': '어깨', '하': '하체', '팔': '팔', '유': '유산소', '가·어': '가슴 · 어깨' };
-        document.getElementById('dsTitle').textContent = partMap[w.tag] || w.tag || '운동';
-        document.getElementById('dsVol').textContent = (w.vol || 0).toLocaleString() + ' kg';
-        document.getElementById('dsMin').textContent = (w.min || 0) + '분';
-        document.getElementById('dsPR').textContent = w.pr || 0;
-        document.getElementById('dsList').innerHTML = (w.ex || []).map(e => `
-          <div class="ds-ex"><span class="name">${e.n}</span><span class="sets">${e.s}</span></div>
-        `).join('');
-        document.getElementById('dsList').style.display = '';
-        document.getElementById('dsEmpty').hidden = (w.ex || []).length === 0;
-        document.querySelector('.ds-stats').style.display = '';
-        document.getElementById('daySheetBackdrop').classList.add('is-open');
-        document.getElementById('daySheet').classList.add('is-open');
-        return;
-      }
-    } catch (e) {
-      console.error('[home] openDaySheet fetchDayDetail', e);
-    }
-  }
-
-  if (hit && hit.part) {
-    const detail = DAY_DETAILS[wdIdx];
-    if (detail) {
-      document.getElementById('dsTitle').textContent = detail.title;
-      document.getElementById('dsVol').textContent = detail.vol.toLocaleString() + ' kg';
-      document.getElementById('dsMin').textContent = detail.min + '분';
-      document.getElementById('dsPR').textContent = detail.pr;
-      document.getElementById('dsList').innerHTML = detail.ex.map(e => `
-        <div class="ds-ex"><span class="name">${e.n}</span><span class="sets">${e.s}</span></div>
-      `).join('');
-      document.getElementById('dsList').style.display = '';
-      document.getElementById('dsEmpty').hidden = true;
-      document.querySelector('.ds-stats').style.display = '';
-    } else {
-      document.getElementById('dsTitle').textContent = hit.part;
-      document.getElementById('dsVol').textContent = '—';
-      document.getElementById('dsMin').textContent = '—';
-      document.getElementById('dsPR').textContent = '—';
-      document.getElementById('dsList').innerHTML = '';
-      document.getElementById('dsEmpty').hidden = false;
-    }
-  } else {
-    document.getElementById('dsTitle').textContent = '쉼';
-    document.querySelector('.ds-stats').style.display = 'none';
-    document.getElementById('dsList').innerHTML = '';
-    document.getElementById('dsEmpty').hidden = false;
-  }
-
-  document.getElementById('daySheetBackdrop').classList.add('is-open');
-  document.getElementById('daySheet').classList.add('is-open');
-}
-function closeDaySheet() {
-  document.getElementById('daySheetBackdrop').classList.remove('is-open');
-  document.getElementById('daySheet').classList.remove('is-open');
-}
-document.getElementById('daySheetBackdrop').addEventListener('click', closeDaySheet);
-
-document.getElementById('weekCal').addEventListener('click', (e) => {
-  const d = e.target.closest('[data-day]');
-  if (!d) return;
-  openDaySheet(+d.dataset.day, d.dataset.iso || null);
-});
-
-document.querySelectorAll('[data-nav]').forEach(b => {
-  b.addEventListener('click', () => {
-    window.location.href = b.dataset.nav === 'stats' ? 'stats.html' : 'admin.html';
-  });
-});
-
-/* CTA + long-press (session 상태일 때만) */
-(function setupCta() {
-  const btn = document.getElementById('ctaBtn');
-  let pressTimer = null;
-  let longPressed = false;
-
-  const isSession = () => document.getElementById('app').dataset.state === 'session';
-
-  function start() {
-    longPressed = false;
-    if (!isSession()) return;
-    btn.classList.add('is-pressed');
-    pressTimer = setTimeout(() => {
-      longPressed = true;
-      btn.classList.remove('is-pressed');
-      openSheet();
-      if (navigator.vibrate) navigator.vibrate(12);
-    }, 500);
-  }
-  function end() {
-    clearTimeout(pressTimer);
-    btn.classList.remove('is-pressed');
-  }
-
-  btn.addEventListener('pointerdown', start);
-  btn.addEventListener('pointerup', end);
-  btn.addEventListener('pointercancel', end);
-  btn.addEventListener('pointerleave', end);
-
-  btn.addEventListener('click', (e) => {
-    if (longPressed) { e.preventDefault(); e.stopPropagation(); return; }
-    window.location.href = 'session.html';
-  });
-})();
-
-/* Sheet — finish/pause/delete 액션 */
-const backdrop = document.getElementById('sheetBackdrop');
-const sheet = document.getElementById('sheet');
-function openSheet() {
-  backdrop.classList.add('is-open');
-  sheet.classList.add('is-open');
-}
-function closeSheet() {
-  backdrop.classList.remove('is-open');
-  sheet.classList.remove('is-open');
-}
-backdrop.addEventListener('click', closeSheet);
-sheet.addEventListener('click', async (e) => {
-  const act = e.target.closest('[data-sheet]');
-  if (!act) return;
-  const type = act.dataset.sheet;
-  closeSheet();
-  if (type === 'finish') {
-    /* SPA: finalizeActiveSession → /#/summary. mocks fallback: toast. */
-    if (window.gymSession?.finalizeActiveSession) {
-      try {
-        const r = await window.gymSession.finalizeActiveSession();
-        if (r?.ok) {
-          window.location.href = 'summary.html';
-        } else {
-          toast('완료 실패: ' + (r?.reason || ''));
-        }
-      } catch (err) {
-        console.error('[home] finalizeActiveSession', err);
-        toast('완료 실패');
-      }
-    } else {
-      toast('완료 — 요약 모달');
-    }
-  } else if (type === 'pause') {
-    /* 별 wave 스텁 — status='paused' 토글은 추후 */
-    toast('일시정지 (예정)');
-  } else if (type === 'delete') {
-    if (!confirm('진행 중 세션을 삭제할까요?')) return;
-    if (window.gymQueries?.getActiveSession && window.gymQueries?.deleteSession) {
-      try {
-        const s = await window.gymQueries.getActiveSession();
-        if (s) {
-          await window.gymQueries.deleteSession(s.id);
-          if (window.gymHome?.mountHomeView) {
-            await window.gymHome.mountHomeView();
-          } else {
-            applyState('empty');
-          }
-          toast('삭제됨');
-        }
-      } catch (err) {
-        console.error('[home] delete active', err);
-        toast('삭제 실패');
-      }
-    } else {
-      toast('삭제됨');
-    }
-  }
-});
-
-/* 캘린더 꾹누르기 → 기록 삭제 */
-function bindCalendarLongPress(container, onLongPress, ms = 500) {
-  let timer = null, startX = 0, startY = 0, currentEl = null, fired = false, cancelled = false;
-  const clear = () => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (currentEl) currentEl.style.transform = '';
-    currentEl = null;
-  };
-  container.addEventListener('pointerdown', (e) => {
-    const el = e.target.closest('[data-day]');
-    if (!el) return;
-    currentEl = el;
-    cancelled = false; fired = false;
-    startX = e.clientX; startY = e.clientY;
-    el.style.transition = 'transform 200ms var(--ease)';
-    timer = setTimeout(() => {
-      if (cancelled || !currentEl) return;
-      fired = true;
-      const el2 = currentEl;
-      el2.style.transform = 'scale(0.96)';
-      if (navigator.vibrate) navigator.vibrate(12);
-      onLongPress(+el2.dataset.day);
-      setTimeout(() => { el2.style.transform = ''; }, 200);
-    }, ms);
-  });
-  container.addEventListener('pointermove', (e) => {
-    if (!currentEl) return;
-    if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
-      cancelled = true; clear();
-    }
-  });
-  container.addEventListener('pointerup', clear);
-  container.addEventListener('pointercancel', clear);
-  container.addEventListener('click', (e) => {
-    if (fired) { e.stopPropagation(); e.preventDefault(); fired = false; }
-  }, true);
-}
-
-const delDayBackdrop = document.getElementById('delDayBackdrop');
-const delDaySheet = document.getElementById('delDaySheet');
-function openDelDaySheet(wdIdx) {
-  document.getElementById('delDayTitle').textContent = `${_monthOfWdIdx(wdIdx)}월 ${DATES[wdIdx]}일 · ${WEEK[wdIdx]} 기록`;
-  delDayBackdrop.classList.add('is-open');
-  delDaySheet.classList.add('is-open');
-}
-function closeDelDaySheet() {
-  delDayBackdrop.classList.remove('is-open');
-  delDaySheet.classList.remove('is-open');
-}
-delDayBackdrop.addEventListener('click', closeDelDaySheet);
-delDaySheet.addEventListener('click', (e) => {
-  const act = e.target.closest('[data-del]');
-  if (!act) return;
-  const type = act.dataset.del;
-  closeDelDaySheet();
-  if (type === 'confirm') toast('기록 삭제됨');
-});
-
-bindCalendarLongPress(document.getElementById('weekCal'), openDelDaySheet);
-
-/* INIT */
-if (window.gymHome) {
-  window.gymHome.mountHomeView().catch(e => console.error('[gym] mountHomeView init', e));
-} else {
-  applyState('active');
-}
+  // HomeA (idle) ↔ HomeC (active) — ?state=active 토글
+  const state = new URLSearchParams(location.search).get('state') === 'active' ? 'active' : 'idle';
+  document.body.dataset.state = state;
 </script>
-
 </body>
 </html>

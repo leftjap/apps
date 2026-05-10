@@ -3,1388 +3,249 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0c0a08">
-<title>Gym · 통계</title>
+<title>Gym · 통계 (v2 · StatsA/B/C)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    /* Dark v2 — Warm dark base + Claude Orange (gym only) */
-    --bg: #0c0a08; --surface: #15120e; --bg-warm: #1a1612; --bg-elevated: #1d1914;
-    --text: #f3efe6; --text-strong: #ffffff; --text-muted: rgba(243,239,230,0.6); --text-faint: rgba(243,239,230,0.4);
-    --accent: #d97757; --accent-soft: rgba(217,119,87,0.18); --accent-deep: #c96442; --accent-hover: #e58a6c; --accent-rgb: 217, 119, 87;
-    --done: #d97757; --done-soft: rgba(217,119,87,0.18);
-    --sage: #d97757; --blue: #6a9bcc; --amber: #c4973b; --danger: #c94432;
-    --border: rgba(255,255,255,0.08); --border-strong: rgba(255,255,255,0.18); --border-light: rgba(255,255,255,0.04);
-    --font-display: 'Poppins', system-ui, sans-serif;
-    --font-body: 'Noto Sans KR', system-ui, sans-serif;
-    --fs-xs: 11px; --fs-sm: 13px; --fs-base: 15px; --fs-md: 16px; --fs-lg: 20px; --fs-xl: 28px;
-    --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px;
-    --s-6: 24px; --s-8: 32px; --s-10: 40px; --s-12: 48px; --s-16: 64px;
-    --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-xl: 20px; --r-pill: 999px;
-    --shadow-xs: 0 1px 2px rgba(0,0,0,0.3);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.4);
-    --shadow-lg: 0 6px 14px rgba(0,0,0,0.3), 0 30px 60px rgba(0,0,0,0.6);
-    --ease: cubic-bezier(0.4, 0, 0.2, 1);
-    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
-  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { -webkit-text-size-adjust: 100%; }
-  body {
-    font-family: var(--font-body); color: var(--text); background: var(--bg);
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
-    background-size: 256px 256px; background-blend-mode: multiply; font-variant-numeric: tabular-nums; line-height: 1.65; -webkit-font-smoothing: antialiased;
-    min-height: 100vh;
-  }
-  .phone {
-    max-width: 375px; height: 100dvh; max-height: 812px; margin: 0 auto;
-    display: flex; flex-direction: column; position: relative;
-    overflow: hidden; background: var(--bg);
-  }
-  @media (min-width: 376px) {
-    body { padding: var(--s-8) 0; }
-    .phone { border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); border-radius: var(--r-lg); }
-  }
-  .safe-top { height: var(--safe-top); min-height: 20px; flex-shrink: 0; }
-
-  /* HEADER */
-  .hdr {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: var(--s-4) var(--s-5) var(--s-2);
-    flex-shrink: 0;
-  }
-  .hdr-title {
-    font-family: var(--font-display);
-    font-size: 20px; font-weight: 600;
-    color: var(--text-strong);
-    letter-spacing: -0.01em;
-  }
-  .hdr-nav { display: flex; align-items: center; gap: var(--s-4); }
-  .hdr-link {
-    font-family: var(--font-display);
-    font-size: var(--fs-md); font-weight: 500;
-    color: var(--text-muted);
-    background: none; border: none; cursor: pointer;
-    padding: var(--s-1) var(--s-2);
-    letter-spacing: 0.01em;
-    border-radius: var(--r-sm);
-    transition: background 150ms var(--ease), color 150ms var(--ease);
-  }
-  .hdr-link.is-active { color: var(--text-strong); font-weight: 600; }
-  .hdr-link:active { background: var(--bg-warm); }
-
-  .screen {
-    flex: 1;
-    display: flex; flex-direction: column;
-    padding: 0 var(--s-5);
-    padding-bottom: calc(var(--s-6) + var(--safe-bottom));
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  /* ============ MONTH HERO — 볼륨 + 비교 ============ */
-  .month-hero {
-    margin-top: var(--s-6);
-    padding-bottom: var(--s-5);
-    flex-shrink: 0;
-  }
-  .mh-label {
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 400;
-    color: var(--text-faint);
-    letter-spacing: 0.01em;
-    margin-bottom: var(--s-2);
-  }
-  .mh-display {
-    display: flex; align-items: baseline;
-    position: relative;
-  }
-  .mh-num {
-    font-family: var(--font-display);
-    font-size: 48px; font-weight: 600;
-    color: var(--text-strong);
-    line-height: 1;
-    letter-spacing: -0.03em;
-    font-variant-numeric: tabular-nums;
-    position: relative;
-  }
-  .mh-num::after {
-    content: '';
-    position: absolute; top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 180px; height: 180px;
-    background: radial-gradient(circle, rgba(var(--accent-rgb), 0.16) 0%, transparent 70%);
-    border-radius: 50%;
-    z-index: -1;
-    pointer-events: none;
-  }
-  .mh-unit {
-    font-family: var(--font-display);
-    font-size: 15px; font-weight: 400;
-    color: var(--text-muted);
-    margin-left: var(--s-2);
-    line-height: 1;
-  }
-  .mh-compare {
-    display: flex; gap: var(--s-4);
-    margin-top: var(--s-3);
-    font-family: var(--font-body);
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-  .mh-compare .delta {
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: 0.01em;
-  }
-  .mh-compare .delta.up { color: var(--sage); }
-  .mh-compare .delta.down { color: var(--amber); }
-
-  /* ============ MONTH NAV ============ */
-  .month-nav {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 var(--s-2);
-    margin-bottom: var(--s-3);
-    flex-shrink: 0;
-  }
-  .nav-btn {
-    width: 32px; height: 32px;
-    display: inline-flex; align-items: center; justify-content: center;
-    border: none; background: none;
-    color: var(--text-muted);
-    cursor: pointer;
-    border-radius: var(--r-sm);
-    transition: background 150ms var(--ease), color 150ms var(--ease);
-  }
-  .nav-btn:active { background: var(--bg-warm); color: var(--text-strong); }
-  .nav-btn:disabled {
-    color: var(--text-faint);
-    cursor: not-allowed;
-    opacity: 0.45;
-  }
-  .nav-btn:disabled:active { background: none; }
-  .nav-btn svg { width: 16px; height: 16px; }
-  .month-label {
-    font-family: var(--font-display);
-    font-size: 14px; font-weight: 500;
-    color: var(--text-strong);
-    letter-spacing: 0.02em;
-  }
-
-  /* ============ MONTHLY CALENDAR — Typography-driven ============ */
-  .cal-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    padding: 0 var(--s-1);
-    margin-bottom: var(--s-2);
-    flex-shrink: 0;
-  }
-  .cal-weekday {
-    font-family: var(--font-display);
-    font-size: 10px; font-weight: 500;
-    color: var(--text-faint);
-    letter-spacing: 0.04em;
-    text-align: center;
-    padding: var(--s-1) 0;
-  }
-  .cal-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1px;
-    padding: 0 var(--s-1);
-    flex-shrink: 0;
-  }
-  .cal-cell {
-    aspect-ratio: 1 / 1.1;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    gap: 2px;
-    background: none; border: none;
-    border-radius: var(--r-sm);
-    cursor: pointer;
-    position: relative;
-    padding: 2px;
-    transition: background 120ms var(--ease);
-    font-family: inherit;
-  }
-  .cal-cell:active { background: var(--bg-warm); }
-  .cal-cell.outside { visibility: hidden; }
-  .cal-num {
-    font-family: var(--font-display);
-    font-size: 13px; font-weight: 300;
-    color: var(--text-faint);
-    line-height: 1;
-    font-variant-numeric: tabular-nums;
-  }
-  /* 운동 강도 — Typography-driven (컬러 도트 금지) */
-  .cal-cell.w-low  .cal-num { color: var(--text); font-weight: 400; font-size: 14px; }
-  .cal-cell.w-med  .cal-num { color: var(--text-strong); font-weight: 500; font-size: 16px; }
-  .cal-cell.w-high .cal-num { color: var(--text-strong); font-weight: 600; font-size: 18px; }
-  /* 부위 약어 (운동한 날 하단) */
-  .cal-tag {
-    font-family: var(--font-body);
-    font-size: 9px;
-    color: var(--text-muted);
-    line-height: 1;
-    letter-spacing: -0.01em;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .cal-cell.today .cal-num::after {
-    content: '';
-    position: absolute;
-    bottom: 2px; left: 50%;
-    width: 14px; height: 2px;
-    background: var(--accent);
-    border-radius: 1px;
-    transform: translateX(-50%);
-  }
-
-  /* ============ 주/월 비교 — 막대 그래프 ============ */
-  .compare-section {
-    margin: var(--s-6) var(--s-5) 0;
-    padding: var(--s-4) var(--s-5) var(--s-5);
-    background: var(--surface);
-    border: 1px solid var(--border-light);
-    border-radius: var(--r-lg);
-    flex-shrink: 0;
-  }
-  .cs-head {
-    display: flex; align-items: baseline; justify-content: space-between;
-    margin-bottom: var(--s-5);
-  }
-  .cs-title {
-    font-family: var(--font-display);
-    font-size: 11px; font-weight: 600;
-    color: var(--text-muted);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .cs-groups {
-    display: flex;
-    flex-direction: column;
-    gap: var(--s-5);
-  }
-  .cs-group { display: flex; flex-direction: column; gap: var(--s-2); }
-  .cs-group-label {
-    font-family: var(--font-display);
-    font-size: 10px; font-weight: 500;
-    color: var(--text-faint);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-  .cs-bars { display: flex; flex-direction: column; gap: var(--s-2); }
-  .cs-bar-row {
-    display: grid;
-    grid-template-columns: 38px 1fr auto;
-    align-items: center;
-    gap: var(--s-3);
-  }
-  .cs-bar-period {
-    font-family: var(--font-body);
-    font-size: 12px;
-    color: var(--text-muted);
-    letter-spacing: -0.01em;
-  }
-  .cs-bar-row.current .cs-bar-period { color: var(--text-strong); font-weight: 500; }
-  .cs-bar-track {
-    height: 6px;
-    background: var(--bg-warm);
-    border-radius: var(--r-pill);
-    overflow: hidden;
-    position: relative;
-  }
-  .cs-bar-fill {
-    height: 100%;
-    border-radius: var(--r-pill);
-    background: var(--text-faint);
-    transform-origin: left;
-    transition: transform 400ms var(--ease-out);
-  }
-  .cs-bar-row.current .cs-bar-fill { background: var(--accent); }
-  .cs-bar-val {
-    display: inline-flex; align-items: baseline; gap: var(--s-2);
-    font-family: var(--font-display);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-  }
-  .cs-bar-volume {
-    font-size: 13px; font-weight: 500;
-    color: var(--text-strong);
-    letter-spacing: -0.01em;
-  }
-  .cs-bar-delta {
-    font-size: 11px; font-weight: 500;
-    color: var(--sage);
-    letter-spacing: 0.02em;
-  }
-  .cs-bar-delta.down { color: var(--amber); }
-  .cs-bar-delta.flat { color: var(--text-faint); }
-
-  /* ============ Day detail sheet ============ */
-  .sheet-backdrop {
-    position: absolute; inset: 0;
-    background: rgba(20,20,19,0.32);
-    opacity: 0; pointer-events: none;
-    transition: opacity 200ms var(--ease);
-    z-index: 50;
-  }
-  .sheet-backdrop.is-open { opacity: 1; pointer-events: auto; }
-  .sheet {
-    position: absolute; left: 0; right: 0; bottom: 0;
-    transform: translateY(100%);
-    background: var(--surface);
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    box-shadow: var(--shadow-lg);
-    transition: transform 260ms var(--ease-out);
-    padding: var(--s-4) var(--s-5) calc(var(--s-5) + var(--safe-bottom));
-    z-index: 60;
-    max-height: 70%;
-    display: flex; flex-direction: column;
-  }
-  .sheet.is-open { transform: translateY(0); }
-  .sheet-handle {
-    width: 36px; height: 4px; background: var(--border);
-    border-radius: 2px; margin: 0 auto var(--s-4);
-    flex-shrink: 0;
-  }
-  .sheet-date {
-    font-family: var(--font-display);
-    font-size: 11px; font-weight: 500;
-    color: var(--text-muted);
-    letter-spacing: 0.04em;
-    margin-bottom: var(--s-1);
-    text-transform: uppercase;
-  }
-  .sheet-title {
-    font-family: var(--font-display);
-    font-size: 20px; font-weight: 600;
-    color: var(--text-strong);
-    letter-spacing: -0.015em;
-    margin-bottom: var(--s-3);
-  }
-  .sheet-stats {
-    display: flex; gap: var(--s-5);
-    padding-bottom: var(--s-3);
-    margin-bottom: var(--s-3);
-    border-bottom: 1px solid var(--border-light);
-  }
-  .ss-item { display: flex; flex-direction: column; gap: 2px; }
-  .ss-val {
-    font-family: var(--font-display);
-    font-size: 18px; font-weight: 600;
-    color: var(--text-strong);
-    letter-spacing: -0.01em;
-    font-variant-numeric: tabular-nums;
-  }
-  .ss-label {
-    font-family: var(--font-display);
-    font-size: 10px;
-    color: var(--text-muted);
-    letter-spacing: 0.02em;
-  }
-  .sheet-list {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-  }
-  .sheet-ex {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: var(--s-3);
-    align-items: baseline;
-    padding: var(--s-3) 0;
-    border-bottom: 1px solid var(--border-light);
-  }
-  .sheet-ex:last-child { border-bottom: none; }
-  .sheet-ex .name {
-    font-family: var(--font-display);
-    font-size: 14px; font-weight: 500;
-    color: var(--text-strong);
-  }
-  .sheet-ex .sets {
-    font-family: var(--font-display);
-    font-size: 12px;
-    color: var(--text-muted);
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* ============ DELETE SHEET (Wave C) ============
-     캘린더 꾹누르기 → 기록 삭제 확인. 기존 상세 sheet 와 CSS 독립. */
-  .del-sheet-title {
-    font-family: var(--font-display);
-    font-size: 12px; font-weight: 500;
-    color: var(--text-muted);
-    letter-spacing: 0.02em;
-    margin-bottom: var(--s-3);
-    text-align: left;
-  }
-  .del-sheet-action {
-    display: block; width: 100%;
-    background: none; border: none;
-    padding: var(--s-4) 0;
-    font-family: var(--font-display);
-    font-size: 15px; font-weight: 500;
-    color: var(--danger);
-    cursor: pointer;
-    text-align: left;
-    transition: color 120ms var(--ease);
-  }
-  .del-sheet-action:active { color: var(--accent-hover); }
-  .del-sheet-cancel {
-    margin-top: var(--s-3);
-    width: 100%;
-    background: var(--bg-warm);
-    border: none;
-    border-radius: var(--r-sm);
-    padding: var(--s-3);
-    font-family: var(--font-display);
-    font-size: 14px; font-weight: 500;
-    color: var(--text-muted);
-    cursor: pointer;
-  }
-
-  /* reveal */
-  .rv { opacity: 0; transform: translateY(12px); animation: rvUp 0.5s var(--ease-out) forwards; }
-  .rv-1 { animation-delay: 0ms; } .rv-2 { animation-delay: 50ms; }
-  .rv-3 { animation-delay: 100ms; } .rv-4 { animation-delay: 150ms; }
-  @keyframes rvUp { to { opacity: 1; transform: translateY(0); } }
-
-  /* toast */
-  .toast {
-    position: absolute;
-    left: 50%; bottom: calc(var(--s-12) + var(--safe-bottom));
-    transform: translate(-50%, 20px);
-    background: rgba(20,20,19,0.9); color: #fff;
-    padding: var(--s-3) var(--s-5); border-radius: var(--r-pill);
-    font-family: var(--font-body); font-size: 12px;
-    opacity: 0; pointer-events: none;
-    transition: opacity 200ms var(--ease), transform 200ms var(--ease);
-    z-index: 80; box-shadow: var(--shadow-lg);
-    white-space: nowrap;
-  }
-  .toast.is-show { opacity: 1; transform: translate(-50%, 0); }
-
-  /* ============ STATS TABS (v2 StatsHeader) ============ */
-  .stats-tabs {
-    margin: 6px var(--s-6) 0;
-    padding: 0;
-    display: flex; gap: 22px;
-    border-bottom: 1px solid var(--border);
-  }
-  .stats-tab {
-    background: none; border: 0; cursor: pointer;
-    padding: 8px 0 12px;
-    font-family: var(--font-body);
-    font-size: 13px; font-weight: 400;
-    color: var(--text-muted);
-    position: relative;
-    letter-spacing: -0.005em;
-  }
-  .stats-tab.is-active {
-    color: var(--text-strong); font-weight: 600;
-  }
-  .stats-tab.is-active::after {
-    content: '';
-    position: absolute; bottom: -1px; left: 0; right: 0;
-    height: 2px; background: var(--accent);
-  }
-
-  .stats-panel { flex: 1; display: flex; flex-direction: column; }
-  .stats-panel[hidden] { display: none; }
-
-  /* ============ WEEK SUMMARY (v2 StatsA) — 캘린더 아래 박스 ============ */
-  .week-summary {
-    margin: 16px 20px 0;
-    padding: 16px 18px;
-    background: var(--surface);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 16px;
-  }
-  .ws-eyebrow {
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-muted);
-    letter-spacing: 0.06em;
-  }
-  .ws-row {
-    margin-top: 6px;
-    display: flex; align-items: baseline; gap: 8px;
-  }
-  .ws-num {
-    font-family: var(--font-display);
-    font-size: 28px; font-weight: 300;
-    color: var(--text-strong);
-    letter-spacing: -0.02em;
-    line-height: 1;
-  }
-  .ws-unit {
-    font-family: var(--font-body);
-    font-size: 12px; color: var(--text-muted);
-    margin-left: -4px;
-  }
-  .ws-chip {
-    margin-left: auto;
-    font-family: var(--font-body);
-    font-size: 11px; font-weight: 600;
-    color: var(--accent);
-  }
-  .ws-chip.is-down { color: var(--danger); }
-  .ws-chip.is-flat { color: var(--text-muted); }
-  .ws-sub {
-    margin-top: 4px;
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-muted);
-  }
-
-  /* ============ TREND PANEL (v2 StatsB) ============ */
-  .trend-hero {
-    padding: 26px var(--s-6) 0;
-  }
-  .trend-eyebrow {
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-muted);
-    letter-spacing: 0.06em;
-  }
-  .trend-display {
-    margin-top: 6px;
-    display: flex; align-items: baseline; gap: 8px;
-  }
-  .trend-num {
-    font-family: var(--font-display);
-    font-size: 44px; font-weight: 200;
-    color: var(--text-strong);
-    letter-spacing: -0.03em;
-    line-height: 0.9;
-  }
-  .trend-unit {
-    font-family: var(--font-body);
-    font-size: 13px; color: var(--text-muted);
-  }
-  .trend-chip {
-    margin-left: auto;
-    font-family: var(--font-body);
-    font-size: 11px; font-weight: 600;
-    color: var(--accent);
-    padding: 3px 8px;
-    background: rgba(217,119,87,0.16);
-    border-radius: 999px;
-  }
-  .trend-chart-wrap {
-    margin: 18px var(--s-6) 0;
-    height: 140px;
-  }
-  .trend-chart { width: 100%; height: 100%; overflow: visible; }
-  .trend-axis text {
-    font-family: var(--font-body);
-    font-size: 9px;
-    fill: rgba(243,239,230,0.35);
-  }
-  .trend-stats {
-    margin: 32px var(--s-5) 0;
-    padding: 18px 0;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  }
-  .ts-item { text-align: center; }
-  .ts-val {
-    font-family: var(--font-display);
-    font-size: 18px; font-weight: 500;
-    color: var(--text-strong);
-  }
-  .ts-val.accent { color: var(--accent); }
-  .ts-unit {
-    font-family: var(--font-body);
-    font-size: 10px; color: var(--text-muted);
-    margin-left: 2px;
-    font-weight: 400;
-  }
-  .ts-label {
-    font-family: var(--font-body);
-    font-size: 10px; color: var(--text-muted);
-    margin-top: 4px;
-  }
-  .trend-pr-list {
-    padding: 18px var(--s-6) 0;
-  }
-  .trend-pr-eyebrow {
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-muted);
-    letter-spacing: 0.06em;
-    margin-bottom: 12px;
-  }
-  .tpr-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 8px 0;
-    border-top: 1px solid var(--border-light);
-  }
-  .tpr-row:first-child { border-top: 0; }
-  .tpr-name {
-    font-family: var(--font-body);
-    font-size: 13px; font-weight: 500;
-    color: var(--text-strong);
-  }
-  .tpr-val {
-    font-family: var(--font-display);
-    font-size: 14px; font-weight: 500;
-    color: var(--text-strong);
-    margin-left: auto; margin-right: 8px;
-  }
-  .tpr-delta {
-    font-family: var(--font-display);
-    font-size: 11px; font-weight: 600;
-    color: var(--accent);
-    min-width: 24px; text-align: right;
-  }
-  .tpr-delta.tpr-flat { color: var(--text-faint); font-weight: 400; }
-  /* 기존 cs-groups 보조 — trend 패널에서 더 작게 */
-  [data-panel="trend"] .compare-section {
-    margin-top: 24px;
-    padding: 0 var(--s-6);
-    opacity: 0.85;
-  }
-
-  /* ============ BODY PARTS PANEL (v2 StatsC) ============ */
-  .bp-hero {
-    padding: 26px var(--s-6) 0;
-  }
-  .bp-eyebrow {
-    font-family: var(--font-body);
-    font-size: 11px; color: var(--text-muted);
-    letter-spacing: 0.06em;
-  }
-  .bp-total {
-    margin-top: 6px;
-    display: flex; align-items: baseline; gap: 8px;
-  }
-  .bp-total-num {
-    font-family: var(--font-display);
-    font-size: 44px; font-weight: 200;
-    color: var(--text-strong);
-    letter-spacing: -0.03em;
-    line-height: 0.9;
-  }
-  .bp-total-unit {
-    font-family: var(--font-body);
-    font-size: 13px; color: var(--text-muted);
-  }
-  .bp-stack {
-    margin: 22px var(--s-6) 0;
-    height: 10px; border-radius: 5px;
-    overflow: hidden;
-    display: flex;
-    background: rgba(255,255,255,0.06);
-  }
-  .bp-stack-seg { height: 100%; }
-  .bp-list {
-    margin: 22px 0 0;
-    padding: 0 var(--s-6);
-  }
-  .bp-row {
-    display: flex; align-items: center;
-    padding: 11px 0;
-    border-top: 1px solid var(--border-light);
-  }
-  .bp-row:first-child { border-top: 0; }
-  .bp-row-dot {
-    width: 8px; height: 8px; border-radius: 4px;
-    margin-right: 12px;
-    flex-shrink: 0;
-  }
-  .bp-row-name {
-    font-family: var(--font-body);
-    font-size: 14px; font-weight: 500;
-    color: var(--text-strong);
-    flex: 1;
-  }
-  .bp-row-bar {
-    flex: 2;
-    height: 4px; border-radius: 2px;
-    background: rgba(255,255,255,0.06);
-    margin-right: 14px;
-    overflow: hidden;
-  }
-  .bp-row-fill { height: 100%; transform-origin: left center; }
-  .bp-row-count {
-    font-family: var(--font-display);
-    font-size: 12px; color: var(--text-muted);
-    min-width: 36px; text-align: right;
-  }
-  .bp-row-pct {
-    font-family: var(--font-display);
-    font-size: 11px; color: var(--text-faint);
-    min-width: 38px; text-align: right;
-    margin-left: 4px;
-  }
+:root {
+  --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
+  --surface: #ffffff; --surface-2: #f7f4ec;
+  --ink: #1a1714; --ink-strong: #0c0a08;
+  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
+  --line: #e6e1d4; --line-soft: #efeae0;
+  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
+  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
+  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
+  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
+  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
+  --font-display: "Poppins", "SF Pro Display", -apple-system, system-ui, sans-serif;
+  --font-body: "Noto Sans KR", -apple-system, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+}
+* { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
+body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
+.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kr { font-family: var(--font-body); }
+.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
+.phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
+.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink-strong); }
+.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
+.phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
+.phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
+.phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; }
+.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
+.phone.dark { color: #f3efe6; }
+.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
+.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+.tab-pane { display: none; }
+[data-tab="cal"] .pane-cal { display: block; }
+[data-tab="trend"] .pane-trend { display: block; }
+[data-tab="body"] .pane-body { display: block; }
+.tab-item { position: relative; padding: 8px 0 12px; cursor: pointer; }
+.tab-bar { position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); display: none; }
+[data-tab="cal"] .tab-cal .tab-bar,
+[data-tab="trend"] .tab-trend .tab-bar,
+[data-tab="body"] .tab-body .tab-bar { display: block; }
+[data-tab="cal"] .tab-cal .tab-label,
+[data-tab="trend"] .tab-trend .tab-label,
+[data-tab="body"] .tab-body .tab-label { font-weight: 600; color: #fff; }
+.tab-label { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.45); }
 </style>
 </head>
 <body>
+<div class="phone dark" style="background:#0c0a08;" data-tab="cal">
+  <div class="phone-notch"></div>
+  <div class="phone-clock num">9:41</div>
+  <div class="phone-batt"><div class="phone-batt-cell"></div></div>
+  <div class="phone-content">
+    <!-- StatsHeader -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
+      <div class="kr" style="font-size:22px;font-weight:600;color:#fff;">통계</div>
+      <div style="display:flex;gap:18px;font-size:12px;color:rgba(255,255,255,0.5);" class="kr"><span>홈</span><span>관리</span></div>
+    </div>
+    <div style="margin-top:22px;padding:0 24px;display:flex;gap:22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+      <div class="tab-item tab-cal" data-go="cal"><span class="kr tab-label">캘린더</span><div class="tab-bar"></div></div>
+      <div class="tab-item tab-trend" data-go="trend"><span class="kr tab-label">추이</span><div class="tab-bar"></div></div>
+      <div class="tab-item tab-body" data-go="body"><span class="kr tab-label">부위</span><div class="tab-bar"></div></div>
+    </div>
 
-<div class="phone" id="app">
-  <div class="safe-top"></div>
-
-  <header class="hdr rv rv-1">
-    <h1 class="hdr-title">통계</h1>
-    <nav class="hdr-nav">
-      <button class="hdr-link" data-nav="home">홈</button>
-      <button class="hdr-link" data-nav="admin">관리</button>
-    </nav>
-  </header>
-
-  <!-- 3탭 (v2 StatsHeader) — 캘린더 / 추이 / 부위 -->
-  <nav class="stats-tabs rv rv-2" role="tablist" aria-label="통계 탭">
-    <button class="stats-tab is-active" data-tab="cal" role="tab" aria-selected="true">캘린더</button>
-    <button class="stats-tab" data-tab="trend" role="tab" aria-selected="false">추이</button>
-    <button class="stats-tab" data-tab="body" role="tab" aria-selected="false">부위</button>
-  </nav>
-
-  <main class="screen">
-
-    <!-- 패널: 캘린더 -->
-    <section class="stats-panel" data-panel="cal">
-      <!-- 월 이동 nav -->
-      <nav class="month-nav rv rv-2">
-        <button class="nav-btn" data-month="-1" aria-label="이전 달">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 3 5 8 10 13"/></svg>
-        </button>
-        <span class="month-label" id="monthLabel"></span>
-        <button class="nav-btn" data-month="1" aria-label="다음 달">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 3 11 8 6 13"/></svg>
-        </button>
-      </nav>
-
-      <!-- 주 헤더 -->
-      <div class="cal-weekdays rv rv-2">
-        <span class="cal-weekday">월</span>
-        <span class="cal-weekday">화</span>
-        <span class="cal-weekday">수</span>
-        <span class="cal-weekday">목</span>
-        <span class="cal-weekday">금</span>
-        <span class="cal-weekday">토</span>
-        <span class="cal-weekday">일</span>
+    <!-- Pane: 캘린더 -->
+    <div class="tab-pane pane-cal">
+      <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;">
+        <span style="color:rgba(255,255,255,0.5);font-size:18px;">‹</span>
+        <div class="num" style="font-size:14px;color:#fff;font-weight:500;letter-spacing:0.04em;">2026 · 5월</div>
+        <span style="color:rgba(255,255,255,0.5);font-size:18px;">›</span>
       </div>
-
-      <!-- 월간 캘린더 -->
-      <div class="cal-grid rv rv-3" id="calGrid"></div>
-
-      <!-- v2 StatsA "이번 주" 박스 — 캘린더 아래 -->
-      <div class="week-summary rv rv-4">
-        <div class="ws-eyebrow">이번 주</div>
-        <div class="ws-row">
-          <span class="ws-num" id="wsNum">12,450</span>
-          <span class="ws-unit">kg</span>
-          <span class="ws-chip" id="wsChip">+8%</span>
+      <div style="padding:16px 18px 0;">
+        <div class="kr" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;color:rgba(255,255,255,0.4);font-size:10px;">
+          <div style="text-align:center;padding-bottom:8px;">월</div>
+          <div style="text-align:center;padding-bottom:8px;">화</div>
+          <div style="text-align:center;padding-bottom:8px;">수</div>
+          <div style="text-align:center;padding-bottom:8px;">목</div>
+          <div style="text-align:center;padding-bottom:8px;">금</div>
+          <div style="text-align:center;padding-bottom:8px;">토</div>
+          <div style="text-align:center;padding-bottom:8px;">일</div>
         </div>
-        <div class="ws-sub" id="wsSub">지난 주 11,520kg 대비</div>
+        <div id="cal-grid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
       </div>
-    </section>
-
-    <!-- 패널: 추이 (v2 StatsB SVG 라인차트 + 기존 비교) -->
-    <section class="stats-panel" data-panel="trend" hidden>
-
-      <!-- v2 StatsB hero — 큰 12.4K + +8% chip -->
-      <div class="trend-hero">
-        <div class="trend-eyebrow">최근 8주 · 주간 볼륨</div>
-        <div class="trend-display">
-          <span class="trend-num" id="trendNum">12.4K</span>
-          <span class="trend-unit">kg / 주</span>
-          <span class="trend-chip" id="trendChip">↑ +8%</span>
+      <div style="margin:16px 20px 0;padding:16px 18px;border-radius:16px;background:#15120e;border:1px solid rgba(255,255,255,0.05);">
+        <div class="kr" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 주</div>
+        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
+          <span class="num" style="font-size:28px;font-weight:300;color:#fff;">12,450<span class="kr" style="font-size:12px;color:rgba(255,255,255,0.5);margin-left:3px;">kg</span></span>
+          <span class="kr" style="font-size:11px;color:var(--accent);font-weight:600;">+8%</span>
         </div>
+        <div class="kr" style="margin-top:4px;font-size:11px;color:rgba(255,255,255,0.45);">지난 주 11,520kg 대비</div>
       </div>
+    </div>
 
-      <!-- v2 StatsB SVG 라인차트 (8주 area + line) -->
-      <div class="trend-chart-wrap">
-        <svg class="trend-chart" id="trendChart" viewBox="-4 -10 288 140" preserveAspectRatio="none" aria-label="최근 8주 볼륨 추이">
+    <!-- Pane: 추이 -->
+    <div class="tab-pane pane-trend">
+      <div style="padding:26px 24px 0;">
+        <div class="kr" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">최근 8주 · 주간 볼륨</div>
+        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
+          <span class="num" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">12.4K</span>
+          <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.55);">kg / 주</span>
+          <span class="kr" style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:600;padding:3px 8px;background:rgba(217,119,87,0.16);border-radius:999px;">↑ +8%</span>
+        </div>
+        <svg id="trend-svg" viewBox="-4 -10 288 140" style="margin-top:18px;width:100%;height:140px;overflow:visible;">
           <defs>
-            <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="rgba(217,119,87,0.32)"/>
               <stop offset="100%" stop-color="rgba(217,119,87,0)"/>
             </linearGradient>
           </defs>
-          <path id="trendArea" fill="url(#trendGrad)" d=""/>
-          <path id="trendLine" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" d=""/>
-          <g id="trendDots"></g>
-          <g class="trend-axis" id="trendAxis"></g>
         </svg>
       </div>
-
-      <!-- 통계 3분할 (PR / 연속 / 평균) — plan Wave B 명시 -->
-      <div class="trend-stats">
-        <div class="ts-item"><div class="ts-val accent" id="tsPR">86K<span class="ts-unit">kg</span></div><div class="ts-label">볼륨 PR</div></div>
-        <div class="ts-item"><div class="ts-val" id="tsStreak">3<span class="ts-unit">주</span></div><div class="ts-label">연속</div></div>
-        <div class="ts-item"><div class="ts-val" id="tsAvg">12.4K<span class="ts-unit">kg/주</span></div><div class="ts-label">평균</div></div>
-      </div>
-
-      <!-- 주요 종목 PR -->
-      <div class="trend-pr-list">
-        <div class="trend-pr-eyebrow">주요 종목 PR</div>
-        <div id="trendPrRows">
-          <div class="tpr-row"><span class="tpr-name">벤치프레스</span><span class="tpr-val">60kg</span><span class="tpr-delta">+5</span></div>
-          <div class="tpr-row"><span class="tpr-name">스쿼트</span><span class="tpr-val">80kg</span><span class="tpr-delta">+5</span></div>
-          <div class="tpr-row"><span class="tpr-name">데드리프트</span><span class="tpr-val">100kg</span><span class="tpr-delta tpr-flat">—</span></div>
+      <div style="margin:32px 20px 0;padding:18px 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+        <div style="text-align:center;">
+          <div class="num" style="font-size:18px;font-weight:500;color:var(--accent);">86K<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span></div>
+          <div class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;">볼륨 PR</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="num" style="font-size:18px;font-weight:500;color:#fff;">3<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span></div>
+          <div class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;">연속</div>
+        </div>
+        <div style="text-align:center;">
+          <div class="num" style="font-size:18px;font-weight:500;color:#fff;">12.4K<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span></div>
+          <div class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;">평균</div>
         </div>
       </div>
-
-      <!-- 기존 cs-groups 막대 비교 (보조) -->
-      <section class="compare-section rv rv-4">
-      <div class="cs-head">
-        <span class="cs-title">볼륨 비교</span>
-      </div>
-      <div class="cs-groups">
-        <!-- 주 -->
-        <div class="cs-group">
-          <span class="cs-group-label">주</span>
-          <div class="cs-bars">
-            <div class="cs-bar-row current">
-              <span class="cs-bar-period">이번</span>
-              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(1.0)"></span></span>
-              <span class="cs-bar-val">
-                <span class="cs-bar-volume">12,450 kg</span>
-                <span class="cs-bar-delta">+8%</span>
-              </span>
-            </div>
-            <div class="cs-bar-row">
-              <span class="cs-bar-period">지난</span>
-              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(0.925)"></span></span>
-              <span class="cs-bar-val">
-                <span class="cs-bar-volume">11,520 kg</span>
-                <span class="cs-bar-delta down">−3%</span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <!-- 월 -->
-        <div class="cs-group">
-          <span class="cs-group-label">월</span>
-          <div class="cs-bars">
-            <div class="cs-bar-row current">
-              <span class="cs-bar-period">이번</span>
-              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(1.0)"></span></span>
-              <span class="cs-bar-val">
-                <span class="cs-bar-volume">48,320 kg</span>
-                <span class="cs-bar-delta">+12%</span>
-              </span>
-            </div>
-            <div class="cs-bar-row">
-              <span class="cs-bar-period">지난</span>
-              <span class="cs-bar-track"><span class="cs-bar-fill" style="transform:scaleX(0.893)"></span></span>
-              <span class="cs-bar-val">
-                <span class="cs-bar-volume">43,140 kg</span>
-                <span class="cs-bar-delta flat">±0%</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-    </section>
-
-    <!-- 패널: 부위 (이번 달 부위 분포) -->
-    <section class="stats-panel" data-panel="body" hidden>
-      <div class="bp-hero">
-        <div class="bp-eyebrow">이번 달 부위 분포</div>
-        <div class="bp-total">
-          <span class="bp-total-num" id="bpTotalNum">14</span>
-          <span class="bp-total-unit">회 운동</span>
-        </div>
-      </div>
-      <div class="bp-stack" id="bpStack"></div>
-      <div class="bp-list" id="bpList"></div>
-    </section>
-
-  </main>
-
-  <!-- 날짜 상세 바텀시트 -->
-  <div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <aside class="sheet" id="sheet" role="dialog" aria-label="날짜 상세">
-    <div class="sheet-handle"></div>
-    <div class="sheet-date" id="sheetDate">4월 21일 · 화</div>
-    <h3 class="sheet-title" id="sheetTitle">가슴 · 팔</h3>
-    <div class="sheet-stats">
-      <div class="ss-item"><span class="ss-val" id="ssVol">8,240 kg</span><span class="ss-label">볼륨</span></div>
-      <div class="ss-item"><span class="ss-val" id="ssMin">58분</span><span class="ss-label">시간</span></div>
-      <div class="ss-item"><span class="ss-val" id="ssPR">2</span><span class="ss-label">PR</span></div>
     </div>
-    <div class="sheet-list" id="sheetList"></div>
-  </aside>
 
-  <!-- 캘린더 날짜 꾹누르기 → 기록 삭제 바텀시트 (Wave C) -->
-  <div class="sheet-backdrop" id="delDayBackdrop"></div>
-  <aside class="sheet" id="delDaySheet" role="dialog" aria-label="기록 삭제">
-    <div class="sheet-handle"></div>
-    <div class="del-sheet-title" id="delDayTitle">4월 22일 · 화 기록</div>
-    <button class="del-sheet-action" data-del="confirm">기록 삭제</button>
-    <button class="del-sheet-cancel" data-del="cancel">취소</button>
-  </aside>
-
-  <div class="toast" id="toast"></div>
+    <!-- Pane: 부위 -->
+    <div class="tab-pane pane-body">
+      <div style="padding:26px 24px 0;">
+        <div class="kr" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 달 부위 분포</div>
+        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
+          <span class="num" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">14</span>
+          <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.55);">회 운동</span>
+        </div>
+        <div style="margin-top:22px;height:10px;border-radius:5px;overflow:hidden;display:flex;background:rgba(255,255,255,0.06);">
+          <div style="width:32%;background:#d97757;"></div>
+          <div style="width:26%;background:#788c5d;"></div>
+          <div style="width:18%;background:#b85a3e;"></div>
+          <div style="width:14%;background:#c9a96e;"></div>
+          <div style="width:10%;background:#6b8a9c;"></div>
+        </div>
+        <div style="margin-top:22px;">
+          <div style="display:flex;align-items:center;padding:11px 0;">
+            <span style="width:8px;height:8px;border-radius:4px;background:#d97757;margin-right:12px;"></span>
+            <span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">가슴</span>
+            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:32%;height:100%;background:#d97757;"></div></div>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">32<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">32%</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
+            <span style="width:8px;height:8px;border-radius:4px;background:#788c5d;margin-right:12px;"></span>
+            <span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">등</span>
+            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:26%;height:100%;background:#788c5d;"></div></div>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">26<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">26%</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
+            <span style="width:8px;height:8px;border-radius:4px;background:#b85a3e;margin-right:12px;"></span>
+            <span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">하체</span>
+            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:18%;height:100%;background:#b85a3e;"></div></div>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">18<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">18%</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
+            <span style="width:8px;height:8px;border-radius:4px;background:#c9a96e;margin-right:12px;"></span>
+            <span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">어깨</span>
+            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:14%;height:100%;background:#c9a96e;"></div></div>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">14<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">14%</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
+            <span style="width:8px;height:8px;border-radius:4px;background:#6b8a9c;margin-right:12px;"></span>
+            <span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">팔</span>
+            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:10%;height:100%;background:#6b8a9c;"></div></div>
+            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">10<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
+            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">10%</span>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:20px;right:20px;bottom:28px;padding:14px 18px;border-radius:14px;background:rgba(217,119,87,0.10);border:1px solid rgba(217,119,87,0.25);display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="kr" style="font-size:12px;color:var(--accent);font-weight:600;">팔이 부족해요</div>
+          <div class="kr" style="margin-top:2px;font-size:11px;color:rgba(255,255,255,0.55);">이번 주 팔 1회 · 권장 2회</div>
+        </div>
+        <span class="kr" style="font-size:12px;color:var(--accent);">→</span>
+      </div>
+    </div>
+  </div>
+  <div class="phone-home"></div>
 </div>
 
 <script>
-/* ============ MONTH DATA — today 기준 동적 init ============
-   Wave 11.6C: workouts 는 Dexie 에서 loadMonthWorkouts() 로 채움.
-   Wave B (2026-05-05): year/month/today/startDow/daysInMonth 박힘 제거 → today 기준 동적.
-   mocks 허브(iframe · window.gymQueries 없음)에선 FALLBACK_WORKOUTS 사용 (4월 한정). */
-const _t = new Date();
-const MONTH = {
-  year: _t.getFullYear(),
-  month: _t.getMonth() + 1,
-  daysInMonth: new Date(_t.getFullYear(), _t.getMonth() + 1, 0).getDate(),
-  startDow: (new Date(_t.getFullYear(), _t.getMonth(), 1).getDay() + 6) % 7, // 0=월
-  today: _t.getDate(),
-  workouts: {},
-};
-
-/* iframe / Dexie 없음 환경 fallback — stats.html Wave 11.5 하드코딩 원본 */
-const FALLBACK_WORKOUTS = {
-  2:  { tag: '등',   vol: 5240, min: 52, pr: 0, level: 'med',  ex: [{n:'바벨 로우', s:'5세트 · 1,250kg'},{n:'랫 풀다운', s:'4세트 · 900kg'},{n:'덤벨 로우', s:'3세트 · 720kg'}] },
-  3:  { tag: '팔',   vol: 2840, min: 28, pr: 0, level: 'low',  ex: [{n:'바이셉 컬', s:'4세트 · 320kg'}, {n:'해머 컬', s:'3세트 · 240kg'}] },
-  5:  { tag: '가',   vol: 7820, min: 55, pr: 1, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 900kg'},{n:'인클라인', s:'4세트 · 640kg'}] },
-  7:  { tag: '하',   vol: 9640, min: 64, pr: 2, level: 'high', ex: [{n:'스쿼트', s:'5세트 · 1,450kg'},{n:'데드리프트', s:'4세트 · 1,600kg'}] },
-  8:  { tag: '어',   vol: 3920, min: 38, pr: 0, level: 'low',  ex: [{n:'숄더 프레스', s:'4세트 · 560kg'}] },
-  10: { tag: '등',   vol: 6140, min: 48, pr: 0, level: 'med',  ex: [{n:'바벨 로우', s:'5세트 · 1,150kg'}] },
-  11: { tag: '가',   vol: 7260, min: 54, pr: 0, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 880kg'}] },
-  13: { tag: '유',   vol: 0,    min: 30, pr: 0, level: 'low',  ex: [{n:'트레드밀', s:'30분 · 3.2km'}] },
-  14: { tag: '팔',   vol: 3480, min: 32, pr: 1, level: 'low',  ex: [{n:'바이셉 컬', s:'4세트 · 360kg'}] },
-  16: { tag: '하',   vol: 8820, min: 58, pr: 0, level: 'high', ex: [{n:'스쿼트', s:'5세트 · 1,380kg'}] },
-  18: { tag: '가',   vol: 8120, min: 60, pr: 2, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 950kg'}, {n:'인클라인', s:'4세트 · 680kg'}, {n:'덤벨 플라이', s:'3세트 · 240kg'}] },
-  19: { tag: '등',   vol: 5640, min: 46, pr: 0, level: 'med',  ex: [{n:'바벨 로우', s:'5세트 · 1,080kg'}] },
-  21: { tag: '가',   vol: 8240, min: 58, pr: 2, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 950kg'},{n:'인클라인', s:'4세트 · 680kg'},{n:'덤벨 플라이', s:'4세트 · 280kg'}] },
-  22: { tag: '가·어', vol: 6820, min: 52, pr: 1, level: 'high', ex: [{n:'벤치프레스', s:'5세트 · 850kg'},{n:'숄더 프레스', s:'4세트 · 540kg'}] },
-};
-
-/** session.blocks → MONTH.workouts[d] 구조 변환 */
-function sessionToWorkoutEntry(session) {
-  const exercises = (session.blocks || []).flatMap(b => b.exercises || []);
-  const ex = exercises.map(e => {
-    const firstSet = e.sets?.[0];
-    if (firstSet && firstSet.duration != null) {
-      const min = Math.round(firstSet.duration / 60);
-      const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
-      return { n: e.exerciseName, s: `${min}분${km}` };
-    }
-    const total = (e.sets || []).reduce((sum, s) => sum + (s.weight || 0) * (s.reps || 0), 0);
-    return { n: e.exerciseName, s: `${e.sets?.length || 0}세트 · ${total.toLocaleString()}kg` };
+  // 탭 토글
+  const phone = document.querySelector('.phone');
+  document.querySelectorAll('.tab-item').forEach(el => {
+    el.addEventListener('click', () => phone.dataset.tab = el.dataset.go);
   });
-  const vol = session.totalVolume || 0;
-  const level = vol < 3000 ? 'low' : vol < 6000 ? 'med' : 'high';
-  return {
-    tag: session.tags?.[0] || '',
-    vol,
-    min: session.durationMin || 0,
-    pr: 0,  // 실 PR 계산은 Wave 11.7 (spec §6-11)
-    level,
-    ex,
-    sessionId: session.id,
-  };
-}
 
-/** Dexie 에서 현재 MONTH.year/month 범위 세션 로드 → MONTH.workouts 갱신 */
-async function loadMonthWorkouts() {
-  if (!window.gymQueries) {
-    /* iframe 허브 등 Dexie 접근 불가 — fallback (현재 월만 유효, 다른 월은 빈 객체) */
-    MONTH.workouts = (MONTH.year === 2026 && MONTH.month === 4) ? { ...FALLBACK_WORKOUTS } : {};
-    return;
+  // 캘린더 그리드 렌더 (5월 1일이 금요일이라고 가정 — 4 cell empty)
+  const cal = document.getElementById('cal-grid');
+  const worked = { 1:1, 4:2, 6:3, 8:1, 11:2, 13:1, 15:2, 18:3, 22:1, 25:2, 27:1 };
+  const today = 6;
+  let html = '';
+  for (let i = 0; i < 4; i++) html += '<div></div>';
+  for (let d = 1; d <= 31; d++) {
+    const intensity = worked[d] || 0;
+    const isToday = d === today;
+    const w = 11 + intensity * 1.5;
+    const c = intensity ? '#fff' : 'rgba(255,255,255,0.3)';
+    const fw = intensity ? 600 : 300;
+    html += '<div style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;">';
+    html += '<span class="num" style="font-size:' + w + 'px;font-weight:' + fw + ';color:' + c + ';">' + d + '</span>';
+    if (isToday) html += '<div style="position:absolute;bottom:6px;width:12px;height:2px;background:var(--accent);border-radius:1px;"></div>';
+    html += '</div>';
   }
-  try {
-    const { from, to } = window.gymQueries.monthRangeISO(MONTH.year, MONTH.month);
-    const sessions = await window.gymQueries.getSessionsByRange(from, to);
-    const map = {};
-    /* Wave 11.14 — SPA 어댑터 우선 (spec §12 형식 + 영문→한국어 매핑). 미노출 시 mocks fallback. */
-    const toEntry = window.gymStats?.sessionToWorkoutEntry || sessionToWorkoutEntry;
-    sessions.forEach(s => {
-      const day = +s.date.slice(-2);  // YYYY-MM-DD → DD
-      map[day] = toEntry(s);
-    });
-    MONTH.workouts = map;
-  } catch (err) {
-    console.warn('[stats] Dexie monthWorkouts fetch failed, using fallback', err);
-    MONTH.workouts = (MONTH.year === 2026 && MONTH.month === 4) ? { ...FALLBACK_WORKOUTS } : {};
-  }
-}
+  cal.innerHTML = html;
 
-function renderCal() {
-  const grid = document.getElementById('calGrid');
-  const cells = [];
-  // outside leading
-  for (let i = 0; i < MONTH.startDow; i++) {
-    cells.push(`<div class="cal-cell outside"></div>`);
-  }
-  for (let d = 1; d <= MONTH.daysInMonth; d++) {
-    const w = MONTH.workouts[d];
-    const classes = [
-      'cal-cell',
-      w ? 'worked' : '',
-      w ? 'w-' + w.level : '',
-      d === MONTH.today ? 'today' : ''
-    ].filter(Boolean).join(' ');
-    /* Wave 11.6.1: 주간 캘린더(home)와 일관성 위해 부위 약어 표시. 강도는 여전히 typography-driven.
-       상세(볼륨·종목)는 날짜 탭 → 바텀시트 */
-    const tag = w ? `<span class="cal-tag">${w.tag}</span>` : '';
-    cells.push(`
-      <button class="${classes}" data-day="${d}" type="button">
-        <span class="cal-num">${d}</span>
-        ${tag}
-      </button>
-    `);
-  }
-  grid.innerHTML = cells.join('');
-}
-
-function updateMonthLabel() {
-  document.getElementById('monthLabel').textContent = `${MONTH.year}년 ${MONTH.month}월`;
-  // 미래 월 버튼 비활성화 — 오늘(2026-04) 이후 월은 이동 불가
-  const TODAY_Y = 2026, TODAY_M = 4;
-  const isFuture = (MONTH.year > TODAY_Y) || (MONTH.year === TODAY_Y && MONTH.month >= TODAY_M);
-  document.querySelector('[data-month="1"]').disabled = isFuture;
-}
-
-/* Day sheet */
-const backdrop = document.getElementById('sheetBackdrop');
-const sheet = document.getElementById('sheet');
-function openDay(d) {
-  const w = MONTH.workouts[d];
-  if (!w) {
-    toast(`${MONTH.month}월 ${d}일 · 쉼`);
-    return;
-  }
-  document.getElementById('sheetDate').textContent =
-    `${MONTH.month}월 ${d}일 · ${['월','화','수','목','금','토','일'][(MONTH.startDow + d - 1) % 7]}`;
-  const partMap = { '가': '가슴', '등': '등', '어': '어깨', '하': '하체', '팔': '팔', '유': '유산소', '가·어': '가슴 · 어깨' };
-  document.getElementById('sheetTitle').textContent = partMap[w.tag] || w.tag;
-  document.getElementById('ssVol').textContent = w.vol.toLocaleString() + ' kg';
-  document.getElementById('ssMin').textContent = w.min + '분';
-  document.getElementById('ssPR').textContent = w.pr;
-  document.getElementById('sheetList').innerHTML = w.ex.map(e => `
-    <div class="sheet-ex">
-      <span class="name">${e.n}</span>
-      <span class="sets">${e.s}</span>
-    </div>
-  `).join('');
-  backdrop.classList.add('is-open');
-  sheet.classList.add('is-open');
-}
-function closeSheet() {
-  backdrop.classList.remove('is-open');
-  sheet.classList.remove('is-open');
-}
-
-document.getElementById('calGrid').addEventListener('click', (e) => {
-  const b = e.target.closest('[data-day]');
-  if (!b) return;
-  openDay(+b.dataset.day);
-});
-backdrop.addEventListener('click', closeSheet);
-
-/* ============ 캘린더 꾹누르기 → 기록 삭제 (Wave C) ============
-   renderCal 이 innerHTML 재생성하므로 container delegation 패턴.
-   짧은 탭 = 기존 openDay (상세), 500ms+ = 삭제 바텀시트 */
-function bindCalendarLongPress(container, onLongPress, ms = 500) {
-  let timer = null, startX = 0, startY = 0, currentEl = null, fired = false, cancelled = false;
-  const clear = () => {
-    if (timer) { clearTimeout(timer); timer = null; }
-    if (currentEl) currentEl.style.transform = '';
-    currentEl = null;
-  };
-  container.addEventListener('pointerdown', (e) => {
-    const el = e.target.closest('[data-day]');
-    if (!el || el.classList.contains('outside')) return;
-    currentEl = el;
-    cancelled = false; fired = false;
-    startX = e.clientX; startY = e.clientY;
-    el.style.transition = 'transform 200ms var(--ease)';
-    timer = setTimeout(() => {
-      if (cancelled || !currentEl) return;
-      fired = true;
-      const el2 = currentEl;
-      el2.style.transform = 'scale(0.96)';
-      if (navigator.vibrate) navigator.vibrate(12);
-      onLongPress(+el2.dataset.day);
-      setTimeout(() => { el2.style.transform = ''; }, 200);
-    }, ms);
-  });
-  container.addEventListener('pointermove', (e) => {
-    if (!currentEl) return;
-    if (Math.abs(e.clientX - startX) > 8 || Math.abs(e.clientY - startY) > 8) {
-      cancelled = true; clear();
-    }
-  });
-  container.addEventListener('pointerup', clear);
-  container.addEventListener('pointercancel', clear);
-  /* 롱프레스 발동 시 capture phase 로 delegation click 차단 */
-  container.addEventListener('click', (e) => {
-    if (fired) { e.stopPropagation(); e.preventDefault(); fired = false; }
-  }, true);
-}
-
-const delDayBackdrop = document.getElementById('delDayBackdrop');
-const delDaySheet = document.getElementById('delDaySheet');
-let _pendingDelDay = null; // Wave 11.15 — confirm 시 활용
-function openDelDaySheet(d) {
-  _pendingDelDay = d;
-  const wd = ['월','화','수','목','금','토','일'][(MONTH.startDow + d - 1) % 7];
-  document.getElementById('delDayTitle').textContent = `${MONTH.month}월 ${d}일 · ${wd} 기록`;
-  delDayBackdrop.classList.add('is-open');
-  delDaySheet.classList.add('is-open');
-}
-function closeDelDaySheet() {
-  delDayBackdrop.classList.remove('is-open');
-  delDaySheet.classList.remove('is-open');
-}
-delDayBackdrop.addEventListener('click', closeDelDaySheet);
-delDaySheet.addEventListener('click', async (e) => {
-  const act = e.target.closest('[data-del]');
-  if (!act) return;
-  const type = act.dataset.del;
-  const day = _pendingDelDay;
-  closeDelDaySheet();
-  if (type !== 'confirm') return;
-  toast('기록 삭제됨');
-  // Wave 11.15 — Dexie 삭제 + 재렌더 (mocks IIFE 격리 우회). day 외 sessionId 우선.
-  if (window.gymStats?.deleteSessionByDay && Number.isFinite(day)) {
-    try {
-      const sessionId = MONTH.workouts?.[day]?.sessionId || null;
-      await window.gymStats.deleteSessionByDay(day, sessionId);
-      await loadMonthWorkouts();
-      renderCal();
-      if (window.gymStats?.applyTodayToCalendar) window.gymStats.applyTodayToCalendar();
-    } catch (err) {
-      console.error('[gym] deleteSessionByDay', err);
-    }
-  }
-});
-
-bindCalendarLongPress(document.getElementById('calGrid'), openDelDaySheet);
-
-/* Month nav — Wave 11.6C 월 이동 시 Dexie 재쿼리 */
-document.querySelectorAll('[data-month]').forEach(b => {
-  b.addEventListener('click', async () => {
-    if (b.disabled) return;
-    const dir = +b.dataset.month;
-    MONTH.month += dir;
-    if (MONTH.month > 12) { MONTH.month = 1; MONTH.year++; }
-    if (MONTH.month < 1) { MONTH.month = 12; MONTH.year--; }
-    /* 해당 월의 첫 요일 재계산: getDay (0=일) → (+6)%7 (0=월) */
-    MONTH.startDow = (new Date(MONTH.year, MONTH.month - 1, 1).getDay() + 6) % 7;
-    MONTH.daysInMonth = new Date(MONTH.year, MONTH.month, 0).getDate();
-    MONTH.today = (MONTH.year === 2026 && MONTH.month === 4) ? 22 : -1; // 오늘 표시는 4월에만
-    await loadMonthWorkouts();
-    renderCal();
-    updateMonthLabel();
-    // Wave 11.13 — 월 변경 후 today 클래스 SPA hijack (mocks MONTH.today 4월=22 하드코딩 우회)
-    if (window.gymStats?.applyTodayToCalendar) {
-      window.gymStats.applyTodayToCalendar();
-    }
-    const hasData = Object.keys(MONTH.workouts).length > 0;
-    if (!hasData) toast(`${MONTH.year}년 ${MONTH.month}월 — 기록 없음`);
-  });
-});
-
-document.querySelectorAll('[data-nav]').forEach(b => {
-  b.addEventListener('click', () => {
-    window.location.href = b.dataset.nav === 'home' ? 'home.html' : 'admin.html';
-  });
-});
-
-let toastTimer;
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('is-show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove('is-show'), 1500);
-}
-
-/* Init — Wave 11.6C: Dexie 로드 후 렌더. fire-and-forget (첫 프레임은 빈 그리드 → 100ms 내 갱신) */
-(async () => {
-  await loadMonthWorkouts();
-  renderCal();
-  updateMonthLabel();
-})();
-
-/* Wave 11.11 — SPA hijack: §9-2 볼륨 비교 갱신 (mocks IIFE 격리 우회) */
-if (window.gymStats) {
-  window.gymStats.mountStatsView()
-    .then(() => hydrateWeekSummary())
-    .catch(e => console.error('[gym] mountStatsView init', e));
-}
-
-/* v2 StatsA week-summary — mountStatsView 후 동일 데이터로 #wsNum/#wsChip/#wsSub 갱신 */
-async function hydrateWeekSummary() {
-  if (!window.gymStats?.summarizeVolumes || !window.gymQueries?.getSessionsByRange) return;
-  try {
-    const today = new Date();
-    const lookback = new Date(today); lookback.setDate(today.getDate() - 60);
-    const fromIso = lookback.toISOString().slice(0, 10);
-    const toIso = today.toISOString().slice(0, 10);
-    const sessions = await window.gymQueries.getSessionsByRange(fromIso, toIso);
-    const v = window.gymStats.summarizeVolumes(sessions);
-    const week = v.week;
-    const wsNum = document.getElementById('wsNum');
-    const wsChip = document.getElementById('wsChip');
-    const wsSub = document.getElementById('wsSub');
-    if (wsNum) wsNum.textContent = (week.current || 0).toLocaleString();
-    if (wsChip) {
-      wsChip.classList.remove('is-down', 'is-flat');
-      if (week.delta == null) { wsChip.textContent = '신규'; }
-      else if (week.sign === 'down') { wsChip.textContent = `${week.delta}%`; wsChip.classList.add('is-down'); }
-      else if (week.sign === 'flat') { wsChip.textContent = '±0%'; wsChip.classList.add('is-flat'); }
-      else { wsChip.textContent = `+${week.delta}%`; }
-    }
-    if (wsSub) wsSub.textContent = `지난 주 ${(week.previous || 0).toLocaleString()}kg 대비`;
-  } catch (e) {
-    console.warn('[stats] hydrateWeekSummary', e);
-  }
-}
-
-/* ============ Wave v2 — 3탭 전환 + 부위별 분포 ============ */
-const PARTS_FALLBACK = [
-  { key: 'chest',    name: '가슴', count: 4, color: '#d97757' },
-  { key: 'back',     name: '등',   count: 3, color: '#788c5d' },
-  { key: 'legs',     name: '하체', count: 3, color: '#b85a3e' },
-  { key: 'shoulder', name: '어깨', count: 2, color: '#c9a96e' },
-  { key: 'arms',     name: '팔',   count: 2, color: '#6b8a9c' },
-];
-
-function renderBodyParts(parts) {
-  const total = parts.reduce((s, p) => s + p.count, 0) || 1;
-  document.getElementById('bpTotalNum').textContent = String(total);
-  // 누적 막대
-  const stack = document.getElementById('bpStack');
-  stack.innerHTML = parts.map(p => {
-    const pct = (p.count / total) * 100;
-    return `<div class="bp-stack-seg" style="width:${pct.toFixed(1)}%;background:${p.color}"></div>`;
-  }).join('');
-  // 행 리스트
-  const list = document.getElementById('bpList');
-  list.innerHTML = parts.map(p => {
-    const pct = ((p.count / total) * 100).toFixed(0);
-    return `
-      <div class="bp-row">
-        <span class="bp-row-dot" style="background:${p.color}"></span>
-        <span class="bp-row-name">${p.name}</span>
-        <span class="bp-row-bar"><span class="bp-row-fill" style="width:${pct}%;background:${p.color}"></span></span>
-        <span class="bp-row-count">${p.count}<span style="font-size:10px;color:var(--text-faint);margin-left:2px">회</span></span>
-        <span class="bp-row-pct">${pct}%</span>
-      </div>
-    `;
-  }).join('');
-}
-
-async function loadBodyParts() {
-  // SPA: stats.js 의 summarizeBodyParts 사용. mocks: fallback.
-  if (window.gymStats?.summarizeBodyParts && window.gymQueries?.getSessionsByRange) {
-    try {
-      const today = new Date();
-      const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-01`;
-      const monthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-      const monthEnd = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-${String(monthLastDay).padStart(2,'0')}`;
-      const sessions = await window.gymQueries.getSessionsByRange(monthStart, monthEnd);
-      const parts = window.gymStats.summarizeBodyParts(sessions);
-      renderBodyParts(parts.length ? parts : PARTS_FALLBACK);
-      return;
-    } catch (err) {
-      console.warn('[stats] body parts fetch failed, fallback', err);
-    }
-  }
-  renderBodyParts(PARTS_FALLBACK);
-}
-
-/* ============ Wave v2 — Trend SVG 라인차트 ============ */
-const TREND_FALLBACK = [55, 62, 58, 71, 68, 75, 82, 86]; // 8주, K 단위
-
-function renderTrendChart(weeklyVols) {
-  /* weeklyVols: [{vol}] 또는 [number] 배열 (오래된 → 최신) */
-  const data = weeklyVols.map(v => typeof v === 'number' ? v : (v.vol || 0));
-  if (!data.length) return;
-  const w = 280, h = 110;
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const pts = data.map((v, i) => {
-    const x = (i / (data.length - 1)) * w;
-    const y = h - ((v - min) / range) * h;
-    return [x, y];
-  });
-  const linePath = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
-  const areaPath = `${linePath} L${w} ${h} L0 ${h} Z`;
-  document.getElementById('trendLine').setAttribute('d', linePath);
-  document.getElementById('trendArea').setAttribute('d', areaPath);
-  const dotsEl = document.getElementById('trendDots');
-  dotsEl.innerHTML = pts.map((p, i) => {
+  // 추이 라인 차트 SVG
+  const svg = document.getElementById('trend-svg');
+  const data = [55,62,58,71,68,75,82,86];
+  const max = Math.max(...data), min = Math.min(...data);
+  const W = 280, H = 110;
+  const pts = data.map((v,i) => [(i/(data.length-1))*W, H - ((v-min)/(max-min))*H]);
+  const path = pts.map((p,i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
+  let svgInner = '<defs><linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(217,119,87,0.32)"/><stop offset="100%" stop-color="rgba(217,119,87,0)"/></linearGradient></defs>';
+  svgInner += '<path d="' + path + ' L' + W + ' ' + H + ' L0 ' + H + ' Z" fill="url(#grad2)"/>';
+  svgInner += '<path d="' + path + '" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
+  pts.forEach((p, i) => {
     const last = i === pts.length - 1;
-    const r = last ? 5 : 2.5;
-    const fill = last ? 'var(--accent)' : 'rgba(255,255,255,0.5)';
-    const stroke = last ? '#0c0a08' : 'none';
-    const sw = last ? 3 : 0;
-    return `<circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
-  }).join('');
-  const axis = document.getElementById('trendAxis');
-  const labels = ['8주전', '6주전', '4주전', '2주전', '이번'];
-  axis.innerHTML = labels.map((l, i) => `<text x="${(i / 4) * w}" y="${h + 18}" text-anchor="middle">${l}</text>`).join('');
-  // 헤드라인 = 마지막 주 vol (천단위 K)
-  const lastVol = data[data.length - 1];
-  const headStr = lastVol >= 1000 ? (lastVol / 1000).toFixed(1) + 'K' : String(lastVol);
-  document.getElementById('trendNum').textContent = headStr;
-  // delta chip = 이번 vs 지난주
-  if (data.length >= 2 && data[data.length - 2] > 0) {
-    const delta = Math.round(((lastVol - data[data.length - 2]) / data[data.length - 2]) * 100);
-    const sign = delta > 0 ? '↑ +' : delta < 0 ? '↓ ' : '±';
-    document.getElementById('trendChip').textContent = `${sign}${Math.abs(delta)}%`;
-  }
-}
-
-async function loadTrend() {
-  if (window.gymStats?.summarizeWeeklyTrend && window.gymQueries?.getSessionsByRange) {
-    try {
-      const today = new Date();
-      const from = new Date(today); from.setDate(today.getDate() - 8 * 7);
-      const fromIso = from.toISOString().slice(0, 10);
-      const toIso = today.toISOString().slice(0, 10);
-      const sessions = await window.gymQueries.getSessionsByRange(fromIso, toIso);
-      const trend = window.gymStats.summarizeWeeklyTrend(sessions, 8);
-      const hasData = trend.some(t => t.vol > 0);
-      renderTrendChart(hasData ? trend : TREND_FALLBACK.map(v => ({ vol: v * 100 })));
-      return;
-    } catch (err) {
-      console.warn('[stats] trend fetch failed, fallback', err);
-    }
-  }
-  renderTrendChart(TREND_FALLBACK.map(v => ({ vol: v * 100 })));
-}
-
-/* 탭 전환 — 패널 토글 */
-const tabs = document.querySelectorAll('.stats-tab');
-const panels = document.querySelectorAll('.stats-panel');
-let bodyLoaded = false;
-let trendLoaded = false;
-tabs.forEach(t => {
-  t.addEventListener('click', () => {
-    const name = t.dataset.tab;
-    tabs.forEach(x => {
-      const a = x.dataset.tab === name;
-      x.classList.toggle('is-active', a);
-      x.setAttribute('aria-selected', a ? 'true' : 'false');
-    });
-    panels.forEach(p => { p.hidden = p.dataset.panel !== name; });
-    if (name === 'body' && !bodyLoaded) {
-      loadBodyParts();
-      bodyLoaded = true;
-    }
-    if (name === 'trend' && !trendLoaded) {
-      loadTrend();
-      trendLoaded = true;
-    }
+    svgInner += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (last ? 5 : 2.5) + '" fill="' + (last ? 'var(--accent)' : 'rgba(255,255,255,0.5)') + '"' + (last ? ' stroke="#0c0a08" stroke-width="3"' : '') + '/>';
   });
-});
+  const labels = ['8주전','6주전','4주전','2주전','이번'];
+  svgInner += '<g fill="rgba(255,255,255,0.35)" font-size="9">';
+  labels.forEach((l, i) => {
+    svgInner += '<text x="' + ((i/4)*W) + '" y="' + (H+18) + '" text-anchor="middle" class="kr">' + l + '</text>';
+  });
+  svgInner += '</g>';
+  svg.innerHTML = svgInner;
 </script>
-
 </body>
 </html>
