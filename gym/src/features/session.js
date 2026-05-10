@@ -562,6 +562,9 @@ function mountSessionActive(doc, block) {
   setTextById(doc, 'cardProgressVol', `${totalDone.toLocaleString()} / ${totalPlanned.toLocaleString()}kg`);
   setTextById(doc, 'cardProgressPct', `${pct}%`);
 
+  // spec §6-3-1 — 스와이프 핸들러 wire (idempotent — dataset.spaHooked guard)
+  try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
+
   return { mounted: true, branch: 'active', exerciseId: block.exerciseId, currentSetIdx: cur };
 }
 
@@ -596,6 +599,164 @@ function renderSetDotHtml(idx, set, isCurrent) {
           <div style="font-size:10px;letter-spacing:0.06em;">S${setNum}</div>
           <div style="font-size:13px;margin-top:4px;">${escapeHtml(valueText)}</div>
         </div>`;
+}
+
+/**
+ * spec §6-3-1 — 좌/우 스와이프 (60px 임계, 수평 dominant). cardSwipeArea 에 pointer 이벤트 부착.
+ *  - 좌 스와이프 (←) : 현재 set done:true + 다음 set 진행. 마지막 set 이면 새 set 추가 (spec §6-3-1).
+ *  - 우 스와이프 (→) : 직전 done set revert (done:false) → 수정 모드. 첫 set 이면 무시.
+ *  - 햅틱: navigator.vibrate(10) — iOS Safari 미지원이지만 Android·기타 PWA 동작.
+ *  - 수직 스크롤 보존: cardSwipeArea CSS `touch-action: pan-y`.
+ */
+function wireSwipeHandlers(doc) {
+  const area = doc.getElementById('cardSwipeArea');
+  if (!area) return;
+  if (area.dataset.spaHooked === '1') return;
+
+  let startX = 0;
+  let startY = 0;
+  let tracking = false;
+
+  const onDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    tracking = true;
+  };
+
+  const onUp = async (e) => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    // spec §6-3-1 — 60px 임계 + 수평 dominant (수직 이동이 크면 스크롤로 판정)
+    if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy)) return;
+    try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
+    if (dx < 0) await handleLeftSwipe();
+    else await handleRightSwipe();
+  };
+
+  const onCancel = () => { tracking = false; };
+
+  area.addEventListener('pointerdown', onDown);
+  area.addEventListener('pointerup', onUp);
+  area.addEventListener('pointercancel', onCancel);
+  area.dataset.spaHooked = '1';
+}
+
+/**
+ * 현재 active block + cursor 조회 (mountSessionActive 와 동일 정책 — 마지막 single 블록).
+ *  - cur : 첫 un-done set idx. 모두 done 이면 -1.
+ *  - effectiveCur : cur === -1 이면 sets.length - 1 (표시상의 "현재 set").
+ *  - 반환 null : active 세션·single 블록 부재.
+ */
+async function getCurrentBlockAndCursor() {
+  const session = await getActiveSession();
+  if (!session || !Array.isArray(session.blocks)) return null;
+  const singles = session.blocks.filter((b) => b && b.type === 'single');
+  if (!singles.length) return null;
+  const block = singles[singles.length - 1];
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  const cur = sets.findIndex((s) => s && !s.done);
+  const effectiveCur = cur === -1 ? Math.max(0, sets.length - 1) : cur;
+  return { session, block, cur, effectiveCur };
+}
+
+/**
+ * spec §6-3-1 좌 스와이프.
+ *  - cur 가 유효 : sets[cur].done = true (preset:false).
+ *  - cur === sets.length - 1 (마지막 set) : 새 set 추가 (이전 값 preset 카피).
+ *  - cur === -1 (모두 이미 done) : 새 set 추가만 (advance 효과).
+ */
+export async function handleLeftSwipe() {
+  let ctx;
+  try { ctx = await getCurrentBlockAndCursor(); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] handleLeftSwipe ctx', e);
+    }
+    return;
+  }
+  if (!ctx) return;
+  const { session, block, cur } = ctx;
+  const blocks = session.blocks.slice();
+  const blockIdx = blocks.indexOf(block);
+  if (blockIdx === -1) return;
+  const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
+
+  if (cur === -1) {
+    const last = sets[sets.length - 1] || {};
+    sets.push({
+      weight: last.weight ?? null,
+      reps: last.reps ?? null,
+      done: false,
+      preset: true,
+      pr: false,
+    });
+  } else {
+    const prev = sets[cur] || {};
+    sets[cur] = {
+      weight: prev.weight ?? null,
+      reps: prev.reps ?? null,
+      done: true,
+      preset: false,
+      pr: !!prev.pr,
+    };
+    if (cur === sets.length - 1) {
+      sets.push({
+        weight: prev.weight ?? null,
+        reps: prev.reps ?? null,
+        done: false,
+        preset: true,
+        pr: false,
+      });
+    }
+  }
+
+  blocks[blockIdx] = { ...block, sets };
+  try { await upsertSession({ ...session, blocks }); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] handleLeftSwipe upsert', e);
+    }
+    return;
+  }
+  await mountSessionView();
+}
+
+/**
+ * spec §6-3-1 우 스와이프.
+ *  - effectiveCur === 0 (첫 set) : 무시.
+ *  - 직전 set (effectiveCur - 1) 의 done:false → 수정 모드 (다시 현재 set 으로).
+ */
+export async function handleRightSwipe() {
+  let ctx;
+  try { ctx = await getCurrentBlockAndCursor(); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] handleRightSwipe ctx', e);
+    }
+    return;
+  }
+  if (!ctx) return;
+  const { session, block, effectiveCur } = ctx;
+  if (effectiveCur === 0) return; // spec §6-3-1 — 첫 set 우 스와이프 무시
+  const blocks = session.blocks.slice();
+  const blockIdx = blocks.indexOf(block);
+  if (blockIdx === -1) return;
+  const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
+  const prevIdx = effectiveCur - 1;
+  if (prevIdx < 0 || prevIdx >= sets.length) return;
+  sets[prevIdx] = { ...sets[prevIdx], done: false };
+  blocks[blockIdx] = { ...block, sets };
+  try { await upsertSession({ ...session, blocks }); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] handleRightSwipe upsert', e);
+    }
+    return;
+  }
+  await mountSessionView();
 }
 
 /**
@@ -769,6 +930,8 @@ if (typeof window !== 'undefined') {
     dumpActiveSessionFromState,
     finalizeActiveSession,
     mountSessionView,
+    handleLeftSwipe,
+    handleRightSwipe,
     getActivePart,
     setActivePart,
   };

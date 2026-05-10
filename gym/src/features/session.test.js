@@ -17,6 +17,8 @@ import {
   getActivePart,
   setActivePart,
   mountSessionView,
+  handleLeftSwipe,
+  handleRightSwipe,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -943,5 +945,114 @@ describe('mountSessionView graceful', () => {
     } finally {
       if (origDoc) globalThis.document = origDoc;
     }
+  });
+});
+
+/* ───────────────── handleLeftSwipe / handleRightSwipe (spec §6-3-1) ───────────────── */
+
+async function seedActiveWithBenchSets(sets) {
+  await db.sessions.put({
+    id: 'active-swipe-test',
+    date: '2026-05-10',
+    startTime: Date.now() - 10 * 60_000,
+    endTime: null,
+    blocks: [{ type: 'single', exerciseId: 'bench_press', sets }],
+    tags: ['chest'],
+    totalVolume: 0,
+    totalCalories: 0,
+    durationMin: 0,
+    status: 'active',
+  });
+}
+
+async function getActiveBenchSets() {
+  const rows = await db.sessions.where('status').equals('active').toArray();
+  expect(rows).toHaveLength(1);
+  return rows[0].blocks[0].sets;
+}
+
+describe('handleLeftSwipe (spec §6-3-1)', () => {
+  it('cur 유효 → sets[cur].done=true, preset:false', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    await handleLeftSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets[1].done).toBe(true);
+    expect(sets[1].preset).toBe(false);
+    expect(sets[2].done).toBe(false);
+    expect(sets).toHaveLength(3); // 마지막 set 아니므로 push 없음
+  });
+
+  it('cur === sets.length - 1 (마지막 set) → 새 set 추가 (preset:true 이전 값 카피)', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    await handleLeftSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets).toHaveLength(3); // push 발생
+    expect(sets[1].done).toBe(true);
+    expect(sets[2]).toMatchObject({ weight: 60, reps: 10, done: false, preset: true });
+  });
+
+  it('cur === -1 (모두 done) → 새 set 1개 push 만', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+    ]);
+    await handleLeftSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets).toHaveLength(3);
+    expect(sets[2]).toMatchObject({ weight: 60, reps: 10, done: false, preset: true });
+  });
+
+  it('active session 부재 → no-op (예외 없음)', async () => {
+    // active 없음 — 그냥 통과
+    await expect(handleLeftSwipe()).resolves.toBeUndefined();
+  });
+});
+
+describe('handleRightSwipe (spec §6-3-1)', () => {
+  it('effectiveCur === 0 (첫 set) → 무시 (sets 변화 없음)', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    await handleRightSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets[0].done).toBe(false);
+    expect(sets[1].done).toBe(false);
+  });
+
+  it('cur === 2 → 직전 set (idx 1) done:false revert', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: false, preset: true, pr: false },
+    ]);
+    await handleRightSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets[0].done).toBe(true);
+    expect(sets[1].done).toBe(false); // revert
+    expect(sets[2].done).toBe(false);
+  });
+
+  it('모든 set done → effectiveCur = sets.length - 1 → 마지막 직전 set revert', async () => {
+    await seedActiveWithBenchSets([
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+      { weight: 60, reps: 10, done: true, preset: false, pr: false },
+    ]);
+    await handleRightSwipe();
+    const sets = await getActiveBenchSets();
+    expect(sets[1].done).toBe(false); // effectiveCur=2 → revert idx=1
+    expect(sets[2].done).toBe(true); // 마지막 set 자체는 그대로
+  });
+
+  it('active session 부재 → no-op (예외 없음)', async () => {
+    await expect(handleRightSwipe()).resolves.toBeUndefined();
   });
 });

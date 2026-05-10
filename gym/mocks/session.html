@@ -144,8 +144,8 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <div id="cardSetProgress" class="num" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.1em;">SET 03 / 05</div>
       </div>
     </div>
-    <!-- 메인 영역 -->
-    <div style="position:absolute;top:150px;left:0;right:0;padding:0 24px;">
+    <!-- 메인 영역 (spec §6-3-1 — 좌/우 스와이프 hit area, touch-action: pan-y) -->
+    <div id="cardSwipeArea" style="position:absolute;top:150px;left:0;right:0;padding:0 24px;touch-action:pan-y;user-select:none;-webkit-user-select:none;">
       <div style="display:flex;align-items:center;justify-content:center;gap:12px;">
         <span style="font-size:14px;color:rgba(255,255,255,0.3);">←</span>
         <div id="cardPrevSet" class="num" style="font-size:16px;color:rgba(255,255,255,0.35);letter-spacing:0.04em;">55kg × 9</div>
