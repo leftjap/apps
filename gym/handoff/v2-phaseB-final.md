@@ -121,7 +121,7 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
 - [x] SessionC 마운트 (b) 스와이프 (§6-3-1) — 본 세션 (`wireSwipeHandlers` + `handleLeftSwipe` + `handleRightSwipe` + `cardSwipeArea` `touch-action: pan-y` + 8 신규 vitest)
 - [x] SessionC 마운트 (c) 빈 공간 ± 증감 (§6-3) — 본 세션 (`handleTap` 좌 30%/우 30% + `applyTapDelta` 장비별 증분 barbell·machine·cable 5/dumbbell 2/bodyweight 0/reps 1 + 0 clamp + preset:false + `flashElement` 150ms 미세 플래시 + 10 신규 vitest)
 - [x] SessionC 마운트 (d) 커스텀 키패드 (§6-3-2) — 본 세션 (`mocks/session.html` 바텀시트 + dim backdrop 마크업 + 12 키 + 완료 + handleTap 중앙 40% → openKeypad / `updateKeypadBuf` 순수함수 (1~9·.·del) + `openKeypad`·`closeKeypad`·`wireKeypad`·`applyKeypadValue` (§6-10 DOM 한 번 생성 transform/opacity 토글) + 배경 탭·아래 60px 스와이프 취소 + 13 신규 vitest)
-- [ ] SessionC 마운트 (e) 프리셋 (§6-3-3)
+- [x] SessionC 마운트 (e) 프리셋 (§6-3-3) — 본 세션 (mountSessionActive 에 preset opacity 토글 0.45/1 추가. 우선순위 ① 직전 세트 / ② 이전 세션 / ③ defaultWeight 는 기존 addExerciseToActiveSession + buildPresetSets + handleLeftSwipe push 로 자동 동작 — 기존 75+ 단위 테스트로 회귀 방지)
 - [ ] SessionC 마운트 (f) 꾹누르기 (§6-9)
 - [ ] SessionC 마운트 (g) PR 감지 (§6-11)
 - [x] `mocks/session.html` 가이드 텍스트 "← 이전 수정 / 완료 →" 제거 — 본 세션 (병합 시 동시 처리)

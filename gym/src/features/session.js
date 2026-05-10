@@ -529,6 +529,14 @@ function mountSessionActive(doc, block) {
   setTextById(doc, 'cardWeight', String(weight));
   setTextById(doc, 'cardReps', String(reps));
 
+  // spec §6-3-3 — preset (placeholder) 톤: text-faint (opacity 0.45) / 사용자 입력: text-strong (opacity 1)
+  const isPreset = !!currentSet.preset;
+  const presetOpacity = isPreset ? '0.45' : '1';
+  const cardWeightEl = doc.getElementById('cardWeight');
+  const cardRepsEl = doc.getElementById('cardReps');
+  if (cardWeightEl) cardWeightEl.style.opacity = presetOpacity;
+  if (cardRepsEl) cardRepsEl.style.opacity = presetOpacity;
+
   // 이전 세트 ("55kg × 9") — 직전 set 의 weight/reps. 부재 시 hidden.
   const prevEl = doc.getElementById('cardPrevSet');
   if (prevEl) {
