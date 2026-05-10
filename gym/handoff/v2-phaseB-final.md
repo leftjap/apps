@@ -119,7 +119,7 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
 - [x] `handoff/v2-redesign.md §11·§12` 읽기
 - [x] SessionC 마운트 (a) 정적 데이터 바인딩 — 본 세션 (`src/features/session.js` mountSessionView 분기 + mountSessionActive + mocks/session.html id 부착)
 - [x] SessionC 마운트 (b) 스와이프 (§6-3-1) — 본 세션 (`wireSwipeHandlers` + `handleLeftSwipe` + `handleRightSwipe` + `cardSwipeArea` `touch-action: pan-y` + 8 신규 vitest)
-- [ ] SessionC 마운트 (c) 빈 공간 ± 증감 (§6-3)
+- [x] SessionC 마운트 (c) 빈 공간 ± 증감 (§6-3) — 본 세션 (`handleTap` 좌 30%/우 30% + `applyTapDelta` 장비별 증분 barbell·machine·cable 5/dumbbell 2/bodyweight 0/reps 1 + 0 clamp + preset:false + `flashElement` 150ms 미세 플래시 + 10 신규 vitest)
 - [ ] SessionC 마운트 (d) 커스텀 키패드 (§6-3-2)
 - [ ] SessionC 마운트 (e) 프리셋 (§6-3-3)
 - [ ] SessionC 마운트 (f) 꾹누르기 (§6-9)

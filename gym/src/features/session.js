@@ -602,11 +602,12 @@ function renderSetDotHtml(idx, set, isCurrent) {
 }
 
 /**
- * spec §6-3-1 — 좌/우 스와이프 (60px 임계, 수평 dominant). cardSwipeArea 에 pointer 이벤트 부착.
- *  - 좌 스와이프 (←) : 현재 set done:true + 다음 set 진행. 마지막 set 이면 새 set 추가 (spec §6-3-1).
- *  - 우 스와이프 (→) : 직전 done set revert (done:false) → 수정 모드. 첫 set 이면 무시.
- *  - 햅틱: navigator.vibrate(10) — iOS Safari 미지원이지만 Android·기타 PWA 동작.
- *  - 수직 스크롤 보존: cardSwipeArea CSS `touch-action: pan-y`.
+ * spec §6-3-1 + §6-3 — cardSwipeArea pointer 통합 핸들러 (스와이프 + 빈 공간 탭 증감).
+ *  - dx ≥ 60 + 수평 dominant : swipe (좌=완료·우=이전 수정)
+ *  - dx,dy < 10 (정적 클릭) : tap (좌 30%=감소 / 우 30%=증가, zone = cardWeightZone | cardRepsZone)
+ *  - 그 외 (애매한 drag) : 무시 (수직 스크롤 보존)
+ *  - 햅틱: swipe 시만 navigator.vibrate(10).
+ *  - touch-action: pan-y 로 수직 네이티브 스크롤 보존.
  */
 function wireSwipeHandlers(doc) {
   const area = doc.getElementById('cardSwipeArea');
@@ -629,11 +630,20 @@ function wireSwipeHandlers(doc) {
     tracking = false;
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
-    // spec §6-3-1 — 60px 임계 + 수평 dominant (수직 이동이 크면 스크롤로 판정)
-    if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy)) return;
-    try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
-    if (dx < 0) await handleLeftSwipe();
-    else await handleRightSwipe();
+    const adx = Math.abs(dx);
+    const ady = Math.abs(dy);
+    // spec §6-3-1 — 60px 임계 + 수평 dominant
+    if (adx >= 60 && adx > ady) {
+      try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
+      if (dx < 0) await handleLeftSwipe();
+      else await handleRightSwipe();
+      return;
+    }
+    // spec §6-3 — 정적 tap (이동 < 10px) → 좌 30% 감소·우 30% 증가
+    if (adx < 10 && ady < 10) {
+      await handleTap(doc, e.clientX, e.clientY);
+    }
+    // 그 외: 애매한 drag — 무시 (수직 스크롤로 처리됨)
   };
 
   const onCancel = () => { tracking = false; };
@@ -642,6 +652,106 @@ function wireSwipeHandlers(doc) {
   area.addEventListener('pointerup', onUp);
   area.addEventListener('pointercancel', onCancel);
   area.dataset.spaHooked = '1';
+}
+
+/**
+ * spec §6-3 — 빈 공간 탭 위치 → zone (weight/reps) + 좌 30%/우 30% 분기.
+ *  - cardWeightZone: 중량 증감 (장비별 증분 — applyTapDelta 참조)
+ *  - cardRepsZone: 횟수 증감 (1)
+ *  - 중앙 40% (0.3 ≤ ratio ≤ 0.7) : 키패드 영역 (단계 d) — 본 단계 무시
+ */
+async function handleTap(doc, x, y) {
+  const zones = [
+    ['cardWeightZone', 'weight'],
+    ['cardRepsZone', 'reps'],
+  ];
+  for (const [zoneId, field] of zones) {
+    const z = doc.getElementById(zoneId);
+    if (!z) continue;
+    const r = z.getBoundingClientRect();
+    if (y < r.top || y > r.bottom) continue;
+    if (x < r.left || x > r.right) continue;
+    const ratio = (x - r.left) / r.width;
+    if (ratio < 0.3) await applyTapDelta(field, -1);
+    else if (ratio > 0.7) await applyTapDelta(field, +1);
+    // 중앙 40% 는 (d) 키패드 — 본 단계 미처리
+    return;
+  }
+}
+
+/**
+ * spec §6-3 — 현재 set 의 weight/reps 증감.
+ *  - 장비별 증분 : barbell/machine/cable 5kg, dumbbell 2kg, bodyweight 중량 증감 불가, reps 1
+ *  - 0 이하 clamp (음수 방지)
+ *  - 변화 없으면 (e.g. 0 - 1 = -1 → clamp 0 = 동일) no-op
+ *  - preset:false 강제 (사용자 입력 → placeholder 해제)
+ *  - 갱신 후 mountSessionView 재호출 + flashElement(150ms)
+ */
+export async function applyTapDelta(field, deltaSign) {
+  if (field !== 'weight' && field !== 'reps') return;
+  if (deltaSign !== 1 && deltaSign !== -1) return;
+
+  let ctx;
+  try { ctx = await getCurrentBlockAndCursor(); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] applyTapDelta ctx', e);
+    }
+    return;
+  }
+  if (!ctx) return;
+  const { session, block, effectiveCur } = ctx;
+  const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
+  const set = sets[effectiveCur];
+  if (!set) return;
+
+  // 장비별 증분
+  let delta = 1;
+  if (field === 'weight') {
+    let ex;
+    try { ex = await getExerciseDefaults(block.exerciseId); }
+    catch (_) { ex = null; }
+    const eq = ex?.equipment;
+    if (eq === 'bodyweight' || eq === 'cardio') return; // 중량 증감 불가
+    delta = eq === 'dumbbell' ? 2 : 5;
+  }
+
+  const curVal = Number(set[field]) || 0;
+  let nextVal = curVal + deltaSign * delta;
+  if (nextVal < 0) nextVal = 0;
+  if (nextVal === curVal) return; // no-op
+
+  const blocks = session.blocks.slice();
+  const blockIdx = blocks.indexOf(block);
+  if (blockIdx === -1) return;
+  sets[effectiveCur] = { ...set, [field]: nextVal, preset: false };
+  blocks[blockIdx] = { ...block, sets };
+
+  try { await upsertSession({ ...session, blocks }); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] applyTapDelta upsert', e);
+    }
+    return;
+  }
+  await mountSessionView();
+
+  if (typeof document !== 'undefined') {
+    flashElement(document.getElementById(field === 'weight' ? 'cardWeight' : 'cardReps'));
+  }
+}
+
+/**
+ * spec §6-3 — 증감 시 150ms 미세 플래시 (opacity dip). element 가 있으면 짧게 0.45→1 복귀.
+ */
+function flashElement(el) {
+  if (!el || !el.style) return;
+  el.style.transition = 'opacity 75ms ease';
+  el.style.opacity = '0.45';
+  setTimeout(() => {
+    el.style.opacity = '1';
+    setTimeout(() => { el.style.transition = ''; }, 75);
+  }, 75);
 }
 
 /**
@@ -932,6 +1042,7 @@ if (typeof window !== 'undefined') {
     mountSessionView,
     handleLeftSwipe,
     handleRightSwipe,
+    applyTapDelta,
     getActivePart,
     setActivePart,
   };

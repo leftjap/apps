@@ -19,6 +19,7 @@ import {
   mountSessionView,
   handleLeftSwipe,
   handleRightSwipe,
+  applyTapDelta,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1054,5 +1055,144 @@ describe('handleRightSwipe (spec §6-3-1)', () => {
 
   it('active session 부재 → no-op (예외 없음)', async () => {
     await expect(handleRightSwipe()).resolves.toBeUndefined();
+  });
+});
+
+/* ───────────────── applyTapDelta (spec §6-3) ───────────────── */
+
+async function seedActiveBench(weight, reps) {
+  await db.sessions.put({
+    id: 'active-tap-test',
+    date: '2026-05-10',
+    startTime: Date.now() - 10 * 60_000,
+    endTime: null,
+    blocks: [{
+      type: 'single',
+      exerciseId: 'bench_press', // barbell
+      sets: [{ weight, reps, done: false, preset: true, pr: false }],
+    }],
+    tags: ['chest'],
+    totalVolume: 0,
+    totalCalories: 0,
+    durationMin: 0,
+    status: 'active',
+  });
+}
+
+async function seedActiveDumbbell(weight, reps) {
+  await db.sessions.put({
+    id: 'active-tap-test',
+    date: '2026-05-10',
+    startTime: Date.now() - 10 * 60_000,
+    endTime: null,
+    blocks: [{
+      type: 'single',
+      exerciseId: 'dumbbell_curl', // dumbbell
+      sets: [{ weight, reps, done: false, preset: true, pr: false }],
+    }],
+    tags: ['arms'],
+    totalVolume: 0,
+    totalCalories: 0,
+    durationMin: 0,
+    status: 'active',
+  });
+}
+
+async function seedActiveBodyweight(reps) {
+  await db.sessions.put({
+    id: 'active-tap-test',
+    date: '2026-05-10',
+    startTime: Date.now() - 10 * 60_000,
+    endTime: null,
+    blocks: [{
+      type: 'single',
+      exerciseId: 'pull_up', // bodyweight
+      sets: [{ weight: null, reps, done: false, preset: true, pr: false }],
+    }],
+    tags: ['back'],
+    totalVolume: 0,
+    totalCalories: 0,
+    durationMin: 0,
+    status: 'active',
+  });
+}
+
+async function getActiveSet0() {
+  const rows = await db.sessions.where('status').equals('active').toArray();
+  return rows[0]?.blocks?.[0]?.sets?.[0];
+}
+
+describe('applyTapDelta (spec §6-3)', () => {
+  it('barbell weight +1 → +5kg, preset:false', async () => {
+    await seedActiveBench(60, 10);
+    await applyTapDelta('weight', +1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(65);
+    expect(s.preset).toBe(false);
+  });
+
+  it('barbell weight -1 → -5kg', async () => {
+    await seedActiveBench(60, 10);
+    await applyTapDelta('weight', -1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(55);
+  });
+
+  it('dumbbell weight +1 → +2kg', async () => {
+    await seedActiveDumbbell(16, 10);
+    await applyTapDelta('weight', +1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(18);
+  });
+
+  it('dumbbell weight -1 → -2kg', async () => {
+    await seedActiveDumbbell(16, 10);
+    await applyTapDelta('weight', -1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(14);
+  });
+
+  it('bodyweight weight 증감 불가 (no-op)', async () => {
+    await seedActiveBodyweight(10);
+    await applyTapDelta('weight', +1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBeNull();
+    expect(s.preset).toBe(true); // preset 그대로
+  });
+
+  it('reps +1', async () => {
+    await seedActiveBench(60, 10);
+    await applyTapDelta('reps', +1);
+    const s = await getActiveSet0();
+    expect(s.reps).toBe(11);
+  });
+
+  it('reps -1', async () => {
+    await seedActiveBench(60, 10);
+    await applyTapDelta('reps', -1);
+    const s = await getActiveSet0();
+    expect(s.reps).toBe(9);
+  });
+
+  it('weight 0 - 5 → 0 clamp (no-op, 변화 없음)', async () => {
+    await seedActiveBench(0, 10);
+    await applyTapDelta('weight', -1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(0);
+    expect(s.preset).toBe(true); // 변화 없으므로 preset 도 그대로
+  });
+
+  it('잘못된 field/sign → no-op', async () => {
+    await seedActiveBench(60, 10);
+    await applyTapDelta('garbage', +1);
+    await applyTapDelta('weight', 0);
+    await applyTapDelta('weight', 99);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(60);
+    expect(s.reps).toBe(10);
+  });
+
+  it('active session 부재 → no-op (예외 없음)', async () => {
+    await expect(applyTapDelta('weight', +1)).resolves.toBeUndefined();
   });
 });
