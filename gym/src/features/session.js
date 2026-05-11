@@ -635,6 +635,8 @@ function mountSessionActive(doc, block, session) {
   // (f-5-1) spec §6-8 — footer nav pill 동적 렌더 + click handler
   try { renderFooterPills(doc, session, block); } catch (e) { console.error('[gymSession] renderFooterPills', e); }
   try { wireFooterPillClick(doc); } catch (e) { console.error('[gymSession] wireFooterPillClick', e); }
+  // (f-5-3a) spec §6-9 — reorder mode drag 추적 (idempotent)
+  try { wireReorderDrag(doc); } catch (e) { console.error('[gymSession] wireReorderDrag', e); }
 
   // spec §6-3-1 — 스와이프 핸들러 wire (idempotent — dataset.spaHooked guard)
   try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
@@ -1089,9 +1091,9 @@ export function wireLongPress(doc, opts = {}) {
 
     el.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
-      // bubble 방지 — 자식 longpress target (예: 세트 도트) 이 부모 (cardSwipeArea active-card) 까지
-      // 동시 hold 발화하지 않도록. swipe 는 cardSwipeArea pointerdown 별도 — 도트 영역에선 swipe 의미 없음.
-      e.stopPropagation();
+      // 자식 longpress target (예: 세트 도트) 이 부모 (cardSwipeArea active-card) 까지 동시 발화 방지.
+      // stopPropagation 대신 target 검사 — pillsEl 의 wireReorderDrag bubble listener 등 외부 listener 보존.
+      if (e.target && e.target !== el && e.target.closest?.('[data-longpress]') !== el) return;
       sx = e.clientX;
       sy = e.clientY;
       pid = e.pointerId;
@@ -1276,6 +1278,66 @@ function wireFooterPillClick(doc) {
     mountSessionView().catch((err) => console.error('[gymSession] pill click mount', err));
   });
   pillsEl.dataset.spaHooked = '1';
+}
+
+/**
+ * spec §6-9 — reorder mode drag 추적 (f-5-3a).
+ *  - reorder mode 활성 + src pill 의 pointerdown → drag 시작.
+ *  - pointermove → src pill 의 transform 갱신 (scale 1.05 유지 + translate dx,dy).
+ *  - pointerup → drop 처리 (f-5-3c 후속, 본 단계는 setReorderMode(false) 만).
+ *  - pointercancel → drag 취소 + transform 복원.
+ *  - idempotent : pillsEl.dataset.spaDragHooked guard.
+ */
+function wireReorderDrag(doc) {
+  const pillsEl = doc.getElementById('sessionFooterPills');
+  if (!pillsEl || pillsEl.dataset.spaDragHooked === '1') return;
+
+  let dragging = false;
+  let dragPill = null;
+  let startX = 0;
+  let startY = 0;
+  let pointerId = null;
+
+  pillsEl.addEventListener('pointerdown', (e) => {
+    if (pillsEl.dataset.reorder !== '1') return;
+    const srcIdx = parseInt(pillsEl.dataset.reorderSrc, 10);
+    if (!Number.isFinite(srcIdx)) return;
+    const pill = e.target.closest(`[data-block-idx="${srcIdx}"]`);
+    if (!pill) return; // 다른 pill click 은 무시 (wireFooterPillClick 도 reorder 시 무시)
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    startX = e.clientX;
+    startY = e.clientY;
+    pointerId = e.pointerId;
+    dragPill = pill;
+    dragging = true;
+    try { pill.setPointerCapture?.(e.pointerId); } catch (_) { /* ignore */ }
+  });
+
+  pillsEl.addEventListener('pointermove', (e) => {
+    if (!dragging || e.pointerId !== pointerId || !dragPill) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    // src pill 의 lift scale 유지하며 translate
+    dragPill.style.transform = `scale(1.05) translate(${dx}px, ${dy}px)`;
+  });
+
+  pillsEl.addEventListener('pointerup', (e) => {
+    if (!dragging || e.pointerId !== pointerId) return;
+    dragging = false;
+    pointerId = null;
+    // (f-5-3a) 본 단계 : drop 처리 없음. setReorderMode(false) 로 모드 종료 + 시각 복원.
+    if (dragPill) dragPill.style.transform = 'scale(1.05)'; // translate 즉시 클리어
+    setReorderMode(doc, false);
+  });
+
+  pillsEl.addEventListener('pointercancel', () => {
+    if (!dragging) return;
+    dragging = false;
+    pointerId = null;
+    if (dragPill) dragPill.style.transform = 'scale(1.05)';
+  });
+
+  pillsEl.dataset.spaDragHooked = '1';
 }
 
 /**
