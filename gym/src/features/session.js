@@ -82,7 +82,7 @@ export async function getExerciseDefaults(exerciseId) {
  *  - status='completed' 만 (active 는 진행 중).
  *  - date 내림차순 → 같은 date 는 endTime 내림차순.
  *  - blocks 의 type='single' && exerciseId 매치 블록의 sets (배열). 매치 없으면 null.
- *  - circuit 블록은 본 wave 범위 외 (별 wave).
+ *  - circuit 블록은 폐기 (spec §16) — single 만 처리.
  */
 export async function getPrevSessionLastSets(exerciseId) {
   if (!exerciseId) throw new Error('[gymSession] getPrevSessionLastSets: exerciseId 누락');
@@ -140,7 +140,8 @@ export function buildPresetSets(exercise) {
 
 /**
  * 단일 운동 추가. spec §6-1 — 첫 운동 추가 순간이 startTime.
- *  - 중복 (single 또는 circuit 의 어느 round 라도 exerciseId 매치) → added=false, reason='duplicate'
+ *  - 중복 (single 블록 중 같은 exerciseId) → added=false, reason='duplicate'
+ *  - circuit 블록 (§16 폐기) 은 graceful skip — 데이터 마이그레이션 전까지 무시.
  *  - tags 에 part 누적 (중복 방지)
  *  - sets prefill (§6-3-3 ③) — defaultSets 개수만큼 preset:true
  *  - 반환: { session, added: boolean, reason? }
@@ -148,15 +149,9 @@ export function buildPresetSets(exercise) {
 export async function addExerciseToActiveSession(exerciseId, part) {
   if (!exerciseId) throw new Error('[gymSession] addExercise: exerciseId 누락');
   const session = await getOrCreateActiveSession();
-  const exists = (session.blocks || []).some((b) => {
-    if (b.type === 'single') return b.exerciseId === exerciseId;
-    if (b.type === 'circuit') {
-      return (b.rounds || []).some((round) =>
-        (round || []).some((s) => s.exerciseId === exerciseId),
-      );
-    }
-    return false;
-  });
+  const exists = (session.blocks || []).some(
+    (b) => b && b.type === 'single' && b.exerciseId === exerciseId,
+  );
   if (exists) return { session, added: false, reason: 'duplicate' };
 
   // spec §6-3-3 — 우선순위 ② 이전 세션 → ③ 운동 기본값.
@@ -192,7 +187,7 @@ export async function addExerciseToActiveSession(exerciseId, part) {
  * 운동 제거 (토글 OFF). spec §6-2 다중 추가/제거 자유 — single 블록만 처리.
  *  - blocks 에서 type==='single' && exerciseId 일치 첫 매치 제거
  *  - 해당 part 의 다른 single 블록이 더 없으면 tags 에서도 part 제거
- *  - circuit 블록 무영향 (별 Wave 처리)
+ *  - 서킷 폐기 (spec §16) — single 블록만 처리
  *  - 반환: { session, removed: boolean, reason? }
  */
 export async function removeExerciseFromActiveSession(exerciseId) {
@@ -214,60 +209,6 @@ export async function removeExerciseFromActiveSession(exerciseId) {
   const next = { ...session, blocks, tags };
   await upsertSession(next);
   return { session: next, removed: true };
-}
-
-/**
- * spec §6-2 / §12 — 서킷 블록 추가. 2+ 개 운동을 1 round 의 circuit 블록으로 묶음.
- *  - exerciseIds 검증: 배열 + 길이 ≥ 2.
- *  - 중복 검사: 어느 운동이라도 이미 single 또는 다른 circuit 안에 있으면 거부.
- *  - round 1 entry : { exerciseId, weight, reps, done:false, preset:true }.
- *    - cardio : weight=null reps=null
- *    - bodyweight : weight=null reps=defaultReps
- *    - 일반 : weight=defaultWeight reps=defaultReps
- *  - tags 누적, startTime null 이면 Date.now().
- *  - 반환 : { session, added: boolean, reason? }
- */
-export async function addCircuitBlockToActiveSession(exerciseIds) {
-  if (!Array.isArray(exerciseIds) || exerciseIds.length < 2) {
-    return { added: false, reason: 'invalid_input' };
-  }
-  const session = await getOrCreateActiveSession();
-  for (const id of exerciseIds) {
-    const exists = (session.blocks || []).some((b) => {
-      if (!b) return false;
-      if (b.type === 'single') return b.exerciseId === id;
-      if (b.type === 'circuit') {
-        return (b.rounds || []).some((round) =>
-          (round || []).some((entry) => entry && entry.exerciseId === id),
-        );
-      }
-      return false;
-    });
-    if (exists) return { session, added: false, reason: 'duplicate', exerciseId: id };
-  }
-  const round1 = await Promise.all(exerciseIds.map(async (id) => {
-    let ex;
-    try { ex = await getExerciseDefaults(id); } catch { ex = null; }
-    const isCardio = ex?.equipment === 'cardio';
-    const isBodyweight = ex?.equipment === 'bodyweight';
-    return {
-      exerciseId: id,
-      weight: isCardio || isBodyweight ? null : (Number.isFinite(ex?.defaultWeight) ? ex.defaultWeight : 0),
-      reps: isCardio ? null : (Number.isFinite(ex?.defaultReps) ? ex.defaultReps : 10),
-      done: false,
-      preset: true,
-    };
-  }));
-  const block = { type: 'circuit', rounds: [round1] };
-  const tags = Array.isArray(session.tags) ? session.tags.slice() : [];
-  for (const id of exerciseIds) {
-    const ex = getBuiltinExercise(id);
-    if (ex?.part && !tags.includes(ex.part)) tags.push(ex.part);
-  }
-  if (!session.startTime) session.startTime = Date.now();
-  const next = { ...session, blocks: [...(session.blocks || []), block], tags };
-  await upsertSession(next);
-  return { session: next, added: true, blockType: 'circuit', exerciseIds };
 }
 
 function tagPartMatchHint(otherExerciseId, part) {
@@ -503,7 +444,7 @@ export async function dumpActiveSessionFromState(stateData) {
 /**
  * Phase B 단계 4 마무리 — mocks/session.html 진입 시 active 세션 유무로 분기.
  *  - active session + 1개 이상의 single 블록 → SessionC active 카드 정적 바인딩 (.session-active)
- *  - 그 외 → SessionEmpty 의 addex 시트 + 서킷 토글 (.session-empty)
+ *  - 그 외 → SessionEmpty 의 addex 시트 (.session-empty)
  *
  * body[data-state] 토글 ('empty'|'active') 로 가시성 제어 (home.html HomeA/HomeC 패턴).
  * DB 미초기화·active 미존재 모두 graceful — empty branch 로 fallback.
@@ -555,9 +496,6 @@ export async function mountSessionView() {
 }
 
 async function mountSessionEmpty(doc, dbUnavailable) {
-  // 서킷 토글은 DOM 만 의존 → DB 상태 무관 wire
-  try { wireCircuitToggle(doc); } catch (e) { console.error('[gymSession] wireCircuitToggle', e); }
-
   const chipsEl = doc.getElementById('addexChips');
   const listEl = doc.getElementById('addexList');
   if (!chipsEl || !listEl) return { skipped: 'no-mounts' };
@@ -991,10 +929,10 @@ function wireActionSheet(doc) {
 }
 
 /**
- * spec §6-9 — kind → 데모 메뉴 매핑.
- *  - 본 (f-2) 단계 : session-end / footer-exercise 두 종류만. (f-3) 에서 active-card / set-row /
- *    circuit / 완료된·예정된 운동 등 다른 대상 추가 + onSelect 진짜 핸들러 연결.
- *  - 본 단계 onSelect : console.log 뿐 (마운트 상태에서 close 만).
+ * spec §6-9 — kind → 메뉴 매핑.
+ *  - 대상: session-end / active-card / set-row / footer-exercise.
+ *  - onSelect 는 mountSessionActive 의 wireLongPress(onTrigger) 가 openActionSheet 호출 시
+ *    handleActionSelect 디스패처로 연결 (진짜 핸들러).
  */
 function getActionMenuFor(kind, target) {
   if (kind === 'session-end') {
@@ -1154,30 +1092,18 @@ export function wireLongPress(doc, opts = {}) {
  *  - currentBlock 과 동일 → 'current'
  *  - single 블록의 sets 모두 done → 'done'
  *  - single 블록의 일부 set done → 'hold' (보류)
- *  - 그 외 (예정) → 'pending'
- *  - circuit 블록은 본 단계 — 모든 entry done 이면 done, 일부 done 이면 hold, 그 외 pending
+ *  - 그 외 (예정 또는 단일 아닌 타입) → 'pending'
+ *  - 서킷 폐기 (spec §16) — block.type !== 'single' 은 graceful skip → pending.
  */
 function classifyBlockState(block, isCurrent) {
   if (isCurrent) return 'current';
-  if (!block) return 'pending';
-  if (block.type === 'single') {
-    const sets = Array.isArray(block.sets) ? block.sets : [];
-    if (sets.length === 0) return 'pending';
-    const allDone = sets.every((s) => s && s.done);
-    if (allDone) return 'done';
-    const anyDone = sets.some((s) => s && s.done);
-    if (anyDone) return 'hold';
-    return 'pending';
-  }
-  if (block.type === 'circuit') {
-    const round1 = (block.rounds && block.rounds[0]) || [];
-    if (round1.length === 0) return 'pending';
-    const allDone = round1.every((e) => e && e.done);
-    if (allDone) return 'done';
-    const anyDone = round1.some((e) => e && e.done);
-    if (anyDone) return 'hold';
-    return 'pending';
-  }
+  if (!block || block.type !== 'single') return 'pending';
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  if (sets.length === 0) return 'pending';
+  const allDone = sets.every((s) => s && s.done);
+  if (allDone) return 'done';
+  const anyDone = sets.some((s) => s && s.done);
+  if (anyDone) return 'hold';
   return 'pending';
 }
 
@@ -1203,10 +1129,7 @@ function blockProgressText(block, state) {
 function blockDisplayName(block) {
   if (!block) return '';
   if (block.type === 'single') return resolveExerciseName(block.exerciseId);
-  if (block.type === 'circuit') {
-    const round1 = (block.rounds && block.rounds[0]) || [];
-    return round1.length ? `서킷 (${round1.length})` : '서킷';
-  }
+  // 서킷 폐기 (spec §16) — 다른 타입은 빈 라벨 (graceful skip).
   return '';
 }
 
@@ -1254,7 +1177,7 @@ function renderFooterPills(doc, session, currentBlock) {
     return;
   }
   const html = session.blocks.map((block, i) => {
-    if (!block) return '';
+    if (!block || block.type !== 'single') return ''; // 서킷 폐기 — non-single graceful skip
     const isCurrent = block === currentBlock;
     const state = classifyBlockState(block, isCurrent);
     const name = blockDisplayName(block);
@@ -1670,6 +1593,7 @@ async function handleActionSelect(doc, kind, actionId, target) {
         if (block.type === 'single') {
           await removeExerciseFromActiveSession(block.exerciseId);
         } else {
+          // 서킷 폐기 (spec §16) — 단순 splice (기존 IndexedDB 의 circuit 잔존 graceful 제거)
           const blocks = session.blocks.slice();
           blocks.splice(blockIdx, 1);
           await upsertSession({ ...session, blocks });
@@ -2026,119 +1950,7 @@ export async function handleRightSwipe() {
   await mountSessionView();
 }
 
-/**
- * spec §6-2 — 서킷 토글 ON/OFF + ON 모드 다중선택 + "완료" 활성 조건.
- *  - ON 진입 : 토글 accent + 패널 표시.
- *  - OFF 복귀 : 패널 숨김 + 선택 초기화 (item is-selected / sheet.dataset.circuitSelected / done disabled).
- *  - ON 모드 listEl click : 종목 선택/해제 토글. dataset.circuitSelected 누적, 패널 list 갱신.
- *  - "완료" disabled = 선택 < 2.
- *  - "완료" click → addCircuitBlockToActiveSession + 시트 close + ON→OFF + mountSessionView.
- */
-function wireCircuitToggle(doc) {
-  const sheet = doc.getElementById('addexSheet');
-  const btn = doc.getElementById('addexCircuitToggle');
-  const panel = doc.getElementById('addexCircuitPanel');
-  const list = doc.getElementById('addexCircuitList');
-  const doneBtn = doc.getElementById('addexCircuitDone');
-  const listEl = doc.getElementById('addexList');
-  if (!sheet || !btn || !panel) return;
-
-  const turnOff = () => {
-    sheet.dataset.circuit = 'off';
-    btn.setAttribute('aria-pressed', 'false');
-    panel.style.display = 'none';
-    btn.style.background = 'transparent';
-    btn.style.color = 'rgba(255,255,255,0.55)';
-    btn.style.borderColor = 'rgba(255,255,255,0.18)';
-    sheet.dataset.circuitSelected = '';
-    if (list) list.innerHTML = '';
-    if (doneBtn) {
-      doneBtn.disabled = true;
-      doneBtn.style.background = 'rgba(217,119,87,0.4)';
-    }
-    if (listEl) {
-      listEl.querySelectorAll('.addex-item.is-selected').forEach((el) => {
-        el.classList.remove('is-selected');
-        el.style.background = '';
-      });
-    }
-  };
-
-  if (btn.dataset.spaHooked !== '1') {
-    btn.addEventListener('click', () => {
-      const next = sheet.dataset.circuit === 'on' ? 'off' : 'on';
-      if (next === 'on') {
-        sheet.dataset.circuit = 'on';
-        btn.setAttribute('aria-pressed', 'true');
-        panel.style.display = '';
-        btn.style.background = 'var(--accent)';
-        btn.style.color = '#fff';
-        btn.style.borderColor = 'transparent';
-      } else {
-        turnOff();
-      }
-    });
-    btn.dataset.spaHooked = '1';
-  }
-
-  // ON 모드 listEl 선택 토글 — single 추가 핸들러 (hookClicks) 는 ON 모드 시 early return
-  if (listEl && listEl.dataset.circuitHooked !== '1') {
-    listEl.addEventListener('click', (e) => {
-      if (sheet.dataset.circuit !== 'on') return;
-      const item = e.target.closest('[data-ex]');
-      if (!item) return;
-      const exId = item.dataset.ex;
-      if (!exId) return;
-      const buf = sheet.dataset.circuitSelected || '';
-      const ids = buf ? buf.split(',') : [];
-      const idx = ids.indexOf(exId);
-      if (idx >= 0) {
-        ids.splice(idx, 1);
-        item.classList.remove('is-selected');
-        item.style.background = '';
-      } else {
-        ids.push(exId);
-        item.classList.add('is-selected');
-        item.style.background = 'rgba(217,119,87,0.18)';
-      }
-      sheet.dataset.circuitSelected = ids.join(',');
-      // 선택 목록 패널 갱신
-      if (list) {
-        list.innerHTML = ids.map((id) => {
-          const ex = getBuiltinExercise(id);
-          const name = ex?.name || id;
-          return `<span style="background:rgba(217,119,87,0.18);color:#fff;padding:3px 8px;border-radius:8px;">${escapeHtml(name)}</span>`;
-        }).join('');
-      }
-      if (doneBtn) {
-        const enabled = ids.length >= 2;
-        doneBtn.disabled = !enabled;
-        doneBtn.style.background = enabled ? 'var(--accent)' : 'rgba(217,119,87,0.4)';
-      }
-    });
-    listEl.dataset.circuitHooked = '1';
-  }
-
-  // "완료" click → 서킷 블록 추가 + 시트 close + 초기화
-  if (doneBtn && doneBtn.dataset.spaHooked !== '1') {
-    doneBtn.addEventListener('click', async () => {
-      if (doneBtn.disabled) return;
-      const ids = (sheet.dataset.circuitSelected || '').split(',').filter(Boolean);
-      if (ids.length < 2) return;
-      try {
-        await addCircuitBlockToActiveSession(ids);
-      } catch (err) {
-        if (!(err && /window\.gymDB 미초기화/.test(String(err.message)))) {
-          console.error('[gymSession] addCircuitBlock click', err);
-        }
-      }
-      turnOff();
-      // active branch 진입 (block 추가됨)
-      try { await mountSessionView(); } catch (e) { console.error('[gymSession] mountSessionView after circuit', e); }
-    });
-    doneBtn.dataset.spaHooked = '1';
-  }
-}
+// (서킷 폐기 — spec §16) wireCircuitToggle 제거.
 
 async function renderChips(chipsEl) {
   chipsEl.innerHTML = PART_IDS.map((id) => {
@@ -2212,9 +2024,6 @@ function hookClicks(chipsEl, listEl) {
   }
   if (listEl.dataset.spaHooked === '1') return;
   listEl.addEventListener('click', async (e) => {
-    // (2) 서킷 ON 모드는 wireCircuitToggle 의 별도 listener 가 처리 — single 추가 흐름 회피
-    const sheet = typeof document !== 'undefined' ? document.getElementById('addexSheet') : null;
-    if (sheet && sheet.dataset.circuit === 'on') return;
     const b = e.target.closest('[data-ex]');
     if (!b) return;
     const exerciseId = b.dataset.ex;
@@ -2276,7 +2085,6 @@ if (typeof window !== 'undefined') {
     createEmptySession,
     getOrCreateActiveSession,
     addExerciseToActiveSession,
-    addCircuitBlockToActiveSession,
     removeExerciseFromActiveSession,
     getExerciseDefaults,
     buildPresetSets,

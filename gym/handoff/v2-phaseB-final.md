@@ -17,7 +17,6 @@
 - HomeC 8 id 분리 (`cardLabel`·`cardTime`·`cardUnit`·`cardPart`·`cardEx`·`cardVol`·`cardProgress`·`cardCta`) + `applyToDom` HomeA/HomeC 분기
 - `src/features/manage.js` 셸 신설 (콘텐츠 wiring 은 잔여)
 - stats `parseMonthLabel` `(\d{4})\s*[·년]\s*(\d{1,2})월`
-- 서킷 토글 **마크업 보강** (`mocks/session-empty.html`, click 핸들러는 잔여)
 
 현재 상태 = **시각만 v2**, 데이터 바인딩 미동작 (mount wiring 부재).
 
@@ -133,8 +132,7 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
   - 신규 vitest +13 (computeDropIdx 6 + performBlockReorder 7).
 - [x] `mocks/session.html` 가이드 텍스트 "← 이전 수정 / 완료 →" 제거 — 본 세션 (병합 시 동시 처리)
 - [x] `src/app.js` mount wiring (6 라우트) — 본 세션 (`ROUTE_MOUNTS` + mount fn 호출)
-- [x] 서킷 토글 click 핸들러 ON/OFF — 본 세션 (`wireCircuitToggle`)
-- [x] 서킷 ON 다중선택 + "완료" 활성 조건 — 본 세션 ((2) `addCircuitBlockToActiveSession` 신설 (rounds[] data 모델, cardio/bodyweight 분기, 중복·태그 누적), wireCircuitToggle 의 ON 모드 listEl 선택 토글 + 패널 list 갱신 + "완료" 동적 disabled (선택 ≥2) + click 시 circuit 블록 1 round 추가 + OFF 복귀 초기화 + mountSessionView 재바인딩, hookClicks 의 single 핸들러는 ON 모드 시 early return + 7 신규 vitest. **참고**: circuit 블록 시각화 (active branch) 부재이므로 add 후 dataState='empty' 유지 — circuit 카드 마운트는 후속)
+- ~~서킷 토글 / 서킷 ON 다중선택~~ — **폐기 (spec §16)**. mocks 마크업 + src `wireCircuitToggle` + `addCircuitBlockToActiveSession` + 관련 vitest 제거. circuit 블록 잔존 데이터는 mountSessionView 가 graceful skip.
 - [x] `pnpm vitest run` 0 fail — 본 세션 (392 → 392)
 - [x] `pnpm build` 통과 — 본 세션 (`✓ 72 modules / 485.76 KiB`)
 - [ ] `pnpm e2e` 0 fail — 다음 세션 (selector 갱신 필요)
@@ -161,7 +159,6 @@ Dexie 스키마·Supabase 동기화·PR 계산 (`src/services/pr.js`) 변경 없
 ### 다음 세션 진입 작업
 
 - (f-5-2/3) reorder 모드 진입 (모든 pill 일괄 접힘 + 선택 lift) + 드래그·드롭 (DOM/DB blocks 순서)
-- circuit 카드 active branch 시각화 (현재 mountSessionActive 가 single 만, circuit 블록 시각 부재)
 - PR 팝 위치 미세 조정 (top:118px → 운동명 영역과 약간 겹침)
 - e2e selector 갱신 7 spec
 - session.test.js mountSessionView 분기 어설션 추가 (현재 graceful no-document 만 어설션)
