@@ -1328,14 +1328,24 @@ function wireReorderDrag(doc) {
     }
   });
 
-  pillsEl.addEventListener('pointerup', (e) => {
+  pillsEl.addEventListener('pointerup', async (e) => {
     if (!dragging || e.pointerId !== pointerId) return;
     dragging = false;
     pointerId = null;
-    // (f-5-3a) 본 단계 : drop 처리 없음. setReorderMode(false) 로 모드 종료 + 시각 복원.
-    if (dragPill) dragPill.style.transform = 'scale(1.05)'; // translate 즉시 클리어
+    if (dragPill) dragPill.style.transform = 'scale(1.05)';
     clearDropPlaceholder(pillsEl);
+    // (f-5-3c) drop 처리 — srcIdx ≠ dstIdx 이면 blocks splice + mountSessionView
+    const srcIdx = parseInt(pillsEl.dataset.reorderSrc, 10);
+    const dstIdx = parseInt(pillsEl.dataset.reorderDst, 10);
     setReorderMode(doc, false);
+    if (Number.isFinite(srcIdx) && Number.isFinite(dstIdx) && srcIdx !== dstIdx) {
+      try {
+        await performBlockReorder(srcIdx, dstIdx);
+        await mountSessionView();
+      } catch (err) {
+        console.error('[gymSession] drop reorder', err);
+      }
+    }
   });
 
   pillsEl.addEventListener('pointercancel', () => {
@@ -1398,6 +1408,52 @@ function clearDropPlaceholder(pillsEl) {
     p.style.marginLeft = '';
     p.style.marginRight = '';
   });
+}
+
+/**
+ * spec §6-9 — drop 처리 (f-5-3c). srcIdx → dstIdx 로 blocks 순서 변경 + DB upsert.
+ *  - dst > src : splice 후 idx 한 칸 당김 (insertIdx = dstIdx - 1).
+ *  - dst ≤ src : splice 후 idx 그대로 (insertIdx = dstIdx).
+ *  - _currentBlockIdx 보정 :
+ *    - = src : insertIdx 로 이동
+ *    - src 와 dst 사이 (src 가 dst 보다 큰 쪽 → cur 가 +1, 작은 쪽 → cur 가 -1)
+ *  - 반환 : { ok, srcIdx, insertIdx } 또는 { ok:false, reason }
+ */
+export async function performBlockReorder(srcIdx, dstIdx) {
+  if (!Number.isFinite(srcIdx) || !Number.isFinite(dstIdx)) {
+    return { ok: false, reason: 'invalid_input' };
+  }
+  if (srcIdx === dstIdx) return { ok: true, srcIdx, insertIdx: srcIdx, unchanged: true };
+  let session;
+  try { session = await getActiveSession(); }
+  catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return { ok: false, reason: 'no_db' };
+    console.error('[gymSession] performBlockReorder getActive', e);
+    return { ok: false, reason: 'error' };
+  }
+  if (!session || !Array.isArray(session.blocks)) return { ok: false, reason: 'no_active_session' };
+  const blocks = session.blocks.slice();
+  if (srcIdx < 0 || srcIdx >= blocks.length) return { ok: false, reason: 'src_out_of_range' };
+  const [removed] = blocks.splice(srcIdx, 1);
+  // splice 후 dst 보정 — dst > src 면 한 칸 당김
+  let insertIdx = dstIdx > srcIdx ? dstIdx - 1 : dstIdx;
+  insertIdx = Math.max(0, Math.min(blocks.length, insertIdx));
+  blocks.splice(insertIdx, 0, removed);
+  try { await upsertSession({ ...session, blocks }); }
+  catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] performBlockReorder upsert', e);
+    }
+    return { ok: false, reason: 'error' };
+  }
+  // _currentBlockIdx 보정
+  if (_currentBlockIdx === srcIdx) {
+    _currentBlockIdx = insertIdx;
+  } else if (_currentBlockIdx != null) {
+    if (srcIdx < _currentBlockIdx && _currentBlockIdx <= dstIdx - 1) _currentBlockIdx -= 1;
+    else if (dstIdx <= _currentBlockIdx && _currentBlockIdx < srcIdx) _currentBlockIdx += 1;
+  }
+  return { ok: true, srcIdx, insertIdx };
 }
 
 /**
@@ -2236,6 +2292,7 @@ if (typeof window !== 'undefined') {
     discardActiveSession,
     setReorderMode,
     computeDropIdx,
+    performBlockReorder,
     getActivePart,
     setActivePart,
   };

@@ -29,6 +29,7 @@ import {
   persistRemoveSet,
   discardActiveSession,
   computeDropIdx,
+  performBlockReorder,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1821,6 +1822,83 @@ describe('computeDropIdx (spec §6-9 / f-5-3b)', () => {
   it("src 만 있으면 (다른 pill 없음) srcIdx 그대로", () => {
     const pillsEl = makePillsEl([{ idx: 0, left: 100, width: 80 }]);
     expect(computeDropIdx(pillsEl, 200, 0)).toBe(0);
+  });
+});
+
+/* ───────────────── performBlockReorder (spec §6-9 / f-5-3c) ───────────────── */
+
+describe('performBlockReorder (spec §6-9 / f-5-3c)', () => {
+  async function seedActiveBlocks(exerciseIds) {
+    const blocks = exerciseIds.map((id) => ({
+      type: 'single',
+      exerciseId: id,
+      sets: [{ weight: 60, reps: 10, done: false, preset: true, pr: false }],
+    }));
+    await db.sessions.put({
+      id: 'reorder-test',
+      date: '2026-05-11',
+      startTime: Date.now() - 10 * 60_000,
+      endTime: null,
+      blocks,
+      tags: ['chest'],
+      totalVolume: 0, totalCalories: 0, durationMin: 0,
+      status: 'active',
+    });
+  }
+
+  async function getActiveBlockOrder() {
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    return rows[0].blocks.map((b) => b.exerciseId);
+  }
+
+  it("src=0 → dst=3 (마지막 자리 뒤) : 첫 번째를 마지막으로 이동", async () => {
+    await seedActiveBlocks(['bench_press', 'incline_bench', 'decline_bench']);
+    const r = await performBlockReorder(0, 3);
+    expect(r.ok).toBe(true);
+    expect(r.insertIdx).toBe(2); // splice 후 dst-1
+    expect(await getActiveBlockOrder()).toEqual(['incline_bench', 'decline_bench', 'bench_press']);
+  });
+
+  it("src=2 → dst=0 (첫 자리 앞) : 마지막을 첫으로", async () => {
+    await seedActiveBlocks(['bench_press', 'incline_bench', 'decline_bench']);
+    const r = await performBlockReorder(2, 0);
+    expect(r.ok).toBe(true);
+    expect(r.insertIdx).toBe(0);
+    expect(await getActiveBlockOrder()).toEqual(['decline_bench', 'bench_press', 'incline_bench']);
+  });
+
+  it("src=0 → dst=2 (가운데 자리) : 첫을 두 번째로", async () => {
+    await seedActiveBlocks(['bench_press', 'incline_bench', 'decline_bench']);
+    const r = await performBlockReorder(0, 2);
+    expect(r.ok).toBe(true);
+    expect(r.insertIdx).toBe(1);
+    expect(await getActiveBlockOrder()).toEqual(['incline_bench', 'bench_press', 'decline_bench']);
+  });
+
+  it("src === dst → unchanged, DB 변경 없음", async () => {
+    await seedActiveBlocks(['bench_press', 'incline_bench']);
+    const r = await performBlockReorder(1, 1);
+    expect(r.ok).toBe(true);
+    expect(r.unchanged).toBe(true);
+    expect(await getActiveBlockOrder()).toEqual(['bench_press', 'incline_bench']);
+  });
+
+  it("srcIdx 범위 초과 → src_out_of_range", async () => {
+    await seedActiveBlocks(['bench_press']);
+    const r = await performBlockReorder(5, 0);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('src_out_of_range');
+  });
+
+  it("active session 부재 → no_active_session", async () => {
+    const r = await performBlockReorder(0, 1);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('no_active_session');
+  });
+
+  it("잘못된 인자 → invalid_input", async () => {
+    expect((await performBlockReorder(NaN, 0)).reason).toBe('invalid_input');
+    expect((await performBlockReorder(0, NaN)).reason).toBe('invalid_input');
   });
 });
 
