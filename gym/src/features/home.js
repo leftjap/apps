@@ -346,8 +346,8 @@ function applyToDom(v, doc) {
   const homeC = doc.querySelector('.home-c');
   if (homeA) homeA.style.display = 'none';
   if (homeC) homeC.style.display = '';
-  const app = doc.getElementById('app');
-  if (app) app.dataset.state = 'session';
+  // mocks 에 #app 없음 → body 에 박아야 home.html CSS [data-state="active"] .home-a hide 룰 매칭
+  if (doc.body?.dataset) doc.body.dataset.state = 'active';
 }
 
 /** Wave 11.10.3 — streak DOM 갱신. Wave 11.10.4 — CTA click → #/session. */
@@ -378,8 +378,9 @@ function applyStreakToDom(streak, doc) {
     cta.dataset.spaCta = '1';
     cta.addEventListener('click', goToSession, { once: true });
   }
-  const app = doc.getElementById('app');
-  if (app) app.dataset.state = streak.state;
+  // streak.state ('empty'|'gap'|'rest'|'active') 는 home.html CSS rule (active|idle) 과 다른 도메인.
+  // idle 카드 (HomeA) 노출을 위해 body 에 'idle' 정규화. mocks 에 #app 없음.
+  if (doc.body?.dataset) doc.body.dataset.state = 'idle';
 }
 
 function goToSession() {
