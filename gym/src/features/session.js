@@ -539,10 +539,16 @@ export async function mountSessionView() {
   if (route === 'active') {
     // (f-5-1) — _currentBlockIdx 가 유효한 single 블록을 가리키면 그 block, 그 외 마지막 single 자동
     let pickedBlock = activeBlocks[activeBlocks.length - 1];
+    let pickedIdx = session.blocks.indexOf(pickedBlock);
     if (_currentBlockIdx != null && _currentBlockIdx >= 0 && _currentBlockIdx < session.blocks.length) {
       const candidate = session.blocks[_currentBlockIdx];
-      if (candidate && candidate.type === 'single') pickedBlock = candidate;
+      if (candidate && candidate.type === 'single') {
+        pickedBlock = candidate;
+        pickedIdx = _currentBlockIdx;
+      }
     }
+    // (f-5-3c) — _currentBlockIdx 항상 displayed block idx 와 동기화. drop 후 보정 일관성.
+    _currentBlockIdx = pickedIdx;
     return mountSessionActive(doc, pickedBlock, session);
   }
   return mountSessionEmpty(doc, dbUnavailable);
