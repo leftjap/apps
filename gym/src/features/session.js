@@ -1319,6 +1319,13 @@ function wireReorderDrag(doc) {
     const dy = e.clientY - startY;
     // src pill 의 lift scale 유지하며 translate
     dragPill.style.transform = `scale(1.05) translate(${dx}px, ${dy}px)`;
+    // (f-5-3b) drop 위치 hit test + 시각 피드백
+    const srcIdx = parseInt(pillsEl.dataset.reorderSrc, 10);
+    if (Number.isFinite(srcIdx)) {
+      const dstIdx = computeDropIdx(pillsEl, e.clientX, srcIdx);
+      pillsEl.dataset.reorderDst = String(dstIdx);
+      applyDropPlaceholder(pillsEl, srcIdx, dstIdx);
+    }
   });
 
   pillsEl.addEventListener('pointerup', (e) => {
@@ -1327,6 +1334,7 @@ function wireReorderDrag(doc) {
     pointerId = null;
     // (f-5-3a) 본 단계 : drop 처리 없음. setReorderMode(false) 로 모드 종료 + 시각 복원.
     if (dragPill) dragPill.style.transform = 'scale(1.05)'; // translate 즉시 클리어
+    clearDropPlaceholder(pillsEl);
     setReorderMode(doc, false);
   });
 
@@ -1335,9 +1343,61 @@ function wireReorderDrag(doc) {
     dragging = false;
     pointerId = null;
     if (dragPill) dragPill.style.transform = 'scale(1.05)';
+    clearDropPlaceholder(pillsEl);
   });
 
   pillsEl.dataset.spaDragHooked = '1';
+}
+
+/**
+ * spec §6-9 — drop 위치 hit test (f-5-3b).
+ *  - src pill 제외 다른 pill 의 boundingRect center.x 와 clientX 비교 → 가장 가까운 idx.
+ *  - clientX < center → 그 pill 자리 (그 앞에 삽입), clientX > center → 그 pill 다음 자리.
+ *  - 반환 : final dst idx (splice 보정 전, 원본 blocks idx 기준).
+ */
+export function computeDropIdx(pillsEl, clientX, srcIdx) {
+  if (!pillsEl) return srcIdx;
+  const pills = Array.from(pillsEl.querySelectorAll('[data-block-idx]'));
+  let dstIdx = srcIdx;
+  let bestDist = Infinity;
+  pills.forEach((p) => {
+    const idx = parseInt(p.dataset.blockIdx, 10);
+    if (!Number.isFinite(idx) || idx === srcIdx) return;
+    const r = p.getBoundingClientRect();
+    const c = r.left + r.width / 2;
+    const d = Math.abs(clientX - c);
+    if (d < bestDist) {
+      bestDist = d;
+      dstIdx = clientX < c ? idx : idx + 1;
+    }
+  });
+  return dstIdx;
+}
+
+/**
+ * spec §6-9 — drop placeholder 시각 (f-5-3b).
+ *  - dst 위치 (src 제외) pill 의 marginLeft 또는 marginRight 에 +18px gap 추가.
+ *  - dst === srcIdx 또는 그 다음 자리면 gap 없음 (제자리 drop).
+ */
+function applyDropPlaceholder(pillsEl, srcIdx, dstIdx) {
+  const pills = pillsEl.querySelectorAll('[data-block-idx]');
+  pills.forEach((p) => {
+    const idx = parseInt(p.dataset.blockIdx, 10);
+    p.style.marginLeft = '';
+    p.style.marginRight = '';
+    if (idx === srcIdx) return;
+    if (idx === dstIdx) p.style.marginLeft = '18px'; // dstIdx 자리 앞에 gap
+    else if (idx === dstIdx - 1) p.style.marginRight = '18px'; // dstIdx 가 그 뒤이면 뒤에 gap
+  });
+}
+
+function clearDropPlaceholder(pillsEl) {
+  const pills = pillsEl?.querySelectorAll?.('[data-block-idx]');
+  if (!pills) return;
+  pills.forEach((p) => {
+    p.style.marginLeft = '';
+    p.style.marginRight = '';
+  });
 }
 
 /**
@@ -2175,6 +2235,7 @@ if (typeof window !== 'undefined') {
     persistRemoveSet,
     discardActiveSession,
     setReorderMode,
+    computeDropIdx,
     getActivePart,
     setActivePart,
   };

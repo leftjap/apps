@@ -28,6 +28,7 @@ import {
   closeActionSheet,
   persistRemoveSet,
   discardActiveSession,
+  computeDropIdx,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -1770,6 +1771,56 @@ describe('discardActiveSession (spec §6-9)', () => {
     const r = await discardActiveSession();
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('no_active_session');
+  });
+});
+
+/* ───────────────── computeDropIdx (spec §6-9 / f-5-3b) ───────────────── */
+
+function makePillsEl(rects) {
+  const pills = rects.map((r) => ({
+    dataset: { blockIdx: String(r.idx) },
+    getBoundingClientRect: () => ({ left: r.left, width: r.width, right: r.left + r.width, top: 0, bottom: 40 }),
+  }));
+  return {
+    querySelectorAll() { return pills; },
+  };
+}
+
+describe('computeDropIdx (spec §6-9 / f-5-3b)', () => {
+  // 3 pill : idx=0 [100,180], idx=1 [200,280], idx=2 [300,380]. width=80 → center 140/240/340
+  const baseRects = [
+    { idx: 0, left: 100, width: 80 },
+    { idx: 1, left: 200, width: 80 },
+    { idx: 2, left: 300, width: 80 },
+  ];
+
+  it("src=2 (가장 오른쪽) drag → clientX 230 (idx 1 center 좌측) → dst=1 (idx 1 자리)", () => {
+    const pillsEl = makePillsEl(baseRects);
+    expect(computeDropIdx(pillsEl, 230, 2)).toBe(1);
+  });
+
+  it("src=2 drag → clientX 250 (idx 1 center 우측) → dst=2 (idx 1 뒤 자리, splice 후 다시 같은 idx)", () => {
+    const pillsEl = makePillsEl(baseRects);
+    expect(computeDropIdx(pillsEl, 250, 2)).toBe(2);
+  });
+
+  it("src=0 (가장 왼쪽) drag → clientX 350 (idx 2 center 좌측) → dst=2", () => {
+    const pillsEl = makePillsEl(baseRects);
+    expect(computeDropIdx(pillsEl, 350, 0)).toBe(2);
+  });
+
+  it("src=0 drag → clientX 400 (idx 2 center 우측) → dst=3 (마지막 자리 뒤)", () => {
+    const pillsEl = makePillsEl(baseRects);
+    expect(computeDropIdx(pillsEl, 400, 0)).toBe(3);
+  });
+
+  it("pillsEl null → srcIdx 그대로", () => {
+    expect(computeDropIdx(null, 100, 5)).toBe(5);
+  });
+
+  it("src 만 있으면 (다른 pill 없음) srcIdx 그대로", () => {
+    const pillsEl = makePillsEl([{ idx: 0, left: 100, width: 80 }]);
+    expect(computeDropIdx(pillsEl, 200, 0)).toBe(0);
   });
 });
 
