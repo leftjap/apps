@@ -1804,9 +1804,9 @@ describe('computeDropIdx (spec §6-9 / f-5-3b)', () => {
     expect(computeDropIdx(pillsEl, 250, 2)).toBe(2);
   });
 
-  it("src=0 (가장 왼쪽) drag → clientX 350 (idx 2 center 좌측) → dst=2", () => {
+  it("src=0 (가장 왼쪽) drag → clientX 320 (idx 2 center 340 좌측) → dst=2", () => {
     const pillsEl = makePillsEl(baseRects);
-    expect(computeDropIdx(pillsEl, 350, 0)).toBe(2);
+    expect(computeDropIdx(pillsEl, 320, 0)).toBe(2);
   });
 
   it("src=0 drag → clientX 400 (idx 2 center 우측) → dst=3 (마지막 자리 뒤)", () => {
