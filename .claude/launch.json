@@ -38,6 +38,12 @@
       "port": 4173
     },
     {
+      "name": "gym-preview-gh",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/gym && pnpm preview --port 4178 --base /apps/gym/"],
+      "port": 4178
+    },
+    {
       "name": "study-dev",
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd /Users/gio_c/apps/study && pnpm dev --port 5173"],
