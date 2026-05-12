@@ -3307,11 +3307,23 @@
     flex-shrink: 0;
   }
   .spotlight-item__amount .amt-unit { color: var(--ink-4); margin-left: 2px; }
+  /* 검색 키워드 형광 highlight (사용자 요청 2026-05-13). */
   .spotlight-item mark {
-    background: oklch(85% 0.05 50 / 0.5);
+    background: oklch(94% 0.16 100);
     color: var(--ink-1);
     border-radius: 2px;
-    padding: 0 1px;
+    padding: 0 2px;
+    font-weight: 600;
+  }
+  /* doc meta 안의 본문 발췌 — 카테고리 라벨과 시각 분리 */
+  .spotlight-item__excerpt {
+    color: var(--ink-3);
+    font-size: 11px;
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
   .spotlight-empty {
     padding: 36px 16px;
@@ -5580,19 +5592,17 @@
         openNewExpenseForm();
         return;
       }
-      const data = FIXTURE[activeCat];
-      const isCounted = activeCat === 'navi' || activeCat === 'fiction';
-      const newNumber = isCounted ? ((data.totalCount || 0) + 1) : null;
-      const placeholder = isCounted ? `#${newNumber} 제목 없음` : '제목 없음';
+      // placeholder + crumb #N 은 SPA wrapNewArticle 이 todayDB 기반 동적 갱신 (사용자 요청 2026-05-12).
+      // mocks fixture totalCount stub (#1337) 사용 금지.
       const view = document.getElementById('mainView');
       view.innerHTML = `
         <article class="doc">
-          <h1 class="doc__h1" contenteditable spellcheck="false" data-empty-title="${placeholder}"></h1>
-          <div class="doc__meta">새 글<span class="sep">·</span>0단어<span class="sep">·</span><span class="save">자동 저장 대기</span></div>
+          <h1 class="doc__h1" contenteditable spellcheck="false" data-empty-title="제목 없음"></h1>
+          <div class="doc__meta">0단어<span class="sep">·</span>원고지 0매</div>
           <div class="doc__body" contenteditable spellcheck="false"></div>
         </article>
       `;
-      _updateCrumbNum(newNumber);
+      // crumb #N 은 wrapNewArticle 안에서 동적 갱신. mocks 의 fixture 값 사용 금지.
       setTimeout(() => {
         const h1 = view.querySelector('.doc__h1');
         if (h1) h1.focus();
@@ -6511,7 +6521,21 @@
         const titleHtml = _highlight(item.title, ql);
         let metaHtml = '';
         let amountHtml = '';
-        if (item.kind === 'doc') metaHtml = `<div class="spotlight-item__meta">${item.categoryLabel}</div>`;
+        if (item.kind === 'doc') {
+          // 본문 발췌 + 키워드 highlight (사용자 요청 2026-05-13).
+          let excerpt = '';
+          if (ql && item.body) {
+            const txt = String(item.body).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+            const pos = txt.toLowerCase().indexOf(ql);
+            if (pos >= 0) {
+              const start = Math.max(0, pos - 30);
+              const end = Math.min(txt.length, pos + ql.length + 50);
+              const raw = (start > 0 ? '…' : '') + txt.slice(start, end) + (end < txt.length ? '…' : '');
+              excerpt = `<div class="spotlight-item__excerpt">${_highlight(raw, ql)}</div>`;
+            }
+          }
+          metaHtml = `<div class="spotlight-item__meta">${item.categoryLabel}</div>${excerpt}`;
+        }
         else if (item.kind === 'expense') {
           const [m, d] = (item.date || '').split('-');
           metaHtml = `<div class="spotlight-item__meta">${item.category} · ${m}월 ${parseInt(d,10)}일</div>`;

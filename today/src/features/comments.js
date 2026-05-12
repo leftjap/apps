@@ -227,15 +227,15 @@ export async function mountForArticle(article, opts = {}) {
     return { ok: false, reason: 'getEntry_error' };
   }
   if (!row) return { ok: false, reason: 'not_found' };
-  // 본인 entry 인지 + is_shared 인지로 composer 활성화 결정
-  const canComment = !!row.is_shared && userId !== null;
+  // 사용자 요청 2026-05-13: 본인 글이면 is_shared 무관 댓글 가능 (메모·추가내용 용도).
+  // 파트너 글은 is_shared=true 일 때만 댓글 가능 (옛 정책 유지).
+  const isOwner = !!(userId && row.owner_id === userId);
+  const canComment = userId !== null && (isOwner || !!row.is_shared);
   syncComposerState(canComment, opts.doc);
-  // Wave 11.6.6 — is_shared=false article 에는 댓글 영역 자체 미마운트.
-  // 사용자 보고: 새글 (is_shared=0) 본문에 '아직 댓글이 없습니다' + 구분선 잉여 노출.
-  // 정책: 댓글은 공유 글의 기능이므로 비공유 시 영역 자체 숨김.
+  // 본인 글 또는 공유 글이면 댓글 영역 mount. 파트너 비공유 글만 미마운트.
   const existing = article.querySelector?.('.doc__comments');
   if (existing) existing.remove();
-  if (!row.is_shared) {
+  if (!canComment) {
     return { ok: true, count: 0, canComment, mounted: false };
   }
   // 댓글 목록 로드

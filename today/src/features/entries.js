@@ -859,12 +859,18 @@ export function wrapNewArticle(doc = document) {
     article.dataset.entryId = 'new-' + Date.now();
   }
   // 새 글 default 시각 — navi/soyoun_navi 는 공유 ON (사용자 결정 2026-05-04), 그 외는 OFF.
+  // 사용자 요청 2026-05-13: 이전 article 이 파트너 글이었을 때 share 에 share--readonly 가 박혀 있어
+  // 새 글에서도 공유 토글이 숨겨지는 버그 fix — readonly 클래스 강제 제거.
   const shareEl = doc.querySelector?.('.share');
   if (shareEl) {
     const kind = getCurrentKind(doc);
     const sharedDefault = kind === 'navi' || kind === 'soyoun_navi';
     shareEl.classList.toggle('share--off', !sharedDefault);
+    shareEl.classList.remove('share--readonly');
   }
+  // 더보기 메뉴 wrap 의 readonly 마커도 정리 (이전 파트너 글 잔재).
+  const moreWrap = doc.querySelector?.('.doc-more-wrap');
+  if (moreWrap) moreWrap.dataset.readOnly = '';
   // 새 글 placeholder + crumb #N — 본인 카테고리 다음 번호 동적 계산 (사용자 요청 2026-05-12).
   // mocks fixture totalCount stub (#1337) 대신 computeEntryNumber 사용.
   const h1 = article.querySelector?.('.doc__h1');
@@ -2189,6 +2195,8 @@ export const Entries = {
   setSaveStatus,
   saveArticle,
   wrapNewArticle,
+  // 사용자 요청 2026-05-13 — 카테고리별 본인 글 누적 카운트
+  computeEntryNumber,
   // Wave 11.5.2b hotfix — placeholder CSS
   injectEditorStyles,
   // 별 wave hotfix — is_shared 토글
