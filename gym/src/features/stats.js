@@ -304,8 +304,20 @@ export function applyTodayToCalendar(now = Date.now(), doc) {
   const label = doc.getElementById('monthLabel');
   if (!grid || !label) return { skipped: 'no-mounts' };
 
-  // 모든 today 클래스 제거 (월 nav 후 잔존 방지)
+  // 기존 today 클래스 제거 (월 nav 후 잔존 방지)
   grid.querySelectorAll('.cal-cell.today').forEach((el) => el.classList.remove('today'));
+  // mocks IIFE 의 fixture accent 밑줄 element 제거 (today=6 fixture 정적 painting → 실 today 와 불일치).
+  // production DOM 만 처리 — test mock 환경은 querySelectorAll('.cal-cell') / element.querySelectorAll 미지원.
+  try {
+    const allCells = grid.querySelectorAll('.cal-cell') || [];
+    for (const el of allCells) {
+      if (typeof el.querySelectorAll !== 'function') continue;
+      el.querySelectorAll('div').forEach((d) => {
+        const s = (typeof d.getAttribute === 'function' ? d.getAttribute('style') : '') || '';
+        if (/background\s*:\s*var\(--accent\)/.test(s) && typeof d.remove === 'function') d.remove();
+      });
+    }
+  } catch (_) { /* mock 환경 graceful */ }
 
   const displayed = parseMonthLabel(label.textContent);
   const today = new Date(now);
@@ -319,6 +331,14 @@ export function applyTodayToCalendar(now = Date.now(), doc) {
   const cell = grid.querySelector(`.cal-cell[data-day="${todayD}"]`);
   if (!cell) return { applied: false, reason: 'no_cell', day: todayD };
   cell.classList.add('today');
+  // today cell 에 accent 밑줄 추가 (mocks IIFE 시안 line 234 패턴 답습). production DOM 만.
+  if (typeof doc.createElement === 'function' && typeof cell.appendChild === 'function') {
+    const bar = doc.createElement('div');
+    if (typeof bar.setAttribute === 'function') {
+      bar.setAttribute('style', 'position:absolute;bottom:6px;width:12px;height:2px;background:var(--accent);border-radius:1px;');
+    }
+    cell.appendChild(bar);
+  }
   return { applied: true, day: todayD };
 }
 
