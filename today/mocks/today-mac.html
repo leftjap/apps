@@ -2489,6 +2489,8 @@
   }
 
   /* ============ Admin (.admin-*) — Wave 11.8 사용자별 매핑 편집 ============ */
+  /* 사이드바 진입점 hide — admin 은 가계부 우상단 더보기 메뉴에서만 진입 (Wave 11.8 후속) */
+  .sb__item[data-category="admin"] { display: none; }
   body.is-admin .top-actions__navi { display: none; }
   body.is-admin .top-actions__expense { display: none; }
   body.is-admin #mainView { display: none; }
@@ -4105,6 +4107,25 @@
               <path d="M8 3.5v9M3.5 8h9"/>
             </svg>
           </button>
+          <!-- 가계부 더보기(⋮) 메뉴 — Wave 11.8 후속 (매핑 관리 진입점) -->
+          <div class="doc-more-wrap">
+            <button class="doc-more-btn" id="expMoreBtn" type="button" title="가계부 메뉴" aria-haspopup="true" aria-expanded="false">
+              <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="3.5" r="0.9" fill="currentColor" stroke="none"/>
+                <circle cx="8" cy="8"   r="0.9" fill="currentColor" stroke="none"/>
+                <circle cx="8" cy="12.5" r="0.9" fill="currentColor" stroke="none"/>
+              </svg>
+            </button>
+            <div class="doc-more-menu" id="expMoreMenu" role="menu" aria-hidden="true">
+              <div class="doc-more-menu__item" role="menuitem" tabindex="0" data-exp-action="admin">
+                <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 4.5h10M3 8h10M3 11.5h6"/>
+                  <circle cx="12" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+                </svg>
+                매핑 관리
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- 매핑 관리 액션 ([Picker][Brand][Alias] 탭 + 추가) — Wave 11.8 -->
@@ -4425,6 +4446,41 @@
           alert('사본 만들기 — 구현 예정');
         } else if (action === 'export') {
           alert('내보내기 — 구현 예정');
+        }
+      });
+    });
+  })();
+
+  // 가계부 ⋮ 메뉴 — 매핑 관리 진입점 (Wave 11.8 후속)
+  (function(){
+    const btn = document.getElementById('expMoreBtn');
+    const menu = document.getElementById('expMoreMenu');
+    if (!btn || !menu) return;
+    const setOpen = (open) => {
+      menu.classList.toggle('is-open', open);
+      btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+      menu.setAttribute('aria-hidden', open ? 'false' : 'true');
+    };
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setOpen(!menu.classList.contains('is-open'));
+    });
+    document.addEventListener('click', (e) => {
+      if (!menu.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+        setOpen(false);
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu.classList.contains('is-open')) setOpen(false);
+    });
+    menu.querySelectorAll('.doc-more-menu__item[data-exp-action]').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const action = item.dataset.expAction;
+        setOpen(false);
+        if (action === 'admin') {
+          setCategory('admin');
+          if (location.hash !== '#/admin') location.hash = '#/admin';
         }
       });
     });
@@ -5472,8 +5528,10 @@
       // Wave 11.8 — admin 은 FIXTURE 없이 SPA admin.js wire (mocks fixture 미사용).
       if (key !== 'admin' && !FIXTURE[key]) return;
       activeCat = key;
+      // admin 은 가계부의 sub-view — 사이드바 active 는 가계부 유지 (Wave 11.8 후속).
+      const activeNavKey = key === 'admin' ? 'expense' : key;
       document.querySelectorAll('.sb__item[data-category]').forEach(el => {
-        el.classList.toggle('sb__item--active', el.dataset.category === key);
+        el.classList.toggle('sb__item--active', el.dataset.category === activeNavKey);
       });
       // body class 갱신 (라우트별 영역 hide/show 위해)
       ['navi', 'fiction', 'blog', 'memo', 'expense', 'admin'].forEach(k => {
