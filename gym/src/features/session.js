@@ -1296,10 +1296,19 @@ function renderFooterPills(doc, session, currentBlock) {
   }).join('');
   pillsEl.innerHTML = html;
   // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel inline center). addex chip 패턴 답습.
-  const active = pillsEl.querySelector('[data-ex-state="active"]');
-  if (active && typeof active.scrollIntoView === 'function') {
-    try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
-    catch (_) { /* old browser fallback */ }
+  // innerHTML 직후 동기 호출 시 mountSessionView async 흐름 안에서 layout 미완 케이스 가능 →
+  // rAF 로 다음 paint frame 에서 호출 (pill bounding rect 보장). jsdom 환경 fallback 으로 즉시 호출.
+  const centerActivePill = () => {
+    const active = pillsEl.querySelector('[data-ex-state="active"]');
+    if (active && typeof active.scrollIntoView === 'function') {
+      try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
+      catch (_) { /* old browser fallback */ }
+    }
+  };
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(centerActivePill);
+  } else {
+    centerActivePill();
   }
 }
 
