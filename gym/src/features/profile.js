@@ -103,7 +103,59 @@ export async function renderProfileTab(root) {
   // §10-3 — 필드 click + 로그아웃 wiring (idempotent)
   try { wireProfileTab(doc); } catch (e) { console.error('[profile] wireProfileTab', e); }
 
+  // §10-3 — 동기화 칩 + 사용자 정보 갱신 (실제 sync 상태 + Auth user)
+  try { await renderSyncStatus(doc); } catch (e) { console.error('[profile] renderSyncStatus', e); }
+
   return { rendered: true, settingsSnapshot: settings };
+}
+
+/** 동기화 칩 + 사용자 정보 갱신 — window.gymSync.isSyncActive + window.gymAuth.getCurrentUser. */
+export async function renderSyncStatus(doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { skipped: 'no-document' };
+  const card = doc.querySelector('[data-bind="sync-card"]');
+  const dot = doc.querySelector('[data-bind="sync-dot"]');
+  const text = doc.querySelector('[data-bind="sync-text"]');
+  const userEl = doc.querySelector('[data-bind="sync-user"]');
+  if (!card || !dot || !text || !userEl) return { skipped: 'no-mounts' };
+
+  const sync = typeof window !== 'undefined' ? window.gymSync : null;
+  const auth = typeof window !== 'undefined' ? window.gymAuth : null;
+  const active = sync?.isSyncActive?.() === true;
+  let user = null;
+  try { user = await auth?.getCurrentUser?.(); } catch (_) { user = null; }
+
+  // 상태 분류: 활성=정상(sage) / 비활성+user=대기(amber) / user 없음=로그인 필요(accent)
+  if (active) {
+    text.textContent = '동기화 정상';
+    text.style.color = 'var(--sage-soft)';
+    dot.style.background = 'var(--sage)';
+    dot.style.boxShadow = '0 0 8px var(--sage)';
+    card.style.background = 'rgba(120,140,93,0.10)';
+    card.style.borderColor = 'rgba(120,140,93,0.25)';
+  } else if (user) {
+    text.textContent = '동기화 대기';
+    text.style.color = 'rgba(217,180,87,0.85)';
+    dot.style.background = 'rgba(217,180,87,0.85)';
+    dot.style.boxShadow = '0 0 8px rgba(217,180,87,0.5)';
+    card.style.background = 'rgba(217,180,87,0.08)';
+    card.style.borderColor = 'rgba(217,180,87,0.22)';
+  } else {
+    text.textContent = '로그인 필요';
+    text.style.color = 'var(--accent)';
+    dot.style.background = 'var(--accent)';
+    dot.style.boxShadow = '0 0 8px var(--accent)';
+    card.style.background = 'rgba(217,119,87,0.08)';
+    card.style.borderColor = 'rgba(217,119,87,0.22)';
+  }
+
+  if (user) {
+    const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '—';
+    userEl.textContent = `${name} · ${user.email || '—'}`;
+  } else {
+    userEl.textContent = '로그인하지 않음';
+  }
+  return { active, hasUser: !!user };
 }
 
 /**
@@ -178,5 +230,6 @@ if (typeof window !== 'undefined') {
     renderProfileTab,
     editProfileField,
     wireProfileTab,
+    renderSyncStatus,
   };
 }
