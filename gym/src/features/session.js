@@ -1867,9 +1867,11 @@ function openKeypad(doc, field, opts = {}) {
   if (!sheet || !backdrop || !value || !unit) return;
   sheet.dataset.mode = field;
   // (f-3 wiring) — prefill 옵션 (set-row edit) + setIdx 보관 (특정 set 편집 모드)
-  sheet.dataset.buf = opts.prefill != null && Number.isFinite(opts.prefill)
-    ? String(opts.prefill)
-    : '';
+  const hasPrefill = opts.prefill != null && Number.isFinite(opts.prefill);
+  sheet.dataset.buf = hasPrefill ? String(opts.prefill) : '';
+  // fresh="1" — prefill 표시 상태. 첫 숫자/. 입력 시 buf reset (prefill 위 덮어쓰기 의도).
+  // del 키는 fresh 라도 buf 의 마지막 글자만 제거 (부분 수정 의도 보존).
+  sheet.dataset.fresh = hasPrefill ? '1' : '0';
   if (opts.setIdx != null && Number.isFinite(opts.setIdx)) {
     sheet.dataset.setIdx = String(opts.setIdx);
   } else {
@@ -1955,12 +1957,18 @@ function wireKeypad(doc) {
   if (!sheet || !backdrop || !done || !value || !grid) return;
   if (sheet.dataset.spaHooked === '1') return;
 
-  // 키 click — grid 위임
+  // 키 click — grid 위임. fresh="1" (prefill 표시 상태) + 숫자/. 입력 시 buf reset.
+  // del 키는 fresh 라도 그대로 (마지막 글자 제거, 부분 수정 의도).
   grid.addEventListener('click', (e) => {
     const btn = e.target.closest('.keypad-key');
     if (!btn) return;
     const k = btn.dataset.key;
-    sheet.dataset.buf = updateKeypadBuf(sheet.dataset.buf || '', k);
+    let buf = sheet.dataset.buf || '';
+    if (sheet.dataset.fresh === '1' && k !== 'del') {
+      buf = '';
+    }
+    sheet.dataset.buf = updateKeypadBuf(buf, k);
+    sheet.dataset.fresh = '0';
     renderKeypadValue(sheet, value);
   });
 
