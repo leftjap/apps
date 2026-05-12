@@ -23,6 +23,7 @@ import {
   updateKeypadBuf,
   applyKeypadValue,
   wireLongPress,
+  wireSessionShortcuts,
   openActionSheet,
   closeActionSheet,
   persistRemoveSet,
@@ -939,6 +940,107 @@ describe('mountSessionView graceful', () => {
     } finally {
       if (origDoc) globalThis.document = origDoc;
     }
+  });
+});
+
+/* ───────────────── wireSessionShortcuts (SessionHeader §6-6 + Footer + §6-2) ───────────────── */
+
+function makeShortcutBtn() {
+  const listeners = {};
+  return {
+    style: {},
+    dataset: {},
+    classList: { add() {}, remove() {} },
+    addEventListener(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
+    _fire(name) { (listeners[name] || []).forEach((fn) => fn({})); },
+    _listeners: listeners,
+  };
+}
+
+function makeShortcutDoc({ home = 2, end = true, addex = true } = {}) {
+  const homeBtns = Array.from({ length: home }, () => makeShortcutBtn());
+  const endBtn = end ? makeShortcutBtn() : null;
+  const addexBtn = addex ? makeShortcutBtn() : null;
+  // openActionSheet 가 의존하는 actionSheet/actionBackdrop/actionTitle/actionItems mock
+  const sheet = { dataset: { open: 'false', kind: '', step: '1' }, style: {} };
+  const backdrop = { dataset: { open: 'false' }, style: { opacity: '0', pointerEvents: 'none' } };
+  const titleEl = { textContent: '' };
+  const itemsEl = { innerHTML: '', _onSelect: null };
+  return {
+    body: { dataset: {} },
+    querySelectorAll(sel) {
+      if (sel === '.js-session-home') return homeBtns;
+      return [];
+    },
+    getElementById(id) {
+      if (id === 'sessionEndBtn') return endBtn;
+      if (id === 'sessionAddexBtn') return addexBtn;
+      if (id === 'actionSheet') return sheet;
+      if (id === 'actionBackdrop') return backdrop;
+      if (id === 'actionTitle') return titleEl;
+      if (id === 'actionItems') return itemsEl;
+      // mountSessionEmpty 가 호출하는 addexChips/addexList 는 sessionAddexBtn click 핸들러용 — null 반환 → graceful skipped no-mounts
+      return null;
+    },
+    _homeBtns: homeBtns,
+    _endBtn: endBtn,
+    _addexBtn: addexBtn,
+    _sheet: sheet,
+    _itemsEl: itemsEl,
+  };
+}
+
+describe('wireSessionShortcuts (§6-6 + §6-2)', () => {
+  it('doc 부재 → wired 0 (graceful)', () => {
+    const r = wireSessionShortcuts(null);
+    expect(r.wired).toBe(0);
+  });
+
+  it('home/end/addex 모두 존재 → wired = 2(home) + 1(end) + 1(addex)', () => {
+    const doc = makeShortcutDoc({ home: 2, end: true, addex: true });
+    const r = wireSessionShortcuts(doc);
+    expect(r.wired).toBe(4);
+    expect(doc.body.dataset.spaShortcuts).toBe('1');
+  });
+
+  it('idempotent — 두 번째 호출 wired 0 (spaShortcuts guard)', () => {
+    const doc = makeShortcutDoc();
+    expect(wireSessionShortcuts(doc).wired).toBe(4);
+    expect(wireSessionShortcuts(doc).wired).toBe(0);
+  });
+
+  it('home click → window.location.hash = "#/home"', () => {
+    const doc = makeShortcutDoc({ home: 1, end: false, addex: false });
+    const origLocation = globalThis.window.location;
+    globalThis.window.location = { hash: '' };
+    try {
+      wireSessionShortcuts(doc);
+      doc._homeBtns[0]._fire('click');
+      expect(globalThis.window.location.hash).toBe('#/home');
+    } finally {
+      if (origLocation) globalThis.window.location = origLocation;
+      else delete globalThis.window.location;
+    }
+  });
+
+  it('end click → openActionSheet (kind=session-end, items: finish/discard danger)', () => {
+    const doc = makeShortcutDoc({ home: 0, end: true, addex: false });
+    wireSessionShortcuts(doc);
+    doc._endBtn._fire('click');
+    expect(doc._sheet.dataset.open).toBe('true');
+    expect(doc._sheet.dataset.kind).toBe('session-end');
+    // items 두 개 (finish, discard) — innerHTML 에 data-action-id="finish" / "discard" 포함
+    expect(doc._itemsEl.innerHTML).toContain('data-action-id="finish"');
+    expect(doc._itemsEl.innerHTML).toContain('data-action-id="discard"');
+  });
+
+  it('addex click → body.dataset.state = "empty" (동기 부분)', () => {
+    const doc = makeShortcutDoc({ home: 0, end: false, addex: true });
+    wireSessionShortcuts(doc);
+    doc.body.dataset.state = 'active';
+    // 핸들러는 async 지만 body.dataset.state 설정은 await 이전이라 동기 적용
+    doc._addexBtn._fire('click');
+    expect(doc.body.dataset.state).toBe('empty');
   });
 });
 

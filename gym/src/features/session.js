@@ -442,6 +442,57 @@ export async function dumpActiveSessionFromState(stateData) {
 /* ───────────────────────────── DOM hijack (mocks/session.html) ───────────────────────────── */
 
 /**
+ * SessionHeader (§6-6) + Footer + (§6-2) 짧은 탭 wiring.
+ *  - .js-session-home click → #/home (empty/active 양쪽 phone wrapper 의 홈 SVG 버튼)
+ *  - #sessionEndBtn click → openActionSheet({kind:'session-end'}) (longpress 동일 메뉴, UX 보강)
+ *  - #sessionAddexBtn click → body.dataset.state='empty' + mountSessionEmpty hydrate
+ * 모두 idempotent (body.dataset.spaShortcuts guard).
+ */
+export function wireSessionShortcuts(doc) {
+  if (!doc) return { wired: 0 };
+  if (doc.body?.dataset?.spaShortcuts === '1') return { wired: 0 };
+
+  let wired = 0;
+
+  const homeBtns = doc.querySelectorAll?.('.js-session-home') || [];
+  homeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (typeof window !== 'undefined') window.location.hash = '#/home';
+    });
+    wired += 1;
+  });
+
+  const endBtn = doc.getElementById?.('sessionEndBtn');
+  if (endBtn) {
+    endBtn.addEventListener('click', () => {
+      const menu = getActionMenuFor('session-end', endBtn);
+      if (!menu) return;
+      openActionSheet(doc, {
+        ...menu,
+        onSelect: (actionId) => handleActionSelect(doc, 'session-end', actionId, endBtn),
+      });
+    });
+    wired += 1;
+  }
+
+  const addexBtn = doc.getElementById?.('sessionAddexBtn');
+  if (addexBtn) {
+    addexBtn.addEventListener('click', async () => {
+      try {
+        if (doc.body?.dataset) doc.body.dataset.state = 'empty';
+        await mountSessionEmpty(doc, false);
+      } catch (e) {
+        console.error('[gymSession] sessionAddexBtn', e);
+      }
+    });
+    wired += 1;
+  }
+
+  if (doc.body?.dataset) doc.body.dataset.spaShortcuts = '1';
+  return { wired };
+}
+
+/**
  * Phase B 단계 4 마무리 — mocks/session.html 진입 시 active 세션 유무로 분기.
  *  - active session + 1개 이상의 single 블록 → SessionC active 카드 정적 바인딩 (.session-active)
  *  - 그 외 → SessionEmpty 의 addex 시트 (.session-empty)
@@ -476,6 +527,10 @@ export async function mountSessionView() {
   const route = !dbUnavailable && activeBlocks.length > 0 && hasActiveCard ? 'active' : 'empty';
 
   if (doc.body && doc.body.dataset) doc.body.dataset.state = route;
+
+  // SessionHeader §6-6 + Footer + §6-2 — 짧은 탭/click wiring (idempotent).
+  // §7-1 꾹누르기 메뉴 외에 short-click 도 동일 메뉴 노출 (UX 보강, 사용자 피드백 반영).
+  try { wireSessionShortcuts(doc); } catch (e) { console.error('[gymSession] wireSessionShortcuts', e); }
 
   if (route === 'active') {
     // (f-5-1) — _currentBlockIdx 가 유효한 single 블록을 가리키면 그 block, 그 외 마지막 single 자동
@@ -2059,6 +2114,9 @@ function hookClicks(chipsEl, listEl) {
       }
     }
     b.classList.add('is-added');
+    // §6-2 — 종목 탭 → 세션 추가 + 바텀시트 닫힘. mountSessionView 재호출로 active 분기 복귀
+    // (active+ 흐름) 또는 첫 추가 시 active 분기 진입 (empty 자연 흐름) 양쪽 모두 자동 복귀.
+    try { await mountSessionView(); } catch (err) { console.error('[gymSession] addex auto-remount', err); }
   });
   listEl.dataset.spaHooked = '1';
 }
@@ -2100,6 +2158,7 @@ if (typeof window !== 'undefined') {
     updateKeypadBuf,
     applyKeypadValue,
     wireLongPress,
+    wireSessionShortcuts,
     openActionSheet,
     closeActionSheet,
     persistRemoveSet,
