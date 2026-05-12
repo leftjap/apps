@@ -2090,11 +2090,28 @@ async function renderList(listEl) {
     listEl.innerHTML = `<div class="addex-empty" data-empty="1" ${VIEW_ATTR}="1">이 부위에 등록된 운동이 없습니다.</div>`;
     return;
   }
+  // active session exerciseId Set 미리 조회 — innerHTML 생성 시 is-added 직접 박아
+  // 신규 토글 후 renderList 재호출 시 기존 운동 토글이 default→is-added 로 transition
+  // 트리거되며 깜빡이는 회귀 회피. syncIsAddedState 는 idempotent 안전망으로 유지.
+  let activeIds = new Set();
+  try {
+    const session = await getActiveSession();
+    if (session && Array.isArray(session.blocks)) {
+      for (const b of session.blocks) {
+        if (b && b.type === 'single' && b.exerciseId) activeIds.add(b.exerciseId);
+      }
+    }
+  } catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] renderList getActiveSession', e);
+    }
+  }
   listEl.innerHTML = list
     .map((ex) => {
       const meta = formatMeta(ex);
+      const addedClass = activeIds.has(ex.id) ? ' is-added' : '';
       return `
-        <button class="addex-item" data-ex="${escapeHtml(ex.id)}" data-name="${escapeHtml(ex.name)}" data-part="${escapeHtml(ex.part)}" ${VIEW_ATTR}="1">
+        <button class="addex-item${addedClass}" data-ex="${escapeHtml(ex.id)}" data-name="${escapeHtml(ex.name)}" data-part="${escapeHtml(ex.part)}" ${VIEW_ATTR}="1">
           <span class="ex-main">
             <span class="ex-name">${escapeHtml(ex.name)}</span>
             <span class="ex-meta">${escapeHtml(meta)}</span>
