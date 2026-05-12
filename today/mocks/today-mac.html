@@ -2960,7 +2960,7 @@
       transform: translateX(-100%);
       transition: transform .22s ease;
       z-index: 50;
-      padding: calc(14px + env(safe-area-inset-top)) 12px calc(12px + env(safe-area-inset-bottom));
+      padding: calc(14px + env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom));
     }
     body[data-drawer-open] .sidebar { transform: translateX(0); }
     body[data-drawer-open] .drawer-backdrop { opacity: 1; pointer-events: auto; }
