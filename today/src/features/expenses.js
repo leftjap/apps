@@ -24,11 +24,18 @@
 import { Queries } from '../db/queries.js';
 import Classifier from '../services/expense-classifier.js';
 
-/** 영문 카테고리 id (DB enum) → 한글 라벨. Classifier 미매칭 시 원본 반환 (이미 한글이거나 미정의). */
+/** 영문 카테고리 id (DB enum) → 한글 라벨.
+ * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
+ * id) 또는 null 은 '기타' (etc) 로 통합. 화면에서 사용자가 만들지 않은 라벨이
+ * 노출되는 것을 방지 — 통계/타임라인/검색 모두 일관.
+ */
 export function toCategoryLabel(id) {
-  if (!id) return '';
-  const hit = Classifier.getCategoryById?.(id);
-  return hit?.name || id;
+  if (id) {
+    const hit = Classifier.getCategoryById?.(id);
+    if (hit) return hit.name;
+  }
+  const etc = Classifier.getCategoryById?.('etc');
+  return etc?.name || '기타';
 }
 
 let _categoryObserver = null;
@@ -275,7 +282,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
       const card = escapeHtml(r.card || '삼성카드 & MILEAGE PLATINUM');
-      const cat = escapeHtml(toCategoryLabel(r.category) || '미분류');
+      const cat = escapeHtml(toCategoryLabel(r.category));
       const isCont = i > 0;
       const dateCell = isCont
         ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>'
@@ -519,8 +526,9 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
     // brand TOP 10 집계
     const name = r.brand || r.merchant;
     if (name) groups.set(name, (groups.get(name) || 0) + amt);
-    // 카테고리 누적 집계 (treemap 용) — 라벨 변환 (영문 id → 한글). null 은 '미분류'.
-    const catLabel = toCategoryLabel(r.category) || '미분류';
+    // 카테고리 누적 집계 (treemap 용) — toCategoryLabel 이 사용자 picker 외 id/null 을
+    // '기타' 로 통합 처리 (2026-05-12). 별도 fallback 불필요.
+    const catLabel = toCategoryLabel(r.category);
     catTotals.set(catLabel, (catTotals.get(catLabel) || 0) + amt);
   }
   // 헤드라인 갱신
