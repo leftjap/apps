@@ -1147,11 +1147,14 @@ export function patchDayPopoverHandlers({ doc = (typeof document !== 'undefined'
 // Dexie searchExpenses 결과로 body 덮어쓰기.
 // ───────────────────────────────────────────────────────────────────────────
 
-/** Dexie row → mocks .exp-popover-row HTML (검색 결과 + 카테고리 popup 공용). Wave 11.6.8b — onclick inline backup. */
+/** Dexie row → mocks .exp-popover-row HTML (검색 결과 + 카테고리 popup 공용).
+ * 2026-05-12: category 컬럼이 영문 id (DB) 또는 한글 (옛 Keep) 혼재. toCategoryLabel
+ * 로 사용자 picker 의 한글 라벨로 통일 표시 (SOYOUN fallback 제거 + 외부 id → '기타').
+ */
 export function rowToExpSearchHtml(row) {
   const merchant = escapeHtml(row?.merchant || row?.memo || '');
   const card = escapeHtml(row?.card || DEFAULT_CARD_LABEL);
-  const category = escapeHtml(row?.category || '');
+  const category = escapeHtml(toCategoryLabel(row?.category));
   const id = escapeAttr(row?.id || '');
   const recurring = row?.recurring ? REPEAT_SVG : '';
   const onclick = id ? ` onclick="window.openExpenseModal && window.openExpenseModal('edit', '${id}')"` : '';
@@ -1300,19 +1303,19 @@ export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
       </div>
     `;
   }
-  // Wave 11.6.6 — 사용자 요구: 구분선은 합계 위에 1개만. rows 위 / summary 아래 (스샷5 정합).
-  const summary = `<div class="exp-fp-summary">${rows.length}건 합계 ${formatAmount(total)}</div>`;
+  // 2026-05-12 — summary 를 body 외부 footer 로 분리 (flex:0 0 auto). row 가 많아
+  // body 가 scroll 처리될 때도 summary 가 카드 하단 고정. 이전엔 body 안에 있어 row
+  // 가 많아지면 카드 max-height 경계 위에 걸쳐 보이는 버그.
   const list = rows.map(rowToExpSearchHtml).join('');
+  const summary = `<div class="exp-fp-summary" style="flex:0 0 auto;padding:10px 16px;border-top:1px solid var(--line-soft, rgba(0,0,0,0.08));font-weight:500;">${rows.length}건 합계 ${formatAmount(total)}</div>`;
   return `
     <div class="exp-fp-card exp-fp-popup--category" role="dialog" aria-modal="true">
       <div class="exp-fp-header">
         <span class="exp-fp-title">${title}</span>
         <button class="exp-fp-close" data-popup-close type="button" aria-label="닫기">×</button>
       </div>
-      <div class="exp-fp-body">
-        ${list}
-        ${summary}
-      </div>
+      <div class="exp-fp-body">${list}</div>
+      ${summary}
     </div>
   `;
 }

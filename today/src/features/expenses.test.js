@@ -880,24 +880,30 @@ describe('patchDayPopoverFromRows — DOM 패치 (1건 룰 포함)', () => {
 // ───────────────────────────────────────────────────────────────────────────
 
 describe('rowToExpSearchHtml', () => {
-  it('필수 필드 직렬화 + 카드/카테고리 + 금액', () => {
+  it('필수 필드 직렬화 + 카드/카테고리 + 금액 (영문 id → 한글 라벨 변환)', () => {
     const html = rowToExpSearchHtml({
       merchant: '쿠팡',
       card: '신한카드',
-      category: '쇼핑',
+      category: 'online',  // 영문 id (DB) → toCategoryLabel 이 '온라인쇼핑' 으로 변환
       amount_krw: 50000,
     });
     expect(html).toContain('class="exp-popover-row"');
     expect(html).toContain('쿠팡');
     expect(html).toContain('신한카드');
-    expect(html).toContain('쇼핑');
+    expect(html).toContain('온라인쇼핑');
     expect(html).toContain('50,000');
   });
-  it('XSS escape (merchant/card/category)', () => {
+  it('사용자 picker 외 category 는 기타 라벨로 통합 (SOYOUN 전용 / null)', () => {
+    const html1 = rowToExpSearchHtml({ merchant: 'M', category: 'food', amount_krw: 100 });
+    const html2 = rowToExpSearchHtml({ merchant: 'M', category: null, amount_krw: 100 });
+    expect(html1).toContain('>기타<');
+    expect(html2).toContain('>기타<');
+  });
+  it('XSS escape (merchant/card)', () => {
     const html = rowToExpSearchHtml({
       merchant: '<script>x</script>',
       card: 'A&B',
-      category: '"q"',
+      category: 'online',
       amount_krw: 100,
     });
     expect(html).not.toContain('<script>');
