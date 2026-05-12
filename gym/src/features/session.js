@@ -640,10 +640,27 @@ async function mountSessionActive(doc, block, session) {
     }
   }
 
-  // S1..Sn 도트
+  // S1..Sn 도트 — 활성 set 가운데 정렬 (footer pill 패턴 답습)
   const setDotsEl = doc.getElementById('cardSetDots');
   if (setDotsEl) {
     setDotsEl.innerHTML = sets.map((s, idx) => renderSetDotHtml(idx, s, idx === cur)).join('');
+    const centerActiveSet = () => {
+      const active = setDotsEl.querySelector('[data-current="1"]');
+      if (!active) return;
+      try {
+        const containerRect = setDotsEl.getBoundingClientRect();
+        const activeRect = active.getBoundingClientRect();
+        const activeCenterRel = activeRect.left + activeRect.width / 2 - containerRect.left;
+        const targetScrollLeft = setDotsEl.scrollLeft + activeCenterRel - containerRect.width / 2;
+        if (typeof setDotsEl.scrollTo === 'function') {
+          setDotsEl.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+        } else {
+          setDotsEl.scrollLeft = targetScrollLeft;
+        }
+      } catch (_) { /* fallback */ }
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(centerActiveSet);
+    else centerActiveSet();
   }
 
   // 진행바 + 볼륨 + %
@@ -746,8 +763,10 @@ function renderSetDotHtml(idx, set, isCurrent) {
   const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
   const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
   // spec §6-9 — 세트 행 hold 대상 (data-longpress="set-row" + data-set-idx)
+  // data-current="1" — 활성 set 가운데 정렬용 셀렉터 (footer pill 패턴 답습).
+  const currentAttr = isCurrent ? ' data-current="1"' : '';
   return `
-        <div data-set-idx="${idx}" data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};cursor:pointer;">
+        <div data-set-idx="${idx}"${currentAttr} data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};flex-shrink:0;cursor:pointer;">
           <div style="font-size:10px;letter-spacing:0.06em;">S${setNum}</div>
           <div style="font-size:13px;margin-top:4px;">${escapeHtml(valueText)}</div>
         </div>`;
