@@ -35,7 +35,8 @@ test.describe('Wave 11.7.2b — admin weight tab', () => {
     // ([data-bind="keypad-sheet"] / [data-key] / [data-bind="keypad-value"] / [data-bind="keypad-backdrop"] /
     //  [data-act="weight-add"] 모두 부재).
     // 체중 입력 UI 는 단순 button (+ 오늘 체중 입력, admin.html:196) 만 존재, click wiring 미구현.
-    // 후속 wave 에서 키패드 sheet 또는 다른 입력 UI 재구현 시 enable.
+    // TODO: 후속 wave 에서 spec §10 weight 입력 UI (키패드 sheet 또는 entry-form 토글) 재구현 시 enable —
+    //       admin.html weight pane 의 + 버튼에 [data-act] 부착 + weights.js 또는 admin IIFE 의 toggle wiring 구현 시점.
     test.skip(true, 'Phase B weight 키패드 sheet UI 폐기 — 후속 wave 에서 재구현 시 enable');
     await bootstrapFake(page);
     const dbReady = await page.evaluate(() => !!window.gymDB);
