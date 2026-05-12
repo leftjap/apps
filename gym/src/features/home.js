@@ -240,6 +240,39 @@ function renderWeekCalendarToDom(cells, doc) {
 }
 
 /**
+ * §9-1 — 주간 캘린더 셀에 tap/long-press 위임.
+ *  - tap: fetchDayDetail(iso) → openDayDetailSheet
+ *  - long-press(500ms): confirm step 시트 → deleteSessionByISO + 캘린더 refresh
+ * idempotent — attachCalendarTapHandlers 가 dataset.spaTapsHooked 로 가드.
+ */
+export function wireWeekCalendarTaps(doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { wired: 0 };
+  const cal = doc.getElementById('weekCal');
+  const tap = typeof window !== 'undefined' ? window.gymDayDetail?.attachCalendarTapHandlers : null;
+  if (!cal || typeof tap !== 'function') return { wired: 0 };
+  tap(cal, {
+    cellSelector: '.cal-day.worked',
+    isoExtractor: (el) => el?.dataset?.iso || null,
+    onTap: async (iso) => {
+      const entry = await fetchDayDetail(iso);
+      window.gymDayDetail?.openDayDetailSheet?.(doc, { iso, entry, step: 'summary' });
+    },
+    onLongPress: (iso) => {
+      window.gymDayDetail?.openDayDetailSheet?.(doc, {
+        iso,
+        step: 'confirm',
+        onDelete: async (delIso) => {
+          await window.gymStats?.deleteSessionByISO?.(delIso);
+          try { await mountHomeView(); } catch (e) { console.error('[gymHome] refresh after delete', e); }
+        },
+      });
+    },
+  });
+  return { wired: 1 };
+}
+
+/**
  * 페이지 헤더 nav 짧은 탭 wiring (home / stats / admin 공통). session.js wireSessionShortcuts 패턴 답습.
  *  - .js-home-stats / .js-nav-stats click → #/stats
  *  - .js-home-manage / .js-nav-manage click → #/admin
@@ -339,6 +372,9 @@ export async function mountHomeView(now = Date.now()) {
       console.error('[gymHome] mountHomeView calendar', e);
     }
   }
+
+  try { wireWeekCalendarTaps(doc); } catch (e) { console.error('[gymHome] wireWeekCalendarTaps', e); }
+  try { window.gymDayDetail?.wireDayDetailSheet?.(doc); } catch (e) { console.error('[gymHome] wireDayDetailSheet', e); }
 
   return {
     activeApplied,
@@ -456,5 +492,6 @@ if (typeof window !== 'undefined') {
     fetchDayDetail,
     partAbbreviation,
     wireHomeShortcuts,
+    wireWeekCalendarTaps,
   };
 }

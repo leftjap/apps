@@ -127,6 +127,22 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <button id="ctaBtn" type="button" style="width:100%;height:56px;border-radius:28px;border:0;background:var(--accent);color:#fff;font-family:var(--font-body);font-size:15px;font-weight:500;box-shadow:0 14px 30px -8px rgba(217,119,87,.55);cursor:pointer;">운동 시작</button>
       </div>
     </div>
+    <!-- §9-1 — 날짜 탭 → 운동 요약 바텀시트 (src/features/day-detail-sheet.js) -->
+    <div id="dayDetailBackdrop" data-open="false" style="position:absolute;inset:0;z-index:90;background:rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
+    <div id="dayDetailSheet" data-open="false" data-step="summary" data-iso="" style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:#15120e;border-top-left-radius:22px;border-top-right-radius:22px;padding:18px 18px 24px;box-shadow:0 -16px 40px -10px rgba(0,0,0,0.45);transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div id="dayDetailDate" class="kr" style="font-size:14px;color:rgba(255,255,255,0.9);font-weight:500;">—</div>
+        <div id="dayDetailTag" class="kr" style="font-size:11px;color:rgba(255,255,255,0.5);"></div>
+      </div>
+      <div id="dayDetailMeta" class="kr" style="display:none;gap:14px;margin-bottom:12px;font-size:12px;color:rgba(255,255,255,0.7);flex-wrap:wrap;"></div>
+      <div id="dayDetailExList" style="display:none;flex-direction:column;max-height:240px;overflow-y:auto;"></div>
+      <div id="dayDetailEmpty" class="kr" style="display:none;font-size:12px;color:rgba(255,255,255,0.4);text-align:center;padding:24px 0;">기록 없음</div>
+      <div id="dayDetailConfirm" style="display:none;flex-direction:column;gap:8px;">
+        <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.85);text-align:center;margin:8px 0 12px;">이 날짜의 기록을 삭제하시겠습니까?</div>
+        <button class="kr" type="button" data-day-detail-action="delete-confirm" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;">삭제</button>
+        <button class="kr" type="button" data-day-detail-action="cancel" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);font-size:14px;cursor:pointer;">취소</button>
+      </div>
+    </div>
   </div>
   <div class="phone-home"></div>
 </div>

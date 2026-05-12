@@ -357,6 +357,64 @@ export function parseMonthLabel(text) {
  *
  * 반환: { ok, deletedId, iso? } 또는 { ok:false, reason }
  */
+/**
+ * §9-1 — 월 캘린더 셀에 tap/long-press 위임.
+ *  - data-day(1~31) + monthLabel(YYYY · M월) → ISO 변환
+ *  - .worked 셀만 활성 (운동 없는 날은 무시)
+ */
+export function wireMonthCalendarTaps(doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { wired: 0 };
+  const grid = doc.getElementById('calGrid');
+  const label = doc.getElementById('monthLabel');
+  const tap = typeof window !== 'undefined' ? window.gymDayDetail?.attachCalendarTapHandlers : null;
+  if (!grid || !label || typeof tap !== 'function') return { wired: 0 };
+  tap(grid, {
+    cellSelector: '.cal-cell.worked',
+    isoExtractor: (el) => {
+      const day = parseInt(el?.dataset?.day, 10);
+      if (!Number.isFinite(day)) return null;
+      const parsed = parseMonthLabel(label.textContent);
+      if (!parsed) return null;
+      return `${parsed.year}-${String(parsed.month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    },
+    onTap: async (iso) => {
+      const fetcher = window.gymHome?.fetchDayDetail;
+      const entry = typeof fetcher === 'function' ? await fetcher(iso) : null;
+      window.gymDayDetail?.openDayDetailSheet?.(doc, { iso, entry, step: 'summary' });
+    },
+    onLongPress: (iso) => {
+      window.gymDayDetail?.openDayDetailSheet?.(doc, {
+        iso,
+        step: 'confirm',
+        onDelete: async (delIso) => {
+          await deleteSessionByISO(delIso);
+          try { await mountStatsView(); } catch (e) { console.error('[gymStats] refresh after delete', e); }
+        },
+      });
+    },
+  });
+  return { wired: 1 };
+}
+
+/**
+ * §9-1 — ISO 기반 단일 삭제 wrapper.
+ * 주간 캘린더는 monthLabel 없으므로 deleteSessionByDay 대신 이쪽 사용.
+ */
+export async function deleteSessionByISO(iso) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return { ok: false, reason: 'invalid_iso' };
+  try {
+    const session = await getSessionByDate(iso);
+    if (!session) return { ok: false, reason: 'no_session', iso };
+    await deleteSession(session.id);
+    return { ok: true, deletedId: session.id, iso };
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return { ok: false, reason: 'no_db' };
+    console.error('[gymStats] deleteSessionByISO', e);
+    return { ok: false, reason: 'error', error: e?.message };
+  }
+}
+
 export async function deleteSessionByDay(day, sessionId, doc) {
   doc = doc || (typeof document !== 'undefined' ? document : null);
   if (!sessionId && !Number.isFinite(day)) {
@@ -401,6 +459,8 @@ export async function mountStatsView(now = Date.now()) {
     applyVolumesToDom(volumes, doc);
     applyTodayToCalendar(now, doc);
     applyWorkedToCalendar(sessions, doc);
+    try { wireMonthCalendarTaps(doc); } catch (e) { console.error('[gymStats] wireMonthCalendarTaps', e); }
+    try { (typeof window !== 'undefined' ? window.gymDayDetail : null)?.wireDayDetailSheet?.(doc); } catch (e) { console.error('[gymStats] wireDayDetailSheet', e); }
     return { applied: true, volumes };
   } catch (e) {
     if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
@@ -482,6 +542,8 @@ if (typeof window !== 'undefined') {
     sessionToWorkoutEntry,
     applyWorkedToCalendar,
     deleteSessionByDay,
+    deleteSessionByISO,
+    wireMonthCalendarTaps,
     mountStatsView,
     summarizeBodyParts,
     summarizeWeeklyTrend,
