@@ -346,6 +346,12 @@ export async function pushExpense(id) {
   try {
     const payload = { ...row };
     delete payload.pending_sync;
+    // 2026-05-12 — normalizeRow 가 모든 store 에 무차별 추가하는 entries 전용 필드 정제.
+    // today_expenses 테이블엔 is_shared/pinned 컬럼이 없어서 포함 시 PGRST204 (schema cache).
+    // 결과: 모든 expense update 가 Supabase 까지 도달 못 하고 Dexie 만 변경되어
+    // 새로고침 시 pullTable 이 옛 Supabase 데이터로 덮어쓰는 silent revert 발생.
+    delete payload.is_shared;
+    delete payload.pinned;
     const { error } = await supabase
       .from('today_expenses')
       .upsert(payload, { onConflict: 'id' });
@@ -422,6 +428,10 @@ export async function pushComment(id) {
   try {
     const payload = { ...row };
     delete payload.pending_sync;
+    // 2026-05-12 — normalizeRow 의 entries 전용 필드 (is_shared/pinned) 가 comments
+    // payload 에 섞이면 PGRST204. expense 와 동일 패턴 fix.
+    delete payload.is_shared;
+    delete payload.pinned;
     const { error } = await supabase
       .from('today_comments')
       .upsert(payload, { onConflict: 'id' });
