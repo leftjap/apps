@@ -620,12 +620,20 @@ async function mountSessionActive(doc, block, session) {
   if (cardWeightEl) cardWeightEl.style.opacity = presetOpacity;
   if (cardRepsEl) cardRepsEl.style.opacity = presetOpacity;
 
-  // 이전 세트 ("55kg × 9") — 직전 set 의 weight/reps. 부재 시 hidden.
+  // 직전 세션 동일 세트번호 표시 ("55kg × 9"). prev session 없거나 해당 set 부재 시 hidden.
+  // spec §6-3-3 의 preset 우선순위와 별개 — cardPrevSet 은 항상 직전 세션 기준.
   const prevEl = doc.getElementById('cardPrevSet');
   if (prevEl) {
-    const prev = cur > 0 ? sets[cur - 1] : null;
-    if (prev && Number.isFinite(prev.weight) && Number.isFinite(prev.reps)) {
-      prevEl.textContent = `${prev.weight}kg × ${prev.reps}`;
+    let prevDisplay = null;
+    try {
+      const prevSessionSets = await getPrevSessionLastSets(block.exerciseId);
+      const p = prevSessionSets && prevSessionSets[cur];
+      if (p && Number.isFinite(p.weight) && Number.isFinite(p.reps)) {
+        prevDisplay = `${p.weight}kg × ${p.reps}`;
+      }
+    } catch (e) { console.error('[gymSession] cardPrevSet prev session lookup', e); }
+    if (prevDisplay) {
+      prevEl.textContent = prevDisplay;
       prevEl.style.display = '';
     } else {
       prevEl.style.display = 'none';
