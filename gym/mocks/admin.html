@@ -52,6 +52,20 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 [data-tab="weight"] .tab-weight .tab-label,
 [data-tab="profile"] .tab-profile .tab-label { font-weight: 600; color: #fff; }
 .tab-label { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.45); }
+/* 운동 탭 — exercises-admin.js renderPartsChips / renderExerciseList 출력 마크업 정합 (시안 inline 다크 톤 답습) */
+.part-chip { flex-shrink: 0; padding: 7px 14px; border-radius: 999px; font-size: 12px; font-weight: 400; font-family: var(--font-body); background: transparent; color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
+.part-chip.is-active { background: rgba(255,255,255,0.1); color: #fff; font-weight: 600; border: 0; }
+.ex-row { display: flex; align-items: center; padding: 13px 14px; border-top: 1px solid rgba(255,255,255,0.04); color: #fff; }
+.ex-row:first-child { border-top: 0; }
+.ex-grip { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 14px; opacity: 0.4; color: rgba(255,255,255,0.6); }
+.ex-grip svg { width: 16px; height: 16px; display: block; }
+.ex-name { flex: 1; font-size: 14px; color: #fff; font-weight: 500; font-family: var(--font-body); }
+.ex-meta { font-size: 11px; color: rgba(255,255,255,0.4); font-family: var(--font-display); margin-right: 14px; }
+.ex-toggle { width: 36px; height: 22px; border-radius: 11px; background: rgba(255,255,255,0.12); border: 0; padding: 0; position: relative; cursor: pointer; flex-shrink: 0; }
+.ex-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 9px; background: #fff; transition: transform 160ms ease; }
+.ex-toggle.is-on { background: var(--accent); }
+.ex-toggle.is-on::after { transform: translateX(14px); }
+.ex-row.is-hidden { opacity: 0.45; }
 </style>
 </head>
 <body>
