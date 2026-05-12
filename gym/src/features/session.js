@@ -2181,9 +2181,27 @@ function hookClicks(chipsEl, listEl) {
       }
     }
     b.classList.add('is-added');
-    // §6-2 — 종목 탭 → 세션 추가 + 바텀시트 닫힘. mountSessionView 재호출로 active 분기 복귀
+    // §6-2 — 종목 탭 → 세션 추가 + 시트 유지. mountSessionView 재호출로 active 분기 복귀
     // (active+ 흐름) 또는 첫 추가 시 active 분기 진입 (empty 자연 흐름) 양쪽 모두 자동 복귀.
     try { await mountSessionView(); } catch (err) { console.error('[gymSession] addex auto-remount', err); }
+    // 다중 선택 유지 — empty→active 첫 전환 시 active 시트가 default 닫힘 상태로 mount 되어
+    // 첫 운동 토글만 하면 시트가 사라지는 회귀. mount 후 active 시트 강제 open (이미 open 시 idempotent).
+    try {
+      const doc = (typeof document !== 'undefined') ? document : null;
+      if (doc) {
+        const sSheet = doc.getElementById('sessionAddexSheet');
+        if (sSheet) {
+          sSheet.dataset.open = 'true';
+          sSheet.style.transform = 'translateY(0)';
+          const sBackdrop = doc.getElementById('sessionAddexBackdrop');
+          if (sBackdrop) {
+            sBackdrop.dataset.open = 'true';
+            sBackdrop.style.opacity = '1';
+            sBackdrop.style.pointerEvents = 'auto';
+          }
+        }
+      }
+    } catch (_) { /* graceful */ }
   });
   listEl.dataset.spaHooked = '1';
 }
