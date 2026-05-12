@@ -5592,17 +5592,16 @@
         openNewExpenseForm();
         return;
       }
-      // placeholder + crumb #N 은 SPA wrapNewArticle 이 todayDB 기반 동적 갱신 (사용자 요청 2026-05-12).
-      // mocks fixture totalCount stub (#1337) 사용 금지.
+      // placeholder + crumb #N + share/more readonly 정리 모두 wrapNewArticle 이 처리.
+      // 주의: .doc__body 박으면 wrapNewArticle 의 early-return 조건 (L843) 에 걸려 정리 코드 미실행.
+      // 따라서 mocks 는 body div 박지 않음 — wrapNewArticle 이 body 추가 + 동적 갱신 일괄 수행.
       const view = document.getElementById('mainView');
       view.innerHTML = `
         <article class="doc">
           <h1 class="doc__h1" contenteditable spellcheck="false" data-empty-title="제목 없음"></h1>
           <div class="doc__meta">0단어<span class="sep">·</span>원고지 0매</div>
-          <div class="doc__body" contenteditable spellcheck="false"></div>
         </article>
       `;
-      // crumb #N 은 wrapNewArticle 안에서 동적 갱신. mocks 의 fixture 값 사용 금지.
       setTimeout(() => {
         const h1 = view.querySelector('.doc__h1');
         if (h1) h1.focus();
