@@ -4479,8 +4479,9 @@
         const action = item.dataset.expAction;
         setOpen(false);
         if (action === 'admin') {
-          setCategory('admin');
+          // setCategory 가 다른 IIFE 의 private — admin sb__item (display:none) click 으로 트리거.
           if (location.hash !== '#/admin') location.hash = '#/admin';
+          document.querySelector('.sb__item[data-category="admin"]')?.click();
         }
       });
     });
