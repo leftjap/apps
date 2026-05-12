@@ -1227,12 +1227,31 @@ function spentAtMatchesMonth(spentAt, year, month) {
   return String(spentAt).startsWith(ym);
 }
 
-/** Dexie searchExpenses(category) → 월 필터 + 합계. UI render 는 별도. */
+/** 'YYYY' prefix 매치 — year-to-date scope. */
+function spentAtMatchesYear(spentAt, year) {
+  if (!spentAt) return false;
+  return String(spentAt).startsWith(`${year}-`);
+}
+
+/** 카테고리 normalize — 한글 라벨이든 영문 id 든 동일 키로 비교 가능.
+ * 한글 ('온라인쇼핑') → id ('online') 변환 시도. 변환 실패 시 raw 유지.
+ */
+function normalizeCategoryKey(c) {
+  if (!c) return '';
+  const asId = Classifier.getCategoryIdByName?.(c);
+  return asId || c;
+}
+
+/** Dexie searchExpenses(category) → 월/년 필터 + 합계. UI render 는 별도.
+ * 2026-05-12: 한글 라벨 ↔ 영문 id 양방향 매칭 + scope='year' 옵션 (누적 위젯 클릭용).
+ * opts.scope === 'year' 면 year-to-date, 그 외엔 기존처럼 month 필터.
+ */
 export async function fetchCategoryExpenses(category, opts = {}) {
   if (!category) return { rows: [], total: 0 };
   const now = new Date();
   const year = opts.year || now.getFullYear();
   const month = opts.month || (now.getMonth() + 1);
+  const scope = opts.scope || 'month';
   let rows = [];
   try {
     rows = await Queries.searchExpenses(category);
@@ -1240,15 +1259,26 @@ export async function fetchCategoryExpenses(category, opts = {}) {
     console.warn('[expenses] searchExpenses 실패:', e?.message || e);
     return { rows: [], total: 0 };
   }
-  const filtered = rows.filter((r) => r.category === category && spentAtMatchesMonth(r.spent_at, year, month));
+  const targetKey = normalizeCategoryKey(category);
+  const dateMatch = (spentAt) => scope === 'year'
+    ? spentAtMatchesYear(spentAt, year)
+    : spentAtMatchesMonth(spentAt, year, month);
+  const filtered = rows.filter((r) => normalizeCategoryKey(r.category) === targetKey && dateMatch(r.spent_at));
   const total = filtered.reduce((s, r) => s + (r.amount_krw || 0), 0);
-  return { rows: filtered, total, year, month };
+  return { rows: filtered, total, year, month, scope };
 }
 
-/** 카테고리 popup HTML — heroCard 패턴 (mocks .exp-fp-popup 답습). */
+/** 카테고리 popup HTML — heroCard 패턴 (mocks .exp-fp-popup 답습).
+ * 2026-05-12: scope='year' 면 제목을 "X · YYYY년" 으로. (누적 위젯 클릭 케이스.)
+ */
 export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
-  const month = opts.month || (new Date().getMonth() + 1);
-  const title = `${escapeHtml(category)} · ${month}월`;
+  const now = new Date();
+  const month = opts.month || (now.getMonth() + 1);
+  const year = opts.year || now.getFullYear();
+  const scope = opts.scope || 'month';
+  const title = scope === 'year'
+    ? `${escapeHtml(category)} · ${year}년`
+    : `${escapeHtml(category)} · ${month}월`;
   if (!rows.length) {
     return `
       <div class="exp-fp-popup exp-fp-popup--category" role="dialog" aria-modal="true">
@@ -1286,12 +1316,12 @@ export async function openCategoryDetailPopup(category, opts = {}, doc = (typeof
   // 기존 popup 제거 (idempotent)
   const existing = doc.getElementById('expCategoryPopupOverlay');
   if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
-  const { rows, total, month } = await fetchCategoryExpenses(category, opts);
+  const { rows, total, year, month, scope } = await fetchCategoryExpenses(category, opts);
   const overlay = doc.createElement('div');
   overlay.id = 'expCategoryPopupOverlay';
   overlay.className = 'exp-fp-overlay';
   overlay.setAttribute('data-category-popup', 'true');
-  overlay.innerHTML = buildCategoryPopupHtml(category, rows, total, { month });
+  overlay.innerHTML = buildCategoryPopupHtml(category, rows, total, { year, month, scope });
   doc.body.appendChild(overlay);
   function close() {
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
@@ -1319,7 +1349,9 @@ export function patchOpenCategoryDetailHandler({
   _categoryDetailPatched = true;
   win.openCategoryDetail = function patchedOpenCategoryDetail(cat, event) {
     if (event && typeof event.stopPropagation === 'function') event.stopPropagation();
-    openCategoryDetailPopup(cat, {}, doc).catch((e) =>
+    // 2026-05-12: 누적 위젯 (.exp-cat-row, year-to-date) 클릭 케이스. scope='year' 로
+    // 모달이 2026년 전체 결제를 노출 (이전엔 현재 월만 → 사용자 인지 불일치).
+    openCategoryDetailPopup(cat, { scope: 'year' }, doc).catch((e) =>
       console.warn('[expenses] openCategoryDetailPopup 실패:', e?.message || e),
     );
   };

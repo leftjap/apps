@@ -1096,6 +1096,71 @@ describe('fetchCategoryExpenses — Wave 11.6.5', () => {
     expect(r.rows).toEqual([]);
     expect(r.total).toBe(0);
   });
+
+  it('2026-05-12 — 한글 라벨 / 영문 id 양방향 매칭', async () => {
+    const { Queries } = await import('../db/queries.js');
+    // SMS ingest 시대 데이터 — category 가 영문 id ('online')
+    await Queries.createExpense({
+      owner_id: OWNER,
+      spent_at: '2026-05-06T13:00:00Z',
+      amount_krw: 3470,
+      merchant: '쿠팡',
+      category: 'online',
+      source: 'sms',
+    });
+    // Keep import 시대 데이터 — category 가 한글 ('온라인쇼핑')
+    await Queries.createExpense({
+      owner_id: OWNER,
+      spent_at: '2026-05-05T13:00:00Z',
+      amount_krw: 26350,
+      merchant: '쿠팡',
+      category: '온라인쇼핑',
+      source: 'manual',
+    });
+    // 한글 라벨로 호출 — 두 row 모두 매칭 (id 변환 후 둘 다 'online')
+    const byLabel = await fetchCategoryExpenses('온라인쇼핑', { year: 2026, month: 5 });
+    expect(byLabel.rows.length).toBe(2);
+    expect(byLabel.total).toBe(29820);
+    // 영문 id 로 호출 — 동일 결과
+    const byId = await fetchCategoryExpenses('online', { year: 2026, month: 5 });
+    expect(byId.rows.length).toBe(2);
+    expect(byId.total).toBe(29820);
+  });
+
+  it('2026-05-12 — scope=year 옵션 (누적 위젯 클릭 케이스)', async () => {
+    const { Queries } = await import('../db/queries.js');
+    // 2026년 1월
+    await Queries.createExpense({
+      owner_id: OWNER,
+      spent_at: '2026-01-15T13:00:00Z',
+      amount_krw: 10000,
+      merchant: 'A',
+      category: 'online',
+      source: 'sms',
+    });
+    // 2026년 5월
+    await Queries.createExpense({
+      owner_id: OWNER,
+      spent_at: '2026-05-06T13:00:00Z',
+      amount_krw: 20000,
+      merchant: 'B',
+      category: 'online',
+      source: 'sms',
+    });
+    // 2025년 (제외)
+    await Queries.createExpense({
+      owner_id: OWNER,
+      spent_at: '2025-12-31T13:00:00Z',
+      amount_krw: 9999,
+      merchant: 'C',
+      category: 'online',
+      source: 'sms',
+    });
+    const r = await fetchCategoryExpenses('online', { year: 2026, scope: 'year' });
+    expect(r.rows.length).toBe(2);
+    expect(r.total).toBe(30000);
+    expect(r.scope).toBe('year');
+  });
 });
 
 describe('buildCategoryPopupHtml — Wave 11.6.5', () => {
