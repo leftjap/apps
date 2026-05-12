@@ -154,6 +154,10 @@ export async function renderWeightTab(root) {
   // 4) chart-legend (30일 전·변화·오늘) — Wave 11.7.5 hotfix
   updateChartLegend(doc, rows);
 
+  // 5) §10-2 — 체중 입력 키패드 wiring (idempotent)
+  try { (typeof window !== 'undefined' ? window.gymWeightKeypad : null)?.wireWeightKeypad?.(doc); }
+  catch (e) { console.error('[gymWeights] wireWeightKeypad', e); }
+
   return { rendered: true, count: rows.length, latestWeight: latest?.weight ?? null };
 }
 

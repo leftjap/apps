@@ -24,6 +24,7 @@ import './features/home.js'; // window.gymHome 노출 (Wave 11.10.1)
 import './features/stats.js'; // window.gymStats 노출 (Wave 11.11)
 import * as dayDetail from './features/day-detail-sheet.js'; // §9-1 day-detail bottom sheet
 if (typeof window !== 'undefined') window.gymDayDetail = dayDetail;
+import './features/weight-keypad-sheet.js'; // §10-2 weight keypad bottom sheet
 import './features/manage.js'; // window.gymManage 노출 (Phase B 단계 4)
 import { Sync } from './db/sync.js'; // window.gymSync 노출 (Wave 11.8.1)
 import { Auth } from './services/auth.js';
