@@ -192,15 +192,18 @@ function hookExerciseDrag(listEl, doc) {
     if (currentIndex === originalIndex) {
       // 변경 없음 — 잡힌 row 만 transition 으로 원위치 (사이 row 는 이미 0)
       row.classList.remove('is-dragging');
-      requestAnimationFrame(() => { row.style.transform = ''; });
+      // double rAF — transition 활성화 paint flush 보장 후 transform 변경
+      requestAnimationFrame(() => requestAnimationFrame(() => { row.style.transform = ''; }));
       return;
     }
 
     // 잡힌 row 를 새 자리까지 transition 으로 슬라이드 안착
-    // is-dragging 제거 → transition 활성화 → 다음 frame 에 transform = targetDy 설정
+    // is-dragging 제거 → transition 활성화 → double rAF 후 transform = targetDy 설정
     const targetDy = (currentIndex - originalIndex) * rowHeight;
     row.classList.remove('is-dragging');
-    requestAnimationFrame(() => { row.style.transform = `translateY(${targetDy}px)`; });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      row.style.transform = `translateY(${targetDy}px)`;
+    }));
 
     // 가상 인덱스 기반 새 순서 계산
     const newOrder = rows.slice();
