@@ -240,6 +240,63 @@ function defaultEntry() {
  *   { applied: false, reason: 'different_month' } — displayed 월 ≠ today 월
  *   { skipped: 'no-document'|'no-mounts' }
  */
+/**
+ * 사용자 보고 — "통계 월 캘린더는 운동한 날짜만 활성화되어야 함".
+ * mocks/stats.html IIFE 의 worked = { 1:1, 4:2, ... } fixture 를 sessions 기반 실 데이터로 갈아끼움.
+ * 표시 중 월 (monthLabel) 기준 sessions 의 date 일자 추출 → 해당 cal-cell 에 .worked class 부착.
+ * mountStatsView 가 호출 (applyVolumesToDom + applyTodayToCalendar 와 같은 sessions 으로 합산).
+ */
+export function applyWorkedToCalendar(sessions, doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { skipped: 'no-document' };
+  const grid = doc.getElementById('calGrid');
+  const label = doc.getElementById('monthLabel');
+  if (!grid || !label) return { skipped: 'no-mounts' };
+
+  // 모든 cell reset — mocks IIFE 의 fixture worked inline style 무효화. 비-worked = default 회색 작은 글자.
+  grid.querySelectorAll('.cal-cell').forEach((el) => {
+    el.classList.remove('worked');
+    const num = el.querySelector('.num');
+    if (num) {
+      num.style.color = 'rgba(255,255,255,0.3)';
+      num.style.fontWeight = '300';
+      num.style.fontSize = '15px';
+    }
+  });
+
+  const displayed = parseMonthLabel(label.textContent);
+  if (!displayed) return { applied: false, reason: 'no_displayed_month' };
+
+  const workedDays = new Set();
+  for (const s of (sessions || [])) {
+    if (!s?.date) continue;
+    if (s.status && s.status !== 'completed') continue;
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.date);
+    if (!m) continue;
+    const y = parseInt(m[1], 10);
+    const mo = parseInt(m[2], 10);
+    const d = parseInt(m[3], 10);
+    if (y !== displayed.year || mo !== displayed.month) continue;
+    workedDays.add(d);
+  }
+
+  let applied = 0;
+  for (const d of workedDays) {
+    const cell = grid.querySelector(`.cal-cell[data-day="${d}"]`);
+    if (cell) {
+      cell.classList.add('worked');
+      const num = cell.querySelector('.num');
+      if (num) {
+        num.style.color = '#fff';
+        num.style.fontWeight = '500';
+        num.style.fontSize = '17px';
+      }
+      applied += 1;
+    }
+  }
+  return { applied, count: workedDays.size };
+}
+
 export function applyTodayToCalendar(now = Date.now(), doc) {
   doc = doc || (typeof document !== 'undefined' ? document : null);
   if (!doc) return { skipped: 'no-document' };
@@ -323,6 +380,7 @@ export async function mountStatsView(now = Date.now()) {
     const volumes = summarizeVolumes(sessions, now);
     applyVolumesToDom(volumes, doc);
     applyTodayToCalendar(now, doc);
+    applyWorkedToCalendar(sessions, doc);
     return { applied: true, volumes };
   } catch (e) {
     if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
@@ -402,6 +460,7 @@ if (typeof window !== 'undefined') {
     applyTodayToCalendar,
     parseMonthLabel,
     sessionToWorkoutEntry,
+    applyWorkedToCalendar,
     deleteSessionByDay,
     mountStatsView,
     summarizeBodyParts,
