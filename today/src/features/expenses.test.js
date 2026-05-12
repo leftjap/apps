@@ -569,7 +569,8 @@ describe('saveExpenseFromForm — Dexie create/update', () => {
     expect(result.ok).toBe(true);
     expect(result.mode).toBe('new');
     expect(result.row.amount_krw).toBe(21500);
-    expect(result.row.category).toBe('외식');
+    // 2026-05-12 Wave 11.8c — extractExpenseFromForm 가 한글 라벨 → 영문 id 변환
+    expect(result.row.category).toBe('dining');
     expect(result.row.merchant).toBe('파인만컴');
     expect(result.row.source).toBe('manual');
     expect(result.row.owner_id).toBe(OWNER);

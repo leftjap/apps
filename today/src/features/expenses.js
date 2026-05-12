@@ -781,7 +781,17 @@ export function extractExpenseFromForm(doc = document) {
   const memo = (get('expModalMemo')?.value || '').trim();
   const merchant_url = (get('expModalUrl')?.value || '').trim();
   const catEl = doc.querySelector('#expModalCatGrid .exp-cat-cell.is-active');
-  const category = catEl?.getAttribute('data-cat') || null;
+  let category = catEl?.getAttribute('data-cat') || null;
+  // 2026-05-12 Wave 11.8c — mocks fallback picker (인증 전) 가 data-cat 에 한글 라벨 사용.
+  // DB row.category 는 영문 id 기준이므로 한글 → id 변환 시도. 변환 실패 시 raw 유지.
+  if (category) {
+    const list = Classifier.getCurrentCategories?.() || [];
+    const validIds = new Set(list.map((c) => c.id));
+    if (!validIds.has(category)) {
+      const asId = Classifier.getCategoryIdByName?.(category);
+      if (asId) category = asId;
+    }
+  }
   return {
     amount_krw,
     spent_at,
@@ -791,6 +801,26 @@ export function extractExpenseFromForm(doc = document) {
     merchant_url: merchant_url || null,
     category,
   };
+}
+
+/** 2026-05-12 Wave 11.8c — 지출 수정 모달의 카테고리 picker 를 user picker 기준으로 강제 재빌드.
+ * mocks IIFE 의 _initExpModal() 이 user 인증 전 호출되어 LEFTJAP fallback 으로 freeze 되는 문제 해소.
+ * data-cat 은 영문 id (DB row.category 일관성), 표시 text 는 한글 라벨.
+ */
+export function rebuildExpModalCatGrid(doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc) return false;
+  const grid = doc.getElementById?.('expModalCatGrid');
+  if (!grid) return false;
+  const list = Classifier.getCurrentCategories?.() || [];
+  if (!list.length) return false;
+  const TOP_N = 4;
+  const html = list.map((c, i) => {
+    const rankClass = i < TOP_N ? ' exp-cat-cell--rank-top' : '';
+    return `<button type="button" class="exp-cat-cell${rankClass}" data-cat="${escapeAttr(c.id)}" onclick="window.selectExpModalCat &amp;&amp; window.selectExpModalCat('${escapeAttr(c.id)}', this)">${escapeHtml(c.name)}</button>`;
+  }).join('');
+  grid.innerHTML = html;
+  if (grid.setAttribute) grid.setAttribute('data-expanded', 'false');
+  return true;
 }
 
 /** Dexie row → 모달 폼 채우기 (수정 모드 진입 시). */
@@ -1490,6 +1520,7 @@ export function mountExpensesView(user) {
   patchExpSearchHandlers();
   patchOpenCategoryDetailHandler();
   patchOpenMerchantDetailHandler();
+  rebuildExpModalCatGrid();
   installExpRowClickHandler();
   injectExpensePopupStyles();
   observeCategoryChange(handleCategoryActive);
@@ -1667,6 +1698,11 @@ export const Expenses = {
   // 2026-05-12 — 카테고리 popup 전용 row template (날짜 노출, 카테고리 라벨 제거)
   rowToCategoryPopupHtml,
   patchOpenCategoryDetailHandler,
+  // 2026-05-12 Wave 11.8b/c — brand 모달 + picker rebuild
+  fetchBrandExpenses,
+  openBrandDetailPopup,
+  patchOpenMerchantDetailHandler,
+  rebuildExpModalCatGrid,
 };
 
 if (typeof window !== 'undefined') {
