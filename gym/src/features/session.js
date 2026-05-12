@@ -907,7 +907,16 @@ async function handleTap(doc, x, y) {
     const ratio = (x - r.left) / r.width;
     if (ratio < 0.3) await applyTapDelta(field, -1);
     else if (ratio > 0.7) await applyTapDelta(field, +1);
-    else openKeypad(doc, field); // spec §6-3-2 — 중앙 40% → 키패드
+    else {
+      // spec §6-3-2 — 중앙 40% → 키패드. 현재 세트 값을 prefill 로 박아 사용자 시작점 제공.
+      let prefill;
+      try {
+        const ctx = await getCurrentBlockAndCursor();
+        const set = ctx && ctx.block && Array.isArray(ctx.block.sets) ? ctx.block.sets[ctx.effectiveCur] : null;
+        if (set && Number.isFinite(set[field])) prefill = set[field];
+      } catch (_) { /* graceful */ }
+      openKeypad(doc, field, { prefill });
+    }
     return;
   }
 }
@@ -1959,7 +1968,11 @@ function wireKeypad(doc) {
     applyKeypadValue(doc).catch((e) => console.error('[gymSession] keypad done', e));
   });
 
-  backdrop.addEventListener('click', () => closeKeypad(doc));
+  // backdrop (빈 화면) 탭 → 입력된 값 commit + 닫힘 (사용자 명시 의도).
+  // buf 가 빈 값 (사용자가 prefill 도 지우고 안 누름) 이면 applyKeypadValue 가 graceful close.
+  backdrop.addEventListener('click', () => {
+    applyKeypadValue(doc).catch((e) => console.error('[gymSession] keypad backdrop apply', e));
+  });
 
   // 시트 아래 스와이프 → 취소 (60px+)
   let downY = 0;
