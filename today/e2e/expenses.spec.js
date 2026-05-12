@@ -568,3 +568,233 @@ test.describe('별 wave C — openExpSearch Dexie wiring', () => {
     expect(result.html).toContain('거래 키워드를 입력하세요');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────
+// patchCumulativeFromHistory — 카테고리 treemap 실 데이터 patch (2026-05-12).
+// fixture 의 `cumulativeCategories` (주거 130만 등) 가 사용자에게 노출되던 회귀 방지.
+// 검증: collapsed (5 rows) / expanded (>5 rows) / 동일 카테고리 합산 / null → 미분류 / 빈 데이터 fixture 유지.
+// ─────────────────────────────────────────────────────────────────────────
+test.describe('patchCumulativeFromHistory — 카테고리 treemap (2026-05-12)', () => {
+  /** mock listExpensesByMonth 헬퍼 — patch 호출 전/후 원복. */
+  async function withMockedQueries(page, mockFn, callback) {
+    return page.evaluate(async ({ mockFnStr, callbackStr }) => {
+      // eslint-disable-next-line no-new-func
+      const mockFn = new Function('return ' + mockFnStr)();
+      // eslint-disable-next-line no-new-func
+      const callback = new Function('return ' + callbackStr)();
+      const orig = window.todayQueries.listExpensesByMonth;
+      window.todayQueries.listExpensesByMonth = mockFn;
+      try { return await callback(); }
+      finally { window.todayQueries.listExpensesByMonth = orig; }
+    }, { mockFnStr: mockFn.toString(), callbackStr: callback.toString() });
+  }
+
+  test('fixture 5 rows (collapsed) — 주거 사라지고 실 카테고리 + 헤드라인/sub 갱신', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await withMockedQueries(
+      page,
+      async (year, month) => {
+        if (year === 2026 && month === 5) {
+          return [
+            { id: 'a', amount_krw: 297000, category: 'subscribe', merchant: 'ANTHROPIC,PBC' },
+            { id: 'b', amount_krw: 19000, category: 'dining', merchant: '비틀비틀' },
+            { id: 'c', amount_krw: 69900, category: 'culture', merchant: '마음레코드' },
+            { id: 'd', amount_krw: 6900, category: 'conv', merchant: 'CU' },
+            { id: 'e', amount_krw: 3470, category: 'online', merchant: '쿠팡' },
+            { id: 'f', amount_krw: 50000, category: 'delivery', merchant: '주식회사우아' },
+          ];
+        }
+        return [];
+      },
+      async () => {
+        const root = document.createElement('div');
+        root.innerHTML = `
+          <div class="exp-cumulative">
+            <div class="exp-headline-title">2026년 5월 12일까지 총 <strong>506만원</strong> 쓰고 있어요</div>
+            <div class="exp-headline-sub">최근 5개월 누적</div>
+            <div class="exp-treemap-section">
+              <div class="exp-headline-sub">어디에 가장 많이 쓰고 있나요</div>
+              <div class="exp-cat-list">
+                <div class="exp-cat-row is-top"><span class="exp-cat-row__label">주거</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:100%"></div></div><span class="exp-cat-row__amt">130만</span></div>
+                <div class="exp-cat-row"><span class="exp-cat-row__label">배달</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:71%"></div></div><span class="exp-cat-row__amt">92만</span></div>
+                <div class="exp-cat-row"><span class="exp-cat-row__label">패션</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:64%"></div></div><span class="exp-cat-row__amt">83만</span></div>
+                <div class="exp-cat-row"><span class="exp-cat-row__label">외식</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:58%"></div></div><span class="exp-cat-row__amt">76만</span></div>
+                <div class="exp-cat-row"><span class="exp-cat-row__label">구독</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:42%"></div></div><span class="exp-cat-row__amt">55만</span></div>
+              </div>
+              <button class="exp-cat-more">+ 5개 더 보기</button>
+            </div>
+            <div class="exp-cumulative-rank"></div>
+          </div>
+        `;
+        document.body.appendChild(root);
+        const ok = await window.todayExpenses.patchCumulativeFromHistory(2026, 5, document);
+        const treemap = root.querySelector('.exp-treemap-section');
+        const rows = [...treemap.querySelectorAll('.exp-cat-row')];
+        const data = {
+          ok,
+          headTitle: root.querySelector('.exp-cumulative > .exp-headline-title').textContent,
+          headSub: root.querySelector('.exp-cumulative > .exp-headline-sub').textContent,
+          labels: rows.map(r => r.querySelector('.exp-cat-row__label').textContent),
+          has주거: rows.some(r => r.querySelector('.exp-cat-row__label').textContent === '주거'),
+          moreText: treemap.querySelector('.exp-cat-more')?.textContent ?? null,
+        };
+        root.remove();
+        return data;
+      },
+    );
+    expect(result.ok).toBe(true);
+    expect(result.has주거).toBe(false);
+    expect(result.labels).toEqual(['구독', '문화', '배달', '외식', '편의점']);
+    expect(result.moreText).toBe('+ 1개 더 보기');
+    expect(result.headSub).toBe('최근 6개월 누적');
+    expect(result.headTitle).toContain('45만원');
+  });
+
+  test('fixture 10 rows (expanded) — DOM 추론으로 isExpanded=true → 전체 노출 + 접기 버튼', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await withMockedQueries(
+      page,
+      async (year, month) => {
+        if (year === 2026 && month === 5) {
+          return [
+            { id: '1', amount_krw: 100000, category: 'dining', merchant: 'A' },
+            { id: '2', amount_krw: 90000, category: 'delivery', merchant: 'B' },
+            { id: '3', amount_krw: 80000, category: 'online', merchant: 'C' },
+            { id: '4', amount_krw: 70000, category: 'conv', merchant: 'D' },
+            { id: '5', amount_krw: 60000, category: 'subscribe', merchant: 'E' },
+            { id: '6', amount_krw: 50000, category: 'transport', merchant: 'F' },
+            { id: '7', amount_krw: 40000, category: 'cat', merchant: 'G' },
+            { id: '8', amount_krw: 30000, category: 'fashion', merchant: 'H' },
+          ];
+        }
+        return [];
+      },
+      async () => {
+        const root = document.createElement('div');
+        const fixtureCats = ['주거', '배달', '패션', '외식', '구독', '온라인쇼핑', '교통', '고양이', '건강', '편의점'];
+        const rowsHtml = fixtureCats.map((c, i) =>
+          `<div class="exp-cat-row${i === 0 ? ' is-top' : ''}"><span class="exp-cat-row__label">${c}</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:50%"></div></div><span class="exp-cat-row__amt">${10 + i}만</span></div>`
+        ).join('');
+        root.innerHTML = `
+          <div class="exp-cumulative">
+            <div class="exp-headline-title">x <strong>0만원</strong> y</div>
+            <div class="exp-headline-sub">sub</div>
+            <div class="exp-treemap-section">
+              <div class="exp-headline-sub">어디에</div>
+              <div class="exp-cat-list">${rowsHtml}</div>
+              <button class="exp-cat-more">접기</button>
+            </div>
+            <div class="exp-cumulative-rank"></div>
+          </div>
+        `;
+        document.body.appendChild(root);
+        await window.todayExpenses.patchCumulativeFromHistory(2026, 5, document);
+        const treemap = root.querySelector('.exp-treemap-section');
+        const rows = [...treemap.querySelectorAll('.exp-cat-row')];
+        const data = {
+          rowCount: rows.length,
+          labels: rows.map(r => r.querySelector('.exp-cat-row__label').textContent),
+          moreText: treemap.querySelector('.exp-cat-more')?.textContent ?? null,
+          has주거: rows.some(r => r.querySelector('.exp-cat-row__label').textContent === '주거'),
+        };
+        root.remove();
+        return data;
+      },
+    );
+    expect(result.has주거).toBe(false);
+    expect(result.rowCount).toBe(8);
+    expect(result.moreText).toBe('접기');
+    expect(result.labels[0]).toBe('외식'); // 최고 금액 1위 (100000)
+  });
+
+  test('동일 카테고리 합산 + null → 미분류', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await withMockedQueries(
+      page,
+      async (y, m) => {
+        if (y === 2026 && m === 5) {
+          return [
+            { id: '1', amount_krw: 10000, category: 'dining', merchant: 'A' },
+            { id: '2', amount_krw: 20000, category: 'dining', merchant: 'B' },
+            { id: '3', amount_krw: 30000, category: 'dining', merchant: 'C' },
+            { id: '4', amount_krw: 7000, category: null, merchant: 'D' },
+            { id: '5', amount_krw: 3000, category: undefined, merchant: 'E' },
+          ];
+        }
+        return [];
+      },
+      async () => {
+        const root = document.createElement('div');
+        root.innerHTML = `
+          <div class="exp-cumulative">
+            <div class="exp-headline-title">x <strong>0만원</strong> y</div>
+            <div class="exp-headline-sub">sub</div>
+            <div class="exp-treemap-section">
+              <div class="exp-headline-sub">어디에</div>
+              <div class="exp-cat-list">
+                <div class="exp-cat-row is-top"><span class="exp-cat-row__label">주거</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:100%"></div></div><span class="exp-cat-row__amt">130만</span></div>
+              </div>
+            </div>
+            <div class="exp-cumulative-rank"></div>
+          </div>
+        `;
+        document.body.appendChild(root);
+        await window.todayExpenses.patchCumulativeFromHistory(2026, 5, document);
+        const treemap = root.querySelector('.exp-treemap-section');
+        const rows = [...treemap.querySelectorAll('.exp-cat-row')];
+        const data = {
+          labels: rows.map(r => r.querySelector('.exp-cat-row__label').textContent),
+          amounts: rows.map(r => r.querySelector('.exp-cat-row__amt').textContent),
+          headTitle: root.querySelector('.exp-cumulative > .exp-headline-title').textContent,
+        };
+        root.remove();
+        return data;
+      },
+    );
+    // dining 3건 합산 = 60,000 → 6만 / null+undefined → 미분류 10,000 → 1만
+    expect(result.labels).toEqual(['외식', '미분류']);
+    expect(result.amounts).toEqual(['6만', '1만']);
+    expect(result.headTitle).toContain('7만원');
+  });
+
+  test('빈 데이터 (6개월 0건) — treemap fixture 유지 (catTotals.size === 0 가드)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await withMockedQueries(
+      page,
+      async () => [],
+      async () => {
+        const root = document.createElement('div');
+        root.innerHTML = `
+          <div class="exp-cumulative">
+            <div class="exp-headline-title">x <strong>0만원</strong> y</div>
+            <div class="exp-headline-sub">sub</div>
+            <div class="exp-treemap-section">
+              <div class="exp-headline-sub">어디에</div>
+              <div class="exp-cat-list">
+                <div class="exp-cat-row is-top"><span class="exp-cat-row__label">주거</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:100%"></div></div><span class="exp-cat-row__amt">130만</span></div>
+                <div class="exp-cat-row"><span class="exp-cat-row__label">배달</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:71%"></div></div><span class="exp-cat-row__amt">92만</span></div>
+              </div>
+            </div>
+            <div class="exp-cumulative-rank"></div>
+          </div>
+        `;
+        document.body.appendChild(root);
+        await window.todayExpenses.patchCumulativeFromHistory(2026, 5, document);
+        const rows = [...root.querySelectorAll('.exp-cat-row')];
+        const data = {
+          labels: rows.map(r => r.querySelector('.exp-cat-row__label').textContent),
+          headTitle: root.querySelector('.exp-cumulative > .exp-headline-title').textContent,
+        };
+        root.remove();
+        return data;
+      },
+    );
+    // 빈 데이터 — treemap 은 fixture 유지 (의도된 fallback). 헤드라인은 0만원 갱신.
+    expect(result.labels).toEqual(['주거', '배달']);
+    expect(result.headTitle).toContain('0만원');
+  });
+});

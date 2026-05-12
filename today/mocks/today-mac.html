@@ -6544,11 +6544,13 @@
     // Esc → 닫기
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.dataset.drawerOpen) setOpen(false); });
     // 사이드바 항목 클릭 → 닫기 (모바일 한정).
-    // 카테고리 탭은 drawer 유지 (recents 목록 노출), 실제 글 선택(.sb__item--recent)
-    // 과 "전체 보기"(.sb__recents-more) 에서만 close — 두 경우 모두 본문 영역 진입.
+    // 카테고리 탭은 기본적으로 drawer 유지 (recents 목록에서 글 선택해 진입).
+    // 단 가계부는 RECENTS 가 진입점이 아니라 메인 캘린더/타임라인이 진입점이므로
+    // 카테고리 클릭 자체로 close (recents 의 거래 내역은 미리보기 성격).
+    // 실제 글 선택(.sb__item--recent) + "전체 보기"(.sb__recents-more) 도 close.
     document.addEventListener('click', (e) => {
       if (!isMobile()) return;
-      const item = e.target.closest('.sb__item--recent, .sb__recents-more');
+      const item = e.target.closest('.sb__item--recent, .sb__recents-more, .sb__item[data-category="expense"]');
       if (item) setOpen(false);
     });
     // viewport 폭 변경 시 — 데스크톱으로 넘어가면 drawer 상태 해제

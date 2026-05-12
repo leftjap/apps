@@ -511,13 +511,17 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
     } catch { /* skip */ }
   }
   const groups = new Map();
+  const catTotals = new Map();
   let total = 0;
   for (const r of allRows) {
     const amt = r.amount_krw || 0;
     total += amt;
+    // brand TOP 10 집계
     const name = r.brand || r.merchant;
-    if (!name) continue;
-    groups.set(name, (groups.get(name) || 0) + amt);
+    if (name) groups.set(name, (groups.get(name) || 0) + amt);
+    // 카테고리 누적 집계 (treemap 용) — 라벨 변환 (영문 id → 한글). null 은 '미분류'.
+    const catLabel = toCategoryLabel(r.category) || '미분류';
+    catTotals.set(catLabel, (catTotals.get(catLabel) || 0) + amt);
   }
   // 헤드라인 갱신
   const today = new Date();
@@ -542,6 +546,37 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
     const tmp = doc.createElement('div');
     tmp.innerHTML = rowsHtml;
     while (tmp.firstChild) rankWrap.appendChild(tmp.firstChild);
+  }
+  // 카테고리 treemap 갱신 (.exp-treemap-section) — mocks fixture (주거 등 가짜 항목) 덮어쓰기.
+  // _categoryExpanded 상태는 mocks IIFE local — DOM 의 .exp-cat-row 개수로 추론 (>5 = expanded).
+  const treemapSection = cumWrap.querySelector('.exp-treemap-section');
+  if (treemapSection && catTotals.size > 0) {
+    const items = [...catTotals.entries()]
+      .map(([key, amount]) => ({ key, amount }))
+      .sort((a, b) => b.amount - a.amount);
+    const max = items[0].amount;
+    const existingRows = treemapSection.querySelectorAll('.exp-cat-row').length;
+    const isExpanded = existingRows > 5;
+    const visibleCount = isExpanded ? items.length : Math.min(5, items.length);
+    const visible = items.slice(0, visibleCount);
+    const hiddenCount = items.length - visibleCount;
+    const catRowsHtml = visible.map((it, idx) => {
+      const pct = max > 0 ? Math.round((it.amount / max) * 100) : 0;
+      const amountText = Math.round(it.amount / 10000) + '만';
+      const isTop = idx === 0;
+      return `<div class="exp-cat-row${isTop ? ' is-top' : ''}" data-cat="${escapeAttr(it.key)}" onclick="openCategoryDetail('${escapeAttr(it.key)}', event)"><span class="exp-cat-row__label">${escapeHtml(it.key)}</span><div class="exp-cat-row__track"><div class="exp-cat-row__fill" style="width:${pct}%;"></div></div><span class="exp-cat-row__amt">${amountText}</span></div>`;
+    }).join('');
+    let catMoreHtml = '';
+    if (hiddenCount > 0) {
+      catMoreHtml = `<button class="exp-cat-more" onclick="toggleCategoryMore(event)">+ ${hiddenCount}개 더 보기</button>`;
+    } else if (isExpanded && items.length > 5) {
+      catMoreHtml = `<button class="exp-cat-more" onclick="toggleCategoryMore(event)">접기</button>`;
+    }
+    // 기존 .exp-cat-list + .exp-cat-more 제거 후 새로 추가 ('exp-headline-sub' 헤더는 보존).
+    treemapSection.querySelectorAll('.exp-cat-list, .exp-cat-more').forEach((el) => el.remove());
+    const catTmp = doc.createElement('div');
+    catTmp.innerHTML = `<div class="exp-cat-list">${catRowsHtml}</div>${catMoreHtml}`;
+    while (catTmp.firstChild) treemapSection.appendChild(catTmp.firstChild);
   }
   return true;
 }
@@ -613,6 +648,49 @@ async function handleCategoryActive(kind) {
   await new Promise((r) => setTimeout(r, 0));
   const now = new Date();
   await loadAndRenderMonth(now.getFullYear(), now.getMonth() + 1, document);
+}
+
+/**
+ * 가계부 사이드바 클릭 위임 — 매 클릭마다 patch 재실행.
+ *
+ * MutationObserver (observeCategoryChange) 는 `is-active` class 변경 시에만 발화한다.
+ * 이미 active 인 가계부를 재클릭하면 mocks `setCategory('expense')` 가 renderExpense() 로
+ * fixture HTML 을 다시 그리지만 class 무변경 → observer 무발화 → SPA patch 미발동 →
+ * fixture 가 화면에 그대로 노출되는 race 가 있다. 본 핸들러가 그 race 를 메운다.
+ * (entries.js installCategoryClickHandler 는 entries.handleCategoryActive 를 호출하는데
+ *  거기서 expense 는 early return 이라 patch 미실행.)
+ */
+let _expenseClickInstalled = false;
+function installExpenseCategoryClickHandler() {
+  if (_expenseClickInstalled) return;
+  if (typeof document === 'undefined') return;
+  _expenseClickInstalled = true;
+  // (1) 사이드바 가계부 클릭 — bubble 단계 OK.
+  document.addEventListener('click', (e) => {
+    const item = e.target?.closest?.('.sb__item[data-category="expense"]');
+    if (!item) return;
+    // mocks setCategory → renderExpense 가 동기로 발동 → 그 뒤 task 에서 patch 강제 재실행.
+    setTimeout(() => {
+      handleCategoryActive('expense').catch((err) =>
+        console.warn('[expenses] category re-click patch 실패:', err?.message || err),
+      );
+    }, 0);
+  });
+  // (2) 카테고리 treemap "접기 / + N개 더 보기" 클릭 — mocks toggleCategoryMore 가
+  //     renderExpense() 전체를 재호출해 SPA patch 가 fixture 로 회귀하는 race 메움.
+  //     toggleCategoryMore 가 event.stopPropagation() 하므로 capture 단계로 청취.
+  document.addEventListener('click', (e) => {
+    const more = e.target?.closest?.('.exp-cat-more');
+    if (!more) return;
+    // 1) capture 단계 — 본 핸들러 먼저 발화
+    // 2) 그 뒤 inline onclick toggleCategoryMore → _categoryExpanded 토글 + renderExpense (동기)
+    // 3) setTimeout(0) 콜백 — 새로 그려진 fixture 위에 patch 재실행
+    setTimeout(() => {
+      handleCategoryActive('expense').catch((err) =>
+        console.warn('[expenses] cat-more re-render patch 실패:', err?.message || err),
+      );
+    }, 0);
+  }, true);
 }
 
 /**
@@ -1260,6 +1338,7 @@ export function mountExpensesView(user) {
   installExpRowClickHandler();
   injectExpensePopupStyles();
   observeCategoryChange(handleCategoryActive);
+  installExpenseCategoryClickHandler();
   bindMonthNavHandlers();
   bindStatsTabHandler();
   refreshSidebarExpenseTotal();
