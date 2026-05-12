@@ -820,12 +820,12 @@ describe('patchDayPopoverFromRows — DOM 패치 (1건 룰 포함)', () => {
     expect(r.reason).toBe('no_popover');
   });
 
-  it('rows 0건 → empty 메시지 + foot 숨김', () => {
+  it('rows 0건 → 빈 list + foot 숨김 (Wave 11.8d — empty 메시지 dead path 제거)', () => {
     const doc = makeFakeDoc();
     const r = patchDayPopoverFromRows({ monthDay: '04-12', rows: [], doc });
     expect(r.applied).toBe(true);
     expect(r.count).toBe(0);
-    expect(doc._popover.querySelector('.expense-list').innerHTML).toContain('이 날의 거래가 없습니다');
+    expect(doc._popover.querySelector('.expense-list').innerHTML).toBe('');
     expect(doc._popover.querySelector('.exp-day-detail__foot').style.display).toBe('none');
   });
 
@@ -1331,15 +1331,15 @@ describe('patchDayPopoverFromRows — Wave 11.6.5 빈 메시지 보강', () => {
     };
   }
 
-  it('rows=[] → SMS 연동 안내 + 거래 추가 버튼 포함', () => {
+  it('rows=[] → 빈 list innerHTML (0건 cell 클릭 자체 차단, dead path 단순화)', () => {
     if (typeof document === 'undefined') return; // node env — skip
     const doc = makeFakeDoc();
     if (!doc._popover) return;
     patchDayPopoverFromRows({ monthDay: '04-12', rows: [], doc });
     const html = doc._popover.querySelector('.expense-list').innerHTML;
-    expect(html).toContain('이 날의 거래가 없습니다');
-    expect(html).toContain('SMS 연동');
-    expect(html).toContain('거래 추가');
-    expect(html).toContain('window.openNewExpenseForm');
+    // 2026-05-12 Wave 11.8d — 빈 메시지/거래 추가 버튼 제거. 0건은 popover 자체 미오픈
+    expect(html).not.toContain('거래 추가');
+    expect(html).not.toContain('window.openNewExpenseForm');
+    expect(html).toBe('');
   });
 });
