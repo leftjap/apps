@@ -2181,11 +2181,10 @@ function hookClicks(chipsEl, listEl) {
       }
     }
     b.classList.add('is-added');
-    // §6-2 — 종목 탭 → 세션 추가 + 시트 유지. mountSessionView 재호출로 active 분기 복귀
-    // (active+ 흐름) 또는 첫 추가 시 active 분기 진입 (empty 자연 흐름) 양쪽 모두 자동 복귀.
-    try { await mountSessionView(); } catch (err) { console.error('[gymSession] addex auto-remount', err); }
-    // 다중 선택 유지 — empty→active 첫 전환 시 active 시트가 default 닫힘 상태로 mount 되어
-    // 첫 운동 토글만 하면 시트가 사라지는 회귀. mount 후 active 시트 강제 open (이미 open 시 idempotent).
+    // 다중 선택 유지 — mount 전 active 시트를 미리 open 상태로 설정해 mountSessionActive 의 reset (line 699)
+    // 을 회피. empty→active 첫 전환 시 mocks default dataset.open="false" + transform translateY(100%) 라
+    // mount 가 reset 적용 후 우리가 open 처리하면 200ms transition 깜빡임 발생. mount 전 'true' 설정 시
+    // line 699 조건 false → skip → transform 변화 0 → 깜빡임 0. active+ 흐름은 idempotent.
     try {
       const doc = (typeof document !== 'undefined') ? document : null;
       if (doc) {
@@ -2202,6 +2201,9 @@ function hookClicks(chipsEl, listEl) {
         }
       }
     } catch (_) { /* graceful */ }
+    // §6-2 — 종목 탭 → 세션 추가 + 시트 유지. mountSessionView 재호출로 active 분기 복귀
+    // (active+ 흐름) 또는 첫 추가 시 active 분기 진입 (empty 자연 흐름) 양쪽 모두 자동 복귀.
+    try { await mountSessionView(); } catch (err) { console.error('[gymSession] addex auto-remount', err); }
   });
   listEl.dataset.spaHooked = '1';
 }
