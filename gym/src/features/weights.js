@@ -154,11 +154,56 @@ export async function renderWeightTab(root) {
   // 4) chart-legend (30일 전·변화·오늘) — Wave 11.7.5 hotfix
   updateChartLegend(doc, rows);
 
+  // 4-1) 변동 칩 (시작→현재 delta) + 통계 (시작/최저/7일 평균)
+  updateWeightStats(doc, rows);
+
   // 5) §10-2 — 체중 입력 키패드 wiring (idempotent)
   try { (typeof window !== 'undefined' ? window.gymWeightKeypad : null)?.wireWeightKeypad?.(doc); }
   catch (e) { console.error('[gymWeights] wireWeightKeypad', e); }
 
   return { rendered: true, count: rows.length, latestWeight: latest?.weight ?? null };
+}
+
+/**
+ * 변동 칩 (시작→현재) + 하단 통계 3개 (시작/최저/7일 평균) 갱신.
+ *  - 0건: 모두 — 표기
+ *  - 1건: 시작·최저·7일 평균 = 그 값, 변동 = — (비교 대상 없음)
+ *  - 2건+: 시작 = oldest, 최저 = min, 7일 평균 = 최근 7건 평균, 변동 = newest - oldest
+ */
+function updateWeightStats(doc, rows) {
+  const deltaEl = doc.querySelector('[data-bind="weight-hero-delta"]');
+  const startEl = doc.querySelector('[data-bind="weight-stat-start"]');
+  const minEl = doc.querySelector('[data-bind="weight-stat-min"]');
+  const avg7El = doc.querySelector('[data-bind="weight-stat-avg7"]');
+  if (!rows.length) {
+    if (deltaEl) { deltaEl.textContent = '—'; deltaEl.style.display = 'none'; }
+    if (startEl) startEl.textContent = '—';
+    if (minEl) minEl.textContent = '—';
+    if (avg7El) avg7El.textContent = '—';
+    return;
+  }
+  const weights = rows.map((r) => Number(r.weight)).filter(Number.isFinite);
+  const oldest = weights[0];
+  const newest = weights[weights.length - 1];
+  const min = Math.min(...weights);
+  const last7 = weights.slice(-7);
+  const avg7 = last7.reduce((s, w) => s + w, 0) / last7.length;
+
+  if (startEl) startEl.textContent = formatWeight(oldest);
+  if (minEl) minEl.textContent = formatWeight(min);
+  if (avg7El) avg7El.textContent = formatWeight(avg7);
+
+  if (deltaEl) {
+    if (weights.length < 2 || oldest === newest) {
+      deltaEl.textContent = '—';
+      deltaEl.style.display = 'none';
+    } else {
+      const diff = Math.round((newest - oldest) * 10) / 10;
+      const arrow = diff < 0 ? '↓' : '↑';
+      deltaEl.textContent = `${arrow} ${diff > 0 ? '+' : ''}${diff.toFixed(1)}`;
+      deltaEl.style.display = '';
+    }
+  }
 }
 
 /**
