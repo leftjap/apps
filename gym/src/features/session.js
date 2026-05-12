@@ -737,13 +737,12 @@ function resolveExerciseName(id) {
 function renderSetDotHtml(idx, set, isCurrent) {
   const setNum = idx + 1;
   const isDone = !!(set && set.done);
-  const isPR = !!(set && set.pr);
   let color = 'rgba(255,255,255,0.25)';
   let weight = '400';
-  // spec §6-11 — PR set 은 accent 영구 표시 (current/done 무관)
-  if (isPR) { color = 'var(--accent)'; weight = '600'; }
-  else if (isCurrent) { color = 'var(--accent)'; weight = '600'; }
-  else if (isDone) { color = 'rgba(255,255,255,0.55)'; weight = '400'; }
+  // 완료된 세트 + 현재 세트 모두 accent (PR 별도 시각 강조 폐기 — 사용자 결정).
+  // set.pr 데이터 자체는 유지 (PR 검사·저장 로직 그대로). 시각만 단일 위계로 단순화.
+  if (isCurrent) { color = 'var(--accent)'; weight = '600'; }
+  else if (isDone) { color = 'var(--accent)'; weight = '400'; }
   const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
   const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
   // spec §6-9 — 세트 행 hold 대상 (data-longpress="set-row" + data-set-idx)
