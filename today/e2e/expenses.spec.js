@@ -647,7 +647,8 @@ test.describe('patchCumulativeFromHistory — 카테고리 treemap (2026-05-12)'
     expect(result.has주거).toBe(false);
     expect(result.labels).toEqual(['구독', '문화', '배달', '외식', '편의점']);
     expect(result.moreText).toBe('+ 1개 더 보기');
-    expect(result.headSub).toBe('최근 6개월 누적');
+    // 2026-05-12 — year-to-date 로 변경. month=5 면 1~5월 합산 (사용자 인지 정렬).
+    expect(result.headSub).toBe('2026년 누적');
     expect(result.headTitle).toContain('45만원');
   });
 

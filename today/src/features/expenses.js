@@ -496,12 +496,12 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
   const rankWrap = cumWrap.querySelector('.exp-cumulative-rank');
   const headTitle = cumWrap.querySelector(':scope > .exp-headline-title');
   const headSub = cumWrap.querySelector(':scope > .exp-headline-sub');
+  // 2026-05-12 — 데이터 범위를 'year-to-date' 로 변경.
+  // 헤드라인이 "YYYY년 M월 D일까지" 라고 표시되는데 실 합산이 최근 6개월 (이전 해 일부 포함)
+  // 이라 사용자 인지 ("올해 누적") 와 모순. year-to-date 로 정합.
   const months = [];
-  for (let i = 5; i >= 0; i--) {
-    let m = month - i;
-    let y = year;
-    while (m < 1) { m += 12; y -= 1; }
-    months.push({ year: y, month: m });
+  for (let m = 1; m <= month; m++) {
+    months.push({ year, month: m });
   }
   let allRows = [];
   for (const { year: y, month: m } of months) {
@@ -528,7 +528,7 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
   const isCurrent = today.getFullYear() === year && today.getMonth() + 1 === month;
   const dayLabel = isCurrent ? today.getDate() : new Date(year, month, 0).getDate();
   if (headTitle) headTitle.innerHTML = `${year}년 ${month}월 ${dayLabel}일까지 총 <strong>${Math.round(total / 10000)}만원</strong> 쓰고 있어요`;
-  if (headSub) headSub.textContent = `최근 ${months.length}개월 누적`;
+  if (headSub) headSub.textContent = `${year}년 누적`;
   // 누적 brand TOP 10
   if (rankWrap) {
     const sorted = [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
