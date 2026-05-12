@@ -46,3 +46,8 @@ coverage/
 
 # Supabase CLI link cache (자동 갱신)
 **/supabase/.temp/
+
+# 사용자 본문 포함 — 로컬 only (admin 백업 JSON·검증 스크린샷)
+today/handoff/leftjap-navi-backup-*.json
+today/handoff/soyoun-navi-backup-*.json
+today/handoff-screenshots/
