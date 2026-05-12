@@ -2951,7 +2951,8 @@
     .sidebar {
       position: fixed;
       left: 0; top: 0;
-      height: 100vh;
+      /* 100dvh — iOS dynamic toolbar/home-indicator 영역 포함 정확 viewport (100vh 는 미포함) */
+      height: 100dvh;
       width: calc(100% - 72px);
       max-width: 340px;
       margin: 0;
@@ -2968,7 +2969,8 @@
        translateX(calc(100% - 72px)) 로 main 을 우측으로 밀어 main 의 좌측면이 우측 끝에 비침.
        opacity .5 + pointer-events none 으로 dim. */
     .main {
-      padding: 16px 16px 20px;
+      /* status-bar-style: black-translucent → main 컨텐츠가 status bar 영역 잠식 차단 (safe-area-inset-top) */
+      padding: calc(16px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
       min-width: 0;
       transition: opacity .22s ease, transform .22s ease;
     }
