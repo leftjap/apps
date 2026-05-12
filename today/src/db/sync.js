@@ -73,6 +73,11 @@ export const TABLE_MAP = Object.freeze([
   Object.freeze({ dexie: 'comments', supabase: 'today_comments', filterColumn: null }),
   // notifications 는 recipient_id 필터.
   Object.freeze({ dexie: 'notifications', supabase: 'today_notifications', filterColumn: 'recipient_id' }),
+  // Wave 11.8 — 사용자별 매핑 (admin UI 편집 대상).
+  // user_id 필터 — 본인 매핑만. RLS 가 강제하지만 client-side 도 명시.
+  Object.freeze({ dexie: 'user_categories', supabase: 'today_user_categories', filterColumn: 'user_id' }),
+  Object.freeze({ dexie: 'user_brand_categories', supabase: 'today_user_brand_categories', filterColumn: 'user_id' }),
+  Object.freeze({ dexie: 'user_merchant_aliases', supabase: 'today_user_merchant_aliases', filterColumn: 'user_id' }),
 ]);
 
 let _syncActive = false;
@@ -552,14 +557,55 @@ export function startRealtime() {
       { event: 'INSERT', schema: 'public', table: 'today_notifications' },
       (payload) => handleNotificationChange(payload),
     )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'today_user_categories' },
+      (payload) => handleUserMappingChange('user_categories', ['user_id', 'id'], payload),
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'today_user_brand_categories' },
+      (payload) => handleUserMappingChange('user_brand_categories', ['user_id', 'brand'], payload),
+    )
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'today_user_merchant_aliases' },
+      (payload) => handleUserMappingChange('user_merchant_aliases', ['user_id', 'merchant_pattern'], payload),
+    )
     .subscribe((status) => {
       if (status === 'SUBSCRIBED') {
-        console.info('[sync] realtime SUBSCRIBED (entries + expenses + comments + notifications)');
+        console.info('[sync] realtime SUBSCRIBED (entries + expenses + comments + notifications + user_mappings)');
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         console.warn('[sync] realtime status:', formatError(status));
       }
     });
   return { ok: true };
+}
+
+/**
+ * Wave 11.8 — 사용자 매핑 테이블 (today_user_categories / brand_categories / merchant_aliases)
+ * realtime payload 처리. 복합 PK 라 delete 시 [user_id, key2] 배열 키 사용.
+ * payload 는 _realtimeListeners 로 전파 → main.js 가 expense-classifier 캐시 invalidate.
+ */
+function handleUserMappingChange(storeName, keyFields, payload) {
+  const db = globalThis.todayDB;
+  if (!db?.[storeName]) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+  try {
+    if (eventType === 'DELETE') {
+      if (oldRow) {
+        const key = keyFields.map((f) => oldRow[f]);
+        db[storeName].delete(key);
+      }
+    } else if (newRow) {
+      db[storeName].put(newRow);
+    }
+  } catch (e) {
+    console.error(`[sync] realtime ${storeName} 실패:`, formatError(e));
+  }
+  for (const fn of _realtimeListeners) {
+    try { fn(payload); } catch (e) { console.error('[sync] listener 실패:', formatError(e)); }
+  }
 }
 
 function handleCommentChange(payload) {

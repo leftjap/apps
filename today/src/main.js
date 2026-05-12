@@ -21,6 +21,7 @@ import { Expenses } from './features/expenses.js';
 import { Notifications } from './features/notifications.js';
 import { Spotlight } from './features/spotlight.js';
 import { Account } from './features/account.js';
+import { Admin } from './features/admin.js';
 import { Comments } from './features/comments.js';
 import { Sync } from './db/sync.js';
 import { DevSeed } from './db/devSeed.js';
@@ -76,11 +77,14 @@ async function handleSession(session) {
   await Profile.ensureProfile(user);
   showAuthenticated(user);
   // mocks DOM 마운트 후 entries / expenses / notifications 부착 (setTimeout 0 — 동일 task 안 mocks IIFE 실행 보장)
-  setTimeout(() => {
+  setTimeout(async () => {
     Entries.mountEntriesView(user);
     Editor.mountEditorTools();
     // 가계부 카테고리 사용자별 분리 — Keep USER_CONFIG 그대로 (leftjap 11 / soyoun 12)
     Classifier.setCurrentEmail(user.email);
+    // Wave 11.8 — DB 사용자 매핑 로드 (Dexie 비어 있으면 freeze fallback 으로 안전 진행).
+    // startSync 완료 후 재로드되면서 picker / brand / alias 가 DB 우선으로 전환.
+    await Classifier.loadUserMappings(user.id);
     Expenses.mountExpensesView(user);
     Notifications.mountNotificationsView(user).catch((e) =>
       console.warn('[main] mountNotificationsView 실패', e?.message || e),
@@ -91,6 +95,10 @@ async function handleSession(session) {
     Account.mountAccountView(user).catch((e) =>
       console.warn('[main] mountAccountView 실패', e?.message || e),
     );
+    // Wave 11.8 — admin UI (사용자별 매핑 편집)
+    Admin.mountAdminView(user).catch((e) =>
+      console.warn('[main] mountAdminView 실패', e?.message || e),
+    );
     Comments.mountCommentsView(user).catch((e) =>
       console.warn('[main] mountCommentsView 실패', e?.message || e),
     );
@@ -100,11 +108,19 @@ async function handleSession(session) {
   // 빈 Dexie 상태에서 초기 렌더 → mocks fixture/empty state 노출되는 문제 해결).
   Sync.startSync(user)
     .catch((e) => { console.warn('[main] startSync 실패', e); return null; })
-    .then(() => {
+    .then(async () => {
       try {
+        // Wave 11.8 — pullAll 완료 후 사용자 매핑 DB → 캐시 재로드 (빈 Dexie 상태에서 채워진 후).
+        await Classifier.loadUserMappings(user.id);
         Entries.rebindCategoryObserver?.();
         Expenses.rebindCategoryObserver?.();
         Expenses.refreshSidebarExpenseTotal?.();
+        // Wave 11.8 — 모달 카테고리 picker 가 DB 매핑 반영하도록 재빌드 (mount 시점엔 Dexie 비어 있었음).
+        Expenses.rebuildExpModalCatGrid?.();
+        // Wave 11.8 — admin view 도 pullAll 완료 후 재렌더 (mount 시점엔 빈 화면이었음).
+        Admin.refreshActive?.()?.catch?.((e) =>
+          console.warn('[main] Admin.refreshActive 실패', e?.message || e),
+        );
         // 회귀 3 fix — pullAll 완료 후 알림 배지 재계산 (Dexie 빈 상태 → 채워진 후 갱신)
         Notifications.refreshAlertBadge?.();
         // 회귀 5 fix — pullAll 완료 후 현재 article 댓글 영역 재마운트.
@@ -116,6 +132,21 @@ async function handleSession(session) {
         console.warn('[main] post-sync refresh 실패', e?.message || e);
       }
     });
+
+  // Wave 11.8 — 다른 디바이스의 admin UI 편집이 realtime 으로 들어오면 classifier 캐시 무효화.
+  // sync.js handleUserMappingChange 가 Dexie put/delete 후 listener 전파 → 여기서 reload.
+  Sync.onRealtimeChange((payload) => {
+    const t = payload?.table;
+    if (t === 'today_user_categories'
+      || t === 'today_user_brand_categories'
+      || t === 'today_user_merchant_aliases') {
+      Classifier.invalidateUserCache();
+      Expenses.rebuildExpModalCatGrid?.();
+      Admin.refreshActive?.()?.catch?.((e) =>
+        console.warn('[main] realtime Admin.refreshActive 실패', e?.message || e),
+      );
+    }
+  });
 }
 
 async function bootstrap() {

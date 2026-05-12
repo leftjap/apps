@@ -65,6 +65,23 @@ export function createTodayDB(name = 'today') {
     notifications:
       '&id, recipient_id, kind, entry_id, comment_id, read_at, created_at',
   });
+  // v6 (Wave 11.8) — 사용자별 카테고리 / 브랜드 매핑 / 매장 alias
+  // 0019 마이그레이션의 (user_id, id) / (user_id, brand) / (user_id, merchant_pattern)
+  // 복합 PK 그대로 Dexie 복합 키로 보존. admin UI 가 CRUD 수행.
+  db.version(6).stores({
+    entries:
+      '&id, owner_id, kind, updated_at, deleted_at, is_shared, pinned, [kind+updated_at], pending_sync',
+    expenses:
+      '&id, owner_id, spent_at, category, brand, merchant, source, deleted_at, updated_at, pending_sync',
+    merchant_rules: '&id, scope, user_id, priority, [scope+priority], pending_sync',
+    comments:
+      '&id, entry_id, author_id, created_at, deleted_at, [entry_id+created_at], pending_sync',
+    notifications:
+      '&id, recipient_id, kind, entry_id, comment_id, read_at, created_at',
+    user_categories: '&[user_id+id], user_id, display_order',
+    user_brand_categories: '&[user_id+brand], user_id',
+    user_merchant_aliases: '&[user_id+merchant_pattern], user_id',
+  });
   return db;
 }
 

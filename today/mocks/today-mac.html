@@ -2488,6 +2488,132 @@
     color: var(--ink-3);
   }
 
+  /* ============ Admin (.admin-*) — Wave 11.8 사용자별 매핑 편집 ============ */
+  body.is-admin .top-actions__navi { display: none; }
+  body.is-admin .top-actions__expense { display: none; }
+  body.is-admin #mainView { display: none; }
+  body.is-admin .bottombar { display: none; }
+  body.is-admin .edit-toolbar { display: none; }
+  body.is-admin .edit-trigger { display: none; }
+  body.is-admin .share { display: none; }
+
+  #adminView { display: none; padding: 24px 28px 80px; max-width: 720px; }
+  body.is-admin #adminView { display: block; }
+
+  .top-actions__admin { display: none; align-items: center; gap: 10px; }
+  body.is-admin .top-actions__admin { display: inline-flex; }
+
+  .admin-tabs {
+    display: inline-flex;
+    background: var(--hover-bg);
+    border-radius: var(--r-md);
+    padding: 3px;
+    gap: 2px;
+  }
+  .admin-tab {
+    appearance: none;
+    border: 0;
+    background: transparent;
+    color: var(--ink-3);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .admin-tab:hover { color: var(--ink-1); }
+  .admin-tab--active {
+    background: var(--sidebar);
+    color: var(--ink-1);
+    box-shadow: var(--shadow-inset-soft);
+  }
+
+  .admin-list {
+    list-style: none;
+    padding: 0;
+    margin: 16px 0 0;
+    border-top: 1px solid var(--line-soft);
+  }
+  .admin-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .admin-row-main {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+  }
+  .admin-row-id {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-2);
+    letter-spacing: 0.02em;
+  }
+  .admin-row-arrow { color: var(--ink-4); font-size: 11px; }
+  .admin-row-name {
+    font-size: 14px;
+    color: var(--ink-1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .admin-row-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-4);
+  }
+  .admin-row-actions { display: inline-flex; gap: 6px; }
+  .admin-row-btn {
+    appearance: none;
+    border: 1px solid var(--line);
+    background: var(--sidebar);
+    color: var(--ink-2);
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: background .12s ease, color .12s ease, border-color .12s ease;
+  }
+  .admin-row-btn:hover { background: var(--hover-bg); color: var(--ink-1); }
+  .admin-row-btn--danger:hover { color: var(--danger); border-color: var(--danger); }
+
+  .admin-empty, .admin-loading, .admin-error {
+    padding: 32px 16px; text-align: center; color: var(--ink-3); font-size: 13px;
+  }
+  .admin-error { color: var(--danger); }
+
+  .admin-field { display: block; margin-bottom: 12px; }
+  .admin-field-label {
+    display: block; font-size: 12px; font-weight: 500;
+    color: var(--ink-3); margin-bottom: 4px;
+  }
+  .admin-field input {
+    width: 100%; box-sizing: border-box;
+    padding: 8px 12px;
+    background: var(--sidebar);
+    border: 1px solid var(--line);
+    border-radius: var(--r-sm);
+    font-size: 14px; color: var(--ink-1);
+    box-shadow: var(--shadow-inset-soft);
+  }
+  .admin-field input:focus {
+    outline: none; border-color: var(--crail-base);
+    box-shadow: 0 0 0 3px oklch(67% 0.12 50 / 0.16);
+  }
+  .admin-field input[readonly] {
+    background: var(--sunken); color: var(--ink-3);
+  }
+  .admin-form-error {
+    color: var(--danger); font-size: 12px;
+    margin-top: 4px; min-height: 18px;
+  }
+
   /* ============ Phase C — 옵션 L: 탭 구조 [피드][통계] + 검색 + FAB ============ */
   /* 상단 sticky toolbar */
   .exp-toolbar {
@@ -3847,6 +3973,14 @@
         가계부
         <span class="meta">1,284,500 원</span>
       </div>
+      <!-- 매핑 관리 — 카테고리/브랜드/매장 alias 편집 (Wave 11.8) -->
+      <div class="sb__item" data-category="admin">
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 4.5h10M3 8h10M3 11.5h6"/>
+          <circle cx="12" cy="11.5" r="1.5" fill="currentColor" stroke="none"/>
+        </svg>
+        매핑 관리
+      </div>
     </div>
 
     <!-- Recents — active 카테고리의 최근 항목으로 동적 갱신.
@@ -3972,6 +4106,20 @@
             </svg>
           </button>
         </div>
+
+        <!-- 매핑 관리 액션 ([Picker][Brand][Alias] 탭 + 추가) — Wave 11.8 -->
+        <div class="top-actions__admin">
+          <div class="admin-tabs" role="tablist">
+            <button class="admin-tab admin-tab--active" data-admin-tab="picker" type="button">카테고리</button>
+            <button class="admin-tab" data-admin-tab="brand" type="button">브랜드 매핑</button>
+            <button class="admin-tab" data-admin-tab="alias" type="button">매장 alias</button>
+          </div>
+          <button class="icon-btn icon-btn--accent" type="button" title="추가" data-admin-add>
+            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round">
+              <path d="M8 3.5v9M3.5 8h9"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -4029,6 +4177,11 @@
 
     <!-- Main view — 카테고리에 따라 doc 또는 expense view 또는 empty state -->
     <div id="mainView"></div>
+
+    <!-- Admin view — Wave 11.8 사용자별 매핑 (picker / brand / alias). admin.js 가 wire. -->
+    <div id="adminView" hidden>
+      <div id="adminBody" class="admin-body"></div>
+    </div>
 
     <!-- Bottom toolbar — 댓글 입력창 -->
     <div class="bottombar">
@@ -5316,15 +5469,21 @@
     }
 
     function setCategory(key) {
-      if (!FIXTURE[key]) return;
+      // Wave 11.8 — admin 은 FIXTURE 없이 SPA admin.js wire (mocks fixture 미사용).
+      if (key !== 'admin' && !FIXTURE[key]) return;
       activeCat = key;
       document.querySelectorAll('.sb__item[data-category]').forEach(el => {
         el.classList.toggle('sb__item--active', el.dataset.category === key);
       });
       // body class 갱신 (라우트별 영역 hide/show 위해)
-      ['navi', 'fiction', 'blog', 'memo', 'expense'].forEach(k => {
+      ['navi', 'fiction', 'blog', 'memo', 'expense', 'admin'].forEach(k => {
         document.body.classList.toggle('is-' + k, k === key);
       });
+      // admin 은 SPA admin.js 가 #adminView 렌더 — 여기선 body class 토글만.
+      if (key === 'admin') {
+        document.getElementById('crumbCat').textContent = '매핑 관리';
+        return;
+      }
       // Wave 11.6.10 — 카테고리 전환 시 edit-toolbar 자동 close (이전 카테고리에서 켜놨던 잔존 차단)
       const __tb = document.getElementById('editToolbar');
       const __trig = document.getElementById('editTrigger');

@@ -47,6 +47,13 @@ const EMAIL_TO_CATEGORIES = Object.freeze({
 
 let _currentEmail = null;
 
+// ─── Wave 11.8 — DB 캐시 (admin UI 편집한 사용자별 매핑) ─────────────────
+// loadUserMappings 가 Dexie 에서 읽어 메모리에 채움. freeze fallback 보장.
+let _currentUserId = null;
+let _userCategoriesList = null;              // [{ id, name }, ...] or null (미로드)
+const _userBrandMap = new Map();             // brand -> category_id
+const _userMerchantAliases = new Map();      // merchant_pattern -> brand
+
 /** 현재 로그인 사용자 email 등록 — main.js auth bootstrap 후 호출. */
 export function setCurrentEmail(email) {
   _currentEmail = email || null;
@@ -58,8 +65,87 @@ export function getCategoriesForEmail(email) {
   return EMAIL_TO_CATEGORIES[email] || LEFTJAP_CATEGORIES;
 }
 
-/** 현재 사용자의 카테고리 배열 (mocks dynamic master 용). */
+/**
+ * Wave 11.8 — 사용자별 DB 매핑을 Dexie 에서 메모리로 적재.
+ * main.js bootstrap 후 1회 호출. realtime change 시 invalidateUserCache 가 재호출.
+ *
+ * Dexie 가 없거나 매핑이 비면 silent — 호출처 (getCurrentCategories 등) 가
+ * freeze fallback (LEFTJAP/SOYOUN_CATEGORIES, BRAND_CATEGORY_MAP, MERCHANT_TO_BRAND) 사용.
+ */
+export async function loadUserMappings(userId) {
+  if (!userId) return { ok: false, reason: 'no_user' };
+  const db = (typeof globalThis !== 'undefined') ? globalThis.todayDB : null;
+  if (!db) return { ok: false, reason: 'no_db' };
+  _currentUserId = userId;
+  try {
+    const cats = await db.user_categories
+      .where('user_id').equals(userId)
+      .sortBy('display_order');
+    _userCategoriesList = cats.map((c) => ({ id: c.id, name: c.name }));
+
+    const brandRows = await db.user_brand_categories
+      .where('user_id').equals(userId)
+      .toArray();
+    _userBrandMap.clear();
+    for (const r of brandRows) _userBrandMap.set(r.brand, r.category_id);
+
+    const aliasRows = await db.user_merchant_aliases
+      .where('user_id').equals(userId)
+      .toArray();
+    _userMerchantAliases.clear();
+    for (const r of aliasRows) _userMerchantAliases.set(r.merchant_pattern, r.brand);
+
+    return {
+      ok: true,
+      categories: _userCategoriesList.length,
+      brands: _userBrandMap.size,
+      aliases: _userMerchantAliases.size,
+    };
+  } catch (e) {
+    return { ok: false, reason: 'dexie_error', error: e };
+  }
+}
+
+let _invalidateInFlight = false;
+/** 캐시 무효화 → 즉시 reload. realtime change listener (main.js 등록) 가 호출. */
+export function invalidateUserCache() {
+  if (_invalidateInFlight) return;
+  if (!_currentUserId) return;
+  _invalidateInFlight = true;
+  loadUserMappings(_currentUserId)
+    .catch((e) => console.warn('[classifier] invalidateUserCache reload 실패:', e?.message || e))
+    .finally(() => { _invalidateInFlight = false; });
+}
+
+/** 테스트 / admin.js 캐시 직접 주입 hook. */
+export function _setUserCacheForTest({ categories, brandMap, merchantAliases, userId } = {}) {
+  if (Array.isArray(categories)) _userCategoriesList = categories.slice();
+  if (brandMap && typeof brandMap === 'object') {
+    _userBrandMap.clear();
+    for (const [k, v] of Object.entries(brandMap)) _userBrandMap.set(k, v);
+  }
+  if (merchantAliases && typeof merchantAliases === 'object') {
+    _userMerchantAliases.clear();
+    for (const [k, v] of Object.entries(merchantAliases)) _userMerchantAliases.set(k, v);
+  }
+  if (userId !== undefined) _currentUserId = userId;
+}
+
+/** 테스트 reset — beforeEach 에서 사용. */
+export function _clearUserCache() {
+  _userCategoriesList = null;
+  _userBrandMap.clear();
+  _userMerchantAliases.clear();
+  _currentUserId = null;
+}
+
+/** 현재 사용자의 카테고리 배열 (mocks dynamic master 용).
+ * Wave 11.8 — DB 캐시 우선, 없으면 email 기반 freeze fallback.
+ */
 export function getCurrentCategories() {
+  if (_userCategoriesList && _userCategoriesList.length > 0) {
+    return _userCategoriesList;
+  }
   return getCategoriesForEmail(_currentEmail);
 }
 
@@ -73,7 +159,9 @@ export function getCategoryById(id) {
   return list.find((c) => c.id === id) || null;
 }
 
-/** 한글 name → id (현재 사용자 우선, 없으면 전체에서). */
+/** 한글 name → id (현재 사용자 우선, 없으면 전체에서).
+ * Wave 11.8 — getCurrentCategories 가 이미 DB 캐시 우선 처리.
+ */
 export function getCategoryIdByName(name) {
   if (!name) return null;
   const cur = getCurrentCategories().find((c) => c.name === name);
@@ -383,15 +471,24 @@ export function cleanMerchantName(merchant) {
 }
 
 // 매출처명 → 브랜드 (정제 후 lookup)
+// Wave 11.8 — 사용자 alias (today_user_merchant_aliases) 우선, 없으면 freeze MERCHANT_TO_BRAND.
 export function getBrandByMerchant(merchant) {
   if (!merchant) return null;
   const cleaned = cleanMerchantName(merchant);
+  if (_userMerchantAliases.size > 0) {
+    if (_userMerchantAliases.has(cleaned)) return _userMerchantAliases.get(cleaned);
+    if (_userMerchantAliases.has(merchant)) return _userMerchantAliases.get(merchant);
+  }
   return MERCHANT_TO_BRAND[cleaned] || null;
 }
 
 // 브랜드 → 카테고리
+// Wave 11.8 — 사용자 brand 매핑 (today_user_brand_categories) 우선, 없으면 freeze BRAND_CATEGORY_MAP.
 export function getCategoryByBrand(brand) {
   if (!brand) return null;
+  if (_userBrandMap.size > 0 && _userBrandMap.has(brand)) {
+    return _userBrandMap.get(brand);
+  }
   return BRAND_CATEGORY_MAP[brand] || null;
 }
 
@@ -487,6 +584,9 @@ const Classifier = {
   getCategoryByBrand,
   autoMatchCategoryByKeyword,
   classifyMerchant,
+  // Wave 11.8 — DB 캐시
+  loadUserMappings,
+  invalidateUserCache,
 };
 
 // EXPENSE_CATEGORIES — 현재 사용자 기준 동적 getter (mocks `_getExpenseCategoryMaster` 호환).

@@ -15,10 +15,16 @@ import {
   getCategoryByBrand,
   autoMatchCategoryByKeyword,
   classifyMerchant,
+  // Wave 11.8 — DB 캐시
+  loadUserMappings,
+  invalidateUserCache,
+  _setUserCacheForTest,
+  _clearUserCache,
 } from './expense-classifier.js';
 
 beforeEach(() => {
   setCurrentEmail(null);
+  _clearUserCache();
 });
 
 describe('LEFTJAP_CATEGORIES (Keep gas/Code.gs USER_CONFIG[leftjap] 그대로)', () => {
@@ -252,6 +258,72 @@ describe('classifyMerchant — 통합 (브랜드 → 키워드 → etc)', () => 
     const r = classifyMerchant('USD 22.00 CLAUDE.AISUBSCRIPTION');
     expect(r.brand).toBe('Anthropic');
     expect(r.category).toBe('subscribe');
+  });
+});
+
+describe('Wave 11.8 — DB 캐시 (사용자별 매핑)', () => {
+  it('getCurrentCategories — DB 캐시가 있으면 freeze 보다 우선', () => {
+    setCurrentEmail('leftjap@gmail.com');
+    _setUserCacheForTest({
+      categories: [
+        { id: 'custom1', name: '커스텀1' },
+        { id: 'custom2', name: '커스텀2' },
+      ],
+    });
+    const cats = getCurrentCategories();
+    expect(cats.length).toBe(2);
+    expect(cats[0].id).toBe('custom1');
+    expect(cats[1].name).toBe('커스텀2');
+  });
+
+  it('getCurrentCategories — 빈 캐시 → email freeze fallback', () => {
+    setCurrentEmail('soyoun312@gmail.com');
+    expect(getCurrentCategories()).toBe(SOYOUN_CATEGORIES);
+  });
+
+  it('getCategoryIdByName — DB 캐시 우선 (커스텀 id 반영)', () => {
+    _setUserCacheForTest({
+      categories: [{ id: 'custom_dining', name: '외식' }],
+    });
+    expect(getCategoryIdByName('외식')).toBe('custom_dining');
+  });
+
+  it('getBrandByMerchant — 사용자 alias 가 freeze 보다 우선', () => {
+    _setUserCacheForTest({
+      merchantAliases: { 'CLAUDE.AISUBSCRIPTION': 'MyAnthropic' },
+    });
+    expect(getBrandByMerchant('CLAUDE.AISUBSCRIPTION')).toBe('MyAnthropic');
+  });
+
+  it('getBrandByMerchant — alias 캐시 비면 MERCHANT_TO_BRAND fallback', () => {
+    expect(getBrandByMerchant('지에스25')).toBe('GS25');
+  });
+
+  it('getCategoryByBrand — 사용자 brand 매핑 우선 (쿠팡 online → food)', () => {
+    _setUserCacheForTest({
+      brandMap: { '쿠팡': 'food' },
+    });
+    expect(getCategoryByBrand('쿠팡')).toBe('food');
+  });
+
+  it('getCategoryByBrand — 캐시 비면 BRAND_CATEGORY_MAP fallback (쿠팡 online)', () => {
+    expect(getCategoryByBrand('쿠팡')).toBe('online');
+  });
+
+  it('loadUserMappings — userId 없음 → no_user', async () => {
+    const r = await loadUserMappings(null);
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('no_user');
+  });
+
+  it('loadUserMappings — Dexie 없음 → no_db', async () => {
+    const r = await loadUserMappings('00000000-0000-0000-0000-000000000000');
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('no_db');
+  });
+
+  it('invalidateUserCache — _currentUserId 없으면 no-op (안전)', () => {
+    expect(() => invalidateUserCache()).not.toThrow();
   });
 });
 

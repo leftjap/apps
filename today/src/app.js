@@ -16,7 +16,7 @@
 import mocksHtml from '../mocks/today-mac.html?raw';
 import { Auth } from './services/auth.js';
 
-const ROUTES = ['navi', 'fiction', 'blog', 'memo', 'expense'];
+const ROUTES = ['navi', 'fiction', 'blog', 'memo', 'expense', 'admin'];
 const DEFAULT_ROUTE = 'navi';
 
 let _mocksMounted = false;
