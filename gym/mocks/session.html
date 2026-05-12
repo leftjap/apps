@@ -44,6 +44,16 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 /* SessionEmpty / SessionActive 가시성 토글 (home.html HomeA/HomeC 패턴 답습) */
 [data-state="empty"] .session-active { display: none; }
 [data-state="active"] .session-empty { display: none; }
+/* §6-2 — 운동 추가 시트 chip / item (session.js renderChips/List 출력 마크업 정합, 시안 inline 다크 톤 답습) */
+.addex-chip { flex-shrink: 0; padding: 8px 16px; border-radius: 999px; font-size: 13px; font-weight: 400; font-family: var(--font-body); background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.08); cursor: pointer; }
+.addex-chip.is-active { background: var(--accent); color: #fff; font-weight: 600; border: 0; }
+.addex-item { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 13px 14px; border-radius: 12px; background: transparent; border: 0; cursor: pointer; font-family: inherit; color: #fff; text-align: left; }
+.addex-item .ex-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.addex-item .ex-name { font-size: 14px; color: #fff; font-weight: 500; font-family: var(--font-body); }
+.addex-item .ex-meta { font-size: 11px; color: rgba(255,255,255,0.45); font-family: var(--font-display); }
+.addex-item .ex-toggle { flex-shrink: 0; width: 18px; height: 18px; }
+.addex-item.is-added .ex-toggle::after { content: "✓"; color: var(--accent); font-size: 14px; font-weight: 600; }
+.addex-empty { padding: 24px 14px; text-align: center; font-size: 12px; color: rgba(255,255,255,0.4); }
 </style>
 </head>
 <body data-state="empty">
