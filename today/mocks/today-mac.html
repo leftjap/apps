@@ -1981,11 +1981,12 @@
   .exp-fp-overlay--category {
     display: grid;
     place-items: center;
-    padding: 24px;
+    padding: clamp(32px, 8vw, 96px);
   }
   .exp-fp-overlay--category .exp-fp-card {
     position: static;
     width: 100%;
+    max-width: 360px;
   }
   .exp-fp-header {
     display: flex;
