@@ -77,13 +77,35 @@ export function formatSavedTime(iso, now = new Date()) {
 }
 
 /**
- * Dexie row → meta HTML (단어수 + 자동저장 시각).
- * `<span class="save">` 노드를 항상 포함해서 자동저장 갱신 시 selector 안정화.
+ * Dexie row → meta HTML (단어수 + 원고지 매수).
+ * 자동저장 시각 라벨은 행 단순화 위해 제거 (사용자 요청 2026-05-12). 저장 동작 자체는 유지.
  */
-export function buildMockMeta(row, now = new Date()) {
+export function buildMockMeta(row) {
   const wc = countWords(row?.content);
-  const saved = escapeHtml(formatSavedTime(row?.updated_at, now));
-  return `${wc}단어<span class="sep">·</span><span class="save">${saved}</span>`;
+  const sheets = sheetCount(row?.content);
+  return `${wc}단어<span class="sep">·</span>원고지 ${sheets}매`;
+}
+
+/**
+ * 카테고리별 본인 글 누적 번호 (사용자 요청 2026-05-12).
+ *  - navi/soyoun_navi 그룹: kind === 'navi' && owner_id === userId (소연 글 제외)
+ *  - 그 외 kind: kind 일치 + owner_id === userId
+ *  - 정렬: created_at asc (옛 글 #1, 최신 글 #N)
+ *  - allRows 에 없는 row (새 글 작성 중 아직 add 전) → max + 1
+ *  - 삭제 시 번호 변동 허용 (동적 계산, DB 컬럼 없음)
+ */
+export function computeEntryNumber(rowId, kind, allRows, userId) {
+  if (!userId || !Array.isArray(allRows)) return null;
+  const isNaviGroup = kind === 'navi' || kind === 'soyoun_navi';
+  const filtered = allRows.filter((r) => {
+    if (r.deleted_at) return false;
+    if (r.owner_id !== userId) return false;
+    return isNaviGroup ? r.kind === 'navi' : r.kind === kind;
+  });
+  const sorted = filtered.sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+  const idx = sorted.findIndex((r) => r.id === rowId);
+  if (idx === -1) return sorted.length + 1;
+  return idx + 1;
 }
 
 /** Dexie row → mocks doc 형식 (id / title / meta). share / number / body 는 향후 wave. */
@@ -176,7 +198,7 @@ export function renderDocFromRow(row, doc = document) {
   const readOnly = isReadOnlyRow(row);
   const partnerName = readOnly ? (USER_ID_TO_DISPLAY_NAME[row.owner_id] || '소연') : '';
   const meta = readOnly
-    ? `${escapeHtml(partnerName)} 작성 <span class="sep">·</span> 읽기 전용 <span class="sep">·</span> ${buildMockMeta(row)}`
+    ? `${escapeHtml(partnerName)}<span class="sep">·</span>${buildMockMeta(row)}`
     : buildMockMeta(row);
   // Wave 11.6.6 — placeholder 는 CSS `:empty::before` (injectEditorStyles) 로만 표시.
   // 본문 텍스트로 inject 시 typing 시 placeholder 가 사용자 입력과 섞여 partial 저장 → 텍스트 흐름 손상.
@@ -216,7 +238,28 @@ export function renderDocFromRow(row, doc = document) {
   // 파트너 공유 글 — ⋯ 메뉴 wrap (article 외부, top-actions 영역) 도 readOnly 동기화
   const moreWrap = doc.querySelector?.('.doc-more-wrap');
   if (moreWrap) moreWrap.dataset.readOnly = readOnly ? '1' : '';
+  updateCrumbEntryNumber(row, doc);
   return true;
+}
+
+/** crumb 의 `#NNNN` 을 본인 카테고리 누적 번호로 동적 갱신 (fire-and-forget).
+ *  파트너 글 (owner !== leftjap) 은 본인 카운트 대상 아님 → `.crumb__num` 자체 hide. */
+function updateCrumbEntryNumber(row, doc) {
+  const numEl = doc.querySelector?.('.crumb__num-val');
+  const numContainer = doc.querySelector?.('.crumb__num');
+  if (!numEl || !numContainer) return;
+  const userId = _currentUser?.id;
+  if (isReadOnlyRow(row, userId)) {
+    numContainer.classList.add('is-empty');
+    return;
+  }
+  numContainer.classList.remove('is-empty');
+  const db = globalThis.todayDB;
+  if (!userId || !db?.entries) return;
+  db.entries.toArray().then((all) => {
+    const n = computeEntryNumber(row.id, row.kind, all, userId);
+    if (n != null) numEl.textContent = String(n);
+  }).catch(() => {});
 }
 
 /**

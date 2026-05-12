@@ -468,7 +468,11 @@
     .share .label { display: none; }
   }
   @media (max-width: 540px) {
-    .crumb__date { display: none; }
+    /* 모바일 헤더 단순화 (사용자 요청 2026-05-12):
+       햄버거 + "오늘의 네비" + 날짜(월일만). #NN / 제거. 요일 부분 숨김. */
+    .crumb__num, .crumb__sep { display: none !important; }
+    .crumb__date { display: inline; }
+    .crumb__date-day { display: none; }
   }
   /* 글 카운트 — 네비/단편 한정. body.is-navi/.is-fiction 일 때만 표시 */
   .crumb__num {
@@ -4052,7 +4056,7 @@
         <span class="crumb__cat" id="crumbCat">오늘의 네비</span>
         <span class="crumb__num" id="crumbNum"><span class="crumb__num-hash">#</span><span class="crumb__num-val">1336</span></span>
         <span class="crumb__sep">/</span>
-        <span class="crumb__date">04 · 27 · MON</span>
+        <span class="crumb__date"><span class="crumb__date-md">04 · 27</span><span class="crumb__date-day"> · MON</span></span>
       </div>
 
       <div class="top-actions">
