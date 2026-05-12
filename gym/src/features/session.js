@@ -848,9 +848,15 @@ export function resolveDotDisplay(sets, i, cur, prevSessionSets) {
   const isCurrent = i === cur;
   const isDone = !!(set && set.done);
   const hasOwn = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
-  if (isDone || isCurrent) {
+  // current: 항상 실제 값 (실시간 입력) — hasOwn=false 면 '—'
+  if (isCurrent) {
     return { text: hasOwn ? `${set.weight}·${set.reps}` : '—', isPreview: false };
   }
+  // done && hasOwn: 입력 완료 — 실제 값 accent
+  if (isDone && hasOwn) {
+    return { text: `${set.weight}·${set.reps}`, isPreview: false };
+  }
+  // done && !hasOwn (좌 스와이프 스킵) 또는 미입력 — 모두 동일하게 preview 폴백.
   // ① 직전 세션 동일 세트번호
   const p = prevSessionSets && prevSessionSets[i];
   if (p && Number.isFinite(p.weight) && Number.isFinite(p.reps)) {

@@ -2103,6 +2103,24 @@ describe('resolveDotDisplay (D — dot preview 우선순위)', () => {
     expect(resolveDotDisplay(sets, 0, 1, null)).toEqual({ text: '90·8', isPreview: false });
   });
 
+  it('done && weight=null (스킵 좌 스와이프) → 직전 세션 또는 직전 세트 폴백', () => {
+    // done 이지만 weight/reps null — handleLeftSwipe 가 사용자 입력 없이 done 처리한 경우.
+    // 직전 세션 있음 → 그 값
+    const sets = [{ weight: null, reps: null, done: true }, { weight: 50, reps: 10, done: false, preset: true }];
+    const prev = [{ weight: 60, reps: 8 }];
+    expect(resolveDotDisplay(sets, 0, 1, prev)).toEqual({ text: '60·8', isPreview: true });
+  });
+
+  it('done && weight=null + 직전 세션 없음 → 다른 입력 세트 폴백 (없으면 sets[i] preset)', () => {
+    const sets = [
+      { weight: null, reps: null, done: true },
+      { weight: 50, reps: 10, done: true },
+      { weight: 50, reps: 10, done: false, preset: true },
+    ];
+    // i=0 미입력 스킵: 직전 세션 없고 직전 입력 세트도 없음 (j<0). sets[0] hasOwn false → '—'
+    expect(resolveDotDisplay(sets, 0, 2, null)).toEqual({ text: '—', isPreview: true });
+  });
+
   it('current 세트 → 실제 값', () => {
     const sets = [{ weight: 90, reps: 8, done: false, preset: true }];
     expect(resolveDotDisplay(sets, 0, 0, null)).toEqual({ text: '90·8', isPreview: false });
