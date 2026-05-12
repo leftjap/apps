@@ -779,17 +779,25 @@ function renderSetDotHtml(idx, set, isCurrent) {
  */
 function renderSetDotsDiff(setDotsEl, sets, cur) {
   if (!setDotsEl) return;
-  // 부족한 dot 추가 (단순 append — 갱신은 아래 루프)
+  let appendedCount = 0;
+  // 부족한 dot 추가 — 새 dot 은 initial style (isCurrent=false, 작은 폰트) 로 박힘.
+  // 그 다음 force reflow 로 layout commit → for loop 갱신 시 transition trigger.
   while (setDotsEl.children.length < sets.length) {
     const wrap = document.createElement('div');
     wrap.innerHTML = renderSetDotHtml(setDotsEl.children.length, sets[setDotsEl.children.length], false);
-    // wrap.firstElementChild 가 div data-set-idx — 그것만 append
     const dot = wrap.firstElementChild;
-    if (dot) setDotsEl.appendChild(dot);
+    if (dot) {
+      setDotsEl.appendChild(dot);
+      appendedCount += 1;
+    }
   }
   // 초과 제거
   while (setDotsEl.children.length > sets.length) {
     setDotsEl.removeChild(setDotsEl.lastChild);
+  }
+  // 새 dot append 시 force reflow → initial style 을 layout 에 commit (transition 시작점 확보)
+  if (appendedCount > 0) {
+    void setDotsEl.offsetHeight;
   }
   // 각 dot 갱신 (inline style + textContent)
   for (let i = 0; i < sets.length; i++) {
