@@ -1284,9 +1284,12 @@ export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
   const title = scope === 'year'
     ? `${escapeHtml(category)} · ${year}년`
     : `${escapeHtml(category)} · ${month}월`;
+  // 2026-05-12 — mocks openExpenseFloatingPopup 패턴 답습. `.exp-fp-card` wrapper 가
+  // position:fixed + max-width:420px + transform transition 담당.
+  // `.exp-fp-popup--category` 는 popover-row hover 등 카테고리 모달 modifier.
   if (!rows.length) {
     return `
-      <div class="exp-fp-popup exp-fp-popup--category" role="dialog" aria-modal="true">
+      <div class="exp-fp-card exp-fp-popup--category" role="dialog" aria-modal="true">
         <div class="exp-fp-header">
           <span class="exp-fp-title">${title}</span>
           <button class="exp-fp-close" data-popup-close type="button" aria-label="닫기">×</button>
@@ -1301,7 +1304,7 @@ export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
   const summary = `<div class="exp-fp-summary">${rows.length}건 합계 ${formatAmount(total)}</div>`;
   const list = rows.map(rowToExpSearchHtml).join('');
   return `
-    <div class="exp-fp-popup exp-fp-popup--category" role="dialog" aria-modal="true">
+    <div class="exp-fp-card exp-fp-popup--category" role="dialog" aria-modal="true">
       <div class="exp-fp-header">
         <span class="exp-fp-title">${title}</span>
         <button class="exp-fp-close" data-popup-close type="button" aria-label="닫기">×</button>
@@ -1328,13 +1331,29 @@ export async function openCategoryDetailPopup(category, opts = {}, doc = (typeof
   overlay.setAttribute('data-category-popup', 'true');
   overlay.innerHTML = buildCategoryPopupHtml(category, rows, total, { year, month, scope });
   doc.body.appendChild(overlay);
-  // 2026-05-12 — `.exp-fp-overlay` 기본 opacity:0 + pointer-events:none. `.open` 클래스가
-  // 붙어야 시각적으로 노출 (CSS rule `.exp-fp-overlay.open { opacity:1; pointer-events:auto; }`).
-  // requestAnimationFrame 으로 다음 frame 에 적용 → opacity transition 정상 발화.
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(() => overlay.classList.add('open'));
-  } else {
-    overlay.classList.add('open');
+  // 2026-05-12 — mocks openExpenseFloatingPopup 패턴 답습.
+  // (1) `.exp-fp-card` 는 position:fixed 인데 left/top 명시 없으면 viewport(0,0) 박힘.
+  //     mount 후 size 측정 → 화면 중앙 정렬.
+  // (2) `.exp-fp-overlay.open` 클래스가 opacity:1 + pointer-events:auto 발화.
+  // fake doc (단위 테스트 mock) 환경에서는 querySelector 미존재 — guard.
+  const card = typeof overlay.querySelector === 'function' ? overlay.querySelector('.exp-fp-card') : null;
+  if (card && typeof window !== 'undefined' && typeof card.getBoundingClientRect === 'function') {
+    const cr = card.getBoundingClientRect();
+    const cardW = cr.width || 380;
+    const cardH = cr.height || 400;
+    const left = Math.max(16, (window.innerWidth - cardW) / 2);
+    const top = Math.max(16, (window.innerHeight - cardH) / 2);
+    if (card.style) {
+      card.style.left = left + 'px';
+      card.style.top = top + 'px';
+    }
+  }
+  if (overlay.classList && typeof overlay.classList.add === 'function') {
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => overlay.classList.add('open'));
+    } else {
+      overlay.classList.add('open');
+    }
   }
   function close() {
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
