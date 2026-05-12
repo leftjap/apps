@@ -640,10 +640,10 @@ async function mountSessionActive(doc, block, session) {
     }
   }
 
-  // S1..Sn 도트 — 활성 set 가운데 정렬 (footer pill 패턴 답습)
+  // S1..Sn 도트 — diff-based 갱신 (DOM 유지로 transition 트리거) + 활성 set 가운데 정렬
   const setDotsEl = doc.getElementById('cardSetDots');
   if (setDotsEl) {
-    setDotsEl.innerHTML = sets.map((s, idx) => renderSetDotHtml(idx, s, idx === cur)).join('');
+    renderSetDotsDiff(setDotsEl, sets, cur);
     const centerActiveSet = () => {
       const active = setDotsEl.querySelector('[data-current="1"]');
       if (!active) return;
@@ -752,24 +752,75 @@ function resolveExerciseName(id) {
 }
 
 function renderSetDotHtml(idx, set, isCurrent) {
+  // 단일 dot HTML — 초기 mount (innerHTML 한 번에 박을 때) 만 사용. 후속 mount 는 renderSetDotsDiff
+  // 가 기존 DOM 갱신 (transition 트리거 보존).
   const setNum = idx + 1;
   const isDone = !!(set && set.done);
-  let color = 'rgba(255,255,255,0.25)';
-  let weight = '400';
-  // 완료된 세트 + 현재 세트 모두 accent (PR 별도 시각 강조 폐기 — 사용자 결정).
-  // set.pr 데이터 자체는 유지 (PR 검사·저장 로직 그대로). 시각만 단일 위계로 단순화.
-  if (isCurrent) { color = 'var(--accent)'; weight = '600'; }
-  else if (isDone) { color = 'var(--accent)'; weight = '400'; }
+  const color = (isCurrent || isDone) ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
+  const weight = isCurrent ? '600' : '400';
   const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
   const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
-  // spec §6-9 — 세트 행 hold 대상 (data-longpress="set-row" + data-set-idx)
-  // data-current="1" — 활성 set 가운데 정렬용 셀렉터 (footer pill 패턴 답습).
+  // 폰트 위계 — current 큰 (label 13px / value 17px), 그 외 작은 (10px / 13px). transition 으로 부드럽게.
+  const labelSize = isCurrent ? '13px' : '10px';
+  const valueSize = isCurrent ? '17px' : '13px';
   const currentAttr = isCurrent ? ' data-current="1"' : '';
   return `
-        <div data-set-idx="${idx}"${currentAttr} data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};flex-shrink:0;cursor:pointer;">
-          <div style="font-size:10px;letter-spacing:0.06em;">S${setNum}</div>
-          <div style="font-size:13px;margin-top:4px;">${escapeHtml(valueText)}</div>
+        <div data-set-idx="${idx}"${currentAttr} data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};flex-shrink:0;cursor:pointer;transition:color 220ms ease-out, font-weight 220ms ease-out;">
+          <div style="font-size:${labelSize};letter-spacing:0.06em;transition:font-size 220ms ease-out;">S${setNum}</div>
+          <div style="font-size:${valueSize};margin-top:4px;transition:font-size 220ms ease-out;">${escapeHtml(valueText)}</div>
         </div>`;
+}
+
+/**
+ * diff-based set dot 갱신 — innerHTML 재생성 폐기 (transition 트리거 보존).
+ *  - 기존 children 매칭 (data-set-idx) → text + style 갱신
+ *  - 부족하면 append, 초과하면 remove
+ *  - 활성 set 변경 시 font-size 220ms transition 자연 트리거 (DOM 유지)
+ */
+function renderSetDotsDiff(setDotsEl, sets, cur) {
+  if (!setDotsEl) return;
+  // 부족한 dot 추가 (단순 append — 갱신은 아래 루프)
+  while (setDotsEl.children.length < sets.length) {
+    const wrap = document.createElement('div');
+    wrap.innerHTML = renderSetDotHtml(setDotsEl.children.length, sets[setDotsEl.children.length], false);
+    // wrap.firstElementChild 가 div data-set-idx — 그것만 append
+    const dot = wrap.firstElementChild;
+    if (dot) setDotsEl.appendChild(dot);
+  }
+  // 초과 제거
+  while (setDotsEl.children.length > sets.length) {
+    setDotsEl.removeChild(setDotsEl.lastChild);
+  }
+  // 각 dot 갱신 (inline style + textContent)
+  for (let i = 0; i < sets.length; i++) {
+    const dot = setDotsEl.children[i];
+    if (!dot) continue;
+    const set = sets[i];
+    const isCurrent = i === cur;
+    const isDone = !!(set && set.done);
+    const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
+    const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
+    const color = (isCurrent || isDone) ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
+    const weight = isCurrent ? '600' : '400';
+    const labelSize = isCurrent ? '13px' : '10px';
+    const valueSize = isCurrent ? '17px' : '13px';
+    // wrap div style 갱신
+    dot.style.color = color;
+    dot.style.fontWeight = weight;
+    if (isCurrent) dot.setAttribute('data-current', '1');
+    else dot.removeAttribute('data-current');
+    // 자식 두 div 갱신 (label / value)
+    const labelEl = dot.children[0];
+    const valueEl = dot.children[1];
+    if (labelEl) {
+      labelEl.textContent = `S${i + 1}`;
+      labelEl.style.fontSize = labelSize;
+    }
+    if (valueEl) {
+      valueEl.textContent = valueText;
+      valueEl.style.fontSize = valueSize;
+    }
+  }
 }
 
 /**
