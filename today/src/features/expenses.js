@@ -1092,18 +1092,9 @@ export function patchDayPopoverFromRows({ monthDay, rows = [], doc = (typeof doc
   popover.querySelector('.exp-day-detail__date').textContent = `${m}월 ${d}일 ${dowName}요일`;
 
   const list = popover.querySelector('.expense-list');
-  if (rows.length === 0) {
-    // Wave 11.6.5 — 빈 상태 메시지 보강 + 거래 추가 빠른 진입
-    list.innerHTML = `
-      <div class="exp-day-detail__empty">
-        <p>이 날의 거래가 없습니다.</p>
-        <p class="exp-day-detail__empty-sub">SMS 연동 또는 거래 직접 추가로 데이터를 채워주세요.</p>
-        <button class="exp-day-detail__empty-btn" type="button" onclick="window.openNewExpenseForm && window.openNewExpenseForm()">거래 추가</button>
-      </div>
-    `;
-  } else {
-    list.innerHTML = rows.map((r) => rowToPopoverHtml(r, { defaultCard })).join('');
-  }
+  // 2026-05-12 Wave 11.8d — 0건 cell 클릭 자체가 차단 (patchDayPopoverHandlers) 되어
+  // 본 함수는 rows.length > 0 인 경우만 도달. 빈 분기 dead path 라 단순화.
+  list.innerHTML = rows.map((r) => rowToPopoverHtml(r, { defaultCard })).join('');
 
   const foot = popover.querySelector('.exp-day-detail__foot');
   if (foot) {
@@ -1134,9 +1125,10 @@ export function patchDayPopoverHandlers({ doc = (typeof document !== 'undefined'
       if (typeof origOpen === 'function') return origOpen.call(this, cellEl);
       return;
     }
-    // Wave 11.6.6 — 0건 + 오늘 아닌 day-cell 클릭 가드 (mocks today-mac.html:4699 패턴 답습).
-    // dev seed 후에도 빈 날짜 클릭은 popover 미오픈. 오늘 날짜는 거래 추가 진입 위해 허용.
-    if (cellEl?.classList?.contains?.('is-zero') && !cellEl?.classList?.contains?.('today')) {
+    // 2026-05-12 Wave 11.8d — 0건 day-cell 모두 클릭 무시 (today 포함). 신규 지출은
+    // 별도 '새 글' 진입점으로 일원화. 이전 today 예외는 거래 추가 빠른 진입용이었으나
+    // 사용자 의도 — 빈 날짜 클릭 자체가 비활성.
+    if (cellEl?.classList?.contains?.('is-zero')) {
       return { applied: false, reason: 'is_zero' };
     }
     const monthDay = cellEl?.dataset?.date;
