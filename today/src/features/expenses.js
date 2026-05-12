@@ -1143,6 +1143,11 @@ export function patchDayPopoverHandlers({ doc = (typeof document !== 'undefined'
     } catch (e) {
       console.warn('[expenses] listExpensesByDate 실패:', e?.message || e);
     }
+    // 2026-05-12 Wave 11.8d — Dexie 조회 결과 0건이면 popover 미오픈 (today cell 에
+    // is-zero class 미부착되는 mocks 정책 보강). 사용자 의도 — 빈 날짜 클릭 자체 비활성.
+    if (rows.length === 0) {
+      return { applied: false, reason: 'is_zero_runtime' };
+    }
     patchDayPopoverFromRows({ monthDay, rows, doc });
     if (doc) {
       doc.querySelectorAll('.exp-month-day.is-selected').forEach((el) => el.classList.remove('is-selected'));
