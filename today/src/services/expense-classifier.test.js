@@ -180,6 +180,22 @@ describe('autoMatchCategoryByKeyword', () => {
   it('매칭 없으면 etc', () => {
     expect(autoMatchCategoryByKeyword('완전알수없는상호')).toBe('etc');
   });
+  it('2026-05-12 보강 — 미분류로 빠지던 chat.db 매출처들', () => {
+    // 식당 5개
+    expect(autoMatchCategoryByKeyword('(주)파인만컴')).toBe('dining');
+    expect(autoMatchCategoryByKeyword('비틀비틀')).toBe('dining');
+    expect(autoMatchCategoryByKeyword('홍대원조통골')).toBe('dining');
+    expect(autoMatchCategoryByKeyword('치악(춘천방')).toBe('dining');
+    expect(autoMatchCategoryByKeyword('철길부산집홍')).toBe('dining');
+    // 문화 — 음반
+    expect(autoMatchCategoryByKeyword('마음레코드')).toBe('culture');
+    // 교통 — 하이패스 (일반 결제 SMS)
+    expect(autoMatchCategoryByKeyword('하이패스')).toBe('transport');
+    // 구독 — SaaS / 소프트웨어
+    expect(autoMatchCategoryByKeyword('GENSPARK.AI')).toBe('subscribe');
+    expect(autoMatchCategoryByKeyword('MICROSOFT*BILL')).toBe('subscribe');
+    expect(autoMatchCategoryByKeyword('XCORP')).toBe('subscribe');
+  });
   it('validIds 제한 — soyoun 활성 카테고리만 매칭', () => {
     const soyounIds = SOYOUN_CATEGORIES.map((c) => c.id);
     // soyoun 에 'online' 없음 → '쿠팡' (online 키워드) → etc fallback
