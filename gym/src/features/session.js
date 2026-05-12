@@ -2035,46 +2035,68 @@ export async function handleLeftSwipe() {
 
   blocks[blockIdx] = { ...block, sets };
 
-  // 좌 스와이프 commit 애니메이션 — out (좌로 슬라이드 + 페이드아웃) → DB + mount → in (우에서 들어옴)
-  // cardSwipeArea 전체에 translateX + opacity transition. 자연스러운 페이지 넘김 느낌.
+  // 좌 스와이프 commit 책장 넘김 애니메이션:
+  //   - OUT (180ms): translateX(0 → -28) + opacity(1 → 0). opacity 0 보장 → 이후 우측 jump 가 invisible
+  //   - DB upsert + mount 는 OUT 과 병렬 (Promise.all) → OUT 끝과 mount 끝이 거의 동시 → 좌측 정지 시간 0
+  //   - IN reset (jump): transform translateX(+28), opacity 0 (invisible 상태)
+  //   - IN (200ms): translateX(+28 → 0) + opacity(0 → 1)
   const doc = typeof document !== 'undefined' ? document : null;
   const swipeArea = doc?.getElementById('cardSwipeArea');
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
-  if (canAnimate) {
-    swipeArea.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
-    swipeArea.style.transform = 'translateX(-28px)';
-    swipeArea.style.opacity = '0.2';
-    await new Promise((r) => setTimeout(r, 180));
-  }
-
-  try { await upsertSession({ ...session, blocks }); }
-  catch (e) {
-    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
-      console.error('[gymSession] handleLeftSwipe upsert', e);
+  if (!canAnimate) {
+    try { await upsertSession({ ...session, blocks }); }
+    catch (e) {
+      if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+        console.error('[gymSession] handleLeftSwipe upsert', e);
+      }
+      return;
     }
-    if (canAnimate) {
-      // upsert 실패 시에도 swipeArea 원상복구
-      swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
-      swipeArea.style.transform = 'translateX(0)';
-      swipeArea.style.opacity = '1';
-    }
+    await mountSessionView();
+    if (prResult && prResult.isPR && typeof document !== 'undefined') showPrPop(document);
     return;
   }
-  await mountSessionView();
 
-  if (canAnimate) {
-    // 우측 시작점 reset (transition 끈 상태로 즉시 jump)
-    swipeArea.style.transition = 'none';
-    swipeArea.style.transform = 'translateX(28px)';
-    swipeArea.style.opacity = '0.2';
-    // 다음 2 frame 후 in transition (1 rAF 만으론 일부 브라우저에서 style flush 안 됨)
-    await new Promise((r) => requestAnimationFrame(r));
-    await new Promise((r) => requestAnimationFrame(r));
+  // OUT 시작
+  swipeArea.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+  swipeArea.style.transform = 'translateX(-28px)';
+  swipeArea.style.opacity = '0';
+  const outDone = new Promise((r) => setTimeout(r, 180));
+
+  // 병렬로 DB + mount 진행 (OUT 시간 동안 가려진 채로 데이터 갱신)
+  let upsertErr = null;
+  const mountDone = (async () => {
+    try { await upsertSession({ ...session, blocks }); }
+    catch (e) {
+      if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+        console.error('[gymSession] handleLeftSwipe upsert', e);
+      }
+      upsertErr = e;
+      return;
+    }
+    await mountSessionView();
+  })();
+
+  await Promise.all([outDone, mountDone]);
+
+  if (upsertErr) {
+    // upsert 실패 — 원상 복구 + 종료
     swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
     swipeArea.style.transform = 'translateX(0)';
     swipeArea.style.opacity = '1';
+    return;
   }
+
+  // IN 시작점 jump (invisible — opacity 0 이라 사용자 안 보임)
+  swipeArea.style.transition = 'none';
+  swipeArea.style.transform = 'translateX(28px)';
+  swipeArea.style.opacity = '0';
+  // 강제 reflow 로 style flush 보장 (rAF 대기 없이도 transition 트리거)
+  void swipeArea.offsetHeight;
+  // IN 트랜지션
+  swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+  swipeArea.style.transform = 'translateX(0)';
+  swipeArea.style.opacity = '1';
 
   // PR 팝 (mountSessionView 후 — 새 dot 노드에 대해 PR 표시는 이미 적용됨, pop 만 추가)
   if (prResult && prResult.isPR && typeof document !== 'undefined') {
@@ -2124,14 +2146,59 @@ export async function handleRightSwipe() {
   if (prevIdx < 0 || prevIdx >= sets.length) return;
   sets[prevIdx] = { ...sets[prevIdx], done: false };
   blocks[blockIdx] = { ...block, sets };
-  try { await upsertSession({ ...session, blocks }); }
-  catch (e) {
-    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
-      console.error('[gymSession] handleRightSwipe upsert', e);
+
+  // 우 스와이프 책장 넘김 (좌 스와이프 대칭) — OUT 우측 + IN 좌측에서 들어옴.
+  const doc = typeof document !== 'undefined' ? document : null;
+  const swipeArea = doc?.getElementById('cardSwipeArea');
+  const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
+
+  if (!canAnimate) {
+    try { await upsertSession({ ...session, blocks }); }
+    catch (e) {
+      if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+        console.error('[gymSession] handleRightSwipe upsert', e);
+      }
+      return;
     }
+    await mountSessionView();
     return;
   }
-  await mountSessionView();
+
+  swipeArea.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+  swipeArea.style.transform = 'translateX(28px)';
+  swipeArea.style.opacity = '0';
+  const outDone = new Promise((r) => setTimeout(r, 180));
+
+  let upsertErr = null;
+  const mountDone = (async () => {
+    try { await upsertSession({ ...session, blocks }); }
+    catch (e) {
+      if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+        console.error('[gymSession] handleRightSwipe upsert', e);
+      }
+      upsertErr = e;
+      return;
+    }
+    await mountSessionView();
+  })();
+
+  await Promise.all([outDone, mountDone]);
+
+  if (upsertErr) {
+    swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+    swipeArea.style.transform = 'translateX(0)';
+    swipeArea.style.opacity = '1';
+    return;
+  }
+
+  // IN 시작점 jump (좌측 invisible)
+  swipeArea.style.transition = 'none';
+  swipeArea.style.transform = 'translateX(-28px)';
+  swipeArea.style.opacity = '0';
+  void swipeArea.offsetHeight;
+  swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+  swipeArea.style.transform = 'translateX(0)';
+  swipeArea.style.opacity = '1';
 }
 
 // (서킷 폐기 — spec §16) wireCircuitToggle 제거.
