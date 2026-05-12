@@ -2034,14 +2034,47 @@ export async function handleLeftSwipe() {
   }
 
   blocks[blockIdx] = { ...block, sets };
+
+  // 좌 스와이프 commit 애니메이션 — out (좌로 슬라이드 + 페이드아웃) → DB + mount → in (우에서 들어옴)
+  // cardSwipeArea 전체에 translateX + opacity transition. 자연스러운 페이지 넘김 느낌.
+  const doc = typeof document !== 'undefined' ? document : null;
+  const swipeArea = doc?.getElementById('cardSwipeArea');
+  const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
+
+  if (canAnimate) {
+    swipeArea.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+    swipeArea.style.transform = 'translateX(-28px)';
+    swipeArea.style.opacity = '0.2';
+    await new Promise((r) => setTimeout(r, 180));
+  }
+
   try { await upsertSession({ ...session, blocks }); }
   catch (e) {
     if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
       console.error('[gymSession] handleLeftSwipe upsert', e);
     }
+    if (canAnimate) {
+      // upsert 실패 시에도 swipeArea 원상복구
+      swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+      swipeArea.style.transform = 'translateX(0)';
+      swipeArea.style.opacity = '1';
+    }
     return;
   }
   await mountSessionView();
+
+  if (canAnimate) {
+    // 우측 시작점 reset (transition 끈 상태로 즉시 jump)
+    swipeArea.style.transition = 'none';
+    swipeArea.style.transform = 'translateX(28px)';
+    swipeArea.style.opacity = '0.2';
+    // 다음 2 frame 후 in transition (1 rAF 만으론 일부 브라우저에서 style flush 안 됨)
+    await new Promise((r) => requestAnimationFrame(r));
+    await new Promise((r) => requestAnimationFrame(r));
+    swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+    swipeArea.style.transform = 'translateX(0)';
+    swipeArea.style.opacity = '1';
+  }
 
   // PR 팝 (mountSessionView 후 — 새 dot 노드에 대해 PR 표시는 이미 적용됨, pop 만 추가)
   if (prResult && prResult.isPR && typeof document !== 'undefined') {
