@@ -97,8 +97,10 @@ test.describe('Wave 11.9.1 — session start + add exercise', () => {
     });
     expect(sess.tags).toContain('chest');
 
-    // mocks nav-item 추가 효과 (벤치프레스 — BUILTIN 의 한국어 name)
-    await expect(page.locator('#navTrack .nav-item[data-name="벤치프레스"]')).toBeVisible();
+    // v2 redesign — #navTrack .nav-item 옛 마크업 폐기. hookClicks 의 자동 mountSessionView →
+    // active 분기 전환 후 #cardExName 에 운동명 표시 (mocks/session.html:133).
+    await page.waitForFunction(() => document.body.dataset.state === 'active', { timeout: 3_000 });
+    await expect(page.locator('#cardExName')).toHaveText('벤치프레스');
   });
 
   test('C. 같은 운동 두번째 클릭 → 중복 차단 (Dexie blocks 길이 1 유지)', async ({ page }) => {
@@ -114,10 +116,13 @@ test.describe('Wave 11.9.1 — session start + add exercise', () => {
       return all.length === 1 && all[0].blocks.length === 1;
     }, { timeout: 3_000 });
 
-    // 두 번째 클릭 — 중복 차단. Dexie blocks 길이 1 유지
-    await page.click('#addexList [data-ex="bench_press"]');
-    // 잠깐 대기 후 중복 차단 보장 (중복일 때는 Dexie put 호출 없음)
-    await page.waitForTimeout(300);
+    // v2 — hookClicks 의 자동 mountSessionView → active 분기 → addexList hidden → UI 두 번째 클릭 불가.
+    // 의미 ("중복 차단 — blocks 길이 1 유지") 는 addExerciseToActiveSession 직접 호출로 보존.
+    const second = await page.evaluate(async () => {
+      return window.gymSession.addExerciseToActiveSession('bench_press', 'chest');
+    });
+    expect(second.added).toBe(false);
+    expect(second.reason).toBe('duplicate');
     const blocksLen = await page.evaluate(async () => {
       const all = await window.gymDB.sessions.toArray();
       return all[0].blocks.length;
@@ -395,55 +400,37 @@ test.describe('Wave 11.9.1 — session start + add exercise', () => {
     await expect(page.locator('#addexList [data-ex="bench_press"]')).toHaveCount(0);
   });
 
-  test('L. 빈 세션 첫 운동 추가 → placeholder hide + 카드 가시화', async ({ page }) => {
+  test('L. 빈 세션 첫 운동 추가 → empty → active 전환 + 카드 가시화', async ({ page }) => {
     await bootstrapFake(page);
     const dbReady = await page.evaluate(() => !!window.gymDB);
     test.skip(!dbReady, 'fake bootstrap 환경 외');
 
     await navigateSession(page);
 
-    // 진입 시 빈 세션 — data-empty-session="1" + placeholder 표시
-    await expect(page.locator('#sessionApp')).toHaveAttribute('data-empty-session', '1');
-    await expect(page.locator('.session-placeholder')).toBeVisible();
+    // v2 redesign — #sessionApp[data-empty-session] / .session-placeholder 폐기.
+    // body[data-state] 토글로 empty / active 분기 (mocks/session.html:49 + CSS:45-46).
+    await expect(page.locator('body')).toHaveAttribute('data-state', 'empty');
 
     // 첫 운동 추가
     await page.click('#addexList [data-ex="bench_press"]');
 
-    // placeholder 해제 + nav-item is-current 승격 + 세트 카드 가시화
-    await expect(page.locator('#sessionApp')).not.toHaveAttribute('data-empty-session', '1');
-    await expect(page.locator('.session-placeholder')).toBeHidden();
-    await expect(page.locator('#navTrack .nav-item.is-current[data-name="벤치프레스"]')).toHaveCount(1);
+    // 자동 mountSessionView → active 분기 전환
+    await expect(page.locator('body')).toHaveAttribute('data-state', 'active');
 
-    // card-viewport 가 displayed (placeholder 와 배타 토글)
-    const cardViewportDisplay = await page.locator('#cardViewport').evaluate(
-      (el) => getComputedStyle(el).display,
-    );
-    expect(cardViewportDisplay).not.toBe('none');
+    // SessionC active 카드 가시화 — #cardSwipeArea + 운동명 + 첫 세트 active
+    await expect(page.locator('#cardSwipeArea')).toBeVisible();
+    await expect(page.locator('#cardExName')).toHaveText('벤치프레스');
+    await expect(page.locator('#cardSetProgress')).toHaveText(/SET 01/);
 
-    // 세션 startTime 기록 (spec §6-1) — Dexie 와 timer DOM 양쪽 검증
+    // 세션 startTime 기록 (spec §6-1) — Dexie 검증
     const dexieStart = await page.evaluate(async () => {
       const all = await window.gymDB.sessions.toArray();
       return all[0]?.startTime ?? null;
     });
     expect(dexieStart).toBeTruthy();
-    await expect(page.locator('#sessionTime')).toHaveClass(/is-running/);
 
-    // Issue 3 — 신규 운동은 1세트부터 + 좌측 peek 부재
-    const exName = await page.locator('#exerciseName').evaluate((el) => el.childNodes[0]?.nodeValue);
-    expect(exName).toBe('벤치프레스');
-    await expect(page.locator('.set-card.is-active .set-label .num')).toHaveText('01');
-    await expect(page.locator('.set-card[data-idx="0"].is-active')).toHaveCount(1);
-    await expect(page.locator('.set-card[data-idx="1"]:not(.is-active)')).toHaveCount(1);
-
-    // Issue 2 — nav-item 가운데 정렬 (footer-nav 중심과 |delta| < 50px, smooth scroll 완료 후)
-    await page.waitForTimeout(400);
-    const centerDelta = await page.evaluate(() => {
-      const item = document.querySelector('.nav-item.is-current');
-      const footer = document.querySelector('.footer-nav');
-      const ir = item.getBoundingClientRect();
-      const fr = footer.getBoundingClientRect();
-      return Math.abs((ir.left + ir.width / 2) - (fr.left + fr.width / 2));
-    });
-    expect(centerDelta).toBeLessThan(50);
+    // 첫 세트 dot 존재 (5세트 prefill 기본) — cardSetDots 의 data-set-idx 0/1 양쪽 존재
+    await expect(page.locator('#cardSetDots [data-set-idx="0"]')).toHaveCount(1);
+    await expect(page.locator('#cardSetDots [data-set-idx="1"]')).toHaveCount(1);
   });
 });
