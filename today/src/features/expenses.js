@@ -1366,6 +1366,92 @@ export async function openCategoryDetailPopup(category, opts = {}, doc = (typeof
   return { ok: true, count: rows.length };
 }
 
+/** Dexie 직접 조회 (brand 매칭) — 카테고리 모달과 동일 패턴. 2026-05-12 Wave 11.8b. */
+export async function fetchBrandExpenses(brand, opts = {}) {
+  if (!brand) return { rows: [], total: 0 };
+  const now = new Date();
+  const year = opts.year || now.getFullYear();
+  const month = opts.month || (now.getMonth() + 1);
+  const scope = opts.scope || 'year';
+  let rows = [];
+  try {
+    if (scope === 'year') {
+      const from = `${year}-01-01T00:00:00.000Z`;
+      const to = `${year}-12-31T23:59:59.999Z`;
+      rows = await Queries.listExpensesByRange(from, to);
+    } else {
+      rows = await Queries.listExpensesByMonth(year, month);
+    }
+  } catch (e) {
+    console.warn('[expenses] listExpenses range/month 실패:', e?.message || e);
+    return { rows: [], total: 0 };
+  }
+  const filtered = rows.filter((r) => r.brand === brand || r.merchant === brand);
+  const total = filtered.reduce((s, r) => s + (r.amount_krw || 0), 0);
+  return { rows: filtered, total, year, month, scope };
+}
+
+/** brand popup 마운트 — 카테고리 모달과 동일 .exp-cat-modal-* class 재사용. */
+export async function openBrandDetailPopup(brand, opts = {}, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc || typeof doc.createElement !== 'function') return { ok: false, reason: 'no_doc' };
+  if (!brand) return { ok: false, reason: 'no_brand' };
+  const existing = doc.getElementById('expBrandPopupOverlay');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
+  const { rows, total, year, month, scope } = await fetchBrandExpenses(brand, opts);
+  const title = scope === 'year' ? `${escapeHtml(brand)} · ${year}년` : `${escapeHtml(brand)} · ${month}월`;
+  const overlay = doc.createElement('div');
+  overlay.id = 'expBrandPopupOverlay';
+  overlay.className = 'exp-cat-modal-overlay';
+  overlay.setAttribute('data-brand-popup', 'true');
+  const body = rows.length
+    ? `<div class="exp-cat-modal-body">${rows.map(rowToCategoryPopupHtml).join('')}</div><div class="exp-cat-modal-footer">${rows.length}건 합계 ${formatAmount(total)}</div>`
+    : `<div class="exp-cat-modal-body"><div class="exp-cat-modal-empty">내역이 없습니다</div></div>`;
+  overlay.innerHTML = `
+    <div class="exp-cat-modal-card" role="dialog" aria-modal="true">
+      <div class="exp-cat-modal-header">
+        <span class="exp-cat-modal-title">${title}</span>
+        <button class="exp-cat-modal-close" data-popup-close type="button" aria-label="닫기">×</button>
+      </div>
+      ${body}
+    </div>
+  `;
+  doc.body.appendChild(overlay);
+  if (overlay.classList?.add) {
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => overlay.classList.add('open'));
+    else overlay.classList.add('open');
+  }
+  const close = () => {
+    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    doc.removeEventListener('keydown', onKey);
+  };
+  const onKey = (e) => { if (e.key === 'Escape') close(); };
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) return close();
+    if (e.target.closest?.('[data-popup-close]')) close();
+  });
+  doc.addEventListener('keydown', onKey);
+  return { ok: true, count: rows.length };
+}
+
+let _merchantDetailPatched = false;
+/** mocks `window.openMerchantDetail` wrap — Dexie 결과로 brand popup 표시. */
+export function patchOpenMerchantDetailHandler({
+  win = (typeof window !== 'undefined' ? window : null),
+  doc = (typeof document !== 'undefined' ? document : null),
+} = {}) {
+  if (!win) return false;
+  if (_merchantDetailPatched) return true;
+  _merchantDetailPatched = true;
+  win.openMerchantDetail = function patchedOpenMerchantDetail(brand, event) {
+    if (event?.stopPropagation) event.stopPropagation();
+    openBrandDetailPopup(brand, { scope: 'year' }, doc).catch((e) =>
+      console.warn('[expenses] openBrandDetailPopup 실패:', e?.message || e),
+    );
+  };
+  return true;
+}
+export function __resetMerchantDetailPatchState() { _merchantDetailPatched = false; }
+
 let _categoryDetailPatched = false;
 /** mocks `window.openCategoryDetail` wrap — Dexie 결과로 popup 표시. */
 export function patchOpenCategoryDetailHandler({
@@ -1403,6 +1489,7 @@ export function mountExpensesView(user) {
   patchDayPopoverHandlers();
   patchExpSearchHandlers();
   patchOpenCategoryDetailHandler();
+  patchOpenMerchantDetailHandler();
   installExpRowClickHandler();
   injectExpensePopupStyles();
   observeCategoryChange(handleCategoryActive);
