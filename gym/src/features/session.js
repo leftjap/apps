@@ -2138,6 +2138,10 @@ export async function handleLeftSwipe() {
     return;
   }
 
+  // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
+  // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.
+  await new Promise((r) => requestAnimationFrame(r));
+
   // IN 시작점 jump (invisible — opacity 0 이라 사용자 안 보임)
   swipeArea.style.transition = 'none';
   swipeArea.style.transform = 'translateX(28px)';
@@ -2241,6 +2245,9 @@ export async function handleRightSwipe() {
     swipeArea.style.opacity = '1';
     return;
   }
+
+  // 자식 transition (set dot font-size 등) 시작 보장 — handleLeftSwipe 와 동일
+  await new Promise((r) => requestAnimationFrame(r));
 
   // IN 시작점 jump (좌측 invisible)
   swipeArea.style.transition = 'none';
