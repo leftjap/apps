@@ -1295,15 +1295,23 @@ function renderFooterPills(doc, session, currentBlock) {
     return renderFooterPillHtml({ blockIdx: i, state, name, progress });
   }).join('');
   pillsEl.innerHTML = html;
-  // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel inline center). addex chip 패턴 답습.
-  // innerHTML 직후 동기 호출 시 mountSessionView async 흐름 안에서 layout 미완 케이스 가능 →
-  // rAF 로 다음 paint frame 에서 호출 (pill bounding rect 보장). jsdom 환경 fallback 으로 즉시 호출.
+  // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel).
+  // scrollIntoView({ inline: 'center' }) 가 iOS Safari PWA 등 일부 환경에서 동작 불완전 →
+  // 직접 scrollLeft 계산 + scrollTo 호출로 호환성 보장. rAF 로 layout 완료 후 paint frame 에서 호출.
   const centerActivePill = () => {
     const active = pillsEl.querySelector('[data-ex-state="active"]');
-    if (active && typeof active.scrollIntoView === 'function') {
-      try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
-      catch (_) { /* old browser fallback */ }
-    }
+    if (!active) return;
+    try {
+      const containerRect = pillsEl.getBoundingClientRect();
+      const activeRect = active.getBoundingClientRect();
+      const activeCenterRel = activeRect.left + activeRect.width / 2 - containerRect.left;
+      const targetScrollLeft = pillsEl.scrollLeft + activeCenterRel - containerRect.width / 2;
+      if (typeof pillsEl.scrollTo === 'function') {
+        pillsEl.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
+      } else {
+        pillsEl.scrollLeft = targetScrollLeft;
+      }
+    } catch (_) { /* fallback */ }
   };
   if (typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(centerActivePill);
