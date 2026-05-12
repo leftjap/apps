@@ -1194,6 +1194,21 @@ describe('buildCategoryPopupHtml — Wave 11.6.5', () => {
     expect(html).not.toContain('<script>x</script>');
     expect(html).toContain('&lt;script&gt;x&lt;/script&gt;');
   });
+
+  it('2026-05-12 — 카테고리 모달 row 는 카테고리 라벨 대신 날짜 노출 (rowToCategoryPopupHtml)', () => {
+    const rows = [
+      { id: 'a', merchant: '쿠팡', card: '삼성1337', category: 'online', amount_krw: 3470, spent_at: '2026-05-06T13:00:00Z' },
+    ];
+    const html = buildCategoryPopupHtml('온라인쇼핑', rows, 3470, { year: 2026, scope: 'year' });
+    // 카테고리 라벨 ('온라인쇼핑') 이 row 첫 column 에 반복되지 않아야 함 — 헤드라인에만
+    const rowOnlyHtml = html.split('class="exp-fp-summary"')[0];  // summary 이전까지
+    const rowSection = rowOnlyHtml.split('class="exp-fp-header"')[1] || rowOnlyHtml;
+    expect(rowSection).not.toMatch(/exp-popover-row__cat[^>]*>온라인쇼핑</);
+    // 대신 날짜 (MM-DD) 노출
+    expect(html).toContain('>05-06<');
+    // 헤드라인엔 카테고리 표시
+    expect(html).toContain('온라인쇼핑 · 2026년');
+  });
 });
 
 describe('openCategoryDetailPopup — Wave 11.6.5', () => {

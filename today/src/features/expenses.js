@@ -1147,9 +1147,9 @@ export function patchDayPopoverHandlers({ doc = (typeof document !== 'undefined'
 // Dexie searchExpenses 결과로 body 덮어쓰기.
 // ───────────────────────────────────────────────────────────────────────────
 
-/** Dexie row → mocks .exp-popover-row HTML (검색 결과 + 카테고리 popup 공용).
- * 2026-05-12: category 컬럼이 영문 id (DB) 또는 한글 (옛 Keep) 혼재. toCategoryLabel
- * 로 사용자 picker 의 한글 라벨로 통일 표시 (SOYOUN fallback 제거 + 외부 id → '기타').
+/** Dexie row → mocks .exp-popover-row HTML (검색 결과 전용).
+ * 검색 모달은 다양한 카테고리 결과 노출되므로 카테고리 라벨이 의미 있음.
+ * 카테고리 모달은 별도 함수 (rowToCategoryPopupHtml) 사용 — 같은 카테고리 반복 제거.
  */
 export function rowToExpSearchHtml(row) {
   const merchant = escapeHtml(row?.merchant || row?.memo || '');
@@ -1159,6 +1159,21 @@ export function rowToExpSearchHtml(row) {
   const recurring = row?.recurring ? REPEAT_SVG : '';
   const onclick = id ? ` onclick="window.openExpenseModal && window.openExpenseModal('edit', '${id}')"` : '';
   return `<div class="exp-popover-row" data-tx-id="${id}"${onclick}><span class="exp-popover-row__cat">${category}</span><span class="exp-popover-row__merchant">${merchant}</span><span class="exp-popover-row__card">${card}${recurring}</span><span class="exp-popover-row__amount">${formatAmount(row?.amount_krw || 0)}</span></div>`;
+}
+
+/** Dexie row → 카테고리 popup 전용 row HTML.
+ * 카테고리 모달은 한 카테고리 안 결제만 노출하므로 row 마다 카테고리 라벨이 반복돼 노이즈.
+ * 첫 column 을 날짜 (MM-DD) 로 교체 — 시간순 정렬과 시각 정합.
+ * CSS grid (.exp-popover-row__cat 자리에 날짜) 그대로 활용 — 별도 stylesheet 변경 없음.
+ */
+export function rowToCategoryPopupHtml(row) {
+  const date = isoToMockDate(row?.spent_at);
+  const merchant = escapeHtml(row?.merchant || row?.memo || '');
+  const card = escapeHtml(row?.card || DEFAULT_CARD_LABEL);
+  const id = escapeAttr(row?.id || '');
+  const recurring = row?.recurring ? REPEAT_SVG : '';
+  const onclick = id ? ` onclick="window.openExpenseModal && window.openExpenseModal('edit', '${id}')"` : '';
+  return `<div class="exp-popover-row" data-tx-id="${id}"${onclick}><span class="exp-popover-row__cat">${date}</span><span class="exp-popover-row__merchant">${merchant}</span><span class="exp-popover-row__card">${card}${recurring}</span><span class="exp-popover-row__amount">${formatAmount(row?.amount_krw || 0)}</span></div>`;
 }
 
 /**
@@ -1306,7 +1321,7 @@ export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
   // 2026-05-12 — summary 를 body 외부 footer 로 분리 (flex:0 0 auto). row 가 많아
   // body 가 scroll 처리될 때도 summary 가 카드 하단 고정. 이전엔 body 안에 있어 row
   // 가 많아지면 카드 max-height 경계 위에 걸쳐 보이는 버그.
-  const list = rows.map(rowToExpSearchHtml).join('');
+  const list = rows.map(rowToCategoryPopupHtml).join('');
   const summary = `<div class="exp-fp-summary" style="flex:0 0 auto;padding:10px 16px;border-top:1px solid var(--line-soft, rgba(0,0,0,0.08));font-weight:500;">${rows.length}건 합계 ${formatAmount(total)}</div>`;
   return `
     <div class="exp-fp-card exp-fp-popup--category" role="dialog" aria-modal="true">
@@ -1584,6 +1599,8 @@ export const Expenses = {
   fetchCategoryExpenses,
   buildCategoryPopupHtml,
   openCategoryDetailPopup,
+  // 2026-05-12 — 카테고리 popup 전용 row template (날짜 노출, 카테고리 라벨 제거)
+  rowToCategoryPopupHtml,
   patchOpenCategoryDetailHandler,
 };
 
