@@ -40,9 +40,11 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     test.skip(!dbReady, 'fake bootstrap 환경 외');
 
     await navigateHome(page);
-    // mountHomeView 가 streak 처리 → empty state
+    // v2 redesign — #app[data-state] 폐기. mountHomeView 가 active 없음/streak 분기 → applyStreakToDom →
+    // body[data-state]='idle' (home.js:383). HomeA 의 sLabel/sNum/ctaBtn 으로 empty state 검증.
     await page.waitForFunction(
-      () => document.getElementById('app')?.dataset.state === 'empty',
+      () => document.body.dataset.state === 'idle'
+        && document.getElementById('ctaBtn')?.textContent === '첫 운동 시작',
       { timeout: 3_000 },
     );
     const v = await page.evaluate(() => ({
@@ -52,7 +54,7 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       sub: document.getElementById('sSub').textContent,
       subUnit: document.getElementById('sSubUnit').textContent,
       cta: document.getElementById('ctaBtn').textContent,
-      appState: document.getElementById('app').dataset.state,
+      bodyState: document.body.dataset.state,
     }));
     expect(v).toEqual({
       label: '마지막 운동',
@@ -61,7 +63,7 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       sub: '0',
       subUnit: '/4회',
       cta: '첫 운동 시작',
-      appState: 'empty',
+      bodyState: 'idle',
     });
   });
 
@@ -90,8 +92,11 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     });
 
     await navigateHome(page);
+    // v2 — streak.state ('active') 는 함수 internal. body[data-state]='idle' 로 통일 (home.js:383).
+    // F 의 의미 = "1일 전 streak 시각 표시" → sNum='1' + sUnit='일 전' + ctaBtn='운동 시작' 으로 검증.
     await page.waitForFunction(
-      () => document.getElementById('app')?.dataset.state === 'active',
+      () => document.body.dataset.state === 'idle'
+        && document.getElementById('sNum')?.textContent === '1',
       { timeout: 3_000 },
     );
     const v = await page.evaluate(() => ({
@@ -102,7 +107,7 @@ test.describe('Wave 11.10.1 — home active session card', () => {
       sub: document.getElementById('sSub').textContent,
       subUnit: document.getElementById('sSubUnit').textContent,
       cta: document.getElementById('ctaBtn').textContent,
-      appState: document.getElementById('app').dataset.state,
+      bodyState: document.body.dataset.state,
     }));
     expect(v.label).toBe('마지막 운동');
     expect(v.num).toBe('1');
@@ -111,7 +116,7 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     expect(v.sub).toMatch(/^\d+$/);
     expect(v.subUnit).toMatch(/^\/\d+회$/);
     expect(v.cta).toBe('운동 시작');
-    expect(v.appState).toBe('active');
+    expect(v.bodyState).toBe('idle');
   });
 
   test('G. 5일+ 공백 → rest state (Wave 11.10.3)', async ({ page }) => {
@@ -138,16 +143,20 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     });
 
     await navigateHome(page);
+    // v2 — streak.state ('rest') 는 internal. body[data-state]='idle'. 의미 = "7일 공백 시 sNum='7'" 로 검증.
     await page.waitForFunction(
-      () => document.getElementById('app')?.dataset.state === 'rest',
+      () => document.body.dataset.state === 'idle'
+        && document.getElementById('sNum')?.textContent === '7',
       { timeout: 3_000 },
     );
     const v = await page.evaluate(() => ({
       num: document.getElementById('sNum').textContent,
-      appState: document.getElementById('app').dataset.state,
+      unit: document.getElementById('sUnit').textContent,
+      bodyState: document.body.dataset.state,
     }));
     expect(v.num).toBe('7');
-    expect(v.appState).toBe('rest');
+    expect(v.unit).toBe('일 전');
+    expect(v.bodyState).toBe('idle');
   });
 
   test('B. active 시드 → "진행 중" + 1/1 종목 + state="session"', async ({ page }) => {
@@ -178,30 +187,33 @@ test.describe('Wave 11.10.1 — home active session card', () => {
 
     await navigateHome(page);
 
-    // mountHomeView 비동기 — DOM 갱신 대기
+    // v2 redesign — active 시드 → applyToDom → HomeC 노출 (body[data-state]='active', home.js:350).
+    // sLabel (HomeA) 대신 cardLabel (HomeC) 검증.
     await page.waitForFunction(() => {
-      return document.getElementById('sLabel')?.textContent === '진행 중';
+      return document.getElementById('cardLabel')?.textContent === '진행 중'
+        && document.body.dataset.state === 'active';
     }, { timeout: 3_000 });
 
     const v = await page.evaluate(() => ({
-      label: document.getElementById('sLabel').textContent,
-      unit: document.getElementById('sUnit').textContent,
-      part: document.getElementById('sPart').textContent,
-      sub: document.getElementById('sSub').textContent,
-      cta: document.getElementById('ctaBtn').textContent,
-      appState: document.getElementById('app').dataset.state,
-      numFontSize: document.getElementById('sNum').style.fontSize,
+      label: document.getElementById('cardLabel').textContent,
+      unit: document.getElementById('cardUnit').textContent,
+      part: document.getElementById('cardPart').textContent,
+      sub: document.getElementById('cardEx').textContent,
+      cta: document.querySelector('#cardCta span')?.textContent,
+      bodyState: document.body.dataset.state,
+      numFontSize: document.getElementById('cardTime').style.fontSize,
     }));
     expect(v.label).toBe('진행 중');
     expect(v.unit).toBe('경과');
     expect(v.part).toBe('가슴');
     expect(v.sub).toBe('1 / 1 종목');
     expect(v.cta).toBe('이어가기');
-    expect(v.appState).toBe('session');
-    expect(v.numFontSize).toBe('40px');
+    expect(v.bodyState).toBe('active');
+    // numFontSize 검증 폐기 — summarizeActiveSession 의 sessionNumSize=40 이 applyToDom 에 미적용
+    // (mocks 정적 56px 유지, home.js:326-343). 옛 코드 흔적, Phase B 에서 미구현.
 
     // num 형식 mm:ss (앞자리 0 padded)
-    const num = await page.evaluate(() => document.getElementById('sNum').textContent);
+    const num = await page.evaluate(() => document.getElementById('cardTime').textContent);
     expect(num).toMatch(/^\d{2,}:\d{2}$/);
   });
 
@@ -321,12 +333,13 @@ test.describe('Wave 11.10.1 — home active session card', () => {
     });
 
     await navigateHome(page);
+    // v2 — active 시드 시 HomeC 노출 → CTA = #cardCta (첫 span '이어가기'). #ctaBtn (HomeA) 폐기.
     await page.waitForFunction(
-      () => document.getElementById('ctaBtn')?.textContent === '이어가기',
+      () => document.querySelector('#cardCta span')?.textContent === '이어가기',
       { timeout: 3_000 },
     );
 
-    await page.click('#ctaBtn');
+    await page.click('#cardCta');
     await page.waitForFunction(
       () => document.body.dataset.route === 'session',
       { timeout: 3_000 },
