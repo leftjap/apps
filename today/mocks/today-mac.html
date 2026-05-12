@@ -6854,8 +6854,8 @@
       if (open) document.body.dataset.drawerOpen = 'true';
       else delete document.body.dataset.drawerOpen;
     };
-    // 진입 시 모바일이면 열림 기본
-    if (isMobile()) setOpen(true);
+    // 진입 시 default 닫힘 (사용자 요청 2026-05-12: 메인 화면 = drawer 닫힘이 시작 상태).
+    // 햄버거(#mainHamburger) 클릭 또는 좌측 edge swipe 로 사용자 능동 열기.
     // 햄버거 → 열기
     document.getElementById('mainHamburger')?.addEventListener('click', () => setOpen(true));
     // backdrop 클릭 → 닫기

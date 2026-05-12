@@ -865,6 +865,24 @@ export function wrapNewArticle(doc = document) {
     const sharedDefault = kind === 'navi' || kind === 'soyoun_navi';
     shareEl.classList.toggle('share--off', !sharedDefault);
   }
+  // 새 글 placeholder + crumb #N — 본인 카테고리 다음 번호 동적 계산 (사용자 요청 2026-05-12).
+  // mocks fixture totalCount stub (#1337) 대신 computeEntryNumber 사용.
+  const h1 = article.querySelector?.('.doc__h1');
+  const numEl = doc.querySelector?.('.crumb__num-val');
+  const numContainer = doc.querySelector?.('.crumb__num');
+  const userId = _currentUser?.id;
+  const db = globalThis.todayDB;
+  const kindForNum = getCurrentKind(doc);
+  if (userId && db?.entries && kindForNum) {
+    db.entries.toArray().then((all) => {
+      const next = computeEntryNumber('__new__', kindForNum, all, userId);
+      if (next != null) {
+        if (h1) h1.dataset.emptyTitle = `#${next} 제목 없음`;
+        if (numEl) numEl.textContent = String(next);
+        numContainer?.classList?.remove('is-empty');
+      }
+    }).catch(() => {});
+  }
   return true;
 }
 
