@@ -1201,8 +1201,8 @@ describe('buildCategoryPopupHtml — Wave 11.6.5', () => {
     ];
     const html = buildCategoryPopupHtml('온라인쇼핑', rows, 3470, { year: 2026, scope: 'year' });
     // 카테고리 라벨 ('온라인쇼핑') 이 row 첫 column 에 반복되지 않아야 함 — 헤드라인에만
-    const rowOnlyHtml = html.split('class="exp-fp-summary"')[0];  // summary 이전까지
-    const rowSection = rowOnlyHtml.split('class="exp-fp-header"')[1] || rowOnlyHtml;
+    const rowOnlyHtml = html.split('class="exp-cat-modal-footer"')[0];  // summary 이전까지
+    const rowSection = rowOnlyHtml.split('class="exp-cat-modal-header"')[1] || rowOnlyHtml;
     expect(rowSection).not.toMatch(/exp-popover-row__cat[^>]*>온라인쇼핑</);
     // 대신 날짜 (MM-DD) 노출
     expect(html).toContain('>05-06<');
@@ -1259,7 +1259,7 @@ describe('openCategoryDetailPopup — Wave 11.6.5', () => {
     });
     const overlays = [];
     const fakeOverlay = {
-      _classes: new Set(['exp-fp-overlay']),
+      _classes: new Set(['exp-cat-modal-overlay']),
       classList: { add: (c) => fakeOverlay._classes.add(c), remove: (c) => fakeOverlay._classes.delete(c) },
       attrs: {},
       setAttribute(k, v) { this.attrs[k] = v; },
@@ -1285,8 +1285,8 @@ describe('openCategoryDetailPopup — Wave 11.6.5', () => {
     expect(fakeOverlay.innerHTML).toContain('배달 · 4월');
     expect(fakeOverlay.innerHTML).toContain('2건');
     expect(fakeOverlay.attrs['data-category-popup']).toBe('true');
-    // 2026-05-12 — modifier 클래스 부착 (overlay grid centering 발화).
-    expect(fakeOverlay.className).toContain('exp-fp-overlay--category');
+    // 2026-05-12 — `.exp-cat-modal-overlay` 전용 트리 (acc-modal 패턴, grid centering).
+    expect(fakeOverlay.className).toContain('exp-cat-modal-overlay');
   });
 });
 

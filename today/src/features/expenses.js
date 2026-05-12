@@ -1291,8 +1291,9 @@ export async function fetchCategoryExpenses(category, opts = {}) {
   return { rows: filtered, total, year, month, scope };
 }
 
-/** 카테고리 popup HTML — heroCard 패턴 (mocks .exp-fp-popup 답습).
- * 2026-05-12: scope='year' 면 제목을 "X · YYYY년" 으로. (누적 위젯 클릭 케이스.)
+/** 카테고리 popup HTML — `.exp-cat-modal-*` 전용 트리 (2026-05-12 신규).
+ * scope='year' 면 제목을 "X · YYYY년" 으로 (누적 위젯 클릭 케이스).
+ * 기존 .exp-fp-* (가맹점 anchor popup) 와 무관 — viewport 중앙 + 좌우 균등 여백 + 고정 폭.
  */
 export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
   const now = new Date();
@@ -1302,34 +1303,28 @@ export function buildCategoryPopupHtml(category, rows, total, opts = {}) {
   const title = scope === 'year'
     ? `${escapeHtml(category)} · ${year}년`
     : `${escapeHtml(category)} · ${month}월`;
-  // 2026-05-12 — mocks openExpenseFloatingPopup 패턴 답습. `.exp-fp-card` wrapper 가
-  // position:fixed + max-width:420px + transform transition 담당.
-  // `.exp-fp-popup--category` 는 popover-row hover 등 카테고리 모달 modifier.
   if (!rows.length) {
     return `
-      <div class="exp-fp-card exp-fp-popup--category" role="dialog" aria-modal="true">
-        <div class="exp-fp-header">
-          <span class="exp-fp-title">${title}</span>
-          <button class="exp-fp-close" data-popup-close type="button" aria-label="닫기">×</button>
+      <div class="exp-cat-modal-card" role="dialog" aria-modal="true">
+        <div class="exp-cat-modal-header">
+          <span class="exp-cat-modal-title">${title}</span>
+          <button class="exp-cat-modal-close" data-popup-close type="button" aria-label="닫기">×</button>
         </div>
-        <div class="exp-fp-body">
-          <div class="exp-fp-empty">이 카테고리의 거래가 없습니다.</div>
+        <div class="exp-cat-modal-body">
+          <div class="exp-cat-modal-empty">이 카테고리의 거래가 없습니다.</div>
         </div>
       </div>
     `;
   }
-  // 2026-05-12 — summary 를 body 외부 footer 로 분리 (flex:0 0 auto). row 가 많아
-  // body 가 scroll 처리될 때도 summary 가 카드 하단 고정. 이전엔 body 안에 있어 row
-  // 가 많아지면 카드 max-height 경계 위에 걸쳐 보이는 버그.
   const list = rows.map(rowToCategoryPopupHtml).join('');
-  const summary = `<div class="exp-fp-summary" style="flex:0 0 auto;padding:10px 16px;border-top:1px solid var(--line-soft, rgba(0,0,0,0.08));font-weight:500;">${rows.length}건 합계 ${formatAmount(total)}</div>`;
+  const summary = `<div class="exp-cat-modal-footer">${rows.length}건 합계 ${formatAmount(total)}</div>`;
   return `
-    <div class="exp-fp-card exp-fp-popup--category" role="dialog" aria-modal="true">
-      <div class="exp-fp-header">
-        <span class="exp-fp-title">${title}</span>
-        <button class="exp-fp-close" data-popup-close type="button" aria-label="닫기">×</button>
+    <div class="exp-cat-modal-card" role="dialog" aria-modal="true">
+      <div class="exp-cat-modal-header">
+        <span class="exp-cat-modal-title">${title}</span>
+        <button class="exp-cat-modal-close" data-popup-close type="button" aria-label="닫기">×</button>
       </div>
-      <div class="exp-fp-body">${list}</div>
+      <div class="exp-cat-modal-body">${list}</div>
       ${summary}
     </div>
   `;
@@ -1345,9 +1340,7 @@ export async function openCategoryDetailPopup(category, opts = {}, doc = (typeof
   const { rows, total, year, month, scope } = await fetchCategoryExpenses(category, opts);
   const overlay = doc.createElement('div');
   overlay.id = 'expCategoryPopupOverlay';
-  // 2026-05-12 — `.exp-fp-overlay--category` modifier 사용. overlay 자체가 grid+place-items+padding
-  // 으로 카드 중앙 정렬 + 좌우 24px 여백 보장. JS 좌표 계산 불필요 (transform timing 버그 자동 해소).
-  overlay.className = 'exp-fp-overlay exp-fp-overlay--category';
+  overlay.className = 'exp-cat-modal-overlay';
   overlay.setAttribute('data-category-popup', 'true');
   overlay.innerHTML = buildCategoryPopupHtml(category, rows, total, { year, month, scope });
   doc.body.appendChild(overlay);
