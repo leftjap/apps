@@ -185,28 +185,44 @@ function hookExerciseDrag(listEl, doc) {
 
   const endDrag = async (e) => {
     if (!state || (e && e.pointerId !== state.pointerId)) return;
-    const { row, rows, currentIndex, originalIndex, grip, pointerId } = state;
+    const { row, rows, currentIndex, originalIndex, grip, pointerId, rowHeight } = state;
     try { grip.releasePointerCapture?.(pointerId); } catch (_) {}
-    // 모든 transform/transition reset (재배치 전)
-    rows.forEach((r) => { r.style.transition = 'none'; r.style.transform = ''; });
-    row.classList.remove('is-dragging');
-    // 다음 frame 에 transition 복원
-    requestAnimationFrame(() => rows.forEach((r) => { r.style.transition = ''; }));
     state = null;
-    if (currentIndex === originalIndex) return;
+
+    if (currentIndex === originalIndex) {
+      // 변경 없음 — 잡힌 row 만 transition 으로 원위치 (사이 row 는 이미 0)
+      row.classList.remove('is-dragging');
+      requestAnimationFrame(() => { row.style.transform = ''; });
+      return;
+    }
+
+    // 잡힌 row 를 새 자리까지 transition 으로 슬라이드 안착
+    // is-dragging 제거 → transition 활성화 → 다음 frame 에 transform = targetDy 설정
+    const targetDy = (currentIndex - originalIndex) * rowHeight;
+    row.classList.remove('is-dragging');
+    requestAnimationFrame(() => { row.style.transform = `translateY(${targetDy}px)`; });
+
     // 가상 인덱스 기반 새 순서 계산
     const newOrder = rows.slice();
     newOrder.splice(originalIndex, 1);
     newOrder.splice(currentIndex, 0, row);
-    // 실제 DOM 재배치 1회 (drop 시점)
+
+    // transition 완료 (200ms) 대기 → 실제 DOM 재배치 + transform reset (transition 잠시 off)
+    await new Promise((r) => setTimeout(r, 210));
+    rows.forEach((r) => { r.style.transition = 'none'; });
     newOrder.forEach((r) => listEl.appendChild(r));
+    rows.forEach((r) => { r.style.transform = ''; });
+    // 2 frame 후 transition 복원 (style flush 보장)
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      rows.forEach((r) => { r.style.transition = ''; });
+    }));
+
     const orderedIds = newOrder.map((r) => r.dataset.id).filter(Boolean);
     try {
       await setExerciseOrderForPart(_activePart, orderedIds);
-      await renderExercisesTab(doc);
+      // renderExercisesTab 재호출 제거 — innerHTML 통째 재생성 시 깜빡임 발생, DOM 은 이미 정확.
     } catch (err) {
       console.error('[exercises-admin] setExerciseOrderForPart', err);
-      await renderExercisesTab(doc);
     }
   };
   listEl.addEventListener('pointerup', endDrag);
