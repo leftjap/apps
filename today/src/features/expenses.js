@@ -536,7 +536,8 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
   const isCurrent = today.getFullYear() === year && today.getMonth() + 1 === month;
   const dayLabel = isCurrent ? today.getDate() : new Date(year, month, 0).getDate();
   if (headTitle) headTitle.innerHTML = `${year}년 ${month}월 ${dayLabel}일까지 총 <strong>${Math.round(total / 10000)}만원</strong> 쓰고 있어요`;
-  if (headSub) headSub.textContent = `${year}년 누적`;
+  // 2026-05-12 — sub 텍스트 제거 (헤드라인 자체가 이미 'YYYY년' 시간 범위를 표시).
+  if (headSub) headSub.textContent = '';
   // 누적 brand TOP 10
   if (rankWrap) {
     const sorted = [...groups.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
