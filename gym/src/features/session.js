@@ -1287,6 +1287,12 @@ function renderFooterPills(doc, session, currentBlock) {
     return renderFooterPillHtml({ blockIdx: i, state, name, progress });
   }).join('');
   pillsEl.innerHTML = html;
+  // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel inline center). addex chip 패턴 답습.
+  const active = pillsEl.querySelector('[data-ex-state="active"]');
+  if (active && typeof active.scrollIntoView === 'function') {
+    try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
+    catch (_) { /* old browser fallback */ }
+  }
 }
 
 /**
