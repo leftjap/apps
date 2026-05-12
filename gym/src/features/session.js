@@ -683,18 +683,19 @@ async function mountSessionActive(doc, block, session) {
 
   // spec §6-2 — active 분기 운동 추가 시트 hydrate (DOM 한 번 생성 + transform 토글).
   // wireSessionShortcuts 의 + 버튼 핸들러가 sheet.dataset.open='true' 토글 + transform 슬라이드업.
-  // mount 시 시트 transform 기본 hidden 으로 reset (운동 추가 후 mountSessionView remount 흐름에서 자동 닫힘).
+  // mount 시 시트 open 상태면 유지 (운동 토글 후 mountSessionView remount 흐름에서 시트 가시 유지).
   try {
     const sSheet = doc.getElementById('sessionAddexSheet');
     const sBackdrop = doc.getElementById('sessionAddexBackdrop');
-    if (sSheet) {
+    // 처음 mount (시트 dataset.open 미설정 또는 'false') 만 hidden 으로 reset. 열린 상태 mount = 유지.
+    if (sSheet && sSheet.dataset.open !== 'true') {
       sSheet.dataset.open = 'false';
       sSheet.style.transform = 'translateY(100%)';
-    }
-    if (sBackdrop) {
-      sBackdrop.dataset.open = 'false';
-      sBackdrop.style.opacity = '0';
-      sBackdrop.style.pointerEvents = 'none';
+      if (sBackdrop) {
+        sBackdrop.dataset.open = 'false';
+        sBackdrop.style.opacity = '0';
+        sBackdrop.style.pointerEvents = 'none';
+      }
     }
     const sChipsEl = doc.getElementById('sessionAddexChips');
     const sListEl = doc.getElementById('sessionAddexList');
@@ -2120,6 +2121,12 @@ function hookClicks(chipsEl, listEl) {
       _activePart = b.dataset.part;
       await renderChips(chipsEl);
       await renderList(listEl);
+      // §6-2 UX — 선택 chip 가시 영역 중앙 정렬 (horizontal scroll). overflow-x:auto 시트 정합.
+      const active = chipsEl.querySelector('.addex-chip.is-active');
+      if (active && typeof active.scrollIntoView === 'function') {
+        try { active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }
+        catch (_) { /* old browser fallback */ }
+      }
     });
     chipsEl.dataset.spaHooked = '1';
   }
