@@ -2986,7 +2986,9 @@
     .main__top {
       gap: 8px;
       flex-wrap: nowrap;
-      overflow: hidden;
+      /* 가로 overflow 만 잘라냄 — 세로는 visible 유지해서 doc-more-menu 등 dropdown
+         이 main__top 영역 아래로 펼쳐질 때 잘림 회피 (사용자 요청 2026-05-12 스샷5). */
+      overflow-x: clip;
     }
     .main__hamburger { display: inline-grid; }
 
