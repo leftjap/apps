@@ -1975,19 +1975,6 @@
     transform: scale(1) translateY(0);
     opacity: 1;
   }
-  /* 카테고리 모달 modifier — acc-modal 패턴 답습 (grid centering + padding).
-     overlay 가 layout 처리하므로 JS 좌표 계산 불필요 + transform timing 버그 자동 해소.
-     좌우 24px 균등 여백 보장 (모바일/데스크탑 일관). */
-  .exp-fp-overlay--category {
-    display: grid;
-    place-items: center;
-    padding: clamp(32px, 8vw, 96px);
-  }
-  .exp-fp-overlay--category .exp-fp-card {
-    position: static;
-    width: 100%;
-    max-width: 360px;
-  }
   .exp-fp-header {
     display: flex;
     align-items: center;
