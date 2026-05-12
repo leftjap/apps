@@ -3081,9 +3081,11 @@
     transform: translateY(0);
     box-shadow: var(--shadow-inset-soft);
   }
-  /* 터치 디바이스 (모바일 + 아이패드) 한정 노출. 데스크톱은 상단 + 버튼 유지. */
+  /* 터치 디바이스 + 사이드바 drawer 열림 상태일 때만 노출 (사용자 요청 2026-05-12).
+     메인 화면(drawer 닫힘) 에선 우상단 "새 글" 버튼이 동일 기능 → FAB 중복 회피.
+     데스크톱은 hover-none 미디어 미스로 항상 숨김. */
   @media (hover: none) and (pointer: coarse) {
-    .t-fab { display: grid; }
+    body[data-drawer-open] .t-fab { display: grid; }
   }
 
   /* — main__top action wrapper 토글 (글쓰기/가계부) — */
@@ -5570,6 +5572,8 @@
     }
 
     function newDoc() {
+      // 사용자 요청 2026-05-12: 모바일 drawer 열림 상태에서 FAB/새글 클릭 시 drawer 자동 닫기
+      document.body.removeAttribute('data-drawer-open');
       if (activeCat === 'expense') {
         openNewExpenseForm();
         return;
