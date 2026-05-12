@@ -6,6 +6,7 @@ import {
   summarizeStreak,
   partAbbreviation,
   buildWeekCalendar,
+  wireHomeShortcuts,
 } from './home.js';
 
 const NOW = 1714492800000; // 2026-04-30 00:00:00 (anchor for elapsed)
@@ -320,5 +321,78 @@ describe('buildWeekCalendar', () => {
     });
     const cells = await buildWeekCalendar(NOW_THU);
     expect(cells.every((c) => c.part === '')).toBe(true);
+  });
+});
+
+/* ───────────────── wireHomeShortcuts (HomeHeader 통계/관리) ───────────────── */
+
+function makeShortcutBtn() {
+  const listeners = {};
+  return {
+    addEventListener(name, fn) { (listeners[name] = listeners[name] || []).push(fn); },
+    _fire(name) { (listeners[name] || []).forEach((fn) => fn({})); },
+  };
+}
+
+function makeShortcutDoc({ stats = 2, manage = 2 } = {}) {
+  const statsBtns = Array.from({ length: stats }, () => makeShortcutBtn());
+  const manageBtns = Array.from({ length: manage }, () => makeShortcutBtn());
+  return {
+    body: { dataset: {} },
+    querySelectorAll(sel) {
+      if (sel === '.js-home-stats') return statsBtns;
+      if (sel === '.js-home-manage') return manageBtns;
+      return [];
+    },
+    _statsBtns: statsBtns,
+    _manageBtns: manageBtns,
+  };
+}
+
+describe('wireHomeShortcuts (HomeHeader 통계/관리)', () => {
+  it('doc 부재 → wired 0 (graceful)', () => {
+    const r = wireHomeShortcuts(null);
+    expect(r.wired).toBe(0);
+  });
+
+  it('stats/manage 양 phone 모두 존재 → wired = 2 + 2', () => {
+    const doc = makeShortcutDoc({ stats: 2, manage: 2 });
+    const r = wireHomeShortcuts(doc);
+    expect(r.wired).toBe(4);
+    expect(doc.body.dataset.spaHomeShortcuts).toBe('1');
+  });
+
+  it('idempotent — 두 번째 호출 wired 0 (spaHomeShortcuts guard)', () => {
+    const doc = makeShortcutDoc();
+    expect(wireHomeShortcuts(doc).wired).toBe(4);
+    expect(wireHomeShortcuts(doc).wired).toBe(0);
+  });
+
+  it('stats click → window.location.hash = "#/stats"', () => {
+    const doc = makeShortcutDoc({ stats: 1, manage: 0 });
+    const origLocation = globalThis.window.location;
+    globalThis.window.location = { hash: '' };
+    try {
+      wireHomeShortcuts(doc);
+      doc._statsBtns[0]._fire('click');
+      expect(globalThis.window.location.hash).toBe('#/stats');
+    } finally {
+      if (origLocation) globalThis.window.location = origLocation;
+      else delete globalThis.window.location;
+    }
+  });
+
+  it('manage click → window.location.hash = "#/admin"', () => {
+    const doc = makeShortcutDoc({ stats: 0, manage: 1 });
+    const origLocation = globalThis.window.location;
+    globalThis.window.location = { hash: '' };
+    try {
+      wireHomeShortcuts(doc);
+      doc._manageBtns[0]._fire('click');
+      expect(globalThis.window.location.hash).toBe('#/admin');
+    } finally {
+      if (origLocation) globalThis.window.location = origLocation;
+      else delete globalThis.window.location;
+    }
   });
 });

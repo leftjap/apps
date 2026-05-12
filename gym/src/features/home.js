@@ -239,6 +239,38 @@ function renderWeekCalendarToDom(cells, doc) {
   cal.innerHTML = html;
 }
 
+/**
+ * HomeHeader §6-? (통계/관리 진입) 짧은 탭 wiring. session.js wireSessionShortcuts 패턴 답습.
+ *  - .js-home-stats click → #/stats
+ *  - .js-home-manage click → #/admin
+ * 양 phone wrapper (HomeA idle + HomeC active) 모두 대응. idempotent (body.dataset.spaHomeShortcuts guard).
+ */
+export function wireHomeShortcuts(doc) {
+  if (!doc) return { wired: 0 };
+  if (doc.body?.dataset?.spaHomeShortcuts === '1') return { wired: 0 };
+
+  let wired = 0;
+
+  const statsBtns = doc.querySelectorAll?.('.js-home-stats') || [];
+  statsBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (typeof window !== 'undefined') window.location.hash = '#/stats';
+    });
+    wired += 1;
+  });
+
+  const manageBtns = doc.querySelectorAll?.('.js-home-manage') || [];
+  manageBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (typeof window !== 'undefined') window.location.hash = '#/admin';
+    });
+    wired += 1;
+  });
+
+  if (doc.body?.dataset) doc.body.dataset.spaHomeShortcuts = '1';
+  return { wired };
+}
+
 /** mocks/home.html 진입 시 호출. active 세션 + 주간 캘린더 SPA hijack. */
 export async function mountHomeView(now = Date.now()) {
   const doc = typeof document !== 'undefined' ? document : null;
@@ -247,6 +279,8 @@ export async function mountHomeView(now = Date.now()) {
   if ((!doc.getElementById('sLabel') && !doc.getElementById('cardLabel')) || !doc.getElementById('weekCal')) {
     return { skipped: 'no-mounts' };
   }
+  // HomeHeader 통계/관리 click wiring (양 분기 공통, idempotent)
+  try { wireHomeShortcuts(doc); } catch (e) { console.error('[gymHome] wireHomeShortcuts', e); }
   let activeApplied = false;
   let streakApplied = false;
   let calendarApplied = false;
@@ -420,5 +454,6 @@ if (typeof window !== 'undefined') {
     buildWeekCalendar,
     fetchDayDetail,
     partAbbreviation,
+    wireHomeShortcuts,
   };
 }
