@@ -27,6 +27,9 @@ export async function renderExercisesTab(root) {
   try {
     await renderPartsChips(doc);
     await renderExerciseList(doc);
+    // mountManageView 가 별도로 click wiring 호출 안 함 → renderExercisesTab 가 wiring 도 보장
+    // (Phase B 단계 4 manage shell 분리 회귀 복구). idempotent 가드 — hookExerciseTabClicks 내부.
+    hookExerciseTabClicks(doc);
     return { rendered: true, part: _activePart };
   } catch (e) {
     if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
@@ -87,13 +90,15 @@ function formatMeta(ex) {
   return `${ex.defaultWeight}kg × ${ex.defaultReps}회`;
 }
 
-/** SPA 환경에서 admin 진입 시 1회 호출. 부위 click + 토글 click + custom 추가 위임 등록. */
+/** SPA 환경에서 admin 진입 시 호출. 부위 click + 토글 click 위임 등록. idempotent (data-spa-hooked guard). */
 export function hookExerciseTabClicks(root) {
   const doc = root || (typeof document !== 'undefined' ? document : null);
   if (!doc) return;
   const partsEl = doc.getElementById('adminParts');
   const listEl = doc.getElementById('adminExList');
   if (!partsEl || !listEl) return;
+  // 중복 호출 (renderExercisesTab 가 매번 hookExerciseTabClicks 호출) 시 핸들러 중복 등록 방지
+  if (partsEl.dataset.spaHooked === '1' && listEl.dataset.spaHooked === '1') return;
 
   // 위임: 부위 chip
   partsEl.addEventListener('click', async (e) => {
@@ -115,6 +120,9 @@ export function hookExerciseTabClicks(root) {
       console.error('[exercises-admin] toggleExerciseHidden', err);
     }
   });
+
+  partsEl.dataset.spaHooked = '1';
+  listEl.dataset.spaHooked = '1';
 }
 
 /**
