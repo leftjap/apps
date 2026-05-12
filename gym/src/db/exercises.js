@@ -77,7 +77,6 @@ export const BUILTIN_EXERCISES = Object.freeze([
   { id: 'leg_extension',   name: '레그 익스텐션',  part: 'legs',     equipment: 'machine',   defaultSets: 3, defaultReps: 12, defaultWeight: 35, met: 4.0 },
   { id: 'leg_curl',        name: '레그 컬',       part: 'legs',     equipment: 'machine',   defaultSets: 3, defaultReps: 12, defaultWeight: 30, met: 4.0 },
   { id: 'calf_raise',      name: '카프 레이즈',    part: 'legs',     equipment: 'machine',   defaultSets: 4, defaultReps: 15, defaultWeight: 50, met: 3.5 },
-  { id: 'good_morning',    name: '굿모닝',        part: 'legs',     equipment: 'barbell',   defaultSets: 3, defaultReps: 10, defaultWeight: 40, met: 5.0 },
 
   // arms (8)
   { id: 'bicep_curl',       name: '바벨 컬',         part: 'arms',     equipment: 'barbell',   defaultSets: 4, defaultReps: 10, defaultWeight: 25, met: 3.5 },
@@ -89,10 +88,12 @@ export const BUILTIN_EXERCISES = Object.freeze([
   { id: 'dips',             name: '딥스',            part: 'arms',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 10, defaultWeight: 0,  met: 5.0 },
   { id: 'wrist_curl',       name: '리스트 컬',       part: 'arms',     equipment: 'dumbbell',  defaultSets: 3, defaultReps: 15, defaultWeight: 5,  met: 3.0 },
 
-  // cardio (3) — 로잉 머신 삭제 (Wave D 사용자 결정)
-  { id: 'treadmill',       name: '트레드밀',       part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 7.0 },
-  { id: 'cycle',           name: '사이클',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 6.5 },
-  { id: 'elliptical',      name: '엘립티컬',       part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 5.0 },
+  // cardio (5) — 사이클 머신·맨몸 코어 운동 (사용자 분류 결정 — abs part 미정의로 cardio 묶음)
+  { id: 'treadmill',           name: '트레드밀',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 7.0 },
+  { id: 'cycle',               name: '사이클',           part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 6.5 },
+  { id: 'elliptical',          name: '엘립티컬',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 5.0 },
+  { id: 'hanging_leg_raise',   name: '행잉 레그 레이즈', part: 'cardio',   equipment: 'bodyweight', defaultSets: 3, defaultReps: 12, defaultWeight: 0, met: 4.0 },
+  { id: 'decline_situp',       name: '디클라인 싯업',    part: 'cardio',   equipment: 'bodyweight', defaultSets: 3, defaultReps: 15, defaultWeight: 0, met: 4.0 },
 ]);
 
 /** equipment 별 weightIncrement 자동 부여 (spec §11) */

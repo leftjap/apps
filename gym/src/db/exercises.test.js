@@ -69,10 +69,10 @@ describe('BUILTIN_EXERCISES 카탈로그', () => {
       expect(Object.keys(INCREMENT)).toContain(e.equipment);
     });
   });
-  it('cardio 부위는 equipment=cardio 만 사용', () => {
+  it('cardio 부위는 equipment=cardio 또는 bodyweight (코어 운동 묶음)', () => {
     BUILTIN_EXERCISES
       .filter(e => e.part === 'cardio')
-      .forEach(e => expect(e.equipment).toBe('cardio'));
+      .forEach(e => expect(['cardio', 'bodyweight']).toContain(e.equipment));
   });
   it('각 6 부위에 최소 1종 존재', () => {
     PART_IDS.forEach(part => {
