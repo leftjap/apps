@@ -123,9 +123,33 @@ export function hookExerciseTabClicks(root) {
   });
 
   hookExerciseDrag(listEl, doc);
+  hookCustomAddButton(doc);
 
   partsEl.dataset.spaHooked = '1';
   listEl.dataset.spaHooked = '1';
+}
+
+/**
+ * §10-1 (custom add) — "+ 커스텀 운동 추가" 버튼 click → prompt 로 운동명 입력 →
+ * createCustomExerciseFromForm 호출. 부위는 현재 활성 탭 (_activePart).
+ * equipment 는 활성 탭이 cardio 면 cardio, 그 외엔 barbell default. 추후 편집 가능.
+ */
+function hookCustomAddButton(doc) {
+  const trigger = doc.querySelector('[data-bind="custom-add-trigger"]');
+  if (!trigger || trigger.dataset.spaHooked === '1') return;
+  trigger.dataset.spaHooked = '1';
+  trigger.addEventListener('click', async () => {
+    const name = typeof window !== 'undefined' && typeof window.prompt === 'function'
+      ? window.prompt('새 운동 이름')
+      : null;
+    if (!name || !name.trim()) return;
+    const equipment = _activePart === 'cardio' ? 'cardio' : 'barbell';
+    try {
+      await createCustomExerciseFromForm({ name: name.trim(), part: _activePart, equipment }, doc);
+    } catch (e) {
+      console.error('[exercises-admin] createCustomExerciseFromForm', e);
+    }
+  });
 }
 
 /**
