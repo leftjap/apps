@@ -145,12 +145,14 @@ function hookExerciseDrag(listEl, doc) {
     e.preventDefault();
     try { grip.setPointerCapture?.(e.pointerId); } catch (_) {}
     const rows = Array.from(listEl.querySelectorAll('.ex-row'));
+    const rect = row.getBoundingClientRect();
     state = {
       pointerId: e.pointerId,
       grip, row, rows,
       startY: e.clientY,
-      currentIndex: rows.indexOf(row),
+      rowHeight: rect.height,
       originalIndex: rows.indexOf(row),
+      currentIndex: rows.indexOf(row),
     };
     row.classList.add('is-dragging');
   });
@@ -160,38 +162,45 @@ function hookExerciseDrag(listEl, doc) {
     const dy = e.clientY - state.startY;
     state.row.style.transform = `translateY(${dy}px)`;
 
-    let newIndex = state.currentIndex;
+    const slot = Math.round(dy / state.rowHeight);
+    let newIndex = state.originalIndex + slot;
+    if (newIndex < 0) newIndex = 0;
+    if (newIndex > state.rows.length - 1) newIndex = state.rows.length - 1;
+    if (newIndex === state.currentIndex) return;
+    state.currentIndex = newIndex;
+
+    // 사이 row 들 슬라이드 — 잡힌 row 는 baseline 자리에 그대로 두고 다른 row 만 transform
     for (let i = 0; i < state.rows.length; i++) {
-      if (i === state.currentIndex) continue;
-      const other = state.rows[i];
-      if (other === state.row) continue;
-      const r = other.getBoundingClientRect();
-      const centerY = r.top + r.height / 2;
-      if (i < state.currentIndex && e.clientY < centerY) { newIndex = i; break; }
-      if (i > state.currentIndex && e.clientY > centerY) newIndex = i;
-    }
-    if (newIndex !== state.currentIndex) {
-      const ref = state.rows[newIndex];
-      if (newIndex < state.currentIndex) listEl.insertBefore(state.row, ref);
-      else listEl.insertBefore(state.row, ref.nextSibling);
-      state.rows = Array.from(listEl.querySelectorAll('.ex-row'));
-      state.currentIndex = state.rows.indexOf(state.row);
-      const newRect = state.row.getBoundingClientRect();
-      state.startY = e.clientY - (e.clientY - (newRect.top + newRect.height / 2));
-      state.row.style.transform = `translateY(${e.clientY - state.startY}px)`;
+      const r = state.rows[i];
+      if (r === state.row) continue;
+      let shift = 0;
+      if (newIndex >= state.originalIndex && i > state.originalIndex && i <= newIndex) {
+        shift = -state.rowHeight;
+      } else if (newIndex < state.originalIndex && i >= newIndex && i < state.originalIndex) {
+        shift = state.rowHeight;
+      }
+      r.style.transform = shift ? `translateY(${shift}px)` : '';
     }
   });
 
   const endDrag = async (e) => {
     if (!state || (e && e.pointerId !== state.pointerId)) return;
-    const { row, currentIndex, originalIndex, grip, pointerId } = state;
+    const { row, rows, currentIndex, originalIndex, grip, pointerId } = state;
     try { grip.releasePointerCapture?.(pointerId); } catch (_) {}
+    // 모든 transform/transition reset (재배치 전)
+    rows.forEach((r) => { r.style.transition = 'none'; r.style.transform = ''; });
     row.classList.remove('is-dragging');
-    row.style.transform = '';
-    const orderedIds = state.rows.map((r) => r.dataset.id).filter(Boolean);
-    const changed = currentIndex !== originalIndex;
+    // 다음 frame 에 transition 복원
+    requestAnimationFrame(() => rows.forEach((r) => { r.style.transition = ''; }));
     state = null;
-    if (!changed) return;
+    if (currentIndex === originalIndex) return;
+    // 가상 인덱스 기반 새 순서 계산
+    const newOrder = rows.slice();
+    newOrder.splice(originalIndex, 1);
+    newOrder.splice(currentIndex, 0, row);
+    // 실제 DOM 재배치 1회 (drop 시점)
+    newOrder.forEach((r) => listEl.appendChild(r));
+    const orderedIds = newOrder.map((r) => r.dataset.id).filter(Boolean);
     try {
       await setExerciseOrderForPart(_activePart, orderedIds);
       await renderExercisesTab(doc);
