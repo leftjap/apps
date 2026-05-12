@@ -23,19 +23,25 @@ export const FIELD_DEFS = Object.freeze({
       if (!Number.isFinite(n) || n < 100 || n > 250) return null;
       return Math.round(n);
     },
-    format: (v) => v == null ? '—' : `${v} cm`,
+    format: (v) => v == null ? '—' : String(v),
   },
-  birthyear: {
-    setting: 'birthYear',
-    label: '생년',
-    unit: '',
+  birthdate: {
+    setting: 'birthDate',
+    label: '생년월일',
+    unit: 'YYYY.MM.DD',
     fallback: null,
     parse: (s) => {
-      const n = Number(String(s).trim());
-      if (!Number.isFinite(n) || n < 1900 || n > 2100) return null;
-      return Math.round(n);
+      const m = String(s).trim().match(/^(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})$/);
+      if (!m) return null;
+      const y = parseInt(m[1], 10), mo = parseInt(m[2], 10), d = parseInt(m[3], 10);
+      if (y < 1900 || y > 2100 || mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+      return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     },
-    format: (v) => v == null ? '—' : String(v),
+    format: (v) => {
+      if (v == null) return '—';
+      const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      return m ? `${m[1]}.${m[2]}.${m[3]}` : String(v);
+    },
   },
   'goal-weight': {
     setting: 'goalWeight',
@@ -47,7 +53,7 @@ export const FIELD_DEFS = Object.freeze({
       if (!Number.isFinite(n) || n <= 0 || n > 300) return null;
       return Math.round(n * 10) / 10;
     },
-    format: (v) => v == null ? '—' : `${v} kg`,
+    format: (v) => v == null ? '—' : String(v),
   },
   'weekly-goal': {
     setting: 'weeklyGoal',
@@ -59,7 +65,7 @@ export const FIELD_DEFS = Object.freeze({
       if (!Number.isFinite(n) || n < 1 || n > 7) return null;
       return Math.round(n);
     },
-    format: (v) => v == null ? '—' : `${v} 회`,
+    format: (v) => v == null ? '—' : String(v),
   },
 });
 
@@ -94,7 +100,41 @@ export async function renderProfileTab(root) {
     valEl.textContent = def.format(v);
     if (hint) valEl.appendChild(hint);
   }
+  // §10-3 — 필드 click + 로그아웃 wiring (idempotent)
+  try { wireProfileTab(doc); } catch (e) { console.error('[profile] wireProfileTab', e); }
+
   return { rendered: true, settingsSnapshot: settings };
+}
+
+/**
+ * §10-3 — 프로필 필드 click → editProfileField, 로그아웃 → Auth.signOut.
+ * idempotent: 각 element 에 dataset.spaHooked='1' 가드.
+ */
+export function wireProfileTab(doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { wired: 0 };
+  let wired = 0;
+  for (const key of PROFILE_FIELD_KEYS) {
+    const el = doc.querySelector(`[data-field="${key}"]`);
+    if (!el || el.dataset.spaHooked === '1') continue;
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => {
+      editProfileField(key, doc).catch((e) => console.error('[profile] editProfileField', key, e));
+    });
+    el.dataset.spaHooked = '1';
+    wired += 1;
+  }
+  const logout = doc.querySelector('[data-bind="logout-trigger"]');
+  if (logout && logout.dataset.spaHooked !== '1') {
+    logout.addEventListener('click', async () => {
+      if (typeof window === 'undefined' || !window.confirm?.('로그아웃하시겠습니까?')) return;
+      try { await window.gymAuth?.signOut?.(); }
+      catch (e) { console.error('[profile] signOut', e); }
+    });
+    logout.dataset.spaHooked = '1';
+    wired += 1;
+  }
+  return { wired };
 }
 
 /**
@@ -137,5 +177,6 @@ if (typeof window !== 'undefined') {
     FIELD_DEFS,
     renderProfileTab,
     editProfileField,
+    wireProfileTab,
   };
 }

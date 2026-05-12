@@ -42,7 +42,7 @@ function makeFakeRoot(fields) {
 
 describe('PROFILE_FIELD_KEYS / FIELD_DEFS', () => {
   it('4 필드 정의', () => {
-    expect(PROFILE_FIELD_KEYS).toEqual(['height', 'birthyear', 'goal-weight', 'weekly-goal']);
+    expect(PROFILE_FIELD_KEYS).toEqual(['height', 'birthdate', 'goal-weight', 'weekly-goal']);
   });
   it('각 필드 setting / parse / format 보유', () => {
     for (const key of PROFILE_FIELD_KEYS) {
@@ -69,21 +69,28 @@ describe('FIELD_DEFS.height parse / format', () => {
     expect(def.parse('300')).toBeNull();
     expect(def.parse('abc')).toBeNull();
   });
-  it('format → "173 cm"', () => {
-    expect(def.format(173)).toBe('173 cm');
+  it('format → "173" (단위 hint span 은 admin.html 에서 별도)', () => {
+    expect(def.format(173)).toBe('173');
     expect(def.format(null)).toBe('—');
   });
 });
 
-describe('FIELD_DEFS.birthyear parse / format', () => {
-  const def = FIELD_DEFS.birthyear;
-  it('정상 1900~2100', () => {
-    expect(def.parse('1976')).toBe(1976);
-    expect(def.parse('2026')).toBe(2026);
+describe('FIELD_DEFS.birthdate parse / format', () => {
+  const def = FIELD_DEFS.birthdate;
+  it('정상 YYYY.MM.DD / YYYY-MM-DD / YYYY/MM/DD → YYYY-MM-DD 저장', () => {
+    expect(def.parse('1976.07.16')).toBe('1976-07-16');
+    expect(def.parse('1976-7-16')).toBe('1976-07-16');
+    expect(def.parse('2026/12/31')).toBe('2026-12-31');
   });
-  it('범위 밖 → null', () => {
-    expect(def.parse('1899')).toBeNull();
-    expect(def.parse('2101')).toBeNull();
+  it('잘못된 입력 → null', () => {
+    expect(def.parse('1976')).toBeNull();
+    expect(def.parse('1976.13.01')).toBeNull();
+    expect(def.parse('1976.07.32')).toBeNull();
+    expect(def.parse('1899.07.16')).toBeNull();
+  });
+  it('format → "1976.07.16"', () => {
+    expect(def.format('1976-07-16')).toBe('1976.07.16');
+    expect(def.format(null)).toBe('—');
   });
 });
 
@@ -94,8 +101,8 @@ describe('FIELD_DEFS.goal-weight parse / format', () => {
     expect(def.parse('69.45')).toBeCloseTo(69.5, 5);
     expect(def.parse('69,4')).toBe(69.4); // comma 정규화
   });
-  it('format → "69 kg"', () => {
-    expect(def.format(69)).toBe('69 kg');
+  it('format → "69" (단위 hint span 은 admin.html 에서 별도)', () => {
+    expect(def.format(69)).toBe('69');
   });
 });
 
@@ -115,7 +122,7 @@ describe('FIELD_DEFS.weekly-goal parse / format', () => {
 describe('renderProfileTab', () => {
   it('settings 없으면 default 적용', async () => {
     const fakeRoot = makeFakeRoot({
-      height: '', birthyear: '', 'goal-weight': '', 'weekly-goal': '',
+      height: '', birthdate: '', 'goal-weight': '', 'weekly-goal': '',
     });
     const r = await renderProfileTab(fakeRoot);
     expect(r.rendered).toBe(true);
@@ -125,22 +132,22 @@ describe('renderProfileTab', () => {
   });
 
   it('settings 갱신 후 적용', async () => {
-    await upsertUserSettings({ height: 180, weeklyGoal: 5, goalWeight: 65, birthYear: 1990 });
+    await upsertUserSettings({ height: 180, weeklyGoal: 5, goalWeight: 65, birthDate: '1990-01-01' });
     const fakeRoot = makeFakeRoot({
-      height: '', birthyear: '', 'goal-weight': '', 'weekly-goal': '',
+      height: '', birthdate: '', 'goal-weight': '', 'weekly-goal': '',
     });
     const r = await renderProfileTab(fakeRoot);
     expect(r.settingsSnapshot.height).toBe(180);
     expect(r.settingsSnapshot.weeklyGoal).toBe(5);
     expect(r.settingsSnapshot.goalWeight).toBe(65);
-    expect(r.settingsSnapshot.birthYear).toBe(1990);
+    expect(r.settingsSnapshot.birthDate).toBe('1990-01-01');
   });
 });
 
 describe('editProfileField', () => {
   it('정상 입력 → upsertUserSettings + 재렌더', async () => {
     const fakeRoot = makeFakeRoot({
-      height: '', birthyear: '', 'goal-weight': '', 'weekly-goal': '',
+      height: '', birthdate: '', 'goal-weight': '', 'weekly-goal': '',
     });
     const r = await editProfileField('height', fakeRoot, () => '180');
     expect(r.ok).toBe(true);
@@ -151,7 +158,7 @@ describe('editProfileField', () => {
 
   it('cancel (null 반환) → no-op', async () => {
     const fakeRoot = makeFakeRoot({
-      height: '', birthyear: '', 'goal-weight': '', 'weekly-goal': '',
+      height: '', birthdate: '', 'goal-weight': '', 'weekly-goal': '',
     });
     const r = await editProfileField('height', fakeRoot, () => null);
     expect(r.ok).toBe(false);
@@ -160,7 +167,7 @@ describe('editProfileField', () => {
 
   it('잘못된 입력 → invalid_input', async () => {
     const fakeRoot = makeFakeRoot({
-      height: '', birthyear: '', 'goal-weight': '', 'weekly-goal': '',
+      height: '', birthdate: '', 'goal-weight': '', 'weekly-goal': '',
     });
     const r = await editProfileField('weekly-goal', fakeRoot, () => '99');
     expect(r.ok).toBe(false);
@@ -177,7 +184,7 @@ describe('editProfileField', () => {
 
   it('goal-weight 갱신 → settings.goalWeight 변경', async () => {
     const fakeRoot = makeFakeRoot({
-      height: '', birthyear: '', 'goal-weight': '', 'weekly-goal': '',
+      height: '', birthdate: '', 'goal-weight': '', 'weekly-goal': '',
     });
     const r = await editProfileField('goal-weight', fakeRoot, () => '67.5');
     expect(r.ok).toBe(true);

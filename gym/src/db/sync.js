@@ -156,6 +156,7 @@ function fromSupabaseSettings(row) {
     weeklyGoal: inner.weeklyGoal ?? 4,
     height: inner.height ?? null,
     birthYear: inner.birthYear ?? null,
+    birthDate: inner.birthDate ?? null,
     goalWeight: inner.goalWeight ?? 69,
     hiddenExercises: Array.isArray(inner.hiddenExercises) ? inner.hiddenExercises : [],
     exerciseOrder: inner.exerciseOrder && typeof inner.exerciseOrder === 'object' ? inner.exerciseOrder : {},
