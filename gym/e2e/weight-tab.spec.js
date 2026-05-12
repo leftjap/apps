@@ -31,34 +31,34 @@ test.describe('Wave 11.7.2b — admin weight tab', () => {
   });
 
   test('B. SPA fakeUser → admin 마운트 + 체중 탭 키패드 sheet 토글', async ({ page }) => {
+    // v2 redesign — mocks/admin.html 의 weight 탭에서 keypad sheet UI 전체 폐기
+    // ([data-bind="keypad-sheet"] / [data-key] / [data-bind="keypad-value"] / [data-bind="keypad-backdrop"] /
+    //  [data-act="weight-add"] 모두 부재).
+    // 체중 입력 UI 는 단순 button (+ 오늘 체중 입력, admin.html:196) 만 존재, click wiring 미구현.
+    // 후속 wave 에서 키패드 sheet 또는 다른 입력 UI 재구현 시 enable.
+    test.skip(true, 'Phase B weight 키패드 sheet UI 폐기 — 후속 wave 에서 재구현 시 enable');
     await bootstrapFake(page);
-    // gymDB 가 fakeUser 로 셋업됐는지 확인. 안 됐으면 skip (env 시뮬 환경 외)
     const dbReady = await page.evaluate(() => !!window.gymDB);
     test.skip(!dbReady, 'window.gymDB 미할당 — fake bootstrap 환경 외');
 
     await page.evaluate(() => { window.location.hash = '#/admin'; });
     await page.waitForFunction(() => document.body.dataset.route === 'admin', { timeout: 5_000 });
 
-    // 체중 탭 진입
     await page.click('[data-tab="weight"]');
     await expect(page.locator('[data-page="weight"]')).toHaveClass(/is-active/);
 
-    // 키패드 sheet 기본 닫힘 (Wave 11.7.5a)
     const sheet = page.locator('[data-bind="keypad-sheet"]');
     await expect(sheet).not.toHaveClass(/is-open/);
 
-    // weight-add 클릭 → 키패드 sheet 열림
     await page.click('[data-act="weight-add"]');
     await expect(sheet).toHaveClass(/is-open/);
 
-    // 0~9 키 클릭 → display 갱신
     await page.click('[data-bind="keypad-sheet"] [data-key="7"]');
     await page.click('[data-bind="keypad-sheet"] [data-key="2"]');
     await page.click('[data-bind="keypad-sheet"] [data-key="."]');
     await page.click('[data-bind="keypad-sheet"] [data-key="5"]');
     await expect(page.locator('[data-bind="keypad-value"]')).toHaveText('72.5');
 
-    // backdrop 좌상단(시트 영역 밖) 클릭 → 닫힘. backdrop 은 sheet 와 겹친 부분이 있어 좌표 명시.
     await page.locator('[data-bind="keypad-backdrop"]').click({ position: { x: 10, y: 10 } });
     await expect(sheet).not.toHaveClass(/is-open/);
   });
@@ -70,7 +70,9 @@ test.describe('Wave 11.7.2b — admin weight tab', () => {
 
     await page.evaluate(() => { window.location.hash = '#/admin'; });
     await page.waitForFunction(() => document.body.dataset.route === 'admin', { timeout: 5_000 });
-    await page.click('[data-tab="weight"]');
+    // v2 redesign — [data-tab="weight"] click selector 폐기. tab-item[data-go="weight"] 가
+    // 새 마크업 (mocks/admin.html:70). 클릭 → IIFE 가 phone.dataset.tab='weight' 토글 → CSS pane 노출.
+    await page.click('.tab-item[data-go="weight"]');
 
     // 깨끗한 DB 보장 — 이전 테스트 잔재 제거
     await page.evaluate(async () => {
