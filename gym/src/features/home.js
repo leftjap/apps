@@ -240,10 +240,11 @@ function renderWeekCalendarToDom(cells, doc) {
 }
 
 /**
- * HomeHeader §6-? (통계/관리 진입) 짧은 탭 wiring. session.js wireSessionShortcuts 패턴 답습.
- *  - .js-home-stats click → #/stats
- *  - .js-home-manage click → #/admin
- * 양 phone wrapper (HomeA idle + HomeC active) 모두 대응. idempotent (body.dataset.spaHomeShortcuts guard).
+ * 페이지 헤더 nav 짧은 탭 wiring (home / stats / admin 공통). session.js wireSessionShortcuts 패턴 답습.
+ *  - .js-home-stats / .js-nav-stats click → #/stats
+ *  - .js-home-manage / .js-nav-manage click → #/admin
+ *  - .js-nav-home click → #/home
+ * 양 phone wrapper (HomeA idle + HomeC active) + stats/admin 헤더 모두 대응. idempotent (body.dataset.spaHomeShortcuts guard).
  */
 export function wireHomeShortcuts(doc) {
   if (!doc) return { wired: 0 };
@@ -251,21 +252,21 @@ export function wireHomeShortcuts(doc) {
 
   let wired = 0;
 
-  const statsBtns = doc.querySelectorAll?.('.js-home-stats') || [];
-  statsBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (typeof window !== 'undefined') window.location.hash = '#/stats';
+  const bind = (selector, hash) => {
+    const btns = doc.querySelectorAll?.(selector) || [];
+    btns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (typeof window !== 'undefined') window.location.hash = hash;
+      });
+      wired += 1;
     });
-    wired += 1;
-  });
+  };
 
-  const manageBtns = doc.querySelectorAll?.('.js-home-manage') || [];
-  manageBtns.forEach((btn) => {
-    btn.addEventListener('click', () => {
-      if (typeof window !== 'undefined') window.location.hash = '#/admin';
-    });
-    wired += 1;
-  });
+  bind('.js-home-stats', '#/stats');
+  bind('.js-home-manage', '#/admin');
+  bind('.js-nav-stats', '#/stats');
+  bind('.js-nav-manage', '#/admin');
+  bind('.js-nav-home', '#/home');
 
   if (doc.body?.dataset) doc.body.dataset.spaHomeShortcuts = '1';
   return { wired };

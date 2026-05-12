@@ -17,7 +17,7 @@ import {
   weekRangeISO,
   toISODate,
 } from '../db/queries.js';
-import { partAbbreviation } from './home.js';
+import { partAbbreviation, wireHomeShortcuts } from './home.js';
 import { exerciseIdToName } from './session-summary.js';
 
 /** YYYY-MM-DD 범위 [from, to] 합산 (totalVolume). */
@@ -313,6 +313,8 @@ export async function mountStatsView(now = Date.now()) {
   const doc = typeof document !== 'undefined' ? document : null;
   if (!doc) return { skipped: 'no-document' };
   if (!doc.querySelector('.compare-section')) return { skipped: 'no-mounts' };
+  // 페이지 헤더 nav (홈/관리) wiring — home.js wireHomeShortcuts 재사용 (idempotent body.dataset.spaHomeShortcuts guard)
+  try { wireHomeShortcuts(doc); } catch (e) { console.error('[gymStats] wireHomeShortcuts', e); }
   try {
     const today = new Date(now);
     const lookback = new Date(today);

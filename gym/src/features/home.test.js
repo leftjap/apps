@@ -334,47 +334,71 @@ function makeShortcutBtn() {
   };
 }
 
-function makeShortcutDoc({ stats = 2, manage = 2 } = {}) {
-  const statsBtns = Array.from({ length: stats }, () => makeShortcutBtn());
-  const manageBtns = Array.from({ length: manage }, () => makeShortcutBtn());
+function makeShortcutDoc({ homeStats = 2, homeManage = 2, navStats = 0, navManage = 0, navHome = 0 } = {}) {
+  const homeStatsBtns = Array.from({ length: homeStats }, () => makeShortcutBtn());
+  const homeManageBtns = Array.from({ length: homeManage }, () => makeShortcutBtn());
+  const navStatsBtns = Array.from({ length: navStats }, () => makeShortcutBtn());
+  const navManageBtns = Array.from({ length: navManage }, () => makeShortcutBtn());
+  const navHomeBtns = Array.from({ length: navHome }, () => makeShortcutBtn());
   return {
     body: { dataset: {} },
     querySelectorAll(sel) {
-      if (sel === '.js-home-stats') return statsBtns;
-      if (sel === '.js-home-manage') return manageBtns;
+      if (sel === '.js-home-stats') return homeStatsBtns;
+      if (sel === '.js-home-manage') return homeManageBtns;
+      if (sel === '.js-nav-stats') return navStatsBtns;
+      if (sel === '.js-nav-manage') return navManageBtns;
+      if (sel === '.js-nav-home') return navHomeBtns;
       return [];
     },
-    _statsBtns: statsBtns,
-    _manageBtns: manageBtns,
+    _homeStatsBtns: homeStatsBtns,
+    _homeManageBtns: homeManageBtns,
+    _navStatsBtns: navStatsBtns,
+    _navManageBtns: navManageBtns,
+    _navHomeBtns: navHomeBtns,
   };
 }
 
-describe('wireHomeShortcuts (HomeHeader 통계/관리)', () => {
+describe('wireHomeShortcuts (페이지 헤더 nav — home/stats/admin 공통)', () => {
   it('doc 부재 → wired 0 (graceful)', () => {
     const r = wireHomeShortcuts(null);
     expect(r.wired).toBe(0);
   });
 
-  it('stats/manage 양 phone 모두 존재 → wired = 2 + 2', () => {
-    const doc = makeShortcutDoc({ stats: 2, manage: 2 });
+  it('home (stats/manage 양 phone) + stats 페이지 nav + admin 페이지 nav → wired = 2+2+1+1+1', () => {
+    const doc = makeShortcutDoc({ homeStats: 2, homeManage: 2, navStats: 1, navManage: 1, navHome: 1 });
     const r = wireHomeShortcuts(doc);
-    expect(r.wired).toBe(4);
+    expect(r.wired).toBe(7);
     expect(doc.body.dataset.spaHomeShortcuts).toBe('1');
   });
 
-  it('idempotent — 두 번째 호출 wired 0 (spaHomeShortcuts guard)', () => {
-    const doc = makeShortcutDoc();
+  it('home only — wired = 2 + 2', () => {
+    const doc = makeShortcutDoc({ homeStats: 2, homeManage: 2 });
     expect(wireHomeShortcuts(doc).wired).toBe(4);
+  });
+
+  it('stats 페이지 only (홈/관리 nav 2건) — wired = 2', () => {
+    const doc = makeShortcutDoc({ homeStats: 0, homeManage: 0, navHome: 1, navManage: 1 });
+    expect(wireHomeShortcuts(doc).wired).toBe(2);
+  });
+
+  it('admin 페이지 only (홈/통계 nav 2건) — wired = 2', () => {
+    const doc = makeShortcutDoc({ homeStats: 0, homeManage: 0, navHome: 1, navStats: 1 });
+    expect(wireHomeShortcuts(doc).wired).toBe(2);
+  });
+
+  it('idempotent — 두 번째 호출 wired 0 (spaHomeShortcuts guard)', () => {
+    const doc = makeShortcutDoc({ homeStats: 2, homeManage: 2, navStats: 1, navManage: 1, navHome: 1 });
+    expect(wireHomeShortcuts(doc).wired).toBe(7);
     expect(wireHomeShortcuts(doc).wired).toBe(0);
   });
 
-  it('stats click → window.location.hash = "#/stats"', () => {
-    const doc = makeShortcutDoc({ stats: 1, manage: 0 });
+  it('home stats click → window.location.hash = "#/stats"', () => {
+    const doc = makeShortcutDoc({ homeStats: 1, homeManage: 0 });
     const origLocation = globalThis.window.location;
     globalThis.window.location = { hash: '' };
     try {
       wireHomeShortcuts(doc);
-      doc._statsBtns[0]._fire('click');
+      doc._homeStatsBtns[0]._fire('click');
       expect(globalThis.window.location.hash).toBe('#/stats');
     } finally {
       if (origLocation) globalThis.window.location = origLocation;
@@ -382,13 +406,55 @@ describe('wireHomeShortcuts (HomeHeader 통계/관리)', () => {
     }
   });
 
-  it('manage click → window.location.hash = "#/admin"', () => {
-    const doc = makeShortcutDoc({ stats: 0, manage: 1 });
+  it('home manage click → window.location.hash = "#/admin"', () => {
+    const doc = makeShortcutDoc({ homeStats: 0, homeManage: 1 });
     const origLocation = globalThis.window.location;
     globalThis.window.location = { hash: '' };
     try {
       wireHomeShortcuts(doc);
-      doc._manageBtns[0]._fire('click');
+      doc._homeManageBtns[0]._fire('click');
+      expect(globalThis.window.location.hash).toBe('#/admin');
+    } finally {
+      if (origLocation) globalThis.window.location = origLocation;
+      else delete globalThis.window.location;
+    }
+  });
+
+  it('nav-home click → window.location.hash = "#/home" (stats/admin 페이지)', () => {
+    const doc = makeShortcutDoc({ homeStats: 0, homeManage: 0, navHome: 1 });
+    const origLocation = globalThis.window.location;
+    globalThis.window.location = { hash: '' };
+    try {
+      wireHomeShortcuts(doc);
+      doc._navHomeBtns[0]._fire('click');
+      expect(globalThis.window.location.hash).toBe('#/home');
+    } finally {
+      if (origLocation) globalThis.window.location = origLocation;
+      else delete globalThis.window.location;
+    }
+  });
+
+  it('nav-stats click → window.location.hash = "#/stats" (admin 페이지)', () => {
+    const doc = makeShortcutDoc({ homeStats: 0, homeManage: 0, navStats: 1 });
+    const origLocation = globalThis.window.location;
+    globalThis.window.location = { hash: '' };
+    try {
+      wireHomeShortcuts(doc);
+      doc._navStatsBtns[0]._fire('click');
+      expect(globalThis.window.location.hash).toBe('#/stats');
+    } finally {
+      if (origLocation) globalThis.window.location = origLocation;
+      else delete globalThis.window.location;
+    }
+  });
+
+  it('nav-manage click → window.location.hash = "#/admin" (stats 페이지)', () => {
+    const doc = makeShortcutDoc({ homeStats: 0, homeManage: 0, navManage: 1 });
+    const origLocation = globalThis.window.location;
+    globalThis.window.location = { hash: '' };
+    try {
+      wireHomeShortcuts(doc);
+      doc._navManageBtns[0]._fire('click');
       expect(globalThis.window.location.hash).toBe('#/admin');
     } finally {
       if (origLocation) globalThis.window.location = origLocation;

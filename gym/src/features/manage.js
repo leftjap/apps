@@ -8,6 +8,8 @@
  * 콘텐츠 함수만 사용. exercises-admin/weights/profile 의 별도 router 진입점 없음.
  */
 
+import { wireHomeShortcuts } from './home.js';
+
 const TAB_RENDERERS = Object.freeze({
   ex: () => window.gymExercisesAdmin?.renderExercisesTab?.(document),
   weight: () => window.gymWeights?.renderWeightTab?.(document),
@@ -23,6 +25,9 @@ export async function mountManageView() {
   if (typeof document === 'undefined') return { skipped: 'no-document' };
   const phone = document.querySelector('.phone[data-tab]');
   if (!phone) return { skipped: 'no-mounts' };
+
+  // 페이지 헤더 nav (홈/통계) wiring (idempotent)
+  try { wireHomeShortcuts(document); } catch (e) { console.error('[manage] wireHomeShortcuts', e); }
 
   const renderActive = async () => {
     const tab = phone.dataset.tab;
