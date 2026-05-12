@@ -1328,6 +1328,14 @@ export async function openCategoryDetailPopup(category, opts = {}, doc = (typeof
   overlay.setAttribute('data-category-popup', 'true');
   overlay.innerHTML = buildCategoryPopupHtml(category, rows, total, { year, month, scope });
   doc.body.appendChild(overlay);
+  // 2026-05-12 — `.exp-fp-overlay` 기본 opacity:0 + pointer-events:none. `.open` 클래스가
+  // 붙어야 시각적으로 노출 (CSS rule `.exp-fp-overlay.open { opacity:1; pointer-events:auto; }`).
+  // requestAnimationFrame 으로 다음 frame 에 적용 → opacity transition 정상 발화.
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => overlay.classList.add('open'));
+  } else {
+    overlay.classList.add('open');
+  }
   function close() {
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
     doc.removeEventListener('keydown', onKey);
