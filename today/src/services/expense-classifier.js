@@ -63,14 +63,14 @@ export function getCurrentCategories() {
   return getCategoriesForEmail(_currentEmail);
 }
 
-/** id 로 카테고리 lookup — 현재 사용자 기준 + 전체 fallback. */
+/** id 로 카테고리 lookup — 현재 사용자 카테고리 한정.
+ * 2026-05-12: 이전엔 SOYOUN_CATEGORIES 전체 fallback 으로 '마트/카페' 등 사용자가
+ * 만들지 않은 라벨이 통계 화면에 노출되던 버그. fallback 제거 — 사용자 picker 외
+ * id 는 null 반환해서 호출자가 '미분류' 처리하도록.
+ */
 export function getCategoryById(id) {
   const list = getCurrentCategories();
-  const hit = list.find((c) => c.id === id);
-  if (hit) return hit;
-  // 다른 사용자의 카테고리 (예: brand 매핑 결과로 들어온 외부 id) 도 lookup 가능
-  const all = [...LEFTJAP_CATEGORIES, ...SOYOUN_CATEGORIES];
-  return all.find((c) => c.id === id) || null;
+  return list.find((c) => c.id === id) || null;
 }
 
 /** 한글 name → id (현재 사용자 우선, 없으면 전체에서). */
