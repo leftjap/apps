@@ -93,10 +93,17 @@ describe('getCategoryById — 현재 사용자 우선 + 전체 fallback', () => 
     setCurrentEmail('soyoun312@gmail.com');
     expect(getCategoryById('convenience').name).toBe('편의점');
   });
-  it('현재 leftjap 인데 soyoun 전용 id (food) 검색 → fallback hit', () => {
+  it('2026-05-12 — 현재 사용자 외 id 면 null (SOYOUN fallback 제거)', () => {
     setCurrentEmail('leftjap@gmail.com');
-    // brand 매핑 결과로 들어온 외부 id 도 lookup 되어야 (UI 표시는 별도 결정)
+    // 'food' 는 SOYOUN 전용 id — 이전엔 fallback 으로 '마트' 라벨 노출되어
+    // 사용자가 만들지 않은 카테고리가 통계에 나오는 버그. 이제 null 반환.
+    expect(getCategoryById('food')).toBeNull();
+    // 반대 — soyoun 사용자는 'food' 있음
+    setCurrentEmail('soyoun312@gmail.com');
     expect(getCategoryById('food').name).toBe('마트');
+    // leftjap 사용자는 'online' 있음 (반대 케이스)
+    setCurrentEmail('leftjap@gmail.com');
+    expect(getCategoryById('online').name).toBe('온라인쇼핑');
   });
   it('아예 없는 id → null', () => {
     expect(getCategoryById('nonexistent')).toBeNull();
