@@ -15,6 +15,7 @@ import {
   toggleExerciseHidden,
   createCustomExercise,
   setExerciseOrderForPart,
+  deleteCustomExercise,
 } from '../db/queries.js';
 import { PART_IDS, PARTS } from '../db/exercises.js';
 
@@ -124,9 +125,67 @@ export function hookExerciseTabClicks(root) {
 
   hookExerciseDrag(listEl, doc);
   hookCustomAddButton(doc);
+  hookCustomLongPressDelete(listEl, doc);
 
   partsEl.dataset.spaHooked = '1';
   listEl.dataset.spaHooked = '1';
+}
+
+/**
+ * 커스텀 운동 long-press(500ms) → 삭제 확인 → deleteCustomExercise.
+ *  - .ex-row.is-custom 만 대상 (빌트인은 toggle hidden 만 지원, 코드 카탈로그라 삭제 불가)
+ *  - .ex-grip 영역은 drag 우선 (grip 위 pointerdown 은 long-press 무시)
+ *  - pointermove > 8px / pointercancel / pointerleave 시 timer cancel
+ */
+function hookCustomLongPressDelete(listEl, doc) {
+  let timerId = null;
+  let trackedRow = null;
+  let startX = 0;
+  let startY = 0;
+
+  const cancel = () => {
+    if (timerId !== null) { clearTimeout(timerId); timerId = null; }
+    trackedRow = null;
+  };
+
+  listEl.addEventListener('pointerdown', (e) => {
+    if (e.target?.closest?.('.ex-grip')) return; // drag handle 영역은 drag 우선
+    if (e.target?.closest?.('[data-toggle]')) return; // toggle 버튼은 click 우선
+    const row = e.target?.closest?.('.ex-row.is-custom');
+    if (!row) return;
+    trackedRow = row;
+    startX = e.clientX || 0;
+    startY = e.clientY || 0;
+    timerId = setTimeout(async () => {
+      timerId = null;
+      const id = trackedRow?.dataset?.id;
+      const nameEl = trackedRow?.querySelector?.('.ex-name');
+      const name = nameEl?.textContent || '운동';
+      trackedRow = null;
+      if (!id) return;
+      const ok = typeof window !== 'undefined' && typeof window.confirm === 'function'
+        ? window.confirm(`'${name}' 운동을 삭제할까요?`)
+        : true;
+      if (!ok) return;
+      try {
+        await deleteCustomExercise(id);
+        await renderExercisesTab(doc);
+      } catch (err) {
+        console.error('[exercises-admin] deleteCustomExercise', err);
+      }
+    }, 500);
+  });
+
+  listEl.addEventListener('pointermove', (e) => {
+    if (!trackedRow) return;
+    const dx = Math.abs((e.clientX || 0) - startX);
+    const dy = Math.abs((e.clientY || 0) - startY);
+    if (dx > 8 || dy > 8) cancel();
+  });
+
+  listEl.addEventListener('pointerup', cancel);
+  listEl.addEventListener('pointercancel', cancel);
+  listEl.addEventListener('pointerleave', cancel);
 }
 
 /**
