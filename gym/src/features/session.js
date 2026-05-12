@@ -126,14 +126,21 @@ export function buildPresetSets(exercise) {
   const isCardio = exercise.equipment === 'cardio';
   const isBodyweight = exercise.equipment === 'bodyweight';
   const sets = [];
-  for (let i = 0; i < count; i += 1) {
-    sets.push({
+  // cardio 는 단일 세트 (spec §6-4 — 1운동 = 1기록). count 무시.
+  const finalCount = isCardio ? 1 : count;
+  for (let i = 0; i < finalCount; i += 1) {
+    const base = {
       weight: isCardio || isBodyweight ? null : weight,
       reps: isCardio ? null : reps,
       done: false,
       preset: true,
       pr: false,
-    });
+    };
+    if (isCardio) {
+      base.duration = null;
+      base.distance = null;
+    }
+    sets.push(base);
   }
   return sets;
 }
@@ -158,14 +165,21 @@ export async function addExerciseToActiveSession(exerciseId, part) {
   const prevSets = await getPrevSessionLastSets(exerciseId);
   let sets;
   if (prevSets && prevSets.length) {
-    // 이전 세션 sets 의 weight/reps 만 가져와 새 preset:true 객체로. done/pr 초기화.
-    sets = prevSets.map((s) => ({
-      weight: s?.weight ?? null,
-      reps: s?.reps ?? null,
-      done: false,
-      preset: true,
-      pr: false,
-    }));
+    // 이전 세션 sets 값 그대로 — weight/reps + cardio 의 duration/distance 도 보존.
+    sets = prevSets.map((s) => {
+      const next = {
+        weight: s?.weight ?? null,
+        reps: s?.reps ?? null,
+        done: false,
+        preset: true,
+        pr: false,
+      };
+      if (s && (s.duration != null || s.distance != null)) {
+        next.duration = s.duration ?? null;
+        next.distance = s.distance ?? null;
+      }
+      return next;
+    });
   } else {
     const exercise = await getExerciseDefaults(exerciseId);
     sets = buildPresetSets(exercise);
@@ -339,7 +353,7 @@ export async function persistKeypadEdit({ exerciseName, setIdx, field, value } =
   if (!exerciseName || !Number.isFinite(setIdx) || setIdx < 0 || !field || !Number.isFinite(value)) {
     return { ok: false, reason: 'invalid_input' };
   }
-  if (field !== 'weight' && field !== 'reps') {
+  if (field !== 'weight' && field !== 'reps' && field !== 'duration' && field !== 'distance') {
     return { ok: false, reason: 'invalid_field' };
   }
   const exerciseId = mapNameToExerciseId(exerciseName);
@@ -610,18 +624,43 @@ async function mountSessionActive(doc, block, session) {
   const currentSet = sets[cur] || {};
 
   setTextById(doc, 'cardExName', resolveExerciseName(block.exerciseId));
-  setTextById(doc, 'cardSetProgress', `SET ${pad2(cur + 1)} / ${pad2(sets.length || 1)}`);
 
-  const weight = Number.isFinite(currentSet.weight) ? currentSet.weight : 0;
-  const reps = Number.isFinite(currentSet.reps) ? currentSet.reps : 0;
-  setTextById(doc, 'cardWeight', String(weight));
-  setTextById(doc, 'cardReps', String(reps));
+  // spec §6-4 / §6-3 — equipment 별 카드 분기 (cardio / bodyweight / weight)
+  let exerciseEq = 'weight';
+  try {
+    const exDef = await getExerciseDefaults(block.exerciseId);
+    if (exDef?.equipment === 'cardio') exerciseEq = 'cardio';
+    else if (exDef?.equipment === 'bodyweight') exerciseEq = 'bodyweight';
+  } catch (_) { /* graceful */ }
+  applyCardKind(doc, exerciseEq);
 
-  // spec §6-3-3 — preset (placeholder) 톤: text-faint (opacity 0.45) / 사용자 입력: text-strong (opacity 1)
+  // SET N/M — cardio 는 단일 세트 표기
+  const totalSets = sets.length || 1;
+  setTextById(doc, 'cardSetProgress', `SET ${pad2(cur + 1)} / ${pad2(totalSets)}`);
+
   const isPreset = !!currentSet.preset;
   const presetOpacity = isPreset ? '0.45' : '1';
   const cardWeightEl = doc.getElementById('cardWeight');
   const cardRepsEl = doc.getElementById('cardReps');
+
+  if (exerciseEq === 'cardio') {
+    const durSec = Number(currentSet.duration) || 0;
+    const distKm = Number(currentSet.distance) || 0;
+    setTextById(doc, 'cardWeight', String(Math.round(durSec / 60)));
+    setTextById(doc, 'cardReps', distKm ? String(distKm) : '0');
+    renderCardioPace(doc, durSec, distKm);
+  } else if (exerciseEq === 'bodyweight') {
+    const reps = Number.isFinite(currentSet.reps) ? currentSet.reps : 0;
+    setTextById(doc, 'cardWeight', '맨몸');
+    setTextById(doc, 'cardReps', String(reps));
+  } else {
+    const weight = Number.isFinite(currentSet.weight) ? currentSet.weight : 0;
+    const reps = Number.isFinite(currentSet.reps) ? currentSet.reps : 0;
+    setTextById(doc, 'cardWeight', String(weight));
+    setTextById(doc, 'cardReps', String(reps));
+  }
+
+  // spec §6-3-3 — preset (placeholder) 톤: text-faint (opacity 0.45) / 사용자 입력: text-strong (opacity 1)
   if (cardWeightEl) cardWeightEl.style.opacity = presetOpacity;
   if (cardRepsEl) cardRepsEl.style.opacity = presetOpacity;
 
@@ -728,6 +767,59 @@ async function mountSessionActive(doc, block, session) {
 function setTextById(doc, id, text) {
   const el = doc.getElementById(id);
   if (el) el.textContent = text;
+}
+
+/**
+ * spec §6-4 + §6 — equipment 별 카드 분기. data-card-kind 어트리뷰트 + 단위 라벨/
+ * setDots/progressbar visibility 동시 토글. CSS 의존 없이 inline 으로 처리.
+ */
+function applyCardKind(doc, kind) {
+  const area = doc.getElementById('cardSwipeArea');
+  if (area) area.setAttribute('data-card-kind', kind);
+  const weightUnit = doc.getElementById('cardWeightUnit');
+  const repsUnit = doc.getElementById('cardRepsUnit');
+  const weightEl = doc.getElementById('cardWeight');
+  const setDotsEl = doc.getElementById('cardSetDots');
+  const paceEl = doc.getElementById('cardPaceZone');
+  const progressBar = doc.getElementById('cardProgressBar');
+  const progressVol = doc.getElementById('cardProgressVol');
+  const progressPct = doc.getElementById('cardProgressPct');
+  const setProgressVis = (display) => {
+    if (progressBar?.parentElement) progressBar.parentElement.style.display = display;
+    if (progressVol?.parentElement) progressVol.parentElement.style.display = display;
+  };
+  if (kind === 'cardio') {
+    if (weightUnit) weightUnit.textContent = '분';
+    if (repsUnit) repsUnit.textContent = 'km';
+    if (weightEl) weightEl.style.fontSize = '132px';
+    if (setDotsEl) setDotsEl.style.display = 'none';
+    if (paceEl) paceEl.style.display = '';
+    setProgressVis('none');
+  } else if (kind === 'bodyweight') {
+    if (weightUnit) weightUnit.textContent = '';
+    if (repsUnit) repsUnit.textContent = '회';
+    if (weightEl) weightEl.style.fontSize = '32px';
+    if (setDotsEl) setDotsEl.style.display = '';
+    if (paceEl) paceEl.style.display = 'none';
+    setProgressVis('');
+  } else {
+    if (weightUnit) weightUnit.textContent = '킬로그램';
+    if (repsUnit) repsUnit.textContent = '회';
+    if (weightEl) weightEl.style.fontSize = '132px';
+    if (setDotsEl) setDotsEl.style.display = '';
+    if (paceEl) paceEl.style.display = 'none';
+    setProgressVis('');
+  }
+}
+
+function renderCardioPace(doc, durSec, distKm) {
+  const el = doc.getElementById('cardPaceZone');
+  if (!el) return;
+  if (!durSec || !distKm) { el.textContent = ''; return; }
+  const paceSecPerKm = durSec / distKm;
+  const mm = Math.floor(paceSecPerKm / 60);
+  const ss = Math.round(paceSecPerKm % 60);
+  el.textContent = `${mm}:${String(ss).padStart(2, '0')}/km`;
 }
 
 function pad2(n) {
@@ -919,10 +1011,14 @@ function wireSwipeHandlers(doc) {
  *  - 중앙 40% (0.3 ≤ ratio ≤ 0.7) : 키패드 영역 (단계 d) — 본 단계 무시
  */
 async function handleTap(doc, x, y) {
-  const zones = [
-    ['cardWeightZone', 'weight'],
-    ['cardRepsZone', 'reps'],
-  ];
+  // spec §6-4 — cardio 운동 시 zone 의 field 매핑이 'duration'·'distance' 로 swap.
+  // 운동 종류는 cardSwipeArea data-card-kind (applyCardKind 가 mount 시 set) 로 확인.
+  const area = doc.getElementById('cardSwipeArea');
+  const kind = area?.getAttribute('data-card-kind') || 'weight';
+  const isCardio = kind === 'cardio';
+  const zones = isCardio
+    ? [['cardWeightZone', 'duration'], ['cardRepsZone', 'distance']]
+    : [['cardWeightZone', 'weight'], ['cardRepsZone', 'reps']];
   for (const [zoneId, field] of zones) {
     const z = doc.getElementById(zoneId);
     if (!z) continue;
@@ -930,15 +1026,18 @@ async function handleTap(doc, x, y) {
     if (y < r.top || y > r.bottom) continue;
     if (x < r.left || x > r.right) continue;
     const ratio = (x - r.left) / r.width;
-    if (ratio < 0.3) await applyTapDelta(field, -1);
-    else if (ratio > 0.7) await applyTapDelta(field, +1);
+    if (!isCardio && ratio < 0.3) await applyTapDelta(field, -1);
+    else if (!isCardio && ratio > 0.7) await applyTapDelta(field, +1);
     else {
-      // spec §6-3-2 — 중앙 40% → 키패드. 현재 세트 값을 prefill 로 박아 사용자 시작점 제공.
+      // spec §6-3-2 — 중앙 40% → 키패드 (cardio 는 전 영역 키패드). prefill 박아 시작점 제공.
       let prefill;
       try {
         const ctx = await getCurrentBlockAndCursor();
         const set = ctx && ctx.block && Array.isArray(ctx.block.sets) ? ctx.block.sets[ctx.effectiveCur] : null;
-        if (set && Number.isFinite(set[field])) prefill = set[field];
+        if (set && Number.isFinite(set[field])) {
+          // duration 은 DB 에 초 단위 저장 → 키패드 prefill 은 분으로 변환
+          prefill = field === 'duration' ? Math.round(set[field] / 60) : set[field];
+        }
       } catch (_) { /* graceful */ }
       openKeypad(doc, field, { prefill });
     }
@@ -1902,7 +2001,11 @@ function openKeypad(doc, field, opts = {}) {
   } else {
     delete sheet.dataset.setIdx;
   }
-  unit.textContent = field === 'weight' ? 'kg' : '회';
+  unit.textContent =
+    field === 'weight' ? 'kg'
+    : field === 'duration' ? '분'
+    : field === 'distance' ? 'km'
+    : '회';
   renderKeypadValue(sheet, value);
   sheet.dataset.open = 'true';
   sheet.style.transform = 'translateY(0)';
@@ -1943,7 +2046,10 @@ export async function applyKeypadValue(doc) {
     closeKeypad(doc);
     return;
   }
-  const finalValue = field === 'reps' ? Math.round(parsed) : parsed;
+  const finalValue =
+    field === 'reps' ? Math.round(parsed)
+    : field === 'duration' ? Math.round(parsed * 60) // 분 → 초
+    : parsed;
 
   let ctx;
   try { ctx = await getCurrentBlockAndCursor(); }

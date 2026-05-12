@@ -191,13 +191,13 @@ describe('addExerciseToActiveSession', () => {
     });
   });
 
-  it('유산소 (treadmill) — sets 1, weight/reps null prefill', async () => {
+  it('유산소 (treadmill) — sets 1, weight/reps null prefill + duration/distance null', async () => {
     const r = await addExerciseToActiveSession('treadmill', 'cardio');
     expect(r.added).toBe(true);
-    // treadmill: cardio, defaultSets 1
+    // treadmill: cardio, 단일 세트 (spec §6-4)
     expect(r.session.blocks[0].sets.length).toBe(1);
     expect(r.session.blocks[0].sets[0]).toEqual({
-      weight: null, reps: null, done: false, preset: true, pr: false,
+      weight: null, reps: null, done: false, preset: true, pr: false, duration: null, distance: null,
     });
   });
 
@@ -639,13 +639,33 @@ describe('persistKeypadEdit', () => {
     })).reason).toBe('invalid_input');
   });
 
-  it('invalid_field — weight/reps 외', async () => {
+  it('invalid_field — weight/reps/duration/distance 외', async () => {
     await addExerciseToActiveSession('bench_press', 'chest');
     const r = await persistKeypadEdit({
-      exerciseName: '벤치프레스', setIdx: 0, field: 'duration', value: 60,
+      exerciseName: '벤치프레스', setIdx: 0, field: 'unknown', value: 60,
     });
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('invalid_field');
+  });
+
+  it('duration field — sets[i].duration 갱신 (cardio)', async () => {
+    await addExerciseToActiveSession('treadmill', 'cardio');
+    const r = await persistKeypadEdit({
+      exerciseName: '트레드밀', setIdx: 0, field: 'duration', value: 1800,
+    });
+    expect(r.ok).toBe(true);
+    const session = await getOrCreateActiveSession();
+    expect(session.blocks[0].sets[0].duration).toBe(1800);
+  });
+
+  it('distance field — sets[i].distance 갱신 (cardio)', async () => {
+    await addExerciseToActiveSession('treadmill', 'cardio');
+    const r = await persistKeypadEdit({
+      exerciseName: '트레드밀', setIdx: 0, field: 'distance', value: 5.5,
+    });
+    expect(r.ok).toBe(true);
+    const session = await getOrCreateActiveSession();
+    expect(session.blocks[0].sets[0].distance).toBe(5.5);
   });
 });
 
