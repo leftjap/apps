@@ -14,6 +14,7 @@ import {
   listExercisesForUser,
   toggleExerciseHidden,
   createCustomExercise,
+  setExerciseOrderForPart,
 } from '../db/queries.js';
 import { PART_IDS, PARTS } from '../db/exercises.js';
 
@@ -121,8 +122,86 @@ export function hookExerciseTabClicks(root) {
     }
   });
 
+  hookExerciseDrag(listEl, doc);
+
   partsEl.dataset.spaHooked = '1';
   listEl.dataset.spaHooked = '1';
+}
+
+/**
+ * §10-1 (drag handle) — .ex-grip pointerdown 즉시 grab.
+ *  - 누르자마자 잡힘 (long-press 아님)
+ *  - 같은 부위 (활성 탭) 내에서만 순서 변경
+ *  - drop 시 setExerciseOrderForPart 로 영구 저장 (settings.exerciseOrder[part])
+ */
+function hookExerciseDrag(listEl, doc) {
+  let state = null;
+
+  listEl.addEventListener('pointerdown', (e) => {
+    const grip = e.target?.closest?.('.ex-grip');
+    if (!grip) return;
+    const row = grip.closest('.ex-row');
+    if (!row || !listEl.contains(row)) return;
+    e.preventDefault();
+    try { grip.setPointerCapture?.(e.pointerId); } catch (_) {}
+    const rows = Array.from(listEl.querySelectorAll('.ex-row'));
+    state = {
+      pointerId: e.pointerId,
+      grip, row, rows,
+      startY: e.clientY,
+      currentIndex: rows.indexOf(row),
+      originalIndex: rows.indexOf(row),
+    };
+    row.classList.add('is-dragging');
+  });
+
+  listEl.addEventListener('pointermove', (e) => {
+    if (!state || e.pointerId !== state.pointerId) return;
+    const dy = e.clientY - state.startY;
+    state.row.style.transform = `translateY(${dy}px)`;
+
+    let newIndex = state.currentIndex;
+    for (let i = 0; i < state.rows.length; i++) {
+      if (i === state.currentIndex) continue;
+      const other = state.rows[i];
+      if (other === state.row) continue;
+      const r = other.getBoundingClientRect();
+      const centerY = r.top + r.height / 2;
+      if (i < state.currentIndex && e.clientY < centerY) { newIndex = i; break; }
+      if (i > state.currentIndex && e.clientY > centerY) newIndex = i;
+    }
+    if (newIndex !== state.currentIndex) {
+      const ref = state.rows[newIndex];
+      if (newIndex < state.currentIndex) listEl.insertBefore(state.row, ref);
+      else listEl.insertBefore(state.row, ref.nextSibling);
+      state.rows = Array.from(listEl.querySelectorAll('.ex-row'));
+      state.currentIndex = state.rows.indexOf(state.row);
+      const newRect = state.row.getBoundingClientRect();
+      state.startY = e.clientY - (e.clientY - (newRect.top + newRect.height / 2));
+      state.row.style.transform = `translateY(${e.clientY - state.startY}px)`;
+    }
+  });
+
+  const endDrag = async (e) => {
+    if (!state || (e && e.pointerId !== state.pointerId)) return;
+    const { row, currentIndex, originalIndex, grip, pointerId } = state;
+    try { grip.releasePointerCapture?.(pointerId); } catch (_) {}
+    row.classList.remove('is-dragging');
+    row.style.transform = '';
+    const orderedIds = state.rows.map((r) => r.dataset.id).filter(Boolean);
+    const changed = currentIndex !== originalIndex;
+    state = null;
+    if (!changed) return;
+    try {
+      await setExerciseOrderForPart(_activePart, orderedIds);
+      await renderExercisesTab(doc);
+    } catch (err) {
+      console.error('[exercises-admin] setExerciseOrderForPart', err);
+      await renderExercisesTab(doc);
+    }
+  };
+  listEl.addEventListener('pointerup', endDrag);
+  listEl.addEventListener('pointercancel', endDrag);
 }
 
 /**

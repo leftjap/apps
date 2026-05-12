@@ -57,7 +57,11 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .part-chip.is-active { background: rgba(255,255,255,0.1); color: #fff; font-weight: 600; border: 0; }
 .ex-row { display: flex; align-items: center; padding: 13px 14px; border-top: 1px solid rgba(255,255,255,0.04); color: #fff; }
 .ex-row:first-child { border-top: 0; }
-.ex-grip { display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-right: 14px; opacity: 0.4; color: rgba(255,255,255,0.6); }
+.ex-grip { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 36px; margin-right: 6px; opacity: 0.4; color: rgba(255,255,255,0.6); cursor: grab; touch-action: none; }
+.ex-grip:active { cursor: grabbing; }
+.ex-row.is-dragging { background: rgba(255,255,255,0.06); box-shadow: 0 8px 24px -6px rgba(0,0,0,0.6); z-index: 5; position: relative; opacity: 0.95; }
+.ex-row.is-placeholder { background: rgba(255,255,255,0.04); opacity: 0.4; }
+.ex-row.is-placeholder .ex-grip, .ex-row.is-placeholder .ex-name, .ex-row.is-placeholder .ex-meta, .ex-row.is-placeholder .ex-toggle { visibility: hidden; }
 .ex-grip svg { width: 16px; height: 16px; display: block; }
 .ex-name { flex: 1; font-size: 14px; color: #fff; font-weight: 500; font-family: var(--font-body); }
 .ex-meta { font-size: 11px; color: rgba(255,255,255,0.4); font-family: var(--font-display); margin-right: 14px; }
