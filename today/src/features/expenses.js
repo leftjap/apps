@@ -1242,9 +1242,10 @@ function normalizeCategoryKey(c) {
   return asId || c;
 }
 
-/** Dexie searchExpenses(category) → 월/년 필터 + 합계. UI render 는 별도.
+/** Dexie 직접 조회 (spent_at 범위) → 카테고리 + 월/년 필터 + 합계. UI render 는 별도.
  * 2026-05-12: 한글 라벨 ↔ 영문 id 양방향 매칭 + scope='year' 옵션 (누적 위젯 클릭용).
- * opts.scope === 'year' 면 year-to-date, 그 외엔 기존처럼 month 필터.
+ * 이전엔 Queries.searchExpenses(키워드 텍스트 매칭) 사용 → category='online' row 가
+ * '온라인쇼핑' 검색에 매칭 안 되는 버그. 직접 listExpensesByRange 사용으로 해소.
  */
 export async function fetchCategoryExpenses(category, opts = {}) {
   if (!category) return { rows: [], total: 0 };
@@ -1254,16 +1255,19 @@ export async function fetchCategoryExpenses(category, opts = {}) {
   const scope = opts.scope || 'month';
   let rows = [];
   try {
-    rows = await Queries.searchExpenses(category);
+    if (scope === 'year') {
+      const from = `${year}-01-01T00:00:00.000Z`;
+      const to = `${year}-12-31T23:59:59.999Z`;
+      rows = await Queries.listExpensesByRange(from, to);
+    } else {
+      rows = await Queries.listExpensesByMonth(year, month);
+    }
   } catch (e) {
-    console.warn('[expenses] searchExpenses 실패:', e?.message || e);
+    console.warn('[expenses] listExpenses range/month 실패:', e?.message || e);
     return { rows: [], total: 0 };
   }
   const targetKey = normalizeCategoryKey(category);
-  const dateMatch = (spentAt) => scope === 'year'
-    ? spentAtMatchesYear(spentAt, year)
-    : spentAtMatchesMonth(spentAt, year, month);
-  const filtered = rows.filter((r) => normalizeCategoryKey(r.category) === targetKey && dateMatch(r.spent_at));
+  const filtered = rows.filter((r) => normalizeCategoryKey(r.category) === targetKey);
   const total = filtered.reduce((s, r) => s + (r.amount_krw || 0), 0);
   return { rows: filtered, total, year, month, scope };
 }
