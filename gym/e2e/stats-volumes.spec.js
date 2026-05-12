@@ -80,7 +80,8 @@ test.describe('Wave 11.11 — stats §9-2 volume comparison', () => {
   test('D. today 동적 표시 — 다른 월 nav → today 클래스 0건 (Wave 11.13)', async ({ page }) => {
     // v2 redesign — mocks/stats.html line 77-79 의 ‹ › 화살표 span 에 wiring 없음.
     // spec §9-1 "← → 월 이동" 명시되어 있으나 v2 마크업에서 [data-month] 속성 + stats.js wiring 미구현.
-    // 후속 wave 에서 month nav 추가 시 다시 enable.
+    // TODO: 후속 wave 에서 spec §9-1 month nav 재구현 시 enable — ‹ › span 에 data-month 속성 + stats.js
+    //       click 위임 (calGrid 재렌더 + applyTodayToCalendar 재호출) 구현 시점.
     test.skip(true, 'Phase B month nav 미구현 — spec §9-1 후속 wave 작업');
     await bootstrapFake(page);
     const dbReady = await page.evaluate(() => !!window.gymDB);
