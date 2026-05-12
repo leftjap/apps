@@ -1285,6 +1285,8 @@ describe('openCategoryDetailPopup — Wave 11.6.5', () => {
     expect(fakeOverlay.innerHTML).toContain('배달 · 4월');
     expect(fakeOverlay.innerHTML).toContain('2건');
     expect(fakeOverlay.attrs['data-category-popup']).toBe('true');
+    // 2026-05-12 — modifier 클래스 부착 (overlay grid centering 발화).
+    expect(fakeOverlay.className).toContain('exp-fp-overlay--category');
   });
 });
 

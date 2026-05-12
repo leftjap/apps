@@ -1345,27 +1345,12 @@ export async function openCategoryDetailPopup(category, opts = {}, doc = (typeof
   const { rows, total, year, month, scope } = await fetchCategoryExpenses(category, opts);
   const overlay = doc.createElement('div');
   overlay.id = 'expCategoryPopupOverlay';
-  overlay.className = 'exp-fp-overlay';
+  // 2026-05-12 — `.exp-fp-overlay--category` modifier 사용. overlay 자체가 grid+place-items+padding
+  // 으로 카드 중앙 정렬 + 좌우 24px 여백 보장. JS 좌표 계산 불필요 (transform timing 버그 자동 해소).
+  overlay.className = 'exp-fp-overlay exp-fp-overlay--category';
   overlay.setAttribute('data-category-popup', 'true');
   overlay.innerHTML = buildCategoryPopupHtml(category, rows, total, { year, month, scope });
   doc.body.appendChild(overlay);
-  // 2026-05-12 — mocks openExpenseFloatingPopup 패턴 답습.
-  // (1) `.exp-fp-card` 는 position:fixed 인데 left/top 명시 없으면 viewport(0,0) 박힘.
-  //     mount 후 size 측정 → 화면 중앙 정렬.
-  // (2) `.exp-fp-overlay.open` 클래스가 opacity:1 + pointer-events:auto 발화.
-  // fake doc (단위 테스트 mock) 환경에서는 querySelector 미존재 — guard.
-  const card = typeof overlay.querySelector === 'function' ? overlay.querySelector('.exp-fp-card') : null;
-  if (card && typeof window !== 'undefined' && typeof card.getBoundingClientRect === 'function') {
-    const cr = card.getBoundingClientRect();
-    const cardW = cr.width || 380;
-    const cardH = cr.height || 400;
-    const left = Math.max(16, (window.innerWidth - cardW) / 2);
-    const top = Math.max(16, (window.innerHeight - cardH) / 2);
-    if (card.style) {
-      card.style.left = left + 'px';
-      card.style.top = top + 'px';
-    }
-  }
   if (overlay.classList && typeof overlay.classList.add === 'function') {
     if (typeof requestAnimationFrame === 'function') {
       requestAnimationFrame(() => overlay.classList.add('open'));
