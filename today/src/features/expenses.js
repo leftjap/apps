@@ -23,6 +23,7 @@
  */
 import { Queries } from '../db/queries.js';
 import Classifier from '../services/expense-classifier.js';
+import { parseCardSms } from '../services/cardSmsParser.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -823,6 +824,63 @@ export function rebuildExpModalCatGrid(doc = (typeof document !== 'undefined' ? 
   return true;
 }
 
+let _pasteSmsPatched = false;
+/** 2026-05-12 Wave 11.8e — `window.pasteExpenseSMS` patch. mocks 의 단순 정규식
+ *  `_parseExpenseSMS` 가 merchant 추출 실패하던 문제 해소. SPA cardSmsParser +
+ *  cleanMerchantName 사용.
+ */
+export function patchPasteExpenseSMSHandler({
+  win = (typeof window !== 'undefined' ? window : null),
+  doc = (typeof document !== 'undefined' ? document : null),
+} = {}) {
+  if (!win || !doc) return false;
+  if (_pasteSmsPatched) return true;
+  _pasteSmsPatched = true;
+  win.pasteExpenseSMS = async function patchedPaste() {
+    let raw = '';
+    try {
+      if (navigator.clipboard?.readText) raw = await navigator.clipboard.readText();
+    } catch (_) {}
+    if (!raw) raw = win.prompt('카드사 문자를 붙여넣으세요', '') || '';
+    if (!raw.trim()) return;
+    const parsed = parseCardSms(raw);
+    if (!parsed) return;
+    if (parsed.amount_krw != null) {
+      const a = doc.getElementById('expModalAmount');
+      if (a) { a.value = parsed.amount_krw.toLocaleString('ko-KR'); a.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+    if (parsed.merchant_raw) {
+      const cleaned = Classifier.cleanMerchantName?.(parsed.merchant_raw) || parsed.merchant_raw;
+      const m = doc.getElementById('expModalMerchant');
+      if (m) { m.value = cleaned; m.dispatchEvent(new Event('input', { bubbles: true })); }
+    }
+    if (parsed.card && typeof win.pickExpCard === 'function') {
+      // card option 매칭 — text 에 card prefix 포함 첫 option
+      const opts = Array.from(doc.querySelectorAll('#expCardPopover .exp-card-option'));
+      const hit = opts.find((o) => (o.textContent || '').replace(/\s/g, '').includes(parsed.card.replace(/\s/g, '')));
+      if (hit) win.pickExpCard(hit.getAttribute('data-card') || hit.textContent.trim());
+    }
+    // brand → category 자동 매핑 (입력 보조 — 사용자가 선택 안 한 경우만)
+    try {
+      const grid = doc.getElementById('expModalCatGrid');
+      const hasActive = grid?.querySelector('.exp-cat-cell.is-active');
+      if (!hasActive && parsed.merchant_raw) {
+        const cleaned = Classifier.cleanMerchantName?.(parsed.merchant_raw) || parsed.merchant_raw;
+        const brand = Classifier.getBrandByMerchant?.(cleaned);
+        const cat = brand ? Classifier.getCategoryByBrand?.(brand) : null;
+        if (cat) {
+          const cell = grid?.querySelector(`.exp-cat-cell[data-cat="${cat}"]`);
+          if (cell && typeof win.selectExpModalCat === 'function') {
+            win.selectExpModalCat(cat, cell);
+          }
+        }
+      }
+    } catch (_) {}
+  };
+  return true;
+}
+export function __resetPasteSmsPatchState() { _pasteSmsPatched = false; }
+
 /** Dexie row → 모달 폼 채우기 (수정 모드 진입 시). */
 export function populateExpenseForm(row, doc = document) {
   if (!row) return false;
@@ -1517,6 +1575,7 @@ export function mountExpensesView(user) {
   patchExpSearchHandlers();
   patchOpenCategoryDetailHandler();
   patchOpenMerchantDetailHandler();
+  patchPasteExpenseSMSHandler();
   rebuildExpModalCatGrid();
   installExpRowClickHandler();
   injectExpensePopupStyles();
@@ -1695,11 +1754,12 @@ export const Expenses = {
   // 2026-05-12 — 카테고리 popup 전용 row template (날짜 노출, 카테고리 라벨 제거)
   rowToCategoryPopupHtml,
   patchOpenCategoryDetailHandler,
-  // 2026-05-12 Wave 11.8b/c — brand 모달 + picker rebuild
+  // 2026-05-12 Wave 11.8b/c/e — brand 모달 + picker rebuild + SMS paste
   fetchBrandExpenses,
   openBrandDetailPopup,
   patchOpenMerchantDetailHandler,
   rebuildExpModalCatGrid,
+  patchPasteExpenseSMSHandler,
 };
 
 if (typeof window !== 'undefined') {
