@@ -108,11 +108,11 @@ export const BRAND_CATEGORY_MAP = Object.freeze({
   크린토피아: 'fashion', 트라이본즈: 'fashion', 현대홈쇼핑: 'fashion',
   베네피트: 'fashion', 무인양품: 'fashion',
 
-  // food (식품/마트)
+  // food (식품/마트) — 쿠팡은 online 으로 분리 (2026-05-12, 사용자 의도 정렬)
   CJ: 'food', 'SSG.COM': 'food', 금옥당: 'food', 뚜레쥬르: 'food',
   띵굴: 'food', 롯데온: 'food', 베즐리: 'food', 사러가: 'food',
   신세계: 'food', 오아시스: 'food', 온브릭스: 'food', 이마트: 'food',
-  쿠팡: 'food', 컬리: 'food', 태극당: 'food', 파리바게뜨: 'food',
+  쿠팡: 'online', 컬리: 'food', 태극당: 'food', 파리바게뜨: 'food',
   파리크라상: 'food', 풀무원: 'food', 하나로마트: 'food',
   한화커넥트: 'food', 현대그린푸드: 'food', '현대백화점 식품관': 'food',
   고디바: 'food',

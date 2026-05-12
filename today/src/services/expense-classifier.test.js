@@ -198,10 +198,28 @@ describe('autoMatchCategoryByKeyword', () => {
   });
   it('validIds 제한 — soyoun 활성 카테고리만 매칭', () => {
     const soyounIds = SOYOUN_CATEGORIES.map((c) => c.id);
-    // soyoun 에 'online' 없음 → '쿠팡' (online 키워드) → etc fallback
+    // soyoun 에 'online' 없음 → 쿠팡 (online 매핑) → etc fallback (autoMatch 도 동일)
     expect(autoMatchCategoryByKeyword('쿠팡', soyounIds)).toBe('etc');
     // soyoun 에 'cafe' 있음 → 스타벅스 → cafe
     expect(autoMatchCategoryByKeyword('스타벅스', soyounIds)).toBe('cafe');
+  });
+});
+
+describe('BRAND_CATEGORY_MAP — 쿠팡 매핑 (2026-05-12)', () => {
+  it('쿠팡 = online (사용자 의도 정렬, food 에서 변경)', () => {
+    const r = classifyMerchant('쿠팡');
+    expect(r.brand).toBe('쿠팡');
+    expect(r.category).toBe('online');
+  });
+  it('쿠팡(와우멤) 은 키워드 fallback 으로 subscribe (BRAND 매핑 X)', () => {
+    const r = classifyMerchant('쿠팡(와우멤');
+    expect(r.brand).toBe(null);
+    expect(r.category).toBe('subscribe');
+  });
+  it('쿠팡이츠 는 키워드 fallback 으로 delivery (BRAND 매핑 X)', () => {
+    const r = classifyMerchant('쿠팡이츠');
+    expect(r.brand).toBe(null);
+    expect(r.category).toBe('delivery');
   });
 });
 
