@@ -477,13 +477,35 @@ export function wireSessionShortcuts(doc) {
 
   const addexBtn = doc.getElementById?.('sessionAddexBtn');
   if (addexBtn) {
-    addexBtn.addEventListener('click', async () => {
-      try {
-        if (doc.body?.dataset) doc.body.dataset.state = 'empty';
-        await mountSessionEmpty(doc, false);
-      } catch (e) {
-        console.error('[gymSession] sessionAddexBtn', e);
+    addexBtn.addEventListener('click', () => {
+      // spec §6-2 — + 클릭 → 시트 슬라이드업 (transform translateY(0)). §6-10 "DOM 한 번 생성 + transform 토글" 준수.
+      // body.dataset.state 토글 폐기 (이전 5c6ef5f 의 풀스크린 토글이 §6-2 의도 위반).
+      const sheet = doc.getElementById('sessionAddexSheet');
+      const backdrop = doc.getElementById('sessionAddexBackdrop');
+      if (!sheet) return;
+      sheet.dataset.open = 'true';
+      sheet.style.transform = 'translateY(0)';
+      if (backdrop) {
+        backdrop.dataset.open = 'true';
+        backdrop.style.opacity = '1';
+        backdrop.style.pointerEvents = 'auto';
       }
+    });
+    wired += 1;
+  }
+
+  // 백드롭 click → 시트 슬라이드다운 (외부 click 닫힘)
+  const addexBackdrop = doc.getElementById?.('sessionAddexBackdrop');
+  if (addexBackdrop) {
+    addexBackdrop.addEventListener('click', () => {
+      const sheet = doc.getElementById('sessionAddexSheet');
+      if (sheet) {
+        sheet.dataset.open = 'false';
+        sheet.style.transform = 'translateY(100%)';
+      }
+      addexBackdrop.dataset.open = 'false';
+      addexBackdrop.style.opacity = '0';
+      addexBackdrop.style.pointerEvents = 'none';
     });
     wired += 1;
   }
@@ -576,7 +598,7 @@ async function mountSessionEmpty(doc, dbUnavailable) {
  *  - 마지막 single 블록을 "현재 운동" 으로 사용 (단계 a — 정적).
  *  - currentSetIdx = 첫 un-done set. 모두 done 이면 마지막 set.
  */
-function mountSessionActive(doc, block, session) {
+async function mountSessionActive(doc, block, session) {
   const sets = Array.isArray(block.sets) ? block.sets : [];
   let cur = sets.findIndex((s) => s && !s.done);
   if (cur === -1) cur = Math.max(0, sets.length - 1);
@@ -658,6 +680,30 @@ function mountSessionActive(doc, block, session) {
       },
     });
   } catch (e) { console.error('[gymSession] wireLongPress', e); }
+
+  // spec §6-2 — active 분기 운동 추가 시트 hydrate (DOM 한 번 생성 + transform 토글).
+  // wireSessionShortcuts 의 + 버튼 핸들러가 sheet.dataset.open='true' 토글 + transform 슬라이드업.
+  // mount 시 시트 transform 기본 hidden 으로 reset (운동 추가 후 mountSessionView remount 흐름에서 자동 닫힘).
+  try {
+    const sSheet = doc.getElementById('sessionAddexSheet');
+    const sBackdrop = doc.getElementById('sessionAddexBackdrop');
+    if (sSheet) {
+      sSheet.dataset.open = 'false';
+      sSheet.style.transform = 'translateY(100%)';
+    }
+    if (sBackdrop) {
+      sBackdrop.dataset.open = 'false';
+      sBackdrop.style.opacity = '0';
+      sBackdrop.style.pointerEvents = 'none';
+    }
+    const sChipsEl = doc.getElementById('sessionAddexChips');
+    const sListEl = doc.getElementById('sessionAddexList');
+    if (sChipsEl && sListEl) {
+      await renderChips(sChipsEl);
+      await renderList(sListEl);
+      hookClicks(sChipsEl, sListEl);
+    }
+  } catch (e) { console.error('[gymSession] active 시트 hydrate', e); }
 
   return { mounted: true, branch: 'active', exerciseId: block.exerciseId, currentSetIdx: cur };
 }

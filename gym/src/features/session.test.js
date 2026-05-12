@@ -957,7 +957,7 @@ function makeShortcutBtn() {
   };
 }
 
-function makeShortcutDoc({ home = 2, end = true, addex = true } = {}) {
+function makeShortcutDoc({ home = 2, end = true, addex = true, addexSheet = true } = {}) {
   const homeBtns = Array.from({ length: home }, () => makeShortcutBtn());
   const endBtn = end ? makeShortcutBtn() : null;
   const addexBtn = addex ? makeShortcutBtn() : null;
@@ -966,6 +966,18 @@ function makeShortcutDoc({ home = 2, end = true, addex = true } = {}) {
   const backdrop = { dataset: { open: 'false' }, style: { opacity: '0', pointerEvents: 'none' } };
   const titleEl = { textContent: '' };
   const itemsEl = { innerHTML: '', _onSelect: null };
+  // §6-2 — addex 시트 + 백드롭 (transform 토글 패턴)
+  const addexSheetEl = addexSheet
+    ? { dataset: { open: 'false' }, style: { transform: 'translateY(100%)' } }
+    : null;
+  const addexBackdropEl = addexSheet
+    ? {
+        dataset: { open: 'false' },
+        style: { opacity: '0', pointerEvents: 'none' },
+        addEventListener(name, fn) { (this._listeners = this._listeners || {})[name] = (this._listeners[name] || []).concat([fn]); },
+        _fire(name) { (this._listeners?.[name] || []).forEach((fn) => fn({})); },
+      }
+    : null;
   return {
     body: { dataset: {} },
     querySelectorAll(sel) {
@@ -975,16 +987,19 @@ function makeShortcutDoc({ home = 2, end = true, addex = true } = {}) {
     getElementById(id) {
       if (id === 'sessionEndBtn') return endBtn;
       if (id === 'sessionAddexBtn') return addexBtn;
+      if (id === 'sessionAddexSheet') return addexSheetEl;
+      if (id === 'sessionAddexBackdrop') return addexBackdropEl;
       if (id === 'actionSheet') return sheet;
       if (id === 'actionBackdrop') return backdrop;
       if (id === 'actionTitle') return titleEl;
       if (id === 'actionItems') return itemsEl;
-      // mountSessionEmpty 가 호출하는 addexChips/addexList 는 sessionAddexBtn click 핸들러용 — null 반환 → graceful skipped no-mounts
       return null;
     },
     _homeBtns: homeBtns,
     _endBtn: endBtn,
     _addexBtn: addexBtn,
+    _addexSheet: addexSheetEl,
+    _addexBackdrop: addexBackdropEl,
     _sheet: sheet,
     _itemsEl: itemsEl,
   };
@@ -996,16 +1011,16 @@ describe('wireSessionShortcuts (§6-6 + §6-2)', () => {
     expect(r.wired).toBe(0);
   });
 
-  it('home/end/addex 모두 존재 → wired = 2(home) + 1(end) + 1(addex)', () => {
-    const doc = makeShortcutDoc({ home: 2, end: true, addex: true });
+  it('home/end/addex/backdrop 모두 존재 → wired = 2(home) + 1(end) + 1(addex) + 1(addexBackdrop)', () => {
+    const doc = makeShortcutDoc({ home: 2, end: true, addex: true, addexSheet: true });
     const r = wireSessionShortcuts(doc);
-    expect(r.wired).toBe(4);
+    expect(r.wired).toBe(5);
     expect(doc.body.dataset.spaShortcuts).toBe('1');
   });
 
   it('idempotent — 두 번째 호출 wired 0 (spaShortcuts guard)', () => {
     const doc = makeShortcutDoc();
-    expect(wireSessionShortcuts(doc).wired).toBe(4);
+    expect(wireSessionShortcuts(doc).wired).toBe(5);
     expect(wireSessionShortcuts(doc).wired).toBe(0);
   });
 
@@ -1034,13 +1049,33 @@ describe('wireSessionShortcuts (§6-6 + §6-2)', () => {
     expect(doc._itemsEl.innerHTML).toContain('data-action-id="discard"');
   });
 
-  it('addex click → body.dataset.state = "empty" (동기 부분)', () => {
-    const doc = makeShortcutDoc({ home: 0, end: false, addex: true });
+  it('addex click → sessionAddexSheet 슬라이드업 (transform translateY(0), spec §6-2)', () => {
+    const doc = makeShortcutDoc({ home: 0, end: false, addex: true, addexSheet: true });
     wireSessionShortcuts(doc);
-    doc.body.dataset.state = 'active';
-    // 핸들러는 async 지만 body.dataset.state 설정은 await 이전이라 동기 적용
     doc._addexBtn._fire('click');
-    expect(doc.body.dataset.state).toBe('empty');
+    expect(doc._addexSheet.dataset.open).toBe('true');
+    expect(doc._addexSheet.style.transform).toBe('translateY(0)');
+    expect(doc._addexBackdrop.dataset.open).toBe('true');
+    expect(doc._addexBackdrop.style.opacity).toBe('1');
+    expect(doc._addexBackdrop.style.pointerEvents).toBe('auto');
+  });
+
+  it('addex 백드롭 click → 시트 슬라이드다운 (외부 click 닫힘)', () => {
+    const doc = makeShortcutDoc({ home: 0, end: false, addex: true, addexSheet: true });
+    wireSessionShortcuts(doc);
+    // 열린 상태 가정
+    doc._addexSheet.dataset.open = 'true';
+    doc._addexSheet.style.transform = 'translateY(0)';
+    doc._addexBackdrop.dataset.open = 'true';
+    doc._addexBackdrop.style.opacity = '1';
+    doc._addexBackdrop.style.pointerEvents = 'auto';
+    // 백드롭 click → 닫힘
+    doc._addexBackdrop._fire('click');
+    expect(doc._addexSheet.dataset.open).toBe('false');
+    expect(doc._addexSheet.style.transform).toBe('translateY(100%)');
+    expect(doc._addexBackdrop.dataset.open).toBe('false');
+    expect(doc._addexBackdrop.style.opacity).toBe('0');
+    expect(doc._addexBackdrop.style.pointerEvents).toBe('none');
   });
 });
 
