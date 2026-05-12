@@ -14,6 +14,7 @@
  */
 
 import { getBuiltinExercise } from '../db/exercises.js';
+import { getSessionById, getSessionsByRange } from '../db/queries.js';
 
 const WEEKDAY_KOR = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -131,9 +132,100 @@ function defaultEmptyVariant() {
   };
 }
 
+function formatHHMM(ts) {
+  if (!Number.isFinite(ts)) return '';
+  const d = new Date(ts);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+function formatReceiptDate(session) {
+  if (!session?.date) return '';
+  const m = String(session.date).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return String(session.date);
+  const d = new Date(`${session.date}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return String(session.date);
+  const weekday = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+  const start = formatHHMM(session.startTime);
+  const end = formatHHMM(session.endTime);
+  const time = start && end ? ` · ${start}→${end}` : '';
+  return `${session.date} · ${weekday}${time}`;
+}
+
+function buildReceiptNo(session) {
+  if (!session?.id) return 'SESSION RECEIPT';
+  const tail = String(session.id).match(/(\d{4,})$/);
+  const num = tail ? tail[1].slice(-4) : String(session.id).slice(-4);
+  return `SESSION RECEIPT · #${num}`;
+}
+
+function renderExRow(ex) {
+  const prBadge = ex.pr
+    ? '<span style="font-size:8px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;margin-left:6px;">PR</span>'
+    : '';
+  return `<div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;"><span style="font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;">${escapeText(ex.name)}${prBadge}</span><span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;">${escapeText(ex.sets)}</span></div>`;
+}
+
+function escapeText(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function findSummarySession() {
+  let id = null;
+  try { id = typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('gym.summary.sessionId') : null; }
+  catch (_) { /* private */ }
+  if (id) {
+    try {
+      const s = await getSessionById(id);
+      if (s) return s;
+    } catch (_) { /* fall through */ }
+  }
+  // 폴백: 오늘 completed 중 endTime 최근
+  try {
+    const today = new Date().toISOString().slice(0, 10);
+    const rows = await getSessionsByRange(today, today);
+    const completed = (rows || []).filter((s) => s && s.status === 'completed');
+    if (completed.length) {
+      completed.sort((a, b) => (a.endTime || a.startTime || 0) - (b.endTime || b.startTime || 0));
+      return completed[completed.length - 1];
+    }
+  } catch (_) { /* db unavailable */ }
+  return null;
+}
+
+export async function mountSummaryView() {
+  if (typeof document === 'undefined') return { skipped: 'no-document' };
+  const session = await findSummarySession();
+  if (!session) return { skipped: 'no-session' };
+  const data = summarizeSession(session);
+
+  const set = (id, text) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  set('summaryReceiptNo', buildReceiptNo(session));
+  set('summaryDate', formatReceiptDate(session));
+  set('summaryTotal', data.volume);
+  set('summaryDuration', `${data.time}분`);
+  set('summaryPR', data.pr > 0 ? `${data.pr} PR ★` : '0 PR');
+  set('summaryKcal', `${data.kcal} kcal`);
+
+  const exList = document.getElementById('summaryExList');
+  if (exList) {
+    if (!data.exercises.length) {
+      exList.innerHTML = '<div class="kr" style="text-align:center;padding:10px 0;font-size:11px;color:rgba(255,255,255,0.3);">기록 없음</div>';
+    } else {
+      exList.innerHTML = data.exercises.map(renderExRow).join('');
+    }
+  }
+  return { mounted: true, sessionId: session.id };
+}
+
 if (typeof window !== 'undefined') {
   window.gymSessionSummary = {
     summarizeSession,
     exerciseIdToName,
+    mountSummaryView,
   };
 }

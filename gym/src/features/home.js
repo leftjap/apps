@@ -477,10 +477,13 @@ export async function fetchDayDetail(iso) {
   }
   if (!sessions.length) return null;
   sessions.sort((a, b) => (a.startTime || 0) - (b.startTime || 0));
-  const latest = sessions[sessions.length - 1];
   const adapter = (typeof window !== 'undefined' && window.gymStats?.sessionToWorkoutEntry) || null;
+  const merger = (typeof window !== 'undefined' && window.gymStats?.mergeWorkoutEntries) || null;
   if (!adapter) return null;
-  return adapter(latest);
+  const entries = sessions.map(adapter).filter(Boolean);
+  if (!entries.length) return null;
+  if (!merger || entries.length === 1) return entries[entries.length - 1];
+  return merger(entries);
 }
 
 if (typeof window !== 'undefined') {

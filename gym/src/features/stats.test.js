@@ -9,6 +9,7 @@ import {
   parseMonthLabel,
   applyTodayToCalendar,
   sessionToWorkoutEntry,
+  mergeWorkoutEntries,
   deleteSessionByDay,
 } from './stats.js';
 
@@ -176,9 +177,8 @@ describe('sessionToWorkoutEntry', () => {
     expect(r.level).toBe('med'); // 3000~6000
     expect(r.min).toBe(45);
     expect(r.pr).toBe(1);
-    expect(r.ex).toEqual([
-      { n: '벤치프레스', s: '2세트 · 1,120kg' },
-    ]);
+    expect(r.ex).toHaveLength(1);
+    expect(r.ex[0]).toMatchObject({ n: '벤치프레스', s: '2세트 · 1,120kg', kind: 'weight' });
     expect(r.sessionId).toBe('session_1');
   });
 
@@ -211,7 +211,8 @@ describe('sessionToWorkoutEntry', () => {
     };
     const r = sessionToWorkoutEntry(session);
     expect(r.tag).toBe('등'); // back → 등
-    expect(r.ex).toEqual([{ n: '벤치프레스', s: '2세트 · 1,370kg' }]);
+    expect(r.ex).toHaveLength(1);
+    expect(r.ex[0]).toMatchObject({ n: '벤치프레스', s: '2세트 · 1,370kg', kind: 'weight' });
   });
 
   it('cardio (duration) — 분/km 표시', () => {
@@ -227,7 +228,8 @@ describe('sessionToWorkoutEntry', () => {
     };
     const r = sessionToWorkoutEntry(session);
     expect(r.tag).toBe('유');
-    expect(r.ex).toEqual([{ n: '트레드밀', s: '30분 · 5km' }]);
+    expect(r.ex).toHaveLength(1);
+    expect(r.ex[0]).toMatchObject({ n: '트레드밀', s: '30분 · 5km', kind: 'cardio' });
   });
 
   it('done:false 세트 무시 (preset 만 있는 운동) → ex 에서 제외', () => {
@@ -295,6 +297,52 @@ describe('sessionToWorkoutEntry', () => {
     };
     const r = sessionToWorkoutEntry(session);
     expect(r.ex[0].n).toBe('cust_xx');
+  });
+});
+
+describe('mergeWorkoutEntries', () => {
+  it('빈 입력 → defaultEntry', () => {
+    expect(mergeWorkoutEntries([])).toEqual({ tag: '', vol: 0, min: 0, pr: 0, level: 'low', ex: [], sessionId: null });
+  });
+
+  it('단일 entry → 그대로 반환', () => {
+    const e = { tag: '가', vol: 100, min: 10, pr: 0, level: 'low', ex: [], sessionId: 's1' };
+    expect(mergeWorkoutEntries([e])).toBe(e);
+  });
+
+  it('같은 종목 weight 두 세션 → setCount/vol 합산, 표시 재포맷', () => {
+    const e1 = { tag: '가', vol: 600, min: 30, pr: 0, level: 'low', sessionId: 's1', ex: [{ n: '벤치프레스', s: '5세트 · 600kg', key: 'bench_press', kind: 'weight', setCount: 5, vol: 600 }] };
+    const e2 = { tag: '가', vol: 400, min: 20, pr: 1, level: 'low', sessionId: 's2', ex: [{ n: '벤치프레스', s: '3세트 · 400kg', key: 'bench_press', kind: 'weight', setCount: 3, vol: 400 }] };
+    const r = mergeWorkoutEntries([e1, e2]);
+    expect(r.vol).toBe(1000);
+    expect(r.min).toBe(50);
+    expect(r.pr).toBe(1);
+    expect(r.sessionId).toBe('s2');
+    expect(r.ex).toHaveLength(1);
+    expect(r.ex[0]).toMatchObject({ n: '벤치프레스', setCount: 8, vol: 1000, s: '8세트 · 1,000kg' });
+  });
+
+  it('다른 종목은 별도 row 로 누적', () => {
+    const e1 = { tag: '가', vol: 600, min: 30, pr: 0, level: 'low', sessionId: 's1', ex: [{ n: '벤치프레스', s: '5세트 · 600kg', key: 'bench_press', kind: 'weight', setCount: 5, vol: 600 }] };
+    const e2 = { tag: '등', vol: 720, min: 25, pr: 0, level: 'low', sessionId: 's2', ex: [{ n: '데드리프트', s: '4세트 · 720kg', key: 'deadlift', kind: 'weight', setCount: 4, vol: 720 }] };
+    const r = mergeWorkoutEntries([e1, e2]);
+    expect(r.ex).toHaveLength(2);
+    expect(r.ex[0].n).toBe('벤치프레스');
+    expect(r.ex[1].n).toBe('데드리프트');
+  });
+
+  it('cardio 합산 — durSec/distKm 합산', () => {
+    const e1 = { tag: '유', vol: 0, min: 30, pr: 0, level: 'low', sessionId: 's1', ex: [{ n: '트레드밀', s: '30분 · 5km', key: 'treadmill', kind: 'cardio', durSec: 1800, distKm: 5 }] };
+    const e2 = { tag: '유', vol: 0, min: 20, pr: 0, level: 'low', sessionId: 's2', ex: [{ n: '트레드밀', s: '20분 · 3km', key: 'treadmill', kind: 'cardio', durSec: 1200, distKm: 3 }] };
+    const r = mergeWorkoutEntries([e1, e2]);
+    expect(r.ex).toHaveLength(1);
+    expect(r.ex[0]).toMatchObject({ durSec: 3000, distKm: 8, s: '50분 · 8km' });
+  });
+
+  it('vol 합산 후 level 재계산 (low+high → high)', () => {
+    const e1 = { tag: '가', vol: 2000, min: 30, pr: 0, level: 'low', sessionId: 's1', ex: [] };
+    const e2 = { tag: '가', vol: 5000, min: 30, pr: 0, level: 'med', sessionId: 's2', ex: [] };
+    expect(mergeWorkoutEntries([e1, e2]).level).toBe('high');
   });
 });
 

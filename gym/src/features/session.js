@@ -310,6 +310,11 @@ export async function finalizeActiveSession(opts = {}) {
       status: 'completed',
     };
     await upsertSession(finalized);
+    try {
+      if (typeof sessionStorage !== 'undefined' && finalized.id) {
+        sessionStorage.setItem('gym.summary.sessionId', finalized.id);
+      }
+    } catch (_) { /* private mode */ }
     return { ok: true, session: finalized };
   } catch (e) {
     if (e && /window\.gymDB 미초기화/.test(String(e.message))) {
@@ -620,30 +625,16 @@ async function mountSessionActive(doc, block, session) {
   if (cardWeightEl) cardWeightEl.style.opacity = presetOpacity;
   if (cardRepsEl) cardRepsEl.style.opacity = presetOpacity;
 
-  // 직전 세션 동일 세트번호 표시 ("55kg × 9"). prev session 없거나 해당 set 부재 시 hidden.
-  // spec §6-3-3 의 preset 우선순위와 별개 — cardPrevSet 은 항상 직전 세션 기준.
-  const prevEl = doc.getElementById('cardPrevSet');
-  if (prevEl) {
-    let prevDisplay = null;
-    try {
-      const prevSessionSets = await getPrevSessionLastSets(block.exerciseId);
-      const p = prevSessionSets && prevSessionSets[cur];
-      if (p && Number.isFinite(p.weight) && Number.isFinite(p.reps)) {
-        prevDisplay = `${p.weight}kg × ${p.reps}`;
-      }
-    } catch (e) { console.error('[gymSession] cardPrevSet prev session lookup', e); }
-    if (prevDisplay) {
-      prevEl.textContent = prevDisplay;
-      prevEl.style.display = '';
-    } else {
-      prevEl.style.display = 'none';
-    }
-  }
+  // 직전 세션 동일 세트번호 lookup — S1..Sn dot 의 preview 표시에 사용 (spec §6-3-3).
+  let prevSessionSets = null;
+  try {
+    prevSessionSets = await getPrevSessionLastSets(block.exerciseId);
+  } catch (e) { console.error('[gymSession] prev session lookup', e); }
 
   // S1..Sn 도트 — diff-based 갱신 (DOM 유지로 transition 트리거) + 활성 set 가운데 정렬
   const setDotsEl = doc.getElementById('cardSetDots');
   if (setDotsEl) {
-    renderSetDotsDiff(setDotsEl, sets, cur);
+    renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets);
     const centerActiveSet = () => {
       const active = setDotsEl.querySelector('[data-current="1"]');
       if (!active) return;
@@ -751,15 +742,47 @@ function resolveExerciseName(id) {
   return id;
 }
 
-function renderSetDotHtml(idx, set, isCurrent) {
+/**
+ * dot 표시 값 결정. spec §6-3-3 우선순위 ①→②→③:
+ *  - done/current: 실제 sets[i] 값 (accent 톤)
+ *  - 미입력: ① 직전 세션 동일 세트번호 → ② 직전 입력 완료된 세트 (sets[j], j<i) → ③ sets[i] 자체 preset
+ *           → '—' (모두 없을 때). preview 는 회색 톤.
+ */
+export function resolveDotDisplay(sets, i, cur, prevSessionSets) {
+  const set = sets[i];
+  const isCurrent = i === cur;
+  const isDone = !!(set && set.done);
+  const hasOwn = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
+  if (isDone || isCurrent) {
+    return { text: hasOwn ? `${set.weight}·${set.reps}` : '—', isPreview: false };
+  }
+  // ① 직전 세션 동일 세트번호
+  const p = prevSessionSets && prevSessionSets[i];
+  if (p && Number.isFinite(p.weight) && Number.isFinite(p.reps)) {
+    return { text: `${p.weight}·${p.reps}`, isPreview: true };
+  }
+  // ② 직전 입력 완료된 세트
+  for (let j = i - 1; j >= 0; j -= 1) {
+    const s = sets[j];
+    if (s && s.done && Number.isFinite(s.weight) && Number.isFinite(s.reps)) {
+      return { text: `${s.weight}·${s.reps}`, isPreview: true };
+    }
+  }
+  // ③ sets[i] preset
+  if (hasOwn) return { text: `${set.weight}·${set.reps}`, isPreview: true };
+  return { text: '—', isPreview: true };
+}
+
+function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets) {
   // 단일 dot HTML — 초기 mount (innerHTML 한 번에 박을 때) 만 사용. 후속 mount 는 renderSetDotsDiff
   // 가 기존 DOM 갱신 (transition 트리거 보존).
   const setNum = idx + 1;
   const isDone = !!(set && set.done);
-  const color = (isCurrent || isDone) ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
+  const display = resolveDotDisplay(sets || [set], idx, isCurrent ? idx : -1, prevSessionSets);
+  const color = (isCurrent || isDone)
+    ? 'var(--accent)'
+    : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
   const weight = isCurrent ? '600' : '400';
-  const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
-  const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
   // 폰트 위계 — current 큰 (label 13px / value 17px), 그 외 작은 (10px / 13px). transition 으로 부드럽게.
   const labelSize = isCurrent ? '13px' : '10px';
   const valueSize = isCurrent ? '22px' : '13px';
@@ -767,7 +790,7 @@ function renderSetDotHtml(idx, set, isCurrent) {
   return `
         <div data-set-idx="${idx}"${currentAttr} data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};flex-shrink:0;cursor:pointer;transition:color 220ms ease-out, font-weight 220ms ease-out;">
           <div style="font-size:${labelSize};letter-spacing:0.06em;transition:font-size 220ms ease-out;">S${setNum}</div>
-          <div style="font-size:${valueSize};margin-top:4px;transition:font-size 220ms ease-out;">${escapeHtml(valueText)}</div>
+          <div style="font-size:${valueSize};margin-top:4px;transition:font-size 220ms ease-out;">${escapeHtml(display.text)}</div>
         </div>`;
 }
 
@@ -777,14 +800,15 @@ function renderSetDotHtml(idx, set, isCurrent) {
  *  - 부족하면 append, 초과하면 remove
  *  - 활성 set 변경 시 font-size 220ms transition 자연 트리거 (DOM 유지)
  */
-function renderSetDotsDiff(setDotsEl, sets, cur) {
+function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets) {
   if (!setDotsEl) return;
   let appendedCount = 0;
   // 부족한 dot 추가 — 새 dot 은 initial style (isCurrent=false, 작은 폰트) 로 박힘.
   // 그 다음 force reflow 로 layout commit → for loop 갱신 시 transition trigger.
   while (setDotsEl.children.length < sets.length) {
     const wrap = document.createElement('div');
-    wrap.innerHTML = renderSetDotHtml(setDotsEl.children.length, sets[setDotsEl.children.length], false);
+    const idx = setDotsEl.children.length;
+    wrap.innerHTML = renderSetDotHtml(idx, sets[idx], false, sets, cur, prevSessionSets);
     const dot = wrap.firstElementChild;
     if (dot) {
       setDotsEl.appendChild(dot);
@@ -806,9 +830,10 @@ function renderSetDotsDiff(setDotsEl, sets, cur) {
     const set = sets[i];
     const isCurrent = i === cur;
     const isDone = !!(set && set.done);
-    const hasVal = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
-    const valueText = (isDone || isCurrent) && hasVal ? `${set.weight}·${set.reps}` : '—';
-    const color = (isCurrent || isDone) ? 'var(--accent)' : 'rgba(255,255,255,0.25)';
+    const display = resolveDotDisplay(sets, i, cur, prevSessionSets);
+    const color = (isCurrent || isDone)
+      ? 'var(--accent)'
+      : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
     const weight = isCurrent ? '600' : '400';
     const labelSize = isCurrent ? '13px' : '10px';
     const valueSize = isCurrent ? '22px' : '13px';
@@ -825,7 +850,7 @@ function renderSetDotsDiff(setDotsEl, sets, cur) {
       labelEl.style.fontSize = labelSize;
     }
     if (valueEl) {
-      valueEl.textContent = valueText;
+      valueEl.textContent = display.text;
       valueEl.style.fontSize = valueSize;
     }
   }

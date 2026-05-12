@@ -116,6 +116,7 @@ function applyAuthGuard(route) {
 const ROUTE_MOUNTS = Object.freeze({
   home: () => window.gymHome?.mountHomeView?.(),
   session: () => window.gymSession?.mountSessionView?.(),
+  summary: () => window.gymSessionSummary?.mountSummaryView?.(),
   stats: () => window.gymStats?.mountStatsView?.(),
   admin: () => window.gymManage?.mountManageView?.(),
 });

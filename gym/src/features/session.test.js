@@ -30,6 +30,7 @@ import {
   discardActiveSession,
   computeDropIdx,
   performBlockReorder,
+  resolveDotDisplay,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -2073,5 +2074,44 @@ describe('wireLongPress cross-cancel (f-3a)', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('resolveDotDisplay (D — dot preview 우선순위)', () => {
+  it('done 세트 → 실제 값', () => {
+    const sets = [{ weight: 90, reps: 8, done: true }];
+    expect(resolveDotDisplay(sets, 0, 1, null)).toEqual({ text: '90·8', isPreview: false });
+  });
+
+  it('current 세트 → 실제 값', () => {
+    const sets = [{ weight: 90, reps: 8, done: false, preset: true }];
+    expect(resolveDotDisplay(sets, 0, 0, null)).toEqual({ text: '90·8', isPreview: false });
+  });
+
+  it('미입력 + 직전 세션 동일 세트번호 있음 → 직전 세션 값 preview', () => {
+    const sets = [{ weight: 0, reps: 0, done: false, preset: true }, { weight: 0, reps: 0, done: false, preset: true }];
+    const prev = [{ weight: 90, reps: 8 }, { weight: 95, reps: 6 }];
+    expect(resolveDotDisplay(sets, 1, 0, prev)).toEqual({ text: '95·6', isPreview: true });
+  });
+
+  it('미입력 + 직전 세션 없음 + 직전 입력 세트 있음 → 직전 세트 값 preview', () => {
+    const sets = [{ weight: 100, reps: 5, done: true }, { weight: 0, reps: 0, done: false, preset: true }];
+    expect(resolveDotDisplay(sets, 1, 0, null)).toEqual({ text: '100·5', isPreview: true });
+  });
+
+  it('미입력 + 직전 세션·직전 세트 없음 + 자체 preset 값 → 그 값 preview', () => {
+    const sets = [{ weight: 60, reps: 10, done: false, preset: true }, { weight: 60, reps: 10, done: false, preset: true }];
+    expect(resolveDotDisplay(sets, 0, 1, null)).toEqual({ text: '60·10', isPreview: true });
+  });
+
+  it('값 전부 부재 → 대시', () => {
+    const sets = [{ weight: null, reps: null, done: false }];
+    expect(resolveDotDisplay(sets, 0, 1, null)).toEqual({ text: '—', isPreview: true });
+  });
+
+  it('직전 세션 우선순위가 직전 세트보다 높음', () => {
+    const sets = [{ weight: 100, reps: 5, done: true }, { weight: 0, reps: 0, done: false, preset: true }];
+    const prev = [{ weight: 90, reps: 8 }, { weight: 95, reps: 6 }];
+    expect(resolveDotDisplay(sets, 1, 0, prev)).toEqual({ text: '95·6', isPreview: true });
   });
 });

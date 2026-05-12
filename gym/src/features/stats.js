@@ -196,15 +196,13 @@ function formatExEntrySpec(block) {
   if (!doneSets.length) return null;
   const firstSet = doneSets[0];
   if (firstSet && firstSet.duration != null) {
-    const min = Math.round(Number(firstSet.duration) / 60);
-    const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
-    return { n: name, s: `${min}분${km}` };
+    const durSec = Number(firstSet.duration) || 0;
+    const distKm = Number(firstSet.distance) || 0;
+    const km = distKm ? ` · ${distKm}km` : '';
+    return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: block.exerciseId, kind: 'cardio', durSec, distKm };
   }
-  const total = doneSets.reduce(
-    (sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0),
-    0,
-  );
-  return { n: name, s: `${doneSets.length}세트 · ${total.toLocaleString()}kg` };
+  const total = doneSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
+  return { n: name, s: `${doneSets.length}세트 · ${total.toLocaleString()}kg`, key: block.exerciseId, kind: 'weight', setCount: doneSets.length, vol: total };
 }
 
 function formatExEntryMocks(ex) {
@@ -214,19 +212,55 @@ function formatExEntryMocks(ex) {
   if (!sets.length) return null;
   const firstSet = sets[0];
   if (firstSet && firstSet.duration != null) {
-    const min = Math.round(Number(firstSet.duration) / 60);
-    const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
-    return { n: name, s: `${min}분${km}` };
+    const durSec = Number(firstSet.duration) || 0;
+    const distKm = Number(firstSet.distance) || 0;
+    const km = distKm ? ` · ${distKm}km` : '';
+    return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: ex.exerciseId || name, kind: 'cardio', durSec, distKm };
   }
-  const total = sets.reduce(
-    (sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0),
-    0,
-  );
-  return { n: name, s: `${sets.length}세트 · ${total.toLocaleString()}kg` };
+  const total = sets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
+  return { n: name, s: `${sets.length}세트 · ${total.toLocaleString()}kg`, key: ex.exerciseId || name, kind: 'weight', setCount: sets.length, vol: total };
 }
 
 function defaultEntry() {
   return { tag: '', vol: 0, min: 0, pr: 0, level: 'low', ex: [], sessionId: null };
+}
+
+export function mergeWorkoutEntries(entries) {
+  const list = Array.isArray(entries) ? entries.filter(Boolean) : [];
+  if (!list.length) return defaultEntry();
+  if (list.length === 1) return list[0];
+  let vol = 0, min = 0, pr = 0, tag = '', sessionId = null;
+  const byKey = new Map();
+  const order = [];
+  for (const entry of list) {
+    vol += Number(entry.vol) || 0;
+    min += Number(entry.min) || 0;
+    pr += Number(entry.pr) || 0;
+    if (!tag && entry.tag) tag = entry.tag;
+    if (entry.sessionId) sessionId = entry.sessionId;
+    for (const item of Array.isArray(entry.ex) ? entry.ex : []) {
+      if (!item) continue;
+      const k = (item.key || item.n) + '::' + (item.kind || 'weight');
+      const existing = byKey.get(k);
+      if (!existing) {
+        byKey.set(k, { ...item });
+        order.push(k);
+        continue;
+      }
+      if (item.kind === 'cardio') {
+        existing.durSec = (existing.durSec || 0) + (item.durSec || 0);
+        existing.distKm = (existing.distKm || 0) + (item.distKm || 0);
+        const km = existing.distKm ? ` · ${existing.distKm}km` : '';
+        existing.s = `${Math.round(existing.durSec / 60)}분${km}`;
+      } else {
+        existing.setCount = (existing.setCount || 0) + (item.setCount || 0);
+        existing.vol = (existing.vol || 0) + (item.vol || 0);
+        existing.s = `${existing.setCount}세트 · ${existing.vol.toLocaleString()}kg`;
+      }
+    }
+  }
+  const level = vol < 3000 ? 'low' : vol < 6000 ? 'med' : 'high';
+  return { tag, vol, min, pr, level, ex: order.map((k) => byKey.get(k)), sessionId };
 }
 
 /**
@@ -540,6 +574,7 @@ if (typeof window !== 'undefined') {
     applyTodayToCalendar,
     parseMonthLabel,
     sessionToWorkoutEntry,
+    mergeWorkoutEntries,
     applyWorkedToCalendar,
     deleteSessionByDay,
     deleteSessionByISO,
