@@ -784,31 +784,34 @@ function applyCardKind(doc, kind) {
   const progressBar = doc.getElementById('cardProgressBar');
   const progressVol = doc.getElementById('cardProgressVol');
   const progressPct = doc.getElementById('cardProgressPct');
-  const setProgressVis = (display) => {
-    if (progressBar?.parentElement) progressBar.parentElement.style.display = display;
-    if (progressVol?.parentElement) progressVol.parentElement.style.display = display;
+  // mocks/session.html 의 cardSetDots / progressVol 부모는 inline display:flex.
+  // style.display='' 는 inline 을 wipe → block 으로 fallback (세로 쌓임 회귀).
+  // 따라서 hide 외엔 'flex' 로 명시. progressBar 부모는 inline display 없음 → 'block' 명시.
+  const setProgressVis = (show) => {
+    if (progressBar?.parentElement) progressBar.parentElement.style.display = show ? 'block' : 'none';
+    if (progressVol?.parentElement) progressVol.parentElement.style.display = show ? 'flex' : 'none';
   };
   if (kind === 'cardio') {
     if (weightUnit) weightUnit.textContent = '분';
     if (repsUnit) repsUnit.textContent = 'km';
     if (weightEl) weightEl.style.fontSize = '132px';
     if (setDotsEl) setDotsEl.style.display = 'none';
-    if (paceEl) paceEl.style.display = '';
-    setProgressVis('none');
+    if (paceEl) paceEl.style.display = 'block';
+    setProgressVis(false);
   } else if (kind === 'bodyweight') {
     if (weightUnit) weightUnit.textContent = '';
     if (repsUnit) repsUnit.textContent = '회';
     if (weightEl) weightEl.style.fontSize = '32px';
-    if (setDotsEl) setDotsEl.style.display = '';
+    if (setDotsEl) setDotsEl.style.display = 'flex';
     if (paceEl) paceEl.style.display = 'none';
-    setProgressVis('');
+    setProgressVis(true);
   } else {
     if (weightUnit) weightUnit.textContent = '킬로그램';
     if (repsUnit) repsUnit.textContent = '회';
     if (weightEl) weightEl.style.fontSize = '132px';
-    if (setDotsEl) setDotsEl.style.display = '';
+    if (setDotsEl) setDotsEl.style.display = 'flex';
     if (paceEl) paceEl.style.display = 'none';
-    setProgressVis('');
+    setProgressVis(true);
   }
 }
 
