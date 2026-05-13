@@ -1,0 +1,111 @@
+{
+  "lang": "ja",
+  "date": "2026-05-13",
+  "_note": "Stage 1 콩트 'やばい！' (안경 소년 + 해결사). ja 가이드 §5.2 콩트 단위 학습 첫 시도. 학습 풀 < 10종 → §4 보강 규정대로 stretch 비활성, 모든 카드 Stage 1, 한자 0개. drift 형식 + scene 메타 5필드 + politeness 라벨.",
+  "cards": [
+    {
+      "id": "ja-2026-05-13-1",
+      "order_index": 1,
+      "sentence": "だめですよ！",
+      "meaning": "안 돼요!",
+      "reading": "だめですよ！",
+      "phonetic_kr": "다메데스요!",
+      "explanation": {
+        "whenToUse": "정중하게 강한 거절·금지·잔소리 시작. 안경 소년의 시그니처 톤.",
+        "grammar": "だめ(안 됨/소용없음) + です(정중) + よ(강조 종조사)",
+        "pronPoints": "です → 데스(묵음). よ → 요(조사, 발음대로). だめですよ 한 호흡으로.",
+        "mistake": "'다메 데스 요' 끊어 X → '다메데스요' 한 덩어리. よ 짧고 강하게.",
+        "similar": "ダメだよ(보통체) / だめだめ(강조 반복)",
+        "stage": 1,
+        "newElements": ["だめ"],
+        "knownElements": ["です", "よ"],
+        "frequency": 10,
+        "category": "감탄/반응",
+        "scene_id": "scene-2026-05-13-yabai",
+        "scene_order": 1,
+        "scene_title": "やばい！",
+        "speaker": "안경 소년",
+        "is_stretch": false,
+        "politeness": "polite"
+      }
+    },
+    {
+      "id": "ja-2026-05-13-2",
+      "order_index": 2,
+      "sentence": "うん。",
+      "meaning": "응.",
+      "reading": "うん。",
+      "phonetic_kr": "운.",
+      "explanation": {
+        "whenToUse": "친한 사이 짧은 긍정 반응. 잠에서 깨어났을 때 멍한 톤도 가능 — 해결사 시그니처.",
+        "grammar": "うん = 긍정 반응 (감탄사)",
+        "pronPoints": "うん → 운 (ん 변이 — ㄴ 받침). 짧고 명확.",
+        "mistake": "'우-ㄴ' 길게 X → 짧은 '운'. ん 입 다물고 ㄴ 받침.",
+        "similar": "ああ(긍정·이해) / はい(정중)",
+        "stage": 1,
+        "newElements": ["うん"],
+        "knownElements": [],
+        "frequency": 10,
+        "category": "감탄/반응",
+        "scene_id": "scene-2026-05-13-yabai",
+        "scene_order": 2,
+        "scene_title": "やばい！",
+        "speaker": "해결사",
+        "is_stretch": false,
+        "politeness": "casual"
+      }
+    },
+    {
+      "id": "ja-2026-05-13-3",
+      "order_index": 3,
+      "sentence": "またですか？",
+      "meaning": "또요?",
+      "reading": "またですか？",
+      "phonetic_kr": "마타데스카?",
+      "explanation": {
+        "whenToUse": "기대 어긋났을 때 가벼운 항의·놀람. 끝 톤 올림.",
+        "grammar": "また(또) + です(정중) + か(의문 종조사)",
+        "pronPoints": "です → 데스(묵음). か → 카(의문 종조사, 발음대로).",
+        "mistake": "か 평서 톤 X → 끝 톤 살짝 올림 '?' 의문 톤.",
+        "similar": "また？(보통체) / もう一回？(보통·강조)",
+        "stage": 1,
+        "newElements": ["か"],
+        "knownElements": ["また", "です"],
+        "frequency": 9,
+        "category": "감탄/반응",
+        "scene_id": "scene-2026-05-13-yabai",
+        "scene_order": 3,
+        "scene_title": "やばい！",
+        "speaker": "안경 소년",
+        "is_stretch": false,
+        "politeness": "polite"
+      }
+    },
+    {
+      "id": "ja-2026-05-13-4",
+      "order_index": 4,
+      "sentence": "やばい。",
+      "meaning": "큰일이다.",
+      "reading": "やばい。",
+      "phonetic_kr": "야바이.",
+      "explanation": {
+        "whenToUse": "위험·곤란·예상 외 상황 즉각 반응. 일상 회화 만능 표현. 펀치라인 — 멍한 톤으로 위험을 가볍게.",
+        "grammar": "やばい = 형용사 (위험·곤란·놀람)",
+        "pronPoints": "やばい → 야바이 (특별 패턴 X — 평음). 상황별 톤 다름.",
+        "mistake": "톤 평범 X → 상황별 강세 (위험: 강한 '야바이!' / 멍함: 늘어진 '야~바이').",
+        "similar": "まずい(좋지 않다, 음식 맥락 주의) / ヤバい(긍정 강조)",
+        "stage": 1,
+        "newElements": ["やばい"],
+        "knownElements": [],
+        "frequency": 10,
+        "category": "감탄/반응",
+        "scene_id": "scene-2026-05-13-yabai",
+        "scene_order": 4,
+        "scene_title": "やばい！",
+        "speaker": "해결사",
+        "is_stretch": false,
+        "politeness": "casual"
+      }
+    }
+  ]
+}
