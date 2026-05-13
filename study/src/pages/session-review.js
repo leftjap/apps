@@ -389,6 +389,17 @@ function buildMain(state, ctrl) {
   h1.innerHTML = wrapWords(state.sentence.sentence);
   wrap.appendChild(h1);
 
+  // ja 가이드 §3.1 reading top-level — 한자 든 문장에서 가나 reading 별도 표시.
+  const readingVal = state.sentence?.reading;
+  if (readingVal && readingVal !== state.sentence.sentence) {
+    const readingEl = document.createElement('div');
+    const readingSize = state.size === 'phone' ? 16 : (state.size === 'tablet' ? 19 : 20);
+    const readingMt = state.size === 'phone' ? 10 : 14;
+    readingEl.style.cssText = `font-size:${readingSize}px;color:var(--text-muted);margin-top:${readingMt}px;font-family:var(--font-display);`;
+    readingEl.textContent = readingVal;
+    wrap.appendChild(readingEl);
+  }
+
   const pron = document.createElement('div');
   const pronSize = state.size === 'phone' ? 14 : (state.size === 'tablet' ? 17 : 18);
   const pronMt = state.size === 'phone' ? 14 : 22;

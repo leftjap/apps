@@ -42,7 +42,11 @@ function section(label, contentHtml) {
 }
 
 function grammarSection(grammar) {
-  const has = Array.isArray(grammar) ? grammar.length > 0 : String(grammar || '').trim() !== '';
+  const isArr = Array.isArray(grammar);
+  const isObj = grammar && typeof grammar === 'object' && !isArr;
+  const has = isArr ? grammar.length > 0
+    : isObj ? Boolean(grammar.structure || grammar.explanation || grammar.struct || grammar.body)
+    : String(grammar || '').trim() !== '';
   if (!has) return null;
   const s = document.createElement('div');
   s.className = 'ex-section';
@@ -50,7 +54,7 @@ function grammarSection(grammar) {
   lab.className = 'ex-label';
   lab.textContent = '문법 뜯어보기';
   s.appendChild(lab);
-  if (Array.isArray(grammar)) {
+  if (isArr) {
     grammar.forEach((g) => {
       const block = document.createElement('div');
       block.className = 'grammar-block';
@@ -72,6 +76,30 @@ function grammarSection(grammar) {
       }
       s.appendChild(block);
     });
+  } else if (isObj) {
+    // ja 가이드 §3.3 정본 형식: {structure, explanation, korean_parallel}
+    const block = document.createElement('div');
+    block.className = 'grammar-block';
+    if (grammar.structure || grammar.struct) {
+      const struct = document.createElement('div');
+      struct.className = 'struct';
+      struct.innerHTML = grammar.structure || grammar.struct || '';
+      block.appendChild(struct);
+    }
+    if (grammar.explanation || grammar.body) {
+      const body = document.createElement('div');
+      body.className = 'ex-text';
+      body.innerHTML = grammar.explanation || grammar.body || '';
+      block.appendChild(body);
+    }
+    if (grammar.korean_parallel) {
+      const kp = document.createElement('div');
+      kp.className = 'ex-text';
+      kp.style.cssText = 'color:var(--text-muted);margin-top:6px;font-size:14px;';
+      kp.innerHTML = `<span style="color:var(--text-faint);">한국어 어순:</span> ${grammar.korean_parallel}`;
+      block.appendChild(kp);
+    }
+    s.appendChild(block);
   } else {
     const txt = document.createElement('div');
     txt.className = 'ex-text';
@@ -141,6 +169,86 @@ function kanjiBreakdownSection(items) {
 
 const POLITENESS_LABEL = { casual: '보통체', polite: '정중체', formal: '격식체' };
 
+// ja 가이드 §3.4 정본 pronunciation 객체 분기 — chunks/tips/weak_focus 통합 표시
+function pronunciationObjectSection(pron) {
+  if (!pron || typeof pron !== 'object') return null;
+  const hasAny = pron.chunks || pron.tips || (Array.isArray(pron.weak_focus) && pron.weak_focus.length > 0);
+  if (!hasAny) return null;
+  const s = document.createElement('div');
+  s.className = 'ex-section';
+  const lab = document.createElement('div');
+  lab.className = 'ex-label';
+  lab.textContent = '발음 포인트';
+  s.appendChild(lab);
+  // chunks
+  if (Array.isArray(pron.chunks) && pron.chunks.length > 0) {
+    const row = document.createElement('div');
+    row.className = 'chunk-row';
+    pron.chunks.forEach((c) => {
+      const item = document.createElement('div');
+      item.className = 'chunk';
+      const main = document.createElement('span');
+      main.className = 'chunk-en';
+      main.textContent = c.ja || c.en || '';
+      const kr = document.createElement('span');
+      kr.className = 'chunk-kr';
+      kr.textContent = c.kr || '';
+      item.append(main, kr);
+      row.appendChild(item);
+    });
+    s.appendChild(row);
+  }
+  // tips
+  if (pron.tips) {
+    const tips = document.createElement('div');
+    tips.className = 'ex-text';
+    tips.style.cssText = 'margin-top:8px;';
+    tips.innerHTML = pron.tips;
+    s.appendChild(tips);
+  }
+  // weak_focus (패턴 이름 배열)
+  if (Array.isArray(pron.weak_focus) && pron.weak_focus.length > 0) {
+    const tags = document.createElement('div');
+    tags.className = 'phoneme-tags';
+    tags.style.cssText = 'margin-top:8px;';
+    pron.weak_focus.forEach((wf) => {
+      const tag = document.createElement('span');
+      tag.className = 'phoneme-tag';
+      tag.textContent = String(wf);
+      tags.appendChild(tag);
+    });
+    s.appendChild(tags);
+  }
+  return s;
+}
+
+// ja 가이드 §3.8 정본 similar 객체 배열 분기 — [{expression, politeness, nuance}]
+function similarObjectSection(similar) {
+  if (!Array.isArray(similar) || similar.length === 0) return null;
+  const s = document.createElement('div');
+  s.className = 'ex-section';
+  const lab = document.createElement('div');
+  lab.className = 'ex-label';
+  lab.textContent = '비슷한 표현';
+  s.appendChild(lab);
+  similar.forEach((item) => {
+    if (!item || typeof item !== 'object') return;
+    const row = document.createElement('div');
+    row.className = 'ex-text';
+    row.style.cssText = 'margin-bottom:6px;';
+    const parts = [];
+    if (item.expression) parts.push(`<strong>${item.expression}</strong>`);
+    if (item.politeness) {
+      const lbl = POLITENESS_LABEL[item.politeness] || item.politeness;
+      parts.push(`<span style="color:var(--text-faint);font-size:12px;margin-left:6px;">[${lbl}]</span>`);
+    }
+    if (item.nuance) parts.push(`<span style="color:var(--text-muted);"> — ${item.nuance}</span>`);
+    row.innerHTML = parts.join('');
+    s.appendChild(row);
+  });
+  return s;
+}
+
 function phonemesSection(phonemes) {
   if (!Array.isArray(phonemes) || phonemes.length === 0) return null;
   const s = document.createElement('div');
@@ -190,11 +298,18 @@ export function createExplanationPanel({ explanation, lang } = {}) {
     if (c) panelEl.appendChild(c);
     const p = phonemesSection(ex.phonemes);
     if (p) panelEl.appendChild(p);
+    // ja 가이드 §3.4 정본 pronunciation 객체 (chunks/tips/weak_focus 통합)
+    const po = pronunciationObjectSection(ex.pronunciation);
+    if (po) panelEl.appendChild(po);
     if (ex.pronPoints) panelEl.appendChild(section('발음 포인트', String(ex.pronPoints)));
     const kb = kanjiBreakdownSection(ex.kanji_breakdown);
     if (kb) panelEl.appendChild(kb);
     if (ex.mistake) panelEl.appendChild(section('한국인 실수', String(ex.mistake)));
-    if (ex.similar) panelEl.appendChild(section('비슷한 표현', String(ex.similar)));
+    if (ex.commonMistakes) panelEl.appendChild(section('한국인 실수', String(ex.commonMistakes)));
+    // ja 가이드 §3.8 정본 similar 객체 배열
+    const so = similarObjectSection(ex.similar);
+    if (so) panelEl.appendChild(so);
+    else if (ex.similar && typeof ex.similar === 'string') panelEl.appendChild(section('비슷한 표현', String(ex.similar)));
   }
 
   let isOpen = false;
