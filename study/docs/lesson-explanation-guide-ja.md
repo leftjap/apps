@@ -45,7 +45,7 @@ i+1 은 **문장 자체 난이도** 에 적용. 해설 깊이가 아님.
 
 ## 3. explanation 스키마 (ja 트랙)
 
-영어 트랙과 동일 구조 + ja 특수 자산 (`korean_parallel` / `kanji_breakdown` / `politeness`). **콩트 운영 시 scene 메타 5필드 (§6.2) 가 같이 nested 됨.**
+영어 트랙과 동일 구조 + ja 특수 자산 (`korean_parallel` / `kanji_breakdown` / `politeness`). **콩트 운영 시 scene 메타 5필드 (§5.2) 가 같이 nested 됨.**
 
 ```json
 {
@@ -57,11 +57,11 @@ i+1 은 **문장 자체 난이도** 에 적용. 해설 깊이가 아님.
     "frequency": 9,
     "category": "상태/진행",
 
-    // 콩트 메타 (5필드, §6.2)
+    // 콩트 메타 (5필드, §5.2)
     "scene_id": "scene-2026-05-13-cafe",
     "scene_order": 2,
     "scene_title": "오늘의 모닝",
-    "speaker": "TBD",
+    "speaker": "해결사",
     "is_stretch": false,
 
     // ja 본 필드
@@ -170,7 +170,7 @@ te형·조건문·수수동사·가능형. politeness 의식적 구분 시작.
 
 ### Stage 가드 (en §5 와 동일 구조)
 - 콩트 내 모든 문장 stage 메타 ∈ `{currentStage, currentStage + 1}`
-- `currentStage + 1` 문장은 **stretch** (§6.2)
+- `currentStage + 1` 문장은 **stretch** (§5.2)
 - `currentStage + 2` 이상 점프 금지
 
 ---
@@ -201,7 +201,7 @@ Stage 1~2 빈출 표현 200~500문장 풀을 미리 생성. 각 문장에 메타
 
 ---
 
-## 6.2 콩트 단위 운영 (Skit-based Sessions)
+## 5.2 콩트 단위 운영 (Skit-based Sessions)
 
 문장 단위 무관계 학습 → 짧은 콩트 단위로 묶어서 학습. 한 세션 = 1 콩트 (Stage 별 분량 §4 참조, 캐릭터 2~3명, 펀치라인 1개).
 
@@ -217,7 +217,7 @@ Stage 1~2 빈출 표현 200~500문장 풀을 미리 생성. 각 문장에 메타
 | `scene_id` | string | 같은 콩트 모든 문장 공유 (`scene-<YYYY-MM-DD>-<slug>`). PWA 묶음 표시 + SRS 그룹 복습 |
 | `scene_order` | 1~N | 콩트 내 문장 순서. 1, 2, 3... 연속 (점프 X) |
 | `scene_title` | string | 콩트 제목 (UI 헤더) |
-| `speaker` | string | 화자 한국식 호칭 (캐릭터 풀 확정 wave 전까지 `"TBD"` 허용) |
+| `speaker` | string | 화자 한국식 호칭 (§5.2 캐릭터 풀 4명 중 하나 — 검은 잡종 / 해결사 / 안경 소년 / 외계 소녀) |
 | `is_stretch` | boolean | currentStage+1 어휘 사용 여부 |
 
 ### default + stretch 비율 (en 과 완전 동일)
@@ -230,13 +230,35 @@ Stage 1~2 빈출 표현 200~500문장 풀을 미리 생성. 각 문장에 메타
 
 **배치 권장**: 1번 문장 default (진입 부담 ↓) → stretch 는 중간이나 펀치라인.
 
-### 캐릭터 풀 — 사용자 별도 세션 결정 대기 (Placeholder)
+### 캐릭터 풀 4명
 
-| # | 슬롯 | 톤 방향 | 적합 Stage |
-|---|---|---|---|
-| TBD | (사용자 별도 세션에서 확정) | — | — |
+한국식 호칭은 **메타에만** 박힘. sentence 안에는 일본어 100% (캐릭터 일본 이름은 sentence 안 자연 등장 가능).
 
-> 캐릭터 슬롯의 구체 인격·이름·톤은 사용자가 별도 세션에서 확정 예정. 본 가이드의 §6.2 콩트 구조는 캐릭터 풀 확정 후 wave 에서 실제 캐릭터 데이터로 교체된다. **그 wave 전까지 콩트 생성 보류.**
+| # | 이름 | 한국식 호칭 | 톤 | speech_style | 1인칭 | 적합 Stage |
+|---|---|---|---|---|---|---|
+| 1 | クロタロウ | 검은 잡종 | 거친 입·욕설·야한 자체검열(삐—)·사무라이 우김·제4의 벽·낮자존감 거대자존심 | casual (야쿠자체) | `俺様` / `ワシ` | 3~5 |
+| 2 | ギン | 해결사 | 죽은 눈·게으름·만화·푸딩·전설 검사 출신·결정적 변모·콧방귀 마무리 | casual (격앙 시 정색) | `俺` | 2~5 |
+| 3 | ハチ | 안경 소년 | 츳코미·큰소리·사회상식 짚기·평균 능력 자조·결심 | polite ~ casual | `僕` | 1~5 |
+| 4 | ルル | 외계 소녀 | 폭식·우산 무기·야쿠자 말투·가족 충성·트림·코후비기 | casual (욕설 섞임) | `あたし` | 2~5 |
+
+### Stage 별 등장 가능 페어
+
+| Stage | 등장 가능 | 권장 페어 (다이내믹) |
+|---|---|---|
+| 1 | 3 (+ 2 보조) | 안경 + 해결사 — 츳코미 + 게으름 boke. Stage 1 어휘 풀 (반응·인사·종조사) 안에서 짧은 vignette |
+| 2 | 2·3 (+ 4 stretch) | 해결사 + 안경 (메인) / 안경 + 외계 (외계 stretch 어휘) |
+| 3 | 1·2·3·4 모두 | 4인 풀 등장 가능. 권장 페어 — 해결사 + 외계 (가족 동거 다이내믹), 안경 + 잡종 (츳코미 + boke 카오스) |
+| 4 | 1·2·3·4 모두 | 3인 조합 (해결사·안경·외계) 본격 시트콤. 잡종 고양이 합류로 4인 카오스 |
+| 5 | 1·2·3·4 모두 | 모든 페어 가능. 미묘한 표현 + 사무라이 톤 (잡종) / 진지한 변모 (해결사) 가능 |
+
+### 캐릭터-stage 정합 원칙
+
+화자의 어휘 stage 가 캐릭터 톤과 자연 정합:
+- Stage 1 콩트는 **안경 (ハチ)** 가 메인 화자. 츳코미 짧은 대사 (`やめてください` `だめですよ` 등) 가 Stage 1 어휘 풀과 자연 정합
+- 해결사 (ギン) 는 stage 무관 default 화자 — 게으름·짧은 반응 (`めんどくさい` `知らない`) 으로 Stage 1~5 자연
+- **잡종 (クロタロウ)** 등장 시 → 거친 어휘 / 사무라이 톤 = stretch 후보 1순위 (Stage 3+)
+- **외계 (ルル)** 등장 시 → 야쿠자 말투 + 외계 특수 어휘 = stretch 후보 (Stage 2 부터 가능, 본격은 3+)
+- 정중체/보통체 일관성: 각 캐릭터의 `speech_style` 따라 1인칭·종조사·문말 표현 turn 마다 일관
 
 ### ja 콩트 특수 원칙 (en 과 다른 부분, 캐릭터 무관하게 적용)
 
@@ -370,7 +392,7 @@ ja 어휘 자산 부족 (~N3 까지 ~3,750 추정) 시 expression 타입 (자유
 - [ ] 각 variation 의 `answers` 배열이 비어있지 않은가
 - [ ] `commonMistakes` 에 한국인 학습자 관점 명시되어 있는가
 
-### 콩트 정합 (§6.2)
+### 콩트 정합 (§5.2)
 
 - [ ] 콩트 모든 문장이 같은 `scene_id` 공유
 - [ ] `scene_order` 가 1~N 연속 (점프 없음)
@@ -379,9 +401,10 @@ ja 어휘 자산 부족 (~N3 까지 ~3,750 추정) 시 expression 타입 (자유
 - [ ] 모든 stretch 문장 `stage === currentStage + 1` 이고 `is_stretch: true`
 - [ ] default 문장 `stage === currentStage` 이고 `is_stretch: false`
 - [ ] `currentStage + 2` 이상 점프 없음
-- [ ] `speaker` 메타가 박힘 (캐릭터 풀 확정 wave 전까지 `"TBD"` 허용)
-- [ ] sentence 안에는 한국식 호칭 0건 (일본어 100%)
-- [ ] 화자별 `speech_style` (casual/polite/formal) 이 turn 마다 일관 — 캐릭터 풀 확정 wave 부터 본격 검증
+- [ ] `speaker` 한국식 호칭이 §5.2 캐릭터 풀 4명 안 (검은 잡종 / 해결사 / 안경 소년 / 외계 소녀)
+- [ ] sentence 안에는 한국식 호칭 0건 (일본어 100%, 캐릭터 일본 이름은 sentence 안 자연 등장 가능)
+- [ ] 화자별 `speech_style` (casual/polite/formal) 이 turn 마다 일관 — §5.2 캐릭터 정의의 speech_style 준수
+- [ ] 캐릭터 캐스팅이 currentStage 의 등장 가능 풀 안 (Stage 1 → 3 메인 + 2 보조 / Stage 2 → 2·3·4 / Stage 3+ → 1·2·3·4 전부)
 
 ### explanation 신규 필드 정합
 
@@ -396,7 +419,7 @@ ja 어휘 자산 부족 (~N3 까지 ~3,750 추정) 시 expression 타입 (자유
 
 ---
 
-## 12. spec 영향 영역 (별 wave 진행)
+## 11. spec 영향 영역 (별 wave 진행)
 
 본 가이드 운영을 위한 spec 변경:
 
@@ -410,7 +433,7 @@ user_known_vocab (user_id, vocab_id, learned_at)
 -- 문장 메타데이터
 sentence_elements (sentence_id, kanji_ids[], grammar_ids[], vocab_ids[])
 
--- 콩트 메타 (en 가이드 §6.2 / ja §6.2 공통, JSONB 안 nested 가능)
+-- 콩트 메타 (en 가이드 §6.2 / ja §5.2 공통 — 번호만 다름, 구조 동일. JSONB 안 nested 가능)
 -- scene_id / scene_order / scene_title / speaker / is_stretch
 ```
 
@@ -429,7 +452,7 @@ sentence_elements (sentence_id, kanji_ids[], grammar_ids[], vocab_ids[])
 
 ---
 
-## 13. 출처
+## 12. 출처
 
 - **i+1 / Comprehensible Input**: Krashen Input Hypothesis (학습자 현재 수준 i 보다 정확히 한 단계 위 인풋)
 - **i+1 sentence card 운영**: jpdb.io (이미 안다고 표시한 단어를 추적, 새 단어 1개만 모르는 문장 자동 출제)
@@ -440,7 +463,7 @@ sentence_elements (sentence_id, kanji_ids[], grammar_ids[], vocab_ids[])
 
 ---
 
-## 14. 참조 경로
+## 13. 참조 경로
 
 - 본 가이드의 출처 spec: [../specs/study-app-spec.md](../specs/study-app-spec.md) §5, §8-3
 - 형식 메타 (en/ja 공통): [./explanation-schema.md](./explanation-schema.md)
