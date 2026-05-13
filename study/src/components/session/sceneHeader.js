@@ -61,7 +61,7 @@ export function createSceneHeader({ explanation } = {}) {
       el.style.display = 'none';
       return;
     }
-    el.style.display = '';
+    el.style.display = 'flex';
     title.textContent = scene.scene_title || '';
     speaker.textContent = scene.speaker || '';
     stretchBadge.style.display = scene.is_stretch ? '' : 'none';
