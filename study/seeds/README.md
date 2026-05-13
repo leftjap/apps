@@ -38,13 +38,13 @@ git commit -m "seed(study): ja 2026-05-04 (10건)"
 git push
 
 # 2. workflow 실행
-gh workflow run seed-supabase.yml \
+gh workflow run study-seed-supabase.yml \
   --field payload=seeds/ja-2026-05-04.json \
   --field user_id=<UUID> \
   --field dry_run=false
 
 # 3. 결과 확인
-gh run list --workflow=seed-supabase.yml --limit 1
+gh run list --workflow=study-seed-supabase.yml --limit 1
 gh run view --log
 ```
 

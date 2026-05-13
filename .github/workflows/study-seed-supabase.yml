@@ -1,13 +1,15 @@
-name: seed-supabase
+name: study-seed-supabase
 
 # Manual trigger only — Claude Code 가 gh workflow run 으로 호출.
 # 정본 경로: study-app-spec.md §5-0 (자연어 트리거 시 처리 로직 8단계)
 # 안전장치: scripts/seed-supabase.mjs 의 dry-run, count cap, lang 검증, post-check.
+# mono repo 변환 후 workflow 는 repo root 의 .github/workflows/ 에 거주.
+# working-directory: study 적용 — payload 경로 및 script 경로는 study 디렉토리 기준.
 on:
   workflow_dispatch:
     inputs:
       payload:
-        description: "Payload JSON 경로 (repo 상대 경로 — 예: seeds/ja-2026-05-04.json)"
+        description: "Payload JSON 경로 (study 디렉토리 기준 상대 경로 — 예: seeds/ja-2026-05-04.json)"
         required: true
         type: string
       user_id:
@@ -20,6 +22,10 @@ on:
         default: "false"
         type: choice
         options: ["false", "true"]
+
+defaults:
+  run:
+    working-directory: study
 
 jobs:
   seed:
@@ -45,7 +51,7 @@ jobs:
 
       - name: Run seed script
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           node scripts/seed-supabase.mjs \

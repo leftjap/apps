@@ -53,15 +53,32 @@ ja 와 동일한 5필드 — 양 트랙 정합:
 
 `phonetic_kr` 도 카드 메타. 한국인 즉시 발음 가능하게.
 
+> 콩트 단위 운영 시 추가 메타 (`scene_id` 등 5필드) → §6.2 참조
+
 ---
 
 ## 4. explanation 스키마 (en 트랙)
 
-ja 4필드 대비 **풍부한 객체 구조**. en 은 chunks·IPA·variations 도 포함.
+ja 4필드 대비 **풍부한 객체 구조**. en 은 chunks·IPA·variations 도 포함. **콩트 운영 시 scene 메타 5필드 (§6.2) 가 같이 nested 됨.**
 
 ```json
 {
   "explanation": {
+    // 공통 메타 (5필드)
+    "stage": 2,
+    "newElements": ["I'm not gonna lie"],
+    "knownElements": ["that was", "pretty rough"],
+    "frequency": 8,
+    "category": "감정/리액션",
+
+    // 콩트 메타 (5필드 — §6.2)
+    "scene_id": "scene-2026-05-13-mixer",
+    "scene_order": 3,
+    "scene_title": "Just a Quick Mixer",
+    "speaker": "지점장",
+    "is_stretch": false,
+
+    // en 본 6필드
     "keyPoint": "I'm not gonna lie = 솔직히 말하면. 관용 표현.",
     "whenToUse": "힘든 경험을 솔직하게 털어놓을 때",
     "grammar": {
@@ -113,24 +130,29 @@ ja 4필드 대비 **풍부한 객체 구조**. en 은 chunks·IPA·variations �
 
 한국인은 **읽기/문법은 강하고 회화/리스닝은 약함** → ja 와 단계 구성 다름.
 
-### Stage 1 — 구어 축약/리액션 (50~80문장)
+### Stage 1 — 구어 축약/리액션 (50~80문장, **콩트 분량 3~5문장**)
 한국인이 **읽으면 이해하지만 말로 안 들리는** 표현.
 - `gonna` `wanna` `gotta` `kinda` `sorta`
 - `Yeah` `nope` `for real` `no way`
 - `lemme see` `hang on` `you know what` `oh my god`
 
-### Stage 2 — 짧은 일상 패턴 (80~150문장)
+### Stage 2 — 짧은 일상 패턴 (80~150문장, **콩트 분량 4~6문장**)
 빈도 최우선:
 - `I'm not gonna lie` `to be honest` `I was just`
 - `kind of / sort of` `would you mind` `do you wanna`
 
-### Stage 3 — 회화/감정 표현 (150~300문장)
+### Stage 3 — 회화/감정 표현 (150~300문장, **콩트 분량 5~7문장**)
 복합 패턴. 신규 요소는 **여전히 1개**.
 - 예: `I've been meaning to ask you` (既知: I've been, 신규: meaning to)
 - 예: `Not gonna sugarcoat it` (既知: Not gonna, 신규: sugarcoat)
 
-### Stage 4 — 미드/여행/비즈니스 실전 (300+)
+### Stage 4 — 미드/여행/비즈니스 실전 (300+, **콩트 분량 7~10문장**)
 자연 발화 속도, idiom 밀도 높은 표현.
+
+### Stage 가드 (spec §5-0 단계 5 준수)
+- 콩트 내 모든 문장 stage 메타 ∈ `{currentStage, currentStage + 1}`
+- `currentStage + 1` 문장은 **stretch** (§6.2)
+- `currentStage + 2` 이상 점프 금지
 
 ---
 
@@ -149,6 +171,67 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **미국식 우선** (한국인 노출도 기준)
 
 > 본 알고리즘 구현은 spec §5/§8-3 변경 + DB 스키마 추가 필요. 별 wave 진행.
+
+---
+
+## 6.2 콩트 단위 운영 (Skit-based Sessions)
+
+문장 단위 무관계 학습 → 짧은 시트콤/콩트 단위로 묶어서 학습. 한 세션 = 1 콩트 (5~6문장, 캐릭터 2~3명, 펀치라인 1개).
+
+### 근거
+- **맥락성**: 한 문장만으로는 화용 (pragmatics) 비어있음. 콩트면 화자·관계·타이밍 자동 학습
+- **Affective filter ↓**: 재미 = 학습 효율 ↑ (§1 i+1 원칙과 정합)
+- **In-context 반복**: 한 콩트 안에서 같은 표현 변주 자연 발생 (SRS 별개 보너스)
+
+### scene 메타 5필드 (explanation JSONB 안 nested)
+
+| 필드 | 형식 | 용도 |
+|---|---|---|
+| `scene_id` | string | 같은 콩트 모든 문장 공유 (`scene-<YYYY-MM-DD>-<slug>`). PWA 묶음 표시 + SRS 그룹 복습 |
+| `scene_order` | 1~N | 콩트 내 문장 순서. 1, 2, 3... 연속 (점프 X) |
+| `scene_title` | string | 콩트 제목 (UI 헤더) |
+| `speaker` | string | 화자 한국식 호칭 (지점장/박사/라쿤/평론가/검사/단장/회장) |
+| `is_stretch` | boolean | currentStage+1 어휘 사용 여부 |
+
+### default + stretch 비율
+
+| 구성 | 비율 | 규칙 |
+|---|---|---|
+| default 문장 | 60~80% | `stage === currentStage`, `is_stretch: false` |
+| stretch 문장 | 20~40% (5문장이면 1~2개) | `stage === currentStage + 1`, `is_stretch: true` |
+| Stage +2 이상 | 금지 | §5 점프 가드 준수 |
+
+**배치 권장**: 1번 문장 default (진입 부담 ↓) → stretch 는 중간이나 펀치라인 (맥락 형성 후 만남)
+
+### 캐릭터 풀 7명
+
+한국식 호칭은 **메타에만** 박힘. sentence 안에는 영어 100% (영어 호칭 필요시 `Boss`/`Doc`/`Chief` 등 자연스럽게).
+
+| # | 호칭 | 톤 레퍼런스 | 적합 Stage |
+|---|---|---|---|
+| 1 | 지점장 | 마이클 스콧 (The Office) — 과시·어색한 농담·인정 욕구 | 1~4 |
+| 2 | 박사 | 셸든 (Big Bang Theory) — 무자각·자존감 무한·빈정거림 못 알아챔 | 1~4 |
+| 3 | 라쿤 | 로켓 (Guardians) — 슬랭·완곡 욕·짧은 컷오프·자기연민 | 2~4 |
+| 4 | 평론가 | 한물간 지식인 — 자기 포장·강자 비굴·열등감 | 2~4 |
+| 5 | 검사 | 무감정 관찰자 (Sherlock 류) — 정황 질문·관찰 톤 | 3~4 |
+| 6 | 단장 | Coach Taylor 류 — 차가운 재건 리더, 짧은 단언 | 3~4 |
+| 7 | 회장 | Logan Roy (Succession) — 욕·고급 어휘 풀 | 4 |
+
+### Stage 별 등장 가능 페어
+
+| Stage | 등장 가능 | 권장 페어 (다이내믹) |
+|---|---|---|
+| 1 | 1·2 | 지점장 + 박사 (과시 vs 무자각) |
+| 2 | 1·2·3·4 | 지점장 + 평론가 (가짜 자신감 vs 진짜 열등감) / 박사 + 평론가 (학문 우월감 vs 책 서문) / 지점장 + 라쿤 (친밀 강요 vs 욕설 회피) |
+| 3 | 1~6 | + 검사·단장 등장 (사건·조직 갈등 상황) |
+| 4 | 1~7 | 회장 등장 (Succession 톤) |
+
+### 캐릭터-stage 정합 원칙
+
+화자의 어휘 stage 가 캐릭터 톤과 자연 정합:
+- Stage 1 콩트에 박사 등장 시 → 박사 대사가 stretch (Stage 2 어휘) 가 자연스러움
+- 라쿤·평론가·검사·단장·회장 등장 시 → 그들의 대사가 stretch 후보 1순위
+- 지점장은 stage 무관 default 어휘 풀로 자연스러움 (구어 축약 풀의 표준 화자)
 
 ---
 
@@ -258,6 +341,9 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **신규 요소 = 정확히 1개**: i+1 검증
 - **변형 연습**: Stage 1~2 미포함 / Stage 3+ 항상 3건 (subject/tense/expression)
 - **slice-of-life 콘텐츠 우선**: voice actor 명확 발음
+- **콩트 단위 생성** (§6.2): 한 세션 = 5~6문장 1 콩트, scene 메타 5필드 nested
+- **default 60~80% + stretch 20~40% 비율**: stretch_level ≤ 1, `currentStage + 2` 점프 금지
+- **캐릭터-stage 정합** (§6.2 페어 매트릭스): currentStage 의 등장 가능 풀 안에서만 캐스팅
 
 ---
 
@@ -278,6 +364,19 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - [ ] Stage 3+ `variations` 가 정확히 3개이고 type 이 `subject`/`tense`/`expression` 인가
 - [ ] 각 variation 의 `answers` 배열이 비어있지 않은가
 - [ ] `commonMistakes` 에 한국인 학습자 관점 명시되어 있는가
+
+### 콩트 정합 (§6.2)
+
+- [ ] 콩트 모든 문장이 같은 `scene_id` 공유
+- [ ] `scene_order` 가 1~N 연속 (점프 없음)
+- [ ] `scene_title` 박힘 (콩트 헤더용)
+- [ ] stretch 문장 비율이 20~40% (5문장이면 1~2개)
+- [ ] 모든 stretch 문장 `stage === currentStage + 1` 이고 `is_stretch: true`
+- [ ] default 문장 `stage === currentStage` 이고 `is_stretch: false`
+- [ ] `currentStage + 2` 이상 점프 없음
+- [ ] `speaker` 가 §6.2 캐릭터 풀 7명 안 (지점장/박사/라쿤/평론가/검사/단장/회장) 한국식 호칭
+- [ ] sentence 안에는 한국식 호칭 0건 (영어 100%)
+- [ ] 캐릭터 캐스팅이 currentStage 의 등장 가능 풀 안 (Stage 1 → 1·2 만 / Stage 2 → 1·2·3·4 / Stage 3 → 1~6 / Stage 4 → 1~7)
 
 ---
 

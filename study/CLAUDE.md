@@ -20,6 +20,6 @@
 
 ## 자동화 박제
 
-- `read-user-context.yml` — 단계 3-4 SELECT
-- `seed-supabase.yml` — 단계 7 INSERT
+- `study-read-user-context.yml` — 단계 3-4 SELECT (repo root `.github/workflows/`, working-directory: study)
+- `study-seed-supabase.yml` — 단계 7 INSERT (repo root `.github/workflows/`, working-directory: study)
 - `seeds/.user-defaults.json` — default user_id
