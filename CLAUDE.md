@@ -22,6 +22,10 @@
 
 하드코딩 금지 (환경변수 또는 config 사용). 단 Supabase anon key 는 `VITE_` prefix 환경변수로 클라이언트 번들 포함 허용 — RLS 로 격리, anon key 자체는 공개 가능. service role key 는 절대 번들 금지.
 
+**로컬 저장 위치 (자동 로드, 매 세션 키 재요구 금지)**:
+- `~/.config/study/.env` (chmod 600) — `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`. study 로컬 자동화·sanity check 실행 시 `source ~/.config/study/.env` 또는 dotenv 로드
+- repo secret (`leftjap/apps`) — GitHub Actions 워크플로용. `gh secret list --repo leftjap/apps` 로 확인 (`SUPABASE_SERVICE_ROLE_KEY`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`)
+
 ---
 
 ## 환경 함정
