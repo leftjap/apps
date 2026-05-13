@@ -20,3 +20,7 @@
 ## 관련 스킬
 
 `supabase-pattern` — `src/db/sync.js`·`schema.js`·`auth.js` 수정 시.
+
+## SMS 카드 결제 ingest
+
+`specs/sms-ingest-pipeline.md` 참조 — 단축어 spec, iOS 한계, launchd backfill, Edge Function API, 디버깅 절차 모두 거기.

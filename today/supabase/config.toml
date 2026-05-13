@@ -1,0 +1,16 @@
+# Supabase 프로젝트 설정 — Today 가계부.
+# 2026-05-13 신규 — 어제 functions deploy 시 default verify_jwt=true 활성화로
+# 단축어/backfill 의 X-Ingest-Token 호출이 모두 401 차단된 사고 재발 방지.
+#
+# 적용 명령:
+#   supabase functions deploy sms-card-ingest --project-ref tcbooffrdacfatywdzcm
+#   (--no-verify-jwt 옵션 누락해도 본 파일이 verify_jwt=false 강제)
+#
+# Supabase config.toml spec: https://supabase.com/docs/guides/cli/config
+
+project_id = "tcbooffrdacfatywdzcm"
+
+[functions.sms-card-ingest]
+# X-Ingest-Token (커스텀 헤더) 으로 함수 본체에서 인증 — gateway 의 JWT 검증 불필요.
+# true 시 Authorization: Bearer <JWT> 헤더 강제 → iOS 단축어/backfill 401 차단됨.
+verify_jwt = false
