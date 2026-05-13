@@ -26,6 +26,7 @@ import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
+import { createSceneHeader } from '../components/session/sceneHeader.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
@@ -319,6 +320,10 @@ function buildMain(state, ctrl) {
   if (state.size === 'desktop') {
     wrap.style.cssText = 'display:flex;flex-direction:column;flex:1;';
   }
+
+  // en 가이드 §6.2 콩트 단위 학습 헤더 — scene_id 없으면 hidden (옛 카드 호환)
+  const sceneHdr = createSceneHeader({ explanation: state.sentence?.explanation });
+  wrap.appendChild(sceneHdr.el);
 
   const sizeMap = { phone: 30, tablet: 56, desktop: 72 };
   const h1 = document.createElement('h1');
