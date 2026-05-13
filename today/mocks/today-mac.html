@@ -567,7 +567,11 @@
     flex-direction: column;
     min-height: 0;
     overflow-y: auto;
+    /* 스크롤은 유지하되 시각적 스크롤바 숨김 (사용자 요청 2026-05-13) */
+    scrollbar-width: none;          /* Firefox */
+    -ms-overflow-style: none;       /* IE / 옛 Edge */
   }
+  #mainView::-webkit-scrollbar { display: none; }  /* WebKit (Chrome/Safari) */
 
   /* ============ Doc ============ */
   .doc {
