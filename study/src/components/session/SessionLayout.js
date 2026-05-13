@@ -327,18 +327,26 @@ function makeProgress(total, step, height, gap, onStepClick) {
   row.setAttribute('aria-valuemax', String(total));
   const dots = [];
   const clickable = typeof onStepClick === 'function';
+  // 클릭 확장 영역 padding — 시각 막대바 (얇은 height) 와 별개로 hit area 넓힘.
+  const hitPad = clickable ? 12 : 0;
   for (let i = 1; i <= total; i++) {
-    const d = document.createElement('div');
-    d.style.cssText = `flex:1;height:${height}px;background:${i === step ? 'var(--accent)' : 'var(--line)'};border-radius:2px;`;
+    // outer — 클릭 영역 (padding 으로 height 확장, background 투명)
+    const outer = document.createElement('div');
+    outer.style.cssText = `flex:1;padding:${hitPad}px 0;display:flex;align-items:center;background:transparent;`;
+    // inner — 실제 시각 막대바 (height 그대로)
+    const inner = document.createElement('div');
+    inner.style.cssText = `width:100%;height:${height}px;background:${i === step ? 'var(--accent)' : 'var(--line)'};border-radius:2px;`;
+    outer.appendChild(inner);
     if (clickable) {
-      d.style.cursor = 'pointer';
-      d.dataset.step = String(i);
-      d.setAttribute('role', 'button');
-      d.setAttribute('aria-label', `${i}번 카드로 이동`);
-      d.addEventListener('click', () => onStepClick(i));
+      outer.style.cursor = 'pointer';
+      outer.dataset.step = String(i);
+      outer.setAttribute('role', 'button');
+      outer.setAttribute('aria-label', `${i}번 카드로 이동`);
+      outer.addEventListener('click', () => onStepClick(i));
     }
-    row.appendChild(d);
-    dots.push(d);
+    row.appendChild(outer);
+    // dots 는 inner — update 시 background 색 변경 대상
+    dots.push(inner);
   }
   return { row, dots };
 }
