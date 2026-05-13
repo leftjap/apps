@@ -201,7 +201,7 @@
 .ex-section{margin-bottom:var(--s-6)}
 .ex-section:last-child{margin-bottom:0}
 .ex-label{font-family:var(--font-display);font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:var(--s-2)}
-.ex-text{font-size:14px;color:var(--text);line-height:1.65}
+.ex-text{font-size:16px;color:var(--text);line-height:1.65}
 .ex-text .hl{color:var(--accent);font-weight:500}
 .chunk-row{display:flex;flex-wrap:wrap;gap:var(--s-3);margin-top:var(--s-3)}
 .chunk{display:flex;flex-direction:column;gap:2px}

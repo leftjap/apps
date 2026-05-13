@@ -130,6 +130,16 @@ export function mountSessionReview(host) {
       saveSnapshot();
     },
     onEnd: () => showEndConfirm({ onConfirm: () => endSession(false) }),
+    onJump: (step) => {
+      if (!Number.isInteger(step) || step < 1 || step > state.cards.length) return;
+      if (step === state.step) return;
+      state.step = step;
+      state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
+      state.recording = false;
+      state.lastScore = null;
+      rerender();
+      saveSnapshot();
+    },
     saveSnapshot,
   };
 
@@ -233,6 +243,7 @@ function render(host, state, handlers = {}) {
       window.location.hash = '#/home';
     },
     onEnd: handlers.onEnd || (() => { window.location.hash = '#/home'; }),
+    onStepClick: handlers.onJump,
   });
 
   const large = state.size !== 'phone';

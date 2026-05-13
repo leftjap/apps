@@ -64,6 +64,7 @@ export function createSessionLayout(opts = {}) {
     time = '00:00',
     onHome,
     onEnd,
+    onStepClick,
     homeLabel,
   } = opts;
 
@@ -77,9 +78,9 @@ export function createSessionLayout(opts = {}) {
 
   const refs = {}; // update 가 만지는 노드 참조
 
-  if (size === 'desktop') buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot });
-  else if (size === 'tablet') buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot });
-  else buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot });
+  if (size === 'desktop') buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, onStepClick, homeLabel, contentSlot });
+  else if (size === 'tablet') buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, onStepClick, homeLabel, contentSlot });
+  else buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, onStepClick, homeLabel, contentSlot });
 
   return {
     el: root,
@@ -108,7 +109,7 @@ export function createSessionLayout(opts = {}) {
 }
 
 /* ────────── PHONE ────────── */
-function buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot }) {
+function buildPhone(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, onStepClick, homeLabel, contentSlot }) {
   const k = KIND[kind];
   root.style.cssText = 'display:flex;flex-direction:column;';
 
@@ -143,7 +144,7 @@ function buildPhone(root, refs, { kind, step, total, tried, passed, recording, t
   header.appendChild(headRow);
 
   // progress dots
-  const prog = makeProgress(total, step, 2, 4);
+  const prog = makeProgress(total, step, 2, 4, onStepClick);
   prog.row.style.marginTop = '12px';
   header.appendChild(prog.row);
 
@@ -181,7 +182,7 @@ function buildPhone(root, refs, { kind, step, total, tried, passed, recording, t
 }
 
 /* ────────── TABLET ────────── */
-function buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel, contentSlot }) {
+function buildTablet(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, onStepClick, homeLabel, contentSlot }) {
   const k = KIND[kind];
   root.style.cssText = 'display:flex;flex-direction:column;padding:0 56px;';
 
@@ -208,7 +209,7 @@ function buildTablet(root, refs, { kind, step, total, tried, passed, recording, 
   headRow.append(homeBtn, timerEl, endBtn);
   header.appendChild(headRow);
 
-  const prog = makeProgress(total, step, 3, 6);
+  const prog = makeProgress(total, step, 3, 6, onStepClick);
   prog.row.style.marginTop = '24px';
   header.appendChild(prog.row);
 
@@ -243,7 +244,7 @@ function buildTablet(root, refs, { kind, step, total, tried, passed, recording, 
 }
 
 /* ────────── DESKTOP ────────── */
-function buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, homeLabel: homeLabelText, contentSlot }) {
+function buildDesktop(root, refs, { kind, step, total, tried, passed, recording, time, onHome, onEnd, onStepClick, homeLabel: homeLabelText, contentSlot }) {
   const k = KIND[kind];
   root.style.cssText = 'display:grid;grid-template-columns:320px 1fr;min-height:100vh;min-height:100dvh;';
 
@@ -270,7 +271,7 @@ function buildDesktop(root, refs, { kind, step, total, tried, passed, recording,
   stepHero.className = 'poppins';
   stepHero.style.cssText = 'font-size:56px;font-weight:700;color:var(--text-strong);letter-spacing:-0.04em;margin-top:8px;line-height:1;font-variant-numeric:tabular-nums;';
   stepHero.innerHTML = `${step}<span style="color:var(--text-faint);font-weight:400;">/${total}</span>`;
-  const prog = makeProgress(total, step, 3, 6);
+  const prog = makeProgress(total, step, 3, 6, onStepClick);
   prog.row.style.marginTop = '18px';
   heroBlock.append(cat, stepHero, prog.row);
   aside.appendChild(heroBlock);
@@ -317,7 +318,7 @@ function buildDesktop(root, refs, { kind, step, total, tried, passed, recording,
 }
 
 /* ────────── helpers ────────── */
-function makeProgress(total, step, height, gap) {
+function makeProgress(total, step, height, gap, onStepClick) {
   const row = document.createElement('div');
   row.style.cssText = `display:flex;gap:${gap}px;`;
   row.setAttribute('role', 'progressbar');
@@ -325,9 +326,17 @@ function makeProgress(total, step, height, gap) {
   row.setAttribute('aria-valuemin', '1');
   row.setAttribute('aria-valuemax', String(total));
   const dots = [];
+  const clickable = typeof onStepClick === 'function';
   for (let i = 1; i <= total; i++) {
     const d = document.createElement('div');
     d.style.cssText = `flex:1;height:${height}px;background:${i === step ? 'var(--accent)' : 'var(--line)'};border-radius:2px;`;
+    if (clickable) {
+      d.style.cursor = 'pointer';
+      d.dataset.step = String(i);
+      d.setAttribute('role', 'button');
+      d.setAttribute('aria-label', `${i}번 카드로 이동`);
+      d.addEventListener('click', () => onStepClick(i));
+    }
     row.appendChild(d);
     dots.push(d);
   }
