@@ -116,6 +116,31 @@ function chunksSection(chunks) {
   return s;
 }
 
+function kanjiBreakdownSection(items) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  const s = document.createElement('div');
+  s.className = 'ex-section';
+  const lab = document.createElement('div');
+  lab.className = 'ex-label';
+  lab.textContent = '한자';
+  s.appendChild(lab);
+  items.forEach((k) => {
+    if (!k || typeof k !== 'object') return;
+    const row = document.createElement('div');
+    row.className = 'ex-text';
+    const parts = [];
+    if (k.kanji) parts.push(`<strong style="font-size:18px;">${k.kanji}</strong>`);
+    if (k.reading) parts.push(`<span style="color:var(--text-muted);">(${k.reading})</span>`);
+    if (k.meaning) parts.push(`— ${k.meaning}`);
+    if (k.korean_meaning) parts.push(`<span style="color:var(--text-faint); margin-left:6px;">· ${k.korean_meaning}</span>`);
+    row.innerHTML = parts.join(' ');
+    s.appendChild(row);
+  });
+  return s;
+}
+
+const POLITENESS_LABEL = { casual: '보통체', polite: '정중체', formal: '격식체' };
+
 function phonemesSection(phonemes) {
   if (!Array.isArray(phonemes) || phonemes.length === 0) return null;
   const s = document.createElement('div');
@@ -152,6 +177,10 @@ export function createExplanationPanel({ explanation, lang } = {}) {
 
   const ex = explanation;
   if (ex && typeof ex === 'object') {
+    if (ex.politeness) {
+      const label = POLITENESS_LABEL[ex.politeness] || ex.politeness;
+      panelEl.appendChild(section('정중도', label));
+    }
     if (ex.whenToUse) panelEl.appendChild(section('이런 상황에서 써요', String(ex.whenToUse)));
     if (ex.key) panelEl.appendChild(section('핵심 포인트', String(ex.key)));
     if (ex.situation) panelEl.appendChild(section('이런 상황에서 써요', String(ex.situation)));
@@ -162,6 +191,8 @@ export function createExplanationPanel({ explanation, lang } = {}) {
     const p = phonemesSection(ex.phonemes);
     if (p) panelEl.appendChild(p);
     if (ex.pronPoints) panelEl.appendChild(section('발음 포인트', String(ex.pronPoints)));
+    const kb = kanjiBreakdownSection(ex.kanji_breakdown);
+    if (kb) panelEl.appendChild(kb);
     if (ex.mistake) panelEl.appendChild(section('한국인 실수', String(ex.mistake)));
     if (ex.similar) panelEl.appendChild(section('비슷한 표현', String(ex.similar)));
   }
