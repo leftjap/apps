@@ -22,8 +22,10 @@
  *  - 1건 이하 시 .exp-day-detail__foot 숨김 (합계 행 의미 없음)
  */
 import { Queries } from '../db/queries.js';
+import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
+import { getCurrentKind } from './entries.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -43,6 +45,7 @@ let _categoryObserver = null;
 let _onCategoryChange = null;
 let _currentUser = null;
 let _activeMonthKey = null; // "YYYY-MM" — race 가드
+let _realtimeUnregister = null;
 
 // ───────────────────────────────────────────────────────────────────────────
 // 어댑터 (순수 함수)
@@ -1584,6 +1587,25 @@ export function mountExpensesView(user) {
   bindMonthNavHandlers();
   bindStatsTabHandler();
   refreshSidebarExpenseTotal();
+  // Realtime listener — expense 변경 시 사이드바 + 활성 카테고리 화면 자동 갱신
+  if (_realtimeUnregister) _realtimeUnregister();
+  _realtimeUnregister = Sync.onRealtimeChange((payload) => {
+    handleRealtimeExpenseChange(payload).catch((e) =>
+      console.warn('[expenses] realtime handler 실패:', e?.message || e),
+    );
+  });
+}
+
+export async function handleRealtimeExpenseChange(payload, doc = document) {
+  if (!payload || payload.table !== 'today_expenses') {
+    return { applied: false, reason: 'table_mismatch' };
+  }
+  try { await refreshSidebarExpenseTotal(doc); } catch (_) {}
+  if (getCurrentKind(doc) === 'expense') {
+    await handleCategoryActive('expense');
+    return { applied: true, reason: 'rerendered' };
+  }
+  return { applied: true, reason: 'sidebar_only' };
 }
 
 /**
@@ -1706,6 +1728,7 @@ export const Expenses = {
   mountExpensesView,
   rebindCategoryObserver,
   refreshSidebarExpenseTotal,
+  handleRealtimeExpenseChange,
   // 어댑터
   formatAmount,
   isoToMockDate,
