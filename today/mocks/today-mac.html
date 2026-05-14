@@ -6881,7 +6881,9 @@
       if (open) document.body.dataset.drawerOpen = 'true';
       else delete document.body.dataset.drawerOpen;
     };
-    // 진입 시 default 닫힘 (사용자 요청 2026-05-12: 메인 화면 = drawer 닫힘이 시작 상태).
+    // 모바일 진입 시 default = drawer 열림 (사용자 요청 2026-05-14, 2026-05-13 결정 반전).
+    // 데스크톱·태블릿은 사이드바가 레이아웃 일부라 별도 처리 불필요.
+    if (isMobile()) setOpen(true);
     // 햄버거(#mainHamburger) 클릭 또는 좌측 edge swipe 로 사용자 능동 열기.
     // 햄버거 → 열기
     document.getElementById('mainHamburger')?.addEventListener('click', () => setOpen(true));
