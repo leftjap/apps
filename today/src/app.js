@@ -30,6 +30,7 @@ export function showLogin() {
   document.body.dataset.authState = 'out';
   ensureLoginCard();
   if (location.hash !== '#/login') location.hash = '#/login';
+  hideInitialLoadingScreen();
 }
 
 export function showAuthenticated() {
@@ -49,6 +50,15 @@ export function showAuthenticated() {
   } else {
     syncFromHash();
   }
+  hideInitialLoadingScreen();
+}
+
+// 초기 로딩 화면 (index.html 의 #loadingScreen) 숨김.
+// requestAnimationFrame 으로 mocks 마운트 paint 직후 → 깜빡임 최소화.
+function hideInitialLoadingScreen() {
+  const el = typeof document !== 'undefined' && document.getElementById('loadingScreen');
+  if (!el || el.classList.contains('hidden')) return;
+  requestAnimationFrame(() => el.classList.add('hidden'));
 }
 
 // ───────────────────────────────────────────────────────────────────────────

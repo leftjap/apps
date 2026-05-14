@@ -17,8 +17,63 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <script type="module" src="/src/main.js"></script>
     <title>Today</title>
+    <style>
+      /* 초기 로딩 화면 — keep 앱 패턴 답습. JS bundle 로드 전부터 즉시 표시. */
+      #loadingScreen {
+        position: fixed;
+        inset: 0;
+        background: #faf9f5;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        transition: opacity 0.3s ease;
+      }
+      #loadingScreen.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-wrapper { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+      .loading-scene { position: relative; height: 140px; width: 120px; }
+      .bounce-avatar {
+        width: 90px; height: 90px; border-radius: 50%;
+        border: 3px solid #fff;
+        box-shadow: 0 6px 20px rgba(0,0,0,.12);
+        object-fit: cover;
+        position: absolute; top: 0; left: 50%; margin-left: -45px;
+        animation: bounce 0.45s ease-in infinite alternate;
+        z-index: 2;
+      }
+      .bounce-shadow {
+        width: 60px; height: 12px; border-radius: 50%;
+        background: radial-gradient(ellipse at center, rgba(0,0,0,.18) 0%, transparent 75%);
+        position: absolute; bottom: 0; left: 50%; margin-left: -30px;
+        animation: shadow-pulse 0.45s ease-in infinite alternate;
+        z-index: 1;
+      }
+      .loading-text {
+        font-size: 14px; color: rgba(0,0,0,.55);
+        letter-spacing: .5px; margin-top: 12px;
+        font-weight: 600; text-align: center;
+        animation: fade-text 1.4s ease-in-out infinite;
+      }
+      @keyframes bounce { 0% { transform: translateY(0); } 100% { transform: translateY(40px); } }
+      @keyframes shadow-pulse { 0% { transform: scale(.5); opacity: .2; } 100% { transform: scale(1.1); opacity: .85; } }
+      @keyframes fade-text { 0%, 100% { opacity: .4; } 50% { opacity: .9; } }
+    </style>
   </head>
   <body>
+    <!-- 초기 로딩 화면 — src/app.js 의 showLogin/showAuthenticated 완료 시 .hidden 추가 -->
+    <div id="loadingScreen">
+      <div class="loading-wrapper">
+        <div class="loading-scene">
+          <img src="/cat-loading.jpg" alt="고양이" class="bounce-avatar" />
+          <div class="bounce-shadow"></div>
+        </div>
+        <div class="loading-text">불러오는 중</div>
+      </div>
+    </div>
     <div id="app"></div>
   </body>
 </html>
