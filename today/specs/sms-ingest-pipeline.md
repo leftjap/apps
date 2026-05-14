@@ -100,6 +100,59 @@ values (encode(gen_random_bytes(24), 'hex'), '<auth.users.id>', '단축어 / lau
 returning token;
 ```
 leftjap 토큰: `de72f3361a68395a009769b2af6a2bbe266c7023244af179` (단축어 + backfill 공통).
+soyoun 토큰: `52cdb054e11608778077461f27d797cb7b98df5845bf95a8` (소연 아이폰 단축어, 2026-05-14 발급).
+
+## 아이폰 단축어·자동화 셋업 (지오·소연 공통 구조)
+
+### 단축어 본체 "Today 가계부 SMS" — 양쪽 동일 (토큰 값만 다름)
+
+작업 순서 (스크린샷 검증 완료):
+
+1. **입력 받기** (단축어 메타 설정 — 별도 액션 X, 단축어 자체 input)
+   - 입력 유형: 텍스트 및 앱
+   - 입력 없는 경우: 텍스트 요청
+2. **URL의 콘텐츠 가져오기**
+   - URL: `https://tcbooffrdacfatywdzcm.supabase.co/functions/v1/sms-card-ingest`
+   - 메소드: POST
+   - 헤더 2개:
+     - `X-Ingest-Token`: 사용자별 토큰 (위 토큰 발급 섹션 참조)
+     - `Content-Type`: `application/json`
+   - 본문 요청 (JSON) 2개:
+     - `text` = "단축어 입력" 매직 변수
+     - `received_at` = "현재 날짜" 변수
+3. **중단 및 URL 콘텐츠 출력** (출력할 곳 없으면 동작 실행 안 함 — 자동화 시 무시, 수동 실행 디버깅용)
+
+### 자동화 트리거
+
+**지오 (leftjap@gmail.com)** — 발신번호 기반 (chat.db backfill 필터와 동일):
+- `+8215888900` (1588-8900, 삼성카드)
+- `+82220008100` (02-2000-8100, 삼성카드 해외승인)
+- `+8215881688` (1588-1688, KB국민카드)
+- `+821063491949` (지오 본인 번호 — 외화·안내 SMS)
+
+**소연 (soyoun312@gmail.com)** — 3개 자동화 (2026-05-15 셋업 검증 완료):
+1. **발신번호**: `1588-8900` (삼성), `02-2000-8100` (삼성 해외), `+821097761949` (소연 본인)
+2. **키워드 "현대백화점카드"** — 현대백화점카드 SMS 발신번호 미확보 대체 (소연 사용 127건)
+3. **키워드 "승인"** — 모든 카드 SMS 본문 공통 키워드, 광범위 fallback
+
+**작동 검증** (2026-05-15):
+- 소연 → 본인 테스트 SMS (`[Web발신]\n삼성2737승인 소*연\n1,000원 일시불\n05/15 13:30 단축어테스트`) 전송
+- → today_expenses 자동 INSERT 확인 (amount=1000, merchant="단축어테스트", card="삼성2737")
+- → 단축어/자동화 정상 작동 확정
+
+**소연 카드 매핑** (keep GAS `USER_CONFIG['soyoun312@gmail.com'].cardNameMap` 인용):
+| Keep 식별자 | 카드명 |
+|---|---|
+| 삼성2737 (또는 삼성) | 삼성카드 iD SIMPLE |
+| 신한8244 | 신한카드 Air |
+| 신한8579 | K-패스 신한카드 체크 |
+| 신한8619 | K-패스 신한카드 체크 |
+
+(Today Edge Function 의 cardSmsParser 는 raw `삼성2737` 그대로 저장 — Today 측 cardNameMap 매핑 없음. 화면 표시 정제는 별도 작업 항목.)
+
+### 알려진 한계 (양쪽 사용자 공통)
+- `last_used_at`: Edge Function fire-and-forget update (`index.ts:71` `void`) 가 Deno serverless process 종료로 abort. NULL 유지가 정상. 검증 지표 = today_expenses row 추가 여부.
+- PWA 가계부 화면: Realtime 미구현 (아래 "알려진 제약" §1). 새 row 추가 후 화면 반영은 수동 새로고침 필요.
 
 ## 디버깅 절차
 
