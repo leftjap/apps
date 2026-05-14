@@ -1956,7 +1956,7 @@ export function computeListStats(rows, userId, now = new Date()) {
 }
 
 export function filterListRows(rows, filterId, userId) {
-  if (filterId === 'shared') return (rows || []).filter((r) => r.is_shared);
+  if (filterId === 'shared') return (rows || []).filter((r) => r.is_shared && !isPartnerRow(r, userId));
   if (filterId === 'soyeon') return (rows || []).filter((r) => isPartnerRow(r, userId) && r.is_shared);
   return rows || [];
 }
@@ -2041,7 +2041,7 @@ export function renderListView(kind, rows, doc = document, opts = {}) {
       ${(kind === 'navi' || kind === 'soyoun_navi') ? `
       <div class="doc-list__chips">
         ${chip('all', '전체', stats.total, null)}
-        ${chip('shared', '공유된 글', stats.shared, 'var(--crail-base)')}
+        ${chip('shared', '내가 공유한 글', stats.shared, 'var(--crail-base)')}
         ${chip('soyeon', '소연이 공유한 글', stats.sharedSoyeon, 'var(--ink-2)')}
       </div>` : ''}
       <div class="doc-list__head">
@@ -2064,6 +2064,7 @@ export async function enterListView(kind, doc = document) {
     _activeMainView = 'list';
     renderListView(kind, rows, doc);
     buildListBreadcrumbExtra(doc);
+    doc.querySelector?.('.bottombar .composer')?.setAttribute('hidden', '');
     return true;
   } catch (e) {
     console.warn('[entries] enterListView 실패:', e?.message || e);
@@ -2076,6 +2077,7 @@ export function exitListView(doc = document) {
   _listViewKind = null;
   _listViewRows = null;
   removeListBreadcrumbExtra(doc);
+  doc.querySelector?.('.bottombar .composer')?.removeAttribute('hidden');
 }
 
 let _listViewClickInstalled = false;
