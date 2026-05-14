@@ -10,12 +10,27 @@
 
 | 필드 | 형식 | 용도 |
 |---|---|---|
-| `stage` | 1 \| 2 \| 3 \| 4 | 학습 단계 |
-| `newElements` | string[] (length === 1) | 학습자 신규 요소 (1T 원칙) |
-| `knownElements` | string[] | prerequisite 검사 |
+| `stage` | 1 \| 2 \| 3 \| 4 (ja: 1~5) | 학습 단계 |
+| `newElements` | string[] (콩트 단위 length===1 — 콩트 1편 안 정확히 1장만 length===1, 나머지 카드 length===0) | 학습자 신규 요소 (1T 원칙, 콩트 1편당 1요소). 룰 박제: 펀치라인 문장에 박는 것이 자연스러움 |
+| `knownElements` | string[] | prerequisite 검사 (콩트 사슬 단위 — 본 콩트 직전까지의 콩트들 newElements 합집합 + 본 콩트 newElements 에 포함) |
 | `frequency` | 1~10 | 빈도 (높을수록 우선) |
 | `category` | string | 분류 |
 | `phonetic_kr` | string | 한국인 즉시 발음 가능 표기 |
+
+## en/ja 공통 콩트 메타 (4필드, Wave 11.7x — 시트콤/콩트 호흡 정본화)
+
+| 필드 | 형식 | 용도 |
+|---|---|---|
+| `skitId` | string (`<lang>-<date>-skit<N>`) | 콩트 묶음 식별자. 같은 skitId 카드 = 한 콩트 |
+| `skitTitle` | string | 콩트 제목 (예: "Empty Fridge Plans") |
+| `skitOrder` | integer (1-base) | 콩트 안 순서. 1=셋업, skitTotal=펀치라인 |
+| `skitTotal` | integer | 콩트 안 총 문장 수. Stage 별 가이드 (en §3 / ja §4 콩트 분량 컬럼) 준수 |
+
+**콩트 단위 원칙:**
+- 하루 = en 콩트 1편 + ja 콩트 1편 (default). 사용자가 "N편" 명시 시 그 수만큼
+- 콩트 호흡 = 셋업 → 전개 → 펀치라인 (캐릭터 2~3명, 펀치라인 1개)
+- 분량은 콩트가 결정. 정해진 N문장 강제 X — Stage 별 가이드 범위 안에서 자연스럽게
+- newElements 박는 위치: 펀치라인 문장 (skitOrder === skitTotal) 권장. 셋업/전개에 신규 요소 등장 시 그 문장의 knownElements 에는 안 들어가지만, 같은 콩트 펀치라인 newElements 가 prerequisite 충족시킴
 
 ## explanation 필드 차이 (en vs ja)
 

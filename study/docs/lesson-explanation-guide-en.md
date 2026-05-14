@@ -130,23 +130,23 @@ ja 4필드 대비 **풍부한 객체 구조**. en 은 chunks·IPA·variations �
 
 한국인은 **읽기/문법은 강하고 회화/리스닝은 약함** → ja 와 단계 구성 다름.
 
-### Stage 1 — 구어 축약/리액션 (50~80문장, **콩트 분량 3~5문장**)
+### Stage 1 — 구어 축약/리액션 (50~80문장, **콩트 분량 4~7문장**)
 한국인이 **읽으면 이해하지만 말로 안 들리는** 표현.
 - `gonna` `wanna` `gotta` `kinda` `sorta`
 - `Yeah` `nope` `for real` `no way`
 - `lemme see` `hang on` `you know what` `oh my god`
 
-### Stage 2 — 짧은 일상 패턴 (80~150문장, **콩트 분량 4~6문장**)
+### Stage 2 — 짧은 일상 패턴 (80~150문장, **콩트 분량 6~10문장**)
 빈도 최우선:
 - `I'm not gonna lie` `to be honest` `I was just`
 - `kind of / sort of` `would you mind` `do you wanna`
 
-### Stage 3 — 회화/감정 표현 (150~300문장, **콩트 분량 5~7문장**)
+### Stage 3 — 회화/감정 표현 (150~300문장, **콩트 분량 8~14문장**)
 복합 패턴. 신규 요소는 **여전히 1개**.
 - 예: `I've been meaning to ask you` (既知: I've been, 신규: meaning to)
 - 예: `Not gonna sugarcoat it` (既知: Not gonna, 신규: sugarcoat)
 
-### Stage 4 — 미드/여행/비즈니스 실전 (300+, **콩트 분량 7~10문장**)
+### Stage 4 — 미드/여행/비즈니스 실전 (300+, **콩트 분량 8~14문장**)
 자연 발화 속도, idiom 밀도 높은 표현.
 
 ### Stage 가드 (spec §5-0 단계 5 준수)
