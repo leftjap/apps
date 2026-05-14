@@ -96,6 +96,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "/tmp/book-v6-preview", "-l", "4800", "--no-clipboard"],
       "port": 4800
+    },
+    {
+      "name": "book-app",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/Users/gio_c/apps/book", "-l", "4801", "--no-clipboard"],
+      "port": 4801
     }
   ]
 }
