@@ -2064,7 +2064,10 @@ export async function enterListView(kind, doc = document) {
     _activeMainView = 'list';
     renderListView(kind, rows, doc);
     buildListBreadcrumbExtra(doc);
-    doc.querySelector?.('.bottombar .composer')?.setAttribute('hidden', '');
+    {
+      const composer = doc.querySelector?.('.bottombar .composer');
+      if (composer) composer.style.display = 'none';
+    }
     return true;
   } catch (e) {
     console.warn('[entries] enterListView 실패:', e?.message || e);
@@ -2077,7 +2080,10 @@ export function exitListView(doc = document) {
   _listViewKind = null;
   _listViewRows = null;
   removeListBreadcrumbExtra(doc);
-  doc.querySelector?.('.bottombar .composer')?.removeAttribute('hidden');
+  {
+    const composer = doc.querySelector?.('.bottombar .composer');
+    if (composer) composer.style.display = '';
+  }
 }
 
 let _listViewClickInstalled = false;
