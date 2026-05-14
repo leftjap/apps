@@ -90,6 +90,12 @@
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd /Users/gio_c/apps/today && pnpm preview --port 4175"],
       "port": 4175
+    },
+    {
+      "name": "book-v6",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "/tmp/book-v6-preview", "-l", "4800", "--no-clipboard"],
+      "port": 4800
     }
   ]
 }
