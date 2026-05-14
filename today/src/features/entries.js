@@ -1944,7 +1944,7 @@ export function computeListStats(rows, userId, now = new Date()) {
     }
     words += countWords(r.content);
     sheets += sheetCount(r.content);
-    if (r.is_shared) shared++;
+    if (r.is_shared && !isPartnerRow(r, userId)) shared++;
     if (isPartnerRow(r, userId) && r.is_shared) sharedSoyeon++;
   }
   return {
