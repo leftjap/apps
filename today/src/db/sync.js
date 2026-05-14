@@ -441,6 +441,13 @@ export async function pushComment(id) {
       .from('today_comments')
       .upsert(payload, { onConflict: 'id' });
     if (error) {
+      // RLS 거부 (42501) — entry 삭제·공유 취소 상태. 재시도해도 영구 거부 →
+      // pending_sync=0 로 outbox 빼서 무한 루프 차단. Dexie row 는 유지 (로컬 데이터 보존).
+      if (error?.code === '42501') {
+        try { await db.comments.put({ ...row, pending_sync: 0 }); } catch (_) {}
+        console.warn('[sync] 댓글 RLS 거부 — outbox 에서 제거:', { id, entry_id: row.entry_id });
+        return { id, status: 'error', error, reason: 'rls_denied' };
+      }
       try { await db.comments.put({ ...row, pending_sync: 1 }); } catch (_) {}
       return { id, status: 'error', error };
     }
