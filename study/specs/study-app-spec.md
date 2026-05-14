@@ -267,12 +267,13 @@ CREATE POLICY "Users can only access own data"
    - 최근 7일 `review_results` 비율 (O / △ / X) → 정답률 < 70% 시 newElements 난이도 한 단계 다운
    - 미완료 (`completed = false`) 카드 카운트 → 5건 초과 시 신규 생성 보류 + 사용자에게 안내
 
-5. **i+1 + 약점 음소 가중 알고리즘**
+5. **i+1 + 약점 음소 가중 알고리즘 (콩트 단위)**
    - `i` = 현재 stage 의 `lang_<lang>.userKnown` 단어/구/문법 모음 (학습자가 이미 아는 것)
-   - `+1` = newElements (length=1) 한 가지만 추가 (문법 구조 1개 OR 새 어휘 1개 OR 발음 패턴 1개). 동시 2가지는 금지
-   - 약점 음소 가중: `weak_phonemes_<lang>` 상위 3개 음소가 sentence 에 포함되도록 우선 (모든 카드 강제는 아님 — count 의 ≥50% 권장)
+   - `+1` = **콩트 1편 전체에 newElements 1개** (문법 구조 1개 OR 새 어휘 1개 OR 발음 패턴 1개). 펀치라인 문장에 메타 박음 (skitOrder === skitTotal). 콩트 안 다른 카드는 newElements length=0
+   - 콩트 호흡 = 셋업 → 전개 → 펀치라인. 분량은 Stage 별 가이드 범위에서 콩트가 결정
+   - 약점 음소 가중: `weak_phonemes_<lang>` 상위 3개 음소가 콩트 안 카드에 포함되도록 우선 (콩트 카드 수의 ≥50% 권장)
    - frequency (1~10) 분포: 7~10 (고빈도) ≥60%, 4~6 (중빈도) ~30%, 1~3 (저빈도) ≤10% — 학습 효율 최대화
-   - stage 가드: 생성 카드의 `stage` 메타가 `lang_<lang>.currentStage` 또는 (currentStage + 1) 만 허용. 점프 (Stage 1 → Stage 3) 금지
+   - stage 가드: 콩트 안 모든 카드의 `stage` 메타가 `lang_<lang>.currentStage` 또는 (currentStage + 1) 만 허용. 점프 (Stage 1 → Stage 3) 금지
 
 6. **콘텐츠 작성 가이드 준수**
    - en: `~/apps/study/docs/lesson-explanation-guide-en.md`
@@ -280,15 +281,18 @@ CREATE POLICY "Users can only access own data"
    - explanation 스키마: `~/apps/study/docs/explanation-schema.md` (en/ja 공통 메타 5필드)
    - 한자 병기 한글 표기 (Wave 11.65): ja sentence 가 한자 포함 시 `phonetic_kr` 의무
 
-7. **`study_today_lessons` INSERT** (count 건)
-   - 필수 컬럼: `id` (uuid 또는 결정적 ID `<lang>-<date>-<idx>`), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
-   - meta 5필드는 explanation JSONB 안에 nested
-   - bulkInsert (lang × date 단일 트랜잭션)
+7. **`study_today_lessons` INSERT** (콩트 1편 = skitTotal 건)
+   - 필수 컬럼: `id` (결정적 ID `<lang>-<date>-skit<N>-<order>`), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
+   - explanation JSONB nested 메타:
+     - 5필드 (stage / newElements / knownElements / frequency / category)
+     - **콩트 메타 4필드** (skitId / skitTitle / skitOrder / skitTotal) — explanation-schema.md §"콩트 메타" 참조
+   - bulkInsert (lang × date 단일 트랜잭션, 콩트 안 카드 동시 INSERT)
 
 8. **검증 + 사용자 보고**
-   - INSERT 직후 동일 user_id + lang + date 로 SELECT count → 요청 분량과 일치 확인
-   - 사용자에게 보고: lang / date / count / 첫 sentence 1건 인용 (sanity check 가능)
-   - 차단 시 (분량 mismatch / RLS reject / 중복 reject) 즉시 사용자 알림 + 원인 보고
+   - INSERT 직후 동일 user_id + lang + date 로 SELECT count → 콩트 skitTotal 과 일치 확인 (콩트 N편 시 N × 각 skitTotal 합산)
+   - 콩트 메타 검증: 같은 skitId 카드 묶음 안 정확히 1장만 `newElements.length === 1` (펀치라인 권장)
+   - 사용자에게 보고: lang / date / skitId / skitTotal / skitTitle / 펀치라인 sentence 1건 인용
+   - 차단 시 (분량 가드 위반 / RLS reject / 중복 reject / newElements 룰 위반) 즉시 사용자 알림 + 원인 보고
 
 **클라이언트 동기화:**
 - 사용자가 PWA 진입 → `Sync.startSync()` 가 `study_today_lessons` PULL → Dexie `todayLessons` 갱신 (Wave 11.13.1)

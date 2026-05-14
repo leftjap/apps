@@ -38,8 +38,8 @@ Repo Secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` 의존. 로컬 .env �
 ## 카드 작성 §10·§11 자체 체크리스트 (요약 — 정본은 위 docs)
 
 ### ja (§10, 11항)
-- [ ] `newElements` length === 1
-- [ ] `knownElements` 가 이전 stage 카드 newElements 합집합에 포함
+- [ ] `newElements` 콩트 단위 length===1 (콩트 1편 안 펀치라인 카드만 length=1, 나머지 length=0)
+- [ ] `knownElements` 가 이전 콩트 newElements 합집합 + 본 콩트 newElements 에 포함 (콩트 사슬 단위)
 - [ ] `phonetic_kr` 4패턴 (장음 `-` / 촉음 받침 / 묵음 약 / 조사 와·오·에) 정확
 - [ ] `frequency` (1~10) · `category` 박힘
 - [ ] Stage 1 sentence + reading 한자 0개
@@ -51,8 +51,8 @@ Repo Secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` 의존. 로컬 .env �
 - [ ] explanation 9키 정확 일치 (whenToUse/grammar/pronPoints/similar + stage/newElements/knownElements/frequency/category)
 
 ### en (§11, 13항)
-- [ ] `newElements` length === 1
-- [ ] `knownElements` 가 이전 stage 카드 newElements 합집합에 포함
+- [ ] `newElements` 콩트 단위 length===1 (콩트 1편 안 펀치라인 카드만 length=1, 나머지 length=0)
+- [ ] `knownElements` 가 이전 콩트 newElements 합집합 + 본 콩트 newElements 에 포함 (콩트 사슬 단위)
 - [ ] `phonetic_kr` 연음/flap/약음 반영 (사전 표기 X)
 - [ ] `pronunciation.chunks` 가 모든 단어 빠짐없이 포함
 - [ ] `phonetic_kr` = chunks 의 kr 이어붙인 것과 일치
