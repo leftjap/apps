@@ -220,17 +220,27 @@ export function renderDocFromRow(row, doc = document) {
     const metaEl = existing.querySelector?.('.doc__meta');
     const body = existing.querySelector?.('.doc__body');
     if (h1 && !locked) {
-      h1.textContent = titleText;
+      // Wave 11.X-3 — 같은 텍스트 시 textContent set skip (textNode 교체 차단 → caret 보존).
+      if (h1.textContent !== titleText) h1.textContent = titleText;
       if (readOnly) h1.removeAttribute?.('contenteditable');
       else h1.setAttribute?.('contenteditable', '');
     }
-    if (metaEl) metaEl.innerHTML = meta;
+    if (metaEl && metaEl.innerHTML !== meta) metaEl.innerHTML = meta;
     if (body && !locked) {
-      body.innerHTML = bodyInner;
+      // Wave 11.X-3 — 같은 content 면 set skip (self-echo 등 동일 reload caret 점프 차단).
+      // 다른 content 면 caret offset save → set → restore (WebKit textNode 교체 시 caret 보존).
+      if (body.innerHTML !== bodyInner) {
+        const win = body.ownerDocument?.defaultView || (typeof window !== 'undefined' ? window : null);
+        const savedOffset = win ? getCaretOffset(body, win) : null;
+        body.innerHTML = bodyInner;
+        if (savedOffset != null && win) setCaretOffset(body, savedOffset, win);
+      }
       if (readOnly) body.removeAttribute?.('contenteditable');
       else body.setAttribute?.('contenteditable', '');
     }
-    existing.dataset.readOnly = readOnly ? '1' : '';
+    if (existing.dataset.readOnly !== (readOnly ? '1' : '')) {
+      existing.dataset.readOnly = readOnly ? '1' : '';
+    }
   } else {
     const editableAttr = readOnly ? '' : 'contenteditable';
     view.innerHTML = `
@@ -644,6 +654,66 @@ export function _clearComposingForTest() { _composingArticle = null; }
 // Wave 11.X-2 — _selfPushTimestamps 테스트 전용 진입점.
 export function _recordSelfPushForTest(id, ts) { _selfPushTimestamps.set(id, ts); }
 export function _clearSelfPushForTest() { _selfPushTimestamps.clear(); }
+
+// ───────────────────────────────────────────────────────────────────────────
+// Wave 11.X-3 — caret save/restore (contenteditable + WebKit textNode 교체 시 caret 보존).
+// 검색 근거: codegenes.net "Caret Position Reverting to Start in Contenteditable Span on Re-render".
+// "If React replaces a text node, the original selection range becomes invalid → caret reset".
+// 우리 케이스도 동일 — body.innerHTML 재설정 시 textNode 교체로 selection invalid → caret 점프.
+// 표준 해결: character offset 으로 save → DOM 변경 → 같은 offset 으로 restore.
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * body 시작부터 현재 caret 위치까지의 절대 character offset 반환.
+ * caret 이 body 안에 없거나 selection 없으면 null.
+ */
+export function getCaretOffset(body, win = (typeof window !== 'undefined' ? window : null)) {
+  if (!body || !win?.getSelection) return null;
+  const sel = win.getSelection();
+  if (!sel || sel.rangeCount === 0) return null;
+  const range = sel.getRangeAt(0);
+  if (!body.contains(range.startContainer)) return null;
+  const pre = body.ownerDocument.createRange();
+  pre.selectNodeContents(body);
+  pre.setEnd(range.startContainer, range.startOffset);
+  return pre.toString().length;
+}
+
+/**
+ * body 안에서 character offset 위치에 caret 설정.
+ * TreeWalker 로 textNode 순회하며 누적 길이로 위치 찾음.
+ * offset 이 텍스트 총 길이를 초과하면 끝에 두기.
+ * offset 이 null/undefined 면 no-op.
+ */
+export function setCaretOffset(body, offset, win = (typeof window !== 'undefined' ? window : null)) {
+  if (!body || offset == null || !win?.getSelection || !body.ownerDocument) return false;
+  const doc = body.ownerDocument;
+  if (!doc.createTreeWalker || !doc.createRange) return false;
+  const sel = win.getSelection();
+  if (!sel) return false;
+  const walker = doc.createTreeWalker(body, NodeFilter.SHOW_TEXT, null);
+  let pos = 0;
+  let node;
+  while ((node = walker.nextNode())) {
+    const len = node.nodeValue?.length ?? 0;
+    if (pos + len >= offset) {
+      const range = doc.createRange();
+      range.setStart(node, offset - pos);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      return true;
+    }
+    pos += len;
+  }
+  // 길이 초과 — body 끝에 두기
+  const range = doc.createRange();
+  range.selectNodeContents(body);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+  return true;
+}
 
 /** article 안 .server-update-badge 표시. element 없으면 doc__meta 에 inline 추가. */
 export function showServerUpdateBadge(article, doc = document) {
@@ -2284,6 +2354,9 @@ export const Entries = {
   // Wave 11.X-2 — 자기 push echo skip (caret 점프 잔존 회귀 차단)
   _recordSelfPushForTest,
   _clearSelfPushForTest,
+  // Wave 11.X-3 — caret save/restore (WebKit textNode 교체 시 caret 보존)
+  getCaretOffset,
+  setCaretOffset,
   showServerUpdateBadge,
   hideServerUpdateBadge,
   handleRealtimeEntryChange,

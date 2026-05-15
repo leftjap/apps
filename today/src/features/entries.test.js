@@ -33,6 +33,8 @@ import {
   _clearComposingForTest,
   _recordSelfPushForTest,
   _clearSelfPushForTest,
+  getCaretOffset,
+  setCaretOffset,
   handleRealtimeEntryChange,
   handleDeleteAction,
   handleDuplicateAction,
@@ -567,6 +569,43 @@ describe('isEditorDirty / markArticleDirty / clearArticleDirty — WeakSet 기�
     expect(() => clearArticleDirty(undefined)).not.toThrow();
     expect(isEditorDirty(null)).toBe(false);
     expect(isEditorDirty(undefined)).toBe(false);
+  });
+});
+
+describe('getCaretOffset / setCaretOffset — Wave 11.X-3 caret save/restore', () => {
+  it('body null/undefined → null', () => {
+    expect(getCaretOffset(null)).toBe(null);
+    expect(getCaretOffset(undefined)).toBe(null);
+  });
+
+  it('win 미주입 + 전역 window 없음 → null (node 환경 안전)', () => {
+    expect(getCaretOffset({}, null)).toBe(null);
+  });
+
+  it('selection 없는 win → null', () => {
+    const fakeWin = { getSelection: () => null };
+    expect(getCaretOffset({}, fakeWin)).toBe(null);
+  });
+
+  it('rangeCount 0 → null', () => {
+    const fakeWin = { getSelection: () => ({ rangeCount: 0 }) };
+    expect(getCaretOffset({}, fakeWin)).toBe(null);
+  });
+
+  it('setCaretOffset offset null → false (no-op)', () => {
+    const fakeWin = { getSelection: () => ({}) };
+    expect(setCaretOffset({}, null, fakeWin)).toBe(false);
+    expect(setCaretOffset({}, undefined, fakeWin)).toBe(false);
+  });
+
+  it('setCaretOffset body null → false', () => {
+    const fakeWin = { getSelection: () => ({}) };
+    expect(setCaretOffset(null, 5, fakeWin)).toBe(false);
+  });
+
+  it('setCaretOffset body.ownerDocument 없음 → false', () => {
+    const fakeWin = { getSelection: () => ({}) };
+    expect(setCaretOffset({}, 5, fakeWin)).toBe(false);
   });
 });
 
