@@ -542,3 +542,64 @@ describe('applyTodayToCalendar', () => {
     expect(r.reason).toBe('different_month');
   });
 });
+
+describe('applyTrendToDom + applyBodyPartsToDom (W-I)', () => {
+  function makeBindDoc(keys) {
+    const map = new Map();
+    for (const k of keys) map.set(k, { textContent: '', innerHTML: '' });
+    return {
+      getElementById: () => null, // SVG skip
+      querySelector: (sel) => {
+        const m = sel.match(/\[data-bind="([^"]+)"\]/);
+        return m ? map.get(m[1]) : null;
+      },
+      _map: map,
+    };
+  }
+  it('applyTrendToDom 빈 trend → no-op', async () => {
+    const { applyTrendToDom } = await import('./stats.js');
+    const doc = makeBindDoc(['trend-avg', 'trend-delta']);
+    applyTrendToDom([], doc);
+    expect(doc._map.get('trend-avg').innerHTML).toBe('');
+  });
+  it('applyTrendToDom trend 8주 → 헤더 갱신', async () => {
+    const { applyTrendToDom } = await import('./stats.js');
+    const doc = makeBindDoc(['trend-avg', 'trend-delta', 'trend-pr', 'trend-streak', 'trend-avg2']);
+    const trend = [
+      { weekStart: '2026-03-23', vol: 5000 },
+      { weekStart: '2026-03-30', vol: 6000 },
+      { weekStart: '2026-04-06', vol: 7000 },
+      { weekStart: '2026-04-13', vol: 8000 },
+      { weekStart: '2026-04-20', vol: 9000 },
+      { weekStart: '2026-04-27', vol: 10000 },
+      { weekStart: '2026-05-04', vol: 11000 },
+      { weekStart: '2026-05-11', vol: 12000 },
+    ];
+    applyTrendToDom(trend, doc);
+    expect(doc._map.get('trend-avg').innerHTML).toBe('8.5K');
+    expect(doc._map.get('trend-pr').innerHTML).toContain('12.0K');
+    expect(doc._map.get('trend-streak').innerHTML).toContain('8');
+    expect(doc._map.get('trend-delta').innerHTML).toContain('+9%');
+  });
+  it('applyBodyPartsToDom 빈 parts → "기록 없음"', async () => {
+    const { applyBodyPartsToDom } = await import('./stats.js');
+    const doc = makeBindDoc(['body-total', 'body-stack', 'body-list']);
+    applyBodyPartsToDom([], doc);
+    expect(doc._map.get('body-total').textContent).toBe('0');
+    expect(doc._map.get('body-stack').innerHTML).toBe('');
+    expect(doc._map.get('body-list').innerHTML).toContain('기록 없음');
+  });
+  it('applyBodyPartsToDom 3부위 → 합계 + 행 생성', async () => {
+    const { applyBodyPartsToDom } = await import('./stats.js');
+    const doc = makeBindDoc(['body-total', 'body-stack', 'body-list']);
+    applyBodyPartsToDom([
+      { key: 'chest', name: '가슴', count: 5, color: '#d97757' },
+      { key: 'back', name: '등', count: 3, color: '#788c5d' },
+      { key: 'legs', name: '하체', count: 2, color: '#b85a3e' },
+    ], doc);
+    expect(doc._map.get('body-total').textContent).toBe('10');
+    expect(doc._map.get('body-stack').innerHTML).toContain('width:50.0%');
+    expect(doc._map.get('body-list').innerHTML).toContain('가슴');
+    expect(doc._map.get('body-list').innerHTML).toContain('50%');
+  });
+});

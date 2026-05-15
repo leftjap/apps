@@ -103,9 +103,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div style="padding:26px 24px 0;">
         <div class="kr" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">최근 8주 · 주간 볼륨</div>
         <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">12.4K</span>
+          <span class="num" data-bind="trend-avg" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">12.4K</span>
           <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.55);">kg / 주</span>
-          <span class="kr" style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:600;padding:3px 8px;background:rgba(217,119,87,0.16);border-radius:999px;">↑ +8%</span>
+          <span class="kr" data-bind="trend-delta" style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:600;padding:3px 8px;background:rgba(217,119,87,0.16);border-radius:999px;">↑ +8%</span>
         </div>
         <svg id="trend-svg" viewBox="-4 -10 288 140" style="margin-top:18px;width:100%;height:140px;overflow:visible;">
           <defs>
@@ -118,15 +118,15 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       </div>
       <div style="margin:32px 20px 0;padding:18px 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
         <div style="text-align:center;">
-          <div class="num" style="font-size:18px;font-weight:500;color:var(--accent);">86K<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span></div>
+          <div class="num" data-bind="trend-pr" style="font-size:18px;font-weight:500;color:var(--accent);">86K<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span></div>
           <div class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;">볼륨 PR</div>
         </div>
         <div style="text-align:center;">
-          <div class="num" style="font-size:18px;font-weight:500;color:#fff;">3<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span></div>
+          <div class="num" data-bind="trend-streak" style="font-size:18px;font-weight:500;color:#fff;">3<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span></div>
           <div class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;">연속</div>
         </div>
         <div style="text-align:center;">
-          <div class="num" style="font-size:18px;font-weight:500;color:#fff;">12.4K<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span></div>
+          <div class="num" data-bind="trend-avg2" style="font-size:18px;font-weight:500;color:#fff;">12.4K<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span></div>
           <div class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;">평균</div>
         </div>
       </div>
@@ -137,17 +137,17 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div style="padding:26px 24px 0;">
         <div class="kr" style="font-size:11px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 달 부위 분포</div>
         <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">14</span>
+          <span class="num" data-bind="body-total" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">14</span>
           <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.55);">회 운동</span>
         </div>
-        <div style="margin-top:22px;height:10px;border-radius:5px;overflow:hidden;display:flex;background:rgba(255,255,255,0.06);">
+        <div data-bind="body-stack" style="margin-top:22px;height:10px;border-radius:5px;overflow:hidden;display:flex;background:rgba(255,255,255,0.06);">
           <div style="width:32%;background:#d97757;"></div>
           <div style="width:26%;background:#788c5d;"></div>
           <div style="width:18%;background:#b85a3e;"></div>
           <div style="width:14%;background:#c9a96e;"></div>
           <div style="width:10%;background:#6b8a9c;"></div>
         </div>
-        <div style="margin-top:22px;">
+        <div data-bind="body-list" style="margin-top:22px;">
           <div style="display:flex;align-items:center;padding:11px 0;">
             <span style="width:8px;height:8px;border-radius:4px;background:#d97757;margin-right:12px;"></span>
             <span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">가슴</span>

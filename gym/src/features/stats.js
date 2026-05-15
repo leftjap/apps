@@ -491,6 +491,9 @@ export async function mountStatsView(now = Date.now()) {
     const sessions = await getSessionsByRange(toISODate(lookback), toISODate(today));
     const volumes = summarizeVolumes(sessions, now);
     applyVolumesToDom(volumes, doc);
+    // W-I — 추이/부위 탭 hydrate (이전엔 fixture 영구 표시)
+    applyTrendToDom(summarizeWeeklyTrend(sessions, 8, now), doc);
+    applyBodyPartsToDom(summarizeBodyParts(sessions), doc);
     applyTodayToCalendar(now, doc);
     applyWorkedToCalendar(sessions, doc);
     try { wireMonthCalendarTaps(doc); } catch (e) { console.error('[gymStats] wireMonthCalendarTaps', e); }
@@ -565,6 +568,96 @@ export function summarizeWeeklyTrend(sessions, weeks = 8, now = Date.now()) {
   return result;
 }
 
+/** 1234 → "1.2K", 999 → "999". 통계 헤더 표기. */
+function formatK(n) {
+  const v = Number(n) || 0;
+  if (v >= 1000) return `${(v / 1000).toFixed(1)}K`;
+  return String(Math.round(v));
+}
+
+/** W-I — 추이 SVG polyline + 헤더 stat 갱신. trend = [{weekStart, vol}] (length=8). */
+export function applyTrendToDom(trend, doc) {
+  if (!doc || !Array.isArray(trend) || trend.length === 0) return;
+  const svg = doc.getElementById('trend-svg');
+  if (svg) {
+    // 기존 path/polyline/circle 제거 (defs 는 보존)
+    Array.from(svg.querySelectorAll('path,polyline,circle')).forEach((el) => el.remove());
+    const w = 280, h = 120;
+    const max = Math.max(1, ...trend.map((t) => Number(t.vol) || 0));
+    const step = trend.length > 1 ? w / (trend.length - 1) : 0;
+    const pts = trend.map((t, i) => `${(i * step).toFixed(1)},${(h - (Number(t.vol) || 0) / max * h).toFixed(1)}`);
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const area = doc.createElementNS(SVG_NS, 'path');
+    area.setAttribute('d', `M0,${h} L${pts.join(' L')} L${w},${h} Z`);
+    area.setAttribute('fill', 'url(#grad)');
+    svg.appendChild(area);
+    const line = doc.createElementNS(SVG_NS, 'polyline');
+    line.setAttribute('points', pts.join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', '#d97757');
+    line.setAttribute('stroke-width', '2');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(line);
+    // 마지막 점 강조
+    const lastPt = pts[pts.length - 1].split(',');
+    const dot = doc.createElementNS(SVG_NS, 'circle');
+    dot.setAttribute('cx', lastPt[0]);
+    dot.setAttribute('cy', lastPt[1]);
+    dot.setAttribute('r', '3.5');
+    dot.setAttribute('fill', '#d97757');
+    svg.appendChild(dot);
+  }
+  const total = trend.reduce((s, t) => s + (Number(t.vol) || 0), 0);
+  const avg = total / trend.length;
+  const last = trend[trend.length - 1]?.vol || 0;
+  const prev = trend[trend.length - 2]?.vol || 0;
+  const delta = prev > 0 ? Math.round((last - prev) / prev * 100) : null;
+  const pr = Math.max(0, ...trend.map((t) => Number(t.vol) || 0));
+  // 연속: 최근부터 vol>0 카운트
+  let streak = 0;
+  for (let i = trend.length - 1; i >= 0; i -= 1) {
+    if ((Number(trend[i].vol) || 0) > 0) streak += 1;
+    else break;
+  }
+  const set = (key, html) => { const el = doc.querySelector(`[data-bind="${key}"]`); if (el) el.innerHTML = html; };
+  set('trend-avg', formatK(avg));
+  set('trend-delta', delta === null ? '신규' : delta >= 0 ? `↑ +${delta}%` : `↓ ${delta}%`);
+  set('trend-pr', `${formatK(pr)}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span>`);
+  set('trend-streak', `${streak}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span>`);
+  set('trend-avg2', `${formatK(avg)}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span>`);
+}
+
+/** W-I — 부위 분포 stack + list 갱신. parts = [{key, name, count, color}] (count>0, sorted desc). */
+export function applyBodyPartsToDom(parts, doc) {
+  if (!doc || !Array.isArray(parts)) return;
+  const total = parts.reduce((s, p) => s + (Number(p.count) || 0), 0);
+  const totalEl = doc.querySelector('[data-bind="body-total"]');
+  if (totalEl) totalEl.textContent = String(total);
+  const stack = doc.querySelector('[data-bind="body-stack"]');
+  if (stack) {
+    if (total === 0) {
+      stack.innerHTML = '';
+    } else {
+      stack.innerHTML = parts.map((p) => {
+        const pct = ((p.count / total) * 100).toFixed(1);
+        return `<div style="width:${pct}%;background:${p.color};"></div>`;
+      }).join('');
+    }
+  }
+  const list = doc.querySelector('[data-bind="body-list"]');
+  if (list) {
+    if (total === 0) {
+      list.innerHTML = '<div class="kr" style="padding:14px 0;color:rgba(255,255,255,0.45);font-size:13px;text-align:center;">기록 없음</div>';
+    } else {
+      list.innerHTML = parts.map((p, i) => {
+        const pct = Math.round((p.count / total) * 100);
+        const border = i === 0 ? '' : 'border-top:1px solid rgba(255,255,255,0.04);';
+        return `<div style="display:flex;align-items:center;padding:11px 0;${border}"><span style="width:8px;height:8px;border-radius:4px;background:${p.color};margin-right:12px;"></span><span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">${p.name}</span><div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${p.color};"></div></div><span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">${p.count}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span><span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">${pct}%</span></div>`;
+      }).join('');
+    }
+  }
+}
+
 if (typeof window !== 'undefined') {
   window.gymStats = {
     summarizeVolumes,
@@ -582,5 +675,7 @@ if (typeof window !== 'undefined') {
     mountStatsView,
     summarizeBodyParts,
     summarizeWeeklyTrend,
+    applyTrendToDom,
+    applyBodyPartsToDom,
   };
 }
