@@ -23,6 +23,9 @@ const _dirtyArticles = new WeakSet();
 // Wave 11.X — IME composition 추적 (한글 조합 중 외부 reload/DOM 재패치 차단).
 // mainView 는 단일 article 만 노출하므로 모듈 레벨 단일 변수로 충분.
 let _composingArticle = null;
+// Wave 11.X-2 — 자기 push 의 Realtime self-echo 무시 (composition 끝난 후 dirty 해제 micro-window 의 caret 점프 회귀 차단).
+// saveArticle 직후 row.updated_at 기록 → handleRealtimeEntryChange 에서 동일 timestamp echo skip.
+const _selfPushTimestamps = new Map();
 
 // ───────────────────────────────────────────────────────────────────────────
 // debounce util — 800ms (spec §3 line 65-66 + §8 line 329)
@@ -597,6 +600,10 @@ export async function saveArticle(article, user, kind) {
     // Wave 11.5.3.3 — 저장 성공 = dirty 해제 + 서버 배지 숨김 (자기 push 의 메아리 reload 방지)
     _dirtyArticles.delete(article);
     hideServerUpdateBadge(article);
+    // Wave 11.X-2 — 자기 push echo 무시용 timestamp 기록 (caret 점프 회귀 차단).
+    if (row?.id && row?.updated_at) {
+      _selfPushTimestamps.set(row.id, row.updated_at);
+    }
     return row;
   } catch (e) {
     setSaveStatus(article, '저장 실패');
@@ -633,6 +640,10 @@ export function isComposing(article) {
 // JSDOM 의 composition event 시뮬레이션 한계 우회 — 테스트 전용 진입점.
 export function _setComposingForTest(article) { _composingArticle = article; }
 export function _clearComposingForTest() { _composingArticle = null; }
+
+// Wave 11.X-2 — _selfPushTimestamps 테스트 전용 진입점.
+export function _recordSelfPushForTest(id, ts) { _selfPushTimestamps.set(id, ts); }
+export function _clearSelfPushForTest() { _selfPushTimestamps.clear(); }
 
 /** article 안 .server-update-badge 표시. element 없으면 doc__meta 에 inline 추가. */
 export function showServerUpdateBadge(article, doc = document) {
@@ -697,6 +708,12 @@ export async function handleRealtimeEntryChange(payload, doc = document) {
   }
 
   if (matches) {
+    // Wave 11.X-2 — 자기 push echo skip (saveArticle 가 기록한 updated_at 과 동일하면 무시).
+    // composition 끝난 후 dirty 해제 micro-window 의 self-echo 로 인한 caret 점프 회귀 차단.
+    const lastSelf = _selfPushTimestamps.get(id);
+    if (lastSelf && newRow?.updated_at === lastSelf) {
+      return { applied: true, reason: 'self_echo_skip', matched: true };
+    }
     // Wave 11.X — IME composition 중에도 dirty 와 동일 처리 (caret 점프 방지).
     const composing = isComposing(article);
     if (isEditorDirty(article) || composing) {
@@ -2264,6 +2281,9 @@ export const Entries = {
   isComposing,
   _setComposingForTest,
   _clearComposingForTest,
+  // Wave 11.X-2 — 자기 push echo skip (caret 점프 잔존 회귀 차단)
+  _recordSelfPushForTest,
+  _clearSelfPushForTest,
   showServerUpdateBadge,
   hideServerUpdateBadge,
   handleRealtimeEntryChange,

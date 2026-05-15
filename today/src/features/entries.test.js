@@ -31,6 +31,8 @@ import {
   isComposing,
   _setComposingForTest,
   _clearComposingForTest,
+  _recordSelfPushForTest,
+  _clearSelfPushForTest,
   handleRealtimeEntryChange,
   handleDeleteAction,
   handleDuplicateAction,
@@ -678,6 +680,48 @@ describe('handleRealtimeEntryChange — payload 분기 (mock document)', () => {
     expect(r.reason).toBe('composing_badge');
     expect(r.matched).toBe(true);
     _clearComposingForTest();
+  });
+
+  it('매치 + 자기 push echo (동일 updated_at) → reason=self_echo_skip (Wave 11.X-2)', async () => {
+    const article = {
+      dataset: { entryId: 'A' },
+      remove: () => {},
+      querySelector: () => null,
+    };
+    _recordSelfPushForTest('A', '2026-05-15T00:00:00.000Z');
+    const doc = {
+      querySelector: (sel) => (sel === '#mainView article.doc' ? article : null),
+      createElement: () => ({ className: '', textContent: '', hidden: false }),
+    };
+    const r = await handleRealtimeEntryChange(
+      { table: 'today_entries', eventType: 'UPDATE', new: { id: 'A', updated_at: '2026-05-15T00:00:00.000Z' } },
+      doc,
+    );
+    expect(r.applied).toBe(true);
+    expect(r.reason).toBe('self_echo_skip');
+    expect(r.matched).toBe(true);
+    _clearSelfPushForTest();
+  });
+
+  it('매치 + 다른 timestamp echo → reload (자기 push 아님 — Wave 11.X-2)', async () => {
+    const article = {
+      dataset: { entryId: 'A' },
+      remove: () => {},
+      querySelector: () => null,
+    };
+    _recordSelfPushForTest('A', '2026-05-15T00:00:00.000Z');
+    const doc = {
+      getElementById: () => ({ innerHTML: '', querySelector: () => null }),
+      querySelector: (sel) => (sel === '#mainView article.doc' ? article : null),
+      createElement: () => ({ className: '', textContent: '', hidden: false }),
+    };
+    const r = await handleRealtimeEntryChange(
+      { table: 'today_entries', eventType: 'UPDATE', new: { id: 'A', updated_at: '2026-05-15T00:00:01.000Z', kind: 'navi' } },
+      doc,
+    );
+    expect(r.applied).toBe(true);
+    expect(r.reason).toBe('reloaded');
+    _clearSelfPushForTest();
   });
 
   it('DELETE + 매치 → article.remove 호출', async () => {
