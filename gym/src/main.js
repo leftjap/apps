@@ -43,6 +43,10 @@ if (typeof document !== 'undefined') {
   });
   window.addEventListener('pagehide', bgFlush);
   document.addEventListener('freeze', bgFlush);
+  // W-C — 온라인 복귀 시 펜딩 큐 즉시 flush (offline 중 적재된 큐 회복).
+  window.addEventListener('online', bgFlush);
+  // W-F — BFCache 복원 (e.persisted=true) 시 펜딩 큐 flush.
+  window.addEventListener('pageshow', (e) => { if (e.persisted) bgFlush(); });
 }
 
 // 홈 화면 설치/PWA 저장소 영속성 요청 (spec §13)

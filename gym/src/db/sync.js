@@ -321,10 +321,11 @@ export async function pullTable(mapping, db, userId) {
   if (!db) return { table: mapping.dexie, status: 'skipped', reason: 'no_db' };
   if (!userId) return { table: mapping.dexie, status: 'skipped', reason: 'no_user' };
   try {
-    const { data, error } = await supabase
-      .from(mapping.supabase)
-      .select('*')
-      .eq('user_id', userId);
+    // W-C — supabase select 만 withRetry wrap. bulkPut 은 ConstraintError 같은 결정성 오류라 wrap 제외.
+    const { data, error } = await withRetry(
+      () => supabase.from(mapping.supabase).select('*').eq('user_id', userId),
+      `pullTable ${mapping.supabase}`,
+    );
     if (error) {
       console.error(`[sync] pullTable ${mapping.supabase} 실패`, error);
       return { table: mapping.dexie, status: 'error', error };
@@ -426,8 +427,24 @@ export async function pushTable(mapping, db, userId, ids = null) {
 export async function pushAll(db, userId, byTable = null) {
   if (!supabase) return { ok: false, reason: 'no_supabase', results: [], failed: 0 };
   if (!db || !userId) return { ok: false, reason: 'preconditions', results: [], failed: 0 };
+  // W-D — 전체 push (byTable=null) 한정 50% 급감 차단 (spec §4 line 223 "안전장치: 50% 이상 세션 감소 시 업로드 차단").
+  // 부분 push (큐 기반 byTable) 는 명시적 사용자 변경 → 차단 안 함.
+  const shrinkBlocked = new Set();
+  if (!byTable) {
+    for (const m of TABLE_MAP) {
+      const serverCount = _serverCounts.has(m.dexie) ? _serverCounts.get(m.dexie) : null;
+      if (serverCount == null || serverCount === 0) continue;
+      const store = db[m.dexie];
+      if (!store?.count) continue;
+      const localCount = await store.count();
+      if (localCount / serverCount < 0.5) shrinkBlocked.add(m.dexie);
+    }
+  }
   const results = await Promise.all(
     TABLE_MAP.map((m) => {
+      if (shrinkBlocked.has(m.dexie)) {
+        return Promise.resolve({ table: m.dexie, status: 'blocked', reason: 'shrink_50pct' });
+      }
       if (byTable) {
         const keysSet = byTable.get(m.dexie);
         const ids = keysSet ? Array.from(keysSet).map((k) => pkFromKey(m.dexie, k)) : [];

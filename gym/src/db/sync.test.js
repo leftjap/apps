@@ -610,3 +610,136 @@ describe('stopSync — delete-only 큐 flush (W-A 회귀 방지)', () => {
     expect(deleteCalled).toBe(true);
   });
 });
+
+describe('pullTable — select withRetry (W-C)', () => {
+  it('select throw 1회 후 retry 1회 만에 ok', async () => {
+    vi.resetModules();
+    let calls = 0;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({
+            eq: async () => {
+              calls += 1;
+              if (calls === 1) throw new Error('network');
+              return { data: [], error: null };
+            },
+          }),
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    vi.spyOn(global, 'setTimeout').mockImplementation((cb) => { cb(); return 0; });
+    const mod = await import('./sync.js');
+    const m = mod.TABLE_MAP.find((x) => x.dexie === 'sessions');
+    const r = await mod.pullTable(m, { sessions: { bulkPut: async () => {} } }, 'u1');
+    expect(r.status).toBe('empty');
+    expect(calls).toBe(2);
+    vi.restoreAllMocks();
+  });
+});
+
+describe('pushAll — 50% 급감 차단 (W-D · spec §4 line 223)', () => {
+  it('전체 push: server=10 + local=4 → blocked, upsert 미호출', async () => {
+    vi.resetModules();
+    let upsertCalled = false;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({ eq: async () => ({ data: Array(10).fill({ id: 's', user_id: 'u1', date: '2026-01-01', status: 'completed', start_time: 0, end_time: 0, blocks: [], tags: [], total_volume: 0, total_calories: 0, duration_min: 0 }), error: null }) }),
+          upsert: async () => { upsertCalled = true; return { error: null }; },
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    const fakeDB = {
+      sessions: { bulkPut: async () => {}, bulkGet: async () => [], toArray: async () => Array(4).fill({ id: 's' }), count: async () => 4 },
+      prs: { bulkPut: async () => {}, bulkGet: async () => [], toArray: async () => [], count: async () => 0 },
+      weights: { bulkPut: async () => {}, toArray: async () => [], count: async () => 0 },
+      customExercises: { bulkPut: async () => {}, toArray: async () => [], count: async () => 0 },
+      settings: { bulkPut: async () => {}, toArray: async () => [], count: async () => 0 },
+    };
+    await mod.pullAll(fakeDB, 'u1');
+    expect(mod.getServerCount('sessions')).toBe(10);
+    const r = await mod.pushAll(fakeDB, 'u1', null);
+    const sessRes = r.results.find((x) => x.table === 'sessions');
+    expect(sessRes.status).toBe('blocked');
+    expect(sessRes.reason).toBe('shrink_50pct');
+    expect(upsertCalled).toBe(false);
+  });
+
+  it('부분 push (byTable): server=10 + local=4 → 차단 안 함 (사용자 명시 변경)', async () => {
+    vi.resetModules();
+    let upsertCalled = false;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({ eq: async () => ({ data: Array(10).fill({ id: 's', user_id: 'u1', date: '2026-01-01', status: 'completed', start_time: 0, end_time: 0, blocks: [], tags: [], total_volume: 0, total_calories: 0, duration_min: 0 }), error: null }) }),
+          upsert: async () => { upsertCalled = true; return { error: null }; },
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    const fakeDB = {
+      sessions: { bulkPut: async () => {}, bulkGet: async () => [{ id: 's1', date: '2026-04-01', status: 'completed', startTime: 0, blocks: [], tags: [], totalVolume: 0, totalCalories: 0, durationMin: 0 }], count: async () => 4 },
+      prs: { bulkPut: async () => {}, bulkGet: async () => [], count: async () => 0 },
+      weights: { bulkPut: async () => {}, count: async () => 0 },
+      customExercises: { bulkPut: async () => {}, count: async () => 0 },
+      settings: { bulkPut: async () => {}, count: async () => 0 },
+    };
+    await mod.pullAll(fakeDB, 'u1');
+    const byTable = new Map([['sessions', new Set(['s1'])]]);
+    const r = await mod.pushAll(fakeDB, 'u1', byTable);
+    const sessRes = r.results.find((x) => x.table === 'sessions');
+    expect(sessRes.status).toBe('ok');
+    expect(upsertCalled).toBe(true);
+  });
+});
+
+describe('startSync — user 교체 시 새 db 인스턴스에 hook 부착 (W-E)', () => {
+  it('stopSync(A) → window.gymDB 교체 → startSync(B) — hook이 새 인스턴스에 부착', async () => {
+    vi.resetModules();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({ eq: async () => ({ data: [], error: null }) }),
+          upsert: async () => ({ error: null }),
+          delete: () => ({ eq: () => ({ in: async () => ({ error: null }) }) }),
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    const makeDB = (label) => {
+      const hooks = { creating: null, updating: null, deleting: null };
+      const store = {
+        bulkPut: async () => {},
+        bulkGet: async () => [],
+        toArray: async () => [],
+        count: async () => 0,
+        hook: (name, fn) => {
+          if (fn) { hooks[name] = fn; return; }
+          return { unsubscribe: () => { hooks[name] = null; } };
+        },
+        _hooks: hooks,
+        _label: label,
+      };
+      return { sessions: store, prs: store, weights: store, customExercises: store, settings: store };
+    };
+    globalThis.window = globalThis.window || {};
+    const dbA = makeDB('A');
+    globalThis.window.gymDB = dbA;
+    await mod.startSync({ id: 'userA' });
+    expect(dbA.sessions._hooks.creating).toBeTruthy();
+    await mod.stopSync();
+    expect(dbA.sessions._hooks.creating).toBeNull();
+    const dbB = makeDB('B');
+    globalThis.window.gymDB = dbB;
+    await mod.startSync({ id: 'userB' });
+    expect(dbB.sessions._hooks.creating).toBeTruthy();
+    expect(dbA.sessions._hooks.creating).toBeNull();
+    await mod.stopSync();
+  });
+});
