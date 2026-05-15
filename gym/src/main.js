@@ -60,8 +60,8 @@ async function bootstrap() {
     if (session?.user) {
       if (Auth.isAllowedEmail(session.user.email)) {
         await Auth.ensureUserDB(session.user);
-        // Wave 11.8.1 — 첫 다운로드 시작 (백그라운드, 실패 시 로컬 데이터 유지)
-        Sync.startSync(session.user).catch((e) => console.error('[main] sync 시작 실패', e));
+        // Wave 11.8.1 — 첫 다운로드 시작. W-H — await 로 in-flight stopSync 와 race 차단.
+        await Sync.startSync(session.user).catch((e) => console.error('[main] sync 시작 실패', e));
       } else {
         // 미허용 이메일 — 즉시 종료 + login 마커
         try { localStorage.setItem(Auth.AUTH_ERROR_KEY, 'not_allowed'); } catch {}

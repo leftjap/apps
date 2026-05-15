@@ -742,4 +742,40 @@ describe('startSync — user 교체 시 새 db 인스턴스에 hook 부착 (W-E)
     expect(dbA.sessions._hooks.creating).toBeNull();
     await mod.stopSync();
   });
+
+  it('await stopSync 직후 await startSync — _ctx 가 새 user 로 유지 (W-H)', async () => {
+    vi.resetModules();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({ eq: async () => ({ data: [], error: null }) }),
+          upsert: async () => ({ error: null }),
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    const makeDB = () => {
+      const hooks = {};
+      const store = {
+        bulkPut: async () => {}, bulkGet: async () => [], toArray: async () => [], count: async () => 0,
+        hook: (n, f) => { if (f) hooks[n] = f; else return { unsubscribe: () => { hooks[n] = null; } }; },
+      };
+      return { sessions: store, prs: store, weights: store, customExercises: store, settings: store };
+    };
+    globalThis.window = globalThis.window || {};
+    globalThis.window.gymDB = makeDB();
+    await mod.startSync({ id: 'A' });
+    // signOut 시퀀스: stopSync await → ensureUserDB await → startSync await (W-H 패턴)
+    await mod.stopSync();
+    globalThis.window.gymDB = makeDB();
+    await mod.startSync({ id: 'B' });
+    expect(mod.isSyncActive()).toBe(true);
+    // 큐 적재 후 flush 시 새 user 의 _ctx 사용 확인 (race 없음)
+    mod.queueUpload('sessions', { id: 's-B', date: '2026-01-01', status: 'active', startTime: 0, blocks: [], tags: [], totalVolume: 0, totalCalories: 0, durationMin: 0 });
+    const r = await mod.flushPendingUploads();
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe('flushed');
+    await mod.stopSync();
+  });
 });

@@ -167,7 +167,8 @@ function subscribeAuth() {
       try { await auth.ensureUserDB(user); }
       catch (e) { console.error('[gym] ensureUserDB 실패', e); return; }
       if (window.gymSync) {
-        window.gymSync.startSync(user).catch((e) => console.error('[gym] sync 시작 실패', e));
+        // W-H — await 로 in-flight stopSync 의 _ctx=null 과 race 차단.
+        await window.gymSync.startSync(user).catch((e) => console.error('[gym] sync 시작 실패', e));
       }
       if (window.location.hash === '#/login' || window.location.hash === '') {
         window.location.replace('#/home');
