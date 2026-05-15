@@ -249,6 +249,32 @@ export function findMapping(dexieName) {
 
 export const DEBOUNCE_MS = 3000;
 
+/**
+ * push/delete 일시 실패 자동 재시도 간격 — spec §4 line 224 "5초, 15초, 45초".
+ * 4xx (RLS · constraint · syntax) 는 즉시 실패 — withRetry 가 코드 prefix 로 차단.
+ */
+export const RETRY_DELAYS_MS = Object.freeze([5000, 15000, 45000]);
+
+async function withRetry(fn, label) {
+  let lastErr = null;
+  for (let i = 0; i <= RETRY_DELAYS_MS.length; i++) {
+    try {
+      const r = await fn();
+      if (!r?.error) return r ?? { error: null };
+      lastErr = r.error;
+      // 4xx (Postgres SQLSTATE 42·22·23 · PostgREST PGRST*) 는 retry 무의미 — 즉시 실패.
+      if (r.error.code && /^(42|22|23|PGRST)/.test(String(r.error.code))) return r;
+    } catch (e) {
+      lastErr = e;
+    }
+    if (i < RETRY_DELAYS_MS.length) {
+      await new Promise((res) => setTimeout(res, RETRY_DELAYS_MS[i]));
+    }
+  }
+  console.error(`[sync] ${label} retry 소진`, lastErr);
+  return { error: lastErr };
+}
+
 let _syncActive = false;
 let _ctx = null;            // { db, userId } — startSync 시 셋업, stopSync 시 비움.
 let _hooks = null;          // { creating, updating, deleting } 핸들러 reference (detach 용).
@@ -369,22 +395,17 @@ export async function pushTable(mapping, db, userId, ids = null) {
       return { table: mapping.dexie, status: 'empty', count: 0 };
     }
     if (!rows || rows.length === 0) {
+      // spec §4 line 225 "IndexedDB 빈 상태에서 업로드 차단 (서버 데이터 삭제 방지)" 자연 처리.
+      // local empty 면 여기서 'empty' return → upsert 호출 안 함 → 서버 보존.
       return { table: mapping.dexie, status: 'empty', count: 0 };
     }
-    // Wave 11.8.3 — 급감 차단: 서버 count=0 마킹된 상태에서 local rows>0 → push 차단.
-    // 마킹 없으면 (첫 startSync 전) 차단 안 함. 명시 clearServerCounts() 후도 차단 해제.
-    if (_serverCounts.has(mapping.dexie) && _serverCounts.get(mapping.dexie) === 0 && rows.length > 0) {
-      return {
-        table: mapping.dexie,
-        status: 'blocked',
-        reason: 'server_empty_local_nonempty',
-        count: rows.length,
-      };
-    }
+    // 주의: Wave 11.8.3 의 "server count=0 + local>0 → blocked" 분기는 spec 의도와 반대 발화로
+    // 신규 user 첫 push 영구 차단 발생 (Wave 11.8.x 회복 wave 에서 제거). 50% 급감 차단은 별 wave.
     const supabaseRows = rows.map((r) => mapping.toSupabase(r, userId));
-    const { error } = await supabase
-      .from(mapping.supabase)
-      .upsert(supabaseRows, { onConflict: mapping.onConflict });
+    const { error } = await withRetry(
+      () => supabase.from(mapping.supabase).upsert(supabaseRows, { onConflict: mapping.onConflict }),
+      `pushTable ${mapping.supabase}`,
+    );
     if (error) {
       console.error(`[sync] pushTable ${mapping.supabase} 실패`, error);
       return { table: mapping.dexie, status: 'error', error };
@@ -501,17 +522,19 @@ export async function deleteTable(mapping, userId, keys) {
     return { table: mapping.dexie, status: 'skipped', reason: 'settings_delete_unsupported' };
   }
   try {
-    let query = supabase.from(mapping.supabase).delete().eq('user_id', userId);
-    if (mapping.dexie === 'prs') {
-      // [exerciseId, type] 배열 → id 합성으로 .in('id', [...])
-      const ids = keys.map(([exId, type]) => `${exId}_${type}`);
-      query = query.in('id', ids);
-    } else if (mapping.dexie === 'weights') {
-      query = query.in('date', keys);
-    } else {
-      query = query.in('id', keys);
-    }
-    const { error } = await query;
+    const { error } = await withRetry(() => {
+      let query = supabase.from(mapping.supabase).delete().eq('user_id', userId);
+      if (mapping.dexie === 'prs') {
+        // [exerciseId, type] 배열 → id 합성으로 .in('id', [...])
+        const ids = keys.map(([exId, type]) => `${exId}_${type}`);
+        query = query.in('id', ids);
+      } else if (mapping.dexie === 'weights') {
+        query = query.in('date', keys);
+      } else {
+        query = query.in('id', keys);
+      }
+      return query;
+    }, `deleteTable ${mapping.supabase}`);
     if (error) {
       console.error(`[sync] deleteTable ${mapping.supabase} 실패`, error);
       return { table: mapping.dexie, status: 'error', error };
@@ -634,8 +657,8 @@ export async function stopSync() {
   if (_ctx?.db && _hooks) {
     detachHooks(_ctx.db, _hooks);
   }
-  // 마지막 pending 큐 flush (ctx 아직 살아있는 상태에서)
-  if (_pendingUploads.size > 0) {
+  // 마지막 pending 큐 flush (ctx 아직 살아있는 상태에서). delete-only 큐도 포함.
+  if (_pendingUploads.size > 0 || _pendingDeletes.size > 0) {
     try { await flushPendingUploads(); } catch (e) { console.error('[sync] stop flush', e); }
   }
   if (_debounceTimer) {

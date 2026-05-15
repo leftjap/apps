@@ -469,37 +469,8 @@ describe('getServerCount / clearServerCounts (Wave 11.8.3)', () => {
   });
 });
 
-describe('pushTable 급감 차단 (Wave 11.8.3)', () => {
-  it('server count=0 + local>0 → blocked', async () => {
-    vi.resetModules();
-    vi.doMock('../services/supabase.js', () => ({
-      supabase: {
-        from: () => ({
-          select: () => ({ eq: async () => ({ data: [], error: null }) }),
-          upsert: async () => ({ error: null }),
-        }),
-      },
-      isSupabaseConfigured: true,
-    }));
-    const mod = await import('./sync.js');
-    // pullAll 로 server count 마킹
-    const fakeDB = {
-      sessions: { bulkPut: async () => {}, bulkGet: async () => [], toArray: async () => [{ id: 's1' }] },
-      prs: { bulkPut: async () => {}, bulkGet: async () => [] },
-      weights: { bulkPut: async () => {} },
-      customExercises: { bulkPut: async () => {} },
-    };
-    const r1 = await mod.pullAll(fakeDB, 'u1');
-    expect(r1.ok).toBe(true);
-    expect(mod.getServerCount('sessions')).toBe(0);
-    // pushTable 시 local>0 + server=0 → blocked
-    const m = mod.TABLE_MAP.find((x) => x.dexie === 'sessions');
-    const r2 = await mod.pushTable(m, fakeDB, 'u1', null);
-    expect(r2.status).toBe('blocked');
-    expect(r2.reason).toBe('server_empty_local_nonempty');
-  });
-
-  it('clearServerCounts 후 차단 해제', async () => {
+describe('pushTable — local empty 자연 차단 (W-A · spec §4 line 225)', () => {
+  it('rows.length=0 → status=empty, upsert 미호출 (서버 보존)', async () => {
     vi.resetModules();
     let upsertCalled = false;
     vi.doMock('../services/supabase.js', () => ({
@@ -512,22 +483,70 @@ describe('pushTable 급감 차단 (Wave 11.8.3)', () => {
       isSupabaseConfigured: true,
     }));
     const mod = await import('./sync.js');
+    const fakeDB = { sessions: { toArray: async () => [], bulkGet: async () => [] } };
+    const m = mod.TABLE_MAP.find((x) => x.dexie === 'sessions');
+    const r = await mod.pushTable(m, fakeDB, 'u1', null);
+    expect(r.status).toBe('empty');
+    expect(upsertCalled).toBe(false);
+  });
+});
+
+describe('withRetry — push 일시 실패 회복 (W-B · spec §4 line 224)', () => {
+  it('네트워크 throw 1회 후 retry 1회 만에 ok', async () => {
+    vi.resetModules();
+    let calls = 0;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          upsert: async () => {
+            calls += 1;
+            if (calls === 1) throw new Error('network');
+            return { error: null };
+          },
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    vi.spyOn(global, 'setTimeout').mockImplementation((cb) => { cb(); return 0; });
+    const mod = await import('./sync.js');
     const fakeDB = {
       sessions: {
-        bulkPut: async () => {},
         bulkGet: async () => [{ id: 's1', date: '2026-04-01', status: 'completed', startTime: 0, blocks: [], tags: [], totalVolume: 0, totalCalories: 0, durationMin: 0 }],
-        toArray: async () => [{ id: 's1', date: '2026-04-01', status: 'completed', startTime: 0, blocks: [], tags: [], totalVolume: 0, totalCalories: 0, durationMin: 0 }],
       },
-      prs: { bulkPut: async () => {}, bulkGet: async () => [] },
-      weights: { bulkPut: async () => {} },
-      customExercises: { bulkPut: async () => {} },
     };
-    await mod.pullAll(fakeDB, 'u1');
-    mod.clearServerCounts();
     const m = mod.TABLE_MAP.find((x) => x.dexie === 'sessions');
     const r = await mod.pushTable(m, fakeDB, 'u1', ['s1']);
     expect(r.status).toBe('ok');
-    expect(upsertCalled).toBe(true);
+    expect(calls).toBe(2);
+    vi.restoreAllMocks();
+  });
+
+  it('4xx RLS (code 42501) 즉시 실패 — retry 0', async () => {
+    vi.resetModules();
+    let calls = 0;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          upsert: async () => {
+            calls += 1;
+            return { error: { code: '42501', message: 'permission denied' } };
+          },
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    vi.spyOn(global, 'setTimeout').mockImplementation((cb) => { cb(); return 0; });
+    const mod = await import('./sync.js');
+    const fakeDB = {
+      sessions: {
+        bulkGet: async () => [{ id: 's1', date: '2026-04-01', status: 'completed', startTime: 0, blocks: [], tags: [], totalVolume: 0, totalCalories: 0, durationMin: 0 }],
+      },
+    };
+    const m = mod.TABLE_MAP.find((x) => x.dexie === 'sessions');
+    const r = await mod.pushTable(m, fakeDB, 'u1', ['s1']);
+    expect(r.status).toBe('error');
+    expect(calls).toBe(1);
+    vi.restoreAllMocks();
   });
 });
 
@@ -556,5 +575,38 @@ describe('queueDelete + deleteAll (Wave 11.8.3)', () => {
     const m = mod.TABLE_MAP[0];
     const r = await mod.deleteTable(m, 'u1', []);
     expect(r.status).toBe('empty');
+  });
+});
+
+describe('stopSync — delete-only 큐 flush (W-A 회귀 방지)', () => {
+  it('uploads 비어있고 deletes 만 있을 때 stopSync 가 deleteAll 발화', async () => {
+    vi.resetModules();
+    let deleteCalled = false;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({ eq: async () => ({ data: [], error: null }) }),
+          delete: () => ({
+            eq: () => ({
+              in: async () => { deleteCalled = true; return { error: null }; },
+            }),
+          }),
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    globalThis.window = globalThis.window || {};
+    globalThis.window.gymDB = {
+      sessions: { hook: () => {}, bulkPut: async () => {}, bulkGet: async () => [], toArray: async () => [] },
+      prs: { hook: () => {}, bulkPut: async () => {}, bulkGet: async () => [] },
+      weights: { hook: () => {}, bulkPut: async () => {} },
+      customExercises: { hook: () => {}, bulkPut: async () => {} },
+      settings: { hook: () => {}, bulkPut: async () => {} },
+    };
+    await mod.startSync({ id: 'u1' });
+    mod.queueDelete('sessions', { id: 'sess-del-1' });
+    await mod.stopSync();
+    expect(deleteCalled).toBe(true);
   });
 });

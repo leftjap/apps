@@ -33,6 +33,18 @@ import { initApp } from './app.js';
 // signOut 시 sync 정리 (Wave 11.8.1)
 Auth.registerOnSignOut(() => Sync.stopSync());
 
+// W-B — 백그라운드 진입·탭 닫기·iOS PWA freeze 시 펜딩 큐 즉시 flush.
+// _ctx 무 시 flushPendingUploads 가 no_session 반환 — 안전 no-op.
+// 3초 debounce 타이머가 백그라운드에서 setTimeout pause/discard 되는 손실 방지.
+if (typeof document !== 'undefined') {
+  const bgFlush = () => { Sync.flushPendingUploads().catch((e) => console.warn('[gym] bg flush', e)); };
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') bgFlush();
+  });
+  window.addEventListener('pagehide', bgFlush);
+  document.addEventListener('freeze', bgFlush);
+}
+
 // 홈 화면 설치/PWA 저장소 영속성 요청 (spec §13)
 if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
   navigator.storage.persist().catch(() => {});
