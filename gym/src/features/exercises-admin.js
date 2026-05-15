@@ -140,49 +140,60 @@ export function hookExerciseTabClicks(root) {
 function hookCustomLongPressDelete(listEl, doc) {
   let timerId = null;
   let trackedRow = null;
-  let startX = 0;
-  let startY = 0;
-
+  let startX = 0, startY = 0;
   const cancel = () => {
     if (timerId !== null) { clearTimeout(timerId); timerId = null; }
     trackedRow = null;
   };
-
+  const closeMenus = () => {
+    doc.querySelectorAll('[data-bind="row-action-menu"]').forEach(m => m.remove());
+  };
   listEl.addEventListener('pointerdown', (e) => {
-    if (e.target?.closest?.('.ex-grip')) return; // drag handle 영역은 drag 우선
-    if (e.target?.closest?.('[data-toggle]')) return; // toggle 버튼은 click 우선
-    const row = e.target?.closest?.('.ex-row.is-custom');
+    if (e.target?.closest?.('.ex-grip')) return;
+    if (e.target?.closest?.('[data-toggle]')) return;
+    if (e.target?.closest?.('[data-bind="row-action-menu"]')) return;
+    const row = e.target?.closest?.('.ex-row');
     if (!row) return;
     trackedRow = row;
     startX = e.clientX || 0;
     startY = e.clientY || 0;
-    timerId = setTimeout(async () => {
+    timerId = setTimeout(() => {
       timerId = null;
       const id = trackedRow?.dataset?.id;
-      const nameEl = trackedRow?.querySelector?.('.ex-name');
-      const name = nameEl?.textContent || '운동';
+      const isCustom = trackedRow?.classList?.contains('is-custom');
+      const isHidden = trackedRow?.classList?.contains('is-hidden');
       trackedRow = null;
       if (!id) return;
-      const ok = typeof window !== 'undefined' && typeof window.confirm === 'function'
-        ? window.confirm(`'${name}' 운동을 삭제할까요?`)
-        : true;
-      if (!ok) return;
-      try {
-        await deleteCustomExercise(id);
-        await renderExercisesTab(doc);
-      } catch (err) {
-        console.error('[exercises-admin] deleteCustomExercise', err);
-      }
+      closeMenus();
+      const row2 = listEl.querySelector(`.ex-row[data-id="${CSS.escape(id)}"]`);
+      if (!row2) return;
+      const menu = doc.createElement('div');
+      menu.dataset.bind = 'row-action-menu';
+      menu.style.cssText = 'display:flex;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.04);';
+      const btns = isCustom
+        ? [{ act: 'delete', label: '삭제', color: '#e15a5a' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }]
+        : [{ act: 'hide', label: isHidden ? '보이기' : '숨기기', color: '#fff' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }];
+      menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:8px;border:0;background:transparent;color:${b.color};cursor:pointer;font-size:13px;">${b.label}</button>`).join('');
+      row2.insertAdjacentElement('afterend', menu);
+      menu.addEventListener('click', async (ev) => {
+        const act = ev.target?.closest?.('[data-act]')?.dataset?.act;
+        if (!act) return;
+        menu.remove();
+        if (act === 'cancel') return;
+        try {
+          if (act === 'delete') await deleteCustomExercise(id);
+          else if (act === 'hide') await toggleExerciseHidden(id);
+          await renderExercisesTab(doc);
+        } catch (err) { console.error('[exercises-admin] long-press action', err); }
+      });
     }, 500);
   });
-
   listEl.addEventListener('pointermove', (e) => {
     if (!trackedRow) return;
     const dx = Math.abs((e.clientX || 0) - startX);
     const dy = Math.abs((e.clientY || 0) - startY);
     if (dx > 8 || dy > 8) cancel();
   });
-
   listEl.addEventListener('pointerup', cancel);
   listEl.addEventListener('pointercancel', cancel);
   listEl.addEventListener('pointerleave', cancel);
@@ -197,17 +208,31 @@ function hookCustomAddButton(doc) {
   const trigger = doc.querySelector('[data-bind="custom-add-trigger"]');
   if (!trigger || trigger.dataset.spaHooked === '1') return;
   trigger.dataset.spaHooked = '1';
-  trigger.addEventListener('click', async () => {
-    const name = typeof window !== 'undefined' && typeof window.prompt === 'function'
-      ? window.prompt('새 운동 이름')
-      : null;
-    if (!name || !name.trim()) return;
-    const equipment = _activePart === 'cardio' ? 'cardio' : 'barbell';
-    try {
-      await createCustomExerciseFromForm({ name: name.trim(), part: _activePart, equipment }, doc);
-    } catch (e) {
-      console.error('[exercises-admin] createCustomExerciseFromForm', e);
-    }
+  trigger.addEventListener('click', () => {
+    if (doc.querySelector('[data-bind="custom-add-form"]')) return;
+    const form = doc.createElement('div');
+    form.dataset.bind = 'custom-add-form';
+    form.style.cssText = 'display:flex;gap:6px;padding:8px 0;';
+    form.innerHTML = `<input type="text" placeholder="새 운동 이름" style="flex:1;height:40px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:#0c0a08;color:#fff;font-size:14px;" /><button type="button" data-act="save" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;">저장</button><button type="button" data-act="cancel" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;">취소</button>`;
+    trigger.insertAdjacentElement('afterend', form);
+    const input = form.querySelector('input');
+    const close = () => form.remove();
+    const save = async () => {
+      const name = input.value.trim();
+      if (!name) return;
+      const equipment = _activePart === 'cardio' ? 'cardio' : 'barbell';
+      try {
+        await createCustomExerciseFromForm({ name, part: _activePart, equipment }, doc);
+        close();
+      } catch (e) { console.error('[exercises-admin] createCustomExerciseFromForm', e); }
+    };
+    form.querySelector('[data-act="cancel"]').addEventListener('click', close);
+    form.querySelector('[data-act="save"]').addEventListener('click', save);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') save();
+      else if (e.key === 'Escape') close();
+    });
+    setTimeout(() => input.focus(), 0);
   });
 }
 
