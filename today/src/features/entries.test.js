@@ -28,6 +28,9 @@ import {
   isEditorDirty,
   markArticleDirty,
   clearArticleDirty,
+  isComposing,
+  _setComposingForTest,
+  _clearComposingForTest,
   handleRealtimeEntryChange,
   handleDeleteAction,
   handleDuplicateAction,
@@ -565,6 +568,30 @@ describe('isEditorDirty / markArticleDirty / clearArticleDirty — WeakSet 기�
   });
 });
 
+describe('isComposing — IME composition 추적 (Wave 11.X 한글 caret 점프 fix)', () => {
+  afterEach(() => _clearComposingForTest());
+
+  it('초기 상태 false (인자 유무 무관)', () => {
+    expect(isComposing()).toBe(false);
+    expect(isComposing({})).toBe(false);
+  });
+
+  it('_setComposingForTest(a) → isComposing(a)=true, isComposing(b)=false, isComposing()=true', () => {
+    const a = {};
+    const b = {};
+    _setComposingForTest(a);
+    expect(isComposing(a)).toBe(true);
+    expect(isComposing(b)).toBe(false);
+    expect(isComposing()).toBe(true);
+  });
+
+  it('_clearComposingForTest 후 false 복귀', () => {
+    _setComposingForTest({});
+    _clearComposingForTest();
+    expect(isComposing()).toBe(false);
+  });
+});
+
 describe('handleRealtimeEntryChange — payload 분기 (mock document)', () => {
   function makeMockDoc(entryId) {
     const article = entryId
@@ -630,6 +657,27 @@ describe('handleRealtimeEntryChange — payload 분기 (mock document)', () => {
     expect(r.reason).toBe('dirty_badge');
     expect(r.matched).toBe(true);
     clearArticleDirty(article);
+  });
+
+  it('매치 + composing → reason=composing_badge (mainView reload skip — Wave 11.X)', async () => {
+    const article = {
+      dataset: { entryId: 'A' },
+      remove: () => {},
+      querySelector: () => null,
+    };
+    _setComposingForTest(article);
+    const doc = {
+      querySelector: (sel) => (sel === '#mainView article.doc' ? article : null),
+      createElement: () => ({ className: '', textContent: '', hidden: false }),
+    };
+    const r = await handleRealtimeEntryChange(
+      { table: 'today_entries', eventType: 'UPDATE', new: { id: 'A' } },
+      doc,
+    );
+    expect(r.applied).toBe(true);
+    expect(r.reason).toBe('composing_badge');
+    expect(r.matched).toBe(true);
+    _clearComposingForTest();
   });
 
   it('DELETE + 매치 → article.remove 호출', async () => {
@@ -1327,7 +1375,41 @@ describe('isReadOnlyRow — 파트너 글 분기', () => {
 
 describe('renderDocFromRow — 파트너 글 read-only 마크업', () => {
   beforeEach(() => __setCurrentUserForTest({ id: '7bae5645-61c6-4476-9ff2-4c30a72812ff' }));
-  afterEach(() => __setCurrentUserForTest(null));
+  afterEach(() => {
+    __setCurrentUserForTest(null);
+    _clearComposingForTest();
+  });
+
+  it('composing 중 동일 entryId 재호출 → body.innerHTML 갱신 skip (Wave 11.X caret 보존)', () => {
+    // existing article (composing 진행 중) 시뮬레이션 — view.querySelector('article.doc') 로 반환.
+    const userBody = { innerHTML: '<p>USER_TYPING</p>', removeAttribute: () => {}, setAttribute: () => {} };
+    const userH1 = { textContent: '기존 제목', removeAttribute: () => {}, setAttribute: () => {} };
+    const metaEl = { innerHTML: '' };
+    const existing = {
+      dataset: { entryId: 'X', readOnly: '' },
+      querySelector: (sel) => {
+        if (sel === '.doc__h1') return userH1;
+        if (sel === '.doc__meta') return metaEl;
+        if (sel === '.doc__body') return userBody;
+        return null;
+      },
+    };
+    const view = {
+      innerHTML: '',
+      querySelector: (sel) => (sel === 'article.doc' ? existing : null),
+    };
+    const fakeDoc = { getElementById: () => view, querySelector: () => null };
+    _setComposingForTest(existing);
+    renderDocFromRow(
+      { id: 'X', owner_id: '7bae5645-61c6-4476-9ff2-4c30a72812ff', title: 'SERVER_NEW_TITLE', content: '<p>SERVER_NEW_BODY</p>' },
+      fakeDoc,
+    );
+    // composing 중이므로 user 가 입력 중이던 body 와 h1 보존.
+    expect(userBody.innerHTML).toBe('<p>USER_TYPING</p>');
+    expect(userH1.textContent).toBe('기존 제목');
+    // meta 는 caret 영향 없으므로 갱신됨 (의도된 동작).
+    expect(metaEl.innerHTML).not.toBe('');
+  });
 
   it('본인 글 → contenteditable 살아있음 + read-only 라벨 미노출', () => {
     const view = { innerHTML: '' };

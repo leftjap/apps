@@ -20,6 +20,9 @@ let _onCategoryChange = null;
 let _currentUser = null;
 let _realtimeUnregister = null;
 const _dirtyArticles = new WeakSet();
+// Wave 11.X — IME composition 추적 (한글 조합 중 외부 reload/DOM 재패치 차단).
+// mainView 는 단일 article 만 노출하므로 모듈 레벨 단일 변수로 충분.
+let _composingArticle = null;
 
 // ───────────────────────────────────────────────────────────────────────────
 // debounce util — 800ms (spec §3 line 65-66 + §8 line 329)
@@ -208,17 +211,18 @@ export function renderDocFromRow(row, doc = document) {
   // dirty 상태 (사용자 입력 중) 시 h1/body 갱신 skip — 사용자 입력 보존.
   const existing = view.querySelector?.('article.doc');
   if (existing && existing.dataset?.entryId === row.id) {
-    const dirty = isEditorDirty(existing);
+    // Wave 11.X — IME composition 중에도 외부 reload 시 body 재패치 차단 (caret 보존).
+    const locked = isEditorDirty(existing) || isComposing(existing);
     const h1 = existing.querySelector?.('.doc__h1');
     const metaEl = existing.querySelector?.('.doc__meta');
     const body = existing.querySelector?.('.doc__body');
-    if (h1 && !dirty) {
+    if (h1 && !locked) {
       h1.textContent = titleText;
       if (readOnly) h1.removeAttribute?.('contenteditable');
       else h1.setAttribute?.('contenteditable', '');
     }
     if (metaEl) metaEl.innerHTML = meta;
-    if (body && !dirty) {
+    if (body && !locked) {
       body.innerHTML = bodyInner;
       if (readOnly) body.removeAttribute?.('contenteditable');
       else body.setAttribute?.('contenteditable', '');
@@ -619,6 +623,17 @@ export function clearArticleDirty(article) {
   if (article) _dirtyArticles.delete(article);
 }
 
+// Wave 11.X — IME composition 추적 (한글 조합 중 외부 reload 가드).
+// article 인자 없으면 "어떤 article 이든 composing 중인지" 반환.
+export function isComposing(article) {
+  if (!article) return _composingArticle != null;
+  return _composingArticle === article;
+}
+
+// JSDOM 의 composition event 시뮬레이션 한계 우회 — 테스트 전용 진입점.
+export function _setComposingForTest(article) { _composingArticle = article; }
+export function _clearComposingForTest() { _composingArticle = null; }
+
 /** article 안 .server-update-badge 표시. element 없으면 doc__meta 에 inline 추가. */
 export function showServerUpdateBadge(article, doc = document) {
   if (!article) return false;
@@ -682,11 +697,17 @@ export async function handleRealtimeEntryChange(payload, doc = document) {
   }
 
   if (matches) {
-    if (isEditorDirty(article)) {
+    // Wave 11.X — IME composition 중에도 dirty 와 동일 처리 (caret 점프 방지).
+    const composing = isComposing(article);
+    if (isEditorDirty(article) || composing) {
       showServerUpdateBadge(article, doc);
-      return { applied: true, reason: 'dirty_badge', matched: true };
+      return {
+        applied: true,
+        reason: composing ? 'composing_badge' : 'dirty_badge',
+        matched: true,
+      };
     }
-    // not dirty — mainView 재패치 (in-place patch — 회귀 5 fix)
+    // not dirty / not composing — mainView 재패치 (in-place patch — 회귀 5 fix)
     renderDocFromRow(newRow, doc);
     return { applied: true, reason: 'reloaded', matched: true };
   }
@@ -734,8 +755,32 @@ function installEditorInput() {
     if (!target.closest('.doc__h1') && !target.closest('.doc__body')) return;
     // Wave 11.5.3.3 — 사용자 입력 시점부터 dirty (saveArticle 성공 시 해제)
     markArticleDirty(article);
+    // Wave 11.X — IME composition 중 (한글 음절 조립) debounce skip.
+    // compositionend 가 와서 한 번에 발사하므로 데이터 손실 없음 (최대 800ms + 조립 시간 지연).
+    // 이유: 조립 중 saveArticle → Supabase Realtime echo → renderDocFromRow → body.innerHTML 재설정 → caret 점프.
+    if (isComposing(article) || e.isComposing || e.inputType === 'insertCompositionText') return;
     setSaveStatus(article, '저장 중…');
     getDebouncedSaver(article)();
+  });
+  // Wave 11.X — composition 이벤트 추적 (compositionstart 시 _composingArticle set, compositionend 시 clear).
+  document.addEventListener('compositionstart', (e) => {
+    const target = e.target;
+    if (!target || !target.closest) return;
+    const article = target.closest('article.doc');
+    if (!article) return;
+    if (!target.closest('.doc__h1') && !target.closest('.doc__body')) return;
+    _composingArticle = article;
+    markArticleDirty(article);
+  });
+  document.addEventListener('compositionend', (e) => {
+    const target = e.target;
+    const article = target?.closest?.('article.doc');
+    _composingArticle = null;
+    // composition 종료 시 한 번 더 저장 트리거 (조립 완료된 글자 반영).
+    if (article && (target.closest('.doc__h1') || target.closest('.doc__body'))) {
+      setSaveStatus(article, '저장 중…');
+      getDebouncedSaver(article)();
+    }
   });
   _editorInputInstalled = true;
 }
@@ -2147,6 +2192,8 @@ export function mountEntriesView(user) {
   clearRecentsList();
   injectEditorStyles();
   installRecentsClickHandler();
+  // Wave 11.X — 재마운트 시 IME 추적 reset (article 교체 race 방어).
+  _composingArticle = null;
   installCategoryClickHandler();
   installListViewClickHandler();
   installNewDocHandler();
@@ -2213,6 +2260,10 @@ export const Entries = {
   isEditorDirty,
   markArticleDirty,
   clearArticleDirty,
+  // Wave 11.X — IME composition 가드 (한글 입력 중 caret 점프 방지)
+  isComposing,
+  _setComposingForTest,
+  _clearComposingForTest,
   showServerUpdateBadge,
   hideServerUpdateBadge,
   handleRealtimeEntryChange,
