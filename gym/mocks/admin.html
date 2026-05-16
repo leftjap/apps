@@ -275,8 +275,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     el.addEventListener('click', () => phone.dataset.tab = el.dataset.go);
   });
 
-  // 체중 라인 차트 (14일) — SPA 환경 (window.gymWeights 노출) 에서는 renderWeightTab 이 실 데이터로 그림. fixture 는 mocks 단독 검토용.
-  if (window.gymWeights?.renderWeightTab) { return; }
+  // 체중 라인 차트 (14일) — svg element 는 SPA 환경에서도 항상 생성 (renderWeightTab 가 d 갱신).
+  // 이전: SPA 시 early return → svg 빈 상태 → renderWeightTab querySelector null → 차트 안 그려지는 회귀.
+  // 신규: fixture data 로 일단 element 생성 → SPA 의 renderWeightTab 가 실 데이터로 path d 덮어쓰기.
   const data = [72.4,72.1,71.9,71.6,71.3,71.5,71.0,70.7,70.5,70.2,70.0,69.8,69.6,69.4];
   const max = Math.max(...data) + 0.4, min = Math.min(...data) - 0.4;
   const W = 280, H = 100;

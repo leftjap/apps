@@ -767,6 +767,25 @@ async function mountSessionActive(doc, block, session) {
 
   // spec §6-3-1 — 스와이프 핸들러 wire (idempotent — dataset.spaHooked guard)
   try { wireSwipeHandlers(doc); } catch (e) { console.error('[gymSession] wireSwipeHandlers', e); }
+  // 세션 헤더 타이머 — session.startTime 부터 경과 MM:SS 1초 갱신.
+  // 이전 mount 의 interval 은 cleanup 후 새로 set (재마운트 시 중복 방지).
+  try {
+    const sessionTimeEl = doc.getElementById('sessionTime');
+    if (sessionTimeEl && session.startTime) {
+      const renderTime = () => {
+        const elapsedSec = Math.max(0, Math.floor((Date.now() - session.startTime) / 1000));
+        const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+        const ss = String(elapsedSec % 60).padStart(2, '0');
+        sessionTimeEl.textContent = `${mm}:${ss}`;
+      };
+      renderTime();
+      if (typeof window !== 'undefined') {
+        if (window._gymSessionTimerId) clearInterval(window._gymSessionTimerId);
+        window._gymSessionTimerId = setInterval(renderTime, 1000);
+      }
+    }
+  } catch (e) { console.error('[gymSession] sessionTimer', e); }
+
   // spec §6-3-2 — 키패드 시트 wire (idempotent — sheet.dataset.spaHooked guard)
   try { wireKeypad(doc); } catch (e) { console.error('[gymSession] wireKeypad', e); }
   // spec §6-9 — 액션 시트 wire + 꾹누르기 → 액션 시트 open 연결
