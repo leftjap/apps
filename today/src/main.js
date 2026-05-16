@@ -161,6 +161,10 @@ async function bootstrap() {
 
   // subscribe-first — supabase-js v2 (GoTrueClient.ts:4037-4088) 가 initializePromise 후
   // INITIAL_SESSION 이벤트로 persisted session 발화. 별도 getSession() 호출 안 함 (iOS WebKit race #1560 회피).
+  const { supabase } = await import('./services/supabase.js');
+  const { installAuthSessionGuard } = await import('./services/auth-session-guard.js');
+  const guard = installAuthSessionGuard(supabase);
+
   Auth.onAuthStateChange(async (event, session) => {
     if (
       event === 'INITIAL_SESSION'
@@ -170,7 +174,8 @@ async function bootstrap() {
     ) {
       await handleSession(session);
     } else if (event === 'SIGNED_OUT') {
-      showLogin();
+      if (guard) await guard.handleSignedOutWithRetry(showLogin);
+      else showLogin();
     }
   });
 }

@@ -13,6 +13,7 @@
  * Dexie 는 supabase 없어도 동작 (오프라인 우선) — 단 user.id 가 있어야 ensureUserDB 가능.
  */
 import { supabase, isSupabaseConfigured } from './supabase.js';
+import { markExplicitSignOut } from './auth-session-guard.js';
 import { createTodayDB } from '../db/schema.js';
 
 /** 허용 이메일 (대소문자 무관) — Gym/Study 와 동일 allowlist 공유. */
@@ -92,6 +93,7 @@ async function signOut() {
     warnNotConfigured('signOut');
     return;
   }
+  markExplicitSignOut();
   const { error } = await supabase.auth.signOut();
   if (error) console.error('[auth] signOut 실패', error);
 }

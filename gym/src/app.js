@@ -1,3 +1,5 @@
+import { supabase } from './services/supabase.js';
+import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionHtml from '../mocks/session.html?raw';
@@ -150,10 +152,14 @@ function mount(route) {
  * - SIGNED_OUT: signOut 안에서 closeUserDB 호출됨 → #/login 으로.
  * - TOKEN_REFRESHED / USER_UPDATED 는 별 처리 없음 (세션 유지).
  */
+let _guard = null;
+
 function subscribeAuth() {
   if (typeof window === 'undefined') return;
   const auth = window.gymAuth;
   if (!auth?.isSupabaseConfigured) return;
+
+  _guard ??= installAuthSessionGuard(supabase);
 
   auth.onAuthStateChange(async (event, session) => {
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
@@ -176,8 +182,13 @@ function subscribeAuth() {
       }
       mount(parseRoute());
     } else if (event === 'SIGNED_OUT') {
-      if (window.location.hash !== '#/login') window.location.replace('#/login');
-      else mount('login'); // 이미 login 이면 마커 표시 위해 재mount
+      // session-guard 가 1회 refreshSession 시도 — 복구 성공 시 redirect 스킵.
+      const forceSignOut = () => {
+        if (window.location.hash !== '#/login') window.location.replace('#/login');
+        else mount('login');
+      };
+      if (_guard) await _guard.handleSignedOutWithRetry(forceSignOut);
+      else forceSignOut();
     }
   });
 }

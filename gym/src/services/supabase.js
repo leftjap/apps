@@ -43,6 +43,9 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      // iOS Safari ITP 7일 룰 회피 — localStorage 대신 IndexedDB.
+      storageKey: STORAGE_KEY,
+      storage: createIndexedDBStorage({ legacyLocalStorageKey: STORAGE_KEY }),
     },
   });
 } else {
