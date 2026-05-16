@@ -295,12 +295,25 @@ export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
  *   { ok: true, session } — finalize 성공
  *   { ok: false, reason: 'no_active_session'|'no_db'|'error' }
  */
+/**
+ * 운동 완료·세션 종료 시 입력 안 된 (done !== true) 빈 세트 제거.
+ * 좌 스와이프 auto-append (line 2202·2219) + 사용자 미입력 세트 모두 일괄 정리.
+ *  - block.type !== 'single' 은 통과 (sets 의미 single 전용)
+ *  - kept.length === sets.length 면 같은 참조 반환 (no-op fast path)
+ */
+function pruneEmptySets(block) {
+  if (!block || block.type !== 'single' || !Array.isArray(block.sets)) return block;
+  const kept = block.sets.filter((s) => s && s.done === true);
+  if (kept.length === block.sets.length) return block;
+  return { ...block, sets: kept };
+}
+
 export async function finalizeActiveSession(opts = {}) {
   try {
     const session = await getActiveSession();
     if (!session) return { ok: false, reason: 'no_active_session' };
 
-    const blocks = Array.isArray(session.blocks) ? session.blocks : [];
+    const blocks = (Array.isArray(session.blocks) ? session.blocks : []).map(pruneEmptySets);
     const totalVolume = blocks.reduce((sum, b) => {
       if (!b || b.type !== 'single') return sum;
       const sets = Array.isArray(b.sets) ? b.sets : [];
@@ -317,6 +330,7 @@ export async function finalizeActiveSession(opts = {}) {
 
     const finalized = {
       ...session,
+      blocks,
       endTime,
       durationMin,
       totalVolume,
@@ -1883,8 +1897,16 @@ async function handleActionSelect(doc, kind, actionId, target) {
     }
     if (kind === 'active-card') {
       if (actionId === 'finish') {
-        // 좌 스와이프 동작 재사용 — 현재 set commit + 다음 set 진행 (spec §6-3-1 / §6-9)
-        await handleLeftSwipe();
+        // 운동 완료 = 좌 스와이프로 입력 확정한 세트(done=true)만 유지. 빈 세트 폐기.
+        // (좌 스와이프 재사용 폐기 — 빈 cur 세트가 done=true 로 박히는 버그 차단)
+        const ctx = await getCurrentBlockAndCursor();
+        if (ctx) {
+          const session = ctx.session;
+          const blocks = session.blocks.slice();
+          blocks[ctx.blockIdx] = pruneEmptySets(ctx.block);
+          await upsertSession({ ...session, blocks });
+        }
+        await mountSessionView();
         return;
       }
       if (actionId === 'delete') {
@@ -1926,9 +1948,16 @@ async function handleActionSelect(doc, kind, actionId, target) {
       const blockIdx = parseInt(target?.dataset?.blockIdx, 10);
       if (!Number.isFinite(blockIdx)) return;
       if (actionId === 'finish') {
-        // active state pill — 해당 block 을 current 로 전환 후 좌 스와이프 (현재 set commit)
+        // active state pill — 해당 block 으로 전환 후 빈 세트 폐기 (운동 완료).
+        // (좌 스와이프 재사용 폐기 — active-card/finish 와 동일 정책)
         _currentBlockIdx = blockIdx;
-        await handleLeftSwipe();
+        const session = await getActiveSession();
+        if (session) {
+          const blocks = session.blocks.slice();
+          blocks[blockIdx] = pruneEmptySets(blocks[blockIdx]);
+          await upsertSession({ ...session, blocks });
+        }
+        await mountSessionView();
         return;
       }
       if (actionId === 'edit') {

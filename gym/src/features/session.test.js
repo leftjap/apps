@@ -883,6 +883,35 @@ describe('finalizeActiveSession', () => {
     expect(r.ok).toBe(true);
     expect(r.session.totalVolume).toBe(60 * 10 + 100 * 5); // 1100
   });
+
+  it('pruneEmptySets — 미완료(done=false) 세트는 finalize 후 blocks 에서 제거', async () => {
+    // 좌 스와이프 auto-append 또는 사용자 미입력 빈 세트 잔류 시나리오:
+    // sets[0]=done(60×10), sets[1]=preset(done:false, weight/reps null).
+    // 기존 동작: sets.length=2 그대로 보존. fix 후: sets.length=1 (done=true 만 유지).
+    await addExerciseToActiveSession('bench_press', 'chest');
+    await persistSetCommit({
+      exerciseName: '벤치프레스', setIdx: 0,
+      set: { weight: 60, reps: 10, done: true, pr: false },
+    });
+    const r = await finalizeActiveSession();
+    expect(r.ok).toBe(true);
+    const block = r.session.blocks[0];
+    expect(block.sets).toHaveLength(1);
+    expect(block.sets[0]).toMatchObject({ weight: 60, reps: 10, done: true });
+    // Dexie 영구 저장도 동일하게 prune
+    const stored = await db.sessions.get(r.session.id);
+    expect(stored.blocks[0].sets).toHaveLength(1);
+  });
+
+  it('pruneEmptySets — 모든 세트 미완료 시 block.sets 는 빈 배열 (block 자체는 유지)', async () => {
+    await addExerciseToActiveSession('bench_press', 'chest');
+    // commit 0건 — 기본 preset 세트 (done:false) 만 존재
+    const r = await finalizeActiveSession();
+    expect(r.ok).toBe(true);
+    expect(r.session.blocks).toHaveLength(1);
+    expect(r.session.blocks[0].sets).toEqual([]);
+    expect(r.session.totalVolume).toBe(0);
+  });
 });
 
 describe('removeExerciseFromActiveSession', () => {
