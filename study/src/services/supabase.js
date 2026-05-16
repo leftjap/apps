@@ -25,6 +25,7 @@
  */
 import { AuthClient } from '@supabase/auth-js';
 import { PostgrestClient } from '@supabase/postgrest-js';
+import { createIndexedDBStorage } from './auth-storage.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -47,15 +48,18 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
     apikey: SUPABASE_ANON_KEY,
   };
 
+  const _storageKey = `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
   const authClient = new AuthClient({
     url: `${SUPABASE_URL}/auth/v1`,
     headers: authHeaders,
-    storageKey: `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`,
+    storageKey: _storageKey,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
     // PKCE flow — iOS PWA standalone 안전성 향상 (implicit grant 보다 권장)
     flowType: 'pkce',
+    // iOS Safari ITP 7일 룰 회피 — localStorage 대신 IndexedDB.
+    storage: createIndexedDBStorage({ legacyLocalStorageKey: _storageKey }),
   });
 
   const postgrestClient = new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {

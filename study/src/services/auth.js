@@ -11,6 +11,7 @@
  * env 미설정(supabase=null) 시 모든 호출 no-op + 콘솔 경고.
  */
 import { supabase, isSupabaseConfigured } from './supabase.js';
+import { markExplicitSignOut } from './auth-session-guard.js';
 import { createStudyDB } from '../db/schema.js';
 import { backfill20260504 } from '../db/backfill20260504.js';
 
@@ -104,6 +105,7 @@ async function signOut() {
     warnNotConfigured('signOut');
     return;
   }
+  markExplicitSignOut();
   const { error } = await supabase.auth.signOut();
   if (error) console.error('[auth] signOut 실패', error);
 }

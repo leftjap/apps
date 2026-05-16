@@ -1,3 +1,5 @@
+import { supabase } from './services/supabase.js';
+import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionNewHtml from '../mocks/session-new.html?raw';
@@ -208,9 +210,12 @@ function hidePvChips() {
  *   기존 SIGNED_IN 단독 분기는 main.js IIFE 의 ensureUserDB 의존 — race 시 라우트 가드 #/login 으로 빠짐.
  * - SIGNED_OUT: ensureUserDB 의 close 는 auth.signOut 내부에서 처리됨. 라우트만 #/login 강제.
  */
+let _guard = null;
+
 function bindAuthEvents() {
   if (typeof window === 'undefined' || !window.studyAuth) return;
   const auth = window.studyAuth;
+  _guard ??= installAuthSessionGuard(supabase);
   auth.onAuthStateChange(async (event, session) => {
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
       const user = session.user;
@@ -246,12 +251,15 @@ function bindAuthEvents() {
         mount(current);
       }
     } else if (event === 'SIGNED_OUT') {
-      if (parseRoute().name !== 'login') {
-        window.location.hash = '#/login';
-      } else {
-        // 이미 login 화면이면 mount 만 강제 (error banner 등 표시 위해)
-        mount(parseRoute());
-      }
+      const forceSignOut = () => {
+        if (parseRoute().name !== 'login') {
+          window.location.hash = '#/login';
+        } else {
+          mount(parseRoute());
+        }
+      };
+      if (_guard) await _guard.handleSignedOutWithRetry(forceSignOut);
+      else forceSignOut();
     }
   });
 }

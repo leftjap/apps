@@ -1071,6 +1071,11 @@ function wireSwipeHandlers(doc) {
  *  - 중앙 40% (0.3 ≤ ratio ≤ 0.7) : 키패드 영역 (단계 d) — 본 단계 무시
  */
 async function handleTap(doc, x, y) {
+  // 완료된 운동 (block.finishedAt) — 키패드·증감 모두 차단 (회색 read-only).
+  try {
+    const ctx = await getCurrentBlockAndCursor();
+    if (ctx && isBlockLocked(ctx.block)) return;
+  } catch (_) { /* graceful */ }
   // spec §6-4 — cardio 운동 시 zone 의 field 매핑이 'duration'·'distance' 로 swap.
   // 운동 종류는 cardSwipeArea data-card-kind (applyCardKind 가 mount 시 set) 로 확인.
   const area = doc.getElementById('cardSwipeArea');
@@ -1522,10 +1527,11 @@ function renderFooterPillHtml({ blockIdx, state, name, progress }) {
   const wrapStart = `<div data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">`;
   const wrapEnd = `</div>`;
   if (state === 'current') {
+    // 활성 운동 폰트 30% 키움 (15→20, 10→13). 비활성 pill (done/hold/pending) 은 기존 유지.
     return wrapStart + `
       <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:2px;background:var(--accent);"></span>
-      <span style="font-size:15px;font-weight:600;color:var(--accent);">${escapeHtml(name)}</span>
-      <span style="font-size:10px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
+      <span style="font-size:20px;font-weight:600;color:var(--accent);">${escapeHtml(name)}</span>
+      <span style="font-size:13px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
       <span style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);"></span>
     ` + wrapEnd;
   }
