@@ -504,9 +504,10 @@ export async function mountStatsView(now = Date.now()) {
     const sessions = await getSessionsByRange(toISODate(lookback), toISODate(today));
     const volumes = summarizeVolumes(sessions, now);
     applyVolumesToDom(volumes, doc);
-    // W-I — 추이/부위 탭 hydrate (이전엔 fixture 영구 표시)
+    // 캘린더 하단 8주 막대+선 추이 + 부위 + 종목 빈도 hydrate
     applyTrendToDom(summarizeWeeklyTrend(sessions, 8, now), doc);
     applyBodyPartsToDom(summarizeBodyParts(sessions), doc);
+    applyExerciseFrequencyToDom(summarizeExerciseFrequency(sessions), doc);
     applyTodayToCalendar(now, doc);
     applyWorkedToCalendar(sessions, doc);
     try { wireMonthCalendarTaps(doc); } catch (e) { console.error('[gymStats] wireMonthCalendarTaps', e); }
@@ -593,56 +594,96 @@ function formatK(n) {
   return String(Math.round(v));
 }
 
-/** W-I — 추이 SVG polyline + 헤더 stat 갱신. trend = [{weekStart, vol}] (length=8). */
+/** 캘린더 탭 하단 추이 그래프 — 8주 막대 + 선 overlay. trend = [{weekStart, vol}] (length=8). */
 export function applyTrendToDom(trend, doc) {
   if (!doc || !Array.isArray(trend) || trend.length === 0) return;
   const svg = doc.getElementById('trend-svg');
-  if (svg) {
-    // 기존 path/polyline/circle 제거 (defs 는 보존)
-    Array.from(svg.querySelectorAll('path,polyline,circle')).forEach((el) => el.remove());
-    const w = 280, h = 120;
-    const max = Math.max(1, ...trend.map((t) => Number(t.vol) || 0));
-    const step = trend.length > 1 ? w / (trend.length - 1) : 0;
-    const pts = trend.map((t, i) => `${(i * step).toFixed(1)},${(h - (Number(t.vol) || 0) / max * h).toFixed(1)}`);
-    const SVG_NS = 'http://www.w3.org/2000/svg';
-    const area = doc.createElementNS(SVG_NS, 'path');
-    area.setAttribute('d', `M0,${h} L${pts.join(' L')} L${w},${h} Z`);
-    area.setAttribute('fill', 'url(#grad)');
-    svg.appendChild(area);
-    const line = doc.createElementNS(SVG_NS, 'polyline');
-    line.setAttribute('points', pts.join(' '));
-    line.setAttribute('fill', 'none');
-    line.setAttribute('stroke', '#d97757');
-    line.setAttribute('stroke-width', '2');
-    line.setAttribute('stroke-linejoin', 'round');
-    svg.appendChild(line);
-    // 마지막 점 강조
-    const lastPt = pts[pts.length - 1].split(',');
-    const dot = doc.createElementNS(SVG_NS, 'circle');
-    dot.setAttribute('cx', lastPt[0]);
-    dot.setAttribute('cy', lastPt[1]);
-    dot.setAttribute('r', '3.5');
-    dot.setAttribute('fill', '#d97757');
-    svg.appendChild(dot);
+  if (!svg) return;
+  Array.from(svg.querySelectorAll('path,polyline,polygon,rect,circle,line')).forEach((el) => el.remove());
+  const w = 280, h = 120;
+  const max = Math.max(1, ...trend.map((t) => Number(t.vol) || 0));
+  const SVG_NS = 'http://www.w3.org/2000/svg';
+  // 1) 막대 — 각 주 1 bar, 이번 주 (마지막) accent
+  const slot = w / trend.length;
+  const barW = slot * 0.6;
+  trend.forEach((t, i) => {
+    const v = Number(t.vol) || 0;
+    if (v <= 0) return;
+    const barH = (v / max) * h;
+    const bar = doc.createElementNS(SVG_NS, 'rect');
+    bar.setAttribute('x', (i * slot + slot * 0.2).toFixed(1));
+    bar.setAttribute('y', (h - barH).toFixed(1));
+    bar.setAttribute('width', barW.toFixed(1));
+    bar.setAttribute('height', barH.toFixed(1));
+    bar.setAttribute('rx', '2');
+    bar.setAttribute('fill', i === trend.length - 1 ? '#d97757' : 'rgba(217,119,87,0.28)');
+    svg.appendChild(bar);
+  });
+  // 2) 선 overlay — 막대 위 (사용자 요청 — 단순 비교 + 추세선)
+  const step = trend.length > 1 ? w / (trend.length - 1) : 0;
+  const pts = trend.map((t, i) => `${(i * step).toFixed(1)},${(h - (Number(t.vol) || 0) / max * h).toFixed(1)}`);
+  const line = doc.createElementNS(SVG_NS, 'polyline');
+  line.setAttribute('points', pts.join(' '));
+  line.setAttribute('fill', 'none');
+  line.setAttribute('stroke', 'rgba(255,255,255,0.55)');
+  line.setAttribute('stroke-width', '1.5');
+  line.setAttribute('stroke-linejoin', 'round');
+  svg.appendChild(line);
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/**
+ * 종목 탭 — 사용자가 자주 한 운동 빈도순.
+ * sessions.blocks[].sets done=true 카운트 → exerciseId 별 누적.
+ * 반환: [{ exerciseId, name, setCount }] (setCount 내림차순)
+ */
+export function summarizeExerciseFrequency(sessions) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  const map = new Map();
+  for (const s of list) {
+    if (!s) continue;
+    const blocks = Array.isArray(s.blocks) ? s.blocks : [];
+    for (const b of blocks) {
+      if (!b || b.type !== 'single' || !b.exerciseId) continue;
+      const sets = Array.isArray(b.sets) ? b.sets : [];
+      const doneCount = sets.filter((x) => x && x.done === true).length;
+      if (doneCount <= 0) continue;
+      map.set(b.exerciseId, (map.get(b.exerciseId) || 0) + doneCount);
+    }
   }
-  const total = trend.reduce((s, t) => s + (Number(t.vol) || 0), 0);
-  const avg = total / trend.length;
-  const last = trend[trend.length - 1]?.vol || 0;
-  const prev = trend[trend.length - 2]?.vol || 0;
-  const delta = prev > 0 ? Math.round((last - prev) / prev * 100) : null;
-  const pr = Math.max(0, ...trend.map((t) => Number(t.vol) || 0));
-  // 연속: 최근부터 vol>0 카운트
-  let streak = 0;
-  for (let i = trend.length - 1; i >= 0; i -= 1) {
-    if ((Number(trend[i].vol) || 0) > 0) streak += 1;
-    else break;
+  return Array.from(map.entries())
+    .map(([exerciseId, setCount]) => ({ exerciseId, name: exerciseIdToName(exerciseId), setCount }))
+    .sort((a, b) => b.setCount - a.setCount);
+}
+
+/** 종목 빈도 list DOM 갱신 — list 막대 비교. */
+export function applyExerciseFrequencyToDom(rows, doc) {
+  if (!doc) return;
+  const totalEl = doc.querySelector('[data-bind="exercise-total"]');
+  const listEl = doc.querySelector('[data-bind="exercise-list"]');
+  const emptyEl = doc.querySelector('[data-bind="exercise-empty"]');
+  if (totalEl) totalEl.textContent = String(rows.length);
+  if (!listEl) return;
+  // 이전 렌더 row 제거 (empty placeholder 만 남김)
+  Array.from(listEl.children).forEach((c) => { if (c !== emptyEl) c.remove(); });
+  if (rows.length === 0) {
+    if (emptyEl) emptyEl.style.display = '';
+    return;
   }
-  const set = (key, html) => { const el = doc.querySelector(`[data-bind="${key}"]`); if (el) el.innerHTML = html; };
-  set('trend-avg', formatK(avg));
-  set('trend-delta', delta === null ? '신규' : delta >= 0 ? `↑ +${delta}%` : `↓ ${delta}%`);
-  set('trend-pr', `${formatK(pr)}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span>`);
-  set('trend-streak', `${streak}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span>`);
-  set('trend-avg2', `${formatK(avg)}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span>`);
+  if (emptyEl) emptyEl.style.display = 'none';
+  const max = rows[0].setCount;
+  const html = rows.map((r) => {
+    const pct = Math.max(4, Math.round((r.setCount / max) * 100));
+    return `<div style="display:flex;align-items:center;padding:13px 0;border-top:1px solid rgba(255,255,255,0.04);">`
+      + `<span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">${escapeHtml(r.name)}</span>`
+      + `<div style="flex:1.5;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--accent);"></div></div>`
+      + `<span class="num" style="font-size:14px;color:rgba(255,255,255,0.8);min-width:48px;text-align:right;">${r.setCount}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">세트</span></span>`
+      + `</div>`;
+  }).join('');
+  listEl.insertAdjacentHTML('beforeend', html);
 }
 
 /** W-I — 부위 분포 stack + list 갱신. parts = [{key, name, count, color}] (count>0, sorted desc). */
@@ -695,5 +736,7 @@ if (typeof window !== 'undefined') {
     summarizeWeeklyTrend,
     applyTrendToDom,
     applyBodyPartsToDom,
+    summarizeExerciseFrequency,
+    applyExerciseFrequencyToDom,
   };
 }
