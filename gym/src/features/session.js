@@ -308,6 +308,29 @@ function pruneEmptySets(block) {
   return { ...block, sets: kept };
 }
 
+/**
+ * 운동 완료 후 자동 이동 대상 — currentIdx 이후 첫 single block idx.
+ * 없으면 null (마지막 운동 — 현재 카드 그대로 회색 read-only 표시).
+ * spec §16 — circuit/cardio 폐기, single 만 대상.
+ */
+function findNextSingleBlock(session, currentIdx) {
+  if (!session || !Array.isArray(session.blocks)) return null;
+  for (let i = currentIdx + 1; i < session.blocks.length; i += 1) {
+    const b = session.blocks[i];
+    if (b && b.type === 'single') return i;
+  }
+  return null;
+}
+
+/**
+ * 사용자가 명시적으로 "완료" 액션을 누른 운동 (block.finishedAt marker).
+ * 회색 read-only 표시 + 스와이프·증감 차단 가드.
+ * 단순 "모든 set done" 만으로는 read-only 아님 (기존 push/revert 동작 보존).
+ */
+function isBlockLocked(block) {
+  return !!(block && Number.isFinite(block.finishedAt));
+}
+
 export async function finalizeActiveSession(opts = {}) {
   try {
     const session = await getActiveSession();
@@ -656,6 +679,13 @@ async function mountSessionActive(doc, block, session) {
   const presetOpacity = isPreset ? '0.45' : '1';
   const cardWeightEl = doc.getElementById('cardWeight');
   const cardRepsEl = doc.getElementById('cardReps');
+  // 완료된 운동 (block.finishedAt marker) — 회색 톤 (footer pill done state 와 동일)
+  const blockDone = isBlockLocked(block);
+  const doneColor = 'rgba(255,255,255,0.5)';
+  const cardSetProgressEl = doc.getElementById('cardSetProgress');
+  if (cardSetProgressEl) {
+    cardSetProgressEl.style.color = blockDone ? doneColor : '';
+  }
 
   if (exerciseEq === 'cardio') {
     const durSec = Number(currentSet.duration) || 0;
@@ -675,8 +705,15 @@ async function mountSessionActive(doc, block, session) {
   }
 
   // spec §6-3-3 — preset (placeholder) 톤: text-faint (opacity 0.45) / 사용자 입력: text-strong (opacity 1)
-  if (cardWeightEl) cardWeightEl.style.opacity = presetOpacity;
-  if (cardRepsEl) cardRepsEl.style.opacity = presetOpacity;
+  // blockDone 시 회색 톤 (opacity 는 1 유지, color 만 변경 — preset 톤과 구분).
+  if (cardWeightEl) {
+    cardWeightEl.style.opacity = blockDone ? '1' : presetOpacity;
+    cardWeightEl.style.color = blockDone ? doneColor : '';
+  }
+  if (cardRepsEl) {
+    cardRepsEl.style.opacity = blockDone ? '1' : presetOpacity;
+    cardRepsEl.style.color = blockDone ? doneColor : '';
+  }
 
   // 직전 세션 동일 세트번호 lookup — S1..Sn dot 의 preview 표시에 사용 (spec §6-3-3).
   let prevSessionSets = null;
@@ -1089,6 +1126,8 @@ export async function applyTapDelta(field, deltaSign) {
     return;
   }
   if (!ctx) return;
+  // 완료된 운동 (회색 read-only) 은 weight/reps 증감 차단
+  if (isBlockLocked(ctx.block)) return;
   const { session, block, effectiveCur } = ctx;
   const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
   const set = sets[effectiveCur];
@@ -1290,14 +1329,13 @@ function getActionMenuFor(kind, target) {
     };
   }
   if (kind === 'active-card') {
-    // spec §6-9 — 진행 중 운동 카드 : 완료 / 삭제 / 이동
+    // spec §6-9 — 진행 중 운동 카드 : 완료 / 삭제 (이동은 long-press hold + drag 로 별도)
     return {
       kind,
       title: '운동 카드',
       items: [
         { id: 'finish', label: '완료' },
         { id: 'delete', label: '삭제', danger: true },
-        { id: 'reorder', label: '이동' },
       ],
       onSelect: (id) => { console.log('[gymSession] action', kind, id); },
     };
@@ -1324,7 +1362,7 @@ function getActionMenuFor(kind, target) {
       items.push({ id: 'edit', label: '수정' });
     }
     items.push({ id: 'delete', label: '삭제', danger: true });
-    items.push({ id: 'reorder', label: '이동' });
+    // 이동 메뉴 제거 — long-press hold + drag 로 별도 (spec §6-9 갱신)
     return {
       kind,
       title: '운동 옵션',
@@ -1898,13 +1936,17 @@ async function handleActionSelect(doc, kind, actionId, target) {
     if (kind === 'active-card') {
       if (actionId === 'finish') {
         // 운동 완료 = 좌 스와이프로 입력 확정한 세트(done=true)만 유지. 빈 세트 폐기.
-        // (좌 스와이프 재사용 폐기 — 빈 cur 세트가 done=true 로 박히는 버그 차단)
+        // block.finishedAt marker → 회색 read-only 표시.
+        // 다음 single block 자동 이동. 마지막이면 현재 block 유지 (회색 read-only).
         const ctx = await getCurrentBlockAndCursor();
         if (ctx) {
           const session = ctx.session;
           const blocks = session.blocks.slice();
-          blocks[ctx.blockIdx] = pruneEmptySets(ctx.block);
+          const pruned = pruneEmptySets(ctx.block);
+          blocks[ctx.blockIdx] = { ...pruned, finishedAt: Date.now() };
           await upsertSession({ ...session, blocks });
+          const nextIdx = findNextSingleBlock({ ...session, blocks }, ctx.blockIdx);
+          if (nextIdx != null) _currentBlockIdx = nextIdx;
         }
         await mountSessionView();
         return;
@@ -1914,12 +1956,6 @@ async function handleActionSelect(doc, kind, actionId, target) {
         if (!ctx) return;
         await removeExerciseFromActiveSession(ctx.block.exerciseId);
         await mountSessionView();
-        return;
-      }
-      if (actionId === 'reorder') {
-        // (f-5-2) reorder 모드 진입 — 현재 currentBlock 의 idx 를 src 로
-        const ctx = await getCurrentBlockAndCursor();
-        if (ctx && Number.isFinite(ctx.blockIdx)) setReorderMode(doc, true, ctx.blockIdx);
         return;
       }
       return;
@@ -1948,14 +1984,17 @@ async function handleActionSelect(doc, kind, actionId, target) {
       const blockIdx = parseInt(target?.dataset?.blockIdx, 10);
       if (!Number.isFinite(blockIdx)) return;
       if (actionId === 'finish') {
-        // active state pill — 해당 block 으로 전환 후 빈 세트 폐기 (운동 완료).
-        // (좌 스와이프 재사용 폐기 — active-card/finish 와 동일 정책)
+        // active state pill — 빈 세트 폐기 + finishedAt marker + 다음 single block 자동 이동.
+        // 마지막이면 _currentBlockIdx 유지 (회색 read-only).
         _currentBlockIdx = blockIdx;
         const session = await getActiveSession();
         if (session) {
           const blocks = session.blocks.slice();
-          blocks[blockIdx] = pruneEmptySets(blocks[blockIdx]);
+          const pruned = pruneEmptySets(blocks[blockIdx]);
+          blocks[blockIdx] = { ...pruned, finishedAt: Date.now() };
           await upsertSession({ ...session, blocks });
+          const nextIdx = findNextSingleBlock({ ...session, blocks }, blockIdx);
+          if (nextIdx != null) _currentBlockIdx = nextIdx;
         }
         await mountSessionView();
         return;
@@ -1982,11 +2021,6 @@ async function handleActionSelect(doc, kind, actionId, target) {
         if (_currentBlockIdx === blockIdx) _currentBlockIdx = null;
         else if (_currentBlockIdx != null && _currentBlockIdx > blockIdx) _currentBlockIdx -= 1;
         await mountSessionView();
-        return;
-      }
-      if (actionId === 'reorder') {
-        // (f-5-2) reorder 모드 진입 — 해당 block 을 src 로
-        setReorderMode(doc, true, blockIdx);
         return;
       }
       return;
@@ -2221,6 +2255,8 @@ export async function handleLeftSwipe() {
     return;
   }
   if (!ctx) return;
+  // 완료된 운동 (마지막 운동 회색 read-only) 은 스와이프 차단
+  if (isBlockLocked(ctx.block)) return;
   const { session, block, cur } = ctx;
   const blocks = session.blocks.slice();
   const blockIdx = blocks.indexOf(block);
@@ -2389,6 +2425,8 @@ export async function handleRightSwipe() {
     return;
   }
   if (!ctx) return;
+  // 완료된 운동 (회색 read-only) 은 스와이프 차단
+  if (isBlockLocked(ctx.block)) return;
   const { session, block, effectiveCur } = ctx;
   if (effectiveCur === 0) return; // spec §6-3-1 — 첫 set 우 스와이프 무시
   const blocks = session.blocks.slice();
