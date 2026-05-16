@@ -280,6 +280,45 @@ Stage 1~2 빈출 표현 200~500문장 풀을 미리 생성. 각 문장에 메타
 3. **슬라이스 우선**: Shirokuma Cafe·Barakamon·K-On·Doraemon 류 톤. 판타지·SF·배틀 톤 회피.
 4. **Manzai 구조 권장**: 일본 슬라이스 코미디의 표준 단위는 boke (보케 — 멍한 사람) + tsukkomi (츳코미 — 정정 역할) 듀오. 캐릭터 풀 확정 시 한 명 이상 tsukkomi 슬롯 권장. 강제 X, 사용자 결정 위임.
 
+### 시트콤 작법 4원리 (외부 작법 정본, en 가이드 §6.2 정합)
+
+콩트 작성 시 다음 4원리 적용 (en 과 동일):
+
+1. **Show-don't-tell** — 캐릭터 설명 X. 1~2번 카드에서 voice 대조 즉시 노출. `scene_intro` 는 장소·상황·콩트 진입 톤만. 캐릭터 정의 박지 X
+2. **Setup–Punchline 구조** — 1번 = Hook · 중간 = Build · 마지막 = Punchline (newElement 박힘)
+3. **Rule of Three** (적정 시) — 패턴 2~3회 반복 후 깨기. 강제 X
+4. **Punchline 자연 선택** — Self-trapping 강제 X. 시나리오·동작 따라 자연 선택
+
+### Punchline taxonomy 5종 (어학 적합도 순)
+
+| 우선 | type | 정의 | 어학 적합 |
+|---|---|---|---|
+| 1 | **Self-trapping** | 캐릭터가 자기 logic·자랑·솔직성 함정에 빠짐 | 시나리오 제한 — 캐릭터 logic 함정 만들 수 있는 상황만 |
+| 2 | **Character-driven** | 캐릭터 voice 자체가 펀치 | 모든 시나리오 자연 |
+| 3 | **Misdirection** | assumption shatter | 일반 적용 |
+| 4 | **Hyperbole / Escalation** | 과장 점증 | 일반 적용 |
+| 5 | **Incongruity** | 논리·맥락 충돌 | 적용 가능 |
+
+회피: Shock / Wordplay / Recognition (학습 noise)
+
+ja 특수: Manzai 보케-츳코미 페어는 Self-trapping + Character-driven 둘 다 자연 발현 (보케가 자기 함정에 빠지는 패턴 = Self-trapping, 츳코미 정정에 보케 voice 유지 = Character-driven).
+
+### 카드 정의 확장
+
+1 카드 = 1 화자의 1 발화 turn (sentence 1~2개 가능). 시트콤·만담 대사 호흡 정합.
+
+### 신규 메타 2종 (en 가이드와 공유)
+
+- **`scene_intro`** (string): 콩트 첫 카드 진입 시 학습자 노출 1~2줄 한국어 컨텍스트. 형식: "장소 + 상황 + 콩트 진입 톤". 캐릭터 설명 금지
+- **`scene_direction`** (string, optional): 카드 사이 narration. 형식: `*(action description)*` 한국어
+
+### newElement 후보 확장 (스펙 §5-0:272 보강)
+
+기존: 문법 1개 OR 새 어휘 1개 OR 발음 패턴 (ja 4패턴) 1개
+추가: **시나리오 핵심 idiom 1개** (Stage 별 시나리오 풀 정의는 별 wave)
+
+콩트 1편 = 1 newElement 펀치라인 카드 박힘 (스펙 §5-0:272 정본 유지)
+
 ---
 
 ## 6. 발음 표기 (phonetic_kr) — 7패턴

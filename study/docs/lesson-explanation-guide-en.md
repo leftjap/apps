@@ -216,15 +216,16 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 | 5 | 검사 | 무감정 관찰자 (Sherlock 류) — 정황 질문·관찰 톤 | 3~4 |
 | 6 | 단장 | Coach Taylor 류 — 차가운 재건 리더, 짧은 단언 | 3~4 |
 | 7 | 회장 | Logan Roy (Succession) — 욕·고급 어휘 풀 | 4 |
+| 8 | 빅맨 | Drax the Destroyer (Guardians) — literal 직역·비유 못 알아먹음·호전·자존감 무한·거짓말 X·솔직·"shall" 절제 | 2~4 |
 
 ### Stage 별 등장 가능 페어
 
 | Stage | 등장 가능 | 권장 페어 (다이내믹) |
 |---|---|---|
 | 1 | 1·2 | 지점장 + 박사 (과시 vs 무자각) |
-| 2 | 1·2·3·4 | 지점장 + 평론가 (가짜 자신감 vs 진짜 열등감) / 박사 + 평론가 (학문 우월감 vs 책 서문) / 지점장 + 라쿤 (친밀 강요 vs 욕설 회피) |
-| 3 | 1~6 | + 검사·단장 등장 (사건·조직 갈등 상황) |
-| 4 | 1~7 | 회장 등장 (Succession 톤) |
+| 2 | 1·2·3·4·**8** | **라쿤 + 빅맨 친구 여행 (시니컬 천재 vs literal 전사, 가오갤 검증 — Stage 2 1순위)** / 지점장 + 평론가 / 박사 + 평론가 / 지점장 + 라쿤 |
+| 3 | 1~6·8 | + 검사·단장 등장 / 라쿤+빅맨 친구 여행 시리즈 |
+| 4 | 1~8 | 회장 등장 (Succession 톤) / 라쿤+빅맨 |
 
 ### 캐릭터-stage 정합 원칙
 
@@ -232,6 +233,79 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - Stage 1 콩트에 박사 등장 시 → 박사 대사가 stretch (Stage 2 어휘) 가 자연스러움
 - 라쿤·평론가·검사·단장·회장 등장 시 → 그들의 대사가 stretch 후보 1순위
 - 지점장은 stage 무관 default 어휘 풀로 자연스러움 (구어 축약 풀의 표준 화자)
+
+### 시트콤 작법 4원리 (외부 작법 정본)
+
+콩트 작성 시 다음 4원리 적용:
+
+1. **Show-don't-tell** — 캐릭터 설명 X. 1~2번 카드에서 voice 대조 즉시 노출. `scene_intro` 메타는 장소·상황·콩트 진입 톤만 (예: "라쿤이 빅맨을 놀리기 시작한다"). 캐릭터 정의 ("라쿤은 천재 발명가") 박지 X
+2. **Setup–Punchline 구조** — 1번 = Hook (캐릭터 voice 즉시) · 중간 = Build/Weaponize · 마지막 = Punchline (newElement 박힌 카드)
+3. **Rule of Three** (적정 시) — 패턴 2~3회 반복 후 깨기. 강제 X — 콩트 호흡상 자연 적용
+4. **Punchline 자연 선택** — Self-trapping 강제 X. 시나리오·동작에 따라 자연 선택 (자세는 §Punchline taxonomy 참조)
+
+### Punchline taxonomy 5종 (어학 적합도 순)
+
+| 우선 | type | 정의 | 어학 적합 |
+|---|---|---|---|
+| 1 | **Self-trapping** | 캐릭터가 자기 logic·자랑·솔직성 함정에 빠짐 (Always Sunny / Curb 톤) | 시나리오 제한 — 빅맨 logic 함정 만들 수 있는 상황만 |
+| 2 | **Character-driven** | 캐릭터 voice 자체가 펀치 (자기 자랑 유지·literal 절정) | 모든 시나리오 자연 |
+| 3 | **Misdirection** | assumption shatter (set up → tear down) | 일반 적용 가능 |
+| 4 | **Hyperbole / Escalation** | 과장 점증 | 일반 적용 가능 |
+| 5 | **Incongruity** | 논리·맥락 충돌 | 적용 가능 |
+
+회피: Shock / Wordplay / Recognition (학습 noise — Recognition 은 학습자 cognitive load ↑)
+
+**핵심**: Self-trapping 1순위는 임팩트 강하나 시나리오 의존도 큼. 자연 시나리오 (식당·길묻기 류 — 빅맨 logic 함정 만들 수 있음) 에서만 작동. 다른 시나리오는 Character-driven 자연 선택 (즉흥 Self-trapping 강제 시 라벨링 부정확).
+
+### 카드 정의 확장 (시트콤 호흡 정합)
+
+1 카드 = 1 화자의 1 발화 turn (sentence 1~2개 가능). 시트콤 대사 호흡 정본. (기존 "1 카드 = 1 sentence" 기본 유지하되 짧은 turn 묶음 허용)
+
+### 신규 메타 2종
+
+- **`scene_intro`** (string): 콩트 첫 카드 (scene_order=1) 진입 시 학습자에게 노출되는 1~2줄 한국어 컨텍스트. 형식: "장소 + 상황 + 콩트 진입 톤". 캐릭터 설명 금지 (show-don't-tell)
+- **`scene_direction`** (string, optional): 카드 사이 narration. 형식: `*(action description)*` 한국어. 콩트 진입·장소 전환·시간 경과 표현 (예: `*(둘은 근처 햄버거 가게에 들어간다)*`)
+
+### 라쿤+빅맨 친구 여행 시리즈 (Stage 2 1순위 페어)
+
+가오갤 Rocket + Drax 페어 검증된 코미디 다이내믹. 라쿤이 빅맨을 습관처럼 놀려먹고 빅맨이 literal 진지하게 받는 친구 동행.
+
+**라쿤 voice 4 패턴:**
+- **Hook (1번 카드)**: 일상 실용 표현. "I'm starving. Let's grab a burger." / "We have a reservation." / "Excuse me, where's X?"
+- **Weaponize (3~5번)**: 빅맨 logic 받아서 escalation·역이용 ("Cool. Then run ahead. I'll catch the next bus.")
+- **Cut**: 짧은 컷오프·deflate. "Just X" / "Cool" / "Sure" / "Right"
+- **Affectionate threat idiom**: 친구 농담 위협. "or I will kill you" / "Do you want to die?" / "I'm going to murder you" — 한국 학습자에게 cultural learning (직역 X)
+
+**빅맨 voice 6 패턴:**
+- **Literal 직역**: idiom 첫 등장 시 직역 질문. "A killer burger? Who did it kill?" / "Which corner? I see four corners."
+- **Logic 응대**: 자기 논리로 받음. "Every duty deserves honor" / "If it has killed before, it may try again"
+- **호전·자랑**: "A warrior X" / "I am a man of X" / "My feet are weapons. They require no protection."
+- **거짓말 X (솔직)**: 무기 명세 / 친구 공격 인정 / 자기 무지 인정 (사용자 제공 Drax 명세 정합)
+- **Self-trap**: 자기 logic·자랑·솔직성의 함정에 빠짐 (펀치라인 후보, 자연 시나리오만)
+- **"shall" 절제**: 콩트당 0~1회. 격식체 과용 회피 (이전 시뮬 honor 어쩌구 함정 회피)
+
+### 시나리오 풀 (Stage 2 라쿤+빅맨) + newElement 풀
+
+| 시나리오 | newElement 후보 (Stage 2~3) | 권장 Punchline type |
+|---|---|---|
+| 식당 | "Do you want to X?" threat idiom / "killer X" slang / "or I will X" / "to die for" | Self-trapping |
+| 호텔 | "talk in one's sleep" / "have a reservation" / "two nights/beds" | Character-driven |
+| 공항 | 부정 의문 "do you not X" / "step aside" / "carry-on" | Character-driven |
+| 렌트카 | "shall take X" / "save by not X-ing" / "would rather X" | Character-driven |
+| 대중교통 | 시니컬 confirmation "Yes. Yes I was." / "mock X this entire time" / "miss the bus" | Misdirection |
+| 길묻기 | 현재완료 "I have lost the X I was Y-ing" / "around the corner" / "you can't miss it" | Self-trapping |
+
+**newElement 후보 확장 (스펙 §5-0:272 보강):**
+- 기존: 문법 1개 OR 새 어휘 1개 OR 발음 1개
+- 추가: **시나리오 핵심 idiom 1개** OR **친구 톤 affectionate threat idiom 1개**
+
+콩트 1편 = 1 newElement 펀치라인 카드 박힘 (스펙 §5-0:272 정본 유지)
+
+### 시리즈 callback 운영
+
+같은 페어 (라쿤+빅맨) 의 catchphrase 가 다음 콩트 setup 으로 자연 재사용:
+- 라쿤: "or I will kill you" → 다음 콩트에 "Yes. Yes I was." 시니컬 confirmation 등
+- 빅맨: "shall" / "warrior" 자랑 → 다음 콩트에 자기 자랑 callback
 
 ---
 
