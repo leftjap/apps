@@ -41,15 +41,15 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .phone.dark .phone-home { background: rgba(255,255,255,.32); }
 .tab-pane { display: none; }
 [data-tab="cal"] .pane-cal { display: block; }
-[data-tab="trend"] .pane-trend { display: block; }
+[data-tab="exercise"] .pane-exercise { display: block; }
 [data-tab="body"] .pane-body { display: block; }
 .tab-item { position: relative; padding: 8px 0 12px; cursor: pointer; }
 .tab-bar { position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); display: none; }
 [data-tab="cal"] .tab-cal .tab-bar,
-[data-tab="trend"] .tab-trend .tab-bar,
+[data-tab="exercise"] .tab-exercise .tab-bar,
 [data-tab="body"] .tab-body .tab-bar { display: block; }
 [data-tab="cal"] .tab-cal .tab-label,
-[data-tab="trend"] .tab-trend .tab-label,
+[data-tab="exercise"] .tab-exercise .tab-label,
 [data-tab="body"] .tab-body .tab-label { font-weight: 600; color: #fff; }
 .tab-label { font-size:15px; font-weight: 400; color: rgba(255,255,255,0.45); }
 </style>
@@ -65,7 +65,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     </div>
     <div style="margin-top:22px;padding:0 24px;display:flex;gap:22px;border-bottom:1px solid rgba(255,255,255,0.06);">
       <div class="tab-item tab-cal" data-go="cal"><span class="kr tab-label">캘린더</span><div class="tab-bar"></div></div>
-      <div class="tab-item tab-trend" data-go="trend"><span class="kr tab-label">추이</span><div class="tab-bar"></div></div>
+      <div class="tab-item tab-exercise" data-go="exercise"><span class="kr tab-label">종목</span><div class="tab-bar"></div></div>
       <div class="tab-item tab-body" data-go="body"><span class="kr tab-label">부위</span><div class="tab-bar"></div></div>
     </div>
 
@@ -88,26 +88,19 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         </div>
         <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
       </div>
-      <div style="margin:16px 20px 0;padding:16px 18px;border-radius:16px;background:#15120e;border:1px solid rgba(255,255,255,0.05);">
-        <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 주</div>
-        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" style="font-size:28px;font-weight:300;color:#fff;"><span data-bind="cal-week-current">0</span><span class="kr" style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:3px;">kg</span></span>
-          <span class="kr" data-bind="cal-week-delta" style="font-size:13px;color:var(--accent);font-weight:600;">+0%</span>
+      <!-- 캘린더 하단 추이 그래프 — 최근 8주 막대 + 선 overlay. 헤더 = 이번 주 + 지난 주 대비 delta. -->
+      <div style="margin:20px 20px 0;padding:16px 18px;border-radius:16px;background:#15120e;border:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;">
+          <div>
+            <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 주</div>
+            <div style="margin-top:4px;display:flex;align-items:baseline;gap:8px;">
+              <span class="num" style="font-size:24px;font-weight:300;color:#fff;"><span data-bind="cal-week-current">0</span><span class="kr" style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:3px;">kg</span></span>
+              <span class="kr" data-bind="cal-week-delta" style="font-size:13px;color:var(--accent);font-weight:600;">+0%</span>
+            </div>
+          </div>
+          <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);">지난 주 <span data-bind="cal-week-previous">0</span>kg</div>
         </div>
-        <div class="kr" style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.45);">지난 주 <span data-bind="cal-week-previous">0</span>kg 대비</div>
-      </div>
-    </div>
-
-    <!-- Pane: 추이 -->
-    <div class="tab-pane pane-trend">
-      <div style="padding:26px 24px 0;">
-        <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">최근 8주 · 주간 볼륨</div>
-        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" data-bind="trend-avg" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">12.4K</span>
-          <span class="kr" style="font-size:15px;color:rgba(255,255,255,0.55);">kg / 주</span>
-          <span class="kr" data-bind="trend-delta" style="margin-left:auto;font-size:13px;color:var(--accent);font-weight:600;padding:3px 8px;background:rgba(217,119,87,0.16);border-radius:999px;">↑ +8%</span>
-        </div>
-        <svg id="trend-svg" viewBox="-4 -10 288 140" style="margin-top:18px;width:100%;height:140px;overflow:visible;">
+        <svg id="trend-svg" viewBox="-4 -10 288 140" style="margin-top:14px;width:100%;height:130px;overflow:visible;">
           <defs>
             <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="rgba(217,119,87,0.32)"/>
@@ -116,18 +109,18 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
           </defs>
         </svg>
       </div>
-      <div style="margin:32px 20px 0;padding:18px 0;border-top:1px solid rgba(255,255,255,0.06);border-bottom:1px solid rgba(255,255,255,0.06);display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        <div style="text-align:center;">
-          <div class="num" data-bind="trend-pr" style="font-size:20px;font-weight:500;color:var(--accent);">86K<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span></div>
-          <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:4px;">볼륨 PR</div>
+    </div>
+
+    <!-- Pane: 종목 — 사용자가 자주 한 운동 종목 빈도순 list -->
+    <div class="tab-pane pane-exercise">
+      <div style="padding:26px 24px 0;">
+        <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">자주 한 운동</div>
+        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
+          <span class="num" data-bind="exercise-total" style="font-size:32px;font-weight:200;color:#fff;letter-spacing:-0.03em;">0</span>
+          <span class="kr" style="font-size:15px;color:rgba(255,255,255,0.55);">종목</span>
         </div>
-        <div style="text-align:center;">
-          <div class="num" data-bind="trend-streak" style="font-size:20px;font-weight:500;color:#fff;">3<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span></div>
-          <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:4px;">연속</div>
-        </div>
-        <div style="text-align:center;">
-          <div class="num" data-bind="trend-avg2" style="font-size:20px;font-weight:500;color:#fff;">12.4K<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span></div>
-          <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-top:4px;">평균</div>
+        <div data-bind="exercise-list" style="margin-top:22px;">
+          <div data-bind="exercise-empty" style="display:none;text-align:center;padding:48px 0;color:rgba(255,255,255,0.4);font-size:14px;" class="kr">아직 운동 기록이 없습니다</div>
         </div>
       </div>
     </div>
