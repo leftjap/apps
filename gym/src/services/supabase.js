@@ -11,9 +11,16 @@
  * Key 형식 호환: legacy JWT (eyJ...) + 신규 publishable (sb_publishable_...) 둘 다 동작.
  */
 import { createClient } from '@supabase/supabase-js';
+import { createIndexedDBStorage } from './auth-storage.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// 기존 localStorage 키 (createClient default = `sb-<projectref>-auth-token`).
+// 명시해서 IDB storage 의 마이그 대상 키와 일치시킴.
+const STORAGE_KEY = SUPABASE_URL
+  ? `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
+  : null;
 
 let _client = null;
 let _envWarned = false;

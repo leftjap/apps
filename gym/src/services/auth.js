@@ -14,6 +14,7 @@
  *          production 에선 빈 DB 로 시작.
  */
 import { supabase, isSupabaseConfigured } from './supabase.js';
+import { markExplicitSignOut } from './auth-session-guard.js';
 import { createGymDB } from '../db/schema.js';
 import { seedDevSessions } from '../db/seed.js';
 
@@ -106,6 +107,8 @@ async function signOut() {
     warnNotConfigured('signOut');
     return;
   }
+  // session-guard 의 SIGNED_OUT silent retry 우회 — 명시 logout 은 그대로 로그인 화면으로.
+  markExplicitSignOut();
   const { error } = await supabase.auth.signOut();
   if (error) console.error('[auth] signOut 실패', error);
 }
