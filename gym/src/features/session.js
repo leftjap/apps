@@ -784,6 +784,28 @@ async function mountSessionActive(doc, block, session) {
           onSelect: (actionId) => handleActionSelect(doc, kind, actionId, target),
         });
       },
+      // footer-exercise armed-for-drag : long-press hold + move 시 reorder drag 진입.
+      // setReorderMode 로 pillsEl.dataset.reorder='1' set 후 가짜 pointerdown dispatch →
+      // wireReorderDrag 의 pointerdown 핸들러가 drag init (dragging=true, setPointerCapture).
+      // 이후 사용자 실제 pointermove/pointerup 은 wireReorderDrag 가 처리.
+      onArmedDrag: ({ kind, target, pointerEvent }) => {
+        if (kind !== 'footer-exercise') return;
+        const blockIdx = parseInt(target.dataset.blockIdx, 10);
+        if (!Number.isFinite(blockIdx)) return;
+        setReorderMode(doc, true, blockIdx);
+        try {
+          const fake = new PointerEvent('pointerdown', {
+            bubbles: true, cancelable: true,
+            pointerId: pointerEvent.pointerId,
+            pointerType: pointerEvent.pointerType,
+            clientX: pointerEvent.clientX,
+            clientY: pointerEvent.clientY,
+            button: 0,
+          });
+          fake.__lpDispatched = true; // wireLongPress 재발화 방지 marker
+          target.dispatchEvent(fake);
+        } catch (err) { console.error('[gymSession] armedDrag dispatch', err); }
+      },
     });
   } catch (e) { console.error('[gymSession] wireLongPress', e); }
 
@@ -1392,7 +1414,7 @@ function getActionMenuFor(kind, target) {
  */
 export function wireLongPress(doc, opts = {}) {
   if (!doc) return { wired: 0 };
-  const { onTrigger, holdMs = 500, moveTolerance = 8 } = opts;
+  const { onTrigger, onArmedDrag, holdMs = 500, moveTolerance = 8 } = opts;
 
   const cancelAll = () => {
     doc.querySelectorAll('[data-longpress]').forEach((el) => {
@@ -1409,6 +1431,9 @@ export function wireLongPress(doc, opts = {}) {
     let sx = 0;
     let sy = 0;
     let triggered = false;
+    // footer-exercise armed-for-drag : 시트 즉시 안 띄움, pointerup 까지 대기.
+    // pointermove > tol 면 onArmedDrag 발화 (drag 진입), pointerup 이면 onTrigger (시트).
+    let armedForDrag = false;
 
     const cancel = () => {
       if (timer) { clearTimeout(timer); timer = null; }
@@ -1416,42 +1441,71 @@ export function wireLongPress(doc, opts = {}) {
       el.style.transition = '';
       pid = null;
       triggered = false;
+      armedForDrag = false;
     };
     el._lpCancel = cancel;
 
     el.addEventListener('pointerdown', (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return;
+      // armed-drag 가 dispatch 한 가짜 pointerdown 무시 (wireReorderDrag 만 받게).
+      // isTrusted 가드 대신 marker 기반 (vitest dispatchEvent 도 isTrusted=false 이므로 isTrusted 사용 불가).
+      if (e.__lpDispatched) return;
       // 자식 longpress target (예: 세트 도트) 이 부모 (cardSwipeArea active-card) 까지 동시 발화 방지.
-      // stopPropagation 대신 target 검사 — pillsEl 의 wireReorderDrag bubble listener 등 외부 listener 보존.
       if (e.target && e.target !== el && e.target.closest?.('[data-longpress]') !== el) return;
       sx = e.clientX;
       sy = e.clientY;
       pid = e.pointerId;
       triggered = false;
+      armedForDrag = false;
       el.style.transition = 'transform 120ms ease';
       el.style.transform = 'scale(0.98)';
       timer = setTimeout(() => {
         timer = null;
         triggered = true;
         try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
-        // scale 복원을 onTrigger 전에 (transition 으로 부드럽게). onTrigger 의 setReorderMode 등이
-        // transform 을 다시 설정해도 충돌 없음 (cleanup 이 그 후 발화하지 않음).
         el.style.transform = '';
         setTimeout(() => { el.style.transition = ''; }, 200);
+        const kind = el.dataset.longpress;
+        // footer-exercise 는 시트 즉시 X — armed 상태 유지 (move=drag / up=시트).
+        if (kind === 'footer-exercise' && typeof onArmedDrag === 'function') {
+          armedForDrag = true;
+          return;
+        }
         if (typeof onTrigger === 'function') {
-          try { onTrigger({ kind: el.dataset.longpress, target: el }); }
+          try { onTrigger({ kind, target: el }); }
           catch (err) { console.error('[gymSession] longpress onTrigger', err); }
         }
       }, holdMs);
     });
     el.addEventListener('pointermove', (e) => {
       if (pid !== null && e.pointerId !== pid) return;
-      if (triggered) return; // 이미 발화 — 이동은 메뉴 처리
       const dx = e.clientX - sx;
       const dy = e.clientY - sy;
-      if (Math.hypot(dx, dy) > moveTolerance) cancel();
+      const moved = Math.hypot(dx, dy);
+      if (armedForDrag && moved > moveTolerance) {
+        // armed → drag 진입. setReorderMode + 가짜 pointerdown dispatch.
+        armedForDrag = false;
+        try {
+          onArmedDrag({ kind: el.dataset.longpress, target: el, pointerEvent: e });
+        } catch (err) { console.error('[gymSession] longpress onArmedDrag', err); }
+        pid = null; // 이후 pointer event 는 wireReorderDrag 가 처리
+        return;
+      }
+      if (triggered || armedForDrag) return;
+      if (moved > moveTolerance) cancel();
     });
-    el.addEventListener('pointerup', cancel);
+    el.addEventListener('pointerup', (e) => {
+      if (pid !== null && e.pointerId !== pid) { cancel(); return; }
+      if (armedForDrag) {
+        // armed + drag 안 시작 → 시트 띄움.
+        armedForDrag = false;
+        if (typeof onTrigger === 'function') {
+          try { onTrigger({ kind: el.dataset.longpress, target: el }); }
+          catch (err) { console.error('[gymSession] longpress onTrigger', err); }
+        }
+      }
+      cancel();
+    });
     el.addEventListener('pointercancel', cancel);
     el.addEventListener('pointerleave', cancel);
 
