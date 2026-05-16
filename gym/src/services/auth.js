@@ -18,10 +18,11 @@ import { markExplicitSignOut } from './auth-session-guard.js';
 import { createGymDB } from '../db/schema.js';
 import { seedDevSessions } from '../db/seed.js';
 
-/** 허용 이메일 (대소문자 무관, 공백 trim) — Study 와 동일 allowlist 공유 */
+/** 허용 이메일 (대소문자 무관, 공백 trim) — Study/Today 와 동일 allowlist 공유 */
 export const ALLOWED_EMAILS = Object.freeze([
   'leftjap@gmail.com',
   'soyoun312@gmail.com',
+  'causencompany@gmail.com', // 디버깅·E2E 검증 전용 (Study/Today 와 정합)
 ]);
 
 /** localStorage key — login 화면이 비허용 이메일 차단 결과 표시용. */
@@ -70,6 +71,21 @@ function onAuthStateChange(cb) {
     cb(event, session);
   });
   return () => data.subscription?.unsubscribe();
+}
+
+/**
+ * Email + password 로그인 — preview / E2E 검증 전용.
+ * production 사용자 흐름은 OAuth 한정. Supabase Dashboard 에서 계정 사전 생성 필요.
+ * ALLOWED_EMAILS 게이트는 OAuth 와 동일하게 적용됨.
+ */
+async function signInWithPassword(email, password) {
+  if (!supabase) {
+    warnNotConfigured('signInWithPassword');
+    return { error: new Error('Supabase 미설정') };
+  }
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) console.error('[auth] signInWithPassword 실패', error);
+  return { data, error };
 }
 
 /** Google OAuth 시작 — 브라우저가 redirect 됨. */
@@ -203,6 +219,7 @@ export const Auth = {
   getCurrentUser,
   onAuthStateChange,
   signInWithGoogle,
+  signInWithPassword,
   signOut,
   registerOnSignOut,
   isAllowedEmail,
