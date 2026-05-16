@@ -172,7 +172,12 @@ function hookCustomLongPressDelete(listEl, doc) {
       menu.style.cssText = 'display:flex;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.04);';
       const btns = isCustom
         ? [{ act: 'delete', label: '삭제', color: '#e15a5a' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }]
-        : [{ act: 'hide', label: isHidden ? '보이기' : '숨기기', color: '#fff' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }];
+        : [
+            // builtin: 코드 카탈로그라 실 삭제 불가 — UX '삭제' 라벨 + 동작은 hide toggle.
+            // 이미 숨김 상태면 '보이기' (unhide). 사용자 의도: 리스트에서 빼는 동작 = '삭제' 로 표시.
+            { act: 'hide', label: isHidden ? '보이기' : '삭제', color: isHidden ? '#fff' : '#e15a5a' },
+            { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' },
+          ];
       menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:8px;border:0;background:transparent;color:${b.color};cursor:pointer;font-size:15px;">${b.label}</button>`).join('');
       row2.insertAdjacentElement('afterend', menu);
       menu.addEventListener('click', async (ev) => {

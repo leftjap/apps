@@ -91,10 +91,10 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div style="margin:16px 20px 0;padding:16px 18px;border-radius:16px;background:#15120e;border:1px solid rgba(255,255,255,0.05);">
         <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 주</div>
         <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" style="font-size:28px;font-weight:300;color:#fff;">12,450<span class="kr" style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:3px;">kg</span></span>
-          <span class="kr" style="font-size:13px;color:var(--accent);font-weight:600;">+8%</span>
+          <span class="num" style="font-size:28px;font-weight:300;color:#fff;"><span data-bind="cal-week-current">0</span><span class="kr" style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:3px;">kg</span></span>
+          <span class="kr" data-bind="cal-week-delta" style="font-size:13px;color:var(--accent);font-weight:600;">+0%</span>
         </div>
-        <div class="kr" style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.45);">지난 주 11,520kg 대비</div>
+        <div class="kr" style="margin-top:4px;font-size:13px;color:rgba(255,255,255,0.45);">지난 주 <span data-bind="cal-week-previous">0</span>kg 대비</div>
       </div>
     </div>
 

@@ -98,6 +98,19 @@ export function formatDelta({ delta, sign }) {
 /** 볼륨 비교 DOM 갱신 — mocks/stats.html 의 .compare-section 구조 답습. */
 export function applyVolumesToDom(volumes, doc) {
   if (!doc) return;
+
+  // 캘린더 하단 주간 요약 박스 hydrate (data-bind="cal-week-*").
+  // 이전 mock 정적 더미 (12,450 / +8% / 11,520) 회귀 fix.
+  const calCurEl = doc.querySelector('[data-bind="cal-week-current"]');
+  const calDeltaEl = doc.querySelector('[data-bind="cal-week-delta"]');
+  const calPrevEl = doc.querySelector('[data-bind="cal-week-previous"]');
+  if (calCurEl) calCurEl.textContent = (volumes.week.current || 0).toLocaleString();
+  if (calPrevEl) calPrevEl.textContent = (volumes.week.previous || 0).toLocaleString();
+  if (calDeltaEl) {
+    calDeltaEl.textContent = formatDelta({ delta: volumes.week.delta, sign: volumes.week.sign });
+    calDeltaEl.style.color = volumes.week.sign === 'down' ? 'rgba(255,255,255,0.5)' : 'var(--accent)';
+  }
+
   const groups = doc.querySelectorAll('.cs-group');
   if (!groups || groups.length < 2) return;
 
@@ -531,11 +544,15 @@ export function summarizeBodyParts(sessions) {
   for (const s of list) {
     if (!s) continue;
     const tags = Array.isArray(s.tags) ? s.tags : [];
+    // 사용자 정책: 하루(세션) = 부위당 1회 카운트. 같은 부위 운동 여러 개여도 1회.
+    // tags 가 운동별 push 되어 있으면 같은 부위 중복 — Set 으로 세션 내 dedupe.
+    const seen = new Set();
     for (const tag of tags) {
-      // 영문 직접 매칭 또는 한국어 1글자 매칭
       let meta = PART_META.find((p) => p.key === tag);
       if (!meta) meta = PART_META.find((p) => p.kr === tag);
       if (!meta) continue;
+      if (seen.has(meta.key)) continue;
+      seen.add(meta.key);
       counts.set(meta.key, (counts.get(meta.key) || 0) + 1);
     }
   }
