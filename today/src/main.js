@@ -12,6 +12,8 @@
  * 매번 login 화면 노출 + INITIAL_SESSION 이 whitelist 밖이라 회복 불가 → "자꾸 풀림".
  */
 import { Auth } from './services/auth.js';
+import { supabase } from './services/supabase.js';
+import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { Profile } from './services/profile.js';
 import { Entries } from './features/entries.js';
 import { Editor } from './features/editor.js';
@@ -161,8 +163,6 @@ async function bootstrap() {
 
   // subscribe-first — supabase-js v2 (GoTrueClient.ts:4037-4088) 가 initializePromise 후
   // INITIAL_SESSION 이벤트로 persisted session 발화. 별도 getSession() 호출 안 함 (iOS WebKit race #1560 회피).
-  const { supabase } = await import('./services/supabase.js');
-  const { installAuthSessionGuard } = await import('./services/auth-session-guard.js');
   const guard = installAuthSessionGuard(supabase);
 
   Auth.onAuthStateChange(async (event, session) => {
