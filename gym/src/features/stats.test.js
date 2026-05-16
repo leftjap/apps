@@ -556,30 +556,47 @@ describe('applyTrendToDom + applyBodyPartsToDom (W-I)', () => {
       _map: map,
     };
   }
-  it('applyTrendToDom 빈 trend → no-op', async () => {
+  it('applyTrendToDom 빈 trend → no-op (svg 없음 graceful)', async () => {
     const { applyTrendToDom } = await import('./stats.js');
-    const doc = makeBindDoc(['trend-avg', 'trend-delta']);
-    applyTrendToDom([], doc);
-    expect(doc._map.get('trend-avg').innerHTML).toBe('');
+    const doc = makeBindDoc([]);
+    // svg getElementById null → early return. throw 없으면 통과.
+    expect(() => applyTrendToDom([], doc)).not.toThrow();
+    expect(() => applyTrendToDom([{ weekStart: '2026-05-11', vol: 1000 }], doc)).not.toThrow();
   });
-  it('applyTrendToDom trend 8주 → 헤더 갱신', async () => {
-    const { applyTrendToDom } = await import('./stats.js');
-    const doc = makeBindDoc(['trend-avg', 'trend-delta', 'trend-pr', 'trend-streak', 'trend-avg2']);
-    const trend = [
-      { weekStart: '2026-03-23', vol: 5000 },
-      { weekStart: '2026-03-30', vol: 6000 },
-      { weekStart: '2026-04-06', vol: 7000 },
-      { weekStart: '2026-04-13', vol: 8000 },
-      { weekStart: '2026-04-20', vol: 9000 },
-      { weekStart: '2026-04-27', vol: 10000 },
-      { weekStart: '2026-05-04', vol: 11000 },
-      { weekStart: '2026-05-11', vol: 12000 },
+  it('summarizeExerciseFrequency — done 세트만 종목별 누적 + 빈도순', async () => {
+    const { summarizeExerciseFrequency } = await import('./stats.js');
+    const sessions = [
+      { blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ done: true }, { done: true }, { done: false }] },
+        { type: 'single', exerciseId: 'squat', sets: [{ done: true }] },
+      ]},
+      { blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ done: true }] },
+        { type: 'single', exerciseId: 'deadlift', sets: [{ done: true }, { done: true }] },
+      ]},
     ];
-    applyTrendToDom(trend, doc);
-    expect(doc._map.get('trend-avg').innerHTML).toBe('8.5K');
-    expect(doc._map.get('trend-pr').innerHTML).toContain('12.0K');
-    expect(doc._map.get('trend-streak').innerHTML).toContain('8');
-    expect(doc._map.get('trend-delta').innerHTML).toContain('+9%');
+    const rows = summarizeExerciseFrequency(sessions);
+    expect(rows.length).toBe(3);
+    expect(rows[0]).toMatchObject({ exerciseId: 'bench_press', setCount: 3 });
+    expect(rows[1]).toMatchObject({ exerciseId: 'deadlift', setCount: 2 });
+    expect(rows[2]).toMatchObject({ exerciseId: 'squat', setCount: 1 });
+  });
+  it('applyExerciseFrequencyToDom 빈 rows → empty 표시', async () => {
+    const { applyExerciseFrequencyToDom } = await import('./stats.js');
+    const empty = { style: { display: 'none' } };
+    const totalEl = { textContent: '' };
+    const listEl = { children: [empty], insertAdjacentHTML: () => {} };
+    const doc = {
+      querySelector: (sel) => {
+        if (sel.includes('exercise-total')) return totalEl;
+        if (sel.includes('exercise-list')) return listEl;
+        if (sel.includes('exercise-empty')) return empty;
+        return null;
+      },
+    };
+    applyExerciseFrequencyToDom([], doc);
+    expect(totalEl.textContent).toBe('0');
+    expect(empty.style.display).toBe('');
   });
   it('applyBodyPartsToDom 빈 parts → "기록 없음"', async () => {
     const { applyBodyPartsToDom } = await import('./stats.js');
