@@ -30,7 +30,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .kr { font-family: var(--font-body); }
 .phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
 .phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
-.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size: 14px; letter-spacing: -0.01em; color: var(--ink-strong); }
+.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size:16px; letter-spacing: -0.01em; color: var(--ink-strong); }
 .phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
 .phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
 .phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
@@ -50,31 +50,31 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div class="receipt">
         <!-- 영수증 헤더 -->
         <div style="text-align:center;padding-bottom:16px;border-bottom:1px dashed rgba(255,255,255,0.15);">
-          <div class="num" style="font-size:22px;font-weight:600;letter-spacing:0.08em;color:#fff;">GYM</div>
-          <div id="summaryReceiptNo" class="kr" style="margin-top:6px;font-size:9px;color:rgba(255,255,255,0.45);letter-spacing:0.18em;">SESSION RECEIPT · #0142</div>
-          <div id="summaryDate" class="num" style="margin-top:6px;font-size:10px;color:rgba(255,255,255,0.45);">2026-05-06 · WED · 18:42→19:34</div>
+          <div class="num" style="font-size:24px;font-weight:600;letter-spacing:0.08em;color:#fff;">GYM</div>
+          <div id="summaryReceiptNo" class="kr" style="margin-top:6px;font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.18em;">SESSION RECEIPT · #0142</div>
+          <div id="summaryDate" class="num" style="margin-top:6px;font-size:13px;color:rgba(255,255,255,0.45);">2026-05-06 · WED · 18:42→19:34</div>
         </div>
         <!-- 운동 행 -->
         <div id="summaryExList" style="padding:14px 0;border-bottom:1px dashed rgba(255,255,255,0.15);">
           <div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;">
-            <span style="font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;">벤치프레스<span style="font-size:8px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;">PR</span></span>
-            <span class="num" style="font-size:11px;color:rgba(255,255,255,0.5);">5×</span>
-            <span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;">600kg</span>
+            <span style="font-size:14px;color:#fff;display:flex;align-items:center;gap:6px;">벤치프레스<span style="font-size:13px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;">PR</span></span>
+            <span class="num" style="font-size:13px;color:rgba(255,255,255,0.5);">5×</span>
+            <span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);font-weight:500;">600kg</span>
           </div>
         </div>
         <!-- TOTAL -->
         <div style="padding:14px 0;display:flex;justify-content:space-between;align-items:baseline;">
-          <span class="kr" style="font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:0.1em;">TOTAL</span>
-          <div class="num" style="font-size:36px;font-weight:300;color:#fff;letter-spacing:-0.02em;"><span id="summaryTotal">888</span><span style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:4px;">kg</span></div>
+          <span class="kr" style="font-size:13px;color:rgba(255,255,255,0.55);letter-spacing:0.1em;">TOTAL</span>
+          <div class="num" style="font-size:36px;font-weight:300;color:#fff;letter-spacing:-0.02em;"><span id="summaryTotal">888</span><span style="font-size:16px;color:rgba(255,255,255,0.5);margin-left:4px;">kg</span></div>
         </div>
         <!-- 메타 -->
         <div class="num" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding-bottom:14px;border-bottom:1px dashed rgba(255,255,255,0.15);">
-          <div id="summaryDuration" style="font-size:11px;color:rgba(255,255,255,0.5);">52분</div>
-          <div id="summaryPR" style="font-size:11px;color:var(--accent);font-weight:600;text-align:center;">1 PR ★</div>
-          <div id="summaryKcal" style="font-size:11px;color:rgba(255,255,255,0.5);text-align:right;">286 kcal</div>
+          <div id="summaryDuration" style="font-size:13px;color:rgba(255,255,255,0.5);">52분</div>
+          <div id="summaryPR" style="font-size:13px;color:var(--accent);font-weight:600;text-align:center;">1 PR ★</div>
+          <div id="summaryKcal" style="font-size:13px;color:rgba(255,255,255,0.5);text-align:right;">286 kcal</div>
         </div>
-        <div class="kr" style="text-align:center;padding:16px 0 12px;font-size:11px;color:rgba(255,255,255,0.5);letter-spacing:0.06em;">오늘도 한 줄, 기록 완료</div>
-        <button id="summaryHomeBtn" type="button" class="kr" style="width:100%;height:38px;border-radius:0;border:1px solid #fff;background:transparent;color:#fff;font-size:12px;font-weight:500;letter-spacing:0.06em;cursor:pointer;">홈으로</button>
+        <div class="kr" style="text-align:center;padding:16px 0 12px;font-size:13px;color:rgba(255,255,255,0.5);letter-spacing:0.06em;">오늘도 한 줄, 기록 완료</div>
+        <button id="summaryHomeBtn" type="button" class="kr" style="width:100%;height:38px;border-radius:0;border:1px solid #fff;background:transparent;color:#fff;font-size:14px;font-weight:500;letter-spacing:0.06em;cursor:pointer;">홈으로</button>
       </div>
     </div>
   </div>

@@ -162,9 +162,9 @@ function buildReceiptNo(session) {
 
 function renderExRow(ex) {
   const prBadge = ex.pr
-    ? '<span style="font-size:8px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;margin-left:6px;">PR</span>'
+    ? '<span style="font-size:13px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;margin-left:6px;">PR</span>'
     : '';
-  return `<div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;"><span style="font-size:12px;color:#fff;display:flex;align-items:center;gap:6px;">${escapeText(ex.name)}${prBadge}</span><span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);font-weight:500;">${escapeText(ex.sets)}</span></div>`;
+  return `<div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;"><span style="font-size:14px;color:#fff;display:flex;align-items:center;gap:6px;">${escapeText(ex.name)}${prBadge}</span><span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);font-weight:500;">${escapeText(ex.sets)}</span></div>`;
 }
 
 function escapeText(s) {
@@ -214,7 +214,7 @@ export async function mountSummaryView() {
   const exList = document.getElementById('summaryExList');
   if (exList) {
     if (!data.exercises.length) {
-      exList.innerHTML = '<div class="kr" style="text-align:center;padding:10px 0;font-size:11px;color:rgba(255,255,255,0.3);">기록 없음</div>';
+      exList.innerHTML = '<div class="kr" style="text-align:center;padding:10px 0;font-size:13px;color:rgba(255,255,255,0.3);">기록 없음</div>';
     } else {
       exList.innerHTML = data.exercises.map(renderExRow).join('');
     }

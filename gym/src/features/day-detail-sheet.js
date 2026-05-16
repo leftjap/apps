@@ -66,12 +66,12 @@ function renderSummary(doc, iso, entry) {
 
   const items = Array.isArray(entry.ex) ? entry.ex : [];
   if (items.length === 0) {
-    listEl.innerHTML = '<div class="kr" style="font-size:12px;color:rgba(255,255,255,0.4);">운동 기록 없음</div>';
+    listEl.innerHTML = '<div class="kr" style="font-size:14px;color:rgba(255,255,255,0.4);">운동 기록 없음</div>';
   } else {
     listEl.innerHTML = items.map((it) => {
       const n = escapeText(it?.n);
       const s = escapeText(it?.s);
-      return `<div class="kr" style="display:flex;justify-content:space-between;font-size:13px;color:rgba(255,255,255,0.85);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">`
+      return `<div class="kr" style="display:flex;justify-content:space-between;font-size:15px;color:rgba(255,255,255,0.85);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">`
         + `<span>${n}</span><span style="color:rgba(255,255,255,0.5);">${s}</span>`
         + `</div>`;
     }).join('');

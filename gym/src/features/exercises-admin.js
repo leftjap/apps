@@ -173,7 +173,7 @@ function hookCustomLongPressDelete(listEl, doc) {
       const btns = isCustom
         ? [{ act: 'delete', label: '삭제', color: '#e15a5a' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }]
         : [{ act: 'hide', label: isHidden ? '보이기' : '숨기기', color: '#fff' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }];
-      menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:8px;border:0;background:transparent;color:${b.color};cursor:pointer;font-size:13px;">${b.label}</button>`).join('');
+      menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:8px;border:0;background:transparent;color:${b.color};cursor:pointer;font-size:15px;">${b.label}</button>`).join('');
       row2.insertAdjacentElement('afterend', menu);
       menu.addEventListener('click', async (ev) => {
         const act = ev.target?.closest?.('[data-act]')?.dataset?.act;
@@ -213,7 +213,7 @@ function hookCustomAddButton(doc) {
     const form = doc.createElement('div');
     form.dataset.bind = 'custom-add-form';
     form.style.cssText = 'display:flex;gap:6px;padding:8px 0;';
-    form.innerHTML = `<input type="text" placeholder="새 운동 이름" style="flex:1;height:40px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:#0c0a08;color:#fff;font-size:14px;" /><button type="button" data-act="save" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-size:13px;">저장</button><button type="button" data-act="cancel" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;font-size:13px;">취소</button>`;
+    form.innerHTML = `<input type="text" placeholder="새 운동 이름" style="flex:1;height:40px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:#0c0a08;color:#fff;font-size:16px;" /><button type="button" data-act="save" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;">저장</button><button type="button" data-act="cancel" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;font-size:15px;">취소</button>`;
     trigger.insertAdjacentElement('afterend', form);
     const input = form.querySelector('input');
     const close = () => form.remove();

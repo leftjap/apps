@@ -622,9 +622,9 @@ export function applyTrendToDom(trend, doc) {
   const set = (key, html) => { const el = doc.querySelector(`[data-bind="${key}"]`); if (el) el.innerHTML = html; };
   set('trend-avg', formatK(avg));
   set('trend-delta', delta === null ? '신규' : delta >= 0 ? `↑ +${delta}%` : `↓ ${delta}%`);
-  set('trend-pr', `${formatK(pr)}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span>`);
-  set('trend-streak', `${streak}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span>`);
-  set('trend-avg2', `${formatK(avg)}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span>`);
+  set('trend-pr', `${formatK(pr)}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">kg</span>`);
+  set('trend-streak', `${streak}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">주</span>`);
+  set('trend-avg2', `${formatK(avg)}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">kg/주</span>`);
 }
 
 /** W-I — 부위 분포 stack + list 갱신. parts = [{key, name, count, color}] (count>0, sorted desc). */
@@ -647,12 +647,12 @@ export function applyBodyPartsToDom(parts, doc) {
   const list = doc.querySelector('[data-bind="body-list"]');
   if (list) {
     if (total === 0) {
-      list.innerHTML = '<div class="kr" style="padding:14px 0;color:rgba(255,255,255,0.45);font-size:13px;text-align:center;">기록 없음</div>';
+      list.innerHTML = '<div class="kr" style="padding:14px 0;color:rgba(255,255,255,0.45);font-size:15px;text-align:center;">기록 없음</div>';
     } else {
       list.innerHTML = parts.map((p, i) => {
         const pct = Math.round((p.count / total) * 100);
         const border = i === 0 ? '' : 'border-top:1px solid rgba(255,255,255,0.04);';
-        return `<div style="display:flex;align-items:center;padding:11px 0;${border}"><span style="width:8px;height:8px;border-radius:4px;background:${p.color};margin-right:12px;"></span><span class="kr" style="font-size:14px;color:#fff;font-weight:500;flex:1;">${p.name}</span><div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${p.color};"></div></div><span class="num" style="font-size:12px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">${p.count}<span class="kr" style="font-size:10px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span><span class="num" style="font-size:11px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">${pct}%</span></div>`;
+        return `<div style="display:flex;align-items:center;padding:11px 0;${border}"><span style="width:8px;height:8px;border-radius:4px;background:${p.color};margin-right:12px;"></span><span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">${p.name}</span><div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${p.color};"></div></div><span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">${p.count}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span><span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">${pct}%</span></div>`;
       }).join('');
     }
   }

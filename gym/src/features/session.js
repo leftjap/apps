@@ -1233,7 +1233,7 @@ export function openActionSheet(doc, { kind = '', title = '', items = [], onSele
     const danger = !!it.danger;
     const color = danger ? 'var(--accent)' : '#fff';
     const weight = danger ? 600 : 400;
-    return `<button class="action-item kr" data-action-id="${escapeHtml(it.id)}" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:${color};font-size:14px;font-weight:${weight};cursor:pointer;text-align:center;">${escapeHtml(it.label)}</button>`;
+    return `<button class="action-item kr" data-action-id="${escapeHtml(it.id)}" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:${color};font-size:16px;font-weight:${weight};cursor:pointer;text-align:center;">${escapeHtml(it.label)}</button>`;
   }).join('');
   itemsEl._items = items;
   itemsEl._onSelect = typeof onSelect === 'function' ? onSelect : null;
@@ -1260,7 +1260,7 @@ function showConfirmStep(doc, kind, actionId, actionLabel) {
   sheet.dataset.step = '2';
   sheet.dataset.confirmId = actionId;
   titleEl.textContent = `${actionLabel}하시겠습니까?`;
-  itemsEl.innerHTML = `<button class="action-confirm kr" data-confirm="ok" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;text-align:center;">${escapeHtml(actionLabel)}</button>`;
+  itemsEl.innerHTML = `<button class="action-confirm kr" data-confirm="ok" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;text-align:center;">${escapeHtml(actionLabel)}</button>`;
 }
 
 export function closeActionSheet(doc) {
@@ -1584,26 +1584,26 @@ function renderFooterPillHtml({ blockIdx, state, name, progress }) {
     // 활성 운동 폰트 30% 키움 (15→20, 10→13). 비활성 pill (done/hold/pending) 은 기존 유지.
     return wrapStart + `
       <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:2px;background:var(--accent);"></span>
-      <span style="font-size:20px;font-weight:600;color:var(--accent);">${escapeHtml(name)}</span>
-      <span style="font-size:13px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
+      <span style="font-size:22px;font-weight:600;color:var(--accent);">${escapeHtml(name)}</span>
+      <span style="font-size:15px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
       <span style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);"></span>
     ` + wrapEnd;
   }
   if (state === 'done') {
     return wrapStart + `
-      <span style="color:var(--sage);font-size:12px;">✓</span>
-      <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
-      <span style="font-size:10px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
+      <span style="color:var(--sage);font-size:14px;">✓</span>
+      <span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
+      <span style="font-size:13px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
     ` + wrapEnd;
   }
   if (state === 'hold') {
     return wrapStart + `
-      <span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
-      <span style="font-size:10px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
+      <span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
+      <span style="font-size:13px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
     ` + wrapEnd;
   }
   // pending
-  return wrapStart + `<span style="font-size:13px;font-weight:400;color:rgba(255,255,255,0.28);">${escapeHtml(name)}</span>` + wrapEnd;
+  return wrapStart + `<span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.28);">${escapeHtml(name)}</span>` + wrapEnd;
 }
 
 /**
