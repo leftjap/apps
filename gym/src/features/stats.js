@@ -541,18 +541,19 @@ const PART_META = [
 export function summarizeBodyParts(sessions) {
   const list = Array.isArray(sessions) ? sessions : [];
   const counts = new Map();
+  // 사용자 정책: 하루 = 부위당 1회. (date, partKey) 쌍 dedupe — 같은 날 여러 session 의 같은 부위도 1회.
+  const dateKeySeen = new Set();
   for (const s of list) {
     if (!s) continue;
+    const date = s.date || '';
     const tags = Array.isArray(s.tags) ? s.tags : [];
-    // 사용자 정책: 하루(세션) = 부위당 1회 카운트. 같은 부위 운동 여러 개여도 1회.
-    // tags 가 운동별 push 되어 있으면 같은 부위 중복 — Set 으로 세션 내 dedupe.
-    const seen = new Set();
     for (const tag of tags) {
       let meta = PART_META.find((p) => p.key === tag);
       if (!meta) meta = PART_META.find((p) => p.kr === tag);
       if (!meta) continue;
-      if (seen.has(meta.key)) continue;
-      seen.add(meta.key);
+      const dk = `${date}|${meta.key}`;
+      if (dateKeySeen.has(dk)) continue;
+      dateKeySeen.add(dk);
       counts.set(meta.key, (counts.get(meta.key) || 0) + 1);
     }
   }
