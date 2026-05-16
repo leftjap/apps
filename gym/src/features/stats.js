@@ -692,6 +692,24 @@ export function applyBodyPartsToDom(parts, doc) {
   const total = parts.reduce((s, p) => s + (Number(p.count) || 0), 0);
   const totalEl = doc.querySelector('[data-bind="body-total"]');
   if (totalEl) totalEl.textContent = String(total);
+
+  // silhouette path 색 강조 — 부위별 빈도 비례 alpha (가장 많이 한 부위 진한 accent).
+  // 안 한 부위 회색 유지. 부위 비례: count/max → alpha 0.18~0.85.
+  const max = Math.max(0, ...parts.map((p) => Number(p.count) || 0));
+  const partCount = new Map(parts.map((p) => [p.key, Number(p.count) || 0]));
+  const silhouettePaths = doc.querySelectorAll?.('[data-part]') || [];
+  silhouettePaths.forEach((el) => {
+    const key = el.getAttribute('data-part');
+    const c = partCount.get(key) || 0;
+    if (max === 0 || c === 0) {
+      el.setAttribute('fill', 'rgba(255,255,255,0.10)');
+    } else {
+      const ratio = c / max;
+      const alpha = 0.18 + ratio * 0.67;
+      el.setAttribute('fill', `rgba(217,119,87,${alpha.toFixed(2)})`);
+    }
+  });
+
   const stack = doc.querySelector('[data-bind="body-stack"]');
   if (stack) {
     if (total === 0) {

@@ -133,12 +133,31 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
           <span class="num" data-bind="body-total" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">14</span>
           <span class="kr" style="font-size:15px;color:rgba(255,255,255,0.55);">회 운동</span>
         </div>
-        <div data-bind="body-stack" style="margin-top:22px;height:10px;border-radius:5px;overflow:hidden;display:flex;background:rgba(255,255,255,0.06);">
-          <div style="width:32%;background:#d97757;"></div>
-          <div style="width:26%;background:#788c5d;"></div>
-          <div style="width:18%;background:#b85a3e;"></div>
-          <div style="width:14%;background:#c9a96e;"></div>
-          <div style="width:10%;background:#6b8a9c;"></div>
+        <!-- 부위 silhouette — 단순 사람 형태 (전면/후면), 빈도 비례 색 강조.
+             data-part: chest/shoulder/arms/legs (전면) / back/shoulder/arms/legs (후면).
+             stats.js applyBodyPartsToDom 가 fill 갱신. -->
+        <div data-bind="body-silhouette" style="margin-top:22px;display:flex;justify-content:center;gap:24px;">
+          <svg viewBox="0 0 200 400" style="width:130px;height:260px;" aria-label="전면">
+            <circle cx="100" cy="38" r="24" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.20)" stroke-width="1"/>
+            <path data-part="shoulder" d="M 50 70 L 75 65 L 75 100 L 48 100 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="shoulder" d="M 125 65 L 150 70 L 152 100 L 125 100 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="chest" d="M 75 70 L 125 70 L 125 140 L 75 140 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="abs" d="M 80 140 L 120 140 L 120 200 L 80 200 Z" fill="rgba(255,255,255,0.06)"/>
+            <path data-part="arms" d="M 40 100 L 55 100 L 60 200 L 45 200 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="arms" d="M 145 100 L 160 100 L 155 200 L 140 200 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="legs" d="M 72 205 L 98 205 L 96 380 L 76 380 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="legs" d="M 102 205 L 128 205 L 124 380 L 104 380 Z" fill="rgba(255,255,255,0.10)"/>
+          </svg>
+          <svg viewBox="0 0 200 400" style="width:130px;height:260px;" aria-label="후면">
+            <circle cx="100" cy="38" r="24" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.20)" stroke-width="1"/>
+            <path data-part="shoulder" d="M 50 70 L 75 65 L 75 100 L 48 100 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="shoulder" d="M 125 65 L 150 70 L 152 100 L 125 100 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="back" d="M 75 70 L 125 70 L 125 200 L 75 200 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="arms" d="M 40 100 L 55 100 L 60 200 L 45 200 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="arms" d="M 145 100 L 160 100 L 155 200 L 140 200 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="legs" d="M 72 205 L 98 205 L 96 380 L 76 380 Z" fill="rgba(255,255,255,0.10)"/>
+            <path data-part="legs" d="M 102 205 L 128 205 L 124 380 L 104 380 Z" fill="rgba(255,255,255,0.10)"/>
+          </svg>
         </div>
         <div data-bind="body-list" style="margin-top:22px;">
           <div style="display:flex;align-items:center;padding:11px 0;">
