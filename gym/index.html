@@ -38,6 +38,19 @@
         padding-top: env(safe-area-inset-top, 0) !important;
         padding-bottom: env(safe-area-inset-bottom, 0) !important;
       }
+      /* iOS long-press callout(복사하기/찾아보기/번역/웹 검색) + text selection 전역 차단.
+         자체 구현 long-press 메뉴(active-card / set-row / footer-exercise / session-end / .ex-row / 캘린더)
+         와 동시 발화 방지. mocks/session.html 의 cardSwipeArea inline user-select:none 만으로는
+         -webkit-touch-callout 미차단. 입력 요소만 예외. */
+      html {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      input, textarea, [contenteditable="true"] {
+        -webkit-user-select: text;
+        user-select: text;
+      }
     </style>
   </head>
   <body></body>
