@@ -78,7 +78,7 @@ function onAuthStateChange(cb) {
  * production 사용자 흐름은 OAuth 한정. Supabase Dashboard 에서 계정 사전 생성 필요.
  * ALLOWED_EMAILS 게이트는 OAuth 와 동일하게 적용됨.
  */
-async function signInWithPassword(email, password) {
+async function signInWithPassword({ email, password } = {}) {
   if (!supabase) {
     warnNotConfigured('signInWithPassword');
     return { error: new Error('Supabase 미설정') };
