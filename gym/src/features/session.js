@@ -958,8 +958,8 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets) {
     : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
   const weight = isCurrent ? '600' : '400';
   // 폰트 위계 — current 큰 (label 13px / value 17px), 그 외 작은 (10px / 13px). transition 으로 부드럽게.
-  const labelSize = isCurrent ? '13px' : '10px';
-  const valueSize = isCurrent ? '22px' : '13px';
+  const labelSize = isCurrent ? '13px' : '13px';
+  const valueSize = isCurrent ? '22px' : '15px';
   const currentAttr = isCurrent ? ' data-current="1"' : '';
   return `
         <div data-set-idx="${idx}"${currentAttr} data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};flex-shrink:0;cursor:pointer;transition:color 220ms ease-out, font-weight 220ms ease-out;">
@@ -1009,8 +1009,8 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets) {
       ? 'var(--accent)'
       : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
     const weight = isCurrent ? '600' : '400';
-    const labelSize = isCurrent ? '13px' : '10px';
-    const valueSize = isCurrent ? '22px' : '13px';
+    const labelSize = isCurrent ? '13px' : '13px';
+    const valueSize = isCurrent ? '22px' : '15px';
     // wrap div style 갱신
     dot.style.color = color;
     dot.style.fontWeight = weight;
