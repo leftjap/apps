@@ -332,6 +332,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     const voiceName = voice ?? speakerCfg?.voice ?? cfg.voice ?? null;
     const styleName = style !== undefined ? style : (speakerCfg?.style ?? cfg.style ?? null);
     const effRate = rate ?? speakerCfg?.rate ?? 0.85;
+    _dbg('speak 매핑 결과', { speaker, voiceName, styleName, effRate });
     const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);
     synth.speakSsmlAsync(
       ssml,
