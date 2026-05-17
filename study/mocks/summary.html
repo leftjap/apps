@@ -45,30 +45,41 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 .streak-area{margin-bottom:var(--s-16)}
 .streak-num{font-family:var(--font-display);font-size:56px;font-weight:600;color:var(--text-strong);line-height:1;letter-spacing:-0.03em;position:relative;display:inline-block}
 @media(min-width:600px){.streak-num{font-size:64px}}
+@media(min-width:1024px){.streak-num{font-size:88px}}
 .streak-num::after{content:'';position:absolute;inset:-14px;background:radial-gradient(circle,rgba(217,119,87,0.15) 0%,transparent 70%);border-radius:50%;z-index:-1}
 .streak-unit{font-family:var(--font-display);font-size:16px;font-weight:400;color:var(--text-muted);margin-left:5px}
+@media(min-width:600px){.streak-unit{font-size:18px}}
+@media(min-width:1024px){.streak-unit{font-size:24px}}
 .streak-msg{font-size:13px;color:var(--text-muted);margin-top:var(--s-3)}
 
 /* Session Stats — 2순위 */
 .session-stats{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:var(--s-12);gap:var(--s-4);flex-wrap:wrap}
 .time-block{flex-shrink:0}
 .time-val{font-family:var(--font-display);font-size:32px;font-weight:600;color:var(--text-strong);line-height:1}
+@media(min-width:600px){.time-val{font-size:36px}}
+@media(min-width:1024px){.time-val{font-size:40px}}
 .time-unit{font-family:var(--font-display);font-size:14px;font-weight:400;color:var(--text-muted);margin-left:3px}
 .time-label{font-size:12px;color:var(--text-faint);margin-top:var(--s-2)}
 .review-block{display:flex;gap:var(--s-6)}
 .review-val{font-family:var(--font-display);font-size:20px;font-weight:600;line-height:1}
+@media(min-width:600px){.review-val{font-size:24px}}
+@media(min-width:1024px){.review-val{font-size:28px}}
 .review-val.got{color:var(--sage)}
 .review-val.hmm{color:var(--amber)}
 .review-val.no{color:var(--danger)}
 .review-label{font-family:var(--font-display);font-size:11px;font-weight:500;color:var(--text-faint);margin-top:var(--s-1)}
+@media(min-width:1024px){.review-label{font-size:12px}}
 
 /* Minor stats — 3순위 */
 .minor-stats{display:flex;gap:var(--s-6);flex-wrap:wrap;margin-bottom:var(--s-12);font-family:var(--font-display);font-size:13px;color:var(--text-faint)}
+@media(min-width:1024px){.minor-stats{font-size:14px}}
 .minor-stats .val{font-weight:600;color:var(--text-muted)}
 
 /* Pronunciation — 한 줄 */
 .pron-line{display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap;margin-bottom:var(--s-12)}
 .pron-score{font-family:var(--font-display);font-size:20px;font-weight:600;color:var(--accent);line-height:1}
+@media(min-width:600px){.pron-score{font-size:22px}}
+@media(min-width:1024px){.pron-score{font-size:24px}}
 .pron-score.sage{color:var(--sage)}
 .pron-score.amber{color:var(--amber)}
 .pron-score.danger{color:var(--danger)}
