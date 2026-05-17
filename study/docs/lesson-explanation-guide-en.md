@@ -203,7 +203,16 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 **배치 권장**: 1번 문장 default (진입 부담 ↓) → stretch 는 중간이나 펀치라인 (맥락 형성 후 만남)
 
-### 캐릭터 풀 7명
+### 활성 트랙: 라쿤+빅맨 친구 여행 (영어 단독)
+
+**en 콘텐츠 현재 활성 트랙 = 라쿤 + 빅맨 친구 여행 단일 페어**. 모든 영어 콩트는 이 페어로만 생성. 시나리오는 §"시나리오 풀" 의 여행 영어 일반 상황에서 선택.
+
+- 메인: **라쿤** (시니컬 천재) — 일상 실용 표현 hook + 빅맨 logic weaponize + affectionate threat
+- Sidekick: **빅맨** (literal·호전·자존감·거짓말 X) — voice 함정 또는 voice 유지 펀치
+
+기존 캐릭터 풀 7명 (지점장·박사·평론가·검사·단장·회장) 은 **현재 트랙에서 사용 X**. 미래 다른 컨셉 (직장·학술 등) 트랙 wave 시 활용 가능, 보존만.
+
+### 캐릭터 풀 (보존, 현재 활성 = 빅맨만)
 
 한국식 호칭은 **메타에만** 박힘. sentence 안에는 영어 100% (영어 호칭 필요시 `Boss`/`Doc`/`Chief` 등 자연스럽게).
 
@@ -218,14 +227,16 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 | 7 | 회장 | Logan Roy (Succession) — 욕·고급 어휘 풀 | 4 |
 | 8 | 빅맨 | Drax the Destroyer (Guardians) — literal 직역·비유 못 알아먹음·호전·자존감 무한·거짓말 X·솔직·"shall" 절제 | 2~4 |
 
-### Stage 별 등장 가능 페어
+### Stage 별 페어 (현재 활성 트랙 = 라쿤+빅맨 단독)
 
-| Stage | 등장 가능 | 권장 페어 (다이내믹) |
+| Stage | 활성 페어 | 비고 |
 |---|---|---|
-| 1 | 1·2 | 지점장 + 박사 (과시 vs 무자각) |
-| 2 | 1·2·3·4·**8** | **라쿤 + 빅맨 친구 여행 (시니컬 천재 vs literal 전사, 가오갤 검증 — Stage 2 1순위)** / 지점장 + 평론가 / 박사 + 평론가 / 지점장 + 라쿤 |
-| 3 | 1~6·8 | + 검사·단장 등장 / 라쿤+빅맨 친구 여행 시리즈 |
-| 4 | 1~8 | 회장 등장 (Succession 톤) / 라쿤+빅맨 |
+| 2 | **라쿤 + 빅맨 친구 여행** | 가오갤 검증, 여행 영어 일반 상황 (§시나리오 풀) |
+| 3 | 라쿤 + 빅맨 | 같은 페어, 어휘·문법 stretch 확장 (현재완료·관계대명사·조건문) |
+| 4 | 라쿤 + 빅맨 | 같은 페어, 비즈니스·complex 상황 (보험 청구·고객 응대 등) |
+| 1 | (활성 X) | Stage 1 = 가나·기초 — 콩트 트랙 비활성. 단순 어휘 카드만 |
+
+(기존 7명 풀의 Stage 페어 정의는 미래 다른 트랙 wave 시 복원 가능, 현재 보존)
 
 ### 캐릭터-stage 정합 원칙
 
@@ -284,16 +295,100 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **Self-trap**: 자기 logic·자랑·솔직성의 함정에 빠짐 (펀치라인 후보, 자연 시나리오만)
 - **"shall" 절제**: 콩트당 0~1회. 격식체 과용 회피 (이전 시뮬 honor 어쩌구 함정 회피)
 
-### 시나리오 풀 (Stage 2 라쿤+빅맨) + newElement 풀
+### 시나리오 풀 — 여행 영어 일반 상황 10 카테고리 (Stage 2 라쿤+빅맨)
 
-| 시나리오 | newElement 후보 (Stage 2~3) | 권장 Punchline type |
+여행 영어가 다루는 일반 상황 전부 포괄. 각 시나리오 = 1 콩트, newElement 1개 펀치라인 카드 박힘.
+
+**1. 공항·비행 (Airport & Flight)**
+
+| 시나리오 | newElement 후보 | 권장 Punchline |
 |---|---|---|
-| 식당 | "Do you want to X?" threat idiom / "killer X" slang / "or I will X" / "to die for" | Self-trapping |
-| 호텔 | "talk in one's sleep" / "have a reservation" / "two nights/beds" | Character-driven |
-| 공항 | 부정 의문 "do you not X" / "step aside" / "carry-on" | Character-driven |
+| 체크인 카운터 | "boarding pass" / "checked baggage" / "window or aisle" | Character-driven |
+| 보안 검사 | 부정 의문 "do you not X" / "step aside" / "carry-on" | Character-driven |
+| 면세점 | "duty-free" / "would you mind X-ing" | Misdirection |
+| 게이트·탑승 | "now boarding" / "row by row" | Character-driven |
+| 기내 | "would you like X" / "press the call button" | Self-trapping |
+| 환승·도착 | "connecting flight" / "purpose of your visit" / "anything to declare" | Character-driven |
+| 짐 분실 | "my luggage is missing" / "fill out this form" | Hyperbole |
+
+**2. 숙박 (Hotel)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 체크인 | "have a reservation" / "two nights/beds" / "talk in one's sleep" | Character-driven |
+| 체크아웃·과금 | "checkout time" / "extra charges" / "minibar" | Misdirection |
+| 룸서비스 | "I'd like to order X" / "send it up" | Character-driven |
+| 객실 문제 | "the X doesn't work" / "can I have a new room" | Self-trapping |
+
+**3. 교통 (Transportation)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 택시 | "where to" / "keep the change" / "step on it" | Hyperbole |
+| 버스 | 시니컬 confirmation "Yes. Yes I was." / "miss the bus" / "the next one" | Misdirection |
 | 렌트카 | "shall take X" / "save by not X-ing" / "would rather X" | Character-driven |
-| 대중교통 | 시니컬 confirmation "Yes. Yes I was." / "mock X this entire time" / "miss the bus" | Misdirection |
+| 기차·지하철 | "round trip" / "one-way" / "which platform" | Character-driven |
+| 우버·앱 | "request a ride" / "share location" | Self-trapping |
+
+**4. 식당 (Restaurant)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 메뉴 주문 | "killer X" slang / "to die for" / "Do you want to die?" threat | Self-trapping |
+| 예약 | "table for two" / "do you have a reservation" | Character-driven |
+| 계산·팁 | "split the bill" / "keep the change" / "service included" | Misdirection |
+| 알레르기·dietary | "I'm allergic to X" / "any nuts" / "gluten-free" | Character-driven |
+
+**5. 쇼핑 (Shopping)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 가격·할인 | "what's the price" / "any discount" / "haggle" | Hyperbole |
+| 사이즈·교환 | "do you have it in X" / "I'd like to exchange" | Character-driven |
+| 세금환급 | "tax refund" / "fill out the form" | Misdirection |
+| 기념품 | "where can I find X" / "made locally" | Character-driven |
+
+**6. 길찾기·관광 (Navigation & Sightseeing)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
 | 길묻기 | 현재완료 "I have lost the X I was Y-ing" / "around the corner" / "you can't miss it" | Self-trapping |
+| 관광지 안내 | "how long does it take" / "worth visiting" | Misdirection |
+| 투어·티켓 | "book a tour" / "audio guide" / "skip the line" | Character-driven |
+| 박물관 | "no flash photography" / "where's the entrance" | Self-trapping |
+
+**7. 돈 (Money)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 환전 | "exchange rate" / "small bills please" | Character-driven |
+| ATM·카드 | "my card is stuck" / "declined" / "PIN" | Self-trapping |
+
+**8. 응급·문제 해결 (Emergency & Trouble)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 의사·약국 | "I have a X" / "over-the-counter" / "prescription" | Character-driven |
+| 분실물 | "I lost my X" / "did someone turn it in" | Misdirection |
+| 경찰·신고 | "report a theft" / "do you speak English" | Self-trapping |
+| 고객 응대 (불만) | "this isn't what I ordered" / "speak to the manager" | Hyperbole |
+
+**9. 소셜 (Social)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 인사·자기소개 | "nice to meet you" / "where are you from" | Character-driven |
+| 스몰토크 | "have you been to X" / "what brings you here" | Misdirection |
+| 약속·헤어짐 | "see you later" / "stay in touch" / "let's grab a coffee" | Character-driven |
+
+**10. 통신 (Communication)**
+
+| 시나리오 | newElement | Punchline |
+|---|---|---|
+| 와이파이·SIM | "free wifi" / "buy a SIM card" / "what's the password" | Self-trapping |
+| 로밍·전화 | "is roaming on" / "expensive call" | Character-driven |
+
+총 **약 32 시나리오**. 자연어 트리거가 콩트 생성 시 카테고리 + 세부 시나리오 선택 → newElement 풀에서 1개 박음.
 
 **newElement 후보 확장 (스펙 §5-0:272 보강):**
 - 기존: 문법 1개 OR 새 어휘 1개 OR 발음 1개
