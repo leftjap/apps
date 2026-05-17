@@ -85,6 +85,16 @@ async function signInWithPassword({ email, password } = {}) {
   return { data, error };
 }
 
+async function verifyOtp({ email, token, type = 'magiclink' } = {}) {
+  if (!supabase) {
+    warnNotConfigured('verifyOtp');
+    return { error: new Error('Supabase 미설정') };
+  }
+  const { data, error } = await supabase.auth.verifyOtp({ email, token, type });
+  if (error) console.error('[auth] verifyOtp 실패', error);
+  return { data, error };
+}
+
 /** Google OAuth 시작 — 브라우저가 redirect 됨. */
 async function signInWithGoogle() {
   if (!supabase) {
@@ -207,6 +217,7 @@ export const Auth = {
   onAuthStateChange,
   signInWithGoogle,
   signInWithPassword,
+  verifyOtp,
   signOut,
   registerOnSignOut,
   isAllowedEmail,
