@@ -556,12 +556,11 @@ describe('applyTrendToDom + applyBodyPartsToDom (W-I)', () => {
       _map: map,
     };
   }
-  it('applyTrendToDom 빈 trend → no-op (svg 없음 graceful)', async () => {
-    const { applyTrendToDom } = await import('./stats.js');
+  it('renderWeeklyTrendChart 빈 trend → no-op (svg 없음 graceful)', async () => {
+    const { renderWeeklyTrendChart } = await import('./stats.js');
     const doc = makeBindDoc([]);
-    // svg getElementById null → early return. throw 없으면 통과.
-    expect(() => applyTrendToDom([], doc)).not.toThrow();
-    expect(() => applyTrendToDom([{ weekStart: '2026-05-11', vol: 1000 }], doc)).not.toThrow();
+    expect(() => renderWeeklyTrendChart([], doc)).not.toThrow();
+    expect(() => renderWeeklyTrendChart([{ weekStart: '2026-05-11', vol: 1000 }], doc)).not.toThrow();
   });
   it('summarizeExerciseFrequency — done 세트만 종목별 누적 + 빈도순', async () => {
     const { summarizeExerciseFrequency } = await import('./stats.js');

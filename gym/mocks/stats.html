@@ -100,14 +100,11 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
           </div>
           <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);">지난 주 <span data-bind="cal-week-previous">0</span>kg</div>
         </div>
-        <svg id="trend-svg" viewBox="-4 -10 288 140" style="margin-top:14px;width:100%;height:130px;overflow:visible;">
-          <defs>
-            <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="rgba(217,119,87,0.32)"/>
-              <stop offset="100%" stop-color="rgba(217,119,87,0)"/>
-            </linearGradient>
-          </defs>
-        </svg>
+        <!-- 8주 주간 볼륨 비교 막대 + 선 overlay. 신규 — 기존 #trend-svg 폐기. -->
+        <div data-bind="weekly-trend" style="margin-top:18px;">
+          <svg id="weekly-trend-chart" viewBox="0 0 320 160" style="width:100%;height:150px;display:block;"></svg>
+          <div data-bind="weekly-trend-xaxis" style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;font-size:11px;color:rgba(255,255,255,0.4);"></div>
+        </div>
       </div>
     </div>
 

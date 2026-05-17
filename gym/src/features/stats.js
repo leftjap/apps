@@ -505,7 +505,7 @@ export async function mountStatsView(now = Date.now()) {
     const volumes = summarizeVolumes(sessions, now);
     applyVolumesToDom(volumes, doc);
     // 캘린더 하단 8주 막대+선 추이 + 부위 + 종목 빈도 hydrate
-    applyTrendToDom(summarizeWeeklyTrend(sessions, 8, now), doc);
+    renderWeeklyTrendChart(summarizeWeeklyTrend(sessions, 8, now), doc);
     applyBodyPartsToDom(summarizeBodyParts(sessions), doc);
     applyExerciseFrequencyToDom(summarizeExerciseFrequency(sessions), doc);
     applyTodayToCalendar(now, doc);
@@ -594,41 +594,77 @@ function formatK(n) {
   return String(Math.round(v));
 }
 
-/** 캘린더 탭 하단 추이 그래프 — 8주 막대 + 선 overlay. trend = [{weekStart, vol}] (length=8). */
-export function applyTrendToDom(trend, doc) {
-  if (!doc || !Array.isArray(trend) || trend.length === 0) return;
-  const svg = doc.getElementById('trend-svg');
+/** 8주 주간 볼륨 비교 — 신규 (기존 applyTrendToDom 폐기, 재사용 금지).
+ *  - 8주 모두 막대 (0인 주도 회색 placeholder, 이번 주 진한 오렌지)
+ *  - 막대 위 선 overlay (8주 모든 점 연결)
+ *  - X 축 라벨 (8주전 / 6주전 / 4주전 / 2주전 / 이번) 별도 div
+ *  - viewBox 0 0 320 160 — padding 충분, 하단 겹침 방지
+ *  - trend = [{weekStart, vol}] (length=8)
+ */
+export function renderWeeklyTrendChart(trend, doc) {
+  if (!doc || !Array.isArray(trend)) return;
+  const svg = doc.getElementById('weekly-trend-chart');
   if (!svg) return;
-  Array.from(svg.querySelectorAll('path,polyline,polygon,rect,circle,line')).forEach((el) => el.remove());
-  const w = 280, h = 120;
-  const max = Math.max(1, ...trend.map((t) => Number(t.vol) || 0));
+  Array.from(svg.querySelectorAll('rect,polyline,circle,line,text')).forEach((el) => el.remove());
+
+  const W = 320, H = 160;
+  const padTop = 14, padBot = 14;
+  const chartH = H - padTop - padBot; // 132
+  const max = Math.max(0, ...trend.map((t) => Number(t.vol) || 0));
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  // 1) 막대 — 각 주 1 bar, 이번 주 (마지막) accent
-  const slot = w / trend.length;
-  const barW = slot * 0.6;
+  const n = trend.length || 8;
+  const slot = W / n;
+  const barW = slot * 0.55;
+
+  // 막대 — 모든 주
   trend.forEach((t, i) => {
     const v = Number(t.vol) || 0;
-    if (v <= 0) return;
-    const barH = (v / max) * h;
+    const isCurrent = i === n - 1;
+    const ratio = max > 0 ? v / max : 0;
+    const barH = ratio > 0 ? Math.max(2, ratio * chartH) : chartH * 0.025; // 0인 주는 baseline 작은 placeholder
+    const x = i * slot + (slot - barW) / 2;
+    const y = padTop + (chartH - barH);
     const bar = doc.createElementNS(SVG_NS, 'rect');
-    bar.setAttribute('x', (i * slot + slot * 0.2).toFixed(1));
-    bar.setAttribute('y', (h - barH).toFixed(1));
+    bar.setAttribute('x', x.toFixed(1));
+    bar.setAttribute('y', y.toFixed(1));
     bar.setAttribute('width', barW.toFixed(1));
     bar.setAttribute('height', barH.toFixed(1));
-    bar.setAttribute('rx', '2');
-    bar.setAttribute('fill', i === trend.length - 1 ? '#d97757' : 'rgba(217,119,87,0.28)');
+    bar.setAttribute('rx', '3');
+    let fill;
+    if (v <= 0) fill = 'rgba(255,255,255,0.08)';
+    else if (isCurrent) fill = '#d97757';
+    else fill = 'rgba(217,119,87,0.45)';
+    bar.setAttribute('fill', fill);
     svg.appendChild(bar);
   });
-  // 2) 선 overlay — 막대 위 (사용자 요청 — 단순 비교 + 추세선)
-  const step = trend.length > 1 ? w / (trend.length - 1) : 0;
-  const pts = trend.map((t, i) => `${(i * step).toFixed(1)},${(h - (Number(t.vol) || 0) / max * h).toFixed(1)}`);
-  const line = doc.createElementNS(SVG_NS, 'polyline');
-  line.setAttribute('points', pts.join(' '));
-  line.setAttribute('fill', 'none');
-  line.setAttribute('stroke', 'rgba(255,255,255,0.55)');
-  line.setAttribute('stroke-width', '1.5');
-  line.setAttribute('stroke-linejoin', 'round');
-  svg.appendChild(line);
+
+  // 선 overlay — 모든 8점 (0 도 baseline 따라)
+  if (max > 0) {
+    const step = n > 1 ? W / (n - 1) : 0;
+    const pts = trend.map((t, i) => {
+      const v = Number(t.vol) || 0;
+      const y = padTop + (chartH - (v / max) * chartH);
+      return `${(i * step).toFixed(1)},${y.toFixed(1)}`;
+    });
+    const line = doc.createElementNS(SVG_NS, 'polyline');
+    line.setAttribute('points', pts.join(' '));
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'rgba(255,255,255,0.65)');
+    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(line);
+  }
+
+  // X 축 라벨 별도 div (그래프와 시각 분리)
+  const xaxis = doc.querySelector('[data-bind="weekly-trend-xaxis"]');
+  if (xaxis) {
+    const labels = trend.map((t, i) => {
+      if (i === n - 1) return '이번';
+      const weeksAgo = n - 1 - i;
+      return weeksAgo % 2 === 0 ? `${weeksAgo}주전` : '';
+    });
+    xaxis.innerHTML = labels.map((l) => `<span style="flex:1;text-align:center;">${l}</span>`).join('');
+  }
 }
 
 function escapeHtml(s) {
@@ -752,7 +788,7 @@ if (typeof window !== 'undefined') {
     mountStatsView,
     summarizeBodyParts,
     summarizeWeeklyTrend,
-    applyTrendToDom,
+    renderWeeklyTrendChart,
     applyBodyPartsToDom,
     summarizeExerciseFrequency,
     applyExerciseFrequencyToDom,
