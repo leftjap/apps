@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { pickVoice, buildAzureSSML, VOICE_DEFAULTS, normalizeReferenceText } from './speech.js';
+import { pickVoice, buildAzureSSML, VOICE_DEFAULTS, SPEAKER_VOICES, normalizeReferenceText } from './speech.js';
 
 // Wave 11.22 — speech.js Azure adapter 단위 테스트
 // vi.mock 의 hoisting 으로 import 전에 mock. fetch 는 globalThis 패치.
@@ -591,5 +591,26 @@ describe('Azure SSML — voice/style 매핑', () => {
     const ssml = buildAzureSSML(`it's "AT&T" <safe> & 1<2`, 'en-US', 0.85, 'en-US-AriaNeural', null);
     expect(ssml).toContain('it&apos;s &quot;AT&amp;T&quot; &lt;safe&gt; &amp; 1&lt;2');
     expect(ssml).not.toMatch(/<safe>/);
+  });
+
+  it('SPEAKER_VOICES — 라쿤·빅맨 en-US 매핑 (Tony unfriendly 1.1 / Davis ML empathetic 0.9)', () => {
+    expect(SPEAKER_VOICES['en-US']['라쿤']).toEqual({ voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 });
+    expect(SPEAKER_VOICES['en-US']['빅맨']).toEqual({ voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 });
+  });
+
+  it('buildAzureSSML — 라쿤 매핑 결과 SSML (Tony unfriendly rate 1.1)', () => {
+    const cfg = SPEAKER_VOICES['en-US']['라쿤'];
+    const ssml = buildAzureSSML("I'm starving. Let's grab a burger.", 'en-US', cfg.rate, cfg.voice, cfg.style);
+    expect(ssml).toContain('<voice name="en-US-TonyNeural">');
+    expect(ssml).toContain('<mstts:express-as style="unfriendly">');
+    expect(ssml).toContain('<prosody rate="1.1">');
+  });
+
+  it('buildAzureSSML — 빅맨 매핑 결과 SSML (Davis ML empathetic rate 0.9)', () => {
+    const cfg = SPEAKER_VOICES['en-US']['빅맨'];
+    const ssml = buildAzureSSML("I am a warrior.", 'en-US', cfg.rate, cfg.voice, cfg.style);
+    expect(ssml).toContain('<voice name="en-US-DavisMultilingualNeural">');
+    expect(ssml).toContain('<mstts:express-as style="empathetic">');
+    expect(ssml).toContain('<prosody rate="0.9">');
   });
 });

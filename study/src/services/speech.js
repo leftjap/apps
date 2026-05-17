@@ -248,6 +248,15 @@ export const VOICE_DEFAULTS = {
   'ja-JP': { voice: 'ja-JP-AoiNeural', style: null },
 };
 
+// 화자별 voice/style/rate 매핑. 현재 활성 트랙: 라쿤 + 빅맨 페어 (en 가이드 §6.2).
+// 다른 speaker 또는 미지정 시 VOICE_DEFAULTS 의 lang 기본값 fallback.
+export const SPEAKER_VOICES = {
+  'en-US': {
+    '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
+    '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },
+  },
+};
+
 /** Azure SSML 생성 — style 있으면 mstts namespace 추가 + express-as 래핑. */
 export function buildAzureSSML(text, lang, rate, voiceName, style) {
   const escaped = escapeXml(text);
@@ -312,16 +321,18 @@ export function clearSynthesizerCache() {
  * Wave 11.35 — debug 타이밍 로깅 추가 (window.__SPEECH_DEBUG).
  * Wave 11.36 — synthesizer 인스턴스 재사용 + pre-connect (TTS 지연 감소).
  */
-async function speakAzure(text, { lang = 'en-US', rate = 0.85, voice, style, onEnd } = {}) {
+async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, onEnd } = {}) {
   const t0 = Date.now();
-  _dbg('speak 시작', { text: text?.slice(0, 40), lang });
+  _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker });
   try {
     const { synth } = await getSynthesizer(lang);
     _dbg('speak synthesizer 준비', { elapsedMs: Date.now() - t0 });
     const cfg = VOICE_DEFAULTS[lang] || {};
-    const voiceName = voice ?? cfg.voice ?? null;
-    const styleName = style !== undefined ? style : (cfg.style ?? null);
-    const ssml = buildAzureSSML(text, lang, rate, voiceName, styleName);
+    const speakerCfg = (speaker && SPEAKER_VOICES[lang]) ? SPEAKER_VOICES[lang][speaker] : null;
+    const voiceName = voice ?? speakerCfg?.voice ?? cfg.voice ?? null;
+    const styleName = style !== undefined ? style : (speakerCfg?.style ?? cfg.style ?? null);
+    const effRate = rate ?? speakerCfg?.rate ?? 0.85;
+    const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);
     synth.speakSsmlAsync(
       ssml,
       (result) => {

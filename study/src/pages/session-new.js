@@ -227,7 +227,7 @@ function render(host, state, handlers = {}) {
       playing = true;
       listen.update({ playing: true });
       listenWave.el.style.display = '';
-      window.studySpeech.speak(text, { lang, rate: 0.85, onEnd: stopPlaying });
+      window.studySpeech.speak(text, { lang, speaker: state.sentence?.speaker, onEnd: stopPlaying });
       // super-edge 안전망 (onEnd 미발화 시 30s)
       setTimeout(stopPlaying, 30000);
     },

@@ -23,7 +23,7 @@ describe('pickCardFields', () => {
     });
     expect(out).toEqual({
       id: 'c1', sentence: 'I could use a coffee.', pron: '아이 쿠 쥬즈 어 커피',
-      ko: '커피 한잔 마시고 싶다.', reading: null, lang: 'en', explanation: null,
+      ko: '커피 한잔 마시고 싶다.', reading: null, lang: 'en', explanation: null, speaker: null,
     });
   });
 
@@ -46,8 +46,13 @@ describe('pickCardFields', () => {
   it('null/undefined 안전', () => {
     expect(pickCardFields(null)).toBeNull();
     expect(pickCardFields({})).toEqual({
-      id: undefined, sentence: '', pron: '', ko: '', reading: null, lang: null, explanation: null,
+      id: undefined, sentence: '', pron: '', ko: '', reading: null, lang: null, explanation: null, speaker: null,
     });
+  });
+
+  it('speaker 필드 보존 (라쿤·빅맨 매핑용)', () => {
+    expect(pickCardFields({ id: 'r1', sentence: 'X', speaker: '라쿤' }).speaker).toBe('라쿤');
+    expect(pickCardFields({ id: 'b1', sentence: 'Y', speaker: '빅맨' }).speaker).toBe('빅맨');
   });
 });
 
