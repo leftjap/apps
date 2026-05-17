@@ -584,11 +584,11 @@ describe('applyTrendToDom + applyBodyPartsToDom (W-I)', () => {
     const { applyExerciseFrequencyToDom } = await import('./stats.js');
     const empty = { style: { display: 'none' } };
     const totalEl = { textContent: '' };
-    const listEl = { children: [empty], insertAdjacentHTML: () => {} };
+    const treemapEl = { children: [empty], insertAdjacentHTML: () => {} };
     const doc = {
       querySelector: (sel) => {
         if (sel.includes('exercise-total')) return totalEl;
-        if (sel.includes('exercise-list')) return listEl;
+        if (sel.includes('exercise-treemap')) return treemapEl;
         if (sel.includes('exercise-empty')) return empty;
         return null;
       },

@@ -19,6 +19,7 @@ import {
 } from '../db/queries.js';
 import { partAbbreviation, wireHomeShortcuts } from './home.js';
 import { exerciseIdToName } from './session-summary.js';
+import { getBuiltinExercise } from '../db/exercises.js';
 
 /** YYYY-MM-DD 범위 [from, to] 합산 (totalVolume). */
 function sumVolumeInRange(sessions, fromISO, toISO) {
@@ -507,7 +508,7 @@ export async function mountStatsView(now = Date.now()) {
     // 캘린더 하단 8주 막대+선 추이 + 부위 + 종목 빈도 hydrate
     renderWeeklyTrendChart(summarizeWeeklyTrend(sessions, 8, now), doc);
     applyBodyPartsToDom(summarizeBodyParts(sessions), doc);
-    applyExerciseFrequencyToDom(summarizeExerciseFrequency(sessions), doc);
+    applyExerciseFrequencyToDom(summarizeExerciseFrequency(sessions, getBuiltinExercise), doc);
     applyTodayToCalendar(now, doc);
     applyWorkedToCalendar(sessions, doc);
     try { wireMonthCalendarTaps(doc); } catch (e) { console.error('[gymStats] wireMonthCalendarTaps', e); }
@@ -674,9 +675,10 @@ function escapeHtml(s) {
 /**
  * 종목 탭 — 사용자가 자주 한 운동 빈도순.
  * sessions.blocks[].sets done=true 카운트 → exerciseId 별 누적.
- * 반환: [{ exerciseId, name, setCount }] (setCount 내림차순)
+ * 부위 + 부위 색 매핑 (PART_META 재사용, builtin 만 — custom/unknown 은 회색 fallback).
+ * 반환: [{ exerciseId, name, setCount, part, color }] (setCount 내림차순)
  */
-export function summarizeExerciseFrequency(sessions) {
+export function summarizeExerciseFrequency(sessions, getBuiltin) {
   const list = Array.isArray(sessions) ? sessions : [];
   const map = new Map();
   for (const s of list) {
@@ -691,20 +693,33 @@ export function summarizeExerciseFrequency(sessions) {
     }
   }
   return Array.from(map.entries())
-    .map(([exerciseId, setCount]) => ({ exerciseId, name: exerciseIdToName(exerciseId), setCount }))
+    .map(([exerciseId, setCount]) => {
+      const ex = typeof getBuiltin === 'function' ? getBuiltin(exerciseId) : null;
+      const part = ex?.part || null;
+      const meta = part ? PART_META.find((p) => p.key === part) : null;
+      return {
+        exerciseId,
+        name: exerciseIdToName(exerciseId),
+        setCount,
+        part,
+        color: meta?.color || 'rgba(255,255,255,0.25)',
+      };
+    })
     .sort((a, b) => b.setCount - a.setCount);
 }
 
-/** 종목 빈도 list DOM 갱신 — list 막대 비교. */
+/** 종목 treemap 렌더 — 박스 면적 ∝ 빈도, 색 = 부위별 (PART_META).
+ *  단순 flex-wrap grid: 박스 flex-grow = setCount, 높이 = setCount 비례 (min/max bound).
+ *  사용자가 한 눈에 가장 자주 한 운동 = 가장 큰 박스, 부위 분포 = 색 면적.
+ */
 export function applyExerciseFrequencyToDom(rows, doc) {
   if (!doc) return;
   const totalEl = doc.querySelector('[data-bind="exercise-total"]');
-  const listEl = doc.querySelector('[data-bind="exercise-list"]');
+  const treemapEl = doc.querySelector('[data-bind="exercise-treemap"]');
   const emptyEl = doc.querySelector('[data-bind="exercise-empty"]');
   if (totalEl) totalEl.textContent = String(rows.length);
-  if (!listEl) return;
-  // 이전 렌더 row 제거 (empty placeholder 만 남김)
-  Array.from(listEl.children).forEach((c) => { if (c !== emptyEl) c.remove(); });
+  if (!treemapEl) return;
+  Array.from(treemapEl.children).forEach((c) => { if (c !== emptyEl) c.remove(); });
   if (rows.length === 0) {
     if (emptyEl) emptyEl.style.display = '';
     return;
@@ -712,14 +727,17 @@ export function applyExerciseFrequencyToDom(rows, doc) {
   if (emptyEl) emptyEl.style.display = 'none';
   const max = rows[0].setCount;
   const html = rows.map((r) => {
-    const pct = Math.max(4, Math.round((r.setCount / max) * 100));
-    return `<div style="display:flex;align-items:center;padding:13px 0;border-top:1px solid rgba(255,255,255,0.04);">`
-      + `<span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">${escapeHtml(r.name)}</span>`
-      + `<div style="flex:1.5;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--accent);"></div></div>`
-      + `<span class="num" style="font-size:14px;color:rgba(255,255,255,0.8);min-width:48px;text-align:right;">${r.setCount}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);margin-left:2px;">세트</span></span>`
+    const ratio = r.setCount / max;
+    // 박스 크기 = 빈도 비례. min 90px, max 240px 너비.
+    const w = Math.round(90 + ratio * 150);
+    const h = Math.round(70 + ratio * 60);
+    const fontSize = ratio >= 0.7 ? 18 : ratio >= 0.4 ? 16 : 14;
+    return `<div style="flex:0 0 ${w}px;height:${h}px;background:${r.color};border-radius:10px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;">`
+      + `<div class="kr" style="font-size:${fontSize}px;font-weight:600;color:#fff;line-height:1.2;">${escapeHtml(r.name)}</div>`
+      + `<div class="num" style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:500;">${r.setCount}<span class="kr" style="font-size:11px;margin-left:2px;opacity:0.7;">세트</span></div>`
       + `</div>`;
   }).join('');
-  listEl.insertAdjacentHTML('beforeend', html);
+  treemapEl.insertAdjacentHTML('beforeend', html);
 }
 
 /** W-I — 부위 분포 stack + list 갱신. parts = [{key, name, count, color}] (count>0, sorted desc). */

@@ -116,8 +116,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
           <span class="num" data-bind="exercise-total" style="font-size:32px;font-weight:200;color:#fff;letter-spacing:-0.03em;">0</span>
           <span class="kr" style="font-size:15px;color:rgba(255,255,255,0.55);">종목</span>
         </div>
-        <div data-bind="exercise-list" style="margin-top:22px;">
-          <div data-bind="exercise-empty" style="display:none;text-align:center;padding:48px 0;color:rgba(255,255,255,0.4);font-size:14px;" class="kr">아직 운동 기록이 없습니다</div>
+        <!-- 종목 treemap — 박스 면적 ∝ 빈도, 색 = 부위. 가장 큰 박스 = 가장 자주 한 운동. -->
+        <div data-bind="exercise-treemap" style="margin-top:22px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;">
+          <div data-bind="exercise-empty" style="display:none;text-align:center;padding:48px 0;color:rgba(255,255,255,0.4);font-size:14px;width:100%;" class="kr">아직 운동 기록이 없습니다</div>
         </div>
       </div>
     </div>
