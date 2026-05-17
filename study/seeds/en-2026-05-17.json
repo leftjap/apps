@@ -1,0 +1,210 @@
+{
+  "lang": "en",
+  "date": "2026-05-17",
+  "_note": "Stage 2 콩트 'Killer Burger' (라쿤+빅맨 친구 여행 트랙 — en 가이드 §6.2 단일 페어). currentStage=2 추정 (5/14 콩트 stage 1·2 혼합 학습 후 진입). 시나리오 = 식당 메뉴 주문. newElement = 'or I will kill you' (라쿤 affectionate threat idiom, 펀치라인 6번 박힘). 6장 (Stage 2 분량 6~10 가드). stretch 2장 (2·4번 빅맨 voice — Stage 3 격식·warrior) = 33% (가이드 20~40%). weak_phonemes_en top 3 (l/ax/t) 6장 모두 포함 (100%). frequency 분포 7~10 = 4장(66%) / 4~6 = 2장(33%) / 1~3 = 0건. Punchline type = Character-driven (라쿤 affectionate threat voice). drift 형식 + scene 5필드 + skit 4필드.",
+  "cards": [
+    {
+      "id": "en-2026-05-17-skit1-1",
+      "order_index": 1,
+      "sentence": "I'm starving. Let's grab a burger.",
+      "meaning": "배고파 죽겠어. 햄버거 먹으러 가자.",
+      "reading": null,
+      "phonetic_kr": "아임 스타-빈. 레츠 그랩 어 버-거.",
+      "explanation": {
+        "key": "I'm starving = 배고파 죽겠어 (과장형). Let's grab X = 캐주얼하게 'X 먹으러/사러 가자' 제안.",
+        "situation": "친구한테 즉흥 식사 제안. 라쿤 hook 톤 — 콩트 진입.",
+        "grammar": [
+          { "struct": "I'm starving", "body": "be + V-ing 현재진행. starve (굶주리다) 의 -ing 형용사화 → 과장 표현 '죽겠어'." },
+          { "struct": "Let's grab + N", "body": "Let us → Let's. grab = '짧게 잡다' 캐주얼 동사. 'get' 보다 친근 톤." }
+        ],
+        "chunks": [["I'm starving.", "아임 스타-빈."], ["Let's grab", "레츠 그랩"], ["a burger.", "어 버-거."]],
+        "phonemes": [["/l/", "Let's 의 'l' clear L"], ["/t/", "starving·Let's 의 't' clear"], ["/ax/", "a 부정관사·burger 의 '-er' = schwa"]],
+        "mistake": "'Let's grab a' 끊어 X → '레츠 그랩 어' 한 호흡. starving 강세 첫 음절 'star-'. burger '-er' = schwa 약하게.",
+        "similar": "I'm so hungry / Let's get a burger / I could eat a horse",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["hungry", "burger"],
+        "frequency": 8,
+        "category": "구어/제안",
+        "skitId": "en-2026-05-17-skit1",
+        "skitTitle": "Killer Burger",
+        "skitOrder": 1,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-17-killer-burger",
+        "scene_order": 1,
+        "scene_title": "Killer Burger",
+        "speaker": "라쿤",
+        "is_stretch": false,
+        "scene_intro": "공항 도착 직후, 라쿤이 친구 빅맨에게 햄버거를 사 먹자고 제안한다."
+      }
+    },
+    {
+      "id": "en-2026-05-17-skit1-2",
+      "order_index": 2,
+      "sentence": "I shall fight on a full stomach.",
+      "meaning": "배부른 채로 싸우겠다.",
+      "reading": null,
+      "phonetic_kr": "아이 셸 파잇 온 어 풀 스터먹.",
+      "explanation": {
+        "key": "shall = 격식체 will (1인칭 의지). 빅맨 warrior voice — '~할 것이다' 단언. 일상 회화 비표준.",
+        "situation": "literal 빅맨 톤 — 음식을 fight 대상으로 인식. 캐릭터-driven stretch.",
+        "grammar": [
+          { "struct": "I shall + V", "body": "shall = will 의 격식체. 1인칭 의지 단언. 캐릭터 voice 표식." },
+          { "struct": "on + a + 형용사 + N", "body": "on a full stomach = 배부른 상태에서. 'on' 이 상태·기반 표현." }
+        ],
+        "chunks": [["I shall fight", "아이 셸 파잇"], ["on a full", "온 어 풀"], ["stomach.", "스터먹."]],
+        "phonemes": [["/l/", "shall·full 의 dark L"], ["/t/", "fight·stomach 의 't' clear"], ["/ax/", "on 의 'on'·a 부정관사 = schwa"]],
+        "mistake": "'on a full' 끊어 X → '온 어 풀' 매끄럽게. shall 은 일상 X — 빅맨 voice 만. stomach '-ach' = '먹' (k 소리).",
+        "similar": "I will fight / I'm gonna eat first / I'll take it on (informal)",
+        "stage": 3,
+        "newElements": [],
+        "knownElements": ["fight", "full"],
+        "frequency": 4,
+        "category": "캐릭터/격식",
+        "skitId": "en-2026-05-17-skit1",
+        "skitTitle": "Killer Burger",
+        "skitOrder": 2,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-17-killer-burger",
+        "scene_order": 2,
+        "scene_title": "Killer Burger",
+        "speaker": "빅맨",
+        "is_stretch": true
+      }
+    },
+    {
+      "id": "en-2026-05-17-skit1-3",
+      "order_index": 3,
+      "sentence": "It's a killer burger here, by the way.",
+      "meaning": "여기 햄버거가 끝내준대, 참고로.",
+      "reading": null,
+      "phonetic_kr": "이쳐 킬러 버-거 히어, 바이러 웨이.",
+      "explanation": {
+        "key": "killer X = 끝내주는 X (slang, 칭찬). by the way = 참고로 (화제 보충).",
+        "situation": "라쿤이 음식 정보 슬쩍 흘리며 화제 끌기.",
+        "grammar": [
+          { "struct": "It's a + killer + N", "body": "It's = It is. killer 가 형용사처럼 N 수식 — slang 용법." },
+          { "struct": "by the way", "body": "화제 보충 부사구. 문장 끝 위치 자연. 한국어 '참고로' 대응." }
+        ],
+        "chunks": [["It's a killer", "이쳐 킬러"], ["burger here,", "버-거 히어,"], ["by the way.", "바이러 웨이."]],
+        "phonemes": [["/l/", "killer 의 'l' clear"], ["/t/", "It's 의 't' + the way 의 t flap"], ["/ax/", "killer·burger 의 '-er' = schwa"]],
+        "mistake": "'It's a' 끊어 X → '이쳐' 연음. killer 강세 첫 음절 'kill-'. 단어 그대로 직역 X — 실제 killer 아님.",
+        "similar": "It's amazing / It's incredible / They're great here",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["it's", "burger", "here", "by the way"],
+        "frequency": 7,
+        "category": "구어/추천",
+        "skitId": "en-2026-05-17-skit1",
+        "skitTitle": "Killer Burger",
+        "skitOrder": 3,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-17-killer-burger",
+        "scene_order": 3,
+        "scene_title": "Killer Burger",
+        "speaker": "라쿤",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-17-skit1-4",
+      "order_index": 4,
+      "sentence": "Whom did it kill? A villainous burger?",
+      "meaning": "누구를 죽였단 말이지? 악당 햄버거야?",
+      "reading": null,
+      "phonetic_kr": "훔 디릿 킬? 어 빌러너스 버-거?",
+      "explanation": {
+        "key": "Whom = 격식체 who 목적격. villainous = 악당의 (Stage 3 어휘). 빅맨 literal warrior voice.",
+        "situation": "라쿤의 'killer burger' 를 글자 그대로 받아 격식체로 진지하게 질문. 빅맨 stretch voice.",
+        "grammar": [
+          { "struct": "Whom did + S + V?", "body": "Whom = 목적격 의문대명사 (격식). 일상은 Who 로 대체 가능. did 가 시제 운반 → 본동사 kill 원형." },
+          { "struct": "A + 형용사 + N?", "body": "수식어 (villainous) + 명사. 의문 톤만 끝." }
+        ],
+        "chunks": [["Whom did it kill?", "훔 디릿 킬?"], ["A villainous", "어 빌러너스"], ["burger?", "버-거?"]],
+        "phonemes": [["/l/", "kill·villainous 의 'l' clear + dark"], ["/t/", "it 의 final t → flap '디릿'"], ["/ax/", "a 부정관사·villainous 의 '-ous' = schwa"]],
+        "mistake": "'did it' 끊어 X → '디릿' (t flap). Whom 일상 회화 X — 빅맨 voice 만 자연. villainous 강세 첫 음절 'vil-'.",
+        "similar": "Who did it kill? (informal) / Did it kill anyone? / What did it kill?",
+        "stage": 3,
+        "newElements": [],
+        "knownElements": ["killer", "burger"],
+        "frequency": 4,
+        "category": "캐릭터/literal",
+        "skitId": "en-2026-05-17-skit1",
+        "skitTitle": "Killer Burger",
+        "skitOrder": 4,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-17-killer-burger",
+        "scene_order": 4,
+        "scene_title": "Killer Burger",
+        "speaker": "빅맨",
+        "is_stretch": true
+      }
+    },
+    {
+      "id": "en-2026-05-17-skit1-5",
+      "order_index": 5,
+      "sentence": "Just sit down and order, please.",
+      "meaning": "그냥 앉아서 주문 좀 해, 제발.",
+      "reading": null,
+      "phonetic_kr": "저스트 시러우 앤 오-더, 플리즈.",
+      "explanation": {
+        "key": "Just + V = 그냥 + 동사. 짜증·deflate 톤. 끝 'please' 가 강조 (sarcasm 가능).",
+        "situation": "라쿤이 빅맨의 literal 질문 cut. 짧은 명령 + please — 라쿤 cut voice.",
+        "grammar": [
+          { "struct": "Just + V1 + and + V2", "body": "Just 명령조. and 로 두 동작 연결. 마지막 please — 보드라운 명령." }
+        ],
+        "chunks": [["Just sit down", "저스트 시러우"], ["and order,", "앤 오-더,"], ["please.", "플리즈."]],
+        "phonemes": [["/l/", "please 의 'l' clear"], ["/t/", "Just·sit 의 't' → flap '저스트·시러우'"], ["/ax/", "down·order 의 '-er' = schwa"]],
+        "mistake": "'sit down' 끊어 X → '시러우' (t flap + down 연음). please 끝 톤 살짝 떨굼 (짜증·sarcasm).",
+        "similar": "Sit down already / Will you just sit / Come on, sit",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["just", "sit down", "order", "please"],
+        "frequency": 9,
+        "category": "구어/명령",
+        "skitId": "en-2026-05-17-skit1",
+        "skitTitle": "Killer Burger",
+        "skitOrder": 5,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-17-killer-burger",
+        "scene_order": 5,
+        "scene_title": "Killer Burger",
+        "speaker": "라쿤",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-17-skit1-6",
+      "order_index": 6,
+      "sentence": "Eat the burger, or I will kill you.",
+      "meaning": "햄버거 먹어, 안 그러면 죽여버릴 거야.",
+      "reading": null,
+      "phonetic_kr": "잇 더 버-거, 오롸이 윌 킬 유.",
+      "explanation": {
+        "key": "or I will kill you = 친구 농담 톤 위협 idiom (affectionate threat). 직역 X — 실제 죽이려는 것 아님. 한국 학습자 cultural learning.",
+        "situation": "라쿤 catchphrase 펀치라인. 친구 사이 가벼운 농담 위협 — 라쿤 voice 정수.",
+        "grammar": [
+          { "struct": "[명령], or + S + will + V", "body": "명령문 + or = 안 그러면. 결과절은 위협/예상. 'or you will V' 도 가능." }
+        ],
+        "chunks": [["Eat the burger,", "잇 더 버-거,"], ["or I will", "오롸이 윌"], ["kill you.", "킬 유."]],
+        "phonemes": [["/l/", "will·kill 의 'l' clear L + dark L 혼합"], ["/t/", "Eat 의 't' final 약화"], ["/ax/", "the·burger 의 '-er' = schwa"]],
+        "mistake": "'or I will' 끊어 X → '오롸이 윌' 한 호흡 (or + I 연음, will 약화). 직역 (살인 위협) X — 친구 농담 톤 cultural learning.",
+        "similar": "or I'll kill you / or I'm going to murder you / Do you want to die?",
+        "stage": 2,
+        "newElements": ["or I will kill you"],
+        "knownElements": ["eat", "the burger", "kill", "you"],
+        "frequency": 7,
+        "category": "구어/친구위협",
+        "skitId": "en-2026-05-17-skit1",
+        "skitTitle": "Killer Burger",
+        "skitOrder": 6,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-17-killer-burger",
+        "scene_order": 6,
+        "scene_title": "Killer Burger",
+        "speaker": "라쿤",
+        "is_stretch": false
+      }
+    }
+  ]
+}
