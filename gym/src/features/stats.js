@@ -622,7 +622,7 @@ export function renderWeeklyTrendChart(trend, doc) {
     const v = Number(t.vol) || 0;
     const isCurrent = i === n - 1;
     const ratio = max > 0 ? v / max : 0;
-    const barH = ratio > 0 ? Math.max(2, ratio * chartH) : chartH * 0.025; // 0인 주는 baseline 작은 placeholder
+    const barH = ratio > 0 ? Math.max(4, ratio * chartH) : Math.max(8, chartH * 0.08); // 0인 주는 명확히 보이는 placeholder (8px+)
     const x = i * slot + (slot - barW) / 2;
     const y = padTop + (chartH - barH);
     const bar = doc.createElementNS(SVG_NS, 'rect');
@@ -661,6 +661,7 @@ export function renderWeeklyTrendChart(trend, doc) {
   if (xaxis) {
     const labels = trend.map((t, i) => {
       if (i === n - 1) return '이번';
+      if (i === 0) return `${n - 1}주전`; // 첫 라벨 항상 표시
       const weeksAgo = n - 1 - i;
       return weeksAgo % 2 === 0 ? `${weeksAgo}주전` : '';
     });
