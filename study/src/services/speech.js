@@ -279,7 +279,11 @@ const _synthCache = {}; // { 'en-US': { synth, connection }, 'ja-JP': { ... } }
 const _synthInFlight = {}; // { lang: Promise<{synth, connection}> } — 병렬 호출 race
 
 async function getSynthesizer(lang) {
-  if (_synthCache[lang]) return _synthCache[lang];
+  if (_synthCache[lang]) {
+    _dbg('getSynthesizer cache HIT', { lang });
+    return _synthCache[lang];
+  }
+  _dbg('getSynthesizer cache MISS — new instance', { lang });
   if (_synthInFlight[lang]) return _synthInFlight[lang];
   _synthInFlight[lang] = (async () => {
     const t0 = Date.now();
@@ -307,9 +311,11 @@ async function getSynthesizer(lang) {
   }
 }
 
-/** synthesizer 캐시 클리어 (테스트 / token 갱신 시). */
+/** synthesizer 캐시 클리어 (테스트 / token 갱신 / cancel 시). */
 export function clearSynthesizerCache() {
-  for (const lang of Object.keys(_synthCache)) {
+  const langs = Object.keys(_synthCache);
+  _dbg('clearSynthesizerCache', { langs });
+  for (const lang of langs) {
     try { _synthCache[lang].synth?.close(); } catch (_) {}
     delete _synthCache[lang];
   }
@@ -329,11 +335,14 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
   _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker });
 
   // 이전 in-flight 호출 강제 중지 (race 차단).
+  // Azure SDK JS 의 SpeechSynthesizer 는 stopSpeakingAsync API 없음 (검증됨).
+  // 진행 중 audio 중지 = synth.close() + 캐시 invalidate. 다음 speak 가 새 synth 생성.
   if (_activeSpeak) {
     _dbg('speak 이전 호출 중지', { prevLang: _activeSpeak.lang });
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
-    try { _activeSpeak.synth?.stopSpeakingAsync?.(() => {}, () => {}); } catch (_) { /* noop */ }
+    try { _activeSpeak.synth?.close?.(); } catch (_) { /* noop */ }
+    try { clearSynthesizerCache(); } catch (_) { /* noop */ }
     _activeSpeak = null;
   }
 
@@ -422,12 +431,14 @@ function cancel() {
     }
   } catch (_) { /* noop */ }
   // Azure — in-flight session 강제 중지 (Wave A.15).
+  // SDK 에 stopSpeakingAsync 없음 → synth.close() + 캐시 invalidate 로 audio 중지.
   if (_activeSpeak) {
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
-    try { _activeSpeak.synth?.stopSpeakingAsync?.(() => {}, () => {}); } catch (_) { /* noop */ }
+    try { _activeSpeak.synth?.close?.(); } catch (_) { /* noop */ }
     _activeSpeak = null;
   }
+  try { clearSynthesizerCache(); } catch (_) { /* noop */ }
 }
 
 // ============================================================
