@@ -82,6 +82,15 @@ export default defineConfig({
               expiration: { maxEntries: 2, maxAgeSeconds: 60 * 60 * 24 * 30 },
             },
           },
+          // navigation 요청은 NetworkFirst — 새 빌드 배포 시 favicon/manifest 즉시 갱신.
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 3,
+            },
+          },
         ],
         navigateFallback: `${BASE}index.html`,
         // mocks/ 는 SPA fallback 대상 제외 (각 HTML 이 독립 페이지)

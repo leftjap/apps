@@ -51,6 +51,18 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
+        // navigation 요청은 NetworkFirst — 새 빌드 배포 시 favicon/manifest 즉시 갱신.
+        // precache fallback 은 offline 시에만 사용.
+        runtimeCaching: [
+          {
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'pages',
+              networkTimeoutSeconds: 3,
+            },
+          },
+        ],
       },
     }),
   ],
