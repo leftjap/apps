@@ -78,40 +78,35 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       result = await seedIfNeeded(db);
     });
 
-    it('skipped=false, isFirstSeed=true, version=v12', () => {
+    it('skipped=false, isFirstSeed=true, version=v13', () => {
       expect(result.skipped).toBe(false);
       expect(result.isFirstSeed).toBe(true);
-      expect(result.version).toBe('v12');
+      expect(result.version).toBe('v13');
     });
 
-    it('reviewQueue 에 re1~re7 + rj1~rj7 (총 14건)', () => {
-      expect(db.reviewQueue._data.size).toBe(14);
-      for (const id of ['re1','re2','re3','re4','re5','re6','re7']) {
-        expect(db.reviewQueue._data.has(id), `en ${id}`).toBe(true);
-      }
+    it('reviewQueue 에 rj1~rj7 (일본어 7건만 — v13 영어 데모 제거)', () => {
+      expect(db.reviewQueue._data.size).toBe(7);
       for (const id of ['rj1','rj2','rj3','rj4','rj5','rj6','rj7']) {
         expect(db.reviewQueue._data.has(id), `ja ${id}`).toBe(true);
       }
     });
 
-    it('todayLessons 에 te1~te3 + tj1~tj3 (총 6건)', () => {
-      expect(db.todayLessons._data.size).toBe(6);
-      for (const id of ['te1','te2','te3','tj1','tj2','tj3']) {
+    it('todayLessons 에 tj1~tj3 (일본어 3건만 — v13 영어 데모 제거)', () => {
+      expect(db.todayLessons._data.size).toBe(3);
+      for (const id of ['tj1','tj2','tj3']) {
         expect(db.todayLessons._data.has(id), id).toBe(true);
       }
     });
 
-    it('영어 10건 (review 7 + today 3) / 일본어 10건 (review 7 + today 3)', async () => {
+    it('영어 시드 0건 / 일본어 10건 (review 7 + today 3) — v13 영어 트랙 Supabase 단독', async () => {
       const enReview = [...db.reviewQueue._data.values()].filter(c => c.lang === 'en');
       const jaReview = [...db.reviewQueue._data.values()].filter(c => c.lang === 'ja');
       const enLessons = [...db.todayLessons._data.values()].filter(c => c.lang === 'en');
       const jaLessons = [...db.todayLessons._data.values()].filter(c => c.lang === 'ja');
-      expect(enReview.length).toBe(7);
+      expect(enReview.length).toBe(0);
       expect(jaReview.length).toBe(7);
-      expect(enLessons.length).toBe(3);
+      expect(enLessons.length).toBe(0);
       expect(jaLessons.length).toBe(3);
-      expect(enReview.length + enLessons.length).toBe(10);
-      expect(jaReview.length + jaLessons.length).toBe(10);
     });
 
     it('sessionLogs / dailyStats 첫 시드 시 push', () => {
@@ -119,9 +114,9 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       expect(db.dailyStats._data.size).toBeGreaterThan(0);
     });
 
-    it('meta.seeded marker 가 v12 으로 저장', async () => {
+    it('meta.seeded marker 가 v13 으로 저장', async () => {
       const marker = await db.meta.get('seeded');
-      expect(marker.value).toBe('v12');
+      expect(marker.value).toBe('v13');
     });
 
     it('일본어 카드 (rj1) — ja 4필드 + meta 5필드 형식', async () => {
@@ -157,35 +152,12 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       }
     });
 
-    it('영어 카드 (re2) — 8필드 형식 (key/situation/grammar 배열/chunks/phonemes)', async () => {
-      const re2 = await db.reviewQueue.get('re2');
-      expect(re2.explanation.key).toBeTruthy();
-      expect(re2.explanation.situation).toBeTruthy();
-      expect(Array.isArray(re2.explanation.grammar)).toBe(true);
-      expect(re2.explanation.grammar.length).toBeGreaterThan(0);
-      expect(Array.isArray(re2.explanation.chunks)).toBe(true);
-      expect(Array.isArray(re2.explanation.phonemes)).toBe(true);
-      expect(re2.explanation.mistake).toBeTruthy();
-      expect(re2.explanation.similar).toBeTruthy();
-      expect(re2.explanation.whenToUse).toBeUndefined();
-    });
-
-    it('영어 today (te1) — varData 변형 연습 3타입', async () => {
-      const te1 = await db.todayLessons.get('te1');
-      expect(te1.explanation.varData).toBeDefined();
-      expect(te1.explanation.varData.exercises.length).toBe(3);
-      const types = te1.explanation.varData.exercises.map(e => e.type);
-      expect(types).toContain('주어 변형');
-      expect(types).toContain('시제 변형');
-      expect(types).toContain('표현 변형');
-    });
-
-    it('phoneticKr 모든 카드 존재 (영어 + 일본어)', async () => {
+    it('phoneticKr 모든 카드 존재 (일본어 — v13 영어 데모 제거)', () => {
       const allCards = [
         ...[...db.reviewQueue._data.values()],
         ...[...db.todayLessons._data.values()],
       ];
-      expect(allCards.length).toBe(20);
+      expect(allCards.length).toBe(10);
       for (const c of allCards) {
         expect(c.phoneticKr, `${c.id} phoneticKr`).toBeTruthy();
       }
@@ -224,13 +196,11 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       expect(await db.todayLessons.get('jn1')).toBeUndefined();
     });
 
-    it('신규 re1~re7 + rj1~rj7 추가, todayLessons te1~te3 + tj1~tj3 추가', async () => {
+    it('신규 rj1~rj7 추가, todayLessons tj1~tj3 추가 (v13 — 영어 데모 제거)', async () => {
       const result = await seedIfNeeded(db);
       expect(result.isFirstSeed).toBe(false);
-      expect(db.reviewQueue._data.size).toBe(14);
-      expect(db.todayLessons._data.size).toBe(6);
-      const re1 = await db.reviewQueue.get('re1');
-      expect(re1.sentence).toBe('Got it.');
+      expect(db.reviewQueue._data.size).toBe(7);
+      expect(db.todayLessons._data.size).toBe(3);
       const rj1 = await db.reviewQueue.get('rj1');
       expect(rj1.sentence).toBe('はい');
       expect(rj1.explanation.whenToUse).toContain('긍정');
@@ -249,17 +219,17 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       expect(result.counts.dailyStats).toBe(0);
     });
 
-    it('marker 가 v12 으로 갱신', async () => {
+    it('marker 가 v13 으로 갱신', async () => {
       await seedIfNeeded(db);
       const marker = await db.meta.get('seeded');
-      expect(marker.value).toBe('v12');
+      expect(marker.value).toBe('v13');
     });
   });
 
   describe('동일 버전 재진입 (멱등성)', () => {
     it('marker.value === SEED_VERSION 이면 skip', async () => {
       const db = createMockDB();
-      await db.meta.put({ key: 'seeded', value: 'v12', at: '2026-05-04T00:00:00Z' });
+      await db.meta.put({ key: 'seeded', value: 'v13', at: '2026-05-04T00:00:00Z' });
       const result = await seedIfNeeded(db);
       expect(result.skipped).toBe(true);
       expect(db.reviewQueue._data.size).toBe(0);

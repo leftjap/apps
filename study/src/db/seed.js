@@ -36,141 +36,26 @@ const OBSOLETE_REVIEW_IDS = [
   's04','s06','s07','s08','s09','s11','s12','s13',
   'jr1','jr2','jr3','jr4','jr5',
   'verify-4','verify-5','v2-4','v2-5',
+  // v13 — 라쿤·빅맨 외 영어 트랙 모두 제거 (사용자 지시, 5/17 Killer Burger skit 만 유지)
+  'en-2026-05-04-1','en-2026-05-04-2','en-2026-05-04-3','en-2026-05-04-4','en-2026-05-04-5',
+  'en-2026-05-05-1','en-2026-05-05-2','en-2026-05-05-3','en-2026-05-05-4','en-2026-05-05-5',
+  'en-2026-05-08-1','en-2026-05-08-2','en-2026-05-08-3','en-2026-05-08-4','en-2026-05-08-5',
+  'en-2026-05-13-1','en-2026-05-13-2','en-2026-05-13-3','en-2026-05-13-4','en-2026-05-13-5',
+  'en-2026-05-14-1','en-2026-05-14-2','en-2026-05-14-3','en-2026-05-14-4','en-2026-05-14-5',
+  'lt-test',
 ];
-const OBSOLETE_LESSON_IDS = ['n1','n2','n3','jn1','jn2','verify-4','verify-5','v2-4','v2-5'];
+const OBSOLETE_LESSON_IDS = [
+  'n1','n2','n3','jn1','jn2','verify-4','verify-5','v2-4','v2-5',
+  // v13 — 라쿤·빅맨 외 영어 트랙 모두 제거 (사용자 지시, 5/17 Killer Burger skit 만 유지)
+  'en-2026-05-04-1','en-2026-05-04-2','en-2026-05-04-3','en-2026-05-04-4','en-2026-05-04-5',
+  'en-2026-05-05-1','en-2026-05-05-2','en-2026-05-05-3','en-2026-05-05-4','en-2026-05-05-5',
+  'en-2026-05-08-1','en-2026-05-08-2','en-2026-05-08-3','en-2026-05-08-4','en-2026-05-08-5',
+  'en-2026-05-13-1','en-2026-05-13-2','en-2026-05-13-3','en-2026-05-13-4','en-2026-05-13-5',
+  'en-2026-05-14-1','en-2026-05-14-2','en-2026-05-14-3','en-2026-05-14-4','en-2026-05-14-5',
+  'lt-test','v2-1','v2-2','v2-3','verify-1','verify-2','verify-3',
+];
 
 const REVIEW_CARDS = [
-  // ─── 영어 review (re1~re7) ── Wave 11.73 — 미드/일상 빈출 Stage 1~2 mix ───
-  {
-    id:'re1', lang:'en',
-    sentence:"Got it.",
-    meaning:'알겠어 / 이해했어.',
-    reading:null, phoneticKr:'가릿',
-    explanation:{
-      key:'<span class="hl">Got it</span> = 즉시 응답 "이해함". 가장 짧은 확인 표현.',
-      situation:'지시·정보 받았을 때 즉답. 친구·동료·상사 모두 가능.',
-      grammar:[
-        {struct:'<span class="hl">Got it</span> = I got it (I 생략)', body:'주어 생략 캐주얼. got = get 의 과거 — "(메시지를) 받았다" 의 idiom.'},
-      ],
-      chunks:[["Got it","가릿"]],
-      phonemes:[["/ɾ/","got it (flap)"]],
-      mistake:'"갓 잇" 단어별 끊지 말고 "가릿" 한 호흡. t 가 모음 사이에서 flap → /ɾ/.',
-      similar:'<span class="hl">I see</span> / <span class="hl">Understood</span> / <span class="hl">Roger that</span>',
-    },
-    interval:3, nextReview:'2026-04-30', consecutivePass:1, lastResult:'O', category:'acknowledgement',
-  },
-  {
-    id:'re2', lang:'en',
-    sentence:"No worries.",
-    meaning:'괜찮아 / 신경 쓰지 마.',
-    reading:null, phoneticKr:'노 워리즈',
-    explanation:{
-      key:'사과·실수에 대한 가벼운 안심 응답. 미국·호주 회화에서 표준.',
-      situation:'누가 사과·실수했을 때 "괜찮다" 답. 식당 직원·동료 모두 OK.',
-      grammar:[
-        {struct:'<span class="hl">No + 명사</span> = 명사가 전혀 없음', body:'No worries = 걱정거리가 없음 → "괜찮다" 의 idiom 적 정착.'},
-      ],
-      chunks:[["No worries","노 워리즈"]],
-      phonemes:[["/z/","worries"],["/ɜːr/","wor-"]],
-      mistake:'"노 워리스" X — worries 끝이 z 발음 (s 무성 X). 단·복수 -ies → /iːz/.',
-      similar:'<span class="hl">It\'s fine</span> / <span class="hl">Don\'t worry about it</span> / <span class="hl">All good</span>',
-    },
-    interval:7, nextReview:'2026-05-08', consecutivePass:2, lastResult:'O', category:'reassurance',
-  },
-  {
-    id:'re3', lang:'en',
-    sentence:"Are you serious?",
-    meaning:'진짜야? / 정말?',
-    reading:null, phoneticKr:'알 유 시리어스',
-    explanation:{
-      key:'놀람·불신 리액션. 강한 의문. 친구·동료 사이.',
-      situation:'믿기 어려운 소식 들었을 때 즉답. 톤에 따라 화남/감탄 양쪽.',
-      grammar:[
-        {struct:'<span class="hl">Are you + 형용사</span> = be 동사 의문', body:'be 동사 의문문 도치 — 가장 기본 패턴.'},
-      ],
-      chunks:[["Are you","알 유"],["serious?","시리어스"]],
-      phonemes:[["/ɪə/","serious"],["/ɹ/","are"]],
-      mistake:'"아 유 시리어스" 끊어 X — "알 유" 한 호흡 연결. r 약음 처리.',
-      similar:'<span class="hl">For real?</span> / <span class="hl">No way!</span> / <span class="hl">You serious?</span>',
-    },
-    interval:1, nextReview:TODAY_ISO, consecutivePass:0, lastResult:'△', category:'disbelief',
-  },
-  {
-    id:'re4', lang:'en',
-    sentence:"Hold on a sec.",
-    meaning:'잠깐만.',
-    reading:null, phoneticKr:'홀돈 어 쎅',
-    explanation:{
-      key:'<span class="hl">hold on</span> = 기다리다 (idiom) / <span class="hl">sec</span> = second 축약.',
-      situation:'통화·대화 중 잠깐 멈추라고 요청. 짐 들고 있는 동료에게도.',
-      grammar:[
-        {struct:'<span class="hl">Hold on</span> = 동사 + 부사 (구동사)', body:'직역 "붙들고 있어" → "기다려" 의 관용 의미로 정착.'},
-        {struct:'<span class="hl">a sec</span> = a second', body:'second 의 회화 축약. 시간이 짧다는 의미만 전달.'},
-      ],
-      chunks:[["Hold on","홀돈"],["a sec","어 쎅"]],
-      phonemes:[["/oʊ/","hold"]],
-      mistake:'"홀드 온" X — d 약음, "홀돈" 한 호흡. sec 짧게 끊어.',
-      similar:'<span class="hl">Just a sec</span> / <span class="hl">One moment</span> / <span class="hl">Wait up</span>',
-    },
-    interval:3, nextReview:'2026-05-02', consecutivePass:1, lastResult:'O', category:'wait_request',
-  },
-  {
-    id:'re5', lang:'en',
-    sentence:"I'm working on it.",
-    meaning:'하고 있어 / 처리 중이야.',
-    reading:null, phoneticKr:'아임 워킹 오닛',
-    explanation:{
-      key:'<span class="hl">work on X</span> = X 를 진행 중 (idiom). 비즈니스 응답 표준.',
-      situation:'상사·동료가 진행 상황 물었을 때. 이메일 답으로도 자주.',
-      grammar:[
-        {struct:'<span class="hl">be + V-ing</span> = 현재진행', body:'지금 이 순간 진행 중. on 이 "그것에 대해" 라는 방향성.'},
-      ],
-      chunks:[["I'm working","아임 워킹"],["on it","오닛"]],
-      phonemes:[["/ɜːr/","working"],["/ɾ/","on it"]],
-      mistake:'"워킹 온 잇" 단어 끊지 말고 "워킹 오닛" 연음. on it 의 t 가 flap.',
-      similar:'<span class="hl">I\'m on it</span> / <span class="hl">Almost there</span> / <span class="hl">In progress</span>',
-    },
-    interval:7, nextReview:'2026-05-10', consecutivePass:2, lastResult:'O', category:'work_progress',
-  },
-  {
-    id:'re6', lang:'en',
-    sentence:"Let's call it a day.",
-    meaning:'오늘은 여기까지 하자.',
-    reading:null, phoneticKr:'렛츠 콜 이러 데이',
-    explanation:{
-      key:'<span class="hl">call it a day</span> = 그날 일을 마치다 (idiom).',
-      situation:'회의·작업 끝낼 때. 야근 그만 하고 퇴근하자고 제안.',
-      grammar:[
-        {struct:'<span class="hl">Let\'s</span> = Let us — 권유', body:'명령문 with us — "함께 ~하자".'},
-        {struct:'<span class="hl">call it X</span> = X 라고 부르다/규정하다', body:'직역 "오늘이라고 부르자" → "오늘 종료" 의 idiom.'},
-      ],
-      chunks:[["Let's call","렛츠 콜"],["it a","이러"],["day","데이"]],
-      phonemes:[["/ɾ/","it a (flap)"]],
-      mistake:'"이트 어" → "이러" t flap 연음. idiom 통째로 외우기 — 개별 단어 분석 X.',
-      similar:'<span class="hl">Wrap it up</span> / <span class="hl">That\'s a wrap</span> / <span class="hl">Let\'s wrap up</span>',
-    },
-    interval:21, nextReview:'2026-05-22', consecutivePass:3, lastResult:'O', category:'wrap_up',
-  },
-  {
-    id:'re7', lang:'en',
-    sentence:"How's it going?",
-    meaning:'잘 지내? / 어때?',
-    reading:null, phoneticKr:'하우즈 잇 고잉',
-    explanation:{
-      key:'캐주얼 인사. <span class="hl">How are you</span> 보다 자주 씀.',
-      situation:'친구·동료 만났을 때 첫 인사. 카페 직원이 손님에게도.',
-      grammar:[
-        {struct:'<span class="hl">How\'s</span> = How is (축약)', body:'is 의 \'s 축약 — 회화 디폴트.'},
-        {struct:'<span class="hl">How is it going</span>', body:'직역 "어떻게 가고 있냐" → "어떻게 지내" 의 idiom.'},
-      ],
-      chunks:[["How's it","하우즈 잇"],["going","고잉"]],
-      phonemes:[["/aʊ/","how"]],
-      mistake:'"하우 이즈 잇" X — 축약 "하우즈 잇" 한 호흡. \'s 빼지 말 것.',
-      similar:'<span class="hl">How are you</span> / <span class="hl">What\'s up</span> / <span class="hl">How\'s everything</span>',
-    },
-    interval:60, nextReview:'2026-06-15', consecutivePass:4, lastResult:'O', category:'casual_greeting',
-  },
-
   // ─── 일본어 review (rj1~rj7) ── Wave 11.73 — 응답·리액션 만능 표현 Stage 1 6건 + Stage 2 1건 ───
   //
   // i+1 사슬: rj1~rj6 모두 Stage 1 (knownElements:[]). rj7 Stage 2 (known=['そう'] ← rj3 newElement).
@@ -277,86 +162,6 @@ const REVIEW_CARDS = [
 ];
 
 const TODAY_LESSONS = [
-  // ─── 영어 today (te1~te3) ── Wave 11.73 — 회화 빈출 idiom · varData 3타입 ───
-  {
-    id:'te1', lang:'en', date:TODAY_ISO,
-    sentence:"I could use a coffee.",
-    meaning:'커피 한잔 마시고 싶다.',
-    reading:null, phoneticKr:'아이 쿠 쥬즈 어 커피',
-    completed:false, orderIndex:1,
-    explanation:{
-      key:'<span class="hl">could use X</span> = X 가 좀 있으면 좋겠다 (idiom — 약한 부드러운 표현).',
-      situation:'피곤할 때 "뭐 좀 마시고 싶다" 부드러운 제안. 직설보다 캐주얼.',
-      grammar:[
-        {struct:'<span class="hl">could use</span> = idiom', body:'직역 "사용할 수 있겠다" → "있으면 좋겠다". 약한 욕구 표현.'},
-      ],
-      chunks:[["I could","아이 쿠"],["use a","쥬즈 어"],["coffee","커피"]],
-      phonemes:[["/uː/","use"],["/ʊ/","could"]],
-      mistake:'"could use" → "쿠드 유즈" 끊어 X — d 약음, "쿠 쥬즈" 한 호흡. "필요하다" 직역보다 idiom 그대로.',
-      similar:'<span class="hl">I\'d love a coffee</span> / <span class="hl">I really need a coffee</span>',
-      varData:{
-        original:"I could use a coffee.",
-        exercises:[
-          { type:'주어 변형', prompt:'<strong>주어를 We</strong> 로 바꿔 다시 쓰세요.', expected:["we could use a coffee","we could use a coffee."], examples:["We could use a coffee."] },
-          { type:'시제 변형', prompt:'<strong>could</strong> 를 <strong>would love</strong> 로 바꿔 다시 쓰세요.', expected:["i would love a coffee","i would love a coffee.","i'd love a coffee","i'd love a coffee."], examples:["I'd love a coffee."] },
-          { type:'표현 변형', prompt:'비슷한 의미 <strong>"I really need"</strong> 로 다시 쓰세요.', expected:["i really need a coffee","i really need a coffee."], examples:["I really need a coffee."] },
-        ],
-      },
-    },
-  },
-  {
-    id:'te2', lang:'en', date:TODAY_ISO,
-    sentence:"It is what it is.",
-    meaning:'어쩔 수 없지 / 그러려니 해.',
-    reading:null, phoneticKr:'이리즈 와리리즈',
-    completed:false, orderIndex:2,
-    explanation:{
-      key:'받아들임 idiom. 바꿀 수 없는 상황에 대한 체념·수용.',
-      situation:'어쩔 수 없는 상황. 한탄·체념 톤. 친구·동료 위로하면서도.',
-      grammar:[
-        {struct:'<span class="hl">It is what it is</span> = 동어반복 idiom', body:'직역 "그것은 그것이다" → "그게 그런 거다" 의 수용 표현.'},
-      ],
-      chunks:[["It is","이리즈"],["what it is","와리리즈"]],
-      phonemes:[["/ɾ/","it is (flap)"]],
-      mistake:'"잇 이즈" X — 모든 t 가 모음 사이 flap. "이리즈" 한 호흡 연음.',
-      similar:'<span class="hl">That\'s how it is</span> / <span class="hl">Nothing we can do</span> / <span class="hl">Such is life</span>',
-      varData:{
-        original:"It is what it is.",
-        exercises:[
-          { type:'주어 변형', prompt:'<strong>It</strong> 을 <strong>They</strong> 로 바꿔 다시 쓰세요.', expected:["they are what they are","they are what they are."], examples:["They are what they are."] },
-          { type:'시제 변형', prompt:'<strong>현재</strong>를 <strong>과거</strong>로 바꿔 다시 쓰세요.', expected:["it was what it was","it was what it was."], examples:["It was what it was."] },
-          { type:'표현 변형', prompt:'비슷한 표현 <strong>"That\'s how it is"</strong> 로 다시 쓰세요.', expected:["that's how it is","that's how it is.","that is how it is","that is how it is."], examples:["That's how it is."] },
-        ],
-      },
-    },
-  },
-  {
-    id:'te3', lang:'en', date:TODAY_ISO,
-    sentence:"Let me get back to you.",
-    meaning:'다시 연락드릴게요.',
-    reading:null, phoneticKr:'렛 미 겟 백 트유',
-    completed:false, orderIndex:3,
-    explanation:{
-      key:'<span class="hl">get back to X</span> = X 에게 답을 다시 주다 (비즈니스 표준).',
-      situation:'즉답 못하고 확인 후 답하겠다는 비즈니스 답. 이메일·통화 양쪽.',
-      grammar:[
-        {struct:'<span class="hl">Let me</span> = 부드러운 의지', body:'명령문 형태지만 "내가 ~할게" 의 부드러운 자기 의지.'},
-        {struct:'<span class="hl">get back to + 사람</span> = 답·연락을 다시 주다', body:'단순 "돌아가다" 가 아니라 "응답을 다시 보내다" 의 idiom.'},
-      ],
-      chunks:[["Let me","렛 미"],["get back","겟 백"],["to you","트유"]],
-      phonemes:[["/æ/","back"]],
-      mistake:'"투 유" X — "트유" 약음 연음. "let me" 의 t 도 약음.',
-      similar:'<span class="hl">I\'ll follow up</span> / <span class="hl">I\'ll get in touch</span> / <span class="hl">I\'ll let you know</span>',
-      varData:{
-        original:"Let me get back to you.",
-        exercises:[
-          { type:'주어 변형', prompt:'<strong>주어를 We</strong> 로 바꿔 다시 쓰세요. (We will 형태)', expected:["we'll get back to you","we'll get back to you.","we will get back to you","we will get back to you."], examples:["We'll get back to you."] },
-          { type:'시제 변형', prompt:'<strong>현재</strong>를 <strong>과거</strong>로 바꿔 다시 쓰세요.', expected:["i got back to you","i got back to you."], examples:["I got back to you."] },
-          { type:'표현 변형', prompt:'비슷한 표현 <strong>"I\'ll follow up"</strong> 으로 다시 쓰세요.', expected:["i'll follow up with you","i'll follow up with you.","i will follow up with you","i'll follow up","i'll follow up."], examples:["I'll follow up with you."] },
-        ],
-      },
-    },
-  },
 
   // ─── 일본어 today (tj1~tj3) ── Wave 11.73 — 만능 리액션 Stage 1 2건 + Stage 2 1건 ───
   // tj3 의 known=['わかった'] ← rj4 newElement 사슬.
@@ -446,7 +251,7 @@ const DAILY_STATS = SESSION_LOGS.map((s) => ({
 //   - SESSION_LOGS sentenceIds 는 ID 슬롯 재사용으로 무결성 유지. 카테고리 라벨만 새 카드 카테고리에 맞춰 정정.
 //   - mocks/session.html CARDS.en/CARDS.ja 동기화.
 //   - REVIEW_UPDATE_FIELDS 에 explanation 포함 → v10 받은 사용자 자동 update (학습 진도 보존).
-const SEED_VERSION = 'v12';
+const SEED_VERSION = 'v13';
 
 const REVIEW_UPDATE_FIELDS = ['sentence', 'meaning', 'reading', 'phoneticKr', 'explanation'];
 const LESSON_UPDATE_FIELDS = ['sentence', 'meaning', 'reading', 'phoneticKr', 'explanation'];
