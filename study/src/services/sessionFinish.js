@@ -93,6 +93,7 @@ export async function finishSession(db, params) {
         phonetic_kr: card.phonetic_kr,
         reading: card.reading ?? null,
         explanation: card.explanation ?? null,
+        speaker: card.speaker ?? null,
         interval: 1,
         nextReview: tomorrow,
         promotedFrom: 'new',

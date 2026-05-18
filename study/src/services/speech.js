@@ -254,6 +254,8 @@ export const SPEAKER_VOICES = {
   'en-US': {
     '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
     '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },
+    '지점장': { voice: 'en-US-AndrewMultilingualNeural', style: 'friendly', rate: 1.0 },
+    '박사': { voice: 'en-US-BrianMultilingualNeural', style: 'calm', rate: 0.95 },
   },
 };
 
