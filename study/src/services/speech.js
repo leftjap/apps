@@ -321,9 +321,22 @@ export function clearSynthesizerCache() {
  * Wave 11.35 — debug 타이밍 로깅 추가 (window.__SPEECH_DEBUG).
  * Wave 11.36 — synthesizer 인스턴스 재사용 + pre-connect (TTS 지연 감소).
  */
+// Wave A.15 — 진행 중 audio playback 추적. race 차단 (빠른 연타 / 카드 전환 시 두 audio 겹침 방지).
+let _activeSpeak = null; // { lang, synth, playbackTimer, onEnd, cancelled }
+
 async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, onEnd } = {}) {
   const t0 = Date.now();
   _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker });
+
+  // 이전 in-flight 호출 강제 중지 (race 차단).
+  if (_activeSpeak) {
+    _dbg('speak 이전 호출 중지', { prevLang: _activeSpeak.lang });
+    _activeSpeak.cancelled = true;
+    if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
+    try { _activeSpeak.synth?.stopSpeakingAsync?.(() => {}, () => {}); } catch (_) { /* noop */ }
+    _activeSpeak = null;
+  }
+
   try {
     const { synth } = await getSynthesizer(lang);
     _dbg('speak synthesizer 준비', { elapsedMs: Date.now() - t0 });
@@ -334,6 +347,11 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     const effRate = rate ?? speakerCfg?.rate ?? 0.85;
     _dbg('speak 매핑 결과', { speaker, voiceName, styleName, effRate });
     const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);
+
+    // 새 in-flight 세션 등록.
+    const session = { lang, synth, playbackTimer: null, onEnd, cancelled: false };
+    _activeSpeak = session;
+
     synth.speakSsmlAsync(
       ssml,
       (result) => {
@@ -343,10 +361,11 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
         const audioMs = result?.audioDuration ? result.audioDuration / 10000 : 0;
         const synthMs = Date.now() - t0;
         _dbg('speak synthesis 완료, playback 대기', { synthMs, audioMs });
-        setTimeout(() => {
-          _dbg('speak playback 완료', { totalMs: Date.now() - t0, audioMs });
-          // synth.close() 안 함 — 캐시 재사용. Wave 11.36.
-          onEnd?.();
+        if (session.cancelled) { _dbg('speak cancelled before playback', {}); return; }
+        session.playbackTimer = setTimeout(() => {
+          _dbg('speak playback 완료', { totalMs: Date.now() - t0, audioMs, cancelled: session.cancelled });
+          if (_activeSpeak === session) _activeSpeak = null;
+          if (!session.cancelled) onEnd?.();
         }, Math.max(0, audioMs));
       },
       (err) => {
@@ -402,8 +421,13 @@ function cancel() {
       window.speechSynthesis.cancel();
     }
   } catch (_) { /* noop */ }
-  // Azure — synth 인스턴스 close (현재 SDK 가 재생 중지 + 리소스 해제)
-  try { clearSynthesizerCache(); } catch (_) { /* noop */ }
+  // Azure — in-flight session 강제 중지 (Wave A.15).
+  if (_activeSpeak) {
+    _activeSpeak.cancelled = true;
+    if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
+    try { _activeSpeak.synth?.stopSpeakingAsync?.(() => {}, () => {}); } catch (_) { /* noop */ }
+    _activeSpeak = null;
+  }
 }
 
 // ============================================================

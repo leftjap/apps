@@ -113,6 +113,7 @@ export function mountSessionReview(host) {
 
   const handlers = {
     onJudge: async (kind) => {
+      try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       const currentCard = state.cards[state.step - 1];
       if (kind === 'got' || kind === 'hmm' || kind === 'no') state.judged[kind] += 1;
       try {
@@ -133,6 +134,7 @@ export function mountSessionReview(host) {
     onJump: (step) => {
       if (!Number.isInteger(step) || step < 1 || step > state.cards.length) return;
       if (step === state.step) return;
+      try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       state.step = step;
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
       state.recording = false;

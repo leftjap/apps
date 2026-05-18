@@ -100,6 +100,7 @@ export function mountSessionNew(host) {
 
   const handlers = {
     onNext: () => {
+      try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       const r = advanceCard(state.cards, state.step);
       if (r.done) { endSession(true); return; }
       state.step = r.step;
@@ -112,6 +113,7 @@ export function mountSessionNew(host) {
     onJump: (step) => {
       if (!Number.isInteger(step) || step < 1 || step > state.cards.length) return;
       if (step === state.step) return;
+      try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       state.step = step;
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
       state.recording = false;
