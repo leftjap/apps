@@ -46,10 +46,12 @@ export function reviewQueueDexieToSupabase(row, userId) {
     consecutive_pass: row.consecutivePass ?? 0,
     last_result: row.lastResult ?? null,
     category: row.category ?? null,
+    speaker: row.speaker ?? null,
   };
 }
 export function reviewQueueSupabaseToDexie(row) {
   if (!row) return null;
+  const speaker = row.speaker ?? row.explanation?.speaker ?? null;
   return {
     id: row.id,
     lang: row.lang,
@@ -62,6 +64,7 @@ export function reviewQueueSupabaseToDexie(row) {
     consecutivePass: row.consecutive_pass ?? 0,
     lastResult: row.last_result ?? null,
     category: row.category ?? null,
+    speaker,
     createdAt: row.created_at ?? null,
     updatedAt: row.updated_at ?? null,
   };
@@ -86,10 +89,13 @@ export function todayLessonsDexieToSupabase(row, userId) {
     audio_url: row.audioUrl ?? null,
     completed: row.completed ?? false,
     order_index: row.orderIndex ?? null,
+    speaker: row.speaker ?? null,
   };
 }
 export function todayLessonsSupabaseToDexie(row) {
   if (!row) return null;
+  // speaker: root 컬럼 우선, fallback explanation.speaker (en 가이드 §6.2 — speaker 는 explanation jsonb 안에 박혀 옴)
+  const speaker = row.speaker ?? row.explanation?.speaker ?? null;
   return {
     id: row.id,
     lang: row.lang,
@@ -102,6 +108,7 @@ export function todayLessonsSupabaseToDexie(row) {
     audioUrl: row.audio_url ?? null,
     completed: row.completed ?? false,
     orderIndex: row.order_index ?? null,
+    speaker,
     createdAt: row.created_at ?? null,
   };
 }

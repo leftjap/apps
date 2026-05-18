@@ -142,6 +142,7 @@ async function main() {
     explanation: c.explanation,
     completed: false,
     order_index: c.order_index ?? null,
+    speaker: c.speaker ?? null,
   }));
 
   const upserted = await upsertRows(supabaseUrl, serviceKey, rows);

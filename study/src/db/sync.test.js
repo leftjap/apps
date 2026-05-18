@@ -273,6 +273,7 @@ describe('sync — Wave 11.13.2 pushTable 정상 동작 (supabase mock)', () => 
         consecutive_pass: 1,
         last_result: 'O',
         category: 'session',
+        speaker: null,
       },
       {
         id: 'c',
@@ -287,6 +288,7 @@ describe('sync — Wave 11.13.2 pushTable 정상 동작 (supabase mock)', () => 
         consecutive_pass: 0,
         last_result: null,
         category: null,
+        speaker: null,
       },
     ]);
   });
@@ -751,6 +753,7 @@ describe('sync — Wave 11.13.3 pullTable reviewQueue 충돌 해결 통합', () 
         audioUrl: null,
         completed: false,
         orderIndex: 0,
+        speaker: null,
         createdAt: '2026-04-15T00:00:00Z',
       },
     ]);
@@ -1434,6 +1437,7 @@ describe('sync — Wave 11.20 reviewQueue 변환', () => {
       consecutive_pass: 1,
       last_result: 'O',
       category: 'session',
+      speaker: null,
     });
   });
 
@@ -1489,6 +1493,7 @@ describe('sync — Wave 11.20 reviewQueue 변환', () => {
       consecutivePass: 1,
       lastResult: 'O',
       category: 'session',
+      speaker: null,
       createdAt: '2026-04-15T00:00:00Z',
       updatedAt: '2026-04-15T00:00:00Z',
     });
@@ -1533,6 +1538,7 @@ describe('sync — Wave 11.20 todayLessons 변환', () => {
       audio_url: null,
       completed: true,
       order_index: 3,
+      speaker: null,
     });
     expect(out.completed_at).toBeUndefined(); // SQL 컬럼 부재 검증
   });
@@ -1580,8 +1586,25 @@ describe('sync — Wave 11.20 todayLessons 변환', () => {
       audioUrl: 'aurl',
       completed: false,
       orderIndex: 0,
+      speaker: null,
       createdAt: '2026-04-15T00:00:00Z',
     });
+  });
+
+  it('todayLessonsSupabaseToDexie — speaker 필드 보존 (라쿤/빅맨)', async () => {
+    const { todayLessonsSupabaseToDexie } = await import('./sync.js');
+    expect(todayLessonsSupabaseToDexie({ id: 'l-rac', sentence: 'X', meaning: 'Y', explanation: {}, speaker: '라쿤' }).speaker).toBe('라쿤');
+    expect(todayLessonsSupabaseToDexie({ id: 'l-big', sentence: 'X', meaning: 'Y', explanation: {}, speaker: '빅맨' }).speaker).toBe('빅맨');
+  });
+
+  it('todayLessonsSupabaseToDexie — root speaker 없으면 explanation.speaker fallback', async () => {
+    const { todayLessonsSupabaseToDexie } = await import('./sync.js');
+    // 기존 카드: root speaker 컬럼이 없는 채로 sync 되어 있음 → explanation jsonb 안의 speaker 사용
+    const out = todayLessonsSupabaseToDexie({ id: 'l1', sentence: 'X', meaning: 'Y', explanation: { speaker: '라쿤', key: 'k' } });
+    expect(out.speaker).toBe('라쿤');
+    // root 우선 (둘 다 있으면 root)
+    const out2 = todayLessonsSupabaseToDexie({ id: 'l1', sentence: 'X', meaning: 'Y', explanation: { speaker: '빅맨' }, speaker: '라쿤' });
+    expect(out2.speaker).toBe('라쿤');
   });
 });
 
