@@ -619,3 +619,74 @@ describe('applyTrendToDom + applyBodyPartsToDom (W-I)', () => {
     expect(doc._map.get('body-list').innerHTML).toContain('50%');
   });
 });
+
+describe('summarizeMuscles (v3)', () => {
+  const fakeGetBuiltin = (id) => ({ id });
+
+  it('빈 sessions → 빈 배열', async () => {
+    const { summarizeMuscles } = await import('./stats.js');
+    expect(summarizeMuscles([], fakeGetBuiltin)).toEqual([]);
+    expect(summarizeMuscles(null, fakeGetBuiltin)).toEqual([]);
+  });
+
+  it('벤치프레스 1세트 → chest 1.0 / triceps 0.4 / deltoid_front 0.4', async () => {
+    const { summarizeMuscles } = await import('./stats.js');
+    const r = summarizeMuscles(
+      [{ blocks: [{ type: 'single', exerciseId: 'bench_press', sets: [{ done: true }] }] }],
+      fakeGetBuiltin,
+    );
+    const m = Object.fromEntries(r.map((x) => [x.muscleKey, x.score]));
+    expect(m.chest).toBe(1.0);
+    expect(m.triceps).toBeCloseTo(0.4, 5);
+    expect(m.deltoid_front).toBeCloseTo(0.4, 5);
+  });
+
+  it('스쿼트 2세트 → quads/glutes 2.0, hamstrings/lower_back 0.8', async () => {
+    const { summarizeMuscles } = await import('./stats.js');
+    const r = summarizeMuscles(
+      [{ blocks: [{ type: 'single', exerciseId: 'squat', sets: [{ done: true }, { done: true }] }] }],
+      fakeGetBuiltin,
+    );
+    const m = Object.fromEntries(r.map((x) => [x.muscleKey, x.score]));
+    expect(m.quads).toBe(2.0);
+    expect(m.glutes).toBe(2.0);
+    expect(m.hamstrings).toBeCloseTo(0.8, 5);
+    expect(m.lower_back).toBeCloseTo(0.8, 5);
+  });
+
+  it('done=false 세트 무시 / cardio + custom skip / score 내림차순 정렬', async () => {
+    const { summarizeMuscles } = await import('./stats.js');
+    const r = summarizeMuscles(
+      [{ blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ done: false }, { done: true }, { done: true }, { done: true }] },
+        { type: 'single', exerciseId: 'treadmill', sets: [{ done: true }] },
+        { type: 'single', exerciseId: 'bicep_curl', sets: [{ done: true }] },
+      ] }],
+      fakeGetBuiltin,
+    );
+    expect(r[0].muscleKey).toBe('chest');
+    expect(r[0].score).toBe(3.0);
+    expect(summarizeMuscles([{ blocks: [{ type: 'single', exerciseId: 'x', sets: [{ done: true }] }] }], () => null)).toEqual([]);
+  });
+});
+
+describe('applyMusclesToSilhouette', () => {
+  function makeSilhouetteDoc(muscleKeys) {
+    const paths = muscleKeys.map((k) => ({
+      _attrs: {}, style: {},
+      setAttribute(name, v) { this._attrs[name] = v; },
+      getAttribute(name) { return name === 'data-muscle' ? k : this._attrs[name]; },
+    }));
+    return { querySelectorAll: () => paths, querySelector: () => null, _paths: paths };
+  }
+
+  it('max=5: chest alpha 0.85, biceps 0.52, lats 0 + multiply 적용', async () => {
+    const { applyMusclesToSilhouette } = await import('./stats.js');
+    const doc = makeSilhouetteDoc(['chest', 'biceps', 'lats']);
+    applyMusclesToSilhouette([{ muscleKey: 'chest', score: 5 }, { muscleKey: 'biceps', score: 2 }], doc);
+    expect(doc._paths[0]._attrs.fill).toBe('rgba(217,119,87,0.85)');
+    expect(doc._paths[1]._attrs.fill).toBe('rgba(217,119,87,0.52)');
+    expect(doc._paths[2]._attrs.fill).toBe('rgba(217,119,87,0)');
+    expect(doc._paths[0].style.mixBlendMode).toBe('multiply');
+  });
+});

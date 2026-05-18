@@ -20,6 +20,7 @@ import {
 import { partAbbreviation, wireHomeShortcuts } from './home.js';
 import { exerciseIdToName } from './session-summary.js';
 import { getBuiltinExercise } from '../db/exercises.js';
+import { EXERCISE_MUSCLES, WEIGHT_PRIMARY, WEIGHT_SYNERGIST } from '../data/exercise-muscles.js';
 
 /** YYYY-MM-DD 범위 [from, to] 합산 (totalVolume). */
 function sumVolumeInRange(sessions, fromISO, toISO) {
@@ -508,6 +509,7 @@ export async function mountStatsView(now = Date.now()) {
     // 캘린더 하단 8주 막대+선 추이 + 부위 + 종목 빈도 hydrate
     renderWeeklyTrendChart(summarizeWeeklyTrend(sessions, 8, now), doc);
     applyBodyPartsToDom(summarizeBodyParts(sessions), doc);
+    applyMusclesToSilhouette(summarizeMuscles(sessions, getBuiltinExercise), doc);
     applyExerciseFrequencyToDom(summarizeExerciseFrequency(sessions, getBuiltinExercise), doc);
     applyTodayToCalendar(now, doc);
     applyWorkedToCalendar(sessions, doc);
@@ -748,22 +750,8 @@ export function applyBodyPartsToDom(parts, doc) {
   const totalEl = doc.querySelector('[data-bind="body-total"]');
   if (totalEl) totalEl.textContent = String(total);
 
-  // silhouette path 색 강조 — 부위별 빈도 비례 alpha (가장 많이 한 부위 진한 accent).
-  // 안 한 부위 회색 유지. 부위 비례: count/max → alpha 0.18~0.85.
-  const max = Math.max(0, ...parts.map((p) => Number(p.count) || 0));
-  const partCount = new Map(parts.map((p) => [p.key, Number(p.count) || 0]));
-  const silhouettePaths = doc.querySelectorAll?.('[data-part]') || [];
-  silhouettePaths.forEach((el) => {
-    const key = el.getAttribute('data-part');
-    const c = partCount.get(key) || 0;
-    if (max === 0 || c === 0) {
-      el.setAttribute('fill', 'rgba(255,255,255,0.10)');
-    } else {
-      const ratio = c / max;
-      const alpha = 0.18 + ratio * 0.67;
-      el.setAttribute('fill', `rgba(217,119,87,${alpha.toFixed(2)})`);
-    }
-  });
+  // silhouette path 색 강조는 applyMusclesToSilhouette() 가 운동종목 → 근육 매핑 기반으로 별도 처리.
+  // applyBodyPartsToDom 은 total/stack/list 만 갱신.
 
   const stack = doc.querySelector('[data-bind="body-stack"]');
   if (stack) {
@@ -790,6 +778,70 @@ export function applyBodyPartsToDom(parts, doc) {
   }
 }
 
+/**
+ * Wave v3 — 운동 종목별 자극 근육 가중치 합산.
+ *
+ * sessions.blocks[].sets done=true 개수 → exerciseId 빈도 → EXERCISE_MUSCLES 매핑 → 근육별 score.
+ * 가중치: primary 1.0, synergist 0.4. 매핑 없는 운동(custom/cardio 등)은 silhouette 강조 0.
+ *
+ * 반환: [{ muscleKey, score }] score 내림차순.
+ */
+export function summarizeMuscles(sessions, getBuiltin) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  const scores = new Map();
+  for (const s of list) {
+    if (!s) continue;
+    const blocks = Array.isArray(s.blocks) ? s.blocks : [];
+    for (const b of blocks) {
+      if (!b || b.type !== 'single' || !b.exerciseId) continue;
+      const sets = Array.isArray(b.sets) ? b.sets : [];
+      const doneCount = sets.filter((x) => x && x.done === true).length;
+      if (doneCount <= 0) continue;
+      // builtin 만 매핑 — custom 운동은 part 정보 없어 skip
+      const ex = typeof getBuiltin === 'function' ? getBuiltin(b.exerciseId) : null;
+      if (!ex) continue;
+      const map = EXERCISE_MUSCLES[b.exerciseId];
+      if (!map) continue;
+      for (const m of map.primary || []) {
+        scores.set(m, (scores.get(m) || 0) + doneCount * WEIGHT_PRIMARY);
+      }
+      for (const m of map.synergist || []) {
+        scores.set(m, (scores.get(m) || 0) + doneCount * WEIGHT_SYNERGIST);
+      }
+    }
+  }
+  return Array.from(scores.entries())
+    .map(([muscleKey, score]) => ({ muscleKey, score }))
+    .sort((a, b) => b.score - a.score);
+}
+
+/**
+ * Wave v3 — silhouette path 색 강조 ([data-muscle] 셀렉터).
+ *
+ * score 최댓값 → alpha 0.85, 0 → 0(투명). 부드러운 ramp: 0.30 ~ 0.85.
+ * 강조 색: 기존 accent #d97757. mix-blend-mode multiply 로 사각형 윤곽 흐림 + 인체 위 자연스러운 색조.
+ */
+export function applyMusclesToSilhouette(muscles, doc) {
+  if (!doc || !Array.isArray(muscles)) return;
+  const max = Math.max(0, ...muscles.map((m) => Number(m.score) || 0));
+  const scoreMap = new Map(muscles.map((m) => [m.muscleKey, Number(m.score) || 0]));
+  const paths = doc.querySelectorAll?.('[data-muscle]') || [];
+  paths.forEach((el) => {
+    const key = el.getAttribute('data-muscle');
+    const s = scoreMap.get(key) || 0;
+    if (max === 0 || s === 0) {
+      el.setAttribute('fill', 'rgba(217,119,87,0)');
+    } else {
+      const ratio = s / max;
+      const alpha = 0.35 + ratio * 0.50;
+      el.setAttribute('fill', `rgba(217,119,87,${alpha.toFixed(2)})`);
+    }
+    // mix-blend-mode multiply + filter blur — 사각형 윤곽 흐림 + silhouette 외곽 너머 새지 않음
+    if (!el.style.mixBlendMode) el.style.mixBlendMode = 'multiply';
+    if (!el.style.filter) el.style.filter = 'blur(8px)';
+  });
+}
+
 if (typeof window !== 'undefined') {
   window.gymStats = {
     summarizeVolumes,
@@ -811,5 +863,7 @@ if (typeof window !== 'undefined') {
     applyBodyPartsToDom,
     summarizeExerciseFrequency,
     applyExerciseFrequencyToDom,
+    summarizeMuscles,
+    applyMusclesToSilhouette,
   };
 }
