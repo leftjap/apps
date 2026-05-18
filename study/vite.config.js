@@ -64,6 +64,10 @@ export default defineConfig({
       // manifest 는 public/manifest.webmanifest 사용 (plugin 자동 생성 비활성)
       manifest: false,
       workbox: {
+        // 새 빌드 배포 시 클라이언트 SW 즉시 갱신 — 옛 아이콘/asset precache 잔존 방지
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         // Wave 11.18 — visualizer 결과 stats.html 은 SW precache 제외 (개발자 분석용, 실 사용 X)
         // Wave 11.22 — azure-sdk 청크 (467 kB) 는 dynamic import 라 첫 페이지 미필요. SW precache 제외 후
