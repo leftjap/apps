@@ -254,8 +254,11 @@ export const SPEAKER_VOICES = {
   'en-US': {
     '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
     '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },
-    '지점장': { voice: 'en-US-AndrewMultilingualNeural', style: 'friendly', rate: 1.0 },
-    '박사': { voice: 'en-US-BrianMultilingualNeural', style: 'calm', rate: 0.95 },
+    // Azure docs: Andrew Multilingual supported styles = empathetic, relieved (friendly 미지원 → 무효).
+    // 빅맨이 empathetic 선점 → 지점장은 voice 만으로 차별화 (style=null).
+    '지점장': { voice: 'en-US-AndrewMultilingualNeural', style: null, rate: 1.0 },
+    // Azure docs: Brian Multilingual = 모든 style 미지원. voice 자체만 적용.
+    '박사': { voice: 'en-US-BrianMultilingualNeural', style: null, rate: 0.95 },
   },
 };
 
