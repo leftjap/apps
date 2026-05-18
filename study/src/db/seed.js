@@ -35,8 +35,9 @@ const OBSOLETE_REVIEW_IDS = [
   'r1','r2','r3','r4','r5',
   's04','s06','s07','s08','s09','s11','s12','s13',
   'jr1','jr2','jr3','jr4','jr5',
+  'verify-4','verify-5','v2-4','v2-5',
 ];
-const OBSOLETE_LESSON_IDS = ['n1','n2','n3','jn1','jn2'];
+const OBSOLETE_LESSON_IDS = ['n1','n2','n3','jn1','jn2','verify-4','verify-5','v2-4','v2-5'];
 
 const REVIEW_CARDS = [
   // ─── 영어 review (re1~re7) ── Wave 11.73 — 미드/일상 빈출 Stage 1~2 mix ───
@@ -445,7 +446,7 @@ const DAILY_STATS = SESSION_LOGS.map((s) => ({
 //   - SESSION_LOGS sentenceIds 는 ID 슬롯 재사용으로 무결성 유지. 카테고리 라벨만 새 카드 카테고리에 맞춰 정정.
 //   - mocks/session.html CARDS.en/CARDS.ja 동기화.
 //   - REVIEW_UPDATE_FIELDS 에 explanation 포함 → v10 받은 사용자 자동 update (학습 진도 보존).
-const SEED_VERSION = 'v11';
+const SEED_VERSION = 'v12';
 
 const REVIEW_UPDATE_FIELDS = ['sentence', 'meaning', 'reading', 'phoneticKr', 'explanation'];
 const LESSON_UPDATE_FIELDS = ['sentence', 'meaning', 'reading', 'phoneticKr', 'explanation'];

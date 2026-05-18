@@ -78,10 +78,10 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       result = await seedIfNeeded(db);
     });
 
-    it('skipped=false, isFirstSeed=true, version=v11', () => {
+    it('skipped=false, isFirstSeed=true, version=v12', () => {
       expect(result.skipped).toBe(false);
       expect(result.isFirstSeed).toBe(true);
-      expect(result.version).toBe('v11');
+      expect(result.version).toBe('v12');
     });
 
     it('reviewQueue 에 re1~re7 + rj1~rj7 (총 14건)', () => {
@@ -119,9 +119,9 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       expect(db.dailyStats._data.size).toBeGreaterThan(0);
     });
 
-    it('meta.seeded marker 가 v11 으로 저장', async () => {
+    it('meta.seeded marker 가 v12 으로 저장', async () => {
       const marker = await db.meta.get('seeded');
-      expect(marker.value).toBe('v11');
+      expect(marker.value).toBe('v12');
     });
 
     it('일본어 카드 (rj1) — ja 4필드 + meta 5필드 형식', async () => {
@@ -249,17 +249,17 @@ describe('seedIfNeeded — Wave 11.71 v8 갈아엎기', () => {
       expect(result.counts.dailyStats).toBe(0);
     });
 
-    it('marker 가 v11 으로 갱신', async () => {
+    it('marker 가 v12 으로 갱신', async () => {
       await seedIfNeeded(db);
       const marker = await db.meta.get('seeded');
-      expect(marker.value).toBe('v11');
+      expect(marker.value).toBe('v12');
     });
   });
 
   describe('동일 버전 재진입 (멱등성)', () => {
     it('marker.value === SEED_VERSION 이면 skip', async () => {
       const db = createMockDB();
-      await db.meta.put({ key: 'seeded', value: 'v11', at: '2026-05-04T00:00:00Z' });
+      await db.meta.put({ key: 'seeded', value: 'v12', at: '2026-05-04T00:00:00Z' });
       const result = await seedIfNeeded(db);
       expect(result.skipped).toBe(true);
       expect(db.reviewQueue._data.size).toBe(0);
