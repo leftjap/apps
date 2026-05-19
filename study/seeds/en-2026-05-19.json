@@ -1,0 +1,212 @@
+{
+  "lang": "en",
+  "date": "2026-05-19",
+  "_note": "Stage 2 콩트 'Talking in Your Sleep' (라쿤+빅맨 친구 여행 트랙). currentStage=2 추정 (5/17 Killer Burger 콩트 후 유지). 시나리오 = 숙박/호텔 체크인. newElement = 'talk in one\\'s sleep' (라쿤 affectionate threat callback, 펀치라인 6번 박힘). 6장 (Stage 2 분량 6~10 가드). stretch 2장 (2·4번 빅맨 warrior voice — Stage 3 어휘) = 33% (가이드 20~40%). weak_phonemes_en top 3 (l/ax/t) — 카드 6장 중 6장 /t/, 5장 /l/, 5장 /ax/ 포함. frequency 분포 7~10=4장(66%) / 4~6=2장(33%) / 1~3=0건. Punchline type = Character-driven (라쿤 친구 농담 톤). drift 형식 + scene 5필드 + skit 4필드.",
+  "cards": [
+    {
+      "id": "en-2026-05-19-skit1-1",
+      "order_index": 1,
+      "sentence": "We have a reservation. Two nights, please.",
+      "meaning": "예약했어요. 2박이요.",
+      "reading": null,
+      "phonetic_kr": "위 해버 레저베이션. 투 나잇츠, 플리즈.",
+      "explanation": {
+        "key": "have a reservation = 예약했어요 (호텔/식당 표준). 'Two nights' = 숙박 일수 짧게 명시.",
+        "situation": "호텔 리셉션 체크인. 라쿤 hook — 콩트 진입 실용 표현.",
+        "grammar": [
+          { "struct": "We have a + N", "body": "have = 보유/상태. a reservation = 가산 명사 + 부정관사. 한국어 '예약이 있어요' 보다 영어는 'have' 표현 자연." },
+          { "struct": "Two nights, please", "body": "수량 명사 + please 단축형. 호텔/식당 카운터 표준 패턴." }
+        ],
+        "chunks": [["We have a", "위 해버"], ["reservation.", "레저베이션."], ["Two nights, please.", "투 나잇츠, 플리즈."]],
+        "phonemes": [["/l/", "please 의 'l' clear"], ["/t/", "Two·nights 의 't' clear"], ["/ax/", "a·reservation 의 '-er-/-tion' = schwa"]],
+        "mistake": "'We have a' 끊어 X → '위 해버' 연음 (have 의 v + a schwa). 'reservation' 강세 3음절 '-va-'. nights '-ts' 함께 발음.",
+        "similar": "I have a booking / We booked for two nights / Checking in for two nights",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["we", "have", "two", "nights", "please"],
+        "frequency": 9,
+        "category": "여행/체크인",
+        "skitId": "en-2026-05-19-skit1",
+        "skitTitle": "Talking in Your Sleep",
+        "skitOrder": 1,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-19-talk-in-sleep",
+        "scene_order": 1,
+        "scene_title": "Talking in Your Sleep",
+        "speaker": "라쿤",
+        "is_stretch": false,
+        "scene_intro": "호텔 리셉션 앞. 라쿤이 친구 빅맨과 함께 도착해 체크인을 시작한다."
+      }
+    },
+    {
+      "id": "en-2026-05-19-skit1-2",
+      "order_index": 2,
+      "sentence": "A warrior requires only one bed.",
+      "meaning": "전사는 침대 하나면 충분하다.",
+      "reading": null,
+      "phonetic_kr": "어 워-리어 리콰이어즈 온리 원 베드.",
+      "explanation": {
+        "key": "warrior · requires = 빅맨 격식·warrior voice 표식 (Stage 3 어휘). only one bed = 검소함 자랑.",
+        "situation": "빅맨이 라쿤의 표준 체크인을 자기 warrior 톤으로 받음. Character-driven stretch.",
+        "grammar": [
+          { "struct": "A + N + requires + N", "body": "require = 격식체 'need'. warrior + require = 빅맨 voice 정합. only one = 강조 수량." },
+          { "struct": "only + 수량 + N", "body": "only 가 수량 한정. '하나면 충분' 의미. 강세 only 첫음절." }
+        ],
+        "chunks": [["A warrior", "어 워-리어"], ["requires only", "리콰이어즈 온리"], ["one bed.", "원 베드."]],
+        "phonemes": [["/l/", "only 의 'l' clear"], ["/t/", "warrior 의 'rri' flap → '리'"], ["/ax/", "A 부정관사·warrior 의 '-or' = schwa"]],
+        "mistake": "'warrior' '워-리어' (rri flap, 첫 음절 강세). require 강세 2음절 'qui-'. only 끊어 X → '온리' 한 호흡. 일상은 'I just need one bed' — warrior 톤은 빅맨 voice 만.",
+        "similar": "I just need one bed / One bed is fine / Just one bed for me",
+        "stage": 3,
+        "newElements": [],
+        "knownElements": ["warrior", "one", "bed"],
+        "frequency": 4,
+        "category": "캐릭터/격식",
+        "skitId": "en-2026-05-19-skit1",
+        "skitTitle": "Talking in Your Sleep",
+        "skitOrder": 2,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-19-talk-in-sleep",
+        "scene_order": 2,
+        "scene_title": "Talking in Your Sleep",
+        "speaker": "빅맨",
+        "is_stretch": true
+      }
+    },
+    {
+      "id": "en-2026-05-19-skit1-3",
+      "order_index": 3,
+      "sentence": "Cool. One bed it is.",
+      "meaning": "콜. 침대 하나로 가자.",
+      "reading": null,
+      "phonetic_kr": "쿨. 원 베리리즈.",
+      "explanation": {
+        "key": "Cool = 캐주얼 동의 (Stage 1~2 핵심). X it is = 'X로 정함' 결정 표현 — 라쿤 cut 톤.",
+        "situation": "라쿤이 빅맨 격식 톤 cut. 짧은 동의로 진행.",
+        "grammar": [
+          { "struct": "N + it is", "body": "도치 강조 — '결정/확정' 의미. 일상 회화에서 짧은 결정 표현. 한국어 'X로 가자' 대응." },
+          { "struct": "Cool.", "body": "동의/수락 단독 감탄사. 친구 톤 캐주얼." }
+        ],
+        "chunks": [["Cool.", "쿨."], ["One bed", "원 베드"], ["it is.", "이리즈."]],
+        "phonemes": [["/l/", "Cool 의 'l' dark L"], ["/t/", "bed it is — d+it flap → '베리리즈'"], ["/ax/", "it is 의 '-is' 약화 = schwa-z"]],
+        "mistake": "'bed it is' 끊어 X → '베리리즈' 연음 (d → flap, it 약화). Cool '쿨-' 길게 X → '쿨' 짧게.",
+        "similar": "Sure / Got it / Sounds good / Done deal",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["cool", "one bed"],
+        "frequency": 8,
+        "category": "구어/동의",
+        "skitId": "en-2026-05-19-skit1",
+        "skitTitle": "Talking in Your Sleep",
+        "skitOrder": 3,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-19-talk-in-sleep",
+        "scene_order": 3,
+        "scene_title": "Talking in Your Sleep",
+        "speaker": "라쿤",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-19-skit1-4",
+      "order_index": 4,
+      "sentence": "I do not sleep. I rest with one eye open.",
+      "meaning": "나는 잠들지 않는다. 한 눈 뜬 채 휴식한다.",
+      "reading": null,
+      "phonetic_kr": "아이 두 낫 슬립. 아이 레스 위드 원 아이 오픈.",
+      "explanation": {
+        "key": "I do not = 격식체 부정 (일상 I don't). with one eye open = 경계 표현 (literal·관용 양립). 빅맨 warrior voice.",
+        "situation": "빅맨이 자기 무지·경계 self-warrior 자랑. Character-driven stretch.",
+        "grammar": [
+          { "struct": "I do not + V", "body": "do not = 격식·강조 부정. 일상은 don't 축약. 빅맨 voice 표식." },
+          { "struct": "with + N + 형용사", "body": "with X open = X 가 열린 채. 부대 상황 구문." }
+        ],
+        "chunks": [["I do not sleep.", "아이 두 낫 슬립."], ["I rest with", "아이 레스 위드"], ["one eye open.", "원 아이 오픈."]],
+        "phonemes": [["/l/", "sleep 의 'l' clear"], ["/t/", "not·rest·with 의 't/d/th' clear·flap"], ["/ax/", "with·open 의 '-en' = schwa"]],
+        "mistake": "'rest with' 끊어 X → '레스 위드' 연음 (final t 약화). 'one eye open' 사이 끊어 X → '원 아이 오픈' 부드럽게. do not 일상 X — 빅맨 voice 만.",
+        "similar": "I don't sleep / I never sleep / I sleep with one eye open (informal)",
+        "stage": 3,
+        "newElements": [],
+        "knownElements": ["sleep", "rest", "one", "eye", "open"],
+        "frequency": 4,
+        "category": "캐릭터/격식",
+        "skitId": "en-2026-05-19-skit1",
+        "skitTitle": "Talking in Your Sleep",
+        "skitOrder": 4,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-19-talk-in-sleep",
+        "scene_order": 4,
+        "scene_title": "Talking in Your Sleep",
+        "speaker": "빅맨",
+        "is_stretch": true
+      }
+    },
+    {
+      "id": "en-2026-05-19-skit1-5",
+      "order_index": 5,
+      "sentence": "Right. Quick question.",
+      "meaning": "그래. 빠른 질문 하나.",
+      "reading": null,
+      "phonetic_kr": "롸잇. 퀵 퀘스천.",
+      "explanation": {
+        "key": "Right = 동의·진정 감탄사. Quick question = 짧은 질문 진입 — 캐주얼 setup 표현.",
+        "situation": "라쿤이 빅맨 voice deflate 후 본론 진입. 펀치라인 직전 setup.",
+        "grammar": [
+          { "struct": "Right.", "body": "동의/진정 단독. 톤에 따라 sarcasm 가능 (라쿤 voice 특화)." },
+          { "struct": "Quick + N", "body": "Quick = 짧은/간단한. 질문·전화·식사 앞에 자연 결합." }
+        ],
+        "chunks": [["Right.", "롸잇."], ["Quick question.", "퀵 퀘스천."]],
+        "phonemes": [["/t/", "Right·question 의 't' final·중간"], ["/ax/", "question 의 '-tion' = schwa-n"]],
+        "mistake": "'Right' '라이트' X → '롸잇' (final t 약화). question '-tion' = '천' (sh + schwa + n).",
+        "similar": "Okay. So / Anyway / By the way / Quick one",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["right", "quick", "question"],
+        "frequency": 8,
+        "category": "구어/setup",
+        "skitId": "en-2026-05-19-skit1",
+        "skitTitle": "Talking in Your Sleep",
+        "skitOrder": 5,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-19-talk-in-sleep",
+        "scene_order": 5,
+        "scene_title": "Talking in Your Sleep",
+        "speaker": "라쿤",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-19-skit1-6",
+      "order_index": 6,
+      "sentence": "Do you talk in your sleep?",
+      "meaning": "너 잠꼬대해?",
+      "reading": null,
+      "phonetic_kr": "두 유 토- 키뉴어 슬립?",
+      "explanation": {
+        "key": "talk in one's sleep = 잠꼬대하다 (관용 표현). 라쿤 친구 농담 톤 — 같은 방 쓰기 전 검문 펀치라인.",
+        "situation": "라쿤이 빅맨 warrior 자랑 직후 친구 농담으로 cut — 잠꼬대 검증. Character-driven 펀치라인.",
+        "grammar": [
+          { "struct": "Do you + V?", "body": "조동사 do 의문문. 일반동사 평서 → 의문 표준 구조." },
+          { "struct": "talk in + 소유격 + sleep", "body": "in one's sleep = 잠자는 동안. 'sleep' 명사 (수면 상태). 직역 '잠 안에서 말하다' → 잠꼬대." }
+        ],
+        "chunks": [["Do you", "두 유"], ["talk in your", "토- 키뉴어"], ["sleep?", "슬립?"]],
+        "phonemes": [["/l/", "talk·sleep 의 'l' clear·dark 혼합"], ["/t/", "talk 의 't' clear·in 의 't' linking"], ["/ax/", "your 약화 = '유어' schwa"]],
+        "mistake": "'talk in your' 끊어 X → '토- 키뉴어' 한 호흡 (talk 의 k가 in 으로 연음, your 약화). talk 의 'l' 묵음 — '톡' X → '토-'. 잠꼬대 직역 X — talk in sleep 자체가 영어 관용 표현.",
+        "similar": "Are you a sleep talker? / Do you snore? / Do you talk in your dreams?",
+        "stage": 2,
+        "newElements": ["talk in one's sleep"],
+        "knownElements": ["do", "you", "talk", "sleep"],
+        "frequency": 7,
+        "category": "구어/친구질문",
+        "skitId": "en-2026-05-19-skit1",
+        "skitTitle": "Talking in Your Sleep",
+        "skitOrder": 6,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-19-talk-in-sleep",
+        "scene_order": 6,
+        "scene_title": "Talking in Your Sleep",
+        "speaker": "라쿤",
+        "is_stretch": false
+      }
+    }
+  ]
+}
