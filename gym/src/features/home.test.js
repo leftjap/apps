@@ -3,6 +3,7 @@ import 'fake-indexeddb/auto';
 import { createGymDB } from '../db/schema.js';
 import {
   summarizeActiveSession,
+  summarizeNextBlocks,
   summarizeStreak,
   partAbbreviation,
   buildWeekCalendar,
@@ -123,6 +124,135 @@ describe('summarizeActiveSession', () => {
       status: 'active', startTime: NOW - 7200 * 1000, blocks: [],
     }, NOW);
     expect(r.num).toBe('120:00'); // 2시간
+  });
+});
+
+describe('summarizeNextBlocks', () => {
+  it('null/undefined/non-active → []', () => {
+    expect(summarizeNextBlocks(null)).toEqual([]);
+    expect(summarizeNextBlocks(undefined)).toEqual([]);
+    expect(summarizeNextBlocks({ status: 'completed', blocks: [] })).toEqual([]);
+  });
+
+  it('blocks 비어있음 → []', () => {
+    expect(summarizeNextBlocks({ status: 'active', blocks: [] })).toEqual([]);
+  });
+
+  it('모든 block 완료 → []', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: true }] },
+        { type: 'single', exerciseId: 'incline_bench', sets: [{ weight: 45, reps: 10, done: true }] },
+      ],
+    };
+    expect(summarizeNextBlocks(session)).toEqual([]);
+  });
+
+  it('진행 중 block 1개만 남음 → [] (다음 없음)', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: false }] },
+      ],
+    };
+    expect(summarizeNextBlocks(session)).toEqual([]);
+  });
+
+  it('정상 — 현재 block 후 미완료 2개 미리보기 (빌트인 한국어 이름 + 세트수)', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [
+          { weight: 60, reps: 10, done: true },
+          { weight: 60, reps: 10, done: false, preset: true },
+        ]},
+        { type: 'single', exerciseId: 'incline_bench', sets: [
+          { weight: 45, reps: 10, done: false, preset: true },
+          { weight: 45, reps: 10, done: false, preset: true },
+          { weight: 45, reps: 10, done: false, preset: true },
+          { weight: 45, reps: 10, done: false, preset: true },
+          { weight: 45, reps: 10, done: false, preset: true },
+        ]},
+        { type: 'single', exerciseId: 'decline_bench', sets: [
+          { weight: 50, reps: 10, done: false, preset: true },
+        ]},
+      ],
+    };
+    expect(summarizeNextBlocks(session)).toEqual([
+      { name: '인클라인 벤치', summary: '45×10 · 5세트' },
+      { name: '디클라인 벤치', summary: '50×10 · 1세트' },
+    ]);
+  });
+
+  it('limit 파라미터 적용', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: false }] },
+        { type: 'single', exerciseId: 'incline_bench', sets: [{ weight: 45, reps: 10, done: false }] },
+        { type: 'single', exerciseId: 'decline_bench', sets: [{ weight: 50, reps: 10, done: false }] },
+      ],
+    };
+    expect(summarizeNextBlocks(session, 1)).toHaveLength(1);
+    expect(summarizeNextBlocks(session, 1)[0].name).toBe('인클라인 벤치');
+  });
+
+  it('finishedAt marker block 은 스킵', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: false }] },
+        { type: 'single', exerciseId: 'incline_bench', finishedAt: 1, sets: [{ weight: 45, reps: 10, done: false }] },
+        { type: 'single', exerciseId: 'decline_bench', sets: [{ weight: 50, reps: 10, done: false }] },
+      ],
+    };
+    const r = summarizeNextBlocks(session);
+    expect(r).toHaveLength(1);
+    expect(r[0].name).toBe('디클라인 벤치');
+  });
+
+  it('bodyweight equipment — 맨몸 표기', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: false }] },
+        { type: 'single', exerciseId: 'push_up', sets: [
+          { reps: 15, done: false, preset: true },
+          { reps: 15, done: false, preset: true },
+          { reps: 15, done: false, preset: true },
+        ]},
+      ],
+    };
+    expect(summarizeNextBlocks(session)).toEqual([
+      { name: '푸시업', summary: '맨몸 15회 · 3세트' },
+    ]);
+  });
+
+  it('빌트인 미매핑 — exerciseId 그대로 fallback, weight 기본 표기', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: false }] },
+        { type: 'single', exerciseId: 'custom_xyz', sets: [{ weight: 30, reps: 8, done: false }] },
+      ],
+    };
+    const r = summarizeNextBlocks(session);
+    expect(r[0]).toEqual({ name: 'custom_xyz', summary: '30×8 · 1세트' });
+  });
+
+  it('circuit block — 스킵 (spec §16 폐기)', () => {
+    const session = {
+      status: 'active',
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 10, done: false }] },
+        { type: 'circuit', rounds: [[{ exerciseId: 'pushup', reps: 10, done: false }]] },
+        { type: 'single', exerciseId: 'incline_bench', sets: [{ weight: 45, reps: 10, done: false }] },
+      ],
+    };
+    const r = summarizeNextBlocks(session);
+    expect(r).toHaveLength(1);
+    expect(r[0].name).toBe('인클라인 벤치');
   });
 });
 

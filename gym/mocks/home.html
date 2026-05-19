@@ -179,15 +179,18 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
           <span>이어가기</span><span style="font-size:18px;">→</span>
         </button>
       </div>
-      <!-- 하단 지난 세션 -->
-      <div style="margin-top:auto;padding:0 24px 12px;">
-        <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.35);letter-spacing:0.08em;margin-bottom:8px;">지난 세션</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding-top:12px;border-top:1px solid rgba(243,239,230,0.08);">
-          <div>
-            <div class="kr" style="font-size:15px;color:#fff;font-weight:500;">가슴 · 5월 5일</div>
-            <div class="kr" style="margin-top:2px;font-size:13px;color:rgba(243,239,230,0.45);">벤치프레스 60×10 · 4세트</div>
+      <!-- 하단 다음 운동 미리보기 (mid-session 이어가기 컨텍스트 — home.js hydrate) -->
+      <div id="nextBlocksSection" style="margin-top:auto;padding:0 24px 12px;">
+        <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.35);letter-spacing:0.08em;margin-bottom:8px;">다음</div>
+        <div id="nextBlocksList" style="display:flex;flex-direction:column;gap:10px;padding-top:12px;border-top:1px solid rgba(243,239,230,0.08);">
+          <div data-next-block style="display:flex;justify-content:space-between;align-items:baseline;">
+            <div class="kr" style="font-size:15px;color:#fff;font-weight:500;">인클라인 벤치</div>
+            <div class="num" style="font-size:14px;color:rgba(243,239,230,0.55);">45×10 · 5세트</div>
           </div>
-          <div class="num" style="font-size:24px;font-weight:200;color:#fff;">2,400<span class="kr" style="font-size:13px;color:rgba(243,239,230,0.5);margin-left:2px;">kg</span></div>
+          <div data-next-block style="display:flex;justify-content:space-between;align-items:baseline;">
+            <div class="kr" style="font-size:15px;color:#fff;font-weight:500;">디클라인 벤치</div>
+            <div class="num" style="font-size:14px;color:rgba(243,239,230,0.55);">50×10 · 5세트</div>
+          </div>
         </div>
       </div>
     </div>

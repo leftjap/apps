@@ -23,7 +23,7 @@ import {
   isoToWeekdayIdx,
   toISODate,
 } from '../db/queries.js';
-import { PARTS } from '../db/exercises.js';
+import { PARTS, getBuiltinExercise } from '../db/exercises.js';
 
 const DEFAULT_WEEKLY_GOAL = 4;
 
@@ -81,6 +81,61 @@ export function summarizeActiveSession(session, now = Date.now()) {
     cta: '이어가기',
     sessionNumSize: 40,
   };
+}
+
+/**
+ * mid-session 홈 화면 "다음" 영역 — 현재 진행 중 single block 이후 미완료 block 들의 미리보기.
+ * 데이터 shape: { type:'single', exerciseId, sets:[{weight,reps,done,...}], finishedAt? }.
+ * 서킷 (spec §16 폐기) 은 스킵.
+ * 반환: [{ name, summary }] (limit 개수까지). active 세션 없거나 다음 block 없으면 [].
+ */
+export function summarizeNextBlocks(session, limit = 2) {
+  if (!session || session.status !== 'active') return [];
+  const blocks = Array.isArray(session.blocks) ? session.blocks : [];
+  let currentIdx = -1;
+  for (let i = 0; i < blocks.length; i++) {
+    if (isSingleBlockIncomplete(blocks[i])) { currentIdx = i; break; }
+  }
+  if (currentIdx === -1) return [];
+  const out = [];
+  for (let i = currentIdx + 1; i < blocks.length && out.length < limit; i++) {
+    if (!isSingleBlockIncomplete(blocks[i])) continue;
+    const preview = formatBlockPreview(blocks[i]);
+    if (preview) out.push(preview);
+  }
+  return out;
+}
+
+function isSingleBlockIncomplete(block) {
+  if (!block || block.type !== 'single') return false;
+  if (Number.isFinite(block.finishedAt)) return false;
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  if (!sets.length) return true;
+  return sets.some((s) => s && !s.done);
+}
+
+function formatBlockPreview(block) {
+  if (!block || block.type !== 'single') return null;
+  const builtin = getBuiltinExercise(block.exerciseId) || {};
+  const name = builtin.name || block.exerciseId || '';
+  const equipment = builtin.equipment || null;
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  const setsCount = sets.length;
+  const firstSet = sets[0] || {};
+  if (equipment === 'cardio') {
+    const dur = Number(firstSet.duration) || 0;
+    const dist = Number(firstSet.distance) || 0;
+    const mins = Math.round(dur / 60);
+    const summary = dist ? `${mins}분 · ${dist}km` : `${mins}분`;
+    return { name, summary };
+  }
+  if (equipment === 'bodyweight') {
+    const reps = Number(firstSet.reps) || 0;
+    return { name, summary: `맨몸 ${reps}회 · ${setsCount}세트` };
+  }
+  const w = Number(firstSet.weight) || 0;
+  const r = Number(firstSet.reps) || 0;
+  return { name, summary: `${w}×${r} · ${setsCount}세트` };
 }
 
 /**
@@ -324,6 +379,7 @@ export async function mountHomeView(now = Date.now()) {
     const v = summarizeActiveSession(session, now);
     if (v) {
       applyToDom(v, doc);
+      applyNextBlocksToDom(summarizeNextBlocks(session), doc);
       activeApplied = true;
       sessionId = session.id;
     }
@@ -452,6 +508,33 @@ function applyStreakToDom(streak, doc) {
   // streak.state ('empty'|'gap'|'rest'|'active') 는 home.html CSS rule (active|idle) 과 다른 도메인.
   // idle 카드 (HomeA) 노출을 위해 body 에 'idle' 정규화. mocks 에 #app 없음.
   if (doc.body?.dataset) doc.body.dataset.state = 'idle';
+}
+
+/**
+ * mid-session 홈 "다음" 영역 hydrate. items 가 비면 section 숨김.
+ * exerciseName 은 user-controlled (custom exercise) — escape 필수.
+ */
+function applyNextBlocksToDom(items, doc) {
+  const section = doc.getElementById('nextBlocksSection');
+  const list = doc.getElementById('nextBlocksList');
+  if (!section || !list) return;
+  if (!items || !items.length) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  list.innerHTML = items.map(({ name, summary }) => `
+    <div data-next-block style="display:flex;justify-content:space-between;align-items:baseline;">
+      <div class="kr" style="font-size:15px;color:#fff;font-weight:500;">${escapeHtml(name)}</div>
+      <div class="num" style="font-size:14px;color:rgba(243,239,230,0.55);">${escapeHtml(summary)}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+  })[c]);
 }
 
 function goToSession() {
