@@ -191,10 +191,11 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <span id="cardProgressPct" style="font-size:13px;color:rgba(255,255,255,0.4);">20%</span>
       </div>
     </div>
-    <!-- SessionFooter — pill 들은 (f-5-1) renderFooterPills 가 동적 렌더 (active session blocks 기반) -->
-    <div id="sessionFooter" style="position:absolute;bottom:24px;left:0;right:0;padding:12px 24px 4px;display:flex;align-items:center;gap:14px;border-top:1px solid rgba(255,255,255,0.06);justify-content:center;">
-      <div id="sessionFooterPills" class="kr" style="display:flex;gap:18px;align-items:center;flex:1;overflow-x:auto;scroll-behavior:smooth;padding-inline:50%;"></div>
-      <button id="sessionAddexBtn" type="button" style="width:36px;height:36px;border-radius:18px;border:1.4px solid rgba(217,119,87,0.45);background:transparent;color:var(--accent);font-size:20px;font-weight:300;line-height:1;padding:0;flex-shrink:0;cursor:pointer;">+</button>
+    <!-- SessionFooter — pill 들은 (f-5-1) renderFooterPills 가 동적 렌더 (active session blocks 기반).
+         + 버튼은 absolute 로 분리 — pills 가 viewport 진짜 중앙에 정렬되도록 (flex sibling 시 좌측 시프트 회귀). -->
+    <div id="sessionFooter" style="position:absolute;bottom:24px;left:0;right:0;padding:12px 24px 4px;border-top:1px solid rgba(255,255,255,0.06);">
+      <div id="sessionFooterPills" class="kr" style="display:flex;gap:18px;align-items:center;overflow-x:auto;scroll-behavior:smooth;padding-inline:50%;"></div>
+      <button id="sessionAddexBtn" type="button" style="position:absolute;right:24px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:18px;border:1.4px solid rgba(217,119,87,0.45);background:#0c0a08;color:var(--accent);font-size:20px;font-weight:300;line-height:1;padding:0;cursor:pointer;">+</button>
     </div>
     <!-- §6-3-2 / §6-10 — 키패드 바텀시트 (DOM 한 번 생성, transform 토글) -->
     <div id="keypadBackdrop" data-open="false" style="position:absolute;inset:0;z-index:79;background:rgba(0,0,0,0.45);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
