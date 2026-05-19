@@ -676,7 +676,8 @@ async function mountSessionActive(doc, block, session) {
   setTextById(doc, 'cardSetProgress', `SET ${pad2(cur + 1)} / ${pad2(totalSets)}`);
 
   const isPreset = !!currentSet.preset;
-  const presetOpacity = isPreset ? '0.45' : '1';
+  // preset/input 모두 흰색 (사용자 가독성 우선) — 구분은 font-weight + setDots accent 로.
+  const presetOpacity = '1';
   const cardWeightEl = doc.getElementById('cardWeight');
   const cardRepsEl = doc.getElementById('cardReps');
   // 완료된 운동 (block.finishedAt marker) — 회색 톤 (footer pill done state 와 동일)
@@ -704,8 +705,8 @@ async function mountSessionActive(doc, block, session) {
     setTextById(doc, 'cardReps', String(reps));
   }
 
-  // spec §6-3-3 — preset (placeholder) 톤: text-faint (opacity 0.45) / 사용자 입력: text-strong (opacity 1)
-  // blockDone 시 회색 톤 (opacity 는 1 유지, color 만 변경 — preset 톤과 구분).
+  // spec §6-3-3 — preset/input 모두 opacity 1 (가독성 우선). 구분은 setDots accent + font-weight.
+  // blockDone 시 회색 톤 (opacity 는 1 유지, color 만 변경 — 운동 완료 read-only 표시).
   if (cardWeightEl) {
     cardWeightEl.style.opacity = blockDone ? '1' : presetOpacity;
     cardWeightEl.style.color = blockDone ? doneColor : '';
