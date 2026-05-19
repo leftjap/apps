@@ -190,7 +190,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 | `scene_id` | string | 같은 콩트 모든 문장 공유 (`scene-<YYYY-MM-DD>-<slug>`). PWA 묶음 표시 + SRS 그룹 복습 |
 | `scene_order` | 1~N | 콩트 내 문장 순서. 1, 2, 3... 연속 (점프 X) |
 | `scene_title` | string | 콩트 제목 (UI 헤더) |
-| `speaker` | string | 화자 한국식 호칭 (지점장/박사/라쿤/평론가/검사/단장/회장) |
+| `speaker` | string | 화자 한국식 호칭. 활성: **우희** / **여빈** (§6.2). archive: 지점장/박사/라쿤/평론가/검사/단장/회장/빅맨 |
 | `is_stretch` | boolean | currentStage+1 어휘 사용 여부 |
 
 ### default + stretch 비율
@@ -203,53 +203,53 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 **배치 권장**: 1번 문장 default (진입 부담 ↓) → stretch 는 중간이나 펀치라인 (맥락 형성 후 만남)
 
-### 활성 트랙: 라쿤+빅맨 친구 여행 (영어 단독)
+### 활성 트랙: 우희+여빈 친구 여행 (영어 단독)
 
-**en 콘텐츠 현재 활성 트랙 = 라쿤 + 빅맨 친구 여행 단일 페어**. 모든 영어 콩트는 이 페어로만 생성. 시나리오는 §"시나리오 풀" 의 여행 영어 일반 상황에서 선택.
+**en 콘텐츠 현재 활성 트랙 = 우희 + 여빈 친구 여행 단일 페어**. 모든 영어 콩트는 이 페어로만 생성. 시나리오는 §"시나리오 풀" 의 여행 영어 일반 상황에서 선택.
 
-- 메인: **라쿤** (시니컬 천재) — 일상 실용 표현 hook + 빅맨 logic weaponize + affectionate threat
-- Sidekick: **빅맨** (literal·호전·자존감·거짓말 X) — voice 함정 또는 voice 유지 펀치
+- 페어: **우희** (입담 폭주·자기 서사화·4차원) + **여빈** (시니컬 사이다·돌직구·flat 컷)
+- 출처: 이병헌 감독 「멜로가 체질」 임진주(천우희)·이은정(전여빈) 차용 — 배우 이름 우희·여빈 사용
+- 다이내믹: **Vitriolic Best Buds** (TV Tropes 정본) — 디스·조롱이 우정 표현. 일방향 mock 금지, 쌍방향 디스 의무
 
-기존 캐릭터 풀 7명 (지점장·박사·평론가·검사·단장·회장) 은 **현재 트랙에서 사용 X**. 미래 다른 컨셉 (직장·학술 등) 트랙 wave 시 활용 가능, 보존만.
+기존 캐릭터 풀 8명 (지점장·박사·라쿤·평론가·검사·단장·회장·빅맨) 은 **현재 트랙에서 사용 X**. 미래 다른 컨셉 (직장·학술 등) 트랙 wave 시 활용 가능, 보존만. 라쿤·빅맨 트랙 5/17·5/19 시드는 학습자 카드 회귀 보호 위해 그대로 유지.
 
-### 캐릭터 풀 (보존, 현재 활성 = 빅맨만)
+### 캐릭터 풀 (활성 = 우희·여빈 / 보존 = 기존 8명)
 
 한국식 호칭은 **메타에만** 박힘. sentence 안에는 영어 100% (영어 호칭 필요시 `Boss`/`Doc`/`Chief` 등 자연스럽게).
 
-| # | 호칭 | 톤 레퍼런스 | 적합 Stage |
-|---|---|---|---|
-| 1 | 지점장 | 마이클 스콧 (The Office) — 과시·어색한 농담·인정 욕구 | 1~4 |
-| 2 | 박사 | 셸든 (Big Bang Theory) — 무자각·자존감 무한·빈정거림 못 알아챔 | 1~4 |
-| 3 | 라쿤 | 로켓 (Guardians) — 슬랭·완곡 욕·짧은 컷오프·자기연민 | 2~4 |
-| 4 | 평론가 | 한물간 지식인 — 자기 포장·강자 비굴·열등감 | 2~4 |
-| 5 | 검사 | 무감정 관찰자 (Sherlock 류) — 정황 질문·관찰 톤 | 3~4 |
-| 6 | 단장 | Coach Taylor 류 — 차가운 재건 리더, 짧은 단언 | 3~4 |
-| 7 | 회장 | Logan Roy (Succession) — 욕·고급 어휘 풀 | 4 |
-| 8 | 빅맨 | Drax the Destroyer (Guardians) — literal 직역·비유 못 알아먹음·호전·자존감 무한·거짓말 X·솔직·"shall" 절제 | 2~4 |
+| # | 호칭 | 톤 레퍼런스 | 적합 Stage | 상태 |
+|---|---|---|---|---|
+| 1 | **우희** | 「멜로가 체질」 임진주 (천우희) — 드라마 작가 4차원·입담 폭주·자기 서사화·자뻑·자기 합리화 | 2~4 | **활성** |
+| 2 | **여빈** | 「멜로가 체질」 이은정 (전여빈) — 다큐 감독 사이다·돌직구·flat sarcasm·진심 피로·짧은 컷 | 2~4 | **활성** |
+| 3 | 지점장 | 마이클 스콧 (The Office) — 과시·어색한 농담·인정 욕구 | 1~4 | archive |
+| 4 | 박사 | 셸든 (Big Bang Theory) — 무자각·자존감 무한·빈정거림 못 알아챔 | 1~4 | archive |
+| 5 | 라쿤 | 로켓 (Guardians) — 슬랭·완곡 욕·짧은 컷오프·자기연민 | 2~4 | archive |
+| 6 | 평론가 | 한물간 지식인 — 자기 포장·강자 비굴·열등감 | 2~4 | archive |
+| 7 | 검사 | 무감정 관찰자 (Sherlock 류) — 정황 질문·관찰 톤 | 3~4 | archive |
+| 8 | 단장 | Coach Taylor 류 — 차가운 재건 리더, 짧은 단언 | 3~4 | archive |
+| 9 | 회장 | Logan Roy (Succession) — 욕·고급 어휘 풀 | 4 | archive |
+| 10 | 빅맨 | Drax the Destroyer (Guardians) — literal 직역·비유 못 알아먹음·호전·자존감 무한·"shall" 절제 | 2~4 | archive |
 
-### Stage 별 페어 (현재 활성 트랙 = 라쿤+빅맨 단독)
+### Stage 별 페어 (현재 활성 트랙 = 우희+여빈 단독)
 
 | Stage | 활성 페어 | 비고 |
 |---|---|---|
-| 2 | **라쿤 + 빅맨 친구 여행** | 가오갤 검증, 여행 영어 일반 상황 (§시나리오 풀) |
-| 3 | 라쿤 + 빅맨 | 같은 페어, 어휘·문법 stretch 확장 (현재완료·관계대명사·조건문) |
-| 4 | 라쿤 + 빅맨 | 같은 페어, 비즈니스·complex 상황 (보험 청구·고객 응대 등) |
+| 2 | **우희 + 여빈 친구 여행** | 멜로가 체질 톤 검증, 여행 영어 일반 상황 (§시나리오 풀) |
+| 3 | 우희 + 여빈 | 같은 페어, 어휘·문법 stretch 확장 (현재완료·관계대명사·조건문) |
+| 4 | 우희 + 여빈 | 같은 페어, 비즈니스·complex 상황 (보험 청구·고객 응대 등) |
 | 1 | (활성 X) | Stage 1 = 가나·기초 — 콩트 트랙 비활성. 단순 어휘 카드만 |
 
-(기존 7명 풀의 Stage 페어 정의는 미래 다른 트랙 wave 시 복원 가능, 현재 보존)
+(기존 8명 풀의 Stage 페어 정의는 미래 다른 트랙 wave 시 복원 가능, 현재 보존)
 
 ### 캐릭터-stage 정합 원칙
 
-화자의 어휘 stage 가 캐릭터 톤과 자연 정합:
-- Stage 1 콩트에 박사 등장 시 → 박사 대사가 stretch (Stage 2 어휘) 가 자연스러움
-- 라쿤·평론가·검사·단장·회장 등장 시 → 그들의 대사가 stretch 후보 1순위
-- 지점장은 stage 무관 default 어휘 풀로 자연스러움 (구어 축약 풀의 표준 화자)
+활성 페어 (우희·여빈) 는 Stage 2~4 어휘 풀에서 자연 정합. 특수 어휘 풀 X — **기본 동사** (be/have/get/take/give/make/do 변주) 70%+ 의무. 라틴계·추상 어휘 (construct/decline/require 등) 차단.
 
 ### 시트콤 작법 4원리 (외부 작법 정본)
 
 콩트 작성 시 다음 4원리 적용:
 
-1. **Show-don't-tell** — 캐릭터 설명 X. 1~2번 카드에서 voice 대조 즉시 노출. `scene_intro` 메타는 장소·상황·콩트 진입 톤만 (예: "라쿤이 빅맨을 놀리기 시작한다"). 캐릭터 정의 ("라쿤은 천재 발명가") 박지 X
+1. **Show-don't-tell** — 캐릭터 설명 X. 1~2번 카드에서 voice 대조 즉시 노출. `scene_intro` 메타는 장소·상황·콩트 진입 톤만 (예: "여빈이 우희의 자뻑을 컷하기 시작한다"). 캐릭터 정의 ("우희는 드라마 작가") 박지 X
 2. **Setup–Punchline 구조** — 1번 = Hook (캐릭터 voice 즉시) · 중간 = Build/Weaponize · 마지막 = Punchline (newElement 박힌 카드)
 3. **Rule of Three** (적정 시) — 패턴 2~3회 반복 후 깨기. 강제 X — 콩트 호흡상 자연 적용
 4. **Punchline 자연 선택** — Self-trapping 강제 X. 시나리오·동작에 따라 자연 선택 (자세는 §Punchline taxonomy 참조)
@@ -258,7 +258,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 | 우선 | type | 정의 | 어학 적합 |
 |---|---|---|---|
-| 1 | **Self-trapping** | 캐릭터가 자기 logic·자랑·솔직성 함정에 빠짐 (Always Sunny / Curb 톤) | 시나리오 제한 — 빅맨 logic 함정 만들 수 있는 상황만 |
+| 1 | **Self-trapping** | 캐릭터가 자기 logic·자랑·솔직성 함정에 빠짐 (Always Sunny / Curb 톤) | 우희 자뻑·자기 서사 함정 만들 수 있는 상황 (자연 발생 빈번) |
 | 2 | **Character-driven** | 캐릭터 voice 자체가 펀치 (자기 자랑 유지·literal 절정) | 모든 시나리오 자연 |
 | 3 | **Misdirection** | assumption shatter (set up → tear down) | 일반 적용 가능 |
 | 4 | **Hyperbole / Escalation** | 과장 점증 | 일반 적용 가능 |
@@ -266,7 +266,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 회피: Shock / Wordplay / Recognition (학습 noise — Recognition 은 학습자 cognitive load ↑)
 
-**핵심**: Self-trapping 1순위는 임팩트 강하나 시나리오 의존도 큼. 자연 시나리오 (식당·길묻기 류 — 빅맨 logic 함정 만들 수 있음) 에서만 작동. 다른 시나리오는 Character-driven 자연 선택 (즉흥 Self-trapping 강제 시 라벨링 부정확).
+**핵심**: 우희 자뻑 voice 가 모든 시나리오에서 Self-trapping 자연 발생 (영어 잘하는 척 → 들통 / 자기 서사화 → 무너짐). 라쿤·빅맨 페어 시절 시나리오 의존성 해소. 그래도 펀치라인 자체는 Character-driven (여빈 마지막 한 방) 이 1순위 — Self-trapping 강제 라벨링 회피.
 
 ### 카드 정의 확장 (시트콤 호흡 정합)
 
@@ -277,25 +277,34 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **`scene_intro`** (string): 콩트 첫 카드 (scene_order=1) 진입 시 학습자에게 노출되는 1~2줄 한국어 컨텍스트. 형식: "장소 + 상황 + 콩트 진입 톤". 캐릭터 설명 금지 (show-don't-tell)
 - **`scene_direction`** (string, optional): 카드 사이 narration. 형식: `*(action description)*` 한국어. 콩트 진입·장소 전환·시간 경과 표현 (예: `*(둘은 근처 햄버거 가게에 들어간다)*`)
 
-### 라쿤+빅맨 친구 여행 시리즈 (Stage 2 1순위 페어)
+### 우희+여빈 친구 여행 시리즈 (Stage 2 1순위 페어)
 
-가오갤 Rocket + Drax 페어 검증된 코미디 다이내믹. 라쿤이 빅맨을 습관처럼 놀려먹고 빅맨이 literal 진지하게 받는 친구 동행.
+「멜로가 체질」 임진주·이은정 페어 검증된 코미디 다이내믹. 우희가 드라마 작가 답게 매 상황을 자기 서사화·입담 폭주, 여빈이 다큐 감독 답게 flat sarcasm·돌직구로 컷. **Vitriolic Best Buds — 디스·조롱·농담이 voice 의 기본값.**
 
-**라쿤 voice 4 패턴:**
-- **Hook (1번 카드)**: 일상 실용 표현. "I'm starving. Let's grab a burger." / "We have a reservation." / "Excuse me, where's X?"
-- **Weaponize (3~5번)**: 빅맨 logic 받아서 escalation·역이용 ("Cool. Then run ahead. I'll catch the next bus.")
-- **Cut**: 짧은 컷오프·deflate. "Just X" / "Cool" / "Sure" / "Right"
-- **Affectionate threat idiom**: 친구 농담 위협. "or I will kill you" / "Do you want to die?" / "I'm going to murder you" — 한국 학습자에게 cultural learning (직역 X)
+**우희 voice 5 패턴 (입담 폭주·자기 서사화):**
+- **Hook (1번 카드)**: 자뻑 진입 또는 4차원 자기 서사화 ("I have a feeling about this place." / "Watch this. My English is amazing.")
+- **입담 폭주**: 묻지도 않은 정보 자기 서사화 ("We are here to make memories." / "We are best friends from Korea.")
+- **자기 합리화**: 들통 직후 합리화 ("I was being polite." / "I was being charming." / "Rude.")
+- **4차원 비유**: 일상을 dramatic 서사로 ("Money does not get to decide my life." / "You take all the magic.")
+- **메인 어택커 반전 (회차 누적 후)**: 가끔 여빈 약점 한 방 — 일방향 mock 아닌 쌍방향 디스 ("At least I talk to people. You just glare.")
 
-**빅맨 voice 6 패턴:**
-- **Literal 직역**: idiom 첫 등장 시 직역 질문. "A killer burger? Who did it kill?" / "Which corner? I see four corners."
-- **Logic 응대**: 자기 논리로 받음. "Every duty deserves honor" / "If it has killed before, it may try again"
-- **호전·자랑**: "A warrior X" / "I am a man of X" / "My feet are weapons. They require no protection."
-- **거짓말 X (솔직)**: 무기 명세 / 친구 공격 인정 / 자기 무지 인정 (사용자 제공 Drax 명세 정합)
-- **Self-trap**: 자기 logic·자랑·솔직성의 함정에 빠짐 (펀치라인 후보, 자연 시나리오만)
-- **"shall" 절제**: 콩트당 0~1회. 격식체 과용 회피 (이전 시뮬 honor 어쩌구 함정 회피)
+**여빈 voice 5 패턴 (시니컬 사이다·flat 컷):**
+- **flat sarcasm**: 짧은 마침표 컷 ("It is a hotel." / "That is exactly what I thought." / "Of course.")
+- **사실 폭로**: 우희 자뻑 직격 ("You did not get a word of that." / "Your card died yesterday.")
+- **정정 (idiom anchor)**: 카운터·행인에 정정 ("She means we have a reservation. Just two nights.")
+- **친구 톤 affectionate threat**: "Talk again, and I will end you." / "Try me." (라쿤 자리 계승)
+- **진심 피로 노출 (가끔)**: 다큐 감독 + 슬픈 내면 측면 ("Do you ever stop talking." / "My life is also taking forever.")
 
-### 시나리오 풀 — 여행 영어 일반 상황 10 카테고리 (Stage 2 라쿤+빅맨)
+**Vitriolic Best Buds 운영 의무:**
+- 콩트당 양쪽 합산 디스·조롱·농담 **3회+** (단순 한 방 X)
+- **쌍방향 검증** — 우희·여빈 각자 최소 1회 어택. 일방향 mock 회귀 시 라쿤·빅맨 5/19 실패 재발
+- **농담 디자인 4패턴 (어휘 의존 X, 구조·반전으로):**
+  - 단순 반전 ("I have money." → "No, you don't.")
+  - 사실 폭로 ("Your card died yesterday.")
+  - flat sarcasm ("It is literally about the time.")
+  - 친구 톤 위협 ("Talk again, and I will end you.")
+
+### 시나리오 풀 — 여행 영어 일반 상황 10 카테고리 (Stage 2 우희+여빈)
 
 여행 영어가 다루는 일반 상황 전부 포괄. 각 시나리오 = 1 콩트, newElement 1개 펀치라인 카드 박힘.
 
@@ -398,9 +407,9 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 ### 시리즈 callback 운영
 
-같은 페어 (라쿤+빅맨) 의 catchphrase 가 다음 콩트 setup 으로 자연 재사용:
-- 라쿤: "or I will kill you" → 다음 콩트에 "Yes. Yes I was." 시니컬 confirmation 등
-- 빅맨: "shall" / "warrior" 자랑 → 다음 콩트에 자기 자랑 callback
+같은 페어 (우희+여빈) 의 catchphrase 가 다음 콩트 setup 으로 자연 재사용:
+- 우희: "Watch this. My English is amazing." / "I have a feeling about this place." → 다음 콩트에 자뻑 callback
+- 여빈: "I will end you." / "Of course." / "Do you ever stop talking." → 다음 콩트에 컷 callback
 
 ---
 
@@ -513,6 +522,11 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **콩트 단위 생성** (§6.2): 한 세션 = 5~6문장 1 콩트, scene 메타 5필드 nested
 - **default 60~80% + stretch 20~40% 비율**: stretch_level ≤ 1, `currentStage + 2` 점프 금지
 - **캐릭터-stage 정합** (§6.2 페어 매트릭스): currentStage 의 등장 가능 풀 안에서만 캐스팅
+- **기본 동사 우선** (§6.2): sentence 동사 풀의 70%+ 가 **be / have / get / take / give / make / do** 의 변주. 라틴계·추상 어휘 (construct / decline / require / warrior 등) 차단
+- **단문 reaction 단독 카드 금지**: "Of course." / "Sure." / "Got it." / "Right." 단독 카드 X. 복습 카드 가치 ↓. reaction 도 절로 확장 ("That is exactly what I thought." / "Take a year.")
+- **모든 카드 = 절 1+ + 학습 포인트 1+**: subject + verb 절 최소 1개 + (idiom · grammar 구조 · phoneme 묶음) 중 최소 1
+- **디스·조롱·농담이 voice 의 기본값** (§6.2): 평서문 자기 자랑 일변도 금지 (5/19 라쿤·빅맨 회귀 방지). 콩트당 양쪽 합산 디스 3회+
+- **농담은 구조·반전으로** (어휘 의존 X): 단순 반전 · 사실 폭로 · flat sarcasm · 친구 톤 위협 4패턴 위주
 
 ---
 
@@ -543,9 +557,16 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - [ ] 모든 stretch 문장 `stage === currentStage + 1` 이고 `is_stretch: true`
 - [ ] default 문장 `stage === currentStage` 이고 `is_stretch: false`
 - [ ] `currentStage + 2` 이상 점프 없음
-- [ ] `speaker` 가 §6.2 캐릭터 풀 7명 안 (지점장/박사/라쿤/평론가/검사/단장/회장) 한국식 호칭
+- [ ] `speaker` 가 §6.2 활성 페어 안 (우희 또는 여빈) — archive 캐릭터 (지점장/박사/라쿤/평론가/검사/단장/회장/빅맨) 신규 시드 사용 X
 - [ ] sentence 안에는 한국식 호칭 0건 (영어 100%)
-- [ ] 캐릭터 캐스팅이 currentStage 의 등장 가능 풀 안 (Stage 1 → 1·2 만 / Stage 2 → 1·2·3·4 / Stage 3 → 1~6 / Stage 4 → 1~7)
+
+### Vitriolic Best Buds 운영 (§6.2 우희+여빈 페어 의무)
+
+- [ ] 모든 카드 sentence 에 절 1+ 포함 (단문 reaction 단독 0건 — "Of course." / "Sure." / "Got it." 단독 X)
+- [ ] 콩트당 디스·조롱·농담 양쪽 합산 **3회+** (sarcasm cut · 사실 폭로 · 친구 톤 위협 · 정정 모욕 중)
+- [ ] **쌍방향 검증** — 우희·여빈 각자 디스 최소 1회 (일방향 mock 0건)
+- [ ] sentence 동사 풀 — **기본 동사** (be/have/get/take/give/make/do 변주) 70%+
+- [ ] 라틴계·추상 어휘 (construct/decline/require/warrior 등) **0건**
 
 ---
 

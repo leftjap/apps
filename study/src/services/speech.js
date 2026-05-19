@@ -248,10 +248,14 @@ export const VOICE_DEFAULTS = {
   'ja-JP': { voice: 'ja-JP-AoiNeural', style: null },
 };
 
-// 화자별 voice/style/rate 매핑. 현재 활성 트랙: 라쿤 + 빅맨 페어 (en 가이드 §6.2).
+// 화자별 voice/style/rate 매핑. 현재 활성 트랙: 우희 + 여빈 페어 (en 가이드 §6.2).
 // 다른 speaker 또는 미지정 시 VOICE_DEFAULTS 의 lang 기본값 fallback.
 export const SPEAKER_VOICES = {
   'en-US': {
+    // 활성 트랙 — 우희+여빈 친구 여행 (멜로가 체질 임진주·이은정 차용)
+    '우희': { voice: 'en-US-JaneNeural', style: 'cheerful', rate: 1.05 },
+    '여빈': { voice: 'en-US-PhoebeMultilingualNeural', style: null, rate: 0.95 },
+    // archive — 라쿤+빅맨 친구 여행 (5/17 시드 회귀 보호 + 미래 wave 복원용)
     '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
     '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },
     // Azure docs: Andrew Multilingual supported styles = empathetic, relieved (friendly 미지원 → 무효).

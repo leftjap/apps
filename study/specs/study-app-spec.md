@@ -295,7 +295,7 @@ CREATE POLICY "Users can only access own data"
      - Show-don't-tell 위반 여부 (scene_intro 에 캐릭터 설명 박혔으면 reject)
      - 1번 카드 = Hook (캐릭터 voice 즉시), 마지막 카드 = Punchline (newElement 박힘)
      - Punchline type 1개 선택 (Self-trapping 1순위, 시나리오 동작상 자연 선택 — 강제 X)
-     - 라쿤+빅맨 페어 사용 시 라쿤 voice 4 패턴 + 빅맨 voice 6 패턴 일관성
+     - 우희+여빈 페어 (활성) 사용 시 우희 voice 5 패턴 + 여빈 voice 5 패턴 일관성 + Vitriolic Best Buds 쌍방향 디스 검증
      - newElement = 시나리오 풀 idiom 1개 또는 친구 톤 affectionate threat 1개 (시나리오별 풀 참조)
    - 사용자에게 보고: lang / date / skitId / skitTotal / skitTitle / 펀치라인 sentence 1건 인용 + Punchline type
    - 차단 시 (분량 가드 위반 / RLS reject / 중복 reject / newElements 룰 위반 / show-don't-tell 위반) 즉시 사용자 알림 + 원인 보고
