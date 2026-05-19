@@ -707,13 +707,15 @@ async function mountSessionActive(doc, block, session) {
 
   // spec §6-3-3 — preset/input 모두 opacity 1 (가독성 우선). 구분은 setDots accent + font-weight.
   // blockDone 시 회색 톤 (opacity 는 1 유지, color 만 변경 — 운동 완료 read-only 표시).
+  // active 상태에서 '#fff' 명시 — 빈 문자열 fallback 시 부모 #f3efe6 (크림톤) 적용되는 회귀 회피.
+  const activeColor = '#fff';
   if (cardWeightEl) {
     cardWeightEl.style.opacity = blockDone ? '1' : presetOpacity;
-    cardWeightEl.style.color = blockDone ? doneColor : '';
+    cardWeightEl.style.color = blockDone ? doneColor : activeColor;
   }
   if (cardRepsEl) {
     cardRepsEl.style.opacity = blockDone ? '1' : presetOpacity;
-    cardRepsEl.style.color = blockDone ? doneColor : '';
+    cardRepsEl.style.color = blockDone ? doneColor : activeColor;
   }
 
   // 직전 세션 동일 세트번호 lookup — S1..Sn dot 의 preview 표시에 사용 (spec §6-3-3).
