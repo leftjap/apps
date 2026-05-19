@@ -572,6 +572,7 @@ export async function fetchDayDetail(iso) {
 if (typeof window !== 'undefined') {
   window.gymHome = {
     summarizeActiveSession,
+    summarizeNextBlocks,
     summarizeStreak,
     mountHomeView,
     buildWeekCalendar,
