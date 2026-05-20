@@ -26,6 +26,8 @@ let _composingArticle = null;
 // Wave 11.X-2 — 자기 push 의 Realtime self-echo 무시 (composition 끝난 후 dirty 해제 micro-window 의 caret 점프 회귀 차단).
 // saveArticle 직후 row.updated_at 기록 → handleRealtimeEntryChange 에서 동일 timestamp echo skip.
 const _selfPushTimestamps = new Map();
+// 자기 save 진행 중 표시 — await 전에 마킹해 REST 응답보다 빠른 echo 도 차단 (timestamp 필터의 race window 보완).
+const _selfSaveInflight = new Map(); // id → count
 
 // ───────────────────────────────────────────────────────────────────────────
 // debounce util — 800ms (spec §3 line 65-66 + §8 line 329)
@@ -584,11 +586,17 @@ export async function saveArticle(article, user, kind) {
   const content = body?.innerHTML || '';
   const id = article.dataset.entryId;
   setSaveStatus(article, '저장 중…');
+  // race 차단 — await 전에 inflight 마킹. 신규 글은 row.id 확정 후 재배정.
+  const inflightKey = id || '__new__';
+  _selfSaveInflight.set(inflightKey, (_selfSaveInflight.get(inflightKey) || 0) + 1);
   try {
     let row;
     if (!id || id.startsWith('new-')) {
       row = await Queries.createEntry({ owner_id: user.id, kind, title, content });
       article.dataset.entryId = row.id;
+      if (row?.id) {
+        _selfSaveInflight.set(row.id, (_selfSaveInflight.get(row.id) || 0) + 1);
+      }
       // Wave 11.5.11 — 새 글 첫 저장 후 recents 만 재로드 (mainView article 은 유지 — 사용자 입력 중 보존)
       try {
         const list = await fetchEntriesForCategory(kind);
@@ -619,7 +627,21 @@ export async function saveArticle(article, user, kind) {
     setSaveStatus(article, '저장 실패');
     console.warn('[entries] save 실패', e.message);
     return null;
+  } finally {
+    // inflight 카운터 감소 — 1초 유예로 늦게 도착하는 echo 까지 커버.
+    const finalId = article.dataset.entryId || inflightKey;
+    setTimeout(() => {
+      decrementInflight(inflightKey);
+      if (finalId !== inflightKey) decrementInflight(finalId);
+    }, 1000);
   }
+}
+
+function decrementInflight(key) {
+  if (!key) return;
+  const n = _selfSaveInflight.get(key) || 0;
+  if (n <= 1) _selfSaveInflight.delete(key);
+  else _selfSaveInflight.set(key, n - 1);
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -654,6 +676,10 @@ export function _clearComposingForTest() { _composingArticle = null; }
 // Wave 11.X-2 — _selfPushTimestamps 테스트 전용 진입점.
 export function _recordSelfPushForTest(id, ts) { _selfPushTimestamps.set(id, ts); }
 export function _clearSelfPushForTest() { _selfPushTimestamps.clear(); }
+
+// _selfSaveInflight 테스트 전용 진입점.
+export function _setSelfInflightForTest(id, n = 1) { _selfSaveInflight.set(id, n); }
+export function _clearSelfInflightForTest() { _selfSaveInflight.clear(); }
 
 // ───────────────────────────────────────────────────────────────────────────
 // Wave 11.X-3 — caret save/restore (contenteditable + WebKit textNode 교체 시 caret 보존).
@@ -778,6 +804,11 @@ export async function handleRealtimeEntryChange(payload, doc = document) {
   }
 
   if (matches) {
+    // inflight skip — await 전에 마킹된 카운터로 REST 응답보다 먼저 도착하는 echo 차단.
+    // timestamp 필터(_selfPushTimestamps)의 race window 보완.
+    if ((_selfSaveInflight.get(id) || 0) > 0) {
+      return { applied: true, reason: 'self_inflight_skip', matched: true };
+    }
     // Wave 11.X-2 — 자기 push echo skip (saveArticle 가 기록한 updated_at 과 동일하면 무시).
     // composition 끝난 후 dirty 해제 micro-window 의 self-echo 로 인한 caret 점프 회귀 차단.
     const lastSelf = _selfPushTimestamps.get(id);
@@ -2354,6 +2385,9 @@ export const Entries = {
   // Wave 11.X-2 — 자기 push echo skip (caret 점프 잔존 회귀 차단)
   _recordSelfPushForTest,
   _clearSelfPushForTest,
+  // self save inflight skip — realtime broadcast 가 REST 응답보다 빨리 도착하는 race 차단.
+  _setSelfInflightForTest,
+  _clearSelfInflightForTest,
   // Wave 11.X-3 — caret save/restore (WebKit textNode 교체 시 caret 보존)
   getCaretOffset,
   setCaretOffset,

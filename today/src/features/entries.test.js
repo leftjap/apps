@@ -33,6 +33,8 @@ import {
   _clearComposingForTest,
   _recordSelfPushForTest,
   _clearSelfPushForTest,
+  _setSelfInflightForTest,
+  _clearSelfInflightForTest,
   getCaretOffset,
   setCaretOffset,
   handleRealtimeEntryChange,
@@ -719,6 +721,48 @@ describe('handleRealtimeEntryChange — payload 분기 (mock document)', () => {
     expect(r.reason).toBe('composing_badge');
     expect(r.matched).toBe(true);
     _clearComposingForTest();
+  });
+
+  it('매치 + inflight 카운터 > 0 → reason=self_inflight_skip (REST 응답보다 빠른 echo 차단)', async () => {
+    const article = {
+      dataset: { entryId: 'A' },
+      remove: () => {},
+      querySelector: () => null,
+    };
+    _setSelfInflightForTest('A', 1);
+    const doc = {
+      querySelector: (sel) => (sel === '#mainView article.doc' ? article : null),
+      createElement: () => ({ className: '', textContent: '', hidden: false }),
+    };
+    // timestamp 미스매치여도 inflight 가 우선 — race 시점 echo 차단.
+    const r = await handleRealtimeEntryChange(
+      { table: 'today_entries', eventType: 'UPDATE', new: { id: 'A', updated_at: '2099-01-01T00:00:00.000Z' } },
+      doc,
+    );
+    expect(r.applied).toBe(true);
+    expect(r.reason).toBe('self_inflight_skip');
+    expect(r.matched).toBe(true);
+    _clearSelfInflightForTest();
+  });
+
+  it('inflight 0 + timestamp 미스매치 + dirty=false → reload (회귀 가드)', async () => {
+    const article = {
+      dataset: { entryId: 'A' },
+      remove: () => {},
+      querySelector: () => null,
+    };
+    _clearSelfInflightForTest();
+    const doc = {
+      getElementById: () => ({ innerHTML: '', querySelector: () => null }),
+      querySelector: (sel) => (sel === '#mainView article.doc' ? article : null),
+      createElement: () => ({ className: '', textContent: '', hidden: false }),
+    };
+    const r = await handleRealtimeEntryChange(
+      { table: 'today_entries', eventType: 'UPDATE', new: { id: 'A', updated_at: '2099-01-01T00:00:00.000Z', kind: 'navi' } },
+      doc,
+    );
+    expect(r.applied).toBe(true);
+    expect(r.reason).toBe('reloaded');
   });
 
   it('매치 + 자기 push echo (동일 updated_at) → reason=self_echo_skip (Wave 11.X-2)', async () => {
