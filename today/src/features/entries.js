@@ -628,14 +628,17 @@ export async function saveArticle(article, user, kind) {
     console.warn('[entries] save 실패', e.message);
     return null;
   } finally {
-    // inflight 카운터 감소 — 1초 유예로 늦게 도착하는 echo 까지 커버.
+    // inflight 카운터 감소 — Slow 4G/3G 환경에서 broadcast latency 가 더 길 수 있어
+    // 3000ms 유예. handleRealtimeEntryChange 가 자기 echo 확인 시 즉시 감소 (early cleanup).
     const finalId = article.dataset.entryId || inflightKey;
     setTimeout(() => {
       decrementInflight(inflightKey);
       if (finalId !== inflightKey) decrementInflight(finalId);
-    }, 1000);
+    }, _SELF_INFLIGHT_TIMEOUT_MS);
   }
 }
+
+const _SELF_INFLIGHT_TIMEOUT_MS = 3000;
 
 function decrementInflight(key) {
   if (!key) return;
@@ -807,6 +810,12 @@ export async function handleRealtimeEntryChange(payload, doc = document) {
     // inflight skip — await 전에 마킹된 카운터로 REST 응답보다 먼저 도착하는 echo 차단.
     // timestamp 필터(_selfPushTimestamps)의 race window 보완.
     if ((_selfSaveInflight.get(id) || 0) > 0) {
+      // early cleanup — timestamp 매치 확인되면 카운터 즉시 감소.
+      // setTimeout 3000ms 보다 빨리 외부 변경에 반응할 수 있게 함.
+      const lastSelf = _selfPushTimestamps.get(id);
+      if (lastSelf && newRow?.updated_at === lastSelf) {
+        decrementInflight(id);
+      }
       return { applied: true, reason: 'self_inflight_skip', matched: true };
     }
     // Wave 11.X-2 — 자기 push echo skip (saveArticle 가 기록한 updated_at 과 동일하면 무시).
