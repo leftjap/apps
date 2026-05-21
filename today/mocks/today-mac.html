@@ -4636,25 +4636,25 @@
           { id: 'tx-04', date: '04-09', category: '구독',     memo: '카카오페이 정기',           amount: 19000, recurring: true },
           { id: 'tx-05', date: '04-10', category: '교통',     memo: '지하철 충전',               amount: 4500 },
           // 04-11 — 4건 (합계 1,548,240 보존)
-          { id: 'tx-06a', date: '04-11', category: '배달',     memo: '주식회사우아',             amount: 24000,   brand: '주식회사우아',     card: '삼성카드 & MILEAGE PLATINUM' },
-          { id: 'tx-06b', date: '04-11', category: '온라인쇼핑', memo: '쿠팡',                   amount: 26350,   brand: '쿠팡',             card: '삼성카드 & MILEAGE PLATINUM' },
-          { id: 'tx-06c', date: '04-11', category: '온라인쇼핑', memo: '쿠팡',                   amount: 1490000, brand: '쿠팡',             card: '삼성카드 & MILEAGE PLATINUM' },
-          { id: 'tx-06d', date: '04-11', category: '구독',     memo: '쿠팡(와우멤)',             amount: 7890,    brand: '쿠팡(와우멤)',     card: '삼성카드 & MILEAGE PLATINUM', recurring: true },
+          { id: 'tx-06a', date: '04-11', category: '배달',     memo: '주식회사우아',             amount: 24000,   brand: '주식회사우아',     card: '삼성1337' },
+          { id: 'tx-06b', date: '04-11', category: '온라인쇼핑', memo: '쿠팡',                   amount: 26350,   brand: '쿠팡',             card: '삼성1337' },
+          { id: 'tx-06c', date: '04-11', category: '온라인쇼핑', memo: '쿠팡',                   amount: 1490000, brand: '쿠팡',             card: '삼성1337' },
+          { id: 'tx-06d', date: '04-11', category: '구독',     memo: '쿠팡(와우멤)',             amount: 7890,    brand: '쿠팡(와우멤)',     card: '삼성1337', recurring: true },
           { id: 'tx-07', date: '04-12', category: '배달',     memo: '주식회사우아 — 저녁',       amount: 11880, brand: '주식회사우아' },
           { id: 'tx-08', date: '04-15', category: '외식',     memo: '점심 — 파인만컴',           amount: 21500, brand: '파인만컴' },
           { id: 'tx-09', date: '04-17', category: '편의점',   memo: '7-Eleven',                amount: 24000 },
           // 04-19 — 3건 (합계 82,570 보존)
-          { id: 'tx-10a', date: '04-19', category: '외식',    memo: '회식 1차',                 amount: 50000, brand: '장수찜갈비',       card: '현대카드 M' },
-          { id: 'tx-10b', date: '04-19', category: '외식',    memo: '회식 2차',                 amount: 22570, brand: '오리엔탈 이자카야', card: '현대카드 M' },
-          { id: 'tx-10c', date: '04-19', category: '교통',    memo: '귀가 택시',                amount: 10000, brand: '카카오T',          card: '현대카드 M' },
+          { id: 'tx-10a', date: '04-19', category: '외식',    memo: '회식 1차',                 amount: 50000, brand: '장수찜갈비',       card: '삼성1337' },
+          { id: 'tx-10b', date: '04-19', category: '외식',    memo: '회식 2차',                 amount: 22570, brand: '오리엔탈 이자카야', card: '삼성1337' },
+          { id: 'tx-10c', date: '04-19', category: '교통',    memo: '귀가 택시',                amount: 10000, brand: '카카오T',          card: '삼성1337' },
           { id: 'tx-11', date: '04-20', category: '외식',     memo: '점심 — 홍대원조통골',       amount: 12600, brand: '홍대원조통골' },
           { id: 'tx-12', date: '04-21', category: '편의점',   memo: '간식',                    amount: 8950 },
           { id: 'tx-13', date: '04-22', category: '구독',     memo: '멜론',                    amount: 4300, recurring: true },
           { id: 'tx-14', date: '04-23', category: '외식',     memo: '저녁 — 화규',             amount: 20000, brand: '화규' },
           { id: 'tx-15', date: '04-24', category: '문화',     memo: '책 — 도시와 그 불확실한 벽', amount: 18000 },
           // 04-25 — 2건 (합계 8,000 보존)
-          { id: 'tx-16a', date: '04-25', category: '편의점',  memo: 'GS25 음료',                amount: 5000, brand: 'GS25',             card: '하나카드 1Q' },
-          { id: 'tx-16b', date: '04-25', category: '간식',    memo: '동네 빵집',                amount: 3000, brand: '동네 빵집',         card: '하나카드 1Q' },
+          { id: 'tx-16a', date: '04-25', category: '편의점',  memo: 'GS25 음료',                amount: 5000, brand: 'GS25',             card: '삼성1337' },
+          { id: 'tx-16b', date: '04-25', category: '간식',    memo: '동네 빵집',                amount: 3000, brand: '동네 빵집',         card: '삼성1337' },
           { id: 'tx-17', date: '04-27', category: '패션',     memo: '봄 자켓 — 네이버페이',     amount: 305000, brand: '네이버페이' }
         ]
       }
@@ -5343,7 +5343,7 @@
         const dn = ['일','월','화','수','목','금','토'][new Date(data.year, tm - 1, td).getDay()];
         return txByDate[dateStr].map((t, i) => {
           const merchant = t.brand || t.memo;
-          const card = t.card || '삼성카드 & MILEAGE PLATINUM';
+          const card = t.card || '삼성1337';
           const isCont = i > 0;
           const dateCell = isCont
             ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>'
@@ -5656,7 +5656,7 @@
       const [sm, sd] = _selectedDate.split('-').map(Number);
       const dowName = ['일','월','화','수','목','금','토'][new Date(data.year, sm - 1, sd).getDay()];
       const repeatSvg = '<svg class="exp-row__recurring" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6L2 8l2 2"/><path d="M2 8h11V5"/><path d="M12 12l2-2-2-2"/><path d="M14 10H3v3"/></svg>';
-      const cardLabel = '삼성카드 & MILEAGE PLATINUM';
+      const cardLabel = '삼성1337';
       const dayRows = dayTxns.length
         ? dayTxns.map(t => {
             const merchant = t.brand || t.memo;
@@ -5780,7 +5780,7 @@
         body.innerHTML = '<div class="exp-search-modal__empty">거래 키워드를 입력하세요</div>';
         return;
       }
-      const cardLabel = '삼성카드 & MILEAGE PLATINUM';
+      const cardLabel = '삼성1337';
       const repeatSvg = '<svg class="exp-row__recurring" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6L2 8l2 2"/><path d="M2 8h11V5"/><path d="M12 12l2-2-2-2"/><path d="M14 10H3v3"/></svg>';
       const matches = data.txns.filter(t =>
         (t.memo || '').toLowerCase().includes(ql) ||
@@ -6800,14 +6800,13 @@
       <button type="button" class="exp-modal__btn exp-modal__btn--primary" onclick="saveExpenseFromModal()">저장</button>
     </div>
 
-    <!-- 신용카드 popover -->
+    <!-- 신용카드 popover — fallback. mountExpensesView 시 currentUser email 기준 동적 재구성. -->
     <div id="expCardPopover" class="exp-card-popover" aria-hidden="true">
       <button type="button" class="exp-card-option" data-card="">선택 안 함</button>
       <button type="button" class="exp-card-option" data-card="현금">현금</button>
-      <button type="button" class="exp-card-option" data-card="삼성카드 &amp; MILEAGE PLATINUM">삼성카드 &amp; MILEAGE PLATINUM</button>
-      <button type="button" class="exp-card-option" data-card="현대카드 M">현대카드 M</button>
-      <button type="button" class="exp-card-option" data-card="신한 더모아">신한 더모아</button>
-      <button type="button" class="exp-card-option" data-card="국민 노리">국민 노리</button>
+      <button type="button" class="exp-card-option" data-card="삼성1337">삼성카드 1337</button>
+      <button type="button" class="exp-card-option" data-card="KB국민카드7007">KB국민카드 7007</button>
+      <button type="button" class="exp-card-option" data-card="KB국민카드 후불하이패스">KB국민 하이패스2.0카드</button>
     </div>
 
     <!-- 지출일시 popover (캘린더 + 시간) -->

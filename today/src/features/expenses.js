@@ -26,6 +26,7 @@ import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
 import { getCurrentKind } from './entries.js';
+import { getCardOptionsForEmail } from './card-options.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -285,7 +286,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
     const dn = dows[new Date(yr, tm - 1, td).getDay()];
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
-      const card = escapeHtml(r.card || '삼성카드 & MILEAGE PLATINUM');
+      const card = escapeHtml(r.card || '');
       const cat = escapeHtml(toCategoryLabel(r.category));
       const isCont = i > 0;
       const dateCell = isCont
@@ -827,6 +828,61 @@ export function rebuildExpModalCatGrid(doc = (typeof document !== 'undefined' ? 
   return true;
 }
 
+/** expModalCardLabel 의 raw value 를 popover 의 친화 라벨로 sync.
+ *  mocks _resetExpModal / populateExpenseForm 등 다양한 경로에서 hidden=raw 가 설정되면
+ *  label.textContent 도 raw 로 노출됨. popover 옵션 매칭 시 친화 라벨로 덮어씀.
+ *  옵션에 없는 raw (legacy row 의 옛 카드명 등) 는 raw 그대로 노출해 표시 안 깨지게 보존.
+ */
+export function syncCardLabelToFriendly(doc = (typeof document !== 'undefined' ? document : null), { clearIfNoMatch = false } = {}) {
+  if (!doc) return false;
+  const labelEl = doc.getElementById('expModalCardLabel');
+  const hidden = doc.getElementById('expModalCard');
+  if (!labelEl) return false;
+  const value = hidden?.value || '';
+  if (!value) { labelEl.textContent = '선택 안 함'; return true; }
+  const opt = doc.querySelector(`#expCardPopover .exp-card-option[data-card="${value.replace(/"/g, '\\"')}"]`);
+  if (opt) {
+    labelEl.textContent = opt.textContent.trim();
+  } else if (clearIfNoMatch) {
+    // 옵션에 없는 raw — new 모달의 fixture default 잔존 등. 빈값으로 클리어.
+    if (hidden) hidden.value = '';
+    labelEl.textContent = '선택 안 함';
+  }
+  // 옵션 미매칭 + clearIfNoMatch=false → raw 그대로 보존 (legacy edit row 호환)
+  return true;
+}
+
+/** 모달 카드 popover 옵션을 currentUser email 기준으로 동적 재구성.
+ *  mocks 의 _initExpModal 이 정적 옵션에 click 리스너를 attach 한 후 우리가
+ *  innerHTML 을 교체하므로 click 리스너 재attach 필요 — pickExpCard 가
+ *  window 에 노출돼 있을 때만 동작. card-options.js 의 정적 매핑 사용.
+ */
+export function renderCardPopoverOptions(email, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc) return false;
+  const popover = doc.getElementById('expCardPopover');
+  if (!popover) return false;
+  const opts = getCardOptionsForEmail(email);
+  popover.innerHTML = opts.map((o) => {
+    const dataAttr = escapeAttr(o.value);
+    const labelEsc = escapeHtml(o.label);
+    return `<button type="button" class="exp-card-option" data-card="${dataAttr}">${labelEsc}</button>`;
+  }).join('');
+  const win = (typeof window !== 'undefined') ? window : null;
+  if (win && typeof win.pickExpCard === 'function') {
+    popover.querySelectorAll('.exp-card-option').forEach((el) => {
+      el.addEventListener('click', () => {
+        const value = el.getAttribute('data-card') || '';
+        const friendlyLabel = el.textContent.trim();
+        win.pickExpCard(value);
+        // mocks pickExpCard 는 label.textContent = value 로 raw 값 노출 — 가독 라벨로 덮어쓰기
+        const labelEl = doc.getElementById('expModalCardLabel');
+        if (labelEl) labelEl.textContent = value ? friendlyLabel : '선택 안 함';
+      });
+    });
+  }
+  return true;
+}
+
 let _pasteSmsPatched = false;
 /** 2026-05-12 Wave 11.8e — `window.pasteExpenseSMS` patch. mocks 의 단순 정규식
  *  `_parseExpenseSMS` 가 merchant 추출 실패하던 문제 해소. SPA cardSmsParser +
@@ -858,10 +914,18 @@ export function patchPasteExpenseSMSHandler({
       if (m) { m.value = cleaned; m.dispatchEvent(new Event('input', { bubbles: true })); }
     }
     if (parsed.card && typeof win.pickExpCard === 'function') {
-      // card option 매칭 — text 에 card prefix 포함 첫 option
+      // card option 매칭 — data-card 값 우선 (정규화 raw), 그 다음 textContent 포함
       const opts = Array.from(doc.querySelectorAll('#expCardPopover .exp-card-option'));
-      const hit = opts.find((o) => (o.textContent || '').replace(/\s/g, '').includes(parsed.card.replace(/\s/g, '')));
-      if (hit) win.pickExpCard(hit.getAttribute('data-card') || hit.textContent.trim());
+      const normalize = (s) => (s || '').replace(/\s/g, '');
+      const parsedNorm = normalize(parsed.card);
+      const hit = opts.find((o) => normalize(o.getAttribute('data-card')) === parsedNorm)
+        || opts.find((o) => normalize(o.textContent).includes(parsedNorm));
+      if (hit) {
+        const value = hit.getAttribute('data-card') || hit.textContent.trim();
+        win.pickExpCard(value);
+        const labelEl = doc.getElementById('expModalCardLabel');
+        if (labelEl) labelEl.textContent = value ? hit.textContent.trim() : '선택 안 함';
+      }
     }
     // brand → category 자동 매핑 (입력 보조 — 사용자가 선택 안 한 경우만)
     try {
@@ -900,9 +964,10 @@ export function populateExpenseForm(row, doc = document) {
     const cell = doc.querySelector(`#expModalCatGrid .exp-cat-cell[data-cat="${row.category}"]`);
     if (cell) cell.classList.add('is-active');
   }
-  // 카드 라벨 (mocks 의 expModalCardLabel 동기화)
+  // 카드 라벨 (mocks 의 expModalCardLabel 동기화) — raw 값 → 친화 라벨 sync
   const cardLabel = doc.getElementById('expModalCardLabel');
   if (cardLabel) cardLabel.textContent = row.card || '선택 안 함';
+  syncCardLabelToFriendly(doc);
   // 일시 텍스트 (mocks 의 expModalDtText)
   const dtText = doc.getElementById('expModalDtText');
   if (dtText && row.spent_at) {
@@ -1035,8 +1100,11 @@ export function patchExpenseModalHandlers() {
     _spaModalMode = mode;
     _spaModalEditId = txId;
     if (mode === 'new' || !txId) {
-      if (typeof origOpen === 'function') return origOpen.call(this, mode, txId);
-      return;
+      const ret = (typeof origOpen === 'function') ? origOpen.call(this, mode, txId) : undefined;
+      // _resetExpModal 후 expModalCardLabel 이 raw fixture default 로 설정됐을 수 있음.
+      // new 모달은 옵션 미매칭 시 빈값으로 클리어 (옛 fixture 라벨 잔존 방지).
+      syncCardLabelToFriendly(undefined, { clearIfNoMatch: true });
+      return ret;
     }
     // edit — Dexie 에서 row 가져오기
     let row = null;
@@ -1106,7 +1174,7 @@ export function patchExpenseModalHandlers() {
 // ───────────────────────────────────────────────────────────────────────────
 
 const REPEAT_SVG = '<svg class="exp-row__recurring" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6L2 8l2 2"/><path d="M2 8h11V5"/><path d="M12 12l2-2-2-2"/><path d="M14 10H3v3"/></svg>';
-const DEFAULT_CARD_LABEL = '삼성카드 & MILEAGE PLATINUM';
+const DEFAULT_CARD_LABEL = '';
 
 /** Dexie row → mocks .exp-popover-row HTML. Wave 11.6.8b — onclick inline backup (capture listener fail 시 보호). */
 export function rowToPopoverHtml(row, opts = {}) {
@@ -1580,6 +1648,7 @@ export function mountExpensesView(user) {
   patchOpenMerchantDetailHandler();
   patchPasteExpenseSMSHandler();
   rebuildExpModalCatGrid();
+  renderCardPopoverOptions(user.email);
   installExpRowClickHandler();
   injectExpensePopupStyles();
   observeCategoryChange(handleCategoryActive);

@@ -705,16 +705,16 @@ describe('rowToPopoverHtml — Dexie row → popover-row HTML', () => {
     expect(html).toContain('class="exp-popover-row"');
   });
 
-  it('card 누락 시 default 카드 라벨 사용', () => {
+  it('card 누락 시 카드 칸 빈값 (DEFAULT_CARD_LABEL = "")', () => {
     const html = rowToPopoverHtml({ id: 'x', amount_krw: 1000 });
-    expect(html).toContain('삼성카드');
-    expect(html).toContain('MILEAGE PLATINUM');
+    // 빈 카드 span — 라벨 텍스트 없음
+    expect(html).toMatch(/<span class="exp-popover-row__card">\s*<\/span>/);
+    expect(html).not.toContain('MILEAGE PLATINUM');
   });
 
   it('card 누락 + opts.defaultCard 우선', () => {
-    const html = rowToPopoverHtml({ id: 'x', amount_krw: 1000 }, { defaultCard: '현대카드 M' });
-    expect(html).toContain('현대카드 M');
-    expect(html).not.toContain('삼성카드');
+    const html = rowToPopoverHtml({ id: 'x', amount_krw: 1000 }, { defaultCard: '삼성카드 1337' });
+    expect(html).toContain('삼성카드 1337');
   });
 
   it('merchant 누락 시 memo fallback', () => {
