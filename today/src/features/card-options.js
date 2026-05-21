@@ -17,13 +17,13 @@ export const COMMON_CARD_OPTIONS = Object.freeze([
 
 export const CARD_OPTIONS_BY_EMAIL = Object.freeze({
   'leftjap@gmail.com': Object.freeze([
-    { value: '삼성1337', label: '삼성카드 1337' },
+    { value: '삼성1337', label: '삼성카드 MILEAGE PLATINUM (스카이패스)' },
     { value: 'KB국민카드7007', label: 'KB국민카드 7007' },
     { value: 'KB국민카드 후불하이패스', label: 'KB국민 하이패스2.0카드' },
   ]),
   'soyoun312@gmail.com': Object.freeze([
     { value: 'K-패스 신한카드 체크', label: 'K-패스 신한카드 체크' },
-    { value: '신한카드 Air', label: '신한카드 Air' },
+    { value: '신한카드 Air', label: '신한카드 Air One' },
     { value: '현대백화점카드', label: '현대백화점카드' },
     { value: '삼성카드 iD SIMPLE', label: '삼성카드 iD SIMPLE' },
   ]),
