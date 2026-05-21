@@ -16,6 +16,7 @@ export const CARD_OPTIONS_BY_EMAIL = Object.freeze({
   'leftjap@gmail.com': Object.freeze([
     { value: '삼성1337', label: '삼성카드 MILEAGE PLATINUM (스카이패스)' },
     { value: 'KB국민카드7007', label: 'KB국민카드 7007' },
+    { value: 'KB국민카드 후불하이패스', label: 'KB국민 하이패스2.0카드' },
     { value: '현금', label: '현금' },
   ]),
   'soyoun312@gmail.com': Object.freeze([
