@@ -15,12 +15,20 @@
  */
 import mocksHtml from '../mocks/today-mac.html?raw';
 import { Auth } from './services/auth.js';
+import { Queries } from './db/queries.js';
 
 const ROUTES = ['navi', 'fiction', 'blog', 'memo', 'expense', 'admin'];
 const DEFAULT_ROUTE = 'navi';
+const WRITING_KINDS = ['navi', 'fiction', 'blog', 'memo']; // entry deep link 지원 카테고리
 
 let _mocksMounted = false;
 let _hashListenerBound = false;
+let _currentUserId = null;
+
+/** main.js 가 인증 완료 후 호출 — deep link 라우팅에 owner_id 필요. */
+export function setRouterUser(userId) {
+  _currentUserId = userId || null;
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // public API (main.js 가 호출)
@@ -43,9 +51,10 @@ export function showAuthenticated() {
     window.addEventListener('hashchange', syncFromHash);
     _hashListenerBound = true;
   }
-  // 인증 직후 #/login 또는 빈 hash 면 default 카테고리로
+  // 인증 직후 hash 정규화 — `#/<kind>` 또는 `#/<kind>/<num>` 만 허용. 나머지 (#/login 등) → default 카테고리.
   const raw = location.hash.replace(/^#\//, '');
-  if (!ROUTES.includes(raw)) {
+  const kindRaw = raw.split('/')[0];
+  if (!ROUTES.includes(kindRaw)) {
     location.hash = `#/${DEFAULT_ROUTE}`;
   } else {
     syncFromHash();
@@ -97,15 +106,47 @@ function syncFromHash() {
   // 비인증 시엔 #/login 만 허용 → main.js 가 showLogin 호출했을 때만 진입
   if (document.body.dataset.authState !== 'in') return;
 
-  const route = ROUTES.includes(raw) ? raw : DEFAULT_ROUTE;
-  if (location.hash !== `#/${route}`) {
-    location.hash = `#/${route}`;
+  // `#/<kind>` 또는 `#/<kind>/<kind_number>` 파싱.
+  const [kindRaw, entryNumRaw] = raw.split('/');
+  const kind = ROUTES.includes(kindRaw) ? kindRaw : DEFAULT_ROUTE;
+  const entryNum = entryNumRaw ? parseInt(entryNumRaw, 10) : null;
+
+  // 카테고리 hash 정규화 (대소문자 ↔ 미정의 ↔ 빈값 일관)
+  if (!kindRaw || kindRaw !== kind) {
+    const target = entryNum != null ? `#/${kind}/${entryNum}` : `#/${kind}`;
+    if (location.hash !== target) {
+      location.hash = target;
+      return;
+    }
+  }
+
+  // 1) 카테고리 사이드바 active 동기화 (mocks IIFE 가 list/feed 화면 렌더)
+  const sbTarget = document.querySelector(`.sb__item[data-category="${kind}"]`);
+  if (sbTarget && !sbTarget.classList.contains('sb__item--active')) {
+    sbTarget.click();
+  }
+
+  // 2) deep link — entry number 명시되면 해당 글 로드
+  if (entryNum != null && Number.isFinite(entryNum) && WRITING_KINDS.includes(kind)) {
+    loadEntryByDeepLink(kind, entryNum).catch((e) => {
+      console.warn('[router] deep link load 실패', e?.message || e);
+    });
+  }
+}
+
+async function loadEntryByDeepLink(kind, kindNumber) {
+  if (!_currentUserId) return;
+  // mount 가드 — mountEntriesView 가 노출하는 window.todayEntries 없으면 mount 전 호출 (page load 직후).
+  // 이 경우 mountEntriesView 의 loadEntryFromDeepLink 가 sync 완료 후 처리 — 여기선 no-op.
+  const renderFn = typeof window !== 'undefined' && window.todayEntries?.renderDocFromRow;
+  if (typeof renderFn !== 'function') return;
+  const row = await Queries.getEntryByKindNumber(_currentUserId, kind, kindNumber);
+  if (!row) {
+    // 잘못된 번호 — 카테고리 페이지로 fallback (URL 만 갱신, history replace)
+    history.replaceState(null, '', `#/${kind}`);
     return;
   }
-  const target = document.querySelector(`.sb__item[data-category="${route}"]`);
-  if (target && !target.classList.contains('sb__item--active')) {
-    target.click();
-  }
+  renderFn(row);
 }
 
 // ───────────────────────────────────────────────────────────────────────────

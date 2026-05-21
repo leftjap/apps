@@ -82,6 +82,12 @@ export function createTodayDB(name = 'today') {
     user_brand_categories: '&[user_id+brand], user_id',
     user_merchant_aliases: '&[user_id+merchant_pattern], user_id',
   });
+  // v7 — entries.kind_number 영구 일련번호 (deep link `#/navi/79`).
+  // 0023 마이그: owner_id + kind 별 created_at asc 순서로 1..N 부여. 삭제 시 보존.
+  db.version(7).stores({
+    entries:
+      '&id, owner_id, kind, updated_at, deleted_at, is_shared, pinned, [kind+updated_at], pending_sync, [owner_id+kind+kind_number]',
+  });
   return db;
 }
 

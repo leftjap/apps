@@ -27,7 +27,7 @@ import { Admin } from './features/admin.js';
 import { Comments } from './features/comments.js';
 import { Sync } from './db/sync.js';
 import { DevSeed } from './db/devSeed.js';
-import { showAuthenticated, showLogin } from './app.js';
+import { showAuthenticated, showLogin, setRouterUser } from './app.js';
 
 // signOut 시 sync 정리 (Wave 11.5.3.1) — stopSync 가 Realtime 도 종료 (Wave 11.5.4)
 Auth.registerOnSignOut(() => Sync.stopSync());
@@ -77,6 +77,7 @@ async function handleSession(session) {
   }
   // ensureProfile 은 RLS · 네트워크 오류 시 null 반환 — 화면은 그대로 진입 (UX 우선)
   await Profile.ensureProfile(user);
+  setRouterUser(user.id);
   showAuthenticated(user);
   // mocks DOM 마운트 후 entries / expenses / notifications 부착 (setTimeout 0 — 동일 task 안 mocks IIFE 실행 보장)
   setTimeout(async () => {

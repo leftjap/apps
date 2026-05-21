@@ -18,6 +18,8 @@ import { supabase } from '../services/supabase.js';
 let _categoryObserver = null;
 let _onCategoryChange = null;
 let _currentUser = null;
+/** mount 직후 deep link 글 로드가 진행 중인 동안만 true — handleCategoryActive 의 첫 글 자동 표시 차단 위해. */
+let _deepLinkInProgress = false;
 let _realtimeUnregister = null;
 const _dirtyArticles = new WeakSet();
 // Wave 11.X — IME composition 추적 (한글 조합 중 외부 reload/DOM 재패치 차단).
@@ -104,6 +106,10 @@ export function buildMockMeta(row) {
  */
 export function computeEntryNumber(rowId, kind, allRows, userId) {
   if (!userId || !Array.isArray(allRows)) return null;
+  // 1차: DB 영구 일련번호 (0023 마이그). 안정 → deep link `#/navi/79` 가 영원히 같은 글.
+  const row = allRows.find((r) => r.id === rowId);
+  if (row && row.kind_number != null) return row.kind_number;
+  // 2차 (fallback): 옛 row 가 kind_number 없는 경우 (sync 전 등) — 동적 계산.
   const isNaviGroup = kind === 'navi' || kind === 'soyoun_navi';
   const filtered = allRows.filter((r) => {
     if (r.deleted_at) return false;
@@ -258,7 +264,25 @@ export function renderDocFromRow(row, doc = document) {
   const moreWrap = doc.querySelector?.('.doc-more-wrap');
   if (moreWrap) moreWrap.dataset.readOnly = readOnly ? '1' : '';
   updateCrumbEntryNumber(row, doc);
+  updateDeepLinkUrl(row);
   return true;
+}
+
+/** 본인 글 열림 시 URL 을 `#/kind/kind_number` 로 갱신 (history.replaceState — back stack 오염 없이).
+ *  - partner 글: URL 변경 안 함 (현재 hash 유지). 본인 카운트 대상 아님 → deep link 시퀀스 부재.
+ *  - kind_number 없는 row (sync 전 등): skip.
+ *  - kind 외 (admin/expense 등): skip.
+ */
+function updateDeepLinkUrl(row) {
+  if (typeof window === 'undefined' || !row) return;
+  const userId = _currentUser?.id;
+  if (!userId || row.owner_id !== userId) return;
+  const kind = row.kind === 'soyoun_navi' ? 'navi' : row.kind;
+  if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return;
+  const num = row.kind_number;
+  if (num == null) return;
+  const target = `#/${kind}/${num}`;
+  if (location.hash !== target) history.replaceState(null, '', target);
 }
 
 /** crumb 의 `#NNNN` 을 본인 카테고리 누적 번호로 동적 갱신 (fire-and-forget).
@@ -412,7 +436,9 @@ async function handleCategoryActive(kind) {
     console.info(`[entries] kind=${kind} count=${list.length}`);
     if (list.length > 0) {
       renderRecentsFromRows(kind, list);
-      renderDocFromRow(list[0]);
+      // mount 직후 deep link 로드 진행 중이면 첫 글 자동 표시 skip — 라우터가 deep link 글 로드 담당.
+      // _deepLinkInProgress 가 false (사용자 카테고리 click 등) 면 항상 첫 글 표시.
+      if (!_deepLinkInProgress) renderDocFromRow(list[0]);
     } else {
       // Wave 11.5.11 — fixture 데이터 노출 차단 (인증 후 본인 데이터만)
       clearRecentsList();
@@ -2057,6 +2083,12 @@ function installCategoryClickHandler() {
     if (!item) return;
     const kind = item.dataset?.category;
     if (!kind) return;
+    // 사용자 click 만 URL 카테고리로 복귀 (글 닫음). programmatic click (syncFromHash 의 sbTarget.click()) 시
+    // isTrusted=false → hash 변경 skip — deep link URL 보존.
+    if (e.isTrusted) {
+      const target = `#/${kind}`;
+      if (location.hash !== target) location.hash = target;
+    }
     // mocks IIFE setCategory 가 동기로 FIXTURE 그림 → 다음 task 에서 SPA 가 진짜 데이터로 덮어씀.
     setTimeout(() => {
       handleCategoryActive(kind).catch((err) =>
@@ -2342,6 +2374,36 @@ export function mountEntriesView(user) {
       console.warn('[entries] realtime handler 실패:', e?.message || e),
     );
   });
+  // deep link URL (`#/kind/N`) 이면 마운트 직후 해당 글 로드 — 새로고침/직접 입력 후 글 복원 보장.
+  loadEntryFromDeepLink(user).catch((e) =>
+    console.warn('[entries] deep link 글 로드 실패', e?.message || e),
+  );
+}
+
+/** mountEntriesView 직후 URL hash 에 entry number 가 있으면 해당 글 자동 로드. */
+async function loadEntryFromDeepLink(user) {
+  if (typeof location === 'undefined') return;
+  const m = location.hash.match(/^#\/(\w+)\/(\d+)$/);
+  if (!m) return;
+  const kind = m[1];
+  const num = parseInt(m[2], 10);
+  if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return;
+  _deepLinkInProgress = true;
+  try {
+    const row = await Queries.getEntryByKindNumber(user.id, kind, num);
+    if (row) {
+      renderDocFromRow(row);
+    } else {
+      // 잘못된 번호 — URL 만 카테고리로 정정 + 첫 글 자동 표시 허용
+      history.replaceState(null, '', `#/${kind}`);
+      _deepLinkInProgress = false;
+      // 첫 글 자동 표시 트리거 — handleCategoryActive 재호출
+      await handleCategoryActive(kind);
+    }
+  } finally {
+    // 짧은 지연 후 flag 해제 — handleCategoryActive 의 비동기 race 윈도우 닫기.
+    setTimeout(() => { _deepLinkInProgress = false; }, 500);
+  }
 }
 
 export function rebindCategoryObserver() {

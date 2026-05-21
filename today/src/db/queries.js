@@ -74,6 +74,17 @@ export async function getEntry(id) {
   return await db().entries.get(id);
 }
 
+/** (owner_id, kind, kind_number) 복합키로 단일 엔트리 조회 — deep link `#/navi/79` 라우팅용. */
+export async function getEntryByKindNumber(ownerId, kind, kindNumber) {
+  if (!ownerId || !kind || kindNumber == null) return null;
+  const num = parseInt(kindNumber, 10);
+  if (!Number.isFinite(num)) return null;
+  return await db().entries
+    .where('[owner_id+kind+kind_number]')
+    .equals([ownerId, kind, num])
+    .first();
+}
+
 /** is_shared = true entries (피드 화면용) — Wave 11.7 본격 사용 */
 export async function listSharedEntries() {
   const rows = await db().entries.where('is_shared').equals(1).toArray();
@@ -164,10 +175,24 @@ export async function createEntry(input) {
   const ts = nowIso();
   // 사용자 결정 (2026-05-04): navi/soyoun_navi 는 공유가 default. input 미지정 시 1, 명시 시 그 값.
   const sharedDefault = input.kind === 'navi' || input.kind === 'soyoun_navi' ? 1 : 0;
+  // owner_id + kind 별 max(kind_number) + 1 부여 (deep link 영구 안정).
+  // Dexie 로컬 + 동시 작성 race condition 은 사용 패턴(1일 1편)상 실 발생 거의 없음.
+  // 만약 race 발생 시 Supabase 단일 INSERT 가 마지막에 처리되어 한쪽이 max+1, 다른쪽이 max+1 (충돌 가능).
+  // 향후 server side trigger 로 강제할 수 있음 — 본 wave 범위 외.
+  let kind_number = input.kind_number;
+  if (kind_number == null) {
+    const peers = await db().entries
+      .where('[owner_id+kind+kind_number]')
+      .between([input.owner_id, input.kind, 0], [input.owner_id, input.kind, Infinity])
+      .toArray();
+    const maxNum = peers.reduce((m, r) => Math.max(m, r.kind_number || 0), 0);
+    kind_number = maxNum + 1;
+  }
   const row = {
     id: input.id || newId(),
     owner_id: input.owner_id,
     kind: input.kind,
+    kind_number,
     title: input.title ?? null,
     content: input.content ?? null,
     meta: input.meta ?? {},
@@ -640,6 +665,7 @@ export const Queries = {
   ENTRY_KINDS,
   listEntries,
   getEntry,
+  getEntryByKindNumber,
   listSharedEntries,
   listSharedNaviEntries,
   searchEntries,
