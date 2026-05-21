@@ -26,7 +26,7 @@ import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
 import { getCurrentKind } from './entries.js';
-import { getCardOptionsForEmail } from './card-options.js';
+import { getCardOptionsForEmail, getDefaultCardForEmail } from './card-options.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -833,22 +833,24 @@ export function rebuildExpModalCatGrid(doc = (typeof document !== 'undefined' ? 
  *  label.textContent 도 raw 로 노출됨. popover 옵션 매칭 시 친화 라벨로 덮어씀.
  *  옵션에 없는 raw (legacy row 의 옛 카드명 등) 는 raw 그대로 노출해 표시 안 깨지게 보존.
  */
-export function syncCardLabelToFriendly(doc = (typeof document !== 'undefined' ? document : null), { clearIfNoMatch = false } = {}) {
+export function syncCardLabelToFriendly(doc = (typeof document !== 'undefined' ? document : null), { defaultEmail = null } = {}) {
   if (!doc) return false;
   const labelEl = doc.getElementById('expModalCardLabel');
   const hidden = doc.getElementById('expModalCard');
   if (!labelEl) return false;
+  // new 모달 (defaultEmail 명시) — 현재 hidden 값 무시하고 사용자별 default 카드로 강제 reset.
+  // _resetExpModal 후 mocks fixture default 잔존 / 이전 모달 open 의 잔존값 모두 덮어씀.
+  if (defaultEmail) {
+    const def = getDefaultCardForEmail(defaultEmail);
+    if (hidden) hidden.value = def?.value || '';
+    labelEl.textContent = def?.label || '선택 안 함';
+    return true;
+  }
+  // edit 모달 — hidden raw 값을 옵션 매칭 시 친화 라벨로, 미매칭 시 raw 유지 (legacy row 호환).
   const value = hidden?.value || '';
   if (!value) { labelEl.textContent = '선택 안 함'; return true; }
   const opt = doc.querySelector(`#expCardPopover .exp-card-option[data-card="${value.replace(/"/g, '\\"')}"]`);
-  if (opt) {
-    labelEl.textContent = opt.textContent.trim();
-  } else if (clearIfNoMatch) {
-    // 옵션에 없는 raw — new 모달의 fixture default 잔존 등. 빈값으로 클리어.
-    if (hidden) hidden.value = '';
-    labelEl.textContent = '선택 안 함';
-  }
-  // 옵션 미매칭 + clearIfNoMatch=false → raw 그대로 보존 (legacy edit row 호환)
+  if (opt) labelEl.textContent = opt.textContent.trim();
   return true;
 }
 
@@ -1101,9 +1103,8 @@ export function patchExpenseModalHandlers() {
     _spaModalEditId = txId;
     if (mode === 'new' || !txId) {
       const ret = (typeof origOpen === 'function') ? origOpen.call(this, mode, txId) : undefined;
-      // _resetExpModal 후 expModalCardLabel 이 raw fixture default 로 설정됐을 수 있음.
-      // new 모달은 옵션 미매칭 시 빈값으로 클리어 (옛 fixture 라벨 잔존 방지).
-      syncCardLabelToFriendly(undefined, { clearIfNoMatch: true });
+      // new 모달 — _resetExpModal 후 fixture/잔존값 무시하고 사용자별 default 카드 강제 적용
+      syncCardLabelToFriendly(undefined, { defaultEmail: _currentUser?.email });
       return ret;
     }
     // edit — Dexie 에서 row 가져오기
