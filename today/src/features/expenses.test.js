@@ -579,24 +579,24 @@ describe('saveExpenseFromForm — Dexie create/update', () => {
     expect(count).toBe(1);
   });
 
-  it('edit — updateExpense (수정 가능 필드만: category/memo/merchant_url)', async () => {
+  it('edit — updateExpense (수정 가능 필드: category/memo/merchant_url/card. amount/datetime/merchant 만 read-only)', async () => {
     // 사전 생성
     const doc1 = makeFakeDoc({
       amount: '50,000',
       datetime: '2026-04-19T18:00',
       merchant: '회식 1차',
-      card: '현대카드',
+      card: '삼성1337',
       category: '외식',
     });
     const first = await Expenses.saveExpenseFromForm({ mode: 'new' }, doc1);
     const editId = first.row.id;
 
-    // edit — category/memo/url 만 변경
+    // edit — category/memo/url/card 변경
     const doc2 = makeFakeDoc({
       amount: '99,999', // 무시됨 (read-only 정책)
       datetime: '2099-01-01T00:00',
       merchant: 'IGNORED',
-      card: 'IGNORED',
+      card: 'KB국민카드7007',
       memo: '편집된 메모',
       url: 'https://example.com',
       category: '간식',
@@ -605,14 +605,14 @@ describe('saveExpenseFromForm — Dexie create/update', () => {
     expect(result.ok).toBe(true);
     expect(result.mode).toBe('edit');
     expect(result.row.id).toBe(editId);
-    // 수정된 필드
+    // 수정된 필드 (card 포함)
     expect(result.row.category).toBe('간식');
     expect(result.row.memo).toBe('편집된 메모');
     expect(result.row.merchant_url).toBe('https://example.com');
-    // 보존된 필드 (read-only)
+    expect(result.row.card).toBe('KB국민카드7007');
+    // 보존된 필드 (read-only — amount/datetime/merchant)
     expect(result.row.amount_krw).toBe(50000);
     expect(result.row.merchant).toBe('회식 1차');
-    expect(result.row.card).toBe('현대카드');
   });
 
   it('validation 실패 — missing 배열 반환', async () => {

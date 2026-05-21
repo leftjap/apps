@@ -6230,7 +6230,8 @@
           _ensureCatVisible(tx.category);
         }
 
-        ['amount', 'datetime', 'merchant', 'card', 'category'].forEach(name => {
+        // card 는 수정 모달에서도 변경 가능 (잘못 입력된 카드 정정 등). amount/datetime/merchant/category 만 readonly.
+        ['amount', 'datetime', 'merchant', 'category'].forEach(name => {
           const f = document.querySelector(`#expModalOverlay .exp-field[data-field="${name}"]`);
           if (f) f.classList.add('is-readonly');
         });

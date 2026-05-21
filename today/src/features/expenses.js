@@ -1005,11 +1005,12 @@ export async function saveExpenseFromForm(opts = {}, doc = document) {
   const editId = opts.editId || null;
   try {
     if (mode === 'edit' && editId) {
-      // spec L491 — 수정 모드: category / memo / merchant_url 만 변경 (4필드 read-only)
+      // 수정 모드: category / memo / merchant_url / card 변경 가능. amount/datetime/merchant 만 readonly.
       const row = await Queries.updateExpense(editId, {
         category: data.category,
         memo: data.memo,
         merchant_url: data.merchant_url,
+        card: data.card,
       });
       // 학습: 사용자가 카테고리 수동 변경 시 user-scope 룰 upsert →
       //       이후 같은 가맹점 SMS 가 들어오면 동일 카테고리 자동 적용
@@ -1129,8 +1130,8 @@ export function patchExpenseModalHandlers() {
     if (title) title.textContent = '지출 수정';
     const dBtn = document.getElementById('expModalDeleteBtn');
     if (dBtn) dBtn.style.display = '';
-    // Wave 11.6.5 — read-only 정책 변경: category 는 변경 가능 (사용자 결정 + spec §13 line 487 정합)
-    ['amount', 'datetime', 'merchant', 'card'].forEach((name) => {
+    // read-only 정책: category·card 는 변경 가능 (사용자 정정 허용). amount/datetime/merchant 만 readonly.
+    ['amount', 'datetime', 'merchant'].forEach((name) => {
       const f = document.querySelector(`#expModalOverlay .exp-field[data-field="${name}"]`);
       if (f) f.classList.add('is-readonly');
     });
