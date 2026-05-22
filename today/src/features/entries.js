@@ -276,12 +276,20 @@ export function renderDocFromRow(row, doc = document) {
 function updateDeepLinkUrl(row) {
   if (typeof window === 'undefined' || !row) return;
   const userId = _currentUser?.id;
-  if (!userId || row.owner_id !== userId) return;
+  if (!userId) return;
   const kind = row.kind === 'soyoun_navi' ? 'navi' : row.kind;
   if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return;
   const num = row.kind_number;
   if (num == null) return;
-  const target = `#/${kind}/${num}`;
+  let target;
+  if (row.owner_id === userId) {
+    target = `#/${kind}/${num}`;
+  } else {
+    // partner 글 — owner slug 추가. 모르는 owner 면 URL 변경 안 함.
+    const slug = USER_ID_TO_SLUG[row.owner_id];
+    if (!slug) return;
+    target = `#/${kind}/${slug}/${num}`;
+  }
   if (location.hash !== target) history.replaceState(null, '', target);
 }
 
@@ -366,6 +374,19 @@ export const USER_ID_TO_DISPLAY_NAME = Object.freeze({
   '7bae5645-61c6-4476-9ff2-4c30a72812ff': '지오',
   '9f0408c0-008b-440c-a938-2effd9cb3bfd': '지오',
   'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '소연',
+});
+
+// partner 글 deep link URL slug (ASCII). 본인 글은 slug 없이 `#/navi/5`,
+// partner 글은 `#/navi/soyoun/5` 형식 — 누가 보든 같은 글 가리킴 (절대 식별).
+export const USER_ID_TO_SLUG = Object.freeze({
+  '7bae5645-61c6-4476-9ff2-4c30a72812ff': 'gio',
+  '9f0408c0-008b-440c-a938-2effd9cb3bfd': 'gio',
+  'aeafd9a7-4094-4e7c-a621-188d6b2e336d': 'soyoun',
+});
+// slug → canonical owner_id (역방향. gio 는 production leftjap UUID 로 정규화).
+export const SLUG_TO_USER_ID = Object.freeze({
+  gio: '7bae5645-61c6-4476-9ff2-4c30a72812ff',
+  soyoun: 'aeafd9a7-4094-4e7c-a621-188d6b2e336d',
 });
 
 export function getOwnNaviKind(email) {
@@ -2380,30 +2401,49 @@ export function mountEntriesView(user) {
   );
 }
 
-/** mountEntriesView 직후 URL hash 에 entry number 가 있으면 해당 글 자동 로드. */
+/** mountEntriesView 직후 URL hash 에 entry number 가 있으면 해당 글 자동 로드.
+ *  - `#/kind/num` → 본인 글
+ *  - `#/kind/slug/num` → partner (slug owner) 글
+ */
 async function loadEntryFromDeepLink(user) {
   if (typeof location === 'undefined') return;
-  const m = location.hash.match(/^#\/(\w+)\/(\d+)$/);
-  if (!m) return;
-  const kind = m[1];
-  const num = parseInt(m[2], 10);
-  if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return;
+  const parsed = parseEntryDeepLink(location.hash, user.id);
+  if (!parsed) return;
+  const { kind, ownerId, num } = parsed;
   _deepLinkInProgress = true;
   try {
-    const row = await Queries.getEntryByKindNumber(user.id, kind, num);
+    const row = await Queries.getEntryByKindNumber(ownerId, kind, num);
     if (row) {
       renderDocFromRow(row);
     } else {
       // 잘못된 번호 — URL 만 카테고리로 정정 + 첫 글 자동 표시 허용
       history.replaceState(null, '', `#/${kind}`);
       _deepLinkInProgress = false;
-      // 첫 글 자동 표시 트리거 — handleCategoryActive 재호출
       await handleCategoryActive(kind);
     }
   } finally {
-    // 짧은 지연 후 flag 해제 — handleCategoryActive 의 비동기 race 윈도우 닫기.
     setTimeout(() => { _deepLinkInProgress = false; }, 500);
   }
+}
+
+/** deep link hash 파싱 → { kind, ownerId, num } 또는 null.
+ *  `#/kind/num` (본인) / `#/kind/slug/num` (partner). currentUserId = 본인 fallback owner. */
+export function parseEntryDeepLink(hash, currentUserId) {
+  const raw = String(hash || '').replace(/^#\//, '');
+  const parts = raw.split('/');
+  const kind = parts[0];
+  if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return null;
+  if (parts.length === 2 && /^\d+$/.test(parts[1])) {
+    // 본인 글
+    return { kind, ownerId: currentUserId, num: parseInt(parts[1], 10) };
+  }
+  if (parts.length === 3 && /^\d+$/.test(parts[2])) {
+    // partner 글 — slug
+    const ownerId = SLUG_TO_USER_ID[parts[1]];
+    if (!ownerId) return null;
+    return { kind, ownerId, num: parseInt(parts[2], 10) };
+  }
+  return null;
 }
 
 export function rebindCategoryObserver() {
@@ -2434,6 +2474,7 @@ export const Entries = {
   ensureRecentsMore,
   removeRecentsMore,
   renderDocFromRow,
+  parseEntryDeepLink,
   // Wave 11.5.2b — 자동저장
   getCurrentKind,
   setSaveStatus,

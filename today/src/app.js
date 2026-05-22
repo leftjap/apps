@@ -106,14 +106,16 @@ function syncFromHash() {
   // 비인증 시엔 #/login 만 허용 → main.js 가 showLogin 호출했을 때만 진입
   if (document.body.dataset.authState !== 'in') return;
 
-  // `#/<kind>` 또는 `#/<kind>/<kind_number>` 파싱.
-  const [kindRaw, entryNumRaw] = raw.split('/');
+  // `#/<kind>` / `#/<kind>/<num>` (본인) / `#/<kind>/<slug>/<num>` (partner) 파싱.
+  const parts = raw.split('/');
+  const kindRaw = parts[0];
   const kind = ROUTES.includes(kindRaw) ? kindRaw : DEFAULT_ROUTE;
-  const entryNum = entryNumRaw ? parseInt(entryNumRaw, 10) : null;
+  const hasDeepLink = parts.length >= 2 && WRITING_KINDS.includes(kind);
 
-  // 카테고리 hash 정규화 (대소문자 ↔ 미정의 ↔ 빈값 일관)
+  // 카테고리 hash 정규화 (kindRaw 미정의 ↔ 빈값) — deep link suffix 보존.
   if (!kindRaw || kindRaw !== kind) {
-    const target = entryNum != null ? `#/${kind}/${entryNum}` : `#/${kind}`;
+    const suffix = parts.slice(1).join('/');
+    const target = suffix ? `#/${kind}/${suffix}` : `#/${kind}`;
     if (location.hash !== target) {
       location.hash = target;
       return;
@@ -126,24 +128,28 @@ function syncFromHash() {
     sbTarget.click();
   }
 
-  // 2) deep link — entry number 명시되면 해당 글 로드
-  if (entryNum != null && Number.isFinite(entryNum) && WRITING_KINDS.includes(kind)) {
-    loadEntryByDeepLink(kind, entryNum).catch((e) => {
+  // 2) deep link — entry 명시되면 해당 글 로드 (mount 후 hashchange 경로)
+  if (hasDeepLink) {
+    loadEntryByDeepLink(location.hash).catch((e) => {
       console.warn('[router] deep link load 실패', e?.message || e);
     });
   }
 }
 
-async function loadEntryByDeepLink(kind, kindNumber) {
+async function loadEntryByDeepLink(hash) {
   if (!_currentUserId) return;
   // mount 가드 — mountEntriesView 가 노출하는 window.todayEntries 없으면 mount 전 호출 (page load 직후).
   // 이 경우 mountEntriesView 의 loadEntryFromDeepLink 가 sync 완료 후 처리 — 여기선 no-op.
-  const renderFn = typeof window !== 'undefined' && window.todayEntries?.renderDocFromRow;
-  if (typeof renderFn !== 'function') return;
-  const row = await Queries.getEntryByKindNumber(_currentUserId, kind, kindNumber);
+  const ns = typeof window !== 'undefined' ? window.todayEntries : null;
+  const renderFn = ns?.renderDocFromRow;
+  const parseFn = ns?.parseEntryDeepLink;
+  if (typeof renderFn !== 'function' || typeof parseFn !== 'function') return;
+  const parsed = parseFn(hash, _currentUserId);
+  if (!parsed) return;
+  const row = await Queries.getEntryByKindNumber(parsed.ownerId, parsed.kind, parsed.num);
   if (!row) {
     // 잘못된 번호 — 카테고리 페이지로 fallback (URL 만 갱신, history replace)
-    history.replaceState(null, '', `#/${kind}`);
+    history.replaceState(null, '', `#/${parsed.kind}`);
     return;
   }
   renderFn(row);

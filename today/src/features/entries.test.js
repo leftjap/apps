@@ -55,6 +55,7 @@ import {
   renderListView,
   isReadOnlyRow,
   renderDocFromRow,
+  parseEntryDeepLink,
 } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
 
@@ -420,6 +421,41 @@ describe('convertHeicToJpeg — heic2any wrapper (Wave 11.9)', () => {
 // ───────────────────────────────────────────────────────────────────────────
 // Wave 11.5.2b — 어댑터 (순수 함수)
 // ───────────────────────────────────────────────────────────────────────────
+
+describe('parseEntryDeepLink — 글 deep link hash 파싱', () => {
+  const CUR = 'cur-user-id';
+  const SOYOUN = 'aeafd9a7-4094-4e7c-a621-188d6b2e336d';
+  const GIO = '7bae5645-61c6-4476-9ff2-4c30a72812ff';
+
+  it('#/navi/5 → 본인 글 (ownerId = currentUserId)', () => {
+    expect(parseEntryDeepLink('#/navi/5', CUR)).toEqual({ kind: 'navi', ownerId: CUR, num: 5 });
+  });
+
+  it('#/navi/soyoun/4 → partner (소연) 글', () => {
+    expect(parseEntryDeepLink('#/navi/soyoun/4', CUR)).toEqual({ kind: 'navi', ownerId: SOYOUN, num: 4 });
+  });
+
+  it('#/fiction/gio/3 → partner (지오) 글, kind 보존', () => {
+    expect(parseEntryDeepLink('#/fiction/gio/3', CUR)).toEqual({ kind: 'fiction', ownerId: GIO, num: 3 });
+  });
+
+  it('#/navi (entry 없음) → null', () => {
+    expect(parseEntryDeepLink('#/navi', CUR)).toBeNull();
+  });
+
+  it('잘못된 slug → null', () => {
+    expect(parseEntryDeepLink('#/navi/unknown/5', CUR)).toBeNull();
+  });
+
+  it('비-writing kind (#/expense/3) → null', () => {
+    expect(parseEntryDeepLink('#/expense/3', CUR)).toBeNull();
+  });
+
+  it('num 자리 비숫자 → null', () => {
+    expect(parseEntryDeepLink('#/navi/abc', CUR)).toBeNull();
+    expect(parseEntryDeepLink('#/navi/soyoun/abc', CUR)).toBeNull();
+  });
+});
 
 describe('escapeHtml — XSS 방지', () => {
   it('& < > " \' 모두 엔티티 변환', () => {
