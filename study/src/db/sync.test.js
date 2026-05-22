@@ -31,12 +31,12 @@ describe('sync — Wave 11.13.1 다운로드', () => {
     }
   });
 
-  it('TABLE_MAP — 4 테이블 (review/today/session/pronunciation), daily_stats/meta 미포함', async () => {
+  it('TABLE_MAP — 6 테이블 (review/today/session/pronunciation + math problems/queue), daily_stats/meta 미포함', async () => {
     const { Sync } = await import('./sync.js');
-    expect(Sync.TABLE_MAP.length).toBe(4);
+    expect(Sync.TABLE_MAP.length).toBe(6);
     const dexieNames = Sync.TABLE_MAP.map((m) => m.dexie);
     expect(dexieNames).toEqual(
-      expect.arrayContaining(['reviewQueue', 'todayLessons', 'sessionLogs', 'pronunciationLog']),
+      expect.arrayContaining(['reviewQueue', 'todayLessons', 'sessionLogs', 'pronunciationLog', 'mathProblems', 'mathQueue']),
     );
     expect(dexieNames).not.toContain('dailyStats');
     expect(dexieNames).not.toContain('meta');
@@ -1319,12 +1319,12 @@ describe('sync — Wave 11.13.x pullAll 확장 (4 + dailyStats + user_meta)', ()
       meta: { bulkPut: vi.fn() },
     };
     const result = await pullAll(db, 'user-1');
-    // Wave 11.68-a — 7 results (4 테이블 + dailyStats + user_meta + pr_records)
-    expect(result.results.length).toBe(7);
+    // 9 results (6 테이블 + dailyStats + user_meta + pr_records)
+    expect(result.results.length).toBe(9);
     expect(result.failed).toBe(0);
     const tables = result.results.map((r) => r.table).sort();
     expect(tables).toEqual(
-      ['dailyStats', 'meta', 'prRecords', 'pronunciationLog', 'reviewQueue', 'sessionLogs', 'todayLessons'],
+      ['dailyStats', 'mathProblems', 'mathQueue', 'meta', 'prRecords', 'pronunciationLog', 'reviewQueue', 'sessionLogs', 'todayLessons'],
     );
   });
 });
@@ -1738,9 +1738,9 @@ describe('sync — Wave 11.20 pronunciationLog 변환', () => {
 });
 
 describe('sync — Wave 11.20 TABLE_MAP 인터페이스', () => {
-  it('TABLE_MAP 4 entry 모두 toSupabase + toDexie 보유', async () => {
+  it('TABLE_MAP 6 entry 모두 toSupabase + toDexie 보유', async () => {
     const { TABLE_MAP } = await import('./sync.js');
-    expect(TABLE_MAP.length).toBe(4);
+    expect(TABLE_MAP.length).toBe(6);
     for (const m of TABLE_MAP) {
       expect(typeof m.toSupabase).toBe('function');
       expect(typeof m.toDexie).toBe('function');

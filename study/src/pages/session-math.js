@@ -12,10 +12,23 @@ function load() {
 }
 function save(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { /* noop */ } }
 
-function buildQueue(p) {
+async function loadProblems() {
+  const db = (typeof window !== 'undefined') ? window.studyDB : null;
+  if (db?.mathProblems) {
+    try {
+      const rows = await db.mathProblems.toArray();
+      if (rows && rows.length) {
+        return rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || ((a.orderIndex ?? 0) - (b.orderIndex ?? 0)));
+      }
+    } catch { /* 폴백 */ }
+  }
+  return MATH_CONTENT; // 번들 폴백 (마이그레이션·시드 전에도 동작)
+}
+
+function buildQueue(items, p) {
   const today = todayISO();
-  const due = MATH_CONTENT.filter((c) => p.srs[c.id] && p.srs[c.id].nextReview <= today);
-  const fresh = MATH_CONTENT.filter((c) => !p.done[c.id] && !p.srs[c.id]);
+  const due = items.filter((c) => p.srs[c.id] && p.srs[c.id].nextReview <= today);
+  const fresh = items.filter((c) => !p.done[c.id] && !p.srs[c.id]);
   return [...due, ...fresh].slice(0, 3); // 하루 2~3문제
 }
 
@@ -33,9 +46,12 @@ function dotsSvg(n) {
 }
 function figureHtml(f) {
   if (!f) return '';
-  if (f.type === 'dots') return `<div class="m-fig">${dotsSvg(f.n || 5)}</div>`;
-  if (f.type === 'svg') return `<div class="m-fig">${f.svg}</div>`;
-  return '';
+  let inner = '';
+  if (f.type === 'dots') inner = dotsSvg(f.n || 5);
+  else if (f.type === 'svg') inner = f.svg || '';
+  else return '';
+  const legend = f.legend ? `<div class="m-legend">${f.legend}</div>` : '';
+  return `<div class="m-fig">${inner}</div>${legend}`;
 }
 function solHtml(s) {
   return '<div class="m-sol">'
@@ -50,7 +66,7 @@ function solHtml(s) {
 
 export function mountSessionMath(host) {
   const progress = load();
-  const queue = buildQueue(progress);
+  let queue = [];
   let i = 0, tries = 0;
 
   function renderDone() {
@@ -70,7 +86,6 @@ export function mountSessionMath(host) {
       + `<span class="m-tag">${c.tag || ''}</span>`
       + (c.lesson ? `<div class="m-lesson">${c.lesson}</div>` : '')
       + figureHtml(c.figure)
-      + (c.legend ? `<div class="m-legend">${c.legend}</div>` : '')
       + `<div class="m-q">${c.prompt}</div>`
       + '<div class="m-row"><input class="m-input" id="m-in" placeholder="답을 입력" />'
       + '<button class="m-btn" id="m-check">확인</button></div>'
@@ -106,6 +121,6 @@ export function mountSessionMath(host) {
     input.focus();
   }
 
-  render();
+  loadProblems().then((items) => { queue = buildQueue(items, progress); render(); });
   return () => { host.innerHTML = ''; };
 }

@@ -26,6 +26,11 @@ export function createStudyDB(name = 'study') {
     pronunciationLog: 'id, date, lang',
     meta: 'key',
   });
+  // 수학 사고력 세션 (additive — 기존 스토어는 자동 승계).
+  db.version(2).stores({
+    mathProblems: 'id, date, module',
+    mathQueue: 'id, nextReview, module',
+  });
   return db;
 }
 

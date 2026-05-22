@@ -187,7 +187,54 @@ export function pronunciationLogSupabaseToDexie(row) {
 }
 
 /**
- * Dexie ↔ Supabase 단순 1:1 매핑 4 테이블.
+ * mathProblems ↔ study_math_problems (0005_study_math.sql).
+ */
+export function mathProblemsDexieToSupabase(row, userId) {
+  if (!row || !userId) return null;
+  return {
+    id: row.id, user_id: userId, date: row.date ?? null,
+    module: row.module ?? null, tag: row.tag ?? null, lesson: row.lesson ?? null,
+    prompt: row.prompt, figure: row.figure ?? null, answer: row.answer,
+    accept: row.accept ?? null, solution: row.solution ?? {},
+    order_index: row.orderIndex ?? null, completed: row.completed ?? false,
+  };
+}
+export function mathProblemsSupabaseToDexie(row) {
+  if (!row) return null;
+  return {
+    id: row.id, date: row.date ?? null, module: row.module ?? null,
+    tag: row.tag ?? null, lesson: row.lesson ?? null, prompt: row.prompt,
+    figure: row.figure ?? null, answer: row.answer, accept: row.accept ?? null,
+    solution: row.solution ?? {}, orderIndex: row.order_index ?? null,
+    completed: row.completed ?? false, createdAt: row.created_at ?? null,
+  };
+}
+
+/**
+ * mathQueue ↔ study_math_queue (SRS).
+ */
+export function mathQueueDexieToSupabase(row, userId) {
+  if (!row || !userId) return null;
+  return {
+    id: row.id, user_id: userId, module: row.module ?? null, tag: row.tag ?? null,
+    prompt: row.prompt, figure: row.figure ?? null, answer: row.answer,
+    accept: row.accept ?? null, solution: row.solution ?? null,
+    interval: row.interval ?? 1, next_review: row.nextReview, last_result: row.lastResult ?? null,
+  };
+}
+export function mathQueueSupabaseToDexie(row) {
+  if (!row) return null;
+  return {
+    id: row.id, module: row.module ?? null, tag: row.tag ?? null, prompt: row.prompt,
+    figure: row.figure ?? null, answer: row.answer, accept: row.accept ?? null,
+    solution: row.solution ?? null, interval: row.interval ?? 1,
+    nextReview: row.next_review, lastResult: row.last_result ?? null,
+    createdAt: row.created_at ?? null, updatedAt: row.updated_at ?? null,
+  };
+}
+
+/**
+ * Dexie ↔ Supabase 단순 1:1 매핑 테이블.
  * dexie 스토어 이름 = createStudyDB 의 키. supabase 테이블 = `study_` 접두사.
  * Wave 11.20 — toSupabase / toDexie 변환 함수 reference 추가.
  */
@@ -215,6 +262,18 @@ export const TABLE_MAP = Object.freeze([
     supabase: 'study_pronunciation_log',
     toSupabase: pronunciationLogDexieToSupabase,
     toDexie: pronunciationLogSupabaseToDexie,
+  }),
+  Object.freeze({
+    dexie: 'mathProblems',
+    supabase: 'study_math_problems',
+    toSupabase: mathProblemsDexieToSupabase,
+    toDexie: mathProblemsSupabaseToDexie,
+  }),
+  Object.freeze({
+    dexie: 'mathQueue',
+    supabase: 'study_math_queue',
+    toSupabase: mathQueueDexieToSupabase,
+    toDexie: mathQueueSupabaseToDexie,
   }),
 ]);
 
