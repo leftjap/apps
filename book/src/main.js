@@ -16,6 +16,7 @@ import './data/books.js';
 import './styles/book.css';
 import './features/feed.js'; // registerScreen('feed', ...)
 import './features/thread.js'; // registerScreen('thread', ...)
+import './features/add-edit.js'; // setActions(openAdd/openEdit/openDelete)
 import { showAuthenticated, showLogin, setRouterUser } from './app.js';
 
 // dev 전용 시드 (preview/E2E 시각 검증) — prod 번들 제외.

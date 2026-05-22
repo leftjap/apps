@@ -99,7 +99,7 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
   return el('header', {
     class: 'topbar',
     style: { padding: '16px 36px', display: 'flex', alignItems: 'center', gap: 22, background: '#fff', borderBottom: '1px solid var(--line-2)', position: 'sticky', top: 0, zIndex: 5 },
-  }, brand, navEl, search, btn({ label: '새 어구록', variant: 'pri', size: 'md', icon: 'plus', onClick: () => nav('/add') }));
+  }, brand, navEl, search, btn({ label: '새 어구록', variant: 'pri', size: 'md', icon: 'plus', onClick: () => (ctx?.openAdd ? ctx.openAdd() : nav('/add')) }));
 }
 
 // ─── BookRow (core-v14 BookRowV14) ──────────────────────────────────────────
@@ -239,7 +239,7 @@ export function crumb({ path = [], ctx } = {}) {
 // ─── Modal (core-v14 ModalV14) ──────────────────────────────────────────────
 export function modal({ title, subtitle, onClose, children, footer, width = 620 } = {}) {
   const overlay = el('div', {
-    style: { position: 'absolute', inset: 0, background: 'rgba(20,18,14,.36)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
+    style: { position: 'fixed', inset: 0, background: 'rgba(20,18,14,.36)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 30 },
     onClick: (e) => { if (e.target === overlay && onClose) onClose(); },
   },
     el('div', { style: { width, maxHeight: '88%', background: '#fff', borderRadius: 16, boxShadow: '0 4px 12px -2px rgba(20,18,14,.10), 0 24px 60px -16px rgba(20,18,14,.32)', display: 'flex', flexDirection: 'column', overflow: 'hidden' } },

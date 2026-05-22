@@ -148,7 +148,7 @@ async function build(host, params, ctx) {
   }
 
   const addBtn = el('button', {
-    onClick: () => ctx.navigate(`/add?book=${ref}`),
+    onClick: () => (ctx.openAdd ? ctx.openAdd({ bookRef: ref }) : ctx.navigate('/add')),
     style: { marginTop: 32, width: '100%', padding: '14px', background: 'transparent', border: '1px dashed var(--line)', borderRadius: 10, color: 'var(--ink-3)', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
   }, iconEl('plus', { sz: 14 }), '이 책에 어구록 추가');
 

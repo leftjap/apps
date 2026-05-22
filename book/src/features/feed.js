@@ -184,8 +184,8 @@ async function render(host, params, ctx) {
       indent.appendChild(quoteRow({
         q,
         onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`),
-        onPin: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`),
-        onEdit: () => ctx.navigate(`/edit/${q.id}`),
+        onPin: async () => { try { await Queries.togglePinQuote(q.id); ctx.refresh(); } catch (e) { console.warn('[feed] 핀 토글 실패', e?.message || e); } },
+        onEdit: () => (ctx.openEdit ? ctx.openEdit(q.id) : ctx.navigate(`/edit/${q.id}`)),
       }));
     }
     section.appendChild(indent);

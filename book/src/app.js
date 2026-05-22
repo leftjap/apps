@@ -23,6 +23,17 @@ import { Auth } from './services/auth.js';
 let _user = null;
 let _hashBound = false;
 const _screens = new Map();
+let _actions = {}; // add-edit.js 가 openAdd/openEdit/openDelete 주입 (setActions)
+
+/** 모달 액션 주입 (features/add-edit.js 가 호출). ctx 에 노출됨. */
+export function setActions(actions) {
+  _actions = { ...(actions || {}) };
+}
+
+/** 현재 라우트 재렌더 (저장/삭제 후 변경 반영). */
+export function refresh() {
+  mountCurrent();
+}
 
 // ───────────────────────────────────────────────────────────────────────────
 // public API (main.js / feature 가 호출)
@@ -116,7 +127,11 @@ function mountCurrent() {
   const { name, params } = parseHash();
   const host = ensureHost();
   const render = _screens.get(name);
-  const ctx = { user: _user, navigate, parseHash };
+  const ctx = { user: _user, navigate, parseHash, refresh: mountCurrent };
+  // 모달 액션 — ctx 바인딩 (opener 가 user/refresh 접근).
+  ctx.openAdd = (opts) => _actions.openAdd && _actions.openAdd(ctx, opts);
+  ctx.openEdit = (id) => _actions.openEdit && _actions.openEdit(ctx, id);
+  ctx.openDelete = (id) => _actions.openDelete && _actions.openDelete(ctx, id);
   host.innerHTML = '';
   if (typeof render === 'function') {
     try {

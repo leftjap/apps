@@ -50,6 +50,9 @@ export function el(tag, props, ...children) {
         node.innerHTML = v;
       } else if (k.startsWith('on') && typeof v === 'function') {
         node.addEventListener(k.slice(2).toLowerCase(), v);
+      } else if (k === 'value') {
+        // input/textarea 는 value 프로퍼티로 설정 (attribute 는 textarea 내용 미반영).
+        node.value = v;
       } else if (k === 'for') {
         node.setAttribute('for', v);
       } else {
