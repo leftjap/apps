@@ -9,10 +9,9 @@
  *   Body:    { entry_id: string }
  * Response: 200 { status:'ok' } | 400 | 403(소유자 아님) | 502(routine 발사 실패)
  *
- * Secrets (Anthropic API 키 아님 — claude.ai/code/routines 의 "API 트리거" 설정에서 발급):
- *   ROUTINE_ID             routine UUID
- *   ROUTINE_TRIGGER_TOKEN  per-routine bearer token
- * (routines-fire 는 research preview — experimental-cc-routine-2026-04-01 beta 헤더 사용)
+ * Secrets (Anthropic API 키 아님):
+ *   ROUTINE_FIRE_URL       routines-fire 엔드포인트 (research preview — 실제 URL/페이로드는 배선 시 확정)
+ *   ROUTINE_TRIGGER_TOKEN  routine 트리거 토큰
  */
 
 // @ts-ignore — Deno std
@@ -24,7 +23,7 @@ declare const Deno: { env: { get(k: string): string | undefined }; serve: (h: (r
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const ROUTINE_ID = Deno.env.get('ROUTINE_ID');
+const ROUTINE_FIRE_URL = Deno.env.get('ROUTINE_FIRE_URL');
 const ROUTINE_TRIGGER_TOKEN = Deno.env.get('ROUTINE_TRIGGER_TOKEN');
 
 const CORS = {
@@ -63,22 +62,17 @@ Deno.serve(async (req: Request) => {
   if (entry.owner_id !== userId) return json(403, { status: 'error', message: 'Not your entry' });
   if (entry.kind !== 'navi' && entry.kind !== 'soyoun_navi') return json(400, { status: 'error', message: 'Not a navi entry' });
 
-  if (!ROUTINE_ID || !ROUTINE_TRIGGER_TOKEN) {
+  if (!ROUTINE_FIRE_URL || !ROUTINE_TRIGGER_TOKEN) {
     return json(503, { status: 'error', message: 'Routine trigger not configured' });
   }
 
-  // Routine 즉시 발사 — 문서화된 /fire 형식 (experimental-cc-routine-2026-04-01).
-  // entry_id 를 text 로 전달 → 에이전트가 `ai-navi-comment.mjs fetch --entry <id>` 처리.
+  // Routine 즉시 발사. 페이로드 shape 은 routines-fire API(research preview)에 맞춰 배선 시 확정.
+  // entry_id 를 프롬프트로 전달 → 에이전트가 `ai-navi-comment.mjs fetch --entry <id>` 처리.
   try {
-    const res = await fetch(`https://api.anthropic.com/v1/claude_code/routines/${ROUTINE_ID}/fire`, {
+    const res = await fetch(ROUTINE_FIRE_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${ROUTINE_TRIGGER_TOKEN}`,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'experimental-cc-routine-2026-04-01',
-      },
-      body: JSON.stringify({ text: `오늘의 네비 즉시 댓글 요청: entry_id=${entry_id}` }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${ROUTINE_TRIGGER_TOKEN}` },
+      body: JSON.stringify({ prompt: `즉시 댓글 요청: entry_id=${entry_id}`, input: { entry_id } }),
     });
     if (!res.ok) return json(502, { status: 'error', message: `Routine fire ${res.status}` });
   } catch (e) {
