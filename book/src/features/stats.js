@@ -12,6 +12,7 @@ import { BOOKS, bookOf } from '../data/books.js';
 import { el } from '../ui/dom.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, pageTitle, streakCard, comparisonCard, btn } from '../ui/components.js';
+import { wordCloud } from '../ui/charts.js';
 
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
@@ -116,8 +117,7 @@ async function render(host, params, ctx) {
   }
   // 단어 빈도
   const wordFreq = new Map(); for (const q of quotes) for (const w of tokenize(q.text)) wordFreq.set(w, (wordFreq.get(w) || 0) + 1);
-  const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 40);
-  const wordMax = Math.max(1, ...topWords.map((w) => w[1]));
+  const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 50);
 
   // ── render
   const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
@@ -160,9 +160,9 @@ async function render(host, params, ctx) {
     card([panelHead('출판사', `${byPub.size}곳`, btn({ label: '출판사 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/pubs') })), ...topPubs.map(pubRow)]),
     card([panelHead('분야', `${cats.length}개`), ...cats.map(catBar)]));
 
-  const wordTags = el('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center', padding: '8px 0' } },
-    ...topWords.map(([w, c]) => el('span', { onClick: () => ctx.navigate(`/word/${encodeURIComponent(w)}`), class: 'book-row', style: { cursor: 'pointer', borderRadius: 8, padding: '2px 8px', fontWeight: c >= wordMax * 0.6 ? 700 : 500, fontSize: 14 + Math.round((c / wordMax) * 22), color: c >= wordMax * 0.6 ? '#c2553a' : 'var(--ink-1)', lineHeight: 1.1 } }, w)));
-  const row4 = card([panelHead('단어', `상위 ${topWords.length}`, btn({ label: '단어 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => topWords[0] && ctx.navigate(`/word/${encodeURIComponent(topWords[0][0])}`) })), topWords.length ? wordTags : el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '아직 단어가 부족합니다.')], '24px 28px');
+  const wordCloudEl = el('div', { style: { display: 'flex', justifyContent: 'center' } },
+    wordCloud({ words: topWords, W: 1180, H: 260, scale: 0.74, onWord: (w) => ctx.navigate(`/word/${encodeURIComponent(w)}`) }));
+  const row4 = card([panelHead('단어', `상위 ${topWords.length}`, btn({ label: '단어 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => topWords[0] && ctx.navigate(`/word/${encodeURIComponent(topWords[0][0])}`) })), topWords.length ? wordCloudEl : el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '아직 단어가 부족합니다.')], '24px 28px');
 
   const inner = el('div', { style: { padding: '36px 36px 100px' } },
     pageTitle({ upper: '통계', title: `${cy}년 ${cm}월`, large: true }), row1, row2, row3, row4);
