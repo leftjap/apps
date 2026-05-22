@@ -11,7 +11,7 @@
 
 다음은 `today/`·`study/` 실제 파일을 읽고 확인한 사실입니다. **추정 아님.**
 
-- **프레임워크: 바닐라 JS (ES Modules). React 아님.** (today/study `package.json` 에 react/react-dom 없음, src 에 react import 0건)
+- **프레임워크: 바닐라 JS (ES Modules). React 아님.** (today/study/gym `package.json` 모두 react/react-dom 없음 — gym deps=supabase+dexie 확인, src 에 react import 0건)
 - 빌드: **Vite 6** + **vite-plugin-pwa** (autoUpdate, NetworkFirst navigation, workbox skipWaiting)
 - 데이터: **@supabase/supabase-js** (Supabase) ↔ **Dexie** (IndexedDB 오프라인 캐시)
 - 테스트: **Vitest** (co-located `*.test.js` + fake-indexeddb) + **Playwright** (e2e)
@@ -27,18 +27,16 @@
 
 ---
 
-## 1. 착수 전 확정할 결정 (Decision Log — 다음 세션 시작 시 사용자 확인)
+## 1. 확정 결정 (Decided — 다음 세션은 그대로 실행. 재논의·위임 없음)
 
-각 항목 **권장안** 표기. 사용자 확정 전 진행 금지인 것은 표시.
+today/study/gym 관례 + book v14 데이터 실측에 근거해 **확정**한다. 사용자 재확인 불필요.
 
-- **D1. 책 카탈로그 저장 방식** — (a) `book_books` Supabase 테이블 정규화 vs (b) 클라이언트 상수(`src/data/books.js`) 유지 + (후행) 알라딘 API.
-  - **권장 (b)**: 책 메타는 외부 소스 성격, 사용자 데이터는 어구록/댓글뿐. 1차는 BOOKS 16종 상수 모듈, DB 는 어구록·댓글만. (대안 a: 다중 사용자가 임의 책 추가 시 필요 → 후행 wave)
-- **D2. 분석 화면(통계·단어·날짜·작가) 실집계 범위** — v14 목은 mock 수치 다수.
-  - **권장**: 1차 = 어구록 CRUD·피드·스레드·책상세·핀·댓글만 실데이터. 분석 4화면은 **mock 스텁 유지**(렌더만, 수치 정리된 더미) 후 별 wave 에서 집계. (이유: 집계 쿼리/뷰는 별도 설계 필요, 핵심 가치 먼저)
-- **D3. 인증/프로젝트** — geo-apps Supabase 재사용 + prefix `book_` (**권장**, today 패턴) vs 신규 프로젝트. ALLOWED_EMAILS = 지오 + 소연.
-- **D4. 두 사용자 모델** — `book_profiles`(신규, today_profiles 동일 패턴) vs `today_profiles` 공유. **권장: book_profiles 신규** (앱 독립성). partner_user_id 로 지오↔소연 페어링.
-- **D5. 배포 경로** — `/apps/book/` (GitHub Pages, deploy-pages.yml 에 book 추가). **확정 가능**.
-- **D6. dev/preview 포트** — 신규 할당 (예 dev 5176 / preview 4176). **OAuth redirect URI 를 geo-apps OAuth 클라이언트에 사전 등록**해야 redirect_uri_mismatch 회피 (today=5175 한정 교훈).
+- **D1 — 책 카탈로그 = 클라이언트 상수.** `data.jsx` BOOKS(16) → `src/data/books.js` 상수 모듈(w/h/d/bg/fg/ax/deco 보존). DB 는 어구록·댓글만. (근거: v14 데이터에 사용자별 책 추가 개념 없음, 책 메타는 외부 소스. 다중 사용자 임의 책 추가는 후행 wave 에서 알라딘 API + `book_books` 도입.)
+- **D2 — 1차 범위 = 어구록 CRUD · 피드 · 스레드 · 책상세 · 핀 · 댓글만 실데이터.** 분석 4화면(통계·단어·날짜·작가)은 1차에 정리된 더미로 렌더(스텁), 실집계는 W7. (근거: v14 분석 수치는 전부 mock, 집계 쿼리/뷰는 별도 설계 필요 — 핵심 가치 먼저.)
+- **D3 — geo-apps Supabase 재사용 + 테이블 prefix `book_`.** `book/src/services/auth.js` 의 `ALLOWED_EMAILS = [지오, 소연]` (today auth.js:20 패턴). (근거: gym/study/today 모두 geo-apps 공유.)
+- **D4 — `book_profiles` 신규(today_profiles 동일 스키마).** `partner_user_id` 로 지오↔소연 페어링 + `book_partner_id()` SQL 헬퍼 신설(today_partner_id() 미러). (근거: 앱 독립 — 타 앱 profiles 변경 영향 차단.)
+- **D5 — 배포 `/apps/book/`** (GitHub Pages). deploy-pages.yml 에 book 빌드 step 추가 — 정확 절차 §9.
+- **D6 — dev `5176` / preview `4176`** (strictPort). ⚠ 결정이 아니라 **W0 선행 액션**: geo-apps OAuth 클라이언트 redirect URI 에 `http://localhost:5176` 등록(미등록 시 redirect_uri_mismatch — today 5175 교훈).
 
 ---
 
@@ -85,23 +83,26 @@ today `0001_init.sql` 패턴 그대로, prefix 치환.
 
 - **book_profiles**: `user_id uuid pk → auth.users`, `display_name text`, `partner_user_id uuid → auth.users`, `updated_at timestamptz`. (D4)
 - **book_books** (D1=a 선택 시만): `id uuid pk`, `isbn text unique`, `title`, `subtitle`, `author`, `publisher`, `year int`, `category text`, `cover jsonb`(`{d,w,h,bg,fg,ax,deco}`), `created_at`. (D1=b → 생략, `src/data/books.js` 상수)
-- **book_quotes**: `id uuid pk default gen_random_uuid()`, `owner_id uuid not null → auth.users`, `book_ref text not null`(isbn 또는 book_id), `text text not null`, `pinned bool default false`, `is_shared bool default false`, `created_at`, `updated_at`, `deleted_at`. 인덱스: `(owner_id, updated_at desc) where deleted_at is null`, shared feed `(updated_at desc) where is_shared and deleted_at is null`.
+- **book_quotes**: `id uuid pk default gen_random_uuid()`, `owner_id uuid not null → auth.users`, `book_ref text not null`(D1=상수 → BOOKS id/isbn 문자열), `text text not null`, `pinned bool default false`, `created_at`, `updated_at`, `deleted_at`. 인덱스: `(owner_id, updated_at desc) where deleted_at is null`, 부부 피드 `(updated_at desc) where deleted_at is null`.
+  - ⚠ **`is_shared` 없음 (착오 정정).** book v14 `data.jsx` 어구록에 공유/비공개 토글 필드가 없음(grep 0건). book 은 **부부 공용 저널** = 두 사람 어구록이 전부 공유 피드에 노출(소연=`who:'y'`). today 의 is_shared 개인/공유 모델을 도입하지 않는다.
 - **book_comments**: `id uuid pk`, `quote_id uuid not null → book_quotes on delete cascade`, `author_id uuid not null → auth.users`, `body text not null`, `created_at`, `updated_at`, `deleted_at`. 인덱스 `(quote_id, created_at)`.
 - 분석(통계/단어 등)은 집계 쿼리 또는 view — D2 따라 후행.
 
-### 3.2 RLS (today 패턴 그대로 — 본인 + 파트너 shared)
-모든 테이블 `enable row level security`.
-- **quotes select**: `owner_id = auth.uid() OR (is_shared AND owner_id IN (파트너 집합))`. 파트너 집합 = book_profiles 에서 본인의 partner + 본인을 partner 로 둔 사용자 (today_entries_select 동일 구조 참고).
+### 3.2 RLS (부부 전부 공유 — is_shared 조건 제거)
+모든 테이블 `enable row level security`. `book_partner_id()` 헬퍼 신설 = today_partner_id() 미러(호출자 book_profiles.partner_user_id 반환). today_entries_select 식에서 **`is_shared` 조건만 제거**한 형태.
+- **quotes select**: `owner_id = auth.uid() OR (owner_id = book_partner_id() AND deleted_at is null)`.
 - **quotes write (for all)**: `using (owner_id = auth.uid()) with check (owner_id = auth.uid())`.
-- **comments select**: 볼 수 있는 quote 의 댓글. **insert with check**: 대상 quote 가 shared(또는 본인 것) + `author_id = auth.uid()`. **update/delete**: `author_id = auth.uid()`.
-- ⚠ service_role key 절대 클라 번들 금지. anon key 만 `VITE_` 허용 (RLS 로 격리).
+- **comments select**: 볼 수 있는 quote(본인 또는 파트너 소유)의 댓글 — `exists(select 1 from book_quotes q where q.id = quote_id and (q.owner_id = auth.uid() or q.owner_id = book_partner_id()))`.
+- **comments insert with check**: `author_id = auth.uid()` + 위 select 와 동일한 quote 가시성 조건. (today 의 `is_shared=true` 게이트 없음 — 전부 공유.)
+- **comments update/delete**: `using (author_id = auth.uid())`.
+- ⚠ service_role key 절대 클라 번들 금지. anon key 만 `VITE_` 허용 (RLS 격리).
 
 ### 3.3 Dexie 오프라인 캐시 (today `db/schema.js` 팩토리 패턴)
 ```js
 export function createBookDB(name = 'book') {
   const db = new Dexie(name);
   db.version(1).stores({
-    quotes:   '&id, owner_id, book_ref, updated_at, deleted_at, is_shared, pinned, [book_ref+updated_at], pending_sync',
+    quotes:   '&id, owner_id, book_ref, updated_at, deleted_at, pinned, [book_ref+updated_at], pending_sync',
     comments: '&id, quote_id, author_id, created_at, deleted_at, pending_sync',
   });
   return db;
@@ -163,7 +164,7 @@ export function createBookDB(name = 'book') {
 ## 6. 작업 순서 (Wave) — 각 Wave 끝 검증 + Conventional Commit
 
 - **W0 — scaffold**: today 복제 → book 화. package.json·vite.config.js·index.html·.env.local. supabase.js·auth·로그인 화면. `pnpm dev` 동작 + 로그인 게이트.
-- **W1 — DB**: `0001_book_init.sql`(테이블+RLS+인덱스) 적용. Dexie `schema.js`·`queries.js`·`sync.js`(기본 pull/push). devSeed.
+- **W1 — DB**: `0001_book_init.sql`(테이블 + `book_partner_id()` 헬퍼 + RLS[is_shared 없는 owner-or-partner] + 인덱스) 적용. Dexie `schema.js`·`queries.js`·`sync.js`(기본 pull/push). devSeed(`who:'me'`→지오, `who:'y'`→소연).
 - **W2 — UI 토대**: `styles/book.css` 이식, `ui/`(cover·components·icons·quote-text), TopBar + app.js hash 라우터 셸.
 - **W3 — 피드**: `feed.js` + groupQuotes + 사이드(streak/pins/comparison/retro; 집계 또는 D2 스텁).
 - **W4 — 스레드/댓글**: `thread.js` + comments CRUD + Realtime + 인라인 댓글/핀 토글(토스트 없이 NEW).
@@ -203,7 +204,7 @@ export function createBookDB(name = 'book') {
 - **DB**: `today/src/db/schema.js`, `queries.js`, `sync.js`, `devSeed.js`
 - **2인 댓글 패턴**(book 댓글 직접 모델): `today/src/features/comments.js`(+`.test.js`)
 - **마이그레이션/RLS**: `today/supabase/migrations/0001_init.sql` → `book_` prefix 치환
-- **배포**: `.github/workflows/deploy-pages.yml`
+- **배포**: `.github/workflows/deploy-pages.yml` (실측 — gym→study→today 각 빌드 후 `_site/<app>/` 결합, 루트 index 에 앱 링크, `cp index.html 404.html` SPA fallback, repo secrets 로 VITE env 주입, pnpm10/node22). **book 추가 4단계**: ① `cache-dependency-path` 에 `book/pnpm-lock.yaml` ② `Build book` step(`cd book && pnpm install --frozen-lockfile && pnpm build && cp dist/index.html dist/404.html`, env `GH_PAGES=1`+`VITE_SUPABASE_*`) ③ Combine 에 `[ -d book/dist ] && cp -r book/dist _site/book` ④ 루트 index 에 `<a href="book/">📖 Book</a>`. (secrets `VITE_SUPABASE_URL`·`VITE_SUPABASE_ANON_KEY` 이미 존재)
 - **디자인 원본(스펙)**: `book/*.jsx` + `book/index.html` (v14, 시각 검증 완료 `d75d563`)
 - **앱 spec 포맷**: `study/specs/study-app-spec.md`, `gym/specs/gym-app-spec.md`
 
@@ -211,7 +212,7 @@ export function createBookDB(name = 'book') {
 
 ## 10. 다음 세션 시작 절차
 1. 이 문서 + §9 참조 파일들 Read.
-2. §1 결정 로그 D1~D6 사용자 확정.
+2. §1 결정(D1~D6)은 **확정됨** — 재논의 없이 그대로 적용. (D6 의 OAuth redirect URI 등록만 W0 선행 액션.)
 3. `today/` 를 출발점으로 W0 scaffold 착수.
 4. Wave 단위 진행 + 각 끝 §7 검증 + 커밋.
 
