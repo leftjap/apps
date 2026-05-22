@@ -219,6 +219,23 @@ export function panelHead({ title, sub, right } = {}) {
   );
 }
 
+// ─── Crumb (details-v12) — 브레드크럼 ───────────────────────────────────────
+// path: [{ label, back, onBack }, { label }, { label }] — 마지막은 강조, back 은 ← 버튼.
+export function crumb({ path = [], ctx } = {}) {
+  const wrap = el('div', { style: { padding: '10px 36px', display: 'flex', alignItems: 'center', gap: 8, background: '#fff', fontSize: 12.5 } });
+  path.forEach((p, i) => {
+    if (i > 0) wrap.appendChild(iconEl('chev', { sz: 11, style: 'color:var(--ink-4)' }));
+    if (p.back) {
+      wrap.appendChild(btn({ label: p.label, variant: 'ghost', size: 'sm', icon: 'arL', onClick: p.onBack || (() => (ctx?.navigate ? ctx.navigate('/') : history.back())) }));
+    } else if (i === path.length - 1) {
+      wrap.appendChild(el('span', { style: { fontWeight: 600, color: 'var(--ink-1)' } }, p.label));
+    } else {
+      wrap.appendChild(el('span', { style: { color: 'var(--ink-3)' } }, p.label));
+    }
+  });
+  return wrap;
+}
+
 // ─── Modal (core-v14 ModalV14) ──────────────────────────────────────────────
 export function modal({ title, subtitle, onClose, children, footer, width = 620 } = {}) {
   const overlay = el('div', {
@@ -241,13 +258,16 @@ export function modal({ title, subtitle, onClose, children, footer, width = 620 
 }
 
 // ─── screenShell — .bk > TopBar + main (각 화면 공통 셸) ─────────────────────
-export function screenShell({ tab = 'excerpt', ctx, mainStyle, children } = {}) {
+export function screenShell({ tab = 'excerpt', ctx, mainStyle, crumbEl, children } = {}) {
   const kids = Array.isArray(children) ? children : [children];
   const main = el('main', { style: mainStyle || {} }, ...kids);
-  return el('div', { class: 'bk' }, topBar({ tab, ctx }), main);
+  const parts = [topBar({ tab, ctx })];
+  if (crumbEl) parts.push(crumbEl);
+  parts.push(main);
+  return el('div', { class: 'bk' }, ...parts);
 }
 
 export default {
   btn, hoverActions, count, countPill, soyeonMark, topBar, bookRow, quoteRow,
-  streakCard, comparisonCard, pageTitle, panelHead, modal, screenShell,
+  streakCard, comparisonCard, pageTitle, panelHead, crumb, modal, screenShell,
 };
