@@ -45,8 +45,15 @@ function computeStats(quotes) {
   return { total, days: current, longest, dailyAvg: Math.round((total / days.length) * 10) / 10, lastEntry, weekHits, todayDow: dow };
 }
 
+// 한국어 불용어 (조사·어미·지시어 — 형태소 분석 없는 휴리스틱, 확장 가능).
+const STOPWORDS = new Set([
+  '것은', '것이', '것을', '것도', '것과', '그것이', '그것은', '그것을', '우리가', '우리는', '우리의',
+  '있다', '없다', '한다', '된다', '같은', '같이', '동안', '가장', '한다는', '일이라면', '아니라', '아니다',
+  '결국', '그리고', '그러나', '하지만', '그런', '이런', '저런', '무엇', '위해', '통해', '대한', '자신',
+  '때문', '그래서', '그러면', '이라는', '라는', '까지', '부터', '매우', '너무', '정말', '제일', '바로',
+]);
 function tokenize(text) {
-  return (text || '').replace(/[^가-힣a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 2);
+  return (text || '').replace(/[^가-힣a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
 }
 
 // 캘린더 (특정 연/월) — 일별 어구록 수 + 대표 표지
@@ -117,7 +124,7 @@ async function render(host, params, ctx) {
   }
   // 단어 빈도
   const wordFreq = new Map(); for (const q of quotes) for (const w of tokenize(q.text)) wordFreq.set(w, (wordFreq.get(w) || 0) + 1);
-  const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 2).sort((a, b) => b[1] - a[1]).slice(0, 50);
+  const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 1).sort((a, b) => b[1] - a[1]).slice(0, 50);
 
   // ── render
   const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
