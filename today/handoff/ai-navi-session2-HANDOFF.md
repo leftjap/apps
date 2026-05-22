@@ -24,9 +24,9 @@
 ## 2. 현재 상태 (검증 등급)
 
 ### [검증됨 — firsthand 도구/화면]
-- edge fn `ai-comment` 배포 ACTIVE + `AI_COMMENT_TOKEN` secret 설정 (supabase functions/secrets list).
+- edge fn `ai-comment` 배포 ACTIVE (functions list). `AI_COMMENT_TOKEN` secret은 **데이터계층 토큰게이트(틀린토큰 401 / 정상 통과)로 작동 확인** (secrets list 명령 자체는 안 돌림).
 - 데이터 계층: 워커(토큰만, service key 無)→edge fn→DB insert·삭제, 틀린 토큰 401 (curl/worker).
-- 단위테스트 15/15 (logic.js: 정착 디바운스·대댓글·중복방지·토큰 상수시간비교). `pnpm vitest run`.
+- 단위테스트 15/15 (logic.js: 정착 디바운스·대댓글·중복방지·토큰 상수시간비교). `pnpm vitest run`. ⚠ comments.js 아바타 CSS 변경(fe09aa8) **후엔 재실행 안 함** — CSS-only라 시각검증으로 갈음(다음 세션 재실행 권장).
 - 루틴 생성: API 트리거, 환경 today-ai-navi, repo leftjap/apps, 모델 Opus 4.7.
 - `/fire` 동작: routine_fire 세션 반환 (firsthand).
 - 루틴 end-to-end(3차, 리터럴 프롬프트): 지침 지킨 댓글 작성→DB→새 클라이언트서 "클로드"+스파크 아바타 렌더 (세션 transcript+DB+앱 스샷).
@@ -37,7 +37,7 @@
 - **루틴 env 주입 작동 안 함** → 현재 프롬프트에 URL·anon·토큰 리터럴로 박음(루틴 config 노출, git 아님). 원인 미규명(research preview? 전파지연?).
 - **루틴 전체 스캔 동작**: /fire 시 entry_id만이 아니라 정착된 공유 네비 전체에 댓글. 라이브 의도엔 맞으나 테스트 시 실데이터 오염. 프롬프트의 entry_id-only 처리 불충분.
 - **마이그 0025(디바운스 cron) 미적용, Vault 미설정** → 자동 트리거 없음(수동 /fire만).
-- **버튼 경로**: request-ai-comment에 ROUTINE_ID/ROUTINE_TRIGGER_TOKEN secret 미설정 → 버튼 503.
+- **버튼 경로**: request-ai-comment에 ROUTINE_ID/ROUTINE_TRIGGER_TOKEN secret 미설정 → 버튼 503 (코드 index.ts가 secret 없으면 503 반환 근거; **이번 세션 실제 클릭 테스트는 안 함**).
 - 실글 4건 클로드 댓글 잔존(삭제 보류).
 - today-ai-navi 환경에 작동 안 하는 env(토큰 포함) 잔존 — 정리 후보.
 - 댓글 버블 배경 거의 안 보임(흰 위 흰) — 미점검 시각 이슈 가능성.
