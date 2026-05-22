@@ -1,0 +1,19 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "book-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "cwd": "/Users/gio_c/apps/book",
+      "port": 5176
+    },
+    {
+      "name": "book-preview",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["preview"],
+      "cwd": "/Users/gio_c/apps/book",
+      "port": 4176
+    }
+  ]
+}

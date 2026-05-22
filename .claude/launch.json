@@ -86,6 +86,12 @@
       "port": 5175
     },
     {
+      "name": "today-ai-navi",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps-ai-navi/today && pnpm dev --port 5175"],
+      "port": 5175
+    },
+    {
       "name": "today-preview",
       "runtimeExecutable": "sh",
       "runtimeArgs": ["-c", "cd /Users/gio_c/apps/today && pnpm preview --port 4175"],
@@ -100,8 +106,20 @@
     {
       "name": "book-app",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["serve", "/Users/gio_c/apps/book", "-l", "4801", "--no-clipboard"],
+      "runtimeArgs": ["serve", "/Users/gio_c/apps/book/design-ref", "-l", "4801", "--no-clipboard"],
       "port": 4801
+    },
+    {
+      "name": "book-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/book && pnpm dev --port 5176"],
+      "port": 5176
+    },
+    {
+      "name": "book-preview",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": ["-c", "cd /Users/gio_c/apps/book && pnpm preview --port 4176"],
+      "port": 4176
     }
   ]
 }
