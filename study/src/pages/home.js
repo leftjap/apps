@@ -208,6 +208,7 @@ function renderPhone(state) {
   const sec2 = el('section', { style: 'padding:32px 24px 0;display:flex;flex-direction:column;gap:12px;' });
   const ctx = { totalReview: state.totalReview };
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
+  sec2.appendChild(mathCard(false));
   root.appendChild(sec2);
 
   // session/review 페이지 톤 매핑: NEW 라벨 accent, PASSED 숫자 sage, 나머지 strong.
@@ -245,6 +246,9 @@ function renderTablet(state) {
   const ctx = { totalReview: state.totalReview };
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
+  const mTab = el('section', { style: 'margin-top:16px;' });
+  mTab.appendChild(mathCard(true));
+  root.appendChild(mTab);
 
   const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
   sec3.append(
@@ -306,6 +310,9 @@ function renderDesktop(state) {
   const ctx = { totalReview: state.totalReview };
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   main.appendChild(grid);
+  const mDesk = el('div', { style: 'margin-top:20px;' });
+  mDesk.appendChild(mathCard(true));
+  main.appendChild(mDesk);
 
   root.appendChild(main);
   return root;
@@ -503,5 +510,23 @@ function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   desc.textContent = descText;
   btn.appendChild(desc);
 
+  return btn;
+}
+
+// 수학 사고력 진입 카드 (lang 독립 — en/ja 토글과 무관).
+function mathCard(large) {
+  const btn = el('button', {
+    type: 'button',
+    'aria-label': '수학 사고력',
+    style: `background:rgba(79,122,140,0.10);border:none;border-radius:var(--r-md);padding:${large ? '28px 30px' : '20px 22px'};text-align:left;cursor:pointer;font-family:var(--font-body);display:flex;flex-direction:column;gap:8px;width:100%;`,
+  });
+  btn.addEventListener('click', () => { window.location.hash = '#/session-math'; });
+  const cat = el('span', { style: `font-size:${large ? 13 : 11}px;color:#4f7a8c;text-transform:uppercase;letter-spacing:0.14em;font-family:var(--font-display);font-weight:700;` });
+  cat.textContent = 'MATH';
+  const title = el('div', { class: 'poppins', style: `font-size:${large ? 22 : 18}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.02em;` });
+  title.textContent = '수학 사고력';
+  const desc = el('div', { style: `font-size:${large ? 14 : 13}px;color:var(--text-muted);` });
+  desc.textContent = '오늘의 한 두 문제 →';
+  btn.append(cat, title, desc);
   return btn;
 }

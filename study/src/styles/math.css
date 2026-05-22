@@ -1,0 +1,31 @@
+/* math.css — 수학 사고력 세션 전용 (tokens.css 변수 사용) */
+.m-wrap { max-width: 560px; margin: 0 auto; padding: 28px 16px 64px; }
+.m-eyebrow { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--text-faint); font-weight: 700; }
+.m-h1 { font-size: 22px; margin: 6px 0 18px; letter-spacing: -.02em; color: var(--text-strong); }
+.m-progress { font-size: 12px; color: var(--text-faint); letter-spacing: .12em; margin-bottom: 14px; }
+.m-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px; box-shadow: 0 1px 2px rgba(0,0,0,.03); }
+.m-tag { display: inline-block; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; font-weight: 700; color: var(--sage); margin-bottom: 10px; }
+.m-lesson { background: rgba(120,140,93,.09); border-radius: 12px; padding: 13px 15px; font-size: 14px; color: var(--text-muted); margin-bottom: 14px; line-height: 1.65; }
+.m-lesson b { color: var(--text-strong); }
+.m-fig { display: flex; justify-content: center; padding: 6px 0 2px; }
+.m-legend { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 2px; }
+.m-q { font-size: 17px; font-weight: 600; margin: 14px 0 2px; color: var(--text-strong); line-height: 1.5; }
+.m-row { display: flex; gap: 8px; margin-top: 14px; }
+.m-input { flex: 1; padding: 12px 14px; font-size: 16px; border: 1px solid var(--line); border-radius: 12px; outline: none; background: #fff; }
+.m-input:focus { border-color: var(--accent); }
+.m-btn { padding: 12px 18px; font-size: 15px; font-weight: 600; border: none; border-radius: 12px; background: var(--accent); color: #fff; cursor: pointer; }
+.m-btn:active { transform: translateY(1px); }
+.m-btn.ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--line); }
+.m-result { margin-top: 14px; padding: 14px 16px; border-radius: 12px; display: none; font-size: 14px; line-height: 1.7; }
+.m-result.show { display: block; }
+.m-result.ok { background: #eef3e9; border: 1px solid #cfe0bf; }
+.m-result.no { background: #fbecea; border: 1px solid #f3cfc9; }
+.m-verdict { font-weight: 700; margin-bottom: 8px; }
+.m-result.ok .m-verdict { color: var(--sage); }
+.m-result.no .m-verdict { color: var(--accent); }
+.m-sol b { color: var(--text-strong); }
+.m-sol .k { color: var(--text-muted); }
+.m-sol p { margin: 4px 0; }
+.m-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.m-done { text-align: center; padding: 40px 16px; }
+.m-done .big { font-size: 44px; font-weight: 700; color: var(--text-strong); font-variant-numeric: tabular-nums; }
