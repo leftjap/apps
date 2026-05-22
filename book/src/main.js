@@ -11,7 +11,24 @@ import { Auth } from './services/auth.js';
 import { supabase } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { Profile } from './services/profile.js';
+import { Sync } from './db/sync.js';
+import './data/books.js';
 import { showAuthenticated, showLogin, setRouterUser } from './app.js';
+
+// dev 전용 시드 (preview/E2E 시각 검증) — prod 번들 제외.
+if (import.meta.env.DEV) import('./db/devSeed.js');
+
+// signOut 시 sync 정리 (Realtime 종료 포함).
+Auth.registerOnSignOut(() => Sync.stopSync());
+
+// 페이지 unload 시 pending flush + online 복귀 시 재push.
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => Sync.flushPendingUploads());
+  window.addEventListener('online', () => {
+    Sync.flushPendingQuotesFromDexie().catch(() => {});
+    Sync.flushPendingCommentsFromDexie().catch(() => {});
+  });
+}
 
 async function handleSession(session) {
   const user = session?.user;
@@ -35,6 +52,8 @@ async function handleSession(session) {
   await Profile.ensureProfile(user);
   setRouterUser(user);
   showAuthenticated(user);
+  // Supabase → Dexie 동기화 (백그라운드). 마이그레이션 미적용 시 pull 실패해도 화면 유지.
+  Sync.startSync(user).catch((e) => console.warn('[main] startSync 실패', Sync.formatError?.(e) || e));
 }
 
 async function bootstrap() {
