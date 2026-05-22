@@ -29,12 +29,16 @@
 
 ## 환경변수 (Routine 환경에 설정)
 
-- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` — DB 접근(RLS 우회).
-- `CLAUDE_USER_ID` — 댓글 author_id (기본값이 스크립트에 박혀 있으나 명시 권장).
-- `AI_COMMENT_SINCE`(옵션) — 신규 댓글 대상 created_at 하한. 미설정 시 now-3d (옛 글 백로그 폭주 방지).
+- `SUPABASE_URL` — Supabase 프로젝트 URL.
+- `AI_COMMENT_TOKEN` — edge fn `ai-comment` 인증 토큰(저권한). **service role 키는 넣지 않는다.**
+  루틴 env 는 평문이라, 누출돼도 피해를 "공유 네비 가짜 댓글" 로 한정하기 위함(service role 은 edge fn 안에만).
+- `SUPABASE_ANON_KEY`(옵션) — 공개 anon 키. 함수 게이트웨이가 요구할 때만 전송(실인증은 토큰이 담당).
+
+> 네트워크: 루틴 환경 Allowed domains 에 `*.supabase.co` 추가 필요(기본 Trusted 목록엔 Supabase 없음 →
+> 누락 시 워커의 edge fn 호출이 403 host_not_allowed 로 실패).
 
 ## 주의
 
-- 댓글 텍스트는 **에이전트(너)가 작성**한다. 스크립트는 DB 입출력만 한다.
+- 댓글 텍스트는 **에이전트(너)가 작성**한다. 스크립트는 edge fn 경유 DB 입출력만 한다(service role 키 미사용).
 - 멱등성: 스크립트가 "클로드 댓글 이미 있고 새 사람 댓글 없음" 대상은 제외하므로, 중복 댓글을 만들지 않는다.
 - 같은 글에 클로드 댓글을 두 번 달지 말 것(fetch 결과에 없으면 작성하지 않음).
