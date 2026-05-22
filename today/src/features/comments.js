@@ -153,7 +153,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row {
       display: flex;
       gap: 8px;
-      align-items: flex-end;
+      align-items: flex-start;
     }
     .comment-row[data-mine="1"] {
       flex-direction: row-reverse;
