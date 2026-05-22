@@ -1,0 +1,56 @@
+name: study-seed-math
+
+# Manual trigger only — Claude Code 가 gh workflow run 으로 호출 ("오늘 수학" 루틴).
+# study-seed-supabase.yml 미러. 안전장치: scripts/seed-math.mjs 의 dry-run, count cap, post-check.
+# working-directory: study — payload/script 경로는 study 디렉토리 기준.
+on:
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: "Payload JSON 경로 (study 기준 — 예: seeds/math-2026-05-22.json)"
+        required: true
+        type: string
+      user_id:
+        description: "대상 user_id (Supabase auth.users.id UUID)"
+        required: true
+        type: string
+      dry_run:
+        description: "Dry run (INSERT 없이 SELECT 카운트만)"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
+
+defaults:
+  run:
+    working-directory: study
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate payload exists
+        run: |
+          if [ ! -f "${{ inputs.payload }}" ]; then
+            echo "ERROR: payload file not found: ${{ inputs.payload }}"
+            exit 1
+          fi
+          echo "Payload contents (first 30 lines):"
+          head -30 "${{ inputs.payload }}"
+
+      - name: Run seed-math script
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node scripts/seed-math.mjs \
+            --payload "${{ inputs.payload }}" \
+            --user-id "${{ inputs.user_id }}" \
+            ${{ inputs.dry_run == 'true' && '--dry-run' || '' }}
