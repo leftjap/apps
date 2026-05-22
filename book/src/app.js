@@ -108,6 +108,7 @@ export function parseHash() {
   const dec = (s) => { try { return decodeURIComponent(s); } catch { return s; } };
   switch (head) {
     case 'login': return { name: 'login', params: {} };
+    case 'search': return { name: 'search', params: {} };
     case 'stats': return { name: 'stats', params: {} };
     case 'book': return { name: 'book', params: { ref: dec(parts[1] || '') } };
     case 'thread': return { name: 'thread', params: { ref: dec(parts[1] || ''), quoteId: parts[2] ? dec(parts[2]) : null } };
