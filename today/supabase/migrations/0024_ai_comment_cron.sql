@@ -5,9 +5,9 @@
 --
 -- 적용 전 prerequisites (수동 — 배선 단계):
 --   1) Supabase Dashboard 에서 pg_cron / pg_net 확장 활성 (아래 create extension 이 시도하나 권한에 따라 대시보드 필요).
---   2) Vault 시크릿 2개 등록 (Anthropic API 키 아님):
---        select vault.create_secret('<routines-fire URL>',   'routine_fire_url');
---        select vault.create_secret('<routine trigger token>','routine_trigger_token');
+--   2) Vault 시크릿 2개 등록 (Anthropic API 키 아님 — claude.ai/code/routines API 트리거 설정):
+--        select vault.create_secret('https://api.anthropic.com/v1/claude_code/routines/<ROUTINE_ID>/fire', 'routine_fire_url');
+--        select vault.create_secret('<per-routine bearer token>', 'routine_trigger_token');
 --   3) Routine 생성(매시간/Opus 4.7, today/routines/ai-navi.md 프롬프트) 완료.
 --
 -- 미검증(research preview): routines-fire 의 정확한 URL/페이로드/인증 헤더는 배선 시 확정.
@@ -69,9 +69,11 @@ select cron.schedule(
       url     := (select decrypted_secret from vault.decrypted_secrets where name = 'routine_fire_url'),
       headers := jsonb_build_object(
         'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'routine_trigger_token')
+        'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'routine_trigger_token'),
+        'anthropic-version', '2023-06-01',
+        'anthropic-beta', 'experimental-cc-routine-2026-04-01'
       ),
-      body    := jsonb_build_object('prompt', '정기 스캔: 오늘의 네비 클로드 자동 댓글')
+      body    := jsonb_build_object('text', '정기 스캔: 오늘의 네비 클로드 자동 댓글')
     )
     where today_ai_has_pending();
   $cron$
