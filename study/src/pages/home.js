@@ -68,11 +68,11 @@ export function mountHome(host) {
   };
 
   state.onLangChange = (newLang) => {
-    if (newLang !== 'en' && newLang !== 'ja') return;
+    if (newLang !== 'en' && newLang !== 'ja' && newLang !== 'math') return;
     if (newLang === state.lang) return;
     try { sessionStorage.setItem('studyLang', newLang); } catch { /* noop */ }
     state.lang = newLang;
-    state.newCount = 0; state.reviewCount = 0;
+    state.newCount = 0; state.reviewCount = 0; state.totalReview = 0;
     state.tried = 0; state.passed = 0;
     state.weekUtter = 0; state.weekPass = 0;
     state.todayNewDone = 0; state.todayReviewDone = 0;
@@ -103,11 +103,35 @@ export function mountHome(host) {
 }
 
 function getStoredLang() {
-  try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; }
+  try { const v = sessionStorage.getItem('studyLang'); return (v === 'ja' || v === 'math') ? v : 'en'; }
   catch { return 'en'; }
 }
 
+// 수학 모드 카운트 — 문제 목록(db.mathProblems 또는 번들) + 진행상태(localStorage mathProgress).
+async function loadMathStats(state) {
+  const today = state.todayISO;
+  let items = [];
+  const db = window.studyDB;
+  if (db?.mathProblems) {
+    try { items = await db.mathProblems.toArray(); } catch { /* 폴백 */ }
+  }
+  if (!items.length) {
+    try { const m = await import('../data/math/index.js'); items = m.MATH_CONTENT || []; } catch { /* noop */ }
+  }
+  let prog = { done: {}, srs: {} };
+  try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
+  const newCount = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
+  const reviewCount = items.filter((c) => prog.srs?.[c.id] && prog.srs[c.id].nextReview <= today).length;
+  const totalReview = Object.keys(prog.srs || {}).length;
+  return {
+    newCount, reviewCount, totalReview,
+    streak: 0, tried: 0, passed: 0, bestStreak: null,
+    weekUtter: 0, weekPass: 0, todayNewDone: 0, todayReviewDone: 0,
+  };
+}
+
 async function loadStats(state) {
+  if (state.lang === 'math') return loadMathStats(state);
   const db = window.studyDB;
   if (!db) return null;
   try {
@@ -193,7 +217,7 @@ function renderPhone(state) {
   root.innerHTML = `<div class="status-bar"><span>9:41</span><span class="status-icons">●●●●  ◐  ▮▮</span></div>`;
 
   const header = el('header', { style: 'display:flex;justify-content:space-between;align-items:center;padding:8px 24px 0;' });
-  header.append(brandLangPair(state, 16, 12, 14, 'EN', 'JP'), headerIcons(20, 12));
+  header.append(brandLangPair(state, 16, 12, 14, 'EN', 'JP', '수학'), headerIcons(20, 12));
   root.appendChild(header);
 
   const sec1 = el('section', { style: 'padding:28px 24px 0;' });
@@ -206,20 +230,21 @@ function renderPhone(state) {
   root.appendChild(sec1);
 
   const sec2 = el('section', { style: 'padding:32px 24px 0;display:flex;flex-direction:column;gap:12px;' });
-  const ctx = { totalReview: state.totalReview };
+  const ctx = { totalReview: state.totalReview, lang: state.lang };
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
-  sec2.appendChild(mathCard(false));
   root.appendChild(sec2);
 
-  // session/review 페이지 톤 매핑: NEW 라벨 accent, PASSED 숫자 sage, 나머지 strong.
-  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;' });
-  sec3.append(
-    statBlock('New', state.todayNewDone, 22, 'strong', '0.10em', 'accent'),
-    statBlock('Review', state.todayReviewDone, 22, 'strong', '0.10em'),
-    statBlock('Tried', state.tried, 22, 'strong', '0.10em'),
-    statBlock('Passed', state.passed, 22, 'sage', '0.10em'),
-  );
-  root.appendChild(sec3);
+  // 발음 기반 메트릭 — 수학 모드엔 무의미하므로 생략 (math sessionLog 도입 시 재정의).
+  if (state.lang !== 'math') {
+    const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;' });
+    sec3.append(
+      statBlock('New', state.todayNewDone, 22, 'strong', '0.10em', 'accent'),
+      statBlock('Review', state.todayReviewDone, 22, 'strong', '0.10em'),
+      statBlock('Tried', state.tried, 22, 'strong', '0.10em'),
+      statBlock('Passed', state.passed, 22, 'sage', '0.10em'),
+    );
+    root.appendChild(sec3);
+  }
   return root;
 }
 
@@ -229,7 +254,7 @@ function renderTablet(state) {
 
   const header = el('header', { style: 'display:flex;justify-content:space-between;align-items:center;padding-top:36px;' });
   const brand = el('div', { style: 'display:flex;align-items:baseline;gap:24px;' });
-  brand.append(brandLogo(18), langPair(state, 13, 'English', '日本語', false));
+  brand.append(brandLogo(18), langPair(state, 13, 'English', '日本語', '수학', false));
   header.append(brand, headerIcons(22, 11));
   root.appendChild(header);
 
@@ -243,21 +268,20 @@ function renderTablet(state) {
   root.appendChild(sec1);
 
   const grid = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:16px;' });
-  const ctx = { totalReview: state.totalReview };
+  const ctx = { totalReview: state.totalReview, lang: state.lang };
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
-  const mTab = el('section', { style: 'margin-top:16px;' });
-  mTab.appendChild(mathCard(true));
-  root.appendChild(mTab);
 
-  const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
-  sec3.append(
-    statBlock('New', state.todayNewDone, 26, 'strong', '0.12em', 'accent'),
-    statBlock('Review', state.todayReviewDone, 26, 'strong', '0.12em'),
-    statBlock('Tried', state.tried, 26, 'strong', '0.12em'),
-    statBlock('Passed', state.passed, 26, 'sage', '0.12em'),
-  );
-  root.appendChild(sec3);
+  if (state.lang !== 'math') {
+    const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
+    sec3.append(
+      statBlock('New', state.todayNewDone, 26, 'strong', '0.12em', 'accent'),
+      statBlock('Review', state.todayReviewDone, 26, 'strong', '0.12em'),
+      statBlock('Tried', state.tried, 26, 'strong', '0.12em'),
+      statBlock('Passed', state.passed, 26, 'sage', '0.12em'),
+    );
+    root.appendChild(sec3);
+  }
   return root;
 }
 
@@ -270,31 +294,43 @@ function renderDesktop(state) {
   top.append(brandLogo(18), headerIcons(18, 7));
   aside.appendChild(top);
 
-  const streakBlk = el('div', {});
-  streakBlk.appendChild(eyebrow('Streak', 11, 'var(--text-faint)', '0.14em'));
-  const sNum = el('div', { class: 'poppins', style: 'font-size:88px;font-weight:700;color:var(--text-strong);letter-spacing:-0.05em;line-height:0.9;margin-top:8px;font-variant-numeric:tabular-nums;' });
-  sNum.innerHTML = `${state.streak}<span style="font-size:24px;color:var(--text-faint);font-weight:400;margin-left:4px;">일</span>`;
-  streakBlk.appendChild(sNum);
-  if (state.bestStreak != null) {
-    const sMeta = el('div', { style: 'font-size:12px;color:var(--text-muted);margin-top:8px;font-family:var(--font-display);' });
-    sMeta.textContent = `최고 ${state.bestStreak}일`;
-    streakBlk.appendChild(sMeta);
-  }
-  aside.appendChild(streakBlk);
+  if (state.lang === 'math') {
+    // 수학 모드: 발음 streak/stats 무의미 → 모듈 안내 (math sessionLog 도입 시 통계로 대체).
+    const mInfo = el('div', {});
+    mInfo.appendChild(eyebrow('Math', 11, 'var(--text-faint)', '0.14em'));
+    const mTitle = el('div', { class: 'poppins', style: 'font-size:32px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;margin-top:8px;line-height:1.15;' });
+    mTitle.textContent = '기하로 생각하기';
+    const mDesc = el('div', { style: 'font-size:14px;color:var(--text-muted);margin-top:12px;line-height:1.7;' });
+    mDesc.textContent = '모양·넓이·변화를 보고 깨닫는 하루 한두 문제. 오른쪽 카드에서 시작하세요.';
+    mInfo.append(mTitle, mDesc);
+    aside.appendChild(mInfo);
+  } else {
+    const streakBlk = el('div', {});
+    streakBlk.appendChild(eyebrow('Streak', 11, 'var(--text-faint)', '0.14em'));
+    const sNum = el('div', { class: 'poppins', style: 'font-size:88px;font-weight:700;color:var(--text-strong);letter-spacing:-0.05em;line-height:0.9;margin-top:8px;font-variant-numeric:tabular-nums;' });
+    sNum.innerHTML = `${state.streak}<span style="font-size:24px;color:var(--text-faint);font-weight:400;margin-left:4px;">일</span>`;
+    streakBlk.appendChild(sNum);
+    if (state.bestStreak != null) {
+      const sMeta = el('div', { style: 'font-size:12px;color:var(--text-muted);margin-top:8px;font-family:var(--font-display);' });
+      sMeta.textContent = `최고 ${state.bestStreak}일`;
+      streakBlk.appendChild(sMeta);
+    }
+    aside.appendChild(streakBlk);
 
-  // STREAK 88px 단일 강조 (DESIGN.md §1) + session 톤 매핑 (NEW label accent, PASSED value sage).
-  const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
-  stats.append(
-    statBlock('New', state.todayNewDone, 28, 'strong', '0.12em', 'accent'),
-    statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
-    statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
-    statBlock('Passed', state.passed, 28, 'sage', '0.12em'),
-  );
-  aside.appendChild(stats);
+    // STREAK 88px 단일 강조 (DESIGN.md §1) + session 톤 매핑 (NEW label accent, PASSED value sage).
+    const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
+    stats.append(
+      statBlock('New', state.todayNewDone, 28, 'strong', '0.12em', 'accent'),
+      statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
+      statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
+      statBlock('Passed', state.passed, 28, 'sage', '0.12em'),
+    );
+    aside.appendChild(stats);
+  }
 
   const lang = el('div', { style: 'margin-top:auto;display:flex;flex-direction:column;gap:14px;' });
   lang.appendChild(eyebrow('Language', 10, 'var(--text-faint)', '0.14em', 4));
-  lang.appendChild(langPair(state, 14, 'English', '日本語', true));
+  lang.appendChild(langPair(state, 14, 'English', '日本語', '수학', true));
   aside.appendChild(lang);
   root.appendChild(aside);
 
@@ -307,12 +343,9 @@ function renderDesktop(state) {
   main.appendChild(heroBlk);
 
   const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;' });
-  const ctx = { totalReview: state.totalReview };
+  const ctx = { totalReview: state.totalReview, lang: state.lang };
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   main.appendChild(grid);
-  const mDesk = el('div', { style: 'margin-top:20px;' });
-  mDesk.appendChild(mathCard(true));
-  main.appendChild(mDesk);
 
   root.appendChild(main);
   return root;
@@ -337,13 +370,13 @@ function eyebrow(text, fontSize, color, ls, mb = 0) {
   return d;
 }
 
-function brandLangPair(state, brandSize, langSize, gap, enLabel, jaLabel) {
+function brandLangPair(state, brandSize, langSize, gap, enLabel, jaLabel, mathLabel) {
   const wrap = el('div', { style: `display:flex;align-items:baseline;gap:${gap}px;` });
-  wrap.append(brandLogo(brandSize), langPair(state, langSize, enLabel, jaLabel, false));
+  wrap.append(brandLogo(brandSize), langPair(state, langSize, enLabel, jaLabel, mathLabel, false));
   return wrap;
 }
 
-function langPair(state, fontSize, enLabel, jaLabel, underline) {
+function langPair(state, fontSize, enLabel, jaLabel, mathLabel, underline) {
   const wrap = el('span', { style: `display:inline-flex;align-items:baseline;gap:${fontSize >= 14 ? 12 : (fontSize >= 13 ? 10 : 8)}px;font-family:var(--font-display);font-size:${fontSize}px;letter-spacing:${fontSize >= 14 ? '0.12em' : '0.14em'};text-transform:uppercase;` });
 
   const make = (lang, label) => {
@@ -361,12 +394,16 @@ function langPair(state, fontSize, enLabel, jaLabel, underline) {
     return b;
   };
 
+  const sep = () => {
+    const s = el('span', { style: 'color:var(--line);font-weight:300;' });
+    s.textContent = '/';
+    return s;
+  };
+
   if (underline) {
-    wrap.append(make('en', enLabel), make('ja', jaLabel));
+    wrap.append(make('en', enLabel), make('ja', jaLabel), make('math', mathLabel));
   } else {
-    const sep = el('span', { style: 'color:var(--line);font-weight:300;' });
-    sep.textContent = '/';
-    wrap.append(make('en', enLabel), sep, make('ja', jaLabel));
+    wrap.append(make('en', enLabel), sep(), make('ja', jaLabel), sep(), make('math', mathLabel));
   }
   return wrap;
 }
@@ -463,18 +500,21 @@ function statBlock(label, value, fontSize, valueColor, ls, labelColor = 'faint')
 
 function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   const isNew = kind === 'new';
+  const isMath = ctx.lang === 'math';
   const color = isNew ? 'var(--accent)' : 'var(--sage)';
   const tint = isNew ? 'rgba(180, 77, 59, 0.08)' : 'rgba(120, 140, 93, 0.10)';
   const totalReview = Number(ctx.totalReview) || 0;
-  // 자유 복습 진입 케이스: due=0 이지만 reviewQueue 에 카드 있음.
-  const reviewFreeCase = !isNew && count === 0 && totalReview > 0;
+  // 자유 복습 진입 케이스: due=0 이지만 reviewQueue 에 카드 있음. (math 모드 제외)
+  const reviewFreeCase = !isNew && !isMath && count === 0 && totalReview > 0;
+  const unitWord = isMath ? '문제' : '문장';
 
   const btn = el('button', {
     type: 'button',
-    'aria-label': `${isNew ? '신규' : '복습'} ${count}문장`,
+    'aria-label': `${isNew ? '신규' : '복습'} ${count}${unitWord}`,
     style: `background:${tint};border:none;border-radius:var(--r-md);padding:${large ? '36px 32px' : '24px 22px'};text-align:left;cursor:pointer;font-family:var(--font-body);display:flex;flex-direction:column;gap:${large ? 24 : 14}px;width:${full ? '100%' : 'auto'};flex:${full ? 'none' : 1};min-height:${large ? 220 : 'auto'};`,
   });
   btn.addEventListener('click', () => {
+    if (isMath) { window.location.hash = isNew ? '#/session-math?mode=new' : '#/session-math?mode=review'; return; }
     if (isNew) { window.location.hash = '#/session-new'; return; }
     window.location.hash = reviewFreeCase ? '#/session-review?mode=free' : '#/session-review';
   });
@@ -489,7 +529,7 @@ function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   const num = el('span', { class: 'poppins', style: `font-size:${large ? 88 : 56}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.04em;line-height:0.9;font-variant-numeric:tabular-nums;` });
   num.textContent = String(count);
   const unit = el('span', { style: `font-size:${large ? 16 : 13}px;color:var(--text-muted);font-family:var(--font-display);` });
-  unit.textContent = '문장';
+  unit.textContent = unitWord;
   numRow.append(num, unit);
   btn.appendChild(numRow);
 
@@ -497,6 +537,9 @@ function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   let descText;
   if (isResume) {
     descText = '이어서 하기';
+  } else if (isMath) {
+    if (isNew) descText = count >= 1 ? '오늘의 새 문제' : '새 문제 없음';
+    else descText = count >= 1 ? '복습할 문제' : '복습 없음';
   } else if (isNew) {
     if (count >= 1) descText = '오늘의 신규 표현';
     else if (totalReview >= 1) descText = '오늘 신규 완료';
@@ -510,23 +553,5 @@ function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {
   desc.textContent = descText;
   btn.appendChild(desc);
 
-  return btn;
-}
-
-// 수학 사고력 진입 카드 (lang 독립 — en/ja 토글과 무관).
-function mathCard(large) {
-  const btn = el('button', {
-    type: 'button',
-    'aria-label': '수학 사고력',
-    style: `background:rgba(79,122,140,0.10);border:none;border-radius:var(--r-md);padding:${large ? '28px 30px' : '20px 22px'};text-align:left;cursor:pointer;font-family:var(--font-body);display:flex;flex-direction:column;gap:8px;width:100%;`,
-  });
-  btn.addEventListener('click', () => { window.location.hash = '#/session-math'; });
-  const cat = el('span', { style: `font-size:${large ? 13 : 11}px;color:#4f7a8c;text-transform:uppercase;letter-spacing:0.14em;font-family:var(--font-display);font-weight:700;` });
-  cat.textContent = 'MATH';
-  const title = el('div', { class: 'poppins', style: `font-size:${large ? 22 : 18}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.02em;` });
-  title.textContent = '수학 사고력';
-  const desc = el('div', { style: `font-size:${large ? 14 : 13}px;color:var(--text-muted);` });
-  desc.textContent = '오늘의 한 두 문제 →';
-  btn.append(cat, title, desc);
   return btn;
 }

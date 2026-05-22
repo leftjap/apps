@@ -1,48 +1,69 @@
-// 모듈: 시각·기하 strand (미적분 직관의 다리)
-const TRI_SVG =
-  '<svg width="260" height="190" viewBox="0 0 260 190" role="img" aria-label="밑변 6 높이 4 삼각형">' +
-  '<rect x="30" y="20" width="200" height="130" fill="none" stroke="#cfc7ba" stroke-dasharray="5 4"/>' +
-  '<polygon points="30,150 230,150 95,20" fill="#dce7d0" stroke="#6f8a52" stroke-width="2.5"/>' +
-  '<line x1="95" y1="20" x2="95" y2="150" stroke="#6f8a52" stroke-width="1.5" stroke-dasharray="4 3"/>' +
-  '<text x="118" y="172" font-size="14" fill="#3a3a3a">밑변 6</text>' +
-  '<text x="40" y="92" font-size="14" fill="#3a3a3a">높이 4</text>' +
-  '<text x="150" y="40" font-size="13" fill="#9a9a9a">(직사각형의 절반)</text></svg>';
-
+// 모듈 2: 넓이는 변형 — 모르는 모양을 아는 모양(직사각형)으로 바꿔 구하기
 export const MODULE_VISUAL = [
   {
     id: 'vis-1',
-    tag: '시각 통찰 · 누적',
-    lesson: '수를 “모양”으로 바꿔 보면, 계산 없이 답이 보일 때가 있어요.',
-    figure: { type: 'dots', n: 5, legend: '색이 같은 ㄱ자 한 겹 = 홀수 한 개 (1·3·5·7·9)' },
-    prompt: '1 + 3 + 5 + 7 + 9 = ?  (그림에서 몇 × 몇으로 보이나요?)',
-    answer: '25',
-    accept: ['25', '5x5'],
-    solution: {
-      core: '홀수를 ㄱ자로 한 겹씩 두르면 항상 정사각형이 된다.',
-      idea:
-        '점 1개에서 시작해 ㄱ자(3개)를 씌우면 2×2, 또 ㄱ자(5개)면 3×3… ' +
-        '홀수 하나가 정사각형 “한 겹”이에요. 그래서 연속한 홀수의 합은 늘 제곱수.',
-      steps: ['1·3·5·7·9를 차례로 두르기 → 5×5 격자', '5 × 5 = 25'],
-      refresh: '곱셈 · 제곱(5² = 25)',
-      example: '계산기 없이도 “홀수 다섯 개의 합 = 5의 제곱”이라고 바로 말할 수 있어요.',
-      think: '쌓임이 넓이가 된다 — 적분의 씨앗.',
+    module: '넓이는 변형',
+    tag: '기하 · 삼각형 넓이',
+    lesson: '넓이는 "이미 아는 모양으로 바꿔 보기"가 핵심.',
+    figure: {
+      type: 'svg',
+      svg: '<svg width="240" height="170" viewBox="0 0 240 170" role="img" aria-label="밑변 6 높이 4 삼각형"><rect x="30" y="20" width="180" height="120" fill="none" stroke="#e8e3d6" stroke-dasharray="5 4"/><polygon points="30,140 210,140 90,20" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="90" y1="20" x2="90" y2="140" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="108" y="158" font-size="13" fill="#8a8475">밑변 6</text><text x="38" y="86" font-size="13" fill="#8a8475">높이 4</text></svg>',
+      legend: '점선 직사각형의 절반이 삼각형',
     },
-  },
-  {
-    id: 'vis-2',
-    tag: '기하 · 넓이',
-    lesson: '넓이는 “이미 아는 모양으로 바꿔 보기”가 핵심.',
-    figure: { type: 'svg', svg: TRI_SVG },
     prompt: '밑변 6, 높이 4인 삼각형의 넓이는?',
     answer: '12',
     accept: ['12'],
     solution: {
       core: '삼각형 = 같은 밑변·높이 직사각형의 절반.',
-      idea: '직사각형을 대각선으로 자르면 똑같은 삼각형 둘이 나와요. 그러니 삼각형은 직사각형의 반.',
+      idea: '직사각형을 대각선으로 자르면 똑같은 삼각형 둘. 그러니 삼각형은 직사각형의 반이에요.',
       steps: ['직사각형 6 × 4 = 24', '절반 → 12   (½ × 밑변 × 높이)'],
       refresh: '½ · 곱셈',
-      example: '텃밭·천 조각·벽 한 면의 넓이도 똑같이 “직사각형으로 바꿔” 구하면 돼요.',
+      example: '텃밭·천 조각·벽 한 면의 넓이도 "직사각형으로 바꿔" 구하면 돼요.',
       think: '모르는 모양은, 아는 모양으로 쪼개거나 채워라.',
+    },
+  },
+  {
+    id: 'vis-2',
+    module: '넓이는 변형',
+    tag: '기하 · 평행사변형',
+    lesson: '삐딱한 모양도 한 조각만 옮기면 똑바른 직사각형이 돼요.',
+    figure: {
+      type: 'svg',
+      svg: '<svg width="240" height="150" viewBox="0 0 240 150" role="img" aria-label="밑변 8 높이 3 평행사변형"><polygon points="40,120 200,120 170,50 10,50" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="40" y1="50" x2="40" y2="120" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="103" y="138" font-size="13" fill="#8a8475">밑변 8</text><text x="48" y="92" font-size="13" fill="#8a8475">높이 3</text></svg>',
+      legend: '기운 끝 조각을 잘라 반대편에 붙이면 직사각형',
+    },
+    prompt: '밑변 8, 높이 3인 평행사변형의 넓이는?',
+    answer: '24',
+    accept: ['24'],
+    solution: {
+      core: '평행사변형 = 밑변 × 높이 (직사각형과 같음).',
+      idea: '한쪽 기운 삼각 조각을 잘라 반대쪽에 붙이면 정확히 직사각형. 넓이는 그대로니 밑변×높이.',
+      steps: ['8 × 3 = 24'],
+      refresh: '곱셈 · 여기서 "높이"는 비스듬한 변이 아니라 수직 거리',
+      example: '비스듬히 쌓은 책 더미의 단면도 밑면×높이로 어림.',
+      think: '잘라 옮겨도 넓이는 안 변한다 — 넓이 보존.',
+    },
+  },
+  {
+    id: 'vis-3',
+    module: '넓이는 변형',
+    tag: '기하 · 사다리꼴',
+    lesson: '윗변과 아랫변이 다르면, 둘의 "평균"이 직사각형의 가로가 돼요.',
+    figure: {
+      type: 'svg',
+      svg: '<svg width="240" height="150" viewBox="0 0 240 150" role="img" aria-label="윗변 4 아랫변 8 높이 4 사다리꼴"><polygon points="30,120 210,120 150,45 70,45" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="70" y1="45" x2="70" y2="120" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="104" y="36" font-size="12" fill="#8a8475">윗변 4</text><text x="103" y="138" font-size="13" fill="#8a8475">아랫변 8</text><text x="36" y="90" font-size="13" fill="#8a8475">높이 4</text></svg>',
+      legend: '윗변·아랫변의 평균 × 높이',
+    },
+    prompt: '윗변 4, 아랫변 8, 높이 4인 사다리꼴의 넓이는?',
+    answer: '24',
+    accept: ['24'],
+    solution: {
+      core: '사다리꼴 = (윗변 + 아랫변) ÷ 2 × 높이.',
+      idea: '똑같은 사다리꼴 하나를 거꾸로 붙이면 평행사변형(밑변 = 윗변+아랫변). 그 절반이 사다리꼴.',
+      steps: ['(4 + 8) ÷ 2 = 6   (평균)', '6 × 4 = 24'],
+      refresh: '평균(두 수 더해 ÷2) · 곱셈',
+      example: '둑·컵 단면처럼 위아래 폭이 다른 모양의 넓이.',
+      think: '평균 = "고르게 폈을 때의 높이". 적분의 평균값 직관.',
     },
   },
 ];

@@ -1,0 +1,71 @@
+{
+  "_note": "오늘 수학 (기하 도입) — seed-math.mjs / study-seed-math.yml 로 study_math_problems 에 upsert. solution·figure 는 jsonb. 데이터 정본: src/data/math/*.",
+  "date": "2026-05-23",
+  "problems": [
+    {
+      "id": "math-2026-05-23-1",
+      "module": "모양으로 세기",
+      "tag": "시각 통찰 · 홀수합",
+      "lesson": "수를 \"모양\"으로 바꿔 보면, 계산 없이 답이 보일 때가 있어요.",
+      "figure": { "type": "dots", "n": 5, "legend": "색이 같은 ㄱ자 한 겹 = 홀수 한 개 (1·3·5·7·9)" },
+      "prompt": "1 + 3 + 5 + 7 + 9 = ?  (그림에서 몇 × 몇으로 보이나요?)",
+      "answer": "25",
+      "accept": ["25", "5x5"],
+      "solution": {
+        "core": "홀수를 ㄱ자로 한 겹씩 두르면 항상 정사각형이 된다.",
+        "idea": "점 1개에서 시작해 ㄱ자(3개)면 2×2, 또 ㄱ자(5개)면 3×3… 홀수 하나가 정사각형 한 겹이에요.",
+        "steps": ["1·3·5·7·9를 차례로 두르기 → 5×5 격자", "5 × 5 = 25"],
+        "refresh": "곱셈 · 제곱(5² = 25)",
+        "example": "계산기 없이도 \"홀수 다섯 개의 합 = 5의 제곱\"이라고 바로 말할 수 있어요.",
+        "think": "쌓임이 넓이가 된다 — 적분의 씨앗."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "math-2026-05-23-2",
+      "module": "넓이는 변형",
+      "tag": "기하 · 삼각형 넓이",
+      "lesson": "넓이는 \"이미 아는 모양으로 바꿔 보기\"가 핵심.",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"240\" height=\"170\" viewBox=\"0 0 240 170\" role=\"img\" aria-label=\"밑변 6 높이 4 삼각형\"><rect x=\"30\" y=\"20\" width=\"180\" height=\"120\" fill=\"none\" stroke=\"#e8e3d6\" stroke-dasharray=\"5 4\"/><polygon points=\"30,140 210,140 90,20\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"2\"/><line x1=\"90\" y1=\"20\" x2=\"90\" y2=\"140\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"4 3\"/><text x=\"108\" y=\"158\" font-size=\"13\" fill=\"#8a8475\">밑변 6</text><text x=\"38\" y=\"86\" font-size=\"13\" fill=\"#8a8475\">높이 4</text></svg>",
+        "legend": "점선 직사각형의 절반이 삼각형"
+      },
+      "prompt": "밑변 6, 높이 4인 삼각형의 넓이는?",
+      "answer": "12",
+      "accept": ["12"],
+      "solution": {
+        "core": "삼각형 = 같은 밑변·높이 직사각형의 절반.",
+        "idea": "직사각형을 대각선으로 자르면 똑같은 삼각형 둘. 그러니 삼각형은 직사각형의 반이에요.",
+        "steps": ["직사각형 6 × 4 = 24", "절반 → 12   (½ × 밑변 × 높이)"],
+        "refresh": "½ · 곱셈",
+        "example": "텃밭·천 조각·벽 한 면의 넓이도 \"직사각형으로 바꿔\" 구하면 돼요.",
+        "think": "모르는 모양은, 아는 모양으로 쪼개거나 채워라."
+      },
+      "order_index": 2
+    },
+    {
+      "id": "math-2026-05-23-3",
+      "module": "도형의 약속",
+      "tag": "기하 · 피타고라스",
+      "lesson": "직각삼각형에선 두 변만 알면 나머지 한 변이 정해져요.",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"220\" height=\"180\" viewBox=\"0 0 220 180\" role=\"img\" aria-label=\"직각삼각형 밑변 3 높이 4\"><polygon points=\"30,150 150,150 30,30\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"2\"/><rect x=\"30\" y=\"138\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"84\" y=\"168\" font-size=\"13\" fill=\"#8a8475\">3</text><text x=\"14\" y=\"95\" font-size=\"13\" fill=\"#8a8475\">4</text><text x=\"96\" y=\"84\" font-size=\"13\" fill=\"#d97757\">?</text></svg>",
+        "legend": "직각을 낀 두 변 3, 4 → 빗변?"
+      },
+      "prompt": "직각을 낀 두 변이 3, 4인 직각삼각형의 빗변 길이는?",
+      "answer": "5",
+      "accept": ["5"],
+      "solution": {
+        "core": "빗변² = 두 변의 제곱의 합 (a² + b² = c²).",
+        "idea": "세 변 위에 정사각형을 그리면, 짧은 두 정사각형 넓이의 합이 큰 정사각형 넓이와 같아요. 길이가 아니라 넓이가 더해지는 거예요.",
+        "steps": ["3² + 4² = 9 + 16 = 25", "√25 = 5"],
+        "refresh": "제곱(3²=9) · 제곱근(√25=5)",
+        "example": "직각자 없이도 변이 3·4·5면 그 모서리는 정확한 직각 — 목수의 오래된 요령.",
+        "think": "제곱 = 넓이. 피타고라스는 \"넓이의 덧셈\"이다."
+      },
+      "order_index": 3
+    }
+  ]
+}
