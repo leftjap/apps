@@ -14,3 +14,7 @@ project_id = "tcbooffrdacfatywdzcm"
 # X-Ingest-Token (커스텀 헤더) 으로 함수 본체에서 인증 — gateway 의 JWT 검증 불필요.
 # true 시 Authorization: Bearer <JWT> 헤더 강제 → iOS 단축어/backfill 401 차단됨.
 verify_jwt = false
+
+[functions.request-ai-comment]
+# "클로드 댓글 받기" 버튼 — 브라우저(PWA)에서 사용자 JWT 로 호출. 소유자 검증 필요 → JWT 강제.
+verify_jwt = true
