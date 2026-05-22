@@ -22,6 +22,7 @@ import {
   handleRealtimeCommentChange,
   __resetCommentsState,
 } from './comments.js';
+import { CLAUDE_USER_ID } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
 
 const OWNER = '11111111-2222-3333-4444-555555555555';
@@ -79,7 +80,7 @@ describe('formatCommentTime', () => {
 });
 
 describe('commentToHtml', () => {
-  it('mine=true → bubble + 삭제 버튼 + data-mine="1" + author "나" + avatar 미렌더', () => {
+  it('mine=true → bubble + 삭제 버튼 + data-mine="1" + author "나" + 아바타 렌더', () => {
     const html = commentToHtml(
       { id: 'c1', body: '댓글', created_at: '2026-04-30T15:00:00Z', author_id: OWNER },
       { currentUserId: OWNER },
@@ -90,11 +91,11 @@ describe('commentToHtml', () => {
     expect(html).toContain('>나<');
     expect(html).toContain('comment-row__bubble');
     expect(html).toContain('>댓글</div>');
-    // Wave 11.6.9 — mine 은 avatar 미렌더 (우측 정렬로 자명)
-    expect(html).not.toContain('comment-row__avatar');
+    // 사용자별 아바타 — mine 도 아바타 렌더 (우측 정렬)
+    expect(html).toContain('comment-row__avatar');
   });
 
-  it('mine=false → 삭제 버튼 없음 + partnerName + partner 아바타', () => {
+  it('mine=false → 삭제 버튼 없음 + partnerName + 아바타', () => {
     const html = commentToHtml(
       { id: 'c2', body: '파트너 댓글', author_id: PARTNER },
       { currentUserId: OWNER, partnerName: '소연' },
@@ -103,24 +104,26 @@ describe('commentToHtml', () => {
     expect(html).not.toContain('comment-row__delete');
     expect(html).toContain('>소연<');
     expect(html).toContain('comment-row__bubble');
-    // Wave 11.6.9 — partner 아바타 (initial = '소')
-    expect(html).toContain('comment-row__avatar--partner');
-    expect(html).toMatch(/comment-row__avatar comment-row__avatar--partner">소</);
+    // 사용자별 아바타 (initial = '소')
+    expect(html).toContain('comment-row__avatar');
+    expect(html).toMatch(/comment-row__avatar"[^>]*>소<\/span>/);
   });
 
-  it('partnerName 없음 → 기본 partner 아바타 "소"', () => {
+  it('partnerName 없음 → 기본 아바타 "소"', () => {
     const html = commentToHtml({ id: 'c3', body: 'x', author_id: PARTNER }, { currentUserId: OWNER });
-    expect(html).toContain('comment-row__avatar--partner');
-    expect(html).toMatch(/comment-row__avatar comment-row__avatar--partner">소</);
+    expect(html).toContain('comment-row__avatar');
+    expect(html).toMatch(/comment-row__avatar"[^>]*>소<\/span>/);
   });
 
-  it('partnerInitial 옵션 적용', () => {
-    // Wave 11.6.9 — mine 은 avatar 미렌더 → currentUserInitial 미반영. partner 만 검증.
-    const partnerHtml = commentToHtml(
-      { id: 'b', body: 'x', author_id: PARTNER },
-      { currentUserId: OWNER, partnerInitial: 'S' },
+  it('클로드 작성자 → 라벨 "클로드" + 로고 SVG 아바타', () => {
+    const html = commentToHtml(
+      { id: 'cl', body: 'hi', author_id: CLAUDE_USER_ID },
+      { currentUserId: OWNER },
     );
-    expect(partnerHtml).toMatch(/comment-row__avatar comment-row__avatar--partner">S</);
+    expect(html).toContain('data-mine="0"');
+    expect(html).toContain('>클로드<');
+    expect(html).toContain('comment-row__avatar--claude');
+    expect(html).toContain('<svg');
   });
 
   it('XSS escape', () => {
@@ -248,9 +251,10 @@ describe('mountForArticle', () => {
     expect(sectionContainer[0]).toContain('>소연<');
   });
 
-  it('is_shared=false entry → canComment=false', async () => {
+  // 본인 글은 is_shared=false 라도 댓글 가능 (2026-05-13 결정). 따라서 차단 경계는 "파트너의 비공유 글".
+  it('파트너의 is_shared=false entry → canComment=false', async () => {
     const { Queries } = await import('../db/queries.js');
-    const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', is_shared: 0 });
+    const e = await Queries.createEntry({ owner_id: PARTNER, kind: 'navi', is_shared: 0 });
     const article = {
       dataset: { entryId: e.id },
       querySelector: () => null,
