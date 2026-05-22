@@ -369,15 +369,11 @@ export const KIND_LABEL_PARTNER = Object.freeze({
   soyoun_navi: '소연',
 });
 
-// 클로드 봇 — AI 자동 댓글 작성자 (auth.users: claude-bot@today.local).
-export const CLAUDE_USER_ID = 'f74a3d8a-f449-4c25-82d1-509dc70a9988';
-
 // 2026-05-05 — owner_id 기반 라벨 (kind 무관). 옛 Keep partner-sync 잔흔 정확 라벨.
 export const USER_ID_TO_DISPLAY_NAME = Object.freeze({
   '7bae5645-61c6-4476-9ff2-4c30a72812ff': '지오',
   '9f0408c0-008b-440c-a938-2effd9cb3bfd': '지오',
   'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '소연',
-  [CLAUDE_USER_ID]: '클로드',
 });
 
 // partner 글 deep link URL slug (ASCII). 본인 글은 slug 없이 `#/navi/5`,
