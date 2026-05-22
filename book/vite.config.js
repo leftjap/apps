@@ -36,9 +36,22 @@ export default defineConfig({
       devOptions: {
         enabled: false,
       },
-      includeAssets: ['icons/*.png'],
-      // W8 에서 manifest 작성. 그 전엔 false (PWA precache 만, install 비활성).
-      manifest: false,
+      includeAssets: ['icons/*.svg'],
+      manifest: {
+        name: 'book',
+        short_name: 'book',
+        description: '부부 공용 어구록 — 책에서 옮긴 문장과 댓글',
+        lang: 'ko',
+        theme_color: '#ffffff',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: BASE,
+        scope: BASE,
+        icons: [
+          { src: 'icons/book-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: 'icons/book-icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
+        ],
+      },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         navigateFallback: `${BASE}index.html`,
