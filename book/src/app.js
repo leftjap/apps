@@ -83,6 +83,7 @@ function ensureHost() {
   injectAuthOverlayStyles();
   host = document.createElement('div');
   host.id = 'book-app';
+  host.className = 'app-root'; // book.css 셸 (풀뷰포트 + 스크롤바 숨김)
   document.querySelector('#app').appendChild(host);
   return host;
 }
