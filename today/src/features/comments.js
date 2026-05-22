@@ -218,9 +218,10 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       white-space: pre-wrap;
       word-break: break-word;
     }
-    /* Wave 11.6.11b — 시각 구분 명확화. mine = --hover-bg (243 옅은 회색) / partner = --sidebar (255 흰).
-       이전 shell vs sidebar (2/255) 차이 너무 미세 → 사용자 환경에서 구분 불가능. 12/255 차이로 확장.
-       모노톤 유지 (검정·갈색·파랑 X), border 제거 (배경 차이로만 구분). */
+    /* Wave 11.6.11b → 보강(세션3 화면검증). 배경은 페이지(--shell 253) 대비로 판단해야 함:
+       mine = --hover-bg (243) → Δ10 보임. partner = --sidebar (255) → Δ2 "흰 위 흰" 안 보임.
+       이전 "12/255 확장"은 mine↔partner 버블끼리 비교라 오류였음 (버블↔페이지가 핵심).
+       partner 는 1px --line 테두리로 가시화 (카카오톡 수신 버블). 모노톤 유지. */
     .comment-row[data-mine="1"] .comment-row__bubble {
       background: var(--hover-bg);
       color: var(--ink-1, oklch(22% 0.008 60));
@@ -229,6 +230,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row[data-mine="0"] .comment-row__bubble {
       background: var(--sidebar);
       color: var(--ink-1, oklch(22% 0.008 60));
+      border: 1px solid var(--line, oklch(92% 0.006 60));
       border-radius: 16px 16px 16px 4px;
     }
     .composer input[disabled] { opacity: 0.5; }
