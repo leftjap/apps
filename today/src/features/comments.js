@@ -14,6 +14,8 @@
  */
 import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
+import { USER_ID_TO_DISPLAY_NAME, CLAUDE_USER_ID } from './entries.js';
+import { supabase } from '../services/supabase.js';
 
 let _currentUser = null;
 let _composerInstalled = false;
@@ -22,6 +24,9 @@ let _commentDeleteInstalled = false;
 let _realtimeUnregister = null;
 let _articleObserver = null;
 let _stylesInjected = false;
+let _claudeBtnInstalled = false;
+// author_id → 사용자가 설정한 프로필 사진 URL. today_profiles 에서 로드 (RLS: 본인+파트너 row 만 노출).
+let _avatarUrlById = {};
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
 const _pendingCommentIds = new Set();
 // Wave 11.6.10 — composer 처리 중 (in-flight) flag. 빠른 Enter 두 번 시 createComment 재호출 차단.
@@ -30,6 +35,15 @@ function markPendingComment(id) {
   if (!id) return;
   _pendingCommentIds.add(id);
   setTimeout(() => _pendingCommentIds.delete(id), 5000);
+}
+
+/** 새 댓글 버블 등장 애니메이션 1회 (prefers-reduced-motion 시 CSS가 무효화). */
+function animateCommentEnter(rowEl) {
+  if (!rowEl || !rowEl.classList) return;
+  rowEl.classList.add('comment-row--enter');
+  const done = () => rowEl.classList?.remove('comment-row--enter');
+  rowEl.addEventListener?.('animationend', done, { once: true });
+  setTimeout(done, 600);
 }
 
 const TIME_FORMATTER_OPTS = { hour: '2-digit', minute: '2-digit', hour12: false };
@@ -54,25 +68,53 @@ export function formatCommentTime(iso, now = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+// 클로드(AI) 아바타 — Anthropic 마크를 단순화한 스파크(asterisk) 인라인 SVG (픽셀-정확 공식 로고 아님).
+const CLAUDE_LOGO_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7"/><line x1="6.3" y1="17.7" x2="17.7" y2="6.3"/></svg>';
+// 사용자별 아바타 배경색.
+const AVATAR_COLORS = Object.freeze({
+  '7bae5645-61c6-4476-9ff2-4c30a72812ff': '#7a8b6f', // 지오
+  '9f0408c0-008b-440c-a938-2effd9cb3bfd': '#7a8b6f', // 지오 (alt UID)
+  'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '#c98aa6', // 소연
+});
+const CLAUDE_CLAY = '#d97757';
+
+/**
+ * author_id 기준 아바타 1개.
+ *  - 클로드(AI): 프로필 사진 없음 → 스파크 SVG 유지.
+ *  - 사람 + 사용자가 설정한 사진(avatarUrl) 있음 → 사진 이미지.
+ *  - 사람 + 사진 없음 → 이니셜 + 색 폴백.
+ */
+function avatarHtml(authorId, name, avatarUrl) {
+  if (authorId === CLAUDE_USER_ID) {
+    return `<span class="comment-row__avatar comment-row__avatar--claude" style="background:${CLAUDE_CLAY}">${CLAUDE_LOGO_SVG}</span>`;
+  }
+  if (avatarUrl) {
+    return `<span class="comment-row__avatar comment-row__avatar--photo"><img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>`;
+  }
+  const color = AVATAR_COLORS[authorId] || 'var(--cloudy-base, #6a9bcc)';
+  const initial = escapeHtml(String(name || '?').charAt(0));
+  return `<span class="comment-row__avatar" style="background:${color}">${initial}</span>`;
+}
+
 /**
  * Dexie comment row → HTML row. mine = author_id === currentUser.id.
- * Wave 11.6.9 — 카카오톡/iMessage 스타일 메시지 버블. mine 우측 갈색 / partner 좌측 흰.
- * partner 만 avatar 노출 (mine 은 우측 정렬로 자명).
+ * Wave 11.6.9 — 카카오톡/iMessage 스타일 메시지 버블. mine 우측 / 그 외 좌측.
+ * 사용자별 아바타: 라벨·아바타를 author_id 기준 결정 (지오/소연/클로드). 전원 아바타 노출.
  */
 export function commentToHtml(comment, opts = {}) {
   const id = escapeHtml(comment?.id || '');
   const body = escapeHtml(comment?.body || '');
   const time = escapeHtml(formatCommentTime(comment?.created_at));
-  const mine = opts.mine === true || comment?.author_id === opts.currentUserId;
-  const authorLabel = mine ? '나' : (opts.partnerName || '소연');
-  const avatarInitial = escapeHtml(
-    opts.partnerInitial || (opts.partnerName ? opts.partnerName.charAt(0) : '소'),
-  );
+  const authorId = comment?.author_id || '';
+  const mine = opts.mine === true || authorId === opts.currentUserId;
+  const name = USER_ID_TO_DISPLAY_NAME[authorId] || opts.partnerName || '소연';
+  const authorLabel = mine ? '나' : name;
   const deleteBtn = mine
     ? `<button class="comment-row__delete" data-comment-id="${id}" aria-label="댓글 삭제">삭제</button>`
     : '';
-  // partner 만 avatar 렌더 (mine 은 우측 정렬로 식별)
-  const avatar = mine ? '' : `<span class="comment-row__avatar comment-row__avatar--partner">${avatarInitial}</span>`;
+  const avatarMap = opts.avatarUrlById || _avatarUrlById;
+  const avatarUrl = authorId ? avatarMap[authorId] : null;
+  const avatar = avatarHtml(authorId, name, avatarUrl);
   return `<div class="comment-row" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}">${avatar}<div class="comment-row__col"><div class="comment-row__meta"><span class="comment-row__author">${escapeHtml(authorLabel)}</span><span class="comment-row__time">${time}</span>${deleteBtn}</div><div class="comment-row__bubble">${body}</div></div></div>`;
 }
 
@@ -123,7 +165,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row {
       display: flex;
       gap: 8px;
-      align-items: flex-end;
+      align-items: flex-start;
     }
     .comment-row[data-mine="1"] {
       flex-direction: row-reverse;
@@ -188,9 +230,10 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       white-space: pre-wrap;
       word-break: break-word;
     }
-    /* Wave 11.6.11b — 시각 구분 명확화. mine = --hover-bg (243 옅은 회색) / partner = --sidebar (255 흰).
-       이전 shell vs sidebar (2/255) 차이 너무 미세 → 사용자 환경에서 구분 불가능. 12/255 차이로 확장.
-       모노톤 유지 (검정·갈색·파랑 X), border 제거 (배경 차이로만 구분). */
+    /* Wave 11.6.11b → 보강(세션3 화면검증). 배경은 페이지(--shell 253) 대비로 판단해야 함:
+       mine = --hover-bg (243) → Δ10 보임. partner = --sidebar (255) → Δ2 "흰 위 흰" 안 보임.
+       이전 "12/255 확장"은 mine↔partner 버블끼리 비교라 오류였음 (버블↔페이지가 핵심).
+       partner 는 1px --line 테두리로 가시화 (카카오톡 수신 버블). 모노톤 유지. */
     .comment-row[data-mine="1"] .comment-row__bubble {
       background: var(--hover-bg);
       color: var(--ink-1, oklch(22% 0.008 60));
@@ -199,9 +242,35 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row[data-mine="0"] .comment-row__bubble {
       background: var(--sidebar);
       color: var(--ink-1, oklch(22% 0.008 60));
+      border: 1px solid var(--line, oklch(92% 0.006 60));
       border-radius: 16px 16px 16px 4px;
     }
     .composer input[disabled] { opacity: 0.5; }
+    .comment-row__avatar--claude svg { display: block; }
+    /* 사용자 설정 프로필 사진 — 원형 clip. */
+    .comment-row__avatar--photo { padding: 0; overflow: hidden; background: var(--hover-bg); }
+    .comment-row__avatar--photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* 엔터 후 피드백 — 새 버블 슬라이드+페이드 등장 (~220ms). */
+    @keyframes comment-row-enter {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .comment-row--enter { animation: comment-row-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+    @media (prefers-reduced-motion: reduce) {
+      .comment-row--enter { animation: none; }
+    }
+    /* "클로드 댓글 받기" 버튼 — 칩 스타일 (DESIGN.md). */
+    .composer__ai {
+      display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; margin-left: 6px;
+      padding: 5px 11px; border: 0; border-radius: 999px;
+      background: var(--hover-bg); color: var(--ink-2, oklch(38% 0.008 60));
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: background .12s ease, color .12s ease, opacity .12s ease;
+    }
+    .composer__ai[hidden] { display: none; }
+    .composer__ai:hover { background: var(--crail-soft, #f0e6df); color: var(--ink-1, oklch(22% 0.008 60)); }
+    .composer__ai[disabled] { color: var(--ink-3, oklch(56% 0.008 60)); cursor: default; opacity: .7; }
+    .composer__ai svg { color: #d97757; }
   `;
   doc.head.appendChild(style);
   _stylesInjected = true;
@@ -216,6 +285,7 @@ export async function mountForArticle(article, opts = {}) {
     const existing = article.querySelector?.('.doc__comments');
     if (existing) existing.remove();
     syncComposerState(false, opts.doc);
+    syncClaudeButton(false, null, opts.doc);
     return { ok: false, reason: 'unsaved' };
   }
   const userId = opts.currentUserId || _currentUser?.id || null;
@@ -232,6 +302,9 @@ export async function mountForArticle(article, opts = {}) {
   const isOwner = !!(userId && row.owner_id === userId);
   const canComment = userId !== null && (isOwner || !!row.is_shared);
   syncComposerState(canComment, opts.doc);
+  // "클로드 댓글 받기" — 내 소유 네비 글에서만 노출.
+  const isNavi = row.kind === 'navi' || row.kind === 'soyoun_navi';
+  syncClaudeButton(isOwner && isNavi, id, opts.doc);
   // 본인 글 또는 공유 글이면 댓글 영역 mount. 파트너 비공유 글만 미마운트.
   const existing = article.querySelector?.('.doc__comments');
   if (existing) existing.remove();
@@ -340,6 +413,12 @@ function installComposerHandler() {
           commentToHtml(row, { currentUserId: _currentUser.id }),
         );
         updateCommentsHeaderCount(article);
+      }
+      // 엔터 피드백 — 새 버블 등장 애니메이션 + 가벼운 햅틱.
+      const rowEl = list?.querySelector?.(`[data-comment-id="${row.id}"]`);
+      if (rowEl) animateCommentEnter(rowEl);
+      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+        try { navigator.vibrate(10); } catch (_) {}
       }
     } catch (err) {
       console.warn('[comments] createComment 실패:', err?.message || err);
@@ -485,6 +564,8 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     commentToHtml(newRow, { currentUserId: _currentUser?.id }),
   );
   updateCommentsHeaderCount(article);
+  const enteredRow = list.querySelector?.(`[data-comment-id="${id}"]`);
+  if (enteredRow) animateCommentEnter(enteredRow);
   return { applied: true, reason: 'appended', id };
 }
 
@@ -498,14 +579,90 @@ function updateCommentsHeaderCount(article) {
   countEl.textContent = String(n);
 }
 
+// "클로드 댓글 받기" 버튼 — 내 소유 네비 글에서 Routine 즉시 발사 요청 (edge fn request-ai-comment).
+function ensureClaudeButton(doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc || _claudeBtnInstalled) return;
+  const composer = doc.querySelector?.('.bottombar .composer');
+  if (!composer) return;
+  if (composer.querySelector('.composer__ai')) { _claudeBtnInstalled = true; return; }
+  const btn = doc.createElement('button');
+  btn.className = 'composer__ai';
+  btn.type = 'button';
+  btn.hidden = true;
+  btn.innerHTML =
+    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7"/><line x1="6.3" y1="17.7" x2="17.7" y2="6.3"/></svg><span>클로드 댓글</span>';
+  btn.addEventListener('click', () => {
+    requestAiComment(btn).catch((e) => console.warn('[comments] AI 댓글 요청 실패:', e?.message || e));
+  });
+  composer.appendChild(btn);
+  _claudeBtnInstalled = true;
+}
+
+/** 버튼 노출/숨김 + 대상 entry 저장. */
+function syncClaudeButton(show, entryId, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc) return;
+  const btn = doc.querySelector?.('.composer__ai');
+  if (!btn) return;
+  btn.hidden = !show;
+  if (show && entryId) btn.dataset.entryId = entryId;
+}
+
+async function requestAiComment(btn) {
+  const entryId = btn?.dataset?.entryId;
+  if (!entryId || btn.disabled) return;
+  btn.disabled = true;
+  btn.setAttribute('aria-busy', 'true');
+  const label = btn.querySelector('span');
+  const prev = label ? label.textContent : '';
+  if (label) label.textContent = '요청 중…';
+  try {
+    // 글 본문이 서버에 반영되도록 먼저 flush (Routine 이 최신 내용을 읽도록).
+    try { await Sync.flushPendingUploads?.(); } catch (_) {}
+    if (!supabase?.functions?.invoke) throw new Error('supabase 미설정');
+    const { error } = await supabase.functions.invoke('request-ai-comment', { body: { entry_id: entryId } });
+    if (error) throw error;
+    if (label) label.textContent = '요청됨';
+  } catch (e) {
+    if (label) label.textContent = prev || '클로드 댓글';
+    throw e;
+  } finally {
+    btn.removeAttribute('aria-busy');
+    setTimeout(() => {
+      btn.disabled = false;
+      if (label && label.textContent === '요청됨') label.textContent = prev || '클로드 댓글';
+    }, 4000);
+  }
+}
+
+/** today_profiles 에서 본인+파트너 avatar_url 맵 로드 (RLS 로 두 row 만 노출). 클로드는 프로필 없음. */
+async function loadAvatarMap() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from('today_profiles').select('user_id, avatar_url');
+    if (error) {
+      console.warn('[comments] avatar 맵 로드 실패:', error.message);
+      return;
+    }
+    const map = {};
+    for (const p of data || []) {
+      if (p?.user_id && p.avatar_url) map[p.user_id] = p.avatar_url;
+    }
+    _avatarUrlById = map;
+  } catch (e) {
+    console.warn('[comments] avatar 맵 로드 예외:', e?.message || e);
+  }
+}
+
 export async function mountCommentsView(user) {
   if (!user?.id) return;
   _currentUser = user;
   if (typeof document === 'undefined') return;
   injectCommentStyles();
+  await loadAvatarMap();
   installComposerHandler();
   installCommentDeleteHandler();
   installArticleObserver();
+  ensureClaudeButton();
   if (_realtimeUnregister) _realtimeUnregister();
   _realtimeUnregister = Sync.onRealtimeChange((payload) => {
     handleRealtimeCommentChange(payload).catch((e) =>
@@ -521,6 +678,7 @@ export function __resetCommentsState() {
   _commentDeleteInstalled = false;
   _stylesInjected = false;
   _composerSubmitting = false;
+  _avatarUrlById = {};
   _pendingCommentIds.clear();
   if (_articleObserver) {
     try { _articleObserver.disconnect(); } catch (_) {}

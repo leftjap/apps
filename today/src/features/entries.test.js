@@ -527,20 +527,20 @@ describe('formatSavedTime — ISO → 표시 텍스트', () => {
   });
 });
 
-describe('buildMockMeta — 단어수 + 자동저장 시각', () => {
-  it('mocks 패턴 정합 — 단어 + sep + save span', () => {
-    const now = new Date('2026-04-30T15:00:30Z');
+describe('buildMockMeta — 단어수 + 원고지 (자동저장 라벨 2026-05-12 제거)', () => {
+  it('mocks 패턴 정합 — 단어 + sep + 원고지, save 라벨 없음', () => {
     const row = { content: '한 둘 셋', updated_at: '2026-04-30T15:00:00Z' };
-    const meta = buildMockMeta(row, now);
+    const meta = buildMockMeta(row);
     expect(meta).toContain('3단어');
     expect(meta).toContain('<span class="sep">·</span>');
-    expect(meta).toContain('<span class="save">방금 저장됨</span>');
+    expect(meta).toContain('원고지');
+    expect(meta).not.toContain('class="save"');
   });
 
-  it('content / updated_at 누락 → 0단어 / 저장 대기', () => {
+  it('content 누락 → 0단어, 저장 라벨 없음', () => {
     const meta = buildMockMeta({});
     expect(meta).toContain('0단어');
-    expect(meta).toContain('저장 대기');
+    expect(meta).not.toContain('저장 대기');
   });
 });
 
@@ -1370,7 +1370,7 @@ describe('computeListStats — 합계/연/월/단어/원고지/공유', () => {
     expect(s.total).toBe(4);
     expect(s.thisYear).toBe(3);
     expect(s.thisMonth).toBe(2);
-    expect(s.shared).toBe(2);
+    expect(s.shared).toBe(1); // shared = 내 공유만 (a). 파트너 공유(d)는 sharedSoyeon
     expect(s.sharedSoyeon).toBe(1);
     expect(s.words).toBeGreaterThan(0);
     expect(s.sheets).toBeGreaterThanOrEqual(0);
@@ -1403,8 +1403,8 @@ describe('filterListRows — all/shared/soyeon 분기', () => {
   it('all → 전체 반환', () => {
     expect(filterListRows(rows, 'all', userId).map((r) => r.id)).toEqual(['a','b','c','d']);
   });
-  it('shared → is_shared truthy 만', () => {
-    expect(filterListRows(rows, 'shared', userId).map((r) => r.id)).toEqual(['a','c']);
+  it('shared → 내 공유 글만 (파트너 공유는 soyeon 필터)', () => {
+    expect(filterListRows(rows, 'shared', userId).map((r) => r.id)).toEqual(['a']);
   });
   it('soyeon → 파트너 owner + is_shared', () => {
     expect(filterListRows(rows, 'soyeon', userId).map((r) => r.id)).toEqual(['c']);
@@ -1444,7 +1444,7 @@ describe('renderListView — #mainView .doc-list 마크업 + 통계/필터/행',
     expect(view.innerHTML).toContain('단어');
     expect(view.innerHTML).toContain('매');
     expect(view.innerHTML).toContain('전체');
-    expect(view.innerHTML).toContain('공유된 글');
+    expect(view.innerHTML).toContain('내가 공유한 글');
     expect(view.innerHTML).toContain('소연이 공유한 글');
     __setCurrentUserForTest(null);
   });
@@ -1586,7 +1586,7 @@ describe('renderDocFromRow — 파트너 글 read-only 마크업', () => {
     expect(view.innerHTML).not.toContain('읽기 전용');
   });
 
-  it('파트너 글 → contenteditable 제거 + 메타 "{이름} 작성 · 읽기 전용"', () => {
+  it('파트너 글 → contenteditable 제거 + data-read-only="1" + 작성자 이름 메타 (읽기전용은 속성으로 표시)', () => {
     const view = { innerHTML: '' };
     const fakeDoc = { getElementById: () => view, querySelector: () => null };
     renderDocFromRow(
@@ -1594,7 +1594,7 @@ describe('renderDocFromRow — 파트너 글 read-only 마크업', () => {
       fakeDoc,
     );
     expect(view.innerHTML).toContain('data-read-only="1"');
-    expect(view.innerHTML).toContain('읽기 전용');
+    expect(view.innerHTML).not.toContain('읽기 전용'); // read-only 는 data-read-only 속성으로 표시 (텍스트 라벨 제거됨)
     expect(view.innerHTML).toContain('소연');
     const h1Tag = view.innerHTML.match(/<h1[^>]*>/)?.[0] || '';
     const bodyTag = view.innerHTML.match(/<div class="doc__body"[^>]*>/)?.[0] || '';
