@@ -100,10 +100,11 @@ function railComparison(quotes) {
   const prevN = prev ? quotes.filter((q) => monthKey(q.created_at || q.updated_at) === prev).length : 0;
   const curBooks = new Set(quotes.filter((q) => monthKey(q.created_at || q.updated_at) === cur).map((q) => q.book_ref)).size;
   const prevBooks = prev ? new Set(quotes.filter((q) => monthKey(q.created_at || q.updated_at) === prev).map((q) => q.book_ref)).size : 0;
+  const periodLabel = cur ? `${Number(cur.slice(5, 7))}월` : undefined;
   return el('div', { style: { background: '#fff', borderRadius: 12, padding: '20px 22px 18px', border: '1px solid var(--line-2)', boxShadow: '0 1px 2px rgba(20,18,14,0.03), 0 8px 24px -10px rgba(20,18,14,0.07)' } },
-    comparisonCard({ topLabel: '어구록', current: curN, prev: prevN, unit: '개' }),
+    comparisonCard({ topLabel: '어구록', current: curN, prev: prevN, unit: '개', period: periodLabel }),
     el('div', { style: { height: 22 } }),
-    comparisonCard({ topLabel: '책', current: curBooks, prev: prevBooks, unit: '권' }),
+    comparisonCard({ topLabel: '책', current: curBooks, prev: prevBooks, unit: '권', period: periodLabel }),
   );
 }
 
@@ -186,6 +187,7 @@ async function render(host, params, ctx) {
         onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`),
         onPin: async () => { try { await Queries.togglePinQuote(q.id); ctx.refresh(); } catch (e) { console.warn('[feed] 핀 토글 실패', e?.message || e); } },
         onEdit: () => (ctx.openEdit ? ctx.openEdit(q.id) : ctx.navigate(`/edit/${q.id}`)),
+        onMore: () => (ctx.openDelete ? ctx.openDelete(q.id) : null),
       }));
     }
     section.appendChild(indent);

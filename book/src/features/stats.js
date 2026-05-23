@@ -1,18 +1,20 @@
 /**
  * 통계 — v14 ScrStatsV14 이식. 시드/Dexie 에서 실집계 (거짓 수치 없음).
- *  - 3 숫자(어구록/책/작가) + StreakCard + 월 비교
- *  - 캘린더(일별 어구록, 책 표지) + 책장(top books)
- *  - 작가/출판사/분야 랭킹
- *  - 단어(본문 토큰 빈도 — 크기별 태그)
+ *  - PeriodSeg(이번 달/올해/전체) 토글 → 기간 필터 + 재렌더 (stats-v14.jsx:49-62,182)
+ *  - 3 숫자(어구록/책/작가) + StreakCard(전체 기준) + 월/연 비교
+ *  - 캘린더(최신 달 일별 어구록·표지) + 책장(top books)
+ *  - 작가/출판사/분야(+증감 ↑↓) 랭킹 — stats-v14.jsx:83-122
+ *  - 단어(WordCloud packing, 불용어 필터)
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
 import { Profile } from '../services/profile.js';
 import { BOOKS, bookOf } from '../data/books.js';
-import { el } from '../ui/dom.js';
+import { el, clear } from '../ui/dom.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, pageTitle, streakCard, comparisonCard, btn } from '../ui/components.js';
 import { wordCloud } from '../ui/charts.js';
+import { tokenize } from '../ui/text.js';
 
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
@@ -27,7 +29,14 @@ const panelHead = (title, sub, right) => el('div', { style: { display: 'flex', a
   sub != null ? el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-4)', marginLeft: 10 } }, String(sub)) : null,
   el('div', { style: { flex: 1 } }), right || null);
 
-// streak (feed.js 와 동일 로직)
+// PeriodSeg (stats-v14.jsx:49-62) — 이번 달/올해/전체
+const periodSeg = (active, onPick) => el('div', { style: { display: 'inline-flex', background: 'var(--paper)', borderRadius: 99, padding: 3 } },
+  ...['이번 달', '올해', '전체'].map((n) => el('button', {
+    onClick: () => onPick(n),
+    style: { padding: '8px 16px', borderRadius: 99, fontSize: 13, fontWeight: n === active ? 700 : 500, color: n === active ? 'var(--ink-1)' : 'var(--ink-3)', background: n === active ? '#fff' : 'transparent', boxShadow: n === active ? '0 1px 2px rgba(20,18,14,.06)' : 'none', border: 0, cursor: 'pointer' },
+  }, n)));
+
+// streak (feed.js 와 동일 로직) — 전체 기준
 function computeStats(quotes) {
   const total = quotes.length;
   if (!total) return { total: 0, days: 0, longest: 0, dailyAvg: 0, lastEntry: '—', weekHits: [0, 0, 0, 0, 0, 0, 0], todayDow: 4 };
@@ -43,17 +52,6 @@ function computeStats(quotes) {
   const weekHits = Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + i); return days.includes(d.toISOString().slice(0, 10)) ? 1 : 0; });
   const lastEntry = `${String(latest.getUTCMonth() + 1).padStart(2, '0')}.${String(latest.getUTCDate()).padStart(2, '0')} ${String(latest.getUTCHours()).padStart(2, '0')}:${String(latest.getUTCMinutes()).padStart(2, '0')}`;
   return { total, days: current, longest, dailyAvg: Math.round((total / days.length) * 10) / 10, lastEntry, weekHits, todayDow: dow };
-}
-
-// 한국어 불용어 (조사·어미·지시어 — 형태소 분석 없는 휴리스틱, 확장 가능).
-const STOPWORDS = new Set([
-  '것은', '것이', '것을', '것도', '것과', '그것이', '그것은', '그것을', '우리가', '우리는', '우리의',
-  '있다', '없다', '한다', '된다', '같은', '같이', '동안', '가장', '한다는', '일이라면', '아니라', '아니다',
-  '결국', '그리고', '그러나', '하지만', '그런', '이런', '저런', '무엇', '위해', '통해', '대한', '자신',
-  '때문', '그래서', '그러면', '이라는', '라는', '까지', '부터', '매우', '너무', '정말', '제일', '바로',
-]);
-function tokenize(text) {
-  return (text || '').replace(/[^가-힣a-zA-Z0-9\s]/g, ' ').split(/\s+/).filter((w) => w.length >= 2 && !STOPWORDS.has(w));
 }
 
 // 캘린더 (특정 연/월) — 일별 어구록 수 + 대표 표지
@@ -87,93 +85,116 @@ function calendar(year, month, dayData, ctx) {
 }
 
 async function render(host, params, ctx) {
-  const user = ctx.user;
-  const owners = ownerIdsOf(user);
+  const owners = ownerIdsOf(ctx.user);
   let quotes = [];
   try { quotes = await Queries.listAllQuotes(owners); } catch (e) { console.warn('[stats] 로드 실패', e?.message || e); }
 
-  const stats = computeStats(quotes);
-  // book/author/pub/category 집계
-  const byBook = new Map(); for (const q of quotes) byBook.set(String(q.book_ref), (byBook.get(String(q.book_ref)) || 0) + 1);
-  const usedBooks = [...byBook.keys()].map(bookOf).filter(Boolean);
-  const distinctBooks = usedBooks.length;
-  const distinctAuthors = new Set(usedBooks.map((b) => b.a)).size;
-  const topBooks = [...byBook.entries()].map(([ref, c]) => ({ b: bookOf(ref), c })).filter((x) => x.b).sort((a, b) => b.c - a.c).slice(0, 5);
-  const byAuthor = new Map(); const byPub = new Map(); const byCat = new Map();
-  for (const [ref, c] of byBook) { const b = bookOf(ref); if (!b) continue; byAuthor.set(b.a, (byAuthor.get(b.a) || 0) + c); byPub.set(b.p, (byPub.get(b.p) || 0) + c); byCat.set(topCat(b), (byCat.get(topCat(b)) || 0) + c); }
-  const topAuthors = [...byAuthor.entries()].map(([name, q]) => ({ name, q, books: BOOKS.filter((b) => b.a === name && byBook.has(String(b.id))).length, pub: BOOKS.find((b) => b.a === name)?.p })).sort((a, b) => b.q - a.q).slice(0, 6);
-  const topPubs = [...byPub.entries()].map(([name, q]) => ({ name, q, books: BOOKS.filter((b) => b.p === name && byBook.has(String(b.id))).length, authors: new Set(BOOKS.filter((b) => b.p === name && byBook.has(String(b.id))).map((b) => b.a)).size })).sort((a, b) => b.q - a.q).slice(0, 6);
-  const cats = [...byCat.entries()].map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v);
-  const catMax = Math.max(1, ...cats.map((c) => c.v));
-  // 월 비교
-  const months = [...new Set(quotes.map((q) => monthKey(q.created_at)).filter(Boolean))].sort().reverse();
-  const curM = months[0]; const prevM = months[1];
-  const curN = quotes.filter((q) => monthKey(q.created_at) === curM).length;
-  const prevN = prevM ? quotes.filter((q) => monthKey(q.created_at) === prevM).length : 0;
-  const curBooks = new Set(quotes.filter((q) => monthKey(q.created_at) === curM).map((q) => q.book_ref)).size;
-  const prevBooks = prevM ? new Set(quotes.filter((q) => monthKey(q.created_at) === prevM).map((q) => q.book_ref)).size : 0;
-  // 캘린더 (최신 어구록의 달)
-  const calMonth = curM ? curM : '2026-05';
-  const [cy, cm] = calMonth.split('-').map(Number);
-  const dayData = {};
-  for (const q of quotes) {
-    if (monthKey(q.created_at) !== calMonth) continue;
-    const k = dayKey(q.created_at); const b = bookOf(q.book_ref); if (!b) continue;
-    if (!dayData[k]) dayData[k] = { books: [], count: 0 };
-    dayData[k].count++; if (!dayData[k].books.some((x) => x.id === b.id)) dayData[k].books.push(b);
+  const streak = computeStats(quotes); // 연속 — 전체 기준 (기간 토글 무관)
+  const allMonths = [...new Set(quotes.map((q) => monthKey(q.created_at)).filter(Boolean))].sort().reverse();
+  const curM = allMonths[0] || '2026-05';
+  const prevM = allMonths[1];
+  const curY = curM.slice(0, 4);
+  const years = [...new Set(quotes.map((q) => (q.created_at || '').slice(0, 4)).filter(Boolean))].sort().reverse();
+  const prevY = years[1];
+  const [calY, calMo] = curM.split('-').map(Number);
+  const catCounts = (subset) => { const m = new Map(); for (const q of subset) { const b = bookOf(q.book_ref); if (b) m.set(topCat(b), (m.get(topCat(b)) || 0) + 1); } return m; };
+
+  function periodData(period) {
+    if (period === '올해') return { sub: quotes.filter((q) => (q.created_at || '').slice(0, 4) === curY), prev: prevY ? quotes.filter((q) => (q.created_at || '').slice(0, 4) === prevY) : [], title: `${curY}년`, pLabel: curY };
+    if (period === '전체') return { sub: quotes, prev: [], title: '전체', pLabel: '전체' };
+    return { sub: quotes.filter((q) => monthKey(q.created_at) === curM), prev: prevM ? quotes.filter((q) => monthKey(q.created_at) === prevM) : [], title: `${calY}년 ${calMo}월`, pLabel: `${calMo}월` };
   }
-  // 단어 빈도
-  const wordFreq = new Map(); for (const q of quotes) for (const w of tokenize(q.text)) wordFreq.set(w, (wordFreq.get(w) || 0) + 1);
-  const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 1).sort((a, b) => b[1] - a[1]).slice(0, 50);
 
-  // ── render
-  const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
-    el('div', { class: 'mono', style: { fontSize: 44, fontWeight: 700, letterSpacing: '-.032em', lineHeight: 1 } }, String(n), el('span', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginLeft: 6, fontFamily: 'var(--sans)' } }, u)));
-  const row1 = el('div', { class: 'stats-row-1', style: { display: 'grid', gridTemplateColumns: '360px minmax(0,1fr)', gap: 24, marginBottom: 28 } },
-    streakCard(stats),
-    card([
-      el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32, paddingBottom: 24, marginBottom: 24, borderBottom: '1px solid var(--line-2)' } },
-        num('어구록', stats.total, '개'), num('책', distinctBooks, '권'), num('작가', distinctAuthors, '명')),
-      el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 } },
-        comparisonCard({ topLabel: '어구록', current: curN, prev: prevN, unit: '개' }),
-        comparisonCard({ topLabel: '책', current: curBooks, prev: prevBooks, unit: '권' })),
-    ], '28px 32px'));
+  const container = el('div', { style: { padding: '36px 36px 100px' } });
+  let active = '이번 달';
 
-  const bookshelf = el('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 26, overflowX: 'auto', paddingBottom: 6 } },
-    ...topBooks.map((t) => el('div', { onClick: () => ctx.navigate(`/book/${t.b.id}`), style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer', flexShrink: 0 } },
-      el('div', { style: { filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.10))' } }, cover(t.b, { scale: 0.6, lift: false })),
-      el('div', { style: { textAlign: 'center' } }, el('div', { class: 'mono', style: { fontSize: 13, fontWeight: 700 } }, String(t.c)), el('div', { style: { fontSize: 11, color: 'var(--ink-3)', marginTop: 3, maxWidth: 96, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.b.t)))));
-  const row2 = el('div', { class: 'stats-row-2', style: { display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 28, marginBottom: 28 } },
-    card([panelHead('캘린더', calMonth), calendar(cy, cm, dayData, ctx)]),
-    card([panelHead('책', `${distinctBooks}권`, btn({ label: '책 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/books') })), bookshelf]));
+  function renderBody() {
+    clear(container);
+    const { sub, prev, title, pLabel } = periodData(active);
 
-  const authorRow = (a, i) => el('div', { class: 'book-row', onClick: () => ctx.navigate(`/author/${encodeURIComponent(a.name)}`), style: { display: 'grid', gridTemplateColumns: '24px 1fr auto auto', alignItems: 'baseline', gap: 12, padding: '11px 10px', margin: '0 -10px', borderRadius: 8, cursor: 'pointer' } },
-    el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
-    el('div', {}, el('div', { style: { fontSize: 14, fontWeight: 600 } }, a.name), el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginTop: 3 } }, a.pub)),
-    el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-3)' } }, `${a.books}권`),
-    el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(a.q)));
-  const pubRow = (p, i) => el('div', { class: 'book-row', style: { display: 'grid', gridTemplateColumns: '24px 1fr auto auto auto', alignItems: 'baseline', gap: 10, padding: '11px 10px', margin: '0 -10px', borderRadius: 8 } },
-    el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
-    el('span', { style: { fontSize: 14, fontWeight: 600 } }, p.name),
-    el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.authors}명`),
-    el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.books}권`),
-    el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(p.q)));
-  const catBar = (c) => el('div', { style: { display: 'grid', gridTemplateColumns: '54px 1fr 44px', alignItems: 'center', gap: 12, padding: '10px 10px', margin: '0 -10px', borderRadius: 6 } },
-    el('span', { style: { fontSize: 13.5, fontWeight: 600 } }, c.n),
-    el('div', { style: { position: 'relative', height: 10, background: 'var(--paper)', borderRadius: 99, overflow: 'hidden' } }, el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(c.v / catMax) * 100}%`, background: 'var(--ink-1)', borderRadius: 99 } })),
-    el('span', { class: 'mono', style: { fontSize: 13, fontWeight: 700, textAlign: 'right' } }, String(c.v)));
-  const row3 = el('div', { class: 'stats-row-3', style: { display: 'grid', gridTemplateColumns: '1fr 1.1fr 0.95fr', gap: 28, marginBottom: 28 } },
-    card([panelHead('작가', `${distinctAuthors}명`, btn({ label: '작가 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/authors') })), ...topAuthors.map(authorRow)]),
-    card([panelHead('출판사', `${byPub.size}곳`, btn({ label: '출판사 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/pubs') })), ...topPubs.map(pubRow)]),
-    card([panelHead('분야', `${cats.length}개`), ...cats.map(catBar)]));
+    const byBook = new Map(); for (const q of sub) byBook.set(String(q.book_ref), (byBook.get(String(q.book_ref)) || 0) + 1);
+    const usedBooks = [...byBook.keys()].map(bookOf).filter(Boolean);
+    const distinctBooks = usedBooks.length;
+    const distinctAuthors = new Set(usedBooks.map((b) => b.a)).size;
+    const topBooks = [...byBook.entries()].map(([ref, c]) => ({ b: bookOf(ref), c })).filter((x) => x.b).sort((a, b) => b.c - a.c).slice(0, 5);
+    const byAuthor = new Map(); const byPub = new Map();
+    for (const [ref, c] of byBook) { const b = bookOf(ref); if (!b) continue; byAuthor.set(b.a, (byAuthor.get(b.a) || 0) + c); byPub.set(b.p, (byPub.get(b.p) || 0) + c); }
+    const topAuthors = [...byAuthor.entries()].map(([name, q]) => ({ name, q, books: BOOKS.filter((b) => b.a === name && byBook.has(String(b.id))).length, pub: BOOKS.find((b) => b.a === name)?.p })).sort((a, b) => b.q - a.q).slice(0, 6);
+    const topPubs = [...byPub.entries()].map(([name, q]) => ({ name, q, books: BOOKS.filter((b) => b.p === name && byBook.has(String(b.id))).length, authors: new Set(BOOKS.filter((b) => b.p === name && byBook.has(String(b.id))).map((b) => b.a)).size })).sort((a, b) => b.q - a.q).slice(0, 6);
+    // 분야 + 직전 기간 대비 증감
+    const curCat = catCounts(sub); const prevCat = catCounts(prev);
+    const cats = [...curCat.entries()].map(([n, v]) => ({ n, v, diff: v - (prevCat.get(n) || 0) })).sort((a, b) => b.v - a.v);
+    const catMax = Math.max(1, ...cats.map((c) => c.v));
+    // 비교 (선택 기간 vs 직전 동일 기간)
+    const curN = sub.length; const prevN = prev.length;
+    const curBooks = distinctBooks; const prevBooks = new Set(prev.map((q) => q.book_ref)).size;
+    // 캘린더 — 항상 최신 달 (이번 달 활동 뷰)
+    const dayData = {};
+    for (const q of quotes) {
+      if (monthKey(q.created_at) !== curM) continue;
+      const k = dayKey(q.created_at); const b = bookOf(q.book_ref); if (!b) continue;
+      if (!dayData[k]) dayData[k] = { books: [], count: 0 };
+      dayData[k].count++; if (!dayData[k].books.some((x) => x.id === b.id)) dayData[k].books.push(b);
+    }
+    // 단어 빈도 (불용어 제외)
+    const wordFreq = new Map(); for (const q of sub) for (const w of tokenize(q.text)) wordFreq.set(w, (wordFreq.get(w) || 0) + 1);
+    const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 1).sort((a, b) => b[1] - a[1]).slice(0, 50);
 
-  const wordCloudEl = el('div', { style: { display: 'flex', justifyContent: 'center' } },
-    wordCloud({ words: topWords, W: 1180, H: 260, scale: 0.74, onWord: (w) => ctx.navigate(`/word/${encodeURIComponent(w)}`) }));
-  const row4 = card([panelHead('단어', `상위 ${topWords.length}`, btn({ label: '단어 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => topWords[0] && ctx.navigate(`/word/${encodeURIComponent(topWords[0][0])}`) })), topWords.length ? wordCloudEl : el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '아직 단어가 부족합니다.')], '24px 28px');
+    const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
+      el('div', { class: 'mono', style: { fontSize: 44, fontWeight: 700, letterSpacing: '-.032em', lineHeight: 1 } }, String(n), el('span', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginLeft: 6, fontFamily: 'var(--sans)' } }, u)));
+    const row1 = el('div', { class: 'stats-row-1', style: { display: 'grid', gridTemplateColumns: '360px minmax(0,1fr)', gap: 24, marginBottom: 28 } },
+      streakCard(streak),
+      card([
+        el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32, paddingBottom: 24, marginBottom: 24, borderBottom: '1px solid var(--line-2)' } },
+          num('어구록', curN, '개'), num('책', distinctBooks, '권'), num('작가', distinctAuthors, '명')),
+        el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40 } },
+          comparisonCard({ topLabel: '어구록', current: curN, prev: prevN, unit: '개', period: pLabel }),
+          comparisonCard({ topLabel: '책', current: curBooks, prev: prevBooks, unit: '권', period: pLabel })),
+      ], '28px 32px'));
 
-  const inner = el('div', { style: { padding: '36px 36px 100px' } },
-    pageTitle({ upper: '통계', title: `${cy}년 ${cm}월`, large: true }), row1, row2, row3, row4);
-  host.appendChild(screenShell({ tab: 'stats', ctx, children: inner }));
+    const bookshelf = el('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 26, overflowX: 'auto', paddingBottom: 6 } },
+      ...topBooks.map((t) => el('div', { onClick: () => ctx.navigate(`/book/${t.b.id}`), style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer', flexShrink: 0 } },
+        el('div', { style: { filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.10))' } }, cover(t.b, { scale: 0.6, lift: false })),
+        el('div', { style: { textAlign: 'center' } }, el('div', { class: 'mono', style: { fontSize: 13, fontWeight: 700 } }, String(t.c)), el('div', { style: { fontSize: 11, color: 'var(--ink-3)', marginTop: 3, maxWidth: 96, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.b.t)))));
+    const row2 = el('div', { class: 'stats-row-2', style: { display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 28, marginBottom: 28 } },
+      card([panelHead('캘린더', curM), calendar(calY, calMo, dayData, ctx)]),
+      card([panelHead('책', `${distinctBooks}권`, btn({ label: '책 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/books') })), topBooks.length ? bookshelf : el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '책이 없습니다.')]));
+
+    const authorRow = (a, i) => el('div', { class: 'book-row', onClick: () => ctx.navigate(`/author/${encodeURIComponent(a.name)}`), style: { display: 'grid', gridTemplateColumns: '24px 1fr auto auto', alignItems: 'baseline', gap: 12, padding: '11px 10px', margin: '0 -10px', borderRadius: 8, cursor: 'pointer' } },
+      el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
+      el('div', {}, el('div', { style: { fontSize: 14, fontWeight: 600 } }, a.name), el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginTop: 3 } }, a.pub)),
+      el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-3)' } }, `${a.books}권`),
+      el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(a.q)));
+    const pubRow = (p, i) => el('div', { class: 'book-row', style: { display: 'grid', gridTemplateColumns: '24px 1fr auto auto auto', alignItems: 'baseline', gap: 10, padding: '11px 10px', margin: '0 -10px', borderRadius: 8 } },
+      el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
+      el('span', { style: { fontSize: 14, fontWeight: 600 } }, p.name),
+      el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.authors}명`),
+      el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.books}권`),
+      el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(p.q)));
+    // 분야 bar — v14 stats-v14.jsx:98-117 (rank/bar/count/diff)
+    const catBar = (c) => el('div', { style: { display: 'grid', gridTemplateColumns: '54px 1fr 44px 32px', alignItems: 'center', gap: 12, padding: '10px 10px', margin: '0 -10px', borderRadius: 6 } },
+      el('span', { style: { fontSize: 13.5, fontWeight: 600 } }, c.n),
+      el('div', { style: { position: 'relative', height: 10, background: 'var(--paper)', borderRadius: 99, overflow: 'hidden' } }, el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(c.v / catMax) * 100}%`, background: 'var(--ink-1)', borderRadius: 99 } })),
+      el('span', { class: 'mono', style: { fontSize: 13, fontWeight: 700, textAlign: 'right' } }, String(c.v)),
+      el('span', { style: { fontSize: 11, color: c.diff > 0 ? '#c2553a' : c.diff < 0 ? 'var(--ink-3)' : 'var(--ink-4)', textAlign: 'right', fontFamily: 'var(--mono)' } }, c.diff > 0 ? `↑${c.diff}` : c.diff < 0 ? `↓${-c.diff}` : '·'));
+    const row3 = el('div', { class: 'stats-row-3', style: { display: 'grid', gridTemplateColumns: '1fr 1.1fr 0.95fr', gap: 28, marginBottom: 28 } },
+      card([panelHead('작가', `${distinctAuthors}명`, btn({ label: '작가 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/authors') })), ...(topAuthors.length ? topAuthors.map(authorRow) : [el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '작가가 없습니다.')])]),
+      card([panelHead('출판사', `${byPub.size}곳`, btn({ label: '출판사 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/pubs') })), ...(topPubs.length ? topPubs.map(pubRow) : [el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '출판사가 없습니다.')])]),
+      card([panelHead('분야', `${cats.length}개`), ...(cats.length ? cats.map(catBar) : [el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '분야가 없습니다.')])]));
+
+    const wordCloudEl = el('div', { style: { display: 'flex', justifyContent: 'center' } },
+      wordCloud({ words: topWords, W: 1180, H: 260, scale: 0.74, onWord: (w) => ctx.navigate(`/word/${encodeURIComponent(w)}`) }));
+    const row4 = card([panelHead('단어', `상위 ${topWords.length}`, btn({ label: '단어 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => topWords[0] && ctx.navigate(`/word/${encodeURIComponent(topWords[0][0])}`) })), topWords.length ? wordCloudEl : el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '아직 단어가 부족합니다.')], '24px 28px');
+
+    container.append(
+      pageTitle({ upper: '통계', title, large: true, right: periodSeg(active, onPeriod) }),
+      row1, row2, row3, row4,
+    );
+  }
+
+  function onPeriod(p) { if (p !== active) { active = p; renderBody(); } }
+  renderBody();
+  host.appendChild(screenShell({ tab: 'stats', ctx, children: container }));
 }
 
 registerScreen('stats', render);

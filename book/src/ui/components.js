@@ -91,9 +91,9 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
     style: { padding: '8px 14px', borderRadius: 7, fontSize: 14, fontWeight: tab === key ? 700 : 500, color: tab === key ? 'var(--ink-1)' : 'var(--ink-3)', cursor: 'pointer', background: tab === key ? 'var(--hover)' : 'transparent' },
   }, name);
   const navEl = el('nav', { style: { display: 'flex', gap: 4, marginLeft: 8 } }, tabEl('어구록', 'excerpt', '/'), tabEl('통계', 'stats', '/stats'));
+  // v14 시안: 검색은 단순 indicator (core-v14.jsx:60-71) — 비기능 표시. 네비는 탭·모두보기·요소 클릭.
   const search = el('div', {
     class: 'topbar-search',
-    onClick: () => nav('/search'),
     style: { display: 'flex', alignItems: 'center', gap: 10, flex: 1, maxWidth: 640, marginLeft: 'auto', height: 40, padding: '0 16px', background: 'var(--paper)', borderRadius: 10, color: 'var(--ink-3)', cursor: 'text' },
   }, iconEl('search', { sz: 16 }), el('span', { style: { flex: 1, fontSize: 14 } }, '책 · 작가 · 분야 · 단어 · 어구록'));
   return el('header', {
@@ -177,25 +177,26 @@ export function streakCard({ days = 0, longest = 0, dailyAvg = 0, lastEntry = '�
   );
 }
 
-// ─── ComparisonCard (core-v9) ───────────────────────────────────────────────
-export function comparisonCard({ label = '이번 달', current = 0, prev = 0, unit = '개', topLabel = '어구록' } = {}) {
+// ─── ComparisonCard (v14 = core-v10.jsx:283-311) — ↑/↓ 증감·라벨 이번/지난·period·bar h14
+export function comparisonCard({ current = 0, prev = 0, unit = '개', topLabel = '어구록', period } = {}) {
   const max = Math.max(current, prev, 1);
   const diff = current - prev;
-  const barRow = (lab, val, color, valColor, mono) => [
-    el('span', { style: { fontSize: 12, color: lab === label ? 'var(--ink-2)' : 'var(--ink-3)', fontWeight: lab === label ? 600 : 500 } }, lab),
-    el('div', { style: { height: 18, borderRadius: 4, background: 'var(--line-2)', position: 'relative', overflow: 'hidden' } },
-      el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(val / max) * 100}%`, background: color } })),
-    el('span', { class: 'mono', style: { fontSize: 12, fontWeight: mono ? 700 : 400, color: valColor, textAlign: 'right' } }, `${val}${unit}`),
+  const barRow = (lab, val, barColor, valColor, strong) => [
+    el('span', { style: { fontSize: 11.5, color: strong ? 'var(--ink-2)' : 'var(--ink-3)', fontWeight: strong ? 600 : 500 } }, lab),
+    el('div', { style: { height: 14, borderRadius: 4, background: 'var(--paper)', position: 'relative', overflow: 'hidden' } },
+      el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(val / max) * 100}%`, background: barColor } })),
+    el('span', { class: 'mono', style: { fontSize: 12, fontWeight: strong ? 700 : 400, color: valColor, textAlign: 'right' } }, String(val), el('span', { style: { color: 'var(--ink-3)', fontWeight: 500 } }, unit)),
   ];
   return el('div', {},
-    el('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 14 } },
+    el('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 12 } },
       el('span', { class: 'upper' }, topLabel),
+      period != null ? el('span', { class: 'mono', style: { fontSize: 10.5, color: 'var(--ink-4)', marginLeft: 8, letterSpacing: '.04em' } }, String(period)) : null,
       el('div', { style: { flex: 1 } }),
-      el('span', { style: { fontSize: 11.5, color: diff > 0 ? '#c2553a' : 'var(--ink-3)', fontFamily: 'var(--mono)', fontWeight: 600 } }, `${diff > 0 ? '+' : ''}${diff}${unit}`),
+      el('span', { style: { fontSize: 11, color: diff > 0 ? '#c2553a' : 'var(--ink-3)', fontFamily: 'var(--mono)', fontWeight: 600 } }, `${diff > 0 ? '↑' : diff < 0 ? '↓' : ''}${Math.abs(diff)}${unit}`),
     ),
-    el('div', { style: { display: 'grid', gridTemplateColumns: '36px 1fr 36px', gap: 10, alignItems: 'center', rowGap: 8 } },
-      ...barRow(label, current, 'var(--ink-1)', 'var(--ink-1)', true),
-      ...barRow('지난 달', prev, 'var(--ink-4)', 'var(--ink-3)', false),
+    el('div', { style: { display: 'grid', gridTemplateColumns: '40px 1fr 40px', gap: 10, alignItems: 'center', rowGap: 8 } },
+      ...barRow('이번', current, 'var(--ink-1)', 'var(--ink-1)', true),
+      ...barRow('지난', prev, 'var(--ink-4)', 'var(--ink-3)', false),
     ),
   );
 }
