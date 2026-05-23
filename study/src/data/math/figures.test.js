@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { squaresOnSides, staircaseToRect, trapezoidDoubled, circleToRect } from './figures.js';
+import { squaresOnSides, staircaseToRect, trapezoidDoubled, circleToRect, labeledCircle, scaledSquares, scaledCircles } from './figures.js';
 
 // 파라메트릭 도형 헬퍼 — 비율이 입력 숫자에서 *계산*됨을 자동 검증(손코딩 비율오류 방지).
 // math-curriculum.md §도형 규약: 라벨 = 입력 숫자, 변형 묘사.
@@ -66,5 +66,39 @@ describe('circleToRect — 원을 부채꼴로 펴면 πr × r 직사각형', ()
     expect(rrect.h).toBe(r * u);
     const cr = +svg.match(/<circle[^>]*r="([\d.]+)"[^>]*fill="#eef/)[1];
     expect(cr).toBe(r * u);
+  });
+});
+
+const lineLen = (svg) => [...svg.matchAll(/<line[^>]*x1="([\d.]+)"[^>]*x2="([\d.]+)"/g)].map((m) => Math.abs(+m[2] - +m[1]));
+
+describe('labeledCircle — 응용 라벨 원', () => {
+  it('반지름 모드: 반지름선(R) + "반지름 N"', () => {
+    const svg = labeledCircle({ value: 5, kind: 'radius' });
+    expect(svg).toContain('반지름 5');
+    expect(lineLen(svg)[0]).toBe(52);
+  });
+  it('지름 모드: 지름선(2R) + "지름 N"', () => {
+    const svg = labeledCircle({ value: 20, kind: 'diameter' });
+    expect(svg).toContain('지름 20');
+    expect(lineLen(svg)[0]).toBe(104);
+  });
+});
+
+describe('scaledSquares — 닮음 정사각형 (큰 변 = k × 작은 변)', () => {
+  it('k=3 비율 3', () => {
+    const r = rects(scaledSquares({ k: 3, unit: 30 }));
+    expect(r[1].w / r[0].w).toBe(3);
+    expect(r[0].w).toBe(30);
+  });
+  it('k=2 비율 2', () => {
+    const r = rects(scaledSquares({ k: 2, unit: 30 }));
+    expect(r[1].w / r[0].w).toBe(2);
+  });
+});
+
+describe('scaledCircles — 닮음 원 (큰 반지름 = k × 작은 반지름)', () => {
+  it('k=2 비율 2', () => {
+    const cs = [...scaledCircles({ k: 2 }).matchAll(/<circle[^>]*r="([\d.]+)"/g)].map((m) => +m[1]).filter((x) => x > 3);
+    expect(Math.max(...cs) / Math.min(...cs)).toBe(2);
   });
 });

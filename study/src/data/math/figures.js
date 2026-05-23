@@ -99,3 +99,47 @@ export function circleToRect({ r, unit = 11, pad = 16, n = 12 }) {
     + txt(rx + W / 2, ry + R + 12, '가로 ≈ πr') + txt(rx - 10, ry + R / 2 + 4, 'r')
     + `<circle cx="${n1(cx)}" cy="${n1(cy)}" r="2" fill="${C.stroke}"/>` + '</svg>';
 }
+
+/**
+ * 라벨 원 — 응용용. 반지름 또는 지름 1개를 표시(단일 원이라 표시 크기는 고정, 라벨이 주어진 값).
+ * kind:'diameter' 면 지름선(가로 전체)+"지름 N", 아니면 반지름선+"반지름 N".
+ */
+export function labeledCircle({ value, kind = 'radius', pad = 18 }) {
+  const R = 52, cx = pad + R, cy = pad + R, w = R * 2 + pad * 2, h = R * 2 + pad * 2 + 16;
+  const dia = kind === 'diameter';
+  const line = dia
+    ? `<line x1="${n1(cx - R)}" y1="${cy}" x2="${n1(cx + R)}" y2="${cy}" stroke="${C.stroke}" stroke-width="1.5"/>`
+    : `<line x1="${cx}" y1="${cy}" x2="${n1(cx + R)}" y2="${cy}" stroke="${C.stroke}" stroke-width="1.5"/>`;
+  const label = dia ? txt(cx, cy - 8, `지름 ${value}`) : txt(cx + R / 2, cy - 8, `반지름 ${value}`);
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="${dia ? '지름' : '반지름'} ${value} 원">`
+    + `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${C.sq}" stroke="${C.stroke}" stroke-width="2"/>`
+    + line + `<circle cx="${cx}" cy="${cy}" r="2.5" fill="${C.stroke}"/>` + label + '</svg>';
+}
+
+/**
+ * 닮음(정사각형) — 작은 정사각형 + 한 변 k배 정사각형(k×k 격자로 넓이 k²배 시각화).
+ */
+export function scaledSquares({ k, unit = 30, pad = 16, gap = 26 }) {
+  const s = unit, big = k * unit, y = pad + big, sx = pad, bx = pad + s + gap;
+  let grid = '';
+  for (let i = 0; i <= k; i++) {
+    grid += `<line x1="${n1(bx + i * unit)}" y1="${n1(y - big)}" x2="${n1(bx + i * unit)}" y2="${y}" stroke="${C.stroke}" stroke-width="0.6"/>`;
+    grid += `<line x1="${bx}" y1="${n1(y - i * unit)}" x2="${n1(bx + big)}" y2="${n1(y - i * unit)}" stroke="${C.stroke}" stroke-width="0.6"/>`;
+  }
+  const w = bx + big + pad, h = y + 16;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="작은 정사각형과 한 변 ${k}배 정사각형(넓이 ${k * k}배)">`
+    + rect(sx, y - s, s, s, C.fill) + rect(bx, y - big, big, big, C.sq) + grid
+    + txt(sx + s / 2, y + 12, '×1') + txt(bx + big / 2, y + 12, `×${k}`) + '</svg>';
+}
+
+/**
+ * 닮음(원) — 작은 원 + 지름 k배 원(넓이 k²배). 피자/접시 등.
+ */
+export function scaledCircles({ k, pad = 16, gap = 26 }) {
+  const r = 24, big = k * r, cy = pad + big, sCx = pad + r, bCx = pad + 2 * r + gap + big;
+  const w = bCx + big + pad, h = pad + 2 * big + 18;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="작은 원과 지름 ${k}배 원(넓이 ${k * k}배)">`
+    + `<circle cx="${n1(sCx)}" cy="${n1(cy)}" r="${r}" fill="${C.fill}" stroke="${C.stroke}" stroke-width="1.5"/>`
+    + `<circle cx="${n1(bCx)}" cy="${n1(cy)}" r="${n1(big)}" fill="${C.sq}" stroke="${C.stroke}" stroke-width="1.5"/>`
+    + txt(sCx, cy + big + 12, '지름 ×1') + txt(bCx, cy + big + 12, `지름 ×${k}`) + '</svg>';
+}

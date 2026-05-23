@@ -68,7 +68,8 @@
 
 1. **파라메트릭 헬퍼로만 생성. 손으로 좌표 박은 raw SVG 금지.**
    - 헬퍼 = 의미 파라미터(라벨과 *같은* 숫자)를 받아 좌표를 **계산**해 SVG 문자열 반환(`dotsSvg(n)` 패턴 확장). 위치: `src/data/math/figures.js`.
-   - 예: `rightTriangle({a,b})` · `parallelogram({base,height,slant})` · `trapezoid({top,bottom,height})` · `squaresOnSides({a,b})` · `scaledSquares({k})` · `circleToRect({r})`.
+   - **현존 헬퍼**(`figures.js`): `dotsSvg(n)` · `squaresOnSides({a,b})` · `staircaseToRect({n})` · `trapezoidDoubled({top,bottom,height})` · `circleToRect({r})` · `labeledCircle({value,kind})` · `scaledSquares({k})` · `scaledCircles({k})`. 새 도형 필요 시 헬퍼 추가 후 사용.
+   - *미이관(잔존 손-SVG): `tri-c`·`para-c` 개념 + `tri/para/trap/pyth` 응용 도형. 깨지진 않았으나 추후 헬퍼화 대상.*
    - → 비율오류·단위불일치가 **구조적으로 불가능**.
 2. **figure 는 개념의 "변형"을 그려야 한다 (결과 도형만 그리면 실패).**
    - 반례(2026-05-23 실측 결함): `pyth` 삼각형만(두 변 위 정사각형 X) · `circ` 원만(부채꼴→직사각형 X) · `trap` 사다리꼴 하나만(붙인 평행사변형 X) · `tnum` figure 자체 부재.

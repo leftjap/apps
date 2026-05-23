@@ -1,5 +1,5 @@
 // 모듈 3: 도형의 약속 — 개념 카드 + 변형 응용. 피타고라스 · 닮음(넓이비) · 원(πr²).
-import { squaresOnSides, circleToRect } from './figures.js';
+import { squaresOnSides, circleToRect, labeledCircle, scaledSquares, scaledCircles } from './figures.js';
 
 export const MODULE_SHAPES = [
   {
@@ -76,8 +76,8 @@ export const MODULE_SHAPES = [
     title: '길이 2배 → 넓이 4배',
     figure: {
       type: 'svg',
-      svg: '<svg width="240" height="150" viewBox="0 0 240 150" role="img" aria-label="작은 정사각형과 2배 정사각형"><rect x="25" y="95" width="34" height="34" fill="#dce7d0" stroke="#788c5d" stroke-width="1.5"/><rect x="120" y="55" width="68" height="68" fill="#eef3e9" stroke="#788c5d" stroke-width="1.5"/><line x1="154" y1="55" x2="154" y2="123" stroke="#788c5d" stroke-width="1" stroke-dasharray="3 3"/><line x1="120" y1="89" x2="188" y2="89" stroke="#788c5d" stroke-width="1" stroke-dasharray="3 3"/><text x="30" y="145" font-size="12" fill="#8a8475">×1</text><text x="140" y="145" font-size="12" fill="#8a8475">×2</text></svg>',
-      legend: '큰 정사각형 = 작은 것 4개',
+      svg: scaledSquares({ k: 2 }),
+      legend: '한 변 2배 → 작은 정사각형 4개',
     },
     body: [
       '닮은 도형은 길이가 k배면 넓이는 k²배가 돼요.',
@@ -92,6 +92,7 @@ export const MODULE_SHAPES = [
     conceptId: 'sim',
     kind: 'apply',
     tag: '응용 · 닮음',
+    figure: { type: 'svg', svg: scaledSquares({ k: 3 }), legend: '한 변 3배 → 작은 정사각형 9개' },
     prompt: '정사각형의 한 변을 3배로 늘이면 넓이는 몇 배가 되나요?',
     answer: '9',
     accept: ['9', '9배'],
@@ -110,6 +111,7 @@ export const MODULE_SHAPES = [
     conceptId: 'sim',
     kind: 'apply',
     tag: '응용 · 전이',
+    figure: { type: 'svg', svg: scaledCircles({ k: 2 }), legend: '지름 2배 피자' },
     prompt: '지름이 2배인 피자는 양(넓이)이 몇 배일까요?',
     answer: '4',
     accept: ['4', '4배'],
@@ -147,6 +149,7 @@ export const MODULE_SHAPES = [
     conceptId: 'circ',
     kind: 'apply',
     tag: '응용 · 원',
+    figure: { type: 'svg', svg: labeledCircle({ value: 5, kind: 'radius' }), legend: '반지름 5' },
     prompt: '반지름 5인 원의 넓이는? (π ≈ 3.14)',
     answer: '78.5',
     accept: ['78.5', '78.54', '25π'],
@@ -166,6 +169,7 @@ export const MODULE_SHAPES = [
     conceptId: 'circ',
     kind: 'apply',
     tag: '응용 · 전이',
+    figure: { type: 'svg', svg: labeledCircle({ value: 20, kind: 'diameter' }), legend: '지름 20 (반지름 아님 — 함정)' },
     prompt: '지름이 20인 원의 넓이는? (π ≈ 3.14)',
     answer: '314',
     accept: ['314', '314.16', '100π'],
