@@ -79,11 +79,11 @@ export const LIBRARY = [
 "a": "황농문",
 "w": 130,
 "h": 195,
-"c": "자기계발 · 교양 심리학",
-"y": 2004,
-"p": "한울림",
-"sub": "미치도록 행복한 나를 만난다",
-"coverUrl": "https://image.aladin.co.kr/product/50/36/cover200/s102534693_1.jpg"
+"c": "자기계발 · 성공학",
+"y": 2024,
+"p": "알에이치코리아(RHK)",
+"sub": "인생을 바꾸는 자기 혁명",
+"coverUrl": "https://image.aladin.co.kr/product/33850/89/cover200/8925575027_1.jpg"
 },
 {
 "id": "book_008",
@@ -292,11 +292,10 @@ export const LIBRARY = [
 "a": "한병철",
 "w": 130,
 "h": 195,
-"c": "인문 · 정치비평/칼럼",
-"y": 2009,
-"p": "후마니타스",
-"sub": "대중 여론으로 읽는 한국 정치",
-"coverUrl": "https://image.aladin.co.kr/product/464/96/cover200/8990106974_1.jpg"
+"c": "인문",
+"d": "dtypo",
+"bg": "#2a3a4d",
+"fg": "#f0ead9"
 },
 {
 "id": "book_026",
@@ -506,11 +505,11 @@ export const LIBRARY = [
 "a": "존 맥스웰",
 "w": 130,
 "h": 195,
-"c": "자기계발 · 경제이야기",
-"y": 2022,
-"p": "리더스북",
-"sub": "작은 아이디어를 빅 비즈니스로 만드는 5가지 절대 법칙",
-"coverUrl": "https://image.aladin.co.kr/product/30562/27/cover200/8901266431_1.jpg"
+"c": "자기계발 · 성공학",
+"y": 2020,
+"p": "유노북스",
+"sub": "성공하는 사람이 믿고 따르는",
+"coverUrl": "https://image.aladin.co.kr/product/23994/15/cover200/k012639116_1.jpg"
 },
 {
 "id": "book_044",
@@ -566,11 +565,11 @@ export const LIBRARY = [
 "a": "이시형",
 "w": 130,
 "h": 195,
-"c": "심리학 · 뇌과학 일반",
-"y": 2022,
-"p": "해나무",
-"sub": "목표를 세우고 성취하는 인지조절의 뇌과학",
-"coverUrl": "https://image.aladin.co.kr/product/28774/41/cover200/k832836388_1.jpg"
+"c": "심리학 · 창의적사고/두뇌계발",
+"y": 2020,
+"p": "블랙피쉬",
+"sub": "기억력·집중력·공부머리를 끌어올려 최상의 뇌로 이끄는 법",
+"coverUrl": "https://image.aladin.co.kr/product/25358/39/cover200/8968332797_2.jpg"
 },
 {
 "id": "book_049",
@@ -578,10 +577,10 @@ export const LIBRARY = [
 "a": "로버트 맥키",
 "w": 130,
 "h": 195,
-"c": "문학 · 대중문화/예술",
-"y": 2026,
-"p": "dicon",
-"coverUrl": "https://image.aladin.co.kr/product/39375/98/cover200/k332139779_1.jpg"
+"c": "문학",
+"d": "dcream",
+"bg": "#d8d2c0",
+"fg": "#1d1a14"
 },
 {
 "id": "book_050",
@@ -624,11 +623,10 @@ export const LIBRARY = [
 "a": "이지성",
 "w": 130,
 "h": 195,
-"c": "자기계발 · 성공담",
-"y": 2020,
-"p": "센시오",
-"sub": "사람들은 최선을 다했다고 자신을 속인다",
-"coverUrl": "https://image.aladin.co.kr/product/25636/6/cover200/k492735319_1.jpg"
+"c": "자기계발",
+"d": "dcream",
+"bg": "#ece2cb",
+"fg": "#1d1a14"
 },
 {
 "id": "book_054",
@@ -684,11 +682,10 @@ export const LIBRARY = [
 "a": "팻 플린",
 "w": 130,
 "h": 195,
-"c": "실용 · 경영전략/혁신",
-"y": 2025,
-"p": "페가수스",
-"sub": "팬·기술·플랫폼이 만들어내는 콘텐츠 이코노미 2.0",
-"coverUrl": "https://image.aladin.co.kr/product/36801/61/cover200/8994651640_1.jpg"
+"c": "실용",
+"d": "dtypo",
+"bg": "#2a3a4d",
+"fg": "#f0ead9"
 },
 {
 "id": "book_059",
@@ -709,10 +706,10 @@ export const LIBRARY = [
 "w": 130,
 "h": 195,
 "c": "투자경제 · 재테크/투자 일반",
-"y": 2025,
-"p": "에프엔미디어",
-"sub": "핵심 산업 밸류체인 판이 바뀐다",
-"coverUrl": "https://image.aladin.co.kr/product/36789/9/cover200/k132030697_2.jpg"
+"y": 2021,
+"p": "인플루엔셜(주)",
+"sub": "자산을 지키며 꾸준히 수익 내는 투자 전략",
+"coverUrl": "https://image.aladin.co.kr/product/26949/2/cover200/k222730811_!.jpg"
 },
 {
 "id": "book_061",
@@ -755,10 +752,11 @@ export const LIBRARY = [
 "a": "데일 카네기",
 "w": 130,
 "h": 195,
-"c": "인문 · 동양철학 일반",
-"y": 2021,
+"c": "인문 · 마음 다스리기",
+"y": 2017,
 "p": "유노북스",
-"coverUrl": "https://image.aladin.co.kr/product/27047/0/cover200/k112731889_1.jpg"
+"sub": "마음이 지치고 심란할 때 읽는 반야심경의 지혜",
+"coverUrl": "https://image.aladin.co.kr/product/10093/93/cover200/k192536075_1.jpg"
 },
 {
 "id": "book_065",
@@ -778,11 +776,10 @@ export const LIBRARY = [
 "a": "빌 퍼킨스",
 "w": 130,
 "h": 195,
-"c": "투자경제 · 성공학",
-"y": 2021,
-"p": "쌤앤파커스",
-"sub": "먹고 놀고 마시는 데 목숨 걸어라, 다시 살 수 없는 것들에 투자하라",
-"coverUrl": "https://image.aladin.co.kr/product/27312/63/cover200/k342732124_1.jpg"
+"c": "투자경제",
+"d": "dcream",
+"bg": "#d8d2c0",
+"fg": "#1d1a14"
 },
 {
 "id": "book_067",
@@ -994,10 +991,10 @@ export const LIBRARY = [
 "w": 130,
 "h": 195,
 "c": "심리학 · 교양 심리학",
-"y": 2023,
+"y": 2008,
 "p": "갤리온",
-"sub": "생각의 발견을 뒤집는 기막힌 발견",
-"coverUrl": "https://image.aladin.co.kr/product/31724/75/cover200/8901272083_1.jpg"
+"sub": "생각의 역사를 뒤집는 기막힌 발견",
+"coverUrl": "https://image.aladin.co.kr/product/285/55/cover200/s132635239_1.jpg"
 },
 {
 "id": "book_085",
@@ -1098,9 +1095,9 @@ export const LIBRARY = [
 "w": 130,
 "h": 195,
 "c": "자기계발",
-"d": "dtypo",
-"bg": "#2a3a4d",
-"fg": "#f0ead9"
+"d": "dcream",
+"bg": "#ece2cb",
+"fg": "#1d1a14"
 },
 {
 "id": "book_094",
@@ -1121,9 +1118,9 @@ export const LIBRARY = [
 "w": 130,
 "h": 195,
 "c": "인문",
-"d": "dcream",
-"bg": "#d8d2c0",
-"fg": "#1d1a14"
+"d": "dtypo",
+"bg": "#2a3a4d",
+"fg": "#f0ead9"
 },
 {
 "id": "book_096",
