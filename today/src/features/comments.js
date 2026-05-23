@@ -25,6 +25,8 @@ let _realtimeUnregister = null;
 let _articleObserver = null;
 let _stylesInjected = false;
 let _claudeBtnInstalled = false;
+// author_id → 사용자가 설정한 프로필 사진 URL. today_profiles 에서 로드 (RLS: 본인+파트너 row 만 노출).
+let _avatarUrlById = {};
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
 const _pendingCommentIds = new Set();
 // Wave 11.6.10 — composer 처리 중 (in-flight) flag. 빠른 Enter 두 번 시 createComment 재호출 차단.
@@ -76,10 +78,18 @@ const AVATAR_COLORS = Object.freeze({
 });
 const CLAUDE_CLAY = '#d97757';
 
-/** author_id 기준 아바타 1개 (클로드=로고 SVG, 사람=이니셜+색). */
-function avatarHtml(authorId, name) {
+/**
+ * author_id 기준 아바타 1개.
+ *  - 클로드(AI): 프로필 사진 없음 → 스파크 SVG 유지.
+ *  - 사람 + 사용자가 설정한 사진(avatarUrl) 있음 → 사진 이미지.
+ *  - 사람 + 사진 없음 → 이니셜 + 색 폴백.
+ */
+function avatarHtml(authorId, name, avatarUrl) {
   if (authorId === CLAUDE_USER_ID) {
     return `<span class="comment-row__avatar comment-row__avatar--claude" style="background:${CLAUDE_CLAY}">${CLAUDE_LOGO_SVG}</span>`;
+  }
+  if (avatarUrl) {
+    return `<span class="comment-row__avatar comment-row__avatar--photo"><img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>`;
   }
   const color = AVATAR_COLORS[authorId] || 'var(--cloudy-base, #6a9bcc)';
   const initial = escapeHtml(String(name || '?').charAt(0));
@@ -102,7 +112,9 @@ export function commentToHtml(comment, opts = {}) {
   const deleteBtn = mine
     ? `<button class="comment-row__delete" data-comment-id="${id}" aria-label="댓글 삭제">삭제</button>`
     : '';
-  const avatar = avatarHtml(authorId, name);
+  const avatarMap = opts.avatarUrlById || _avatarUrlById;
+  const avatarUrl = authorId ? avatarMap[authorId] : null;
+  const avatar = avatarHtml(authorId, name, avatarUrl);
   return `<div class="comment-row" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}">${avatar}<div class="comment-row__col"><div class="comment-row__meta"><span class="comment-row__author">${escapeHtml(authorLabel)}</span><span class="comment-row__time">${time}</span>${deleteBtn}</div><div class="comment-row__bubble">${body}</div></div></div>`;
 }
 
@@ -235,6 +247,9 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     }
     .composer input[disabled] { opacity: 0.5; }
     .comment-row__avatar--claude svg { display: block; }
+    /* 사용자 설정 프로필 사진 — 원형 clip. */
+    .comment-row__avatar--photo { padding: 0; overflow: hidden; background: var(--hover-bg); }
+    .comment-row__avatar--photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
     /* 엔터 후 피드백 — 새 버블 슬라이드+페이드 등장 (~220ms). */
     @keyframes comment-row-enter {
       from { opacity: 0; transform: translateY(8px) scale(0.98); }
@@ -619,11 +634,31 @@ async function requestAiComment(btn) {
   }
 }
 
+/** today_profiles 에서 본인+파트너 avatar_url 맵 로드 (RLS 로 두 row 만 노출). 클로드는 프로필 없음. */
+async function loadAvatarMap() {
+  if (!supabase) return;
+  try {
+    const { data, error } = await supabase.from('today_profiles').select('user_id, avatar_url');
+    if (error) {
+      console.warn('[comments] avatar 맵 로드 실패:', error.message);
+      return;
+    }
+    const map = {};
+    for (const p of data || []) {
+      if (p?.user_id && p.avatar_url) map[p.user_id] = p.avatar_url;
+    }
+    _avatarUrlById = map;
+  } catch (e) {
+    console.warn('[comments] avatar 맵 로드 예외:', e?.message || e);
+  }
+}
+
 export async function mountCommentsView(user) {
   if (!user?.id) return;
   _currentUser = user;
   if (typeof document === 'undefined') return;
   injectCommentStyles();
+  await loadAvatarMap();
   installComposerHandler();
   installCommentDeleteHandler();
   installArticleObserver();
@@ -643,6 +678,7 @@ export function __resetCommentsState() {
   _commentDeleteInstalled = false;
   _stylesInjected = false;
   _composerSubmitting = false;
+  _avatarUrlById = {};
   _pendingCommentIds.clear();
   if (_articleObserver) {
     try { _articleObserver.disconnect(); } catch (_) {}

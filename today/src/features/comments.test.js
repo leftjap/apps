@@ -126,6 +126,45 @@ describe('commentToHtml', () => {
     expect(html).toContain('<svg');
   });
 
+  it('사용자 설정 사진(avatarUrlById) 있으면 img 아바타 (이니셜 대신)', () => {
+    const html = commentToHtml(
+      { id: 'p1', body: '사진댓글', author_id: PARTNER },
+      { currentUserId: OWNER, avatarUrlById: { [PARTNER]: 'https://x/today-avatars/p/avatar.jpeg?t=1' } },
+    );
+    expect(html).toContain('comment-row__avatar--photo');
+    expect(html).toContain('<img');
+    expect(html).toContain('src="https://x/today-avatars/p/avatar.jpeg?t=1"');
+    expect(html).not.toMatch(/comment-row__avatar"[^>]*>소<\/span>/);
+  });
+
+  it('사진 없으면 이니셜 폴백 유지', () => {
+    const html = commentToHtml(
+      { id: 'p2', body: 'x', author_id: PARTNER },
+      { currentUserId: OWNER, avatarUrlById: {} },
+    );
+    expect(html).not.toContain('comment-row__avatar--photo');
+    expect(html).toMatch(/comment-row__avatar"[^>]*>소<\/span>/);
+  });
+
+  it('클로드는 사진 맵에 있어도 스파크 SVG 유지 (사진 무시)', () => {
+    const html = commentToHtml(
+      { id: 'c9', body: 'hi', author_id: CLAUDE_USER_ID },
+      { currentUserId: OWNER, avatarUrlById: { [CLAUDE_USER_ID]: 'https://x/c.jpg' } },
+    );
+    expect(html).toContain('comment-row__avatar--claude');
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('comment-row__avatar--photo');
+  });
+
+  it('avatar 사진 URL XSS escape (속성 breakout 차단)', () => {
+    const html = commentToHtml(
+      { id: 'p3', body: 'x', author_id: PARTNER },
+      { currentUserId: OWNER, avatarUrlById: { [PARTNER]: 'https://x/a.jpg"><script>alert(1)</script>' } },
+    );
+    expect(html).not.toContain('"><script>');
+    expect(html).toContain('&quot;');
+  });
+
   it('XSS escape', () => {
     const html = commentToHtml(
       { id: 'x', body: '<script>alert(1)</script>', author_id: PARTNER },
