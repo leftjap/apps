@@ -412,6 +412,91 @@ test.describe('Wave 11.7.3c-2 알림 드롭다운', () => {
     expect(result.dropdownHidden).toBe(true);
   });
 
+  test('buildNotifRowHtml — kind 라벨 + comment_id 속성 (Q1 댓글/게시물 구분)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await page.evaluate(() => {
+      const root = document.createElement('div');
+      root.innerHTML = `<div id="notifDropdownList"></div>`;
+      document.body.appendChild(root);
+      const now = new Date().toISOString();
+      const notifs = [
+        { id: 'nc', entry_id: 'e1', comment_id: 'c1', kind: 'new_comment', preview: '댓글왔어요', created_at: now, read_at: null },
+        { id: 'np', entry_id: 'e2', comment_id: null, kind: 'new_post', preview: '새글썼어요', created_at: now, read_at: null },
+      ];
+      window.todayNotifications.renderNotifDropdown(notifs);
+      const rows = [...document.querySelectorAll('.notif-dropdown__row')];
+      const out = {
+        kinds: rows.map(r => r.getAttribute('data-kind')),
+        commentIds: rows.map(r => r.getAttribute('data-comment-id')),
+        labels: rows.map(r => r.querySelector('.notif-dropdown__kind')?.textContent || null),
+        previews: rows.map(r => r.querySelector('.notif-dropdown__preview')?.textContent),
+      };
+      root.remove();
+      return out;
+    });
+    expect(result.kinds).toEqual(['new_comment', 'new_post']);
+    expect(result.commentIds).toEqual(['c1', '']);
+    expect(result.labels).toEqual(['댓글', '새 글']);
+    expect(result.previews[0]).toContain('댓글');
+    expect(result.previews[0]).toContain('댓글왔어요');
+  });
+
+  test('handleNotifClick — new_comment 알림은 해당 댓글로 스크롤+하이라이트 (Q2)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await page.evaluate(async () => {
+      const TID = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+      const CID = 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+      const targetRow = {
+        id: TID, owner_id: 'me', kind: 'navi', kind_number: 3,
+        title: '댓글 딥링크 글', content: '<p>본문</p>',
+        is_shared: 1, created_at: '2026-05-20T00:00:00.000Z', updated_at: '2026-05-20T00:00:00.000Z',
+      };
+      const prevDB = globalThis.todayDB;
+      globalThis.todayDB = { entries: { get: async (id) => (id === TID ? targetRow : null) } };
+      document.querySelector('#mainView')?.remove();
+      document.querySelector('#recentsList')?.remove();
+      document.querySelector('.sb__item[data-category="navi"]')?.remove();
+      // article(data-entry-id=TID) — renderDocFromRow 는 같은 entryId 면 in-place patch 라 댓글 보존
+      const main = document.createElement('div');
+      main.id = 'mainView';
+      main.innerHTML = `<article class="doc" data-entry-id="${TID}">`
+        + `<h1 class="doc__h1">댓글 딥링크 글</h1><div class="doc__meta"></div><div class="doc__body"><p>본문</p></div>`
+        + `<section class="doc__comments"><div class="doc__comments-list">`
+        + `<div class="comment-row" data-comment-id="other-comment"><div class="comment-row__bubble">다른 댓글</div></div>`
+        + `<div class="comment-row" data-comment-id="${CID}"><div class="comment-row__bubble">타겟 댓글</div></div>`
+        + `</div></section></article>`;
+      document.body.appendChild(main);
+      const sb = document.createElement('div');
+      sb.innerHTML = `<div id="recentsList"><div class="sb__item sb__item--recent" data-doc-id="${TID}">x</div></div>`;
+      document.body.appendChild(sb);
+      let sbTop = document.querySelector('.sb__top');
+      let createdSbTop = false;
+      if (!sbTop) { sbTop = document.createElement('div'); sbTop.className = 'sb__top'; document.body.appendChild(sbTop); createdSbTop = true; }
+      window.todayNotifications.injectNotifDropdownStyles();
+      window.todayNotifications.injectNotifDropdown();
+      document.getElementById('notifDropdown').removeAttribute('hidden');
+      const ret = await window.todayNotifications.handleNotifClick({
+        id: 'n-c', entry_id: TID, comment_id: CID, kind: 'new_comment', read_at: 'skip',
+      });
+      const out = {
+        ret,
+        targetHighlighted: !!document.querySelector(`.comment-row[data-comment-id="${CID}"]`)?.classList.contains('notif-comment-highlight'),
+        otherHighlighted: !!document.querySelector('.comment-row[data-comment-id="other-comment"]')?.classList.contains('notif-comment-highlight'),
+      };
+      main.remove(); sb.remove();
+      if (createdSbTop) { document.getElementById('notifDropdown')?.remove(); sbTop.remove(); }
+      globalThis.todayDB = prevDB;
+      return out;
+    });
+    expect(result.ret.ok).toBe(true);
+    expect(result.ret.scrolledToComment).toBe(true);
+    expect(result.ret.comment_id).toBe('cccccccc-cccc-4ccc-8ccc-cccccccccccc');
+    expect(result.targetHighlighted).toBe(true);
+    expect(result.otherHighlighted).toBe(false);
+  });
+
   test('handleRealtimeNotificationChange — table mismatch / not_recipient / refreshed', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');

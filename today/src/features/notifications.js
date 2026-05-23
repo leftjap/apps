@@ -206,13 +206,22 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
-/** notif row → HTML 문자열. */
+/** 알림 kind → 행 라벨. entry_unshared 등 background kind 는 라벨 없음(드롭다운 미표시). */
+const NOTIF_KIND_LABEL = Object.freeze({ new_comment: '댓글', new_post: '새 글' });
+
+/** notif row → HTML 문자열. kind 라벨 + comment_id(댓글 딥링크용) 포함. */
 export function buildNotifRowHtml(notif, now = new Date()) {
   const id = escapeHtml(notif.id);
   const preview = escapeHtml(notif.preview || '(미리보기 없음)');
   const time = formatRelativeTime(notif.created_at, now);
   const isRead = !!notif.read_at;
-  return `<div class="notif-dropdown__row" data-notif-id="${id}" data-entry-id="${escapeHtml(notif.entry_id || '')}"><span class="notif-dropdown__unread-dot${isRead ? ' is-read' : ''}"></span><div class="notif-dropdown__body"><div class="notif-dropdown__preview">${preview}</div><div class="notif-dropdown__time">${time}</div></div></div>`;
+  const kind = notif.kind || '';
+  const commentId = escapeHtml(notif.comment_id || '');
+  const labelText = NOTIF_KIND_LABEL[kind] || '';
+  const kindLabel = labelText
+    ? `<span class="notif-dropdown__kind notif-dropdown__kind--${escapeHtml(kind)}">${labelText}</span>`
+    : '';
+  return `<div class="notif-dropdown__row" data-notif-id="${id}" data-entry-id="${escapeHtml(notif.entry_id || '')}" data-comment-id="${commentId}" data-kind="${escapeHtml(kind)}"><span class="notif-dropdown__unread-dot${isRead ? ' is-read' : ''}"></span><div class="notif-dropdown__body"><div class="notif-dropdown__preview">${kindLabel}${preview}</div><div class="notif-dropdown__time">${time}</div></div></div>`;
 }
 
 /** 드롭다운 CSS 인라인 주입 (idempotent). */
@@ -305,6 +314,27 @@ export function injectNotifDropdownStyles(doc = document) {
     #recentsList [data-doc-id].notif-highlight {
       background: var(--bg-warm, #f5f0ea);
       transition: background 200ms;
+    }
+    /* 알림 종류 라벨 (댓글 / 새 글) */
+    .notif-dropdown__kind {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 0 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 16px;
+      vertical-align: 1px;
+      color: #fff;
+      background: var(--text-muted, #8a8475);
+    }
+    .notif-dropdown__kind--new_comment { background: var(--accent, #d97757); }
+    .notif-dropdown__kind--new_post { background: var(--cloudy-base, #6a9bcc); }
+    /* 댓글 알림 클릭 → 해당 댓글 버블 하이라이트 2.4초 */
+    #mainView .doc__comments .comment-row.notif-comment-highlight .comment-row__bubble {
+      outline: 2px solid var(--accent, #d97757);
+      outline-offset: 2px;
+      transition: outline 200ms;
     }
   `;
   doc.head.appendChild(style);
@@ -497,9 +527,47 @@ export async function handleNotifClick(notif, doc) {
     target.classList.add('notif-highlight');
     setTimeout(() => target.classList.remove('notif-highlight'), 2000);
   }
-  // 6. 드롭다운 닫기
+  // 6. 댓글 알림(new_comment)이면 해당 댓글로 스크롤 + 하이라이트.
+  //    본문 열린 직후 댓글 영역은 comments.js installArticleObserver 가 async mount → 짧게 polling.
+  let scrolledToComment = false;
+  if (notif.comment_id) {
+    scrolledToComment = await scrollToNotifComment(notif.comment_id, doc);
+  }
+  // 7. 드롭다운 닫기
   closeNotifDropdown(doc);
-  return { ok: true, opened, scrolled: !!target, entry_id: notif.entry_id, kind: row?.kind || null };
+  return {
+    ok: true,
+    opened,
+    scrolled: !!target,
+    scrolledToComment,
+    entry_id: notif.entry_id,
+    comment_id: notif.comment_id || null,
+    kind: row?.kind || null,
+  };
+}
+
+/**
+ * 댓글 딥링크 — comment_id 의 댓글 row 로 scrollIntoView + 하이라이트 2.4초.
+ * 본문 전환 후 댓글 영역은 comments.js 가 async mount 하므로 maxWaitMs 까지 polling.
+ * data-comment-id 는 .comment-row 와 .comment-row__delete 둘 다 가지므로 .comment-row 로 한정.
+ * 반환: 스크롤 성공 여부.
+ */
+async function scrollToNotifComment(commentId, doc, maxWaitMs = 1500) {
+  if (!commentId) return false;
+  const sel = `#mainView .doc__comments .comment-row[data-comment-id="${cssEscape(commentId)}"]`;
+  const start = Date.now();
+  let el = doc.querySelector(sel);
+  while (!el && Date.now() - start < maxWaitMs) {
+    await new Promise((r) => setTimeout(r, 100));
+    el = doc.querySelector(sel);
+  }
+  if (!el) return false;
+  if (typeof el.scrollIntoView === 'function') {
+    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+  el.classList.add('notif-comment-highlight');
+  setTimeout(() => el.classList.remove('notif-comment-highlight'), 2400);
+  return true;
 }
 
 /** CSS attribute selector 안 안전한 entry_id (UUID 외 특수문자 가드). */
@@ -556,6 +624,8 @@ export function installBellClickHandler(doc = document) {
       const notif = {
         id: row.getAttribute('data-notif-id'),
         entry_id: row.getAttribute('data-entry-id'),
+        comment_id: row.getAttribute('data-comment-id') || null,
+        kind: row.getAttribute('data-kind') || null,
         // read_at 은 DOM 의 is-read 클래스로 추정
         read_at: row.querySelector('.notif-dropdown__unread-dot')?.classList.contains('is-read') ? 'has-read' : null,
       };
