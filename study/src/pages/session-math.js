@@ -140,12 +140,24 @@ function buildMathMain(c, size) {
   row.append(input, checkBtn);
   wrap.appendChild(row);
 
-  const result = document.createElement('div');
-  result.id = 'm-res';
-  result.style.cssText = 'margin-top:24px;display:flex;flex-direction:column;align-items:flex-start;width:100%;';
-  wrap.appendChild(result);
+  // 채점 결과(verdict) — 입력칸 바로 아래 (채점 후 채움)
+  const verdict = document.createElement('div');
+  verdict.id = 'm-verdict';
+  wrap.appendChild(verdict);
 
-  return { wrap, input, checkBtn, result };
+  // 해설 — 언어 session-new 처럼 채점 전부터 입력칸 아래 '접힌' 상태로 노출. 사용자가 토글로 펼침.
+  const explain = createExplanationPanel({ explanation: c.solution });
+  explain.toggleEl.style.marginTop = '20px';
+  explain.toggleEl.style.alignSelf = 'flex-start';
+  wrap.append(explain.toggleEl, explain.panelEl);
+
+  // 다음 버튼 (채점 후 채움)
+  const nextWrap = document.createElement('div');
+  nextWrap.id = 'm-next';
+  nextWrap.style.cssText = 'width:100%;';
+  wrap.appendChild(nextWrap);
+
+  return { wrap, input, checkBtn, verdict, nextWrap };
 }
 
 export function mountSessionMath(host) {
@@ -178,7 +190,7 @@ export function mountSessionMath(host) {
     host.appendChild(root);
   }
 
-  function reveal(c, correct, result, input, checkBtn) {
+  function reveal(c, correct, verdict, nextWrap, input, checkBtn) {
     const kindR = correct ? (tries > 1 ? 'hmm' : 'got') : 'no';
     tried += 1; if (correct) passed += 1;
     layout?.update({ tried, passed });
@@ -194,16 +206,9 @@ export function mountSessionMath(host) {
     progress.logs[t] = lg;
     save(progress);
 
-    result.innerHTML = '';
-    const v = document.createElement('div');
-    v.style.cssText = `font-weight:700;font-size:18px;color:${correct ? 'var(--sage)' : 'var(--accent)'};`;
-    v.textContent = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
-    result.appendChild(v);
-    // 어학과 동일한 해설 컴포넌트 (.explain-toggle / .explain-panel / .ex-section)
-    const explain = createExplanationPanel({ explanation: c.solution });
-    explain.toggleEl.style.marginTop = '16px';
-    explain.toggle(); // 채점 후 자동 펼침
-    result.append(explain.toggleEl, explain.panelEl);
+    // verdict 표시. 해설은 이미 입력칸 아래 접힌 채 노출돼 있음 — 자동 펼침 안 함(언어처럼 사용자 토글).
+    verdict.style.cssText = `margin-top:20px;font-weight:700;font-size:18px;color:${correct ? 'var(--sage)' : 'var(--accent)'};`;
+    verdict.textContent = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
     input.disabled = true;
     checkBtn.style.display = 'none';
     const next = document.createElement('button');
@@ -211,7 +216,7 @@ export function mountSessionMath(host) {
     next.style.cssText = 'margin-top:24px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r-md);padding:14px 28px;font-size:15px;cursor:pointer;font-family:var(--font-body);';
     next.textContent = '다음 →';
     next.onclick = () => { i += 1; render(); };
-    result.appendChild(next);
+    nextWrap.appendChild(next);
   }
 
   function render() {
@@ -227,7 +232,7 @@ export function mountSessionMath(host) {
       onHome: () => { window.location.hash = '#/home'; },
       onEnd: () => { window.location.hash = '#/home'; },
     });
-    const { wrap, input, checkBtn, result } = buildMathMain(c, size);
+    const { wrap, input, checkBtn, verdict, nextWrap } = buildMathMain(c, size);
     layout.contentSlot.appendChild(wrap);
     host.appendChild(layout.el);
     const submit = () => {
@@ -235,15 +240,12 @@ export function mountSessionMath(host) {
       if (r.empty) { input.focus(); return; }
       tries += 1;
       if (!r.correct && tries < 2) {
-        result.innerHTML = '';
-        const hint = document.createElement('div');
-        hint.style.cssText = 'color:var(--accent);font-size:15px;line-height:1.6;';
-        hint.textContent = `다시 한 번 — 힌트: ${c.solution.core}`;
-        result.appendChild(hint);
+        verdict.style.cssText = 'margin-top:20px;color:var(--accent);font-size:15px;line-height:1.6;';
+        verdict.textContent = `다시 한 번 — 힌트: ${c.solution.core}`;
         input.focus(); input.select();
         return;
       }
-      reveal(c, r.correct, result, input, checkBtn);
+      reveal(c, r.correct, verdict, nextWrap, input, checkBtn);
     };
     checkBtn.onclick = submit;
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
