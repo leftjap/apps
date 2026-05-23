@@ -903,14 +903,28 @@ describe('finalizeActiveSession', () => {
     expect(stored.blocks[0].sets).toHaveLength(1);
   });
 
-  it('pruneEmptySets — 모든 세트 미완료 시 block.sets 는 빈 배열 (block 자체는 유지)', async () => {
+  it('완료 세트 0개 운동 블록은 finalize 시 제거 (미수행 운동 미저장)', async () => {
     await addExerciseToActiveSession('bench_press', 'chest');
-    // commit 0건 — 기본 preset 세트 (done:false) 만 존재
+    // commit 0건 — 기본 preset 세트 (done:false) 만 존재 → 완료 세트 0개
+    const r = await finalizeActiveSession();
+    expect(r.ok).toBe(true);
+    expect(r.session.blocks).toHaveLength(0); // 블록 통째 제거
+    expect(r.session.totalVolume).toBe(0);
+  });
+
+  it('일부 운동만 완료 — 미완료 운동 블록 제거, 완료 운동만 보존', async () => {
+    await addExerciseToActiveSession('bench_press', 'chest');
+    await addExerciseToActiveSession('squat', 'legs');
+    // 벤치만 1세트 완료, 스쿼트는 미수행
+    await persistSetCommit({
+      exerciseName: '벤치프레스', setIdx: 0,
+      set: { weight: 60, reps: 10, done: true, pr: false },
+    });
     const r = await finalizeActiveSession();
     expect(r.ok).toBe(true);
     expect(r.session.blocks).toHaveLength(1);
-    expect(r.session.blocks[0].sets).toEqual([]);
-    expect(r.session.totalVolume).toBe(0);
+    expect(r.session.blocks[0].exerciseId).toBe('bench_press');
+    expect(r.session.blocks[0].sets).toHaveLength(1);
   });
 });
 
@@ -2176,9 +2190,31 @@ describe('resolveDotDisplay (D — dot preview 우선순위)', () => {
     expect(resolveDotDisplay(sets, 0, 1, null)).toEqual({ text: '—', isPreview: true });
   });
 
-  it('직전 세션 우선순위가 직전 세트보다 높음', () => {
+  it('이번 세션 직전 세트 우선순위가 이전 세션보다 높음 (spec §6-3-3)', () => {
     const sets = [{ weight: 100, reps: 5, done: true }, { weight: 0, reps: 0, done: false, preset: true }];
     const prev = [{ weight: 90, reps: 8 }, { weight: 95, reps: 6 }];
-    expect(resolveDotDisplay(sets, 1, 0, prev)).toEqual({ text: '95·6', isPreview: true });
+    // ① 이번 세션 직전 세트(100·5 done) 가 ② 이전 세션(95·6) 보다 우선
+    expect(resolveDotDisplay(sets, 1, 0, prev)).toEqual({ text: '100·5', isPreview: true });
+  });
+
+  it('맨몸(kind=bodyweight) — weight=null 이어도 reps 만으로 표기', () => {
+    const sets = [
+      { weight: null, reps: 15, done: true, preset: false },
+      { weight: null, reps: 12, done: false, preset: true },
+    ];
+    // current(맨몸): reps 만
+    expect(resolveDotDisplay(sets, 1, 1, null, 'bodyweight')).toEqual({ text: '12', isPreview: false });
+    // done(맨몸): reps 만
+    expect(resolveDotDisplay(sets, 0, 1, null, 'bodyweight')).toEqual({ text: '15', isPreview: false });
+  });
+
+  it('맨몸 upcoming 도트 — 현재 세트 reps 전파 (preview)', () => {
+    const sets = [
+      { weight: null, reps: 15, done: true, preset: false },
+      { weight: null, reps: 20, done: false, preset: false }, // current
+      { weight: null, reps: 12, done: false, preset: true },
+    ];
+    // i=2 (upcoming): 현재 세트(reps 20) 전파
+    expect(resolveDotDisplay(sets, 2, 1, null, 'bodyweight')).toEqual({ text: '20', isPreview: true });
   });
 });

@@ -336,7 +336,11 @@ export async function finalizeActiveSession(opts = {}) {
     const session = await getActiveSession();
     if (!session) return { ok: false, reason: 'no_active_session' };
 
-    const blocks = (Array.isArray(session.blocks) ? session.blocks : []).map(pruneEmptySets);
+    // 완료(done) 세트만 보존 후, 완료 세트 0개인 single 운동 블록은 통째 제거
+    // (현재 세트는 완료 세트 아님 — 미수행 운동은 저장 안 함).
+    const blocks = (Array.isArray(session.blocks) ? session.blocks : [])
+      .map(pruneEmptySets)
+      .filter((b) => !(b && b.type === 'single' && Array.isArray(b.sets) && b.sets.length === 0));
     const totalVolume = blocks.reduce((sum, b) => {
       if (!b || b.type !== 'single') return sum;
       const sets = Array.isArray(b.sets) ? b.sets : [];
@@ -727,7 +731,7 @@ async function mountSessionActive(doc, block, session) {
   // S1..Sn 도트 — diff-based 갱신 (DOM 유지로 transition 트리거) + 활성 set 가운데 정렬
   const setDotsEl = doc.getElementById('cardSetDots');
   if (setDotsEl) {
-    renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets);
+    renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, exerciseEq);
     const centerActiveSet = () => {
       const active = setDotsEl.querySelector('[data-current="1"]');
       if (!active) return;
@@ -933,48 +937,54 @@ function resolveExerciseName(id) {
 }
 
 /**
- * dot 표시 값 결정. spec §6-3-3 우선순위 ①→②→③:
+ * dot 표시 값 결정. spec §6-3-3 프리셋 우선순위:
  *  - done/current: 실제 sets[i] 값 (accent 톤)
- *  - 미입력: ① 직전 세션 동일 세트번호 → ② 직전 입력 완료된 세트 (sets[j], j<i) → ③ sets[i] 자체 preset
- *           → '—' (모두 없을 때). preview 는 회색 톤.
+ *  - 미입력 preview: ① 이번 세션 직전 세트 (done 또는 현재 세트 값 — upcoming 으로 전파)
+ *                  → ② 이전 세션 같은 세트번호 → ③ sets[i] 자체 preset → '—'. preview 는 회색 톤.
+ *  - kind='bodyweight': weight 무시, reps 만으로 값 판정·표기 ("15"). 그 외: "weight·reps".
  */
-export function resolveDotDisplay(sets, i, cur, prevSessionSets) {
+export function resolveDotDisplay(sets, i, cur, prevSessionSets, kind = 'weight') {
+  const bw = kind === 'bodyweight';
   const set = sets[i];
   const isCurrent = i === cur;
   const isDone = !!(set && set.done);
-  const hasOwn = set && Number.isFinite(set.weight) && Number.isFinite(set.reps);
-  // current: 항상 실제 값 (실시간 입력) — hasOwn=false 면 '—'
+  // 표기 가능 값 (맨몸은 reps 만, 그 외 weight+reps)
+  const hasVal = (s) => !!(s && Number.isFinite(s.reps) && (bw || Number.isFinite(s.weight)));
+  const fmt = (s) => (bw ? `${s.reps}` : `${s.weight}·${s.reps}`);
+  // 전파·상속용 의미값 — reps>0 (합성 0·0 미입력 제외)
+  const meaningful = (s) => hasVal(s) && s.reps > 0;
+  // current: 항상 실제 값 (실시간 입력) — 값 없으면 '—'
   if (isCurrent) {
-    return { text: hasOwn ? `${set.weight}·${set.reps}` : '—', isPreview: false };
+    return { text: hasVal(set) ? fmt(set) : '—', isPreview: false };
   }
-  // done && hasOwn: 입력 완료 — 실제 값 accent
-  if (isDone && hasOwn) {
-    return { text: `${set.weight}·${set.reps}`, isPreview: false };
+  // done && 값 있음: 입력 완료 — 실제 값 accent
+  if (isDone && hasVal(set)) {
+    return { text: fmt(set), isPreview: false };
   }
-  // done && !hasOwn (좌 스와이프 스킵) 또는 미입력 — 모두 동일하게 preview 폴백.
-  // ① 직전 세션 동일 세트번호
-  const p = prevSessionSets && prevSessionSets[i];
-  if (p && Number.isFinite(p.weight) && Number.isFinite(p.reps)) {
-    return { text: `${p.weight}·${p.reps}`, isPreview: true };
-  }
-  // ② 직전 입력 완료된 세트
+  // preview 폴백 (spec §6-3-3 우선순위):
+  // ① 이번 세션 직전 세트 — i 이전의 done 세트 또는 현재 세트 값. upcoming 도트로 현재값 전파.
   for (let j = i - 1; j >= 0; j -= 1) {
     const s = sets[j];
-    if (s && s.done && Number.isFinite(s.weight) && Number.isFinite(s.reps)) {
-      return { text: `${s.weight}·${s.reps}`, isPreview: true };
+    if (meaningful(s) && (s.done || j === cur)) {
+      return { text: fmt(s), isPreview: true };
     }
   }
+  // ② 이전 세션 같은 세트번호
+  const p = prevSessionSets && prevSessionSets[i];
+  if (hasVal(p)) {
+    return { text: fmt(p), isPreview: true };
+  }
   // ③ sets[i] preset
-  if (hasOwn) return { text: `${set.weight}·${set.reps}`, isPreview: true };
+  if (hasVal(set)) return { text: fmt(set), isPreview: true };
   return { text: '—', isPreview: true };
 }
 
-function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets) {
+function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind = 'weight') {
   // 단일 dot HTML — 초기 mount (innerHTML 한 번에 박을 때) 만 사용. 후속 mount 는 renderSetDotsDiff
   // 가 기존 DOM 갱신 (transition 트리거 보존).
   const setNum = idx + 1;
   const isDone = !!(set && set.done);
-  const display = resolveDotDisplay(sets || [set], idx, isCurrent ? idx : -1, prevSessionSets);
+  const display = resolveDotDisplay(sets || [set], idx, isCurrent ? idx : -1, prevSessionSets, kind);
   const color = (isCurrent || isDone)
     ? 'var(--accent)'
     : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
@@ -996,7 +1006,7 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets) {
  *  - 부족하면 append, 초과하면 remove
  *  - 활성 set 변경 시 font-size 220ms transition 자연 트리거 (DOM 유지)
  */
-function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets) {
+function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight') {
   if (!setDotsEl) return;
   let appendedCount = 0;
   // 부족한 dot 추가 — 새 dot 은 initial style (isCurrent=false, 작은 폰트) 로 박힘.
@@ -1004,7 +1014,7 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets) {
   while (setDotsEl.children.length < sets.length) {
     const wrap = document.createElement('div');
     const idx = setDotsEl.children.length;
-    wrap.innerHTML = renderSetDotHtml(idx, sets[idx], false, sets, cur, prevSessionSets);
+    wrap.innerHTML = renderSetDotHtml(idx, sets[idx], false, sets, cur, prevSessionSets, kind);
     const dot = wrap.firstElementChild;
     if (dot) {
       setDotsEl.appendChild(dot);
@@ -1026,7 +1036,7 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets) {
     const set = sets[i];
     const isCurrent = i === cur;
     const isDone = !!(set && set.done);
-    const display = resolveDotDisplay(sets, i, cur, prevSessionSets);
+    const display = resolveDotDisplay(sets, i, cur, prevSessionSets, kind);
     const color = (isCurrent || isDone)
       ? 'var(--accent)'
       : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
@@ -1560,6 +1570,8 @@ export function wireLongPress(doc, opts = {}) {
 function classifyBlockState(block, isCurrent) {
   if (isCurrent) return 'current';
   if (!block || block.type !== 'single') return 'pending';
+  // 명시적 "완료" 액션 (finishedAt marker) → 항상 done 표시.
+  if (Number.isFinite(block.finishedAt)) return 'done';
   const sets = Array.isArray(block.sets) ? block.sets : [];
   if (sets.length === 0) return 'pending';
   const allDone = sets.every((s) => s && s.done);
@@ -1612,10 +1624,11 @@ function renderFooterPillHtml({ blockIdx, state, name, progress }) {
     ` + wrapEnd;
   }
   if (state === 'done') {
+    // 완료 — 미완료(pending 0.22) 대비 밝기 강화 (0.72) + weight 500 + sage ✓ (spec §6-8 취소선 금지).
     return wrapStart + `
-      <span style="color:var(--sage);font-size:14px;">✓</span>
-      <span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
-      <span style="font-size:13px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
+      <span style="color:var(--sage);font-size:15px;font-weight:600;">✓</span>
+      <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.72);">${escapeHtml(name)}</span>
+      <span style="font-size:13px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
     ` + wrapEnd;
   }
   if (state === 'hold') {
@@ -1624,8 +1637,8 @@ function renderFooterPillHtml({ blockIdx, state, name, progress }) {
       <span style="font-size:13px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
     ` + wrapEnd;
   }
-  // pending
-  return wrapStart + `<span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.28);">${escapeHtml(name)}</span>` + wrapEnd;
+  // pending — 완료(0.72) 대비 더 흐리게 (0.22)
+  return wrapStart + `<span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.22);">${escapeHtml(name)}</span>` + wrapEnd;
 }
 
 /**
@@ -2356,21 +2369,29 @@ export async function handleLeftSwipe() {
     });
   } else {
     const prev = sets[cur] || {};
+    const committedW = prev.weight ?? null;
+    const committedR = prev.reps ?? null;
     sets[cur] = {
-      weight: prev.weight ?? null,
-      reps: prev.reps ?? null,
+      weight: committedW,
+      reps: committedR,
       done: true,
       preset: false,
       pr: !!prev.pr,
     };
     if (cur === sets.length - 1) {
       sets.push({
-        weight: prev.weight ?? null,
-        reps: prev.reps ?? null,
+        weight: committedW,
+        reps: committedR,
         done: false,
         preset: true,
         pr: false,
       });
+    } else {
+      // spec §6-3-3 — 다음 세트는 직전 세트 값 상속 (아직 사용자 미수정 preset 인 경우만).
+      const next = sets[cur + 1];
+      if (next && next.preset) {
+        sets[cur + 1] = { ...next, weight: committedW, reps: committedR };
+      }
     }
   }
 
@@ -2697,7 +2718,9 @@ function hookClicks(chipsEl, listEl) {
       return;
     }
     try {
-      await addExerciseToActiveSession(exerciseId, part);
+      const res = await addExerciseToActiveSession(exerciseId, part);
+      // 추가된 최신 운동을 현재 세트로 표기 — _currentBlockIdx 초기화 시 mount 가 마지막 single 픽.
+      if (res && res.added) _currentBlockIdx = null;
     } catch (err) {
       console.error('[gymSession] addExerciseToActiveSession', err);
     }

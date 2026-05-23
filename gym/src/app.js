@@ -172,15 +172,17 @@ function subscribeAuth() {
       }
       try { await auth.ensureUserDB(user); }
       catch (e) { console.error('[gym] ensureUserDB 실패', e); return; }
-      if (window.gymSync) {
-        // W-H — await 로 in-flight stopSync 의 _ctx=null 과 race 차단.
-        await window.gymSync.startSync(user).catch((e) => console.error('[gym] sync 시작 실패', e));
-      }
+      // 라우팅·mount 를 sync(네트워크) 완료 앞에서 처리 — 콜드스타트마다 sync 대기 후 재mount 로
+      // 화면이 리로드되는 체감 제거. 데이터는 로컬 우선, sync 는 백그라운드 갱신.
       if (window.location.hash === '#/login' || window.location.hash === '') {
         window.location.replace('#/home');
-        return;
+      } else {
+        mount(parseRoute());
       }
-      mount(parseRoute());
+      if (window.gymSync) {
+        // W-H — await 로 in-flight stopSync 의 _ctx=null 과 race 차단 (mount 뒤 백그라운드).
+        await window.gymSync.startSync(user).catch((e) => console.error('[gym] sync 시작 실패', e));
+      }
     } else if (event === 'SIGNED_OUT') {
       // session-guard 가 1회 refreshSession 시도 — 복구 성공 시 redirect 스킵.
       const forceSignOut = () => {

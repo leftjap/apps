@@ -60,8 +60,9 @@ async function bootstrap() {
     if (session?.user) {
       if (Auth.isAllowedEmail(session.user.email)) {
         await Auth.ensureUserDB(session.user);
-        // Wave 11.8.1 — 첫 다운로드 시작. W-H — await 로 in-flight stopSync 와 race 차단.
-        await Sync.startSync(session.user).catch((e) => console.error('[main] sync 시작 실패', e));
+        // 콜드스타트 첫 paint 를 막지 않도록 startSync 는 비차단 (네트워크 다운로드 대기 → 빈 화면 리로드 체감 제거).
+        // 부트스트랩 시점엔 in-flight stopSync 가 없어 await 불필요 (재인증 race 는 app.js subscribeAuth 가 처리).
+        Sync.startSync(session.user).catch((e) => console.error('[main] sync 시작 실패', e));
       } else {
         // 미허용 이메일 — 즉시 종료 + login 마커
         try { localStorage.setItem(Auth.AUTH_ERROR_KEY, 'not_allowed'); } catch {}
