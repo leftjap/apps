@@ -193,6 +193,14 @@ function buildConceptMain(c, size) {
     wrap.appendChild(box);
   }
 
+  // 유의미성(왜 중요/어디 쓰나) — utility-value. sage 좌측 보더 콜아웃.
+  if (c.significance) {
+    const sig = document.createElement('div');
+    sig.style.cssText = `margin-top:18px;padding:10px 0 10px 14px;border-left:3px solid var(--sage);font-size:${size === 'phone' ? 14 : 15}px;color:var(--text-muted);line-height:1.7;`;
+    sig.textContent = c.significance;
+    wrap.appendChild(sig);
+  }
+
   const nextBtn = document.createElement('button');
   nextBtn.type = 'button';
   nextBtn.id = 'm-concept-next';

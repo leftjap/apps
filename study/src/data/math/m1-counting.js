@@ -1,4 +1,6 @@
 // 모듈 1: 모양으로 세기 (figurate) — 개념 카드 + 변형 응용. Variation Theory 구조.
+import { staircaseToRect } from './figures.js';
+
 export const MODULE_COUNTING = [
   {
     id: 'odd-c',
@@ -13,6 +15,7 @@ export const MODULE_COUNTING = [
       '그래서 연속한 홀수의 합은 항상 제곱수 — 홀수 n개의 합 = n².',
     ],
     worked: { prompt: '1 + 3 + 5 = ?', steps: ['ㄱ자 3겹 → 3 × 3 격자', '= 9'] },
+    significance: "낱낱이 더하지 않고 '모양의 규칙'으로 단번에 세는 패턴 사고 — 흩어진 수도 구조로 보면 한눈에 셉니다.",
   },
   {
     id: 'odd-a',
@@ -59,11 +62,13 @@ export const MODULE_COUNTING = [
     kind: 'concept',
     tag: '개념 · 삼각수',
     title: '1부터 더하기 = 직사각형의 절반',
+    figure: { type: 'svg', svg: staircaseToRect({ n: 4 }), legend: '계단(1+2+3+4) + 거꾸로 끼운 계단 = 4×5 직사각형 (그 절반이 합)' },
     body: [
       '1+2+3…을 계단으로 쌓고, 똑같은 계단을 거꾸로 끼우면 빈틈없는 직사각형이 돼요.',
       '가로 n, 세로 (n+1) 직사각형의 절반이 그 합 — n × (n+1) ÷ 2.',
     ],
     worked: { prompt: '1 + 2 + 3 + 4 는?', steps: ['계단 두 벌 → 4 × 5 = 20', '절반 → 10'] },
+    significance: "하나씩 더하는 대신 '직사각형 절반'으로 바꿔 단번에 구하는 변환 사고 — 1부터 쌓이는 합(적립·일수)을 공식 한 번에.",
   },
   {
     id: 'tnum-a',

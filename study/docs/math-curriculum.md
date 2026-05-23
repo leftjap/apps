@@ -11,6 +11,7 @@
 - **개념 → 절차** (NCTM·ST Math): 개념 이해가 절차에 선행·병행해야 절차가 견고·유연. 시각(개념) 먼저.
 - **Variation Theory**: 개념 설명 → worked example → **변형 응용**. "한 번에 하나만 변경"해야 핵심 원리 추출. 전이는 의도적 설계 없이는 안 일어남.
 - **Productive Failure** (Kapur): 탐구·추측 먼저 → 설명하면 개념이해·전이 우수.
+- **Utility-Value / Relevance 개입** (검색 2026-05, 다수 RCT·PNAS): "왜 중요한가·어디 쓰이나"를 짚으면 수학 동기·성취·관련성 인식이 향상. → **개념카드에 유의미성(가치) 1줄 의무**(아래 §카드 모델·체크리스트).
 - **금지**: 개념 학습 없는 단순 공식 대입 단답 반복(위 근거 모두 미달).
 
 ## 하루 구조
@@ -27,8 +28,13 @@
 **개념 카드** (`kind:'concept'`, 채점 없음 — "다음"):
 ```
 { id, module, conceptId, kind:'concept', tag, title,
-  figure?: {type,…}, body: ['원리 단락…'], worked: { prompt, steps:['…'] } }
+  figure?: {type,…}, body: ['원리 단락…'], worked: { prompt, steps:['…'] },
+  significance: '사고·논리 + 현실활용 1~2문장 — 필수(utility-value)' }
 ```
+- `significance` **필수 (3축)**: *무엇·어떻게* 너머 — ① **유용함/왜 중요** ② **기르는 사고·논리**(이 개념이 어떤 *추론 도구*를 길러주나) ③ **현실 활용**. 1~2문장(비대화 — 최대 2문장).
+  - ②가 핵심: 단순 "어디 쓰나"를 넘어 *사고법*을 명시. 예) 피타고라스 "**직접 못 재는 길이를 아는 값으로 우회해 구하는 간접 측정 사고** — 내비 거리·화면 대각선·경사로까지 자 없이". / 닮음 "*부분으로 전체를 가늠하는 비례 추론*". / 사다리꼴 "*모르는 모양을 아는 모양으로 바꾸는 변환 사고*".
+- *(2026-05-23 결함: ⑴ 개념 8개 전부 significance 부재 ⑵ 1차 정의가 "왜 중요/어디 쓰나"라 ②사고·논리 축이 빠졌음 → 3축으로 보강.)*
+
 **응용 문제** (`kind:'apply'`, 입력 채점):
 ```
 { id, module, conceptId, kind:'apply', tag, figure?, prompt,
@@ -54,17 +60,54 @@
 
 - `m1-counting.js`·`m2-visual.js`·`m3-shapes.js` — 각 [개념 카드 + 응용]. `index.js` = `MATH_CONTENT = [...m1, ...m2, ...m3]`.
 
-## 도형(figure) 규약
+## 도형(figure) 규약 — 파라메트릭 생성 의무
 
-- `{type:'dots', n, legend?}` — n×n 점 격자. `{type:'svg', svg, legend?}` — 직접 저작 정적 SVG. **SVG 좌표 비율 = 라벨 수치 비율**(일관 단위 — node 파싱 검증). 색은 tokens 톤, hex 최소.
-- 외부 도형 데이터셋(저작권) 금지 → 직접 SVG.
+> **근거(시행착오):** 손코딩 raw SVG 는 여러 세션 누적 **비율오류 6건**(vis-2·vis-3·shp-1·para-a·pyth-b·para-b) + **묘사누락 4건**(아래 2번). 반면 함수 생성 `dotsSvg(n)` 은 오류 0.
+> **근거(검색 2026-05):** programmatic generation = "mathematically exact coordinates, perfect consistency" 가 best practice, 좌표 손코딩은 알려진 실패모드. (`geometrySVG` 도 좌표 손코딩 대신 이름점+메서드.)
+
+1. **파라메트릭 헬퍼로만 생성. 손으로 좌표 박은 raw SVG 금지.**
+   - 헬퍼 = 의미 파라미터(라벨과 *같은* 숫자)를 받아 좌표를 **계산**해 SVG 문자열 반환(`dotsSvg(n)` 패턴 확장). 위치: `src/data/math/figures.js`.
+   - 예: `rightTriangle({a,b})` · `parallelogram({base,height,slant})` · `trapezoid({top,bottom,height})` · `squaresOnSides({a,b})` · `scaledSquares({k})` · `circleToRect({r})`.
+   - → 비율오류·단위불일치가 **구조적으로 불가능**.
+2. **figure 는 개념의 "변형"을 그려야 한다 (결과 도형만 그리면 실패).**
+   - 반례(2026-05-23 실측 결함): `pyth` 삼각형만(두 변 위 정사각형 X) · `circ` 원만(부채꼴→직사각형 X) · `trap` 사다리꼴 하나만(붙인 평행사변형 X) · `tnum` figure 자체 부재.
+   - 헬퍼가 변형(점선 오버레이·분해·재배열)을 **포함**해 그리도록 작성. legend 로 때우지 말 것.
+3. **비율 = 라벨 숫자**. 헬퍼 **단위테스트로 자동 검증**(입력→계산좌표 비율 assert). 수동 grep 금지(2026-05 "비율만 보고 통과" → 묘사누락 놓침).
+4. 색은 tokens 톤, hex 최소. 외부 도형 데이터셋(저작권) 금지.
+5. **무거운 라이브러리 기각:** JSXGraph(~200KB — study 번들 148KB 대비 과중·인터랙티브 과잉) · Mafs(React 전용, 본 앱 vanilla JS). 정적 삽화엔 자작 헬퍼가 적정.
+6. `{type:'dots', n, legend?}` 는 이미 파라메트릭(유지). 신규 SVG 도형은 1번 헬퍼 경유.
 
 ## 채점 규약 (mathAnswer.js)
 
 - 정수·소수·분수·% 동치 자동. `accept:[…]` 대체표기, `range:[lo,hi]` π·추정 허용. 1차 오답 → 힌트(core) → 2차 정답·해설.
 - UI: 해설 6필드는 session.css `.ex-section`/`.explain-toggle`(언어 패널과 동일, 입력칸 아래 접힘). 별도 CSS 금지.
 
-## 데이터 흐름 · 마이그레이션
+## 데이터 흐름 (2026-05-23 — 번들 정본)
 
-생성: Claude → `seeds/math-<date>.json` → `seed-math.mjs`(또는 `study-seed-math.yml`) → `study_math_problems`(Supabase). 소비: sync.js → Dexie(schema v3) → `session-math.js`(번들 폴백 `MATH_CONTENT`).
-마이그: `cd ~/apps/study && supabase db query --linked --yes --file supabase/migrations/0005_study_math.sql` (CLI keychain 인증·링크됨).
+- **정본 = `src/data/math/*` (정적 커리큘럼).** `session-math.js`·`home.js` 가 `MATH_CONTENT` 를 **직접** 사용. Supabase/Dexie 경유 안 함. 콘텐츠 수정 = 파일 편집 → push → 배포.
+- **근거:** 정적 커리큘럼을 per-user `study_math_problems`(db-first)로 흘려, 옛 데이터가 새 카드를 가리는 **staleness 버그** 발생(sync 가 서버 삭제를 Dexie 에 반영 안 함). 정적 콘텐츠의 정본은 번들이어야 맞음.
+- **현재 미사용(dead, 보존):** `study_math_problems/queue` 테이블 · `sync.js` math 매핑 · `seed-math.mjs` · `study-seed-math.yml` · `0005_study_math.sql`. → 향후 *per-user/일일 자동생성* math 가 필요해질 때만 부활(그때 db-first 재도입). 그 전엔 손대지 말 것.
+- 라이브 확인: PWA SW autoUpdate(다음 방문 자동). 즉시 검증은 SW 해제 + 캐시 clear + 강제 reload(`curl <live>/assets/*.js | grep` 로 배포 번들 대조).
+
+## 품질 체크리스트 (카드 작성 직후 — "정합" 단정 전 자체 점검)
+
+> en/ja §10/§11 미러. 항목은 실제 시행착오에서 도출(반례 = 위 §들).
+
+**개념카드**
+- [ ] figure 가 개념의 **변형**을 시각화 (결과 도형만 ❌)
+- [ ] figure 는 **파라메트릭 헬퍼** 생성 (손 raw SVG ❌)
+- [ ] figure 비율 = 라벨 숫자 (헬퍼 **단위테스트** 통과 — 수동 grep ❌)
+- [ ] **significance 1줄** (왜 중요/어디 쓰나, utility-value)
+- [ ] body = 원리 단락(공식 암기 아님) + worked 예시 산술 정확
+
+**응용카드**
+- [ ] 개념당 **동형 + 전이** (한 번에 하나만 변경 — Variation)
+- [ ] 답 = 숫자, `accept`/`range` 정합 (오답 함정은 의도적으로)
+- [ ] `solution` 6필드 (idea·example 권장)
+
+**공통 (거짓말 방지 — 시행착오 박제)**
+- [ ] **답 독립 재계산** = 카드 answer (node 스크립트, 카드값 안 보고)
+- [ ] 검증은 **실데이터/실화면** (인위 clear 상태로 "통과" 단정 ❌ — 반복실수)
+- [ ] 못 본 layer 는 "미관측" 명시
+- [ ] 콘텐츠 정본 = 번들(`src/data/math`). 정적 커리큘럼은 DB 경유 안 함
+- [ ] 작성 직후 `pnpm vitest run`(figure 헬퍼 테스트 포함) + 라이브 강제 reload 확인

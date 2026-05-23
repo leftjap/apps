@@ -1,4 +1,6 @@
 // 모듈 3: 도형의 약속 — 개념 카드 + 변형 응용. 피타고라스 · 닮음(넓이비) · 원(πr²).
+import { squaresOnSides, circleToRect } from './figures.js';
+
 export const MODULE_SHAPES = [
   {
     id: 'pyth-c',
@@ -9,14 +11,15 @@ export const MODULE_SHAPES = [
     title: '직각삼각형: 넓이의 덧셈',
     figure: {
       type: 'svg',
-      svg: '<svg width="200" height="190" viewBox="0 0 200 190" role="img" aria-label="직각삼각형 밑변 3 높이 4"><polygon points="30,160 120,160 30,40" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><rect x="30" y="148" width="12" height="12" fill="none" stroke="#788c5d" stroke-width="1"/><text x="70" y="178" font-size="13" fill="#8a8475">3</text><text x="14" y="105" font-size="13" fill="#8a8475">4</text><text x="80" y="92" font-size="13" fill="#d97757">?</text></svg>',
-      legend: '직각을 낀 두 변 3, 4 → 빗변?',
+      svg: squaresOnSides({ a: 3, b: 4 }),
+      legend: '두 변 위 정사각형 넓이(9·16)의 합 = 빗변 위 정사각형 넓이(25)',
     },
     body: [
       '직각을 낀 두 변 위에 정사각형을 그리면, 둘의 넓이 합이 빗변 위 정사각형 넓이와 같아요.',
       '길이가 아니라 넓이(제곱)가 더해져요 — a² + b² = c².',
     ],
     worked: { prompt: '두 변 3, 4면?', steps: ['3² + 4² = 9 + 16 = 25', '√25 = 5'] },
+    significance: "직접 못 재는 길이를 '아는 값으로 우회해' 구하는 간접 측정 사고 — 내비 거리·화면 대각선 인치·경사로 길이까지 자 없이 계산으로.",
   },
   {
     id: 'pyth-a',
@@ -81,6 +84,7 @@ export const MODULE_SHAPES = [
       '길이는 한 줄이지만 넓이는 가로 × 세로 — 두 번 곱하니 배율도 제곱.',
     ],
     worked: { prompt: '한 변을 2배로?', steps: ['2² = 4배'] },
+    significance: "길이 변화가 넓이엔 '제곱으로' 퍼지는 걸 읽는 차원 사고 — 2배 확대=4배(잉크·피자·지도 축척의 직관).",
   },
   {
     id: 'sim-a',
@@ -127,14 +131,15 @@ export const MODULE_SHAPES = [
     title: '원 = πr²',
     figure: {
       type: 'svg',
-      svg: '<svg width="210" height="150" viewBox="0 0 210 150" role="img" aria-label="반지름 10 원"><circle cx="78" cy="75" r="52" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="78" y1="75" x2="130" y2="75" stroke="#788c5d" stroke-width="1.5"/><circle cx="78" cy="75" r="2.5" fill="#788c5d"/><text x="92" y="68" font-size="13" fill="#8a8475">r=10</text></svg>',
-      legend: '부채꼴로 펴면 가로 πr · 세로 r 직사각형',
+      svg: circleToRect({ r: 10 }),
+      legend: '원을 부채꼴로 잘라 펴면 가로 πr · 세로 r 직사각형 → 넓이 πr²',
     },
     body: [
       '원을 잘게 부채꼴로 잘라 번갈아 끼우면 거의 직사각형 — 가로는 둘레의 절반 πr, 세로는 반지름 r.',
       '그래서 넓이 = πr × r = πr².',
     ],
     worked: { prompt: '반지름 10이면? (π ≈ 3.14)', steps: ['10² = 100', '× 3.14 = 314'] },
+    significance: "곡선을 잘게 잘라 '아는 직사각형으로' 근사하는 적분의 씨앗 사고 — 원판·바퀴·파이프 단면 넓이로.",
   },
   {
     id: 'circ-a',

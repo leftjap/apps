@@ -1,4 +1,6 @@
 // 모듈 2: 넓이는 변형 — 개념 카드(원리) + 변형 응용(동형·전이). Variation Theory 구조.
+import { trapezoidDoubled } from './figures.js';
+
 export const MODULE_VISUAL = [
   {
     id: 'tri-c',
@@ -17,6 +19,7 @@ export const MODULE_VISUAL = [
       '그러니 삼각형 넓이는 직사각형(밑변 × 높이)의 절반 — ½ × 밑변 × 높이.',
     ],
     worked: { prompt: '밑변 6, 높이 4인 삼각형은?', steps: ['직사각형 6 × 4 = 24', '절반 → 12'] },
+    significance: "낯선 도형을 '아는 직사각형의 절반'으로 환원해 푸는 사고 — 삼각 땅·지붕 단면처럼 직각 아닌 넓이도 한 번에.",
   },
   {
     id: 'tri-a',
@@ -81,6 +84,7 @@ export const MODULE_VISUAL = [
       '넓이는 그대로 — 밑변 × 높이. 단 "높이"는 비스듬한 변이 아니라 수직 거리.',
     ],
     worked: { prompt: '밑변 8, 높이 3은?', steps: ['8 × 3 = 24'] },
+    significance: "기울어진 겉모습에 안 속고 '잘라 옮겨도 넓이는 그대로'를 보는 보존 사고 — 비스듬한 변 아닌 수직 높이로 재기.",
   },
   {
     id: 'para-a',
@@ -137,14 +141,15 @@ export const MODULE_VISUAL = [
     title: '사다리꼴 = 평균 × 높이',
     figure: {
       type: 'svg',
-      svg: '<svg width="240" height="170" viewBox="0 0 240 170" role="img" aria-label="윗변 4 아랫변 8 높이 4 사다리꼴"><polygon points="40,130 200,130 160,50 80,50" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="80" y1="50" x2="80" y2="130" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="105" y="42" font-size="12" fill="#8a8475">윗변</text><text x="100" y="148" font-size="12" fill="#8a8475">아랫변</text></svg>',
-      legend: '거꾸로 붙이면 평행사변형',
+      svg: trapezoidDoubled({ top: 4, bottom: 8, height: 4 }),
+      legend: '똑같은 사다리꼴(연한 색)을 거꾸로 붙이면 평행사변형 — 그 절반이 사다리꼴',
     },
     body: [
       '똑같은 사다리꼴을 거꾸로 붙이면 평행사변형이 돼요(밑변 = 윗변 + 아랫변).',
       '그 절반이 사다리꼴 — (윗변 + 아랫변) ÷ 2 × 높이.',
     ],
     worked: { prompt: '윗변 4, 아랫변 8, 높이 4는?', steps: ['(4 + 8) ÷ 2 = 6', '6 × 4 = 24'] },
+    significance: "위·아래가 다를 때 '평균으로 고르게' 바꿔 재는 평균화 사고 — 둑·수로 단면처럼 폭이 변하는 넓이로.",
   },
   {
     id: 'trap-a',
