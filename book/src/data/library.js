@@ -577,10 +577,10 @@ export const LIBRARY = [
 "a": "로버트 맥키",
 "w": 130,
 "h": 195,
-"c": "문학",
-"d": "dcream",
-"bg": "#d8d2c0",
-"fg": "#1d1a14"
+"c": "문학 · 시나리오/시나리오작법",
+"y": 2024,
+"p": "민음인",
+"coverUrl": "https://image.aladin.co.kr/product/34850/15/cover200/k682933745_1.jpg"
 },
 {
 "id": "book_050",
@@ -625,7 +625,7 @@ export const LIBRARY = [
 "h": 195,
 "c": "자기계발",
 "d": "dcream",
-"bg": "#ece2cb",
+"bg": "#d8d2c0",
 "fg": "#1d1a14"
 },
 {
@@ -682,10 +682,11 @@ export const LIBRARY = [
 "a": "팻 플린",
 "w": 130,
 "h": 195,
-"c": "실용",
-"d": "dtypo",
-"bg": "#2a3a4d",
-"fg": "#f0ead9"
+"c": "실용 · 마케팅/브랜드",
+"y": 2021,
+"p": "알에이치코리아(RHK)",
+"sub": "비즈니스를 성장시키는 이 시대의 가장 큰손",
+"coverUrl": "https://image.aladin.co.kr/product/26794/65/cover200/8925588927_1.jpg"
 },
 {
 "id": "book_059",
@@ -778,7 +779,7 @@ export const LIBRARY = [
 "h": 195,
 "c": "투자경제",
 "d": "dcream",
-"bg": "#d8d2c0",
+"bg": "#ece2cb",
 "fg": "#1d1a14"
 },
 {
@@ -1095,9 +1096,9 @@ export const LIBRARY = [
 "w": 130,
 "h": 195,
 "c": "자기계발",
-"d": "dcream",
-"bg": "#ece2cb",
-"fg": "#1d1a14"
+"d": "dtypo",
+"bg": "#2a3a4d",
+"fg": "#f0ead9"
 },
 {
 "id": "book_094",
@@ -1118,9 +1119,9 @@ export const LIBRARY = [
 "w": 130,
 "h": 195,
 "c": "인문",
-"d": "dtypo",
-"bg": "#2a3a4d",
-"fg": "#f0ead9"
+"d": "dcream",
+"bg": "#d8d2c0",
+"fg": "#1d1a14"
 },
 {
 "id": "book_096",
