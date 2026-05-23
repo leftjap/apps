@@ -107,17 +107,11 @@ function getStoredLang() {
   catch { return 'en'; }
 }
 
-// 수학 모드 카운트 — 문제 목록(db.mathProblems 또는 번들) + 진행상태(localStorage mathProgress).
+// 수학 모드 카운트 — 문제 목록(번들 정본, session-math 와 동일) + 진행상태(localStorage mathProgress).
 async function loadMathStats(state) {
   const today = state.todayISO;
   let items = [];
-  const db = window.studyDB;
-  if (db?.mathProblems) {
-    try { items = await db.mathProblems.toArray(); } catch { /* 폴백 */ }
-  }
-  if (!items.length) {
-    try { const m = await import('../data/math/index.js'); items = m.MATH_CONTENT || []; } catch { /* noop */ }
-  }
+  try { const m = await import('../data/math/index.js'); items = m.MATH_CONTENT || []; } catch { /* noop */ }
   let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
   const newCount = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;

@@ -113,7 +113,7 @@ export const MODULE_VISUAL = [
     tag: '응용 · 전이',
     figure: {
       type: 'svg',
-      svg: '<svg width="240" height="140" viewBox="0 0 240 140" role="img" aria-label="밑변 6 높이 4 비스듬한 변 5 평행사변형"><polygon points="40,110 160,110 200,30 80,30" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="80" y1="110" x2="80" y2="30" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="92" y="128" font-size="12" fill="#8a8475">밑변 6</text><text x="58" y="74" font-size="12" fill="#8a8475">높이 4</text><text x="178" y="74" font-size="12" fill="#b8b1a0">변 5</text></svg>',
+      svg: '<svg width="240" height="140" viewBox="0 0 240 140" role="img" aria-label="밑변 6 높이 4 비스듬한 변 5 평행사변형"><polygon points="40,110 160,110 220,30 100,30" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="100" y1="110" x2="100" y2="30" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="85" y="128" font-size="12" fill="#8a8475">밑변 6</text><text x="106" y="74" font-size="12" fill="#8a8475">높이 4</text><text x="190" y="68" font-size="12" fill="#b8b1a0">변 5</text></svg>',
       legend: '비스듬한 변 5는 넓이와 무관',
     },
     prompt: '밑변 6, 높이 4인 평행사변형의 비스듬한 변은 5예요. 넓이는?',

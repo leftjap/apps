@@ -18,19 +18,6 @@ function load() {
 }
 function save(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { /* noop */ } }
 
-async function loadProblems() {
-  const db = (typeof window !== 'undefined') ? window.studyDB : null;
-  if (db?.mathProblems) {
-    try {
-      const rows = await db.mathProblems.toArray();
-      if (rows && rows.length) {
-        return rows.sort((a, b) => (a.date || '').localeCompare(b.date || '') || ((a.orderIndex ?? 0) - (b.orderIndex ?? 0)));
-      }
-    } catch { /* 번들 폴백 */ }
-  }
-  return MATH_CONTENT;
-}
-
 // mode: 'new'=신규만, 'review'=복습(개념 숙달형), 그 외=혼합.
 function buildQueue(items, p, mode) {
   const today = todayISO();
@@ -315,7 +302,8 @@ export function mountSessionMath(host) {
     input.focus();
   }
 
-  loadProblems().then((items) => { queue = buildQueue(items, progress, mode); render(); });
+  queue = buildQueue(MATH_CONTENT, progress, mode);
+  render();
   const stop = watchSize((s) => { if (s !== size) { size = s; render(); } });
   return () => { host.innerHTML = ''; stop(); };
 }
