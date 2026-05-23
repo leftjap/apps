@@ -93,14 +93,17 @@ async function ensureProfile(user) {
   const partnerUserId = getPartnerUserIdForEmail(user.email);
   const insertPayload = { user_id: user.id, display_name: displayName };
   if (partnerUserId) insertPayload.partner_user_id = partnerUserId;
+  // upsert(onConflict user_id): 부팅 시 다중 auth 이벤트(INITIAL_SESSION/SIGNED_IN/
+  // TOKEN_REFRESHED)가 ensureProfile 를 동시 호출 → SELECT 모두 빈 결과 → INSERT 레이스 →
+  // 패자 23505(duplicate key). upsert 로 idempotent 화 (RLS insert+update 정책 양쪽 충족).
   const { data: inserted, error: insertError } = await supabase
     .from('book_profiles')
-    .insert(insertPayload)
+    .upsert(insertPayload, { onConflict: 'user_id' })
     .select(SELECT_COLS)
     .single();
 
   if (insertError) {
-    console.error('[profile] insert 실패', insertError);
+    console.error('[profile] upsert 실패', insertError);
     return null;
   }
   return inserted;
