@@ -352,6 +352,66 @@ test.describe('Wave 11.7.3c-2 알림 드롭다운', () => {
     expect(result.ret.scrolled).toBe(false);
   });
 
+  test('handleNotifClick — 대상 글을 본문(#mainView)에 연다 (회귀 fix 2026-05-23)', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForSelector('#today-login-card');
+    const result = await page.evaluate(async () => {
+      const TID = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+      const targetRow = {
+        id: TID, owner_id: 'me', kind: 'navi', kind_number: 7,
+        title: '알림 대상 글', content: '<p>대상 본문</p>',
+        is_shared: 1, created_at: '2026-05-20T00:00:00.000Z', updated_at: '2026-05-20T00:00:00.000Z',
+      };
+      // Dexie stub — handleNotifClick 은 getEntry 만 사용 (sidebar 부재 → tabBtn null → renderDocFromRow 직행)
+      const prevDB = globalThis.todayDB;
+      globalThis.todayDB = { entries: { get: async (id) => (id === TID ? targetRow : null) } };
+      document.querySelector('#mainView')?.remove();
+      document.querySelector('#recentsList')?.remove();
+      document.querySelector('.sb__item[data-category="navi"]')?.remove();
+      const main = document.createElement('div');
+      main.id = 'mainView';
+      document.body.appendChild(main);
+      const sb = document.createElement('div');
+      sb.innerHTML = `<div id="recentsList"><div class="sb__item sb__item--recent" data-doc-id="${TID}">알림 대상 글</div></div>`;
+      document.body.appendChild(sb);
+      let sbTop = document.querySelector('.sb__top');
+      let createdSbTop = false;
+      if (!sbTop) {
+        sbTop = document.createElement('div');
+        sbTop.className = 'sb__top';
+        document.body.appendChild(sbTop);
+        createdSbTop = true;
+      }
+      window.todayNotifications.injectNotifDropdown();
+      const dropdown = document.getElementById('notifDropdown');
+      dropdown.removeAttribute('hidden');
+
+      const ret = await window.todayNotifications.handleNotifClick({ id: 'notif-x', entry_id: TID, read_at: null });
+
+      const article = document.querySelector('#mainView article.doc');
+      const out = {
+        ret,
+        articleEntryId: article?.dataset?.entryId || null,
+        articleTitle: article?.querySelector('.doc__h1')?.textContent || null,
+        targetHighlighted: !!document.querySelector(`[data-doc-id="${TID}"]`)?.classList.contains('notif-highlight'),
+        dropdownHidden: dropdown.hasAttribute('hidden'),
+      };
+      main.remove();
+      sb.remove();
+      if (createdSbTop) { dropdown?.remove(); sbTop.remove(); }
+      globalThis.todayDB = prevDB;
+      return out;
+    });
+    // 핵심: 본문(#mainView)이 알림 대상 글로 열림
+    expect(result.ret.ok).toBe(true);
+    expect(result.ret.opened).toBe(true);
+    expect(result.articleEntryId).toBe(result.ret.entry_id);
+    expect(result.articleTitle).toBe('알림 대상 글');
+    // 보조: 사이드바 항목 하이라이트 + 드롭다운 닫힘
+    expect(result.targetHighlighted).toBe(true);
+    expect(result.dropdownHidden).toBe(true);
+  });
+
   test('handleRealtimeNotificationChange — table mismatch / not_recipient / refreshed', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');

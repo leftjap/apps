@@ -420,14 +420,23 @@ export async function toggleNotifDropdown(doc = document) {
 }
 
 /**
- * Wave 11.7.3c-3 — 알림 행 클릭 → 딥링크.
- * spec §11 L436-443 + §4 L131 (사용자 결정 2026-04-30 — 세그먼트 UI 폐기 + recents 합집합):
- *   1. markNotificationRead(notif.id) + 배지 갱신
- *   2. 네비 카테고리 진입 (이미 active 면 직접 fetch 재패치)
- *   3. #recentsList [data-doc-id="entry_id"] scrollIntoView + 하이라이트 2초
- *   4. 드롭다운 닫기
+ * 알림 행 클릭 → 본문 딥링크 (회귀 fix 2026-05-23).
  *
- * 반환: { ok, scrolled, entry_id, reason }
+ * 기존 버그: navi 탭 진입 + 사이드바 항목 scrollIntoView/하이라이트만 수행 →
+ *   본문(#mainView)이 알림 대상 글로 열리지 않음 (navi 최신 글이 떠 있을 뿐).
+ *   대상이 navi 외 글(fiction/blog/memo)이면 navi recents 에 없어 강조조차 실패.
+ *   본문이 안 열리니 그 글의 댓글 영역(installArticleObserver→mountForArticle)도 미발화.
+ *
+ * 수정: 대상 entry 를 직접 로드해 본문을 그 글로 연다 (kind 무관). 본문이 열리면
+ *   comments.js 의 installArticleObserver 가 article data-entry-id 변경을 감지해 댓글 자동 mount.
+ *   1. markNotificationRead + 배지 갱신
+ *   2. getEntry(entry_id) — 대상 글 로드 (없으면 navi fallback — 미pull/삭제 방어)
+ *   3. row.kind 카테고리 탭 전환 (soyoun_navi → navi 합집합 탭)
+ *   4. renderDocFromRow(row) — 본문을 대상 글로 (핵심)
+ *   5. #recentsList 항목 scrollIntoView + 하이라이트 2초 (보조)
+ *   6. 드롭다운 닫기
+ *
+ * 반환: { ok, opened, scrolled, entry_id, kind, reason }
  */
 export async function handleNotifClick(notif, doc) {
   if (!notif?.entry_id) return { ok: false, reason: 'no_entry_id' };
@@ -444,25 +453,42 @@ export async function handleNotifClick(notif, doc) {
     }
   }
   await refreshAlertBadge();
-  // 2. 네비 카테고리 진입 — mocks setCategory 흐름 + Dexie 합집합 fetch
-  const naviBtn = doc.querySelector('.sb__item[data-category="navi"]');
-  const isAlreadyNavi = naviBtn?.classList.contains('sb__item--active');
-  if (naviBtn && !isAlreadyNavi) {
-    naviBtn.click();
+  // 2. 대상 entry 로드 — 핵심 fix. 사이드바 강조가 아니라 본문을 이 글로 직접 연다.
+  let row = null;
+  try {
+    row = await Queries.getEntry(notif.entry_id);
+  } catch (e) {
+    console.warn('[notifications] getEntry 실패', e?.message || e);
+  }
+  // 3. 대상 글 kind 의 카테고리 탭으로 전환 (soyoun_navi → navi 합집합).
+  //    row 없으면(미pull/삭제) navi fallback — 기존 동작 보존.
+  const tabKind = row && row.kind === 'soyoun_navi'
+    ? 'navi'
+    : (row && Queries.ENTRY_KINDS.includes(row.kind) ? row.kind : 'navi');
+  const tabBtn = doc.querySelector(`.sb__item[data-category="${tabKind}"]`)
+    || doc.querySelector('.sb__item[data-category="navi"]');
+  const isAlreadyActive = !!tabBtn?.classList?.contains('sb__item--active');
+  if (tabBtn && !isAlreadyActive) {
+    tabBtn.click();
     // mocks setCategory 가 #recentsList 갈아치움 + handleCategoryActive 가 setTimeout(0) 후 patch
     await new Promise((r) => setTimeout(r, 250));
-  } else if (isAlreadyNavi) {
-    // 이미 navi active — 직접 fetch + 재패치 (MutationObserver 발화 안 함)
+  } else if (isAlreadyActive) {
+    // 이미 해당 탭 active — 직접 fetch + 재패치 (MutationObserver 발화 안 함)
     try {
-      const list = await Entries.fetchEntriesForCategory('navi');
+      const list = await Entries.fetchEntriesForCategory(tabKind);
       if (list.length > 0) {
-        Entries.renderRecentsFromRows('navi', list, doc);
+        Entries.renderRecentsFromRows(tabKind, list, doc);
       }
     } catch (e) {
       console.warn('[notifications] fetchEntries 실패', e?.message || e);
     }
   }
-  // 3. entry_id 매치 row scrollIntoView + 하이라이트 2초
+  // 4. 본문(#mainView)을 대상 글로 직접 열기 — 댓글 영역은 comments.js 가 자동 mount.
+  let opened = false;
+  if (row && typeof Entries.renderDocFromRow === 'function') {
+    opened = !!Entries.renderDocFromRow(row, doc);
+  }
+  // 5. entry_id 매치 row scrollIntoView + 하이라이트 2초 (보조 — 목록 내 위치 강조)
   const target = doc.querySelector(`#recentsList [data-doc-id="${cssEscape(notif.entry_id)}"]`);
   if (target) {
     if (typeof target.scrollIntoView === 'function') {
@@ -471,9 +497,9 @@ export async function handleNotifClick(notif, doc) {
     target.classList.add('notif-highlight');
     setTimeout(() => target.classList.remove('notif-highlight'), 2000);
   }
-  // 4. 드롭다운 닫기
+  // 6. 드롭다운 닫기
   closeNotifDropdown(doc);
-  return { ok: true, scrolled: !!target, entry_id: notif.entry_id };
+  return { ok: true, opened, scrolled: !!target, entry_id: notif.entry_id, kind: row?.kind || null };
 }
 
 /** CSS attribute selector 안 안전한 entry_id (UUID 외 특수문자 가드). */
