@@ -1,155 +1,76 @@
-# book 이식 — 세션 핸드오프 / 작업 명세서
+# book — 세션 핸드오프 / 작업명세서 (2026-05-23, 2차)
 
-> 작성: 2026-05-23 · 대상: 다음 세션 Claude (로컬)
-> 원 작업지시서: `book/specs/book-port-spec.md` (이걸 기반으로 W0~W8 구현 완료)
-> 본 문서: 구현 현황 + **반복된 실수/실패 요인** + **v14 디자인 정밀 대조 과제** + 다음 액션
+> 대상: 다음 세션 Claude (로컬). 선행: `book/specs/book-port-spec.md`.
+> 본 세션 범위: 마이그레이션 적용 + profile 버그 + causencompany 제거 + 검색 + **서재 102책/991어구록 이식**.
+> ⚠ 본 세션에서 **과대검증·설계결함·시안미준수** 가 다수 발생 (§4 정직 기록). 다음 세션은 §4 를 먼저 읽고 시작할 것.
 
----
-
-## 0. TL;DR
-
-- **W0~W8 + 검색: 코드 구현 완료, `main` 푸시, GitHub Pages 배포 완료** (`https://leftjap.github.io/apps/book/`).
-- **UI/네비게이션: 전 화면 스크린샷 + 전 버튼 클릭 검증 완료** (단위 28/28, e2e 2/2).
-- **미완료 단 1건**: Supabase 마이그레이션 *미적용* → 실 데이터 영속·RLS·Realtime **미검증** (DB 자격증명 필요 — 제 손에 없음).
-- **다음 세션 최우선 2가지**: (1) 마이그레이션 적용 + 데이터/RLS/Realtime 검증, (2) **v14 디자인 시안 정밀 1:1 대조 + 누락분 보완** (특히 분석 화면).
-
----
-
-## 1. 구현 완료 내역 (커밋 — 모두 푸시됨)
-
-| 커밋 | Wave | 내용 |
+## 0. 현재 상태 (커밋·검증)
+| 커밋 | 내용 | 검증 |
 |---|---|---|
-| `15aa5a2` | W0 | scaffold (today→book): Vite6+PWA, 인증(Supabase OAuth+password), Dexie schema, hash 라우터 셸, 로그인 카드. v14 목 → `design-ref/` 이동 보존 |
-| `11df0f3` | W1 | 데이터 레이어: `0001_book_init.sql`+`0002_book_realtime.sql`(미적용), `db/queries.js`·`sync.js`·`devSeed.js`, `data/books.js`(BOOKS 16 상수) |
-| `b3af4f2` | W2+W3 | UI 토대(`ui/dom·icons·cover·quote-text·format·components`, `styles/book.css`) + 피드(그룹+Streak/Pins/Comparison/Retro 실집계) |
-| `e63209c` | W4 | 스레드/댓글 CRUD + 핀 토글 + Realtime 배선 |
-| `685a01e` | W5 | 추가/수정/삭제 모달(오버레이) |
-| `a441c19` | W6 | 책상세 + 모두보기(책/작가/출판사/핀) |
-| `f591499` | W7 | 분석(stats/word/day/author) — 시드 실집계 |
-| `dd0cb43` | W8 | PWA manifest+SVG아이콘 + deploy-pages.yml book 통합 + e2e |
-| `6a70119` | fix | 검색 화면(`search.js`) — 검색바 dead-end 해소 |
+| `4f529a3` | Supabase 마이그 0001/0002 적용 + profile insert→upsert(레이스 23505) | SQL(테이블3/정책9/realtime2/RLS3)·REST 200·콘솔 0 |
+| `f6089ad` | causencompany 테스트계정 제거 (ALLOWED_EMAILS=leftjap+soyoun312) | 리로드 시 거부→로그인, grep 0 |
+| `7fd82cc` | 검색 기능 (search 라우트·페이지) | ⚠ **시안 미준수 — 이슈 [P0-B]** |
+| `313362b`·`1a2d23d`·`ad62114` | 서재 102책 BOOKS 교체 + 991어구록 Supabase 적재 + 표지 오매칭 수정 | 표지 96(다른책0)+placeholder6, RLS 부부공유 시뮬(소연 991/무관 0) |
 
-(중간에 `WIP(claude-snapshot)` 커밋 다수 — Stop hook 자동 생성, 무시 가능. `d449f14`는 **타 세션 study 작업** — book 무관.)
+- **데이터 위치**: 책 = `src/data/library.js`(번들, 부부공유 자동). 어구록 = Supabase `book_quotes`(owner 지오 `7bae5645`, book_ref=`book_001`..`book_102`).
+- **소스**: `~/cowork/docs/서재/quotes-data.json`(102책/991어구록). 카탈로그 빌더: `/tmp/build_catalog2.py`(저자/제목검증), `/tmp/gen_library.py`(library 생성), `/tmp/insert_quotes.py`(적재).
+- **인증**: 본인 계정 leftjap(지오)/soyoun312(소연). 테스트는 leftjap 매직링크(service_role admin generate_link → verifyOtp, 비번 불요).
 
----
+## 1. 알려진 이슈 = 다음 세션 작업 (우선순위순)
 
-## 2. 실제 파일 구조
+### [P0-A] created_at 설계결함 → 책 분리/중복-보임 + 통계 날짜 오류 (가장 큼)
+- **증상**: 피드에서 같은 책 어구록이 여러 곳에 흩어져(분리) 중복처럼 보임. 통계 날짜·"가장 최근"이 현재가 아닌 2026-03-23.
+- **근본원인(실측)**: 적재 시 `created_at = added(전부 2026-03-23) + qi분`. 모든 책이 동일 날짜 00:00~00:44(UTC) 분대에 몰려, 분이 겹치는 책끼리 시간순 피드에서 **인터리브** → `groupQuotes`(연속 동일책만 그룹) 가 끊겨 책이 분리. **실 중복 아님**(book_quotes 991 = distinct 991 확인).
+- **확인**: 피드 시간순 상위10 = book_005/book_025 교차.
+- **수정안(택1, 사용자 확인 후)**:
+  - (a·권장) **피드/통계를 created_at 무관하게 book_ref 그룹 유지** — `feed.js` 정렬/groupQuotes 를 책 단위로. 원본에 실 독서일이 없어 created_at 재배정은 임의적.
+  - (b) created_at 재배정: `update book_quotes set created_at = base + book순서*offset + qi`. SQL 1회. 단 날짜 의미 임의.
+  - 통계 "현재 날짜"는 원본에 실날짜 부재라 불가 — 통계 기본기간 "전체" 고정 또는 (b) 채택 결정 필요.
 
-```
-book/
-  index.html · vite.config.js · package.json · .env.local(gitignore) · .gitignore
-  public/icons/book-icon.svg          # PWA 아이콘 (SVG)
-  src/
-    main.js                           # 부트스트랩 + 전 화면 import + Sync 배선
-    app.js                            # hash 라우터 + registerScreen + 로그인카드 + setActions(모달)
-    services/  supabase·auth·auth-storage·auth-session-guard·profile
-    db/        schema·queries·sync·devSeed (+ *.test.js)
-    data/      books.js (BOOKS 16 + bookOf/groupQuotes)
-    ui/        dom·icons·cover·quote-text·format·components
-    features/  feed·thread·book-detail·lists·add-edit·stats·word·day·author·search
-    styles/    book.css
-  supabase/migrations/ 0001_book_init.sql · 0002_book_realtime.sql   # ⚠ 미적용
-  e2e/smoke.spec.js · playwright.config.js
-  design-ref/                         # v14 원본 (Babel JSX) — 디자인 대조용 보존
-  specs/ book-port-spec.md · book-handoff.md(이 문서)
-```
+### [P0-B] 검색 — v14 시안 미준수 (별도 페이지로 구현함)
+- **증상**: topbar 검색 클릭 → **별도 `/search` 페이지**로 이동. 시안은 topbar 검색바 자체가 인라인.
+- **수정안**: `features/search.js` + `'search'` 라우트(app.js) + main.js import 제거 또는 재설계. **topbar 검색바를 인라인 기능화** — 포커스 시 입력 활성 + 하단 드롭다운 결과(책/어구록), 시안 레이아웃 유지. (`ui/components.js` topbar-search.)
 
-라우트(app.js parseHash): `#/`(feed) `#/stats` `#/search` `#/book/:ref` `#/thread/:ref/:quoteId?` `#/word/:w` `#/day/:d` `#/author/:name` `#/all/:kind`(books|authors|pubs|pins) `#/login`. 모달(add/edit/delete)은 라우트 아닌 **오버레이 상태**(ctx.openAdd/openEdit/openDelete).
+### [P1-C] 어구록 끝없는 스크롤 (페이지네이션 부재)
+- **증상**: 피드에 991 어구록 전부 렌더 → 무한 스크롤·성능 부담.
+- **수정안**: `feed.js` 점진 로드(무한스크롤) 또는 가상 스크롤 + 초기 N개 제한.
 
----
+### [P1-D] 소스 데이터 부정확 (제목/저자) — 사용자 정보 필요
+- 일부 책 제목/저자가 부정확. Aladin 저자일치 책 없어 placeholder 처리됨(§2). 예: book_095 "편하게 사는 삶과 인간답게 사는 삶"/홍세화 (사용자: **제목 잘못**), book_025 "분노사회"/한병철(한병철 저작에 분노사회 없음 — 오류 의심).
+- **수정안**: 사용자가 정확한 제목/저자/ISBN 제공 → `quotes-data.json` 수정 → 카탈로그 재빌드 + library 재생성. 자동수정 금지(오매칭 위험).
 
-## 3. 검증 상태 (정직 — 방법 명시)
+### [P2-E] 디자인: 어구록 본문 좌정렬 (⚠ 인지만, 수정 금지)
+- 어구록 좌정렬로 가독 불편. **사용자 지시: "일단 알고만 있어, 처리하지 말 것."** → 본 세션·다음 세션 모두 디자인 변경 금지. 추후 디자인 작업 지시 시에만 처리.
 
-| 항목 | 방법 | 결과 |
-|---|---|---|
-| 빌드(로컬 + GH_PAGES) | `pnpm build` | ✅ |
-| 단위 테스트 | `pnpm vitest run` | ✅ 28/28 (queries/sync/devSeed) |
-| e2e (게이트 + 로그인→추가→댓글→핀) | `pnpm e2e` | ✅ 2/2 |
-| 전 UI 화면 렌더 | preview MCP 스크린샷 (풀사이즈) | ✅ 전 화면 |
-| 전 버튼/네비 클릭 | preview MCP `.click()` → 라우팅+렌더 | ✅ TopBar·피드·스레드·책상세·통계·모두보기·단어/날짜/작가·모달·검색·핀토글(피드+스레드) |
-| 배포 아티팩트 | gh run watch + curl 200 + 운영 렌더 스샷 | ✅ (운영은 빈 상태 — 마이그레이션 전) |
-| **마이그레이션 SQL 실행** | — | ❌ **미실행=미검증** (today 0001과 패턴 일치하나 DB에 안 돌림) |
-| **Supabase 영속/동기화** | — | ❌ 미검증 (테이블 미존재) |
-| **RLS 2계정 격리** | — | ❌ 미검증 |
-| **Realtime echo** | — | ❌ 배선만, 미검증 |
-| 반응형(모바일/태블릿) | — | ❌ 미검증 (데스크탑만) |
+## 2. placeholder 6권 (표지 없음 — Aladin 저자일치 없음) + 세트표지 1
+- `book_002` 혹시 당신도 '음식 문맹자'인가요? / 박정훈
+- `book_025` 분노사회 / 한병철 (※데이터 오류 의심)
+- `book_053` 한번이라도 모든 걸 걸어본 적 있나 / 이지성
+- `book_066` 가진 돈을 몽땅 써라 / 빌 퍼킨스 (※"가진 돈은…/호리에 다카후미"는 다른 책)
+- `book_093` 꾸준함과 루틴의 힘 / 이재원
+- `book_095` 편하게 사는 삶과 인간답게 사는 삶 / 홍세화 (※제목 오류)
+- 세트표지: `book_033` 희망 버리기의 기술/마크 맨슨 → Aladin엔 [세트] 2권만(개별 없음). 저자 정확하나 세트 이미지.
 
-검증 데이터 = **시드(로컬 Dexie, 15 어구록/4 댓글/3 핀)**. 실 Supabase 데이터 아님.
+## 3. 검증 프로토콜 (preview MCP)
+- book-dev 5176 (`preview_start("book-dev")`, 세션 중 죽으면 재시작). 스샷 전 `loadingScreen.hidden` + sync flood 주의.
+- 로그인: leftjap 매직링크 — `curl .../auth/v1/admin/generate_link {type:magiclink,email:leftjap@gmail.com}` (service_role) → 브라우저 `(await import('/src/services/supabase.js')).supabase.auth.verifyOtp({token_hash, type:'magiclink'})`. 시드: `window.bookDevSeed.seedDemoData` (구 샘플 id 참조 — 현 BOOKS와 불일치, 호출 주의).
+- Supabase SQL: today 워크디렉토리에서 `supabase db query --linked`(Management API, 키체인 토큰 무프롬프트, DB비번 불요). RLS 시뮬: `begin; set local role authenticated; set local request.jwt.claims='{"sub":"<uid>","role":"authenticated"}'; <select>; rollback`.
 
----
+## 4. ⚠ 본 세션 반복 실수 & 교훈 (정직 기록 — 다음 세션 필독)
+### 과대검증·거짓 (반복)
+1. **"제대로 구현/전 뷰 검증 완료" 조기 단정** — 카운트(991/102)·일부 스샷만 보고 "검증 완료"라 단정. 실제론 (a)피드 책분리(created_at) (b)통계 날짜오류 (c)검색 시안미준수 (d)무한스크롤 을 **전부 못 잡음**. → **교훈: "검증"은 카운트가 아니라 실 UX(피드 그룹·정렬·스크롤·디자인)를 사용자 눈으로. 스샷은 1~2뷰가 아니라 대표 시나리오 전부.**
+2. **"오매칭 0" 단정** — 잡은 4건만 보고 단정, 전수 미검증. 사용자 지적 전 자가발견 못 함(한병철 스샷서 우연 포착). → **교훈: 생성/이식한 데이터는 전수 또는 표본 교차검증(제목·저자 매칭) 후 단정.**
+3. **통계 날짜를 "사소한 표시 뉘앙스"로 축소** — 실은 created_at 설계결함의 증상(책분리와 동일 원인). → **교훈: 이상징후를 "사소"로 치부 금지. 근본원인 추적.**
+### 시안 미준수·게으름
+4. **검색 별도 페이지** — v14 시안(topbar 인라인 검색바)을 안 보고 별도 /search 페이지를 만듦("엉터리"). → **교훈: 기능 구현 전 design-ref 시안(core-v14.jsx 등) 확인. 위치·인터랙션 형태를 시안에 맞춤.**
+5. **데이터 품질 미점검(누락)** — 이식 전/후 중복·책분리·제목오류를 점검 안 함(소스엔 없었으나 내 created_at이 분리 유발). 무한스크롤도 인지 못 함. → **교훈: 대량 데이터 이식 시 — 중복·분리·정렬·페이지네이션·날짜를 체크리스트로 사전 점검.**
+### 교훈 요약
+- **얕은 검증 금지**: count/REST200/단일스샷 ≠ 검증. 실 사용 시나리오를 끝까지(스크롤 포함) 본다.
+- **내가 만든 데이터를 의심**: created_at·표지매칭 등 자가생성물 전수/표본 검증.
+- **시안 우선**: UI 작업 전 design-ref 대조.
+- **축소 금지**: 사용자가 짚기 전에 이상을 근본원인까지.
 
-## 4. ⚠ 본 세션 반복된 거짓말/미검증/실패 요인 (다음 세션 반드시 경계)
-
-정직한 자기분석. 같은 실수 반복 금지.
-
-1. **검증 과대표기 (가장 큰 문제)**: 요약표에 `preview ✓`를 남발해 **eval(DOM 구조 확인)과 실제 화면 스크린샷을 혼동**. 사례:
-   - 출판사(all/pubs) 화면은 **0 검증**인데 "모두보기 4종 ✓"로 적음.
-   - 스레드 핀토글 미클릭인데 매트릭스에 ✓.
-   - **교훈: "검증"이라 쓸 땐 방법을 명시**(스크린샷/클릭/eval/단위테스트). eval로 DOM만 본 건 "화면 검증" 아님.
-2. **스크린샷 품질 미점검**: `location.reload()` 후 뷰포트가 작게 리셋된 걸 인지 못하고 작은/가려진 캡처를 "확인함"으로 처리. 로딩 오버레이(0.3s 페이드)가 화면 위에 겹친 채 캡처됨.
-   - **교훈: 리로드 대신 `location.hash` 이동(뷰포트 유지). 캡처 후 실제로 눈으로 보고 작거나 가려졌으면 재촬영.**
-3. **dead-end 출하**: W3에서 검색바에 `nav('/search')`를 달면서 search 라우트/화면을 안 만듦 → 피드로 폴백되는 죽은 버튼. 사용자가 "버튼 다 눌러봤냐" 압박 후에야 발견·수정.
-   - **교훈: onClick 단 모든 요소는 반드시 클릭 검증.**
-4. **버그 늦은 발견**: `el('textarea',{value})`가 value를 attribute로만 설정 → 수정 모달 빈칸 버그. 화면 검증으로만 잡힘.
-   - **교훈: 폼 요소는 실제 입력/표시 확인.**
-5. **처음부터 철저하지 않음**: Wave별 검증을 eval/일부 클릭으로 끝내고, 사용자가 **3회 압박("화면 검증 했나"·"버튼 다 눌렀나"·"거짓 미검증 없나")** 한 뒤에야 전수 클릭+스크린샷.
-   - **교훈: Wave 종료 검증 시 처음부터 (a) 전 화면 스크린샷 (b) 전 버튼 클릭을 기본으로.**
-6. **마이그레이션 반복 보류 표현**: 매번 "자격증명 없어 불가"만 반복. 자율 수단(키체인 토큰/db push 충돌) 전수조사를 늦게 함. 결론은 정당(비대화형 토큰 없음)이나, **더 빨리 한 번에 조사하고 명확히 옵션 제시했어야**.
-
----
-
-## 5. 🎯 v14 디자인 시안 정밀 대조 (다음 세션 최우선 과제)
-
-> 본 세션은 "기능/로직"은 v14 구조대로 이식했으나 **픽셀·요소 단위 1:1 대조는 미완**. 특히 분석 화면을 D2("분석 lean 허용")를 근거로 **단순화**했는데, 이게 시안과 다름. 다음 세션이 화면별로 대조 후 보완.
-
-### 5.1 대조 방법
-- **v14 원본 실행**: `book/design-ref/index.html` (React+Babel inline). 로컬에서 `npx serve book/design-ref -l 4801` (launch.json `book-app` 가 이 경로) 또는 브라우저로 직접 open. 단, design-ref 의 app.jsx 는 임시 go/back 라우터라 화면 전환은 됨.
-- **현재 앱**: `book-dev`(5176). 시드 후(`window.bookDevSeed.seedDemoData`) 비교.
-- **절차**: 화면별 v14 vs 현재 나란히 스크린샷 → 간격/타이포/색/요소 누락/정렬 대조 → 차이 목록화 → 보완.
-
-### 5.2 이미 아는 누락·단순화 (의도적이나 시안과 다름 — 보완 후보)
-- **통계(stats)**: `PeriodSeg`(이번달/올해/전체 토글) **없음**. 단어 패널이 **크기별 태그** — v14는 `WordCloud` 패킹(`design-ref/wordcloud.jsx` `packCloud` **미이식**).
-- **단어 상세(word)**: v14의 `등장 추이`(월 막대그래프), `함께 자주 등장`(관련어 칩), `옮긴 작가`, `처음 만난 곳` 박스 **누락**. 현재 = hero+stats+책+어구록만.
-- **날짜 상세(day)**: v14의 `이 주`(주간 막대), `인근 날` 사이드 위젯 **누락**. 현재 = hero+타임라인+읽은책.
-- **작가 상세(author)**: v14의 `이 작가를 옮긴 흐름`(월 막대), `이 작가의 단어`(WordCloud) **누락**. 현재 = hero+책+어구록.
-- **피드 "최근순"**: 정렬 핸들러 없음(시각 표시만 — v14도 inert). 정렬 기능 자체가 미구현.
-
-### 5.3 미확인 — 다음 세션 정밀 점검 필요
-- **픽셀 간격/패딩/폰트크기/letter-spacing** v14 정확 일치 여부 — 전 화면 미정밀대조 (eyeball 수준).
-- **표지(Cv) 6종 디자인 변형**(dblock/dtypo/dcream/dframe/dphoto/dsplit) 시각 정합 — 일부만 육안 확인. dsplit(아무튼 비건)·dframe·dphoto 그라데이션 등 v14와 1:1 대조 필요.
-- **반응형** (`@media` 1040/760/480) 미검증 — 데스크탑(1280/1440)만 봄.
-- **호버 상태**(book-row/quote-row hover 배경, hov-actions opacity) 시각 미확인.
-- **스레드 앵커/댓글 아바타 연결선**, 모달 그림자/배경 dim 등 디테일.
-
----
-
-## 6. 다음 세션 액션 (우선순위)
-
-1. **[P0] 마이그레이션 적용 + 데이터 검증**
-   - 적용: 대시보드 SQL Editor에 `0001`→`0002` 실행 (권장) **또는** DB 비번으로 `supabase db push`(⚠ book 0001 vs today 0001 버전 충돌 — 타임스탬프로 리네임하거나 대시보드 직접).
-   - 검증: ① 추가→Supabase 저장→새로고침 pull 왕복 ② **RLS**: 서비스롤 키로 파트너(소연 `aeafd9a7`)/제3자 owner 의 quote 시드 → 본인 클라이언트가 파트너 건 **보이고** 제3자 건 **안 보이는지** ③ **Realtime**: 2탭에서 한쪽 추가 시 다른쪽 echo.
-2. **[P0] v14 디자인 정밀 대조(§5) + 누락 보완** — 워드클라우드 packCloud 이식, 월별 막대차트, PeriodSeg, 관련어/주간/인근날 위젯, 픽셀 간격 조정.
-3. **[P1] 반응형 검증** (모바일 375 / 태블릿 768).
-4. **[P1] e2e 확장** — 현재는 데이터레이어 위주. 실제 UI 클릭 플로우(추가 모달 작성→저장→피드 반영) 추가.
-5. **[P2] 피드 정렬(최근순/가나다 등) 기능** — 현재 미구현.
-
----
-
-## 7. 운영 메모 (함정 — 본 세션 교훈)
-
-- **검증 도구**: preview MCP (`book-dev` 5176). **리로드 후 뷰포트 리셋** → `preview_resize` 후 `location.hash` 이동(리로드 금지)으로 뷰포트 유지. 로딩 오버레이 페이드 겹침 → 재촬영.
-- **인증 우회**: `~/.config/book/.env` 의 `TEST_USER_EMAIL`/`TEST_USER_PASSWORD`(본인 계정) → `window.bookAuth.signInWithPassword({email,password})`.
-- **시드**: `window.bookDevSeed.seedDemoData({meId, partnerId})`. partnerId = `window.bookProfile.getPartnerUserIdForEmail(본인 이메일)`(소연 aeafd9a7). 비-UUID id라 sync push skip(로컬 전용). 세션/시드는 IndexedDB라 dev 서버 재시작에도 유지.
-- **scope-gate**: `~/.claude/.scope-approved` (TTL 짧음, 파일 존재 시 통과). 대규모 Write/Edit(>100줄/5000b, md는 200줄/10000b) 전 `touch` 또는 사용자 "범위 승인" 발화. 작업 끝나면 `rm` 권장.
-- **vitest watch 금지** → 항상 `pnpm vitest run`. (watch-guard 훅이 `vitest` 단독 차단.)
-- **.env Write 차단**(PreToolUse 훅) → Bash로 작성.
-- **supabase CLI**: 로그인됨, geo-apps(`tcbooffrdacfatywdzcm`) linked via today. 액세스 토큰은 macOS 키체인에만(비대화형 추출 불가, `security` 시 GUI 프롬프트). DB 비번 없음.
-- **자동 commit+push**: 본 세션 편집 파일만 골라 Conventional Commits + push (앞 W들 그렇게 함). WIP 스냅샷은 Stop hook 자동.
-
----
-
-## 8. 참조
-- 원 작업지시서: `book/specs/book-port-spec.md`
-- v14 디자인 원본: `book/design-ref/*.jsx` + `index.html`
-- today 참조(패턴 출처): `today/src/...`, `today/supabase/migrations/0001_init.sql`
-- 배포: `https://leftjap.github.io/apps/book/` · 워크플로 `.github/workflows/deploy-pages.yml`
+## 5. 운영 함정
+- git: Stop 훅 WIP 스냅샷 혼재 → 본 세션 파일만 add 후 Conventional commit + push. destructive 사전확인.
+- scope-gate: 대용량 Write/Edit(md 200줄/10000b) 전 `~/.claude/.scope-approved` 플래그(매 프롬프트 삭제 — 같은 응답서 설정).
+- book-dev 5176: study/today와 포트 경합 가능, 세션 중 죽으면 재시작.
