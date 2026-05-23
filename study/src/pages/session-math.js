@@ -42,7 +42,7 @@ function buildQueue(items, p, mode) {
     const seen = new Set();
     const out = [];
     for (const d of due) {
-      const alt = items.find((c) => c.module === d.module && !p.done[c.id] && !p.srs[c.id] && !seen.has(c.id));
+      const alt = items.find((c) => c.module === d.module && c.kind !== 'concept' && !p.done[c.id] && !p.srs[c.id] && !seen.has(c.id));
       const pick = alt || d;
       if (!seen.has(pick.id)) { seen.add(pick.id); out.push(pick); }
     }
@@ -160,6 +160,62 @@ function buildMathMain(c, size) {
   return { wrap, input, checkBtn, verdict, nextWrap };
 }
 
+// 개념 카드 (kind:'concept') — figure + 원리(body) + worked example. 채점 없음, "응용 풀기" 버튼.
+function buildConceptMain(c, size) {
+  const wrap = document.createElement('div');
+  wrap.className = 'session-main';
+  if (size === 'desktop') wrap.style.cssText = 'display:flex;flex-direction:column;flex:1;';
+
+  if (c.tag) {
+    const tag = document.createElement('div');
+    tag.style.cssText = 'font-size:12px;color:var(--sage);text-transform:uppercase;letter-spacing:0.12em;font-family:var(--font-display);font-weight:700;margin-bottom:16px;';
+    tag.textContent = c.tag;
+    wrap.appendChild(tag);
+  }
+  const fig = figureNode(c.figure);
+  if (fig) wrap.appendChild(fig);
+
+  const sizeMap = { phone: 24, tablet: 32, desktop: 40 };
+  const h1 = document.createElement('h1');
+  h1.className = 'poppins';
+  h1.style.cssText = `font-size:${sizeMap[size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;line-height:1.3;margin:${fig ? '12px 0 0' : '0'};`;
+  h1.textContent = c.title || '';
+  wrap.appendChild(h1);
+
+  (c.body || []).forEach((para) => {
+    const p = document.createElement('p');
+    p.style.cssText = `font-size:${size === 'phone' ? 15 : 16}px;color:var(--text);line-height:1.8;margin:14px 0 0;`;
+    p.textContent = para;
+    wrap.appendChild(p);
+  });
+
+  if (c.worked) {
+    const box = document.createElement('div');
+    box.className = 'grammar-block';
+    box.style.cssText = 'margin-top:20px;';
+    const q = document.createElement('div');
+    q.style.cssText = 'font-weight:600;color:var(--text-strong);margin-bottom:6px;';
+    q.textContent = `예시 — ${c.worked.prompt || ''}`;
+    box.appendChild(q);
+    (c.worked.steps || []).forEach((s) => {
+      const sd = document.createElement('div');
+      sd.style.cssText = 'color:var(--text-muted);font-size:14px;line-height:1.7;';
+      sd.textContent = s;
+      box.appendChild(sd);
+    });
+    wrap.appendChild(box);
+  }
+
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button';
+  nextBtn.id = 'm-concept-next';
+  nextBtn.style.cssText = 'margin-top:32px;align-self:flex-start;background:var(--text-strong);color:#fff;border:none;border-radius:var(--r-md);padding:14px 28px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font-body);';
+  nextBtn.textContent = '이해했어요 · 응용 풀기 →';
+  wrap.appendChild(nextBtn);
+
+  return { el: wrap, nextBtn };
+}
+
 export function mountSessionMath(host) {
   const progress = load();
   const mode = (typeof window !== 'undefined' && window.studyRoute?.params?.mode) || '';
@@ -232,6 +288,13 @@ export function mountSessionMath(host) {
       onHome: () => { window.location.hash = '#/home'; },
       onEnd: () => { window.location.hash = '#/home'; },
     });
+    if (c.kind === 'concept') {
+      const cm = buildConceptMain(c, size);
+      layout.contentSlot.appendChild(cm.el);
+      host.appendChild(layout.el);
+      cm.nextBtn.onclick = () => { progress.done[c.id] = true; save(progress); i += 1; render(); };
+      return;
+    }
     const { wrap, input, checkBtn, verdict, nextWrap } = buildMathMain(c, size);
     layout.contentSlot.appendChild(wrap);
     host.appendChild(layout.el);
