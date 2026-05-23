@@ -1,14 +1,14 @@
 /**
  * book e2e 스모크 — 로그인 게이트 + 인증 후 핵심 플로우(추가→댓글→핀).
  *
- * OAuth 우회: signInWithPassword (causencompany, ~/.config/book/.env 의 TEST_USER_PASSWORD).
- * 인증 플로우는 password env 없으면 skip (CI 안전). 데이터는 Dexie 로컬 — 마이그레이션 불필요.
+ * OAuth 우회: signInWithPassword (~/.config/book/.env 의 TEST_USER_EMAIL/PASSWORD — 본인 계정).
+ * 인증 플로우는 email/password env 없으면 skip (CI 안전). 데이터는 Dexie 로컬.
  *
  * 실행: `source ~/.config/book/.env && pnpm e2e`
  */
 import { test, expect } from '@playwright/test';
 
-const TEST_EMAIL = 'causencompany@gmail.com';
+const TEST_EMAIL = process.env.TEST_USER_EMAIL;
 const TEST_PASSWORD = process.env.TEST_USER_PASSWORD;
 
 test.describe('book smoke', () => {
@@ -22,7 +22,7 @@ test.describe('book smoke', () => {
   });
 
   test('로그인 → 추가 → 댓글 → 핀', async ({ page }) => {
-    test.skip(!TEST_PASSWORD, 'TEST_USER_PASSWORD 미설정 — 인증 플로우 skip');
+    test.skip(!TEST_EMAIL || !TEST_PASSWORD, 'TEST_USER_EMAIL/PASSWORD 미설정 — 인증 플로우 skip');
     await page.goto('/');
     await page.waitForSelector('#book-login-card');
     await page.evaluate(

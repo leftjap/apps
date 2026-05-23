@@ -74,7 +74,7 @@ book/
 | **Realtime echo** | — | ❌ 배선만, 미검증 |
 | 반응형(모바일/태블릿) | — | ❌ 미검증 (데스크탑만) |
 
-검증 데이터 = **시드(causencompany 로컬 Dexie, 15 어구록/4 댓글/3 핀)**. 실 Supabase 데이터 아님.
+검증 데이터 = **시드(로컬 Dexie, 15 어구록/4 댓글/3 핀)**. 실 Supabase 데이터 아님.
 
 ---
 
@@ -127,7 +127,7 @@ book/
 
 1. **[P0] 마이그레이션 적용 + 데이터 검증**
    - 적용: 대시보드 SQL Editor에 `0001`→`0002` 실행 (권장) **또는** DB 비번으로 `supabase db push`(⚠ book 0001 vs today 0001 버전 충돌 — 타임스탬프로 리네임하거나 대시보드 직접).
-   - 검증: ① 추가→Supabase 저장→새로고침 pull 왕복 ② **RLS**: 서비스롤 키로 파트너(소연 `aeafd9a7`)/제3자 owner 의 quote 시드 → causencompany 클라이언트가 파트너 건 **보이고** 제3자 건 **안 보이는지** ③ **Realtime**: 2탭에서 한쪽 추가 시 다른쪽 echo.
+   - 검증: ① 추가→Supabase 저장→새로고침 pull 왕복 ② **RLS**: 서비스롤 키로 파트너(소연 `aeafd9a7`)/제3자 owner 의 quote 시드 → 본인 클라이언트가 파트너 건 **보이고** 제3자 건 **안 보이는지** ③ **Realtime**: 2탭에서 한쪽 추가 시 다른쪽 echo.
 2. **[P0] v14 디자인 정밀 대조(§5) + 누락 보완** — 워드클라우드 packCloud 이식, 월별 막대차트, PeriodSeg, 관련어/주간/인근날 위젯, 픽셀 간격 조정.
 3. **[P1] 반응형 검증** (모바일 375 / 태블릿 768).
 4. **[P1] e2e 확장** — 현재는 데이터레이어 위주. 실제 UI 클릭 플로우(추가 모달 작성→저장→피드 반영) 추가.
@@ -138,8 +138,8 @@ book/
 ## 7. 운영 메모 (함정 — 본 세션 교훈)
 
 - **검증 도구**: preview MCP (`book-dev` 5176). **리로드 후 뷰포트 리셋** → `preview_resize` 후 `location.hash` 이동(리로드 금지)으로 뷰포트 유지. 로딩 오버레이 페이드 겹침 → 재촬영.
-- **인증 우회**: causencompany + `~/.config/book/.env` 의 `TEST_USER_PASSWORD` → `window.bookAuth.signInWithPassword({email,password})`. (production 계정 지오/소연으로 검증 금지 — 데이터 오염.)
-- **시드**: `window.bookDevSeed.seedDemoData({meId, partnerId})`. partnerId = `window.bookProfile.EMAIL_TO_PARTNER_USER_ID['causencompany@gmail.com']`(소연 aeafd9a7). 비-UUID id라 sync push skip(로컬 전용). 세션/시드는 IndexedDB라 dev 서버 재시작에도 유지.
+- **인증 우회**: `~/.config/book/.env` 의 `TEST_USER_EMAIL`/`TEST_USER_PASSWORD`(본인 계정) → `window.bookAuth.signInWithPassword({email,password})`.
+- **시드**: `window.bookDevSeed.seedDemoData({meId, partnerId})`. partnerId = `window.bookProfile.getPartnerUserIdForEmail(본인 이메일)`(소연 aeafd9a7). 비-UUID id라 sync push skip(로컬 전용). 세션/시드는 IndexedDB라 dev 서버 재시작에도 유지.
 - **scope-gate**: `~/.claude/.scope-approved` (TTL 짧음, 파일 존재 시 통과). 대규모 Write/Edit(>100줄/5000b, md는 200줄/10000b) 전 `touch` 또는 사용자 "범위 승인" 발화. 작업 끝나면 `rm` 권장.
 - **vitest watch 금지** → 항상 `pnpm vitest run`. (watch-guard 훅이 `vitest` 단독 차단.)
 - **.env Write 차단**(PreToolUse 훅) → Bash로 작성.

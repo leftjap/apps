@@ -17,13 +17,11 @@ import { supabase } from './supabase.js';
 // 지오=7bae5645…, 소연=aeafd9a7… → 서로 partner.
 export const EMAIL_TO_PARTNER_USER_ID = Object.freeze({
   'leftjap@gmail.com': 'aeafd9a7-4094-4e7c-a621-188d6b2e336d',
-  'causencompany@gmail.com': 'aeafd9a7-4094-4e7c-a621-188d6b2e336d',
   'soyoun312@gmail.com': '7bae5645-61c6-4476-9ff2-4c30a72812ff',
 });
 
 export const EMAIL_TO_DISPLAY_NAME = Object.freeze({
   'leftjap@gmail.com': '지오',
-  'causencompany@gmail.com': '지오',
   'soyoun312@gmail.com': '소연',
 });
 
