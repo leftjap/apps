@@ -109,6 +109,7 @@ export function parseHash() {
   switch (head) {
     case 'login': return { name: 'login', params: {} };
     case 'stats': return { name: 'stats', params: {} };
+    case 'search': return { name: 'search', params: {} };
     case 'book': return { name: 'book', params: { ref: dec(parts[1] || '') } };
     case 'thread': return { name: 'thread', params: { ref: dec(parts[1] || ''), quoteId: parts[2] ? dec(parts[2]) : null } };
     case 'word': return { name: 'word', params: { w: dec(parts[1] || '') } };

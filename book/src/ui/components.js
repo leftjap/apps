@@ -91,10 +91,10 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
     style: { padding: '8px 14px', borderRadius: 7, fontSize: 14, fontWeight: tab === key ? 700 : 500, color: tab === key ? 'var(--ink-1)' : 'var(--ink-3)', cursor: 'pointer', background: tab === key ? 'var(--hover)' : 'transparent' },
   }, name);
   const navEl = el('nav', { style: { display: 'flex', gap: 4, marginLeft: 8 } }, tabEl('어구록', 'excerpt', '/'), tabEl('통계', 'stats', '/stats'));
-  // v14 시안: 검색은 단순 indicator (core-v14.jsx:60-71) — 비기능 표시. 네비는 탭·모두보기·요소 클릭.
+  // v14 시안은 indicator 였으나 검색 페이지(/search)로 실기능화 — 클릭 시 이동.
   const search = el('div', {
-    class: 'topbar-search',
-    style: { display: 'flex', alignItems: 'center', gap: 10, flex: 1, maxWidth: 640, marginLeft: 'auto', height: 40, padding: '0 16px', background: 'var(--paper)', borderRadius: 10, color: 'var(--ink-3)', cursor: 'text' },
+    class: 'topbar-search', onClick: () => nav('/search'),
+    style: { display: 'flex', alignItems: 'center', gap: 10, flex: 1, maxWidth: 640, marginLeft: 'auto', height: 40, padding: '0 16px', background: 'var(--paper)', borderRadius: 10, color: 'var(--ink-3)', cursor: 'pointer' },
   }, iconEl('search', { sz: 16 }), el('span', { style: { flex: 1, fontSize: 14 } }, '책 · 작가 · 분야 · 단어 · 어구록'));
   return el('header', {
     class: 'topbar',
