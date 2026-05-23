@@ -82,13 +82,13 @@
 - 정수·소수·분수·% 동치 자동. `accept:[…]` 대체표기, `range:[lo,hi]` π·추정 허용. 1차 오답 → 힌트(core) → 2차 정답·해설.
 - UI: 해설 6필드는 session.css `.ex-section`/`.explain-toggle`(언어 패널과 동일, 입력칸 아래 접힘). 별도 CSS 금지.
 
-## 데이터 흐름 (2026-05-23 — 하이브리드: 번들 개념 정본 + DB 일일 응용)
+## 데이터 흐름 (2026-05-23 — 큐레이션 번들 정본 + SRS 복습)
 
-- **개념·핵심 응용·도형 = 번들 `src/data/math/*` 정본** (정적 커리큘럼, 파라메트릭 도형). 수정 = 파일 편집 → push → 배포.
-- **일일 응용 연습 = `study-daily-9am` 루틴이 매일 생성** → `seed-math.mjs` → `study_math_problems` → `sync.js` → Dexie `mathProblems`.
-- **병합:** `session-math.js` `loadProblems()` · `home.js` `loadMathStats()` 가 **번들 + Dexie**(번들 id 중복 제거, DB행 `kind:apply`)를 합쳐 큐 구성 → 개념은 고품질 정본, 매일 새 응용 무한 공급.
-- **staleness 방지:** Dexie 는 schema clear(v3·v4)로 Supabase 미러 유지(sync pull-only — 서버 삭제 미반영이라 수동 clear 필요). 루틴은 **응용만** 시드(개념/도형 불가 — seed-math 가 prompt/answer/solution 강제, 경험적 확인).
-- 라이브 확인: PWA SW autoUpdate. 즉시 검증 = SW 해제 + 캐시 clear + 강제 reload(`curl <live>/assets/*.js | grep`).
+- **정본 = 번들 `src/data/math/*`** (개념→응용 + 파라메트릭 도형). 수정·추가 = 파일 편집 → push → 배포. `session-math`·`home` 이 `MATH_CONTENT` 사용.
+- **루틴 자동생성 안 함:** `study-daily-9am` 은 en/ja 만. math 자동생성은 *그림 없는 맨 산수로 전락* + 개념/도형(코드 헬퍼)은 `study_math_problems`(prompt/answer/solution 강제)에 **시드 불가**(경험적 확인) → 제외. **새 내용 = 사람이 모듈을 큐레이션 추가**(backbone 4~7 순서).
+- **매일 engagement = SRS 복습**(2·7·30·90, localStorage progress). 배운 응용이 그림·개념째 다시 출제 — 사고력 수학은 언어와 달리 매일 새 드릴이 목적 아님.
+- **병합 코드(dormant):** `loadProblems`·`loadMathStats` 는 번들 + Dexie `mathProblems` 병합 구조 유지(향후 *큐레이션 DB 콘텐츠* 대비). 현재 DB 비어 사실상 번들 전용. schema v3·v4 clear 로 스테일 정리.
+- 라이브 확인: PWA SW autoUpdate. 즉시 검증 = SW 해제 + 캐시 clear + 강제 reload.
 
 ## 품질 체크리스트 (카드 작성 직후 — "정합" 단정 전 자체 점검)
 
