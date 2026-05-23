@@ -1,9 +1,10 @@
 /* SessionMath — 수학 사고력 세션.
- * 기존 session 컴포넌트(createSessionLayout) + session.css 해설 클래스
- * (.explain-panel/.ex-section/.ex-label/.ex-text/.grammar-block) 재사용. 입력+자동채점 흐름.
- * 정본 콘텐츠: src/data/math/*. 진행상태: localStorage(mathProgress). 별도 CSS 없음(토큰 인라인).
+ * session-new 와 동일 구조: createSessionLayout 셸 + contentSlot 직접 배치(흰 카드 없음) +
+ * createExplanationPanel(.explain-* / .ex-section) 해설 컴포넌트 재사용. 녹음 대신 입력+자동채점.
+ * 진행상태: localStorage(mathProgress). 복습은 개념 숙달형(언어 SRS 와 분리).
  */
 import { createSessionLayout, pickSize, watchSize } from '../components/session/index.js';
+import { createExplanationPanel } from '../components/session/explanationPanel.js';
 import { MATH_CONTENT } from '../data/math/index.js';
 import { checkAnswer } from '../services/mathAnswer.js';
 import { todayPlusDays } from '../services/srs.js';
@@ -12,8 +13,8 @@ const LS_KEY = 'mathProgress';
 const todayISO = () => (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10));
 
 function load() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY)) || { done: {}, srs: {} }; }
-  catch { return { done: {}, srs: {} }; }
+  try { return JSON.parse(localStorage.getItem(LS_KEY)) || { done: {}, srs: {}, logs: {} }; }
+  catch { return { done: {}, srs: {}, logs: {} }; }
 }
 function save(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { /* noop */ } }
 
@@ -30,14 +31,14 @@ async function loadProblems() {
   return MATH_CONTENT;
 }
 
-// mode: 'new'=신규만, 'review'=복습(due)만, 그 외=혼합. 하루 2~3문제(복습 최대 10).
+// mode: 'new'=신규만, 'review'=복습(개념 숙달형), 그 외=혼합.
 function buildQueue(items, p, mode) {
   const today = todayISO();
   const due = items.filter((c) => p.srs[c.id] && p.srs[c.id].nextReview <= today);
   const fresh = items.filter((c) => !p.done[c.id] && !p.srs[c.id]);
   if (mode === 'new') return fresh.slice(0, 3);
   if (mode === 'review') {
-    // 개념 숙달형: 복습 시 같은 개념(module)의 다른 미완료 문제 우선 — 문장 암기가 아니라 개념 적용.
+    // 같은 개념(module)의 다른 미완료 문제 우선 — 암기 반복이 아니라 개념 적용.
     const seen = new Set();
     const out = [];
     for (const d of due) {
@@ -50,20 +51,17 @@ function buildQueue(items, p, mode) {
   return [...due, ...fresh].slice(0, 3);
 }
 
-// 개념 숙달형 SRS — 언어 암기 간격(srs.js 1·3·7·21·60)과 분리.
-// 기하는 한 번 이해하면 오래 가므로 간격을 크게(2·7·30·90), 틀린 개념만 1일로 되돌림.
+// 개념 숙달형 SRS — 언어 암기 간격(srs.js 1·3·7·21·60)과 분리. 맞히면 길게(2·7·30·90), 틀린 개념만 1일.
 const MATH_INTERVALS = [2, 7, 30, 90];
 function nextMathSrs(currentInterval, kind, today) {
   if (kind === 'no') return { interval: 1, nextReview: todayPlusDays(today, 1), graduate: false };
   const cur = MATH_INTERVALS.includes(currentInterval) ? currentInterval : 0;
   const idx = MATH_INTERVALS.indexOf(cur);
   if (kind === 'got') {
-    const nextIdx = idx + 1;
-    if (nextIdx >= MATH_INTERVALS.length) return { graduate: true };
-    const iv = MATH_INTERVALS[nextIdx];
-    return { interval: iv, nextReview: todayPlusDays(today, iv), graduate: false };
+    const ni = idx + 1;
+    if (ni >= MATH_INTERVALS.length) return { graduate: true };
+    return { interval: MATH_INTERVALS[ni], nextReview: todayPlusDays(today, MATH_INTERVALS[ni]), graduate: false };
   }
-  // hmm(1차 오답 후 정답): 현 단계 유지 (없으면 첫 단계)
   const keep = idx >= 0 ? cur : MATH_INTERVALS[0];
   return { interval: keep, nextReview: todayPlusDays(today, keep), graduate: false };
 }
@@ -71,7 +69,7 @@ function nextMathSrs(currentInterval, kind, today) {
 // ㄱ자(L-shell) 겹마다 sage 단일 hue 명도 단계 — 홀수합=정사각형 시각 통찰.
 function dotsSvg(n) {
   const shells = ['#cfe0bf', '#a9c489', '#85a861', '#6f8c4d', '#566f3a'];
-  const gap = 40, off = 22, r = 12;
+  const gap = 38, off = 21, r = 11;
   let dots = '';
   for (let row = 0; row < n; row++) {
     for (let col = 0; col < n; col++) {
@@ -82,47 +80,72 @@ function dotsSvg(n) {
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${n}x${n} 점 격자">${dots}</svg>`;
 }
 
-function figureHtml(f) {
-  if (!f) return '';
+function figureNode(f) {
+  if (!f) return null;
   const inner = f.type === 'dots' ? dotsSvg(f.n || 5) : (f.type === 'svg' ? (f.svg || '') : '');
-  if (!inner) return '';
-  const legend = f.legend ? `<div style="font-size:12px;color:var(--text-muted);text-align:center;margin-top:6px;">${f.legend}</div>` : '';
-  return `<div style="display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;">${inner}${legend}</div>`;
-}
-
-// 해설 6필드 → session.css .ex-section 클래스 (언어 explanation 패널과 동일 디자인).
-function solutionHtml(s) {
-  const sec = (label, html) => `<div class="ex-section"><div class="ex-label">${label}</div><div class="ex-text">${html}</div></div>`;
-  let h = sec('핵심', s.core);
-  if (s.idea) h += `<div class="ex-section"><div class="ex-text">${s.idea}</div></div>`;
-  if (Array.isArray(s.steps) && s.steps.length) {
-    h += '<div class="ex-section"><div class="ex-label">풀이</div>'
-      + s.steps.map((st) => `<div class="grammar-block">${st}</div>`).join('') + '</div>';
+  if (!inner) return null;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0 8px;';
+  const box = document.createElement('div');
+  box.innerHTML = inner;
+  wrap.appendChild(box);
+  if (f.legend) {
+    const l = document.createElement('div');
+    l.style.cssText = 'font-size:12px;color:var(--text-muted);text-align:center;';
+    l.textContent = f.legend;
+    wrap.appendChild(l);
   }
-  if (s.refresh) h += sec('기초 환기', s.refresh);
-  if (s.example) h += sec('예시', s.example);
-  if (s.think) h += sec('사고 포인트', s.think);
-  return h;
+  return wrap;
 }
 
-function cardHtml(c) {
-  return '<div style="background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:22px;box-shadow:var(--shadow-sm);">'
-    + `<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--sage);margin-bottom:10px;">${c.tag || ''}</div>`
-    + (c.lesson ? `<div class="grammar-block" style="margin:0 0 14px;">${c.lesson}</div>` : '')
-    + figureHtml(c.figure)
-    + `<h2 class="poppins" style="font-size:18px;font-weight:700;color:var(--text-strong);line-height:1.5;margin:14px 0 0;">${c.prompt}</h2>`
-    + '<div style="display:flex;gap:8px;margin-top:16px;">'
-    + '<input id="m-in" inputmode="text" autocomplete="off" aria-label="답 입력" placeholder="답을 입력" style="flex:1;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;font-size:16px;color:var(--text-strong);font-family:var(--font-body);" />'
-    + '<button id="m-check" type="button" style="background:var(--text-strong);color:#fff;border:none;border-radius:var(--r-sm);padding:12px 18px;font-size:15px;font-weight:600;cursor:pointer;font-family:var(--font-body);">확인</button>'
-    + '</div><div id="m-res" role="status" style="margin-top:16px;"></div></div>';
-}
+// session-new buildMain 구조 차용 — 흰 카드 박스 없이 contentSlot 에 직접. 녹음 대신 입력행.
+function buildMathMain(c, size) {
+  const wrap = document.createElement('div');
+  wrap.className = 'session-main';
+  if (size === 'desktop') wrap.style.cssText = 'display:flex;flex-direction:column;flex:1;';
 
-function resultHtml(correct, c) {
-  const color = correct ? 'var(--sage)' : 'var(--accent)';
-  const verdict = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
-  return `<div style="font-weight:700;font-size:15px;color:${color};margin-bottom:6px;">${verdict}</div>`
-    + `<div class="explain-panel open" style="padding-top:6px;">${solutionHtml(c.solution)}</div>`
-    + '<button id="m-next" type="button" style="margin-top:18px;width:100%;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r-sm);padding:12px;font-size:15px;cursor:pointer;font-family:var(--font-body);">다음 →</button>';
+  if (c.tag) {
+    const tag = document.createElement('div');
+    tag.style.cssText = 'font-size:12px;color:var(--sage);text-transform:uppercase;letter-spacing:0.12em;font-family:var(--font-display);font-weight:700;margin-bottom:16px;';
+    tag.textContent = c.tag;
+    wrap.appendChild(tag);
+  }
+
+  const fig = figureNode(c.figure);
+  if (fig) wrap.appendChild(fig);
+
+  const sizeMap = { phone: 24, tablet: 34, desktop: 42 };
+  const h1 = document.createElement('h1');
+  h1.className = 'poppins';
+  h1.style.cssText = `font-size:${sizeMap[size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;line-height:1.3;margin:${fig ? '12px 0 0' : '0'};`;
+  h1.textContent = c.prompt;
+  wrap.appendChild(h1);
+
+  if (c.lesson) {
+    const lesson = document.createElement('div');
+    lesson.style.cssText = `font-size:${size === 'phone' ? 15 : 16}px;color:var(--text-muted);margin-top:12px;line-height:1.75;`;
+    lesson.innerHTML = c.lesson;
+    wrap.appendChild(lesson);
+  }
+
+  const row = document.createElement('div');
+  row.style.cssText = `display:flex;gap:8px;margin-top:${size === 'phone' ? 32 : 48}px;align-items:center;flex-wrap:wrap;`;
+  const input = document.createElement('input');
+  input.id = 'm-in'; input.type = 'text'; input.autocomplete = 'off';
+  input.setAttribute('aria-label', '답 입력'); input.placeholder = '답 입력';
+  input.style.cssText = 'flex:1;min-width:0;max-width:240px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;font-size:18px;color:var(--text-strong);font-family:var(--font-body);';
+  const checkBtn = document.createElement('button');
+  checkBtn.id = 'm-check'; checkBtn.type = 'button'; checkBtn.className = 'record-btn';
+  checkBtn.textContent = '확인';
+  row.append(input, checkBtn);
+  wrap.appendChild(row);
+
+  const result = document.createElement('div');
+  result.id = 'm-res';
+  result.style.cssText = 'margin-top:24px;display:flex;flex-direction:column;align-items:flex-start;width:100%;';
+  wrap.appendChild(result);
+
+  return { wrap, input, checkBtn, result };
 }
 
 export function mountSessionMath(host) {
@@ -134,53 +157,61 @@ export function mountSessionMath(host) {
 
   function renderDone() {
     host.innerHTML = '';
-    const wrap = document.createElement('div');
-    wrap.className = 'phone-shell study-app';
-    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:40px 24px;';
+    const root = document.createElement('div');
+    root.className = 'phone-shell study-app';
+    root.style.cssText = 'display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;text-align:center;padding:40px 24px;';
     const msg = queue.length === 0
       ? (mode === 'review' ? '복습할 문제가 없어요.' : '풀 문제가 없어요. 곧 새 문제가 채워집니다.')
       : '오늘 분량 끝. 틀린 문제는 며칠 뒤 다시 나옵니다.';
-    wrap.innerHTML = '<div class="poppins" style="font-size:40px;font-weight:700;color:var(--text-strong);">잘했어요</div>'
-      + `<p style="color:var(--text-muted);margin-top:8px;">${msg}</p>`
-      + '<button id="m-home" type="button" style="margin-top:20px;background:var(--text-strong);color:#fff;border:none;border-radius:var(--r-sm);padding:12px 20px;font-weight:600;cursor:pointer;font-family:var(--font-body);">홈으로</button>';
-    host.appendChild(wrap);
-    host.querySelector('#m-home').onclick = () => { window.location.hash = '#/home'; };
+    const big = document.createElement('div');
+    big.className = 'poppins';
+    big.style.cssText = 'font-size:40px;font-weight:700;color:var(--text-strong);';
+    big.textContent = '잘했어요';
+    const sub = document.createElement('p');
+    sub.style.cssText = 'color:var(--text-muted);margin-top:8px;';
+    sub.textContent = msg;
+    const home = document.createElement('button');
+    home.type = 'button'; home.className = 'record-btn'; home.style.cssText = 'margin-top:20px;cursor:pointer;';
+    home.textContent = '홈으로';
+    home.onclick = () => { window.location.hash = '#/home'; };
+    root.append(big, sub, home);
+    host.appendChild(root);
   }
 
-  function bindCard(c) {
-    const input = host.querySelector('#m-in');
-    const res = host.querySelector('#m-res');
-    const reveal = (correct) => {
-      const kindR = correct ? (tries > 1 ? 'hmm' : 'got') : 'no';
-      tried += 1; if (correct) passed += 1;
-      layout?.update({ tried, passed });
-      const t = todayISO();
-      // 개념 숙달형 SRS (언어와 분리)
-      const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
-      progress.done[c.id] = true;
-      if (st.graduate) delete progress.srs[c.id];
-      else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
-      // 일별 로그 (home streak·통계용)
-      progress.logs = progress.logs || {};
-      const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
-      lg.tried += 1;
-      if (correct) lg.passed += 1;
-      if (mode === 'review') lg.reviewDone += 1; else lg.newDone += 1;
-      progress.logs[t] = lg;
-      save(progress);
-      res.innerHTML = resultHtml(correct, c);
-      host.querySelector('#m-next').onclick = () => { i += 1; render(); };
-    };
-    host.querySelector('#m-check').onclick = () => {
-      const r = checkAnswer(input.value, c);
-      if (r.empty) { input.focus(); return; }
-      tries += 1;
-      if (r.correct || tries >= 2) { reveal(r.correct); return; }
-      res.innerHTML = `<div style="color:var(--accent);font-size:14px;">다시 한 번 — 힌트: ${c.solution.core}</div>`;
-      input.focus(); input.select();
-    };
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') host.querySelector('#m-check')?.click(); });
-    input.focus();
+  function reveal(c, correct, result, input, checkBtn) {
+    const kindR = correct ? (tries > 1 ? 'hmm' : 'got') : 'no';
+    tried += 1; if (correct) passed += 1;
+    layout?.update({ tried, passed });
+    const t = todayISO();
+    const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
+    progress.done[c.id] = true;
+    if (st.graduate) delete progress.srs[c.id];
+    else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+    progress.logs = progress.logs || {};
+    const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
+    lg.tried += 1; if (correct) lg.passed += 1;
+    if (mode === 'review') lg.reviewDone += 1; else lg.newDone += 1;
+    progress.logs[t] = lg;
+    save(progress);
+
+    result.innerHTML = '';
+    const v = document.createElement('div');
+    v.style.cssText = `font-weight:700;font-size:18px;color:${correct ? 'var(--sage)' : 'var(--accent)'};`;
+    v.textContent = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
+    result.appendChild(v);
+    // 어학과 동일한 해설 컴포넌트 (.explain-toggle / .explain-panel / .ex-section)
+    const explain = createExplanationPanel({ explanation: c.solution });
+    explain.toggleEl.style.marginTop = '16px';
+    explain.toggle(); // 채점 후 자동 펼침
+    result.append(explain.toggleEl, explain.panelEl);
+    input.disabled = true;
+    checkBtn.style.display = 'none';
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.style.cssText = 'margin-top:24px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r-md);padding:14px 28px;font-size:15px;cursor:pointer;font-family:var(--font-body);';
+    next.textContent = '다음 →';
+    next.onclick = () => { i += 1; render(); };
+    result.appendChild(next);
   }
 
   function render() {
@@ -196,11 +227,27 @@ export function mountSessionMath(host) {
       onHome: () => { window.location.hash = '#/home'; },
       onEnd: () => { window.location.hash = '#/home'; },
     });
-    const body = document.createElement('div');
-    body.innerHTML = cardHtml(c);
-    layout.contentSlot.appendChild(body);
+    const { wrap, input, checkBtn, result } = buildMathMain(c, size);
+    layout.contentSlot.appendChild(wrap);
     host.appendChild(layout.el);
-    bindCard(c);
+    const submit = () => {
+      const r = checkAnswer(input.value, c);
+      if (r.empty) { input.focus(); return; }
+      tries += 1;
+      if (!r.correct && tries < 2) {
+        result.innerHTML = '';
+        const hint = document.createElement('div');
+        hint.style.cssText = 'color:var(--accent);font-size:15px;line-height:1.6;';
+        hint.textContent = `다시 한 번 — 힌트: ${c.solution.core}`;
+        result.appendChild(hint);
+        input.focus(); input.select();
+        return;
+      }
+      reveal(c, r.correct, result, input, checkBtn);
+    };
+    checkBtn.onclick = submit;
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    input.focus();
   }
 
   loadProblems().then((items) => { queue = buildQueue(items, progress, mode); render(); });

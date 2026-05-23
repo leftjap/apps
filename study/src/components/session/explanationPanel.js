@@ -284,7 +284,30 @@ export function createExplanationPanel({ explanation, lang } = {}) {
   panelEl.className = 'explain-panel';
 
   const ex = explanation;
-  if (ex && typeof ex === 'object') {
+  // 수학 해설 (core/idea/steps/refresh/example/think) — 언어 필드와 분기. 동일 .ex-section 디자인 재사용.
+  const isMath = ex && typeof ex === 'object' && (ex.core || Array.isArray(ex.steps));
+  if (isMath) {
+    if (ex.core) panelEl.appendChild(section('핵심', String(ex.core)));
+    if (ex.idea) panelEl.appendChild(section('왜 이렇게 보나', String(ex.idea)));
+    if (Array.isArray(ex.steps) && ex.steps.length) {
+      const s = document.createElement('div');
+      s.className = 'ex-section';
+      const lab = document.createElement('div');
+      lab.className = 'ex-label';
+      lab.textContent = '풀이';
+      s.appendChild(lab);
+      ex.steps.forEach((st) => {
+        const b = document.createElement('div');
+        b.className = 'grammar-block';
+        b.textContent = String(st);
+        s.appendChild(b);
+      });
+      panelEl.appendChild(s);
+    }
+    if (ex.refresh) panelEl.appendChild(section('기초 환기', String(ex.refresh)));
+    if (ex.example) panelEl.appendChild(section('예시', String(ex.example)));
+    if (ex.think) panelEl.appendChild(section('사고 포인트', String(ex.think)));
+  } else if (ex && typeof ex === 'object') {
     if (ex.politeness) {
       const label = POLITENESS_LABEL[ex.politeness] || ex.politeness;
       panelEl.appendChild(section('정중도', label));

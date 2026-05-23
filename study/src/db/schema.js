@@ -31,6 +31,15 @@ export function createStudyDB(name = 'study') {
     mathProblems: 'id, date, module',
     mathQueue: 'id, nextReview, module',
   });
+  // v3: 복리(구 콘텐츠) 잔존 정리. sync 는 pull(bulkPut)만 하고 서버 삭제를 Dexie 에 반영하지
+  // 않으므로(deleting hook 부재), 한 번 clear 후 다음 pull 로 서버 정본(기하)만 재구축.
+  db.version(3).stores({
+    mathProblems: 'id, date, module',
+    mathQueue: 'id, nextReview, module',
+  }).upgrade(async (tx) => {
+    await tx.table('mathProblems').clear();
+    await tx.table('mathQueue').clear();
+  });
   return db;
 }
 
