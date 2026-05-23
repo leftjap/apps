@@ -82,12 +82,13 @@
 - 정수·소수·분수·% 동치 자동. `accept:[…]` 대체표기, `range:[lo,hi]` π·추정 허용. 1차 오답 → 힌트(core) → 2차 정답·해설.
 - UI: 해설 6필드는 session.css `.ex-section`/`.explain-toggle`(언어 패널과 동일, 입력칸 아래 접힘). 별도 CSS 금지.
 
-## 데이터 흐름 (2026-05-23 — 번들 정본)
+## 데이터 흐름 (2026-05-23 — 하이브리드: 번들 개념 정본 + DB 일일 응용)
 
-- **정본 = `src/data/math/*` (정적 커리큘럼).** `session-math.js`·`home.js` 가 `MATH_CONTENT` 를 **직접** 사용. Supabase/Dexie 경유 안 함. 콘텐츠 수정 = 파일 편집 → push → 배포.
-- **근거:** 정적 커리큘럼을 per-user `study_math_problems`(db-first)로 흘려, 옛 데이터가 새 카드를 가리는 **staleness 버그** 발생(sync 가 서버 삭제를 Dexie 에 반영 안 함). 정적 콘텐츠의 정본은 번들이어야 맞음.
-- **현재 미사용(dead, 보존):** `study_math_problems/queue` 테이블 · `sync.js` math 매핑 · `seed-math.mjs` · `study-seed-math.yml` · `0005_study_math.sql`. → 향후 *per-user/일일 자동생성* math 가 필요해질 때만 부활(그때 db-first 재도입). 그 전엔 손대지 말 것.
-- 라이브 확인: PWA SW autoUpdate(다음 방문 자동). 즉시 검증은 SW 해제 + 캐시 clear + 강제 reload(`curl <live>/assets/*.js | grep` 로 배포 번들 대조).
+- **개념·핵심 응용·도형 = 번들 `src/data/math/*` 정본** (정적 커리큘럼, 파라메트릭 도형). 수정 = 파일 편집 → push → 배포.
+- **일일 응용 연습 = `study-daily-9am` 루틴이 매일 생성** → `seed-math.mjs` → `study_math_problems` → `sync.js` → Dexie `mathProblems`.
+- **병합:** `session-math.js` `loadProblems()` · `home.js` `loadMathStats()` 가 **번들 + Dexie**(번들 id 중복 제거, DB행 `kind:apply`)를 합쳐 큐 구성 → 개념은 고품질 정본, 매일 새 응용 무한 공급.
+- **staleness 방지:** Dexie 는 schema clear(v3·v4)로 Supabase 미러 유지(sync pull-only — 서버 삭제 미반영이라 수동 clear 필요). 루틴은 **응용만** 시드(개념/도형 불가 — seed-math 가 prompt/answer/solution 강제, 경험적 확인).
+- 라이브 확인: PWA SW autoUpdate. 즉시 검증 = SW 해제 + 캐시 clear + 강제 reload(`curl <live>/assets/*.js | grep`).
 
 ## 품질 체크리스트 (카드 작성 직후 — "정합" 단정 전 자체 점검)
 

@@ -18,6 +18,23 @@ function load() {
 }
 function save(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { /* noop */ } }
 
+// 하이브리드 콘텐츠: 번들(개념 정본 + 핵심 응용) + Dexie(루틴 생성 일일 응용 연습) 병합.
+// 번들 id 중복 제거. DB 행은 응용으로 취급(prompt/answer/solution — 개념·도형 없음). 정적 개념은
+// 번들이 정본, 매일 새 연습은 루틴이 study_math_problems 에 시드 → sync → 여기서 합류.
+async function loadProblems() {
+  const items = [...MATH_CONTENT];
+  const db = (typeof window !== 'undefined') ? window.studyDB : null;
+  if (db?.mathProblems) {
+    try {
+      const rows = await db.mathProblems.toArray();
+      const bundleIds = new Set(MATH_CONTENT.map((c) => c.id));
+      const extra = rows.filter((r) => !bundleIds.has(r.id)).map((r) => ({ ...r, kind: 'apply' }));
+      items.push(...extra);
+    } catch { /* 번들만 폴백 */ }
+  }
+  return items;
+}
+
 // mode: 'new'=신규만, 'review'=복습(개념 숙달형), 그 외=혼합.
 function buildQueue(items, p, mode) {
   const today = todayISO();
@@ -310,8 +327,7 @@ export function mountSessionMath(host) {
     input.focus();
   }
 
-  queue = buildQueue(MATH_CONTENT, progress, mode);
-  render();
+  loadProblems().then((items) => { queue = buildQueue(items, progress, mode); render(); });
   const stop = watchSize((s) => { if (s !== size) { size = s; render(); } });
   return () => { host.innerHTML = ''; stop(); };
 }

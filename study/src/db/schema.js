@@ -40,6 +40,16 @@ export function createStudyDB(name = 'study') {
     await tx.table('mathProblems').clear();
     await tx.table('mathQueue').clear();
   });
+  // v4: 하이브리드 전환 — 옛 단답(스테일) 잔존 정리. session-math 가 번들(개념 정본) + Dexie
+  // (루틴 생성 일일 응용 연습)를 병합하므로, Dexie 가 Supabase(정리됨)를 미러하도록 한 번 clear.
+  // 이후 sync 가 루틴 응용만 재구축. (sync 는 pull-only — 서버 삭제 미반영이라 수동 clear 필요.)
+  db.version(4).stores({
+    mathProblems: 'id, date, module',
+    mathQueue: 'id, nextReview, module',
+  }).upgrade(async (tx) => {
+    await tx.table('mathProblems').clear();
+    await tx.table('mathQueue').clear();
+  });
   return db;
 }
 

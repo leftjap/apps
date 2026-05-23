@@ -111,7 +111,15 @@ function getStoredLang() {
 async function loadMathStats(state) {
   const today = state.todayISO;
   let items = [];
-  try { const m = await import('../data/math/index.js'); items = m.MATH_CONTENT || []; } catch { /* noop */ }
+  try { const m = await import('../data/math/index.js'); items = [...(m.MATH_CONTENT || [])]; } catch { /* noop */ }
+  const db = window.studyDB; // 하이브리드: 번들 + 루틴 생성 일일 응용(Dexie) 병합
+  if (db?.mathProblems) {
+    try {
+      const rows = await db.mathProblems.toArray();
+      const ids = new Set(items.map((c) => c.id));
+      items.push(...rows.filter((r) => !ids.has(r.id)).map((r) => ({ ...r, kind: 'apply' })));
+    } catch { /* 번들만 */ }
+  }
   let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
   const newCount = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
