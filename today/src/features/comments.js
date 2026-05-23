@@ -607,6 +607,35 @@ function syncClaudeButton(show, entryId, doc = (typeof document !== 'undefined' 
   if (show && entryId) btn.dataset.entryId = entryId;
 }
 
+// 최소 토스트 — 앱에 알림 UI 가 없어 자체 추가. 하단 중앙, 2.5s 후 자동 소멸.
+let _toastTimer = null;
+function showToast(message) {
+  if (typeof document === 'undefined') return;
+  let el = document.querySelector('.today-toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'today-toast';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.style.cssText = [
+      'position:fixed', 'left:50%', 'bottom:calc(72px + env(safe-area-inset-bottom, 0px))',
+      'transform:translateX(-50%) translateY(8px)', 'z-index:10000', 'max-width:80vw',
+      'padding:10px 16px', 'border-radius:14px', 'background:var(--ink-1, oklch(22% 0.008 60))',
+      'color:#fff', 'font-size:13px', 'line-height:1.4', 'box-shadow:0 6px 20px rgba(0,0,0,.18)',
+      'opacity:0', 'transition:opacity .18s ease, transform .18s ease', 'pointer-events:none',
+      'white-space:nowrap', 'text-align:center',
+    ].join(';');
+    document.body.appendChild(el);
+  }
+  el.textContent = message;
+  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)'; });
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(8px)';
+  }, 2500);
+}
+
 async function requestAiComment(btn) {
   const entryId = btn?.dataset?.entryId;
   if (!entryId || btn.disabled) return;
@@ -615,21 +644,31 @@ async function requestAiComment(btn) {
   const label = btn.querySelector('span');
   const prev = label ? label.textContent : '';
   if (label) label.textContent = '요청 중…';
+  let queued = false;
   try {
     // 글 본문이 서버에 반영되도록 먼저 flush (Routine 이 최신 내용을 읽도록).
     try { await Sync.flushPendingUploads?.(); } catch (_) {}
     if (!supabase?.functions?.invoke) throw new Error('supabase 미설정');
-    const { error } = await supabase.functions.invoke('request-ai-comment', { body: { entry_id: entryId } });
+    const { data, error } = await supabase.functions.invoke('request-ai-comment', { body: { entry_id: entryId } });
     if (error) throw error;
-    if (label) label.textContent = '요청됨';
+    if (data?.status === 'noop') {
+      // 클로드가 이미 답했고 새 사람 댓글 없음 → 발사 안 함. 헛클릭 대신 안내.
+      showToast('클로드가 이미 답글을 남겼어요');
+      if (label) label.textContent = prev || '클로드 댓글';
+    } else {
+      queued = true;
+      showToast('곧 클로드가 답글을 달아요');
+      if (label) label.textContent = '요청됨';
+    }
   } catch (e) {
+    showToast('잠시 후 다시 시도해 주세요');
     if (label) label.textContent = prev || '클로드 댓글';
     throw e;
   } finally {
     btn.removeAttribute('aria-busy');
     setTimeout(() => {
       btn.disabled = false;
-      if (label && label.textContent === '요청됨') label.textContent = prev || '클로드 댓글';
+      if (queued && label && label.textContent === '요청됨') label.textContent = prev || '클로드 댓글';
     }, 4000);
   }
 }

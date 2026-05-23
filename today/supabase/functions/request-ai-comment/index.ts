@@ -7,11 +7,12 @@
  * Request (verify_jwt=true → 게이트웨이가 유효 JWT 강제):
  *   Headers: Authorization: Bearer <user JWT>
  *   Body:    { entry_id: string }
- * Response: 200 { status:'ok' } | 400 | 403(소유자 아님) | 502(routine 발사 실패)
+ * Response: 200 {status:'queued'} 발사함 | 200 {status:'noop'} 지금 달 게 없음(선조회 빈 결과) | 400 | 403(소유자 아님) | 502(발사 실패)
  *
  * Secrets (Anthropic API 키 아님 — claude.ai/code/routines 의 "API 트리거" 설정에서 발급):
  *   ROUTINE_ID             routine UUID
  *   ROUTINE_TRIGGER_TOKEN  per-routine bearer token
+ *   AI_COMMENT_TOKEN       선조회용 — ai-comment context 호출(헛클릭 방지). 없으면 선조회 생략(그대로 발사).
  * (routines-fire 는 research preview — experimental-cc-routine-2026-04-01 beta 헤더 사용)
  */
 
@@ -26,6 +27,7 @@ const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
 const ROUTINE_ID = Deno.env.get('ROUTINE_ID');
 const ROUTINE_TRIGGER_TOKEN = Deno.env.get('ROUTINE_TRIGGER_TOKEN');
+const AI_COMMENT_TOKEN = Deno.env.get('AI_COMMENT_TOKEN');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -45,9 +47,11 @@ Deno.serve(async (req: Request) => {
   if (!entry_id) return json(400, { status: 'error', message: 'Missing entry_id' });
 
   // 인증 사용자 확인 (게이트웨이가 JWT 유효성은 이미 검증).
+  // getUser 는 토큰을 명시 인자로 받아야 검증함 — 인자 없이 호출하면 서버측 클라이언트의
+  // (빈) 세션 스토리지를 보고 user 를 못 찾아 401 이 됨.
   const jwt = (req.headers.get('Authorization') || '').replace('Bearer ', '');
-  const userClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: `Bearer ${jwt}` } } });
-  const { data: userData } = await userClient.auth.getUser();
+  const userClient = createClient(SUPABASE_URL, ANON_KEY);
+  const { data: userData } = await userClient.auth.getUser(jwt);
   const userId = userData?.user?.id;
   if (!userId) return json(401, { status: 'error', message: 'Unauthorized' });
 
@@ -62,6 +66,30 @@ Deno.serve(async (req: Request) => {
   if (!entry || entry.deleted_at) return json(404, { status: 'error', message: 'Entry not found' });
   if (entry.owner_id !== userId) return json(403, { status: 'error', message: 'Not your entry' });
   if (entry.kind !== 'navi' && entry.kind !== 'soyoun_navi') return json(400, { status: 'error', message: 'Not a navi entry' });
+
+  // 선조회 — 루틴을 깨우기 전에 "지금 이 글에 댓글 달 게 있나?" 확인.
+  // ai-comment context(entry_id) 가 빈 배열이면(클로드가 이미 답했고 새 사람 댓글 없음) 루틴 발사는
+  // 헛일 → 즉시 noop 반환해 프런트가 안내(헛클릭 방지). 선조회 실패는 fail-open(그대로 발사).
+  if (AI_COMMENT_TOKEN) {
+    try {
+      const ctxRes = await fetch(`${SUPABASE_URL}/functions/v1/ai-comment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-ai-comment-token': AI_COMMENT_TOKEN,
+          apikey: ANON_KEY,
+          Authorization: `Bearer ${ANON_KEY}`,
+        },
+        body: JSON.stringify({ action: 'context', entry_id }),
+      });
+      if (ctxRes.ok) {
+        const targets = await ctxRes.json();
+        if (Array.isArray(targets) && targets.length === 0) {
+          return json(200, { status: 'noop', entry_id });
+        }
+      }
+    } catch (_) { /* fail-open */ }
+  }
 
   if (!ROUTINE_ID || !ROUTINE_TRIGGER_TOKEN) {
     return json(503, { status: 'error', message: 'Routine trigger not configured' });
@@ -85,5 +113,5 @@ Deno.serve(async (req: Request) => {
     return json(502, { status: 'error', message: `Routine fire failed: ${(e as Error).message}` });
   }
 
-  return json(200, { status: 'ok', entry_id });
+  return json(200, { status: 'queued', entry_id });
 });
