@@ -6,7 +6,7 @@
 import { createSessionLayout, pickSize, watchSize } from '../components/session/index.js';
 import { MATH_CONTENT } from '../data/math/index.js';
 import { checkAnswer } from '../services/mathAnswer.js';
-import { nextSrsState } from '../services/srs.js';
+import { todayPlusDays } from '../services/srs.js';
 
 const LS_KEY = 'mathProgress';
 const todayISO = () => (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10));
@@ -36,8 +36,36 @@ function buildQueue(items, p, mode) {
   const due = items.filter((c) => p.srs[c.id] && p.srs[c.id].nextReview <= today);
   const fresh = items.filter((c) => !p.done[c.id] && !p.srs[c.id]);
   if (mode === 'new') return fresh.slice(0, 3);
-  if (mode === 'review') return due.slice(0, 10);
+  if (mode === 'review') {
+    // 개념 숙달형: 복습 시 같은 개념(module)의 다른 미완료 문제 우선 — 문장 암기가 아니라 개념 적용.
+    const seen = new Set();
+    const out = [];
+    for (const d of due) {
+      const alt = items.find((c) => c.module === d.module && !p.done[c.id] && !p.srs[c.id] && !seen.has(c.id));
+      const pick = alt || d;
+      if (!seen.has(pick.id)) { seen.add(pick.id); out.push(pick); }
+    }
+    return out.slice(0, 10);
+  }
   return [...due, ...fresh].slice(0, 3);
+}
+
+// 개념 숙달형 SRS — 언어 암기 간격(srs.js 1·3·7·21·60)과 분리.
+// 기하는 한 번 이해하면 오래 가므로 간격을 크게(2·7·30·90), 틀린 개념만 1일로 되돌림.
+const MATH_INTERVALS = [2, 7, 30, 90];
+function nextMathSrs(currentInterval, kind, today) {
+  if (kind === 'no') return { interval: 1, nextReview: todayPlusDays(today, 1), graduate: false };
+  const cur = MATH_INTERVALS.includes(currentInterval) ? currentInterval : 0;
+  const idx = MATH_INTERVALS.indexOf(cur);
+  if (kind === 'got') {
+    const nextIdx = idx + 1;
+    if (nextIdx >= MATH_INTERVALS.length) return { graduate: true };
+    const iv = MATH_INTERVALS[nextIdx];
+    return { interval: iv, nextReview: todayPlusDays(today, iv), graduate: false };
+  }
+  // hmm(1차 오답 후 정답): 현 단계 유지 (없으면 첫 단계)
+  const keep = idx >= 0 ? cur : MATH_INTERVALS[0];
+  return { interval: keep, nextReview: todayPlusDays(today, keep), graduate: false };
 }
 
 // ㄱ자(L-shell) 겹마다 sage 단일 hue 명도 단계 — 홀수합=정사각형 시각 통찰.
@@ -126,10 +154,19 @@ export function mountSessionMath(host) {
       const kindR = correct ? (tries > 1 ? 'hmm' : 'got') : 'no';
       tried += 1; if (correct) passed += 1;
       layout?.update({ tried, passed });
-      const st = nextSrsState(progress.srs[c.id]?.interval ?? 0, kindR, todayISO());
+      const t = todayISO();
+      // 개념 숙달형 SRS (언어와 분리)
+      const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
       progress.done[c.id] = true;
       if (st.graduate) delete progress.srs[c.id];
       else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+      // 일별 로그 (home streak·통계용)
+      progress.logs = progress.logs || {};
+      const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
+      lg.tried += 1;
+      if (correct) lg.passed += 1;
+      if (mode === 'review') lg.reviewDone += 1; else lg.newDone += 1;
+      progress.logs[t] = lg;
       save(progress);
       res.innerHTML = resultHtml(correct, c);
       host.querySelector('#m-next').onclick = () => { i += 1; render(); };

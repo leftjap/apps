@@ -118,15 +118,33 @@ async function loadMathStats(state) {
   if (!items.length) {
     try { const m = await import('../data/math/index.js'); items = m.MATH_CONTENT || []; } catch { /* noop */ }
   }
-  let prog = { done: {}, srs: {} };
+  let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
   const newCount = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
   const reviewCount = items.filter((c) => prog.srs?.[c.id] && prog.srs[c.id].nextReview <= today).length;
   const totalReview = Object.keys(prog.srs || {}).length;
+  // 일별 로그 → streak·오늘 통계 (en/ja 와 동일 stat 영역을 math 데이터로 채움)
+  const logs = prog.logs || {};
+  const todayLog = logs[today] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
+  const dates = Object.keys(logs).filter((d) => (logs[d]?.tried || 0) > 0).sort().reverse();
+  let streak = 0;
+  let cursor = today;
+  if (!dates.includes(cursor)) {
+    const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
+    cursor = c.toISOString().slice(0, 10);
+  }
+  for (const d of dates) {
+    if (d === cursor) {
+      streak += 1;
+      const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
+      cursor = c.toISOString().slice(0, 10);
+    } else if (d < cursor) break;
+  }
   return {
-    newCount, reviewCount, totalReview,
-    streak: 0, tried: 0, passed: 0, bestStreak: null,
-    weekUtter: 0, weekPass: 0, todayNewDone: 0, todayReviewDone: 0,
+    newCount, reviewCount, totalReview, streak,
+    tried: todayLog.tried, passed: todayLog.passed,
+    todayNewDone: todayLog.newDone, todayReviewDone: todayLog.reviewDone,
+    bestStreak: null, weekUtter: 0, weekPass: 0,
   };
 }
 
@@ -234,17 +252,15 @@ function renderPhone(state) {
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
   root.appendChild(sec2);
 
-  // 발음 기반 메트릭 — 수학 모드엔 무의미하므로 생략 (math sessionLog 도입 시 재정의).
-  if (state.lang !== 'math') {
-    const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;' });
-    sec3.append(
-      statBlock('New', state.todayNewDone, 22, 'strong', '0.10em', 'accent'),
-      statBlock('Review', state.todayReviewDone, 22, 'strong', '0.10em'),
-      statBlock('Tried', state.tried, 22, 'strong', '0.10em'),
-      statBlock('Passed', state.passed, 22, 'sage', '0.10em'),
-    );
-    root.appendChild(sec3);
-  }
+  // session/review 페이지 톤 매핑: NEW 라벨 accent, PASSED 숫자 sage, 나머지 strong.
+  const sec3 = el('section', { style: 'padding:32px 24px 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;' });
+  sec3.append(
+    statBlock('New', state.todayNewDone, 22, 'strong', '0.10em', 'accent'),
+    statBlock('Review', state.todayReviewDone, 22, 'strong', '0.10em'),
+    statBlock('Tried', state.tried, 22, 'strong', '0.10em'),
+    statBlock('Passed', state.passed, 22, 'sage', '0.10em'),
+  );
+  root.appendChild(sec3);
   return root;
 }
 
@@ -272,16 +288,14 @@ function renderTablet(state) {
   grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
   root.appendChild(grid);
 
-  if (state.lang !== 'math') {
-    const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
-    sec3.append(
-      statBlock('New', state.todayNewDone, 26, 'strong', '0.12em', 'accent'),
-      statBlock('Review', state.todayReviewDone, 26, 'strong', '0.12em'),
-      statBlock('Tried', state.tried, 26, 'strong', '0.12em'),
-      statBlock('Passed', state.passed, 26, 'sage', '0.12em'),
-    );
-    root.appendChild(sec3);
-  }
+  const sec3 = el('section', { style: 'margin-top:48px;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:48px;' });
+  sec3.append(
+    statBlock('New', state.todayNewDone, 26, 'strong', '0.12em', 'accent'),
+    statBlock('Review', state.todayReviewDone, 26, 'strong', '0.12em'),
+    statBlock('Tried', state.tried, 26, 'strong', '0.12em'),
+    statBlock('Passed', state.passed, 26, 'sage', '0.12em'),
+  );
+  root.appendChild(sec3);
   return root;
 }
 
@@ -294,39 +308,27 @@ function renderDesktop(state) {
   top.append(brandLogo(18), headerIcons(18, 7));
   aside.appendChild(top);
 
-  if (state.lang === 'math') {
-    // 수학 모드: 발음 streak/stats 무의미 → 모듈 안내 (math sessionLog 도입 시 통계로 대체).
-    const mInfo = el('div', {});
-    mInfo.appendChild(eyebrow('Math', 11, 'var(--text-faint)', '0.14em'));
-    const mTitle = el('div', { class: 'poppins', style: 'font-size:32px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;margin-top:8px;line-height:1.15;' });
-    mTitle.textContent = '기하로 생각하기';
-    const mDesc = el('div', { style: 'font-size:14px;color:var(--text-muted);margin-top:12px;line-height:1.7;' });
-    mDesc.textContent = '모양·넓이·변화를 보고 깨닫는 하루 한두 문제. 오른쪽 카드에서 시작하세요.';
-    mInfo.append(mTitle, mDesc);
-    aside.appendChild(mInfo);
-  } else {
-    const streakBlk = el('div', {});
-    streakBlk.appendChild(eyebrow('Streak', 11, 'var(--text-faint)', '0.14em'));
-    const sNum = el('div', { class: 'poppins', style: 'font-size:88px;font-weight:700;color:var(--text-strong);letter-spacing:-0.05em;line-height:0.9;margin-top:8px;font-variant-numeric:tabular-nums;' });
-    sNum.innerHTML = `${state.streak}<span style="font-size:24px;color:var(--text-faint);font-weight:400;margin-left:4px;">일</span>`;
-    streakBlk.appendChild(sNum);
-    if (state.bestStreak != null) {
-      const sMeta = el('div', { style: 'font-size:12px;color:var(--text-muted);margin-top:8px;font-family:var(--font-display);' });
-      sMeta.textContent = `최고 ${state.bestStreak}일`;
-      streakBlk.appendChild(sMeta);
-    }
-    aside.appendChild(streakBlk);
-
-    // STREAK 88px 단일 강조 (DESIGN.md §1) + session 톤 매핑 (NEW label accent, PASSED value sage).
-    const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
-    stats.append(
-      statBlock('New', state.todayNewDone, 28, 'strong', '0.12em', 'accent'),
-      statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
-      statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
-      statBlock('Passed', state.passed, 28, 'sage', '0.12em'),
-    );
-    aside.appendChild(stats);
+  const streakBlk = el('div', {});
+  streakBlk.appendChild(eyebrow('Streak', 11, 'var(--text-faint)', '0.14em'));
+  const sNum = el('div', { class: 'poppins', style: 'font-size:88px;font-weight:700;color:var(--text-strong);letter-spacing:-0.05em;line-height:0.9;margin-top:8px;font-variant-numeric:tabular-nums;' });
+  sNum.innerHTML = `${state.streak}<span style="font-size:24px;color:var(--text-faint);font-weight:400;margin-left:4px;">일</span>`;
+  streakBlk.appendChild(sNum);
+  if (state.bestStreak != null) {
+    const sMeta = el('div', { style: 'font-size:12px;color:var(--text-muted);margin-top:8px;font-family:var(--font-display);' });
+    sMeta.textContent = `최고 ${state.bestStreak}일`;
+    streakBlk.appendChild(sMeta);
   }
+  aside.appendChild(streakBlk);
+
+  // STREAK 88px 단일 강조 (DESIGN.md §1) + session 톤 매핑 (NEW label accent, PASSED value sage).
+  const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
+  stats.append(
+    statBlock('New', state.todayNewDone, 28, 'strong', '0.12em', 'accent'),
+    statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
+    statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
+    statBlock('Passed', state.passed, 28, 'sage', '0.12em'),
+  );
+  aside.appendChild(stats);
 
   const lang = el('div', { style: 'margin-top:auto;display:flex;flex-direction:column;gap:14px;' });
   lang.appendChild(eyebrow('Language', 10, 'var(--text-faint)', '0.14em', 4));
