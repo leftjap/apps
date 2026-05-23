@@ -279,11 +279,13 @@ export function mountSessionMath(host) {
     verdict.textContent = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
     input.disabled = true;
     checkBtn.style.display = 'none';
-    // 유의미성(왜 중요/사고·논리/현실) — 채점 후 노출. 풀기 전엔 힌트 안 되게 숨김.
-    if (c.significance) {
+    // 유의미성 — 응용은 부모 개념의 (genuine) significance 노출(의미·사고). 응용 고유의 현실/사고는
+    // 해설(example/think)이 담당 — 별도 응용 significance 는 example/think 재조합·중복이라 폐지.
+    const sigText = MATH_CONTENT.find((x) => x.kind === 'concept' && x.conceptId === c.conceptId)?.significance;
+    if (sigText) {
       const sig = document.createElement('div');
       sig.style.cssText = 'margin-top:18px;padding:10px 0 10px 14px;border-left:3px solid var(--sage);font-size:14px;color:var(--text-muted);line-height:1.7;';
-      sig.textContent = c.significance;
+      sig.textContent = sigText;
       nextWrap.appendChild(sig);
     }
     const next = document.createElement('button');

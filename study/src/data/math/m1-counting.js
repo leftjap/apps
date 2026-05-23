@@ -35,7 +35,6 @@ export const MODULE_COUNTING = [
       example: '홀수 묶음의 합을 한눈에 제곱수로.',
       think: '개수만 세면 답 — 일일이 더할 필요 없이.',
     },
-    significance: "낱낱이 더하지 않고 '홀수 몇 개?'만 세어 제곱으로 — 정사각 배열(좌석·타일·픽셀)의 총수를 단번에.",
   },
   {
     id: 'odd-b',
@@ -55,7 +54,6 @@ export const MODULE_COUNTING = [
       example: '타일·좌석을 정사각형으로 깔 때 한 줄 개수.',
       think: '제곱 ↔ 제곱근, 방향을 뒤집어 생각하기.',
     },
-    significance: "제곱을 거꾸로 — 넓이(개수)에서 한 변을 되찾는 제곱근 사고. 정사각으로 깔 때 한 줄 개수를 역산.",
   },
   {
     id: 'tnum-c',
@@ -86,10 +84,9 @@ export const MODULE_COUNTING = [
       idea: '20 × 21의 절반.',
       steps: ['20 × 21 = 420', '÷ 2 = 210'],
       refresh: '곱셈 · 절반(÷2)',
-      example: '1~20번 좌석 수 합도 한 번에.',
-      think: '수가 커져도 공식은 그대로.',
+      example: '1~20번 좌석·계단 칸을 일일이 안 세고 한 번에.',
+      think: '더할 게 많을수록 일일이 더하기 대비 공식의 이득이 커진다.',
     },
-    significance: "20번까지 일일이 더하지 않고 '직사각형 절반' 공식으로 — 적립·일수처럼 1부터 쌓이는 합을 한 번에.",
   },
   {
     id: 'tnum-b',
@@ -108,6 +105,5 @@ export const MODULE_COUNTING = [
       example: '적립 합으로 며칠째인지 역산.',
       think: '공식을 거꾸로 — 합에서 끝수 찾기.',
     },
-    significance: "합을 주고 '어디까지?'를 되찾는 역산 — 누적 적립액으로 며칠째인지 거꾸로 알아내기.",
   },
 ];
