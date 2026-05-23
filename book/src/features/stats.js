@@ -172,7 +172,7 @@ async function render(host, params, ctx) {
       el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.books}권`),
       el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(p.q)));
     // 분야 bar — v14 stats-v14.jsx:98-117 (rank/bar/count/diff)
-    const catBar = (c) => el('div', { style: { display: 'grid', gridTemplateColumns: '54px 1fr 44px 32px', alignItems: 'center', gap: 12, padding: '10px 10px', margin: '0 -10px', borderRadius: 6 } },
+    const catBar = (c) => el('div', { class: 'book-row', style: { display: 'grid', gridTemplateColumns: '54px 1fr 44px 32px', alignItems: 'center', gap: 12, padding: '10px 10px', margin: '0 -10px', borderRadius: 6, cursor: 'pointer' } },
       el('span', { style: { fontSize: 13.5, fontWeight: 600 } }, c.n),
       el('div', { style: { position: 'relative', height: 10, background: 'var(--paper)', borderRadius: 99, overflow: 'hidden' } }, el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(c.v / catMax) * 100}%`, background: 'var(--ink-1)', borderRadius: 99 } })),
       el('span', { class: 'mono', style: { fontSize: 13, fontWeight: 700, textAlign: 'right' } }, String(c.v)),
