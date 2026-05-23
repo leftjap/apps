@@ -7,7 +7,7 @@ export const MODULE_SHAPES = [
     lesson: '직각삼각형에선 두 변만 알면 나머지 한 변이 정해져요.',
     figure: {
       type: 'svg',
-      svg: '<svg width="220" height="180" viewBox="0 0 220 180" role="img" aria-label="직각삼각형 밑변 3 높이 4"><polygon points="30,150 150,150 30,30" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><rect x="30" y="138" width="12" height="12" fill="none" stroke="#788c5d" stroke-width="1"/><text x="84" y="168" font-size="13" fill="#8a8475">3</text><text x="14" y="95" font-size="13" fill="#8a8475">4</text><text x="96" y="84" font-size="13" fill="#d97757">?</text></svg>',
+      svg: '<svg width="200" height="190" viewBox="0 0 200 190" role="img" aria-label="직각삼각형 밑변 3 높이 4"><polygon points="30,160 120,160 30,40" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><rect x="30" y="148" width="12" height="12" fill="none" stroke="#788c5d" stroke-width="1"/><text x="70" y="178" font-size="13" fill="#8a8475">3</text><text x="14" y="105" font-size="13" fill="#8a8475">4</text><text x="80" y="92" font-size="13" fill="#d97757">?</text></svg>',
       legend: '직각을 낀 두 변 3, 4 → 빗변?',
     },
     prompt: '직각을 낀 두 변이 3, 4인 직각삼각형의 빗변 길이는?',

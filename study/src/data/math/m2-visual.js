@@ -29,7 +29,7 @@ export const MODULE_VISUAL = [
     lesson: '삐딱한 모양도 한 조각만 옮기면 똑바른 직사각형이 돼요.',
     figure: {
       type: 'svg',
-      svg: '<svg width="240" height="150" viewBox="0 0 240 150" role="img" aria-label="밑변 8 높이 3 평행사변형"><polygon points="40,120 200,120 170,50 10,50" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="40" y1="50" x2="40" y2="120" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="103" y="138" font-size="13" fill="#8a8475">밑변 8</text><text x="48" y="92" font-size="13" fill="#8a8475">높이 3</text></svg>',
+      svg: '<svg width="240" height="150" viewBox="0 0 240 150" role="img" aria-label="밑변 8 높이 3 평행사변형"><polygon points="40,120 200,120 170,60 10,60" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="40" y1="60" x2="40" y2="120" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="103" y="138" font-size="13" fill="#8a8475">밑변 8</text><text x="48" y="96" font-size="13" fill="#8a8475">높이 3</text></svg>',
       legend: '기운 끝 조각을 잘라 반대편에 붙이면 직사각형',
     },
     prompt: '밑변 8, 높이 3인 평행사변형의 넓이는?',
@@ -51,7 +51,7 @@ export const MODULE_VISUAL = [
     lesson: '윗변과 아랫변이 다르면, 둘의 "평균"이 직사각형의 가로가 돼요.',
     figure: {
       type: 'svg',
-      svg: '<svg width="240" height="150" viewBox="0 0 240 150" role="img" aria-label="윗변 4 아랫변 8 높이 4 사다리꼴"><polygon points="30,120 210,120 150,45 70,45" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="70" y1="45" x2="70" y2="120" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="104" y="36" font-size="12" fill="#8a8475">윗변 4</text><text x="103" y="138" font-size="13" fill="#8a8475">아랫변 8</text><text x="36" y="90" font-size="13" fill="#8a8475">높이 4</text></svg>',
+      svg: '<svg width="240" height="170" viewBox="0 0 240 170" role="img" aria-label="윗변 4 아랫변 8 높이 4 사다리꼴"><polygon points="40,130 200,130 160,50 80,50" fill="#dce7d0" stroke="#788c5d" stroke-width="2"/><line x1="80" y1="50" x2="80" y2="130" stroke="#788c5d" stroke-width="1.2" stroke-dasharray="4 3"/><text x="105" y="42" font-size="12" fill="#8a8475">윗변 4</text><text x="103" y="148" font-size="13" fill="#8a8475">아랫변 8</text><text x="38" y="94" font-size="13" fill="#8a8475">높이 4</text></svg>',
       legend: '윗변·아랫변의 평균 × 높이',
     },
     prompt: '윗변 4, 아랫변 8, 높이 4인 사다리꼴의 넓이는?',
