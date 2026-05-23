@@ -279,6 +279,13 @@ export function mountSessionMath(host) {
     verdict.textContent = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
     input.disabled = true;
     checkBtn.style.display = 'none';
+    // 유의미성(왜 중요/사고·논리/현실) — 채점 후 노출. 풀기 전엔 힌트 안 되게 숨김.
+    if (c.significance) {
+      const sig = document.createElement('div');
+      sig.style.cssText = 'margin-top:18px;padding:10px 0 10px 14px;border-left:3px solid var(--sage);font-size:14px;color:var(--text-muted);line-height:1.7;';
+      sig.textContent = c.significance;
+      nextWrap.appendChild(sig);
+    }
     const next = document.createElement('button');
     next.type = 'button';
     next.style.cssText = 'margin-top:24px;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r-md);padding:14px 28px;font-size:15px;cursor:pointer;font-family:var(--font-body);';
@@ -299,6 +306,7 @@ export function mountSessionMath(host) {
       tried, passed, time: '',
       onHome: () => { window.location.hash = '#/home'; },
       onEnd: () => { window.location.hash = '#/home'; },
+      onStepClick: (step) => { i = Math.max(0, Math.min(queue.length - 1, step - 1)); render(); },
     });
     if (c.kind === 'concept') {
       const cm = buildConceptMain(c, size);

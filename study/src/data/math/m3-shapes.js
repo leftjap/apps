@@ -43,6 +43,7 @@ export const MODULE_SHAPES = [
       example: '3·4·5의 닮은 직각삼각형(6·8·10).',
       think: '같은 비율은 빗변도 같은 배율.',
     },
+    significance: "3·4·5의 2배가 6·8·10 — 같은 비율이면 빗변도 같은 배율. 화면·직각 구조의 대각선을 비례로.",
   },
   {
     id: 'pyth-b',
@@ -66,6 +67,7 @@ export const MODULE_SHAPES = [
       example: '사다리 길이(빗변)와 벽 높이로 바닥 거리 구하기.',
       think: 'a²+b²=c²를 거꾸로 — 빗변 주고 한 변 찾기.',
     },
+    significance: "a²+b²=c²를 거꾸로 — 빗변과 한 변으로 나머지를 역산. 사다리 길이·벽 높이로 바닥 거리를 구하듯.",
   },
   {
     id: 'sim-c',
@@ -103,6 +105,7 @@ export const MODULE_SHAPES = [
       example: '복사기 3배 확대면 잉크는 9배.',
       think: '길이 몇 배든 넓이는 그 제곱.',
     },
+    significance: "길이 3배면 넓이는 3²=9배 — 확대복사·도면 스케일에서 재료·잉크가 왜 급증하는지.",
   },
   {
     id: 'sim-b',
@@ -121,6 +124,7 @@ export const MODULE_SHAPES = [
       example: '작은 피자 둘보다 2배 지름 하나가 더 많아요.',
       think: '"길이비의 제곱" 원리가 사각형 → 원으로 전이.',
     },
+    significance: "'제곱' 원리가 사각형→원으로 전이 — 지름 2배 피자가 왜 4배 양인지(큰 게 이득).",
   },
   {
     id: 'circ-c',
@@ -159,6 +163,7 @@ export const MODULE_SHAPES = [
       example: '반지름만 알면 접시·바퀴 넓이 끝.',
       think: '같은 공식, 반지름만 바뀜.',
     },
+    significance: "곡선 도형도 반지름 하나로 넓이가 정해진다 — 접시·바퀴·파이프 단면을 πr²로.",
   },
   {
     id: 'circ-b',
@@ -178,5 +183,6 @@ export const MODULE_SHAPES = [
       example: '바퀴·접시 크기는 보통 지름으로 적혀 있어요 — 반으로.',
       think: '주어진 게 지름인지 반지름인지 먼저 확인.',
     },
+    significance: "주어진 게 지름인지 반지름인지 먼저 점검 — 바퀴·접시는 보통 지름 표기라 반으로 나눠야.",
   },
 ];

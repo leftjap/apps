@@ -43,6 +43,7 @@ export const MODULE_VISUAL = [
       example: '삼각 깃발·지붕 단면의 넓이도 같은 식.',
       think: '수치가 바뀌어도 "직사각형의 절반" 원리는 그대로.',
     },
+    significance: "직각 아닌 삼각형도 '직사각형 절반'으로 — 삼각 땅·깃발·지붕 단면 넓이를 같은 식으로.",
   },
   {
     id: 'tri-b',
@@ -66,6 +67,7 @@ export const MODULE_VISUAL = [
       example: '마름모·연 모양도 대각선으로 쪼개 절반씩 구해요.',
       think: '"절반" 원리가 직사각형 → 평행사변형으로 전이.',
     },
+    significance: "'절반' 원리가 직사각형→평행사변형으로 전이 — 마름모·연도 대각선으로 쪼개 절반씩.",
   },
   {
     id: 'para-c',
@@ -108,6 +110,7 @@ export const MODULE_VISUAL = [
       example: '비스듬히 쌓은 단의 단면 넓이.',
       think: '기울어져도 넓이는 밑변×높이.',
     },
+    significance: "기울어진 모양도 넓이는 밑변×높이 — 비스듬히 쌓은 단·블록 단면을 그대로 잰다.",
   },
   {
     id: 'para-b',
@@ -131,6 +134,7 @@ export const MODULE_VISUAL = [
       example: '경사진 지붕도 "수직 높이"로 넓이를 재요.',
       think: '주어진 수 중 무엇이 "높이(수직)"인지 골라내기.',
     },
+    significance: "주어진 수 중 무엇이 '수직 높이'인지 골라내는 분별 — 경사 지붕도 빗변 아닌 수직 높이로.",
   },
   {
     id: 'trap-c',
@@ -173,6 +177,7 @@ export const MODULE_VISUAL = [
       example: '둑·컵 단면 넓이.',
       think: '윗변·아랫변의 평균이 "고른 높이".',
     },
+    significance: "위·아래 폭이 다를 때 '평균 폭'으로 — 둑·수로·컵처럼 벌어지는 단면을 평균으로.",
   },
   {
     id: 'trap-b',
@@ -196,6 +201,7 @@ export const MODULE_VISUAL = [
       example: '특수한 사다리꼴 = 직사각형/평행사변형.',
       think: '공식 하나가 여러 모양을 포함 — 일반화.',
     },
+    significance: "사다리꼴 공식 하나가 직사각형까지 품는다 — 특수한 경우를 일반 공식으로 통합하는 사고.",
   },
 ];
 

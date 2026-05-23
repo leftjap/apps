@@ -122,7 +122,8 @@ async function loadMathStats(state) {
   }
   let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
-  const newCount = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
+  const freshRemaining = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
+  const newCount = Math.min(freshRemaining, 3); // math 세션은 하루 3장씩 → '오늘의 새 문제'도 오늘분만(남은 전부 X)
   const reviewCount = items.filter((c) => prog.srs?.[c.id] && prog.srs[c.id].nextReview <= today).length;
   const totalReview = Object.keys(prog.srs || {}).length;
   // 일별 로그 → streak·오늘 통계 (en/ja 와 동일 stat 영역을 math 데이터로 채움)
