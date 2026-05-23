@@ -33,6 +33,15 @@ export function cover(b, { scale = 0.75, lift = true, style: extra } = {}) {
 
   const outer = box(baseStyle);
 
+  // 등록 책(알라딘): 표지 이미지 URL → <img>. 스타일드 변형 건너뜀.
+  if (b.coverUrl) {
+    outer.style.padding = '0';
+    outer.appendChild(el('img', { src: b.coverUrl, alt: b.t || '', loading: 'lazy', style: { width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit', display: 'block' } }));
+    outer.appendChild(box({ position: 'absolute', inset: 0, background: 'linear-gradient(150deg,rgba(255,255,255,.05),rgba(0,0,0,.10))', pointerEvents: 'none', borderRadius: 'inherit' }));
+    outer.appendChild(box({ position: 'absolute', right: 0, top: 0, bottom: 0, width: 1, background: 'rgba(0,0,0,.18)' }));
+    return outer;
+  }
+
   const children = [];
   if (b.d === 'dframe') {
     children.push(box({

@@ -265,6 +265,23 @@ export async function setCommentPendingSync(id, value) {
 // 노출
 // ───────────────────────────────────────────────────────────────────────────
 
+// ═══════════════════════════════════════════════════════════════════════════
+// books — 등록 책(알라딘). id = ISBN. (현재 로컬 Dexie; 마이그레이션 후 Supabase 확장)
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function upsertBook(book) {
+  if (!book?.id) throw new Error('[bookQueries] book id(ISBN) 누락');
+  const ts = nowIso();
+  const existing = await db().books.get(String(book.id));
+  const row = { ...book, id: String(book.id), created_at: existing?.created_at || book.created_at || ts, pending_sync: 0 };
+  await db().books.put(row);
+  return row;
+}
+
+export async function listBooks() {
+  return await db().books.toArray();
+}
+
 export const Queries = {
   // quotes
   listFeed,
@@ -290,6 +307,9 @@ export const Queries = {
   countCommentsForQuotes,
   listPendingComments,
   setCommentPendingSync,
+  // books
+  upsertBook,
+  listBooks,
 };
 
 if (typeof window !== 'undefined') {

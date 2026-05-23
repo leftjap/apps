@@ -7,7 +7,8 @@
  */
 import { setActions } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { BOOKS, bookOf } from '../data/books.js';
+import { BOOKS, bookOf, registerBookInMemory } from '../data/books.js';
+import { Aladin } from '../db/aladin.js';
 import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
@@ -67,18 +68,38 @@ function bookSelector(initialRef, { editable = true } = {}) {
     }
   }
   function togglePanel() { panelOpen = !panelOpen; renderPanel(); }
+  function pick(r) { ref = r; panelOpen = false; renderRow(); renderPanel(); }
+  function bookRowItem(b, onPick, sub) {
+    return el('div', { class: 'book-row', onClick: onPick, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px', borderRadius: 8, cursor: 'pointer' } },
+      cover(b, { scale: 0.2 }),
+      el('div', { style: { flex: 1, minWidth: 0 } },
+        el('div', { style: { fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, b.t),
+        el('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, sub || b.a)));
+  }
   function renderPanel() {
     clear(panelHost);
     if (!panelOpen) return;
-    const list = el('div', { style: { marginTop: 8, maxHeight: 240, overflowY: 'auto', border: '1px solid var(--line)', borderRadius: 10, padding: 6 } });
-    for (const b of BOOKS) {
-      list.appendChild(el('div', { class: 'book-row', onClick: () => { ref = String(b.id); panelOpen = false; renderRow(); renderPanel(); }, style: { display: 'flex', alignItems: 'center', gap: 12, padding: '8px 10px', borderRadius: 8, cursor: 'pointer' } },
-        cover(b, { scale: 0.2 }),
-        el('div', { style: { flex: 1, minWidth: 0 } },
-          el('div', { style: { fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, b.t),
-          el('div', { style: { fontSize: 11.5, color: 'var(--ink-3)', marginTop: 2 } }, b.a))));
-    }
-    panelHost.appendChild(list);
+    const search = el('input', { placeholder: '알라딘에서 책 검색 (제목·저자·ISBN)', style: { width: '100%', height: 38, padding: '0 12px', border: '1px solid var(--line)', borderRadius: 8, fontSize: 13.5, outline: 'none', boxSizing: 'border-box', fontFamily: 'var(--sans)' } });
+    const results = el('div', { style: { maxHeight: 280, overflowY: 'auto', marginTop: 8 } });
+    panelHost.appendChild(el('div', { style: { marginTop: 8, border: '1px solid var(--line)', borderRadius: 10, padding: 8 } }, search, results));
+    const showLibrary = () => { clear(results); results.appendChild(el('div', { class: 'upper', style: { margin: '4px 4px 6px' } }, '내 서재')); for (const b of BOOKS) results.appendChild(bookRowItem(b, () => pick(String(b.id)))); };
+    const runSearch = async (q) => {
+      clear(results); results.appendChild(el('div', { style: { padding: 12, color: 'var(--ink-3)', fontSize: 13 } }, '검색 중…'));
+      let list;
+      try { list = await Aladin.searchBooks(q, { max: 10 }); } catch (e) { clear(results); results.appendChild(el('div', { style: { padding: 12, color: '#c2553a', fontSize: 13 } }, '알라딘 검색 실패: ' + (e?.message || e))); return; }
+      clear(results);
+      if (!list.length) { results.appendChild(el('div', { style: { padding: 12, color: 'var(--ink-3)', fontSize: 13 } }, '검색 결과 없음')); return; }
+      results.appendChild(el('div', { class: 'upper', style: { margin: '4px 4px 6px' } }, '알라딘 검색결과'));
+      for (const n of list) {
+        const ab = Aladin.toAppBook(n);
+        if (!ab) continue;
+        results.appendChild(bookRowItem(ab, async () => { try { await Queries.upsertBook(ab); registerBookInMemory(ab); } catch (e) { console.warn('[add] 책 등록 실패', e?.message || e); } pick(String(ab.id)); }, `${ab.a} · ${ab.p}${ab.y ? ' · ' + ab.y : ''}`));
+      }
+    };
+    let t;
+    search.addEventListener('input', () => { const q = search.value.trim(); clearTimeout(t); if (!q) { showLibrary(); return; } t = setTimeout(() => runSearch(q), 350); });
+    showLibrary();
+    setTimeout(() => search.focus(), 30);
   }
   renderRow();
   return { el: container, getRef: () => ref };

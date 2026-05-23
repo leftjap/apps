@@ -47,11 +47,16 @@ export const BOOKS = Object.freeze([
     d: 'dframe', w: 152, h: 225, bg: '#1d1a14', fg: '#f0ead9' },
 ]);
 
-/** book_ref (문자열) 또는 numeric id 로 책 조회. */
+// 등록 책(알라딘) 런타임 레지스트리 — bookOf 동기 조회용. 부팅 시 Dexie books 에서 로드.
+const REGISTRY = new Map();
+export function registerBookInMemory(b) { if (b && b.id != null) REGISTRY.set(String(b.id), b); }
+export function loadBooksIntoRegistry(list) { for (const b of (list || [])) registerBookInMemory(b); }
+
+/** book_ref (문자열/numeric id, 또는 등록책 ISBN) 로 책 조회. 상수 16권 → 등록 레지스트리 순. */
 export function bookOf(ref) {
   if (ref == null) return null;
   const s = String(ref);
-  return BOOKS.find((b) => String(b.id) === s) || null;
+  return BOOKS.find((b) => String(b.id) === s) || REGISTRY.get(s) || null;
 }
 
 /** 책의 book_ref 문자열. */
@@ -79,7 +84,7 @@ export function groupQuotes(list) {
   return groups;
 }
 
-export const BookData = { BOOKS, bookOf, bookRefOf, groupQuotes };
+export const BookData = { BOOKS, bookOf, bookRefOf, groupQuotes, registerBookInMemory, loadBooksIntoRegistry };
 
 if (typeof window !== 'undefined') {
   window.bookData = BookData;

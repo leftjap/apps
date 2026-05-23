@@ -24,6 +24,14 @@ export function createBookDB(name = 'book') {
     comments:
       '&id, quote_id, author_id, created_at, deleted_at, [quote_id+created_at], pending_sync',
   });
+  // v2: 등록 책(알라딘) 저장소 — id=ISBN, 책 메타(앱 형태). quotes/comments 보존.
+  db.version(2).stores({
+    quotes:
+      '&id, owner_id, book_ref, updated_at, deleted_at, pinned, [book_ref+updated_at], pending_sync',
+    comments:
+      '&id, quote_id, author_id, created_at, deleted_at, [quote_id+created_at], pending_sync',
+    books: '&id, created_at, pending_sync',
+  });
   return db;
 }
 

@@ -12,7 +12,8 @@ import { supabase } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { Profile } from './services/profile.js';
 import { Sync } from './db/sync.js';
-import './data/books.js';
+import { Queries } from './db/queries.js';
+import { loadBooksIntoRegistry } from './data/books.js';
 import './styles/book.css';
 import './features/feed.js'; // registerScreen('feed', ...)
 import './features/thread.js'; // registerScreen('thread', ...)
@@ -58,6 +59,8 @@ async function handleSession(session) {
   }
   // Dexie DB 인스턴스 — Supabase 미설정·오프라인에서도 로컬 동작 확보
   await Auth.ensureUserDB(user);
+  // 등록 책(알라딘) 메모리 레지스트리 로드 — bookOf 동기 조회용.
+  try { loadBooksIntoRegistry(await Queries.listBooks()); } catch (e) { console.warn('[main] 등록책 로드 실패', e?.message || e); }
   // ensureProfile 은 RLS · 네트워크 오류 시 null 반환 — 화면은 그대로 진입 (UX 우선)
   await Profile.ensureProfile(user);
   setRouterUser(user);
