@@ -1,23 +1,32 @@
 {
-  "_note": "오늘 수학 (기하 도입) — seed-math.mjs / study-seed-math.yml 로 study_math_problems 에 upsert. solution·figure 는 jsonb. 데이터 정본: src/data/math/*.",
+  "_note": "오늘 수학 — m1 삼각수(강화) → m2 넓이는 변형(삼각형 개념·평행사변형 적용). 05-22(홀수합) 다음 backbone 진척. seed-math.mjs 로 study_math_problems upsert.",
   "date": "2026-05-23",
   "problems": [
     {
       "id": "math-2026-05-23-1",
       "module": "모양으로 세기",
-      "tag": "시각 통찰 · 홀수합",
-      "lesson": "수를 \"모양\"으로 바꿔 보면, 계산 없이 답이 보일 때가 있어요.",
-      "figure": { "type": "dots", "n": 5, "legend": "색이 같은 ㄱ자 한 겹 = 홀수 한 개 (1·3·5·7·9)" },
-      "prompt": "1 + 3 + 5 + 7 + 9 = ?  (그림에서 몇 × 몇으로 보이나요?)",
-      "answer": "25",
-      "accept": ["25", "5x5"],
+      "tag": "시각 통찰 · 삼각수",
+      "lesson": "1, 2, 3… 을 계단처럼 쌓고 — 똑같은 계단 하나를 거꾸로 끼우면 빈틈 없는 직사각형이 돼요.",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"164\" height=\"186\" viewBox=\"0 0 164 186\" role=\"img\" aria-label=\"1부터 6까지 계단 두 개가 6 곱하기 7 직사각형\"><rect x=\"16\" y=\"148\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"16\" y=\"126\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"16\" y=\"104\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"16\" y=\"82\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"16\" y=\"60\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"16\" y=\"38\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"16\" y=\"16\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"38\" y=\"148\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"38\" y=\"126\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"38\" y=\"104\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"38\" y=\"82\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"38\" y=\"60\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"38\" y=\"38\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"38\" y=\"16\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"60\" y=\"148\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"60\" y=\"126\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"60\" y=\"104\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"60\" y=\"82\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"60\" y=\"60\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"60\" y=\"38\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"60\" y=\"16\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"82\" y=\"148\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"82\" y=\"126\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"82\" y=\"104\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"82\" y=\"82\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"82\" y=\"60\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"82\" y=\"38\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"82\" y=\"16\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"104\" y=\"148\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"104\" y=\"126\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"104\" y=\"104\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"104\" y=\"82\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"104\" y=\"60\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"104\" y=\"38\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"104\" y=\"16\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/><rect x=\"126\" y=\"148\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"126\" y=\"126\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"126\" y=\"104\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"126\" y=\"82\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"126\" y=\"60\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"126\" y=\"38\" width=\"22\" height=\"22\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"126\" y=\"16\" width=\"22\" height=\"22\" fill=\"#eef2e6\" stroke=\"#e8e3d6\" stroke-width=\"1\"/></svg>",
+        "legend": "진한 계단 + 연한 계단 = 6 × 7 직사각형 → 계단 하나는 그 절반"
+      },
+      "prompt": "1 + 2 + 3 + 4 + 5 + 6 = ?  (똑같은 계단을 거꾸로 붙이면 몇 × 몇 직사각형이 되나요?)",
+      "answer": "21",
+      "accept": [
+        "21"
+      ],
       "solution": {
-        "core": "홀수를 ㄱ자로 한 겹씩 두르면 항상 정사각형이 된다.",
-        "idea": "점 1개에서 시작해 ㄱ자(3개)면 2×2, 또 ㄱ자(5개)면 3×3… 홀수 하나가 정사각형 한 겹이에요.",
-        "steps": ["1·3·5·7·9를 차례로 두르기 → 5×5 격자", "5 × 5 = 25"],
-        "refresh": "곱셈 · 제곱(5² = 25)",
-        "example": "계산기 없이도 \"홀수 다섯 개의 합 = 5의 제곱\"이라고 바로 말할 수 있어요.",
-        "think": "쌓임이 넓이가 된다 — 적분의 씨앗."
+        "core": "1부터 n까지의 합 = n × (n+1) 의 절반.",
+        "idea": "계단(1,2,…,6)을 하나 더 만들어 거꾸로 끼우면 빈틈 없이 6×7 직사각형이 돼요. 그러니 계단 하나는 그 절반.",
+        "steps": [
+          "계단 두 개 → 6 × 7 = 42",
+          "절반 → 21    (n(n+1)/2)"
+        ],
+        "refresh": "곱셈 · ½",
+        "example": "1번부터 100번까지 다 더하기? 100 × 101 ÷ 2 = 5050 — 가우스가 어릴 때 쓴 바로 그 방법이에요.",
+        "think": "쌓임(1,2,3…)이 삼각형 넓이가 된다 — 적분의 씨앗."
       },
       "order_index": 1
     },
@@ -33,11 +42,16 @@
       },
       "prompt": "밑변 6, 높이 4인 삼각형의 넓이는?",
       "answer": "12",
-      "accept": ["12"],
+      "accept": [
+        "12"
+      ],
       "solution": {
         "core": "삼각형 = 같은 밑변·높이 직사각형의 절반.",
         "idea": "직사각형을 대각선으로 자르면 똑같은 삼각형 둘. 그러니 삼각형은 직사각형의 반이에요.",
-        "steps": ["직사각형 6 × 4 = 24", "절반 → 12   (½ × 밑변 × 높이)"],
+        "steps": [
+          "직사각형 6 × 4 = 24",
+          "절반 → 12    (½ × 밑변 × 높이)"
+        ],
         "refresh": "½ · 곱셈",
         "example": "텃밭·천 조각·벽 한 면의 넓이도 \"직사각형으로 바꿔\" 구하면 돼요.",
         "think": "모르는 모양은, 아는 모양으로 쪼개거나 채워라."
@@ -46,24 +60,28 @@
     },
     {
       "id": "math-2026-05-23-3",
-      "module": "도형의 약속",
-      "tag": "기하 · 피타고라스",
-      "lesson": "직각삼각형에선 두 변만 알면 나머지 한 변이 정해져요.",
+      "module": "넓이는 변형",
+      "tag": "기하 · 평행사변형 넓이",
+      "lesson": "평행사변형은 기운 끝의 삼각형을 잘라 반대편에 붙이면 — 반듯한 직사각형이 돼요.",
       "figure": {
         "type": "svg",
-        "svg": "<svg width=\"220\" height=\"180\" viewBox=\"0 0 220 180\" role=\"img\" aria-label=\"직각삼각형 밑변 3 높이 4\"><polygon points=\"30,150 150,150 30,30\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"2\"/><rect x=\"30\" y=\"138\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"84\" y=\"168\" font-size=\"13\" fill=\"#8a8475\">3</text><text x=\"14\" y=\"95\" font-size=\"13\" fill=\"#8a8475\">4</text><text x=\"96\" y=\"84\" font-size=\"13\" fill=\"#d97757\">?</text></svg>",
-        "legend": "직각을 낀 두 변 3, 4 → 빗변?"
+        "svg": "<svg width=\"260\" height=\"160\" viewBox=\"0 0 260 160\" role=\"img\" aria-label=\"밑변 7 높이 4 평행사변형\"><rect x=\"40\" y=\"30\" width=\"168\" height=\"96\" fill=\"none\" stroke=\"#e8e3d6\" stroke-dasharray=\"5 4\"/><polygon points=\"40,126 208,126 248,30 80,30\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"2\"/><line x1=\"120\" y1=\"126\" x2=\"120\" y2=\"30\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"4 3\"/><rect x=\"120\" y=\"114\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"104\" y=\"146\" font-size=\"13\" fill=\"#8a8475\">밑변 7</text><text x=\"128\" y=\"84\" font-size=\"13\" fill=\"#8a8475\">높이 4</text></svg>",
+        "legend": "기운 끝을 잘라 옮기면 → 점선 직사각형 (밑변 × 높이)"
       },
-      "prompt": "직각을 낀 두 변이 3, 4인 직각삼각형의 빗변 길이는?",
-      "answer": "5",
-      "accept": ["5"],
+      "prompt": "밑변 7, 높이 4인 평행사변형의 넓이는?",
+      "answer": "28",
+      "accept": [
+        "28"
+      ],
       "solution": {
-        "core": "빗변² = 두 변의 제곱의 합 (a² + b² = c²).",
-        "idea": "세 변 위에 정사각형을 그리면, 짧은 두 정사각형 넓이의 합이 큰 정사각형 넓이와 같아요. 길이가 아니라 넓이가 더해지는 거예요.",
-        "steps": ["3² + 4² = 9 + 16 = 25", "√25 = 5"],
-        "refresh": "제곱(3²=9) · 제곱근(√25=5)",
-        "example": "직각자 없이도 변이 3·4·5면 그 모서리는 정확한 직각 — 목수의 오래된 요령.",
-        "think": "제곱 = 넓이. 피타고라스는 \"넓이의 덧셈\"이다."
+        "core": "평행사변형 넓이 = 밑변 × 높이 (직사각형과 같다).",
+        "idea": "기운 끝의 삼각형을 잘라 반대쪽에 붙이면 반듯한 직사각형. 모양만 바뀌고 넓이는 그대로예요.",
+        "steps": [
+          "밑변 7 × 높이 4 = 28"
+        ],
+        "refresh": "곱셈",
+        "example": "기울어진 화단·주차 구획의 넓이도 수직 \"높이\"만 알면 직사각형처럼 구해요. (기운 변의 길이가 아니라 수직 높이!)",
+        "think": "삼각형·평행사변형·사다리꼴 — 전부 \"아는 모양으로 바꾸기\" 한 가지 생각."
       },
       "order_index": 3
     }
