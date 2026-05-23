@@ -16,6 +16,17 @@
 - **소스**: `~/cowork/docs/서재/quotes-data.json`(102책/991어구록). 카탈로그 빌더: `/tmp/build_catalog2.py`(저자/제목검증), `/tmp/gen_library.py`(library 생성), `/tmp/insert_quotes.py`(적재).
 - **인증**: 본인 계정 leftjap(지오)/soyoun312(소연). 테스트는 leftjap 매직링크(service_role admin generate_link → verifyOtp, 비번 불요).
 
+## 0.6 이번 세션(2026-05-23, 2차 후속) 완료 — P0-A/B + P1-C
+
+사용자 결정: **"정직 유지 + 책그룹"**(날짜 미조작). 검증: 실 데이터(991/102, owner 지오) preview + node + vitest 28/28.
+
+- **[P0-A] ✅ 피드 책분리 해소**: `groupQuotes`(books.js) 를 *연속그룹 → 전역 (who,book_ref) 그룹 + 그룹/그룹내 최신순* 으로 변경. feed.js·lists.js(핀) 동시 적용. 날짜 재배정 안 함(원본 단일 날짜). 검증: node(인터리브 병합) + 실UI **102책 → 102섹션, 중복 0**.
+- **[P0-A] ✅ 통계 날짜**: stats.js 기본기간 `'이번 달' → '전체'`. 검증: 전체 991/102책/97작가, 캘린더 03-23 991(단일 날짜 그대로 노출 = 정직).
+- **[P0-B] ✅ 검색 인라인화**: `/search` 페이지·라우트(app.js)·import(main.js)·`features/search.js` **삭제**. topBar `.topbar-search` 를 실제 input+드롭다운(책/어구록)으로 — components.js `topbarSearch`/`renderSearchResults`(focus 시 lazy listAllQuotes, 디바운스 160ms, blur 150ms 닫힘). 검증: '투자'→책3·어구록12 드롭다운. ⚠ `.topbar-search` 는 book.css:58 `@media(max-width:760px)` 에서 기존대로 숨김(모바일 검색 없음 — 회귀 아님).
+- **[P1-C] ✅ 무한스크롤**: feed.js — 책그룹당 어구록 5개 + `+N개 더`(→/book) 링크 + 하단 **수동 "더 보기(책 N권)" 버튼**(클릭당 +12 그룹). ⚠ 당초 IntersectionObserver 였으나 **preview headless 가 IO·scroll·focus 이벤트 미전달**(검증불가 + 실패 시 12권 갇힘 리스크) → 수동 버튼으로 채택. 검증: 12→24→…→102 클릭 로드 후 버튼 자동 숨김.
+
+**남은 작업**: [P1-D] 소스 데이터 제목/저자(book_025 표지엔 "한병철"·라벨은 "분노사회" 확인 — 데이터 오류 잔존, 사용자 정보 필요), [P2-E] 좌정렬(미수정 유지).
+
 ## 1. 알려진 이슈 = 다음 세션 작업 (우선순위순)
 
 ### [P0-A] created_at 설계결함 → 책 분리/중복-보임 + 통계 날짜 오류 (가장 큼)

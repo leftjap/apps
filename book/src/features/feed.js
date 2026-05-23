@@ -175,13 +175,17 @@ async function render(host, params, ctx) {
   if (!groups.length) {
     mainCol.appendChild(el('div', { style: { padding: '60px 0', color: 'var(--ink-3)', fontSize: 15 } }, '아직 어구록이 없습니다. 새 어구록을 추가해 보세요.'));
   }
-  for (const g of groups) {
+
+  // 책 그룹당 최신 N개만 노출(+더보기), 그룹은 점진 로드(전체 991 동시 렌더 방지).
+  const QUOTES_PER_BOOK = 5;
+  const GROUPS_PER_PAGE = 12;
+  const renderGroup = (g) => {
     const b = bookOf(g.book_ref);
-    if (!b) continue;
+    if (!b) return null;
     const section = el('section', { style: { margin: '0 0 32px' } });
     section.appendChild(bookRow({ b, count: g.q.length, soyeon: g.who === 'y', onClick: () => ctx.navigate(`/book/${bookRefOf(b)}`) }));
     const indent = el('div', { class: 'q-indent', style: { marginTop: 6, marginLeft: 86 } });
-    for (const q of g.q) {
+    for (const q of g.q.slice(0, QUOTES_PER_BOOK)) {
       indent.appendChild(quoteRow({
         q,
         onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`),
@@ -190,9 +194,34 @@ async function render(host, params, ctx) {
         onMore: () => (ctx.openDelete ? ctx.openDelete(q.id) : null),
       }));
     }
+    if (g.q.length > QUOTES_PER_BOOK) {
+      indent.appendChild(el('div', {
+        class: 'book-row', onClick: () => ctx.navigate(`/book/${g.book_ref}`),
+        style: { display: 'inline-flex', alignItems: 'center', gap: 5, padding: '8px 12px', margin: '2px -12px 0', borderRadius: 8, cursor: 'pointer', fontSize: 13, color: 'var(--ink-3)', fontWeight: 500 },
+      }, `어구록 ${g.q.length - QUOTES_PER_BOOK}개 더`, iconEl('ar', { sz: 13 })));
+    }
     section.appendChild(indent);
-    mainCol.appendChild(section);
-  }
+    return section;
+  };
+
+  const moreBtn = el('button', {
+    class: 'vbtn',
+    style: { display: 'none', margin: '8px auto 0', padding: '11px 22px', fontSize: 13.5, fontWeight: 600, color: 'var(--ink-2)', background: '#fff', border: '1px solid var(--line)', borderRadius: 10, cursor: 'pointer' },
+  });
+  mainCol.appendChild(moreBtn);
+  let cursor = 0;
+  const renderMore = () => {
+    for (const g of groups.slice(cursor, cursor + GROUPS_PER_PAGE)) {
+      const s = renderGroup(g);
+      if (s) mainCol.insertBefore(s, moreBtn);
+    }
+    cursor += GROUPS_PER_PAGE;
+    const remaining = groups.length - cursor;
+    moreBtn.textContent = remaining > 0 ? `더 보기 (책 ${remaining}권)` : '';
+    moreBtn.style.display = remaining > 0 ? 'block' : 'none';
+  };
+  moreBtn.addEventListener('click', renderMore);
+  renderMore();
 
   // 사이드
   const aside = el('aside', { style: { display: 'flex', flexDirection: 'column', gap: 32, paddingTop: 58 } },

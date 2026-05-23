@@ -106,7 +106,8 @@ async function render(host, params, ctx) {
   }
 
   const container = el('div', { style: { padding: '36px 36px 100px' } });
-  let active = '이번 달';
+  // 데이터에 실 독서일이 없어 어구록이 단일 날짜에 몰려 있음 → 기본 '전체'로 991건 전부 노출.
+  let active = '전체';
 
   function renderBody() {
     clear(container);

@@ -5,6 +5,11 @@
 import { el } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
+import { quoteText } from './quote-text.js';
+import { fmtDateTime } from './format.js';
+import { Queries } from '../db/queries.js';
+import { BOOKS, bookOf } from '../data/books.js';
+import { Profile } from '../services/profile.js';
 
 // ─── Btn — 3 size × 4 variant (core-v9 Btn) ─────────────────────────────────
 const BTN_SIZES = {
@@ -79,6 +84,73 @@ export function soyeonMark({ size = 'sm' } = {}) {
   );
 }
 
+// ─── Topbar 인라인 검색 (v14 .topbar-search 실기능화) ─
+function searchOwnerIds(user) {
+  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+}
+
+function renderSearchResults(panel, raw, quotes, countMap, ctx, close) {
+  const nav = ctx?.navigate || (() => {});
+  const q = raw.trim().toLowerCase();
+  const hint = (t) => el('div', { style: { padding: '16px 12px', color: 'var(--ink-3)', fontSize: 13 } }, t);
+  const label = (t) => el('div', { class: 'upper', style: { margin: '10px 8px 4px', fontSize: 10.5 } }, t);
+  panel.replaceChildren();
+  if (!q) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  if (quotes == null) { panel.appendChild(hint('불러오는 중…')); return; }
+  const books = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(q) || (b.a || '').toLowerCase().includes(q)).slice(0, 8);
+  const qs = quotes.filter((r) => (r.text || '').toLowerCase().includes(q)).slice(0, 12);
+  if (!books.length && !qs.length) { panel.appendChild(hint(`'${raw.trim()}' 검색 결과가 없습니다.`)); return; }
+  if (books.length) {
+    panel.appendChild(label(`책 ${books.length}`));
+    for (const b of books) panel.appendChild(bookRow({ b, count: countMap.get(String(b.id)) || 0, onClick: () => { close(); nav(`/book/${b.id}`); } }));
+  }
+  if (qs.length) {
+    panel.appendChild(label(`어구록 ${qs.length}`));
+    for (const r of qs) {
+      const b = bookOf(r.book_ref);
+      panel.appendChild(el('div', { class: 'book-row', onClick: () => { close(); nav(`/thread/${r.book_ref}/${r.id}`); }, style: { padding: '12px 12px', borderRadius: 10, cursor: 'pointer' } },
+        quoteText({ text: r.text, fontSize: 15, lineHeight: 1.6, variant: 'inline', serif: true }),
+        el('div', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)', marginTop: 6 } }, `${b ? b.t + ' · ' : ''}${fmtDateTime(r.created_at)}`),
+      ));
+    }
+  }
+}
+
+export function topbarSearch({ ctx } = {}) {
+  const wrap = el('div', { class: 'topbar-search-wrap', style: { position: 'relative', flex: 1, maxWidth: 640, marginLeft: 'auto' } });
+  const bar = el('div', { class: 'topbar-search', style: { display: 'flex', alignItems: 'center', gap: 10, height: 40, padding: '0 16px', background: 'var(--paper)', borderRadius: 10, color: 'var(--ink-3)', transition: 'box-shadow .12s' } }, iconEl('search', { sz: 16 }));
+  const input = el('input', { type: 'text', placeholder: '책 · 작가 · 분야 · 단어 · 어구록', style: { flex: 1, minWidth: 0, height: '100%', border: 0, outline: 0, background: 'transparent', fontSize: 14, fontFamily: 'var(--sans)', color: 'var(--ink-1)' } });
+  bar.appendChild(input);
+  const panel = el('div', { style: { position: 'absolute', top: 48, left: 0, right: 0, maxHeight: 'min(70vh, 520px)', overflowY: 'auto', background: '#fff', border: '1px solid var(--line-2)', borderRadius: 12, boxShadow: '0 8px 28px -8px rgba(20,18,14,.18)', padding: 8, zIndex: 30, display: 'none' } });
+  wrap.append(bar, panel);
+
+  const countMap = new Map();
+  let quotes = null; // lazy
+  let loading = false;
+  let debounce;
+  const close = () => { panel.style.display = 'none'; };
+  const run = () => renderSearchResults(panel, input.value, quotes, countMap, ctx, close);
+
+  async function ensureLoaded() {
+    if (quotes != null || loading) return;
+    loading = true;
+    try {
+      quotes = await Queries.listAllQuotes(searchOwnerIds(ctx?.user));
+      countMap.clear();
+      for (const r of quotes) countMap.set(String(r.book_ref), (countMap.get(String(r.book_ref)) || 0) + 1);
+    } catch (e) { quotes = []; console.warn('[search] 로드 실패', e?.message || e); }
+    loading = false;
+    if (document.activeElement === input && input.value.trim()) run();
+  }
+
+  input.addEventListener('focus', () => { bar.style.boxShadow = '0 0 0 2px rgba(20,18,14,.10)'; ensureLoaded(); if (input.value.trim()) run(); });
+  input.addEventListener('blur', () => { bar.style.boxShadow = 'none'; setTimeout(close, 150); });
+  input.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(run, 160); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { input.value = ''; close(); input.blur(); } });
+  return wrap;
+}
+
 // ─── TopBar (core-v14 TopBarV14) — 어구록/통계 탭 + 검색 + 새 어구록 ─────────
 export function topBar({ tab = 'excerpt', ctx } = {}) {
   const nav = ctx?.navigate || (() => {});
@@ -91,11 +163,7 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
     style: { padding: '8px 14px', borderRadius: 7, fontSize: 14, fontWeight: tab === key ? 700 : 500, color: tab === key ? 'var(--ink-1)' : 'var(--ink-3)', cursor: 'pointer', background: tab === key ? 'var(--hover)' : 'transparent' },
   }, name);
   const navEl = el('nav', { style: { display: 'flex', gap: 4, marginLeft: 8 } }, tabEl('어구록', 'excerpt', '/'), tabEl('통계', 'stats', '/stats'));
-  // v14 시안은 indicator 였으나 검색 페이지(/search)로 실기능화 — 클릭 시 이동.
-  const search = el('div', {
-    class: 'topbar-search', onClick: () => nav('/search'),
-    style: { display: 'flex', alignItems: 'center', gap: 10, flex: 1, maxWidth: 640, marginLeft: 'auto', height: 40, padding: '0 16px', background: 'var(--paper)', borderRadius: 10, color: 'var(--ink-3)', cursor: 'pointer' },
-  }, iconEl('search', { sz: 16 }), el('span', { style: { flex: 1, fontSize: 14 } }, '책 · 작가 · 분야 · 단어 · 어구록'));
+  const search = topbarSearch({ ctx });
   return el('header', {
     class: 'topbar',
     style: { padding: '16px 36px', display: 'flex', alignItems: 'center', gap: 22, background: '#fff', borderBottom: '1px solid var(--line-2)', position: 'sticky', top: 0, zIndex: 5 },

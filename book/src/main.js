@@ -24,7 +24,6 @@ import './features/stats.js'; // registerScreen('stats', ...)
 import './features/word.js'; // registerScreen('word', ...)
 import './features/day.js'; // registerScreen('day', ...)
 import './features/author.js'; // registerScreen('author', ...)
-import './features/search.js'; // registerScreen('search', ...)
 import { showAuthenticated, showLogin, setRouterUser } from './app.js';
 
 // dev 전용 시드 (preview/E2E 시각 검증) — prod 번들 제외.
