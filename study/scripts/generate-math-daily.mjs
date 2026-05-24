@@ -180,13 +180,16 @@ function main() {
   const gen = makeGen(rng);
   const epochDay = Math.floor(new Date(date + 'T00:00:00Z').getTime() / 86400000);
   const conceptId = o.concept || ORDER[epochDay % ORDER.length]; // 날짜별 backbone 개념 순환
-  const problems = [];
-  for (let i = 0; i < o.count; i++) {
+  const problems = [], seen = new Set();
+  for (let guard = 0; problems.length < o.count && guard < o.count * 25; guard++) {
     const p = gen[conceptId](), meta = p._meta; delete p._meta;
+    if (seen.has(p.prompt)) continue; // 같은 날 세트 내 중복 문제 회피
+    seen.add(p.prompt);
     const rc = recompute(meta); // 답 독립 재계산 일치 검증
-    if (Math.abs(rc - Number(p.answer)) > 0.011) throw new Error(`answer mismatch ${conceptId}#${i}: gen=${p.answer} recompute=${rc}`);
+    if (Math.abs(rc - Number(p.answer)) > 0.011) throw new Error(`answer mismatch ${conceptId}: gen=${p.answer} recompute=${rc}`);
     const figOk = p.figure.type === 'dots' ? p.figure.n > 0 : (p.figure.svg || '').startsWith('<svg');
-    if (!figOk) throw new Error(`figure invalid ${conceptId}#${i}`);
+    if (!figOk) throw new Error(`figure invalid ${conceptId}`);
+    const i = problems.length;
     problems.push({
       id: `gen-${date}-${conceptId}-${i + 1}`, conceptId, kind: 'apply',
       module: META[conceptId].module, tag: META[conceptId].tag,
@@ -194,6 +197,7 @@ function main() {
       accept: p.accept, range: p.range, solution: p.solution, order_index: i,
     });
   }
+  if (problems.length < o.count) throw new Error(`unique 생성 실패 ${conceptId}: ${problems.length}/${o.count}`);
   const out = o.out || `seeds/math-${date}.json`;
   writeFileSync(out, JSON.stringify({ date, problems }, null, 2));
   console.log(`[generate-math-daily] date=${date} concept=${conceptId} count=${problems.length} → ${out}`);
