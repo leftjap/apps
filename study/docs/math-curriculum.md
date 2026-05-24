@@ -92,9 +92,9 @@
 ## 데이터 흐름 (2026-05-23 — 큐레이션 번들 정본 + SRS 복습)
 
 - **정본 = 번들 `src/data/math/*`** (개념→응용 + 파라메트릭 도형). 수정·추가 = 파일 편집 → push → 배포. `session-math`·`home` 이 `MATH_CONTENT` 사용.
-- **루틴 자동생성 안 함:** `study-daily-9am` 은 en/ja 만. math 자동생성은 *그림 없는 맨 산수로 전락* + 개념/도형(코드 헬퍼)은 `study_math_problems`(prompt/answer/solution 강제)에 **시드 불가**(경험적 확인) → 제외. **새 내용 = 사람이 모듈을 큐레이션 추가**(backbone 4~7 순서).
-- **매일 engagement = SRS 복습**(2·7·30·90, localStorage progress). 배운 응용이 그림·개념째 다시 출제 — 사고력 수학은 언어와 달리 매일 새 드릴이 목적 아님.
-- **병합 코드(dormant):** `loadProblems`·`loadMathStats` 는 번들 + Dexie `mathProblems` 병합 구조 유지(향후 *큐레이션 DB 콘텐츠* 대비). 현재 DB 비어 사실상 번들 전용. schema v3·v4 clear 로 스테일 정리.
+- **루틴 일일 응용 생성 (2026-05-24 편입):** `study-daily-9am` 이 en/ja + **수학 일일 응용**을 생성. `scripts/generate-math-daily.mjs` (날짜 시드 멱등, backbone 개념 1개 순환 + 응용 3개, figures.js 파라메트릭 도형 + 답 계산 + 6필드 + `conceptId`) → `seed-math.mjs` 로 `study_math_problems`(concept_id·kind) upsert. *개념 카드는 여전히 번들 큐레이션*(자동생성 X — 품질). 도형 시드 가능(`figure jsonb` 컬럼, 0005:21). 마이그 `0006` 으로 concept_id·kind 추가 → nextNewGroup 이 [개념 + 그날 응용] 노출.
+- **매일 engagement = 신규 응용(생성) + SRS 복습**(2·7·30·90, localStorage progress). 시드 응용은 부모 개념과 함께(개념-우선) 출제.
+- **병합 코드(active):** `loadProblems`·`loadMathStats` 가 번들 + Dexie `mathProblems`(루틴 시드분, sync 경유) 병합. 시드 행은 `conceptId`·`kind` 보존 → 개념 그룹에 합류. (이전엔 dormant; 0006 + sync concept_id 매핑으로 활성.)
 - 라이브 확인: PWA SW autoUpdate. 즉시 검증 = SW 해제 + 캐시 clear + 강제 reload.
 
 ## 품질 체크리스트 (카드 작성 직후 — "정합" 단정 전 자체 점검)

@@ -28,7 +28,7 @@ async function loadProblems() {
     try {
       const rows = await db.mathProblems.toArray();
       const bundleIds = new Set(MATH_CONTENT.map((c) => c.id));
-      const extra = rows.filter((r) => !bundleIds.has(r.id)).map((r) => ({ ...r, kind: 'apply' }));
+      const extra = rows.filter((r) => !bundleIds.has(r.id)).map((r) => ({ ...r, kind: r.kind || 'apply' }));
       items.push(...extra);
     } catch { /* 번들만 폴백 */ }
   }

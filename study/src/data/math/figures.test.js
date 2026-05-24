@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { squaresOnSides, staircaseToRect, trapezoidDoubled, circleToRect, labeledCircle, scaledSquares, scaledCircles } from './figures.js';
+import { squaresOnSides, staircaseToRect, trapezoidDoubled, circleToRect, labeledCircle, scaledSquares, scaledCircles, labeledTriangle, labeledParallelogram, labeledTrapezoid } from './figures.js';
 
 // 파라메트릭 도형 헬퍼 — 비율이 입력 숫자에서 *계산*됨을 자동 검증(손코딩 비율오류 방지).
 // math-curriculum.md §도형 규약: 라벨 = 입력 숫자, 변형 묘사.
@@ -100,5 +100,38 @@ describe('scaledCircles — 닮음 원 (큰 반지름 = k × 작은 반지름)',
   it('k=2 비율 2', () => {
     const cs = [...scaledCircles({ k: 2 }).matchAll(/<circle[^>]*r="([\d.]+)"/g)].map((m) => +m[1]).filter((x) => x > 3);
     expect(Math.max(...cs) / Math.min(...cs)).toBe(2);
+  });
+});
+
+describe('labeledTriangle — 응용 삼각형 (밑변·높이)', () => {
+  it('밑변 = base·u, 수직 높이 = height·u', () => {
+    const u = 14, svg = labeledTriangle({ base: 10, height: 6, unit: u });
+    const p = polys(svg)[0];
+    const ys = p.map((q) => q[1]);
+    expect(Math.abs(p[1][0] - p[0][0])).toBe(10 * u);          // 밑변
+    expect(Math.max(...ys) - Math.min(...ys)).toBe(6 * u);     // 높이(수직)
+    expect(svg).toContain('밑변 10'); expect(svg).toContain('높이 6');
+  });
+});
+
+describe('labeledParallelogram — 응용 평행사변형 (밑변·수직높이)', () => {
+  it('밑변 = base·u, 수직 높이 = height·u', () => {
+    const u = 14, svg = labeledParallelogram({ base: 7, height: 5, unit: u });
+    const p = polys(svg)[0];
+    const ys = p.map((q) => q[1]);
+    expect(Math.abs(p[1][0] - p[0][0])).toBe(7 * u);           // 밑변(아랫변)
+    expect(Math.max(...ys) - Math.min(...ys)).toBe(5 * u);     // 수직 높이
+  });
+});
+
+describe('labeledTrapezoid — 응용 사다리꼴 (윗변·아랫변·높이)', () => {
+  it('윗변=top·u, 아랫변=bottom·u, 높이=height·u', () => {
+    const u = 14, svg = labeledTrapezoid({ top: 3, bottom: 7, height: 4, unit: u });
+    const p = polys(svg)[0];
+    const ys = p.map((q) => q[1]); const minY = Math.min(...ys), maxY = Math.max(...ys);
+    const xs = (y) => p.filter((q) => Math.abs(q[1] - y) < 0.5).map((q) => q[0]);
+    expect(Math.max(...xs(minY)) - Math.min(...xs(minY))).toBe(3 * u);  // 윗변
+    expect(Math.max(...xs(maxY)) - Math.min(...xs(maxY))).toBe(7 * u);  // 아랫변
+    expect(maxY - minY).toBe(4 * u);                                    // 높이
   });
 });

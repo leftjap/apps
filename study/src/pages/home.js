@@ -110,20 +110,21 @@ function getStoredLang() {
 // 수학 모드 카운트 — 문제 목록(번들 정본, session-math 와 동일) + 진행상태(localStorage mathProgress).
 async function loadMathStats(state) {
   const today = state.todayISO;
-  let items = [];
-  try { const m = await import('../data/math/index.js'); items = [...(m.MATH_CONTENT || [])]; } catch { /* noop */ }
+  let items = [], nextGroup = null;
+  try { const m = await import('../data/math/index.js'); items = [...(m.MATH_CONTENT || [])]; nextGroup = m.nextNewGroup; } catch { /* noop */ }
   const db = window.studyDB; // 하이브리드: 번들 + 루틴 생성 일일 응용(Dexie) 병합
   if (db?.mathProblems) {
     try {
       const rows = await db.mathProblems.toArray();
       const ids = new Set(items.map((c) => c.id));
-      items.push(...rows.filter((r) => !ids.has(r.id)).map((r) => ({ ...r, kind: 'apply' })));
+      items.push(...rows.filter((r) => !ids.has(r.id)).map((r) => ({ ...r, kind: r.kind || 'apply' })));
     } catch { /* 번들만 */ }
   }
   let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
   const freshRemaining = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
-  const newCount = Math.min(freshRemaining, 3); // math 세션은 하루 3장씩 → '오늘의 새 문제'도 오늘분만(남은 전부 X)
+  // 실제 NEW 세션 = nextNewGroup(개념 1 + 그 응용들). 카운트도 그것과 일치(시드 응용 포함).
+  const newCount = nextGroup ? nextGroup(items, prog).length : Math.min(freshRemaining, 3);
   const reviewCount = items.filter((c) => prog.srs?.[c.id] && prog.srs[c.id].nextReview <= today).length;
   const totalReview = Object.keys(prog.srs || {}).length;
   // 일별 로그 → streak·오늘 통계 (en/ja 와 동일 stat 영역을 math 데이터로 채움)

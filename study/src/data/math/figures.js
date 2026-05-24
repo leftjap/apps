@@ -143,3 +143,48 @@ export function scaledCircles({ k, pad = 16, gap = 26 }) {
     + `<circle cx="${n1(bCx)}" cy="${n1(cy)}" r="${n1(big)}" fill="${C.sq}" stroke="${C.stroke}" stroke-width="1.5"/>`
     + txt(sCx, cy + big + 12, '지름 ×1') + txt(bCx, cy + big + 12, `지름 ×${k}`) + '</svg>';
 }
+
+const dline = (x1, y1, x2, y2) =>
+  `<line x1="${n1(x1)}" y1="${n1(y1)}" x2="${n1(x2)}" y2="${n1(y2)}" stroke="${C.stroke}" stroke-width="1.1" stroke-dasharray="4 3"/>`;
+
+/**
+ * 삼각형(응용) — 밑변·높이 라벨. 넓이 = ½·밑변·높이. 좌표는 입력에서 계산(비율 정합).
+ */
+export function labeledTriangle({ base, height, unit = 14, pad = 24 }) {
+  const u = unit, W = base * u, H = height * u, x0 = pad, yB = pad + H, apexX = pad + W * 0.42;
+  const w = W + pad * 2, h = H + pad * 2 + 6;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="밑변 ${base} 높이 ${height} 삼각형">`
+    + poly([[x0, yB], [x0 + W, yB], [apexX, pad]], C.fill)
+    + dline(apexX, pad, apexX, yB)
+    + txt(x0 + W / 2, yB + 16, `밑변 ${base}`)
+    + txt(apexX + 24, pad + H / 2, `높이 ${height}`) + '</svg>';
+}
+
+/**
+ * 평행사변형(응용) — 밑변·높이(수직) 라벨. 넓이 = 밑변·높이. 비스듬한 변은 넓이와 무관.
+ */
+export function labeledParallelogram({ base, height, unit = 14, pad = 26 }) {
+  const u = unit, W = base * u, H = height * u, slant = Math.min(H * 0.6, W * 0.5);
+  const x0 = pad + slant, yB = pad + H;
+  const w = W + slant + pad * 2, h = H + pad * 2 + 6;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="밑변 ${base} 높이 ${height} 평행사변형">`
+    + poly([[x0, yB], [x0 + W, yB], [x0 + W - slant, pad], [x0 - slant, pad]], C.fill)
+    + dline(x0, yB, x0, pad)
+    + txt(x0 + W / 2, yB + 16, `밑변 ${base}`)
+    + txt(x0 - 20, pad + H / 2, `높이 ${height}`) + '</svg>';
+}
+
+/**
+ * 사다리꼴(응용) — 윗변·아랫변·높이 라벨. 넓이 = (윗변+아랫변)/2·높이.
+ */
+export function labeledTrapezoid({ top, bottom, height, unit = 14, pad = 26 }) {
+  const u = unit, TOP = top * u, BOT = bottom * u, H = height * u, A = (BOT - TOP) / 2;
+  const x0 = pad, yT = pad, yB = pad + H;
+  const w = BOT + pad * 2, h = H + pad * 2 + 6;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="윗변 ${top} 아랫변 ${bottom} 높이 ${height} 사다리꼴">`
+    + poly([[x0 + A, yT], [x0 + A + TOP, yT], [x0 + BOT, yB], [x0, yB]], C.fill)
+    + dline(x0 + A, yT, x0 + A, yB)
+    + txt(x0 + A + TOP / 2, yT - 8, `윗변 ${top}`)
+    + txt(x0 + BOT / 2, yB + 16, `아랫변 ${bottom}`)
+    + txt(x0 + A - 18, yT + H / 2, `높이 ${height}`) + '</svg>';
+}

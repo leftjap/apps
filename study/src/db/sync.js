@@ -196,6 +196,7 @@ export function mathProblemsDexieToSupabase(row, userId) {
     module: row.module ?? null, tag: row.tag ?? null, lesson: row.lesson ?? null,
     prompt: row.prompt, figure: row.figure ?? null, answer: row.answer,
     accept: row.accept ?? null, solution: row.solution ?? {},
+    concept_id: row.conceptId ?? null, kind: row.kind ?? 'apply',
     order_index: row.orderIndex ?? null, completed: row.completed ?? false,
   };
 }
@@ -205,7 +206,8 @@ export function mathProblemsSupabaseToDexie(row) {
     id: row.id, date: row.date ?? null, module: row.module ?? null,
     tag: row.tag ?? null, lesson: row.lesson ?? null, prompt: row.prompt,
     figure: row.figure ?? null, answer: row.answer, accept: row.accept ?? null,
-    solution: row.solution ?? {}, orderIndex: row.order_index ?? null,
+    solution: row.solution ?? {}, conceptId: row.concept_id ?? null, kind: row.kind ?? 'apply',
+    orderIndex: row.order_index ?? null,
     completed: row.completed ?? false, createdAt: row.created_at ?? null,
   };
 }

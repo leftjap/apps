@@ -4,7 +4,7 @@
  * seed-supabase.mjs 미러. 사용:
  *   node scripts/seed-math.mjs --payload seeds/math-2026-05-22.json --user-id <uuid> [--dry-run]
  * env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (RLS 우회). 의존성 0 (Node 22 fetch).
- * payload: { date, problems:[{id,module,tag,lesson?,prompt,figure?,answer,accept?,solution,order_index?}] }
+ * payload: { date, problems:[{id,conceptId?,kind?,module,tag,lesson?,prompt,figure?,answer,accept?,solution,order_index?}] }
  */
 import { readFileSync } from 'node:fs';
 import { argv, env, exit } from 'node:process';
@@ -63,7 +63,9 @@ async function main() {
   const rows = p.problems.map((c) => ({
     id: c.id, user_id: args.userId, date: p.date, module: c.module ?? null, tag: c.tag ?? null,
     lesson: c.lesson ?? null, prompt: c.prompt, figure: c.figure ?? null, answer: String(c.answer),
-    accept: c.accept ?? null, solution: c.solution, order_index: c.order_index ?? null, completed: false,
+    accept: c.accept ?? null, solution: c.solution,
+    concept_id: c.concept_id ?? c.conceptId ?? null, kind: c.kind ?? 'apply',
+    order_index: c.order_index ?? null, completed: false,
   }));
   const { text } = await rest(url, key, '/study_math_problems?on_conflict=id', {
     method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=representation' }, body: JSON.stringify(rows),
