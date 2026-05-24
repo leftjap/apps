@@ -289,13 +289,13 @@ export const LIBRARY = [
 {
 "id": "book_025",
 "t": "분노사회",
-"a": "한병철",
+"a": "정지우",
 "w": 130,
 "h": 195,
 "c": "인문",
-"d": "dtypo",
-"bg": "#2a3a4d",
-"fg": "#f0ead9"
+"y": 2014,
+"p": "이경",
+"coverUrl": "https://image.aladin.co.kr/product/3842/54/cover200/8968230099_1.jpg"
 },
 {
 "id": "book_026",
@@ -619,14 +619,14 @@ export const LIBRARY = [
 },
 {
 "id": "book_053",
-"t": "한번이라도 모든 걸 걸어본 적 있나",
-"a": "이지성",
+"t": "한 번이라도 모든 걸 걸어본 적 있는가",
+"a": "전성민",
 "w": 130,
 "h": 195,
 "c": "자기계발",
-"d": "dcream",
-"bg": "#d8d2c0",
-"fg": "#1d1a14"
+"y": 2020,
+"p": "센시오",
+"coverUrl": "https://image.aladin.co.kr/product/25636/6/cover200/k492735319_1.jpg"
 },
 {
 "id": "book_054",
@@ -773,14 +773,14 @@ export const LIBRARY = [
 },
 {
 "id": "book_066",
-"t": "가진 돈을 몽땅 써라",
+"t": "역전하는 법",
 "a": "빌 퍼킨스",
 "w": 130,
 "h": 195,
 "c": "투자경제",
-"d": "dcream",
-"bg": "#ece2cb",
-"fg": "#1d1a14"
+"y": 2023,
+"p": "마인드빌딩",
+"coverUrl": "https://image.aladin.co.kr/product/32934/66/cover200/k032936945_2.jpg"
 },
 {
 "id": "book_067",
