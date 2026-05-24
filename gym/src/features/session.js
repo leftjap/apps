@@ -1046,6 +1046,15 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     // wrap div style 갱신
     dot.style.color = color;
     dot.style.fontWeight = weight;
+    // spec §6-9 set-row 꾹누르기 — mocks 정적 dot(S1~S5)은 data-longpress 누락 (renderSetDotHtml append dot 만 보유).
+    // 갱신 루프에서 보장 → 5세트 이하도 세트 수정/삭제 발화. 없으면 꾹누르기가 부모 active-card 로 흡수되는 회귀.
+    // cardio 는 #cardSetDots display:none + 단일 세트 → set-row 제외 (§6-4 — 수정은 zone 키패드).
+    if (kind === 'cardio') {
+      dot.removeAttribute('data-longpress');
+    } else {
+      if (dot.getAttribute('data-longpress') !== 'set-row') dot.setAttribute('data-longpress', 'set-row');
+      if (dot.style.cursor !== 'pointer') dot.style.cursor = 'pointer';
+    }
     if (isCurrent) dot.setAttribute('data-current', '1');
     else dot.removeAttribute('data-current');
     // 자식 두 div 갱신 (label / value)
@@ -1384,7 +1393,6 @@ function getActionMenuFor(kind, target) {
         { id: 'finish', label: '종료' },
         { id: 'discard', label: '세션 삭제', danger: true },
       ],
-      onSelect: (id) => { console.log('[gymSession] action', kind, id); },
     };
   }
   if (kind === 'active-card') {
@@ -1396,7 +1404,6 @@ function getActionMenuFor(kind, target) {
         { id: 'finish', label: '완료' },
         { id: 'delete', label: '삭제', danger: true },
       ],
-      onSelect: (id) => { console.log('[gymSession] action', kind, id); },
     };
   }
   if (kind === 'set-row') {
@@ -1409,7 +1416,6 @@ function getActionMenuFor(kind, target) {
         { id: 'edit', label: '수정' },
         { id: 'delete', label: '삭제', danger: true },
       ],
-      onSelect: (id) => { console.log('[gymSession] action', kind, setIdx, id); },
     };
   }
   if (kind === 'footer-exercise') {
@@ -1426,7 +1432,6 @@ function getActionMenuFor(kind, target) {
       kind,
       title: '운동 옵션',
       items,
-      onSelect: (id) => { console.log('[gymSession] action', kind, state, id); },
     };
   }
   return null;
@@ -1942,9 +1947,11 @@ export function setReorderMode(doc, on, srcIdx = null) {
 /**
  * spec §6-9 set-row 삭제 — block.sets[setIdx] 제거.
  *  - sets.length === 0 이 되면 block 자체도 제거 (운동 카드 통째 삭제와 같은 의미).
- *  - 마지막 single 블록 기준 (mountSessionActive 와 동일 정책).
+ *  - 대상 블록: blockIdx 명시 single 우선, 미지정 시 마지막 single (하위호환).
+ *    호출부(set-row 삭제)는 getCurrentBlockAndCursor 의 blockIdx 를 넘겨 '수정'과 동일 블록 보장
+ *    (footer pill 로 이전 블록 전환 시 보이지 않는 블록 세트 삭제되던 회귀 방지).
  */
-export async function persistRemoveSet(setIdx) {
+export async function persistRemoveSet(setIdx, blockIdx = null) {
   if (!Number.isFinite(setIdx) || setIdx < 0) return { ok: false, reason: 'invalid_input' };
   let session;
   try { session = await getActiveSession(); }
@@ -1955,17 +1962,26 @@ export async function persistRemoveSet(setIdx) {
   }
   if (!session) return { ok: false, reason: 'no_active_session' };
   const blocks = Array.isArray(session.blocks) ? session.blocks.slice() : [];
-  // 마지막 single 블록
-  const singles = blocks.map((b, i) => ({ b, i })).filter(({ b }) => b && b.type === 'single');
-  if (!singles.length) return { ok: false, reason: 'no_single_block' };
-  const { b: block, i: blockIdx } = singles[singles.length - 1];
+  // 대상 블록 — blockIdx 명시 single 우선, 그 외 마지막 single.
+  let block = null;
+  let targetIdx = -1;
+  if (blockIdx != null && blockIdx >= 0 && blockIdx < blocks.length && blocks[blockIdx]?.type === 'single') {
+    block = blocks[blockIdx];
+    targetIdx = blockIdx;
+  } else {
+    const singles = blocks.map((b, i) => ({ b, i })).filter(({ b }) => b && b.type === 'single');
+    if (!singles.length) return { ok: false, reason: 'no_single_block' };
+    const pick = singles[singles.length - 1];
+    block = pick.b;
+    targetIdx = pick.i;
+  }
   const sets = Array.isArray(block.sets) ? block.sets.slice() : [];
   if (setIdx >= sets.length) return { ok: false, reason: 'index_out_of_range' };
   sets.splice(setIdx, 1);
   if (sets.length === 0) {
-    blocks.splice(blockIdx, 1);
+    blocks.splice(targetIdx, 1);
   } else {
-    blocks[blockIdx] = { ...block, sets };
+    blocks[targetIdx] = { ...block, sets };
   }
   try { await upsertSession({ ...session, blocks }); }
   catch (e) {
@@ -2058,17 +2074,18 @@ async function handleActionSelect(doc, kind, actionId, target) {
     if (kind === 'set-row') {
       const setIdx = parseInt(target?.dataset?.setIdx, 10);
       if (!Number.isFinite(setIdx)) return;
+      // edit/delete 공통 — 현재 표시 블록 (footer pill 전환 반영).
+      const ctx = await getCurrentBlockAndCursor();
       if (actionId === 'edit') {
-        // 키패드 open with prefill (weight 모드, 해당 set 기존 값)
-        const ctx = await getCurrentBlockAndCursor();
         if (!ctx) return;
         const set = ctx.block.sets?.[setIdx];
         if (!set) return;
+        // 키패드 open with prefill (weight 모드, 해당 set 기존 값)
         openKeypad(doc, 'weight', { prefill: set.weight, setIdx });
         return;
       }
       if (actionId === 'delete') {
-        await persistRemoveSet(setIdx);
+        await persistRemoveSet(setIdx, ctx ? ctx.blockIdx : null);
         await mountSessionView();
         return;
       }

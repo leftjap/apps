@@ -1929,6 +1929,54 @@ describe('persistRemoveSet (spec §6-9)', () => {
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('no_active_session');
   });
+
+  it("blockIdx 명시 → 마지막이 아닌 그 블록 세트 제거 (footer pill 전환 회귀 방지)", async () => {
+    await db.sessions.put({
+      id: 'rm-multi', date: '2026-05-11',
+      startTime: Date.now() - 10 * 60_000, endTime: null,
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [
+          { weight: 60, reps: 10, done: true, preset: false, pr: false },
+          { weight: 65, reps: 9, done: true, preset: false, pr: false },
+        ] },
+        { type: 'single', exerciseId: 'squat', sets: [
+          { weight: 100, reps: 5, done: false, preset: true, pr: false },
+        ] },
+      ],
+      tags: ['chest', 'legs'],
+      totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'active',
+    });
+    const r = await persistRemoveSet(0, 0); // 첫(마지막 아닌) 블록의 set 0 제거
+    expect(r.ok).toBe(true);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    const blocks = rows[0].blocks;
+    expect(blocks[0].sets).toHaveLength(1);
+    expect(blocks[0].sets[0].weight).toBe(65); // set 0(60kg) 제거됨
+    expect(blocks[1].sets).toHaveLength(1);     // squat 블록 그대로
+  });
+
+  it("blockIdx 미지정 → 마지막 single 블록 대상 (하위호환)", async () => {
+    await db.sessions.put({
+      id: 'rm-multi2', date: '2026-05-11',
+      startTime: Date.now() - 10 * 60_000, endTime: null,
+      blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [
+          { weight: 60, reps: 10, done: true, preset: false, pr: false },
+        ] },
+        { type: 'single', exerciseId: 'squat', sets: [
+          { weight: 100, reps: 5, done: false, preset: true, pr: false },
+        ] },
+      ],
+      tags: ['chest', 'legs'],
+      totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'active',
+    });
+    const r = await persistRemoveSet(0); // 미지정 → 마지막(squat)
+    expect(r.ok).toBe(true);
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    const blocks = rows[0].blocks;
+    expect(blocks[0].sets).toHaveLength(1); // bench 그대로
+    expect(blocks).toHaveLength(1);          // squat (set 0개) → 블록 제거
+  });
 });
 
 /* ───────────────── discardActiveSession (spec §6-9 session-end discard) ───────────────── */

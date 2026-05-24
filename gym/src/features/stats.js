@@ -818,7 +818,7 @@ export function summarizeMuscles(sessions, getBuiltin) {
 /**
  * Wave v3 — silhouette path 색 강조 ([data-muscle] 셀렉터).
  *
- * score 최댓값 → alpha 0.85, 0 → 0(투명). 부드러운 ramp: 0.30 ~ 0.85.
+ * score 최댓값 → alpha 0.85, 0 → 0(투명). 부드러운 ramp: 0.35 ~ 0.85.
  * 강조 색: 기존 accent #d97757. mix-blend-mode multiply 로 사각형 윤곽 흐림 + 인체 위 자연스러운 색조.
  */
 export function applyMusclesToSilhouette(muscles, doc) {

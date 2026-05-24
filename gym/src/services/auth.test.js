@@ -15,8 +15,8 @@ import { describe, it, expect } from 'vitest';
 import { Auth, ALLOWED_EMAILS } from './auth.js';
 
 describe('ALLOWED_EMAILS (Study 와 동일 allowlist 공유)', () => {
-  it('정확히 두 이메일을 포함한다', () => {
-    expect(ALLOWED_EMAILS).toEqual(['leftjap@gmail.com', 'soyoun312@gmail.com']);
+  it('정확히 세 이메일을 포함한다', () => {
+    expect(ALLOWED_EMAILS).toEqual(['leftjap@gmail.com', 'soyoun312@gmail.com', 'causencompany@gmail.com']);
   });
 
   it('frozen 이다 (런타임 변조 방지)', () => {

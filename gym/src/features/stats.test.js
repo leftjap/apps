@@ -680,12 +680,12 @@ describe('applyMusclesToSilhouette', () => {
     return { querySelectorAll: () => paths, querySelector: () => null, _paths: paths };
   }
 
-  it('max=5: chest alpha 0.85, biceps 0.52, lats 0 + multiply 적용', async () => {
+  it('max=5: chest alpha 0.85, biceps 0.55, lats 0 + multiply 적용', async () => {
     const { applyMusclesToSilhouette } = await import('./stats.js');
     const doc = makeSilhouetteDoc(['chest', 'biceps', 'lats']);
     applyMusclesToSilhouette([{ muscleKey: 'chest', score: 5 }, { muscleKey: 'biceps', score: 2 }], doc);
     expect(doc._paths[0]._attrs.fill).toBe('rgba(217,119,87,0.85)');
-    expect(doc._paths[1]._attrs.fill).toBe('rgba(217,119,87,0.52)');
+    expect(doc._paths[1]._attrs.fill).toBe('rgba(217,119,87,0.55)');
     expect(doc._paths[2]._attrs.fill).toBe('rgba(217,119,87,0)');
     expect(doc._paths[0].style.mixBlendMode).toBe('multiply');
   });
