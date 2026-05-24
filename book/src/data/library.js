@@ -1,5 +1,5 @@
 /**
- * 서재 — quotes-data.json 102책. Aladin 메타(표지/출판사/연도/분야) 보강. 자동 생성(gen_library.py).
+ * 서재 — quotes-data.json 105책. Aladin 메타(표지/출판사/연도/분야) 보강. 자동 생성(gen_library.py) + 수기 보정(book_095 분할).
  * book_ref(quotes) = book.id. coverUrl 있으면 Aladin 이미지, 없으면 d/bg/fg 텍스트 표지.
  */
 export const LIBRARY = [
@@ -14,17 +14,6 @@ export const LIBRARY = [
 "p": "갤리온",
 "sub": "인생에서 가장 중요한 것만 남기는 힘",
 "coverUrl": "https://image.aladin.co.kr/product/12005/79/cover200/8901219948_1.jpg"
-},
-{
-"id": "book_002",
-"t": "혹시 당신도 '음식 문맹자'인가요?",
-"a": "박정훈",
-"w": 130,
-"h": 195,
-"c": "실용",
-"d": "dcream",
-"bg": "#ece2cb",
-"fg": "#1d1a14"
 },
 {
 "id": "book_003",
@@ -1114,14 +1103,15 @@ export const LIBRARY = [
 },
 {
 "id": "book_095",
-"t": "(출처 미확인 어구록)",
-"a": "미상",
+"t": "열두 발자국",
+"a": "정재승",
 "w": 130,
 "h": 195,
-"c": "인문",
-"d": "dcream",
-"bg": "#d8d2c0",
-"fg": "#1d1a14"
+"c": "인문 · 교양 인문학",
+"y": 2018,
+"p": "어크로스",
+"sub": "생각의 모험으로 지성의 숲으로 지도 밖의 세계로 이끄는 열두 번의 강의",
+"coverUrl": "https://image.aladin.co.kr/product/15072/28/cover200/k072533160_2.jpg"
 },
 {
 "id": "book_096",
@@ -1227,5 +1217,28 @@ export const LIBRARY = [
 "y": 2020,
 "p": "한겨레출판",
 "coverUrl": "https://image.aladin.co.kr/product/23419/67/cover200/k792638381_2.jpg"
+},
+{
+"id": "book_105",
+"t": "돈 말고 무엇을 갖고 있는가",
+"a": "정지우",
+"w": 130,
+"h": 195,
+"c": "자기계발 · 성공학",
+"y": 2024,
+"p": "마름모",
+"sub": "세상의 잣대에 휘둘리지 않는 나라는 세계를 만드는 법",
+"coverUrl": "https://image.aladin.co.kr/product/34403/80/cover200/k012932614_1.jpg"
+},
+{
+"id": "book_106",
+"t": "밀가루만 끊어도 100가지 병을 막을 수 있다",
+"a": "스티븐 왕겐",
+"w": 130,
+"h": 195,
+"c": "건강 · 음식과 건강",
+"y": 2012,
+"p": "끌레마",
+"coverUrl": "https://image.aladin.co.kr/product/1517/29/cover200/8994081178_1.jpg"
 }
 ];
