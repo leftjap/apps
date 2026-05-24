@@ -166,7 +166,8 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
   const search = topbarSearch({ ctx });
   return el('header', {
     class: 'topbar',
-    style: { padding: '16px 36px', display: 'flex', alignItems: 'center', gap: 22, background: '#fff', borderBottom: '1px solid var(--line-2)', position: 'sticky', top: 0, zIndex: 5 },
+    // 콘텐츠와 동일 1240 프레임에 맞춰 내부 정렬 — full-width bg/border 유지하되 항목만 중앙(자식 구조 보존 → 모바일 규칙 유지).
+    style: { padding: '16px max(36px, calc((100% - 1240px) / 2 + 36px))', display: 'flex', alignItems: 'center', gap: 22, background: '#fff', borderBottom: '1px solid var(--line-2)', position: 'sticky', top: 0, zIndex: 5 },
   }, brand, navEl, search, btn({ label: '새 어구록', variant: 'pri', size: 'md', icon: 'plus', onClick: () => (ctx?.openAdd ? ctx.openAdd() : nav('/add')) }));
 }
 

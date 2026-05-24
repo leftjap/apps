@@ -126,7 +126,7 @@ async function render(host, params, ctx) {
         el('div', { style: { fontSize: 16, lineHeight: 1.65, fontWeight: 500 } }, el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), ...highlight(q.text, word), el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”')),
         el('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, fontSize: 12, color: 'var(--ink-4)' } }, el('span', { style: { color: 'var(--ink-2)', fontWeight: 600 } }, b?.t || ''), el('span', {}, '·'), el('span', { class: 'mono' }, fmtDateTime(q.created_at))))); }));
 
-  const inner = el('div', { style: { maxWidth: 1080, padding: '40px 44px 100px' } }, hero,
+  const inner = el('div', { class: 'page', style: { maxWidth: 1080, padding: '40px 44px 100px' } }, hero,
     matches.length ? trendSec : null,
     matches.length ? cols : null,
     booksRanked.length ? booksSec : null,

@@ -28,6 +28,13 @@
 
 **남은 작업**: [P1-D] 소스 데이터 정합성 — book_025 `분노사회`/`한병철` 저자 정합성 의심(핸드오프 기재, **미독립검증**; 표지·피드 렌더 자체는 `분노사회` 정상). 사용자 정확 정보 필요. [P2-E] 좌정렬(미수정 유지).
 
+## 0.7 레이아웃: 와이드 화면 중앙정렬 (2026-05-24)
+- **증상**: topbar 는 full-width 인데 콘텐츠(feed-grid)가 `maxWidth:1160` 좌측고정 → 와이드 모니터(1920)서 우측 760px 빈공간(불균형).
+- **수정**: 공유 `.bk .page { max-width:1240; margin:auto; width:100%; box-sizing:border-box }`(book.css) + 전 화면 최상위 컨테이너에 `class:'page'`(feed/stats/day/book-detail/author/word/thread/lists) + topbar 패딩 `16px max(36px, calc((100% - 1240px)/2 + 36px))`(자식구조 보존 → `@760` 모바일 규칙 유지) + feed cols `minmax(0,1fr) 380px` gap64(읽기≈724 ≈ DESIGN.md 720).
+- **검증(preview)**: 1920 → 좌우여백 340=340·로고=읽기컬럼left·버튼=사이드바right(정합 0px) / 1280 → 20=20, feed·stats 동일 좌측 / 768 → 태블릿 피드 1열 / 375 → 모바일(패딩16·검색숨김·버튼우측). overflow 없음. vitest 28/28.
+- ⚠ **P2-E(어구록 본문 좌정렬)와 무관** — 이건 페이지 블록 위치 정렬. P2-E(텍스트 정렬)는 여전히 미수정.
+- 참고: book 은 `~/apps/DESIGN.md`(4앱 전용) 적용 대상 아님(자체 v14). 단 읽기폭 720·"negative space 의도" 원칙은 참고됨.
+
 ## 1. 알려진 이슈 = 다음 세션 작업 (우선순위순)
 
 ### [P0-A] created_at 설계결함 → 책 분리/중복-보임 + 통계 날짜 오류 (가장 큼)

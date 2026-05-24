@@ -109,7 +109,7 @@ async function render(host, params, ctx) {
 
   const aside = el('aside', { style: { display: 'flex', flexDirection: 'column', gap: 32, paddingTop: 26 } }, weekSec, readSec, nearSec);
 
-  const grid = el('div', { class: 'day-grid', style: { maxWidth: 1080, padding: '40px 44px 100px', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 56 } },
+  const grid = el('div', { class: 'day-grid page', style: { maxWidth: 1080, padding: '40px 44px 100px', display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 56 } },
     el('div', {}, hero, flow, list.length ? timeline : el('div', { style: { color: 'var(--ink-3)' } }, '이 날의 어구록이 없습니다.')), aside);
   const crumbEl = crumb({ ctx, path: [{ label: '캘린더', back: true, onBack: () => ctx.navigate('/stats') }, { label: `${y}년 ${Number(mo)}월` }, { label: `${Number(mo)}월 ${Number(da)}일`, last: true }] });
   host.appendChild(screenShell({ tab: 'stats', ctx, crumbEl, children: grid }));

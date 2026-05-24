@@ -85,7 +85,7 @@ async function render(host, params, ctx) {
     ));
   }
 
-  const inner = el('div', { style: { maxWidth: 1000, padding: '40px 44px 100px' } }, hero, listWrap);
+  const inner = el('div', { class: 'page', style: { maxWidth: 1000, padding: '40px 44px 100px' } }, hero, listWrap);
   const crumbEl = crumb({ ctx, path: [{ label: '피드', back: true, onBack: () => ctx.navigate('/') }, { label: '책' }, { label: b.t, last: true }] });
   host.appendChild(screenShell({ tab: 'excerpt', ctx, crumbEl, children: inner }));
 }

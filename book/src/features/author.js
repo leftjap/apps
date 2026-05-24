@@ -81,7 +81,7 @@ async function render(host, params, ctx) {
       el('div', { class: 'mono', style: { marginTop: 8, fontSize: 12, color: 'var(--ink-4)' } }, fmtDateTime(q.created_at)))),
   );
 
-  const inner = el('div', { style: { maxWidth: 1080, padding: '40px 44px 100px' } }, hero,
+  const inner = el('div', { class: 'page', style: { maxWidth: 1080, padding: '40px 44px 100px' } }, hero,
     list.length ? trendSec : null, booksSec, wordsSec,
     list.length ? quotesSec : el('div', { style: { color: 'var(--ink-3)' } }, '이 작가의 어구록이 없습니다.'));
   const crumbEl = crumb({ ctx, path: [{ label: '피드', back: true, onBack: () => ctx.navigate('/') }, { label: '작가' }, { label: name, last: true }] });

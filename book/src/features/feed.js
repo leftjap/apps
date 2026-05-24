@@ -158,8 +158,8 @@ async function render(host, params, ctx) {
 
   clear(mainInner);
   const grid = el('div', {
-    class: 'feed-grid',
-    style: { padding: '36px 36px 100px', display: 'grid', gridTemplateColumns: 'minmax(0, 660px) 340px', gap: 56, maxWidth: 1160, justifyContent: 'start' },
+    class: 'feed-grid page',
+    style: { padding: '36px 36px 100px', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 380px', gap: 64 },
   });
 
   // 메인 컬럼

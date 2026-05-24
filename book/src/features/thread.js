@@ -152,7 +152,7 @@ async function build(host, params, ctx) {
     style: { marginTop: 32, width: '100%', padding: '14px', background: 'transparent', border: '1px dashed var(--line)', borderRadius: 10, color: 'var(--ink-3)', fontSize: 14, fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 },
   }, iconEl('plus', { sz: 14 }), '이 책에 어구록 추가');
 
-  const inner = el('div', { style: { maxWidth: 780, padding: '32px 44px 100px' } }, band, items, addBtn);
+  const inner = el('div', { class: 'page', style: { maxWidth: 780, padding: '32px 44px 100px' } }, band, items, addBtn);
   const crumbEl = crumb({ ctx, path: [{ label: '피드', back: true, onBack: () => ctx.navigate('/') }, { label: book.t, last: true }] });
   host.appendChild(screenShell({ tab: 'excerpt', ctx, crumbEl, children: inner }));
 }

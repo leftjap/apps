@@ -43,7 +43,7 @@ function viewBooks(ctx, countMap) {
     ));
   }
   return { tab: 'stats', back: '/stats', backLabel: '통계', crumbLast: '책',
-    inner: el('div', { style: { padding: '40px 44px 100px' } }, pageTitle({ upper: '책', title: `${BOOKS.length}권`, large: true }), grid) };
+    inner: el('div', { class: 'page', style: { padding: '40px 44px 100px' } }, pageTitle({ upper: '책', title: `${BOOKS.length}권`, large: true }), grid) };
 }
 
 // ─── authors table ───────────────────────────────────────────────────────────
@@ -68,7 +68,7 @@ function viewAuthors(ctx, countMap) {
     el('span', { class: 'mono', style: { fontSize: 14, color: a.quotes > 0 ? 'var(--ink-1)' : 'var(--ink-4)', fontWeight: 700, textAlign: 'right' } }, a.quotes || '—'),
   ));
   return { tab: 'stats', back: '/stats', backLabel: '통계', crumbLast: '작가',
-    inner: el('div', { style: { padding: '40px 44px 100px', maxWidth: 1080 } }, pageTitle({ upper: '작가', title: `${authors.length}명`, large: true }), headerRow, ...rows) };
+    inner: el('div', { class: 'page', style: { padding: '40px 44px 100px', maxWidth: 1080 } }, pageTitle({ upper: '작가', title: `${authors.length}명`, large: true }), headerRow, ...rows) };
 }
 
 // ─── pubs table ──────────────────────────────────────────────────────────────
@@ -93,7 +93,7 @@ function viewPubs(ctx, countMap) {
     el('span', { class: 'mono', style: { fontSize: 14, color: p.quotes > 0 ? 'var(--ink-1)' : 'var(--ink-4)', fontWeight: 700, textAlign: 'right' } }, p.quotes || '—'),
   ));
   return { tab: 'stats', back: '/stats', backLabel: '통계', crumbLast: '출판사',
-    inner: el('div', { style: { padding: '40px 44px 100px', maxWidth: 1000 } }, pageTitle({ upper: '출판사', title: `${pubs.length}곳`, large: true }), headerRow, ...rows) };
+    inner: el('div', { class: 'page', style: { padding: '40px 44px 100px', maxWidth: 1000 } }, pageTitle({ upper: '출판사', title: `${pubs.length}곳`, large: true }), headerRow, ...rows) };
 }
 
 // ─── pins ────────────────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ function viewPins(ctx, pinned, meId) {
     return sec;
   }).filter(Boolean);
   return { tab: 'excerpt', back: '/', backLabel: '피드', crumbLast: '핀',
-    inner: el('div', { style: { maxWidth: 780, padding: '40px 44px 100px' } }, header, ...sections,
+    inner: el('div', { class: 'page', style: { maxWidth: 780, padding: '40px 44px 100px' } }, header, ...sections,
       pinned.length === 0 ? el('div', { style: { color: 'var(--ink-3)' } }, '핀한 어구록이 없습니다.') : null) };
 }
 
