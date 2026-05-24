@@ -23,9 +23,10 @@
 - **[P0-A] ✅ 피드 책분리 해소**: `groupQuotes`(books.js) 를 *연속그룹 → 전역 (who,book_ref) 그룹 + 그룹/그룹내 최신순* 으로 변경. feed.js·lists.js(핀) 동시 적용. 날짜 재배정 안 함(원본 단일 날짜). 검증: node(인터리브 병합) + 실UI **102책 → 102섹션, 중복 0**.
 - **[P0-A] ✅ 통계 날짜**: stats.js 기본기간 `'이번 달' → '전체'`. 검증: 전체 991/102책/97작가, 캘린더 03-23 991(단일 날짜 그대로 노출 = 정직).
 - **[P0-B] ✅ 검색 인라인화**: `/search` 페이지·라우트(app.js)·import(main.js)·`features/search.js` **삭제**. topBar `.topbar-search` 를 실제 input+드롭다운(책/어구록)으로 — components.js `topbarSearch`/`renderSearchResults`(focus 시 lazy listAllQuotes, 디바운스 160ms, blur 150ms 닫힘). 검증: '투자'→책3·어구록12 드롭다운. ⚠ `.topbar-search` 는 book.css:58 `@media(max-width:760px)` 에서 기존대로 숨김(모바일 검색 없음 — 회귀 아님).
-- **[P1-C] ✅ 무한스크롤**: feed.js — 책그룹당 어구록 5개 + `+N개 더`(→/book) 링크 + 하단 **수동 "더 보기(책 N권)" 버튼**(클릭당 +12 그룹). ⚠ 당초 IntersectionObserver 였으나 **preview headless 가 IO·scroll·focus 이벤트 미전달**(검증불가 + 실패 시 12권 갇힘 리스크) → 수동 버튼으로 채택. 검증: 12→24→…→102 클릭 로드 후 버튼 자동 숨김.
+- **[P1-C] ✅ 무한스크롤**: feed.js — 책그룹당 어구록 5개 + `+N개 더`(→/book) 링크 + 하단 **수동 "더 보기(책 N권)" 버튼**(클릭당 +12 그룹). ⚠ 당초 IntersectionObserver. preview headless 에서 **IO 콜백·프로그램적 scrollTo·프로그램적 `input.focus()` 미발화**(실 클릭/실 브라우저에선 동작하나 *이 환경에서 스크롤 로드 검증 불가*) → 검증 가능한 수동 버튼으로 채택. 검증: 12→24→…→102 클릭 로드 후 버튼 자동 숨김.
+- **[수정후속] books.js null 바이트 제거**: groupQuotes key 구분자가 실수로 `\x00`(null) 이어서 파일이 binary 로 분류됨 → `|` 로 교체(기능 동일, 별도 커밋).
 
-**남은 작업**: [P1-D] 소스 데이터 제목/저자(book_025 표지엔 "한병철"·라벨은 "분노사회" 확인 — 데이터 오류 잔존, 사용자 정보 필요), [P2-E] 좌정렬(미수정 유지).
+**남은 작업**: [P1-D] 소스 데이터 정합성 — book_025 `분노사회`/`한병철` 저자 정합성 의심(핸드오프 기재, **미독립검증**; 표지·피드 렌더 자체는 `분노사회` 정상). 사용자 정확 정보 필요. [P2-E] 좌정렬(미수정 유지).
 
 ## 1. 알려진 이슈 = 다음 세션 작업 (우선순위순)
 
