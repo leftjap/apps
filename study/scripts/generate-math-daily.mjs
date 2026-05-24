@@ -13,6 +13,7 @@ import { argv } from 'node:process';
 import {
   squaresOnSides, staircaseToRect, labeledCircle, scaledSquares, scaledCircles,
   labeledTriangle, labeledParallelogram, labeledTrapezoid,
+  triangleInRect, paraToRect, squareCount, rightTriangle, trapezoidDoubled, circleToRect,
 } from '../src/data/math/figures.js';
 
 function hashSeed(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
@@ -65,21 +66,25 @@ function makeGen(rng) {
         conceptId: 'odd', figure: { type: 'dots', n, legend: `홀수 ${n}개 (${seq.join('·')})` },
         prompt: `${seq.join(' + ')} = ?`, answer: n * n, accept: [`${n * n}`, `${n}x${n}`, `${n}²`, `${n}^2`],
         solution: {
-          core: '홀수 n개의 합 = n².', idea: `1부터 ${2 * n - 1}까지 홀수는 ${n}개 → ${n}² = ${n * n}.`,
-          steps: [`홀수 ${n}개`, `${n} × ${n} = ${n * n}`], refresh: `제곱(${n}² = ${n * n})`,
-          example: '정사각형으로 깔린 타일·좌석의 개수를 한눈에.', think: '개수만 세면 답 — 일일이 더할 필요 없이.',
+          figure: { type: 'svg', svg: squareCount({ side: n }) },
+          core: '홀수 n개의 합 = n².',
+          idea: `다 더하지 말고 홀수가 몇 개인지만 세요. 1부터 ${2 * n - 1}까지 홀수는 ${n}개 — 그림처럼 한 변 ${n}인 정사각형이 꽉 차니 답은 ${n} × ${n} = ${n * n}.`,
+          steps: [`홀수가 ${n}개`, `${n} × ${n} = ${n * n}`], refresh: `제곱(${n}² = ${n * n})`,
+          example: '정사각형으로 깔린 타일·좌석의 개수를 한눈에.', think: '"전부 더하기" 대신 "몇 개인지 세서 제곱" — 셈을 구조로 바꾼다.',
         }, _meta: { t: 'odd', n },
       };
     },
     trinum() {
       const n = ri(6, 12), figN = Math.min(n, 7);
       return {
-        conceptId: 'trinum', figure: { type: 'svg', svg: staircaseToRect({ n: figN }), legend: `계단(1+2+…) 두 벌 = ${figN}×${figN + 1} 직사각형의 절반 원리` },
+        conceptId: 'trinum',
         prompt: `1 + 2 + 3 + … + ${n} = ?`, answer: n * (n + 1) / 2, accept: [`${n * (n + 1) / 2}`],
         solution: {
-          core: 'n × (n+1) ÷ 2.', idea: `${n} × ${n + 1}의 절반.`,
-          steps: [`${n} × ${n + 1} = ${n * (n + 1)}`, `÷ 2 = ${n * (n + 1) / 2}`], refresh: '곱셈 · 절반(÷2)',
-          example: `1~${n}번 좌석·계단 칸을 일일이 안 세고 한 번에.`, think: '더할 게 많을수록 공식의 이득이 커진다.',
+          figure: { type: 'svg', svg: staircaseToRect({ n: figN }) },
+          core: 'n × (n+1) ÷ 2 — 계단 두 벌이 직사각형.',
+          idea: `1부터 ${n}까지를 계단으로 쌓고 똑같은 계단을 거꾸로 끼우면(그림은 ${figN}까지 축약해 원리만), 가로 ${n} · 세로 ${n + 1} 직사각형이 돼요. 그 칸 ${n} × ${n + 1} = ${n * (n + 1)} 의 절반이 답.`,
+          steps: [`직사각형 ${n} × ${n + 1} = ${n * (n + 1)}`, `계단 두 벌이니 절반 → ${n * (n + 1) / 2}`], refresh: '곱셈 · 절반(÷2)',
+          example: `1~${n}번 좌석이나 한 칸씩 늘어난 계단 칸의 총수를 한 번에.`, think: '더할 게 많을수록 "두 벌→직사각형" 공식의 이득이 커진다.',
         }, _meta: { t: 'trinum', n },
       };
     },
@@ -89,9 +94,11 @@ function makeGen(rng) {
         conceptId: 'tri', figure: { type: 'svg', svg: labeledTriangle({ base, height }), legend: `밑변 ${base} · 높이 ${height}` },
         prompt: `밑변 ${base}, 높이 ${height}인 삼각형의 넓이는?`, answer: base * height / 2, accept: [`${base * height / 2}`],
         solution: {
-          core: '½ × 밑변 × 높이.', idea: `직사각형 ${base} × ${height}의 절반.`,
-          steps: [`${base} × ${height} = ${base * height}`, `÷ 2 = ${base * height / 2}`], refresh: '½ · 곱셈',
-          example: '삼각 깃발·지붕 단면의 넓이도 같은 식.', think: '낯선 모양을 "직사각형의 절반"으로 환원.',
+          figure: { type: 'svg', svg: triangleInRect({ base, height }) },
+          core: '½ × 밑변 × 높이.',
+          idea: `이 삼각형을 점선 직사각형(${base} × ${height})의 절반으로 보세요(그림). 직사각형 칸 ${base * height} 의 절반이니 ${base * height / 2}.`,
+          steps: [`감싸는 직사각형 ${base} × ${height} = ${base * height}`, `절반 → ${base * height / 2}`], refresh: '½ · 곱셈',
+          example: '삼각 깃발·지붕 단면의 넓이도 "직사각형의 절반"으로.', think: '낯선 모양을 "직사각형의 절반"으로 환원.',
         }, _meta: { t: 'tri', base, height },
       };
     },
@@ -101,8 +108,10 @@ function makeGen(rng) {
         conceptId: 'para', figure: { type: 'svg', svg: labeledParallelogram({ base, height }), legend: `밑변 ${base} · 높이 ${height}` },
         prompt: `밑변 ${base}, 높이 ${height}인 평행사변형의 넓이는?`, answer: base * height, accept: [`${base * height}`],
         solution: {
-          core: '평행사변형 = 밑변 × 높이.', idea: `직사각형으로 펴면 ${base} × ${height}.`,
-          steps: [`${base} × ${height} = ${base * height}`], refresh: '곱셈 · 높이=수직 거리',
+          figure: { type: 'svg', svg: paraToRect({ base, height }) },
+          core: '평행사변형 = 밑변 × 높이.',
+          idea: `기운 끝 조각을 잘라 반대편에 붙이면 점선 직사각형이 돼요(그림). 넓이는 그대로 ${base} × ${height} = ${base * height}.`,
+          steps: [`직사각형으로 펴면 ${base} × ${height} = ${base * height}`], refresh: '곱셈 · 높이=수직 거리',
           example: '비스듬히 쌓은 벽돌 단·기울인 책 무더기 단면.', think: '겉모양 기울기에 안 흔들리고 밑변×높이만 본다.',
         }, _meta: { t: 'para', base, height },
       };
@@ -113,8 +122,10 @@ function makeGen(rng) {
         conceptId: 'trap', figure: { type: 'svg', svg: labeledTrapezoid({ top, bottom, height }), legend: `윗변 ${top} · 아랫변 ${bottom} · 높이 ${height}` },
         prompt: `윗변 ${top}, 아랫변 ${bottom}, 높이 ${height}인 사다리꼴의 넓이는?`, answer: (top + bottom) / 2 * height, accept: [`${(top + bottom) / 2 * height}`],
         solution: {
-          core: '(윗변 + 아랫변) ÷ 2 × 높이.', idea: `평균 (${top}+${bottom})/2 = ${(top + bottom) / 2}, 거기에 높이 ${height}.`,
-          steps: [`(${top} + ${bottom}) ÷ 2 = ${(top + bottom) / 2}`, `× ${height} = ${(top + bottom) / 2 * height}`], refresh: '평균 · 곱셈',
+          figure: { type: 'svg', svg: trapezoidDoubled({ top, bottom, height }) },
+          core: '(윗변 + 아랫변) ÷ 2 × 높이.',
+          idea: `똑같은 사다리꼴을 거꾸로 붙이면 밑변 ${top}+${bottom}=${top + bottom} 평행사변형이 돼요(그림). 한 벌은 절반이니 평균 폭 ${(top + bottom) / 2} 에 높이 ${height}.`,
+          steps: [`평균 폭 (${top} + ${bottom}) ÷ 2 = ${(top + bottom) / 2}`, `× ${height} = ${(top + bottom) / 2 * height}`], refresh: '평균 · 곱셈',
           example: '둑·수로 단면처럼 위·아래 폭이 다른 면.', think: '들쭉날쭉을 평균으로 평평하게 골라 본다.',
         }, _meta: { t: 'trap', top, bottom, height },
       };
@@ -122,10 +133,12 @@ function makeGen(rng) {
     pyth() {
       const [a, b, c] = pick(TRIPLES), unit = Math.max(8, Math.round(260 / (2 * b + a)));
       return {
-        conceptId: 'pyth', figure: { type: 'svg', svg: squaresOnSides({ a, b, unit }), legend: `두 변 위 정사각형(${a * a}·${b * b}) 합 = 빗변 위(${c * c})` },
+        conceptId: 'pyth', figure: { type: 'svg', svg: rightTriangle({ a, b, labels: { base: `${a}`, height: `${b}`, hyp: '?' } }), legend: `두 변 ${a}, ${b} → 빗변?` },
         prompt: `직각을 낀 두 변이 ${a}, ${b}인 직각삼각형의 빗변은?`, answer: c, accept: [`${c}`],
         solution: {
-          core: 'a² + b² = c².', idea: `${a}² + ${b}² = ${a * a} + ${b * b} = ${c * c}. √${c * c} = ${c}.`,
+          figure: { type: 'svg', svg: squaresOnSides({ a, b, unit }) },
+          core: 'a² + b² = c².',
+          idea: `두 변 위 정사각형 넓이를 그려 더해요(그림). ${a}² + ${b}² = ${a * a} + ${b * b} = ${c * c} 가 빗변 위 정사각형 넓이. 빗변은 √${c * c} = ${c}.`,
           steps: [`${a}² + ${b}² = ${c * c}`, `√${c * c} = ${c}`], refresh: '제곱 · 제곱근',
           example: '직접 못 재는 빗변을 두 변으로 계산.', think: '못 재는 길이를 아는 값들의 관계로 우회해 구한다.',
         }, _meta: { t: 'pyth', a, b, c },
@@ -137,14 +150,18 @@ function makeGen(rng) {
         conceptId: 'sim', figure: { type: 'svg', svg: scaledCircles({ k }), legend: `지름 ${k}배 원` },
         prompt: `지름이 ${k}배인 피자는 양(넓이)이 몇 배일까요?`, answer: k * k, accept: [`${k * k}`, `${k * k}배`],
         solution: {
-          core: '원도 닮음 — 지름이 k배면 넓이는 k².', idea: `지름 ${k}배 → ${k}² = ${k * k}배.`,
-          steps: [`${k}² = ${k * k}`], refresh: '제곱', example: '큰 피자가 훨씬 이득인 이유.', think: '"길이비의 제곱" 원리가 원에도 전이.',
+          figure: { type: 'svg', svg: squareCount({ side: k }) },
+          core: '원도 닮음 — 지름이 k배면 넓이는 k².',
+          idea: `원도 정사각형과 똑같이 지름 ${k}배 → ${k} × ${k} = ${k * k}배. 그림의 ${k}×${k}=${k * k}칸이 그 제곱이에요.`,
+          steps: [`${k}² = ${k * k}`], refresh: `제곱(${k}² = ${k * k})`, example: '큰 피자가 훨씬 이득인 이유.', think: '"길이비의 제곱" 원리가 원에도 전이.',
         }, _meta: { t: 'sim', k },
       } : {
         conceptId: 'sim', figure: { type: 'svg', svg: scaledSquares({ k }), legend: `한 변 ${k}배 → 작은 정사각형 ${k * k}개` },
         prompt: `정사각형의 한 변을 ${k}배로 늘이면 넓이는 몇 배가 되나요?`, answer: k * k, accept: [`${k * k}`, `${k * k}배`],
         solution: {
-          core: '길이비 k → 넓이비 k².', idea: `${k}² = ${k * k}. 작은 정사각형 ${k * k}개가 들어가요.`,
+          figure: { type: 'svg', svg: squareCount({ side: k }) },
+          core: '길이비 k → 넓이비 k².',
+          idea: `한 변 ${k}배 → 가로 ${k}줄·세로 ${k}줄이라 작은 정사각형이 ${k} × ${k} = ${k * k}개 들어차요(그림).`,
           steps: [`${k} × ${k} = ${k * k}`], refresh: `제곱(${k}² = ${k * k})`,
           example: `복사기 ${k}배 확대면 잉크·종이는 ${k * k}배.`, think: '1차원(길이) 변화가 2차원(넓이)엔 제곱으로 증폭.',
         }, _meta: { t: 'sim', k },
@@ -156,7 +173,9 @@ function makeGen(rng) {
         conceptId: 'circ', figure: { type: 'svg', svg: labeledCircle({ value: 2 * r, kind: 'diameter' }), legend: `지름 ${2 * r} (반지름 아님 — 함정)` },
         prompt: `지름이 ${2 * r}인 원의 넓이는? (π ≈ 3.14)`, answer: area, accept: [`${area}`, `${r * r}π`], range: [area - 0.5, area + 0.5],
         solution: {
-          core: '반지름 = 지름 ÷ 2 를 먼저.', idea: `지름 ${2 * r} → 반지름 ${r}. ${r}² × 3.14 = ${area}.`,
+          figure: { type: 'svg', svg: circleToRect({ r, unit: Math.max(5, Math.round(48 / r)) }) },
+          core: '반지름 = 지름 ÷ 2 를 먼저.',
+          idea: `지름 ${2 * r}을 그대로 쓰면 함정! 먼저 반으로 — 반지름 ${r}. 부채꼴로 펴면 가로 πr·세로 r 직사각형(그림), 넓이 = π × ${r}² = ${r * r} × 3.14 = ${area}.`,
           steps: [`반지름 ${2 * r} ÷ 2 = ${r}`, `${r}² × 3.14 = ${area}`], refresh: '지름÷2 · 제곱 · π',
           example: '바퀴·접시 크기는 보통 지름으로 — 반으로.', think: '주어진 게 지름인지 반지름인지 먼저 확인.',
         }, _meta: { t: 'circ', r, area },
@@ -164,7 +183,9 @@ function makeGen(rng) {
         conceptId: 'circ', figure: { type: 'svg', svg: labeledCircle({ value: r, kind: 'radius' }), legend: `반지름 ${r}` },
         prompt: `반지름 ${r}인 원의 넓이는? (π ≈ 3.14)`, answer: area, accept: [`${area}`, `${r * r}π`], range: [area - 0.5, area + 0.5],
         solution: {
-          core: 'πr².', idea: `${r}² = ${r * r}, × 3.14 = ${area}.`,
+          figure: { type: 'svg', svg: circleToRect({ r, unit: Math.max(5, Math.round(48 / r)) }) },
+          core: 'πr².',
+          idea: `원을 부채꼴로 펴면 가로 πr·세로 r 직사각형이 돼요(그림). 넓이 = π × ${r}² = ${r * r} × 3.14 = ${area}.`,
           steps: [`${r}² = ${r * r}`, `× 3.14 = ${area}`], refresh: '제곱 · π(≈3.14)',
           example: '반지름만 재면 접시·바퀴·CD 넓이가 바로.', think: "공식은 '틀' — 반지름만 갈아끼우면 어떤 원이든.",
         }, _meta: { t: 'circ', r, area },
@@ -187,8 +208,9 @@ function main() {
     seen.add(p.prompt);
     const rc = recompute(meta); // 답 독립 재계산 일치 검증
     if (Math.abs(rc - Number(p.answer)) > 0.011) throw new Error(`answer mismatch ${conceptId}: gen=${p.answer} recompute=${rc}`);
-    const figOk = p.figure.type === 'dots' ? p.figure.n > 0 : (p.figure.svg || '').startsWith('<svg');
-    if (!figOk) throw new Error(`figure invalid ${conceptId}`);
+    const figOk = (f) => !!f && (f.type === 'dots' ? f.n > 0 : (f.svg || '').startsWith('<svg'));
+    if (p.figure && !figOk(p.figure)) throw new Error(`prompt figure invalid ${conceptId}`);
+    if (!figOk(p.solution.figure)) throw new Error(`solution figure missing/invalid ${conceptId}`); // 해설 도형 의무
     const i = problems.length;
     problems.push({
       id: `gen-${date}-${conceptId}-${i + 1}`, conceptId, kind: 'apply',

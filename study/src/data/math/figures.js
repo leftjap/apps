@@ -147,6 +147,41 @@ export function scaledCircles({ k, pad = 16, gap = 26 }) {
 const dline = (x1, y1, x2, y2) =>
   `<line x1="${n1(x1)}" y1="${n1(y1)}" x2="${n1(x2)}" y2="${n1(y2)}" stroke="${C.stroke}" stroke-width="1.1" stroke-dasharray="4 3"/>`;
 
+const SHELLS = ['#cfe0bf', '#a9c489', '#85a861', '#6f8c4d', '#566f3a'];
+
+/**
+ * 홀수합 단계 시각화 — 1 → +3 → +4(2²) → … 정사각형이 ㄱ자 한 겹씩 자라는 과정을 패널로.
+ * 패널 n = n×n 격자(겹마다 색), 아래 "n²=값", 패널 사이 "+(2n+1)". 말 대신 그림이 설명.
+ */
+export function oddSquareSteps({ maxN = 4, dot = 11, gap = 5, panelGap = 38, pad = 16 } = {}) {
+  const cell = dot + gap, H = maxN * cell - gap;
+  let body = '', x = pad;
+  for (let n = 1; n <= maxN; n++) {
+    const w = n * cell - gap, yTop = pad + (H - w);
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      body += `<circle cx="${n1(x + c * cell + dot / 2)}" cy="${n1(yTop + r * cell + dot / 2)}" r="${n1(dot / 2)}" fill="${SHELLS[Math.max(r, c) % SHELLS.length]}"/>`;
+    }
+    body += txt(x + w / 2, pad + H + 16, `${n}² = ${n * n}`, C.stroke, 12);
+    if (n < maxN) body += txt(x + w + panelGap / 2, pad + H / 2 + 4, `+${2 * n + 1}`, C.accent, 13);
+    x += w + panelGap;
+  }
+  const w = x - panelGap + pad, h = pad + H + 26;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="홀수를 ㄱ자로 더할수록 정사각형이 커지는 과정 1·4·9·16">${body}</svg>`;
+}
+
+/**
+ * 정사각 개수 — 한 변 side 인 정사각형 격자(채움) + "side × side = side²". 해설 결과 시각화용.
+ */
+export function squareCount({ side, dot = 14, gap = 7, pad = 16 }) {
+  const cell = dot + gap, W = side * cell - gap;
+  let dots = '';
+  for (let r = 0; r < side; r++) for (let c = 0; c < side; c++) {
+    dots += `<circle cx="${n1(pad + c * cell + dot / 2)}" cy="${n1(pad + r * cell + dot / 2)}" r="${n1(dot / 2)}" fill="${C.fill}"/>`;
+  }
+  const w = W + pad * 2, h = pad + W + 22;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" aria-label="한 변 ${side} 정사각형 = ${side * side}칸">${dots}${txt(pad + W / 2, pad + W + 16, `${side} × ${side} = ${side * side}`, C.stroke, 13)}</svg>`;
+}
+
 /**
  * 삼각형(응용) — 밑변·높이 라벨. 넓이 = ½·밑변·높이. 좌표는 입력에서 계산(비율 정합).
  */
@@ -187,4 +222,60 @@ export function labeledTrapezoid({ top, bottom, height, unit = 14, pad = 26 }) {
     + txt(x0 + A + TOP / 2, yT - 8, `윗변 ${top}`)
     + txt(x0 + BOT / 2, yB + 16, `아랫변 ${bottom}`)
     + txt(x0 + A - 18, yT + H / 2, `높이 ${height}`) + '</svg>';
+}
+
+/**
+ * 삼각형 = 직사각형의 절반 (해설용) — base×height 점선 직사각형 안에 채운 직각삼각형 + 대각선.
+ * 빈 위쪽이 "나머지 반쪽"임을 보여 ½·밑변·높이를 시각화. 응용 solution.figure.
+ */
+export function triangleInRect({ base, height, unit = 16, pad = 16 }) {
+  const u = unit, W = base * u, H = height * u;
+  const x0 = pad + 44, yT = pad, yB = pad + H, xR = x0 + W;
+  const tri = [[x0, yB], [xR, yB], [x0, yT]];                 // 왼아래 직각삼각형 = 절반
+  const w = xR + pad, h = yB + pad + 8;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" `
+    + `aria-label="밑변 ${base} 높이 ${height} 삼각형 = ${base}×${height} 직사각형의 절반(넓이 ${n1(base * height / 2)})">`
+    + `<rect x="${n1(x0)}" y="${n1(yT)}" width="${n1(W)}" height="${n1(H)}" fill="none" stroke="${C.stroke}" stroke-width="1.2" stroke-dasharray="5 4"/>`
+    + poly(tri, C.fill)
+    + `<line x1="${n1(x0)}" y1="${n1(yT)}" x2="${n1(xR)}" y2="${n1(yB)}" stroke="${C.stroke}" stroke-width="1"/>`
+    + `<text x="${n1(x0 - 8)}" y="${n1(yT + H / 2 + 4)}" font-size="12" fill="${C.text}" text-anchor="end">높이 ${height}</text>`
+    + txt(x0 + W / 2, yB + 16, `밑변 ${base}`) + '</svg>';
+}
+
+/**
+ * 평행사변형 → 직사각형 (해설용) — 채운 평행사변형 + 같은 밑변·높이 점선 직사각형 오버레이 + 수직 높이선.
+ * "기운 변이 아니라 수직 높이로 잰다 → 밑변×높이" 발상 시각화. 응용 solution.figure.
+ */
+export function paraToRect({ base, height, unit = 16, pad = 16 }) {
+  const u = unit, W = base * u, H = height * u, slant = Math.min(H * 0.5, W * 0.4);
+  const x0 = pad + 44, yT = pad, yB = pad + H;
+  const para = [[x0, yB], [x0 + W, yB], [x0 + W - slant, yT], [x0 - slant, yT]];
+  const w = x0 + W + pad, h = yB + pad + 8;
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" `
+    + `aria-label="밑변 ${base} 높이 ${height} 평행사변형 = 같은 밑변·높이 직사각형(넓이 ${n1(base * height)})">`
+    + poly(para, C.fill)
+    + `<rect x="${n1(x0)}" y="${n1(yT)}" width="${n1(W)}" height="${n1(H)}" fill="none" stroke="${C.stroke}" stroke-width="1.2" stroke-dasharray="5 4"/>`
+    + dline(x0, yB, x0, yT)
+    + `<text x="${n1(x0 - 8)}" y="${n1(yT + H / 2 + 4)}" font-size="12" fill="${C.text}" text-anchor="end">높이 ${height}</text>`
+    + txt(x0 + W / 2, yB + 16, `밑변 ${base}`) + '</svg>';
+}
+
+/**
+ * 직각삼각형(응용 프롬프트) — 가로변 a·세로변 b(직각 왼아래) + 빗변. 좌표는 a·b 에서 계산.
+ * 라벨 기본 = a·b 수치, `labels:{base,height,hyp}` 로 '?' 등 덮어쓰기(빗변/한 변 미지수 문제).
+ */
+export function rightTriangle({ a, b, unit = 16, pad = 20, labels = {} }) {
+  const u = unit, W = a * u, H = b * u;
+  const x0 = pad + 16, yT = pad, yB = pad + H;
+  const tri = [[x0, yB], [x0 + W, yB], [x0, yT]];                 // 직각 왼아래
+  const w = x0 + W + pad, h = yB + pad + 8;
+  const base = labels.base ?? `${a}`, height = labels.height ?? `${b}`, hyp = labels.hyp ?? '';
+  return `<svg width="${n1(w)}" height="${n1(h)}" viewBox="0 0 ${n1(w)} ${n1(h)}" role="img" `
+    + `aria-label="직각삼각형 가로 ${base} 세로 ${height} 빗변 ${hyp}">`
+    + poly(tri, C.fill)
+    + `<rect x="${n1(x0)}" y="${n1(yB - 11)}" width="11" height="11" fill="none" stroke="${C.stroke}" stroke-width="1"/>`
+    + txt(x0 + W / 2, yB + 16, base)
+    + `<text x="${n1(x0 - 8)}" y="${n1(yT + H / 2 + 4)}" font-size="12" fill="${C.text}" text-anchor="end">${height}</text>`
+    + (hyp ? `<text x="${n1(x0 + W / 2 + 6)}" y="${n1(yT + H / 2 - 2)}" font-size="13" fill="${C.accent}">${hyp}</text>` : '')
+    + '</svg>';
 }

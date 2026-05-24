@@ -92,7 +92,10 @@ function figureNode(f) {
   const wrap = document.createElement('div');
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:6px;margin:4px 0 8px;';
   const box = document.createElement('div');
+  box.style.cssText = 'width:100%;display:flex;justify-content:center;';
   box.innerHTML = inner;
+  const svgEl = box.querySelector('svg'); // 폭 넘침 방지 — 화면보다 크면 비율 유지하며 축소
+  if (svgEl) { svgEl.style.maxWidth = '100%'; svgEl.style.height = 'auto'; }
   wrap.appendChild(box);
   if (f.legend) {
     const l = document.createElement('div');
@@ -159,13 +162,14 @@ function buildMathMain(c, size, mode) {
     wrap.appendChild(tag);
   }
 
-  const fig = figureNode(c.figure);
-  if (fig) wrap.appendChild(fig);
+  const figList = Array.isArray(c.figures) ? c.figures : (c.figure ? [c.figure] : []);
+  let anyFig = false;
+  figList.forEach((f) => { const fn = figureNode(f); if (fn) { wrap.appendChild(fn); anyFig = true; } });
 
   const sizeMap = { phone: 24, tablet: 34, desktop: 42 };
   const h1 = document.createElement('h1');
   h1.className = 'poppins';
-  h1.style.cssText = `font-size:${sizeMap[size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;line-height:1.3;margin:${fig ? '12px 0 0' : '0'};`;
+  h1.style.cssText = `font-size:${sizeMap[size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;line-height:1.3;margin:${anyFig ? '12px 0 0' : '0'};`;
   h1.textContent = c.prompt;
   wrap.appendChild(h1);
 
@@ -197,6 +201,9 @@ function buildMathMain(c, size, mode) {
   const explain = createExplanationPanel({ explanation: c.solution });
   explain.toggleEl.style.marginTop = '20px';
   explain.toggleEl.style.alignSelf = 'flex-start';
+  // 해설 그림 — 말 대신 시각으로. 해설 패널 맨 위에 배치.
+  const solFig = figureNode(c.solution && c.solution.figure);
+  if (solFig) { solFig.style.margin = '14px 0 4px'; explain.panelEl.insertBefore(solFig, explain.panelEl.firstChild); }
   wrap.append(explain.toggleEl, explain.panelEl);
 
   // 다음 버튼 (채점 후 채움)
@@ -220,13 +227,15 @@ function buildConceptMain(c, size) {
     tag.textContent = c.tag;
     wrap.appendChild(tag);
   }
-  const fig = figureNode(c.figure);
-  if (fig) wrap.appendChild(fig);
+  // 개념 figure — 단일(c.figure) 또는 다중(c.figures[]) 순차 렌더(이미지 주도 설명).
+  const figList = Array.isArray(c.figures) ? c.figures : (c.figure ? [c.figure] : []);
+  let anyFig = false;
+  figList.forEach((f) => { const fn = figureNode(f); if (fn) { wrap.appendChild(fn); anyFig = true; } });
 
   const sizeMap = { phone: 24, tablet: 32, desktop: 40 };
   const h1 = document.createElement('h1');
   h1.className = 'poppins';
-  h1.style.cssText = `font-size:${sizeMap[size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;line-height:1.3;margin:${fig ? '12px 0 0' : '0'};`;
+  h1.style.cssText = `font-size:${sizeMap[size]}px;font-weight:700;color:var(--text-strong);letter-spacing:-0.03em;line-height:1.3;margin:${anyFig ? '12px 0 0' : '0'};`;
   h1.textContent = c.title || '';
   wrap.appendChild(h1);
 

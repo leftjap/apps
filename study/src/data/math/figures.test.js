@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { squaresOnSides, staircaseToRect, trapezoidDoubled, circleToRect, labeledCircle, scaledSquares, scaledCircles, labeledTriangle, labeledParallelogram, labeledTrapezoid } from './figures.js';
+import { squaresOnSides, staircaseToRect, trapezoidDoubled, circleToRect, labeledCircle, scaledSquares, scaledCircles, labeledTriangle, labeledParallelogram, labeledTrapezoid, oddSquareSteps, squareCount, triangleInRect, paraToRect, rightTriangle } from './figures.js';
 
 // 파라메트릭 도형 헬퍼 — 비율이 입력 숫자에서 *계산*됨을 자동 검증(손코딩 비율오류 방지).
 // math-curriculum.md §도형 규약: 라벨 = 입력 숫자, 변형 묘사.
@@ -133,5 +133,71 @@ describe('labeledTrapezoid — 응용 사다리꼴 (윗변·아랫변·높이)',
     expect(Math.max(...xs(minY)) - Math.min(...xs(minY))).toBe(3 * u);  // 윗변
     expect(Math.max(...xs(maxY)) - Math.min(...xs(maxY))).toBe(7 * u);  // 아랫변
     expect(maxY - minY).toBe(4 * u);                                    // 높이
+  });
+});
+
+const circleCount = (svg) => [...svg.matchAll(/<circle /g)].length;
+
+describe('oddSquareSteps — 홀수합 단계(정사각형 성장)', () => {
+  it('패널 점 합 = Σn² (maxN=4 → 30), 결과·증분 라벨', () => {
+    const svg = oddSquareSteps({ maxN: 4 });
+    expect(circleCount(svg)).toBe(1 + 4 + 9 + 16); // 각 패널 n×n
+    ['1² = 1', '2² = 4', '3² = 9', '4² = 16'].forEach((l) => expect(svg).toContain(l));
+    ['+3', '+5', '+7'].forEach((l) => expect(svg).toContain(l)); // 겹마다 더해지는 홀수
+  });
+  it('인자 없이 호출 가능(기본값) — 모듈 로드 시 oddSquareSteps()', () => {
+    expect(() => oddSquareSteps()).not.toThrow();
+    expect(oddSquareSteps()).toContain('<svg');
+  });
+});
+
+describe('squareCount — 정사각 개수 시각화', () => {
+  it('side=6 → 36점 + "6 × 6 = 36"', () => {
+    const svg = squareCount({ side: 6 });
+    expect(circleCount(svg)).toBe(36);
+    expect(svg).toContain('6 × 6 = 36');
+  });
+});
+
+describe('triangleInRect — 삼각형 = 직사각형 절반 (해설)', () => {
+  it('점선 직사각형 = base×height·u, 채운 삼각형 = 그 절반(밑변·높이 일치)', () => {
+    const u = 16, svg = triangleInRect({ base: 10, height: 6, unit: u });
+    const r = rects(svg).find((x) => x.fill === 'none');
+    expect(r.w).toBe(10 * u);
+    expect(r.h).toBe(6 * u);
+    const p = polys(svg)[0];
+    const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBe(10 * u); // 삼각형 밑변
+    expect(Math.max(...ys) - Math.min(...ys)).toBe(6 * u);  // 삼각형 높이(수직)
+    expect(svg).toContain('밑변 10'); expect(svg).toContain('높이 6');
+  });
+});
+
+describe('paraToRect — 평행사변형 → 직사각형 (해설)', () => {
+  it('점선 직사각형 = base×height·u, 평행사변형 아랫변 = base·u', () => {
+    const u = 16, svg = paraToRect({ base: 7, height: 5, unit: u });
+    const r = rects(svg).find((x) => x.fill === 'none');
+    expect(r.w).toBe(7 * u);
+    expect(r.h).toBe(5 * u);
+    const p = polys(svg)[0];
+    const ys = p.map((q) => q[1]); const maxY = Math.max(...ys);
+    const xsBottom = p.filter((q) => Math.abs(q[1] - maxY) < 0.5).map((q) => q[0]);
+    expect(Math.max(...xsBottom) - Math.min(...xsBottom)).toBe(7 * u); // 평행사변형 아랫변
+    expect(svg).toContain('밑변 7'); expect(svg).toContain('높이 5');
+  });
+});
+
+describe('rightTriangle — 직각삼각형 (응용 프롬프트)', () => {
+  it('가로변 = a·u, 세로변 = b·u, 라벨 덮어쓰기(빗변 ?)', () => {
+    const u = 16, svg = rightTriangle({ a: 6, b: 8, unit: u, labels: { base: '6', height: '8', hyp: '?' } });
+    const p = polys(svg)[0];
+    const xs = p.map((q) => q[0]), ys = p.map((q) => q[1]);
+    expect(Math.max(...xs) - Math.min(...xs)).toBe(6 * u); // 가로변(밑변)
+    expect(Math.max(...ys) - Math.min(...ys)).toBe(8 * u); // 세로변(높이)
+    expect(svg).toContain('>6<'); expect(svg).toContain('>8<'); expect(svg).toContain('>?<');
+  });
+  it('미지수 한 변 문제 — 라벨만 ? (기하는 실수치로 비율 정합)', () => {
+    const svg = rightTriangle({ a: 12, b: 5, labels: { base: '?', height: '5', hyp: '13' } });
+    expect(svg).toContain('>?<'); expect(svg).toContain('>13<');
   });
 });
