@@ -11,7 +11,7 @@
 - **개념 → 절차** (NCTM·ST Math): 개념 이해가 절차에 선행·병행해야 절차가 견고·유연. 시각(개념) 먼저.
 - **Variation Theory**: 개념 설명 → worked example → **변형 응용**. "한 번에 하나만 변경"해야 핵심 원리 추출. 전이는 의도적 설계 없이는 안 일어남.
 - **Productive Failure** (Kapur): 탐구·추측 먼저 → 설명하면 개념이해·전이 우수.
-- **Utility-Value / Relevance 개입** (검색 2026-05, 다수 RCT·PNAS): "왜 중요한가·어디 쓰이나"를 짚으면 수학 동기·성취·관련성 인식이 향상. → **개념카드에 significance(가치·사고) 의무**; 응용은 그 개념것을 노출 + 문제별 `example`(현실)·`think`(사고)로 의미 전달(아래 §카드 모델·체크리스트).
+- **Utility-Value / Relevance 개입** (검색 2026-05, 다수 RCT·PNAS): "왜 중요한가·어디 쓰이나"를 짚으면 수학 동기·성취·관련성 인식이 향상. → **개념카드는 배경·가치·사고·실생활 미니레슨 의무**(2026-05-24 사용자 지시); 응용은 부모 개념 `value` 노출 + 문제별 `example`(현실)·`think`(사고)로 의미 전달(아래 §카드 모델·체크리스트).
 - **금지**: 개념 학습 없는 단순 공식 대입 단답 반복(위 근거 모두 미달).
 
 ## 하루 구조
@@ -25,21 +25,26 @@
 
 한 개념을 `conceptId`로 묶음. 순서: **개념 → 그 응용 2개 → 다음 개념**. SRS 복습은 apply 만(개념은 신규일마다 학습).
 
-**개념 카드** (`kind:'concept'`, 채점 없음 — "다음"):
+**개념 카드** (`kind:'concept'`, 채점 없음 — "이해했어요 · 응용 풀기"). **미니레슨 순서 = 개념(body) → 예시(worked) → 배경 → 왜 배울 가치 → 길러지는 사고 → 실생활**:
 ```
 { id, module, conceptId, kind:'concept', tag, title,
-  figure?: {type,…}, body: ['원리 단락…'], worked: { prompt, steps:['…'] },
-  significance: '사고·논리 + 현실활용 1~2문장 — 필수(utility-value)' }
+  figure?: {type,…}, body: ['개념 원리 단락…'], worked: { prompt, steps:['…'] },
+  background: '어디서 왔나 / 무슨 문제를 풀려고 생겼나 — 1~2문장',
+  value:      '왜 배울 가치 / 무엇으로 이어지나 (utility-value) — 1~2문장',
+  thinking:   '길러지는 사고·추론 도구 — *사고법* 명시, 1~2문장',
+  realLife:   '실생활 구체 사례 — 1~2문장' }
 ```
-- `significance` **개념 카드 필수 (3축)**: *무엇·어떻게* 너머 — ① **유용함/왜 중요** ② **기르는 사고·논리**(어떤 *추론 도구*를 길러주나) ③ **현실 시사점**. 1~2문장. ②가 핵심: 단순 "어디 쓰나"를 넘어 *사고법* 명시(예: 피타고라스 "직접 못 재는 길이를 우회해 구하는 간접 측정 사고").
-- **응용엔 별도 significance 금지.** 응용은 *부모 개념의 significance* 가 채점 후 자동 노출(conceptId 매칭 — session-math). 문제별 의미는 `solution.example`(현실) + `think`(사고)가 담당 — **generic·복붙 금지, 매 문제 고유로 숙고.**
-- *(2026-05-23 결함: 응용에 significance 를 따로 달았더니 example/think 재조합·중복(11/16 겹침 30~90%) → 폐지. 개념것 노출 + example/think 강화로 정정.)*
+- **5부(body·background·value·thinking·realLife) 전부 필수** (2026-05-24 사용자 지시 — 기존 단일 `significance` 압축 폐지). *무엇·어떻게* 너머의 맥락을 담되 문장은 폰 가독 길이(1~2문장). `thinking` 이 핵심: 단순 "어디 쓰나"를 넘어 *사고법* 명시(예: 피타고라스 "직접 못 재는 길이를 우회해 구하는 간접 측정 사고").
+- **각 개념마다 고유로 작성 — generic·복붙 금지.** `background` 는 가능하면 실제 유래(삼각수=가우스 일화, 원=아르키메데스 부채꼴, 닮음=갈릴레이 거인, 삼각형=이집트 측량).
+- **응용엔 위 4필드 금지.** 응용은 *부모 개념의 `value`* 가 채점 후 자동 노출(conceptId 매칭 — session-math). 문제별 의미는 `solution.example`(현실) + `think`(사고)가 담당.
+- **복습(review) 세션**: 응용 상단 접이식 "개념 다시보기"가 부모 개념(figure+body)을 한 탭 거리로 노출 — 복습에서도 개념 framing 유지("문제부터 덜컥" 방지).
+- *(2026-05-23: 응용에 significance 따로 달았더니 example/think 재조합·중복 → 폐지. 2026-05-24: 개념 단일 significance → 5부 미니레슨으로 확장.)*
 
 **응용 문제** (`kind:'apply'`, 입력 채점):
 ```
 { id, module, conceptId, kind:'apply', tag, figure?, prompt,
   answer, accept?, range?, solution: {core,idea,steps,refresh,example,think} }
-  // significance 없음 — 부모 개념것 노출. 문제별 의미 = example(현실) + think(사고)
+  // 개념 4필드 없음 — 부모 개념 value 노출. 문제별 의미 = example(현실) + think(사고)
 ```
 
 ## 응용 설계 (Variation — 한 번에 하나만 변경)
@@ -100,14 +105,15 @@
 - [ ] figure 가 개념의 **변형**을 시각화 (결과 도형만 ❌)
 - [ ] figure 는 **파라메트릭 헬퍼** 생성 (손 raw SVG ❌)
 - [ ] figure 비율 = 라벨 숫자 (헬퍼 **단위테스트** 통과 — 수동 grep ❌)
-- [ ] **significance 1줄** (왜 중요/어디 쓰나, utility-value)
+- [ ] **5부 전부**: body(개념)·worked(예시)·background(배경)·value(가치)·thinking(사고)·realLife(실생활) — 빈 필드 ❌
+- [ ] background·value·thinking·realLife **각 개념 고유**(generic·복붙 ❌), `thinking` 은 *사고법* 명시
 - [ ] body = 원리 단락(공식 암기 아님) + worked 예시 산술 정확
 
 **응용카드**
 - [ ] 개념당 **동형 + 전이** (한 번에 하나만 변경 — Variation)
 - [ ] 답 = 숫자, `accept`/`range` 정합 (오답 함정은 의도적으로)
 - [ ] `solution` 6필드 (idea·example 권장)
-- [ ] `example`(현실)·`think`(사고)가 **문제별 고유**(generic·복붙 ❌) — 응용 의미는 이 둘 + 부모 개념 significance 노출로. **응용엔 별도 significance 달지 말 것**(example/think 재조합 됨)
+- [ ] `example`(현실)·`think`(사고)가 **문제별 고유**(generic·복붙 ❌) — 응용 의미는 이 둘 + 부모 개념 `value` 노출로. **응용엔 개념 4필드(background/value/thinking/realLife) 달지 말 것**
 
 **공통 (거짓말 방지 — 시행착오 박제)**
 - [ ] **답 독립 재계산** = 카드 answer (node 스크립트, 카드값 안 보고)

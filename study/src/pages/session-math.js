@@ -5,7 +5,7 @@
  */
 import { createSessionLayout, pickSize, watchSize } from '../components/session/index.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
-import { MATH_CONTENT } from '../data/math/index.js';
+import { MATH_CONTENT, nextNewGroup } from '../data/math/index.js';
 import { checkAnswer } from '../services/mathAnswer.js';
 import { todayPlusDays } from '../services/srs.js';
 
@@ -40,7 +40,8 @@ function buildQueue(items, p, mode) {
   const today = todayISO();
   const due = items.filter((c) => p.srs[c.id] && p.srs[c.id].nextReview <= today);
   const fresh = items.filter((c) => !p.done[c.id] && !p.srs[c.id]);
-  if (mode === 'new') return fresh.slice(0, 3);
+  // 신규일 = 다음 개념 그룹(개념 설명 먼저 → 그 응용). "문제부터 덜컥" 방지(하루 구조).
+  if (mode === 'new') return nextNewGroup(items, p);
   if (mode === 'review') {
     // 같은 개념(module)의 다른 미완료 문제 우선 — 암기 반복이 아니라 개념 적용.
     const seen = new Set();
@@ -102,11 +103,54 @@ function figureNode(f) {
   return wrap;
 }
 
+// 복습(review) 응용 상단 접이식 '개념 다시보기' — 부모 개념 title+figure+body 요약. 기본 접힘.
+function buildConceptRecap(parent) {
+  if (!parent) return null;
+  const box = document.createElement('div');
+  box.style.cssText = 'margin-bottom:20px;';
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.setAttribute('aria-expanded', 'false');
+  btn.style.cssText = 'background:transparent;border:1px solid var(--line);border-radius:var(--r-sm);padding:8px 14px;font-size:13px;color:var(--sage);font-family:var(--font-display);font-weight:700;letter-spacing:0.04em;cursor:pointer;display:inline-flex;align-items:center;gap:6px;';
+  const caret = document.createElement('span');
+  caret.textContent = '▾';
+  caret.style.cssText = 'display:inline-block;transition:transform 0.15s;';
+  btn.append(document.createTextNode('개념 다시보기'), caret);
+  const panel = document.createElement('div');
+  panel.style.cssText = 'display:none;margin-top:12px;padding:14px 16px;background:var(--sidebar);border:1px solid var(--line);border-radius:var(--r-md);';
+  const t = document.createElement('div');
+  t.style.cssText = 'font-weight:700;color:var(--text-strong);font-size:15px;margin-bottom:8px;';
+  t.textContent = parent.title || '';
+  panel.appendChild(t);
+  const fig = figureNode(parent.figure);
+  if (fig) { fig.style.margin = '4px 0 10px'; panel.appendChild(fig); }
+  (parent.body || []).forEach((para) => {
+    const p = document.createElement('p');
+    p.style.cssText = 'font-size:14px;color:var(--text-muted);line-height:1.7;margin:6px 0 0;';
+    p.textContent = para;
+    panel.appendChild(p);
+  });
+  btn.onclick = () => {
+    const open = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    caret.style.transform = open ? '' : 'rotate(180deg)';
+    btn.setAttribute('aria-expanded', String(!open));
+  };
+  box.append(btn, panel);
+  return box;
+}
+
 // session-new buildMain 구조 차용 — 흰 카드 박스 없이 contentSlot 에 직접. 녹음 대신 입력행.
-function buildMathMain(c, size) {
+function buildMathMain(c, size, mode) {
   const wrap = document.createElement('div');
   wrap.className = 'session-main';
   if (size === 'desktop') wrap.style.cssText = 'display:flex;flex-direction:column;flex:1;';
+
+  if (mode === 'review') {
+    const parent = MATH_CONTENT.find((x) => x.kind === 'concept' && x.conceptId === c.conceptId);
+    const recap = buildConceptRecap(parent);
+    if (recap) wrap.appendChild(recap);
+  }
 
   if (c.tag) {
     const tag = document.createElement('div');
@@ -210,12 +254,29 @@ function buildConceptMain(c, size) {
     wrap.appendChild(box);
   }
 
-  // 유의미성(왜 중요/어디 쓰나) — utility-value. sage 좌측 보더 콜아웃.
-  if (c.significance) {
-    const sig = document.createElement('div');
-    sig.style.cssText = `margin-top:18px;padding:10px 0 10px 14px;border-left:3px solid var(--sage);font-size:${size === 'phone' ? 14 : 15}px;color:var(--text-muted);line-height:1.7;`;
-    sig.textContent = c.significance;
-    wrap.appendChild(sig);
+  // 5부 미니레슨 — 개념(body)·예시(worked) 다음: 배경 → 왜 배울 가치 → 길러지는 사고 → 실생활.
+  const sections = [
+    ['배경', c.background],
+    ['왜 배울 가치', c.value],
+    ['길러지는 사고', c.thinking],
+    ['실생활', c.realLife],
+  ].filter(([, v]) => v);
+  if (sections.length) {
+    const lesson = document.createElement('div');
+    lesson.style.cssText = 'margin-top:22px;display:flex;flex-direction:column;gap:16px;';
+    sections.forEach(([label, text]) => {
+      const sec = document.createElement('div');
+      sec.style.cssText = 'padding-left:14px;border-left:3px solid var(--sage);';
+      const h = document.createElement('div');
+      h.style.cssText = 'font-size:11px;color:var(--sage);text-transform:uppercase;letter-spacing:0.12em;font-family:var(--font-display);font-weight:700;margin-bottom:5px;';
+      h.textContent = label;
+      const p = document.createElement('p');
+      p.style.cssText = `font-size:${size === 'phone' ? 14 : 15}px;color:var(--text-muted);line-height:1.75;margin:0;`;
+      p.textContent = text;
+      sec.append(h, p);
+      lesson.appendChild(sec);
+    });
+    wrap.appendChild(lesson);
   }
 
   const nextBtn = document.createElement('button');
@@ -279,9 +340,10 @@ export function mountSessionMath(host) {
     verdict.textContent = correct ? `정답!  ·  ${c.answer}` : `정답은 ${c.answer}`;
     input.disabled = true;
     checkBtn.style.display = 'none';
-    // 유의미성 — 응용은 부모 개념의 (genuine) significance 노출(의미·사고). 응용 고유의 현실/사고는
-    // 해설(example/think)이 담당 — 별도 응용 significance 는 example/think 재조합·중복이라 폐지.
-    const sigText = MATH_CONTENT.find((x) => x.kind === 'concept' && x.conceptId === c.conceptId)?.significance;
+    // 유의미성 — 응용은 부모 개념의 '왜 배울 가치'(value) 노출. 응용 고유의 현실/사고는
+    // 해설(example/think)이 담당.
+    const parentConcept = MATH_CONTENT.find((x) => x.kind === 'concept' && x.conceptId === c.conceptId);
+    const sigText = parentConcept?.value;
     if (sigText) {
       const sig = document.createElement('div');
       sig.style.cssText = 'margin-top:18px;padding:10px 0 10px 14px;border-left:3px solid var(--sage);font-size:14px;color:var(--text-muted);line-height:1.7;';
@@ -317,7 +379,7 @@ export function mountSessionMath(host) {
       cm.nextBtn.onclick = () => { progress.done[c.id] = true; save(progress); i += 1; render(); };
       return;
     }
-    const { wrap, input, checkBtn, verdict, nextWrap } = buildMathMain(c, size);
+    const { wrap, input, checkBtn, verdict, nextWrap } = buildMathMain(c, size, mode);
     layout.contentSlot.appendChild(wrap);
     host.appendChild(layout.el);
     const submit = () => {
