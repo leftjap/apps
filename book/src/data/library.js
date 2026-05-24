@@ -1114,8 +1114,8 @@ export const LIBRARY = [
 },
 {
 "id": "book_095",
-"t": "편하게 사는 삶과 인간답게 사는 삶",
-"a": "홍세화",
+"t": "(출처 미확인 어구록)",
+"a": "미상",
 "w": 130,
 "h": 195,
 "c": "인문",
@@ -1216,5 +1216,16 @@ export const LIBRARY = [
 "y": 2024,
 "p": "웅진지식하우스",
 "coverUrl": "https://image.aladin.co.kr/product/33799/49/cover200/s512137751_1.jpg"
+},
+{
+"id": "book_104",
+"t": "결 : 거칢에 대하여",
+"a": "홍세화",
+"w": 130,
+"h": 195,
+"c": "사회",
+"y": 2020,
+"p": "한겨레출판",
+"coverUrl": "https://image.aladin.co.kr/product/23419/67/cover200/k792638381_2.jpg"
 }
 ];
