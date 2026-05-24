@@ -1091,14 +1091,14 @@ export const LIBRARY = [
 },
 {
 "id": "book_093",
-"t": "꾸준함과 루틴의 힘",
-"a": "이재원",
+"t": "루틴의 힘",
+"a": "댄 애리얼리, 그레첸 루빈, 세스 고딘 외",
 "w": 130,
 "h": 195,
 "c": "자기계발",
-"d": "dtypo",
-"bg": "#2a3a4d",
-"fg": "#f0ead9"
+"y": 2020,
+"p": "부키",
+"coverUrl": "https://image.aladin.co.kr/product/23147/73/cover200/8960517720_1.jpg"
 },
 {
 "id": "book_094",
