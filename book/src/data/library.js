@@ -1205,5 +1205,16 @@ export const LIBRARY = [
 "p": "페이지2(page2)",
 "sub": "자본주의 게임의 법칙",
 "coverUrl": "https://image.aladin.co.kr/product/33140/84/cover200/k132937226_1.jpg"
+},
+{
+"id": "book_103",
+"t": "빨모쌤의 라이브 영어회화",
+"a": "빨간모자쌤 신용하",
+"w": 130,
+"h": 195,
+"c": "외국어",
+"y": 2024,
+"p": "웅진지식하우스",
+"coverUrl": "https://image.aladin.co.kr/product/33799/49/cover200/s512137751_1.jpg"
 }
 ];
