@@ -52,7 +52,7 @@ vi.mock('./features/editor.js', () => ({
 }));
 
 vi.mock('./services/expense-classifier.js', () => ({
-  default: { setCurrentEmail: vi.fn(), loadUserMappings: vi.fn(async () => {}) },
+  default: { setCurrentEmail: vi.fn() },
 }));
 
 vi.mock('./features/expenses.js', () => ({
@@ -92,7 +92,6 @@ vi.mock('./db/sync.js', () => ({
     flushPendingUploads: vi.fn(),
     flushPendingFromDexie: vi.fn(async () => {}),
     flushPendingExpensesFromDexie: vi.fn(async () => {}),
-    onRealtimeChange: vi.fn(),
   },
 }));
 
@@ -106,7 +105,6 @@ vi.mock('./app.js', () => {
   return {
     showLogin: mockShowLogin,
     showAuthenticated: mockShowAuthenticated,
-    setRouterUser: vi.fn(),
   };
 });
 
