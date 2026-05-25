@@ -97,6 +97,15 @@ describe('parseCardSms — 단위 케이스 (인라인)', () => {
     expect(r.amount_krw).toBe(10300);
     expect(r.card).toBe('삼성1337');
   });
+
+  it('domestic: 현대백화점카드 멀티라인 — 가맹점이 별도 줄 + 번호 없는 카드명', () => {
+    const r = parseCardSms('[Web발신]\n[현대백화점카드]\n05/24 16:57(본인)\n신촌점\n서영이앤티\n107,520원 일시불 승인');
+    expect(r).toEqual({ kind: 'domestic', amount_krw: 107520, merchant_raw: '서영이앤티', card: '현대백화점카드' });
+  });
+  it('domestic: 현대백화점카드 — 가맹점 꼬리 부호(-) 제거', () => {
+    const r = parseCardSms('[Web발신]\n[현대백화점카드]\n05/24 17:03(본인)\n신촌점\n베즐리베이커리-\n33,600원 일시불 승인');
+    expect(r).toEqual({ kind: 'domestic', amount_krw: 33600, merchant_raw: '베즐리베이커리', card: '현대백화점카드' });
+  });
 });
 
 // ─── Fixture-driven 회귀 테스트 (audit/sms-fixtures 의 실제 SMS) ───
