@@ -1,0 +1,104 @@
+{
+  "date": "2026-05-25",
+  "problems": [
+    {
+      "id": "gen-2026-05-25-sim-1",
+      "conceptId": "sim",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 닮음",
+      "prompt": "정사각형의 한 변을 4배로 늘이면 넓이는 몇 배가 되나요?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"208\" height=\"152\" viewBox=\"0 0 208 152\" role=\"img\" aria-label=\"작은 정사각형과 한 변 4배 정사각형(넓이 16배)\"><rect x=\"16\" y=\"106\" width=\"30\" height=\"30\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"72\" y=\"16\" width=\"120\" height=\"120\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1\"/><line x1=\"72\" y1=\"16\" x2=\"72\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"136\" x2=\"192\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"102\" y1=\"16\" x2=\"102\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"106\" x2=\"192\" y2=\"106\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"132\" y1=\"16\" x2=\"132\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"76\" x2=\"192\" y2=\"76\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"162\" y1=\"16\" x2=\"162\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"46\" x2=\"192\" y2=\"46\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"192\" y1=\"16\" x2=\"192\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"16\" x2=\"192\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><text x=\"31\" y=\"148\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">×1</text><text x=\"132\" y=\"148\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">×4</text></svg>",
+        "legend": "한 변 4배 → 작은 정사각형 16개"
+      },
+      "answer": "16",
+      "accept": [
+        "16",
+        "16배"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"109\" height=\"115\" viewBox=\"0 0 109 115\" role=\"img\" aria-label=\"한 변 4 정사각형 = 16칸\"><circle cx=\"23\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><text x=\"54.5\" y=\"109\" font-size=\"13\" fill=\"#788c5d\" text-anchor=\"middle\">4 × 4 = 16</text></svg>"
+        },
+        "core": "길이비 k → 넓이비 k².",
+        "idea": "한 변 4배 → 가로 4줄·세로 4줄이라 작은 정사각형이 4 × 4 = 16개 들어차요(그림).",
+        "steps": [
+          "4 × 4 = 16"
+        ],
+        "refresh": "제곱(4² = 16)",
+        "example": "복사기 4배 확대면 잉크·종이는 16배.",
+        "think": "1차원(길이) 변화가 2차원(넓이)엔 제곱으로 증폭."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-05-25-sim-2",
+      "conceptId": "sim",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 닮음",
+      "prompt": "정사각형의 한 변을 2배로 늘이면 넓이는 몇 배가 되나요?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"148\" height=\"92\" viewBox=\"0 0 148 92\" role=\"img\" aria-label=\"작은 정사각형과 한 변 2배 정사각형(넓이 4배)\"><rect x=\"16\" y=\"46\" width=\"30\" height=\"30\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1\"/><rect x=\"72\" y=\"16\" width=\"60\" height=\"60\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1\"/><line x1=\"72\" y1=\"16\" x2=\"72\" y2=\"76\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"76\" x2=\"132\" y2=\"76\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"102\" y1=\"16\" x2=\"102\" y2=\"76\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"46\" x2=\"132\" y2=\"46\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"132\" y1=\"16\" x2=\"132\" y2=\"76\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><line x1=\"72\" y1=\"16\" x2=\"132\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"0.6\"/><text x=\"31\" y=\"88\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">×1</text><text x=\"102\" y=\"88\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">×2</text></svg>",
+        "legend": "한 변 2배 → 작은 정사각형 4개"
+      },
+      "answer": "4",
+      "accept": [
+        "4",
+        "4배"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"67\" height=\"73\" viewBox=\"0 0 67 73\" role=\"img\" aria-label=\"한 변 2 정사각형 = 4칸\"><circle cx=\"23\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><text x=\"33.5\" y=\"67\" font-size=\"13\" fill=\"#788c5d\" text-anchor=\"middle\">2 × 2 = 4</text></svg>"
+        },
+        "core": "길이비 k → 넓이비 k².",
+        "idea": "한 변 2배 → 가로 2줄·세로 2줄이라 작은 정사각형이 2 × 2 = 4개 들어차요(그림).",
+        "steps": [
+          "2 × 2 = 4"
+        ],
+        "refresh": "제곱(2² = 4)",
+        "example": "복사기 2배 확대면 잉크·종이는 4배.",
+        "think": "1차원(길이) 변화가 2차원(넓이)엔 제곱으로 증폭."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-05-25-sim-3",
+      "conceptId": "sim",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 닮음",
+      "prompt": "지름이 4배인 피자는 양(넓이)이 몇 배일까요?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"298\" height=\"226\" viewBox=\"0 0 298 226\" role=\"img\" aria-label=\"작은 원과 지름 4배 원(넓이 16배)\"><circle cx=\"40\" cy=\"112\" r=\"24\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><circle cx=\"186\" cy=\"112\" r=\"96\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"40\" y=\"220\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">지름 ×1</text><text x=\"186\" y=\"220\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">지름 ×4</text></svg>",
+        "legend": "지름 4배 원"
+      },
+      "answer": "16",
+      "accept": [
+        "16",
+        "16배"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"109\" height=\"115\" viewBox=\"0 0 109 115\" role=\"img\" aria-label=\"한 변 4 정사각형 = 16칸\"><circle cx=\"23\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><text x=\"54.5\" y=\"109\" font-size=\"13\" fill=\"#788c5d\" text-anchor=\"middle\">4 × 4 = 16</text></svg>"
+        },
+        "core": "원도 닮음 — 지름이 k배면 넓이는 k².",
+        "idea": "원도 정사각형과 똑같이 지름 4배 → 4 × 4 = 16배. 그림의 4×4=16칸이 그 제곱이에요.",
+        "steps": [
+          "4² = 16"
+        ],
+        "refresh": "제곱(4² = 16)",
+        "example": "큰 피자가 훨씬 이득인 이유.",
+        "think": "\"길이비의 제곱\" 원리가 원에도 전이."
+      },
+      "order_index": 2
+    }
+  ]
+}
