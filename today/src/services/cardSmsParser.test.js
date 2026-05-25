@@ -106,6 +106,15 @@ describe('parseCardSms — 단위 케이스 (인라인)', () => {
     const r = parseCardSms('[Web발신]\n[현대백화점카드]\n05/24 17:03(본인)\n신촌점\n베즐리베이커리-\n33,600원 일시불 승인');
     expect(r).toEqual({ kind: 'domestic', amount_krw: 33600, merchant_raw: '베즐리베이커리', card: '현대백화점카드' });
   });
+
+  it('domestic: 신한카드(8244) 누적형 — 괄호 카드번호 + 누적 꼬리 제거 + 카드명 alias', () => {
+    const r = parseCardSms('[Web발신]\n신한카드(8244)승인 김*연 315,000원 (일시불)05/24 20:45 맛이차이나 누적 345,400원');
+    expect(r).toEqual({ kind: 'domestic', amount_krw: 315000, merchant_raw: '맛이차이나', card: '신한카드 Air' });
+  });
+  it('domestic: 신한체크승인(8579) — (금액) 머리 제거 + 카드명 alias', () => {
+    const r = parseCardSms('[Web발신]\n[신한체크승인] 김*연(8579) 05/23 20:34 (금액)74,000원 마포소금구이');
+    expect(r).toEqual({ kind: 'domestic', amount_krw: 74000, merchant_raw: '마포소금구이', card: 'K-패스 신한카드 체크' });
+  });
 });
 
 // ─── Fixture-driven 회귀 테스트 (audit/sms-fixtures 의 실제 SMS) ───

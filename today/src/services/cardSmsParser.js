@@ -20,6 +20,16 @@ const ISSUER_PATTERNS = [
   { code: '우리', re: /우리(?:카드)?\s*(\d{4})/ },
 ];
 
+// raw 카드식별자 → 사용자 친화 카드명 (card-options.js value 와 일치).
+// 소연 신한/삼성 카드는 SMS 가 raw 번호로 들어오므로 친화명으로 정규화.
+// 지오 카드(삼성1337 등)는 card-options value 가 raw 라 매핑 안 함.
+const CARD_ALIASES = {
+  '신한8244': '신한카드 Air',
+  '신한8579': 'K-패스 신한카드 체크',
+  '신한8619': 'K-패스 신한카드 체크',
+  '삼성2737': '삼성카드 iD SIMPLE',
+};
+
 function normalize(text) {
   return String(text)
     .replace(/\r\n?/g, '\n')
@@ -29,6 +39,11 @@ function normalize(text) {
 }
 
 function extractCard(text) {
+  const raw = extractCardRaw(text);
+  return raw ? (CARD_ALIASES[raw] || raw) : null;
+}
+
+function extractCardRaw(text) {
   if (/KB국민카드\s*후불하이패스/.test(text)) return 'KB국민카드 후불하이패스';
   const sc = text.match(/SC은행BC\((\d{4})\)/);
   if (sc) return `SC은행BC${sc[1]}`;
@@ -41,6 +56,12 @@ function extractCard(text) {
   for (const { code, re } of ISSUER_PATTERNS) {
     const m = text.match(re);
     if (m) return `${code}${m[1]}`;
+  }
+  // 괄호 안 카드번호 (신한카드(8244) / [신한체크승인] …(8579)) — 한 줄 내에서만.
+  const paren = text.match(/(삼성|신한|KB국민카드|국민|현대|롯데|하나|우리)[^()\n]*\((\d{4})\)/);
+  if (paren) {
+    const issuer = paren[1] === '국민' ? 'KB국민카드' : paren[1];
+    return `${issuer}${paren[2]}`;
   }
   // 번호 없는 대괄호 카드명 (현대백화점카드 등) — '카드' 로 끝나는 대괄호 라벨.
   const named = text.match(/\[([^\]\n]*카드)\]/);
@@ -57,7 +78,11 @@ function extractKrwAmount(text) {
 
 function extractMerchantFromTimeline(text) {
   const m = text.match(/\d{1,2}\/\d{1,2}\s+\d{1,2}:\d{2}\s+([^\n]+)/);
-  return m ? m[1].trim() : null;
+  if (!m) return null;
+  let s = m[1].trim();
+  s = s.replace(/^\(금액\)\s*[\d,]+\s*원\s*/, '');   // 신한체크 "(금액)74,000원" 머리 제거
+  s = s.replace(/\s*누적\s*[\d,]+\s*원\s*$/, '');     // 신한 "누적 345,400원" 꼬리 제거 (인라인일 때만)
+  return s.trim() || null;
 }
 
 function extractMerchantOverseasKb(text) {
