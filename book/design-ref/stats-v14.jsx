@@ -171,7 +171,7 @@ const PubRowV14 = ({ name, authors, books, quotes, rank }) => (
 // ─── SCREEN
 const ScrStatsV14 = () => (
  <div className="bk" style={{ width: 1440, height: 900, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-  <TopBarV15 active="stats" />
+  <TopBarV14 tab="stats" />
   <main style={{ flex: 1, overflow: 'auto' }}>
    <div style={{ padding: '36px 36px 100px' }}>
     {/* Hero title — bigger */}
