@@ -211,7 +211,7 @@ soyoun 토큰: `52cdb054e11608778077461f27d797cb7b98df5845bf95a8` (소연 아이
 (소연 카드 매핑 — 상위 "카드·발신번호 마스터" 섹션 참조. keep GAS `USER_CONFIG['soyoun312@gmail.com'].cardNameMap`도 동일 내용. cardSmsParser의 `CARD_ALIASES`가 raw → 친화명 정규화 처리.)
 
 ### 알려진 한계 (양쪽 사용자 공통)
-- `last_used_at`: Edge Function fire-and-forget update (`index.ts:71` `void`) 가 Deno serverless process 종료로 abort. NULL 유지가 정상. 검증 지표 = today_expenses row 추가 여부.
+- ~~`last_used_at`: Edge Function fire-and-forget update가 Deno serverless process 종료로 abort. NULL 유지가 정상.~~ **2026-05-26 v2 해소** — `await`로 변경 (index.ts:71). 자동화 발화 시 last_used_at 정확 기록. **자동화 발화 여부 server-side 100% 추적 가능**. self-verify: rejected POST 1건 후 NULL → ISO 시각 업데이트 확인 (소연 토큰 2026-05-26 06:27 UTC).
 - PWA 가계부 화면: Realtime 미구현 (아래 "알려진 제약" §1). 새 row 추가 후 화면 반영은 수동 새로고침 필요.
 
 ## 디버깅 절차

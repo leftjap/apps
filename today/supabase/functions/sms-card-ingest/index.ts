@@ -67,8 +67,11 @@ Deno.serve(async (req: Request) => {
   if (!tokenRow) return json(401, { status: 'error', message: 'Invalid token' });
   const owner_id: string = tokenRow.owner_id;
 
-  // last_used_at 갱신 (await 안 하고 fire-and-forget — 실패해도 무시)
-  void sb.from('today_sms_ingest_tokens').update({ last_used_at: new Date().toISOString() }).eq('token', token);
+  // last_used_at 갱신 — await로 변경 (2026-05-26 v2): fire-and-forget이 Deno serverless
+  // process 종료로 abort 되어 항상 NULL 유지되던 spec §154 문제 해소. 자동화 발화 시점 추적 가능.
+  try {
+    await sb.from('today_sms_ingest_tokens').update({ last_used_at: new Date().toISOString() }).eq('token', token);
+  } catch (_) { /* 실패해도 ingest 자체는 진행 */ }
 
   return await handleIngest(sb, owner_id, text, received_at);
 });
