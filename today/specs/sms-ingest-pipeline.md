@@ -241,6 +241,12 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 3. Mac off 시간 ingest 누락 — wake 후 catch-up
 4. iCloud Messages 동기화 지연 — iPhone → chat.db 분~시간 단위
 5. **소연 신한 (~~지금까지 미수집~~)** — 2026-05-26 edge function 경로 검증 완료, 소연 폰 자동화 추가만 남음
+6. **iOS "사용하지 않는 앱 정리"(Offload Unused Apps) 가 단축어 앱을 오프로드 → 모든 자동화 정지** ★ 2026-05-26 발견
+   - 소연 폰에서 단축어 앱이 사라져 있었음(재다운로드로 복구). 이게 05-14 이후 ingest 정지의 진짜 root cause로 추정 — "트리거 부재" 추정보다 정확.
+   - 05/24까지 현대백화점카드 자동화는 작동(DB 2건 증거) → 그 이후 ~05/26 사이에 오프로드 발생한 듯.
+   - **운영 대응**: 폰 `설정 > App Store > 사용하지 않는 앱 정리` **OFF**. 단축어 앱은 백그라운드에서 자동화 트리거 실행에 필요 — 오프로드되면 자동화 무력화.
+   - **재발 감지**: PWA 갭 배너(주력 카드 7일 무수집)가 silent failure 방어선. 단 단축어 앱 자체가 죽으면 모든 카드 동시 정지 → 배너에 여러 카드 동시 노출 패턴 = 단축어 앱 점검 신호.
+   - 참고: [iOS 단축어 오프로드 영향](https://www.tenorshare.com/iphone-fix/shortcuts-not-working-iphone.html), [자동화 비활성화 대응](https://support.apple.com/guide/shortcuts/enable-or-disable-a-personal-automation-apd602971e63/ios)
 
 ## 변경 이력
 
