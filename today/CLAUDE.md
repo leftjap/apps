@@ -24,3 +24,5 @@
 ## SMS 카드 결제 ingest
 
 `specs/sms-ingest-pipeline.md` 참조 — 단축어 spec, iOS 한계, launchd backfill, Edge Function API, 디버깅 절차 모두 거기.
+
+**카드 정보(발신번호·친화명·채널·자동화 매핑)는 spec의 "카드·발신번호 마스터" 섹션이 single source of truth.** 매번 사용자에 묻거나 chat.db 쿼리 금지. 카드 추가/변경 시 (1) 마스터 테이블, (2) `_shared/cardSmsParser.js`의 `CARD_ALIASES`, (3) 자동화 트리거 섹션 셋 다 한 commit으로 갱신.
