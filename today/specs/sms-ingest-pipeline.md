@@ -256,3 +256,4 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 | 2026-05-12 | `0019/0020/0021` 사용자별 매핑 DB 화 + enrichByKind DB 쿼리 전환 |
 | 2026-05-13 | iOS 단축어 dead 진단 (last_used_at NULL). gateway `UNAUTHORIZED_NO_AUTH_HEADER` 발견 — Authorization: Bearer service_role JWT 필수. backfill 스크립트 헤더 보강. launchd 운영 전환. 본 문서 |
 | 2026-05-26 | 소연 신한 미수집 진단. 근본 원인: today-native 신한 수집은 처음부터 작동한 적 없음(0건), keep 수동 import이 stopgap 갭 가려주다 05-14 종료로 노출. fix: edge function 재배포(`50a80d7` 신한 파서 fix 반영), `_shared` deps git 추적, 소연 폰 자동화 #4 (신한 발신번호) 추가 안내. e2e POST→INSERT→PWA 검증 통과 ([스샷](../handoff/verify-shinhan-edge-e2e.png)). spec 검증 기록 정정 + ingest health 임계치 신설 |
+| 2026-05-26 | **단축어 앱 오프로드 발견** — 소연 폰에서 단축어 앱이 사라져 있어 재다운로드. 진짜 root cause 후보: iOS "사용하지 않는 앱 정리"가 단축어 앱 오프로드 → 모든 자동화 정지 (05/24 현대 작동 이후 ~05/26 사이 발생 추정). 알려진 제약 #6 신설, 안내문에 오프로드 방지 단계 추가. 카드·발신번호 마스터 신설(spec 상단) — 1588-3650 = 현대백화점카드 확정 |
