@@ -1,0 +1,119 @@
+{
+  "date": "2026-05-26",
+  "problems": [
+    {
+      "id": "gen-2026-05-26-circ-1",
+      "conceptId": "circ",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 원",
+      "prompt": "지름이 16인 원의 넓이는? (π ≈ 3.14)",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"140\" height=\"156\" viewBox=\"0 0 140 156\" role=\"img\" aria-label=\"지름 16 원\"><circle cx=\"70\" cy=\"70\" r=\"52\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"2\"/><line x1=\"18\" y1=\"70\" x2=\"122\" y2=\"70\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><circle cx=\"70\" cy=\"70\" r=\"2.5\" fill=\"#788c5d\"/><text x=\"70\" y=\"62\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">지름 16</text></svg>",
+        "legend": "지름 16 (반지름 아님 — 함정)"
+      },
+      "answer": "200.96",
+      "accept": [
+        "200.96",
+        "64π"
+      ],
+      "range": [
+        200.46,
+        201.46
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"320.8\" height=\"142\" viewBox=\"0 0 320.8 142\" role=\"img\" aria-label=\"반지름 8 원을 부채꼴로 펴면 가로 πr 세로 r 직사각형 → 넓이 πr²\"><circle cx=\"64\" cy=\"64\" r=\"48\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"64\" y1=\"64\" x2=\"112\" y2=\"64\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"105.6\" y2=\"88\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"88\" y2=\"105.6\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"64\" y2=\"112\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"40\" y2=\"105.6\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"22.4\" y2=\"88\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"16\" y2=\"64\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"22.4\" y2=\"40\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"40\" y2=\"22.4\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"64\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"88\" y2=\"22.4\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"105.6\" y2=\"40\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><text x=\"134\" y=\"69\" font-size=\"18\" fill=\"#8a8475\">→</text><polygon points=\"154,88 166.6,40 179.1,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"179.1,88 191.7,40 204.3,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"204.3,88 216.8,40 229.4,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"229.4,88 242,40 254.5,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"254.5,88 267.1,40 279.7,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"279.7,88 292.2,40 304.8,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"154\" y=\"40\" width=\"150.8\" height=\"48\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"229.4\" y=\"100\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">가로 ≈ πr</text><text x=\"144\" y=\"68\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">r</text><circle cx=\"64\" cy=\"64\" r=\"2\" fill=\"#788c5d\"/></svg>"
+        },
+        "core": "반지름 = 지름 ÷ 2 를 먼저.",
+        "idea": "지름 16을 그대로 쓰면 함정! 먼저 반으로 — 반지름 8. 부채꼴로 펴면 가로 πr·세로 r 직사각형(그림), 넓이 = π × 8² = 64 × 3.14 = 200.96.",
+        "steps": [
+          "반지름 16 ÷ 2 = 8",
+          "8² × 3.14 = 200.96"
+        ],
+        "refresh": "지름÷2 · 제곱 · π",
+        "example": "바퀴·접시 크기는 보통 지름으로 — 반으로.",
+        "think": "주어진 게 지름인지 반지름인지 먼저 확인."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-05-26-circ-2",
+      "conceptId": "circ",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 원",
+      "prompt": "반지름 3인 원의 넓이는? (π ≈ 3.14)",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"140\" height=\"156\" viewBox=\"0 0 140 156\" role=\"img\" aria-label=\"반지름 3 원\"><circle cx=\"70\" cy=\"70\" r=\"52\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"2\"/><line x1=\"70\" y1=\"70\" x2=\"122\" y2=\"70\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><circle cx=\"70\" cy=\"70\" r=\"2.5\" fill=\"#788c5d\"/><text x=\"96\" y=\"62\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">반지름 3</text></svg>",
+        "legend": "반지름 3"
+      },
+      "answer": "28.26",
+      "accept": [
+        "28.26",
+        "9π"
+      ],
+      "range": [
+        27.76,
+        28.76
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"320.8\" height=\"142\" viewBox=\"0 0 320.8 142\" role=\"img\" aria-label=\"반지름 3 원을 부채꼴로 펴면 가로 πr 세로 r 직사각형 → 넓이 πr²\"><circle cx=\"64\" cy=\"64\" r=\"48\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"64\" y1=\"64\" x2=\"112\" y2=\"64\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"105.6\" y2=\"88\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"88\" y2=\"105.6\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"64\" y2=\"112\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"40\" y2=\"105.6\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"22.4\" y2=\"88\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"16\" y2=\"64\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"22.4\" y2=\"40\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"40\" y2=\"22.4\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"64\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"88\" y2=\"22.4\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"105.6\" y2=\"40\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><text x=\"134\" y=\"69\" font-size=\"18\" fill=\"#8a8475\">→</text><polygon points=\"154,88 166.6,40 179.1,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"179.1,88 191.7,40 204.3,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"204.3,88 216.8,40 229.4,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"229.4,88 242,40 254.5,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"254.5,88 267.1,40 279.7,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"279.7,88 292.2,40 304.8,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"154\" y=\"40\" width=\"150.8\" height=\"48\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"229.4\" y=\"100\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">가로 ≈ πr</text><text x=\"144\" y=\"68\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">r</text><circle cx=\"64\" cy=\"64\" r=\"2\" fill=\"#788c5d\"/></svg>"
+        },
+        "core": "πr².",
+        "idea": "원을 부채꼴로 펴면 가로 πr·세로 r 직사각형이 돼요(그림). 넓이 = π × 3² = 9 × 3.14 = 28.26.",
+        "steps": [
+          "3² = 9",
+          "× 3.14 = 28.26"
+        ],
+        "refresh": "제곱 · π(≈3.14)",
+        "example": "반지름만 재면 접시·바퀴·CD 넓이가 바로.",
+        "think": "공식은 '틀' — 반지름만 갈아끼우면 어떤 원이든."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-05-26-circ-3",
+      "conceptId": "circ",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 원",
+      "prompt": "지름이 8인 원의 넓이는? (π ≈ 3.14)",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"140\" height=\"156\" viewBox=\"0 0 140 156\" role=\"img\" aria-label=\"지름 8 원\"><circle cx=\"70\" cy=\"70\" r=\"52\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"2\"/><line x1=\"18\" y1=\"70\" x2=\"122\" y2=\"70\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><circle cx=\"70\" cy=\"70\" r=\"2.5\" fill=\"#788c5d\"/><text x=\"70\" y=\"62\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">지름 8</text></svg>",
+        "legend": "지름 8 (반지름 아님 — 함정)"
+      },
+      "answer": "50.24",
+      "accept": [
+        "50.24",
+        "16π"
+      ],
+      "range": [
+        49.74,
+        50.74
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"320.8\" height=\"142\" viewBox=\"0 0 320.8 142\" role=\"img\" aria-label=\"반지름 4 원을 부채꼴로 펴면 가로 πr 세로 r 직사각형 → 넓이 πr²\"><circle cx=\"64\" cy=\"64\" r=\"48\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"64\" y1=\"64\" x2=\"112\" y2=\"64\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"105.6\" y2=\"88\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"88\" y2=\"105.6\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"64\" y2=\"112\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"40\" y2=\"105.6\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"22.4\" y2=\"88\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"16\" y2=\"64\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"22.4\" y2=\"40\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"40\" y2=\"22.4\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"64\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"88\" y2=\"22.4\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><line x1=\"64\" y1=\"64\" x2=\"105.6\" y2=\"40\" stroke=\"#788c5d\" stroke-width=\"0.8\"/><text x=\"134\" y=\"69\" font-size=\"18\" fill=\"#8a8475\">→</text><polygon points=\"154,88 166.6,40 179.1,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"179.1,88 191.7,40 204.3,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"204.3,88 216.8,40 229.4,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"229.4,88 242,40 254.5,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"254.5,88 267.1,40 279.7,88\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"279.7,88 292.2,40 304.8,88\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"154\" y=\"40\" width=\"150.8\" height=\"48\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"229.4\" y=\"100\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">가로 ≈ πr</text><text x=\"144\" y=\"68\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">r</text><circle cx=\"64\" cy=\"64\" r=\"2\" fill=\"#788c5d\"/></svg>"
+        },
+        "core": "반지름 = 지름 ÷ 2 를 먼저.",
+        "idea": "지름 8을 그대로 쓰면 함정! 먼저 반으로 — 반지름 4. 부채꼴로 펴면 가로 πr·세로 r 직사각형(그림), 넓이 = π × 4² = 16 × 3.14 = 50.24.",
+        "steps": [
+          "반지름 8 ÷ 2 = 4",
+          "4² × 3.14 = 50.24"
+        ],
+        "refresh": "지름÷2 · 제곱 · π",
+        "example": "바퀴·접시 크기는 보통 지름으로 — 반으로.",
+        "think": "주어진 게 지름인지 반지름인지 먼저 확인."
+      },
+      "order_index": 2
+    }
+  ]
+}
