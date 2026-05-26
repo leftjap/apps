@@ -15,6 +15,7 @@ import { Auth } from './services/auth.js';
 import { supabase, storageKey } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { backupSession, restoreSessionIfMissing } from './services/auth-session-backup.js';
+import { markLogin } from './services/auth-diag.js';
 import { Profile } from './services/profile.js';
 import { Entries } from './features/entries.js';
 import { Editor } from './features/editor.js';
@@ -161,6 +162,17 @@ async function bootstrap() {
     navigator.storage.persist()
       .then((granted) => console.info('[main] storage.persist() granted:', granted))
       .catch((e) => console.warn('[main] storage.persist() 실패', e?.message || e));
+    // 사용자 첫 제스처 후 persist 재요청 — iOS grant 휴리스틱이 engagement 에 반응
+    if (typeof window !== 'undefined' && navigator.storage.persisted) {
+      window.addEventListener('pointerdown', async () => {
+        try {
+          if (!(await navigator.storage.persisted())) {
+            const g = await navigator.storage.persist();
+            console.info('[main] storage.persist() retry granted:', g);
+          }
+        } catch { /* noop */ }
+      }, { once: true, passive: true });
+    }
   }
 
   // subscribe-first — supabase-js v2 (GoTrueClient.ts:4037-4088) 가 initializePromise 후
@@ -176,6 +188,7 @@ async function bootstrap() {
     ) {
       if (session) {
         backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
+        markLogin(storageKey); // 진단 마커 (eviction 판별용)
         await handleSession(session);
       } else if (event === 'INITIAL_SESSION') {
         // 부팅 시 토큰 없음 → 백업으로 1회 복원 시도 (성공 시 SIGNED_IN 후속 발화로 재진입)

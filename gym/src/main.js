@@ -54,6 +54,17 @@ if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
   navigator.storage.persist()
     .then((granted) => console.info('[main] storage.persist() granted:', granted))
     .catch((e) => console.warn('[main] storage.persist() 실패', e?.message || e));
+  // 사용자 첫 제스처 후 persist 재요청 — iOS grant 휴리스틱이 engagement 에 반응
+  if (typeof window !== 'undefined' && navigator.storage.persisted) {
+    window.addEventListener('pointerdown', async () => {
+      try {
+        if (!(await navigator.storage.persisted())) {
+          const g = await navigator.storage.persist();
+          console.info('[main] storage.persist() retry granted:', g);
+        }
+      } catch { /* noop */ }
+    }, { once: true, passive: true });
+  }
 }
 
 async function bootstrap() {

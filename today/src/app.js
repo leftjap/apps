@@ -15,6 +15,8 @@
  */
 import mocksHtml from '../mocks/today-mac.html?raw';
 import { Auth } from './services/auth.js';
+import { storageKey } from './services/supabase.js';
+import { mountDiag, unmountDiag } from './services/auth-diag.js';
 import { Queries } from './db/queries.js';
 
 const ROUTES = ['navi', 'fiction', 'blog', 'memo', 'expense', 'admin'];
@@ -39,10 +41,12 @@ export function showLogin() {
   ensureLoginCard();
   if (location.hash !== '#/login') location.hash = '#/login';
   hideInitialLoadingScreen();
+  mountDiag(storageKey).catch(() => {});
 }
 
 export function showAuthenticated() {
   document.body.dataset.authState = 'in';
+  unmountDiag();
   if (!_mocksMounted) {
     injectMocks();
     _mocksMounted = true;

@@ -1,6 +1,7 @@
 import { supabase, storageKey } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { backupSession, restoreSessionIfMissing } from './services/auth-session-backup.js';
+import { markLogin, mountDiag, unmountDiag } from './services/auth-diag.js';
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionHtml from '../mocks/session.html?raw';
@@ -136,6 +137,7 @@ function mount(route) {
   document.body.dataset.route = guarded;
   reExecuteScripts();
   window.scrollTo(0, 0);
+  if (guarded === 'login') mountDiag(storageKey).catch(() => {}); else unmountDiag();
 
   const mountFn = ROUTE_MOUNTS[guarded];
   if (typeof mountFn === 'function') {
@@ -163,7 +165,10 @@ function subscribeAuth() {
   _guard ??= installAuthSessionGuard(supabase);
 
   auth.onAuthStateChange(async (event, session) => {
-    if (session?.user) backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
+    if (session?.user) {
+      backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
+      markLogin(storageKey); // 진단 마커
+    }
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
       const user = session.user;
       if (!auth.isAllowedEmail(user.email)) {

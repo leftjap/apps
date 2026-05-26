@@ -1,6 +1,7 @@
 import { supabase, storageKey } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { backupSession, restoreSessionIfMissing } from './services/auth-session-backup.js';
+import { markLogin, mountDiag, unmountDiag } from './services/auth-diag.js';
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionNewHtml from '../mocks/session-new.html?raw';
@@ -195,6 +196,7 @@ function mount(route) {
   // session.html 의 인라인 분기 (Wave 11.22 후속 b) 는 그대로 유지 — idempotent (두 번 hide 무해).
   hidePvChips();
   window.scrollTo(0, 0);
+  if (route.name === 'login') mountDiag(storageKey).catch(() => {}); else unmountDiag();
 }
 
 // Wave 11.30 — SPA 모드에서 mocks 디버그 chip 일괄 hide.
@@ -222,7 +224,10 @@ function bindAuthEvents() {
   const auth = window.studyAuth;
   _guard ??= installAuthSessionGuard(supabase);
   auth.onAuthStateChange(async (event, session) => {
-    if (session?.user) backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
+    if (session?.user) {
+      backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
+      markLogin(storageKey); // 진단 마커
+    }
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
       const user = session.user;
       if (!auth.isAllowedEmail(user.email)) {
