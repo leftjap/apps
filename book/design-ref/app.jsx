@@ -7,12 +7,14 @@
 // view key → window 에 등록된 화면 컴포넌트 이름
 const ROUTES = {
  feed: 'ScrFeedV14',
+ 'feed-v15': 'ScrFeedV15',
  stats: 'ScrStatsV14',
  thread: 'ScrThreadV14',
  word: 'ScrWordV14',
  day: 'ScrDayV14',
  author: 'ScrAuthorV14',
  book: 'ScrBookV14',
+ 'book-v15': 'ScrBookV15',
  allBooks: 'ScrAllBooksV14',
  allAuthors: 'ScrAllAuthorsV14',
  allPubs: 'ScrAllPubsV14',
@@ -30,7 +32,7 @@ const back = () => { if (_setStack) _setStack(s => (s.length > 1 ? s.slice(0, -1
 const goRoot = (view, params) => { if (_setStack) _setStack([{ view: view || 'feed', params: params || {} }]); };
 
 const BookApp = () => {
- const [stack, setStack] = React.useState([{ view: 'feed', params: {} }]);
+ const [stack, setStack] = React.useState([{ view: 'feed-v15', params: {} }]);
  _setStack = setStack;
  const cur = stack[stack.length - 1];
  const name = ROUTES[cur.view] || ROUTES.feed;
