@@ -41,9 +41,10 @@ function markPendingComment(id) {
 function animateCommentEnter(rowEl) {
   if (!rowEl || !rowEl.classList) return;
   rowEl.classList.add('comment-row--enter');
+  rowEl.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
   const done = () => rowEl.classList?.remove('comment-row--enter');
   rowEl.addEventListener?.('animationend', done, { once: true });
-  setTimeout(done, 600);
+  setTimeout(done, 700);
 }
 
 const TIME_FORMATTER_OPTS = { hour: '2-digit', minute: '2-digit', hour12: false };
@@ -250,12 +251,12 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     /* 사용자 설정 프로필 사진 — 원형 clip. */
     .comment-row__avatar--photo { padding: 0; overflow: hidden; background: var(--hover-bg); }
     .comment-row__avatar--photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    /* 엔터 후 피드백 — 새 버블 슬라이드+페이드 등장 (~220ms). */
+    /* 엔터 후 피드백 — 새 버블 슬라이드+페이드+살짝 over-bounce 등장 (~400ms). */
     @keyframes comment-row-enter {
-      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      from { opacity: 0; transform: translateY(16px) scale(0.92); }
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .comment-row--enter { animation: comment-row-enter 0.22s cubic-bezier(0.22, 1, 0.36, 1); }
+    .comment-row--enter { animation: comment-row-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
     @media (prefers-reduced-motion: reduce) {
       .comment-row--enter { animation: none; }
     }
