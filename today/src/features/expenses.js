@@ -1658,6 +1658,7 @@ export function mountExpensesView(user) {
   bindMonthNavHandlers();
   bindStatsTabHandler();
   refreshSidebarExpenseTotal();
+  refreshIngestGapBanner();
   // Realtime listener — expense 변경 시 사이드바 + 활성 카테고리 화면 자동 갱신
   if (_realtimeUnregister) _realtimeUnregister();
   _realtimeUnregister = Sync.onRealtimeChange((payload) => {
@@ -1672,6 +1673,7 @@ export async function handleRealtimeExpenseChange(payload, doc = document) {
     return { applied: false, reason: 'table_mismatch' };
   }
   try { await refreshSidebarExpenseTotal(doc); } catch (_) {}
+  try { await refreshIngestGapBanner(doc); } catch (_) {}
   if (getCurrentKind(doc) === 'expense') {
     await handleCategoryActive('expense');
     return { applied: true, reason: 'rerendered' };
@@ -1695,6 +1697,93 @@ export async function refreshSidebarExpenseTotal(doc = (typeof document !== 'und
   } catch (e) {
     console.warn('[expenses] refreshSidebarExpenseTotal 실패', e?.message || e);
   }
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// Ingest gap banner — 카드별 자동 수집 끊김 감지 (2026-05-26 신설)
+// 소연 신한 사고 (today-native 미구현, keep stopgap 05-14 종료로 노출) 재발 방지.
+// 주력 카드 (최근 90일 SMS-origin ≥10건) 가 7일 무수집이면 가계부 화면 상단 배너.
+// ───────────────────────────────────────────────────────────────────────────
+
+const INGEST_GAP_DISMISS_KEY = 'today.ingestGapBanner.dismissedAt';
+const INGEST_GAP_THRESHOLD_DAYS = 7;
+const INGEST_GAP_DOMINANT_COUNT = 10;
+const INGEST_GAP_LOOKBACK_DAYS = 90;
+const INGEST_GAP_DISMISS_HOURS = 24;
+
+/** 카드별 SMS-origin 수집 통계 (최근 N일) → 갭 카드 리스트. */
+export async function detectIngestGapCards(now = new Date()) {
+  const lookbackFrom = new Date(now.getTime() - INGEST_GAP_LOOKBACK_DAYS * 86400000).toISOString();
+  const toISO = new Date(now.getTime() + 86400000).toISOString();
+  let rows;
+  try {
+    rows = await Queries.listExpensesByRange(lookbackFrom, toISO);
+  } catch (e) {
+    console.warn('[expenses] ingest gap query 실패:', e?.message || e);
+    return [];
+  }
+  const smsRows = rows.filter((r) => r.source === 'sms' && r.card && r.sms_raw);
+  const byCard = new Map();
+  for (const r of smsRows) {
+    const e = byCard.get(r.card) || { card: r.card, count: 0, maxSpentAt: '' };
+    e.count++;
+    if ((r.spent_at || '') > e.maxSpentAt) e.maxSpentAt = r.spent_at;
+    byCard.set(r.card, e);
+  }
+  const cutoff = new Date(now.getTime() - INGEST_GAP_THRESHOLD_DAYS * 86400000).toISOString();
+  const gaps = [];
+  for (const e of byCard.values()) {
+    if (e.count >= INGEST_GAP_DOMINANT_COUNT && e.maxSpentAt < cutoff) {
+      gaps.push({ card: e.card, lastSpentAt: e.maxSpentAt, count: e.count });
+    }
+  }
+  return gaps;
+}
+
+function _ingestGapDismissedRecently(now = Date.now()) {
+  try {
+    const v = (typeof localStorage !== 'undefined') ? localStorage.getItem(INGEST_GAP_DISMISS_KEY) : null;
+    if (!v) return false;
+    return (now - Number(v)) < INGEST_GAP_DISMISS_HOURS * 3600000;
+  } catch (_) { return false; }
+}
+
+function _injectIngestGapBannerStyles(doc) {
+  if (doc.getElementById('ingestGapBannerStyles')) return;
+  const s = doc.createElement('style');
+  s.id = 'ingestGapBannerStyles';
+  s.textContent = '.ingest-gap-banner{margin:0 0 12px;padding:10px 14px;background:#fff4e0;color:#8a5a00;border:1px solid #f2d27d;border-radius:8px;font-size:13px;line-height:1.5;display:flex;align-items:center;justify-content:space-between;gap:12px}.ingest-gap-banner[hidden]{display:none}.ingest-gap-banner__text{flex:1}.ingest-gap-banner__text strong{font-weight:600}.ingest-gap-banner__dismiss{background:none;border:none;cursor:pointer;color:inherit;font-size:18px;line-height:1;padding:2px 6px;flex-shrink:0}';
+  doc.head.appendChild(s);
+}
+
+/** 갭 검출 → #mainView 최상단에 배너 노출/숨김. 24h dismiss 기억. */
+export async function refreshIngestGapBanner(doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc || !doc.body) return;
+  const mountTarget = doc.getElementById('mainView') || doc.querySelector('main.main') || doc.body;
+  _injectIngestGapBannerStyles(doc);
+  let el = doc.getElementById('ingestGapBanner');
+  if (!el) {
+    el = doc.createElement('div');
+    el.id = 'ingestGapBanner';
+    el.className = 'ingest-gap-banner';
+    el.hidden = true;
+    el.innerHTML = '<span class="ingest-gap-banner__text"></span><button class="ingest-gap-banner__dismiss" aria-label="닫기" type="button">×</button>';
+    if (mountTarget.firstChild) mountTarget.insertBefore(el, mountTarget.firstChild);
+    else mountTarget.appendChild(el);
+    el.querySelector('.ingest-gap-banner__dismiss')?.addEventListener('click', () => {
+      try { localStorage.setItem(INGEST_GAP_DISMISS_KEY, String(Date.now())); } catch (_) {}
+      el.hidden = true;
+    });
+  }
+  if (_ingestGapDismissedRecently()) { el.hidden = true; return; }
+  const gaps = await detectIngestGapCards();
+  if (!gaps.length) { el.hidden = true; return; }
+  const cards = gaps.map((g) => g.card).join(', ');
+  const oldest = gaps.reduce((a, g) => (a < g.lastSpentAt ? a : g.lastSpentAt), gaps[0].lastSpentAt);
+  const daysAgo = Math.max(INGEST_GAP_THRESHOLD_DAYS, Math.floor((Date.now() - new Date(oldest).getTime()) / 86400000));
+  const txt = el.querySelector('.ingest-gap-banner__text');
+  if (txt) txt.innerHTML = '⚠ <strong>' + cards + '</strong> 자동 수집 ' + daysAgo + '일 무이력 — 아이폰 Shortcuts 자동화 점검 필요';
+  el.hidden = false;
 }
 
 // Wave 11.6.6 — popover/popup row 클릭 → 지출 수정 모달 통합 wiring.
@@ -1854,6 +1943,9 @@ export const Expenses = {
   patchOpenMerchantDetailHandler,
   rebuildExpModalCatGrid,
   patchPasteExpenseSMSHandler,
+  // 2026-05-26 — ingest 갭 배너 (소연 신한 사고 재발 방지)
+  detectIngestGapCards,
+  refreshIngestGapBanner,
 };
 
 if (typeof window !== 'undefined') {

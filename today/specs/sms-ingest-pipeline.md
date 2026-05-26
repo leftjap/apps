@@ -130,15 +130,22 @@ soyoun 토큰: `52cdb054e11608778077461f27d797cb7b98df5845bf95a8` (소연 아이
 - `+8215881688` (1588-1688, KB국민카드)
 - `+821063491949` (지오 본인 번호 — 외화·안내 SMS)
 
-**소연 (soyoun312@gmail.com)** — 3개 자동화 (2026-05-15 셋업 검증 완료):
+**소연 (soyoun312@gmail.com)** — 4개 자동화:
 1. **발신번호**: `1588-8900` (삼성), `02-2000-8100` (삼성 해외), `+821097761949` (소연 본인)
-2. **키워드 "현대백화점카드"** — 현대백화점카드 SMS 발신번호 미확보 대체 (소연 사용 127건)
-3. **키워드 "승인"** — 모든 카드 SMS 본문 공통 키워드, 광범위 fallback
+2. **키워드 "현대백화점카드"** — 현대백화점카드 SMS 발신번호 미확보 대체 (소연 사용 127건). **검증 작동** (DB 증거 2026-05-24).
+3. **키워드 "승인"** — 모든 카드 SMS 본문 공통 키워드, 광범위 fallback. **현재 작동 불확실** (DB 증거 부재 — 후술).
+4. **발신번호 `+8215447200`** (신한카드, 2026-05-26 추가) — 신한 체크/Air 모두 커버. 셋업 안내: [`handoff/soyoun-shinhan-automation-setup.md`](../handoff/soyoun-shinhan-automation-setup.md).
 
-**작동 검증** (2026-05-15):
-- 소연 → 본인 테스트 SMS (`[Web발신]\n삼성2737승인 소*연\n1,000원 일시불\n05/15 13:30 단축어테스트`) 전송
-- → today_expenses 자동 INSERT 확인 (amount=1000, merchant="단축어테스트", card="삼성2737")
-- → 단축어/자동화 정상 작동 확정
+**작동 검증 — 2026-05-26 재점검 결과 (이전 2026-05-15 기록 정정):**
+
+| 자동화 | DB 증거 (소연 owner sms_raw IS NOT NULL 행) | 판단 |
+|---|---|---|
+| #1 발신번호 (삼성) | **0건** | 미작동 또는 소연 삼성 사용 빈도 ↓ (삼성→카톡 이전 진행 중) |
+| #2 키워드 현대 | 2건 (2026-05-24) | **작동** |
+| #3 키워드 승인 | **0건** (대신 잡문자 3건 — "난 잔다" 류) | 작동 불확실, broad trigger가 카드 SMS는 놓치고 개인 대화만 잡음 |
+| #4 신한 발신번호 | 셋업 직후 1건 (test, 2026-05-26) — POST→INSERT→PWA 표시 e2e 통과 ([스샷](../handoff/verify-shinhan-edge-e2e.png)) | **edge function·파서·DB·PWA 흐름은 통과**. 자동 트리거는 소연 폰 셋업 후 운영 관찰 필요 |
+
+2026-05-15 기록의 삼성 테스트 행은 현재 DB에 부재 (사후 정리됐거나 자동화 비활성화 가능). "셋업 검증 완료"는 자동 catch가 아니라 수동 단축어 실행 1회 가능성 — **자동 트리거 정상 작동 자체는 #2만 확정**.
 
 **소연 카드 매핑** (keep GAS `USER_CONFIG['soyoun312@gmail.com'].cardNameMap` 인용):
 | Keep 식별자 | 카드명 |
@@ -182,12 +189,26 @@ curl -s -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPAB
 cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functions/_shared/cardSmsParser.js').then(m=>console.log(JSON.stringify(m.parseCardSms('<본문>'),null,2)))"
 ```
 
+## Ingest health 임계치 (silent failure 방지)
+
+2026-05-26 사고 (소연 신한 한 번도 today-native 수집 안 됨, keep 수동 import 05-14 종료로 노출) 재발 방지.
+
+**원칙:** 자동 수집은 silent failure가 자연스러움 — 모니터링 없으면 사용자가 몇 주~몇 달 뒤에야 알게.
+
+**임계치 (초안, 운영 데이터로 조정):**
+- 사용자×카드 단위 — 주력 카드 7일 무수집 시 알림
+- "주력 카드" 판정: 최근 90일 거래 ≥10건
+- 노출: PWA 가계부 화면 상단 배너 (외부 인프라 무, 사용자 동선에 직접 노출)
+
+**§7 단정 정정:** "iOS 메시지 수신 시 자동화는 본문 미전달" 일반 단정은 너무 강함 — 소연 #2 (키워드 현대) 자동화가 본문을 전달해 edge function에 도달함이 DB로 확인됨 (2026-05-24 2건). Apple 문서의 "본문 미전달"은 일부 트리거·iOS 버전 한정 가능성. 자동화 종류별 실제 작동은 케이스별 검증.
+
 ## 알려진 제약
 
 1. Realtime 구독 미구현 (Wave 11.5.4 후행) — PWA 새로고침 필요
-2. iOS 단축어 본문 변수 부재 — Apple 공식 한계
+2. iOS 단축어 본문 변수 부재 — Apple 공식 한계 (위 §7 정정 참조 — 자동화 종류별 다름)
 3. Mac off 시간 ingest 누락 — wake 후 catch-up
 4. iCloud Messages 동기화 지연 — iPhone → chat.db 분~시간 단위
+5. **소연 신한 (~~지금까지 미수집~~)** — 2026-05-26 edge function 경로 검증 완료, 소연 폰 자동화 추가만 남음
 
 ## 변경 이력
 
@@ -196,3 +217,4 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 | 2026-05-08 | `0018_sms_ingest_tokens.sql` 토큰 인증 도입 |
 | 2026-05-12 | `0019/0020/0021` 사용자별 매핑 DB 화 + enrichByKind DB 쿼리 전환 |
 | 2026-05-13 | iOS 단축어 dead 진단 (last_used_at NULL). gateway `UNAUTHORIZED_NO_AUTH_HEADER` 발견 — Authorization: Bearer service_role JWT 필수. backfill 스크립트 헤더 보강. launchd 운영 전환. 본 문서 |
+| 2026-05-26 | 소연 신한 미수집 진단. 근본 원인: today-native 신한 수집은 처음부터 작동한 적 없음(0건), keep 수동 import이 stopgap 갭 가려주다 05-14 종료로 노출. fix: edge function 재배포(`50a80d7` 신한 파서 fix 반영), `_shared` deps git 추적, 소연 폰 자동화 #4 (신한 발신번호) 추가 안내. e2e POST→INSERT→PWA 검증 통과 ([스샷](../handoff/verify-shinhan-edge-e2e.png)). spec 검증 기록 정정 + ingest health 임계치 신설 |
