@@ -94,3 +94,8 @@ export const supabase = _supabase;
 
 /** env 가 정상 설정됐는지 여부. login.html 등에서 안내용. */
 export const isSupabaseConfigured = Boolean(_supabase);
+
+/** auth 토큰 저장 키 (세션 백업 모듈이 별도 백업 키 파생에 사용). AuthClient storageKey 와 동일 식. */
+export const storageKey = SUPABASE_URL
+  ? `sb-${new URL(SUPABASE_URL).hostname.split('.')[0]}-auth-token`
+  : null;

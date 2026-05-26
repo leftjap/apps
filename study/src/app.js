@@ -1,5 +1,6 @@
-import { supabase } from './services/supabase.js';
+import { supabase, storageKey } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
+import { backupSession, restoreSessionIfMissing } from './services/auth-session-backup.js';
 import loginHtml from '../mocks/login.html?raw';
 import homeHtml from '../mocks/home.html?raw';
 import sessionNewHtml from '../mocks/session-new.html?raw';
@@ -221,6 +222,7 @@ function bindAuthEvents() {
   const auth = window.studyAuth;
   _guard ??= installAuthSessionGuard(supabase);
   auth.onAuthStateChange(async (event, session) => {
+    if (session?.user) backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
     if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
       const user = session.user;
       if (!auth.isAllowedEmail(user.email)) {
@@ -254,7 +256,13 @@ function bindAuthEvents() {
         // 이미 다른 라우트 (예: 새로고침 후 라우트 가드 통과) — 재마운트로 db 활성 반영
         mount(current);
       }
+    } else if (event === 'INITIAL_SESSION') {
+      // 부팅 시 토큰 없음 → 백업으로 1회 복원 (성공 시 SIGNED_IN 후속 발화로 재진입)
+      await restoreSessionIfMissing(supabase, storageKey);
     } else if (event === 'SIGNED_OUT') {
+      // 비정상 제거면 백업 복원 우선 (명시 로그아웃은 백업이 이미 폐기됨)
+      const r = await restoreSessionIfMissing(supabase, storageKey);
+      if (r.restored) return;
       const forceSignOut = () => {
         if (parseRoute().name !== 'login') {
           window.location.hash = '#/login';
@@ -265,6 +273,7 @@ function bindAuthEvents() {
       if (_guard) await _guard.handleSignedOutWithRetry(forceSignOut);
       else forceSignOut();
     }
+
   });
 }
 

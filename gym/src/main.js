@@ -51,7 +51,9 @@ if (typeof document !== 'undefined') {
 
 // 홈 화면 설치/PWA 저장소 영속성 요청 (spec §13)
 if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
-  navigator.storage.persist().catch(() => {});
+  navigator.storage.persist()
+    .then((granted) => console.info('[main] storage.persist() granted:', granted))
+    .catch((e) => console.warn('[main] storage.persist() 실패', e?.message || e));
 }
 
 async function bootstrap() {

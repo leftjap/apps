@@ -12,8 +12,9 @@
  * 매번 login 화면 노출 + INITIAL_SESSION 이 whitelist 밖이라 회복 불가 → "자꾸 풀림".
  */
 import { Auth } from './services/auth.js';
-import { supabase } from './services/supabase.js';
+import { supabase, storageKey } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
+import { backupSession, restoreSessionIfMissing } from './services/auth-session-backup.js';
 import { Profile } from './services/profile.js';
 import { Entries } from './features/entries.js';
 import { Editor } from './features/editor.js';
@@ -173,8 +174,20 @@ async function bootstrap() {
       || event === 'TOKEN_REFRESHED'
       || event === 'USER_UPDATED'
     ) {
-      await handleSession(session);
+      if (session) {
+        backupSession(storageKey, session); // 복원용 미러 (rotation OFF 라 refresh 토큰 장수명)
+        await handleSession(session);
+      } else if (event === 'INITIAL_SESSION') {
+        // 부팅 시 토큰 없음 → 백업으로 1회 복원 시도 (성공 시 SIGNED_IN 후속 발화로 재진입)
+        const r = await restoreSessionIfMissing(supabase, storageKey);
+        if (!r.restored) await handleSession(null);
+      } else {
+        await handleSession(session);
+      }
     } else if (event === 'SIGNED_OUT') {
+      // 비정상 제거면 백업으로 복원 (명시 로그아웃은 백업이 이미 폐기돼 복원 안 됨)
+      const r = await restoreSessionIfMissing(supabase, storageKey);
+      if (r.restored) return;
       if (guard) await guard.handleSignedOutWithRetry(showLogin);
       else showLogin();
     }

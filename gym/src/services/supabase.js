@@ -57,3 +57,6 @@ export const supabase = _client;
 
 /** env 가 정상 설정됐는지 여부. login.html 등에서 안내용. */
 export const isSupabaseConfigured = Boolean(_client);
+
+/** auth 토큰 저장 키 (세션 백업 모듈이 별도 백업 키 파생에 사용). */
+export const storageKey = STORAGE_KEY;

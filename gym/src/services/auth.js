@@ -13,8 +13,9 @@
  * dev seed: ensureUserDB 가 import.meta.env.DEV 환경에서만 seedDevSessions 자동 실행.
  *          production 에선 빈 DB 로 시작.
  */
-import { supabase, isSupabaseConfigured } from './supabase.js';
+import { supabase, isSupabaseConfigured, storageKey } from './supabase.js';
 import { markExplicitSignOut } from './auth-session-guard.js';
+import { clearBackup } from './auth-session-backup.js';
 import { createGymDB } from '../db/schema.js';
 import { seedDevSessions } from '../db/seed.js';
 
@@ -125,7 +126,9 @@ async function signOut() {
   }
   // session-guard 의 SIGNED_OUT silent retry 우회 — 명시 logout 은 그대로 로그인 화면으로.
   markExplicitSignOut();
-  const { error } = await supabase.auth.signOut();
+  clearBackup(storageKey); // 명시 로그아웃 — 백업 폐기로 자동복원 부활 차단
+  // scope:'local' — 이 기기/앱만 로그아웃. 전역(global) 은 같은 계정의 타 기기·타 앱 세션까지 폭파.
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) console.error('[auth] signOut 실패', error);
 }
 

@@ -23,7 +23,9 @@ if (typeof window !== 'undefined') {
 // 홈 화면 설치/PWA 저장소 영속성 요청 (spec §4 주석)
 // 실패해도 앱은 정상 동작 — IndexedDB 는 storage pressure 시 삭제 가능하지만 Supabase 동기화가 보조 (Wave 11.13).
 if (typeof navigator !== 'undefined' && navigator.storage?.persist) {
-  navigator.storage.persist().catch(() => {});
+  navigator.storage.persist()
+    .then((granted) => console.info('[main] storage.persist() granted:', granted))
+    .catch((e) => console.warn('[main] storage.persist() 실패', e?.message || e));
 }
 
 /**
