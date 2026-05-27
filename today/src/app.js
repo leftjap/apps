@@ -238,18 +238,18 @@ function injectAuthOverlayStyles() {
       text-align: center;
     }
     .today-login__brand {
-      font-size: 24px; font-weight: 700; color: #141413;
+      font-size: 25px; font-weight: 700; color: #141413;
       margin: 0 0 8px;
     }
     .today-login__hint {
-      font-size: 13px; color: #8a8475;
+      font-size: 14px; color: #8a8475;
       margin: 0 0 24px; line-height: 1.5;
     }
     .today-login__btn {
       width: 100%; padding: 12px 16px;
       background: #ffffff; color: #1f1f1f;
       border: 1px solid #dadce0; border-radius: 10px;
-      font-size: 15px; font-weight: 500;
+      font-size: 16px; font-weight: 500;
       cursor: pointer;
       display: inline-flex; align-items: center; justify-content: center;
       gap: 10px;

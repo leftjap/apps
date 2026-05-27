@@ -145,7 +145,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       border-top: 1px solid var(--line, oklch(92% 0.006 60));
     }
     .doc__comments-header {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 600;
       color: var(--ink-2, oklch(38% 0.008 60));
       margin-bottom: 16px;
@@ -226,7 +226,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row__delete:hover { color: var(--ink-1, oklch(22% 0.008 60)); }
     .comment-row__bubble {
       padding: 10px 14px;
-      font-size: 14px;
+      font-size: 15px;
       line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
@@ -622,7 +622,7 @@ function showToast(message) {
       'position:fixed', 'left:50%', 'bottom:calc(72px + env(safe-area-inset-bottom, 0px))',
       'transform:translateX(-50%) translateY(8px)', 'z-index:10000', 'max-width:80vw',
       'padding:10px 16px', 'border-radius:14px', 'background:var(--ink-1, oklch(22% 0.008 60))',
-      'color:#fff', 'font-size:13px', 'line-height:1.4', 'box-shadow:0 6px 20px rgba(0,0,0,.18)',
+      'color:#fff', 'font-size:14px', 'line-height:1.4', 'box-shadow:0 6px 20px rgba(0,0,0,.18)',
       'opacity:0', 'transition:opacity .18s ease, transform .18s ease', 'pointer-events:none',
       'white-space:nowrap', 'text-align:center',
     ].join(';');

@@ -400,7 +400,7 @@ export function clearExpensesFixture(doc = document) {
   });
   // 타임라인 비우기
   const tl = doc.querySelector('.exp-tl-list');
-  if (tl) tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:14px;">이 달의 거래가 없습니다.</div>';
+  if (tl) tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:15px;">이 달의 거래가 없습니다.</div>';
   // Recents 비우기 (사이드바)
   const list = doc.getElementById('recentsList');
   if (list) list.innerHTML = '';
@@ -1752,7 +1752,7 @@ function _injectIngestGapBannerStyles(doc) {
   if (doc.getElementById('ingestGapBannerStyles')) return;
   const s = doc.createElement('style');
   s.id = 'ingestGapBannerStyles';
-  s.textContent = '.ingest-gap-banner{margin:0 0 12px;padding:10px 14px;background:#fff4e0;color:#8a5a00;border:1px solid #f2d27d;border-radius:8px;font-size:13px;line-height:1.5;display:flex;align-items:center;justify-content:space-between;gap:12px}.ingest-gap-banner[hidden]{display:none}.ingest-gap-banner__text{flex:1}.ingest-gap-banner__text strong{font-weight:600}.ingest-gap-banner__dismiss{background:none;border:none;cursor:pointer;color:inherit;font-size:18px;line-height:1;padding:2px 6px;flex-shrink:0}';
+  s.textContent = '.ingest-gap-banner{margin:0 0 12px;padding:10px 14px;background:#fff4e0;color:#8a5a00;border:1px solid #f2d27d;border-radius:8px;font-size:14px;line-height:1.5;display:flex;align-items:center;justify-content:space-between;gap:12px}.ingest-gap-banner[hidden]{display:none}.ingest-gap-banner__text{flex:1}.ingest-gap-banner__text strong{font-weight:600}.ingest-gap-banner__dismiss{background:none;border:none;cursor:pointer;color:inherit;font-size:19px;line-height:1;padding:2px 6px;flex-shrink:0}';
   doc.head.appendChild(s);
 }
 

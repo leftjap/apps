@@ -256,7 +256,7 @@ export function injectNotifDropdownStyles(doc = document) {
       padding: 10px 12px;
     }
     .notif-dropdown__title {
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--text-strong, #141413);
     }
@@ -293,7 +293,7 @@ export function injectNotifDropdownStyles(doc = document) {
     .notif-dropdown__unread-dot.is-read { visibility: hidden; }
     .notif-dropdown__body { flex: 1; min-width: 0; }
     .notif-dropdown__preview {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text, #3d3929);
       overflow: hidden;
       text-overflow: ellipsis;

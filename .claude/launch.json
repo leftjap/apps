@@ -6,6 +6,19 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "5180", "--directory", "/Users/gio_c/apps/book/design-ref", "--bind", "127.0.0.1"],
       "port": 5180
+    },
+    {
+      "name": "today-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "cwd": "/Users/gio_c/apps/today",
+      "port": 5175
+    },
+    {
+      "name": "today-mocks",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8085", "--directory", "/Users/gio_c/apps/today", "--bind", "127.0.0.1"],
+      "port": 8085
     }
   ]
 }

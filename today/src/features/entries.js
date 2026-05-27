@@ -543,7 +543,7 @@ function injectEditorStyles() {
       border: 0;
       text-align: left;
       padding: var(--sp-2, 8px) var(--sp-3, 12px);
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 500;
       color: var(--ink-2, #38392c);
       border-radius: var(--r-sm, 8px);
@@ -1036,6 +1036,83 @@ function installPasteHandler() {
     }
   }, true);
   _pasteHandlerInstalled = true;
+}
+
+// Wave 12 — drop 핸들러: 외부 drag-drop 우회 차단. paste 핸들러와 동일 plaintext/image 강제.
+//   dragover preventDefault 없이는 drop 이벤트 발화 안 함 (브라우저 기본 동작 막기 위해).
+let _dropHandlerInstalled = false;
+function installDropHandler() {
+  if (_dropHandlerInstalled) return;
+  if (typeof document === 'undefined') return;
+  document.addEventListener('dragover', (e) => {
+    const target = e.target;
+    if (!target || !target.closest) return;
+    if (!target.closest('.doc__h1') && !target.closest('.doc__body')) return;
+    e.preventDefault();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  }, true);
+  document.addEventListener('drop', async (e) => {
+    const target = e.target;
+    if (!target || !target.closest) return;
+    if (!target.closest('.doc__h1') && !target.closest('.doc__body')) return;
+    const dt = e.dataTransfer;
+    if (!dt) return;
+    const isBody = !!target.closest('.doc__body');
+    if (isBody && dt.files && dt.files.length > 0) {
+      for (const file of dt.files) {
+        if (file.type && file.type.startsWith('image/')) {
+          e.preventDefault();
+          const result = await compressImage(file);
+          if (!result?.ok) {
+            console.warn('[entries] drop 이미지 압축 실패:', result?.reason || 'unknown');
+            return;
+          }
+          let imgSrc = result.dataUrl;
+          try {
+            const upload = await uploadImage(result.dataUrl, { user_id: _currentUser?.id });
+            if (upload?.ok && upload.url) imgSrc = upload.url;
+            else console.warn('[entries] drop Storage 업로드 실패, dataUrl fallback:', upload?.reason);
+          } catch (err) {
+            console.warn('[entries] drop uploadImage 예외:', err?.message || err);
+          }
+          try {
+            document.execCommand('insertImage', false, imgSrc);
+          } catch (err) {
+            console.warn('[entries] drop insertImage 실패:', err?.message || err);
+          }
+          return;
+        }
+      }
+    }
+    e.preventDefault();
+    const text = dt.getData('text/plain') || dt.getData('text') || '';
+    if (!text) return;
+    if (isBody) {
+      const trimmed = text.trim();
+      if (
+        /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?.*)?$/i.test(trimmed) ||
+        /^https?:\/\/(images\.unsplash\.com|drive\.google\.com\/thumbnail)/i.test(trimmed)
+      ) {
+        try {
+          document.execCommand('insertImage', false, trimmed);
+          return;
+        } catch (err) {
+          console.warn('[entries] drop 이미지 URL insertImage 실패:', err?.message || err);
+        }
+      }
+    }
+    try {
+      document.execCommand('insertText', false, text);
+    } catch (_) {
+      const sel = window.getSelection?.();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(text));
+      range.collapse(false);
+    }
+  }, true);
+  _dropHandlerInstalled = true;
 }
 
 let _newDocHandlerInstalled = false;
@@ -2383,6 +2460,7 @@ export function mountEntriesView(user) {
   installNewDocHandler();
   installEditorInput();
   installPasteHandler();
+  installDropHandler();
   installShareToggleHandler();
   installDocMoreActionHandler();
   annotateEditToolbar();
