@@ -1588,19 +1588,19 @@ function classifyBlockState(block, isCurrent) {
 
 /**
  * 진행도 텍스트 — current/hold/done 별 spec §6-8 footer nav 표현.
- *  - current : "·N/M" (현재 set / 총)
- *  - hold    : "·N/M"
- *  - done    : "·N세트 ✓" 의 N 부분 (✓ 는 별도 prefix span 으로 렌더)
+ *  - current : "N/M" (현재 set / 총)
+ *  - hold    : "N/M"
+ *  - done    : "N세트 ✓" 의 N 부분 (✓ 는 별도 prefix span 으로 렌더)
  */
 function blockProgressText(block, state) {
   if (!block || block.type !== 'single') return '';
   const sets = Array.isArray(block.sets) ? block.sets : [];
   const total = sets.length;
-  if (state === 'done') return `·${total}세트`;
+  if (state === 'done') return `${total}세트`;
   if (state === 'current' || state === 'hold') {
     const cur = sets.findIndex((s) => !s.done);
     const num = cur === -1 ? total : cur + 1;
-    return `·${num}/${total}`;
+    return `${num}/${total}`;
   }
   return '';
 }
@@ -1657,7 +1657,15 @@ function renderFooterPills(doc, session, currentBlock) {
     if (pillsEl) pillsEl.innerHTML = '';
     return;
   }
-  const html = session.blocks.map((block, i) => {
+  // 완료된 운동 (finishedAt) 을 완료 순서대로 좌측 정렬.
+  // 원본 인덱스는 유지 (blockIdx — click·hold 핸들러가 session.blocks[idx] 참조).
+  const entries = session.blocks.map((block, i) => ({ block, i }));
+  const done = entries
+    .filter(({ block }) => block && block.type === 'single' && Number.isFinite(block.finishedAt))
+    .sort((a, b) => (a.block.finishedAt || 0) - (b.block.finishedAt || 0));
+  const rest = entries.filter(({ block }) => !block || block.type !== 'single' || !Number.isFinite(block.finishedAt));
+  const ordered = [...done, ...rest];
+  const html = ordered.map(({ block, i }) => {
     if (!block || block.type !== 'single') return ''; // 서킷 폐기 — non-single graceful skip
     const isCurrent = block === currentBlock;
     const state = classifyBlockState(block, isCurrent);

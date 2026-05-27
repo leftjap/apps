@@ -19,6 +19,13 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "8085", "--directory", "/Users/gio_c/apps/today", "--bind", "127.0.0.1"],
       "port": 8085
+    },
+    {
+      "name": "gym-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
+      "cwd": "/Users/gio_c/apps/gym",
+      "port": 5176
     }
   ]
 }

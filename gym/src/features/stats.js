@@ -711,9 +711,9 @@ export function summarizeExerciseFrequency(sessions, getBuiltin) {
     .sort((a, b) => b.setCount - a.setCount);
 }
 
-/** 종목 treemap 렌더 — 박스 면적 ∝ 빈도, 색 = 부위별 (PART_META).
- *  단순 flex-wrap grid: 박스 flex-grow = setCount, 높이 = setCount 비례 (min/max bound).
- *  사용자가 한 눈에 가장 자주 한 운동 = 가장 큰 박스, 부위 분포 = 색 면적.
+/** 종목 빈도 list 렌더 — 모바일 친화 행 단위 리스트.
+ *  각 row: 부위 색 점 + 종목명 + setCount + 가로 막대 (빈도 비례 fill).
+ *  treemap 면적 표현은 모바일 viewport 에서 가독성 떨어져 폐기.
  */
 export function applyExerciseFrequencyToDom(rows, doc) {
   if (!doc) return;
@@ -728,16 +728,16 @@ export function applyExerciseFrequencyToDom(rows, doc) {
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
-  const max = rows[0].setCount;
+  const max = rows[0].setCount || 1;
   const html = rows.map((r) => {
-    const ratio = r.setCount / max;
-    // 박스 크기 = 빈도 비례. min 90px, max 240px 너비.
-    const w = Math.round(90 + ratio * 150);
-    const h = Math.round(70 + ratio * 60);
-    const fontSize = ratio >= 0.7 ? 18 : ratio >= 0.4 ? 16 : 14;
-    return `<div style="flex:0 0 ${w}px;height:${h}px;background:${r.color};border-radius:10px;padding:12px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;">`
-      + `<div class="kr" style="font-size:${fontSize}px;font-weight:600;color:#fff;line-height:1.2;">${escapeHtml(r.name)}</div>`
-      + `<div class="num" style="font-size:13px;color:rgba(255,255,255,0.85);font-weight:500;">${r.setCount}<span class="kr" style="font-size:11px;margin-left:2px;opacity:0.7;">세트</span></div>`
+    const pct = Math.max(4, Math.round((r.setCount / max) * 100));
+    return `<div class="ex-freq-row">`
+      + `<div class="ex-freq-head">`
+        + `<span class="ex-freq-dot" style="background:${r.color};"></span>`
+        + `<span class="ex-freq-name kr">${escapeHtml(r.name)}</span>`
+        + `<span class="ex-freq-count num">${r.setCount}<span class="kr">세트</span></span>`
+      + `</div>`
+      + `<div class="ex-freq-bar"><span class="ex-freq-fill" style="width:${pct}%;background:${r.color};"></span></div>`
       + `</div>`;
   }).join('');
   treemapEl.insertAdjacentHTML('beforeend', html);
@@ -823,6 +823,7 @@ export function summarizeMuscles(sessions, getBuiltin) {
  */
 export function applyMusclesToSilhouette(muscles, doc) {
   if (!doc || !Array.isArray(muscles)) return;
+  const BASE = 'rgba(212,165,154,0.22)'; // 무자극 인체 살색 톤
   const max = Math.max(0, ...muscles.map((m) => Number(m.score) || 0));
   const scoreMap = new Map(muscles.map((m) => [m.muscleKey, Number(m.score) || 0]));
   const paths = doc.querySelectorAll?.('[data-muscle]') || [];
@@ -830,15 +831,12 @@ export function applyMusclesToSilhouette(muscles, doc) {
     const key = el.getAttribute('data-muscle');
     const s = scoreMap.get(key) || 0;
     if (max === 0 || s === 0) {
-      el.setAttribute('fill', 'rgba(217,119,87,0)');
+      el.setAttribute('fill', BASE);
     } else {
       const ratio = s / max;
-      const alpha = 0.35 + ratio * 0.50;
+      const alpha = 0.45 + ratio * 0.45;
       el.setAttribute('fill', `rgba(217,119,87,${alpha.toFixed(2)})`);
     }
-    // mix-blend-mode multiply + filter blur — 사각형 윤곽 흐림 + silhouette 외곽 너머 새지 않음
-    if (!el.style.mixBlendMode) el.style.mixBlendMode = 'multiply';
-    if (!el.style.filter) el.style.filter = 'blur(8px)';
   });
 }
 

@@ -25,13 +25,22 @@
       /* PWA full-screen override — mocks/*.html 의 시안 액자 (phone wrapper 360x740 / body padding 24 / 베이지 배경) 를
          실 디바이스 viewport 풀스크린으로 덮어쓰기. app.js 의 injectHeadAssets 가 mocks <style> 을 inject 한 뒤에
          이 inline 이 적용되도록 index.html 의 <style> 은 head 마지막에 위치. !important 로 보장. */
-      html, body { margin: 0 !important; padding: 0 !important; min-height: 100vh; background: #0c0a08 !important; }
+      html, body {
+        margin: 0 !important; padding: 0 !important;
+        height: 100dvh !important;
+        background: #0c0a08 !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
+        -webkit-overflow-scrolling: auto;
+        position: fixed; inset: 0;
+      }
       .phone {
         width: 100vw !important;
-        height: 100vh !important;
-        min-height: 100dvh;
+        height: 100dvh !important;
         border-radius: 0 !important;
         box-shadow: none !important;
+        overflow: hidden !important;
+        overscroll-behavior: none !important;
       }
       .phone-notch, .phone-home, .phone-clock, .phone-batt { display: none !important; }
       .phone-content {
