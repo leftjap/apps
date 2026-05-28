@@ -140,8 +140,9 @@ export function rowToMockDoc(row, now = new Date()) {
  * #recentsList 를 Dexie rows 로 재구성. rows.length === 0 시 no-op (mocks fixture 보존).
  * mocks renderRecents (today-mac.html L3778-3783) 의 HTML 패턴 답습.
  */
-// 리센츠 인라인 댓글 카운트 아이콘 — 디자이너 시안 §1-② `💬 N` 그대로 (사용자 결정 2026-05-28).
-const CHAT_BUBBLE_ICON = '💬';
+// 리센츠 인라인 댓글 카운트 아이콘 — 시안 HTML 직접 인용 (Lucide message-circle, 11×11 fill).
+// 시안 src: shared.jsx:1084 `<svg width=11 height=11 viewBox=0 0 24 24 fill=currentColor>`.
+const CHAT_BUBBLE_SVG = '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.3A8 8 0 1 1 21 12z"/></svg>';
 
 export async function renderRecentsFromRows(kind, rows, doc = document) {
   const list = doc.getElementById('recentsList');
@@ -164,7 +165,7 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
     const labelHtml = shareLabel ? `<span class="recent-share">${escapeHtml(shareLabel)}</span>` : '';
     const n = countMap.get(r.id) || 0;
     const countHtml = n > 0
-      ? `<span class="recent-comment-count">${CHAT_BUBBLE_ICON} ${n}</span>`
+      ? `<span class="recent-comment-count">${CHAT_BUBBLE_SVG}${n}</span>`
       : '';
     return `<div class="sb__item sb__item--recent" data-doc-id="${id}"><span class="sb__item__group"><span class="sb__item__title">${title}</span>${countHtml}</span>${labelHtml}</div>`;
   }).join('');

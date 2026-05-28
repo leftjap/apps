@@ -310,15 +310,11 @@
     gap: 3px;
     font-family: var(--font-mono);
     font-size: 11px;
-    color: var(--ink-3);
+    color: var(--ink-4);          /* 시안 rgb(168,165,159) */
   }
   .sb__item--recent .recent-comment-count svg {
-    width: 12px;
-    height: 12px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 1.6;
-    stroke-linejoin: round;
+    /* 시안 정합 — width/height/fill 은 인라인 attr (11×11 currentColor) */
+    flex-shrink: 0;
   }
   /* 공유자 칩 (소연/지오) — DESIGN.md §6 r-pill (crail-soft 배경 + crail-deep 텍스트) */
   .sb__item--recent .recent-share:not(.recent-share--amount):not(.recent-share--year) {
