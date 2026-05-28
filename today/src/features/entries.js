@@ -140,8 +140,8 @@ export function rowToMockDoc(row, now = new Date()) {
  * #recentsList 를 Dexie rows 로 재구성. rows.length === 0 시 no-op (mocks fixture 보존).
  * mocks renderRecents (today-mac.html L3778-3783) 의 HTML 패턴 답습.
  */
-// 리센츠 인라인 댓글 카운트용 말풍선 — 12×12 stroke (DESIGN.md "Emoji UI 라벨 금지" 준수).
-const CHAT_BUBBLE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H9l-4 4z"/></svg>';
+// 리센츠 인라인 댓글 카운트 아이콘 — 디자이너 시안 §1-② `💬 N` 그대로 (사용자 결정 2026-05-28).
+const CHAT_BUBBLE_ICON = '💬';
 
 export async function renderRecentsFromRows(kind, rows, doc = document) {
   const list = doc.getElementById('recentsList');
@@ -164,7 +164,7 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
     const labelHtml = shareLabel ? `<span class="recent-share">${escapeHtml(shareLabel)}</span>` : '';
     const n = countMap.get(r.id) || 0;
     const countHtml = n > 0
-      ? `<span class="recent-comment-count">${CHAT_BUBBLE_SVG}${n}</span>`
+      ? `<span class="recent-comment-count">${CHAT_BUBBLE_ICON} ${n}</span>`
       : '';
     return `<div class="sb__item sb__item--recent" data-doc-id="${id}"><span class="sb__item__group"><span class="sb__item__title">${title}</span>${countHtml}</span>${labelHtml}</div>`;
   }).join('');
