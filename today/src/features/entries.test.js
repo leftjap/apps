@@ -153,10 +153,10 @@ describe('renderRecentsFromRows — partner 라벨 owner_id 기반 (2026-05-05)'
   }
   afterEach(() => __setCurrentUserForTest(null));
 
-  it('소연 (ME) 컨텍스트 — owner=GIO 글에 지오 라벨 / 본인 글 라벨 없음', () => {
+  it('소연 (ME) 컨텍스트 — owner=GIO 글에 지오 라벨 / 본인 글 라벨 없음', async () => {
     __setCurrentUserForTest({ id: SOYOUN });
     const { list, doc } = makeFakeDoc();
-    renderRecentsFromRows('navi', [
+    await renderRecentsFromRows('navi', [
       { id: 'a', title: '내 글', kind: 'soyoun_navi', owner_id: SOYOUN },
       { id: 'b', title: '지오 글', kind: 'navi', owner_id: GIO },
     ], doc);
@@ -164,10 +164,10 @@ describe('renderRecentsFromRows — partner 라벨 owner_id 기반 (2026-05-05)'
     expect(list.innerHTML).not.toContain('소연</span>');
   });
 
-  it('지오 (ME) 컨텍스트 — owner=SOYOUN 글에 소연 라벨', () => {
+  it('지오 (ME) 컨텍스트 — owner=SOYOUN 글에 소연 라벨', async () => {
     __setCurrentUserForTest({ id: GIO });
     const { list, doc } = makeFakeDoc();
-    renderRecentsFromRows('navi', [
+    await renderRecentsFromRows('navi', [
       { id: 'a', title: '내 글', kind: 'navi', owner_id: GIO },
       { id: 'b', title: '소연 글', kind: 'soyoun_navi', owner_id: SOYOUN },
       // 잔흔 케이스 — owner=소연 + kind=navi (Keep partner-sync) → 소연 라벨

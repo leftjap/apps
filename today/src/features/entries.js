@@ -140,22 +140,33 @@ export function rowToMockDoc(row, now = new Date()) {
  * #recentsList 를 Dexie rows 로 재구성. rows.length === 0 시 no-op (mocks fixture 보존).
  * mocks renderRecents (today-mac.html L3778-3783) 의 HTML 패턴 답습.
  */
-export function renderRecentsFromRows(kind, rows, doc = document) {
+// 리센츠 인라인 댓글 카운트용 말풍선 — 12×12 stroke (DESIGN.md "Emoji UI 라벨 금지" 준수).
+const CHAT_BUBBLE_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14v10H9l-4 4z"/></svg>';
+
+export async function renderRecentsFromRows(kind, rows, doc = document) {
   const list = doc.getElementById('recentsList');
   if (!list) return false;
   if (!rows || !rows.length) return false;
-  // mocks today-mac.html L3781 답습 — partner 작성 글에 share 라벨 (예: '소연').
-  // 사용자 의도: navi 탭 합집합 (본인 + 파트너 is_shared) recents 안에서 라벨로 작성자 구분.
-  // 2026-05-04 — Keep import 후 N1 (사이드바 list 5건 limit 으로 import 글 가시성 0) 해소: 30 으로 확대.
-  // 2026-05-05 — owner_id 기반 라벨 (kind 무관). 옛 partner-sync 잔흔 (owner=소연+kind=navi) 도 정확히 '소연' 라벨.
   const userId = _currentUser?.id || null;
-  const docsHtml = rows.slice(0, 30).map((r) => {
+  const visible = rows.slice(0, 30);
+  // 댓글 수 batch 조회 — Dexie 1회 (N+1 회피).
+  let countMap = new Map();
+  try {
+    countMap = await Queries.countCommentsByEntries(visible.map((r) => r.id));
+  } catch (_) {
+    /* Dexie 미초기화 등 — 카운트 생략하고 렌더 계속 */
+  }
+  const docsHtml = visible.map((r) => {
     const id = escapeHtml(r.id);
     const title = escapeHtml(r.title || '제목 없음');
     const isPartner = r.owner_id && userId && r.owner_id !== userId;
     const shareLabel = isPartner ? USER_ID_TO_DISPLAY_NAME[r.owner_id] || '' : '';
-    const labelHtml = shareLabel ? `<span class="recent-share">${shareLabel}</span>` : '';
-    return `<div class="sb__item sb__item--recent" data-doc-id="${id}">${title}${labelHtml}</div>`;
+    const labelHtml = shareLabel ? `<span class="recent-share">${escapeHtml(shareLabel)}</span>` : '';
+    const n = countMap.get(r.id) || 0;
+    const countHtml = n > 0
+      ? `<span class="recent-comment-count">${CHAT_BUBBLE_SVG}${n}</span>`
+      : '';
+    return `<div class="sb__item sb__item--recent" data-doc-id="${id}"><span class="sb__item__title">${title}</span>${countHtml}${labelHtml}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
   ensureRecentsMore(kind, doc);
@@ -460,7 +471,7 @@ async function handleCategoryActive(kind) {
     const list = await fetchEntriesForCategory(kind);
     console.info(`[entries] kind=${kind} count=${list.length}`);
     if (list.length > 0) {
-      renderRecentsFromRows(kind, list);
+      await renderRecentsFromRows(kind, list);
       // mount 직후 deep link 로드 진행 중이면 첫 글 자동 표시 skip — 라우터가 deep link 글 로드 담당.
       // _deepLinkInProgress 가 false (사용자 카테고리 click 등) 면 항상 첫 글 표시.
       if (!_deepLinkInProgress) renderDocFromRow(list[0]);
@@ -651,7 +662,7 @@ export async function saveArticle(article, user, kind) {
       // Wave 11.5.11 — 새 글 첫 저장 후 recents 만 재로드 (mainView article 은 유지 — 사용자 입력 중 보존)
       try {
         const list = await fetchEntriesForCategory(kind);
-        if (list.length > 0) renderRecentsFromRows(kind, list);
+        if (list.length > 0) await renderRecentsFromRows(kind, list);
       } catch (_) {
         /* recents 갱신 실패는 저장 자체 실패 아님 — 무시 */
       }
@@ -660,7 +671,7 @@ export async function saveArticle(article, user, kind) {
       // Wave 11.6.6 — 제목/본문 update 시에도 Recents 즉시 갱신 (정렬·제목 텍스트 반영)
       try {
         const list = await fetchEntriesForCategory(kind);
-        if (list.length > 0) renderRecentsFromRows(kind, list);
+        if (list.length > 0) await renderRecentsFromRows(kind, list);
       } catch (_) {
         /* recents 갱신 실패는 저장 자체 실패 아님 — 무시 */
       }
@@ -903,7 +914,7 @@ export function scheduleRecentsRefresh(kind, doc = document) {
     _recentsRefreshTimer = null;
     try {
       const list = await fetchEntriesForCategory(kind);
-      renderRecentsFromRows(kind, list, doc);
+      await renderRecentsFromRows(kind, list, doc);
     } catch (e) {
       console.warn('[entries] recents refresh 실패:', e?.message || e);
     }

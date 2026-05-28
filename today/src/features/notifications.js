@@ -209,7 +209,8 @@ function escapeHtml(s) {
 /** 알림 kind → 행 라벨. entry_unshared 등 background kind 는 라벨 없음(드롭다운 미표시). */
 const NOTIF_KIND_LABEL = Object.freeze({ new_comment: '댓글', new_post: '새 글' });
 
-/** notif row → HTML 문자열. kind 라벨 + comment_id(댓글 딥링크용) 포함. */
+/** notif row → HTML 문자열. kind 라벨 + comment_id(댓글 딥링크용) 포함.
+ *  그룹 카드 내부 stack-row 로도 사용. data-* 어트리뷰트는 위임 핸들러 호환 위해 유지. */
 export function buildNotifRowHtml(notif, now = new Date()) {
   const id = escapeHtml(notif.id);
   const preview = escapeHtml(notif.preview || '(미리보기 없음)');
@@ -222,6 +223,36 @@ export function buildNotifRowHtml(notif, now = new Date()) {
     ? `<span class="notif-dropdown__kind notif-dropdown__kind--${escapeHtml(kind)}">${labelText}</span>`
     : '';
   return `<div class="notif-dropdown__row" data-notif-id="${id}" data-entry-id="${escapeHtml(notif.entry_id || '')}" data-comment-id="${commentId}" data-kind="${escapeHtml(kind)}"><span class="notif-dropdown__unread-dot${isRead ? ' is-read' : ''}"></span><div class="notif-dropdown__body"><div class="notif-dropdown__preview">${kindLabel}${preview}</div><div class="notif-dropdown__time">${time}</div></div></div>`;
+}
+
+/** entry_id 단위로 notif 그룹핑. 그룹 정렬: latest_at desc / 그룹 내: created_at desc. */
+export function groupNotifsByEntry(notifs) {
+  const groups = new Map();
+  for (const n of notifs || []) {
+    const key = n.entry_id || `__no_entry__:${n.id}`;
+    if (!groups.has(key)) {
+      groups.set(key, { entry_id: n.entry_id || null, latest_at: n.created_at || '', notifs: [] });
+    }
+    const g = groups.get(key);
+    g.notifs.push(n);
+    if ((n.created_at || '') > g.latest_at) g.latest_at = n.created_at || '';
+  }
+  for (const g of groups.values()) {
+    g.notifs.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  }
+  return [...groups.values()].sort((a, b) => (b.latest_at || '').localeCompare(a.latest_at || ''));
+}
+
+/** 그룹 카드 HTML — head(글 제목 + #kind_number) + N개 stack-row. entryRow 없으면 폴백. */
+export function buildNotifGroupHtml(group, entryRow, now = new Date()) {
+  const entryId = escapeHtml(group.entry_id || '');
+  const title = escapeHtml(entryRow?.title || '(글)');
+  const num = entryRow?.kind_number != null
+    ? `<span class="notif-dropdown__group-num">#${escapeHtml(String(entryRow.kind_number))}</span>`
+    : '';
+  const hasUnread = group.notifs.some((n) => !n.read_at);
+  const rows = group.notifs.map((n) => buildNotifRowHtml(n, now)).join('');
+  return `<div class="notif-dropdown__group${hasUnread ? ' has-unread' : ''}" data-entry-id="${entryId}"><button class="notif-dropdown__group-head" data-entry-id="${entryId}" type="button"><span class="notif-dropdown__group-title">${title}</span>${num}</button>${rows}</div>`;
 }
 
 /** 드롭다운 CSS 인라인 주입 (idempotent). */
@@ -336,6 +367,49 @@ export function injectNotifDropdownStyles(doc = document) {
       outline-offset: 2px;
       transition: outline 200ms;
     }
+    /* 글 단위 그룹 카드 (entry_id 기준 묶음) */
+    .notif-dropdown__group {
+      border-bottom: 1px solid var(--border, #e8e4dc);
+    }
+    .notif-dropdown__group:last-child { border-bottom: 0; }
+    .notif-dropdown__group.has-unread {
+      box-shadow: inset 2px 0 0 var(--accent, #d97757);
+    }
+    .notif-dropdown__group-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      background: transparent;
+      border: 0;
+      padding: 8px 12px 4px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .notif-dropdown__group-head:hover {
+      background: var(--bg-warm, #f5f0ea);
+    }
+    .notif-dropdown__group-title {
+      flex: 1;
+      min-width: 0;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-strong, #141413);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .notif-dropdown__group-num {
+      flex-shrink: 0;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 11px;
+      color: var(--text-muted, #8a8475);
+    }
+    .notif-dropdown__group .notif-dropdown__row {
+      padding-left: 24px;
+      padding-top: 6px;
+      padding-bottom: 6px;
+    }
   `;
   doc.head.appendChild(style);
   return true;
@@ -356,8 +430,8 @@ export function injectNotifDropdown(doc = document) {
   return true;
 }
 
-/** 드롭다운 list 영역에 notifs 렌더 (빈 상태 포함). */
-export function renderNotifDropdown(notifs, doc = document) {
+/** 드롭다운 list 영역에 notifs 렌더 (빈 상태 포함). entry_id 기준 그룹 카드 + 글 제목/번호 batch fetch. */
+export async function renderNotifDropdown(notifs, doc = document) {
   const list = doc.getElementById('notifDropdownList');
   if (!list) return false;
   // unread 0 일 때 "모두 읽음" 버튼 hide — 라벨처럼 보여 헷갈리는 UX 해소
@@ -371,8 +445,15 @@ export function renderNotifDropdown(notifs, doc = document) {
     list.innerHTML = '<div class="notif-dropdown__empty">새 알림 없음</div>';
     return true;
   }
+  const groups = groupNotifsByEntry(notifs);
+  // 글 제목 + kind_number batch fetch — getEntry 는 Dexie 로컬, 미pull/삭제는 null fallback
+  const entryRows = await Promise.all(
+    groups.map((g) => (g.entry_id
+      ? Queries.getEntry(g.entry_id).catch(() => null)
+      : Promise.resolve(null))),
+  );
   const now = new Date();
-  list.innerHTML = notifs.map((n) => buildNotifRowHtml(n, now)).join('');
+  list.innerHTML = groups.map((g, i) => buildNotifGroupHtml(g, entryRows[i], now)).join('');
   return true;
 }
 
@@ -389,7 +470,7 @@ export async function openNotifDropdown(doc = document) {
     console.warn('[notifications] listNotifications 실패', e?.message || e);
     notifs = [];
   }
-  renderNotifDropdown(notifs, doc);
+  await renderNotifDropdown(notifs, doc);
   dropdown.removeAttribute('hidden');
   // Wave 11.6.8c — popover 위치 동적 계산 (button rect 기반, 사이드바 외부 우측 펼침)
   // 사용자 보고: sb__top absolute right:12px 으로 사이드바 안에 그려져 좌측 잘림. fixed + bell button 우측 정렬로 viewport 안.
@@ -507,7 +588,7 @@ export async function handleNotifClick(notif, doc) {
     try {
       const list = await Entries.fetchEntriesForCategory(tabKind);
       if (list.length > 0) {
-        Entries.renderRecentsFromRows(tabKind, list, doc);
+        await Entries.renderRecentsFromRows(tabKind, list, doc);
       }
     } catch (e) {
       console.warn('[notifications] fetchEntries 실패', e?.message || e);
@@ -587,7 +668,7 @@ export async function markAllReadAndRefresh(doc = document) {
     const dropdown = doc.getElementById(NOTIF_DROPDOWN_ID);
     if (dropdown && !dropdown.hasAttribute('hidden')) {
       const notifs = await Queries.listNotifications(_currentUser.id);
-      renderNotifDropdown(notifs, doc);
+      await renderNotifDropdown(notifs, doc);
     }
     return { ok: true, cleared };
   } catch (e) {
@@ -614,6 +695,29 @@ export function installBellClickHandler(doc = document) {
       e.preventDefault();
       e.stopPropagation();
       markAllReadAndRefresh(doc).catch((err) => console.warn('[notifications] markAll 실패', err?.message || err));
+      return;
+    }
+    // 그룹 헤더 클릭 → 해당 entry 로만 이동 (comment_id 제외 — scrollToNotifComment 가드로 댓글 스크롤 없음)
+    const groupHead = e.target.closest && e.target.closest('.notif-dropdown__group-head');
+    if (groupHead) {
+      e.preventDefault();
+      e.stopPropagation();
+      const entryId = groupHead.getAttribute('data-entry-id');
+      if (entryId) {
+        // 그룹 안 첫 row 를 markRead 대상으로 사용 (handleNotifClick 시그니처에 단일 notif 필요)
+        const groupEl = groupHead.closest('.notif-dropdown__group');
+        const firstRow = groupEl?.querySelector('.notif-dropdown__row');
+        const notif = {
+          id: firstRow?.getAttribute('data-notif-id') || null,
+          entry_id: entryId,
+          comment_id: null,
+          kind: firstRow?.getAttribute('data-kind') || null,
+          read_at: firstRow?.querySelector('.notif-dropdown__unread-dot')?.classList.contains('is-read') ? 'has-read' : null,
+        };
+        handleNotifClick(notif, doc).catch((err) =>
+          console.warn('[notifications] group head click 실패', err?.message || err),
+        );
+      }
       return;
     }
     // Wave 11.7.3c-3 — 알림 행 클릭 → 딥링크
@@ -648,6 +752,8 @@ export const Notifications = {
   // Wave 11.7.3c-2 — 드롭다운
   formatRelativeTime,
   buildNotifRowHtml,
+  groupNotifsByEntry,
+  buildNotifGroupHtml,
   injectNotifDropdownStyles,
   injectNotifDropdown,
   renderNotifDropdown,

@@ -282,12 +282,53 @@
 
   /* Recents — 모두 동일하게 회색 ink-3, 우측에 공유 대상 표시 */
   .sb__item--recent {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     padding: 12px 8px;
     color: var(--ink-3);
     font-size: 15px;
   }
   .sb__item--recent:hover { color: var(--ink-1); }
-  .sb__item--recent .recent-share {
+  .sb__item--recent .sb__item__title {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sb__item--recent .recent-comment-count {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+  }
+  .sb__item--recent .recent-comment-count svg {
+    width: 12px;
+    height: 12px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linejoin: round;
+  }
+  /* 공유자 칩 (소연/지오) — DESIGN.md §6 r-pill (crail-soft 배경 + crail-deep 텍스트) */
+  .sb__item--recent .recent-share:not(.recent-share--amount):not(.recent-share--year) {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    padding: 1px 8px;
+    border-radius: 999px;
+    background: var(--crail-soft);
+    color: var(--crail-deep);
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 500;
+  }
+  /* 가계부 variant — 기존 mono + base 컬러 보존 */
+  .sb__item--recent .recent-share--amount {
     margin-left: auto;
     font-family: var(--font-mono);
     font-size: 11px;
@@ -296,11 +337,13 @@
   }
   /* 1년 전 글 라벨 — '소연'과 동일 사이즈 (11px) */
   .sb__item--recent .recent-share--year {
+    margin-left: auto;
     color: var(--ink-4);
     font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 400;
     letter-spacing: -0.01em;
+    flex-shrink: 0;
   }
 
   /* — Footer (좌하단 사용자 카드 + popover) — */

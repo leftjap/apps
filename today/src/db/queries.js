@@ -603,6 +603,18 @@ export async function countCommentsByEntry(entryId) {
   return rows.length;
 }
 
+/** entry_id 배열별 댓글 수 — Dexie 1회 호출로 일괄 (N+1 회피). 리센츠 인라인 카운트용. */
+export async function countCommentsByEntries(entryIds) {
+  if (!entryIds?.length) return new Map();
+  const rows = await db().comments.where('entry_id').anyOf(entryIds).toArray();
+  const map = new Map(entryIds.map((id) => [id, 0]));
+  for (const c of rows) {
+    if (c.deleted_at) continue;
+    map.set(c.entry_id, (map.get(c.entry_id) || 0) + 1);
+  }
+  return map;
+}
+
 function enqueueCommentSync(id) {
   const sync = globalThis.todaySync;
   if (sync && typeof sync.queueUploadComment === 'function') {
@@ -706,6 +718,7 @@ export const Queries = {
   softDeleteComment,
   listCommentsByEntry,
   countCommentsByEntry,
+  countCommentsByEntries,
   // Wave 11.7.1 — notifications
   listNotifications,
   countUnreadNotifications,

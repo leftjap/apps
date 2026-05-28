@@ -14,7 +14,7 @@
  */
 import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
-import { USER_ID_TO_DISPLAY_NAME, CLAUDE_USER_ID } from './entries.js';
+import { USER_ID_TO_DISPLAY_NAME, CLAUDE_USER_ID, getCurrentKind, scheduleRecentsRefresh } from './entries.js';
 import { supabase } from '../services/supabase.js';
 
 let _currentUser = null;
@@ -272,6 +272,53 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .composer__ai:hover { background: var(--crail-soft, #f0e6df); color: var(--ink-1, oklch(22% 0.008 60)); }
     .composer__ai[disabled] { color: var(--ink-3, oklch(56% 0.008 60)); cursor: default; opacity: .7; }
     .composer__ai svg { color: #d97757; }
+    /* 모바일 (≤720px) — 카톡 말풍선 → 노트(일기) 스타일 (사용자 결정 2026-05-28, 디자이너 시안 D1) */
+    @media (max-width: 720px) {
+      .doc__comments {
+        margin-left: -16px;
+        margin-right: -16px;
+        padding-left: 16px;
+        padding-right: 16px;
+      }
+      .doc__comments-list {
+        gap: 0;
+      }
+      .comment-row,
+      .comment-row[data-mine="1"] {
+        flex-direction: row;
+        gap: 10px;
+        padding: 14px 0;
+        border-bottom: 1px solid var(--line-soft, oklch(94.5% 0.006 60));
+        align-items: flex-start;
+      }
+      .comment-row:last-child { border-bottom: 0; }
+      .comment-row__col {
+        max-width: none;
+        flex: 1;
+        min-width: 0;
+        gap: 6px;
+      }
+      .comment-row[data-mine="1"] .comment-row__meta {
+        flex-direction: row;
+      }
+      .comment-row__meta {
+        gap: 8px;
+      }
+      .comment-row__bubble,
+      .comment-row[data-mine="1"] .comment-row__bubble,
+      .comment-row[data-mine="0"] .comment-row__bubble {
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        padding: 0;
+        font-size: 17px;
+        line-height: 1.55;
+        word-break: keep-all;
+        text-wrap: pretty;
+        color: var(--ink-1, oklch(22% 0.008 60));
+      }
+      .comment-row__delete { opacity: 1; }
+    }
   `;
   doc.head.appendChild(style);
   _stylesInjected = true;
@@ -415,6 +462,7 @@ function installComposerHandler() {
         );
         updateCommentsHeaderCount(article);
       }
+      notifyRecentsCountChange();
       // 엔터 피드백 — 새 버블 등장 애니메이션 + 가벼운 햅틱.
       const rowEl = list?.querySelector?.(`[data-comment-id="${row.id}"]`);
       if (rowEl) animateCommentEnter(rowEl);
@@ -465,6 +513,7 @@ function installCommentDeleteHandler() {
           updateCommentsHeaderCount(article);
         }
       }
+      notifyRecentsCountChange();
     } catch (err) {
       console.warn('[comments] softDeleteComment 실패:', err?.message || err);
       btn.disabled = false;
@@ -529,6 +578,7 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     list = article.querySelector?.('.doc__comments-list');
     if (list) {
       // mountForArticle 이 listCommentsByEntry 결과 전체 렌더 — 추가 append 불필요
+      notifyRecentsCountChange();
       return { applied: true, reason: 'mount_full', id };
     }
   }
@@ -545,6 +595,7 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     } else {
       updateCommentsHeaderCount(article);
     }
+    notifyRecentsCountChange();
     return { applied: true, reason: 'removed', id };
   }
 
@@ -565,6 +616,7 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     commentToHtml(newRow, { currentUserId: _currentUser?.id }),
   );
   updateCommentsHeaderCount(article);
+  notifyRecentsCountChange();
   const enteredRow = list.querySelector?.(`[data-comment-id="${id}"]`);
   if (enteredRow) animateCommentEnter(enteredRow);
   return { applied: true, reason: 'appended', id };
@@ -578,6 +630,18 @@ function updateCommentsHeaderCount(article) {
   if (!list || !countEl) return;
   const n = list.querySelectorAll?.('.comment-row').length || 0;
   countEl.textContent = String(n);
+}
+
+/** 댓글 CUD/Realtime 직후 리센츠 댓글 카운트 자동 재반영 (Entries 200ms debounce 재사용).
+ *  typeof document 가드 — vitest node 환경 등 document 없는 곳에서 no-op. */
+function notifyRecentsCountChange() {
+  if (typeof document === 'undefined') return;
+  try {
+    const k = getCurrentKind(document);
+    if (k) scheduleRecentsRefresh(k, document);
+  } catch (_) {
+    /* 활성 카테고리 없거나 sidebar 미마운트 — 무시 */
+  }
 }
 
 // "클로드 댓글 받기" 버튼 — 내 소유 네비 글에서 Routine 즉시 발사 요청 (edge fn request-ai-comment).
