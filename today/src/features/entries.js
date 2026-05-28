@@ -166,7 +166,7 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
     const countHtml = n > 0
       ? `<span class="recent-comment-count">${CHAT_BUBBLE_SVG}${n}</span>`
       : '';
-    return `<div class="sb__item sb__item--recent" data-doc-id="${id}"><span class="sb__item__title">${title}</span>${countHtml}${labelHtml}</div>`;
+    return `<div class="sb__item sb__item--recent" data-doc-id="${id}"><span class="sb__item__group"><span class="sb__item__title">${title}</span>${countHtml}</span>${labelHtml}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
   ensureRecentsMore(kind, doc);

@@ -284,14 +284,20 @@
   .sb__item--recent {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
     padding: 12px 8px;
     color: var(--ink-3);
     font-size: 15px;
   }
   .sb__item--recent:hover { color: var(--ink-1); }
+  .sb__item--recent .sb__item__group {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
   .sb__item--recent .sb__item__title {
-    flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

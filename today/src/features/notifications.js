@@ -250,9 +250,8 @@ export function buildNotifGroupHtml(group, entryRow, now = new Date()) {
   const num = entryRow?.kind_number != null
     ? `<span class="notif-dropdown__group-num">#${escapeHtml(String(entryRow.kind_number))}</span>`
     : '';
-  const hasUnread = group.notifs.some((n) => !n.read_at);
   const rows = group.notifs.map((n) => buildNotifRowHtml(n, now)).join('');
-  return `<div class="notif-dropdown__group${hasUnread ? ' has-unread' : ''}" data-entry-id="${entryId}"><button class="notif-dropdown__group-head" data-entry-id="${entryId}" type="button"><span class="notif-dropdown__group-title">${title}</span>${num}</button>${rows}</div>`;
+  return `<div class="notif-dropdown__group" data-entry-id="${entryId}"><button class="notif-dropdown__group-head" data-entry-id="${entryId}" type="button"><span class="notif-dropdown__group-title">${title}</span>${num}</button>${rows}</div>`;
 }
 
 /** 드롭다운 CSS 인라인 주입 (idempotent). */
@@ -304,7 +303,13 @@ export function injectNotifDropdownStyles(doc = document) {
       color: var(--text, #3d3929);
       background: var(--bg-warm, #f5f0ea);
     }
-    .notif-dropdown__list { overflow-y: auto; flex: 1; }
+    .notif-dropdown__list {
+      overflow-y: auto;
+      flex: 1;
+      scrollbar-width: none;          /* Firefox */
+      -ms-overflow-style: none;       /* IE/legacy Edge */
+    }
+    .notif-dropdown__list::-webkit-scrollbar { display: none; } /* WebKit/Chromium/Safari */
     .notif-dropdown__row {
       display: flex;
       gap: 8px;
@@ -372,9 +377,6 @@ export function injectNotifDropdownStyles(doc = document) {
       border-bottom: 1px solid var(--border, #e8e4dc);
     }
     .notif-dropdown__group:last-child { border-bottom: 0; }
-    .notif-dropdown__group.has-unread {
-      box-shadow: inset 2px 0 0 var(--accent, #d97757);
-    }
     .notif-dropdown__group-head {
       display: flex;
       align-items: center;
