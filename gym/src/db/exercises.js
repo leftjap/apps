@@ -123,6 +123,36 @@ export function listAllBuiltin() {
   }));
 }
 
+/* ───────── 커스텀 운동 이름 캐시 (동기 resolveExerciseName 용) ─────────
+ * 렌더 경로(session/home/summary/stats)는 block.exerciseId 만 들고 있고 이름은
+ * 동기로 풀어야 하는데, 커스텀 운동(cust_*)은 Dexie(비동기) customExercises 에만 있어
+ * 빌트인 카탈로그만으론 못 푼다 → id(cust_...)가 그대로 화면에 노출되던 버그.
+ * 각 view mount 에서 primeCustomExerciseCache(await listCustomExercises()) 로 채워 해소. */
+const _customExerciseCache = new Map();
+
+/** 커스텀 운동 목록으로 동기 lookup 캐시 갱신 (mount 시 호출). */
+export function primeCustomExerciseCache(list) {
+  _customExerciseCache.clear();
+  for (const ex of (Array.isArray(list) ? list : [])) {
+    if (ex && ex.id) _customExerciseCache.set(ex.id, ex);
+  }
+}
+
+/** 캐시된 커스텀 운동 객체 (없으면 null) — equipment 등 부가정보 동기 조회용. */
+export function getCachedCustomExercise(id) {
+  return id ? (_customExerciseCache.get(id) || null) : null;
+}
+
+/** 운동 id → 표시명. builtin → 커스텀 캐시 → id fallback. 동기. */
+export function resolveExerciseName(id) {
+  if (!id) return '';
+  const builtin = getBuiltinExercise(id);
+  if (builtin?.name) return builtin.name;
+  const custom = _customExerciseCache.get(id);
+  if (custom?.name) return custom.name;
+  return id;
+}
+
 /* mocks 허브 inline script 접근용 — Wave 11.6 의 window.gymQueries 패턴 답습 */
 if (typeof window !== 'undefined') {
   window.gymExercises = {
@@ -134,5 +164,8 @@ if (typeof window !== 'undefined') {
     getBuiltinExercise,
     listBuiltinByPart,
     listAllBuiltin,
+    primeCustomExerciseCache,
+    getCachedCustomExercise,
+    resolveExerciseName,
   };
 }

@@ -22,8 +22,9 @@ import {
   weekRangeISO,
   isoToWeekdayIdx,
   toISODate,
+  listCustomExercises,
 } from '../db/queries.js';
-import { PARTS, getBuiltinExercise } from '../db/exercises.js';
+import { PARTS, getBuiltinExercise, resolveExerciseName, getCachedCustomExercise, primeCustomExerciseCache } from '../db/exercises.js';
 
 const DEFAULT_WEEKLY_GOAL = 4;
 
@@ -116,9 +117,10 @@ function isSingleBlockIncomplete(block) {
 
 function formatBlockPreview(block) {
   if (!block || block.type !== 'single') return null;
-  const builtin = getBuiltinExercise(block.exerciseId) || {};
-  const name = builtin.name || block.exerciseId || '';
-  const equipment = builtin.equipment || null;
+  const builtin = getBuiltinExercise(block.exerciseId);
+  const custom = builtin ? null : getCachedCustomExercise(block.exerciseId);
+  const name = resolveExerciseName(block.exerciseId) || '';
+  const equipment = (builtin || custom)?.equipment || null;
   const sets = Array.isArray(block.sets) ? block.sets : [];
   const setsCount = sets.length;
   const firstSet = sets[0] || {};
@@ -364,6 +366,8 @@ export function wireHomeShortcuts(doc) {
 export async function mountHomeView(now = Date.now()) {
   const doc = typeof document !== 'undefined' ? document : null;
   if (!doc) return { skipped: 'no-document' };
+  // 커스텀 운동 이름 동기 lookup 캐시 prime — 진행 카드/프리뷰가 cust_* id 대신 이름 표시.
+  try { primeCustomExerciseCache(await listCustomExercises()); } catch (_) { /* db 없음 fallback */ }
   // v2 다크 시안 — HomeA(sLabel) 또는 HomeC(cardLabel) 중 하나는 존재해야 마운트 의미.
   if ((!doc.getElementById('sLabel') && !doc.getElementById('cardLabel')) || !doc.getElementById('weekCal')) {
     return { skipped: 'no-mounts' };

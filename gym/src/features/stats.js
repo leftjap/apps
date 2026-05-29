@@ -16,10 +16,11 @@ import {
   deleteSession,
   weekRangeISO,
   toISODate,
+  listCustomExercises,
 } from '../db/queries.js';
 import { partAbbreviation, wireHomeShortcuts } from './home.js';
 import { exerciseIdToName } from './session-summary.js';
-import { getBuiltinExercise } from '../db/exercises.js';
+import { getBuiltinExercise, primeCustomExerciseCache } from '../db/exercises.js';
 import { EXERCISE_MUSCLES, WEIGHT_PRIMARY, WEIGHT_SYNERGIST } from '../data/exercise-muscles.js';
 
 /** YYYY-MM-DD 범위 [from, to] 합산 (totalVolume). */
@@ -497,6 +498,8 @@ export async function mountStatsView(now = Date.now()) {
   const doc = typeof document !== 'undefined' ? document : null;
   if (!doc) return { skipped: 'no-document' };
   if (!doc.querySelector('.compare-section')) return { skipped: 'no-mounts' };
+  // 커스텀 운동 이름 동기 lookup 캐시 prime — 종목 빈도 등이 cust_* id 대신 이름 표시.
+  try { primeCustomExerciseCache(await listCustomExercises()); } catch (_) { /* db 없음 fallback */ }
   // 페이지 헤더 nav (홈/관리) wiring — home.js wireHomeShortcuts 재사용 (idempotent body.dataset.spaHomeShortcuts guard)
   try { wireHomeShortcuts(doc); } catch (e) { console.error('[gymStats] wireHomeShortcuts', e); }
   try {

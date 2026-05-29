@@ -19,7 +19,7 @@ import {
   listCustomExercises,
   toISODate,
 } from '../db/queries.js';
-import { PART_IDS, PARTS, getBuiltinExercise } from '../db/exercises.js';
+import { PART_IDS, PARTS, getBuiltinExercise, resolveExerciseName, primeCustomExerciseCache } from '../db/exercises.js';
 import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
 
 const VIEW_ATTR = 'data-spa-managed';
@@ -586,6 +586,9 @@ export async function mountSessionView() {
   const doc = typeof document !== 'undefined' ? document : null;
   if (!doc) return { skipped: 'no-document' };
 
+  // 커스텀 운동 이름 동기 lookup 캐시 prime — 카드/footer 의 resolveExerciseName 이 cust_* id 대신 이름 표시.
+  try { primeCustomExerciseCache(await listCustomExercises()); } catch (_) { /* db 없음 fallback */ }
+
   const hasActiveCard = !!doc.getElementById('cardExName');
   const hasEmptySheet = !!doc.getElementById('addexChips') && !!doc.getElementById('addexList');
   if (!hasActiveCard && !hasEmptySheet) return { skipped: 'no-mounts' };
@@ -927,13 +930,6 @@ function renderCardioPace(doc, durSec, distKm) {
 function pad2(n) {
   const v = Math.max(0, Math.floor(Number(n) || 0));
   return String(v).padStart(2, '0');
-}
-
-function resolveExerciseName(id) {
-  if (!id) return '';
-  const builtin = getBuiltinExercise(id);
-  if (builtin?.name) return builtin.name;
-  return id;
 }
 
 /**

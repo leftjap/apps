@@ -5,7 +5,7 @@
  *  - spec: { blocks: [{type:'single', exerciseId:'영문', sets:[...]}, ...] }
  *  - mocks: { blocks: [{type:'single', exercises:[{exerciseName:'한국어', sets:[...]}]}] }
  *
- * 영문 exerciseId → 한국어 name 매핑은 BUILTIN_EXERCISES 만 (custom 미매핑 시 영문 fallback — 별 wave).
+ * 영문 exerciseId → 한국어 name 매핑: BUILTIN_EXERCISES + 커스텀 캐시(primeCustomExerciseCache).
  *
  * mocks/summary.html 의 sessionToVariant 와 동일 출력 형식:
  *   { label, title, subtitle, volume, time, pr, kcal, exercises:[{name, sets, pr}] }
@@ -13,8 +13,8 @@
  * circuit 블록은 별 wave (현재 spec §12 정합 single 만).
  */
 
-import { getBuiltinExercise } from '../db/exercises.js';
-import { getSessionById, getSessionsByRange } from '../db/queries.js';
+import { getBuiltinExercise, getCachedCustomExercise, primeCustomExerciseCache } from '../db/exercises.js';
+import { getSessionById, getSessionsByRange, listCustomExercises } from '../db/queries.js';
 
 const WEEKDAY_KOR = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -107,7 +107,9 @@ export function exerciseIdToName(id) {
   if (!id) return '';
   const builtin = getBuiltinExercise(id);
   if (builtin?.name) return builtin.name;
-  return id; // fallback — custom/unknown
+  const custom = getCachedCustomExercise(id);
+  if (custom?.name) return custom.name;
+  return id; // fallback — unknown (캐시 미prime 시 cust_* id)
 }
 
 function formatSubtitle(date) {
@@ -198,6 +200,8 @@ export async function mountSummaryView() {
   if (typeof document === 'undefined') return { skipped: 'no-document' };
   const session = await findSummarySession();
   if (!session) return { skipped: 'no-session' };
+  // 커스텀 운동 이름 동기 lookup 캐시 prime — 영수증 운동 목록이 cust_* id 대신 이름 표시.
+  try { primeCustomExerciseCache(await listCustomExercises()); } catch (_) { /* db 없음 fallback */ }
   const data = summarizeSession(session);
 
   const set = (id, text) => {
