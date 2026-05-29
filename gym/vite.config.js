@@ -29,7 +29,11 @@ export default defineConfig({
   },
   plugins: [
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' (NOT 'autoUpdate'): autoUpdate 는 새 SW 활성화 시 vite-plugin-pwa 가
+      // window.location.reload() 를 자동 호출(register.js: activated→reload) → 배포 후 앱 재개 시
+      // 화면이 통째로 리로드되는 체감. 'prompt' 는 새 버전을 대기시키고 다음 콜드스타트에 자연 적용
+      // (강제 reload 없음). 개인용 PWA 라 즉시 갱신보다 끊김 없는 재개 우선. 회귀 주의 — 되돌리지 말 것.
+      registerType: 'prompt',
       injectRegister: 'auto',
       devOptions: {
         enabled: false,
