@@ -2238,11 +2238,11 @@ describe('resolveDotDisplay (D — dot preview 우선순위)', () => {
     expect(resolveDotDisplay(sets, 0, 1, null)).toEqual({ text: '—', isPreview: true });
   });
 
-  it('이번 세션 직전 세트 우선순위가 이전 세션보다 높음 (spec §6-3-3)', () => {
+  it('이전 세션 우선순위가 이번 세션 직전 세트보다 높음 (spec §6-3-3)', () => {
     const sets = [{ weight: 100, reps: 5, done: true }, { weight: 0, reps: 0, done: false, preset: true }];
     const prev = [{ weight: 90, reps: 8 }, { weight: 95, reps: 6 }];
-    // ① 이번 세션 직전 세트(100·5 done) 가 ② 이전 세션(95·6) 보다 우선
-    expect(resolveDotDisplay(sets, 1, 0, prev)).toEqual({ text: '100·5', isPreview: true });
+    // ① 이전 세션 같은 세트번호(95·6) 가 ② 이번 세션 직전 세트(100·5 done) 보다 우선
+    expect(resolveDotDisplay(sets, 1, 0, prev)).toEqual({ text: '95·6', isPreview: true });
   });
 
   it('맨몸(kind=bodyweight) — weight=null 이어도 reps 만으로 표기', () => {

@@ -939,8 +939,8 @@ function resolveExerciseName(id) {
 /**
  * dot 표시 값 결정. spec §6-3-3 프리셋 우선순위:
  *  - done/current: 실제 sets[i] 값 (accent 톤)
- *  - 미입력 preview: ① 이번 세션 직전 세트 (done 또는 현재 세트 값 — upcoming 으로 전파)
- *                  → ② 이전 세션 같은 세트번호 → ③ sets[i] 자체 preset → '—'. preview 는 회색 톤.
+ *  - 미입력 preview: ① 이전 세션 같은 세트번호 (지난 기록을 세트별 타깃으로 우선 표시)
+ *                  → ② 이번 세션 직전 세트 (done 또는 현재 세트 값) → ③ sets[i] 자체 preset → '—'. preview 는 회색 톤.
  *  - kind='bodyweight': weight 무시, reps 만으로 값 판정·표기 ("15"). 그 외: "weight·reps".
  */
 export function resolveDotDisplay(sets, i, cur, prevSessionSets, kind = 'weight') {
@@ -961,18 +961,18 @@ export function resolveDotDisplay(sets, i, cur, prevSessionSets, kind = 'weight'
   if (isDone && hasVal(set)) {
     return { text: fmt(set), isPreview: false };
   }
-  // preview 폴백 (spec §6-3-3 우선순위):
-  // ① 이번 세션 직전 세트 — i 이전의 done 세트 또는 현재 세트 값. upcoming 도트로 현재값 전파.
+  // preview 폴백 (spec §6-3-3 우선순위 — 이전 세션 우선):
+  // ① 이전 세션 같은 세트번호 — 지난번 기록이 있으면 세트별 타깃으로 우선 표시.
+  const p = prevSessionSets && prevSessionSets[i];
+  if (hasVal(p)) {
+    return { text: fmt(p), isPreview: true };
+  }
+  // ② 이번 세션 직전 세트 — 이전 세션 없을 때 i 이전의 done 세트 또는 현재 세트 값 폴백/전파.
   for (let j = i - 1; j >= 0; j -= 1) {
     const s = sets[j];
     if (meaningful(s) && (s.done || j === cur)) {
       return { text: fmt(s), isPreview: true };
     }
-  }
-  // ② 이전 세션 같은 세트번호
-  const p = prevSessionSets && prevSessionSets[i];
-  if (hasVal(p)) {
-    return { text: fmt(p), isPreview: true };
   }
   // ③ sets[i] preset
   if (hasVal(set)) return { text: fmt(set), isPreview: true };
