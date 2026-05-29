@@ -1,0 +1,104 @@
+{
+  "date": "2026-05-29",
+  "problems": [
+    {
+      "id": "gen-2026-05-29-tri-1",
+      "conceptId": "tri",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 삼각형",
+      "prompt": "밑변 11, 높이 6인 삼각형의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"202\" height=\"138\" viewBox=\"0 0 202 138\" role=\"img\" aria-label=\"밑변 11 높이 6 삼각형\"><polygon points=\"24,108 178,108 88.7,24\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"88.7\" y1=\"24\" x2=\"88.7\" y2=\"108\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"101\" y=\"124\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 11</text><text x=\"112.7\" y=\"66\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 6</text></svg>",
+        "legend": "밑변 11 · 높이 6"
+      },
+      "answer": "33",
+      "accept": [
+        "33"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"252\" height=\"136\" viewBox=\"0 0 252 136\" role=\"img\" aria-label=\"밑변 11 높이 6 삼각형 = 11×6 직사각형의 절반(넓이 33)\"><rect x=\"60\" y=\"16\" width=\"176\" height=\"96\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"5 4\"/><polygon points=\"60,112 236,112 60,16\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"60\" y1=\"16\" x2=\"236\" y2=\"112\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"52\" y=\"68\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">높이 6</text><text x=\"148\" y=\"128\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 11</text></svg>"
+        },
+        "core": "½ × 밑변 × 높이.",
+        "idea": "이 삼각형을 점선 직사각형(11 × 6)의 절반으로 보세요(그림). 직사각형 칸 66 의 절반이니 33.",
+        "steps": [
+          "감싸는 직사각형 11 × 6 = 66",
+          "절반 → 33"
+        ],
+        "refresh": "½ · 곱셈",
+        "example": "삼각 깃발·지붕 단면의 넓이도 \"직사각형의 절반\"으로.",
+        "think": "낯선 모양을 \"직사각형의 절반\"으로 환원."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-05-29-tri-2",
+      "conceptId": "tri",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 삼각형",
+      "prompt": "밑변 10, 높이 8인 삼각형의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"188\" height=\"166\" viewBox=\"0 0 188 166\" role=\"img\" aria-label=\"밑변 10 높이 8 삼각형\"><polygon points=\"24,136 164,136 82.8,24\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"82.8\" y1=\"24\" x2=\"82.8\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"94\" y=\"152\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 10</text><text x=\"106.8\" y=\"80\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 8</text></svg>",
+        "legend": "밑변 10 · 높이 8"
+      },
+      "answer": "40",
+      "accept": [
+        "40"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"236\" height=\"168\" viewBox=\"0 0 236 168\" role=\"img\" aria-label=\"밑변 10 높이 8 삼각형 = 10×8 직사각형의 절반(넓이 40)\"><rect x=\"60\" y=\"16\" width=\"160\" height=\"128\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"5 4\"/><polygon points=\"60,144 220,144 60,16\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"60\" y1=\"16\" x2=\"220\" y2=\"144\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"52\" y=\"84\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">높이 8</text><text x=\"140\" y=\"160\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 10</text></svg>"
+        },
+        "core": "½ × 밑변 × 높이.",
+        "idea": "이 삼각형을 점선 직사각형(10 × 8)의 절반으로 보세요(그림). 직사각형 칸 80 의 절반이니 40.",
+        "steps": [
+          "감싸는 직사각형 10 × 8 = 80",
+          "절반 → 40"
+        ],
+        "refresh": "½ · 곱셈",
+        "example": "삼각 깃발·지붕 단면의 넓이도 \"직사각형의 절반\"으로.",
+        "think": "낯선 모양을 \"직사각형의 절반\"으로 환원."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-05-29-tri-3",
+      "conceptId": "tri",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 삼각형",
+      "prompt": "밑변 7, 높이 8인 삼각형의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"146\" height=\"166\" viewBox=\"0 0 146 166\" role=\"img\" aria-label=\"밑변 7 높이 8 삼각형\"><polygon points=\"24,136 122,136 65.2,24\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"65.2\" y1=\"24\" x2=\"65.2\" y2=\"136\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"73\" y=\"152\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 7</text><text x=\"89.2\" y=\"80\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 8</text></svg>",
+        "legend": "밑변 7 · 높이 8"
+      },
+      "answer": "28",
+      "accept": [
+        "28"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"188\" height=\"168\" viewBox=\"0 0 188 168\" role=\"img\" aria-label=\"밑변 7 높이 8 삼각형 = 7×8 직사각형의 절반(넓이 28)\"><rect x=\"60\" y=\"16\" width=\"112\" height=\"128\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"5 4\"/><polygon points=\"60,144 172,144 60,16\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"60\" y1=\"16\" x2=\"172\" y2=\"144\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"52\" y=\"84\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">높이 8</text><text x=\"116\" y=\"160\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 7</text></svg>"
+        },
+        "core": "½ × 밑변 × 높이.",
+        "idea": "이 삼각형을 점선 직사각형(7 × 8)의 절반으로 보세요(그림). 직사각형 칸 56 의 절반이니 28.",
+        "steps": [
+          "감싸는 직사각형 7 × 8 = 56",
+          "절반 → 28"
+        ],
+        "refresh": "½ · 곱셈",
+        "example": "삼각 깃발·지붕 단면의 넓이도 \"직사각형의 절반\"으로.",
+        "think": "낯선 모양을 \"직사각형의 절반\"으로 환원."
+      },
+      "order_index": 2
+    }
+  ]
+}

@@ -1,0 +1,238 @@
+{
+  "lang": "en",
+  "date": "2026-05-29",
+  "_note": "Stage 2 콩트 'No Big Deal' (우희+여빈 친구 공항 — 활성 트랙 continuation). currentStage=2 (5/27 'Step on It' 직후 유지). 시나리오 = 공항/면세 (travel arc day 3). newElement = 'no big deal' (펀치라인 6번 박힘, 우희 Self-trapping — 게이트 닫힐 판에 자기합리화). 6장 (Stage 2 분량 6~10 가드). stretch 0장 (모든 카드 stage=2, is_stretch=false) = 0%. weak_phonemes_en top 3 (t/l/ax) — /t/ 5장(1·2·3·4·5 = 83% ≥50% ✓), /l/ 4장(1·3·5·6 = 67% ≥50% ✓), /ax/ 4장(1·2·4·5 = 67% ≥50% ✓). frequency 분포 7~10=6장(100%) ✓. Punchline type = Self-trapping (우희 게이트 닫힐 상황에 'No big deal' — 자기합리화 완결). Vitriolic Best Buds — 여빈 컷 2회(2·4번) + 우희 역공 3회(3·5·6번) = 쌍방향 ✓ 5회+. 1번 카드 = Hook (우희 자뻑 voice 즉시), 6번 = Punchline (newElement 박힘). show-don't-tell — scene_intro에 캐릭터 설명 없음 (상황 묘사만). drift 형식 + scene 5필드 + skit 4필드.",
+  "cards": [
+    {
+      "id": "en-2026-05-29-skit1-1",
+      "order_index": 1,
+      "sentence": "The duty-free had a sale. I had to stop.",
+      "meaning": "면세점에 세일이 있었어. 멈출 수밖에 없었지.",
+      "reading": null,
+      "phonetic_kr": "더 듀티프리 해다 쎄일. 아해러 스탑.",
+      "speaker": "우희",
+      "explanation": {
+        "key": "I had to = '~할 수밖에 없었다' (과거 의무). duty-free = 공항 면세 구역.",
+        "situation": "공항 게이트. 우희가 면세 봉투를 들고 뛰어오며. Hook — 자뻑 자기합리화 즉시.",
+        "grammar": [
+          { "struct": "I had to + 동사원형", "body": "had to = '~할 수밖에 없었다'. have to 의 과거형. 의무·필요 강조." },
+          { "struct": "duty-free had a sale", "body": "duty-free = 면세점·면세 구역. had a sale = 세일이 있었다. 단순 과거 서술." }
+        ],
+        "chunks": [["The duty-free", "더 듀티프리"], ["had a sale.", "해다 쎄일."], ["I had to stop.", "아해러 스탑."]],
+        "phonemes": [
+          ["/t/", "duty·to·stop 의 t — duty flap '듀리', to 약화, stop final t 짧게 막음"],
+          ["/l/", "sale final l — '쎄일' 끝 혀끝 잇몸 닿음 (clear l)"],
+          ["/ax/", "the·a·had 의 schwa — '더·어·어' 약화 연음"]
+        ],
+        "mistake": "'had to' '해드 투' 분리 X → '해러' 연음. 'duty-free' t flap → '듀리프리'도 자연. 'stop' final t 강하게 X → 짧게 막음.",
+        "similar": "I couldn't help it. / I just had to. / How could I not? — 모두 '어쩔 수 없었어' 뉘앙스.",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["had to", "sale", "stop"],
+        "frequency": 8,
+        "category": "여행/쇼핑",
+        "skitId": "en-2026-05-29-skit1",
+        "skitTitle": "No Big Deal",
+        "skitOrder": 1,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-29-no-big-deal",
+        "scene_order": 1,
+        "scene_title": "No Big Deal",
+        "speaker": "우희",
+        "is_stretch": false,
+        "scene_intro": "공항 게이트. 우희가 면세점 봉투를 한 아름 들고 허겁지겁 달려온다."
+      }
+    },
+    {
+      "id": "en-2026-05-29-skit1-2",
+      "order_index": 2,
+      "sentence": "We have eight minutes to board.",
+      "meaning": "탑승까지 8분 남았어.",
+      "reading": null,
+      "phonetic_kr": "위 해브 에잇 미닛츠 투 보드.",
+      "speaker": "여빈",
+      "explanation": {
+        "key": "We have X minutes to board = '탑승까지 X분 남았다'. 시간 촉박 경고 표준.",
+        "situation": "우희 자기합리화 직후 여빈 건조 경고. 탑승 시간 팩폭.",
+        "grammar": [
+          { "struct": "We have + 시간 + to + 동사", "body": "have X time to do = 'X 시간 안에 ~해야 한다'. 긴박 상황 시간 표현." },
+          { "struct": "board (동사)", "body": "board = 탑승하다. 비행기·배·기차에 오르다. 공항 표준 동사." }
+        ],
+        "chunks": [["We have eight minutes", "위 해브 에잇 미닛츠"], ["to board.", "투 보드."]],
+        "phonemes": [
+          ["/t/", "eight·minutes·to 의 t — eight final glottal '에잇', minutes final ts '미닛츠', to 약화"],
+          ["/ax/", "to·minutes 약화 — to '터' 급속 약화, minutes '-its' schwa"]
+        ],
+        "mistake": "'eight' '에이트' X → '에잇' (final t 성문 폐쇄). 'minutes' '마이뉴츠' X → '미닛츠'. 'to board' 한 호흡 '투보드'.",
+        "similar": "Boarding starts in eight minutes. / We're running out of time. / Hurry up. — 탑승 촉박 경고 패턴.",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["we", "have", "eight", "minutes", "to", "board"],
+        "frequency": 9,
+        "category": "여행/시간",
+        "skitId": "en-2026-05-29-skit1",
+        "skitTitle": "No Big Deal",
+        "skitOrder": 2,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-29-no-big-deal",
+        "scene_order": 2,
+        "scene_title": "No Big Deal",
+        "speaker": "여빈",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-29-skit1-3",
+      "order_index": 3,
+      "sentence": "Eight is plenty.",
+      "meaning": "8분이면 충분해.",
+      "reading": null,
+      "phonetic_kr": "에잇 이즈 플렌티.",
+      "speaker": "우희",
+      "explanation": {
+        "key": "X is plenty = 'X면 충분해'. 자기합리화 짧은 단언 패턴.",
+        "situation": "여빈 경고에 우희 무덤덤한 자기합리화 재반격.",
+        "grammar": [
+          { "struct": "X is plenty.", "body": "plenty = 충분함 (명사/형용사). 'X면 충분해' 자신감·자기합리화 단언. 비교: 'That's enough' 보다 tone이 더 느긋함." }
+        ],
+        "chunks": [["Eight is plenty.", "에잇 이즈 플렌티."]],
+        "phonemes": [
+          ["/t/", "eight·plenty 의 t — eight final glottal '에잇', plenty flap '플렌리'"],
+          ["/l/", "plenty 의 l — '플렌(l)리' clear l, 혀끝 잇몸 닿음"]
+        ],
+        "mistake": "'plenty' '플렌티' 강세 첫음절 '플-'. 'eight' final t → 성문 폐쇄음 '에잇'. 'Eight is' 연음 '에잇이즈'.",
+        "similar": "Eight is more than enough. / That's plenty of time. / We're fine. — 모두 '충분해'. 자기합리화 tone은 'X is plenty' 가 최고.",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["eight", "is", "plenty"],
+        "frequency": 7,
+        "category": "구어/자기합리화",
+        "skitId": "en-2026-05-29-skit1",
+        "skitTitle": "No Big Deal",
+        "skitOrder": 3,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-29-no-big-deal",
+        "scene_order": 3,
+        "scene_title": "No Big Deal",
+        "speaker": "우희",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-29-skit1-4",
+      "order_index": 4,
+      "sentence": "They are about to close the gate.",
+      "meaning": "곧 게이트 닫혀.",
+      "reading": null,
+      "phonetic_kr": "데이얼 어바웃 투 클로즈 더 게잇.",
+      "speaker": "여빈",
+      "explanation": {
+        "key": "be about to = '막 ~하려고 하다'. 임박한 미래 — will soon 보다 더 즉각적.",
+        "situation": "우희 반격 직후 여빈 추가 팩폭 — 게이트 닫힐 참.",
+        "grammar": [
+          { "struct": "They are about to + 동사원형", "body": "be about to = 막 ~하려는 참이다. 임박한 미래 표현. will soon 보다 더 즉각적·긴박." },
+          { "struct": "close the gate", "body": "gate = 탑승구. close = 닫다. '게이트 닫히다' = 탑승 마감. 공항 표준 표현." }
+        ],
+        "chunks": [["They are about to", "데이얼 어바웃 투"], ["close the gate.", "클로즈 더 게잇."]],
+        "phonemes": [
+          ["/t/", "about·to·gate 의 t — about flap '어바우(t)', to 약화, gate final '게잇'"],
+          ["/ax/", "They·are·about·the 의 약화 — 빠른 연음 schwa 4회"]
+        ],
+        "mistake": "'about to' '어바웃 투' 분리 X → '어바우투' 연음. 'close' '클로시' X → '클로즈' (voiced /z/). 'gate' final t 약화 '게잇'.",
+        "similar": "The gate is closing. / Last call for boarding. / They're closing up. — 탑승 마감 임박 표현.",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["they", "are", "about", "to", "close", "the", "gate"],
+        "frequency": 8,
+        "category": "여행/공항",
+        "skitId": "en-2026-05-29-skit1",
+        "skitTitle": "No Big Deal",
+        "skitOrder": 4,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-29-no-big-deal",
+        "scene_order": 4,
+        "scene_title": "No Big Deal",
+        "speaker": "여빈",
+        "is_stretch": false
+      }
+    },
+    {
+      "id": "en-2026-05-29-skit1-5",
+      "order_index": 5,
+      "sentence": "I also got a little souvenir. Two, actually.",
+      "meaning": "나 기념품도 조금 샀어. 사실 두 개.",
+      "reading": null,
+      "phonetic_kr": "아이 올쏘 갓 어 리를 수버니어. 투, 액추얼리.",
+      "speaker": "우희",
+      "explanation": {
+        "key": "Two, actually = '사실 두 개'. actually 로 앞 발화 슬쩍 수정. 뻔뻔 자기합리화 패턴.",
+        "situation": "여빈 경고에도 우희 쇼핑 자백 + 숫자 수정 (Two, actually — 뻔뻔). 게이트 마감 방송 들리는 상황.",
+        "grammar": [
+          { "struct": "I also got a little + 명사.", "body": "also = 추가. got = 구매했다 (get 과거). little = 약간의·작은. 자기합리화 소품 추가 패턴." },
+          { "struct": "Two, actually. (구어 수정)", "body": "actually = 사실은. 앞 문장을 뒤늦게 수정·추가. '사실 두 개' — 구어 자연스러운 무뚝뚝한 자백." }
+        ],
+        "chunks": [["I also got", "아이 올쏘 갓"], ["a little souvenir.", "어 리를 수버니어."], ["Two, actually.", "투, 액추얼리."]],
+        "phonemes": [
+          ["/t/", "got·little·two·actually — got final '갓', little flap '리를', two '투', actually '액추얼리'"],
+          ["/l/", "little·also 의 l — little '리를' (clear+dark l 연속), also '올쏘' dark l"],
+          ["/ax/", "also·a·actually — '올쏘·어·액추얼리' schwa 연속"]
+        ],
+        "mistake": "'little' '리틀' X → '리를' (flap t + dark l). 'souvenir' 강세 끝음절 '-nir'. 'actually' tu → '추' 동화 '액추얼리'.",
+        "similar": "I picked up a couple of things. / I got a few extra. / Just one more thing. — 더 사왔다는 자백 패턴.",
+        "stage": 2,
+        "newElements": [],
+        "knownElements": ["I", "also", "got", "a", "little", "two", "actually"],
+        "frequency": 7,
+        "category": "구어/자기합리화",
+        "skitId": "en-2026-05-29-skit1",
+        "skitTitle": "No Big Deal",
+        "skitOrder": 5,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-29-no-big-deal",
+        "scene_order": 5,
+        "scene_title": "No Big Deal",
+        "speaker": "우희",
+        "is_stretch": false,
+        "scene_direction": "*(게이트 마감 방송이 들린다)*"
+      }
+    },
+    {
+      "id": "en-2026-05-29-skit1-6",
+      "order_index": 6,
+      "sentence": "No big deal.",
+      "meaning": "별거 아니야.",
+      "reading": null,
+      "phonetic_kr": "노 빅 딜.",
+      "speaker": "우희",
+      "explanation": {
+        "key": "No big deal = '별거 아니야'. 위로·무관심·자기합리화 표준 관용구.",
+        "situation": "우희 Self-trapping 펀치라인 — 게이트 닫힐 판에 'No big deal' 자기합리화 완결.",
+        "grammar": [
+          { "struct": "No big deal. (관용 명사구 문장)", "body": "big deal = 대단한 일. no = 부정. '별거 아니야'. It's no big deal 의 구어 축약. 위로·자기합리화·무관심 모두 사용." },
+          { "struct": "동사 없는 구어 단언", "body": "명사구 단독 문장. 구어에서 'It's ...' 주어·동사 생략 자연스러움. 강조 없이 짧게 단언." }
+        ],
+        "chunks": [["No big deal.", "노 빅 딜."]],
+        "phonemes": [
+          ["/l/", "deal final l — '딜' 끝 혀 올림 clear l. '딜r' 처럼 굴리기 X."],
+          ["/ax/", "No 비강세 — 자기합리화 평탄 tone. '너 빅 딜' 처럼 묻힐 수 있음."]
+        ],
+        "mistake": "'deal' '디얼' X → '딜' (final l 혀 올리기로 종결). 'No big deal' 3단어 한 호흡 '노빅딜'. big 의 g 약화 → '빅' 짧게.",
+        "similar": "Not a big deal. / It's fine. / Don't worry about it. — 모두 '별거 아니야' 계열. casual: no big deal < it's fine < it's not a problem (neutral)",
+        "stage": 2,
+        "newElements": ["no big deal"],
+        "knownElements": ["no", "big"],
+        "frequency": 8,
+        "category": "구어/자기합리화",
+        "skitId": "en-2026-05-29-skit1",
+        "skitTitle": "No Big Deal",
+        "skitOrder": 6,
+        "skitTotal": 6,
+        "scene_id": "scene-2026-05-29-no-big-deal",
+        "scene_order": 6,
+        "scene_title": "No Big Deal",
+        "speaker": "우희",
+        "is_stretch": false
+      }
+    }
+  ]
+}
