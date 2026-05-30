@@ -21,6 +21,8 @@ import { PART_IDS, PARTS } from '../db/exercises.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
+// 숨김(삭제) 처리된 운동을 펼쳐 보는 상태. 기본 false → 삭제 시 메인 목록에서 사라짐.
+let _showHidden = false;
 
 /** 부위 chip + 운동 리스트 모두 hydrate. mocks fixture 는 덮어씀. */
 export async function renderExercisesTab(root) {
@@ -62,7 +64,17 @@ async function renderExerciseList(doc) {
     listEl.innerHTML = `<div class="ex-empty" data-empty="1">이 부위에 등록된 운동이 없습니다.</div>`;
     return;
   }
-  listEl.innerHTML = list.map(ex => renderRow(ex)).join('');
+  // 삭제(빌트인) = 숨김 처리 → 메인 목록에서 제거. 숨긴 항목은 하단 접이식 섹션에서 복원.
+  const visible = list.filter(ex => !ex.hidden);
+  const hidden = list.filter(ex => ex.hidden);
+  let html = visible.length
+    ? visible.map(ex => renderRow(ex)).join('')
+    : `<div class="ex-empty" data-empty="1">이 부위에 표시 중인 운동이 없습니다.</div>`;
+  if (hidden.length) {
+    html += `<button type="button" data-bind="hidden-toggle" class="kr" style="width:100%;margin-top:6px;padding:12px 14px;border:0;background:transparent;color:rgba(255,255,255,0.4);font-size:13px;text-align:left;cursor:pointer;">숨긴 운동 ${hidden.length}개 ${_showHidden ? '▴' : '▾'}</button>`;
+    if (_showHidden) html += hidden.map(ex => renderRow(ex)).join('');
+  }
+  listEl.innerHTML = html;
 }
 
 function renderRow(ex) {
@@ -112,6 +124,9 @@ export function hookExerciseTabClicks(root) {
 
   // 위임: 운동 리스트 토글 (SPA 환경에서만 hookExerciseTabClicks 호출되므로 항상 SPA 모드)
   listEl.addEventListener('click', async (e) => {
+    // "숨긴 운동 N개" 펼치기/접기
+    const ht = e.target.closest('[data-bind="hidden-toggle"]');
+    if (ht) { _showHidden = !_showHidden; await renderExercisesTab(doc); return; }
     const t = e.target.closest('[data-toggle]');
     if (!t) return;
     const id = t.dataset.toggle;
