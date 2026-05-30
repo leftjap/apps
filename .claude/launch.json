@@ -8,6 +8,13 @@
       "port": 5180
     },
     {
+      "name": "book-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "cwd": "/Users/gio_c/apps/book",
+      "port": 5176
+    },
+    {
       "name": "today-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
