@@ -162,7 +162,7 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
     onClick: () => nav(route),
     style: { padding: '8px 14px', borderRadius: 7, fontSize: 14, fontWeight: tab === key ? 700 : 500, color: tab === key ? 'var(--ink-1)' : 'var(--ink-3)', cursor: 'pointer', background: tab === key ? 'var(--hover)' : 'transparent' },
   }, name);
-  const navEl = el('nav', { style: { display: 'flex', gap: 4, marginLeft: 8 } }, tabEl('어구록', 'excerpt', '/'), tabEl('통계', 'stats', '/stats'));
+  const navEl = el('nav', { style: { display: 'flex', gap: 4, marginLeft: 8 } }, tabEl('피드', 'feed', '/'), tabEl('어구록', 'library', '/library'), tabEl('통계', 'stats', '/stats'));
   const search = topbarSearch({ ctx });
   return el('header', {
     class: 'topbar',

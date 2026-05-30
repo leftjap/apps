@@ -15,7 +15,9 @@ import { Sync } from './db/sync.js';
 import { Queries } from './db/queries.js';
 import { loadBooksIntoRegistry } from './data/books.js';
 import './styles/book.css';
+import './styles/v4.css';
 import './features/feed.js'; // registerScreen('feed', ...)
+import './features/library.js'; // registerScreen('library', ...)
 import './features/thread.js'; // registerScreen('thread', ...)
 import './features/add-edit.js'; // setActions(openAdd/openEdit/openDelete)
 import './features/book-detail.js'; // registerScreen('book', ...)

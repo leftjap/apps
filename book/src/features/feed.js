@@ -135,7 +135,7 @@ async function render(host, params, ctx) {
 
   // 셸 먼저 (TopBar + 로딩 main)
   const mainInner = el('div', {});
-  const shell = screenShell({ tab: 'excerpt', ctx, children: mainInner });
+  const shell = screenShell({ tab: 'feed', ctx, children: mainInner });
   host.appendChild(shell);
 
   if (!owners.length) {
