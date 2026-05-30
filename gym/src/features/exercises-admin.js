@@ -13,6 +13,7 @@
 import {
   listExercisesForUser,
   toggleExerciseHidden,
+  setExerciseDeleted,
   createCustomExercise,
   setExerciseOrderForPart,
   deleteCustomExercise,
@@ -21,8 +22,6 @@ import { PART_IDS, PARTS } from '../db/exercises.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
-// 숨김(삭제) 처리된 운동을 펼쳐 보는 상태. 기본 false → 삭제 시 메인 목록에서 사라짐.
-let _showHidden = false;
 
 /** 부위 chip + 운동 리스트 모두 hydrate. mocks fixture 는 덮어씀. */
 export async function renderExercisesTab(root) {
@@ -64,17 +63,7 @@ async function renderExerciseList(doc) {
     listEl.innerHTML = `<div class="ex-empty" data-empty="1">이 부위에 등록된 운동이 없습니다.</div>`;
     return;
   }
-  // 삭제(빌트인) = 숨김 처리 → 메인 목록에서 제거. 숨긴 항목은 하단 접이식 섹션에서 복원.
-  const visible = list.filter(ex => !ex.hidden);
-  const hidden = list.filter(ex => ex.hidden);
-  let html = visible.length
-    ? visible.map(ex => renderRow(ex)).join('')
-    : `<div class="ex-empty" data-empty="1">이 부위에 표시 중인 운동이 없습니다.</div>`;
-  if (hidden.length) {
-    html += `<button type="button" data-bind="hidden-toggle" class="kr" style="width:100%;margin-top:6px;padding:12px 14px;border:0;background:transparent;color:rgba(255,255,255,0.4);font-size:13px;text-align:left;cursor:pointer;">숨긴 운동 ${hidden.length}개 ${_showHidden ? '▴' : '▾'}</button>`;
-    if (_showHidden) html += hidden.map(ex => renderRow(ex)).join('');
-  }
-  listEl.innerHTML = html;
+  listEl.innerHTML = list.map(ex => renderRow(ex)).join('');
 }
 
 function renderRow(ex) {
@@ -124,9 +113,6 @@ export function hookExerciseTabClicks(root) {
 
   // 위임: 운동 리스트 토글 (SPA 환경에서만 hookExerciseTabClicks 호출되므로 항상 SPA 모드)
   listEl.addEventListener('click', async (e) => {
-    // "숨긴 운동 N개" 펼치기/접기
-    const ht = e.target.closest('[data-bind="hidden-toggle"]');
-    if (ht) { _showHidden = !_showHidden; await renderExercisesTab(doc); return; }
     const t = e.target.closest('[data-toggle]');
     if (!t) return;
     const id = t.dataset.toggle;
@@ -176,7 +162,6 @@ function hookCustomLongPressDelete(listEl, doc) {
       timerId = null;
       const id = trackedRow?.dataset?.id;
       const isCustom = trackedRow?.classList?.contains('is-custom');
-      const isHidden = trackedRow?.classList?.contains('is-hidden');
       trackedRow = null;
       if (!id) return;
       closeMenus();
@@ -185,14 +170,12 @@ function hookCustomLongPressDelete(listEl, doc) {
       const menu = doc.createElement('div');
       menu.dataset.bind = 'row-action-menu';
       menu.style.cssText = 'display:flex;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.04);';
-      const btns = isCustom
-        ? [{ act: 'delete', label: '삭제', color: '#e15a5a' }, { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' }]
-        : [
-            // builtin: 코드 카탈로그라 실 삭제 불가 — UX '삭제' 라벨로 통일, 동작은 hide.
-            // 이미 hidden 이면 no-op (다시 보이게 하려면 토글 사용).
-            { act: 'hide', label: '삭제', color: '#e15a5a' },
-            { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' },
-          ];
+      // 커스텀·빌트인 모두 '삭제' = 실제 제거. 커스텀은 DB 행 삭제, 빌트인은 코드 카탈로그라
+      // settings.deletedExercises 에 기록해 영속 제거 (목록·운동선택 어디에도 안 보임).
+      const btns = [
+        { act: 'delete', label: '삭제', color: '#e15a5a' },
+        { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' },
+      ];
       menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:8px;border:0;background:transparent;color:${b.color};cursor:pointer;font-size:15px;">${b.label}</button>`).join('');
       row2.insertAdjacentElement('afterend', menu);
       menu.addEventListener('click', async (ev) => {
@@ -201,8 +184,10 @@ function hookCustomLongPressDelete(listEl, doc) {
         menu.remove();
         if (act === 'cancel') return;
         try {
-          if (act === 'delete') await deleteCustomExercise(id);
-          else if (act === 'hide' && !isHidden) await toggleExerciseHidden(id);
+          if (act === 'delete') {
+            if (isCustom) await deleteCustomExercise(id);
+            else await setExerciseDeleted(id, true);
+          }
           await renderExercisesTab(doc);
         } catch (err) { console.error('[exercises-admin] long-press action', err); }
       });

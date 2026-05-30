@@ -159,6 +159,7 @@ function fromSupabaseSettings(row) {
     birthDate: inner.birthDate ?? null,
     goalWeight: inner.goalWeight ?? 69,
     hiddenExercises: Array.isArray(inner.hiddenExercises) ? inner.hiddenExercises : [],
+    deletedExercises: Array.isArray(inner.deletedExercises) ? inner.deletedExercises : [],
     exerciseOrder: inner.exerciseOrder && typeof inner.exerciseOrder === 'object' ? inner.exerciseOrder : {},
     exercisePartOverride: inner.exercisePartOverride && typeof inner.exercisePartOverride === 'object' ? inner.exercisePartOverride : {},
   };

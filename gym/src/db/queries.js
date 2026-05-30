@@ -203,6 +203,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   birthYear: null,
   goalWeight: 69,
   hiddenExercises: [],
+  deletedExercises: [],
   exerciseOrder: {},
   exercisePartOverride: {},
 });
@@ -230,6 +231,7 @@ function cloneSettings(s) {
   return {
     ...s,
     hiddenExercises: [...s.hiddenExercises],
+    deletedExercises: [...(s.deletedExercises || [])],
     exerciseOrder: { ...s.exerciseOrder },
     exercisePartOverride: { ...s.exercisePartOverride },
   };
@@ -319,6 +321,7 @@ export async function listExercisesForUser({ part = null, includeHidden = true }
   const customs = await listCustomExercises();
   const partOverride = settings.exercisePartOverride || {};
   const hidden = new Set(settings.hiddenExercises || []);
+  const deleted = new Set(settings.deletedExercises || []);
 
   // 1+2) 머지 + part override
   const map = new Map();
@@ -331,8 +334,9 @@ export async function listExercisesForUser({ part = null, includeHidden = true }
     map.set(c.id, { ...c, part: finalPart, custom: true });
   }
 
-  // 3) part 필터
-  let list = Array.from(map.values());
+  // 3) 영구 삭제 운동 제외 (항상 — 관리 리스트·운동 선택 모두). 빌트인 '삭제'의 실제 효과.
+  let list = Array.from(map.values()).filter(e => !deleted.has(e.id));
+  // part 필터
   if (part && part !== 'all') {
     list = list.filter(e => e.part === part);
   }
@@ -380,6 +384,23 @@ export async function toggleExerciseHidden(exerciseId) {
   else set.add(exerciseId);
   const next = Array.from(set);
   await upsertUserSettings({ hiddenExercises: next });
+  return next;
+}
+
+/**
+ * 빌트인 운동 영구 삭제 — settings.deletedExercises 에 add/remove (숨김과 별개).
+ * 삭제된 빌트인은 listExercisesForUser 에서 항상 제외(관리 리스트·운동 선택 모두).
+ * 빌트인은 코드 카탈로그라 DB 행이 없으므로 이 set 으로 "삭제" 영속. 커스텀은 deleteCustomExercise.
+ * 반환: 갱신된 settings.deletedExercises 배열.
+ */
+export async function setExerciseDeleted(exerciseId, deleted = true) {
+  if (!exerciseId) throw new Error('[setExerciseDeleted] exerciseId 누락');
+  const settings = await getUserSettings();
+  const set = new Set(settings.deletedExercises || []);
+  if (deleted) set.add(exerciseId);
+  else set.delete(exerciseId);
+  const next = Array.from(set);
+  await upsertUserSettings({ deletedExercises: next });
   return next;
 }
 
@@ -495,6 +516,7 @@ if (typeof window !== 'undefined') {
     listAllBuiltin,
     listExercisesForUser,
     toggleExerciseHidden,
+    setExerciseDeleted,
     setExerciseOrderForPart,
     setExercisePartOverride,
     // utils
