@@ -65,6 +65,16 @@ function schedule(row) {
 }
 
 async function runClaude(row) {
+  // settle 재확인: 마지막 수정(updated_at) 후 SETTLE_MS 경과해야 정착. 작성 중이면 재스케줄.
+  const { data: cur, error: ce } = await sb.from('today_entries').select('updated_at, deleted_at').eq('id', row.id).single();
+  if (ce || !cur || cur.deleted_at) { log(`skip ${row.id} (삭제/조회 실패)`); seen.delete(row.id); return; }
+  const sinceUpdate = Date.now() - new Date(cur.updated_at).getTime();
+  if (sinceUpdate < SETTLE_MS) {
+    const wait = SETTLE_MS - sinceUpdate;
+    log(`reschedule ${row.id}: 마지막 수정 후 ${Math.round(sinceUpdate / 1000)}s → 정착까지 ${Math.round(wait / 1000)}s 대기`);
+    setTimeout(() => { runClaude(row); }, wait);
+    return;
+  }
   log(`run ${row.id}`);
   const prompt = [
     '너는 투데이 앱 "오늘의 네비" 댓글 봇 클로드다.',
