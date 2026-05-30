@@ -365,12 +365,15 @@ export async function listExpensesByRange(fromISO, toISO) {
     .sort((a, b) => (b.spent_at || '').localeCompare(a.spent_at || ''));
 }
 
-/** 월 단위 listByRange (year, monthOneBased). */
+/** 월 단위 listByRange (year, monthOneBased) — KST(UTC+9) 월 경계.
+ *  사용자는 KST 달력으로 가계부를 봄. 캘린더/타임라인 버킷(isoToMockDate)도 로컬(KST) 기준이라,
+ *  월 합계도 KST 로 맞춰야 일관됨. 이전 UTC 'Z' 경계는 매월 1일 0~9시(KST) 거래를 전월로 오집계했음
+ *  (예: 5/1 05:00 KST = 4/30 20:00 UTC → 4월로 샜음). spent_at 은 UTC 인스턴트라 인스턴트 경계로 환산.
+ *  KST 1일 00:00 = UTC 전날 15:00 (= Date.UTC(...) - 9h). */
 export async function listExpensesByMonth(year, monthOneBased) {
-  const m = String(monthOneBased).padStart(2, '0');
-  const lastDay = new Date(year, monthOneBased, 0).getDate();
-  const from = `${year}-${m}-01T00:00:00.000Z`;
-  const to = `${year}-${m}-${String(lastDay).padStart(2, '0')}T23:59:59.999Z`;
+  const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+  const from = new Date(Date.UTC(year, monthOneBased - 1, 1, 0, 0, 0, 0) - KST_OFFSET_MS).toISOString();
+  const to = new Date(Date.UTC(year, monthOneBased, 1, 0, 0, 0, 0) - KST_OFFSET_MS - 1).toISOString();
   return await listExpensesByRange(from, to);
 }
 

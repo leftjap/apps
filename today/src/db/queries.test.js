@@ -510,31 +510,37 @@ describe('createExpense', () => {
   });
 });
 
-describe('listExpensesByRange / listExpensesByMonth', () => {
+describe('listExpensesByRange / listExpensesByMonth (KST 월 경계)', () => {
+  // spent_at 은 UTC 인스턴트. 귀속 월 = KST(+9) 환산 달 (캘린더 isoToMockDate 도 로컬=KST 버킷).
+  // 각 거래의 KST 환산을 주석에 명시 — 코드와 독립적으로 진실을 도출해 assert.
   beforeEach(async () => {
-    await createExpense({ owner_id: OWNER, spent_at: '2026-04-01T10:00:00.000Z', amount_krw: 1000, source: 'manual', category: 'dining' });
-    await createExpense({ owner_id: OWNER, spent_at: '2026-04-15T15:00:00.000Z', amount_krw: 2000, source: 'manual', category: 'dining' });
-    await createExpense({ owner_id: OWNER, spent_at: '2026-04-30T20:00:00.000Z', amount_krw: 3000, source: 'manual', category: 'subscribe' });
-    await createExpense({ owner_id: OWNER, spent_at: '2026-05-01T10:00:00.000Z', amount_krw: 9999, source: 'manual', category: 'dining' });
+    await createExpense({ owner_id: OWNER, spent_at: '2026-04-01T10:00:00.000Z', amount_krw: 1000, source: 'manual', category: 'dining' });    // KST 4/1 19:00 → 4월
+    await createExpense({ owner_id: OWNER, spent_at: '2026-04-15T15:00:00.000Z', amount_krw: 2000, source: 'manual', category: 'dining' });    // KST 4/16 00:00 → 4월
+    await createExpense({ owner_id: OWNER, spent_at: '2026-04-30T20:00:00.000Z', amount_krw: 3000, source: 'manual', category: 'subscribe' });  // KST 5/1 05:00 → 5월(경계)
+    await createExpense({ owner_id: OWNER, spent_at: '2026-05-01T10:00:00.000Z', amount_krw: 9999, source: 'manual', category: 'dining' });    // KST 5/1 19:00 → 5월
   });
 
-  it('월 단위 listByMonth — 4월만 3건', async () => {
+  it('KST 4월 = 2건 (4/30 20:00 UTC = KST 5/1 05:00 은 5월로 귀속, 이전 UTC 경계 버그 회귀 방지)', async () => {
     const apr = await listExpensesByMonth(2026, 4);
-    expect(apr).toHaveLength(3);
-    expect(apr.every((e) => e.spent_at.startsWith('2026-04'))).toBe(true);
+    expect(apr.map((e) => e.amount_krw).sort((a, b) => a - b)).toEqual([1000, 2000]);
+  });
+
+  it('KST 5월 = 2건 (월초 새벽 KST 거래가 5월에 포함)', async () => {
+    const may = await listExpensesByMonth(2026, 5);
+    expect(may.map((e) => e.amount_krw).sort((a, b) => a - b)).toEqual([3000, 9999]);
   });
 
   it('spent_at desc 정렬 (최신 먼저)', async () => {
     const apr = await listExpensesByMonth(2026, 4);
-    expect(apr[0].amount_krw).toBe(3000);
-    expect(apr[2].amount_krw).toBe(1000);
+    expect(apr[0].amount_krw).toBe(2000); // 4/15
+    expect(apr[1].amount_krw).toBe(1000); // 4/1
   });
 
   it('softDeleted 제외', async () => {
     const apr = await listExpensesByMonth(2026, 4);
     await softDeleteExpense(apr[0].id);
     const after = await listExpensesByMonth(2026, 4);
-    expect(after).toHaveLength(2);
+    expect(after).toHaveLength(1);
   });
 });
 

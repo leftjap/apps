@@ -72,6 +72,11 @@
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
+    height: 100%;
+    /* iOS: body 자체 스크롤 차단 → rubber-band 바운스 + 툴바 토글 점프 제거.
+       스크롤은 #mainView 가 전담. '화면 딱 고정' 요구 (2026-05-31). */
+    overflow: hidden;
+    overscroll-behavior: none;
     font-family: var(--font-sans);
     color: var(--ink-1);
     background: var(--shell);
@@ -81,7 +86,8 @@
 
   /* ============ App shell ============ */
   .app {
-    height: 100vh;
+    /* 100dvh — iOS dynamic toolbar 접힘/펼침에도 정확 viewport (100vh 는 툴바 영역 포함해 점프 유발) */
+    height: 100dvh;
     display: flex;
     background: var(--shell);
   }
@@ -613,6 +619,9 @@
     flex-direction: column;
     min-height: 0;
     overflow-y: auto;
+    /* 내부 스크롤이 body 로 전파(chain) 안 되게 — 끝까지 스크롤해도 화면 안 흔들림 */
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;  /* iOS 관성 스크롤 */
     /* 스크롤은 유지하되 시각적 스크롤바 숨김 (사용자 요청 2026-05-13) */
     scrollbar-width: none;          /* Firefox */
     -ms-overflow-style: none;       /* IE / 옛 Edge */
