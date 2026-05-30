@@ -21,7 +21,7 @@ const STATE_DIR = path.join(HOME, '.local/state/navi-daemon');
 const LAST_SEEN = path.join(STATE_DIR, 'last_seen');
 const TOKEN_FILE = path.join(HOME, '.config/navi-daemon/oauth-token');
 const CLAUDE = '/opt/homebrew/bin/claude';
-const SETTLE_MS = 10 * 60 * 1000;
+const SETTLE_MS = Number(process.env.NAVI_SETTLE_MS) || 10 * 60 * 1000;
 const NAVI_KINDS = ['navi', 'soyoun_navi'];
 
 function loadEnv(p) {
