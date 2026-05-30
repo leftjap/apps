@@ -1,15 +1,16 @@
 /**
  * 피드 탭 — v4 FeedTab 이식 (바닐라). 저장된 어구록을 다양한 방식으로 재발견·환기.
- * 섹션(순서 고정, 데이터 없으면 숨김): 오늘의 한 줄(Hero) · 최근 · AI의 발견(ECHOES) · ★오래된 핀 · 같은 단어 + 푸터.
- *  - 현재 데이터는 과거 스냅샷이라 "최근 7일"·핀·tags·ECHOES 가 비어 일부 섹션 숨김.
- *    W4(tags→같은 단어)·W5(ECHOES/THEMES 스냅샷) 데이터가 생기면 해당 섹션이 자동 표시됨.
+ * 섹션(순서 고정, 데이터 없으면 숨김): 오늘의 한 줄(Hero) · 최근 · AI의 발견(메아리) · ★오래된 핀 · 같은 단어 + 푸터.
+ *  - AI의 발견·같은 단어는 Claude Code Routine 주간 생성 스냅샷(data/curation.js)을 읽음(작업지시서 §4).
+ *  - 오늘의 한 줄·최근·오래된 핀은 어구록 집계.
  *  - 어구록 클릭 → 공용 QuoteModal(ui/quote-modal.js).
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
 import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
-import { el } from '../ui/dom.js';
+import { CURATION } from '../data/curation.js';
+import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
@@ -30,6 +31,7 @@ function weekNum(d) {
 }
 const anchor = (label, ...rest) => el('div', { class: 'block-anchor' }, el('span', { class: 'label' }, label), ...rest);
 const block = (anchorEl, body) => el('section', { class: 'block' }, anchorEl, body);
+const srcLine = (b) => `${b ? b.t : ''} · ${b ? b.a : ''}`;
 
 async function render(host, params, ctx) {
   const user = ctx.user;
@@ -49,6 +51,7 @@ async function render(host, params, ctx) {
   let commentCounts = {};
   try { all = await Queries.listAllQuotes(owners); } catch (e) { console.warn('[feed] 로드 실패', e?.message || e); }
   try { commentCounts = await Queries.countCommentsForQuotes(all.map((q) => q.id)); } catch (e) { /* noop */ }
+  const qById = new Map(all.map((q) => [q.id, q]));
   const open = (q) => openQuoteModal(q, ctx, { commentCount: commentCounts[q.id] || 0, container: root });
 
   const byDateDesc = [...all].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
@@ -64,7 +67,7 @@ async function render(host, params, ctx) {
     return;
   }
 
-  // ── 1. 오늘의 한 줄 (Hero) ── 핀+오래된 우선, 없으면 30일+ 오래된 것 중 랜덤
+  // ── 1. 오늘의 한 줄 (Hero) ──
   const pinnedOld = all.filter((q) => q.pinned && daysAgo(q.created_at) > 7);
   const old30 = all.filter((q) => daysAgo(q.created_at) > 30);
   const pool = pinnedOld.length ? pinnedOld : (old30.length ? old30 : all);
@@ -100,10 +103,7 @@ async function render(host, params, ctx) {
       const b = bookOf(q.book_ref);
       list.appendChild(el('div', { class: 'recent-row', onClick: () => open(q) },
         el('div', { class: 'idx' }, String(i + 1).padStart(2, '0')),
-        el('div', {},
-          el('div', { class: 'text' }, q.text),
-          el('div', { class: 'src' }, `${b ? b.t : ''} · ${b ? b.a : ''}`),
-        ),
+        el('div', {}, el('div', { class: 'text' }, q.text), el('div', { class: 'src' }, srcLine(b))),
         el('div', { class: 'when' }, relTime(q.created_at)),
       ));
     });
@@ -113,10 +113,41 @@ async function render(host, params, ctx) {
     ));
   }
 
-  // ── 3. AI의 발견 (ECHOES) — 주간 스냅샷(W5). 현재 데이터 없음 → 섹션 생략 ──
-  // ── 4. 같은 단어 (tags 클러스터) — W4. 현재 tags 없음 → 섹션 생략 ──
+  // ── 3. AI의 발견 (메아리) — 큐레이션 스냅샷 ──
+  const echoes = (CURATION?.echoes || [])
+    .map((e) => ({ ...e, qa: qById.get(e.a), qb: qById.get(e.b) }))
+    .filter((e) => e.qa && e.qb);
+  if (echoes.length) {
+    const wrap = el('div', { class: 'echoes' });
+    echoes.forEach((e, i) => {
+      const ba = bookOf(e.qa.book_ref);
+      const bb = bookOf(e.qb.book_ref);
+      wrap.appendChild(el('div', { class: 'echo' },
+        el('div', { class: 'head' },
+          el('span', { class: 'word' }, e.keyword),
+          el('span', { class: 'ai' }, `CLAUDE · ${String(i + 1).padStart(2, '0')}`),
+        ),
+        e.note ? el('div', { class: 'note' }, e.note) : null,
+        el('div', { class: 'echo-pair' },
+          el('div', { class: 'side', onClick: () => open(e.qa) },
+            el('p', { class: 'txt' }, e.qa.text),
+            el('div', { class: 'src' }, srcLine(ba)),
+          ),
+          el('div', { class: 'between' }, el('span', { class: 'glyph' }, '≈')),
+          el('div', { class: 'side', onClick: () => open(e.qb) },
+            el('p', { class: 'txt' }, e.qb.text),
+            el('div', { class: 'src' }, srcLine(bb)),
+          ),
+        ),
+      ));
+    });
+    feedEl.appendChild(block(
+      anchor('AI의 발견', el('span', {}, '서로 다른 책에서 같은 말을 찾았습니다'), el('span', { class: 'right' }, `${echoes.length} 쌍`)),
+      wrap,
+    ));
+  }
 
-  // ── 5. ★ 오래된 핀 — 14일+ 핀 오래된 순 최대 3 (현재 핀 0 → 자동 숨김) ──
+  // ── 4. ★ 오래된 핀 — 14일+ 핀 오래된 순 최대 3 ──
   const oldPins = all
     .filter((q) => q.pinned && daysAgo(q.created_at) > 14)
     .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
@@ -127,10 +158,7 @@ async function render(host, params, ctx) {
       const b = bookOf(q.book_ref);
       list.appendChild(el('div', { class: 'pin-row', onClick: () => open(q) },
         el('div', { class: 'star' }, iconEl('star-fill', { sz: 14 })),
-        el('div', {},
-          el('div', { class: 'txt' }, q.text),
-          el('div', { class: 'src' }, `${b ? b.t : ''} · ${b ? b.a : ''}`),
-        ),
+        el('div', {}, el('div', { class: 'txt' }, q.text), el('div', { class: 'src' }, srcLine(b))),
         el('div', { class: 'when' }, relTime(q.created_at)),
       ));
     });
@@ -140,14 +168,50 @@ async function render(host, params, ctx) {
     ));
   }
 
+  // ── 5. 같은 단어 (키워드 클러스터) — 큐레이션 스냅샷 ──
+  const clusters = (CURATION?.clusters || [])
+    .map((c) => ({ ...c, qs: c.quotes.map((id) => qById.get(id)).filter(Boolean) }))
+    .filter((c) => c.qs.length);
+  if (clusters.length) {
+    let active = 0;
+    const words = el('div', { class: 'cluster-words' });
+    const panel = el('div', { class: 'cluster-quotes' });
+    const renderPanel = () => {
+      clear(panel);
+      for (const q of clusters[active].qs) {
+        const b = bookOf(q.book_ref);
+        panel.appendChild(el('div', { class: 'cluster-q', onClick: () => open(q) },
+          el('p', { class: 'txt' }, q.text),
+          el('div', { class: 'src' }, srcLine(b)),
+        ));
+      }
+      [...words.children].forEach((w, i) => w.classList.toggle('active', i === active));
+    };
+    clusters.forEach((c, i) => {
+      words.appendChild(el('button', { class: 'cluster-tab', onClick: () => { active = i; renderPanel(); } },
+        el('span', { class: 'word' }, c.word),
+        el('span', { class: 'stat' }, `${c.count ?? c.qs.length}개 · ${c.books ?? '-'}권`),
+      ));
+    });
+    feedEl.appendChild(block(
+      anchor('같은 단어', el('span', {}, '여러 책에서 등장하는 키워드'), el('span', { class: 'right' }, `${clusters.length} 키워드`)),
+      el('div', { class: 'cluster-list' }, words, panel),
+    ));
+    renderPanel();
+  }
+
   // 푸터 — 루틴 설명
   feedEl.appendChild(el('footer', { class: 'feed-footer' },
     el('div', {},
-      '이 피드는 저장된 어구록을 다양한 방식으로 다시 꺼내 보여줍니다. ',
+      '이 피드는 ', el('strong', { style: { color: 'var(--ink-2)' } }, 'Claude'),
+      '가 매주 어구록을 다시 읽어 만듭니다. ',
       el('strong', { style: { color: 'var(--ink-2)' } }, 'AI의 발견'), ' · ',
       el('strong', { style: { color: 'var(--ink-2)' } }, '같은 단어'),
-      ' 섹션은 주간 큐레이션이 쌓이면 활성화됩니다.',
+      '는 저장된 어구록을 분석해 환기할 만한 연결을 찾아냅니다.',
     ),
+    CURATION?.generatedAt ? el('div', { class: 'routines-inline' },
+      el('span', { class: 'ri-item' }, el('span', { class: 'dot' }), el('span', { class: 'name' }, '주간 큐레이션'), el('span', { class: 'when' }, `· ${CURATION.generatedAt} 생성`)),
+    ) : null,
   ));
 }
 
