@@ -11,6 +11,29 @@
   --mono: "JetBrains Mono", ui-monospace, monospace;
   --sh-pop: 0 4px 12px -2px rgba(20,18,14,.10), 0 24px 60px -16px rgba(20,18,14,.24);
 }
+
+/* ── v4 시안 토큰 — 신규 피드·어구록 화면(.bookv4) 스코프. 구 화면은 위 :root v14 유지(회귀 0). ── */
+.bookv4 {
+  --bg: #FFFFFF;
+  --bg-soft: #FAFAF8;
+  --hover: rgba(0,0,0,0.035);
+  --selected: rgba(0,0,0,0.05);
+  --ink: #18171A;
+  --ink-2: #5F5B53;
+  --ink-3: #9A958B;
+  --ink-4: #C8C2B4;
+  --line: rgba(0,0,0,0.07);
+  --line-soft: rgba(0,0,0,0.04);
+  --line-bold: rgba(0,0,0,0.18);
+  --accent: #E85A3A;
+  --pin: #C8881A;
+  --highlight: #FAF3E0;
+  --font-sans: var(--sans);
+  --font-serif: var(--serif);
+  --font-mono: var(--mono);
+  --s-anxiety: #B85742; --s-certainty: #2C2C2C; --s-warm: #B88842;
+  --s-money: #5A6B5C; --s-craft: #6C6356; --s-meaning: #4E5462; --s-doubt: #87807A;
+}
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {

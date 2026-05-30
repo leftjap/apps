@@ -32,6 +32,11 @@ export const ICON_PATHS = Object.freeze({
   share: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.6-4.2M8.2 13l7.6 4.2"/>',
   trash: '<path d="M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13"/>',
   check: '<path d="M5 12l5 5 9-11"/>',
+  // v4 추가 — 별(핀)·복사·셔플 (menu-v 는 기존 dots-v 재사용)
+  star: '<path d="M12 2.6l2.9 5.88 6.5.95-4.7 4.58 1.1 6.47L12 17.42l-5.8 3.06 1.1-6.47-4.7-4.58 6.5-.95z"/>',
+  'star-fill': '<path d="M12 2.6l2.9 5.88 6.5.95-4.7 4.58 1.1 6.47L12 17.42l-5.8 3.06 1.1-6.47-4.7-4.58 6.5-.95z" fill="currentColor" stroke="none"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+  shuffle: '<polyline points="16 3 21 3 21 8"/><path d="M4 20L21 3"/><polyline points="21 16 21 21 16 21"/><path d="M15 15l6 6"/><path d="M4 4l5 5"/>',
 });
 
 /** SVG 문자열. style 은 인라인 문자열로 전달 가능. */
