@@ -172,6 +172,70 @@ describe('clearExpensesFixture — 빈 월 시 mocks fixture 더미 표시 차�
   });
 });
 
+describe('월 이동 시 헤드라인 월 단어 갱신 (N2 회귀 — 이전달인데 5월 표기)', () => {
+  // mock 헤드라인은 'N월에는 <strong>X만원</strong> 쓰고 있어요' 구조.
+  // 월 이동 시 strong(금액)만 갱신하면 'N월에는' 접두가 init 월(현재월)로 멈추는 버그.
+  const makeBox = (initialHTML) => ({ innerHTML: initialHTML });
+  const makeStrong = (box, textContent) => ({
+    textContent,
+    closest(sel) { return sel === '.exp-headline-title' ? box : null; },
+  });
+
+  it('patchHeadlineFromRows — month 전달 시 접두 월 단어까지 4월로 갱신', () => {
+    const box = makeBox('5월에는 <strong>149만원</strong> 쓰고 있어요');
+    const strong = makeStrong(box, '149만원');
+    const sub = { textContent: '48,005원' };
+    const doc = {
+      querySelector(sel) {
+        if (sel === '.exp-headline-title strong') return strong;
+        if (sel === '.exp-headline-sub strong') return sub;
+        return null;
+      },
+    };
+    const ok = Expenses.patchHeadlineFromRows([{ amount_krw: 2306707 }], { month: 4, todayDay: 30 }, doc);
+    expect(ok).toBe(true);
+    expect(box.innerHTML).toContain('4월에는');
+    expect(box.innerHTML).toContain('231만원');
+    expect(box.innerHTML).not.toContain('5월');
+  });
+
+  it('patchHeadlineFromRows — month 미전달 시 기존 동작 유지 (strong 금액만, 하위호환)', () => {
+    const box = makeBox('5월에는 <strong>149만원</strong> 쓰고 있어요');
+    const strong = makeStrong(box, '149만원');
+    const doc = {
+      querySelector(sel) { return sel === '.exp-headline-title strong' ? strong : null; },
+    };
+    Expenses.patchHeadlineFromRows([{ amount_krw: 2306707 }], { todayDay: 30 }, doc);
+    expect(strong.textContent).toBe('231만원');
+    expect(box.innerHTML).toContain('5월에는'); // 접두 미변경 (innerHTML 손 안 댐)
+  });
+
+  it('patchRankSectionFromRows — month 전달 시 랭킹 헤드라인 월 단어 갱신', () => {
+    const box = makeBox('5월에는 <strong>삼성화재</strong>에 많이 쓰고 있어요');
+    const section = { querySelector(sel) { return sel === '.exp-headline-title' ? box : null; } };
+    const doc = { querySelector(sel) { return sel === '.exp-rank-section' ? section : null; } };
+    const rows = [{ merchant: '쿠팡', amount_krw: 75000 }, { merchant: '네이버', amount_krw: 1000 }];
+    const ok = Expenses.patchRankSectionFromRows(rows, doc, 4);
+    expect(ok).toBe(true);
+    expect(box.innerHTML).toContain('4월에는');
+    expect(box.innerHTML).toContain('쿠팡');
+    expect(box.innerHTML).not.toContain('5월');
+  });
+
+  it('clearExpensesFixture — month 전달 시 0원 헤드라인도 4월 반영', () => {
+    const box = makeBox('5월에는 <strong>149만원</strong> 쓰고 있어요');
+    const strong = makeStrong(box, '149만원');
+    const doc = {
+      querySelector(sel) { return sel === '.exp-headline-title strong' ? strong : null; },
+      querySelectorAll() { return []; },
+      getElementById() { return null; },
+    };
+    clearExpensesFixture(doc, 4);
+    expect(box.innerHTML).toContain('4월에는');
+    expect(box.innerHTML).toContain('0만원');
+  });
+});
+
 describe('formatAmount — mocks 패턴 정합', () => {
   it('숫자 → amt-num + amt-unit HTML', () => {
     const html = formatAmount(305000);

@@ -215,16 +215,22 @@ export function renderExpenseRecentsFromRows(rows, doc = document) {
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
- * .exp-headline-title <strong> + .exp-headline-sub <strong> 텍스트만 갱신.
- * inline onclick 보존 (전체 갈아치움 안 함).
+ * .exp-headline-title + .exp-headline-sub <strong> 텍스트 갱신.
+ * opts.month 전달 시 'N월에는' 접두까지 재구성 (월 이동 시 mock 의 init 월 고정 해소).
+ * mock 헤드라인은 렌더 시점 월을 텍스트로 박아넣어, strong 만 바꾸면 월 단어가 멈춤 (N2 회귀).
+ * inline onclick 은 .exp-headline-title 자체엔 없음 — innerHTML 재구성 안전.
  */
 export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
   const title = doc.querySelector('.exp-headline-title strong');
   const sub = doc.querySelector('.exp-headline-sub strong');
   if (!title && !sub) return false;
   if (!rows || !rows.length) return false;
-  const { total, dailyAvg, headlineMan } = summarizeMonth(rows, opts.todayDay);
-  if (title) title.textContent = `${headlineMan}만원`;
+  const { dailyAvg, headlineMan } = summarizeMonth(rows, opts.todayDay);
+  if (title) {
+    const titleBox = opts.month != null ? title.closest?.('.exp-headline-title') : null;
+    if (titleBox) titleBox.innerHTML = `${opts.month}월에는 <strong>${headlineMan}만원</strong> 쓰고 있어요`;
+    else title.textContent = `${headlineMan}만원`;
+  }
   if (sub) sub.textContent = `${dailyAvg.toLocaleString('ko-KR')}원`;
   return true;
 }
@@ -321,7 +327,7 @@ export function escapeAttr(s) {
  * - rows.length === 0 → no-op (mocks fixture 보존)
  * - 가맹점 후보 0건 (모든 rows merchant/brand 없음) → no-op (fixture 보존)
  */
-export function patchRankSectionFromRows(rows, doc = document) {
+export function patchRankSectionFromRows(rows, doc = document, month = null) {
   if (!rows || !rows.length) return false;
   const section = doc.querySelector('.exp-rank-section');
   if (!section) return false;
@@ -341,8 +347,12 @@ export function patchRankSectionFromRows(rows, doc = document) {
     if (amtEl) amtEl.textContent = formatManwon(topBrand.amount);
     rank1.setAttribute('onclick', `openMerchantDetail('${escapeAttr(topBrand.name)}', event)`);
   }
-  const headStrong = section.querySelector('.exp-headline-title strong');
-  if (headStrong) headStrong.textContent = topBrand.name;
+  const headTitle = section.querySelector('.exp-headline-title');
+  if (headTitle) {
+    // 월 이동 시 'N월에는' 접두까지 갱신. topBrand.name 은 사용자 데이터 → escapeHtml.
+    if (month != null) headTitle.innerHTML = `${month}월에는 <strong>${escapeHtml(topBrand.name)}</strong>에 많이 쓰고 있어요`;
+    else { const hs = headTitle.querySelector('strong'); if (hs) hs.textContent = topBrand.name; }
+  }
   const grid = section.querySelector('.exp-rank-grid');
   if (grid) {
     // 2026-05-04 — chip 영문 enum (etc/delivery/dining/...) → 한글 라벨 변환 (Classifier).
@@ -380,11 +390,15 @@ function observeCategoryChange(cb) {
  * 헤드라인 0원 / 캘린더 amount 비우기 + is-zero 적용 / 타임라인 비우기 / Recents 비우기.
  * mocks 의 inline onclick 등 구조 자체는 유지 (사용자 클릭 시 빈 popover).
  */
-export function clearExpensesFixture(doc = document) {
+export function clearExpensesFixture(doc = document, month = null) {
   if (!doc) return false;
-  // 헤드라인 — 월 총액 0원 / 일평균 0원
+  // 헤드라인 — 월 총액 0원 / 일평균 0원 (month 전달 시 'N월에는' 접두까지 갱신)
   const title = doc.querySelector('.exp-headline-title strong');
-  if (title) title.textContent = '0';
+  if (title) {
+    const titleBox = month != null ? title.closest?.('.exp-headline-title') : null;
+    if (titleBox) titleBox.innerHTML = `${month}월에는 <strong>0만원</strong> 쓰고 있어요`;
+    else title.textContent = '0';
+  }
   const sub = doc.querySelector('.exp-headline-sub strong');
   if (sub) sub.textContent = '0';
   // 캘린더 일별 합계 비우기
@@ -609,14 +623,14 @@ export async function loadAndRenderMonth(year, month, doc = document) {
     const todayDay = isCurrentMonth ? now.getDate() : 0;
     if (!rows.length) {
       // 2026-05-04 정책 — Keep import 후 mocks fixture (tx-XX 더미) 표시 차단.
-      clearExpensesFixture(doc);
+      clearExpensesFixture(doc, month);
       return;
     }
     renderExpenseRecentsFromRows(rows);
-    patchHeadlineFromRows(rows, { todayDay });
+    patchHeadlineFromRows(rows, { todayDay, month });
     patchCalendarFromRows(rows, { todayDay });
     renderTimelineFromRows(rows, { todayDay }, doc, year);
-    patchRankSectionFromRows(rows, doc);
+    patchRankSectionFromRows(rows, doc, month);
     // 통계 탭 — 월별 추이 + 누적 brand TOP 10 (panel hidden 상태에서도 갱신해서 stats 클릭 시 즉시 반영)
     await patchMonthlyTrendChart(year, month, doc);
     await patchCumulativeFromHistory(year, month, doc);
@@ -646,7 +660,7 @@ function bindStatsTabHandler() {
     const month = m ? Number(m[2]) : now.getMonth() + 1;
     try {
       const rows = await Queries.listExpensesByMonth(year, month);
-      if (rows && rows.length) patchRankSectionFromRows(rows, document);
+      if (rows && rows.length) patchRankSectionFromRows(rows, document, month);
       await patchMonthlyTrendChart(year, month, document);
       await patchCumulativeFromHistory(year, month, document);
     } catch (err) {
