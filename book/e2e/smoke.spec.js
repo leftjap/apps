@@ -18,7 +18,7 @@ test.describe('book smoke', () => {
     await expect(page.locator('.book-login__brand')).toHaveText('book');
     await expect(page.locator('[data-role="signin"]')).toBeVisible();
     const books = await page.evaluate(() => window.bookData?.BOOKS?.length);
-    expect(books).toBe(16);
+    expect(books).toBeGreaterThan(100); // 알라딘 카탈로그 105책 (구 시드 16 → stale 수정)
   });
 
   test('로그인 → 추가 → 댓글 → 핀', async ({ page }) => {
