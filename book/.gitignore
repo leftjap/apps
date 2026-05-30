@@ -10,3 +10,4 @@ playwright-report/
 # 큐레이션 임시 입력 (어구록 본문 — 커밋 금지)
 .curation-input.json
 .curation-quotes.txt
+.e2e-snap.txt
