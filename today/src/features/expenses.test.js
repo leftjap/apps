@@ -23,6 +23,7 @@ import {
   formatManwon,
   rankMerchantsByMonth,
   escapeAttr,
+  chipLabelHtml,
   mountExpensesView,
   datetimeLocalToIso,
   isoToDatetimeLocal,
@@ -1405,5 +1406,28 @@ describe('patchDayPopoverFromRows — Wave 11.6.5 빈 메시지 보강', () => {
     expect(html).not.toContain('거래 추가');
     expect(html).not.toContain('window.openNewExpenseForm');
     expect(html).toBe('');
+  });
+});
+
+describe('chipLabelHtml — 랭킹 카테고리 칩 4글자+ 균형 줄바꿈', () => {
+  it("4글자 '해외체류' → '해외<br>체류' (2/2)", () => {
+    expect(chipLabelHtml('해외체류')).toBe('해외<br>체류');
+  });
+  it("2글자 '마트' → 그대로 (1줄)", () => {
+    expect(chipLabelHtml('마트')).toBe('마트');
+  });
+  it("3글자 '편의점' → 그대로 (1줄)", () => {
+    expect(chipLabelHtml('편의점')).toBe('편의점');
+  });
+  it("5글자 '온라인쇼핑' → '온라인<br>쇼핑' (3/2)", () => {
+    expect(chipLabelHtml('온라인쇼핑')).toBe('온라인<br>쇼핑');
+  });
+  it('null/빈 → 빈 문자열', () => {
+    expect(chipLabelHtml(null)).toBe('');
+    expect(chipLabelHtml('')).toBe('');
+  });
+  it('각 조각 escape (XSS 안전)', () => {
+    // '<i>해외체류' = 7자 → mid=4 → 첫조각 '<i>해'(escape)/'외체류'
+    expect(chipLabelHtml('<i>해외체류')).toBe('&lt;i&gt;해<br>외체류');
   });
 });

@@ -317,6 +317,15 @@ export function escapeAttr(s) {
   return String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+/** 랭킹 카드 카테고리 칩(32px 원) 라벨 — 4글자+ 는 중간에서 <br> 로 균형 줄바꿈
+ *  ('해외체류' → '해외'/'체류'). 각 조각은 escape, <br> 만 raw. 3글자 이하는 1줄. */
+export function chipLabelHtml(label) {
+  const s = String(label ?? '');
+  if (s.length <= 3) return escapeHtml(s);
+  const mid = Math.ceil(s.length / 2);
+  return `${escapeHtml(s.slice(0, mid))}<br>${escapeHtml(s.slice(mid))}`;
+}
+
 /**
  * .exp-rank-section 의 1위 카드 (.exp-rank-1) + 그리드 (.exp-rank-grid) Dexie rows 로 갱신.
  * mocks today-mac.html L4552-4563 (rank-1) + L4466-4477 (brands grid) 답습.
@@ -356,7 +365,7 @@ export function patchRankSectionFromRows(rows, doc = document, month = null) {
   const grid = section.querySelector('.exp-rank-grid');
   if (grid) {
     // 2026-05-04 — chip 영문 enum (etc/delivery/dining/...) → 한글 라벨 변환 (Classifier).
-    const gridHtml = brands.slice(0, 6).map((b) => `<div class="exp-rank-card" onclick="openMerchantDetail('${escapeAttr(b.name)}', event)"><span class="exp-rank-card__num">${b.rank}</span><span class="exp-rank-card__chip">${escapeHtml(toCategoryLabel(b.cat))}</span><div class="exp-rank-card__main"><span class="exp-rank-card__name">${escapeHtml(b.name)}</span><span class="exp-rank-card__amt">${formatManwon(b.amount)}</span></div></div>`).join('');
+    const gridHtml = brands.slice(0, 6).map((b) => `<div class="exp-rank-card" onclick="openMerchantDetail('${escapeAttr(b.name)}', event)"><span class="exp-rank-card__num">${b.rank}</span><span class="exp-rank-card__chip">${chipLabelHtml(toCategoryLabel(b.cat))}</span><div class="exp-rank-card__main"><span class="exp-rank-card__name">${escapeHtml(b.name)}</span><span class="exp-rank-card__amt">${formatManwon(b.amount)}</span></div></div>`).join('');
     grid.innerHTML = gridHtml;
   }
   return true;
