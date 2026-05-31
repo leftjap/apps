@@ -7,7 +7,9 @@
  *  정규화: { isbn, title, sub, author, publisher, year, category, coverUrl }
  */
 
-const BASE = '/api/aladin';
+const SUPA = (import.meta.env && import.meta.env.VITE_SUPABASE_URL) || '';
+// dev: vite proxy(/api/aladin)가 ttbkey 주입. prod(정적 배포): Supabase Edge Function(aladin) 경유.
+const BASE = (import.meta.env && import.meta.env.DEV) ? '/api/aladin' : `${SUPA}/functions/v1/aladin`;
 const COMMON = 'output=js&Version=20131101&Cover=Big';
 
 // "한강 (지은이)", "정세랑 (지은이), 김보희 (그림)" → 대표 저자명
