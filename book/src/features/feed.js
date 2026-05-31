@@ -58,7 +58,6 @@ async function render(host, params, ctx) {
   const now = new Date();
 
   feedEl.appendChild(el('header', { class: 'feed-head' },
-    el('h1', {}, '피드'),
     el('div', { class: 'when' }, `${fmtShort(now)} ${DOW[now.getDay()]} · WEEK ${weekNum(now)}`),
   ));
 
