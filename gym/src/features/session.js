@@ -743,7 +743,18 @@ async function mountSessionActive(doc, block, session) {
         const activeRect = active.getBoundingClientRect();
         const activeCenterRel = activeRect.left + activeRect.width / 2 - containerRect.left;
         const targetScrollLeft = setDotsEl.scrollLeft + activeCenterRel - containerRect.width / 2;
-        if (typeof setDotsEl.scrollTo === 'function') {
+        // 첫 정렬(mount 직후 — 새 DOM 이라 dataset.aligned 없음)은 즉시 점프. 컨테이너 inline 의
+        // scroll-behavior:smooth 때문에 scrollLeft 대입조차 애니메이션화되므로, 임시로 'auto' 로 덮어
+        // 즉시 점프 → 세트 도트가 우→좌 슬라이드되는 "날아오는" 체감 제거 (앱 재개·reload 시).
+        // 이후 세트 변경 재정렬(같은 DOM 유지 — renderSetDotsDiff)만 smooth.
+        const firstAlign = setDotsEl.dataset.aligned !== '1';
+        if (firstAlign) {
+          const prevSB = setDotsEl.style.scrollBehavior;
+          setDotsEl.style.scrollBehavior = 'auto';
+          setDotsEl.scrollLeft = targetScrollLeft;
+          setDotsEl.style.scrollBehavior = prevSB;
+          setDotsEl.dataset.aligned = '1';
+        } else if (typeof setDotsEl.scrollTo === 'function') {
           setDotsEl.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
         } else {
           setDotsEl.scrollLeft = targetScrollLeft;
@@ -1681,7 +1692,17 @@ function renderFooterPills(doc, session, currentBlock) {
       const activeRect = active.getBoundingClientRect();
       const activeCenterRel = activeRect.left + activeRect.width / 2 - containerRect.left;
       const targetScrollLeft = pillsEl.scrollLeft + activeCenterRel - containerRect.width / 2;
-      if (typeof pillsEl.scrollTo === 'function') {
+      // 첫 정렬(mount 직후 — 새 DOM)은 즉시 점프. inline scroll-behavior:smooth 가 scrollLeft 대입도
+      // 애니메이션화하므로 임시 'auto' 로 덮어 즉시 점프 → 운동 pill 이 우→좌 슬라이드되는 체감 제거.
+      // 이후 운동 전환(같은 컨테이너 유지)만 smooth.
+      const firstAlign = pillsEl.dataset.aligned !== '1';
+      if (firstAlign) {
+        const prevSB = pillsEl.style.scrollBehavior;
+        pillsEl.style.scrollBehavior = 'auto';
+        pillsEl.scrollLeft = targetScrollLeft;
+        pillsEl.style.scrollBehavior = prevSB;
+        pillsEl.dataset.aligned = '1';
+      } else if (typeof pillsEl.scrollTo === 'function') {
         pillsEl.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
       } else {
         pillsEl.scrollLeft = targetScrollLeft;
