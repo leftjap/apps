@@ -4,7 +4,8 @@
 > LLM 큐레이션은 **Claude 로컬앱의 루틴즈**가 수행한다 (외부 임베딩 회사·API 미사용 — Claude 가 직접 읽고 판단).
 
 ## 스케줄
-- 매주 일요일 21:00 (권장). Claude 로컬앱 Routines 에 등록.
+- 매주 일요일 오전 10:02 KST. **Desktop scheduled task** `book-weekly-curation` (cron `0 10 * * 0`) 로 등록됨 (`~/.claude/scheduled-tasks/book-weekly-curation/SKILL.md`).
+- PC 가 꺼져 있거나 슬립이면 다음 앱 실행 때 1회 catch-up (Desktop task 기본 동작 — 일요일 밤보다 오전이 앱 가동 확률 높아 채택).
 
 ## 루틴이 매주 수행하는 작업
 
