@@ -177,7 +177,7 @@
 /* 1. Hero — 오늘의 한 줄 */
 .bookv4 .hero { padding: 24px 0 48px; display: grid; grid-template-columns: 140px 1fr; gap: 48px; align-items: center; cursor: pointer; }
 .bookv4 .hero .cover-slot { width: 140px; position: relative; }
-.bookv4 .hero .text { font-family: var(--font-serif); font-size: 30px; font-weight: 500; line-height: 1.45; letter-spacing: -0.025em; color: var(--ink); word-break: keep-all; text-wrap: balance; }
+.bookv4 .hero .text { font-family: var(--font-serif); font-size: 30px; font-weight: 500; line-height: 1.45; letter-spacing: -0.025em; color: var(--ink); word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
 .bookv4 .hero .src { margin-top: 24px; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .bookv4 .hero .src .div { width: 1px; height: 12px; background: var(--ink-4); }
 .bookv4 .hero .src .au { color: var(--ink-3); }
