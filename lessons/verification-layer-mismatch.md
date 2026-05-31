@@ -74,7 +74,7 @@ preview MCP 어느 방식이든 사용자 iPhone 실기 검증 ≠ . preview 통
 
 **5. preview Chrome OAuth 세션 미공유**
 
-Claude_Preview MCP 의 Chrome 인스턴스는 별 profile. allowed emails (leftjap/soyoun312/causencompany) 외 차단 확인용으로 OAuth 시도해도 재인증 화면. **로그인 상태 의존 검증 (사용자 카드 화면 / Supabase Realtime / RLS user_id 격리) 은 도구 우회 불가** — 사용자 1회 안내 ("X 화면 캡처 공유") 가 정합.
+Claude_Preview MCP 의 Chrome 인스턴스는 별 profile. allowed emails (leftjap/soyoun312) 외 차단 확인용으로 OAuth 시도해도 재인증 화면. **로그인 상태 의존 검증 (사용자 카드 화면 / Supabase Realtime / RLS user_id 격리) 은 도구 우회 불가** — 사용자 1회 안내 ("X 화면 캡처 공유") 가 정합.
 
 대안: chrome-devtools MCP autoConnect 모드 — 사용자 chrome 또는 별 profile 에 attach → OAuth 세션 공유. 셋업: `~/apps/lessons/chrome-devtools-mcp-autoconnect.md`
 

@@ -23,7 +23,6 @@ import { seedDevSessions } from '../db/seed.js';
 export const ALLOWED_EMAILS = Object.freeze([
   'leftjap@gmail.com',
   'soyoun312@gmail.com',
-  'causencompany@gmail.com', // 디버깅·E2E 검증 전용 (Study/Today 와 정합)
 ]);
 
 /** localStorage key — login 화면이 비허용 이메일 차단 결과 표시용. */

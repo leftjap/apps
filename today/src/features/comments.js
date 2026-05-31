@@ -74,7 +74,6 @@ const CLAUDE_LOGO_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="n
 // 사용자별 아바타 배경색.
 const AVATAR_COLORS = Object.freeze({
   '7bae5645-61c6-4476-9ff2-4c30a72812ff': '#7a8b6f', // 지오
-  '9f0408c0-008b-440c-a938-2effd9cb3bfd': '#7a8b6f', // 지오 (alt UID)
   'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '#c98aa6', // 소연
 });
 const CLAUDE_CLAY = '#d97757';

@@ -20,7 +20,7 @@ autoConnect 는 이미 띄워진 chrome 에 attach. OAuth 로그인된 PWA 그�
 - **OAuth 세션 의존** — 실 Supabase 인증, 실 RLS, 파트너 데이터 검증
 - **SW 캐시 / 옛 dist 의심** — 사용자 chrome 의 캐시 상태 진단 (Today Wave 11.10 hotfix 검증 사례 — sb__avatar-img 미존재 → SW reload 후 정상)
 - **통합 클릭 흐름** — 자동저장 (debounce), 모달 confirm, 라우팅 (hash router 와 mocks UI 분리 확인)
-- **신규 사용자 환경** — 신규 OAuth 계정에서만 노출되는 결함 (Today Defect-002 fixture 노출 사례 — causencompany 신규 계정에서만 발견)
+- **신규 사용자 환경** — 신규 OAuth 계정에서만 노출되는 결함 (Today Defect-002 fixture 노출 사례)
 - **Performance / network / console** — DevTools 직접 사용
 
 Playwright 와 분담:
@@ -57,23 +57,6 @@ MCP config 변경 반영. 재시작 후 `mcp__chrome-devtools__list_pages` 호�
 - Claude 가 page 헷갈리면 엉뚱한 탭에 입력 위험
 
 profile 생성: chrome 우상단 프로필 아이콘 → "추가" → 빈 profile → 검증 대상 PWA 만 로그인. 메인 profile 은 무영향.
-
-## 디버깅 전용 Google 계정
-
-`causencompany@gmail.com` — Today/Study/Gym allowlist 등록 (Today 는 2026-05-02 등록 완료, Study/Gym 은 검증 진입 시).
-
-이유:
-- 일상 leftjap@gmail.com 계정 cookie / Drive / Gmail 세션 0 노출
-- 별 chrome profile + 별 Google 계정 = 실 격리 (process 단위는 chrome 완전 종료 후 디버깅 profile 만 띄움 시)
-- 신규 계정이라 데이터 0 → 신규 사용자 환경 결함 (mocks fixture 노출 등) 자동 발견
-
-각 앱 추가 절차:
-1. `~/apps/<app>/src/services/auth.js` `ALLOWED_EMAILS` 에 `'causencompany@gmail.com'` 1줄 추가
-2. `~/apps/<app>/src/services/auth.test.js` 의 `toEqual` assertion 정합 갱신
-3. 각 앱의 Supabase 프로젝트 (앱별 별 프로젝트 가능) Auth → Users → Add user 로 `causencompany@gmail.com` 등록 (signup 차단 우회)
-4. `pnpm build` → preview 재기동 → 새 chrome profile 에서 Google OAuth (causencompany 선택) → 진입 확인
-
-chrome profile 권장 이름: "Today 디버깅" 또는 "PWA debug" (한 profile 로 Today/Study/Gym 모두 검증 — 같은 Google 계정 = 같은 storage key 격리).
 
 ## 보안
 

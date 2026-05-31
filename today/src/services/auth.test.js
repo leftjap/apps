@@ -23,12 +23,11 @@ vi.mock('./supabase.js', () => ({
 
 const { Auth, ALLOWED_EMAILS, AUTH_ERROR_KEY } = await import('./auth.js');
 
-describe('ALLOWED_EMAILS (Gym/Study 와 동일 allowlist 공유 + 디버깅 1)', () => {
-  it('커플 2 + 디버깅 1 이메일을 포함한다', () => {
+describe('ALLOWED_EMAILS (Gym/Study 와 동일 allowlist 공유)', () => {
+  it('커플 2 이메일을 포함한다', () => {
     expect(ALLOWED_EMAILS).toEqual([
       'leftjap@gmail.com',
       'soyoun312@gmail.com',
-      'causencompany@gmail.com',
     ]);
   });
 

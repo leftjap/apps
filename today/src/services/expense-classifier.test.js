@@ -71,9 +71,6 @@ describe('getCategoriesForEmail / setCurrentEmail / getCurrentCategories', () =>
   it('soyoun 이메일 → SOYOUN_CATEGORIES', () => {
     expect(getCategoriesForEmail('soyoun312@gmail.com')).toBe(SOYOUN_CATEGORIES);
   });
-  it('causencompany (디버깅) → LEFTJAP_CATEGORIES', () => {
-    expect(getCategoriesForEmail('causencompany@gmail.com')).toBe(LEFTJAP_CATEGORIES);
-  });
   it('미등록 이메일 → leftjap default', () => {
     expect(getCategoriesForEmail('unknown@example.com')).toBe(LEFTJAP_CATEGORIES);
     expect(getCategoriesForEmail(null)).toBe(LEFTJAP_CATEGORIES);

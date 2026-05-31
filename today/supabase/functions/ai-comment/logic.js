@@ -4,7 +4,6 @@
 
 const HUMAN_NAME_BY_ID = {
   '7bae5645-61c6-4476-9ff2-4c30a72812ff': '지오',
-  '9f0408c0-008b-440c-a938-2effd9cb3bfd': '지오',
   'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '소연',
 };
 

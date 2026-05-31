@@ -70,7 +70,7 @@
 ## 8. 파일·식별자·명령
 - 브랜치: `feat/ai-navi-comment` (origin에 push 예정 — 아래)
 - 핵심 코드: `today/src/features/comments.js`(아바타/버튼/엔터), `today/src/features/entries.js`(CLAUDE_USER_ID 매핑), `today/scripts/ai-navi-comment.mjs`(워커, 무의존 fetch/insert), `today/supabase/functions/request-ai-comment/index.ts`, `today/supabase/migrations/0024_ai_comment_cron.sql`, `today/routines/ai-navi.md`(지침 원문).
-- 식별자: CLAUDE_USER_ID `f74a3d8a-f449-4c25-82d1-509dc70a9988` / 지오 `7bae5645-61c6-4476-9ff2-4c30a72812ff`(+alt `9f0408c0-...`=causencompany 테스트계정) / 소연 `aeafd9a7-4094-4e7c-a621-188d6b2e336d` / project ref `tcbooffrdacfatywdzcm`.
-- 검증환경: 로컬 dev `pnpm dev`(today/, 실호스트는 dangerouslyDisableSandbox), 실 Chrome=chrome-devtools MCP(지오 production 로그인됨), 로컬 로그인=causencompany(테스트, ~/.config/today/.env의 TEST_USER_PASSWORD). 테스트는 격리 글 생성 후 반드시 삭제.
+- 식별자: CLAUDE_USER_ID `f74a3d8a-f449-4c25-82d1-509dc70a9988` / 지오 `7bae5645-61c6-4476-9ff2-4c30a72812ff` / 소연 `aeafd9a7-4094-4e7c-a621-188d6b2e336d` / project ref `tcbooffrdacfatywdzcm`.
+- 검증환경: 로컬 dev `pnpm dev`(today/, 실호스트는 dangerouslyDisableSandbox), 실 Chrome=chrome-devtools MCP(지오 production 로그인됨). 테스트는 격리 글 생성 후 반드시 삭제.
 - supabase CLI 인증됨(키체인). DB 비번은 평문에 없음 → 마이그는 대시보드 SQL.
 - 워커 로컬 테스트: `node today/scripts/ai-navi-comment.mjs fetch` / `... insert --entry <id> --body "<text>"` (today/.env.local 자동로드).

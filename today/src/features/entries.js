@@ -372,7 +372,6 @@ function observeCategoryChange(cb) {
 
 const OWNED_NAVI_BY_EMAIL = Object.freeze({
   'leftjap@gmail.com': 'navi',
-  'causencompany@gmail.com': 'navi',
   'soyoun312@gmail.com': 'soyoun_navi',
 });
 
@@ -387,7 +386,6 @@ export const CLAUDE_USER_ID = 'f74a3d8a-f449-4c25-82d1-509dc70a9988';
 // 2026-05-05 — owner_id 기반 라벨 (kind 무관). 옛 Keep partner-sync 잔흔 정확 라벨.
 export const USER_ID_TO_DISPLAY_NAME = Object.freeze({
   '7bae5645-61c6-4476-9ff2-4c30a72812ff': '지오',
-  '9f0408c0-008b-440c-a938-2effd9cb3bfd': '지오',
   'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '소연',
   [CLAUDE_USER_ID]: '클로드',
 });
@@ -396,7 +394,6 @@ export const USER_ID_TO_DISPLAY_NAME = Object.freeze({
 // partner 글은 `#/navi/soyoun/5` 형식 — 누가 보든 같은 글 가리킴 (절대 식별).
 export const USER_ID_TO_SLUG = Object.freeze({
   '7bae5645-61c6-4476-9ff2-4c30a72812ff': 'gio',
-  '9f0408c0-008b-440c-a938-2effd9cb3bfd': 'gio',
   'aeafd9a7-4094-4e7c-a621-188d6b2e336d': 'soyoun',
 });
 // slug → canonical owner_id (역방향. gio 는 production leftjap UUID 로 정규화).

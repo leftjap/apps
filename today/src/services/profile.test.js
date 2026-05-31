@@ -68,10 +68,6 @@ describe('partner_user_id / display_name 이메일 매핑 (2026-05-05)', () => {
     expect(Profile.getPartnerUserIdForEmail('leftjap@gmail.com')).toBe('aeafd9a7-4094-4e7c-a621-188d6b2e336d');
     expect(Profile.getDisplayNameForEmail('leftjap@gmail.com')).toBe('지오');
   });
-  it('causencompany (alt) → partner=소연 / 지오', () => {
-    expect(Profile.getPartnerUserIdForEmail('causencompany@gmail.com')).toBe('aeafd9a7-4094-4e7c-a621-188d6b2e336d');
-    expect(Profile.getDisplayNameForEmail('causencompany@gmail.com')).toBe('지오');
-  });
   it('soyoun312 → partner=지오 / 소연', () => {
     expect(Profile.getPartnerUserIdForEmail('soyoun312@gmail.com')).toBe('7bae5645-61c6-4476-9ff2-4c30a72812ff');
     expect(Profile.getDisplayNameForEmail('soyoun312@gmail.com')).toBe('소연');

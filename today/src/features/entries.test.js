@@ -125,9 +125,6 @@ describe('getOwnNaviKind — 이메일 → owned navi kind 매핑 (소연 fix)',
   it('leftjap → navi', () => {
     expect(getOwnNaviKind('leftjap@gmail.com')).toBe('navi');
   });
-  it('causencompany (leftjap alt) → navi', () => {
-    expect(getOwnNaviKind('causencompany@gmail.com')).toBe('navi');
-  });
   it('soyoun → soyoun_navi', () => {
     expect(getOwnNaviKind('soyoun312@gmail.com')).toBe('soyoun_navi');
   });

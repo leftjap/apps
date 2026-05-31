@@ -20,7 +20,6 @@ import { backfill20260504 } from '../db/backfill20260504.js';
 export const ALLOWED_EMAILS = Object.freeze([
   'leftjap@gmail.com',
   'soyoun312@gmail.com',
-  'causencompany@gmail.com',
 ]);
 
 /** localStorage key — login 화면이 비허용 이메일 차단 결과 표시용. */

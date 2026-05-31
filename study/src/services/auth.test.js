@@ -19,7 +19,6 @@ describe('ALLOWED_EMAILS (spec §3)', () => {
     expect(ALLOWED_EMAILS).toEqual([
       'leftjap@gmail.com',
       'soyoun312@gmail.com',
-      'causencompany@gmail.com',
     ]);
   });
 
@@ -32,7 +31,6 @@ describe('isAllowedEmail', () => {
   it('정확히 일치하면 true', () => {
     expect(Auth.isAllowedEmail('leftjap@gmail.com')).toBe(true);
     expect(Auth.isAllowedEmail('soyoun312@gmail.com')).toBe(true);
-    expect(Auth.isAllowedEmail('causencompany@gmail.com')).toBe(true);
   });
 
   it('대소문자·공백 정규화', () => {

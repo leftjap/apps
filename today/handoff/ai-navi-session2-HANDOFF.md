@@ -60,11 +60,11 @@
 - 루틴: ROUTINE_ID `trig_01NsH9Hy8szVkMpE1EhLuUbA`, 환경 today-ai-navi. **트리거 토큰**은 git에 안 적음 — 필요 시 claude.ai 루틴에서 Regenerate.
 - Supabase: project `tcbooffrdacfatywdzcm`. 설정된 secret: `AI_COMMENT_TOKEN`. 미설정: `ROUTINE_ID`, `ROUTINE_TRIGGER_TOKEN`, Vault.
 - `AI_COMMENT_TOKEN` 값 위치(저권한·회전가능): worktree `today/.env.local` + Supabase secret + 루틴 프롬프트(리터럴). git엔 없음.
-- ID: CLAUDE_USER_ID `f74a3d8a-f449-4c25-82d1-509dc70a9988` / 소연 `aeafd9a7-4094-4e7c-a621-188d6b2e336d` / 지오 `7bae5645-61c6-4476-9ff2-4c30a72812ff` / causencompany(테스트) `9f0408c0-008b-440c-a938-2effd9cb3bfd`.
+- ID: CLAUDE_USER_ID `f74a3d8a-f449-4c25-82d1-509dc70a9988` / 소연 `aeafd9a7-4094-4e7c-a621-188d6b2e336d` / 지오 `7bae5645-61c6-4476-9ff2-4c30a72812ff`.
 - 오염 댓글 4: entries `cd94705e`(토론토/소연), `658e4dd5`(싱가포르/소연), `3d984dd5`(AYO/지오), `7908ab73`(북샵/지오). author f74a3d8a.
 - 핵심 파일: `today/supabase/functions/ai-comment/{index.ts,logic.js,logic.test.js}`, `today/scripts/ai-navi-comment.mjs`(워커=로컬테스트용), `today/supabase/migrations/0025_ai_comment_debounce.sql`(미적용), `today/routines/ai-navi.md`(git=${}버전, 루틴실제=리터럴 불일치), `today/src/features/comments.js`(아바타 수정).
 - `/fire`: `curl -X POST https://api.anthropic.com/v1/claude_code/routines/<ID>/fire -H "Authorization: Bearer <트리거토큰>" -H "anthropic-beta: experimental-cc-routine-2026-04-01" -H "anthropic-version: 2023-06-01" -d '{"text":"... entry_id=<id>"}'`.
-- 검증환경: 로컬 dev `pnpm dev`(worktree today, dangerouslyDisableSandbox), preview MCP launch.json 설정 "today-ai-navi", 로그인 causencompany(~/.config/today/.env), service key는 main `today/.env.local`. 실 Chrome=chrome-devtools MCP(claude.ai 로그인됨→루틴 UI 조작 가능).
+- 검증환경: 로컬 dev `pnpm dev`(worktree today, dangerouslyDisableSandbox), preview MCP launch.json 설정 "today-ai-navi", service key는 main `today/.env.local`. 실 Chrome=chrome-devtools MCP(claude.ai 로그인됨→루틴 UI 조작 가능).
 
 ## 5. 토큰 노출 메모
 - `AI_COMMENT_TOKEN`(저권한)·루틴 트리거토큰이 이번 세션 대화기록·루틴 프롬프트(claude.ai)에 노출됨. 우려 시 회전: AI_COMMENT_TOKEN(supabase secret + 루틴 프롬프트 + worktree .env.local 동시 갱신), 루틴 토큰(claude.ai 루틴 Regenerate). 둘 다 저권한(공유 네비 가짜 댓글 한정)이라 긴급도 낮음.

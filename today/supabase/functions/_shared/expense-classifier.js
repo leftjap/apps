@@ -38,11 +38,9 @@ export const SOYOUN_CATEGORIES = Object.freeze([
 ]);
 
 // 사용자별 카테고리 매핑.
-// causencompany 는 leftjap 의 디버깅용 alt account → leftjap 카테고리 사용.
 const EMAIL_TO_CATEGORIES = Object.freeze({
   'leftjap@gmail.com': LEFTJAP_CATEGORIES,
   'soyoun312@gmail.com': SOYOUN_CATEGORIES,
-  'causencompany@gmail.com': LEFTJAP_CATEGORIES,
 });
 
 let _currentEmail = null;

@@ -21,7 +21,6 @@ import { createTodayDB } from '../db/schema.js';
 export const ALLOWED_EMAILS = Object.freeze([
   'leftjap@gmail.com',
   'soyoun312@gmail.com',
-  'causencompany@gmail.com', // 디버깅 전용 (chrome-devtools attach 격리)
 ]);
 
 export const AUTH_ERROR_KEY = 'todayAuthError';
