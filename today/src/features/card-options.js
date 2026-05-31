@@ -43,3 +43,18 @@ export function getDefaultCardForEmail(email) {
   const opts = getCardOptionsForEmail(email);
   return opts.find((o) => o.value) || null;
 }
+
+/**
+ * raw card value (today_expenses.card) → 사용자 친화 표시 label.
+ * email 의 등록 옵션에서 value 매칭 시 label, 미매칭·email 없음 → value 그대로 (graceful).
+ * 타임라인·팝오버·검색·카테고리 모달이 raw 값('삼성1337')을 그대로 노출하던 버그 해소용.
+ */
+export function cardLabelFromValue(value, email) {
+  if (!value) return value || '';
+  const opts = email && CARD_OPTIONS_BY_EMAIL[email];
+  if (opts) {
+    const hit = opts.find((o) => o.value === value);
+    if (hit) return hit.label;
+  }
+  return value;
+}

@@ -26,7 +26,7 @@ import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
 import { getCurrentKind } from './entries.js';
-import { getCardOptionsForEmail, getDefaultCardForEmail } from './card-options.js';
+import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue } from './card-options.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -292,7 +292,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
     const dn = dows[new Date(yr, tm - 1, td).getDay()];
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
-      const card = escapeHtml(r.card || '');
+      const card = escapeHtml(cardLabelFromValue(r.card, _currentUser?.email) || '');
       const cat = escapeHtml(toCategoryLabel(r.category));
       const isCont = i > 0;
       const dateCell = isCont
@@ -1195,7 +1195,7 @@ const DEFAULT_CARD_LABEL = '';
 /** Dexie row → mocks .exp-popover-row HTML. Wave 11.6.8b — onclick inline backup (capture listener fail 시 보호). */
 export function rowToPopoverHtml(row, opts = {}) {
   const merchant = row?.merchant || row?.memo || '';
-  const card = row?.card || opts.defaultCard || DEFAULT_CARD_LABEL;
+  const card = cardLabelFromValue(row?.card, _currentUser?.email) || opts.defaultCard || DEFAULT_CARD_LABEL;
   const category = row?.category || '';
   const id = row?.id || '';
   const recurring = row?.recurring ? REPEAT_SVG : '';
@@ -1325,7 +1325,7 @@ export function patchDayPopoverHandlers({ doc = (typeof document !== 'undefined'
  */
 export function rowToExpSearchHtml(row) {
   const merchant = escapeHtml(row?.merchant || row?.memo || '');
-  const card = escapeHtml(row?.card || DEFAULT_CARD_LABEL);
+  const card = escapeHtml(cardLabelFromValue(row?.card, _currentUser?.email) || DEFAULT_CARD_LABEL);
   const category = escapeHtml(toCategoryLabel(row?.category));
   const id = escapeAttr(row?.id || '');
   const recurring = row?.recurring ? REPEAT_SVG : '';
@@ -1341,7 +1341,7 @@ export function rowToExpSearchHtml(row) {
 export function rowToCategoryPopupHtml(row) {
   const date = isoToMockDate(row?.spent_at);
   const merchant = escapeHtml(row?.merchant || row?.memo || '');
-  const card = escapeHtml(row?.card || DEFAULT_CARD_LABEL);
+  const card = escapeHtml(cardLabelFromValue(row?.card, _currentUser?.email) || DEFAULT_CARD_LABEL);
   const id = escapeAttr(row?.id || '');
   const recurring = row?.recurring ? REPEAT_SVG : '';
   const onclick = id ? ` onclick="window.openExpenseModal && window.openExpenseModal('edit', '${id}')"` : '';
