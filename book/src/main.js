@@ -26,7 +26,7 @@ import './features/stats.js'; // registerScreen('stats', ...)
 import './features/word.js'; // registerScreen('word', ...)
 import './features/day.js'; // registerScreen('day', ...)
 import './features/author.js'; // registerScreen('author', ...)
-import { showAuthenticated, showLogin, setRouterUser } from './app.js';
+import { showAuthenticated, showLogin, setRouterUser, refresh } from './app.js';
 
 // dev 전용 시드 (preview/E2E 시각 검증) — prod 번들 제외.
 if (import.meta.env.DEV) import('./db/devSeed.js');
@@ -68,7 +68,8 @@ async function handleSession(session) {
   setRouterUser(user);
   showAuthenticated(user);
   // Supabase → Dexie 동기화 (백그라운드). 마이그레이션 미적용 시 pull 실패해도 화면 유지.
-  Sync.startSync(user).catch((e) => console.warn('[main] startSync 실패', Sync.formatError?.(e) || e));
+  // pull 완료(Dexie 적재) 후 현재 화면 재렌더 — 첫 진입(빈 Dexie) 시 빈 화면 방지.
+  Sync.startSync(user).then(() => refresh()).catch((e) => console.warn('[main] startSync 실패', Sync.formatError?.(e) || e));
 }
 
 async function bootstrap() {
