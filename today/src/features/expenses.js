@@ -630,10 +630,13 @@ export async function loadAndRenderMonth(year, month, doc = document) {
     patchHeadlineFromRows(rows, { todayDay, month });
     patchCalendarFromRows(rows, { todayDay });
     renderTimelineFromRows(rows, { todayDay }, doc, year);
-    patchRankSectionFromRows(rows, doc, month);
-    // 통계 탭 — 월별 추이 + 누적 brand TOP 10 (panel hidden 상태에서도 갱신해서 stats 클릭 시 즉시 반영)
-    await patchMonthlyTrendChart(year, month, doc);
-    await patchCumulativeFromHistory(year, month, doc);
+    // 통계 탭(랭킹·월별추이·누적)은 항상 '현재 월' 기준 — 피드에서 과거 월을 봐도 통계는 현재월 고정.
+    // '최근 6개월'·'쓰고 있어요'(현재진행) 라벨이 현재 시점 의미이므로. 과거 월 로드 시 통계는 안 건드림.
+    if (isCurrentMonth) {
+      patchRankSectionFromRows(rows, doc, month);
+      await patchMonthlyTrendChart(year, month, doc);
+      await patchCumulativeFromHistory(year, month, doc);
+    }
   } catch (e) {
     console.warn('[expenses] loadAndRenderMonth 실패', e?.message || e);
   }
@@ -653,11 +656,10 @@ function bindStatsTabHandler() {
     const btn = e.target?.closest?.('.exp-mini-tab[data-tab="stats"]');
     if (!btn) return;
     // mocks setExpTab 가 panel show/hide. SPA 가 추가로 stats panel 데이터 강제 patch.
-    const label = document.querySelector('.exp-month-nav-label');
-    const m = label?.textContent?.match(/(\d{4})년\s*(\d{1,2})월/);
+    // 통계는 피드 선택월과 무관하게 항상 '현재 월' 기준 (5/31 인데 피드가 4월이면 4월 통계 뜨던 버그 해소).
     const now = new Date();
-    const year = m ? Number(m[1]) : now.getFullYear();
-    const month = m ? Number(m[2]) : now.getMonth() + 1;
+    const year = now.getFullYear();
+    const month = now.getMonth() + 1;
     try {
       const rows = await Queries.listExpensesByMonth(year, month);
       if (rows && rows.length) patchRankSectionFromRows(rows, document, month);

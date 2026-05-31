@@ -1423,10 +1423,16 @@
     color: var(--ink-2);
     display: grid; place-items: center;
     font-family: var(--font-sans);
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     flex-shrink: 0;
+    /* 4글자+ 카테고리('해외체류' 등)가 원 밖으로 삐지던 문제 — 원 안에서 줄바꿈 수용 + clip */
+    overflow: hidden;
+    padding: 1px;
+    line-height: 1.05;
+    text-align: center;
+    word-break: break-all;
   }
   .exp-rank-card__main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .exp-rank-card__name {
