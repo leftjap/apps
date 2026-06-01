@@ -627,6 +627,10 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    /* 가로 스크롤 차단 — 세로 스와이프가 비스듬할 때 본문이 좌우로 밀리는 iOS 대각선
+       스크롤 드리프트 제거. 세로만 스크롤. (overflow-y:auto 단독이면 spec 상 overflow-x 가
+       visible→auto 로 강제 계산돼 가로 스크롤이 살아남던 버그. 긴 토큰은 .doc__body 가 줄바꿈.) */
+    overflow-x: hidden;
     overflow-y: auto;
     /* 내부 스크롤이 body 로 전파(chain) 안 되게 — 끝까지 스크롤해도 화면 안 흔들림 */
     overscroll-behavior: contain;
@@ -1670,6 +1674,10 @@
     line-height: 1.85;
     color: var(--ink-1);
     -webkit-text-size-adjust: 100%;
+    /* 긴 URL·끊김 없는 문자열이 가로로 삐져나가지 않게 줄바꿈 — #mainView 가로 스크롤
+       (좌우 흔들림) 의 원인 차단. overflow-x:hidden 과 짝 (클리핑 대신 줄바꿈으로 해소). */
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .doc__body,
   .doc__body * {
