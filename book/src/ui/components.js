@@ -5,11 +5,10 @@
 import { el } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
-import { quoteText } from './quote-text.js';
-import { fmtDateTime } from './format.js';
 import { Queries } from '../db/queries.js';
 import { BOOKS, bookOf } from '../data/books.js';
 import { Profile } from '../services/profile.js';
+import { CURATION } from '../data/curation.js';
 
 // ─── Btn — 3 size × 4 variant (core-v9 Btn) ─────────────────────────────────
 const BTN_SIZES = {
@@ -84,70 +83,236 @@ export function soyeonMark({ size = 'sm' } = {}) {
   );
 }
 
-// ─── Topbar 인라인 검색 (v14 .topbar-search 실기능화) ─
+// ═══════════════════════════════════════════════════════════════════════════
+// Topbar 인라인 검색 — 제로스테이트 + 실시간 결과
+//   디자인: "북앱 검색 제로스테이트"(claude.ai/design) 핸드오프 이식.
+//   제로스테이트 = 목적지 단축키(lean-forward). 서프라이즈(오늘의 한 줄·AI의 발견)는
+//   피드(lean-back) 소관이라 의도적으로 제외 — 역할 분리.
+//   신호는 pinned + 빈도집계 + 큐레이션 스냅샷뿐(열람·검색 이력 0). 추가 쿼리 없이
+//   포커스 시 로드된 quotes 에서 전부 파생.
+// ═══════════════════════════════════════════════════════════════════════════
 function searchOwnerIds(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
 }
+const topCatOf = (b) => (b?.c ? b.c.split('·')[0].trim() : '기타');
 
-function renderSearchResults(panel, raw, quotes, countMap, ctx, close) {
-  const nav = ctx?.navigate || (() => {});
-  const q = raw.trim().toLowerCase();
-  const hint = (t) => el('div', { style: { padding: '16px 12px', color: 'var(--ink-3)', fontSize: 13 } }, t);
-  const label = (t) => el('div', { class: 'upper', style: { margin: '10px 8px 4px', fontSize: 10.5 } }, t);
+function zsSecHead(iconName, title, right) {
+  return el('div', { class: 'zs-head' },
+    el('span', { class: 'zs-title' }, iconEl(iconName, { sz: 14, st: 1.9 }), title),
+    right || null,
+  );
+}
+function zsGroupLabel(iconName, title, extra) {
+  return el('div', { class: 'zs-group' }, iconEl(iconName, { sz: 13, st: 1.9 }), title, extra || null);
+}
+/** needle 첫 매치만 <mark>. 사용자 텍스트는 createTextNode 로 안전. */
+function markInto(node, text, needle) {
+  const t = String(text || '');
+  const n = (needle || '').trim();
+  if (!n) { node.appendChild(document.createTextNode(t)); return node; }
+  const i = t.toLowerCase().indexOf(n.toLowerCase());
+  if (i < 0) { node.appendChild(document.createTextNode(t)); return node; }
+  node.appendChild(document.createTextNode(t.slice(0, i)));
+  node.appendChild(el('mark', {}, t.slice(i, i + n.length)));
+  node.appendChild(document.createTextNode(t.slice(i + n.length)));
+  return node;
+}
+
+/** book_ref → 책별 어구록 수 맵. */
+function countByBook(quotes) {
+  const m = new Map();
+  for (const r of quotes) m.set(String(r.book_ref), (m.get(String(r.book_ref)) || 0) + 1);
+  return m;
+}
+
+// ─── 제로스테이트 (포커스 + 빈 입력) ─────────────────────────────────────────
+function renderZero(panel, quotes, actions) {
   panel.replaceChildren();
-  if (!q) { panel.style.display = 'none'; return; }
   panel.style.display = 'block';
-  if (quotes == null) { panel.appendChild(hint('불러오는 중…')); return; }
-  const books = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(q) || (b.a || '').toLowerCase().includes(q)).slice(0, 8);
-  const qs = quotes.filter((r) => (r.text || '').toLowerCase().includes(q)).slice(0, 12);
-  if (!books.length && !qs.length) { panel.appendChild(hint(`'${raw.trim()}' 검색 결과가 없습니다.`)); return; }
-  if (books.length) {
-    panel.appendChild(label(`책 ${books.length}`));
-    for (const b of books) panel.appendChild(bookRow({ b, count: countMap.get(String(b.id)) || 0, onClick: () => { close(); nav(`/book/${b.id}`); } }));
-  }
-  if (qs.length) {
-    panel.appendChild(label(`어구록 ${qs.length}`));
-    for (const r of qs) {
-      const b = bookOf(r.book_ref);
-      panel.appendChild(el('div', { class: 'book-row', onClick: () => { close(); nav(`/thread/${r.book_ref}/${r.id}`); }, style: { padding: '12px 12px', borderRadius: 10, cursor: 'pointer' } },
-        quoteText({ text: r.text, fontSize: 15, lineHeight: 1.6, variant: 'inline', serif: true }),
-        el('div', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)', marginTop: 6 } }, `${b ? b.t + ' · ' : ''}${fmtDateTime(r.created_at)}`),
-      ));
+  const all = quotes || [];
+
+  // ① 핀한 어구록 — 유일한 개인 신호. 없으면 섹션 숨김.
+  const pinned = all.filter((q) => q.pinned).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+  if (pinned.length) {
+    const sec = el('div', { class: 'zs-sec' },
+      zsSecHead('pin', '핀한 어구록', el('button', { class: 'zs-more', onClick: () => actions.navTo('/library') }, `핀 전체 ${pinned.length}개`)));
+    for (const q of pinned.slice(0, 5)) {
+      const b = bookOf(q.book_ref);
+      sec.appendChild(el('div', { class: 'zs-pin zs-item', onClick: () => actions.openQuote(q) },
+        el('span', { class: 'zs-pin-ico' }, iconEl('pin', { sz: 14 })),
+        el('div', { class: 'zs-pin-body' },
+          el('div', { class: 'zs-pin-text' }, q.text),
+          el('div', { class: 'zs-pin-meta' }, el('b', {}, b ? b.t : '(책 미상)'), b ? ` · ${b.a}` : ''))));
     }
+    panel.appendChild(sec);
+  }
+
+  // ② 주제·단어로 바로 찾기 — 칩 단어는 큐레이션 클러스터(주간 LLM 정제)만 사용.
+  // raw 토큰은 조사 미분리로 거칠어('시간'·'시간을' 분리) 칩에 부적합 → 미사용.
+  const used = countByBook(all);
+  const words = (CURATION?.clusters || []).map((c) => ({ w: c.word, n: c.count }));
+  const catFreq = new Map();
+  for (const ref of used.keys()) { const b = bookOf(ref); if (b) catFreq.set(topCatOf(b), (catFreq.get(topCatOf(b)) || 0) + 1); }
+  const cats = [...catFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([c]) => c);
+  if (words.length || cats.length) {
+    const sec = el('div', { class: 'zs-sec' }, zsSecHead('hash', '주제·단어로 바로 찾기'));
+    if (words.length) {
+      const chips = el('div', { class: 'zs-chips' });
+      for (const o of words) chips.appendChild(el('button', { class: 'zs-chip zs-item', onClick: () => actions.runQuery(o.w) },
+        el('span', { class: 'zs-hash' }, '#'), o.w, o.n != null ? el('span', { class: 'zs-ct' }, String(o.n)) : null));
+      sec.appendChild(chips);
+    }
+    if (cats.length) {
+      const chips = el('div', { class: 'zs-chips', style: { marginTop: 4 } });
+      for (const c of cats) chips.appendChild(el('button', { class: 'zs-chip cat zs-item', onClick: () => actions.runQuery(c) }, c));
+      sec.appendChild(chips);
+    }
+    panel.appendChild(sec);
+  }
+
+  // ③ 빠른 이동 — 많이 모은 책 · 작가. 검색 맥락의 점프(사이드바와 동작 다름).
+  const topBooks = [...used.entries()].map(([ref, c]) => ({ b: bookOf(ref), c })).filter((x) => x.b).sort((a, b) => b.c - a.c).slice(0, 3);
+  const byAuthor = new Map();
+  for (const [ref, c] of used) { const b = bookOf(ref); if (b) byAuthor.set(b.a, (byAuthor.get(b.a) || 0) + c); }
+  const topAuthors = [...byAuthor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([a, n]) => ({ a, n }));
+  if (topBooks.length || topAuthors.length) {
+    const col1 = el('div', {}, el('div', { class: 'zs-jlabel' }, '많이 모은 책'));
+    for (const t of topBooks) col1.appendChild(el('div', { class: 'zs-jump zs-item', onClick: () => actions.navTo(`/book/${t.b.id}`) },
+      el('div', { class: 'zs-jcover' }, cover(t.b, { scale: 30 / (t.b.w || 130), lift: false })),
+      el('div', { class: 'zs-jbody' }, el('div', { class: 'zs-jtitle' }, t.b.t), el('div', { class: 'zs-jsub' }, t.b.a)),
+      el('span', { class: 'zs-jcount' }, String(t.c))));
+    const col2 = el('div', {}, el('div', { class: 'zs-jlabel' }, '작가'));
+    for (const o of topAuthors) col2.appendChild(el('div', { class: 'zs-jump zs-item', onClick: () => actions.navTo(`/author/${encodeURIComponent(o.a)}`) },
+      el('span', { class: 'zs-javatar' }, (o.a || '?').slice(0, 1)),
+      el('div', { class: 'zs-jbody' }, el('div', { class: 'zs-jtitle' }, o.a), el('div', { class: 'zs-jsub' }, '작가')),
+      el('span', { class: 'zs-jcount' }, String(o.n))));
+    panel.appendChild(el('div', { class: 'zs-sec' }, zsSecHead('book', '빠른 이동'),
+      el('div', { class: 'zs-jgrid' }, col1, col2)));
+  }
+
+  if (!panel.children.length) {
+    panel.appendChild(el('div', { class: 'zs-empty' }, el('b', {}, '아직 어구록이 없습니다'), '새 어구록을 추가하면 여기에서 바로 찾을 수 있어요.'));
   }
 }
 
+// ─── 실시간 결과 (입력 중) — 책·작가·분야·어구록 그룹 ───────────────────────
+function renderResults(panel, raw, quotes, actions) {
+  panel.replaceChildren();
+  panel.style.display = 'block';
+  if (quotes == null) { panel.appendChild(el('div', { class: 'zs-hint' }, '불러오는 중…')); return; }
+  const q = raw.trim();
+  const lc = q.toLowerCase();
+  const all = quotes || [];
+  const used = countByBook(all);
+
+  const bookMatches = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 4);
+  const authors = [...new Set(BOOKS.filter((b) => (b.a || '').toLowerCase().includes(lc)).map((b) => b.a))].slice(0, 3);
+  const cats = [...new Set(BOOKS.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 3);
+  const qsAll = all.filter((r) => (r.text || '').toLowerCase().includes(lc));
+  const qs = qsAll.slice(0, 6);
+
+  // 책
+  if (bookMatches.length) {
+    panel.appendChild(zsGroupLabel('book', '책'));
+    for (const b of bookMatches) {
+      const row = bookRow({ b, count: used.get(String(b.id)) || 0, meta: topCatOf(b), onClick: () => actions.navTo(`/book/${b.id}`) });
+      row.classList.add('zs-item');
+      panel.appendChild(row);
+    }
+  }
+  // 작가
+  if (authors.length) {
+    panel.appendChild(zsGroupLabel('user', '작가'));
+    for (const a of authors) {
+      const n = BOOKS.filter((b) => b.a === a).reduce((s, b) => s + (used.get(String(b.id)) || 0), 0);
+      panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.navTo(`/author/${encodeURIComponent(a)}`) },
+        el('span', { class: 'zs-rico' }, iconEl('user', { sz: 15 })),
+        el('div', { class: 'zs-rbody' }, markInto(el('div', { class: 'zs-rtitle' }), a, q), el('div', { class: 'zs-rsub' }, `작가 · ${n}개`))));
+    }
+  }
+  // 분야
+  if (cats.length) {
+    panel.appendChild(zsGroupLabel('layer', '분야'));
+    for (const c of cats) {
+      const n = all.filter((r) => { const b = bookOf(r.book_ref); return b && topCatOf(b) === c; }).length;
+      panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.runQuery(c) },
+        el('span', { class: 'zs-rico' }, iconEl('layer', { sz: 15 })),
+        el('div', { class: 'zs-rbody' }, markInto(el('div', { class: 'zs-rtitle' }), c, q), el('div', { class: 'zs-rsub' }, `분야 · ${n}개`))));
+    }
+  }
+  // 어구록
+  if (qs.length) {
+    panel.appendChild(zsGroupLabel('quote', '어구록', el('span', { class: 'zs-grp-ct' }, String(qsAll.length))));
+    for (const r of qs) {
+      const b = bookOf(r.book_ref);
+      panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.openQuote(r) },
+        el('span', { class: 'zs-rico' }, iconEl(r.pinned ? 'pin' : 'quote', { sz: 15 })),
+        el('div', { class: 'zs-rbody' },
+          markInto(el('div', { class: 'zs-rquote' }), r.text, q),
+          el('div', { class: 'zs-rmeta' }, `${b ? b.t + ' · ' + b.a : '(책 미상)'}`))));
+    }
+  }
+
+  if (!panel.children.length) {
+    panel.appendChild(el('div', { class: 'zs-empty' }, el('b', {}, `'${q}'에 대한 결과가 없어요`), '다른 단어로 찾아보거나, 주제 칩을 눌러보세요.'));
+    return;
+  }
+  const total = bookMatches.length + authors.length + cats.length + qsAll.length;
+  panel.appendChild(el('div', { class: 'zs-foot' }, el('span', { class: 'zs-enter' }, 'Enter'), ` '${q}' 전체 검색 결과 ${total}건`));
+}
+
 export function topbarSearch({ ctx } = {}) {
-  const wrap = el('div', { class: 'topbar-search-wrap', style: { position: 'relative', flex: 1, maxWidth: 640, marginLeft: 'auto' } });
-  const bar = el('div', { class: 'topbar-search', style: { display: 'flex', alignItems: 'center', gap: 10, height: 40, padding: '0 16px', background: 'var(--paper)', borderRadius: 10, color: 'var(--ink-3)', transition: 'box-shadow .12s' } }, iconEl('search', { sz: 16 }));
-  const input = el('input', { type: 'text', placeholder: '책 · 작가 · 분야 · 단어 · 어구록', style: { flex: 1, minWidth: 0, height: '100%', border: 0, outline: 0, background: 'transparent', fontSize: 14, fontFamily: 'var(--sans)', color: 'var(--ink-1)' } });
-  bar.appendChild(input);
-  const panel = el('div', { style: { position: 'absolute', top: 48, left: 0, right: 0, maxHeight: 'min(70vh, 520px)', overflowY: 'auto', background: '#fff', border: '1px solid var(--line-2)', borderRadius: 12, boxShadow: '0 8px 28px -8px rgba(20,18,14,.18)', padding: 8, zIndex: 30, display: 'none' } });
+  const wrap = el('div', { class: 'topbar-search-wrap' });
+  const bar = el('div', { class: 'topbar-search' }, iconEl('search', { sz: 16 }));
+  const input = el('input', { class: 'ts-input', type: 'text', placeholder: '책 · 작가 · 분야 · 단어 · 어구록', autocomplete: 'off', spellcheck: 'false' });
+  const clearBtn = el('button', { class: 'ts-clear', 'aria-label': '지우기' }, iconEl('close', { sz: 14 }));
+  bar.append(input, clearBtn);
+  const panel = el('div', { class: 'topbar-search-panel' });
   wrap.append(bar, panel);
 
-  const countMap = new Map();
   let quotes = null; // lazy
   let loading = false;
-  let debounce;
-  const close = () => { panel.style.display = 'none'; };
-  const run = () => renderSearchResults(panel, input.value, quotes, countMap, ctx, close);
+  let items = [];
+  let cur = -1;
+
+  const close = () => { panel.style.display = 'none'; wrap.classList.remove('open'); };
+  function bindRows() { items = [...panel.querySelectorAll('.zs-item')]; cur = -1; }
+  function setCur(i) {
+    if (cur >= 0 && items[cur]) items[cur].classList.remove('zs-cur');
+    cur = Math.max(-1, Math.min(i, items.length - 1));
+    if (cur >= 0 && items[cur]) { items[cur].classList.add('zs-cur'); items[cur].scrollIntoView({ block: 'nearest' }); }
+  }
+  const render = () => {
+    if (quotes == null) { panel.style.display = 'block'; panel.replaceChildren(el('div', { class: 'zs-hint' }, '불러오는 중…')); return; }
+    if (input.value.trim()) renderResults(panel, input.value, quotes, actions);
+    else renderZero(panel, quotes, actions);
+    bindRows();
+  };
+  const actions = {
+    navTo: (route) => { close(); input.blur(); (ctx?.navigate || (() => {}))(route); },
+    openQuote: (qr) => { close(); input.blur(); (ctx?.navigate || (() => {}))(`/thread/${qr.book_ref}/${qr.id}`); },
+    runQuery: (text) => { input.value = text; wrap.classList.add('has-text'); render(); input.focus(); },
+  };
 
   async function ensureLoaded() {
     if (quotes != null || loading) return;
     loading = true;
-    try {
-      quotes = await Queries.listAllQuotes(searchOwnerIds(ctx?.user));
-      countMap.clear();
-      for (const r of quotes) countMap.set(String(r.book_ref), (countMap.get(String(r.book_ref)) || 0) + 1);
-    } catch (e) { quotes = []; console.warn('[search] 로드 실패', e?.message || e); }
+    try { quotes = await Queries.listAllQuotes(searchOwnerIds(ctx?.user)); }
+    catch (e) { quotes = []; console.warn('[search] 로드 실패', e?.message || e); }
     loading = false;
-    if (document.activeElement === input && input.value.trim()) run();
+    if (document.activeElement === input) render();
   }
 
-  input.addEventListener('focus', () => { bar.style.boxShadow = '0 0 0 2px rgba(20,18,14,.10)'; ensureLoaded(); if (input.value.trim()) run(); });
-  input.addEventListener('blur', () => { bar.style.boxShadow = 'none'; setTimeout(close, 150); });
-  input.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(run, 160); });
-  input.addEventListener('keydown', (e) => { if (e.key === 'Escape') { input.value = ''; close(); input.blur(); } });
+  input.addEventListener('focus', () => { wrap.classList.add('open'); ensureLoaded(); render(); });
+  input.addEventListener('blur', () => { setTimeout(close, 150); });
+  input.addEventListener('input', () => { wrap.classList.toggle('has-text', !!input.value); render(); });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { input.value = ''; wrap.classList.remove('has-text'); close(); input.blur(); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setCur(cur + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); setCur(cur - 1); }
+    else if (e.key === 'Enter' && cur >= 0 && items[cur]) { e.preventDefault(); items[cur].click(); }
+  });
+  clearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); input.value = ''; wrap.classList.remove('has-text'); render(); input.focus(); });
   return wrap;
 }
 
