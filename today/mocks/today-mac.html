@@ -72,11 +72,9 @@
   * { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0;
-    /* iOS: 문서를 뷰포트에 핀 고정(position:fixed; inset:0) → 탭·스크롤·키보드에도
-       rubber-band 바운스/패닝 완전 차단. overflow:hidden 만으론 iOS 문서 드래그가 안 막힘.
-       스크롤은 #mainView 전담. '화면 딱 고정' (2026-05-31 도입, 2026-06-01 핀 고정 강화). */
-    position: fixed;
-    inset: 0;
+    height: 100%;
+    /* iOS: body 자체 스크롤 차단 → rubber-band 바운스 + 툴바 토글 점프 제거.
+       스크롤은 #mainView 가 전담. '화면 딱 고정' 요구 (2026-05-31). */
     overflow: hidden;
     overscroll-behavior: none;
     font-family: var(--font-sans);
@@ -88,15 +86,8 @@
 
   /* ============ App shell ============ */
   .app {
-    /* 뷰포트에 핀 고정 — 탭/스크롤/키보드에도 셸(헤더·사이드바)이 안 밀림.
-       height: --app-vh = visualViewport 추적(main.js installViewportLock) → 키보드 노출 시
-       가시영역에 정합해 셸이 안 밀림. 미지원/초기엔 100dvh fallback.
-       top: --app-vt = visual viewport offsetTop 추적 (키보드가 viewport 밀 때 정합). */
-    position: fixed;
-    top: var(--app-vt, 0px);
-    left: 0;
-    right: 0;
-    height: var(--app-vh, 100dvh);
+    /* 100dvh — iOS dynamic toolbar 접힘/펼침에도 정확 viewport (100vh 는 툴바 영역 포함해 점프 유발) */
+    height: 100dvh;
     display: flex;
     background: var(--shell);
   }
