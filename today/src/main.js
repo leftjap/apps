@@ -154,7 +154,34 @@ async function handleSession(session) {
   });
 }
 
+// iOS PWA 화면 고정 — visualViewport 추적해 셸(.app) 높이를 가시영역에 정합 (2026-06-01).
+// 소프트 키보드 노출 시 .app 이 키보드 위로 줄어들어 셸이 밀리지 않음 (탭→키보드→화면 흔들림 차단).
+// CSS: .app { height: var(--app-vh, 100dvh); top: var(--app-vt, 0px) } (mocks/today-mac.html).
+// visualViewport 미지원 브라우저는 CSS 100dvh fallback 으로 동작 (no-op).
+// vv 'scroll'/'resize' 는 키보드·툴바·핀치줌 시에만 발화 — #mainView 내부 스크롤엔 무반응(잔크 없음).
+function installViewportLock() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const root = document.documentElement;
+  let raf = 0;
+  const apply = () => {
+    raf = 0;
+    root.style.setProperty('--app-vh', `${Math.round(vv.height)}px`);
+    root.style.setProperty('--app-vt', `${Math.round(vv.offsetTop)}px`);
+  };
+  const schedule = () => {
+    if (!raf) raf = requestAnimationFrame(apply);
+  };
+  vv.addEventListener('resize', schedule);
+  vv.addEventListener('scroll', schedule);
+  apply();
+}
+
 async function bootstrap() {
+  // 화면 고정 (visualViewport 추적) — 인증 이전, mocks 마운트 전부터 CSS 변수 세팅.
+  installViewportLock();
+
   // Storage persistence 요청 — WebKit 정책 (webkit.org/blog/14403) 상 best-effort mode 는
   // LRU 비활성·storage pressure 시 evict 가능. persistent mode 가 명시적 eviction 면제 카테고리.
   // Home Screen PWA 에서는 grant heuristic favorable. deny 돼도 무해.
