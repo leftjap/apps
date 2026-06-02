@@ -54,7 +54,8 @@ async function render(host, params, ctx) {
     const t = q.created_at || q.updated_at || '';
     if (t > g.last) g.last = t;
   }
-  const booksWithQuotes = BOOKS.filter((b) => byBook.has(String(b.id)));
+  // 어구록 있는 모든 book_ref (번들 BOOKS + 알라딘 추가 책 REGISTRY) — bookOf 로 메타 조회. 메타 없으면 제외.
+  const booksWithQuotes = [...byBook.keys()].map((ref) => bookOf(ref)).filter(Boolean);
   const genres = ['전체', ...Array.from(new Set(booksWithQuotes.map(genreOf)))];
 
   let genre = '전체';

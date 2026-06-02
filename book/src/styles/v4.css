@@ -12,9 +12,9 @@
   border-right: 1px solid var(--line-soft);
   background: var(--bg);
   display: flex; flex-direction: column;
-  position: sticky; top: 0;
+  position: sticky; top: 73px;
   align-self: start;
-  max-height: 100%;
+  max-height: calc(100vh - 73px);
 }
 .bookv4 .aside-head { padding: 24px 24px 12px; display: flex; align-items: baseline; justify-content: space-between; }
 .bookv4 .aside-head h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; white-space: nowrap; margin: 0; }
