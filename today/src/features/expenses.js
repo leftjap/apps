@@ -1725,9 +1725,9 @@ export async function refreshSidebarExpenseTotal(doc = (typeof document !== 'und
 }
 
 // ───────────────────────────────────────────────────────────────────────────
-// Ingest gap banner — 카드별 자동 수집 끊김 감지 (2026-05-26 신설)
+// Ingest gap banner — 카드별 자동 수집 끊김 감지 (2026-05-26 신설, 2026-06-02 사각지대 fix)
 // 소연 신한 사고 (today-native 미구현, keep stopgap 05-14 종료로 노출) 재발 방지.
-// 주력 카드 (최근 90일 SMS-origin ≥10건) 가 7일 무수집이면 가계부 화면 상단 배너.
+// 주력 카드 (최근 90일 전체 거래 ≥10건) 중 자동수집 이력 있고 7일 끊기면 화면 상단 배너.
 // ───────────────────────────────────────────────────────────────────────────
 
 const INGEST_GAP_DISMISS_KEY = 'today.ingestGapBanner.dismissedAt';
@@ -1736,7 +1736,15 @@ const INGEST_GAP_DOMINANT_COUNT = 10;
 const INGEST_GAP_LOOKBACK_DAYS = 90;
 const INGEST_GAP_DISMISS_HOURS = 24;
 
-/** 카드별 SMS-origin 수집 통계 (최근 N일) → 갭 카드 리스트. */
+/** 카드별 수집 통계 (최근 N일) → 자동수집 끊긴 카드 리스트.
+ *  판정 (2026-06-02 개선 — 신한 사각지대 fix):
+ *   - 주력 카드: 전체 거래(import/manual/sms 무관) ≥ DOMINANT_COUNT
+ *   - 자동수집 가능 카드: today 자동수집(source='sms' && sms_raw) 이력 ≥1
+ *     (삼성→카톡 이전처럼 SMS 자동을 아예 안 하는 카드 오탐 방지. source='sms'만으론
+ *      keep 이관 행(sms_raw 無)이 섞이므로 sms_raw 필수)
+ *   - 끊김: 자동수집 마지막 spent_at < (now - THRESHOLD_DAYS)
+ *  기존(자동수집 ≥10 끊김)도 포함 — 자동수집 ⊆ 전체거래라 호환. 추가로 신한처럼
+ *  "거래는 많지만 자동수집은 적게만 되다 끊긴" 카드까지 감지. */
 export async function detectIngestGapCards(now = new Date()) {
   const lookbackFrom = new Date(now.getTime() - INGEST_GAP_LOOKBACK_DAYS * 86400000).toISOString();
   const toISO = new Date(now.getTime() + 86400000).toISOString();
@@ -1747,19 +1755,23 @@ export async function detectIngestGapCards(now = new Date()) {
     console.warn('[expenses] ingest gap query 실패:', e?.message || e);
     return [];
   }
-  const smsRows = rows.filter((r) => r.source === 'sms' && r.card && r.sms_raw);
   const byCard = new Map();
-  for (const r of smsRows) {
-    const e = byCard.get(r.card) || { card: r.card, count: 0, maxSpentAt: '' };
-    e.count++;
-    if ((r.spent_at || '') > e.maxSpentAt) e.maxSpentAt = r.spent_at;
+  for (const r of rows) {
+    if (!r.card) continue;
+    const e = byCard.get(r.card) || { card: r.card, txCount: 0, autoCount: 0, lastAutoAt: '' };
+    e.txCount++;
+    if (r.source === 'sms' && r.sms_raw) {
+      e.autoCount++;
+      if ((r.spent_at || '') > e.lastAutoAt) e.lastAutoAt = r.spent_at;
+    }
     byCard.set(r.card, e);
   }
   const cutoff = new Date(now.getTime() - INGEST_GAP_THRESHOLD_DAYS * 86400000).toISOString();
   const gaps = [];
   for (const e of byCard.values()) {
-    if (e.count >= INGEST_GAP_DOMINANT_COUNT && e.maxSpentAt < cutoff) {
-      gaps.push({ card: e.card, lastSpentAt: e.maxSpentAt, count: e.count });
+    // 주력 거래량 + 자동수집 이력 있음(오탐 방지) + 자동수집 7일+ 끊김
+    if (e.txCount >= INGEST_GAP_DOMINANT_COUNT && e.autoCount >= 1 && e.lastAutoAt < cutoff) {
+      gaps.push({ card: e.card, lastSpentAt: e.lastAutoAt, count: e.autoCount, txCount: e.txCount });
     }
   }
   return gaps;

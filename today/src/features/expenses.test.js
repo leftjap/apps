@@ -42,8 +42,10 @@ import {
   patchOpenCategoryDetailHandler,
   __resetCategoryDetailPatchState,
   clearExpensesFixture,
+  detectIngestGapCards,
 } from './expenses.js';
 import { createTodayDB } from '../db/schema.js';
+import { Queries } from '../db/queries.js';
 
 describe('Expenses 인터페이스 노출', () => {
   it('필수 멤버 노출 (Wave 11.6.3 + 11.6.4b)', () => {
@@ -1429,5 +1431,66 @@ describe('chipLabelHtml — 랭킹 카테고리 칩 4글자+ 균형 줄바꿈', 
   it('각 조각 escape (XSS 안전)', () => {
     // '<i>해외체류' = 7자 → mid=4 → 첫조각 '<i>해'(escape)/'외체류'
     expect(chipLabelHtml('<i>해외체류')).toBe('&lt;i&gt;해<br>외체류');
+  });
+});
+
+describe('detectIngestGapCards — 자동수집 끊김 감지 (2026-06-02 사각지대 fix)', () => {
+  const NOW = new Date('2026-06-02T00:00:00.000Z'); // cutoff = 5/26 00:00, lookback = 3/4
+  const auto = (card, spent) => ({ card, source: 'sms', sms_raw: '[Web발신]' + card, spent_at: spent, deleted_at: null });
+  const imp = (card, spent) => ({ card, source: 'import', sms_raw: null, spent_at: spent, deleted_at: null });
+  const man = (card, spent) => ({ card, source: 'manual', sms_raw: null, spent_at: spent, deleted_at: null });
+  const mockRows = (rows) => vi.spyOn(Queries, 'listExpensesByRange').mockResolvedValue(rows);
+  afterEach(() => vi.restoreAllMocks());
+
+  it('신한: 거래 많고 자동수집이 7일+ 끊김 → 갭 검출 (사각지대 fix 핵심)', async () => {
+    const rows = [
+      auto('K-패스 신한카드 체크', '2026-05-25T09:00:00.000Z'), // 마지막 자동 = cutoff(5/26) 이전
+      auto('K-패스 신한카드 체크', '2026-05-23T09:00:00.000Z'),
+    ];
+    for (let i = 0; i < 15; i++) rows.push(man('K-패스 신한카드 체크', `2026-05-${10 + i}T09:00:00.000Z`)); // 전체 거래 17 ≥10
+    mockRows(rows);
+    const gaps = await detectIngestGapCards(NOW);
+    const hit = gaps.find((g) => g.card === 'K-패스 신한카드 체크');
+    expect(hit).toBeTruthy();
+    expect(hit.lastSpentAt).toBe('2026-05-25T09:00:00.000Z');
+    expect(hit.count).toBe(2); // 자동수집 건수
+  });
+
+  it('삼성(자동수집 0건, 카톡 이전): 거래 많아도 미검출 (오탐 방지)', async () => {
+    const rows = [];
+    for (let i = 0; i < 20; i++) rows.push(man('삼성카드 iD SIMPLE', `2026-05-${10 + (i % 18)}T09:00:00.000Z`));
+    mockRows(rows);
+    const gaps = await detectIngestGapCards(NOW);
+    expect(gaps.find((g) => g.card === '삼성카드 iD SIMPLE')).toBeFalsy();
+  });
+
+  it('현대(자동수집 마지막 = 어제): 끊김 아님 → 미검출', async () => {
+    const rows = [auto('현대백화점카드', '2026-06-01T09:00:00.000Z')];
+    for (let i = 0; i < 15; i++) rows.push(imp('현대백화점카드', `2026-04-${10 + i}T09:00:00.000Z`));
+    mockRows(rows);
+    const gaps = await detectIngestGapCards(NOW);
+    expect(gaps.find((g) => g.card === '현대백화점카드')).toBeFalsy();
+  });
+
+  it('거래 적은 카드(<10): 자동수집 끊겨도 미검출 (노이즈 억제)', async () => {
+    mockRows([auto('롯데카드', '2026-05-01T09:00:00.000Z'), man('롯데카드', '2026-05-02T09:00:00.000Z')]);
+    const gaps = await detectIngestGapCards(NOW);
+    expect(gaps.find((g) => g.card === '롯데카드')).toBeFalsy();
+  });
+
+  it('card 없는 행(잡문자 본인 메모): 무시', async () => {
+    const rows = [];
+    for (let i = 0; i < 12; i++) rows.push({ card: null, source: 'sms', sms_raw: '난 잔다', spent_at: '2026-05-01T09:00:00.000Z', deleted_at: null });
+    mockRows(rows);
+    const gaps = await detectIngestGapCards(NOW);
+    expect(gaps.length).toBe(0);
+  });
+
+  it('회귀: 자동수집 ≥10건이 7일 끊김 → 여전히 검출 (기존 동작 호환)', async () => {
+    const rows = [];
+    for (let i = 0; i < 12; i++) rows.push(auto('신한카드 Air', `2026-05-${10 + i}T09:00:00.000Z`));
+    mockRows(rows);
+    const gaps = await detectIngestGapCards(NOW);
+    expect(gaps.find((g) => g.card === '신한카드 Air')).toBeTruthy();
   });
 });
