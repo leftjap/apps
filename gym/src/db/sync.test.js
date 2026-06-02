@@ -436,6 +436,41 @@ describe('queueUpload + flushPendingUploads 디바운스', () => {
     const r = await mod.flushPendingUploads();
     expect(r.status).toBe('empty');
   });
+
+  it('push 실패(error) → 큐 보존 → 다음 flush 가 재시도 (변경 유실 0)', async () => {
+    vi.resetModules();
+    let upsertCalls = 0;
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({ eq: async () => ({ data: [], error: null }) }),
+          // 항상 RLS 거부(즉시 실패, retry 0) — push 'error' 유발
+          upsert: async () => { upsertCalls += 1; return { error: { code: '42501', message: 'denied' } }; },
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    globalThis.window = globalThis.window || {};
+    globalThis.window.gymDB = {
+      sessions: { hook: () => {}, bulkPut: async () => {}, bulkGet: async () => [{ id: 's-keep', status: 'completed', endTime: 2000, startTime: 1000, blocks: [], tags: [] }], toArray: async () => [] },
+      prs: { hook: () => {}, bulkPut: async () => {}, bulkGet: async () => [] },
+      weights: { hook: () => {}, bulkPut: async () => {} },
+      customExercises: { hook: () => {}, bulkPut: async () => {} },
+      settings: { hook: () => {}, bulkPut: async () => {} },
+    };
+    await mod.startSync({ id: 'u1' });
+    mod.queueUpload('sessions', { id: 's-keep' });
+    const r1 = await mod.flushPendingUploads();
+    expect(r1.ok).toBe(false); // push error
+    const callsAfter1 = upsertCalls;
+    expect(callsAfter1).toBeGreaterThanOrEqual(1);
+    // 큐가 보존됐다면 두 번째 flush 가 다시 push 시도 (empty 아님)
+    const r2 = await mod.flushPendingUploads();
+    expect(r2.status).toBe('flushed');
+    expect(upsertCalls).toBeGreaterThan(callsAfter1);
+    await mod.stopSync();
+  });
 });
 
 describe('resolveConflict (Wave 11.8.3 — prs 한정)', () => {
@@ -455,6 +490,73 @@ describe('resolveConflict (Wave 11.8.3 — prs 한정)', () => {
     const local = { e1rm: 80, src: 'local' };
     const server = { e1rm: 80, src: 'server' };
     expect(Sync.resolveConflict(local, server).src).toBe('server');
+  });
+});
+
+describe('resolveSessionConflict — completed 가 stale active 로 회귀 차단', () => {
+  it('local null → server', () => {
+    expect(Sync.resolveSessionConflict(null, { status: 'active' }).status).toBe('active');
+  });
+  it('server null → local', () => {
+    expect(Sync.resolveSessionConflict({ status: 'completed' }, null).status).toBe('completed');
+  });
+  it('로컬 completed + 서버 stale active → 로컬 completed 보존 (핵심 회귀 차단)', () => {
+    const local = { status: 'completed', endTime: 2000, startTime: 1000, src: 'local' };
+    const server = { status: 'active', endTime: null, startTime: 1000, src: 'server' };
+    const r = Sync.resolveSessionConflict(local, server);
+    expect(r.status).toBe('completed');
+    expect(r.src).toBe('local');
+  });
+  it('로컬 active + 서버 completed → 서버 completed 우선 (다른 기기 완료 반영)', () => {
+    const local = { status: 'active', endTime: null, startTime: 1000 };
+    const server = { status: 'completed', endTime: 3000, startTime: 1000 };
+    expect(Sync.resolveSessionConflict(local, server).status).toBe('completed');
+  });
+  it('둘 다 completed → endTime 늦은 쪽 우선', () => {
+    const local = { status: 'completed', endTime: 5000, src: 'local' };
+    const server = { status: 'completed', endTime: 3000, src: 'server' };
+    expect(Sync.resolveSessionConflict(local, server).src).toBe('local');
+  });
+  it('둘 다 active + endTime 동률 → server (push 일관성)', () => {
+    const local = { status: 'active', startTime: 1000, src: 'local' };
+    const server = { status: 'active', startTime: 1000, src: 'server' };
+    expect(Sync.resolveSessionConflict(local, server).src).toBe('server');
+  });
+});
+
+describe('pullTable sessions — resolveSessionConflict 적용 (서버 active 가 로컬 completed 못 덮음)', () => {
+  it('서버 stale active pull → bulkPut 에 로컬 completed 전달 (회귀 차단)', async () => {
+    vi.resetModules();
+    vi.doMock('../services/supabase.js', () => ({
+      supabase: {
+        from: () => ({
+          select: () => ({
+            eq: async () => ({
+              // 서버는 동기화 지연으로 아직 active 상태
+              data: [{ id: 's1', user_id: 'u1', date: '2026-05-01', status: 'active', start_time: 1000, end_time: null, blocks: [], tags: [], total_volume: 0, total_calories: 0, duration_min: 0 }],
+              error: null,
+            }),
+          }),
+        }),
+      },
+      isSupabaseConfigured: true,
+    }));
+    const mod = await import('./sync.js');
+    const m = mod.TABLE_MAP.find((t) => t.dexie === 'sessions');
+    let putRows = null;
+    const db = {
+      sessions: {
+        // 로컬엔 이미 완료된 세션
+        bulkGet: async () => [{ id: 's1', date: '2026-05-01', status: 'completed', startTime: 1000, endTime: 2000, blocks: [], tags: [], totalVolume: 100, totalCalories: 50, durationMin: 17 }],
+        bulkPut: async (rows) => { putRows = rows; },
+      },
+    };
+    const r = await mod.pullTable(m, db, 'u1');
+    expect(r.status).toBe('ok');
+    expect(putRows).toHaveLength(1);
+    // 서버 active 가 아니라 로컬 completed 가 유지돼야 함
+    expect(putRows[0].status).toBe('completed');
+    expect(putRows[0].endTime).toBe(2000);
   });
 });
 

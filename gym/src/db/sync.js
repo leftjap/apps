@@ -308,6 +308,24 @@ export function resolveConflict(local, server) {
   return server; // server >= local 이면 server 우선
 }
 
+/**
+ * 세션 충돌 해결 — sessions 스키마엔 updated_at 이 없어 status/endTime 으로 판정 (마이그레이션 불요).
+ *  - completed 는 active 로 되돌리지 않음: 한쪽만 completed 면 그 쪽 우선
+ *    (다른 기기에서 운동 완료가 동기화 지연 중인 stale active 로 덮여 "진행 중" 회귀하는 회귀 차단).
+ *  - 둘 다 같은 status (둘 다 completed 또는 둘 다 active): endTime(없으면 startTime) 늦은 쪽 우선,
+ *    동률이면 server (push 결과 일관성 — resolveConflict 와 동일 규칙).
+ */
+export function resolveSessionConflict(local, server) {
+  if (!local) return server;
+  if (!server) return local;
+  const lc = local.status === 'completed';
+  const sc = server.status === 'completed';
+  if (lc !== sc) return lc ? local : server;
+  const lt = Number(local.endTime) || Number(local.startTime) || 0;
+  const st = Number(server.endTime) || Number(server.startTime) || 0;
+  return st >= lt ? server : local;
+}
+
 /** 서버 count 마킹 access (테스트 + 외부 reset 용). */
 export function getServerCount(dexieName) {
   return _serverCounts.has(dexieName) ? _serverCounts.get(dexieName) : null;
@@ -339,13 +357,18 @@ export async function pullTable(mapping, db, userId) {
       return { table: mapping.dexie, status: 'error', reason: 'no_store' };
     }
     const transformed = data.map(mapping.fromSupabase);
-    // Wave 11.8.3 — prs 만 충돌 해결 (e1rm 큰 쪽 우선). 다른 테이블은 단순 bulkPut.
+    // Wave 11.8.3 — prs 충돌 해결 (e1rm 큰 쪽). sessions 충돌 해결 (completed 우선). 그 외 단순 bulkPut.
     let rowsToPut = transformed;
     if (mapping.dexie === 'prs' && typeof store.bulkGet === 'function') {
       // prs PK = [exerciseId+type] 복합. server row 의 exerciseId/type 으로 키 생성 → bulkGet.
       const keys = transformed.map((r) => [r.exerciseId, r.type]);
       const localRows = await store.bulkGet(keys);
       rowsToPut = transformed.map((serverRow, i) => resolveConflict(localRows[i], serverRow));
+    } else if (mapping.dexie === 'sessions' && typeof store.bulkGet === 'function') {
+      // sessions PK = id. 로컬 completed 가 server stale active 로 덮이는 것 차단 (resolveSessionConflict).
+      const keys = transformed.map((r) => r.id);
+      const localRows = await store.bulkGet(keys);
+      rowsToPut = transformed.map((serverRow, i) => resolveSessionConflict(localRows[i], serverRow));
     }
     await store.bulkPut(rowsToPut);
     return { table: mapping.dexie, status: 'ok', count: rowsToPut.length };
@@ -504,6 +527,23 @@ export async function flushPendingUploads() {
     hasUploads ? pushAll(_ctx.db, _ctx.userId, upSnapshot) : Promise.resolve({ ok: true, results: [] }),
     hasDeletes ? deleteAll(_ctx.userId, delSnapshot) : Promise.resolve({ ok: true, results: [] }),
   ]);
+
+  // 큐는 push 전에 비웠으므로(스냅샷), 에러난 테이블 키는 다시 큐에 적재 → 다음 flush
+  // (online 복귀 / 백그라운드 진입 / 다음 사용자 변경) 시 재시도. 지속 오프라인에도 변경 유실 0.
+  // 'blocked'(shrink 가드)/'empty'/'skipped' 는 재적재 안 함 (의도된 비-업로드). 'error' 만 복구.
+  const requeue = (snapshot, pending, results) => {
+    for (const r of results || []) {
+      if (r.status !== 'error') continue;
+      const keys = snapshot.get(r.table);
+      if (!keys || keys.size === 0) continue;
+      if (!pending.has(r.table)) pending.set(r.table, new Set());
+      const set = pending.get(r.table);
+      for (const k of keys) set.add(k);
+    }
+  };
+  if (!pushResult.ok) requeue(upSnapshot, _pendingUploads, pushResult.results);
+  if (!deleteResult.ok) requeue(delSnapshot, _pendingDeletes, deleteResult.results);
+
   return {
     ok: pushResult.ok && deleteResult.ok,
     status: 'flushed',
@@ -697,6 +737,7 @@ export const Sync = {
   DEBOUNCE_MS,
   findMapping,
   resolveConflict,
+  resolveSessionConflict,
   getServerCount,
   clearServerCounts,
   pullTable,
