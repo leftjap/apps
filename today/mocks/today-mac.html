@@ -7007,6 +7007,7 @@
 
       let sx = 0, sy = 0, t0 = 0, decided = false, swiping = false;
       let startOpen = false, panelW = 0, mainShift = 0;
+      let moveBound = false; // drawer 드래그용 non-passive touchmove 등록 여부 (제스처 중에만 true)
 
       const setTrack = (progress) => {
         const p = Math.max(0, Math.min(1, progress));
@@ -7042,24 +7043,11 @@
         }, dur * 1000 + 60);
       };
 
-      document.addEventListener('touchstart', (e) => {
-        if (!isMobile() || e.touches.length !== 1) return;
-        const t = e.target;
-        if (!t) return;
-        if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
-        if (t.closest && t.closest('button')) return;
-        if (t.closest && t.closest('[contenteditable]:not([contenteditable="false"])')) return;
-        startOpen = !!document.body.dataset.drawerOpen;
-        const x = e.touches[0].clientX;
-        // edge swipe 만 — closed 일 때 좌측 edge 안에서만 시작
-        if (!startOpen && x > EDGE_PX) return;
-        sx = x; sy = e.touches[0].clientY; t0 = Date.now();
-        decided = false; swiping = false;
-        panelW = sidebar.getBoundingClientRect().width || (window.innerWidth * 0.85);
-        mainShift = window.innerWidth - 72;
-      }, { capture: true, passive: true });
-
-      document.addEventListener('touchmove', (e) => {
+      // 본문 스크롤 fast-path 보존 (2026-06-02): drawer 드래그용 touchmove(passive:false)를
+      // 상시 등록하면 iOS 컴포지터 스크롤이 꺼져 본문 스크롤이 메인스레드에 묶여 느려진다(소연 보고).
+      // → edge-swipe / drawer-open 제스처 시작 시에만 동적 등록하고 제스처 종료 시 제거.
+      //   평소 본문 영역 터치는 touchstart 의 edge 체크에서 막혀 리스너가 붙지 않음 → fast-path 유지.
+      const onDrawerMove = (e) => {
         if (!isMobile() || e.touches.length !== 1 || !panelW) return;
         const dx = e.touches[0].clientX - sx;
         const dy = e.touches[0].clientY - sy;
@@ -7076,9 +7064,38 @@
         if (e.cancelable) e.preventDefault();
         const progress = startOpen ? 1 + dx / panelW : dx / panelW;
         setTrack(progress);
-      }, { capture: true, passive: false });
+      };
+      const bindDrawerMove = () => {
+        if (moveBound) return;
+        document.addEventListener('touchmove', onDrawerMove, { capture: true, passive: false });
+        moveBound = true;
+      };
+      const unbindDrawerMove = () => {
+        if (!moveBound) return;
+        document.removeEventListener('touchmove', onDrawerMove, { capture: true });
+        moveBound = false;
+      };
+
+      document.addEventListener('touchstart', (e) => {
+        if (!isMobile() || e.touches.length !== 1) return;
+        const t = e.target;
+        if (!t) return;
+        if (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
+        if (t.closest && t.closest('button')) return;
+        if (t.closest && t.closest('[contenteditable]:not([contenteditable="false"])')) return;
+        startOpen = !!document.body.dataset.drawerOpen;
+        const x = e.touches[0].clientX;
+        // edge swipe 만 — closed 일 때 좌측 edge 안에서만 시작
+        if (!startOpen && x > EDGE_PX) return;
+        sx = x; sy = e.touches[0].clientY; t0 = Date.now();
+        decided = false; swiping = false;
+        panelW = sidebar.getBoundingClientRect().width || (window.innerWidth * 0.85);
+        mainShift = window.innerWidth - 72;
+        bindDrawerMove(); // 드래그 후보 확정 — 이 제스처 동안만 non-passive touchmove 활성
+      }, { capture: true, passive: true });
 
       document.addEventListener('touchend', (e) => {
+        unbindDrawerMove();
         if (!swiping || !panelW) { swiping = false; decided = false; panelW = 0; return; }
         const dx = e.changedTouches[0].clientX - sx;
         const elapsed = Date.now() - t0;
@@ -7091,6 +7108,7 @@
       }, { capture: true, passive: true });
 
       document.addEventListener('touchcancel', () => {
+        unbindDrawerMove();
         if (swiping) snapTo(startOpen, 0);
         swiping = false; decided = false; panelW = 0;
       }, { capture: true, passive: true });
