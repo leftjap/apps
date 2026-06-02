@@ -183,7 +183,7 @@ soyoun 토큰: `52cdb054e11608778077461f27d797cb7b98df5845bf95a8` (소연 아이
 | #1 발신번호 (삼성) | **0건** | 미작동 또는 소연 삼성 사용 빈도 ↓ (삼성→카톡 이전 진행 중) |
 | #2 키워드 현대 | 2건 (2026-05-24) | **작동** |
 | #3 키워드 승인 | **0건** (카드 SMS·잡문자 모두 0) | 잡문자 3건은 #3 아닌 **#1 본인 번호** 트리거 — 잡문자 본문에 "승인" 없음. **#3 자체가 폰에 없거나 비활성 가설** (2026-05-26 v2 정정. 폰 미관찰로 100% 확정 아님). |
-| #4 신한 발신번호 | 셋업 직후 1건 (test, 2026-05-26) — POST→INSERT→PWA 표시 e2e 통과 ([스샷](../handoff/verify-shinhan-edge-e2e.png)) | **edge function·파서·DB·PWA 흐름은 통과**. 자동 트리거는 소연 폰 셋업 후 운영 관찰 필요 |
+| #4 신한 발신번호 | 셋업 직후 1건 (test, 2026-05-26) — POST→INSERT→PWA 표시 e2e 통과 ([스샷](../handoff/verify-shinhan-edge-e2e.png)) | **edge function·파서·DB·PWA 흐름은 통과**. 자동 트리거는 소연 폰 셋업 후 운영 관찰 필요. **2026-06-02 실측: 여전히 실시간 0건** (신한 1,250건 중 실시간 자동 ingest 0, count=exact) — 발신번호 1544-7200 미작동. 키워드 "신한" 전환 권장 |
 
 2026-05-15 기록의 삼성 테스트 행은 현재 DB에 부재 (사후 정리됐거나 자동화 비활성화 가능). "셋업 검증 완료"는 자동 catch가 아니라 수동 단축어 실행 1회 가능성 — **자동 트리거 정상 작동 자체는 #2만 확정**.
 
@@ -261,7 +261,7 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 2. iOS 단축어 본문 변수 부재 — Apple 공식 한계 (위 §7 정정 참조 — 자동화 종류별 다름)
 3. Mac off 시간 ingest 누락 — wake 후 catch-up
 4. iCloud Messages 동기화 지연 — iPhone → chat.db 분~시간 단위
-5. **소연 신한 (~~지금까지 미수집~~)** — 2026-05-26 edge function 경로 검증 완료, 소연 폰 자동화 추가만 남음
+5. **소연 신한 — 2026-06-02 실측 여전히 실시간 0건** (Air 446 + 체크 804 = 1,250건 중 실시간 자동 ingest 0건, count=exact). edge function·파서·두 파일 동일·토큰은 정상이나 소연 폰 신한 자동화가 미작동(발신번호 1544-7200 매칭 0 — 미설정/번호 불일치/비활성). 발신번호 우월 권장을 신한에 한해 정정 → **키워드 "신한" 자동화 권장** ([`handoff/soyoun-shinhan-automation-setup.md`](../handoff/soyoun-shinhan-automation-setup.md) v3). 8619는 today 실 SMS 미수집(DB 0, keep/spec 기록만 — 실 본문은 8244·8579 2종만 확인)
 6. **iOS "사용하지 않는 앱 정리"(Offload Unused Apps) 가 단축어 앱을 오프로드 → 모든 자동화 정지** ★ 2026-05-26 발견
    - 소연 폰에서 단축어 앱이 사라져 있었음(재다운로드로 복구). 이게 05-14 이후 ingest 정지의 진짜 root cause로 추정 — "트리거 부재" 추정보다 정확.
    - 05/24까지 현대백화점카드 자동화는 작동(DB 2건 증거) → 그 이후 ~05/26 사이에 오프로드 발생한 듯.
@@ -278,3 +278,4 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 | 2026-05-13 | iOS 단축어 dead 진단 (last_used_at NULL). gateway `UNAUTHORIZED_NO_AUTH_HEADER` 발견 — Authorization: Bearer service_role JWT 필수. backfill 스크립트 헤더 보강. launchd 운영 전환. 본 문서 |
 | 2026-05-26 | 소연 신한 미수집 진단. 근본 원인: today-native 신한 수집은 처음부터 작동한 적 없음(0건), keep 수동 import이 stopgap 갭 가려주다 05-14 종료로 노출. fix: edge function 재배포(`50a80d7` 신한 파서 fix 반영), `_shared` deps git 추적, 소연 폰 자동화 #4 (신한 발신번호) 추가 안내. e2e POST→INSERT→PWA 검증 통과 ([스샷](../handoff/verify-shinhan-edge-e2e.png)). spec 검증 기록 정정 + ingest health 임계치 신설 |
 | 2026-05-26 | **단축어 앱 오프로드 발견** — 소연 폰에서 단축어 앱이 사라져 있어 재다운로드. 진짜 root cause 후보: iOS "사용하지 않는 앱 정리"가 단축어 앱 오프로드 → 모든 자동화 정지 (05/24 현대 작동 이후 ~05/26 사이 발생 추정). 알려진 제약 #6 신설, 안내문에 오프로드 방지 단계 추가. 카드·발신번호 마스터 신설(spec 상단) — 1588-3650 = 현대백화점카드 확정 |
+| 2026-06-02 | 소연 신한 자동 ingest 재점검 — **실시간 0건 확정**(count=exact, 신한 1,250건 중). 파서 정상(테스트 34/34, 8244·8579 실본문 파싱 정확), 두 파일(`_shared`↔`src/services`) 동일, 토큰 last_used 6/1. 단축어 앱은 살아있음(현대 6/1 실시간 도달). 원인: 소연 폰 신한 자동화 미작동(발신번호 1544-7200 매칭 0). 발신번호 우월 권장을 신한에 한해 정정 → 키워드 "신한" 권장(reject 8종 + 결제 시그니처 2중 필터로 안전). 8619 실 SMS 미수집(DB 0). 안내문 v3 추가. 트리거 출처는 DB로 구분 불가(단축어가 출처 미인지)임을 명시 |
