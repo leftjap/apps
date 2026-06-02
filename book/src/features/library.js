@@ -19,7 +19,13 @@ import { openQuoteModal, rowMenuButton } from '../ui/quote-modal.js';
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
 }
-const genreOf = (b) => (((b?.c || '').split('·')[0]) || '').trim() || '기타';
+const genreOf = (b) => {
+  const c = (b?.c || '').trim();
+  if (!c) return '기타';
+  // 알라딘 풀패스("국내도서>자기계발>힐링>...") → 대분류(국내도서 다음). BOOKS 짧은 장르("자기계발")는 그대로.
+  if (c.includes('>')) { const p = c.split('>').map((s) => s.trim()).filter(Boolean); return p[1] || p[0] || '기타'; }
+  return (c.split('·')[0] || '').trim() || '기타';
+};
 /** width px 표지 — cover() 는 scale=px/mm 이므로 scale = width / b.w. */
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 
