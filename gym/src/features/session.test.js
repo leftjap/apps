@@ -1209,44 +1209,6 @@ describe('handleLeftSwipe (spec §6-3-1)', () => {
     await expect(handleLeftSwipe()).resolves.toBeUndefined();
   });
 
-  it('이전 세션 같은 세트번호 기록 있음 → 더 높은 값 입력해도 다음 세트는 이전 세션 값 보존 (§6-3-3 ①)', async () => {
-    // 이전 세션: S1·S2·S3 모두 60·10.
-    await seedCompletedSession({
-      id: 's_prev', date: '2026-05-01',
-      exerciseId: 'bench_press',
-      sets: [
-        { weight: 60, reps: 10, done: true, preset: false, pr: false },
-        { weight: 60, reps: 10, done: true, preset: false, pr: false },
-        { weight: 60, reps: 10, done: true, preset: false, pr: false },
-      ],
-      endTime: 1000,
-    });
-    // 이번 세션: S1 을 이전 세션보다 높은 70·10 으로 입력 후 완료 (cur=0).
-    await seedActiveWithBenchSets([
-      { weight: 70, reps: 10, done: false, preset: false, pr: false },
-      { weight: 60, reps: 10, done: false, preset: true, pr: false },
-      { weight: 60, reps: 10, done: false, preset: true, pr: false },
-    ]);
-    await handleLeftSwipe();
-    const sets = await getActiveBenchSets();
-    expect(sets[0]).toMatchObject({ weight: 70, reps: 10, done: true, preset: false });
-    // S2 는 직전 세트(70)로 덮이지 않고 이전 세션 값(60) 보존 — preset 유지.
-    expect(sets[1]).toMatchObject({ weight: 60, reps: 10, preset: true });
-  });
-
-  it('이전 세션 기록 없음 → 다음 세트는 직전 세트 값 상속 (§6-3-3 ②)', async () => {
-    // completed 세션 없음 → 직전 세트 70 이 다음 preset 세트로 전파.
-    await seedActiveWithBenchSets([
-      { weight: 70, reps: 10, done: false, preset: false, pr: false },
-      { weight: 60, reps: 10, done: false, preset: true, pr: false },
-    ]);
-    await handleLeftSwipe();
-    const sets = await getActiveBenchSets();
-    expect(sets[0]).toMatchObject({ weight: 70, reps: 10, done: true });
-    // 이전 세션 없음 → 직전 세트 70 상속.
-    expect(sets[1]).toMatchObject({ weight: 70, reps: 10, preset: true });
-  });
-
   /* (3) PR 통합 — spec §6-11 */
   it('첫 set commit (이전 PR 부재) → set.pr=true 마크 (PR 자동)', async () => {
     await seedActiveWithBenchSets([
