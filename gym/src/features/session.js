@@ -2429,10 +2429,21 @@ export async function handleLeftSwipe() {
         pr: false,
       });
     } else {
-      // spec §6-3-3 — 다음 세트는 직전 세트 값 상속 (아직 사용자 미수정 preset 인 경우만).
+      // spec §6-3-3 — 다음 세트 값 우선순위: ① 이전 세션 같은 세트번호 > ② 이번 세션 직전 세트 상속.
+      // 직전 세트 상속(②)은 사용자 미수정 preset 이면서 + 이전 세션에 같은 세트번호 기록이 없을 때만.
+      // 이전 세션 기록이 있으면 prefill 된 그 값을 보존 (직전 세트의 더 높은 값으로 덮어쓰지 않음) —
+      // 미수정 preset 을 상속으로 덮으면 이전 세션 타깃이 진행하며 전부 사라지는 회귀.
       const next = sets[cur + 1];
       if (next && next.preset) {
-        sets[cur + 1] = { ...next, weight: committedW, reps: committedR };
+        let prevSessionSets = null;
+        try { prevSessionSets = await getPrevSessionLastSets(block.exerciseId); }
+        catch (_) { /* 조회 실패 → 직전 세트 상속(②)으로 폴백 */ }
+        const ps = prevSessionSets && prevSessionSets[cur + 1];
+        // 이전 세션 같은 세트번호에 의미값(reps>0) 있으면 보존 — 없으면 직전 세트 상속.
+        const hasPrevSame = !!(ps && Number.isFinite(ps.reps) && ps.reps > 0);
+        if (!hasPrevSame) {
+          sets[cur + 1] = { ...next, weight: committedW, reps: committedR };
+        }
       }
     }
   }
