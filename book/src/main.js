@@ -13,7 +13,8 @@ import { installAuthSessionGuard } from './services/auth-session-guard.js';
 import { Profile } from './services/profile.js';
 import { Sync } from './db/sync.js';
 import { Queries } from './db/queries.js';
-import { loadBooksIntoRegistry } from './data/books.js';
+import { loadBooksIntoRegistry, bookOf, registerBookInMemory } from './data/books.js';
+import { Aladin } from './db/aladin.js';
 import './styles/book.css';
 import './styles/v4.css';
 import './features/feed.js'; // registerScreen('feed', ...)
@@ -43,6 +44,38 @@ if (typeof window !== 'undefined') {
   });
 }
 
+/**
+ * 책 메타(books)는 로컬 Dexie 전용이라 Supabase 동기화되지 않는다(quotes/comments 만 동기화).
+ * 다른 기기에서 알라딘으로 추가한 책은 어구록(book_ref=ISBN)만 전파되고 메타가 없어
+ * bookOf()=null → 서재/피드에서 통째로 누락된다. 어구록의 ISBN형 book_ref 중 메타 없는 것을
+ * 알라딘으로 자력 복원 + Dexie 캐시(영구) 한다. 알라딘 실패 시 메모리 플레이스홀더(미저장 → 다음 로드 재시도).
+ */
+async function restoreMissingBooks() {
+  const db = globalThis.bookDB;
+  if (!db) return;
+  let refs;
+  try {
+    const quotes = await db.quotes.toArray();
+    refs = [...new Set(quotes.map((q) => String(q.book_ref)))]
+      .filter((ref) => /^\d{13}$/.test(ref) && !bookOf(ref));
+  } catch (e) { console.warn('[main] 누락 책 조회 실패', e?.message || e); return; }
+  if (!refs.length) return;
+  for (const ref of refs) {
+    let book = null;
+    try {
+      const node = await Aladin.lookupByIsbn(ref);
+      book = node && Aladin.toAppBook(node);
+    } catch (e) { console.warn('[main] 알라딘 책 메타 조회 실패', ref, e?.message || e); }
+    if (book?.id) {
+      try { await Queries.upsertBook(book); } catch (e) { console.warn('[main] 책 메타 캐시 실패', ref, e?.message || e); }
+      registerBookInMemory(book);
+    } else {
+      // 폴백: 메타 복원 실패 — 어구록 접근만은 보장(Dexie 미저장, 다음 로드 재시도)
+      registerBookInMemory({ id: ref, t: `(제목 미확인) ${ref}`, a: '', p: '', c: '기타', coverUrl: '', w: 130, h: 195 });
+    }
+  }
+}
+
 async function handleSession(session) {
   const user = session?.user;
   if (!user) {
@@ -69,7 +102,10 @@ async function handleSession(session) {
   showAuthenticated(user);
   // Supabase → Dexie 동기화 (백그라운드). 마이그레이션 미적용 시 pull 실패해도 화면 유지.
   // pull 완료(Dexie 적재) 후 현재 화면 재렌더 — 첫 진입(빈 Dexie) 시 빈 화면 방지.
-  Sync.startSync(user).then(() => refresh()).catch((e) => console.warn('[main] startSync 실패', Sync.formatError?.(e) || e));
+  Sync.startSync(user)
+    .then(() => restoreMissingBooks())
+    .then(() => refresh())
+    .catch((e) => console.warn('[main] startSync 실패', Sync.formatError?.(e) || e));
 }
 
 async function bootstrap() {
