@@ -1,0 +1,81 @@
+name: ingest-gap-check
+
+# 카드 자동수집(SMS ingest) 끊김 일일 점검 — 소연 화면 배너 대체.
+# service_role 로 지오·소연 양쪽 카드를 점검(scripts/check-ingest-gap.mjs).
+# gap 이면 GitHub issue 생성/갱신(지오 이메일 알림), 복구되면 자동 닫힘.
+on:
+  schedule:
+    - cron: '0 22 * * *'   # 매일 07:00 KST (22:00 UTC 전날)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+defaults:
+  run:
+    working-directory: today
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: today/pnpm-lock.yaml
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Check ingest gap
+        id: check
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          node scripts/check-ingest-gap.mjs > gaps.json
+          cat gaps.json
+          echo "has_gap=$(jq '([.results[]|length]|add) > 0' gaps.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Open/update issue on gap
+        if: steps.check.outputs.has_gap == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          TITLE="⚠ 카드 자동수집 끊김 감지"
+          BODY=$(jq -r '
+            "카드 자동수집(SMS ingest)이 끊긴 카드가 있습니다. (점검: \(.checkedAt))\n" +
+            ([.results | to_entries[] | select(.value|length>0) |
+              "\n### \(.key)\n" + ([.value[] | "- **\(.card)** — \(.daysSince)일 무수집 (마지막 \(.lastAutoAt[0:10]), 최근 90일 거래 \(.txCount)건 중 자동 \(.autoCount)건)"] | join("\n"))
+            ] | join("\n")) +
+            "\n\n---\n대응: 소연 폰 키워드 \"신한\" 자동화 점검 (handoff/soyoun-shinhan-automation-setup.md). 이 이슈는 ingest-gap-check 워크플로우가 매일 자동 갱신/종료합니다."
+          ' gaps.json)
+          EXISTING=$(gh issue list --repo "$REPO" --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue edit "$EXISTING" --repo "$REPO" --body "$BODY"
+            echo "updated issue #$EXISTING"
+          else
+            gh issue create --repo "$REPO" --title "$TITLE" --body "$BODY"
+          fi
+
+      - name: Close issue when recovered
+        if: steps.check.outputs.has_gap == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          TITLE="⚠ 카드 자동수집 끊김 감지"
+          EXISTING=$(gh issue list --repo "$REPO" --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$EXISTING" ]; then
+            gh issue close "$EXISTING" --repo "$REPO" --comment "자동수집 정상 복구 — 모든 주력 카드가 7일 내 수집됨."
+            echo "closed issue #$EXISTING"
+          fi
