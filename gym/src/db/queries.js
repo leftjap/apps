@@ -222,7 +222,8 @@ export async function upsertUserSettings(patch) {
     throw new Error('[upsertUserSettings] patch 는 객체여야 함');
   }
   const existing = await getUserSettings();
-  const merged = { ...existing, ...patch, key: 'userSettings' };
+  // updatedAt — 동기화 LWW 용 클라이언트 타임스탬프 (settings JSONB 에 실려 push/pull, 클럭 일관).
+  const merged = { ...existing, ...patch, key: 'userSettings', updatedAt: Date.now() };
   await db().settings.put(merged);
   return merged;
 }

@@ -153,6 +153,8 @@ function fromSupabaseSettings(row) {
   const inner = row?.settings || {};
   return {
     key: 'userSettings',
+    // updatedAt — LWW 용 (클라이언트가 settings JSONB 안에 기록한 값). 없으면 0 (legacy → 서버 우선).
+    updatedAt: Number(inner.updatedAt) || 0,
     weeklyGoal: inner.weeklyGoal ?? 4,
     height: inner.height ?? null,
     birthYear: inner.birthYear ?? null,
@@ -326,6 +328,21 @@ export function resolveSessionConflict(local, server) {
   return st >= lt ? server : local;
 }
 
+/**
+ * 설정 충돌 해결 — settings 는 user 당 단일 row. pull 이 로컬을 통째로 덮어쓰면 아직 push 안 된
+ * 로컬 변경(예: 숨김 운동)이 서버의 오래된/빈 설정으로 회귀하는 회귀가 있어 LWW 적용.
+ *  - updatedAt (클라이언트가 settings JSONB 에 기록, push/pull 동행 → 클럭 일관) 비교.
+ *  - 로컬이 더 최신(= 미push 변경 보유) 이면 로컬 보존 → 다음 flush 가 서버로 올림.
+ *  - 그 외(서버 ≥ 로컬, 또는 legacy 0 동률) 서버 우선 — 다른 기기 변경/서버 권위 반영.
+ */
+export function resolveSettingsConflict(local, server) {
+  if (!local) return server;
+  if (!server) return local;
+  const lt = Number(local.updatedAt) || 0;
+  const st = Number(server.updatedAt) || 0;
+  return lt > st ? local : server;
+}
+
 /** 서버 count 마킹 access (테스트 + 외부 reset 용). */
 export function getServerCount(dexieName) {
   return _serverCounts.has(dexieName) ? _serverCounts.get(dexieName) : null;
@@ -369,6 +386,11 @@ export async function pullTable(mapping, db, userId) {
       const keys = transformed.map((r) => r.id);
       const localRows = await store.bulkGet(keys);
       rowsToPut = transformed.map((serverRow, i) => resolveSessionConflict(localRows[i], serverRow));
+    } else if (mapping.dexie === 'settings' && typeof store.bulkGet === 'function') {
+      // settings PK = 'userSettings' 단일 row. 미push 로컬 변경(숨김 등)이 서버 stale 로 덮이는 것 차단.
+      const keys = transformed.map((r) => r.key);
+      const localRows = await store.bulkGet(keys);
+      rowsToPut = transformed.map((serverRow, i) => resolveSettingsConflict(localRows[i], serverRow));
     }
     await store.bulkPut(rowsToPut);
     return { table: mapping.dexie, status: 'ok', count: rowsToPut.length };
@@ -738,6 +760,7 @@ export const Sync = {
   findMapping,
   resolveConflict,
   resolveSessionConflict,
+  resolveSettingsConflict,
   getServerCount,
   clearServerCounts,
   pullTable,
