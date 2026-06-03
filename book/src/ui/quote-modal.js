@@ -44,17 +44,23 @@ async function togglePin(q, ctx, onChange) {
   } catch (e) { console.warn('[quote] 핀 토글 실패', e?.message || e); }
 }
 
-/** ⋮ 메뉴 팝오버 엘리먼트. afterAction(act): edit/delete 시 호출(모달 닫기 등). */
+/**
+ * ⋮ 메뉴 팝오버 엘리먼트. afterAction(act): edit/delete 시 호출(모달 닫기 등).
+ * 소유권: 핀/수정/삭제는 본인 소유 어구록(owner_id===me)만 노출 — 상대 글은 RLS write 거부라
+ * 로컬만 바뀌고 서버 미반영(reload 시 복원)되므로 메뉴 자체를 숨긴다. 복사는 누구나 가능.
+ */
 export function buildMenuPop(q, ctx, { onChange, afterAction } = {}) {
+  const meId = ctx?.user?.id;
+  const isMine = !meId || q.owner_id === meId; // me 미상이면(로컬/미로그인) 일단 허용
   return el('div', { class: 'menu-pop', onClick: (e) => e.stopPropagation() },
-    el('button', { onClick: () => { closePop(); togglePin(q, ctx, onChange); } },
-      iconEl(q.pinned ? 'star-fill' : 'star', { sz: 14 }), q.pinned ? '핀 해제' : '핀 추가'),
+    isMine ? el('button', { onClick: () => { closePop(); togglePin(q, ctx, onChange); } },
+      iconEl(q.pinned ? 'star-fill' : 'star', { sz: 14 }), q.pinned ? '핀 해제' : '핀 추가') : null,
     el('button', { onClick: () => { closePop(); copyText(q.text); } }, iconEl('copy', { sz: 14 }), '복사'),
-    el('button', { onClick: () => { closePop(); afterAction?.('edit'); (ctx.openEdit ? ctx.openEdit(q.id) : ctx.navigate(`/edit/${q.id}`)); } },
-      iconEl('edit', { sz: 14 }), '수정'),
-    el('hr', {}),
-    el('button', { class: 'danger', onClick: () => { closePop(); afterAction?.('delete'); (ctx.openDelete ? ctx.openDelete(q.id) : ctx.navigate(`/delete/${q.id}`)); } },
-      iconEl('trash', { sz: 14 }), '삭제'),
+    isMine ? el('button', { onClick: () => { closePop(); afterAction?.('edit'); (ctx.openEdit ? ctx.openEdit(q.id) : ctx.navigate(`/edit/${q.id}`)); } },
+      iconEl('edit', { sz: 14 }), '수정') : null,
+    isMine ? el('hr', {}) : null,
+    isMine ? el('button', { class: 'danger', onClick: () => { closePop(); afterAction?.('delete'); (ctx.openDelete ? ctx.openDelete(q.id) : ctx.navigate(`/delete/${q.id}`)); } },
+      iconEl('trash', { sz: 14 }), '삭제') : null,
   );
 }
 

@@ -145,11 +145,16 @@ async function render(host, params, ctx) {
         ),
         el('div', { class: 'book-row-count' }, String(cnt)),
       );
-      attachContextMenu(row, () => el('div', { class: 'menu-pop', onClick: (e) => e.stopPropagation() },
-        el('button', { onClick: () => { closePop(); ctx.openAdd && ctx.openAdd({ bookRef: ref }); } }, iconEl('plus', { sz: 14 }), '이 책에 어구록 추가'),
-        el('hr', {}),
-        el('button', { class: 'danger', onClick: () => { closePop(); ctx.openDeleteBook && ctx.openDeleteBook(ref, (byBook.get(ref)?.quotes || []).map((q) => q.id)); } }, iconEl('trash', { sz: 14 }), '책 삭제'),
-      ));
+      // 책 삭제는 책의 어구록이 전부 본인 소유일 때만 노출 — 상대 글은 RLS write 거부(로컬만 변경, reload 시 복원).
+      attachContextMenu(row, () => {
+        const bookQuotes = byBook.get(ref)?.quotes || [];
+        const canDelete = bookQuotes.length > 0 && bookQuotes.every((q) => q.owner_id === meId);
+        return el('div', { class: 'menu-pop', onClick: (e) => e.stopPropagation() },
+          el('button', { onClick: () => { closePop(); ctx.openAdd && ctx.openAdd({ bookRef: ref }); } }, iconEl('plus', { sz: 14 }), '이 책에 어구록 추가'),
+          canDelete ? el('hr', {}) : null,
+          canDelete ? el('button', { class: 'danger', onClick: () => { closePop(); ctx.openDeleteBook && ctx.openDeleteBook(ref, bookQuotes.map((q) => q.id)); } }, iconEl('trash', { sz: 14 }), '책 삭제') : null,
+        );
+      });
       list.appendChild(row);
     }
     asideEl.appendChild(list);
