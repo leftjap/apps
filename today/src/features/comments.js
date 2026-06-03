@@ -24,7 +24,6 @@ let _commentDeleteInstalled = false;
 let _realtimeUnregister = null;
 let _articleObserver = null;
 let _stylesInjected = false;
-let _claudeBtnInstalled = false;
 // author_id → 사용자가 설정한 프로필 사진 URL. today_profiles 에서 로드 (RLS: 본인+파트너 row 만 노출).
 let _avatarUrlById = {};
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
@@ -259,18 +258,6 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     @media (prefers-reduced-motion: reduce) {
       .comment-row--enter { animation: none; }
     }
-    /* "클로드 댓글 받기" 버튼 — 칩 스타일 (DESIGN.md). */
-    .composer__ai {
-      display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; margin-left: 6px;
-      padding: 5px 11px; border: 0; border-radius: 999px;
-      background: var(--hover-bg); color: var(--ink-2, oklch(38% 0.008 60));
-      font-size: 12px; font-weight: 500; cursor: pointer;
-      transition: background .12s ease, color .12s ease, opacity .12s ease;
-    }
-    .composer__ai[hidden] { display: none; }
-    .composer__ai:hover { background: var(--crail-soft, #f0e6df); color: var(--ink-1, oklch(22% 0.008 60)); }
-    .composer__ai[disabled] { color: var(--ink-3, oklch(56% 0.008 60)); cursor: default; opacity: .7; }
-    .composer__ai svg { color: #d97757; }
     /* 모바일 (≤720px) — 카톡 말풍선 → 노트(일기) 스타일 (사용자 결정 2026-05-28, 디자이너 시안 D1) */
     @media (max-width: 720px) {
       .doc__comments {
@@ -332,7 +319,6 @@ export async function mountForArticle(article, opts = {}) {
     const existing = article.querySelector?.('.doc__comments');
     if (existing) existing.remove();
     syncComposerState(false, opts.doc);
-    syncClaudeButton(false, null, opts.doc);
     return { ok: false, reason: 'unsaved' };
   }
   const userId = opts.currentUserId || _currentUser?.id || null;
@@ -349,9 +335,6 @@ export async function mountForArticle(article, opts = {}) {
   const isOwner = !!(userId && row.owner_id === userId);
   const canComment = userId !== null && (isOwner || !!row.is_shared);
   syncComposerState(canComment, opts.doc);
-  // "클로드 댓글 받기" — 내 소유 네비 글에서만 노출.
-  const isNavi = row.kind === 'navi' || row.kind === 'soyoun_navi';
-  syncClaudeButton(isOwner && isNavi, id, opts.doc);
   // 본인 글 또는 공유 글이면 댓글 영역 mount. 파트너 비공유 글만 미마운트.
   const existing = article.querySelector?.('.doc__comments');
   if (existing) existing.remove();
@@ -643,100 +626,6 @@ function notifyRecentsCountChange() {
   }
 }
 
-// "클로드 댓글 받기" 버튼 — 내 소유 네비 글에서 Routine 즉시 발사 요청 (edge fn request-ai-comment).
-function ensureClaudeButton(doc = (typeof document !== 'undefined' ? document : null)) {
-  if (!doc || _claudeBtnInstalled) return;
-  const composer = doc.querySelector?.('.bottombar .composer');
-  if (!composer) return;
-  if (composer.querySelector('.composer__ai')) { _claudeBtnInstalled = true; return; }
-  const btn = doc.createElement('button');
-  btn.className = 'composer__ai';
-  btn.type = 'button';
-  btn.hidden = true;
-  btn.innerHTML =
-    '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7"/><line x1="6.3" y1="17.7" x2="17.7" y2="6.3"/></svg><span>클로드 댓글</span>';
-  btn.addEventListener('click', () => {
-    requestAiComment(btn).catch((e) => console.warn('[comments] AI 댓글 요청 실패:', e?.message || e));
-  });
-  composer.appendChild(btn);
-  _claudeBtnInstalled = true;
-}
-
-/** 버튼 노출/숨김 + 대상 entry 저장. */
-function syncClaudeButton(show, entryId, doc = (typeof document !== 'undefined' ? document : null)) {
-  if (!doc) return;
-  const btn = doc.querySelector?.('.composer__ai');
-  if (!btn) return;
-  btn.hidden = !show;
-  if (show && entryId) btn.dataset.entryId = entryId;
-}
-
-// 최소 토스트 — 앱에 알림 UI 가 없어 자체 추가. 하단 중앙, 2.5s 후 자동 소멸.
-let _toastTimer = null;
-function showToast(message) {
-  if (typeof document === 'undefined') return;
-  let el = document.querySelector('.today-toast');
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'today-toast';
-    el.setAttribute('role', 'status');
-    el.setAttribute('aria-live', 'polite');
-    el.style.cssText = [
-      'position:fixed', 'left:50%', 'bottom:calc(72px + env(safe-area-inset-bottom, 0px))',
-      'transform:translateX(-50%) translateY(8px)', 'z-index:10000', 'max-width:80vw',
-      'padding:10px 16px', 'border-radius:14px', 'background:var(--ink-1, oklch(22% 0.008 60))',
-      'color:#fff', 'font-size:14px', 'line-height:1.4', 'box-shadow:0 6px 20px rgba(0,0,0,.18)',
-      'opacity:0', 'transition:opacity .18s ease, transform .18s ease', 'pointer-events:none',
-      'white-space:nowrap', 'text-align:center',
-    ].join(';');
-    document.body.appendChild(el);
-  }
-  el.textContent = message;
-  requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateX(-50%) translateY(0)'; });
-  if (_toastTimer) clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateX(-50%) translateY(8px)';
-  }, 2500);
-}
-
-async function requestAiComment(btn) {
-  const entryId = btn?.dataset?.entryId;
-  if (!entryId || btn.disabled) return;
-  btn.disabled = true;
-  btn.setAttribute('aria-busy', 'true');
-  const label = btn.querySelector('span');
-  const prev = label ? label.textContent : '';
-  if (label) label.textContent = '요청 중…';
-  let queued = false;
-  try {
-    // 글 본문이 서버에 반영되도록 먼저 flush (Routine 이 최신 내용을 읽도록).
-    try { await Sync.flushPendingUploads?.(); } catch (_) {}
-    if (!supabase?.functions?.invoke) throw new Error('supabase 미설정');
-    const { data, error } = await supabase.functions.invoke('request-ai-comment', { body: { entry_id: entryId } });
-    if (error) throw error;
-    if (data?.status === 'noop') {
-      // 클로드가 이미 답했고 새 사람 댓글 없음 → 발사 안 함. 헛클릭 대신 안내.
-      showToast('클로드가 이미 답글을 남겼어요');
-      if (label) label.textContent = prev || '클로드 댓글';
-    } else {
-      queued = true;
-      showToast('곧 클로드가 답글을 달아요');
-      if (label) label.textContent = '요청됨';
-    }
-  } catch (e) {
-    showToast('잠시 후 다시 시도해 주세요');
-    if (label) label.textContent = prev || '클로드 댓글';
-    throw e;
-  } finally {
-    btn.removeAttribute('aria-busy');
-    setTimeout(() => {
-      btn.disabled = false;
-      if (queued && label && label.textContent === '요청됨') label.textContent = prev || '클로드 댓글';
-    }, 4000);
-  }
-}
-
 /** today_profiles 에서 본인+파트너 avatar_url 맵 로드 (RLS 로 두 row 만 노출). 클로드는 프로필 없음. */
 async function loadAvatarMap() {
   if (!supabase) return;
@@ -765,7 +654,6 @@ export async function mountCommentsView(user) {
   installComposerHandler();
   installCommentDeleteHandler();
   installArticleObserver();
-  ensureClaudeButton();
   if (_realtimeUnregister) _realtimeUnregister();
   _realtimeUnregister = Sync.onRealtimeChange((payload) => {
     handleRealtimeCommentChange(payload).catch((e) =>
