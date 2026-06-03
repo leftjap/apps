@@ -14,7 +14,7 @@ import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
-import { openQuoteModal, rowMenuButton } from '../ui/quote-modal.js';
+import { openQuoteModal, rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
@@ -134,7 +134,7 @@ async function render(host, params, ctx) {
     for (const b of fb) {
       const ref = String(b.id);
       const cnt = pinnedOnly ? (byBook.get(ref)?.pinned || 0) : (byBook.get(ref)?.quotes.length || 0);
-      list.appendChild(el('div', {
+      const row = el('div', {
         class: ref === selectedId ? 'book-row selected' : 'book-row',
         onClick: () => { selectedId = ref; renderAside(); renderMain(); },
       },
@@ -144,7 +144,13 @@ async function render(host, params, ctx) {
           el('div', { class: 'book-row-byline' }, `${b.a} · ${b.p}`),
         ),
         el('div', { class: 'book-row-count' }, String(cnt)),
+      );
+      attachContextMenu(row, () => el('div', { class: 'menu-pop', onClick: (e) => e.stopPropagation() },
+        el('button', { onClick: () => { closePop(); ctx.openAdd && ctx.openAdd({ bookRef: ref }); } }, iconEl('plus', { sz: 14 }), '이 책에 어구록 추가'),
+        el('hr', {}),
+        el('button', { class: 'danger', onClick: () => { closePop(); ctx.openDeleteBook && ctx.openDeleteBook(ref, (byBook.get(ref)?.quotes || []).map((q) => q.id)); } }, iconEl('trash', { sz: 14 }), '책 삭제'),
       ));
+      list.appendChild(row);
     }
     asideEl.appendChild(list);
   }
@@ -166,17 +172,23 @@ async function render(host, params, ctx) {
       ),
     ));
 
-    const stream = el('div', { class: 'quote-stream' });
-    if (!qs.length) stream.appendChild(el('div', { class: 'empty' }, '저장된 어구록이 없습니다.'));
+    const stream = el('div', {
+      class: 'quote-stream',
+      // 빈 영역(어구록 없는 공간) 클릭 → 이 책으로 바로 어구록 추가
+      onClick: (e) => { if (e.target === stream || (e.target.classList && e.target.classList.contains('empty'))) ctx.openAdd && ctx.openAdd({ bookRef: selectedId }); },
+    });
+    if (!qs.length) stream.appendChild(el('div', { class: 'empty', style: { cursor: 'pointer' } }, '저장된 어구록이 없습니다. 클릭해 추가하세요.'));
     qs.forEach((q, i) => {
-      stream.appendChild(el('article', {
+      const article = el('article', {
         class: q.pinned ? 'quote-row is-pinned' : 'quote-row',
         onClick: () => openQuoteModal(q, ctx, { commentCount: commentCounts[q.id] || 0, container: root }),
       },
         el('div', { class: 'idx' }, String(i + 1).padStart(2, '0')),
         el('p', { class: 'body' }, q.text, q.owner_id !== meId ? el('span', { class: 'soyeon' }, '— 소연') : null),
         rowMenuButton(q, ctx, { onChange: onQuoteChange }),
-      ));
+      );
+      attachContextMenu(article, () => buildMenuPop(q, ctx, { onChange: onQuoteChange }));
+      stream.appendChild(article);
     });
     mainCol.appendChild(stream);
   }

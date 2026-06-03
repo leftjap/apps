@@ -29,7 +29,7 @@ export function relTime(iso) {
 
 // ─── menu-pop (행·모달 공용) ───
 let _openPop = null;
-function closePop() {
+export function closePop() {
   if (_openPop) { _openPop.remove(); _openPop = null; document.removeEventListener('click', onDocClick, true); }
 }
 function onDocClick(e) {
@@ -72,6 +72,22 @@ export function rowMenuButton(q, ctx, opts = {}) {
     },
   }, iconEl('dots-v', { sz: 16 }));
   return btn;
+}
+
+/** 우클릭(contextmenu)+롱프레스(모바일 ~500ms)로 menu-pop 띄우기. popFactory: ()=>menu-pop el. rowEl 은 position:relative 권장. */
+export function attachContextMenu(rowEl, popFactory) {
+  const openAt = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    closePop();
+    const pop = popFactory();
+    rowEl.appendChild(pop);
+    _openPop = pop;
+    setTimeout(() => document.addEventListener('click', onDocClick, true), 0);
+  };
+  rowEl.addEventListener('contextmenu', openAt);
+  let t = null;
+  rowEl.addEventListener('touchstart', () => { t = setTimeout(() => openAt(null), 500); }, { passive: true });
+  ['touchend', 'touchmove', 'touchcancel'].forEach((ev) => rowEl.addEventListener(ev, () => clearTimeout(t)));
 }
 
 // ─── QuoteModal ───

@@ -230,7 +230,32 @@ async function openDelete(ctx, id) {
   close = mountOverlay(overlay);
 }
 
-setActions({ openAdd, openEdit, openDelete });
+// ─── 책 삭제 확인 (책의 어구록 일괄 soft-delete) ──────────────────────────────
+async function openDeleteBook(ctx, ref, quoteIds = []) {
+  const b = bookOf(ref);
+  if (!b) return;
+  let close;
+  const doDelete = async () => {
+    try {
+      for (const id of quoteIds) await Queries.softDeleteQuote(id);
+      close();
+      ctx.refresh && ctx.refresh();
+    } catch (e) { console.warn('[deleteBook] 실패', e?.message || e); }
+  };
+  const dialog = el('div', { style: { width: 440, background: '#fff', borderRadius: 14, boxShadow: '0 4px 12px -2px rgba(20,18,14,.10), 0 24px 60px -16px rgba(20,18,14,.32)', padding: '26px 28px' } },
+    el('div', { style: { width: 40, height: 40, borderRadius: 50, background: 'rgba(194,85,58,0.10)', color: '#c2553a', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 } }, iconEl('trash', { sz: 20, st: 1.8 })),
+    el('h3', { style: { margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: '-.02em' } }, '책을 삭제하시겠어요?'),
+    el('p', { style: { margin: '8px 0 20px', fontSize: 13.5, color: 'var(--ink-3)', lineHeight: 1.65 } },
+      `‘${b.t}’ 의 어구록 ${quoteIds.length}개를 모두 삭제합니다. 어구록이 0개가 되면 서재에서 사라집니다.`),
+    el('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } },
+      btn({ label: '취소', variant: 'sec', size: 'md', onClick: () => close() }),
+      btn({ label: '삭제', variant: 'warm', size: 'md', onClick: doDelete })),
+  );
+  const overlay = el('div', { style: { position: 'fixed', inset: 0, background: 'rgba(20,18,14,.36)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 31 }, onClick: (e) => { if (e.target === overlay) close(); } }, dialog);
+  close = mountOverlay(overlay);
+}
 
-export { openAdd, openEdit, openDelete };
-export default { openAdd, openEdit, openDelete };
+setActions({ openAdd, openEdit, openDelete, openDeleteBook });
+
+export { openAdd, openEdit, openDelete, openDeleteBook };
+export default { openAdd, openEdit, openDelete, openDeleteBook };

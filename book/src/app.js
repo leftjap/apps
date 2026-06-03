@@ -133,6 +133,7 @@ function mountCurrent() {
   ctx.openAdd = (opts) => _actions.openAdd && _actions.openAdd(ctx, opts);
   ctx.openEdit = (id) => _actions.openEdit && _actions.openEdit(ctx, id);
   ctx.openDelete = (id) => _actions.openDelete && _actions.openDelete(ctx, id);
+  ctx.openDeleteBook = (ref, quoteIds) => _actions.openDeleteBook && _actions.openDeleteBook(ctx, ref, quoteIds);
   host.innerHTML = '';
   if (typeof render === 'function') {
     try {
