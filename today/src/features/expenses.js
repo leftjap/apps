@@ -1815,7 +1815,7 @@ export async function refreshIngestGapBanner(doc = (typeof document !== 'undefin
   if (_ingestGapDismissedRecently()) { el.hidden = true; return; }
   const gaps = await detectIngestGapCards();
   if (!gaps.length) { el.hidden = true; return; }
-  const cards = gaps.map((g) => g.card).join(', ');
+  const cards = gaps.map((g) => cardLabelFromValue(g.card, _currentUser?.email) || g.card).join(', ');
   const oldest = gaps.reduce((a, g) => (a < g.lastSpentAt ? a : g.lastSpentAt), gaps[0].lastSpentAt);
   const daysAgo = Math.max(INGEST_GAP_THRESHOLD_DAYS, Math.floor((Date.now() - new Date(oldest).getTime()) / 86400000));
   const txt = el.querySelector('.ingest-gap-banner__text');
