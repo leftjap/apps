@@ -1683,7 +1683,7 @@ export function mountExpensesView(user) {
   bindMonthNavHandlers();
   bindStatsTabHandler();
   refreshSidebarExpenseTotal();
-  refreshIngestGapBanner();
+  // ingest gap 배너 UI 제거 (2026-06-03, 소연 미관) — 자동수집 끊김 감지는 서버 cron 으로 이관.
   // Realtime listener — expense 변경 시 사이드바 + 활성 카테고리 화면 자동 갱신
   if (_realtimeUnregister) _realtimeUnregister();
   _realtimeUnregister = Sync.onRealtimeChange((payload) => {
@@ -1698,7 +1698,6 @@ export async function handleRealtimeExpenseChange(payload, doc = document) {
     return { applied: false, reason: 'table_mismatch' };
   }
   try { await refreshSidebarExpenseTotal(doc); } catch (_) {}
-  try { await refreshIngestGapBanner(doc); } catch (_) {}
   if (getCurrentKind(doc) === 'expense') {
     await handleCategoryActive('expense');
     return { applied: true, reason: 'rerendered' };
