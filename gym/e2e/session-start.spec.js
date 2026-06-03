@@ -421,7 +421,8 @@ test.describe('Wave 11.9.1 — session start + add exercise', () => {
     // SessionC active 카드 가시화 — #cardSwipeArea + 운동명 + 첫 세트 active
     await expect(page.locator('#cardSwipeArea')).toBeVisible();
     await expect(page.locator('#cardExName')).toHaveText('벤치프레스');
-    await expect(page.locator('#cardSetProgress')).toHaveText(/SET 01/);
+    // §6-6 v2.2 — 우상단은 SET N/M 대신 세션 볼륨. 첫 세션·미완료 → "0kg" (직전 세션 없음).
+    await expect(page.locator('#cardSetProgress')).toHaveText(/kg/);
 
     // 세션 startTime 기록 (spec §6-1) — Dexie 검증
     const dexieStart = await page.evaluate(async () => {

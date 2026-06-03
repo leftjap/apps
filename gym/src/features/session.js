@@ -113,6 +113,31 @@ export async function getPrevSessionLastSets(exerciseId) {
 }
 
 /**
+ * 직전 세션(가장 최근 완료) 의 총 볼륨 — 우상단 세션 단위 비교용 (워크아웃 전체).
+ *  - 완료 시 저장된 totalVolume 필드 사용 (모든 done 세트 weight×reps 합, §6-6 v2.2).
+ *  - 현재 active 세션(excludeId) 제외. 직전 기록 없으면 0.
+ */
+export async function getPrevSessionTotalVolume(excludeId) {
+  try {
+    const db = (typeof window !== 'undefined' ? window.gymDB : null);
+    if (!db) return 0;
+    const rows = await db.sessions.where('status').equals('completed').toArray();
+    const completed = rows.filter((r) => r && r.id !== excludeId);
+    if (!completed.length) return 0;
+    completed.sort((a, b) => {
+      const da = String(a.date || ''), dbS = String(b.date || '');
+      if (da !== dbS) return da < dbS ? 1 : -1;
+      return (b.endTime || 0) - (a.endTime || 0);
+    });
+    return Number(completed[0].totalVolume) || 0;
+  } catch (e) {
+    if (e && /window\.gymDB 미초기화/.test(String(e.message))) return 0;
+    console.error('[gymSession] getPrevSessionTotalVolume', e);
+    return 0;
+  }
+}
+
+/**
  * spec §6-3-3 ③ 운동 기본값 prefill — defaultSets 개수만큼 preset:true 객체.
  *  - cardio (equipment='cardio'): weight=null, reps=null (시간 기반은 별 wave)
  *  - bodyweight (equipment='bodyweight'): weight=null
@@ -678,9 +703,23 @@ async function mountSessionActive(doc, block, session) {
   } catch (_) { /* graceful */ }
   applyCardKind(doc, exerciseEq);
 
-  // SET N/M — cardio 는 단일 세트 표기
-  const totalSets = sets.length || 1;
-  setTextById(doc, 'cardSetProgress', `SET ${pad2(cur + 1)} / ${pad2(totalSets)}`);
+  // 우상단 (§6-6 v2.2) — SET N/M 대신 세션 단위 볼륨 (오늘 누적 / 직전 세션 총 볼륨).
+  //   set 진행도는 S1..Sn dot 이 이미 표시 → 중복 제거하고 워크아웃 단위 동기부여로 대체.
+  //   numerator = 현재 세션 모든 블록 done 세트 volume, denominator = 직전 세션 totalVolume.
+  let sessionDoneVol = 0;
+  for (const b of (session.blocks || [])) {
+    if (!b || b.type !== 'single' || !Array.isArray(b.sets)) continue;
+    for (const s of b.sets) {
+      if (s && s.done) sessionDoneVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    }
+  }
+  let prevSessionVol = 0;
+  try { prevSessionVol = await getPrevSessionTotalVolume(session.id); }
+  catch (_) { /* graceful — 직전 기록 없으면 0 */ }
+  const sessVolText = prevSessionVol > 0
+    ? `${sessionDoneVol.toLocaleString()} / ${prevSessionVol.toLocaleString()}kg`
+    : `${sessionDoneVol.toLocaleString()}kg`;
+  setTextById(doc, 'cardSetProgress', sessVolText);
 
   const isPreset = !!currentSet.preset;
   // preset/input 모두 흰색 (사용자 가독성 우선) — 구분은 font-weight + setDots accent 로.
@@ -765,19 +804,29 @@ async function mountSessionActive(doc, block, session) {
     else centerActiveSet();
   }
 
-  // 진행바 + 볼륨 + %
-  let totalDone = 0;
-  let totalPlanned = 0;
+  // 진행바 (§6-7) — 이번 운동 현재 누적 볼륨 / 직전 이 운동의 총 볼륨.
+  //   분모는 직전 세션 같은 종목의 총 볼륨(prevSessionSets 합) — "오늘 계획"이 아니라 고정된
+  //   "지난번 넘기" 타깃. 분자(done)가 분모를 넘으면 pct>100% (직전 기록 돌파).
+  let exDoneVol = 0;
   for (const s of sets) {
-    const w = Number(s?.weight) || 0;
-    const r = Number(s?.reps) || 0;
-    totalPlanned += w * r;
-    if (s && s.done) totalDone += w * r;
+    if (s && s.done) exDoneVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
   }
-  const pct = totalPlanned > 0 ? Math.round((totalDone / totalPlanned) * 100) : 0;
+  let prevExVol = 0;
+  if (Array.isArray(prevSessionSets)) {
+    for (const s of prevSessionSets) {
+      const r = Number(s?.reps) || 0;
+      if (r > 0) prevExVol += (Number(s?.weight) || 0) * r; // 의미값(reps>0) 만
+    }
+  }
+  // 직전 기록 없으면(첫 세션) 오늘 계획 볼륨으로 폴백 — 바가 빈 채로 남지 않게.
+  let denom = prevExVol;
+  if (denom <= 0) {
+    for (const s of sets) denom += (Number(s?.weight) || 0) * (Number(s?.reps) || 0);
+  }
+  const pct = denom > 0 ? Math.round((exDoneVol / denom) * 100) : 0;
   const bar = doc.getElementById('cardProgressBar');
-  if (bar) bar.style.width = `${pct}%`;
-  setTextById(doc, 'cardProgressVol', `${totalDone.toLocaleString()} / ${totalPlanned.toLocaleString()}kg`);
+  if (bar) bar.style.width = `${Math.min(100, pct)}%`; // 바 fill 은 100% cap, 초과는 % 텍스트로
+  setTextById(doc, 'cardProgressVol', `${exDoneVol.toLocaleString()} / ${denom.toLocaleString()}kg`);
   setTextById(doc, 'cardProgressPct', `${pct}%`);
 
   // (f-5-1) spec §6-8 — footer nav pill 동적 렌더 + click handler
@@ -936,11 +985,6 @@ function renderCardioPace(doc, durSec, distKm) {
   const mm = Math.floor(paceSecPerKm / 60);
   const ss = Math.round(paceSecPerKm % 60);
   el.textContent = `${mm}:${String(ss).padStart(2, '0')}/km`;
-}
-
-function pad2(n) {
-  const v = Math.max(0, Math.floor(Number(n) || 0));
-  return String(v).padStart(2, '0');
 }
 
 /**
@@ -2429,10 +2473,21 @@ export async function handleLeftSwipe() {
         pr: false,
       });
     } else {
-      // spec §6-3-3 — 다음 세트는 직전 세트 값 상속 (아직 사용자 미수정 preset 인 경우만).
+      // spec §6-3-3 — 다음 세트 값 우선순위: ① 이전 세션 같은 세트번호 > ② 이번 세션 직전 세트 상속.
+      // 직전 세트 상속(②)은 사용자 미수정 preset 이면서 + 이전 세션에 같은 세트번호 기록이 없을 때만.
+      // 이전 세션 기록이 있으면 prefill 된 그 값을 보존 (직전 세트의 더 높은 값으로 덮어쓰지 않음) —
+      // 미수정 preset 을 상속으로 덮으면 이전 세션 타깃이 진행하며 전부 사라지는 회귀.
       const next = sets[cur + 1];
       if (next && next.preset) {
-        sets[cur + 1] = { ...next, weight: committedW, reps: committedR };
+        let prevSessionSets = null;
+        try { prevSessionSets = await getPrevSessionLastSets(block.exerciseId); }
+        catch (_) { /* 조회 실패 → 직전 세트 상속(②)으로 폴백 */ }
+        const ps = prevSessionSets && prevSessionSets[cur + 1];
+        // 이전 세션 같은 세트번호에 의미값(reps>0) 있으면 보존 — 없으면 직전 세트 상속.
+        const hasPrevSame = !!(ps && Number.isFinite(ps.reps) && ps.reps > 0);
+        if (!hasPrevSame) {
+          sets[cur + 1] = { ...next, weight: committedW, reps: committedR };
+        }
       }
     }
   }
@@ -2827,6 +2882,7 @@ if (typeof window !== 'undefined') {
     getExerciseDefaults,
     buildPresetSets,
     getPrevSessionLastSets,
+    getPrevSessionTotalVolume,
     persistSetCommit,
     persistKeypadEdit,
     dumpActiveSessionFromState,
