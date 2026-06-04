@@ -171,7 +171,9 @@ function placeholderEl(name, err) {
 function hideInitialLoadingScreen() {
   const el = typeof document !== 'undefined' && document.getElementById('loadingScreen');
   if (!el || el.classList.contains('hidden')) return;
-  requestAnimationFrame(() => el.classList.add('hidden'));
+  // 직접 토글 — requestAnimationFrame 콜백은 백그라운드(visibility hidden) 탭에서 멈춰
+  // 로딩 화면이 안 사라지는 버그가 있었다. classList 변경은 탭 가시성과 무관하게 즉시 적용된다.
+  el.classList.add('hidden');
 }
 
 // ───────────────────────────────────────────────────────────────────────────
