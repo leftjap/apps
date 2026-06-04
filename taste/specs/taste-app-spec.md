@@ -4,6 +4,7 @@
 > 대상: 구현 세션 Claude (로컬).
 > 스택 근거: study/gym/today/book 4앱 실측 패턴 (`book/specs/book-port-spec.md` §0 동일 확인분).
 > 한 줄 요약: 내가 별점 평가한 영화(왓챠피디아)·책(앱 입력)을 Claude가 주 1회 읽고, 다음에 볼/읽을 작품을 이유와 함께 추천하는 개인용 PWA.
+> 디자인: 화면 UI·비주얼 상세는 `taste-design-brief.md`(Claude Design 입력용) 참조.
 
 ---
 
