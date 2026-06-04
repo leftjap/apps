@@ -73,8 +73,8 @@
 .bookv4 .sort-seg button { background: transparent; border: 0; padding: 5px 12px; font-size: 12.5px; color: var(--ink-3); border-radius: 7px; font-weight: 500; }
 .bookv4 .sort-seg button.active { color: var(--ink); background: var(--bg-soft); }
 
-/* min-height: 어구록이 stream 을 꽉 채우지 않도록 하단 빈 영역 확보 → 빈 영역 좌클릭으로 어구록 추가 가능 */
-.bookv4 .quote-stream { display: flex; flex-direction: column; min-height: 45vh; }
+/* padding-bottom: 마지막 어구록 아래 빈 영역 확보 → 빈 영역 좌클릭으로 어구록 추가(어구록 수 무관, e.target===stream) */
+.bookv4 .quote-stream { display: flex; flex-direction: column; padding-bottom: 25vh; }
 .bookv4 .quote-row {
   position: relative; display: grid; grid-template-columns: 40px 1fr 36px;
   gap: 20px; padding: 24px 0; cursor: pointer;
