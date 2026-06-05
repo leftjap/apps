@@ -15,6 +15,7 @@ import { cover } from '../ui/cover.js';
 import { screenShell, pageTitle, streakCard, comparisonCard, btn } from '../ui/components.js';
 import { wordCloud } from '../ui/charts.js';
 import { tokenize } from '../ui/text.js';
+import { supabase } from '../services/supabase.js';
 
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
@@ -89,6 +90,28 @@ async function render(host, params, ctx) {
   let quotes = [];
   try { quotes = await Queries.listAllQuotes(owners); } catch (e) { console.warn('[stats] 로드 실패', e?.message || e); }
 
+  // 밀리 독서시간 (book_reading_seconds — millie-sync 가 적재, RLS 본인+파트너)
+  const reading = { today: 0, week: 0, month: 0 };
+  try {
+    if (supabase && owners.length) {
+      const { data } = await supabase
+        .from('book_reading_seconds')
+        .select('day,seconds')
+        .in('owner_id', owners);
+      const now = new Date();
+      const lk = (dt) => `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+      const todayK = lk(now);
+      const wkAgo = new Date(now); wkAgo.setDate(now.getDate() - 6);
+      const wkStart = lk(wkAgo);
+      const moK = todayK.slice(0, 7);
+      for (const r of data || []) {
+        if (r.day === todayK) reading.today += r.seconds;
+        if (r.day >= wkStart && r.day <= todayK) reading.week += r.seconds;
+        if (r.day.slice(0, 7) === moK) reading.month += r.seconds;
+      }
+    }
+  } catch (e) { console.warn('[stats] 독서시간 로드 실패', e?.message || e); }
+
   const streak = computeStats(quotes); // 연속 — 전체 기준 (기간 토글 무관)
   const allMonths = [...new Set(quotes.map((q) => monthKey(q.created_at)).filter(Boolean))].sort().reverse();
   const curM = allMonths[0] || '2026-05';
@@ -143,6 +166,14 @@ async function render(host, params, ctx) {
 
     const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
       el('div', { class: 'mono', style: { fontSize: 44, fontWeight: 700, letterSpacing: '-.032em', lineHeight: 1 } }, String(n), el('span', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginLeft: 6, fontFamily: 'var(--sans)' } }, u)));
+    const fmtDur = (s) => { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}시간 ${m}분` : `${m}분`; };
+    const readingCard = card([
+      panelHead('밀리 독서시간', '오늘 · 이번주 · 이번달'),
+      el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 } },
+        num('오늘', fmtDur(reading.today), ''),
+        num('이번주', fmtDur(reading.week), ''),
+        num('이번달', fmtDur(reading.month), '')),
+    ], '28px 32px');
     const row1 = el('div', { class: 'stats-row-1', style: { display: 'grid', gridTemplateColumns: '360px minmax(0,1fr)', gap: 24, marginBottom: 28 } },
       streakCard(streak),
       card([
@@ -189,6 +220,7 @@ async function render(host, params, ctx) {
 
     container.append(
       pageTitle({ upper: '통계', title, large: true, right: periodSeg(active, onPeriod) }),
+      readingCard,
       row1, row2, row3, row4,
     );
   }
