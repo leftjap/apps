@@ -125,74 +125,73 @@ function countByBook(quotes) {
   return m;
 }
 
-// ─── 제로스테이트 (포커스 + 빈 입력) ─────────────────────────────────────────
+// ─── 최근 검색 (localStorage, 기기 로컬 전용 — 서버 동기화 없음) ──────────────
+// 검색창 유일의 비중복 신호. 다른 화면(피드·통계·서재)은 모두 사전조직 뷰라
+// "사용자가 친 쿼리"는 검색창에만 존재. 원 설계의 "이력 0"은 서버 이력 0 으로 해석.
+const RECENT_KEY = 'book.recentSearch';
+function loadRecentSearches() {
+  try { return (JSON.parse(localStorage.getItem(RECENT_KEY) || '[]') || []).filter((t) => typeof t === 'string' && t.trim()).slice(0, 5); }
+  catch { return []; }
+}
+function pushRecentSearch(term) {
+  const t = (term || '').trim();
+  if (t.length < 2) return;
+  const arr = [t, ...loadRecentSearches().filter((x) => x !== t)].slice(0, 5);
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(arr)); } catch { /* noop */ }
+}
+function removeRecentSearch(term) {
+  try { localStorage.setItem(RECENT_KEY, JSON.stringify(loadRecentSearches().filter((x) => x !== term))); } catch { /* noop */ }
+}
+
+/** 검색 문법 파싱: `책:키워드` · `분야:키워드` · `"정확구절"` · 일반. (데이터상 유효한 필터만) */
+function parseQuery(raw) {
+  const s = (raw || '').trim();
+  let m;
+  if ((m = s.match(/^"(.+)"$/))) return { mode: 'exact', term: m[1].trim() };
+  if ((m = s.match(/^책\s*[:：]\s*(.+)$/))) return { mode: 'book', term: m[1].trim() };
+  if ((m = s.match(/^분야\s*[:：]\s*(.+)$/))) return { mode: 'cat', term: m[1].trim() };
+  return { mode: 'all', term: s };
+}
+
+// ─── 제로스테이트 (포커스 + 빈 입력) — 최근 검색 + 주제·단어 + 문법 힌트 ──────
+// 검색창 비중복 신호만 남김: 최근검색(검색창 유일 고유) + 주제·단어 칩(query suggestion).
+// 핀(데이터 0개)·책/작가 점프(통계·서재 복제)·장르 칩(통계·서재 복제)은 제거.
 function renderZero(panel, quotes, actions) {
   panel.replaceChildren();
   panel.style.display = 'block';
   const all = quotes || [];
-
-  // ① 핀한 어구록 — 유일한 개인 신호. 없으면 섹션 숨김.
-  const pinned = all.filter((q) => q.pinned).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
-  if (pinned.length) {
-    const sec = el('div', { class: 'zs-sec' },
-      zsSecHead('pin', '핀한 어구록', el('button', { class: 'zs-more', onClick: () => actions.navTo('/library') }, `핀 전체 ${pinned.length}개`)));
-    for (const q of pinned.slice(0, 5)) {
-      const b = bookOf(q.book_ref);
-      sec.appendChild(el('div', { class: 'zs-pin zs-item', onClick: () => actions.openQuote(q) },
-        el('span', { class: 'zs-pin-ico' }, iconEl('pin', { sz: 14 })),
-        el('div', { class: 'zs-pin-body' },
-          el('div', { class: 'zs-pin-text' }, q.text),
-          el('div', { class: 'zs-pin-meta' }, el('b', {}, b ? b.t : '(책 미상)'), b ? ` · ${b.a}` : ''))));
-    }
-    panel.appendChild(sec);
-  }
-
-  // ② 주제·단어로 바로 찾기 — 칩 단어는 큐레이션 클러스터(주간 LLM 정제)만 사용.
-  // raw 토큰은 조사 미분리로 거칠어('시간'·'시간을' 분리) 칩에 부적합 → 미사용.
-  const used = countByBook(all);
-  const words = (CURATION?.clusters || []).map((c) => ({ w: c.word, n: c.count }));
-  const catFreq = new Map();
-  for (const ref of used.keys()) { const b = bookOf(ref); if (b) catFreq.set(topCatOf(b), (catFreq.get(topCatOf(b)) || 0) + 1); }
-  const cats = [...catFreq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([c]) => c);
-  if (words.length || cats.length) {
-    const sec = el('div', { class: 'zs-sec' }, zsSecHead('hash', '주제·단어로 바로 찾기'));
-    if (words.length) {
-      const chips = el('div', { class: 'zs-chips' });
-      for (const o of words) chips.appendChild(el('button', { class: 'zs-chip zs-item', onClick: () => actions.runQuery(o.w) },
-        el('span', { class: 'zs-hash' }, '#'), o.w, o.n != null ? el('span', { class: 'zs-ct' }, String(o.n)) : null));
-      sec.appendChild(chips);
-    }
-    if (cats.length) {
-      const chips = el('div', { class: 'zs-chips', style: { marginTop: 4 } });
-      for (const c of cats) chips.appendChild(el('button', { class: 'zs-chip cat zs-item', onClick: () => actions.runQuery(c) }, c));
-      sec.appendChild(chips);
-    }
-    panel.appendChild(sec);
-  }
-
-  // ③ 빠른 이동 — 많이 모은 책 · 작가. 검색 맥락의 점프(사이드바와 동작 다름).
-  const topBooks = [...used.entries()].map(([ref, c]) => ({ b: bookOf(ref), c })).filter((x) => x.b).sort((a, b) => b.c - a.c).slice(0, 3);
-  const byAuthor = new Map();
-  for (const [ref, c] of used) { const b = bookOf(ref); if (b) byAuthor.set(b.a, (byAuthor.get(b.a) || 0) + c); }
-  const topAuthors = [...byAuthor.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([a, n]) => ({ a, n }));
-  if (topBooks.length || topAuthors.length) {
-    const col1 = el('div', {}, el('div', { class: 'zs-jlabel' }, '많이 모은 책'));
-    for (const t of topBooks) col1.appendChild(el('div', { class: 'zs-jump zs-item', onClick: () => actions.navTo(`/book/${t.b.id}`) },
-      el('div', { class: 'zs-jcover' }, cover(t.b, { scale: 30 / (t.b.w || 130), lift: false })),
-      el('div', { class: 'zs-jbody' }, el('div', { class: 'zs-jtitle' }, t.b.t), el('div', { class: 'zs-jsub' }, t.b.a)),
-      el('span', { class: 'zs-jcount' }, String(t.c))));
-    const col2 = el('div', {}, el('div', { class: 'zs-jlabel' }, '작가'));
-    for (const o of topAuthors) col2.appendChild(el('div', { class: 'zs-jump zs-item', onClick: () => actions.navTo(`/author/${encodeURIComponent(o.a)}`) },
-      el('span', { class: 'zs-javatar' }, (o.a || '?').slice(0, 1)),
-      el('div', { class: 'zs-jbody' }, el('div', { class: 'zs-jtitle' }, o.a), el('div', { class: 'zs-jsub' }, '작가')),
-      el('span', { class: 'zs-jcount' }, String(o.n))));
-    panel.appendChild(el('div', { class: 'zs-sec' }, zsSecHead('book', '빠른 이동'),
-      el('div', { class: 'zs-jgrid' }, col1, col2)));
-  }
-
-  if (!panel.children.length) {
+  if (!all.length) {
     panel.appendChild(el('div', { class: 'zs-empty' }, el('b', {}, '아직 어구록이 없습니다'), '새 어구록을 추가하면 여기에서 바로 찾을 수 있어요.'));
+    return;
   }
+
+  // ① 최근 검색 — 검색창 유일 고유 신호 (localStorage, 기기 로컬)
+  const recents = loadRecentSearches();
+  if (recents.length) {
+    const chips = el('div', { class: 'zs-chips' });
+    for (const term of recents) {
+      const x = el('span', {
+        class: 'zs-recent-x', 'aria-label': '삭제',
+        onClick: (e) => { e.stopPropagation(); removeRecentSearch(term); renderZero(panel, quotes, actions); actions.rebind && actions.rebind(); },
+      }, iconEl('close', { sz: 11 }));
+      chips.appendChild(el('button', { class: 'zs-chip zs-recent zs-item', onClick: () => actions.runQuery(term) }, term, x));
+    }
+    panel.appendChild(el('div', { class: 'zs-sec' }, zsSecHead('search', '최근 검색'), chips));
+  }
+
+  // ② 주제·단어로 바로 찾기 — 큐레이션 클러스터(주간 LLM 정제). query suggestion 역할.
+  const words = (CURATION?.clusters || []).map((c) => ({ w: c.word, n: c.count }));
+  if (words.length) {
+    const chips = el('div', { class: 'zs-chips' });
+    for (const o of words) chips.appendChild(el('button', { class: 'zs-chip zs-item', onClick: () => actions.runQuery(o.w) },
+      el('span', { class: 'zs-hash' }, '#'), o.w, o.n != null ? el('span', { class: 'zs-ct' }, String(o.n)) : null));
+    panel.appendChild(el('div', { class: 'zs-sec' }, zsSecHead('hash', '주제·단어로 바로 찾기'), chips));
+  }
+
+  // ③ 검색 문법 힌트 — 검색창 고유(다른 화면은 검색 불가). 데이터상 유효한 필터만.
+  panel.appendChild(el('div', { class: 'zs-syntax' },
+    el('span', { class: 'zs-syntax-label' }, '좁혀 찾기'),
+    el('code', {}, '책:제목'), el('code', {}, '분야:자기계발'), el('code', {}, '"정확한 구절"')));
 }
 
 // ─── 실시간 결과 (입력 중) — 책·작가·분야·어구록 그룹 ───────────────────────
@@ -200,15 +199,33 @@ function renderResults(panel, raw, quotes, actions) {
   panel.replaceChildren();
   panel.style.display = 'block';
   if (quotes == null) { panel.appendChild(el('div', { class: 'zs-hint' }, '불러오는 중…')); return; }
-  const q = raw.trim();
+  const parsed = parseQuery(raw);
+  const q = parsed.term;            // 하이라이트 needle
   const lc = q.toLowerCase();
   const all = quotes || [];
   const used = countByBook(all);
 
-  const bookMatches = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 4);
-  const authors = [...new Set(BOOKS.filter((b) => (b.a || '').toLowerCase().includes(lc)).map((b) => b.a))].slice(0, 3);
-  const cats = [...new Set(BOOKS.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 3);
-  const qsAll = all.filter((r) => (r.text || '').toLowerCase().includes(lc));
+  let bookMatches = [], authors = [], cats = [], qsAll = [];
+  if (parsed.mode === 'book') {
+    // 책:키워드 — 책 제목 매칭 + 그 책들의 어구록
+    bookMatches = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 8);
+    const ids = new Set(bookMatches.map((b) => String(b.id)));
+    qsAll = all.filter((r) => ids.has(String(r.book_ref)));
+  } else if (parsed.mode === 'cat') {
+    // 분야:키워드 — 분야 매칭 + 그 분야 어구록
+    cats = [...new Set(BOOKS.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 5);
+    const cs = new Set(cats);
+    qsAll = all.filter((r) => { const b = bookOf(r.book_ref); return b && cs.has(topCatOf(b)); });
+  } else if (parsed.mode === 'exact') {
+    // "정확구절" — 본문 정확 포함(대소문자 유지)
+    qsAll = all.filter((r) => (r.text || '').includes(q));
+  } else {
+    // 일반 — 책·작가·분야·어구록 통합
+    bookMatches = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 4);
+    authors = [...new Set(BOOKS.filter((b) => (b.a || '').toLowerCase().includes(lc)).map((b) => b.a))].slice(0, 3);
+    cats = [...new Set(BOOKS.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 3);
+    qsAll = all.filter((r) => (r.text || '').toLowerCase().includes(lc));
+  }
   const qs = qsAll.slice(0, 6);
 
   // 책
@@ -289,9 +306,11 @@ export function topbarSearch({ ctx } = {}) {
     bindRows();
   };
   const actions = {
-    navTo: (route) => { close(); input.blur(); (ctx?.navigate || (() => {}))(route); },
-    openQuote: (qr) => { close(); input.blur(); (ctx?.navigate || (() => {}))(`/thread/${qr.book_ref}/${qr.id}`); },
+    // 검색 결과에서 항목 클릭 = 유용했던 검색 → 최근 검색에 저장(입력값이 있을 때만).
+    navTo: (route) => { pushRecentSearch(input.value); close(); input.blur(); (ctx?.navigate || (() => {}))(route); },
+    openQuote: (qr) => { pushRecentSearch(input.value); close(); input.blur(); (ctx?.navigate || (() => {}))(`/thread/${qr.book_ref}/${qr.id}`); },
     runQuery: (text) => { input.value = text; wrap.classList.add('has-text'); render(); input.focus(); },
+    rebind: () => bindRows(),
   };
 
   async function ensureLoaded() {
