@@ -167,13 +167,13 @@ async function render(host, params, ctx) {
     const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
       el('div', { class: 'mono', style: { fontSize: 44, fontWeight: 700, letterSpacing: '-.032em', lineHeight: 1 } }, String(n), el('span', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginLeft: 6, fontFamily: 'var(--sans)' } }, u)));
     const fmtDur = (s) => { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}시간 ${m}분` : `${m}분`; };
-    const readingCard = card([
+    const readingCard = el('div', { style: { marginBottom: 28 } }, card([
       panelHead('밀리 독서시간', '오늘 · 이번주 · 이번달'),
       el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 32 } },
         num('오늘', fmtDur(reading.today), ''),
         num('이번주', fmtDur(reading.week), ''),
         num('이번달', fmtDur(reading.month), '')),
-    ], '28px 32px');
+    ], '28px 32px'));
     const row1 = el('div', { class: 'stats-row-1', style: { display: 'grid', gridTemplateColumns: '360px minmax(0,1fr)', gap: 24, marginBottom: 28 } },
       streakCard(streak),
       card([
