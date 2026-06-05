@@ -221,16 +221,19 @@ function renderResults(panel, raw, quotes, actions) {
   const lc = q.toLowerCase();
   const all = quotes || [];
   const used = countByBook(all);
+  // 책·작가·분야 검색 소스 = 보유 책(어구록 있는 책). BOOKS 번들 + 알라딘 등록(REGISTRY) 모두 포함.
+  // (BOOKS 상수만 쓰면 알라딘 추가 책 — 예: 에고라는 적 — 이 누락됨)
+  const ownedBooks = [...used.keys()].map((ref) => bookOf(ref)).filter(Boolean);
 
   let bookMatches = [], authors = [], cats = [], qsAll = [];
   if (parsed.mode === 'book') {
     // 책:키워드 — 책 제목 매칭 + 그 책들의 어구록
-    bookMatches = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 8);
+    bookMatches = ownedBooks.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 8);
     const ids = new Set(bookMatches.map((b) => String(b.id)));
     qsAll = all.filter((r) => ids.has(String(r.book_ref)));
   } else if (parsed.mode === 'cat') {
     // 분야:키워드 — 분야 매칭 + 그 분야 어구록
-    cats = [...new Set(BOOKS.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 5);
+    cats = [...new Set(ownedBooks.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 5);
     const cs = new Set(cats);
     qsAll = all.filter((r) => { const b = bookOf(r.book_ref); return b && cs.has(topCatOf(b)); });
   } else if (parsed.mode === 'exact') {
@@ -238,9 +241,9 @@ function renderResults(panel, raw, quotes, actions) {
     qsAll = all.filter((r) => (r.text || '').includes(q));
   } else {
     // 일반 — 책·작가·분야·어구록 통합
-    bookMatches = BOOKS.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 4);
-    authors = [...new Set(BOOKS.filter((b) => (b.a || '').toLowerCase().includes(lc)).map((b) => b.a))].slice(0, 3);
-    cats = [...new Set(BOOKS.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 3);
+    bookMatches = ownedBooks.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 4);
+    authors = [...new Set(ownedBooks.filter((b) => (b.a || '').toLowerCase().includes(lc)).map((b) => b.a))].slice(0, 3);
+    cats = [...new Set(ownedBooks.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 3);
     qsAll = all.filter((r) => (r.text || '').toLowerCase().includes(lc));
   }
   const qs = qsAll.slice(0, 6);
