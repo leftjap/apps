@@ -105,7 +105,7 @@ function zsSecHead(iconName, title, right) {
 function zsGroupLabel(iconName, title, extra) {
   return el('div', { class: 'zs-group' }, iconEl(iconName, { sz: 13, st: 1.9 }), title, extra || null);
 }
-/** needle 첫 매치만 <mark>. 사용자 텍스트는 createTextNode 로 안전. */
+/** needle 첫 매치만 <mark>. 사용자 텍스트는 createTextNode 로 안전. (짧은 제목·작가용) */
 function markInto(node, text, needle) {
   const t = String(text || '');
   const n = (needle || '').trim();
@@ -115,6 +115,23 @@ function markInto(node, text, needle) {
   node.appendChild(document.createTextNode(t.slice(0, i)));
   node.appendChild(el('mark', {}, t.slice(i, i + n.length)));
   node.appendChild(document.createTextNode(t.slice(i + n.length)));
+  return node;
+}
+
+/** 긴 본문(어구록)용 — 매치 키워드 주변만 발췌 + <mark>. 키워드가 뒤에 있어도 보이게.
+ *  매치 없으면(책·분야 필터 등) 앞부분 발췌. */
+function snippetInto(node, text, needle, lead = 26) {
+  const t = String(text || '');
+  const n = (needle || '').trim();
+  const i = n ? t.toLowerCase().indexOf(n.toLowerCase()) : -1;
+  if (i < 0) { node.appendChild(document.createTextNode(t.slice(0, 150) + (t.length > 150 ? '…' : ''))); return node; }
+  const start = Math.max(0, i - lead);
+  if (start > 0) node.appendChild(document.createTextNode('…'));
+  node.appendChild(document.createTextNode(t.slice(start, i)));
+  node.appendChild(el('mark', {}, t.slice(i, i + n.length)));
+  const end = Math.min(t.length, i + n.length + lead * 4);
+  node.appendChild(document.createTextNode(t.slice(i + n.length, end)));
+  if (end < t.length) node.appendChild(document.createTextNode('…'));
   return node;
 }
 
@@ -265,7 +282,7 @@ function renderResults(panel, raw, quotes, actions) {
       panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.openQuote(r) },
         el('span', { class: 'zs-rico' }, iconEl(r.pinned ? 'pin' : 'quote', { sz: 15 })),
         el('div', { class: 'zs-rbody' },
-          markInto(el('div', { class: 'zs-rquote' }), r.text, q),
+          snippetInto(el('div', { class: 'zs-rquote' }), r.text, q),
           el('div', { class: 'zs-rmeta' }, `${b ? b.t + ' · ' + b.a : '(책 미상)'}`))));
     }
   }
@@ -323,7 +340,7 @@ export function topbarSearch({ ctx } = {}) {
   }
 
   input.addEventListener('focus', () => { wrap.classList.add('open'); ensureLoaded(); render(); });
-  input.addEventListener('blur', () => { setTimeout(close, 150); });
+  input.addEventListener('blur', () => { if (input.value.trim().length >= 2) pushRecentSearch(input.value); setTimeout(close, 150); });
   input.addEventListener('input', () => { wrap.classList.toggle('has-text', !!input.value); render(); });
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { input.value = ''; wrap.classList.remove('has-text'); close(); input.blur(); }
