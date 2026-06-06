@@ -247,11 +247,27 @@ a{cursor:pointer;text-decoration:none;color:inherit;}
 .recent__h{font-size:13px;font-weight:600;color:var(--ink-3);margin:0;letter-spacing:.02em;}
 .recent__row{display:flex;gap:18px;flex-wrap:wrap;}
 .recent__item{display:flex;flex-direction:column;gap:7px;width:60px;align-items:flex-start;}
-.recent__title{font-size:12px;font-weight:500;line-height:1.25;color:var(--ink-2);}
+.recent__title{font-size:12px;font-weight:500;line-height:1.25;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height:30px;}
 .recent__stars{font-family:var(--mono);font-size:11px;}
 .recent__val{color:var(--gold);}
 .recent__pan{color:var(--danger);font-weight:600;}
 .recent__item:hover .recent__title{color:var(--accent-deep);}
+
+/* ───────────── 내 서재 — 컨트롤 + 포스터 그리드 ───────────── */
+.libctl{display:flex;flex-direction:column;gap:12px;margin:calc(var(--u)*0.4) 0 calc(var(--u)*1.4);align-items:flex-start;}
+.gradechips{display:flex;gap:6px;flex-wrap:wrap;}
+.gchip{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--ink-3);background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:4px 11px;transition:color .12s,background .12s,border-color .12s;}
+.gchip:hover{color:var(--ink-1);}
+.gchip.is-on{background:var(--accent-soft);border-color:transparent;color:var(--ink-1);}
+.gchip--pan.is-on{background:var(--danger);color:#fff;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(106px,1fr));gap:22px 14px;}
+.gcard{display:flex;flex-direction:column;gap:8px;text-align:left;cursor:pointer;background:none;border:none;padding:0;min-width:0;font-family:inherit;}
+.gcard:hover .gcard__title{color:var(--accent-deep);}
+.gcard__titlerow{display:flex;align-items:center;gap:5px;min-width:0;}
+.gcard__title{flex:1;min-width:0;font-size:13px;font-weight:600;letter-spacing:-.02em;color:var(--ink-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .12s;}
+.gcard__type{flex:none;font-size:10px;font-weight:600;color:var(--ink-3);background:var(--paper);border:1px solid var(--line);border-radius:5px;padding:1px 5px;}
+.gcard__rate{font-family:var(--mono);font-size:11.5px;color:var(--gold);}
+.gcard__rate--pan{color:var(--danger);font-weight:600;}
 
 /* 검색 타입 필터 */
 .search__filter{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);}
