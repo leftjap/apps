@@ -2,6 +2,13 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "taste-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "cwd": "/Users/gio_c/apps/taste",
+      "port": 5177
+    },
+    {
       "name": "book-design-ref",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "5180", "--directory", "/Users/gio_c/apps/book/design-ref", "--bind", "127.0.0.1"],
