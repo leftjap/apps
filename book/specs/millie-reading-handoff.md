@@ -1,7 +1,7 @@
 # 밀리 독서시간 → 북앱 통계 연동 — 핸드오프 (2026-06-06)
 
 > 대상: 다음 세션 Claude (로컬, ~/apps). 밀리의서재 읽은 시간을 북앱(book) 통계에 자동 기록하는 작업.
-> **남은 건 단 하나: `/bin/zsh`에 FDA(전체 디스크 접근) 부여 → 검증 → 구 트래커 제거.**
+> **✅ 2026-06-06 전부 완료 — `/bin/zsh` FDA 부여 → launchd 잡 검증(19일치 `-> 200`, `authorization denied` 사라짐) → 구 트래커 제거. 자동 싱크(15분 간격) 가동 중. 아래는 기록용.**
 
 ## 목표
 밀리의서재로 책 읽은 시간을 북앱 통계 화면 "밀리 독서시간" 카드에 **자동**으로 쌓는다.
@@ -19,7 +19,9 @@
 4. **싱크 스크립트** `~/.local/bin/millie-sync.sh`: knowledgeC에서 최근 35일 밀리 일별 사용 초를 읽어 Supabase upsert. 터미널(FDA 있음)에서 수동 실행 시 정상 동작 확인됨.
 5. **LaunchAgent** `~/Library/LaunchAgents/com.gio.millie-sync.plist`: 15분(StartInterval 900) 간격. **ProgramArguments를 `/bin/zsh` 명시 실행으로 수정함** (책임 프로세스를 zsh로 고정하려고).
 
-## ⏳ 남은 것 — FDA 권한 (이거 하나면 끝)
+## ✅ (해결됨 2026-06-06) FDA 권한
+**결과**: `/bin/zsh`를 FDA에 추가 → `launchctl unload/load` 후 `sync-stdout.log`에 `sync … -> 200` **19건**, `sql-err.log` 비어 있음(`authorization denied` 사라짐). 구 트래커 `com.gio.millie-tracker` 잡 unload + 파일 3개(plist·millie-tracker.sh·millie) 삭제 완료. **자동 싱크 가동 중.** 아래 원문은 진단 기록용.
+
 **문제**: launchd 백그라운드 잡이 `~/Library/Application Support/Knowledge/knowledgeC.db`(TCC 보호)를 읽으려면 Full Disk Access 필요. 현재 `authorization denied`.
 
 **중요 — 책임 프로세스**: FDA에 `millie-sync.sh`를 추가해도 **denied 여전**. macOS가 권한 확인하는 대상은 스크립트가 아니라 **그걸 실행하는 `/bin/zsh`**. 그래서 plist를 `/bin/zsh <script>`로 바꿨고, **`/bin/zsh`를 FDA에 추가해야 함**.
