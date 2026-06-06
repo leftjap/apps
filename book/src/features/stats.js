@@ -26,15 +26,15 @@ const topCat = (b) => (b?.c ? b.c.split('·')[0].trim() : '기타');
 
 const card = (children, padding = '24px 26px') => el('div', { style: { background: '#fff', borderRadius: 14, padding, border: '1px solid var(--line-2)', boxShadow: '0 1px 2px rgba(20,18,14,0.03), 0 8px 24px -10px rgba(20,18,14,0.07)' } }, ...(Array.isArray(children) ? children : [children]));
 const panelHead = (title, sub, right) => el('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 20 } },
-  el('h3', { style: { margin: 0, fontSize: 16, fontWeight: 700, letterSpacing: '-.015em' } }, title),
-  sub != null ? el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-4)', marginLeft: 10 } }, String(sub)) : null,
+  el('h3', { style: { margin: 0, fontSize: 16, fontWeight: 600, letterSpacing: '-.015em' } }, title),
+  sub != null ? el('span', { class: 'tnum', style: { fontSize: 12, color: 'var(--ink-4)', marginLeft: 10 } }, String(sub)) : null,
   el('div', { style: { flex: 1 } }), right || null);
 
 // PeriodSeg (stats-v14.jsx:49-62) — 이번 달/올해/전체
 const periodSeg = (active, onPick) => el('div', { style: { display: 'inline-flex', background: 'var(--paper)', borderRadius: 99, padding: 3 } },
   ...['이번 달', '올해', '전체'].map((n) => el('button', {
     onClick: () => onPick(n),
-    style: { padding: '8px 16px', borderRadius: 99, fontSize: 13, fontWeight: n === active ? 700 : 500, color: n === active ? 'var(--ink-1)' : 'var(--ink-3)', background: n === active ? '#fff' : 'transparent', boxShadow: n === active ? '0 1px 2px rgba(20,18,14,.06)' : 'none', border: 0, cursor: 'pointer' },
+    style: { padding: '8px 16px', borderRadius: 99, fontSize: 13, fontWeight: n === active ? 600 : 500, color: n === active ? 'var(--ink-1)' : 'var(--ink-3)', background: n === active ? '#fff' : 'transparent', boxShadow: n === active ? '0 1px 2px rgba(20,18,14,.06)' : 'none', border: 0, cursor: 'pointer' },
   }, n)));
 
 // streak (feed.js 와 동일 로직) — 전체 기준
@@ -76,8 +76,8 @@ function calendar(year, month, dayData, ctx) {
       class: data ? 'cal-cell-active' : '', onClick: data ? () => ctx.navigate(`/day/${key}`) : undefined,
       style: { position: 'relative', cursor: data ? 'pointer' : 'default', borderRadius: 8, transition: 'background .12s' },
     },
-      el('div', { style: { position: 'absolute', top: 6, left: 8, fontSize: 10.5, fontFamily: 'var(--mono)', color: dow === 0 ? '#c2553a' : data ? 'var(--ink-2)' : 'var(--ink-4)', fontWeight: 500, opacity: data ? 1 : 0.55, zIndex: 5 } }, String(d)),
-      data && data.count > 1 ? el('div', { style: { position: 'absolute', top: 5, right: 6, minWidth: 16, height: 16, padding: '0 5px', background: '#fff', border: '1px solid var(--line)', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 600, color: 'var(--ink-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', zIndex: 6 } }, String(data.count)) : null,
+      el('div', { style: { position: 'absolute', top: 6, left: 8, fontSize: 10.5, fontFamily: 'var(--sans)', fontVariantNumeric: 'tabular-nums', color: dow === 0 ? '#c2553a' : data ? 'var(--ink-2)' : 'var(--ink-4)', fontWeight: 500, opacity: data ? 1 : 0.55, zIndex: 5 } }, String(d)),
+      data && data.count > 1 ? el('div', { style: { position: 'absolute', top: 5, right: 6, minWidth: 16, height: 16, padding: '0 5px', background: '#fff', border: '1px solid var(--line)', borderRadius: 99, fontFamily: 'var(--sans)', fontVariantNumeric: 'tabular-nums', fontSize: 10, fontWeight: 600, color: 'var(--ink-2)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', zIndex: 6 } }, String(data.count)) : null,
       data ? el('div', { style: { position: 'absolute', left: '50%', bottom: 8, transform: 'translateX(-50%)' } }, cover(data.books[0], { scale: 0.2, lift: false })) : null,
     );
     grid.appendChild(cell);
@@ -165,7 +165,7 @@ async function render(host, params, ctx) {
     const topWords = [...wordFreq.entries()].filter(([, c]) => c >= 1).sort((a, b) => b[1] - a[1]).slice(0, 50);
 
     const num = (l, n, u) => el('div', {}, el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginBottom: 12, fontWeight: 500 } }, l),
-      el('div', { class: 'mono', style: { fontSize: 44, fontWeight: 700, letterSpacing: '-.032em', lineHeight: 1 } }, String(n), el('span', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginLeft: 6, fontFamily: 'var(--sans)' } }, u)));
+      el('div', { class: 'tnum', style: { fontSize: 44, fontWeight: 600, letterSpacing: '-.032em', lineHeight: 1 } }, String(n), el('span', { style: { fontSize: 14, color: 'var(--ink-3)', fontWeight: 500, marginLeft: 6, fontFamily: 'var(--sans)' } }, u)));
     const fmtDur = (s) => { const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h}시간 ${m}분` : `${m}분`; };
     const readingCard = el('div', { style: { marginBottom: 28 } }, card([
       panelHead('밀리 독서시간', '오늘 · 이번주 · 이번달'),
@@ -187,28 +187,28 @@ async function render(host, params, ctx) {
     const bookshelf = el('div', { style: { display: 'flex', alignItems: 'flex-end', gap: 26, overflowX: 'auto', paddingBottom: 6 } },
       ...topBooks.map((t) => el('div', { onClick: () => ctx.navigate(`/book/${t.b.id}`), style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, cursor: 'pointer', flexShrink: 0 } },
         el('div', { style: { filter: 'drop-shadow(0 3px 8px rgba(0,0,0,0.10))' } }, cover(t.b, { scale: 0.6, lift: false })),
-        el('div', { style: { textAlign: 'center' } }, el('div', { class: 'mono', style: { fontSize: 13, fontWeight: 700 } }, String(t.c)), el('div', { style: { fontSize: 11, color: 'var(--ink-3)', marginTop: 3, maxWidth: 96, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.b.t)))));
+        el('div', { style: { textAlign: 'center' } }, el('div', { class: 'tnum', style: { fontSize: 13, fontWeight: 600 } }, String(t.c)), el('div', { style: { fontSize: 11, color: 'var(--ink-3)', marginTop: 3, maxWidth: 96, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' } }, t.b.t)))));
     const row2 = el('div', { class: 'stats-row-2', style: { display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: 28, marginBottom: 28 } },
       card([panelHead('캘린더', curM), calendar(calY, calMo, dayData, ctx)]),
       card([panelHead('책', `${distinctBooks}권`, btn({ label: '책 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/books') })), topBooks.length ? bookshelf : el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '책이 없습니다.')]));
 
     const authorRow = (a, i) => el('div', { class: 'book-row', onClick: () => ctx.navigate(`/author/${encodeURIComponent(a.name)}`), style: { display: 'grid', gridTemplateColumns: '24px 1fr auto auto', alignItems: 'baseline', gap: 12, padding: '11px 10px', margin: '0 -10px', borderRadius: 8, cursor: 'pointer' } },
-      el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
+      el('span', { class: 'tnum', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
       el('div', {}, el('div', { style: { fontSize: 14, fontWeight: 600 } }, a.name), el('div', { style: { fontSize: 12, color: 'var(--ink-3)', marginTop: 3 } }, a.pub)),
-      el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-3)' } }, `${a.books}권`),
-      el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(a.q)));
+      el('span', { class: 'tnum', style: { fontSize: 12, color: 'var(--ink-3)' } }, `${a.books}권`),
+      el('span', { class: 'tnum', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 600, minWidth: 36, textAlign: 'right' } }, String(a.q)));
     const pubRow = (p, i) => el('div', { class: 'book-row', style: { display: 'grid', gridTemplateColumns: '24px 1fr auto auto auto', alignItems: 'baseline', gap: 10, padding: '11px 10px', margin: '0 -10px', borderRadius: 8 } },
-      el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
+      el('span', { class: 'tnum', style: { fontSize: 11, color: 'var(--ink-4)' } }, String(i + 1).padStart(2, '0')),
       el('span', { style: { fontSize: 14, fontWeight: 600 } }, p.name),
-      el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.authors}명`),
-      el('span', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.books}권`),
-      el('span', { class: 'mono', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 700, minWidth: 36, textAlign: 'right' } }, String(p.q)));
+      el('span', { class: 'tnum', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.authors}명`),
+      el('span', { class: 'tnum', style: { fontSize: 11.5, color: 'var(--ink-3)' } }, `${p.books}권`),
+      el('span', { class: 'tnum', style: { fontSize: 13.5, color: 'var(--ink-1)', fontWeight: 600, minWidth: 36, textAlign: 'right' } }, String(p.q)));
     // 분야 bar — v14 stats-v14.jsx:98-117 (rank/bar/count/diff)
     const catBar = (c) => el('div', { class: 'book-row', style: { display: 'grid', gridTemplateColumns: '54px 1fr 44px 32px', alignItems: 'center', gap: 12, padding: '10px 10px', margin: '0 -10px', borderRadius: 6, cursor: 'pointer' } },
       el('span', { style: { fontSize: 13.5, fontWeight: 600 } }, c.n),
       el('div', { style: { position: 'relative', height: 10, background: 'var(--paper)', borderRadius: 99, overflow: 'hidden' } }, el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(c.v / catMax) * 100}%`, background: 'var(--ink-1)', borderRadius: 99 } })),
-      el('span', { class: 'mono', style: { fontSize: 13, fontWeight: 700, textAlign: 'right' } }, String(c.v)),
-      el('span', { style: { fontSize: 11, color: c.diff > 0 ? '#c2553a' : c.diff < 0 ? 'var(--ink-3)' : 'var(--ink-4)', textAlign: 'right', fontFamily: 'var(--mono)' } }, c.diff > 0 ? `↑${c.diff}` : c.diff < 0 ? `↓${-c.diff}` : '·'));
+      el('span', { class: 'tnum', style: { fontSize: 13, fontWeight: 600, textAlign: 'right' } }, String(c.v)),
+      el('span', { style: { fontSize: 11, color: c.diff > 0 ? '#c2553a' : c.diff < 0 ? 'var(--ink-3)' : 'var(--ink-4)', textAlign: 'right', fontFamily: 'var(--sans)', fontVariantNumeric: 'tabular-nums' } }, c.diff > 0 ? `↑${c.diff}` : c.diff < 0 ? `↓${-c.diff}` : '·'));
     const row3 = el('div', { class: 'stats-row-3', style: { display: 'grid', gridTemplateColumns: '1fr 1.1fr 0.95fr', gap: 28, marginBottom: 28 } },
       card([panelHead('작가', `${distinctAuthors}명`, btn({ label: '작가 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/authors') })), ...(topAuthors.length ? topAuthors.map(authorRow) : [el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '작가가 없습니다.')])]),
       card([panelHead('출판사', `${byPub.size}곳`, btn({ label: '출판사 전체', variant: 'ghost', size: 'sm', iconR: 'ar', style: { color: 'var(--ink-3)' }, onClick: () => ctx.navigate('/all/pubs') })), ...(topPubs.length ? topPubs.map(pubRow) : [el('div', { style: { color: 'var(--ink-3)', fontSize: 13 } }, '출판사가 없습니다.')])]),
