@@ -352,6 +352,9 @@ export function topbarSearch({ ctx } = {}) {
     else if (e.key === 'Enter' && cur >= 0 && items[cur]) { e.preventDefault(); items[cur].click(); }
   });
   clearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); input.value = ''; wrap.classList.remove('has-text'); render(); input.focus(); });
+  // 칩/✕ 버튼 클릭이 input 의 focus 를 가져가 blur→setTimeout(close) 를 유발 → 결과가 닫히는 버그 방지.
+  // clearBtn 과 동일하게 mousedown 기본동작(focus 이동)만 막는다. 위임이라 재렌더에도 유지. (결과 행은 div→focus 안 가짐, 무관)
+  panel.addEventListener('mousedown', (e) => { if (e.target.closest('.zs-chip')) e.preventDefault(); });
   return wrap;
 }
 
