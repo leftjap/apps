@@ -3,7 +3,10 @@ import { Auth } from '../services/auth.js';
 
 export function hideLoadingScreen() {
   const node = document.getElementById('loadingScreen');
-  if (node && !node.classList.contains('hidden')) requestAnimationFrame(() => node.classList.add('hidden'));
+  if (!node) return;
+  node.classList.add('hidden'); // 보이는 페이지: opacity 0 fade + pointer-events none
+  // fade 후 완전 제거 — timer 는 rAF/CSS transition 과 달리 오프스크린·백그라운드 탭에서도 발화 → 로딩 화면 잔존 방지.
+  setTimeout(() => { node.style.display = 'none'; }, 350);
 }
 
 const GOOGLE_G = `
