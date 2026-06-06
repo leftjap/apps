@@ -51,7 +51,7 @@ export function mount({ userId } = {}) {
         ? el('span', { class: 'recent__pan' }, '비추 0.5')
         : el('span', { class: 'recent__val' }, r.rating > 0 ? `★ ${r.rating.toFixed(1)}` : '미평가');
       row.appendChild(el('button', { class: 'recent__item', onClick: () => { location.hash = '#/w/' + encodeURIComponent(r.id); } },
-        poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 60, rounded: 8, label: false }),
+        poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 60, rounded: 8, label: false, src: r.meta?.poster_url }),
         el('span', { class: 'recent__title' }, r.title),
         el('span', { class: 'recent__stars' }, stars)));
     });

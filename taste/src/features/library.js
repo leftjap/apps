@@ -31,7 +31,7 @@ export function mount({ userId } = {}) {
     rows.forEach((r) => {
       const isFilm = r.media_type === 'movie';
       list.appendChild(el('article', { class: 'rec', onClick: () => { location.hash = '#/w/' + encodeURIComponent(r.id); } },
-        poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 56, rounded: 8, label: false }),
+        poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 56, rounded: 8, label: false, src: r.meta?.poster_url }),
         el('div', { class: 'rec__text' },
           el('h3', { class: 'rec__title' }, r.title),
           el('p', { class: 'detail__sub', style: 'margin:0' }, subOf(r)),

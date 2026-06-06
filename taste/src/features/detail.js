@@ -64,7 +64,7 @@ function inforow(k, v) {
 
 function rail(w, userId, isFilm) {
   const aside = el('aside', { class: 'rail' });
-  aside.appendChild(poster({ type: isFilm ? 'film' : 'book', title: w.title, year: w.year, hue: w.hue, w: 200, rounded: 12, label: false }));
+  aside.appendChild(poster({ type: isFilm ? 'film' : 'book', title: w.title, year: w.year, hue: w.hue, w: 200, rounded: 12, label: false, src: w.poster_url }));
   const info = el('dl', { class: 'info' });
   const rows = isFilm
     ? [['감독', w.director], ['출연', Array.isArray(w.cast) ? w.cast.join(', ') : w.cast], ['극본', w.writer]]
