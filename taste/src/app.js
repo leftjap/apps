@@ -22,7 +22,7 @@ function parseHash() {
   const [seg, raw] = h.split('/');
   if (seg === 'w' && raw) return { name: 'detail', id: decodeURIComponent(raw) };
   if (seg === 'import') return { name: 'import' };
-  if (seg === 'library') return { name: 'library' };
+  if (seg === 'library') return { name: 'library', cat: raw || null };
   return { name: 'home' };
 }
 
@@ -37,24 +37,31 @@ function render() {
 
 function shell(v) {
   const root = el('div', { class: 'app dens-regular' });
-  root.appendChild(topbar());
+  root.appendChild(topbar(v));
   const stage = el('main', { class: 'stage' });
   if (v.name === 'detail') stage.appendChild(Detail.mount({ userId: _userId, id: v.id }));
   else if (v.name === 'import') stage.appendChild(ImportView.mount({ userId: _userId }));
-  else if (v.name === 'library') stage.appendChild(Library.mount({ userId: _userId }));
+  else if (v.name === 'library') stage.appendChild(Library.mount({ userId: _userId, cat: v.cat }));
   else stage.appendChild(Home.mount({ userId: _userId }));
   root.appendChild(stage);
   return root;
 }
 
-function topbar() {
+const NAV = [['movie', '영화'], ['drama', '드라마'], ['book', '책']];
+function topbar(v) {
   const brand = el('button', { class: 'brand', 'aria-label': 'taste 홈', onClick: () => { location.hash = '#/'; } },
     'taste', el('span', { class: 'brand__dot' }));
-  const cue = el('button', { class: 'searchcue', onClick: () => openSearch({ userId: _userId }) },
+  const nav = el('nav', { class: 'topnav' }, ...NAV.map(([cat, label]) => el('button', {
+    class: 'topnav__item' + (v && v.name === 'library' && v.cat === cat ? ' is-on' : ''),
+    onClick: () => { location.hash = '#/library/' + cat; },
+  }, label)));
+  const cue = el('button', { class: 'searchcue', 'aria-label': '검색', onClick: () => openSearch({ userId: _userId }) },
     el('span', { class: 'searchcue__icon', 'aria-hidden': 'true' }, '⌕'),
-    el('span', { class: 'searchcue__label' }, '작품을 검색해 평가하기'),
+    el('span', { class: 'searchcue__label' }, '검색'),
     el('kbd', { class: 'searchcue__kbd' }, '⌘K'));
-  return el('header', { class: 'topbar' }, el('div', { class: 'topbar__inner' }, brand, cue, accountMenu()));
+  return el('header', { class: 'topbar' }, el('div', { class: 'topbar__inner' },
+    el('div', { class: 'topbar__left' }, brand, nav),
+    el('div', { class: 'topbar__right' }, cue, accountMenu())));
 }
 
 function accountMenu() {

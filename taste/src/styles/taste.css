@@ -46,9 +46,15 @@ a{cursor:pointer;text-decoration:none;color:inherit;}
 }
 .topbar__inner{
   max-width:1060px;margin:0 auto;
-  display:flex;align-items:center;gap:18px;
+  display:flex;align-items:center;justify-content:space-between;gap:18px;
   padding:15px clamp(20px,5vw,56px);
 }
+.topbar__left{display:flex;align-items:center;gap:clamp(10px,2vw,22px);min-width:0;}
+.topbar__right{display:flex;align-items:center;gap:12px;flex:none;}
+.topnav{display:flex;align-items:center;gap:2px;}
+.topnav__item{font-size:15px;font-weight:600;color:var(--ink-3);padding:7px 13px;border-radius:999px;white-space:nowrap;transition:color .12s,background .12s;}
+.topnav__item:hover{color:var(--ink-1);background:var(--hover);}
+.topnav__item.is-on{color:var(--ink-1);background:var(--paper);}
 .brand{
   font-weight:700;font-size:27px;letter-spacing:-.045em;
   display:inline-flex;align-items:flex-end;gap:3px;color:var(--ink-1);
@@ -57,15 +63,15 @@ a{cursor:pointer;text-decoration:none;color:inherit;}
 .brand:hover{opacity:.65;}
 .brand__dot{width:7px;height:7px;border-radius:999px;background:var(--accent);margin-bottom:6px;}
 .searchcue{
-  flex:1;max-width:520px;
-  display:flex;align-items:center;gap:10px;
-  height:40px;padding:0 12px;margin:0 auto;
+  flex:none;
+  display:flex;align-items:center;gap:8px;
+  height:38px;padding:0 13px;
   background:var(--paper);border:1px solid var(--line);border-radius:999px;
   color:var(--ink-3);transition:border-color .15s,background .15s;
 }
 .searchcue:hover{border-color:var(--ink-4);background:var(--hover);}
-.searchcue__icon{font-size:17px;color:var(--ink-3);}
-.searchcue__label{font-size:14px;flex:1;text-align:left;}
+.searchcue__icon{font-size:16px;color:var(--ink-3);}
+.searchcue__label{font-size:13.5px;}
 .searchcue__kbd{
   font-family:var(--mono);font-size:11px;color:var(--ink-3);
   border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:var(--bg);
@@ -339,9 +345,11 @@ a{cursor:pointer;text-decoration:none;color:inherit;}
 
 /* ───────────── 반응형 ───────────── */
 @media (max-width:880px){
-  .topbar{gap:10px;padding:12px 18px;}
+  .topbar__inner{gap:10px;padding:12px 18px;}
+  .topbar__left{gap:8px;}
+  .topnav__item{padding:6px 9px;font-size:14px;}
   .searchcue__label{display:none;}
-  .searchcue{flex:none;width:44px;justify-content:center;padding:0;}
+  .searchcue{width:44px;justify-content:center;padding:0;}
   .home__intro{align-items:flex-start;}
   .tracks{grid-template-columns:1fr;gap:32px;}
   .detail__body{grid-template-columns:1fr;gap:28px;}
