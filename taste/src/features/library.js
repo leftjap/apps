@@ -41,7 +41,7 @@ function rateEl(rating) {
 }
 
 export function mount({ userId, cat = null } = {}) {
-  const root = el('div', { class: 'home' });
+  const root = el('div', { class: 'home lib' });
   let sort = 'registered', grade = null, all = [];
 
   const note = el('p', { class: 'home__note', style: 'white-space:normal' });
