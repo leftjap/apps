@@ -176,7 +176,11 @@ export function mount({ userId } = {}) {
   renderNote(); renderBody();
   (async () => {
     if (!userId) return;
-    try { all = await Queries.listRatings(userId); recos = await readRecos(userId); renderNote(); renderBody(); } catch (e) { /* noop */ }
+    try {
+      all = await Queries.listRatings(userId); recos = await readRecos(userId); renderNote(); renderBody();
+      // 로그인 sync 가 끝나기 전 첫 렌더면 추천이 비어 보임 → 추천 테이블을 직접 당겨 보장 후 재렌더.
+      if (!analyzing) { await Sync.pullRecommendations(userId); recos = await readRecos(userId); if (!analyzing) renderReco(); }
+    } catch (e) { /* noop */ }
   })();
   subscribeRecos();
   return root;

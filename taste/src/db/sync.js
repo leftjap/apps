@@ -23,6 +23,13 @@ async function pullTable(m, db, userId) {
 }
 export async function pullAll(db, userId) { await Promise.all(TABLE_MAP.map((m) => pullTable(m, db, userId))); }
 
+// 홈 첫 렌더가 로그인 startSync 보다 빠르면 추천이 비어 보임 → 홈이 추천만 즉시 당기도록(replace).
+export async function pullRecommendations(userId) {
+  const db = globalThis.tasteDB; if (!db || !userId) return;
+  const m = TABLE_MAP.find((x) => x.dexie === 'recommendations');
+  if (m) await pullTable(m, db, userId);
+}
+
 let _timers = {};
 export function queueUpload(store, id) { clearTimeout(_timers[id]); _timers[id] = setTimeout(() => pushRating(id), 800); }
 async function pushRating(id) {
@@ -35,5 +42,5 @@ async function pushRating(id) {
 export async function flushPending() { const p = await listPendingRatings(); for (const r of p) await pushRating(r.id); }
 
 export async function startSync(user) { const db = globalThis.tasteDB; if (!db || !user) return; await pullAll(db, user.id); await flushPending(); }
-export const Sync = { TABLE_MAP, pullAll, queueUpload, flushPending, startSync };
+export const Sync = { TABLE_MAP, pullAll, pullRecommendations, queueUpload, flushPending, startSync };
 if (typeof window !== 'undefined') window.tasteSync = Sync;
