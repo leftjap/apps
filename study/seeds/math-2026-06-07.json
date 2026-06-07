@@ -1,0 +1,101 @@
+{
+  "date": "2026-06-07",
+  "problems": [
+    {
+      "id": "gen-2026-06-07-para-1",
+      "conceptId": "para",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 평행사변형",
+      "prompt": "밑변 7, 높이 5인 평행사변형의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"192\" height=\"128\" viewBox=\"0 0 192 128\" role=\"img\" aria-label=\"밑변 7 높이 5 평행사변형\"><polygon points=\"68,96 166,96 124,26 26,26\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"68\" y1=\"96\" x2=\"68\" y2=\"26\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"117\" y=\"112\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 7</text><text x=\"48\" y=\"61\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 5</text></svg>",
+        "legend": "밑변 7 · 높이 5"
+      },
+      "answer": "35",
+      "accept": [
+        "35"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"188\" height=\"120\" viewBox=\"0 0 188 120\" role=\"img\" aria-label=\"밑변 7 높이 5 평행사변형 = 같은 밑변·높이 직사각형(넓이 35)\"><polygon points=\"60,96 172,96 132,16 20,16\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"60\" y=\"16\" width=\"112\" height=\"80\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"5 4\"/><line x1=\"60\" y1=\"96\" x2=\"60\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"52\" y=\"60\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">높이 5</text><text x=\"116\" y=\"112\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 7</text></svg>"
+        },
+        "core": "평행사변형 = 밑변 × 높이.",
+        "idea": "기운 끝 조각을 잘라 반대편에 붙이면 점선 직사각형이 돼요(그림). 넓이는 그대로 7 × 5 = 35.",
+        "steps": [
+          "직사각형으로 펴면 7 × 5 = 35"
+        ],
+        "refresh": "곱셈 · 높이=수직 거리",
+        "example": "비스듬히 쌓은 벽돌 단·기울인 책 무더기 단면.",
+        "think": "겉모양 기울기에 안 흔들리고 밑변×높이만 본다."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-06-07-para-2",
+      "conceptId": "para",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 평행사변형",
+      "prompt": "밑변 6, 높이 8인 평행사변형의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"178\" height=\"170\" viewBox=\"0 0 178 170\" role=\"img\" aria-label=\"밑변 6 높이 8 평행사변형\"><polygon points=\"68,138 152,138 110,26 26,26\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"68\" y1=\"138\" x2=\"68\" y2=\"26\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"110\" y=\"154\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 6</text><text x=\"48\" y=\"82\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 8</text></svg>",
+        "legend": "밑변 6 · 높이 8"
+      },
+      "answer": "48",
+      "accept": [
+        "48"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"172\" height=\"168\" viewBox=\"0 0 172 168\" role=\"img\" aria-label=\"밑변 6 높이 8 평행사변형 = 같은 밑변·높이 직사각형(넓이 48)\"><polygon points=\"60,144 156,144 117.6,16 21.6,16\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"60\" y=\"16\" width=\"96\" height=\"128\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"5 4\"/><line x1=\"60\" y1=\"144\" x2=\"60\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"52\" y=\"84\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">높이 8</text><text x=\"108\" y=\"160\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 6</text></svg>"
+        },
+        "core": "평행사변형 = 밑변 × 높이.",
+        "idea": "기운 끝 조각을 잘라 반대편에 붙이면 점선 직사각형이 돼요(그림). 넓이는 그대로 6 × 8 = 48.",
+        "steps": [
+          "직사각형으로 펴면 6 × 8 = 48"
+        ],
+        "refresh": "곱셈 · 높이=수직 거리",
+        "example": "비스듬히 쌓은 벽돌 단·기울인 책 무더기 단면.",
+        "think": "겉모양 기울기에 안 흔들리고 밑변×높이만 본다."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-06-07-para-3",
+      "conceptId": "para",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 평행사변형",
+      "prompt": "밑변 10, 높이 8인 평행사변형의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"259.2\" height=\"170\" viewBox=\"0 0 259.2 170\" role=\"img\" aria-label=\"밑변 10 높이 8 평행사변형\"><polygon points=\"93.2,138 233.2,138 166,26 26,26\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"93.2\" y1=\"138\" x2=\"93.2\" y2=\"26\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"163.2\" y=\"154\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 10</text><text x=\"73.2\" y=\"82\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 8</text></svg>",
+        "legend": "밑변 10 · 높이 8"
+      },
+      "answer": "80",
+      "accept": [
+        "80"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"236\" height=\"168\" viewBox=\"0 0 236 168\" role=\"img\" aria-label=\"밑변 10 높이 8 평행사변형 = 같은 밑변·높이 직사각형(넓이 80)\"><polygon points=\"60,144 220,144 156,16 -4,16\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"60\" y=\"16\" width=\"160\" height=\"128\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1.2\" stroke-dasharray=\"5 4\"/><line x1=\"60\" y1=\"144\" x2=\"60\" y2=\"16\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"52\" y=\"84\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">높이 8</text><text x=\"140\" y=\"160\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">밑변 10</text></svg>"
+        },
+        "core": "평행사변형 = 밑변 × 높이.",
+        "idea": "기운 끝 조각을 잘라 반대편에 붙이면 점선 직사각형이 돼요(그림). 넓이는 그대로 10 × 8 = 80.",
+        "steps": [
+          "직사각형으로 펴면 10 × 8 = 80"
+        ],
+        "refresh": "곱셈 · 높이=수직 거리",
+        "example": "비스듬히 쌓은 벽돌 단·기울인 책 무더기 단면.",
+        "think": "겉모양 기울기에 안 흔들리고 밑변×높이만 본다."
+      },
+      "order_index": 2
+    }
+  ]
+}
