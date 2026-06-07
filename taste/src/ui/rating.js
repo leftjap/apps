@@ -23,12 +23,14 @@ export function ratingLabel(v) {
 export function starRating({ value = 0, editable = false, onChange, size = 22, showValue = true } = {}) {
   const wrap = el('div', { class: 'stars' });
   const row = el('div', { class: 'stars__row' });
-  const fills = [];
+  const cells = [];
   for (let i = 1; i <= 5; i++) {
-    const fill = el('div', { class: 'star__fill', style: `clip-path:${STAR_CLIP}` });
-    fills.push(fill);
+    // fill = 전체폭(size) 별 모양. clip = X% overflow 래퍼 → 찌그러짐 없이 왼쪽 X% 노출.
+    const fill = el('div', { class: 'star__fill', style: `clip-path:${STAR_CLIP};width:${size}px` });
+    const clip = el('div', { class: 'star__clip' }, fill);
+    cells.push({ clip, fill });
     const star = el('div', { class: 'star', style: `width:${size}px;height:${size}px` },
-      el('div', { class: 'star__track', style: `clip-path:${STAR_CLIP}` }), fill);
+      el('div', { class: 'star__track', style: `clip-path:${STAR_CLIP}` }), clip);
     if (editable) {
       const hit = (val, side) => el('button', {
         class: 'star__hit', style: side, 'aria-label': `${val}점`,
@@ -47,7 +49,7 @@ export function starRating({ value = 0, editable = false, onChange, size = 22, s
     const pan = isPan(shown);
     wrap.className = 'stars' + (pan ? ' stars--pan' : '');
     const color = pan ? 'var(--danger)' : 'var(--gold)';
-    fills.forEach((f, idx) => { f.style.width = `${starFill(shown, idx + 1)}%`; f.style.background = color; });
+    cells.forEach(({ clip, fill }, idx) => { clip.style.width = `${starFill(shown, idx + 1)}%`; fill.style.background = color; });
     if (meta) {
       meta.innerHTML = '';
       if (shown > 0) {

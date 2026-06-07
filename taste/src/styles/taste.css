@@ -159,9 +159,10 @@ a{cursor:pointer;text-decoration:none;color:inherit;}
 .stars{display:inline-flex;align-items:center;gap:14px;}
 .stars__row{display:inline-flex;gap:4px;}
 .star{position:relative;display:inline-block;}
-.star__track,.star__fill{position:absolute;inset:0;height:100%;}
-.star__track{background:var(--ink-4);opacity:.32;width:100%;}
-.star__fill{background:var(--gold);}
+.star__track{position:absolute;inset:0;height:100%;width:100%;background:var(--ink-4);opacity:.32;}
+/* 채움: 정상 별(전체폭)을 overflow 래퍼로 X%만 노출 → 0.5★ 도 찌그러짐 없이 정상 별의 왼쪽 절반. */
+.star__clip{position:absolute;left:0;top:0;height:100%;overflow:hidden;}
+.star__fill{position:absolute;left:0;top:0;height:100%;background:var(--gold);}
 .star__hit{position:absolute;top:0;width:50%;height:100%;z-index:2;background:none;}
 .stars__meta{display:flex;align-items:center;gap:8px;}
 .stars__val{font-family:var(--mono);font-weight:600;font-size:18px;color:var(--ink-1);}
