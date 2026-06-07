@@ -1,8 +1,11 @@
 // taste 홈(메인 추천 피드) — Featured 추천(taste_recommendations) 트랙 + 최근 평가(Dexie).
+// §7 연출: '다시 추천' 버튼(request-taste-reco) → 분석 중 스켈레톤 → realtime 새 batch 도착 시 교체.
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString, dot } from '../ui/poster.js';
 import { Queries } from '../db/queries.js';
 import { openSearch } from './search.js';
+import { supabase } from '../services/supabase.js';
+import { Sync } from '../db/sync.js';
 
 const OPTS = [['all', '전체'], ['movie', '영화'], ['book', '책']];
 
@@ -34,11 +37,31 @@ function track(title, items) {
     el('div', { class: 'track__list' }, ...items.map(recoRow)));
 }
 
+// 분석 중 스켈레톤 (가짜 타이머 아님 — 실제 재생성 대기 상태. realtime 도착 시 해제).
+function analyzingBlock() {
+  const list = el('div', { class: 'track__list' });
+  for (let i = 0; i < 4; i++) {
+    list.append(el('article', { class: 'rec' },
+      el('div', { class: 'sk sk--poster' }),
+      el('div', { class: 'rec__text', style: 'flex:1' },
+        el('div', { class: 'sk sk--line', style: 'width:55%' }),
+        el('div', { class: 'sk sk--line', style: 'width:88%' }))));
+  }
+  return el('section', {},
+    el('div', { class: 'feat__eyebrow', style: 'margin-bottom:14px' },
+      el('span', { class: 'pulse' }), el('span', {}, '평가를 반영해 다시 고르는 중…')),
+    list);
+}
+
+// realtime 채널은 모듈 레벨로 1개만(home 은 hashchange 마다 재mount → 중복 구독 방지).
+let _recoChannel = null;
+
 export function mount({ userId } = {}) {
   const root = el('div', { class: 'home' });
   let filter = 'all';
   let all = [];
   let recos = [];
+  let analyzing = false;
 
   const note = el('p', { class: 'home__note' });
   const intro = el('header', { class: 'home__intro' },
@@ -55,8 +78,41 @@ export function mount({ userId } = {}) {
     note.append(document.createTextNode('지금까지 '), el('b', {}, `${all.length}편`), document.createTextNode(' 평가했어요.'));
   }
 
+  // '다시 추천' 버튼 — request-taste-reco 발사. 평가가 있을 때만 노출.
+  function regenButton() {
+    if (!all.length || !supabase) return null;
+    return el('button', { class: 'btn btn--sm', disabled: analyzing ? '' : null, onClick: requestReco },
+      analyzing ? '추천 준비 중…' : '다시 추천');
+  }
+
+  async function requestReco() {
+    if (!supabase || !userId || analyzing) return;
+    analyzing = true; renderReco();
+    try {
+      const { data, error } = await supabase.functions.invoke('request-taste-reco', { body: {} });
+      if (error) throw error;
+      if (data?.status === 'queued') {
+        // realtime 으로 새 batch 도착 시 해제. 안 오면 120초 후 1회 재pull 폴백.
+        setTimeout(() => { if (analyzing) onRecoChange(); }, 120000);
+        return;
+      }
+      analyzing = false; renderReco();
+      flash(data?.status === 'noop' ? '추천을 새로 만들 평가가 더 필요해요.' : '잠시 후 다시 시도해 주세요.');
+    } catch (e) {
+      analyzing = false; renderReco();
+      flash('추천 자동 재생성이 아직 설정되지 않았어요.');
+    }
+  }
+
+  function flash(msg) {
+    const m = el('p', { class: 'home__note', style: 'margin-top:10px;color:var(--ink-3)' }, msg);
+    recoSec.appendChild(m);
+    setTimeout(() => { try { m.remove(); } catch (e) {} }, 4000);
+  }
+
   function renderReco() {
     clear(recoSec);
+    if (analyzing) { recoSec.appendChild(analyzingBlock()); return; }
     if (!recos.length) {
       const block = el('div', { style: 'padding:calc(var(--u)*1.6) 20px;border:1px dashed var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;gap:12px;align-items:flex-start' });
       block.append(
@@ -65,6 +121,7 @@ export function mount({ userId } = {}) {
           all.length ? '평가를 반영한 추천을 준비하고 있어요. 곧 이 자리에 다음에 볼·읽을 작품이 이유와 함께 도착합니다.'
             : '작품을 평가하면, 다음에 볼·읽을 작품을 이유와 함께 골라드려요.'));
       if (all.length === 0) block.append(el('button', { class: 'btn btn--sm', onClick: () => openSearch({ userId }) }, '검색해 첫 평가 시작'));
+      else { const b = regenButton(); if (b) block.append(b); }
       recoSec.appendChild(block);
       return;
     }
@@ -73,9 +130,10 @@ export function mount({ userId } = {}) {
     const tracks = [];
     if (filter !== 'book' && films.length) tracks.push(track('다음에 볼 작품', films));
     if (filter !== 'movie' && books.length) tracks.push(track('다음에 읽을 책', books));
-    recoSec.append(
-      el('div', { class: 'feat__eyebrow', style: 'margin-bottom:14px' }, dot(), el('span', {}, '오늘의 추천 · 평가 반영')),
-      el('div', { class: 'tracks' }, ...tracks));
+    const head = el('div', { class: 'feat__eyebrow', style: 'margin-bottom:14px;justify-content:space-between' },
+      el('span', { style: 'display:flex;align-items:center;gap:8px' }, dot(), el('span', {}, '오늘의 추천 · 평가 반영')));
+    const b = regenButton(); if (b) head.appendChild(b);
+    recoSec.append(head, el('div', { class: 'tracks' }, ...tracks));
   }
 
   function renderRecent() {
@@ -99,11 +157,28 @@ export function mount({ userId } = {}) {
 
   function renderBody() { renderReco(); renderRecent(); }
 
+  // realtime: 추천 변경(새 batch) 도착 → 재pull + 분석중 해제 + 재렌더 (§7 실 비동기).
+  async function onRecoChange() {
+    try { await Sync.pullAll(globalThis.tasteDB, userId); } catch (e) { /* noop */ }
+    recos = await readRecos(userId);
+    analyzing = false;
+    renderReco();
+  }
+  function subscribeRecos() {
+    if (!supabase || !userId) return;
+    try { if (_recoChannel) supabase.removeChannel(_recoChannel); } catch (e) { /* noop */ }
+    _recoChannel = supabase
+      .channel('taste-recos-' + userId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'taste_recommendations', filter: 'owner_id=eq.' + userId }, onRecoChange)
+      .subscribe();
+  }
+
   renderNote(); renderBody();
   (async () => {
     if (!userId) return;
     try { all = await Queries.listRatings(userId); recos = await readRecos(userId); renderNote(); renderBody(); } catch (e) { /* noop */ }
   })();
+  subscribeRecos();
   return root;
 }
 

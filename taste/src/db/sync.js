@@ -3,7 +3,8 @@ import { listPendingRatings, setPendingSync } from './queries.js';
 
 export const TABLE_MAP = Object.freeze([
   { dexie: 'ratings', supabase: 'taste_ratings', filterColumn: 'owner_id' },
-  { dexie: 'recommendations', supabase: 'taste_recommendations', filterColumn: 'owner_id' },
+  // recommendations 는 루틴이 owner별 전량 교체하는 스냅샷(로컬 편집 없음) → pull 시 owner 행 clear 후 재적재(stale 제거).
+  { dexie: 'recommendations', supabase: 'taste_recommendations', filterColumn: 'owner_id', replace: true },
 ]);
 const PAGE = 1000;
 const isUuid = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
@@ -17,6 +18,7 @@ async function pullTable(m, db, userId) {
     if (error) return; all = all.concat(data || []);
     if (!data || data.length < PAGE) break; from += PAGE;
   }
+  if (m.replace) { try { await db[m.dexie].where(m.filterColumn).equals(userId).delete(); } catch (e) { /* noop */ } }
   await db[m.dexie].bulkPut(all.map((r) => ({ ...r, pending_sync: 0 })));
 }
 export async function pullAll(db, userId) { await Promise.all(TABLE_MAP.map((m) => pullTable(m, db, userId))); }
