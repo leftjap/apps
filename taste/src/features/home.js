@@ -13,6 +13,11 @@ async function readRecos(userId) {
   try { return await db.recommendations.where('owner_id').equals(userId).toArray(); } catch (e) { return []; }
 }
 
+// 추천 ↔ 평가 매칭 키 (media_type|title|year). 이미 평가한 작품을 추천에서 제외하는 데 사용.
+function ratedKeyOf(media_type, title, year) {
+  return `${media_type}|${String(title || '').trim().toLowerCase()}|${year ?? ''}`;
+}
+
 // 추천작은 미평가작 → 상세에서 바로 평가할 수 있게 __tasteOpen 으로 전달 후 이동.
 function openReco(r) {
   window.__tasteOpen = window.__tasteOpen || {};
@@ -110,7 +115,10 @@ export function mount({ userId } = {}) {
   function renderReco() {
     clear(recoSec);
     if (analyzing) { recoSec.appendChild(analyzingBlock()); return; }
-    if (!recos.length) {
+    // 이미 평가한(=본) 작품은 추천에서 숨김.
+    const ratedSet = new Set(all.map((r) => ratedKeyOf(r.media_type, r.title, r.year)));
+    const visible = recos.filter((r) => !ratedSet.has(ratedKeyOf(r.media_type, r.title, r.year)));
+    if (!visible.length) {
       const block = el('div', { style: 'padding:calc(var(--u)*1.6) 20px;border:1px dashed var(--line);border-radius:var(--r-lg);display:flex;flex-direction:column;gap:12px;align-items:flex-start' });
       block.append(
         el('div', { class: 'feat__eyebrow' }, dot(), el('span', {}, '오늘의 추천')),
@@ -122,8 +130,8 @@ export function mount({ userId } = {}) {
       recoSec.appendChild(block);
       return;
     }
-    const films = recos.filter((r) => r.media_type === 'movie');
-    const books = recos.filter((r) => r.media_type === 'book');
+    const films = visible.filter((r) => r.media_type === 'movie');
+    const books = visible.filter((r) => r.media_type === 'book');
     const tracks = [];
     if (filter !== 'book' && films.length) tracks.push(track('다음에 볼 작품', films));
     if (filter !== 'movie' && books.length) tracks.push(track('다음에 읽을 책', books));
