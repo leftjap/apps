@@ -29,10 +29,11 @@
 - **API 트리거 ON** → `ROUTINE_ID` + bearer token 확보.
 - ⚠ Today 교훈(`ai-navi-session2-HANDOFF.md:37`): env 주입이 불안정할 수 있음 → 안 들어오면 프롬프트에 값 리터럴로 박기(routine config, git 아님).
 
-### 2d. 버튼용 secret
+### 2d. 버튼용 secret  ⚠ taste 전용 이름 (Today 의 ROUTINE_ID 덮어쓰면 Today 버튼 깨짐!)
 ```
-supabase secrets set ROUTINE_ID="<routine uuid>" ROUTINE_TRIGGER_TOKEN="<bearer token>" --project-ref tcbooffrdacfatywdzcm
+supabase secrets set TASTE_ROUTINE_ID="<routine uuid>" TASTE_ROUTINE_TRIGGER_TOKEN="<bearer token>" --project-ref tcbooffrdacfatywdzcm
 ```
+(공유 프로젝트라 edge fn secret 은 전역 — `ROUTINE_ID`/`ROUTINE_TRIGGER_TOKEN` 은 Today ai-navi 전용이므로 절대 사용 금지.)
 
 ### 2e. cron (선택 — 0003)
 ```

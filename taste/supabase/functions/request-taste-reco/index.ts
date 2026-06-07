@@ -10,9 +10,9 @@
  * Response: 200 {status:'queued'} | 200 {status:'noop'}(평가 없음) | 401 | 503 | 502
  *
  * Secrets (Anthropic API 키 아님 — claude.ai/code/routines 의 "API 트리거" 에서 발급):
- *   ROUTINE_ID             routine UUID
- *   ROUTINE_TRIGGER_TOKEN  per-routine bearer token
- *   TASTE_RECO_TOKEN       선조회용 — taste-reco context 호출(평가 0 → 헛발사 방지). 없으면 선조회 생략.
+ *   TASTE_ROUTINE_ID            routine UUID  (※ Today 의 ROUTINE_ID 와 충돌 회피 — 공유 프로젝트라 taste 전용 이름)
+ *   TASTE_ROUTINE_TRIGGER_TOKEN per-routine bearer token
+ *   TASTE_RECO_TOKEN            선조회용 — taste-reco context 호출(평가 0 → 헛발사 방지). 없으면 선조회 생략.
  * (routines-fire 는 research preview — experimental-cc-routine-2026-04-01 beta 헤더 사용)
  */
 
@@ -24,8 +24,9 @@ declare const Deno: { env: { get(k: string): string | undefined }; serve: (h: (r
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!;
-const ROUTINE_ID = Deno.env.get('ROUTINE_ID');
-const ROUTINE_TRIGGER_TOKEN = Deno.env.get('ROUTINE_TRIGGER_TOKEN');
+// ※ 공유 프로젝트(geo-apps)라 Today 의 ROUTINE_ID/ROUTINE_TRIGGER_TOKEN 과 충돌 회피 — taste 전용 이름.
+const ROUTINE_ID = Deno.env.get('TASTE_ROUTINE_ID');
+const ROUTINE_TRIGGER_TOKEN = Deno.env.get('TASTE_ROUTINE_TRIGGER_TOKEN');
 const TASTE_RECO_TOKEN = Deno.env.get('TASTE_RECO_TOKEN');
 
 const CORS = {
