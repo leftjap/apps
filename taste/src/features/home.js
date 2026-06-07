@@ -7,8 +7,6 @@ import { openSearch } from './search.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
 
-const OPTS = [['all', '전체'], ['movie', '영화'], ['book', '책']];
-
 async function readRecos(userId) {
   const db = globalThis.tasteDB;
   if (!db || !userId) return [];
@@ -66,8 +64,7 @@ export function mount({ userId } = {}) {
   const note = el('p', { class: 'home__note' });
   const intro = el('header', { class: 'home__intro' },
     el('h1', { class: 'home__greet' }, '다음에 무엇을 볼까요'),
-    note,
-    segmented((f) => { filter = f; renderBody(); }));
+    note);
   const recoSec = el('section', {});
   const recentSec = el('section', { class: 'recent' });
   root.append(intro, recoSec, recentSec);
@@ -184,15 +181,4 @@ export function mount({ userId } = {}) {
   })();
   subscribeRecos();
   return root;
-}
-
-function segmented(onChange) {
-  const seg = el('div', { class: 'seg', role: 'tablist' });
-  const btns = {};
-  OPTS.forEach(([k, label]) => {
-    btns[k] = el('button', { class: 'seg__btn' + (k === 'all' ? ' is-on' : ''), role: 'tab',
-      onClick: () => { Object.entries(btns).forEach(([kk, bb]) => { bb.className = 'seg__btn' + (kk === k ? ' is-on' : ''); }); onChange(k); } }, label);
-    seg.appendChild(btns[k]);
-  });
-  return seg;
 }

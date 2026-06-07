@@ -18,42 +18,45 @@ export function ratingLabel(v) {
 }
 
 // design-ref/source/app/ui.jsx StarRating 포팅. 값 표시 = 숫자 + 0.5★ 비추 칩(R5).
+// ⚠ 호버는 채움만 갱신(paint) — DOM 을 재생성하면 클릭/드래그 대상 버튼이 파괴돼 확정(onChange)이
+//    삼켜진다(버그). 확정은 pointerup 으로 — 마우스 클릭·드래그-릴리스·터치 탭 모두 커버.
 export function starRating({ value = 0, editable = false, onChange, size = 22, showValue = true } = {}) {
   const wrap = el('div', { class: 'stars' });
-  let hover = null;
-  const draw = () => {
-    const shown = hover != null ? hover : value;
-    const pan = isPan(shown);
-    const fillColor = pan ? 'var(--danger)' : 'var(--gold)';
-    wrap.className = 'stars' + (pan ? ' stars--pan' : '');
-    wrap.innerHTML = '';
-    const row = el('div', { class: 'stars__row' });
-    for (let i = 1; i <= 5; i++) {
-      const star = el('div', { class: 'star', style: `width:${size}px;height:${size}px` },
-        el('div', { class: 'star__track', style: `clip-path:${STAR_CLIP}` }),
-        el('div', { class: 'star__fill', style: `clip-path:${STAR_CLIP};width:${starFill(shown, i)}%;background:${fillColor}` }));
-      if (editable) {
-        const half = el('button', { class: 'star__hit', style: 'left:0', 'aria-label': `${i - 0.5}점`,
-          onClick: () => onChange && onChange(i - 0.5),
-          onMouseenter: () => { hover = i - 0.5; draw(); } });
-        const full = el('button', { class: 'star__hit', style: 'right:0', 'aria-label': `${i}점`,
-          onClick: () => onChange && onChange(i),
-          onMouseenter: () => { hover = i; draw(); } });
-        star.append(half, full);
-      }
-      row.appendChild(star);
+  const row = el('div', { class: 'stars__row' });
+  const fills = [];
+  for (let i = 1; i <= 5; i++) {
+    const fill = el('div', { class: 'star__fill', style: `clip-path:${STAR_CLIP}` });
+    fills.push(fill);
+    const star = el('div', { class: 'star', style: `width:${size}px;height:${size}px` },
+      el('div', { class: 'star__track', style: `clip-path:${STAR_CLIP}` }), fill);
+    if (editable) {
+      const hit = (val, side) => el('button', {
+        class: 'star__hit', style: side, 'aria-label': `${val}점`,
+        onPointerup: () => onChange && onChange(val),
+        onMouseenter: () => paint(val),
+      });
+      star.append(hit(i - 0.5, 'left:0'), hit(i, 'right:0'));
     }
-    wrap.appendChild(row);
-    if (showValue) {
-      const meta = el('div', { class: 'stars__meta' });
+    row.appendChild(star);
+  }
+  wrap.appendChild(row);
+  const meta = showValue ? el('div', { class: 'stars__meta' }) : null;
+  if (meta) wrap.appendChild(meta);
+
+  function paint(shown) {
+    const pan = isPan(shown);
+    wrap.className = 'stars' + (pan ? ' stars--pan' : '');
+    const color = pan ? 'var(--danger)' : 'var(--gold)';
+    fills.forEach((f, idx) => { f.style.width = `${starFill(shown, idx + 1)}%`; f.style.background = color; });
+    if (meta) {
+      meta.innerHTML = '';
       if (shown > 0) {
         meta.appendChild(el('span', { class: 'stars__val' }, shown.toFixed(1)));
         if (pan) meta.appendChild(el('span', { class: 'stars__pan' }, '비추'));
       } else meta.appendChild(el('span', { class: 'stars__empty' }, editable ? '평가하기' : '미평가'));
-      wrap.appendChild(meta);
     }
-  };
-  if (editable) wrap.addEventListener('mouseleave', () => { hover = null; draw(); });
-  draw();
+  }
+  if (editable) wrap.addEventListener('mouseleave', () => paint(value));
+  paint(value);
   return wrap;
 }
