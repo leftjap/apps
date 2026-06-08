@@ -12,8 +12,8 @@
 
 - 시안: `design-ref/cue.html`(오프라인 단일본, 폰트 내장) + `design-ref/런처.html`(편집용).
 - 작업지시서: `design-ref/cue 작업지시서.md` — 디자인 토큰·레이아웃·모션의 정본. **새 디자인 발명 금지**.
-- 공통 디자인 시스템: `~/apps/DESIGN.md`. cue 는 mono 를 **Spline Sans Mono** 로 override
-  (JetBrains Mono 0 가운데 점 박힘 → 금지). Light only.
+- 공통 디자인 시스템: `~/apps/DESIGN.md`. cue 는 mono 를 **Inconsolata** 로 override
+  (0 가운데 점/슬래시 없는 plain glyph — JetBrains·Spline Sans Mono 둘 다 점 있어 제외). Light only.
 
 ## 스택
 

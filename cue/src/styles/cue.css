@@ -24,7 +24,7 @@
     0 14px 28px -10px rgba(28,24,18,0.16),
     0 36px 60px -28px rgba(28,24,18,0.26);
   --sans:"Pretendard",system-ui,-apple-system,sans-serif;
-  --mono:"Spline Sans Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --mono:"Inconsolata",ui-monospace,"SF Mono",Menlo,monospace;
 }
 *{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; }

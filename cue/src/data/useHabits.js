@@ -25,7 +25,13 @@ export function useHabits(demoMode) {
     const off = onAuthChange((session) => {
       if (!alive) return;
       settled = true;
-      setAuth(session?.user ? { userId: session.user.id } : null);
+      const uid = session?.user?.id ?? null;
+      // 같은 사용자면 state 무변경 → effect2 재요청 안 함 (토큰 refresh 등 중복 fetch 방지)
+      setAuth((prev) => {
+        const prevId = prev === undefined ? undefined : (prev ? prev.userId : null);
+        if (prevId === uid) return prev;
+        return uid ? { userId: uid } : null;
+      });
     });
     // 안전망: INITIAL_SESSION 이 안 오면 로딩 무한 고착 방지 → 로그아웃 처리(로그인 버튼 노출)
     const timer = setTimeout(() => { if (alive && !settled) setAuth(null); }, 6000);
