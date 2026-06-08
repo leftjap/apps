@@ -11,23 +11,17 @@
 - 스케줄/예약 아님 — **on-demand 즉시**. 단, 생성 주체는 **구독 Routine**.
 - 이걸 만족하는 유일한 구조: **버튼 → Routine 을 `/fire` 로 즉시 발사**(Today 버튼과 100% 동일). Routine 은 "스케줄 실행"으로 보이지만 `/fire` 로 **즉시 1회 발사**가 되며, 지오 구독으로 돈다(API 과금 없음).
 
-## 2. 이전 세션(나)의 오류 — 먼저 복구할 것
+## 2. 이전 세션(나)의 오류 — ✅ 복구 완료 (2026-06-08, 커밋 7f7be0c)
 1. **API 함수를 만들어 버림(제약 위반).** `generate-taste-reco` edge fn 이 `ANTHROPIC_API_KEY` 로 Messages API 를 직접 호출. **삭제 대상.**
 2. **버튼을 그 API 함수로 재배선.** `home.js` 버튼이 `generate-taste-reco` 를 호출하게 바뀜. **되돌릴 것.**
 3. **config.toml** 을 generate-taste-reco 만 남게 덮어씀. **되돌릴 것.**
 4. (앞서) cron 을 "주1회"로 잘못 박았다가 변경감지로 고침 — cron 은 부차적(버튼이 메인). 무시 가능.
 
-### 복구 절차 (깔끔 — 한 커밋만 revert)
-```bash
-cd ~/apps
-git revert c21cfd8          # generate-taste-reco 추가 + config/home 변경을 한 번에 되돌림
-                            #  → generate-taste-reco/index.ts 삭제, config.toml 복원(taste-reco+request-taste-reco),
-                            #    home.js 버튼 → request-taste-reco 복원
-git push origin main
-cd ~/apps/taste
-supabase functions delete generate-taste-reco --project-ref tcbooffrdacfatywdzcm   # 배포본 제거
-```
-revert 후 **정확한 구조(아래 §3)** 가 그대로 복원됨. (request-taste-reco·taste-reco·routines/taste-reco.md 는 삭제된 적 없음 — 전부 살아있음.)
+### 복구 절차 — ✅ 이미 실행 완료 (재실행 불필요)
+- `git revert c21cfd8` → 커밋 **7f7be0c**(push 됨): generate-taste-reco/index.ts 삭제, config.toml 복원(taste-reco+request-taste-reco), home.js 버튼 → request-taste-reco 복원.
+- `supabase functions delete generate-taste-reco --project-ref tcbooffrdacfatywdzcm --yes` → 배포본 제거 완료. **현재 배포: taste-reco + request-taste-reco 만**(검증됨).
+
+정확한 구조(§3)가 **코드·배포 양쪽** 다 복원됨. request-taste-reco·taste-reco·routines/taste-reco.md 는 삭제된 적 없음 — 전부 살아있음. **➡ 다음 세션은 §4(지오 1회 셋업)부터 시작.**
 
 ## 3. 정확한 아키텍처 (이미 만들어져 있음 — revert 하면 완성형)
 - **`taste-reco`** edge fn (DEPLOYED, 검증됨): service_role 격리 DB 게이트. `x-taste-reco-token` 게이트. `context`(평가·기존추천 읽기)/`submit`(추천 교체). 검증결과: 토큰없음 401 / 토큰+owner count 1383 / scan [].
@@ -56,7 +50,7 @@ revert 후 **정확한 구조(아래 §3)** 가 그대로 복원됨. (request-ta
 ## 7. 사실
 - Supabase: geo-apps `tcbooffrdacfatywdzcm`. service_role = `~/.config/study/.env`. anon = `taste/.env.local`.
 - 지오 owner_id: `7bae5645-61c6-4476-9ff2-4c30a72812ff`. 활성 평가 1383(영화638·드라마429·책316).
-- secrets(현재): `TASTE_RECO_TOKEN` 만 설정. `TASTE_ROUTINE_ID`·`TASTE_ROUTINE_TRIGGER_TOKEN`·`ANTHROPIC_API_KEY` 미설정(ANTHROPIC 은 쓰면 안 됨).
-- 배포 함수: taste-reco·request-taste-reco(정확) + generate-taste-reco(삭제 대상).
+- secrets(현재, 검증됨 2026-06-08): `TASTE_RECO_TOKEN` 설정 / `ANTHROPIC_API_KEY` **미설정**(과금 API 흔적 0 ✓) / `TASTE_ROUTINE_ID`·`TASTE_ROUTINE_TRIGGER_TOKEN` 미설정(§4 에서 지오 설정). ⚠ `ROUTINE_ID`·`ROUTINE_TRIGGER_TOKEN` 은 **Today 전용** — 덮어쓰지 말 것(taste 는 `TASTE_` prefix 별도 이름 사용).
+- 배포 함수: taste-reco·request-taste-reco 만 (generate-taste-reco 삭제 완료 ✓).
 - 앱 배포: push→GitHub Actions(`deploy-pages.yml`). PWA 캐시로 새 코드 1~2회 새로고침 필요.
-- 마지막 커밋: `c21cfd8`(되돌릴 것). 그 직전까지(`a6aa2c7`)가 정상 베이스.
+- 커밋 흐름: `a6aa2c7`(정상 베이스) → `c21cfd8`(API 실수) → `1e07119`(핸드오프) → `7f7be0c`(revert=복구 완료, **현재 HEAD**).
