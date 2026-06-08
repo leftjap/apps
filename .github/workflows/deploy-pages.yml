@@ -34,6 +34,7 @@ jobs:
             today/pnpm-lock.yaml
             book/pnpm-lock.yaml
             taste/pnpm-lock.yaml
+            cue/pnpm-lock.yaml
 
       - name: Build gym
         env:
@@ -94,6 +95,18 @@ jobs:
           pnpm build
           cp dist/index.html dist/404.html
 
+      - name: Build cue
+        continue-on-error: true
+        env:
+          GH_PAGES: '1'
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          cd cue
+          pnpm install --frozen-lockfile
+          pnpm build
+          cp dist/index.html dist/404.html
+
       - name: Combine into _site
         run: |
           mkdir -p _site
@@ -102,6 +115,7 @@ jobs:
           [ -d today/dist ] && cp -r today/dist _site/today || echo "::warning::today build missing — skipping"
           [ -d book/dist ] && cp -r book/dist _site/book || echo "::warning::book build missing — skipping"
           [ -d taste/dist ] && cp -r taste/dist _site/taste || echo "::warning::taste build missing — skipping"
+          [ -d cue/dist ] && cp -r cue/dist _site/cue || echo "::warning::cue build missing — skipping"
           # 루트 index — leftjap.github.io/apps/ 진입 시 4 앱 링크 표시
           cat > _site/index.html <<'HTML'
           <!doctype html>
@@ -113,6 +127,7 @@ jobs:
           <a href="today/">📝 Today</a>
           <a href="book/">📖 Book</a>
           <a href="taste/">🎬 Taste</a>
+          <a href="cue/">⚡ cue (런처)</a>
           </body></html>
           HTML
 
