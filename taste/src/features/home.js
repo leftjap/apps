@@ -11,7 +11,10 @@ import { trailReset } from '../app.js';
 async function readRecos(userId) {
   const db = globalThis.tasteDB;
   if (!db || !userId) return [];
-  try { return await db.recommendations.where('owner_id').equals(userId).toArray(); } catch (e) { return []; }
+  try {
+    const all = await db.recommendations.where('owner_id').equals(userId).toArray();
+    return all.filter((r) => (r.kind ?? 'home') === 'home');   // 홈 피드는 kind=home 만 — 갈래(branch)는 상세에서만(홈 누수 방지)
+  } catch (e) { return []; }
 }
 
 // 추천 ↔ 평가 매칭 키 (media_type|title|year). 이미 평가한 작품을 추천에서 제외하는 데 사용.
