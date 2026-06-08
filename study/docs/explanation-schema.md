@@ -75,8 +75,26 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
   ],
   mistake: '한국인이 자주 하는 실수 (한 문단)',
   similar: '비슷한 표현 비교 (한 문단)',
+  drills: [
+    { en: '핵심 요소를 레벨맞춤으로 치환한 변주 문장', ko: '한국어 뜻' },
+    // 각 문장 = 듣기(TTS)/녹음(발음채점) 가능. 개수는 내용·레벨 기반 (3~8), 고정 quota X
+  ],
 }
 ```
+
+## drills — 변주 연습 (RealClass-mining 모델 신규)
+
+문장의 핵심 요소(기본동사·구동사·유용 명사 등 — AI가 식별)를 **레벨맞춤으로 다양하게 치환**한 연습 문장 배열. "변주"가 영어 학습 핵심이라는 정본.
+
+| 필드 | 형식 | 비고 |
+|---|---|---|
+| drills | `[{en, ko}]` 객체 배열 | 각 행 = 변주 문장 1개. en 필수, ko 권장 |
+
+**규칙:**
+- **개수**: 내용·레벨 기반. 핵심·헷갈리는 요소 6~8개, 쉬운 요소 3개. 고정 quota 금지
+- **구성**: 같은 뜻 패턴 치환 ~70%(패턴 그루빙) + 뜻 범위 ~30%(변주 폭). 자연·빈출·레벨맞춤만 — 기계적 슬롯 채우기 금지
+- **UI**: 각 drill 행에 🔊(TTS `studySpeech.speak`) + ⏺(녹음→발음채점 `services/sessionAnalyze.js`) 자동 부착 → 듣기·말하기·녹음
+- **렌더**: `components/session/explanationPanel.js` 의 `drillsSection(ex.drills, {lang})` (key 섹션 직후 append)
 
 ## 필드별 규칙
 
