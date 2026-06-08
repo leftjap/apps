@@ -142,55 +142,75 @@ function openBranch(r) {
   location.hash = '#/w/' + encodeURIComponent(r.id);
 }
 
-function branchCard(r) {
+// 정본: design-ref/source/app/detail.jsx:12-26 — 인덱스 카탈로그(01·02·03 + branch__head/kind).
+function branchCard(r, index) {
   const isFilm = r.media_type === 'movie';
-  return el('article', { class: 'rec', onClick: () => openBranch(r) },
-    poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 56, rounded: 8, label: false, src: r.poster_url }),
-    el('div', { class: 'rec__text' },
-      el('h3', { class: 'rec__title' }, r.title),
-      el('p', { class: 'rec__reason' }, r.reason || '')));
+  return el('a', { class: 'branch', onClick: () => openBranch(r) },
+    el('span', { class: 'branch__index' }, String(index).padStart(2, '0')),
+    poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 48, rounded: 7, label: false, src: r.poster_url }),
+    el('div', { class: 'branch__body' },
+      el('div', { class: 'branch__head' },
+        el('span', { class: 'branch__title' }, r.title),
+        el('span', { class: 'branch__kind' }, isFilm ? '영화' : '책')),
+      el('p', { class: 'branch__reason' }, r.reason || '')));
 }
 
-function branchSkeleton() {
-  const list = el('div', { class: 'track__list' });
-  for (let i = 0; i < 3; i++) {
-    list.append(el('article', { class: 'rec' },
-      el('div', { class: 'sk sk--poster' }),
-      el('div', { class: 'rec__text', style: 'flex:1' },
-        el('div', { class: 'sk sk--line', style: 'width:55%' }),
-        el('div', { class: 'sk sk--line', style: 'width:85%' }))));
-  }
-  return list;
+// 정본: detail.jsx:28-39.
+function branchSkeleton(index) {
+  return el('div', { class: 'branch branch--skel', 'aria-hidden': 'true' },
+    el('span', { class: 'branch__index' }, String(index).padStart(2, '0')),
+    el('div', { class: 'sk sk--poster', style: 'width:48px;height:71px;border-radius:7px' }),
+    el('div', { class: 'branch__body' },
+      el('div', { class: 'sk sk--line', style: 'width:38%' }),
+      el('div', { class: 'sk sk--line', style: 'width:90%;margin-top:11px' })));
 }
 
 // 상세 갈래 realtime 채널은 모듈 레벨 1개(상세는 hashchange 마다 재mount → 중복 구독 방지).
 let _branchChannel = null;
 
+// 정본: detail.jsx:131-149 — branches__head 에 {N}갈래 상태(또는 pending), 본문은 branch-rail.
 function branchesSection(w, userId) {
   const key = srcKey(w);
   const sec = el('section', { class: 'branches' });
-  sec.appendChild(el('div', { class: 'branches__head' }, el('h2', { class: 'branches__h' }, '이 작품에서 이어지는 갈래')));
-  const body = el('div', {});
-  sec.appendChild(body);
+  const status = el('span', { class: 'branches__status' });
+  sec.appendChild(el('div', { class: 'branches__head' }, el('h2', { class: 'branches__h' }, '이 작품에서 이어지는 갈래'), status));
+  const rail = el('div', { class: 'branch-rail' });
+  sec.appendChild(rail);
   let requested = false;
-  const note = (t) => el('p', { class: 'branch__reason', style: 'color:var(--ink-4);padding:16px 0;margin:0' }, t);
+
+  function setStatus(pending, count) {
+    clear(status);
+    if (pending) {
+      status.className = 'branches__status branches__status--on';
+      status.append(el('span', { class: 'pulse' }), document.createTextNode(' 평가를 반영해 다시 고르는 중…'));
+    } else {
+      status.className = 'branches__status';
+      status.textContent = count != null ? `${count}갈래` : '';
+    }
+  }
+  const note = (t) => el('p', { class: 'branch__reason', style: 'padding:16px 0;margin:0;color:var(--ink-4)' }, t);
 
   async function render() {
-    if (!userId || !supabase) { clear(body); body.appendChild(note('로그인하면 이 작품에서 이어지는 갈래를 골라드려요.')); return; }
+    if (!userId || !supabase) { clear(rail); setStatus(false, null); rail.appendChild(note('로그인하면 이 작품에서 이어지는 갈래를 골라드려요.')); return; }
     const branches = await readBranches(userId, key);
-    clear(body);
-    if (branches.length) { body.appendChild(el('div', { class: 'track__list' }, ...branches.map(branchCard))); return; }
+    clear(rail);
+    if (branches.length) {
+      setStatus(false, branches.length);
+      branches.forEach((r, i) => rail.appendChild(branchCard(r, i + 1)));
+      return;
+    }
     // 갈래 없음 → 평가 ★3.0+ 면 on-demand 생성 트리거 + 스켈레톤. 아니면 안내.
     const ex = await Queries.getRating(userId, w.media_type, w.title, w.year);
     if (ex && ex.rating >= 3.0) {
-      body.appendChild(el('div', { class: 'feat__eyebrow', style: 'margin-bottom:10px' }, el('span', { class: 'pulse' }), el('span', {}, '이어지는 갈래를 고르는 중…')));
-      body.appendChild(branchSkeleton());
+      setStatus(true);
+      [1, 2, 3].forEach((i) => rail.appendChild(branchSkeleton(i)));
       if (!requested) {
         requested = true;
         try { await supabase.from('taste_reco_requests').insert({ owner_id: userId, source: 'detail', kind: 'branch', source_work: key }); } catch (e) { /* noop */ }
       }
     } else {
-      body.appendChild(note('이 작품을 ★3.0 이상으로 평가하면, 여기서 이어지는 갈래를 이유와 함께 골라드려요.'));
+      setStatus(false, null);
+      rail.appendChild(note('이 작품을 ★3.0 이상으로 평가하면, 여기서 이어지는 갈래를 이유와 함께 골라드려요.'));
     }
   }
 
