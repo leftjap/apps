@@ -61,7 +61,10 @@ export function mergeDailyStats(prev, log) {
  */
 export async function finishSession(db, params) {
   if (!db) return null;
-  const completedNew = Array.isArray(params.completedNewCards) ? params.completedNewCards : [];
+  const allCompleted = Array.isArray(params.completedNewCards) ? params.completedNewCards : [];
+  const isSceneCard = (c) => c && c.explanation && Array.isArray(c.explanation.dialogue);
+  // scene 카드(전체 다이얼로그)는 외울 문장이 아니라 복습 이관·newSentenceIds 제외 (완료 표시는 함)
+  const completedNew = allCompleted.filter((c) => !isSceneCard(c));
   const log = buildSessionLog({
     mode: params.mode,
     lang: params.lang,
@@ -81,10 +84,11 @@ export async function finishSession(db, params) {
   // Wave A.11 — lang_${lang} meta 의 totalDays/totalTime/streak 누적.
   await applyLangMeta(db, params.lang, log);
 
-  if (params.mode === 'new' && completedNew.length > 0) {
+  if (params.mode === 'new' && allCompleted.length > 0) {
     const tomorrow = todayPlusDays(log.date, 1);
-    for (const card of completedNew) {
+    for (const card of allCompleted) {
       await db.todayLessons.update(card.id, { completed: true });
+      if (isSceneCard(card)) continue; // scene 은 복습 이관 X (완료 표시만)
       await db.reviewQueue.put({
         id: card.id,
         lang: card.lang,

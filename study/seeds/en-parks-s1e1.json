@@ -18,6 +18,28 @@
   },
   "cards": [
     {
+      "id": "en-park-s1e1-scene",
+      "order_index": 0,
+      "sentence": "토론회 — 구덩이 신고",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "explanation": {
+        "sceneTitle": "토론회 — 구덩이 신고",
+        "sceneSummary": "공개 토론회에서 간호사 앤이 동네 구덩이 문제를 제기하고, 톰이 끼어든다.",
+        "dialogue": [
+          { "speaker": "Leslie", "en": "We're here to answer your questions, so fire away.", "ko": "질문 받을게요, 얼마든지요." },
+          { "speaker": "Ann", "en": "I'm Ann. I don't really care for politics, but—", "ko": "저 앤이에요. 정치엔 별 관심 없는데요." },
+          { "speaker": "Ann", "en": "My boyfriend fell into a pit and broke both legs.", "ko": "남자친구가 구덩이에 빠져 양다리가 부러졌어요." },
+          { "speaker": "Leslie", "en": "Okay. I'll do something about it.", "ko": "알겠어요. 제가 어떻게든 해볼게요." },
+          { "speaker": "Tom", "en": "You probably feel like you need to move on, though.", "ko": "근데 이제 슬슬 정리하고 싶을 수도 있죠." },
+          { "speaker": "Ann", "en": "Are you hitting on me right now?", "ko": "지금 저한테 작업 거는 거예요?" },
+          { "speaker": "Tom", "en": "No, no. I'm just a very open person.", "ko": "아뇨, 전 그냥 좀 개방적인 사람이라서요." },
+          { "speaker": "Leslie", "en": "The bottom line is, I'll help you get this fixed.", "ko": "요점은, 제가 도와서 이거 해결하겠다는 거예요." }
+        ]
+      }
+    },
+    {
       "id": "en-park-s1e1-fire-away",
       "order_index": 1,
       "sentence": "We're here to answer your questions, so fire away.",

@@ -48,6 +48,22 @@ describe('finishSession (real Dexie)', () => {
     expect(promoted2.interval).toBe(1);
   });
 
+  it('mode=new — scene 카드(explanation.dialogue)는 복습 이관·newSentenceIds 제외', async () => {
+    await db.todayLessons.put({
+      id: 'scene1', lang: 'en', date: '2026-05-08', completed: false, order_index: 0,
+      sentence: '토론회', meaning: '', explanation: { dialogue: [{ speaker: 'A', en: 'Hi', ko: '안녕' }] },
+    });
+    const completedNew = await db.todayLessons.where('lang').equals('en').toArray(); // scene1 + n1 + n2
+    const log = await finishSession(db, {
+      mode: 'new', lang: 'en', date: '2026-05-08',
+      durationSec: 60, tried: 2, passed: 1, completedNewCards: completedNew,
+    });
+    expect(log.newSentenceIds.sort()).toEqual(['n1', 'n2']); // scene1 제외
+    expect(await db.reviewQueue.get('scene1')).toBeUndefined(); // 이관 안 됨
+    expect(await db.reviewQueue.get('n1')).toBeTruthy();
+    expect((await db.todayLessons.get('scene1')).completed).toBe(true); // 완료 표시(remaining 안 남게)
+  });
+
   it('mode=review — sessionLogs put + dailyStats reviewCount 증가, 카드 이관 없음', async () => {
     await finishSession(db, {
       mode: 'review', lang: 'en', date: '2026-05-08',

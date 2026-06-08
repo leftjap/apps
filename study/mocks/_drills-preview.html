@@ -27,25 +27,23 @@
 <div class="wrap" id="root"></div>
 <script type="module">
 import { createExplanationPanel } from '/src/components/session/explanationPanel.js';
+import { buildScenePage } from '/src/components/session/scenePage.js';
 
 const data = await (await fetch('/seeds/en-parks-s1e1.json')).json();
 const root = document.getElementById('root');
+const sceneCard = data.cards.find(c => Array.isArray(c.explanation?.dialogue));
+const sentenceCards = data.cards.filter(c => !c.explanation?.dialogue);
 
-// STEP 1 — 장면 다이얼로그
-const s1 = document.createElement('div'); s1.className='step'; s1.textContent='1. 먼저 — 장면 통으로'; root.appendChild(s1);
-const sc = document.createElement('div'); sc.className='scene';
-const h = document.createElement('h3'); h.textContent = data.scene.title; sc.appendChild(h);
-const hi = (t)=>t.replace(/\b(fire away|care for|move on|hitting on|bottom line|do something about it|get this fixed)\b/gi,'<b>$1</b>');
-data.scene.lines.forEach(l=>{
-  const r=document.createElement('div'); r.className='sl';
-  r.innerHTML = '<div class="spk">'+l.speaker+'</div><div class="en">'+hi(l.en)+'</div><div class="ko">'+l.ko+'</div>';
-  sc.appendChild(r);
-});
-root.appendChild(sc);
+// STEP 1 — 실제 scenePage 컴포넌트 (세션 첫 페이지)
+const s1 = document.createElement('div'); s1.className='step'; s1.textContent='1. 세션 첫 페이지 — 전체 다이얼로그 (실 컴포넌트)'; root.appendChild(s1);
+root.appendChild(buildScenePage(sceneCard.explanation, {
+  onListen:(t)=>{ try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';speechSynthesis.speak(u);}catch(e){} },
+  onNext:()=>{},
+}));
 
 // STEP 2 — 표현 카드 (실제 explanationPanel 컴포넌트)
-const s2 = document.createElement('div'); s2.className='step'; s2.textContent='2. 그다음 — 표현별 변주 + 듣기/녹음'; root.appendChild(s2);
-data.cards.slice(0,3).forEach(c=>{
+const s2 = document.createElement('div'); s2.className='step'; s2.textContent='2. 시작하기 → 문장별 페이지 (변주 + 듣기/녹음)'; root.appendChild(s2);
+sentenceCards.slice(0,2).forEach(c=>{
   const card=document.createElement('div'); card.className='card';
   const s=document.createElement('div'); s.className='sent'; s.textContent=c.sentence;
   const m=document.createElement('div'); m.className='mean'; m.textContent=c.meaning;

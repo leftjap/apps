@@ -218,6 +218,18 @@
 .drill-listen{color:var(--accent)}
 .drill-rec{color:var(--sage)}
 .drill-rec[data-on="1"]{background:var(--bg-warm);color:var(--danger)}
+
+/* RealClass-mining 다이얼로그 페이지 (세션 첫 페이지 — 전체 대화 먼저) */
+.scene-page{display:flex;flex-direction:column}
+.scene-page-title{font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--text-strong);margin-bottom:4px}
+.scene-page-summary{font-size:13px;color:var(--text-muted);margin-bottom:var(--s-5)}
+.scene-line{display:grid;grid-template-columns:1fr auto;gap:1px var(--s-3);align-items:center;padding:var(--s-3) 0;border-top:1px solid var(--border)}
+.scene-line:first-of-type{border-top:none}
+.scene-line-spk{grid-column:1/2;font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em}
+.scene-line-en{grid-column:1/2;font-size:16px;color:var(--text-strong);font-weight:500}
+.scene-line-ko{grid-column:1/2;font-size:13px;color:var(--text-muted)}
+.scene-line-listen{grid-column:2/3;grid-row:1/4;font-family:var(--font-display);font-weight:600;font-size:12px;border-radius:var(--r-sm);padding:6px 11px;cursor:pointer;border:1.5px solid var(--border);background:transparent;color:var(--accent);white-space:nowrap}
+.scene-start-btn{margin-top:var(--s-5);background:var(--accent);color:#fff;border:none;border-radius:var(--r-md);padding:14px;font-size:16px;font-family:var(--font-display);font-weight:600;cursor:pointer;width:100%}
 .phoneme-tags{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-top:var(--s-3)}
 .phoneme-tag{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--accent);padding:var(--s-1) var(--s-3);border:1px solid rgba(217,119,87,0.25);border-radius:var(--r-pill)}
 .grammar-block{padding:var(--s-3) var(--s-4);background:var(--bg-warm);border-radius:var(--r-md);margin-top:var(--s-3);font-size:14px;line-height:1.65}

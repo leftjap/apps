@@ -27,6 +27,7 @@ import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSn
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
 import { createSceneHeader } from '../components/session/sceneHeader.js';
+import { buildScenePage } from '../components/session/scenePage.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
@@ -201,6 +202,18 @@ function render(host, state, handlers = {}) {
     onEnd: handlers.onEnd || (() => { window.location.hash = '#/home'; }),
     onStepClick: handlers.onJump,
   });
+
+  // RealClass-mining: 첫 카드가 scene(전체 다이얼로그)이면 다이얼로그 페이지 → '시작하기'로 문장 카드 진입
+  const sceneEx = state.sentence?.explanation;
+  if (sceneEx && Array.isArray(sceneEx.dialogue)) {
+    const ttsLang = (state.sentence?.lang || getStoredLang()) === 'ja' ? 'ja-JP' : 'en-US';
+    layout.contentSlot.appendChild(buildScenePage(sceneEx, {
+      onListen: (t) => { if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang }); },
+      onNext: handlers.onNext,
+    }));
+    host.appendChild(layout.el);
+    return { cleanup: () => { host.innerHTML = ''; }, layout };
+  }
 
   const large = state.size !== 'phone';
   let playing = false;
