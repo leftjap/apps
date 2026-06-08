@@ -4,6 +4,7 @@ import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString } from '../ui/poster.js';
 import { Aladin } from '../db/aladin.js';
 import { Queries } from '../db/queries.js';
+import { trailReset } from '../app.js';
 
 let _open = false;
 
@@ -41,7 +42,7 @@ export function openSearch({ userId } = {}) {
     document.removeEventListener('keydown', onKey);
   }
 
-  const pick = (id) => { close(); location.hash = '#/w/' + encodeURIComponent(id); };
+  const pick = (id) => { close(); trailReset(id); location.hash = '#/w/' + encodeURIComponent(id); };
   const subOf = (r) => (r.media_type === 'movie'
     ? [r.meta?.director, r.year].filter(Boolean).join(' · ')
     : [r.meta?.author, r.meta?.publisher].filter(Boolean).join(' · '));

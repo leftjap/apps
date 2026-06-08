@@ -17,6 +17,24 @@ let _keysBound = false;
 
 export function setRouterUser(id) { _userId = id || null; }
 
+// 갈래 경로 스택(정본 main.jsx:122-134 path) — [{id, title}]. 신규 열기=리셋, 갈래 클릭=append, 브레드크럼=자르기.
+let _trail = [];
+export function trailReset(id, title) { _trail = [{ id, title: title || null }]; }
+export function trailAppend(id, title) {
+  if (_trail.length && _trail[_trail.length - 1].id === id) return;
+  _trail.push({ id, title: title || null });
+}
+export function trailGo(i) {
+  if (i < 0 || i >= _trail.length) return;
+  _trail = _trail.slice(0, i + 1);
+  location.hash = '#/w/' + encodeURIComponent(_trail[i].id);
+}
+// 직접 URL 로 연 작품은 제목 미상 → 상세 해석 후 backfill(이후 갈래 타면 브레드크럼에 제목 표시).
+export function trailSetTitle(id, title) {
+  const t = _trail.find((x) => x.id === id);
+  if (t && !t.title) t.title = title || null;
+}
+
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const [seg, raw] = h.split('/');
@@ -39,7 +57,13 @@ function shell(v) {
   const root = el('div', { class: 'app dens-regular' });
   root.appendChild(topbar(v));
   const stage = el('main', { class: 'stage' });
-  if (v.name === 'detail') stage.appendChild(Detail.mount({ userId: _userId, id: v.id }));
+  if (v.name === 'detail') {
+    // trail 재조정 — id 가 경로에 있으면 거기까지 자르고(브레드크럼·뒤로가기), 없으면 새 경로([id]).
+    const ti = _trail.findIndex((t) => t.id === v.id);
+    if (ti >= 0) _trail = _trail.slice(0, ti + 1);
+    else _trail = [{ id: v.id, title: null }];
+    stage.appendChild(Detail.mount({ userId: _userId, id: v.id, trail: _trail.slice() }));
+  }
   else if (v.name === 'import') stage.appendChild(ImportView.mount({ userId: _userId }));
   else if (v.name === 'library') stage.appendChild(Library.mount({ userId: _userId, cat: v.cat }));
   else stage.appendChild(Home.mount({ userId: _userId }));

@@ -6,6 +6,7 @@ import { Queries } from '../db/queries.js';
 import { openSearch } from './search.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
+import { trailReset } from '../app.js';
 
 async function readRecos(userId) {
   const db = globalThis.tasteDB;
@@ -22,6 +23,7 @@ function ratedKeyOf(media_type, title, year) {
 function openReco(r) {
   window.__tasteOpen = window.__tasteOpen || {};
   window.__tasteOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
+  trailReset(r.id, r.title);   // 신규 열기 — 갈래 경로 리셋
   location.hash = '#/w/' + encodeURIComponent(r.id);
 }
 
@@ -148,7 +150,7 @@ export function mount({ userId } = {}) {
       const stars = (r.rating > 0 && r.rating <= 0.5)
         ? el('span', { class: 'recent__pan' }, '비추 0.5')
         : el('span', { class: 'recent__val' }, r.rating > 0 ? `★ ${r.rating.toFixed(1)}` : '미평가');
-      row.appendChild(el('button', { class: 'recent__item', onClick: () => { location.hash = '#/w/' + encodeURIComponent(r.id); } },
+      row.appendChild(el('button', { class: 'recent__item', onClick: () => { trailReset(r.id, r.title); location.hash = '#/w/' + encodeURIComponent(r.id); } },
         poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 60, rounded: 8, label: false, src: r.meta?.poster_url }),
         el('span', { class: 'recent__title' }, r.title),
         el('span', { class: 'recent__stars' }, stars)));

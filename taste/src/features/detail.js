@@ -6,6 +6,7 @@ import { starRating } from '../ui/rating.js';
 import { Queries } from '../db/queries.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
+import { trailAppend, trailGo, trailSetTitle } from '../app.js';
 
 // 검색서 막 연 신규 작품(평가 전) / Dexie 평가 row → 공통 정규화.
 function pickMeta(src) {
@@ -40,11 +41,14 @@ async function resolveWork(id, userId) {
   return null;
 }
 
-export function mount({ userId, id } = {}) {
+export function mount({ userId, id, trail = [] } = {}) {
   const root = el('div', { class: 'detail' });
   resolveWork(id, userId).then((w) => {
     clear(root);
-    root.appendChild(w ? detailBody(w, userId) : notFound());
+    if (!w) { root.appendChild(notFound()); return; }
+    trailSetTitle(id, w.title);   // 직접 URL 진입 시 제목 backfill
+    if (trail.length > 1) root.appendChild(trailNav(trail));
+    root.appendChild(detailBody(w, userId));
   });
   return root;
 }
@@ -139,7 +143,21 @@ async function readBranches(userId, key) {
 function openBranch(r) {
   window.__tasteOpen = window.__tasteOpen || {};
   window.__tasteOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
+  trailAppend(r.id, r.title);   // 갈래 클릭 — 경로에 가지 추가
   location.hash = '#/w/' + encodeURIComponent(r.id);
+}
+
+// 정본: design-ref/source/app/detail.jsx:52-70 — 갈래를 타고 온 경로(가지 → A → B). path.length>1 일 때만.
+function trailNav(trail) {
+  const nav = el('nav', { class: 'trail' });
+  trail.forEach((t, i) => {
+    const seg = el('span', { class: 'trail__seg' });
+    if (i > 0) seg.appendChild(el('span', { class: 'trail__sep' }, '가지 →'));
+    if (i === trail.length - 1) seg.appendChild(el('span', { class: 'trail__cur' }, t.title || ''));
+    else seg.appendChild(el('a', { class: 'trail__link', onClick: () => trailGo(i) }, t.title || ''));
+    nav.appendChild(seg);
+  });
+  return nav;
 }
 
 // 정본: design-ref/source/app/detail.jsx:12-26 — 인덱스 카탈로그(01·02·03 + branch__head/kind).
