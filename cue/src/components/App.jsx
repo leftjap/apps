@@ -14,6 +14,7 @@ import {
   useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle,
 } from './Tweaks.jsx';
 import { useHabits } from '../data/useHabits.js';
+import { launchHabit } from '../data/launch.js';
 import { signInWithGoogle } from '../services/auth.js';
 
 const TWEAK_DEFAULTS = {
@@ -88,15 +89,18 @@ function Door({ habit, stateKey, demoMode, onDemo, isNext }) {
   const ref = useRef(null);
 
   const launch = useCallback(() => {
-    if (demoMode) { onDemo(); return; }          // 데모: 상태 순환(앱 안 엶)
-    if (habit.url) {
-      const el = ref.current;
-      if (el && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        el.classList.remove('launching'); void el.offsetWidth; el.classList.add('launching');
-      }
-      window.open(habit.url, '_blank', 'noopener');
-    }
-  }, [demoMode, onDemo, habit.url]);
+    const el = ref.current;
+    // 데모: 상태순환 / 실모드 url: 앱 열기(launching 모션) / url 없음(iPhone): 무동작 — launch.js
+    launchHabit({
+      habit, demoMode, onDemo,
+      open: (url, target, feat) => {
+        if (el && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          el.classList.remove('launching'); void el.offsetWidth; el.classList.add('launching');
+        }
+        window.open(url, target, feat);
+      },
+    });
+  }, [demoMode, onDemo, habit]);
 
   const onKey = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); launch(); } };
 
