@@ -16,6 +16,7 @@ import {
 import { useHabits } from '../data/useHabits.js';
 import { launchHabit } from '../data/launch.js';
 import { signInWithGoogle } from '../services/auth.js';
+import AccountMenu from './AccountMenu.jsx';
 
 const TWEAK_DEFAULTS = {
   demoMode: false, // 작업지시서 §9 — 기본 OFF (카드 탭 = 실제 앱 실행). 데모는 Tweaks 에서.
@@ -70,13 +71,16 @@ function Header({ flags }) {
           </button>
         </h1>
       </div>
-      <div className={`tally${allDone ? ' alldone' : ''}`}>
-        <span className="tally__n">{allDone
-          ? <><b>오늘 다 했어요</b> <span className="chk" aria-hidden="true">✓</span></>
-          : <>오늘 <b>{done}</b> / {flags.length}</>}</span>
-        <span className="tally__dots">
-          {flags.map((f, k) => <span key={k} className={`tally__d${f ? ' on' : ''}`} />)}
-        </span>
+      <div className="head__r">
+        <AccountMenu />
+        <div className={`tally${allDone ? ' alldone' : ''}`}>
+          <span className="tally__n">{allDone
+            ? <><b>오늘 다 했어요</b> <span className="chk" aria-hidden="true">✓</span></>
+            : <>오늘 <b>{done}</b> / {flags.length}</>}</span>
+          <span className="tally__dots">
+            {flags.map((f, k) => <span key={k} className={`tally__d${f ? ' on' : ''}`} />)}
+          </span>
+        </div>
       </div>
     </header>
   );

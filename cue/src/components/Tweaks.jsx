@@ -114,8 +114,10 @@ export function TweaksPanel({ title = 'Tweaks', children }) {
         setOpen((o) => !o);
       }
     };
+    const onOpen = () => setOpen(true); // 계정 메뉴 "표시 설정" 에서 열기
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('cue:open-tweaks', onOpen);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('cue:open-tweaks', onOpen); };
   }, []);
 
   const onDragStart = (e) => {

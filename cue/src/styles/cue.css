@@ -24,7 +24,7 @@
     0 14px 28px -10px rgba(28,24,18,0.16),
     0 36px 60px -28px rgba(28,24,18,0.26);
   --sans:"Pretendard",system-ui,-apple-system,sans-serif;
-  --mono:"Inconsolata",ui-monospace,"SF Mono",Menlo,monospace;
+  --mono:"Lekton",ui-monospace,"SF Mono",Menlo,monospace;
 }
 *{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; }
@@ -244,3 +244,25 @@ button{ font-family:inherit; }
 @media (max-width:560px){ .ovrow__figs{ gap:14px; } .ovweeks{ height:30px; } .ovrow{ grid-template-columns:1fr; gap:10px; } }
 
 @media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } .door.is-done .door__seal svg path{ stroke-dashoffset:0; } }
+
+/* ── 계정 메뉴 (시안 외 — 사용자 요청: 로그아웃 등. DESIGN.md 토큰으로 구성) ───────── */
+.head__r{ display:flex; flex-direction:column; align-items:flex-end; gap:14px; flex-shrink:0; }
+.acct{ position:relative; }
+.acct__btn{ width:34px; height:34px; border-radius:50%; background:var(--paper); border:1px solid var(--line);
+  font-family:var(--sans); font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer;
+  display:grid; place-items:center; box-shadow:var(--shadow); transition:border-color .15s, background .15s; }
+.acct__btn:hover{ border-color:var(--ink-4); background:var(--hover-bg); }
+.acct__btn:focus-visible{ outline:2px solid var(--crail); outline-offset:2px; }
+.acct__menu{ position:absolute; top:42px; right:0; z-index:120; width:222px; background:var(--paper);
+  border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow-lift); padding:7px;
+  animation:acctrise .16s cubic-bezier(.2,.8,.2,1); }
+@keyframes acctrise{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+.acct__head{ display:flex; align-items:center; gap:10px; padding:8px 9px 11px; }
+.acct__av{ width:30px; height:30px; border-radius:50%; background:var(--sunken); border:1px solid var(--line);
+  display:grid; place-items:center; font-size:12px; font-weight:600; color:var(--ink-2); flex-shrink:0; }
+.acct__email{ font-size:12px; color:var(--ink-3); letter-spacing:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.acct__sep{ height:1px; background:var(--line-soft); margin:3px 6px; }
+.acct__item{ width:100%; text-align:left; border:0; background:transparent; padding:9px 10px; border-radius:9px;
+  font-family:var(--sans); font-size:13.5px; font-weight:500; color:var(--ink-1); cursor:pointer; transition:background .12s; }
+.acct__item:hover{ background:var(--hover-bg); }
+.acct__item--quiet{ color:var(--ink-3); }
