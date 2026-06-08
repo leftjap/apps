@@ -8,6 +8,7 @@ import {
   lastActiveDaysAgo,
   weekStartMonday,
   countDaysInCurrentWeek,
+  nowMarker,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -84,6 +85,17 @@ describe('weekStartMonday — 그 주 월요일 00:00', () => {
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 8)))).toBe('2026-06-08'); // 월
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 10)))).toBe('2026-06-08'); // 수
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 7)))).toBe('2026-06-01'); // 일 → 직전 월
+  });
+});
+
+describe('nowMarker — 오늘 흐름 "지금" 실시각 마커 (시각 → label + 0~100 위치)', () => {
+  it('HH:MM 라벨 + 자정 기준 분 비율 위치', () => {
+    expect(nowMarker(new Date(2026, 5, 9, 14, 2))).toEqual({ label: '14:02', pos: 58.5 }); // 842/1440
+    expect(nowMarker(new Date(2026, 5, 9, 0, 0))).toEqual({ label: '00:00', pos: 0 });
+    expect(nowMarker(new Date(2026, 5, 9, 9, 5))).toEqual({ label: '09:05', pos: 37.8 }); // 545/1440
+  });
+  it('자정 직전은 100 근처', () => {
+    expect(nowMarker(new Date(2026, 5, 9, 23, 59)).pos).toBeCloseTo(99.9, 1);
   });
 });
 

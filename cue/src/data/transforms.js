@@ -137,3 +137,10 @@ export function countDaysInCurrentWeek(dateKeys, today) {
   }
   return set.size;
 }
+
+/** 오늘 흐름 "지금" 마커 — 시각 → { label:"HH:MM", pos:0~100 (자정 기준 분 비율) } */
+export function nowMarker(date) {
+  const d = new Date(date);
+  const mins = d.getHours() * 60 + d.getMinutes();
+  return { label: `${p2(d.getHours())}:${p2(d.getMinutes())}`, pos: Math.round((mins / 1440) * 1000) / 10 };
+}
