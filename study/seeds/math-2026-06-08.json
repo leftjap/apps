@@ -1,0 +1,104 @@
+{
+  "date": "2026-06-08",
+  "problems": [
+    {
+      "id": "gen-2026-06-08-trap-1",
+      "conceptId": "trap",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 사다리꼴",
+      "prompt": "윗변 2, 아랫변 4, 높이 8인 사다리꼴의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"108\" height=\"170\" viewBox=\"0 0 108 170\" role=\"img\" aria-label=\"윗변 2 아랫변 4 높이 8 사다리꼴\"><polygon points=\"40,26 68,26 82,138 26,138\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"40\" y1=\"26\" x2=\"40\" y2=\"138\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"54\" y=\"18\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">윗변 2</text><text x=\"54\" y=\"154\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">아랫변 4</text><text x=\"22\" y=\"82\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 8</text></svg>",
+        "legend": "윗변 2 · 아랫변 4 · 높이 8"
+      },
+      "answer": "24",
+      "accept": [
+        "24"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"186\" height=\"222\" viewBox=\"0 0 186 222\" role=\"img\" aria-label=\"윗변 2 아랫변 4 사다리꼴 + 거꾸로 붙인 사다리꼴 = 밑변 6 평행사변형\"><polygon points=\"38,16 82,16 104,192 16,192\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"148,192 104,192 82,16 170,16\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"82\" y=\"204\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">평행사변형 밑변 = 2 + 4</text></svg>"
+        },
+        "core": "(윗변 + 아랫변) ÷ 2 × 높이.",
+        "idea": "똑같은 사다리꼴을 거꾸로 붙이면 밑변 2+4=6 평행사변형이 돼요(그림). 한 벌은 절반이니 평균 폭 3 에 높이 8.",
+        "steps": [
+          "평균 폭 (2 + 4) ÷ 2 = 3",
+          "× 8 = 24"
+        ],
+        "refresh": "평균 · 곱셈",
+        "example": "둑·수로 단면처럼 위·아래 폭이 다른 면.",
+        "think": "들쭉날쭉을 평균으로 평평하게 골라 본다."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-06-08-trap-2",
+      "conceptId": "trap",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 사다리꼴",
+      "prompt": "윗변 5, 아랫변 8, 높이 8인 사다리꼴의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"164\" height=\"170\" viewBox=\"0 0 164 170\" role=\"img\" aria-label=\"윗변 5 아랫변 8 높이 8 사다리꼴\"><polygon points=\"47,26 117,26 138,138 26,138\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"47\" y1=\"26\" x2=\"47\" y2=\"138\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"82\" y=\"18\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">윗변 5</text><text x=\"82\" y=\"154\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">아랫변 8</text><text x=\"29\" y=\"82\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 8</text></svg>",
+        "legend": "윗변 5 · 아랫변 8 · 높이 8"
+      },
+      "answer": "52",
+      "accept": [
+        "52"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"351\" height=\"222\" viewBox=\"0 0 351 222\" role=\"img\" aria-label=\"윗변 5 아랫변 8 사다리꼴 + 거꾸로 붙인 사다리꼴 = 밑변 13 평행사변형\"><polygon points=\"49,16 159,16 192,192 16,192\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"302,192 192,192 159,16 335,16\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"159\" y=\"204\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">평행사변형 밑변 = 5 + 8</text></svg>"
+        },
+        "core": "(윗변 + 아랫변) ÷ 2 × 높이.",
+        "idea": "똑같은 사다리꼴을 거꾸로 붙이면 밑변 5+8=13 평행사변형이 돼요(그림). 한 벌은 절반이니 평균 폭 6.5 에 높이 8.",
+        "steps": [
+          "평균 폭 (5 + 8) ÷ 2 = 6.5",
+          "× 8 = 52"
+        ],
+        "refresh": "평균 · 곱셈",
+        "example": "둑·수로 단면처럼 위·아래 폭이 다른 면.",
+        "think": "들쭉날쭉을 평균으로 평평하게 골라 본다."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-06-08-trap-3",
+      "conceptId": "trap",
+      "kind": "apply",
+      "module": "넓이는 변형",
+      "tag": "응용 · 사다리꼴",
+      "prompt": "윗변 5, 아랫변 11, 높이 6인 사다리꼴의 넓이는?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"206\" height=\"142\" viewBox=\"0 0 206 142\" role=\"img\" aria-label=\"윗변 5 아랫변 11 높이 6 사다리꼴\"><polygon points=\"68,26 138,26 180,110 26,110\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><line x1=\"68\" y1=\"26\" x2=\"68\" y2=\"110\" stroke=\"#788c5d\" stroke-width=\"1.1\" stroke-dasharray=\"4 3\"/><text x=\"103\" y=\"18\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">윗변 5</text><text x=\"103\" y=\"126\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">아랫변 11</text><text x=\"50\" y=\"68\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">높이 6</text></svg>",
+        "legend": "윗변 5 · 아랫변 11 · 높이 6"
+      },
+      "answer": "48",
+      "accept": [
+        "48"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"450\" height=\"178\" viewBox=\"0 0 450 178\" role=\"img\" aria-label=\"윗변 5 아랫변 11 사다리꼴 + 거꾸로 붙인 사다리꼴 = 밑변 16 평행사변형\"><polygon points=\"82,16 192,16 258,148 16,148\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"368,148 258,148 192,16 434,16\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><text x=\"192\" y=\"160\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">평행사변형 밑변 = 5 + 11</text></svg>"
+        },
+        "core": "(윗변 + 아랫변) ÷ 2 × 높이.",
+        "idea": "똑같은 사다리꼴을 거꾸로 붙이면 밑변 5+11=16 평행사변형이 돼요(그림). 한 벌은 절반이니 평균 폭 8 에 높이 6.",
+        "steps": [
+          "평균 폭 (5 + 11) ÷ 2 = 8",
+          "× 6 = 48"
+        ],
+        "refresh": "평균 · 곱셈",
+        "example": "둑·수로 단면처럼 위·아래 폭이 다른 면.",
+        "think": "들쭉날쭉을 평균으로 평평하게 골라 본다."
+      },
+      "order_index": 2
+    }
+  ]
+}
