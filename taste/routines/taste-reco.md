@@ -38,7 +38,7 @@ curl -s -X POST "${SUPABASE_URL}/functions/v1/taste-reco" \
 
 **3. 실재 검증 + 포스터** — 생성한 각 후보를 WebSearch 로 확인:
 - 제목+연도로 실제 작품인지 검증(동명/오타/환각 폐기). 연도·감독/저자 보정.
-- 포스터 이미지 URL 확보(공개 포스터/위키미디어 등). 못 찾으면 `poster_url` 생략(앱이 플레이스홀더 폴백).
+- **포스터 이미지 URL 은 추천작마다 필수로 채운다** — WebSearch 로 직접 확보(영화: TMDB `image.tmdb.org`/`media.themoviedb.org`·위키미디어, 책: OpenLibrary 표지·알라딘). **홈 10개·갈래 3개 전부** 빠짐없이. 흔한 작품은 공개 포스터가 반드시 있으니 **누락 0 이 목표** — "못 찾았다"로 쉽게 건너뛰지 말 것. 정말 못 찾는 드문 예외만 생략(앱 플레이스홀더 폴백).
 - `external_id` 알면 채움(TMDB id/ISBN13), 모르면 생략.
 
 **4. 기록** — owner 마다 submit (검증 통과분만):
