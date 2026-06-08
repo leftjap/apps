@@ -1,5 +1,5 @@
 // taste 홈(메인 추천 피드) — Featured 추천(taste_recommendations) 트랙 + 최근 평가(Dexie).
-// §7 연출: '다시 추천' 버튼(request-taste-reco) → 분석 중 스켈레톤 → realtime 새 batch 도착 시 교체.
+// §7 연출: '다시 추천' 버튼 → taste_reco_requests insert → 로컬 데몬이 claude 재생성 → realtime 새 batch 도착 시 교체.
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString, dot } from '../ui/poster.js';
 import { Queries } from '../db/queries.js';
@@ -80,7 +80,7 @@ export function mount({ userId } = {}) {
     note.append(document.createTextNode('지금까지 '), el('b', {}, `${all.length}편`), document.createTextNode(' 평가했어요.'));
   }
 
-  // '다시 추천' 버튼 — request-taste-reco 발사. 평가가 있을 때만 노출.
+  // '다시 추천' 버튼 — taste_reco_requests 에 요청 1줄 insert(로컬 데몬 트리거). 평가가 있을 때만 노출.
   function regenButton() {
     if (!all.length || !supabase) return null;
     return el('button', { class: 'btn btn--sm', disabled: analyzing ? '' : null, onClick: requestReco },
@@ -91,18 +91,14 @@ export function mount({ userId } = {}) {
     if (!supabase || !userId || analyzing) return;
     analyzing = true; renderReco();
     try {
-      const { data, error } = await supabase.functions.invoke('request-taste-reco', { body: {} });
+      // 로컬 데몬이 realtime 으로 이 행을 즉시 감지 → claude 가 재생성 → taste_recommendations 변경 realtime 도착 시 해제.
+      const { error } = await supabase.from('taste_reco_requests').insert({ owner_id: userId, source: 'button' });
       if (error) throw error;
-      if (data?.status === 'queued') {
-        // realtime 으로 새 batch 도착 시 해제. 안 오면 120초 후 1회 재pull 폴백.
-        setTimeout(() => { if (analyzing) onRecoChange(); }, 120000);
-        return;
-      }
-      analyzing = false; renderReco();
-      flash(data?.status === 'noop' ? '추천을 새로 만들 평가가 더 필요해요.' : '잠시 후 다시 시도해 주세요.');
+      // 생성은 수십 초~수 분 걸릴 수 있음. 정상 해제는 realtime(onRecoChange). 폴백 재pull 은 5분 후 1회.
+      setTimeout(() => { if (analyzing) onRecoChange(); }, 300000);
     } catch (e) {
       analyzing = false; renderReco();
-      flash('추천 자동 재생성이 아직 설정되지 않았어요.');
+      flash('추천 재생성 요청을 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
   }
 
