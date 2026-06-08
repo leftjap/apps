@@ -72,12 +72,12 @@ const jobs = new Map();   // key → { ownerId, kind, sourceWork }
 function keyFor(ownerId, kind, sourceWork) {
   return kind === 'branch' ? `branch::${ownerId}::${sourceWork}` : `home::${ownerId}`;
 }
-function enqueue(ownerId, kind, sourceWork) {
+function enqueue(ownerId, kind, sourceWork, source) {
   if (!ownerId) return;
   const k = kind === 'branch' ? 'branch' : 'home';
   if (k === 'branch' && !sourceWork) return;
   const key = keyFor(ownerId, k, sourceWork || '');
-  jobs.set(key, { ownerId, kind: k, sourceWork: sourceWork || null });
+  jobs.set(key, { ownerId, kind: k, sourceWork: sourceWork || null, low: source === 'backfill' });
   scheduler.request(key);
 }
 
@@ -141,14 +141,30 @@ async function runClaude(key) {
   }
 }
 
-// 전역 직렬화 — 동시 claude -p 1개만(머신·구독 rate limit 보호). 키별 코얼레싱은 scheduler 가 유지.
-let runChain = Promise.resolve();
-function serializedRun(key) {
-  const p = runChain.then(() => runClaude(key));
-  runChain = p.catch(() => {});
-  return p;
+// 우선순위 직렬화 — 동시 claude -p 1개(머신·구독 rate limit 보호). 인터랙티브(detail/rating/button)는 highQ,
+// 백필은 lowQ → 백필이 깔려 있어도 새 평가·버튼이 먼저 처리됨. 키별 코얼레싱은 scheduler 가 유지.
+const highQ = [], lowQ = [];
+const _resolve = new Map();
+let _working = false;
+function dispatch(key) {
+  return new Promise((resolve) => {
+    const job = jobs.get(key);
+    (job && job.low ? lowQ : highQ).push(key);
+    _resolve.set(key, resolve);
+    pump();
+  });
 }
-const scheduler = createScheduler(serializedRun);
+async function pump() {
+  if (_working) return;
+  _working = true;
+  while (highQ.length || lowQ.length) {
+    const key = highQ.length ? highQ.shift() : lowQ.shift();
+    try { await runClaude(key); } catch (_) { /* runClaude 가 자체 로깅 */ }
+    const r = _resolve.get(key); _resolve.delete(key); if (r) r();
+  }
+  _working = false;
+}
+const scheduler = createScheduler(dispatch);
 
 // 평가 INSERT — (a) 홈 재생성 디바운스(연속 평가 1회로 흡수), (b) ★3.0+ 새 평가는 그 작품 갈래 생성.
 const ratingTimers = new Map();
@@ -172,7 +188,7 @@ function onRating(row) {
 async function catchUp() {
   const since = new Date(Date.now() - CATCHUP_MS).toISOString();
   const { data, error } = await sb.from('taste_reco_requests')
-    .select('owner_id,kind,source_work,created_at').gt('created_at', since).order('created_at', { ascending: true });
+    .select('owner_id,kind,source_work,source,created_at').gt('created_at', since).order('created_at', { ascending: true });
   if (error) { log('catchup err', error.message); return; }
   const seen = new Set();
   for (const r of (data || [])) {
@@ -180,7 +196,7 @@ async function catchUp() {
     const key = keyFor(r.owner_id, kind, r.source_work || '');
     if (seen.has(key)) continue;
     seen.add(key);
-    enqueue(r.owner_id, kind, r.source_work);
+    enqueue(r.owner_id, kind, r.source_work, r.source);
   }
   if (seen.size) log(`catchup: ${seen.size} 작업 보충`);
 }
@@ -195,8 +211,8 @@ function subscribeChannel() {
   currentChannel = ch;
   ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'taste_reco_requests' }, (p) => {
       const r = p.new || {};
-      log('request', r.owner_id, r.kind || 'home', r.source_work || '');
-      enqueue(r.owner_id, r.kind || 'home', r.source_work || null);
+      log('request', r.owner_id, r.kind || 'home', r.source_work || '', r.source || '');
+      enqueue(r.owner_id, r.kind || 'home', r.source_work || null, r.source);
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'taste_ratings' }, (p) => {
       log('rating', p.new?.owner_id, p.new?.rating);
