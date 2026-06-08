@@ -1,8 +1,16 @@
 # Supabase 프로젝트 설정 — taste (geo-apps 공유 프로젝트, 테이블 prefix taste_).
-# 적용: supabase functions deploy generate-taste-reco --project-ref tcbooffrdacfatywdzcm
+# Today 패턴: functions deploy 시 gateway 기본 verify_jwt=true 사고 방지로 함수별 명시.
+#
+# 적용:
+#   supabase functions deploy taste-reco --project-ref tcbooffrdacfatywdzcm
+#   supabase functions deploy request-taste-reco --project-ref tcbooffrdacfatywdzcm
 
 project_id = "tcbooffrdacfatywdzcm"
 
-[functions.generate-taste-reco]
-# 버튼은 유저 JWT, cron/수동은 x-taste-reco-token — 함수 본체에서 둘 다 처리하므로 gateway JWT 강제 안 함.
+[functions.taste-reco]
+# x-taste-reco-token 커스텀 헤더로 함수 본체 인증 → gateway JWT 불필요(Routine·cron 이 토큰으로 호출).
 verify_jwt = false
+
+[functions.request-taste-reco]
+# "다시 추천" 버튼 — 브라우저(PWA)에서 사용자 JWT 로 호출. 본인 확인 필요 → JWT 강제.
+verify_jwt = true

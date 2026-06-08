@@ -91,20 +91,18 @@ export function mount({ userId } = {}) {
     if (!supabase || !userId || analyzing) return;
     analyzing = true; renderReco();
     try {
-      // generate-taste-reco 가 그 자리에서 생성·기록까지 끝낸 뒤 응답(수십 초). 끝나면 재pull 해서 교체.
-      const { data, error } = await supabase.functions.invoke('generate-taste-reco', { body: {} });
+      const { data, error } = await supabase.functions.invoke('request-taste-reco', { body: {} });
       if (error) throw error;
-      if (data?.status === 'ok') {
-        await Sync.pullRecommendations(userId);
-        recos = await readRecos(userId);
-        analyzing = false; renderReco();
-      } else {
-        analyzing = false; renderReco();
-        flash(data?.message || '추천을 만들 수 없었어요.');
+      if (data?.status === 'queued') {
+        // realtime 으로 새 batch 도착 시 해제. 안 오면 120초 후 1회 재pull 폴백.
+        setTimeout(() => { if (analyzing) onRecoChange(); }, 120000);
+        return;
       }
+      analyzing = false; renderReco();
+      flash(data?.status === 'noop' ? '추천을 새로 만들 평가가 더 필요해요.' : '잠시 후 다시 시도해 주세요.');
     } catch (e) {
       analyzing = false; renderReco();
-      flash('추천 생성에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      flash('추천 자동 재생성이 아직 설정되지 않았어요.');
     }
   }
 
