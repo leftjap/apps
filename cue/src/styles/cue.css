@@ -246,7 +246,7 @@ button{ font-family:inherit; }
 @media (prefers-reduced-motion:reduce){ *{ animation:none !important; transition:none !important; } .door.is-done .door__seal svg path{ stroke-dashoffset:0; } }
 
 /* ── 계정 메뉴 (시안 외 — 사용자 요청: 로그아웃 등. DESIGN.md 토큰으로 구성) ───────── */
-.head__r{ display:flex; flex-direction:column; align-items:flex-end; gap:14px; flex-shrink:0; }
+.head__r{ display:flex; flex-direction:row; align-items:flex-start; gap:16px; flex-shrink:0; }
 .acct{ position:relative; }
 .acct__btn{ width:34px; height:34px; border-radius:50%; background:var(--paper); border:1px solid var(--line);
   font-family:var(--sans); font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer;
