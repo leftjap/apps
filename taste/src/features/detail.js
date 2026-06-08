@@ -4,6 +4,8 @@ import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString, chip, dot } from '../ui/poster.js';
 import { starRating } from '../ui/rating.js';
 import { Queries } from '../db/queries.js';
+import { supabase } from '../services/supabase.js';
+import { Sync } from '../db/sync.js';
 
 // 검색서 막 연 신규 작품(평가 전) / Dexie 평가 row → 공통 정규화.
 function pickMeta(src) {
@@ -55,7 +57,7 @@ function notFound() {
 
 function detailBody(w, userId) {
   const isFilm = w.media_type === 'movie';
-  return el('div', { class: 'detail__body' }, rail(w, userId, isFilm), main(w, isFilm));
+  return el('div', { class: 'detail__body' }, rail(w, userId, isFilm), main(w, isFilm, userId));
 }
 
 function inforow(k, v) {
@@ -121,7 +123,95 @@ function buildSub(w, isFilm) {
   return (isFilm ? [w.director, w.year] : [w.author, w.publisher]).filter(Boolean).join(' · ');
 }
 
-function main(w, isFilm) {
+// ── 갈래(branch) — 이 작품에서 이어지는 추천 (kind=branch, source_work=이 작품 키) ──
+function srcKey(w) { return `${w.title}|${w.year ?? ''}`; }
+
+async function readBranches(userId, key) {
+  const db = globalThis.tasteDB;
+  if (!db || !userId) return [];
+  try {
+    const all = await db.recommendations.where('source_work').equals(key).toArray();
+    return all.filter((r) => r.owner_id === userId && r.kind === 'branch');
+  } catch (e) { return []; }
+}
+
+// 갈래 클릭 = 그 작품 상세로 가지치며 이동(spec §3.2). 미평가작이라 __tasteOpen 으로 메타 전달.
+function openBranch(r) {
+  window.__tasteOpen = window.__tasteOpen || {};
+  window.__tasteOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
+  location.hash = '#/w/' + encodeURIComponent(r.id);
+}
+
+function branchCard(r) {
+  const isFilm = r.media_type === 'movie';
+  return el('article', { class: 'rec', onClick: () => openBranch(r) },
+    poster({ type: isFilm ? 'film' : 'book', title: r.title, year: r.year, hue: hueFromString(r.title), w: 56, rounded: 8, label: false, src: r.poster_url }),
+    el('div', { class: 'rec__text' },
+      el('h3', { class: 'rec__title' }, r.title),
+      el('p', { class: 'rec__reason' }, r.reason || '')));
+}
+
+function branchSkeleton() {
+  const list = el('div', { class: 'track__list' });
+  for (let i = 0; i < 3; i++) {
+    list.append(el('article', { class: 'rec' },
+      el('div', { class: 'sk sk--poster' }),
+      el('div', { class: 'rec__text', style: 'flex:1' },
+        el('div', { class: 'sk sk--line', style: 'width:55%' }),
+        el('div', { class: 'sk sk--line', style: 'width:85%' }))));
+  }
+  return list;
+}
+
+// 상세 갈래 realtime 채널은 모듈 레벨 1개(상세는 hashchange 마다 재mount → 중복 구독 방지).
+let _branchChannel = null;
+
+function branchesSection(w, userId) {
+  const key = srcKey(w);
+  const sec = el('section', { class: 'branches' });
+  sec.appendChild(el('div', { class: 'branches__head' }, el('h2', { class: 'branches__h' }, '이 작품에서 이어지는 갈래')));
+  const body = el('div', {});
+  sec.appendChild(body);
+  let requested = false;
+  const note = (t) => el('p', { class: 'branch__reason', style: 'color:var(--ink-4);padding:16px 0;margin:0' }, t);
+
+  async function render() {
+    if (!userId || !supabase) { clear(body); body.appendChild(note('로그인하면 이 작품에서 이어지는 갈래를 골라드려요.')); return; }
+    const branches = await readBranches(userId, key);
+    clear(body);
+    if (branches.length) { body.appendChild(el('div', { class: 'track__list' }, ...branches.map(branchCard))); return; }
+    // 갈래 없음 → 평가 ★3.0+ 면 on-demand 생성 트리거 + 스켈레톤. 아니면 안내.
+    const ex = await Queries.getRating(userId, w.media_type, w.title, w.year);
+    if (ex && ex.rating >= 3.0) {
+      body.appendChild(el('div', { class: 'feat__eyebrow', style: 'margin-bottom:10px' }, el('span', { class: 'pulse' }), el('span', {}, '이어지는 갈래를 고르는 중…')));
+      body.appendChild(branchSkeleton());
+      if (!requested) {
+        requested = true;
+        try { await supabase.from('taste_reco_requests').insert({ owner_id: userId, source: 'detail', kind: 'branch', source_work: key }); } catch (e) { /* noop */ }
+      }
+    } else {
+      body.appendChild(note('이 작품을 ★3.0 이상으로 평가하면, 여기서 이어지는 갈래를 이유와 함께 골라드려요.'));
+    }
+  }
+
+  function subscribe() {
+    if (!supabase || !userId) return;
+    try { if (_branchChannel) supabase.removeChannel(_branchChannel); } catch (e) { /* noop */ }
+    _branchChannel = supabase
+      .channel('taste-branch-' + userId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'taste_recommendations', filter: 'owner_id=eq.' + userId }, async () => {
+        try { await Sync.pullRecommendations(userId); } catch (e) { /* noop */ }
+        render();
+      })
+      .subscribe();
+  }
+
+  render();
+  subscribe();
+  return sec;
+}
+
+function main(w, isFilm, userId) {
   const m = el('div', { class: 'detail__main' });
   const head = el('header', { class: 'detail__head' });
   const kind = el('div', { class: 'detail__kind' }, dot(), el('span', {}, isFilm ? '영화' : '책'));
@@ -144,10 +234,6 @@ function main(w, isFilm) {
       el('p', { class: 'reading__body' }, w.summary)));
   }
 
-  m.appendChild(el('section', { class: 'branches' },
-    el('div', { class: 'branches__head' },
-      el('h2', { class: 'branches__h' }, '이 작품에서 이어지는 갈래')),
-    el('p', { class: 'branch__reason', style: 'color:var(--ink-4);padding:16px 0;margin:0' },
-      '평가가 쌓이면 이 작품에서 이어지는 갈래를 이유와 함께 골라드려요.')));
+  m.appendChild(branchesSection(w, userId));
   return m;
 }

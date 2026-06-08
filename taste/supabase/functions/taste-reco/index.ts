@@ -72,7 +72,8 @@ async function runContext(owner_id?: string) {
   return owners.map((oid) => toOwnerContext(oid, ratings.filter((r) => r.owner_id === oid && !r.deleted_at)));
 }
 
-async function runSubmit(owner_id: string, batch_id: string, recommendations: Array<Record<string, unknown>>) {
+type Replace = { kind?: string; source_work?: string };
+async function runSubmit(owner_id: string, batch_id: string, recommendations: Array<Record<string, unknown>>, replace?: Replace) {
   const now = new Date().toISOString();
   const rows = recommendations.map((r) => ({
     owner_id,
@@ -88,12 +89,16 @@ async function runSubmit(owner_id: string, batch_id: string, recommendations: Ar
     batch_id,
     generated_at: now,
   }));
-  // owner 추천 교체 — 개인 격리: owner 범위로만 삭제 후 새 batch insert.
-  const { error: delErr } = await sb.from('taste_recommendations').delete().eq('owner_id', owner_id);
+  // 교체 범위 — replace 없으면 owner 전량(backward compat); {kind:'home'}=홈만(갈래 보존);
+  // {kind:'branch',source_work}=그 작품 갈래만(홈·타 작품 갈래 보존).
+  let del = sb.from('taste_recommendations').delete().eq('owner_id', owner_id);
+  if (replace?.kind === 'home') del = del.eq('kind', 'home');
+  else if (replace?.kind === 'branch') del = del.eq('kind', 'branch').eq('source_work', replace.source_work ?? '');
+  const { error: delErr } = await del;
   if (delErr) return json(500, { status: 'error', message: `delete: ${delErr.message}` });
   const { error: insErr } = await sb.from('taste_recommendations').insert(rows);
   if (insErr) return json(500, { status: 'error', message: `insert: ${insErr.message}` });
-  return json(200, { status: 'ok', owner_id, inserted: rows.length });
+  return json(200, { status: 'ok', owner_id, inserted: rows.length, scope: replace?.kind ?? 'all' });
 }
 
 Deno.serve(async (req: Request) => {
@@ -105,7 +110,7 @@ Deno.serve(async (req: Request) => {
     return json(401, { status: 'error', message: 'Unauthorized' });
   }
 
-  let body: { action?: string; owner_id?: string; batch_id?: string; recommendations?: Array<Record<string, unknown>> } = {};
+  let body: { action?: string; owner_id?: string; batch_id?: string; recommendations?: Array<Record<string, unknown>>; replace?: Replace } = {};
   try { body = await req.json(); } catch { /* empty body allowed for context */ }
   const url = new URL(req.url);
   const action = url.searchParams.get('action') || body.action || 'context';
@@ -118,7 +123,7 @@ Deno.serve(async (req: Request) => {
       if (!body.owner_id || !body.batch_id || !Array.isArray(body.recommendations) || !body.recommendations.length) {
         return json(400, { status: 'error', message: 'Missing owner_id, batch_id, or recommendations' });
       }
-      return await runSubmit(body.owner_id, body.batch_id, body.recommendations);
+      return await runSubmit(body.owner_id, body.batch_id, body.recommendations, body.replace);
     }
     return json(400, { status: 'error', message: `Unknown action: ${action}` });
   } catch (e) {

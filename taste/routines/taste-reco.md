@@ -32,8 +32,9 @@ curl -s -X POST "${SUPABASE_URL}/functions/v1/taste-reco" \
 - ratings 에서 ★3.5+ 패턴(장르·톤·주제·창작자)을 positive 로, ★2.0↓·0.5 패턴을 negative(회피)로 추출.
 - **홈 추천**(kind=`home`): 다음에 볼 영화·드라마 + 읽을 책. 각 `{media_type, title, year, reason, basis}`.
   - `basis` = 이 추천을 끌어낸 근거 평가작 식별자 배열(`"<title>|<year>"`, 평가작).
-- **작품별 갈래**(kind=`branch`): owner 의 최애(★4.5+) 몇 작품마다 그 작품에서 이어지는 추천 3개. 각 `{media_type, title, year, reason, source_work}` (`source_work` = 출발 작품 `"<title>|<year>"`).
-- 분량 가이드(취향 데이터에 맞게 가감): 홈 영화/드라마 6~10, 홈 책 4~8, 갈래 최애 3~5작품 × 3.
+- **작품별 갈래**(kind=`branch`): 호출 프롬프트가 지정한 출발 작품(`source_work="<title>|<year>"`)에서 이어지는 추천 **3개**. 각 `{media_type, title, year, reason, source_work}`. 출발 작품의 톤·주제·창작자 결을 잇되 owner 취향(positive/negative)도 함께 반영.
+- **모드는 호출 프롬프트가 home 또는 branch 로 지정 — 한 실행에 하나만.** (home = 홈 피드, branch = 특정 작품 갈래.)
+- 분량 가이드: 홈 영화/드라마 6, 홈 책 4 (총 10). 갈래 = 출발 작품당 3.
 
 **3. 실재 검증 + 포스터** — 생성한 각 후보를 WebSearch 로 확인:
 - 제목+연도로 실제 작품인지 검증(동명/오타/환각 폐기). 연도·감독/저자 보정.
@@ -49,10 +50,11 @@ curl -s -X POST "${SUPABASE_URL}/functions/v1/taste-reco" \
   -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
   -d "$(jq -nc --arg oid "<owner_id>" --arg b "$(date +%Y-%m-%dT%H:%M)" \
         --argjson recs '[{"media_type":"movie","title":"...","year":2014,"reason":"...","kind":"home","basis":["인터스텔라|2014"]}]' \
-        '{action:"submit", owner_id:$oid, batch_id:$b, recommendations:$recs}')"
+        --argjson rep '{"kind":"home"}' \
+        '{action:"submit", owner_id:$oid, batch_id:$b, recommendations:$recs, replace:$rep}')"
 ```
 - `recommendations` 각 원소: `{media_type, title, year, reason, kind, basis?, source_work?, poster_url?, external_id?}`.
-- submit 은 그 owner 의 기존 추천을 **전량 교체**(멱등) → 같은 owner 재실행 안전.
+- **`replace` 로 교체 범위 지정 (필수 — 빠뜨리면 owner 추천 전량 삭제)**: 홈 실행이면 `{"kind":"home"}` (홈만 교체, 갈래 보존). 갈래 실행이면 `{"kind":"branch","source_work":"<title>|<year>"}` (그 작품 갈래만 교체, 홈·타 작품 보존).
 → `{"status":"ok","owner_id":...,"inserted":N}`.
 
 ## 네트워크 (루틴 환경 설정)

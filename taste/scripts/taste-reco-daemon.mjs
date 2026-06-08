@@ -4,10 +4,10 @@
  * service role 로 DB 를 구독하다가 트리거가 오면 `claude -p` 헤드리스를 띄워
  * routines/taste-reco.md 지침대로 추천을 재생성한다. launchd KeepAlive 로 상주.
  *
- * 트리거 두 가지:
- *   - taste_reco_requests INSERT  → 즉시 ("다시 추천" 버튼 / 평가 후 enqueue)
- *   - taste_ratings INSERT         → 디바운스 후 (연속 평가는 1회로 흡수)
- * 동시실행 방지·연타 흡수는 reco-scheduler.js (단위테스트됨).
+ * 트리거:
+ *   - taste_reco_requests INSERT  → home("다시 추천" 버튼) 또는 branch(상세페이지 갈래, kind+source_work)
+ *   - taste_ratings INSERT         → 홈 재생성(디바운스) + ★3.0+ 새 평가면 그 작품 갈래 생성
+ * 키별 코얼레싱(연타 흡수)은 reco-scheduler.js(단위테스트), 동시 claude -p 1개로 전역 직렬화(rate limit 보호).
  *
  * 비용 0: claude 인증은 CLAUDE_CODE_OAUTH_TOKEN(지오 구독). Anthropic API 키 아님.
  *
@@ -66,79 +66,123 @@ if (!TASTE_RECO_TOKEN || !ANON_KEY) { log('FATAL: TASTE_RECO_TOKEN / ANON_KEY �
 fs.mkdirSync(STATE_DIR, { recursive: true });
 const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
 
-// claude -p 헤드리스로 owner 추천 재생성. 버튼 응답이므로 홈 추천만 빠르게(갈래 생략).
-// MCP·user 설정 미로드(--strict-mcp-config / --setting-sources project) → 헤드리스 작업 집중·기동 단축.
-async function runClaude(ownerId) {
-  const startedIso = new Date().toISOString();
-  log(`run ${ownerId} 시작`);
-  const prompt = [
+// ── 작업(job) 추적 + 코얼레싱 키 ───────────────────────────────────────
+// home = owner 1개. branch = owner×출발작품(source_work). 키로 같은 작품 중복 생성 방지.
+const jobs = new Map();   // key → { ownerId, kind, sourceWork }
+function keyFor(ownerId, kind, sourceWork) {
+  return kind === 'branch' ? `branch::${ownerId}::${sourceWork}` : `home::${ownerId}`;
+}
+function enqueue(ownerId, kind, sourceWork) {
+  if (!ownerId) return;
+  const k = kind === 'branch' ? 'branch' : 'home';
+  if (k === 'branch' && !sourceWork) return;
+  const key = keyFor(ownerId, k, sourceWork || '');
+  jobs.set(key, { ownerId, kind: k, sourceWork: sourceWork || null });
+  scheduler.request(key);
+}
+
+// claude -p 공통 인자. MCP·user 설정 미로드(--strict-mcp-config/--setting-sources project) → 헤드리스 집중·기동 단축.
+const claudeArgs = (prompt) => ['-p', prompt,
+  '--allowedTools', 'Read,Bash,WebSearch',
+  '--permission-mode', 'bypassPermissions',
+  '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
+  '--setting-sources', 'project'];
+
+function homePrompt(ownerId) {
+  return [
     '너는 taste 앱의 개인 취향 추천 엔진 클로드다. 아래 4단계만 수행하고 종료한다(다른 작업·스킬 호출 금지).',
-    `${TASTE_DIR}/routines/taste-reco.md 의 원칙·검증·호출법을 따른다. 대상 owner_id=${ownerId}. 이번엔 홈 추천만(kind=home), 갈래(branch)는 생략.`,
+    `${TASTE_DIR}/routines/taste-reco.md 의 원칙·검증·호출법을 따른다. 대상 owner_id=${ownerId}. 이번엔 홈 추천만(kind=home).`,
     `(1) taste-reco context 를 owner_id=${ownerId} 로 호출해 평가를 받는다(빈 배열이면 즉시 종료).`,
     '(2) ★3.5+ positive / ★2↓·0.5 negative 패턴을 분석해 홈 후보를 만든다: 영화·드라마 6 + 책 4 (총 10) 정도.',
     '(3) 각 후보를 WebSearch 로 실재검증(제목+연도)하고 포스터 URL 을 확보한다. 검증 실패작은 폐기(환각 0).',
-    '(4) taste-reco submit 으로 owner 추천을 교체 등록한다(kind 전부 home). edge fn 은 DB 입출력만, 추천·검증은 네가 직접.',
+    '(4) taste-reco submit 으로 등록: 각 rec kind="home", replace={"kind":"home"} (홈만 교체, 갈래 보존). edge fn 은 DB 입출력만.',
     '환경변수 SUPABASE_URL, TASTE_RECO_TOKEN, SUPABASE_ANON_KEY 는 주입돼 있다.',
   ].join('\n');
+}
+function branchPrompt(ownerId, sourceWork) {
+  return [
+    '너는 taste 앱의 개인 취향 추천 엔진 클로드다. 아래만 수행하고 종료한다(다른 작업·스킬 호출 금지).',
+    `${TASTE_DIR}/routines/taste-reco.md 의 원칙·검증·호출법을 따른다. 대상 owner_id=${ownerId}. 이번엔 작품별 갈래(kind=branch)만.`,
+    `출발 작품 source_work="${sourceWork}" (형식 "제목|연도").`,
+    `(1) taste-reco context 를 owner_id=${ownerId} 로 호출. 평가작 중 source_work 와 일치하는 작품을 찾아 media_type·결을 확인(없으면 제목·연도로 진행).`,
+    '(2) 그 작품에서 이어지는 추천 3개를 만든다 — 출발작의 톤·주제·창작자 결을 잇고 owner 취향(positive/negative) 반영, 이미 평가한 작품 제외.',
+    '(3) 각 후보를 WebSearch 로 실재검증(제목+연도)하고 포스터 URL 확보. 검증 실패작 폐기(환각 0).',
+    `(4) taste-reco submit: 각 rec 에 kind="branch", source_work="${sourceWork}". replace={"kind":"branch","source_work":"${sourceWork}"} 로 그 작품 갈래만 교체.`,
+    '환경변수 SUPABASE_URL, TASTE_RECO_TOKEN, SUPABASE_ANON_KEY 는 주입돼 있다.',
+  ].join('\n');
+}
+
+// claude -p 헤드리스 실행. key 의 job(kind/source_work)에 따라 home/branch.
+async function runClaude(key) {
+  const job = jobs.get(key);
+  if (!job) { log(`run ${key}: job 메타 없음 skip`); return; }
+  const { ownerId, kind, sourceWork } = job;
+  const startedIso = new Date().toISOString();
+  const label = kind === 'branch' ? `branch ${ownerId} ${sourceWork}` : `home ${ownerId}`;
+  log(`run ${label} 시작`);
+  const prompt = kind === 'branch' ? branchPrompt(ownerId, sourceWork) : homePrompt(ownerId);
   const runLog = path.join(STATE_DIR, 'last-run.log');
   try {
-    const { stdout, stderr } = await execFileP(
-      CLAUDE,
-      ['-p', prompt,
-        '--allowedTools', 'Read,Bash,WebSearch',
-        '--permission-mode', 'bypassPermissions',
-        '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}',
-        '--setting-sources', 'project'],
-      {
-        cwd: TASTE_DIR,
-        env: {
-          ...process.env,
-          CLAUDE_CODE_OAUTH_TOKEN: OAUTH_TOKEN,
-          SUPABASE_URL,
-          TASTE_RECO_TOKEN,
-          SUPABASE_ANON_KEY: ANON_KEY,
-          HOME,
-          PATH: '/opt/homebrew/bin:/usr/bin:/bin',
-        },
-        timeout: RUN_TIMEOUT_MS,
-        maxBuffer: 10 * 1024 * 1024,
-      }
-    );
-    try { fs.writeFileSync(runLog, `OK ${startedIso} ${ownerId}\n==STDOUT==\n${stdout}\n==STDERR==\n${stderr || ''}`); } catch (_) { /* noop */ }
-    log(`done ${ownerId}: ${String(stdout).slice(-200).replace(/\s+/g, ' ')}`);
-    // 성공 시에만 요청행 정리(무한증가 방지). 실패면 남겨 다음 트리거/재시도 여지.
-    try { await sb.from('taste_reco_requests').delete().eq('owner_id', ownerId).lte('created_at', startedIso); }
-    catch (e) { log(`cleanup err ${ownerId}: ${e.message}`); }
+    const { stdout, stderr } = await execFileP(CLAUDE, claudeArgs(prompt), {
+      cwd: TASTE_DIR,
+      env: { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: OAUTH_TOKEN, SUPABASE_URL, TASTE_RECO_TOKEN, SUPABASE_ANON_KEY: ANON_KEY, HOME, PATH: '/opt/homebrew/bin:/usr/bin:/bin' },
+      timeout: RUN_TIMEOUT_MS, maxBuffer: 10 * 1024 * 1024,
+    });
+    try { fs.writeFileSync(runLog, `OK ${startedIso} ${label}\n==STDOUT==\n${stdout}\n==STDERR==\n${stderr || ''}`); } catch (_) { /* noop */ }
+    log(`done ${label}: ${String(stdout).slice(-200).replace(/\s+/g, ' ')}`);
+    // 성공 시 해당 요청행만 정리(범위 한정).
+    let del = sb.from('taste_reco_requests').delete().eq('owner_id', ownerId).lte('created_at', startedIso);
+    del = kind === 'branch' ? del.eq('kind', 'branch').eq('source_work', sourceWork) : del.eq('kind', 'home');
+    try { await del; } catch (e) { log(`cleanup err ${label}: ${e.message}`); }
   } catch (e) {
     const out = String(e.stdout || ''); const err = String(e.stderr || '');
-    try { fs.writeFileSync(runLog, `ERROR ${startedIso} ${ownerId}: ${e.message} killed=${e.killed} signal=${e.signal}\n==STDOUT==\n${out}\n==STDERR==\n${err}`); } catch (_) { /* noop */ }
-    log(`ERROR ${ownerId}: ${e.message} killed=${e.killed} signal=${e.signal} | out:${out.slice(-200).replace(/\s+/g, ' ')}`);
+    try { fs.writeFileSync(runLog, `ERROR ${startedIso} ${label}: ${e.message} killed=${e.killed} signal=${e.signal}\n==STDOUT==\n${out}\n==STDERR==\n${err}`); } catch (_) { /* noop */ }
+    log(`ERROR ${label}: ${e.message} killed=${e.killed} signal=${e.signal} | out:${out.slice(-200).replace(/\s+/g, ' ')}`);
   }
 }
 
-const scheduler = createScheduler(runClaude);
+// 전역 직렬화 — 동시 claude -p 1개만(머신·구독 rate limit 보호). 키별 코얼레싱은 scheduler 가 유지.
+let runChain = Promise.resolve();
+function serializedRun(key) {
+  const p = runChain.then(() => runClaude(key));
+  runChain = p.catch(() => {});
+  return p;
+}
+const scheduler = createScheduler(serializedRun);
 
-// 평가 INSERT 디바운스 — 연속 평가는 마지막 후 RATING_DEBOUNCE_MS 지나 1회만 트리거.
+// 평가 INSERT — (a) 홈 재생성 디바운스(연속 평가 1회로 흡수), (b) ★3.0+ 새 평가는 그 작품 갈래 생성.
 const ratingTimers = new Map();
-function onRating(ownerId) {
+function onRating(row) {
+  const ownerId = row?.owner_id;
   if (!ownerId) return;
   clearTimeout(ratingTimers.get(ownerId));
   ratingTimers.set(ownerId, setTimeout(() => {
     ratingTimers.delete(ownerId);
     log(`rating-debounce fire ${ownerId}`);
-    scheduler.request(ownerId);
+    enqueue(ownerId, 'home');
   }, RATING_DEBOUNCE_MS));
+  if (Number(row.rating) >= 3.0 && row.title) {
+    const sw = `${row.title}|${row.year ?? ''}`;
+    log(`rating→branch ${ownerId} ${sw}`);
+    enqueue(ownerId, 'branch', sw);
+  }
 }
 
-// 데몬 다운 중 눌린 버튼 보충 — 최근 요청 owner 들을 1회씩.
+// 데몬 다운 중 들어온 요청 보충 — 최근 요청(home/branch)을 키별 1회씩.
 async function catchUp() {
   const since = new Date(Date.now() - CATCHUP_MS).toISOString();
   const { data, error } = await sb.from('taste_reco_requests')
-    .select('owner_id,created_at').gt('created_at', since).order('created_at', { ascending: true });
+    .select('owner_id,kind,source_work,created_at').gt('created_at', since).order('created_at', { ascending: true });
   if (error) { log('catchup err', error.message); return; }
-  const owners = [...new Set((data || []).map((r) => r.owner_id))];
-  if (owners.length) log(`catchup: ${owners.length} owner 보충`);
-  for (const o of owners) scheduler.request(o);
+  const seen = new Set();
+  for (const r of (data || [])) {
+    const kind = r.kind === 'branch' ? 'branch' : 'home';
+    const key = keyFor(r.owner_id, kind, r.source_work || '');
+    if (seen.has(key)) continue;
+    seen.add(key);
+    enqueue(r.owner_id, kind, r.source_work);
+  }
+  if (seen.size) log(`catchup: ${seen.size} 작업 보충`);
 }
 
 // realtime 구독 — 끊기면(CHANNEL_ERROR/TIMED_OUT/CLOSED) 5초 후 재연결.
@@ -150,12 +194,13 @@ function subscribeChannel() {
   const ch = sb.channel('taste-reco-daemon');
   currentChannel = ch;
   ch.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'taste_reco_requests' }, (p) => {
-      log('request', p.new?.owner_id, p.new?.source);
-      scheduler.request(p.new?.owner_id);
+      const r = p.new || {};
+      log('request', r.owner_id, r.kind || 'home', r.source_work || '');
+      enqueue(r.owner_id, r.kind || 'home', r.source_work || null);
     })
     .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'taste_ratings' }, (p) => {
-      log('rating', p.new?.owner_id);
-      onRating(p.new?.owner_id);
+      log('rating', p.new?.owner_id, p.new?.rating);
+      onRating(p.new);
     })
     .subscribe((s) => {
       log('realtime:', s);
