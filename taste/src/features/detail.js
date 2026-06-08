@@ -244,7 +244,8 @@ function branchesSection(w, userId) {
       .subscribe();
   }
 
-  render();
+  // 초기: Dexie 최신화 후 렌더 — 새 탭/기기에서 기존 갈래가 아직 동기화 전이면 pending·중복 트리거가 생기므로(home.js:187 패턴).
+  (async () => { try { await Sync.pullRecommendations(userId); } catch (e) { /* noop */ } render(); })();
   subscribe();
   return sec;
 }
