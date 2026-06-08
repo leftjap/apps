@@ -113,6 +113,8 @@ function ratebox(w, userId) {
       cur = v;
     }
     draw();
+    // 평가 ★3.0+ → 엔진(데몬 onRating)이 이 작품 갈래를 생성. 앱은 "분석 중" 연출만 띄움(생성은 앱이 안 함 — spec D3).
+    if (v >= 3.0) { _pendingBranch.add(srcKey(w)); if (_branchRerender) _branchRerender(); }
   };
   (async () => {
     if (!userId) return;
@@ -185,6 +187,8 @@ function branchSkeleton(index) {
 
 // 상세 갈래 realtime 채널은 모듈 레벨 1개(상세는 hashchange 마다 재mount → 중복 구독 방지).
 let _branchChannel = null;
+const _pendingBranch = new Set();   // 방금 평가해 갈래 생성 대기 중인 작품 키 — "분석 중" 연출용. 생성은 엔진(데몬/백필)이 함.
+let _branchRerender = null;          // 현재 상세 branchesSection 의 render — ratebox 가 평가 후 호출.
 
 // 정본: detail.jsx:131-149 — branches__head 에 {N}갈래 상태(또는 pending), 본문은 branch-rail.
 function branchesSection(w, userId) {
@@ -194,7 +198,6 @@ function branchesSection(w, userId) {
   sec.appendChild(el('div', { class: 'branches__head' }, el('h2', { class: 'branches__h' }, '이 작품에서 이어지는 갈래'), status));
   const rail = el('div', { class: 'branch-rail' });
   sec.appendChild(rail);
-  let requested = false;
 
   function setStatus(pending, count) {
     clear(status);
@@ -213,19 +216,21 @@ function branchesSection(w, userId) {
     const branches = await readBranches(userId, key);
     clear(rail);
     if (branches.length) {
+      _pendingBranch.delete(key);
       setStatus(false, branches.length);
       branches.forEach((r, i) => rail.appendChild(branchCard(r, i + 1)));
       return;
     }
-    // 갈래 없음 → 평가 ★3.0+ 면 on-demand 생성 트리거 + 스켈레톤. 아니면 안내.
+    // 갈래 없음 — 앱은 생성하지 않는다(spec D3: 생성 로직을 앱에 두지 않음, 앱은 표시만). 생성은 엔진(데몬/백필).
     const ex = await Queries.getRating(userId, w.media_type, w.title, w.year);
-    if (ex && ex.rating >= 3.0) {
+    if (_pendingBranch.has(key)) {
+      // 방금 평가 → 엔진이 생성 중. "분석 중" 연출(spec §4 R3). 도착하면 realtime 으로 위 분기.
       setStatus(true);
       [1, 2, 3].forEach((i) => rail.appendChild(branchSkeleton(i)));
-      if (!requested) {
-        requested = true;
-        try { await supabase.from('taste_reco_requests').insert({ owner_id: userId, source: 'detail', kind: 'branch', source_work: key }); } catch (e) { /* noop */ }
-      }
+    } else if (ex && ex.rating >= 3.0) {
+      // 평가됐으나 아직 갈래 미생성 → 엔진/백필이 준비되면 채움(앱은 트리거 안 함).
+      setStatus(false, null);
+      rail.appendChild(note('이 작품의 갈래는 준비되면 여기 채워집니다.'));
     } else {
       setStatus(false, null);
       rail.appendChild(note('이 작품을 ★3.0 이상으로 평가하면, 여기서 이어지는 갈래를 이유와 함께 골라드려요.'));
@@ -244,7 +249,8 @@ function branchesSection(w, userId) {
       .subscribe();
   }
 
-  // 초기: Dexie 최신화 후 렌더 — 새 탭/기기에서 기존 갈래가 아직 동기화 전이면 pending·중복 트리거가 생기므로(home.js:187 패턴).
+  _branchRerender = render;   // ratebox 가 평가 후 "분석 중" 연출을 띄우게 연결.
+  // 초기: Dexie 최신화 후 렌더 — 새 탭/기기에서 기존 갈래가 아직 동기화 전이면 누락되므로(home.js:187 패턴).
   (async () => { try { await Sync.pullRecommendations(userId); } catch (e) { /* noop */ } render(); })();
   subscribe();
   return sec;
