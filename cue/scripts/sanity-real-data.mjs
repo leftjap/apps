@@ -30,6 +30,8 @@ for (const h of habits) {
   console.log(
     `${h.ko.padEnd(3)} ${h.en.padEnd(5)} | ${st.kind.padEnd(8)} | ${String(st.big).padStart(3)} ${st.unit.padEnd(6)} | 오늘 ${String(st.today).padStart(4)}${h.metric.unit} | "${st.line}" | hist합 ${histSum}${h.metric.unit}/${activeDays}일 | ${h.url ?? '(iPhone)'}`,
   );
+  const trendPct = (h.trend || []).map((r) => Math.round(r * 100)).join(',');
+  console.log(`      └ 최장 ${h.longest}일 · 12주 추세(주별 활동%): [${trendPct}]`);
 }
 console.log('');
 process.exit(0);

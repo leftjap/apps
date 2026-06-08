@@ -144,3 +144,17 @@ export function nowMarker(date) {
   const mins = d.getHours() * 60 + d.getMinutes();
   return { label: `${p2(d.getHours())}:${p2(d.getMinutes())}`, pos: Math.round((mins / 1440) * 1000) / 10 };
 }
+
+/** 일별 series(weeks*7) → 주별 활동일 비율 배열 (각 = 그 주 활동일수/7). 마지막 원소 = 현재 주.
+   전체통계 모달의 12주 추세 막대(실데이터) + 주평균 활동일 산출용. */
+export function weeklyActivityRatios(series, weeks) {
+  const out = [];
+  for (let w = 0; w < weeks; w++) {
+    let active = 0;
+    for (let d = 0; d < 7; d++) {
+      if ((series[w * 7 + d] || 0) > 0) active++;
+    }
+    out.push(active / 7);
+  }
+  return out;
+}

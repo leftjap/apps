@@ -9,6 +9,7 @@ import {
   weekStartMonday,
   countDaysInCurrentWeek,
   nowMarker,
+  weeklyActivityRatios,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -85,6 +86,28 @@ describe('weekStartMonday — 그 주 월요일 00:00', () => {
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 8)))).toBe('2026-06-08'); // 월
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 10)))).toBe('2026-06-08'); // 수
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 7)))).toBe('2026-06-01'); // 일 → 직전 월
+  });
+});
+
+describe('weeklyActivityRatios — 일별 series → 주별 활동일 비율 (전체통계 12주 추세 실데이터)', () => {
+  it('주별 (활동일/7) 비율, weeks 개 반환', () => {
+    const series = [1, 0, 1, 0, 0, 0, 0, /* w0: 2활동 */ 2, 3, 1, 4, 5, 0, 0 /* w1: 5활동 */];
+    const r = weeklyActivityRatios(series, 2);
+    expect(r.length).toBe(2);
+    expect(r[0]).toBeCloseTo(2 / 7, 5);
+    expect(r[1]).toBeCloseTo(5 / 7, 5);
+  });
+  it('전부 활동 → 1, 전부 0 → 0', () => {
+    expect(weeklyActivityRatios([1, 1, 1, 1, 1, 1, 1], 1)).toEqual([1]);
+    expect(weeklyActivityRatios([0, 0, 0, 0, 0, 0, 0], 1)).toEqual([0]);
+  });
+  it('마지막 주(현재 주)가 배열 끝', () => {
+    // 3주: 가장 최근 주(현재)가 마지막 원소
+    const series = new Array(21).fill(0);
+    series[20] = 1; // 오늘만 활동
+    const r = weeklyActivityRatios(series, 3);
+    expect(r[2]).toBeCloseTo(1 / 7, 5); // 마지막 주에 1일
+    expect(r[0]).toBe(0);
   });
 });
 

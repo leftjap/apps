@@ -272,7 +272,7 @@ function nextHabitId(habits, stateKeys, nowPos) {
   return n ? n.h.id : null;
 }
 
-/* 12주 추세(목업) — id 시드로 결정론적, 우상향 */
+/* 12주 추세 — 데모 폴백용(실데이터는 adapter 의 habit.trend 사용). id 시드 결정론적 */
 function weeklyTrend(seed, weeks) {
   let r = (seed * 7919) % 233280;
   const out = [];
@@ -292,6 +292,7 @@ function StatsOverlay({ habits, stateKeys, order, onClose }) {
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
   const WEEKS = 12;
+  const isReal = (order || habits.map((_, i) => i)).some((i) => Array.isArray(habits[i].trend));
   return (
     <div className="ov" onClick={onClose}>
       <div className="ov__panel" onClick={(e) => e.stopPropagation()}>
@@ -303,8 +304,8 @@ function StatsOverlay({ habits, stateKeys, order, onClose }) {
         <div className="ov__rows">
           {(order || habits.map((_, i) => i)).map((i) => {
             const h = habits[i]; const st = h.states[stateKeys[i]];
-            const longest = longestRun(fullSeq(h.hist, st.today));
-            const ratios = weeklyTrend(h.id.charCodeAt(0) + h.id.length, WEEKS);
+            const longest = h.longest != null ? h.longest : longestRun(fullSeq(h.hist, st.today));
+            const ratios = h.trend || weeklyTrend(h.id.charCodeAt(0) + h.id.length, WEEKS);
             const avg = ratios.reduce((a, b) => a + b, 0) / ratios.length;
             const perWeek = Math.round(avg * 7 * 10) / 10;
             return (
@@ -330,7 +331,7 @@ function StatsOverlay({ habits, stateKeys, order, onClose }) {
             );
           })}
         </div>
-        <div className="ov__note">12주 추세는 목업 · 실제 4앱 연동 후 실데이터로 채워집니다</div>
+        <div className="ov__note">{isReal ? '최근 12주 · 주별 활동일 비율 (현재 주 강조)' : '12주 추세는 데모 목업 · 실연동 시 실데이터'}</div>
       </div>
     </div>
   );
