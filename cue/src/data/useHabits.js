@@ -45,12 +45,30 @@ export function useHabits(demoMode) {
     if (auth === undefined) { setState((s) => (s.status === 'ready' ? s : { status: 'loading', habits: null })); return undefined; }
     if (auth === null) { setState({ status: 'signed-out', habits: null }); return undefined; }
 
+    // 상시표시 모니터용 자동 새로고침: 90초 폴링 + 탭 가시화/포커스 시 즉시 재요청
+    // (앱 DB 변경을 reload 없이 cue 에 반영). 폴링 실패는 기존 데이터 유지(깜빡임 방지).
     let alive = true;
-    setState((s) => ({ status: 'loading', habits: s.habits }));
-    buildRealHabits(supabase, auth.userId)
-      .then((habits) => { if (alive) setState({ status: 'ready', habits }); })
-      .catch((e) => { console.warn('[useHabits]', e); if (alive) setState({ status: 'error', habits: null }); });
-    return () => { alive = false; };
+    const load = async (showLoading) => {
+      if (showLoading) setState((s) => ({ status: 'loading', habits: s.habits }));
+      try {
+        const habits = await buildRealHabits(supabase, auth.userId);
+        if (alive) setState({ status: 'ready', habits });
+      } catch (e) {
+        console.warn('[useHabits]', e);
+        if (alive) setState((s) => (s.habits ? { status: 'ready', habits: s.habits } : { status: 'error', habits: null }));
+      }
+    };
+    load(true);
+    const iv = setInterval(() => { if (!document.hidden) load(false); }, 90000);
+    const onVisible = () => { if (!document.hidden) load(false); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      alive = false;
+      clearInterval(iv);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
   }, [demoMode, auth]);
 
   return state;

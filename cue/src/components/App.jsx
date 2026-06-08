@@ -8,7 +8,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SENTENCES } from '../data/sentences.js';
 import { ORDER } from '../data/mock.js';
 import {
-  fullSeq, level, longestRun, dayMeta, sentenceOfDay, p2, startOfToday,
+  fullSeq, level, longestRun, dayMeta, sentenceOfDay, p2, startOfToday, nowMarker,
 } from '../data/transforms.js';
 import {
   useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle,
@@ -28,8 +28,15 @@ const TWEAK_DEFAULTS = {
   showRecord: true,
 };
 
-const BASE = startOfToday();
-const YEAR = BASE.getFullYear();
+// 상시표시용 시계 — intervalMs 마다 현재 시각 갱신 (날짜 자정 롤오버 + "지금" 마커 실시간)
+function useNow(intervalMs = 60000) {
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return now;
+}
 
 function useTimer(active, seed) {
   const [s, setS] = useState(seed);
@@ -45,11 +52,11 @@ function useTimer(active, seed) {
 }
 
 /* ---------- hero ---------- */
-function Header({ flags }) {
+function Header({ flags, base }) {
   const [i, setI] = useState(sentenceOfDay(SENTENCES.length));
   const s = SENTENCES[i];
   const parts = s.hi && s.text.includes(s.hi) ? s.text.split(s.hi) : null;
-  const t = dayMeta(0, BASE);
+  const t = dayMeta(0, base);
   const done = flags.filter(Boolean).length;
   const allDone = done === flags.length && flags.length > 0;
   return (
@@ -58,7 +65,7 @@ function Header({ flags }) {
         <div className="head__meta">
           <span className="brand">cue<i className="brand__dot" /></span>
           <span>오늘</span>
-          <span className="date mono">{YEAR}.{p2(t.m)}.{p2(t.d)} <b>{t.wd}</b></span>
+          <span className="date mono">{base.getFullYear()}.{p2(t.m)}.{p2(t.d)} <b>{t.wd}</b></span>
         </div>
         <h1 className="sentence">
           {parts ? <>{parts[0]}<span className="uline">{s.hi}</span>{parts[1]}</> : s.text}
@@ -153,8 +160,7 @@ function Door({ habit, stateKey, demoMode, onDemo, isNext }) {
 }
 
 /* ---------- 오늘 흐름 (day flow) — DB 기록 시각 / 안 한 건 마지막 실행 ---------- */
-const NOW_POS = 52, NOW_LABEL = '14:02';
-function DayRibbon({ habits, stateKeys }) {
+function DayRibbon({ habits, stateKeys, nowPos, nowLabel }) {
   const stops = habits.map((h, i) => ({ h, st: h.states[stateKeys[i]], pos: h.slot.pos, time: h.slot.time }))
     .sort((a, b) => a.pos - b.pos);
   const pending = stops.filter((s) => s.st.kind !== 'done' && s.st.kind !== 'progress').map((s) => s.h.ko);
@@ -168,8 +174,8 @@ function DayRibbon({ habits, stateKeys }) {
       </div>
       <div className="ribbon__track">
         <div className="ribbon__line" />
-        <div className="ribbon__elapsed" style={{ width: `${NOW_POS}%` }} />
-        <div className="ribbon__now" style={{ left: `${NOW_POS}%` }}><b>지금 {NOW_LABEL}</b></div>
+        <div className="ribbon__elapsed" style={{ width: `${nowPos}%` }} />
+        <div className="ribbon__now" style={{ left: `${nowPos}%` }}><b>지금 {nowLabel}</b></div>
         {stops.map((s) => {
           const k = s.st.kind;
           const cls = k === 'done' ? 'done' : k === 'progress' ? 'live' : 'pending';
@@ -188,8 +194,8 @@ function DayRibbon({ habits, stateKeys }) {
 }
 
 /* ---------- record (calendar) ---------- */
-function Record({ habits, stateKeys, period, order, onOpenStats }) {
-  const ticks = [period - 1, Math.round((period - 1) * 0.74), Math.round((period - 1) * 0.5), Math.round((period - 1) * 0.26), 0].map((n) => dayMeta(n, BASE));
+function Record({ habits, stateKeys, period, order, onOpenStats, base }) {
+  const ticks = [period - 1, Math.round((period - 1) * 0.74), Math.round((period - 1) * 0.5), Math.round((period - 1) * 0.26), 0].map((n) => dayMeta(n, base));
   const seqs = habits.map((h, i) => fullSeq(h.hist, h.states[stateKeys[i]].today).slice(-period));
   const longest = Math.max(...seqs.map((s) => longestRun(s)));
   let total = 0, sum = 0;
@@ -198,7 +204,7 @@ function Record({ habits, stateKeys, period, order, onOpenStats }) {
   const writer = habits.find((h) => h.id === 'today'); const wi = habits.indexOf(writer);
   const ws = writer.states[stateKeys[wi]];
   const weekPages = Math.round(writer.hist.concat([ws.today || 0]).slice(-7).reduce((a, b) => a + (+b || 0), 0) * 10) / 10;
-  const from = dayMeta(period - 1, BASE), to = dayMeta(0, BASE);
+  const from = dayMeta(period - 1, base), to = dayMeta(0, base);
 
   return (
     <section className="rec">
@@ -227,7 +233,7 @@ function Record({ habits, stateKeys, period, order, onOpenStats }) {
                 <span className="cells">
                   {seq.map((c, k) => {
                     const isToday = k === seq.length - 1;
-                    const dm = dayMeta(period - 1 - k, BASE);
+                    const dm = dayMeta(period - 1 - k, base);
                     let cls = 'cell';
                     if (dm.wd === '토' || dm.wd === '일') cls += ' we';
                     const lv = level(+c, h.metric.max); if (lv) cls += ' ' + lv;
@@ -260,9 +266,9 @@ function Record({ habits, stateKeys, period, order, onOpenStats }) {
 }
 
 /* 다음 행동 = 지금 이후 첫 미완료 정거장 (동선과 동일 로직) */
-function nextHabitId(habits, stateKeys) {
+function nextHabitId(habits, stateKeys, nowPos) {
   const stops = habits.map((h, i) => ({ h, st: h.states[stateKeys[i]], pos: h.slot.pos })).sort((a, b) => a.pos - b.pos);
-  const n = stops.find((s) => s.pos > NOW_POS && s.st.kind !== 'done') || stops.find((s) => s.st.kind !== 'done' && s.st.kind !== 'progress');
+  const n = stops.find((s) => s.pos > nowPos && s.st.kind !== 'done') || stops.find((s) => s.st.kind !== 'done' && s.st.kind !== 'progress');
   return n ? n.h.id : null;
 }
 
@@ -341,6 +347,9 @@ function applyTweaks(t) {
 /* ---------- dashboard (시안 본문) — habits 주입받아 렌더 ---------- */
 function Dashboard({ habits, t }) {
   const demoMode = t.demoMode;
+  const now = useNow(60000);        // 1분마다 갱신 → 날짜 자정 롤오버 + "지금" 마커 실시간
+  const base = startOfToday();
+  const nm = nowMarker(now);
   const [idxs, setIdxs] = useState(() => habits.map((h) => h.cycle.indexOf(h.start)));
   useEffect(() => { setIdxs(habits.map((h) => h.cycle.indexOf(h.start))); }, [habits]);
   const demo = useCallback((i) => {
@@ -350,19 +359,19 @@ function Dashboard({ habits, t }) {
   // 표시 순서 = 하루 흐름(ORDER). 문·탤리·기록 모두 동일 순서로 일관.
   const ord = ORDER.map((id) => habits.findIndex((h) => h.id === id)).filter((i) => i >= 0);
   const flags = ord.map((i) => habits[i].states[stateKeys[i]].kind === 'done');
-  const nextId = nextHabitId(habits, stateKeys);
+  const nextId = nextHabitId(habits, stateKeys, nm.pos);
   const [statsOpen, setStatsOpen] = useState(false);
 
   return (
     <div className="page">
-      <Header flags={flags} />
+      <Header flags={flags} base={base} />
       <section className="doors">
         {ord.map((i) => (
           <Door key={habits[i].id} habit={habits[i]} stateKey={stateKeys[i]} demoMode={demoMode} onDemo={() => demo(i)} isNext={habits[i].id === nextId} />
         ))}
       </section>
-      {t.showRibbon && <DayRibbon habits={habits} stateKeys={stateKeys} />}
-      {t.showRecord && <Record habits={habits} stateKeys={stateKeys} period={t.period} order={ord} onOpenStats={() => setStatsOpen(true)} />}
+      {t.showRibbon && <DayRibbon habits={habits} stateKeys={stateKeys} nowPos={nm.pos} nowLabel={nm.label} />}
+      {t.showRecord && <Record habits={habits} stateKeys={stateKeys} period={t.period} order={ord} onOpenStats={() => setStatsOpen(true)} base={base} />}
       <p className="hint">
         {demoMode
           ? <>데모 모드 · 카드를 <b>탭</b>하면 상태가 바뀝니다 (미실행→진행→완료) · 데이터는 목업</>
