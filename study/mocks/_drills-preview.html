@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>drills 실 컴포넌트 미리보기</title>
+<link rel="stylesheet" href="/src/styles/tokens.css">
+<link rel="stylesheet" href="/src/styles/session.css">
+<style>
+  body{background:var(--bg);font-family:var(--font-body);margin:0;padding:20px}
+  .wrap{max-width:430px;margin:0 auto}
+  .step{font-family:var(--font-display);font-weight:600;font-size:13px;color:var(--text-strong);margin:20px 0 10px}
+  .scene{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;box-shadow:0 1px 3px rgba(20,20,19,.06)}
+  .scene h3{font-family:var(--font-display);font-size:14px;margin:0 0 8px;color:var(--text-strong)}
+  .sl{display:grid;gap:1px;padding:8px 0;border-top:1px solid var(--border)}
+  .sl:first-of-type{border-top:none}
+  .sl .spk{font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text-muted)}
+  .sl .en{font-size:14px;color:var(--text-strong)}
+  .sl .en b{color:var(--accent)}
+  .sl .ko{font-size:12px;color:var(--text-muted)}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,20,19,.06)}
+  .card .sent{font-family:var(--font-display);font-size:17px;font-weight:600;color:var(--text-strong)}
+  .card .mean{font-size:13px;color:var(--text-muted);margin-top:2px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap" id="root"></div>
+<script type="module">
+import { createExplanationPanel } from '/src/components/session/explanationPanel.js';
+
+const data = await (await fetch('/seeds/en-parks-s1e1.json')).json();
+const root = document.getElementById('root');
+
+// STEP 1 — 장면 다이얼로그
+const s1 = document.createElement('div'); s1.className='step'; s1.textContent='1. 먼저 — 장면 통으로'; root.appendChild(s1);
+const sc = document.createElement('div'); sc.className='scene';
+const h = document.createElement('h3'); h.textContent = data.scene.title; sc.appendChild(h);
+const hi = (t)=>t.replace(/\b(fire away|care for|move on|hitting on|bottom line|do something about it|get this fixed)\b/gi,'<b>$1</b>');
+data.scene.lines.forEach(l=>{
+  const r=document.createElement('div'); r.className='sl';
+  r.innerHTML = '<div class="spk">'+l.speaker+'</div><div class="en">'+hi(l.en)+'</div><div class="ko">'+l.ko+'</div>';
+  sc.appendChild(r);
+});
+root.appendChild(sc);
+
+// STEP 2 — 표현 카드 (실제 explanationPanel 컴포넌트)
+const s2 = document.createElement('div'); s2.className='step'; s2.textContent='2. 그다음 — 표현별 변주 + 듣기/녹음'; root.appendChild(s2);
+data.cards.slice(0,3).forEach(c=>{
+  const card=document.createElement('div'); card.className='card';
+  const s=document.createElement('div'); s.className='sent'; s.textContent=c.sentence;
+  const m=document.createElement('div'); m.className='mean'; m.textContent=c.meaning;
+  card.append(s,m);
+  const { toggleEl, panelEl } = createExplanationPanel({
+    explanation: c.explanation, lang:'en',
+    onListen:(t)=>{ try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';speechSynthesis.speak(u);}catch(e){} },
+    onRecord:(t,btn)=>{ if(btn){btn.dataset.on=btn.dataset.on==='1'?'0':'1';btn.textContent=btn.dataset.on==='1'?'녹음 중…':'녹음';} },
+  });
+  panelEl.classList.add('open'); // 스크린샷 위해 펼침
+  card.append(toggleEl, panelEl);
+  root.appendChild(card);
+});
+</script>
+</body>
+</html>

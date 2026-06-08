@@ -102,4 +102,42 @@ describe('createExplanationPanel — 실 시드 fixture', () => {
     const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
     expect(labels).not.toContain('문법 뜯어보기');
   });
+
+  it('en 카드 drills: "변주 연습" 섹션 + 행마다 듣기/녹음 버튼', () => {
+    const ex = { key: '핵심', drills: [
+      { en: 'She runs a business.', ko: '그녀는 사업을 운영해요.' },
+      { en: 'Can you run the meeting?', ko: '회의 진행해줄래요?' },
+    ] };
+    const { panelEl } = createExplanationPanel({ explanation: ex, lang: 'en' });
+    const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
+    expect(labels).toContain('변주 연습');
+    const drills = panelEl.querySelectorAll('.drill');
+    expect(drills.length).toBe(2);
+    expect(drills[0].textContent).toContain('She runs a business.');
+    expect(drills[0].textContent).toContain('그녀는 사업을 운영해요.');
+    expect(drills[0].querySelector('.drill-listen')).toBeTruthy();
+    expect(drills[0].querySelector('.drill-rec')).toBeTruthy();
+  });
+
+  it('drills 듣기 클릭 → onListen(en) 호출', () => {
+    const calls = [];
+    const ex = { drills: [{ en: 'Fire away.', ko: '얼마든지요.' }] };
+    const { panelEl } = createExplanationPanel({ explanation: ex, lang: 'en', onListen: (t) => calls.push(t) });
+    panelEl.querySelector('.drill-listen').click();
+    expect(calls).toEqual(['Fire away.']);
+  });
+
+  it('drills 녹음 클릭 → onRecord(en) 호출', () => {
+    const calls = [];
+    const ex = { drills: [{ en: 'Fire away.', ko: '얼마든지요.' }] };
+    const { panelEl } = createExplanationPanel({ explanation: ex, lang: 'en', onRecord: (t) => calls.push(t) });
+    panelEl.querySelector('.drill-rec').click();
+    expect(calls).toEqual(['Fire away.']);
+  });
+
+  it('drills 없음: "변주 연습" 섹션 hidden', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'x' } });
+    const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
+    expect(labels).not.toContain('변주 연습');
+  });
 });

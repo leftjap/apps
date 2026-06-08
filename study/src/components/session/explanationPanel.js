@@ -272,7 +272,49 @@ function phonemesSection(phonemes) {
   return s;
 }
 
-export function createExplanationPanel({ explanation, lang } = {}) {
+// RealClass-mining 모델: 핵심 요소를 레벨맞춤 치환한 변주 문장 + 행마다 듣기/녹음
+// onListen(en) / onRecord(en) 주입 (세션 페이지가 studySpeech.speak / sessionAnalyze 연결)
+function drillsSection(drills, { onListen, onRecord } = {}) {
+  if (!Array.isArray(drills) || drills.length === 0) return null;
+  const s = document.createElement('div');
+  s.className = 'ex-section';
+  const lab = document.createElement('div');
+  lab.className = 'ex-label';
+  lab.textContent = '변주 연습';
+  const sub = document.createElement('div');
+  sub.className = 'ex-text';
+  sub.textContent = '듣고 → 말하고 → 녹음해 보세요.';
+  s.append(lab, sub);
+  drills.forEach((d) => {
+    if (!d || typeof d !== 'object') return;
+    const row = document.createElement('div');
+    row.className = 'drill';
+    const en = document.createElement('div');
+    en.className = 'drill-en';
+    en.textContent = d.en || '';
+    const ko = document.createElement('div');
+    ko.className = 'drill-ko';
+    ko.textContent = d.ko || '';
+    const acts = document.createElement('div');
+    acts.className = 'drill-acts';
+    const listen = document.createElement('button');
+    listen.type = 'button';
+    listen.className = 'drill-listen';
+    listen.textContent = '듣기';
+    listen.addEventListener('click', () => { if (onListen) onListen(d.en || ''); });
+    const rec = document.createElement('button');
+    rec.type = 'button';
+    rec.className = 'drill-rec';
+    rec.textContent = '녹음';
+    rec.addEventListener('click', () => { if (onRecord) onRecord(d.en || '', rec); });
+    acts.append(listen, rec);
+    row.append(en, ko, acts);
+    s.appendChild(row);
+  });
+  return s;
+}
+
+export function createExplanationPanel({ explanation, lang, onListen, onRecord } = {}) {
   void lang;
   const toggleEl = document.createElement('button');
   toggleEl.type = 'button';
@@ -314,6 +356,8 @@ export function createExplanationPanel({ explanation, lang } = {}) {
     }
     if (ex.whenToUse) panelEl.appendChild(section('이런 상황에서 써요', String(ex.whenToUse)));
     if (ex.key) panelEl.appendChild(section('핵심 포인트', String(ex.key)));
+    const drillsEl = drillsSection(ex.drills, { onListen, onRecord });
+    if (drillsEl) panelEl.appendChild(drillsEl);
     if (ex.situation) panelEl.appendChild(section('이런 상황에서 써요', String(ex.situation)));
     const g = grammarSection(ex.grammar);
     if (g) panelEl.appendChild(g);

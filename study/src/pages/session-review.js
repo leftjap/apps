@@ -425,9 +425,30 @@ function buildMain(state, ctrl) {
 
   // 해설 보기
   const exMt = state.size === 'phone' ? 28 : 32;
+  const drillRec = { ctrl: null };
   const explain = createExplanationPanel({
     explanation: state.sentence?.explanation,
     lang: state.sentence?.lang,
+    onListen: (text) => {
+      if (text && window.studySpeech?.speak) {
+        window.studySpeech.speak(text, { lang: state.sentence?.lang === 'ja' ? 'ja-JP' : 'en-US' });
+      }
+    },
+    onRecord: async (text, btn) => {
+      if (drillRec.ctrl) {
+        const ctrl = drillRec.ctrl;
+        drillRec.ctrl = null;
+        if (btn) { btn.dataset.on = '0'; btn.textContent = '녹음'; }
+        const result = await stopAndAnalyze(ctrl, text, { lang: state.sentence?.lang });
+        if (result?.mockFallback) showRecordToast(recordErrorMessage(result.fallbackReason));
+        else showRecordToast(`발음 점수 ${Math.round(result?.score ?? 0)}점`);
+        return;
+      }
+      const rec = await startMicRecording();
+      if (rec.error) { showRecordToast(recordErrorMessage(rec.error)); return; }
+      drillRec.ctrl = rec.controller;
+      if (btn) { btn.dataset.on = '1'; btn.textContent = '녹음 중…'; }
+    },
   });
   explain.toggleEl.style.marginTop = `${exMt}px`;
   explain.toggleEl.style.alignSelf = 'flex-start';
