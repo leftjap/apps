@@ -32,7 +32,6 @@ const STATE_DIR = path.join(HOME, '.local/state/taste-reco-daemon');
 const TOKEN_FILE = path.join(HOME, '.config/navi-daemon/oauth-token');
 const CLAUDE = '/opt/homebrew/bin/claude';
 const RATING_DEBOUNCE_MS = Number(process.env.TASTE_RATING_DEBOUNCE_MS) || 90 * 1000;
-const CATCHUP_MS = 15 * 60 * 1000;       // 데몬 다운 중 들어온 최근 요청 보충
 const RUN_TIMEOUT_MS = 12 * 60 * 1000;   // claude -p 1회 상한(WebSearch 실재검증 ~10건이 오래 걸림)
 
 function loadEnvFile(p) {
@@ -184,11 +183,10 @@ function onRating(row) {
   }
 }
 
-// 데몬 다운 중 들어온 요청 보충 — 최근 요청(home/branch)을 키별 1회씩.
+// 재시작 시 대기 요청 전체 재개 — 성공분은 행이 삭제되므로 남은 행 = 미처리분(백필 포함). 키별 1회씩.
 async function catchUp() {
-  const since = new Date(Date.now() - CATCHUP_MS).toISOString();
   const { data, error } = await sb.from('taste_reco_requests')
-    .select('owner_id,kind,source_work,source,created_at').gt('created_at', since).order('created_at', { ascending: true });
+    .select('owner_id,kind,source_work,source,created_at').order('created_at', { ascending: true }).limit(2000);
   if (error) { log('catchup err', error.message); return; }
   const seen = new Set();
   for (const r of (data || [])) {
@@ -232,6 +230,7 @@ function subscribeChannel() {
 }
 subscribeChannel();
 setInterval(() => {}, 60000);   // 이벤트 루프 유지 — 소켓 일시 종료에도 프로세스 안 죽게.
+setInterval(() => catchUp(), 3 * 60 * 60 * 1000);   // 주기적 재큐잉 — 백필이 rate-limit 으로 실패한 분을 3시간마다 재시도.
 
 process.on('SIGTERM', () => { log('SIGTERM'); process.exit(0); });
 process.on('SIGINT', () => { log('SIGINT'); process.exit(0); });
