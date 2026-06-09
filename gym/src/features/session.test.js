@@ -1790,7 +1790,7 @@ describe('openActionSheet / closeActionSheet (spec §6-9 / §6-10)', () => {
     expect(doc._titleEl.textContent).toBe('세션 옵션');
     expect(doc._itemsEl.innerHTML).toContain('data-action-id="finish"');
     expect(doc._itemsEl.innerHTML).toContain('data-action-id="discard"');
-    expect(doc._itemsEl.innerHTML).toContain('var(--accent)'); // danger 항목 색
+    expect(doc._itemsEl.innerHTML).toContain('action-item danger'); // danger 항목 (P4 라이트 — class 기반 --danger)
   });
 
   it("close : sheet 내려감 + backdrop opacity 0 + pointer-events none", () => {
@@ -1832,14 +1832,14 @@ describe('openActionSheet / closeActionSheet (spec §6-9 / §6-10)', () => {
     expect(() => closeActionSheet(partial)).not.toThrow();
   });
 
-  it("danger 아닌 항목 — color #fff, weight 400", () => {
+  it("danger 아닌 항목 — action-item (danger 클래스 없음)", () => {
     const doc = makeActionDoc();
     openActionSheet(doc, {
       kind: 'a',
       items: [{ id: 'edit', label: '수정' }],
     });
-    expect(doc._itemsEl.innerHTML).toContain('color:#fff');
-    expect(doc._itemsEl.innerHTML).toContain('font-weight:400');
+    expect(doc._itemsEl.innerHTML).toContain('class="action-item"');
+    expect(doc._itemsEl.innerHTML).not.toContain('action-item danger');
   });
 
   /* (f-4) step 보관 + items 보관 */

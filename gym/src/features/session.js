@@ -716,10 +716,9 @@ async function mountSessionActive(doc, block, session) {
   let prevSessionVol = 0;
   try { prevSessionVol = await getPrevSessionTotalVolume(session.id); }
   catch (_) { /* graceful — 직전 기록 없으면 0 */ }
-  const sessVolText = prevSessionVol > 0
-    ? `${sessionDoneVol.toLocaleString()} / ${prevSessionVol.toLocaleString()}kg`
-    : `${sessionDoneVol.toLocaleString()}kg`;
-  setTextById(doc, 'cardSetProgress', sessVolText);
+  // P1 라이트 — 타이틀 우상단: 이번(숫자만, kg 라벨은 markup static) / 직전(별도 줄).
+  setTextById(doc, 'cardSetProgress', sessionDoneVol.toLocaleString());
+  setTextById(doc, 'cardSessVolPrev', prevSessionVol > 0 ? `직전 ${prevSessionVol.toLocaleString()}kg` : '');
 
   const isPreset = !!currentSet.preset;
   // preset/input 모두 흰색 (사용자 가독성 우선) — 구분은 font-weight + setDots accent 로.
@@ -728,7 +727,7 @@ async function mountSessionActive(doc, block, session) {
   const cardRepsEl = doc.getElementById('cardReps');
   // 완료된 운동 (block.finishedAt marker) — 회색 톤 (footer pill done state 와 동일)
   const blockDone = isBlockLocked(block);
-  const doneColor = 'rgba(255,255,255,0.5)';
+  const doneColor = 'var(--ink-4)'; // P1 라이트 — 완료(read-only) 회색 톤
   const cardSetProgressEl = doc.getElementById('cardSetProgress');
   if (cardSetProgressEl) {
     cardSetProgressEl.style.color = blockDone ? doneColor : '';
@@ -753,8 +752,8 @@ async function mountSessionActive(doc, block, session) {
 
   // spec §6-3-3 — preset/input 모두 opacity 1 (가독성 우선). 구분은 setDots accent + font-weight.
   // blockDone 시 회색 톤 (opacity 는 1 유지, color 만 변경 — 운동 완료 read-only 표시).
-  // active 상태에서 '#fff' 명시 — 빈 문자열 fallback 시 부모 #f3efe6 (크림톤) 적용되는 회귀 회피.
-  const activeColor = '#fff';
+  // P1 라이트 — active 무게/횟수는 잉크 1 (가장 진한). blockDone 시 doneColor.
+  const activeColor = 'var(--ink-1)';
   if (cardWeightEl) {
     cardWeightEl.style.opacity = blockDone ? '1' : presetOpacity;
     cardWeightEl.style.color = blockDone ? doneColor : activeColor;
@@ -826,8 +825,34 @@ async function mountSessionActive(doc, block, session) {
   const pct = denom > 0 ? Math.round((exDoneVol / denom) * 100) : 0;
   const bar = doc.getElementById('cardProgressBar');
   if (bar) bar.style.width = `${Math.min(100, pct)}%`; // 바 fill 은 100% cap, 초과는 % 텍스트로
-  setTextById(doc, 'cardProgressVol', `${exDoneVol.toLocaleString()} / ${denom.toLocaleString()}kg`);
+  setTextById(doc, 'cardProgressVol', prevExVol > 0
+    ? `${exDoneVol.toLocaleString()} / 직전 ${denom.toLocaleString()}kg`
+    : `${exDoneVol.toLocaleString()} / ${denom.toLocaleString()}kg`);
   setTextById(doc, 'cardProgressPct', `${pct}%`);
+
+  // P1 라이트 — PR 칩(progressive overload 넛지). 현재 무게가 직전 세션 동일 종목 최대 무게 초과 시 +Δkg.
+  //   기존 데이터(prevSessionSets)만 사용 — 새 PR 로직 발명 X. weight 종목·미완료 블록 한정.
+  try {
+    const prChip = doc.getElementById('cardPrChip');
+    const prChipVal = doc.getElementById('cardPrChipVal');
+    if (prChip && prChipVal) {
+      let show = false;
+      if (exerciseEq === 'weight' && !blockDone && Array.isArray(prevSessionSets)) {
+        const curW = Number(currentSet.weight) || 0;
+        let prevMax = 0;
+        for (const s of prevSessionSets) {
+          const w = Number(s?.weight) || 0;
+          if ((Number(s?.reps) || 0) > 0 && w > prevMax) prevMax = w;
+        }
+        const delta = curW - prevMax;
+        if (prevMax > 0 && delta > 0) {
+          prChipVal.textContent = `+${Number.isInteger(delta) ? delta : delta.toFixed(1)}kg`;
+          show = true;
+        }
+      }
+      prChip.style.display = show ? 'inline-flex' : 'none';
+    }
+  } catch (e) { console.error('[gymSession] PR chip', e); }
 
   // (f-5-1) spec §6-8 — footer nav pill 동적 렌더 + click handler
   try { renderFooterPills(doc, session, block); } catch (e) { console.error('[gymSession] renderFooterPills', e); }
@@ -953,24 +978,25 @@ function applyCardKind(doc, kind) {
     if (progressBar?.parentElement) progressBar.parentElement.style.display = show ? 'block' : 'none';
     if (progressVol?.parentElement) progressVol.parentElement.style.display = show ? 'flex' : 'none';
   };
+  // P1 라이트 — weight 종목은 KG 라벨 없음(단위 숨김), 큰 숫자 중앙. cardio 만 '분' 단위 노출.
   if (kind === 'cardio') {
-    if (weightUnit) weightUnit.textContent = '분';
+    if (weightUnit) { weightUnit.textContent = '분'; weightUnit.style.display = 'block'; }
     if (repsUnit) repsUnit.textContent = 'km';
-    if (weightEl) weightEl.style.fontSize = '132px';
+    if (weightEl) weightEl.style.fontSize = '120px';
     if (setDotsEl) setDotsEl.style.display = 'none';
     if (paceEl) paceEl.style.display = 'block';
     setProgressVis(false);
   } else if (kind === 'bodyweight') {
-    if (weightUnit) weightUnit.textContent = '';
+    if (weightUnit) { weightUnit.textContent = ''; weightUnit.style.display = 'none'; }
     if (repsUnit) repsUnit.textContent = '회';
-    if (weightEl) weightEl.style.fontSize = '32px';
+    if (weightEl) weightEl.style.fontSize = '64px';
     if (setDotsEl) setDotsEl.style.display = 'flex';
     if (paceEl) paceEl.style.display = 'none';
     setProgressVis(true);
   } else {
-    if (weightUnit) weightUnit.textContent = '킬로그램';
+    if (weightUnit) { weightUnit.textContent = ''; weightUnit.style.display = 'none'; }
     if (repsUnit) repsUnit.textContent = '회';
-    if (weightEl) weightEl.style.fontSize = '132px';
+    if (weightEl) weightEl.style.fontSize = '120px';
     if (setDotsEl) setDotsEl.style.display = 'flex';
     if (paceEl) paceEl.style.display = 'none';
     setProgressVis(true);
@@ -1031,23 +1057,16 @@ export function resolveDotDisplay(sets, i, cur, prevSessionSets, kind = 'weight'
 }
 
 function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind = 'weight') {
-  // 단일 dot HTML — 초기 mount (innerHTML 한 번에 박을 때) 만 사용. 후속 mount 는 renderSetDotsDiff
-  // 가 기존 DOM 갱신 (transition 트리거 보존).
-  const setNum = idx + 1;
+  // P1 라이트 — 세그먼트(.seg = bar + 값). 초기 mount append 용. 후속은 renderSetDotsDiff 가 갱신.
+  //   완료=.done(ink bar) / 현재=.now(crail 맥동 bar) / 예정=ghost(line 보더). 값=직전 세션 per-set 타깃.
   const isDone = !!(set && set.done);
   const display = resolveDotDisplay(sets || [set], idx, isCurrent ? idx : -1, prevSessionSets, kind);
-  const color = (isCurrent || isDone)
-    ? 'var(--accent)'
-    : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
-  const weight = isCurrent ? '600' : '400';
-  // 폰트 위계 — current 큰 (label 13px / value 17px), 그 외 작은 (10px / 13px). transition 으로 부드럽게.
-  const labelSize = isCurrent ? '13px' : '13px';
-  const valueSize = isCurrent ? '22px' : '15px';
+  const stateClass = isCurrent ? ' now' : (isDone ? ' done' : '');
   const currentAttr = isCurrent ? ' data-current="1"' : '';
   return `
-        <div data-set-idx="${idx}"${currentAttr} data-longpress="set-row" style="text-align:center;color:${color};font-weight:${weight};flex-shrink:0;cursor:pointer;transition:color 220ms ease-out, font-weight 220ms ease-out;">
-          <div style="font-size:${labelSize};letter-spacing:0.06em;transition:font-size 220ms ease-out;">S${setNum}</div>
-          <div style="font-size:${valueSize};margin-top:4px;transition:font-size 220ms ease-out;">${escapeHtml(display.text)}</div>
+        <div class="seg${stateClass}" data-set-idx="${idx}"${currentAttr} data-longpress="set-row">
+          <span class="seg-bar"></span>
+          <span class="seg-n">${escapeHtml(display.text)}</span>
         </div>`;
 }
 
@@ -1060,15 +1079,14 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind 
 function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight') {
   if (!setDotsEl) return;
   let appendedCount = 0;
-  // 부족한 dot 추가 — 새 dot 은 initial style (isCurrent=false, 작은 폰트) 로 박힘.
-  // 그 다음 force reflow 로 layout commit → for loop 갱신 시 transition trigger.
+  // 부족한 세그먼트 추가 (초기 non-current 로 박은 뒤 아래 루프가 상태 클래스 확정 → bar transition).
   while (setDotsEl.children.length < sets.length) {
     const wrap = document.createElement('div');
     const idx = setDotsEl.children.length;
     wrap.innerHTML = renderSetDotHtml(idx, sets[idx], false, sets, cur, prevSessionSets, kind);
-    const dot = wrap.firstElementChild;
-    if (dot) {
-      setDotsEl.appendChild(dot);
+    const seg = wrap.firstElementChild;
+    if (seg) {
+      setDotsEl.appendChild(seg);
       appendedCount += 1;
     }
   }
@@ -1076,49 +1094,32 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
   while (setDotsEl.children.length > sets.length) {
     setDotsEl.removeChild(setDotsEl.lastChild);
   }
-  // 새 dot append 시 force reflow → initial style 을 layout 에 commit (transition 시작점 확보)
+  // append 시 force reflow → initial 상태 commit (bar background/height transition 시작점 확보)
   if (appendedCount > 0) {
     void setDotsEl.offsetHeight;
   }
-  // 각 dot 갱신 (inline style + textContent)
+  // 각 세그먼트 상태 갱신 (클래스 토글 + 값)
   for (let i = 0; i < sets.length; i++) {
-    const dot = setDotsEl.children[i];
-    if (!dot) continue;
+    const seg = setDotsEl.children[i];
+    if (!seg) continue;
     const set = sets[i];
     const isCurrent = i === cur;
     const isDone = !!(set && set.done);
     const display = resolveDotDisplay(sets, i, cur, prevSessionSets, kind);
-    const color = (isCurrent || isDone)
-      ? 'var(--accent)'
-      : (display.isPreview && display.text !== '—' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.18)');
-    const weight = isCurrent ? '600' : '400';
-    const labelSize = isCurrent ? '13px' : '13px';
-    const valueSize = isCurrent ? '22px' : '15px';
-    // wrap div style 갱신
-    dot.style.color = color;
-    dot.style.fontWeight = weight;
-    // spec §6-9 set-row 꾹누르기 — mocks 정적 dot(S1~S5)은 data-longpress 누락 (renderSetDotHtml append dot 만 보유).
-    // 갱신 루프에서 보장 → 5세트 이하도 세트 수정/삭제 발화. 없으면 꾹누르기가 부모 active-card 로 흡수되는 회귀.
-    // cardio 는 #cardSetDots display:none + 단일 세트 → set-row 제외 (§6-4 — 수정은 zone 키패드).
+    // 상태 클래스 (.seg base 유지 + done/now 토글 → CSS 가 bar/값 색·높이 transition)
+    seg.classList.toggle('now', isCurrent);
+    seg.classList.toggle('done', isDone && !isCurrent);
+    // spec §6-9 set-row 꾹누르기 — cardio 제외(단일 세트 + display:none → 수정은 zone 키패드).
     if (kind === 'cardio') {
-      dot.removeAttribute('data-longpress');
-    } else {
-      if (dot.getAttribute('data-longpress') !== 'set-row') dot.setAttribute('data-longpress', 'set-row');
-      if (dot.style.cursor !== 'pointer') dot.style.cursor = 'pointer';
+      seg.removeAttribute('data-longpress');
+    } else if (seg.getAttribute('data-longpress') !== 'set-row') {
+      seg.setAttribute('data-longpress', 'set-row');
     }
-    if (isCurrent) dot.setAttribute('data-current', '1');
-    else dot.removeAttribute('data-current');
-    // 자식 두 div 갱신 (label / value)
-    const labelEl = dot.children[0];
-    const valueEl = dot.children[1];
-    if (labelEl) {
-      labelEl.textContent = `S${i + 1}`;
-      labelEl.style.fontSize = labelSize;
-    }
-    if (valueEl) {
-      valueEl.textContent = display.text;
-      valueEl.style.fontSize = valueSize;
-    }
+    if (isCurrent) seg.setAttribute('data-current', '1');
+    else seg.removeAttribute('data-current');
+    // 값 라벨 갱신 (.seg-n)
+    const nEl = seg.querySelector('.seg-n');
+    if (nEl) nEl.textContent = display.text;
   }
 }
 
@@ -1310,6 +1311,14 @@ function flashElement(el) {
  *  - 취소 / backdrop / 시트 아래 60px 스와이프 → close
  *  - onSelect 는 itemsEl._onSelect 에 보관 (open 마다 교체).
  */
+// P4 — 액션 항목 아이콘 (action id 별). 매핑 없는 id 는 라벨만 (아이콘 없음).
+const ACTION_ICONS = {
+  edit: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M11.5 2.5l4 4L6 16H2v-4L11.5 2.5z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>',
+  delete: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M3.5 5h11M7 5V3.5h4V5M5 5l.6 9a1 1 0 001 1h4.8a1 1 0 001-1L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  discard: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M3.5 5h11M7 5V3.5h4V5M5 5l.6 9a1 1 0 001 1h4.8a1 1 0 001-1L13 5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  finish: '<svg width="17" height="17" viewBox="0 0 18 18" fill="none"><path d="M3.5 9.5l3.5 3.5 7.5-8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+
 export function openActionSheet(doc, { kind = '', title = '', items = [], onSelect } = {}) {
   const sheet = doc?.getElementById?.('actionSheet');
   const backdrop = doc?.getElementById?.('actionBackdrop');
@@ -1323,9 +1332,8 @@ export function openActionSheet(doc, { kind = '', title = '', items = [], onSele
   if (titleEl) titleEl.textContent = title;
   itemsEl.innerHTML = items.map((it) => {
     const danger = !!it.danger;
-    const color = danger ? 'var(--accent)' : '#fff';
-    const weight = danger ? 600 : 400;
-    return `<button class="action-item kr" data-action-id="${escapeHtml(it.id)}" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:${color};font-size:16px;font-weight:${weight};cursor:pointer;text-align:center;">${escapeHtml(it.label)}</button>`;
+    const icon = ACTION_ICONS[it.id] || '';
+    return `<button class="action-item${danger ? ' danger' : ''}" data-action-id="${escapeHtml(it.id)}" type="button">${icon}${escapeHtml(it.label)}</button>`;
   }).join('');
   itemsEl._items = items;
   itemsEl._onSelect = typeof onSelect === 'function' ? onSelect : null;
@@ -1352,7 +1360,7 @@ function showConfirmStep(doc, kind, actionId, actionLabel) {
   sheet.dataset.step = '2';
   sheet.dataset.confirmId = actionId;
   titleEl.textContent = `${actionLabel}하시겠습니까?`;
-  itemsEl.innerHTML = `<button class="action-confirm kr" data-confirm="ok" type="button" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;text-align:center;">${escapeHtml(actionLabel)}</button>`;
+  itemsEl.innerHTML = `<button class="action-confirm" data-confirm="ok" type="button">${escapeHtml(actionLabel)}</button>`;
 }
 
 export function closeActionSheet(doc) {
@@ -1364,6 +1372,8 @@ export function closeActionSheet(doc) {
   backdrop.dataset.open = 'false';
   backdrop.style.opacity = '0';
   backdrop.style.pointerEvents = 'none';
+  // P4 — 선택 링(held) 해제 (set-row 등 꾹누른 대상).
+  try { doc.querySelectorAll?.('.held').forEach((el) => el.classList.remove('held')); } catch (_) { /* noop */ }
 }
 
 function wireActionSheet(doc) {
@@ -1560,6 +1570,7 @@ export function wireLongPress(doc, opts = {}) {
           return;
         }
         if (typeof onTrigger === 'function') {
+          el.classList?.add('held'); // P4 — crail 선택 링 (시트 열린 동안 유지, closeActionSheet 가 제거)
           try { onTrigger({ kind, target: el }); }
           catch (err) { console.error('[gymSession] longpress onTrigger', err); }
         }
@@ -1668,33 +1679,25 @@ function renderFooterPillHtml({ blockIdx, state, name, progress }) {
   const exStateAttr = state === 'current' ? 'active'
     : state === 'done' ? 'completed'
     : state === 'hold' ? 'hold' : 'upcoming';
-  const wrapStart = `<div data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}" style="position:relative;display:flex;align-items:center;gap:4px;padding-bottom:4px;flex-shrink:0;cursor:pointer;">`;
+  // P1 라이트 — 운동 전환 reel. 현재=crail 칩(중앙), 완료=ink ✓, 예정=흐린 ink. 진행도 텍스트 제거(세그먼트바로 이동).
+  const wrapStart = `<div data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}" style="flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer;">`;
   const wrapEnd = `</div>`;
   if (state === 'current') {
-    // 활성 운동 폰트 30% 키움 (15→20, 10→13). 비활성 pill (done/hold/pending) 은 기존 유지.
     return wrapStart + `
-      <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:2px;background:var(--accent);"></span>
-      <span style="font-size:22px;font-weight:600;color:var(--accent);">${escapeHtml(name)}</span>
-      <span style="font-size:15px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
-      <span style="position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--accent);"></span>
+      <span style="font-size:15px;font-weight:600;color:var(--ink-1);padding:8px 15px;border-radius:999px;background:var(--crail-soft);box-shadow:inset 0 0 0 1px var(--crail-base);white-space:nowrap;">${escapeHtml(name)}</span>
     ` + wrapEnd;
   }
   if (state === 'done') {
-    // 완료 — 미완료(pending 0.22) 대비 밝기 강화 (0.72) + weight 500 + sage ✓ (spec §6-8 취소선 금지).
     return wrapStart + `
-      <span style="color:var(--sage);font-size:15px;font-weight:600;">✓</span>
-      <span style="font-size:15px;font-weight:500;color:rgba(255,255,255,0.72);">${escapeHtml(name)}</span>
-      <span style="font-size:13px;color:rgba(255,255,255,0.5);">${escapeHtml(progress)}</span>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;color:var(--ink-4);"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">${escapeHtml(name)}</span>
     ` + wrapEnd;
   }
   if (state === 'hold') {
-    return wrapStart + `
-      <span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.5);">${escapeHtml(name)}</span>
-      <span style="font-size:13px;color:rgba(255,255,255,0.4);">${escapeHtml(progress)}</span>
-    ` + wrapEnd;
+    return wrapStart + `<span style="font-size:13px;font-weight:500;color:var(--ink-3);white-space:nowrap;">${escapeHtml(name)}</span>` + wrapEnd;
   }
-  // pending — 완료(0.72) 대비 더 흐리게 (0.22)
-  return wrapStart + `<span style="font-size:15px;font-weight:400;color:rgba(255,255,255,0.22);">${escapeHtml(name)}</span>` + wrapEnd;
+  // 예정(pending) — 가장 흐린 ink
+  return wrapStart + `<span style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">${escapeHtml(name)}</span>` + wrapEnd;
 }
 
 /**
@@ -2254,11 +2257,7 @@ function openKeypad(doc, field, opts = {}) {
   } else {
     delete sheet.dataset.setIdx;
   }
-  unit.textContent =
-    field === 'weight' ? 'kg'
-    : field === 'duration' ? '분'
-    : field === 'distance' ? 'km'
-    : '회';
+  setupKeypadChrome(doc, field, hasPrefill ? opts.prefill : null);
   renderKeypadValue(sheet, value);
   sheet.dataset.open = 'true';
   sheet.style.transform = 'translateY(0)';
@@ -2282,6 +2281,67 @@ function renderKeypadValue(sheet, valueEl) {
   if (!valueEl) return;
   const buf = sheet?.dataset?.buf || '';
   valueEl.textContent = buf === '' ? '0' : buf;
+}
+
+/**
+ * P3 라이트 키패드 chrome — 단위 라벨 + 무게/횟수(또는 시간/거리) 토글 active + 빠른증분 가시성 + 참조줄.
+ *  - pair: weight↔reps / duration↔distance. bodyweight 는 weight 토글 숨김(횟수 전용).
+ *  - quick(±2.5/+5 원판단위): weight 에서만 노출.
+ *  - ref: prefill(편집 시작값) 이 있으면 "직전 Nkg".
+ */
+function setupKeypadChrome(doc, field, prefill) {
+  const unit = doc.getElementById('keypadUnit');
+  const seg = doc.getElementById('keypadModeSeg');
+  const quick = doc.getElementById('keypadQuick');
+  const ref = doc.getElementById('keypadRef');
+  const unitText = field === 'weight' ? 'kg' : field === 'duration' ? '분' : field === 'distance' ? 'km' : '회';
+  if (unit) unit.textContent = unitText;
+  const isCardioField = field === 'duration' || field === 'distance';
+  const pair = isCardioField ? [['duration', '시간'], ['distance', '거리']] : [['weight', '무게'], ['reps', '횟수']];
+  const kind = doc.getElementById('cardSwipeArea')?.getAttribute('data-card-kind') || 'weight';
+  if (seg) {
+    const btns = seg.querySelectorAll('button');
+    pair.forEach(([m, label], i) => {
+      const b = btns[i];
+      if (!b) return;
+      b.dataset.kpmode = m;
+      b.textContent = label;
+      b.classList.toggle('on', m === field);
+      // bodyweight 운동은 무게 편집 없음 → 무게 토글 숨김(횟수만).
+      b.style.display = (kind === 'bodyweight' && m === 'weight') ? 'none' : '';
+    });
+  }
+  if (quick) quick.style.display = field === 'weight' ? 'flex' : 'none';
+  if (ref) {
+    if (prefill != null && Number.isFinite(prefill)) {
+      ref.innerHTML = `직전 <b>${escapeHtml(String(prefill))}${escapeHtml(unitText)}</b>`;
+    } else {
+      ref.textContent = '';
+    }
+  }
+}
+
+/**
+ * P3 — 키패드 내 무게/횟수 토글. 현재 set 의 새 field 값을 prefill 로 불러와 재초기화 (편집 set 유지).
+ */
+async function switchKeypadMode(doc, field) {
+  const sheet = doc.getElementById('keypadSheet');
+  if (!sheet || sheet.dataset.mode === field) return;
+  let prefill;
+  try {
+    const ctx = await getCurrentBlockAndCursor();
+    const setIdx = sheet.dataset.setIdx ? parseInt(sheet.dataset.setIdx, 10) : ctx?.effectiveCur;
+    const set = ctx?.block?.sets?.[setIdx];
+    if (set && Number.isFinite(set[field])) {
+      prefill = field === 'duration' ? Math.round(set[field] / 60) : set[field];
+    }
+  } catch (_) { /* graceful */ }
+  sheet.dataset.mode = field;
+  const has = prefill != null && Number.isFinite(prefill);
+  sheet.dataset.buf = has ? String(prefill) : '';
+  sheet.dataset.fresh = has ? '1' : '0';
+  setupKeypadChrome(doc, field, has ? prefill : null);
+  renderKeypadValue(sheet, doc.getElementById('keypadValue'));
 }
 
 /**
@@ -2356,6 +2416,31 @@ function wireKeypad(doc) {
     renderKeypadValue(sheet, value);
   });
 
+  // P3 — 무게/횟수(또는 시간/거리) 토글
+  const modeSeg = doc.getElementById('keypadModeSeg');
+  if (modeSeg) {
+    modeSeg.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-kpmode]');
+      if (!b) return;
+      switchKeypadMode(doc, b.dataset.kpmode).catch((err) => console.error('[gymSession] keypad mode', err));
+    });
+  }
+  // P3 — 원판 단위 빠른 증분 (±2.5/+5). 현재 buf 에 delta 적용 (0 미만 clamp).
+  const quick = doc.getElementById('keypadQuick');
+  if (quick) {
+    quick.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-kpdelta]');
+      if (!b) return;
+      const delta = parseFloat(b.dataset.kpdelta);
+      if (!Number.isFinite(delta)) return;
+      let next = (parseFloat(sheet.dataset.buf || '0') || 0) + delta;
+      if (next < 0) next = 0;
+      sheet.dataset.buf = Number.isInteger(next) ? String(next) : String(parseFloat(next.toFixed(2)));
+      sheet.dataset.fresh = '0';
+      renderKeypadValue(sheet, value);
+    });
+  }
+
   done.addEventListener('click', () => {
     applyKeypadValue(doc).catch((e) => console.error('[gymSession] keypad done', e));
   });
@@ -2372,7 +2457,7 @@ function wireKeypad(doc) {
   sheet.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     // 키 버튼 직접 클릭은 swipe 추적 안 함 (의도치 않은 close 방지)
-    if (e.target.closest('.keypad-key, #keypadDone')) return;
+    if (e.target.closest('.keypad-key, #keypadDone, #keypadModeSeg, #keypadQuick')) return;
     downY = e.clientY;
     tracking = true;
   });

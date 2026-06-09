@@ -1,0 +1,63 @@
+/* 짐앱 라이트 페이퍼 디자인 토큰 — gym-redesign/paper.css 기준 (작업지시서 G1).
+   main.js 가 전역 import. 토큰 정의 전용 — 전역 body 색/폰트 미적용으로
+   아직 다크인 미작업 화면(자체 :root 다크 유지)의 회귀를 막는다. */
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap");
+
+:root {
+  /* Surfaces */
+  --tone-255: rgb(255, 255, 255);
+  --tone-253: rgb(253, 253, 253);
+  --tone-243: rgb(243, 243, 243);
+  --shell: var(--tone-253);
+  --card: var(--tone-255);
+  --hover-bg: var(--tone-243);
+  --sunken: oklch(97.6% 0.006 60);
+  --line: oklch(92.0% 0.006 60);
+  --line-soft: oklch(94.5% 0.006 60);
+
+  /* Ink — 4단 + 순검정 */
+  --ink-1: oklch(22% 0.008 60);
+  --ink-2: oklch(38% 0.008 60);
+  --ink-3: oklch(56% 0.008 60);
+  --ink-4: oklch(72% 0.006 60);
+  --black: #000;
+
+  /* Accents — Crail(주황) 메인 + Cloudy(보조). 점 단위 사용. */
+  --crail-soft: oklch(85% 0.05 50);
+  --crail-base: oklch(67% 0.12 50);
+  --crail-deep: oklch(48% 0.14 50);
+  --crail-tint: oklch(95% 0.02 50);
+  --cloudy-soft: oklch(88% 0.04 240);
+  --cloudy-base: oklch(65% 0.08 240);
+  --cloudy-deep: oklch(42% 0.12 240);
+
+  --warning: #c98a3f;
+  --danger: #c5544a;
+
+  /* Spacing / radii */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+  --r-sm: 8px; --r-md: 12px; --r-lg: 18px; --r-xl: 24px;
+
+  --shadow-float:
+    0 1px 0 rgba(20,18,14,0.02),
+    0 6px 14px -8px rgba(20,18,14,0.08),
+    0 24px 48px -24px rgba(20,18,14,0.18);
+  --shadow-pop:
+    0 1px 0 rgba(20,18,14,0.03),
+    0 8px 16px -10px rgba(20,18,14,0.18),
+    0 24px 48px -24px rgba(20,18,14,0.24);
+  --shadow-inset-soft: 0 4px 12px -8px rgba(20,18,14,0.08);
+
+  --font-sans: "Pretendard", "Inter", system-ui, sans-serif;
+  --font-mono: "Space Grotesk", ui-monospace, monospace;
+}
+
+/* 숫자/메타 모노 — 시안 전역 .mono 와 동일. tabular-nums 정렬. */
+.mono {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}

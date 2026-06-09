@@ -10,6 +10,7 @@
  *
  * 미인증 / Supabase env 미설정 / mocks 허브(iframe) 환경 모두 정상 fallback.
  */
+import './styles/paper.css';  // 라이트 페이퍼 디자인 토큰 (작업지시서 G1 — 전역)
 import './db/schema.js';      // factory module load
 import './db/queries.js';     // window.gymQueries 노출 (window.gymDB 동적 조회)
 import './db/exercises.js';   // window.gymExercises 노출 (정적 카탈로그)
