@@ -9,6 +9,9 @@
  *  부재 시 fallback (시안 노출 — Wave A.8.2 에서 실 데이터 주입 예정).
  */
 
+import { h } from '../components/d1/dom.js';
+import { pickSize } from '../components/session/index.js';
+
 const FALLBACK = {
   mode: 'normal',
   durationSec: 18 * 60,
@@ -42,6 +45,9 @@ function pronCls(score) {
 
 export function mountSummary(host) {
   const data = readSummary();
+
+  // 데스크탑 = D1 재디자인 요약. phone/tablet = 기존 mock 채우기 (아래).
+  if (pickSize() === 'desktop') { renderD1Summary(host, data); return; }
 
   const set = (id, val) => { const el = host.querySelector(`#${id}`); if (el) el.textContent = String(val); };
 
@@ -135,4 +141,80 @@ async function mountFreeReviewCta(host) {
     window.location.hash = '#/session-review?mode=free';
   });
   anchor.parentElement?.insertBefore(btn, anchor.nextSibling);
+}
+
+/* ────────── D1 desktop — ⑥ 학습 완료 요약 ──────────
+ * 중앙 760 집중형. 배지 → 지표 3분할 → 기억 판정 3칩 → 약점 음소 → 확인/자유복습.
+ * subject/scene/date 는 summary 데이터에 없어 mode 기반 부제로 graceful 처리. phone/tablet 미변경.
+ */
+function renderD1Summary(host, data) {
+  host.innerHTML = '';
+  const mins = Math.max(1, Math.round((Number(data.durationSec) || 0) / 60));
+  const tryN = Number(data.tryCount) || 0;
+  let avgText = '—', avgColor = 'var(--ink)';
+  if (tryN > 0) {
+    const avg = (typeof data.pronAvg === 'number') ? data.pronAvg : Math.round((Number(data.passCount) / tryN) * 80 + 20);
+    avgText = String(avg);
+    const cls = pronCls(avg);
+    avgColor = cls === 'sage' ? 'var(--sage)' : cls === 'amber' ? 'var(--amber)' : cls === 'danger' ? 'var(--danger)' : 'var(--ink)';
+  }
+
+  const unit = (u) => h('span', { style: 'font-size:18px;color:var(--mut);font-weight:700;' }, u);
+  const metric = (label, valueNode) => h('div', { class: 'd1-metric' }, h('div', { class: 'ml' }, label), h('div', { class: 'mv' }, valueNode));
+  const divider = () => h('div', { style: 'width:1px;height:56px;background:var(--line);' });
+
+  const judges = [
+    { n: data.judged.got, l: '완벽', c: 'var(--sage)', bg: 'var(--sage-bg)' },
+    { n: data.judged.hmm, l: '애매', c: 'var(--ink)', bc: 'var(--faint)', bg: '#fff' },
+    { n: data.judged.no, l: '다시', c: 'var(--terra)', bg: '#fff' },
+  ];
+  const weak = Array.isArray(data.weakTop3) ? data.weakTop3.slice(0, 3) : [];
+  const subtitle = data.mode === 'review' ? '복습 완료' : '신규 학습 완료';
+
+  const rt = data.returnTo || 'home';
+  const doneLabel = rt === 'stats' ? '확인 · 캘린더로' : rt === 'sentList' ? '확인 · 문장 목록으로' : '확인';
+  const goDone = () => {
+    try { sessionStorage.removeItem('studySummary'); sessionStorage.removeItem('studyReturnTo'); } catch { /* noop */ }
+    if (rt === 'stats') window.location.hash = '#/stats';
+    else if (rt === 'sentList') window.location.hash = '#/stats?tab=sent';
+    else window.location.hash = '#/home';
+  };
+  const ctaRow = h('div', { style: 'display:flex;gap:12px;justify-content:center;margin-top:40px;' },
+    h('button', { class: 'd1-btn d1-btn--primary lg', style: 'min-width:150px;', onClick: goDone }, doneLabel));
+
+  const col = h('div', { style: 'max-width:760px;margin:0 auto;padding:60px 40px 52px;width:100%;' },
+    h('div', { class: 'd1-badge' }, '✓'),
+    h('div', { class: 'd1-eyebrow', style: 'text-align:center;color:var(--faint);letter-spacing:.06em;margin-top:22px;' }, '학습 완료'),
+    h('h1', { class: 'd1-h1', style: 'text-align:center;margin-top:12px;' }, '오늘 분량, 끝까지 해냈어요'),
+    h('div', { style: 'text-align:center;font-size:15.5px;color:var(--mut);margin-top:14px;' }, subtitle),
+    h('div', { style: 'display:flex;align-items:center;margin-top:42px;border:1px solid var(--line);border-radius:18px;padding:26px 0;' },
+      metric('학습 시간', h('span', {}, String(mins), unit('분'))),
+      divider(),
+      metric('새 표현', h('span', {}, String(data.newCount), unit('개'))),
+      divider(),
+      metric('평균 발음', h('span', { style: 'color:' + avgColor + ';' }, avgText)),
+    ),
+    h('div', { class: 'd1-panel-lab', style: 'margin-top:34px;margin-bottom:12px;' }, '오늘의 기억 판정'),
+    h('div', { style: 'display:flex;gap:12px;' }, judges.map((x) => h('div', { class: 'd1-rchip', style: 'border-color:' + (x.bc || x.c) + ';background:' + x.bg + ';' },
+      h('span', { class: 'rn', style: 'color:' + x.c + ';' }, String(x.n)),
+      h('span', { class: 'rl', style: 'color:' + x.c + ';' }, x.l)))),
+    weak.length ? h('div', { class: 'd1-panel-lab', style: 'margin-top:30px;margin-bottom:12px;' }, '더 연습할 발음') : null,
+    weak.length ? h('div', { style: 'display:flex;gap:10px;flex-wrap:wrap;' }, weak.map((w) => h('span', { class: 'd1-tag' }, w))) : null,
+    ctaRow,
+  );
+
+  host.appendChild(h('div', { class: 'd1-root', style: 'display:block;min-height:100vh;min-height:100dvh;' }, col));
+
+  // 자유 복습 CTA — 정규 review 완료 + reviewQueue 有 + home 복귀 시.
+  const isHomeReturn = !data.returnTo || data.returnTo === 'home';
+  if (data.mode === 'review' && Number(data.total) > 0 && isHomeReturn) {
+    (async () => {
+      const db = window.studyDB;
+      if (!db?.reviewQueue) return;
+      const lang = sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en';
+      const rows = await db.reviewQueue.where('lang').equals(lang).toArray();
+      if (!Array.isArray(rows) || rows.length === 0) return;
+      ctaRow.appendChild(h('button', { class: 'd1-btn d1-btn--sage lg', onClick: () => { try { sessionStorage.removeItem('studySummary'); } catch { /* noop */ } window.location.hash = '#/session-review?mode=free'; } }, '자유 복습 ' + rows.length + '장'));
+    })().catch((e) => console.error('[summary d1] free cta', e));
+  }
 }
