@@ -54,6 +54,7 @@ export function mountHome(host) {
     todayReviewDone: demo ? DEMO_FIXTURES.todayReviewDone : 0,
     todayISO: demo ? DEMO_FIXTURES.todayISO : (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10)),
     resume: null, // 'new' | 'review' | null — activeSession 매치 시
+    sessionTitle: '', // #5 — AI 생성 세션 타이틀(scene/skit). 첫 미완료 카드 explanation 에서 산출.
   };
 
   let cleanup = render(host, state);
@@ -78,6 +79,7 @@ export function mountHome(host) {
     state.tried = 0; state.passed = 0;
     state.weekUtter = 0; state.weekPass = 0;
     state.todayNewDone = 0; state.todayReviewDone = 0;
+    state.sessionTitle = '';
     rerender();
     refreshStats();
   };
@@ -150,7 +152,7 @@ async function loadMathStats(state) {
     newCount, reviewCount, totalReview, streak,
     tried: todayLog.tried, passed: todayLog.passed,
     todayNewDone: todayLog.newDone, todayReviewDone: todayLog.reviewDone,
-    bestStreak: null, weekUtter: 0, weekPass: 0,
+    bestStreak: null, weekUtter: 0, weekPass: 0, sessionTitle: '',
   };
 }
 
@@ -166,7 +168,17 @@ async function loadStats(state) {
     const totalReview = allLang.length;
     const langLessons = await db.todayLessons.where('lang').equals(lang).toArray();
     // carry-forward: 미완료 신규는 date 무관 전부 카운트 (cardLoader.loadNewCards 와 동일 정책).
-    const newCount = langLessons.filter((l) => l.completed !== true).length;
+    const incomplete = langLessons.filter((l) => l.completed !== true);
+    const newCount = incomplete.length;
+    // #5 — AI 생성 세션 타이틀: 곧 시작할 첫 카드(loadNewCards 정렬 동일: date ASC → order_index ASC)의
+    // scene/skit 타이틀. 콩트/장면 제목을 home hero 에 노출 (없으면 '' → 기본 카피 fallback).
+    const firstNew = incomplete.slice().sort((a, b) => {
+      const da = a.date || '', db_ = b.date || '';
+      if (da !== db_) return da < db_ ? -1 : 1;
+      return (a.order_index ?? 0) - (b.order_index ?? 0);
+    })[0];
+    const firstEx = firstNew?.explanation || {};
+    const sessionTitle = firstEx.sceneTitle || firstEx.scene_title || firstEx.skitTitle || '';
 
     const logs = await db.sessionLogs.where('lang').equals(lang).toArray();
     const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();
@@ -214,7 +226,7 @@ async function loadStats(state) {
       if (cands[0]?.value?.value != null) bestStreak = cands[0].value.value;
     } catch { /* meta 미존재 ok */ }
 
-    return { newCount, reviewCount, totalReview, streak, tried, passed, bestStreak, weekUtter, weekPass, todayNewDone, todayReviewDone };
+    return { newCount, reviewCount, totalReview, streak, tried, passed, bestStreak, weekUtter, weekPass, todayNewDone, todayReviewDone, sessionTitle };
   } catch (e) {
     console.error('[home loadStats]', e);
     return null;
@@ -376,10 +388,11 @@ function d1HomeMain(state) {
   const reviewUnit = isMath ? '문제' : '문장';
   const langLabel = isMath ? '수학' : state.lang === 'ja' ? '일본어' : '영어';
 
-  // hero (신규) — 실제 상태별 카피 (기존 sessionCard 정책과 일치)
+  // ── 신규 박스 ──
   let heroTitle, heroSub;
   if (state.newCount >= 1) {
-    heroTitle = isMath ? '오늘의 새 문제를 풀어요' : '오늘의 새 표현을 시작해요';
+    // #5 — AI 가 생성한 세션 타이틀(scene/skit) 우선 노출. 없으면 기본 카피.
+    heroTitle = state.sessionTitle || (isMath ? '오늘의 새 문제를 풀어요' : '오늘의 새 표현을 시작해요');
     heroSub = isMath ? '개념을 이해하고 차근차근 풀어요' : '전체 대화를 먼저 듣고 · 하나씩 따라 말하기';
   } else if (state.totalReview >= 1) {
     heroTitle = '오늘 신규 완료';
@@ -389,47 +402,30 @@ function d1HomeMain(state) {
     heroSub = '잠시 후 다시 확인해 주세요';
   }
   const heroBtn = h('button', { class: 'd1-btn d1-btn--primary lg', style: 'margin-top:28px;', onClick: () => { window.location.hash = isMath ? '#/session-math?mode=new' : '#/session-new'; } },
-    d1Icon('sound', 17), '신규 학습 시작');
+    d1Icon('sound', 17), state.resume === 'new' ? '이어서 하기' : '신규 학습 시작'); // #1 — 진행 중 세션 시 이어서 하기(spec §7-7)
   if (state.newCount < 1) { heroBtn.disabled = true; heroBtn.style.opacity = '0.5'; heroBtn.style.cursor = 'default'; }
 
-  const hero = h('div', { class: 'd1-hero' },
-    h('div', { style: 'min-width:0;' },
-      h('div', { class: 'd1-lab', style: 'color:var(--terra);' }, '신규 학습 · ' + langLabel),
-      h('div', { style: 'font-size:34px;font-weight:800;letter-spacing:-0.03em;margin-top:12px;' }, heroTitle),
-      h('div', { style: 'font-size:15px;color:var(--mut);margin-top:10px;' }, heroSub),
-      heroBtn,
-    ),
-    h('div', { style: 'text-align:right;flex:0 0 auto;' },
-      h('div', { class: 'd1-bignum', style: 'color:var(--terra);' }, String(state.newCount)),
-      h('div', { style: 'font-size:14px;color:var(--mut);font-weight:600;margin-top:8px;' }, '오늘의 새 ' + newUnit),
-    ),
-  );
+  const hero = d1SessionBox({
+    tone: 'new', eyebrow: '신규 학습 · ' + langLabel, title: heroTitle, sub: heroSub,
+    btn: heroBtn, num: state.newCount, numLabel: '오늘의 새 ' + newUnit,
+  });
 
-  // bar (복습) — 실제 상태별 카피·라우팅
+  // ── 복습 박스 (#4 — 신규와 동일 박스 구조: 버튼 좌하단 정렬) ──
   const reviewFree = !isMath && state.reviewCount === 0 && state.totalReview > 0;
-  let barTitle, barNum;
-  if (state.reviewCount >= 1) { barTitle = '오늘이 복습 적기예요'; barNum = state.reviewCount; }
-  else if (state.totalReview >= 1) { barTitle = '오늘 분량 완료 · 자유 복습'; barNum = state.totalReview; }
-  else { barTitle = isMath ? '복습할 문제가 없어요' : '신규 학습 후 복습'; barNum = 0; }
-  const barBtn = h('button', { class: 'd1-btn d1-btn--sage', onClick: () => {
+  let barTitle, barSub, barNum;
+  if (state.reviewCount >= 1) { barTitle = '오늘이 복습 적기예요'; barSub = '기억이 남아 있을 때 한 번 더 굳혀요'; barNum = state.reviewCount; }
+  else if (state.totalReview >= 1) { barTitle = '오늘 분량 완료 · 자유 복습'; barSub = '복습 큐에서 자유롭게 더 연습해요'; barNum = state.totalReview; }
+  else { barTitle = isMath ? '복습할 문제가 없어요' : '신규 학습 후 복습'; barSub = '새 표현을 익히면 복습이 쌓여요'; barNum = 0; }
+  const barBtn = h('button', { class: 'd1-btn d1-btn--sage lg', style: 'margin-top:28px;', onClick: () => {
     if (isMath) { window.location.hash = '#/session-math?mode=review'; return; }
     window.location.hash = reviewFree ? '#/session-review?mode=free' : '#/session-review';
-  } }, d1Icon('repeat', 16), '복습 시작');
+  } }, d1Icon('repeat', 16), state.resume === 'review' ? '이어서 하기' : '복습 시작'); // #1
   if (barNum < 1) { barBtn.disabled = true; barBtn.style.opacity = '0.5'; barBtn.style.cursor = 'default'; }
 
-  const bar = h('div', { class: 'd1-bar', style: 'margin-top:18px;' },
-    h('div', { style: 'display:flex;align-items:baseline;gap:16px;' },
-      h('div', {},
-        h('div', { class: 'd1-lab', style: 'color:var(--sage);' }, '복습'),
-        h('div', { style: 'font-size:18px;font-weight:700;margin-top:6px;' }, barTitle),
-      ),
-      h('div', { style: 'display:flex;align-items:baseline;gap:6px;margin-left:8px;' },
-        h('span', { style: 'font-size:32px;font-weight:800;color:var(--sage);letter-spacing:-0.03em;' }, String(barNum)),
-        h('span', { style: 'font-size:14px;color:var(--mut);font-weight:600;' }, reviewUnit),
-      ),
-    ),
-    barBtn,
-  );
+  const bar = d1SessionBox({
+    tone: 'review', eyebrow: '복습', title: barTitle, sub: barSub,
+    btn: barBtn, num: barNum, numLabel: '복습 ' + reviewUnit, marginTop: true,
+  });
 
   return h('div', { class: 'd1-main' },
     h('div', { class: 'd1-eyebrow', style: 'letter-spacing:.06em;color:var(--faint);' }, todayLabel(state.todayISO)),
@@ -439,6 +435,23 @@ function d1HomeMain(state) {
     hero,
     bar,
     h('div', { style: 'flex:1;' }),
+  );
+}
+
+// 홈 신규/복습 공용 박스 — 좌측: 라벨·제목·부제·버튼(좌하단), 우측: 큰 숫자. (#4 정렬 일관)
+function d1SessionBox({ tone, eyebrow, title, sub, btn, num, numLabel, marginTop }) {
+  const accent = tone === 'review' ? 'var(--sage)' : 'var(--terra)';
+  return h('div', { class: 'd1-hero' + (tone === 'review' ? ' d1-hero--review' : ''), style: marginTop ? 'margin-top:18px;' : null },
+    h('div', { style: 'min-width:0;' },
+      h('div', { class: 'd1-lab', style: 'color:' + accent + ';' }, eyebrow),
+      h('div', { style: 'font-size:31px;font-weight:800;letter-spacing:-0.03em;margin-top:12px;line-height:1.2;' }, title),
+      h('div', { style: 'font-size:15px;color:var(--mut);margin-top:10px;' }, sub),
+      btn,
+    ),
+    h('div', { style: 'text-align:right;flex:0 0 auto;' },
+      h('div', { class: 'd1-bignum', style: 'color:' + accent + ';' }, String(num)),
+      h('div', { style: 'font-size:14px;color:var(--mut);font-weight:600;margin-top:8px;' }, numLabel),
+    ),
   );
 }
 
