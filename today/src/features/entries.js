@@ -1915,8 +1915,8 @@ function installRecentsDeleteHandler() {
   document.addEventListener('contextmenu', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
-    // 파트너 공유 글 (recent-share span 보유) 은 우클릭 메뉴 차단 — 삭제 진입점 가드
-    if (item.querySelector('.recent-share')) {
+    // 파트너 공유 글 (.rc-sub .sh span 보유) 은 우클릭 메뉴 차단 — 삭제 진입점 가드
+    if (item.querySelector('.rc-sub .sh')) {
       e.preventDefault();
       return;
     }
@@ -1938,8 +1938,8 @@ function installRecentsDeleteHandler() {
   document.addEventListener('touchstart', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
-    // 파트너 공유 글 (recent-share span 보유) 은 롱프레스 메뉴 차단
-    if (item.querySelector('.recent-share')) return;
+    // 파트너 공유 글 (.rc-sub .sh span 보유) 은 롱프레스 메뉴 차단
+    if (item.querySelector('.rc-sub .sh')) return;
     const t = e.touches?.[0];
     if (!t) return;
     _recentsLpStartX = t.clientX;

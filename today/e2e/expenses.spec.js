@@ -307,7 +307,7 @@ test.describe('Wave 11.6.3 expenses', () => {
             </div>
             <span class="exp-rank-1__amt">FIX</span>
           </div>
-          <div class="exp-rank-grid">FIX-GRID</div>
+          <div class="exp-rank-rows">FIX-ROWS</div>
         </div>
       `;
       document.body.appendChild(root);
@@ -321,47 +321,45 @@ test.describe('Wave 11.6.3 expenses', () => {
       ];
       const ok = window.todayExpenses.patchRankSectionFromRows(rows);
       const rank1 = root.querySelector('.exp-rank-1');
-      const grid = root.querySelector('.exp-rank-grid');
-      const cards = [...grid.querySelectorAll('.exp-rank-card')];
+      const rowsEl = root.querySelector('.exp-rank-rows');
+      const items = [...rowsEl.querySelectorAll('.exp-rank-row')];
       const result = {
         ok,
-        headlineStrong: root.querySelector('.exp-headline-title strong')?.textContent,
         rank1Num: rank1.querySelector('.exp-rank-1__num')?.textContent,
         rank1Avatar: rank1.querySelector('.exp-rank-1__avatar')?.textContent,
         rank1Name: rank1.querySelector('.exp-rank-1__name')?.textContent,
         rank1Meta: rank1.querySelector('.exp-rank-1__meta')?.textContent,
         rank1Amt: rank1.querySelector('.exp-rank-1__amt')?.textContent,
         rank1Onclick: rank1.getAttribute('onclick'),
-        gridCardCount: cards.length,
-        gridCard0: {
-          num: cards[0]?.querySelector('.exp-rank-card__num')?.textContent,
-          chip: cards[0]?.querySelector('.exp-rank-card__chip')?.textContent,
-          name: cards[0]?.querySelector('.exp-rank-card__name')?.textContent,
-          amt: cards[0]?.querySelector('.exp-rank-card__amt')?.textContent,
-          onclick: cards[0]?.getAttribute('onclick'),
+        rowCount: items.length,
+        row0: {
+          num: items[0]?.querySelector('.exp-rank-row__num')?.textContent,
+          cat: items[0]?.querySelector('.exp-rank-row__cat')?.textContent,
+          name: items[0]?.querySelector('.exp-rank-row__name')?.textContent,
+          amt: items[0]?.querySelector('.exp-rank-row__amt')?.textContent,
+          onclick: items[0]?.getAttribute('onclick'),
         },
-        gridCard2Name: cards[2]?.querySelector('.exp-rank-card__name')?.textContent,
+        row2Name: items[2]?.querySelector('.exp-rank-row__name')?.textContent,
       };
       root.remove();
       return result;
     });
     expect(result.ok).toBe(true);
-    expect(result.headlineStrong).toBe('쿠팡');
     expect(result.rank1Num).toBe('1');
     expect(result.rank1Avatar).toBe('쿠');
     expect(result.rank1Name).toBe('쿠팡');
     // share = 1550000 / 2000000 = 77.5%
-    expect(result.rank1Meta).toBe('2건 · 77.5%');
+    expect(result.rank1Meta).toBe('2건 · 전체의 77.5%');
     expect(result.rank1Amt).toBe('155만원');
     expect(result.rank1Onclick).toContain("openMerchantDetail('쿠팡', event)");
-    // 2~N위 그리드 — 3개 (쿠팡 1위 분리 후 나머지 3 가맹점)
-    expect(result.gridCardCount).toBe(3);
-    expect(result.gridCard0.num).toBe('2');
-    expect(result.gridCard0.chip).toBe('외식');
-    expect(result.gridCard0.name).toBe('파인만컴');
-    expect(result.gridCard0.amt).toBe('30만원');
-    expect(result.gridCard0.onclick).toContain("openMerchantDetail('파인만컴', event)");
-    expect(result.gridCard2Name).toBe('양화정');
+    // 2~N위 행 — 3개 (쿠팡 1위 분리 후 나머지 3 가맹점)
+    expect(result.rowCount).toBe(3);
+    expect(result.row0.num).toBe('2');
+    expect(result.row0.cat).toBe('외식');
+    expect(result.row0.name).toBe('파인만컴');
+    expect(result.row0.amt).toBe('30만원');
+    expect(result.row0.onclick).toContain("openMerchantDetail('파인만컴', event)");
+    expect(result.row2Name).toBe('양화정');
   });
 
   test('patchRankSectionFromRows — rows=0 → no-op (mocks fixture 보존)', async ({ page }) => {
@@ -372,7 +370,7 @@ test.describe('Wave 11.6.3 expenses', () => {
       root.innerHTML = `
         <div class="exp-rank-section">
           <div class="exp-rank-1"><span class="exp-rank-1__name">FIXTURE</span></div>
-          <div class="exp-rank-grid">FIXTURE-GRID</div>
+          <div class="exp-rank-rows">FIXTURE-ROWS</div>
         </div>
       `;
       document.body.appendChild(root);
@@ -380,14 +378,14 @@ test.describe('Wave 11.6.3 expenses', () => {
       const result = {
         ok,
         rank1Name: root.querySelector('.exp-rank-1__name')?.textContent,
-        gridText: root.querySelector('.exp-rank-grid')?.textContent,
+        rowsText: root.querySelector('.exp-rank-rows')?.textContent,
       };
       root.remove();
       return result;
     });
     expect(result.ok).toBe(false);
     expect(result.rank1Name).toBe('FIXTURE');
-    expect(result.gridText).toBe('FIXTURE-GRID');
+    expect(result.rowsText).toBe('FIXTURE-ROWS');
   });
 });
 
@@ -407,19 +405,16 @@ test.describe('Wave 11.6.3.2 day popover', () => {
     expect(ok).toBe(true);
   });
 
-  test('patchDayPopoverFromRows — 1건 시 foot.style.display="none"', async ({ page }) => {
+  test('patchDayPopoverFromRows — 1건 → 헤더 합계 + 거래 행 (시안 §8)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const result = await page.evaluate(() => {
       const root = document.createElement('div');
       root.innerHTML = `
         <div id="expDayPopover">
-          <span class="exp-day-detail__date"></span>
+          <div class="exp-day-detail__date"></div>
+          <div class="exp-day-detail__sum"></div>
           <div class="expense-list"></div>
-          <div class="exp-day-detail__foot">
-            <span class="exp-day-detail__foot-count"></span>
-            <span class="exp-day-detail__foot-sum"></span>
-          </div>
         </div>
       `;
       document.body.appendChild(root);
@@ -433,33 +428,33 @@ test.describe('Wave 11.6.3.2 day popover', () => {
         applied: r.applied,
         count: r.count,
         date: popover.querySelector('.exp-day-detail__date').textContent,
+        sum: popover.querySelector('.exp-day-detail__sum').innerHTML,
         listHtml: popover.querySelector('.expense-list').innerHTML,
-        footDisplay: popover.querySelector('.exp-day-detail__foot').style.display,
+        rowCount: popover.querySelectorAll('.exp-day-row').length,
       };
       root.remove();
       return data;
     });
     expect(result.applied).toBe(true);
     expect(result.count).toBe(1);
-    expect(result.date).toMatch(/^4월 12일 [일월화수목금토]요일$/);
+    expect(result.date).toContain('4월 12일');
     expect(result.listHtml).toContain('주식회사우아');
     expect(result.listHtml).toContain('11,880');
-    expect(result.footDisplay).toBe('none');
+    expect(result.sum).toContain('11,880');
+    expect(result.sum).toContain('1건');
+    expect(result.rowCount).toBe(1);
   });
 
-  test('patchDayPopoverFromRows — 2건+ 시 foot 표시 + count + sum', async ({ page }) => {
+  test('patchDayPopoverFromRows — 2건 → 헤더 합계 합산 (시안 §8)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const result = await page.evaluate(() => {
       const root = document.createElement('div');
       root.innerHTML = `
         <div id="expDayPopover">
-          <span class="exp-day-detail__date"></span>
+          <div class="exp-day-detail__date"></div>
+          <div class="exp-day-detail__sum"></div>
           <div class="expense-list"></div>
-          <div class="exp-day-detail__foot">
-            <span class="exp-day-detail__foot-count"></span>
-            <span class="exp-day-detail__foot-sum"></span>
-          </div>
         </div>
       `;
       document.body.appendChild(root);
@@ -473,17 +468,14 @@ test.describe('Wave 11.6.3.2 day popover', () => {
       });
       const popover = document.getElementById('expDayPopover');
       const data = {
-        footDisplay: popover.querySelector('.exp-day-detail__foot').style.display,
-        footCount: popover.querySelector('.exp-day-detail__foot-count').textContent,
-        footSum: popover.querySelector('.exp-day-detail__foot-sum').innerHTML,
-        rowCount: popover.querySelectorAll('.exp-popover-row').length,
+        sum: popover.querySelector('.exp-day-detail__sum').innerHTML,
+        rowCount: popover.querySelectorAll('.exp-day-row').length,
       };
       root.remove();
       return data;
     });
-    expect(result.footDisplay).toBe('');
-    expect(result.footCount).toBe('2건');
-    expect(result.footSum).toContain('8,000');
+    expect(result.sum).toContain('8,000');
+    expect(result.sum).toContain('2건');
     expect(result.rowCount).toBe(2);
   });
 

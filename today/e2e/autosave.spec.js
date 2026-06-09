@@ -381,8 +381,8 @@ test.describe('Wave 11.7.3 recents share 라벨', () => {
       const result = items.map((it) => ({
         id: it.getAttribute('data-doc-id'),
         title: it.textContent.replace('소연', '').trim(),
-        hasLabel: !!it.querySelector('.recent-share'),
-        labelText: it.querySelector('.recent-share')?.textContent || '',
+        hasLabel: !!it.querySelector('.rc-sub .sh'),
+        labelText: it.querySelector('.rc-sub .sh')?.textContent || '',
       }));
       list.remove();
       return { ok, items: result };
