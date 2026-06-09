@@ -5,9 +5,11 @@ function renderGrid(grid) {
   grid.dataset.spaRendered = '1';
   grid.innerHTML = KEYS.map((k) => {
     const label = k === 'del' ? '⌫' : k;
-    const color = k === 'del' ? 'rgba(255,255,255,0.7)' : '#fff';
-    const fs = k === 'del' ? '18px' : '20px';
-    return `<button class="keypad-key kr" data-key="${k}" type="button" style="height:48px;border-radius:10px;background:rgba(255,255,255,0.06);border:0;color:${color};font-family:var(--font-display);font-size:${fs};font-weight:300;cursor:pointer;">${label}</button>`;
+    const isFn = k === 'del' || k === '.';
+    const color = isFn ? 'var(--ink-3)' : 'var(--ink-1)';
+    const bg = isFn ? 'transparent' : 'var(--sunken)';
+    const fs = k === 'del' ? '20px' : '23px';
+    return `<button class="keypad-key" data-key="${k}" type="button" style="height:50px;border-radius:var(--r-md);background:${bg};border:0;color:${color};font-family:var(--font-mono);font-size:${fs};font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;">${label}</button>`;
   }).join('');
 }
 function updateBuf(buf, key) {

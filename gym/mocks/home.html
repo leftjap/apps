@@ -41,107 +41,88 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .phone.dark .phone-home { background: rgba(255,255,255,.32); }
 [data-state="active"] .home-a { display: none; }
 [data-state="idle"] .home-c { display: none; }
-/* 주간 캘린더 — home.js renderWeekCalendarToDom 마크업 (cal-day button + cal-label/num/part span) 정합. */
-.cal-day { display: flex; flex-direction: column; align-items: center; gap: 4px; background: transparent; border: 0; padding: 0; cursor: pointer; font-family: inherit; }
-.cal-label { font-size:13px; color: rgba(243, 239, 230, 0.4); font-weight: 400; }
-.cal-day.today .cal-label { color: #fff; font-weight: 600; }
-.cal-num { font-family: var(--font-display); font-size:17px; font-weight: 300; color: rgba(243, 239, 230, 0.3); letter-spacing: -0.02em; }
-.cal-day.today .cal-num, .cal-day.worked .cal-num { font-size:20px; font-weight: 500; color: #fff; }
-.cal-part { font-size:13px; color: rgba(243, 239, 230, 0.5); }
+/* 주간 스트립 — home.js renderWeekCalendarToDom (cal-day + cal-label/num/part). P5 라이트: 오늘=crail 원, 운동한 날 앞글자=crail. */
+.cal-day { display: flex; flex-direction: column; align-items: center; gap: 5px; background: transparent; border: 0; padding: 4px 0; cursor: pointer; font-family: inherit; }
+.cal-label { font-size: 12px; font-weight: 500; color: var(--ink-4); }
+.cal-day.today .cal-label { color: var(--crail-deep); font-weight: 600; }
+.cal-num { font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--ink-4); letter-spacing: -0.02em; }
+.cal-day.worked .cal-num { color: var(--ink-2); }
+.cal-day.today .cal-num { width: 28px; height: 28px; border-radius: 50%; background: var(--crail-base); color: #fff; display: flex; align-items: center; justify-content: center; }
+.cal-part { font-size: 10px; font-weight: 600; color: transparent; line-height: 1; min-height: 11px; }
+.cal-day.worked .cal-part { color: var(--crail-deep); }
+/* P5 이번 주 4세그먼트 (applyStreakToDom 렌더) */
+#homeWeekSeg i { height: 8px; border-radius: 4px; background: var(--line); }
+#homeWeekSeg i.fill { background: var(--crail-base); }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 </style>
 </head>
 <body data-state="idle">
 <!-- HomeA — idle -->
-<div class="phone dark home-a" style="background:#0f0d0a;">
+<div class="phone home-a" style="background:var(--shell);color:var(--ink-1);">
   <div class="phone-notch"></div>
   <div class="phone-content">
-    <div style="height:100%;display:flex;flex-direction:column;color:#f3efe6;padding:8px 0;">
-      <!-- HomeHeader -->
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
-        <div class="num" style="font-size:24px;font-weight:600;letter-spacing:-0.02em;color:#fff;">Gym</div>
-        <div style="display:flex;gap:18px;font-size:14px;color:rgba(255,255,255,0.5);" class="kr"><span class="js-home-stats" style="cursor:pointer;">통계</span><span class="js-home-manage" style="cursor:pointer;">관리</span></div>
+    <div style="height:100%;display:flex;flex-direction:column;color:var(--ink-1);padding:8px 0;">
+      <!-- 헤더 -->
+      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 26px;">
+        <div style="font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--ink-1);">Gym</div>
+        <div style="display:flex;gap:4px;" class="kr"><span class="js-home-stats" style="padding:8px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;">통계</span><span class="js-home-manage" style="padding:8px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;">관리</span></div>
       </div>
-      <!-- 주간 캘린더 -->
-      <div id="weekCal" style="margin-top:26px;padding:0 18px;display:grid;grid-template-columns:repeat(7,1fr);">
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);font-weight:400;">월</div>
-          <div class="num" style="font-size:20px;font-weight:500;color:#fff;">4</div>
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.5);">가슴</div>
+      <!-- 주간 스트립 (renderWeekCalendarToDom 채움) -->
+      <div id="weekCal" style="flex-shrink:0;margin-top:22px;padding:0 18px;display:grid;grid-template-columns:repeat(7,1fr);"></div>
+      <!-- 오늘 체중 카드 (탭 → weightKeypadSheet 입력 모달) -->
+      <div data-bind="weight-input-trigger" style="flex-shrink:0;margin:18px 26px 0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-inset-soft);cursor:pointer;">
+        <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+          <span class="kr" style="font-size:14px;font-weight:600;color:var(--ink-1);white-space:nowrap;">오늘 체중</span>
+          <span id="homeWeightRef" class="kr" style="font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 —kg</span>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);font-weight:400;">화</div>
-          <div class="num" style="font-size:17px;font-weight:300;color:rgba(243,239,230,0.3);">5</div>
+        <span style="display:inline-flex;align-items:baseline;gap:5px;padding:8px 16px;border-radius:var(--r-sm);background:var(--crail-tint);box-shadow:inset 0 0 0 1px var(--crail-base);">
+          <span class="kr" style="font-size:13px;font-weight:600;color:var(--crail-deep);white-space:nowrap;">기록하기</span>
+        </span>
+      </div>
+      <!-- 히어로: 이번 주 운동 (상단 앵커, 위→아래) -->
+      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-start;padding:36px 26px 0;">
+        <div class="kr" style="font-size:13px;font-weight:500;color:var(--ink-3);letter-spacing:0.01em;">이번 주 운동</div>
+        <div style="margin-top:12px;display:flex;align-items:baseline;gap:12px;">
+          <span id="homeWeekNum" class="mono" style="font-size:104px;font-weight:500;line-height:0.82;color:var(--ink-1);letter-spacing:-0.05em;">0</span>
+          <span id="homeWeekGoal" class="mono" style="font-size:24px;font-weight:400;color:var(--ink-4);white-space:nowrap;">/ 4회</span>
         </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:#fff;font-weight:600;">수</div>
-          <div class="num" style="font-size:20px;font-weight:500;color:#fff;">6</div>
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.5);">등</div>
-          <div style="width:10px;height:2px;border-radius:1px;background:var(--accent);margin-top:2px;"></div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);font-weight:400;">목</div>
-          <div class="num" style="font-size:17px;font-weight:300;color:rgba(243,239,230,0.3);">7</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);font-weight:400;">금</div>
-          <div class="num" style="font-size:17px;font-weight:300;color:rgba(243,239,230,0.3);">8</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);font-weight:400;">토</div>
-          <div class="num" style="font-size:17px;font-weight:300;color:rgba(243,239,230,0.3);">9</div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:4px;">
-          <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);font-weight:400;">일</div>
-          <div class="num" style="font-size:17px;font-weight:300;color:rgba(243,239,230,0.3);">10</div>
+        <div id="homeWeekSeg" style="margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;"></div>
+        <div id="homeStreakWrap" style="margin-top:18px;display:none;align-self:flex-start;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);white-space:nowrap;">
+          <span id="homeStreak" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);">0</span>
+          <span class="kr" style="font-size:12px;font-weight:500;color:var(--crail-deep);">주 연속</span>
         </div>
       </div>
-      <!-- 가운데 마지막 운동 정보 -->
-      <div style="flex:1;padding:44px 24px 0;position:relative;">
-        <div style="position:absolute;top:30px;left:0;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle, rgba(217,119,87,0.22) 0%, rgba(217,119,87,0) 60%);"></div>
-        <div style="position:relative;">
-          <div id="sLabel" class="kr" style="font-size:13px;color:rgba(243,239,230,0.45);letter-spacing:0.06em;margin-bottom:12px;">마지막 운동</div>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <div id="sNum" class="num" style="font-size:88px;font-weight:200;line-height:0.85;letter-spacing:-0.05em;color:#fff;">1</div>
-            <div id="sUnit" class="kr" style="font-size:20px;color:rgba(243,239,230,0.6);">일 전</div>
-          </div>
-          <div style="margin-top:24px;display:flex;gap:32px;">
-            <div>
-              <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">마지막 부위</div>
-              <div id="sPart" class="kr" style="margin-top:6px;font-size:18px;color:#fff;font-weight:500;">가슴</div>
-            </div>
-            <div style="width:1px;background:rgba(243,239,230,0.1);"></div>
-            <div>
-              <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);letter-spacing:0.06em;">이번 주</div>
-              <div style="margin-top:4px;display:flex;align-items:baseline;gap:3px;">
-                <span id="sSub" class="num" style="font-size:24px;font-weight:500;color:#fff;">1</span>
-                <span id="sSubUnit" class="kr" style="font-size:13px;color:rgba(243,239,230,0.5);">/4회</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- 하단 운동 시작 버튼 -->
-      <div style="padding:0 24px 8px;">
-        <div class="kr" style="font-size:13px;color:rgba(243,239,230,0.4);margin-bottom:12px;text-align:center;">한 세트만 더.</div>
-        <button id="ctaBtn" type="button" style="width:100%;height:56px;border-radius:28px;border:0;background:var(--accent);color:#fff;font-family:var(--font-body);font-size:17px;font-weight:500;box-shadow:0 14px 30px -8px rgba(217,119,87,.55);cursor:pointer;">운동 시작</button>
+      <!-- CTA — 워밍 잉크 -->
+      <div style="flex-shrink:0;padding:4px 26px 26px;">
+        <button id="ctaBtn" type="button" class="kr" style="width:100%;height:52px;border-radius:var(--r-md);border:0;background:var(--ink-1);color:#fbf8f2;font-size:15px;font-weight:600;letter-spacing:0.01em;cursor:pointer;box-shadow:0 8px 20px -12px rgba(20,18,14,0.5);">운동 시작</button>
       </div>
     </div>
     <!-- §9-1 — 날짜 탭 → 운동 요약 바텀시트 (src/features/day-detail-sheet.js) -->
-    <div id="dayDetailBackdrop" data-open="false" style="position:absolute;inset:0;z-index:90;background:rgba(0,0,0,0.5);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
-    <div id="dayDetailSheet" data-open="false" data-step="summary" data-iso="" style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:#15120e;border-top-left-radius:22px;border-top-right-radius:22px;padding:18px 18px 24px;box-shadow:0 -16px 40px -10px rgba(0,0,0,0.45);transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
+    <div id="dayDetailBackdrop" data-open="false" style="position:absolute;inset:0;z-index:90;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
+    <div id="dayDetailSheet" data-open="false" data-step="summary" data-iso="" style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:18px 18px 24px;box-shadow:0 -20px 50px -18px rgba(20,18,14,0.4);transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-        <div id="dayDetailDate" class="kr" style="font-size:16px;color:rgba(255,255,255,0.9);font-weight:500;">—</div>
-        <div id="dayDetailTag" class="kr" style="font-size:13px;color:rgba(255,255,255,0.5);"></div>
+        <div id="dayDetailDate" class="kr" style="font-size:16px;color:var(--ink-1);font-weight:600;">—</div>
+        <div id="dayDetailTag" class="kr" style="font-size:13px;color:var(--ink-3);"></div>
       </div>
-      <div id="dayDetailMeta" class="kr" style="display:none;gap:14px;margin-bottom:12px;font-size:14px;color:rgba(255,255,255,0.7);flex-wrap:wrap;"></div>
+      <div id="dayDetailMeta" class="kr" style="display:none;gap:14px;margin-bottom:12px;font-size:14px;color:var(--ink-2);flex-wrap:wrap;"></div>
       <div id="dayDetailExList" style="display:none;flex-direction:column;max-height:240px;overflow-y:auto;"></div>
-      <div id="dayDetailEmpty" class="kr" style="display:none;font-size:14px;color:rgba(255,255,255,0.4);text-align:center;padding:24px 0;">기록 없음</div>
+      <div id="dayDetailEmpty" class="kr" style="display:none;font-size:14px;color:var(--ink-4);text-align:center;padding:24px 0;">기록 없음</div>
       <div id="dayDetailConfirm" style="display:none;flex-direction:column;gap:8px;">
-        <div class="kr" style="font-size:15px;color:rgba(255,255,255,0.85);text-align:center;margin:8px 0 12px;">이 날짜의 기록을 삭제하시겠습니까?</div>
-        <button class="kr" type="button" data-day-detail-action="delete-confirm" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">삭제</button>
-        <button class="kr" type="button" data-day-detail-action="cancel" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);font-size:16px;cursor:pointer;">취소</button>
+        <div class="kr" style="font-size:15px;color:var(--ink-1);text-align:center;margin:8px 0 12px;">이 날짜의 기록을 삭제하시겠습니까?</div>
+        <button class="kr" type="button" data-day-detail-action="delete-confirm" style="width:100%;height:48px;border-radius:var(--r-md);border:0;background:var(--danger);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">삭제</button>
+        <button class="kr" type="button" data-day-detail-action="cancel" style="width:100%;height:48px;border-radius:var(--r-md);border:1px solid var(--line);background:var(--card);color:var(--ink-3);font-size:16px;font-weight:600;cursor:pointer;">취소</button>
       </div>
+    </div>
+    <!-- P5/P13 — 오늘 체중 입력 키패드 (weight-keypad-sheet.js · home/admin 공유) -->
+    <div id="weightKeypadBackdrop" data-open="false" style="position:absolute;inset:0;z-index:79;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
+    <div id="weightKeypadSheet" data-open="false" data-buf="" style="position:absolute;left:0;right:0;bottom:0;z-index:80;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:12px 20px 24px;box-shadow:0 -20px 50px -18px rgba(20,18,14,0.4);transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
+      <div style="width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
+      <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;">
+        <div id="weightKeypadValue" class="mono" style="font-size:52px;font-weight:500;color:var(--ink-1);letter-spacing:-0.03em;line-height:1;text-align:right;">0</div>
+        <div class="mono" style="font-size:17px;font-weight:500;color:var(--ink-4);">kg</div>
+      </div>
+      <div id="weightKeypadGrid" style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
+      <button id="weightKeypadDone" type="button" class="kr" style="margin-top:12px;width:100%;height:52px;border-radius:var(--r-md);background:var(--ink-1);color:#fbf8f2;font-size:16px;font-weight:600;border:0;cursor:pointer;box-shadow:0 8px 20px -12px rgba(20,18,14,0.5);">저장</button>
     </div>
   </div>
   <div class="phone-home"></div>

@@ -23,6 +23,7 @@ import {
   isoToWeekdayIdx,
   toISODate,
   listCustomExercises,
+  listAllWeights,
 } from '../db/queries.js';
 import { PARTS, getBuiltinExercise, resolveExerciseName, getCachedCustomExercise, primeCustomExerciseCache } from '../db/exercises.js';
 
@@ -153,6 +154,26 @@ function formatBlockPreview(block) {
  *
  * empty 상태(시안 부재) 임의 채움: label='마지막 운동', num='—', part='', sub='0', subUnit='/Ngoal회'.
  */
+/**
+ * P5 — 연속 운동 주(週) 수. 이번 주부터 거꾸로, 운동한 주가 연속되는 동안 카운트.
+ *  - 이번 주 미운동은 streak 미파기(아직 안 끝남) — 지난 주부터 평가.
+ */
+function computeWeekStreak(sessions, now) {
+  if (!Array.isArray(sessions) || !sessions.length) return 0;
+  const dates = sessions.map((s) => String(s.date || '')).filter(Boolean);
+  let streak = 0;
+  let cursor = new Date(now);
+  for (let i = 0; i < 60; i += 1) {
+    const { from, to } = weekRangeISO(cursor);
+    const hit = dates.some((d) => d >= from && d <= to);
+    if (hit) streak += 1;
+    else if (i > 0) break; // 이번 주(i=0) 미운동은 유지, 그 이전 빈 주는 중단
+    cursor = new Date(cursor);
+    cursor.setDate(cursor.getDate() - 7);
+  }
+  return streak;
+}
+
 export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT_WEEKLY_GOAL) {
   const goal = Number.isFinite(weeklyGoal) && weeklyGoal >= 1 && weeklyGoal <= 7
     ? Math.round(weeklyGoal) : DEFAULT_WEEKLY_GOAL;
@@ -169,6 +190,9 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
       part: '',
       sub: '0',
       subUnit,
+      weekCountNum: 0,
+      goalNum: goal,
+      weekStreak: 0,
     };
   }
   list.sort((a, b) => {
@@ -203,6 +227,9 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
     part,
     sub: String(weekCount),
     subUnit,
+    weekCountNum: weekCount,
+    goalNum: goal,
+    weekStreak: computeWeekStreak(list, now),
   };
 }
 
@@ -284,7 +311,7 @@ function renderWeekCalendarToDom(cells, doc) {
       c.isToday ? 'today' : '',
       'spa-managed',
     ].filter(Boolean).join(' ');
-    const partHtml = c.part ? c.part : '&nbsp;';
+    const partHtml = c.part ? escapeHtml(Array.from(String(c.part))[0] || '') : '&nbsp;'; // P5 — 종목 앞글자
     return `
       <button class="${classes}" type="button" data-day="${isoToWeekdayIdx(c.iso)}" data-iso="${c.iso}">
         <span class="cal-label">${c.wdLabel}</span>
@@ -416,6 +443,16 @@ export async function mountHomeView(now = Date.now()) {
       const streak = summarizeStreak(sessions, now, weeklyGoal);
       applyStreakToDom(streak, doc);
       streakApplied = true;
+      // P5 — 오늘 체중 카드: 직전 체중 표시 + 입력 모달(weightKeypadSheet) wire
+      try {
+        const weights = await listAllWeights();
+        const latest = Array.isArray(weights) && weights.length ? weights[weights.length - 1] : null;
+        const ref = doc.getElementById('homeWeightRef');
+        if (ref) ref.textContent = latest ? `직전 ${latest.weight}kg` : '오늘 첫 기록';
+      } catch (wErr) {
+        if (!(wErr && /window\.gymDB 미초기화/.test(String(wErr.message)))) console.error('[gymHome] weight card', wErr);
+      }
+      try { window.gymWeightKeypad?.wireWeightKeypad?.(doc); } catch (wkErr) { console.error('[gymHome] wireWeightKeypad', wkErr); }
     } catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
         console.error('[gymHome] mountHomeView streak', e);
@@ -487,20 +524,26 @@ function applyStreakToDom(streak, doc) {
     const el = doc.getElementById(id);
     if (el) el.textContent = text;
   };
-  setText('sLabel', streak.label);
-  const sNum = doc.getElementById('sNum');
-  if (sNum) {
-    sNum.textContent = streak.num;
-    sNum.style.fontSize = ''; // session 카드의 40px override 해제
+  // P5 라이트 — 이번 주 운동 N / M회 + 4(=goal)세그먼트 + 연속 주 칩.
+  const goalN = Math.max(1, streak.goalNum ?? DEFAULT_WEEKLY_GOAL);
+  const weekN = Math.max(0, streak.weekCountNum ?? 0);
+  setText('homeWeekNum', String(weekN));
+  setText('homeWeekGoal', `/ ${goalN}회`);
+  const seg = doc.getElementById('homeWeekSeg');
+  if (seg) {
+    const filled = Math.min(goalN, weekN);
+    seg.innerHTML = Array.from({ length: goalN }, (_, i) => `<i class="${i < filled ? 'fill' : ''}"></i>`).join('');
   }
-  setText('sUnit', streak.unit);
-  const sPart = doc.getElementById('sPart');
-  if (sPart) {
-    sPart.textContent = streak.part;
-    sPart.style.display = streak.part ? '' : 'none';
+  const streakWrap = doc.getElementById('homeStreakWrap');
+  if (streakWrap) {
+    const ws = streak.weekStreak ?? 0;
+    if (ws >= 1) {
+      setText('homeStreak', String(ws));
+      streakWrap.style.display = 'inline-flex';
+    } else {
+      streakWrap.style.display = 'none';
+    }
   }
-  setText('sSub', streak.sub);
-  setText('sSubUnit', streak.subUnit || '');
   setText('ctaBtn', streak.state === 'empty' ? '첫 운동 시작' : '운동 시작');
   // Wave 11.10.4 — '운동 시작' / '첫 운동 시작' click → #/session.
   // session 화면 진입 후 사용자가 종목 클릭 시 addExerciseToActiveSession 가 active session 자동 생성 (spec §6-1).
