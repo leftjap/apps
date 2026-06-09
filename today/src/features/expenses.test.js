@@ -895,40 +895,41 @@ describe('patchDayPopoverFromRows — DOM 패치 (1건 룰 포함)', () => {
     expect(r.reason).toBe('no_popover');
   });
 
-  it('rows 0건 → 빈 list + foot 숨김 (Wave 11.8d — empty 메시지 dead path 제거)', () => {
+  it('rows 0건 → 빈 list + 헤더 합계 "0건" (시안 §8 — foot 제거, 헤더 합계 이관)', () => {
     const doc = makeFakeDoc();
     const r = patchDayPopoverFromRows({ monthDay: '04-12', rows: [], doc });
     expect(r.applied).toBe(true);
     expect(r.count).toBe(0);
     expect(doc._popover.querySelector('.expense-list').innerHTML).toBe('');
-    expect(doc._popover.querySelector('.exp-day-detail__foot').style.display).toBe('none');
+    expect(doc._popover.querySelector('.exp-day-detail__sum').innerHTML).toContain('0건');
   });
 
-  it('rows 1건 → foot.style.display="none" (1건 룰)', () => {
+  it('rows 1건 → 거래 행 + 헤더 합계 "11,880원 · 1건"', () => {
     const doc = makeFakeDoc();
     const rows = [{ id: 'a', category: '배달', merchant: '주식회사우아', amount_krw: 11880 }];
     const r = patchDayPopoverFromRows({ monthDay: '04-12', rows, doc });
     expect(r.applied).toBe(true);
     expect(r.count).toBe(1);
     expect(doc._popover.querySelector('.expense-list').innerHTML).toContain('주식회사우아');
-    expect(doc._popover.querySelector('.exp-day-detail__foot').style.display).toBe('none');
+    const sum = doc._popover.querySelector('.exp-day-detail__sum').innerHTML;
+    expect(sum).toContain('11,880');
+    expect(sum).toContain('1건');
   });
 
-  it('rows 2건 → foot.style.display="" + count + sum', () => {
+  it('rows 2건 → 헤더 합계 "8,000원 · 2건"', () => {
     const doc = makeFakeDoc();
     const rows = [
       { id: 'a', category: '편의점', merchant: 'GS25', amount_krw: 5000 },
       { id: 'b', category: '간식', merchant: '빵집', amount_krw: 3000 },
     ];
     const r = patchDayPopoverFromRows({ monthDay: '04-25', rows, doc });
-    const foot = doc._popover.querySelector('.exp-day-detail__foot');
     expect(r.count).toBe(2);
-    expect(foot.style.display).toBe('');
-    expect(foot.querySelector('.exp-day-detail__foot-count').textContent).toBe('2건');
-    expect(foot.querySelector('.exp-day-detail__foot-sum').innerHTML).toContain('8,000');
+    const sum = doc._popover.querySelector('.exp-day-detail__sum').innerHTML;
+    expect(sum).toContain('8,000');
+    expect(sum).toContain('2건');
   });
 
-  it('rows 4건 → 합계 정확', () => {
+  it('rows 4건 → 합계 정확 (1,548,240원 · 4건)', () => {
     const doc = makeFakeDoc();
     const rows = [
       { id: 'a', amount_krw: 24000 },
@@ -937,17 +938,18 @@ describe('patchDayPopoverFromRows — DOM 패치 (1건 룰 포함)', () => {
       { id: 'd', amount_krw: 7890 },
     ];
     const r = patchDayPopoverFromRows({ monthDay: '04-11', rows, doc });
-    const foot = doc._popover.querySelector('.exp-day-detail__foot');
     expect(r.count).toBe(4);
-    expect(foot.querySelector('.exp-day-detail__foot-count').textContent).toBe('4건');
-    expect(foot.querySelector('.exp-day-detail__foot-sum').innerHTML).toContain('1,548,240');
+    const sum = doc._popover.querySelector('.exp-day-detail__sum').innerHTML;
+    expect(sum).toContain('1,548,240');
+    expect(sum).toContain('4건');
   });
 
-  it('헤더 텍스트 = "M월 D일 X요일"', () => {
+  it('헤더 날짜 = "M월 D일" + 요일 span', () => {
     const doc = makeFakeDoc();
     patchDayPopoverFromRows({ monthDay: '04-12', rows: [], doc });
-    const dateText = doc._popover.querySelector('.exp-day-detail__date').textContent;
-    expect(dateText).toMatch(/^4월 12일 [일월화수목금토]요일$/);
+    const dateHtml = doc._popover.querySelector('.exp-day-detail__date').innerHTML;
+    expect(dateHtml).toContain('4월 12일');
+    expect(dateHtml).toMatch(/class="dow">[일월화수목금토]</);
   });
 });
 

@@ -1266,6 +1266,40 @@
     color: var(--ink-1);
     letter-spacing: -0.01em;
   }
+  /* ── 일자 상세 — 시안(modal-day) 재구조화: 헤더 합계 + 거래 행 + 점선 추가 (작업지시서 §8) ── */
+  .exp-day-detail .exp-day-detail__date .dow { color: var(--ink-3); font-weight: 400; margin-left: 8px; }
+  .exp-day-detail__sum { margin-top: 6px; font-size: 13px; color: var(--ink-3); white-space: nowrap; font-feature-settings: 'tnum' 1; }
+  .exp-day-detail__sum b { color: var(--crail-base); font-weight: 600; font-size: 15px; }
+  .exp-day-detail__close {
+    width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent;
+    color: var(--ink-3); cursor: pointer; display: grid; place-items: center; flex-shrink: 0;
+    transition: background .12s, color .12s;
+  }
+  .exp-day-detail__close:hover { background: var(--hover-bg); color: var(--ink-1); }
+  .exp-day-detail__close .ico { width: 18px; height: 18px; }
+  /* 거래 행 — 카테고리·시간 / 가맹점 / 금액 (피드와 동일 시각언어) */
+  .exp-day-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 12px 10px; border-radius: 10px; cursor: pointer; transition: background .12s; }
+  .exp-day-row:hover { background: var(--hover-bg); }
+  .exp-day-row__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .exp-day-row__head { display: flex; align-items: center; gap: 8px; }
+  .exp-day-row__cat { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
+  .exp-day-row__time { font-size: 12px; color: var(--ink-4); font-feature-settings: 'tnum' 1; display: inline-flex; align-items: center; gap: 6px; }
+  .exp-day-row__time::before { content: ""; width: 3px; height: 3px; border-radius: 50%; background: var(--ink-4); }
+  .exp-day-row__merchant { font-size: 15px; color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .exp-day-row__merchant .exp-row__recurring { margin-left: 4px; color: var(--ink-4); }
+  .exp-day-row__amt { font-size: 15px; color: var(--ink-1); text-align: right; white-space: nowrap; font-feature-settings: 'tnum' 1; letter-spacing: -0.02em; }
+  .exp-day-row__amt .amt-num { color: var(--ink-1); }
+  .exp-day-row__amt .amt-unit { color: var(--ink-3); font-size: 12px; margin-left: 2px; }
+  /* 점선 "이 날에 거래 추가" */
+  .exp-day-add {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; margin: 8px 0 2px; padding: 12px;
+    border: 1px dashed var(--line); border-radius: var(--r-sm); background: transparent;
+    color: var(--ink-3); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: border-color .14s, color .14s, background .14s;
+  }
+  .exp-day-add:hover { border-color: var(--crail-base); color: var(--crail-base); background: rgba(217,119,87,0.05); }
+  .exp-day-add .ico { width: 17px; height: 17px; }
 
   /* popover 거래 row — 2줄 (금액 + 매출처/카드 메타) */
   .exp-popover-row {
@@ -4819,9 +4853,9 @@
           { id: 'tx-08', date: '04-15', category: '외식',     memo: '점심 — 파인만컴',           amount: 21500, brand: '파인만컴' },
           { id: 'tx-09', date: '04-17', category: '편의점',   memo: '7-Eleven',                amount: 24000 },
           // 04-19 — 3건 (합계 82,570 보존)
-          { id: 'tx-10a', date: '04-19', category: '외식',    memo: '회식 1차',                 amount: 50000, brand: '장수찜갈비',       card: '삼성1337' },
-          { id: 'tx-10b', date: '04-19', category: '외식',    memo: '회식 2차',                 amount: 22570, brand: '오리엔탈 이자카야', card: '삼성1337' },
-          { id: 'tx-10c', date: '04-19', category: '교통',    memo: '귀가 택시',                amount: 10000, brand: '카카오T',          card: '삼성1337' },
+          { id: 'tx-10a', date: '04-19', category: '외식',    memo: '회식 1차',                 amount: 50000, brand: '장수찜갈비',       card: '삼성1337', time: '19:30' },
+          { id: 'tx-10b', date: '04-19', category: '외식',    memo: '회식 2차',                 amount: 22570, brand: '오리엔탈 이자카야', card: '삼성1337', time: '21:40' },
+          { id: 'tx-10c', date: '04-19', category: '교통',    memo: '귀가 택시',                amount: 10000, brand: '카카오T',          card: '삼성1337', time: '23:05' },
           { id: 'tx-11', date: '04-20', category: '외식',     memo: '점심 — 홍대원조통골',       amount: 12600, brand: '홍대원조통골' },
           { id: 'tx-12', date: '04-21', category: '편의점',   memo: '간식',                    amount: 8950 },
           { id: 'tx-13', date: '04-22', category: '구독',     memo: '멜론',                    amount: 4300, recurring: true },
@@ -5862,32 +5896,25 @@
       const [sm, sd] = _selectedDate.split('-').map(Number);
       const dowName = ['일','월','화','수','목','금','토'][new Date(data.year, sm - 1, sd).getDay()];
       const repeatSvg = '<svg class="exp-row__recurring" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6L2 8l2 2"/><path d="M2 8h11V5"/><path d="M12 12l2-2-2-2"/><path d="M14 10H3v3"/></svg>';
-      const cardLabel = '삼성1337';
       const dayRows = dayTxns.length
         ? dayTxns.map(t => {
             const merchant = t.brand || t.memo;
-            const card = t.card || cardLabel;
+            const timeHtml = t.time ? `<span class="exp-day-row__time">${t.time}</span>` : '';
             return `
-              <div class="exp-popover-row" data-tx-id="${t.id}">
-                <span class="exp-popover-row__cat">${t.category}</span>
-                <span class="exp-popover-row__merchant">${merchant}</span>
-                <span class="exp-popover-row__card">${card}${t.recurring ? repeatSvg : ''}</span>
-                <span class="exp-popover-row__amount">${formatAmount(t.amount)}</span>
+              <div class="exp-day-row" data-tx-id="${t.id}" onclick="closeExpDayPopover(); openExpenseModal('edit','${t.id}')">
+                <div class="exp-day-row__body">
+                  <div class="exp-day-row__head"><span class="exp-day-row__cat">${t.category}</span>${timeHtml}</div>
+                  <div class="exp-day-row__merchant">${merchant}${t.recurring ? repeatSvg : ''}</div>
+                </div>
+                <div class="exp-day-row__amt">${formatAmount(t.amount)}</div>
               </div>
             `;
           }).join('')
         : '<div class="exp-day-detail__empty">이 날의 거래가 없습니다.</div>';
 
-      popover.querySelector('.exp-day-detail__date').textContent = `${sm}월 ${sd}일 ${dowName}요일`;
+      popover.querySelector('.exp-day-detail__date').innerHTML = `${sm}월 ${sd}일<span class="dow">${dowName}</span>`;
+      popover.querySelector('.exp-day-detail__sum').innerHTML = `이 날 <b>${daySum.toLocaleString()}원</b> · ${dayTxns.length}건`;
       popover.querySelector('.expense-list').innerHTML = dayRows;
-      const foot = popover.querySelector('.exp-day-detail__foot');
-      if (dayTxns.length > 1) {
-        foot.style.display = '';
-        foot.querySelector('.exp-day-detail__foot-count').textContent = `${dayTxns.length}건`;
-        foot.querySelector('.exp-day-detail__foot-sum').innerHTML = formatAmount(daySum);
-      } else {
-        foot.style.display = 'none';
-      }
 
       // 셀 selected 클래스 직접 동기화 (renderExpense 호출 X 라 자동 안 됨)
       document.querySelectorAll('.exp-month-day.is-selected').forEach(el => el.classList.remove('is-selected'));
@@ -6412,11 +6439,12 @@
       _expModalMode = mode;
       _expModalEditId = txId;
       const _modalEl = document.querySelector('#expModalOverlay .exp-modal');
-      if (_modalEl) _modalEl.setAttribute('data-mode', mode);   // 붙여넣기 CTA 신규만 (작업지시서 §7)
+      if (_modalEl) _modalEl.setAttribute('data-mode', 'new');   // 기본 new — edit tx 확정 후 전환 (half-state 방지)
 
       if (mode === 'edit' && txId) {
         const tx = FIXTURE.expense.txns.find(t => t.id === txId);
-        if (!tx) return;
+        if (!tx) return;   // tx 없으면 new 상태 유지
+        if (_modalEl) _modalEl.setAttribute('data-mode', 'edit');   // 붙여넣기 CTA 신규만 (작업지시서 §7)
         document.getElementById('expModalTitle').textContent = '거래 수정';
         document.getElementById('expModalDeleteBtn').style.display = '';
 
@@ -6906,13 +6934,18 @@
 <div id="expDayPopoverOverlay" class="exp-day-popover-overlay" aria-hidden="true"></div>
 <div id="expDayPopover" class="exp-day-detail is-popover" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="exp-day-detail__head">
-    <span class="exp-day-detail__date"></span>
+    <div>
+      <div class="exp-day-detail__date"></div>
+      <div class="exp-day-detail__sum"></div>
+    </div>
+    <button type="button" class="exp-day-detail__close" onclick="closeExpDayPopover()" aria-label="닫기">
+      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
   </div>
   <div class="expense-list"></div>
-  <div class="exp-day-detail__foot">
-    <span class="exp-day-detail__foot-count"></span>
-    <span class="exp-day-detail__foot-sum"></span>
-  </div>
+  <button type="button" class="exp-day-add" onclick="closeExpDayPopover(); openExpenseModal('new')">
+    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13M5.5 12h13"/></svg>이 날에 거래 추가
+  </button>
 </div>
 
 <!-- Spotlight (⌘K) 검색 모달 -->

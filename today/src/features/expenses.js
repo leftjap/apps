@@ -1315,6 +1315,17 @@ export function dayOfWeekFromMonthDay(monthDay) {
  * popover DOM 패치 — date / list / foot. 1건 이하 시 foot 숨김 (mocks 와 동일 룰).
  * rows.length === 0 시 empty 메시지 (mocks FIXTURE fallback 안 함 — 시안 데이터 노출 방지).
  */
+// 일자 상세 거래 행 — 카테고리·시간 / 가맹점 / 금액 (피드와 동일 시각언어, 작업지시서 §8)
+function dayRowToHtml(r) {
+  const id = escapeHtml(r.id);
+  const cat = escapeHtml(toCategoryLabel(r.category));
+  const time = r.spent_at ? new Date(r.spent_at).toTimeString().slice(0, 5) : '';
+  const timeHtml = time ? `<span class="exp-day-row__time">${time}</span>` : '';
+  const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
+  const recur = r.recurring ? REPEAT_SVG : '';
+  return `<div class="exp-day-row" data-tx-id="${id}" onclick="closeExpDayPopover(); openExpenseModal('edit','${id}')"><div class="exp-day-row__body"><div class="exp-day-row__head"><span class="exp-day-row__cat">${cat}</span>${timeHtml}</div><div class="exp-day-row__merchant">${merchant}${recur}</div></div><div class="exp-day-row__amt">${formatAmount(r.amount_krw || 0)}</div></div>`;
+}
+
 export function patchDayPopoverFromRows({ monthDay, rows = [], doc = (typeof document !== 'undefined' ? document : null), defaultCard = DEFAULT_CARD_LABEL } = {}) {
   if (!doc || !monthDay) return { applied: false, reason: !doc ? 'no_doc' : 'no_date' };
   const popover = doc.getElementById('expDayPopover');
@@ -1322,24 +1333,15 @@ export function patchDayPopoverFromRows({ monthDay, rows = [], doc = (typeof doc
 
   const [m, d] = monthDay.split('-').map(Number);
   const dowName = dayOfWeekFromMonthDay(monthDay);
-  popover.querySelector('.exp-day-detail__date').textContent = `${m}월 ${d}일 ${dowName}요일`;
+  const dateEl = popover.querySelector('.exp-day-detail__date');
+  if (dateEl) dateEl.innerHTML = `${m}월 ${d}일<span class="dow">${dowName}</span>`;
+  // 헤더 합계 — "이 날 N원 · N건" (시안 §8, 풋터에서 이관)
+  const sum = rows.reduce((s, r) => s + (r.amount_krw || 0), 0);
+  const sumEl = popover.querySelector('.exp-day-detail__sum');
+  if (sumEl) sumEl.innerHTML = `이 날 <b>${sum.toLocaleString('ko-KR')}원</b> · ${rows.length}건`;
 
   const list = popover.querySelector('.expense-list');
-  // 2026-05-12 Wave 11.8d — 0건 cell 클릭 자체가 차단 (patchDayPopoverHandlers) 되어
-  // 본 함수는 rows.length > 0 인 경우만 도달. 빈 분기 dead path 라 단순화.
-  list.innerHTML = rows.map((r) => rowToPopoverHtml(r, { defaultCard })).join('');
-
-  const foot = popover.querySelector('.exp-day-detail__foot');
-  if (foot) {
-    if (rows.length > 1) {
-      foot.style.display = '';
-      const sum = rows.reduce((s, r) => s + (r.amount_krw || 0), 0);
-      foot.querySelector('.exp-day-detail__foot-count').textContent = `${rows.length}건`;
-      foot.querySelector('.exp-day-detail__foot-sum').innerHTML = formatAmount(sum);
-    } else {
-      foot.style.display = 'none';
-    }
-  }
+  list.innerHTML = rows.map((r) => dayRowToHtml(r)).join('');
 
   return { applied: true, count: rows.length };
 }
