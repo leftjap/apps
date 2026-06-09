@@ -295,13 +295,15 @@ const SENTENCES = [
 ];
 
 // 문장 클릭 → 복습 세션 진입.
-// from='stats'    → 그 날짜에 학습한 모든 문장을 순차 복습 큐로, × 시 stats 로 복귀
-// from='sentList' → 해당 문장 하나만 복습 큐로, × 시 stats 문장목록 탭으로 복귀
+// #3 — from 무관하게 '그날 학습한 문장 전체'를 순차 복습 큐로 (세션 사이드바에 그날 문장이 다 노출).
+//   from='stats' → × 시 캘린더로 복귀 / from='sentList' → × 시 문장목록 탭으로 복귀 (returnTo 만 분기).
+//   live source(d1SentSource) 우선 — 실데이터는 _iso(전체 날짜) 기준 묶음. iframe mock 은 date.
 // queue/returnTo 는 sessionStorage 전달 (URL 쿼리로 JSON 직렬화 회피).
 function goReview(s, from) {
-  const queue = (from === 'stats')
-    ? SENTENCES.filter(x => x.date === s.date)
-    : [s];
+  const pool = (Array.isArray(d1SentSource) && d1SentSource.length) ? d1SentSource : SENTENCES;
+  const key = s._iso || s.date;
+  const sameDay = pool.filter((x) => (x._iso || x.date) === key);
+  const queue = sameDay.length ? sameDay : [s];
   sessionStorage.setItem('studyReviewQueue', JSON.stringify(queue));
   sessionStorage.setItem('studyReturnTo', from);
   // Wave 11.34 — SPA 라우터로 직접 hash 변경 (rewriteMockLinks 의 정규식이 template literal 백틱 미매칭 → P-1 회귀 원인).

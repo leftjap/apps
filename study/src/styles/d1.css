@@ -89,7 +89,6 @@
 /* home */
 .d1-hero{ background:var(--terra-bg2); border:1px solid var(--terra-bg); border-radius:22px; padding:40px 44px; display:flex; align-items:center; justify-content:space-between; gap:32px; }
 .d1-hero--review{ background:var(--sage-bg); border-color:transparent; } /* #4 — 복습 박스: 신규와 동일 구조, sage 톤 */
-.d1-bar{ background:var(--sage-bg); border-radius:18px; padding:0 36px; height:108px; display:flex; align-items:center; justify-content:space-between; }
 .d1-bignum{ font-size:78px; font-weight:800; line-height:.86; letter-spacing:-0.04em; }
 
 /* session */
