@@ -3,77 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0c0a08">
-<title>Gym · 통계 (v2 · StatsA/B/C)</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#fdfdfd">
+<title>Gym · 통계 (Light Paper)</title>
 <style>
-:root {
-  --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
-  --surface: #ffffff; --surface-2: #f7f4ec;
-  --ink: #1a1714; --ink-strong: #0c0a08;
-  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
-  --line: #e6e1d4; --line-soft: #efeae0;
-  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
-  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
-  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
-  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
-  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
-  --font-display: "Poppins", "SF Pro Display", -apple-system, system-ui, sans-serif;
-  --font-body: "Noto Sans KR", -apple-system, system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
-}
+/* Light Paper 재디자인 — 토큰은 전역 src/styles/paper.css (--shell/--card/--ink-*/--crail-* 등).
+   폰트도 paper.css 가 Pretendard(--font-sans) + Space Grotesk(--font-mono) import. */
 * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
-.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.kr { font-family: var(--font-body); }
-.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
+body { margin: 0; min-height: 100vh; background: var(--hover-bg); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-sans); color: var(--ink-1); }
+/* .num — JS 생성 마크업이 class="num" 사용. 시안 .mono 와 동일하게 Space Grotesk tabular 로 매핑. */
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; letter-spacing: -0.01em; }
+.kr { font-family: var(--font-sans); }
+.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(20,18,14,.04), 0 30px 60px -20px rgba(20,18,14,.16), 0 0 0 1px rgba(20,18,14,.05); font-family: var(--font-sans); color: var(--ink-1); }
 .phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
-.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size:16px; letter-spacing: -0.01em; color: var(--ink-strong); }
-.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
+.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-mono); font-weight: 600; font-size:16px; letter-spacing: -0.01em; color: var(--ink-1); }
+.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-1); }
 .phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
 .phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
 .phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
-.phone.dark { color: #f3efe6; }
-.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
-.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(20,18,14,.22); }
 .tab-pane { display: none; }
 [data-tab="cal"] .pane-cal { display: block; }
 [data-tab="exercise"] .pane-exercise { display: block; }
 [data-tab="body"] .pane-body { display: block; }
 .tab-item { position: relative; padding: 8px 0 12px; cursor: pointer; }
-.tab-bar { position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--accent); display: none; }
+.tab-bar { position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--crail-base); border-radius: 1px; display: none; }
 [data-tab="cal"] .tab-cal .tab-bar,
 [data-tab="exercise"] .tab-exercise .tab-bar,
 [data-tab="body"] .tab-body .tab-bar { display: block; }
 [data-tab="cal"] .tab-cal .tab-label,
 [data-tab="exercise"] .tab-exercise .tab-label,
-[data-tab="body"] .tab-body .tab-label { font-weight: 600; color: #fff; }
-.tab-label { font-size:15px; font-weight: 400; color: rgba(255,255,255,0.45); }
+[data-tab="body"] .tab-body .tab-label { font-weight: 600; color: var(--ink-1); }
+.tab-label { font-size:15px; font-weight: 500; color: var(--ink-4); }
 /* 종목 빈도 row — 모바일 친화 list 디자인 (treemap 폐기) */
-.ex-freq-row { display: flex; flex-direction: column; gap: 6px; padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.ex-freq-row { display: flex; flex-direction: column; gap: 6px; padding: 10px 4px; border-bottom: 1px solid var(--line-soft); }
 .ex-freq-row:last-child { border-bottom: 0; }
 .ex-freq-head { display: flex; align-items: center; gap: 10px; }
 .ex-freq-dot { width: 8px; height: 8px; border-radius: 4px; flex: 0 0 8px; }
-.ex-freq-name { flex: 1; font-size: 15px; color: #fff; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.ex-freq-count { font-size: 13px; color: rgba(255,255,255,0.65); font-weight: 500; display: inline-flex; align-items: baseline; gap: 3px; }
-.ex-freq-count > .kr { font-size: 11px; color: rgba(255,255,255,0.4); }
-.ex-freq-bar { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
-.ex-freq-fill { display: block; height: 100%; border-radius: 2px; opacity: 0.9; }
+.ex-freq-name { flex: 1; font-size: 15px; color: var(--ink-1); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ex-freq-count { font-size: 13px; color: var(--ink-3); font-weight: 500; display: inline-flex; align-items: baseline; gap: 3px; }
+.ex-freq-count > .kr { font-size: 11px; color: var(--ink-4); }
+.ex-freq-bar { height: 6px; background: var(--sunken); border-radius: 3px; overflow: hidden; }
+.ex-freq-fill { display: block; height: 100%; border-radius: 3px; }
+/* 부위 도넛 — work-order 비율 링 (실루엣 폐기 후 교체). conic-gradient 는 stats.js applyBodyPartsToDom 가 주입. */
+.donut-wrap { display: flex; justify-content: center; padding: 22px 0 6px; }
+.donut { width: 168px; height: 168px; border-radius: 50%; position: relative;
+  background: conic-gradient(var(--crail-base) 0 32%, #c2bbac 32% 58%, #d0cabd 58% 76%, #ddd8cd 76% 90%, #e9e5dc 90% 100%); }
+.donut::after { content: ""; position: absolute; inset: 26px; border-radius: 50%; background: var(--shell); box-shadow: inset 0 1px 3px rgba(20,18,14,0.06); }
+.donut .ctr { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.donut .ctr .n { font-size: 30px; font-weight: 600; color: var(--ink-1); letter-spacing: -0.03em; }
+.donut .ctr .k { font-size: 11px; font-weight: 500; color: var(--ink-4); margin-top: 1px; }
+/* 부위 범례 */
+.lrow { display: flex; align-items: center; gap: 12px; padding: 11px 0; }
+.lrow + .lrow { border-top: 1px solid var(--line-soft); }
+.lrow .dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+.lrow .nm { flex: 1; font-size: 15px; font-weight: 500; color: var(--ink-1); white-space: nowrap; }
+.lrow .ct { font-size: 13px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.lrow .pc { font-size: 13px; font-weight: 600; color: var(--ink-1); min-width: 38px; text-align: right; }
 </style>
 </head>
 <body>
-<div class="phone dark" style="background:#0c0a08;" data-tab="cal">
+<div class="phone" style="background:var(--shell);" data-tab="cal">
   <div class="phone-notch"></div>
   <div class="phone-content">
     <!-- StatsHeader -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;">
-      <div class="kr" style="font-size:24px;font-weight:600;color:#fff;">통계</div>
-      <div style="display:flex;gap:18px;font-size:14px;color:rgba(255,255,255,0.5);" class="kr"><span class="js-nav-home" style="cursor:pointer;">홈</span><span class="js-nav-manage" style="cursor:pointer;">관리</span></div>
+      <div class="kr" style="font-size:24px;font-weight:700;color:var(--ink-1);letter-spacing:-0.02em;">통계</div>
+      <div style="display:flex;gap:4px;font-size:14px;" class="kr"><span class="js-nav-home" style="cursor:pointer;padding:8px 12px;border-radius:var(--r-sm);color:var(--ink-3);">홈</span><span class="js-nav-manage" style="cursor:pointer;padding:8px 12px;border-radius:var(--r-sm);color:var(--ink-3);">관리</span></div>
     </div>
-    <div style="margin-top:22px;padding:0 24px;display:flex;gap:22px;border-bottom:1px solid rgba(255,255,255,0.06);">
+    <div style="margin-top:20px;padding:0 24px;display:flex;gap:24px;border-bottom:1px solid var(--line);">
       <div class="tab-item tab-cal" data-go="cal"><span class="kr tab-label">캘린더</span><div class="tab-bar"></div></div>
       <div class="tab-item tab-exercise" data-go="exercise"><span class="kr tab-label">종목</span><div class="tab-bar"></div></div>
       <div class="tab-item tab-body" data-go="body"><span class="kr tab-label">부위</span><div class="tab-bar"></div></div>
@@ -81,179 +78,76 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 
     <!-- Pane: 캘린더 -->
     <div class="tab-pane pane-cal">
-      <div style="padding:20px 24px 0;display:flex;align-items:center;justify-content:space-between;">
-        <span style="color:rgba(255,255,255,0.5);font-size:20px;">‹</span>
-        <div id="monthLabel" class="num" style="font-size:16px;color:#fff;font-weight:500;letter-spacing:0.04em;">2026 · 5월</div>
-        <span style="color:rgba(255,255,255,0.5);font-size:20px;">›</span>
+      <div style="padding:18px 24px 0;display:flex;align-items:center;justify-content:space-between;">
+        <span aria-label="이전 달" style="width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer;">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div id="monthLabel" class="num" style="font-size:15px;color:var(--ink-1);font-weight:600;letter-spacing:0.02em;">2026 · 5월</div>
+        <span aria-label="다음 달" style="width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer;">
+          <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
       </div>
-      <div style="padding:16px 18px 0;">
-        <div class="kr" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;color:rgba(255,255,255,0.4);font-size:13px;">
-          <div style="text-align:center;padding-bottom:8px;">월</div>
-          <div style="text-align:center;padding-bottom:8px;">화</div>
-          <div style="text-align:center;padding-bottom:8px;">수</div>
-          <div style="text-align:center;padding-bottom:8px;">목</div>
-          <div style="text-align:center;padding-bottom:8px;">금</div>
-          <div style="text-align:center;padding-bottom:8px;">토</div>
-          <div style="text-align:center;padding-bottom:8px;">일</div>
+      <div style="padding:14px 18px 0;">
+        <div class="kr" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;color:var(--ink-4);font-size:11px;font-weight:500;">
+          <div style="text-align:center;padding-bottom:6px;">월</div>
+          <div style="text-align:center;padding-bottom:6px;">화</div>
+          <div style="text-align:center;padding-bottom:6px;">수</div>
+          <div style="text-align:center;padding-bottom:6px;">목</div>
+          <div style="text-align:center;padding-bottom:6px;">금</div>
+          <div style="text-align:center;padding-bottom:6px;">토</div>
+          <div style="text-align:center;padding-bottom:6px;">일</div>
         </div>
         <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;"></div>
       </div>
       <!-- 캘린더 하단 추이 그래프 — 최근 8주 막대 + 선 overlay. 헤더 = 이번 주 + 지난 주 대비 delta. -->
-      <div style="margin:20px 20px 0;padding:16px 18px;border-radius:16px;background:#15120e;border:1px solid rgba(255,255,255,0.05);">
+      <div style="margin:24px 22px 28px;padding:18px 20px 22px;border-radius:var(--r-lg);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-float);">
         <div style="display:flex;align-items:baseline;justify-content:space-between;">
           <div>
-            <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">이번 주</div>
-            <div style="margin-top:4px;display:flex;align-items:baseline;gap:8px;">
-              <span class="num" style="font-size:24px;font-weight:300;color:#fff;"><span data-bind="cal-week-current">0</span><span class="kr" style="font-size:14px;color:rgba(255,255,255,0.5);margin-left:3px;">kg</span></span>
-              <span class="kr" data-bind="cal-week-delta" style="font-size:13px;color:var(--accent);font-weight:600;">+0%</span>
+            <div class="kr" style="font-size:12px;color:var(--ink-3);letter-spacing:0.02em;">이번 주 볼륨</div>
+            <div style="margin-top:5px;display:flex;align-items:baseline;gap:8px;">
+              <span class="num" style="font-size:26px;font-weight:600;color:var(--ink-1);letter-spacing:-0.02em;"><span data-bind="cal-week-current">0</span><span class="kr" style="font-size:13px;color:var(--ink-4);margin-left:1px;">kg</span></span>
+              <span class="kr" data-bind="cal-week-delta" style="font-size:13px;color:var(--crail-deep);font-weight:600;">+0%</span>
             </div>
           </div>
-          <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);">지난 주 <span data-bind="cal-week-previous">0</span>kg</div>
+          <div class="kr" style="font-size:12px;color:var(--ink-4);">지난 주 <span data-bind="cal-week-previous">0</span>kg</div>
         </div>
         <!-- 8주 주간 볼륨 비교 막대 + 선 overlay. 신규 — 기존 #trend-svg 폐기. -->
-        <div data-bind="weekly-trend" style="margin-top:18px;">
+        <div data-bind="weekly-trend" style="margin-top:16px;">
           <svg id="weekly-trend-chart" viewBox="0 0 320 160" style="width:100%;height:150px;display:block;"></svg>
-          <div data-bind="weekly-trend-xaxis" style="display:flex;justify-content:space-between;margin-top:10px;padding:0 4px;font-size:11px;color:rgba(255,255,255,0.4);"></div>
+          <div data-bind="weekly-trend-xaxis" style="display:flex;justify-content:space-between;margin-top:8px;padding:0 2px;font-family:var(--font-mono);font-size:10px;color:var(--ink-4);"></div>
         </div>
       </div>
     </div>
 
     <!-- Pane: 종목 — 사용자가 자주 한 운동 종목 빈도순 list -->
     <div class="tab-pane pane-exercise">
-      <div style="padding:26px 24px 0;">
-        <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">자주 한 운동 · 최근 60일</div>
-        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" data-bind="exercise-total" style="font-size:32px;font-weight:200;color:#fff;letter-spacing:-0.03em;">0</span>
-          <span class="kr" style="font-size:15px;color:rgba(255,255,255,0.55);">종목</span>
+      <div style="padding:22px 24px 0;">
+        <div class="kr" style="font-size:12px;color:var(--ink-3);letter-spacing:0.02em;">자주 한 운동 · 최근 60일</div>
+        <div style="margin-top:6px;display:flex;align-items:baseline;gap:7px;">
+          <span class="num" data-bind="exercise-total" style="font-size:34px;font-weight:600;color:var(--ink-1);letter-spacing:-0.03em;">0</span>
+          <span class="kr" style="font-size:14px;color:var(--ink-4);">종목</span>
         </div>
         <!-- 종목 빈도 list — 모바일 친화 row layout (가로 막대 + setCount). -->
-        <div data-bind="exercise-treemap" style="margin-top:18px;display:flex;flex-direction:column;gap:2px;max-height:calc(100dvh - 240px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:24px;">
-          <div data-bind="exercise-empty" style="display:none;text-align:center;padding:48px 0;color:rgba(255,255,255,0.4);font-size:14px;width:100%;" class="kr">아직 운동 기록이 없습니다</div>
+        <div data-bind="exercise-treemap" style="margin-top:18px;display:flex;flex-direction:column;gap:6px;max-height:calc(100dvh - 240px);overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-bottom:24px;">
+          <div data-bind="exercise-empty" style="display:none;text-align:center;padding:48px 0;color:var(--ink-4);font-size:14px;width:100%;" class="kr">아직 운동 기록이 없습니다</div>
         </div>
       </div>
     </div>
 
     <!-- Pane: 부위 -->
     <div class="tab-pane pane-body">
-      <div style="padding:26px 24px 0;">
-        <div class="kr" style="font-size:13px;color:rgba(255,255,255,0.45);letter-spacing:0.06em;">최근 60일 부위 분포</div>
-        <div style="margin-top:6px;display:flex;align-items:baseline;gap:8px;">
-          <span class="num" data-bind="body-total" style="font-size:44px;font-weight:200;color:#fff;letter-spacing:-0.03em;">14</span>
-          <span class="kr" style="font-size:15px;color:rgba(255,255,255,0.55);">회 운동</span>
-        </div>
-        <!-- 부위 인체 도감 — react-body-highlighter MIT polygon 자원 (viewBox 0 0 100 200, 1:2 비율).
-             기존 사각형 path 폐기 → 실제 근육 형상 polygon 으로 교체. gym muscle key 호환. -->
-        <div data-bind="body-silhouette" style="margin-top:18px;display:flex;justify-content:center;gap:16px;align-items:flex-start;">
-          <svg viewBox="0 0 100 220" style="width:46%;max-width:160px;height:auto;" aria-label="전면" class="body-svg">
-            <!-- head -->
-            <polygon data-muscle="head" points="42.4489796 2.85714286 40 11.8367347 42.0408163 19.5918367 46.122449 23.2653061 49.7959184 25.3061224 54.6938776 22.4489796 57.5510204 19.1836735 59.1836735 10.2040816 57.1428571 2.44897959 49.7959184 0" fill="rgba(212,165,154,0.45)"/>
-            <!-- neck -->
-            <polygon points="55.5102041 23.6734694 50.6122449 33.4693878 50.6122449 39.1836735 61.6326531 40 70.6122449 44.8979592 69.3877551 36.7346939 63.2653061 35.1020408 58.3673469 30.6122449" fill="rgba(212,165,154,0.30)"/>
-            <polygon points="28.9795918 44.8979592 30.2040816 37.1428571 36.3265306 35.1020408 41.2244898 30.2040816 44.4897959 24.4897959 48.9795918 33.877551 48.5714286 39.1836735 37.9591837 39.5918367" fill="rgba(212,165,154,0.30)"/>
-            <!-- chest -->
-            <polygon data-muscle="chest" points="51.8367347 41.6326531 51.0204082 55.1020408 57.9591837 57.9591837 67.755102 55.5102041 70.6122449 47.3469388 62.0408163 41.6326531" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="chest" points="29.7959184 46.5306122 31.4285714 55.5102041 40.8163265 57.9591837 48.1632653 55.1020408 47.755102 42.0408163 37.5510204 42.0408163" fill="rgba(212,165,154,0.22)"/>
-            <!-- front deltoids -->
-            <polygon data-muscle="deltoid_front" points="78.3673469 53.0612245 79.5918367 47.755102 79.1836735 41.2244898 75.9183673 37.9591837 71.0204082 36.3265306 72.244898 42.8571429 71.4285714 47.3469388" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="deltoid_front" points="28.1632653 47.3469388 21.2244898 53.0612245 20 47.755102 20.4081633 40.8163265 24.4897959 37.1428571 28.5714286 37.1428571 26.9387755 43.2653061" fill="rgba(212,165,154,0.22)"/>
-            <!-- side delt (front 과 공유 — 어깨 옆 부분) -->
-            <polygon data-muscle="deltoid_side" points="79.5918367 47.755102 82 55 78 60 76 55" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="deltoid_side" points="20.4081633 47.755102 18 55 22 60 24 55" fill="rgba(212,165,154,0.22)"/>
-            <!-- biceps -->
-            <polygon data-muscle="biceps" points="16.7346939 68.1632653 17.9591837 71.4285714 22.8571429 66.122449 28.9795918 53.877551 27.755102 49.3877551 20.4081633 55.9183673" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="biceps" points="71.4285714 49.3877551 70.2040816 54.6938776 76.3265306 66.122449 81.6326531 71.8367347 82.8571429 68.9795918 78.7755102 55.5102041" fill="rgba(212,165,154,0.22)"/>
-            <!-- abs -->
-            <polygon data-muscle="abs" points="56.3265306 59.1836735 57.9591837 64.0816327 58.3673469 77.9591837 58.3673469 92.6530612 56.3265306 98.3673469 55.1020408 104.081633 51.4285714 107.755102 51.0204082 84.4897959 50.6122449 67.3469388 51.0204082 57.1428571" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="abs" points="43.6734694 58.7755102 48.5714286 57.1428571 48.9795918 67.3469388 48.5714286 84.4897959 48.1632653 107.346939 44.4897959 103.673469 40.8163265 91.4285714 40.8163265 78.3673469 41.2244898 64.4897959" fill="rgba(212,165,154,0.22)"/>
-            <!-- forearm -->
-            <polygon data-muscle="forearm" points="6.12244898 88.5714286 10.2040816 75.1020408 14.6938776 70.2040816 16.3265306 74.2857143 19.1836735 73.4693878 4.48979592 97.5510204 0 100" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="forearm" points="84.4897959 69.7959184 83.2653061 73.4693878 80 73.0612245 95.1020408 98.3673469 100 100.408163 93.4693878 89.3877551 89.7959184 76.3265306" fill="rgba(212,165,154,0.22)"/>
-            <!-- quads -->
-            <polygon data-muscle="quads" points="34.6938776 98.7755102 37.1428571 108.163265 37.1428571 127.755102 34.2857143 137.142857 31.0204082 132.653061 29.3877551 120 28.1632653 111.428571 29.3877551 100.816327 32.244898 94.6938776" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="quads" points="63.2653061 105.714286 64.4897959 100 66.9387755 94.6938776 70.2040816 101.22449 71.0204082 111.836735 68.1632653 133.061224 65.3061224 137.55102 62.4489796 128.571429 62.0408163 111.428571" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="quads" points="38.7755102 129.387755 38.3673469 112.244898 41.2244898 118.367347 44.4897959 129.387755 42.8571429 135.102041 40 146.122449 36.3265306 146.530612 35.5102041 140" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="quads" points="59.5918367 145.714286 55.5102041 128.979592 60.8163265 113.877551 61.2244898 130.204082 64.0816327 139.591837 62.8571429 146.530612" fill="rgba(212,165,154,0.22)"/>
-            <!-- calves (front 조금) -->
-            <polygon data-muscle="calves" points="35.5102041 158.367347 35.9183673 162.44898 35.9183673 166.938776 35.1020408 172.244898 35.1020408 176.734694 32.244898 182.040816 30.6122449 187.346939 26.9387755 194.693878 27.3469388 187.755102 28.1632653 180.408163 28.5714286 175.510204 28.9795918 169.795918 29.7959184 164.081633 30.2040816 158.77551" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="calves" points="71.4285714 160.408163 73.4693878 153.469388 76.7346939 161.22449 79.5918367 167.755102 78.3673469 187.755102 79.5918367 195.510204 74.6938776 195.510204" fill="rgba(212,165,154,0.22)"/>
-          </svg>
-          <svg viewBox="0 0 100 220" style="width:46%;max-width:160px;height:auto;" aria-label="후면" class="body-svg">
-            <!-- head -->
-            <polygon data-muscle="head_back" points="50.6382979 0 45.9574468 0.85106383 40.8510638 5.53191489 40.4255319 12.7659574 45.106383 20 55.7446809 20 59.1489362 13.6170213 59.5744681 4.68085106 55.7446809 1.27659574" fill="rgba(212,165,154,0.45)"/>
-            <!-- traps -->
-            <polygon data-muscle="traps" points="44.6808511 21.7021277 47.6595745 21.7021277 47.2340426 38.2978723 47.6595745 64.6808511 38.2978723 53.1914894 35.3191489 40.8510638 31.0638298 36.5957447 39.1489362 33.1914894 43.8297872 27.2340426" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="traps" points="52.3404255 21.7021277 55.7446809 21.7021277 56.5957447 27.2340426 60.8510638 32.7659574 68.9361702 36.5957447 64.6808511 40.4255319 61.7021277 53.1914894 52.3404255 64.6808511 53.1914894 38.2978723" fill="rgba(212,165,154,0.22)"/>
-            <!-- rear deltoids -->
-            <polygon data-muscle="deltoid_rear" points="29.3617021 37.0212766 22.9787234 39.1489362 17.4468085 44.2553191 18.2978723 53.6170213 24.2553191 49.3617021 27.2340426 46.3829787" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="deltoid_rear" points="71.0638298 37.0212766 78.2978723 39.5744681 82.5531915 44.6808511 81.7021277 53.6170213 74.893617 48.9361702 72.3404255 45.106383" fill="rgba(212,165,154,0.22)"/>
-            <!-- lats (upper back) -->
-            <polygon data-muscle="lats" points="31.0638298 38.7234043 28.0851064 48.9361702 28.5106383 55.3191489 34.0425532 75.3191489 47.2340426 71.0638298 47.2340426 66.3829787 36.5957447 54.0425532 33.6170213 41.2765957" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="lats" points="68.9361702 38.7234043 71.9148936 49.3617021 71.4893617 56.1702128 65.9574468 75.3191489 52.7659574 71.0638298 52.7659574 66.3829787 63.4042553 54.4680851 66.3829787 41.7021277" fill="rgba(212,165,154,0.22)"/>
-            <!-- triceps -->
-            <polygon data-muscle="triceps" points="26.8085106 49.787234 17.8723404 55.7446809 14.4680851 72.3404255 16.5957447 81.7021277 21.7021277 63.8297872 26.8085106 55.7446809" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="triceps" points="73.6170213 50.212766 82.1276596 55.7446809 85.9574468 73.1914894 83.4042553 82.1276596 77.8723404 62.9787234 73.1914894 55.7446809" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="triceps" points="26.8085106 58.2978723 26.8085106 68.5106383 22.9787234 75.3191489 19.1489362 77.4468085 22.5531915 65.5319149" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="triceps" points="72.7659574 58.2978723 77.0212766 64.6808511 80.4255319 77.4468085 76.5957447 75.3191489 72.7659574 68.9361702" fill="rgba(212,165,154,0.22)"/>
-            <!-- lower back -->
-            <polygon data-muscle="lower_back" points="47.6595745 72.7659574 34.4680851 77.0212766 35.3191489 83.4042553 49.3617021 102.12766 46.8085106 82.9787234" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="lower_back" points="52.3404255 72.7659574 65.5319149 77.0212766 64.6808511 83.4042553 50.6382979 102.12766 53.1914894 83.8297872" fill="rgba(212,165,154,0.22)"/>
-            <!-- forearm -->
-            <polygon data-muscle="forearm" points="86.3829787 75.7446809 91.0638298 83.4042553 93.1914894 94.0425532 100 106.382979 96.1702128 104.255319 88.0851064 89.3617021 84.2553191 83.8297872" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="forearm" points="13.6170213 75.7446809 8.93617021 83.8297872 6.80851064 93.6170213 0 106.382979 3.82978723 104.255319 12.3404255 88.5106383 15.7446809 82.9787234" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="forearm" points="81.2765957 79.5744681 77.4468085 77.8723404 79.1489362 84.6808511 91.0638298 103.829787 93.1914894 108.93617 94.4680851 104.680851" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="forearm" points="18.7234043 79.5744681 22.1276596 77.8723404 20.8510638 84.2553191 9.36170213 102.978723 6.80851064 108.510638 5.10638298 104.680851" fill="rgba(212,165,154,0.22)"/>
-            <!-- glutes -->
-            <polygon data-muscle="glutes" points="44.6808511 99.5744681 30.212766 108.510638 29.787234 118.723404 31.4893617 125.957447 47.2340426 121.276596 49.3617021 114.893617" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="glutes" points="55.3191489 99.1489362 51.0638298 114.468085 52.3404255 120.851064 68.0851064 125.957447 69.787234 119.148936 69.3617021 108.510638" fill="rgba(212,165,154,0.22)"/>
-            <!-- hamstrings -->
-            <polygon data-muscle="hamstrings" points="28.9361702 122.12766 31.0638298 129.361702 36.5957447 125.957447 35.3191489 135.319149 34.4680851 150.212766 29.3617021 158.297872 28.9361702 146.808511 27.6595745 141.276596 27.2340426 131.489362" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="hamstrings" points="71.4893617 121.702128 69.3617021 128.93617 63.8297872 125.957447 65.5319149 136.595745 66.3829787 150.212766 71.0638298 158.297872 71.4893617 147.659574 72.7659574 142.12766 73.6170213 131.914894" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="hamstrings" points="38.7234043 125.531915 44.2553191 145.957447 40.4255319 166.808511 36.1702128 152.765957 37.0212766 135.319149" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="hamstrings" points="61.7021277 125.531915 63.4042553 136.170213 64.2553191 153.191489 60 166.808511 56.1702128 146.382979" fill="rgba(212,165,154,0.22)"/>
-            <!-- calves -->
-            <polygon data-muscle="calves" points="29.3617021 160.425532 28.5106383 167.234043 24.6808511 179.574468 23.8297872 192.765957 25.5319149 197.021277 28.5106383 193.191489 29.787234 180 31.9148936 171.06383 31.9148936 166.808511" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="calves" points="37.4468085 165.106383 35.3191489 167.659574 33.1914894 171.914894 31.0638298 180.425532 30.212766 191.914894 34.0425532 200 38.7234043 190.638298 39.1489362 168.93617" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="calves" points="62.9787234 165.106383 61.2765957 168.510638 61.7021277 190.638298 66.3829787 199.574468 70.6382979 191.914894 68.9361702 179.574468 66.8085106 170.212766" fill="rgba(212,165,154,0.22)"/>
-            <polygon data-muscle="calves" points="70.6382979 160.425532 72.3404255 168.510638 75.7446809 179.148936 76.5957447 192.765957 74.4680851 196.595745 72.3404255 193.617021 70.6382979 179.574468 68.0851064 168.085106" fill="rgba(212,165,154,0.22)"/>
-          </svg>
-        </div>
-        <div data-bind="body-list" style="margin-top:22px;">
-          <div style="display:flex;align-items:center;padding:11px 0;">
-            <span style="width:8px;height:8px;border-radius:4px;background:#d97757;margin-right:12px;"></span>
-            <span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">가슴</span>
-            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:32%;height:100%;background:#d97757;"></div></div>
-            <span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">32<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
-            <span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">32%</span>
-          </div>
-          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
-            <span style="width:8px;height:8px;border-radius:4px;background:#788c5d;margin-right:12px;"></span>
-            <span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">등</span>
-            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:26%;height:100%;background:#788c5d;"></div></div>
-            <span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">26<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
-            <span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">26%</span>
-          </div>
-          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
-            <span style="width:8px;height:8px;border-radius:4px;background:#b85a3e;margin-right:12px;"></span>
-            <span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">하체</span>
-            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:18%;height:100%;background:#b85a3e;"></div></div>
-            <span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">18<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
-            <span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">18%</span>
-          </div>
-          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
-            <span style="width:8px;height:8px;border-radius:4px;background:#c9a96e;margin-right:12px;"></span>
-            <span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">어깨</span>
-            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:14%;height:100%;background:#c9a96e;"></div></div>
-            <span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">14<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
-            <span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">14%</span>
-          </div>
-          <div style="display:flex;align-items:center;padding:11px 0;border-top:1px solid rgba(255,255,255,0.04);">
-            <span style="width:8px;height:8px;border-radius:4px;background:#6b8a9c;margin-right:12px;"></span>
-            <span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">팔</span>
-            <div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:10%;height:100%;background:#6b8a9c;"></div></div>
-            <span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">10<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span>
-            <span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">10%</span>
+      <div style="padding:22px 24px 0;">
+        <div class="kr" style="font-size:12px;color:var(--ink-3);letter-spacing:0.02em;">최근 60일 부위 분포</div>
+        <!-- work-order 도넛 — 인체 실루엣 폐기 후 교체. body-silhouette 훅 유지 (applyBodyPartsToDom 가
+             이 .donut 의 conic-gradient background 를 부위 비율 + 랭크 색으로 주입). 중앙 = 총 운동 횟수. -->
+        <div class="donut-wrap" style="margin-top:8px;">
+          <div class="donut" data-bind="body-silhouette">
+            <div class="ctr"><span class="num n" data-bind="body-total">0</span><span class="k kr">회 운동</span></div>
           </div>
         </div>
+        <!-- 비율 막대 (얇은 stacked) — applyBodyPartsToDom 가 부위별 width%+색 주입. -->
+        <div data-bind="body-stack" style="margin:14px 4px 0;display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--sunken);"></div>
+        <div data-bind="body-list" style="margin-top:14px;"></div>
       </div>
     </div>
     <div class="compare-section" style="display:none;" aria-hidden="true">
@@ -278,7 +172,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div id="dayDetailEmpty" class="kr" style="display:none;font-size:14px;color:rgba(255,255,255,0.4);text-align:center;padding:24px 0;">기록 없음</div>
       <div id="dayDetailConfirm" style="display:none;flex-direction:column;gap:8px;">
         <div class="kr" style="font-size:15px;color:rgba(255,255,255,0.85);text-align:center;margin:8px 0 12px;">이 날짜의 기록을 삭제하시겠습니까?</div>
-        <button class="kr" type="button" data-day-detail-action="delete-confirm" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--accent);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">삭제</button>
+        <button class="kr" type="button" data-day-detail-action="delete-confirm" style="width:100%;height:44px;border-radius:10px;border:0;background:var(--danger);color:#fff;font-size:16px;font-weight:600;cursor:pointer;">삭제</button>
         <button class="kr" type="button" data-day-detail-action="cancel" style="width:100%;height:44px;border-radius:10px;border:0;background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.7);font-size:16px;cursor:pointer;">취소</button>
       </div>
     </div>
@@ -293,47 +187,30 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     el.addEventListener('click', () => { if (phone) phone.dataset.tab = el.dataset.go; });
   });
 
-  // 캘린더 그리드 렌더 (5월 1일이 금요일이라고 가정 — 4 cell empty)
+  // 캘린더 그리드 렌더 (5월 1일이 금요일이라고 가정 — 4 cell empty).
+  // 라이브 앱에서는 stats.js 의 applyWorkedToCalendar(볼륨 히트맵) + applyTodayToCalendar(크레일 링)가
+  // 곧바로 덮어쓴다. 여기 fixture 는 다크 플래시 방지 + standalone mock 미리보기용 라이트 기본값.
   const cal = document.getElementById('calGrid');
-  const worked = { 1:1, 4:2, 6:3, 8:1, 11:2, 13:1, 15:2, 18:3, 22:1, 25:2, 27:1 };
+  const vol = { 1:3200, 4:8600, 6:13500, 8:5400, 11:9200, 13:4100, 15:10800, 18:14200, 22:6100, 25:9900, 27:4800 };
+  const maxVol = 14200;
   const today = 6;
   let html = '';
   for (let i = 0; i < 4; i++) html += '<div></div>';
   for (let d = 1; d <= 31; d++) {
-    const intensity = worked[d] || 0;
+    const v = vol[d] || 0;
     const isToday = d === today;
-    const w = 11 + intensity * 1.5;
-    const c = intensity ? '#fff' : 'rgba(255,255,255,0.3)';
-    const fw = intensity ? 600 : 300;
+    const a = v ? 0.14 + 0.82 * (v / maxVol) : 0;
+    const bg = v ? 'background:rgba(193,99,63,' + a.toFixed(2) + ');' : '';
+    const c = v ? (a > 0.52 ? '#fff' : 'var(--crail-deep)') : 'var(--ink-4)';
+    const fw = v ? (a > 0.4 ? 600 : 500) : 500;
+    const ring = isToday ? 'box-shadow:inset 0 0 0 1.5px var(--crail-deep);' : '';
     const cls = 'cal-cell' + (isToday ? ' today' : '');
-    html += '<div class="' + cls + '" data-day="' + d + '" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;">';
-    html += '<span class="num" style="font-size:' + w + 'px;font-weight:' + fw + ';color:' + c + ';">' + d + '</span>';
-    if (isToday) html += '<div style="position:absolute;bottom:6px;width:12px;height:2px;background:var(--accent);border-radius:1px;"></div>';
+    html += '<div class="' + cls + '" data-day="' + d + '" style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;' + bg + ring + '">';
+    html += '<span class="num" style="font-size:13px;font-weight:' + fw + ';color:' + c + ';">' + d + '</span>';
     html += '</div>';
   }
   if (cal) cal.innerHTML = html;
-
-  // 추이 라인 차트 SVG
-  const svg = document.getElementById('trend-svg');
-  const data = [55,62,58,71,68,75,82,86];
-  const max = Math.max(...data), min = Math.min(...data);
-  const W = 280, H = 110;
-  const pts = data.map((v,i) => [(i/(data.length-1))*W, H - ((v-min)/(max-min))*H]);
-  const path = pts.map((p,i) => (i ? 'L' : 'M') + p[0].toFixed(1) + ' ' + p[1].toFixed(1)).join(' ');
-  let svgInner = '<defs><linearGradient id="grad2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(217,119,87,0.32)"/><stop offset="100%" stop-color="rgba(217,119,87,0)"/></linearGradient></defs>';
-  svgInner += '<path d="' + path + ' L' + W + ' ' + H + ' L0 ' + H + ' Z" fill="url(#grad2)"/>';
-  svgInner += '<path d="' + path + '" stroke="var(--accent)" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>';
-  pts.forEach((p, i) => {
-    const last = i === pts.length - 1;
-    svgInner += '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="' + (last ? 5 : 2.5) + '" fill="' + (last ? 'var(--accent)' : 'rgba(255,255,255,0.5)') + '"' + (last ? ' stroke="#0c0a08" stroke-width="3"' : '') + '/>';
-  });
-  const labels = ['8주전','6주전','4주전','2주전','이번'];
-  svgInner += '<g fill="rgba(255,255,255,0.35)" font-size="9">';
-  labels.forEach((l, i) => {
-    svgInner += '<text x="' + ((i/4)*W) + '" y="' + (H+18) + '" text-anchor="middle" class="kr">' + l + '</text>';
-  });
-  svgInner += '</g>';
-  if (svg) svg.innerHTML = svgInner;
+  // 8주 추이 차트(#weekly-trend-chart)는 stats.js renderWeeklyTrendChart 가 라이브 데이터로 렌더.
 </script>
 </body>
 </html>

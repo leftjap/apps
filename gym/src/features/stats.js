@@ -111,7 +111,8 @@ export function applyVolumesToDom(volumes, doc) {
   if (calPrevEl) calPrevEl.textContent = (volumes.week.previous || 0).toLocaleString();
   if (calDeltaEl) {
     calDeltaEl.textContent = formatDelta({ delta: volumes.week.delta, sign: volumes.week.sign });
-    calDeltaEl.style.color = volumes.week.sign === 'down' ? 'rgba(255,255,255,0.5)' : 'var(--accent)';
+    // 라이트: 증가/신규 = 크레일, 감소 = 중립 회색 잉크.
+    calDeltaEl.style.color = volumes.week.sign === 'down' ? 'var(--ink-3)' : 'var(--crail-deep)';
   }
 
   const groups = doc.querySelectorAll('.cs-group');
@@ -303,48 +304,64 @@ export function applyWorkedToCalendar(sessions, doc) {
   const label = doc.getElementById('monthLabel');
   if (!grid || !label) return { skipped: 'no-mounts' };
 
-  // 모든 cell reset — mocks IIFE 의 fixture worked inline style 무효화. 비-worked = default 회색 작은 글자.
+  // 모든 cell reset — mocks IIFE 의 fixture 히트맵 inline style 무효화.
+  // 비-worked = 라이트 기본값 (작은 회색 글자, 배경 없음). today 셀의 크레일 링(boxShadow)은 보존.
   grid.querySelectorAll('.cal-cell').forEach((el) => {
     el.classList.remove('worked');
+    if (el.style) {
+      el.style.background = '';
+      if (!el.classList.contains('today') && 'boxShadow' in el.style) el.style.boxShadow = '';
+    }
     const num = el.querySelector('.num');
     if (num) {
-      num.style.color = 'rgba(255,255,255,0.3)';
-      num.style.fontWeight = '300';
-      num.style.fontSize = '15px';
+      num.style.color = 'var(--ink-4)';
+      num.style.fontWeight = '500';
+      num.style.fontSize = '13px';
     }
   });
 
   const displayed = parseMonthLabel(label.textContent);
   if (!displayed) return { applied: false, reason: 'no_displayed_month' };
 
-  const workedDays = new Set();
+  // 표시 중 월의 일별 총 볼륨 합산 (완료 세션의 single 블록 done 세트 weight*reps).
+  const volByDay = new Map();
   for (const s of (sessions || [])) {
     if (!s?.date) continue;
     if (s.status && s.status !== 'completed') continue;
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.date);
     if (!m) continue;
-    const y = parseInt(m[1], 10);
-    const mo = parseInt(m[2], 10);
+    if (parseInt(m[1], 10) !== displayed.year || parseInt(m[2], 10) !== displayed.month) continue;
     const d = parseInt(m[3], 10);
-    if (y !== displayed.year || mo !== displayed.month) continue;
-    workedDays.add(d);
+    let dayVol = 0;
+    for (const b of (Array.isArray(s.blocks) ? s.blocks : [])) {
+      if (!b || b.type !== 'single') continue;
+      for (const st of (Array.isArray(b.sets) ? b.sets : [])) {
+        if (st && st.done) dayVol += (Number(st.weight) || 0) * (Number(st.reps) || 0);
+      }
+    }
+    volByDay.set(d, (volByDay.get(d) || 0) + dayVol);
   }
 
+  const maxVol = Math.max(0, ...volByDay.values());
   let applied = 0;
-  for (const d of workedDays) {
+  for (const [d, dayVol] of volByDay) {
     const cell = grid.querySelector(`.cal-cell[data-day="${d}"]`);
-    if (cell) {
-      cell.classList.add('worked');
-      const num = cell.querySelector('.num');
-      if (num) {
-        num.style.color = '#fff';
-        num.style.fontWeight = '500';
-        num.style.fontSize = '17px';
-      }
-      applied += 1;
+    if (!cell) continue;
+    cell.classList.add('worked');
+    // 볼륨 비율을 연속 농도(alpha)로. 0kg 운동일(전부 done=false 등)도 worked 로 잡되 최소 농도.
+    const a = maxVol > 0 ? 0.14 + 0.82 * (dayVol / maxVol) : 0.14;
+    if (cell.style) {
+      cell.style.background = `rgba(193,99,63,${a.toFixed(2)})`;
+      cell.style.borderRadius = '8px';
     }
+    const num = cell.querySelector('.num');
+    if (num) {
+      num.style.color = a > 0.52 ? '#fff' : 'var(--crail-deep)';
+      num.style.fontWeight = a > 0.4 ? 600 : 500;
+    }
+    applied += 1;
   }
-  return { applied, count: workedDays.size };
+  return { applied, count: volByDay.size };
 }
 
 export function applyTodayToCalendar(now = Date.now(), doc) {
@@ -381,14 +398,8 @@ export function applyTodayToCalendar(now = Date.now(), doc) {
   const cell = grid.querySelector(`.cal-cell[data-day="${todayD}"]`);
   if (!cell) return { applied: false, reason: 'no_cell', day: todayD };
   cell.classList.add('today');
-  // today cell 에 accent 밑줄 추가 (mocks IIFE 시안 line 234 패턴 답습). production DOM 만.
-  if (typeof doc.createElement === 'function' && typeof cell.appendChild === 'function') {
-    const bar = doc.createElement('div');
-    if (typeof bar.setAttribute === 'function') {
-      bar.setAttribute('style', 'position:absolute;bottom:6px;width:12px;height:2px;background:var(--accent);border-radius:1px;');
-    }
-    cell.appendChild(bar);
-  }
+  // today cell 에 크레일 링 (라이트 재디자인 — 밑줄 div 폐기, inset box-shadow 로 교체).
+  if (cell.style) cell.style.boxShadow = 'inset 0 0 0 1.5px var(--crail-deep)';
   return { applied: true, day: todayD };
 }
 
@@ -636,29 +647,40 @@ export function renderWeeklyTrendChart(trend, doc) {
     bar.setAttribute('width', barW.toFixed(1));
     bar.setAttribute('height', barH.toFixed(1));
     bar.setAttribute('rx', '3');
+    // 라이트 재디자인: 막대는 중립 회색, 이번 주(마지막)만 크레일. 0인 주는 더 옅은 회색 placeholder.
     let fill;
-    if (v <= 0) fill = 'rgba(255,255,255,0.08)';
-    else if (isCurrent) fill = '#d97757';
-    else fill = 'rgba(217,119,87,0.45)';
+    if (v <= 0) fill = '#e9e5dc';
+    else if (isCurrent) fill = '#c1633f';
+    else fill = '#dfd9cd';
     bar.setAttribute('fill', fill);
     svg.appendChild(bar);
   });
 
-  // 선 overlay — 모든 8점 (0 도 baseline 따라)
+  // 선 overlay + 점 — 모든 8점 (0 도 baseline 따라). 선/점 모두 중립, 이번 주 점만 크레일.
   if (max > 0) {
     const step = n > 1 ? W / (n - 1) : 0;
-    const pts = trend.map((t, i) => {
+    const coords = trend.map((t, i) => {
       const v = Number(t.vol) || 0;
-      const y = padTop + (chartH - (v / max) * chartH);
-      return `${(i * step).toFixed(1)},${y.toFixed(1)}`;
+      return [i * step, padTop + (chartH - (v / max) * chartH)];
     });
     const line = doc.createElementNS(SVG_NS, 'polyline');
-    line.setAttribute('points', pts.join(' '));
+    line.setAttribute('points', coords.map((p) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' '));
     line.setAttribute('fill', 'none');
-    line.setAttribute('stroke', 'rgba(255,255,255,0.65)');
-    line.setAttribute('stroke-width', '1.5');
+    line.setAttribute('stroke', '#b3ac9e');
+    line.setAttribute('stroke-width', '1.6');
+    line.setAttribute('stroke-linecap', 'round');
     line.setAttribute('stroke-linejoin', 'round');
     svg.appendChild(line);
+    coords.forEach((p, i) => {
+      const isCurrent = i === n - 1;
+      const dot = doc.createElementNS(SVG_NS, 'circle');
+      dot.setAttribute('cx', p[0].toFixed(1));
+      dot.setAttribute('cy', p[1].toFixed(1));
+      dot.setAttribute('r', isCurrent ? '4' : '2.5');
+      dot.setAttribute('fill', isCurrent ? '#c1633f' : '#c4bcae');
+      if (isCurrent) { dot.setAttribute('stroke', '#fffdf8'); dot.setAttribute('stroke-width', '2'); }
+      svg.appendChild(dot);
+    });
   }
 
   // X 축 라벨 별도 div (그래프와 시각 분리)
@@ -732,50 +754,79 @@ export function applyExerciseFrequencyToDom(rows, doc) {
   }
   if (emptyEl) emptyEl.style.display = 'none';
   const max = rows[0].setCount || 1;
-  const html = rows.map((r) => {
+  // 색 규율: 1위(최다 빈도)만 크레일, 나머지는 중립 회색. PART_META 부위색 미사용.
+  const html = rows.map((r, i) => {
     const pct = Math.max(4, Math.round((r.setCount / max) * 100));
+    const isTop = i === 0;
+    const dot = isTop ? 'var(--crail-base)' : 'var(--ink-3)';
+    const fill = isTop ? 'var(--crail-base)' : 'var(--ink-4)';
+    const nameStyle = isTop ? ' style="color:var(--crail-deep);"' : '';
     return `<div class="ex-freq-row">`
       + `<div class="ex-freq-head">`
-        + `<span class="ex-freq-dot" style="background:${r.color};"></span>`
-        + `<span class="ex-freq-name kr">${escapeHtml(r.name)}</span>`
+        + `<span class="ex-freq-dot" style="background:${dot};"></span>`
+        + `<span class="ex-freq-name kr"${nameStyle}>${escapeHtml(r.name)}</span>`
         + `<span class="ex-freq-count num">${r.setCount}<span class="kr">세트</span></span>`
       + `</div>`
-      + `<div class="ex-freq-bar"><span class="ex-freq-fill" style="width:${pct}%;background:${r.color};"></span></div>`
+      + `<div class="ex-freq-bar"><span class="ex-freq-fill" style="width:${pct}%;background:${fill};"></span></div>`
       + `</div>`;
   }).join('');
   treemapEl.insertAdjacentHTML('beforeend', html);
 }
 
-/** W-I — 부위 분포 stack + list 갱신. parts = [{key, name, count, color}] (count>0, sorted desc). */
+/** 부위 랭크 색 — 1위만 크레일, 나머지는 중립 회색 ramp (PART_META 부위별 색 미사용, 색 규율 준수). */
+const PART_RANK_GRAY = ['#c2bbac', '#d0cabd', '#ddd8cd', '#e9e5dc'];
+function partRankColor(i) {
+  if (i === 0) return 'var(--crail-base)';
+  return PART_RANK_GRAY[Math.min(i - 1, PART_RANK_GRAY.length - 1)];
+}
+
+/** W-I — 부위 분포 도넛 + stack + list 갱신. parts = [{key, name, count, color}] (count>0, sorted desc).
+ *  색은 RANK 기반(1위 크레일 / 나머지 회색 ramp) — parts[].color(부위별 색)는 무시. */
 export function applyBodyPartsToDom(parts, doc) {
   if (!doc || !Array.isArray(parts)) return;
   const total = parts.reduce((s, p) => s + (Number(p.count) || 0), 0);
   const totalEl = doc.querySelector('[data-bind="body-total"]');
   if (totalEl) totalEl.textContent = String(total);
 
-  // silhouette path 색 강조는 applyMusclesToSilhouette() 가 운동종목 → 근육 매핑 기반으로 별도 처리.
-  // applyBodyPartsToDom 은 total/stack/list 만 갱신.
+  // 도넛 — body-silhouette 훅(실루엣 폐기 후 .donut div)에 conic-gradient 주입.
+  // innerHTML 미사용 (중앙 body-total 라벨 보존) — background style 만 교체.
+  const donut = doc.querySelector('[data-bind="body-silhouette"]');
+  if (donut && donut.style) {
+    if (total === 0) {
+      donut.style.background = 'var(--sunken)';
+    } else {
+      let acc = 0;
+      const stops = parts.map((p, i) => {
+        const from = (acc / total) * 100;
+        acc += Number(p.count) || 0;
+        const to = (acc / total) * 100;
+        return `${partRankColor(i)} ${from.toFixed(2)}% ${to.toFixed(2)}%`;
+      });
+      donut.style.background = `conic-gradient(${stops.join(', ')})`;
+    }
+  }
 
+  // 비율 막대 (얇은 stacked) — width%+랭크 색.
   const stack = doc.querySelector('[data-bind="body-stack"]');
   if (stack) {
     if (total === 0) {
       stack.innerHTML = '';
     } else {
-      stack.innerHTML = parts.map((p) => {
+      stack.innerHTML = parts.map((p, i) => {
         const pct = ((p.count / total) * 100).toFixed(1);
-        return `<div style="width:${pct}%;background:${p.color};"></div>`;
+        return `<div style="width:${pct}%;background:${partRankColor(i)};"></div>`;
       }).join('');
     }
   }
+  // 범례 — .lrow (dot + 이름 + 횟수 + %).
   const list = doc.querySelector('[data-bind="body-list"]');
   if (list) {
     if (total === 0) {
-      list.innerHTML = '<div class="kr" style="padding:14px 0;color:rgba(255,255,255,0.45);font-size:15px;text-align:center;">기록 없음</div>';
+      list.innerHTML = '<div class="kr" style="padding:14px 0;color:var(--ink-4);font-size:15px;text-align:center;">기록 없음</div>';
     } else {
       list.innerHTML = parts.map((p, i) => {
         const pct = Math.round((p.count / total) * 100);
-        const border = i === 0 ? '' : 'border-top:1px solid rgba(255,255,255,0.04);';
-        return `<div style="display:flex;align-items:center;padding:11px 0;${border}"><span style="width:8px;height:8px;border-radius:4px;background:${p.color};margin-right:12px;"></span><span class="kr" style="font-size:16px;color:#fff;font-weight:500;flex:1;">${p.name}</span><div style="flex:2;height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-right:14px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${p.color};"></div></div><span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);min-width:32px;text-align:right;">${p.count}<span class="kr" style="font-size:13px;color:rgba(255,255,255,0.4);margin-left:2px;">회</span></span><span class="num" style="font-size:13px;color:rgba(255,255,255,0.4);min-width:36px;text-align:right;">${pct}%</span></div>`;
+        return `<div class="lrow"><span class="dot" style="background:${partRankColor(i)};"></span><span class="nm kr">${p.name}</span><span class="ct num">${p.count}회</span><span class="pc num">${pct}%</span></div>`;
       }).join('');
     }
   }
