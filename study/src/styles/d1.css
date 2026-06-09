@@ -220,7 +220,7 @@
 .se-stepval{ font-size:18px; font-weight:800; min-width:40px; text-align:center; font-variant-numeric:tabular-nums; }
 .se-seg{ display:flex; gap:4px; padding:4px; background:var(--line2); border-radius:999px; }
 .se-segbtn{ height:36px; padding:0 18px; border:none; background:none; border-radius:999px; font-size:13.5px; font-weight:700; color:var(--mut); cursor:pointer; transition:background .15s,color .15s; }
-.se-segbtn.on{ background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(20,18,14,.06); }
+.se-segbtn.on, .se-segbtn.active{ background:#fff; color:var(--ink); box-shadow:0 1px 2px rgba(20,18,14,.06); }
 .se-toggle{ width:50px; height:28px; border-radius:14px; background:var(--line); position:relative; cursor:pointer; transition:background .15s; flex:0 0 auto; }
 .se-toggle.on{ background:var(--sage); }
 .se-thumb{ width:22px; height:22px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; box-shadow:0 1px 3px rgba(20,18,14,.18); transition:transform .15s; }

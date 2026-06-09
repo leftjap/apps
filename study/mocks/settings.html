@@ -257,6 +257,78 @@ body{background:var(--bg);background-image:url("data:image/svg+xml,%3Csvg viewBo
 <div class="toast" id="toast"></div>
 
 <script>
+// ── D1 데스크탑 재디자인 (innerWidth>=1024): 모바일 .app 을 D1 레이아웃으로 교체.
+// 정본 ID/클래스(#daily-val·#threshold-val·#defaultLang .lang-pill·[data-toggle]·#profileName 등)를
+// 그대로 재사용 → 아래 loadSettings/saveSettings/adj/listeners/hydrateProfile/sync/logout 무변경 동작.
+// d1.css 는 main.js 번들(SPA). 모바일/태블릿(<1024)은 기존 마크업 유지. ──
+if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+  var __appEl = document.querySelector('.app');
+  if (__appEl) __appEl.outerHTML = `
+<div class="d1-root" style="display:block;overflow:hidden;min-height:100vh;min-height:100dvh;">
+  <div style="max-width:1040px;margin:0 auto;width:100%;padding:40px 56px 48px;">
+    <button class="d1-topbtn" id="btnBack"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5"/></svg>홈으로</button>
+    <h1 class="d1-h1" style="font-size:38px;margin-top:16px;">설정</h1>
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:56px;margin-top:32px;align-items:start;">
+      <div>
+        <div style="display:flex;align-items:center;gap:15px;">
+          <div class="se-avatar" id="profileAvatar">G</div>
+          <div>
+            <div style="font-size:17px;font-weight:700;" id="profileName">Gio</div>
+            <div style="font-size:13px;color:var(--mut);margin-top:2px;" id="profileEmail">leftjap@gmail.com</div>
+          </div>
+        </div>
+        <div style="margin-top:28px;">
+          <div class="se-seclab">동기화</div>
+          <div class="se-sync" style="padding:16px 18px;">
+            <div style="flex:1;">
+              <div style="font-size:13.5px;font-weight:700;color:var(--sage);" id="syncLabel">동기화 완료</div>
+              <div style="font-size:12px;color:var(--faint);margin-top:2px;" id="syncTime">5분 전</div>
+            </div>
+            <button class="d1-btn d1-btn--sage sm" id="btnSync">동기화</button>
+          </div>
+          <div style="margin-top:14px;">
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-bottom:7px;"><span>로컬 저장소</span><span style="color:var(--faint);">2.4 MB</span></div>
+            <div class="se-store"><i style="width:12%;"></i></div>
+            <div style="font-size:11.5px;color:var(--faint);margin-top:6px;">영구 저장 활성</div>
+          </div>
+        </div>
+        <div style="margin-top:28px;">
+          <button class="se-logout" id="btnLogout" style="width:100%;">로그아웃</button>
+          <div style="font-size:12px;color:var(--faint);margin-top:18px;font-weight:600;">Study · v0.1.0</div>
+        </div>
+      </div>
+      <div>
+        <div class="se-seclab">학습</div>
+        <div class="se-row" style="padding-top:4px;">
+          <div class="se-label">기본 언어</div>
+          <div class="se-seg" id="defaultLang">
+            <button class="se-segbtn lang-pill active" data-lang="en">English</button>
+            <button class="se-segbtn lang-pill" data-lang="ja">日本語</button>
+            <button class="se-segbtn lang-pill" data-lang="math">수학</button>
+          </div>
+        </div>
+        <div class="se-row">
+          <div class="se-label">일일 신규 문장</div>
+          <div class="se-step"><button class="se-stepbtn" onclick="adj('daily',-1)">−</button><span class="se-stepval" id="daily-val">10</span><button class="se-stepbtn" onclick="adj('daily',1)">+</button></div>
+        </div>
+        <div class="se-row">
+          <div><div class="se-label">발음 통과 기준</div><div class="se-desc">이 점수 이상이면 통과 발화로 기록</div></div>
+          <div class="se-step"><button class="se-stepbtn" onclick="adj('threshold',-1)">−</button><span class="se-stepval" id="threshold-val">70</span><button class="se-stepbtn" onclick="adj('threshold',1)">+</button></div>
+        </div>
+        <div class="se-row">
+          <div><div class="se-label">세션 자동 만료</div><div class="se-desc">이탈 후 자동 저장까지 대기 시간</div></div>
+          <div style="font-size:14.5px;font-weight:700;color:var(--mut);">1시간</div>
+        </div>
+        <div class="se-row">
+          <div><div class="se-label">발음 연습 자동 시작</div><div class="se-desc">카드 표시 후 음성 자동 재생</div></div>
+          <div class="se-toggle" data-toggle><div class="se-thumb"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
 // Dexie settings (Wave 11.9B · spec §9-7) — 언어/일일 신규/통과 기준/자동 TTS 저장·복원.
 // iframe 허브는 window.studyDB 없음 → no-op, 기존 mock UI 그대로.
 async function loadSettings() {
