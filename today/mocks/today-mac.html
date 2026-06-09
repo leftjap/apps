@@ -3515,9 +3515,9 @@
   /* ═══ Phase D — 가계부 거래 입력/수정 모달 (Wave 11.1.5+) ═══ */
   .exp-modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(20, 18, 14, 0.42);
-    backdrop-filter: blur(3px);
-    -webkit-backdrop-filter: blur(3px);
+    background: oklch(22% 0.008 60 / 0.32);   /* DESIGN.md §6 모달 backdrop */
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     z-index: 1000;
     display: flex; align-items: center; justify-content: center;
     opacity: 0; pointer-events: none;
@@ -3585,29 +3585,37 @@
     font-family: var(--font-sans);
   }
 
-  /* paste CTA — 본문 최상단 prominent 버튼 */
+  /* paste CTA — crail-soft 박스 + 아이콘 + 2줄 설명 (신규만, 작업지시서 §7) */
   .exp-paste-cta {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    display: flex; align-items: center; gap: 12px;
     width: 100%;
-    height: 36px;
-    margin: 8px 0 4px;
-    padding: 0 14px;
-    border: 1px solid var(--line);
-    background: var(--sunken);
+    margin: 6px 0 14px;
+    padding: 13px 15px;
+    border: 0;
+    background: var(--crail-soft);
     border-radius: var(--r-md);
-    color: var(--ink-2);
+    color: var(--crail-deep);
     font-family: var(--font-sans);
-    font-size: 14px;
-    font-weight: 500;
     cursor: pointer;
-    transition: background .12s, color .12s, border-color .12s;
+    text-align: left;
+    transition: filter .12s;
   }
-  .exp-paste-cta:hover {
-    background: var(--hover-bg);
-    color: var(--ink-1);
-    border-color: var(--ink-4);
+  .exp-paste-cta:hover { filter: brightness(0.97); }
+  .exp-paste-cta__ico {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--crail-base); color: #fff;
+    display: grid; place-items: center; flex-shrink: 0;
   }
-  .exp-paste-cta .ico { width: 13px; height: 13px; }
+  .exp-paste-cta__ico .ico { width: 19px; height: 19px; }
+  .exp-paste-cta__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .exp-paste-cta__text b { font-size: 14px; font-weight: 600; }
+  .exp-paste-cta__text span { font-size: 12px; opacity: 0.8; }
+  /* "또는 직접 입력" 구분선 */
+  .exp-modal__or { display: flex; align-items: center; gap: 12px; margin: 0 0 4px; color: var(--ink-4); font-size: 11px; white-space: nowrap; }
+  .exp-modal__or::before, .exp-modal__or::after { content: ""; height: 1px; background: var(--line-soft); flex: 1; }
+  /* 수정 모달 — 붙여넣기 CTA·구분선 숨김 (작업지시서 §7) */
+  .exp-modal[data-mode="edit"] .exp-paste-cta,
+  .exp-modal[data-mode="edit"] .exp-modal__or { display: none; }
 
   /* 금액 — 큰 숫자 + 우측 "원" + 1px underline (유일한 시각 분기점) */
   .exp-field--amount {
@@ -3625,12 +3633,21 @@
     box-shadow: none;
     padding: 0;
     font-family: var(--font-sans);
-    font-size: 18px;
-    font-weight: 300;
+    font-size: 21px;          /* 1순위 위계 — 지출처(18)보다 큼 (작업지시서 §7) */
+    font-weight: 400;
     color: var(--ink-1);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     font-feature-settings: 'tnum' 1;
   }
+  /* 포커스 시 밑줄 크레일 (작업지시서 §7) */
+  .exp-field--amount,
+  .exp-field--row[data-field="merchant"],
+  .exp-field--row[data-field="memo"],
+  .exp-field--row[data-field="url"] { transition: border-color .14s; }
+  .exp-field--amount:focus-within,
+  .exp-field--row[data-field="merchant"]:focus-within,
+  .exp-field--row[data-field="memo"]:focus-within,
+  .exp-field--row[data-field="url"]:focus-within { border-bottom-color: var(--crail-base); }
   .exp-field--amount input::placeholder {
     color: var(--ink-4);
     font-weight: 300;
@@ -3733,11 +3750,11 @@
     border-color: var(--ink-4);
   }
   .exp-cat-cell.is-active {
-    /* Wave 11.6.10 — 더 옅은 그레이 (구분만 되는 수준) + 볼드 제거. surface-2 → hover-bg, ink-4 보더 → line, font-weight 600 → 500 (default 유지). */
-    background: var(--hover-bg, oklch(97.6% 0.006 60));
-    border-color: var(--line, oklch(92% 0.006 60));
+    /* 선택 — 절제된 회색 + 굵게 (작업지시서 §7) */
+    background: var(--hover-bg);
+    border-color: var(--ink-3);
     color: var(--ink-1);
-    /* font-weight 600 제거 → default 500 */
+    font-weight: 600;
   }
 
   /* 카테고리 "더 보기" 토글 — 그리드 아래 우측 텍스트 링크 */
@@ -3976,8 +3993,9 @@
   .exp-field.is-readonly .exp-cat-cell { pointer-events: none; }
   .exp-modal__foot {
     display: flex; gap: 8px; justify-content: flex-end;
-    padding: 12px 20px 16px;
-    background: var(--shell);
+    padding: 14px 22px 18px;
+    background: var(--sidebar);
+    border-top: 1px solid var(--line-soft);
   }
   .exp-modal__btn {
     padding: 8px 16px;
@@ -6393,11 +6411,13 @@
       _resetExpModal();
       _expModalMode = mode;
       _expModalEditId = txId;
+      const _modalEl = document.querySelector('#expModalOverlay .exp-modal');
+      if (_modalEl) _modalEl.setAttribute('data-mode', mode);   // 붙여넣기 CTA 신규만 (작업지시서 §7)
 
       if (mode === 'edit' && txId) {
         const tx = FIXTURE.expense.txns.find(t => t.id === txId);
         if (!tx) return;
-        document.getElementById('expModalTitle').textContent = '지출 수정';
+        document.getElementById('expModalTitle').textContent = '거래 수정';
         document.getElementById('expModalDeleteBtn').style.display = '';
 
         document.getElementById('expModalAmount').value = (tx.amount || 0).toLocaleString();
@@ -6936,11 +6956,10 @@
 
     <div class="exp-modal__body">
       <button type="button" class="exp-paste-cta" onclick="pasteExpenseSMS()">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M2.5 3.5h11v7h-6L4.5 13v-2.5h-2v-7z"/>
-        </svg>
-        <span>카드사 문자 붙여넣기</span>
+        <span class="exp-paste-cta__ico"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="4" width="9" height="13" rx="2"/><path d="M9.5 17h7a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-2"/><path d="M8 6.5h4"/></svg></span>
+        <span class="exp-paste-cta__text"><b>카드사 문자 붙여넣기</b><span>결제 알림을 붙여넣으면 금액·지출처·카드가 자동으로 채워져요</span></span>
       </button>
+      <div class="exp-modal__or">또는 직접 입력</div>
 
       <div class="exp-field exp-field--amount" data-field="amount">
         <input id="expModalAmount" type="text" inputmode="numeric" placeholder="금액을 입력하세요" autocomplete="off" />

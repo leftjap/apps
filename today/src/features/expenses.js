@@ -1227,9 +1227,11 @@ export function patchExpenseModalHandlers() {
     populateExpenseForm(row);
     // 3) 제목 / 휴지통 / read-only / overlay open
     const title = document.getElementById('expModalTitle');
-    if (title) title.textContent = '지출 수정';
+    if (title) title.textContent = '거래 수정';   // 시안 §7
     const dBtn = document.getElementById('expModalDeleteBtn');
     if (dBtn) dBtn.style.display = '';
+    const modalEl = document.querySelector('#expModalOverlay .exp-modal');
+    if (modalEl) modalEl.setAttribute('data-mode', 'edit');   // 붙여넣기 CTA 숨김 (신규만, §7)
     // read-only 정책: category·card 는 변경 가능 (사용자 정정 허용). amount/datetime/merchant 만 readonly.
     ['amount', 'datetime', 'merchant'].forEach((name) => {
       const f = document.querySelector(`#expModalOverlay .exp-field[data-field="${name}"]`);
