@@ -26,7 +26,7 @@ import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
 import { getCurrentKind } from './entries.js';
-import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue, cardShortLabel } from './card-options.js';
+import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue } from './card-options.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -333,7 +333,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
     const isToday = isCurYear && dateStr === curMd;
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
-      const card = escapeHtml(cardShortLabel(r.card, _currentUser?.email) || '');
+      const card = escapeHtml(cardLabelFromValue(r.card, _currentUser?.email) || '');
       const cat = escapeHtml(toCategoryLabel(r.category));
       const recur = r.recurring ? RECUR_SVG : '';
       const isCont = i > 0;
