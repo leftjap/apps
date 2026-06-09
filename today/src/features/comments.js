@@ -14,8 +14,11 @@
  */
 import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
+<<<<<<< Updated upstream
 import { USER_ID_TO_DISPLAY_NAME, CLAUDE_USER_ID, getCurrentKind, scheduleRecentsRefresh } from './entries.js';
 import { supabase } from '../services/supabase.js';
+=======
+>>>>>>> Stashed changes
 
 let _currentUser = null;
 let _composerInstalled = false;
@@ -24,8 +27,11 @@ let _commentDeleteInstalled = false;
 let _realtimeUnregister = null;
 let _articleObserver = null;
 let _stylesInjected = false;
+<<<<<<< Updated upstream
 // author_id → 사용자가 설정한 프로필 사진 URL. today_profiles 에서 로드 (RLS: 본인+파트너 row 만 노출).
 let _avatarUrlById = {};
+=======
+>>>>>>> Stashed changes
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
 const _pendingCommentIds = new Set();
 // Wave 11.6.10 — composer 처리 중 (in-flight) flag. 빠른 Enter 두 번 시 createComment 재호출 차단.
@@ -36,6 +42,7 @@ function markPendingComment(id) {
   setTimeout(() => _pendingCommentIds.delete(id), 5000);
 }
 
+<<<<<<< Updated upstream
 /** 새 댓글 버블 등장 애니메이션 1회 (prefers-reduced-motion 시 CSS가 무효화). */
 function animateCommentEnter(rowEl) {
   if (!rowEl || !rowEl.classList) return;
@@ -46,6 +53,8 @@ function animateCommentEnter(rowEl) {
   setTimeout(done, 700);
 }
 
+=======
+>>>>>>> Stashed changes
 const TIME_FORMATTER_OPTS = { hour: '2-digit', minute: '2-digit', hour12: false };
 
 export function escapeHtml(s) {
@@ -68,6 +77,7 @@ export function formatCommentTime(iso, now = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+<<<<<<< Updated upstream
 // 클로드(AI) 아바타 — Anthropic 마크를 단순화한 스파크(asterisk) 인라인 SVG (픽셀-정확 공식 로고 아님).
 const CLAUDE_LOGO_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7"/><line x1="6.3" y1="17.7" x2="17.7" y2="6.3"/></svg>';
 // 사용자별 아바타 배경색.
@@ -95,25 +105,27 @@ function avatarHtml(authorId, name, avatarUrl) {
   return `<span class="comment-row__avatar" style="background:${color}">${initial}</span>`;
 }
 
+=======
+>>>>>>> Stashed changes
 /**
  * Dexie comment row → HTML row. mine = author_id === currentUser.id.
- * Wave 11.6.9 — 카카오톡/iMessage 스타일 메시지 버블. mine 우측 / 그 외 좌측.
- * 사용자별 아바타: 라벨·아바타를 author_id 기준 결정 (지오/소연/클로드). 전원 아바타 노출.
+ * Wave 11.6.9 — 카카오톡/iMessage 스타일 메시지 버블. mine 우측 갈색 / partner 좌측 흰.
+ * partner 만 avatar 노출 (mine 은 우측 정렬로 자명).
  */
 export function commentToHtml(comment, opts = {}) {
   const id = escapeHtml(comment?.id || '');
   const body = escapeHtml(comment?.body || '');
   const time = escapeHtml(formatCommentTime(comment?.created_at));
-  const authorId = comment?.author_id || '';
-  const mine = opts.mine === true || authorId === opts.currentUserId;
-  const name = USER_ID_TO_DISPLAY_NAME[authorId] || opts.partnerName || '소연';
-  const authorLabel = mine ? '나' : name;
+  const mine = opts.mine === true || comment?.author_id === opts.currentUserId;
+  const authorLabel = mine ? '나' : (opts.partnerName || '소연');
+  const avatarInitial = escapeHtml(
+    opts.partnerInitial || (opts.partnerName ? opts.partnerName.charAt(0) : '소'),
+  );
   const deleteBtn = mine
     ? `<button class="comment-row__delete" data-comment-id="${id}" aria-label="댓글 삭제">삭제</button>`
     : '';
-  const avatarMap = opts.avatarUrlById || _avatarUrlById;
-  const avatarUrl = authorId ? avatarMap[authorId] : null;
-  const avatar = avatarHtml(authorId, name, avatarUrl);
+  // partner 만 avatar 렌더 (mine 은 우측 정렬로 식별)
+  const avatar = mine ? '' : `<span class="comment-row__avatar comment-row__avatar--partner">${avatarInitial}</span>`;
   return `<div class="comment-row" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}">${avatar}<div class="comment-row__col"><div class="comment-row__meta"><span class="comment-row__author">${escapeHtml(authorLabel)}</span><span class="comment-row__time">${time}</span>${deleteBtn}</div><div class="comment-row__bubble">${body}</div></div></div>`;
 }
 
@@ -164,7 +176,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row {
       display: flex;
       gap: 8px;
-      align-items: flex-start;
+      align-items: flex-end;
     }
     .comment-row[data-mine="1"] {
       flex-direction: row-reverse;
@@ -229,10 +241,9 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       white-space: pre-wrap;
       word-break: break-word;
     }
-    /* Wave 11.6.11b → 보강(세션3 화면검증). 배경은 페이지(--shell 253) 대비로 판단해야 함:
-       mine = --hover-bg (243) → Δ10 보임. partner = --sidebar (255) → Δ2 "흰 위 흰" 안 보임.
-       이전 "12/255 확장"은 mine↔partner 버블끼리 비교라 오류였음 (버블↔페이지가 핵심).
-       partner 는 1px --line 테두리로 가시화 (카카오톡 수신 버블). 모노톤 유지. */
+    /* Wave 11.6.11b — 시각 구분 명확화. mine = --hover-bg (243 옅은 회색) / partner = --sidebar (255 흰).
+       이전 shell vs sidebar (2/255) 차이 너무 미세 → 사용자 환경에서 구분 불가능. 12/255 차이로 확장.
+       모노톤 유지 (검정·갈색·파랑 X), border 제거 (배경 차이로만 구분). */
     .comment-row[data-mine="1"] .comment-row__bubble {
       background: var(--hover-bg);
       color: var(--ink-1, oklch(22% 0.008 60));
@@ -241,10 +252,10 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row[data-mine="0"] .comment-row__bubble {
       background: var(--sidebar);
       color: var(--ink-1, oklch(22% 0.008 60));
-      border: 1px solid var(--line, oklch(92% 0.006 60));
       border-radius: 16px 16px 16px 4px;
     }
     .composer input[disabled] { opacity: 0.5; }
+<<<<<<< Updated upstream
     .comment-row__avatar--claude svg { display: block; }
     /* 사용자 설정 프로필 사진 — 원형 clip. */
     .comment-row__avatar--photo { padding: 0; overflow: hidden; background: var(--hover-bg); }
@@ -305,6 +316,8 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       }
       .comment-row__delete { opacity: 1; }
     }
+=======
+>>>>>>> Stashed changes
   `;
   doc.head.appendChild(style);
   _stylesInjected = true;
@@ -445,6 +458,7 @@ function installComposerHandler() {
         );
         updateCommentsHeaderCount(article);
       }
+<<<<<<< Updated upstream
       notifyRecentsCountChange();
       // 엔터 피드백 — 새 버블 등장 애니메이션 + 가벼운 햅틱.
       const rowEl = list?.querySelector?.(`[data-comment-id="${row.id}"]`);
@@ -452,6 +466,8 @@ function installComposerHandler() {
       if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
         try { navigator.vibrate(10); } catch (_) {}
       }
+=======
+>>>>>>> Stashed changes
     } catch (err) {
       console.warn('[comments] createComment 실패:', err?.message || err);
     } finally {
@@ -616,9 +632,12 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     commentToHtml(newRow, { currentUserId: _currentUser?.id }),
   );
   updateCommentsHeaderCount(article);
+<<<<<<< Updated upstream
   notifyRecentsCountChange();
   const enteredRow = list.querySelector?.(`[data-comment-id="${id}"]`);
   if (enteredRow) animateCommentEnter(enteredRow);
+=======
+>>>>>>> Stashed changes
   return { applied: true, reason: 'appended', id };
 }
 
@@ -632,6 +651,7 @@ function updateCommentsHeaderCount(article) {
   countEl.textContent = String(n);
 }
 
+<<<<<<< Updated upstream
 /** 댓글 CUD/Realtime 직후 리센츠 댓글 카운트 자동 재반영 (Entries 200ms debounce 재사용).
  *  typeof document 가드 — vitest node 환경 등 document 없는 곳에서 no-op. */
 function notifyRecentsCountChange() {
@@ -663,12 +683,13 @@ async function loadAvatarMap() {
   }
 }
 
+=======
+>>>>>>> Stashed changes
 export async function mountCommentsView(user) {
   if (!user?.id) return;
   _currentUser = user;
   if (typeof document === 'undefined') return;
   injectCommentStyles();
-  await loadAvatarMap();
   installComposerHandler();
   installCommentDeleteHandler();
   installArticleObserver();
@@ -687,7 +708,6 @@ export function __resetCommentsState() {
   _commentDeleteInstalled = false;
   _stylesInjected = false;
   _composerSubmitting = false;
-  _avatarUrlById = {};
   _pendingCommentIds.clear();
   if (_articleObserver) {
     try { _articleObserver.disconnect(); } catch (_) {}
