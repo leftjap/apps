@@ -213,16 +213,24 @@ describe('월 이동 시 헤드라인 월 단어 갱신 (N2 회귀 — 이전달
     expect(box.innerHTML).toContain('5월에는'); // 접두 미변경 (innerHTML 손 안 댐)
   });
 
-  it('patchRankSectionFromRows — month 전달 시 랭킹 헤드라인 월 단어 갱신', () => {
-    const box = makeBox('5월에는 <strong>삼성화재</strong>에 많이 쓰고 있어요');
-    const section = { querySelector(sel) { return sel === '.exp-headline-title' ? box : null; } };
+  it('patchRankSectionFromRows — 1위 hero + 2~N위 행 갱신 (시안 §6, 헤드라인 제거)', () => {
+    const made = {};
+    const q = (s) => made[s] || (made[s] = { textContent: '' });
+    const rank1 = { querySelector: q, setAttribute() {} };
+    const rankRows = { innerHTML: '' };
+    const section = {
+      querySelector(sel) {
+        if (sel === '.exp-rank-1') return rank1;
+        if (sel === '.exp-rank-rows') return rankRows;
+        return null;
+      },
+    };
     const doc = { querySelector(sel) { return sel === '.exp-rank-section' ? section : null; } };
     const rows = [{ merchant: '쿠팡', amount_krw: 75000 }, { merchant: '네이버', amount_krw: 1000 }];
     const ok = Expenses.patchRankSectionFromRows(rows, doc, 4);
     expect(ok).toBe(true);
-    expect(box.innerHTML).toContain('4월에는');
-    expect(box.innerHTML).toContain('쿠팡');
-    expect(box.innerHTML).not.toContain('5월');
+    expect(made['.exp-rank-1__name'].textContent).toBe('쿠팡'); // 1위 hero
+    expect(rankRows.innerHTML).toContain('네이버');               // 2위 행
   });
 
   it('clearExpensesFixture — month 전달 시 0원 헤드라인도 4월 반영', () => {

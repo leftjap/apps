@@ -394,22 +394,51 @@ export function patchRankSectionFromRows(rows, doc = document, month = null) {
     if (numEl) numEl.textContent = '1';
     if (avatarEl) avatarEl.textContent = topBrand.initial;
     if (nameEl) nameEl.textContent = topBrand.name;
-    if (metaEl) metaEl.textContent = `${topBrand.count}건 · ${topBrand.share}%`;
+    if (metaEl) metaEl.textContent = `${topBrand.count}건 · 전체의 ${topBrand.share}%`;
     if (amtEl) amtEl.textContent = formatManwon(topBrand.amount);
     rank1.setAttribute('onclick', `openMerchantDetail('${escapeAttr(topBrand.name)}', event)`);
   }
-  const headTitle = section.querySelector('.exp-headline-title');
-  if (headTitle) {
-    // 월 이동 시 'N월에는' 접두까지 갱신. topBrand.name 은 사용자 데이터 → escapeHtml.
-    if (month != null) headTitle.innerHTML = `${month}월에는 <strong>${escapeHtml(topBrand.name)}</strong>에 많이 쓰고 있어요`;
-    else { const hs = headTitle.querySelector('strong'); if (hs) hs.textContent = topBrand.name; }
+  // 2~N위 — 번호 + 이름 + 카테고리(약하게) + 금액 행 (시안 §6, 그리드 카드 대체)
+  const rankRows = section.querySelector('.exp-rank-rows');
+  if (rankRows) {
+    rankRows.innerHTML = brands.slice(0, 6).map((b) => `<div class="exp-rank-row" onclick="openMerchantDetail('${escapeAttr(b.name)}', event)"><span class="exp-rank-row__num">${b.rank}</span><div class="exp-rank-row__body"><span class="exp-rank-row__name">${escapeHtml(b.name)}</span><span class="exp-rank-row__cat">${escapeHtml(toCategoryLabel(b.cat))}</span></div><span class="exp-rank-row__amt">${formatManwon(b.amount)}</span></div>`).join('');
   }
-  const grid = section.querySelector('.exp-rank-grid');
-  if (grid) {
-    // 2026-05-04 — chip 영문 enum (etc/delivery/dining/...) → 한글 라벨 변환 (Classifier).
-    const gridHtml = brands.slice(0, 6).map((b) => `<div class="exp-rank-card" onclick="openMerchantDetail('${escapeAttr(b.name)}', event)"><span class="exp-rank-card__num">${b.rank}</span><span class="exp-rank-card__chip">${chipLabelHtml(toCategoryLabel(b.cat))}</span><div class="exp-rank-card__main"><span class="exp-rank-card__name">${escapeHtml(b.name)}</span><span class="exp-rank-card__amt">${formatManwon(b.amount)}</span></div></div>`).join('');
-    grid.innerHTML = gridHtml;
+  return true;
+}
+
+/**
+ * 통계 — 월간 카테고리별 가로 막대 (#statsCatList). 1위 crail, min-width 9px (CSS). 시안 §6.
+ */
+export function patchStatsCategoryBars(rows, month = null, doc = document) {
+  if (!rows || !rows.length) return false;
+  // 통계 헤드라인 — "N월에는 N만원 썼어요" (현재월 총액, 시안 §6)
+  const statsHl = doc.getElementById?.('statsHeadline');
+  if (statsHl) {
+    const man = Math.round(rows.reduce((s, r) => s + (r.amount_krw || 0), 0) / 10000);
+    if (month != null) {
+      statsHl.innerHTML = `${month}월에는 <strong>${man}만원</strong> 썼어요`;
+      const ss = statsHl.querySelector?.('strong');
+      if (ss) { ss.textContent = '0만원'; animateCount(ss, man, '만원'); }
+    } else {
+      const ss = statsHl.querySelector?.('strong');
+      if (ss) animateCount(ss, man, '만원');
+    }
   }
+  // 카테고리별 막대 (1위 crail)
+  const list = doc.getElementById?.('statsCatList');
+  if (!list) return false;
+  const totals = new Map();
+  for (const r of rows) {
+    const cat = toCategoryLabel(r.category) || '기타';
+    totals.set(cat, (totals.get(cat) || 0) + (r.amount_krw || 0));
+  }
+  const sorted = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+  if (!sorted.length) return false;
+  const max = sorted[0][1] || 1;
+  list.innerHTML = sorted.map(([name, amt], i) => {
+    const f = i === 0 ? ' is-first' : '';
+    return `<div class="exp-cat-row${f}"><span class="exp-cat-row__name">${escapeHtml(name)}</span><div class="exp-cat-row__bar"><div class="exp-cat-row__fill${f}" style="width:${Math.round(amt / max * 100)}%"></div></div><span class="exp-cat-row__amt">${Math.round(amt / 10000)}만원</span></div>`;
+  }).join('');
   return true;
 }
 
@@ -556,6 +585,10 @@ export async function patchMonthlyTrendChart(year, month, doc = document) {
     return `<div class="exp-bar ${isCurrent ? 'is-current' : ''}"><div class="exp-bar__col"><div class="exp-bar__fill" style="height:${pct}%"></div></div><div class="exp-bar__amount">${manwon}만</div><div class="exp-bar__label">${mo.month}월</div></div>`;
   }).join('');
   chart.innerHTML = html;
+  // 6개월 평균 라벨 갱신 (시안 §6 — "월별 추이 · 6개월 평균 N만원")
+  const avg = Math.round(totals.reduce((s, t) => s + t, 0) / (totals.length || 1) / 10000);
+  const avgEl = chart.closest?.('.exp-stats-sec')?.querySelector?.('.exp-stats-sec__label strong');
+  if (avgEl) avgEl.textContent = `${avg}만원`;
   return true;
 }
 
@@ -682,9 +715,9 @@ export async function loadAndRenderMonth(year, month, doc = document) {
     // 통계 탭(랭킹·월별추이·누적)은 항상 '현재 월' 기준 — 피드에서 과거 월을 봐도 통계는 현재월 고정.
     // '최근 6개월'·'쓰고 있어요'(현재진행) 라벨이 현재 시점 의미이므로. 과거 월 로드 시 통계는 안 건드림.
     if (isCurrentMonth) {
+      patchStatsCategoryBars(rows, month, doc);
       patchRankSectionFromRows(rows, doc, month);
       await patchMonthlyTrendChart(year, month, doc);
-      await patchCumulativeFromHistory(year, month, doc);
     }
   } catch (e) {
     console.warn('[expenses] loadAndRenderMonth 실패', e?.message || e);
@@ -711,9 +744,11 @@ function bindStatsTabHandler() {
     const month = now.getMonth() + 1;
     try {
       const rows = await Queries.listExpensesByMonth(year, month);
-      if (rows && rows.length) patchRankSectionFromRows(rows, document, month);
+      if (rows && rows.length) {
+        patchStatsCategoryBars(rows, month, document);
+        patchRankSectionFromRows(rows, document, month);
+      }
       await patchMonthlyTrendChart(year, month, document);
-      await patchCumulativeFromHistory(year, month, document);
     } catch (err) {
       console.warn('[expenses] stats tab patch 실패', err?.message || err);
     }
@@ -1934,6 +1969,7 @@ export const Expenses = {
   patchCalendarFromRows,
   renderTimelineFromRows,
   patchRankSectionFromRows,
+  patchStatsCategoryBars,
   clearExpensesFixture,
   rebuildCalendarGrid,
   loadAndRenderMonth,
