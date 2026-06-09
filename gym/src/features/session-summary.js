@@ -14,7 +14,7 @@
  */
 
 import { getBuiltinExercise, getCachedCustomExercise, primeCustomExerciseCache } from '../db/exercises.js';
-import { getSessionById, getSessionsByRange, listCustomExercises } from '../db/queries.js';
+import { getSessionById, getSessionsByRange, listCustomExercises, weekRangeISO, toISODate } from '../db/queries.js';
 
 const WEEKDAY_KOR = ['일', '월', '화', '수', '목', '금', '토'];
 
@@ -67,7 +67,7 @@ function formatSingleSpec(block) {
   if (!doneSets.length) return null; // 완료 세트 없으면 표시 제외
   const firstSet = doneSets[0];
   if (firstSet && firstSet.duration != null) {
-    return formatTimeBased(name, firstSet, doneSets.some((s) => s.pr));
+    return formatTimeBased(name, firstSet, doneSets.some((s) => s.pr), doneSets.length);
   }
   return formatVolumeBased(name, doneSets);
 }
@@ -79,15 +79,16 @@ function formatSingleMocks(ex) {
   if (!allSets.length) return null;
   const firstSet = allSets[0];
   if (firstSet && firstSet.duration != null) {
-    return formatTimeBased(name, firstSet, false);
+    return formatTimeBased(name, firstSet, false, allSets.length);
   }
   return formatVolumeBased(name, allSets, false);
 }
 
-function formatTimeBased(name, firstSet, pr) {
+function formatTimeBased(name, firstSet, pr, setCount = 1) {
   const min = Math.round(Number(firstSet.duration) / 60);
   const km = firstSet.distance ? ` · ${firstSet.distance}km` : '';
-  return { name, sets: `${min}분${km}`, pr: !!pr };
+  // 영수증 3열 — 시간기반은 볼륨(kg) 없음. volume 열에 시간/거리 문자열 노출.
+  return { name, sets: `${min}분${km}`, setCount, volume: `${min}분${km}`, pr: !!pr };
 }
 
 function formatVolumeBased(name, sets, pr) {
@@ -96,9 +97,12 @@ function formatVolumeBased(name, sets, pr) {
     0,
   );
   const hasPR = pr === undefined ? sets.some((s) => s.pr) : !!pr;
+  // sets — 기존 결합 문자열 유지. setCount/volume — 영수증 3열용 분리 필드.
   return {
     name,
     sets: `${sets.length}세트 · ${total.toLocaleString()}kg`,
+    setCount: sets.length,
+    volume: `${total.toLocaleString()}kg`,
     pr: hasPR,
   };
 }
@@ -163,14 +167,56 @@ function buildReceiptNo(session) {
 }
 
 function renderExRow(ex) {
-  const prBadge = ex.pr
-    ? '<span style="font-size:13px;color:var(--accent);padding:1px 5px;border:1px solid var(--accent);border-radius:3px;font-weight:600;margin-left:6px;">PR</span>'
+  // 라이트 페이퍼 영수증 3열 — 운동명(PR ★) | 세트수 | 볼륨(우). summary-paper.html 정합.
+  const star = ex.pr
+    ? '<span style="color:var(--crail-deep);font-size:11px;">★</span>'
     : '';
-  return `<div class="kr" style="display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;"><span style="font-size:14px;color:#fff;display:flex;align-items:center;gap:6px;">${escapeText(ex.name)}${prBadge}</span><span class="num" style="font-size:14px;color:rgba(255,255,255,0.7);font-weight:500;">${escapeText(ex.sets)}</span></div>`;
+  const nameColor = ex.pr ? 'var(--crail-deep)' : 'var(--ink-1)';
+  const count = Number.isFinite(ex.setCount) ? `${ex.setCount}세트` : '';
+  const vol = ex.volume != null ? ex.volume : ex.sets;
+  return `<div style="display:grid;grid-template-columns:1fr auto auto;align-items:baseline;column-gap:12px;padding:7px 0;"><span style="font-size:13px;font-weight:500;color:${nameColor};display:flex;align-items:center;gap:6px;white-space:nowrap;">${escapeText(ex.name)}${star}</span><span class="mono" style="font-size:12px;color:var(--ink-4);white-space:nowrap;">${escapeText(count)}</span><span class="mono" style="font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;min-width:56px;text-align:right;">${escapeText(vol)}</span></div>`;
 }
 
 function escapeText(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/**
+ * 영수증 하단 스탬프용 — 연속 운동 주(週) 수. home.js computeWeekStreak 와 동일 규칙:
+ * 이번 주부터 거꾸로, 운동한 주가 연속되는 동안 카운트. 이번 주(i=0) 미운동은 streak 미파기.
+ * 입력: completed 세션 날짜 배열(date 문자열). 빈 배열 → 0.
+ */
+function computeWeekStreakFromDates(dates, now) {
+  if (!Array.isArray(dates) || !dates.length) return 0;
+  let streak = 0;
+  let cursor = new Date(now);
+  for (let i = 0; i < 60; i += 1) {
+    const { from, to } = weekRangeISO(cursor);
+    const hit = dates.some((d) => d >= from && d <= to);
+    if (hit) streak += 1;
+    else if (i > 0) break; // 이번 주(i=0) 미운동은 유지, 그 이전 빈 주는 중단
+    cursor = new Date(cursor);
+    cursor.setDate(cursor.getDate() - 7);
+  }
+  return streak;
+}
+
+/** 최근 ~70일 completed 세션 기준 연속 주 수. db 미가용 시 0. */
+async function fetchWeekStreak(now = Date.now()) {
+  try {
+    const today = new Date(now);
+    const todayISO = toISODate(today);
+    const from = new Date(today);
+    from.setDate(today.getDate() - 70);
+    const rows = await getSessionsByRange(toISODate(from), todayISO);
+    const dates = (rows || [])
+      .filter((s) => s && s.status === 'completed')
+      .map((s) => String(s.date || ''))
+      .filter(Boolean);
+    return computeWeekStreakFromDates(dates, now);
+  } catch (_) {
+    return 0;
+  }
 }
 
 async function findSummarySession() {
@@ -208,22 +254,38 @@ export async function mountSummaryView() {
     const el = document.getElementById(id);
     if (el) el.textContent = text;
   };
+  // r-meta 3열 — 소요 / 신기록(PR 카운트) / 세트(총 세트수). #summaryKcal 은 총 세트수로 재사용.
+  const totalSets = data.exercises.reduce((s, e) => s + (Number(e.setCount) || 0), 0);
   set('summaryReceiptNo', buildReceiptNo(session));
   set('summaryDate', formatReceiptDate(session));
   set('summaryTotal', data.volume);
   set('summaryDuration', `${data.time}분`);
-  set('summaryPR', data.pr > 0 ? `${data.pr} PR ★` : '0 PR');
-  set('summaryKcal', `${data.kcal} kcal`);
+  set('summaryPR', String(data.pr));
+  set('summaryKcal', String(totalSets));
 
   const exList = document.getElementById('summaryExList');
   if (exList) {
     if (!data.exercises.length) {
-      exList.innerHTML = '<div class="kr" style="text-align:center;padding:10px 0;font-size:13px;color:rgba(255,255,255,0.3);">기록 없음</div>';
+      exList.innerHTML = '<div style="text-align:center;padding:10px 0;font-size:13px;color:var(--ink-4);">기록 없음</div>';
     } else {
       exList.innerHTML = data.exercises.map(renderExRow).join('');
     }
   }
-  return { mounted: true, sessionId: session.id };
+
+  // r-foot 스탬프 — 연속 주 칩. streak<1 이면 중립 '기록 완료' 로 폴백(스탬프 유지).
+  const streak = await fetchWeekStreak();
+  const stamp = document.getElementById('summaryStamp');
+  const stampStar = document.getElementById('summaryStampStar');
+  if (stamp) {
+    if (streak >= 1) {
+      stamp.textContent = `${streak}주 연속 달성`;
+      if (stampStar) stampStar.style.display = '';
+    } else {
+      stamp.textContent = '기록 완료';
+      if (stampStar) stampStar.style.display = 'none';
+    }
+  }
+  return { mounted: true, sessionId: session.id, weekStreak: streak };
 }
 
 if (typeof window !== 'undefined') {

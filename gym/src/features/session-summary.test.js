@@ -50,7 +50,7 @@ describe('summarizeSession — spec §12 형식', () => {
     expect(v.kcal).toBe(165);
     expect(v.pr).toBe(1);
     expect(v.exercises).toEqual([
-      { name: '벤치프레스', sets: '2세트 · 1,120kg', pr: true },
+      { name: '벤치프레스', sets: '2세트 · 1,120kg', setCount: 2, volume: '1,120kg', pr: true },
     ]);
   });
 
@@ -79,8 +79,8 @@ describe('summarizeSession — spec §12 형식', () => {
     };
     const v = summarizeSession(session);
     expect(v.exercises.length).toBe(2);
-    expect(v.exercises[0]).toEqual({ name: '벤치프레스', sets: '1세트 · 600kg', pr: false });
-    expect(v.exercises[1]).toEqual({ name: '스쿼트', sets: '2세트 · 1,040kg', pr: false });
+    expect(v.exercises[0]).toEqual({ name: '벤치프레스', sets: '1세트 · 600kg', setCount: 1, volume: '600kg', pr: false });
+    expect(v.exercises[1]).toEqual({ name: '스쿼트', sets: '2세트 · 1,040kg', setCount: 2, volume: '1,040kg', pr: false });
   });
 
   it('done:false 세트는 출력 제외', () => {
@@ -125,7 +125,7 @@ describe('summarizeSession — spec §12 형식', () => {
       }],
     };
     const v = summarizeSession(session);
-    expect(v.exercises[0]).toEqual({ name: '트레드밀', sets: '30분 · 5km', pr: false });
+    expect(v.exercises[0]).toEqual({ name: '트레드밀', sets: '30분 · 5km', setCount: 1, volume: '30분 · 5km', pr: false });
   });
 
   it('미매핑 exerciseId — 영문 그대로', () => {
@@ -173,7 +173,7 @@ describe('summarizeSession — mocks Wave 11.6D 형식 fallback', () => {
       }],
     };
     const v = summarizeSession(session);
-    expect(v.exercises[0]).toEqual({ name: '벤치프레스', sets: '2세트 · 1,370kg', pr: false });
+    expect(v.exercises[0]).toEqual({ name: '벤치프레스', sets: '2세트 · 1,370kg', setCount: 2, volume: '1,370kg', pr: false });
   });
 });
 
