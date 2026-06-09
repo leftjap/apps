@@ -785,6 +785,287 @@ document.getElementById('btnNextMonth').addEventListener('click', () => {
 });
 renderMonthNav();
 
+/* ============ D1 데스크탑 재디자인 (⑦⑧ 기록) ============
+ * innerWidth>=1024 시 .app 을 D1 레이아웃으로 교체 + D1 전용 렌더. 기존 fetcher/헬퍼(fetchSessionLogDayMap·
+ * fetchStatsDayDetailFromDB·fetchSentencesWithLastLearned·getStatsLang·intensityFromCount·cursor·goReview) 재사용.
+ * 모바일/태블릿(<1024)은 가드 아래 기존 렌더 그대로. d1.css 는 main.js 번들(SPA). */
+const D1_PLAY = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.2v13.6c0 .9 1 1.5 1.8 1L20 12.9c.7-.5.7-1.5 0-2L9.8 4.2C9 3.7 8 4.3 8 5.2Z"/></svg>';
+const D1_MIC = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v3"/></svg>';
+const D1_HOME = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5.5 9.5V20h13V9.5"/></svg>';
+function d1esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function d1set(id, v) { const el = document.getElementById(id); if (el) el.textContent = String(v); }
+let d1Sort = 'recent', d1Sel = null, d1SentSource = null;
+
+async function renderD1Sidebar() {
+  const lang = getStatsLang();
+  const db = window.studyDB;
+  let days = 0, utter = 0, pass = 0;
+  if (db) {
+    try {
+      const prefix = getCursorPrefix();
+      const logs = await db.sessionLogs.where('lang').equals(lang).toArray();
+      const monthLogs = logs.filter((l) => (l.date || '').startsWith(prefix));
+      days = new Set(monthLogs.map((l) => l.date)).size;
+      utter = monthLogs.reduce((s, l) => s + (l.utteranceCount || 0), 0);
+      pass = monthLogs.reduce((s, l) => s + (l.passCount || 0), 0);
+    } catch (e) { console.error('[d1 sidebar]', e); }
+  } else if (isCurrentMonth() && cursor.month === 4) {
+    const vals = Object.values(APRIL_DATA);
+    days = vals.filter((v) => v[0] > 0).length;
+    utter = vals.reduce((s, v) => s + v[0], 0);
+    pass = Math.round(utter * 0.75);
+  }
+  d1set('d1-days', days); d1set('d1-utter', utter); d1set('d1-pass', pass);
+  d1set('d1-month-eyebrow', cursor.year + '년 ' + cursor.month + '월');
+  document.querySelectorAll('#d1stats .d1-subj').forEach((s) => s.classList.toggle('on', s.dataset.lang === lang));
+}
+
+function renderD1MonthNav() {
+  const nav = document.getElementById('d1-mnav');
+  if (!nav) return;
+  const prevM = cursor.month === 1 ? 12 : cursor.month - 1;
+  const nextM = cursor.month === 12 ? 1 : cursor.month + 1;
+  const nextOff = isFutureFromCursor(1);
+  nav.innerHTML = '<button class="st-mbtn" data-dir="-1">' + prevM + '월</button>'
+    + '<span class="st-mlabel">' + cursor.year + '년 ' + cursor.month + '월</span>'
+    + '<button class="st-mbtn' + (nextOff ? ' off' : '') + '" data-dir="1">' + nextM + '월</button>';
+  nav.querySelectorAll('.st-mbtn').forEach((b) => b.addEventListener('click', () => {
+    if (b.classList.contains('off')) return;
+    const dir = parseInt(b.dataset.dir, 10);
+    if (dir < 0) { if (cursor.month === 1) { cursor.year -= 1; cursor.month = 12; } else cursor.month -= 1; }
+    else { if (cursor.month === 12) { cursor.year += 1; cursor.month = 1; } else cursor.month += 1; }
+    d1Sel = null;
+    renderD1MonthNav(); renderD1Sidebar(); renderD1Cal(); renderD1Chart();
+    document.getElementById('d1-right').innerHTML = '<div class="d1-panel-lab">날짜를 선택하세요</div>';
+  }));
+}
+
+async function renderD1Cal() {
+  const dayMap = await fetchSessionLogDayMap(getStatsLang());
+  const useFb = !dayMap && isCurrentMonth() && cursor.month === 4;
+  const grid = document.getElementById('d1-cal');
+  if (!grid) return;
+  let html = ['월', '화', '수', '목', '금', '토', '일'].map((d) => '<div class="st-dow">' + d + '</div>').join('');
+  const offset = getCursorFirstDOW(), lastDay = getCursorDaysInMonth();
+  for (let i = 0; i < offset; i++) html += '<div class="st-cell empty"></div>';
+  for (let d = 1; d <= lastDay; d++) {
+    const v = dayMap ? (dayMap[d] || 0) : (useFb && APRIL_DATA[d] ? APRIL_DATA[d][0] : 0);
+    const isToday = isCurrentMonth() && d === TODAY;
+    const tintA = v ? (v < 10 ? 0.08 : v < 18 ? 0.17 : 0.30) : 0;
+    const bg = (isToday || v === 0) ? '' : 'background:rgba(207,106,64,' + tintA + ');';
+    const cls = 'st-cell' + (isToday ? ' today' : '') + (d === d1Sel && !isToday ? ' sel' : '');
+    html += '<div class="' + cls + '" data-day="' + d + '" style="' + bg + '"><div class="st-date">' + d + '</div><div class="st-val ' + intensityFromCount(v) + '">' + (v > 0 ? v : '') + '</div></div>';
+  }
+  grid.innerHTML = html;
+  grid.querySelectorAll('.st-cell:not(.empty)').forEach((c) => c.addEventListener('click', () => selectD1Day(parseInt(c.dataset.day, 10))));
+}
+
+async function renderD1Chart() {
+  const dayMap = await fetchSessionLogDayMap(getStatsLang());
+  const useFb = !dayMap && isCurrentMonth() && cursor.month === 4;
+  const getV = (d) => dayMap ? (dayMap[d] || 0) : (useFb && APRIL_DATA[d] ? APRIL_DATA[d][0] : 0);
+  const wrap = document.getElementById('d1-chart'), xax = document.getElementById('d1-chartx');
+  if (!wrap) return;
+  const last = getCursorDaysInMonth();
+  let maxV = 0; for (let d = 1; d <= last; d++) maxV = Math.max(maxV, getV(d));
+  let html = '';
+  for (let d = 1; d <= last; d++) {
+    const v = getV(d);
+    const cls = 'st-bar' + (v > 0 ? ' has' : '') + (v >= 15 ? ' high' : '') + (isCurrentMonth() && d === TODAY ? ' today' : '');
+    const hgt = maxV > 0 ? Math.max((v / maxV) * 100, v > 0 ? 6 : 0) : 0;
+    html += '<div class="' + cls + '" data-day="' + d + '" style="height:' + hgt + '%;"></div>';
+  }
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('.st-bar').forEach((b) => b.addEventListener('click', () => selectD1Day(parseInt(b.dataset.day, 10))));
+  const labels = last >= 28 ? [1, 8, 15, 22, 30] : [1, 5, 10, 15];
+  xax.innerHTML = labels.map((d) => '<span>' + d + '</span>').join('');
+}
+
+async function selectD1Day(day) {
+  d1Sel = day;
+  document.querySelectorAll('#d1-cal .st-cell').forEach((c) => c.classList.toggle('sel', String(day) === c.dataset.day && !c.classList.contains('today')));
+  await renderD1DayDetail(day);
+}
+
+async function renderD1DayDetail(day) {
+  const right = document.getElementById('d1-right');
+  if (!right) return;
+  const lang = getStatsLang();
+  const detail = await fetchStatsDayDetailFromDB(day, lang);
+  let mins = 0, pass = 0, utter = 0, sents = [], has = false;
+  if (detail) {
+    has = true;
+    mins = Math.max(1, Math.round(detail.log.durationSec / 60));
+    pass = detail.log.passCount || 0; utter = detail.log.utteranceCount || 0;
+    if (window.studyDay?.fetchDayLessonsForDay && window.studyDB) {
+      try { const cards = await window.studyDay.fetchDayLessonsForDay(window.studyDB, lang, getCursorISO(day)); sents = (cards || []).map((c) => ({ en: c.sentence, ko: c.meaning })); } catch (e) { console.error('[d1 daydetail]', e); }
+    }
+  } else if (APRIL_DATA[day] && APRIL_DATA[day][0]) {
+    has = true;
+    const v = APRIL_DATA[day][0]; mins = Math.round(v * 1.5); pass = Math.floor(v * 0.75); utter = v;
+    sents = SENTENCES.filter((s) => s.date === '4/' + day).slice(0, 2).map((s) => ({ en: s.en, ko: s.ko }));
+  }
+  const isToday = isCurrentMonth() && day === TODAY;
+  let html = '<div class="d1-panel-lab" style="margin-bottom:16px;">' + cursor.month + '월 ' + day + '일' + (isToday ? ' · 오늘' : '') + '</div>';
+  if (!has) { right.innerHTML = html + '<div style="font-size:14px;color:var(--faint);">학습 기록이 없어요.</div>'; return; }
+  html += '<div class="st-day"><div class="st-daystat">'
+    + '<div><div class="d1-lab">학습 시간</div><div style="font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-0.02em;">' + mins + '<span style="font-size:15px;color:var(--mut);font-weight:700;">분</span></div></div>'
+    + '<div><div class="d1-lab">통과 / 발화</div><div style="font-size:30px;font-weight:800;margin-top:6px;letter-spacing:-0.02em;"><span style="color:var(--sage);">' + pass + '</span><span style="color:var(--faint);"> / ' + utter + '</span></div></div>'
+    + '</div></div>';
+  html += '<div class="d1-panel-lab" style="margin:26px 0 4px;">학습한 문장</div>';
+  if (sents.length) {
+    html += sents.map((s) => '<div class="st-sent"><div style="flex:1;min-width:0;"><div style="font-size:15.5px;font-weight:600;line-height:1.35;">' + d1esc(s.en) + '</div><div style="font-size:13px;color:var(--mut);margin-top:2px;">' + d1esc(s.ko) + '</div></div><div class="st-acts"><button class="st-listen" data-en="' + d1esc(s.en) + '" title="듣기">' + D1_PLAY + '</button><button class="st-rec" title="따라 말하기">' + D1_MIC + '</button></div></div>').join('');
+  } else { html += '<div style="font-size:13px;color:var(--faint);">신규 학습 없음</div>'; }
+  html += '<div style="font-size:13px;color:var(--faint);margin-top:18px;line-height:1.55;">여기서 바로 듣고 따라 말하거나, 문장을 누르면 해설과 함께 복습해요.</div>';
+  right.innerHTML = html;
+  right.querySelectorAll('.st-listen').forEach((b) => b.addEventListener('click', () => { const en = b.dataset.en; if (en && window.studySpeech?.speak) window.studySpeech.speak(en, { lang: lang === 'ja' ? 'ja-JP' : 'en-US', rate: 0.85 }); }));
+}
+
+function renderD1Sentences(mode) {
+  const list = document.getElementById('d1-sentlist');
+  if (!list) return;
+  const source = d1SentSource || SENTENCES;
+  let sorted = source.slice();
+  if (source !== SENTENCES) sorted.sort((a, b) => (b._iso || '').localeCompare(a._iso || ''));
+  if (mode === 'weak') {
+    const rO = { X: 0, '△': 1, O: 2 };
+    sorted.sort((a, b) => { const ra = rO[a.result] ?? 2, rb = rO[b.result] ?? 2; return ra !== rb ? ra - rb : a.score - b.score; });
+  } else if (mode === 'graduating') sorted.sort((a, b) => b.interval - a.interval);
+  let html = '', lastDate = '';
+  sorted.forEach((s) => {
+    if (mode === 'recent' && s.date !== lastDate) { html += '<div class="st-datehdr">' + s.date + '</div>'; lastDate = s.date; }
+    const ivl = s.interval >= 60 ? '졸업 임박' : s.interval + '일 후';
+    const rlab = s.result === 'O' ? '' : s.result === 'X' ? 'No' : 'Hmm';
+    const rcol = s.result === 'X' ? 'var(--danger)' : 'var(--amber)';
+    html += '<div class="st-sent" data-id="' + d1esc(s.id) + '"><div style="flex:1;min-width:0;"><div style="font-size:17px;font-weight:600;line-height:1.35;">' + d1esc(s.en) + '</div><div style="font-size:13.5px;color:var(--mut);margin-top:2px;">' + d1esc(s.ko) + '</div>'
+      + '<div style="display:flex;gap:14px;margin-top:7px;font-size:12.5px;align-items:baseline;"><span class="st-score ' + s.cls + '">' + s.score + '</span><span style="color:var(--faint);">' + ivl + '</span>' + (rlab ? '<span style="color:' + rcol + ';font-weight:700;">' + rlab + '</span>' : '') + '</div></div>'
+      + '<div class="st-acts"><button class="st-listen" data-en="' + d1esc(s.en) + '" title="듣기">' + D1_PLAY + '</button><button class="st-rec" title="따라 말하기">' + D1_MIC + '</button></div></div>';
+  });
+  list.innerHTML = html;
+  const lang = getStatsLang();
+  list.querySelectorAll('.st-sent').forEach((item) => {
+    const id = item.dataset.id; const s = sorted.find((x) => x.id === id);
+    item.querySelector('.st-listen')?.addEventListener('click', (e) => { e.stopPropagation(); const en = e.currentTarget.dataset.en; if (en && window.studySpeech?.speak) window.studySpeech.speak(en, { lang: lang === 'ja' ? 'ja-JP' : 'en-US', rate: 0.85 }); });
+    item.querySelector('.st-rec')?.addEventListener('click', (e) => e.stopPropagation());
+    if (s) item.addEventListener('click', () => goReview(s, 'sentList'));
+  });
+}
+
+function renderD1Rail() {
+  const right = document.getElementById('d1-right');
+  if (!right) return;
+  const source = d1SentSource || SENTENCES;
+  const total = source.length;
+  const weak = source.filter((s) => s.score < 75 || s.result !== 'O').length;
+  const grad = source.filter((s) => s.interval >= 60).length;
+  const avg = total ? Math.round(source.reduce((a, s) => a + s.score, 0) / total) : 0;
+  right.innerHTML = '<div class="st-rail" style="width:auto;border-left:none;padding-left:0;">'
+    + '<div class="d1-panel-lab" style="margin-bottom:12px;">요약</div>'
+    + '<div class="st-railcard">'
+    + '<div class="st-railrow"><span class="rk">총 문장</span><span class="rv">' + total + '</span></div>'
+    + '<div class="st-railrow"><span class="rk">약한 문장</span><span class="rv" style="color:var(--amber);">' + weak + '</span></div>'
+    + '<div class="st-railrow"><span class="rk">졸업 임박</span><span class="rv">' + grad + '</span></div>'
+    + '<div class="st-railrow"><span class="rk">평균 점수</span><span class="rv" style="color:var(--sage);">' + avg + '</span></div>'
+    + '</div>'
+    + '<div class="d1-panel-lab" style="margin:26px 0 8px;">점수</div>'
+    + '<div class="st-legend"><span class="st-dotc" style="background:var(--sage);"></span>통과 · 75점 이상</div>'
+    + '<div class="st-legend"><span class="st-dotc" style="background:var(--amber);"></span>애매 · 60–74점</div>'
+    + '<div class="st-legend"><span class="st-dotc" style="background:var(--danger);"></span>다시 · 60점 미만</div>'
+    + '<div style="font-size:13px;color:var(--faint);margin-top:22px;line-height:1.6;">듣기·녹음으로 바로 연습하거나, 문장을 누르면 해설과 함께 복습 세션으로 들어가요.</div>'
+    + '</div>';
+}
+
+async function switchD1Tab(tab) {
+  document.getElementById('d1-tab-cal').classList.toggle('on', tab === 'cal');
+  document.getElementById('d1-tab-list').classList.toggle('on', tab === 'list');
+  document.getElementById('d1-cal-view').style.display = tab === 'cal' ? '' : 'none';
+  document.getElementById('d1-list-view').style.display = tab === 'list' ? 'flex' : 'none';
+  document.getElementById('d1-mnav').style.visibility = tab === 'cal' ? '' : 'hidden';
+  if (tab === 'cal') {
+    await selectD1Day(d1Sel || (isCurrentMonth() ? TODAY : 1));
+  } else {
+    d1SentSource = (await fetchSentencesWithLastLearned(getStatsLang())) || SENTENCES;
+    renderD1Sentences(d1Sort);
+    renderD1Rail();
+  }
+}
+
+function setupD1Stats() {
+  document.getElementById('btnBack')?.addEventListener('click', () => { window.location.hash = '#/home'; });
+  document.getElementById('d1-tab-cal')?.addEventListener('click', () => switchD1Tab('cal'));
+  document.getElementById('d1-tab-list')?.addEventListener('click', () => switchD1Tab('list'));
+  document.querySelectorAll('#d1-sort .st-sortpill').forEach((b) => b.addEventListener('click', () => {
+    d1Sort = b.dataset.mode;
+    document.querySelectorAll('#d1-sort .st-sortpill').forEach((x) => x.classList.toggle('on', x === b));
+    renderD1Sentences(d1Sort);
+  }));
+  document.querySelectorAll('#d1stats .d1-subj').forEach((s) => s.addEventListener('click', () => {
+    const lang = s.dataset.lang; if (!lang) return;
+    sessionStorage.setItem('studyLang', lang);
+    d1Sel = null;
+    renderD1Sidebar();
+    if (document.getElementById('d1-tab-cal').classList.contains('on')) { renderD1Cal(); renderD1Chart(); document.getElementById('d1-right').innerHTML = '<div class="d1-panel-lab">날짜를 선택하세요</div>'; }
+    else switchD1Tab('list');
+  }));
+  renderD1MonthNav();
+  renderD1Sidebar();
+  renderD1Cal();
+  renderD1Chart();
+  const routeTab = (new URLSearchParams(location.search).get('tab') === 'sent') || (window.studyRoute?.params?.tab === 'sent');
+  switchD1Tab(routeTab ? 'list' : 'cal');
+}
+
+if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+  const __statsApp = document.querySelector('.app');
+  if (__statsApp) __statsApp.outerHTML = `
+<div class="d1-root" id="d1stats" style="min-height:100vh;min-height:100dvh;">
+  <div class="d1-side">
+    <button class="d1-topbtn" id="btnBack">${D1_HOME}홈으로</button>
+    <div style="margin-top:26px;">
+      <div class="d1-lab" id="d1-month-eyebrow">기록</div>
+      <div style="font-size:27px;font-weight:800;letter-spacing:-0.03em;margin-top:8px;">기록</div>
+    </div>
+    <div style="margin-top:34px;">
+      <div class="d1-lab" style="color:var(--terra);">활동 일수</div>
+      <div style="display:flex;align-items:flex-end;gap:6px;margin-top:8px;">
+        <span id="d1-days" style="font-size:48px;font-weight:800;color:var(--terra);letter-spacing:-0.03em;line-height:1;">0</span>
+        <span style="font-size:15px;color:var(--mut);font-weight:600;margin-bottom:6px;">일</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:30px;margin-top:30px;">
+      <div><div class="d1-lab">총 발화</div><div id="d1-utter" style="font-size:26px;font-weight:800;margin-top:7px;">0</div></div>
+      <div><div class="d1-lab">통과</div><div id="d1-pass" style="font-size:26px;font-weight:800;margin-top:7px;color:var(--sage);">0</div></div>
+    </div>
+    <div style="flex:1;"></div>
+    <div>
+      <div class="d1-lab" style="margin-bottom:10px;">과목</div>
+      <div class="d1-subj on" data-lang="en"><span style="display:inline-flex;align-items:center;"><span class="dot"></span><span class="nm">영어</span></span><span class="ct"></span></div>
+      <div class="d1-subj" data-lang="ja"><span style="display:inline-flex;align-items:center;"><span class="dot"></span><span class="nm">일본어</span></span><span class="ct"></span></div>
+    </div>
+  </div>
+  <div class="d1-main" style="padding:0;flex-direction:row;">
+    <div style="flex:1 1 60%;padding:40px 44px 36px 56px;border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="st-tabs"><button class="st-tab on" id="d1-tab-cal">캘린더</button><button class="st-tab" id="d1-tab-list">문장 목록</button></div>
+        <div class="st-mnav" id="d1-mnav"></div>
+      </div>
+      <div id="d1-cal-view" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+        <div class="st-cal" id="d1-cal" style="margin-top:24px;"></div>
+        <div style="flex:1;min-height:18px;"></div>
+        <div><div class="d1-panel-lab">일별 발화</div><div class="st-chart" id="d1-chart"></div><div class="st-chartx" id="d1-chartx"></div></div>
+      </div>
+      <div id="d1-list-view" style="display:none;flex-direction:column;flex:1;min-height:0;">
+        <div class="st-sort" id="d1-sort" style="margin-top:16px;"><button class="st-sortpill on" data-mode="recent">최신순</button><button class="st-sortpill" data-mode="weak">약한 문장</button><button class="st-sortpill" data-mode="graduating">졸업 임박</button></div>
+        <div id="d1-sentlist" style="margin-top:8px;overflow-y:auto;padding-right:8px;"></div>
+      </div>
+    </div>
+    <div id="d1-right" style="flex:1 1 40%;padding:40px 48px 36px;overflow-y:auto;"></div>
+  </div>
+</div>`;
+  setupD1Stats();
+  return;
+}
+
 /* init — async render 들은 fire-and-forget. 실패해도 콘솔 에러만 남기고 나머지 UI 정상 진행. */
 renderCal().catch((e) => console.error('[renderCal]', e));
 renderChart().catch((e) => console.error('[renderChart]', e));
