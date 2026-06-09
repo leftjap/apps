@@ -140,10 +140,26 @@ export function rowToMockDoc(row, now = new Date()) {
  * #recentsList 를 Dexie rows 로 재구성. rows.length === 0 시 no-op (mocks fixture 보존).
  * mocks renderRecents (today-mac.html L3778-3783) 의 HTML 패턴 답습.
  */
-// 리센츠 인라인 댓글 카운트 아이콘 — 시안 HTML 직접 인용 (Lucide message-circle, 11×11 fill).
-// 시안 src: shared.jsx:1084 `<svg width=11 height=11 viewBox=0 0 24 24 fill=currentColor>`.
-const CHAT_BUBBLE_SVG = '<svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor" stroke="none" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.3A8 8 0 1 1 21 12z"/></svg>';
+/**
+ * 상대 날짜 — 리센츠 메타용 ("오늘"/"어제"/"N일 전"/"N주 전"/"M월 D일"). 작업지시서 §3.
+ */
+export function formatRelativeDay(iso, now = new Date()) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const day0 = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const days = Math.round((day0(now) - day0(d)) / 86400000);
+  if (days <= 0) return '오늘';
+  if (days === 1) return '어제';
+  if (days < 7) return `${days}일 전`;
+  if (days < 28) return `${Math.floor(days / 7)}주 전`;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+}
 
+/**
+ * 리센츠 — 글 문서는 2줄(제목 + "날짜 · 공유자 · 댓글 N"), 안 읽은 항목만 크레일 펄스 도트. 작업지시서 §3.
+ * 공유자(소연/지오)는 본문·사이드바 모두 crail-deep (.sh) 로 통일.
+ */
 export async function renderRecentsFromRows(kind, rows, doc = document) {
   const list = doc.getElementById('recentsList');
   if (!list) return false;
@@ -157,20 +173,33 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
   } catch (_) {
     /* Dexie 미초기화 등 — 카운트 생략하고 렌더 계속 */
   }
+  // 안 읽은 댓글 있는 글 — 알림(read_at=null) 의 entry_id 집합 → 펄스 도트.
+  let unreadSet = new Set();
+  try {
+    if (userId) {
+      const notifs = await Queries.listNotifications(userId, { unreadOnly: true });
+      unreadSet = new Set((notifs || []).map((nt) => nt.entry_id).filter(Boolean));
+    }
+  } catch (_) {
+    /* 알림 미초기화 등 — 도트 생략 */
+  }
   const docsHtml = visible.map((r) => {
     const id = escapeHtml(r.id);
     const title = escapeHtml(r.title || '제목 없음');
     const isPartner = r.owner_id && userId && r.owner_id !== userId;
     const shareLabel = isPartner ? USER_ID_TO_DISPLAY_NAME[r.owner_id] || '' : '';
-    const labelHtml = shareLabel ? `<span class="recent-share">${escapeHtml(shareLabel)}</span>` : '';
     const n = countMap.get(r.id) || 0;
-    const countHtml = n > 0
-      ? `<span class="recent-comment-count">${CHAT_BUBBLE_SVG}${n}</span>`
-      : '';
-    return `<div class="sb__item sb__item--recent" data-doc-id="${id}"><span class="sb__item__group"><span class="sb__item__title">${title}</span>${countHtml}</span>${labelHtml}</div>`;
+    const unread = unreadSet.has(r.id);
+    const dateStr = formatRelativeDay(r.updated_at || r.created_at);
+    const sub = [
+      dateStr,
+      shareLabel ? `<span class="sh">${escapeHtml(shareLabel)}</span>` : '',
+      n > 0 ? `<span class="cm${unread ? ' unread' : ''}">댓글 ${n}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="sb__item sb__item--recent is-doc" data-doc-id="${id}"><div class="rc-main"><span class="rc-title">${title}</span>${unread ? '<span class="rc-dot"></span>' : ''}</div>${sub ? `<div class="rc-sub">${sub}</div>` : ''}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
-  ensureRecentsMore(kind, doc);
+  ensureRecentsMore(kind, rows.length, doc);
   return true;
 }
 
@@ -178,31 +207,38 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
 // 클릭 동작은 §5.0 전체 목록 뷰 wiring 단계에서 추가.
 const WRITING_KINDS_FOR_LIST = Object.freeze(['navi', 'fiction', 'blog', 'memo']);
 
-export function ensureRecentsMore(kind, doc = (typeof document !== 'undefined' ? document : null)) {
+export function ensureRecentsMore(kind, totalCount, doc = (typeof document !== 'undefined' ? document : null)) {
   if (!doc) return false;
   const list = doc.getElementById('recentsList');
   if (!list) return false;
   const group = list.parentElement;
   if (!group) return false;
-  const existing = group.querySelector(':scope > .sb__recents-more');
+  const existing = group.querySelector(':scope > .sb__more');
   const shouldShow = WRITING_KINDS_FOR_LIST.includes(kind) && list.children.length > 0;
   if (!shouldShow) {
     if (existing) existing.remove();
     return false;
   }
-  if (existing) return true;
+  // 건수 = 카테고리 전체 글 수 (rows.length). 화살표 없이 "전체 보기 · NN편" (작업지시서 §3).
+  const count = Number.isFinite(totalCount) ? totalCount : list.children.length;
+  const countText = `${count.toLocaleString('ko-KR')}편`;
+  if (existing) {
+    const c = existing.querySelector('.sb__more-count');
+    if (c) c.textContent = countText;
+    return true;
+  }
   const btn = doc.createElement('button');
   btn.type = 'button';
-  btn.className = 'sb__recents-more';
+  btn.className = 'sb__more';
   btn.dataset.action = 'show-all-list';
-  btn.textContent = '전체 보기 →';
+  btn.innerHTML = `전체 보기<span class="sb__more-count">${countText}</span>`;
   list.insertAdjacentElement('afterend', btn);
   return true;
 }
 
 export function removeRecentsMore(doc = (typeof document !== 'undefined' ? document : null)) {
   if (!doc || typeof doc.querySelector !== 'function') return false;
-  const btn = doc.querySelector('.sb__group--recents > .sb__recents-more');
+  const btn = doc.querySelector('.sb__group--recents > .sb__more');
   if (!btn) return false;
   btn.remove();
   return true;
@@ -582,32 +618,7 @@ function injectEditorStyles() {
       0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0); }
       30%, 70% { box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.45); }
     }
-    /* spec §3.3.1 — 리센츠 전체 보기 진입점.
-       DESIGN.md 준수: ghost ink-3 톤 (액센트 점 단위 원칙 — 사이드바 액센트 이미 3곳 사용 중).
-       sticky 폐기: recents 리스트 마지막 항목 다음 inline 배치 (스크롤로 자연 도달). */
-    .sb__recents-more {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 6px;
-      width: 100%;
-      margin: 0;
-      padding: 10px 8px;
-      background: transparent;
-      border: 0;
-      font-family: var(--font-sans, 'Pretendard', sans-serif);
-      font-size: 12px;
-      font-weight: 500;
-      line-height: 1.5;
-      color: var(--ink-3);
-      cursor: pointer;
-      border-radius: 8px;
-      transition: background 0.12s ease, color 0.12s ease;
-    }
-    .sb__recents-more:hover {
-      background: var(--hover-bg);
-      color: var(--ink-1);
-    }
+    /* "전체 보기" 버튼(.sb__more, 화살표 없이 제목+건수) 스타일은 mocks shell CSS 로 이관 (Today 리디자인 §3). */
     /* 파트너 글 read-only — 작성자만 공유 결정 가능 + 본문 수정 불가.
        시각: top-actions 의 share 토글 숨김. 메타에 "{이름} 작성 · 읽기 전용" 라벨 노출. */
     .share.share--readonly { display: none; }

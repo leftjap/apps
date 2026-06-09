@@ -203,8 +203,8 @@ export function renderExpenseRecentsFromRows(rows, doc = document) {
   const items = rows.slice(0, 5).map((r) => {
     const id = escapeHtml(r.id);
     const memo = escapeHtml(r.memo || r.merchant || r.brand || r.category || '거래');
-    const amt = formatAmount(r.amount_krw || 0);
-    return `<div class="sb__item sb__item--recent" data-tx-id="${id}" onclick="jumpToExpenseTx('${id}')">${memo}<span class="recent-share recent-share--amount">${amt}</span></div>`;
+    const amt = `${(r.amount_krw || 0).toLocaleString('ko-KR')}원`;   // Pretendard+tnum (.meta), mono 금지 (작업지시서 §1)
+    return `<div class="sb__item sb__item--recent is-exp" data-tx-id="${id}" onclick="jumpToExpenseTx('${id}')"><span class="rc-title">${memo}</span><span class="meta">${amt}</span></div>`;
   }).join('');
   list.innerHTML = items;
   return true;
@@ -1717,7 +1717,7 @@ export async function refreshSidebarExpenseTotal(doc = (typeof document !== 'und
   try {
     const now = new Date();
     const total = await Queries.sumExpensesMonth(now.getFullYear(), now.getMonth() + 1);
-    meta.textContent = `${(total || 0).toLocaleString('ko-KR')} 원`;
+    meta.textContent = `${(total || 0).toLocaleString('ko-KR')}원`;
   } catch (e) {
     console.warn('[expenses] refreshSidebarExpenseTotal 실패', e?.message || e);
   }
