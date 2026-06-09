@@ -36,6 +36,9 @@ import { createSceneHeader } from '../components/session/sceneHeader.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { h } from '../components/d1/dom.js';
+import { hiFragment } from '../components/d1/shared.js';
+import { buildD1Side, buildD1Practice, buildD1ExplainRight, buildD1Judges, exprOf } from '../components/d1/sessionShell.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -217,6 +220,11 @@ export function mountSessionReview(host) {
 
 function render(host, state, handlers = {}) {
   host.innerHTML = '';
+
+  // 데스크탑 = D1 재디자인 복습. phone/tablet = 기존 경로 (아래).
+  if (state.size === 'desktop') {
+    return renderD1Review(host, state, handlers);
+  }
 
   // returnTo 별 좌상단 라벨 분기 — onHome 동작 (returnTo 별 라우팅) 과 일관.
   // fromSessionQueue 미설정 (일반 home 진입) 시 default '홈으로'.
@@ -489,4 +497,73 @@ function applyExclusive(recording, playing, lastScore, recordWaveCmp, pillWrap) 
     recordWaveCmp.el.style.display = recording ? '' : 'none';
   }
   pillWrap.style.display = (!recording && !playing && lastScore != null) ? '' : 'none';
+}
+
+/* ────────── D1 desktop — ④ 복습(판정+해설) ──────────
+ * 좌: 회상(문장→듣기/따라말하기→점수) + 판정 3카드(선택 전 중립). 우: 해설 필수(핵심·변주·상황·실수·비슷한표현).
+ * 녹음·채점은 buildD1Practice 재사용, 판정은 handlers.onJudge(no/hmm/got) → applySrsUpdate.
+ */
+function renderD1Review(host, state, handlers) {
+  const lang = getStoredLang();
+  const subjLabel = lang === 'ja' ? '일본어' : '영어';
+  const s = state.sentence;
+  const ex = s?.explanation || {};
+  const total = state.total;
+  const idx = state.step;
+  const items = state.cards.map((c, i) => ({ n: i + 1, t: exprOf(c) || c.sentence || ('복습 ' + (i + 1)) }));
+
+  const renderReturnTo = state.fromSessionQueue ? getSessionReturnTo() : 'home';
+  const homeLabel = renderReturnTo === 'stats' ? '캘린더로' : renderReturnTo === 'sentList' ? '문장 목록으로' : '홈으로';
+  const onHome = () => {
+    if (state.fromSessionQueue) {
+      const rt = getSessionReturnTo();
+      clearSessionQueue();
+      if (rt === 'stats') { window.location.hash = '#/stats'; return; }
+      if (rt === 'sentList') { window.location.hash = '#/stats?tab=sent'; return; }
+    }
+    window.location.hash = '#/home';
+  };
+
+  const side = buildD1Side({
+    mode: 'review', subjLabel, homeLabel, timer: state.time, idx, total, items,
+    onHome, onEnd: handlers.onEnd || (() => { window.location.hash = '#/home'; }),
+    onJump: handlers.onJump,
+  });
+  const layout = { update(st) { if (st && 'time' in st && side.timeEl) side.timeEl.textContent = st.time; } };
+  let onCleanup = () => {};
+  const wrapRoot = (main) => {
+    const root = h('div', { class: 'd1-root', style: 'min-height:100vh;min-height:100dvh;' }, side.el, main);
+    host.appendChild(root);
+    return { cleanup: () => { try { onCleanup(); window.studySpeech?.cancel?.(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
+  };
+
+  if (total === 0 || !s?.sentence) {
+    return wrapRoot(h('div', { class: 'd1-main', style: 'align-items:center;justify-content:center;' },
+      h('div', { style: 'text-align:center;color:var(--mut);' },
+        h('div', { class: 'd1-h1', style: 'font-size:30px;' }, '복습할 문장이 없어요'),
+        h('div', { style: 'margin-top:12px;' }, '신규 학습 후 다시 오세요.'))));
+  }
+
+  const card = state.cards[state.step - 1] || {};
+  const hl = (() => { const e = exprOf(card); return e ? [e] : []; })();
+  const lastInfo = (Number.isInteger(card.reviewCount) && card.reviewCount > 0) ? (' · ' + (card.reviewCount + 1) + '번째 복습') : '';
+
+  const practice = buildD1Practice(state, lang, { saveSnapshot: handlers.saveSnapshot });
+  onCleanup = practice.stop;
+
+  const left = h('div', { style: 'flex:1 1 56%;padding:48px 48px 40px 56px;border-right:1px solid var(--line);display:flex;flex-direction:column;' },
+    h('div', { class: 'd1-lab', style: 'color:var(--sage);' }, '복습' + lastInfo),
+    h('h1', { class: 'd1-sent', style: 'margin-top:18px;' }, hiFragment(s.sentence, hl)),
+    h('div', { style: 'font-size:19px;color:var(--mut);margin-top:18px;line-height:1.5;' }, s.ko || ''),
+    s.pron ? h('div', { style: 'font-size:14px;color:var(--faint);margin-top:8px;' }, s.pron) : null,
+    h('div', { style: 'display:flex;gap:12px;margin-top:28px;' }, practice.listenBtn, practice.recBtn),
+    practice.scoreRow,
+    h('div', { style: 'flex:1;min-height:36px;' }),
+    h('div', { class: 'd1-panel-lab', style: 'margin-bottom:14px;' }, '방금 표현, 얼마나 편했나요?'),
+    buildD1Judges(handlers.onJudge),
+  );
+
+  const right = buildD1ExplainRight(ex, lang, { header: '해설', sub: '기억이 안 나면 확인하세요', withDrills: true, hl, flexBasis: '44%' });
+  const main = h('div', { class: 'd1-main', style: 'padding:0;flex-direction:row;' }, left, right);
+  return wrapRoot(main);
 }

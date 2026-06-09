@@ -34,7 +34,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
-import { buildD1Side } from '../components/d1/sessionShell.js';
+import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows } from '../components/d1/sessionShell.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -555,42 +555,9 @@ function renderD1Dialogue(host, state, handlers) {
  * 좌: 능동 연습 흐름(문장→듣기/따라말하기+점수→변주). 우: 해설(핵심/상황/실수/비슷한표현).
  * 녹음/채점은 기존 services(startMicRecording·stopAndAnalyze 등)를 그대로 재사용, D1 버튼으로 래핑.
  */
-function exprOf(card) {
-  return String(card?.explanation?.key || '').split('=')[0].replace(/\([^)]*\)/g, '').trim();
-}
-
-function d1Section(label, text) {
-  return h('div', {},
-    h('div', { class: 'd1-panel-lab' }, label),
-    h('div', { style: 'font-size:15px;line-height:1.55;' }, text),
-  );
-}
-
-function buildD1ExplainRight(ex) {
-  const kids = [h('div', { class: 'd1-panel-lab', style: 'margin-bottom:16px;' }, '표현 해설')];
-  if (ex?.key) {
-    kids.push(h('div', { class: 'd1-keybox' },
-      h('div', { class: 'd1-panel-lab', style: 'color:var(--terra);margin-bottom:8px;' }, '핵심 포인트'),
-      h('div', { style: 'font-size:16px;line-height:1.6;font-weight:500;' }, String(ex.key)),
-    ));
-  }
-  const sects = [];
-  const situation = ex?.situation || ex?.whenToUse;
-  if (situation) sects.push(d1Section('이런 상황에서 써요', String(situation)));
-  const mistake = ex?.mistake || ex?.commonMistakes;
-  if (mistake) sects.push(d1Section('한국인 실수', String(mistake)));
-  let similar = null;
-  if (typeof ex?.similar === 'string') similar = ex.similar;
-  else if (Array.isArray(ex?.similar)) similar = ex.similar.map((x) => x?.expression || '').filter(Boolean).join(' / ');
-  if (similar) sects.push(d1Section('비슷한 표현', similar));
-  if (sects.length) kids.push(h('div', { style: 'display:grid;gap:26px;margin-top:28px;' }, sects));
-  return h('div', { style: 'flex:1 1 43%;padding:48px 56px 40px 48px;overflow-y:auto;' }, kids);
-}
-
 function renderD1New(host, state, handlers) {
   const lang = getStoredLang();
   const subjLabel = lang === 'ja' ? '일본어' : '영어';
-  const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const s = state.sentence;
   const ex = s?.explanation || {};
 
@@ -609,10 +576,11 @@ function renderD1New(host, state, handlers) {
     onJump: (n) => handlers.onJump?.(n + offset),
   });
   const layout = { update(st) { if (st && 'time' in st && side.timeEl) side.timeEl.textContent = st.time; } };
+  let onCleanup = () => {};
   const wrapRoot = (main) => {
     const root = h('div', { class: 'd1-root', style: 'min-height:100vh;min-height:100dvh;' }, side.el, main);
     host.appendChild(root);
-    return { cleanup: () => { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
+    return { cleanup: () => { try { onCleanup(); window.studySpeech?.cancel?.(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
   };
 
   if (total === 0 || !s?.sentence) {
@@ -623,94 +591,14 @@ function renderD1New(host, state, handlers) {
   }
 
   const hl = (() => { const e = exprOf(state.cards[state.step - 1] || {}); return e ? [e] : []; })();
+  const practice = buildD1Practice(state, lang, { saveSnapshot: handlers.saveSnapshot });
+  onCleanup = practice.stop;
 
-  // ── 듣기 (재생 토글) ──
-  let playing = false, recording = false, recCtrl = null;
-  const listenBtn = h('button', { class: 'd1-btn d1-btn--outline lg' }, d1Icon('play', 15), '듣기');
-  const stopPlaying = () => { playing = false; };
-  listenBtn.addEventListener('click', () => {
-    if (recording) return;
-    if (playing) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopPlaying(); return; }
-    const text = s.sentence || '';
-    if (!text || !window.studySpeech?.speak) return;
-    playing = true;
-    window.studySpeech.speak(text, { lang: ttsLang, speaker: s.speaker, onEnd: stopPlaying });
-    setTimeout(stopPlaying, 30000);
-  });
-
-  // ── 따라 말하기 (녹음 토글) ──
-  const recBtn = h('button', { class: 'd1-btn d1-btn--primary lg d1-pulse' }, d1Icon('mic', 17), '따라 말하기');
-  const recLabel = recBtn.lastChild;
-  const setRec = (on) => { recording = on; recBtn.classList.toggle('d1-pulse', !on); recLabel.textContent = on ? '녹음 멈추기' : '따라 말하기'; };
-
-  // ── 점수 행 ──
-  const scoreNum = h('span', { class: 'sc' }, '');
-  const scoreChip = h('span', { class: 'd1-score', style: 'display:none;' }, scoreNum, h('span', { class: 'sl' }, '발음'));
-  const scoreMsg = h('span', { style: 'font-size:14px;color:var(--mut);' }, '');
-  const showScore = (score) => {
-    scoreNum.textContent = String(score);
-    scoreChip.style.display = '';
-    scoreMsg.textContent = score >= PASS_THRESHOLD ? '또렷하게 잘 말했어요. 변주로 더 굳혀 볼까요?' : '조금 더 또렷하게 다시 말해 볼까요?';
-  };
-  if (state.lastScore != null) showScore(state.lastScore);
-
-  recBtn.addEventListener('click', async () => {
-    if (!recording) {
-      setRec(true);
-      const rec = await startMicRecording();
-      if (rec.error) { setRec(false); recCtrl = null; showRecordToast(recordErrorMessage(rec.error)); return; }
-      recCtrl = rec.controller;
-    } else {
-      const ctrl = recCtrl; recCtrl = null;
-      const result = await stopAndAnalyze(ctrl, s.sentence, s);
-      setRec(false);
-      if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-      const score = Number(result?.score) || 0;
-      state.lastScore = score; state.tried += 1; if (score >= PASS_THRESHOLD) state.passed += 1;
-      state.pronScores.push(score);
-      if (Array.isArray(result?.weakPhonemes)) for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1;
-      showScore(score);
-      try {
-        await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
-        await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);
-      } catch (e) { console.error('[session-new d1] pron persist', e); }
-      handlers.saveSnapshot?.();
-    }
-  });
-
-  // ── 변주 연습 (drills) ──
-  const drillRec = { ctrl: null, btn: null };
-  const onDrillRecord = async (text, btn) => {
-    if (drillRec.ctrl) {
-      const ctrl = drillRec.ctrl; drillRec.ctrl = null;
-      if (drillRec.btn) drillRec.btn.lastChild.textContent = '녹음';
-      drillRec.btn = null;
-      const result = await stopAndAnalyze(ctrl, text, { lang });
-      if (result?.mockFallback) showRecordToast(recordErrorMessage(result.fallbackReason));
-      else showRecordToast('발음 점수 ' + Math.round(result?.score ?? 0) + '점');
-      return;
-    }
-    const rec = await startMicRecording();
-    if (rec.error) { showRecordToast(recordErrorMessage(rec.error)); return; }
-    drillRec.ctrl = rec.controller; drillRec.btn = btn;
-    if (btn) btn.lastChild.textContent = '멈추기';
-  };
+  // ── 변주 연습 (drills) — 좌측 ──
   const drills = Array.isArray(ex.drills) ? ex.drills : [];
-  const drillRows = drills.map((d) => {
-    const recChip = h('button', { class: 'd1-chip', style: 'background:var(--terra);border-color:var(--terra);color:#fff;' }, d1Icon('mic', 13), '녹음');
-    recChip.addEventListener('click', () => onDrillRecord(d.en || '', recChip));
-    return h('div', { class: 'd1-drill' },
-      h('div', { style: 'grid-column:1;font-size:16px;font-weight:600;' }, hiFragment(d.en || '', hl)),
-      h('div', { style: 'grid-column:1;font-size:13.5px;color:var(--mut);' }, d.ko || ''),
-      h('div', { style: 'grid-column:2;grid-row:1 / 3;display:flex;gap:8px;' },
-        h('button', { class: 'd1-chip', style: 'color:var(--mut);', onClick: () => { if (d.en && window.studySpeech?.speak) window.studySpeech.speak(d.en, { lang: ttsLang }); } }, d1Icon('play', 12), '듣기'),
-        recChip,
-      ),
-    );
-  });
   const drillsBlock = drills.length ? h('div', { style: 'margin-top:40px;' },
     h('div', { class: 'd1-panel-lab' }, '변주 연습 — 듣고, 따라 말하고, 녹음하기'),
-    h('div', { style: 'margin-top:4px;' }, drillRows),
+    h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang)),
   ) : null;
 
   const pager = h('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:32px;' },
@@ -723,12 +611,12 @@ function renderD1New(host, state, handlers) {
     h('h1', { class: 'd1-sent', style: 'margin-top:18px;' }, hiFragment(s.sentence, hl)),
     h('div', { style: 'font-size:19px;color:var(--mut);margin-top:18px;line-height:1.5;' }, s.ko || ''),
     s.pron ? h('div', { style: 'font-size:14px;color:var(--faint);margin-top:8px;' }, s.pron) : null,
-    h('div', { style: 'display:flex;gap:12px;margin-top:28px;' }, listenBtn, recBtn),
-    h('div', { style: 'display:flex;align-items:center;gap:14px;margin-top:18px;min-height:38px;' }, scoreChip, scoreMsg),
+    h('div', { style: 'display:flex;gap:12px;margin-top:28px;' }, practice.listenBtn, practice.recBtn),
+    practice.scoreRow,
     drillsBlock,
     pager,
   );
 
-  const main = h('div', { class: 'd1-main', style: 'padding:0;flex-direction:row;' }, left, buildD1ExplainRight(ex));
+  const main = h('div', { class: 'd1-main', style: 'padding:0;flex-direction:row;' }, left, buildD1ExplainRight(ex, lang));
   return wrapRoot(main);
 }
