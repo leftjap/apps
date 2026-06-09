@@ -52,8 +52,8 @@ describe('summarizeActiveSession', () => {
       ],
     };
     const r = summarizeActiveSession(session, NOW);
-    expect(r).toEqual({
-      label: '진행 중',
+    expect(r).toMatchObject({
+      label: '운동 중',
       num: '28:42',
       unit: '경과',
       part: '가슴 · 어깨',

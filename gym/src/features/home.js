@@ -74,14 +74,39 @@ export function summarizeActiveSession(session, now = Date.now()) {
   const tags = Array.isArray(session.tags) ? session.tags : [];
   const part = tags.map((t) => PARTS[t] || t).join(' · ');
 
+  // P6 — 현재 진행 중 block(첫 미완료 single) + 위치 + 세트 진행 + 누적 볼륨
+  let curBlock = null, curPos = 0, sp = 0;
+  for (const b of blocks) {
+    if (b && b.type === 'single') {
+      sp += 1;
+      if (!curBlock && isSingleBlockIncomplete(b)) { curBlock = b; curPos = sp; }
+    }
+  }
+  const curSets = Array.isArray(curBlock?.sets) ? curBlock.sets : [];
+  let curSetIdx = curSets.findIndex((s) => s && !s.done);
+  if (curSetIdx === -1) curSetIdx = Math.max(0, curSets.length - 1);
+  const exName = curBlock ? resolveExerciseName(curBlock.exerciseId) : '';
+  let totalVol = 0;
+  for (const b of singles) {
+    for (const s of (Array.isArray(b.sets) ? b.sets : [])) {
+      if (s && s.done) totalVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
+    }
+  }
+
   return {
-    label: '진행 중',
+    label: '운동 중',
     num,
     unit: '경과',
     part,
     sub: `${completedExercises} / ${totalExercises} 종목`,
     cta: '이어가기',
     sessionNumSize: 40,
+    exName,
+    subLine: `${part ? part + ' · ' : ''}${totalExercises}종목 중 ${curPos || 1}번째`,
+    sets: curSets.map((s) => ({ weight: Number(s?.weight) || 0, reps: Number(s?.reps) || 0, done: !!(s && s.done) })),
+    curSetIdx,
+    setTotal: curSets.length,
+    totalVol,
   };
 }
 
@@ -302,8 +327,8 @@ export async function buildWeekCalendar(now = Date.now()) {
 
 /** #weekCal innerHTML 갱신 (Wave 11.10.2). */
 function renderWeekCalendarToDom(cells, doc) {
-  const cal = doc.getElementById('weekCal');
-  if (!cal) return;
+  const cals = doc.querySelectorAll('.js-week-cal');
+  if (!cals.length) return;
   const html = cells.map((c) => {
     const classes = [
       'cal-day',
@@ -320,7 +345,7 @@ function renderWeekCalendarToDom(cells, doc) {
       </button>
     `;
   }).join('');
-  cal.innerHTML = html;
+  cals.forEach((cal) => { cal.innerHTML = html; });
 }
 
 /**
@@ -491,23 +516,28 @@ function applyToDom(v, doc) {
     const el = doc.getElementById(id);
     if (el) el.textContent = text;
   };
+  // P6 라이트 — 박스 전체가 이어하기 버튼. 운동명·sub·세트 세그먼트·SET N/M·누적 볼륨.
   setText('cardLabel', v.label);
   setText('cardTime', v.num);
   setText('cardUnit', v.unit);
-  const cardPart = doc.getElementById('cardPart');
-  if (cardPart) {
-    cardPart.textContent = v.part;
-    cardPart.style.display = v.part ? '' : 'none';
+  setText('cardExName', v.exName || '');
+  setText('cardSubLine', v.subLine || '');
+  setText('cardVol', (v.totalVol ?? 0).toLocaleString());
+  setText('cardSetProg', `SET ${(v.curSetIdx ?? 0) + 1} / ${v.setTotal ?? 0}`);
+  const seg = doc.getElementById('cardResumeSeg');
+  if (seg && Array.isArray(v.sets)) {
+    const cur = v.curSetIdx ?? 0;
+    seg.innerHTML = v.sets.map((s, i) => {
+      const cls = i === cur ? 'now' : (s.done ? 'done' : '');
+      const label = i === cur ? `${i + 1}세트` : (s.done && s.reps > 0 ? `${s.weight}·${s.reps}` : '·');
+      return `<div class="seg ${cls}"><span class="bar"></span><span class="n">${escapeHtml(label)}</span></div>`;
+    }).join('');
   }
-  setText('cardEx', v.sub);
-  // CTA 버튼: textContent 갱신 시 시안 우측 화살표(span "→") 가 함께 사라지지 않도록 첫 자식 span 만 갱신
-  const cta = doc.getElementById('cardCta');
-  if (cta) {
-    const labelSpan = cta.querySelector('span');
-    if (labelSpan) labelSpan.textContent = v.cta;
-    else cta.textContent = v.cta;
-    cta.dataset.spaCta = '1';
-    cta.addEventListener('click', goToSession, { once: true });
+  // 박스 전체 click → 세션 이어가기 (별도 CTA 버튼 없음)
+  const resume = doc.getElementById('cardResume');
+  if (resume && resume.dataset.spaResume !== '1') {
+    resume.dataset.spaResume = '1';
+    resume.addEventListener('click', goToSession);
   }
   // HomeA / HomeC 가시성 토글 — 같은 id 충돌 회피 + spec §5-5 진행 중 카드 노출
   const homeA = doc.querySelector('.home-a');
