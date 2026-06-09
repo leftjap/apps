@@ -24,6 +24,9 @@ function setSummary(data) {
 
 describe('mountSummary — btnDone 라벨 returnTo 분기', () => {
   beforeEach(() => {
+    // 이 스위트는 모바일 summary(mock 채우기 경로 · #btnDone)를 검증한다.
+    // jsdom 기본 innerWidth=1024 는 데스크탑 D1 분기를 타므로 모바일 폭으로 고정.
+    window.innerWidth = 375;
     document.body.innerHTML = HOST_HTML;
     sessionStorage.clear();
   });
@@ -59,6 +62,7 @@ describe('mountSummary — btnDone 라벨 returnTo 분기', () => {
 
 describe('mountSummary — btnDone 클릭 라우팅', () => {
   beforeEach(() => {
+    window.innerWidth = 375; // 모바일 경로 검증 (위 스위트 주석 참조)
     document.body.innerHTML = HOST_HTML;
     sessionStorage.clear();
     window.location.hash = '';
