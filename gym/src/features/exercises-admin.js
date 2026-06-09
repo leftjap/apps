@@ -169,14 +169,14 @@ function hookCustomLongPressDelete(listEl, doc) {
       if (!row2) return;
       const menu = doc.createElement('div');
       menu.dataset.bind = 'row-action-menu';
-      menu.style.cssText = 'display:flex;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.04);';
+      menu.style.cssText = 'display:flex;gap:6px;padding:8px 18px;background:var(--hover-bg);border-radius:var(--r-sm);';
       // 커스텀·빌트인 모두 '삭제' = 실제 제거. 커스텀은 DB 행 삭제, 빌트인은 코드 카탈로그라
       // settings.deletedExercises 에 기록해 영속 제거 (목록·운동선택 어디에도 안 보임).
       const btns = [
-        { act: 'delete', label: '삭제', color: '#e15a5a' },
-        { act: 'cancel', label: '취소', color: 'rgba(255,255,255,0.5)' },
+        { act: 'delete', label: '삭제', color: 'var(--danger)' },
+        { act: 'cancel', label: '취소', color: 'var(--ink-3)' },
       ];
-      menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:8px;border:0;background:transparent;color:${b.color};cursor:pointer;font-size:15px;">${b.label}</button>`).join('');
+      menu.innerHTML = btns.map(b => `<button type="button" data-act="${b.act}" style="flex:1;height:36px;border-radius:var(--r-sm);border:0;background:transparent;color:${b.color};cursor:pointer;font-size:15px;font-weight:600;">${b.label}</button>`).join('');
       row2.insertAdjacentElement('afterend', menu);
       menu.addEventListener('click', async (ev) => {
         const act = ev.target?.closest?.('[data-act]')?.dataset?.act;
@@ -218,7 +218,7 @@ function hookCustomAddButton(doc) {
     const form = doc.createElement('div');
     form.dataset.bind = 'custom-add-form';
     form.style.cssText = 'display:flex;gap:6px;padding:8px 0;';
-    form.innerHTML = `<input type="text" placeholder="새 운동 이름" style="flex:1;height:40px;padding:0 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:#0c0a08;color:#fff;font-size:16px;" /><button type="button" data-act="save" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:var(--accent);color:#fff;cursor:pointer;font-size:15px;">저장</button><button type="button" data-act="cancel" style="height:40px;padding:0 14px;border-radius:8px;border:0;background:transparent;color:rgba(255,255,255,0.5);cursor:pointer;font-size:15px;">취소</button>`;
+    form.innerHTML = `<input type="text" placeholder="새 운동 이름" style="flex:1;height:44px;padding:0 14px;border-radius:var(--r-sm);border:1px solid var(--line);background:var(--card);color:var(--ink-1);font-size:16px;" /><button type="button" data-act="save" style="height:44px;padding:0 16px;border-radius:var(--r-sm);border:0;background:var(--ink-1);color:#fbf8f2;cursor:pointer;font-size:15px;font-weight:600;">저장</button><button type="button" data-act="cancel" style="height:44px;padding:0 14px;border-radius:var(--r-sm);border:0;background:transparent;color:var(--ink-3);cursor:pointer;font-size:15px;font-weight:500;">취소</button>`;
     trigger.insertAdjacentElement('afterend', form);
     const input = form.querySelector('input');
     const close = () => form.remove();

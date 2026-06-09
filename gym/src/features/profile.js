@@ -125,28 +125,21 @@ export async function renderSyncStatus(doc) {
   let user = null;
   try { user = await auth?.getCurrentUser?.(); } catch (_) { user = null; }
 
-  // 상태 분류: 활성=정상(sage) / 비활성+user=대기(amber) / user 없음=로그인 필요(accent)
+  // P14 라이트 — 카드는 항상 중립(--card/--line). 동기화 상태는 점+텍스트로만 표현.
+  // 활성=정상(crail 점) / 비활성=대기·로그인필요(중립 점). 제3색(green/amber) 금지.
+  card.style.background = 'var(--card)';
+  card.style.borderColor = 'var(--line)';
+  text.style.color = 'var(--ink-2)';
+  dot.style.boxShadow = 'none';
   if (active) {
     text.textContent = '동기화 정상';
-    text.style.color = 'var(--sage-soft)';
-    dot.style.background = 'var(--sage)';
-    dot.style.boxShadow = '0 0 8px var(--sage)';
-    card.style.background = 'rgba(120,140,93,0.10)';
-    card.style.borderColor = 'rgba(120,140,93,0.25)';
+    dot.style.background = 'var(--crail-base)';
   } else if (user) {
     text.textContent = '동기화 대기';
-    text.style.color = 'rgba(217,180,87,0.85)';
-    dot.style.background = 'rgba(217,180,87,0.85)';
-    dot.style.boxShadow = '0 0 8px rgba(217,180,87,0.5)';
-    card.style.background = 'rgba(217,180,87,0.08)';
-    card.style.borderColor = 'rgba(217,180,87,0.22)';
+    dot.style.background = 'var(--ink-4)';
   } else {
     text.textContent = '로그인 필요';
-    text.style.color = 'var(--accent)';
-    dot.style.background = 'var(--accent)';
-    dot.style.boxShadow = '0 0 8px var(--accent)';
-    card.style.background = 'rgba(217,119,87,0.08)';
-    card.style.borderColor = 'rgba(217,119,87,0.22)';
+    dot.style.background = 'var(--ink-4)';
   }
 
   if (user) {
