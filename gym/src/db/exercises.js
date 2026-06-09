@@ -17,8 +17,8 @@
  */
 
 export const PARTS = Object.freeze({
-  back: '등',
   chest: '가슴',
+  back: '등',
   shoulder: '어깨',
   legs: '하체',
   arms: '팔',

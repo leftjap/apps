@@ -16,7 +16,7 @@ import {
 
 describe('PARTS / PART_IDS', () => {
   it('정확히 6 부위', () => {
-    expect(PART_IDS).toEqual(['back', 'chest', 'shoulder', 'legs', 'arms', 'cardio']);
+    expect(PART_IDS).toEqual(['chest', 'back', 'shoulder', 'legs', 'arms', 'cardio']);
     expect(Object.keys(PARTS)).toHaveLength(6);
   });
   it('모든 라벨이 한국어 1~3자', () => {
