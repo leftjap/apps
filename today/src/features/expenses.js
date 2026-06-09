@@ -26,7 +26,7 @@ import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
 import { getCurrentKind } from './entries.js';
-import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue } from './card-options.js';
+import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue, cardShortLabel } from './card-options.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
  * 2026-05-12: 사용자 picker 외 id (예: LEFTJAP 사용자에게 'food'/'cafe' 같은 SOYOUN 전용
@@ -220,6 +220,29 @@ export function renderExpenseRecentsFromRows(rows, doc = document) {
  * mock 헤드라인은 렌더 시점 월을 텍스트로 박아넣어, strong 만 바꾸면 월 단어가 멈춤 (N2 회귀).
  * inline onclick 은 .exp-headline-title 자체엔 없음 — innerHTML 재구성 안전.
  */
+// 카운트업 — 헤드라인 금액 진입/변경 시 현재값→목표 애니 (작업지시서 §1·§9). prefers-reduced-motion 시 즉시.
+function animateCount(el, target, suffix = '') {
+  if (!el) return;
+  const cur = parseInt(String(el.textContent).replace(/[^0-9]/g, ''), 10) || 0;
+  // 비브라우저(jsdom)·모션최소화 → 즉시 세팅 (테스트 동기 검증 + a11y)
+  const reduce = typeof matchMedia === 'undefined' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce || cur === target || !Number.isFinite(target)) { el.textContent = `${target}${suffix}`; return; }
+  let v = cur;
+  const dir = target > cur ? 1 : -1;
+  const step = Math.max(1, Math.ceil(Math.abs(target - cur) / 24));
+  const iv = setInterval(() => {
+    v += dir * step;
+    if ((dir === 1 && v >= target) || (dir === -1 && v <= target)) { v = target; clearInterval(iv); }
+    el.textContent = `${v}${suffix}`;
+  }, 30);
+}
+
+// 캘린더 셀 금액 축약 — 만/천 (좁은 셀, 작업지시서 §5)
+function fmtCalAmount(n) {
+  if (n >= 10000) { const m = n / 10000; return `${m % 1 === 0 ? m : m.toFixed(1)}만`; }
+  return `${Math.round(n / 1000)}천`;
+}
+
 export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
   const title = doc.querySelector('.exp-headline-title strong');
   const sub = doc.querySelector('.exp-headline-sub strong');
@@ -227,9 +250,17 @@ export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
   if (!rows || !rows.length) return false;
   const { dailyAvg, headlineMan } = summarizeMonth(rows, opts.todayDay);
   if (title) {
-    const titleBox = opts.month != null ? title.closest?.('.exp-headline-title') : null;
-    if (titleBox) titleBox.innerHTML = `${opts.month}월에는 <strong>${headlineMan}만원</strong> 쓰고 있어요`;
-    else title.textContent = `${headlineMan}만원`;
+    if (opts.month != null) {
+      const box = title.closest?.('.exp-headline-title');
+      if (box) {
+        // innerHTML 엔 최종값(접두 월 갱신 포함) — 실 DOM 에선 strong 만 0 으로 되돌려 카운트업
+        box.innerHTML = `${opts.month}월에는 <strong>${headlineMan}만원</strong> 쓰고 있어요`;
+        const s = box.querySelector?.('strong');
+        if (s) { s.textContent = '0만원'; animateCount(s, headlineMan, '만원'); }
+      }
+    } else {
+      animateCount(title, headlineMan, '만원');
+    }
   }
   if (sub) sub.textContent = `${dailyAvg.toLocaleString('ko-KR')}원`;
   return true;
@@ -248,15 +279,17 @@ export function patchCalendarFromRows(rows, opts = {}, doc = document) {
   if (!cells.length) return false;
   if (!rows || !rows.length) return false;
   const totals = dailyTotalsFromRows(rows);
-  const highThreshold = 100000;
+  // 지출 강도 tier — 일평균 기준 (t3 ≥ 1.6×avg, t2 ≥ 0.5×avg, t1 > 0). 작업지시서 §5.
+  const { dailyAvg } = summarizeMonth(rows, opts.todayDay);
+  const avg = dailyAvg || 0;
+  const high = avg * 1.6;
   cells.forEach((cell) => {
     const ds = cell.getAttribute('data-date');
     const total = totals[ds] || 0;
     const amtEl = cell.querySelector('.exp-month-day-amount');
-    if (amtEl) {
-      amtEl.textContent = total > 0 ? total.toLocaleString('ko-KR') : '';
-      amtEl.classList.toggle('high', total >= highThreshold && total > 0);
-    }
+    if (amtEl) amtEl.textContent = total > 0 ? fmtCalAmount(total) : '';
+    cell.classList.remove('t1', 't2', 't3');
+    if (total > 0) cell.classList.add(total >= high ? 't3' : total >= avg * 0.5 ? 't2' : 't1');
     // is-zero 갱신 (today 는 예외 — mocks 정책 답습)
     const isToday = cell.classList.contains('today');
     cell.classList.toggle('is-zero', total === 0 && !isToday);
@@ -287,21 +320,30 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
   }
   const sortedDates = Object.keys(txByDate).sort((a, b) => b.localeCompare(a));
   const dows = ['일', '월', '화', '수', '목', '금', '토'];
+  // 정기결제 — 단순 원형 화살표 (작업지시서 §5). 카드는 짧은 브랜드명.
+  const RECUR_SVG = '<svg class="exp-tl-row__recur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.3-5.4"/><path d="M17.5 3.2V7h-3.8"/></svg>';
+  const now = new Date();
+  const isCurYear = yr === now.getFullYear();
+  const curMd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const html = sortedDates.map((dateStr) => {
     const [tm, td] = dateStr.split('-').map(Number);
-    const dn = dows[new Date(yr, tm - 1, td).getDay()];
+    const dow = new Date(yr, tm - 1, td).getDay();
+    const dn = dows[dow];
+    const isSun = dow === 0;
+    const isToday = isCurYear && dateStr === curMd;
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
-      const card = escapeHtml(cardLabelFromValue(r.card, _currentUser?.email) || '');
+      const card = escapeHtml(cardShortLabel(r.card, _currentUser?.email) || '');
       const cat = escapeHtml(toCategoryLabel(r.category));
+      const recur = r.recurring ? RECUR_SVG : '';
       const isCont = i > 0;
       const dateCell = isCont
         ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>'
-        : `<div class="exp-tl-row__date"><span class="exp-tl-row__date-dow">${dn}</span><span class="exp-tl-row__date-d">${td}일</span></div>`;
+        : `<div class="exp-tl-row__date"><span class="exp-tl-row__date-dow${isSun ? ' sun' : ''}">${dn}</span><span class="exp-tl-row__date-d">${td}</span></div>`;
       const isHigh = (r.amount_krw || 0) >= highThreshold;
       const amt = formatAmount(r.amount_krw || 0);
       const id = escapeHtml(r.id);
-      return `<div class="exp-tl-row${isCont ? ' is-cont' : ''}" data-tx-id="${id}" onclick="openExpenseModal('edit', '${id}')">${dateCell}<div class="exp-tl-row__body"><div class="exp-tl-row__head"><span class="exp-tl-row__cat">${cat}</span><span class="exp-tl-row__card">${card}</span></div><div class="exp-tl-row__merchant">${merchant}</div></div><div class="exp-tl-row__amount${isHigh ? ' is-high' : ''}">${amt}</div></div>`;
+      return `<div class="exp-tl-row${isCont ? ' is-cont' : ''}${isToday ? ' today' : ''}" data-tx-id="${id}" onclick="openExpenseModal('edit', '${id}')">${dateCell}<div class="exp-tl-row__body"><div class="exp-tl-row__head"><span class="exp-tl-row__cat">${cat}</span><span class="exp-tl-row__card">${card}${recur}</span></div><div class="exp-tl-row__merchant">${merchant}</div></div><div class="exp-tl-row__amount${isHigh ? ' is-high' : ''}">${amt}</div></div>`;
     }).join('');
   }).join('');
   list.innerHTML = html;
@@ -414,10 +456,8 @@ export function clearExpensesFixture(doc = document, month = null) {
   const cells = doc.querySelectorAll('.exp-month-day[data-date]');
   cells.forEach((cell) => {
     const amtEl = cell.querySelector('.exp-month-day-amount');
-    if (amtEl) {
-      amtEl.textContent = '';
-      amtEl.classList.remove('high');
-    }
+    if (amtEl) { amtEl.textContent = ''; amtEl.classList.remove('high'); }
+    cell.classList.remove('t1', 't2', 't3');
     const isToday = cell.classList.contains('today');
     cell.classList.toggle('is-zero', !isToday);
   });
