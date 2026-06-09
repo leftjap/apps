@@ -70,6 +70,13 @@ function toISODate(d) {
   return `${y}-${m}-${day}`;
 }
 
+/** ISO(YYYY-MM-DD) → 한국어 'M월 D일' (입력 기록 리스트 표기, 시안 정합). 파싱 실패 시 원본 반환. */
+function formatKoreanDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+  if (!m) return String(iso || '');
+  return `${parseInt(m[2], 10)}월 ${parseInt(m[3], 10)}일`;
+}
+
 /* ───────────────────────────── DOM 어댑터 (Wave 11.7.2b) ───────────────────────────── */
 
 /**
@@ -119,13 +126,24 @@ export async function renderWeightTab(root) {
     } else {
       const sorted = [...rows].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
       const minWeight = Math.min(...rows.map(r => Number(r.weight) || Infinity));
-      listRoot.innerHTML = sorted.slice(0, 10).map(r => {
+      listRoot.innerHTML = sorted.slice(0, 10).map((r, i) => {
         const isPr = Number(r.weight) === minWeight && rows.length > 1;
-        const prMark = isPr ? '<span class="pr-mark">PR</span>' : '';
+        const prMark = isPr ? '<span class="pr-mark">최저</span>' : '';
         const cls = isPr ? 'wr-val pr' : 'wr-val';
+        // 증감 — 직전 기록일(다음 더 오래된 항목) 대비. 감소(▼)=crail(목표 진척), 증가(▲)·변동없음(—)=뉴트럴.
+        const prev = sorted[i + 1];
+        let chg = '';
+        if (prev) {
+          const diff = Number(r.weight) - Number(prev.weight);
+          const mag = Math.abs(diff).toFixed(1);
+          if (Math.abs(diff) < 0.05) chg = '<span class="wr-chg">— 0.0</span>';
+          else if (diff < 0) chg = `<span class="wr-chg dn">▼ ${mag}</span>`;
+          else chg = `<span class="wr-chg up">▲ ${mag}</span>`;
+        }
         return `<div class="weight-row" data-date="${escapeHtml(r.date)}">`
-          + `<span class="wr-date">${escapeHtml(r.date)}</span>`
+          + `<span class="wr-date">${escapeHtml(formatKoreanDate(r.date))}</span>`
           + `<span class="${cls}">${formatWeight(r.weight)} kg${prMark}</span>`
+          + chg
           + `</div>`;
       }).join('');
     }

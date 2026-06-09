@@ -61,3 +61,17 @@
   font-feature-settings: "tnum" 1;
   letter-spacing: -0.01em;
 }
+
+/* 체중 입력 모달(P13) 캐럿 — 깜빡이는 crail 바. 시안 weight-keypad.html .car 정합 (P3 세션 키패드와 동일 언어). */
+.wk-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.78em;
+  margin-left: 5px;
+  background: var(--crail-base);
+  border-radius: 1px;
+  vertical-align: baseline;
+  animation: wkCaret 1.1s step-end infinite;
+}
+@keyframes wkCaret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .wk-caret { animation: none; } }

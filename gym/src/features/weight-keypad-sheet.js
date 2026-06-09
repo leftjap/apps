@@ -18,7 +18,8 @@ function updateBuf(buf, key) {
   return (buf + key).slice(0, 5);
 }
 function renderValue(sheet, valueEl) {
-  if (valueEl) valueEl.textContent = sheet.dataset.buf || '0';
+  // P13 — 큰 값 + 깜빡이는 캐럿 (P3 세션 키패드와 동일 키패드 언어). buf 는 updateBuf 가 숫자/. 만 보장 → innerHTML 안전.
+  if (valueEl) valueEl.innerHTML = `${sheet.dataset.buf || '0'}<span class="wk-caret" aria-hidden="true"></span>`;
 }
 export function openWeightKeypad(doc) {
   if (!doc) return;

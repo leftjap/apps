@@ -29,11 +29,14 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
 .phone[data-tab="weight"] .phone-content { overflow-y: hidden; /* 체중 탭은 입력기록 리스트 자체 스크롤 + 버튼 고정 */ }
 #adminExList { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 /* 체중 입력 기록 row */
-.weight-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
+.weight-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line-soft); }
 .weight-row:last-child { border-bottom: 0; }
-.wr-date { font-size: 13px; color: var(--ink-3); font-family: var(--font-mono); font-weight: 500; }
+.wr-date { flex: 1; font-size: 13px; color: var(--ink-3); font-family: var(--font-mono); font-weight: 500; }
 .wr-val { font-size: 15px; color: var(--ink-1); font-weight: 600; font-family: var(--font-mono); display: inline-flex; align-items: center; gap: 7px; }
 .wr-val.pr { color: var(--crail-deep); }
+.wr-chg { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--ink-4); min-width: 44px; text-align: right; }
+.wr-chg.dn { color: var(--crail-deep); }
+.wr-chg.up { color: var(--ink-3); }
 .pr-mark { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--crail-soft); color: var(--crail-deep); letter-spacing: 0.02em; font-family: var(--font-sans); }
 .weight-empty { padding: 14px 0; font-size: 13px; color: var(--ink-4); text-align: center; }
 .tab-item { position: relative; padding: 6px 0 12px; cursor: pointer; }
