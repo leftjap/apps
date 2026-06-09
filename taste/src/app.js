@@ -73,8 +73,8 @@ function shell(v) {
 
 const NAV = [['movie', '영화'], ['drama', '드라마'], ['book', '책']];
 function topbar(v) {
-  const brand = el('button', { class: 'brand', 'aria-label': 'taste 홈', onClick: () => { location.hash = '#/'; } },
-    'taste', el('span', { class: 'brand__dot' }));
+  const brand = el('button', { class: 'brand', 'aria-label': 'pick 홈', onClick: () => { location.hash = '#/'; } },
+    'pick', el('span', { class: 'brand__dot' }));
   const nav = el('nav', { class: 'topnav' }, ...NAV.map(([cat, label]) => el('button', {
     class: 'topnav__item' + (v && v.name === 'library' && v.cat === cat ? ' is-on' : ''),
     onClick: () => { location.hash = '#/library/' + cat; },

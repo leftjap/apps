@@ -136,10 +136,10 @@ export function mount({ userId } = {}) {
     const tracks = [];
     if (filter !== 'book' && films.length) tracks.push(track('다음에 볼 작품', films));
     if (filter !== 'movie' && books.length) tracks.push(track('다음에 읽을 책', books));
-    const head = el('div', { class: 'feat__eyebrow', style: 'margin-bottom:14px;justify-content:space-between' },
-      el('span', { style: 'display:flex;align-items:center;gap:8px' }, dot(), el('span', {}, '오늘의 추천 · 평가 반영')));
-    const b = regenButton(); if (b) head.appendChild(b);
-    recoSec.append(head, el('div', { class: 'tracks' }, ...tracks));
+    const b = regenButton();
+    const tracksEl = el('div', { class: 'tracks' }, ...tracks);
+    if (b) recoSec.append(el('div', { class: 'feat__eyebrow', style: 'margin-bottom:14px;justify-content:flex-end' }, b), tracksEl);
+    else recoSec.append(tracksEl);
   }
 
   function renderRecent() {
