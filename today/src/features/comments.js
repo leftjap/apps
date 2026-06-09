@@ -425,6 +425,7 @@ function installComposerHandler() {
     if (tempId) markPendingComment(tempId);
     // 즉시 input.value 비우기 (사용자 빠른 Enter 두 번 시 두 번째 Enter 가 빈 body 로 차단)
     input.value = '';
+    input.closest?.('.composer')?.classList.remove('has-text');   // 전송 버튼 고스트 복귀 (작업지시서 §4)
     try {
       const row = await Queries.createComment({
         ...(tempId ? { id: tempId } : {}),
@@ -457,6 +458,23 @@ function installComposerHandler() {
       _composerSubmitting = false;
     }
   }, true);
+
+  // 입력 유무 → 원형 전송 버튼 고스트/크레일 전환 (.has-text) — 작업지시서 §4
+  document.addEventListener('input', (e) => {
+    const input = e.target?.closest?.('.bottombar .composer input');
+    if (!input) return;
+    const composer = input.closest('.composer');
+    if (composer) composer.classList.toggle('has-text', (input.value || '').trim().length > 0);
+  });
+  // 원형 전송 버튼 클릭 → Enter 와 동일 제출 (기존 capture keydown 핸들러 재사용)
+  document.addEventListener('click', (e) => {
+    const btn = e.target?.closest?.('.bottombar .composer .composer__send');
+    if (!btn) return;
+    const input = btn.closest('.composer')?.querySelector('input');
+    if (!input) return;
+    if (input.disabled) { pulseShareToggle(document); return; }
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+  });
 }
 
 // Wave 11.6.7 — disabled composer 클릭 시 share 토글 시각 강조 (1.5s pulse)

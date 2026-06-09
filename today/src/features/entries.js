@@ -260,7 +260,7 @@ export function renderDocFromRow(row, doc = document) {
   const readOnly = isReadOnlyRow(row);
   const partnerName = readOnly ? (USER_ID_TO_DISPLAY_NAME[row.owner_id] || '소연') : '';
   const meta = readOnly
-    ? `${escapeHtml(partnerName)}<span class="sep">·</span>${buildMockMeta(row)}`
+    ? `<span class="who">${escapeHtml(partnerName)}</span><span class="sep">·</span>${buildMockMeta(row)}`
     : buildMockMeta(row);
   // Wave 11.6.6 — placeholder 는 CSS `:empty::before` (injectEditorStyles) 로만 표시.
   // 본문 텍스트로 inject 시 typing 시 placeholder 가 사용자 입력과 섞여 partial 저장 → 텍스트 흐름 손상.

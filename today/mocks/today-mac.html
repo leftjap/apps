@@ -485,7 +485,8 @@
   /* ============ Main ============ */
   .main {
     flex: 1;
-    padding: 22px 32px 24px;
+    /* 상단 정렬: 사이드바 헤더 줄과 메인 상단바 줄의 세로 중심 정렬 (작업지시서 §3) */
+    padding: 30px 32px 24px;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -606,20 +607,25 @@
   .icon-btn:hover { background: var(--hover-bg); }
   .icon-btn .ico { width: 18px; height: 18px; opacity: 0.7; }
 
-  /* 새 글 버튼 — crail 보더 사각 라운드, .icon-btn 비의존 독립 컴포넌트 */
+  /* 액션 그룹 구분선 — 공유 | Aa·새글 | ⋮ (작업지시서 §4) */
+  .ta-sep { width: 1px; height: 20px; background: var(--line); margin: 0 8px; flex-shrink: 0; }
+
+  /* 새 글 — 라벨 단 알약 (크레일 아웃라인). 모호한 + 아이콘 대신 (작업지시서 §4) */
   .new-doc-btn {
-    width: 28px; height: 28px;
+    display: inline-flex; align-items: center; gap: 5px;
+    height: 32px; padding: 0 13px 0 10px;
     border: 1px solid var(--crail-base);
     border-radius: 8px;
     background: transparent;
     color: var(--crail-base);
-    display: grid; place-items: center;
+    font-family: inherit; font-size: 13px; font-weight: 600;
     cursor: pointer;
     flex-shrink: 0;
-    transition: background .15s ease;
+    white-space: nowrap;
+    transition: background .15s ease, color .15s ease;
   }
-  .new-doc-btn:hover { background: rgba(217, 119, 87, 0.08); }
-  .new-doc-btn .ico { width: 16px; height: 16px; }
+  .new-doc-btn:hover { background: var(--crail-base); color: #fff; }
+  .new-doc-btn .ico { width: 17px; height: 17px; }
 
   /* 가계부 — 거래 추가 버튼 (별 컴포넌트, 그대로 유지) */
   .icon-btn--accent {
@@ -682,10 +688,11 @@
     font-size: 11px;
     color: var(--ink-3);
     margin-bottom: 26px;
-    padding-bottom: 14px;
+    padding-bottom: 20px;
     border-bottom: 1px solid var(--line-soft);
     letter-spacing: -0.01em;
   }
+  .doc__meta .who { color: var(--crail-deep); }   /* 공유자(소연) — 본문·사이드바 crail-deep 통일 (작업지시서 §3·§4) */
   .doc__meta .save {
     color: var(--ink-3);
   }
@@ -1579,24 +1586,36 @@
   }
 
   .composer {
-    background: #fff;
+    background: var(--sidebar);
     border: 1px solid var(--line);
-    border-radius: 12px;
-    padding: 12px 16px;
-    display: flex; align-items: center; gap: 8px;
-    box-shadow: 0 4px 12px -8px rgba(20, 18, 14, 0.08);
+    border-radius: 14px;
+    padding: 11px 12px 11px 18px;
+    display: flex; align-items: center; gap: 12px;
+    box-shadow: var(--shadow-inset-soft);
+    transition: border-color .16s, box-shadow .16s;
   }
-  .composer .ico { width: 18px; height: 18px; opacity: 0.55; flex-shrink: 0; }
-  .composer__return { opacity: 0.4 !important; color: var(--ink-3); margin-left: 4px; }
+  /* 포커스 시 크레일 보더 + ring (작업지시서 §4) */
+  .composer:focus-within { border-color: var(--crail-base); box-shadow: 0 0 0 3px rgba(217,119,87,.16); }
+  .composer > .ico { width: 19px; height: 19px; color: var(--ink-4); opacity: 1; flex-shrink: 0; }
   .composer input {
     flex: 1;
     border: 0; outline: 0; background: transparent;
     font-family: var(--font-sans);
     font-size: 15px;
     color: var(--ink-1);
-    padding: 4px 0;
+    padding: 7px 0;
   }
   .composer input::placeholder { color: var(--ink-4); }
+  /* 원형 전송 버튼 — 입력 전 고스트 → 입력 시 크레일 (작업지시서 §4) */
+  .composer__send {
+    width: 34px; height: 34px; border-radius: 50%; border: 0; flex-shrink: 0; cursor: pointer;
+    display: grid; place-items: center; background: var(--sunken); color: var(--ink-4);
+    transition: background .18s, color .18s, transform .18s;
+  }
+  .composer__send .ico { width: 16px; height: 16px; opacity: 1; }
+  .composer.has-text .composer__send { background: var(--crail-base); color: #fff; }
+  .composer.has-text .composer__send:hover { transform: scale(1.06); }
+  .composer.has-text .composer__send:active { transform: scale(.94); }
 
   /* ============ Edit toolbar (상단 편집 도구 뎠라운 리본) ============ */
   .edit-trigger {
@@ -3193,7 +3212,7 @@
   }
 
   /* — main__top action wrapper 토글 (글쓰기/가계부) — */
-  .top-actions__navi { display: flex; align-items: center; gap: 14px; }
+  .top-actions__navi { display: flex; align-items: center; gap: 6px; }
   .top-actions__expense { display: flex; align-items: center; gap: 10px; }
   body.is-expense .top-actions__navi { display: none; }
   body:not(.is-expense) .top-actions__expense { display: none; }
@@ -4193,14 +4212,16 @@
             <span class="label">소연에게 공유</span>
             <span class="switch"></span>
           </div>
+          <span class="ta-sep"></span>
           <button id="editTrigger" class="edit-trigger" title="편집 도구" aria-pressed="false">
             <span class="edit-trigger__label" aria-hidden="true">Aa</span>
           </button>
-          <button class="new-doc-btn" id="newDocBtn" title="새 글">
+          <button class="new-doc-btn" id="newDocBtn" title="새 글 쓰기">
             <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
               <path d="M8 3.5v9M3.5 8h9"/>
-            </svg>
+            </svg>새 글
           </button>
+          <span class="ta-sep"></span>
           <!-- Wave 11.6.7 — 글 메뉴(⋮) 가장 우측으로 이동 (사용자 의도) -->
           <div class="doc-more-wrap">
             <button class="doc-more-btn" id="docMoreBtn" type="button" title="글 메뉴" aria-haspopup="true" aria-expanded="false">
@@ -4345,10 +4366,11 @@
           <path d="M3 4h10v7H7l-3 2.5V11H3V4z"/>
         </svg>
         <input type="text" placeholder="댓글을 남겨보세요" />
-        <svg class="ico composer__return" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M11 5v2.5a1.5 1.5 0 0 1-1.5 1.5H4"/>
-          <path d="M6 7l-2 2 2 2"/>
-        </svg>
+        <button class="composer__send" type="button" title="보내기" aria-label="댓글 보내기">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/>
+          </svg>
+        </button>
       </div>
     </div>
 
@@ -4845,10 +4867,13 @@
             : `<p class="doc__p">${b.text}</p>`
           ).join('')
         : '<p class="doc__p" style="color:var(--ink-4);">본문 미리보기 — 클릭해서 작성하세요.</p>';
+      // 바이라인: 공유자(.who crail-deep) + 단어/원고지. '저장됨' 등 상태 표시 제거 (작업지시서 §4)
+      const metaClean = String(doc.meta || '').replace(/(<span class="sep">[^<]*<\/span>\s*)?(<span class="save">)?[^<]*자동 저장됨(<\/span>)?\s*$/, '');
+      const who = doc.share ? `<span class="who">${doc.share}</span><span class="sep">·</span>` : '';
       view.innerHTML = `
         <article class="doc">
           <h1 class="doc__h1" contenteditable spellcheck="false">${doc.title}</h1>
-          <div class="doc__meta">${doc.meta}</div>
+          <div class="doc__meta">${who}${metaClean}</div>
           ${bodyHtml}
         </article>
       `;
