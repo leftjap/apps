@@ -31,6 +31,10 @@ import { buildScenePage } from '../components/session/scenePage.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { h } from '../components/d1/dom.js';
+import { d1Icon } from '../components/d1/icons.js';
+import { hiFragment } from '../components/d1/shared.js';
+import { buildD1Side } from '../components/d1/sessionShell.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -189,6 +193,14 @@ export function mountSessionNew(host) {
 function render(host, state, handlers = {}) {
   host.innerHTML = '';
 
+  // RealClass-mining: 첫 카드가 scene(전체 다이얼로그)이면 다이얼로그 페이지.
+  const sceneEx = state.sentence?.explanation;
+  const isDialogue = sceneEx && Array.isArray(sceneEx.dialogue);
+  // 데스크탑 = D1 재디자인 다이얼로그. phone/tablet = 기존 scenePage (아래 분기).
+  if (state.size === 'desktop' && isDialogue) {
+    return renderD1Dialogue(host, state, handlers);
+  }
+
   const layout = createSessionLayout({
     size: state.size,
     kind: 'new',
@@ -203,9 +215,8 @@ function render(host, state, handlers = {}) {
     onStepClick: handlers.onJump,
   });
 
-  // RealClass-mining: 첫 카드가 scene(전체 다이얼로그)이면 다이얼로그 페이지 → '시작하기'로 문장 카드 진입
-  const sceneEx = state.sentence?.explanation;
-  if (sceneEx && Array.isArray(sceneEx.dialogue)) {
+  // phone/tablet 다이얼로그: 기존 scenePage → '시작하기'로 문장 카드 진입
+  if (isDialogue) {
     const ttsLang = (state.sentence?.lang || getStoredLang()) === 'ja' ? 'ja-JP' : 'en-US';
     layout.contentSlot.appendChild(buildScenePage(sceneEx, {
       onListen: (t) => { if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang }); },
@@ -453,4 +464,89 @@ function applyExclusive(recording, playing, lastScore, recordWaveCmp, pillWrap) 
   }
   // pill: 녹음/재생 중 아니고 점수 있을 때
   pillWrap.style.display = (!recording && !playing && lastScore != null) ? '' : 'none';
+}
+
+/* ────────── D1 desktop — ② 다이얼로그(전체 장면) ──────────
+ * 시드 dialogue 줄에는 hl 이 없으므로, 학습 표현 카드(state.cards[1..])의
+ * sentence 를 다이얼로그 줄에 순차 정규화-매칭해 학습 줄 번호를 부여하고,
+ * card.explanation.key 의 표현을 best-effort 하이라이트한다. (미매칭 줄은 맥락 줄)
+ */
+function deriveDialogue(sceneEx, cards) {
+  const dialogue = Array.isArray(sceneEx?.dialogue) ? sceneEx.dialogue : [];
+  const exprCards = (cards || []).filter((c) => c?.explanation?.key);
+  const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  let ci = 0;
+  return dialogue.map((line) => {
+    let num = null, hl = [];
+    const nl = norm(line.en);
+    if (ci < exprCards.length) {
+      const card = exprCards[ci];
+      const nc = norm(card.sentence);
+      if (nl && nc && nl.includes(nc)) {
+        num = ci + 1;
+        const expr = String(card.explanation.key || '').split('=')[0].replace(/\([^)]*\)/g, '').trim();
+        if (expr) hl = [expr];
+        ci += 1;
+      }
+    }
+    return { spk: line.speaker || '', en: line.en || '', ko: line.ko || '', num, hl };
+  });
+}
+
+function renderD1Dialogue(host, state, handlers) {
+  const sceneEx = state.sentence.explanation;
+  const lang = getStoredLang();
+  const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
+  const subjLabel = lang === 'ja' ? '일본어' : '영어';
+  const sceneTitle = sceneEx.sceneTitle || '오늘의 장면';
+  const lines = deriveDialogue(sceneEx, state.cards);
+  const exprCount = lines.filter((l) => l.num != null).length;
+
+  const onListen = (t) => { if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang }); };
+  const speakAll = () => {
+    const seq = lines.map((l) => l.en).filter(Boolean);
+    let i = 0;
+    const next = () => { if (i >= seq.length || !window.studySpeech?.speak) return; window.studySpeech.speak(seq[i++], { lang: ttsLang, onEnd: next }); };
+    next();
+  };
+
+  const side = buildD1Side({
+    mode: 'scene', subjLabel, timer: state.time,
+    scene: sceneTitle, sceneMeta: exprCount ? ('표현 ' + exprCount + '개') : '',
+    onHome: () => { window.location.hash = '#/home'; },
+    onEnd: handlers.onEnd || (() => { window.location.hash = '#/home'; }),
+  });
+
+  const dlist = h('div', { class: 'd1-dlist', style: 'margin-top:20px;' },
+    lines.map((l) => h('div', { class: 'd1-dline' + (l.num != null ? ' study' : '') },
+      l.num != null ? h('div', { class: 'd1-dnum' }, String(l.num)) : h('div'),
+      h('div', { class: 'd1-dspk' }, l.spk),
+      h('div', { class: 'd1-den' }, hiFragment(l.en, l.hl)),
+      h('div', { class: 'd1-dko' }, l.ko),
+      h('button', { class: 'd1-dplay', 'aria-label': '듣기', onClick: () => onListen(l.en) }, d1Icon('play', 13)),
+    )),
+  );
+
+  const main = h('div', { class: 'd1-main' },
+    h('div', { class: 'd1-eyebrow', style: 'color:var(--faint);' }, '오늘의 장면'),
+    h('h1', { class: 'd1-h1', style: 'margin-top:12px;' }, sceneTitle),
+    sceneEx.sceneSummary ? h('div', { style: 'font-size:16px;color:var(--mut);margin-top:14px;line-height:1.5;max-width:720px;' }, sceneEx.sceneSummary) : null,
+    h('div', { style: 'display:flex;gap:18px;margin-top:26px;align-items:center;' },
+      h('button', { class: 'd1-btn d1-btn--outline', onClick: speakAll }, d1Icon('sound', 15), '전체 대화 듣기'),
+      exprCount ? h('span', { style: 'display:inline-flex;align-items:center;gap:9px;font-size:13.5px;color:var(--mut);' },
+        h('span', { style: 'width:20px;height:20px;border-radius:50%;border:1.5px solid var(--terra);color:var(--terra);font-size:10px;font-weight:700;display:grid;place-items:center;' }, '1'),
+        '번호 표현 ' + exprCount + '개를 차례로 학습해요') : null,
+    ),
+    dlist,
+    h('div', { style: 'flex:1;' }),
+    h('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-top:30px;max-width:760px;' },
+      h('div', { style: 'font-size:13.5px;color:var(--faint);' }, '전체 대화를 한 번 듣고 넘어가세요.'),
+      h('button', { class: 'd1-btn d1-btn--primary lg', onClick: handlers.onNext }, '표현 공부 시작하기'),
+    ),
+  );
+
+  const root = h('div', { class: 'd1-root', style: 'min-height:100vh;min-height:100dvh;' }, side.el, main);
+  host.appendChild(root);
+  const layout = { update(s) { if (s && 'time' in s && side.timeEl) side.timeEl.textContent = s.time; } };
+  return { cleanup: () => { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
 }
