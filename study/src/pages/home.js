@@ -15,6 +15,8 @@
 
 import { pickSize, watchSize } from '../components/session/index.js';
 import { loadActiveSession } from '../services/activeSession.js';
+import { h } from '../components/d1/dom.js';
+import { d1Icon } from '../components/d1/icons.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -303,58 +305,141 @@ function renderTablet(state) {
   return root;
 }
 
-/* ────────── DESKTOP ────────── */
+/* ────────── DESKTOP (D1 — Refined Editorial 재디자인) ────────── */
+const D1_SUBJECTS = [
+  { key: 'en', label: '영어' },
+  { key: 'ja', label: '일본어' },
+  { key: 'math', label: '수학' },
+];
+
 function renderDesktop(state) {
-  const root = el('div', { class: 'phone-shell study-app', style: 'display:grid;grid-template-columns:320px 1fr;min-height:100vh;min-height:100dvh;' });
-
-  const aside = el('aside', { style: 'padding:40px 36px;display:flex;flex-direction:column;gap:36px;background:rgba(0,0,0,0.015);' });
-  const top = el('div', { style: 'display:flex;justify-content:space-between;align-items:center;' });
-  top.append(brandLogo(18), headerIcons(18, 7));
-  aside.appendChild(top);
-
-  const streakBlk = el('div', {});
-  streakBlk.appendChild(eyebrow('Streak', 11, 'var(--text-faint)', '0.14em'));
-  const sNum = el('div', { class: 'poppins', style: 'font-size:88px;font-weight:700;color:var(--text-strong);letter-spacing:-0.05em;line-height:0.9;margin-top:8px;font-variant-numeric:tabular-nums;' });
-  sNum.innerHTML = `${state.streak}<span style="font-size:24px;color:var(--text-faint);font-weight:400;margin-left:4px;">일</span>`;
-  streakBlk.appendChild(sNum);
-  if (state.bestStreak != null) {
-    const sMeta = el('div', { style: 'font-size:12px;color:var(--text-muted);margin-top:8px;font-family:var(--font-display);' });
-    sMeta.textContent = `최고 ${state.bestStreak}일`;
-    streakBlk.appendChild(sMeta);
-  }
-  aside.appendChild(streakBlk);
-
-  // STREAK 88px 단일 강조 (DESIGN.md §1) + session 톤 매핑 (NEW label accent, PASSED value sage).
-  const stats = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;column-gap:24px;row-gap:18px;' });
-  stats.append(
-    statBlock('New', state.todayNewDone, 28, 'strong', '0.12em', 'accent'),
-    statBlock('Review', state.todayReviewDone, 28, 'strong', '0.12em'),
-    statBlock('Tried', state.tried, 28, 'strong', '0.12em'),
-    statBlock('Passed', state.passed, 28, 'sage', '0.12em'),
-  );
-  aside.appendChild(stats);
-
-  const lang = el('div', { style: 'margin-top:auto;display:flex;flex-direction:column;gap:14px;' });
-  lang.appendChild(eyebrow('Language', 10, 'var(--text-faint)', '0.14em', 4));
-  lang.appendChild(langPair(state, 14, 'English', '日本語', '수학', true));
-  aside.appendChild(lang);
-  root.appendChild(aside);
-
-  const main = el('main', { style: 'padding:64px 80px;display:flex;flex-direction:column;gap:32px;' });
-  const heroBlk = el('div', {});
-  heroBlk.appendChild(eyebrow(todayLabel(state.todayISO), 13, 'var(--text-faint)', '0.14em'));
-  const h1 = el('h1', { class: 'poppins', style: 'font-size:56px;font-weight:700;color:var(--text-strong);letter-spacing:-0.04em;line-height:1.05;margin:12px 0 0;' });
-  h1.innerHTML = '오늘 무엇부터<br/>시작할까요?';
-  heroBlk.appendChild(h1);
-  main.appendChild(heroBlk);
-
-  const grid = el('div', { style: 'display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;' });
-  const ctx = { totalReview: state.totalReview, lang: state.lang };
-  grid.append(sessionCard('new', state.newCount, true, false, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, true, false, state.resume === 'review', ctx));
-  main.appendChild(grid);
-
-  root.appendChild(main);
+  const root = h('div', { class: 'd1-root', style: 'min-height:100vh;min-height:100dvh;' });
+  root.append(d1HomeSidebar(state), d1HomeMain(state));
   return root;
+}
+
+function d1HomeSidebar(state) {
+  const days = ['월', '화', '수', '목', '금', '토', '일'];
+  const td = new Date(state.todayISO + 'T00:00:00Z');
+  const todayDow = (td.getUTCDay() + 6) % 7; // Mon=0
+
+  const head = h('div', { style: 'display:flex;justify-content:space-between;align-items:center;' },
+    h('span', { style: 'font-size:19px;font-weight:800;letter-spacing:-0.02em;' }, 'Study'),
+    h('span', { style: 'display:flex;gap:16px;' },
+      h('span', { class: 'd1-icon', role: 'button', 'aria-label': '기록', onClick: () => { window.location.hash = '#/stats'; } }, d1Icon('cal', 17)),
+      h('span', { class: 'd1-icon', role: 'button', 'aria-label': '설정', onClick: () => { window.location.hash = '#/settings'; } }, d1Icon('gear', 17)),
+    ),
+  );
+
+  const streak = h('div', { style: 'margin-top:46px;' },
+    h('div', { class: 'd1-lab' }, '연속 학습'),
+    h('div', { style: 'display:flex;align-items:flex-end;gap:7px;margin-top:12px;' },
+      h('span', { style: 'font-size:56px;font-weight:800;line-height:.9;letter-spacing:-0.03em;color:var(--terra);font-variant-numeric:tabular-nums;' }, String(state.streak)),
+      h('span', { style: 'font-size:16px;color:var(--mut);font-weight:600;margin-bottom:8px;' }, '일째'),
+    ),
+  );
+
+  const week = h('div', { style: 'margin-top:32px;' },
+    h('div', { class: 'd1-week' }, days.map((d, i) => h('div', { class: 'd' },
+      h('span', { class: 'bar' + (i === todayDow ? ' on' : '') }),
+      h('span', { class: 'lb' }, d),
+    ))),
+  );
+
+  const stats = h('div', { style: 'display:flex;gap:30px;margin-top:34px;' },
+    h('div', {}, h('div', { class: 'd1-lab' }, '시도'), h('div', { style: 'font-size:26px;font-weight:800;margin-top:7px;' }, String(state.tried))),
+    h('div', {}, h('div', { class: 'd1-lab' }, '통과'), h('div', { style: 'font-size:26px;font-weight:800;margin-top:7px;color:var(--sage);' }, String(state.passed))),
+  );
+
+  const subjects = h('div', {},
+    h('div', { class: 'd1-lab', style: 'margin-bottom:10px;' }, '과목'),
+    D1_SUBJECTS.map((s) => {
+      const on = s.key === state.lang;
+      return h('div', {
+        class: 'd1-subj' + (on ? ' on' : ''),
+        role: 'button', 'aria-label': s.label,
+        onClick: () => { if (typeof state.onLangChange === 'function') state.onLangChange(s.key); },
+      },
+        h('span', { style: 'display:inline-flex;align-items:center;' },
+          h('span', { class: 'dot' }), h('span', { class: 'nm' }, s.label)),
+        h('span', { class: 'ct' }, on ? String(state.totalReview) : ''),
+      );
+    }),
+  );
+
+  return h('div', { class: 'd1-side' }, head, streak, week, stats, h('div', { style: 'flex:1;' }), subjects);
+}
+
+function d1HomeMain(state) {
+  const isMath = state.lang === 'math';
+  const newUnit = isMath ? '문제' : '표현';
+  const reviewUnit = isMath ? '문제' : '문장';
+  const langLabel = isMath ? '수학' : state.lang === 'ja' ? '일본어' : '영어';
+
+  // hero (신규) — 실제 상태별 카피 (기존 sessionCard 정책과 일치)
+  let heroTitle, heroSub;
+  if (state.newCount >= 1) {
+    heroTitle = isMath ? '오늘의 새 문제를 풀어요' : '오늘의 새 표현을 시작해요';
+    heroSub = isMath ? '개념을 이해하고 차근차근 풀어요' : '전체 대화를 먼저 듣고 · 하나씩 따라 말하기';
+  } else if (state.totalReview >= 1) {
+    heroTitle = '오늘 신규 완료';
+    heroSub = '복습으로 오늘 분량을 마무리하세요';
+  } else {
+    heroTitle = isMath ? '오늘 풀 문제가 없어요' : '학습할 표현이 없어요';
+    heroSub = '잠시 후 다시 확인해 주세요';
+  }
+  const heroBtn = h('button', { class: 'd1-btn d1-btn--primary lg', style: 'margin-top:28px;', onClick: () => { window.location.hash = isMath ? '#/session-math?mode=new' : '#/session-new'; } },
+    d1Icon('sound', 17), '신규 학습 시작');
+  if (state.newCount < 1) { heroBtn.disabled = true; heroBtn.style.opacity = '0.5'; heroBtn.style.cursor = 'default'; }
+
+  const hero = h('div', { class: 'd1-hero' },
+    h('div', { style: 'min-width:0;' },
+      h('div', { class: 'd1-lab', style: 'color:var(--terra);' }, '신규 학습 · ' + langLabel),
+      h('div', { style: 'font-size:34px;font-weight:800;letter-spacing:-0.03em;margin-top:12px;' }, heroTitle),
+      h('div', { style: 'font-size:15px;color:var(--mut);margin-top:10px;' }, heroSub),
+      heroBtn,
+    ),
+    h('div', { style: 'text-align:right;flex:0 0 auto;' },
+      h('div', { class: 'd1-bignum', style: 'color:var(--terra);' }, String(state.newCount)),
+      h('div', { style: 'font-size:14px;color:var(--mut);font-weight:600;margin-top:8px;' }, '오늘의 새 ' + newUnit),
+    ),
+  );
+
+  // bar (복습) — 실제 상태별 카피·라우팅
+  const reviewFree = !isMath && state.reviewCount === 0 && state.totalReview > 0;
+  let barTitle, barNum;
+  if (state.reviewCount >= 1) { barTitle = '오늘이 복습 적기예요'; barNum = state.reviewCount; }
+  else if (state.totalReview >= 1) { barTitle = '오늘 분량 완료 · 자유 복습'; barNum = state.totalReview; }
+  else { barTitle = isMath ? '복습할 문제가 없어요' : '신규 학습 후 복습'; barNum = 0; }
+  const barBtn = h('button', { class: 'd1-btn d1-btn--sage', onClick: () => {
+    if (isMath) { window.location.hash = '#/session-math?mode=review'; return; }
+    window.location.hash = reviewFree ? '#/session-review?mode=free' : '#/session-review';
+  } }, d1Icon('repeat', 16), '복습 시작');
+  if (barNum < 1) { barBtn.disabled = true; barBtn.style.opacity = '0.5'; barBtn.style.cursor = 'default'; }
+
+  const bar = h('div', { class: 'd1-bar', style: 'margin-top:18px;' },
+    h('div', { style: 'display:flex;align-items:baseline;gap:16px;' },
+      h('div', {},
+        h('div', { class: 'd1-lab', style: 'color:var(--sage);' }, '복습'),
+        h('div', { style: 'font-size:18px;font-weight:700;margin-top:6px;' }, barTitle),
+      ),
+      h('div', { style: 'display:flex;align-items:baseline;gap:6px;margin-left:8px;' },
+        h('span', { style: 'font-size:32px;font-weight:800;color:var(--sage);letter-spacing:-0.03em;' }, String(barNum)),
+        h('span', { style: 'font-size:14px;color:var(--mut);font-weight:600;' }, reviewUnit),
+      ),
+    ),
+    barBtn,
+  );
+
+  return h('div', { class: 'd1-main' },
+    h('div', { class: 'd1-eyebrow', style: 'letter-spacing:.06em;color:var(--faint);' }, todayLabel(state.todayISO)),
+    h('h1', { class: 'd1-h1', style: 'margin-top:14px;' }, '오늘 무엇부터 시작할까요?'),
+    h('div', { style: 'font-size:15.5px;color:var(--mut);margin-top:16px;line-height:1.5;' }, '새 표현을 이어서 익히거나, 복습으로 오늘 분량을 마무리하세요.'),
+    h('div', { style: 'flex:1;' }),
+    hero,
+    bar,
+    h('div', { style: 'flex:1;' }),
+  );
 }
 
 /* ────────── shared ────────── */

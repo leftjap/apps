@@ -1,5 +1,6 @@
 import './styles/tokens.css';
 import './styles/session.css';
+import './styles/d1.css';
 import './db/schema.js';
 import { TODAY_ISO, todayDayNumber } from './utils/today.js';
 import './services/speech.js'; // window.studySpeech 등록 (Wave 11.11)
