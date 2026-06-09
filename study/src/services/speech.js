@@ -240,11 +240,12 @@ async function speakWeb(text, { lang = 'en-US', rate = 0.85, onEnd } = {}) {
 }
 
 // Wave 11.32 — lang 별 Azure Neural voice + style 매핑.
-// 영어: AriaNeural + whispering (사용자 선택, mstts:express-as)
+// 영어: AriaNeural (또렷한 표준 발음 — 화자 미지정 카드 기본). whispering 폐기:
+//   발음 학습에 부적합(속삭임=음소 불명료) + 화자 없는 표현 카드 전부에 적용돼 단조로움.
 // 일본어: AoiNeural (호기심 child voice, style 미적용)
 // override: opts.voice / opts.style 로 카드별 또는 사용자 settings 우선.
 export const VOICE_DEFAULTS = {
-  'en-US': { voice: 'en-US-AriaNeural', style: 'whispering' },
+  'en-US': { voice: 'en-US-AriaNeural', style: null },
   'ja-JP': { voice: 'ja-JP-AoiNeural', style: null },
 };
 
@@ -255,6 +256,10 @@ export const SPEAKER_VOICES = {
     // 활성 트랙 — 우희+여빈 친구 여행 (멜로가 체질 임진주·이은정 차용)
     '우희': { voice: 'en-US-JaneNeural', style: 'cheerful', rate: 1.05 },
     '여빈': { voice: 'en-US-PhoebeMultilingualNeural', style: null, rate: 0.95 },
+    // Parks 발췌 — 토론회 장면 (en-parks-s1e1) 다이얼로그 화자. 화자별 구분 voice (style 무 — 또렷한 발음 우선).
+    'Leslie': { voice: 'en-US-AvaMultilingualNeural', style: null, rate: 1.05 },
+    'Ann': { voice: 'en-US-EmmaMultilingualNeural', style: null, rate: 1.0 },
+    'Tom': { voice: 'en-US-AndrewMultilingualNeural', style: null, rate: 0.98 },
     // archive — 라쿤+빅맨 친구 여행 (5/17 시드 회귀 보호 + 미래 wave 복원용)
     '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
     '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },

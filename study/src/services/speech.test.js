@@ -555,9 +555,10 @@ describe('normalizeReferenceText — Wave 11.36', () => {
 
 // Wave 11.32 — Azure SSML 빌드 + lang 별 voice/style 매핑 단위 테스트.
 describe('Azure SSML — voice/style 매핑', () => {
-  it('VOICE_DEFAULTS — en-US = AriaNeural + whispering, ja-JP = AoiNeural', () => {
+  it('VOICE_DEFAULTS — en-US = AriaNeural (style 무 — whispering 폐기), ja-JP = AoiNeural', () => {
     expect(VOICE_DEFAULTS['en-US'].voice).toBe('en-US-AriaNeural');
-    expect(VOICE_DEFAULTS['en-US'].style).toBe('whispering');
+    // whispering 폐기 — 발음 학습 부적합 + 화자 없는 표현 카드 단조로움 (화자별 voice 는 SPEAKER_VOICES).
+    expect(VOICE_DEFAULTS['en-US'].style).toBe(null);
     expect(VOICE_DEFAULTS['ja-JP'].voice).toBe('ja-JP-AoiNeural');
     expect(VOICE_DEFAULTS['ja-JP'].style).toBe(null);
   });
@@ -596,6 +597,12 @@ describe('Azure SSML — voice/style 매핑', () => {
   it('SPEAKER_VOICES — 라쿤·빅맨 en-US 매핑 (Tony unfriendly 1.1 / Davis ML empathetic 0.9)', () => {
     expect(SPEAKER_VOICES['en-US']['라쿤']).toEqual({ voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 });
     expect(SPEAKER_VOICES['en-US']['빅맨']).toEqual({ voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 });
+  });
+
+  it('SPEAKER_VOICES — Parks 화자(Leslie/Ann/Tom) 구분 voice (style 무 — 또렷한 발음)', () => {
+    expect(SPEAKER_VOICES['en-US']['Leslie']).toEqual({ voice: 'en-US-AvaMultilingualNeural', style: null, rate: 1.05 });
+    expect(SPEAKER_VOICES['en-US']['Ann']).toEqual({ voice: 'en-US-EmmaMultilingualNeural', style: null, rate: 1.0 });
+    expect(SPEAKER_VOICES['en-US']['Tom']).toEqual({ voice: 'en-US-AndrewMultilingualNeural', style: null, rate: 0.98 });
   });
 
   it('buildAzureSSML — 라쿤 매핑 결과 SSML (Tony unfriendly rate 1.1)', () => {
