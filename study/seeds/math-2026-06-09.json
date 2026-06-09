@@ -1,0 +1,104 @@
+{
+  "date": "2026-06-09",
+  "problems": [
+    {
+      "id": "gen-2026-06-09-pyth-1",
+      "conceptId": "pyth",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 피타고라스",
+      "prompt": "직각을 낀 두 변이 6, 8인 직각삼각형의 빗변은?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"152\" height=\"176\" viewBox=\"0 0 152 176\" role=\"img\" aria-label=\"직각삼각형 가로 6 세로 8 빗변 ?\"><polygon points=\"36,148 132,148 36,20\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"36\" y=\"137\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"84\" y=\"164\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">6</text><text x=\"28\" y=\"88\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">8</text><text x=\"90\" y=\"82\" font-size=\"13\" fill=\"#d97757\">?</text></svg>",
+        "legend": "두 변 6, 8 → 빗변?"
+      },
+      "answer": "10",
+      "accept": [
+        "10"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"300\" height=\"276\" viewBox=\"0 0 300 276\" role=\"img\" aria-label=\"직각을 낀 두 변 6·8 위 정사각형(넓이 36·64)의 합 = 빗변 위 정사각형 넓이 100\"><polygon points=\"114,186 114,90 18,90 18,186\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"114,186 186,186 186,258 114,258\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"114,90 186,186 282,114 210,18\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"114,186 186,186 114,90\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"114\" y=\"174\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"150\" y=\"227\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">36</text><text x=\"66\" y=\"143\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">64</text><text x=\"198\" y=\"107\" font-size=\"13\" fill=\"#d97757\" text-anchor=\"middle\">100</text></svg>"
+        },
+        "core": "a² + b² = c².",
+        "idea": "두 변 위 정사각형 넓이를 그려 더해요(그림). 6² + 8² = 36 + 64 = 100 가 빗변 위 정사각형 넓이. 빗변은 √100 = 10.",
+        "steps": [
+          "6² + 8² = 100",
+          "√100 = 10"
+        ],
+        "refresh": "제곱 · 제곱근",
+        "example": "직접 못 재는 빗변을 두 변으로 계산.",
+        "think": "못 재는 길이를 아는 값들의 관계로 우회해 구한다."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-06-09-pyth-2",
+      "conceptId": "pyth",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 피타고라스",
+      "prompt": "직각을 낀 두 변이 5, 12인 직각삼각형의 빗변은?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"136\" height=\"240\" viewBox=\"0 0 136 240\" role=\"img\" aria-label=\"직각삼각형 가로 5 세로 12 빗변 ?\"><polygon points=\"36,212 116,212 36,20\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"36\" y=\"201\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"76\" y=\"228\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">5</text><text x=\"28\" y=\"120\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">12</text><text x=\"82\" y=\"114\" font-size=\"13\" fill=\"#d97757\">?</text></svg>",
+        "legend": "두 변 5, 12 → 빗변?"
+      },
+      "answer": "13",
+      "accept": [
+        "13"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"297\" height=\"234\" viewBox=\"0 0 297 234\" role=\"img\" aria-label=\"직각을 낀 두 변 5·12 위 정사각형(넓이 25·144)의 합 = 빗변 위 정사각형 넓이 169\"><polygon points=\"126,171 126,63 18,63 18,171\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"126,171 171,171 171,216 126,216\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"126,63 171,171 279,126 234,18\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"126,171 171,171 126,63\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"126\" y=\"159\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"148.5\" y=\"198.5\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">25</text><text x=\"72\" y=\"122\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">144</text><text x=\"202.5\" y=\"99.5\" font-size=\"13\" fill=\"#d97757\" text-anchor=\"middle\">169</text></svg>"
+        },
+        "core": "a² + b² = c².",
+        "idea": "두 변 위 정사각형 넓이를 그려 더해요(그림). 5² + 12² = 25 + 144 = 169 가 빗변 위 정사각형 넓이. 빗변은 √169 = 13.",
+        "steps": [
+          "5² + 12² = 169",
+          "√169 = 13"
+        ],
+        "refresh": "제곱 · 제곱근",
+        "example": "직접 못 재는 빗변을 두 변으로 계산.",
+        "think": "못 재는 길이를 아는 값들의 관계로 우회해 구한다."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-06-09-pyth-3",
+      "conceptId": "pyth",
+      "kind": "apply",
+      "module": "도형의 약속",
+      "tag": "응용 · 피타고라스",
+      "prompt": "직각을 낀 두 변이 8, 15인 직각삼각형의 빗변은?",
+      "figure": {
+        "type": "svg",
+        "svg": "<svg width=\"184\" height=\"288\" viewBox=\"0 0 184 288\" role=\"img\" aria-label=\"직각삼각형 가로 8 세로 15 빗변 ?\"><polygon points=\"36,260 164,260 36,20\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"36\" y=\"249\" width=\"11\" height=\"11\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"100\" y=\"276\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">8</text><text x=\"28\" y=\"144\" font-size=\"12\" fill=\"#8a8475\" text-anchor=\"end\">15</text><text x=\"106\" y=\"138\" font-size=\"13\" fill=\"#d97757\">?</text></svg>",
+        "legend": "두 변 8, 15 → 빗변?"
+      },
+      "answer": "17",
+      "accept": [
+        "17"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"340\" height=\"284\" viewBox=\"0 0 340 284\" role=\"img\" aria-label=\"직각을 낀 두 변 8·15 위 정사각형(넓이 64·225)의 합 = 빗변 위 정사각형 넓이 289\"><polygon points=\"138,202 138,82 18,82 18,202\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"138,202 202,202 202,266 138,266\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"138,82 202,202 322,138 258,18\" fill=\"#eef3e9\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><polygon points=\"138,202 202,202 138,82\" fill=\"#dce7d0\" stroke=\"#788c5d\" stroke-width=\"1.5\"/><rect x=\"138\" y=\"190\" width=\"12\" height=\"12\" fill=\"none\" stroke=\"#788c5d\" stroke-width=\"1\"/><text x=\"170\" y=\"239\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">64</text><text x=\"78\" y=\"147\" font-size=\"13\" fill=\"#8a8475\" text-anchor=\"middle\">225</text><text x=\"230\" y=\"115\" font-size=\"13\" fill=\"#d97757\" text-anchor=\"middle\">289</text></svg>"
+        },
+        "core": "a² + b² = c².",
+        "idea": "두 변 위 정사각형 넓이를 그려 더해요(그림). 8² + 15² = 64 + 225 = 289 가 빗변 위 정사각형 넓이. 빗변은 √289 = 17.",
+        "steps": [
+          "8² + 15² = 289",
+          "√289 = 17"
+        ],
+        "refresh": "제곱 · 제곱근",
+        "example": "직접 못 재는 빗변을 두 변으로 계산.",
+        "think": "못 재는 길이를 아는 값들의 관계로 우회해 구한다."
+      },
+      "order_index": 2
+    }
+  ]
+}
