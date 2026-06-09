@@ -71,7 +71,7 @@ describe('FIELD_DEFS.height parse / format', () => {
   });
   it('format → "173" (단위 hint span 은 admin.html 에서 별도)', () => {
     expect(def.format(173)).toBe('173');
-    expect(def.format(null)).toBe('—');
+    expect(def.format(null)).toBe('입력');
   });
 });
 
@@ -90,7 +90,7 @@ describe('FIELD_DEFS.birthdate parse / format', () => {
   });
   it('format → "1976.07.16"', () => {
     expect(def.format('1976-07-16')).toBe('1976.07.16');
-    expect(def.format(null)).toBe('—');
+    expect(def.format(null)).toBe('입력');
   });
 });
 

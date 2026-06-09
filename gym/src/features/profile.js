@@ -23,7 +23,7 @@ export const FIELD_DEFS = Object.freeze({
       if (!Number.isFinite(n) || n < 100 || n > 250) return null;
       return Math.round(n);
     },
-    format: (v) => v == null ? '—' : String(v),
+    format: (v) => v == null ? '입력' : String(v),
   },
   birthdate: {
     setting: 'birthDate',
@@ -38,7 +38,7 @@ export const FIELD_DEFS = Object.freeze({
       return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     },
     format: (v) => {
-      if (v == null) return '—';
+      if (v == null) return '입력';
       const m = String(v).match(/^(\d{4})-(\d{2})-(\d{2})$/);
       return m ? `${m[1]}.${m[2]}.${m[3]}` : String(v);
     },
@@ -53,7 +53,7 @@ export const FIELD_DEFS = Object.freeze({
       if (!Number.isFinite(n) || n <= 0 || n > 300) return null;
       return Math.round(n * 10) / 10;
     },
-    format: (v) => v == null ? '—' : String(v),
+    format: (v) => v == null ? '입력' : String(v),
   },
   'weekly-goal': {
     setting: 'weeklyGoal',
@@ -65,7 +65,7 @@ export const FIELD_DEFS = Object.freeze({
       if (!Number.isFinite(n) || n < 1 || n > 7) return null;
       return Math.round(n);
     },
-    format: (v) => v == null ? '—' : String(v),
+    format: (v) => v == null ? '입력' : String(v),
   },
 });
 
@@ -98,6 +98,7 @@ export async function renderProfileTab(root) {
     // hint span 보존 (예: 주간 목표의 "1~7" hint)
     const hint = valEl.querySelector('.hint');
     valEl.textContent = def.format(v);
+    if (valEl.style) valEl.style.color = (v == null) ? 'var(--ink-4)' : '';  // P14 — 미입력 '입력' 은 dim placeholder (시안 .empty 정합)
     if (hint) valEl.appendChild(hint);
   }
   // §10-3 — 필드 click + 로그아웃 wiring (idempotent)
