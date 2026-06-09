@@ -14,11 +14,6 @@
  */
 import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
-<<<<<<< Updated upstream
-import { USER_ID_TO_DISPLAY_NAME, CLAUDE_USER_ID, getCurrentKind, scheduleRecentsRefresh } from './entries.js';
-import { supabase } from '../services/supabase.js';
-=======
->>>>>>> Stashed changes
 
 let _currentUser = null;
 let _composerInstalled = false;
@@ -27,11 +22,6 @@ let _commentDeleteInstalled = false;
 let _realtimeUnregister = null;
 let _articleObserver = null;
 let _stylesInjected = false;
-<<<<<<< Updated upstream
-// author_id → 사용자가 설정한 프로필 사진 URL. today_profiles 에서 로드 (RLS: 본인+파트너 row 만 노출).
-let _avatarUrlById = {};
-=======
->>>>>>> Stashed changes
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
 const _pendingCommentIds = new Set();
 // Wave 11.6.10 — composer 처리 중 (in-flight) flag. 빠른 Enter 두 번 시 createComment 재호출 차단.
@@ -42,19 +32,6 @@ function markPendingComment(id) {
   setTimeout(() => _pendingCommentIds.delete(id), 5000);
 }
 
-<<<<<<< Updated upstream
-/** 새 댓글 버블 등장 애니메이션 1회 (prefers-reduced-motion 시 CSS가 무효화). */
-function animateCommentEnter(rowEl) {
-  if (!rowEl || !rowEl.classList) return;
-  rowEl.classList.add('comment-row--enter');
-  rowEl.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
-  const done = () => rowEl.classList?.remove('comment-row--enter');
-  rowEl.addEventListener?.('animationend', done, { once: true });
-  setTimeout(done, 700);
-}
-
-=======
->>>>>>> Stashed changes
 const TIME_FORMATTER_OPTS = { hour: '2-digit', minute: '2-digit', hour12: false };
 
 export function escapeHtml(s) {
@@ -77,36 +54,6 @@ export function formatCommentTime(iso, now = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
-<<<<<<< Updated upstream
-// 클로드(AI) 아바타 — Anthropic 마크를 단순화한 스파크(asterisk) 인라인 SVG (픽셀-정확 공식 로고 아님).
-const CLAUDE_LOGO_SVG = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="20"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="6.3" y1="6.3" x2="17.7" y2="17.7"/><line x1="6.3" y1="17.7" x2="17.7" y2="6.3"/></svg>';
-// 사용자별 아바타 배경색.
-const AVATAR_COLORS = Object.freeze({
-  '7bae5645-61c6-4476-9ff2-4c30a72812ff': '#7a8b6f', // 지오
-  'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '#c98aa6', // 소연
-});
-const CLAUDE_CLAY = '#d97757';
-
-/**
- * author_id 기준 아바타 1개.
- *  - 클로드(AI): 프로필 사진 없음 → 스파크 SVG 유지.
- *  - 사람 + 사용자가 설정한 사진(avatarUrl) 있음 → 사진 이미지.
- *  - 사람 + 사진 없음 → 이니셜 + 색 폴백.
- */
-function avatarHtml(authorId, name, avatarUrl) {
-  if (authorId === CLAUDE_USER_ID) {
-    return `<span class="comment-row__avatar comment-row__avatar--claude" style="background:${CLAUDE_CLAY}">${CLAUDE_LOGO_SVG}</span>`;
-  }
-  if (avatarUrl) {
-    return `<span class="comment-row__avatar comment-row__avatar--photo"><img src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer"></span>`;
-  }
-  const color = AVATAR_COLORS[authorId] || 'var(--cloudy-base, #6a9bcc)';
-  const initial = escapeHtml(String(name || '?').charAt(0));
-  return `<span class="comment-row__avatar" style="background:${color}">${initial}</span>`;
-}
-
-=======
->>>>>>> Stashed changes
 /**
  * Dexie comment row → HTML row. mine = author_id === currentUser.id.
  * Wave 11.6.9 — 카카오톡/iMessage 스타일 메시지 버블. mine 우측 갈색 / partner 좌측 흰.
@@ -155,7 +102,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       border-top: 1px solid var(--line, oklch(92% 0.006 60));
     }
     .doc__comments-header {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--ink-2, oklch(38% 0.008 60));
       margin-bottom: 16px;
@@ -236,7 +183,7 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
     .comment-row__delete:hover { color: var(--ink-1, oklch(22% 0.008 60)); }
     .comment-row__bubble {
       padding: 10px 14px;
-      font-size: 15px;
+      font-size: 14px;
       line-height: 1.5;
       white-space: pre-wrap;
       word-break: break-word;
@@ -255,69 +202,6 @@ function injectCommentStyles(doc = (typeof document !== 'undefined' ? document :
       border-radius: 16px 16px 16px 4px;
     }
     .composer input[disabled] { opacity: 0.5; }
-<<<<<<< Updated upstream
-    .comment-row__avatar--claude svg { display: block; }
-    /* 사용자 설정 프로필 사진 — 원형 clip. */
-    .comment-row__avatar--photo { padding: 0; overflow: hidden; background: var(--hover-bg); }
-    .comment-row__avatar--photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    /* 엔터 후 피드백 — 새 버블 슬라이드+페이드+살짝 over-bounce 등장 (~400ms). */
-    @keyframes comment-row-enter {
-      from { opacity: 0; transform: translateY(16px) scale(0.92); }
-      to   { opacity: 1; transform: translateY(0) scale(1); }
-    }
-    .comment-row--enter { animation: comment-row-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    @media (prefers-reduced-motion: reduce) {
-      .comment-row--enter { animation: none; }
-    }
-    /* 모바일 (≤720px) — 카톡 말풍선 → 노트(일기) 스타일 (사용자 결정 2026-05-28, 디자이너 시안 D1) */
-    @media (max-width: 720px) {
-      .doc__comments {
-        margin-left: -16px;
-        margin-right: -16px;
-        padding-left: 16px;
-        padding-right: 16px;
-      }
-      .doc__comments-list {
-        gap: 0;
-      }
-      .comment-row,
-      .comment-row[data-mine="1"] {
-        flex-direction: row;
-        gap: 10px;
-        padding: 14px 0;
-        border-bottom: 1px solid var(--line-soft, oklch(94.5% 0.006 60));
-        align-items: flex-start;
-      }
-      .comment-row:last-child { border-bottom: 0; }
-      .comment-row__col {
-        max-width: none;
-        flex: 1;
-        min-width: 0;
-        gap: 6px;
-      }
-      .comment-row[data-mine="1"] .comment-row__meta {
-        flex-direction: row;
-      }
-      .comment-row__meta {
-        gap: 8px;
-      }
-      .comment-row__bubble,
-      .comment-row[data-mine="1"] .comment-row__bubble,
-      .comment-row[data-mine="0"] .comment-row__bubble {
-        background: transparent;
-        border: 0;
-        border-radius: 0;
-        padding: 0;
-        font-size: 17px;
-        line-height: 1.55;
-        word-break: keep-all;
-        text-wrap: pretty;
-        color: var(--ink-1, oklch(22% 0.008 60));
-      }
-      .comment-row__delete { opacity: 1; }
-    }
-=======
->>>>>>> Stashed changes
   `;
   doc.head.appendChild(style);
   _stylesInjected = true;
@@ -438,7 +322,6 @@ function installComposerHandler() {
     if (tempId) markPendingComment(tempId);
     // 즉시 input.value 비우기 (사용자 빠른 Enter 두 번 시 두 번째 Enter 가 빈 body 로 차단)
     input.value = '';
-    input.closest?.('.composer')?.classList.remove('has-text');   // 전송 버튼 고스트 복귀 (작업지시서 §4)
     try {
       const row = await Queries.createComment({
         ...(tempId ? { id: tempId } : {}),
@@ -458,39 +341,12 @@ function installComposerHandler() {
         );
         updateCommentsHeaderCount(article);
       }
-<<<<<<< Updated upstream
-      notifyRecentsCountChange();
-      // 엔터 피드백 — 새 버블 등장 애니메이션 + 가벼운 햅틱.
-      const rowEl = list?.querySelector?.(`[data-comment-id="${row.id}"]`);
-      if (rowEl) animateCommentEnter(rowEl);
-      if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
-        try { navigator.vibrate(10); } catch (_) {}
-      }
-=======
->>>>>>> Stashed changes
     } catch (err) {
       console.warn('[comments] createComment 실패:', err?.message || err);
     } finally {
       _composerSubmitting = false;
     }
   }, true);
-
-  // 입력 유무 → 원형 전송 버튼 고스트/크레일 전환 (.has-text) — 작업지시서 §4
-  document.addEventListener('input', (e) => {
-    const input = e.target?.closest?.('.bottombar .composer input');
-    if (!input) return;
-    const composer = input.closest('.composer');
-    if (composer) composer.classList.toggle('has-text', (input.value || '').trim().length > 0);
-  });
-  // 원형 전송 버튼 클릭 → Enter 와 동일 제출 (기존 capture keydown 핸들러 재사용)
-  document.addEventListener('click', (e) => {
-    const btn = e.target?.closest?.('.bottombar .composer .composer__send');
-    if (!btn) return;
-    const input = btn.closest('.composer')?.querySelector('input');
-    if (!input) return;
-    if (input.disabled) { pulseShareToggle(document); return; }
-    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
-  });
 }
 
 // Wave 11.6.7 — disabled composer 클릭 시 share 토글 시각 강조 (1.5s pulse)
@@ -529,7 +385,6 @@ function installCommentDeleteHandler() {
           updateCommentsHeaderCount(article);
         }
       }
-      notifyRecentsCountChange();
     } catch (err) {
       console.warn('[comments] softDeleteComment 실패:', err?.message || err);
       btn.disabled = false;
@@ -594,7 +449,6 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     list = article.querySelector?.('.doc__comments-list');
     if (list) {
       // mountForArticle 이 listCommentsByEntry 결과 전체 렌더 — 추가 append 불필요
-      notifyRecentsCountChange();
       return { applied: true, reason: 'mount_full', id };
     }
   }
@@ -611,7 +465,6 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     } else {
       updateCommentsHeaderCount(article);
     }
-    notifyRecentsCountChange();
     return { applied: true, reason: 'removed', id };
   }
 
@@ -632,12 +485,6 @@ export async function handleRealtimeCommentChange(payload, doc = (typeof documen
     commentToHtml(newRow, { currentUserId: _currentUser?.id }),
   );
   updateCommentsHeaderCount(article);
-<<<<<<< Updated upstream
-  notifyRecentsCountChange();
-  const enteredRow = list.querySelector?.(`[data-comment-id="${id}"]`);
-  if (enteredRow) animateCommentEnter(enteredRow);
-=======
->>>>>>> Stashed changes
   return { applied: true, reason: 'appended', id };
 }
 
@@ -651,40 +498,6 @@ function updateCommentsHeaderCount(article) {
   countEl.textContent = String(n);
 }
 
-<<<<<<< Updated upstream
-/** 댓글 CUD/Realtime 직후 리센츠 댓글 카운트 자동 재반영 (Entries 200ms debounce 재사용).
- *  typeof document 가드 — vitest node 환경 등 document 없는 곳에서 no-op. */
-function notifyRecentsCountChange() {
-  if (typeof document === 'undefined') return;
-  try {
-    const k = getCurrentKind(document);
-    if (k) scheduleRecentsRefresh(k, document);
-  } catch (_) {
-    /* 활성 카테고리 없거나 sidebar 미마운트 — 무시 */
-  }
-}
-
-/** today_profiles 에서 본인+파트너 avatar_url 맵 로드 (RLS 로 두 row 만 노출). 클로드는 프로필 없음. */
-async function loadAvatarMap() {
-  if (!supabase) return;
-  try {
-    const { data, error } = await supabase.from('today_profiles').select('user_id, avatar_url');
-    if (error) {
-      console.warn('[comments] avatar 맵 로드 실패:', error.message);
-      return;
-    }
-    const map = {};
-    for (const p of data || []) {
-      if (p?.user_id && p.avatar_url) map[p.user_id] = p.avatar_url;
-    }
-    _avatarUrlById = map;
-  } catch (e) {
-    console.warn('[comments] avatar 맵 로드 예외:', e?.message || e);
-  }
-}
-
-=======
->>>>>>> Stashed changes
 export async function mountCommentsView(user) {
   if (!user?.id) return;
   _currentUser = user;
