@@ -327,7 +327,8 @@
     margin-top: 3px; font-size: 11px; color: var(--ink-4);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
   }
-  .sb__item--recent.is-doc .rc-sub .sh { color: var(--crail-deep); }   /* 공유자 — 사이드바·본문 crail-deep 통일 (작업지시서 §3) */
+  /* 공유자(소연) — 우측 정렬로 분리 (rc-main 오른쪽, crail-deep). 사용자 요청 */
+  .sb__item--recent.is-doc .rc-main .sh { margin-left: auto; color: var(--crail-deep); font-size: 11px; font-weight: 500; flex-shrink: 0; }
   .sb__item--recent.is-doc .rc-sub .cm { color: var(--ink-4); }
   .sb__item--recent.is-doc .rc-sub .cm.unread { color: var(--crail-base); }
   /* 가계부 리센츠 — 1줄 (내역 + 금액). 금액은 .meta(Pretendard+tnum) — mono 금지 (작업지시서 §1) */
@@ -4902,14 +4903,14 @@
       ` : '';
       // 글 문서 — 2줄 (제목 + "날짜 · 공유자 · 댓글 N"), 안 읽은 항목만 펄스 도트 (작업지시서 §3)
       const docsHtml = docs.slice(0, 5).map(d => {
+        const shHtml = d.share ? `<span class="sh">${d.share}</span>` : '';
         const sub = [
           d.date || '',
-          d.share ? `<span class="sh">${d.share}</span>` : '',
           d.comments ? `<span class="cm${d.unread ? ' unread' : ''}">댓글 ${d.comments}</span>` : ''
         ].filter(Boolean).join(' · ');
         return `
         <div class="sb__item sb__item--recent is-doc" data-doc-id="${d.id}">
-          <div class="rc-main"><span class="rc-title">${d.title}</span>${d.unread ? '<span class="rc-dot"></span>' : ''}</div>
+          <div class="rc-main"><span class="rc-title">${d.title}</span>${d.unread ? '<span class="rc-dot"></span>' : ''}${shHtml}</div>
           ${sub ? `<div class="rc-sub">${sub}</div>` : ''}
         </div>`;
       }).join('');
@@ -6422,10 +6423,15 @@
         m.setAttribute('data-card-open', 'false');
         m.setAttribute('data-date-open', 'false');
       }
-      const cardLabel = document.getElementById('expModalCardLabel');
-      if (cardLabel) cardLabel.textContent = _getLastUsedCard() || '선택 안 함';
+      const lastCard = _getLastUsedCard() || '';
       const cardHidden = document.getElementById('expModalCard');
-      if (cardHidden) cardHidden.value = _getLastUsedCard() || '';
+      if (cardHidden) cardHidden.value = lastCard;
+      const cardLabel = document.getElementById('expModalCardLabel');
+      if (cardLabel) {
+        // raw 값('삼성1337') 대신 카드 팝오버 옵션의 풀네임 표시 (작업지시서 §7 — 내부코드 금지)
+        const opt = lastCard && document.querySelector(`#expCardPopover .exp-card-option[data-card="${lastCard.replace(/"/g, '\\"')}"]`);
+        cardLabel.textContent = opt ? opt.textContent.trim() : (lastCard || '선택 안 함');
+      }
       const dtText = document.getElementById('expModalDtText');
       if (dtText) dtText.textContent = '—';
       const dBtn = document.getElementById('expModalDeleteBtn');

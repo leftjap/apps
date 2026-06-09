@@ -191,12 +191,13 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
     const n = countMap.get(r.id) || 0;
     const unread = unreadSet.has(r.id);
     const dateStr = formatRelativeDay(r.updated_at || r.created_at);
+    // 공유자(소연)는 우측 정렬로 분리 (rc-main 오른쪽). 서브라인엔 날짜·댓글만.
+    const shHtml = shareLabel ? `<span class="sh">${escapeHtml(shareLabel)}</span>` : '';
     const sub = [
       dateStr,
-      shareLabel ? `<span class="sh">${escapeHtml(shareLabel)}</span>` : '',
       n > 0 ? `<span class="cm${unread ? ' unread' : ''}">댓글 ${n}</span>` : '',
     ].filter(Boolean).join(' · ');
-    return `<div class="sb__item sb__item--recent is-doc" data-doc-id="${id}"><div class="rc-main"><span class="rc-title">${title}</span>${unread ? '<span class="rc-dot"></span>' : ''}</div>${sub ? `<div class="rc-sub">${sub}</div>` : ''}</div>`;
+    return `<div class="sb__item sb__item--recent is-doc" data-doc-id="${id}"><div class="rc-main"><span class="rc-title">${title}</span>${unread ? '<span class="rc-dot"></span>' : ''}${shHtml}</div>${sub ? `<div class="rc-sub">${sub}</div>` : ''}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
   ensureRecentsMore(kind, rows.length, doc);
@@ -1915,8 +1916,8 @@ function installRecentsDeleteHandler() {
   document.addEventListener('contextmenu', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
-    // 파트너 공유 글 (.rc-sub .sh span 보유) 은 우클릭 메뉴 차단 — 삭제 진입점 가드
-    if (item.querySelector('.rc-sub .sh')) {
+    // 파트너 공유 글 (.sh span 보유) 은 우클릭 메뉴 차단 — 삭제 진입점 가드
+    if (item.querySelector('.sh')) {
       e.preventDefault();
       return;
     }
@@ -1938,8 +1939,8 @@ function installRecentsDeleteHandler() {
   document.addEventListener('touchstart', (e) => {
     const item = e.target?.closest?.('.sb__item--recent[data-doc-id]');
     if (!item) return;
-    // 파트너 공유 글 (.rc-sub .sh span 보유) 은 롱프레스 메뉴 차단
-    if (item.querySelector('.rc-sub .sh')) return;
+    // 파트너 공유 글 (.sh span 보유) 은 롱프레스 메뉴 차단
+    if (item.querySelector('.sh')) return;
     const t = e.touches?.[0];
     if (!t) return;
     _recentsLpStartX = t.clientX;
