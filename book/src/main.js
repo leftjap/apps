@@ -32,6 +32,19 @@ import { showAuthenticated, showLogin, setRouterUser, refresh } from './app.js';
 // dev 전용 시드 (preview/E2E 시각 검증) — prod 번들 제외.
 if (import.meta.env.DEV) import('./db/devSeed.js');
 
+// dev 전용 인증 시뮬레이션 (preview/E2E 시각 검증 — OAuth 우회). prod 번들 제외.
+// window.__bookDevAuth(email?) → Dexie 격리 DB 초기화 + 라우터 진입(피드). 서버 미검증(로컬 UI 전용).
+if (import.meta.env.DEV) {
+  window.__bookDevAuth = async (email = 'leftjap@gmail.com') => {
+    const user = { id: `dev-${email}`, email };
+    await Auth.ensureUserDB(user);
+    try { loadBooksIntoRegistry(await Queries.listBooks()); } catch { /* noop */ }
+    setRouterUser(user);
+    showAuthenticated(user);
+    return { id: user.id, email };
+  };
+}
+
 // signOut 시 sync 정리 (Realtime 종료 포함).
 Auth.registerOnSignOut(() => Sync.stopSync());
 

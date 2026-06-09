@@ -5,10 +5,7 @@
 import { el } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
-import { Queries } from '../db/queries.js';
-import { BOOKS, bookOf } from '../data/books.js';
-import { Profile } from '../services/profile.js';
-import { CURATION } from '../data/curation.js';
+import { openSearchModal, bindSearchHotkey } from './search-modal.js';
 
 // ─── Btn — 3 size × 4 variant (core-v9 Btn) ─────────────────────────────────
 const BTN_SIZES = {
@@ -83,280 +80,18 @@ export function soyeonMark({ size = 'sm' } = {}) {
   );
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// Topbar 인라인 검색 — 제로스테이트 + 실시간 결과
-//   디자인: "북앱 검색 제로스테이트"(claude.ai/design) 핸드오프 이식.
-//   제로스테이트 = 목적지 단축키(lean-forward). 서프라이즈(오늘의 한 줄·AI의 발견)는
-//   피드(lean-back) 소관이라 의도적으로 제외 — 역할 분리.
-//   신호는 pinned + 빈도집계 + 큐레이션 스냅샷뿐(열람·검색 이력 0). 추가 쿼리 없이
-//   포커스 시 로드된 quotes 에서 전부 파생.
-// ═══════════════════════════════════════════════════════════════════════════
-function searchOwnerIds(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
-}
-const topCatOf = (b) => (b?.c ? b.c.split('·')[0].trim() : '기타');
-
-function zsSecHead(iconName, title, right) {
-  return el('div', { class: 'zs-head' },
-    el('span', { class: 'zs-title' }, iconEl(iconName, { sz: 14, st: 1.9 }), title),
-    right || null,
+// ─── 검색 트리거 (탑바) — 클릭/⌘K 로 검색 모달 열기 (ui/search-modal.js) ───────
+// 시안 §4·§8: 탑바 검색창은 모달 오버레이를 여는 트리거. (구 인라인 드롭다운 폐기 — 모달로 일원화)
+export function searchTrigger({ ctx } = {}) {
+  bindSearchHotkey(ctx);
+  return el('button', {
+    class: 'topbar-search', type: 'button', 'aria-label': '검색 (단축키 ⌘K)',
+    onClick: () => openSearchModal(ctx),
+  },
+    iconEl('search', { sz: 16 }),
+    el('span', { class: 'ts-ph' }, '책 · 작가 · 단어 · 어구록 검색'),
+    el('span', { class: 'ts-kbd mono' }, '⌘K'),
   );
-}
-function zsGroupLabel(iconName, title, extra) {
-  return el('div', { class: 'zs-group' }, iconEl(iconName, { sz: 13, st: 1.9 }), title, extra || null);
-}
-/** needle 첫 매치만 <mark>. 사용자 텍스트는 createTextNode 로 안전. (짧은 제목·작가용) */
-function markInto(node, text, needle) {
-  const t = String(text || '');
-  const n = (needle || '').trim();
-  if (!n) { node.appendChild(document.createTextNode(t)); return node; }
-  const i = t.toLowerCase().indexOf(n.toLowerCase());
-  if (i < 0) { node.appendChild(document.createTextNode(t)); return node; }
-  node.appendChild(document.createTextNode(t.slice(0, i)));
-  node.appendChild(el('mark', {}, t.slice(i, i + n.length)));
-  node.appendChild(document.createTextNode(t.slice(i + n.length)));
-  return node;
-}
-
-/** 긴 본문(어구록)용 — 매치 키워드 주변만 발췌 + <mark>. 키워드가 뒤에 있어도 보이게.
- *  매치 없으면(책·분야 필터 등) 앞부분 발췌. */
-function snippetInto(node, text, needle, lead = 26) {
-  const t = String(text || '');
-  const n = (needle || '').trim();
-  const i = n ? t.toLowerCase().indexOf(n.toLowerCase()) : -1;
-  if (i < 0) { node.appendChild(document.createTextNode(t.slice(0, 150) + (t.length > 150 ? '…' : ''))); return node; }
-  const start = Math.max(0, i - lead);
-  if (start > 0) node.appendChild(document.createTextNode('…'));
-  node.appendChild(document.createTextNode(t.slice(start, i)));
-  node.appendChild(el('mark', {}, t.slice(i, i + n.length)));
-  const end = Math.min(t.length, i + n.length + lead * 4);
-  node.appendChild(document.createTextNode(t.slice(i + n.length, end)));
-  if (end < t.length) node.appendChild(document.createTextNode('…'));
-  return node;
-}
-
-/** book_ref → 책별 어구록 수 맵. */
-function countByBook(quotes) {
-  const m = new Map();
-  for (const r of quotes) m.set(String(r.book_ref), (m.get(String(r.book_ref)) || 0) + 1);
-  return m;
-}
-
-// ─── 최근 검색 (localStorage, 기기 로컬 전용 — 서버 동기화 없음) ──────────────
-// 검색창 유일의 비중복 신호. 다른 화면(피드·통계·서재)은 모두 사전조직 뷰라
-// "사용자가 친 쿼리"는 검색창에만 존재. 원 설계의 "이력 0"은 서버 이력 0 으로 해석.
-const RECENT_KEY = 'book.recentSearch';
-function loadRecentSearches() {
-  try { return (JSON.parse(localStorage.getItem(RECENT_KEY) || '[]') || []).filter((t) => typeof t === 'string' && t.trim()).slice(0, 5); }
-  catch { return []; }
-}
-function pushRecentSearch(term) {
-  const t = (term || '').trim();
-  if (t.length < 2) return;
-  const arr = [t, ...loadRecentSearches().filter((x) => x !== t)].slice(0, 5);
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify(arr)); } catch { /* noop */ }
-}
-function removeRecentSearch(term) {
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify(loadRecentSearches().filter((x) => x !== term))); } catch { /* noop */ }
-}
-
-/** 검색 문법 파싱: `책:키워드` · `분야:키워드` · `"정확구절"` · 일반. (데이터상 유효한 필터만) */
-function parseQuery(raw) {
-  const s = (raw || '').trim();
-  let m;
-  if ((m = s.match(/^"(.+)"$/))) return { mode: 'exact', term: m[1].trim() };
-  if ((m = s.match(/^책\s*[:：]\s*(.+)$/))) return { mode: 'book', term: m[1].trim() };
-  if ((m = s.match(/^분야\s*[:：]\s*(.+)$/))) return { mode: 'cat', term: m[1].trim() };
-  return { mode: 'all', term: s };
-}
-
-// ─── 제로스테이트 (포커스 + 빈 입력) — 최근 검색 + 주제·단어 + 문법 힌트 ──────
-// 검색창 비중복 신호만 남김: 최근검색(검색창 유일 고유) + 주제·단어 칩(query suggestion).
-// 핀(데이터 0개)·책/작가 점프(통계·서재 복제)·장르 칩(통계·서재 복제)은 제거.
-function renderZero(panel, quotes, actions) {
-  panel.replaceChildren();
-  panel.style.display = 'block';
-  const all = quotes || [];
-  if (!all.length) {
-    panel.appendChild(el('div', { class: 'zs-empty' }, el('b', {}, '아직 어구록이 없습니다'), '새 어구록을 추가하면 여기에서 바로 찾을 수 있어요.'));
-    return;
-  }
-
-  // ① 최근 검색 — 검색창 유일 고유 신호 (localStorage, 기기 로컬)
-  const recents = loadRecentSearches();
-  if (recents.length) {
-    const chips = el('div', { class: 'zs-chips' });
-    for (const term of recents) {
-      const x = el('span', {
-        class: 'zs-recent-x', 'aria-label': '삭제',
-        onClick: (e) => { e.stopPropagation(); removeRecentSearch(term); renderZero(panel, quotes, actions); actions.rebind && actions.rebind(); },
-      }, iconEl('close', { sz: 11 }));
-      chips.appendChild(el('button', { class: 'zs-chip zs-recent zs-item', onClick: () => actions.runQuery(term) }, term, x));
-    }
-    panel.appendChild(el('div', { class: 'zs-sec' }, zsSecHead('search', '최근 검색'), chips));
-  }
-
-  // ② 주제·단어로 바로 찾기 — 큐레이션 클러스터(주간 LLM 정제). query suggestion 역할.
-  const words = (CURATION?.clusters || []).map((c) => ({ w: c.word, n: c.count }));
-  if (words.length) {
-    const chips = el('div', { class: 'zs-chips' });
-    for (const o of words) chips.appendChild(el('button', { class: 'zs-chip zs-item', onClick: () => actions.runQuery(o.w) },
-      el('span', { class: 'zs-hash' }, '#'), o.w, o.n != null ? el('span', { class: 'zs-ct' }, String(o.n)) : null));
-    panel.appendChild(el('div', { class: 'zs-sec' }, zsSecHead('hash', '주제·단어로 바로 찾기'), chips));
-  }
-
-  // ③ 검색 문법 힌트 — 검색창 고유(다른 화면은 검색 불가). 데이터상 유효한 필터만.
-  panel.appendChild(el('div', { class: 'zs-syntax' },
-    el('span', { class: 'zs-syntax-label' }, '좁혀 찾기'),
-    el('code', {}, '책:제목'), el('code', {}, '분야:자기계발'), el('code', {}, '"정확한 구절"')));
-}
-
-// ─── 실시간 결과 (입력 중) — 책·작가·분야·어구록 그룹 ───────────────────────
-function renderResults(panel, raw, quotes, actions) {
-  panel.replaceChildren();
-  panel.style.display = 'block';
-  if (quotes == null) { panel.appendChild(el('div', { class: 'zs-hint' }, '불러오는 중…')); return; }
-  const parsed = parseQuery(raw);
-  const q = parsed.term;            // 하이라이트 needle
-  const lc = q.toLowerCase();
-  const all = quotes || [];
-  const used = countByBook(all);
-  // 책·작가·분야 검색 소스 = 보유 책(어구록 있는 책). BOOKS 번들 + 알라딘 등록(REGISTRY) 모두 포함.
-  // (BOOKS 상수만 쓰면 알라딘 추가 책 — 예: 에고라는 적 — 이 누락됨)
-  const ownedBooks = [...used.keys()].map((ref) => bookOf(ref)).filter(Boolean);
-
-  let bookMatches = [], authors = [], cats = [], qsAll = [];
-  if (parsed.mode === 'book') {
-    // 책:키워드 — 책 제목 매칭 + 그 책들의 어구록
-    bookMatches = ownedBooks.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 8);
-    const ids = new Set(bookMatches.map((b) => String(b.id)));
-    qsAll = all.filter((r) => ids.has(String(r.book_ref)));
-  } else if (parsed.mode === 'cat') {
-    // 분야:키워드 — 분야 매칭 + 그 분야 어구록
-    cats = [...new Set(ownedBooks.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 5);
-    const cs = new Set(cats);
-    qsAll = all.filter((r) => { const b = bookOf(r.book_ref); return b && cs.has(topCatOf(b)); });
-  } else if (parsed.mode === 'exact') {
-    // "정확구절" — 본문 정확 포함(대소문자 유지)
-    qsAll = all.filter((r) => (r.text || '').includes(q));
-  } else {
-    // 일반 — 책·작가·분야·어구록 통합
-    bookMatches = ownedBooks.filter((b) => (b.t || '').toLowerCase().includes(lc)).slice(0, 4);
-    authors = [...new Set(ownedBooks.filter((b) => (b.a || '').toLowerCase().includes(lc)).map((b) => b.a))].slice(0, 3);
-    cats = [...new Set(ownedBooks.map(topCatOf))].filter((c) => c.toLowerCase().includes(lc)).slice(0, 3);
-    qsAll = all.filter((r) => (r.text || '').toLowerCase().includes(lc));
-  }
-  const qs = qsAll.slice(0, 6);
-
-  // 책
-  if (bookMatches.length) {
-    panel.appendChild(zsGroupLabel('book', '책'));
-    for (const b of bookMatches) {
-      const row = bookRow({ b, count: used.get(String(b.id)) || 0, meta: topCatOf(b), onClick: () => actions.navTo(`/book/${b.id}`) });
-      row.classList.add('zs-item');
-      panel.appendChild(row);
-    }
-  }
-  // 작가
-  if (authors.length) {
-    panel.appendChild(zsGroupLabel('user', '작가'));
-    for (const a of authors) {
-      const n = BOOKS.filter((b) => b.a === a).reduce((s, b) => s + (used.get(String(b.id)) || 0), 0);
-      panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.navTo(`/author/${encodeURIComponent(a)}`) },
-        el('span', { class: 'zs-rico' }, iconEl('user', { sz: 15 })),
-        el('div', { class: 'zs-rbody' }, markInto(el('div', { class: 'zs-rtitle' }), a, q), el('div', { class: 'zs-rsub' }, `작가 · ${n}개`))));
-    }
-  }
-  // 분야
-  if (cats.length) {
-    panel.appendChild(zsGroupLabel('layer', '분야'));
-    for (const c of cats) {
-      const n = all.filter((r) => { const b = bookOf(r.book_ref); return b && topCatOf(b) === c; }).length;
-      panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.runQuery(c) },
-        el('span', { class: 'zs-rico' }, iconEl('layer', { sz: 15 })),
-        el('div', { class: 'zs-rbody' }, markInto(el('div', { class: 'zs-rtitle' }), c, q), el('div', { class: 'zs-rsub' }, `분야 · ${n}개`))));
-    }
-  }
-  // 어구록
-  if (qs.length) {
-    panel.appendChild(zsGroupLabel('quote', '어구록', el('span', { class: 'zs-grp-ct' }, String(qsAll.length))));
-    for (const r of qs) {
-      const b = bookOf(r.book_ref);
-      panel.appendChild(el('div', { class: 'zs-res zs-item', onClick: () => actions.openQuote(r) },
-        el('span', { class: 'zs-rico' }, iconEl(r.pinned ? 'pin' : 'quote', { sz: 15 })),
-        el('div', { class: 'zs-rbody' },
-          snippetInto(el('div', { class: 'zs-rquote' }), r.text, q),
-          el('div', { class: 'zs-rmeta' }, `${b ? b.t + ' · ' + b.a : '(책 미상)'}`))));
-    }
-  }
-
-  if (!panel.children.length) {
-    panel.appendChild(el('div', { class: 'zs-empty' }, el('b', {}, `'${q}'에 대한 결과가 없어요`), '다른 단어로 찾아보거나, 주제 칩을 눌러보세요.'));
-    return;
-  }
-  const total = bookMatches.length + authors.length + cats.length + qsAll.length;
-  panel.appendChild(el('div', { class: 'zs-foot' }, el('span', { class: 'zs-enter' }, 'Enter'), ` '${q}' 전체 검색 결과 ${total}건`));
-}
-
-export function topbarSearch({ ctx } = {}) {
-  const wrap = el('div', { class: 'topbar-search-wrap' });
-  const bar = el('div', { class: 'topbar-search' }, iconEl('search', { sz: 16 }));
-  const input = el('input', { class: 'ts-input', type: 'text', placeholder: '책 · 작가 · 분야 · 단어 · 어구록', autocomplete: 'off', spellcheck: 'false' });
-  const clearBtn = el('button', { class: 'ts-clear', 'aria-label': '지우기' }, iconEl('close', { sz: 14 }));
-  bar.append(input, clearBtn);
-  const panel = el('div', { class: 'topbar-search-panel' });
-  wrap.append(bar, panel);
-
-  let quotes = null; // lazy
-  let loading = false;
-  let items = [];
-  let cur = -1;
-
-  const close = () => { panel.style.display = 'none'; wrap.classList.remove('open'); };
-  function bindRows() { items = [...panel.querySelectorAll('.zs-item')]; cur = -1; }
-  function setCur(i) {
-    if (cur >= 0 && items[cur]) items[cur].classList.remove('zs-cur');
-    cur = Math.max(-1, Math.min(i, items.length - 1));
-    if (cur >= 0 && items[cur]) { items[cur].classList.add('zs-cur'); items[cur].scrollIntoView({ block: 'nearest' }); }
-  }
-  const render = () => {
-    if (quotes == null) { panel.style.display = 'block'; panel.replaceChildren(el('div', { class: 'zs-hint' }, '불러오는 중…')); return; }
-    if (input.value.trim()) renderResults(panel, input.value, quotes, actions);
-    else renderZero(panel, quotes, actions);
-    bindRows();
-  };
-  const actions = {
-    // 검색 결과에서 항목 클릭 = 유용했던 검색 → 최근 검색에 저장(입력값이 있을 때만).
-    navTo: (route) => { pushRecentSearch(input.value); close(); input.blur(); (ctx?.navigate || (() => {}))(route); },
-    openQuote: (qr) => { pushRecentSearch(input.value); close(); input.blur(); (ctx?.navigate || (() => {}))(`/thread/${qr.book_ref}/${qr.id}`); },
-    runQuery: (text) => { input.value = text; wrap.classList.add('has-text'); render(); input.focus(); },
-    rebind: () => bindRows(),
-  };
-
-  async function ensureLoaded() {
-    if (quotes != null || loading) return;
-    loading = true;
-    try { quotes = await Queries.listAllQuotes(searchOwnerIds(ctx?.user)); }
-    catch (e) { quotes = []; console.warn('[search] 로드 실패', e?.message || e); }
-    loading = false;
-    if (document.activeElement === input) render();
-  }
-
-  input.addEventListener('focus', () => { wrap.classList.add('open'); ensureLoaded(); render(); });
-  input.addEventListener('blur', () => { if (input.value.trim().length >= 2) pushRecentSearch(input.value); setTimeout(close, 150); });
-  input.addEventListener('input', () => { wrap.classList.toggle('has-text', !!input.value); render(); });
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') { input.value = ''; wrap.classList.remove('has-text'); close(); input.blur(); }
-    else if (e.key === 'ArrowDown') { e.preventDefault(); setCur(cur + 1); }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setCur(cur - 1); }
-    else if (e.key === 'Enter' && cur >= 0 && items[cur]) { e.preventDefault(); items[cur].click(); }
-  });
-  clearBtn.addEventListener('mousedown', (e) => { e.preventDefault(); input.value = ''; wrap.classList.remove('has-text'); render(); input.focus(); });
-  // 패널 항목(칩·✕·결과 행) 클릭이 input focus 를 가져가 blur→setTimeout(close) 로 결과가 닫히는 버그 방지.
-  // clearBtn 과 동일하게 mousedown 기본동작(focus 이동)만 막는다(위임 → 재렌더에도 유지).
-  // .zs-item 전체 적용: runQuery 행(칩·분야 드릴인)은 패널 유지, navTo/openQuote 행은 onClick 이 close() 를 직접 호출하므로 무해.
-  panel.addEventListener('mousedown', (e) => { if (e.target.closest('.zs-item')) e.preventDefault(); });
-  return wrap;
 }
 
 // ─── TopBar (core-v14 TopBarV14) — 어구록/통계 탭 + 검색 + 새 어구록 ─────────
@@ -371,12 +106,13 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
     style: { padding: '8px 14px', borderRadius: 7, fontSize: 14, fontWeight: tab === key ? 700 : 500, color: tab === key ? 'var(--ink-1)' : 'var(--ink-3)', cursor: 'pointer', background: tab === key ? 'var(--hover)' : 'transparent' },
   }, name);
   const navEl = el('nav', { style: { display: 'flex', gap: 4, marginLeft: 8 } }, tabEl('피드', 'feed', '/'), tabEl('어구록', 'library', '/library'), tabEl('통계', 'stats', '/stats'));
-  const search = topbarSearch({ ctx });
+  const search = searchTrigger({ ctx });
   return el('header', {
     class: 'topbar',
     // 콘텐츠와 동일 1240 프레임에 맞춰 내부 정렬 — full-width bg/border 유지하되 항목만 중앙(자식 구조 보존 → 모바일 규칙 유지).
     style: { padding: '16px max(36px, calc((100% - 1240px) / 2 + 36px))', display: 'flex', alignItems: 'center', gap: 22, background: '#fff', borderBottom: '1px solid var(--line-2)', position: 'sticky', top: 0, zIndex: 5 },
-  }, brand, navEl, search, btn({ label: '새 어구록', variant: 'pri', size: 'md', icon: 'plus', onClick: () => (ctx?.openAdd ? ctx.openAdd() : nav('/add')) }));
+    // §8: 브랜드+내비 좌측 거터 · spacer · 검색(300px)+새 어구록 우측 그룹 (시안 common.js 정렬).
+  }, brand, navEl, el('div', { style: { flex: 1 } }), search, btn({ label: '새 어구록', variant: 'pri', size: 'md', icon: 'plus', onClick: () => (ctx?.openAdd ? ctx.openAdd() : nav('/add')) }));
 }
 
 // ─── BookRow (core-v14 BookRowV14) ──────────────────────────────────────────
