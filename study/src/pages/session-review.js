@@ -563,7 +563,7 @@ function renderD1Review(host, state, handlers) {
     buildD1Judges(handlers.onJudge),
   );
 
-  const right = buildD1ExplainRight(ex, lang, { header: '해설', sub: '기억이 안 나면 확인하세요', withDrills: true, hl, flexBasis: '44%' });
+  const right = buildD1ExplainRight(ex, lang, { header: '해설', sub: '기억이 안 나면 확인하세요', withDrills: true, hl, flexBasis: '44%', speaker: s?.speaker });
   const main = h('div', { class: 'd1-main', style: 'padding:0;flex-direction:row;' }, left, right);
   return wrapRoot(main);
 }

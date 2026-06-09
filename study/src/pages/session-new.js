@@ -502,11 +502,15 @@ function renderD1Dialogue(host, state, handlers) {
   const lines = deriveDialogue(sceneEx, state.cards);
   const exprCount = lines.filter((l) => l.num != null).length;
 
-  const onListen = (t) => { if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang }); };
+  const onListen = (t, spk) => { if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang, speaker: spk }); };
   const speakAll = () => {
-    const seq = lines.map((l) => l.en).filter(Boolean);
     let i = 0;
-    const next = () => { if (i >= seq.length || !window.studySpeech?.speak) return; window.studySpeech.speak(seq[i++], { lang: ttsLang, onEnd: next }); };
+    const next = () => {
+      if (i >= lines.length || !window.studySpeech?.speak) return;
+      const ln = lines[i++];
+      if (!ln.en) { next(); return; }
+      window.studySpeech.speak(ln.en, { lang: ttsLang, speaker: ln.spk, onEnd: next });
+    };
     next();
   };
 
@@ -523,7 +527,7 @@ function renderD1Dialogue(host, state, handlers) {
       h('div', { class: 'd1-dspk' }, l.spk),
       h('div', { class: 'd1-den' }, hiFragment(l.en, l.hl)),
       h('div', { class: 'd1-dko' }, l.ko),
-      h('button', { class: 'd1-dplay', 'aria-label': '듣기', onClick: () => onListen(l.en) }, d1Icon('play', 13)),
+      h('button', { class: 'd1-dplay', 'aria-label': '듣기', onClick: () => onListen(l.en, l.spk) }, d1Icon('play', 13)),
     )),
   );
 
@@ -598,7 +602,7 @@ function renderD1New(host, state, handlers) {
   const drills = Array.isArray(ex.drills) ? ex.drills : [];
   const drillsBlock = drills.length ? h('div', { style: 'margin-top:40px;' },
     h('div', { class: 'd1-panel-lab' }, '변주 연습 — 듣고, 따라 말하고, 녹음하기'),
-    h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang)),
+    h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang, s?.speaker)),
   ) : null;
 
   const pager = h('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:32px;' },

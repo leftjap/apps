@@ -16,7 +16,9 @@ export function pickCardFields(card) {
     reading: card.reading ?? null,
     lang: card.lang ?? null,
     explanation: card.explanation ?? null,
-    speaker: card.speaker ?? null,
+    // speaker: root 컬럼 우선, fallback explanation.speaker (sync.js 와 동일 — 화자가 explanation jsonb 안에
+    // 박혀 오는 카드[en 가이드 §6.2]에서 TTS 화자별 voice 가 누락돼 기본 Aria 로 떨어지던 버그 픽스).
+    speaker: card.speaker ?? card.explanation?.speaker ?? null,
   };
 }
 

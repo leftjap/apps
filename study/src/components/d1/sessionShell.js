@@ -120,7 +120,7 @@ function d1Section(label, text) {
 }
 
 /* 변주 드릴 행들 — 각 행 [표현(하이라이트)·뜻 · 듣기 chip · 녹음 chip]. 녹음은 services 재사용. */
-export function buildD1DrillRows(drills, hl, lang) {
+export function buildD1DrillRows(drills, hl, lang, speaker) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const rec = { ctrl: null, btn: null };
   const onRecord = async (text, btn) => {
@@ -145,7 +145,7 @@ export function buildD1DrillRows(drills, hl, lang) {
       h('div', { style: 'grid-column:1;font-size:16px;font-weight:600;' }, hiFragment(d.en || '', hl)),
       h('div', { style: 'grid-column:1;font-size:13.5px;color:var(--mut);' }, d.ko || ''),
       h('div', { style: 'grid-column:2;grid-row:1 / 3;display:flex;gap:8px;' },
-        h('button', { class: 'd1-chip', style: 'color:var(--mut);', onClick: () => { if (d.en && window.studySpeech?.speak) window.studySpeech.speak(d.en, { lang: ttsLang }); } }, d1Icon('play', 12), '듣기'),
+        h('button', { class: 'd1-chip', style: 'color:var(--mut);', onClick: () => { if (d.en && window.studySpeech?.speak) window.studySpeech.speak(d.en, { lang: ttsLang, speaker }); } }, d1Icon('play', 12), '듣기'),
         recChip,
       ),
     );
@@ -154,7 +154,7 @@ export function buildD1DrillRows(drills, hl, lang) {
 
 /* 우측 해설 컬럼 — 핵심(keybox) + (옵션)변주 + 상황/실수/비슷한표현. en/ja 스키마 graceful. */
 export function buildD1ExplainRight(ex, lang, opts = {}) {
-  const { header = '표현 해설', sub = null, withDrills = false, hl = [], flexBasis = '43%' } = opts;
+  const { header = '표현 해설', sub = null, withDrills = false, hl = [], flexBasis = '43%', speaker = null } = opts;
   const headerEl = sub
     ? h('div', { style: 'display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px;' },
         h('span', { class: 'd1-panel-lab', style: 'margin-bottom:0;' }, header),
@@ -171,7 +171,7 @@ export function buildD1ExplainRight(ex, lang, opts = {}) {
     if (drills.length) {
       kids.push(h('div', { style: 'margin-top:24px;' },
         h('div', { class: 'd1-panel-lab' }, '변주 — 듣고, 따라 말하기'),
-        h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang))));
+        h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang, speaker))));
     }
   }
   const sects = [];
