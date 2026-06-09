@@ -8,6 +8,8 @@ import { createExplanationPanel } from '../components/session/explanationPanel.j
 import { MATH_CONTENT, nextNewGroup } from '../data/math/index.js';
 import { checkAnswer } from '../services/mathAnswer.js';
 import { todayPlusDays } from '../services/srs.js';
+import { h } from '../components/d1/dom.js';
+import { buildD1Side } from '../components/d1/sessionShell.js';
 
 const LS_KEY = 'mathProgress';
 const todayISO = () => (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10));
@@ -367,10 +369,126 @@ export function mountSessionMath(host) {
     nextWrap.appendChild(next);
   }
 
+  // ── D1 desktop — ⑤ 수학 세션 (개념 = 단일컬럼 / 응용 = 2단). 모바일 reveal 미변경(데스크탑만). ──
+  function renderD1Math(c) {
+    const items = queue.map((q, idx) => ({ n: idx + 1, t: q.tag || q.title || ('문제 ' + (idx + 1)) }));
+    const side = buildD1Side({
+      mode: 'math', subjLabel: '수학', timer: '', idx: i + 1, total: queue.length || 1, items,
+      onHome: () => { window.location.hash = '#/home'; },
+      onEnd: () => { window.location.hash = '#/home'; },
+      onJump: (n) => { i = Math.max(0, Math.min(queue.length - 1, n - 1)); render(); },
+    });
+    const wrapRoot = (main) => {
+      const root = h('div', { class: 'd1-root', style: 'min-height:100vh;min-height:100dvh;' }, side.el, main);
+      host.appendChild(root);
+    };
+    const sect = (label, text) => h('div', {}, h('div', { class: 'd1-panel-lab' }, label), h('div', { style: 'font-size:15px;line-height:1.55;' }, text));
+    const pager = () => h('div', { style: 'display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:32px;' },
+      h('button', { class: 'd1-btn d1-btn--ghost', onClick: () => { if (i > 0) { i -= 1; render(); } } }, '이전'),
+      h('button', { class: 'd1-btn d1-btn--outline', style: 'color:var(--terra);border-color:var(--terra);', onClick: () => { i += 1; render(); } }, (i + 1 >= queue.length) ? '마치기' : '다음 문제'),
+    );
+
+    // ── 개념 카드 ──
+    if (c.kind === 'concept') {
+      const figs = Array.isArray(c.figures) ? c.figures : (c.figure ? [c.figure] : []);
+      const sections = [['배경', c.background], ['왜 배울 가치', c.value], ['길러지는 사고', c.thinking], ['실생활', c.realLife]].filter(([, v]) => v);
+      wrapRoot(h('div', { class: 'd1-main', style: 'max-width:880px;' },
+        c.tag ? h('div', { class: 'd1-lab', style: 'color:var(--sage);' }, c.tag) : null,
+        h('h1', { class: 'd1-h1', style: 'margin-top:14px;font-size:36px;' }, c.title || ''),
+        figs.map((f) => figureNode(f)).filter(Boolean),
+        (c.body || []).map((p) => h('p', { style: 'font-size:16px;color:var(--ink);line-height:1.8;margin:14px 0 0;' }, p)),
+        c.worked ? h('div', { class: 'd1-keybox', style: 'margin-top:20px;' },
+          h('div', { class: 'd1-panel-lab', style: 'color:var(--terra);margin-bottom:8px;' }, '예시 — ' + (c.worked.prompt || '')),
+          (c.worked.steps || []).map((s) => h('div', { class: 'd1-mathstep' }, h('span', { class: 'd1-mdot' }), s))) : null,
+        sections.length ? h('div', { style: 'margin-top:24px;display:grid;gap:18px;' },
+          sections.map(([label, text]) => h('div', { style: 'padding-left:14px;border-left:3px solid var(--sage);' },
+            h('div', { class: 'd1-panel-lab', style: 'color:var(--sage);margin-bottom:5px;' }, label),
+            h('p', { style: 'font-size:15px;color:var(--mut);line-height:1.75;margin:0;' }, text)))) : null,
+        h('button', { class: 'd1-btn d1-btn--primary lg', style: 'margin-top:32px;align-self:flex-start;', onClick: () => { progress.done[c.id] = true; save(progress); i += 1; render(); } }, '이해했어요 · 응용 풀기'),
+      ));
+      return;
+    }
+
+    // ── 응용 문제 (2단) ──
+    const figs = Array.isArray(c.figures) ? c.figures : (c.figure ? [c.figure] : []);
+    const sol = c.solution || {};
+    const input = h('input', { class: 'd1-mathin', type: 'text', autocomplete: 'off', 'aria-label': '답 입력', placeholder: '답' });
+    const checkBtn = h('button', { class: 'd1-btn d1-btn--primary lg' }, '확인');
+    const verdictWrap = h('div', { style: 'display:flex;align-items:center;gap:12px;margin-top:18px;min-height:38px;' });
+
+    const doGrade = (correct) => {
+      const kindR = correct ? (tries > 1 ? 'hmm' : 'got') : 'no';
+      tried += 1; if (correct) passed += 1;
+      const t = todayISO();
+      const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
+      progress.done[c.id] = true;
+      if (st.graduate) delete progress.srs[c.id];
+      else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+      progress.logs = progress.logs || {};
+      const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
+      lg.tried += 1; if (correct) lg.passed += 1;
+      if (mode === 'review') lg.reviewDone += 1; else lg.newDone += 1;
+      progress.logs[t] = lg;
+      save(progress);
+      verdictWrap.innerHTML = '';
+      if (correct) {
+        verdictWrap.append(
+          h('span', { class: 'd1-score' }, h('span', { class: 'sc', style: 'font-size:15px;' }, '정답')),
+          h('span', { style: 'font-size:15px;color:var(--mut);' }, c.answer + ' — 맞았어요.'));
+      } else {
+        verdictWrap.append(h('span', { style: 'display:inline-flex;align-items:center;padding:8px 15px;border-radius:999px;background:var(--terra-bg);color:var(--terra);font-weight:800;font-size:15px;' }, '정답은 ' + c.answer));
+      }
+      input.disabled = true; checkBtn.disabled = true; checkBtn.style.opacity = '0.5';
+    };
+    const submit = () => {
+      const r = checkAnswer(input.value, c);
+      if (r.empty) { input.focus(); return; }
+      tries += 1;
+      if (!r.correct && tries < 2) {
+        verdictWrap.innerHTML = '';
+        verdictWrap.append(h('span', { style: 'font-size:14.5px;color:var(--terra);line-height:1.6;' }, '다시 한 번 — 힌트: ' + (sol.core || '')));
+        input.focus(); input.select();
+        return;
+      }
+      doGrade(r.correct);
+    };
+    checkBtn.addEventListener('click', submit);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+
+    const left = h('div', { style: 'flex:1 1 57%;padding:48px 48px 40px 56px;border-right:1px solid var(--line);display:flex;flex-direction:column;' },
+      h('div', { class: 'd1-eyebrow', style: 'color:var(--faint);' }, '문제 ' + (i + 1) + ' / ' + (queue.length || 1) + (c.module ? (' · ' + c.module) : '')),
+      figs.length ? h('div', { style: 'margin-top:24px;' }, figs.map((f) => figureNode(f)).filter(Boolean)) : null,
+      h('h1', { class: 'd1-sent', style: 'font-size:38px;margin-top:' + (figs.length ? '20px' : '8px') + ';' }, c.prompt || ''),
+      h('div', { style: 'display:flex;gap:12px;margin-top:26px;align-items:center;' }, input, checkBtn),
+      verdictWrap,
+      pager(),
+    );
+
+    const steps = Array.isArray(sol.steps) ? sol.steps : [];
+    const right = h('div', { style: 'flex:1 1 43%;padding:48px 56px 40px 48px;overflow-y:auto;' },
+      h('div', { class: 'd1-panel-lab', style: 'margin-bottom:16px;' }, '풀이'),
+      sol.core ? h('div', { class: 'd1-keybox' },
+        h('div', { class: 'd1-panel-lab', style: 'color:var(--terra);margin-bottom:8px;' }, '핵심'),
+        h('div', { style: 'font-size:16px;line-height:1.6;font-weight:500;' }, sol.core)) : null,
+      steps.length ? h('div', { style: 'margin-top:24px;' },
+        h('div', { class: 'd1-panel-lab' }, '단계로 보기'),
+        h('div', { style: 'margin-top:4px;' }, steps.map((s, idx) => h('div', { class: 'd1-mathstep' + (idx === steps.length - 1 ? ' last' : '') }, h('span', { class: 'd1-mdot' }), s)))) : null,
+      h('div', { style: 'display:grid;gap:22px;margin-top:24px;' },
+        sol.idea ? sect('왜 이렇게 될까요', sol.idea) : null,
+        sol.example ? sect('실생활에서는', sol.example) : null,
+        sol.think ? sect('사고 포인트', sol.think) : null,
+      ),
+    );
+
+    wrapRoot(h('div', { class: 'd1-main', style: 'padding:0;flex-direction:row;' }, left, right));
+    if (!input.disabled) setTimeout(() => input.focus(), 0);
+  }
+
   function render() {
     host.innerHTML = '';
     if (i >= queue.length) { renderDone(); return; }
     const c = queue[i]; tries = 0;
+    if (size === 'desktop') { renderD1Math(c); return; }
     layout = createSessionLayout({
       size,
       kind: mode === 'review' ? 'review' : 'new',
