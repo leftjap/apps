@@ -55,6 +55,12 @@
       "port": 8085
     },
     {
+      "name": "today-redesign-ref",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8086", "--directory", "/Users/gio_c/Downloads/today_redesign_ref/today-redesign", "--bind", "127.0.0.1"],
+      "port": 8086
+    },
+    {
       "name": "gym-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
