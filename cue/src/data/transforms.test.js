@@ -10,6 +10,7 @@ import {
   countDaysInCurrentWeek,
   nowMarker,
   weeklyActivityRatios,
+  lastSessionLabel,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -86,6 +87,18 @@ describe('weekStartMonday — 그 주 월요일 00:00', () => {
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 8)))).toBe('2026-06-08'); // 월
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 10)))).toBe('2026-06-08'); // 수
     expect(localDayKey(weekStartMonday(new Date(2026, 5, 7)))).toBe('2026-06-01'); // 일 → 직전 월
+  });
+});
+
+describe('lastSessionLabel — 직전 세션 시각 → "N일 전 HH:MM" (오늘 흐름 마지막 라벨)', () => {
+  it('상대일 + HH:MM (자정 기준 일수 차)', () => {
+    expect(lastSessionLabel(new Date(2026, 5, 8, 20, 14), new Date(2026, 5, 9, 0, 30))).toBe('어제 20:14');
+    expect(lastSessionLabel(new Date(2026, 5, 5, 13, 20), new Date(2026, 5, 9, 9, 0))).toBe('4일 전 13:20');
+    expect(lastSessionLabel(new Date(2026, 5, 9, 6, 5), new Date(2026, 5, 9, 14, 0))).toBe('오늘 06:05');
+  });
+  it('날짜 없으면 null', () => {
+    expect(lastSessionLabel(null, new Date(2026, 5, 9))).toBeNull();
+    expect(lastSessionLabel(undefined, new Date(2026, 5, 9))).toBeNull();
   });
 });
 

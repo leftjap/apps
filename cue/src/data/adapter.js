@@ -16,6 +16,7 @@
 import {
   dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun, relativeDayLabel,
   lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, weeklyActivityRatios,
+  lastSessionLabel,
 } from './transforms.js';
 
 const WINDOW = 84;       // 84일=12주 — 전체통계 추세 + 충분한 streak/최장 계산
@@ -42,8 +43,8 @@ function viewHabit(id, hist, st, lastLabel, trend, longest) {
   };
 }
 
-// 일별 습관(study/today/book) 공통 상태 빌더
-function buildDaily(id, series, noneLine) {
+// 일별 습관(study/today/book) 공통 상태 빌더. lastOverride: "N일 전 HH:MM"(시각 있으면)
+function buildDaily(id, series, noneLine, lastOverride) {
   const lastI = WINDOW - 1;
   const hist = series.slice(WINDOW - HIST_LEN, lastI); // 히트맵용 최근 34일(오늘 제외)
   const todayVal = series[lastI];
@@ -54,8 +55,8 @@ function buildDaily(id, series, noneLine) {
     ? { kind: 'done', big, unit, today: todayVal, line: `오늘 ${todayVal}${META[id].metric.unit}`, enter: '다시 열기' }
     : { kind: 'none', big, unit, today: 0, line: noneLine, enter: META[id].enterNone };
   const d = lastActiveDaysAgo(series);
-  return viewHabit(id, hist, st, d != null ? relativeDayLabel(d) : '기록 없음',
-    weeklyActivityRatios(series, TREND_WEEKS), longestRun(series));
+  const last = lastOverride || (d != null ? relativeDayLabel(d) : '기록 없음');
+  return viewHabit(id, hist, st, last, weeklyActivityRatios(series, TREND_WEEKS), longestRun(series));
 }
 
 async function rows(client, table, columns, filters = (q) => q) {
@@ -76,7 +77,9 @@ async function fetchStudy(client, userId, today, sinceKey, todayKey) {
   const due = await rows(client, 'study_review_queue', 'next_review',
     (q) => q.eq('user_id', userId).lte('next_review', todayKey));
   const noneLine = due.length > 0 ? `복습 ${due.length}개 대기` : '오늘 아직';
-  return buildDaily('study', series, noneLine);
+  const logs = await rows(client, 'study_session_logs', 'created_at',
+    (q) => q.eq('user_id', userId).order('created_at', { ascending: false }).limit(1));
+  return buildDaily('study', series, noneLine, lastSessionLabel(logs[0]?.created_at, today));
 }
 
 async function fetchToday(client, userId, today, sinceKey) {
@@ -84,7 +87,8 @@ async function fetchToday(client, userId, today, sinceKey) {
     (q) => q.eq('owner_id', userId).in('kind', WRITING_KINDS).is('deleted_at', null).gte('created_at', sinceKey));
   const series = dailySeries(data, (r) => localDayKey(r.created_at), (r) => sheetsFromHtml(r.content), WINDOW, today)
     .map(round1);
-  return buildDaily('today', series, '오늘 아직');
+  const lastTs = data.reduce((mx, r) => (!mx || r.created_at > mx ? r.created_at : mx), null);
+  return buildDaily('today', series, '오늘 아직', lastSessionLabel(lastTs, today));
 }
 
 async function fetchBook(client, userId, today, sinceKey) {
@@ -98,7 +102,7 @@ async function fetchBook(client, userId, today, sinceKey) {
 }
 
 async function fetchGym(client, userId, today, sinceKey) {
-  const data = await rows(client, 'gym_sessions', 'date, status, duration_min, start_time',
+  const data = await rows(client, 'gym_sessions', 'date, status, duration_min, start_time, end_time',
     (q) => q.eq('user_id', userId).gte('date', sinceKey));
   const completed = data.filter((r) => r.status === 'completed');
   const series = dailySeries(completed, (r) => r.date, (r) => r.duration_min, WINDOW, today);
@@ -118,8 +122,10 @@ async function fetchGym(client, userId, today, sinceKey) {
     const d = lastActiveDaysAgo(series);
     st = { kind: 'none', big: weekCount, unit, today: 0, line: d != null ? `마지막 운동 ${relativeDayLabel(d)}` : '이번주 아직', enter: null };
   }
+  const lastTs = completed.reduce((mx, r) => { const t = Number(r.end_time || r.start_time) || 0; return t > mx ? t : mx; }, 0);
   const dd = lastActiveDaysAgo(series);
-  return viewHabit('gym', hist, st, dd != null ? relativeDayLabel(dd) : '기록 없음',
+  const lastLabel = lastTs ? lastSessionLabel(new Date(lastTs), today) : (dd != null ? relativeDayLabel(dd) : '기록 없음');
+  return viewHabit('gym', hist, st, lastLabel,
     weeklyActivityRatios(series, TREND_WEEKS), longestRun(series));
 }
 

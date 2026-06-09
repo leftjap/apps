@@ -158,3 +158,13 @@ export function weeklyActivityRatios(series, weeks) {
   }
   return out;
 }
+
+/** 직전 세션 시각(Date) → "N일 전 HH:MM" (오늘 흐름 "마지막" 라벨). 날짜 없으면 null. */
+export function lastSessionLabel(date, today) {
+  if (!date) return null;
+  const d = new Date(date);
+  const a = new Date(d); a.setHours(0, 0, 0, 0);
+  const b = new Date(today); b.setHours(0, 0, 0, 0);
+  const daysAgo = Math.round((b - a) / 86400000);
+  return `${relativeDayLabel(daysAgo)} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
+}
