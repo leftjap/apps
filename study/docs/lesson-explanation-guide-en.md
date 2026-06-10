@@ -481,6 +481,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - 경로: `~/apps/study/seeds/sources/realclass-parks-s1e1.txt` (145문장, `EN:`/`KO:` 쌍, 문장번호)
 - **gitignored** (`study/seeds/sources/`) — repo 가 PUBLIC 이므로 유료 콘텐츠 전문 커밋 금지. 시드에는 학습 발췌 (다이얼로그 6~10줄 압축 + 표현 카드) 만 커밋
 - **소스 파일 부재 시 생성 중단** — 사용자에게 소스 파일 요청. 기억·추측으로 대사 재구성 금지
+- **화자 귀속 검증** (2026-06-10): 소스에 화자 라벨이 없음 (`EN:/KO:` 쌍뿐) → 화자 배정은 에피소드 지식 의존. **귀속이 불확실하면 외부 transcript 대조로 검증, 불가 시 그 장면 생성 보류** (다른 장면 선택). 검증 출처를 `_note` 에 남김
 
 ### 세션 구조 (1세션 = 1장면)
 
@@ -504,6 +505,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 - `dialogue` 6~10줄. 원 대사 순서 유지하되 **학습용 압축·발췌 허용** (s1e1 정본: 원문 ~50문장 구간 → 8줄)
 - scene 카드는 복습 큐 이관 자동 제외 (`sessionFinish.js` — 완료 표시만). 시드 측 작업 없음
+- **신규 화자 TTS 등록 의무** (2026-06-10): dialogue 의 speaker 전원이 `src/services/speech.js` `SPEAKER_VOICES['en-US']` 에 등록돼 있어야 함 (성별 맞는 voice + rate). 미등록 화자는 기본 Aria(여성) 폴백 → **남성 캐릭터 성별 불일치**. 새 화자 등장 시 voice 등록을 같은 커밋에서 — `validate-seed.mjs` 가 미등록 화자를 차단
 
 ### 표현 카드 형식 (`explanation`) — 한국인 해설 8필드 (2026-06-10 발음·문법 복원)
 
@@ -521,15 +523,17 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 - `sentence` = 장면 속 원문 (학습용 최소 단순화 허용) / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
 - **발음 정합 룰** (구 §11 부활): `phonetic_kr` = chunks 의 kr 이어붙임과 일치 / chunks 가 본문 전단어 커버 / 사전 표기 X·실발화 기준
+- **다이얼로그 매칭 계약** (2026-06-10 — `session-new.js` `deriveDialogue` 코드 결합): 다이얼로그 번호·하이라이트는 **순차 커서**로 부여된다 — ① 표현 카드 순서(order_index) = dialogue 등장 순서 ② 카드 `sentence` 가 해당 dialogue 줄에 포함 (소문자·기호 제거 정규화 기준) ③ 한 줄당 표현 1개 (한 줄에 표현 2개면 줄을 쪼개 발췌). 위반 시 그 카드부터 번호 전멸 ("표현 0개" 버그의 원인) — `validate-seed.mjs` 가 시뮬레이션으로 차단
 - 콩트 메타 (skit*/scene_id/stage/newElements/knownElements) **미사용** — s1e1 정본 기준
 - TTS·녹음·다이얼로그 색 강조 전부 코드 자동 — 시드 측 추가 필드 불필요
 - ⚠️ **재INSERT 안전**: 시드 재적재(upsert)는 `completed=false` 로 merge → **사용자가 해당 카드 학습을 시작한 뒤에는 같은 카드 재INSERT 금지** (학습 완료 리셋됨). 보강은 학습 전에만
 
-### 발췌 기준 (3종 — 사용자 합의)
+### 발췌 기준 (4종 — 사용자 합의 3종 + 화자 교차 2026-06-10 추가)
 
 1. **단순 인사·짧은 리액션 단독 제외** — Hello / Hi / Okay / Here we go 단독 등 학습 가치 없는 줄
 2. **미국 지방정부·행정 고유 디테일 제외** — 학습자 수준·상황 (미드 자막 의존도 낮추기 + 여행 + 비즈니스 일상 회화) 과 무관한 내용
 3. **일상 전이 가능 표현 우선** — 구동사·관용구·기본동사 chunk (fire away / care for / move on / bottom line 류)
+4. **화자 교차 (대화성)** — 최소 2화자의 실제 교환 (리액션 단독 제외), 단일 화자 연속 3줄 이하 권장, 인터뷰 컷(독백) 발췌는 전체의 1/3 이하. 근거: dialogue 가 monologue 보다 이해 우위 (다중 관점·교차 발화) + 2026-06-10 핑키 프라미스 독백형 시드 교훈. dialogue-first 모델 취지 (화자·관계 맥락) 와 정합
 
 ### 중복 방지 (사용 이력)
 
@@ -538,22 +542,27 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 ### 파일·ID 규칙
 
-- 파일명 `seeds/en-<YYYY-MM-DD>.json` (자동화 워크플로 `study-seed-supabase.yml` 인자 정합)
-- payload `_note` 에 모델·출처 장면 (에피소드 + 스크립트 문장 번호 범위) 명시
-- 카드 id `en-parks-s1e1-<slug>` — 전 시드 통틀어 고유
+- 파일명 `seeds/en-<YYYY-MM-DD>.json` (자동화 워크플로 `study-seed-supabase.yml` 인자 정합). 같은 날 재생성 시 `-2` 접미사 허용
+- **1일 1장면** (2026-06-10): 같은 (user, lang, date) 에는 한 그룹만 — 같은 date 에 scene 2장이 들어오면 `order_index` 가 그룹 간 충돌해 세션 정렬이 섞인다 (`loadNewCards` date→order_index 정렬). 같은 날 교체는 **서버 기존 그룹 삭제 후 적재** — `validate-seed.mjs` 서버 게이트 (1일 1장면·completed) 가 차단
+- payload `_note` 에 모델·출처 장면 명시 + **`_source: { episode, lines: [시작, 끝] }` 구조화 필드 의무** (2026-06-10 — 사용 구간 기계 검증·잔여 풀 산출용. `_note` 산문은 사람용 보조)
+- 카드 id `en-parks-<se>-<slug>` — 전 시드 통틀어 고유
 
 ### 생성 후 자체 체크리스트 (en 활성 트랙)
 
-- [ ] scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비)
-- [ ] 표현 카드 5~7장 — 각 `drills` 3~8개 (en 필수, ko 동반, **kr 음차 의무**. 개수는 schema §drills 정본 — 핵심·헷갈리는 표현 6~8 / 쉬운 표현 3, 하한 일괄 깔기 금지)
-- [ ] 표현 카드마다 `grammar` 1~2건 + `chunks` + `phonemes` 1~3건 (한국인 해설 8필드 완비)
-- [ ] `chunks` 가 본문 모든 단어 포함 + `phonetic_kr` = chunks kr 이어붙임과 일치
+> 🅖 표시 = `scripts/validate-seed.mjs` 가 기계 차단 (INSERT 전 자동). 나머지는 판단형 — 수동 확인.
+
+- [ ] 🅖 scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비)
+- [ ] 🅖 표현 카드 5~7장 — 각 `drills` 3~8개 (en 필수, ko 동반, **kr 음차 의무**. 개수는 schema §drills 정본 — 핵심·헷갈리는 표현 6~8 / 쉬운 표현 3, 하한 일괄 깔기 금지 — 전 카드 ≤4 면 게이트 경고)
+- [ ] 🅖 표현 카드마다 `grammar` 1~2건 + `chunks` + `phonemes` 1~3건 (한국인 해설 8필드 완비)
+- [ ] 🅖 `chunks` 가 본문 모든 단어 포함 + `phonetic_kr` = chunks kr 이어붙임과 일치
+- [ ] 🅖 다이얼로그 매칭 계약 — 표현 전수 번호 부여 (위 "다이얼로그 매칭 계약")
+- [ ] 🅖 dialogue 화자 전원 `SPEAKER_VOICES` 등록
+- [ ] 🅖 카드 id 전 시드 고유 + `_source` 구간이 기존 시드와 겹침 0
+- [ ] 🅖 1일 1장면 — 같은 (lang, date) 타 그룹 없음 + 학습 시작된 카드 재INSERT 0 (서버 게이트)
 - [ ] 음차 전부 연음/flap/약음 반영 (사전 표기 0건 — §7)
-- [ ] 발췌 기준 3종 통과 (인사 단독 0 / 행정 디테일 0 / 일상 전이성 O)
-- [ ] 기존 Parks 시드와 dialogue·표현 중복 0
-- [ ] 카드 id 전 시드 고유
-- [ ] `_note` 에 출처 장면 문장 번호 범위 명시
-- [ ] INSERT 전 라이브 미완료 en 신규 카드 확인 — 5건 초과 시 INSERT 보류 + 사용자 안내 (spec §5-0 단계 4). 학습 시작된 카드 재INSERT 금지
+- [ ] 발췌 기준 4종 통과 (인사 단독 0 / 행정 디테일 0 / 일상 전이성 O / 화자 교차 — 독백 1/3 이하)
+- [ ] 화자 귀속 확실 (불확실 시 외부 transcript 대조 — 위 "화자 귀속 검증")
+- [ ] INSERT 전 라이브 미완료 en 신규 카드 확인 — 5건 초과 시 INSERT 보류 + 사용자 안내 (spec §5-0 단계 4)
 
 ---
 
