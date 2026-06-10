@@ -85,10 +85,11 @@ export function todayLessonsDexieToSupabase(row, userId) {
     meaning: row.meaning,
     reading: row.reading ?? null,
     explanation: row.explanation ?? {},
-    phonetic_kr: row.phoneticKr ?? null,
+    // snake_case 우선 + 레거시 camelCase 폴백 (2026-06-10 픽스 전 pull 이 만든 기기 잔존 행 보호)
+    phonetic_kr: row.phonetic_kr ?? row.phoneticKr ?? null,
     audio_url: row.audioUrl ?? null,
     completed: row.completed ?? false,
-    order_index: row.orderIndex ?? null,
+    order_index: row.order_index ?? row.orderIndex ?? null,
     speaker: row.speaker ?? null,
   };
 }
@@ -104,10 +105,12 @@ export function todayLessonsSupabaseToDexie(row) {
     meaning: row.meaning,
     reading: row.reading ?? null,
     explanation: row.explanation ?? {},
-    phoneticKr: row.phonetic_kr ?? null,
+    // UI 리더 (pickCardFields·loadNewCards 정렬) 와 동일 키 — camelCase 산출 시 발음 공란·정렬 깨짐
+    // (2026-06-10 실기기 확인: pull 행이 phoneticKr/orderIndex 로 저장돼 발음·순서 유실)
+    phonetic_kr: row.phonetic_kr ?? null,
     audioUrl: row.audio_url ?? null,
     completed: row.completed ?? false,
-    orderIndex: row.order_index ?? null,
+    order_index: row.order_index ?? null,
     speaker,
     createdAt: row.created_at ?? null,
   };

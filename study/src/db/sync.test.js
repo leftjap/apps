@@ -749,10 +749,10 @@ describe('sync — Wave 11.13.3 pullTable reviewQueue 충돌 해결 통합', () 
         meaning: '안녕',
         reading: null,
         explanation: { foo: 'bar' },
-        phoneticKr: null,
+        phonetic_kr: null,
         audioUrl: null,
         completed: false,
-        orderIndex: 0,
+        order_index: 0,
         speaker: null,
         createdAt: '2026-04-15T00:00:00Z',
       },
@@ -1582,10 +1582,10 @@ describe('sync — Wave 11.20 todayLessons 변환', () => {
       meaning: '안녕',
       reading: null,
       explanation: { foo: 'bar' },
-      phoneticKr: 'pkr',
+      phonetic_kr: 'pkr',
       audioUrl: 'aurl',
       completed: false,
-      orderIndex: 0,
+      order_index: 0,
       speaker: null,
       createdAt: '2026-04-15T00:00:00Z',
     });
@@ -1757,5 +1757,44 @@ describe('sync — Wave 11.20 TABLE_MAP 인터페이스', () => {
     expect(typeof Sync.sessionLogsSupabaseToDexie).toBe('function');
     expect(typeof Sync.pronunciationLogDexieToSupabase).toBe('function');
     expect(typeof Sync.pronunciationLogSupabaseToDexie).toBe('function');
+  });
+});
+
+describe('sync — todayLessons 변환 ↔ UI 필드 정합 (2026-06-10 실기기 발음 공란·정렬 깨짐 픽스)', () => {
+  // pull 산출 row 는 UI 리더와 같은 키를 가져야 한다:
+  //  - pickCardFields → card.phonetic_kr (cardLoader.js)
+  //  - loadNewCards/home 세션 타이틀 정렬 → row.order_index
+  const serverRow = {
+    id: 'en-x-1', user_id: 'u', lang: 'en', date: '2026-06-10',
+    sentence: 'Fire away.', meaning: '얼마든지요.', reading: null,
+    explanation: { key: 'k' }, phonetic_kr: '파이어 어웨이', audio_url: null,
+    completed: false, order_index: 3, speaker: null, created_at: '2026-06-10T00:00:00Z',
+  };
+
+  it('toDexie: phonetic_kr / order_index 를 snake_case 그대로 보존', async () => {
+    const { todayLessonsSupabaseToDexie } = await import('./sync.js');
+    const row = todayLessonsSupabaseToDexie(serverRow);
+    expect(row.phonetic_kr).toBe('파이어 어웨이');
+    expect(row.order_index).toBe(3);
+  });
+
+  it('toDexie → pickCardFields round-trip: pron 비공란', async () => {
+    const { todayLessonsSupabaseToDexie } = await import('./sync.js');
+    const { pickCardFields } = await import('../pages/cardLoader.js');
+    const out = pickCardFields(todayLessonsSupabaseToDexie(serverRow));
+    expect(out.pron).toBe('파이어 어웨이');
+  });
+
+  it('toSupabase: snake_case 우선 + 레거시 camelCase 행 폴백', async () => {
+    const { todayLessonsDexieToSupabase } = await import('./sync.js');
+    const snake = todayLessonsDexieToSupabase(
+      { id: 'a', lang: 'en', date: '2026-06-10', phonetic_kr: '가', order_index: 1 }, 'u');
+    expect(snake.phonetic_kr).toBe('가');
+    expect(snake.order_index).toBe(1);
+    // 기수정 전 pull 이 만든 camelCase 행 (기기 잔존) 도 push 시 값 유실 금지
+    const legacy = todayLessonsDexieToSupabase(
+      { id: 'b', lang: 'en', date: '2026-06-10', phoneticKr: '나', orderIndex: 2 }, 'u');
+    expect(legacy.phonetic_kr).toBe('나');
+    expect(legacy.order_index).toBe(2);
   });
 });
