@@ -1,0 +1,213 @@
+/**
+ * validate-seed.mjs — 시드 콘텐츠 검증기 (INSERT 전 게이트).
+ *
+ * 배경 (2026-06-10): 구조 검증(seed-supabase.mjs validatePayload)만 있고 콘텐츠 검증이
+ * 산문 체크리스트뿐이라 매칭 stuck·drills 하한 깔기·재INSERT 사고가 규율로만 방어됐음.
+ * 본 모듈이 guide-en §6.3 체크리스트의 기계화 가능 항목을 결정적으로 차단한다.
+ *
+ * 구성:
+ *  - validateSeedContent(payload, { existingSeeds, speakerNames }) — 순수 콘텐츠 검증
+ *  - evaluateServerGuards({ serverRows, payloadIds }) — 1일 1장면 + completed 게이트 (순수)
+ *  - parseSpeakerVoiceNames(src) — speech.js 소스에서 SPEAKER_VOICES en-US 화자 키 추출
+ *    (speech.js 는 Vite 전용 import.meta.env 의존이라 Node 에서 직접 import 불가 → 소스 파싱)
+ *  - loadExistingSeeds(dir, excludeFile) — seeds/en-*.json 사용 이력 로드
+ *
+ * CLI: node scripts/validate-seed.mjs --payload seeds/<f>.json
+ *      (서버 게이트는 seed-supabase.mjs 가 SELECT 결과로 evaluateServerGuards 호출)
+ */
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, basename } from 'node:path';
+import { argv, exit } from 'node:process';
+
+// session-new.js deriveDialogue 와 동일 정규화 (매칭 계약 시뮬레이션용 — 로직 변경 시 양쪽 동기화)
+const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+
+const isSceneCard = (c) => Array.isArray(c?.explanation?.dialogue);
+
+/** speech.js 소스에서 SPEAKER_VOICES 의 'en-US' 블록 화자 키 추출. */
+export function parseSpeakerVoiceNames(src) {
+  const names = new Set();
+  const start = src.indexOf('SPEAKER_VOICES');
+  if (start === -1) return names;
+  const block = src.slice(start);
+  // '키': { voice: ... } 형태의 따옴표 키만 수집 (lang 키 'en-US' 류 제외)
+  for (const m of block.matchAll(/'([^']+)'\s*:\s*\{\s*voice:/g)) names.add(m[1]);
+  return names;
+}
+
+/** seeds 디렉토리에서 en-*.json 사용 이력 로드 (자기 자신 제외). */
+export function loadExistingSeeds(dir, excludeFile) {
+  const out = [];
+  for (const f of readdirSync(dir)) {
+    if (!f.startsWith('en-') || !f.endsWith('.json') || f === excludeFile) continue;
+    try {
+      const p = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+      out.push({
+        file: f,
+        ids: new Set((p.cards || []).map((c) => c.id)),
+        source: p._source ?? null,
+      });
+    } catch { /* 손상 파일은 이력에서 제외 — ID·구간 비교 불가 시 보수적으로 무시 */ }
+  }
+  return out;
+}
+
+const EXPL_REQUIRED = ['key', 'situation', 'drills', 'grammar', 'chunks', 'phonemes', 'mistake', 'similar', 'category', 'frequency'];
+
+/**
+ * 콘텐츠 검증 본체. 반환 { ok, errors[], warnings[] }.
+ * RealClass 분기: lang==='en' && 첫 정렬 카드에 dialogue 존재. 그 외(ja 등)는 generic 만.
+ */
+export function validateSeedContent(payload, { existingSeeds = [], speakerNames = new Set() } = {}) {
+  const errors = [];
+  const warnings = [];
+  const cards = Array.isArray(payload?.cards) ? payload.cards : [];
+
+  // ── generic: payload 내 + 기존 시드 간 ID 고유 ──
+  const seen = new Set();
+  for (const c of cards) {
+    if (seen.has(c.id)) errors.push(`ID 중복 (payload 내): ${c.id}`);
+    seen.add(c.id);
+    for (const ex of existingSeeds) {
+      if (ex.ids.has(c.id)) errors.push(`ID 중복 (기존 시드 ${ex.file}): ${c.id}`);
+    }
+  }
+
+  const sorted = [...cards].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+  // en 신규 시드 = RealClass 트랙 의무 (guide §6.3 활성 정본) — scene 부재도 RealClass 규칙으로 차단
+  const isRealClass = payload?.lang === 'en';
+  if (!isRealClass) return { ok: errors.length === 0, errors, warnings };
+
+  // ── 구조: scene 1장 (oi 0) + 표현 5~7장 ──
+  const scenes = sorted.filter(isSceneCard);
+  const exprs = sorted.filter((c) => !isSceneCard(c));
+  if (scenes.length !== 1) errors.push(`scene 카드는 정확히 1장이어야 함 (현재 ${scenes.length})`);
+  const scene = scenes[0];
+  if (scene && (scene.order_index ?? null) !== 0) errors.push(`scene 카드 order_index 는 0 (현재 ${scene.order_index})`);
+  if (exprs.length < 5 || exprs.length > 7) errors.push(`표현 카드는 5~7장 (현재 ${exprs.length})`);
+
+  // ── scene: dialogue 6~10줄, speaker/en/ko 완비, 화자 TTS 등록 ──
+  const dialogue = scene?.explanation?.dialogue ?? [];
+  if (dialogue.length < 6 || dialogue.length > 10) errors.push(`dialogue 는 6~10줄 (현재 ${dialogue.length})`);
+  dialogue.forEach((l, i) => {
+    if (!l?.speaker || !l?.en || !l?.ko) errors.push(`dialogue ${i + 1}줄 speaker/en/ko 누락`);
+    else if (speakerNames.size && !speakerNames.has(l.speaker)) {
+      errors.push(`화자 '${l.speaker}' 가 SPEAKER_VOICES 미등록 — speech.js 에 voice(성별·rate) 등록 후 적재 (미등록 시 Aria 폴백으로 성별 불일치)`);
+    }
+  });
+
+  // ── 표현 카드: 8필드 + 발음 정합 + drills ──
+  let allDrillsAtFloor = exprs.length > 0;
+  for (const c of exprs) {
+    const ex = c.explanation || {};
+    for (const f of EXPL_REQUIRED) {
+      if (ex[f] === undefined || ex[f] === null || ex[f] === '') errors.push(`${c.id}: explanation.${f} 누락 (8필드 의무)`);
+    }
+    if (Array.isArray(ex.grammar) && (ex.grammar.length < 1 || ex.grammar.length > 2)) {
+      errors.push(`${c.id}: grammar 는 1~2건 (현재 ${ex.grammar.length})`);
+    }
+    if (Array.isArray(ex.phonemes) && (ex.phonemes.length < 1 || ex.phonemes.length > 3)) {
+      errors.push(`${c.id}: phonemes 는 1~3건 (현재 ${ex.phonemes.length})`);
+    }
+    // 발음 정합 (guide §6.3 발음 정합 룰)
+    if (Array.isArray(ex.chunks) && ex.chunks.length) {
+      const krJoin = ex.chunks.map((x) => x?.[1] ?? '').join(' ');
+      if (krJoin !== c.phonetic_kr) {
+        errors.push(`${c.id}: phonetic_kr 이 chunks kr 이어붙임과 불일치 ("${c.phonetic_kr}" ≠ "${krJoin}")`);
+      }
+      const enJoin = norm(ex.chunks.map((x) => x?.[0] ?? '').join(' '));
+      if (enJoin !== norm(c.sentence)) {
+        errors.push(`${c.id}: chunks 가 본문 전단어 미커버 ("${norm(c.sentence)}" ≠ "${enJoin}")`);
+      }
+    }
+    // drills 3~8 + en/ko/kr 완비
+    const drills = Array.isArray(ex.drills) ? ex.drills : [];
+    if (drills.length < 3 || drills.length > 8) errors.push(`${c.id}: drills 는 3~8개 (현재 ${drills.length})`);
+    drills.forEach((d, i) => {
+      if (!d?.en || !d?.ko || !d?.kr) errors.push(`${c.id}: drills[${i}] en/ko/kr 누락 (kr 음차 의무)`);
+    });
+    if (drills.length > 4) allDrillsAtFloor = false;
+  }
+  if (allDrillsAtFloor) {
+    warnings.push('전 표현 카드 drills ≤4 — 하한 일괄 깔기 의심 (schema §drills: 핵심·헷갈림 6~8 / 쉬움 3)');
+  }
+
+  // ── 매칭 계약: deriveDialogue 순차 커서 시뮬레이션 — 표현 전수 번호 부여 의무 ──
+  if (scene && exprs.length) {
+    let ci = 0;
+    for (const line of dialogue) {
+      if (ci >= exprs.length) break;
+      const nl = norm(line.en);
+      const nc = norm(exprs[ci].sentence);
+      if (nl && nc && nl.includes(nc)) ci += 1;
+    }
+    if (ci !== exprs.length) {
+      errors.push(`다이얼로그 매칭 실패: 표현 ${exprs.length}장 중 ${ci}장만 번호 부여 — 카드 순서가 dialogue 등장 순서와 일치하고 sentence 가 해당 줄에 포함(정규화)돼야 함 (session-new.js deriveDialogue 계약)`);
+    }
+  }
+
+  // ── _source 구조화 + 기존 시드 구간 겹침 ──
+  const src = payload._source;
+  if (!src?.episode || !Array.isArray(src?.lines) || src.lines.length !== 2) {
+    errors.push('_source 누락 — { episode, lines: [시작, 끝] } 구조 의무 (사용 구간 기계 검증용)');
+  } else {
+    for (const ex of existingSeeds) {
+      const s = ex.source;
+      if (!s?.episode || s.episode !== src.episode || !Array.isArray(s.lines)) continue;
+      const [a1, a2] = src.lines;
+      const [b1, b2] = s.lines;
+      if (a1 <= b2 && b1 <= a2) {
+        errors.push(`_source 구간 겹침: ${src.episode} #${a1}~${a2} ↔ ${ex.file} #${b1}~${b2}`);
+      }
+    }
+  }
+
+  return { ok: errors.length === 0, errors, warnings };
+}
+
+/**
+ * 서버 게이트 (순수). serverRows = 같은 (user, lang, date) 의 { id, completed } 행들.
+ *  - 1일 1장면: payload 에 없는 id 가 서버에 존재 → 다른 그룹과 같은 날 충돌 → 차단
+ *  - completed 게이트: payload id 중 서버 completed=true → 학습 시작 후 재INSERT → 차단
+ */
+export function evaluateServerGuards({ serverRows = [], payloadIds = new Set() } = {}) {
+  const errors = [];
+  for (const r of serverRows) {
+    if (!payloadIds.has(r.id)) {
+      errors.push(`1일 1장면 위반: 같은 (lang, date) 에 다른 그룹 행 존재 (${r.id}) — 기존 그룹 삭제 후 적재`);
+    } else if (r.completed === true) {
+      errors.push(`completed 게이트: ${r.id} 학습 시작됨 — 재INSERT 금지 (upsert 가 completed=false 로 리셋)`);
+    }
+  }
+  return { ok: errors.length === 0, errors };
+}
+
+/** CLI — 콘텐츠 검증만 (서버 게이트는 seed-supabase.mjs 경로에서 수행). */
+function parseArgs(args) {
+  const out = {};
+  for (let i = 0; i < args.length; i += 1) {
+    if (args[i] === '--payload') out.payload = args[i + 1];
+  }
+  return out;
+}
+
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) {
+  const args = parseArgs(argv.slice(2));
+  if (!args.payload) {
+    console.error('usage: node scripts/validate-seed.mjs --payload seeds/<f>.json');
+    exit(1);
+  }
+  const payload = JSON.parse(readFileSync(args.payload, 'utf8'));
+  const seedsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'seeds');
+  const existingSeeds = loadExistingSeeds(seedsDir, basename(args.payload));
+  const speechSrc = readFileSync(join(seedsDir, '..', 'src', 'services', 'speech.js'), 'utf8');
+  const r = validateSeedContent(payload, { existingSeeds, speakerNames: parseSpeakerVoiceNames(speechSrc) });
+  for (const w of r.warnings) console.warn(`[validate] WARN: ${w}`);
+  if (!r.ok) {
+    for (const e of r.errors) console.error(`[validate] FAIL: ${e}`);
+    exit(1);
+  }
+  console.log(`[validate] OK — ${payload.lang} ${payload.date} cards=${payload.cards.length}`);
+}

@@ -1,0 +1,286 @@
+/**
+ * validate-seed.test.mjs — 시드 콘텐츠 검증기 (en RealClass) 단위 테스트.
+ *
+ * 대상: scripts/validate-seed.mjs
+ *  - validateSeedContent(payload, { existingSeeds, speakerNames }) — 순수 검증
+ *  - evaluateServerGuards({ serverRows, payloadIds }) — 1일 1장면 + completed 게이트 (순수)
+ *  - parseSpeakerVoiceNames(src) — speech.js 소스에서 en-US 화자 키 추출
+ */
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import {
+  validateSeedContent,
+  evaluateServerGuards,
+  parseSpeakerVoiceNames,
+} from './validate-seed.mjs';
+
+const __dir = dirname(fileURLToPath(import.meta.url));
+const seedsDir = join(__dir, '..', 'seeds');
+
+const SPEAKERS = new Set(['Leslie', 'Ann', 'Tom']);
+
+/** 최소 유효 payload — 검사 통과 기준선. overrides 로 케이스 변형. */
+function makePayload(overrides = {}) {
+  const expr = (id, oi, sentence, chunks, drillCount = 5) => ({
+    id, sentence, meaning: '뜻', reading: null,
+    phonetic_kr: chunks.map((c) => c[1]).join(' '),
+    order_index: oi,
+    explanation: {
+      key: `${sentence} = 뜻.`,
+      situation: '장면 · 맥락',
+      drills: Array.from({ length: drillCount }, (_, i) => ({ en: `Drill ${i}.`, ko: '뜻', kr: '드릴' })),
+      grammar: [{ struct: '구조', body: '설명' }],
+      chunks,
+      phonemes: [['/ð/', 'that']],
+      mistake: '함정',
+      similar: '대체 표현',
+      category: 'chunk/test',
+      frequency: 7,
+    },
+  });
+  const payload = {
+    _source: { episode: 's1e1', lines: [1, 20] },
+    lang: 'en',
+    date: '2026-06-11',
+    cards: [
+      {
+        id: 'en-parks-s1e1-test-scene',
+        sentence: '테스트 장면', meaning: "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+        reading: null, phonetic_kr: null, order_index: 0,
+        explanation: {
+          sceneTitle: '테스트 장면', sceneSummary: '요약',
+          dialogue: [
+            { speaker: 'Ann', en: 'Alpha line one.', ko: '한 줄' },
+            { speaker: 'Leslie', en: 'Beta line two.', ko: '두 줄' },
+            { speaker: 'Ann', en: 'Gamma line three.', ko: '세 줄' },
+            { speaker: 'Leslie', en: 'Delta line four.', ko: '네 줄' },
+            { speaker: 'Ann', en: 'Epsilon line five.', ko: '다섯 줄' },
+            { speaker: 'Leslie', en: 'Zeta line six.', ko: '여섯 줄' },
+          ],
+        },
+      },
+      expr('en-parks-s1e1-test-a', 1, 'Alpha line one.', [['Alpha line', '알파 라인'], ['one.', '원.']]),
+      expr('en-parks-s1e1-test-b', 2, 'Beta line two.', [['Beta line', '베타 라인'], ['two.', '투.']]),
+      expr('en-parks-s1e1-test-c', 3, 'Gamma line three.', [['Gamma line', '감마 라인'], ['three.', '쓰리.']]),
+      expr('en-parks-s1e1-test-d', 4, 'Delta line four.', [['Delta line', '델타 라인'], ['four.', '포.']]),
+      expr('en-parks-s1e1-test-e', 5, 'Epsilon line five.', [['Epsilon line', '엡실론 라인'], ['five.', '파이브.']]),
+    ],
+  };
+  return { ...payload, ...overrides };
+}
+
+const okOpts = { existingSeeds: [], speakerNames: SPEAKERS };
+
+describe('validateSeedContent — 기준선', () => {
+  it('유효 payload → ok, errors 0', () => {
+    const r = validateSeedContent(makePayload(), okOpts);
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('현행 적재 시드 en-2026-06-10-2.json → 통과 (기존 시드 2종을 existingSeeds 로)', () => {
+    const load = (f) => JSON.parse(readFileSync(join(seedsDir, f), 'utf8'));
+    const payload = load('en-2026-06-10-2.json');
+    const existing = ['en-parks-s1e1.json', 'en-2026-06-10.json'].map((f) => {
+      const p = load(f);
+      return { file: f, ids: new Set(p.cards.map((c) => c.id)), source: p._source ?? null };
+    });
+    const r = validateSeedContent(payload, { existingSeeds: existing, speakerNames: SPEAKERS });
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe('validateSeedContent — 구조', () => {
+  it('scene 카드 부재 → 차단', () => {
+    const p = makePayload();
+    p.cards = p.cards.slice(1);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('scene');
+  });
+
+  it('dialogue 5줄 (<6) → 차단', () => {
+    const p = makePayload();
+    p.cards[0].explanation.dialogue = p.cards[0].explanation.dialogue.slice(0, 5);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+  });
+
+  it('표현 카드 4장 (<5) → 차단', () => {
+    const p = makePayload();
+    p.cards = p.cards.slice(0, 5); // scene + 표현 4
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+  });
+
+  it('8필드 누락 (mistake 없음) → 차단', () => {
+    const p = makePayload();
+    delete p.cards[1].explanation.mistake;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('mistake');
+  });
+});
+
+describe('validateSeedContent — 발음 정합', () => {
+  it('phonetic_kr ≠ chunks kr 이어붙임 → 차단', () => {
+    const p = makePayload();
+    p.cards[1].phonetic_kr = '다른 음차';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
+  it('chunks 가 본문 전단어 미커버 → 차단', () => {
+    const p = makePayload();
+    p.cards[1].explanation.chunks = [['Alpha', '알파']]; // 'line one' 누락
+    p.cards[1].phonetic_kr = '알파';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('chunks');
+  });
+});
+
+describe('validateSeedContent — 다이얼로그 매칭 계약 (deriveDialogue 동일 로직)', () => {
+  it('표현 카드 순서가 dialogue 등장 순서와 어긋남 → 차단', () => {
+    const p = makePayload();
+    const [scene, a, b, ...rest] = p.cards;
+    p.cards = [scene, b, a, ...rest]; // a/b 순서 교환 (order_index 도 교환)
+    p.cards[1].order_index = 1;
+    p.cards[2].order_index = 2;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('매칭');
+  });
+
+  it('sentence 가 어느 줄에도 미포함 → 차단', () => {
+    const p = makePayload();
+    p.cards[1].sentence = 'Nowhere sentence.';
+    p.cards[1].explanation.chunks = [['Nowhere sentence.', '노웨어 센텐스.']];
+    p.cards[1].phonetic_kr = '노웨어 센텐스.';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('매칭');
+  });
+});
+
+describe('validateSeedContent — drills', () => {
+  it('2개 (<3) → 차단 / 9개 (>8) → 차단 / kr 누락 → 차단', () => {
+    const low = makePayload();
+    low.cards[1].explanation.drills = low.cards[1].explanation.drills.slice(0, 2);
+    expect(validateSeedContent(low, okOpts).ok).toBe(false);
+
+    const high = makePayload();
+    high.cards[1].explanation.drills = Array.from({ length: 9 }, (_, i) => ({ en: `D${i}.`, ko: '뜻', kr: '드릴' }));
+    expect(validateSeedContent(high, okOpts).ok).toBe(false);
+
+    const noKr = makePayload();
+    delete noKr.cards[1].explanation.drills[0].kr;
+    expect(validateSeedContent(noKr, okOpts).ok).toBe(false);
+  });
+
+  it('전 표현 카드 drills ≤4 → 경고 (하한 일괄 깔기)', () => {
+    const p = makePayload();
+    for (const c of p.cards.slice(1)) c.explanation.drills = c.explanation.drills.slice(0, 4);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true); // 차단은 아님
+    expect(r.warnings.join(' ')).toContain('하한');
+  });
+});
+
+describe('validateSeedContent — ID·_source', () => {
+  it('기존 시드와 ID 중복 → 차단', () => {
+    const r = validateSeedContent(makePayload(), {
+      existingSeeds: [{ file: 'x.json', ids: new Set(['en-parks-s1e1-test-a']), source: null }],
+      speakerNames: SPEAKERS,
+    });
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('중복');
+  });
+
+  it('_source 누락 → 차단 / 기존 시드와 구간 겹침 → 차단', () => {
+    const noSrc = makePayload();
+    delete noSrc._source;
+    expect(validateSeedContent(noSrc, okOpts).ok).toBe(false);
+
+    const overlap = validateSeedContent(makePayload(), {
+      existingSeeds: [{ file: 'y.json', ids: new Set(), source: { episode: 's1e1', lines: [15, 30] } }],
+      speakerNames: SPEAKERS,
+    });
+    expect(overlap.ok).toBe(false);
+    expect(overlap.errors.join(' ')).toContain('겹침');
+  });
+
+  it('다른 에피소드 같은 구간은 겹침 아님', () => {
+    const r = validateSeedContent(makePayload(), {
+      existingSeeds: [{ file: 'z.json', ids: new Set(), source: { episode: 's1e2', lines: [1, 20] } }],
+      speakerNames: SPEAKERS,
+    });
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe('validateSeedContent — 화자 등록 (TTS)', () => {
+  it('SPEAKER_VOICES 미등록 화자 → 차단', () => {
+    const p = makePayload();
+    p.cards[0].explanation.dialogue[0].speaker = 'Ron';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('Ron');
+  });
+});
+
+describe('validateSeedContent — 비 RealClass payload (generic)', () => {
+  it('ja payload 는 RealClass 검사 skip — id 중복만', () => {
+    const p = {
+      lang: 'ja', date: '2026-06-11',
+      cards: [
+        { id: 'ja-1', sentence: 'あ', meaning: '아' },
+        { id: 'ja-1', sentence: 'い', meaning: '이' },
+      ],
+    };
+    const r = validateSeedContent(p, { existingSeeds: [], speakerNames: SPEAKERS });
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('중복');
+    const ok = validateSeedContent({ ...p, cards: [p.cards[0]] }, { existingSeeds: [], speakerNames: SPEAKERS });
+    expect(ok.ok).toBe(true);
+  });
+});
+
+describe('evaluateServerGuards — 서버 게이트 (순수)', () => {
+  const ids = new Set(['a', 'b']);
+
+  it('서버 빈 상태 → 통과', () => {
+    expect(evaluateServerGuards({ serverRows: [], payloadIds: ids }).ok).toBe(true);
+  });
+
+  it('같은 (lang,date) 에 payload 외 id 존재 → 차단 (1일 1장면)', () => {
+    const r = evaluateServerGuards({ serverRows: [{ id: 'other', completed: false }], payloadIds: ids });
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('1일 1장면');
+  });
+
+  it('payload id 중 completed=true 존재 → 차단 (학습 시작 후 재INSERT 금지)', () => {
+    const r = evaluateServerGuards({ serverRows: [{ id: 'a', completed: true }], payloadIds: ids });
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('completed');
+  });
+
+  it('같은 id 재적재 (completed=false) → 통과 (학습 전 보강)', () => {
+    const r = evaluateServerGuards({ serverRows: [{ id: 'a', completed: false }], payloadIds: ids });
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe('parseSpeakerVoiceNames — speech.js 소스 파싱', () => {
+  it('실제 speech.js 에서 Leslie/Ann/Tom 추출', () => {
+    const src = readFileSync(join(__dir, '..', 'src', 'services', 'speech.js'), 'utf8');
+    const names = parseSpeakerVoiceNames(src);
+    expect(names.has('Leslie')).toBe(true);
+    expect(names.has('Ann')).toBe(true);
+    expect(names.has('Tom')).toBe(true);
+  });
+});

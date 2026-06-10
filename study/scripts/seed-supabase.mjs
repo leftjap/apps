@@ -36,7 +36,15 @@
  * 의존성: 0개 (Node 22 fetch 내장 사용 — 추가 패키지 install 안 함).
  */
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, basename } from 'node:path';
 import { argv, env, exit } from 'node:process';
+import {
+  validateSeedContent,
+  evaluateServerGuards,
+  parseSpeakerVoiceNames,
+  loadExistingSeeds,
+} from './validate-seed.mjs';
 
 function parseArgs(args) {
   const out = { dryRun: false };
@@ -96,6 +104,13 @@ async function selectCount(supabaseUrl, serviceKey, userId, lang, date) {
   return Number.isFinite(total) ? total : 0;
 }
 
+// 같은 (user, lang, date) 의 { id, completed } 행 — validate-seed 서버 게이트 입력
+async function selectRows(supabaseUrl, serviceKey, userId, lang, date) {
+  const path = `/study_today_lessons?select=id,completed&user_id=eq.${userId}&lang=eq.${lang}&date=eq.${date}`;
+  const { text } = await rest(supabaseUrl, serviceKey, path, { method: 'GET' });
+  return JSON.parse(text);
+}
+
 async function upsertRows(supabaseUrl, serviceKey, rows) {
   const path = '/study_today_lessons?on_conflict=id';
   const { text } = await rest(supabaseUrl, serviceKey, path, {
@@ -120,10 +135,35 @@ async function main() {
   const payload = JSON.parse(readFileSync(args.payload, 'utf8'));
   validatePayload(payload);
 
+  // 콘텐츠 게이트 (validate-seed.mjs — guide §6.3 체크리스트 기계화: 구조·발음 정합·
+  // 다이얼로그 매칭 계약·drills·ID/_source 겹침·화자 TTS 등록). 실패 시 INSERT 차단.
+  const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const existingSeeds = loadExistingSeeds(join(rootDir, 'seeds'), basename(args.payload));
+  const speechSrc = readFileSync(join(rootDir, 'src', 'services', 'speech.js'), 'utf8');
+  const content = validateSeedContent(payload, {
+    existingSeeds,
+    speakerNames: parseSpeakerVoiceNames(speechSrc),
+  });
+  for (const w of content.warnings) console.warn(`[seed] WARN: ${w}`);
+  if (!content.ok) {
+    for (const e of content.errors) console.error(`[seed] BLOCKED: ${e}`);
+    throw new Error(`content validation failed (${content.errors.length} errors)`);
+  }
+
   console.log(`[seed] lang=${payload.lang} date=${payload.date} count=${payload.cards.length} user=${args.userId} dryRun=${args.dryRun}`);
 
-  const preCount = await selectCount(supabaseUrl, serviceKey, args.userId, payload.lang, payload.date);
-  console.log(`[seed] existing rows for (user, lang, date): ${preCount}`);
+  const preRows = await selectRows(supabaseUrl, serviceKey, args.userId, payload.lang, payload.date);
+  console.log(`[seed] existing rows for (user, lang, date): ${preRows.length}`);
+
+  // 서버 게이트: 1일 1장면 (같은 날 다른 그룹 차단) + completed 게이트 (학습 시작 후 재INSERT 차단)
+  const guards = evaluateServerGuards({
+    serverRows: preRows,
+    payloadIds: new Set(payload.cards.map((c) => c.id)),
+  });
+  if (!guards.ok) {
+    for (const e of guards.errors) console.error(`[seed] BLOCKED: ${e}`);
+    throw new Error(`server guard failed (${guards.errors.length} errors)`);
+  }
 
   if (args.dryRun) {
     console.log('[seed] dry-run — INSERT skipped');
