@@ -1727,7 +1727,10 @@ function renderFooterPills(doc, session, currentBlock) {
     const progress = blockProgressText(block, state);
     return renderFooterPillHtml({ blockIdx: i, state, name, progress });
   }).join('');
-  pillsEl.innerHTML = html;
+  // 중앙 정렬용 양끝 spacer — 기존 padding-inline:50% 는 border-box 최소폭을 컨테이너 폭으로
+  // 강제해 추가(+) 버튼을 뷰포트 밖으로 밀어냄 (P1 재검증 발견). overflow 로만 흐르는 flex
+  // spacer 로 대체 — 레이아웃 폭에 기여하지 않아 + 버튼이 항상 보임.
+  pillsEl.innerHTML = `<span aria-hidden="true" style="flex:0 0 50%;"></span>${html}<span aria-hidden="true" style="flex:0 0 50%;"></span>`;
   // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel).
   // scrollIntoView({ inline: 'center' }) 가 iOS Safari PWA 등 일부 환경에서 동작 불완전 →
   // 직접 scrollLeft 계산 + scrollTo 호출로 호환성 보장. rAF 로 layout 완료 후 paint frame 에서 호출.
@@ -2314,7 +2317,9 @@ function setupKeypadChrome(doc, field, prefill) {
   if (quick) quick.style.display = field === 'weight' ? 'flex' : 'none';
   if (ref) {
     if (prefill != null && Number.isFinite(prefill)) {
-      ref.innerHTML = `직전 <b>${escapeHtml(String(prefill))}${escapeHtml(unitText)}</b>`;
+      // 시안(session-keypad.html) ref 줄 — weight 모드는 탭존 증감 힌트 동반.
+      const hint = field === 'weight' ? ' · 탭존으로도 ±2.5' : '';
+      ref.innerHTML = `직전 <b>${escapeHtml(String(prefill))}${escapeHtml(unitText)}</b>${hint}`;
     } else {
       ref.textContent = '';
     }

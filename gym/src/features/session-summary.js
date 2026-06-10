@@ -160,10 +160,11 @@ function formatReceiptDate(session) {
 }
 
 function buildReceiptNo(session) {
-  if (!session?.id) return 'SESSION RECEIPT';
+  // 시안(summary-paper.html:65) 카피 — "SESSION · #0142" (RECEIPT 단어 없음).
+  if (!session?.id) return 'SESSION';
   const tail = String(session.id).match(/(\d{4,})$/);
   const num = tail ? tail[1].slice(-4) : String(session.id).slice(-4);
-  return `SESSION RECEIPT · #${num}`;
+  return `SESSION · #${num}`;
 }
 
 function renderExRow(ex) {
