@@ -1,7 +1,7 @@
 // 왓챠 import 저장 — 멱등성(재업로드 시 중복 생성 0)과 soft-deleted 부활이 핵심 데이터 불변식.
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { createTasteDB } from '../db/schema.js';
+import { createPickDB } from '../db/schema.js';
 import { saveRows } from './import.js';
 import { listRatings, softDeleteRating, getRating } from '../db/queries.js';
 
@@ -12,7 +12,7 @@ const PARSED = [
 ];
 
 describe('import saveRows', () => {
-  beforeEach(() => { globalThis.tasteDB = createTasteDB('taste_import_test_' + Math.random()); });
+  beforeEach(() => { globalThis.pickDB = createPickDB('pick_import_test_' + Math.random()); });
 
   it('첫 실행: 전부 create', async () => {
     const r = await saveRows('u1', PARSED);
@@ -24,7 +24,7 @@ describe('import saveRows', () => {
     await saveRows('u1', PARSED);
     const r2 = await saveRows('u1', PARSED);
     expect(r2).toEqual({ created: 0, updated: 3 });
-    expect(await globalThis.tasteDB.ratings.where('owner_id').equals('u1').count()).toBe(3);
+    expect(await globalThis.pickDB.ratings.where('owner_id').equals('u1').count()).toBe(3);
   });
 
   it('앱에서 평가 해제한 작품 재import: 부활 재사용 (신규 행 생성 안 함 — 서버 23505 방지)', async () => {
@@ -35,7 +35,7 @@ describe('import saveRows', () => {
     expect(r2).toEqual({ created: 0, updated: 1 });
     const revived = await getRating('u1', 'movie', '기생충', 2019);
     expect(revived?.id).toBe(ex.id);
-    expect(await globalThis.tasteDB.ratings.where('owner_id').equals('u1').count()).toBe(3);
+    expect(await globalThis.pickDB.ratings.where('owner_id').equals('u1').count()).toBe(3);
   });
 
   it('onProgress: 마지막에 (done, total) 보고', async () => {
@@ -48,6 +48,6 @@ describe('import saveRows', () => {
     let n = 0;
     const r = await saveRows('u1', PARSED, null, () => n++ >= 1);   // 1행 처리 후 중단
     expect(r.created).toBe(1);
-    expect(await globalThis.tasteDB.ratings.where('owner_id').equals('u1').count()).toBe(1);
+    expect(await globalThis.pickDB.ratings.where('owner_id').equals('u1').count()).toBe(1);
   });
 });

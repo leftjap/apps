@@ -1,4 +1,4 @@
-// taste 검색 오버레이(1급) — design-ref/source/app/main.jsx SearchOverlay 포팅(바닐라).
+// pick 검색 오버레이(1급) — design-ref/source/app/main.jsx SearchOverlay 포팅(바닐라).
 // 결과 = 로컬 평가 작품 + 알라딘 책(신규 추가). 영화 라이브 검색은 Wave 2(TMDB).
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString } from '../ui/poster.js';
@@ -78,8 +78,8 @@ export function openSearch({ userId } = {}) {
         ali = (await Aladin.searchBooks(q, { max: 8 })).filter((b) => b.isbn && !ratedIsbn.has(b.isbn));
       } catch (e) { /* 알라딘 실패 무시 */ }
     }
-    window.__tasteOpen = window.__tasteOpen || {};
-    ali.forEach((b) => { window.__tasteOpen['isbn:' + b.isbn] = { media_type: 'book', title: b.title, year: b.year, external_id: b.isbn, meta: { author: b.author, publisher: b.publisher, poster_url: b.coverUrl, sub: b.sub } }; });
+    window.__pickOpen = window.__pickOpen || {};
+    ali.forEach((b) => { window.__pickOpen['isbn:' + b.isbn] = { media_type: 'book', title: b.title, year: b.year, external_id: b.isbn, meta: { author: b.author, publisher: b.publisher, poster_url: b.coverUrl, sub: b.sub } }; });
 
     const rows = [
       ...loc.map((r) => ({ id: r.id, mtype: r.media_type, title: r.title, sub: subOf(r), kind: r.media_type === 'movie' && r.meta?.subtype === 'tv' ? '드라마' : null })),

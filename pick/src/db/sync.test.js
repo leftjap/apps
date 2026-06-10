@@ -2,7 +2,7 @@
 // 재현: 평가 해제(소프트삭제 동기화됨) 후 재평가 → 신규 로컬 행 upsert 가 409(23505) 영구 재시도 루프.
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import 'fake-indexeddb/auto';
-import { createTasteDB } from './schema.js';
+import { createPickDB } from './schema.js';
 
 // supabase 모듈 모킹 — 테스트별 핸들러 주입.
 const h = { upsert: null, select: null, update: null };
@@ -35,12 +35,12 @@ const SRV = {
 
 describe('pushRating 23505 reconcile', () => {
   beforeEach(() => {
-    globalThis.tasteDB = createTasteDB('taste_sync_test_' + Math.random());
+    globalThis.pickDB = createPickDB('pick_sync_test_' + Math.random());
     h.upsert = null; h.select = null; h.update = null;
   });
 
   it('upsert 23505 → 서버 행 채택: 로컬 dup 삭제 + (로컬 최신) 서버 update + pending 해제', async () => {
-    const db = globalThis.tasteDB;
+    const db = globalThis.pickDB;
     // 로컬: 재평가로 만들어진 신규 행 (서버 soft-deleted 행과 키 충돌)
     const local = {
       id: '06807f50-05b4-4175-89d2-1ef3a049382d', owner_id: 'u1', media_type: 'movie', title: '그대들', year: 2023,
@@ -73,7 +73,7 @@ describe('pushRating 23505 reconcile', () => {
   });
 
   it('upsert 23505 + 서버가 더 최신 → 서버 값 채택(update 미호출)', async () => {
-    const db = globalThis.tasteDB;
+    const db = globalThis.pickDB;
     const local = {
       id: 'bbbbbbbb-0000-0000-0000-000000000002', owner_id: 'u1', media_type: 'movie', title: '그대들', year: 2023,
       rating: 2, source: 'app', rated_at: '2026-06-07T00:00:00.000Z', meta: {},
@@ -94,7 +94,7 @@ describe('pushRating 23505 reconcile', () => {
   });
 
   it('upsert 일반 오류 → pending 유지 (기존 동작 회귀 없음)', async () => {
-    const db = globalThis.tasteDB;
+    const db = globalThis.pickDB;
     await db.ratings.add({
       id: 'aaaaaaaa-0000-0000-0000-000000000001', owner_id: 'u1', media_type: 'book', title: 'b', year: 2020,
       rating: 3, source: 'app', rated_at: null, meta: {}, created_at: 'x', updated_at: 'x', deleted_at: null, pending_sync: 1,
@@ -111,27 +111,27 @@ describe('pullTable 페이지네이션·replace', () => {
   const recoRow = (id, owner) => ({ id, owner_id: owner, media_type: 'movie', title: id, kind: 'home' });
 
   beforeEach(() => {
-    globalThis.tasteDB = createTasteDB('taste_pull_test_' + Math.random());
+    globalThis.pickDB = createPickDB('pick_pull_test_' + Math.random());
     h.upsert = null; h.select = null; h.update = null;
   });
 
   it('1500행: range 페이지 2회로 전량 적재', async () => {
     const ranges = [];
     h.select = (ctx) => {
-      if (ctx.table === 'taste_recommendations') return { data: [], error: null };
+      if (ctx.table === 'pick_recommendations') return { data: [], error: null };
       ranges.push(ctx.range);
       const [from] = ctx.range;
       const rows = [];
       for (let i = from; i < Math.min(from + 1000, 1500); i++) rows.push(ratingRow(i));
       return { data: rows, error: null };
     };
-    await pullAll(globalThis.tasteDB, 'u1');
+    await pullAll(globalThis.pickDB, 'u1');
     expect(ranges).toEqual([[0, 999], [1000, 1999]]);
-    expect(await globalThis.tasteDB.ratings.count()).toBe(1500);
+    expect(await globalThis.pickDB.ratings.count()).toBe(1500);
   });
 
   it('replace 모드: owner 행만 새 스냅샷으로 교체, 타 owner 행 보존', async () => {
-    const db = globalThis.tasteDB;
+    const db = globalThis.pickDB;
     await db.recommendations.bulkPut([recoRow('stale-1', 'u1'), recoRow('stale-2', 'u1'), recoRow('other-1', 'u2')]);
     h.select = () => ({ data: [recoRow('fresh-1', 'u1')], error: null });
     await pullRecommendations('u1');
@@ -140,7 +140,7 @@ describe('pullTable 페이지네이션·replace', () => {
   });
 
   it('select 오류: 기존 행 보존 (replace delete 미실행 — 빈 추천 화면 방지)', async () => {
-    const db = globalThis.tasteDB;
+    const db = globalThis.pickDB;
     await db.recommendations.bulkPut([recoRow('keep-1', 'u1'), recoRow('keep-2', 'u1')]);
     h.select = () => ({ data: null, error: { message: 'network' } });
     await pullRecommendations('u1');
@@ -148,7 +148,7 @@ describe('pullTable 페이지네이션·replace', () => {
   });
 
   it('bulkPut 실패(불량 행): 트랜잭션 롤백 — replace delete 가 단독 적용돼 빈 추천이 되는 것 방지', async () => {
-    const db = globalThis.tasteDB;
+    const db = globalThis.pickDB;
     await db.recommendations.bulkPut([recoRow('keep-1', 'u1'), recoRow('keep-2', 'u1')]);
     h.select = () => ({ data: [{ owner_id: 'u1', title: 'id 없는 불량 행' }], error: null });   // &id 키 부재 → bulkPut throw
     await expect(pullRecommendations('u1')).rejects.toThrow();

@@ -1,4 +1,4 @@
-// taste 앱 셸 + view-state 라우터. design-ref/source/app/main.jsx App 포팅(바닐라).
+// pick 앱 셸 + view-state 라우터. design-ref/source/app/main.jsx App 포팅(바닐라).
 // Wave 1: 라우트 home/detail(단일 작품)/import/library + 검색 오버레이 + 계정 메뉴.
 // (경로 스택·갈래 trail·분석 연출은 Wave 2.)
 import { el, clear } from './ui/dom.js';
@@ -12,10 +12,15 @@ import * as Library from './features/library.js';
 import { openSearch } from './features/search.js';
 
 let _userId = null;
+let _userInitial = 'P';
 let _bound = false;
 let _keysBound = false;
 
-export function setRouterUser(id) { _userId = id || null; }
+// email 첫 글자 = 아바타 영문 이니셜 (leftjap→L, soyoun312→S). 미상 시 앱 이니셜 P.
+export function setRouterUser(id, email) {
+  _userId = id || null;
+  _userInitial = (String(email || '').trim()[0] || 'P').toUpperCase();
+}
 
 // 갈래 경로 스택(정본 main.jsx:122-134 path) — [{id, title}]. 신규 열기=리셋, 갈래 클릭=append, 브레드크럼=자르기.
 let _trail = [];
@@ -100,7 +105,7 @@ function topbar(v) {
 
 function accountMenu() {
   const wrap = el('div', { class: 'account' });
-  const avatar = el('button', { class: 'avatar', 'aria-label': '계정 메뉴' }, '나');
+  const avatar = el('button', { class: 'avatar', 'aria-label': '계정 메뉴' }, _userInitial);
   let menu = null;
   const close = () => {
     if (!menu) return;
@@ -116,7 +121,7 @@ function accountMenu() {
     const sub = el('span', { class: 'menu__sub' }, '브랜치 탐색');
     menu = el('div', { class: 'menu', role: 'menu' },
       el('div', { class: 'menu__head' },
-        el('span', { class: 'avatar avatar--sm' }, '나'),
+        el('span', { class: 'avatar avatar--sm' }, _userInitial),
         el('div', { class: 'menu__id' }, el('span', { class: 'menu__name' }, '내 서재'), sub)),
       el('div', { class: 'menu__sep' }),
       item('평가 가져오기', () => { location.hash = '#/import'; }),

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 작품별 갈래 백필 — ★threshold+ 평가작 중 아직 갈래 없는 작품에 branch 요청을 큐잉.
- * 데몬(taste-reco-daemon)이 직렬로 1개씩 생성한다(작품당 ~3분). idempotent:
+ * 데몬(pick-reco-daemon)이 직렬로 1개씩 생성한다(작품당 ~3분). idempotent:
  * 이미 갈래 있는 작품은 건너뜀 → 데몬 재시작으로 큐가 비어도 다시 실행하면 남은 것만 이어감.
  *
  * 사용:  node scripts/backfill-branches.mjs [threshold] [limit]
@@ -17,7 +17,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
-const OWNER = process.env.TASTE_OWNER_ID || '7bae5645-61c6-4476-9ff2-4c30a72812ff';
+const OWNER = process.env.PICK_OWNER_ID || '7bae5645-61c6-4476-9ff2-4c30a72812ff';
 const THRESHOLD = Number(process.argv[2]) || 4.5;
 const LIMIT = process.argv[3] ? Number(process.argv[3]) : Infinity;
 
@@ -48,9 +48,9 @@ async function readAll(table, cols, filt) {
   return all;
 }
 
-const ratings = await readAll('taste_ratings', 'title,year,rating,deleted_at', (q) => q.eq('owner_id', OWNER));
-const recos = await readAll('taste_recommendations', 'kind,source_work', (q) => q.eq('owner_id', OWNER).eq('kind', 'branch'));
-const pendingReq = await readAll('taste_reco_requests', 'kind,source_work', (q) => q.eq('owner_id', OWNER).eq('kind', 'branch'));
+const ratings = await readAll('pick_ratings', 'title,year,rating,deleted_at', (q) => q.eq('owner_id', OWNER));
+const recos = await readAll('pick_recommendations', 'kind,source_work', (q) => q.eq('owner_id', OWNER).eq('kind', 'branch'));
+const pendingReq = await readAll('pick_reco_requests', 'kind,source_work', (q) => q.eq('owner_id', OWNER).eq('kind', 'branch'));
 
 const haveBranch = new Set(recos.map((r) => r.source_work));
 const queued = new Set(pendingReq.map((r) => r.source_work));
@@ -66,8 +66,8 @@ if (!todo.length) { console.log('큐잉할 것 없음 — 모두 생성됨/대�
 
 const rows = todo.map((sw) => ({ owner_id: OWNER, source: 'backfill', kind: 'branch', source_work: sw }));
 for (let i = 0; i < rows.length; i += 200) {
-  const { error } = await sb.from('taste_reco_requests').insert(rows.slice(i, i + 200));
+  const { error } = await sb.from('pick_reco_requests').insert(rows.slice(i, i + 200));
   if (error) { console.error('insert err:', error.message); process.exit(1); }
 }
-console.log(`큐잉 완료: ${rows.length}개. 데몬이 순차 생성. 진행: tail -f ~/.local/state/taste-reco-daemon/stdout.log`);
+console.log(`큐잉 완료: ${rows.length}개. 데몬이 순차 생성. 진행: tail -f ~/.local/state/pick-reco-daemon/stdout.log`);
 console.log('재시작으로 큐 유실 시 이 스크립트 재실행하면 남은 것만 이어감(idempotent).');

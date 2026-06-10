@@ -1,5 +1,5 @@
-// taste 홈(메인 추천 피드) — Featured 추천(taste_recommendations) 트랙 + 최근 평가(Dexie).
-// §7 연출: '다시 추천' 버튼 → taste_reco_requests insert → 로컬 데몬이 claude 재생성 → realtime 새 batch 도착 시 교체.
+// pick 홈(메인 추천 피드) — Featured 추천(pick_recommendations) 트랙 + 최근 평가(Dexie).
+// §7 연출: '다시 추천' 버튼 → pick_reco_requests insert → 로컬 데몬이 claude 재생성 → realtime 새 batch 도착 시 교체.
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString, dot } from '../ui/poster.js';
 import { Queries } from '../db/queries.js';
@@ -9,7 +9,7 @@ import { Sync } from '../db/sync.js';
 import { trailReset, onViewTeardown } from '../app.js';
 
 async function readRecos(userId) {
-  const db = globalThis.tasteDB;
+  const db = globalThis.pickDB;
   if (!db || !userId) return [];
   try {
     const all = await db.recommendations.where('owner_id').equals(userId).toArray();
@@ -22,10 +22,10 @@ function ratedKeyOf(media_type, title, year) {
   return `${media_type}|${String(title || '').trim().toLowerCase()}|${year ?? ''}`;
 }
 
-// 추천작은 미평가작 → 상세에서 바로 평가할 수 있게 __tasteOpen 으로 전달 후 이동.
+// 추천작은 미평가작 → 상세에서 바로 평가할 수 있게 __pickOpen 으로 전달 후 이동.
 function openReco(r) {
-  window.__tasteOpen = window.__tasteOpen || {};
-  window.__tasteOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
+  window.__pickOpen = window.__pickOpen || {};
+  window.__pickOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
   trailReset(r.id, r.title);   // 신규 열기 — 갈래 경로 리셋
   location.hash = '#/w/' + encodeURIComponent(r.id);
 }
@@ -86,7 +86,7 @@ export function mount({ userId } = {}) {
     note.append(document.createTextNode('지금까지 '), el('b', {}, `${all.length}편`), document.createTextNode(' 평가했어요.'));
   }
 
-  // '다시 추천' 버튼 — taste_reco_requests 에 요청 1줄 insert(로컬 데몬 트리거). 평가가 있을 때만 노출.
+  // '다시 추천' 버튼 — pick_reco_requests 에 요청 1줄 insert(로컬 데몬 트리거). 평가가 있을 때만 노출.
   function regenButton() {
     if (!all.length || !supabase) return null;
     return el('button', { class: 'btn btn--sm', disabled: analyzing ? '' : null, onClick: requestReco },
@@ -97,8 +97,8 @@ export function mount({ userId } = {}) {
     if (!supabase || !userId || analyzing) return;
     analyzing = true; renderReco();
     try {
-      // 로컬 데몬이 realtime 으로 이 행을 즉시 감지 → claude 가 재생성 → taste_recommendations 변경 realtime 도착 시 해제.
-      const { error } = await supabase.from('taste_reco_requests').insert({ owner_id: userId, source: 'button' });
+      // 로컬 데몬이 realtime 으로 이 행을 즉시 감지 → claude 가 재생성 → pick_recommendations 변경 realtime 도착 시 해제.
+      const { error } = await supabase.from('pick_reco_requests').insert({ owner_id: userId, source: 'button' });
       if (error) throw error;
       // 생성은 수십 초~수 분 걸릴 수 있음. 정상 해제는 realtime(onRecoChange). 폴백 재pull 은 5분 후 1회.
       fallbackTimer = setTimeout(() => { if (analyzing) onRecoChange(); }, 300000);
@@ -167,7 +167,7 @@ export function mount({ userId } = {}) {
   // realtime: 추천 변경(새 batch) 도착 → 재pull + 분석중 해제 + 재렌더 (§7 실 비동기).
   async function onRecoChange() {
     if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
-    try { await Sync.pullAll(globalThis.tasteDB, userId); } catch (e) { /* noop */ }
+    try { await Sync.pullAll(globalThis.pickDB, userId); } catch (e) { /* noop */ }
     recos = await readRecos(userId);
     analyzing = false;
     renderReco();
@@ -176,8 +176,8 @@ export function mount({ userId } = {}) {
     if (!supabase || !userId) return;
     try { if (_recoChannel) supabase.removeChannel(_recoChannel); } catch (e) { /* noop */ }
     _recoChannel = supabase
-      .channel('taste-recos-' + userId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'taste_recommendations', filter: 'owner_id=eq.' + userId }, onRecoChange)
+      .channel('pick-recos-' + userId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pick_recommendations', filter: 'owner_id=eq.' + userId }, onRecoChange)
       .subscribe();
   }
 

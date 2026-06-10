@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { createTasteDB } from './schema.js';
+import { createPickDB } from './schema.js';
 import { createRating, updateRating, softDeleteRating, getRating, getRatingAny, listRatings } from './queries.js';
 
 describe('rating queries', () => {
-  beforeEach(() => { globalThis.tasteDB = createTasteDB('taste_test_' + Math.random()); });
+  beforeEach(() => { globalThis.pickDB = createPickDB('pick_test_' + Math.random()); });
 
   it('createRating: owner_id 필수, id/ts 자동, pending_sync=1', async () => {
     const r = await createRating({ owner_id: 'u1', media_type: 'book', title: '데미안', year: 1919, rating: 4.5, source: 'app' });
@@ -79,7 +79,7 @@ describe('rating queries', () => {
     const revived = await getRatingAny('u1', 'movie', '왕복', 2024);
     await updateRating(revived.id, { rating: 3.5, deleted_at: null });
     expect((await listRatings('u1')).filter((x) => x.title === '왕복')).toHaveLength(1);
-    expect(await globalThis.tasteDB.ratings.where('owner_id').equals('u1').count()).toBe(1);
+    expect(await globalThis.pickDB.ratings.where('owner_id').equals('u1').count()).toBe(1);
     expect((await getRating('u1', 'movie', '왕복', 2024)).rating).toBe(3.5);
   });
 });

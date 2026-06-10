@@ -1,4 +1,4 @@
-/* AccountMenu — 헤더 우상단 계정 드롭다운 (taste 패턴 참조).
+/* AccountMenu — 헤더 우상단 계정 드롭다운 (pick 패턴 참조).
    이메일 표시 + 표시 설정(Tweaks) + 로그아웃. cue 의 기존 auth.js(getUser/signOut) 사용.
    ⚠️ getUser()는 onAuthStateChange 콜백 밖(마운트 effect)에서 호출 → auth 락 데드락 없음. */
 import React, { useState, useEffect, useRef } from 'react';

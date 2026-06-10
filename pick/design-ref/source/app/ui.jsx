@@ -1,4 +1,4 @@
-/* taste — 공용 UI 컴포넌트. window로 export. */
+/* pick — 공용 UI 컴포넌트. window로 export. */
 const { useState } = React;
 
 /* 포스터/표지 플레이스홀더 — 저채도 색 한 점 + 모노 라벨. 직접 그린 이미지 금지 규칙 준수. */

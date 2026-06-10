@@ -1,14 +1,14 @@
-# Taste Wave 1 구현 플랜 — 파운데이션 + 디자인 셸 + 평가 루프
+# Pick Wave 1 구현 플랜 — 파운데이션 + 디자인 셸 + 평가 루프
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 >
-> **갱신 2026-06-05**: 디자인 핸드오프(`taste/design-ref/`) 정본 반영. UI는 React 프로토타입을 **바닐라 JS로 포팅**. 추천 피드·갈래는 Wave 2 엔진 → Wave 1은 **빈 상태**로 둔다. (구 플랜의 `#/ratings` 탭·placeholder UI 폐기.)
+> **갱신 2026-06-05**: 디자인 핸드오프(`pick/design-ref/`) 정본 반영. UI는 React 프로토타입을 **바닐라 JS로 포팅**. 추천 피드·갈래는 Wave 2 엔진 → Wave 1은 **빈 상태**로 둔다. (구 플랜의 `#/ratings` 탭·placeholder UI 폐기.)
 
 **Goal:** 지오가 로그인해 — 책은 **알라딘 검색**으로, 영화는 **왓챠 CSV**로 — 작품을 찾아 **작품 상세 허브의 별점(0.5단위, 0.5★=비추)** 으로 평가하고 Supabase에 개인 격리로 저장하는, 디자인 충실한 working PWA. 추천 Featured·트랙·갈래는 **빈 상태**(Wave 2 엔진이 채움).
 
-**Architecture:** `today`의 빌드·인증·Dexie·sync 인프라를 미러하되 partner/공유 로직 제거(`owner_id = auth.uid()` 개인 격리). UI는 `taste/design-ref/source`(taste.html 토큰·CSS + ui/home/detail/main jsx)를 **바닐라 JS(`el` 기반)로 포팅**. 라우팅은 디자인의 view-state(`{name, path[]}`)를 hash(`#/`, `#/w/:id`, `#/import`, `#/library`)에 매핑 + **검색 오버레이(1급, 라우트 아님)**. 알라딘은 `book`에서 재사용.
+**Architecture:** `today`의 빌드·인증·Dexie·sync 인프라를 미러하되 partner/공유 로직 제거(`owner_id = auth.uid()` 개인 격리). UI는 `pick/design-ref/source`(pick.html 토큰·CSS + ui/home/detail/main jsx)를 **바닐라 JS(`el` 기반)로 포팅**. 라우팅은 디자인의 view-state(`{name, path[]}`)를 hash(`#/`, `#/w/:id`, `#/import`, `#/library`)에 매핑 + **검색 오버레이(1급, 라우트 아님)**. 알라딘은 `book`에서 재사용.
 
-**Tech Stack:** 바닐라 JS(ES Modules), Vite 6 + vite-plugin-pwa, @supabase/supabase-js, Dexie, Vitest, Playwright. 폰트 3종(Pretendard / Noto Serif KR / JetBrains Mono). 참조 spec: `taste/specs/taste-app-spec.md`. 디자인 정본: `taste/design-ref/`.
+**Tech Stack:** 바닐라 JS(ES Modules), Vite 6 + vite-plugin-pwa, @supabase/supabase-js, Dexie, Vitest, Playwright. 폰트 3종(Pretendard / Noto Serif KR / JetBrains Mono). 참조 spec: `pick/specs/pick-app-spec.md`. 디자인 정본: `pick/design-ref/`.
 
 ---
 
@@ -24,16 +24,16 @@
 ## File Structure (생성/수정 파일 맵)
 
 ```
-taste/
-  package.json              T1  name=taste, today deps 미러
-  vite.config.js            T1  base /apps/taste/, port 5177/4177, PWA, /api/aladin proxy
+pick/
+  package.json              T1  name=pick, today deps 미러
+  vite.config.js            T1  base /apps/pick/, port 5177/4177, PWA, /api/aladin proxy
   playwright.config.js      T1  port 4177
-  index.html                T1  #loadingScreen + #app, title Taste, 폰트 3종 link
+  index.html                T1  #loadingScreen + #app, title Pick, 폰트 3종 link
   .env.local                T1  VITE_SUPABASE_*, ALADIN_TTB_KEY (gitignore)
   .gitignore                T1
   public/manifest.webmanifest, icons/  T1
   src/
-    styles/taste.css        T2  ★디자인★ design-ref taste.html <style> 토큰·전역·셸·오버레이·포스터·별점·홈·상세·갈래·반응형 그대로
+    styles/pick.css        T2  ★디자인★ design-ref pick.html <style> 토큰·전역·셸·오버레이·포스터·별점·홈·상세·갈래·반응형 그대로
     ui/dom.js               T2  book 복사 (el/clear/frag/escapeHtml — 순수)
     ui/rating.js            T6  ★디자인★ StarRating (0.5 half-hit, clip-path, isPan 비추) + ratingLabel(보조)
     ui/rating.test.js       T6  ★디자인★ starFill/isPan/ratingLabel TDD
@@ -50,7 +50,7 @@ taste/
     db/sync.js              T5  ★신규★ TABLE_MAP 2개, filterColumn owner_id
     app.js                  T7  ★디자인★ view-state {name,path[]} 라우터 + 셸(상단바·계정메뉴) + ⌘K
     ui/login.js             T7  ★신규★ 로그인 카드 (today app.js 축약)
-    main.js                 T7  today 부트스트랩 미러 + import './styles/taste.css'
+    main.js                 T7  today 부트스트랩 미러 + import './styles/pick.css'
     features/detail.js      T8  ★디자인★ 작품 상세 허브 (rail+줄거리+갈래빈+ratebox)
     features/home.js        T9  ★디자인★ 홈 피드 (인트로+세그먼트+Featured빈+트랙빈+최근)
     features/search.js      T10 ★디자인★ 검색 오버레이 (로컬+알라딘 책) — 셸이 mount
@@ -58,31 +58,31 @@ taste/
     features/library.js     T12 ★디자인★ 내 서재 전체 평점 목록 (#/library)
     lib/watcha.js           T11 ★신규★ CSV 파서
     lib/watcha.test.js      T11 ★신규★ TDD
-  supabase/migrations/0001_taste_init.sql  T3.5 ★신규★ (지오 적용)
+  supabase/migrations/0001_pick_init.sql  T3.5 ★신규★ (지오 적용)
 ```
 
-> **포팅 원칙(전 디자인 Task 공통)**: React 컴포넌트(`design-ref/source/app/*.jsx`)를 `el()`-기반 바닐라로 옮긴다. **CSS 클래스명·DOM 구조·수치는 그대로**(taste.css가 정본). React `useState`는 클로저 지역 상태 + 재렌더 함수로, props는 함수 인자로 치환. `tweaks-panel.jsx`는 시안 전용 → **이식 안 함**(디자인 §12 기본값만 적용).
+> **포팅 원칙(전 디자인 Task 공통)**: React 컴포넌트(`design-ref/source/app/*.jsx`)를 `el()`-기반 바닐라로 옮긴다. **CSS 클래스명·DOM 구조·수치는 그대로**(pick.css가 정본). React `useState`는 클로저 지역 상태 + 재렌더 함수로, props는 함수 인자로 치환. `tweaks-panel.jsx`는 시안 전용 → **이식 안 함**(디자인 §12 기본값만 적용).
 
 ---
 
 ## Task 1: 프로젝트 스캐폴딩
 
-**Files:** `taste/package.json`, `vite.config.js`, `playwright.config.js`, `index.html`, `.env.local`, `.gitignore`, `public/`
+**Files:** `pick/package.json`, `vite.config.js`, `playwright.config.js`, `index.html`, `.env.local`, `.gitignore`, `public/`
 
 - [ ] **Step 1: today 설정 파일 복사 후 치환**
 
 ```bash
 cd ~/apps
-cp today/package.json today/vite.config.js today/playwright.config.js today/index.html taste/
-cp -r today/public taste/public   # manifest, icons, cat-loading.jpg
+cp today/package.json today/vite.config.js today/playwright.config.js today/index.html pick/
+cp -r today/public pick/public   # manifest, icons, cat-loading.jpg
 ```
 
-- [ ] **Step 2: package.json 치환** — L2 `"name": "today"` → `"name": "taste"`. (deps/devDeps/scripts/`pnpm.onlyBuiltDependencies:["esbuild"]` 그대로.)
+- [ ] **Step 2: package.json 치환** — L2 `"name": "today"` → `"name": "pick"`. (deps/devDeps/scripts/`pnpm.onlyBuiltDependencies:["esbuild"]` 그대로.)
 
 - [ ] **Step 3: vite.config.js 치환 + 알라딘 proxy 추가**
 
-`taste/vite.config.js`:
-- base: `'/apps/today/'` → `'/apps/taste/'`
+`pick/vite.config.js`:
+- base: `'/apps/today/'` → `'/apps/pick/'`
 - `server.port` 5175 → `5177`, `preview.port` 4175 → `4177`, 포트 주석의 5175 → 5177
 - `server` 블록에 알라딘 proxy 추가. **구현 시 `book/vite.config.js`의 정확한 proxy 블록(+`loadEnv`로 `ALADIN_TTB_KEY` 로드)을 Read해 그대로 옮길 것.** 형태:
 
@@ -110,98 +110,98 @@ server: {
 
 - [ ] **Step 4: index.html / playwright.config.js / manifest 치환 + 폰트 3종**
 
-- `index.html`: title `"Today"`→`"Taste"`, `<title>Taste</title>`. `#loadingScreen`+`#app` 구조 그대로. `<head>`에 **폰트 3종** link 추가 (design-ref/source/taste.html L9-10 그대로):
+- `index.html`: title `"Today"`→`"Pick"`, `<title>Pick</title>`. `#loadingScreen`+`#app` 구조 그대로. `<head>`에 **폰트 3종** link 추가 (design-ref/source/pick.html L9-10 그대로):
 ```html
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" />
 ```
 - `playwright.config.js`: `baseURL`+`webServer.url` `4175`→`4177`.
-- `public/manifest.webmanifest`: name/short_name `"Today"`→`"Taste"`.
+- `public/manifest.webmanifest`: name/short_name `"Today"`→`"Pick"`.
 
-- [ ] **Step 5: .env.local + .gitignore** — `taste/.gitignore`(today 복사). `taste/.env.local`(gitignore됨): `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`(book/today/.env.local에서 확인) + `ALADIN_TTB_KEY=ttbleftjap1352001`.
+- [ ] **Step 5: .env.local + .gitignore** — `pick/.gitignore`(today 복사). `pick/.env.local`(gitignore됨): `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`(book/today/.env.local에서 확인) + `ALADIN_TTB_KEY=ttbleftjap1352001`.
 
-- [ ] **Step 6: 설치 + 빌드** Run: `cd ~/apps/taste && pnpm install && pnpm build` → Expected: `dist/` 생성, 에러 없음.
+- [ ] **Step 6: 설치 + 빌드** Run: `cd ~/apps/pick && pnpm install && pnpm build` → Expected: `dist/` 생성, 에러 없음.
 
 - [ ] **Step 7: Commit**
 ```bash
-cd ~/apps && git add taste/package.json taste/vite.config.js taste/playwright.config.js taste/index.html taste/.gitignore taste/public && git commit -m "feat(taste): 프로젝트 스캐폴딩 — today 인프라 미러 + 알라딘 proxy + 폰트 3종"
+cd ~/apps && git add pick/package.json pick/vite.config.js pick/playwright.config.js pick/index.html pick/.gitignore pick/public && git commit -m "feat(pick): 프로젝트 스캐폴딩 — today 인프라 미러 + 알라딘 proxy + 폰트 3종"
 ```
 
 ---
 
 ## Task 2: 디자인 토큰·전역 CSS 이식 + dom 헬퍼
 
-**Files:** `taste/src/styles/taste.css`, `taste/src/ui/dom.js`
+**Files:** `pick/src/styles/pick.css`, `pick/src/ui/dom.js`
 
 - [ ] **Step 1: dom.js 복사 (book, 순수)**
 ```bash
-cd ~/apps && mkdir -p taste/src/ui taste/src/styles
-cp book/src/ui/dom.js taste/src/ui/dom.js
+cd ~/apps && mkdir -p pick/src/ui pick/src/styles
+cp book/src/ui/dom.js pick/src/ui/dom.js
 ```
 `el/setStyle/clear/frag/escapeHtml` — book 도메인 의존 0 → 무변경. (icons.js·cover.js는 **복사 안 함** — 디자인은 clip-path 별 + 유니코드 글리프(`⌕`) + oklch Poster를 쓰므로 아이콘폰트·book cover 불요.)
 
-- [ ] **Step 2: taste.css 작성** — `design-ref/source/taste.html`의 `<style>` 블록(L12–L349) **전체를 그대로** `taste/src/styles/taste.css`로 옮긴다. 포함: `:root` 토큰, 전역(`body`/`button`/`a`/`::selection`/`.num`), 밀도(`.dens-*`)·읽는본문(`.read-serif`), 상단바(`.topbar`/`.brand`/`.searchcue`/`.account`/`.avatar`/`.menu`), `.stage`, 검색 오버레이(`.search-scrim`/`.search`/`.sresult`), 포스터(`.poster`/`.poster--book`/`.poster__spine`), 별점(`.stars`/`.star`/`.star__track`/`.star__fill`/`.star__hit`/`.stars__pan`), 칩·점(`.chip`/`.dot`), 스켈레톤(`.sk`/`.pulse`), 홈(`.home`/`.seg`/`.feat`/`.basis`/`.tracks`/`.rec`/`.recent`), 상세(`.detail`/`.trail`/`.rail`/`.info`/`.ratebox`/`.reading`), 갈래(`.branches`/`.branch`), 반응형(`@880`/`@560`/`reduced-motion`).
+- [ ] **Step 2: pick.css 작성** — `design-ref/source/pick.html`의 `<style>` 블록(L12–L349) **전체를 그대로** `pick/src/styles/pick.css`로 옮긴다. 포함: `:root` 토큰, 전역(`body`/`button`/`a`/`::selection`/`.num`), 밀도(`.dens-*`)·읽는본문(`.read-serif`), 상단바(`.topbar`/`.brand`/`.searchcue`/`.account`/`.avatar`/`.menu`), `.stage`, 검색 오버레이(`.search-scrim`/`.search`/`.sresult`), 포스터(`.poster`/`.poster--book`/`.poster__spine`), 별점(`.stars`/`.star`/`.star__track`/`.star__fill`/`.star__hit`/`.stars__pan`), 칩·점(`.chip`/`.dot`), 스켈레톤(`.sk`/`.pulse`), 홈(`.home`/`.seg`/`.feat`/`.basis`/`.tracks`/`.rec`/`.recent`), 상세(`.detail`/`.trail`/`.rail`/`.info`/`.ratebox`/`.reading`), 갈래(`.branches`/`.branch`), 반응형(`@880`/`@560`/`reduced-motion`).
 
-- [ ] **Step 3: 빌드 확인 + Commit** Run: `cd ~/apps/taste && pnpm build` → 에러 없음.
+- [ ] **Step 3: 빌드 확인 + Commit** Run: `cd ~/apps/pick && pnpm build` → 에러 없음.
 ```bash
-cd ~/apps && git add taste/src/styles/taste.css taste/src/ui/dom.js && git commit -m "feat(taste): 디자인 토큰·전역 CSS 이식 + dom 헬퍼"
+cd ~/apps && git add pick/src/styles/pick.css pick/src/ui/dom.js && git commit -m "feat(pick): 디자인 토큰·전역 CSS 이식 + dom 헬퍼"
 ```
 
 ---
 
 ## Task 3: 인증 서비스 미러 (today, partner 제거)
 
-**Files:** `taste/src/services/{supabase,auth-storage,auth-session-guard,auth,profile}.js`
+**Files:** `pick/src/services/{supabase,auth-storage,auth-session-guard,auth,profile}.js`
 
 - [ ] **Step 1: 무변경 복사 3종**
 ```bash
-cd ~/apps && mkdir -p taste/src/services
-cp today/src/services/supabase.js today/src/services/auth-storage.js today/src/services/auth-session-guard.js taste/src/services/
+cd ~/apps && mkdir -p pick/src/services
+cp today/src/services/supabase.js today/src/services/auth-storage.js today/src/services/auth-session-guard.js pick/src/services/
 ```
 
-- [ ] **Step 2: auth.js 미러 + 치환** — `cp today/src/services/auth.js taste/src/services/auth.js` 후: import `createTodayDB`→`createTasteDB`(`from '../db/schema.js'`); DB명 `'today_'+hash`→`'taste_'+hash`; `AUTH_ERROR_KEY 'todayAuthError'`→`'tasteAuthError'`; `window.todayDB`/`window.todayAuth`→`window.tasteDB`/`window.tasteAuth`; `ALLOWED_EMAILS`(leftjap, soyoun312) 그대로.
+- [ ] **Step 2: auth.js 미러 + 치환** — `cp today/src/services/auth.js pick/src/services/auth.js` 후: import `createTodayDB`→`createPickDB`(`from '../db/schema.js'`); DB명 `'today_'+hash`→`'pick_'+hash`; `AUTH_ERROR_KEY 'todayAuthError'`→`'pickAuthError'`; `window.todayDB`/`window.todayAuth`→`window.pickDB`/`window.pickAuth`; `ALLOWED_EMAILS`(leftjap, soyoun312) 그대로.
 
 - [ ] **Step 3: profile.js 최소형 신규 (partner 전부 제거)**
 ```js
-// taste profiles: 개인 격리. partner_user_id 없음. display_name만.
+// pick profiles: 개인 격리. partner_user_id 없음. display_name만.
 import { supabase } from './supabase.js';
 export async function ensureProfile(user) {
   if (!supabase || !user) return null;
-  const { data } = await supabase.from('taste_profiles')
+  const { data } = await supabase.from('pick_profiles')
     .select('user_id, display_name').eq('user_id', user.id).maybeSingle();
   if (data) return data;
   const display_name = user.user_metadata?.name || user.email || 'me';
-  const { data: created } = await supabase.from('taste_profiles')
+  const { data: created } = await supabase.from('pick_profiles')
     .upsert({ user_id: user.id, display_name }, { onConflict: 'user_id' })
     .select('user_id, display_name').maybeSingle();
   return created || null;
 }
 export const Profile = { ensureProfile };
-if (typeof window !== 'undefined') window.tasteProfile = Profile;
+if (typeof window !== 'undefined') window.pickProfile = Profile;
 ```
 
 - [ ] **Step 4: Commit** (schema.js T4 이후 함께 빌드 검증)
 ```bash
-cd ~/apps && git add taste/src/services && git commit -m "feat(taste): 인증 서비스 미러 — today 복사 + partner 제거 개인 격리"
+cd ~/apps && git add pick/src/services && git commit -m "feat(pick): 인증 서비스 미러 — today 복사 + partner 제거 개인 격리"
 ```
 
 ---
 
 ## Task 3.5: Supabase 마이그레이션 0001 (지오가 적용)
 
-**Files:** `taste/supabase/migrations/0001_taste_init.sql`
+**Files:** `pick/supabase/migrations/0001_pick_init.sql`
 
 > recommendations 테이블은 Wave 1에선 미사용(추천 엔진은 Wave 2). 0001은 ratings 중심. 갈래(branch) 차원은 **마이그 0002(Wave 2)** 에서 추가.
 
 - [ ] **Step 1: 마이그 작성** (`today_expenses` 개인격리 RLS를 정본으로)
 ```sql
--- taste 초기 스키마. Project: geo-apps 공유 → prefix taste_. 개인 격리(partner 없음).
-create table if not exists taste_profiles (
+-- pick 초기 스키마. Project: geo-apps 공유 → prefix pick_. 개인 격리(partner 없음).
+create table if not exists pick_profiles (
   user_id uuid primary key references auth.users on delete cascade,
   display_name text not null,
   updated_at timestamptz not null default now()
 );
-create table if not exists taste_ratings (
+create table if not exists pick_ratings (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users on delete cascade,
   media_type text not null check (media_type in ('movie','book')),
@@ -217,8 +217,8 @@ create table if not exists taste_ratings (
   deleted_at timestamptz,
   unique (owner_id, media_type, title, year)
 );
-create index if not exists taste_ratings_owner_updated on taste_ratings (owner_id, updated_at);
-create table if not exists taste_recommendations (
+create index if not exists pick_ratings_owner_updated on pick_ratings (owner_id, updated_at);
+create table if not exists pick_recommendations (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users on delete cascade,
   media_type text not null check (media_type in ('movie','book')),
@@ -230,41 +230,41 @@ create table if not exists taste_recommendations (
   batch_id text not null,
   generated_at timestamptz not null default now()
 );
-create index if not exists taste_reco_owner_batch on taste_recommendations (owner_id, batch_id);
-alter table taste_profiles enable row level security;
-alter table taste_ratings enable row level security;
-alter table taste_recommendations enable row level security;
-create policy taste_profiles_own on taste_profiles
+create index if not exists pick_reco_owner_batch on pick_recommendations (owner_id, batch_id);
+alter table pick_profiles enable row level security;
+alter table pick_ratings enable row level security;
+alter table pick_recommendations enable row level security;
+create policy pick_profiles_own on pick_profiles
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
-create policy taste_ratings_own on taste_ratings
+create policy pick_ratings_own on pick_ratings
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
-create policy taste_reco_own on taste_recommendations
+create policy pick_reco_own on pick_recommendations
   for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
-alter publication supabase_realtime add table taste_ratings;
+alter publication supabase_realtime add table pick_ratings;
 ```
 
 - [ ] **Step 2: 지오에게 적용 요청** (DB 마이그는 destructive 사전확인 대상) — Supabase SQL 에디터 실행 또는 `source ~/.config/study/.env` 후 psql. **Claude 자동 적용 금지.** 적용 후 테이블 3·정책 3·realtime 1 확인.
 
 - [ ] **Step 3: Commit**
 ```bash
-cd ~/apps && git add taste/supabase/migrations/0001_taste_init.sql && git commit -m "feat(taste): Supabase 마이그 0001 — ratings/recommendations 개인 격리 RLS"
+cd ~/apps && git add pick/supabase/migrations/0001_pick_init.sql && git commit -m "feat(pick): Supabase 마이그 0001 — ratings/recommendations 개인 격리 RLS"
 ```
 
 ---
 
 ## Task 4: Dexie schema + rating 쿼리 (TDD)
 
-**Files:** `taste/src/db/schema.js`, `queries.js`, `queries.test.js`
+**Files:** `pick/src/db/schema.js`, `queries.js`, `queries.test.js`
 
-- [ ] **Step 1: 실패 테스트** `taste/src/db/queries.test.js`
+- [ ] **Step 1: 실패 테스트** `pick/src/db/queries.test.js`
 ```js
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
-import { createTasteDB } from './schema.js';
+import { createPickDB } from './schema.js';
 import { createRating, updateRating, softDeleteRating, listRatings } from './queries.js';
 
 describe('rating queries', () => {
-  beforeEach(() => { globalThis.tasteDB = createTasteDB('taste_test_' + Math.random()); });
+  beforeEach(() => { globalThis.pickDB = createPickDB('pick_test_' + Math.random()); });
   it('createRating: owner_id 필수, id/ts 자동, pending_sync=1', async () => {
     const r = await createRating({ owner_id: 'u1', media_type: 'book', title: '데미안', year: 1919, rating: 4.5, source: 'app' });
     expect(r.id).toBeTruthy(); expect(r.created_at).toBeTruthy(); expect(r.pending_sync).toBe(1);
@@ -284,12 +284,12 @@ describe('rating queries', () => {
 });
 ```
 
-- [ ] **Step 2: 실패 확인** Run: `cd ~/apps/taste && pnpm vitest run src/db/queries.test.js` → FAIL. ⚠ `pnpm vitest run`(watch 금지).
+- [ ] **Step 2: 실패 확인** Run: `cd ~/apps/pick && pnpm vitest run src/db/queries.test.js` → FAIL. ⚠ `pnpm vitest run`(watch 금지).
 
 - [ ] **Step 3: schema.js**
 ```js
 import Dexie from 'dexie';
-export function createTasteDB(name = 'taste') {
+export function createPickDB(name = 'pick') {
   const db = new Dexie(name);
   db.version(1).stores({
     ratings: '&id, owner_id, media_type, updated_at, deleted_at, [owner_id+media_type], pending_sync',
@@ -297,17 +297,17 @@ export function createTasteDB(name = 'taste') {
   });
   return db;
 }
-export default createTasteDB;
+export default createPickDB;
 ```
 
 - [ ] **Step 4: queries.js** (today queries.js:170-283 골격)
 ```js
-const db = () => { const d = globalThis.tasteDB; if (!d) throw new Error('[tasteQueries] tasteDB 미초기화'); return d; };
+const db = () => { const d = globalThis.pickDB; if (!d) throw new Error('[pickQueries] pickDB 미초기화'); return d; };
 const newId = () => (globalThis.crypto?.randomUUID?.() || 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2));
 const nowIso = () => new Date().toISOString();
-const enqueue = (id) => { try { globalThis.tasteSync?.queueUpload?.('ratings', id); } catch (e) {} };
+const enqueue = (id) => { try { globalThis.pickSync?.queueUpload?.('ratings', id); } catch (e) {} };
 export async function createRating(input) {
-  if (!input?.owner_id) throw new Error('[tasteQueries] owner_id 누락');
+  if (!input?.owner_id) throw new Error('[pickQueries] owner_id 누락');
   const row = { id: newId(), owner_id: input.owner_id, media_type: input.media_type,
     title: input.title, year: input.year ?? null, external_id: input.external_id ?? null,
     rating: input.rating, source: input.source, rated_at: input.rated_at ?? null,
@@ -332,7 +332,7 @@ export async function listRatings(owner_id, mediaType) {
 export async function listPendingRatings() { return db().ratings.where('pending_sync').equals(1).toArray(); }
 export async function setPendingSync(id, v) { const c = await db().ratings.get(id); if (c) await db().ratings.put({ ...c, pending_sync: v }); }
 export const Queries = { createRating, updateRating, softDeleteRating, getRating, listRatings, listPendingRatings, setPendingSync };
-if (typeof window !== 'undefined') window.tasteQueries = Queries;
+if (typeof window !== 'undefined') window.pickQueries = Queries;
 ```
 > `getRating`은 상세 ratebox가 "이미 평가됨?"을 판정해 create/update 분기하는 데 쓴다(T8).
 
@@ -340,22 +340,22 @@ if (typeof window !== 'undefined') window.tasteQueries = Queries;
 
 - [ ] **Step 6: Commit**
 ```bash
-cd ~/apps && git add taste/src/db/schema.js taste/src/db/queries.js taste/src/db/queries.test.js && git commit -m "feat(taste): Dexie schema + rating CRUD (TDD 4/4)"
+cd ~/apps && git add pick/src/db/schema.js pick/src/db/queries.js pick/src/db/queries.test.js && git commit -m "feat(pick): Dexie schema + rating CRUD (TDD 4/4)"
 ```
 
 ---
 
 ## Task 5: sync.js — pending_sync 큐 (owner_id 격리)
 
-**Files:** `taste/src/db/sync.js`
+**Files:** `pick/src/db/sync.js`
 
 - [ ] **Step 1: sync.js 작성** (today sync.js 패턴 압축, TABLE_MAP 2개 모두 filterColumn `owner_id`)
 ```js
 import { supabase } from '../services/supabase.js';
 import { listPendingRatings, setPendingSync } from './queries.js';
 export const TABLE_MAP = Object.freeze([
-  { dexie: 'ratings', supabase: 'taste_ratings', filterColumn: 'owner_id' },
-  { dexie: 'recommendations', supabase: 'taste_recommendations', filterColumn: 'owner_id' },
+  { dexie: 'ratings', supabase: 'pick_ratings', filterColumn: 'owner_id' },
+  { dexie: 'recommendations', supabase: 'pick_recommendations', filterColumn: 'owner_id' },
 ]);
 const PAGE = 1000;
 const isUuid = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
@@ -375,30 +375,30 @@ let _timers = {};
 export function queueUpload(store, id) { clearTimeout(_timers[id]); _timers[id] = setTimeout(() => pushRating(id), 800); }
 async function pushRating(id) {
   if (!supabase) return;
-  const db = globalThis.tasteDB; const row = await db.ratings.get(id); if (!row) return;
+  const db = globalThis.pickDB; const row = await db.ratings.get(id); if (!row) return;
   if (!isUuid(id)) { await setPendingSync(id, 0); return; }
-  const { error } = await supabase.from('taste_ratings').upsert(stripMeta(row), { onConflict: 'id' });
+  const { error } = await supabase.from('pick_ratings').upsert(stripMeta(row), { onConflict: 'id' });
   await setPendingSync(id, error ? 1 : 0);
 }
 export async function flushPending() { const p = await listPendingRatings(); for (const r of p) await pushRating(r.id); }
-export async function startSync(user) { const db = globalThis.tasteDB; if (!db || !user) return; await pullAll(db, user.id); await flushPending(); }
+export async function startSync(user) { const db = globalThis.pickDB; if (!db || !user) return; await pullAll(db, user.id); await flushPending(); }
 export const Sync = { TABLE_MAP, pullAll, queueUpload, flushPending, startSync };
-if (typeof window !== 'undefined') window.tasteSync = Sync;
+if (typeof window !== 'undefined') window.pickSync = Sync;
 ```
 
 - [ ] **Step 2: 빌드 + Commit** Run: `pnpm build` → 에러 없음.
 ```bash
-cd ~/apps && git add taste/src/db/sync.js && git commit -m "feat(taste): sync — pending_sync 큐 + owner_id 격리 reconcile"
+cd ~/apps && git add pick/src/db/sync.js && git commit -m "feat(pick): sync — pending_sync 큐 + owner_id 격리 reconcile"
 ```
 
 ---
 
 ## Task 6: 공용 컴포넌트 — StarRating(TDD) + Poster/Chip/Dot
 
-**Files:** `taste/src/ui/rating.js`, `rating.test.js`, `taste/src/ui/poster.js`
-**디자인 정본:** `design-ref/source/app/ui.jsx` (Poster L4-29, StarRating L31-92, Chip L94-101, Dot L103-106), CSS는 taste.css.
+**Files:** `pick/src/ui/rating.js`, `rating.test.js`, `pick/src/ui/poster.js`
+**디자인 정본:** `design-ref/source/app/ui.jsx` (Poster L4-29, StarRating L31-92, Chip L94-101, Dot L103-106), CSS는 pick.css.
 
-- [ ] **Step 1: 실패 테스트** `taste/src/ui/rating.test.js` — 포팅의 **순수 로직**(별 채움%·비추 판정·앵커 라벨)을 검증.
+- [ ] **Step 1: 실패 테스트** `pick/src/ui/rating.test.js` — 포팅의 **순수 로직**(별 채움%·비추 판정·앵커 라벨)을 검증.
 ```js
 import { describe, it, expect } from 'vitest';
 import { starFill, isPan, ratingLabel } from './rating.js';
@@ -507,17 +507,17 @@ export const dot = (size = 6) => el('span', { class: 'dot', style: `width:${size
 
 - [ ] **Step 6: Commit**
 ```bash
-cd ~/apps && git add taste/src/ui/rating.js taste/src/ui/rating.test.js taste/src/ui/poster.js && git commit -m "feat(taste): 공용 컴포넌트 — StarRating(0.5/비추 TDD) + Poster/Chip/Dot 이식"
+cd ~/apps && git add pick/src/ui/rating.js pick/src/ui/rating.test.js pick/src/ui/poster.js && git commit -m "feat(pick): 공용 컴포넌트 — StarRating(0.5/비추 TDD) + Poster/Chip/Dot 이식"
 ```
 
 ---
 
 ## Task 7: 앱 셸 + 라우터 + 로그인 게이트
 
-**Files:** `taste/src/app.js`, `taste/src/ui/login.js`, `taste/src/main.js`
+**Files:** `pick/src/app.js`, `pick/src/ui/login.js`, `pick/src/main.js`
 **디자인 정본:** `design-ref/source/app/main.jsx` (App 셸 L82-228: 상단바·계정메뉴·view-state·⌘K).
 
-- [ ] **Step 1: app.js — 셸 + view-state 라우터** — main.jsx의 `view={name,path[]}`·`ratings`·`searchOpen`·`menuOpen`을 모듈 상태로. 라우트 mapping: `#/`→home, `#/w/:id`→detail(현재 작품=`path` 끝), `#/import`→import, `#/library`→library. 검색은 오버레이(T10)로 `openSearch()` 노출. `navTo(id)`(새 경로), `branchTo(id)`(path push, 가지치기), `goHome()`, `setRating(id,v)`(Wave 1: Dexie 저장만; analyzing 연출은 Wave 2). 상단바(brand `taste`+코랄점, searchcue `⌘K`, avatar 계정메뉴 — main.jsx L160-189 그대로). ⌘K/`/`/Esc 단축키(main.jsx L109-120).
+- [ ] **Step 1: app.js — 셸 + view-state 라우터** — main.jsx의 `view={name,path[]}`·`ratings`·`searchOpen`·`menuOpen`을 모듈 상태로. 라우트 mapping: `#/`→home, `#/w/:id`→detail(현재 작품=`path` 끝), `#/import`→import, `#/library`→library. 검색은 오버레이(T10)로 `openSearch()` 노출. `navTo(id)`(새 경로), `branchTo(id)`(path push, 가지치기), `goHome()`, `setRating(id,v)`(Wave 1: Dexie 저장만; analyzing 연출은 Wave 2). 상단바(brand `pick`+코랄점, searchcue `⌘K`, avatar 계정메뉴 — main.jsx L160-189 그대로). ⌘K/`/`/Esc 단축키(main.jsx L109-120).
 ```js
 import { el, clear } from './ui/dom.js';
 import { ensureLoginCard, hideLoadingScreen } from './ui/login.js';
@@ -559,7 +559,7 @@ function shell(v) {
 function topbar() {
   const bar = el('header', { class: 'topbar' });
   const inner = el('div', { class: 'topbar__inner' });
-  const brand = el('button', { class: 'brand', 'aria-label': 'taste 홈' }, 'taste', el('span', { class: 'brand__dot' }));
+  const brand = el('button', { class: 'brand', 'aria-label': 'pick 홈' }, 'pick', el('span', { class: 'brand__dot' }));
   brand.addEventListener('click', () => { location.hash = '#/'; });
   const cue = el('button', { class: 'searchcue' },
     el('span', { class: 'searchcue__icon' }, '⌕'),
@@ -582,7 +582,7 @@ export function showAuthenticated() {
   bindShortcuts(); render(); hideLoadingScreen();
 }
 function bindShortcuts() {
-  if (window.__tasteKeys) return; window.__tasteKeys = true;
+  if (window.__pickKeys) return; window.__pickKeys = true;
   window.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openSearch({ userId: _userId }); }
     if (e.key === '/' && !/input|textarea/i.test(document.activeElement.tagName)) { e.preventDefault(); openSearch({ userId: _userId }); }
@@ -591,27 +591,27 @@ function bindShortcuts() {
 ```
 > `accountMenu()`는 분량상 본문에서 생략 — `design-ref/source/app/main.jsx` L170-188(avatar+menu+바깥클릭/Esc)을 Read해 그대로 el-포팅. 메뉴 항목: "평가 가져오기"→`location.hash='#/import'`, "내 서재"→`#/library`, "로그아웃"→`Auth.signOut()`.
 
-- [ ] **Step 2: login.js** — `today/src/app.js:166-268`(ensureLoginCard)을 taste용으로 축약: 브랜드 `taste`, Google 버튼→`Auth.signInWithGoogle()`, `hideLoadingScreen`은 `#loadingScreen`에 `.hidden`. 클래스 `#taste-login-card`/`.taste-login__*`.
+- [ ] **Step 2: login.js** — `today/src/app.js:166-268`(ensureLoginCard)을 pick용으로 축약: 브랜드 `pick`, Google 버튼→`Auth.signInWithGoogle()`, `hideLoadingScreen`은 `#loadingScreen`에 `.hidden`. 클래스 `#pick-login-card`/`.pick-login__*`.
 
 - [ ] **Step 3: features 스텁** — `home.js`/`detail.js`/`import.js`/`library.js`에 `export function mount(){ return el('div',{},'…'); }`, `search.js`에 `export function openSearch(){}` 최소 스텁(T8~T11에서 채움).
 
-- [ ] **Step 4: main.js — today 부트스트랩 미러** — `cp today/src/main.js taste/src/main.js` 후: 최상단 `import './styles/taste.css';`. today 도메인 feature import 제거. **보존 골격**: storage persist, `installAuthSessionGuard`, subscribe-first `Auth.onAuthStateChange`, `handleSession`(allowedEmail 게이트→`ensureUserDB`→`ensureProfile`→`setRouterUser`→`showAuthenticated`), 백그라운드 `Sync.startSync`. import: `./app.js`의 `showAuthenticated, showLogin, setRouterUser`. (today/src/main.js:51-210 참고.)
+- [ ] **Step 4: main.js — today 부트스트랩 미러** — `cp today/src/main.js pick/src/main.js` 후: 최상단 `import './styles/pick.css';`. today 도메인 feature import 제거. **보존 골격**: storage persist, `installAuthSessionGuard`, subscribe-first `Auth.onAuthStateChange`, `handleSession`(allowedEmail 게이트→`ensureUserDB`→`ensureProfile`→`setRouterUser`→`showAuthenticated`), 백그라운드 `Sync.startSync`. import: `./app.js`의 `showAuthenticated, showLogin, setRouterUser`. (today/src/main.js:51-210 참고.)
 
-- [ ] **Step 5: dev + 로그인 검증 (preview MCP)** Run: `cd ~/apps/taste && pnpm dev`(5177). preview_start `http://localhost:5177` → 로그인 카드 렌더·콘솔 0. (OAuth는 선행조건 후; 미등록이면 카드까지.)
+- [ ] **Step 5: dev + 로그인 검증 (preview MCP)** Run: `cd ~/apps/pick && pnpm dev`(5177). preview_start `http://localhost:5177` → 로그인 카드 렌더·콘솔 0. (OAuth는 선행조건 후; 미등록이면 카드까지.)
 
 - [ ] **Step 6: Commit**
 ```bash
-cd ~/apps && git add taste/src/app.js taste/src/ui/login.js taste/src/main.js taste/src/features && git commit -m "feat(taste): 앱 셸 + view-state 라우터 + 로그인 게이트 — 디자인 상단바"
+cd ~/apps && git add pick/src/app.js pick/src/ui/login.js pick/src/main.js pick/src/features && git commit -m "feat(pick): 앱 셸 + view-state 라우터 + 로그인 게이트 — 디자인 상단바"
 ```
 
 ---
 
 ## Task 8: 작품 상세 허브 (★ 최우선) — ratebox 별점 저장
 
-**Files:** `taste/src/features/detail.js`
+**Files:** `pick/src/features/detail.js`
 **디자인 정본:** `design-ref/source/app/detail.jsx` + 디자인 §6. CSS: `.detail__body`(grid 200px/660px), `.rail`, `.info`/`.inforow`, `.ratebox`, `.reading`, `.branches`, `.trail`.
 
-- [ ] **Step 1: detail.js mount** — `mount({ userId, id })`가 2열 그리드를 그린다. 작품 데이터 소스: **내가 평가한 작품**은 Dexie(`getRating`/`listRatings`)에서, **검색으로 막 연 신규 작품**은 메모리 전달(T10이 임시 work 객체를 `window.__tasteOpen`에 넣고 navigate). Wave 1 작품 메타 = ratings.meta(poster_url/author/director/summary 등 가능한 만큼) + 알라딘 응답.
+- [ ] **Step 1: detail.js mount** — `mount({ userId, id })`가 2열 그리드를 그린다. 작품 데이터 소스: **내가 평가한 작품**은 Dexie(`getRating`/`listRatings`)에서, **검색으로 막 연 신규 작품**은 메모리 전달(T10이 임시 work 객체를 `window.__pickOpen`에 넣고 navigate). Wave 1 작품 메타 = ratings.meta(poster_url/author/director/summary 등 가능한 만큼) + 알라딘 응답.
   - **브레드크럼 `.trail`**: 경로(path) 길이>1일 때 `제목 가지 → 제목` (현재 굵게, 이전 링크). 경로는 app.js가 관리(branchTo push).
   - **좌 `.rail`(sticky top:92, w200)**: `poster({...work, w:200})` + `.info` dl(영화: 감독/출연/극본, 책: 저자/옮김/출판 — 있는 키만) + **`.ratebox`**: 라벨 `내 평가` + `starRating({ value: cur?.rating||0, editable:true, size:28, onChange })` + 평가됨이면 `평가 지우기`(클릭→`softDeleteRating`).
   - **우 `.detail__main`**: `.detail__head`(kind `● 영화|책` + measure `138분`/`636쪽` + `.detail__title` + `.detail__sub` 원제·감독/저자·연도 + 태그 칩), `.reading`(라벨 `줄거리` + `.reading__body` summary, **앱 내 소비 — 외부 링크 없음**), `.branches`(헤더 `이 작품에서 이어지는 갈래` + 상태문구). **Wave 1: 갈래 데이터 없음 → 빈 상태** `.branches__status` = `아직 추천을 만들 만큼 평가가 쌓이지 않았어요.`(엔진은 Wave 2). 분석중 연출(스켈레톤/펄스)도 Wave 2.
@@ -621,7 +621,7 @@ import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString } from '../ui/poster.js';
 import { starRating } from '../ui/rating.js';
 import { Queries } from '../db/queries.js';
-// work 해석: window.__tasteOpen[id] (검색서 막 연 신규) ?? Dexie ratings 매칭. 구현 시 둘 다 처리.
+// work 해석: window.__pickOpen[id] (검색서 막 연 신규) ?? Dexie ratings 매칭. 구현 시 둘 다 처리.
 export function mount({ userId, id }) {
   const root = el('div', { class: 'detail' });
   // ...trail / rail(poster+info+ratebox) / main(head+reading+branches 빈상태) 구성
@@ -630,18 +630,18 @@ export function mount({ userId, id }) {
 ```
 > 본 Step의 DOM 세부는 `detail.jsx`를 Read해 클래스 그대로 el-포팅. ratebox만이 Wave 1의 핵심 동작(저장).
 
-- [ ] **Step 2: preview 검증** dev에서 검색→상세 진입(또는 임시 work 주입) → ratebox 별 클릭(4.5) → `tasteDB.ratings.count()` 1 확인(preview_eval) → 0.5 클릭 시 `비추` 빨강 칩 → 콘솔 0. preview_screenshot.
+- [ ] **Step 2: preview 검증** dev에서 검색→상세 진입(또는 임시 work 주입) → ratebox 별 클릭(4.5) → `pickDB.ratings.count()` 1 확인(preview_eval) → 0.5 클릭 시 `비추` 빨강 칩 → 콘솔 0. preview_screenshot.
 
 - [ ] **Step 3: Commit**
 ```bash
-cd ~/apps && git add taste/src/features/detail.js taste/src/ui/poster.js && git commit -m "feat(taste): 작품 상세 허브 — 2열 그리드 + ratebox 별점 저장(0.5/비추) + 줄거리 + 갈래 빈상태"
+cd ~/apps && git add pick/src/features/detail.js pick/src/ui/poster.js && git commit -m "feat(pick): 작품 상세 허브 — 2열 그리드 + ratebox 별점 저장(0.5/비추) + 줄거리 + 갈래 빈상태"
 ```
 
 ---
 
 ## Task 9: 홈 피드 (추천 빈 상태 + 최근 평가)
 
-**Files:** `taste/src/features/home.js`
+**Files:** `pick/src/features/home.js`
 **디자인 정본:** `design-ref/source/app/home.jsx` + 디자인 §5. CSS: `.home`/`.home__intro`/`.seg`/`.feat`/`.tracks`/`.track`/`.rec`/`.recent`.
 
 - [ ] **Step 1: home.js mount** — `mount({ userId })`:
@@ -651,22 +651,22 @@ cd ~/apps && git add taste/src/features/detail.js taste/src/ui/poster.js && git 
 - [ ] **Step 2: preview 검증** 평가 0 → 빈 상태+시작 버튼. 평가 1+ → 최근에 표시, 세그먼트 전환 거름. screenshot.
 - [ ] **Step 3: Commit**
 ```bash
-cd ~/apps && git add taste/src/features/home.js && git commit -m "feat(taste): 홈 피드 — 인트로+세그먼트+최근평가, 추천 빈 상태(엔진 전)"
+cd ~/apps && git add pick/src/features/home.js && git commit -m "feat(pick): 홈 피드 — 인트로+세그먼트+최근평가, 추천 빈 상태(엔진 전)"
 ```
 
 ---
 
 ## Task 10: 검색 오버레이 (1급) + 알라딘 책 합류
 
-**Files:** `taste/src/features/search.js`, `taste/src/db/aladin.js`
+**Files:** `pick/src/features/search.js`, `pick/src/db/aladin.js`
 **디자인 정본:** `design-ref/source/app/main.jsx` SearchOverlay(L10-73) + 디자인 §8. CSS: `.search-scrim`/`.search`/`.search__bar`/`.search__filter`/`.sresult`.
 
-- [ ] **Step 1: aladin.js 복사 (무변경)** `cp book/src/db/aladin.js taste/src/db/aladin.js`. `searchBooks(q,{max})`, `toAppBook(n)`→`{id:isbn,t,a,p,y,c,coverUrl,...}`. dev=`/api/aladin`(T1 proxy), prod=Edge Function(공유).
+- [ ] **Step 1: aladin.js 복사 (무변경)** `cp book/src/db/aladin.js pick/src/db/aladin.js`. `searchBooks(q,{max})`, `toAppBook(n)`→`{id:isbn,t,a,p,y,c,coverUrl,...}`. dev=`/api/aladin`(T1 proxy), prod=Edge Function(공유).
 
 - [ ] **Step 2: search.js openSearch** — `openSearch({ userId })`가 스크림+모달을 body에 append. 입력(디바운스 300ms) + 타입 세그(전체/영화/책) + `N건`. **결과 합류**:
   - 로컬: `listRatings(userId)` 중 질의 부분일치(제목+meta).
   - 알라딘 책(타입 전체/책): `Aladin.searchBooks(q,{max:10})` → `toAppBook` → sresult. (영화 라이브 검색은 Wave 2 TMDB — Wave 1은 로컬 영화만.)
-  - 행 클릭: 신규 작품이면 임시 work 객체(`{id: 'isbn:'+isbn, media_type:'book', title, year, meta:{author, poster_url}}`)를 `window.__tasteOpen[id]=work`에 넣고 `location.hash = '#/w/'+encodeURIComponent(id)` → 상세(T8)에서 평가. 기존 평가작이면 그 id로 이동.
+  - 행 클릭: 신규 작품이면 임시 work 객체(`{id: 'isbn:'+isbn, media_type:'book', title, year, meta:{author, poster_url}}`)를 `window.__pickOpen[id]=work`에 넣고 `location.hash = '#/w/'+encodeURIComponent(id)` → 상세(T8)에서 평가. 기존 평가작이면 그 id로 이동.
   - 닫기: Esc/스크림 클릭. `⌘K` 재진입(T7 wiring).
 ```js
 import { el } from '../ui/dom.js';
@@ -679,24 +679,24 @@ export function openSearch({ userId } = {}) {
   // scrim+modal+input(debounce)+seg+results(local+aladin) ... main.jsx SearchOverlay el-포팅
 }
 ```
-> SearchOverlay DOM/포커스/키 핸들링은 `main.jsx` L10-73 Read해 포팅. 차이: `window.TASTE.list` 대신 로컬 ratings + 라이브 알라딘.
+> SearchOverlay DOM/포커스/키 핸들링은 `main.jsx` L10-73 Read해 포팅. 차이: `window.PICK.list` 대신 로컬 ratings + 라이브 알라딘.
 
 - [ ] **Step 3: preview 검증** ⌘K → 모달 → "데미안" 입력 → 알라딘 표지 결과 → 클릭 → 상세 진입 → ratebox 평가 → Dexie 저장. 콘솔 0. screenshot.
 
 - [ ] **Step 4: Commit**
 ```bash
-cd ~/apps && git add taste/src/features/search.js taste/src/db/aladin.js && git commit -m "feat(taste): 검색 오버레이(1급, ⌘K) + 알라딘 책 합류 → 상세 진입 평가"
+cd ~/apps && git add pick/src/features/search.js pick/src/db/aladin.js && git commit -m "feat(pick): 검색 오버레이(1급, ⌘K) + 알라딘 책 합류 → 상세 진입 평가"
 ```
 
 ---
 
 ## Task 11: 왓챠 CSV import (TDD 파서)
 
-**Files:** `taste/src/lib/watcha.js`, `watcha.test.js`, `taste/src/features/import.js`
+**Files:** `pick/src/lib/watcha.js`, `watcha.test.js`, `pick/src/features/import.js`
 
 - [ ] **Step 1: ⚠ 실제 CSV 헤더 확인 (지오)** — [erinyskim/watchapedia-export](https://github.com/erinyskim/watchapedia-export)로 실제 CSV 1개 추출해 헤더·샘플 제공. **파서 컬럼명은 실제 export 확인 후 확정**(추정 금지). 아래 테스트 컬럼명은 확인 후 조정.
 
-- [ ] **Step 2: 실패 테스트** `taste/src/lib/watcha.test.js`
+- [ ] **Step 2: 실패 테스트** `pick/src/lib/watcha.test.js`
 ```js
 import { describe, it, expect } from 'vitest';
 import { parseWatchaCsv } from './watcha.js';
@@ -742,24 +742,24 @@ export function parseWatchaCsv(text) {
 
 - [ ] **Step 6: import.js mount** — `<input type=file accept=.csv>` → FileReader → `parseWatchaCsv` → 미리보기(건수·샘플 5행) → "저장" → 각 행 `getRating` 후 create/update(이미 있으면 평점 갱신) `meta:{}`. 진행률. 디자인 토큰(`.stage` 내 단순 카드)로 최소 스타일.
 
-- [ ] **Step 7: preview 검증** 샘플 CSV 업로드 → 미리보기 건수 → 저장 → `tasteDB.ratings.where('source').equals('watcha').count()` 확인.
+- [ ] **Step 7: preview 검증** 샘플 CSV 업로드 → 미리보기 건수 → 저장 → `pickDB.ratings.where('source').equals('watcha').count()` 확인.
 
 - [ ] **Step 8: Commit**
 ```bash
-cd ~/apps && git add taste/src/lib taste/src/features/import.js && git commit -m "feat(taste): 왓챠 CSV import — 파서(MOVIE만, 0.5★ 보존) TDD 3/3 + 업로드 화면"
+cd ~/apps && git add pick/src/lib pick/src/features/import.js && git commit -m "feat(pick): 왓챠 CSV import — 파서(MOVIE만, 0.5★ 보존) TDD 3/3 + 업로드 화면"
 ```
 
 ---
 
 ## Task 12: 내 서재 — 전체 평점 목록 (#/library)
 
-**Files:** `taste/src/features/library.js`
+**Files:** `pick/src/features/library.js`
 
 - [ ] **Step 1: library.js mount** — 계정 메뉴 "내 서재" 진입. `listRatings(userId)` 전체를 **영화/책 세그먼트**로 구분, 각 행 = poster + 제목 + `starRating({value, editable:false})` 값 표시(비추 빨강). 행 클릭→상세(편집·삭제는 상세 ratebox에서). 다량 CSV 영화 브라우즈용. (디자인에 전용 화면은 없으나 계정 메뉴 항목 존재 → 트랙 레이아웃 재사용.)
 - [ ] **Step 2: preview 검증** import+평가 후 목록에 영화·책 표시, 행 클릭→상세→평점 수정→목록 반영.
 - [ ] **Step 3: Commit**
 ```bash
-cd ~/apps && git add taste/src/features/library.js && git commit -m "feat(taste): 내 서재 — 전체 평점 목록(영화/책) + 상세 연결"
+cd ~/apps && git add pick/src/features/library.js && git commit -m "feat(pick): 내 서재 — 전체 평점 목록(영화/책) + 상세 연결"
 ```
 
 ---
@@ -774,4 +774,4 @@ cd ~/apps && git add taste/src/features/library.js && git commit -m "feat(taste)
 6. `pnpm vitest run` 전체 통과(queries 4 + rating 로직 + watcha 3), `pnpm build` 성공.
 7. 디자인 픽셀 충실도: 토큰·상단바·별점(clip-path/비추)·상세 2열 그리드·포스터(책등) 시안과 일치(preview_screenshot 대조).
 
-**Wave 2 → `taste/specs/taste-wave2-plan.md`**: TMDB 발급 → 마이그 0002(recommendations에 kind/source_work/basis) → `taste-weekly-reco` 루틴(별점 읽기→Claude 추천(홈+갈래)→TMDB/알라딘 실재 검증→교체) → 홈 Featured/트랙 + 상세 갈래 채움 → §7 분석중→도착 연출(실 비동기) → 검색 TMDB 영화 합류 → `deploy-pages.yml` taste step.
+**Wave 2 → `pick/specs/pick-wave2-plan.md`**: TMDB 발급 → 마이그 0002(recommendations에 kind/source_work/basis) → `pick-weekly-reco` 루틴(별점 읽기→Claude 추천(홈+갈래)→TMDB/알라딘 실재 검증→교체) → 홈 Featured/트랙 + 상세 갈래 채움 → §7 분석중→도착 연출(실 비동기) → 검색 TMDB 영화 합류 → `deploy-pages.yml` pick step.

@@ -1,4 +1,4 @@
-// taste 로그인 카드 — today app.js ensureLoginCard 패턴 축약. 브랜드 pick + 코랄 점.
+// pick 로그인 카드 — today app.js ensureLoginCard 패턴 축약. 브랜드 pick + 코랄 점.
 import { Auth } from '../services/auth.js';
 
 export function hideLoadingScreen() {
@@ -18,23 +18,23 @@ const GOOGLE_G = `
   </svg>`;
 
 export function ensureLoginCard() {
-  let card = document.querySelector('#taste-login-card');
+  let card = document.querySelector('#pick-login-card');
   if (card) return card;
   injectAuthOverlayStyles();
   const configured = Auth.isSupabaseConfigured;
   card = document.createElement('div');
-  card.id = 'taste-login-card';
+  card.id = 'pick-login-card';
   card.innerHTML = `
-    <div class="taste-login__inner">
-      <h1 class="taste-login__brand">pick<span class="taste-login__dot"></span></h1>
-      <p class="taste-login__hint">${
+    <div class="pick-login__inner">
+      <h1 class="pick-login__brand">pick<span class="pick-login__dot"></span></h1>
+      <p class="pick-login__hint">${
         configured ? '초대받은 계정만 접근할 수 있습니다.'
           : '⚠️ Supabase 설정 누락 — .env.local 의 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 확인'
       }</p>
-      <button class="taste-login__btn" data-role="signin" ${configured ? '' : 'disabled'}>
+      <button class="pick-login__btn" data-role="signin" ${configured ? '' : 'disabled'}>
         ${GOOGLE_G}<span>Google 로 시작하기</span>
       </button>
-      <p class="taste-login__error" data-role="error"></p>
+      <p class="pick-login__error" data-role="error"></p>
     </div>`;
   document.querySelector('#app').appendChild(card);
   card.querySelector('[data-role="signin"]').addEventListener('click', async () => {
@@ -49,20 +49,20 @@ export function ensureLoginCard() {
 }
 
 function injectAuthOverlayStyles() {
-  if (document.querySelector('#taste-auth-overlay-styles')) return;
+  if (document.querySelector('#pick-auth-overlay-styles')) return;
   const style = document.createElement('style');
-  style.id = 'taste-auth-overlay-styles';
+  style.id = 'pick-auth-overlay-styles';
   style.textContent = `
-    body[data-auth-state="in"] #taste-login-card { display: none !important; }
-    #taste-login-card { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--paper, #f6f4ee); z-index: 9999; font-family: 'Pretendard', system-ui, sans-serif; }
-    .taste-login__inner { width: min(360px, 88vw); padding: 36px 30px; background: var(--bg, #fff); border: 1px solid var(--line, #ececea); border-radius: 18px; box-shadow: var(--shadow-float, 0 24px 48px -24px rgba(20,18,14,.18)); text-align: center; }
-    .taste-login__brand { font-size: 30px; font-weight: 700; letter-spacing: -.045em; color: var(--ink-1, #15140f); margin: 0 0 10px; display: inline-flex; align-items: flex-end; justify-content: center; gap: 3px; }
-    .taste-login__dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent, #d97757); margin-bottom: 7px; }
-    .taste-login__hint { font-size: 14px; color: var(--ink-3, #8a877d); margin: 0 0 24px; line-height: 1.5; word-break: keep-all; }
-    .taste-login__btn { width: 100%; padding: 12px 16px; background: var(--bg, #fff); color: var(--ink-1, #1f1f1f); border: 1px solid #dadce0; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: background .15s, border-color .15s; }
-    .taste-login__btn:hover:not(:disabled) { background: var(--hover, #f4f2ec); border-color: var(--ink-4, #b8b5aa); }
-    .taste-login__btn:disabled { background: var(--paper-2, #efece4); color: var(--ink-3, #8a877d); cursor: not-allowed; }
-    .taste-login__error { margin: 16px 0 0; min-height: 18px; font-size: 12px; color: var(--danger, #b44d3b); }
+    body[data-auth-state="in"] #pick-login-card { display: none !important; }
+    #pick-login-card { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--paper, #f6f4ee); z-index: 9999; font-family: 'Pretendard', system-ui, sans-serif; }
+    .pick-login__inner { width: min(360px, 88vw); padding: 36px 30px; background: var(--bg, #fff); border: 1px solid var(--line, #ececea); border-radius: 18px; box-shadow: var(--shadow-float, 0 24px 48px -24px rgba(20,18,14,.18)); text-align: center; }
+    .pick-login__brand { font-size: 30px; font-weight: 700; letter-spacing: -.045em; color: var(--ink-1, #15140f); margin: 0 0 10px; display: inline-flex; align-items: flex-end; justify-content: center; gap: 3px; }
+    .pick-login__dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent, #d97757); margin-bottom: 7px; }
+    .pick-login__hint { font-size: 14px; color: var(--ink-3, #8a877d); margin: 0 0 24px; line-height: 1.5; word-break: keep-all; }
+    .pick-login__btn { width: 100%; padding: 12px 16px; background: var(--bg, #fff); color: var(--ink-1, #1f1f1f); border: 1px solid #dadce0; border-radius: 999px; font-size: 15px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: background .15s, border-color .15s; }
+    .pick-login__btn:hover:not(:disabled) { background: var(--hover, #f4f2ec); border-color: var(--ink-4, #b8b5aa); }
+    .pick-login__btn:disabled { background: var(--paper-2, #efece4); color: var(--ink-3, #8a877d); cursor: not-allowed; }
+    .pick-login__error { margin: 16px 0 0; min-height: 18px; font-size: 12px; color: var(--danger, #b44d3b); }
   `;
   document.head.appendChild(style);
 }

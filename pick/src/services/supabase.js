@@ -50,8 +50,8 @@ if (SUPABASE_URL && SUPABASE_ANON_KEY) {
 
 /** Supabase 클라이언트. env 누락 시 null. */
 export const supabase = _client;
-// 진단·검증용 노출 (tasteDB/tasteAuth/tasteSync 패턴) — 채널 누수 점검 시 getChannels() 사용.
-if (typeof window !== 'undefined' && _client) window.tasteSupabase = _client;
+// 진단·검증용 노출 (pickDB/pickAuth/pickSync 패턴) — 채널 누수 점검 시 getChannels() 사용.
+if (typeof window !== 'undefined' && _client) window.pickSupabase = _client;
 
 /** env 가 정상 설정됐는지 여부. login UI 안내용. */
 export const isSupabaseConfigured = Boolean(_client);

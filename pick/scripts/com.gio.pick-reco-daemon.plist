@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- taste 추천 로컬 데몬 — launchd KeepAlive 상주. 설치:
-       cp taste/scripts/com.gio.taste-reco-daemon.plist ~/Library/LaunchAgents/
-       launchctl load ~/Library/LaunchAgents/com.gio.taste-reco-daemon.plist
-     해제: launchctl unload ~/Library/LaunchAgents/com.gio.taste-reco-daemon.plist -->
+<!-- pick 추천 로컬 데몬 — launchd KeepAlive 상주. 설치:
+       cp pick/scripts/com.gio.pick-reco-daemon.plist ~/Library/LaunchAgents/
+       launchctl load ~/Library/LaunchAgents/com.gio.pick-reco-daemon.plist
+     해제: launchctl unload ~/Library/LaunchAgents/com.gio.pick-reco-daemon.plist -->
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
   <key>Label</key>
-  <string>com.gio.taste-reco-daemon</string>
+  <string>com.gio.pick-reco-daemon</string>
   <key>ProgramArguments</key>
   <array>
     <string>/opt/homebrew/bin/node</string>
-    <string>/Users/gio_c/apps/taste/scripts/taste-reco-daemon.mjs</string>
+    <string>/Users/gio_c/apps/pick/scripts/pick-reco-daemon.mjs</string>
   </array>
   <key>WorkingDirectory</key>
-  <string>/Users/gio_c/apps/taste</string>
+  <string>/Users/gio_c/apps/pick</string>
   <key>RunAtLoad</key>
   <true/>
   <key>KeepAlive</key>
@@ -22,9 +22,9 @@
   <key>ThrottleInterval</key>
   <integer>10</integer>
   <key>StandardOutPath</key>
-  <string>/Users/gio_c/.local/state/taste-reco-daemon/stdout.log</string>
+  <string>/Users/gio_c/.local/state/pick-reco-daemon/stdout.log</string>
   <key>StandardErrorPath</key>
-  <string>/Users/gio_c/.local/state/taste-reco-daemon/stderr.log</string>
+  <string>/Users/gio_c/.local/state/pick-reco-daemon/stderr.log</string>
   <key>EnvironmentVariables</key>
   <dict>
     <key>PATH</key>

@@ -1,4 +1,4 @@
-// taste 추천 엔진 — 순수 판정/형성 로직.
+// pick 추천 엔진 — 순수 판정/형성 로직.
 // Deno edge fn(index.ts)과 Node vitest(logic.test.js) 공용. 런타임 전역 의존 없음
 // (TextEncoder 는 Deno·Node 양쪽 글로벌). 부수효과·DB 접근 없음 → 단위 테스트 용이.
 // Today ai-comment/logic.js 미러.

@@ -1,10 +1,10 @@
-const db = () => { const d = globalThis.tasteDB; if (!d) throw new Error('[tasteQueries] tasteDB 미초기화'); return d; };
+const db = () => { const d = globalThis.pickDB; if (!d) throw new Error('[pickQueries] pickDB 미초기화'); return d; };
 const newId = () => (globalThis.crypto?.randomUUID?.() || 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2));
 const nowIso = () => new Date().toISOString();
-const enqueue = (id) => { try { globalThis.tasteSync?.queueUpload?.('ratings', id); } catch (e) {} };
+const enqueue = (id) => { try { globalThis.pickSync?.queueUpload?.('ratings', id); } catch (e) {} };
 
 export async function createRating(input) {
-  if (!input?.owner_id) throw new Error('[tasteQueries] owner_id 누락');
+  if (!input?.owner_id) throw new Error('[pickQueries] owner_id 누락');
   const row = {
     id: newId(), owner_id: input.owner_id, media_type: input.media_type,
     title: input.title, year: input.year ?? null, external_id: input.external_id ?? null,
@@ -41,4 +41,4 @@ export async function listPendingRatings() { return db().ratings.where('pending_
 export async function setPendingSync(id, v) { const c = await db().ratings.get(id); if (c) await db().ratings.put({ ...c, pending_sync: v }); }
 
 export const Queries = { createRating, updateRating, softDeleteRating, getRating, getRatingAny, listRatings, listPendingRatings, setPendingSync };
-if (typeof window !== 'undefined') window.tasteQueries = Queries;
+if (typeof window !== 'undefined') window.pickQueries = Queries;

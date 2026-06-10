@@ -20,8 +20,8 @@ export default defineConfig({
     sourcemap: true,
   },
   server: {
-    // 포트 fallback 금지 — geo-apps OAuth redirect URI 가 포트 한정 (today 5175 / book 5176 / taste 5177).
-    // cue 는 5178 (taste 가 5177 점유). fallback 시 redirect_uri_mismatch.
+    // 포트 fallback 금지 — geo-apps OAuth redirect URI 가 포트 한정 (today 5175 / book 5176 / pick 5177).
+    // cue 는 5178 (pick 이 5177 점유). fallback 시 redirect_uri_mismatch.
     port: 5178,
     strictPort: true,
     host: '0.0.0.0',

@@ -1,4 +1,4 @@
-/* taste — 더미 데이터: 한국어 작품 + 브랜치 그래프
+/* pick — 더미 데이터: 한국어 작품 + 브랜치 그래프
    모든 텍스트는 실제 작품. summary/reason은 사람이 쓴 듯 짧게. */
 (function () {
   // hue: 포스터 플레이스홀더 색조(저채도). 작품마다 결정적 색 한 점.
@@ -383,6 +383,6 @@
   // 최근 평가 활동(홈 사이드/상태용)
   const RECENT = ['heojil', 'demian', 'sapiens', 'parasite', 'cmbyn', 'cosmos'];
 
-  window.TASTE = { works: W, home: HOME, recent: RECENT,
+  window.PICK = { works: W, home: HOME, recent: RECENT,
     list: Object.values(W) };
 })();

@@ -1,4 +1,4 @@
-// taste 내 서재 — 포스터 그리드 + 정렬(최신/등록/별점)·별점 등급 필터.
+// pick 내 서재 — 포스터 그리드 + 정렬(최신/등록/별점)·별점 등급 필터.
 // 카테고리(영화/드라마/책)는 상단 네비가 라우트(cat)로 전달. cat 없으면 전체.
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString } from '../ui/poster.js';

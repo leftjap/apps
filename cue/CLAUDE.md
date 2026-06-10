@@ -18,7 +18,7 @@
 ## 스택
 
 Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 시안이 React 라 React 유지).
-포트 dev 5178 / preview 4178 (strictPort — OAuth redirect URI 한정; taste 가 5177 점유).
+포트 dev 5178 / preview 4178 (strictPort — OAuth redirect URI 한정; pick 이 5177 점유).
 
 ## 데이터 (실연동)
 

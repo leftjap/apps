@@ -1,4 +1,4 @@
-// taste 작품 상세 허브 ★ — design-ref/source/app/detail.jsx 포팅(바닐라).
+// pick 작품 상세 허브 ★ — design-ref/source/app/detail.jsx 포팅(바닐라).
 // Wave 1: rail(포스터+정보+ratebox 별점) + 줄거리 + 갈래 빈상태. 갈래/분석연출은 Wave 2.
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString, chip, dot } from '../ui/poster.js';
@@ -34,8 +34,8 @@ function pickMeta(src) {
 }
 
 async function resolveWork(id, userId) {
-  if (typeof window !== 'undefined' && window.__tasteOpen && window.__tasteOpen[id]) return pickMeta(window.__tasteOpen[id]);
-  const db = globalThis.tasteDB;
+  if (typeof window !== 'undefined' && window.__pickOpen && window.__pickOpen[id]) return pickMeta(window.__pickOpen[id]);
+  const db = globalThis.pickDB;
   if (db && id) {
     try { const row = await db.ratings.get(id); if (row && !row.deleted_at) return pickMeta(row); } catch (e) { /* noop */ }
   }
@@ -139,7 +139,7 @@ function buildSub(w, isFilm) {
 function srcKey(w) { return `${w.title}|${w.year ?? ''}`; }
 
 async function readBranches(userId, key) {
-  const db = globalThis.tasteDB;
+  const db = globalThis.pickDB;
   if (!db || !userId) return [];
   try {
     const all = await db.recommendations.where('source_work').equals(key).toArray();
@@ -147,10 +147,10 @@ async function readBranches(userId, key) {
   } catch (e) { return []; }
 }
 
-// 갈래 클릭 = 그 작품 상세로 가지치며 이동(spec §3.2). 미평가작이라 __tasteOpen 으로 메타 전달.
+// 갈래 클릭 = 그 작품 상세로 가지치며 이동(spec §3.2). 미평가작이라 __pickOpen 으로 메타 전달.
 function openBranch(r) {
-  window.__tasteOpen = window.__tasteOpen || {};
-  window.__tasteOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
+  window.__pickOpen = window.__pickOpen || {};
+  window.__pickOpen[r.id] = { media_type: r.media_type, title: r.title, year: r.year, external_id: r.external_id, meta: { poster_url: r.poster_url } };
   trailAppend(r.id, r.title);   // 갈래 클릭 — 경로에 가지 추가
   location.hash = '#/w/' + encodeURIComponent(r.id);
 }
@@ -246,8 +246,8 @@ function branchesSection(w, userId) {
     if (!supabase || !userId) return;
     try { if (_branchChannel) supabase.removeChannel(_branchChannel); } catch (e) { /* noop */ }
     _branchChannel = supabase
-      .channel('taste-branch-' + userId)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'taste_recommendations', filter: 'owner_id=eq.' + userId }, async () => {
+      .channel('pick-branch-' + userId)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pick_recommendations', filter: 'owner_id=eq.' + userId }, async () => {
         try { await Sync.pullRecommendations(userId); } catch (e) { /* noop */ }
         render();
       })

@@ -1,4 +1,4 @@
-/* taste — 작품 상세(허브) 화면 */
+/* pick — 작품 상세(허브) 화면 */
 function InfoRow({ label, children }) {
   return (
     <div className="inforow">
@@ -42,7 +42,7 @@ function Detail({ work, ratings, setRating, onOpen, path, analyzing }) {
   const isFilm = work.type === 'film';
   const myRating = ratings[work.id] ?? 0;
   const branches = work.branches
-    .map((b) => ({ b, w: window.TASTE.works[b.to] }))
+    .map((b) => ({ b, w: window.PICK.works[b.to] }))
     .filter((x) => x.w);
 
   const pending = analyzing === work.id;
@@ -53,7 +53,7 @@ function Detail({ work, ratings, setRating, onOpen, path, analyzing }) {
       {path.length > 1 && (
         <nav className="trail">
           {path.map((id, i) => {
-            const w = window.TASTE.works[id];
+            const w = window.PICK.works[id];
             const last = i === path.length - 1;
             return (
               <span key={id + i} className="trail__seg">

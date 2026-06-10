@@ -1,6 +1,6 @@
 import Dexie from 'dexie';
 
-export function createTasteDB(name = 'taste') {
+export function createPickDB(name = 'pick') {
   const db = new Dexie(name);
   db.version(1).stores({
     ratings: '&id, owner_id, media_type, updated_at, deleted_at, [owner_id+media_type], pending_sync',
@@ -13,4 +13,4 @@ export function createTasteDB(name = 'taste') {
   });
   return db;
 }
-export default createTasteDB;
+export default createPickDB;

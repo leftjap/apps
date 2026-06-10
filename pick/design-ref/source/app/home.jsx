@@ -1,4 +1,4 @@
-/* taste — 홈(메인 추천 피드) 화면 — 영화·책 트랙 분리 */
+/* pick — 홈(메인 추천 피드) 화면 — 영화·책 트랙 분리 */
 const { useState: useSh } = React;
 
 function Basis({ ids, onOpen }) {
@@ -7,7 +7,7 @@ function Basis({ ids, onOpen }) {
       <span className="basis__lead" aria-hidden="true">↳</span>
       <div className="basis__chips">
         {ids.map((id) => {
-          const w = window.TASTE.works[id];
+          const w = window.PICK.works[id];
           if (!w) return null;
           return (
             <button key={id} className="basis__chip"
@@ -41,7 +41,7 @@ function Segmented({ value, onChange }) {
 
 /* 슬림 오늘의 추천 — 영역 전체 클릭 */
 function Featured({ rec, onOpen, analyzing }) {
-  const w = window.TASTE.works[rec.to];
+  const w = window.PICK.works[rec.to];
   return (
     <section className="feat" onClick={() => onOpen(rec.to)}>
       <div className="feat__eyebrow">
@@ -70,7 +70,7 @@ function Featured({ rec, onOpen, analyzing }) {
 }
 
 function RecRow({ rec, onOpen }) {
-  const w = window.TASTE.works[rec.to];
+  const w = window.PICK.works[rec.to];
   return (
     <article className="rec" onClick={() => onOpen(rec.to)}>
       <div className="rec__poster">
@@ -120,7 +120,7 @@ function Track({ title, count, recs, onOpen, pending }) {
 }
 
 function Home({ onOpen, ratings, analyzing }) {
-  const home = window.TASTE.home;
+  const home = window.PICK.home;
   const [filter, setFilter] = useSh('all');
   const ratedCount = Object.values(ratings).filter((v) => v > 0).length;
   const pending = analyzing === 'home';
@@ -129,8 +129,8 @@ function Home({ onOpen, ratings, analyzing }) {
   const showFilms = filter === 'all' || filter === 'film';
   const showBooks = filter === 'all' || filter === 'book';
 
-  const recent = window.TASTE.recent.filter((id) => {
-    const w = window.TASTE.works[id];
+  const recent = window.PICK.recent.filter((id) => {
+    const w = window.PICK.works[id];
     return filter === 'all' || w.type === filter;
   });
 
@@ -161,7 +161,7 @@ function Home({ onOpen, ratings, analyzing }) {
         <h2 className="recent__h">최근 평가</h2>
         <div className="recent__row">
           {recent.map((id) => {
-            const w = window.TASTE.works[id];
+            const w = window.PICK.works[id];
             const r = ratings[id] ?? 0;
             return (
               <button key={id} className="recent__item" onClick={() => onOpen(id)}>

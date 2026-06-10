@@ -1,4 +1,4 @@
-// taste 추천 엔진 순수 로직 단위 테스트 (Node vitest). edge fn 과 공용인 logic.js 검증.
+// pick 추천 엔진 순수 로직 단위 테스트 (Node vitest). edge fn 과 공용인 logic.js 검증.
 import { describe, it, expect } from 'vitest';
 import { constantTimeEqual, ratedKey, pendingOwners, toOwnerContext } from './logic.js';
 

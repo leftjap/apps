@@ -1,11 +1,11 @@
 /**
- * Edge Function: taste-reco
+ * Edge Function: pick-reco
  *
  * 클라우드 Routine(클로드)이 호출하는 DB 게이트웨이. service role 키는 이 함수 안에만 있고
- * 루틴엔 저권한 토큰(TASTE_RECO_TOKEN)만 둔다 → 토큰 누출돼도 피해는 "추천 스냅샷 교체"로 한정.
- * (Today ai-comment 미러. taste 는 owner별 개인 추천 — spec D4 격리.)
+ * 루틴엔 저권한 토큰(PICK_RECO_TOKEN)만 둔다 → 토큰 누출돼도 피해는 "추천 스냅샷 교체"로 한정.
+ * (Today ai-comment 미러. pick 는 owner별 개인 추천 — spec D4 격리.)
  *
- * 인증: 헤더 `x-taste-reco-token` == secret TASTE_RECO_TOKEN (상수시간 비교). user JWT 불필요.
+ * 인증: 헤더 `x-pick-reco-token` == secret PICK_RECO_TOKEN (상수시간 비교). user JWT 불필요.
  * 액션 (?action= 또는 body.action):
  *   context → 추천 생성 컨텍스트. body.owner_id 주면 그 owner 만(평가 없으면 []),
  *             없으면 재생성 필요한 owner 전체(pendingOwners) 배열.
@@ -13,8 +13,8 @@
  *
  * 순수 로직(constantTimeEqual/pendingOwners/toOwnerContext)은 ./logic.js (vitest 공용).
  *
- * Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (Supabase 자동 주입), TASTE_RECO_TOKEN
- * 옵션 env: TASTE_SETTLE_MINUTES(기본 15)
+ * Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (Supabase 자동 주입), PICK_RECO_TOKEN
+ * 옵션 env: PICK_SETTLE_MINUTES(기본 15)
  */
 
 // @ts-ignore — Deno std
@@ -27,12 +27,12 @@ declare const Deno: { env: { get(k: string): string | undefined }; serve: (h: (r
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const TASTE_RECO_TOKEN = Deno.env.get('TASTE_RECO_TOKEN');
-const SETTLE_MS = Number(Deno.env.get('TASTE_SETTLE_MINUTES') || 15) * 60 * 1000;
+const PICK_RECO_TOKEN = Deno.env.get('PICK_RECO_TOKEN');
+const SETTLE_MS = Number(Deno.env.get('PICK_SETTLE_MINUTES') || 15) * 60 * 1000;
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-taste-reco-token',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-pick-reco-token',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const json = (status: number, body: unknown) =>
@@ -61,13 +61,13 @@ async function readAll<T>(table: string, cols: string, eq?: [string, string]): P
 
 async function runContext(owner_id?: string) {
   if (owner_id) {
-    const ratings = await readAll<Rating>('taste_ratings', 'owner_id,media_type,title,year,rating,meta,updated_at,deleted_at', ['owner_id', owner_id]);
+    const ratings = await readAll<Rating>('pick_ratings', 'owner_id,media_type,title,year,rating,meta,updated_at,deleted_at', ['owner_id', owner_id]);
     const live = ratings.filter((r) => !r.deleted_at);
     if (!live.length) return [];
     return [toOwnerContext(owner_id, live)];
   }
-  const ratings = await readAll<Rating>('taste_ratings', 'owner_id,media_type,title,year,rating,meta,updated_at,deleted_at');
-  const recos = await readAll<Reco>('taste_recommendations', 'owner_id,generated_at');
+  const ratings = await readAll<Rating>('pick_ratings', 'owner_id,media_type,title,year,rating,meta,updated_at,deleted_at');
+  const recos = await readAll<Reco>('pick_recommendations', 'owner_id,generated_at');
   const owners = pendingOwners(ratings, recos, SETTLE_MS, Date.now());
   return owners.map((oid) => toOwnerContext(oid, ratings.filter((r) => r.owner_id === oid && !r.deleted_at)));
 }
@@ -91,12 +91,12 @@ async function runSubmit(owner_id: string, batch_id: string, recommendations: Ar
   }));
   // 교체 범위 — replace 없으면 owner 전량(backward compat); {kind:'home'}=홈만(갈래 보존);
   // {kind:'branch',source_work}=그 작품 갈래만(홈·타 작품 갈래 보존).
-  let del = sb.from('taste_recommendations').delete().eq('owner_id', owner_id);
+  let del = sb.from('pick_recommendations').delete().eq('owner_id', owner_id);
   if (replace?.kind === 'home') del = del.eq('kind', 'home');
   else if (replace?.kind === 'branch') del = del.eq('kind', 'branch').eq('source_work', replace.source_work ?? '');
   const { error: delErr } = await del;
   if (delErr) return json(500, { status: 'error', message: `delete: ${delErr.message}` });
-  const { error: insErr } = await sb.from('taste_recommendations').insert(rows);
+  const { error: insErr } = await sb.from('pick_recommendations').insert(rows);
   if (insErr) return json(500, { status: 'error', message: `insert: ${insErr.message}` });
   return json(200, { status: 'ok', owner_id, inserted: rows.length, scope: replace?.kind ?? 'all' });
 }
@@ -105,8 +105,8 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   if (req.method !== 'POST') return json(405, { status: 'error', message: 'Method not allowed' });
 
-  if (!TASTE_RECO_TOKEN) return json(503, { status: 'error', message: 'TASTE_RECO_TOKEN not configured' });
-  if (!constantTimeEqual(req.headers.get('x-taste-reco-token'), TASTE_RECO_TOKEN)) {
+  if (!PICK_RECO_TOKEN) return json(503, { status: 'error', message: 'PICK_RECO_TOKEN not configured' });
+  if (!constantTimeEqual(req.headers.get('x-pick-reco-token'), PICK_RECO_TOKEN)) {
     return json(401, { status: 'error', message: 'Unauthorized' });
   }
 

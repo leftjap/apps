@@ -1,4 +1,4 @@
-/* taste — 앱 셸: 라우팅 · 검색(1급) · AI 분석 연출 · Tweaks */
+/* pick — 앱 셸: 라우팅 · 검색(1급) · AI 분석 연출 · Tweaks */
 const { useState: useS, useEffect: useE, useRef: useR, useMemo: useM } = React;
 
 const LS = {
@@ -16,7 +16,7 @@ function SearchOverlay({ open, onClose, onPick }) {
 
   const results = useM(() => {
     const term = q.trim().toLowerCase();
-    let all = window.TASTE.list;
+    let all = window.PICK.list;
     if (type !== 'all') all = all.filter((w) => w.type === type);
     if (!term) return all.slice(0, 10);
     return all.filter((w) => {
@@ -81,11 +81,11 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const [view, setView] = useS(() => LS.get('taste.view', { name: 'home', path: [] }));
+  const [view, setView] = useS(() => LS.get('pick.view', { name: 'home', path: [] }));
   const [ratings, setRatings] = useS(() => {
     const seed = {};
-    for (const w of window.TASTE.list) if (w.rating) seed[w.id] = w.rating;
-    return LS.get('taste.ratings', seed);
+    for (const w of window.PICK.list) if (w.rating) seed[w.id] = w.rating;
+    return LS.get('pick.ratings', seed);
   });
   const [analyzing, setAnalyzing] = useS(null);
   const [searchOpen, setSearchOpen] = useS(false);
@@ -102,8 +102,8 @@ function App() {
     return () => { document.removeEventListener('mousedown', h); document.removeEventListener('keydown', k); };
   }, [menuOpen]);
 
-  useE(() => LS.set('taste.view', view), [view]);
-  useE(() => LS.set('taste.ratings', ratings), [ratings]);
+  useE(() => LS.set('pick.view', view), [view]);
+  useE(() => LS.set('pick.ratings', ratings), [ratings]);
 
   // ⌘K / 단축키로 검색 열기
   useE(() => {
@@ -145,7 +145,7 @@ function App() {
   const onSearchPick = (id) => { setSearchOpen(false); navTo(id); };
 
   const current = view.name === 'detail'
-    ? window.TASTE.works[view.path[view.path.length - 1]]
+    ? window.PICK.works[view.path[view.path.length - 1]]
     : null;
 
   const rootCls = [
@@ -159,8 +159,8 @@ function App() {
     <div className={rootCls} style={{ '--accent': t.accent }}>
       <header className="topbar">
         <div className="topbar__inner">
-          <button className="brand" onClick={goHome} aria-label="taste 홈">
-            taste<span className="brand__dot" />
+          <button className="brand" onClick={goHome} aria-label="pick 홈">
+            pick<span className="brand__dot" />
           </button>
           <button className="searchcue" onClick={() => setSearchOpen(true)}>
             <span className="searchcue__icon">⌕</span>

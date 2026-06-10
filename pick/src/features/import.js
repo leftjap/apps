@@ -1,4 +1,4 @@
-// taste 가져오기 — 왓챠 CSV 업로드 → 파싱 미리보기 → 저장(create/update dedup). 디자인 외 유틸.
+// pick 가져오기 — 왓챠 CSV 업로드 → 파싱 미리보기 → 저장(create/update dedup). 디자인 외 유틸.
 import { el, clear } from '../ui/dom.js';
 import { parseWatchaCsv } from '../lib/watcha.js';
 import { Queries } from '../db/queries.js';

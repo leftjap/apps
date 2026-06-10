@@ -1,14 +1,14 @@
-# Supabase 프로젝트 설정 — taste (geo-apps 공유 프로젝트, 테이블 prefix taste_).
+# Supabase 프로젝트 설정 — pick (geo-apps 공유 프로젝트, 테이블 prefix pick_).
 # Today 패턴: functions deploy 시 gateway 기본 verify_jwt=true 사고 방지로 함수별 명시.
 #
 # 적용:
-#   supabase functions deploy taste-reco --project-ref tcbooffrdacfatywdzcm
-# "다시 추천" 버튼은 edge fn 이 아니라 taste_reco_requests insert → 로컬 데몬(scripts/taste-reco-daemon.mjs)이 처리.
+#   supabase functions deploy pick-reco --project-ref tcbooffrdacfatywdzcm
+# "다시 추천" 버튼은 edge fn 이 아니라 pick_reco_requests insert → 로컬 데몬(scripts/pick-reco-daemon.mjs)이 처리.
 
 project_id = "tcbooffrdacfatywdzcm"
 
-[functions.taste-reco]
-# x-taste-reco-token 커스텀 헤더로 함수 본체 인증 → gateway JWT 불필요(로컬 데몬의 claude 가 토큰으로 호출).
+[functions.pick-reco]
+# x-pick-reco-token 커스텀 헤더로 함수 본체 인증 → gateway JWT 불필요(로컬 데몬의 claude 가 토큰으로 호출).
 verify_jwt = false
 
 [functions.aladin]

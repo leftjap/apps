@@ -7,7 +7,7 @@
  *  - userHash(user) → 사용자별 IndexedDB 이름 격리 (Wave 11.5.1)
  *  - ensureUserDB / closeUserDB — Dexie 인스턴스 동적 할당 (Wave 11.5.1)
  *  - signOut cleanup 콜백 (Realtime unsubscribe 등 등록)
- *  - mocks IIFE 접근용 `window.tasteAuth` 노출
+ *  - mocks IIFE 접근용 `window.pickAuth` 노출
  *
  * env 미설정(supabase=null) 시 Auth 호출 no-op + 콘솔 경고.
  * Dexie 는 supabase 없어도 동작 (오프라인 우선) — 단 user.id 가 있어야 ensureUserDB 가능.
@@ -15,7 +15,7 @@
 import { supabase, isSupabaseConfigured, storageKey } from './supabase.js';
 import { markExplicitSignOut } from './auth-session-guard.js';
 import { clearBackup } from './auth-session-backup.js';
-import { createTasteDB } from '../db/schema.js';
+import { createPickDB } from '../db/schema.js';
 
 /** 허용 이메일 (대소문자 무관) — Gym/Study 와 동일 allowlist 공유. */
 export const ALLOWED_EMAILS = Object.freeze([
@@ -23,7 +23,7 @@ export const ALLOWED_EMAILS = Object.freeze([
   'soyoun312@gmail.com',
 ]);
 
-export const AUTH_ERROR_KEY = 'tasteAuthError';
+export const AUTH_ERROR_KEY = 'pickAuthError';
 
 const _signOutCallbacks = new Set();
 let _currentDB = null;
@@ -132,7 +132,7 @@ function isAllowedEmail(email) {
 
 /**
  * user.id (UUID) 를 sha256 → hex 12자.
- * Dexie DB 이름 `taste_<hash>` 용. 사용자 2명 환경에서 충돌 0 (12 hex = 48 bits).
+ * Dexie DB 이름 `pick_<hash>` 용. 사용자 2명 환경에서 충돌 0 (12 hex = 48 bits).
  */
 async function userHash(user) {
   if (!user?.id) throw new Error('userHash: user.id 누락');
@@ -147,7 +147,7 @@ async function userHash(user) {
 /**
  * user 기반 Dexie 인스턴스 보장.
  * 같은 user 면 기존 인스턴스 재사용, 다른 user 면 close 후 재생성.
- * window.tasteDB 동적 할당 → mocks 의 inline script 가 즉시 새 인스턴스 참조.
+ * window.pickDB 동적 할당 → mocks 의 inline script 가 즉시 새 인스턴스 참조.
  *
  * 동시성:
  *  - 동시 호출 시 _initPromise 로 직렬화 (signOut → 재로그인 race 방지).
@@ -158,16 +158,16 @@ async function ensureUserDB(user) {
     await _initPromise.catch(() => {});
   }
   const hash = await userHash(user);
-  const dbName = 'taste_' + hash;
+  const dbName = 'pick_' + hash;
   if (_currentDB && _currentDBName === dbName) return _currentDB;
 
   _initPromise = (async () => {
     if (_currentDB) {
       try { _currentDB.close(); } catch (e) { console.error('[auth] prev db close 실패', e); }
     }
-    _currentDB = createTasteDB(dbName);
+    _currentDB = createPickDB(dbName);
     _currentDBName = dbName;
-    if (typeof window !== 'undefined') window.tasteDB = _currentDB;
+    if (typeof window !== 'undefined') window.pickDB = _currentDB;
     return _currentDB;
   })();
   try { return await _initPromise; }
@@ -181,7 +181,7 @@ function closeUserDB() {
   _currentDB = null;
   _currentDBName = null;
   _initPromise = null;
-  if (typeof window !== 'undefined') window.tasteDB = null;
+  if (typeof window !== 'undefined') window.pickDB = null;
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ export const Auth = {
 };
 
 if (typeof window !== 'undefined') {
-  window.tasteAuth = Auth;
+  window.pickAuth = Auth;
 }
 
 export default Auth;

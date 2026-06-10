@@ -1,4 +1,4 @@
-# 작업지시서 — taste (책·영화 평가→추천 PWA)
+# 작업지시서 — pick (책·영화 평가→추천 PWA)
 
 > **이 문서 하나로 구현 가능하도록 작성되었습니다.** 시안(HTML 프로토타입)을 그대로 배포하지 말고, 대상 코드베이스의 환경·패턴에 맞게 **재구현**하세요. 환경이 없다면 React + TypeScript 등 적합한 스택을 선택해 구현합니다.
 
@@ -8,11 +8,11 @@
 
 | 항목 | 위치 |
 |---|---|
-| **단일 파일 시안 (바로 열기)** | 이 폴더의 `시안 — taste 프로토타입.html` — 더블클릭하면 브라우저에서 바로 동작 |
-| **실행형 소스 (직접 편집 가능)** | 이 폴더의 `source/taste.html` + `source/app/*.jsx` |
-| **임시 라이브 URL (~1시간 유효)** | https://71ba8f22-71d8-4d66-934e-9359b87a9da4.claudeusercontent.com/v1/design/projects/71ba8f22-71d8-4d66-934e-9359b87a9da4/serve/design_handoff_taste/%EC%8B%9C%EC%95%88%20%E2%80%94%20taste%20%ED%94%84%EB%A1%9C%ED%86%A0%ED%83%80%EC%9E%85.html?t=a3a71ca1e1b4a4c2aa1649cd76d7452917def0239bc52f542b24f653a0957eb2.77efd719-6301-42fe-9ef6-7fb85da0cfac.fcb3f812-6bb4-409e-a1c0-d9cfce470079.1780654026.fp&direct=1 |
+| **단일 파일 시안 (바로 열기)** | 이 폴더의 `시안 — pick 프로토타입.html` — 더블클릭하면 브라우저에서 바로 동작 |
+| **실행형 소스 (직접 편집 가능)** | 이 폴더의 `source/pick.html` + `source/app/*.jsx` |
+| **임시 라이브 URL (~1시간 유효)** | https://71ba8f22-71d8-4d66-934e-9359b87a9da4.claudeusercontent.com/v1/design/projects/71ba8f22-71d8-4d66-934e-9359b87a9da4/serve/design_handoff_pick/%EC%8B%9C%EC%95%88%20%E2%80%94%20pick%20%ED%94%84%EB%A1%9C%ED%86%A0%ED%83%80%EC%9E%85.html?t=a3a71ca1e1b4a4c2aa1649cd76d7452917def0239bc52f542b24f653a0957eb2.77efd719-6301-42fe-9ef6-7fb85da0cfac.fcb3f812-6bb4-409e-a1c0-d9cfce470079.1780654026.fp&direct=1 |
 
-> ⚠️ 라이브 URL은 약 1시간 후 만료됩니다. **기준 시안은 이 폴더의 `시안 — taste 프로토타입.html` 파일**입니다.
+> ⚠️ 라이브 URL은 약 1시간 후 만료됩니다. **기준 시안은 이 폴더의 `시안 — pick 프로토타입.html` 파일**입니다.
 
 **Fidelity: 하이파이(hifi).** 색·타이포·간격·인터랙션이 확정된 픽셀 단위 목업입니다. 코드베이스의 기존 라이브러리/패턴으로 **픽셀 충실도 있게** 재현하세요.
 
@@ -22,7 +22,7 @@
 
 ## 1. 제품 개요
 
-**taste** — 책과 영화를 평가하면, 그 평가를 AI가 분석해 “다음에 볼·읽을 작품”을 **이유와 함께** 추천하는 개인용 PWA. 데스크톱 주력 + 모바일 대응.
+**pick** — 책과 영화를 평가하면, 그 평가를 AI가 분석해 “다음에 볼·읽을 작품”을 **이유와 함께** 추천하는 개인용 PWA. 데스크톱 주력 + 모바일 대응.
 
 사용자는 단 두 가지만 한다:
 - **평가** — 본 작품을 검색해 별점을 매긴다. (검색이 평가의 입구)
@@ -110,7 +110,7 @@
 
 - **컨테이너**: 콘텐츠 `max-width:1060px; margin:0 auto;` padding `clamp(24,4vw,48)px clamp(20,5vw,56)px 120px`.
 - **상단바(sticky, z40)**: `bg color-mix(in oklab,var(--bg) 86%,transparent)` + `backdrop-filter:saturate(1.2) blur(14px)` + 하단 `1px var(--line)`. 내부(`.topbar__inner`)는 `max-width:1060` 중앙정렬, `padding:15px clamp(20,5vw,56)px`, `display:flex; align-items:center; gap:18px`.
-  - **좌: 브랜드** `taste` (27px/700/-.045em) + 코랄 점(7px). 클릭=홈.
+  - **좌: 브랜드** `pick` (27px/700/-.045em) + 코랄 점(7px). 클릭=홈.
   - **중앙: 검색 큐** `flex:1; max-width:520px; height40; bg paper; border line; radius999;` — 돋보기 + “작품을 검색해 평가하기” + `⌘K` kbd. 클릭=검색 오버레이.
   - **우: 아바타** 38px 원(`bg paper-2; border line`, 글자 “나”). 클릭=계정 드롭다운(§6.3).
 - 모바일(≤880): 검색 큐는 44px 아이콘만, 라벨 숨김.
@@ -216,7 +216,7 @@
 - `ratings`: `{ [workId]: number(0~5, 0.5단위) }`. 평가 0 = 해제.
 - `analyzing`: `null | workId | 'home'`.
 - `searchOpen`, `menuOpen`.
-- **영속화(프로토타입)**: `localStorage['taste.view']`, `localStorage['taste.ratings']`. **실제 구현은 사용자 계정 + 백엔드 저장**으로 대체.
+- **영속화(프로토타입)**: `localStorage['pick.view']`, `localStorage['pick.ratings']`. **실제 구현은 사용자 계정 + 백엔드 저장**으로 대체.
 
 ### 10.2 작품 데이터 스키마
 ```ts
@@ -278,11 +278,11 @@ type Work = {
 ## 14. 파일 안내 (이 패키지)
 
 ```
-design_handoff_taste/
+design_handoff_pick/
 ├─ README.md                     ← 이 작업지시서
-├─ 시안 — taste 프로토타입.html   ← 단일 파일 시안(바로 열기)
+├─ 시안 — pick 프로토타입.html   ← 단일 파일 시안(바로 열기)
 └─ source/                       ← 실행형 소스(레퍼런스)
-   ├─ taste.html                 ← 진입 HTML + 전체 스타일(<style>)
+   ├─ pick.html                 ← 진입 HTML + 전체 스타일(<style>)
    └─ app/
       ├─ data.js                 ← 더미 작품 + 브랜치 그래프 (스키마 참조)
       ├─ ui.jsx                  ← Poster, StarRating(★비추), Chip, Dot

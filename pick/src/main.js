@@ -1,5 +1,5 @@
-import './styles/taste.css';
-// taste 진입점 — today 부트스트랩 미러(subscribe-first OAuth). partner/feature-mount 제거.
+import './styles/pick.css';
+// pick 진입점 — today 부트스트랩 미러(subscribe-first OAuth). partner/feature-mount 제거.
 import { Auth } from './services/auth.js';
 import { supabase, storageKey } from './services/supabase.js';
 import { installAuthSessionGuard } from './services/auth-session-guard.js';
@@ -19,7 +19,7 @@ async function handleSession(session) {
   }
   await Auth.ensureUserDB(user);
   await Profile.ensureProfile(user);
-  setRouterUser(user.id);
+  setRouterUser(user.id, user.email);
   showAuthenticated(user);
   // Supabase → Dexie 동기화 (백그라운드, 실패해도 화면 진입).
   Sync.startSync(user).catch((e) => console.warn('[main] startSync 실패', e?.message || e));
