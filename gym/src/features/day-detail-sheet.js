@@ -57,22 +57,22 @@ function renderSummary(doc, iso, entry) {
 
   tagEl.textContent = entry.tag || '';
 
+  // 라이트 페이퍼 (사용자 피드백 2026-06-10: 다크 잔존·level(med) 디버그 노출·볼륨 단위 누락 수정)
   const chips = [];
-  if (entry.vol) chips.push(`<span>볼륨 ${escapeText(entry.vol)}</span>`);
-  if (entry.min) chips.push(`<span>${escapeText(entry.min)}분</span>`);
-  if (entry.pr) chips.push(`<span style="color:var(--accent);">PR ${escapeText(entry.pr)}</span>`);
-  if (entry.level) chips.push(`<span>${escapeText(entry.level)}</span>`);
+  if (entry.vol) chips.push(`<span>볼륨 <b style="font-family:var(--font-mono);font-weight:600;color:var(--ink-1);">${escapeText(Number(entry.vol).toLocaleString())}kg</b></span>`);
+  if (entry.min) chips.push(`<span><b style="font-family:var(--font-mono);font-weight:600;color:var(--ink-1);">${escapeText(entry.min)}</b>분</span>`);
+  if (entry.pr) chips.push(`<span style="color:var(--crail-deep);font-weight:600;">PR ${escapeText(entry.pr)}</span>`);
   metaEl.innerHTML = chips.join('');
 
   const items = Array.isArray(entry.ex) ? entry.ex : [];
   if (items.length === 0) {
-    listEl.innerHTML = '<div class="kr" style="font-size:14px;color:rgba(255,255,255,0.4);">운동 기록 없음</div>';
+    listEl.innerHTML = '<div class="kr" style="font-size:14px;color:var(--ink-4);">운동 기록 없음</div>';
   } else {
     listEl.innerHTML = items.map((it) => {
       const n = escapeText(it?.n);
       const s = escapeText(it?.s);
-      return `<div class="kr" style="display:flex;justify-content:space-between;font-size:15px;color:rgba(255,255,255,0.85);padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">`
-        + `<span>${n}</span><span style="color:rgba(255,255,255,0.5);">${s}</span>`
+      return `<div class="kr" style="display:flex;justify-content:space-between;font-size:15px;color:var(--ink-1);padding:8px 0;border-bottom:1px solid var(--line-soft);">`
+        + `<span>${n}</span><span class="mono" style="color:var(--ink-3);">${s}</span>`
         + `</div>`;
     }).join('');
   }

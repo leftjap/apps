@@ -174,7 +174,7 @@ describe('sessionToWorkoutEntry', () => {
       ],
     };
     const r = sessionToWorkoutEntry(session);
-    expect(r.tag).toBe('가'); // chest → 가
+    expect(r.tag).toBe('가슴'); // 날짜 상세 시트 표기 — 풀네임 (2026-06-10, 구: 단글자 약어)
     expect(r.vol).toBe(4500);
     expect(r.level).toBe('med'); // 3000~6000
     expect(r.min).toBe(45);
@@ -212,7 +212,7 @@ describe('sessionToWorkoutEntry', () => {
       }],
     };
     const r = sessionToWorkoutEntry(session);
-    expect(r.tag).toBe('등'); // back → 등
+    expect(r.tag).toBe('등'); // back — 풀네임도 '등'
     expect(r.ex).toHaveLength(1);
     expect(r.ex[0]).toMatchObject({ n: '벤치프레스', s: '2세트 · 1,370kg', kind: 'weight' });
   });
@@ -229,7 +229,7 @@ describe('sessionToWorkoutEntry', () => {
       }],
     };
     const r = sessionToWorkoutEntry(session);
-    expect(r.tag).toBe('맨'); // 카테고리 표시명 유산소→맨몸 (2026-06-10)
+    expect(r.tag).toBe('맨몸'); // 날짜 상세 시트 표기 — 풀네임 (2026-06-10)
     expect(r.ex).toHaveLength(1);
     expect(r.ex[0]).toMatchObject({ n: '트레드밀', s: '30분 · 5km', kind: 'cardio' });
   });
@@ -546,10 +546,19 @@ describe('applyTodayToCalendar', () => {
 });
 
 describe('sessionToWorkoutEntry — 값 미입력 done 세트 (라이브 2026-06-10 발견)', () => {
-  it('weight/duration 전부 null 인 done 세트 → "N세트" (0kg 표기 생략)', () => {
+  it('cardio 운동의 duration 미입력 done 세트 → "—" (세트·0kg 표기 부적절 — 사용자 피드백)', () => {
     const r = sessionToWorkoutEntry({
       id: 's-x', date: '2026-06-09', status: 'completed', totalVolume: 0,
       blocks: [{ type: 'single', exerciseId: 'treadmill', sets: [{ done: true, weight: null, reps: null }] }],
+    });
+    expect(r.ex[0].s).toBe('—');
+    expect(r.ex[0].kind).toBe('cardio');
+  });
+
+  it('weight 운동의 값 미입력 done 세트 → "N세트" (0kg 생략)', () => {
+    const r = sessionToWorkoutEntry({
+      id: 's-y', date: '2026-06-09', status: 'completed', totalVolume: 0,
+      blocks: [{ type: 'single', exerciseId: 'bench_press', sets: [{ done: true, weight: null, reps: null }] }],
     });
     expect(r.ex[0].s).toBe('1세트');
   });

@@ -20,7 +20,7 @@ import {
 } from '../db/queries.js';
 import { partAbbreviation, wireHomeShortcuts } from './home.js';
 import { exerciseIdToName } from './session-summary.js';
-import { getBuiltinExercise, primeCustomExerciseCache } from '../db/exercises.js';
+import { getBuiltinExercise, primeCustomExerciseCache, PARTS } from '../db/exercises.js';
 import { EXERCISE_MUSCLES, WEIGHT_PRIMARY, WEIGHT_SYNERGIST } from '../data/exercise-muscles.js';
 
 /** YYYY-MM-DD 범위 [from, to] 합산 (totalVolume). */
@@ -191,9 +191,10 @@ export function sessionToWorkoutEntry(session) {
   const vol = Number(session.totalVolume) || 0;
   const level = vol < 3000 ? 'low' : vol < 6000 ? 'med' : 'high';
 
-  // tags 영문 → 단일 글자 한국어 약어 (Wave 11.10.2 partAbbreviation). 첫 tag.
+  // 날짜 상세 시트 표기 — 부위 풀네임 (사용자 피드백 2026-06-10: 단글자 '맨' 어색). 첫 tag.
+  // PARTS 미등록 tag(구 한글 약어 등)는 partAbbreviation fallback.
   const tags = Array.isArray(session.tags) ? session.tags : [];
-  const tag = tags.length ? partAbbreviation(tags[0]) : '';
+  const tag = tags.length ? (PARTS[tags[0]] || partAbbreviation(tags[0])) : '';
 
   return {
     tag,
@@ -217,6 +218,10 @@ function formatExEntrySpec(block) {
     const distKm = Number(firstSet.distance) || 0;
     const km = distKm ? ` · ${distKm}km` : '';
     return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: block.exerciseId, kind: 'cardio', durSec, distKm };
+  }
+  // cardio 운동인데 duration 미입력(구버그 데이터) — 세트·kg 표기 부적절 → "—" (사용자 피드백 2026-06-10)
+  if (getBuiltinExercise(block.exerciseId)?.equipment === 'cardio') {
+    return { n: name, s: '—', key: block.exerciseId, kind: 'cardio', durSec: 0, distKm: 0 };
   }
   const total = doneSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
   // 값 미입력 done 세트(구 기록 — duration/weight 없이 완료만)는 "0kg" 표기 생략 (라이브 2026-06-10 발견).

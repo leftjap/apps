@@ -38,8 +38,9 @@ describe('openDayDetailSheet summary', () => {
     expect(e.dayDetailSheet.style.transform).toBe('translateY(0)');
     expect(e.dayDetailDate.textContent).toMatch(/5월 12일/);
     expect(e.dayDetailTag.textContent).toBe('가슴');
-    expect(e.dayDetailMeta.innerHTML).toContain('볼륨 2400');
-    expect(e.dayDetailMeta.innerHTML).toContain('45분');
+    expect(e.dayDetailMeta.innerHTML).toContain('2,400kg'); // 라이트 재스타일 — 콤마+단위 (2026-06-10)
+    expect(e.dayDetailMeta.innerHTML).toContain('분');
+    expect(e.dayDetailMeta.innerHTML).not.toContain('med'); // level 디버그 노출 제거
     expect(e.dayDetailExList.innerHTML).toContain('벤치프레스');
     expect(e.dayDetailEmpty.style.display).toBe('none');
     expect(e.dayDetailConfirm.style.display).toBe('none');
