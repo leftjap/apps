@@ -57,7 +57,7 @@ jobs:
             ([.results | to_entries[] | select(.value|length>0) |
               "\n### \(.key)\n" + ([.value[] | "- **\(.card)** — \(.daysSince)일 무수집 (마지막 \(.lastAutoAt[0:10]), 최근 90일 거래 \(.txCount)건 중 자동 \(.autoCount)건)"] | join("\n"))
             ] | join("\n")) +
-            "\n\n---\n대응: 소연 폰 키워드 \"신한\" 자동화 점검 (handoff/soyoun-shinhan-automation-setup.md). 이 이슈는 ingest-gap-check 워크플로우가 매일 자동 갱신/종료합니다."
+            "\n\n---\n대응: 소연 폰 키워드 \"신한\" 자동화 점검 (today/specs/soyoun-shinhan-automation-setup.md). 이 이슈는 ingest-gap-check 워크플로우가 매일 자동 갱신/종료합니다."
           ' gaps.json)
           EXISTING=$(gh issue list --repo "$REPO" --state open --search "$TITLE in:title" --json number --jq '.[0].number // empty')
           if [ -n "$EXISTING" ]; then
