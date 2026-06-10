@@ -103,14 +103,14 @@ describe('createExplanationPanel — 실 시드 fixture', () => {
     expect(labels).not.toContain('문법 뜯어보기');
   });
 
-  it('en 카드 drills: "변주 연습" 섹션 + 행마다 듣기/녹음 버튼', () => {
+  it('en 카드 drills: "응용 연습" 섹션 + 행마다 듣기/녹음 버튼', () => {
     const ex = { key: '핵심', drills: [
       { en: 'She runs a business.', ko: '그녀는 사업을 운영해요.' },
       { en: 'Can you run the meeting?', ko: '회의 진행해줄래요?' },
     ] };
     const { panelEl } = createExplanationPanel({ explanation: ex, lang: 'en' });
     const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
-    expect(labels).toContain('변주 연습');
+    expect(labels).toContain('응용 연습');
     const drills = panelEl.querySelectorAll('.drill');
     expect(drills.length).toBe(2);
     expect(drills[0].textContent).toContain('She runs a business.');
@@ -135,10 +135,10 @@ describe('createExplanationPanel — 실 시드 fixture', () => {
     expect(calls).toEqual(['Fire away.']);
   });
 
-  it('drills 없음: "변주 연습" 섹션 hidden', () => {
+  it('drills 없음: "응용 연습" 섹션 hidden', () => {
     const { panelEl } = createExplanationPanel({ explanation: { key: 'x' } });
     const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
-    expect(labels).not.toContain('변주 연습');
+    expect(labels).not.toContain('응용 연습');
   });
 
   it('drill kr 음차: .drill-kr 줄 렌더 (RealClass 발음 가이드)', () => {

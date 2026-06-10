@@ -39,7 +39,9 @@
           { "en": "Is that a promise?", "ko": "약속하는 거죠?", "kr": "이즈 대러 프라미스?" },
           { "en": "Is that a yes?", "ko": "그거 승낙인 거죠?", "kr": "이즈 대러 예스?" },
           { "en": "Is that an apology?", "ko": "그거 사과하는 거예요?", "kr": "이즈 대런 어팔러지?" },
-          { "en": "You'll be there at six. Is that a promise?", "ko": "6시에 온다는 거죠. 약속하는 거예요?", "kr": "유일 비 데어 앳 씩스. 이즈 대러 프라미스?" }
+          { "en": "You'll be there at six. Is that a promise?", "ko": "6시에 온다는 거죠. 약속하는 거예요?", "kr": "유일 비 데어 앳 씩스. 이즈 대러 프라미스?" },
+          { "en": "Is that a deal?", "ko": "그럼 그렇게 하기로 한 거죠?", "kr": "이즈 대러 디-일?" },
+          { "en": "Is that a no?", "ko": "그거 거절이라는 거예요?", "kr": "이즈 대러 노우?" }
         ],
         "grammar": [
           { "struct": "Is that a + 명사?", "body": "상대가 방금 한 말을 '~인 거예요?' 라고 한 단어로 규정해 확인. that = 방금 그 말." }
@@ -65,7 +67,9 @@
         "drills": [
           { "en": "It's more than a job.", "ko": "그건 직업 그 이상이에요.", "kr": "잇츠 모어 대너 잡." },
           { "en": "He's more than a friend.", "ko": "걔는 친구 그 이상이야.", "kr": "히즈 모어 대너 프렌드." },
-          { "en": "This is more than enough.", "ko": "이거면 충분하고도 남아요.", "kr": "디스 이즈 모어 댄 이너프." }
+          { "en": "This is more than enough.", "ko": "이거면 충분하고도 남아요.", "kr": "디스 이즈 모어 댄 이너프." },
+          { "en": "It's more than a hobby.", "ko": "그건 취미 그 이상이에요.", "kr": "잇츠 모어 대너 하비." },
+          { "en": "She's more than a coworker.", "ko": "그분은 동료 그 이상이에요.", "kr": "쉬즈 모어 대너 코워커." }
         ],
         "grammar": [
           { "struct": "more than a + 명사", "body": "'~보다 더한 것' → '~ 그 이상'. 단순 비교가 아니라 그 명사의 격을 올리는 강조." }
@@ -92,7 +96,10 @@
           { "en": "Fill in the blanks.", "ko": "빈칸을 채우세요.", "kr": "필린 더 블랭크스." },
           { "en": "Can you fill in for me tomorrow?", "ko": "내일 나 대신 좀 해줄래? (=대신하다)", "kr": "캔유 필린 포 미 터마로우?" },
           { "en": "Fill me in later.", "ko": "나중에 자세히 알려줘. (=상황을 채워주다)", "kr": "필 미 인 레이러." },
-          { "en": "They filled in the hole.", "ko": "걔들이 구멍을 메웠어.", "kr": "데이 필딘 더 호울." }
+          { "en": "They filled in the hole.", "ko": "걔들이 구멍을 메웠어.", "kr": "데이 필딘 더 호울." },
+          { "en": "Please fill in this form.", "ko": "이 서식을 작성해 주세요. (=작성하다)", "kr": "플리즈 필린 디스 폼." },
+          { "en": "We need to fill in the gaps.", "ko": "빈틈을 메워야 해요.", "kr": "위 니투 필린 더 갭스." },
+          { "en": "She filled in while I was away.", "ko": "내가 없는 동안 걔가 대신했어.", "kr": "쉬 필딘 와일 아이 워즈 어웨이." }
         ],
         "grammar": [
           { "struct": "fill in + 대상", "body": "빈 것을 채워 넣는 그림 하나로 '메우다/작성하다/대신하다' 전부 커버. 사람이 오면 (fill her in) '알려주다'." }
@@ -119,7 +126,9 @@
           { "en": "I can handle it.", "ko": "내가 처리할 수 있어.", "kr": "아이 캔 핸들릿." },
           { "en": "She handles everything at work.", "ko": "걔가 회사에서 다 처리해.", "kr": "쉬 핸들즈 에브리띵 앳 워크." },
           { "en": "I'm proud of you.", "ko": "네가 자랑스러워.", "kr": "아임 프라우더브 유." },
-          { "en": "That's something I'm proud of.", "ko": "그건 내가 자랑스러워하는 거야.", "kr": "댓츠 썸띵 아임 프라우더브." }
+          { "en": "That's something I'm proud of.", "ko": "그건 내가 자랑스러워하는 거야.", "kr": "댓츠 썸띵 아임 프라우더브." },
+          { "en": "She's proud of her work.", "ko": "걔는 자기 일에 자부심이 있어.", "kr": "쉬즈 프라우더브 허 워크." },
+          { "en": "I handled it myself.", "ko": "내가 직접 처리했어.", "kr": "아이 핸들딧 마이셀프." }
         ],
         "grammar": [
           { "struct": "I've + p.p. (경험 누적)", "body": "지금까지 해온 일 묶음은 현재완료. 과거 한 건이면 I handled." },
@@ -147,7 +156,9 @@
           { "en": "I made this cake from scratch.", "ko": "이 케이크 처음부터 직접 만들었어.", "kr": "아이 메이드 디스 케익 프롬 스크래치." },
           { "en": "We started from scratch.", "ko": "우린 맨바닥부터 시작했어.", "kr": "위 스타리드 프롬 스크래치." },
           { "en": "Let's build it from scratch.", "ko": "처음부터 새로 만들자.", "kr": "렛츠 빌딧 프롬 스크래치." },
-          { "en": "I learned English from scratch.", "ko": "영어를 기초부터 배웠어.", "kr": "아이 런드 잉글리쉬 프롬 스크래치." }
+          { "en": "I learned English from scratch.", "ko": "영어를 기초부터 배웠어.", "kr": "아이 런드 잉글리쉬 프롬 스크래치." },
+          { "en": "He built his company from scratch.", "ko": "그는 회사를 맨바닥부터 일궜어요.", "kr": "히 빌트 히즈 컴퍼니 프롬 스크래치." },
+          { "en": "Let's start over from scratch.", "ko": "처음부터 다시 하자.", "kr": "렛츠 스타로버 프롬 스크래치." }
         ],
         "grammar": [
           { "struct": "the chance to + 동사", "body": "'~할 기회' — to부정사가 명사 chance 를 뒤에서 수식. 한국어 '~할 기회' 어순과 반대." },

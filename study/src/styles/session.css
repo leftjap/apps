@@ -208,7 +208,7 @@
 .chunk-en{font-family:var(--font-display);font-size:13px;font-weight:600;color:var(--text-strong)}
 .chunk-kr{font-size:12px;color:var(--text-muted)}
 
-/* RealClass-mining 변주 연습 (drills) — 핵심 요소 레벨맞춤 치환, 행마다 듣기/녹음 */
+/* RealClass-mining 응용 연습 (drills) — 핵심 요소 레벨맞춤 치환, 행마다 듣기/녹음 */
 .drill{display:grid;grid-template-columns:1fr auto;gap:2px var(--s-3);align-items:center;padding:var(--s-3) 0;border-top:1px dashed var(--border)}
 .drill:first-of-type{border-top:none}
 .drill-en{grid-column:1/2;font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--text-strong)}

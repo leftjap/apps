@@ -272,7 +272,7 @@ function phonemesSection(phonemes) {
   return s;
 }
 
-// RealClass-mining 모델: 핵심 요소를 레벨맞춤 치환한 변주 문장 + 행마다 듣기/녹음
+// RealClass-mining 모델: 핵심 요소를 레벨맞춤 치환한 응용 문장 + 행마다 듣기/녹음
 // onListen(en) / onRecord(en) 주입 (세션 페이지가 studySpeech.speak / sessionAnalyze 연결)
 function drillsSection(drills, { onListen, onRecord } = {}) {
   if (!Array.isArray(drills) || drills.length === 0) return null;
@@ -280,7 +280,7 @@ function drillsSection(drills, { onListen, onRecord } = {}) {
   s.className = 'ex-section';
   const lab = document.createElement('div');
   lab.className = 'ex-label';
-  lab.textContent = '변주 연습';
+  lab.textContent = '응용 연습';
   const sub = document.createElement('div');
   sub.className = 'ex-text';
   sub.textContent = '듣고 → 말하고 → 녹음해 보세요.';

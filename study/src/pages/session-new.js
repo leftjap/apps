@@ -556,7 +556,7 @@ function renderD1Dialogue(host, state, handlers) {
 }
 
 /* ────────── D1 desktop — ③ 표현별 학습(신규) ──────────
- * 좌: 능동 연습 흐름(문장→듣기/따라말하기+점수→변주). 우: 해설(핵심/상황/실수/비슷한표현).
+ * 좌: 능동 연습 흐름(문장→듣기/따라말하기+점수→응용). 우: 해설(핵심/상황/실수/비슷한표현).
  * 녹음/채점은 기존 services(startMicRecording·stopAndAnalyze 등)를 그대로 재사용, D1 버튼으로 래핑.
  */
 function renderD1New(host, state, handlers) {
@@ -598,10 +598,10 @@ function renderD1New(host, state, handlers) {
   const practice = buildD1Practice(state, lang, { saveSnapshot: handlers.saveSnapshot });
   onCleanup = practice.stop;
 
-  // ── 변주 연습 (drills) — 좌측 ──
+  // ── 응용 연습 (drills) — 좌측 ──
   const drills = Array.isArray(ex.drills) ? ex.drills : [];
   const drillsBlock = drills.length ? h('div', { style: 'margin-top:40px;' },
-    h('div', { class: 'd1-panel-lab' }, '변주 연습 — 듣고, 따라 말하고, 녹음하기'),
+    h('div', { class: 'd1-panel-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'),
     h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang, s?.speaker)),
   ) : null;
 

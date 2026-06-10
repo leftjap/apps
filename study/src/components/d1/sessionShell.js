@@ -119,7 +119,7 @@ function d1Section(label, text) {
   );
 }
 
-/* 변주 드릴 행들 — 각 행 [표현(하이라이트)·뜻 · 듣기 chip · 녹음 chip]. 녹음은 services 재사용. */
+/* 응용 드릴 행들 — 각 행 [표현(하이라이트)·뜻 · 듣기 chip · 녹음 chip]. 녹음은 services 재사용. */
 export function buildD1DrillRows(drills, hl, lang, speaker) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const rec = { ctrl: null, btn: null };
@@ -154,7 +154,7 @@ export function buildD1DrillRows(drills, hl, lang, speaker) {
   });
 }
 
-/* 우측 해설 컬럼 — 핵심(keybox) + (옵션)변주 + 상황/실수/비슷한표현. en/ja 스키마 graceful. */
+/* 우측 해설 컬럼 — 핵심(keybox) + (옵션)응용 + 상황/실수/비슷한표현. en/ja 스키마 graceful. */
 export function buildD1ExplainRight(ex, lang, opts = {}) {
   const { header = '표현 해설', sub = null, withDrills = false, hl = [], flexBasis = '43%', speaker = null } = opts;
   const headerEl = sub
@@ -172,7 +172,7 @@ export function buildD1ExplainRight(ex, lang, opts = {}) {
     const drills = Array.isArray(ex?.drills) ? ex.drills : [];
     if (drills.length) {
       kids.push(h('div', { style: 'margin-top:24px;' },
-        h('div', { class: 'd1-panel-lab' }, '변주 — 듣고, 따라 말하기'),
+        h('div', { class: 'd1-panel-lab' }, '응용 — 듣고, 따라 말하기'),
         h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang, speaker))));
     }
   }

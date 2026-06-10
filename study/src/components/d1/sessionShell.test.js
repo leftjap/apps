@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { buildD1DrillRows, buildD1ExplainRight } from './sessionShell.js';
 
-describe('buildD1DrillRows — 변주 행 (D1)', () => {
+describe('buildD1DrillRows — 응용 행 (D1)', () => {
   beforeEach(() => { document.body.innerHTML = ''; });
 
   it('kr 음차 줄 렌더 (RealClass 발음 가이드)', () => {

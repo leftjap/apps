@@ -500,7 +500,7 @@ function applyExclusive(recording, playing, lastScore, recordWaveCmp, pillWrap) 
 }
 
 /* ────────── D1 desktop — ④ 복습(판정+해설) ──────────
- * 좌: 회상(문장→듣기/따라말하기→점수) + 판정 3카드(선택 전 중립). 우: 해설 필수(핵심·변주·상황·실수·비슷한표현).
+ * 좌: 회상(문장→듣기/따라말하기→점수) + 판정 3카드(선택 전 중립). 우: 해설 필수(핵심·응용·상황·실수·비슷한표현).
  * 녹음·채점은 buildD1Practice 재사용, 판정은 handlers.onJudge(no/hmm/got) → applySrsUpdate.
  */
 function renderD1Review(host, state, handlers) {
