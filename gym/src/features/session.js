@@ -1732,10 +1732,9 @@ function renderFooterPills(doc, session, currentBlock) {
     const progress = blockProgressText(block, state);
     return renderFooterPillHtml({ blockIdx: i, state, name, progress });
   }).join('');
-  // 중앙 정렬용 양끝 spacer — 기존 padding-inline:50% 는 border-box 최소폭을 컨테이너 폭으로
-  // 강제해 추가(+) 버튼을 뷰포트 밖으로 밀어냄 (P1 재검증 발견). overflow 로만 흐르는 flex
-  // spacer 로 대체 — 레이아웃 폭에 기여하지 않아 + 버튼이 항상 보임.
-  pillsEl.innerHTML = `<span aria-hidden="true" style="flex:0 0 50%;"></span>${html}<span aria-hidden="true" style="flex:0 0 50%;"></span>`;
+  // 양끝 50% spacer 제거 — 칩 좌측 정렬 시작 (사용자 피드백 2026-06-10: 좌측 빈 공간 답답).
+  // 활성 칩 중앙 정렬(centerActivePill)은 스크롤 가능 범위 내에서만 동작 (scrollLeft 자동 clamp).
+  pillsEl.innerHTML = html;
   // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel).
   // scrollIntoView({ inline: 'center' }) 가 iOS Safari PWA 등 일부 환경에서 동작 불완전 →
   // 직접 scrollLeft 계산 + scrollTo 호출로 호환성 보장. rAF 로 layout 완료 후 paint frame 에서 호출.

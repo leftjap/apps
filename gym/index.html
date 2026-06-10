@@ -46,8 +46,9 @@
       }
       .phone-notch, .phone-home, .phone-clock, .phone-batt { display: none !important; }
       .phone-content {
-        padding-top: env(safe-area-inset-top, 0px) !important;
-        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+        /* inset 그대로는 과체감 (사용자 피드백 2026-06-10) — 12px 감산, 0 미만 방지 */
+        padding-top: max(calc(env(safe-area-inset-top, 0px) - 12px), 0px) !important;
+        padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 0px) !important;
       }
       /* 하단 고정 바텀시트 — 홈 인디케이터 겹침 방지 (전 시트 padding-bottom 24px 공통 → +inset) */
       #keypadSheet, #weightKeypadSheet, #dayDetailSheet, #actionSheet, #sessionAddexSheet, #addexSheet {
