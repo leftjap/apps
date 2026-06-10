@@ -7,7 +7,7 @@ export const TABLE_MAP = Object.freeze([
   { dexie: 'recommendations', supabase: 'taste_recommendations', filterColumn: 'owner_id', replace: true },
 ]);
 const PAGE = 1000;
-const isUuid = (id) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id);
+const isUuid = (id) => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 const stripMeta = (row) => { const o = { ...row }; delete o.pending_sync; return o; };
 
 async function pullTable(m, db, userId) {
@@ -18,8 +18,11 @@ async function pullTable(m, db, userId) {
     if (error) return; all = all.concat(data || []);
     if (!data || data.length < PAGE) break; from += PAGE;
   }
-  if (m.replace) { try { await db[m.dexie].where(m.filterColumn).equals(userId).delete(); } catch (e) { /* noop */ } }
-  await db[m.dexie].bulkPut(all.map((r) => ({ ...r, pending_sync: 0 })));
+  // replace 의 delete+bulkPut 을 한 트랜잭션으로 — bulkPut 실패 시 롤백 (빈 추천 화면 방지).
+  await db.transaction('rw', db[m.dexie], async () => {
+    if (m.replace) await db[m.dexie].where(m.filterColumn).equals(userId).delete();
+    await db[m.dexie].bulkPut(all.map((r) => ({ ...r, pending_sync: 0 })));
+  });
 }
 export async function pullAll(db, userId) { await Promise.all(TABLE_MAP.map((m) => pullTable(m, db, userId))); }
 

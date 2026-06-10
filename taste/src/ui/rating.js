@@ -36,6 +36,9 @@ export function starRating({ value = 0, editable = false, onChange, size = 22, s
         class: 'star__hit', style: side, 'aria-label': `${val}점`,
         onPointerup: () => onChange && onChange(val),
         onMouseenter: () => paint(val),
+        // 키보드 활성화(Enter/Space)는 click 만 발화하고 pointerup 은 안 옴(실측).
+        // detail===0 = 키보드 유래 click. 마우스 click(detail≥1)은 pointerup 이 이미 처리 — 중복 확정 방지.
+        onClick: (e) => { if (e.detail === 0 && onChange) onChange(val); },
       });
       star.append(hit(i - 0.5, 'left:0'), hit(i, 'right:0'));
     }

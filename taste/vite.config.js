@@ -66,7 +66,8 @@ export default defineConfig(({ mode }) => {
             {
               urlPattern: ({ request }) => request.mode === 'navigate',
               handler: 'NetworkFirst',
-              options: { cacheName: 'pages', networkTimeoutSeconds: 3 },
+              // 'pages' 같은 무스코프 이름은 한 origin 의 형제 앱들과 캐시를 공유하게 됨 — 앱 prefix 로 격리.
+              options: { cacheName: 'pick-pages', networkTimeoutSeconds: 3 },
             },
           ],
         },

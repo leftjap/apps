@@ -43,4 +43,11 @@ describe('import saveRows', () => {
     await saveRows('u1', PARSED, (done, total) => calls.push([done, total]));
     expect(calls[calls.length - 1]).toEqual([3, 3]);
   });
+
+  it('isCancelled: 라우트 이탈 시 잔여 행 중단 (처리분은 유지 — 재실행 멱등으로 이어가기)', async () => {
+    let n = 0;
+    const r = await saveRows('u1', PARSED, null, () => n++ >= 1);   // 1행 처리 후 중단
+    expect(r.created).toBe(1);
+    expect(await globalThis.tasteDB.ratings.where('owner_id').equals('u1').count()).toBe(1);
+  });
 });

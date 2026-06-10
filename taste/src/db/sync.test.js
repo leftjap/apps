@@ -146,4 +146,12 @@ describe('pullTable 페이지네이션·replace', () => {
     await pullRecommendations('u1');
     expect(await db.recommendations.count()).toBe(2);
   });
+
+  it('bulkPut 실패(불량 행): 트랜잭션 롤백 — replace delete 가 단독 적용돼 빈 추천이 되는 것 방지', async () => {
+    const db = globalThis.tasteDB;
+    await db.recommendations.bulkPut([recoRow('keep-1', 'u1'), recoRow('keep-2', 'u1')]);
+    h.select = () => ({ data: [{ owner_id: 'u1', title: 'id 없는 불량 행' }], error: null });   // &id 키 부재 → bulkPut throw
+    await expect(pullRecommendations('u1')).rejects.toThrow();
+    expect(await db.recommendations.count()).toBe(2);   // 롤백 — 기존 행 보존
+  });
 });
