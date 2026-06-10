@@ -50,6 +50,13 @@ export function createStudyDB(name = 'study') {
     await tx.table('mathProblems').clear();
     await tx.table('mathQueue').clear();
   });
+  // v5: en 세션 콘텐츠 전면 삭제 (2026-06-10 사용자 지시 — 2세션 적층·deriveDialogue stuck 상태 리셋).
+  // 서버 행도 삭제되지만 sync 는 pull-only 라 기기 Dexie 미반영 → 버전 bump 가 유일한 클라 삭제 경로 (v3/v4 전례).
+  // reviewQueue 는 오늘 이관분 (en-park*) 만 — 5월 콩트 복습 자산 (en-2026-05-*) 은 보존. ja·math 무영향.
+  db.version(5).upgrade(async (tx) => {
+    await tx.table('todayLessons').where('lang').equals('en').delete();
+    await tx.table('reviewQueue').where('id').startsWith('en-park').delete();
+  });
   return db;
 }
 

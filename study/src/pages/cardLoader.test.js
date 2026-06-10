@@ -78,6 +78,73 @@ describe('loadNewCards', () => {
   });
 });
 
+describe('loadNewCards — 장면 그룹 스코프 (1세션 = 1장면)', () => {
+  // scene 카드 = explanation.dialogue 배열 보유 (finishSession isSceneCard 와 동일 판정)
+  const scene = (id, date, completed = false) => ({
+    id, lang: 'en', date, completed, order_index: 0,
+    explanation: { sceneTitle: 'T', dialogue: [{ speaker: 'A', en: 'Hi.', ko: '안녕.' }] },
+  });
+  const expr = (id, date, oi, completed = false) => ({
+    id, lang: 'en', date, completed, order_index: oi,
+    explanation: { key: 'k' },
+  });
+  // 실 데이터 미러: s1e1 토론회 7장 (scene+표현5+bottom-line) + 6/10 위원회 6장 (scene+표현5)
+  const g1 = (overrides = {}) => [
+    scene('s1-scene', '2026-06-04', overrides['s1-scene']),
+    expr('s1-e1', '2026-06-04', 1, overrides['s1-e1']),
+    expr('s1-e2', '2026-06-04', 2, overrides['s1-e2']),
+    expr('s1-e3', '2026-06-04', 3, overrides['s1-e3']),
+    expr('s1-e4', '2026-06-04', 4, overrides['s1-e4']),
+    expr('s1-e5', '2026-06-04', 5, overrides['s1-e5']),
+    expr('s1-bottom', '2026-06-04', 6, overrides['s1-bottom']),
+  ];
+  const g2 = [
+    scene('s2-scene', '2026-06-10'),
+    expr('s2-e1', '2026-06-10', 1), expr('s2-e2', '2026-06-10', 2),
+    expr('s2-e3', '2026-06-10', 3), expr('s2-e4', '2026-06-10', 4), expr('s2-e5', '2026-06-10', 5),
+  ];
+
+  it('① 2세션 적층(13장) → 첫 그룹 7장만 반환', async () => {
+    const db = createMockDB({ todayLessons: [...g2, ...g1()] }); // 입력 순서 무관 (정렬 검증 겸)
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-e1', 's1-e2', 's1-e3', 's1-e4', 's1-e5', 's1-bottom']);
+  });
+
+  it('② 부분완료(표현 5장 완료) → 첫 그룹 잔여(scene·bottom-line)만 — 다음 그룹 혼입 금지', async () => {
+    const done = { 's1-e1': true, 's1-e2': true, 's1-e3': true, 's1-e4': true, 's1-e5': true };
+    const db = createMockDB({ todayLessons: [...g1(done), ...g2] });
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-bottom']);
+  });
+
+  it('③ prefix 부분완료(scene 먼저 완료) → scene 없는 잔여 꼬리만 — 다음 scene 직전 컷', async () => {
+    // finishSession 은 세션 카드를 prefix 로 완료 마킹 → scene(선두)부터 완료되는 게 일반형
+    const done = { 's1-scene': true, 's1-e1': true, 's1-e2': true, 's1-e3': true };
+    const db = createMockDB({ todayLessons: [...g1(done), ...g2] });
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['s1-e4', 's1-e5', 's1-bottom']);
+  });
+
+  it('④ ja(scene 카드 없음) → 전체 반환 (기존 동작 유지)', async () => {
+    const ja = (id, date, oi) => ({ id, lang: 'ja', date, completed: false, order_index: oi, explanation: { key: 'k' } });
+    const db = createMockDB({ todayLessons: [ja('j1', '2026-06-09', 0), ja('j2', '2026-06-09', 1), ja('j3', '2026-06-10', 0)] });
+    const out = await loadNewCards(db, 'ja', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['j1', 'j2', 'j3']);
+  });
+
+  it('⑤ scene 없는 en(구 콘텐츠) → 전체 반환', async () => {
+    const db = createMockDB({ todayLessons: [expr('e1', '2026-05-20', 0), expr('e2', '2026-05-20', 1), expr('e3', '2026-05-21', 0)] });
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['e1', 'e2', 'e3']);
+  });
+
+  it('⑥ 단일 그룹(scene 1장)만 있으면 전체 반환', async () => {
+    const db = createMockDB({ todayLessons: g1() });
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out).toHaveLength(7);
+  });
+});
+
 describe('advanceCard', () => {
   const cards = [
     { id: 'a', sentence: 'A', phonetic_kr: 'a', meaning: 'aa' },

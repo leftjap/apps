@@ -34,6 +34,23 @@ describe('cardLoader 통합 (real Dexie + fake-indexeddb)', () => {
     expect(out[0].sentence).toBe('D');
   });
 
+  it('loadNewCards: 실 Dexie 에서 장면 그룹 스코프 — 2세션 적층 시 첫 그룹만', async () => {
+    const scene = (id, date, oi = 0) => ({
+      id, lang: 'en', date, completed: false, order_index: oi, sentence: 'S',
+      explanation: { sceneTitle: 'T', dialogue: [{ speaker: 'A', en: 'Hi.', ko: '안녕.' }] },
+    });
+    const expr = (id, date, oi) => ({
+      id, lang: 'en', date, completed: false, order_index: oi, sentence: 'E',
+      explanation: { key: 'k' },
+    });
+    await db.todayLessons.bulkPut([
+      scene('s2-scene', '2026-06-10'), expr('s2-e1', '2026-06-10', 1),
+      scene('s1-scene', '2026-06-04'), expr('s1-e1', '2026-06-04', 1), expr('s1-e2', '2026-06-04', 2),
+    ]);
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-e1', 's1-e2']);
+  });
+
   it('loadReviewCards: 실 Dexie 에서 due 필터 + 미정 nextReview 도 due + overdue 우선', async () => {
     await db.reviewQueue.bulkPut([
       { id: 'r1', lang: 'en', nextReview: '2026-05-07' },

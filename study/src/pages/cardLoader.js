@@ -2,7 +2,7 @@
  * cardLoader.js — 세션 페이지 (session-new / session-review) 의 카드 로드 헬퍼.
  *
  * pickCardFields(card)  — Dexie row → UI 가 필요한 필드만 추출 (순수 함수, 테스트 가능)
- * loadNewCards(db, lang, todayISO) — todayLessons 에서 오늘의 미완료 신규 카드 (order_index ASC)
+ * loadNewCards(db, lang, todayISO) — todayLessons 에서 미완료 신규 카드 (FIFO·order_index ASC, 첫 장면 그룹만)
  * loadReviewCards(db, lang, todayISO) — reviewQueue 의 due 카드 (nextReview <= today, 미정 nextReview 도 due)
  */
 
@@ -34,7 +34,12 @@ export async function loadNewCards(db, lang, todayISO) {
     if (da !== db_) return da < db_ ? -1 : 1; // 오래된 date 먼저 (FIFO)
     return (a.order_index ?? 0) - (b.order_index ?? 0);
   });
-  return filtered;
+  // 장면 그룹 스코프 (1세션 = 1장면): scene 카드(explanation.dialogue 배열)가 그룹 시작.
+  // 선두 이후 첫 scene 직전에서 컷 — 이전 그룹 부분완료 꼬리(scene 완료 후 잔여 표현 포함)가
+  // 다음 장면과 한 세션에 섞이지 않는다. scene 없는 리스트(ja 콩트·구 en)는 전체 반환 (기존 동작).
+  // → deriveDialogue (session-new.js) 의 타 장면 표현 혼입·순차 커서 stuck 자동 해소.
+  const cut = filtered.findIndex((r, i) => i > 0 && Array.isArray(r?.explanation?.dialogue));
+  return cut === -1 ? filtered : filtered.slice(0, cut);
 }
 
 /**
