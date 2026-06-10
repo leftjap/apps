@@ -28,6 +28,8 @@
   --accent: #E85A3A;
   --pin: #C8881A;
   --highlight: #FAF3E0;
+  /* 시안 styles-v3 명시 그림자 — 떠오르는 박스(피드 연결 카드 등) */
+  --shadow-float: 0 1px 0 rgba(20,18,14,.02), 0 6px 14px -8px rgba(20,18,14,.10), 0 22px 44px -22px rgba(20,18,14,.18);
   --font-sans: var(--sans);
   --font-serif: var(--serif);
   --font-mono: var(--mono);

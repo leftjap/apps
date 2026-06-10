@@ -157,96 +157,69 @@
 }
 
 /* ============================================================
-   FEED — 에디토리얼 믹스 (섹션마다 다른 레이아웃)
+   HOME v4 — 독서 타임라인 (시안 feed3.js + styles-v3.css 이식)
+   최근 한 줄(hero) · 지금 읽는 책(진행중 펄스) · 최근 기록(타임라인) · 연결
    ============================================================ */
-.bookv4 .feed { max-width: 1180px; margin: 0 auto; padding: 40px 40px 100px; }
-.bookv4 .feed-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 40px; }
-.bookv4 .feed-head h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; margin: 0; }
-.bookv4 .feed-head .when { font-family: var(--font-mono); font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bookv4 .h4-wrap { max-width: 832px; margin: 0 auto; padding: 44px 36px 96px; }
 
-.bookv4 .block { margin-bottom: 64px; }
-.bookv4 .block-anchor {
-  font-family: var(--font-mono); font-size: 11px; color: var(--ink-3);
-  letter-spacing: 0.06em; font-weight: 500;
-  display: flex; align-items: baseline; gap: 14px;
-  margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--line-soft); white-space: nowrap;
+@keyframes h4-pulse { 0% { box-shadow: 0 0 0 0 rgba(232,90,58,.5); } 70% { box-shadow: 0 0 0 7px rgba(232,90,58,0); } 100% { box-shadow: 0 0 0 0 rgba(232,90,58,0); } }
+
+/* 최근 한 줄 — 잔잔한 hero */
+.bookv4 .h4-hero { padding: 8px 0 40px; margin-bottom: 8px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.bookv4 .h4-hero .date { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 22px; }
+.bookv4 .h4-hero blockquote { margin: 0; font-family: var(--font-serif); font-size: 27px; font-weight: 500; line-height: 1.6; letter-spacing: -.022em; color: var(--ink); word-break: keep-all; text-wrap: pretty; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.bookv4 .h4-hero .src { display: flex; align-items: center; gap: 10px; margin-top: 22px; }
+.bookv4 .h4-hero .src strong { font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.bookv4 .h4-hero .src .au { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; }
+
+.bookv4 .h4-sec { padding-top: 40px; }
+.bookv4 .h4-lab { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 18px; }
+.bookv4 .h4-lab .by { color: var(--ink-4); }
+
+/* 지금 읽는 책 — 가로 표지 + 진행중 펄스 */
+.bookv4 .h4-shelf { display: flex; gap: 22px; overflow-x: auto; padding: 2px 2px 6px; }
+.bookv4 .h4-book { display: flex; flex-direction: column; align-items: center; gap: 9px; flex-shrink: 0; }
+.bookv4 .h4-book .cv { position: relative; }
+.bookv4 .h4-book .cv .live { position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; }
+@media (prefers-reduced-motion: no-preference) { .bookv4 .h4-book .cv .live { animation: h4-pulse 2.4s ease-out infinite; } }
+.bookv4 .h4-book .n { display: inline-flex; align-items: center; gap: 4px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.bookv4 .h4-book .n svg { color: var(--ink-4); }
+.bookv4 .h4-book:hover .n { color: var(--ink); }
+
+/* 최근 기록 — 시간순 타임라인 (레일 + 점) */
+.bookv4 .h4-timeline { position: relative; display: flex; flex-direction: column; }
+.bookv4 .h4-timeline::before { content: ''; position: absolute; left: 10px; top: 22px; bottom: 22px; width: 1px; background: var(--line); }
+.bookv4 .h4-item { position: relative; display: grid; grid-template-columns: 22px 1fr; gap: 14px; padding: 16px 0; cursor: pointer; text-align: left; }
+.bookv4 .h4-item + .h4-item { border-top: 1px solid var(--line-soft); }
+.bookv4 .h4-item .rail { position: relative; display: flex; justify-content: center; padding-top: 7px; }
+.bookv4 .h4-item .rail .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-4); box-shadow: 0 0 0 3px #fff; }
+.bookv4 .h4-item .rail .dot.pin { background: var(--pin); }
+.bookv4 .h4-item:hover .rail .dot { background: var(--accent); }
+.bookv4 .h4-item .body .q { margin: 0; font-size: 15.5px; line-height: 1.7; color: var(--ink); word-break: keep-all; text-wrap: pretty; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bookv4 .h4-item:hover .body .q { color: var(--accent); }
+.bookv4 .h4-item .body .src { display: flex; align-items: center; gap: 8px; margin-top: 7px; font-size: 12px; color: var(--ink-3); min-width: 0; }
+.bookv4 .h4-item .body .src strong { font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+.bookv4 .h4-item .body .src .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-4); flex-shrink: 0; }
+.bookv4 .h4-item .body .src .au { white-space: nowrap; }
+
+/* 연결 — 하나만, 떠오르는 박스 */
+.bookv4 .h4-echo { background: #fff; border-radius: 16px; padding: 26px 28px; box-shadow: var(--shadow-float); }
+.bookv4 .h4-echo .kw { font-family: var(--font-serif); font-size: 21px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); word-break: keep-all; }
+.bookv4 .h4-echo .note { margin: 10px 0 22px; font-family: var(--font-serif); font-style: italic; font-size: 13.5px; line-height: 1.7; color: var(--ink-2); }
+.bookv4 .h4-echo .pair { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 20px; align-items: stretch; }
+.bookv4 .h4-echo .side { cursor: pointer; }
+.bookv4 .h4-echo .side p { margin: 0; font-size: 14px; line-height: 1.7; color: var(--ink); word-break: keep-all; }
+.bookv4 .h4-echo .side:hover p { color: var(--accent); }
+.bookv4 .h4-echo .side .src { font-size: 11.5px; color: var(--ink-3); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.bookv4 .h4-echo .tie { display: grid; place-items: center; font-family: var(--font-mono); font-size: 12px; color: var(--ink-4); }
+
+@media (max-width: 760px) {
+  .bookv4 .h4-wrap { padding: 28px 0 72px; }
+  .bookv4 .h4-hero blockquote { font-size: 21px; }
+  .bookv4 .h4-echo { padding: 20px 18px; }
+  .bookv4 .h4-echo .pair { grid-template-columns: 1fr; gap: 16px; }
+  .bookv4 .h4-echo .tie { display: none; }
 }
-.bookv4 .block-anchor > * { white-space: nowrap; flex-shrink: 0; }
-.bookv4 .block-anchor .label { color: var(--ink); font-weight: 600; font-family: var(--font-sans); font-size: 13px; letter-spacing: -0.01em; }
-.bookv4 .block-anchor .right { margin-left: auto; }
-
-/* 1. Hero — 오늘의 한 줄 */
-.bookv4 .hero { padding: 24px 0 48px; display: grid; grid-template-columns: 140px 1fr; gap: 48px; align-items: center; cursor: pointer; }
-.bookv4 .hero .cover-slot { width: 140px; position: relative; }
-.bookv4 .hero .text { font-family: var(--font-serif); font-size: 26px; font-weight: 500; line-height: 1.5; letter-spacing: -0.022em; color: var(--ink); word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
-.bookv4 .hero .src { margin-top: 24px; font-size: 13px; color: var(--ink-2); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.bookv4 .hero .src .div { width: 1px; height: 12px; background: var(--ink-4); }
-.bookv4 .hero .src .au { color: var(--ink-3); }
-.bookv4 .hero .src .when { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); margin-left: auto; }
-
-/* 2. 최근 — 번호 리스트 */
-.bookv4 .recent-list { display: flex; flex-direction: column; }
-.bookv4 .recent-row { display: grid; grid-template-columns: 32px 1fr auto; gap: 20px; padding: 22px 0; cursor: pointer; align-items: start; }
-.bookv4 .recent-row + .recent-row { border-top: 1px solid var(--line-soft); }
-.bookv4 .recent-row .idx { font-family: var(--font-mono); font-size: 11px; color: var(--ink-4); padding-top: 6px; font-variant-numeric: tabular-nums; }
-.bookv4 .recent-row .text { font-size: 15px; line-height: 1.7; color: var(--ink); word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-wrap: pretty; }
-.bookv4 .recent-row .src { font-size: 11.5px; color: var(--ink-3); margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bookv4 .recent-row .when { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); padding-top: 6px; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.bookv4 .recent-row:hover .text { color: var(--accent); }
-
-/* 3. AI의 발견 — 메아리 (좌·우 + ≈) */
-.bookv4 .echoes { display: flex; flex-direction: column; gap: 40px; }
-.bookv4 .echo { position: relative; padding: 8px 0 0; }
-.bookv4 .echo .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
-.bookv4 .echo .head .word { font-family: var(--font-serif); font-size: 22px; font-weight: 600; letter-spacing: -0.025em; color: var(--ink); }
-.bookv4 .echo .head .ai { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
-.bookv4 .echo .note { font-size: 12.5px; color: var(--ink-2); margin-bottom: 18px; font-style: italic; }
-.bookv4 .echo-pair { display: grid; grid-template-columns: 1fr 64px 1fr; gap: 24px; align-items: stretch; }
-.bookv4 .echo-pair .side { cursor: pointer; }
-.bookv4 .echo-pair .side .txt { font-size: 14.5px; line-height: 1.7; color: var(--ink); word-break: keep-all; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
-.bookv4 .echo-pair .side .src { font-size: 11.5px; color: var(--ink-3); margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bookv4 .echo-pair .side:hover .txt { color: var(--accent); }
-.bookv4 .echo-pair .between { display: grid; place-items: center; position: relative; }
-.bookv4 .echo-pair .between::before, .bookv4 .echo-pair .between::after { content: ''; position: absolute; left: 50%; transform: translateX(-50%); width: 1px; background: var(--line-bold); }
-.bookv4 .echo-pair .between::before { top: 0; height: calc(50% - 14px); }
-.bookv4 .echo-pair .between::after { bottom: 0; height: calc(50% - 14px); }
-.bookv4 .echo-pair .between .glyph { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); background: var(--bg); padding: 4px 0; z-index: 1; }
-
-/* 4. 오래된 핀 */
-.bookv4 .pin-list { display: flex; flex-direction: column; }
-.bookv4 .pin-row { display: grid; grid-template-columns: 28px 1fr auto; gap: 16px; padding: 20px 0; align-items: start; cursor: pointer; }
-.bookv4 .pin-row + .pin-row { border-top: 1px solid var(--line-soft); }
-.bookv4 .pin-row .star { color: var(--pin); padding-top: 4px; display: inline-flex; }
-.bookv4 .pin-row .txt { font-size: 15px; line-height: 1.7; color: var(--ink); word-break: keep-all; text-wrap: pretty; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.bookv4 .pin-row .src { font-size: 11.5px; color: var(--ink-3); margin-top: 6px; }
-.bookv4 .pin-row .when { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); padding-top: 6px; white-space: nowrap; }
-.bookv4 .pin-row:hover .txt { color: var(--accent); }
-
-/* 5. 같은 단어 — 키워드 탭 + 어구록 */
-.bookv4 .cluster-list { display: grid; grid-template-columns: 200px 1fr; gap: 40px; align-items: start; }
-.bookv4 .cluster-words { display: flex; flex-direction: column; gap: 2px; }
-.bookv4 .cluster-tab { text-align: left; background: transparent; border: 0; padding: 10px 14px 10px 16px; font-size: 14px; font-weight: 500; color: var(--ink-2); border-radius: 8px; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.bookv4 .cluster-tab:hover { background: var(--hover); color: var(--ink); }
-.bookv4 .cluster-tab.active { background: var(--ink); color: white; }
-.bookv4 .cluster-tab.active .stat { color: rgba(255,255,255,0.6); }
-.bookv4 .cluster-tab .word { font-weight: 600; letter-spacing: -0.01em; }
-.bookv4 .cluster-tab .word::before { content: '#'; margin-right: 2px; opacity: 0.5; }
-.bookv4 .cluster-tab .stat { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.bookv4 .cluster-quotes { display: flex; flex-direction: column; }
-.bookv4 .cluster-q { padding: 18px 0; cursor: pointer; }
-.bookv4 .cluster-q + .cluster-q { border-top: 1px solid var(--line-soft); }
-.bookv4 .cluster-q .txt { font-size: 14.5px; line-height: 1.7; color: var(--ink); word-break: keep-all; text-wrap: pretty; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.bookv4 .cluster-q .src { font-size: 11.5px; color: var(--ink-3); margin-top: 8px; }
-.bookv4 .cluster-q:hover .txt { color: var(--accent); }
-
-/* 푸터 — 루틴 */
-.bookv4 .feed-footer { margin-top: 64px; padding: 24px 0; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink-3); line-height: 1.7; }
-.bookv4 .feed-footer .routines-inline { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 8px; }
-.bookv4 .feed-footer .ri-item { display: flex; align-items: center; gap: 6px; }
-.bookv4 .feed-footer .ri-item .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ink); display: inline-block; }
-.bookv4 .feed-footer .ri-item .dot.paused { background: var(--ink-4); }
-.bookv4 .feed-footer .ri-item .name { color: var(--ink-2); font-weight: 500; }
-.bookv4 .feed-footer .ri-item .when { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
 
 /* ThemeModal — 주간 테마 상세 */
 .bookv4-modal-back .modal.theme { max-width: 820px; }
@@ -260,15 +233,3 @@
 .bookv4-modal-back .theme-q .txt { font-size: 14px; line-height: 1.7; color: var(--ink); margin-bottom: 6px; word-break: keep-all; }
 .bookv4-modal-back .theme-q .src { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
 
-@media (max-width: 880px) {
-  .bookv4 .feed { padding: 24px 18px 80px; }
-  .bookv4 .feed-head h1 { font-size: 22px; }
-  .bookv4 .hero { grid-template-columns: 100px 1fr; gap: 22px; padding: 8px 0 32px; }
-  .bookv4 .hero .cover-slot { width: 100px; }
-  .bookv4 .hero .text { font-size: 20px; }
-  .bookv4 .echo-pair { grid-template-columns: 1fr; gap: 16px; }
-  .bookv4 .echo-pair .between { display: none; }
-  .bookv4 .cluster-list { grid-template-columns: 1fr; gap: 18px; }
-  .bookv4 .cluster-words { flex-direction: row; flex-wrap: wrap; }
-  .bookv4 .cluster-tab { padding: 7px 14px; flex: 0 0 auto; }
-}

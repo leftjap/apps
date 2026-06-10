@@ -61,6 +61,12 @@
       "port": 8086
     },
     {
+      "name": "bookapp-sian-ref",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5184", "--directory", "/Users/gio_c/Downloads/_bookapp_extract/design_handoff_검색/시안", "--bind", "127.0.0.1"],
+      "port": 5184
+    },
+    {
       "name": "gym-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
