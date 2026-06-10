@@ -68,6 +68,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 @keyframes segGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(193,99,63,0); } 50% { box-shadow: 0 0 0 4px rgba(193,99,63,0.18); } }
 @media (prefers-reduced-motion: reduce) { #cardResume, #cardResumeSeg .seg.now .bar, .home-live { animation: none; } }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+/* 바텀시트 그림자 — 열렸을 때만. 닫힘(translateY(100%)) 상태에서 위로 뻗는 그림자가
+   뷰포트 하단으로 새어 '구분선 같은 그라데이션' 으로 보이던 문제 차단. */
+#dayDetailSheet[data-open="true"], #weightKeypadSheet[data-open="true"] { box-shadow: 0 -20px 50px -18px rgba(20,18,14,0.4); }
 </style>
 </head>
 <body data-state="idle">
@@ -113,7 +116,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     </div>
     <!-- §9-1 — 날짜 탭 → 운동 요약 바텀시트 (src/features/day-detail-sheet.js) -->
     <div id="dayDetailBackdrop" data-open="false" style="position:absolute;inset:0;z-index:90;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
-    <div id="dayDetailSheet" data-open="false" data-step="summary" data-iso="" style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:18px 18px 24px;box-shadow:0 -20px 50px -18px rgba(20,18,14,0.4);transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
+    <div id="dayDetailSheet" data-open="false" data-step="summary" data-iso="" style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:18px 18px 24px;transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
         <div id="dayDetailDate" class="kr" style="font-size:16px;color:var(--ink-1);font-weight:600;">—</div>
         <div id="dayDetailTag" class="kr" style="font-size:13px;color:var(--ink-3);"></div>
@@ -129,7 +132,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     </div>
     <!-- P5/P13 — 오늘 체중 입력 키패드 (weight-keypad-sheet.js · home/admin 공유) -->
     <div id="weightKeypadBackdrop" data-open="false" style="position:absolute;inset:0;z-index:79;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
-    <div id="weightKeypadSheet" data-open="false" data-buf="" style="position:absolute;left:0;right:0;bottom:0;z-index:80;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:12px 20px 24px;box-shadow:0 -20px 50px -18px rgba(20,18,14,0.4);transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
+    <div id="weightKeypadSheet" data-open="false" data-buf="" style="position:absolute;left:0;right:0;bottom:0;z-index:80;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:12px 20px 24px;transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
       <div style="width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
       <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;">
         <div id="weightKeypadValue" class="mono" style="font-size:52px;font-weight:500;color:var(--ink-1);letter-spacing:-0.03em;line-height:1;text-align:right;">0</div>
