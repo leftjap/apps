@@ -47,19 +47,19 @@ export function openSearch({ userId } = {}) {
     ? [r.meta?.director, r.year].filter(Boolean).join(' · ')
     : [r.meta?.author, r.meta?.publisher].filter(Boolean).join(' · '));
 
-  function rowEl({ id, mtype, title, sub }) {
+  function rowEl({ id, mtype, title, sub, kind }) {
     const isFilm = mtype === 'movie';
     return el('button', { class: 'sresult', onClick: () => pick(id) },
       poster({ type: isFilm ? 'film' : 'book', title, hue: hueFromString(title), w: 36, rounded: 6, label: false }),
       el('div', { class: 'sresult__text' }, el('span', { class: 'sresult__title' }, title), el('span', { class: 'sresult__sub' }, sub || '')),
-      el('span', { class: 'sresult__kind' }, isFilm ? '영화' : '책'));
+      el('span', { class: 'sresult__kind' }, kind || (isFilm ? '영화' : '책')));
   }
 
   async function run() {
     const q = input.value.trim();
     const ql = q.toLowerCase();
     let loc = local.filter((r) => type === 'all' || r.media_type === type);
-    if (ql) loc = loc.filter((r) => `${r.title} ${r.meta?.author || ''} ${r.meta?.director || ''}`.toLowerCase().includes(ql));
+    if (ql) loc = loc.filter((r) => `${r.title} ${r.meta?.author || ''} ${r.meta?.director || ''} ${Array.isArray(r.meta?.cast) ? r.meta.cast.join(' ') : r.meta?.cast || ''}`.toLowerCase().includes(ql));
     else loc = loc.slice(0, 10);
 
     let ali = [];
@@ -73,7 +73,7 @@ export function openSearch({ userId } = {}) {
     ali.forEach((b) => { window.__tasteOpen['isbn:' + b.isbn] = { media_type: 'book', title: b.title, year: b.year, external_id: b.isbn, meta: { author: b.author, publisher: b.publisher, poster_url: b.coverUrl, sub: b.sub } }; });
 
     const rows = [
-      ...loc.map((r) => ({ id: r.id, mtype: r.media_type, title: r.title, sub: subOf(r) })),
+      ...loc.map((r) => ({ id: r.id, mtype: r.media_type, title: r.title, sub: subOf(r), kind: r.media_type === 'movie' && r.meta?.subtype === 'tv' ? '드라마' : null })),
       ...ali.map((b) => ({ id: 'isbn:' + b.isbn, mtype: 'book', title: b.title, sub: [b.author, b.publisher].filter(Boolean).join(' · ') })),
     ];
     clear(results);

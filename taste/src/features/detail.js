@@ -28,6 +28,7 @@ function pickMeta(src) {
     translator: meta.translator ?? null,
     publisher: meta.publisher ?? null,
     poster_url: meta.poster_url ?? null,
+    subtype: meta.subtype ?? src.subtype ?? null,   // 'tv' = 드라마 (library catLabel 과 동일 규칙)
     sub: src.sub ?? null,
   };
 }
@@ -259,7 +260,7 @@ function branchesSection(w, userId) {
 function main(w, isFilm, userId) {
   const m = el('div', { class: 'detail__main' });
   const head = el('header', { class: 'detail__head' });
-  const kind = el('div', { class: 'detail__kind' }, dot(), el('span', {}, isFilm ? '영화' : '책'));
+  const kind = el('div', { class: 'detail__kind' }, dot(), el('span', {}, isFilm ? (w.subtype === 'tv' ? '드라마' : '영화') : '책'));
   const measure = isFilm ? (w.runtime ? `${w.runtime}분` : null) : (w.pages ? `${w.pages}쪽` : null);
   if (measure) kind.appendChild(el('span', { class: 'detail__measure' }, measure));
   head.appendChild(kind);

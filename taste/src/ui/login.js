@@ -1,4 +1,4 @@
-// taste 로그인 카드 — today app.js ensureLoginCard 패턴 축약. 브랜드 taste + 코랄 점.
+// taste 로그인 카드 — today app.js ensureLoginCard 패턴 축약. 브랜드 pick + 코랄 점.
 import { Auth } from '../services/auth.js';
 
 export function hideLoadingScreen() {
@@ -26,7 +26,7 @@ export function ensureLoginCard() {
   card.id = 'taste-login-card';
   card.innerHTML = `
     <div class="taste-login__inner">
-      <h1 class="taste-login__brand">taste<span class="taste-login__dot"></span></h1>
+      <h1 class="taste-login__brand">pick<span class="taste-login__dot"></span></h1>
       <p class="taste-login__hint">${
         configured ? '초대받은 계정만 접근할 수 있습니다.'
           : '⚠️ Supabase 설정 누락 — .env.local 의 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 확인'

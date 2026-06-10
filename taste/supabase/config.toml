@@ -10,3 +10,7 @@ project_id = "tcbooffrdacfatywdzcm"
 [functions.taste-reco]
 # x-taste-reco-token 커스텀 헤더로 함수 본체 인증 → gateway JWT 불필요(로컬 데몬의 claude 가 토큰으로 호출).
 verify_jwt = false
+
+[functions.aladin]
+# 공개 도서검색 프록시 — 클라이언트가 인증 헤더 없이 직접 fetch. ttbkey 는 secret(ALADIN_TTB_KEY) 주입.
+verify_jwt = false
