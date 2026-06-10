@@ -11,6 +11,7 @@ import {
   nowMarker,
   weeklyActivityRatios,
   lastSessionLabel,
+  isStaleActiveSession,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -145,5 +146,27 @@ describe('countDaysInCurrentWeek — 이번주(월~오늘) 활동 distinct 일�
     const today = new Date(2026, 5, 8); // 월
     const keys = ['2026-06-08', '2026-06-08', '2026-06-09']; // 09=미래 제외
     expect(countDaysInCurrentWeek(keys, today)).toBe(1);
+  });
+});
+
+describe('isStaleActiveSession — 오래된 active 세션 가드 (잔재를 "운동 중"으로 안 띄움)', () => {
+  const now = Date.UTC(2026, 5, 10, 1, 0, 0); // 기준 시각 epoch ms
+  const H = 3600 * 1000;
+  it('시작 12시간 미만 → fresh (false)', () => {
+    expect(isStaleActiveSession(now - 30 * 60 * 1000, now)).toBe(false); // 30분 전 — 운동 중
+    expect(isStaleActiveSession(now - (12 * H - 60 * 1000), now)).toBe(false); // 11시간 59분 전
+  });
+  it('시작 12시간 이상 → stale (true)', () => {
+    expect(isStaleActiveSession(now - 12 * H, now)).toBe(true); // 경계 = stale
+    expect(isStaleActiveSession(now - 9 * 24 * H, now)).toBe(true); // 9일 방치 잔재 (2026-06-03 실사례)
+  });
+  it('start_time 부재/0 → stale 취급 (타이머 계산 불가)', () => {
+    expect(isStaleActiveSession(null, now)).toBe(true);
+    expect(isStaleActiveSession(undefined, now)).toBe(true);
+    expect(isStaleActiveSession(0, now)).toBe(true);
+  });
+  it('문자열 epoch 도 숫자 처리 (DB bigint 문자열 대응)', () => {
+    expect(isStaleActiveSession(String(now - H), now)).toBe(false);
+    expect(isStaleActiveSession(String(now - 13 * H), now)).toBe(true);
   });
 });

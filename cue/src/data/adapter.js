@@ -16,7 +16,7 @@
 import {
   dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun, relativeDayLabel,
   lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, weeklyActivityRatios,
-  lastSessionLabel,
+  lastSessionLabel, isStaleActiveSession,
 } from './transforms.js';
 
 const WINDOW = 84;       // 84일=12주 — 전체통계 추세 + 충분한 streak/최장 계산
@@ -111,9 +111,10 @@ async function fetchGym(client, userId, today, sinceKey) {
   const todayVal = series[lastI];
   const weekCount = countDaysInCurrentWeek(completed.map((r) => r.date), today);
   const unit = '이번주 회';
-  const active = data.find((r) => r.status === 'active' || r.status === 'paused');
+  const active = data.find((r) =>
+    (r.status === 'active' || r.status === 'paused') && !isStaleActiveSession(r.start_time, Date.now()));
   let st;
-  if (active && active.start_time) {
+  if (active) {
     const timer = Math.max(0, Math.floor((Date.now() - Number(active.start_time)) / 1000));
     st = { kind: 'progress', big: weekCount, unit, today: 0, line: '운동 중', timer, enter: null };
   } else if (todayVal > 0) {

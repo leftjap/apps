@@ -159,6 +159,15 @@ export function weeklyActivityRatios(series, weeks) {
   return out;
 }
 
+/** active/paused 세션이 잔재인지 — 시작 후 12시간 경과(또는 start_time 부재) 시 true.
+   운동이 12시간을 넘을 수 없으므로, 종료 처리가 안 된 행이 "운동 중"으로 무한 표시되는 것 방지. */
+const STALE_ACTIVE_MS = 12 * 3600 * 1000;
+export function isStaleActiveSession(startTime, now) {
+  const t = Number(startTime);
+  if (!t) return true;
+  return now - t >= STALE_ACTIVE_MS;
+}
+
 /** 직전 세션 시각(Date) → "N일 전 HH:MM" (오늘 흐름 "마지막" 라벨). 날짜 없으면 null. */
 export function lastSessionLabel(date, today) {
   if (!date) return null;
