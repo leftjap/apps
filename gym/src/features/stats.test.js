@@ -545,6 +545,16 @@ describe('applyTodayToCalendar', () => {
   });
 });
 
+describe('sessionToWorkoutEntry — 값 미입력 done 세트 (라이브 2026-06-10 발견)', () => {
+  it('weight/duration 전부 null 인 done 세트 → "N세트" (0kg 표기 생략)', () => {
+    const r = sessionToWorkoutEntry({
+      id: 's-x', date: '2026-06-09', status: 'completed', totalVolume: 0,
+      blocks: [{ type: 'single', exerciseId: 'treadmill', sets: [{ done: true, weight: null, reps: null }] }],
+    });
+    expect(r.ex[0].s).toBe('1세트');
+  });
+});
+
 // P7 — 캘린더 월 동적 렌더 + 월 네비 (mock 정적 "2026 · 5월" 고정 버그 수정)
 describe('shiftMonth', () => {
   it('+1 → 다음 달', () => {

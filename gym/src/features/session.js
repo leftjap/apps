@@ -2904,6 +2904,10 @@ function hookClicks(chipsEl, listEl) {
         }
       }
       b.classList.remove('is-added');
+      // 제거된 블록이 현재 표시 중이면 카드·footer 가 유령 종목에 머묾 (라이브 검증 2026-06-10 발견)
+      // — 추가 경로와 동일하게 재마운트. _currentBlockIdx 는 null 로 재픽 (mount 가 마지막 single 선택).
+      _currentBlockIdx = null;
+      try { await mountSessionView(); } catch (err) { console.error('[gymSession] addex remove remount', err); }
       return;
     }
     try {

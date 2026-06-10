@@ -219,7 +219,9 @@ function formatExEntrySpec(block) {
     return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: block.exerciseId, kind: 'cardio', durSec, distKm };
   }
   const total = doneSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
-  return { n: name, s: `${doneSets.length}세트 · ${total.toLocaleString()}kg`, key: block.exerciseId, kind: 'weight', setCount: doneSets.length, vol: total };
+  // 값 미입력 done 세트(구 기록 — duration/weight 없이 완료만)는 "0kg" 표기 생략 (라이브 2026-06-10 발견).
+  const label = total > 0 ? `${doneSets.length}세트 · ${total.toLocaleString()}kg` : `${doneSets.length}세트`;
+  return { n: name, s: label, key: block.exerciseId, kind: 'weight', setCount: doneSets.length, vol: total };
 }
 
 function formatExEntryMocks(ex) {
@@ -235,7 +237,8 @@ function formatExEntryMocks(ex) {
     return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: ex.exerciseId || name, kind: 'cardio', durSec, distKm };
   }
   const total = sets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
-  return { n: name, s: `${sets.length}세트 · ${total.toLocaleString()}kg`, key: ex.exerciseId || name, kind: 'weight', setCount: sets.length, vol: total };
+  const label = total > 0 ? `${sets.length}세트 · ${total.toLocaleString()}kg` : `${sets.length}세트`;
+  return { n: name, s: label, key: ex.exerciseId || name, kind: 'weight', setCount: sets.length, vol: total };
 }
 
 function defaultEntry() {
