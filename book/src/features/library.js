@@ -1,19 +1,23 @@
 /**
- * 어구록(서재) 탭 — v4 LibraryTab 이식 (바닐라).
- *  - 사이드바: 플랫 책 리스트(카드 아님) + 「핀만 보기」 토글 + 장르 칩. hover 그레이, 선택 시 좌측 검정 바.
- *  - 메인: 선택 책의 어구록 읽기뷰. 인덱스 번호 + 큰 타이포, 구분선만. 표지·인용부호·태그·날짜 비노출.
- *  - 어구록 클릭 → QuoteModal(공용 ui/quote-modal.js). ⋮ → 핀/복사/수정/삭제.
- * 데이터: BOOKS 상수 + Queries.listAllQuotes(owners) 1회 → 책별 집계/필터. cover() 는 scale=px/mm.
- * D2: 부부 양쪽 표시 + 소연 문장 작은 라벨.
+ * 어구록(서재) 탭 — v3 리디자인 (시안 library3.js 이식, SCREEN 02).
+ *  - 사이드바(lx-aside): 서재 헤드 + 읽은 책 등록 + 장르 칩 + 책 리스트(표지 36px,
+ *    선택=액센트 좌측 바, 핀 별+개수). 「핀만 보기」는 북바 도구로 이동.
+ *  - 메인(lx-main): 북바(표지 44px + serif 제목 + 저자·출판사 + 어구록 N · 핀 N +
+ *    도구[정렬 토글·핀만·검색]) · 빠른 입력(lx-capture, 클릭→추가 모달 textarea 포커스)
+ *    · 발췌 노트(lx-x — 인덱스·시간·작성자 비노출, 행 밀도↑) — 시안 SCREEN 02 결정.
+ *  - 행 호버 액션: 핀 토글(본인 소유만) + ⋮ 메뉴. 댓글 있는 행은 우상단 말풍선(클릭→스레드).
+ *  - 어구록 클릭 → QuoteModal. 우클릭/롱프레스 → 컨텍스트 메뉴 (기존 유지).
+ * 데이터: BOOKS/REGISTRY + Queries.listAllQuotes(owners) 1회 → 책별 집계/필터.
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
 import { Profile } from '../services/profile.js';
-import { BOOKS, bookOf } from '../data/books.js';
+import { bookOf } from '../data/books.js';
 import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
+import { openSearchModal } from '../ui/search-modal.js';
 import { openQuoteModal, rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
@@ -69,9 +73,9 @@ async function render(host, params, ctx) {
   let sort = '최근';
   let selectedId = params.ref && byBook.has(String(params.ref)) ? String(params.ref) : null;
 
-  const asideEl = el('aside', { class: 'library-aside' });
-  const mainCol = el('div', { class: 'library-main' });
-  root.appendChild(el('div', { class: 'library' }, asideEl, mainCol));
+  const asideEl = el('aside', { class: 'lx-aside' });
+  const mainCol = el('div', { class: 'lx-main' });
+  root.appendChild(el('div', { class: 'lx-shell' }, asideEl, mainCol));
 
   function filteredBooks() {
     let bs = genre === '전체' ? booksWithQuotes : booksWithQuotes.filter((b) => genreOf(b) === genre);
@@ -99,6 +103,14 @@ async function render(host, params, ctx) {
     renderMain();
   }
 
+  async function togglePin(q) {
+    try {
+      await Queries.togglePinQuote(q.id);
+      q.pinned = q.pinned ? 0 : 1;
+      onQuoteChange(q);
+    } catch (e) { console.warn('[library] 핀 토글 실패', e?.message || e); }
+  }
+
   function renderAside() {
     clear(asideEl);
     const fb = filteredBooks();
@@ -107,43 +119,41 @@ async function render(host, params, ctx) {
     }
     const totalInView = fb.reduce((s, b) => s + quotesOf(b.id).length, 0);
 
-    asideEl.appendChild(el('div', { class: 'aside-head' },
+    asideEl.appendChild(el('div', { class: 'lx-aside-head' },
       el('h2', {}, '서재'),
       el('span', { class: 'meta' }, `${fb.length}권 · ${totalInView}개`),
     ));
-    asideEl.appendChild(el('div', { class: 'aside-controls' },
-      el('button', {
-        class: pinnedOnly ? 'filter-pin active' : 'filter-pin',
-        onClick: () => { pinnedOnly = !pinnedOnly; renderAside(); renderMain(); },
-      },
-        el('span', { class: 'star' }, iconEl(pinnedOnly ? 'star-fill' : 'star', { sz: 12 })),
-        el('span', {}, '핀만 보기'),
-      ),
-    ));
-    const chips = el('div', { class: 'aside-chips' });
+    asideEl.appendChild(el('button', {
+      class: 'lx-addbook',
+      onClick: () => { ctx.openAdd && ctx.openAdd(); },
+    }, iconEl('plus', { sz: 14 }), '읽은 책 등록'));
+    const chips = el('div', { class: 'lx-chips' });
     for (const g of genres) {
       chips.appendChild(el('button', {
-        class: g === genre ? 'chip active' : 'chip',
+        class: g === genre ? 'c on' : 'c',
         onClick: () => { genre = g; renderAside(); renderMain(); },
       }, g));
     }
     asideEl.appendChild(chips);
 
-    const list = el('div', { class: 'book-list' });
+    const list = el('div', { class: 'lx-blist' });
     if (!fb.length) list.appendChild(el('div', { class: 'aside-empty' }, '조건에 맞는 책이 없습니다'));
     for (const b of fb) {
       const ref = String(b.id);
-      const cnt = pinnedOnly ? (byBook.get(ref)?.pinned || 0) : (byBook.get(ref)?.quotes.length || 0);
+      const g = byBook.get(ref);
+      const cnt = pinnedOnly ? (g?.pinned || 0) : (g?.quotes.length || 0);
       const row = el('div', {
-        class: ref === selectedId ? 'book-row selected' : 'book-row',
+        class: ref === selectedId ? 'lx-brow on' : 'lx-brow',
         onClick: () => { selectedId = ref; renderAside(); renderMain(); },
       },
-        el('div', { class: 'cover-slot' }, coverAt(b, 44)),
-        el('div', { class: 'book-row-info' },
-          el('div', { class: 'book-row-title' }, b.t),
-          el('div', { class: 'book-row-byline' }, `${b.a} · ${b.p}`),
+        coverAt(b, 36),
+        el('div', { style: { minWidth: 0 } },
+          el('div', { class: 'tt' }, b.t),
+          el('div', { class: 'by' }, b.a),
         ),
-        el('div', { class: 'book-row-count' }, String(cnt)),
+        el('div', { class: 'n' },
+          (g?.pinned || 0) > 0 ? el('span', { class: 'pin' }, iconEl('star-fill', { sz: 9 })) : null,
+          String(cnt)),
       );
       // 책 삭제는 책의 어구록이 전부 본인 소유일 때만 노출 — 상대 글은 RLS write 거부(로컬만 변경, reload 시 복원).
       attachContextMenu(row, () => {
@@ -164,38 +174,71 @@ async function render(host, params, ctx) {
     clear(mainCol);
     const b = selectedId ? bookOf(selectedId) : null;
     if (!b) { mainCol.appendChild(el('div', { class: 'empty' }, '왼쪽에서 책을 선택하세요.')); return; }
+    const g = byBook.get(selectedId);
     const qs = quotesOf(selectedId);
+    const totalN = g?.quotes.length || 0;
+    const pins = g?.pinned || 0;
 
-    mainCol.appendChild(el('header', { class: 'library-main-head' },
-      el('div', {},
-        el('div', { class: 'book-name' }, b.t),
-        el('div', { class: 'book-by' }, `${b.a} · ${b.p}`, el('span', { class: 'count' }, `${qs.length}개`)),
-      ),
-      el('div', { class: 'sort-seg' },
-        el('button', { class: sort === '최근' ? 'active' : '', onClick: () => { sort = '최근'; renderMain(); } }, '최근순'),
-        el('button', { class: sort === '오래된' ? 'active' : '', onClick: () => { sort = '오래된'; renderMain(); } }, '오래된순'),
+    mainCol.appendChild(el('header', { class: 'lx-bookbar' },
+      el('div', { class: 'cv' }, coverAt(b, 44)),
+      el('div', { class: 'info' },
+        el('div', { class: 'tt' }, b.t),
+        el('div', { class: 'by' }, `${b.a} · ${b.p}`,
+          el('span', { class: 'ct' }, ` · 어구록 ${totalN}`, pins ? el('span', { class: 'pin' }, ` · 핀 ${pins}`) : null))),
+      el('div', { class: 'tools' },
+        el('button', {
+          title: '정렬 전환',
+          onClick: () => { sort = sort === '최근' ? '오래된' : '최근'; renderMain(); },
+        }, sort === '최근' ? '최근순' : '오래된순', iconEl('chevD', { sz: 13 })),
+        el('button', {
+          class: pinnedOnly ? 'ico on' : 'ico', title: '핀만 보기',
+          onClick: () => { pinnedOnly = !pinnedOnly; renderAside(); renderMain(); },
+        }, iconEl(pinnedOnly ? 'star-fill' : 'star', { sz: 15 })),
+        el('button', { class: 'ico', title: '검색 (⌘K)', onClick: () => openSearchModal(ctx) }, iconEl('search', { sz: 15 })),
       ),
     ));
 
-    const stream = el('div', {
-      class: 'quote-stream',
-      // 빈 영역(어구록 없는 공간) 클릭 → 이 책으로 바로 어구록 추가
-      onClick: (e) => { if (e.target === stream || (e.target.classList && e.target.classList.contains('empty'))) ctx.openAdd && ctx.openAdd({ bookRef: selectedId }); },
-    });
-    if (!qs.length) stream.appendChild(el('div', { class: 'empty', style: { cursor: 'pointer' } }, '저장된 어구록이 없습니다. 클릭해 추가하세요.'));
-    qs.forEach((q, i) => {
+    // 빠른 입력 — 클릭 → 책 프리셋 추가 모달(textarea 자동 포커스). 힌트 줄 없음(시안).
+    mainCol.appendChild(el('div', {
+      class: 'lx-capture', role: 'button',
+      onClick: () => { ctx.openAdd && ctx.openAdd({ bookRef: selectedId }); },
+    },
+      el('span', { class: 'q' }, iconEl('quote', { sz: 18 })),
+      el('div', { class: 'ph' }, el('span', { class: 'caret' }), '어구를 입력하거나 붙여넣으세요'),
+      el('button', { class: 'save' }, '저장'),
+    ));
+
+    const list = el('div', { class: 'lx-list' });
+    if (!qs.length) {
+      list.appendChild(el('div', {
+        class: 'empty', style: { cursor: 'pointer' },
+        onClick: () => { ctx.openAdd && ctx.openAdd({ bookRef: selectedId }); },
+      }, '저장된 어구록이 없습니다. 클릭해 추가하세요.'));
+    }
+    for (const q of qs) {
+      const isMine = !meId || q.owner_id === meId;
+      const cN = commentCounts[q.id] || 0;
       const article = el('article', {
-        class: q.pinned ? 'quote-row is-pinned' : 'quote-row',
-        onClick: () => openQuoteModal(q, ctx, { commentCount: commentCounts[q.id] || 0, container: root }),
+        class: q.pinned ? 'lx-x pinned' : 'lx-x',
+        onClick: () => openQuoteModal(q, ctx, { commentCount: cN, container: root }),
       },
-        el('div', { class: 'idx' }, String(i + 1).padStart(2, '0')),
-        el('p', { class: 'body' }, q.text, q.owner_id !== meId ? el('span', { class: 'soyeon' }, '— 소연') : null),
-        rowMenuButton(q, ctx, { onChange: onQuoteChange }),
+        el('div', { class: 'txt' }, q.text),
+        cN > 0 ? el('button', {
+          class: 'lx-memoflag', title: `댓글 ${cN} — 스레드 열기`,
+          onClick: (e) => { e.stopPropagation(); ctx.navigate(`/thread/${selectedId}/${q.id}`); },
+        }, iconEl('comment', { sz: 14 })) : null,
+        el('div', { class: 'lx-acts', onClick: (e) => e.stopPropagation() },
+          isMine ? el('button', {
+            class: q.pinned ? 'on' : '', title: q.pinned ? '핀 해제' : '핀',
+            onClick: () => togglePin(q),
+          }, iconEl(q.pinned ? 'star-fill' : 'star', { sz: 15 })) : null,
+          rowMenuButton(q, ctx, { onChange: onQuoteChange }),
+        ),
       );
       attachContextMenu(article, () => buildMenuPop(q, ctx, { onChange: onQuoteChange }));
-      stream.appendChild(article);
-    });
-    mainCol.appendChild(stream);
+      list.appendChild(article);
+    }
+    mainCol.appendChild(list);
   }
 
   renderAside();
