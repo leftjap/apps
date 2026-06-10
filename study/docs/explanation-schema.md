@@ -6,7 +6,7 @@
 >
 > **콘텐츠 작성 가이드 (ja, 정본):** [./lesson-explanation-guide-ja.md](./lesson-explanation-guide-ja.md) — i+1·1T·Stage 1~4·4패턴 발음·explanation 4필드 (whenToUse/grammar/pronPoints/similar)·variations 비활성 (Stage 1~2).
 
-## en/ja 공통 ReviewCard 메타 (5필드 + phonetic_kr)
+## en/ja 공통 ReviewCard 메타 (5필드 + phonetic_kr) — ⚠️ ja 정본 (en RealClass 는 미사용: §scene 카드·guide §6.3)
 
 | 필드 | 형식 | 용도 |
 |---|---|---|
@@ -76,7 +76,7 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
   mistake: '한국인이 자주 하는 실수 (한 문단)',
   similar: '비슷한 표현 비교 (한 문단)',
   drills: [
-    { en: '핵심 요소를 레벨맞춤으로 치환한 응용 문장', ko: '한국어 뜻' },
+    { en: '핵심 요소를 레벨맞춤으로 치환한 응용 문장', ko: '한국어 뜻', kr: '한글 음차 (연음 반영 — en 의무)' },
     // 각 문장 = 듣기(TTS)/녹음(발음채점) 가능. 개수는 내용·레벨 기반 (3~8), 고정 quota X
   ],
 }
@@ -134,20 +134,27 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
 - **단정형 회피**: "꼭/반드시" 보다 "권장/자연스러움" 표현
 - **html 태그 허용** — `<span class="hl">…</span>` 강조, `<br>` 줄바꿈. 다른 태그는 escape 필요
 
-## 예시 (en)
+## 예시 (en — 활성 RealClass 표현 카드, 2026-06-10 현행화. 실 시드 = seeds/en-2026-06-10-2.json)
 
 ```js
 {
-  key: '<span class="hl">I\'m not gonna lie</span>는 "솔직히 말하면" 의 관용 표현. gonna = going to 의 구어체 축약.',
-  situation: '힘든 경험을 솔직하게 털어놓을 때. 친구끼리 편하게 대화하는 상황.',
-  grammar: [
-    { struct: '<span class="hl">I\'m not gonna lie</span> = 관용 표현 (문장 전체가 부사 역할)', body: '한국어는 "솔직히"를 한 단어로 놓지만, 영어는 절 전체가 앞에 옴.' },
-    { struct: '<span class="hl">pretty</span> = 부사 "꽤" (형용사 아님)', body: 'pretty + 형용사 = 꽤 ~한. very 보다 캐주얼.' }
+  key: 'Is that a promise? = 약속하는 거예요? 상대의 말을 못박아 확인하는 되묻기.',
+  situation: '장면 · 레슬리의 다짐에 앤이 진짜냐고 확인',
+  drills: [
+    { en: 'Is that a promise?', ko: '약속하는 거죠?', kr: '이즈 대러 프라미스?' },
+    { en: 'Is that a yes?', ko: '그거 승낙인 거죠?', kr: '이즈 대러 예스?' },
+    { en: 'Is that a deal?', ko: '그럼 그렇게 하기로 한 거죠?', kr: '이즈 대러 디-일?' },
+    // … 핵심·헷갈리는 표현 6~8 / 쉬운 표현 3 (§drills 규칙)
   ],
-  chunks: [["I'm not gonna lie", '아임나러나 라이'], ['that was', '대러즈'], ['pretty rough', '프리리 러프']],
-  phonemes: [['/ʌ/', 'gonna'], ['/f/', 'rough'], ['/ɾ/', 'pretty']],
-  mistake: '"gonna" 를 "고나" 로 발음 — /ɡʌnə/ "거나" 에 가까움. 단어마다 끊어 읽음 — 하나의 덩어리로.',
-  similar: '<span class="hl">to be honest</span> / <span class="hl">honestly</span> — 비슷하지만 I\'m not gonna lie 가 더 캐주얼.',
+  grammar: [
+    { struct: 'Is that a + 명사?', body: "상대가 방금 한 말을 '~인 거예요?' 라고 한 단어로 규정해 확인. that = 방금 그 말." },
+  ],
+  chunks: [['Is that a', '이즈 대러'], ['promise?', '프라미스?']], // 이어붙임 = phonetic_kr 와 일치 의무
+  phonemes: [['/ð/', "that — 혀끝 이 사이 '대'"], ['/ɾ/', "that a → '대러' (flap 연결)"]],
+  mistake: "that a 를 끊어 '댓 어' (X) — 연음 '대러' 한 호흡. 프로미스(X) 프라미스(O).",
+  similar: 'Do you promise? / You promise?',
+  category: 'chunk/confirmation',
+  frequency: 8,
 }
 ```
 

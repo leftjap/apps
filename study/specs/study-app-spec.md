@@ -289,12 +289,12 @@ CREATE POLICY "Users can only access own data"
    - 필수 컬럼: `id` (결정적 ID — ja `<lang>-<date>-skit<N>-<order>` / en `en-parks-<se>-<slug>`), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
    - explanation JSONB nested 메타:
      - ja: 5필드 (stage / newElements / knownElements / frequency / category) + **콩트 메타 4필드** (skitId / skitTitle / skitOrder / skitTotal) — explanation-schema.md §"콩트 메타" 참조
-     - en: scene 카드 = `sceneTitle/sceneSummary/dialogue` / 표현 카드 = `key/situation/drills/mistake/similar/category/frequency` — explanation-schema.md §"scene 카드"·§"drills" 참조
+     - en: **en 가이드 §6.3 유일 정본** (scene 카드 + 표현 카드 한국인 해설 8필드 — 필드 열거 재서술 금지, SSOT 2026-06-10)
    - bulkInsert (lang × date 단일 트랜잭션, 묶음 카드 동시 INSERT)
 
 8. **검증 + 사용자 보고**
    - INSERT 직후 동일 user_id + lang + date 로 SELECT count → 카드 수 일치 확인 (ja: 콩트 skitTotal 합산 / en: scene 1 + 표현 카드 수)
-   - en 검증 (RealClass — en 가이드 §6.3 체크리스트 정본): scene 카드 `order_index 0` + `explanation.dialogue` 배열 / 표현 카드 drills 3~8 / 발췌 기준 3종 / 기존 Parks 시드 중복 0
+   - en 검증 (RealClass — en 가이드 §6.3 체크리스트 정본): **기계 게이트 = `scripts/validate-seed.mjs`** (seed-supabase.mjs 가 INSERT 전 자동 호출 — 구조·발음 정합·매칭 계약·drills·ID/`_source` 겹침·화자 등록 + 서버 1일 1장면·completed 게이트). 판단형 (발췌 기준·드릴 분포) 만 수동
    - ja 콩트 메타 검증: 같은 skitId 카드 묶음 안 정확히 1장만 `newElements.length === 1` (펀치라인 권장)
    - **시트콤 작법 자체 점검** (ja 전용 — ja 가이드 §5.2. en §6.2 는 archive):
      - Show-don't-tell 위반 여부 (scene_intro 에 캐릭터 설명 박혔으면 reject)

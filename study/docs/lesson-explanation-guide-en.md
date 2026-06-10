@@ -417,9 +417,60 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - 우희: "Watch this. My English is amazing." / "I have a feeling about this place." → 다음 콩트에 자뻑 callback
 - 여빈: "I will end you." / "Of course." / "Do you ever stop talking." → 다음 콩트에 컷 callback
 
+### 콩트 생성 원칙 (구 §10 이동분 — 2026-06-10 SSOT 정리)
+
+- **신규 요소 = 정확히 1개**: i+1 검증 (콩트 메타 newElements)
+- **콩트 단위 생성**: 한 세션 = 5~6문장 1 콩트, scene 메타 5필드 nested
+- **default 60~80% + stretch 20~40% 비율**: stretch_level ≤ 1, `currentStage + 2` 점프 금지
+- **캐릭터-stage 정합** (페어 매트릭스): currentStage 의 등장 가능 풀 안에서만 캐스팅
+- **기본 동사 우선**: sentence 동사 풀의 70%+ 가 **be / have / get / take / give / make / do** 의 변형. 라틴계·추상 어휘 (construct / decline / require / warrior 등) 차단
+- **디스·조롱·농담이 voice 의 기본값**: 평서문 자기 자랑 일변도 금지 (5/19 라쿤·빅맨 회귀 방지). 콩트당 양쪽 합산 디스 3회+
+- **농담은 구조·반전으로** (어휘 의존 X): 단순 반전 · 사실 폭로 · flat sarcasm · 친구 톤 위협 4패턴 위주
+
+### 자체 검증 체크리스트 (구 §11 이동분 — 콩트 트랙 전용)
+
+- [ ] `newElements` 길이가 정확히 **1** 인가
+- [ ] `knownElements` 의 모든 요소가 이전 stage 에 등장했는가
+- [ ] `phonetic_kr` 이 연음/flap/약음 반영했는가 (사전 표기 X)
+- [ ] `pronunciation.chunks` 배열에 모든 단어가 빠짐없이 포함되는가
+- [ ] `phonetic_kr` 이 chunks 의 kr 을 이어붙인 것과 일치하는가
+- [ ] `weak_focus` 가 IPA 기호 배열인가 (한글 X, 2~4개)
+- [ ] `frequency` 점수 (1~10) 가 매겨졌는가
+- [ ] `category` 가 분류되었는가
+- [ ] Stage 1 문장이라면 구어 축약/리액션 위주인가
+- [ ] Stage 1~2 문장에 `variations` 미포함인가
+- [ ] Stage 3+ `variations` 가 정확히 3개이고 type 이 `subject`/`tense`/`expression` 인가
+- [ ] 각 variation 의 `answers` 배열이 비어있지 않은가
+- [ ] `commonMistakes` 에 한국인 학습자 관점 명시되어 있는가
+
+**콩트 정합:**
+
+- [ ] 콩트 모든 문장이 같은 `scene_id` 공유
+- [ ] `scene_order` 가 1~N 연속 (점프 없음)
+- [ ] `scene_title` 박힘 (콩트 헤더용)
+- [ ] stretch 문장 비율이 20~40% (5문장이면 1~2개)
+- [ ] 모든 stretch 문장 `stage === currentStage + 1` 이고 `is_stretch: true`
+- [ ] default 문장 `stage === currentStage` 이고 `is_stretch: false`
+- [ ] `currentStage + 2` 이상 점프 없음
+- [ ] `speaker` 가 활성 페어 안 (우희 또는 여빈) — archive 캐릭터 (지점장/박사/라쿤/평론가/검사/단장/회장/빅맨) 신규 시드 사용 X
+- [ ] sentence 안에는 한국식 호칭 0건 (영어 100%)
+
+**Vitriolic Best Buds 운영 (우희+여빈 페어 의무):**
+
+- [ ] 모든 카드 sentence 에 절 1+ 포함 (단문 reaction 단독 0건 — "Of course." / "Sure." / "Got it." 단독 X)
+- [ ] 콩트당 디스·조롱·농담 양쪽 합산 **3회+** (sarcasm cut · 사실 폭로 · 친구 톤 위협 · 정정 모욕 중)
+- [ ] **쌍방향 검증** — 우희·여빈 각자 디스 최소 1회 (일방향 mock 0건)
+- [ ] sentence 동사 풀 — **기본 동사** (be/have/get/take/give/make/do 변형) 70%+
+- [ ] 라틴계·추상 어휘 (construct/decline/require/warrior 등) **0건**
+
 ---
 
 ## 6.3 RealClass-mining 트랙 (⭐ 활성 — 2026-06-08 전환)
+
+> **유일 생성 정본 (2026-06-10 SSOT)**: en 신규 시드의 생성·검증 규칙은 본 § 가 유일 정본이다.
+> schema·README·spec·스킬 문서는 본 § 를 링크로 참조만 한다 (규칙 재서술 금지 — drift 방지).
+> 기계 게이트: [`scripts/validate-seed.mjs`](../scripts/validate-seed.mjs) 가 본 § 체크리스트의 기계화 가능 항목을
+> INSERT 전 결정적으로 차단 (`seed-supabase.mjs` 자동 호출).
 
 본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation S1E1. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
 
@@ -513,7 +564,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 | **연음** | gonna · wanna · didja · wouldja | `phonetic_kr` `chunks` |
 | **Flap** | water → wadder · pretty → priddy | `phonetic_kr` `tips` |
 | **약음/생략** | for → fer · and → 'n · of → uh | `phonetic_kr` `tips` |
-| **IPA 음소** | θ · ð · ɹ · f · v · æ · ʌ · ɪ | `weak_focus` (pill 태그) |
+| **IPA 음소** | θ · ð · ɹ · f · v · æ · ʌ · ɪ | `phonemes` (활성 §6.3) / `weak_focus` (구형 §4) |
 
 ### Shadowing 메커니즘
 영상 오디오 들으면서 즉시 따라 말함. 자막 보며 하면 어휘 암기에 도움, 자막 끄고 하면 듣기 이해력 향상.
@@ -603,67 +654,26 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 ---
 
-## 10. 콘텐츠 생성 원칙
+## 10. 콘텐츠 생성 원칙 (일반 — 트랙 공통)
 
-> ⭐ 활성 RealClass-mining 트랙의 생성 원칙·구조 = **§6.3 정본**. 아래 일반 원칙 중 구어체·발음·phonetic_kr·drills 류는 유효하나, **콩트 관련 항목 (콩트 단위 생성 / default+stretch / 캐릭터 / 디스·농담) 은 archive (§6.2)**.
+> ⭐ 활성 RealClass-mining 트랙의 생성·검증 규칙 = **§6.3 유일 정본**. 본 § 는 트랙 공통 일반 원칙만 유지.
+> 콩트 전용 원칙 (콩트 단위 생성 / default+stretch / 캐릭터 / 기본 동사 비율 / 디스·농담) 은 **§6.2 말미로 이동** (2026-06-10 SSOT 정리).
 
 - **구어체 우선**: gonna · wanna · gotta · kinda · lemme. 교과서 영어 X
 - **한국어 표기 발음 (phonetic_kr)**: 연음/flap/약음 정확 반영. 사전 표기 X
 - **chunks 분리 필수**: 한국인 단어별 끊어 읽기 교정
-- **IPA weak_focus**: 한국인 약점 음소 명시
-- **신규 요소 = 정확히 1개**: i+1 검증
-- **변형 연습**: Stage 1~2 미포함 / Stage 3+ 항상 3건 (subject/tense/expression)
+- **약점 음소 명시**: 한국인 약점 음소 IPA 표기 (활성 트랙 필드명 `phonemes` — 구형 `weak_focus` 는 §6.2 archive)
+- **변형 연습**: Stage 1~2 미포함 / Stage 3+ 항상 3건 (subject/tense/expression) — §8 정본
 - **slice-of-life 콘텐츠 우선**: voice actor 명확 발음
-- **콩트 단위 생성** (§6.2): 한 세션 = 5~6문장 1 콩트, scene 메타 5필드 nested
-- **default 60~80% + stretch 20~40% 비율**: stretch_level ≤ 1, `currentStage + 2` 점프 금지
-- **캐릭터-stage 정합** (§6.2 페어 매트릭스): currentStage 의 등장 가능 풀 안에서만 캐스팅
-- **기본 동사 우선** (§6.2): sentence 동사 풀의 70%+ 가 **be / have / get / take / give / make / do** 의 변주. 라틴계·추상 어휘 (construct / decline / require / warrior 등) 차단
 - **단문 reaction 단독 카드 금지**: "Of course." / "Sure." / "Got it." / "Right." 단독 카드 X. 복습 카드 가치 ↓. reaction 도 절로 확장 ("That is exactly what I thought." / "Take a year.")
 - **모든 카드 = 절 1+ + 학습 포인트 1+**: subject + verb 절 최소 1개 + (idiom · grammar 구조 · phoneme 묶음) 중 최소 1
-- **디스·조롱·농담이 voice 의 기본값** (§6.2): 평서문 자기 자랑 일변도 금지 (5/19 라쿤·빅맨 회귀 방지). 콩트당 양쪽 합산 디스 3회+
-- **농담은 구조·반전으로** (어휘 의존 X): 단순 반전 · 사실 폭로 · flat sarcasm · 친구 톤 위협 4패턴 위주
 
 ---
 
-## 11. 자체 검증 체크리스트
+## 11. 자체 검증 체크리스트 — ➡ 이동
 
-> ⭐ **활성 트랙 (RealClass-mining) 체크리스트 = §6.3 "생성 후 자체 체크리스트"**. 아래는 콩트 트랙 (§6.2 archive) 체크리스트 — 신규 en 시드에 적용하지 않음.
-
-콘텐츠 생성 후 확인:
-
-- [ ] `newElements` 길이가 정확히 **1** 인가
-- [ ] `knownElements` 의 모든 요소가 이전 stage 에 등장했는가
-- [ ] `phonetic_kr` 이 연음/flap/약음 반영했는가 (사전 표기 X)
-- [ ] `pronunciation.chunks` 배열에 모든 단어가 빠짐없이 포함되는가
-- [ ] `phonetic_kr` 이 chunks 의 kr 을 이어붙인 것과 일치하는가
-- [ ] `weak_focus` 가 IPA 기호 배열인가 (한글 X, 2~4개)
-- [ ] `frequency` 점수 (1~10) 가 매겨졌는가
-- [ ] `category` 가 분류되었는가
-- [ ] Stage 1 문장이라면 구어 축약/리액션 위주인가
-- [ ] Stage 1~2 문장에 `variations` 미포함인가
-- [ ] Stage 3+ `variations` 가 정확히 3개이고 type 이 `subject`/`tense`/`expression` 인가
-- [ ] 각 variation 의 `answers` 배열이 비어있지 않은가
-- [ ] `commonMistakes` 에 한국인 학습자 관점 명시되어 있는가
-
-### 콩트 정합 (§6.2)
-
-- [ ] 콩트 모든 문장이 같은 `scene_id` 공유
-- [ ] `scene_order` 가 1~N 연속 (점프 없음)
-- [ ] `scene_title` 박힘 (콩트 헤더용)
-- [ ] stretch 문장 비율이 20~40% (5문장이면 1~2개)
-- [ ] 모든 stretch 문장 `stage === currentStage + 1` 이고 `is_stretch: true`
-- [ ] default 문장 `stage === currentStage` 이고 `is_stretch: false`
-- [ ] `currentStage + 2` 이상 점프 없음
-- [ ] `speaker` 가 §6.2 활성 페어 안 (우희 또는 여빈) — archive 캐릭터 (지점장/박사/라쿤/평론가/검사/단장/회장/빅맨) 신규 시드 사용 X
-- [ ] sentence 안에는 한국식 호칭 0건 (영어 100%)
-
-### Vitriolic Best Buds 운영 (§6.2 우희+여빈 페어 의무)
-
-- [ ] 모든 카드 sentence 에 절 1+ 포함 (단문 reaction 단독 0건 — "Of course." / "Sure." / "Got it." 단독 X)
-- [ ] 콩트당 디스·조롱·농담 양쪽 합산 **3회+** (sarcasm cut · 사실 폭로 · 친구 톤 위협 · 정정 모욕 중)
-- [ ] **쌍방향 검증** — 우희·여빈 각자 디스 최소 1회 (일방향 mock 0건)
-- [ ] sentence 동사 풀 — **기본 동사** (be/have/get/take/give/make/do 변주) 70%+
-- [ ] 라틴계·추상 어휘 (construct/decline/require/warrior 등) **0건**
+> ⭐ **활성 트랙 (RealClass-mining) 체크리스트 = §6.3 "생성 후 자체 체크리스트" 유일 정본** (기계 게이트 = `scripts/validate-seed.mjs`).
+> 콩트 트랙 (archive) 체크리스트는 **§6.2 말미 "자체 검증 체크리스트 (구 §11 이동분)"** 으로 이동 (2026-06-10 SSOT 정리). 신규 en 시드에 적용하지 않음.
 
 ---
 
