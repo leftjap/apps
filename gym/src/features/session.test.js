@@ -466,6 +466,24 @@ describe('persistSetCommit', () => {
     expect(sess.blocks[0].sets[1].preset).toBe(true);
   });
 
+  it('cardio — 입력된 duration·distance 가 스와이프 완료(done commit)에도 보존 (라이브 2026-06-10 사용자 보고)', async () => {
+    await addExerciseToActiveSession('treadmill', 'cardio');
+    // 키패드로 시간·거리 입력된 상태 재현
+    const sess0 = (await db.sessions.toArray())[0];
+    sess0.blocks[0].sets[0] = { ...sess0.blocks[0].sets[0], duration: 1200, distance: 3 };
+    await db.sessions.put(sess0);
+    const r = await persistSetCommit({
+      exerciseName: '트레드밀',
+      setIdx: 0,
+      set: { done: true, pr: false },
+    });
+    expect(r.ok).toBe(true);
+    const sess = (await db.sessions.toArray())[0];
+    expect(sess.blocks[0].sets[0].done).toBe(true);
+    expect(sess.blocks[0].sets[0].duration).toBe(1200);
+    expect(sess.blocks[0].sets[0].distance).toBe(3);
+  });
+
   it('PR 마킹 — pr:true 보존', async () => {
     await addExerciseToActiveSession('bench_press', 'chest');
     const r = await persistSetCommit({

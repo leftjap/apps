@@ -289,8 +289,13 @@ export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
     }
     const prev = sets[setIdx] || {};
     sets[setIdx] = {
+      // prev 스프레드 — cardio 의 duration·distance 등 명시 키 외 필드 보존.
+      // (구버전이 5개 키로 재구성해 cardio 입력값이 스와이프 완료 시 유실 — 2026-06-10 사용자 보고)
+      ...prev,
       weight: set.weight === undefined ? prev.weight : set.weight,
       reps: set.reps === undefined ? prev.reps : set.reps,
+      duration: set.duration === undefined ? prev.duration : set.duration,
+      distance: set.distance === undefined ? prev.distance : set.distance,
       done: set.done === undefined ? true : !!set.done,
       preset: false,
       pr: !!set.pr,
