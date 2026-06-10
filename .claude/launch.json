@@ -72,6 +72,12 @@
       "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
       "cwd": "/Users/gio_c/apps/gym",
       "port": 5176
+    },
+    {
+      "name": "gym-mocks",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "5185", "--directory", "/Users/gio_c/apps/gym/mocks", "--bind", "127.0.0.1"],
+      "port": 5185
     }
   ]
 }
