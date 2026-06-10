@@ -38,7 +38,10 @@ jobs:
 
       # 회귀 게이트 — today 테스트 실패 시 전체 배포 차단 (2026-06-10, 가계부 점검 후속).
       # env 불필요: 스위트는 supabase mock 기반 (.env.local 부재 모드로 로컬 검증 완료).
+      # TZ 고정: isoToMockDate 등 날짜 표시가 사용자 로컬 시간대(KST) 전제 — UTC 러너에서 오탐 방지.
       - name: Test today (vitest)
+        env:
+          TZ: Asia/Seoul
         run: |
           cd today
           pnpm install --frozen-lockfile
