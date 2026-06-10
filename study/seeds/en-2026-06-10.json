@@ -1,0 +1,139 @@
+{
+  "lang": "en",
+  "date": "2026-06-10",
+  "_note": "RealClass-mining — Parks and Recreation S1E1 '위원회 브레인스토밍' 장면 (소스 스크립트 #133~145 발췌·압축 → dialogue 8줄). 표현 카드 5장: make it happen / not a priority / You know what / that could work / write that down. 발췌 기준 3종 통과 — 인사 단독 0, 행정·군사 비유 디테일 (firepower/bigger guns/lifeblood/City Council) 표현 카드 제외, 일상 전이 표현만. 기존 en-parks-s1e1 (토론회 #56~103: fire away/care for/do something about it/move on/hit on/bottom line) 와 dialogue·표현 중복 0. INSERT 보류 — 라이브 미완료 en 7장 (s1e1) 잔존 (spec §5-0 단계 4 가드, 5건 초과). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "cards": [
+    {
+      "id": "en-parks-s1e1-brainstorm-scene",
+      "order_index": 0,
+      "sentence": "공원 작전 회의 — 위원회 결성",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "explanation": {
+        "sceneTitle": "공원 작전 회의 — 위원회 결성",
+        "sceneSummary": "구덩이를 공원으로 만들 방법을 고민하던 레슬리가 톰과 브레인스토밍 끝에 위원회 결성을 선언한다.",
+        "dialogue": [
+          { "speaker": "Leslie", "en": "Okay, brainstorm. How do we make this park happen?", "ko": "자, 브레인스토밍해 봅시다. 어떻게 하면 공원을 만들 수 있을까요?" },
+          { "speaker": "Tom", "en": "Let's go to the City Council directly and ask them to put up the money.", "ko": "곧장 시의회로 가서 돈을 대 달라고 하죠." },
+          { "speaker": "Leslie", "en": "No, parks are not a priority.", "ko": "안 돼요, 공원은 우선순위가 아니에요." },
+          { "speaker": "Leslie", "en": "I need more firepower. You know what I need to do?", "ko": "화력이 더 필요해요. 내가 뭘 해야 하는지 알겠어요?" },
+          { "speaker": "Leslie", "en": "Form a committee. Right?", "ko": "위원회를 구성하는 거예요, 그렇죠?" },
+          { "speaker": "Tom", "en": "Yeah, that could work.", "ko": "네, 그럼 되겠네요." },
+          { "speaker": "Leslie", "en": "Committees are power, and committees make things happen.", "ko": "위원회는 곧 힘이고, 위원회는 일이 되게 해주니까요." },
+          { "speaker": "Leslie", "en": "That's really good. Write that down.", "ko": "방금 거 진짜 좋았어요. 적어 놔 주세요." }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e1-make-it-happen",
+      "order_index": 1,
+      "sentence": "How do we make this park happen?",
+      "meaning": "어떻게 하면 이 공원을 만들어낼 수 있을까요?",
+      "reading": null,
+      "phonetic_kr": "하우 드위 메익 디스 파-크 해픈?",
+      "explanation": {
+        "key": "make X happen = X가 실현되게 만들다. 계획·꿈을 '되게 한다'는 빈출 chunk.",
+        "situation": "장면 · 레슬리가 공원 만들 방법을 브레인스토밍",
+        "drills": [
+          { "en": "Let's make it happen.", "ko": "한번 되게 만들어 보자." },
+          { "en": "We made it happen.", "ko": "우리가 해냈어." },
+          { "en": "How do we make this happen?", "ko": "이거 어떻게 성사시키지?" },
+          { "en": "You make your dreams happen.", "ko": "꿈은 네가 이뤄내는 거야." }
+        ],
+        "mistake": "happen = '일어나다'만 알면 막힘 — make + 목적어 + happen = '~을 되게 만들다'. happen 뒤 to부정사 X.",
+        "similar": "pull it off / get it done — '해내다' 뉘앙스.",
+        "category": "chunk/action",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-not-a-priority",
+      "order_index": 2,
+      "sentence": "Parks are not a priority.",
+      "meaning": "공원은 우선순위가 아니에요.",
+      "reading": null,
+      "phonetic_kr": "팍스 아 나러 프라이아러리",
+      "explanation": {
+        "key": "priority = 우선순위. be not a priority = 뒷전이다 / top priority = 최우선.",
+        "situation": "장면 · 시의회 설득은 안 통한다는 레슬리의 진단",
+        "drills": [
+          { "en": "This is not a priority right now.", "ko": "이건 지금 우선순위가 아니야." },
+          { "en": "My family is my top priority.", "ko": "가족이 내 최우선이야." },
+          { "en": "We need to set priorities.", "ko": "우선순위부터 정해야 해." },
+          { "en": "Safety is the number one priority.", "ko": "안전이 최우선입니다." }
+        ],
+        "mistake": "사전 발음 '프라이오리티' X → 빠른 발화는 t flap '프라이아러리'. 관사 누락 주의 — not *a* priority.",
+        "similar": "It's on the back burner. (뒷전이다) / It can wait.",
+        "category": "vocab/business",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-you-know-what",
+      "order_index": 3,
+      "sentence": "You know what I need to do?",
+      "meaning": "내가 뭘 해야 하는지 알겠어요?",
+      "reading": null,
+      "phonetic_kr": "유 노 워라이 니루 두?",
+      "explanation": {
+        "key": "You know what …? = 화제 던지기 오프너. 'You know what?' 단독 = '있잖아.'",
+        "situation": "장면 · 레슬리가 스스로 해법을 꺼내며 뜸 들임",
+        "drills": [
+          { "en": "You know what? Let's just go.", "ko": "있잖아, 그냥 가자." },
+          { "en": "You know what I mean?", "ko": "무슨 말인지 알지?" },
+          { "en": "You know what we should do?", "ko": "우리 뭘 해야 하는지 알아?" },
+          { "en": "You know what's funny?", "ko": "웃긴 게 뭔지 알아?" }
+        ],
+        "mistake": "진짜 묻는 의문문이 아니라 주의 끌기 신호. what I 연음 → '워라이', need to → '니루'.",
+        "similar": "Guess what? (있잖아, 들어봐) / Here's the thing. (요점은 말이야)",
+        "category": "chunk/conversation",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-that-could-work",
+      "order_index": 4,
+      "sentence": "Yeah, that could work.",
+      "meaning": "네, 그건 될 수도 있겠네요.",
+      "reading": null,
+      "phonetic_kr": "예, 댓 큳 워-크",
+      "explanation": {
+        "key": "That could work = 되겠는데? (가능성 인정). work = (계획이) 통하다·되다.",
+        "situation": "장면 · 톰이 레슬리의 위원회 아이디어에 동의",
+        "drills": [
+          { "en": "That could work.", "ko": "그거 되겠는데." },
+          { "en": "It might actually work.", "ko": "그거 진짜 될지도 몰라." },
+          { "en": "That would never work.", "ko": "그건 절대 안 될 거야." },
+          { "en": "Is this going to work?", "ko": "이게 통할까?" }
+        ],
+        "mistake": "work = '일하다'만 알면 막힘 — 계획·방법이 '통하다'. could/might/would 로 확신도 조절.",
+        "similar": "That might do it. / Worth a shot. (해볼 만해)",
+        "category": "chunk/conversation",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-write-that-down",
+      "order_index": 5,
+      "sentence": "That's really good. Write that down.",
+      "meaning": "방금 거 진짜 좋네요. 적어 놔요.",
+      "reading": null,
+      "phonetic_kr": "댓츠 리얼리 굿. 롸이댓 다운.",
+      "explanation": {
+        "key": "write down = 적어 두다 (구동사). Write that down. = 그거 받아 적어요.",
+        "situation": "장면 · 레슬리가 자기 명언에 감탄해 톰에게 받아적게 함",
+        "drills": [
+          { "en": "Let me write that down.", "ko": "그거 적어 둘게." },
+          { "en": "Did you write it down?", "ko": "그거 적어 놨어?" },
+          { "en": "I wrote down her number.", "ko": "걔 번호 적어 뒀어." },
+          { "en": "Write this down before you forget.", "ko": "잊기 전에 적어 둬." }
+        ],
+        "mistake": "대명사는 사이에 끼움 — write it down (write down it X). write that 연음 → '롸이댓' (t flap).",
+        "similar": "jot down (휘갈겨 적다) / take notes (필기하다)",
+        "category": "phrasal-verb/action",
+        "frequency": 8
+      }
+    }
+  ]
+}
