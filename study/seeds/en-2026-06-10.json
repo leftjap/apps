@@ -1,7 +1,7 @@
 {
   "lang": "en",
   "date": "2026-06-10",
-  "_note": "RealClass-mining — Parks and Recreation S1E1 '위원회 브레인스토밍' 장면 (소스 스크립트 #133~145 발췌·압축 → dialogue 8줄). 표현 카드 5장: make it happen / not a priority / You know what / that could work / write that down. 발췌 기준 3종 통과 — 인사 단독 0, 행정·군사 비유 디테일 (firepower/bigger guns/lifeblood/City Council) 표현 카드 제외, 일상 전이 표현만. 기존 en-parks-s1e1 (토론회 #56~103: fire away/care for/do something about it/move on/hit on/bottom line) 와 dialogue·표현 중복 0. INSERT 보류 — 라이브 미완료 en 7장 (s1e1) 잔존 (spec §5-0 단계 4 가드, 5건 초과). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_note": "RealClass-mining — Parks and Recreation S1E1 '위원회 브레인스토밍' 장면 (소스 스크립트 #133~145 발췌·압축 → dialogue 8줄). 표현 카드 5장: make it happen / not a priority / You know what / that could work / write that down. 발췌 기준 3종 통과 — 인사 단독 0, 행정·군사 비유 디테일 (firepower/bigger guns/lifeblood/City Council) 표현 카드 제외, 일상 전이 표현만. 기존 en-parks-s1e1 (토론회 #56~103) 와 dialogue·표현 중복 0. 2026-06-10 한국인 해설 8필드 보강 (grammar/chunks/phonemes + drills kr 음차) — 가이드 §6.3 형식 정본. 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
   "cards": [
     {
       "id": "en-parks-s1e1-brainstorm-scene",
@@ -36,11 +36,17 @@
         "key": "make X happen = X가 실현되게 만들다. 계획·꿈을 '되게 한다'는 빈출 chunk.",
         "situation": "장면 · 레슬리가 공원 만들 방법을 브레인스토밍",
         "drills": [
-          { "en": "Let's make it happen.", "ko": "한번 되게 만들어 보자." },
-          { "en": "We made it happen.", "ko": "우리가 해냈어." },
-          { "en": "How do we make this happen?", "ko": "이거 어떻게 성사시키지?" },
-          { "en": "You make your dreams happen.", "ko": "꿈은 네가 이뤄내는 거야." }
+          { "en": "Let's make it happen.", "ko": "한번 되게 만들어 보자.", "kr": "렛츠 메이킷 해픈." },
+          { "en": "We made it happen.", "ko": "우리가 해냈어.", "kr": "위 메이딧 해픈." },
+          { "en": "How do we make this happen?", "ko": "이거 어떻게 성사시키지?", "kr": "하우 드위 메익 디스 해픈?" },
+          { "en": "You make your dreams happen.", "ko": "꿈은 네가 이뤄내는 거야.", "kr": "유 메익 유어 드림즈 해픈." }
         ],
+        "grammar": [
+          { "struct": "make + 목적어 + happen", "body": "'~이 일어나게 만들다' 사역 구조. 한국어 '공원을 만들다'와 달리 영어는 park 가 happen(실현)하도록 만든다고 봄. happen 뒤 to부정사 X." },
+          { "struct": "How do we + 동사?", "body": "'어떻게 ~하지?' 방법 묻기 표준. How can we 보다 '실행한다' 전제가 깔린 뉘앙스." }
+        ],
+        "chunks": [["How do we", "하우 드위"], ["make this park", "메익 디스 파-크"], ["happen?", "해픈?"]],
+        "phonemes": [["/æ/", "happen 첫모음 — '해' 입 크게 옆으로"], ["/ɹ/", "park — 혀 말아 '파-크'"]],
         "mistake": "happen = '일어나다'만 알면 막힘 — make + 목적어 + happen = '~을 되게 만들다'. happen 뒤 to부정사 X.",
         "similar": "pull it off / get it done — '해내다' 뉘앙스.",
         "category": "chunk/action",
@@ -58,11 +64,16 @@
         "key": "priority = 우선순위. be not a priority = 뒷전이다 / top priority = 최우선.",
         "situation": "장면 · 시의회 설득은 안 통한다는 레슬리의 진단",
         "drills": [
-          { "en": "This is not a priority right now.", "ko": "이건 지금 우선순위가 아니야." },
-          { "en": "My family is my top priority.", "ko": "가족이 내 최우선이야." },
-          { "en": "We need to set priorities.", "ko": "우선순위부터 정해야 해." },
-          { "en": "Safety is the number one priority.", "ko": "안전이 최우선입니다." }
+          { "en": "This is not a priority right now.", "ko": "이건 지금 우선순위가 아니야.", "kr": "디시즈 나러 프라이아러리 롸잇 나우." },
+          { "en": "My family is my top priority.", "ko": "가족이 내 최우선이야.", "kr": "마이 패믈리 이즈 마이 탑 프라이아러리." },
+          { "en": "We need to set priorities.", "ko": "우선순위부터 정해야 해.", "kr": "위 니투 셋 프라이아러리즈." },
+          { "en": "Safety is the number one priority.", "ko": "안전이 최우선입니다.", "kr": "세이프티 이즈 더 넘버 원 프라이아러리." }
         ],
+        "grammar": [
+          { "struct": "A is not a priority", "body": "'A는 우선 대상이 아니다'. 한국어 '우선순위가 낮다'를 영어는 관사 a + 명사로 '우선순위 축에 못 든다'고 표현. 관사 누락 주의." }
+        ],
+        "chunks": [["Parks are", "팍스 아"], ["not a", "나러"], ["priority", "프라이아러리"]],
+        "phonemes": [["/ɾ/", "not a → '나러', priority 의 t 도 '러' (flap)"], ["/ɹ/", "priority 첫 r — 혀 말기 '프롸'"]],
         "mistake": "사전 발음 '프라이오리티' X → 빠른 발화는 t flap '프라이아러리'. 관사 누락 주의 — not *a* priority.",
         "similar": "It's on the back burner. (뒷전이다) / It can wait.",
         "category": "vocab/business",
@@ -80,11 +91,16 @@
         "key": "You know what …? = 화제 던지기 오프너. 'You know what?' 단독 = '있잖아.'",
         "situation": "장면 · 레슬리가 스스로 해법을 꺼내며 뜸 들임",
         "drills": [
-          { "en": "You know what? Let's just go.", "ko": "있잖아, 그냥 가자." },
-          { "en": "You know what I mean?", "ko": "무슨 말인지 알지?" },
-          { "en": "You know what we should do?", "ko": "우리 뭘 해야 하는지 알아?" },
-          { "en": "You know what's funny?", "ko": "웃긴 게 뭔지 알아?" }
+          { "en": "You know what? Let's just go.", "ko": "있잖아, 그냥 가자.", "kr": "유 노 왓? 렛츠 저스트 고." },
+          { "en": "You know what I mean?", "ko": "무슨 말인지 알지?", "kr": "유 노 워라이 민?" },
+          { "en": "You know what we should do?", "ko": "우리 뭘 해야 하는지 알아?", "kr": "유 노 왓 위 슈드 두?" },
+          { "en": "You know what's funny?", "ko": "웃긴 게 뭔지 알아?", "kr": "유 노 왓츠 퍼니?" }
         ],
+        "grammar": [
+          { "struct": "You know what + 절?", "body": "진짜 의문이 아닌 주의 끌기 신호. what 뒤는 의문문 어순이 아닌 평서 어순 (what I need to do — what do I need ✗)." }
+        ],
+        "chunks": [["You know", "유 노"], ["what I", "워라이"], ["need to do?", "니루 두?"]],
+        "phonemes": [["/ɾ/", "what I → '워라이' (flap 연결)"], ["/ə/", "to 약화 — '투' 아닌 '루'"]],
         "mistake": "진짜 묻는 의문문이 아니라 주의 끌기 신호. what I 연음 → '워라이', need to → '니루'.",
         "similar": "Guess what? (있잖아, 들어봐) / Here's the thing. (요점은 말이야)",
         "category": "chunk/conversation",
@@ -102,11 +118,17 @@
         "key": "That could work = 되겠는데? (가능성 인정). work = (계획이) 통하다·되다.",
         "situation": "장면 · 톰이 레슬리의 위원회 아이디어에 동의",
         "drills": [
-          { "en": "That could work.", "ko": "그거 되겠는데." },
-          { "en": "It might actually work.", "ko": "그거 진짜 될지도 몰라." },
-          { "en": "That would never work.", "ko": "그건 절대 안 될 거야." },
-          { "en": "Is this going to work?", "ko": "이게 통할까?" }
+          { "en": "That could work.", "ko": "그거 되겠는데.", "kr": "댓 큳 워-크." },
+          { "en": "It might actually work.", "ko": "그거 진짜 될지도 몰라.", "kr": "잇 마잇 액츄얼리 워-크." },
+          { "en": "That would never work.", "ko": "그건 절대 안 될 거야.", "kr": "댓 욷 네버 워-크." },
+          { "en": "Is this gonna work?", "ko": "이게 통할까?", "kr": "이즈 디스 거나 워-크?" }
         ],
+        "grammar": [
+          { "struct": "could + 동사원형", "body": "'~일 수도' 가능성. can(된다)보다 한 발 뺀 추측. would(가정)·might(더 약함)로 확신도 조절." },
+          { "struct": "work = (계획이) 통하다", "body": "주어가 사물(that/it/plan)이면 work 는 '일하다'가 아니라 '효과 있다·돌아간다'." }
+        ],
+        "chunks": [["Yeah,", "예,"], ["that could", "댓 큳"], ["work", "워-크"]],
+        "phonemes": [["/ʊ/", "could — '쿠-' 아닌 짧은 '큳'"], ["/ɹ/", "work — 입술 오므리고 혀 말아 '워-크'"]],
         "mistake": "work = '일하다'만 알면 막힘 — 계획·방법이 '통하다'. could/might/would 로 확신도 조절.",
         "similar": "That might do it. / Worth a shot. (해볼 만해)",
         "category": "chunk/conversation",
@@ -124,11 +146,16 @@
         "key": "write down = 적어 두다 (구동사). Write that down. = 그거 받아 적어요.",
         "situation": "장면 · 레슬리가 자기 명언에 감탄해 톰에게 받아적게 함",
         "drills": [
-          { "en": "Let me write that down.", "ko": "그거 적어 둘게." },
-          { "en": "Did you write it down?", "ko": "그거 적어 놨어?" },
-          { "en": "I wrote down her number.", "ko": "걔 번호 적어 뒀어." },
-          { "en": "Write this down before you forget.", "ko": "잊기 전에 적어 둬." }
+          { "en": "Let me write that down.", "ko": "그거 적어 둘게.", "kr": "렛미 롸이댓 다운." },
+          { "en": "Did you write it down?", "ko": "그거 적어 놨어?", "kr": "디쥬 롸이릿 다운?" },
+          { "en": "I wrote down her number.", "ko": "걔 번호 적어 뒀어.", "kr": "아이 롯 다운 허 넘버." },
+          { "en": "Write this down before you forget.", "ko": "잊기 전에 적어 둬.", "kr": "롸잇 디스 다운 비포 유 퍼겟." }
         ],
+        "grammar": [
+          { "struct": "write + 목적어 + down (분리 구동사)", "body": "대명사 목적어는 반드시 사이에 — write it down (write down it ✗). 명사는 양쪽 다 가능. down = '기록으로 남김' 뉘앙스." }
+        ],
+        "chunks": [["That's really good.", "댓츠 리얼리 굿."], ["Write that", "롸이댓"], ["down.", "다운."]],
+        "phonemes": [["/ɾ/", "write that → '롸이댓' (t 연결·약화)"], ["/ɹ/", "really·write — 혀 말기 '뤼·롸'"]],
         "mistake": "대명사는 사이에 끼움 — write it down (write down it X). write that 연음 → '롸이댓' (t flap).",
         "similar": "jot down (휘갈겨 적다) / take notes (필기하다)",
         "category": "phrasal-verb/action",

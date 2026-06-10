@@ -25,7 +25,7 @@
 
 `explanation` 스키마:
 - ja: 4필드 (whenToUse/grammar/pronPoints/similar) + 메타 5필드 (stage/newElements/knownElements/frequency/category) — 콩트 단위
-- en (⭐ RealClass-mining, 2026-06-08 전환): **1세션 = 1장면** — scene 카드 1장 (`order_index: 0`, explanation = `sceneTitle/sceneSummary/dialogue:[{speaker,en,ko}]` 6~10줄) + 표현 카드 5~7장 (explanation = `key/situation/drills/mistake/similar/category/frequency`). 형식 정본 = [en-parks-s1e1.json](./en-parks-s1e1.json). 소스 = `sources/realclass-parks-s1e1.txt` (gitignored — 유료 콘텐츠 전문 커밋 금지, 발췌만 커밋). 구 8필드 콩트 형식 (key/grammar 배열/chunks/phonemes…) 은 5/29 이전 시드 잔존분 — 신규 사용 금지
+- en (⭐ RealClass-mining, 2026-06-08 전환): **1세션 = 1장면** — scene 카드 1장 (`order_index: 0`, explanation = `sceneTitle/sceneSummary/dialogue:[{speaker,en,ko}]` 6~10줄) + 표현 카드 5~7장 (explanation = `key/situation/drills:[{en,ko,kr}]/grammar/chunks/phonemes/mistake/similar` + `category/frequency` — 한국인 해설 8필드, 2026-06-10 발음·문법 복원). 형식 정본 = [en-2026-06-10.json](./en-2026-06-10.json) (구 형식 참고 = en-parks-s1e1.json). 소스 = `sources/realclass-parks-s1e1.txt` (gitignored — 유료 콘텐츠 전문 커밋 금지, 발췌만 커밋). 콩트 형식 (skit 메타) 은 5/29 이전 시드 잔존분 — 신규 사용 금지
 
 정본: `~/apps/study/docs/lesson-explanation-guide-{ja,en}.md` (en 활성 = §6.3) + `explanation-schema.md`
 

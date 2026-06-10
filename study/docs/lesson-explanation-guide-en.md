@@ -423,7 +423,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation S1E1. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
 
-**형식 정본** = [`seeds/en-parks-s1e1.json`](../seeds/en-parks-s1e1.json). 렌더링: `src/components/session/scenePage.js` (다이얼로그 페이지) + `src/components/session/explanationPanel.js` `drillsSection` (변주).
+**형식 정본** = [`seeds/en-2026-06-10.json`](../seeds/en-2026-06-10.json) (한국인 해설 8필드 — 2026-06-10 발음·문법 복원판). 렌더링: `src/components/session/scenePage.js` (다이얼로그 페이지) + `src/components/session/explanationPanel.js` (해설 8필드 + drills) / D1 = `src/components/d1/sessionShell.js`.
 
 ### 소스 (로컬 전용 — 커밋 금지)
 
@@ -454,20 +454,25 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - `dialogue` 6~10줄. 원 대사 순서 유지하되 **학습용 압축·발췌 허용** (s1e1 정본: 원문 ~50문장 구간 → 8줄)
 - scene 카드는 복습 큐 이관 자동 제외 (`sessionFinish.js` — 완료 표시만). 시드 측 작업 없음
 
-### 표현 카드 형식 (`explanation`)
+### 표현 카드 형식 (`explanation`) — 한국인 해설 8필드 (2026-06-10 발음·문법 복원)
 
 | 필드 | 내용 |
 |---|---|
 | `key` | 핵심 한 줄 — "표현 = 뜻. 성격." |
 | `situation` | "장면 · …" — 장면 안 맥락 한 줄 |
-| `drills` | `[{en, ko}]` 3~8개 — [explanation-schema.md](./explanation-schema.md) §drills 규칙 (핵심·헷갈림 6~8 / 쉬움 3, 패턴 치환 ~70% + 뜻 범위 ~30%) |
+| `drills` | `[{en, ko, kr}]` 3~8개 — **kr = 한글 음차 의무** (녹음 연습 발음 가이드, 연음/flap 반영). 개수·구성은 [explanation-schema.md](./explanation-schema.md) §drills 규칙 |
+| `grammar` | `[{struct, body}]` 1~2건 — 문장 구조 + 한국어 어순 관점 설명 ("문법 뜯어보기") |
+| `chunks` | `[[en, kr]]` — 본문을 한 호흡 단위로 분리, **모든 단어 빠짐없이** ("발음 — 청크 단위") |
+| `phonemes` | `[[ipa, word]]` 1~3건 — 한국인 약점 음소 (θ ð ɹ f v ʌ æ ɪ flap-t 등) ("주의 음소") |
 | `mistake` | 한국인 관점 함정 (직역 오해·발음 연음) 한 줄 |
 | `similar` | 같은 뜻 대체 표현 1~2개 |
 | `category` / `frequency` | 분류 / 1~10 빈도 |
 
 - `sentence` = 장면 속 원문 (학습용 최소 단순화 허용) / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
+- **발음 정합 룰** (구 §11 부활): `phonetic_kr` = chunks 의 kr 이어붙임과 일치 / chunks 가 본문 전단어 커버 / 사전 표기 X·실발화 기준
 - 콩트 메타 (skit*/scene_id/stage/newElements/knownElements) **미사용** — s1e1 정본 기준
 - TTS·녹음·다이얼로그 색 강조 전부 코드 자동 — 시드 측 추가 필드 불필요
+- ⚠️ **재INSERT 안전**: 시드 재적재(upsert)는 `completed=false` 로 merge → **사용자가 해당 카드 학습을 시작한 뒤에는 같은 카드 재INSERT 금지** (학습 완료 리셋됨). 보강은 학습 전에만
 
 ### 발췌 기준 (3종 — 사용자 합의)
 
@@ -489,12 +494,15 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 ### 생성 후 자체 체크리스트 (en 활성 트랙)
 
 - [ ] scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비)
-- [ ] 표현 카드 5~7장 — 각 `drills` 3~8개 (en 필수, ko 동반)
+- [ ] 표현 카드 5~7장 — 각 `drills` 3~8개 (en 필수, ko 동반, **kr 음차 의무**)
+- [ ] 표현 카드마다 `grammar` 1~2건 + `chunks` + `phonemes` 1~3건 (한국인 해설 8필드 완비)
+- [ ] `chunks` 가 본문 모든 단어 포함 + `phonetic_kr` = chunks kr 이어붙임과 일치
+- [ ] 음차 전부 연음/flap/약음 반영 (사전 표기 0건 — §7)
 - [ ] 발췌 기준 3종 통과 (인사 단독 0 / 행정 디테일 0 / 일상 전이성 O)
 - [ ] 기존 Parks 시드와 dialogue·표현 중복 0
 - [ ] 카드 id 전 시드 고유
 - [ ] `_note` 에 출처 장면 문장 번호 범위 명시
-- [ ] INSERT 전 라이브 미완료 en 신규 카드 확인 — 5건 초과 시 INSERT 보류 + 사용자 안내 (spec §5-0 단계 4)
+- [ ] INSERT 전 라이브 미완료 en 신규 카드 확인 — 5건 초과 시 INSERT 보류 + 사용자 안내 (spec §5-0 단계 4). 학습 시작된 카드 재INSERT 금지
 
 ---
 

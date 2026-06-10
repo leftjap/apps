@@ -141,10 +141,12 @@ export function buildD1DrillRows(drills, hl, lang, speaker) {
   return (Array.isArray(drills) ? drills : []).map((d) => {
     const recChip = h('button', { class: 'd1-chip', style: 'background:var(--terra);border-color:var(--terra);color:#fff;' }, d1Icon('mic', 13), '녹음');
     recChip.addEventListener('click', () => onRecord(d.en || '', recChip));
+    // kr = 한글 음차 (RealClass 발음 가이드). 구 시드(en/ko만)는 미생성 — chips row span 가변.
     return h('div', { class: 'd1-drill' },
       h('div', { style: 'grid-column:1;font-size:16px;font-weight:600;' }, hiFragment(d.en || '', hl)),
+      d.kr ? h('div', { class: 'd1-drill-kr', style: 'grid-column:1;font-size:12.5px;color:var(--faint);' }, d.kr) : null,
       h('div', { style: 'grid-column:1;font-size:13.5px;color:var(--mut);' }, d.ko || ''),
-      h('div', { style: 'grid-column:2;grid-row:1 / 3;display:flex;gap:8px;' },
+      h('div', { style: 'grid-column:2;grid-row:1 / ' + (d.kr ? 4 : 3) + ';display:flex;gap:8px;' },
         h('button', { class: 'd1-chip', style: 'color:var(--mut);', onClick: () => { if (d.en && window.studySpeech?.speak) window.studySpeech.speak(d.en, { lang: ttsLang, speaker }); } }, d1Icon('play', 12), '듣기'),
         recChip,
       ),
@@ -177,6 +179,38 @@ export function buildD1ExplainRight(ex, lang, opts = {}) {
   const sects = [];
   const situation = ex?.situation || ex?.whenToUse;
   if (situation) sects.push(d1Section('이런 상황에서 써요', String(situation)));
+  // 문법 뜯어보기 — explanationPanel(phone) grammarSection 과 섹션 parity ([{struct,body}|string])
+  if (Array.isArray(ex?.grammar) && ex.grammar.length) {
+    sects.push(h('div', {},
+      h('div', { class: 'd1-panel-lab' }, '문법 뜯어보기'),
+      ex.grammar.map((g) => h('div', { style: 'margin-bottom:8px;' },
+        h('div', { style: 'font-size:14.5px;font-weight:600;' }, typeof g === 'string' ? g : (g?.struct || '')),
+        (g && typeof g === 'object' && g.body) ? h('div', { style: 'font-size:13.5px;line-height:1.55;color:var(--mut);margin-top:2px;' }, g.body) : null,
+      )),
+    ));
+  }
+  // 발음 — 청크 단위 ([[en,kr]|string])
+  if (Array.isArray(ex?.chunks) && ex.chunks.length) {
+    sects.push(h('div', {},
+      h('div', { class: 'd1-panel-lab' }, '발음 — 청크 단위'),
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:10px 16px;' },
+        ex.chunks.map((c) => h('div', { style: 'display:flex;flex-direction:column;gap:2px;' },
+          h('span', { style: 'font-size:13.5px;font-weight:600;' }, Array.isArray(c) ? (c[0] || '') : String(c)),
+          Array.isArray(c) && c[1] ? h('span', { style: 'font-size:12.5px;color:var(--faint);' }, c[1]) : null,
+        )),
+      ),
+    ));
+  }
+  // 주의 음소 ([[ipa,word]|string])
+  if (Array.isArray(ex?.phonemes) && ex.phonemes.length) {
+    sects.push(h('div', {},
+      h('div', { class: 'd1-panel-lab' }, '주의 음소'),
+      h('div', { style: 'display:flex;flex-wrap:wrap;gap:8px;' },
+        ex.phonemes.map((p) => h('span', { style: 'font-size:12.5px;border:1px solid var(--line);border-radius:8px;padding:4px 10px;color:var(--mut);' },
+          Array.isArray(p) ? (p[0] + ' ' + (p[1] || '')).trim() : String(p))),
+      ),
+    ));
+  }
   const mistake = ex?.mistake || ex?.commonMistakes;
   if (mistake) sects.push(d1Section('한국인 실수', String(mistake)));
   let similar = null;

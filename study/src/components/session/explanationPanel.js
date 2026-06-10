@@ -292,6 +292,13 @@ function drillsSection(drills, { onListen, onRecord } = {}) {
     const en = document.createElement('div');
     en.className = 'drill-en';
     en.textContent = d.en || '';
+    // kr = 한글 음차 (RealClass 발음 가이드 — 녹음 연습 보조). 구 시드(en/ko만)는 미생성.
+    let kr = null;
+    if (d.kr) {
+      kr = document.createElement('div');
+      kr.className = 'drill-kr';
+      kr.textContent = d.kr;
+    }
     const ko = document.createElement('div');
     ko.className = 'drill-ko';
     ko.textContent = d.ko || '';
@@ -308,7 +315,8 @@ function drillsSection(drills, { onListen, onRecord } = {}) {
     rec.textContent = '녹음';
     rec.addEventListener('click', () => { if (onRecord) onRecord(d.en || '', rec); });
     acts.append(listen, rec);
-    row.append(en, ko, acts);
+    if (kr) row.append(en, kr, ko, acts);
+    else row.append(en, ko, acts);
     s.appendChild(row);
   });
   return s;

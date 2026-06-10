@@ -104,13 +104,14 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
 
 | 필드 | 형식 | 비고 |
 |---|---|---|
-| drills | `[{en, ko}]` 객체 배열 | 각 행 = 변주 문장 1개. en 필수, ko 권장 |
+| drills | `[{en, ko, kr}]` 객체 배열 | 각 행 = 변주 문장 1개. en 필수, ko 권장, **kr = 한글 음차 의무 (en 신규, 2026-06-10)** — 녹음 연습 발음 가이드, 연음/flap 반영 |
 
 **규칙:**
 - **개수**: 내용·레벨 기반. 핵심·헷갈리는 요소 6~8개, 쉬운 요소 3개. 고정 quota 금지
 - **구성**: 같은 뜻 패턴 치환 ~70%(패턴 그루빙) + 뜻 범위 ~30%(변주 폭). 자연·빈출·레벨맞춤만 — 기계적 슬롯 채우기 금지
-- **UI**: 각 drill 행에 🔊(TTS `studySpeech.speak`) + ⏺(녹음→발음채점 `services/sessionAnalyze.js`) 자동 부착 → 듣기·말하기·녹음
-- **렌더**: `components/session/explanationPanel.js` 의 `drillsSection(ex.drills, {lang})` (key 섹션 직후 append)
+- **UI**: 각 drill 행에 🔊(TTS `studySpeech.speak`) + ⏺(녹음→발음채점 `services/sessionAnalyze.js`) 자동 부착 → 듣기·말하기·녹음. kr 음차는 en 아래 faint 줄
+- **렌더**: phone/tablet = `components/session/explanationPanel.js` `drillsSection` / D1 데스크탑 = `components/d1/sessionShell.js` `buildD1DrillRows` (양쪽 kr 지원, 누락 시 미표시 — 구 시드 호환)
+- **표현 카드 동반 필드 (en RealClass)**: `grammar:[{struct,body}]` + `chunks:[[en,kr]]` + `phonemes:[[ipa,word]]` 의무 — 렌더는 phone(explanationPanel) + D1(buildD1ExplainRight) 양 경로 지원 (2026-06-10 D1 parity 추가)
 
 ## 필드별 규칙
 

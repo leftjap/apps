@@ -140,4 +140,20 @@ describe('createExplanationPanel — 실 시드 fixture', () => {
     const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
     expect(labels).not.toContain('변주 연습');
   });
+
+  it('drill kr 음차: .drill-kr 줄 렌더 (RealClass 발음 가이드)', () => {
+    const ex = { drills: [
+      { en: "Let's make it happen.", ko: '한번 되게 만들어 보자.', kr: '렛츠 메이킷 해픈.' },
+    ] };
+    const { panelEl } = createExplanationPanel({ explanation: ex, lang: 'en' });
+    const kr = panelEl.querySelector('.drill .drill-kr');
+    expect(kr).toBeTruthy();
+    expect(kr.textContent).toBe('렛츠 메이킷 해픈.');
+  });
+
+  it('drill kr 없음: .drill-kr 미생성 (구 시드 호환)', () => {
+    const ex = { drills: [{ en: 'Fire away.', ko: '얼마든지요.' }] };
+    const { panelEl } = createExplanationPanel({ explanation: ex, lang: 'en' });
+    expect(panelEl.querySelector('.drill .drill-kr')).toBeNull();
+  });
 });

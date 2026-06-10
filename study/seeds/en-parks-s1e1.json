@@ -1,7 +1,7 @@
 {
   "lang": "en",
   "date": "2026-06-08",
-  "_note": "RealClass-mining 모델 — Parks and Recreation S1E1 '토론회' 장면. dialogue-first → 표현별 drills(변주+듣기/녹음). 콩트 모델 폐기. 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_note": "RealClass-mining 모델 — Parks and Recreation S1E1 '토론회' 장면 (소스 스크립트 #56~103 발췌·압축). dialogue-first → 표현별 drills(변주+듣기/녹음). 콩트 모델 폐기. 2026-06-10 한국인 해설 8필드 보강 (grammar/chunks/phonemes + drills kr 음차 — 가이드 §6.3). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
   "scene": {
     "title": "공개 토론회 — 구덩이 신고",
     "summary": "토론회에서 간호사 앤이 동네 구덩이 문제를 제기하고, 톰이 끼어든다.",
@@ -50,10 +50,16 @@
         "key": "fire away = (질문·말을) 마음껏 하세요. 시작하라는 신호.",
         "situation": "장면 · 레슬리가 토론회에서 질문을 받기 시작",
         "drills": [
-          { "en": "If you have any questions, fire away.", "ko": "질문 있으면 얼마든지요." },
-          { "en": "Go ahead, fire away.", "ko": "자, 시작하세요." },
-          { "en": "I'm ready. Fire away.", "ko": "준비됐어요. 물어보세요." }
+          { "en": "If you have any questions, fire away.", "ko": "질문 있으면 얼마든지요.", "kr": "이퓨 해브 애니 퀘스천스, 파이어 어웨이." },
+          { "en": "Go ahead, fire away.", "ko": "자, 시작하세요.", "kr": "고 어헤드, 파이어 어웨이." },
+          { "en": "I'm ready. Fire away.", "ko": "준비됐어요. 물어보세요.", "kr": "아임 레디. 파이어 어웨이." }
         ],
+        "grammar": [
+          { "struct": "be here to + 동사", "body": "'~하러 와 있다' 목적 표현. We're here to help. 처럼 응대 멘트 빈출." },
+          { "struct": "fire away (명령형)", "body": "구동사 명령형 = '시작하세요' 신호. away 가 '맘껏 계속' 뉘앙스." }
+        ],
+        "chunks": [["We're here", "위어 히어"], ["to answer", "투 앤서"], ["your questions,", "유어 퀘스천스,"], ["so fire away", "쏘 파이어 어웨이"]],
+        "phonemes": [["/f/", "fire — 윗니+아랫입술 마찰"], ["/w/", "We're·away — 입술 오므림 '위·어웨이'"]],
         "mistake": "fire(불)·away와 무관한 관용. '쏘 파이어 어웨이' 한 호흡.",
         "similar": "Ask away. / Go ahead and ask.",
         "category": "phrasal-verb/conversation",
@@ -71,11 +77,16 @@
         "key": "care for = (주로 부정문) 좋아하다. ※ '돌보다' 뜻도 있음.",
         "situation": "장면 · 앤이 자기소개하며 정치에 관심 없다고 말함",
         "drills": [
-          { "en": "I don't really care for coffee.", "ko": "커피는 별로 안 좋아해요." },
-          { "en": "She doesn't care for spicy food.", "ko": "걔는 매운 거 안 좋아해." },
-          { "en": "Would you care for some tea?", "ko": "차 좀 드실래요? (정중한 권유)" },
-          { "en": "He cares for his sick mother.", "ko": "그는 아픈 어머니를 돌봐요. (=돌보다)" }
+          { "en": "I don't really care for coffee.", "ko": "커피는 별로 안 좋아해요.", "kr": "아이 돈 리얼리 케어 포 커피." },
+          { "en": "She doesn't care for spicy food.", "ko": "걔는 매운 거 안 좋아해.", "kr": "쉬 더즌 케어 포 스파이시 푸드." },
+          { "en": "Would you care for some tea?", "ko": "차 좀 드실래요? (정중한 권유)", "kr": "우쥬 케어 포 썸 티?" },
+          { "en": "He cares for his sick mother.", "ko": "그는 아픈 어머니를 돌봐요. (=돌보다)", "kr": "히 케어즈 포 히즈 씩 마더." }
         ],
+        "grammar": [
+          { "struct": "don't care for + 명사", "body": "(부정문) '안 좋아하다'의 완곡 표현 — don't like 보다 부드러움. ※ 긍정문 care for = 돌보다." }
+        ],
+        "chunks": [["I don't really", "아이 돈(트) 리얼리"], ["care for", "케어 포"], ["politics", "폴리틱스"]],
+        "phonemes": [["/ɹ/", "really·care — 혀 말기 '뤼·케어'"], ["/f/", "for — 윗니+아랫입술 '포'"]],
         "mistake": "care=신경쓰다/돌보다만 알면 막힘. 'don't care for'=안 좋아한다.",
         "similar": "I'm not a fan of politics. / I'm not into politics.",
         "category": "phrasal-verb/feelings",
@@ -93,10 +104,16 @@
         "key": "do something about it = (문제를) 어떻게든 조치하다/해결하다.",
         "situation": "장면 · 레슬리가 앤의 문제를 해결하겠다고 약속",
         "drills": [
-          { "en": "We need to do something about this.", "ko": "이거 어떻게든 손봐야 해요." },
-          { "en": "Can you do something about the noise?", "ko": "소음 좀 어떻게 해줄 수 있어요?" },
-          { "en": "I'll do something about it tomorrow.", "ko": "내일 어떻게든 처리할게요." }
+          { "en": "We need to do something about this.", "ko": "이거 어떻게든 손봐야 해요.", "kr": "위 니투 두 썸띵 어바웃 디스." },
+          { "en": "Can you do something about the noise?", "ko": "소음 좀 어떻게 해줄 수 있어요?", "kr": "캔유 두 썸띵 어바웃 더 노이즈?" },
+          { "en": "I'll do something about it tomorrow.", "ko": "내일 어떻게든 처리할게요.", "kr": "아일 두 썸띵 어바우릿 터마로우." }
         ],
+        "grammar": [
+          { "struct": "do something about + 문제", "body": "'~에 대해 뭔가 조치하다'. 구체 해법 없이도 '손쓰겠다'고 약속하는 만능 chunk." },
+          { "struct": "I'll = I will (즉석 결심)", "body": "그 자리에서 정한 약속은 will. 미리 계획된 일(be going to)과 구분." }
+        ],
+        "chunks": [["Okay.", "오케이."], ["I'll do something", "아일 두 썸띵"], ["about it", "어바우릿"]],
+        "phonemes": [["/θ/", "something — 혀끝 이 사이 '띵'"], ["/ɾ/", "about it → '어바우릿' (flap 연결)"]],
         "mistake": "'about it' 연음 → '어바우릿'. 막연한 '뭔가 조치'를 뜻하는 빈출 chunk.",
         "similar": "I'll take care of it. / I'll handle it.",
         "category": "chunk/action",
@@ -114,11 +131,17 @@
         "key": "move on = (과거·관계를) 잊고 나아가다. 빈출 + 의미 다양.",
         "situation": "장면 · 톰이 앤에게 (작업 걸며) 정리하라고 떠봄",
         "drills": [
-          { "en": "It's time to move on.", "ko": "이제 넘어갈 때야." },
-          { "en": "She moved on from her ex.", "ko": "걔는 전 남친 잊고 나아갔어." },
-          { "en": "Let's move on to the next topic.", "ko": "다음 주제로 넘어가죠." },
-          { "en": "I need to move on with my life.", "ko": "내 삶을 이어가야 해." }
+          { "en": "It's time to move on.", "ko": "이제 넘어갈 때야.", "kr": "잇츠 타임 투 무-봔." },
+          { "en": "She moved on from her ex.", "ko": "걔는 전 남친 잊고 나아갔어.", "kr": "쉬 무-브돈 프롬 허 엑스." },
+          { "en": "Let's move on to the next topic.", "ko": "다음 주제로 넘어가죠.", "kr": "렛츠 무-봔 투 더 넥스트 타픽." },
+          { "en": "I need to move on with my life.", "ko": "내 삶을 이어가야 해.", "kr": "아이 니투 무-봔 윗 마이 라이프." }
         ],
+        "grammar": [
+          { "struct": "feel like + 절", "body": "'~인 것 같은 기분이다'. feel like + 명사/동명사(~가 땡긴다)와 구분 — 뒤가 절이면 심정 추측." },
+          { "struct": "move on (from X)", "body": "물리 이동이 아닌 심리 정리·전환. 과거를 접고 다음 단계로 넘어감." }
+        ],
+        "chunks": [["You probably", "유 프롸블리"], ["feel like", "필 라잌"], ["you need to", "유 니투"], ["move on", "무-봔"]],
+        "phonemes": [["/v/", "move — 윗니+아랫입술 유성 '무-브'"], ["/l/", "probably·feel like — l 혀끝 잇몸"]],
         "mistake": "단순 '이동' 아님 — 심리적으로 정리하고 나아감. need to + 동사원형.",
         "similar": "You should let it go. / Time to turn the page.",
         "category": "phrasal-verb/feelings",
@@ -136,10 +159,15 @@
         "key": "hit on (someone) = 작업 걸다·들이대다. ※ hit on an idea = (생각이) 떠오르다.",
         "situation": "장면 · 톰의 속셈을 앤이 눈치챔",
         "drills": [
-          { "en": "Is he hitting on you?", "ko": "쟤 너한테 작업 거는 거야?" },
-          { "en": "Stop hitting on my friend.", "ko": "내 친구한테 작업 좀 걸지 마." },
-          { "en": "We hit on a great idea.", "ko": "우리 좋은 생각이 떠올랐어. (=떠오르다)" }
+          { "en": "Is he hitting on you?", "ko": "쟤 너한테 작업 거는 거야?", "kr": "이즈 히 히링 온 유?" },
+          { "en": "Stop hitting on my friend.", "ko": "내 친구한테 작업 좀 걸지 마.", "kr": "스탑 히링 온 마이 프렌드." },
+          { "en": "We hit on a great idea.", "ko": "우리 좋은 생각이 떠올랐어. (=떠오르다)", "kr": "위 히로너 그레잇 아이디어." }
         ],
+        "grammar": [
+          { "struct": "hit on + 사람 (진행형 빈출)", "body": "'작업 걸다'. 진행형으로 '지금 그러는 중이냐' 추궁. ※ hit on an idea = (생각이) 떠오르다." }
+        ],
+        "chunks": [["Are you", "아 유"], ["hitting on me", "히링 온 미"], ["right now?", "롸잇 나우?"]],
+        "phonemes": [["/ɾ/", "hitting → '히링' (tt flap)"], ["/ɹ/", "right — 혀 말기 '롸'"]],
         "mistake": "직역 '나를 친다' ✗ → 관용 '작업 걸다'. 진행형으로 현재 상황 강조.",
         "similar": "Are you flirting with me? / Are you making a move on me?",
         "category": "phrasal-verb/relationships",
@@ -157,11 +185,17 @@
         "key": "the bottom line is = 요점은 ~이다 (결론 못박기). + get something fixed = ~을 고치게 하다.",
         "situation": "장면 · 레슬리가 결론을 못박음",
         "drills": [
-          { "en": "The bottom line is, we need more time.", "ko": "요점은, 시간이 더 필요하다는 거예요." },
-          { "en": "Here's the bottom line.", "ko": "결론은 이거예요." },
-          { "en": "I'll get it fixed by Friday.", "ko": "금요일까지 고쳐놓을게요." },
-          { "en": "Let's get the car fixed.", "ko": "차 고치러 가자." }
+          { "en": "The bottom line is, we need more time.", "ko": "요점은, 시간이 더 필요하다는 거예요.", "kr": "더 바럼 라인 이즈, 위 니드 모어 타임." },
+          { "en": "Here's the bottom line.", "ko": "결론은 이거예요.", "kr": "히어즈 더 바럼 라인." },
+          { "en": "I'll get it fixed by Friday.", "ko": "금요일까지 고쳐놓을게요.", "kr": "아일 게릿 픽스트 바이 프라이데이." },
+          { "en": "Let's get the car fixed.", "ko": "차 고치러 가자.", "kr": "렛츠 겟 더 카 픽스트." }
         ],
+        "grammar": [
+          { "struct": "The bottom line is, + 절", "body": "'요점은 ~이다' 결론 못박기 오프너. 비즈니스·일상 공용." },
+          { "struct": "get + 목적어 + p.p.", "body": "'~되게 하다' — 남을 시켜서 또는 결과적으로. fix it(직접 고침)과 뉘앙스 차이." }
+        ],
+        "chunks": [["The bottom line is,", "더 바럼 라인 이즈,"], ["I'll help you", "아일 헬프 유"], ["get this fixed", "겟 디스 픽스트"]],
+        "phonemes": [["/ɾ/", "bottom → '바럼' (tt flap)"], ["/kst/", "fixed — 자음 3연속 '픽스트' 한 번에"]],
         "mistake": "get + 목적어 + p.p. = 남을 시켜/하게 해서 ~되게 하다. 'fix it'(직접)과 뉘앙스 다름.",
         "similar": "The point is… / What matters is…",
         "category": "chunk/discourse",
