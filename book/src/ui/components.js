@@ -165,55 +165,6 @@ export function quoteRow({ q, fontSize = 16, onClick, onPin, onEdit, onMore, dem
   return el('div', { class: 'quote-row', onClick, style: { padding: '12px 12px 14px', margin: '0 -12px', borderRadius: 8, cursor: onClick ? 'pointer' : 'default' } }, body, meta);
 }
 
-// ─── StreakCard (core-v14 StreakCardV14) — warm wash + 주간 strip ───────────
-export function streakCard({ days = 0, longest = 0, dailyAvg = 0, lastEntry = '—', weekHits = [0, 0, 0, 0, 0, 0, 0], todayDow = 4 } = {}) {
-  const strip = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6, marginBottom: 8 } },
-    ...weekHits.map((hit, i) => el('div', { style: { height: 4, borderRadius: 99, background: hit ? '#c2553a' : 'var(--paper-2)', opacity: hit ? (i === todayDow ? 1 : 0.85) : 1 } })));
-  const dows = el('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 6 } },
-    ...['월', '화', '수', '목', '금', '토', '일'].map((d, i) => el('span', { class: 'mono', style: { fontSize: 10.5, textAlign: 'center', color: i === todayDow ? 'var(--ink-1)' : 'var(--ink-3)', fontWeight: i === todayDow ? 600 : 500 } }, d)));
-  const stats = el('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1.2fr', gap: 14, paddingTop: 14, borderTop: '1px solid var(--line-2)' } },
-    ...[['최장', `${longest}일`], ['평균', `${dailyAvg}/일`], ['마지막', lastEntry]].map(([l, v]) => el('div', {},
-      el('div', { style: { fontSize: 10, color: 'var(--ink-3)', marginBottom: 5, fontFamily: 'var(--mono)', letterSpacing: '.06em', textTransform: 'uppercase' } }, l),
-      el('div', { style: { fontSize: 14, fontWeight: 600, fontFamily: 'var(--sans)', fontVariantNumeric: 'tabular-nums' } }, v),
-    )));
-  return el('div', { style: { position: 'relative', background: '#fff', borderRadius: 14, padding: '24px 26px 22px', overflow: 'hidden', border: '1px solid rgba(217,119,87,0.07)', boxShadow: '0 1px 2px rgba(20,18,14,0.03), 0 8px 24px -10px rgba(20,18,14,0.08)' } },
-    el('div', { style: { position: 'absolute', inset: 0, background: 'radial-gradient(circle 260px at 25% 20%, rgba(217,119,87,0.10) 0%, rgba(217,119,87,0.025) 35%, rgba(217,119,87,0) 70%)', pointerEvents: 'none' } }),
-    el('div', { style: { position: 'relative' } },
-      el('div', { class: 'upper', style: { marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 } }, '연속', el('span', { style: { width: 5, height: 5, borderRadius: 50, background: '#c2553a' } })),
-      el('div', { style: { display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 24 } },
-        el('span', { style: { fontSize: 60, fontWeight: 600, letterSpacing: '-.035em', lineHeight: 1, fontFamily: 'var(--sans)', fontVariantNumeric: 'tabular-nums', color: 'var(--ink-1)' } }, String(days)),
-        el('span', { style: { fontSize: 15, color: 'var(--ink-2)', fontWeight: 500 } }, '일째'),
-      ),
-      el('div', { style: { marginBottom: 22 } }, strip, dows),
-      stats,
-    ),
-  );
-}
-
-// ─── ComparisonCard (v14 = core-v10.jsx:283-311) — ↑/↓ 증감·라벨 이번/지난·period·bar h14
-export function comparisonCard({ current = 0, prev = 0, unit = '개', topLabel = '어구록', period } = {}) {
-  const max = Math.max(current, prev, 1);
-  const diff = current - prev;
-  const barRow = (lab, val, barColor, valColor, strong) => [
-    el('span', { style: { fontSize: 11.5, color: strong ? 'var(--ink-2)' : 'var(--ink-3)', fontWeight: strong ? 600 : 500 } }, lab),
-    el('div', { style: { height: 14, borderRadius: 4, background: 'var(--paper)', position: 'relative', overflow: 'hidden' } },
-      el('div', { style: { position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(val / max) * 100}%`, background: barColor } })),
-    el('span', { class: 'tnum', style: { fontSize: 12, fontWeight: strong ? 600 : 400, color: valColor, textAlign: 'right' } }, String(val), el('span', { style: { color: 'var(--ink-3)', fontWeight: 500 } }, unit)),
-  ];
-  return el('div', {},
-    el('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 12 } },
-      el('span', { class: 'upper' }, topLabel),
-      period != null ? el('span', { class: 'tnum', style: { fontSize: 10.5, color: 'var(--ink-4)', marginLeft: 8, letterSpacing: '.04em' } }, String(period)) : null,
-      el('div', { style: { flex: 1 } }),
-      el('span', { style: { fontSize: 11, color: diff > 0 ? '#c2553a' : 'var(--ink-3)', fontFamily: 'var(--sans)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 } }, `${diff > 0 ? '↑' : diff < 0 ? '↓' : ''}${Math.abs(diff)}${unit}`),
-    ),
-    el('div', { style: { display: 'grid', gridTemplateColumns: '40px 1fr 40px', gap: 10, alignItems: 'center', rowGap: 8 } },
-      ...barRow('이번', current, 'var(--ink-1)', 'var(--ink-1)', true),
-      ...barRow('지난', prev, 'var(--ink-4)', 'var(--ink-3)', false),
-    ),
-  );
-}
-
 // ─── PageTitle / PanelHead (core-v14) ───────────────────────────────────────
 export function pageTitle({ upper, title, right, large = false } = {}) {
   return el('div', { class: 'page-title-wrap', style: { display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 36 } },
@@ -283,5 +234,5 @@ export function screenShell({ tab = 'excerpt', ctx, mainStyle, crumbEl, children
 
 export default {
   btn, hoverActions, count, countPill, soyeonMark, topBar, bookRow, quoteRow,
-  streakCard, comparisonCard, pageTitle, panelHead, crumb, modal, screenShell,
+  pageTitle, panelHead, crumb, modal, screenShell,
 };
