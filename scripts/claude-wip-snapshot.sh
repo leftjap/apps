@@ -45,6 +45,16 @@ if [ "$changed_count" -gt "$SAFETY_THRESHOLD" ]; then
   exit 0
 fi
 
+# 충돌마커 가드: stash-pop/merge 중단 상태 파일을 스냅샷하면 깨진 코드가 커밋되고
+# 이후 auto-push 에 섞여 배포가 죽음 (2026-06-09 today 404 — comments.js 마커 커밋 3f35b04).
+# `=======` 단독 검사는 markdown 구분선 오탐 가능 → <<<<<<</>>>>>>> 만 검사 (실제 충돌엔 둘 다 존재).
+conflicted=$(git diff --cached --name-only -z | xargs -0 grep -lI -E '^(<<<<<<<|>>>>>>>) ' 2>/dev/null || true)
+if [ -n "$conflicted" ]; then
+  git reset HEAD >/dev/null 2>&1 || true
+  echo "[claude-wip-snapshot] conflict markers in: $(echo "$conflicted" | tr '\n' ' '). Skipping snapshot — resolve markers first." >&2
+  exit 0
+fi
+
 # pre-commit 통과 필요. 실패 시 스테이지 해제 후 skip
 if ! git commit -m "WIP(claude-snapshot): $(date +%Y-%m-%d-%H%M) — 다음 의미 커밋에 squash 가능" >/dev/null 2>&1; then
   git reset HEAD >/dev/null 2>&1 || true
