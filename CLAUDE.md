@@ -15,6 +15,15 @@
 - 절차 (5+ 단계) → `~/.claude/skills/<name>/SKILL.md`
 - 환경 함정 → `~/apps/lessons/<topic>.md` (`@import` 금지, 텍스트 경로 인용만)
 - 앱 spec → `~/apps/<app>/specs/<app>-app-spec.md`
+- 세션 인수인계 → `<app>/handoff/` (아래 "세션 핸드오프")
+
+---
+
+## 세션 핸드오프 (인수인계 문서)
+
+- **위치**: `<app>/handoff/<주제>-<날짜>.md` 한 곳만 — specs/·docs/·앱 루트 신규 생성 금지. 내용 형식 자유 (템플릿 없음).
+- **git**: `**/handoff/` 전체 .gitignore — 커밋 금지 (공개 repo, 2026-06-10 가계부 스샷 공개 사고 계기). spec 이 인용할 영구 문서·증적은 specs/ 이관 후 링크.
+- **수명**: 다음 세션이 소화하면 삭제, 영구 가치는 lessons/·specs/ 이관. 한 달 이상 미수정 핸드오프 신뢰 금지 — 코드가 정본.
 
 ---
 

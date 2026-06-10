@@ -54,3 +54,6 @@ today/handoff-screenshots/
 
 # Study 학습 소스 원문 (유료 구독 리얼클래스 콘텐츠 — 공개 repo 전문 커밋 금지, 시드 발췌만 커밋)
 study/seeds/sources/
+
+# 세션 핸드오프 — 로컬 전용 (공개 repo: 개인정보·검증 스크린샷 커밋 금지. CLAUDE.md "세션 핸드오프" 참조)
+**/handoff/
