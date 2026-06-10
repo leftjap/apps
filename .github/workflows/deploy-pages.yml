@@ -116,6 +116,16 @@ jobs:
           [ -d book/dist ] && cp -r book/dist _site/book || echo "::warning::book build missing — skipping"
           [ -d taste/dist ] && cp -r taste/dist _site/taste || echo "::warning::taste build missing — skipping"
           [ -d cue/dist ] && cp -r cue/dist _site/cue || echo "::warning::cue build missing — skipping"
+          # pick → taste 별칭 스텁 — 앱명 Pick 리네임(aebac33) 후 주소창에 /apps/pick 직접 입력 대응.
+          # 배포 경로 정본은 taste/ 유지. query·hash 보존 redirect.
+          mkdir -p _site/pick
+          cat > _site/pick/index.html <<'HTML'
+          <!doctype html>
+          <html lang="ko"><head><meta charset="utf-8"><title>Pick</title>
+          <script>location.replace('/apps/taste/' + location.search + location.hash);</script>
+          <meta http-equiv="refresh" content="0; url=/apps/taste/">
+          </head><body><a href="/apps/taste/">Pick 앱으로 이동…</a></body></html>
+          HTML
           # 루트 index — leftjap.github.io/apps/ 진입 시 4 앱 링크 표시
           cat > _site/index.html <<'HTML'
           <!doctype html>
