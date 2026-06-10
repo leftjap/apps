@@ -3,6 +3,8 @@
 > 출처: [study-app-spec.md](../specs/study-app-spec.md) §5, §8-3 + i+1 원리 (Krashen Input Hypothesis · jpdb.io / Migaku 운영 방식 · 1T sentence mining)
 > 대상: Claude Code 가 영어 콘텐츠 생성 시 참조
 >
+> ⭐ **활성 모델 (2026-06-08 전환)**: **RealClass-mining — §6.3 이 생성 정본**. 다이얼로그-우선 (세션 첫 페이지 = 전체 장면) + 표현별 drills. 콩트 트랙 (§6.2 우희+여빈) 은 archive — 신규 시드에 사용 금지.
+>
 > **목표 학습자 수준**: 미드/영화 자막 의존도 낮추기 + 영어권 여행 + 비즈니스 일상 회화
 > **시작 가정**: 한국 정규 교육 기반 (읽기 가능, 회화/리스닝 약점). 성인 학습자
 >
@@ -58,6 +60,8 @@ ja 와 동일한 5필드 — 양 트랙 정합:
 ---
 
 ## 4. explanation 스키마 (en 트랙)
+
+> ⚠️ 본 §4 는 콩트 트랙 시절 형식. **활성 RealClass-mining 트랙의 카드 형식은 §6.3** (scene 카드 = sceneTitle/sceneSummary/dialogue, 표현 카드 = key/situation/drills/… — [explanation-schema.md](./explanation-schema.md) 와 정합).
 
 ja 4필드 대비 **풍부한 객체 구조**. en 은 chunks·IPA·variations 도 포함. **콩트 운영 시 scene 메타 5필드 (§6.2) 가 같이 nested 됨.**
 
@@ -174,7 +178,9 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 ---
 
-## 6.2 콩트 단위 운영 (Skit-based Sessions)
+## 6.2 콩트 단위 운영 (Skit-based Sessions) — ⛔ archive (비활성)
+
+> **2026-06-08 콩트 모델 폐기** (`seeds/en-parks-s1e1.json` `_note` 박제). 신규 en 시드는 §6.3 RealClass-mining 정본. 본 § 는 미래 다른 트랙 wave 대비 보존만. (ja 트랙의 콩트 운영은 ja 가이드 정본 — 영향 없음)
 
 문장 단위 무관계 학습 → 짧은 시트콤/콩트 단위로 묶어서 학습. 한 세션 = 1 콩트 (5~6문장, 캐릭터 2~3명, 펀치라인 1개).
 
@@ -413,6 +419,85 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 ---
 
+## 6.3 RealClass-mining 트랙 (⭐ 활성 — 2026-06-08 전환)
+
+본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation S1E1. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
+
+**형식 정본** = [`seeds/en-parks-s1e1.json`](../seeds/en-parks-s1e1.json). 렌더링: `src/components/session/scenePage.js` (다이얼로그 페이지) + `src/components/session/explanationPanel.js` `drillsSection` (변주).
+
+### 소스 (로컬 전용 — 커밋 금지)
+
+- 경로: `~/apps/study/seeds/sources/realclass-parks-s1e1.txt` (145문장, `EN:`/`KO:` 쌍, 문장번호)
+- **gitignored** (`study/seeds/sources/`) — repo 가 PUBLIC 이므로 유료 콘텐츠 전문 커밋 금지. 시드에는 학습 발췌 (다이얼로그 6~10줄 압축 + 표현 카드) 만 커밋
+- **소스 파일 부재 시 생성 중단** — 사용자에게 소스 파일 요청. 기억·추측으로 대사 재구성 금지
+
+### 세션 구조 (1세션 = 1장면)
+
+| 카드 | order_index | 역할 |
+|---|---|---|
+| **scene 카드** 1장 | **0** | 세션 첫 페이지 = 전체 다이얼로그 (줄마다 [듣기] + [시작하기]) |
+| **표현 카드** 5~7장 | 1~ | 장면 속 핵심 표현 1개씩 — 뜻/핵심 + drills 변주 + 듣기/녹음 |
+
+### scene 카드 형식
+
+- `sentence` = 장면 제목 (한국어) / `meaning` = "전체 장면을 먼저 듣고 '시작하기'를 누르세요." / `reading`·`phonetic_kr` = null
+- `explanation`:
+
+```json
+{
+  "sceneTitle": "토론회 — 구덩이 신고",
+  "sceneSummary": "공개 토론회에서 간호사 앤이 동네 구덩이 문제를 제기하고, 톰이 끼어든다.",
+  "dialogue": [ { "speaker": "Leslie", "en": "...", "ko": "..." } ]
+}
+```
+
+- `dialogue` 6~10줄. 원 대사 순서 유지하되 **학습용 압축·발췌 허용** (s1e1 정본: 원문 ~50문장 구간 → 8줄)
+- scene 카드는 복습 큐 이관 자동 제외 (`sessionFinish.js` — 완료 표시만). 시드 측 작업 없음
+
+### 표현 카드 형식 (`explanation`)
+
+| 필드 | 내용 |
+|---|---|
+| `key` | 핵심 한 줄 — "표현 = 뜻. 성격." |
+| `situation` | "장면 · …" — 장면 안 맥락 한 줄 |
+| `drills` | `[{en, ko}]` 3~8개 — [explanation-schema.md](./explanation-schema.md) §drills 규칙 (핵심·헷갈림 6~8 / 쉬움 3, 패턴 치환 ~70% + 뜻 범위 ~30%) |
+| `mistake` | 한국인 관점 함정 (직역 오해·발음 연음) 한 줄 |
+| `similar` | 같은 뜻 대체 표현 1~2개 |
+| `category` / `frequency` | 분류 / 1~10 빈도 |
+
+- `sentence` = 장면 속 원문 (학습용 최소 단순화 허용) / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
+- 콩트 메타 (skit*/scene_id/stage/newElements/knownElements) **미사용** — s1e1 정본 기준
+- TTS·녹음·다이얼로그 색 강조 전부 코드 자동 — 시드 측 추가 필드 불필요
+
+### 발췌 기준 (3종 — 사용자 합의)
+
+1. **단순 인사·짧은 리액션 단독 제외** — Hello / Hi / Okay / Here we go 단독 등 학습 가치 없는 줄
+2. **미국 지방정부·행정 고유 디테일 제외** — 학습자 수준·상황 (미드 자막 의존도 낮추기 + 여행 + 비즈니스 일상 회화) 과 무관한 내용
+3. **일상 전이 가능 표현 우선** — 구동사·관용구·기본동사 chunk (fire away / care for / move on / bottom line 류)
+
+### 중복 방지 (사용 이력)
+
+- 사용 이력 정본 = repo `seeds/en-*.json` 중 Parks 출처 시드 (`_note` 에 출처 장면·문장 범위 명시 의무)
+- 신규 장면의 dialogue·표현이 기존 시드와 겹치면 다른 장면 선택
+
+### 파일·ID 규칙
+
+- 파일명 `seeds/en-<YYYY-MM-DD>.json` (자동화 워크플로 `study-seed-supabase.yml` 인자 정합)
+- payload `_note` 에 모델·출처 장면 (에피소드 + 스크립트 문장 번호 범위) 명시
+- 카드 id `en-parks-s1e1-<slug>` — 전 시드 통틀어 고유
+
+### 생성 후 자체 체크리스트 (en 활성 트랙)
+
+- [ ] scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비)
+- [ ] 표현 카드 5~7장 — 각 `drills` 3~8개 (en 필수, ko 동반)
+- [ ] 발췌 기준 3종 통과 (인사 단독 0 / 행정 디테일 0 / 일상 전이성 O)
+- [ ] 기존 Parks 시드와 dialogue·표현 중복 0
+- [ ] 카드 id 전 시드 고유
+- [ ] `_note` 에 출처 장면 문장 번호 범위 명시
+- [ ] INSERT 전 라이브 미완료 en 신규 카드 확인 — 5건 초과 시 INSERT 보류 + 사용자 안내 (spec §5-0 단계 4)
+
+---
+
 ## 7. 발음 학습 — en 특화 4영역
 
 | 영역 | 내용 | 표기 위치 |
@@ -512,6 +597,8 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 
 ## 10. 콘텐츠 생성 원칙
 
+> ⭐ 활성 RealClass-mining 트랙의 생성 원칙·구조 = **§6.3 정본**. 아래 일반 원칙 중 구어체·발음·phonetic_kr·drills 류는 유효하나, **콩트 관련 항목 (콩트 단위 생성 / default+stretch / 캐릭터 / 디스·농담) 은 archive (§6.2)**.
+
 - **구어체 우선**: gonna · wanna · gotta · kinda · lemme. 교과서 영어 X
 - **한국어 표기 발음 (phonetic_kr)**: 연음/flap/약음 정확 반영. 사전 표기 X
 - **chunks 분리 필수**: 한국인 단어별 끊어 읽기 교정
@@ -531,6 +618,8 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 ---
 
 ## 11. 자체 검증 체크리스트
+
+> ⭐ **활성 트랙 (RealClass-mining) 체크리스트 = §6.3 "생성 후 자체 체크리스트"**. 아래는 콩트 트랙 (§6.2 archive) 체크리스트 — 신규 en 시드에 적용하지 않음.
 
 콘텐츠 생성 후 확인:
 

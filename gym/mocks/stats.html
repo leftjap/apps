@@ -79,11 +79,11 @@ body { margin: 0; min-height: 100vh; background: var(--hover-bg); display: flex;
     <!-- Pane: 캘린더 -->
     <div class="tab-pane pane-cal">
       <div style="padding:18px 24px 0;display:flex;align-items:center;justify-content:space-between;">
-        <span aria-label="이전 달" style="width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer;">
+        <span id="calPrev" aria-label="이전 달" style="width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer;">
           <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M7 1L1 7l6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
         <div id="monthLabel" class="num" style="font-size:15px;color:var(--ink-1);font-weight:600;letter-spacing:0.02em;">2026 · 5월</div>
-        <span aria-label="다음 달" style="width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer;">
+        <span id="calNext" aria-label="다음 달" style="width:32px;height:32px;border-radius:var(--r-sm);display:flex;align-items:center;justify-content:center;color:var(--ink-3);cursor:pointer;">
           <svg width="8" height="14" viewBox="0 0 8 14" fill="none"><path d="M1 1l6 6-6 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </span>
       </div>

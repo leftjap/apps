@@ -66,6 +66,13 @@
       "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
       "cwd": "/Users/gio_c/apps/gym",
       "port": 5176
+    },
+    {
+      "name": "gym-dev-alt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5179"],
+      "cwd": "/Users/gio_c/apps/gym",
+      "port": 5179
     }
   ]
 }

@@ -11,6 +11,8 @@ import {
   sessionToWorkoutEntry,
   mergeWorkoutEntries,
   deleteSessionByDay,
+  shiftMonth,
+  renderCalendarGrid,
 } from './stats.js';
 
 const NOW_THU = new Date('2026-04-30T10:00:00').getTime(); // 목요일
@@ -540,6 +542,63 @@ describe('applyTodayToCalendar', () => {
     const r = applyTodayToCalendar(NOW, doc);
     expect(r.applied).toBe(false);
     expect(r.reason).toBe('different_month');
+  });
+});
+
+// P7 — 캘린더 월 동적 렌더 + 월 네비 (mock 정적 "2026 · 5월" 고정 버그 수정)
+describe('shiftMonth', () => {
+  it('+1 → 다음 달', () => {
+    expect(shiftMonth({ year: 2026, month: 6 }, 1)).toEqual({ year: 2026, month: 7 });
+  });
+
+  it('-1 → 이전 달', () => {
+    expect(shiftMonth({ year: 2026, month: 6 }, -1)).toEqual({ year: 2026, month: 5 });
+  });
+
+  it('12월 +1 → 다음해 1월', () => {
+    expect(shiftMonth({ year: 2026, month: 12 }, 1)).toEqual({ year: 2027, month: 1 });
+  });
+
+  it('1월 -1 → 전해 12월', () => {
+    expect(shiftMonth({ year: 2026, month: 1 }, -1)).toEqual({ year: 2025, month: 12 });
+  });
+});
+
+describe('renderCalendarGrid', () => {
+  function makeRenderDoc({ monthLabel = '2026 · 5월' } = {}) {
+    const grid = { innerHTML: 'stale-fixture' };
+    const label = { textContent: monthLabel };
+    return {
+      getElementById: (id) => (id === 'calGrid' ? grid : id === 'monthLabel' ? label : null),
+      _grid: grid,
+      _label: label,
+    };
+  }
+
+  it('2026년 6월 → 라벨 갱신 + 30개 cal-cell + 선행 empty 0 (6/1 월요일)', () => {
+    const doc = makeRenderDoc();
+    const r = renderCalendarGrid(2026, 6, doc);
+    expect(r.rendered).toBe(true);
+    expect(doc._label.textContent).toBe('2026 · 6월');
+    const html = doc._grid.innerHTML;
+    expect((html.match(/cal-cell/g) || []).length).toBe(30);
+    expect(html.startsWith('<div class="cal-cell"')).toBe(true);
+    expect(html).toContain('data-day="30"');
+    expect(html).not.toContain('data-day="31"');
+  });
+
+  it('2026년 5월 → 31개 cal-cell + 선행 empty 4 (5/1 금요일)', () => {
+    const doc = makeRenderDoc();
+    renderCalendarGrid(2026, 5, doc);
+    const html = doc._grid.innerHTML;
+    expect((html.match(/cal-cell/g) || []).length).toBe(31);
+    expect(html.startsWith('<div></div><div></div><div></div><div></div><div class="cal-cell"')).toBe(true);
+    expect(html).toContain('data-day="31"');
+  });
+
+  it('grid/label 없음 → skipped no-mounts', () => {
+    const r = renderCalendarGrid(2026, 6, { getElementById: () => null });
+    expect(r.skipped).toBe('no-mounts');
   });
 });
 

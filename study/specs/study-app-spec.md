@@ -240,6 +240,10 @@ CREATE POLICY "Users can only access own data"
 | "이번 주 5일치 영어" | en | 일자별 콩트 1편 × 5일 | 5일치 batch |
 | "오늘 콘텐츠 비워줘" | 양쪽 | 0 (DELETE) | 잘못 생성 시 reset |
 
+**⭐ en/ja 모델 분기 (2026-06-08 — en 콩트 모델 폐기, `seeds/en-parks-s1e1.json` `_note` 박제):**
+- **en = RealClass-mining 1장면** (위 표의 "콩트 N편" 은 en 에서 "장면 N개" 로 읽음). 1세션 = scene 카드 1장 (`order_index: 0`, 전체 다이얼로그 — 세션 첫 페이지) + 표현 카드 5~7장 (drills 변주). **생성 정본 = en 가이드 §6.3** (소스 스크립트·발췌 기준 3종·중복 방지·ID 규칙·체크리스트). 아래 단계 5·7·8 의 콩트 단위 본문은 en 에 비적용
+- **ja = 콩트 1편** (아래 콩트 단위 본문 = ja 정본, 변경 없음)
+
 **분량 룰 (Wave 11.7x — 시트콤/콩트 호흡 정본):**
 - 한 콩트 = 셋업 → 전개 → 펀치라인. 카드 N개의 묶음 (skitId 메타로 식별)
 - Stage 별 분량 (en/ja 가이드 §3·§4 정본):
@@ -267,7 +271,7 @@ CREATE POLICY "Users can only access own data"
    - 최근 7일 `review_results` 비율 (O / △ / X) → 정답률 < 70% 시 newElements 난이도 한 단계 다운
    - 미완료 (`completed = false`) 카드 카운트 → 5건 초과 시 신규 생성 보류 + 사용자에게 안내
 
-5. **i+1 + 약점 음소 가중 알고리즘 (콩트 단위)**
+5. **i+1 + 약점 음소 가중 알고리즘 (콩트 단위 — ja 정본. en 은 RealClass 장면 발췌가 대체: en 가이드 §6.3)**
    - `i` = 현재 stage 의 `lang_<lang>.userKnown` 단어/구/문법 모음 (학습자가 이미 아는 것)
    - `+1` = **콩트 1편 전체에 newElements 1개** (문법 구조 1개 OR 새 어휘 1개 OR 발음 패턴 1개). 펀치라인 문장에 메타 박음 (skitOrder === skitTotal). 콩트 안 다른 카드는 newElements length=0
    - 콩트 호흡 = 셋업 → 전개 → 펀치라인. 분량은 Stage 별 가이드 범위에서 콩트가 결정
@@ -281,24 +285,25 @@ CREATE POLICY "Users can only access own data"
    - explanation 스키마: `~/apps/study/docs/explanation-schema.md` (en/ja 공통 메타 5필드)
    - 한자 병기 한글 표기 (Wave 11.65): ja sentence 가 한자 포함 시 `phonetic_kr` 의무
 
-7. **`study_today_lessons` INSERT** (콩트 1편 = skitTotal 건)
-   - 필수 컬럼: `id` (결정적 ID `<lang>-<date>-skit<N>-<order>`), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
+7. **`study_today_lessons` INSERT** (ja: 콩트 1편 = skitTotal 건 / en: 1장면 = scene 카드 1 + 표현 카드 5~7 건)
+   - 필수 컬럼: `id` (결정적 ID — ja `<lang>-<date>-skit<N>-<order>` / en `en-parks-<se>-<slug>`), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
    - explanation JSONB nested 메타:
-     - 5필드 (stage / newElements / knownElements / frequency / category)
-     - **콩트 메타 4필드** (skitId / skitTitle / skitOrder / skitTotal) — explanation-schema.md §"콩트 메타" 참조
-   - bulkInsert (lang × date 단일 트랜잭션, 콩트 안 카드 동시 INSERT)
+     - ja: 5필드 (stage / newElements / knownElements / frequency / category) + **콩트 메타 4필드** (skitId / skitTitle / skitOrder / skitTotal) — explanation-schema.md §"콩트 메타" 참조
+     - en: scene 카드 = `sceneTitle/sceneSummary/dialogue` / 표현 카드 = `key/situation/drills/mistake/similar/category/frequency` — explanation-schema.md §"scene 카드"·§"drills" 참조
+   - bulkInsert (lang × date 단일 트랜잭션, 묶음 카드 동시 INSERT)
 
 8. **검증 + 사용자 보고**
-   - INSERT 직후 동일 user_id + lang + date 로 SELECT count → 콩트 skitTotal 과 일치 확인 (콩트 N편 시 N × 각 skitTotal 합산)
-   - 콩트 메타 검증: 같은 skitId 카드 묶음 안 정확히 1장만 `newElements.length === 1` (펀치라인 권장)
-   - **시트콤 작법 자체 점검** (en 가이드 §6.2 / ja 가이드 §5.2):
+   - INSERT 직후 동일 user_id + lang + date 로 SELECT count → 카드 수 일치 확인 (ja: 콩트 skitTotal 합산 / en: scene 1 + 표현 카드 수)
+   - en 검증 (RealClass — en 가이드 §6.3 체크리스트 정본): scene 카드 `order_index 0` + `explanation.dialogue` 배열 / 표현 카드 drills 3~8 / 발췌 기준 3종 / 기존 Parks 시드 중복 0
+   - ja 콩트 메타 검증: 같은 skitId 카드 묶음 안 정확히 1장만 `newElements.length === 1` (펀치라인 권장)
+   - **시트콤 작법 자체 점검** (ja 전용 — ja 가이드 §5.2. en §6.2 는 archive):
      - Show-don't-tell 위반 여부 (scene_intro 에 캐릭터 설명 박혔으면 reject)
      - 1번 카드 = Hook (캐릭터 voice 즉시), 마지막 카드 = Punchline (newElement 박힘)
      - Punchline type 1개 선택 (Self-trapping 1순위, 시나리오 동작상 자연 선택 — 강제 X)
      - 우희+여빈 페어 (활성) 사용 시 우희 voice 5 패턴 + 여빈 voice 5 패턴 일관성 + Vitriolic Best Buds 쌍방향 디스 검증
      - newElement = 시나리오 풀 idiom 1개 또는 친구 톤 affectionate threat 1개 (시나리오별 풀 참조)
-   - 사용자에게 보고: lang / date / skitId / skitTotal / skitTitle / 펀치라인 sentence 1건 인용 + Punchline type
-   - 차단 시 (분량 가드 위반 / RLS reject / 중복 reject / newElements 룰 위반 / show-don't-tell 위반) 즉시 사용자 알림 + 원인 보고
+   - 사용자에게 보고: ja = lang / date / skitId / skitTotal / skitTitle / 펀치라인 sentence 1건 인용 + Punchline type. en = date / 장면 제목 / 출처 문장 범위 / 표현 카드 목록 (sentence + key)
+   - 차단 시 (분량 가드 위반 / RLS reject / 중복 reject / 소스 스크립트 부재 (en) / newElements 룰 위반 (ja) / show-don't-tell 위반 (ja)) 즉시 사용자 알림 + 원인 보고
 
 **클라이언트 동기화:**
 - 사용자가 PWA 진입 → `Sync.startSync()` 가 `study_today_lessons` PULL → Dexie `todayLessons` 갱신 (Wave 11.13.1)

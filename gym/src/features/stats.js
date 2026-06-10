@@ -409,6 +409,83 @@ export function parseMonthLabel(text) {
   return { year: parseInt(m[1], 10), month: parseInt(m[2], 10) };
 }
 
+/** P7 — 표시월 ±delta (연 경계 처리). month 1-based. */
+export function shiftMonth({ year, month }, delta) {
+  const d = new Date(year, (month - 1) + delta, 1);
+  return { year: d.getFullYear(), month: d.getMonth() + 1 };
+}
+
+/**
+ * P7 — monthLabel + calGrid 를 지정 월로 재렌더.
+ *
+ * mocks IIFE 의 5월 fixture (정적 "2026 · 5월" + 31일 고정) 를 실제 월 레이아웃으로 교체.
+ * 셀은 기본(비-worked) 상태만 — 히트맵/오늘 링은 직후 applyWorkedToCalendar/applyTodayToCalendar 가 입힘.
+ * 그리드 헤더가 월~일 이므로 선행 빈칸 = (1일 요일 + 6) % 7.
+ */
+export function renderCalendarGrid(year, month, doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { skipped: 'no-document' };
+  const grid = doc.getElementById('calGrid');
+  const label = doc.getElementById('monthLabel');
+  if (!grid || !label) return { skipped: 'no-mounts' };
+
+  label.textContent = `${year} · ${month}월`;
+
+  const leading = (new Date(year, month - 1, 1).getDay() + 6) % 7;
+  const days = new Date(year, month, 0).getDate();
+  let html = '';
+  for (let i = 0; i < leading; i++) html += '<div></div>';
+  for (let d = 1; d <= days; d++) {
+    html += '<div class="cal-cell" data-day="' + d + '" style="aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;">'
+      + '<span class="num" style="font-size:13px;font-weight:500;color:var(--ink-4);">' + d + '</span>'
+      + '</div>';
+  }
+  grid.innerHTML = html;
+  return { rendered: true, year, month, days, leading };
+}
+
+/**
+ * P7 — 지정 월로 캘린더 전체 갱신 (그리드 + 해당 월 세션 히트맵 + 오늘 링).
+ * 월 네비는 60일 lookback 밖으로 나갈 수 있어 표시월 범위로 별도 조회.
+ */
+export async function refreshCalendarMonth(year, month, doc, now = Date.now()) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { skipped: 'no-document' };
+  const r = renderCalendarGrid(year, month, doc);
+  if (r.skipped) return r;
+  let sessions = [];
+  try {
+    const mm = String(month).padStart(2, '0');
+    const lastDay = new Date(year, month, 0).getDate();
+    sessions = await getSessionsByRange(`${year}-${mm}-01`, `${year}-${mm}-${String(lastDay).padStart(2, '0')}`);
+  } catch (_) { /* db 없음 — 그리드·라벨만 갱신 */ }
+  applyWorkedToCalendar(sessions, doc);
+  applyTodayToCalendar(now, doc);
+  return { applied: true, year, month };
+}
+
+/** P7 — 월 네비 화살표 (#calPrev/#calNext) 클릭 → 표시월 ±1. idempotent. */
+export function wireMonthNav(doc) {
+  doc = doc || (typeof document !== 'undefined' ? document : null);
+  if (!doc) return { wired: 0 };
+  const prev = doc.getElementById('calPrev');
+  const next = doc.getElementById('calNext');
+  const label = doc.getElementById('monthLabel');
+  if (!prev || !next || !label) return { wired: 0 };
+  if (prev.dataset.spaMonthNav === '1') return { wired: 0 };
+  prev.dataset.spaMonthNav = '1';
+  next.dataset.spaMonthNav = '1';
+  const go = (delta) => {
+    const cur = parseMonthLabel(label.textContent);
+    if (!cur) return;
+    const t = shiftMonth(cur, delta);
+    refreshCalendarMonth(t.year, t.month, doc).catch((e) => console.error('[gymStats] monthNav', e));
+  };
+  prev.addEventListener('click', () => go(-1));
+  next.addEventListener('click', () => go(1));
+  return { wired: 1 };
+}
+
 /**
  * Wave 11.15 — §9-1 꾹누르기 → 세션 삭제.
  *
@@ -525,8 +602,11 @@ export async function mountStatsView(now = Date.now()) {
     applyBodyPartsToDom(summarizeBodyParts(sessions), doc);
     applyMusclesToSilhouette(summarizeMuscles(sessions, getBuiltinExercise), doc);
     applyExerciseFrequencyToDom(summarizeExerciseFrequency(sessions, getBuiltinExercise), doc);
+    // P7 — mock 정적 "2026 · 5월" fixture 를 현재월 그리드로 교체 후 히트맵·오늘 링 적용.
+    renderCalendarGrid(today.getFullYear(), today.getMonth() + 1, doc);
     applyTodayToCalendar(now, doc);
     applyWorkedToCalendar(sessions, doc);
+    try { wireMonthNav(doc); } catch (e) { console.error('[gymStats] wireMonthNav', e); }
     try { wireMonthCalendarTaps(doc); } catch (e) { console.error('[gymStats] wireMonthCalendarTaps', e); }
     try { (typeof window !== 'undefined' ? window.gymDayDetail : null)?.wireDayDetailSheet?.(doc); } catch (e) { console.error('[gymStats] wireDayDetailSheet', e); }
     return { applied: true, volumes };
@@ -902,6 +982,10 @@ if (typeof window !== 'undefined') {
     applyVolumesToDom,
     applyTodayToCalendar,
     parseMonthLabel,
+    shiftMonth,
+    renderCalendarGrid,
+    refreshCalendarMonth,
+    wireMonthNav,
     sessionToWorkoutEntry,
     mergeWorkoutEntries,
     applyWorkedToCalendar,

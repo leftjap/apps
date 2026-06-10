@@ -2,7 +2,7 @@
 
 > 카드별 `explanation` 필드 + ReviewCard 메타 (en/ja 공통 구조).
 >
-> **콘텐츠 작성 가이드 (en, 정본):** [./lesson-explanation-guide-en.md](./lesson-explanation-guide-en.md) — i+1·1T·Stage 1~4·구어 축약/리액션·chunks 객체·IPA weak_focus·variations Stage 3+·shadowing.
+> **콘텐츠 작성 가이드 (en, 정본):** [./lesson-explanation-guide-en.md](./lesson-explanation-guide-en.md) — ⭐ **활성 = §6.3 RealClass-mining** (scene 카드 다이얼로그-우선 + 표현 카드 drills, 2026-06-08 전환). i+1·발음·phonetic_kr 일반 원칙 동일.
 >
 > **콘텐츠 작성 가이드 (ja, 정본):** [./lesson-explanation-guide-ja.md](./lesson-explanation-guide-ja.md) — i+1·1T·Stage 1~4·4패턴 발음·explanation 4필드 (whenToUse/grammar/pronPoints/similar)·variations 비활성 (Stage 1~2).
 
@@ -17,7 +17,7 @@
 | `category` | string | 분류 |
 | `phonetic_kr` | string | 한국인 즉시 발음 가능 표기 |
 
-## en/ja 공통 콩트 메타 (4필드, Wave 11.7x — 시트콤/콩트 호흡 정본화)
+## 콩트 메타 (4필드, Wave 11.7x) — ja 전용 (en 은 2026-06-08 RealClass-mining 전환, §scene 카드 참조)
 
 | 필드 | 형식 | 용도 |
 |---|---|---|
@@ -26,8 +26,8 @@
 | `skitOrder` | integer (1-base) | 콩트 안 순서. 1=셋업, skitTotal=펀치라인 |
 | `skitTotal` | integer | 콩트 안 총 문장 수. Stage 별 가이드 (en §3 / ja §4 콩트 분량 컬럼) 준수 |
 
-**콩트 단위 원칙:**
-- 하루 = en 콩트 1편 + ja 콩트 1편 (default). 사용자가 "N편" 명시 시 그 수만큼
+**콩트 단위 원칙 (ja):**
+- 하루 = ja 콩트 1편 (default. en 은 RealClass 1장면 — §scene 카드). 사용자가 "N편" 명시 시 그 수만큼
 - 콩트 호흡 = 셋업 → 전개 → 펀치라인 (캐릭터 2~3명, 펀치라인 1개)
 - 분량은 콩트가 결정. 정해진 N문장 강제 X — Stage 별 가이드 범위 안에서 자연스럽게
 - newElements 박는 위치: 펀치라인 문장 (skitOrder === skitTotal) 권장. 셋업/전개에 신규 요소 등장 시 그 문장의 knownElements 에는 안 들어가지만, 같은 콩트 펀치라인 newElements 가 prerequisite 충족시킴
@@ -81,6 +81,22 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
   ],
 }
 ```
+
+## scene 카드 — 전체 다이얼로그 (RealClass-mining 모델, en 활성)
+
+세션 첫 페이지 = 장면 전체 다이얼로그. **카드 1장 (`order_index: 0`)** 의 explanation 에 박힘. 형식 정본 = [`seeds/en-parks-s1e1.json`](../seeds/en-parks-s1e1.json).
+
+| 필드 | 형식 | 비고 |
+|---|---|---|
+| `sceneTitle` | string | 다이얼로그 페이지 제목 (없으면 '오늘의 장면') |
+| `sceneSummary` | string (선택) | 1~2줄 상황 요약 |
+| `dialogue` | `[{speaker, en, ko}]` | 6~10줄. **이 필드 존재 = scene 카드로 인식** |
+
+**동작 (코드 박제 — 시드 측 추가 작업 없음):**
+- 감지: `src/pages/session-new.js` 가 현재 카드 `explanation.dialogue` 배열 존재 시 다이얼로그 페이지 렌더 (`components/session/scenePage.js`, D1 데스크탑 = `renderD1Dialogue`)
+- 정렬: scene 카드 `order_index 0` → `pages/cardLoader.js` `loadNewCards` (date FIFO → order_index ASC) 가 세션 첫 카드로 배치
+- 복습 제외: `services/sessionFinish.js` 가 scene 카드 (`explanation.dialogue` 보유) 를 복습 큐 이관에서 제외 (완료 표시만)
+- 색 강조: D1 다이얼로그가 표현 카드 문장과 자동 매칭 강조 — 시드 측 highlights 필드 불필요
 
 ## drills — 변주 연습 (RealClass-mining 모델 신규)
 
