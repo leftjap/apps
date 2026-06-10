@@ -43,8 +43,8 @@ export function mount({ userId } = {}) {
     actions.appendChild(status);
     for (const r of parsed) {
       try {
-        const ex = await Queries.getRating(userId, 'movie', r.title, r.year);
-        if (ex) { await Queries.updateRating(ex.id, { rating: r.rating, rated_at: r.rated_at, source: 'watcha' }); updated++; }
+        const ex = await Queries.getRatingAny(userId, 'movie', r.title, r.year);   // soft-deleted 부활 재사용 (23505 방지)
+        if (ex) { await Queries.updateRating(ex.id, { rating: r.rating, rated_at: r.rated_at, source: 'watcha', deleted_at: null }); updated++; }
         else { await Queries.createRating({ owner_id: userId, media_type: 'movie', title: r.title, year: r.year, rating: r.rating, source: 'watcha', rated_at: r.rated_at, meta: {} }); created++; }
       } catch (e) { /* 행 skip */ }
       done++;

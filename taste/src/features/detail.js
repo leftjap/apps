@@ -108,8 +108,9 @@ function ratebox(w, userId) {
       if (rowId) { await Queries.softDeleteRating(rowId); rowId = null; }
       cur = 0;
     } else {
-      const ex = await Queries.getRating(userId, w.media_type, w.title, w.year);
-      if (ex) { await Queries.updateRating(ex.id, { rating: v, rated_at: new Date().toISOString() }); rowId = ex.id; }
+      // getRatingAny: soft-deleted 행 부활 재사용 — 신규 create 는 서버 unique 키와 23505 충돌 (sync.js reconcileDup 주석).
+      const ex = await Queries.getRatingAny(userId, w.media_type, w.title, w.year);
+      if (ex) { await Queries.updateRating(ex.id, { rating: v, rated_at: new Date().toISOString(), deleted_at: null }); rowId = ex.id; }
       else { const c = await Queries.createRating({ owner_id: userId, media_type: w.media_type, title: w.title, year: w.year, external_id: w.external_id, rating: v, source: 'app', rated_at: new Date().toISOString(), meta: metaForSave(w) }); rowId = c.id; }
       cur = v;
     }

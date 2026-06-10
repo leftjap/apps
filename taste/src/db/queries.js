@@ -24,6 +24,13 @@ export async function getRating(owner_id, media_type, title, year) {
   const rows = await db().ratings.where('[owner_id+media_type]').equals([owner_id, media_type]).toArray();
   return rows.find((r) => !r.deleted_at && r.title === title && (r.year ?? null) === (year ?? null)) || null;
 }
+// soft-deleted 포함 매칭 (alive 우선) — 재평가 시 신규 create 대신 기존 행 부활 재사용용.
+// 서버 unique(owner,media,title,year) 를 soft-deleted 행이 점유해 신규 행 upsert 가 23505 로 영구 충돌하므로.
+export async function getRatingAny(owner_id, media_type, title, year) {
+  const rows = await db().ratings.where('[owner_id+media_type]').equals([owner_id, media_type]).toArray();
+  const matches = rows.filter((r) => r.title === title && (r.year ?? null) === (year ?? null));
+  return matches.find((r) => !r.deleted_at) || matches[0] || null;
+}
 export async function listRatings(owner_id, mediaType) {
   const rows = await db().ratings.where('owner_id').equals(owner_id).toArray();
   return rows.filter((r) => !r.deleted_at && (!mediaType || r.media_type === mediaType))
@@ -32,5 +39,5 @@ export async function listRatings(owner_id, mediaType) {
 export async function listPendingRatings() { return db().ratings.where('pending_sync').equals(1).toArray(); }
 export async function setPendingSync(id, v) { const c = await db().ratings.get(id); if (c) await db().ratings.put({ ...c, pending_sync: v }); }
 
-export const Queries = { createRating, updateRating, softDeleteRating, getRating, listRatings, listPendingRatings, setPendingSync };
+export const Queries = { createRating, updateRating, softDeleteRating, getRating, getRatingAny, listRatings, listPendingRatings, setPendingSync };
 if (typeof window !== 'undefined') window.tasteQueries = Queries;

@@ -37,7 +37,31 @@ async function pushRating(id) {
   const db = globalThis.tasteDB; const row = await db.ratings.get(id); if (!row) return;
   if (!isUuid(id)) { await setPendingSync(id, 0); return; }
   const { error } = await supabase.from('taste_ratings').upsert(stripMeta(row), { onConflict: 'id' });
+  if (error && error.code === '23505') { await reconcileDup(db, row); return; }
   await setPendingSync(id, error ? 1 : 0);
+}
+
+// 23505: 서버 unique(owner,media,title,year) 를 같은 키의 다른 행(주로 soft-deleted)이 점유 → upsert 영구 재시도 루프.
+// 해소: 서버 행 채택(LWW) — 로컬이 최신이면 서버 행을 로컬 값으로 갱신(부활 포함), 로컬 dup 행은 서버 행으로 교체.
+async function reconcileDup(db, row) {
+  let q = supabase.from('taste_ratings').select('*')
+    .eq('owner_id', row.owner_id).eq('media_type', row.media_type).eq('title', row.title);
+  q = (row.year ?? null) === null ? q.is('year', null) : q.eq('year', row.year);
+  const { data, error } = await q;
+  if (error) { await setPendingSync(row.id, 1); return; }
+  const srv = (data || []).find((s) => s.id !== row.id);
+  if (!srv) { await setPendingSync(row.id, 1); return; }  // 23505 인데 서버 행 미발견 — 다음 flush 재시도
+  const localNewer = new Date(row.updated_at) > new Date(srv.updated_at);
+  if (localNewer) {
+    const patch = { rating: row.rating, rated_at: row.rated_at, source: row.source, meta: row.meta, updated_at: row.updated_at, deleted_at: row.deleted_at ?? null };
+    const { error: upErr } = await supabase.from('taste_ratings').update(patch).eq('id', srv.id);
+    if (upErr) { await setPendingSync(row.id, 1); return; }
+  }
+  const adopted = localNewer
+    ? { ...srv, rating: row.rating, rated_at: row.rated_at, source: row.source, meta: row.meta, updated_at: row.updated_at, deleted_at: row.deleted_at ?? null }
+    : srv;
+  await db.ratings.delete(row.id);
+  await db.ratings.put({ ...adopted, pending_sync: 0 });
 }
 export async function flushPending() { const p = await listPendingRatings(); for (const r of p) await pushRating(r.id); }
 
