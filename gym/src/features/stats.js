@@ -639,7 +639,7 @@ const PART_META = [
   { key: 'legs',     name: '하체', kr: '하', color: '#b85a3e' },
   { key: 'shoulder', name: '어깨', kr: '어', color: '#c9a96e' },
   { key: 'arms',     name: '팔',   kr: '팔', color: '#6b8a9c' },
-  { key: 'cardio',   name: '유산소', kr: '유', color: '#9b8fb0' },
+  { key: 'cardio',   name: '맨몸', kr: '맨', color: '#9b8fb0' },
 ];
 
 export function summarizeBodyParts(sessions) {

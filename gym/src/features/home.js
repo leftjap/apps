@@ -39,7 +39,7 @@ export function partAbbreviation(tag) {
     case 'shoulder': return '어';
     case 'legs': return '하';
     case 'arms': return '팔';
-    case 'cardio': return '유';
+    case 'cardio': return '맨'; // 카테고리 표시명 유산소→맨몸 (사용자 결정 2026-06-10)
     default:
       // 한국어 fallback (mocks Wave 11.6D 에서 이미 단일 글자) — 그대로 반환
       if (typeof tag === 'string' && tag.length === 1) return tag;

@@ -22,7 +22,7 @@ export const PARTS = Object.freeze({
   shoulder: '어깨',
   legs: '하체',
   arms: '팔',
-  cardio: '유산소',
+  cardio: '맨몸', // 표시명만 변경 (key 'cardio' 는 DB tags 저장값이라 유지 — 사용자 결정 2026-06-10)
 });
 
 export const PART_IDS = Object.freeze(Object.keys(PARTS));
