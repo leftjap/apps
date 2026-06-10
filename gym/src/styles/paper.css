@@ -75,3 +75,6 @@
 }
 @keyframes wkCaret { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .wk-caret { animation: none; } }
+
+/* P13 체중 키패드 참조줄 — 동적 hydrate(formatWkRef) 가 b 만 삽입, 강조 스타일은 여기서 */
+.wk-ref b { font-family: var(--font-mono); color: var(--ink-3); font-weight: 600; }

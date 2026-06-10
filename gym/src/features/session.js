@@ -2318,7 +2318,9 @@ function setupKeypadChrome(doc, field, prefill) {
   if (ref) {
     if (prefill != null && Number.isFinite(prefill)) {
       // 시안(session-keypad.html) ref 줄 — weight 모드는 탭존 증감 힌트 동반.
-      const hint = field === 'weight' ? ' · 탭존으로도 ±2.5' : '';
+      // 시안 문구 "±2.5" 는 실 로직과 불일치 (applyTapDelta: barbell/machine/cable ±5, dumbbell ±2)
+      // → 장비별로 달라 수치 미명시 (라이브 검증 2026-06-10 발견).
+      const hint = field === 'weight' ? ' · 좌우 탭존으로도 증감' : '';
       ref.innerHTML = `직전 <b>${escapeHtml(String(prefill))}${escapeHtml(unitText)}</b>${hint}`;
     } else {
       ref.textContent = '';

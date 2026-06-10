@@ -21,6 +21,29 @@ function renderValue(sheet, valueEl) {
   // P13 — 큰 값 + 깜빡이는 캐럿 (P3 세션 키패드와 동일 키패드 언어). buf 는 updateBuf 가 숫자/. 만 보장 → innerHTML 안전.
   if (valueEl) valueEl.innerHTML = `${sheet.dataset.buf || '0'}<span class="wk-caret" aria-hidden="true"></span>`;
 }
+/**
+ * P13 참조줄 — rows(체중 date 오름차순) → "직전 <b>Nkg</b> · 7일 평균 <b>Mkg</b>".
+ * mock fixture 정적값(69.4/69.7) 하드코딩이 실 데이터를 무시하던 버그 수정 — 동적 계산.
+ * 기록 없으면 '오늘 첫 기록'. 숫자만 삽입 (innerHTML 안전).
+ */
+function formatWkRef(rows) {
+  const list = Array.isArray(rows) ? rows.filter((r) => r && Number.isFinite(Number(r.weight))) : [];
+  if (!list.length) return '오늘 첫 기록';
+  const latest = Number(list[list.length - 1].weight);
+  const last7 = list.slice(-7);
+  const avg = last7.reduce((s, r) => s + Number(r.weight), 0) / last7.length;
+  const fmt = (n) => (Math.round(n * 10) / 10).toFixed(1); // P12 통계(formatWeight)와 동일 표기
+  return `직전 <b>${fmt(latest)}kg</b> · 7일 평균 <b>${fmt(avg)}kg</b>`;
+}
+/** 참조줄 비동기 채움 — 허브(mocks iframe, gymQueries 없음)는 fixture 유지. */
+async function hydrateWkRef(doc) {
+  const ref = doc.querySelector('[data-bind="wk-ref"]');
+  const Q = (typeof window !== 'undefined') ? window.gymQueries : null;
+  if (!ref || !Q?.listAllWeights) return;
+  try {
+    ref.innerHTML = formatWkRef(await Q.listAllWeights());
+  } catch (_) { /* db 미초기화 — fixture 유지 */ }
+}
 export function openWeightKeypad(doc) {
   if (!doc) return;
   const sheet = doc.getElementById('weightKeypadSheet');
@@ -29,6 +52,7 @@ export function openWeightKeypad(doc) {
   if (!sheet || !backdrop || !value) return;
   sheet.dataset.buf = '';
   renderValue(sheet, value);
+  hydrateWkRef(doc).catch(() => { /* graceful */ });
   sheet.dataset.open = 'true';
   sheet.style.transform = 'translateY(0)';
   backdrop.dataset.open = 'true';
@@ -95,4 +119,4 @@ export function wireWeightKeypad(doc) {
 if (typeof window !== 'undefined') {
   window.gymWeightKeypad = { openWeightKeypad, closeWeightKeypad, wireWeightKeypad };
 }
-export const __test__ = { updateBuf };
+export const __test__ = { updateBuf, formatWkRef };
