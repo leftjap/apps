@@ -3,9 +3,9 @@
 --
 -- 구 번들 호환: 배포 전환 윈도우 동안 열린 옛 클라이언트를 위해 taste_* 이름의
 -- security_invoker 뷰를 남김 (RLS 는 base 테이블 정책이 호출자 권한으로 적용).
---   - 읽기: 정상 동작 / 단순 insert·update·delete: auto-updatable 뷰로 통과
---   - upsert(ON CONFLICT): 뷰엔 제약이 없어 실패 → 클라이언트 pending 유지 → 새 번들에서 재시도 (유실 없음)
---   - realtime: publication 은 OID 추종이라 pick_* 이름으로 발화 — 옛 채널 필터는 미수신 (수용)
+--   - 읽기·insert·update·delete·upsert(ON CONFLICT) 전부 통과 — 실측: 뷰 경유 on_conflict=id
+--     upsert 가 INSERT 201·UPDATE 200 (PG 가 auto-updatable 뷰의 ON CONFLICT 를 base 제약으로 해석)
+--   - realtime: publication 은 OID 추종이라 pick_* 이름으로 발화 — 옛 채널 필터만 미수신 (수용)
 -- 뷰 제거는 모든 기기가 새 번들로 넘어간 뒤 별도 마이그레이션으로.
 --
 -- 참고: 인덱스·제약 이름은 taste_* prefix 그대로 둠 (기능 무관, 코드는 제약명 미참조 —
