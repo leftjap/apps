@@ -1,9 +1,10 @@
 import { defineConfig, loadEnv } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// GitHub Pages: leftjap.github.io/apps/taste/ 서브경로 배포 (workflow 가 GH_PAGES=1 주입).
+// GitHub Pages: leftjap.github.io/apps/pick/ 서브경로 배포 (workflow 가 GH_PAGES=1 주입).
+// 앱명 Pick 리네임에 맞춰 경로 이관 (2026-06-10) — 구 /apps/taste/ 는 redirect 스텁 + kill-SW.
 // 로컬 dev/preview 는 GH_PAGES 미설정 → / (기본 동작 유지).
-const BASE = process.env.GH_PAGES ? '/apps/taste/' : '/';
+const BASE = process.env.GH_PAGES ? '/apps/pick/' : '/';
 
 export default defineConfig(({ mode }) => {
   // .env / .env.local 에서 ALADIN_TTB_KEY 로드 (서버측만 — 클라 번들 미노출). book 미러.

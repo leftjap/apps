@@ -125,18 +125,34 @@ jobs:
           [ -d study/dist ] && cp -r study/dist _site/study || echo "::warning::study build missing — skipping"
           [ -d today/dist ] && cp -r today/dist _site/today || echo "::warning::today build missing — skipping"
           [ -d book/dist ] && cp -r book/dist _site/book || echo "::warning::book build missing — skipping"
-          [ -d taste/dist ] && cp -r taste/dist _site/taste || echo "::warning::taste build missing — skipping"
+          [ -d taste/dist ] && cp -r taste/dist _site/pick || echo "::warning::taste build missing — skipping"
           [ -d cue/dist ] && cp -r cue/dist _site/cue || echo "::warning::cue build missing — skipping"
-          # pick → taste 별칭 스텁 — 앱명 Pick 리네임(aebac33) 후 주소창에 /apps/pick 직접 입력 대응.
-          # 배포 경로 정본은 taste/ 유지. query·hash 보존 redirect.
-          mkdir -p _site/pick
-          cat > _site/pick/index.html <<'HTML'
+          # 정식 경로 이관 (2026-06-10): taste/dist → /apps/pick/ (vite base 도 /apps/pick/).
+          # 구 /apps/taste/ 는 redirect 스텁 + kill-SW — 구 SW 가 캐시된 옛 앱을 계속 서빙하는 것 차단.
+          # (한 origin 을 6개 앱이 공유 → kill-SW 캐시 삭제는 /apps/taste/ 스코프 키만 한정)
+          mkdir -p _site/taste
+          cat > _site/taste/index.html <<'HTML'
           <!doctype html>
           <html lang="ko"><head><meta charset="utf-8"><title>Pick</title>
-          <script>location.replace('/apps/taste/' + location.search + location.hash);</script>
-          <meta http-equiv="refresh" content="0; url=/apps/taste/">
-          </head><body><a href="/apps/taste/">Pick 앱으로 이동…</a></body></html>
+          <script>location.replace('/apps/pick/' + location.search + location.hash);</script>
+          <meta http-equiv="refresh" content="0; url=/apps/pick/">
+          </head><body><a href="/apps/pick/">Pick 앱으로 이동…</a></body></html>
           HTML
+          cat > _site/taste/sw.js <<'JS'
+          // self-destroying SW — 구 taste 스코프 SW 교체용. 스코프 캐시 정리 후 unregister + 열린 탭 재네비게이트.
+          self.addEventListener('install', function () { self.skipWaiting(); });
+          self.addEventListener('activate', function (e) {
+            e.waitUntil((async function () {
+              try {
+                var keys = await caches.keys();
+                await Promise.all(keys.filter(function (k) { return k.indexOf('/apps/taste/') !== -1; }).map(function (k) { return caches.delete(k); }));
+              } catch (err) { /* noop */ }
+              await self.registration.unregister();
+              var cs = await self.clients.matchAll({ type: 'window' });
+              cs.forEach(function (c) { try { c.navigate(c.url); } catch (err) { /* noop */ } });
+            })());
+          });
+          JS
           # 루트 index — leftjap.github.io/apps/ 진입 시 4 앱 링크 표시
           cat > _site/index.html <<'HTML'
           <!doctype html>
@@ -147,7 +163,7 @@ jobs:
           <a href="gym/">💪 Gym</a>
           <a href="today/">📝 Today</a>
           <a href="book/">📖 Book</a>
-          <a href="taste/">🎬 Pick</a>
+          <a href="pick/">🎬 Pick</a>
           <a href="cue/">⚡ cue (런처)</a>
           </body></html>
           HTML
