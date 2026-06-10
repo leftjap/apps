@@ -81,8 +81,7 @@ function topbar(v) {
   }, label)));
   const cue = el('button', { class: 'searchcue', 'aria-label': '검색', onClick: () => openSearch({ userId: _userId }) },
     el('span', { class: 'searchcue__icon', 'aria-hidden': 'true' }, '⌕'),
-    el('span', { class: 'searchcue__label' }, '검색'),
-    el('kbd', { class: 'searchcue__kbd' }, '⌘K'));
+    el('span', { class: 'searchcue__label' }, '검색'));
   return el('header', { class: 'topbar' }, el('div', { class: 'topbar__inner' },
     el('div', { class: 'topbar__left' }, brand, nav),
     el('div', { class: 'topbar__right' }, cue, accountMenu())));

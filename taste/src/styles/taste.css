@@ -63,19 +63,15 @@ a{cursor:pointer;text-decoration:none;color:inherit;}
 .brand:hover{opacity:.65;}
 .brand__dot{width:7px;height:7px;border-radius:999px;background:var(--accent);margin-bottom:6px;}
 .searchcue{
-  flex:none;
+  flex:none;width:280px;
   display:flex;align-items:center;gap:8px;
-  height:38px;padding:0 13px;
+  height:38px;padding:0 15px;
   background:var(--paper);border:1px solid var(--line);border-radius:999px;
   color:var(--ink-3);transition:border-color .15s,background .15s;
 }
 .searchcue:hover{border-color:var(--ink-4);background:var(--hover);}
 .searchcue__icon{font-size:16px;color:var(--ink-3);}
 .searchcue__label{font-size:13.5px;}
-.searchcue__kbd{
-  font-family:var(--mono);font-size:11px;color:var(--ink-3);
-  border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:var(--bg);
-}
 .account{position:relative;flex:none;}
 .avatar{
   width:38px;height:38px;border-radius:999px;

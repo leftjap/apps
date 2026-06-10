@@ -4,19 +4,19 @@ import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString } from '../ui/poster.js';
 import { Queries } from '../db/queries.js';
 
-// 최신순=작품 출시 신작순(기본) · 등록순=평가한 날짜 최신(담은 순) · 별점순=내 별점 높은순.
-const SORTS = [['recent', '최신순'], ['registered', '등록순'], ['rating', '별점순']];
+// 최신순=내가 최근 등록(평가)한 순(기본) · 출시순=작품 출시 신작순 · 별점순=내 별점 높은순.
+const SORTS = [['recent', '최신순'], ['released', '출시순'], ['rating', '별점순']];
 const GRADES = [5, 4.5, 4, 3.5, 3, 2.5, 2, 1.5, 1, 0.5];
 const CAT_TITLE = { movie: '영화', drama: '드라마', book: '책' };
-const CMP = {
-  registered: (a, b) => String(b.rated_at || '').localeCompare(String(a.rated_at || '')),
-  recent: (a, b) => (b.year || 0) - (a.year || 0) || String(b.rated_at || '').localeCompare(String(a.rated_at || '')),
+export const CMP = {
+  recent: (a, b) => String(b.rated_at || b.created_at || '').localeCompare(String(a.rated_at || a.created_at || '')),
+  released: (a, b) => (b.year || 0) - (a.year || 0) || String(b.rated_at || '').localeCompare(String(a.rated_at || '')),
   rating: (a, b) => (b.rating || 0) - (a.rating || 0) || String(b.rated_at || '').localeCompare(String(a.rated_at || '')),
 };
 
 // 드라마/시리즈 = movie 타입 중 meta.subtype==='tv' (import 시 보존). 순수 영화는 그 외 movie.
 const isTv = (r) => r.media_type === 'movie' && r.meta?.subtype === 'tv';
-function matchCat(r, cat) {
+export function matchCat(r, cat) {
   if (cat === 'movie') return r.media_type === 'movie' && !isTv(r);
   if (cat === 'drama') return isTv(r);
   if (cat === 'book') return r.media_type === 'book';

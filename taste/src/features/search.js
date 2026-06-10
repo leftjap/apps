@@ -22,7 +22,7 @@ export function openSearch({ userId } = {}) {
 
   const seg = el('div', { class: 'seg seg--sm' });
   const segBtns = {};
-  [['all', '전체'], ['movie', '영화'], ['book', '책']].forEach(([k, label]) => {
+  [['all', '전체'], ['movie', '영화'], ['drama', '드라마'], ['book', '책']].forEach(([k, label]) => {
     segBtns[k] = el('button', { class: 'seg__btn' + (k === 'all' ? ' is-on' : ''),
       onClick: () => { type = k; Object.entries(segBtns).forEach(([kk, bb]) => { bb.className = 'seg__btn' + (kk === k ? ' is-on' : ''); }); run(); } }, label);
     seg.appendChild(segBtns[k]);
@@ -55,10 +55,19 @@ export function openSearch({ userId } = {}) {
       el('span', { class: 'sresult__kind' }, kind || (isFilm ? '영화' : '책')));
   }
 
+  // 드라마 = movie 타입 중 meta.subtype==='tv' (library matchCat 과 동일 규칙) — 영화 세그에선 제외.
+  const isTv = (r) => r.media_type === 'movie' && r.meta?.subtype === 'tv';
+  const matchType = (r) => {
+    if (type === 'all') return true;
+    if (type === 'movie') return r.media_type === 'movie' && !isTv(r);
+    if (type === 'drama') return isTv(r);
+    return r.media_type === 'book';
+  };
+
   async function run() {
     const q = input.value.trim();
     const ql = q.toLowerCase();
-    let loc = local.filter((r) => type === 'all' || r.media_type === type);
+    let loc = local.filter(matchType);
     if (ql) loc = loc.filter((r) => `${r.title} ${r.meta?.author || ''} ${r.meta?.director || ''} ${Array.isArray(r.meta?.cast) ? r.meta.cast.join(' ') : r.meta?.cast || ''}`.toLowerCase().includes(ql));
     else loc = loc.slice(0, 10);
 
