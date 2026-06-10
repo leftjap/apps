@@ -6,10 +6,11 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no"
     />
-    <meta name="theme-color" content="#0c0a08" />
+    <!-- 라이트 페이퍼 — 상태바 검은 글자(default) + 웜화이트 (2026-06-10 아이폰 상하단 부정합 수정. 구: 다크 #0c0a08 + black-translucent 흰 글자) -->
+    <meta name="theme-color" content="#fdfdfd" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="짐" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <!-- iOS 홈화면 아이콘 -->
@@ -28,7 +29,7 @@
       html, body {
         margin: 0 !important; padding: 0 !important;
         height: 100dvh !important;
-        background: #0c0a08 !important;
+        background: #fdfdfd !important; /* 라이트 — safe-area 빈틈에 다크 띠 방지 (구 #0c0a08) */
         overflow: hidden !important;
         overscroll-behavior: none !important;
         -webkit-overflow-scrolling: auto;
@@ -41,11 +42,16 @@
         box-shadow: none !important;
         overflow: hidden !important;
         overscroll-behavior: none !important;
+        background: #fdfdfd !important; /* mock 별 .phone 무배경 대비 — 위아래 inset 영역 라이트 보장 */
       }
       .phone-notch, .phone-home, .phone-clock, .phone-batt { display: none !important; }
       .phone-content {
-        padding-top: env(safe-area-inset-top, 0) !important;
-        padding-bottom: env(safe-area-inset-bottom, 0) !important;
+        padding-top: env(safe-area-inset-top, 0px) !important;
+        padding-bottom: env(safe-area-inset-bottom, 0px) !important;
+      }
+      /* 하단 고정 바텀시트 — 홈 인디케이터 겹침 방지 (전 시트 padding-bottom 24px 공통 → +inset) */
+      #keypadSheet, #weightKeypadSheet, #dayDetailSheet, #actionSheet, #sessionAddexSheet, #addexSheet {
+        padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
       }
       /* iOS long-press callout(복사하기/찾아보기/번역/웹 검색) + text selection 전역 차단.
          자체 구현 long-press 메뉴(active-card / set-row / footer-exercise / session-end / .ex-row / 캘린더)
