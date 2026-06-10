@@ -236,3 +236,10 @@
 .grammar-block{padding:var(--s-3) var(--s-4);background:var(--bg-warm);border-radius:var(--r-md);margin-top:var(--s-3);font-size:14px;line-height:1.65}
 .grammar-block+.grammar-block{margin-top:var(--s-2)}
 .grammar-block .struct{font-family:var(--font-display);font-size:13px;font-weight:500;color:var(--text-muted);margin-bottom:var(--s-2)}
+
+/* ── 녹음 반복 진행·점수 안착 (2026-06-10 — 버튼 상태 변화·팝업 후 안착) ── */
+.drill-acts{align-items:center}
+.drill-score{font-family:var(--font-display);font-size:12px;font-weight:800;color:var(--accent);border:1px solid rgba(217,119,87,0.35);border-radius:var(--r-pill);padding:4px 10px;white-space:nowrap}
+.drill-rec.rec-done{color:var(--accent);border-color:rgba(217,119,87,0.45)}
+@keyframes scorePop{0%{transform:scale(1.55) translateY(-10px);opacity:0}60%{transform:scale(1.06) translateY(1px);opacity:1}100%{transform:scale(1) translateY(0)}}
+.score-pop{animation:scorePop .45s cubic-bezier(.2,.8,.3,1.1)}

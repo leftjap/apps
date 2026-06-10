@@ -157,3 +157,35 @@ describe('createExplanationPanel — 실 시드 fixture', () => {
     expect(panelEl.querySelector('.drill .drill-kr')).toBeNull();
   });
 });
+
+describe('drillsSection — 녹음 후 행 상태·점수 배지 (phone, 2026-06-10)', () => {
+  it('onRecord 가 {score} 반환 시 행에 배지 안착 + rec-done + "다시 녹음"', async () => {
+    const panel = createExplanationPanel({
+      explanation: { key: 'k', drills: [{ en: 'Fill in the blanks.', ko: '빈칸', kr: '필린' }] },
+      lang: 'en',
+      onRecord: async () => ({ score: 91 }),
+    });
+    document.body.appendChild(panel.panelEl);
+    const rec = panel.panelEl.querySelector('.drill-rec');
+    rec.click();
+    await new Promise((r) => setTimeout(r, 0));
+    const badge = panel.panelEl.querySelector('.drill-score');
+    expect(badge).toBeTruthy();
+    expect(badge.textContent).toContain('91');
+    expect(rec.classList.contains('rec-done')).toBe(true);
+    expect(rec.textContent).toContain('다시 녹음');
+  });
+
+  it('onRecord 가 null(시작 단계) 이면 배지 없음', async () => {
+    const panel = createExplanationPanel({
+      explanation: { key: 'k', drills: [{ en: 'X.', ko: 'x' }] },
+      lang: 'en',
+      onRecord: async () => null,
+    });
+    document.body.appendChild(panel.panelEl);
+    panel.panelEl.querySelector('.drill-rec').click();
+    await new Promise((r) => setTimeout(r, 0));
+    const badge = panel.panelEl.querySelector('.drill-score');
+    expect(badge.style.display).toBe('none'); // 시작 단계 — 배지 비노출
+  });
+});

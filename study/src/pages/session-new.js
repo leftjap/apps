@@ -34,7 +34,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
-import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows } from '../components/d1/sessionShell.js';
+import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
@@ -64,6 +64,7 @@ export function mountSessionNew(host) {
     recCtrl: null,
     pronScores: [],
     weakInSession: {},
+    recLog: {}, // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착·진행 게이트 (2026-06-10)
     ended: false,
   };
 
@@ -73,6 +74,7 @@ export function mountSessionNew(host) {
       mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
+      recLog: { ...state.recLog },
       cardIds: state.cards.map((c) => c.id),
     }).catch((e) => console.error('[session-new] saveActiveSession', e));
   };
@@ -103,26 +105,39 @@ export function mountSessionNew(host) {
     window.location.hash = '#/summary';
   };
 
+  // 진행 게이트 (2026-06-10): 표현 카드는 따라 말하기 1회 이상 후 전진 (목표 REC_TARGET회).
+  // scene 카드·뒤로 가기는 자유. 마이크 불가 환경은 state.micBlocked 로 자동 escape.
+  const gateBlocked = (targetStep) => {
+    const cur = state.cards[state.step - 1];
+    if (!cur?.explanation?.key) return false; // 표현 카드만 게이트
+    if (targetStep <= state.step) return false;
+    if (canAdvance(state, cur.id)) return false;
+    showRecordToast(`따라 말하기 1회 후 넘어갈 수 있어요 (목표 ${REC_TARGET}회)`);
+    return true;
+  };
+
   const handlers = {
     onNext: () => {
+      if (gateBlocked(state.step + 1)) return;
       try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       const r = advanceCard(state.cards, state.step);
       if (r.done) { endSession(true); return; }
       state.step = r.step;
       state.sentence = r.sentence || EMPTY_SENTENCE;
       state.recording = false;
-      state.lastScore = null;
+      state.lastScore = state.recLog?.[state.sentence?.id]?.best ?? null; // 점수 안착 복원
       rerender();
       saveSnapshot();
     },
     onJump: (step) => {
       if (!Number.isInteger(step) || step < 1 || step > state.cards.length) return;
       if (step === state.step) return;
+      if (gateBlocked(step)) return;
       try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       state.step = step;
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
       state.recording = false;
-      state.lastScore = null;
+      state.lastScore = state.recLog?.[state.sentence?.id]?.best ?? null; // 점수 안착 복원
       rerender();
       saveSnapshot();
     },
@@ -310,6 +325,7 @@ function render(host, state, handlers = {}) {
         state.tried += 1;
         if (score >= PASS_THRESHOLD) state.passed += 1;
         state.pronScores.push(score);
+        bumpRecLog(state, state.sentence?.id, score); // 진행 게이트·점수 안착 (D1 과 공유)
         if (Array.isArray(result?.weakPhonemes)) {
           for (const ph of result.weakPhonemes) {
             if (typeof ph === 'string' && ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1;
@@ -412,20 +428,23 @@ function buildMain(state, ctrl) {
         window.studySpeech.speak(text, { lang: state.sentence?.lang === 'ja' ? 'ja-JP' : 'en-US' });
       }
     },
+    // 반환: 채점 완료 시 { score } — drillsSection 이 행 배지 안착 + 버튼 상태 전환 (2026-06-10)
     onRecord: async (text, btn) => {
       if (drillRec.ctrl) {
         const ctrl = drillRec.ctrl;
         drillRec.ctrl = null;
-        if (btn) { btn.dataset.on = '0'; btn.textContent = '녹음'; }
+        if (btn) { btn.dataset.on = '0'; btn.textContent = btn.classList.contains('rec-done') ? '다시 녹음' : '녹음'; }
         const result = await stopAndAnalyze(ctrl, text, { lang: state.sentence?.lang });
-        if (result?.mockFallback) showRecordToast(recordErrorMessage(result.fallbackReason));
-        else showRecordToast(`발음 점수 ${Math.round(result?.score ?? 0)}점`);
-        return;
+        if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return null; }
+        const score = Math.round(result?.score ?? 0);
+        showRecordToast(`발음 점수 ${score}점`);
+        return { score };
       }
       const rec = await startMicRecording();
-      if (rec.error) { showRecordToast(recordErrorMessage(rec.error)); return; }
+      if (rec.error) { showRecordToast(recordErrorMessage(rec.error)); return null; }
       drillRec.ctrl = rec.controller;
       if (btn) { btn.dataset.on = '1'; btn.textContent = '녹음 중…'; }
+      return null;
     },
   });
   explain.toggleEl.style.marginTop = `${exMt}px`;

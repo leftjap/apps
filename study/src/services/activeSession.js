@@ -113,6 +113,8 @@ export function restoreFromSnapshot(snapshot, cards, mode) {
     lastScore: snapshot.lastScore ?? null,
     pronScores: Array.isArray(snapshot.pronScores) ? [...snapshot.pronScores] : [],
     weakInSession: (snapshot.weakInSession && typeof snapshot.weakInSession === 'object') ? { ...snapshot.weakInSession } : {},
+    // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착 복원 (2026-06-10)
+    recLog: (snapshot.recLog && typeof snapshot.recLog === 'object') ? { ...snapshot.recLog } : {},
     judged: (snapshot.judged && typeof snapshot.judged === 'object')
       ? { got: Number(snapshot.judged.got) || 0, hmm: Number(snapshot.judged.hmm) || 0, no: Number(snapshot.judged.no) || 0 }
       : { got: 0, hmm: 0, no: 0 },

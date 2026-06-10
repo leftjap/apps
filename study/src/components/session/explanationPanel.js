@@ -313,8 +313,24 @@ function drillsSection(drills, { onListen, onRecord } = {}) {
     rec.type = 'button';
     rec.className = 'drill-rec';
     rec.textContent = '녹음';
-    rec.addEventListener('click', () => { if (onRecord) onRecord(d.en || '', rec); });
-    acts.append(listen, rec);
+    // 점수 배지 — 토스트(팝업) 후 행에 안착 + 버튼 상태 전환 (2026-06-10, D1 buildD1DrillRows 와 parity)
+    const badge = document.createElement('span');
+    badge.className = 'drill-score';
+    badge.style.display = 'none';
+    rec.addEventListener('click', async () => {
+      if (!onRecord) return;
+      const out = await onRecord(d.en || '', rec);
+      if (out && typeof out.score === 'number') {
+        badge.textContent = Math.round(out.score) + '점';
+        badge.style.display = '';
+        badge.classList.remove('score-pop');
+        void badge.offsetWidth;
+        badge.classList.add('score-pop');
+        rec.classList.add('rec-done');
+        rec.textContent = '다시 녹음';
+      }
+    });
+    acts.append(badge, listen, rec);
     if (kr) row.append(en, kr, ko, acts);
     else row.append(en, ko, acts);
     s.appendChild(row);

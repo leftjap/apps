@@ -442,20 +442,23 @@ function buildMain(state, ctrl) {
         window.studySpeech.speak(text, { lang: state.sentence?.lang === 'ja' ? 'ja-JP' : 'en-US' });
       }
     },
+    // 반환: 채점 완료 시 { score } — drillsSection 행 배지 안착 (session-new 와 동일 계약, 2026-06-10)
     onRecord: async (text, btn) => {
       if (drillRec.ctrl) {
         const ctrl = drillRec.ctrl;
         drillRec.ctrl = null;
-        if (btn) { btn.dataset.on = '0'; btn.textContent = '녹음'; }
+        if (btn) { btn.dataset.on = '0'; btn.textContent = btn.classList.contains('rec-done') ? '다시 녹음' : '녹음'; }
         const result = await stopAndAnalyze(ctrl, text, { lang: state.sentence?.lang });
-        if (result?.mockFallback) showRecordToast(recordErrorMessage(result.fallbackReason));
-        else showRecordToast(`발음 점수 ${Math.round(result?.score ?? 0)}점`);
-        return;
+        if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return null; }
+        const score = Math.round(result?.score ?? 0);
+        showRecordToast(`발음 점수 ${score}점`);
+        return { score };
       }
       const rec = await startMicRecording();
-      if (rec.error) { showRecordToast(recordErrorMessage(rec.error)); return; }
+      if (rec.error) { showRecordToast(recordErrorMessage(rec.error)); return null; }
       drillRec.ctrl = rec.controller;
       if (btn) { btn.dataset.on = '1'; btn.textContent = '녹음 중…'; }
+      return null;
     },
   });
   explain.toggleEl.style.marginTop = `${exMt}px`;

@@ -231,3 +231,12 @@
 .se-logout{ height:48px; padding:0 22px; border:1px solid rgba(178,77,58,.3); background:#fff; color:var(--danger); border-radius:11px; font-size:14.5px; font-weight:700; cursor:pointer; transition:background .15s,border-color .15s; }
 .se-logout:hover{ background:rgba(178,77,58,.05); border-color:var(--danger); }
 .se-avatar{ width:54px; height:54px; border-radius:50%; background:var(--terra-bg); color:var(--terra); display:grid; place-items:center; font-size:22px; font-weight:800; flex:0 0 auto; }
+
+/* ── 녹음 반복 진행 점·점수 안착 (2026-06-10) ── */
+.d1-recdots{display:inline-flex;gap:5px;align-items:center}
+.d1-recdots i{width:9px;height:9px;border-radius:50%;background:var(--line);transition:background .2s,transform .2s}
+.d1-recdots i.on{background:var(--terra);transform:scale(1.15)}
+.d1-chip-score{font-size:12px;font-weight:800;color:var(--terra);border:1px solid var(--terra);border-radius:999px;padding:3px 9px;background:var(--terra-bg2);white-space:nowrap}
+.d1-chip.rec-done{background:#fff;color:var(--terra);border-color:var(--terra)}
+@keyframes scorePop{0%{transform:scale(1.55) translateY(-10px);opacity:0}60%{transform:scale(1.06) translateY(1px);opacity:1}100%{transform:scale(1) translateY(0)}}
+.score-pop{animation:scorePop .45s cubic-bezier(.2,.8,.3,1.1)}

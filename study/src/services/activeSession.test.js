@@ -73,3 +73,14 @@ describe('restoreFromSnapshot', () => {
     expect(out.startTime).toBeGreaterThanOrEqual(before);
   });
 });
+
+describe('restoreFromSnapshot — recLog (2026-06-10 녹음 진행 복원)', () => {
+  it('snapshot.recLog 를 복사 복원, 없으면 빈 객체', () => {
+    const cards = [{ id: 'a' }, { id: 'b' }];
+    const base = { mode: 'new', cardIds: ['a', 'b'], step: 2 };
+    const withLog = restoreFromSnapshot({ ...base, recLog: { a: { count: 2, best: 90 } } }, cards, 'new');
+    expect(withLog.recLog).toEqual({ a: { count: 2, best: 90 } });
+    const noLog = restoreFromSnapshot(base, cards, 'new');
+    expect(noLog.recLog).toEqual({});
+  });
+});
