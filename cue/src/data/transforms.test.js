@@ -12,6 +12,9 @@ import {
   weeklyActivityRatios,
   lastSessionLabel,
   isStaleActiveSession,
+  latestTodayTs,
+  sumCurrentWeek,
+  activeDaysInCurrentWeek,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -168,5 +171,53 @@ describe('isStaleActiveSession — 오래된 active 세션 가드 (잔재를 "�
   it('문자열 epoch 도 숫자 처리 (DB bigint 문자열 대응)', () => {
     expect(isStaleActiveSession(String(now - H), now)).toBe(false);
     expect(isStaleActiveSession(String(now - 13 * H), now)).toBe(true);
+  });
+});
+
+describe('latestTodayTs — 로컬 오늘 기록 중 최신 타임스탬프 (오늘 흐름 at)', () => {
+  const today = new Date(2026, 5, 10);
+  it('오늘 것 중 최신 ms 반환, 다른 날 제외', () => {
+    const end = new Date(2026, 5, 10, 20, 37).getTime();
+    const ts = [
+      new Date(2026, 5, 10, 19, 48).getTime(),
+      end,
+      new Date(2026, 5, 9, 17, 55).getTime(), // 어제 — 제외
+    ];
+    expect(latestTodayTs(ts, today)).toBe(end);
+  });
+  it('ISO 문자열도 로컬 날짜로 버킷', () => {
+    const iso = new Date(2026, 5, 10, 11, 5).toISOString();
+    expect(latestTodayTs([iso], today)).toBe(new Date(2026, 5, 10, 11, 5).getTime());
+  });
+  it('오늘 것 없음/빈 배열/null 항목 → null', () => {
+    expect(latestTodayTs([new Date(2026, 5, 9).getTime()], today)).toBeNull();
+    expect(latestTodayTs([], today)).toBeNull();
+    expect(latestTodayTs([null, undefined], today)).toBeNull();
+  });
+});
+
+describe('sumCurrentWeek — 오늘로 끝나는 series 의 이번주(월~오늘) 합', () => {
+  it('수요일 → 마지막 3칸(월·화·수) 합', () => {
+    expect(sumCurrentWeek([9, 9, 9, 9, 1, 2, 3], new Date(2026, 5, 10))).toBe(6);
+  });
+  it('월요일 → 오늘 한 칸만', () => {
+    expect(sumCurrentWeek([5, 5, 7], new Date(2026, 5, 8))).toBe(7);
+  });
+  it('일요일 → 7칸 전부', () => {
+    expect(sumCurrentWeek([9, 1, 1, 1, 1, 1, 1, 1], new Date(2026, 5, 14))).toBe(7);
+  });
+});
+
+describe('activeDaysInCurrentWeek — 이번주(월~오늘) 중 하나라도 활동한 날 수', () => {
+  it('수요일, 시퀀스 합집합 (월=한쪽, 화=다른쪽, 수=없음 → 2일)', () => {
+    const seqs = [
+      [9, 9, 9, 9, 0, 2, 0],
+      [9, 9, 9, 9, 1, 0, 0],
+    ];
+    expect(activeDaysInCurrentWeek(seqs, new Date(2026, 5, 10))).toBe(2);
+  });
+  it('전부 0 → 0, 짧은 seq 는 없는 날 0 취급', () => {
+    expect(activeDaysInCurrentWeek([[0, 0, 0]], new Date(2026, 5, 10))).toBe(0);
+    expect(activeDaysInCurrentWeek([[1]], new Date(2026, 5, 10))).toBe(1); // 오늘만 존재
   });
 });

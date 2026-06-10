@@ -11,12 +11,12 @@
      글쓰기 today = today_entries.content 글자수→매수(200자=1매), WRITING_KINDS
      운동 gym    = gym_sessions.duration_min, status=completed (이번주 회수 + active 라이브)
      독서 book   = book_reading_seconds.seconds/60 (분)
-   ※ "오늘 흐름" 정거장 위치/시각은 습관별 대표 시각(slot) 기준 — 일별 집계 테이블엔
-      분 단위 기록 시각이 없어 실제 분단위 시각은 표시하지 않음(작업지시서 허용 범위). */
+   ※ "오늘 흐름" 정거장: 오늘 완료 시 실제 DB 기록 시각 at (gym=end_time, today/study=created_at).
+      book 만 일별 집계 테이블이라 분 단위 시각 없음 → 대표 시각(slot) 폴백 (작업지시서 §4 at). */
 import {
   dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun, relativeDayLabel,
   lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, weeklyActivityRatios,
-  lastSessionLabel, isStaleActiveSession,
+  lastSessionLabel, isStaleActiveSession, latestTodayTs,
 } from './transforms.js';
 
 const WINDOW = 84;       // 84일=12주 — 전체통계 추세 + 충분한 streak/최장 계산
@@ -34,17 +34,17 @@ const META = {
 
 const round1 = (v) => Math.round(v * 10) / 10;
 
-function viewHabit(id, hist, st, lastLabel, trend, longest) {
+function viewHabit(id, hist, st, lastLabel, trend, longest, at) {
   const m = META[id];
   return {
     id, ko: m.ko, en: m.en, url: m.url, device: m.device,
-    metric: m.metric, slot: m.slot, last: lastLabel,
+    metric: m.metric, slot: m.slot, last: lastLabel, at: at ?? null,
     hist, trend, longest, cycle: ['cur'], start: 'cur', states: { cur: st },
   };
 }
 
 // 일별 습관(study/today/book) 공통 상태 빌더. lastOverride: "N일 전 HH:MM"(시각 있으면)
-function buildDaily(id, series, noneLine, lastOverride) {
+function buildDaily(id, series, noneLine, lastOverride, at) {
   const lastI = WINDOW - 1;
   const hist = series.slice(WINDOW - HIST_LEN, lastI); // 히트맵용 최근 34일(오늘 제외)
   const todayVal = series[lastI];
@@ -56,7 +56,7 @@ function buildDaily(id, series, noneLine, lastOverride) {
     : { kind: 'none', big, unit, today: 0, line: noneLine, enter: META[id].enterNone };
   const d = lastActiveDaysAgo(series);
   const last = lastOverride || (d != null ? relativeDayLabel(d) : '기록 없음');
-  return viewHabit(id, hist, st, last, weeklyActivityRatios(series, TREND_WEEKS), longestRun(series));
+  return viewHabit(id, hist, st, last, weeklyActivityRatios(series, TREND_WEEKS), longestRun(series), at);
 }
 
 async function rows(client, table, columns, filters = (q) => q) {
@@ -79,7 +79,8 @@ async function fetchStudy(client, userId, today, sinceKey, todayKey) {
   const noneLine = due.length > 0 ? `복습 ${due.length}개 대기` : '오늘 아직';
   const logs = await rows(client, 'study_session_logs', 'created_at',
     (q) => q.eq('user_id', userId).order('created_at', { ascending: false }).limit(1));
-  return buildDaily('study', series, noneLine, lastSessionLabel(logs[0]?.created_at, today));
+  const at = latestTodayTs([logs[0]?.created_at], today);
+  return buildDaily('study', series, noneLine, lastSessionLabel(logs[0]?.created_at, today), at);
 }
 
 async function fetchToday(client, userId, today, sinceKey) {
@@ -88,7 +89,8 @@ async function fetchToday(client, userId, today, sinceKey) {
   const series = dailySeries(data, (r) => localDayKey(r.created_at), (r) => sheetsFromHtml(r.content), WINDOW, today)
     .map(round1);
   const lastTs = data.reduce((mx, r) => (!mx || r.created_at > mx ? r.created_at : mx), null);
-  return buildDaily('today', series, '오늘 아직', lastSessionLabel(lastTs, today));
+  const at = latestTodayTs(data.map((r) => r.created_at), today);
+  return buildDaily('today', series, '오늘 아직', lastSessionLabel(lastTs, today), at);
 }
 
 async function fetchBook(client, userId, today, sinceKey) {
@@ -126,8 +128,9 @@ async function fetchGym(client, userId, today, sinceKey) {
   const lastTs = completed.reduce((mx, r) => { const t = Number(r.end_time || r.start_time) || 0; return t > mx ? t : mx; }, 0);
   const dd = lastActiveDaysAgo(series);
   const lastLabel = lastTs ? lastSessionLabel(new Date(lastTs), today) : (dd != null ? relativeDayLabel(dd) : '기록 없음');
+  const at = latestTodayTs(completed.map((r) => Number(r.end_time || r.start_time) || null), today);
   return viewHabit('gym', hist, st, lastLabel,
-    weeklyActivityRatios(series, TREND_WEEKS), longestRun(series));
+    weeklyActivityRatios(series, TREND_WEEKS), longestRun(series), at);
 }
 
 /** 주어진 Supabase client·userId 로 4개 habit (시안 순서: today→gym→study→book) 빌드 */

@@ -9,6 +9,7 @@ import { SENTENCES } from '../data/sentences.js';
 import { ORDER } from '../data/mock.js';
 import {
   fullSeq, level, longestRun, dayMeta, sentenceOfDay, p2, startOfToday, nowMarker,
+  sumCurrentWeek, activeDaysInCurrentWeek,
 } from '../data/transforms.js';
 import {
   useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle,
@@ -161,8 +162,12 @@ function Door({ habit, stateKey, demoMode, onDemo, isNext }) {
 
 /* ---------- 오늘 흐름 (day flow) — DB 기록 시각 / 안 한 건 마지막 실행 ---------- */
 function DayRibbon({ habits, stateKeys, nowPos, nowLabel }) {
-  const stops = habits.map((h, i) => ({ h, st: h.states[stateKeys[i]], pos: h.slot.pos, time: h.slot.time }))
-    .sort((a, b) => a.pos - b.pos);
+  // 오늘 완료 = 실제 DB 기록 시각(at)으로 위치·라벨 (book 등 at 없으면 대표 시각 slot 폴백)
+  const stops = habits.map((h, i) => {
+    const st = h.states[stateKeys[i]];
+    const m = st.kind === 'done' && h.at ? nowMarker(h.at) : null;
+    return { h, st, pos: m ? m.pos : h.slot.pos, time: m ? m.label : h.slot.time };
+  }).sort((a, b) => a.pos - b.pos);
   const pending = stops.filter((s) => s.st.kind !== 'done' && s.st.kind !== 'progress').map((s) => s.h.ko);
   return (
     <section className="ribbon">
@@ -197,13 +202,15 @@ function DayRibbon({ habits, stateKeys, nowPos, nowLabel }) {
 function Record({ habits, stateKeys, period, order, onOpenStats, base }) {
   const ticks = [period - 1, Math.round((period - 1) * 0.74), Math.round((period - 1) * 0.5), Math.round((period - 1) * 0.26), 0].map((n) => dayMeta(n, base));
   const seqs = habits.map((h, i) => fullSeq(h.hist, h.states[stateKeys[i]].today).slice(-period));
-  const longest = Math.max(...seqs.map((s) => longestRun(s)));
+  const runs = seqs.map((s) => longestRun(s));
+  const longest = Math.max(...runs);
+  const longestKo = longest > 0 ? habits[runs.indexOf(longest)].ko : null; // 동률 시 첫 습관
   let total = 0, sum = 0;
   seqs.forEach((s) => s.forEach((v) => { total++; if (v > 0) sum++; }));
   const comp = total ? Math.round(sum / total * 100) : 0;
-  const writer = habits.find((h) => h.id === 'today'); const wi = habits.indexOf(writer);
-  const ws = writer.states[stateKeys[wi]];
-  const weekPages = Math.round(writer.hist.concat([ws.today || 0]).slice(-7).reduce((a, b) => a + (+b || 0), 0) * 10) / 10;
+  const weekActive = activeDaysInCurrentWeek(seqs, base);
+  const wi = habits.findIndex((h) => h.id === 'today');
+  const weekPages = Math.round(sumCurrentWeek(seqs[wi], base) * 10) / 10; // 이번주 = 월~오늘
   const from = dayMeta(period - 1, base), to = dayMeta(0, base);
 
   return (
@@ -242,7 +249,9 @@ function Record({ habits, stateKeys, period, order, onOpenStats, base }) {
                     return <span key={k} className={cls} title={`${dm.m}.${p2(dm.d)} (${dm.wd}) · ${isToday ? '오늘 · ' : ''}${status}`} />;
                   })}
                 </span>
-                <span className="rrow__streak mono"><b>{st.big}</b>{h.id === 'gym' ? '회' : '일'}</span>
+                <span className={`rrow__streak mono${st.big > 0 ? '' : ' is-zero'}`}>
+                  {h.id === 'gym' ? <>이번주 <b>{st.big}</b>회</> : <>연속 <b>{st.big}</b>일</>}
+                </span>
               </div>
             </div>
           );
@@ -255,10 +264,10 @@ function Record({ habits, stateKeys, period, order, onOpenStats, base }) {
         <span className="lg lg--note">칸 진하기 = 그날 한 양 (운동 분 · 어학 문장 · 글쓰기 매 · 독서 분)</span>
       </div>
       <div className="rec__figs">
-        <div className="fig"><span className="fig__n mono">{longest}<span className="u">일</span></span><span className="fig__l">최장 연속</span></div>
-        <div className="fig"><span className="fig__n mono">{comp}<span className="u">%</span></span><span className="fig__l">활동률</span></div>
-        <div className="fig"><span className="fig__n mono accent">{weekPages}<span className="u">매</span></span><span className="fig__l">이번주 원고</span></div>
-        <div className="fig"><span className="fig__n mono">{sum}<span className="u">회</span></span><span className="fig__l">{Math.round(period / 7)}주 활동</span></div>
+        <div className="fig"><span className="fig__n mono accent">{weekActive}<span className="u">/7일</span></span><span className="fig__l">이번주 활동</span></div>
+        <div className="fig"><span className="fig__n mono">{weekPages}<span className="u">매</span></span><span className="fig__l">이번주 원고</span></div>
+        <div className="fig"><span className="fig__n mono">{comp}<span className="u">%</span></span><span className="fig__l">{Math.round(period / 7)}주 활동률</span></div>
+        <div className="fig"><span className="fig__n mono">{longest}<span className="u">일</span></span><span className="fig__l">최장 연속{longestKo ? ` · ${longestKo}` : ''}</span></div>
         <span className="range">{from.m}.{p2(from.d)} – {to.m}.{p2(to.d)}</span>
       </div>
     </section>
