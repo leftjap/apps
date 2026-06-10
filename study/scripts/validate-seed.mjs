@@ -147,6 +147,20 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     }
   }
 
+  // ── 약점 음소 가중 (Step 4, 2026-06-10): 생성 절차가 기록한 _context.weakPhonemes 와
+  // 표현 카드 phonemes 의 교차가 0이면 경고 — 단계 3-4 컨텍스트가 발췌에 반영 안 된 신호.
+  // 콘텐츠 풀 제약상 항상 가능하진 않으므로 차단 아님. _context 부재 시 검사 생략 (구 시드 호환).
+  const weak = payload._context?.weakPhonemes;
+  if (Array.isArray(weak) && weak.length) {
+    const weakSet = new Set(weak.map((w) => String(w).replace(/[/]/g, '')));
+    const hit = exprs.some((c) => (c.explanation?.phonemes ?? []).some(
+      (p) => weakSet.has(String(p?.[0] ?? '').replace(/[/]/g, '')),
+    ));
+    if (!hit) {
+      warnings.push(`약점 음소 미반영: _context.weakPhonemes (${weak.join(', ')}) 와 표현 카드 phonemes 교차 0 — 장면 선정 가중 재검토 (guide §6.3 약점 음소 가중)`);
+    }
+  }
+
   // ── _source 구조화 + 기존 시드 구간 겹침 ──
   const src = payload._source;
   if (!src?.episode || !Array.isArray(src?.lines) || src.lines.length !== 2) {

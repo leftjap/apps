@@ -14,7 +14,7 @@
 
 ## 관련 스킬 (자동 활성화)
 
-`study-content` — 카드 생성·수정·자동화 진입점. 트리거·비트리거 조건은 스킬 본문. **본 스킬 없이 카드 작성 시 §10/§11 체크리스트 통과 거짓 단정 위험.**
+`study-content` — 카드 생성·수정·자동화 진입점. 트리거·비트리거 조건은 스킬 본문. **본 스킬 없이 카드 작성 시 체크리스트 (ja=가이드 §10 / en=가이드 §6.3 유일 정본 + `scripts/validate-seed.mjs` 게이트) 통과 거짓 단정 위험.**
 
 `supabase-pattern` — `src/db/sync.js`·`schema.js`·`auth.js` 수정·RLS·OAuth·Auth 작업 시.
 

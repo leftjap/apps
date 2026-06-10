@@ -284,3 +284,23 @@ describe('parseSpeakerVoiceNames — speech.js 소스 파싱', () => {
     expect(names.has('Tom')).toBe(true);
   });
 });
+
+describe('validateSeedContent — 약점 음소 가중 (_context.weakPhonemes, 2026-06-10 Step 4)', () => {
+  it('컨텍스트 있음 + 표현 phonemes 와 교차 0 → 경고 (차단 아님)', () => {
+    const p = makePayload({ _context: { weakPhonemes: ['/ŋ/'] } });
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.join(' ')).toContain('약점 음소');
+  });
+
+  it('컨텍스트 있음 + 교차 존재 → 경고 없음', () => {
+    const p = makePayload({ _context: { weakPhonemes: ['/ð/'] } }); // makePayload 표현 phonemes = /ð/
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('약점 음소'))).toEqual([]);
+  });
+
+  it('컨텍스트 없음 → 경고 없음 (구 시드 호환)', () => {
+    const r = validateSeedContent(makePayload(), okOpts);
+    expect(r.warnings.filter((w) => w.includes('약점 음소'))).toEqual([]);
+  });
+});

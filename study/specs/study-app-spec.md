@@ -271,7 +271,7 @@ CREATE POLICY "Users can only access own data"
    - 최근 7일 `review_results` 비율 (O / △ / X) → 정답률 < 70% 시 newElements 난이도 한 단계 다운
    - 미완료 (`completed = false`) 카드 카운트 → 5건 초과 시 신규 생성 보류 + 사용자에게 안내
 
-5. **i+1 + 약점 음소 가중 알고리즘 (콩트 단위 — ja 정본. en 은 RealClass 장면 발췌가 대체: en 가이드 §6.3)**
+5. **i+1 + 약점 음소 가중 알고리즘 (콩트 단위 — ja 정본. en 은 RealClass 장면 발췌에 약점 음소 가중 반영 — en 가이드 §6.3 "약점 음소 가중", 2026-06-10 연결)**
    - `i` = 현재 stage 의 `lang_<lang>.userKnown` 단어/구/문법 모음 (학습자가 이미 아는 것)
    - `+1` = **콩트 1편 전체에 newElements 1개** (문법 구조 1개 OR 새 어휘 1개 OR 발음 패턴 1개). 펀치라인 문장에 메타 박음 (skitOrder === skitTotal). 콩트 안 다른 카드는 newElements length=0
    - 콩트 호흡 = 셋업 → 전개 → 펀치라인. 분량은 Stage 별 가이드 범위에서 콩트가 결정
