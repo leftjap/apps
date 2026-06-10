@@ -95,11 +95,13 @@ export async function renderProfileTab(root) {
     const valEl = btn.querySelector('.f-val');
     if (!valEl) continue;
     const v = settings[def.setting] ?? def.fallback;
-    // hint span 보존 (예: 주간 목표의 "1~7" hint)
+    // hint span + chevron 보존 (예: 주간 목표의 "1~7" hint, 시안 우측 > 아이콘)
     const hint = valEl.querySelector('.hint');
+    const chev = valEl.querySelector('.f-chev');
     valEl.textContent = def.format(v);
     if (valEl.style) valEl.style.color = (v == null) ? 'var(--ink-4)' : '';  // P14 — 미입력 '입력' 은 dim placeholder (시안 .empty 정합)
     if (hint) valEl.appendChild(hint);
+    if (chev) valEl.appendChild(chev);
   }
   // §10-3 — 필드 click + 로그아웃 wiring (idempotent)
   try { wireProfileTab(doc); } catch (e) { console.error('[profile] wireProfileTab', e); }

@@ -37,6 +37,9 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
 .wr-chg { font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--ink-4); min-width: 44px; text-align: right; }
 .wr-chg.dn { color: var(--crail-deep); }
 .wr-chg.up { color: var(--ink-3); }
+/* P12 시안(admin-weight.html:94) — 오늘 미입력 행 */
+.wr-today { margin-left: 6px; font-family: var(--font-sans); font-size: 11px; font-weight: 700; color: var(--crail-deep); }
+.wr-val.none { color: var(--ink-4); font-weight: 500; }
 .pr-mark { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 999px; background: var(--crail-soft); color: var(--crail-deep); letter-spacing: 0.02em; font-family: var(--font-sans); }
 .weight-empty { padding: 14px 0; font-size: 13px; color: var(--ink-4); text-align: center; }
 .tab-item { position: relative; padding: 6px 0 12px; cursor: pointer; }
@@ -94,38 +97,38 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
       <div id="adminExList" style="margin-top:8px;padding:0 18px 120px;">
         <!-- 운동 행 — on -->
         <div class="ex-row">
-          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg></span>
+          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg></span>
           <span class="ex-name">벤치프레스</span>
           <span class="ex-meta">60kg × 10</span>
           <button class="ex-toggle is-on" type="button"></button>
         </div>
         <div class="ex-row">
-          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg></span>
+          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg></span>
           <span class="ex-name">인클라인 벤치</span>
           <span class="ex-meta">45kg × 10</span>
           <button class="ex-toggle is-on" type="button"></button>
         </div>
         <div class="ex-row">
-          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg></span>
+          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg></span>
           <span class="ex-name">디클라인 벤치</span>
           <span class="ex-meta">50kg × 10</span>
           <button class="ex-toggle is-on" type="button"></button>
         </div>
         <div class="ex-row">
-          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg></span>
+          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg></span>
           <span class="ex-name">덤벨 플라이</span>
           <span class="ex-meta">18kg × 12</span>
           <button class="ex-toggle is-on" type="button"></button>
         </div>
         <!-- off -->
         <div class="ex-row is-hidden">
-          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg></span>
+          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg></span>
           <span class="ex-name">케이블 크로스오버</span>
           <span class="ex-meta">20kg × 12</span>
           <button class="ex-toggle" type="button"></button>
         </div>
         <div class="ex-row">
-          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg></span>
+          <span class="ex-grip" aria-hidden="true"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg></span>
           <span class="ex-name">푸시업</span>
           <span class="ex-meta">맨몸 · 15</span>
           <button class="ex-toggle is-on" type="button"></button>
@@ -200,12 +203,14 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
           <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:17px;color:var(--ink-1);font-weight:600;">173</span>
             <span class="hint kr" style="font-size:13px;font-weight:500;color:var(--ink-4);">cm</span>
+            <svg class="f-chev" width="7" height="12" viewBox="0 0 7 12" fill="none" style="align-self:center;margin-left:4px;color:var(--ink-4);flex-shrink:0;"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
         </div>
         <div data-field="birthdate" style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line-soft);cursor:pointer;">
           <span class="kr" style="font-size:15px;font-weight:500;color:var(--ink-2);">생년월일</span>
           <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:17px;color:var(--ink-4);font-weight:500;">—</span>
+            <svg class="f-chev" width="7" height="12" viewBox="0 0 7 12" fill="none" style="align-self:center;margin-left:4px;color:var(--ink-4);flex-shrink:0;"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
         </div>
         <div data-field="goal-weight" style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line-soft);cursor:pointer;">
@@ -213,6 +218,7 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
           <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:17px;color:var(--ink-1);font-weight:600;">69</span>
             <span class="hint kr" style="font-size:13px;font-weight:500;color:var(--ink-4);">kg</span>
+            <svg class="f-chev" width="7" height="12" viewBox="0 0 7 12" fill="none" style="align-self:center;margin-left:4px;color:var(--ink-4);flex-shrink:0;"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
         </div>
         <div data-field="weekly-goal" style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line-soft);cursor:pointer;">
@@ -220,6 +226,7 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
           <div class="f-val" style="display:flex;align-items:baseline;gap:4px;">
             <span class="num" style="font-size:17px;color:var(--ink-1);font-weight:600;">4</span>
             <span class="hint kr" style="font-size:13px;font-weight:500;color:var(--ink-4);">회</span>
+            <svg class="f-chev" width="7" height="12" viewBox="0 0 7 12" fill="none" style="align-self:center;margin-left:4px;color:var(--ink-4);flex-shrink:0;"><path d="M1 1l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
         </div>
       </div>

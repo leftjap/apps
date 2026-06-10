@@ -126,7 +126,14 @@ export async function renderWeightTab(root) {
     } else {
       const sorted = [...rows].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
       const minWeight = Math.min(...rows.map(r => Number(r.weight) || Infinity));
-      listRoot.innerHTML = sorted.slice(0, 10).map((r, i) => {
+      // 시안(admin-weight.html:94) — 오늘 미입력이면 리스트 최상단에 "오늘 · 미입력" 행.
+      const todayISO = Q.toISODate(new Date());
+      const todayRow = sorted[0]?.date === todayISO ? '' :
+        `<div class="weight-row" data-date="${escapeHtml(todayISO)}">`
+        + `<span class="wr-date">${escapeHtml(formatKoreanDate(todayISO))}<b class="wr-today">오늘</b></span>`
+        + `<span class="wr-val none">미입력</span>`
+        + `</div>`;
+      listRoot.innerHTML = todayRow + sorted.slice(0, 10).map((r, i) => {
         const isPr = Number(r.weight) === minWeight && rows.length > 1;
         const prMark = isPr ? '<span class="pr-mark">최저</span>' : '';
         const cls = isPr ? 'wr-val pr' : 'wr-val';

@@ -74,7 +74,7 @@ function renderRow(ex) {
   return `
     <div class="ex-row${hiddenCls}${customCls}" data-id="${escapeHtml(ex.id)}" ${VIEW_ATTR}="1">
       <span class="ex-grip" aria-hidden="true">
-        <svg viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.4"/><circle cx="11" cy="3" r="1.4"/><circle cx="5" cy="8" r="1.4"/><circle cx="11" cy="8" r="1.4"/><circle cx="5" cy="13" r="1.4"/><circle cx="11" cy="13" r="1.4"/></svg>
+        <svg viewBox="0 0 16 16" fill="currentColor"><rect x="2" y="3.5" width="12" height="1.5" rx="0.75"/><rect x="2" y="7.25" width="12" height="1.5" rx="0.75"/><rect x="2" y="11" width="12" height="1.5" rx="0.75"/></svg>
       </span>
       <span class="ex-name">${escapeHtml(ex.name)}</span>
       <span class="ex-meta">${escapeHtml(meta)}</span>
