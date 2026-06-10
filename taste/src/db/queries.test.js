@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import 'fake-indexeddb/auto';
 import { createTasteDB } from './schema.js';
-import { createRating, updateRating, softDeleteRating, getRating, listRatings } from './queries.js';
+import { createRating, updateRating, softDeleteRating, getRating, getRatingAny, listRatings } from './queries.js';
 
 describe('rating queries', () => {
   beforeEach(() => { globalThis.tasteDB = createTasteDB('taste_test_' + Math.random()); });
@@ -40,5 +40,23 @@ describe('rating queries', () => {
     await createRating({ owner_id: 'u1', media_type: 'movie', title: 'm', rating: 4, source: 'watcha' });
     expect(await listRatings('u1', 'movie')).toHaveLength(1);
     expect((await listRatings('u1', 'movie'))[0].media_type).toBe('movie');
+  });
+
+  // 평가 해제(소프트삭제) 후 재평가 시 신규 행 생성은 서버 unique(owner,media,title,year) 와 23505 충돌
+  // → soft-deleted 행을 찾아 부활 재사용해야 함 (detail ratebox / import 의 create 분기 전 조회용).
+  it('getRatingAny: soft-deleted 행도 반환 (재평가 부활 재사용용)', async () => {
+    const r = await createRating({ owner_id: 'u1', media_type: 'movie', title: '그대들', year: 2023, rating: 4, source: 'app' });
+    await softDeleteRating(r.id);
+    expect(await getRating('u1', 'movie', '그대들', 2023)).toBeNull();
+    const any = await getRatingAny('u1', 'movie', '그대들', 2023);
+    expect(any?.id).toBe(r.id);
+    expect(any?.deleted_at).toBeTruthy();
+  });
+
+  it('getRatingAny: alive 행이 있으면 alive 우선', async () => {
+    const dead = await createRating({ owner_id: 'u1', media_type: 'movie', title: 'x', year: 2020, rating: 3, source: 'app' });
+    await softDeleteRating(dead.id);
+    const alive = await createRating({ owner_id: 'u1', media_type: 'movie', title: 'x', year: 2020, rating: 5, source: 'app' });
+    expect((await getRatingAny('u1', 'movie', 'x', 2020))?.id).toBe(alive.id);
   });
 });

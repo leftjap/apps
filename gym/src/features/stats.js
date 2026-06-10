@@ -459,6 +459,9 @@ export async function refreshCalendarMonth(year, month, doc, now = Date.now()) {
     const lastDay = new Date(year, month, 0).getDate();
     sessions = await getSessionsByRange(`${year}-${mm}-01`, `${year}-${mm}-${String(lastDay).padStart(2, '0')}`);
   } catch (_) { /* db 없음 — 그리드·라벨만 갱신 */ }
+  // 연속 네비 race 가드 — 조회 중 다른 네비가 표시월을 바꿨으면 이 응답은 stale (히트맵 reset 방지).
+  const cur = parseMonthLabel(doc.getElementById('monthLabel')?.textContent);
+  if (!cur || cur.year !== year || cur.month !== month) return { skipped: 'stale' };
   applyWorkedToCalendar(sessions, doc);
   applyTodayToCalendar(now, doc);
   return { applied: true, year, month };
