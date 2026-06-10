@@ -2517,6 +2517,16 @@ async function getCurrentBlockAndCursor() {
   return { session, block, blockIdx, cur, effectiveCur };
 }
 
+/** 스와이프 세트완료 체크 플래시 (사용자 요청 2026-06-10) — reduced-motion 은 CSS 게이트가 차단. */
+function playSwipeCommitFx(doc) {
+  const fx = doc?.getElementById?.('swipeCommitFx');
+  if (!fx) return;
+  fx.classList.remove('show');
+  void fx.offsetWidth; // 강제 reflow — 연속 스와이프 시 애니 재시작
+  fx.classList.add('show');
+  setTimeout(() => fx.classList.remove('show'), 620);
+}
+
 /**
  * spec §6-3-1 좌 스와이프.
  *  - cur 가 유효 : sets[cur].done = true (preset:false).
@@ -2641,6 +2651,7 @@ export async function handleLeftSwipe() {
       return;
     }
     await mountSessionView();
+    if (cur !== -1) playSwipeCommitFx(doc);
     if (prResult && prResult.isPR && typeof document !== 'undefined') showPrPop(document);
     return;
   }
@@ -2674,6 +2685,9 @@ export async function handleLeftSwipe() {
     swipeArea.style.opacity = '1';
     return;
   }
+
+  // 세트완료 확증 피드백 — 체크 플래시 (advance-only(cur===-1) 는 완료가 아니므로 제외)
+  if (cur !== -1) playSwipeCommitFx(doc);
 
   // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
   // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.

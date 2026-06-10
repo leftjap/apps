@@ -47,6 +47,13 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .vbar-shimmer { animation: shimmer 2.8s ease-in-out infinite; }
 .seg.now .seg-bar { animation: barPulse 1.8s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar { animation: none; } }
+/* 스와이프 세트완료 피드백 — 중앙 crail 체크 플래시 (사용자 요청 2026-06-10).
+   카드 OUT/IN 책장넘김(기존)과 병행 — fx 는 area 밖이라 페이드에 안 휩쓸림. */
+#swipeCommitFx { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; opacity: 0; z-index: 6; }
+#swipeCommitFx .fx-check { width: 64px; height: 64px; border-radius: 50%; background: var(--crail-tint); box-shadow: inset 0 0 0 2px var(--crail-base); display: flex; align-items: center; justify-content: center; color: var(--crail-deep); }
+#swipeCommitFx.show { animation: swipeFxPop 520ms ease-out; }
+@keyframes swipeFxPop { 0% { opacity: 0; transform: scale(0.82) translateX(12px); } 25% { opacity: 1; transform: scale(1) translateX(0); } 70% { opacity: 1; } 100% { opacity: 0; transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { #swipeCommitFx.show { animation: none; } }
 /* P1 세트 진행 세그먼트바 (#cardSetDots — renderSetDotsDiff 출력). 완료=ink, 현재=crail 맥동, 예정=ghost. */
 #cardSetDots .seg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; cursor: pointer; }
 #cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; }
@@ -166,6 +173,8 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- PR 팝 (transient e1RM PR — showPrPop 토글) -->
     <div id="cardPrPop" class="mono" style="position:absolute;top:212px;left:0;right:0;text-align:center;font-weight:600;color:var(--crail-deep);font-size:22px;letter-spacing:0.04em;opacity:0;transform:translateY(0);transition:opacity 220ms ease, transform 700ms ease;pointer-events:none;z-index:5;">PR</div>
     <!-- 히어로: 무게(중앙·좌우 빈공간 탭 증감) / 횟수 / PR 칩. cardSwipeArea = 스와이프+탭+꾹누르기 -->
+    <!-- 스와이프 세트완료 피드백 (사용자 요청 2026-06-10) — handleLeftSwipe 가 .show 토글. 카드 OUT 페이드에 안 휩쓸리게 area 밖 -->
+    <div id="swipeCommitFx" aria-hidden="true"><span class="fx-check"><svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
     <div id="cardSwipeArea" data-longpress="active-card" data-card-kind="weight" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 26px;touch-action:pan-y;user-select:none;-webkit-user-select:none;">
       <div id="cardWeightZone" style="width:100%;text-align:center;cursor:pointer;">
         <div id="cardWeight" class="mono" style="font-size:120px;font-weight:400;line-height:0.82;color:var(--ink-1);letter-spacing:-0.06em;">65</div>
