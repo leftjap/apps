@@ -15,7 +15,7 @@ vi.mock('../services/supabase.js', () => {
       update: (patch) => { ctx.mode = 'update'; ctx.patch = patch; return b; },
       eq: (k, v) => { ctx.filters.push([k, v]); return b; },
       is: (k, v) => { ctx.filters.push([k, v]); return b; },
-      range: () => b,
+      range: (from, to) => { ctx.range = [from, to]; return b; },
       then: (resolve) => resolve(h[ctx.mode] ? h[ctx.mode](ctx) : { data: null, error: null }),
     };
     return b;
@@ -23,7 +23,7 @@ vi.mock('../services/supabase.js', () => {
   return { supabase: { from: (t) => builder(t) } };
 });
 
-const { queueUpload, flushPending } = await import('./sync.js');
+const { queueUpload, flushPending, pullAll, pullRecommendations } = await import('./sync.js');
 const { Queries } = await import('./queries.js');
 
 const SRV = {
@@ -102,5 +102,48 @@ describe('pushRating 23505 reconcile', () => {
     h.upsert = () => ({ data: null, error: { code: '57014', message: 'timeout' } });
     await flushPending();
     expect(await Queries.listPendingRatings()).toHaveLength(1);
+  });
+});
+
+// pull — 1000행 페이지네이션(supabase select 기본 limit 함정)·replace 모드 원자성.
+describe('pullTable 페이지네이션·replace', () => {
+  const ratingRow = (i) => ({ id: `r-${i}`, owner_id: 'u1', media_type: 'movie', title: `t${i}`, year: 2000, rating: 3, updated_at: 'x', deleted_at: null });
+  const recoRow = (id, owner) => ({ id, owner_id: owner, media_type: 'movie', title: id, kind: 'home' });
+
+  beforeEach(() => {
+    globalThis.tasteDB = createTasteDB('taste_pull_test_' + Math.random());
+    h.upsert = null; h.select = null; h.update = null;
+  });
+
+  it('1500행: range 페이지 2회로 전량 적재', async () => {
+    const ranges = [];
+    h.select = (ctx) => {
+      if (ctx.table === 'taste_recommendations') return { data: [], error: null };
+      ranges.push(ctx.range);
+      const [from] = ctx.range;
+      const rows = [];
+      for (let i = from; i < Math.min(from + 1000, 1500); i++) rows.push(ratingRow(i));
+      return { data: rows, error: null };
+    };
+    await pullAll(globalThis.tasteDB, 'u1');
+    expect(ranges).toEqual([[0, 999], [1000, 1999]]);
+    expect(await globalThis.tasteDB.ratings.count()).toBe(1500);
+  });
+
+  it('replace 모드: owner 행만 새 스냅샷으로 교체, 타 owner 행 보존', async () => {
+    const db = globalThis.tasteDB;
+    await db.recommendations.bulkPut([recoRow('stale-1', 'u1'), recoRow('stale-2', 'u1'), recoRow('other-1', 'u2')]);
+    h.select = () => ({ data: [recoRow('fresh-1', 'u1')], error: null });
+    await pullRecommendations('u1');
+    const all = await db.recommendations.toArray();
+    expect(all.map((r) => r.id).sort()).toEqual(['fresh-1', 'other-1']);
+  });
+
+  it('select 오류: 기존 행 보존 (replace delete 미실행 — 빈 추천 화면 방지)', async () => {
+    const db = globalThis.tasteDB;
+    await db.recommendations.bulkPut([recoRow('keep-1', 'u1'), recoRow('keep-2', 'u1')]);
+    h.select = () => ({ data: null, error: { message: 'network' } });
+    await pullRecommendations('u1');
+    expect(await db.recommendations.count()).toBe(2);
   });
 });

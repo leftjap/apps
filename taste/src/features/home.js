@@ -6,7 +6,7 @@ import { Queries } from '../db/queries.js';
 import { openSearch } from './search.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
-import { trailReset } from '../app.js';
+import { trailReset, onViewTeardown } from '../app.js';
 
 async function readRecos(userId) {
   const db = globalThis.tasteDB;
@@ -78,6 +78,7 @@ export function mount({ userId } = {}) {
   const recoSec = el('section', {});
   const recentSec = el('section', { class: 'recent' });
   root.append(intro, recoSec, recentSec);
+  let fallbackTimer = null;   // requestReco 5분 폴백 — 라우트 이탈 시 teardown 에서 취소
 
   function renderNote() {
     clear(note);
@@ -100,7 +101,7 @@ export function mount({ userId } = {}) {
       const { error } = await supabase.from('taste_reco_requests').insert({ owner_id: userId, source: 'button' });
       if (error) throw error;
       // 생성은 수십 초~수 분 걸릴 수 있음. 정상 해제는 realtime(onRecoChange). 폴백 재pull 은 5분 후 1회.
-      setTimeout(() => { if (analyzing) onRecoChange(); }, 300000);
+      fallbackTimer = setTimeout(() => { if (analyzing) onRecoChange(); }, 300000);
     } catch (e) {
       analyzing = false; renderReco();
       flash('추천 재생성 요청을 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
@@ -165,6 +166,7 @@ export function mount({ userId } = {}) {
 
   // realtime: 추천 변경(새 batch) 도착 → 재pull + 분석중 해제 + 재렌더 (§7 실 비동기).
   async function onRecoChange() {
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
     try { await Sync.pullAll(globalThis.tasteDB, userId); } catch (e) { /* noop */ }
     recos = await readRecos(userId);
     analyzing = false;
@@ -189,5 +191,9 @@ export function mount({ userId } = {}) {
     } catch (e) { /* noop */ }
   })();
   subscribeRecos();
+  onViewTeardown(() => {
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+    try { if (_recoChannel) { supabase.removeChannel(_recoChannel); _recoChannel = null; } } catch (e) { /* noop */ }
+  });
   return root;
 }

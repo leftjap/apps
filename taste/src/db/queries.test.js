@@ -59,4 +59,27 @@ describe('rating queries', () => {
     const alive = await createRating({ owner_id: 'u1', media_type: 'movie', title: 'x', year: 2020, rating: 5, source: 'app' });
     expect((await getRatingAny('u1', 'movie', 'x', 2020))?.id).toBe(alive.id);
   });
+
+  // 홈 '최근 평가'·검색 기본 목록의 기준 — 메타 백필 등으로 updated_at 만 바뀌어도 순서가 흔들리면 안 됨.
+  it('listRatings: rated_at(등록) 최신순 — updated_at 갱신에 영향받지 않음', async () => {
+    const tick = () => new Promise((r) => setTimeout(r, 3));   // updated_at(ms) 동률 방지 — 동률이면 정렬이 uuid 순서에 좌우돼 flaky
+    const a = await createRating({ owner_id: 'u1', media_type: 'movie', title: '어제 평가', rating: 3, source: 'app', rated_at: '2026-06-09T00:00:00.000Z' });
+    await tick();
+    await createRating({ owner_id: 'u1', media_type: 'movie', title: '오늘 평가', rating: 4, source: 'app', rated_at: '2026-06-10T00:00:00.000Z' });
+    await tick();
+    await updateRating(a.id, { meta: { poster_url: 'x' } });   // 백필성 갱신 — updated_at 만 변경
+    const rows = await listRatings('u1');
+    expect(rows.map((r) => r.title)).toEqual(['오늘 평가', '어제 평가']);
+  });
+
+  // 평가 해제→재평가 왕복이 행을 늘리지 않는다 (서버 unique 23505 의 로컬 전제 조건).
+  it('해제→재평가 왕복: 단일 행 유지 (부활 재사용)', async () => {
+    const r = await createRating({ owner_id: 'u1', media_type: 'movie', title: '왕복', year: 2024, rating: 4, source: 'app' });
+    await softDeleteRating(r.id);
+    const revived = await getRatingAny('u1', 'movie', '왕복', 2024);
+    await updateRating(revived.id, { rating: 3.5, deleted_at: null });
+    expect((await listRatings('u1')).filter((x) => x.title === '왕복')).toHaveLength(1);
+    expect(await globalThis.tasteDB.ratings.where('owner_id').equals('u1').count()).toBe(1);
+    expect((await getRating('u1', 'movie', '왕복', 2024)).rating).toBe(3.5);
+  });
 });

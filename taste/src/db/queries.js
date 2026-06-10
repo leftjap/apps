@@ -33,8 +33,9 @@ export async function getRatingAny(owner_id, media_type, title, year) {
 }
 export async function listRatings(owner_id, mediaType) {
   const rows = await db().ratings.where('owner_id').equals(owner_id).toArray();
+  // rated_at(등록) 기준 — updated_at 은 메타 백필·동기화 reconcile 로도 바뀌어 '최근 평가' 순서가 흔들림.
   return rows.filter((r) => !r.deleted_at && (!mediaType || r.media_type === mediaType))
-    .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+    .sort((a, b) => String(b.rated_at || b.created_at || '').localeCompare(String(a.rated_at || a.created_at || '')));
 }
 export async function listPendingRatings() { return db().ratings.where('pending_sync').equals(1).toArray(); }
 export async function setPendingSync(id, v) { const c = await db().ratings.get(id); if (c) await db().ratings.put({ ...c, pending_sync: v }); }

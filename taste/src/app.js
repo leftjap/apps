@@ -44,8 +44,19 @@ function parseHash() {
   return { name: 'home' };
 }
 
+// 뷰 정리 훅 — mount 가 등록한 정리(realtime 채널 해제·타이머 취소)를 라우트 이탈·로그아웃 시 실행.
+// 없으면 떠난 뷰의 채널·클로저가 detached DOM 을 계속 갱신 (구독 누수).
+let _viewTeardowns = [];
+export function onViewTeardown(fn) { _viewTeardowns.push(fn); }
+function runViewTeardowns() {
+  const fns = _viewTeardowns;
+  _viewTeardowns = [];
+  for (const fn of fns) { try { fn(); } catch (e) { console.error('[router] view teardown 실패', e); } }
+}
+
 function render() {
   if (document.body.dataset.authState !== 'in') return;
+  runViewTeardowns();
   const v = parseHash();
   const host = document.getElementById('app');
   clear(host);
@@ -125,6 +136,7 @@ function accountMenu() {
 }
 
 export function showLogin() {
+  runViewTeardowns(); // 로그아웃 — 떠나는 세션의 realtime 채널·타이머 정리
   document.body.dataset.authState = 'out';
   ensureLoginCard();
   if (!location.hash) location.hash = '#/';

@@ -6,7 +6,7 @@ import { starRating } from '../ui/rating.js';
 import { Queries } from '../db/queries.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
-import { trailAppend, trailGo, trailSetTitle } from '../app.js';
+import { trailAppend, trailGo, trailSetTitle, onViewTeardown } from '../app.js';
 
 // 검색서 막 연 신규 작품(평가 전) / Dexie 평가 row → 공통 정규화.
 function pickMeta(src) {
@@ -29,7 +29,7 @@ function pickMeta(src) {
     publisher: meta.publisher ?? null,
     poster_url: meta.poster_url ?? null,
     subtype: meta.subtype ?? src.subtype ?? null,   // 'tv' = 드라마 (library catLabel 과 동일 규칙)
-    sub: src.sub ?? null,
+    sub: src.sub ?? meta.sub ?? null,               // 알라딘 부제는 search 가 meta.sub 에 저장
   };
 }
 
@@ -45,6 +45,7 @@ async function resolveWork(id, userId) {
 export function mount({ userId, id, trail = [] } = {}) {
   const root = el('div', { class: 'detail' });
   resolveWork(id, userId).then((w) => {
+    if (!root.isConnected) return;   // 해석 중 라우트 이탈 — 구독·렌더 생략 (떠난 뷰가 teardown 등록하는 것 방지)
     clear(root);
     if (!w) { root.appendChild(notFound()); return; }
     trailSetTitle(id, w.title);   // 직접 URL 진입 시 제목 backfill
@@ -62,14 +63,17 @@ function notFound() {
 
 function detailBody(w, userId) {
   const isFilm = w.media_type === 'movie';
-  return el('div', { class: 'detail__body' }, rail(w, userId, isFilm), main(w, isFilm, userId));
+  // 갈래 섹션을 먼저 만들어 refresh 콜백을 ratebox 에 직접 주입 — 모듈 전역(_branchRerender) 경유 시
+  // 다른 상세로 빠르게 이동한 뒤 평가하면 엉뚱한 화면의 갈래가 갱신되는 레이스가 있었음.
+  const branches = branchesSection(w, userId);
+  return el('div', { class: 'detail__body' }, rail(w, userId, isFilm, branches.refresh), main(w, isFilm, branches.el));
 }
 
 function inforow(k, v) {
   return el('div', { class: 'inforow' }, el('dt', { class: 'inforow__k' }, k), el('dd', { class: 'inforow__v' }, v));
 }
 
-function rail(w, userId, isFilm) {
+function rail(w, userId, isFilm, onRated) {
   const aside = el('aside', { class: 'rail' });
   aside.appendChild(poster({ type: isFilm ? 'film' : 'book', title: w.title, year: w.year, hue: w.hue, w: 200, rounded: 12, label: false, src: w.poster_url }));
   const info = el('dl', { class: 'info' });
@@ -78,7 +82,7 @@ function rail(w, userId, isFilm) {
     : [['저자', w.author], ['옮김', w.translator], ['출판', w.publisher]];
   for (const [k, v] of rows) if (v) info.appendChild(inforow(k, v));
   if (info.childNodes.length) aside.appendChild(info);
-  aside.appendChild(ratebox(w, userId));
+  aside.appendChild(ratebox(w, userId, onRated));
   return aside;
 }
 
@@ -90,7 +94,7 @@ function metaForSave(w) {
   return m;
 }
 
-function ratebox(w, userId) {
+function ratebox(w, userId, onRated) {
   const box = el('div', { class: 'ratebox' });
   let cur = 0, rowId = null;
   const draw = () => {
@@ -116,7 +120,7 @@ function ratebox(w, userId) {
     }
     draw();
     // 평가 ★3.0+ → 엔진(데몬 onRating)이 이 작품 갈래를 생성. 앱은 "분석 중" 연출만 띄움(생성은 앱이 안 함 — spec D3).
-    if (v >= 3.0) { _pendingBranch.add(srcKey(w)); if (_branchRerender) _branchRerender(); }
+    if (v >= 3.0) { _pendingBranch.add(srcKey(w)); if (onRated) onRated(); }
   };
   (async () => {
     if (!userId) return;
@@ -189,8 +193,7 @@ function branchSkeleton(index) {
 
 // 상세 갈래 realtime 채널은 모듈 레벨 1개(상세는 hashchange 마다 재mount → 중복 구독 방지).
 let _branchChannel = null;
-const _pendingBranch = new Set();   // 방금 평가해 갈래 생성 대기 중인 작품 키 — "분석 중" 연출용. 생성은 엔진(데몬/백필)이 함.
-let _branchRerender = null;          // 현재 상세 branchesSection 의 render — ratebox 가 평가 후 호출.
+const _pendingBranch = new Set();   // 방금 평가해 갈래 생성 대기 중인 작품 키 — "분석 중" 연출용. 생성은 엔진(데몬/백필)이 함. 재진입 시 유지 의도라 모듈 레벨.
 
 // 정본: detail.jsx:131-149 — branches__head 에 {N}갈래 상태(또는 pending), 본문은 branch-rail.
 function branchesSection(w, userId) {
@@ -251,14 +254,16 @@ function branchesSection(w, userId) {
       .subscribe();
   }
 
-  _branchRerender = render;   // ratebox 가 평가 후 "분석 중" 연출을 띄우게 연결.
   // 초기: Dexie 최신화 후 렌더 — 새 탭/기기에서 기존 갈래가 아직 동기화 전이면 누락되므로(home.js:187 패턴).
   (async () => { try { await Sync.pullRecommendations(userId); } catch (e) { /* noop */ } render(); })();
   subscribe();
-  return sec;
+  onViewTeardown(() => {
+    try { if (_branchChannel) { supabase.removeChannel(_branchChannel); _branchChannel = null; } } catch (e) { /* noop */ }
+  });
+  return { el: sec, refresh: render };   // refresh — ratebox 가 평가 직후 "분석 중" 연출을 띄울 때 호출
 }
 
-function main(w, isFilm, userId) {
+function main(w, isFilm, branchesEl) {
   const m = el('div', { class: 'detail__main' });
   const head = el('header', { class: 'detail__head' });
   const kind = el('div', { class: 'detail__kind' }, dot(), el('span', {}, isFilm ? (w.subtype === 'tv' ? '드라마' : '영화') : '책'));
@@ -281,6 +286,6 @@ function main(w, isFilm, userId) {
       el('p', { class: 'reading__body' }, w.summary)));
   }
 
-  m.appendChild(branchesSection(w, userId));
+  m.appendChild(branchesEl);
   return m;
 }

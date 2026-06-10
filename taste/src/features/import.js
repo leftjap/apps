@@ -38,21 +38,28 @@ export function mount({ userId } = {}) {
   async function save(btn) {
     if (!userId || !parsed.length) return;
     btn.disabled = true;
-    let done = 0, created = 0, updated = 0;
     const status = el('span', { style: 'color:var(--ink-3);font-size:13px' }, '저장 중…');
     actions.appendChild(status);
-    for (const r of parsed) {
-      try {
-        const ex = await Queries.getRatingAny(userId, 'movie', r.title, r.year);   // soft-deleted 부활 재사용 (23505 방지)
-        if (ex) { await Queries.updateRating(ex.id, { rating: r.rating, rated_at: r.rated_at, source: 'watcha', deleted_at: null }); updated++; }
-        else { await Queries.createRating({ owner_id: userId, media_type: 'movie', title: r.title, year: r.year, rating: r.rating, source: 'watcha', rated_at: r.rated_at, meta: {} }); created++; }
-      } catch (e) { /* 행 skip */ }
-      done++;
-      if (done % 10 === 0 || done === parsed.length) status.textContent = `저장 중… ${done}/${parsed.length}`;
-    }
+    const { created, updated } = await saveRows(userId, parsed, (done, total) => { status.textContent = `저장 중… ${done}/${total}`; });
     status.textContent = `완료 — 신규 ${created} · 갱신 ${updated}.`;
     actions.appendChild(el('a', { class: 'btn btn--sm', href: '#/library' }, '내 서재 보기'));
   }
 
   return root;
+}
+
+// 저장 로직 — UI 분리 (테스트 대상). 멱등: 같은 CSV 재실행 시 create 0 · update N.
+// getRatingAny 로 soft-deleted 행 부활 재사용 — 신규 create 는 서버 unique 와 23505 충돌 (sync.js reconcileDup 주석).
+export async function saveRows(userId, parsed, onProgress) {
+  let done = 0, created = 0, updated = 0;
+  for (const r of parsed) {
+    try {
+      const ex = await Queries.getRatingAny(userId, 'movie', r.title, r.year);
+      if (ex) { await Queries.updateRating(ex.id, { rating: r.rating, rated_at: r.rated_at, source: 'watcha', deleted_at: null }); updated++; }
+      else { await Queries.createRating({ owner_id: userId, media_type: 'movie', title: r.title, year: r.year, rating: r.rating, source: 'watcha', rated_at: r.rated_at, meta: {} }); created++; }
+    } catch (e) { /* 행 skip */ }
+    done++;
+    if (onProgress && (done % 10 === 0 || done === parsed.length)) onProgress(done, parsed.length);
+  }
+  return { created, updated };
 }
