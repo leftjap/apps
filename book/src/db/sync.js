@@ -154,7 +154,8 @@ export async function pushQuote(id) {
   if (!db) return { id, status: 'skipped', reason: 'no_db' };
   const row = await db.quotes.get(id);
   if (!row) return { id, status: 'skipped', reason: 'not_found' };
-  if (!isValidUuid(id)) {
+  // 비UUID owner(dev 가짜 유저 등)는 서버가 22P02 로 영구 거부 — 보내지 않고 outbox 제거.
+  if (!isValidUuid(id) || !isValidUuid(row.owner_id)) {
     try { await setQuotePendingSync(id, 0); } catch (_) { /* 무시 */ }
     return { id, status: 'skipped', reason: 'non_uuid_local_only' };
   }
@@ -230,7 +231,8 @@ export async function pushComment(id) {
   if (!db) return { id, status: 'skipped', reason: 'no_db' };
   const row = await db.comments.get(id);
   if (!row) return { id, status: 'skipped', reason: 'not_found' };
-  if (!isValidUuid(id) || !isValidUuid(row.quote_id)) {
+  // 비UUID author(dev 가짜 유저 등) 포함 — 서버 영구 거부 행은 보내지 않고 outbox 제거.
+  if (!isValidUuid(id) || !isValidUuid(row.quote_id) || !isValidUuid(row.author_id)) {
     try { await setCommentPendingSync(id, 0); } catch (_) { /* 무시 */ }
     return { id, status: 'skipped', reason: 'non_uuid_local_only' };
   }
