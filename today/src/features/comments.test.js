@@ -248,7 +248,22 @@ describe('mountForArticle', () => {
     expect(sectionContainer[0]).toContain('>소연<');
   });
 
-  it('is_shared=false entry → canComment=false', async () => {
+  it('파트너의 is_shared=false entry → canComment=false', async () => {
+    const { Queries } = await import('../db/queries.js');
+    const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', is_shared: 0 });
+    const article = {
+      dataset: { entryId: e.id },
+      querySelector: () => null,
+      insertAdjacentHTML: () => {},
+    };
+    const r = await mountForArticle(article, {
+      currentUserId: 'u-partner-not-owner',
+      doc: { querySelector: () => null },
+    });
+    expect(r.canComment).toBe(false);
+  });
+
+  it('본인 글은 is_shared=false 여도 canComment=true (2026-05-13 정책 — 메모·추가내용 용도)', async () => {
     const { Queries } = await import('../db/queries.js');
     const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', is_shared: 0 });
     const article = {
@@ -260,7 +275,7 @@ describe('mountForArticle', () => {
       currentUserId: OWNER,
       doc: { querySelector: () => null },
     });
-    expect(r.canComment).toBe(false);
+    expect(r.canComment).toBe(true);
   });
 });
 

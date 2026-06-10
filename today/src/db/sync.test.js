@@ -22,8 +22,8 @@ const { Sync, TABLE_MAP, startSync, stopSync, pullTable, pullAll, isSyncActive }
   await import('./sync.js');
 
 describe('TABLE_MAP', () => {
-  it('entries + expenses + merchant_rules + comments + notifications 매핑', () => {
-    expect(TABLE_MAP).toHaveLength(5);
+  it('entries + expenses + merchant_rules + comments + notifications + user 매핑 3종', () => {
+    expect(TABLE_MAP).toHaveLength(8);
     expect(TABLE_MAP[0].dexie).toBe('entries');
     expect(TABLE_MAP[0].filterColumn).toBeNull();
     expect(TABLE_MAP[1].dexie).toBe('expenses');
@@ -34,6 +34,13 @@ describe('TABLE_MAP', () => {
     expect(TABLE_MAP[3].filterColumn).toBeNull();
     expect(TABLE_MAP[4].dexie).toBe('notifications');
     expect(TABLE_MAP[4].filterColumn).toBe('recipient_id');
+    // Wave 11.8 — 사용자별 매핑 3종 (admin UI 편집 대상), user_id 필터
+    expect(TABLE_MAP[5].dexie).toBe('user_categories');
+    expect(TABLE_MAP[5].filterColumn).toBe('user_id');
+    expect(TABLE_MAP[6].dexie).toBe('user_brand_categories');
+    expect(TABLE_MAP[6].filterColumn).toBe('user_id');
+    expect(TABLE_MAP[7].dexie).toBe('user_merchant_aliases');
+    expect(TABLE_MAP[7].filterColumn).toBe('user_id');
   });
 
   it('frozen — 런타임 변조 방지', () => {
