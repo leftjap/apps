@@ -286,7 +286,7 @@ async function render(host, params, ctx) {
 
     /* row4: 단어 클라우드 */
     const cloud = el('div', { class: 'st-cloud' },
-      wordCloud({ words: topWords, W: 1130, H: 270, scale: 0.74, onWord: (w) => ctx.navigate(`/word/${encodeURIComponent(w)}`) }));
+      wordCloud({ words: topWords, W: 1100, H: 270, scale: 0.74, onWord: (w) => ctx.navigate(`/word/${encodeURIComponent(w)}`) }));
     const row4 = card([panelHead('단어', `상위 ${topWords.length}`, moreBtn('단어 전체', () => topWords[0] && ctx.navigate(`/word/${encodeURIComponent(topWords[0][0])}`))),
       topWords.length ? cloud : stEmpty('아직 단어가 부족합니다.')], 'pad-md');
 
@@ -295,6 +295,8 @@ async function render(host, params, ctx) {
       readingCard(),
       row1, row2, row3, row4,
     );
+    // 좁은 화면에서 클라우드가 가로 스크롤일 때 초기 위치를 중앙(단어 군집)으로
+    setTimeout(() => { cloud.scrollLeft = (cloud.scrollWidth - cloud.clientWidth) / 2; }, 0);
   }
 
   function onPeriod(p) { if (p !== active) { active = p; renderBody(); requestAnimationFrame(() => countUp(container)); } }

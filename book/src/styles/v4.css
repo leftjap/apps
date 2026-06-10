@@ -335,8 +335,11 @@
 .bookv4 .cat-row .diff { font-size: 11px; color: var(--ink-4); text-align: right; font-variant-numeric: tabular-nums; }
 .bookv4 .cat-row .diff.up { color: var(--accent); }
 
-/* 단어 클라우드 */
-.bookv4 .st-cloud { display: flex; justify-content: center; }
+/* 단어 클라우드 — 고정폭 패킹이 좁은 화면에서 flex-shrink 로 wrap 만 줄어
+   전체 비가시가 되던 문제(구버전 동일 — A/B 확인) → 원폭 유지 + 가로 스크롤.
+   margin:auto 센터링(justify-content:center 는 overflow 시 좌측 도달 불가) */
+.bookv4 .st-cloud { display: flex; overflow-x: auto; }
+.bookv4 .st-cloud > div { flex-shrink: 0; margin: 0 auto; }
 .bookv4 .st-cloud span:hover { color: var(--accent) !important; opacity: 1 !important; }
 
 .bookv4 .st-empty { color: var(--ink-3); font-size: 13px; padding: 12px 0; }
