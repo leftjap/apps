@@ -36,6 +36,14 @@ jobs:
             taste/pnpm-lock.yaml
             cue/pnpm-lock.yaml
 
+      # 회귀 게이트 — today 테스트 실패 시 전체 배포 차단 (2026-06-10, 가계부 점검 후속).
+      # env 불필요: 스위트는 supabase mock 기반 (.env.local 부재 모드로 로컬 검증 완료).
+      - name: Test today (vitest)
+        run: |
+          cd today
+          pnpm install --frozen-lockfile
+          pnpm vitest run
+
       - name: Build gym
         env:
           GH_PAGES: '1'
