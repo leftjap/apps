@@ -229,7 +229,7 @@ describe('sessionToWorkoutEntry', () => {
       }],
     };
     const r = sessionToWorkoutEntry(session);
-    expect(r.tag).toBe('유');
+    expect(r.tag).toBe('맨'); // 카테고리 표시명 유산소→맨몸 (2026-06-10)
     expect(r.ex).toHaveLength(1);
     expect(r.ex[0]).toMatchObject({ n: '트레드밀', s: '30분 · 5km', kind: 'cardio' });
   });

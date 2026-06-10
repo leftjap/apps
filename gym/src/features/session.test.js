@@ -1185,6 +1185,27 @@ async function getActiveBenchSets() {
 }
 
 describe('handleLeftSwipe (spec §6-3-1)', () => {
+  it('cardio — 입력된 duration·distance 보존 + 새 preset 세트에도 카피 (라이브 2026-06-10 사용자 보고)', async () => {
+    await db.sessions.put({
+      id: 'active-swipe-cardio', date: '2026-06-10', startTime: Date.now() - 10 * 60_000, endTime: null,
+      blocks: [{ type: 'single', exerciseId: 'treadmill', sets: [
+        { weight: null, reps: null, duration: 1200, distance: 3, done: false, preset: false, pr: false },
+      ] }],
+      tags: ['cardio'], totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'active',
+    });
+    await handleLeftSwipe();
+    const rows = await db.sessions.where('status').equals('active').toArray();
+    const sets = rows[0].blocks[0].sets;
+    expect(sets[0].done).toBe(true);
+    expect(sets[0].duration).toBe(1200);
+    expect(sets[0].distance).toBe(3);
+    // 마지막 set 완료 → 새 preset set 도 cardio 값 카피
+    expect(sets).toHaveLength(2);
+    expect(sets[1].duration).toBe(1200);
+    expect(sets[1].distance).toBe(3);
+    expect(sets[1].done).toBe(false);
+  });
+
   it('cur 유효 → sets[cur].done=true, preset:false', async () => {
     await seedActiveWithBenchSets([
       { weight: 60, reps: 10, done: true, preset: false, pr: false },

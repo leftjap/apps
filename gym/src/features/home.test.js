@@ -352,7 +352,7 @@ describe('partAbbreviation', () => {
     expect(partAbbreviation('shoulder')).toBe('어');
     expect(partAbbreviation('legs')).toBe('하');
     expect(partAbbreviation('arms')).toBe('팔');
-    expect(partAbbreviation('cardio')).toBe('유');
+    expect(partAbbreviation('cardio')).toBe('맨'); // 카테고리 표시명 유산소→맨몸 (2026-06-10)
   });
 
   it('한국어 단일 글자 (mocks Wave 11.6D fallback) → 그대로', () => {

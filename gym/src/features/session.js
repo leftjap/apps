@@ -2546,6 +2546,8 @@ export async function handleLeftSwipe() {
     sets.push({
       weight: last.weight ?? null,
       reps: last.reps ?? null,
+      duration: last.duration ?? null,
+      distance: last.distance ?? null,
       done: false,
       preset: true,
       pr: false,
@@ -2555,6 +2557,8 @@ export async function handleLeftSwipe() {
     const committedW = prev.weight ?? null;
     const committedR = prev.reps ?? null;
     sets[cur] = {
+      // prev 스프레드 — cardio duration·distance 등 보존 (구버전 5키 재구성이 입력값 유실 — 2026-06-10 사용자 보고)
+      ...prev,
       weight: committedW,
       reps: committedR,
       done: true,
@@ -2565,6 +2569,8 @@ export async function handleLeftSwipe() {
       sets.push({
         weight: committedW,
         reps: committedR,
+        duration: prev.duration ?? null,
+        distance: prev.distance ?? null,
         done: false,
         preset: true,
         pr: false,
