@@ -1,0 +1,165 @@
+{
+  "_note": "RealClass-mining — Parks and Recreation S1E1 '구덩이 약속(핑키 프라미스)' 장면 (소스 스크립트 #107~116 발췌·압축 → dialogue 8줄). 표현 카드 5장: Is that a promise / more than a promise / fill in / handled + proud of / from scratch. 발췌 기준 3종 통과 — 인사 단독 0, 행정 디테일 (Hoover Dam·소독 캠페인·25달러 보고) 제외, 일상 전이 표현만. 기존 시드 (토론회 #56~103 · 위원회 #133~145) 와 dialogue·표현 중복 0 — #104~105 의 'I'll do something about it' 은 기존 표현과 중복이라 발췌에서 제외. 한국인 해설 8필드 (가이드 §6.3, 형식 정본 en-2026-06-10.json). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "lang": "en",
+  "date": "2026-06-10",
+  "cards": [
+    {
+      "id": "en-parks-s1e1-promise-scene",
+      "sentence": "구덩이 약속 — 핑키 프라미스",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "구덩이 약속 — 핑키 프라미스",
+        "sceneSummary": "토론회에서 레슬리가 구덩이를 메우고 공원을 만들겠다며 약속을 '핑키 프라미스'로 격상해 못박는다.",
+        "dialogue": [
+          { "speaker": "Ann", "en": "Is that a promise?", "ko": "약속하는 거예요?" },
+          { "speaker": "Leslie", "en": "It's more than a promise. It's a pinky promise.", "ko": "약속 그 이상이죠. 손가락 걸고 하는 약속이에요." },
+          { "speaker": "Leslie", "en": "I pinky promise all of you that I will help.", "ko": "도와드리겠다고 여러분 모두에게 굳게 약속할게요." },
+          { "speaker": "Leslie", "en": "I will go there tomorrow, and we will fill in that pit.", "ko": "내일 현장에 가서, 그 구덩이를 메울 거예요." },
+          { "speaker": "Leslie", "en": "And when that's done, we're gonna put a park on the land.", "ko": "그리고 다 끝나면, 그 땅에 공원을 만들 거고요." },
+          { "speaker": "Ann", "en": "Wow.", "ko": "와." },
+          { "speaker": "Leslie", "en": "I've handled a lot of things that I'm proud of.", "ko": "자랑스러운 일들을 그동안 많이 처리해왔어요." },
+          { "speaker": "Leslie", "en": "But the chance to build a whole new park from scratch...", "ko": "하지만 완전히 새 공원을 맨 처음부터 만들 기회라니..." }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e1-is-that-a-promise",
+      "sentence": "Is that a promise?",
+      "meaning": "약속하는 거예요?",
+      "reading": null,
+      "phonetic_kr": "이즈 대러 프라미스?",
+      "order_index": 1,
+      "explanation": {
+        "key": "Is that a promise? = 약속하는 거예요? 상대의 말을 못박아 확인하는 되묻기.",
+        "situation": "장면 · 레슬리의 다짐에 앤이 진짜냐고 확인",
+        "drills": [
+          { "en": "Is that a promise?", "ko": "약속하는 거죠?", "kr": "이즈 대러 프라미스?" },
+          { "en": "Is that a yes?", "ko": "그거 승낙인 거죠?", "kr": "이즈 대러 예스?" },
+          { "en": "Is that an apology?", "ko": "그거 사과하는 거예요?", "kr": "이즈 대런 어팔러지?" },
+          { "en": "You'll be there at six. Is that a promise?", "ko": "6시에 온다는 거죠. 약속하는 거예요?", "kr": "유일 비 데어 앳 씩스. 이즈 대러 프라미스?" }
+        ],
+        "grammar": [
+          { "struct": "Is that a + 명사?", "body": "상대가 방금 한 말을 '~인 거예요?' 라고 한 단어로 규정해 확인. that = 방금 그 말." }
+        ],
+        "chunks": [["Is that a", "이즈 대러"], ["promise?", "프라미스?"]],
+        "phonemes": [["/ð/", "that — 혀끝 이 사이 '대'"], ["/ɾ/", "that a → '대러' (flap 연결)"]],
+        "mistake": "that a 를 끊어 '댓 어' (X) — 연음 '대러' 한 호흡. 프로미스(X) 프라미스(O).",
+        "similar": "Do you promise? / You promise?",
+        "category": "chunk/confirmation",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-more-than-a-promise",
+      "sentence": "It's more than a promise.",
+      "meaning": "약속 그 이상이죠.",
+      "reading": null,
+      "phonetic_kr": "잇츠 모어 대너 프라미스",
+      "order_index": 2,
+      "explanation": {
+        "key": "more than a ~ = ~ 그 이상. 격을 한 단계 올려 강조.",
+        "situation": "장면 · 레슬리가 약속을 '핑키 프라미스'로 격상",
+        "drills": [
+          { "en": "It's more than a job.", "ko": "그건 직업 그 이상이에요.", "kr": "잇츠 모어 대너 잡." },
+          { "en": "He's more than a friend.", "ko": "걔는 친구 그 이상이야.", "kr": "히즈 모어 대너 프렌드." },
+          { "en": "This is more than enough.", "ko": "이거면 충분하고도 남아요.", "kr": "디스 이즈 모어 댄 이너프." }
+        ],
+        "grammar": [
+          { "struct": "more than a + 명사", "body": "'~보다 더한 것' → '~ 그 이상'. 단순 비교가 아니라 그 명사의 격을 올리는 강조." }
+        ],
+        "chunks": [["It's", "잇츠"], ["more than a", "모어 대너"], ["promise", "프라미스"]],
+        "phonemes": [["/ð/", "than — 유성 '대'"], ["/ɹ/", "more — 혀 말기 '모어'"]],
+        "mistake": "than 을 '댄' 으로 딱딱하게 끊지 말 것 — than a 연음 '대너'.",
+        "similar": "It's not just a promise.",
+        "category": "chunk/emphasis",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-fill-in",
+      "sentence": "We will fill in that pit.",
+      "meaning": "그 구덩이를 메울 거예요.",
+      "reading": null,
+      "phonetic_kr": "위 윌 필린 댓 핏",
+      "order_index": 3,
+      "explanation": {
+        "key": "fill in = (구멍·빈칸을) 메우다·채우다. ※ 사람이 대상이면 '대신하다·알려주다'.",
+        "situation": "장면 · 레슬리가 구덩이를 메우겠다고 약속",
+        "drills": [
+          { "en": "Fill in the blanks.", "ko": "빈칸을 채우세요.", "kr": "필린 더 블랭크스." },
+          { "en": "Can you fill in for me tomorrow?", "ko": "내일 나 대신 좀 해줄래? (=대신하다)", "kr": "캔유 필린 포 미 터마로우?" },
+          { "en": "Fill me in later.", "ko": "나중에 자세히 알려줘. (=상황을 채워주다)", "kr": "필 미 인 레이러." },
+          { "en": "They filled in the hole.", "ko": "걔들이 구멍을 메웠어.", "kr": "데이 필딘 더 호울." }
+        ],
+        "grammar": [
+          { "struct": "fill in + 대상", "body": "빈 것을 채워 넣는 그림 하나로 '메우다/작성하다/대신하다' 전부 커버. 사람이 오면 (fill her in) '알려주다'." }
+        ],
+        "chunks": [["We will", "위 윌"], ["fill in", "필린"], ["that pit", "댓 핏"]],
+        "phonemes": [["/f/", "fill — 윗니+아랫입술 '필'"], ["/ɪ/", "fill·in·pit — 짧은 '이'"]],
+        "mistake": "fill in 을 끊어 '필 인' (X) → 연음 '필린'. fill(채우다)·feel(느끼다) 모음 길이 구분.",
+        "similar": "We'll fill it up. / We'll close up that hole.",
+        "category": "phrasal-verb/action",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-proud-of",
+      "sentence": "I've handled a lot of things that I'm proud of.",
+      "meaning": "자랑스러운 일들을 그동안 많이 처리해왔어요.",
+      "reading": null,
+      "phonetic_kr": "아이브 핸들더 라러브 띵스 댓 아임 프라우더브",
+      "order_index": 4,
+      "explanation": {
+        "key": "handle = (일을) 처리하다·감당하다. + I'm proud of = ~가 자랑스럽다.",
+        "situation": "장면 · 레슬리가 그간의 성과를 돌아봄",
+        "drills": [
+          { "en": "I can handle it.", "ko": "내가 처리할 수 있어.", "kr": "아이 캔 핸들릿." },
+          { "en": "She handles everything at work.", "ko": "걔가 회사에서 다 처리해.", "kr": "쉬 핸들즈 에브리띵 앳 워크." },
+          { "en": "I'm proud of you.", "ko": "네가 자랑스러워.", "kr": "아임 프라우더브 유." },
+          { "en": "That's something I'm proud of.", "ko": "그건 내가 자랑스러워하는 거야.", "kr": "댓츠 썸띵 아임 프라우더브." }
+        ],
+        "grammar": [
+          { "struct": "I've + p.p. (경험 누적)", "body": "지금까지 해온 일 묶음은 현재완료. 과거 한 건이면 I handled." },
+          { "struct": "things that I'm proud of", "body": "전치사 of 가 관계절 끝에 남는 영어 어순 — '내가 자랑스러워하는 것들'." }
+        ],
+        "chunks": [["I've handled a", "아이브 핸들더"], ["lot of things", "라러브 띵스"], ["that I'm", "댓 아임"], ["proud of", "프라우더브"]],
+        "phonemes": [["/ɾ/", "lot of → '라러브' (flap)"], ["/θ/", "things — 혀끝 이 사이 '띵'"], ["/aʊ/", "proud — '아우' 이중모음"]],
+        "mistake": "proud of 의 of 빼먹기 주의 — 관계절 끝 of 까지 한 덩어리. handle = '손잡이' 직역 (X).",
+        "similar": "I've taken care of a lot. / I've dealt with a lot.",
+        "category": "chunk/experience",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-from-scratch",
+      "sentence": "The chance to build a whole new park from scratch.",
+      "meaning": "완전히 새 공원을 맨 처음부터 만들 기회.",
+      "reading": null,
+      "phonetic_kr": "더 챈스 투 빌더 호울 뉴 파크 프롬 스크래치",
+      "order_index": 5,
+      "explanation": {
+        "key": "from scratch = 맨 처음부터·아무것도 없는 상태에서. 요리·창업·공부 만능 관용구.",
+        "situation": "장면 · 레슬리에게 구덩이는 공원을 0에서 만들 기회",
+        "drills": [
+          { "en": "I made this cake from scratch.", "ko": "이 케이크 처음부터 직접 만들었어.", "kr": "아이 메이드 디스 케익 프롬 스크래치." },
+          { "en": "We started from scratch.", "ko": "우린 맨바닥부터 시작했어.", "kr": "위 스타리드 프롬 스크래치." },
+          { "en": "Let's build it from scratch.", "ko": "처음부터 새로 만들자.", "kr": "렛츠 빌딧 프롬 스크래치." },
+          { "en": "I learned English from scratch.", "ko": "영어를 기초부터 배웠어.", "kr": "아이 런드 잉글리쉬 프롬 스크래치." }
+        ],
+        "grammar": [
+          { "struct": "the chance to + 동사", "body": "'~할 기회' — to부정사가 명사 chance 를 뒤에서 수식. 한국어 '~할 기회' 어순과 반대." },
+          { "struct": "from scratch", "body": "scratch = 긁어 그은 출발선. 재료·기반 없이 '0에서부터' 라는 관용 덩어리." }
+        ],
+        "chunks": [["The chance to", "더 챈스 투"], ["build a", "빌더"], ["whole new park", "호울 뉴 파크"], ["from scratch", "프롬 스크래치"]],
+        "phonemes": [["/tʃ/", "chance·scratch — '치' 파찰"], ["/oʊ/", "whole — '호울' 이중모음"]],
+        "mistake": "'스크래치에서' 직역 (X) — from scratch 통째로 '맨 처음부터'. whole 의 w 는 묵음 '호울'.",
+        "similar": "from the ground up / from zero",
+        "category": "idiom/daily",
+        "frequency": 9
+      }
+    }
+  ]
+}
