@@ -1,0 +1,177 @@
+{
+  "_note": "RealClass-mining — Parks and Recreation S1E1 '공원 설문 — 미끄럼틀 소동' 장면 (소스 스크립트 #3~16 발췌·압축 → dialogue 6줄). 표현 5장: Can I ask you a few questions / There's a ~ stuck in / this is a / not allowed to / Could you. 약점 음소 가중 적용 (2026-06-10 컨텍스트: 상위 3 = /ɪ/ /z/ /ð/ — 표현 5/5 가 약점 음소 포함, §6.3 약점 음소 가중). 발췌 기준 4종 통과 — 인사 단독 0 (#1~2 Hello/Hi 제외), 행정 디테일 0, 일상 전이 (요청·금지·존재 패턴), 화자 교차 (Leslie/Bystander 2화자, 단일 화자 연속 3줄 이하, 독백 0). 'Ms. Knope!' 줄 화자는 원작 대본 무라벨 — 이름 추측 없이 역할명 Bystander 처리 (성별 남성 추정, simpleremix transcript 대조 2026-06-10). 기존 시드 (#56~103·#107~116·#133~145) 와 dialogue·표현 중복 0. 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_source": { "episode": "s1e1", "lines": [3, 16] },
+  "_context": { "weakPhonemes": ["/ɪ/", "/z/", "/ð/"] },
+  "lang": "en",
+  "date": "2026-06-11",
+  "cards": [
+    {
+      "id": "en-parks-s1e1-survey-scene",
+      "sentence": "공원 설문 — 미끄럼틀 소동",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "공원 설문 — 미끄럼틀 소동",
+        "sceneSummary": "레슬리가 공원에서 설문을 돌리다, 미끄럼틀에 취객이 끼었다는 외침에 출동한다.",
+        "dialogue": [
+          { "speaker": "Leslie", "en": "My name is Leslie Knope, and I work for the Parks and Recreation Department.", "ko": "난 레슬리 노프라고 해. 공원여가부에서 일한단다." },
+          { "speaker": "Leslie", "en": "Can I ask you a few questions?", "ko": "몇 가지 물어봐도 될까?" },
+          { "speaker": "Bystander", "en": "Ms. Knope! There's a drunk stuck in the slide.", "ko": "노프 씨! 술 취한 사람이 미끄럼틀에 갇혀 있어요." },
+          { "speaker": "Leslie", "en": "Sir, this is a children's slide.", "ko": "저기요, 이건 어린이용 미끄럼틀이에요." },
+          { "speaker": "Leslie", "en": "You're not allowed to sleep in here.", "ko": "여기서 주무시면 안 돼요." },
+          { "speaker": "Leslie", "en": "Could you put your arms to your side?", "ko": "양팔을 몸에 붙여 보시겠어요?" }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e1-ask-a-few-questions",
+      "sentence": "Can I ask you a few questions?",
+      "meaning": "몇 가지 물어봐도 될까요?",
+      "reading": null,
+      "phonetic_kr": "캐나이 애스큐 어 퓨 퀘스천스?",
+      "order_index": 1,
+      "explanation": {
+        "key": "Can I ask you a few questions? = 몇 가지 물어봐도 될까요? 말 걸기·요청의 표준 오프너.",
+        "situation": "장면 · 레슬리가 공원에서 설문을 시작",
+        "drills": [
+          { "en": "Can I ask you a few questions?", "ko": "몇 가지 물어봐도 될까요?", "kr": "캐나이 애스큐 어 퓨 퀘스천스?" },
+          { "en": "Can I ask you something?", "ko": "뭐 하나 물어봐도 돼?", "kr": "캐나이 애스큐 썸띵?" },
+          { "en": "Can I ask you a favor?", "ko": "부탁 하나 해도 될까요?", "kr": "캐나이 애스큐 어 페이버?" },
+          { "en": "Quick question. Can I ask?", "ko": "짧은 질문요. 물어봐도 되죠?", "kr": "퀵 퀘스천. 캐나이 애스크?" },
+          { "en": "Do you have a few minutes?", "ko": "잠깐 시간 좀 있으세요?", "kr": "두유 해버 퓨 미닛츠?" }
+        ],
+        "grammar": [
+          { "struct": "Can I + 동사 ~?", "body": "허락 구하는 기본 패턴. 한국어 '~해도 될까요?' — May I 보다 캐주얼하고 일상 빈출." },
+          { "struct": "a few + 복수 명사", "body": "'몇 개의 ~'. few(거의 없다)와 달리 a few 는 긍정 뉘앙스." }
+        ],
+        "chunks": [["Can I", "캐나이"], ["ask you", "애스큐"], ["a few", "어 퓨"], ["questions?", "퀘스천스?"]],
+        "phonemes": [["/z/", "questions — 유성 '즈' (스 X)"], ["/æ/", "ask — 입 크게 '애'"]],
+        "mistake": "Can I 를 끊어 '캔 아이' (X) — 연음 '캐나이'. questions 끝은 /z/ 유성 '즈'.",
+        "similar": "Mind if I ask you something? / Got a minute?",
+        "category": "chunk/request",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-stuck-in",
+      "sentence": "There's a drunk stuck in the slide.",
+      "meaning": "술 취한 사람이 미끄럼틀에 갇혀 있어요.",
+      "reading": null,
+      "phonetic_kr": "데어저 드렁크 스터킨 더 슬라이드",
+      "order_index": 2,
+      "explanation": {
+        "key": "There's a ~ stuck in … = ~가 …에 끼어/갇혀 있어요. 상황 신고의 만능 골격.",
+        "situation": "장면 · 행인이 레슬리에게 취객 상황을 알림",
+        "drills": [
+          { "en": "There's a car stuck in the snow.", "ko": "차가 눈에 갇혀 있어요.", "kr": "데어저 카 스터킨 더 스노우." },
+          { "en": "My card is stuck in the machine.", "ko": "카드가 기계에 끼었어요.", "kr": "마이 카디즈 스턱 인 더 머신." },
+          { "en": "I'm stuck in traffic.", "ko": "차가 막혀서 꼼짝 못 해.", "kr": "아임 스턱 인 트래픽." },
+          { "en": "The elevator is stuck again.", "ko": "엘리베이터가 또 멈췄어요.", "kr": "디 엘리베이러 이즈 스턱 어겐." },
+          { "en": "There's something stuck in my teeth.", "ko": "이에 뭐가 끼었어.", "kr": "데어즈 썸띵 스턱 인 마이 티-쓰." },
+          { "en": "We're stuck. Let's ask for help.", "ko": "우리 막혔어. 도움을 청하자.", "kr": "위어 스턱. 렛츠 애스크 포 헬프." }
+        ],
+        "grammar": [
+          { "struct": "There's a + 명사 + stuck in ~", "body": "'~가 …에 끼어 있다' 존재+상태 보고. There's 로 시작해 듣는 사람 주의를 끈다." },
+          { "struct": "stuck = stick 의 과거분사", "body": "'끼인·갇힌·막힌' 상태. 교통·기계·물건 어디든 쓰는 만능 상태어." }
+        ],
+        "chunks": [["There's a", "데어저"], ["drunk", "드렁크"], ["stuck in", "스터킨"], ["the slide", "더 슬라이드"]],
+        "phonemes": [["/ð/", "There's·the — 혀끝 이 사이 '데'"], ["/z/", "There's — 유성 '즈'"], ["/ʌ/", "drunk·stuck — 짧은 '어'"]],
+        "mistake": "stuck in 을 끊어 '스턱 인' (X) — 연음 '스터킨'. There's 는 '데어즈→데어저' 한 호흡.",
+        "similar": "Someone's trapped in ~ / ~ is jammed.",
+        "category": "chunk/situation",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-this-is-a",
+      "sentence": "Sir, this is a children's slide.",
+      "meaning": "저기요, 이건 어린이용 미끄럼틀이에요.",
+      "reading": null,
+      "phonetic_kr": "써, 디시저 칠드런즈 슬라이드",
+      "order_index": 3,
+      "explanation": {
+        "key": "this is a ~ = 이건 ~예요. 기본 중의 기본 — 약점 음소 /ð·ɪ·z/ 3종 집중 문장.",
+        "situation": "장면 · 레슬리가 취객에게 상황을 일깨움",
+        "drills": [
+          { "en": "This is a quiet zone.", "ko": "여긴 정숙 구역이에요.", "kr": "디시저 콰이엇 조운." },
+          { "en": "This is a one-way street.", "ko": "여긴 일방통행이에요.", "kr": "디시저 원웨이 스트릿." },
+          { "en": "Sir, this is a no-parking area.", "ko": "선생님, 여긴 주차 금지 구역이에요.", "kr": "써, 디시저 노파킹 에어리어." },
+          { "en": "This is a really good deal.", "ko": "이거 진짜 괜찮은 조건이에요.", "kr": "디시저 륄리 굿 디-일." },
+          { "en": "Is this a joke?", "ko": "이거 장난이에요?", "kr": "이즈 디서 조욱?" }
+        ],
+        "grammar": [
+          { "struct": "Sir / Ma'am + 지적", "body": "모르는 상대를 부드럽게 부르며 잘못을 일깨우는 공식. 직접 명령보다 정중." },
+          { "struct": "this is a + 명사", "body": "'이건 ~예요' — 장소·물건의 성격을 규정해 상대 행동을 교정하는 화법." }
+        ],
+        "chunks": [["Sir,", "써,"], ["this is a", "디시저"], ["children's slide", "칠드런즈 슬라이드"]],
+        "phonemes": [["/ð/", "this — 혀끝 이 사이 '디'"], ["/ɪ/", "this·is — 짧은 '이'"], ["/z/", "is·children's — 유성 '즈'"]],
+        "mistake": "this is a 를 또박또박 '디스 이즈 어' (X) — 한 호흡 '디시저'. 약점 음소 ð·ɪ·z 가 전부 들어간 연습 문장.",
+        "similar": "This place is for kids.",
+        "category": "chunk/daily",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-not-allowed-to",
+      "sentence": "You're not allowed to sleep in here.",
+      "meaning": "여기서 주무시면 안 돼요.",
+      "reading": null,
+      "phonetic_kr": "유어 낫 얼라우투 슬리핀 히어",
+      "order_index": 4,
+      "explanation": {
+        "key": "be not allowed to ~ = ~하면 안 된다 (규칙·금지). 공공장소 표지판·안내 빈출.",
+        "situation": "장면 · 레슬리가 취객에게 규칙을 안내",
+        "drills": [
+          { "en": "You're not allowed to park here.", "ko": "여기 주차하시면 안 돼요.", "kr": "유어 낫 얼라우투 파크 히어." },
+          { "en": "We're not allowed to take photos.", "ko": "우리 사진 찍으면 안 된대.", "kr": "위어 낫 얼라우투 테익 포로즈." },
+          { "en": "Am I allowed to bring a friend?", "ko": "친구 데려와도 되나요?", "kr": "앰 아이 얼라우투 브링 어 프렌드?" },
+          { "en": "Pets are not allowed in here.", "ko": "여긴 반려동물 출입 금지예요.", "kr": "펫츠 아 낫 얼라우드 인 히어." },
+          { "en": "You're allowed one carry-on bag.", "ko": "기내 가방은 하나까지 돼요.", "kr": "유어 얼라우드 원 캐리온 백." },
+          { "en": "Sleeping in here is not allowed.", "ko": "여기서 자는 건 금지예요.", "kr": "슬리핑 인 히어 이즈 낫 얼라우드." }
+        ],
+        "grammar": [
+          { "struct": "be allowed to + 동사", "body": "'~해도 된다' 허용의 수동 표현. 부정 not allowed to = 금지. 규칙을 말할 때 must not 보다 부드러움." },
+          { "struct": "in here", "body": "'이 안에서' — here 앞에 in 을 붙여 공간 안쪽 강조." }
+        ],
+        "chunks": [["You're not", "유어 낫"], ["allowed to", "얼라우투"], ["sleep in", "슬리핀"], ["here", "히어"]],
+        "phonemes": [["/aʊ/", "allowed — '아우' 이중모음"], ["/iː/", "sleep — 긴 '이-' (짧으면 slip 끼익)"]],
+        "mistake": "allowed to 를 '얼라우드 투' (X) — 연음 '얼라우투'. sleep 은 장음 /iː/ — 짧게 발음하면 slip(미끄러지다).",
+        "similar": "No sleeping here. / Sleeping is prohibited. (격식)",
+        "category": "chunk/rules",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-could-you",
+      "sentence": "Could you put your arms to your side?",
+      "meaning": "양팔을 몸에 붙여 주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 풋 유어 암즈 투 유어 사이드?",
+      "order_index": 5,
+      "explanation": {
+        "key": "Could you ~? = ~해 주시겠어요? 정중 요청의 1순위 패턴. Could you = '쿠쥬' 연음.",
+        "situation": "장면 · 레슬리가 취객을 미끄럼틀에서 빼내려 안내",
+        "drills": [
+          { "en": "Could you say that again?", "ko": "다시 한 번 말씀해 주시겠어요?", "kr": "쿠쥬 세이 댓 어겐?" },
+          { "en": "Could you open the window?", "ko": "창문 좀 열어 주실래요?", "kr": "쿠쥬 오픈 더 윈도우?" },
+          { "en": "Could you hold this for a second?", "ko": "이것 좀 잠깐 들어 줄래요?", "kr": "쿠쥬 호울 디스 포러 세컨?" },
+          { "en": "Could you speak a little slower?", "ko": "조금만 천천히 말씀해 주시겠어요?", "kr": "쿠쥬 스픽 어 리를 슬로워?" },
+          { "en": "Could you give me a hand?", "ko": "좀 도와주시겠어요?", "kr": "쿠쥬 깁 미 어 핸드?" },
+          { "en": "Put your arms up, please.", "ko": "팔을 위로 올려 주세요.", "kr": "풋 유어 암즈 업, 플리즈." }
+        ],
+        "grammar": [
+          { "struct": "Could you + 동사 ~?", "body": "Can you 보다 정중한 요청. 처음 보는 사람·서비스 상황 기본값." },
+          { "struct": "put A to B", "body": "'A 를 B 에 붙이다/대다' — put 의 위치 이동 그림." }
+        ],
+        "chunks": [["Could you", "쿠쥬"], ["put your", "풋 유어"], ["arms", "암즈"], ["to your side?", "투 유어 사이드?"]],
+        "phonemes": [["/z/", "arms — 유성 '즈'"], ["/ɹ/", "your·arms — 혀 말기"]],
+        "mistake": "Could you 를 '쿠드 유' (X) — 연음 '쿠쥬' (§7 디쥬·우쥬 동일 패턴). arms 끝 /z/ 유성.",
+        "similar": "Would you mind putting ~? (더 정중) / Can you ~? (캐주얼)",
+        "category": "chunk/request",
+        "frequency": 10
+      }
+    }
+  ]
+}
