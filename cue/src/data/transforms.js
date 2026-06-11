@@ -4,18 +4,6 @@
 
 export const WD = ["일", "월", "화", "수", "목", "금", "토"];
 
-/** 27일 hist + 오늘 = 28일 일별 수치 배열 */
-export function fullSeq(hist, todayVal) {
-  return (hist || []).concat([todayVal || 0]);
-}
-
-/** 양 → 웜그레이 농담 단계 (해당 습관 max 기준). 0 이하면 "" (안 함) */
-export function level(v, max) {
-  if (v <= 0) return "";
-  const r = v / max;
-  return r < 0.34 ? "g1" : r < 0.7 ? "g2" : "g3";
-}
-
 /** 연속 일수 — 끝(최신)에서부터 수치>0 인 날 카운트, 0 만나면 중단 */
 export function runDays(seq) {
   let n = 0;
@@ -36,11 +24,6 @@ export function longestRun(seq) {
   return best;
 }
 
-/** 최근 n일 중 활동(수치>0)한 일수 */
-export function activeDays(seq, n) {
-  return seq.slice(-n).filter((v) => v > 0).length;
-}
-
 /** 오늘 자정 (날짜 라벨·hist 정렬 기준) */
 export function startOfToday() {
   const d = new Date();
@@ -53,13 +36,6 @@ export function dayMeta(daysAgo, base) {
   const d = new Date(base);
   d.setDate(d.getDate() - daysAgo);
   return { m: d.getMonth() + 1, d: d.getDate(), wd: WD[d.getDay()] };
-}
-
-/** 날짜 기반 결정론적 문장 인덱스 (연중 일수 % 문장수) */
-export function sentenceOfDay(count, now) {
-  now = now || new Date();
-  const start = new Date(now.getFullYear(), 0, 0);
-  return Math.floor((now - start) / 86400000) % count;
 }
 
 export const p2 = (n) => String(n).padStart(2, "0");
@@ -138,47 +114,9 @@ export function countDaysInCurrentWeek(dateKeys, today) {
   return set.size;
 }
 
-/** 일별 series(weeks*7) → 주별 활동일 비율 배열 (각 = 그 주 활동일수/7). 마지막 원소 = 현재 주.
-   전체통계 모달의 12주 추세 막대(실데이터) + 주평균 활동일 산출용. */
-export function weeklyActivityRatios(series, weeks) {
-  const out = [];
-  for (let w = 0; w < weeks; w++) {
-    let active = 0;
-    for (let d = 0; d < 7; d++) {
-      if ((series[w * 7 + d] || 0) > 0) active++;
-    }
-    out.push(active / 7);
-  }
-  return out;
-}
-
-/** active/paused 세션이 잔재인지 — 시작 후 12시간 경과(또는 start_time 부재) 시 true.
-   운동이 12시간을 넘을 수 없으므로, 종료 처리가 안 된 행이 "운동 중"으로 무한 표시되는 것 방지. */
-const STALE_ACTIVE_MS = 12 * 3600 * 1000;
-export function isStaleActiveSession(startTime, now) {
-  const t = Number(startTime);
-  if (!t) return true;
-  return now - t >= STALE_ACTIVE_MS;
-}
-
 /** 이번주 경과 일수 — 월=1 … 일=7 */
 function daysIntoWeek(today) {
   return ((new Date(today).getDay() + 6) % 7) + 1;
-}
-
-/** 오늘로 끝나는 series 의 이번주(월~오늘) 합 */
-export function sumCurrentWeek(seq, today) {
-  return (seq || []).slice(-daysIntoWeek(today)).reduce((a, b) => a + (+b || 0), 0);
-}
-
-/** 오늘로 끝나는 series 들의 이번주(월~오늘) 중 하나라도 >0 인 날 수 */
-export function activeDaysInCurrentWeek(seqs, today) {
-  const n = daysIntoWeek(today);
-  let cnt = 0;
-  for (let i = 1; i <= n; i++) {
-    if ((seqs || []).some((s) => (s[s.length - i] || 0) > 0)) cnt++;
-  }
-  return cnt;
 }
 
 /** 타임스탬프(ms|ISO) 목록 중 로컬 '오늘' 에 속한 최신 ms (없으면 null) — 오늘 흐름 at */
@@ -209,16 +147,6 @@ export function medianMinuteOfDay(tsList, fallbackMin) {
   if (mins.length < 3) return fallbackMin;
   const mid = Math.floor(mins.length / 2);
   return mins.length % 2 ? mins[mid] : (mins[mid - 1] + mins[mid]) / 2;
-}
-
-/** 직전 세션 시각(Date) → "N일 전 HH:MM" (오늘 흐름 "마지막" 라벨). 날짜 없으면 null. */
-export function lastSessionLabel(date, today) {
-  if (!date) return null;
-  const d = new Date(date);
-  const a = new Date(d); a.setHours(0, 0, 0, 0);
-  const b = new Date(today); b.setHours(0, 0, 0, 0);
-  const daysAgo = Math.round((b - a) / 86400000);
-  return `${relativeDayLabel(daysAgo)} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
 }
 
 /* ─── v8 대시보드 (월 캘린더·주간 집계·due 판정) ─────────────────────── */
