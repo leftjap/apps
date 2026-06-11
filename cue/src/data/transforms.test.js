@@ -16,6 +16,12 @@ import {
   activeDaysInCurrentWeek,
   minuteOfDay,
   medianMinuteOfDay,
+  monthSeries,
+  monthSum,
+  weeklySums,
+  weeklyActiveDayCounts,
+  weeks4Streak,
+  dueOf,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -240,5 +246,83 @@ describe('medianMinuteOfDay — 평소 실행 시간대 = 최근 실행 시각 �
   it('invalid 타임스탬프는 무시하고 유효분만 집계', () => {
     expect(medianMinuteOfDay([at(13, 0), null, 'bad', at(14, 0), at(13, 50)], 999))
       .toBe(13 * 60 + 50);
+  });
+});
+
+/* ─── v8 대시보드 (작업지시서 2026-06-12) ─────────────────────────────── */
+
+describe('v8: monthSeries / monthSum', () => {
+  // 2026-06-12 (금) — 6월은 30일, 6/1=월
+  const today = new Date(2026, 5, 12);
+  it('이번 달 1~말일 배열, 오늘 이후 0', () => {
+    // series: 오늘로 끝나는 14일 (5/30~6/12)
+    const series = [1, 2, /* 6/1 */ 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, /* 오늘 */ 14];
+    const m = monthSeries(series, today);
+    expect(m).toHaveLength(30);
+    expect(m[0]).toBe(3); // 6/1
+    expect(m[11]).toBe(14); // 6/12 오늘
+    expect(m[12]).toBe(0); // 미래
+  });
+  it('series 가 달 시작보다 짧으면 앞을 0', () => {
+    const m = monthSeries([5, 6], today); // 6/11, 6/12 만
+    expect(m[10]).toBe(5);
+    expect(m[9]).toBe(0);
+  });
+  it('monthSum: 지난달 합 / 이번 달 합', () => {
+    // 43일: 5/1~6/12 — 5월(31일) 전부 1, 6월 전부 2
+    const series = [...Array(31).fill(1), ...Array(12).fill(2)];
+    expect(monthSum(series, today, 1)).toBe(31);
+    expect(monthSum(series, today, 0)).toBe(24);
+  });
+  it('monthSum: series 밖이면 null', () => {
+    expect(monthSum([1, 2, 3], today, 1)).toBeNull();
+  });
+});
+
+describe('v8: weeklySums / weeklyActiveDayCounts', () => {
+  const today = new Date(2026, 5, 12); // 금 → 이번주 경과 5일 (월~금)
+  it('주별 합 — 마지막 = 이번주 부분(월~오늘)', () => {
+    const series = [...Array(7).fill(1), ...Array(7).fill(2), ...Array(5).fill(3)];
+    expect(weeklySums(series, today, 3)).toEqual([7, 14, 15]);
+  });
+  it('series 부족 주는 0', () => {
+    expect(weeklySums([1, 1, 1, 1, 1], today, 2)).toEqual([0, 5]);
+  });
+  it('활동일수', () => {
+    const series = [...[1, 0, 1, 0, 1, 0, 0], ...[1, 1, 1, 1, 0]];
+    expect(weeklyActiveDayCounts(series, today, 2)).toEqual([3, 4]);
+  });
+});
+
+describe('v8: weeks4Streak', () => {
+  it('이번주(마지막) 4 미만이면 연속 안 끊김 — cur = 지난주까지', () => {
+    expect(weeks4Streak([4, 4, 4, 2])).toEqual({ cur: 3, best: 3 });
+  });
+  it('이번주 4 이상이면 포함', () => {
+    expect(weeks4Streak([3, 4, 4, 4])).toEqual({ cur: 3, best: 3 });
+  });
+  it('과거 최장 > 현재', () => {
+    expect(weeks4Streak([4, 4, 4, 0, 4, 1])).toEqual({ cur: 1, best: 3 });
+  });
+  it('빈 배열', () => {
+    expect(weeks4Streak([])).toEqual({ cur: 0, best: 0 });
+  });
+});
+
+describe('v8: dueOf — §6 due 판정 (동시 0~1개)', () => {
+  const apps = (over) => [
+    { id: 'read', done: false, usualMin: 1350, ...(over && over.read) },
+    { id: 'write', done: false, usualMin: 1170, ...(over && over.write) },
+    { id: 'lang', done: false, usualMin: 780, ...(over && over.lang) },
+    { id: 'gym', done: true, usualMin: 430, ...(over && over.gym) },
+  ];
+  it('지난 것 중 가장 이른 미완료 1개', () => {
+    expect(dueOf(apps(), 1200)).toBe('lang');
+  });
+  it('완료는 제외', () => {
+    expect(dueOf(apps({ lang: { done: true } }), 1200)).toBe('write');
+  });
+  it('아무 것도 안 지났으면 null', () => {
+    expect(dueOf(apps(), 700)).toBeNull();
   });
 });

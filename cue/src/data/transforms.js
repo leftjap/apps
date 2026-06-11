@@ -220,3 +220,83 @@ export function lastSessionLabel(date, today) {
   const daysAgo = Math.round((b - a) / 86400000);
   return `${relativeDayLabel(daysAgo)} ${p2(d.getHours())}:${p2(d.getMinutes())}`;
 }
+
+/* ─── v8 대시보드 (월 캘린더·주간 집계·due 판정) ─────────────────────── */
+
+/** 오늘이 속한 달의 1일~말일 일별 배열 — 오늘로 끝나는 series 에서 추출. 오늘 이후·범위 밖 = 0 */
+export function monthSeries(series, today) {
+  const d = new Date(today);
+  const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  const todayDate = d.getDate();
+  const last = series.length - 1;
+  const out = new Array(dim).fill(0);
+  for (let day = 1; day <= todayDate; day++) {
+    const i = last - (todayDate - day);
+    if (i >= 0) out[day - 1] = series[i] || 0;
+  }
+  return out;
+}
+
+/** monthsBack 달 전 한 달 합 (0=이번 달 1일~오늘). 그 달 시작이 series 밖이면 null */
+export function monthSum(series, today, monthsBack) {
+  const base = new Date(today); base.setHours(0, 0, 0, 0);
+  const first = new Date(base.getFullYear(), base.getMonth() - monthsBack, 1);
+  const lastDay = monthsBack === 0
+    ? base
+    : new Date(base.getFullYear(), base.getMonth() - monthsBack + 1, 0);
+  const firstIdx = series.length - 1 - Math.round((base - first) / 86400000);
+  const lastIdx = series.length - 1 - Math.round((base - lastDay) / 86400000);
+  if (firstIdx < 0) return null;
+  let s = 0;
+  for (let i = firstIdx; i <= lastIdx; i++) s += series[i] || 0;
+  return Math.round(s * 10) / 10;
+}
+
+/** 최근 weeks 주 주별 합 (월 시작, 마지막 = 이번주 월~오늘). oldest→newest. 부족분 0 */
+export function weeklySums(series, today, weeks = 8) {
+  const n = daysIntoWeek(today);
+  const out = [];
+  for (let w = 0; w < weeks; w++) {
+    const start = series.length - (n + (weeks - 1 - w) * 7);
+    const len = w === weeks - 1 ? n : 7;
+    let s = 0;
+    for (let i = 0; i < len; i++) s += series[start + i] || 0;
+    out.push(Math.round(s * 10) / 10);
+  }
+  return out;
+}
+
+/** 최근 weeks 주 주별 활동일수 (월 시작, 마지막 = 이번주 부분). oldest→newest */
+export function weeklyActiveDayCounts(series, today, weeks) {
+  const n = daysIntoWeek(today);
+  const out = [];
+  for (let w = 0; w < weeks; w++) {
+    const start = series.length - (n + (weeks - 1 - w) * 7);
+    const len = w === weeks - 1 ? n : 7;
+    let c = 0;
+    for (let i = 0; i < len; i++) if ((series[start + i] || 0) > 0) c++;
+    out.push(c);
+  }
+  return out;
+}
+
+/** 주 4일 연속 — counts(마지막 = 이번주 진행 중) 기준 {cur, best}.
+    이번주가 아직 4 미만이어도 연속을 끊지 않는다 (진행 중). ≥4 면 포함. */
+export function weeks4Streak(counts, target = 4) {
+  if (!counts || counts.length === 0) return { cur: 0, best: 0 };
+  let best = 0, run = 0;
+  for (const c of counts.slice(0, -1)) {
+    run = c >= target ? run + 1 : 0;
+    if (run > best) best = run;
+  }
+  const cur = counts[counts.length - 1] >= target ? run + 1 : run;
+  return { cur, best: Math.max(best, cur) };
+}
+
+/** v8 작업지시서 §6 due 판정 — 보통 시각이 지난 미완료 중 가장 이른 것 (동시 0~1개) */
+export function dueOf(apps, nowMin) {
+  const c = (apps || [])
+    .filter((a) => !a.done && a.usualMin <= nowMin)
+    .sort((a, b) => a.usualMin - b.usualMin);
+  return c.length ? c[0].id : null;
+}
