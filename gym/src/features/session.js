@@ -2516,16 +2516,6 @@ async function getCurrentBlockAndCursor() {
   return { session, block, blockIdx, cur, effectiveCur };
 }
 
-/** 스와이프 세트완료 체크 플래시 (사용자 요청 2026-06-10) — reduced-motion 은 CSS 게이트가 차단. */
-function playSwipeCommitFx(doc) {
-  const fx = doc?.getElementById?.('swipeCommitFx');
-  if (!fx) return;
-  fx.classList.remove('show');
-  void fx.offsetWidth; // 강제 reflow — 연속 스와이프 시 애니 재시작
-  fx.classList.add('show');
-  setTimeout(() => fx.classList.remove('show'), 620);
-}
-
 /**
  * spec §6-3-1 좌 스와이프.
  *  - cur 가 유효 : sets[cur].done = true (preset:false).
@@ -2632,11 +2622,12 @@ export async function handleLeftSwipe() {
 
   blocks[blockIdx] = { ...block, sets };
 
-  // 좌 스와이프 commit 책장 넘김 애니메이션:
-  //   - OUT (180ms): translateX(0 → -28) + opacity(1 → 0). opacity 0 보장 → 이후 우측 jump 가 invisible
+  // 좌 스와이프 commit 책장 넘김 (방향 C · 산뜻 — 작업지시서 §5):
+  //   - OUT (187ms, accel): translateX(0 → -26) + opacity(1 → 0). opacity 0 보장 → 이후 우측 jump 가 invisible
   //   - DB upsert + mount 는 OUT 과 병렬 (Promise.all) → OUT 끝과 mount 끝이 거의 동시 → 좌측 정지 시간 0
-  //   - IN reset (jump): transform translateX(+28), opacity 0 (invisible 상태)
-  //   - IN (200ms): translateX(+28 → 0) + opacity(0 → 1)
+  //   - IN reset (jump): transform translateX(+26), opacity 0 (invisible 상태)
+  //   - IN (220ms, decel): translateX(+26 → 0) + opacity(0 → 1) + 볼륨바 brightness 동반 강조
+  //   - onfinish 비의존 (setTimeout 폴백 + Promise.all) → 백그라운드 탭 안전 (§5 콜아웃)
   const doc = typeof document !== 'undefined' ? document : null;
   const swipeArea = doc?.getElementById('cardSwipeArea');
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
@@ -2650,16 +2641,15 @@ export async function handleLeftSwipe() {
       return;
     }
     await mountSessionView();
-    if (cur !== -1) playSwipeCommitFx(doc);
     if (prResult && prResult.isPR && typeof document !== 'undefined') showPrPop(document);
     return;
   }
 
-  // OUT 시작
-  swipeArea.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
-  swipeArea.style.transform = 'translateX(-28px)';
+  // OUT 시작 (방향 C — 가속 이징)
+  swipeArea.style.transition = 'transform 187ms cubic-bezier(.4,0,1,1), opacity 187ms cubic-bezier(.4,0,1,1)';
+  swipeArea.style.transform = 'translateX(-26px)';
   swipeArea.style.opacity = '0';
-  const outDone = new Promise((r) => setTimeout(r, 180));
+  const outDone = new Promise((r) => setTimeout(r, 187));
 
   // 병렬로 DB + mount 진행 (OUT 시간 동안 가려진 채로 데이터 갱신)
   let upsertErr = null;
@@ -2685,23 +2675,30 @@ export async function handleLeftSwipe() {
     return;
   }
 
-  // 세트완료 확증 피드백 — 체크 플래시 (advance-only(cur===-1) 는 완료가 아니므로 제외)
-  if (cur !== -1) playSwipeCommitFx(doc);
-
   // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
   // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.
   await new Promise((r) => requestAnimationFrame(r));
 
   // IN 시작점 jump (invisible — opacity 0 이라 사용자 안 보임)
   swipeArea.style.transition = 'none';
-  swipeArea.style.transform = 'translateX(28px)';
+  swipeArea.style.transform = 'translateX(26px)';
   swipeArea.style.opacity = '0';
   // 강제 reflow 로 style flush 보장 (rAF 대기 없이도 transition 트리거)
   void swipeArea.offsetHeight;
-  // IN 트랜지션
-  swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+  // IN 트랜지션 (방향 C — 감속 이징)
+  swipeArea.style.transition = 'transform 220ms cubic-bezier(.16,.84,.3,1), opacity 220ms cubic-bezier(.16,.84,.3,1)';
   swipeArea.style.transform = 'translateX(0)';
   swipeArea.style.opacity = '1';
+  // 볼륨바 동반 강조 — brightness 1 → 1.14 → 1 (방향 C §5). WAAPI fill:none → 자동 복귀(throttle 안전).
+  try {
+    const volBarEl = doc.getElementById('cardProgressBar');
+    if (volBarEl && typeof volBarEl.animate === 'function') {
+      volBarEl.animate(
+        [{ filter: 'brightness(1)' }, { filter: 'brightness(1.14)', offset: 0.4 }, { filter: 'brightness(1)' }],
+        { duration: 440, easing: 'ease-out' },
+      );
+    }
+  } catch (_) { /* WAAPI 미지원 graceful */ }
 
   // PR 팝 (mountSessionView 후 — 새 dot 노드에 대해 PR 표시는 이미 적용됨, pop 만 추가)
   if (prResult && prResult.isPR && typeof document !== 'undefined') {
