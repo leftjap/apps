@@ -1,4 +1,4 @@
-/* sanity-real-data.mjs — 실 Supabase 데이터로 adapter.buildRealHabits 검증 (로컬 전용).
+/* sanity-real-data.mjs — 실 Supabase 데이터로 adapter.buildRealApps 검증 (로컬 전용).
    브라우저 OAuth 없이 실데이터 경로(쿼리+변환)를 점검: service-role 키로 RLS 우회하되
    adapter 가 owner 명시 필터로 사용자 행만 집계하는지 확인 (앱은 anon+RLS 로 동일 코드 사용).
 
@@ -8,7 +8,7 @@
      node scripts/sanity-real-data.mjs
    ※ service-role 키는 절대 커밋 금지 — env 로만 주입(이 스크립트는 하드코딩 안 함). */
 import { createClient } from '@supabase/supabase-js';
-import { buildRealHabits } from '../src/data/adapter.js';
+import { buildRealApps } from '../src/data/adapter.js';
 
 const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -20,18 +20,19 @@ if (!url || !key || !userId) {
 }
 
 const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-const habits = await buildRealHabits(client, userId);
+const apps = await buildRealApps(client, userId);
 
-console.log(`\n=== cue 실데이터 빌드 (user ${userId.slice(0, 8)}…) ===\n`);
-for (const h of habits) {
-  const st = h.states.cur;
-  const histSum = Math.round(h.hist.reduce((a, b) => a + b, 0) * 10) / 10;
-  const activeDays = h.hist.filter((v) => v > 0).length;
-  console.log(
-    `${h.ko.padEnd(3)} ${h.en.padEnd(5)} | ${st.kind.padEnd(8)} | ${String(st.big).padStart(3)} ${st.unit.padEnd(6)} | 오늘 ${String(st.today).padStart(4)}${h.metric.unit} | "${st.line}" | hist합 ${histSum}${h.metric.unit}/${activeDays}일 | ${h.url ?? '(iPhone)'}`,
-  );
-  const trendPct = (h.trend || []).map((r) => Math.round(r * 100)).join(',');
-  console.log(`      └ 최장 ${h.longest}일 · 리본 마지막="${h.last}" · 12주 추세(%): [${trendPct}]`);
+const hookStr = (h) => h ? `${h.title}${h.strong ? ` [${h.strong}]` : ''}${h.tail || ''}` : '(없음)';
+console.log(`\n=== cue v8 실데이터 빌드 (user ${userId.slice(0, 8)}…) ===\n`);
+for (const a of apps) {
+  const calSum = Math.round(a.cal.reduce((x, y) => x + y, 0) * 10) / 10;
+  console.log(`■ ${a.name} (${a.id}) — done=${a.done} usualMin=${a.usualMin} atMin=${a.atMin} tlMeta=${a.tlMeta ?? '-'}`);
+  console.log(`  hook     : ${hookStr(a.hook)}`);
+  if (a.hookDone) console.log(`  hookDone : ${hookStr(a.hookDone)}`);
+  console.log(`  sub      : ${a.sub}`);
+  console.log(`  beat     : ${a.beat}`);
+  for (const r of a.records) console.log(`  rec      : [${r.lb}] ${r.v}${r.note ? ` — ${r.note}` : ''}`);
+  console.log(`  cal      : 이번 달 합 ${calSum}${a.calUnit} / weekly8 [${a.weekly8.join(', ')}] / total "${a.total}"`);
+  console.log(`  cta      : ${a.cta}${a.ctaDone ? ` / done: ${a.ctaDone}` : ''} → ${a.url ?? '(iPhone 전용)'}\n`);
 }
-console.log('');
 process.exit(0);

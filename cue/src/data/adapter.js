@@ -1,69 +1,72 @@
-/* adapter.js — 실데이터 → 시안 habit shape (단일 상태 cur).
-   같은 Supabase 프로젝트의 4앱 테이블을 읽어 빌드. demo 와 동일 shape 라 컴포넌트 그대로 동작.
+/* adapter.js — 실데이터 → v8 앱 shape (design-ref/v8 작업지시서 §8).
+   같은 Supabase 프로젝트의 4앱 테이블을 읽어 빌드. mock 과 동일 shape 라 컴포넌트 그대로 동작.
 
    Supabase client 는 주입(DI):
      - 앱: 브라우저 anon 클라이언트 (RLS 가 로그인 사용자로 격리)
      - 검증 스크립트: service-role 클라이언트 (RLS 우회 → owner 명시 필터 필수)
    → 두 경로 모두 owner 컬럼을 명시 필터(study/gym=user_id, today/book=owner_id).
 
-   지표(작업지시서 §4):
-     어학 study  = study_daily_stats.utterance_count 합/일 (문장)
-     글쓰기 today = today_entries.content 글자수→매수(200자=1매), WRITING_KINDS
-     운동 gym    = gym_sessions.duration_min, status=completed (이번주 회수 + active 라이브)
-     독서 book   = book_reading_seconds.seconds/60 (분)
-   ※ "오늘 흐름" 점 좌표 (flow 작업지시서 §5):
-      atMin   = 오늘 완료 시 실제 DB 기록 시각 분 (gym=end_time, today/study=created_at).
-      usualMin = 평소 실행 시간대 — 최근 4주 실행 시각 중앙값, 기록<3회면 usualFallback.
-      book 만 일별 집계 테이블이라 분 단위 시각 없음 → 항상 usualFallback (구 slot 폴백 승계). */
+   지표 (§8 — 윈도우는 올해 1/1~오늘, 최소 63일):
+     독서 read   = book_reading_seconds.seconds/60 (분). 외부 millie-tracker 가 채움 — 시각 없음
+     글쓰기 write = today_entries.content 글자수→매수(200자=1매), WRITING_KINDS. hook=마지막 문서 제목
+     어학 lang   = study_daily_stats.study_time_sec/60 (분). hook=study_today_lessons sceneTitle
+     운동 gym    = gym_sessions.duration_min, status=completed. 주 4일 목표, 부위=tags[0]
+   문장 생성은 copy.js (§9), 수치 함수는 transforms.js. */
 import {
-  dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun, relativeDayLabel,
-  lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, weeklyActivityRatios,
-  lastSessionLabel, isStaleActiveSession, latestTodayTs, minuteOfDay, medianMinuteOfDay,
+  dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun,
+  lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday,
+  latestTodayTs, minuteOfDay, medianMinuteOfDay, p2,
+  monthSeries, monthSum, weeklySums, weeklyActiveDayCounts, weeks4Streak,
 } from './transforms.js';
+import { buildRead, buildWrite, buildLang, buildGym } from './copy.js';
 
-const WINDOW = 84;       // 84일=12주 — 전체통계 추세 + 충분한 streak/최장 계산
-const TREND_WEEKS = 12;  // 전체통계 모달 주별 추세 막대 수
-const HIST_LEN = 35;     // 히트맵 표시(34 hist + 오늘), Tweaks 기록 기간 최대 35일
-const USUAL_DAYS = 28;   // usualMin 중앙값 산출 창 — 최근 4주 (flow 작업지시서 §5)
+const USUAL_DAYS = 28; // usualMin 중앙값 산출 창 — 최근 4주
 const WRITING_KINDS = ['navi', 'fiction', 'blog', 'memo']; // today 앱 WRITING_KINDS
 
-// 습관별 정적 메타 (지표 unit·히트맵 max, usualMin 폴백 분, 미실행 CTA)
+// 앱별 정적 메타 (딥링크·usualMin 폴백·캘린더 단위)
 const META = {
-  today: { ko: '글쓰기', en: 'Today', url: 'https://leftjap.github.io/apps/today/', metric: { unit: '매', max: 3.4 }, usualFallback: 6 * 60 + 40, enterNone: '쓰기' },
-  gym:   { ko: '운동', en: 'Gym', url: null, device: 'iPhone', metric: { unit: '분', max: 60 }, usualFallback: 13 * 60 + 50, enterNone: null },
-  study: { ko: '어학', en: 'Study', url: 'https://leftjap.github.io/apps/study/', metric: { unit: '문장', max: 46 }, usualFallback: 20 * 60, enterNone: '열기' },
-  book:  { ko: '독서', en: 'Book', url: 'https://leftjap.github.io/apps/book/', metric: { unit: '분', max: 50 }, usualFallback: 22 * 60 + 30, enterNone: '읽기' },
+  read:  { url: 'https://leftjap.github.io/apps/book/',  usualFallback: 22 * 60 + 30, calUnit: '분' },
+  write: { url: 'https://leftjap.github.io/apps/today/', usualFallback: 6 * 60 + 40,  calUnit: '매' },
+  lang:  { url: 'https://leftjap.github.io/apps/study/', usualFallback: 20 * 60,      calUnit: '분' },
+  gym:   { url: null, usualFallback: 13 * 60 + 50, calUnit: '분' }, // iPhone 전용 — CTA 무동작
 };
 
 const round1 = (v) => Math.round(v * 10) / 10;
+const fmtHM = (min) => `${p2(Math.floor(min / 60))}:${p2(Math.round(min) % 60)}`;
 
-function viewHabit(id, hist, st, lastLabel, trend, longest, usualMin) {
-  const m = META[id];
+/** 올해 1/1~오늘 일수 (최소 63 — 1월에도 8주 집계 확보) */
+function ytdLen(today) {
+  const base = new Date(today); base.setHours(0, 0, 0, 0);
+  const jan1 = new Date(base.getFullYear(), 0, 1);
+  return Math.max(Math.round((base - jan1) / 86400000) + 1, 63);
+}
+
+/** 모든 활동 공용 수치 묶음 (series = 올해 일별, 마지막 = 오늘) */
+function seriesStats(series, today) {
+  const last = series.length - 1;
+  const todayVal = round1(series[last]);
+  const done = todayVal > 0;
+  const lastDaysAgo = done ? 0 : lastActiveDaysAgo(series);
   return {
-    id, ko: m.ko, en: m.en, url: m.url, device: m.device,
-    metric: m.metric, usualMin, last: lastLabel,
-    hist, trend, longest, cycle: ['cur'], start: 'cur', states: { cur: st },
+    todayVal, done,
+    streak: done ? runDays(series) : runDays(series.slice(0, last)),
+    best: longestRun(series),
+    dayBest: round1(Math.max(...series, 0)),
+    lastDaysAgo,
+    lastVal: lastDaysAgo != null ? round1(series[last - lastDaysAgo]) : null,
+    yearSum: round1(series.reduce((a, b) => a + b, 0)),
+    yearDays: series.filter((v) => v > 0).length,
+    cal: monthSeries(series, today),
+    weekly8: weeklySums(series, today, 8),
   };
 }
 
-// 일별 습관(study/today/book) 공통 상태 빌더.
-// lastOverride: "N일 전 HH:MM"(시각 있으면) / usualTs: 최근 4주 실행 타임스탬프(중앙값용)
-function buildDaily(id, series, noneLine, lastOverride, at, usualTs) {
-  const m = META[id];
-  const lastI = WINDOW - 1;
-  const hist = series.slice(WINDOW - HIST_LEN, lastI); // 히트맵용 최근 34일(오늘 제외)
-  const todayVal = series[lastI];
-  const done = todayVal > 0;
-  const big = done ? runDays(series) : runDays(series.slice(0, lastI)); // 오늘 안 했으면 어제까지 연속
-  const unit = '일 연속';
-  const usualMin = medianMinuteOfDay(usualTs, m.usualFallback);
-  const st = done
-    ? { kind: 'done', big, unit, today: todayVal, line: `오늘 ${todayVal}${m.metric.unit}`, enter: '다시 열기',
-        atMin: minuteOfDay(at) ?? usualMin, amount: `${todayVal}${m.metric.unit}` }
-    : { kind: 'none', big, unit, today: 0, line: noneLine, enter: m.enterNone };
-  const d = lastActiveDaysAgo(series);
-  const last = lastOverride || (d != null ? relativeDayLabel(d) : '기록 없음');
-  return viewHabit(id, hist, st, last, weeklyActivityRatios(series, TREND_WEEKS), longestRun(series), usualMin);
+/** copy 빌더 결과 + 수치 메타 → 뷰 한 장 */
+function view(id, s, built, { usualMin, atMin = null, tlMeta = null }) {
+  return {
+    id, url: META[id].url, done: s.done, usualMin, atMin, tlMeta,
+    cal: s.cal, calUnit: META[id].calUnit, weekly8: s.weekly8, ...built,
+  };
 }
 
 async function rows(client, table, columns, filters = (q) => q) {
@@ -77,91 +80,131 @@ async function rows(client, table, columns, filters = (q) => q) {
   }
 }
 
-async function fetchStudy(client, userId, today, sinceKey, todayKey, usualSince) {
-  const data = await rows(client, 'study_daily_stats', 'date, utterance_count',
-    (q) => q.eq('user_id', userId).gte('date', sinceKey));
-  const series = dailySeries(data, (r) => r.date, (r) => r.utterance_count, WINDOW, today);
-  const due = await rows(client, 'study_review_queue', 'next_review',
-    (q) => q.eq('user_id', userId).lte('next_review', todayKey));
-  const noneLine = due.length > 0 ? `복습 ${due.length}개 대기` : '오늘 아직';
-  // 최근 4주 세션 로그 — [0]=직전 세션(라벨·at), 전체=usualMin 중앙값. 4주 무기록 시 series 폴백 라벨
-  const logs = await rows(client, 'study_session_logs', 'created_at',
-    (q) => q.eq('user_id', userId).gte('created_at', usualSince.toISOString()).order('created_at', { ascending: false }));
-  const at = latestTodayTs([logs[0]?.created_at], today);
-  return buildDaily('study', series, noneLine, lastSessionLabel(logs[0]?.created_at, today), at,
-    logs.map((r) => r.created_at));
-}
-
-async function fetchToday(client, userId, today, sinceKey, usualSinceKey) {
-  const data = await rows(client, 'today_entries', 'content, created_at, kind, deleted_at',
-    (q) => q.eq('owner_id', userId).in('kind', WRITING_KINDS).is('deleted_at', null).gte('created_at', sinceKey));
-  const series = dailySeries(data, (r) => localDayKey(r.created_at), (r) => sheetsFromHtml(r.content), WINDOW, today)
-    .map(round1);
-  const lastTs = data.reduce((mx, r) => (!mx || r.created_at > mx ? r.created_at : mx), null);
-  const at = latestTodayTs(data.map((r) => r.created_at), today);
-  const usualTs = data.filter((r) => localDayKey(r.created_at) >= usualSinceKey).map((r) => r.created_at);
-  return buildDaily('today', series, '오늘 아직', lastSessionLabel(lastTs, today), at, usualTs);
-}
-
-async function fetchBook(client, userId, today, sinceKey) {
+async function fetchRead(client, userId, today, len, sinceKey) {
   const data = await rows(client, 'book_reading_seconds', 'day, seconds',
     (q) => q.eq('owner_id', userId).gte('day', sinceKey));
-  const series = dailySeries(data, (r) => r.day, (r) => Math.round(r.seconds / 60), WINDOW, today);
-  const lastI = WINDOW - 1;
-  const d = lastActiveDaysAgo(series);
-  const noneLine = d != null ? `${relativeDayLabel(d)} ${series[lastI - d]}분 읽음` : '오늘 아직';
-  return buildDaily('book', series, noneLine); // 시각 데이터 없음 → usualMin·atMin 폴백
+  const series = dailySeries(data, (r) => r.day, (r) => Math.round(r.seconds / 60), len, today);
+  const s = seriesStats(series, today);
+  const built = buildRead({
+    done: s.done, todayMin: s.todayVal, lastVal: s.lastVal, lastDaysAgo: s.lastDaysAgo,
+    streak: s.streak, best: s.best, dayBest: s.dayBest, yearMin: s.yearSum, yearDays: s.yearDays, today,
+  });
+  // book 은 일별 집계 테이블 — 시각 없음 → 위치는 usualFallback, tlMeta 는 분량만
+  return view('read', s, built, {
+    usualMin: META.read.usualFallback,
+    tlMeta: s.done ? `${s.todayVal}분` : null,
+  });
 }
 
-async function fetchGym(client, userId, today, sinceKey, usualSinceKey) {
-  const data = await rows(client, 'gym_sessions', 'date, status, duration_min, start_time, end_time',
+async function fetchWrite(client, userId, today, len, sinceKey, usualSinceKey) {
+  const data = await rows(client, 'today_entries', 'title, content, created_at, kind, deleted_at',
+    (q) => q.eq('owner_id', userId).in('kind', WRITING_KINDS).is('deleted_at', null).gte('created_at', sinceKey));
+  const series = dailySeries(data, (r) => localDayKey(r.created_at), (r) => sheetsFromHtml(r.content), len, today)
+    .map(round1);
+  const s = seriesStats(series, today);
+  const latest = data.reduce((mx, r) => (!mx || r.created_at > mx.created_at ? r : mx), null);
+  const doc = latest
+    ? { title: (latest.title || '').trim() || '제목 없는 글', sheets: sheetsFromHtml(latest.content) }
+    : null;
+  const usualTs = data.filter((r) => localDayKey(r.created_at) >= usualSinceKey).map((r) => r.created_at);
+  const usualMin = medianMinuteOfDay(usualTs, META.write.usualFallback);
+  const atMin = minuteOfDay(latestTodayTs(data.map((r) => r.created_at), today));
+  const prevMonthSheets = monthSum(series, today, 1);
+  const built = buildWrite({
+    done: s.done, todaySheets: s.todayVal, doc, lastDaysAgo: s.lastDaysAgo,
+    dayBest: s.dayBest, lastSheets: s.lastVal,
+    monthSheets: monthSum(series, today, 0) ?? 0, prevMonthSheets,
+    prevMonthName: today.getMonth() === 0 ? 12 : today.getMonth(),
+    yearSheets: s.yearSum, yearDays: s.yearDays, today,
+  });
+  return view('write', s, built, {
+    usualMin, atMin,
+    tlMeta: s.done ? `${fmtHM(atMin ?? usualMin)} · ${s.todayVal}매` : null,
+  });
+}
+
+async function fetchLang(client, userId, today, len, sinceKey, usualSince) {
+  const data = await rows(client, 'study_daily_stats', 'date, study_time_sec',
+    (q) => q.eq('user_id', userId).gte('date', sinceKey));
+  const series = dailySeries(data, (r) => r.date, (r) => r.study_time_sec / 60, len, today)
+    .map((v) => Math.round(v));
+  const s = seriesStats(series, today);
+  // 마지막 레슨명 = "마지막 학습일 이전" 최신 sceneTitle — 오늘 시드만 생성되고 미학습이면 잡지 않음
+  let scene = null;
+  if (s.lastDaysAgo != null) {
+    const keys = dayKeysEndingToday(len, today);
+    const lastActiveKey = keys[len - 1 - s.lastDaysAgo];
+    const lessons = await rows(client, 'study_today_lessons', 'date, explanation',
+      (q) => q.eq('user_id', userId)
+        .or('explanation->>sceneTitle.not.is.null,explanation->>scene_title.not.is.null')
+        .lte('date', lastActiveKey)
+        .order('date', { ascending: false }).limit(1));
+    const r = lessons[0];
+    const title = r && (r.explanation?.sceneTitle || r.explanation?.scene_title);
+    if (title) {
+      const [, m, d] = r.date.split('-').map(Number);
+      scene = { title, m, d };
+    }
+  }
+  const logs = await rows(client, 'study_session_logs', 'created_at',
+    (q) => q.eq('user_id', userId).gte('created_at', usualSince.toISOString()).order('created_at', { ascending: false }));
+  const usualMin = medianMinuteOfDay(logs.map((r) => r.created_at), META.lang.usualFallback);
+  const atMin = minuteOfDay(latestTodayTs([logs[0]?.created_at], today));
+  const built = buildLang({
+    done: s.done, todayMin: s.todayVal, scene, lastDaysAgo: s.lastDaysAgo,
+    streak: s.streak, best: s.best, dayBest: s.dayBest, lastVal: s.lastVal,
+    yearMin: s.yearSum, yearDays: s.yearDays, today,
+  });
+  return view('lang', s, built, {
+    usualMin, atMin,
+    tlMeta: s.done ? `${fmtHM(atMin ?? usualMin)} · ${s.todayVal}분` : null,
+  });
+}
+
+async function fetchGym(client, userId, today, len, sinceKey, usualSinceKey) {
+  const data = await rows(client, 'gym_sessions', 'date, status, duration_min, start_time, end_time, tags',
     (q) => q.eq('user_id', userId).gte('date', sinceKey));
   const completed = data.filter((r) => r.status === 'completed');
-  const series = dailySeries(completed, (r) => r.date, (r) => r.duration_min, WINDOW, today);
-  const lastI = WINDOW - 1;
-  const hist = series.slice(WINDOW - HIST_LEN, lastI);
-  const todayVal = series[lastI];
+  const series = dailySeries(completed, (r) => r.date, (r) => r.duration_min, len, today);
+  const s = seriesStats(series, today);
   const weekCount = countDaysInCurrentWeek(completed.map((r) => r.date), today);
-  const unit = '이번주 회';
-  // 평소 시간대 = 최근 4주 완료 세션 시작 시각 중앙값 (시작 시각이 "보통 언제 하나"의 신호)
+  const w4 = weeks4Streak(weeklyActiveDayCounts(series, today, Math.ceil(len / 7)));
+  // 평소 시간대 = 최근 4주 완료 세션 시작 시각 중앙값
   const usualMin = medianMinuteOfDay(
     completed.filter((r) => r.date >= usualSinceKey).map((r) => Number(r.start_time) || null),
     META.gym.usualFallback);
-  const at = latestTodayTs(completed.map((r) => Number(r.end_time || r.start_time) || null), today);
-  const active = data.find((r) =>
-    (r.status === 'active' || r.status === 'paused') && !isStaleActiveSession(r.start_time, Date.now()));
-  let st;
-  if (active) {
-    const timer = Math.max(0, Math.floor((Date.now() - Number(active.start_time)) / 1000));
-    st = { kind: 'progress', big: weekCount, unit, today: 0, line: '운동 중', timer, enter: null };
-  } else if (todayVal > 0) {
-    st = { kind: 'done', big: weekCount, unit, today: todayVal, line: `오늘 ${todayVal}분`, enter: null,
-      atMin: minuteOfDay(at) ?? usualMin, amount: `${todayVal}분` };
-  } else {
-    const d = lastActiveDaysAgo(series);
-    st = { kind: 'none', big: weekCount, unit, today: 0, line: d != null ? `마지막 운동 ${relativeDayLabel(d)}` : '이번주 아직', enter: null };
-  }
-  const lastTs = completed.reduce((mx, r) => { const t = Number(r.end_time || r.start_time) || 0; return t > mx ? t : mx; }, 0);
-  const dd = lastActiveDaysAgo(series);
-  const lastLabel = lastTs ? lastSessionLabel(new Date(lastTs), today) : (dd != null ? relativeDayLabel(dd) : '기록 없음');
-  return viewHabit('gym', hist, st, lastLabel,
-    weeklyActivityRatios(series, TREND_WEEKS), longestRun(series), usualMin);
+  const atMin = minuteOfDay(latestTodayTs(completed.map((r) => Number(r.end_time || r.start_time) || null), today));
+  const todayKey = localDayKey(today);
+  const todayLast = completed
+    .filter((r) => r.date === todayKey)
+    .reduce((mx, r) => (!mx || Number(r.end_time || 0) > Number(mx.end_time || 0) ? r : mx), null);
+  const built = buildGym({
+    done: s.done, todayMin: s.todayVal,
+    atLabel: s.done ? fmtHM(atMin ?? usualMin) : null,
+    tag: todayLast?.tags?.[0] ?? null,
+    weekCount, w4, dayBest: s.dayBest, lastVal: s.lastVal, lastDaysAgo: s.lastDaysAgo,
+    yearCount: completed.filter((r) => r.duration_min > 0).length, yearMin: s.yearSum, today,
+  });
+  return view('gym', s, built, {
+    usualMin, atMin,
+    tlMeta: s.done ? `${fmtHM(atMin ?? usualMin)} · ${s.todayVal}분` : null,
+  });
 }
 
-/** 주어진 Supabase client·userId 로 4개 habit (시안 순서: today→gym→study→book) 빌드 */
-export async function buildRealHabits(client, userId) {
+/** v8 앱 4개 — 표시 순서 고정: 독서 → 글쓰기 → 어학 → 운동 (§3) */
+export async function buildRealApps(client, userId) {
   const today = startOfToday();
-  const keys = dayKeysEndingToday(WINDOW, today);
+  const len = ytdLen(today);
+  const keys = dayKeysEndingToday(len, today);
   const sinceKey = keys[0];
-  const todayKey = keys[keys.length - 1];
-  const usualSinceKey = keys[WINDOW - USUAL_DAYS]; // 최근 4주 시작일 (usualMin 창)
+  const usualSinceKey = keys[Math.max(0, len - USUAL_DAYS)];
   const usualSince = new Date(today);
   usualSince.setDate(usualSince.getDate() - (USUAL_DAYS - 1));
-  const [todayH, gymH, studyH, bookH] = await Promise.all([
-    fetchToday(client, userId, today, sinceKey, usualSinceKey),
-    fetchGym(client, userId, today, sinceKey, usualSinceKey),
-    fetchStudy(client, userId, today, sinceKey, todayKey, usualSince),
-    fetchBook(client, userId, today, sinceKey),
+  const [read, write, lang, gym] = await Promise.all([
+    fetchRead(client, userId, today, len, sinceKey),
+    fetchWrite(client, userId, today, len, sinceKey, usualSinceKey),
+    fetchLang(client, userId, today, len, sinceKey, usualSince),
+    fetchGym(client, userId, today, len, sinceKey, usualSinceKey),
   ]);
-  return [todayH, gymH, studyH, bookH];
+  return [read, write, lang, gym];
 }
