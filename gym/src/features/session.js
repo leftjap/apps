@@ -26,6 +26,9 @@ const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
 // (f-5-1) 사용자가 footer pill 탭으로 선택한 block idx (없으면 마지막 single 자동)
 let _currentBlockIdx = null;
+// 좌스와이프 커밋 1회성 신호 — 커밋한 종목 exerciseId. mountSessionActive 가 count-up/축하 모션 발화 후 소비(null).
+// 데이터-델타 추론(exDoneVol 증가) 만으로는 키패드 done-세트 수정도 오발화 → 명시 신호로 커밋만 구분.
+let _justCommittedExId = null;
 
 /* ───────────────────────────── Dexie 어댑터 ───────────────────────────── */
 
@@ -722,8 +725,9 @@ async function mountSessionActive(doc, block, session) {
   try { prevSessionVol = await getPrevSessionTotalVolume(session.id); }
   catch (_) { /* graceful — 직전 기록 없으면 0 */ }
   // P1 라이트 — 타이틀 우상단: 이번(숫자만, kg 라벨은 markup static) / 직전(별도 줄).
-  setTextById(doc, 'cardSetProgress', sessionDoneVol.toLocaleString());
-  setTextById(doc, 'cardSessVolPrev', prevSessionVol > 0 ? `직전 ${prevSessionVol.toLocaleString()}kg` : '');
+  // 우상단 누적(최종값) — 단, count-up 분기는 아래에서 시작값으로 덮어써 역방향 깜빡임 방지(리뷰 #8/#9).
+  setTextById(doc, 'cardSetProgress', Math.round(sessionDoneVol).toLocaleString());
+  setTextById(doc, 'cardSessVolPrev', prevSessionVol > 0 ? `직전 ${Math.round(prevSessionVol).toLocaleString()}kg` : '');
 
   const isPreset = !!currentSet.preset;
   // preset/input 모두 흰색 (사용자 가독성 우선) — 구분은 font-weight + setDots accent 로.
@@ -848,24 +852,29 @@ async function mountSessionActive(doc, block, session) {
   const bar = doc.getElementById('cardProgressBar');
   const edge = doc.getElementById('volEdge');
   const exVolText = (v) => (prevExVol > 0
-    ? `${v.toLocaleString()} / 직전 ${denom.toLocaleString()}kg`
-    : `${v.toLocaleString()} / ${denom.toLocaleString()}kg`);
+    ? `${Math.round(v).toLocaleString()} / 직전 ${Math.round(denom).toLocaleString()}kg`
+    : `${Math.round(v).toLocaleString()} / ${Math.round(denom).toLocaleString()}kg`);
   const RMV = prefersReducedMotion();
-  // 커밋 카운트업 판정 — 같은 종목 + 직전 렌더 대비 exDoneVol 증가 시만 (탭증감·우스와이프·reload 제외).
+  // 커밋 카운트업 — handleLeftSwipe 가 세운 1회성 커밋 플래그가 이 종목과 일치 + 직전 렌더 대비 exDoneVol 증가 + 비-RM.
+  //   키패드 done-세트 수정·탭증감·우스와이프·reload 는 플래그 없음 → 오발화 차단 (리뷰 #6).
   const prevExNum = bar ? Number(bar.dataset.exVol) : NaN;
   const sameEx = bar && bar.dataset.exId === block.exerciseId && Number.isFinite(prevExNum);
-  const countUp = sameEx && exDoneVol > prevExNum && !RMV;
+  const isCommit = _justCommittedExId === block.exerciseId;
+  const countUp = sameEx && exDoneVol > prevExNum && !RMV && isCommit;
+  const topBefore = sessionDoneVol - (exDoneVol - (Number.isFinite(prevExNum) ? prevExNum : exDoneVol));
   if (countUp) {
     // 바·엣지는 CSS transition(620ms) 가 자동으로 width/left 보간 (DOM 영속).
     if (bar) bar.style.width = `${widthPct}%`;
     if (edge) edge.style.left = `${widthPct}%`;
-    const topBefore = sessionDoneVol - (exDoneVol - prevExNum); // 우상단 누적도 같은 delta 로 동반.
+    // 시작값 즉시 세팅 — 725 의 cardSetProgress 최종값 선-paint 역방향 점프 방지 (animNum 첫 tick 은 다음 프레임, 리뷰 #8/#9).
+    setTextById(doc, 'cardProgressVol', exVolText(prevExNum));
+    setTextById(doc, 'cardSetProgress', Math.round(topBefore).toLocaleString());
     animNum(prevExNum, exDoneVol, 620, (v, isFinal) => {
-      setTextById(doc, 'cardProgressVol', exVolText(isFinal ? exDoneVol : Math.round(v)));
-      setTextById(doc, 'cardSetProgress', (isFinal ? sessionDoneVol : Math.round(topBefore + (v - prevExNum))).toLocaleString());
+      setTextById(doc, 'cardProgressVol', exVolText(isFinal ? exDoneVol : v));
+      setTextById(doc, 'cardSetProgress', Math.round(isFinal ? sessionDoneVol : topBefore + (v - prevExNum)).toLocaleString());
     });
   } else {
-    // 첫 마운트 / 종목 변경 / 감소 / reduced-motion → 즉시 (transition 일시 차단으로 fill-in 방지).
+    // 첫 마운트 / 종목 변경 / 감소 / reduced-motion / 비-커밋 → 즉시 (transition 일시 차단으로 fill-in 방지).
     if (bar) { const t = bar.style.transition; bar.style.transition = 'none'; bar.style.width = `${widthPct}%`; void bar.offsetWidth; bar.style.transition = t; }
     if (edge) { const t = edge.style.transition; edge.style.transition = 'none'; edge.style.left = `${widthPct}%`; void edge.offsetWidth; edge.style.transition = t; }
     setTextById(doc, 'cardProgressVol', exVolText(exDoneVol));
@@ -907,10 +916,8 @@ async function mountSessionActive(doc, block, session) {
     }
   }
   // 신기록 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 누적 숫자 펄스 + 태그 rise-in.
-  if (countUp) {
-    const topBefore = sessionDoneVol - (exDoneVol - prevExNum);
-    if (topBefore <= prevSessionVol && sessionDoneVol > prevSessionVol) topRecordPulse(doc);
-  }
+  if (countUp && topBefore <= prevSessionVol && sessionDoneVol > prevSessionVol) topRecordPulse(doc);
+  _justCommittedExId = null; // 커밋 1회성 신호 소비 — 다음 재렌더(키패드·탭증감 등)는 비-커밋.
 
   // P1 라이트 — PR 칩(progressive overload 넛지). 현재 무게가 직전 세션 동일 종목 최대 무게 초과 시 +Δkg.
   //   기존 데이터(prevSessionSets)만 사용 — 새 PR 로직 발명 X. weight 종목·미완료 블록 한정.
@@ -1224,6 +1231,7 @@ function wireSwipeHandlers(doc) {
   let tracking = false;   // pointerdown~up 추적 중
   let dragging = false;   // 수평 드래그 추종 engage 됨
   let captured = false;   // setPointerCapture 적용 여부
+  let committing = false; // 커밋 핸들러 in-flight 락 — 빠른 연속 스와이프 레이스(이중 커밋·전이 깜빡임) 방지 (리뷰 #4)
 
   const heroEl = () => doc.getElementById('cardHeroVals');
   const revealEl = () => doc.getElementById('completeReveal');
@@ -1245,6 +1253,7 @@ function wireSwipeHandlers(doc) {
 
   const onDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (committing) return; // 커밋 애니 진행 중 — 새 제스처 무시 (참조 시안 S.busy 답습, 리뷰 #4)
     startX = e.clientX;
     startY = e.clientY;
     tracking = true;
@@ -1306,13 +1315,19 @@ function wireSwipeHandlers(doc) {
     if (dragging) {
       dragging = false;
       resetDragVisual();
-      // spec §6-3-1 — 좌 -60 커밋 / 우 +60 이전 수정 / 그 외 스프링백.
+      // spec §6-3-1 — 좌 -60 커밋 / 우 +60 이전 수정 / 미세 떨림(±10 미만) 탭 폴백 / 그 외 스프링백.
       if (dx <= -60) {
         try { navigator.vibrate?.(10); } catch (_) { /* 미지원 silent */ }
-        await handleLeftSwipe({ fromDrag: true });
+        committing = true;
+        try { await handleLeftSwipe({ fromDrag: true }); } finally { committing = false; }
       } else if (dx >= 60 && adx > ady) {
         try { navigator.vibrate?.(10); } catch (_) { /* 미지원 silent */ }
-        await handleRightSwipe({ fromDrag: true });
+        committing = true;
+        try { await handleRightSwipe({ fromDrag: true }); } finally { committing = false; }
+      } else if (adx < 10 && ady < 10) {
+        // 미세 떨림(8px 초과로 engage 됐으나 최종 <10px) — 드래그 추종 transform 즉시 복원 후 탭 폴백 (리뷰 #2)
+        const h = heroEl(); if (h) { h.style.transition = 'none'; h.style.transform = ''; }
+        await handleTap(doc, e.clientX, e.clientY);
       } else {
         springBack();
       }
@@ -2879,6 +2894,10 @@ export async function handleLeftSwipe(options = {}) {
 
   blocks[blockIdx] = { ...block, sets };
 
+  // 커밋 1회성 신호 — mountSessionActive 가 이 종목 count-up/축하 모션 발화 후 소비 (리뷰 #6).
+  //   cur===-1(전부 done → advance only) 은 새 done 세트가 없어 축하 대상 아님.
+  if (cur !== -1) _justCommittedExId = block.exerciseId;
+
   // 좌 스와이프 commit 책장 넘김 (방향 C · 산뜻 — 작업지시서 §5):
   //   - OUT (187ms, accel): translateX(0 → -26) + opacity(1 → 0). opacity 0 보장 → 이후 우측 jump 가 invisible
   //   - DB upsert + mount 는 OUT 과 병렬 (Promise.all) → OUT 끝과 mount 끝이 거의 동시 → 좌측 정지 시간 0
@@ -2891,6 +2910,8 @@ export async function handleLeftSwipe(options = {}) {
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
   if (!canAnimate || prefersReducedMotion()) {
+    // RM/비애니 — 드래그 추종이 남긴 translateX 즉시 복원 (애니 경로만 translateX(0) 복원하던 누락 보완, 리뷰 #1).
+    if (heroVals) { heroVals.style.transition = 'none'; heroVals.style.transform = ''; heroVals.style.opacity = '1'; }
     try { await upsertSession({ ...session, blocks }); }
     catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
@@ -3053,6 +3074,8 @@ export async function handleRightSwipe(options = {}) {
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
   if (!canAnimate || prefersReducedMotion()) {
+    // RM/비애니 — 드래그 추종이 남긴 translateX 즉시 복원 (리뷰 #1).
+    if (heroVals) { heroVals.style.transition = 'none'; heroVals.style.transform = ''; heroVals.style.opacity = '1'; }
     try { await upsertSession({ ...session, blocks }); }
     catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
