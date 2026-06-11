@@ -1,19 +1,19 @@
-/* useHabits — 데모(목업) vs 실데이터(Supabase) 전환 + 로그인 상태 관리.
+/* useApps — 데모(목업) vs 실데이터(Supabase) 전환 + 로그인 상태 관리 (v8 앱 4개).
    status: 'demo' | 'loading' | 'ready' | 'signed-out' | 'error'
 
    ⚠️ supabase v2 데드락 회피: onAuthStateChange 콜백은 auth 락을 쥔 채 실행되므로
    그 안에서 auth 메서드(getSession/getUser)나 PostgREST 쿼리(내부적으로 getSession 호출)를
    부르면 재진입 데드락 → 영원히 hang. 따라서 콜백은 세션만 state 에 저장하고,
-   실제 fetch(buildRealHabits)는 콜백 밖 별도 effect 에서 수행한다. */
+   실제 fetch(buildRealApps)는 콜백 밖 별도 effect 에서 수행한다. */
 import { useState, useEffect } from 'react';
-import { MOCK_HABITS } from './mock.js';
-import { buildRealHabits } from './adapter.js';
+import { MOCK_APPS } from './mock.js';
+import { buildRealApps } from './adapter.js';
 import { supabase } from '../services/supabase.js';
 import { onAuthChange, isSupabaseConfigured } from '../services/auth.js';
 
-export function useHabits(demoMode) {
+export function useApps(demoMode) {
   const [state, setState] = useState(() =>
-    demoMode ? { status: 'demo', habits: MOCK_HABITS } : { status: 'loading', habits: null });
+    demoMode ? { status: 'demo', apps: MOCK_APPS } : { status: 'loading', apps: null });
   // undefined = 아직 모름, null = 로그아웃, { userId } = 로그인
   const [auth, setAuth] = useState(undefined);
 
@@ -40,22 +40,22 @@ export function useHabits(demoMode) {
 
   // 2) demoMode/auth 반응 — fetch 는 인증 콜백 밖(락 미보유)에서 수행
   useEffect(() => {
-    if (demoMode) { setState({ status: 'demo', habits: MOCK_HABITS }); return undefined; }
-    if (!isSupabaseConfigured) { setState({ status: 'signed-out', habits: null }); return undefined; }
-    if (auth === undefined) { setState((s) => (s.status === 'ready' ? s : { status: 'loading', habits: null })); return undefined; }
-    if (auth === null) { setState({ status: 'signed-out', habits: null }); return undefined; }
+    if (demoMode) { setState({ status: 'demo', apps: MOCK_APPS }); return undefined; }
+    if (!isSupabaseConfigured) { setState({ status: 'signed-out', apps: null }); return undefined; }
+    if (auth === undefined) { setState((s) => (s.status === 'ready' ? s : { status: 'loading', apps: null })); return undefined; }
+    if (auth === null) { setState({ status: 'signed-out', apps: null }); return undefined; }
 
     // 상시표시 모니터용 자동 새로고침: 90초 폴링 + 탭 가시화/포커스 시 즉시 재요청
     // (앱 DB 변경을 reload 없이 cue 에 반영). 폴링 실패는 기존 데이터 유지(깜빡임 방지).
     let alive = true;
     const load = async (showLoading) => {
-      if (showLoading) setState((s) => ({ status: 'loading', habits: s.habits }));
+      if (showLoading) setState((s) => ({ status: 'loading', apps: s.apps }));
       try {
-        const habits = await buildRealHabits(supabase, auth.userId);
-        if (alive) setState({ status: 'ready', habits });
+        const apps = await buildRealApps(supabase, auth.userId);
+        if (alive) setState({ status: 'ready', apps });
       } catch (e) {
-        console.warn('[useHabits]', e);
-        if (alive) setState((s) => (s.habits ? { status: 'ready', habits: s.habits } : { status: 'error', habits: null }));
+        console.warn('[useApps]', e);
+        if (alive) setState((s) => (s.apps ? { status: 'ready', apps: s.apps } : { status: 'error', apps: null }));
       }
     };
     load(true);

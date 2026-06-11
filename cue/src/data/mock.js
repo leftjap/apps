@@ -1,52 +1,73 @@
-/* mock.js — 데모 모드(Tweaks) 목업 습관 데이터. design-ref/flow/src/flow/data.js 의 HABITS verbatim.
-   실데이터(adapter.js)는 동일 shape 를 생성하되 단일 상태(cycle:["cur"])로 만든다.
-   demo: 카드·캡션 탭 시 cycle 을 따라 상태 순환 미리보기.
-   기본 장면: 글쓰기 완료(06:40) · 운동 미실행(밀림) · 어학·독서 미실행
-   → 오늘 기록 / 밀린 미실행 / 다가올 미실행이 모두 보이는 검증용 구성. */
+/* mock.js — 데모 모드 목업 (design-ref/v8/시안-소스/data.js 값 승계, v8 shape).
+   장면: 운동 완료(07:12) · 어학 13:00 (오후엔 due) · 글쓰기 19:30 · 독서 22:30 대기
+   — 시안 기본 화면과 동일. due 는 목업 고정이 아니라 실제 dueOf(§6)가 시각으로 판정. */
+import { startOfToday } from './transforms.js';
 
-/* 표시 순서 — 하루 흐름(아침→밤). 문·흐름·기록 모두 이 순서로 일관 */
-export const ORDER = ["today", "gym", "study", "book"];
+function mockCal(vals) {
+  const today = startOfToday();
+  const dim = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+  const out = new Array(dim).fill(0);
+  for (let i = 0; i < Math.min(today.getDate(), vals.length); i++) out[i] = vals[i];
+  return out;
+}
 
-export const MOCK_HABITS = [
+export const MOCK_APPS = [
   {
-    id: "today", ko: "글쓰기", en: "Today", url: "https://leftjap.github.io/apps/today/",
-    metric: { unit: "매", max: 3.4 }, usualMin: 6 * 60 + 40, last: "어제 07:10",
-    cycle: ["none", "done"], start: "done",
-    states: {
-      none: { kind: "none", big: 3, unit: "일 연속", today: 0, line: "오늘 아직", enter: "쓰기" },
-      done: { kind: "done", big: 4, unit: "일 연속", today: 2.1, line: "오늘 2.1매", enter: "다시 열기", atMin: 6 * 60 + 40, amount: "2.1매" },
-    },
-    hist: [2.1, 1.8, 0, 2.4, 1.5, 3.0, 2.2, 0, 1.9, 2.6, 1.4, 2.0, 0, 2.8, 1.7, 2.2, 3.4, 1.9, 2.5, 2.1, 2.3, 1.7, 2.4, 0, 2.6, 1.9, 2.1],
+    id: 'read', name: '독서', url: 'https://leftjap.github.io/apps/book/',
+    done: false, usualMin: 22.5 * 60, atMin: null, tlMeta: null,
+    hook: { title: '어제', strong: '9분', tail: ' 읽었어요' },
+    hookDone: { title: '오늘', strong: '9분', tail: ' 읽었어요' },
+    sub: '2일 연속이에요', cta: '이어 읽기',
+    cal: mockCal([12, 0, 25, 0, 31, 22, 9, 0, 38, 14, 9, 0]), calUnit: '분',
+    records: [
+      { lb: '최장 연속', v: '11일', note: '지금 2일째예요' },
+      { lb: '하루 최고', v: '52분', note: '어제는 9분' },
+      { lb: '올해 누적', v: '38시간', note: '41일 읽었어요' },
+    ],
+    beat: '오늘 읽으면 3일 연속이에요 — 최장 기록은 11일',
+    weekly8: [96, 120, 143, 88, 110, 64, 121, 38], total: '올해 38시간',
   },
   {
-    id: "gym", ko: "운동", en: "Gym", url: null, device: "iPhone",
-    metric: { unit: "분", max: 60 }, usualMin: 13 * 60 + 50, last: "그제 13:20",
-    cycle: ["none", "progress", "done"], start: "none",
-    states: {
-      none: { kind: "none", big: 2, unit: "이번주 회", today: 0, line: "마지막 운동 그제", enter: null },
-      progress: { kind: "progress", big: 2, unit: "이번주 회", today: 0, line: "운동 중", timer: 735, enter: null },
-      done: { kind: "done", big: 3, unit: "이번주 회", today: 48, line: "오늘 48분", enter: null, atMin: 14 * 60 + 5, amount: "48분" },
-    },
-    hist: [45, 0, 0, 52, 38, 0, 41, 0, 48, 0, 0, 44, 50, 0, 46, 0, 55, 42, 0, 0, 47, 40, 0, 49, 0, 43, 0],
+    id: 'write', name: '글쓰기', url: 'https://leftjap.github.io/apps/today/',
+    done: false, usualMin: 19.5 * 60, atMin: null, tlMeta: null,
+    hook: { title: '「6월 에세이」 —', strong: '9.2매', tail: '까지 썼어요' },
+    sub: '마지막으로 쓴 날은 6월 4일이에요', cta: '이어 쓰기',
+    cal: mockCal([0, 3.2, 2.2, 3.6, 0, 0, 0, 0, 0, 0, 0, 0]), calUnit: '매',
+    records: [
+      { lb: '하루 최고', v: '6.8매', note: '지난번엔 3.6매' },
+      { lb: '이번 달', v: '9.2매', note: '5월엔 38.4매' },
+      { lb: '올해 누적', v: '412매', note: '18일 썼어요' },
+    ],
+    beat: '오늘 한 매만 보태도 「6월 에세이」가 다시 자라요',
+    weekly8: [10.2, 8.4, 12.4, 6.8, 12.4, 9.2, 0, 0], total: '올해 412매',
   },
   {
-    id: "study", ko: "어학", en: "Study", url: "https://leftjap.github.io/apps/study/",
-    metric: { unit: "문장", max: 46 }, usualMin: 20 * 60, last: "어제 20:14",
-    cycle: ["none", "done"], start: "none",
-    states: {
-      none: { kind: "none", big: 7, unit: "일 연속", today: 0, line: "복습 8개 대기", enter: "열기" },
-      done: { kind: "done", big: 8, unit: "일 연속", today: 32, line: "오늘 32문장", enter: "다시 열기", atMin: 20 * 60 + 25, amount: "32문장" },
-    },
-    hist: [32, 28, 0, 40, 35, 44, 30, 0, 38, 42, 26, 33, 0, 45, 29, 36, 48, 31, 39, 0, 41, 39, 37, 43, 28, 35, 32],
+    id: 'lang', name: '어학', url: 'https://leftjap.github.io/apps/study/',
+    done: false, usualMin: 13 * 60, atMin: null, tlMeta: null,
+    hook: { title: '「구덩이 약속 — 핑키 프라미스」 ·', strong: '5월 18일', tail: '이 마지막이에요' },
+    sub: '오늘 10분이면 다시 시작할 수 있어요', cta: '오늘 분량 시작',
+    cal: mockCal([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), calUnit: '분',
+    records: [
+      { lb: '최장 연속', v: '14일', note: '오늘 하면 1일째예요' },
+      { lb: '하루 최고', v: '35분', note: '5월 18일엔 35분' },
+      { lb: '올해 누적', v: '21시간', note: '9일 했어요' },
+    ],
+    beat: '오늘 10분이면 1일째예요 — 최장 기록은 14일',
+    weekly8: [0, 0, 85, 40, 0, 27, 0, 0], total: '올해 21시간',
   },
   {
-    id: "book", ko: "독서", en: "Book", url: "https://leftjap.github.io/apps/book/",
-    metric: { unit: "분", max: 50 }, usualMin: 22 * 60 + 30, last: "어제 22:30",
-    cycle: ["none", "done"], start: "none",
-    states: {
-      none: { kind: "none", big: 5, unit: "일 연속", today: 0, line: "어제 28분 읽음", enter: "읽기" },
-      done: { kind: "done", big: 6, unit: "일 연속", today: 28, line: "오늘 28분", enter: "다시 열기", atMin: 22 * 60 + 40, amount: "28분" },
-    },
-    hist: [28, 0, 35, 30, 42, 25, 0, 33, 38, 0, 45, 29, 31, 0, 40, 36, 27, 44, 30, 32, 48, 0, 33, 38, 35, 41, 28],
+    id: 'gym', name: '운동', url: null,
+    done: true, usualMin: 7.2 * 60, atMin: 7 * 60 + 12, tlMeta: '07:12 · 41분',
+    hook: { title: '이번 주', strong: '2회', tail: ' 했어요 — 목표는 주 4일' },
+    hookDone: { title: '오늘 07:12 · 상체', strong: '41분', tail: '' },
+    sub: '3주 연속으로 주 4일을 지켰어요', cta: '운동 기록 열기', ctaDone: '오늘 기록 보기',
+    cal: mockCal([0, 41, 38, 0, 44, 0, 52, 0, 46, 0, 0, 41]), calUnit: '분',
+    records: [
+      { lb: '주 4일 연속', v: '3주', note: '최고 기록은 5주' },
+      { lb: '하루 최고', v: '71분', note: '오늘은 41분' },
+      { lb: '올해 운동', v: '86회', note: '모두 64시간' },
+    ],
+    beat: '이번 주 2번 더 하면 4주 연속이에요 — 최고 기록은 5주',
+    weekly8: [4, 3, 4, 4, 3, 4, 2, 2], total: '올해 86회 · 64시간',
   },
 ];
