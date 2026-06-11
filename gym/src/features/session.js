@@ -2794,7 +2794,7 @@ export async function handleLeftSwipe() {
       return;
     }
     await mountSessionView();
-    if (prResult && prResult.isPR && typeof document !== 'undefined') showPrPop(document);
+    if (prResult && prResult.isPR && typeof document !== 'undefined') showPrPop(document, cur);
     return;
   }
 
@@ -2865,7 +2865,7 @@ export async function handleLeftSwipe() {
 
   // PR 팝 (mountSessionView 후 — 새 dot 노드에 대해 PR 표시는 이미 적용됨, pop 만 추가)
   if (prResult && prResult.isPR && typeof document !== 'undefined') {
-    showPrPop(document);
+    showPrPop(document, cur);
   }
 }
 
@@ -2875,15 +2875,35 @@ export async function handleLeftSwipe() {
  *  - transform translateY(0) → translateY(-12px) (700ms ease, 위로 떠오름)
  *  - 800ms 후 fade-out (opacity 1 → 0, transform 복원)
  */
-function showPrPop(doc) {
+function showPrPop(doc, segIdx) {
   const el = doc.getElementById('cardPrPop');
-  if (!el) return;
-  el.style.opacity = '1';
-  el.style.transform = 'translateY(-12px)';
-  setTimeout(() => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(0)';
-  }, 800);
+  if (el) {
+    if (typeof el.animate === 'function') {
+      // PR rise & fade (작업지시서 §9) — 1000ms.
+      el.animate([
+        { opacity: 0, transform: 'translateY(10px) scale(0.92)' },
+        { opacity: 1, transform: 'translateY(-2px) scale(1)', offset: 0.28 },
+        { opacity: 1, transform: 'translateY(-7px) scale(1)', offset: 0.68 },
+        { opacity: 0, transform: 'translateY(-16px) scale(1)' },
+      ], { duration: 1000, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    } else {
+      el.style.opacity = '1'; el.style.transform = 'translateY(-12px)';
+      setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateY(0)'; }, 800);
+    }
+  }
+  // 완료 세그 crail 글로우 1회 (§9) — PR 강조.
+  if (Number.isFinite(segIdx)) {
+    try {
+      const segBar = doc.getElementById('cardSetDots')?.querySelector(`.seg[data-set-idx="${segIdx}"] .seg-bar`);
+      if (segBar && typeof segBar.animate === 'function') segBar.animate([
+        { boxShadow: '0 0 0 0 rgba(217,119,87,0)' },
+        { boxShadow: '0 0 0 5px rgba(217,119,87,0.30)', offset: 0.4 },
+        { boxShadow: '0 0 0 0 rgba(217,119,87,0)' },
+      ], { duration: 950, easing: 'ease-out' });
+    } catch (_) { /* WAAPI 미지원 graceful */ }
+  }
+  // PR 햅틱 강화 (§9) — 기본 vibrate(10) 대비 강한 패턴.
+  try { navigator.vibrate?.([12, 28, 12]); } catch (_) { /* 미지원 silent */ }
 }
 
 /**
