@@ -59,7 +59,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 @media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar, #volEdge, #cardProgressBar.is-over { animation: none; } }
 /* P1 세트 진행 세그먼트바 (#cardSetDots — renderSetDotsDiff 출력). 완료=ink, 현재=crail 맥동, 예정=ghost. */
 #cardSetDots .seg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; cursor: pointer; }
-#cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; }
+#cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; transform-origin: bottom center; }
 #cardSetDots .seg.done .seg-bar { background: var(--ink-2); box-shadow: none; }
 #cardSetDots .seg.now .seg-bar { background: var(--crail-base); box-shadow: none; height: 11px; }
 #cardSetDots .seg .seg-n { font-size: 11px; font-weight: 500; color: var(--ink-4); white-space: nowrap; }

@@ -1222,42 +1222,118 @@ function wireSwipeHandlers(doc) {
 
   let startX = 0;
   let startY = 0;
-  let tracking = false;
+  let tracking = false;   // pointerdown~up 추적 중
+  let dragging = false;   // 수평 드래그 추종 engage 됨
+  let captured = false;   // setPointerCapture 적용 여부
+
+  const heroEl = () => doc.getElementById('cardHeroVals');
+  const revealEl = () => doc.getElementById('completeReveal');
+  const nowSegBar = () => doc.getElementById('cardSetDots')?.querySelector('.seg.now .seg-bar');
+
+  const resetDragVisual = () => {
+    const rv = revealEl();
+    if (rv) { rv.style.opacity = '0'; rv.style.transform = 'translateY(-50%) translateX(14px) scale(0.9)'; }
+    const sb = nowSegBar();
+    if (sb) sb.style.transform = '';
+  };
 
   // (f-3a) 교차 취소 — hold 발화 시 외부에서 swipe tracking 무력화 가능
-  area._swipeReset = () => { tracking = false; };
+  area._swipeReset = () => {
+    tracking = false; dragging = false;
+    resetDragVisual();
+    const h = heroEl(); if (h) h.style.transform = '';
+  };
 
   const onDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     startX = e.clientX;
     startY = e.clientY;
     tracking = true;
+    dragging = false;
+    captured = false;
+  };
+
+  // 드래그 추종 (작업지시서 §4 / FIG 2) — 수평 우세 + 8px 초과 시 engage. 그 전엔 수직 스크롤(pan-y) 보존.
+  const onMove = (e) => {
+    if (!tracking) return;
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
+    if (!dragging) {
+      if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+        dragging = true;
+        try { area._lpCancel?.(); } catch (_) { /* longpress 중단 — scale/transform 경합 차단 */ }
+        try { area.setPointerCapture?.(e.pointerId); captured = true; } catch (_) {}
+      } else {
+        return; // 수직/미세 이동 — 네이티브 스크롤에 양보
+      }
+    }
+    const h = heroEl();
+    if (!h) return;
+    let tx = dx;
+    if (tx > 0) tx *= 0.25;     // 우드래그 저항
+    tx = Math.max(tx, -150);     // 좌 clamp
+    h.style.transition = '';
+    h.style.transform = `translateX(${tx}px)`;
+    // "완료" 칩 비례 노출 (좌드래그) + 완료될 세그 미세 부풀림
+    const p = Math.min(1, Math.max(0, -dx / 90));
+    const rv = revealEl();
+    if (rv) { rv.style.opacity = String(p); rv.style.transform = `translateY(-50%) translateX(${(1 - p) * 14}px) scale(${0.9 + p * 0.1})`; }
+    const sb = nowSegBar();
+    if (sb) sb.style.transform = `scaleY(${1 + p * 0.28})`;
+  };
+
+  const springBack = () => {
+    const h = heroEl();
+    if (!h) return;
+    const from = h.style.transform || 'translateX(0)';
+    if (typeof h.animate === 'function') {
+      h.animate([
+        { transform: from },
+        { transform: 'translateX(6px)', offset: 0.6 },
+        { transform: 'translateX(0)' },
+      ], { duration: 320, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    }
+    h.style.transform = '';
   };
 
   const onUp = async (e) => {
     if (!tracking) return;
     tracking = false;
+    if (captured) { try { area.releasePointerCapture?.(e.pointerId); } catch (_) {} captured = false; }
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
     const adx = Math.abs(dx);
     const ady = Math.abs(dy);
-    // spec §6-3-1 — 60px 임계 + 수평 dominant
-    if (adx >= 60 && adx > ady) {
-      try { navigator.vibrate?.(10); } catch (_) { /* iOS Safari 미지원 — silent */ }
-      if (dx < 0) await handleLeftSwipe();
-      else await handleRightSwipe();
+    if (dragging) {
+      dragging = false;
+      resetDragVisual();
+      // spec §6-3-1 — 좌 -60 커밋 / 우 +60 이전 수정 / 그 외 스프링백.
+      if (dx <= -60) {
+        try { navigator.vibrate?.(10); } catch (_) { /* 미지원 silent */ }
+        await handleLeftSwipe({ fromDrag: true });
+      } else if (dx >= 60 && adx > ady) {
+        try { navigator.vibrate?.(10); } catch (_) { /* 미지원 silent */ }
+        await handleRightSwipe({ fromDrag: true });
+      } else {
+        springBack();
+      }
       return;
     }
-    // spec §6-3 — 정적 tap (이동 < 10px) → 좌 30% 감소·우 30% 증가
+    // 드래그 미engage — 정적 tap (이동 < 10px) → 좌 30% 감소·우 30% 증가
     if (adx < 10 && ady < 10) {
       await handleTap(doc, e.clientX, e.clientY);
     }
-    // 그 외: 애매한 drag — 무시 (수직 스크롤로 처리됨)
+    // 그 외: 애매한 미세 drag — 무시 (수직 스크롤로 처리됨)
   };
 
-  const onCancel = () => { tracking = false; };
+  const onCancel = (e) => {
+    tracking = false;
+    if (captured && e) { try { area.releasePointerCapture?.(e.pointerId); } catch (_) {} captured = false; }
+    if (dragging) { dragging = false; resetDragVisual(); springBack(); }
+  };
 
   area.addEventListener('pointerdown', onDown);
+  area.addEventListener('pointermove', onMove);
   area.addEventListener('pointerup', onUp);
   area.addEventListener('pointercancel', onCancel);
   area.dataset.spaHooked = '1';
@@ -2693,7 +2769,8 @@ function topRecordPulse(doc) {
  *  - cur === sets.length - 1 (마지막 set) : 새 set 추가 (이전 값 preset 카피).
  *  - cur === -1 (모두 이미 done) : 새 set 추가만 (advance 효과).
  */
-export async function handleLeftSwipe() {
+export async function handleLeftSwipe(options = {}) {
+  const fromDrag = !!options.fromDrag; // 드래그 추종 커밋 — OUT 을 위치 점프 없이 페이드만 (이미 좌로 끌려있음).
   let ctx;
   try { ctx = await getCurrentBlockAndCursor(); }
   catch (e) {
@@ -2817,11 +2894,16 @@ export async function handleLeftSwipe() {
     return;
   }
 
-  // OUT 시작 (방향 C — 가속 이징)
-  heroVals.style.transition = 'transform 187ms cubic-bezier(.4,0,1,1), opacity 187ms cubic-bezier(.4,0,1,1)';
-  heroVals.style.transform = 'translateX(-26px)';
-  heroVals.style.opacity = '0';
-  const outDone = new Promise((r) => setTimeout(r, 187));
+  // OUT 시작 — fromDrag 면 현재 끌린 위치에서 페이드만(점프 방지), 아니면 방향 C 슬라이드(가속).
+  if (fromDrag) {
+    heroVals.style.transition = 'opacity 150ms ease-out';
+    heroVals.style.opacity = '0';
+  } else {
+    heroVals.style.transition = 'transform 187ms cubic-bezier(.4,0,1,1), opacity 187ms cubic-bezier(.4,0,1,1)';
+    heroVals.style.transform = 'translateX(-26px)';
+    heroVals.style.opacity = '0';
+  }
+  const outDone = new Promise((r) => setTimeout(r, fromDrag ? 150 : 187));
 
   // 병렬로 DB + mount 진행 (OUT 시간 동안 가려진 채로 데이터 갱신)
   let upsertErr = null;
@@ -2930,7 +3012,8 @@ function showPrPop(doc, segIdx) {
  *  - effectiveCur === 0 (첫 set) : 무시.
  *  - 직전 set (effectiveCur - 1) 의 done:false → 수정 모드 (다시 현재 set 으로).
  */
-export async function handleRightSwipe() {
+export async function handleRightSwipe(options = {}) {
+  const fromDrag = !!options.fromDrag; // 드래그 추종 커밋 — OUT 페이드만 (점프 방지).
   let ctx;
   try { ctx = await getCurrentBlockAndCursor(); }
   catch (e) {
@@ -2971,10 +3054,15 @@ export async function handleRightSwipe() {
     return;
   }
 
-  heroVals.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
-  heroVals.style.transform = 'translateX(28px)';
-  heroVals.style.opacity = '0';
-  const outDone = new Promise((r) => setTimeout(r, 180));
+  if (fromDrag) {
+    heroVals.style.transition = 'opacity 150ms ease-out';
+    heroVals.style.opacity = '0';
+  } else {
+    heroVals.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+    heroVals.style.transform = 'translateX(28px)';
+    heroVals.style.opacity = '0';
+  }
+  const outDone = new Promise((r) => setTimeout(r, fromDrag ? 150 : 180));
 
   let upsertErr = null;
   const mountDone = (async () => {
