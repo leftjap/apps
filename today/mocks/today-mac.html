@@ -103,7 +103,8 @@
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-float);
-    padding: 14px 12px 12px;
+    /* 상단 행 수직 중심 y=47 — margin 16 + pad 15 + 행 32/2 (작업지시서 §3.7) */
+    padding: 15px 12px 12px;
     display: flex;
     flex-direction: column;
     font-size: 15px;
@@ -124,6 +125,7 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    height: auto;
     padding: 4px 0 14px 0;
     margin-bottom: 4px;
   }
@@ -170,12 +172,13 @@
     margin-left: 6px;
   }
 
-  /* — Brand row + icon buttons — */
+  /* — Brand row + icon buttons — 높이 32 고정 (수직 중심 y=47, 작업지시서 §3.7) */
   .sb__top {
     display: flex; align-items: center;
     gap: 4px;
-    padding: 4px 6px 14px 6px;
-    margin-bottom: 4px;
+    height: 32px;
+    padding: 0 6px;
+    margin-bottom: 16px;
   }
   .sb__brand {
     display: flex; align-items: center; gap: 10px;
@@ -246,35 +249,52 @@
     padding-top: 16px;
   }
   .sb__group--recents::-webkit-scrollbar { display: none; }
+  /* 최근 섹션 라벨 — 활성 카테고리명 + 우측 건수 (작업지시서 §3.4) */
   .sb__label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 10.5px;
+    font-weight: 500;
     letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-3);
-    padding: 4px 8px 8px;
+    color: var(--ink-4);
+    padding: 4px 10px 8px;
+    white-space: nowrap;
+  }
+  .sb__label-count {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-4);
   }
 
+  /* 카테고리 행 38px — 활성 = hover-bg + 아이콘만 오렌지 (작업지시서 §3.2) */
   .sb__item {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 12px 8px;
-    border-radius: 8px;
-    font-size: 15px;
+    height: 38px;
+    padding: 0 10px;
+    border-radius: 10px;
+    font-size: 13.5px;
+    font-weight: 500;
     line-height: 1.3;
-    color: var(--ink-1);
+    color: var(--ink-2);
     cursor: default;
+    white-space: nowrap;
   }
   .sb__item .ico {
-    width: 18px; height: 18px;
+    width: 17px; height: 17px;
     flex-shrink: 0;
-    opacity: 0.75;
+    opacity: 0.85;
+    color: var(--ink-3);
   }
   .sb__item:hover { background: var(--hover-bg); }
   .sb__item--active {
     background: var(--hover-bg);
-    font-weight: 500;
+    color: var(--ink-1);
+    font-weight: 600;
   }
   .sb__item--active .ico { opacity: 1; color: var(--crail-base); }
   .sb__item[data-category] { cursor: pointer; }
@@ -286,13 +306,13 @@
     user-select: none;
   }
 
-  /* — 가계부 월누적 — 숫자는 Pretendard+tnum (mono 금지, 작업지시서 §1) -- */
+  /* — 가계부 행 우측 당월 총액 — 모노 10.5px (작업지시서 §3.3) -- */
   .sb__item .meta {
     margin-left: auto;
-    font-family: var(--font-sans);
-    font-feature-settings: "tnum";
-    font-size: 12px;
-    color: var(--ink-3);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--ink-4);
     letter-spacing: -0.01em;
     white-space: nowrap;
   }
@@ -328,8 +348,21 @@
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3;
   }
   /* 공유자(소연) — 우측 정렬로 분리 (rc-main 오른쪽, crail-deep). 사용자 요청 */
-  .sb__item--recent.is-doc .rc-main .sh { margin-left: auto; color: var(--crail-deep); font-size: 11px; font-weight: 500; flex-shrink: 0; }
-  .sb__item--recent.is-doc .rc-sub .cm { color: var(--ink-4); }
+  /* 공유자 — 텍스트 대신 15px 원형 아바타 (작업지시서 §3.4) */
+  .sb__item--recent.is-doc .rc-main .sh {
+    margin-left: auto;
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    background: var(--crail-soft);
+    color: var(--crail-deep);
+    font-size: 8.5px; font-weight: 700;
+    display: inline-grid; place-items: center;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  /* 댓글 N → 말풍선 아이콘 + 숫자 (작업지시서 §3.4) */
+  .sb__item--recent.is-doc .rc-sub .cm { color: var(--ink-4); display: inline-flex; align-items: center; gap: 3px; }
+  .sb__item--recent.is-doc .rc-sub .cm svg { width: 10px; height: 10px; flex-shrink: 0; }
   .sb__item--recent.is-doc .rc-sub .cm.unread { color: var(--crail-base); }
   /* 가계부 리센츠 — 1줄 (내역 + 금액). 금액은 .meta(Pretendard+tnum) — mono 금지 (작업지시서 §1) */
   .sb__item--recent.is-exp { display: flex; align-items: center; gap: 8px; color: var(--ink-2); }
@@ -345,19 +378,16 @@
     flex-shrink: 0;
   }
 
-  /* "전체 보기" — 화살표 없이 제목 + 건수 (작업지시서 §3) */
+  /* "전체 보기" — 보더 고스트 버튼 H34, R10, 1px line-soft (작업지시서 §3.5) */
   .sb__more {
-    display: flex; align-items: center; gap: 8px; width: 100%; margin-top: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    width: 100%; height: 34px; margin-top: 8px;
     flex-shrink: 0; white-space: nowrap;
-    background: transparent; border: 0; cursor: pointer; font-family: inherit;
-    padding: 10px 8px; border-radius: 8px; color: var(--ink-3); font-size: 12px; font-weight: 500;
+    background: transparent; border: 1px solid var(--line-soft); cursor: pointer; font-family: inherit;
+    padding: 0; border-radius: 10px; color: var(--ink-2); font-size: 12.5px; font-weight: 500;
     transition: background .14s ease, color .14s ease;
   }
   .sb__more:hover { background: var(--hover-bg); color: var(--ink-1); }
-  .sb__more .sb__more-count {
-    margin-left: auto; font-family: var(--font-sans); font-feature-settings: "tnum";
-    font-size: 11px; color: var(--ink-4); white-space: nowrap;
-  }
 
   /* — Footer (좌하단 사용자 카드 + popover) — */
   .sb__footer {
@@ -427,21 +457,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* 더보기(⋮) 어포던스 — hover 시 노출 (계정 메뉴 진입점, 작업지시서 §3) */
-  .sb__user-more {
-    margin-left: auto;
-    width: 26px; height: 26px;
-    border-radius: 7px;
-    display: grid; place-items: center;
-    color: var(--ink-4);
-    opacity: 0;
-    flex-shrink: 0;
-    transition: opacity .12s ease, background .12s ease, color .12s ease;
-  }
-  .sb__user-more .ico { width: 16px; height: 16px; }
-  .sb__user:hover .sb__user-more,
-  .sb__user.is-open .sb__user-more { opacity: 1; }
-  .app.is-sidebar-collapsed .sb__user-more { display: none; }
+  /* 푸터 ⋮ 제거 (작업지시서 §3.6) — 아바타+이름 클릭이 계정 메뉴 진입점 */
   /* 설정 popover 메뉴 */
   .sb__menu {
     position: absolute;
@@ -486,8 +502,8 @@
   /* ============ Main ============ */
   .main {
     flex: 1;
-    /* 상단 정렬: 사이드바 헤더 줄과 메인 상단바 줄의 세로 중심 정렬 (작업지시서 §3) */
-    padding: 30px 32px 24px;
+    /* 상단 정렬: 탑바 수직 중심 y=47 = pad 16 + 62/2 (작업지시서 §3.7) */
+    padding: 16px 32px 24px;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -495,7 +511,8 @@
 
   .main__top {
     display: flex; align-items: center; justify-content: space-between;
-    padding-bottom: 14px;
+    height: 62px;
+    flex-shrink: 0;
     border-bottom: 1px solid var(--line);
     font-size: 15px;
     gap: 12px;
@@ -4619,59 +4636,60 @@
       <div class="sb__brand">
         <div class="sb__name">Today</div>
       </div>
+      <!-- 아이콘 — 16그리드 · 1.5px 스트로크 · 라운드 캡 통일 (작업지시서 §3.1) -->
       <button class="sb__icon-btn" title="검색 (⌘K)" onclick="openSpotlight()">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25">
-          <circle cx="7" cy="7" r="4.5"/>
-          <path d="M10.4 10.4L13.5 13.5" stroke-linecap="round"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="7.2" cy="7.2" r="4.3"/>
+          <path d="M10.5 10.5L13.4 13.4"/>
         </svg>
       </button>
       <button class="sb__icon-btn sb__icon-btn--has-alert" title="새 알림 2개">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 2.5a3.5 3.5 0 0 0-3.5 3.5v2.5c0 1-.5 1.8-1.2 2.5h9.4c-.7-.7-1.2-1.5-1.2-2.5V6A3.5 3.5 0 0 0 8 2.5z"/>
-          <path d="M6.75 13a1.25 1.25 0 0 0 2.5 0"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 2.6a3.6 3.6 0 0 0-3.6 3.6v2.2c0 .9-.4 1.7-1 2.4-.3.3-.1.9.4.9h8.4c.5 0 .7-.6.4-.9-.6-.7-1-1.5-1-2.4V6.2A3.6 3.6 0 0 0 8 2.6z"/>
+          <path d="M6.8 13.2a1.25 1.25 0 0 0 2.4 0"/>
         </svg>
         <span class="alert-dot"></span>
       </button>
       <button class="sb__icon-btn" id="sidebarToggle" title="사이드바 접기" aria-expanded="true">
-        <svg class="ico sidebar-toggle-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="2" y="3" width="12" height="10" rx="1.5"/>
-          <path d="M6 3v10"/>
+        <svg class="ico sidebar-toggle-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2.2" y="3" width="11.6" height="10" rx="2.5"/>
+          <path d="M6.4 3v10"/>
         </svg>
       </button>
     </div>
 
-    <!-- Primary nav — 의미에 맞는 아이콘으로 교체 -->
+    <!-- Primary nav — 16그리드 · 1.5px 스트로크 · 라운드 캡 (작업지시서 §3.1) -->
     <div class="sb__group">
-      <!-- 오늘의 네비 — 항해 컴퍼스 (방향/오늘의 항로) -->
+      <!-- 오늘의 네비 — 나침반 -->
       <div class="sb__item sb__item--active" data-category="navi">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="8" cy="8" r="5.5"/>
-          <path d="M10.5 5.5L8.8 8.8L5.5 10.5L7.2 7.2z" fill="currentColor" stroke="none"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="8" cy="8" r="5.8"/>
+          <path d="M10.4 5.6L9 9L5.6 10.4L7 7z" fill="currentColor" stroke="none"/>
         </svg>
         오늘의 네비
       </div>
-      <!-- 단편 — 짧은 글 (한 페이지) -->
+      <!-- 단편 — 모서리 접힌 문서 -->
       <div class="sb__item" data-category="fiction">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3.5 2.5h6L12.5 5.5v8h-9z"/>
-          <path d="M9 2.5V5.5h3.5"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.5 2.5h5L12.5 5.5v7a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1z"/>
+          <path d="M9.5 2.5V5.5h3"/>
         </svg>
         단편
       </div>
-      <!-- 블로그 — RSS / 발행 -->
+      <!-- 블로그 — RSS -->
       <div class="sb__item" data-category="blog">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 3a10 10 0 0 1 10 10"/>
-          <path d="M3 7.5a5.5 5.5 0 0 1 5.5 5.5"/>
-          <circle cx="3.7" cy="12.3" r="0.9" fill="currentColor" stroke="none"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3.3 3.4a9.3 9.3 0 0 1 9.3 9.3"/>
+          <path d="M3.3 7.6a5.1 5.1 0 0 1 5.1 5.1"/>
+          <circle cx="4.2" cy="11.8" r="1" fill="currentColor" stroke="none"/>
         </svg>
         블로그
       </div>
-      <!-- 메모 — 메모지 (사각형 + 가로줄) -->
+      <!-- 메모 — 스티키 노트 -->
       <div class="sb__item" data-category="memo">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="3" width="10" height="10" rx="1"/>
-          <path d="M5.5 6h5M5.5 8.5h5M5.5 11h3"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 4.5a1.5 1.5 0 0 1 1.5-1.5h7A1.5 1.5 0 0 1 13 4.5v4.6L9.6 13H4.5A1.5 1.5 0 0 1 3 11.5z"/>
+          <path d="M9.6 13V9.6H13"/>
         </svg>
         메모
       </div>
@@ -4679,12 +4697,11 @@
 
     <!-- 유틸리티 그룹 — 가계부 (글쓰기 카테고리와 line-soft 구분선으로 위계 분리, 작업지시서 §3) -->
     <div class="sb__group sb__group--util">
-      <!-- 가계부 — 동전 (지출 누적) -->
+      <!-- 가계부 — 지갑 (카드 + 클래스프) -->
       <div class="sb__item" data-category="expense">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <ellipse cx="8" cy="5" rx="5" ry="2"/>
-          <path d="M3 5v3c0 1.1 2.2 2 5 2s5-.9 5-2V5"/>
-          <path d="M3 8v3c0 1.1 2.2 2 5 2s5-.9 5-2V8"/>
+        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M2.5 5.5A2 2 0 0 1 4.5 3.5h7a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2z"/>
+          <path d="M13.5 7H10.8a1.5 1.5 0 0 0 0 3h2.7"/>
         </svg>
         가계부
         <span class="meta">1,284,500원</span>
@@ -4702,22 +4719,19 @@
     <!-- Recents — active 카테고리의 최근 항목으로 동적 갱신.
          viewport 부족 시 mouse wheel/trackpad 로 자체 스크롤 (스크롤바 시각 0 — 사이드바 룩 일정). -->
     <div class="sb__group sb__group--recents">
-      <div class="sb__label" id="recentsLabel">RECENTS</div>
+      <!-- 라벨 = 활성 카테고리명 + 우측 건수 (작업지시서 §3.4) -->
+      <div class="sb__label" id="recentsLabel"><span id="recentsLabelText">최근</span><span class="sb__label-count" id="recentsLabelCount"></span></div>
       <div id="recentsList"></div>
     </div>
 
     <!-- Footer — 좌하단 사용자 카드 + popover -->
     <div class="sb__footer">
       <div class="sb__settings-wrap">
+        <!-- 푸터 = 아바타 + 이름만 (⋮ 없음 — 작업지시서 §3.6). 클릭 시 계정 메뉴 -->
         <button class="sb__user" id="userCardBtn" title="계정" type="button" aria-haspopup="true" aria-expanded="false">
           <span class="sb__avatar"><img class="sb__avatar-img" alt="" hidden>G</span>
           <span class="sb__user-info">
             <span class="sb__user-name">지오</span>
-          </span>
-          <span class="sb__user-more" aria-hidden="true">
-            <svg class="ico" viewBox="0 0 16 16" fill="currentColor" stroke="none">
-              <circle cx="8" cy="3.5" r="0.9"/><circle cx="8" cy="8" r="0.9"/><circle cx="8" cy="12.5" r="0.9"/>
-            </svg>
           </span>
         </button>
         <div class="sb__menu" id="settingsMenu" role="menu" aria-hidden="true">
