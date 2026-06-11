@@ -117,12 +117,20 @@ describe('loadNewCards — 장면 그룹 스코프 (1세션 = 1장면)', () => {
     expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-bottom']);
   });
 
-  it('③ prefix 부분완료(scene 먼저 완료) → scene 없는 잔여 꼬리만 — 다음 scene 직전 컷', async () => {
-    // finishSession 은 세션 카드를 prefix 로 완료 마킹 → scene(선두)부터 완료되는 게 일반형
+  it('③ prefix 부분완료(scene 먼저 완료) → 그룹 scene 복원 + 잔여 꼬리 — 다음 scene 직전 컷', async () => {
+    // finishSession 은 세션 카드를 prefix 로 완료 마킹 → scene(선두)부터 완료되는 게 일반형.
+    // 완료된 scene 을 빼고 표현 꼬리만 내보내면 다이얼로그 없는 세션이 됨 (2026-06-12 버그) → scene 재노출.
     const done = { 's1-scene': true, 's1-e1': true, 's1-e2': true, 's1-e3': true };
     const db = createMockDB({ todayLessons: [...g1(done), ...g2] });
     const out = await loadNewCards(db, 'en', '2026-06-10');
-    expect(out.map((r) => r.id)).toEqual(['s1-e4', 's1-e5', 's1-bottom']);
+    expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-e4', 's1-e5', 's1-bottom']);
+  });
+
+  it('③-b 실측 미러: scene 만 완료 + 표현 전부 잔존 + 다음 그룹 적층 → scene 복원, 다음 그룹 혼입 금지', async () => {
+    const done = { 's1-scene': true };
+    const db = createMockDB({ todayLessons: [...g1(done), ...g2] });
+    const out = await loadNewCards(db, 'en', '2026-06-10');
+    expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-e1', 's1-e2', 's1-e3', 's1-e4', 's1-e5', 's1-bottom']);
   });
 
   it('④ ja(scene 카드 없음) → 전체 반환 (기존 동작 유지)', async () => {

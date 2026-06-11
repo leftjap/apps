@@ -26,20 +26,33 @@ export async function loadNewCards(db, lang, todayISO) {
   // todayISO 인자는 호환성 유지 (호출자 시그니처 변경 회피). 날짜 필터링은 안 함.
   // carry-forward 정책: 미완료 신규는 추가된 날짜와 무관하게 다음 세션에 계속 노출.
   if (!db || !lang) return [];
-  const rows = await db.todayLessons.where('lang').equals(lang).toArray();
-  const filtered = rows.filter((r) => r.completed !== true);
-  filtered.sort((a, b) => {
+  const isScene = (r) => Array.isArray(r?.explanation?.dialogue);
+  const byDateOrder = (a, b) => {
     const da = a.date || '';
     const db_ = b.date || '';
     if (da !== db_) return da < db_ ? -1 : 1; // 오래된 date 먼저 (FIFO)
     return (a.order_index ?? 0) - (b.order_index ?? 0);
-  });
+  };
+  const rows = await db.todayLessons.where('lang').equals(lang).toArray();
+  const filtered = rows.filter((r) => r.completed !== true);
+  filtered.sort(byDateOrder);
   // 장면 그룹 스코프 (1세션 = 1장면): scene 카드(explanation.dialogue 배열)가 그룹 시작.
   // 선두 이후 첫 scene 직전에서 컷 — 이전 그룹 부분완료 꼬리(scene 완료 후 잔여 표현 포함)가
   // 다음 장면과 한 세션에 섞이지 않는다. scene 없는 리스트(ja 콩트·구 en)는 전체 반환 (기존 동작).
   // → deriveDialogue (session-new.js) 의 타 장면 표현 혼입·순차 커서 stuck 자동 해소.
-  const cut = filtered.findIndex((r, i) => i > 0 && Array.isArray(r?.explanation?.dialogue));
-  return cut === -1 ? filtered : filtered.slice(0, cut);
+  const cut = filtered.findIndex((r, i) => i > 0 && isScene(r));
+  const group = cut === -1 ? filtered : filtered.slice(0, cut);
+  // scene 완료 + 표현 잔존 꼬리: 중도 종료 시 finishSession 이 prefix(scene 포함)만 완료 마킹하므로
+  // 꼬리만 남으면 다이얼로그 없는 세션이 됨 → 그룹의 scene 카드를 완료 여부 무관 선두에 복원.
+  // (scene 재완료 마킹은 no-op, 복습 이관도 scene 제외 — sessionFinish.js)
+  if (group.length > 0 && !isScene(group[0])) {
+    const all = rows.slice().sort(byDateOrder);
+    const pos = all.findIndex((r) => r.id === group[0].id);
+    for (let i = pos - 1; i >= 0; i--) {
+      if (isScene(all[i])) { group.unshift(all[i]); break; }
+    }
+  }
+  return group;
 }
 
 /**
