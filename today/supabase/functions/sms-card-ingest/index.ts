@@ -238,6 +238,9 @@ function isRejectPattern(text: string): boolean {
   if (/문자명세서/.test(text)) return true;
   // 후불하이패스 결제예정은 parser 가 처리 → 여기 도달하면 일반 결제예정
   if (/결제예정/.test(text) && !/후불하이패스/.test(text)) return true;
+  // 카드대금 청구 알림 (예: "[KB국민카드]고*진님 06/01 카드대금 12,800원") — 개별 승인의
+  // 월 합산 청구라 저장 시 이중계상. 키워드 자동화 전환(2026-06-11)으로 유입 시작.
+  if (/카드대금/.test(text)) return true;
   // 카드사 비결제 안내·광고 (parser 의 reject 분기와 동기)
   if (/\(광고\)/.test(text)) return true;
   if (/,\s*[^\]\n]*안내\]/.test(text)) return true;
