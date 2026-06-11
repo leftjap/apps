@@ -340,19 +340,23 @@ async function render(host, params, ctx) {
               const segS = cur;
               cur += sg.text.length;
               if (!sg.c) return sg.text;
+              // 칠해진 형광펜: 좌클릭·우클릭 모두 같은 팝오버(색 변경/지우기).
+              // 우클릭은 행 컨텍스트 메뉴(수정/삭제)를 가로채 하이라이트 메뉴로 — 마크 밖 우클릭은 행 메뉴 유지.
+              const openMarkPop = (ev) => {
+                const sel = window.getSelection();
+                if (sel && !sel.isCollapsed) return; // 드래그 중엔 드래그 팝오버 우선
+                ev.preventDefault();
+                ev.stopPropagation();
+                openSelPop({
+                  article: ev.currentTarget.closest('.lx-x'), q,
+                  s: segS, e: segS + sg.text.length,
+                  rect: ev.currentTarget.getBoundingClientRect(),
+                });
+              };
               return el('mark', {
                 ...(sg.c === 'y' ? {} : { class: { p: 'pink', g: 'green', b: 'blue' }[sg.c] }),
-                // 칠해진 형광펜 클릭 → 같은 팝오버로 색 변경/지우기 (드래그 중에는 드래그 팝오버 우선)
-                onClick: (ev) => {
-                  const sel = window.getSelection();
-                  if (sel && !sel.isCollapsed) return;
-                  ev.stopPropagation();
-                  openSelPop({
-                    article: ev.currentTarget.closest('.lx-x'), q,
-                    s: segS, e: segS + sg.text.length,
-                    rect: ev.currentTarget.getBoundingClientRect(),
-                  });
-                },
+                onClick: openMarkPop,
+                onContextmenu: openMarkPop,
               }, sg.text);
             });
           })()),
