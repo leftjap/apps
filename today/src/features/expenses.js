@@ -254,7 +254,7 @@ export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
       const box = title.closest?.('.exp-headline-title');
       if (box) {
         // innerHTML 엔 최종값(접두 월 갱신 포함) — 실 DOM 에선 strong 만 0 으로 되돌려 카운트업
-        box.innerHTML = `${opts.month}월에는 <strong>${headlineMan}만원</strong> 쓰고 있어요`;
+        box.innerHTML = `${opts.month}월에는 <strong>${headlineMan}만원</strong> 썼어요`;
         const s = box.querySelector?.('strong');
         if (s) { s.textContent = '0만원'; animateCount(s, headlineMan, '만원'); }
       }
@@ -270,30 +270,50 @@ export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
 // DOM 패치 — 캘린더 일별 합계
 // ───────────────────────────────────────────────────────────────────────────
 
+/** 분위수 기반 농도 tier (1~5) — 지출 있는 날 금액 분포 기준 (작업지시서 §5.1). */
+export function quantileTier(amount, sortedTotals) {
+  const n = sortedTotals?.length || 0;
+  if (!n || amount <= 0) return 0;
+  let rank = 0;
+  for (const v of sortedTotals) if (v <= amount) rank++;
+  return Math.min(5, Math.max(1, Math.ceil(((rank - 0.5) / n) * 5)));
+}
+
+const CAL_TIER_CLASSES = ['t1', 't2', 't3', 's1', 's2', 's3', 's4', 's5'];
+
 /**
- * .exp-month-day[data-date] 의 .exp-month-day-amount 텍스트 갱신.
- * highThreshold = 100,000 원 고정 (사용자 정책: 10만원 이상 지출만 강조).
+ * .exp-month-day[data-date] 타일 갱신 — 농도 s1~s5 (분위수) + 금액 (만원 축약) + 주합 열.
+ * 지출 없는 날 = is-zero (타일 없음, 클릭 비활성 — 작업지시서 §5.1).
  */
 export function patchCalendarFromRows(rows, opts = {}, doc = document) {
   const cells = doc.querySelectorAll('.exp-month-day[data-date]');
   if (!cells.length) return false;
   if (!rows || !rows.length) return false;
   const totals = dailyTotalsFromRows(rows);
-  // 지출 강도 tier — 일평균 기준 (t3 ≥ 1.6×avg, t2 ≥ 0.5×avg, t1 > 0). 작업지시서 §5.
-  const { dailyAvg } = summarizeMonth(rows, opts.todayDay);
-  const avg = dailyAvg || 0;
-  const high = avg * 1.6;
+  const sorted = Object.values(totals).filter((v) => v > 0).sort((a, b) => a - b);
   cells.forEach((cell) => {
     const ds = cell.getAttribute('data-date');
     const total = totals[ds] || 0;
     const amtEl = cell.querySelector('.exp-month-day-amount');
     if (amtEl) amtEl.textContent = total > 0 ? fmtCalAmount(total) : '';
-    cell.classList.remove('t1', 't2', 't3');
-    if (total > 0) cell.classList.add(total >= high ? 't3' : total >= avg * 0.5 ? 't2' : 't1');
-    // is-zero 갱신 (today 는 예외 — mocks 정책 답습)
-    const isToday = cell.classList.contains('today');
-    cell.classList.toggle('is-zero', total === 0 && !isToday);
+    cell.classList.remove(...CAL_TIER_CLASSES);
+    if (total > 0) cell.classList.add(`s${quantileTier(total, sorted)}`);
+    cell.classList.toggle('is-zero', total === 0);
   });
+  // 주합 열 — 캘린더 grid 행 순서 기준 (rebuildCalendarGrid 가 data-week 부여)
+  const weekEls = doc.querySelectorAll('.exp-week-sum[data-week]');
+  if (weekEls.length) {
+    const allCells = [...doc.querySelectorAll('.exp-month-grid .exp-month-day')];
+    weekEls.forEach((el) => {
+      const w = Number(el.getAttribute('data-week'));
+      let sum = 0;
+      allCells.slice(w * 7, w * 7 + 7).forEach((c) => {
+        const ds = c.getAttribute?.('data-date');
+        if (ds) sum += totals[ds] || 0;
+      });
+      el.textContent = sum > 0 ? fmtCalAmount(sum) : '';
+    });
+  }
   return true;
 }
 
@@ -302,15 +322,15 @@ export function patchCalendarFromRows(rows, opts = {}, doc = document) {
 // ───────────────────────────────────────────────────────────────────────────
 
 /**
- * 타임라인 (.exp-tl-list) 를 Dexie rows 로 재구성.
- * mocks renderExpense L4421-4458 패턴 답습 — 같은 날 두 번째 거래부터 좌측 컬럼 .is-cont.
+ * 월 타임라인 (.exp-tl-list, 우측 레일) 을 Dexie rows 로 재구성 (작업지시서 §5.3).
+ * 행: 좌측 42px 날짜 블록 (일 15px 모노 + 요일 9.5px) / 거래 (지출처 13.5px/600 +
+ * 메타 "카테고리 · 카드명" 10.5px) / 금액 모노 13px 우정렬. 같은 날 여러 거래는 날짜 블록 공유 (.is-cont).
  */
 export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
   const list = doc.querySelector('.exp-tl-list');
   if (!list) return false;
   if (!rows || !rows.length) return false;
   const yr = year || new Date().getFullYear();
-  const highThreshold = 100000; // 10만원 이상 지출 → 오렌지 강조 (정책)
   const txByDate = {};
   for (const r of rows) {
     const d = isoToMockDate(r.spent_at);
@@ -320,33 +340,119 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
   }
   const sortedDates = Object.keys(txByDate).sort((a, b) => b.localeCompare(a));
   const dows = ['일', '월', '화', '수', '목', '금', '토'];
-  // 정기결제 — 단순 원형 화살표 (작업지시서 §5). 카드는 짧은 브랜드명.
+  // 정기결제 — 단순 원형 화살표. 카테고리 칩 금지 — 텍스트 메타 (작업지시서 §5.3).
   const RECUR_SVG = '<svg class="exp-tl-row__recur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.3-5.4"/><path d="M17.5 3.2V7h-3.8"/></svg>';
   const now = new Date();
   const isCurYear = yr === now.getFullYear();
   const curMd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const html = sortedDates.map((dateStr) => {
     const [tm, td] = dateStr.split('-').map(Number);
-    const dow = new Date(yr, tm - 1, td).getDay();
-    const dn = dows[dow];
-    const isSun = dow === 0;
+    const dn = dows[new Date(yr, tm - 1, td).getDay()];
     const isToday = isCurYear && dateStr === curMd;
     return txByDate[dateStr].map((r, i) => {
       const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
       const card = escapeHtml(cardLabelFromValue(r.card, _currentUser?.email) || '');
       const cat = escapeHtml(toCategoryLabel(r.category));
+      const meta = [cat, card].filter(Boolean).join(' · ');
       const recur = r.recurring ? RECUR_SVG : '';
       const isCont = i > 0;
       const dateCell = isCont
         ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>'
-        : `<div class="exp-tl-row__date"><span class="exp-tl-row__date-dow${isSun ? ' sun' : ''}">${dn}</span><span class="exp-tl-row__date-d">${td}</span></div>`;
-      const isHigh = (r.amount_krw || 0) >= highThreshold;
+        : `<div class="exp-tl-row__date"><span class="exp-tl-row__date-d">${td}</span><span class="exp-tl-row__date-dow">${dn}</span></div>`;
       const amt = formatAmount(r.amount_krw || 0);
       const id = escapeHtml(r.id);
-      return `<div class="exp-tl-row${isCont ? ' is-cont' : ''}${isToday ? ' today' : ''}" data-tx-id="${id}" onclick="openExpenseModal('edit', '${id}')">${dateCell}<div class="exp-tl-row__body"><div class="exp-tl-row__head"><span class="exp-tl-row__cat">${cat}</span><span class="exp-tl-row__card">${card}${recur}</span></div><div class="exp-tl-row__merchant">${merchant}</div></div><div class="exp-tl-row__amount${isHigh ? ' is-high' : ''}">${amt}</div></div>`;
+      return `<div class="exp-tl-row${isCont ? ' is-cont' : ''}${isToday ? ' today' : ''}" data-tx-id="${id}" onclick="openExpenseModal('edit', '${id}')">${dateCell}<div class="exp-tl-row__body"><div class="exp-tl-row__merchant">${merchant}${recur}</div><div class="exp-tl-row__meta">${meta}</div></div><div class="exp-tl-row__amount">${amt}</div></div>`;
     }).join('');
   }).join('');
   list.innerHTML = html;
+  return true;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// DOM 패치 — 우측 레일 (월 요약 카드 + 타임라인 헤더, 작업지시서 §5.3)
+// ───────────────────────────────────────────────────────────────────────────
+
+const MONTH_EN = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
+/** 우측 레일 월 요약 카드 + 타임라인 라벨/건수 갱신. 전부 잉크색 (§5.3). */
+export function patchRailFromRows(rows, year, month, opts = {}, doc = document) {
+  const monthEl = doc.getElementById?.('expRailMonth');
+  if (!monthEl) return false;
+  const totalEl = doc.getElementById('expRailTotal');
+  const statsEl = doc.getElementById('expRailStats');
+  const tlLabel = doc.getElementById('expRailTlLabel');
+  const tlCount = doc.getElementById('expRailTlCount');
+  monthEl.textContent = `${MONTH_EN[month - 1] || ''} ${year}`;
+  const list = rows || [];
+  const { total, dailyAvg } = summarizeMonth(list, opts.todayDay);
+  if (totalEl) totalEl.innerHTML = `<b>${total.toLocaleString('ko-KR')}</b> <span class="unit">원</span>`;
+  const totals = dailyTotalsFromRows(list);
+  let maxDay = null;
+  let maxAmt = 0;
+  for (const [ds, v] of Object.entries(totals)) {
+    if (v > maxAmt) { maxAmt = v; maxDay = ds; }
+  }
+  const maxDayLabel = maxDay ? `${month}/${Number(maxDay.split('-')[1])} · ${fmtCalAmount(maxAmt)}` : '—';
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div class="exp-rail-stat"><span>하루 평균</span><b>${dailyAvg.toLocaleString('ko-KR')} 원</b></div>
+      <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>${maxDayLabel}</b></div>
+      <div class="exp-rail-stat"><span>기록된 거래</span><b>${list.length}건</b></div>`;
+  }
+  if (tlLabel) tlLabel.textContent = `${month}월 타임라인`;
+  if (tlCount) tlCount.textContent = `${list.length}건`;
+  return true;
+}
+
+/**
+ * 간이 통계 2열 (피드, 캘린더 아래 — 작업지시서 §5.2).
+ * 카테고리: 가로 막대 (회색), 상위 5 + "그 외 N개" / 브랜드 TOP 5: 순번·이름·카테고리·건수·금액.
+ */
+export function patchFeedMiniStats(rows, month = null, doc = document) {
+  const catList = doc.querySelector?.('.exp-mini-cat-list');
+  const brandRows = doc.querySelector?.('.exp-brand-rows');
+  if (!catList && !brandRows) return false;
+  // 월 라벨
+  if (month != null) {
+    doc.querySelectorAll?.('.exp-mini-month').forEach((el) => { el.textContent = `${month}월`; });
+  }
+  const list = rows || [];
+  if (catList) {
+    const totals = new Map();
+    for (const r of list) {
+      const cat = toCategoryLabel(r.category) || '기타';
+      totals.set(cat, (totals.get(cat) || 0) + (r.amount_krw || 0));
+    }
+    const sorted = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
+    const max = sorted.length ? sorted[0][1] : 1;
+    const top = sorted.slice(0, 5);
+    const rest = sorted.length - top.length;
+    catList.innerHTML = top.map(([name, amt]) =>
+      `<div class="exp-cat-row"><span class="exp-cat-row__name">${escapeHtml(name)}</span><div class="exp-cat-row__bar"><div class="exp-cat-row__fill" style="width:${Math.round((amt / max) * 100)}%"></div></div><span class="exp-cat-row__amt">${amt.toLocaleString('ko-KR')} 원</span></div>`,
+    ).join('') + (rest > 0 ? `<div class="exp-cat-rest">그 외 ${rest}개</div>` : '');
+  }
+  if (brandRows) {
+    const { topBrand, brands } = rankMerchantsByMonth(list);
+    // 1위 카테고리 — rankMerchantsByMonth 가 topBrand 에 cat 미노출 → rows 에서 최빈값 산출
+    let topCat = '';
+    if (topBrand) {
+      const counts = {};
+      for (const r of list) {
+        if ((r.brand || r.merchant) === topBrand.name) {
+          const c = r.category || '미분류';
+          counts[c] = (counts[c] || 0) + 1;
+        }
+      }
+      topCat = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
+    }
+    const all = topBrand
+      ? [{ rank: 1, name: topBrand.name, cat: topCat, count: topBrand.count, amount: topBrand.amount }, ...brands]
+      : brands;
+    brandRows.innerHTML = all.slice(0, 5).map((b) => {
+      const meta = [b.cat ? toCategoryLabel(b.cat) : '', b.count ? `${b.count}건` : ''].filter(Boolean).join(' · ');
+      return `<div class="exp-brand-row" onclick="openMerchantDetail('${escapeAttr(b.name)}', event)"><span class="exp-brand-row__num">${b.rank}</span><div class="exp-brand-row__body"><span class="exp-brand-row__name">${escapeHtml(b.name)}</span><span class="exp-brand-row__meta">${escapeHtml(meta)}</span></div><span class="exp-brand-row__amt">${(b.amount || 0).toLocaleString('ko-KR')} 원</span></div>`;
+    }).join('');
+  }
   return true;
 }
 
@@ -476,23 +582,41 @@ export function clearExpensesFixture(doc = document, month = null) {
   const title = doc.querySelector('.exp-headline-title strong');
   if (title) {
     const titleBox = month != null ? title.closest?.('.exp-headline-title') : null;
-    if (titleBox) titleBox.innerHTML = `${month}월에는 <strong>0만원</strong> 쓰고 있어요`;
+    if (titleBox) titleBox.innerHTML = `${month}월에는 <strong>0만원</strong> 썼어요`;
     else title.textContent = '0';
   }
   const sub = doc.querySelector('.exp-headline-sub strong');
   if (sub) sub.textContent = '0';
-  // 캘린더 일별 합계 비우기
+  // 캘린더 일별 합계 비우기 (타일 농도 제거 + is-zero)
   const cells = doc.querySelectorAll('.exp-month-day[data-date]');
   cells.forEach((cell) => {
     const amtEl = cell.querySelector('.exp-month-day-amount');
     if (amtEl) { amtEl.textContent = ''; amtEl.classList.remove('high'); }
-    cell.classList.remove('t1', 't2', 't3');
-    const isToday = cell.classList.contains('today');
-    cell.classList.toggle('is-zero', !isToday);
+    cell.classList.remove(...CAL_TIER_CLASSES);
+    cell.classList.add('is-zero');
   });
+  // 주합 열 비우기
+  doc.querySelectorAll('.exp-week-sum').forEach((el) => { el.textContent = ''; });
+  // 우측 레일 — 0원 요약 + 빈 타임라인
+  const totalEl = doc.getElementById?.('expRailTotal');
+  if (totalEl) totalEl.innerHTML = '<b>0</b> <span class="unit">원</span>';
+  const statsEl = doc.getElementById?.('expRailStats');
+  if (statsEl) {
+    statsEl.innerHTML = `
+      <div class="exp-rail-stat"><span>하루 평균</span><b>0 원</b></div>
+      <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>—</b></div>
+      <div class="exp-rail-stat"><span>기록된 거래</span><b>0건</b></div>`;
+  }
+  const tlCount = doc.getElementById?.('expRailTlCount');
+  if (tlCount) tlCount.textContent = '0건';
+  // 간이 통계 2열 비우기
+  const catList = doc.querySelector?.('.exp-mini-cat-list');
+  if (catList) catList.innerHTML = '';
+  const brandRows = doc.querySelector?.('.exp-brand-rows');
+  if (brandRows) brandRows.innerHTML = '';
   // 타임라인 비우기
   const tl = doc.querySelector('.exp-tl-list');
-  if (tl) tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:15px;">이 달의 거래가 없습니다.</div>';
+  if (tl) tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:14px;">이 달의 거래가 없습니다.</div>';
   // Recents 비우기 (사이드바)
   const list = doc.getElementById('recentsList');
   if (list) list.innerHTML = '';
@@ -519,13 +643,19 @@ export function rebuildCalendarGrid(year, month, doc = document) {
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
   const todayDay = isCurrentMonth ? now.getDate() : -1;
   const mm = String(month).padStart(2, '0');
-  const calCells = cells.map((d) => {
-    if (d === null) return '<div class="exp-month-day empty"></div>';
-    const ds = `${mm}-${String(d).padStart(2, '0')}`;
-    const cls = ['exp-month-day'];
-    if (d === todayDay) cls.push('today');
-    return `<div class="${cls.join(' ')}" data-date="${ds}"><div class="exp-month-day-num">${d}</div><div class="exp-month-day-amount"></div></div>`;
-  }).join('');
+  // 7열 + 주합 열 — 주 단위로 cells + .exp-week-sum (작업지시서 §5.1)
+  let calCells = '';
+  for (let w = 0; w < cells.length / 7; w++) {
+    for (let i = 0; i < 7; i++) {
+      const d = cells[w * 7 + i];
+      if (d === null) { calCells += '<div class="exp-month-day empty"></div>'; continue; }
+      const ds = `${mm}-${String(d).padStart(2, '0')}`;
+      const cls = ['exp-month-day', 'is-zero'];
+      if (d === todayDay) cls.splice(1, 0, 'today');
+      calCells += `<div class="${cls.join(' ')}" data-date="${ds}"><div class="exp-month-day-num">${d}</div><div class="exp-month-day-amount"></div></div>`;
+    }
+    calCells += `<div class="exp-week-sum" data-week="${w}"></div>`;
+  }
   // dow-row 보존 후 cells 갈아치움
   const dowRow = grid.querySelector('.exp-month-dow-row');
   grid.innerHTML = '';
@@ -691,7 +821,7 @@ export async function patchCumulativeFromHistory(year, month, doc = document) {
   return true;
 }
 
-/** 지정 월 (year, month) 의 expense 데이터를 로드 + 캘린더/헤드라인/타임라인/랭킹 patch. */
+/** 지정 월 (year, month) 의 expense 데이터를 로드 + 캘린더/헤드라인/레일/간이통계 patch. */
 export async function loadAndRenderMonth(year, month, doc = document) {
   const monthKey = `${year}-${String(month).padStart(2, '0')}`;
   _activeMonthKey = monthKey;
@@ -706,14 +836,17 @@ export async function loadAndRenderMonth(year, month, doc = document) {
     if (!rows.length) {
       // 2026-05-04 정책 — Keep import 후 mocks fixture (tx-XX 더미) 표시 차단.
       clearExpensesFixture(doc, month);
+      patchRailFromRows([], year, month, { todayDay }, doc);
       return;
     }
     renderExpenseRecentsFromRows(rows);
     patchHeadlineFromRows(rows, { todayDay, month });
     patchCalendarFromRows(rows, { todayDay });
     renderTimelineFromRows(rows, { todayDay }, doc, year);
-    // 통계 탭(랭킹·월별추이·누적)은 항상 '현재 월' 기준 — 피드에서 과거 월을 봐도 통계는 현재월 고정.
-    // '최근 6개월'·'쓰고 있어요'(현재진행) 라벨이 현재 시점 의미이므로. 과거 월 로드 시 통계는 안 건드림.
+    // 우측 레일 + 간이 통계 2열 — 보고 있는 월 기준 (작업지시서 §5.2·§5.3)
+    patchRailFromRows(rows, year, month, { todayDay }, doc);
+    patchFeedMiniStats(rows, month, doc);
+    // 기존 통계 페이지(통계 버튼 진입)는 항상 '현재 월' 기준 — 과거 월 로드 시 안 건드림.
     if (isCurrentMonth) {
       patchStatsCategoryBars(rows, month, doc);
       patchRankSectionFromRows(rows, doc, month);
@@ -1971,7 +2104,10 @@ export const Expenses = {
   renderExpenseRecentsFromRows,
   patchHeadlineFromRows,
   patchCalendarFromRows,
+  quantileTier,
   renderTimelineFromRows,
+  patchRailFromRows,
+  patchFeedMiniStats,
   patchRankSectionFromRows,
   patchStatsCategoryBars,
   clearExpensesFixture,

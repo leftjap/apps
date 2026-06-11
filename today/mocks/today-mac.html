@@ -960,11 +960,13 @@
 
   /* ============ 가계부 거래 뷰 ============ */
   .expense-view {
-    max-width: 720px;
+    max-width: 860px;
     margin: 0 auto;
     width: 100%;
-    padding: 32px 4px 0;
+    padding: 4px 8px 0;
   }
+  /* 기존 통계 페이지 — 720px 칼럼 유지 (통계 버튼으로 진입, 작업지시서 §5.2) */
+  .expense-view .exp-tab-panel--stats { max-width: 720px; margin: 0 auto; }
   .expense-view .doc__h1 { margin-bottom: 10px; }
   .expense-list {
     margin-top: 18px;
@@ -1016,9 +1018,9 @@
 
   /* ===== 가계부 — keep 정보 구조 + 시안 D 톤 ===== */
 
-  /* 큰 헤드라인 — "4월에는 N만원 쓰고 있어요" */
+  /* 큰 헤드라인 — "5월에는 N만원 썼어요" */
   .exp-headline {
-    padding: 30px 2px 22px;
+    padding: 24px 2px 20px;
   }
   .exp-headline-title {
     font-size: 27px;
@@ -1037,8 +1039,9 @@
     margin-top: 6px;
     line-height: 1.5;
   }
+  /* 오렌지는 헤드라인 강조 1곳만 — 서브 수치는 잉크 (작업지시서 §1 색 사용 원칙) */
   .exp-headline-sub strong {
-    color: var(--crail-base);
+    color: var(--ink-2);
     font-weight: 500;
     font-family: var(--font-sans);
     font-feature-settings: 'tnum' 1;
@@ -1099,13 +1102,34 @@
   .exp-cat-row.is-first .exp-cat-row__name { color: var(--ink-1); font-weight: 500; }
   .exp-cat-row.is-first .exp-cat-row__amt { color: var(--crail-base); font-weight: 600; }
 
-  /* 월 네비 */
+  /* 캘린더 헤더 — 좌 범례 / 우 월 네비 (작업지시서 §5.1) */
+  .exp-cal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 4px 2px 14px;
+  }
+  .legend {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .legend i { width: 11px; height: 11px; border-radius: 3.5px; display: inline-block; border: 1px solid var(--line-soft); }
+  .legend i.s1 { background: oklch(96.5% 0.02 50); }
+  .legend i.s2 { background: oklch(93.5% 0.038 50); }
+  .legend i.s3 { background: oklch(88.5% 0.062 50); }
+  .legend i.s4 { background: oklch(79% 0.095 50); }
+  .legend i.s5 { background: var(--crail-base); border-color: var(--crail-base); }
   .exp-month-nav {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 18px;
-    padding: 16px 0 6px;
+    gap: 10px;
   }
   .exp-month-nav-btn {
     width: 28px; height: 28px;
@@ -1117,97 +1141,282 @@
     color: var(--ink-3);
   }
   .exp-month-nav-btn:hover { background: var(--hover-bg); color: var(--ink-1); }
+  .exp-month-nav-btn.is-disabled { opacity: .35; cursor: default; }
   .exp-month-nav-btn .ico { width: 14px; height: 14px; }
   .exp-month-nav-label {
-    font-size: 16px;
-    font-weight: 500;
+    font-size: 14.5px;
+    font-weight: 600;
     color: var(--ink-1);
     letter-spacing: -0.01em;
-    min-width: 80px;
+    min-width: 86px;
     text-align: center;
+    white-space: nowrap;
   }
 
-  /* 월간 캘린더 */
-  .exp-month-cal { padding: 4px 0 8px; }
+  /* 월간 캘린더 — 7열 + 주합 열 (작업지시서 §5.1) */
+  .exp-month-cal { padding: 0 0 8px; }
   .exp-month-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
+    grid-template-columns: repeat(7, 1fr) 54px;
+    gap: 7px;
   }
   .exp-month-dow-row {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, 1fr) 54px;
+    gap: 7px;
     grid-column: 1 / -1;
-    border-bottom: 1px solid var(--line-soft);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
+  /* 요일 헤더 — 모노 10.5px, 일·토만 옅은 오렌지 톤 (§5.1) */
   .exp-month-dow {
     text-align: center;
-    font-family: var(--font-sans);
-    font-feature-settings: 'tnum' 1;
-    font-size: 11px;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
     color: var(--ink-4);
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
     padding: 6px 0 8px;
+    white-space: nowrap;
   }
-  .exp-month-dow.sun { color: oklch(58% 0.11 25); }   /* 일요일 헤더 빨강 (작업지시서 §5) */
-  /* 캘린더 셀 — 날짜 좌상단 앵커 + 금액 보조, 지출 강도 tier 배경 (작업지시서 §5) */
+  .exp-month-dow.we { color: oklch(70% 0.06 50); }
+  .exp-month-dow.wk { text-align: right; padding-right: 4px; }
+  /* 캘린더 타일 — 지출 있는 날 = 라운드 타일 R13 / 없는 날 = 날짜 숫자만 (§5.1) */
   .exp-month-day {
-    min-height: 60px;
-    padding: 8px 9px;
-    border-radius: 10px;
-    border: 1px solid transparent;
+    min-height: 66px;
+    padding: 9px 11px;
+    border-radius: 13px;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    justify-content: space-between;
     cursor: pointer;
     background: transparent;
-    transition: background .12s ease, border-color .12s ease;
+    transition: filter .12s ease;
     position: relative;
   }
   .exp-month-day.empty, .exp-month-day.is-zero { cursor: default; }
-  .exp-month-day:hover:not(.empty):not(.is-zero) { background: var(--hover-bg); }
-  /* 지출 강도 tier — t1 옅음 → t3 강조. 날짜는 검정 유지, 금액만 색으로 구분 */
-  .exp-month-day.t1 { background: var(--sunken); }
-  .exp-month-day.t2 { background: oklch(94% 0.012 50); }
-  .exp-month-day.t2 .exp-month-day-amount { color: var(--crail-deep); font-weight: 500; }
-  .exp-month-day.t3 { background: var(--crail-soft); }
-  .exp-month-day.t3 .exp-month-day-amount { color: var(--crail-deep); font-weight: 600; }
-  /* 선택일(일자 상세 열림) — 흰 카드 대신 크레일 보더 (테두리 슬롯 재사용, 레이아웃 시프트 없음) */
-  .exp-month-day.is-selected:not(.today) { border-color: var(--crail-base); }
-  /* 날짜 = 진한 앵커 (13px / ink-1 / 600), 두 자리 nowrap */
+  .exp-month-day:hover:not(.empty):not(.is-zero) { filter: brightness(.97); }
+  /* 농도 5단계 (tokens.css .c3.s1~.s5) */
+  .exp-month-day.s1 { background: oklch(96.5% 0.02 50); }
+  .exp-month-day.s2 { background: oklch(93.5% 0.038 50); }
+  .exp-month-day.s3 { background: oklch(88.5% 0.062 50); }
+  .exp-month-day.s4 { background: oklch(79% 0.095 50); }
+  .exp-month-day.s5 { background: var(--crail-base); }
+  /* 날짜 — 구석 11px 모노 (§5.1) */
   .exp-month-day-num {
-    font-size: 13px;
-    color: var(--ink-1);
-    font-weight: 600;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-4);
     line-height: 1;
     white-space: nowrap;
-    font-feature-settings: 'tnum' 1;
   }
-  /* 오늘 — 날짜를 크레일 채움 배지(흰 글자). 전체 셀 테두리링 아님 */
-  .exp-month-day.today .exp-month-day-num {
-    display: inline-flex; align-items: center; justify-content: center;
-    min-width: 20px; height: 20px; margin: -2px 0 0 -2px; padding: 0 5px;
-    background: var(--crail-base); color: #fff; border-radius: 999px; font-weight: 600;
-  }
+  .exp-month-day.s2 .exp-month-day-num, .exp-month-day.s3 .exp-month-day-num { color: oklch(58% 0.07 50); }
+  .exp-month-day.s4 .exp-month-day-num { color: oklch(40% 0.09 50); }
+  .exp-month-day.s5 .exp-month-day-num { color: rgba(255,255,255,.75); }
+  /* 금액 — 만원 축약 15.5px/600 주인공, 타일 하단 정렬 (§5.1). calm 변형 — 옅은 단계 잉크 텍스트 (§5.1 v6) */
   .exp-month-day-amount {
-    align-self: stretch;
-    font-family: var(--font-sans);
-    font-feature-settings: 'tnum' 1;
+    font-family: var(--font-mono);
+    font-size: 15.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: auto;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  .calm .exp-month-day.s1 .exp-month-day-amount,
+  .calm .exp-month-day.s2 .exp-month-day-amount { color: var(--ink-1); }
+  .calm .exp-month-day.s1 .exp-month-day-num,
+  .calm .exp-month-day.s2 .exp-month-day-num { color: var(--ink-4); }
+  .calm .exp-month-day.s3 .exp-month-day-amount { color: oklch(26% 0.05 50); }
+  .calm .exp-month-day.s3 .exp-month-day-num { color: oklch(46% 0.05 50); }
+  .calm .exp-month-day.s4 .exp-month-day-amount { color: oklch(24% 0.06 50); }
+  .exp-month-day.s5 .exp-month-day-amount { color: #fff; }
+  /* 오늘 — 이중 링 (tokens .c3.tdy) */
+  .exp-month-day.today { box-shadow: 0 0 0 2px var(--shell), 0 0 0 4px var(--crail-deep); }
+  /* 주합 열 — 모노 11px 우정렬 (§5.1) */
+  .exp-week-sum {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    white-space: nowrap;
+    padding-right: 4px;
+  }
+
+  /* 간이 통계 2열 — 카테고리(회색 막대) / 브랜드 TOP 5 (작업지시서 §5.2) */
+  .exp-mini-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+    margin-top: 30px;
+    padding-bottom: 40px;
+  }
+  .exp-mini-head {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-2);
+    letter-spacing: -0.01em;
+    padding-bottom: 4px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+  .exp-mini-month {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-4);
+    letter-spacing: 0.06em;
+  }
+  .exp-mini-cat-list { margin-top: 8px; }
+  .exp-mini-cat-list .exp-cat-row { grid-template-columns: 64px 1fr auto; gap: 12px; padding: 8px 0; }
+  .exp-mini-cat-list .exp-cat-row__name { font-size: 12.5px; }
+  .exp-mini-cat-list .exp-cat-row__bar { height: 7px; }
+  .exp-mini-cat-list .exp-cat-row__amt { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
+  .exp-cat-rest {
+    padding: 8px 0 0;
+    font-size: 11.5px;
+    color: var(--ink-4);
+  }
+  .exp-brand-rows { margin-top: 8px; display: flex; flex-direction: column; }
+  .exp-brand-row {
+    display: grid;
+    grid-template-columns: 20px 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 8px 0;
+    cursor: pointer;
+    border-radius: 8px;
+  }
+  .exp-brand-row:hover { background: var(--hover-bg); }
+  .exp-brand-row__num {
+    font-family: var(--font-mono);
     font-size: 11px;
     color: var(--ink-4);
-    font-weight: 400;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    text-align: center;
+  }
+  .exp-brand-row__body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .exp-brand-row__name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-1);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .exp-brand-row__meta { font-size: 10.5px; color: var(--ink-4); white-space: nowrap; }
+  .exp-brand-row__amt {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-1);
     white-space: nowrap;
+  }
+
+  /* 우측 레일 — 월 요약 카드 + 월 타임라인 카드 (작업지시서 §5.3) */
+  .exp-rail {
+    width: 300px;
+    flex: none;
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 0;
+    margin: 18px 0 4px;
+  }
+  body.is-expense:not(.is-exp-stats) .exp-rail { display: flex; }
+  .exp-rail-card {
+    background: var(--sidebar);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-float);
+    padding: 18px 18px 16px;
+  }
+  .exp-rail-month {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    color: var(--ink-4);
+    text-transform: uppercase;
+  }
+  .exp-rail-total {
+    margin-top: 8px;
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--ink-1);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .exp-rail-total .unit { font-size: 14px; color: var(--ink-3); font-weight: 500; }
+  .exp-rail-stats { margin-top: 16px; display: flex; flex-direction: column; }
+  .exp-rail-stat {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 7px 0;
+    font-size: 12px;
+    color: var(--ink-3);
+    white-space: nowrap;
+  }
+  .exp-rail-stat b {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--ink-1);
+  }
+  .exp-rail-tlwrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+  .exp-rail-tl-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--ink-1);
+    letter-spacing: -0.01em;
+    padding: 0 2px 8px;
+    flex-shrink: 0;
+  }
+  .exp-rail-tl-count {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--ink-4);
+  }
+  .exp-rail .exp-tl-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    padding-bottom: 28px;
+  }
+  .exp-rail .exp-tl-list::-webkit-scrollbar { display: none; }
+  /* 하단 페이드 (§5.3) */
+  .exp-rail-tlwrap::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 36px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), var(--sidebar));
+    pointer-events: none;
+    border-radius: 0 0 var(--r-lg) var(--r-lg);
   }
 
   /* 모바일: 셀 높이·패딩 축소 */
   @media (max-width: 600px) {
-    .exp-month-day { min-height: 50px; padding: 6px 6px; }
-    .exp-month-grid { gap: 6px; }
+    .exp-month-day { min-height: 52px; padding: 7px 8px; border-radius: 11px; }
+    .exp-month-grid, .exp-month-dow-row { gap: 5px; grid-template-columns: repeat(7, 1fr) 40px; }
+    .exp-month-day-amount { font-size: 12.5px; }
+    .exp-mini-stats { grid-template-columns: 1fr; gap: 28px; }
   }
 
   /* 선택일 상세 — keep 카드 시각 흡수 (박스화 + slide-in 애니메이션) */
@@ -3171,117 +3380,81 @@
     border-bottom: 0;
   }
 
-  /* === 새 timeline row — 날짜 그룹 헤더 없음, 각 row가 좌측 날짜 컬럼 가짐 === */
+  /* === 월 타임라인 행 — 좌측 42px 날짜 블록 / 거래 / 금액 (작업지시서 §5.3) === */
   .exp-tl-row {
     display: grid;
-    grid-template-columns: 56px 1fr auto;
-    gap: 18px;
-    align-items: center;
-    padding: 15px 8px;
-    border-radius: 8px;
+    grid-template-columns: 42px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    padding: 13px 4px;
     cursor: pointer;
     transition: background .12s;
-    font-size: 14px;
   }
-  .exp-tl-row:hover { background: var(--hover-bg); }
-  .exp-tl-row.is-cont { padding-top: 5px; }
+  .exp-tl-row + .exp-tl-row { border-top: 1px solid var(--line-soft); }
+  .exp-tl-row:hover { background: var(--hover-bg); border-radius: 8px; }
+  .exp-tl-row.is-cont { padding-top: 0; border-top: 0; }
 
-  /* 날짜 컬럼 — 두 줄 (요일 위, 일자 아래), 모두 가운데 정렬 */
+  /* 날짜 블록 — 일 15px 모노 + 요일 9.5px (§5.3) */
   .exp-tl-row__date {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    line-height: 1.2;
+    gap: 4px;
+    line-height: 1;
   }
-  .exp-tl-row__date.is-cont {
-    /* 같은 날 연속 row의 빈 자리 — grid 칸은 유지 */
-  }
-  .exp-tl-row__date-dow {
-    font-size: 11px;
-    color: var(--ink-4);
-    font-weight: 400;
-    text-align: center;
-    line-height: 1.2;
-  }
-  .exp-tl-row__date-dow.sun { color: oklch(58% 0.11 25); }   /* 일요일 빨강 (작업지시서 §5) */
   .exp-tl-row__date-d {
-    font-family: var(--font-sans);
-    font-feature-settings: 'tnum' 1;
-    font-size: 16px;
+    font-family: var(--font-mono);
+    font-size: 15px;
     font-weight: 600;
     color: var(--ink-1);
-    letter-spacing: -0.01em;
-    text-align: center;
-    line-height: 1.2;
+    line-height: 1;
   }
-  .exp-tl-row.today .exp-tl-row__date-d { color: var(--crail-base); }   /* 오늘 날짜 크레일 (작업지시서 §5) */
+  .exp-tl-row__date-dow {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.08em;
+    color: var(--ink-4);
+    line-height: 1;
+  }
+  .exp-tl-row.today .exp-tl-row__date-d { color: var(--crail-deep); }
 
-  /* 본문 — 카테고리·카드(상단 회색) / 상호명(하단 본문 톤) */
+  /* 거래 — 지출처 13.5px/600 + 메타 "카테고리 · 카드명" 10.5px (§5.3, 칩 금지) */
   .exp-tl-row__body {
     display: flex;
     flex-direction: column;
     gap: 3px;
     min-width: 0;
   }
-  .exp-tl-row__head {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 0;
-  }
-  .exp-tl-row__cat {
-    font-size: 12px;
-    color: var(--ink-3);
-    flex-shrink: 0;
-    white-space: nowrap;
-  }
-  .exp-tl-row__card {
-    font-size: 12px;
-    color: var(--ink-4);
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    min-width: 0;
-  }
-  /* 카테고리·카드 사이 점 구분자 (작업지시서 §5) */
-  .exp-tl-row__card::before {
-    content: "";
-    width: 3px; height: 3px; border-radius: 50%;
-    background: var(--ink-4); flex-shrink: 0;
-  }
-  .exp-tl-row__recur { width: 13px; height: 13px; color: var(--ink-4); flex-shrink: 0; }
   .exp-tl-row__merchant {
-    font-size: 15px;
+    font-size: 13.5px;
+    font-weight: 600;
     color: var(--ink-1);
-    font-weight: 400;
+    line-height: 1.25;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .exp-tl-row__meta {
+    font-size: 10.5px;
+    color: var(--ink-4);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .exp-tl-row__recur { width: 11px; height: 11px; color: var(--ink-4); flex-shrink: 0; vertical-align: -1px; margin-left: 3px; }
 
-  /* 금액 — sans + tnum, 숫자/단위 분리 톤 */
+  /* 금액 — 모노 13px 우정렬 (§5.3) */
   .exp-tl-row__amount {
-    font-family: var(--font-sans);
-    font-feature-settings: 'tnum' 1;
-    font-size: 15px;
-    font-weight: 400;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
     color: var(--ink-1);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.01em;
     text-align: right;
     white-space: nowrap;
+    line-height: 1.25;
   }
   .exp-tl-row__amount .amt-num { color: var(--ink-1); }
-  .exp-tl-row__amount .amt-unit {
-    color: var(--ink-3);
-    font-weight: 400;
-    margin-left: 2px;
-  }
-  .exp-tl-row__amount.is-high .amt-num,
-  .exp-tl-row__amount.is-high .amt-unit { color: var(--crail-base); }
+  .exp-tl-row__amount .amt-unit { color: var(--ink-3); font-weight: 400; margin-left: 2px; }
 
   /* ============ Responsive — DESIGN.md §4 ============
      1025↑  데스크톱   244-252 expanded (기본)
@@ -3398,6 +3571,15 @@
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
     .share__ro-long { display: none; }
 
+    /* 가계부 우측 레일 — 모바일 임시 스택 (페이지 5 에서 바텀 시트로 전환) */
+    body.is-expense:not(.is-exp-stats) .exp-rail {
+      width: 100%;
+      margin: 0;
+      overflow: visible;
+    }
+    .exp-rail-tlwrap { overflow: visible; }
+    .exp-rail .exp-tl-list { max-height: 50dvh; }
+
     /* 폰트 — 사용자 의도 "한 사이즈씩" +1 일괄. 메타(≤12px) 보존.
        모바일에서 .doc__body 직접 텍스트 노드와 <div> 래퍼 단락이 다른 폰트로 보이는
        데스크탑 .doc__body div { ... !important } 잔존 버그 → div/p/li/h1-h6 wildcard !important 로 통일. */
@@ -3508,31 +3690,24 @@
   body:not(.is-expense) .top-actions__expense { display: none; }
 
   /* — 가계부 mini tabs (피드/통계, main__top 우상단) — */
-  .exp-mini-tabs {
-    display: inline-flex;
-    background: var(--hover-bg);
-    border-radius: 8px;
-    padding: 2px;
-  }
-  .exp-mini-tab {
-    height: 24px;
-    padding: 0 10px;
-    border: 0;
-    background: transparent;
-    border-radius: 6px;
-    cursor: pointer;
-    font-family: var(--font-sans);
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--ink-3);
-    transition: background .15s ease, color .15s ease;
-  }
-  .exp-mini-tab:hover { color: var(--ink-1); }
-  .exp-mini-tab.is-active {
-    background: var(--tone-255);
+  /* "통계" — Secondary 버튼 (H36, 1px line 보더, 작업지시서 §2·§5.2). 활성 시 잉크 반전 */
+  .exp-stats-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 36px; padding: 0 14px;
+    border-radius: 10px;
+    background: var(--sidebar);
     color: var(--ink-1);
-    box-shadow: 0 1px 2px rgba(20, 18, 14, 0.06);
+    font-size: 13.5px; font-weight: 600;
+    border: 1px solid var(--line);
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s ease;
   }
+  .exp-stats-btn:hover { background: var(--hover-bg); }
+  .exp-stats-btn.is-active { background: var(--ink-1); color: #fff; border-color: var(--ink-1); }
+  /* 가계부 화면 — FAB 없음, 지출 입력은 탑바 Primary 하나 (작업지시서 §5.3) */
+  body.is-expense .t-fab { display: none !important; }
 
   /* — 가계부 검색 모달 (popover 동일 토큰) — */
   .exp-search-overlay {
@@ -4554,21 +4729,14 @@
           </button>
         </div>
 
-        <!-- 가계부 전용 액션 ([피드][통계][검색][+]) -->
+        <!-- 가계부 전용 액션 — [통계 Secondary]·[구분선]·[고스트들]·[지출 입력 Primary] (작업지시서 §2·§5.2) -->
         <div class="top-actions__expense">
-          <div class="exp-mini-tabs" role="tablist">
-            <button class="exp-mini-tab is-active" data-tab="feed" type="button" onclick="setExpTab('feed')">피드</button>
-            <button class="exp-mini-tab" data-tab="stats" type="button" onclick="setExpTab('stats')">통계</button>
-          </div>
+          <button class="exp-stats-btn exp-mini-tab" data-tab="stats" type="button" onclick="toggleExpStats()">통계</button>
+          <span class="ta-sep"></span>
           <button class="icon-btn" type="button" title="거래 검색" onclick="openExpSearch()">
             <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="7" cy="7" r="5"/>
               <path d="M11 11l3 3"/>
-            </svg>
-          </button>
-          <button class="icon-btn icon-btn--accent" type="button" title="거래 추가" onclick="openNewExpenseForm()">
-            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round">
-              <path d="M8 3.5v9M3.5 8h9"/>
             </svg>
           </button>
           <!-- 가계부 더보기(⋮) 메뉴 — Wave 11.8 후속 (매핑 관리 진입점) -->
@@ -4590,6 +4758,11 @@
               </div>
             </div>
           </div>
+          <button class="new-doc-btn" type="button" title="지출 입력" onclick="openNewExpenseForm()">
+            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M8 3.5v9M3.5 8h9"/>
+            </svg>지출 입력
+          </button>
         </div>
 
         <!-- 매핑 관리 액션 ([Picker][Brand][Alias] 탭 + 추가) — Wave 11.8 -->
@@ -4679,6 +4852,19 @@
               </svg>
             </button>
           </div>
+        </div>
+      </aside>
+
+      <!-- 가계부 우측 레일 — 월 요약 카드 + 월 타임라인 카드 (작업지시서 §5.3) -->
+      <aside class="exp-rail" id="expRail" aria-label="월 요약">
+        <div class="exp-rail-card exp-rail-summary">
+          <div class="exp-rail-month" id="expRailMonth">—</div>
+          <div class="exp-rail-total" id="expRailTotal"><b>0</b> <span class="unit">원</span></div>
+          <div class="exp-rail-stats" id="expRailStats"></div>
+        </div>
+        <div class="exp-rail-card exp-rail-tlwrap">
+          <div class="exp-rail-tl-head"><span id="expRailTlLabel">타임라인</span><span class="exp-rail-tl-count" id="expRailTlCount"></span></div>
+          <div class="exp-tl-list" id="expRailTlList"></div>
         </div>
       </aside>
     </div>
@@ -5634,7 +5820,9 @@
       // 검색 모드 종료 (있다면)
       const view = document.querySelector('.expense-view');
       if (view) view.classList.remove('is-searching');
-      // main__top mini tab 강조
+      // 통계 모드 — 우측 레일 hide (CSS body.is-exp-stats)
+      document.body.classList.toggle('is-exp-stats', name === 'stats');
+      // main__top "통계" 버튼 강조
       document.querySelectorAll('.exp-mini-tab').forEach(btn => {
         btn.classList.toggle('is-active', btn.dataset.tab === name);
       });
@@ -5755,10 +5943,62 @@
       requestAnimationFrame(() => requestAnimationFrame(() => {
         const row = document.querySelector(`.exp-tl-row[data-tx-id="${txId}"], .expense-row[data-tx-id="${txId}"]`);
         if (!row) return;
-        row.scrollIntoView({block: 'center', behavior: 'smooth'});
+        // scrollIntoView 금지 (작업지시서 §6) — 컨테이너 scrollTop 직접 제어
+        const scroller = row.closest('.exp-tl-list') || document.getElementById('mainView');
+        if (scroller) {
+          const top = row.offsetTop - scroller.clientHeight / 2 + row.clientHeight / 2;
+          scroller.scrollTop = Math.max(0, top);
+        }
         row.classList.add('is-highlighted');
         setTimeout(() => row.classList.remove('is-highlighted'), 1500);
       }));
+    }
+
+    // 통계 토글 — 탑바 "통계" Secondary 버튼 (세그먼트 탭 제거, 작업지시서 §5.2)
+    function toggleExpStats() {
+      setExpTab(_activeExpTab === 'stats' ? 'feed' : 'stats');
+    }
+    window.toggleExpStats = toggleExpStats;
+
+    // 우측 레일 fixture — 월 요약 + 월 타임라인 (SPA patchRailFromRows 가 실 데이터로 덮어씀)
+    const MONTH_EN = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+    function renderExpenseRailFixture(data, dailyTotals, fmtCal) {
+      const monthEl = document.getElementById('expRailMonth');
+      const totalEl = document.getElementById('expRailTotal');
+      const statsEl = document.getElementById('expRailStats');
+      const tlLabel = document.getElementById('expRailTlLabel');
+      const tlCount = document.getElementById('expRailTlCount');
+      const tlList = document.getElementById('expRailTlList');
+      if (!monthEl || !tlList) return;
+      monthEl.textContent = `${MONTH_EN[data.month - 1]} ${data.year}`;
+      if (totalEl) totalEl.innerHTML = `<b>${data.monthTotal.toLocaleString('ko-KR')}</b> <span class="unit">원</span>`;
+      // 가장 많이 쓴 날
+      let maxDay = null, maxAmt = 0;
+      Object.entries(dailyTotals).forEach(([ds, v]) => { if (v > maxAmt) { maxAmt = v; maxDay = ds; } });
+      const maxDayLabel = maxDay ? `${data.month}/${Number(maxDay.split('-')[1])} · ${fmtCal(maxAmt)}` : '—';
+      if (statsEl) statsEl.innerHTML = `
+        <div class="exp-rail-stat"><span>하루 평균</span><b>${data.dailyAvg.toLocaleString('ko-KR')} 원</b></div>
+        <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>${maxDayLabel}</b></div>
+        <div class="exp-rail-stat"><span>기록된 거래</span><b>${data.txns.length}건</b></div>`;
+      if (tlLabel) tlLabel.textContent = `${data.month}월 타임라인`;
+      if (tlCount) tlCount.textContent = `${data.txns.length}건`;
+      // tl6 행 — 좌측 42px 날짜 블록 / 거래(지출처+메타) / 금액 (작업지시서 §5.3)
+      const byDate = {};
+      data.txns.forEach(t => { (byDate[t.date] = byDate[t.date] || []).push(t); });
+      const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
+      tlList.innerHTML = dates.map(ds => {
+        const [tm, td] = ds.split('-').map(Number);
+        const dn = ['일','월','화','수','목','금','토'][new Date(data.year, tm - 1, td).getDay()];
+        return byDate[ds].map((t, i) => `
+          <div class="exp-tl-row${i > 0 ? ' is-cont' : ''}" data-tx-id="${t.id}" onclick="openExpenseModal('edit', '${t.id}')">
+            ${i > 0 ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>' : `<div class="exp-tl-row__date"><span class="exp-tl-row__date-d">${td}</span><span class="exp-tl-row__date-dow">${dn}</span></div>`}
+            <div class="exp-tl-row__body">
+              <div class="exp-tl-row__merchant">${t.brand || t.memo}</div>
+              <div class="exp-tl-row__meta">${[t.category, t.card].filter(Boolean).join(' · ')}</div>
+            </div>
+            <div class="exp-tl-row__amount">${(t.amount || 0).toLocaleString('ko-KR')} 원</div>
+          </div>`).join('');
+      }).join('');
     }
 
     function renderExpense() {
@@ -5774,9 +6014,17 @@
         dailyTotals[t.date] = (dailyTotals[t.date] || 0) + t.amount;
       });
       const dailyAvg = data.monthTotal / data.today;
-      const highThreshold = dailyAvg * 1.6;
+      // 농도 5단계 — 지출 있는 날 분포 분위수 기반 (작업지시서 §5.1)
+      const sortedDayTotals = Object.values(dailyTotals).filter(v => v > 0).sort((a, b) => a - b);
+      const calTier = (amount) => {
+        const n = sortedDayTotals.length;
+        if (!n || amount <= 0) return 0;
+        let rank = 0;
+        for (const v of sortedDayTotals) if (v <= amount) rank++;
+        return Math.min(5, Math.max(1, Math.ceil(((rank - 0.5) / n) * 5)));
+      };
 
-      // 월간 캘린더
+      // 월간 캘린더 (7열 + 주합 열)
       const firstDow = new Date(data.year, data.month - 1, 1).getDay();
       const daysInMonth = new Date(data.year, data.month, 0).getDate();
       const cells = [];
@@ -5790,27 +6038,24 @@
       const nextDisabled = currentYM >= sysYM;
 
       const fmtCal = n => n >= 10000 ? `${n/10000 % 1 === 0 ? n/10000 : (n/10000).toFixed(1)}만` : `${Math.round(n/1000)}천`;
-      const calCells = cells.map(d => {
-        if (d === null) return '<div class="exp-month-day empty"></div>';
-        const ds = `${mm}-${String(d).padStart(2, '0')}`;
-        const total = dailyTotals[ds] || 0;
-        const isToday = d === data.today;
-        const isSelected = ds === _selectedDate && !isToday;
-        const cls = ['exp-month-day'];
-        if (isToday) cls.push('today');
-        if (isSelected) cls.push('is-selected');
-        // 사용자 피드백 #7: 거래 없는 일자 클릭 비활성
-        if (total === 0 && !isToday) cls.push('is-zero');
-        // 지출 강도 tier (작업지시서 §5)
-        if (total > 0) cls.push(total >= highThreshold ? 't3' : total >= dailyAvg * 0.5 ? 't2' : 't1');
-        const amtTxt = total > 0 ? fmtCal(total) : '';
-        return `
-          <div class="${cls.join(' ')}" data-date="${ds}">
-            <div class="exp-month-day-num">${d}</div>
-            <div class="exp-month-day-amount">${amtTxt}</div>
-          </div>
-        `;
-      }).join('');
+      let calCells = '';
+      for (let w = 0; w < cells.length / 7; w++) {
+        let weekSum = 0;
+        for (let i = 0; i < 7; i++) {
+          const d = cells[w * 7 + i];
+          if (d === null) { calCells += '<div class="exp-month-day empty"></div>'; continue; }
+          const ds = `${mm}-${String(d).padStart(2, '0')}`;
+          const total = dailyTotals[ds] || 0;
+          weekSum += total;
+          const cls = ['exp-month-day'];
+          if (d === data.today) cls.push('today');
+          // 지출 없는 날 = 타일 없음 + 클릭 비활성 (작업지시서 §5.1)
+          if (total === 0) cls.push('is-zero');
+          else cls.push('s' + calTier(total));
+          calCells += `<div class="${cls.join(' ')}" data-date="${ds}"><div class="exp-month-day-num">${d}</div><div class="exp-month-day-amount">${total > 0 ? fmtCal(total) : ''}</div></div>`;
+        }
+        calCells += `<div class="exp-week-sum" data-week="${w}">${weekSum > 0 ? fmtCal(weekSum) : ''}</div>`;
+      }
 
       // 선택일 상세
       const dayTxns = data.txns.filter(t => t.date === _selectedDate);
@@ -5827,49 +6072,8 @@
           `).join('')
         : '<div class="exp-day-detail__empty">이 날의 거래가 없습니다.</div>';
 
-      // 옵션 L 피드 탭 — 월 전체 거래 timeline
-      // 새 구조: 날짜 그룹 헤더 없음, 각 row가 좌측 날짜 컬럼을 가짐.
-      // 같은 날 두 번째 거래부터는 좌측 컬럼 비움(.is-cont).
-      const txByDate = {};
-      data.txns.forEach(t => {
-        if (!txByDate[t.date]) txByDate[t.date] = [];
-        txByDate[t.date].push(t);
-      });
-      const sortedDates = Object.keys(txByDate).sort((a, b) => b.localeCompare(a));
-      const cardShortMap = { '삼성1337': '삼성카드', 'KB국민카드7007': 'KB국민카드', 'KB국민카드 후불하이패스': 'KB국민카드', '현금': '현금' };
-      const tlRecurSvg = '<svg class="exp-tl-row__recur" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 12a7.5 7.5 0 1 1-2.3-5.4"/><path d="M17.5 3.2V7h-3.8"/></svg>';
-      const timelineHtml = sortedDates.map(dateStr => {
-        const [tm, td] = dateStr.split('-').map(Number);
-        const dow = new Date(data.year, tm - 1, td).getDay();
-        const dn = ['일','월','화','수','목','금','토'][dow];
-        const isSun = dow === 0;
-        const isTodayRow = dateStr === todayStr;
-        return txByDate[dateStr].map((t, i) => {
-          const merchant = t.brand || t.memo;
-          const card = cardShortMap[t.card] || t.card || '삼성카드';
-          const isCont = i > 0;
-          const dateCell = isCont
-            ? '<div class="exp-tl-row__date is-cont" aria-hidden="true"></div>'
-            : `<div class="exp-tl-row__date">
-                 <span class="exp-tl-row__date-dow${isSun ? ' sun' : ''}">${dn}</span>
-                 <span class="exp-tl-row__date-d">${td}</span>
-               </div>`;
-          const isHigh = t.amount >= highThreshold;
-          return `
-            <div class="exp-tl-row${isCont ? ' is-cont' : ''}${isTodayRow ? ' today' : ''}" data-tx-id="${t.id}" onclick="openExpenseModal('edit', '${t.id}')">
-              ${dateCell}
-              <div class="exp-tl-row__body">
-                <div class="exp-tl-row__head">
-                  <span class="exp-tl-row__cat">${t.category}</span>
-                  <span class="exp-tl-row__card">${card}${t.recurring ? tlRecurSvg : ''}</span>
-                </div>
-                <div class="exp-tl-row__merchant">${merchant}</div>
-              </div>
-              <div class="exp-tl-row__amount${isHigh ? ' is-high' : ''}">${formatAmount(t.amount)}</div>
-            </div>
-          `;
-        }).join('');
-      }).join('');
+      // 우측 레일 fixture — 월 요약 카드 + 월 타임라인 (tl6 행, 작업지시서 §5.3)
+      renderExpenseRailFixture(data, dailyTotals, fmtCal);
 
       const [sm, sd] = _selectedDate.split('-').map(Number);
       const dowName = ['일','월','화','수','목','금','토'][new Date(data.year, sm - 1, sd).getDay()];
@@ -5937,46 +6141,73 @@
       // 6개월 평균
       const trendAvgMan = Math.round(data.monthlyTrend.reduce((s, t) => s + t.total, 0) / data.monthlyTrend.length / 10000);
 
+      // 간이 통계 2열 — 카테고리 상위 5 (회색 막대) + 브랜드 TOP 5 (작업지시서 §5.2)
+      const miniCatTop = statsCatSorted.slice(0, 5);
+      const miniCatRest = statsCatSorted.length - miniCatTop.length;
+      const miniCatHtml = miniCatTop.map(([name, amt]) => `
+        <div class="exp-cat-row">
+          <span class="exp-cat-row__name">${name}</span>
+          <div class="exp-cat-row__bar"><div class="exp-cat-row__fill" style="width:${Math.round(amt / statsCatMax * 100)}%"></div></div>
+          <span class="exp-cat-row__amt">${amt.toLocaleString('ko-KR')} 원</span>
+        </div>`).join('') + (miniCatRest > 0 ? `<div class="exp-cat-rest">그 외 ${miniCatRest}개</div>` : '');
+      const miniBrands = [{ rank: 1, name: tb.name, cat: '', count: tb.count, amount: tb.amount }, ...(data.brands || [])].slice(0, 5);
+      const miniBrandHtml = miniBrands.map(b => `
+        <div class="exp-brand-row" onclick="openMerchantDetail('${b.name}', event)">
+          <span class="exp-brand-row__num">${b.rank}</span>
+          <div class="exp-brand-row__body"><span class="exp-brand-row__name">${b.name}</span><span class="exp-brand-row__meta">${[b.cat, b.count ? b.count + '건' : ''].filter(Boolean).join(' · ')}</span></div>
+          <span class="exp-brand-row__amt">${b.amount.toLocaleString('ko-KR')} 원</span>
+        </div>`).join('');
+
       view.innerHTML = `
         <article class="expense-view">
-          <!-- 피드 탭 panel (디폴트) -->
+          <!-- 피드 panel (디폴트) — 헤드라인 + 히트맵 캘린더 + 간이 통계 2열 (작업지시서 §5) -->
           <div class="exp-tab-panel exp-tab-panel--feed ${_activeExpTab==='feed'?'is-active':''}">
-            <!-- 1. 이번 달 헤드라인 -->
             <div class="exp-headline">
-            <div class="exp-headline-title">${data.month}월에는 <strong>${headlineMan}만원</strong> 쓰고 있어요</div>
-            <div class="exp-headline-sub">하루 평균 <strong>${data.dailyAvg.toLocaleString('ko-KR')}원</strong> 쓰고 있어요</div>
-          </div>
-
-          <!-- 2. 월 네비 + 캘린더 + 선택일 상세 -->
-          <div class="exp-month-nav">
-            <button class="exp-month-nav-btn" type="button" aria-label="이전 달">
-              <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4l-4 4 4 4"/></svg>
-            </button>
-            <span class="exp-month-nav-label">${data.year}년 ${data.month}월</span>
-            <button class="exp-month-nav-btn ${nextDisabled ? 'is-disabled' : ''}" type="button" aria-label="다음 달" ${nextDisabled ? 'disabled' : ''}>
-              <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
-            </button>
-          </div>
-
-          <div class="exp-month-cal">
-            <div class="exp-month-grid">
-              <div class="exp-month-dow-row">
-                <div class="exp-month-dow sun">일</div>
-                <div class="exp-month-dow">월</div>
-                <div class="exp-month-dow">화</div>
-                <div class="exp-month-dow">수</div>
-                <div class="exp-month-dow">목</div>
-                <div class="exp-month-dow">금</div>
-                <div class="exp-month-dow">토</div>
-              </div>
-              ${calCells}
+              <div class="exp-headline-title">${data.month}월에는 <strong>${headlineMan}만원</strong> 썼어요</div>
+              <div class="exp-headline-sub">하루 평균 <strong>${data.dailyAvg.toLocaleString('ko-KR')}원</strong> · 날짜를 누르면 그날 거래가 열려요</div>
             </div>
-          </div>
 
-          <!-- 월 전체 거래 timeline (피드 탭 안 — 캘린더 아래 scroll) -->
-          <div class="exp-tl-list">
-            ${timelineHtml}
-          </div>
+            <!-- 캘린더 헤더 — 범례 + 월 네비 (작업지시서 §5.1) -->
+            <div class="exp-cal-head">
+              <div class="legend">적게 <i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="s4"></i><i class="s5"></i> 많이</div>
+              <div class="exp-month-nav">
+                <button class="exp-month-nav-btn" type="button" aria-label="이전 달">
+                  <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4l-4 4 4 4"/></svg>
+                </button>
+                <span class="exp-month-nav-label">${data.year}년 ${data.month}월</span>
+                <button class="exp-month-nav-btn ${nextDisabled ? 'is-disabled' : ''}" type="button" aria-label="다음 달" ${nextDisabled ? 'disabled' : ''}>
+                  <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="exp-month-cal">
+              <div class="exp-month-grid calm">
+                <div class="exp-month-dow-row">
+                  <div class="exp-month-dow we">일</div>
+                  <div class="exp-month-dow">월</div>
+                  <div class="exp-month-dow">화</div>
+                  <div class="exp-month-dow">수</div>
+                  <div class="exp-month-dow">목</div>
+                  <div class="exp-month-dow">금</div>
+                  <div class="exp-month-dow we">토</div>
+                  <div class="exp-month-dow wk">주합</div>
+                </div>
+                ${calCells}
+              </div>
+            </div>
+
+            <!-- 간이 통계 2열 — 카테고리 / 브랜드 TOP (작업지시서 §5.2) -->
+            <div class="exp-mini-stats">
+              <div class="exp-mini-col">
+                <div class="exp-mini-head">카테고리 <span class="exp-mini-month">${data.month}월</span></div>
+                <div class="exp-cat-list exp-mini-cat-list">${miniCatHtml}</div>
+              </div>
+              <div class="exp-mini-col">
+                <div class="exp-mini-head">브랜드 TOP <span class="exp-mini-month">${data.month}월</span></div>
+                <div class="exp-brand-rows">${miniBrandHtml}</div>
+              </div>
+            </div>
           </div>
           <!-- /피드 panel -->
 

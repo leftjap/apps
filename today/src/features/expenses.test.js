@@ -42,6 +42,7 @@ import {
   patchOpenCategoryDetailHandler,
   __resetCategoryDetailPatchState,
   clearExpensesFixture,
+  quantileTier,
   detectIngestGapCards,
 } from './expenses.js';
 import { createTodayDB } from '../db/schema.js';
@@ -93,8 +94,8 @@ describe('clearExpensesFixture — 빈 월 시 mocks fixture 더미 표시 차�
           } else if (on) classes.add(c);
           else classes.delete(c);
         },
-        add(c) { classes.add(c); },
-        remove(c) { classes.delete(c); },
+        add(...cs) { cs.forEach((c) => classes.add(c)); },
+        remove(...cs) { cs.forEach((c) => classes.delete(c)); },
         contains(c) { return classes.has(c); },
       },
       _classes: classes,
@@ -139,10 +140,10 @@ describe('clearExpensesFixture — 빈 월 시 mocks fixture 더미 표시 차�
     expect(sub.textContent).toBe('0');
   });
 
-  it('캘린더 셀의 amount 텍스트를 비우고 is-zero 적용 (today 제외)', () => {
+  it('캘린더 셀의 amount 텍스트를 비우고 is-zero 적용 (지출 없는 날 = 오늘 포함 전부 타일 없음, 리디자인 §5.1)', () => {
     const amt1 = makeNode({ textContent: '29,100', classList: ['high'] });
     const amtToday = makeNode({ textContent: '12,500' });
-    const cell1 = makeNode({ children: { '.exp-month-day-amount': amt1 } });
+    const cell1 = makeNode({ children: { '.exp-month-day-amount': amt1 }, classList: ['s3'] });
     const cellToday = makeNode({
       classList: ['today'],
       children: { '.exp-month-day-amount': amtToday },
@@ -152,7 +153,8 @@ describe('clearExpensesFixture — 빈 월 시 mocks fixture 더미 표시 차�
     expect(amt1.textContent).toBe('');
     expect(amt1.classList.contains('high')).toBe(false);
     expect(cell1.classList.contains('is-zero')).toBe(true);
-    expect(cellToday.classList.contains('is-zero')).toBe(false); // today 예외
+    expect(cell1.classList.contains('s3')).toBe(false); // 농도 타일 제거
+    expect(cellToday.classList.contains('is-zero')).toBe(true); // 오늘도 0건이면 비활성 (Wave 11.8d 정합)
   });
 
   it('타임라인 .exp-tl-list innerHTML 을 빈-거래 메시지로 교체', () => {
@@ -1502,5 +1504,24 @@ describe('detectIngestGapCards — 자동수집 끊김 감지 (2026-06-02 사각
     mockRows(rows);
     const gaps = await detectIngestGapCards(NOW);
     expect(gaps.find((g) => g.card === '신한카드 Air')).toBeTruthy();
+  });
+});
+
+describe('quantileTier — 캘린더 농도 분위수 (리디자인 §5.1)', () => {
+  it('5단계 분포 — 최솟값 s1 / 중간 s3 / 최댓값 s5', () => {
+    const sorted = [1000, 5000, 20000, 90000, 300000];
+    expect(quantileTier(1000, sorted)).toBe(1);
+    expect(quantileTier(20000, sorted)).toBe(3);
+    expect(quantileTier(300000, sorted)).toBe(5);
+  });
+  it('0원·빈 분포 → 0 (타일 없음)', () => {
+    expect(quantileTier(0, [1000])).toBe(0);
+    expect(quantileTier(5000, [])).toBe(0);
+  });
+  it('동일 금액 다수 — 같은 tier 공유', () => {
+    const sorted = [10000, 10000, 10000];
+    expect(quantileTier(10000, sorted)).toBe(quantileTier(10000, sorted));
+    expect(quantileTier(10000, sorted)).toBeGreaterThanOrEqual(1);
+    expect(quantileTier(10000, sorted)).toBeLessThanOrEqual(5);
   });
 });
