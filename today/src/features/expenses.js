@@ -263,6 +263,12 @@ export function patchHeadlineFromRows(rows, opts = {}, doc = document) {
     }
   }
   if (sub) sub.textContent = `${dailyAvg.toLocaleString('ko-KR')}원`;
+  // 모바일 월 헤더 서브 — "총 N원 · 하루 평균 M원" (시안 05)
+  const msub = doc.querySelector?.('.exp-mhead-sub');
+  if (msub) {
+    const total = (rows || []).reduce((s, r) => s + (r.amount_krw || 0), 0);
+    msub.innerHTML = `총 <strong>${total.toLocaleString('ko-KR')}원</strong> · 하루 평균 ${dailyAvg.toLocaleString('ko-KR')}원`;
+  }
   return true;
 }
 
@@ -587,6 +593,9 @@ export function clearExpensesFixture(doc = document, month = null) {
   }
   const sub = doc.querySelector('.exp-headline-sub strong');
   if (sub) sub.textContent = '0';
+  // 모바일 월 헤더 서브 — 0원
+  const msub = doc.querySelector?.('.exp-mhead-sub');
+  if (msub) msub.innerHTML = '총 <strong>0원</strong> · 하루 평균 0원';
   // 캘린더 일별 합계 비우기 (타일 농도 제거 + is-zero)
   const cells = doc.querySelectorAll('.exp-month-day[data-date]');
   cells.forEach((cell) => {
@@ -663,9 +672,10 @@ export function rebuildCalendarGrid(year, month, doc = document) {
   const tmp = doc.createElement('div');
   tmp.innerHTML = calCells;
   while (tmp.firstChild) grid.appendChild(tmp.firstChild);
-  // nav-label
-  const label = doc.querySelector('.exp-month-nav-label');
-  if (label) label.textContent = `${year}년 ${month}월`;
+  // nav-label — 데스크톱 캘린더 헤더 + 모바일 월 헤더 (시안 05) 모두 갱신
+  doc.querySelectorAll('.exp-month-nav-label').forEach((label) => {
+    label.textContent = `${year}년 ${month}월`;
+  });
   // nextDisabled 토글 — mocks L4626 정합
   const sysYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const currentYM = `${year}-${mm}`;
@@ -832,7 +842,8 @@ export async function loadAndRenderMonth(year, month, doc = document) {
     console.info(`[expenses] year=${year} month=${month} count=${rows.length}`);
     const now = new Date();
     const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
-    const todayDay = isCurrentMonth ? now.getDate() : 0;
+    // 하루 평균 분모 — 진행 중인 달은 경과 일수, 과거 달은 그 달의 일수 (시안 03: 1,240,841/31=40,027)
+    const todayDay = isCurrentMonth ? now.getDate() : new Date(year, month, 0).getDate();
     if (!rows.length) {
       // 2026-05-04 정책 — Keep import 후 mocks fixture (tx-XX 더미) 표시 차단.
       clearExpensesFixture(doc, month);

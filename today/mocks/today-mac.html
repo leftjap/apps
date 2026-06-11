@@ -1153,16 +1153,16 @@
     white-space: nowrap;
   }
 
-  /* 월간 캘린더 — 7열 + 주합 열 (작업지시서 §5.1) */
+  /* 월간 캘린더 — 7열 + 주합 열 (작업지시서 §5.1). minmax(0,1fr) — 금액 nowrap 이 열을 밀어내지 않게 */
   .exp-month-cal { padding: 0 0 8px; }
   .exp-month-grid {
     display: grid;
-    grid-template-columns: repeat(7, 1fr) 54px;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 54px;
     gap: 7px;
   }
   .exp-month-dow-row {
     display: grid;
-    grid-template-columns: repeat(7, 1fr) 54px;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) 54px;
     gap: 7px;
     grid-column: 1 / -1;
     margin-bottom: 2px;
@@ -1312,6 +1312,11 @@
     white-space: nowrap;
   }
 
+  /* 모바일 전용 월 헤더 (시안 05) — 데스크톱 숨김 */
+  .exp-mhead { display: none; }
+  /* 레일 시트 핸들 — 모바일 전용 */
+  .exp-rail-handle { display: none; }
+
   /* 우측 레일 — 월 요약 카드 + 월 타임라인 카드 (작업지시서 §5.3) */
   .exp-rail {
     width: 300px;
@@ -1411,11 +1416,13 @@
     border-radius: 0 0 var(--r-lg) var(--r-lg);
   }
 
-  /* 모바일: 셀 높이·패딩 축소 */
+  /* 모바일: 셀 축소 + 주합 열 숨김 (시안 05 — 7열) */
   @media (max-width: 600px) {
-    .exp-month-day { min-height: 52px; padding: 7px 8px; border-radius: 11px; }
-    .exp-month-grid, .exp-month-dow-row { gap: 5px; grid-template-columns: repeat(7, 1fr) 40px; }
-    .exp-month-day-amount { font-size: 12.5px; }
+    .exp-month-day { min-height: 54px; padding: 6px 6px; border-radius: 11px; min-width: 0; overflow: hidden; }
+    .exp-month-grid, .exp-month-dow-row { gap: 4px; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+    .exp-week-sum, .exp-month-dow.wk { display: none; }
+    .exp-month-day-num { font-size: 10px; }
+    .exp-month-day-amount { font-size: 11.5px; letter-spacing: -0.03em; }
     .exp-mini-stats { grid-template-columns: 1fr; gap: 28px; }
   }
 
@@ -3596,14 +3603,65 @@
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
     .share__ro-long { display: none; }
 
-    /* 가계부 우측 레일 — 모바일 임시 스택 (페이지 5 에서 바텀 시트로 전환) */
-    body.is-expense:not(.is-exp-stats) .exp-rail {
-      width: 100%;
-      margin: 0;
-      overflow: visible;
+    /* ── 가계부 모바일 (시안 05) ── */
+    /* 탑바: 통계 버튼·구분선 숨김, 지출 입력 → + 아이콘 압축 */
+    body.is-expense .exp-stats-btn { display: none; }
+    .top-actions__expense .ta-sep { display: none; }
+    .top-actions__expense .new-doc-btn { font-size: 0; gap: 0; width: 36px; padding: 0; justify-content: center; }
+    /* 피드 패널 재배치: 모바일 월 헤더 → 캘린더 → 범례 → 간이 통계 */
+    .exp-tab-panel--feed.is-active { display: flex; flex-direction: column; }
+    .exp-headline { display: none; }
+    .exp-mhead { display: block; order: 1; padding: 8px 0 14px; }
+    .exp-mhead-nav { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .exp-mhead-title { font-size: 18px; font-weight: 700; min-width: 0; }
+    .exp-mhead-sub {
+      margin-top: 6px;
+      text-align: center;
+      font-size: 12.5px;
+      color: var(--ink-3);
+      font-feature-settings: 'tnum' 1;
     }
-    .exp-rail-tlwrap { overflow: visible; }
-    .exp-rail .exp-tl-list { max-height: 50dvh; }
+    .exp-mhead-sub strong { color: var(--crail-deep); font-weight: 600; }
+    .exp-month-cal { order: 2; }
+    .exp-cal-head { order: 3; justify-content: center; padding: 12px 0 4px; }
+    .exp-cal-head .exp-month-nav { display: none; }
+    .exp-mini-stats { order: 4; }
+    /* 우측 레일 → 타임라인 바텀 시트 (요약 카드는 월 헤더 서브가 대체) */
+    body.is-expense:not(.is-exp-stats) .exp-rail {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      width: auto;
+      margin: 0;
+      z-index: 60;
+      gap: 0;
+      background: var(--sidebar);
+      border-radius: 18px 18px 0 0;
+      box-shadow: var(--shadow-pop);
+      padding: 4px 16px calc(10px + env(safe-area-inset-bottom));
+      height: 64dvh;
+      transform: translateY(calc(100% - 104px));
+      transition: transform .26s ease;
+    }
+    body.is-expense:not(.is-exp-stats) .exp-rail.is-open { transform: translateY(0); }
+    .exp-rail-handle {
+      display: grid; place-items: center;
+      height: 22px; width: 100%;
+      background: transparent; border: 0; padding: 0;
+      cursor: grab; flex: none;
+      touch-action: none;
+    }
+    .exp-rail-handle i {
+      width: 44px; height: 4.5px;
+      border-radius: 999px;
+      background: var(--line);
+      display: block;
+    }
+    .exp-rail-summary { display: none; }
+    .exp-rail-card { box-shadow: none; border-radius: 0; background: transparent; padding: 0 2px; }
+    .exp-rail-tlwrap::after { display: none; }
+    .exp-rail .exp-tl-list { padding-bottom: 8px; }
+    /* 시트 peek 에 본문 하단이 가리지 않게 여백 확보 */
+    body.is-expense #mainView { padding-bottom: 116px; }
 
     /* 폰트 — 사용자 의도 "한 사이즈씩" +1 일괄. 메타(≤12px) 보존.
        모바일에서 .doc__body 직접 텍스트 노드와 <div> 래퍼 단락이 다른 폰트로 보이는
@@ -4880,8 +4938,9 @@
         </div>
       </aside>
 
-      <!-- 가계부 우측 레일 — 월 요약 카드 + 월 타임라인 카드 (작업지시서 §5.3) -->
+      <!-- 가계부 우측 레일 — 월 요약 카드 + 월 타임라인 카드 (작업지시서 §5.3). 모바일은 바텀 시트 (시안 05) -->
       <aside class="exp-rail" id="expRail" aria-label="월 요약">
+        <button class="exp-rail-handle" id="expRailHandle" type="button" aria-label="타임라인 시트 열기/닫기"><i></i></button>
         <div class="exp-rail-card exp-rail-summary">
           <div class="exp-rail-month" id="expRailMonth">—</div>
           <div class="exp-rail-total" id="expRailTotal"><b>0</b> <span class="unit">원</span></div>
@@ -4941,6 +5000,34 @@
     }, { passive: true });
     handle.addEventListener('touchend', () => { startY = null; });
     // 데스크톱 전환 시 is-open 잔존 제거
+    mq.addEventListener?.('change', (e) => { if (!e.matches) setOpen(false); });
+  })();
+
+  // 가계부 타임라인 바텀 시트 (모바일 ≤768) — 핸들 탭/스와이프 (시안 05)
+  (function(){
+    const rail = document.getElementById('expRail');
+    const handle = document.getElementById('expRailHandle');
+    if (!rail || !handle) return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const isOpen = () => rail.classList.contains('is-open');
+    const setOpen = (open) => rail.classList.toggle('is-open', open);
+    handle.addEventListener('click', () => { if (mq.matches) setOpen(!isOpen()); });
+    rail.querySelector('.exp-rail-tl-head')?.addEventListener('click', () => {
+      if (mq.matches && !isOpen()) setOpen(true);
+    });
+    let startY = null, startOpen = false;
+    handle.addEventListener('touchstart', (e) => {
+      if (!mq.matches) return;
+      startY = e.touches[0].clientY;
+      startOpen = isOpen();
+    }, { passive: true });
+    handle.addEventListener('touchmove', (e) => {
+      if (startY == null) return;
+      const dy = e.touches[0].clientY - startY;
+      if (dy < -28 && !startOpen) { setOpen(true); startY = null; }
+      else if (dy > 28 && startOpen) { setOpen(false); startY = null; }
+    }, { passive: true });
+    handle.addEventListener('touchend', () => { startY = null; });
     mq.addEventListener?.('change', (e) => { if (!e.matches) setOpen(false); });
   })();
 
@@ -6187,6 +6274,19 @@
         <article class="expense-view">
           <!-- 피드 panel (디폴트) — 헤드라인 + 히트맵 캘린더 + 간이 통계 2열 (작업지시서 §5) -->
           <div class="exp-tab-panel exp-tab-panel--feed ${_activeExpTab==='feed'?'is-active':''}">
+            <!-- 모바일 전용 월 헤더 — 중앙 제목 + 총액/하루평균 서브 (시안 05). 데스크톱 숨김 -->
+            <div class="exp-mhead">
+              <div class="exp-mhead-nav">
+                <button class="exp-month-nav-btn" type="button" aria-label="이전 달">
+                  <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4l-4 4 4 4"/></svg>
+                </button>
+                <span class="exp-month-nav-label exp-mhead-title">${data.year}년 ${data.month}월</span>
+                <button class="exp-month-nav-btn ${nextDisabled ? 'is-disabled' : ''}" type="button" aria-label="다음 달" ${nextDisabled ? 'disabled' : ''}>
+                  <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
+                </button>
+              </div>
+              <div class="exp-mhead-sub">총 <strong>${data.monthTotal.toLocaleString('ko-KR')}원</strong> · 하루 평균 ${data.dailyAvg.toLocaleString('ko-KR')}원</div>
+            </div>
             <div class="exp-headline">
               <div class="exp-headline-title">${data.month}월에는 <strong>${headlineMan}만원</strong> 썼어요</div>
               <div class="exp-headline-sub">하루 평균 <strong>${data.dailyAvg.toLocaleString('ko-KR')}원</strong> · 날짜를 누르면 그날 거래가 열려요</div>
