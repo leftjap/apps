@@ -768,6 +768,22 @@ async function mountSessionActive(doc, block, session) {
     cardRepsEl.style.color = blockDone ? doneColor : activeColor;
   }
 
+  // 완료 상태 (§9) — 잠긴 운동(blockDone) 은 히어로를 ✓(sage) + "N세트 완료" 요약으로 (기록 태그는 정적 잔류 → FIG 4).
+  //   cardio 는 단일 기록(거리/시간) 이라 ✓ 요약 제외.
+  const cardDoneLabelEl = doc.getElementById('cardDoneLabel');
+  const cardRepsZoneEl = doc.getElementById('cardRepsZone');
+  const cardWeightUnitEl = doc.getElementById('cardWeightUnit');
+  if (blockDone && exerciseEq !== 'cardio') {
+    const doneSetCount = sets.filter((s) => s && s.done).length;
+    if (cardWeightEl) { cardWeightEl.textContent = '✓'; cardWeightEl.style.fontSize = '92px'; cardWeightEl.style.color = 'var(--sage)'; }
+    if (cardWeightUnitEl) cardWeightUnitEl.style.display = 'none';
+    if (cardRepsZoneEl) cardRepsZoneEl.style.display = 'none';
+    if (cardDoneLabelEl) { cardDoneLabelEl.textContent = `${doneSetCount}세트 완료`; cardDoneLabelEl.style.display = 'block'; }
+  } else {
+    if (cardDoneLabelEl) cardDoneLabelEl.style.display = 'none';
+    if (cardRepsZoneEl && exerciseEq !== 'cardio') cardRepsZoneEl.style.display = 'flex'; // inline 복구 ('' = block fallback 방지)
+  }
+
   // 직전 세션 동일 세트번호 lookup — S1..Sn dot 의 preview 표시에 사용 (spec §6-3-3).
   let prevSessionSets = null;
   try {
@@ -1646,6 +1662,8 @@ export function wireLongPress(doc, opts = {}) {
     });
     el.addEventListener('pointermove', (e) => {
       if (pid !== null && e.pointerId !== pid) return;
+      // cancel/armed 후(pid=null) — longpress 비활성. transform 재-wipe 방지 → 스와이프 드래그 추종 보존.
+      if (pid === null) return;
       const dx = e.clientX - sx;
       const dy = e.clientY - sy;
       const moved = Math.hypot(dx, dy);
