@@ -2801,6 +2801,7 @@ export async function handleLeftSwipe() {
   //   - onfinish 비의존 (setTimeout 폴백 + Promise.all) → 백그라운드 탭 안전 (§5 콜아웃)
   const doc = typeof document !== 'undefined' ? document : null;
   const swipeArea = doc?.getElementById('cardSwipeArea');
+  const heroVals = doc?.getElementById('cardHeroVals') || swipeArea; // 슬라이드/드래그 대상 = 내부 히어로 값 (완료 칩은 cardSwipeArea 직속 → 같이 안 움직임)
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
   if (!canAnimate) {
@@ -2817,9 +2818,9 @@ export async function handleLeftSwipe() {
   }
 
   // OUT 시작 (방향 C — 가속 이징)
-  swipeArea.style.transition = 'transform 187ms cubic-bezier(.4,0,1,1), opacity 187ms cubic-bezier(.4,0,1,1)';
-  swipeArea.style.transform = 'translateX(-26px)';
-  swipeArea.style.opacity = '0';
+  heroVals.style.transition = 'transform 187ms cubic-bezier(.4,0,1,1), opacity 187ms cubic-bezier(.4,0,1,1)';
+  heroVals.style.transform = 'translateX(-26px)';
+  heroVals.style.opacity = '0';
   const outDone = new Promise((r) => setTimeout(r, 187));
 
   // 병렬로 DB + mount 진행 (OUT 시간 동안 가려진 채로 데이터 갱신)
@@ -2840,9 +2841,9 @@ export async function handleLeftSwipe() {
 
   if (upsertErr) {
     // upsert 실패 — 원상 복구 + 종료
-    swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
-    swipeArea.style.transform = 'translateX(0)';
-    swipeArea.style.opacity = '1';
+    heroVals.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+    heroVals.style.transform = 'translateX(0)';
+    heroVals.style.opacity = '1';
     return;
   }
 
@@ -2861,15 +2862,15 @@ export async function handleLeftSwipe() {
   });
 
   // IN 시작점 jump (invisible — opacity 0 이라 사용자 안 보임)
-  swipeArea.style.transition = 'none';
-  swipeArea.style.transform = 'translateX(26px)';
-  swipeArea.style.opacity = '0';
+  heroVals.style.transition = 'none';
+  heroVals.style.transform = 'translateX(26px)';
+  heroVals.style.opacity = '0';
   // 강제 reflow 로 style flush 보장 (rAF 대기 없이도 transition 트리거)
-  void swipeArea.offsetHeight;
+  void heroVals.offsetHeight;
   // IN 트랜지션 (방향 C — 감속 이징)
-  swipeArea.style.transition = 'transform 220ms cubic-bezier(.16,.84,.3,1), opacity 220ms cubic-bezier(.16,.84,.3,1)';
-  swipeArea.style.transform = 'translateX(0)';
-  swipeArea.style.opacity = '1';
+  heroVals.style.transition = 'transform 220ms cubic-bezier(.16,.84,.3,1), opacity 220ms cubic-bezier(.16,.84,.3,1)';
+  heroVals.style.transform = 'translateX(0)';
+  heroVals.style.opacity = '1';
   // 볼륨바 동반 강조 — brightness 1 → 1.14 → 1 (방향 C §5). WAAPI fill:none → 자동 복귀(throttle 안전).
   try {
     const volBarEl = doc.getElementById('cardProgressBar');
@@ -2955,6 +2956,7 @@ export async function handleRightSwipe() {
   // 우 스와이프 책장 넘김 (좌 스와이프 대칭) — OUT 우측 + IN 좌측에서 들어옴.
   const doc = typeof document !== 'undefined' ? document : null;
   const swipeArea = doc?.getElementById('cardSwipeArea');
+  const heroVals = doc?.getElementById('cardHeroVals') || swipeArea; // 슬라이드/드래그 대상 = 내부 히어로 값 (완료 칩은 cardSwipeArea 직속 → 같이 안 움직임)
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
   if (!canAnimate) {
@@ -2969,9 +2971,9 @@ export async function handleRightSwipe() {
     return;
   }
 
-  swipeArea.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
-  swipeArea.style.transform = 'translateX(28px)';
-  swipeArea.style.opacity = '0';
+  heroVals.style.transition = 'transform 180ms ease-out, opacity 180ms ease-out';
+  heroVals.style.transform = 'translateX(28px)';
+  heroVals.style.opacity = '0';
   const outDone = new Promise((r) => setTimeout(r, 180));
 
   let upsertErr = null;
@@ -2990,9 +2992,9 @@ export async function handleRightSwipe() {
   await Promise.all([outDone, mountDone]);
 
   if (upsertErr) {
-    swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
-    swipeArea.style.transform = 'translateX(0)';
-    swipeArea.style.opacity = '1';
+    heroVals.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+    heroVals.style.transform = 'translateX(0)';
+    heroVals.style.opacity = '1';
     return;
   }
 
@@ -3006,13 +3008,13 @@ export async function handleRightSwipe() {
   });
 
   // IN 시작점 jump (좌측 invisible)
-  swipeArea.style.transition = 'none';
-  swipeArea.style.transform = 'translateX(-28px)';
-  swipeArea.style.opacity = '0';
-  void swipeArea.offsetHeight;
-  swipeArea.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
-  swipeArea.style.transform = 'translateX(0)';
-  swipeArea.style.opacity = '1';
+  heroVals.style.transition = 'none';
+  heroVals.style.transform = 'translateX(-28px)';
+  heroVals.style.opacity = '0';
+  void heroVals.offsetHeight;
+  heroVals.style.transition = 'transform 200ms ease-out, opacity 200ms ease-out';
+  heroVals.style.transform = 'translateX(0)';
+  heroVals.style.opacity = '1';
 }
 
 // (서킷 폐기 — spec §16) wireCircuitToggle 제거.

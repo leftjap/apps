@@ -183,7 +183,10 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- PR 팝 (transient e1RM PR — showPrPop 토글) -->
     <div id="cardPrPop" class="mono" style="position:absolute;top:212px;left:0;right:0;text-align:center;font-weight:600;color:var(--crail-deep);font-size:22px;letter-spacing:0.04em;opacity:0;transform:translateY(0);transition:opacity 220ms ease, transform 700ms ease;pointer-events:none;z-index:5;">PR</div>
     <!-- 히어로: 무게(중앙·좌우 빈공간 탭 증감) / 횟수 / PR 칩. cardSwipeArea = 스와이프+탭+꾹누르기 -->
-    <div id="cardSwipeArea" data-longpress="active-card" data-card-kind="weight" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 26px;touch-action:pan-y;user-select:none;-webkit-user-select:none;">
+    <div id="cardSwipeArea" data-longpress="active-card" data-card-kind="weight" style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 26px;touch-action:pan-y;user-select:none;-webkit-user-select:none;">
+      <!-- 좌스와이프 드래그 시 당김량 비례 노출되는 "완료" 칩 (작업지시서 §4 / FIG 2). 카드와 함께 안 움직이게 cardHeroVals 밖. -->
+      <div id="completeReveal" style="position:absolute;right:22px;top:50%;transform:translateY(-50%) translateX(14px) scale(0.9);display:flex;align-items:center;gap:7px;padding:7px 14px 7px 11px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);color:var(--crail-deep);font-size:13px;font-weight:600;opacity:0;pointer-events:none;z-index:4;white-space:nowrap;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>완료</div>
+      <div id="cardHeroVals" style="width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform;">
       <div id="cardWeightZone" style="width:100%;text-align:center;cursor:pointer;">
         <div id="cardWeight" class="mono" style="font-size:120px;font-weight:400;line-height:0.82;color:var(--ink-1);letter-spacing:-0.06em;">65</div>
         <div id="cardWeightUnit" class="kr" style="display:none;font-size:15px;color:var(--ink-4);"></div>
@@ -200,6 +203,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <span style="color:var(--crail-deep);font-size:9px;line-height:1;">▲</span>
         <span id="cardPrChipVal" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);white-space:nowrap;">+5kg</span>
       </div>
+      </div><!-- /cardHeroVals -->
     </div>
     <!-- 하단 볼륨 프로그레스 바 (이 종목 볼륨 진행 · shimmer) -->
     <div style="flex-shrink:0;padding:0 26px;">
