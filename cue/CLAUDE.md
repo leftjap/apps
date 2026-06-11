@@ -12,6 +12,8 @@
 
 - 시안: `design-ref/cue.html`(오프라인 단일본, 폰트 내장) + `design-ref/런처.html`(편집용).
 - 작업지시서: `design-ref/cue 작업지시서.md` — 디자인 토큰·레이아웃·모션의 정본. **새 디자인 발명 금지**.
+- '오늘 흐름' 섹션만 `design-ref/flow/오늘 흐름 작업지시서.md`(2026-06-11)가 §3.3 을 대체 — 시안
+  `flow/시안 (오프라인 단일본).html`(git 미포함) + `flow/src/`(편집용). 수치·모션 정본은 `flow/src/flow/cue-flow.css`.
 - 공통 디자인 시스템: `~/apps/DESIGN.md`. cue 는 mono 를 **Lekton** 로 override
   (0 안에 점·슬래시 전혀 없는 빈 glyph — Spline/JetBrains/IBM=점, Inconsolata/Roboto/PT=슬래시라 제외). Light only.
 
