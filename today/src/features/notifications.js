@@ -366,10 +366,11 @@ export function injectNotifDropdownStyles(doc = document) {
     }
     .notif-dropdown__kind--new_comment { background: var(--accent, #d97757); }
     .notif-dropdown__kind--new_post { background: var(--cloudy-base, #6a9bcc); }
-    /* 댓글 알림 클릭 → 해당 댓글 버블 하이라이트 2.4초 */
-    #mainView .doc__comments .comment-row.notif-comment-highlight .comment-row__bubble {
+    /* 댓글 알림 클릭 → 대화 패널 해당 메시지 하이라이트 2.4초 (리디자인 §4.2 — #convoList .cv-msg) */
+    #convoList .cv-msg.notif-comment-highlight {
       outline: 2px solid var(--accent, #d97757);
-      outline-offset: 2px;
+      outline-offset: 3px;
+      border-radius: 8px;
       transition: outline 200ms;
     }
     /* 글 단위 그룹 카드 (entry_id 기준 묶음) */
@@ -630,14 +631,15 @@ export async function handleNotifClick(notif, doc) {
 }
 
 /**
- * 댓글 딥링크 — comment_id 의 댓글 row 로 scrollIntoView + 하이라이트 2.4초.
- * 본문 전환 후 댓글 영역은 comments.js 가 async mount 하므로 maxWaitMs 까지 polling.
- * data-comment-id 는 .comment-row 와 .comment-row__delete 둘 다 가지므로 .comment-row 로 한정.
+ * 댓글 딥링크 — comment_id 의 대화 패널 메시지(.cv-msg) 하이라이트 2.4초 (리디자인 §4.2).
+ * 본문 전환 후 타임라인은 comments.js 가 async mount 하므로 maxWaitMs 까지 polling.
+ * 스크롤은 #convoList scrollTop 직접 제어 (scrollIntoView 금지 — 작업지시서 §6).
+ * 모바일(≤768)은 바텀 시트를 열어 메시지가 보이게 함.
  * 반환: 스크롤 성공 여부.
  */
 async function scrollToNotifComment(commentId, doc, maxWaitMs = 1500) {
   if (!commentId) return false;
-  const sel = `#mainView .doc__comments .comment-row[data-comment-id="${cssEscape(commentId)}"]`;
+  const sel = `#convoList .cv-msg[data-comment-id="${cssEscape(commentId)}"]`;
   const start = Date.now();
   let el = doc.querySelector(sel);
   while (!el && Date.now() - start < maxWaitMs) {
@@ -645,8 +647,15 @@ async function scrollToNotifComment(commentId, doc, maxWaitMs = 1500) {
     el = doc.querySelector(sel);
   }
   if (!el) return false;
-  if (typeof el.scrollIntoView === 'function') {
-    el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  // 모바일 바텀 시트 — 닫혀 있으면 열어서 노출
+  const panel = doc.getElementById?.('convoPanel');
+  const win = doc.defaultView || (typeof window !== 'undefined' ? window : null);
+  if (panel && win?.matchMedia?.('(max-width: 768px)')?.matches) {
+    panel.classList.add('is-open');
+  }
+  const list = doc.getElementById?.('convoList');
+  if (list && typeof el.offsetTop === 'number') {
+    list.scrollTop = Math.max(0, el.offsetTop - (list.clientHeight || 0) / 2 + (el.clientHeight || 0) / 2);
   }
   el.classList.add('notif-comment-highlight');
   setTimeout(() => el.classList.remove('notif-comment-highlight'), 2400);

@@ -906,6 +906,65 @@ describe('syncShareToggleFromRow — .share 클래스 동기화 (mock element)',
   });
 });
 
+describe('syncShareToggleFromRow — 상태 필 라벨 동적 (계정별 상대 이름, 리디자인 §4.3 회귀 fix)', () => {
+  const GIO = '7bae5645-61c6-4476-9ff2-4c30a72812ff';
+  const SOYOUN = 'aeafd9a7-4094-4e7c-a621-188d6b2e336d';
+  function makeShareDoc() {
+    const els = {
+      avatar: { textContent: '' },
+      on: { textContent: '' },
+      off: { textContent: '' },
+      roLong: { textContent: '' },
+    };
+    const share = {
+      _classes: new Set(['share']),
+      title: '',
+      classList: {
+        toggle(n, f) { if (f) share._classes.add(n); else share._classes.delete(n); },
+        contains(n) { return share._classes.has(n); },
+      },
+      querySelector(sel) {
+        return {
+          '.share__avatar': els.avatar,
+          '.share__on-label': els.on,
+          '.share__off-label': els.off,
+          '.share__ro-long': els.roLong,
+        }[sel] || null;
+      },
+    };
+    return { share, els, doc: { querySelector: (sel) => (sel === '.share' ? share : null) } };
+  }
+  afterEach(() => __setCurrentUserForTest(null));
+
+  it('소연 계정 — 지오의 공유 글(읽기 전용): "지오가 공유한 글" + 아바타 "지"', () => {
+    __setCurrentUserForTest({ id: SOYOUN });
+    const { share, els, doc } = makeShareDoc();
+    syncShareToggleFromRow({ is_shared: 1, owner_id: GIO }, doc);
+    expect(share._classes.has('share--readonly')).toBe(true);
+    expect(els.roLong.textContent).toBe('지오가 공유한 글 · ');
+    expect(els.avatar.textContent).toBe('지');
+  });
+
+  it('소연 계정 — 본인 글: "지오와 공유 중" / "지오에게 공유" + 아바타 "지"', () => {
+    __setCurrentUserForTest({ id: SOYOUN });
+    const { els, doc } = makeShareDoc();
+    syncShareToggleFromRow({ is_shared: 1, owner_id: SOYOUN }, doc);
+    expect(els.on.textContent).toBe('지오와 공유 중');
+    expect(els.off.textContent).toBe('지오에게 공유');
+    expect(els.avatar.textContent).toBe('지');
+  });
+
+  it('지오 계정 — 본인 글 "소연과 공유 중" / 소연 글 읽기 전용 "소연이 공유한 글"', () => {
+    __setCurrentUserForTest({ id: GIO });
+    const { els, doc } = makeShareDoc();
+    syncShareToggleFromRow({ is_shared: 1, owner_id: GIO }, doc);
+    expect(els.on.textContent).toBe('소연과 공유 중');
+    expect(els.avatar.textContent).toBe('소');
+    syncShareToggleFromRow({ is_shared: 1, owner_id: SOYOUN }, doc);
+    expect(els.roLong.textContent).toBe('소연이 공유한 글 · ');
+  });
+});
+
 describe('saveArticle — Dexie create/update + .save 갱신', () => {
   beforeEach(async () => {
     const dbName = 'today_test_' + Math.random().toString(36).slice(2, 10);

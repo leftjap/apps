@@ -386,17 +386,45 @@ function updateCrumbEntryNumber(row, doc) {
   }).catch(() => {});
 }
 
+// 상태 필 상대 표시명 — 2인 고정 페어 (지오 ↔ 소연). 계정별로 상대 이름이 다름 (리디자인 §4.3).
+const PARTNER_NAME_BY_USER_ID = Object.freeze({
+  '7bae5645-61c6-4476-9ff2-4c30a72812ff': '소연',
+  'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '지오',
+});
+
+/** 한글 마지막 글자 받침 여부 — 조사 선택 (와/과, 이/가). */
+function hasBatchim(s) {
+  const c = String(s || '').charCodeAt(String(s || '').length - 1);
+  return c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 !== 0;
+}
+
 /**
- * mocks 의 `.share` 토글 (top-actions__navi 안, today-mac.html L3226) 클래스 동기화.
+ * mocks 의 `.share` 상태 필 동기화 — 클래스 + 라벨 텍스트.
  * row.is_shared truthy → `.share` (default ON). falsy → `.share--off` 추가.
+ * 라벨은 계정별 동적: 본인 글 = 상대 이름 ("소연과 공유 중"/"지오와 공유 중"),
+ * 파트너 글 = 작성자 이름 ("소연이 공유한 글"/"지오가 공유한 글") — 하드코딩 시
+ * 소연 계정에서 잘못된 이름이 노출되던 회귀 fix (2026-06-12).
  * spec L405-415 의 is_shared insert/update trigger 와 정합 — 토글 시 Realtime 으로 파트너에게 알림.
  */
 export function syncShareToggleFromRow(row, doc = document) {
   const el = doc.querySelector?.('.share');
   if (!el) return false;
   el.classList.toggle('share--off', !row?.is_shared);
-  // 파트너 글은 작성자만 공유 결정 가능 → 토글 숨김.
-  el.classList.toggle('share--readonly', isReadOnlyRow(row));
+  // 파트너 글은 작성자만 공유 결정 가능 → 읽기 전용 필.
+  const readOnly = isReadOnlyRow(row);
+  el.classList.toggle('share--readonly', readOnly);
+  const partner = PARTNER_NAME_BY_USER_ID[_currentUser?.id] || '소연';
+  const author = USER_ID_TO_DISPLAY_NAME[row?.owner_id] || partner;
+  const display = readOnly ? author : partner;
+  const avatarEl = el.querySelector?.('.share__avatar');
+  if (avatarEl) avatarEl.textContent = display.charAt(0);
+  const onEl = el.querySelector?.('.share__on-label');
+  if (onEl) onEl.textContent = `${partner}${hasBatchim(partner) ? '과' : '와'} 공유 중`;
+  const offEl = el.querySelector?.('.share__off-label');
+  if (offEl) offEl.textContent = `${partner}에게 공유`;
+  const roEl = el.querySelector?.('.share__ro-long');
+  if (roEl) roEl.textContent = `${author}${hasBatchim(author) ? '이' : '가'} 공유한 글 · `;
+  try { el.title = readOnly ? '읽기 전용' : `${partner}에게 공유`; } catch (_) { /* fake element */ }
   return true;
 }
 
@@ -1202,13 +1230,11 @@ export function wrapNewArticle(doc = document) {
   }
   // 새 글 default 시각 — navi/soyoun_navi 는 공유 ON (사용자 결정 2026-05-04), 그 외는 OFF.
   // 사용자 요청 2026-05-13: 이전 article 이 파트너 글이었을 때 share 에 share--readonly 가 박혀 있어
-  // 새 글에서도 공유 토글이 숨겨지는 버그 fix — readonly 클래스 강제 제거.
-  const shareEl = doc.querySelector?.('.share');
-  if (shareEl) {
+  // 새 글에서도 공유 토글이 숨겨지는 버그 fix — readonly 해제 + 라벨도 본인 글 기준으로 동기화.
+  {
     const kind = getCurrentKind(doc);
     const sharedDefault = kind === 'navi' || kind === 'soyoun_navi';
-    shareEl.classList.toggle('share--off', !sharedDefault);
-    shareEl.classList.remove('share--readonly');
+    syncShareToggleFromRow({ is_shared: sharedDefault ? 1 : 0, owner_id: _currentUser?.id }, doc);
   }
   // 더보기 메뉴 wrap 의 readonly 마커도 정리 (이전 파트너 글 잔재).
   const moreWrap = doc.querySelector?.('.doc-more-wrap');
