@@ -2802,8 +2802,14 @@ export async function handleRightSwipe() {
     return;
   }
 
-  // 자식 transition (set dot font-size 등) 시작 보장 — handleLeftSwipe 와 동일
-  await new Promise((r) => requestAnimationFrame(r));
+  // 자식 transition (set dot font-size 등) 시작 보장 — handleLeftSwipe 와 동일.
+  // §5 콜아웃 — rAF 가 백그라운드 탭/헤드리스에서 안 fire 시 IN 미실행으로 카드가 OUT 에 갇히는 것 방지 (setTimeout 폴백).
+  await new Promise((r) => {
+    let settled = false;
+    const go = () => { if (!settled) { settled = true; r(); } };
+    requestAnimationFrame(go);
+    setTimeout(go, 32);
+  });
 
   // IN 시작점 jump (좌측 invisible)
   swipeArea.style.transition = 'none';
