@@ -8,13 +8,14 @@ import {
   lastActiveDaysAgo,
   weekStartMonday,
   countDaysInCurrentWeek,
-  nowMarker,
   weeklyActivityRatios,
   lastSessionLabel,
   isStaleActiveSession,
   latestTodayTs,
   sumCurrentWeek,
   activeDaysInCurrentWeek,
+  minuteOfDay,
+  medianMinuteOfDay,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -128,17 +129,6 @@ describe('weeklyActivityRatios — 일별 series → 주별 활동일 비율 (�
   });
 });
 
-describe('nowMarker — 오늘 흐름 "지금" 실시각 마커 (시각 → label + 0~100 위치)', () => {
-  it('HH:MM 라벨 + 자정 기준 분 비율 위치', () => {
-    expect(nowMarker(new Date(2026, 5, 9, 14, 2))).toEqual({ label: '14:02', pos: 58.5 }); // 842/1440
-    expect(nowMarker(new Date(2026, 5, 9, 0, 0))).toEqual({ label: '00:00', pos: 0 });
-    expect(nowMarker(new Date(2026, 5, 9, 9, 5))).toEqual({ label: '09:05', pos: 37.8 }); // 545/1440
-  });
-  it('자정 직전은 100 근처', () => {
-    expect(nowMarker(new Date(2026, 5, 9, 23, 59)).pos).toBeCloseTo(99.9, 1);
-  });
-});
-
 describe('countDaysInCurrentWeek — 이번주(월~오늘) 활동 distinct 일수 (gym 회수)', () => {
   it('주 시작~오늘 범위 내 distinct 날짜만', () => {
     const today = new Date(2026, 5, 10); // 수
@@ -219,5 +209,36 @@ describe('activeDaysInCurrentWeek — 이번주(월~오늘) 중 하나라도 활
   it('전부 0 → 0, 짧은 seq 는 없는 날 0 취급', () => {
     expect(activeDaysInCurrentWeek([[0, 0, 0]], new Date(2026, 5, 10))).toBe(0);
     expect(activeDaysInCurrentWeek([[1]], new Date(2026, 5, 10))).toBe(1); // 오늘만 존재
+  });
+});
+
+describe('minuteOfDay — 타임스탬프 → 로컬 minute-of-day (오늘 흐름 atMin)', () => {
+  it('ms·ISO 모두 로컬 시각 기준 분', () => {
+    expect(minuteOfDay(new Date(2026, 5, 10, 6, 40).getTime())).toBe(400);
+    expect(minuteOfDay(new Date(2026, 5, 10, 20, 25).toISOString())).toBe(1225);
+  });
+  it('invalid → null', () => {
+    expect(minuteOfDay(null)).toBeNull();
+    expect(minuteOfDay('not-a-date')).toBeNull();
+  });
+});
+
+describe('medianMinuteOfDay — 평소 실행 시간대 = 최근 실행 시각 중앙값 (flow 작업지시서 §5)', () => {
+  const at = (h, m) => new Date(2026, 5, 10, h, m).getTime();
+
+  it('홀수 개 — 가운데 값', () => {
+    expect(medianMinuteOfDay([at(13, 0), at(14, 0), at(13, 50)], 999)).toBe(13 * 60 + 50);
+  });
+  it('짝수 개 — 가운데 두 값 평균', () => {
+    expect(medianMinuteOfDay([at(13, 0), at(13, 10), at(14, 0), at(14, 30)], 999))
+      .toBe((13 * 60 + 10 + 14 * 60) / 2);
+  });
+  it('기록 3회 미만 → fallback (작업지시서 §5)', () => {
+    expect(medianMinuteOfDay([at(13, 0), at(14, 0)], 830)).toBe(830);
+    expect(medianMinuteOfDay([], 830)).toBe(830);
+  });
+  it('invalid 타임스탬프는 무시하고 유효분만 집계', () => {
+    expect(medianMinuteOfDay([at(13, 0), null, 'bad', at(14, 0), at(13, 50)], 999))
+      .toBe(13 * 60 + 50);
   });
 });

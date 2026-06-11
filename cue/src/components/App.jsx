@@ -8,9 +8,10 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { SENTENCES } from '../data/sentences.js';
 import { ORDER } from '../data/mock.js';
 import {
-  fullSeq, level, longestRun, dayMeta, sentenceOfDay, p2, startOfToday, nowMarker,
+  fullSeq, level, longestRun, dayMeta, sentenceOfDay, p2, startOfToday,
   sumCurrentWeek, activeDaysInCurrentWeek,
 } from '../data/transforms.js';
+import { nextOf } from '../data/flow.js';
 import {
   useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle,
 } from './Tweaks.jsx';
@@ -18,6 +19,7 @@ import { useHabits } from '../data/useHabits.js';
 import { launchHabit } from '../data/launch.js';
 import { signInWithGoogle } from '../services/auth.js';
 import AccountMenu from './AccountMenu.jsx';
+import FlowBand from './FlowBand.jsx';
 
 const TWEAK_DEFAULTS = {
   demoMode: false, // 작업지시서 §9 — 기본 OFF (카드 탭 = 실제 앱 실행). 데모는 Tweaks 에서.
@@ -27,29 +29,31 @@ const TWEAK_DEFAULTS = {
   density: 50,
   showRibbon: true,
   showRecord: true,
+  // 오늘 흐름 (flow 작업지시서 §3.1·§6·§7)
+  liveTime: true,  // 실연동 기본 ON — OFF 시 demoHour 기준 (시간대별 상태 검증용)
+  demoHour: 16.5,
+  showSec: true,
+  motion: 70,      // 0~100 → --motion 0~1. 0이면 상시 모션 전부 정지
+  startHour: 6,    // 타임라인 창 시작 (0/3/6/9시)
 };
 
-// 상시표시용 시계 — intervalMs 마다 현재 시각 갱신 (날짜 자정 롤오버 + "지금" 마커 실시간)
-function useNow(intervalMs = 60000) {
-  const [now, setNow] = useState(() => new Date());
+/* 상시표시 시계 — 1s interval 하나로 시계·초·자정 롤오버·운동 타이머 공용 (flow 작업지시서 §6).
+   실시간 OFF(Tweaks) 면 demoHour 기준 + 초는 계속 흐름 — 시간대별 상태 검증용. */
+function useClock(live, demoHour) {
+  const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs);
+    const id = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
-  }, [intervalMs]);
-  return now;
-}
-
-function useTimer(active, seed) {
-  const [s, setS] = useState(seed);
-  useEffect(() => {
-    if (!active) return;
-    setS(seed);
-    const id = setInterval(() => setS((v) => v + 1), 1000);
-    return () => clearInterval(id);
-  }, [active, seed]);
-  const mm = String(Math.floor(s / 60)).padStart(2, '0');
-  const ss = String(s % 60).padStart(2, '0');
-  return `${mm}:${ss}`;
+  }, []);
+  const anchor = useRef(null);
+  if (!anchor.current || anchor.current.demoHour !== demoHour) anchor.current = { demoHour, t0: Date.now() };
+  if (live) {
+    const d = new Date();
+    return { h: d.getHours(), m: d.getMinutes(), sec: d.getSeconds(), min: d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60 };
+  }
+  const elapsed = (Date.now() - anchor.current.t0) / 1000;
+  const secOfDay = (demoHour * 3600 + elapsed) % 86400;
+  return { h: Math.floor(secOfDay / 3600), m: Math.floor(secOfDay / 60) % 60, sec: Math.floor(secOfDay % 60), min: secOfDay / 60 };
 }
 
 /* ---------- hero ---------- */
@@ -97,7 +101,13 @@ function Header({ flags, base }) {
 /* ---------- door (앱으로 들어가는 문) ---------- */
 function Door({ habit, stateKey, demoMode, onDemo, isNext }) {
   const st = habit.states[stateKey];
-  const timer = useTimer(st.kind === 'progress' && !!st.timer, st.timer || 0);
+  // 운동 라이브 경과 — Dashboard 가 시계(1s)로 재렌더하므로 별도 interval 없이 seed+경과로 파생
+  const tRef = useRef(null);
+  if (st.kind === 'progress' && st.timer && (!tRef.current || tRef.current.seed !== st.timer)) {
+    tRef.current = { seed: st.timer, t0: Date.now() };
+  }
+  const tSec = tRef.current ? tRef.current.seed + Math.floor((Date.now() - tRef.current.t0) / 1000) : 0;
+  const timer = `${p2(Math.floor(tSec / 60))}:${p2(tSec % 60)}`;
   const ref = useRef(null);
 
   const launch = useCallback(() => {
@@ -157,44 +167,6 @@ function Door({ habit, stateKey, demoMode, onDemo, isNext }) {
             </span>}
       </div>
     </button>
-  );
-}
-
-/* ---------- 오늘 흐름 (day flow) — DB 기록 시각 / 안 한 건 마지막 실행 ---------- */
-function DayRibbon({ habits, stateKeys, nowPos, nowLabel }) {
-  // 오늘 완료 = 실제 DB 기록 시각(at)으로 위치·라벨 (book 등 at 없으면 대표 시각 slot 폴백)
-  const stops = habits.map((h, i) => {
-    const st = h.states[stateKeys[i]];
-    const m = st.kind === 'done' && h.at ? nowMarker(h.at) : null;
-    return { h, st, pos: m ? m.pos : h.slot.pos, time: m ? m.label : h.slot.time };
-  }).sort((a, b) => a.pos - b.pos);
-  const pending = stops.filter((s) => s.st.kind !== 'done' && s.st.kind !== 'progress').map((s) => s.h.ko);
-  return (
-    <section className="ribbon">
-      <div className="ribbon__head">
-        <span className="ribbon__title">오늘 흐름</span>
-        <span className="ribbon__next">
-          {pending.length ? <>오늘 아직 <b>{pending.join(' · ')}</b></> : <b>오늘 다 했어요</b>}
-        </span>
-      </div>
-      <div className="ribbon__track">
-        <div className="ribbon__line" />
-        <div className="ribbon__elapsed" style={{ width: `${nowPos}%` }} />
-        <div className="ribbon__now" style={{ left: `${nowPos}%` }}><b>지금 {nowLabel}</b></div>
-        {stops.map((s) => {
-          const k = s.st.kind;
-          const cls = k === 'done' ? 'done' : k === 'progress' ? 'live' : 'pending';
-          // 한 건 = DB 기록 시각 · 진행 = 지금 · 안 한 건 = 마지막 실행
-          const label = k === 'done' ? s.time : k === 'progress' ? '지금' : `마지막 ${s.h.last}`;
-          return (
-            <div className={`ribbon__stop ${cls}`} key={s.h.id} style={{ left: `${s.pos}%` }}>
-              <span className="ribbon__dot" />
-              <span className="ribbon__lab"><span className="ko">{s.h.ko}</span><span className="tm mono">{label}</span></span>
-            </div>
-          );
-        })}
-      </div>
-    </section>
   );
 }
 
@@ -274,13 +246,6 @@ function Record({ habits, stateKeys, period, order, onOpenStats, base }) {
   );
 }
 
-/* 다음 행동 = 지금 이후 첫 미완료 정거장 (동선과 동일 로직) */
-function nextHabitId(habits, stateKeys, nowPos) {
-  const stops = habits.map((h, i) => ({ h, st: h.states[stateKeys[i]], pos: h.slot.pos })).sort((a, b) => a.pos - b.pos);
-  const n = stops.find((s) => s.pos > nowPos && s.st.kind !== 'done') || stops.find((s) => s.st.kind !== 'done' && s.st.kind !== 'progress');
-  return n ? n.h.id : null;
-}
-
 /* 12주 추세 — 데모 폴백용(실데이터는 adapter 의 habit.trend 사용). id 시드 결정론적 */
 function weeklyTrend(seed, weeks) {
   let r = (seed * 7919) % 233280;
@@ -352,35 +317,47 @@ function applyTweaks(t) {
   r.setProperty('--crail', `oklch(67% ${(0.06 + (t.accent / 100) * 0.10).toFixed(3)} 50)`);
   r.setProperty('--crail-deep', `oklch(48% ${(0.07 + (t.accent / 100) * 0.11).toFixed(3)} 50)`);
   r.setProperty('--density', (0.82 + (t.density / 100) * 0.45).toFixed(3));
+  r.setProperty('--motion', String(t.motion / 100));
+  // 0이면 정지. 그 외엔 inline 제거 — prefers-reduced-motion CSS 가 inline 에 덮이지 않게 (§7)
+  if (t.motion === 0) r.setProperty('--anim', 'paused');
+  else r.removeProperty('--anim');
 }
 
 /* ---------- dashboard (시안 본문) — habits 주입받아 렌더 ---------- */
 function Dashboard({ habits, t }) {
   const demoMode = t.demoMode;
-  const now = useNow(60000);        // 1분마다 갱신 → 날짜 자정 롤오버 + "지금" 마커 실시간
+  const clock = useClock(t.liveTime, t.demoHour); // 1s 단일 interval — 자정 롤오버·시계·타이머 공용
   const base = startOfToday();
-  const nm = nowMarker(now);
   const [idxs, setIdxs] = useState(() => habits.map((h) => h.cycle.indexOf(h.start)));
   useEffect(() => { setIdxs(habits.map((h) => h.cycle.indexOf(h.start))); }, [habits]);
   const demo = useCallback((i) => {
     setIdxs((prev) => prev.map((v, k) => (k === i ? (v + 1) % habits[i].cycle.length : v)));
   }, [habits]);
+  const demoById = useCallback((id) => {
+    const i = habits.findIndex((h) => h.id === id);
+    if (i >= 0) demo(i);
+  }, [habits, demo]);
   const stateKeys = idxs.map((ix, i) => habits[i].cycle[ix]);
   // 표시 순서 = 하루 흐름(ORDER). 문·탤리·기록 모두 동일 순서로 일관.
   const ord = ORDER.map((id) => habits.findIndex((h) => h.id === id)).filter((i) => i >= 0);
   const flags = ord.map((i) => habits[i].states[stateKeys[i]].kind === 'done');
-  const nextId = nextHabitId(habits, stateKeys, nm.pos);
+  // "다음" = 미실행 중 밀린 것 우선 — 도어 태그·흐름 밴드 동일 소스 (flow 작업지시서 §3.4)
+  const pend = habits.map((h, i) => ({ h, st: h.states[stateKeys[i]] })).filter((x) => x.st.kind === 'none');
+  const nextId = nextOf(pend, clock.min);
   const [statsOpen, setStatsOpen] = useState(false);
 
   return (
     <div className="page">
       <Header flags={flags} base={base} />
+      {t.showRibbon && (
+        <FlowBand habits={habits} stateKeys={stateKeys} clock={clock} showSec={t.showSec}
+          startHour={t.startHour} nextId={nextId} demoMode={demoMode} onDemo={demoById} />
+      )}
       <section className="doors">
         {ord.map((i) => (
           <Door key={habits[i].id} habit={habits[i]} stateKey={stateKeys[i]} demoMode={demoMode} onDemo={() => demo(i)} isNext={habits[i].id === nextId} />
         ))}
       </section>
-      {t.showRibbon && <DayRibbon habits={habits} stateKeys={stateKeys} nowPos={nm.pos} nowLabel={nm.label} />}
       {t.showRecord && <Record habits={habits} stateKeys={stateKeys} period={t.period} order={ord} onOpenStats={() => setStatsOpen(true)} base={base} />}
       <p className="hint">
         {demoMode
@@ -435,9 +412,16 @@ export default function App() {
       <TweaksPanel title="Tweaks">
         <TweakSection label="동작" />
         <TweakToggle label="데모 모드 (탭=상태전환)" value={t.demoMode} onChange={(v) => setTweak('demoMode', v)} />
-        <TweakToggle label="오늘 동선 보이기" value={t.showRibbon} onChange={(v) => setTweak('showRibbon', v)} />
+        <TweakToggle label="오늘 흐름 보이기" value={t.showRibbon} onChange={(v) => setTweak('showRibbon', v)} />
         <TweakToggle label="기록 보이기" value={t.showRecord} onChange={(v) => setTweak('showRecord', v)} />
         <TweakSlider label="기록 기간" value={t.period} min={14} max={35} step={7} unit="일" onChange={(v) => setTweak('period', v)} />
+        <TweakSection label="오늘 흐름" />
+        <TweakToggle label="실제 시각 사용" value={t.liveTime} onChange={(v) => setTweak('liveTime', v)} />
+        {!t.liveTime && <TweakSlider label="데모 시각" value={t.demoHour} min={5} max={23.5} step={0.25} unit="시" onChange={(v) => setTweak('demoHour', v)} />}
+        <TweakSlider label="타임라인 시작" value={t.startHour} min={0} max={9} step={3} unit="시" onChange={(v) => setTweak('startHour', v)} />
+        <TweakSection label="모션" />
+        <TweakToggle label="초 표시" value={t.showSec} onChange={(v) => setTweak('showSec', v)} />
+        <TweakSlider label="모션 수위" value={t.motion} min={0} max={100} step={10} onChange={(v) => setTweak('motion', v)} />
         <TweakSection label="색" />
         <TweakSlider label="색온도" value={t.warmth} min={0} max={100} onChange={(v) => setTweak('warmth', v)} />
         <TweakSlider label="Crail 강도" value={t.accent} min={0} max={100} onChange={(v) => setTweak('accent', v)} />

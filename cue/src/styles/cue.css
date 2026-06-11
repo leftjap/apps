@@ -15,6 +15,7 @@
   --g1:oklch(87% 0.004 60); --g2:oklch(71% 0.005 60); --g3:oklch(49% 0.006 60);
   --crail:#d97757; --crail-deep:#b3502f; --crail-soft:#f0c9ba; --crail-wash:#faeae2;
   --ts:1; --density:1;
+  --motion:0.7; /* Tweaks: 모션 수위 0~1 (오늘 흐름 상시 모션 강도) */
   --shadow:
     0 1px 0 rgba(28,24,18,0.02),
     0 4px 12px -6px rgba(28,24,18,0.09),
@@ -132,27 +133,83 @@ button{ font-family:inherit; }
 .door.launching{ animation:launch .5s ease; }
 @keyframes launch{ 0%{ transform:translateY(-1px) scale(1);} 40%{ transform:translateY(-6px) scale(1.012);} 100%{ transform:none; } }
 
-/* ---------- 오늘 동선 (day ribbon) ---------- */
-.ribbon{ background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:clamp(16px,2vw,21px) clamp(22px,2.6vw,32px) clamp(20px,2.2vw,26px); }
-.ribbon__head{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:24px; }
-.ribbon__title{ font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; }
-.ribbon__next{ font-family:var(--mono); font-size:11.5px; color:var(--ink-3); letter-spacing:0.02em; white-space:nowrap; }
-.ribbon__next b{ color:var(--crail-deep); font-weight:600; }
-.ribbon__track{ position:relative; height:42px; margin:0 10px; }
-.ribbon__line{ position:absolute; left:0; right:0; top:8px; height:2px; background:var(--line); border-radius:2px; }
-.ribbon__elapsed{ position:absolute; left:0; top:8px; height:2px; background:var(--crail-soft); border-radius:2px; }
-.ribbon__now{ position:absolute; top:-6px; height:28px; width:2px; background:var(--crail); transform:translateX(-1px); }
-.ribbon__now b{ position:absolute; top:-15px; left:50%; transform:translateX(-50%); font-family:var(--mono); font-size:9px; font-weight:600; letter-spacing:0.04em; color:var(--crail-deep); white-space:nowrap; }
-.ribbon__stop{ position:absolute; top:0; transform:translateX(-50%); display:flex; flex-direction:column; align-items:center; gap:9px; }
-.ribbon__dot{ width:14px; height:14px; border-radius:50%; background:#fff; box-shadow:inset 0 0 0 2px var(--line); }
-.ribbon__stop.done .ribbon__dot{ background:var(--crail); box-shadow:none; }
-.ribbon__stop.next .ribbon__dot{ box-shadow:inset 0 0 0 2px var(--crail); }
-.ribbon__stop.live .ribbon__dot{ box-shadow:inset 0 0 0 2px var(--crail); background:var(--crail-wash); animation:beat 1.6s ease-in-out infinite; }
-.ribbon__lab{ display:flex; flex-direction:column; align-items:center; gap:1px; }
-.ribbon__lab .ko{ font-size:11.5px; font-weight:600; color:var(--ink-3); letter-spacing:-0.01em; white-space:nowrap; }
-.ribbon__lab .tm{ font-family:var(--mono); font-size:8.5px; color:var(--ink-4); letter-spacing:0.02em; }
-.ribbon__stop.done .ribbon__lab .ko,.ribbon__stop.next .ribbon__lab .ko,.ribbon__stop.live .ribbon__lab .ko{ color:var(--ink-1); }
-.ribbon__stop.next .ribbon__lab .tm{ color:var(--crail-deep); font-weight:600; }
+/* ============================================================
+   오늘 흐름 — 시간 밴드 (대형 라이브 시계 + 2레인 타임라인)
+   레인 위 = 오늘 실제 기록(DB) · 레인 아래 = 미실행(평소 시간대 고스트)
+   flow 작업지시서 — 수치·모션 정본: design-ref/flow/src/flow/cue-flow.css
+   ============================================================ */
+.band{ background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow);
+  padding:clamp(18px,2.2vw,24px) clamp(20px,2.6vw,30px) clamp(16px,2vw,20px); }
+.band__head{ display:flex; align-items:baseline; justify-content:space-between; gap:14px; margin-bottom:14px; }
+.band__title{ font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; white-space:nowrap; }
+.band__pending{ font-family:var(--mono); font-size:11.5px; color:var(--ink-3); letter-spacing:0.02em; white-space:nowrap; }
+.band__pending b{ color:var(--crail-deep); font-weight:600; }
+.band__body{ display:grid; grid-template-columns:minmax(196px,232px) 1fr; gap:clamp(20px,3vw,40px); align-items:center; }
+@media (max-width:760px){ .band__body{ grid-template-columns:1fr; gap:8px; } }
+
+/* 시계 블록 */
+.clock{ display:flex; flex-direction:column; gap:9px; }
+.clock__time{ font-family:var(--mono); font-weight:700; font-size:clamp(42px,4.6vw,58px); line-height:.9; letter-spacing:-0.04em; color:var(--ink-1); display:flex; align-items:baseline; }
+.clock__time .colon{ margin:0 -0.075em; animation:colonblink 2s steps(1) infinite; animation-play-state:var(--anim, running); }
+.clock__time .sec{ font-size:.42em; font-weight:400; color:var(--crail-deep); margin-left:7px; letter-spacing:0; min-width:2.4ch; }
+@keyframes colonblink{ 0%,100%{ opacity:1; } 50%{ opacity:calc(1 - var(--motion)*0.62); } }
+.clock__remain{ font-size:14px; color:var(--ink-2); letter-spacing:-0.01em; line-height:1.5; }
+.clock__remain b{ font-family:var(--mono); font-weight:700; color:var(--crail-deep); font-size:16px; }
+/* 단계적 긴급도 — 미실행이 남은 채 저녁(잔여 ≤ 4시간)이 되면 숨쉬기 펄스 */
+.urgent b{ animation:breathe 2.4s ease-in-out infinite; animation-play-state:var(--anim, running); }
+@keyframes breathe{ 0%,100%{ opacity:1; } 50%{ opacity:calc(1 - var(--motion)*0.45); } }
+.clock__pct{ font-family:var(--mono); font-size:10.5px; letter-spacing:0.05em; text-transform:uppercase; color:var(--ink-4); }
+.clock__alldone{ font-size:14px; color:var(--ink-2); }
+.clock__alldone b{ color:var(--crail-deep); }
+
+/* 타임라인 */
+.tl{ position:relative; height:182px; }
+.tl__line{ position:absolute; left:0; right:0; top:var(--axis); height:2px; background:var(--line); border-radius:2px; }
+.tl__elapsed{ position:absolute; left:0; top:calc(var(--axis) - 1px); height:4px; border-radius:3px; overflow:hidden;
+  background:linear-gradient(90deg, var(--crail-wash), var(--crail-soft)); }
+.tl__elapsed::after{ content:""; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent, color-mix(in oklch, var(--crail) calc(var(--motion)*70%), transparent), transparent);
+  background-size:34% 100%; background-repeat:no-repeat;
+  animation:sweep 3.4s ease-in-out infinite; animation-play-state:var(--anim, running); }
+@keyframes sweep{ from{ background-position:-60% 0; } to{ background-position:160% 0; } }
+.tl__tick{ position:absolute; top:calc(var(--axis) + 6px); width:1px; height:5px; background:var(--line); }
+.tl__ticklab{ position:absolute; bottom:0; transform:translateX(-50%); font-family:var(--mono); font-size:9.5px; letter-spacing:0.04em; color:var(--ink-4); }
+
+/* 지금 마커 — 한 화면의 bold element */
+.tl__now{ position:absolute; top:6px; bottom:22px; width:2px; background:var(--crail); transform:translateX(-1px); border-radius:2px; }
+.tl__nowhead{ position:absolute; top:calc(var(--axis) - 6px); left:-5px; width:12px; height:12px; border-radius:50%;
+  background:var(--crail); box-shadow:0 0 0 3px var(--crail-wash);
+  animation:nowpulse 2.2s ease-in-out infinite; animation-play-state:var(--anim, running); }
+@keyframes nowpulse{
+  0%,100%{ box-shadow:0 0 0 3px var(--crail-wash), 0 0 0 0 color-mix(in oklch, var(--crail) calc(var(--motion)*45%), transparent); }
+  50%{ box-shadow:0 0 0 3px var(--crail-wash), 0 0 0 calc(var(--motion)*11px) transparent; } }
+.tl__nowlab{ position:absolute; top:-3px; left:1px; transform:translateX(-50%); font-family:var(--mono); font-size:10.5px; font-weight:700; letter-spacing:0.04em; color:#fff;
+  background:var(--crail); border-radius:6px; padding:3px 7px; white-space:nowrap; box-shadow:0 2px 6px -2px rgba(179,80,47,.5); }
+
+/* 점 — 축 위에 직접 올라감 (겹침 없는 좌표) */
+.tl__pt{ position:absolute; top:var(--axis); transform:translate(-50%,-50%); width:13px; height:13px; border-radius:50%; }
+.tl__pt.done{ background:var(--crail); box-shadow:0 0 0 2.5px var(--crail-wash); }
+.tl__pt.live{ background:var(--crail-wash); box-shadow:inset 0 0 0 2px var(--crail);
+  animation:nowpulse 1.6s ease-in-out infinite; animation-play-state:var(--anim, running); }
+.tl__pt.ghost{ width:12px; height:12px; background:var(--paper); border:2px dashed var(--ink-4); }
+.tl__pt.ghost.due{ border-color:var(--crail); }
+
+/* 라벨 캡션 — 위 레인(오늘 기록) / 아래 레인(미실행 고스트). 탭 = 문(데모엔 상태 순환) */
+button.tl__cap{ background:transparent; border:0; padding:0; font:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+button.tl__cap:focus-visible{ outline:2px solid var(--crail); outline-offset:3px; border-radius:6px; }
+.tl__cap{ position:absolute; display:flex; flex-direction:column; align-items:center; gap:1px; }
+.tl__cap.up{ bottom:calc(100% - var(--axis) + 11px); }
+.tl__cap.dn{ top:calc(var(--axis) + 13px); }
+.tl__cap .ko{ font-size:12px; font-weight:600; color:var(--ink-1); letter-spacing:-0.01em; white-space:nowrap; display:flex; align-items:center; gap:5px; }
+.tl__cap .tm{ font-family:var(--mono); font-size:10px; color:var(--ink-3); letter-spacing:0.02em; white-space:nowrap; }
+.tl__cap .sub{ font-family:var(--mono); font-size:9px; color:var(--ink-4); letter-spacing:0.02em; white-space:nowrap; }
+.tl__cap.up .tm{ color:var(--crail-deep); font-weight:700; }
+.tl__cap.dn .ko{ color:var(--ink-3); }
+.tl__cap.dn.due .ko{ color:var(--ink-1); }
+.tl__cap.dn.due .sub{ color:var(--crail-deep); }
+.tl__nexttag{ font-family:var(--mono); font-size:8.5px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--crail-deep);
+  background:var(--crail-wash); border-radius:5px; padding:1.5px 5px; }
+
 .rec{ background:var(--paper); border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow); padding:clamp(18px,2.3vw,26px); }
 .rec__head{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:16px; }
 .rec__title{ font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; }

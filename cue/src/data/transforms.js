@@ -138,13 +138,6 @@ export function countDaysInCurrentWeek(dateKeys, today) {
   return set.size;
 }
 
-/** 오늘 흐름 "지금" 마커 — 시각 → { label:"HH:MM", pos:0~100 (자정 기준 분 비율) } */
-export function nowMarker(date) {
-  const d = new Date(date);
-  const mins = d.getHours() * 60 + d.getMinutes();
-  return { label: `${p2(d.getHours())}:${p2(d.getMinutes())}`, pos: Math.round((mins / 1440) * 1000) / 10 };
-}
-
 /** 일별 series(weeks*7) → 주별 활동일 비율 배열 (각 = 그 주 활동일수/7). 마지막 원소 = 현재 주.
    전체통계 모달의 12주 추세 막대(실데이터) + 주평균 활동일 산출용. */
 export function weeklyActivityRatios(series, weeks) {
@@ -199,6 +192,23 @@ export function latestTodayTs(tsList, today) {
     if (best === null || d.getTime() > best) best = d.getTime();
   }
   return best;
+}
+
+/** 타임스탬프(ms|ISO) → 로컬 minute-of-day. invalid 면 null (오늘 흐름 atMin) */
+export function minuteOfDay(ts) {
+  if (ts == null) return null;
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.getHours() * 60 + d.getMinutes();
+}
+
+/** 평소 실행 시간대(분) = 실행 시각들의 minute-of-day 중앙값.
+    유효 기록 3회 미만이면 fallbackMin (flow 작업지시서 §5) */
+export function medianMinuteOfDay(tsList, fallbackMin) {
+  const mins = (tsList || []).map(minuteOfDay).filter((m) => m != null).sort((a, b) => a - b);
+  if (mins.length < 3) return fallbackMin;
+  const mid = Math.floor(mins.length / 2);
+  return mins.length % 2 ? mins[mid] : (mins[mid - 1] + mins[mid]) / 2;
 }
 
 /** 직전 세션 시각(Date) → "N일 전 HH:MM" (오늘 흐름 "마지막" 라벨). 날짜 없으면 null. */
