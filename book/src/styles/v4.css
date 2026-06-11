@@ -15,6 +15,9 @@
 .bookv4 .lx-aside-head .meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .bookv4 .lx-addbook { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 9px; margin-bottom: 14px; border: 1px dashed var(--line-bold); border-radius: 9px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); background: transparent; }
 .bookv4 .lx-addbook:hover { border-color: var(--accent); color: var(--accent); }
+.bookv4 .lx-pins { display: flex; align-items: center; gap: 7px; width: 100%; padding: 7px 10px; margin-bottom: 10px; border-radius: 8px; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.bookv4 .lx-pins:hover { background: var(--hover); color: var(--ink); }
+.bookv4 .lx-pins svg { color: var(--pin); }
 .bookv4 .lx-chips { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 4px 14px; }
 .bookv4 .lx-chips .c { font-size: 12px; padding: 4px 9px; border-radius: 999px; color: var(--ink-2); font-weight: 500; white-space: nowrap; }
 .bookv4 .lx-chips .c:hover { background: var(--hover); }

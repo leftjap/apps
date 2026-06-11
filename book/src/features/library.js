@@ -232,6 +232,11 @@ async function render(host, params, ctx) {
       class: 'lx-addbook',
       onClick: () => { ctx.openAdd && ctx.openAdd(); },
     }, iconEl('plus', { sz: 14 }), '읽은 책 등록'));
+    // 전체 핀(=형광펜) 모아보기 — 책 단위가 아닌 한 화면 스트림(/all/pins)
+    asideEl.appendChild(el('button', {
+      class: 'lx-pins',
+      onClick: () => ctx.navigate('/all/pins'),
+    }, iconEl('star-fill', { sz: 12 }), '핀 모아보기'));
     const chips = el('div', { class: 'lx-chips' });
     for (const g of genres) {
       chips.appendChild(el('button', {
