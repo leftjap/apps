@@ -46,7 +46,10 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .sess-live { animation: pulse 1.8s ease-in-out infinite; }
 .vbar-shimmer { animation: shimmer 2.8s ease-in-out infinite; }
 .seg.now .seg-bar { animation: barPulse 1.8s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar { animation: none; } }
+/* 볼륨바 리딩 엣지 점 맥동 (작업지시서 §7) */
+@keyframes edgePulse { 0%,100% { box-shadow: 0 0 0 3px var(--crail-base), 0 0 11px 3px rgba(217,119,87,0.6); transform: translate(-50%,-50%) scale(1); } 50% { box-shadow: 0 0 0 3px var(--crail-base), 0 0 24px 9px rgba(217,119,87,0.9); transform: translate(-50%,-50%) scale(1.16); } }
+#volEdge { animation: edgePulse 1.35s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar, #volEdge { animation: none; } }
 /* P1 세트 진행 세그먼트바 (#cardSetDots — renderSetDotsDiff 출력). 완료=ink, 현재=crail 맥동, 예정=ghost. */
 #cardSetDots .seg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; cursor: pointer; }
 #cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; }
@@ -55,6 +58,8 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 #cardSetDots .seg .seg-n { font-size: 11px; font-weight: 500; color: var(--ink-4); white-space: nowrap; }
 #cardSetDots .seg.done .seg-n { color: var(--ink-3); }
 #cardSetDots .seg.now .seg-n { color: var(--crail-deep); font-weight: 600; }
+/* 확정 플래시 (작업지시서 §6) — 완료 세그 바 하단 2px 라인. playSegConfirmFlash 가 WAAPI 로 scaleX 0→1 후 페이드. */
+#cardSetDots .seg .seg-flash { position: absolute; left: 0; right: 0; top: 9px; height: 2px; border-radius: 2px; transform: scaleX(0); transform-origin: left center; opacity: 0; background: var(--ink-1); pointer-events: none; }
 
 /* SessionEmpty / SessionActive 가시성 토글 (home.html HomeA/HomeC 패턴 답습) */
 [data-state="empty"] .session-active { display: none; }
@@ -192,10 +197,15 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.02em;white-space:nowrap;">이 종목 볼륨</span>
         <span class="mono" style="font-size:13px;font-weight:500;color:var(--ink-3);white-space:nowrap;"><span id="cardProgressVol">600 / 720kg</span><span id="cardProgressPct" style="display:none;"></span></span>
       </div>
-      <div style="height:7px;border-radius:4px;background:var(--sunken);position:relative;overflow:hidden;box-shadow:var(--shadow-inset-soft);">
-        <div id="cardProgressBar" style="position:absolute;left:0;top:0;height:100%;width:47%;background:var(--crail-base);border-radius:4px;overflow:hidden;">
-          <span class="vbar-shimmer" style="position:absolute;top:0;bottom:0;width:45%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.5),transparent);"></span>
+      <div class="vol-track" style="height:11px;border-radius:6px;background:var(--sunken);position:relative;box-shadow:var(--shadow-inset-soft);margin-bottom:20px;">
+        <div id="cardProgressBar" style="position:absolute;left:0;top:0;height:100%;width:47%;background:var(--crail-base);border-radius:6px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.32),0 2px 5px -1px rgba(217,119,87,0.45);transition:width 620ms cubic-bezier(.2,.7,.2,1);">
+          <span class="vbar-shimmer" style="position:absolute;top:0;bottom:0;left:0;width:42%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);pointer-events:none;"></span>
         </div>
+        <span id="volEdge" style="position:absolute;left:47%;top:50%;width:15px;height:15px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 0 3px var(--crail-base),0 0 14px 4px rgba(217,119,87,0.75);transition:left 620ms cubic-bezier(.2,.7,.2,1);z-index:3;"></span>
+        <div id="volGoal" style="position:absolute;top:-3px;right:0;height:17px;width:2px;border-radius:1px;background:var(--ink-4);z-index:2;"></div>
+        <div id="volBurst" style="position:absolute;top:50%;right:0;width:12px;height:12px;border-radius:50%;transform:translate(50%,-50%) scale(0.4);border:2px solid var(--crail-base);opacity:0;pointer-events:none;z-index:1;"></div>
+        <div id="volMarkCap" class="mono" style="position:absolute;top:15px;right:0;font-size:9px;font-weight:600;letter-spacing:0.03em;color:var(--ink-4);white-space:nowrap;">직전 기록</div>
+        <div id="volBreak" class="kr" style="position:absolute;right:0;top:14px;display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--crail-deep);white-space:nowrap;opacity:0;pointer-events:none;"><span>직전 기록 돌파</span> <b id="volBreakAmt" class="mono">+0kg</b></div>
       </div>
     </div>
     <!-- 하단 운동 전환 (renderFooterPills 리스타일) + 추가(+).

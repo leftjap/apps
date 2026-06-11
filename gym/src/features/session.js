@@ -1070,6 +1070,7 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind 
   const currentAttr = isCurrent ? ' data-current="1"' : '';
   return `
         <div class="seg${stateClass}" data-set-idx="${idx}"${currentAttr} data-longpress="set-row">
+          <i class="seg-flash"></i>
           <span class="seg-bar"></span>
           <span class="seg-n">${escapeHtml(display.text)}</span>
         </div>`;
@@ -2517,6 +2518,54 @@ async function getCurrentBlockAndCursor() {
 }
 
 /**
+ * 세그먼트 확정 플래시 (작업지시서 §6) — 완료 세그 하단 2px 라인 scaleX 0→1 후 페이드.
+ * 확정 색 = 잉크(ink-1). 모든 방향 공통. reduced-motion 은 호출부에서 게이트.
+ */
+function playSegConfirmFlash(doc, idx, dur = 240) {
+  try {
+    const flash = doc?.getElementById('cardSetDots')?.querySelector(`.seg[data-set-idx="${idx}"] .seg-flash`);
+    if (!flash || typeof flash.animate !== 'function') return;
+    flash.style.background = 'var(--ink-1)';
+    flash.animate([
+      { transform: 'scaleX(0)', opacity: 0 },
+      { transform: 'scaleX(1)', opacity: 0.85, offset: 0.4 },
+      { transform: 'scaleX(1)', opacity: 0 },
+    ], { duration: dur * 1.6, easing: 'ease-out' });
+  } catch (_) { /* WAAPI 미지원 graceful */ }
+}
+
+/**
+ * 숫자 카운트업 (작업지시서 §7) — from→to ease-out-cubic. rAF + setTimeout 폴백(백그라운드 안전).
+ * onUpd(value, isFinal) — isFinal 일 때 정확한 최종값 표시.
+ */
+function animNum(from, to, dur, onUpd) {
+  if (typeof requestAnimationFrame !== 'function' || typeof performance === 'undefined') { onUpd(to, true); return; }
+  const t0 = performance.now();
+  let done = false;
+  const tick = (now) => {
+    if (done) return;
+    const p = Math.min(1, (now - t0) / dur);
+    if (p < 1) { const e = 1 - Math.pow(1 - p, 3); onUpd(from + (to - from) * e, false); requestAnimationFrame(tick); }
+    else { done = true; onUpd(to, true); }
+  };
+  requestAnimationFrame(tick);
+  setTimeout(() => { if (!done) { done = true; onUpd(to, true); } }, dur + 90);
+}
+
+/** 볼륨 진행바 리딩 엣지 플레어 (작업지시서 §7) — 완료 시 한 번 강하게. reduced-motion 은 호출부 게이트. */
+function flareVolEdge(doc) {
+  try {
+    const edge = doc?.getElementById('volEdge');
+    if (!edge || typeof edge.animate !== 'function') return;
+    edge.animate([
+      { boxShadow: '0 0 0 2px var(--crail-base), 0 0 8px 2px rgba(217,119,87,0.45)', transform: 'translate(-50%,-50%) scale(1)' },
+      { boxShadow: '0 0 0 3px var(--crail-base), 0 0 20px 7px rgba(217,119,87,0.7)', transform: 'translate(-50%,-50%) scale(1.4)', offset: 0.3 },
+      { boxShadow: '0 0 0 2px var(--crail-base), 0 0 8px 2px rgba(217,119,87,0.45)', transform: 'translate(-50%,-50%) scale(1)' },
+    ], { duration: 560, easing: 'ease-out' });
+  } catch (_) { /* WAAPI 미지원 graceful */ }
+}
+
+/**
  * spec §6-3-1 좌 스와이프.
  *  - cur 가 유효 : sets[cur].done = true (preset:false).
  *  - cur === sets.length - 1 (마지막 set) : 새 set 추가 (이전 값 preset 카피).
@@ -2674,6 +2723,9 @@ export async function handleLeftSwipe() {
     swipeArea.style.opacity = '1';
     return;
   }
+
+  // 세그먼트 확정 플래시 (§6) — 방금 완료한 세그(cur). advance-only(cur===-1) 는 완료가 아니므로 제외.
+  if (cur !== -1) playSegConfirmFlash(doc, cur);
 
   // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
   // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.
