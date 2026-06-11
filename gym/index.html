@@ -48,7 +48,10 @@
       .phone-content {
         /* inset 그대로는 과체감 (사용자 피드백 2026-06-10) — 12px 감산, 0 미만 방지 */
         padding-top: max(calc(env(safe-area-inset-top, 0px) - 12px), 0px) !important;
-        padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 12px), 0px) !important;
+        /* 하단 — 각 화면 최하단 블록이 자체 padding ≥22px 보유 (홈 CTA·세션 footer 등).
+           가드는 inset 초과분(−22px)만 보충 → 화면 자체 패딩 + 가드 = inset(34px) 정확히.
+           구 −12px 는 자체 패딩과 이중 스택되어 하단 과여백 (사용자 피드백 2026-06-11). */
+        padding-bottom: max(calc(env(safe-area-inset-bottom, 0px) - 22px), 0px) !important;
       }
       /* 하단 고정 바텀시트 — 홈 인디케이터 겹침 방지 (전 시트 padding-bottom 24px 공통 → +inset) */
       #keypadSheet, #weightKeypadSheet, #dayDetailSheet, #actionSheet, #sessionAddexSheet, #addexSheet {

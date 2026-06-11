@@ -583,6 +583,7 @@ export function wireSessionShortcuts(doc) {
         backdrop.style.opacity = '1';
         backdrop.style.pointerEvents = 'auto';
       }
+      setStatusBarDim(doc, true);
     });
     wired += 1;
   }
@@ -599,6 +600,7 @@ export function wireSessionShortcuts(doc) {
       addexBackdrop.dataset.open = 'false';
       addexBackdrop.style.opacity = '0';
       addexBackdrop.style.pointerEvents = 'none';
+      setStatusBarDim(doc, false);
     });
     wired += 1;
   }
@@ -1027,6 +1029,7 @@ async function mountSessionActive(doc, block, session) {
         sBackdrop.style.opacity = '0';
         sBackdrop.style.pointerEvents = 'none';
       }
+      setStatusBarDim(doc, false); // 시트 닫힌 상태 mount — status bar dim 잔존 방지
     }
     const sChipsEl = doc.getElementById('sessionAddexChips');
     const sListEl = doc.getElementById('sessionAddexList');
@@ -1317,7 +1320,7 @@ function wireSwipeHandlers(doc) {
       resetDragVisual();
       // spec §6-3-1 — 좌 -60 커밋 / 우 +60 이전 수정 / 미세 떨림(±10 미만) 탭 폴백 / 그 외 스프링백.
       if (dx <= -60) {
-        try { navigator.vibrate?.(10); } catch (_) { /* 미지원 silent */ }
+        // 진동·링은 handleLeftSwipe 의 playSetHaptic 가 담당 (이중 진동 방지 — 부록 햅틱 링).
         committing = true;
         try { await handleLeftSwipe({ fromDrag: true }); } finally { committing = false; }
       } else if (dx >= 60 && adx > ady) {
@@ -2788,6 +2791,41 @@ function topRecordPulse(doc) {
 }
 
 /**
+ * 시트 dim 시 status bar(theme-color) 동조 — iOS standalone 은 status bar 가 웹 뷰포트 밖이라
+ * 백드롭(inset:0)이 못 덮어 상단에 밝은 가로 띠(seam)가 남음 (사용자 보고 2026-06-11).
+ * 시트 open 시 dim 합성색(#fdfdfd 위 oklch(22% .008 60 / .32) ≈ #b8b7b6), close 시 복원.
+ */
+function setStatusBarDim(doc, on) {
+  try {
+    const meta = doc?.querySelector?.('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', on ? '#b8b7b6' : '#fdfdfd');
+  } catch (_) { /* graceful */ }
+}
+
+/**
+ * 햅틱 + 링 시각화 (부록 작업지시서 — 햅틱 링) — 세트 완료 커밋 직후 1회.
+ *  - navigator.vibrate 는 iOS Safari/PWA 미지원 → 링 애니가 시각적 확정감을 대체 (항상 병행 실행).
+ *  - 일반: 420ms, scale .4→.72→1, 글로우 alpha .3 / PR: 540ms, scale .4→1.5→2.1, 글로우 alpha .45.
+ *  - reduced-motion: 링·진동 모두 스킵 (부록 §조건).
+ */
+function playSetHaptic(doc, isPR) {
+  if (prefersReducedMotion()) return;
+  try { navigator.vibrate?.(isPR ? [12, 28, 12] : 10); } catch (_) { /* iOS 미지원 silent */ }
+  try {
+    const ring = doc?.getElementById('hapticRing');
+    if (!ring || typeof ring.animate !== 'function') return;
+    ring.animate([
+      { opacity: 0, transform: 'translate(-50%,-50%) scale(0.4)', boxShadow: '0 0 0 0 rgba(217,119,87,0)' },
+      isPR
+        ? { opacity: 1, transform: 'translate(-50%,-50%) scale(1.5)', offset: 0.3 }
+        : { opacity: 0.9, transform: 'translate(-50%,-50%) scale(0.72)', offset: 0.25 },
+      { opacity: isPR ? 0.85 : 0.9, boxShadow: isPR ? '0 0 0 14px rgba(217,119,87,0.45)' : '0 0 0 8px rgba(217,119,87,0.3)', offset: 0.5 },
+      { opacity: 0, transform: `translate(-50%,-50%) scale(${isPR ? 2.1 : 1.0})`, boxShadow: '0 0 0 0 rgba(217,119,87,0)' },
+    ], { duration: isPR ? 540 : 420, easing: 'cubic-bezier(0.2,0.7,0.2,1)' });
+  } catch (_) { /* WAAPI 미지원 graceful */ }
+}
+
+/**
  * spec §6-3-1 좌 스와이프.
  *  - cur 가 유효 : sets[cur].done = true (preset:false).
  *  - cur === sets.length - 1 (마지막 set) : 새 set 추가 (이전 값 preset 카피).
@@ -2924,6 +2962,10 @@ export async function handleLeftSwipe(options = {}) {
   const heroVals = doc?.getElementById('cardHeroVals') || swipeArea; // 슬라이드/드래그 대상 = 내부 히어로 값 (완료 칩은 cardSwipeArea 직속 → 같이 안 움직임)
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
+  // 햅틱 + 링 시각화 (부록) — 커밋 즉시(0ms). advance-only(cur===-1) 는 완료 아님 → 약진동만 (기존 동작 보존).
+  if (cur !== -1) playSetHaptic(doc, prMoment);
+  else { try { navigator.vibrate?.(10); } catch (_) { /* iOS 미지원 silent */ } }
+
   if (!canAnimate || prefersReducedMotion()) {
     // RM/비애니 — 드래그 추종이 남긴 translateX 즉시 복원 (애니 경로만 translateX(0) 복원하던 누락 보완, 리뷰 #1).
     if (heroVals) { heroVals.style.transition = 'none'; heroVals.style.transform = ''; heroVals.style.opacity = '1'; }
@@ -3022,8 +3064,7 @@ export async function handleLeftSwipe(options = {}) {
  *  - 800ms 후 fade-out (opacity 1 → 0, transform 복원)
  */
 function showPrPop(doc, segIdx) {
-  // PR 햅틱 강화 (§9) — 기본 vibrate(10) 대비 강한 패턴. 햅틱은 시각 모션 아님 → RM 무관.
-  try { navigator.vibrate?.([12, 28, 12]); } catch (_) { /* 미지원 silent */ }
+  // 진동·링은 playSetHaptic(부록 햅틱 링)이 담당 — 여기선 시각(팝+세그 글로우)만.
   if (prefersReducedMotion()) return; // RM — PR 팝/글로우 미재생 (PR 표시는 세그의 영구 accent 로 정적 전달).
   const el = doc.getElementById('cardPrPop');
   if (el) {
@@ -3308,6 +3349,7 @@ function hookClicks(chipsEl, listEl) {
             sBackdrop.style.opacity = '1';
             sBackdrop.style.pointerEvents = 'auto';
           }
+          setStatusBarDim(doc, true);
         }
       }
     } catch (_) { /* graceful */ }
