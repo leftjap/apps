@@ -6,10 +6,11 @@
 -- RLS: 0001 quotes 패턴 — select 본인+파트너(미래 공유 표시 대비), 쓰기 본인만.
 --      insert 는 보이는 어구(본인·파트너)에만 허용 (comments insert 패턴 미러).
 -- 비파괴: 신규 테이블만 추가. 기존 테이블 영향 없음.
--- 적용: 공유 프로젝트라 `supabase db push` 불가(버전 충돌) — **대시보드 SQL Editor 로
---       실행** (0003 millie 와 동일 절차). 적용 전에도 클라는 안전: push/pull 이
---       42P01 을 'table_missing' 으로 무해 처리(pending 유지), 적용 후 앱 시작 시
---       pending 하이라이트가 flush 로 자동 업로드된다.
+-- 적용: ✅ 2026-06-12 Management API 로 적용 완료 (lessons/supabase-migration-management-api.md
+--       — db push 는 공유 프로젝트 히스토리 충돌로 불가하나 API 경로는 동작).
+--       스키마·RLS 4정책·rowsecurity·실왕복(insert/select/delete)·anon 차단(42501) 검증됨.
+--       클라는 적용 전에도 안전했음: push/pull 이 42P01 을 'table_missing' 으로 무해
+--       처리(pending 유지), 적용 후 앱 시작 시 pending 하이라이트가 flush 로 자동 업로드.
 -- ═══════════════════════════════════════════════════════════════════════════
 
 create table book_quote_highlights (
