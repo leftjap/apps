@@ -828,11 +828,34 @@ async function mountSessionActive(doc, block, session) {
     for (const s of sets) denom += (Number(s?.weight) || 0) * (Number(s?.reps) || 0);
   }
   const pct = denom > 0 ? Math.round((exDoneVol / denom) * 100) : 0;
+  const widthPct = Math.min(100, pct); // 바 fill 은 100% cap, 초과는 over 상태(§7-over) 로
   const bar = doc.getElementById('cardProgressBar');
-  if (bar) bar.style.width = `${Math.min(100, pct)}%`; // 바 fill 은 100% cap, 초과는 % 텍스트로
-  setTextById(doc, 'cardProgressVol', prevExVol > 0
-    ? `${exDoneVol.toLocaleString()} / 직전 ${denom.toLocaleString()}kg`
-    : `${exDoneVol.toLocaleString()} / ${denom.toLocaleString()}kg`);
+  const edge = doc.getElementById('volEdge');
+  const exVolText = (v) => (prevExVol > 0
+    ? `${v.toLocaleString()} / 직전 ${denom.toLocaleString()}kg`
+    : `${v.toLocaleString()} / ${denom.toLocaleString()}kg`);
+  const RMV = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 커밋 카운트업 판정 — 같은 종목 + 직전 렌더 대비 exDoneVol 증가 시만 (탭증감·우스와이프·reload 제외).
+  const prevExNum = bar ? Number(bar.dataset.exVol) : NaN;
+  const sameEx = bar && bar.dataset.exId === block.exerciseId && Number.isFinite(prevExNum);
+  const countUp = sameEx && exDoneVol > prevExNum && !RMV;
+  if (countUp) {
+    // 바·엣지는 CSS transition(620ms) 가 자동으로 width/left 보간 (DOM 영속).
+    if (bar) bar.style.width = `${widthPct}%`;
+    if (edge) edge.style.left = `${widthPct}%`;
+    const topBefore = sessionDoneVol - (exDoneVol - prevExNum); // 우상단 누적도 같은 delta 로 동반.
+    animNum(prevExNum, exDoneVol, 620, (v, isFinal) => {
+      setTextById(doc, 'cardProgressVol', exVolText(isFinal ? exDoneVol : Math.round(v)));
+      setTextById(doc, 'cardSetProgress', (isFinal ? sessionDoneVol : Math.round(topBefore + (v - prevExNum))).toLocaleString());
+    });
+  } else {
+    // 첫 마운트 / 종목 변경 / 감소 / reduced-motion → 즉시 (transition 일시 차단으로 fill-in 방지).
+    if (bar) { const t = bar.style.transition; bar.style.transition = 'none'; bar.style.width = `${widthPct}%`; void bar.offsetWidth; bar.style.transition = t; }
+    if (edge) { const t = edge.style.transition; edge.style.transition = 'none'; edge.style.left = `${widthPct}%`; void edge.offsetWidth; edge.style.transition = t; }
+    setTextById(doc, 'cardProgressVol', exVolText(exDoneVol));
+  }
+  if (bar) { bar.dataset.exVol = String(exDoneVol); bar.dataset.exId = String(block.exerciseId); }
   setTextById(doc, 'cardProgressPct', `${pct}%`);
 
   // P1 라이트 — PR 칩(progressive overload 넛지). 현재 무게가 직전 세션 동일 종목 최대 무게 초과 시 +Δkg.
@@ -2724,8 +2747,8 @@ export async function handleLeftSwipe() {
     return;
   }
 
-  // 세그먼트 확정 플래시 (§6) — 방금 완료한 세그(cur). advance-only(cur===-1) 는 완료가 아니므로 제외.
-  if (cur !== -1) playSegConfirmFlash(doc, cur);
+  // 세그먼트 확정 플래시 (§6) + 볼륨바 끝점 플레어 (§7) — 방금 완료한 세그(cur). advance-only(cur===-1) 제외.
+  if (cur !== -1) { playSegConfirmFlash(doc, cur); flareVolEdge(doc); }
 
   // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
   // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.
