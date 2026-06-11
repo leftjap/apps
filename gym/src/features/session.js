@@ -2677,7 +2677,14 @@ export async function handleLeftSwipe() {
 
   // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
   // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.
-  await new Promise((r) => requestAnimationFrame(r));
+  // §5 콜아웃 — rAF 는 백그라운드 탭/헤드리스에서 안 fire → IN 미실행으로 히어로가 OUT(빈 화면)에 갇힘.
+  // setTimeout 폴백으로 IN 진입 보장 (rAF·timer 중 먼저 도착하는 쪽).
+  await new Promise((r) => {
+    let settled = false;
+    const go = () => { if (!settled) { settled = true; r(); } };
+    requestAnimationFrame(go);
+    setTimeout(go, 32);
+  });
 
   // IN 시작점 jump (invisible — opacity 0 이라 사용자 안 보임)
   swipeArea.style.transition = 'none';
