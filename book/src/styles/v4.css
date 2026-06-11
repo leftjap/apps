@@ -53,14 +53,14 @@
 
 /* 발췌 노트 — 흐르는 문서. 행 사이 구분선만, 카드/틴트 없음. 인덱스·시간 비노출 */
 .bookv4 .lx-list { display: flex; flex-direction: column; padding-bottom: 15vh; }
-.bookv4 .lx-x { position: relative; padding: 13px 12px 13px 26px; border-radius: 8px; transition: background .12s; cursor: pointer; }
+.bookv4 .lx-x { position: relative; padding: 13px 12px 13px 26px; border-radius: 8px; transition: background .12s; }
 .bookv4 .lx-x:hover { background: var(--hover); }
 .bookv4 .lx-x.pinned::before { content: ''; position: absolute; left: 9px; top: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--pin); }
 .bookv4 .lx-x + .lx-x { border-top: 1px solid var(--line-soft); }
-.bookv4 .lx-x .txt { font-size: 15.5px; line-height: 1.72; color: var(--ink); letter-spacing: -.005em; word-break: keep-all; text-wrap: pretty; padding-right: 38px; }
+.bookv4 .lx-x .txt { font-size: 15.5px; line-height: 1.72; color: var(--ink); letter-spacing: -.005em; word-break: keep-all; text-wrap: pretty; padding-right: 38px; cursor: text; }
 /* 드래그로 만든 부분 하이라이트 — 종이 형광펜. 색 = 팝오버 스와치와 동일.
    box-decoration-break/padding 미사용(연속 배경) — 줄바꿈 렌더 안정 (시안 styles-v3). */
-.bookv4 .lx-x .txt mark { background: var(--hl-yellow); color: inherit; border-radius: 2px; }
+.bookv4 .lx-x .txt mark { background: var(--hl-yellow); color: inherit; border-radius: 2px; cursor: pointer; }
 .bookv4 .lx-x .txt mark.pink { background: var(--hl-pink); }
 .bookv4 .lx-x .txt mark.blue { background: var(--hl-blue); }
 .bookv4 .lx-x .txt mark.green { background: var(--hl-green); }

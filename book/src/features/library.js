@@ -19,7 +19,7 @@ import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
 import { openSearchModal } from '../ui/search-modal.js';
 import { segmentText, applyMark, removeRange, coveredColor } from '../ui/highlight.js';
-import { openQuoteModal, rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
+import { rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
@@ -183,9 +183,12 @@ async function render(host, params, ctx) {
       class: active === c ? `sw ${name} on` : `sw ${name}`, title,
       onClick: () => setMarks(active === c ? removeRange(marks, { s, e }) : applyMark(marks, { s, e, c })),
     });
+    const hasOverlap = marks.some((m) => m.s < e && m.e > s);
     const pop = el('div', { class: 'lx-selpop', onClick: (ev) => ev.stopPropagation(), onMousedown: (ev) => ev.stopPropagation() },
       sw('y', 'yellow', '노랑'), sw('p', 'pink', '분홍'), sw('g', 'green', '초록'), sw('b', 'blue', '파랑'),
       el('span', { class: 'div' }),
+      // 겹치는 하이라이트가 있을 때만 — 구간 지우기 (mark 클릭이든 드래그 부분 선택이든 동일)
+      hasOverlap ? el('button', { title: '하이라이트 지우기', onClick: () => setMarks(removeRange(marks, { s, e })) }, iconEl('trash', { sz: 15 })) : null,
       el('button', { title: '댓글 달기 — 스레드 열기', onClick: () => { closeSelPop(); ctx.navigate(`/thread/${q.book_ref}/${q.id}`); } }, iconEl('comment', { sz: 15 })),
       el('button', {
         title: '선택 복사',
@@ -313,18 +316,32 @@ async function render(host, params, ctx) {
       const isMine = !meId || q.owner_id === meId;
       const cN = commentCounts[q.id] || 0;
       const article = el('article', {
+        // 행 좌클릭 모달 없음 — 본문은 드래그(형광펜)·mark 클릭(편집) 영역. 수정/삭제는 호버 ⋮·우클릭.
         class: q.pinned ? 'lx-x pinned' : 'lx-x',
-        onClick: () => {
-          // 드래그 선택/팝오버 중엔 모달 금지 — 하이라이트 편집이 모달 뎁스 없이 우선.
-          const sel = window.getSelection();
-          if (_selpopEl || (sel && !sel.isCollapsed)) return;
-          openQuoteModal(q, ctx, { commentCount: cN, container: root });
-        },
       },
         el('div', { class: 'txt' },
-          ...segmentText(q.text, hlMap[q.id] || []).map((sg) => sg.c
-            ? el('mark', sg.c === 'y' ? {} : { class: { p: 'pink', g: 'green', b: 'blue' }[sg.c] }, sg.text)
-            : sg.text)),
+          ...(() => {
+            let cur = 0;
+            return segmentText(q.text, hlMap[q.id] || []).map((sg) => {
+              const segS = cur;
+              cur += sg.text.length;
+              if (!sg.c) return sg.text;
+              return el('mark', {
+                ...(sg.c === 'y' ? {} : { class: { p: 'pink', g: 'green', b: 'blue' }[sg.c] }),
+                // 칠해진 형광펜 클릭 → 같은 팝오버로 색 변경/지우기 (드래그 중에는 드래그 팝오버 우선)
+                onClick: (ev) => {
+                  const sel = window.getSelection();
+                  if (sel && !sel.isCollapsed) return;
+                  ev.stopPropagation();
+                  openSelPop({
+                    article: ev.currentTarget.closest('.lx-x'), q,
+                    s: segS, e: segS + sg.text.length,
+                    rect: ev.currentTarget.getBoundingClientRect(),
+                  });
+                },
+              }, sg.text);
+            });
+          })()),
         cN > 0 ? el('button', {
           class: 'lx-memoflag', title: `댓글 ${cN} — 스레드 열기`,
           onClick: (e) => { e.stopPropagation(); ctx.navigate(`/thread/${selectedId}/${q.id}`); },
