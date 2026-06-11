@@ -32,6 +32,15 @@ export function createBookDB(name = 'book') {
       '&id, quote_id, author_id, created_at, deleted_at, [quote_id+created_at], pending_sync',
     books: '&id, created_at, pending_sync',
   });
+  // v3: 드래그 형광펜 — quote_highlights(로컬 전용, sync 없음). 행 { quote_id, marks:[{s,e,c}], updated_at }.
+  db.version(3).stores({
+    quotes:
+      '&id, owner_id, book_ref, updated_at, deleted_at, pinned, [book_ref+updated_at], pending_sync',
+    comments:
+      '&id, quote_id, author_id, created_at, deleted_at, [quote_id+created_at], pending_sync',
+    books: '&id, created_at, pending_sync',
+    quote_highlights: '&quote_id',
+  });
   return db;
 }
 

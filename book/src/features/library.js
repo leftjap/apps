@@ -18,6 +18,7 @@ import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
 import { openSearchModal } from '../ui/search-modal.js';
+import { segmentText, applyMark, removeRange, coveredColor } from '../ui/highlight.js';
 import { openQuoteModal, rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
@@ -32,6 +33,10 @@ const genreOf = (b) => {
 };
 /** width px 표지 — cover() 는 scale=px/mm 이므로 scale = width / b.w. */
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
+
+// 선택 팝오버는 전역 1개 — 재마운트 시 이전 mount 의 document 리스너를 정리한다.
+let _selpopEl = null;
+let _selpopCleanup = null;
 
 async function render(host, params, ctx) {
   const user = ctx.user;
@@ -53,6 +58,9 @@ async function render(host, params, ctx) {
   catch (e) { console.warn('[library] 로드 실패', e?.message || e); }
   try { commentCounts = await Queries.countCommentsForQuotes(all.map((q) => q.id)); }
   catch (e) { console.warn('[library] 댓글 수 실패', e?.message || e); }
+  let hlMap = {}; // quoteId → marks[] (드래그 형광펜, 로컬 전용)
+  try { hlMap = await Queries.getHighlightsFor(all.map((q) => q.id)); }
+  catch (e) { console.warn('[library] 하이라이트 로드 실패', e?.message || e); }
 
   const byBook = new Map(); // ref → { quotes, pinned, last }
   for (const q of all) {
@@ -110,6 +118,91 @@ async function render(host, params, ctx) {
       onQuoteChange(q);
     } catch (e) { console.warn('[library] 핀 토글 실패', e?.message || e); }
   }
+
+  // ── 드래그 형광펜 — 본문 드래그 → 선택 팝오버(스와치 4색 + 댓글 + 복사), 시안 lx-selpop ──
+  const articleQuote = new WeakMap(); // .lx-x 엘리먼트 → quote
+  if (_selpopCleanup) _selpopCleanup();
+  const closeSelPop = () => { if (_selpopEl) { _selpopEl.remove(); _selpopEl = null; } };
+  const onDocDown = (ev) => { if (_selpopEl && !_selpopEl.contains(ev.target)) closeSelPop(); };
+  const onEsc = (ev) => { if (ev.key === 'Escape') closeSelPop(); };
+  document.addEventListener('mousedown', onDocDown, true);
+  document.addEventListener('keydown', onEsc, true);
+  _selpopCleanup = () => {
+    document.removeEventListener('mousedown', onDocDown, true);
+    document.removeEventListener('keydown', onEsc, true);
+    closeSelPop();
+  };
+
+  // 컨테이너 기준 텍스트 오프셋 — mark 분할과 무관하게 텍스트 노드 길이 누적.
+  function textOffsetIn(container, node, nodeOffset) {
+    if (node === container) { // 트리플클릭 등: 자식 인덱스 → 텍스트 오프셋
+      let total = 0;
+      for (let i = 0; i < nodeOffset; i++) total += container.childNodes[i]?.textContent.length || 0;
+      return total;
+    }
+    let total = 0;
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let n;
+    while ((n = walker.nextNode())) {
+      if (n === node) return total + nodeOffset;
+      total += n.textContent.length;
+    }
+    return null;
+  }
+
+  function readSelection() {
+    const sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return null;
+    const range = sel.getRangeAt(0);
+    const elOf = (n) => (n && n.nodeType === 3 ? n.parentElement : n);
+    const txtEl = elOf(range.startContainer)?.closest('.lx-x .txt');
+    if (!txtEl || elOf(range.endContainer)?.closest('.lx-x .txt') !== txtEl) return null; // 행 경계 드래그 제외
+    const s = textOffsetIn(txtEl, range.startContainer, range.startOffset);
+    const e = textOffsetIn(txtEl, range.endContainer, range.endOffset);
+    if (s == null || e == null || e <= s) return null;
+    const article = txtEl.closest('.lx-x');
+    const q = articleQuote.get(article);
+    if (!q) return null;
+    return { article, q, s, e, rect: range.getBoundingClientRect() };
+  }
+
+  function openSelPop({ article, q, s, e, rect }) {
+    closeSelPop();
+    const marks = hlMap[q.id] || [];
+    const active = coveredColor(marks, s, e); // 전 구간 단일 색이면 그 색 활성(재클릭=해제)
+    const setMarks = async (next) => {
+      hlMap[q.id] = next;
+      try { await Queries.setHighlights(q.id, next); }
+      catch (err) { console.warn('[library] 하이라이트 저장 실패', err?.message || err); }
+      const sel = window.getSelection();
+      if (sel) sel.removeAllRanges();
+      closeSelPop();
+      renderMain();
+    };
+    const sw = (c, name, title) => el('button', {
+      class: active === c ? `sw ${name} on` : `sw ${name}`, title,
+      onClick: () => setMarks(active === c ? removeRange(marks, { s, e }) : applyMark(marks, { s, e, c })),
+    });
+    const pop = el('div', { class: 'lx-selpop', onClick: (ev) => ev.stopPropagation(), onMousedown: (ev) => ev.stopPropagation() },
+      sw('y', 'yellow', '노랑'), sw('p', 'pink', '분홍'), sw('g', 'green', '초록'), sw('b', 'blue', '파랑'),
+      el('span', { class: 'div' }),
+      el('button', { title: '댓글 달기 — 스레드 열기', onClick: () => { closeSelPop(); ctx.navigate(`/thread/${q.book_ref}/${q.id}`); } }, iconEl('comment', { sz: 15 })),
+      el('button', {
+        title: '선택 복사',
+        onClick: () => { try { navigator.clipboard?.writeText(q.text.slice(s, e)); } catch { /* noop */ } closeSelPop(); },
+      }, iconEl('copy', { sz: 15 })),
+    );
+    const aRect = article.getBoundingClientRect();
+    pop.style.left = `${Math.max(8, Math.round(rect.left - aRect.left))}px`;
+    pop.style.top = `${Math.round(rect.bottom - aRect.top + 8)}px`; // 선택 아래 — 꼬리는 위(시안)
+    article.appendChild(pop);
+    _selpopEl = pop;
+  }
+
+  mainCol.addEventListener('mouseup', () => {
+    // selection 확정 후 판독 (mouseup 직후엔 미확정)
+    setTimeout(() => { const cs = readSelection(); if (cs) openSelPop(cs); }, 0);
+  });
 
   function renderAside() {
     clear(asideEl);
@@ -171,6 +264,7 @@ async function render(host, params, ctx) {
   }
 
   function renderMain() {
+    closeSelPop();
     clear(mainCol);
     const b = selectedId ? bookOf(selectedId) : null;
     if (!b) { mainCol.appendChild(el('div', { class: 'empty' }, '왼쪽에서 책을 선택하세요.')); return; }
@@ -220,9 +314,17 @@ async function render(host, params, ctx) {
       const cN = commentCounts[q.id] || 0;
       const article = el('article', {
         class: q.pinned ? 'lx-x pinned' : 'lx-x',
-        onClick: () => openQuoteModal(q, ctx, { commentCount: cN, container: root }),
+        onClick: () => {
+          // 드래그 선택/팝오버 중엔 모달 금지 — 하이라이트 편집이 모달 뎁스 없이 우선.
+          const sel = window.getSelection();
+          if (_selpopEl || (sel && !sel.isCollapsed)) return;
+          openQuoteModal(q, ctx, { commentCount: cN, container: root });
+        },
       },
-        el('div', { class: 'txt' }, q.text),
+        el('div', { class: 'txt' },
+          ...segmentText(q.text, hlMap[q.id] || []).map((sg) => sg.c
+            ? el('mark', sg.c === 'y' ? {} : { class: { p: 'pink', g: 'green', b: 'blue' }[sg.c] }, sg.text)
+            : sg.text)),
         cN > 0 ? el('button', {
           class: 'lx-memoflag', title: `댓글 ${cN} — 스레드 열기`,
           onClick: (e) => { e.stopPropagation(); ctx.navigate(`/thread/${selectedId}/${q.id}`); },
@@ -236,6 +338,7 @@ async function render(host, params, ctx) {
         ),
       );
       attachContextMenu(article, () => buildMenuPop(q, ctx, { onChange: onQuoteChange }));
+      articleQuote.set(article, q);
       list.appendChild(article);
     }
     mainCol.appendChild(list);

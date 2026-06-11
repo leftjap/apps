@@ -58,6 +58,25 @@
 .bookv4 .lx-x.pinned::before { content: ''; position: absolute; left: 9px; top: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--pin); }
 .bookv4 .lx-x + .lx-x { border-top: 1px solid var(--line-soft); }
 .bookv4 .lx-x .txt { font-size: 15.5px; line-height: 1.72; color: var(--ink); letter-spacing: -.005em; word-break: keep-all; text-wrap: pretty; padding-right: 38px; }
+/* 드래그로 만든 부분 하이라이트 — 종이 형광펜. 색 = 팝오버 스와치와 동일.
+   box-decoration-break/padding 미사용(연속 배경) — 줄바꿈 렌더 안정 (시안 styles-v3). */
+.bookv4 .lx-x .txt mark { background: var(--hl-yellow); color: inherit; border-radius: 2px; }
+.bookv4 .lx-x .txt mark.pink { background: var(--hl-pink); }
+.bookv4 .lx-x .txt mark.blue { background: var(--hl-blue); }
+.bookv4 .lx-x .txt mark.green { background: var(--hl-green); }
+
+/* 선택 팝오버 — 드래그 하이라이트 색상/액션 (떠오르는 박스, 시안 lx-selpop) */
+.bookv4 .lx-selpop { position: absolute; display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: #fff; border-radius: 10px; box-shadow: var(--shadow-lift); z-index: 10; }
+.bookv4 .lx-selpop::after { content: ''; position: absolute; left: 30px; top: -6px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); box-shadow: -3px -3px 6px -3px rgba(20,18,14,.18); }
+.bookv4 .lx-selpop button { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; color: var(--ink-2); }
+.bookv4 .lx-selpop button:hover { background: var(--hover); color: var(--ink); }
+.bookv4 .lx-selpop button.sw { width: 17px; height: 17px; border-radius: 50%; border: 1px solid rgba(0,0,0,.12); }
+.bookv4 .lx-selpop .sw.yellow { background: var(--hl-yellow); }
+.bookv4 .lx-selpop .sw.pink { background: var(--hl-pink); }
+.bookv4 .lx-selpop .sw.green { background: var(--hl-green); }
+.bookv4 .lx-selpop .sw.blue { background: var(--hl-blue); }
+.bookv4 .lx-selpop .sw.on { box-shadow: 0 0 0 2px #fff, 0 0 0 3.5px var(--ink-2); }
+.bookv4 .lx-selpop .div { width: 1px; height: 18px; background: var(--line); margin: 0 3px; }
 /* 댓글 표식 — 좌측 스캔 라인 비움, 우상단 아이콘만(호버 시 액션으로 대체) */
 .bookv4 .lx-memoflag { position: absolute; top: 13px; right: 11px; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--ink-4); }
 .bookv4 .lx-memoflag:hover { color: var(--ink-2); }

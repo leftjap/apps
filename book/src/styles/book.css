@@ -28,8 +28,11 @@
   --accent: #E85A3A;
   --pin: #C8881A;
   --highlight: #FAF3E0;
-  /* 시안 styles-v3 명시 그림자 — 떠오르는 박스(피드 연결 카드 등) */
+  /* 시안 styles-v3 명시 그림자 — 떠오르는 박스(피드 연결 카드·선택 팝오버) */
   --shadow-float: 0 1px 0 rgba(20,18,14,.02), 0 6px 14px -8px rgba(20,18,14,.10), 0 22px 44px -22px rgba(20,18,14,.18);
+  --shadow-lift: 0 1px 0 rgba(20,18,14,.02), 0 10px 22px -14px rgba(20,18,14,.20), 0 34px 60px -34px rgba(20,18,14,.26);
+  /* 형광펜 4색 — 시안 styles-v3 명시값. 칠하는 색 = 팝오버 스와치 색 동일 */
+  --hl-yellow: #FBE38A; --hl-pink: #F6BBD2; --hl-green: #BFE3A6; --hl-blue: #AFD4F2;
   --font-sans: var(--sans);
   --font-serif: var(--serif);
   --font-mono: var(--mono);

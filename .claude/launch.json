@@ -42,6 +42,13 @@
       "port": 5176
     },
     {
+      "name": "book-dev-alt",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev", "--port", "5186"],
+      "cwd": "/Users/gio_c/apps/book",
+      "port": 5186
+    },
+    {
       "name": "today-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],

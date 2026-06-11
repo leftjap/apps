@@ -282,6 +282,28 @@ export async function listBooks() {
   return await db().books.toArray();
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// highlights — 드래그 형광펜 (quote_highlights, 로컬 전용 — 서버 동기화 없음)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** quoteIds → { quoteId: marks[] }. 행 없는 id 는 키 자체가 없음. */
+export async function getHighlightsFor(quoteIds) {
+  const ids = (quoteIds || []).filter(Boolean);
+  if (!ids.length) return {};
+  const rows = await db().quote_highlights.where('quote_id').anyOf(ids).toArray();
+  return Object.fromEntries(rows.map((r) => [r.quote_id, r.marks || []]));
+}
+
+/** marks 저장 — 빈 배열이면 행 삭제. */
+export async function setHighlights(quoteId, marks) {
+  if (!marks || !marks.length) {
+    await db().quote_highlights.delete(quoteId);
+    return [];
+  }
+  await db().quote_highlights.put({ quote_id: quoteId, marks, updated_at: nowIso() });
+  return marks;
+}
+
 export const Queries = {
   // quotes
   listFeed,
@@ -310,6 +332,9 @@ export const Queries = {
   // books
   upsertBook,
   listBooks,
+  // highlights (로컬 전용)
+  getHighlightsFor,
+  setHighlights,
 };
 
 if (typeof window !== 'undefined') {
