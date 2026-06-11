@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cue 대시보드 개편 — 작업지시서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: #F0EEE6; color: #232019;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  font-size: 14.5px; line-height: 1.7; font-feature-settings: 'tnum';
+  -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 816px; margin: 28px auto; background: #fff;
+  padding: 68px 72px; box-shadow: 0 2px 12px rgba(0,0,0,.08); border-radius: 3px;
+}
+h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 6px; }
+h2 {
+  font-size: 19px; font-weight: 800; letter-spacing: -0.01em;
+  margin: 44px 0 14px; padding-top: 18px; border-top: 2px solid #232019;
+}
+h2 .no { color: #D2602F; margin-right: 8px; }
+h3 { font-size: 15.5px; font-weight: 800; margin: 26px 0 8px; }
+p { margin: 0 0 10px; }
+ul, ol { margin: 0 0 12px; padding-left: 22px; }
+li { margin-bottom: 5px; }
+b { font-weight: 700; }
+code {
+  font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 12.5px;
+  background: #F4F1E9; border-radius: 4px; padding: 1.5px 6px;
+}
+.doc-meta { color: #8A8270; font-size: 13px; margin-bottom: 4px; }
+.lede { font-size: 15.5px; color: #544C3E; }
+table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; }
+th { text-align: left; font-weight: 700; border-bottom: 2px solid #232019; padding: 7px 10px 7px 0; white-space: nowrap; }
+td { border-bottom: 1px solid #E5E0D2; padding: 7px 10px 7px 0; vertical-align: top; }
+td:first-child { white-space: nowrap; }
+.callout {
+  background: #FBF4EC; border: 1px solid #EBD9C6; border-radius: 8px;
+  padding: 14px 18px; margin: 14px 0 18px; font-size: 13.5px;
+}
+.callout b:first-child { color: #B9551F; }
+.warn { background: #FDF1EE; border-color: #EFCDC2; }
+figure { margin: 16px 0 22px; }
+figure img { width: 100%; border: 1px solid #E5E0D2; border-radius: 8px; display: block; }
+figcaption { font-size: 12.5px; color: #8A8270; margin-top: 7px; }
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 16px; }
+.sw { width: 118px; font-size: 11.5px; color: #544C3E; }
+.sw i { display: block; height: 44px; border-radius: 7px; border: 1px solid #E5E0D2; margin-bottom: 5px; }
+.sw code { font-size: 11px; padding: 0 4px; }
+.toc { columns: 2; font-size: 13.5px; margin: 14px 0 0; }
+.toc li { margin-bottom: 3px; }
+.copy-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; margin: 10px 0 16px; font-size: 13px; }
+.copy-pair .bad, .copy-pair .good { padding: 9px 14px; border-radius: 7px; margin-bottom: 8px; }
+.copy-pair .bad { background: #FDF1EE; color: #8C3A24; text-decoration: line-through; text-decoration-color: rgba(140,58,36,.45); }
+.copy-pair .good { background: #F1F5EC; color: #3E5A33; }
+.kv td:first-child { font-weight: 700; width: 180px; }
+section { break-inside: avoid-page; }
+h2, h3 { break-after: avoid-page; }
+figure, table, .callout { break-inside: avoid-page; }
+@media print {
+  body { background: none; }
+  .page { box-shadow: none; border-radius: 0; max-width: none; width: auto; margin: 0; padding: 0; }
+  .callout, .copy-pair .bad, .copy-pair .good, .sw i { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  @page { margin: 0.75in; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="doc-meta">작업지시서 · 2026.06.12 · v8 기준</p>
+<h1>cue 대시보드 개편 구현 지시서</h1>
+<p class="lede">독서·글쓰기·어학·운동 네 도구를 매일 호출하게 만드는 대시보드. 이 문서 하나로 디자인 의도, 화면 명세, 데이터 계약, 카피 규칙까지 구현에 필요한 전부를 전달한다. 동봉된 <code>시안-소스/</code> 폴더의 코드가 1차 기준이며, 이 문서는 코드만으로 전달되지 않는 의도와 규칙을 보충한다.</p>
+
+<ul class="toc">
+<li>1. 목적과 설계 원칙</li>
+<li>2. 시안</li>
+<li>3. 화면 구조</li>
+<li>4. 디자인 토큰</li>
+<li>5. 컴포넌트 명세</li>
+<li>6. 상태 정의</li>
+<li>7. 애니메이션 명세</li>
+<li>8. 데이터 계약 (DB 연동)</li>
+<li>9. 카피 규칙</li>
+<li>10. 반응형·접근성</li>
+<li>11. QA 체크리스트</li>
+<li>12. 파일 구성</li>
+</ul>
+
+<h2><span class="no">1</span>목적과 설계 원칙</h2>
+<p>이 앱의 단 하나의 목적: <b>사용자가 오늘 네 가지 활동(독서·글쓰기·어학·운동)의 도구를 실제로 열게 만드는 것.</b> 모든 기록은 각 도구에서 자동으로 측정되어 넘어온다 — 대시보드에는 수동 입력·체크 UI가 없다.</p>
+<ol>
+<li><b>시각적 위계는 단 하나의 흐름</b> — ① 시간이 가고 있다(시계·타임라인) → ② 오늘의 원이 덜 닫혔다(하루 고리) → ③ 각 활동의 재개 지점(행) → ④ 깰 수 있는 기록(펼침). 이 순서 밖의 요소를 추가하지 않는다.</li>
+<li><b>색은 한 곳에만</b> — 화면 전체가 웜 그레이 모노톤이고, 포인트색(오렌지)은 "시간·지금 할 일·경신 가능 기록"에만 쓴다. 포인트색이 세 군데 이상 동시에 강조되면 잘못된 것이다.</li>
+<li><b>동기 장치는 세 가지</b> — 유한한 하루(타임라인), 미완성의 원(열린 고리, 자이가르닉 효과), 깨고 싶은 기록(goal-gradient: 가까운 목표일수록 동기 상승). 이외의 게이미피케이션(포인트·레벨·배지)은 도입하지 않는다.</li>
+<li><b>모든 문장은 구체적 사실</b> — "잘하고 있어요" 같은 빈 격려 금지. 책 제목·쪽수·날짜·분량처럼 DB에서 온 구체값만 말한다.</li>
+</ol>
+
+<h2><span class="no">2</span>시안</h2>
+<figure>
+  <img src="img/01-시안.png" alt="메인 화면 — 독서 행이 펼쳐진 기본 상태">
+  <figcaption>시안 1 — 기본 화면. 시계 + 하루 고리 + 타임라인, 활동 행 4개(독서 펼침). 첫 행은 기본으로 펼친 상태로 시작한다.</figcaption>
+</figure>
+<figure>
+  <img src="img/03-시안.png" alt="어학 행이 펼쳐진 화면 — due 상태 강조">
+  <figcaption>시안 2 — 어학이 '지금 할 일(due)' 상태. 행 테두리·고리·CTA가 포인트색으로 강조되고 고리가 천천히 회전한다.</figcaption>
+</figure>
+<figure>
+  <img src="img/05-시안.png" alt="전체 통계 화면">
+  <figcaption>시안 3 — 전체 통계(추가 뎁스). 활동별 8주 추이와 기록 요약. ESC 또는 ✕로 복귀.</figcaption>
+</figure>
+<p>나머지 캡처(<code>img/02</code> 글쓰기 펼침, <code>img/04</code> 운동 펼침)도 동봉. 동작하는 시안은 <code>시안-소스/큐 대시보드 v8.html</code>을 브라우저에서 열어 확인한다.</p>
+
+<h2><span class="no">3</span>화면 구조</h2>
+<table>
+<tr><th>영역</th><th>구성</th><th>인터랙션</th></tr>
+<tr><td>① 헤더</td><td>로고(cue.), 날짜, [전체 통계] 버튼</td><td>버튼 → 전체 통계 화면</td></tr>
+<tr><td>② 히어로</td><td>현재 시각(초 포함) · 남은 시간 · 경과율 / 하루 고리(n/4) / 오늘 흐름 타임라인</td><td><b>전부 보기 전용.</b> 클릭 요소 없음</td></tr>
+<tr><td>③ 활동 행 ×4</td><td>순서 고정: 독서 → 글쓰기 → 어학 → 운동. 각 행 = 고리 마크 + 이름 + 재개 지점 문장 + 보조 한 줄 + CTA + 펼침 화살표</td><td>행 클릭 → 아래로 기록 펼침(한 번에 하나만). CTA 클릭 → 해당 앱으로 이동(행 펼침과 독립, <code>stopPropagation</code>)</td></tr>
+<tr><td>④ 펼침 영역</td><td>이번 달 캘린더 히트맵 + 기록 3종 + 경신 한 줄(beat)</td><td>beat 우측 [전체 통계] 링크</td></tr>
+<tr><td>⑤ 전체 통계</td><td>활동별 카드: 8주 막대 추이 + 누적 요약 + 기록 3종</td><td>✕ 또는 ESC로 복귀</td></tr>
+</table>
+<div class="callout"><b>오늘 흐름에 클릭 요소를 두지 않는 이유</b> — 과거 버전에서 타임라인 위 라벨이 서로 겹치고 클릭 대상이 모호해지는 문제가 반복됐다. 타임라인은 "시간이 흐른다"는 압박만 담당하고, 행동은 전부 ③의 행에서 일어난다. 이 분리를 유지할 것.</div>
+
+<h2><span class="no">4</span>디자인 토큰</h2>
+<div class="swatches">
+  <div class="sw"><i style="background:#FAF7F1"></i><code>#FAF7F1</code> 배경</div>
+  <div class="sw"><i style="background:#FFFFFF"></i><code>#FFFFFF</code> 카드</div>
+  <div class="sw"><i style="background:#27211A"></i><code>#27211A</code> 본문 잉크</div>
+  <div class="sw"><i style="background:#A2967F"></i><code>#A2967F</code> 보조 텍스트</div>
+  <div class="sw"><i style="background:#ECE4D3"></i><code>#ECE4D3</code> 테두리</div>
+  <div class="sw"><i style="background:#D2602F"></i><code>#D2602F</code> 포인트(유일)</div>
+</div>
+<table class="kv">
+<tr><td>서체</td><td>Pretendard Variable. 숫자는 항상 <code>font-feature-settings: 'tnum'</code>(고정폭)</td></tr>
+<tr><td>타입 스케일</td><td>시계 68px/800 · 섹션 제목 26px/800 · 행 이름 16.5px/800 · 재개 문장 15px · 기록값 24px/800 · 라벨·캡션 11~12.5px</td></tr>
+<tr><td>모서리</td><td>행 카드 18px · 안쪽 박스 10px · 캘린더 셀 5px · 버튼 pill(999px)</td></tr>
+<tr><td>레이아웃</td><td>최대 폭 1060px 중앙 정렬, 좌우 패딩 48px. 행 간격 12px</td></tr>
+<tr><td>그림자</td><td>펼친 행에만 <code>0 6px 24px -14px rgba(60,45,25,.25)</code>. 그 외 플랫</td></tr>
+<tr><td>히트맵 단계</td><td>0: <code>#F0EADC</code> / 1: <code>#ECD2BB</code> / 2: <code>#DE9D6C</code> / 3: <code>#D2602F</code> — 경계값은 그 달 최대치의 34%·67%</td></tr>
+</table>
+
+<h2><span class="no">5</span>컴포넌트 명세</h2>
+
+<h3>5-1. 시계 블록</h3>
+<ul>
+<li><code>HH:MM</code> 68px, 콜론은 <code>#C9BCA1</code>. 초는 바로 옆 베이스라인에 17px 포인트색, <code>min-width</code>를 줘 자릿수 변화에 레이아웃이 떨리지 않게 한다.</li>
+<li>아래 두 줄: "오늘이 <b>n시간 nn분</b> 남았어요"(강조 포인트색) / "하루의 n%가 지나갔어요"(보조색). 1초마다 갱신.</li>
+</ul>
+
+<h3>5-2. 하루 고리 (DayRing)</h3>
+<ul>
+<li>84px 원. 활동당 하나씩 4개의 호(arc)로 분절 — 각 호는 자기 구간의 78%를 채우고 사이가 끊겨 있어 "조각난 원"으로 읽힌다. 완료 호는 포인트색, 미완료는 <code>#E9E1CF</code>. 중앙에 <code>n/4</code>.</li>
+<li>의도: 덜 닫힌 원이 항상 보이게 해 완성 욕구를 자극한다. 4개가 모두 닫히는 순간이 하루의 보상이므로, 완료 시 호가 채워지는 트랜지션(0.3s)을 생략하지 말 것.</li>
+</ul>
+
+<h3>5-3. 오늘 흐름 타임라인</h3>
+<ul>
+<li>가로축 06:00–24:00. 위치 함수 <code>px(h) = (clamp(h,6,24) − 6) / 18 × 100%</code>.</li>
+<li>축은 9px 높이 트랙(<code>#EEE7D9</code>). 경과 구간은 포인트색 계열 대각 스트라이프가 채우고 계속 흐른다(7-2).</li>
+<li>"지금" 마커: 상단 pill(포인트색 배경, <code>지금 HH:MM</code>) + 세로선 + 축 위의 점. <b>세로선은 축에서 끝난다</b> — 아래 활동 라벨 영역(축 기준 +21px 아래)과 절대 겹치지 않는다.</li>
+<li>활동 4개는 보통 수행 시각 위치에 고리 마크 + 이름. 완료된 것은 회색 처리 + 아래 <code>07:12 · 41분</code> 메타. due 활동은 이름이 포인트색.</li>
+<li>시간 눈금 06·09·12·15·18·21·24, 양 끝은 잘리지 않게 끝점 정렬.</li>
+<li>영역 전체 <code>pointer-events: none</code>.</li>
+</ul>
+
+<h3>5-4. 활동 행</h3>
+<ul>
+<li>그리드: <code>18px(마크) · 76px(이름) · 1fr(문장 2줄) · auto(CTA) · 14px(화살표)</code>, 간격 16px, 패딩 18px 22px.</li>
+<li>마크는 76% 호의 "열린 고리". 완료 시 닫힌 원 + 체크. due 행의 고리는 포인트색으로 7초/회전.</li>
+<li>1행(재개 지점): 구체 명사 + 굵은 수치. 예: 『물고기는 존재하지 않는다』 <b>132 / 264쪽</b>. 2행(보조 사실): 보조색 12.5px.</li>
+<li>행 전체가 펼침 토글 버튼(<code>aria-expanded</code>). 호버 시 배경 <code>#FCFAF5</code>.</li>
+</ul>
+
+<h3>5-5. CTA 버튼</h3>
+<ul>
+<li><b>전 행 동일 폭 168px</b>, pill. 좌측 26px 원형 아이콘 캡슐(활동별 아이콘) + 중앙 정렬 라벨 + 우측 ↗.</li>
+<li>기본: 흰 배경 + <code>#E6DCC9</code> 테두리. 호버: 포인트색 채움(아이콘 캡슐은 반투명 백색). due 행: 항상 채워진 상태.</li>
+<li>라벨은 데이터의 <code>cta</code> 필드 그대로: "이어 읽기" / "이어 쓰기" / "오늘 분량 시작" / "운동 기록 열기"(완료 후 "오늘 기록 보기").</li>
+<li>클릭 시 해당 앱으로 이동(딥링크는 구현 시 연결). 행 펼침이 함께 토글되지 않도록 이벤트 전파를 막는다.</li>
+</ul>
+
+<h3>5-6. 펼침 영역</h3>
+<ul>
+<li>2열 그리드: 좌측 월 캘린더(고정폭), 우측 기록 3종. 하단 풀폭으로 beat 라인.</li>
+<li><b>월 캘린더 히트맵</b>: 요일 헤더(월~일) + 이번 달 전체. 셀 19×15px, 미래 날짜는 점선 테두리 빈 셀, 오늘은 포인트색 외곽선. 셀 <code>title</code>로 날짜·수치 툴팁. 설명 캡션은 넣지 않는다(과거 피드백으로 제거됨).</li>
+<li><b>기록 3종</b>: 라벨(11.5px) / 값(24px 800) / 보조(12px). 구성은 활동별로 다르다 — 8절 표 참조.</li>
+<li><b>beat 라인</b>: 옅은 포인트색 배경 박스. "오늘의 행동 → 가장 가까운 기록 경신"을 잇는 한 문장. 우측에 [전체 통계] 텍스트 링크.</li>
+</ul>
+
+<h3>5-7. 전체 통계</h3>
+<ul>
+<li>2×2 카드 그리드. 카드: 아이콘+이름+연간 요약(우측) / 8주 막대(이번 주만 포인트색, 0인 주는 바닥선만) / 축 라벨 "8주 전·이번 주" / 기록 3종 한 줄.</li>
+<li>메인과 같은 화면 영역을 교체하는 방식(라우팅 불필요). ESC 키 지원.</li>
+</ul>
+
+<h2><span class="no">6</span>상태 정의</h2>
+<table>
+<tr><th>상태</th><th>판정</th><th>표현</th></tr>
+<tr><td>완료 (done)</td><td>오늘 해당 활동 세션이 DB에 기록됨</td><td>닫힌 원+체크, 이름·문장 회색, 행 배경 투명, CTA는 보기형 라벨, 타임라인에 시각·분량 메타</td></tr>
+<tr><td>지금 할 일 (due)</td><td>현재 시각이 보통 수행 시각을 지났고 미완료인 활동 중 가장 이른 것</td><td>행 테두리·고리·CTA 포인트색, 고리 회전. <b>동시에 1개만</b></td></tr>
+<tr><td>대기 (default)</td><td>그 외</td><td>모노톤, CTA 외곽선형</td></tr>
+<tr><td>하루 마감</td><td>4개 모두 완료</td><td>하루 고리 4호 모두 닫힘. (마감 축하 연출은 이번 범위 외 — 임의로 추가하지 말 것)</td></tr>
+</table>
+<div class="callout warn"><b>주의</b> — 시안 코드의 due 판정은 <code>DUE_ID = 'lang'</code>으로 고정된 목업이다. 실제 구현에서는 위 판정 규칙(시각 + 완료 여부)으로 계산하고, 운동 완료 여부도 시계가 아닌 DB 세션 존재로 판정한다.</div>
+
+<h2><span class="no">7</span>애니메이션 명세</h2>
+<table>
+<tr><th>#</th><th>대상</th><th>명세</th><th>의도</th></tr>
+<tr><td>7-1</td><td>지금 점</td><td>box-shadow 맥동, 2s ease-out 무한. 3px → 14px 확산 후 소멸</td><td>"지금"으로 시선 고정</td></tr>
+<tr><td>7-2</td><td>경과 스트라이프</td><td>115° 대각 스트라이프(포인트색 58%·28% 두 톤, 8px 간격)가 0.7s/18px 속도로 진행 방향 흐름</td><td>시간이 소모되고 있다는 상시 압박</td></tr>
+<tr><td>7-3</td><td>due 고리</td><td>마크 7s/회전 무한</td><td>열린 고리가 "살아 있음"</td></tr>
+<tr><td>7-4</td><td>행 펼침</td><td>0.22s ease, translateY(−5px)→0. <b>opacity는 건드리지 않는다</b>(과거에 opacity 종료값 누락으로 내용이 통째로 안 보이는 버그가 있었음)</td><td>—</td></tr>
+<tr><td>7-5</td><td>완료 전환</td><td>고리 호·하루 고리 채움 0.3s 트랜지션</td><td>완료의 보상감</td></tr>
+</table>
+<p>모든 애니메이션은 <code>@media (prefers-reduced-motion: no-preference)</code> 안에서만 실행. 끄면(또는 OS 설정 시) 정지 상태가 완성된 디자인이어야 한다.</p>
+
+<h2><span class="no">8</span>데이터 계약 (DB 연동)</h2>
+<p>시안의 <code>data.js</code>(<code>window.CUE8</code>)가 계약서다. <b>모든 수치는 목업이므로 한 글자도 그대로 옮기지 말고</b> 아래 매핑으로 DB에서 채운다.</p>
+<table>
+<tr><th>필드</th><th>타입</th><th>채우는 값</th></tr>
+<tr><td><code>hook</code></td><td>{title, strong, tail}</td><td>직전 세션의 재개 지점. 독서=책 제목+현재/전체 쪽수, 글쓰기=문서 제목+누적 매수, 어학=마지막 레슨명+마지막 학습일, 운동=오늘 세션(시각·부위·시간) 또는 주간 진행</td></tr>
+<tr><td><code>sub</code></td><td>string</td><td>보조 사실 한 줄(어제 분량, 마지막 날짜, 연속 주 수 등)</td></tr>
+<tr><td><code>cal</code></td><td>number[28~31]</td><td>이번 달 1일~말일의 일별 누적량. 단위: 독서·어학·운동=분, 글쓰기=원고지 매수</td></tr>
+<tr><td><code>records</code></td><td>{lb, v, note}[3]</td><td>활동별 구성 고정 — 독서: 최장 연속 / 하루 최고 / 올해 읽은 책 · 글쓰기: 하루 최고 / 이번 달 매수(전월 비교) / 올해 완성 편수 · 어학: 최장 연속 / 하루 최고 / 올해 누적 · 운동: 주 4일 연속 / 하루 최고 / 올해 횟수. <code>note</code>에는 현재값을 붙여 기록과의 격차가 보이게</td></tr>
+<tr><td><code>beat</code></td><td>string</td><td>오늘 행동으로 깰 수 있는 <b>가장 가까운</b> 기록 한 문장. 서버 또는 클라이언트에서 규칙 생성(9절 문체 준수)</td></tr>
+<tr><td><code>weekly8</code></td><td>number[8]</td><td>최근 8주 주별 합계(운동만 횟수, 나머지 분/매)</td></tr>
+<tr><td><code>total</code></td><td>string</td><td>연간 요약 — "올해 4권 · 38시간" 형식</td></tr>
+</table>
+<ul>
+<li>글쓰기 분량 단위는 <b>원고지 매(200자)</b>. 소수 1자리까지 표기(9.2매).</li>
+<li>운동 목표는 <b>주 4일</b>. "주 3회" 표기가 남아 있으면 오류다.</li>
+<li>타임라인의 활동별 보통 시각은 최근 수행 시각의 중앙값으로 산출(시안에서는 7.2 / 13.0 / 19.5 / 22.5로 하드코딩).</li>
+</ul>
+
+<h2><span class="no">9</span>카피 규칙</h2>
+<p>이 화면의 모든 문장이 그대로 출시 문구가 된다. 규칙:</p>
+<ol>
+<li><b>사용자에게 말 거는 문장은 해요체.</b> 라벨·캡션(최장 연속, 하루 최고 등)만 명사형.</li>
+<li><b>번역투 금지.</b> "열려 있는 일", "고리를 닫는다", "작업이 닫힌다" 같은 영어 직역 표현 사용 불가. 시각 요소로서의 고리(링)는 유지하되 <b>말로 풀어 쓰지 않는다</b>.</li>
+<li><b>반말 종결 금지.</b> "남았다 / 썼다 / 비었다 / 멈춰 있다" → 전부 해요체로.</li>
+<li><b>빈 격려·추상 평가 금지.</b> "잘하고 있어요", "그날 많이 했어요" 불가. 구체값으로만 말한다.</li>
+<li><b>죄책감 어법 금지.</b> 공백은 사실로만: "마지막으로 쓴 날은 6월 4일이에요". 복귀는 문턱을 낮춰서: "오늘 10분이면 다시 시작할 수 있어요".</li>
+</ol>
+<div class="copy-pair">
+  <div class="bad">아직 열려 있는 일 3</div><div class="good">오늘이 16시간 33분 남았어요</div>
+  <div class="bad">10분이면 닫힌다</div><div class="good">오늘 10분이면 다시 시작할 수 있어요</div>
+  <div class="bad">「6월 에세이」가 멈춰 있다</div><div class="good">「6월 에세이」 — 9.2매까지 썼어요</div>
+  <div class="bad">8일 비었다</div><div class="good">마지막으로 쓴 날은 6월 4일이에요</div>
+</div>
+<p>beat 문장 패턴: <b>"오늘 [최소 행동]이면 [구체 결과]예요 — [기준 기록]"</b>. 예: "오늘 읽으면 3일 연속이에요 — 최장 기록은 11일".</p>
+
+<h2><span class="no">10</span>반응형 · 접근성</h2>
+<ul>
+<li><b>920px 이하</b>: 히어로 1열(시계 블록 위, 타임라인 아래), 행 그리드 축소(이름·문장 영역이 풀폭 줄로), 펼침 1열, 통계 1열. 시계 56px.</li>
+<li>행 토글은 <code>&lt;button aria-expanded&gt;</code>, 하루 고리는 <code>role="img"</code> + aria-label, 장식 SVG는 전부 <code>aria-hidden</code>.</li>
+<li>키보드: Tab 순회 + 포커스 링(포인트색 2px), 전체 통계 ESC 닫기.</li>
+<li>터치 타겟 최소 44px(CTA·행 헤더 충족 확인).</li>
+</ul>
+
+<h2><span class="no">11</span>QA 체크리스트</h2>
+<ol>
+<li>임의의 시각(새벽 3시, 23:59 포함)에서 "지금" 마커·라벨·눈금이 어떤 요소와도 겹치지 않는가</li>
+<li>활동 보통 시각이 몰려 있어도(저녁 3개) 타임라인 라벨이 겹치지 않는가</li>
+<li>due 행이 항상 정확히 0~1개인가</li>
+<li>4개 모두 완료 시 하루 고리·타임라인·행이 모두 일관된 완료 상태인가</li>
+<li>월 캘린더의 요일 시작(월요일)과 실제 달력이 일치하는가 — 달이 바뀌어도</li>
+<li>글쓰기 "매" 단위·운동 "주 4일"이 모든 화면(행·펼침·통계)에서 일치하는가</li>
+<li>모든 문구가 9절 규칙을 통과하는가 (번역투·반말 종결 전수 검사)</li>
+<li>reduced-motion에서 모든 애니메이션이 꺼지고도 화면이 완성 상태인가</li>
+<li>펼침 영역이 어떤 행에서도 잘리지 않고 끝까지 보이는가</li>
+<li>새로고침 후에도 상태(펼침 등)가 자연스럽게 복원되는가</li>
+</ol>
+
+<h2><span class="no">12</span>파일 구성</h2>
+<table>
+<tr><th>경로</th><th>내용</th></tr>
+<tr><td><code>작업지시서.html</code></td><td>이 문서 (브라우저 인쇄 → PDF 가능)</td></tr>
+<tr><td><code>img/01~05-시안.png</code></td><td>시안 캡처 5종 (기본·글쓰기·어학·운동 펼침·전체 통계)</td></tr>
+<tr><td><code>시안-소스/큐 대시보드 v8.html</code></td><td>동작하는 시안 — 브라우저에서 바로 열림</td></tr>
+<tr><td><code>시안-소스/app.jsx</code></td><td>화면 전체 구현(React). 컴포넌트: Hero / DayRing / MonthCal / AppRow / StatsView</td></tr>
+<tr><td><code>시안-소스/style.css</code></td><td>전체 스타일 — 토큰·애니메이션 포함, 그대로 이식 가능</td></tr>
+<tr><td><code>시안-소스/data.js</code></td><td>데이터 계약(목업). 8절 매핑으로 DB 연결</td></tr>
+</table>
+<div class="callout"><b>구현 우선순위</b> — ① 데이터 연동(8절) ② due 판정 로직(6절) ③ CTA 딥링크 ④ 카피 전수 검사(9절) ⑤ QA(11절). 디자인 변경이 필요해지면 1절의 원칙 안에서 판단할 것.</div>
+
+</div>
+</body>
+</html>
