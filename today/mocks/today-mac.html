@@ -103,8 +103,8 @@
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     box-shadow: var(--shadow-float);
-    /* 상단 행 수직 중심 y=47 — margin 16 + pad 15 + 행 32/2 (작업지시서 §3.7) */
-    padding: 15px 12px 12px;
+    /* 상단 행 수직 중심 y=47 — margin 16 + border 1 + pad 14 + 행 32/2 (작업지시서 §3.7) */
+    padding: 14px 12px 12px;
     display: flex;
     flex-direction: column;
     font-size: 15px;
@@ -299,7 +299,9 @@
   .sb__item--active .ico { opacity: 1; color: var(--crail-base); }
   .sb__item[data-category] { cursor: pointer; }
   /* recents 롱프레스 — iOS callout/텍스트 선택/preview 차단해 커스텀 timer (entries.js) 살림 */
+  /* 행 높이 38px 은 카테고리 행 한정 — 리센츠 2줄 행은 auto */
   .sb__item--recent {
+    height: auto;
     cursor: pointer;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -3694,8 +3696,8 @@
       line-height: 1.7 !important;
     }
     .doc__meta { font-size: 12px; }
-    .sb__item { font-size: 17px; }
-    .sb__item--recent { font-size: 16px; }
+    .sb__item { font-size: 16px; height: 44px; }   /* 터치 타겟 44px (DESIGN.md §4) */
+    .sb__item--recent { font-size: 16px; height: auto; }
     .sb__user-name { font-size: 15px; }
 
     /* doc-list — 모바일 단일 칼럼 카드 스택 (RECENTS "전체 보기" 진입 후) */
@@ -5460,6 +5462,14 @@
     let activeCat = 'navi';
     let _selectedDate = null; // 가계부 캘린더 선택일
 
+    // 최근 섹션 라벨 — 활성 카테고리명 + 우측 건수 (작업지시서 §3.4)
+    function setRecentsLabelFixture(text, count) {
+      const t = document.getElementById('recentsLabelText');
+      const c = document.getElementById('recentsLabelCount');
+      if (t && text != null) t.textContent = text;
+      if (c) c.textContent = count != null && count !== '' ? String(count) : '';
+    }
+
     function renderRecents(key) {
       const data = FIXTURE[key];
       const list = document.getElementById('recentsList');
@@ -5467,6 +5477,7 @@
       // 가계부 — Recents 자리에 최근 거래 (Phase D — 클릭 → 일자 점프 + highlight)
       if (key === 'expense') {
         const items = (data.txns || []).slice(0, 5);
+        setRecentsLabelFixture(data.label, (data.txns || []).length);
         list.innerHTML = items.map(t => `
           <div class="sb__item sb__item--recent is-exp" data-tx-id="${t.id}" onclick="jumpToExpenseTx('${t.id}')">
             <span class="rc-title">${t.memo}</span>
@@ -5478,6 +5489,7 @@
 
       const docs = data.docs || [];
       const oya = data.oneYearAgo || null;
+      setRecentsLabelFixture(data.label, data.totalCount || docs.length);
       if (!docs.length && !oya) {
         list.innerHTML = '';
         return;
@@ -5488,12 +5500,13 @@
           <span class="recent-share recent-share--year">1년 전</span>
         </div>
       ` : '';
-      // 글 문서 — 2줄 (제목 + "날짜 · 공유자 · 댓글 N"), 안 읽은 항목만 펄스 도트 (작업지시서 §3)
+      // 글 문서 — 2줄 (제목 + "날짜 · 말풍선 N"), 공유자 15px 아바타, 안 읽은 항목만 펄스 도트 (작업지시서 §3.4)
+      const cmSvg = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5A1.5 1.5 0 0 1 5 3.5h6A1.5 1.5 0 0 1 12.5 5v4A1.5 1.5 0 0 1 11 10.5H8l-2.8 2.2V10.5H5A1.5 1.5 0 0 1 3.5 9z"/></svg>';
       const docsHtml = docs.slice(0, 5).map(d => {
-        const shHtml = d.share ? `<span class="sh">${d.share}</span>` : '';
+        const shHtml = d.share ? `<span class="sh" title="${d.share}">${d.share.charAt(0)}</span>` : '';
         const sub = [
           d.date || '',
-          d.comments ? `<span class="cm${d.unread ? ' unread' : ''}">댓글 ${d.comments}</span>` : ''
+          d.comments ? `<span class="cm${d.unread ? ' unread' : ''}">${cmSvg}${d.comments}</span>` : ''
         ].filter(Boolean).join(' · ');
         return `
         <div class="sb__item sb__item--recent is-doc" data-doc-id="${d.id}">
@@ -5501,7 +5514,7 @@
           ${sub ? `<div class="rc-sub">${sub}</div>` : ''}
         </div>`;
       }).join('');
-      const moreHtml = `<button class="sb__more" type="button" data-action="show-all-list">전체 보기<span class="sb__more-count">${(data.totalCount || docs.length).toLocaleString('ko-KR')}편</span></button>`;
+      const moreHtml = `<button class="sb__more" type="button" data-action="show-all-list">전체 보기</button>`;
       list.innerHTML = oyaHtml + docsHtml + moreHtml;
     }
 

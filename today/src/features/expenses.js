@@ -25,7 +25,7 @@ import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
 import Classifier from '../services/expense-classifier.js';
 import { parseCardSms } from '../services/cardSmsParser.js';
-import { getCurrentKind } from './entries.js';
+import { getCurrentKind, setRecentsLabel } from './entries.js';
 import { getCardOptionsForEmail, getDefaultCardForEmail, cardLabelFromValue } from './card-options.js';
 
 /** 영문 카테고리 id (DB enum) → 한글 라벨.
@@ -203,10 +203,12 @@ export function renderExpenseRecentsFromRows(rows, doc = document) {
   const items = rows.slice(0, 5).map((r) => {
     const id = escapeHtml(r.id);
     const memo = escapeHtml(r.memo || r.merchant || r.brand || r.category || '거래');
-    const amt = `${(r.amount_krw || 0).toLocaleString('ko-KR')}원`;   // Pretendard+tnum (.meta), mono 금지 (작업지시서 §1)
+    const amt = `${(r.amount_krw || 0).toLocaleString('ko-KR')}원`;
     return `<div class="sb__item sb__item--recent is-exp" data-tx-id="${id}" onclick="jumpToExpenseTx('${id}')"><span class="rc-title">${memo}</span><span class="meta">${amt}</span></div>`;
   }).join('');
   list.innerHTML = items;
+  // 최근 섹션 라벨 — 활성 카테고리명 + 당월 거래 건수 (작업지시서 §3.4)
+  setRecentsLabel('가계부', rows.length, doc);
   return true;
 }
 
@@ -626,9 +628,10 @@ export function clearExpensesFixture(doc = document, month = null) {
   // 타임라인 비우기
   const tl = doc.querySelector('.exp-tl-list');
   if (tl) tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:14px;">이 달의 거래가 없습니다.</div>';
-  // Recents 비우기 (사이드바)
+  // Recents 비우기 (사이드바) + 라벨 갱신
   const list = doc.getElementById('recentsList');
   if (list) list.innerHTML = '';
+  setRecentsLabel('가계부', '', doc);
   return true;
 }
 

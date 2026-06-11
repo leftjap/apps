@@ -166,9 +166,22 @@ export function formatRelativeDay(iso, now = new Date()) {
   return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 }
 
+// 말풍선 아이콘 — 리센츠 "댓글 N" (작업지시서 §3.4)
+const CM_BUBBLE_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5A1.5 1.5 0 0 1 5 3.5h6A1.5 1.5 0 0 1 12.5 5v4A1.5 1.5 0 0 1 11 10.5H8l-2.8 2.2V10.5H5A1.5 1.5 0 0 1 3.5 9z"/></svg>';
+
+/** 최근 섹션 라벨 — 활성 카테고리명 + 우측 건수 (작업지시서 §3.4). */
+export function setRecentsLabel(text, count, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc) return false;
+  const t = doc.getElementById?.('recentsLabelText');
+  const c = doc.getElementById?.('recentsLabelCount');
+  if (t && text != null) t.textContent = text;
+  if (c) c.textContent = count != null && count !== '' ? String(count) : '';
+  return !!(t || c);
+}
+
 /**
- * 리센츠 — 글 문서는 2줄(제목 + "날짜 · 공유자 · 댓글 N"), 안 읽은 항목만 크레일 펄스 도트. 작업지시서 §3.
- * 공유자(소연/지오)는 본문·사이드바 모두 crail-deep (.sh) 로 통일.
+ * 리센츠 — 글 문서는 2줄(제목 + "날짜 · 말풍선 N"), 안 읽은 항목만 크레일 펄스 도트. 작업지시서 §3.4.
+ * 공유자는 15px 원형 아바타 (.sh — 이니셜 + title 풀네임).
  */
 export async function renderRecentsFromRows(kind, rows, doc = document) {
   const list = doc.getElementById('recentsList');
@@ -201,15 +214,16 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
     const n = countMap.get(r.id) || 0;
     const unread = unreadSet.has(r.id);
     const dateStr = formatRelativeDay(r.updated_at || r.created_at);
-    // 공유자(소연)는 우측 정렬로 분리 (rc-main 오른쪽). 서브라인엔 날짜·댓글만.
-    const shHtml = shareLabel ? `<span class="sh">${escapeHtml(shareLabel)}</span>` : '';
+    // 공유자 — 15px 원형 아바타 (이니셜, title=풀네임. 작업지시서 §3.4)
+    const shHtml = shareLabel ? `<span class="sh" title="${escapeHtml(shareLabel)}">${escapeHtml(shareLabel.charAt(0))}</span>` : '';
     const sub = [
       dateStr,
-      n > 0 ? `<span class="cm${unread ? ' unread' : ''}">댓글 ${n}</span>` : '',
+      n > 0 ? `<span class="cm${unread ? ' unread' : ''}">${CM_BUBBLE_SVG}${n}</span>` : '',
     ].filter(Boolean).join(' · ');
     return `<div class="sb__item sb__item--recent is-doc" data-doc-id="${id}"><div class="rc-main"><span class="rc-title">${title}</span>${unread ? '<span class="rc-dot"></span>' : ''}${shHtml}</div>${sub ? `<div class="rc-sub">${sub}</div>` : ''}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
+  setRecentsLabel(KIND_LABEL_KO[kind] || kind, rows.length, doc);
   ensureRecentsMore(kind, rows.length, doc);
   return true;
 }
@@ -230,19 +244,13 @@ export function ensureRecentsMore(kind, totalCount, doc = (typeof document !== '
     if (existing) existing.remove();
     return false;
   }
-  // 건수 = 카테고리 전체 글 수 (rows.length). 화살표 없이 "전체 보기 · NN편" (작업지시서 §3).
-  const count = Number.isFinite(totalCount) ? totalCount : list.children.length;
-  const countText = `${count.toLocaleString('ko-KR')}편`;
-  if (existing) {
-    const c = existing.querySelector('.sb__more-count');
-    if (c) c.textContent = countText;
-    return true;
-  }
+  // 보더 고스트 버튼 "전체 보기" — 건수는 최근 섹션 라벨 우측으로 이관 (작업지시서 §3.4·§3.5)
+  if (existing) return true;
   const btn = doc.createElement('button');
   btn.type = 'button';
   btn.className = 'sb__more';
   btn.dataset.action = 'show-all-list';
-  btn.innerHTML = `전체 보기<span class="sb__more-count">${countText}</span>`;
+  btn.textContent = '전체 보기';
   list.insertAdjacentElement('afterend', btn);
   return true;
 }
@@ -486,6 +494,7 @@ export function clearRecentsList(doc = (typeof document !== 'undefined' ? docume
   const list = doc.getElementById('recentsList');
   if (!list) return false;
   list.innerHTML = '';
+  setRecentsLabel(null, '', doc);
   removeRecentsMore(doc);
   return true;
 }
@@ -526,6 +535,7 @@ async function handleCategoryActive(kind) {
     } else {
       // Wave 11.5.11 — fixture 데이터 노출 차단 (인증 후 본인 데이터만)
       clearRecentsList();
+      setRecentsLabel(KIND_LABEL_KO[kind] || kind, '');
       clearMainViewEmpty(KIND_LABEL_KO[kind] || kind);
     }
   } catch (e) {
