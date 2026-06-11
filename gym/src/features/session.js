@@ -858,6 +858,45 @@ async function mountSessionActive(doc, block, session) {
   if (bar) { bar.dataset.exVol = String(exDoneVol); bar.dataset.exId = String(block.exerciseId); }
   setTextById(doc, 'cardProgressPct', `${pct}%`);
 
+  // over(직전 기록 돌파) 상태 (§7) — 정적 (reload/재렌더 반영). prevExVol>0 (실제 직전 기록 존재) 한정.
+  const exOver = prevExVol > 0 && exDoneVol >= prevExVol;
+  const volGoalEl = doc.getElementById('volGoal');
+  const volMarkCapEl = doc.getElementById('volMarkCap');
+  const volBreakEl = doc.getElementById('volBreak');
+  const volBreakAmtEl = doc.getElementById('volBreakAmt');
+  if (bar) bar.classList.toggle('is-over', exOver);
+  if (volGoalEl) volGoalEl.classList.toggle('broken', exOver);
+  if (volMarkCapEl) volMarkCapEl.style.opacity = exOver ? '0' : '';
+  if (volBreakEl) {
+    if (exOver) {
+      if (volBreakAmtEl) volBreakAmtEl.textContent = `+${Math.round(exDoneVol - prevExVol).toLocaleString()}kg`;
+      volBreakEl.style.opacity = '1'; // inline opacity 로 가시성 보장 — 모션은 transform 만 (§7 콜아웃, throttle 시 0 갇힘 방지)
+    } else {
+      volBreakEl.style.opacity = '0';
+    }
+  }
+  // 돌파 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 버스트 + 바 팝 + 태그 rise-in.
+  if (countUp && prevExNum < prevExVol && exDoneVol >= prevExVol) exRecordBurst(doc);
+
+  // 우상단 워크아웃 총볼륨 신기록 (§8) — 정적 (reload/재렌더 반영). prevSessionVol>0 + 오늘 누적이 직전 총볼륨 초과 시.
+  const topRecord = prevSessionVol > 0 && sessionDoneVol > prevSessionVol;
+  const sessPrevEl = doc.getElementById('cardSessVolPrev');
+  const recordTagEl = doc.getElementById('cardRecordTag');
+  if (sessPrevEl) sessPrevEl.classList.toggle('struck', topRecord);
+  if (recordTagEl) {
+    if (topRecord) {
+      recordTagEl.innerHTML = `<span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록 +${Math.round(sessionDoneVol - prevSessionVol).toLocaleString()}kg`;
+      recordTagEl.style.opacity = '1';
+    } else {
+      recordTagEl.style.opacity = '0';
+    }
+  }
+  // 신기록 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 누적 숫자 펄스 + 태그 rise-in.
+  if (countUp) {
+    const topBefore = sessionDoneVol - (exDoneVol - prevExNum);
+    if (topBefore <= prevSessionVol && sessionDoneVol > prevSessionVol) topRecordPulse(doc);
+  }
+
   // P1 라이트 — PR 칩(progressive overload 넛지). 현재 무게가 직전 세션 동일 종목 최대 무게 초과 시 +Δkg.
   //   기존 데이터(prevSessionSets)만 사용 — 새 PR 로직 발명 X. weight 종목·미완료 블록 한정.
   try {
@@ -2585,6 +2624,48 @@ function flareVolEdge(doc) {
       { boxShadow: '0 0 0 3px var(--crail-base), 0 0 20px 7px rgba(217,119,87,0.7)', transform: 'translate(-50%,-50%) scale(1.4)', offset: 0.3 },
       { boxShadow: '0 0 0 2px var(--crail-base), 0 0 8px 2px rgba(217,119,87,0.45)', transform: 'translate(-50%,-50%) scale(1)' },
     ], { duration: 560, easing: 'ease-out' });
+  } catch (_) { /* WAAPI 미지원 graceful */ }
+}
+
+/**
+ * 직전 기록 돌파 순간 1회성 (작업지시서 §7-over) — 끝점 버스트 링 + 바 brightness 팝 + 돌파 태그 rise-in.
+ * 정적 over 상태(is-over/broken/태그)는 mountSessionActive 가 담당. reduced-motion 은 호출부 게이트.
+ */
+function exRecordBurst(doc) {
+  try {
+    const burst = doc?.getElementById('volBurst');
+    const bar = doc?.getElementById('cardProgressBar');
+    const brk = doc?.getElementById('volBreak');
+    if (burst && typeof burst.animate === 'function') burst.animate([
+      { opacity: 0, transform: 'translate(50%,-50%) scale(0.4)' },
+      { opacity: 0.85, transform: 'translate(50%,-50%) scale(1.8)', offset: 0.3 },
+      { opacity: 0, transform: 'translate(50%,-50%) scale(3.6)' },
+    ], { duration: 660, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    if (bar && typeof bar.animate === 'function') bar.animate([
+      { filter: 'brightness(1)' }, { filter: 'brightness(1.28)', offset: 0.3 }, { filter: 'brightness(1)' },
+    ], { duration: 520, easing: 'ease-out' });
+    if (brk && typeof brk.animate === 'function') brk.animate([
+      { transform: 'translateY(7px)' }, { transform: 'translateY(0)' },
+    ], { duration: 360, easing: 'cubic-bezier(.2,.8,.3,1)' });
+  } catch (_) { /* WAAPI 미지원 graceful */ }
+}
+
+/**
+ * 워크아웃 총볼륨 신기록 순간 1회성 (작업지시서 §8) — 누적 숫자 scale+crail 플래시 + 신기록 태그 rise-in.
+ * 정적 상태(취소선·태그)는 mountSessionActive 가 담당. reduced-motion 은 호출부 게이트.
+ */
+function topRecordPulse(doc) {
+  try {
+    const num = doc?.getElementById('cardSetProgress');
+    const tag = doc?.getElementById('cardRecordTag');
+    if (num && typeof num.animate === 'function') num.animate([
+      { transform: 'scale(1)', color: 'var(--ink-1)' },
+      { transform: 'scale(1.16)', color: 'var(--crail-deep)', offset: 0.32 },
+      { transform: 'scale(1)', color: 'var(--ink-1)' },
+    ], { duration: 580, easing: 'cubic-bezier(.2,.7,.2,1)' });
+    if (tag && typeof tag.animate === 'function') tag.animate([
+      { transform: 'translateY(6px)' }, { transform: 'translateY(0)' },
+    ], { duration: 400, easing: 'cubic-bezier(.2,.8,.3,1)' });
   } catch (_) { /* WAAPI 미지원 graceful */ }
 }
 
