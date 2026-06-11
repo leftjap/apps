@@ -41,6 +41,18 @@ export function createBookDB(name = 'book') {
     books: '&id, created_at, pending_sync',
     quote_highlights: '&quote_id',
   });
+  // v4: 형광펜 서버 동기화(book_quote_highlights, 본인 행만) — pending_sync 인덱스 추가.
+  // 기존 v3 행은 pending 1 로 마킹 → 마이그 적용 후 첫 flush 에서 일괄 업로드.
+  db.version(4).stores({
+    quotes:
+      '&id, owner_id, book_ref, updated_at, deleted_at, pinned, [book_ref+updated_at], pending_sync',
+    comments:
+      '&id, quote_id, author_id, created_at, deleted_at, [quote_id+created_at], pending_sync',
+    books: '&id, created_at, pending_sync',
+    quote_highlights: '&quote_id, pending_sync',
+  }).upgrade((tx) => tx.table('quote_highlights').toCollection().modify((r) => {
+    if (r.pending_sync === undefined) r.pending_sync = 1;
+  }));
   return db;
 }
 

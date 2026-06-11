@@ -172,7 +172,7 @@ async function render(host, params, ctx) {
     const active = coveredColor(marks, s, e); // 전 구간 단일 색이면 그 색 활성(재클릭=해제)
     const setMarks = async (next) => {
       hlMap[q.id] = next;
-      try { await Queries.setHighlights(q.id, next); }
+      try { await Queries.setHighlights(q.id, next, meId); }
       catch (err) { console.warn('[library] 하이라이트 저장 실패', err?.message || err); }
       // 형광펜=핀 — 칠해진 어구는 핀, 마지막 형광펜을 지우면 핀 해제 (사용자 결정 2026-06-12).
       // 파트너 어구는 제외: 서버가 본인 행만 수정 허용(RLS) — 형광펜(로컬)만 칠해진다.

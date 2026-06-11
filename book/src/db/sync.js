@@ -15,6 +15,7 @@ import { supabase } from '../services/supabase.js';
 import {
   listPendingQuotes, setQuotePendingSync,
   listPendingComments, setCommentPendingSync,
+  listPendingHighlights, setHighlightPendingSync,
 } from './queries.js';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -42,6 +43,8 @@ export function formatError(e) {
 export const TABLE_MAP = Object.freeze([
   Object.freeze({ dexie: 'quotes', supabase: 'book_quotes', filterColumn: null }),
   Object.freeze({ dexie: 'comments', supabase: 'book_comments', filterColumn: null }),
+  // 형광펜: 본인 행만 pull (부부 겹쳐보기는 후속 — 로컬 모델이 quote 당 1행).
+  Object.freeze({ dexie: 'quote_highlights', supabase: 'book_quote_highlights', filterColumn: 'owner_id' }),
 ]);
 
 let _syncActive = false;
@@ -80,6 +83,11 @@ export async function pullTable(mapping, db, userId) {
       query = query.range(from, from + PULL_PAGE_SIZE - 1);
       const { data, error } = await query;
       if (error) {
+        // 마이그레이션 미적용(테이블 부재) — 시작마다 에러 노이즈 대신 조용히 skip.
+        if (error?.code === '42P01') {
+          console.warn(`[sync] ${mapping.supabase} 테이블 미적용 — 마이그 적용 후 자동 동기화`);
+          return { table: mapping.dexie, status: 'skipped', reason: 'table_missing' };
+        }
         console.error(`[sync] pullTable ${mapping.supabase} 실패:`, formatError(error));
         return { table: mapping.dexie, status: 'error', error };
       }
@@ -125,6 +133,7 @@ export async function startSync(user) {
   startRealtime();
   flushPendingQuotesFromDexie().catch((e) => console.warn('[sync] flush quotes 실패:', formatError(e)));
   flushPendingCommentsFromDexie().catch((e) => console.warn('[sync] flush comments 실패:', formatError(e)));
+  flushPendingHighlightsFromDexie().catch((e) => console.warn('[sync] flush highlights 실패:', formatError(e)));
   return result;
 }
 
@@ -215,8 +224,17 @@ export async function flushPendingUploads() {
     if (t) clearTimeout(t);
     _quoteTimers.delete(id);
   }
-  const results = await Promise.all(ids.map((id) => pushQuote(id)));
-  return { count: ids.length, results };
+  const hlIds = [...new Set(_highlightTimers.keys())];
+  for (const id of hlIds) {
+    const t = _highlightTimers.get(id);
+    if (t) clearTimeout(t);
+    _highlightTimers.delete(id);
+  }
+  const results = await Promise.all([
+    ...ids.map((id) => pushQuote(id)),
+    ...hlIds.map((id) => pushHighlight(id)),
+  ]);
+  return { count: ids.length + hlIds.length, results };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -280,6 +298,88 @@ export async function flushPendingCommentsFromDexie() {
   if (!pending.length) return { count: 0, results: [] };
   const results = await Promise.all(pending.map((p) => pushComment(p.id)));
   return { count: pending.length, results };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// push — highlights (드래그 형광펜, 본인 행만 — book_quote_highlights)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const _highlightTimers = new Map();
+
+export async function pushHighlight(quoteId) {
+  if (!supabase) return { id: quoteId, status: 'skipped', reason: 'no_supabase' };
+  const db = globalThis.bookDB;
+  if (!db) return { id: quoteId, status: 'skipped', reason: 'no_db' };
+  const row = await db.quote_highlights.get(quoteId);
+  if (!row) return { id: quoteId, status: 'skipped', reason: 'not_found' };
+  // 구버전(v3) 행은 owner 미기록 — 어구 소유자로 폴백 (파트너 어구 위 하이라이트는 RLS 가 최종 차단).
+  const owner = row.owner_id || (await db.quotes.get(quoteId))?.owner_id;
+  const empty = !row.marks || row.marks.length === 0;
+  if (!isValidUuid(quoteId) || !isValidUuid(owner)) {
+    // dev 가짜 유저·verify 시드 — 로컬 전용. 톰스톤이면 구동작(행 삭제) 복원.
+    try { if (empty) await db.quote_highlights.delete(quoteId); else await setHighlightPendingSync(quoteId, 0); } catch (_) { /* 무시 */ }
+    return { id: quoteId, status: 'skipped', reason: 'non_uuid_local_only' };
+  }
+  const onError = async (error) => {
+    if (error?.code === '42P01') {
+      // 테이블 미적용 — pending 유지, 마이그 적용 후 flush 가 복구.
+      console.warn('[sync] book_quote_highlights 테이블 미적용 — 마이그 적용 후 자동 동기화');
+      return { id: quoteId, status: 'error', error, reason: 'table_missing' };
+    }
+    if (error?.code === '42501') {
+      // RLS 영구 거부 — outbox 제거 (무한 루프 차단, comments 패턴). Dexie 보존.
+      try { await setHighlightPendingSync(quoteId, 0); } catch (_) { /* 무시 */ }
+      console.warn('[sync] 하이라이트 RLS 거부 — outbox 제거:', { quote_id: quoteId });
+      return { id: quoteId, status: 'error', error, reason: 'rls_denied' };
+    }
+    console.error('[sync] pushHighlight 실패:', formatError(error));
+    try { await setHighlightPendingSync(quoteId, 1); } catch (_) { /* 무시 */ }
+    return { id: quoteId, status: 'error', error };
+  };
+  try {
+    if (empty) {
+      const { error } = await supabase.from('book_quote_highlights').delete().match({ quote_id: quoteId, owner_id: owner });
+      if (error) return await onError(error);
+      await db.quote_highlights.delete(quoteId); // 톰스톤 제거
+      return { id: quoteId, status: 'ok', op: 'delete' };
+    }
+    const { error } = await supabase.from('book_quote_highlights').upsert(
+      { quote_id: quoteId, owner_id: owner, marks: row.marks, updated_at: row.updated_at || new Date().toISOString() },
+      { onConflict: 'quote_id,owner_id' },
+    );
+    if (error) return await onError(error);
+    try { await setHighlightPendingSync(quoteId, 0); } catch (_) { /* 무시 */ }
+    return { id: quoteId, status: 'ok' };
+  } catch (e) {
+    console.error('[sync] pushHighlight 예외:', formatError(e));
+    try { await setHighlightPendingSync(quoteId, 1); } catch (_) { /* 무시 */ }
+    return { id: quoteId, status: 'error', error: e };
+  }
+}
+
+export function queueUploadHighlight(quoteId) {
+  if (!quoteId) return;
+  const existing = _highlightTimers.get(quoteId);
+  if (existing) clearTimeout(existing);
+  const t = setTimeout(() => {
+    _highlightTimers.delete(quoteId);
+    pushHighlight(quoteId);
+  }, UPLOAD_DEBOUNCE_MS);
+  _highlightTimers.set(quoteId, t);
+}
+
+export async function flushPendingHighlightsFromDexie() {
+  if (!supabase) return { count: 0, reason: 'no_supabase', results: [] };
+  const db = globalThis.bookDB;
+  if (!db) return { count: 0, reason: 'no_db', results: [] };
+  let pending;
+  try { pending = await listPendingHighlights(); }
+  catch (e) { return { count: 0, reason: 'list_failed', error: e, results: [] }; }
+  if (!pending.length) return { count: 0, results: [] };
+  const results = await Promise.all(pending.map((p) => pushHighlight(p.quote_id)));
+  const recovered = results.filter((r) => r.status === 'ok').length;
+  if (recovered > 0) console.info(`[sync] flush highlights — ${recovered}/${pending.length} 복구`);
+  return { count: pending.length, recovered, results };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -381,6 +481,9 @@ export const Sync = {
   pushComment,
   queueUploadComment,
   flushPendingCommentsFromDexie,
+  pushHighlight,
+  queueUploadHighlight,
+  flushPendingHighlightsFromDexie,
   startRealtime,
   stopRealtime,
   onRealtimeChange,

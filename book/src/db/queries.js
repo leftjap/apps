@@ -49,6 +49,11 @@ function enqueueCommentSync(id) {
   if (sync && typeof sync.queueUploadComment === 'function') sync.queueUploadComment(id);
 }
 
+function enqueueHighlightSync(quoteId) {
+  const sync = globalThis.bookSync;
+  if (sync && typeof sync.queueUploadHighlight === 'function') sync.queueUploadHighlight(quoteId);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // quotes — read
 // ═══════════════════════════════════════════════════════════════════════════
@@ -294,14 +299,28 @@ export async function getHighlightsFor(quoteIds) {
   return Object.fromEntries(rows.map((r) => [r.quote_id, r.marks || []]));
 }
 
-/** marks 저장 — 빈 배열이면 행 삭제. */
-export async function setHighlights(quoteId, marks) {
-  if (!marks || !marks.length) {
-    await db().quote_highlights.delete(quoteId);
-    return [];
-  }
-  await db().quote_highlights.put({ quote_id: quoteId, marks, updated_at: nowIso() });
-  return marks;
+/** marks 저장 + 서버 업로드 큐 등록. 빈 배열 = 톰스톤(marks []) — 서버 delete 후 push 가 로컬 행 제거. */
+export async function setHighlights(quoteId, marks, ownerId) {
+  const next = marks || [];
+  await db().quote_highlights.put({
+    quote_id: quoteId, marks: next, owner_id: ownerId, updated_at: nowIso(), pending_sync: 1,
+  });
+  enqueueHighlightSync(quoteId);
+  return next;
+}
+
+/** pending_sync 플래그 설정 (sync.js 호출). updated_at 갱신 안 함. */
+export async function setHighlightPendingSync(quoteId, value) {
+  const flag = value ? 1 : 0;
+  const existing = await db().quote_highlights.get(quoteId);
+  if (!existing) return null;
+  await db().quote_highlights.put({ ...existing, pending_sync: flag });
+  return flag;
+}
+
+/** pending_sync=1 하이라이트 (오프라인/마이그 전 → flush 대상). */
+export async function listPendingHighlights() {
+  return await db().quote_highlights.where('pending_sync').equals(1).toArray();
 }
 
 export const Queries = {
@@ -332,9 +351,11 @@ export const Queries = {
   // books
   upsertBook,
   listBooks,
-  // highlights (로컬 전용)
+  // highlights (본인 행 서버 동기화 — book_quote_highlights)
   getHighlightsFor,
   setHighlights,
+  setHighlightPendingSync,
+  listPendingHighlights,
 };
 
 if (typeof window !== 'undefined') {
