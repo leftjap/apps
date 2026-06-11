@@ -174,10 +174,19 @@ async function render(host, params, ctx) {
       hlMap[q.id] = next;
       try { await Queries.setHighlights(q.id, next); }
       catch (err) { console.warn('[library] 하이라이트 저장 실패', err?.message || err); }
+      // 형광펜=핀 — 칠해진 어구는 핀, 마지막 형광펜을 지우면 핀 해제 (사용자 결정 2026-06-12).
+      // 파트너 어구는 제외: 서버가 본인 행만 수정 허용(RLS) — 형광펜(로컬)만 칠해진다.
+      if (!meId || q.owner_id === meId) {
+        const shouldPin = next.length > 0 ? 1 : 0;
+        if ((q.pinned ? 1 : 0) !== shouldPin) {
+          try { await Queries.updateQuote(q.id, { pinned: shouldPin }); q.pinned = shouldPin; }
+          catch (err) { console.warn('[library] 핀 동기화 실패', err?.message || err); }
+        }
+      }
       const sel = window.getSelection();
       if (sel) sel.removeAllRanges();
       closeSelPop();
-      renderMain();
+      onQuoteChange(q); // 사이드바 별·개수 + 북바 핀 카운트까지 갱신
     };
     const sw = (c, name, title) => el('button', {
       class: active === c ? `sw ${name} on` : `sw ${name}`, title,
