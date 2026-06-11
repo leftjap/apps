@@ -58,10 +58,13 @@ def extract_attr_body(blob):
         if idx < 0: continue
         pos = idx + len(prefix)
         b = blob[pos]
+        # typedstream 길이는 little-endian (2026-06-11 실측: 0x81 0x8a 0x02 = 650.
+        # big 으로 읽으면 35330 → blob 범위 초과 → 추출 실패. 최근 macOS 는 m.text 가
+        # NULL 이고 attributedBody 만 있는 메시지가 늘어 이 추출기가 필수 경로)
         if b == 0x81:
-            length = int.from_bytes(blob[pos+1:pos+3], 'big'); pos += 3
+            length = int.from_bytes(blob[pos+1:pos+3], 'little'); pos += 3
         elif b == 0x82:
-            length = int.from_bytes(blob[pos+1:pos+5], 'big'); pos += 5
+            length = int.from_bytes(blob[pos+1:pos+5], 'little'); pos += 5
         elif b < 0x80:
             length = b; pos += 1
         else:

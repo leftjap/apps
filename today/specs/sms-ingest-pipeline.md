@@ -231,6 +231,16 @@ curl -s -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPAB
 
 **(3) Edge Function 로그**: Supabase Dashboard → Functions → sms-card-ingest → Logs
 
+**(3') gateway 도달 여부 — Management API** (Dashboard 없이 터미널에서. 보존 ~1일):
+```bash
+TOK=$(security find-generic-password -l "Supabase CLI" -w | sed 's/^go-keyring-base64://' | base64 -d)
+curl -s -G "https://api.supabase.com/v1/projects/tcbooffrdacfatywdzcm/analytics/endpoints/logs.all" \
+  -H "Authorization: Bearer $TOK" \
+  --data-urlencode "iso_timestamp_start=<ISO_UTC>" --data-urlencode "iso_timestamp_end=<ISO_UTC>" \
+  --data-urlencode "sql=select timestamp, event_message, response.status_code from function_edge_logs cross join unnest(metadata) as m cross join unnest(m.request) as request cross join unnest(m.response) as response where request.url like '%sms-card-ingest%' order by timestamp desc limit 50"
+```
+판독: 도달 0건 = 폰사이드 단절(자동화/단축어/네트워크) · 401/400 = 헤더/바디 문제(함수 코드 도달 전이라 last_used_at 미갱신). 테이블은 `function_edge_logs` (`edge_logs` 아님 — 거긴 REST/auth).
+
 **(4) PWA UI 미반영** (서버엔 있는데 안 보임) — 콘솔에서:
 ```js
 (async()=>{const r=await navigator.serviceWorker.getRegistrations();await Promise.all(r.map(x=>x.unregister()));const k=await caches.keys();await Promise.all(k.map(x=>caches.delete(x)));location.reload();})();
@@ -284,3 +294,4 @@ cd ~/apps/today && node --experimental-vm-modules -e "import('./supabase/functio
 | 2026-06-02 | 소연 신한 자동 ingest 재점검 — **실시간 0건 확정**(count=exact, 신한 1,250건 중). 파서 정상(테스트 34/34, 8244·8579 실본문 파싱 정확), 두 파일(`_shared`↔`src/services`) 동일, 토큰 last_used 6/1. 단축어 앱은 살아있음(현대 6/1 실시간 도달). 원인: 소연 폰 신한 자동화 미작동(발신번호 1544-7200 매칭 0). 발신번호 우월 권장을 신한에 한해 정정 → 키워드 "신한" 권장(reject 8종 + 결제 시그니처 2중 필터로 안전). 8619 실 SMS 미수집(DB 0). 안내문 v3 추가. 트리거 출처는 DB로 구분 불가(단축어가 출처 미인지)임을 명시. **화면 검증**(소연 세션 주입→가계부 로드→폐기): 신한 거래 화면 표시 확인, gap banner 미표시(자동수집<10 임계 미달 = 사각지대) 시각 확정, 신한은 친화명 2종 ≈1,250 + 변형 포함 시 ≈1,425건 |
 | 2026-06-02 | **gap banner 사각지대 fix** (`src/features/expenses.js` `detectIngestGapCards`) — 판정을 "자동수집 ≥10건"에서 "전체거래 ≥10 + 자동수집(`source='sms' && sms_raw`) 이력 ≥1 + 자동수집 7일+ 끊김"으로 변경. 신한 2종 감지, 삼성(자동 0건)·card null(잡문자) 오탐 방지, 기존 동작(자동수집 ≥10 끊김) 호환. 단위테스트 6건 추가(`expenses.test.js`, 114 pass). **소연 실데이터 화면검증**: 수정 전 `gaps=[]` → 수정 후 신한 2종 배너 표시 확인(세션 주입→검증→폐기) |
 | 2026-06-03 | **근본 원인 확정 — keep 데이터·코드 분석** (`~/Downloads/soyoun_app_database.json` + keep GAS `~/code-archive/.scratch/today-source/gas/Code.js`). ① **keep에선 신한 자동수집이 정상이었다**: 체크 24 + Air 10건, `source=sms`, 3/16~5/2. → "신한 처음부터 불가"(2026-05-26 기록)는 **today-native 한정**이고 keep에선 됐음. ② **keep은 발신번호를 안 받음**: `doPost`가 SMS 처리에 `data.smsText`(본문)만 사용(Code.js:697), 카드식별도 본문에서 카드사명+4자리 추출(Code.js:1998). today edge도 본문 기반 → **발신번호는 원래 불필요**. today 전환 때 소연 폰 자동화를 발신번호별로 재구성한 게 신한 끊김 원인(현대는 키워드라 생존). ③ **화면 검증**: 발신번호 없이 신한 본문을 소연 토큰으로 edge POST(Authorization 없이 X-Ingest-Token만) → `200 ok` → `card='신한카드 Air'` 분류 → 소연 가계부 화면 표시 확인 → 검증거래 hard delete. **결론: 해결책은 발신번호가 아니라 본문 전달(키워드 "신한")** |
+| 2026-06-11 | **지오 ingest 정지 진단·복구**. 증상: 당일 해외승인 SMS 도착 + 단축어 실행 목격에도 앱 미반영. 증거: 토큰 last_used 6/5 16:57 정지 + gateway 로그(function_edge_logs) 25h 내 도달 0건 + 수동 POST 200 → **서버 전 구간 정상, 폰 자동화→POST 구간 단절 확정**. 함수 재배포도 5/26 이후 없음(v21). 30일 chat.db↔DB 전수 대조 → 누락 3건 backfill: 6/11 ANTHROPIC USD110(₩148,500) · 6/3 ANTHROPIC USD11.46(₩15,471) · 5/19 후불하이패스 12,800. 쿠팡 5/16 승인+취소 상쇄쌍은 의도적 미복원(취소가 reject라 승인만 넣으면 유령지출). **부분 고장 패턴**: 6/3 해외(02-2000-8100) 누락 ↔ 6/5 국내(1588-8900) 정상, 5/19 KB 누락 ↔ 5/21 KB 정상 — 발신번호 자동화가 산발 flaky하다 6/5 이후 전면 정지 의심. backfill 추출기 typedstream 길이 endian fix('big'→'little', 실측 0x81 0x8a02=650) — 최근 macOS 가 m.text NULL + attributedBody만 저장하는 추세라 추출기가 필수경로화(6/10·6/11 메시지 둘 다 m.text NULL). PWA 표시 e2e 검증(지오 세션 주입→가계부 6/11·6/3 행 + 월합계 갱신 확인). ⚠ backfill 행도 source='sms'라 gap 배너 타이머 리셋됨 — 폰 자동화 미수리 시 다음 감지는 6/18 |
