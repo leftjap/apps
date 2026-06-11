@@ -567,66 +567,94 @@
     display: flex; align-items: center; gap: 14px;
   }
 
-  /* Share toggle — minimal: label + switch only */
+  /* Share 상태 필 — [아바타] 소연과 공유 중 · / 점선 "소연에게 공유" / 읽기 전용 (작업지시서 §4.3) */
   .share {
-    display: flex; align-items: center; gap: 9px;
+    display: inline-flex; align-items: center; gap: 7px;
+    height: 36px; padding: 0 13px 0 9px;
+    border-radius: 999px;
     cursor: pointer;
     user-select: none;
-    font-size: 15px;
-    color: var(--ink-2);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--ink-1);
+    white-space: nowrap;
+    background: oklch(85% 0.05 50 / .35);
+    border: 1px solid var(--crail-base);
   }
-  .share .label { font-weight: 500; }
-  .share .target { color: var(--ink-3); }
-  .share .switch {
-    width: 26px; height: 14px;
-    border-radius: 999px;
-    background: var(--crail-base);
-    position: relative;
+  .share__avatar {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--crail-soft);
+    color: var(--crail-deep);
+    font-size: 10px; font-weight: 700;
+    display: grid; place-items: center;
     flex-shrink: 0;
   }
-  .share .switch::after {
-    content: "";
-    position: absolute;
-    top: 2px; right: 2px;
-    width: 10px; height: 10px;
+  .share__dot {
+    width: 5px; height: 5px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--crail-base);
+    flex-shrink: 0;
   }
-  .share--off .switch { background: oklch(86% 0.006 60); }
-  .share--off .switch::after { right: auto; left: 2px; }
+  .share__off-label, .share__ro-label { display: none; }
+  /* 미공유 — 점선 보더 고스트 */
+  .share--off {
+    background: transparent;
+    border: 1px dashed var(--line);
+    color: var(--ink-3);
+    font-weight: 500;
+    padding: 0 13px;
+  }
+  .share--off .share__avatar, .share--off .share__on-label, .share--off .share__dot { display: none; }
+  .share--off .share__off-label { display: inline; }
+  /* 읽기 전용 — sunken 필, 토글 아님 */
+  .share--readonly {
+    background: var(--sunken);
+    border: 1px solid transparent;
+    color: var(--ink-2);
+    font-weight: 500;
+    cursor: default;
+    pointer-events: none;
+  }
+  .share--readonly .share__on-label, .share--readonly .share__dot { display: none; }
+  .share--readonly .share__ro-label { display: inline; }
+  /* 읽기 전용 글 — 서식(Aa) 숨김 (작업지시서 §4.3) */
+  body[data-doc-readonly="1"] .edit-trigger { display: none; }
 
+  /* 고스트 아이콘 버튼 — 36×36, R10 (작업지시서 §2) */
   .icon-btn {
-    width: 28px; height: 28px;
+    width: 36px; height: 36px;
     padding: 0;
-    border-radius: 8px;
+    border-radius: 10px;
     border: 0;
     background: transparent;
     display: grid; place-items: center;
     cursor: pointer;
-    color: var(--ink-1);
+    color: var(--ink-2);
   }
   .icon-btn:hover { background: var(--hover-bg); }
   .icon-btn .ico { width: 18px; height: 18px; opacity: 0.7; }
 
-  /* 액션 그룹 구분선 — 공유 | Aa·새글 | ⋮ (작업지시서 §4) */
-  .ta-sep { width: 1px; height: 20px; background: var(--line); margin: 0 8px; flex-shrink: 0; }
+  /* 액션 그룹 구분선 — [상태/보조] · [구분선] · [고스트들] · [Primary] (작업지시서 §2) */
+  .ta-sep { width: 1px; height: 18px; background: var(--line); margin: 0 4px; flex-shrink: 0; }
 
-  /* 새 글 — 라벨 단 알약 (크레일 아웃라인). 모호한 + 아이콘 대신 (작업지시서 §4) */
+  /* 새 글 — Primary 버튼: H36, R10, ink-1 솔리드 + 흰 텍스트. 화면당 1개 (작업지시서 §2) */
   .new-doc-btn {
-    display: inline-flex; align-items: center; gap: 5px;
-    height: 32px; padding: 0 13px 0 10px;
-    border: 1px solid var(--crail-base);
-    border-radius: 8px;
-    background: transparent;
-    color: var(--crail-base);
-    font-family: inherit; font-size: 13px; font-weight: 600;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; padding: 0 15px 0 12px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--ink-1);
+    color: #fff;
+    font-family: inherit; font-size: 13.5px; font-weight: 600;
     cursor: pointer;
     flex-shrink: 0;
     white-space: nowrap;
-    transition: background .15s ease, color .15s ease;
+    box-shadow: 0 1px 2px rgba(20,18,14,.18);
+    transition: opacity .15s ease;
   }
-  .new-doc-btn:hover { background: var(--crail-base); color: #fff; }
-  .new-doc-btn .ico { width: 17px; height: 17px; }
+  .new-doc-btn:hover { opacity: .88; }
+  .new-doc-btn .ico { width: 16px; height: 16px; }
 
   /* 가계부 — 거래 추가 버튼 (별 컴포넌트, 그대로 유지) */
   .icon-btn--accent {
@@ -664,16 +692,16 @@
     padding: 32px 4px 0;
     /* Wave 11.7.2 — overflow: hidden 제거. 자식 (이미지·긴 본문) 이 article 영역 초과 시 잘리던 회귀 fix.
        #mainView (overflow-y: auto) 가 스크롤 처리 — article 자체는 자연 height. */
-    max-width: 720px;
+    max-width: 600px;   /* 본문 칼럼 600px 중앙 (작업지시서 §4.1) */
     margin: 0 auto;
     width: 100%;
   }
   .doc__h1 {
-    font-size: 29px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
     margin: 0 0 10px;
-    line-height: 1.3;
+    line-height: 1.25;
     outline: none;
   }
   .doc__h1[contenteditable]:empty::before {
@@ -685,24 +713,26 @@
     color: var(--ink-4);
   }
   .doc__meta {
-    font-family: var(--font-mono);
-    font-size: 11px;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    font-weight: 500;
     color: var(--ink-3);
     margin-bottom: 26px;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--line-soft);
     letter-spacing: -0.01em;
   }
-  .doc__meta .who { color: var(--crail-deep); }   /* 공유자(소연) — 본문·사이드바 crail-deep 통일 (작업지시서 §3·§4) */
+  .doc__meta .who { color: var(--crail-deep); font-weight: 600; }   /* 작성자명만 crail-deep (작업지시서 §4.1) */
   .doc__meta .save {
     color: var(--ink-3);
   }
   .doc__meta .sep {
-    margin: 0 8px;
+    margin: 0 7px;
     color: var(--ink-4);
+    font-size: 10px;
   }
   .doc__p {
-    font-size: 16px;
+    font-size: 15.5px;
     line-height: 1.85;
     margin: 0 0 14px;
     color: var(--ink-1);
@@ -713,7 +743,7 @@
     border-left: 2px solid var(--crail-base);
     padding: 4px 0 4px 16px;
     margin: 18px 0;
-    font-size: 16px;
+    font-size: 15.5px;
     line-height: 1.85;
     color: var(--ink-2);
     position: relative;
@@ -1629,48 +1659,210 @@
   }
 
   /* ============ Bottom toolbar (입력창 — 댓글) ============ */
-  .bottombar {
-    margin: 16px auto 0;
-    max-width: 720px;
-    width: 100%;
+  /* ============ 본문 + 대화 패널 2칼럼 (작업지시서 §4) ============ */
+  .main__body {
+    flex: 1;
+    display: flex;
+    gap: 28px;
+    min-height: 0;
+  }
+  body.is-admin .main__body { display: none; }
+
+  /* 대화 패널 — 348px 고정, 흰 카드 R18 + float 그림자, 메인과 분리되어 떠 있음 (§4.1) */
+  .convo {
+    width: 348px;
+    flex: none;
+    display: none;
+    flex-direction: column;
+    min-height: 0;
+    margin: 18px 0 4px;
+    background: var(--sidebar);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-float);
+    padding: 20px 18px 14px;
+  }
+  body[data-convo="1"] .convo { display: flex; }
+  body.is-expense .convo, body.is-admin .convo { display: none; }
+
+  /* 헤더 — "대화" + 건수. 구분선 없음, 여백으로만 구획 (§4.2) */
+  .convo__head {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink-1);
+    letter-spacing: -0.01em;
+    padding: 0 4px 14px;
+    flex-shrink: 0;
+  }
+  .convo__count {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-4);
+    margin-left: 3px;
+  }
+  .convo__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 2px 4px 14px;
+    scrollbar-width: none;
+  }
+  .convo__list::-webkit-scrollbar { display: none; }
+
+  /* 날짜 구분 — 가운데 정렬 모노 10px 텍스트만, 선 없음 (§4.2) */
+  .cv-day {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    color: var(--ink-4);
+    padding: 6px 0 2px;
+    flex-shrink: 0;
   }
 
+  /* 사람 댓글 — 배경 없음, 아바타 24px + 이름/시각 + 본문 13.5px (§4.2) */
+  .cv-msg {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+  }
+  .cv-msg__avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 10.5px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .cv-msg__avatar--me { background: var(--sunken); color: var(--ink-2); border: 1px solid var(--line); }
+  .cv-msg__avatar--partner { background: var(--crail-soft); color: var(--crail-deep); }
+  /* 클로드 아바타 — crail 원형 + 흰 8방향 스파크 (별 4꼭지 금지, §4.2) */
+  .cv-msg__avatar--ai { background: var(--crail-base); color: #fff; }
+  .cv-msg__avatar--ai svg { width: 11px; height: 11px; }
+  .cv-msg__main { flex: 1; min-width: 0; }
+  .cv-msg__head {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-bottom: 3px;
+  }
+  .cv-msg__name {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-1);
+    white-space: nowrap;
+  }
+  .cv-msg__time {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-4);
+    white-space: nowrap;
+  }
+  .cv-msg__body {
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: var(--ink-1);
+    white-space: pre-wrap;
+    word-break: break-word;
+    text-wrap: pretty;
+  }
+  .cv-msg__del {
+    background: transparent; border: 0; padding: 0;
+    font-size: 10.5px;
+    color: var(--ink-4);
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity .12s ease;
+    flex-shrink: 0;
+  }
+  .cv-msg:hover .cv-msg__del, .cv-msg:focus-within .cv-msg__del { opacity: 1; }
+  .cv-msg__del:hover { color: var(--danger); }
+
+  /* 클로드 자동 댓글 — sunken 카드 R12 + "자동" 태그 + 2줄 클램프 (§4.2) */
+  .cv-msg--ai .cv-msg__card {
+    background: var(--sunken);
+    border-radius: 12px;
+    padding: 10px 12px 9px;
+  }
+  .ai-tag {
+    display: inline-flex; align-items: center;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    color: var(--ink-4);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 1.5px 7px;
+    white-space: nowrap;
+  }
+  .cv-msg__body.is-clamped {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .cv-msg__more {
+    background: transparent; border: 0; padding: 4px 0 0;
+    display: inline-flex; align-items: center; gap: 3px;
+    font-family: var(--font-sans);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--ink-3);
+    cursor: pointer;
+  }
+  .cv-msg__more:hover { color: var(--ink-1); }
+  .cv-msg__more[hidden] { display: none; }
+
+  .convo__empty {
+    padding: 26px 4px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--ink-4);
+  }
+
+  /* 컴포저 — 하단 고정 H44, 우측 32px 잉크 원형 전송 (§4.2) */
+  .convo__composer { flex-shrink: 0; padding-top: 6px; }
   .composer {
     background: var(--sidebar);
     border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 11px 12px 11px 18px;
-    display: flex; align-items: center; gap: 12px;
+    border-radius: 13px;
+    height: 44px;
+    padding: 0 6px 0 14px;
+    display: flex; align-items: center; gap: 10px;
     box-shadow: var(--shadow-inset-soft);
     transition: border-color .16s, box-shadow .16s;
   }
-  /* 포커스 시 크레일 보더 + ring (작업지시서 §4) */
   .composer:focus-within { border-color: var(--crail-base); box-shadow: 0 0 0 3px rgba(217,119,87,.16); }
-  .composer > .ico { width: 19px; height: 19px; color: var(--ink-4); opacity: 1; flex-shrink: 0; }
   .composer input {
     flex: 1;
+    min-width: 0;
     border: 0; outline: 0; background: transparent;
     font-family: var(--font-sans);
-    font-size: 15px;
+    font-size: 13.5px;
     color: var(--ink-1);
     padding: 7px 0;
   }
   .composer input::placeholder { color: var(--ink-4); }
-  /* 원형 전송 버튼 — 입력 전 고스트 → 입력 시 크레일 (작업지시서 §4) */
   .composer__send {
-    width: 34px; height: 34px; border-radius: 50%; border: 0; flex-shrink: 0; cursor: pointer;
-    display: grid; place-items: center; background: var(--sunken); color: var(--ink-4);
-    transition: background .18s, color .18s, transform .18s;
+    width: 32px; height: 32px; border-radius: 50%; border: 0; flex-shrink: 0; cursor: pointer;
+    display: grid; place-items: center; background: var(--ink-1); color: #fff;
+    transition: transform .18s, opacity .18s;
   }
-  .composer__send .ico { width: 16px; height: 16px; opacity: 1; }
-  .composer.has-text .composer__send { background: var(--crail-base); color: #fff; }
-  .composer.has-text .composer__send:hover { transform: scale(1.06); }
-  .composer.has-text .composer__send:active { transform: scale(.94); }
+  .composer__send .ico { width: 15px; height: 15px; opacity: 1; }
+  .composer__send:hover { transform: scale(1.06); }
+  .composer__send:active { transform: scale(.94); }
+  .composer input:disabled ~ .composer__send { opacity: .4; pointer-events: none; }
 
   /* ============ Edit toolbar (상단 편집 도구 뎠라운 리본) ============ */
   .edit-trigger {
-    width: 28px; height: 28px;
-    border-radius: 8px;
+    width: 36px; height: 36px;
+    border-radius: 10px;
     border: 0;
     background: transparent;
     display: grid; place-items: center;
@@ -1749,9 +1941,10 @@
   /* 본문 단일 폰트·사이즈 강제 — 외부 paste 또는 historical h1/h2/h3 가 들어와도
      본문 디폴트로 시각화. plaintext paste handler (entries.js) 와 이중 안전망. */
   .doc__body {
-    font-size: 16px;
+    font-size: 15.5px;   /* 본문 15.5px / 1.85 (작업지시서 §4.1) */
     line-height: 1.85;
     color: var(--ink-1);
+    text-wrap: pretty;
     -webkit-text-size-adjust: 100%;
     /* 긴 URL·끊김 없는 문자열이 가로로 삐져나가지 않게 줄바꿈 — #mainView 가로 스크롤
        (좌우 흔들림) 의 원인 차단. overflow-x:hidden 과 짝 (클리핑 대신 줄바꿈으로 해소). */
@@ -1774,7 +1967,7 @@
   .doc__body li,
   .doc__body blockquote,
   .doc__body span {
-    font-size: 16px !important;
+    font-size: 15.5px !important;
     line-height: 1.85 !important;
     font-weight: inherit !important;
     color: var(--ink-1);
@@ -2526,15 +2719,15 @@
     line-height: 1.6;
   }
 
-  /* 에디터 ⋯ 메뉴 */
+  /* 에디터 ⋯ 메뉴 — 고스트 아이콘 버튼 36×36 (작업지시서 §2) */
   .doc-more-wrap { position: relative; }
   .doc-more-btn {
     display: grid;
     place-items: center;
-    width: 28px; height: 28px;
+    width: 36px; height: 36px;
     background: transparent;
     border: 0;
-    border-radius: 6px;
+    border-radius: 10px;
     color: var(--ink-3);
     cursor: pointer;
     transition: background .12s ease, color .12s ease;
@@ -2611,8 +2804,6 @@
   }
 
   /* ============ 라우트별 영역 hide (사용자 피드백 #1, #5) ============ */
-  /* 댓글창 (composer) — 가계부 view 한정 hide */
-  body.is-expense .bottombar { display: none; }
   /* Wave 11.6.10 — 가계부 view 에서 edit-toolbar 자체도 hide (이전 카테고리에서 켜놨던 toolbar 잔존 차단) */
   body.is-expense .edit-toolbar { display: none; }
 
@@ -2662,7 +2853,6 @@
   body.is-admin .top-actions__navi { display: none; }
   body.is-admin .top-actions__expense { display: none; }
   body.is-admin #mainView { display: none; }
-  body.is-admin .bottombar { display: none; }
   body.is-admin .edit-toolbar { display: none; }
   body.is-admin .edit-trigger { display: none; }
   body.is-admin .share { display: none; }
@@ -3169,6 +3359,15 @@
 
     /* 본문 가독성 — 모바일에선 max-width 자동, 좌우 padding 최소 */
     .doc { max-width: 100%; }
+
+    /* 대화 패널 — 모바일 임시 스택 (페이지 2 에서 바텀 시트로 전환) */
+    .main__body { flex-direction: column; gap: 0; }
+    body[data-convo="1"] .convo {
+      width: 100%;
+      margin: 10px 0 0;
+      max-height: 42dvh;
+      padding: 14px 14px 10px;
+    }
 
     /* 폰트 — 사용자 의도 "한 사이즈씩" +1 일괄. 메타(≤12px) 보존.
        모바일에서 .doc__body 직접 텍스트 노드와 <div> 래퍼 단락이 다른 폰트로 보이는
@@ -4286,23 +4485,19 @@
       </div>
 
       <div class="top-actions">
-        <!-- navi 전용 액션 (글쓰기 카테고리) -->
+        <!-- navi 전용 액션 (글쓰기 카테고리) — [상태 필]·[구분선]·[고스트들]·[Primary 맨 끝] (작업지시서 §2) -->
         <div class="top-actions__navi">
           <div class="share" title="소연에게 공유">
-            <span class="label">소연에게 공유</span>
-            <span class="switch"></span>
+            <span class="share__avatar">소</span>
+            <span class="share__on-label label">소연과 공유 중</span>
+            <span class="share__dot switch"></span>
+            <span class="share__off-label">소연에게 공유</span>
+            <span class="share__ro-label">소연이 공유한 글 · 읽기 전용</span>
           </div>
           <span class="ta-sep"></span>
           <button id="editTrigger" class="edit-trigger" title="편집 도구" aria-pressed="false">
             <span class="edit-trigger__label" aria-hidden="true">Aa</span>
           </button>
-          <button class="new-doc-btn" id="newDocBtn" title="새 글 쓰기">
-            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-              <path d="M8 3.5v9M3.5 8h9"/>
-            </svg>새 글
-          </button>
-          <span class="ta-sep"></span>
-          <!-- Wave 11.6.7 — 글 메뉴(⋮) 가장 우측으로 이동 (사용자 의도) -->
           <div class="doc-more-wrap">
             <button class="doc-more-btn" id="docMoreBtn" type="button" title="글 메뉴" aria-haspopup="true" aria-expanded="false">
               <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
@@ -4323,6 +4518,11 @@
               </div>
             </div>
           </div>
+          <button class="new-doc-btn" id="newDocBtn" title="새 글 쓰기">
+            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M8 3.5v9M3.5 8h9"/>
+            </svg>새 글
+          </button>
         </div>
 
         <!-- 가계부 전용 액션 ([피드][통계][검색][+]) -->
@@ -4431,33 +4631,47 @@
       </div>
     </div>
 
-    <!-- Main view — 카테고리에 따라 doc 또는 expense view 또는 empty state -->
-    <div id="mainView"></div>
+    <!-- 본문 + 대화 패널 2칼럼 (시안 01 — 본문 600px 중앙 + 우측 348px 대화 카드) -->
+    <div class="main__body">
+      <!-- Main view — 카테고리에 따라 doc 또는 expense view 또는 empty state -->
+      <div id="mainView"></div>
+
+      <!-- 대화 패널 — 글 전체에 대한 단일 타임라인 (작업지시서 §4.2) -->
+      <aside class="convo" id="convoPanel" aria-label="대화">
+        <div class="convo__head">대화 <span class="convo__count" id="convoCount"></span></div>
+        <div class="convo__list" id="convoList"></div>
+        <div class="convo__composer">
+          <div class="composer">
+            <input type="text" placeholder="댓글을 남겨보세요…" />
+            <button class="composer__send" type="button" title="보내기" aria-label="댓글 보내기">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
 
     <!-- Admin view — Wave 11.8 사용자별 매핑 (picker / brand / alias). admin.js 가 wire. -->
     <div id="adminView" hidden>
       <div id="adminBody" class="admin-body"></div>
     </div>
 
-    <!-- Bottom toolbar — 댓글 입력창 -->
-    <div class="bottombar">
-      <div class="composer">
-        <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 4h10v7H7l-3 2.5V11H3V4z"/>
-        </svg>
-        <input type="text" placeholder="댓글을 남겨보세요" />
-        <button class="composer__send" type="button" title="보내기" aria-label="댓글 보내기">
-          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 19V6"/><path d="M6.5 11.5L12 6l5.5 5.5"/>
-          </svg>
-        </button>
-      </div>
-    </div>
-
   </main>
 </div>
 
 <script>
+  // 탑바 날짜 크럼 — 현재 날짜 동적 표시 (fixture 하드코딩 04·27 stale 방지)
+  (function(){
+    const md = document.querySelector('.crumb__date-md');
+    const day = document.querySelector('.crumb__date-day');
+    const now = new Date();
+    const p2 = (n) => String(n).padStart(2, '0');
+    if (md) md.textContent = `${p2(now.getMonth() + 1)} · ${p2(now.getDate())}`;
+    if (day) day.textContent = ` · ${['SUN','MON','TUE','WED','THU','FRI','SAT'][now.getDay()]}`;
+  })();
+
   // 편집 도구 토글 — 클릭시 상단 툴바 슬라이드 다운 / 올라감
   (function(){
     const trig = document.getElementById('editTrigger');

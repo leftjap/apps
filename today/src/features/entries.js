@@ -96,6 +96,16 @@ export function buildMockMeta(row) {
   return `${wc}단어<span class="sep">·</span>원고지 ${sheets}매`;
 }
 
+/** ISO → 메타 줄 저장시각 ('6월 4일 21:07' / 오늘이면 'HH:MM'). 작업지시서 §4.1. */
+export function formatMetaTime(iso, now = new Date()) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const hm = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  if (d.toDateString() === now.toDateString()) return hm;
+  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${hm}`;
+}
+
 /**
  * 카테고리별 본인 글 누적 번호 (사용자 요청 2026-05-12).
  *  - navi/soyoun_navi 그룹: kind === 'navi' && owner_id === userId (소연 글 제외)
@@ -259,10 +269,14 @@ export function renderDocFromRow(row, doc = document) {
   if (!view || !row) return false;
   const titleText = row.title || '';
   const readOnly = isReadOnlyRow(row);
-  const partnerName = readOnly ? (USER_ID_TO_DISPLAY_NAME[row.owner_id] || '소연') : '';
-  const meta = readOnly
-    ? `<span class="who">${escapeHtml(partnerName)}</span><span class="sep">·</span>${buildMockMeta(row)}`
-    : buildMockMeta(row);
+  // 메타 줄 — 작성자·단어수·원고지·저장시각. 작성자명만 crail-deep (작업지시서 §4.1).
+  const authorName = USER_ID_TO_DISPLAY_NAME[row.owner_id] || (readOnly ? '소연' : '');
+  const savedAt = formatMetaTime(row.updated_at);
+  const meta = [
+    authorName ? `<span class="who">${escapeHtml(authorName)}</span>` : '',
+    buildMockMeta(row),
+    savedAt ? `<span class="save">${escapeHtml(savedAt)}</span>` : '',
+  ].filter(Boolean).join('<span class="sep">·</span>');
   // Wave 11.6.6 — placeholder 는 CSS `:empty::before` (injectEditorStyles) 로만 표시.
   // 본문 텍스트로 inject 시 typing 시 placeholder 가 사용자 입력과 섞여 partial 저장 → 텍스트 흐름 손상.
   const bodyInner = row.content && row.content.length ? row.content : '';
@@ -312,6 +326,8 @@ export function renderDocFromRow(row, doc = document) {
   // 파트너 공유 글 — ⋯ 메뉴 wrap (article 외부, top-actions 영역) 도 readOnly 동기화
   const moreWrap = doc.querySelector?.('.doc-more-wrap');
   if (moreWrap) moreWrap.dataset.readOnly = readOnly ? '1' : '';
+  // 읽기 전용 글 — 서식(Aa) 숨김용 body 마커 (mocks CSS body[data-doc-readonly] 셀렉터, 리디자인 §4.3)
+  if (doc.body) doc.body.dataset.docReadonly = readOnly ? '1' : '';
   updateCrumbEntryNumber(row, doc);
   updateDeepLinkUrl(row);
   return true;
@@ -479,6 +495,7 @@ export function clearMainViewEmpty(label, doc = (typeof document !== 'undefined'
   const view = doc.getElementById('mainView');
   if (!view) return false;
   view.innerHTML = `<div class="empty-state"><h2 class="empty-state__heading">${escapeHtml(label || '글쓰기')}을(를) 시작하세요</h2></div>`;
+  if (doc.body) doc.body.dataset.docReadonly = '';
   return true;
 }
 
@@ -616,9 +633,7 @@ function injectEditorStyles() {
       30%, 70% { box-shadow: 0 0 0 4px rgba(217, 119, 87, 0.45); }
     }
     /* "전체 보기" 버튼(.sb__more, 화살표 없이 제목+건수) 스타일은 mocks shell CSS 로 이관 (Today 리디자인 §3). */
-    /* 파트너 글 read-only — 작성자만 공유 결정 가능 + 본문 수정 불가.
-       시각: top-actions 의 share 토글 숨김. 메타에 "{이름} 작성 · 읽기 전용" 라벨 노출. */
-    .share.share--readonly { display: none; }
+    /* 파트너 글 read-only — 상태 필 ("소연이 공유한 글 · 읽기 전용") 은 mocks .share--readonly CSS 가 표시 (리디자인 §4.3). */
     .doc[data-read-only="1"] .doc__h1,
     .doc[data-read-only="1"] .doc__body { caret-color: transparent; }
   `;
@@ -1188,6 +1203,8 @@ export function wrapNewArticle(doc = document) {
   // 더보기 메뉴 wrap 의 readonly 마커도 정리 (이전 파트너 글 잔재).
   const moreWrap = doc.querySelector?.('.doc-more-wrap');
   if (moreWrap) moreWrap.dataset.readOnly = '';
+  // 새 글은 항상 본인 글 — Aa 숨김 마커 해제 (이전 파트너 글 잔재 차단)
+  if (doc.body) doc.body.dataset.docReadonly = '';
   // 새 글 placeholder + crumb #N — 본인 카테고리 다음 번호 동적 계산 (사용자 요청 2026-05-12).
   // mocks fixture totalCount stub (#1337) 대신 computeEntryNumber 사용.
   const h1 = article.querySelector?.('.doc__h1');
@@ -2387,10 +2404,7 @@ export async function enterListView(kind, doc = document) {
     _activeMainView = 'list';
     renderListView(kind, rows, doc);
     buildListBreadcrumbExtra(doc);
-    {
-      const composer = doc.querySelector?.('.bottombar .composer');
-      if (composer) composer.style.display = 'none';
-    }
+    // 대화 패널은 comments.js article observer 가 article 부재 감지 → 자동 숨김 (리디자인 §4)
     return true;
   } catch (e) {
     console.warn('[entries] enterListView 실패:', e?.message || e);
@@ -2403,10 +2417,6 @@ export function exitListView(doc = document) {
   _listViewKind = null;
   _listViewRows = null;
   removeListBreadcrumbExtra(doc);
-  {
-    const composer = doc.querySelector?.('.bottombar .composer');
-    if (composer) composer.style.display = '';
-  }
 }
 
 let _listViewClickInstalled = false;
