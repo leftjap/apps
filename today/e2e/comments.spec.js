@@ -54,10 +54,10 @@ test.describe('Wave 11.7.1 comments', () => {
       return { mine, partner };
     });
     expect(result.mine).toContain('data-mine="1"');
-    expect(result.mine).toContain('comment-row__delete');
+    expect(result.mine).toContain('cv-msg__del');
     expect(result.mine).toContain('>나<');
     expect(result.partner).toContain('data-mine="0"');
-    expect(result.partner).not.toContain('comment-row__delete');
+    expect(result.partner).not.toContain('cv-msg__del');
     expect(result.partner).toContain('>소연<');
   });
 
@@ -88,11 +88,11 @@ test.describe('Wave 11.7.1 comments', () => {
       };
     });
     expect(r.empty).toBe('');
-    expect(r.many).toContain('class="doc__comments"');
-    expect(r.many).toContain('class="doc__comments-count">2<');
+    // 리디자인 §4.2 — 대화 패널 타임라인 (.cv-msg) 구조
+    expect(r.many).toContain('class="cv-msg');
     expect(r.many).toContain('data-comment-id="a"');
     expect(r.many).toContain('data-comment-id="b"');
-    expect(r.many).not.toContain('comment-empty');
+    expect(r.many).not.toContain('doc__comments');
   });
 
   test('handleRealtimeCommentChange — table mismatch / entry mismatch', async ({ page }) => {

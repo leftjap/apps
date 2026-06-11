@@ -463,11 +463,17 @@ test.describe('Wave 11.7.3c-2 알림 드롭다운', () => {
       main.id = 'mainView';
       main.innerHTML = `<article class="doc" data-entry-id="${TID}">`
         + `<h1 class="doc__h1">댓글 딥링크 글</h1><div class="doc__meta"></div><div class="doc__body"><p>본문</p></div>`
-        + `<section class="doc__comments"><div class="doc__comments-list">`
-        + `<div class="comment-row" data-comment-id="other-comment"><div class="comment-row__bubble">다른 댓글</div></div>`
-        + `<div class="comment-row" data-comment-id="${CID}"><div class="comment-row__bubble">타겟 댓글</div></div>`
-        + `</div></section></article>`;
+        + `</article>`;
       document.body.appendChild(main);
+      // 리디자인 §4.2 — 댓글은 대화 패널 (#convoPanel > #convoList .cv-msg)
+      document.getElementById('convoPanel')?.remove();
+      const convo = document.createElement('aside');
+      convo.id = 'convoPanel';
+      convo.innerHTML = `<div id="convoList">`
+        + `<div class="cv-msg" data-comment-id="other-comment"><div class="cv-msg__body">다른 댓글</div></div>`
+        + `<div class="cv-msg" data-comment-id="${CID}"><div class="cv-msg__body">타겟 댓글</div></div>`
+        + `</div>`;
+      document.body.appendChild(convo);
       const sb = document.createElement('div');
       sb.innerHTML = `<div id="recentsList"><div class="sb__item sb__item--recent" data-doc-id="${TID}">x</div></div>`;
       document.body.appendChild(sb);
@@ -482,10 +488,10 @@ test.describe('Wave 11.7.3c-2 알림 드롭다운', () => {
       });
       const out = {
         ret,
-        targetHighlighted: !!document.querySelector(`.comment-row[data-comment-id="${CID}"]`)?.classList.contains('notif-comment-highlight'),
-        otherHighlighted: !!document.querySelector('.comment-row[data-comment-id="other-comment"]')?.classList.contains('notif-comment-highlight'),
+        targetHighlighted: !!document.querySelector(`.cv-msg[data-comment-id="${CID}"]`)?.classList.contains('notif-comment-highlight'),
+        otherHighlighted: !!document.querySelector('.cv-msg[data-comment-id="other-comment"]')?.classList.contains('notif-comment-highlight'),
       };
-      main.remove(); sb.remove();
+      main.remove(); sb.remove(); convo.remove();
       if (createdSbTop) { document.getElementById('notifDropdown')?.remove(); sbTop.remove(); }
       globalThis.todayDB = prevDB;
       return out;

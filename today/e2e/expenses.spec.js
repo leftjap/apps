@@ -86,14 +86,15 @@ test.describe('Wave 11.6.3 expenses', () => {
   });
 
   test('patchHeadlineFromRows — strong 텍스트만 갱신 (inline onclick 보존)', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });   // 카운트업 애니 즉시 세팅 (값 검증 안정화)
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const result = await page.evaluate(() => {
       const root = document.createElement('div');
       root.innerHTML = `
         <div class="exp-headline" onclick="origHandler()">
-          <div class="exp-headline-title">4월에는 <strong>0만원</strong> 쓰고 있어요</div>
-          <div class="exp-headline-sub">하루 평균 <strong>0원</strong> 쓰고 있어요</div>
+          <div class="exp-headline-title">4월에는 <strong>0만원</strong> 썼어요</div>
+          <div class="exp-headline-sub">하루 평균 <strong>0원</strong> · 날짜를 누르면 그날 거래가 열려요</div>
         </div>
       `;
       document.body.appendChild(root);
@@ -140,9 +141,10 @@ test.describe('Wave 11.6.3 expenses', () => {
       const result = {
         ok,
         c11Amount: c11?.querySelector('.exp-month-day-amount')?.textContent,
-        c11High: c11?.querySelector('.exp-month-day-amount')?.classList.contains('high'),
+        c11Tier: [...(c11?.classList || [])].find((c) => /^s[1-5]$/.test(c)) || null,
         c11IsZero: c11?.classList.contains('is-zero'),
         c27Amount: c27?.querySelector('.exp-month-day-amount')?.textContent,
+        c27Tier: [...(c27?.classList || [])].find((c) => /^s[1-5]$/.test(c)) || null,
         c27IsZero: c27?.classList.contains('is-zero'),
         c28Amount: c28?.querySelector('.exp-month-day-amount')?.textContent,
         c28IsZero: c28?.classList.contains('is-zero'),
@@ -151,11 +153,13 @@ test.describe('Wave 11.6.3 expenses', () => {
       return result;
     });
     expect(result.ok).toBe(true);
-    expect(result.c11Amount).toBe('1,490,000');
-    expect(result.c11High).toBe(true);
+    // 리디자인 §5.1 — 만원 축약 + 분위수 농도 (큰 거래일수록 높은 tier)
+    expect(result.c11Amount).toBe('149만');
+    expect(result.c11Tier).toBe('s4');
     expect(result.c11IsZero).toBe(false);
-    expect(result.c27Amount).toBe('5,000');
-    // today 는 거래 적어도 is-zero 안 매기는 mocks 정책
+    expect(result.c27Amount).toBe('5천');
+    expect(result.c27Tier).toBe('s2');
+    // 지출 있는 날 — is-zero 아님
     expect(result.c27IsZero).toBe(false);
     // 04-28 거래 0 → is-zero
     expect(result.c28Amount).toBe('');
@@ -405,7 +409,7 @@ test.describe('Wave 11.6.3.2 day popover', () => {
     expect(ok).toBe(true);
   });
 
-  test('patchDayPopoverFromRows — 1건 → 헤더 합계 + 거래 행 (시안 §8)', async ({ page }) => {
+  test('patchDayPopoverFromRows — 1건 → 제목 옆 합계 + 거래 행 (시안 04)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const result = await page.evaluate(() => {
@@ -439,13 +443,13 @@ test.describe('Wave 11.6.3.2 day popover', () => {
     expect(result.count).toBe(1);
     expect(result.date).toContain('4월 12일');
     expect(result.listHtml).toContain('주식회사우아');
+    expect(result.listHtml).toContain('exp-day-row__meta');   // 메타 "카테고리 · 카드명" (시안 04)
     expect(result.listHtml).toContain('11,880');
-    expect(result.sum).toContain('11,880');
-    expect(result.sum).toContain('1건');
+    expect(result.sum).toContain('11,880');                    // 합계만 — 건수 표기는 시안 04 에서 제거
     expect(result.rowCount).toBe(1);
   });
 
-  test('patchDayPopoverFromRows — 2건 → 헤더 합계 합산 (시안 §8)', async ({ page }) => {
+  test('patchDayPopoverFromRows — 2건 → 제목 옆 합계 합산 (시안 04)', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const result = await page.evaluate(() => {
@@ -474,12 +478,11 @@ test.describe('Wave 11.6.3.2 day popover', () => {
       root.remove();
       return data;
     });
-    expect(result.sum).toContain('8,000');
-    expect(result.sum).toContain('2건');
+    expect(result.sum).toContain('8,000');   // 합계만 — 건수 표기는 시안 04 에서 제거
     expect(result.rowCount).toBe(2);
   });
 
-  test('patchDayPopoverFromRows — 0건 시 empty 메시지 + foot 숨김', async ({ page }) => {
+  test('patchDayPopoverFromRows — 시안 04 계약: 제목+합계(잉크) 갱신, 0건 시 빈 리스트', async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('#today-login-card');
     const result = await page.evaluate(() => {
@@ -487,11 +490,8 @@ test.describe('Wave 11.6.3.2 day popover', () => {
       root.innerHTML = `
         <div id="expDayPopover">
           <span class="exp-day-detail__date"></span>
+          <span class="exp-day-detail__sum"></span>
           <div class="expense-list"></div>
-          <div class="exp-day-detail__foot">
-            <span class="exp-day-detail__foot-count"></span>
-            <span class="exp-day-detail__foot-sum"></span>
-          </div>
         </div>
       `;
       document.body.appendChild(root);
@@ -504,16 +504,21 @@ test.describe('Wave 11.6.3.2 day popover', () => {
       const data = {
         applied: r.applied,
         count: r.count,
+        dateHtml: popover.querySelector('.exp-day-detail__date').innerHTML,
+        sumHtml: popover.querySelector('.exp-day-detail__sum').innerHTML,
         listHtml: popover.querySelector('.expense-list').innerHTML,
-        footDisplay: popover.querySelector('.exp-day-detail__foot').style.display,
+        dataDate: popover.dataset.date,
       };
       root.remove();
       return data;
     });
     expect(result.applied).toBe(true);
     expect(result.count).toBe(0);
-    expect(result.listHtml).toContain('이 날의 거래가 없습니다');
-    expect(result.footDisplay).toBe('none');
+    expect(result.dateHtml).toContain('4월 1일');
+    expect(result.dateHtml).toMatch(/[일월화수목금토]요일/);
+    expect(result.sumHtml).toContain('0 원');
+    expect(result.listHtml).toBe('');
+    expect(result.dataDate).toBe('04-01');
   });
 
 });
