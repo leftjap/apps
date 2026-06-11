@@ -850,8 +850,7 @@ async function mountSessionActive(doc, block, session) {
   const exVolText = (v) => (prevExVol > 0
     ? `${v.toLocaleString()} / 직전 ${denom.toLocaleString()}kg`
     : `${v.toLocaleString()} / ${denom.toLocaleString()}kg`);
-  const RMV = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const RMV = prefersReducedMotion();
   // 커밋 카운트업 판정 — 같은 종목 + 직전 렌더 대비 exDoneVol 증가 시만 (탭증감·우스와이프·reload 제외).
   const prevExNum = bar ? Number(bar.dataset.exVol) : NaN;
   const sameEx = bar && bar.dataset.exId === block.exerciseId && Number.isFinite(prevExNum);
@@ -1286,14 +1285,14 @@ function wireSwipeHandlers(doc) {
     const h = heroEl();
     if (!h) return;
     const from = h.style.transform || 'translateX(0)';
-    if (typeof h.animate === 'function') {
+    if (typeof h.animate === 'function' && !prefersReducedMotion()) {
       h.animate([
         { transform: from },
         { transform: 'translateX(6px)', offset: 0.6 },
         { transform: 'translateX(0)' },
       ], { duration: 320, easing: 'cubic-bezier(.2,.8,.3,1)' });
     }
-    h.style.transform = '';
+    h.style.transform = ''; // RM: 즉시 복귀
   };
 
   const onUp = async (e) => {
@@ -2673,11 +2672,18 @@ async function getCurrentBlockAndCursor() {
   return { session, block, blockIdx, cur, effectiveCur };
 }
 
+/** prefers-reduced-motion: reduce 감지 (작업지시서 §10) — 모션 게이트 공통. SSR/미지원 시 false. */
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
 /**
  * 세그먼트 확정 플래시 (작업지시서 §6) — 완료 세그 하단 2px 라인 scaleX 0→1 후 페이드.
- * 확정 색 = 잉크(ink-1). 모든 방향 공통. reduced-motion 은 호출부에서 게이트.
+ * 확정 색 = 잉크(ink-1). 모든 방향 공통. reduced-motion 시 미재생(상태는 mountSessionActive 가 정적 반영).
  */
 function playSegConfirmFlash(doc, idx, dur = 240) {
+  if (prefersReducedMotion()) return;
   try {
     const flash = doc?.getElementById('cardSetDots')?.querySelector(`.seg[data-set-idx="${idx}"] .seg-flash`);
     if (!flash || typeof flash.animate !== 'function') return;
@@ -2710,6 +2716,7 @@ function animNum(from, to, dur, onUpd) {
 
 /** 볼륨 진행바 리딩 엣지 플레어 (작업지시서 §7) — 완료 시 한 번 강하게. reduced-motion 은 호출부 게이트. */
 function flareVolEdge(doc) {
+  if (prefersReducedMotion()) return;
   try {
     const edge = doc?.getElementById('volEdge');
     if (!edge || typeof edge.animate !== 'function') return;
@@ -2726,6 +2733,7 @@ function flareVolEdge(doc) {
  * 정적 over 상태(is-over/broken/태그)는 mountSessionActive 가 담당. reduced-motion 은 호출부 게이트.
  */
 function exRecordBurst(doc) {
+  if (prefersReducedMotion()) return;
   try {
     const burst = doc?.getElementById('volBurst');
     const bar = doc?.getElementById('cardProgressBar');
@@ -2749,6 +2757,7 @@ function exRecordBurst(doc) {
  * 정적 상태(취소선·태그)는 mountSessionActive 가 담당. reduced-motion 은 호출부 게이트.
  */
 function topRecordPulse(doc) {
+  if (prefersReducedMotion()) return;
   try {
     const num = doc?.getElementById('cardSetProgress');
     const tag = doc?.getElementById('cardRecordTag');
@@ -2881,7 +2890,7 @@ export async function handleLeftSwipe(options = {}) {
   const heroVals = doc?.getElementById('cardHeroVals') || swipeArea; // 슬라이드/드래그 대상 = 내부 히어로 값 (완료 칩은 cardSwipeArea 직속 → 같이 안 움직임)
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
-  if (!canAnimate) {
+  if (!canAnimate || prefersReducedMotion()) {
     try { await upsertSession({ ...session, blocks }); }
     catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
@@ -2977,6 +2986,9 @@ export async function handleLeftSwipe(options = {}) {
  *  - 800ms 후 fade-out (opacity 1 → 0, transform 복원)
  */
 function showPrPop(doc, segIdx) {
+  // PR 햅틱 강화 (§9) — 기본 vibrate(10) 대비 강한 패턴. 햅틱은 시각 모션 아님 → RM 무관.
+  try { navigator.vibrate?.([12, 28, 12]); } catch (_) { /* 미지원 silent */ }
+  if (prefersReducedMotion()) return; // RM — PR 팝/글로우 미재생 (PR 표시는 세그의 영구 accent 로 정적 전달).
   const el = doc.getElementById('cardPrPop');
   if (el) {
     if (typeof el.animate === 'function') {
@@ -3003,8 +3015,6 @@ function showPrPop(doc, segIdx) {
       ], { duration: 950, easing: 'ease-out' });
     } catch (_) { /* WAAPI 미지원 graceful */ }
   }
-  // PR 햅틱 강화 (§9) — 기본 vibrate(10) 대비 강한 패턴.
-  try { navigator.vibrate?.([12, 28, 12]); } catch (_) { /* 미지원 silent */ }
 }
 
 /**
@@ -3042,7 +3052,7 @@ export async function handleRightSwipe(options = {}) {
   const heroVals = doc?.getElementById('cardHeroVals') || swipeArea; // 슬라이드/드래그 대상 = 내부 히어로 값 (완료 칩은 cardSwipeArea 직속 → 같이 안 움직임)
   const canAnimate = swipeArea && typeof requestAnimationFrame === 'function';
 
-  if (!canAnimate) {
+  if (!canAnimate || prefersReducedMotion()) {
     try { await upsertSession({ ...session, blocks }); }
     catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
