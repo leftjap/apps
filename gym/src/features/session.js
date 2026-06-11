@@ -2866,8 +2866,11 @@ export async function handleLeftSwipe(options = {}) {
     }
   }
 
-  // (g) PR 판정 (spec §6-11) — cur 유효 + commit 시점만. cur===-1 (advance only) 분기는 PR 발화 없음.
+  // (g) PR 판정 — cur 유효 + commit 시점만. cur===-1 (advance only) 분기는 PR 발화 없음.
+  //   ① e1RM PR (persistSetPR): 통계 기록 + set.pr 영구 마크(renderSetDotHtml accent).
+  //   ② PR 모먼트(팝+세그 crail 글로우+강햅틱): 작업지시서 §9 조건 = "직전 동일 종목 최대 무게 초과" (무게 기반, cardPrChip 과 동일).
   let prResult = null;
+  let prMoment = false;
   if (cur !== -1) {
     const committed = sets[cur];
     if (committed && Number.isFinite(committed.weight) && Number.isFinite(committed.reps)
@@ -2889,6 +2892,18 @@ export async function handleLeftSwipe(options = {}) {
           console.error('[gymSession] handleLeftSwipe PR', e);
         }
       }
+      // §9 PR 모먼트 — 직전 동일 종목 최대 무게 초과 (무게 종목 한정 — cardio/bodyweight 는 weight 0 → 미발화).
+      try {
+        const prevSets = await getPrevSessionLastSets(block.exerciseId);
+        if (Array.isArray(prevSets)) {
+          let prevMax = 0;
+          for (const s of prevSets) {
+            const w = Number(s?.weight) || 0;
+            if ((Number(s?.reps) || 0) > 0 && w > prevMax) prevMax = w;
+          }
+          if (prevMax > 0 && committed.weight > prevMax) prMoment = true;
+        }
+      } catch (_) { /* graceful — prev 기록 없으면 PR 모먼트 없음 */ }
     }
   }
 
@@ -2920,7 +2935,7 @@ export async function handleLeftSwipe(options = {}) {
       return;
     }
     await mountSessionView();
-    if (prResult && prResult.isPR && typeof document !== 'undefined') showPrPop(document, cur);
+    if (prMoment && typeof document !== 'undefined') showPrPop(document, cur);
     return;
   }
 
@@ -2995,7 +3010,7 @@ export async function handleLeftSwipe(options = {}) {
   } catch (_) { /* WAAPI 미지원 graceful */ }
 
   // PR 팝 (mountSessionView 후 — 새 dot 노드에 대해 PR 표시는 이미 적용됨, pop 만 추가)
-  if (prResult && prResult.isPR && typeof document !== 'undefined') {
+  if (prMoment && typeof document !== 'undefined') {
     showPrPop(document, cur);
   }
 }
