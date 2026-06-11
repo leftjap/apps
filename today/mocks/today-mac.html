@@ -1506,10 +1506,17 @@
     color: var(--ink-1);
     letter-spacing: -0.01em;
   }
-  /* ── 일자 상세 — 시안(modal-day) 재구조화: 헤더 합계 + 거래 행 + 점선 추가 (작업지시서 §8) ── */
-  .exp-day-detail .exp-day-detail__date .dow { color: var(--ink-3); font-weight: 400; margin-left: 8px; }
-  .exp-day-detail__sum { margin-top: 6px; font-size: 13px; color: var(--ink-3); white-space: nowrap; font-feature-settings: 'tnum' 1; }
-  .exp-day-detail__sum b { color: var(--crail-base); font-weight: 600; font-size: 15px; }
+  /* ── 일자 상세 모달 — 제목 "5월 11일 월요일" + 합계(잉크색) 인라인 (작업지시서 §5.1, 시안 04) ── */
+  .exp-day-detail__title { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+  .exp-day-detail .exp-day-detail__date .dow { color: var(--ink-2); font-weight: 700; margin-left: 6px; }
+  .exp-day-detail__sum {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+  .exp-day-detail__sum b { color: var(--ink-1); font-weight: 500; font-size: 13px; }
   .exp-day-detail__close {
     width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent;
     color: var(--ink-3); cursor: pointer; display: grid; place-items: center; flex-shrink: 0;
@@ -1517,29 +1524,47 @@
   }
   .exp-day-detail__close:hover { background: var(--hover-bg); color: var(--ink-1); }
   .exp-day-detail__close .ico { width: 18px; height: 18px; }
-  /* 거래 행 — 카테고리·시간 / 가맹점 / 금액 (피드와 동일 시각언어) */
-  .exp-day-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 12px 10px; border-radius: 10px; cursor: pointer; transition: background .12s; }
-  .exp-day-row:hover { background: var(--hover-bg); }
-  .exp-day-row__body { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-  .exp-day-row__head { display: flex; align-items: center; gap: 8px; }
-  .exp-day-row__cat { font-size: 12px; color: var(--ink-3); white-space: nowrap; }
-  .exp-day-row__time { font-size: 12px; color: var(--ink-4); font-feature-settings: 'tnum' 1; display: inline-flex; align-items: center; gap: 6px; }
-  .exp-day-row__time::before { content: ""; width: 3px; height: 3px; border-radius: 50%; background: var(--ink-4); }
-  .exp-day-row__merchant { font-size: 15px; color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* 거래 행 — 지출처 / 메타(카테고리 · 카드명) / 금액 (시안 04) */
+  .exp-day-row { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; padding: 13px 4px; cursor: pointer; transition: background .12s; }
+  .exp-day-row + .exp-day-row { border-top: 1px solid var(--line-soft); }
+  .exp-day-row:hover { background: var(--hover-bg); border-radius: 10px; }
+  .exp-day-row__body { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+  .exp-day-row__merchant { font-size: 14.5px; font-weight: 600; color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .exp-day-row__merchant .exp-row__recurring { margin-left: 4px; color: var(--ink-4); }
-  .exp-day-row__amt { font-size: 15px; color: var(--ink-1); text-align: right; white-space: nowrap; font-feature-settings: 'tnum' 1; letter-spacing: -0.02em; }
+  .exp-day-row__meta { font-size: 11px; color: var(--ink-4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .exp-day-row__amt { font-family: var(--font-mono); font-size: 14px; font-weight: 500; color: var(--ink-1); text-align: right; white-space: nowrap; letter-spacing: -0.01em; }
   .exp-day-row__amt .amt-num { color: var(--ink-1); }
   .exp-day-row__amt .amt-unit { color: var(--ink-3); font-size: 12px; margin-left: 2px; }
-  /* 점선 "이 날에 거래 추가" */
-  .exp-day-add {
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    width: 100%; margin: 8px 0 2px; padding: 12px;
-    border: 1px dashed var(--line); border-radius: var(--r-sm); background: transparent;
-    color: var(--ink-3); font-family: inherit; font-size: 13px; font-weight: 500; cursor: pointer;
-    transition: border-color .14s, color .14s, background .14s;
+  /* 모달 풋터 — 우하단 [닫기 Secondary] [이 날에 거래 추가 Primary] (작업지시서 §5.1) */
+  .exp-day-detail__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 18px;
   }
-  .exp-day-add:hover { border-color: var(--crail-base); color: var(--crail-base); background: rgba(217,119,87,0.05); }
-  .exp-day-add .ico { width: 17px; height: 17px; }
+  .exp-day-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    height: 36px; padding: 0 14px;
+    border-radius: 10px;
+    font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .14s, opacity .14s;
+  }
+  .exp-day-btn--ghost {
+    background: var(--sidebar);
+    color: var(--ink-1);
+    border: 1px solid var(--line);
+  }
+  .exp-day-btn--ghost:hover { background: var(--hover-bg); }
+  .exp-day-btn--pri {
+    background: var(--ink-1);
+    color: #fff;
+    border: 0;
+    box-shadow: 0 1px 2px rgba(20,18,14,.18);
+  }
+  .exp-day-btn--pri:hover { opacity: .88; }
+  .exp-day-btn .ico { width: 15px; height: 15px; }
 
   /* popover 거래 row — 2줄 (금액 + 매출처/카드 메타) */
   .exp-popover-row {
@@ -6393,7 +6418,7 @@
       }
     });
 
-    // ═══ 가계부 캘린더 셀 클릭 → popover (Mac, 셀 우측 fallback 좌측) ═══
+    // ═══ 가계부 캘린더 셀 클릭 → 날짜 모달 (시안 04) ═══
     function openExpDayPopover(cellEl) {
       const popover = document.getElementById('expDayPopover');
       if (!popover) return;
@@ -6406,12 +6431,12 @@
       const dayRows = dayTxns.length
         ? dayTxns.map(t => {
             const merchant = t.brand || t.memo;
-            const timeHtml = t.time ? `<span class="exp-day-row__time">${t.time}</span>` : '';
+            const meta = [t.category, t.card].filter(Boolean).join(' · ');
             return `
               <div class="exp-day-row" data-tx-id="${t.id}" onclick="closeExpDayPopover(); openExpenseModal('edit','${t.id}')">
                 <div class="exp-day-row__body">
-                  <div class="exp-day-row__head"><span class="exp-day-row__cat">${t.category}</span>${timeHtml}</div>
                   <div class="exp-day-row__merchant">${merchant}${t.recurring ? repeatSvg : ''}</div>
+                  <div class="exp-day-row__meta">${meta}</div>
                 </div>
                 <div class="exp-day-row__amt">${formatAmount(t.amount)}</div>
               </div>
@@ -6419,8 +6444,9 @@
           }).join('')
         : '<div class="exp-day-detail__empty">이 날의 거래가 없습니다.</div>';
 
-      popover.querySelector('.exp-day-detail__date').innerHTML = `${sm}월 ${sd}일<span class="dow">${dowName}</span>`;
-      popover.querySelector('.exp-day-detail__sum').innerHTML = `이 날 <b>${daySum.toLocaleString()}원</b> · ${dayTxns.length}건`;
+      popover.dataset.date = _selectedDate;
+      popover.querySelector('.exp-day-detail__date').innerHTML = `${sm}월 ${sd}일<span class="dow">${dowName}요일</span>`;
+      popover.querySelector('.exp-day-detail__sum').innerHTML = `<b>${daySum.toLocaleString('ko-KR')} 원</b>`;
       popover.querySelector('.expense-list').innerHTML = dayRows;
 
       // 셀 selected 클래스 직접 동기화 (renderExpense 호출 X 라 자동 안 됨)
@@ -6700,6 +6726,23 @@
       const pad = n => String(n).padStart(2, '0');
       return `${d.getMonth()+1}월 ${d.getDate()}일 ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     }
+    // 날짜 모달 → "이 날에 거래 추가" — 신규 지출 입력 모달 + 그 날짜 프리셋 (작업지시서 §5.1)
+    // 주의: closeExpDayPopover/openExpenseModal 은 별 IIFE — window 노출분 호출 (SPA monkey-patch 경유)
+    function addExpenseOnPopoverDate() {
+      const popover = document.getElementById('expDayPopover');
+      const ds = popover?.dataset?.date || '';   // 'MM-DD'
+      window.closeExpDayPopover?.();
+      window.openExpenseModal?.('new');
+      const m = ds.match(/^(\d{2})-(\d{2})$/);
+      if (!m) return;
+      // 연도는 현재 보고 있는 월 네비 라벨 기준 (과거 월에서도 정확)
+      const label = document.querySelector('.exp-month-nav-label')?.textContent || '';
+      const ym = label.match(/(\d{4})년/);
+      const year = ym ? Number(ym[1]) : new Date().getFullYear();
+      const now = new Date();
+      _setExpModalDt(new Date(year, Number(m[1]) - 1, Number(m[2]), now.getHours(), now.getMinutes()));
+    }
+    window.addExpenseOnPopoverDate = addExpenseOnPopoverDate;
     function _setExpModalDt(d) {
       const pad = n => String(n).padStart(2, '0');
       const value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -7446,18 +7489,22 @@
 <div id="expDayPopoverOverlay" class="exp-day-popover-overlay" aria-hidden="true"></div>
 <div id="expDayPopover" class="exp-day-detail is-popover" aria-hidden="true" role="dialog" aria-modal="true">
   <div class="exp-day-detail__head">
-    <div>
-      <div class="exp-day-detail__date"></div>
-      <div class="exp-day-detail__sum"></div>
+    <div class="exp-day-detail__title">
+      <span class="exp-day-detail__date"></span>
+      <span class="exp-day-detail__sum"></span>
     </div>
     <button type="button" class="exp-day-detail__close" onclick="closeExpDayPopover()" aria-label="닫기">
       <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
   </div>
   <div class="expense-list"></div>
-  <button type="button" class="exp-day-add" onclick="closeExpDayPopover(); openExpenseModal('new')">
-    <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5.5v13M5.5 12h13"/></svg>이 날에 거래 추가
-  </button>
+  <!-- 우하단 [닫기] [이 날에 거래 추가 Primary] (작업지시서 §5.1) -->
+  <div class="exp-day-detail__actions">
+    <button type="button" class="exp-day-btn exp-day-btn--ghost" onclick="closeExpDayPopover()">닫기</button>
+    <button type="button" class="exp-day-btn exp-day-btn--pri" onclick="addExpenseOnPopoverDate()">
+      <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M8 3.5v9M3.5 8h9"/></svg>이 날에 거래 추가
+    </button>
+  </div>
 </div>
 
 <!-- Spotlight (⌘K) 검색 모달 -->

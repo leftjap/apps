@@ -1445,18 +1445,18 @@ export function dayOfWeekFromMonthDay(monthDay) {
 }
 
 /**
- * popover DOM 패치 — date / list / foot. 1건 이하 시 foot 숨김 (mocks 와 동일 룰).
+ * 날짜 모달 DOM 패치 — 제목 "5월 11일 월요일" + 합계(잉크색) + 거래 리스트 (시안 04).
  * rows.length === 0 시 empty 메시지 (mocks FIXTURE fallback 안 함 — 시안 데이터 노출 방지).
  */
-// 일자 상세 거래 행 — 카테고리·시간 / 가맹점 / 금액 (피드와 동일 시각언어, 작업지시서 §8)
+// 거래 행 — 지출처 / 메타(카테고리 · 카드명) / 금액 (시안 04)
 function dayRowToHtml(r) {
   const id = escapeHtml(r.id);
   const cat = escapeHtml(toCategoryLabel(r.category));
-  const time = r.spent_at ? new Date(r.spent_at).toTimeString().slice(0, 5) : '';
-  const timeHtml = time ? `<span class="exp-day-row__time">${time}</span>` : '';
+  const card = escapeHtml(cardLabelFromValue(r.card, _currentUser?.email) || '');
+  const meta = [cat, card].filter(Boolean).join(' · ');
   const merchant = escapeHtml(r.brand || r.memo || r.merchant || '');
   const recur = r.recurring ? REPEAT_SVG : '';
-  return `<div class="exp-day-row" data-tx-id="${id}" onclick="closeExpDayPopover(); openExpenseModal('edit','${id}')"><div class="exp-day-row__body"><div class="exp-day-row__head"><span class="exp-day-row__cat">${cat}</span>${timeHtml}</div><div class="exp-day-row__merchant">${merchant}${recur}</div></div><div class="exp-day-row__amt">${formatAmount(r.amount_krw || 0)}</div></div>`;
+  return `<div class="exp-day-row" data-tx-id="${id}" onclick="closeExpDayPopover(); openExpenseModal('edit','${id}')"><div class="exp-day-row__body"><div class="exp-day-row__merchant">${merchant}${recur}</div><div class="exp-day-row__meta">${meta}</div></div><div class="exp-day-row__amt">${formatAmount(r.amount_krw || 0)}</div></div>`;
 }
 
 export function patchDayPopoverFromRows({ monthDay, rows = [], doc = (typeof document !== 'undefined' ? document : null), defaultCard = DEFAULT_CARD_LABEL } = {}) {
@@ -1466,12 +1466,14 @@ export function patchDayPopoverFromRows({ monthDay, rows = [], doc = (typeof doc
 
   const [m, d] = monthDay.split('-').map(Number);
   const dowName = dayOfWeekFromMonthDay(monthDay);
+  // "이 날에 거래 추가" 날짜 프리셋용 (mocks addExpenseOnPopoverDate 가 읽음)
+  if (popover.dataset) popover.dataset.date = monthDay;
   const dateEl = popover.querySelector('.exp-day-detail__date');
-  if (dateEl) dateEl.innerHTML = `${m}월 ${d}일<span class="dow">${dowName}</span>`;
-  // 헤더 합계 — "이 날 N원 · N건" (시안 §8, 풋터에서 이관)
+  if (dateEl) dateEl.innerHTML = `${m}월 ${d}일<span class="dow">${dowName ? `${dowName}요일` : ''}</span>`;
+  // 합계 — 잉크색 (작업지시서 §5.1)
   const sum = rows.reduce((s, r) => s + (r.amount_krw || 0), 0);
   const sumEl = popover.querySelector('.exp-day-detail__sum');
-  if (sumEl) sumEl.innerHTML = `이 날 <b>${sum.toLocaleString('ko-KR')}원</b> · ${rows.length}건`;
+  if (sumEl) sumEl.innerHTML = `<b>${sum.toLocaleString('ko-KR')} 원</b>`;
 
   const list = popover.querySelector('.expense-list');
   list.innerHTML = rows.map((r) => dayRowToHtml(r)).join('');
