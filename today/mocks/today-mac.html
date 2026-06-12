@@ -3571,11 +3571,14 @@
       border-radius: 0 var(--r-lg) var(--r-lg) 0;
       transform: translateX(-100%);
       transition: transform .22s ease;
-      z-index: 50;
+      z-index: 70;   /* 바텀 시트(60) 위 — 드로어 드래그/열림 시 시트에 가리지 않게 */
       padding: calc(14px + env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom));
     }
     body[data-drawer-open] .sidebar { transform: translateX(0); }
     body[data-drawer-open] .drawer-backdrop { opacity: 1; pointer-events: auto; }
+    /* 드로어 열림 — 바텀 시트는 backdrop 아래로 (본문과 함께 dim) */
+    body[data-drawer-open] .convo,
+    body[data-drawer-open] .exp-rail { z-index: 30; }
 
     /* 본문 고정 — drawer 는 본문 위로 슬라이드 (오버레이). 본문을 밀면 사이드바·본문 사이
        빈 면이 노출돼 3단처럼 보이는 문제 (아이폰 PWA 피드백 1, 2026-06-12). dim 은 backdrop 담당. */
@@ -3630,6 +3633,9 @@
       display: block;
     }
     .convo__head { padding: 0 4px 8px; }
+    /* peek(닫힘) — 마지막 댓글을 리스트 상단에 정렬할 스크롤 여지 확보 (다댓글 글에서
+       scrollHeight-clientHeight 한계로 정렬 불가하던 문제, 아이폰 피드백 3) */
+    body[data-convo="1"] .convo:not(.is-open) .convo__list { padding-bottom: 60dvh; }
     /* 시트 peek (196px) 에 본문 하단이 가리지 않게 여백 확보 */
     body[data-convo="1"] #mainView { padding-bottom: 208px; }
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
