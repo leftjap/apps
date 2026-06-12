@@ -5072,6 +5072,7 @@
       };
       requestAnimationFrame(() => requestAnimationFrame(align));
       setTimeout(align, 180);   // AI 클램프 재측정 등 늦은 높이 변화 정착 후 재정렬
+      setTimeout(align, 450);   // 닫힘 트랜지션(260ms) 후 최종 정렬 — 추가 직후 닫기 경로 잔차 보정
     });
     // 가계부 타임라인 시트 — 닫힘(peek): 최신 거래(목록 상단)부터 (피드백 5)
     initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', (open) => {
