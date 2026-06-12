@@ -77,6 +77,12 @@ function hideInitialLoadingScreen() {
   const el = typeof document !== 'undefined' && document.getElementById('loadingScreen');
   if (!el || el.classList.contains('hidden')) return;
   requestAnimationFrame(() => el.classList.add('hidden'));
+  // 페이드(0.3s) 후 DOM 에서 완전 제거 — opacity:0 만으론 z9999 전체화면 오버레이가
+  // 무한 애니메이션(bounce/fade)으로 상주해 iOS PWA resume/리페인트 시 잠깐 비칠 수 있음
+  // (로딩화면 깜빡임). display:none 으로 컴포지팅·애니메이션까지 종료.
+  const removeLoader = () => { el.style.display = 'none'; };
+  el.addEventListener('transitionend', removeLoader, { once: true });
+  setTimeout(removeLoader, 360); // transitionend 누락 환경 fallback
 }
 
 // ───────────────────────────────────────────────────────────────────────────
