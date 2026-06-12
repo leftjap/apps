@@ -82,14 +82,22 @@ describe('classifySheetGesture — 결정 시점 제스처 분류 (리스트 스
   it('닫힘 + 아래로 → none (peek 아래로 못 감)', () => {
     expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: false, listScrollTop: 0 })).toBe('none');
   });
-  it('열림 + 아래로 + 리스트 최상단(scrollTop 0) → close', () => {
-    expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: true, listScrollTop: 0 })).toBe('close');
+  it('열림 + 아래로 + 리스트에서 시작 + 리스트 최상단(scrollTop 0) → close', () => {
+    expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: true, listScrollTop: 0, fromList: true })).toBe('close');
   });
-  it('열림 + 아래로 + 리스트 스크롤 중(scrollTop>0) → none (리스트 스크롤 우선)', () => {
-    expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: true, listScrollTop: 50 })).toBe('none');
+  it('열림 + 아래로 + 리스트에서 시작 + 스크롤 중(scrollTop>0) → none (리스트 스크롤 우선)', () => {
+    expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: true, listScrollTop: 50, fromList: true })).toBe('none');
   });
-  it('열림 + 위로 → none (리스트 아래로 스크롤 우선)', () => {
-    expect(classifySheetGesture({ dx: 2, dy: -20, startOpen: true, listScrollTop: 0 })).toBe('none');
+  it('열림 + 아래로 + 핸들·헤더에서 시작(fromList=false) → 리스트 바닥이어도 항상 close', () => {
+    // 사이드바처럼 핸들을 잡고 끌면 리스트 스크롤 위치 무관하게 닫혀야 함 (핵심 수정)
+    expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: true, listScrollTop: 9999, fromList: false })).toBe('close');
+  });
+  it('열림 + 아래로 + 핸들·헤더에서 시작 + 리스트 최상단 → close', () => {
+    expect(classifySheetGesture({ dx: 2, dy: 20, startOpen: true, listScrollTop: 0, fromList: false })).toBe('close');
+  });
+  it('열림 + 위로 → none (fromList 무관, 리스트 아래로 스크롤 우선)', () => {
+    expect(classifySheetGesture({ dx: 2, dy: -20, startOpen: true, listScrollTop: 0, fromList: true })).toBe('none');
+    expect(classifySheetGesture({ dx: 2, dy: -20, startOpen: true, listScrollTop: 0, fromList: false })).toBe('none');
   });
   it('결정 임계 경계: |dy|=6 은 pending 아님(분류 진행)', () => {
     expect(classifySheetGesture({ dx: 0, dy: -6, startOpen: false, listScrollTop: 0 })).toBe('open');

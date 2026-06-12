@@ -48,15 +48,20 @@ export function sheetSnap({ dy, range, elapsedMs, startOpen }) {
  *  - 'pending': 아직 임계 미달
  *  - 'none'   : 시트 제스처 아님 (가로 우세 / peek 아래로 / 리스트 스크롤 우선)
  *  - 'open'   : 닫힘에서 위로 → 여는 드래그
- *  - 'close'  : 열림에서 아래로 & 리스트 최상단 → 닫는 드래그
+ *  - 'close'  : 열림에서 아래로 → 닫는 드래그
+ *
+ * 사이드바 닫기처럼 "핸들·헤더(스크롤 불가 영역)를 잡으면 어디서든 닫힘". 스크롤 조율은
+ * 리스트 위에서 시작한 드래그(fromList)에만 적용 — 리스트가 더 위로 스크롤 가능하면 양보.
+ * (열면 리스트가 바닥으로 가므로, fromList 조율을 핸들에까지 적용하면 핸들로도 못 닫는 버그가 됐음.)
+ * @param {boolean} fromList 터치가 스크롤 리스트 위에서 시작했는지
  * @returns {'pending'|'none'|'open'|'close'}
  */
-export function classifySheetGesture({ dx, dy, startOpen, listScrollTop }) {
+export function classifySheetGesture({ dx, dy, startOpen, listScrollTop, fromList }) {
   const { DECIDE_PX, ANGLE } = SHEET_GESTURE;
   if (Math.abs(dx) < DECIDE_PX && Math.abs(dy) < DECIDE_PX) return 'pending';
   if (Math.abs(dx) > Math.abs(dy) * ANGLE) return 'none'; // 가로 우세 → 시트 무관
   if (!startOpen) return dy < 0 ? 'open' : 'none';
-  // 열림: 리스트가 최상단일 때만 아래로 드래그가 닫기로 engage. 그 외엔 리스트 native 스크롤에 양보.
-  if (dy > 0 && (listScrollTop || 0) <= 0) return 'close';
+  // 열림 + 아래로 → 닫기. 단 리스트 위에서 시작했고(fromList) 더 위로 스크롤 가능하면 리스트 양보.
+  if (dy > 0 && (!fromList || (listScrollTop || 0) <= 0)) return 'close';
   return 'none';
 }
