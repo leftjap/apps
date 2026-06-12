@@ -61,4 +61,18 @@ describe('pullTable — pending_sync 보호', () => {
     const row = await globalThis.bookDB.quote_highlights.get(Q);
     expect(row.marks).toEqual([{ s: 0, e: 9, c: 'p' }]);   // 서버값 반영됨
   });
+
+  it('quotes: pending=1 어구 수정도 pull 로 덮어쓰지 않는다(동일 버그 — 같은 pullTable 경로)', async () => {
+    const QUOTES = { dexie: 'quotes', supabase: 'book_quotes', filterColumn: null };
+    // 로컬: 수정된 어구 (아직 서버 미반영)
+    await globalThis.bookDB.quotes.put({ id: Q, owner_id: ME, book_ref: 'b', text: '수정된 텍스트', pinned: 0, created_at: 'x', updated_at: 'new', deleted_at: null, pending_sync: 1 });
+    // 서버: 옛 텍스트
+    state.serverRows = [{ id: Q, owner_id: ME, book_ref: 'b', text: '옛 텍스트', pinned: false, created_at: 'x', updated_at: 'old', deleted_at: null }];
+
+    await pullTable(QUOTES, globalThis.bookDB, ME);
+
+    const row = await globalThis.bookDB.quotes.get(Q);
+    expect(row.text).toBe('수정된 텍스트');   // 로컬 수정 보존 (서버 옛값에 안 덮임)
+    expect(row.pending_sync).toBe(1);
+  });
 });
