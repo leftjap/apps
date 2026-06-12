@@ -4,87 +4,166 @@
     {
       "name": "study-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev", "--port", "5183"],
+      "runtimeArgs": [
+        "dev",
+        "--port",
+        "5183"
+      ],
       "cwd": "/Users/gio_c/apps/study",
       "port": 5183
     },
     {
       "name": "taste-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "cwd": "/Users/gio_c/apps/taste",
       "port": 5177
     },
     {
       "name": "cue-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "cwd": "/Users/gio_c/apps/cue",
       "port": 5178
     },
     {
       "name": "book-design-ref",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5180", "--directory", "/Users/gio_c/apps/book/design-ref", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5180",
+        "--directory",
+        "/Users/gio_c/apps/book/design-ref",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 5180
     },
     {
       "name": "taste-design-ref",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5181", "--directory", "/Users/gio_c/apps/taste/design-ref", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5181",
+        "--directory",
+        "/Users/gio_c/apps/taste/design-ref",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 5181
     },
     {
       "name": "book-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "cwd": "/Users/gio_c/apps/book",
       "port": 5176
     },
     {
       "name": "book-dev-alt",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev", "--port", "5186"],
+      "runtimeArgs": [
+        "dev",
+        "--port",
+        "5186"
+      ],
       "cwd": "/Users/gio_c/apps/book",
       "port": 5186
     },
     {
       "name": "today-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "cwd": "/Users/gio_c/apps/today",
       "port": 5175
     },
     {
       "name": "today-mocks",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8085", "--directory", "/Users/gio_c/apps/today", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8085",
+        "--directory",
+        "/Users/gio_c/apps/today",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 8085
     },
     {
       "name": "today-redesign-ref",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8086", "--directory", "/Users/gio_c/Downloads/today_redesign_ref/today-redesign", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8086",
+        "--directory",
+        "/Users/gio_c/Downloads/today_redesign_ref/today-redesign",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 8086
     },
     {
       "name": "bookapp-sian-ref",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5184", "--directory", "/Users/gio_c/Downloads/_bookapp_extract/design_handoff_검색/시안", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5184",
+        "--directory",
+        "/Users/gio_c/Downloads/_bookapp_extract/design_handoff_검색/시안",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 5184
     },
     {
       "name": "gym-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev", "--host", "127.0.0.1", "--port", "5176"],
+      "runtimeArgs": [
+        "dev",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5176"
+      ],
       "cwd": "/Users/gio_c/apps/gym",
       "port": 5176
     },
     {
       "name": "gym-mocks",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "5185", "--directory", "/Users/gio_c/apps/gym/mocks", "--bind", "127.0.0.1"],
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5185",
+        "--directory",
+        "/Users/gio_c/apps/gym/mocks",
+        "--bind",
+        "127.0.0.1"
+      ],
       "port": 5185
+    },
+    {
+      "name": "book-preview",
+      "runtimeArgs": [
+        "preview"
+      ],
+      "port": 4176,
+      "cwd": "/Users/gio_c/apps/book",
+      "runtimeExecutable": "pnpm"
     }
   ]
 }
