@@ -264,7 +264,8 @@ function dotsRow(done, total) {
 }
 
 function bottomStrip(state, d) {
-  const langLabel = state.lang === 'math' ? '수학' : state.lang === 'ja' ? '일본어' : '영어';
+  const isMath = state.lang === 'math';
+  const langLabel = isMath ? '수학' : state.lang === 'ja' ? '일본어' : '영어';
   const maxBar = Math.max(...d.pronBars, 1);
   const bars = d.pronBars.map((v, i) => h('i', {
     class: i === d.pronBars.length - 1 ? 'hot' : '',
@@ -281,9 +282,9 @@ function bottomStrip(state, d) {
     ),
     h('div', { class: 'vh-pane' },
       h('div', { class: 'vh-lab' }, `누적 진도 · ${langLabel}`),
-      h('div', { class: 'vh-kv' }, h('span', {}, '배운 표현'), h('b', {}, String(d.cumExpr))),
-      h('div', { class: 'vh-kv' }, h('span', {}, '마스터한 문장'), h('b', {}, String(d.cumMaster))),
-      h('div', { class: 'vh-kv' }, h('span', {}, '총 발화'), h('b', {}, d.cumUtter.toLocaleString())),
+      h('div', { class: 'vh-kv' }, h('span', {}, isMath ? '배운 문제' : '배운 표현'), h('b', {}, String(d.cumExpr))),
+      h('div', { class: 'vh-kv' }, h('span', {}, isMath ? '마스터한 문제' : '마스터한 문장'), h('b', {}, String(d.cumMaster))),
+      h('div', { class: 'vh-kv' }, h('span', {}, isMath ? '총 시도' : '총 발화'), h('b', {}, (d.cumUtter || 0).toLocaleString())),
     ),
     h('div', { class: 'vh-pane' },
       h('div', { class: 'vh-lab' }, '이번 주 학습'),

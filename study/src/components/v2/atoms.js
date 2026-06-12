@@ -35,6 +35,9 @@ export const V_KEYS = `
 @media (prefers-reduced-motion: reduce){
   .v-eq i,.v-draw,.v-bar > i,.v-bar > i::after{animation:none!important}
   .v-bar > i{width:var(--w,100%)}
+  /* 루프(infinite) 데코 애니는 1회만 — breathe/flicker/pulse/halo/sheen/blink/lineprog 등 무한 반복 차단.
+     v-settle/v-grow/v-draw 등 1회 안착(both)은 count 1 유지로 무영향. */
+  .vh *,.vd *,.vs *{animation-iteration-count:1!important}
 }
 `;
 

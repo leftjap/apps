@@ -132,8 +132,9 @@ export function renderDialogueV2(host, state, handlers = {}) {
 
   const speakAll = () => {
     let i = 0;
+    const stop = () => { listenAll?.classList.remove('on'); }; // 재생 종료 시 진행바 애니 정지
     const next = () => {
-      if (i >= lines.length || !window.studySpeech?.speak) return;
+      if (i >= lines.length || !window.studySpeech?.speak) { stop(); return; }
       const ln = lines[i++];
       if (!ln.en) { next(); return; }
       window.studySpeech.speak(ln.en, { lang: ttsLang, speaker: ln.spk, onEnd: next });

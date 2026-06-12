@@ -82,7 +82,8 @@ export function mountSessionNew(host) {
   };
 
   const saveSnapshot = () => {
-    if (state.ended || !window.studyDB || !state.loaded) return;
+    // 데모(?demo=1)는 실 meta('activeSession')에 절대 쓰지 않는다 (격리). 인증 SPA 에서도 안전.
+    if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return;
     saveActiveSession(window.studyDB, {
       mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
@@ -95,6 +96,8 @@ export function mountSessionNew(host) {
 
   const endSession = async (finishedAll) => {
     state.ended = true;
+    // 데모(?demo=1)는 finishSession/persistSummary/clearActiveSession 등 실 DB write 를 일절 하지 않는다.
+    if (isDemoMode()) { window.location.hash = '#/summary'; return; }
     const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
     const durationSec = Math.floor((Date.now() - startTime) / 1000);
     try {

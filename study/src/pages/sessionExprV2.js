@@ -316,8 +316,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       if (state.recording) return;
       state.recording = true; setRecVisual(true);
       setTimeout(() => {
-        state.recording = false; setRecVisual(false);
+        state.recording = false;
         applyScore(Math.min(88 + Math.min(recCount(), 2) * 3, 99), ['ð']);
+        setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
       }, 1000);
       return;
     }
@@ -334,9 +335,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     } else {
       const ctrlR = recCtrl; recCtrl = null;
       const result = await stopAndAnalyze(ctrlR, s.sentence, s);
-      state.recording = false; setRecVisual(false);
-      if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      state.recording = false;
+      if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       applyScore(Number(result?.score) || 0, result?.weakPhonemes);
+      setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
       try {
         await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
         await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);

@@ -127,6 +127,10 @@ export function mountHome(host) {
     state.weekUtter = 0; state.weekPass = 0;
     state.todayNewDone = 0; state.todayReviewDone = 0;
     state.sessionTitle = '';
+    // 데스크톱 v2 하단 스트립 확장 필드 — 언어별 loadStats 가 다시 채우기 전 stale 표시 방지.
+    state.pronBars = []; state.grass = null; state.cumExpr = 0; state.cumUtter = 0;
+    state.cumMaster = 0; state.weekDoneText = ''; state.pronAvg = 0; state.pronDelta = 0;
+    state.stripLeftLabel = undefined; state.stripLeftHead = undefined; state.stripLeftUnit = undefined;
     rerender();
     refreshStats();
   };
@@ -195,11 +199,35 @@ async function loadMathStats(state) {
       cursor = c.toISOString().slice(0, 10);
     } else if (d < cursor) break;
   }
+  // ── 데스크톱 v2 하단 스트립 (수학) — 발화 대신 '문제' 추이 ──
+  const mByDate = {};
+  for (const dk in logs) mByDate[dk] = logs[dk]?.tried || 0;
+  const mPronBars = [];
+  for (let i = 13; i >= 0; i--) {
+    const dt = new Date(today + 'T00:00:00Z'); dt.setUTCDate(dt.getUTCDate() - i);
+    mPronBars.push(mByDate[dt.toISOString().slice(0, 10)] || 0);
+  }
+  const mMonday = (iso) => { const d = new Date(iso + 'T00:00:00Z'); const w = d.getUTCDay(); d.setUTCDate(d.getUTCDate() + (w === 0 ? -6 : 1 - w)); return d.toISOString().slice(0, 10); };
+  const mWeekStart = mMonday(today);
+  const mGrass = []; let mWeekDays = 0, mWeekTried = 0, mWeekPassed = 0;
+  for (let i = 0; i < 7; i++) {
+    const dt = new Date(mWeekStart + 'T00:00:00Z'); dt.setUTCDate(dt.getUTCDate() + i);
+    const iso = dt.toISOString().slice(0, 10);
+    const t = mByDate[iso] || 0;
+    if (t > 0 && iso <= today) { mWeekDays++; mWeekTried += t; mWeekPassed += (logs[iso]?.passed || 0); }
+    mGrass.push(iso === today ? (t > 0 ? 'tg' : 't') : iso > today ? '' : t > 0 ? 'f' : '');
+  }
+  const mCumUtter = Object.values(logs).reduce((s, l) => s + (l.tried || 0), 0);
+  const mCumExpr = Object.values(logs).reduce((s, l) => s + (l.newDone || 0), 0);
   return {
     newCount, reviewCount, totalReview, streak,
     tried: todayLog.tried, passed: todayLog.passed,
     todayNewDone: todayLog.newDone, todayReviewDone: todayLog.reviewDone,
-    bestStreak: null, weekUtter: 0, weekPass: 0, sessionTitle: '',
+    bestStreak: null, weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
+    pronBars: mPronBars, grass: mGrass, cumUtter: mCumUtter, cumExpr: mCumExpr, cumMaster: totalReview,
+    weekDoneText: todayLog.tried > 0 ? `${mWeekDays}일 학습 · 오늘 진행 중` : `${mWeekDays}일 학습`,
+    pronAvg: mWeekTried, pronDelta: 0,
+    stripLeftLabel: '일일 문제 · 14일', stripLeftHead: '이번 주 문제', stripLeftUnit: '문제',
   };
 }
 
@@ -292,7 +320,9 @@ async function loadStats(state) {
       grass.push(iso === todayISO ? (has ? 'tg' : 't') : iso > todayISO ? '' : has ? 'f' : '');
     }
     const cumUtter = logs.reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
-    const cumExpr = logs.reduce((s, l) => s + (l.mode === 'new' ? (l.newSentenceIds?.length || 0) : 0), 0);
+    // newSentenceIds 는 sync 내구(0003) — mode(로컬 전용, sync 소실)에 의존하지 않게 합산.
+    // (newSentenceIds 는 신규 세션에서만 채워지므로 mode 필터 없이도 동일 결과 + 타기기 정합)
+    const cumExpr = logs.reduce((s, l) => s + (l.newSentenceIds?.length || 0), 0);
     const weekDoneText = todayLogs.length > 0 ? `${weekDays}일 학습 · 오늘 진행 중` : `${weekDays}일 학습`;
 
     return {
