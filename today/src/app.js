@@ -61,12 +61,18 @@ export function showAuthenticated() {
     _hashListenerBound = true;
   }
   // 인증 직후 hash 정규화 — `#/<kind>` 또는 `#/<kind>/<num>` 만 허용. 나머지 (#/login 등) → default 카테고리.
+  // try/catch 필수 — syncFromHash 의 sbTarget.click() 이 mock IIFE 를 실행하다 throw 하면
+  // hideInitialLoadingScreen 이 스킵돼 로딩화면(z9999)이 영구 잔존, 드로어 드래그 중 비침.
   const raw = location.hash.replace(/^#\//, '');
   const kindRaw = raw.split('/')[0];
-  if (!ROUTES.includes(kindRaw)) {
-    location.hash = `#/${DEFAULT_ROUTE}`;
-  } else {
-    syncFromHash();
+  try {
+    if (!ROUTES.includes(kindRaw)) {
+      location.hash = `#/${DEFAULT_ROUTE}`;
+    } else {
+      syncFromHash();
+    }
+  } catch (e) {
+    console.warn('[router] 초기 라우팅 실패 (로딩화면은 계속 제거)', e?.message || e);
   }
   hideInitialLoadingScreen();
 }
@@ -83,6 +89,10 @@ function hideInitialLoadingScreen() {
   const removeLoader = () => { el.remove(); };
   el.addEventListener('transitionend', removeLoader, { once: true });
   setTimeout(removeLoader, 360); // transitionend 누락 환경 fallback (rAF·transition 미발화 시)
+  // 느린 기기 콜드스타트 안전망 — 사용자가 boot 중 화면을 터치(드로어 스와이프 등)하면 즉시 제거.
+  // 이 시점이면 app 은 이미 마운트됨(showAuthenticated/showLogin 진입). { once } 로 자동 해제.
+  document.addEventListener('touchstart', removeLoader, { once: true, capture: true, passive: true });
+  document.addEventListener('pointerdown', removeLoader, { once: true, capture: true, passive: true });
 }
 
 // ───────────────────────────────────────────────────────────────────────────
