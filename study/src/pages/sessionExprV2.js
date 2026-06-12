@@ -288,16 +288,45 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     }
   };
 
+  // 점수 → 리빌 적용 (state·DOM·애니). DB 쓰기는 실경로에서만 별도 호출. 데모 시뮬과 단일 출처 공유.
+  let curRing = ring;
+  function applyScore(score, weakPhonemes) {
+    state.lastScore = score; state.tried = (state.tried || 0) + 1;
+    const passed = score >= PASS_THRESHOLD;
+    if (passed) { state.passed = (state.passed || 0) + 1; state.combo = (state.combo || 0) + 1; } else { state.combo = 0; }
+    if (!Array.isArray(state.pronScores)) state.pronScores = [];
+    state.pronScores.push(score);
+    if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
+    bumpRecLog(state, s?.id, score);
+    const newRing = ringEl(score); curRing.replaceWith(newRing); curRing = newRing;
+    ringHost.lastChild.textContent = `직전 점수 · ${recCount()}회 시도`;
+    if (passed) { passChip.style.display = ''; passChip.lastChild.textContent = `PASS · 콤보 ×${state.combo}`; }
+    else passChip.style.display = 'none';
+    refreshDots(); refreshRecWidget();
+  }
+  const setRecVisual = (on) => {
+    recPill.classList.toggle('recing', on); recPill.classList.toggle('pri', !on);
+    recPill.replaceChild(on ? vEq(4) : vIcon(VI.MIC, { size: 14, sw: 2 }), recPill.firstChild);
+    recPill.lastChild.textContent = on ? '녹음 멈추기' : (recCount() > 0 ? '다시 말하기' : '따라 말하기');
+  };
+
   recPill.addEventListener('click', async () => {
+    // 데모(?demo=1&view=session) — 마이크 없이 녹음→리빌 시뮬레이션 (검증용).
+    if (state.demo) {
+      if (state.recording) return;
+      state.recording = true; setRecVisual(true);
+      setTimeout(() => {
+        state.recording = false; setRecVisual(false);
+        applyScore(Math.min(88 + Math.min(recCount(), 2) * 3, 99), ['ð']);
+      }, 1000);
+      return;
+    }
     if (!state.recording) {
-      state.recording = true;
-      recPill.classList.remove('pri'); recPill.classList.add('recing');
-      recPill.lastChild.textContent = '녹음 멈추기'; recPill.replaceChild(vEq(4), recPill.firstChild);
+      state.recording = true; setRecVisual(true);
       const rec = await startMicRecording();
       if (rec.error) {
         state.recording = false; recCtrl = null; state.micBlocked = true;
-        recPill.classList.remove('recing'); recPill.classList.add('pri');
-        recPill.replaceChild(vIcon(VI.MIC, { size: 14, sw: 2 }), recPill.firstChild); recPill.lastChild.textContent = '따라 말하기';
+        setRecVisual(false);
         showRecordToast(recordErrorMessage(rec.error));
         return;
       }
@@ -305,25 +334,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     } else {
       const ctrlR = recCtrl; recCtrl = null;
       const result = await stopAndAnalyze(ctrlR, s.sentence, s);
-      state.recording = false;
-      recPill.classList.remove('recing'); recPill.classList.add('pri');
-      recPill.replaceChild(vIcon(VI.MIC, { size: 14, sw: 2 }), recPill.firstChild); recPill.lastChild.textContent = '다시 말하기';
+      state.recording = false; setRecVisual(false);
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-      const score = Number(result?.score) || 0;
-      state.lastScore = score; state.tried = (state.tried || 0) + 1;
-      const passed = score >= PASS_THRESHOLD;
-      if (passed) { state.passed = (state.passed || 0) + 1; state.combo = (state.combo || 0) + 1; } else { state.combo = 0; }
-      if (!Array.isArray(state.pronScores)) state.pronScores = [];
-      state.pronScores.push(score);
-      if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
-      bumpRecLog(state, s?.id, score);
-      // 점수 링 갱신
-      const newRing = ringEl(score); ring.replaceWith(newRing); ring.remove?.();
-      ringHost.replaceChild(newRing, ringHost.firstChild);
-      ringHost.lastChild.textContent = `직전 점수 · ${recCount()}회 시도`;
-      if (passed) { passChip.style.display = ''; passChip.lastChild.textContent = `PASS · 콤보 ×${state.combo}`; }
-      else passChip.style.display = 'none';
-      refreshDots(); refreshRecWidget();
+      applyScore(Number(result?.score) || 0, result?.weakPhonemes);
       try {
         await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
         await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);

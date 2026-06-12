@@ -186,6 +186,7 @@ export function mountSessionNew(host) {
     state.cards = demoNewCards();
     state.exprExclude = DEMO_EXCLUDE_IDS;
     state.total = state.cards.length;
+    state.demo = true; // sessionExprV2 녹음 시뮬레이션 (마이크 없이 리빌 검증)
     state.micBlocked = true; // 데모 — 진행 게이트 무력화
     const idx = demoView() === 'session' ? 1 : 0;
     state.step = idx + 1;
