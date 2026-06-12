@@ -5008,12 +5008,13 @@
     if (day) day.textContent = ` · ${['SUN','MON','TUE','WED','THU','FRI','SAT'][now.getDay()]}`;
   })();
 
-  // 바텀 시트 공용 컨트롤러 (모바일 ≤768) — 아이폰 PWA 피드백 2~5 (2026-06-12):
-  //  * 시트 어디서든 위로 스와이프 → 열기 (핸들 한정 X, 터치 영역 확대)
-  //  * 핸들·헤더 탭 = 토글 / 핸들·헤더에서 아래로 스와이프 → 닫기
-  //  * 열린 시트 바깥(본문 등) 탭 → 닫기
+  // 바텀 시트 공용 컨트롤러 (모바일 ≤768) — 사이드바 드로어처럼 손가락 1:1 추적 + 관성 snap:
+  //  * 시트 어디서든 위로 스와이프 → 손가락 따라 열림 / 떼면 속도·거리로 snap
+  //  * 열림 상태 아래로 스와이프 → 손가락 따라 닫힘 (리스트 최상단부터 — 리스트 스크롤과 조율)
+  //  * 핸들·헤더 탭 = 토글 / 열린 시트 바깥(본문 등) 탭 → 닫기
+  //  순수 결정 로직은 src/features/sheetGesture.js (window.__todaySheetGesture, vitest 검증).
   (function(){
-    function initMobileSheet(panelId, handleId, headSel, onChange) {
+    function initMobileSheet(panelId, handleId, headSel, listId, peekPx, onChange) {
       const panel = document.getElementById(panelId);
       const handle = document.getElementById(handleId);
       if (!panel || !handle) return;
@@ -5026,29 +5027,82 @@
       };
       const toggle = () => { if (mq.matches) setOpen(!isOpen()); };
       handle.addEventListener('click', toggle);
-      // 헤더 탭 = 토글 (열림 상태에서 다시 탭하면 닫힘 — 피드백 4)
+      // 헤더 탭 = 토글 (열림 상태에서 다시 탭하면 닫힘)
       panel.querySelector(headSel)?.addEventListener('click', (e) => {
         if (!mq.matches) return;
         if (e.target.closest && e.target.closest('button') && !e.target.closest('#' + handleId)) return;
         toggle();
       });
-      // 시트 전체 스와이프 — 닫힘: 위로 24px → 열기 / 열림: 핸들·헤더에서 아래로 24px → 닫기
-      let sy = null, startOpen = false, fromHead = false;
+
+      // ── 손가락 1:1 추적 + 관성 snap (사이드바 드로어 L7872~ 의 세로축 포팅) ──
+      //  range = sheetH - peek. setTrack 이 매 프레임 손가락 따라 transform, touchend 에서 snap.
+      //  순수 로직(window.__todaySheetGesture) 부재 시(standalone mock) 스와이프만 비활성 — 탭은 유지.
+      const G = window.__todaySheetGesture;
+      if (G) {
+      const C = G.SHEET_GESTURE;
+      let sx = 0, sy = 0, t0 = 0, decided = false, swiping = false;
+      let startOpen = false, range = 0, startScrollTop = 0, moveBound = false;
+      const listEl = () => (listId ? document.getElementById(listId) : null);
+
+      const setTrack = (p) => {
+        panel.style.transition = 'none';
+        panel.style.transform = 'translateY(' + (range * (1 - p)) + 'px)';
+      };
+      const snapTo = (open, velocity) => {
+        const dur = velocity > C.VEL_TH ? 0.24 : 0.30;
+        panel.style.transition = 'transform ' + dur + 's ' + C.CURVE;
+        setOpen(open); // 클래스 토글 → CSS transform 목표 변경 + onChange(정렬) 호출
+        const clean = () => { panel.style.transform = ''; };
+        requestAnimationFrame(clean);
+        setTimeout(clean, 32); // raf 누락 환경 fallback
+        setTimeout(() => { panel.style.transition = ''; }, dur * 1000 + 60);
+      };
+
+      const onMove = (e) => {
+        if (!mq.matches || e.touches.length !== 1 || !range) return;
+        const dx = e.touches[0].clientX - sx;
+        const dy = e.touches[0].clientY - sy;
+        if (!decided) {
+          const cls = G.classifySheetGesture({ dx, dy, startOpen, listScrollTop: startScrollTop });
+          if (cls === 'pending') return;
+          decided = true;
+          if (cls === 'none') { range = 0; return; } // 리스트 스크롤 등에 양보 (preventDefault 안 함)
+          swiping = true;
+        }
+        if (!swiping) return;
+        if (e.cancelable) e.preventDefault();
+        setTrack(G.sheetProgress(dy, range, startOpen));
+      };
+      // 리스트 fast-path 보존: drag 후보일 때만 non-passive touchmove 동적 등록 (드로어 패턴).
+      const bindMove = () => { if (moveBound) return; panel.addEventListener('touchmove', onMove, { passive: false }); moveBound = true; };
+      const unbindMove = () => { if (!moveBound) return; panel.removeEventListener('touchmove', onMove, { passive: false }); moveBound = false; };
+
       panel.addEventListener('touchstart', (e) => {
         if (!mq.matches || e.touches.length !== 1) return;
-        sy = e.touches[0].clientY;
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; t0 = Date.now();
+        decided = false; swiping = false;
         startOpen = isOpen();
-        const t = e.target;
-        fromHead = !!(t && t.closest && (t.closest('#' + handleId) || t.closest(headSel)));
+        range = Math.max(0, panel.getBoundingClientRect().height - peekPx);
+        const list = listEl();
+        startScrollTop = list ? list.scrollTop : 0;
+        bindMove();
       }, { passive: true });
-      panel.addEventListener('touchmove', (e) => {
-        if (sy == null) return;
-        const dy = e.touches[0].clientY - sy;
-        if (!startOpen && dy < -24) { setOpen(true); sy = null; }
-        else if (startOpen && dy > 24 && fromHead) { setOpen(false); sy = null; }
+      panel.addEventListener('touchend', (e) => {
+        unbindMove();
+        if (!swiping || !range) { swiping = false; decided = false; return; }
+        const dy = e.changedTouches[0].clientY - sy;
+        const snap = G.sheetSnap({ dy, range, elapsedMs: Date.now() - t0, startOpen });
+        snapTo(snap.targetOpen, snap.velocity);
+        swiping = false; decided = false;
       }, { passive: true });
-      panel.addEventListener('touchend', () => { sy = null; });
-      // 열린 시트 바깥 탭 → 닫기 (피드백 4)
+      panel.addEventListener('touchcancel', () => {
+        unbindMove();
+        if (swiping) snapTo(startOpen, 0);
+        swiping = false; decided = false;
+      }, { passive: true });
+      } // if (G)
+
+      // 열린 시트 바깥 탭 → 닫기
       document.addEventListener('click', (e) => {
         if (!mq.matches || !isOpen()) return;
         if (panel.contains(e.target)) return;
@@ -5061,7 +5115,7 @@
 
     // 댓글 시트 — 열림: 타임라인 맨 아래 / 닫힘(peek): 최신 댓글 첫 줄부터 (피드백 3)
     // 닫힘 정렬은 더블 rAF — peek 패딩(60dvh) 적용 후 scrollTop 설정 (클램프 방지)
-    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', (open) => {
+    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 196, (open) => {
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
@@ -5078,7 +5132,7 @@
       setTimeout(align, 450);   // 닫힘 트랜지션(260ms) 후 최종 정렬
     });
     // 가계부 타임라인 시트 — 닫힘(peek): 최신 거래(목록 상단)부터 (피드백 5)
-    initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', (open) => {
+    initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', 'expRailTlList', 156, (open) => {
       const list = document.getElementById('expRailTlList');
       if (list && !open) list.scrollTop = 0;
     });
