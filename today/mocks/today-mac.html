@@ -7944,7 +7944,7 @@
       const VEL_TH = 0.5;
       const CURVE = 'cubic-bezier(.25,.46,.45,.94)';
 
-      let sx = 0, sy = 0, t0 = 0, decided = false, swiping = false;
+      let sx = 0, sy = 0, sxOrig = 0, t0 = 0, decided = false, swiping = false;
       let startOpen = false, panelW = 0;
       let moveBound = false; // drawer 드래그용 non-passive touchmove 등록 여부 (제스처 중에만 true)
 
@@ -7994,9 +7994,9 @@
           // closed → 우 swipe(open), open → 좌 swipe(close) 만 유효
           if ((!startOpen && dir !== 'right') || (startOpen && dir !== 'left')) { panelW = 0; return; }
           swiping = true;
-          // 결정점부터 추적 — sx 를 현재 손가락 위치로 재기준. 안 하면 데드존(첫 프레임 dx,
+          // 결정점부터 시각추적 — sx 를 현재 손가락 위치로 재기준. 안 하면 데드존(첫 프레임 dx,
           // 빠른 플릭은 수십 px) 만큼 사이드바가 팝인돼 "점프"로 보임. 닫기는 grab 점이 ~6px 만
-          // 이동해 무영향. snap 의 pct/velocity 도 이 결정점 기준(engage 후 실이동) → 더 정확.
+          // 이동해 무영향. (snap 판정은 sxOrig=원래 touchstart 기준 — touchend 참고.)
           sx = e.touches[0].clientX; sy = e.touches[0].clientY;
         }
         if (!swiping) return;
@@ -8027,7 +8027,7 @@
         const x = e.touches[0].clientX;
         // edge swipe 만 — closed 일 때 좌측 edge 안에서만 시작
         if (!startOpen && x > EDGE_PX) return;
-        sx = x; sy = e.touches[0].clientY; t0 = Date.now();
+        sx = x; sxOrig = x; sy = e.touches[0].clientY; t0 = Date.now();
         decided = false; swiping = false;
         panelW = sidebar.getBoundingClientRect().width || (window.innerWidth * 0.85);
         bindDrawerMove(); // 드래그 후보 확정 — 이 제스처 동안만 non-passive touchmove 활성
@@ -8036,7 +8036,9 @@
       document.addEventListener('touchend', (e) => {
         unbindDrawerMove();
         if (!swiping || !panelW) { swiping = false; decided = false; panelW = 0; return; }
-        const dx = e.changedTouches[0].clientX - sx;
+        // snap 판정은 원래 touchstart 기준(sxOrig)으로 — 시각추적용 sx 는 결정점으로 재기준돼
+        // 있어, 그걸로 재면 데드존 거리가 빠져 짧고 빠른 플릭이 spring-back 되던 회귀(리뷰 blocker).
+        const dx = e.changedTouches[0].clientX - sxOrig;
         const elapsed = Date.now() - t0;
         const velocity = elapsed > 0 ? Math.abs(dx) / elapsed : 0;
         const pct = Math.abs(dx) / panelW;
