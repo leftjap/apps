@@ -153,12 +153,22 @@ function scrollListToBottom(doc) {
   const peekClosed = !!(win?.matchMedia?.('(max-width: 768px)')?.matches
     && panel && !panel.classList?.contains?.('is-open'));
   if (peekClosed) {
-    const msgs = list.querySelectorAll?.('.cv-msg') || [];
-    const last = msgs[msgs.length - 1];
-    if (last && typeof last.offsetTop === 'number') {
-      list.scrollTop = Math.max(0, last.offsetTop - 2);
-      return;
-    }
+    // rect 기반 상대 보정 (자기수렴) + 클램프 측정 등 늦은 높이 변화 재정렬 — mocks 시트 컨트롤러와 동일 방식
+    const alignPeek = () => {
+      const msgs = list.querySelectorAll?.('.cv-msg') || [];
+      const last = msgs[msgs.length - 1];
+      if (!last) return;
+      if (typeof last.getBoundingClientRect === 'function' && typeof list.getBoundingClientRect === 'function') {
+        const delta = last.getBoundingClientRect().top - list.getBoundingClientRect().top;
+        list.scrollTop = Math.max(0, list.scrollTop + delta - 2);
+      } else if (typeof last.offsetTop === 'number') {
+        list.scrollTop = Math.max(0, last.offsetTop - 2);
+      }
+    };
+    alignPeek();
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(() => requestAnimationFrame(alignPeek));
+    setTimeout(alignPeek, 200);
+    return;
   }
   list.scrollTop = list.scrollHeight;
 }
