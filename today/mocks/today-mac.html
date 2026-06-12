@@ -7994,10 +7994,15 @@
           // closed → 우 swipe(open), open → 좌 swipe(close) 만 유효
           if ((!startOpen && dir !== 'right') || (startOpen && dir !== 'left')) { panelW = 0; return; }
           swiping = true;
+          // 결정점부터 추적 — sx 를 현재 손가락 위치로 재기준. 안 하면 데드존(첫 프레임 dx,
+          // 빠른 플릭은 수십 px) 만큼 사이드바가 팝인돼 "점프"로 보임. 닫기는 grab 점이 ~6px 만
+          // 이동해 무영향. snap 의 pct/velocity 도 이 결정점 기준(engage 후 실이동) → 더 정확.
+          sx = e.touches[0].clientX; sy = e.touches[0].clientY;
         }
         if (!swiping) return;
         if (e.cancelable) e.preventDefault();
-        const progress = startOpen ? 1 + dx / panelW : dx / panelW;
+        const dxTrack = e.touches[0].clientX - sx; // re-baseline 반영 (결정 직후 0 = 휴지)
+        const progress = startOpen ? 1 + dxTrack / panelW : dxTrack / panelW;
         setTrack(progress);
       };
       const bindDrawerMove = () => {

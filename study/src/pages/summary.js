@@ -11,6 +11,7 @@
 
 import { h } from '../components/d1/dom.js';
 import { pickSize } from '../components/session/index.js';
+import { renderSummaryV2 } from './summaryV2.js';
 
 const FALLBACK = {
   mode: 'normal',
@@ -46,8 +47,8 @@ function pronCls(score) {
 export function mountSummary(host) {
   const data = readSummary();
 
-  // 데스크탑 = D1 재디자인 요약. phone/tablet = 기존 mock 채우기 (아래).
-  if (pickSize() === 'desktop') { renderD1Summary(host, data); return; }
+  // 데스크탑 = C 파이널 v2 요약. phone/tablet = 기존 mock 채우기 (아래).
+  if (pickSize() === 'desktop') { renderSummaryV2(host, data); return; }
 
   const set = (id, val) => { const el = host.querySelector(`#${id}`); if (el) el.textContent = String(val); };
 
