@@ -27,8 +27,6 @@ function nameOf(authorId, meId) {
   return ID_TO_NAME[authorId] || '상대';
 }
 
-let _unsub = null;
-
 function ownerIdsOf(user) {
   return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
 }
@@ -158,13 +156,14 @@ async function build(host, params, ctx) {
 }
 
 function render(host, params, ctx) {
-  // 이전 realtime 리스너 정리 후 재등록 (화면 전환 시 누수 방지).
-  if (_unsub) { try { _unsub(); } catch (_) {} _unsub = null; }
   build(host, params, ctx);
-  _unsub = Sync.onRealtimeChange((payload) => {
+  // realtime 변경 시 재렌더. 화면을 떠날 때 라우터(ctx.onCleanup)가 구독을 해제 →
+  // thread 리스너가 살아남아 다른 화면(library 등)을 덮어쓰던 누수를 차단.
+  const unsub = Sync.onRealtimeChange((payload) => {
     const t = payload?.table;
     if (t === 'book_comments' || t === 'book_quotes') build(host, params, ctx);
   });
+  ctx.onCleanup?.(unsub);
 }
 
 registerScreen('thread', render);

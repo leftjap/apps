@@ -24,6 +24,7 @@ let _user = null;
 let _hashBound = false;
 const _screens = new Map();
 let _actions = {}; // add-edit.js 가 openAdd/openEdit/openDelete 주입 (setActions)
+let _cleanupCurrent = null; // 떠나는 화면의 정리(realtime 구독 해제 등) — 다음 mount 직전 호출
 
 /** 모달 액션 주입 (features/add-edit.js 가 호출). ctx 에 노출됨. */
 export function setActions(actions) {
@@ -125,10 +126,16 @@ export function parseHash() {
 
 function mountCurrent() {
   if (document.body.dataset.authState !== 'in') return;
+  // 떠나는 화면 정리 — realtime 구독 등 전역 리스너 누수 방지. (thread 가 등록한 realtime
+  // 리스너가 살아남아, library 를 보는 중 quote/comment 이벤트에 화면을 통째 교체하던 버그 차단.)
+  if (_cleanupCurrent) {
+    try { _cleanupCurrent(); } catch (e) { console.warn('[router] 화면 정리 실패', e?.message || e); }
+    _cleanupCurrent = null;
+  }
   const { name, params } = parseHash();
   const host = ensureHost();
   const render = _screens.get(name);
-  const ctx = { user: _user, navigate, parseHash, refresh: mountCurrent };
+  const ctx = { user: _user, navigate, parseHash, refresh: mountCurrent, onCleanup: (fn) => { _cleanupCurrent = fn; } };
   // 모달 액션 — ctx 바인딩 (opener 가 user/refresh 접근).
   ctx.openAdd = (opts) => _actions.openAdd && _actions.openAdd(ctx, opts);
   ctx.openEdit = (id) => _actions.openEdit && _actions.openEdit(ctx, id);
