@@ -1,6 +1,6 @@
 // cue v8 — 월 캘린더 히트맵, 열린 고리 마크, 진행 애니메이션, 버튼 통일
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef, useLayoutEffect, useMemo } = React;
 
 /* ---------------- 시간 ---------------- */
 function useNow() {
@@ -17,9 +17,9 @@ const px = (h) => ((Math.min(Math.max(h, T0), T1) - T0) / (T1 - T0)) * 100;
 
 const FLOW = [
   { id: 'gym', name: '운동', t: 7.2, doneAt: 7.21, tlMeta: '07:12 · 41분' },
-  { id: 'lang', name: '어학', t: 13.0 },
-  { id: 'write', name: '글쓰기', t: 19.5 },
-  { id: 'read', name: '독서', t: 22.5 },
+  { id: 'lang', name: '어학', t: 19.0 },
+  { id: 'write', name: '글쓰기', t: 19.65 },
+  { id: 'read', name: '독서', t: 20.15 },
 ];
 const DUE_ID = 'lang';
 
@@ -105,6 +105,60 @@ function Hero({ now, showSec, doneIds }) {
   const rh = Math.floor(remainMin / 60), rm = remainMin % 60;
   const pct = Math.round(((h * 60 + m) / 1440) * 100);
 
+  // 시간대가 몰리면 라벨을 묶는다: 점은 실제 위치에 작게, 라벨은 클러스터 단위로 하나
+  const railRef = useRef(null);
+  const groupRefs = useRef({});
+  const [W, setW] = useState(0);
+  const [lay, setLay] = useState(null);
+
+  useLayoutEffect(() => {
+    const measure = () => railRef.current && setW(railRef.current.clientWidth);
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (railRef.current) ro.observe(railRef.current);
+    return () => ro.disconnect();
+  }, []);
+
+  // 점 간격이 60px 이하면 같은 클러스터
+  const clusters = useMemo(() => {
+    if (!W) return [];
+    const CLUSTER_PX = 60;
+    const out = [];
+    FLOW.forEach((a) => {
+      const x = (px(a.t) / 100) * W;
+      const last = out[out.length - 1];
+      if (last && x - last.xs[last.xs.length - 1] <= CLUSTER_PX) {
+        last.items.push(a);
+        last.xs.push(x);
+      } else {
+        out.push({ key: a.id, items: [a], xs: [x] });
+      }
+    });
+    out.forEach((c) => { c.cx = c.xs.reduce((s, v) => s + v, 0) / c.xs.length; });
+    return out;
+  }, [W]);
+
+  // 클러스터 라벨 폭을 실측해 좌우 스윅 + 클램프
+  useLayoutEffect(() => {
+    if (!W || clusters.length === 0) return;
+    const GAP = 26;
+    const ws = clusters.map((c) => (groupRefs.current[c.key] ? groupRefs.current[c.key].offsetWidth : 60));
+    const lefts = clusters.map((c, i) => c.cx - ws[i] / 2);
+    for (let i = 0; i < lefts.length; i++) {
+      if (i === 0) lefts[i] = Math.max(0, lefts[i]);
+      else lefts[i] = Math.max(lefts[i], lefts[i - 1] + ws[i - 1] + GAP);
+    }
+    for (let i = lefts.length - 1; i >= 0; i--) {
+      const maxL = i === lefts.length - 1 ? W - ws[i] : lefts[i + 1] - GAP - ws[i];
+      lefts[i] = Math.min(lefts[i], maxL);
+      if (i === 0) lefts[i] = Math.max(0, lefts[i]);
+    }
+    setLay({
+      lefts: Object.fromEntries(clusters.map((c, i) => [c.key, lefts[i]])),
+      stems: clusters.map((c, i) => Math.min(Math.max(c.cx, lefts[i] + 16), lefts[i] + ws[i] - 16)),
+    });
+  }, [W, clusters, doneIds.size]);
+
   return (
     <section className="hero" data-screen-label="오늘 흐름">
       <div className="hero-clock">
@@ -121,7 +175,7 @@ function Hero({ now, showSec, doneIds }) {
         </div>
       </div>
       <div className="flow">
-        <div className="flow-rail">
+        <div className="flow-rail" ref={railRef}>
           <div className="flow-now" style={{ left: px(dec) + '%' }}>
             <span className="flow-now-pill">지금 <b>{pad(h)}:{pad(m)}</b></span>
             <i className="flow-now-line"></i>
@@ -133,13 +187,42 @@ function Hero({ now, showSec, doneIds }) {
           {FLOW.map((a) => {
             const done = doneIds.has(a.id);
             return (
-              <div key={a.id} className={'flow-item' + (done ? ' done' : '') + (!done && a.t <= dec ? ' due' : '')} style={{ left: px(a.t) + '%' }}>
-                <Mark done={done} size={14} />
-                <span className="flow-name">{a.name}</span>
-                {done && <span className="flow-meta">{a.tlMeta}</span>}
-              </div>
+              <i
+                key={a.id}
+                className={'flow-pt' + (done ? ' done' : '') + (a.id === DUE_ID && !done ? ' due' : '')}
+                style={{ left: px(a.t) + '%' }}
+              ></i>
             );
           })}
+          {lay && lay.stems.map((x, i) => (
+            <i key={'s' + i} className="flow-stem" style={{ left: x }}></i>
+          ))}
+          {clusters.map((c) => (
+            <div
+              key={c.key}
+              className={'flow-group' + (c.items.length > 1 ? ' multi' : '')}
+              ref={(el) => { groupRefs.current[c.key] = el; }}
+              style={lay && lay.lefts[c.key] != null ? { left: lay.lefts[c.key] } : { left: c.cx, visibility: 'hidden' }}
+            >
+              <span className="fg-row">
+                {c.items.map((a) => {
+                  const done = doneIds.has(a.id);
+                  const due = a.id === DUE_ID && !done;
+                  return (
+                    <span key={a.id} className={'fg-item' + (done ? ' done' : '') + (due ? ' due' : '')}>
+                      <Mark done={done} size={13} accent={due} />{a.name}
+                    </span>
+                  );
+                })}
+              </span>
+              {c.items.length === 1 && doneIds.has(c.items[0].id) && (
+                <span className="flow-meta">{c.items[0].tlMeta}</span>
+              )}
+            </div>
+          ))}
+          {[6, 9, 12, 15, 18, 21, 24].map((hh) => (
+            <i key={'t' + hh} className="flow-tick" style={{ left: px(hh) + '%' }}></i>
+          ))}
           <div className="flow-hours">
             {[6, 9, 12, 15, 18, 21, 24].map((hh) => (
               <span key={hh} style={{ left: px(hh) + '%' }}>{pad(hh)}</span>

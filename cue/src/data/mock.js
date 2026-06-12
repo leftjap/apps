@@ -1,6 +1,7 @@
 /* mock.js — 데모 모드 목업 (design-ref/v8/시안-소스/data.js 값 승계, v8 shape).
-   장면: 운동 완료(07:12) · 어학 13:00 (오후엔 due) · 글쓰기 19:30 · 독서 22:30 대기
-   — 시안 기본 화면과 동일. due 는 목업 고정이 아니라 실제 dueOf(§6)가 시각으로 판정. */
+   장면: 운동 완료(07:12) · 어학 19:00 · 글쓰기 19:39 · 독서 20:09 대기
+   — 시안 기본 화면과 동일 (저녁 3개 몰림 → 타임라인 클러스터 묶음 시연, §3.3).
+   due 는 목업 고정이 아니라 실제 dueOf(§6)가 시각으로 판정. */
 import { startOfToday } from './transforms.js';
 
 function mockCal(vals) {
@@ -14,7 +15,7 @@ function mockCal(vals) {
 export const MOCK_APPS = [
   {
     id: 'read', name: '독서', url: 'https://leftjap.github.io/apps/book/',
-    done: false, usualMin: 22.5 * 60, atMin: null, tlMeta: null,
+    done: false, usualMin: 20.15 * 60, atMin: null, tlMeta: null,
     hook: { title: '어제', strong: '9분', tail: ' 읽었어요' },
     hookDone: { title: '오늘', strong: '9분', tail: ' 읽었어요' },
     sub: '2일 연속이에요', cta: '이어 읽기',
@@ -29,7 +30,7 @@ export const MOCK_APPS = [
   },
   {
     id: 'write', name: '글쓰기', url: 'https://leftjap.github.io/apps/today/',
-    done: false, usualMin: 19.5 * 60, atMin: null, tlMeta: null,
+    done: false, usualMin: 19.65 * 60, atMin: null, tlMeta: null,
     hook: { title: '「6월 에세이」 —', strong: '9.2매', tail: '까지 썼어요' },
     sub: '마지막으로 쓴 날은 6월 4일이에요', cta: '이어 쓰기',
     cal: mockCal([0, 3.2, 2.2, 3.6, 0, 0, 0, 0, 0, 0, 0, 0]), calUnit: '매',
@@ -43,7 +44,7 @@ export const MOCK_APPS = [
   },
   {
     id: 'lang', name: '어학', url: 'https://leftjap.github.io/apps/study/',
-    done: false, usualMin: 13 * 60, atMin: null, tlMeta: null,
+    done: false, usualMin: 19 * 60, atMin: null, tlMeta: null,
     hook: { title: '「구덩이 약속 — 핑키 프라미스」 ·', strong: '5월 18일', tail: '이 마지막이에요' },
     sub: '오늘 10분이면 다시 시작할 수 있어요', cta: '오늘 분량 시작',
     cal: mockCal([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]), calUnit: '분',
