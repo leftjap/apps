@@ -89,9 +89,15 @@ async function restoreMissingBooks() {
   }
 }
 
+// 같은 유저의 토큰 갱신 재발화(TOKEN_REFRESHED·focus 시 SIGNED_IN 등)에 전체 재부팅을 막는 가드.
+// 미가드 시: 세션 가드의 focus refresh(≥5분 간격)마다 handleSession → startSync(already_active 즉시
+// resolve) → refresh()=mountCurrent 로 화면 통째 리마운트(표지 img 전부 재생성·스크롤 리셋) = 수시 깜빡임.
+let _bootedUserId = null;
+
 async function handleSession(session) {
   const user = session?.user;
   if (!user) {
+    _bootedUserId = null;
     showLogin();
     return;
   }
@@ -101,10 +107,17 @@ async function handleSession(session) {
       Auth.AUTH_ERROR_KEY,
       `허용되지 않은 계정입니다: ${user.email || '(이메일 없음)'}`,
     );
+    _bootedUserId = null;
     await Auth.signOut();
     showLogin();
     return;
   }
+  // 동일 유저 세션 갱신 — UI 재부팅(리마운트·재pull·프로필 재조회) 생략. 갱신 토큰은 supabase 클라가 보유.
+  if (_bootedUserId === user.id) {
+    setRouterUser(user);
+    return;
+  }
+  _bootedUserId = user.id;
   // Dexie DB 인스턴스 — Supabase 미설정·오프라인에서도 로컬 동작 확보
   await Auth.ensureUserDB(user);
   // 등록 책(알라딘) 메모리 레지스트리 로드 — bookOf 동기 조회용.
@@ -141,6 +154,7 @@ async function bootstrap() {
     ) {
       await handleSession(session);
     } else if (event === 'SIGNED_OUT') {
+      _bootedUserId = null; // 재로그인(또는 가드 retry 성공 후 갱신 이벤트) 시 풀부트 허용
       if (guard) await guard.handleSignedOutWithRetry(showLogin);
       else showLogin();
     }
