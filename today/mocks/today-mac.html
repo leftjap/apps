@@ -235,7 +235,8 @@
   /* — Nav groups — */
   .sb__group { margin-bottom: 2px; }
   /* 가계부(유틸리티) 그룹 — 글쓰기 카테고리와 line-soft 구분선으로 위계 분리 (작업지시서 §3) */
-  .sb__group--util { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+  /* 시안 06 — 메모↔가계부 사이 구분선 없음. 구분선은 가계부↔최근 섹션 사이 (.sb__group--recents) */
+  .sb__group--util { margin-top: 8px; }
 
   /* recents 영역만 자체 스크롤 (mouse wheel/trackpad). 스크롤바 시각 0 — 사이드바 룩 일정. */
   .sb__top, .sb__footer { flex-shrink: 0; }
@@ -243,10 +244,12 @@
   .sb__group--recents {
     flex: 1;
     min-height: 0;
+    margin-top: 12px;
     margin-bottom: 0;
     overflow-y: auto;
     scrollbar-width: none;
-    padding-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line-soft);   /* 시안 06 — 가계부와 최근 섹션 사이 구분선 */
   }
   .sb__group--recents::-webkit-scrollbar { display: none; }
   /* 최근 섹션 라벨 — 활성 카테고리명 + 우측 건수 (작업지시서 §3.4) */
@@ -1121,13 +1124,22 @@
   .exp-cat-row.is-first .exp-cat-row__name { color: var(--ink-1); font-weight: 500; }
   .exp-cat-row.is-first .exp-cat-row__amt { color: var(--crail-base); font-weight: 600; }
 
-  /* 캘린더 헤더 — 좌 범례 / 우 월 네비 (작업지시서 §5.1) */
+  /* 헤드라인 행 — 좌 타이틀/서브, 우 월 네비 (시안 03) */
+  .exp-headline {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .exp-headline-main { min-width: 0; }
+  .exp-headline .exp-month-nav { margin-top: 6px; flex-shrink: 0; }
+  /* 캘린더 헤더 — 범례 우측 (시안 03: 주합 열 위) */
   .exp-cal-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 16px;
-    padding: 4px 2px 14px;
+    padding: 4px 2px 10px;
   }
   .legend {
     display: inline-flex;
@@ -1294,10 +1306,14 @@
   .exp-mini-cat-list .exp-cat-row__bar { height: 7px; }
   .exp-mini-cat-list .exp-cat-row__amt { font-family: var(--font-mono); font-size: 12px; font-weight: 500; }
   .exp-cat-rest {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
     padding: 8px 0 0;
     font-size: 11.5px;
     color: var(--ink-4);
   }
+  .exp-cat-rest__amt { font-family: var(--font-mono); font-size: 11px; }
   .exp-brand-rows { margin-top: 8px; display: flex; flex-direction: column; }
   .exp-brand-row {
     display: grid;
@@ -4706,7 +4722,7 @@
           <path d="M13.5 7H10.8a1.5 1.5 0 0 0 0 3h2.7"/>
         </svg>
         가계부
-        <span class="meta">1,284,500원</span>
+        <span class="meta">1,284,500</span>
       </div>
       <!-- 매핑 관리 — 카테고리/브랜드/매장 alias 편집 (Wave 11.8) -->
       <div class="sb__item" data-category="admin">
@@ -5477,11 +5493,11 @@
       // 가계부 — Recents 자리에 최근 거래 (Phase D — 클릭 → 일자 점프 + highlight)
       if (key === 'expense') {
         const items = (data.txns || []).slice(0, 5);
-        setRecentsLabelFixture(data.label, (data.txns || []).length);
+        setRecentsLabelFixture('최근 거래', `${data.month}월`);   // 시안 03
         list.innerHTML = items.map(t => `
           <div class="sb__item sb__item--recent is-exp" data-tx-id="${t.id}" onclick="jumpToExpenseTx('${t.id}')">
             <span class="rc-title">${t.memo}</span>
-            <span class="meta">${(t.amount || 0).toLocaleString('ko-KR')}원</span>
+            <span class="meta">${(t.amount || 0).toLocaleString('ko-KR')}</span>
           </div>
         `).join('');
         return;
@@ -5489,7 +5505,7 @@
 
       const docs = data.docs || [];
       const oya = data.oneYearAgo || null;
-      setRecentsLabelFixture(data.label, data.totalCount || docs.length);
+      setRecentsLabelFixture(data.label, Math.min(5, docs.length));   // 건수 = 표시 항목 수 (시안 06)
       if (!docs.length && !oya) {
         list.innerHTML = '';
         return;
@@ -6314,14 +6330,12 @@
               </div>
               <div class="exp-mhead-sub">총 <strong>${data.monthTotal.toLocaleString('ko-KR')}원</strong> · 하루 평균 ${data.dailyAvg.toLocaleString('ko-KR')}원</div>
             </div>
+            <!-- 헤드라인 행 — 좌 타이틀/서브, 우 월 네비 (시안 03) -->
             <div class="exp-headline">
-              <div class="exp-headline-title">${data.month}월에는 <strong>${headlineMan}만원</strong> 썼어요</div>
-              <div class="exp-headline-sub">하루 평균 <strong>${data.dailyAvg.toLocaleString('ko-KR')}원</strong> · 날짜를 누르면 그날 거래가 열려요</div>
-            </div>
-
-            <!-- 캘린더 헤더 — 범례 + 월 네비 (작업지시서 §5.1) -->
-            <div class="exp-cal-head">
-              <div class="legend">적게 <i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="s4"></i><i class="s5"></i> 많이</div>
+              <div class="exp-headline-main">
+                <div class="exp-headline-title">${data.month}월에는 <strong>${headlineMan}만원</strong> 썼어요</div>
+                <div class="exp-headline-sub">하루 평균 <strong>${data.dailyAvg.toLocaleString('ko-KR')}원</strong> · 날짜를 누르면 그날 거래가 열려요</div>
+              </div>
               <div class="exp-month-nav">
                 <button class="exp-month-nav-btn" type="button" aria-label="이전 달">
                   <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 4l-4 4 4 4"/></svg>
@@ -6331,6 +6345,11 @@
                   <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4"/></svg>
                 </button>
               </div>
+            </div>
+
+            <!-- 캘린더 헤더 — 범례 우측 (시안 03: 주합 열 위) -->
+            <div class="exp-cal-head">
+              <div class="legend">적게 <i class="s1"></i><i class="s2"></i><i class="s3"></i><i class="s4"></i><i class="s5"></i> 많이</div>
             </div>
 
             <div class="exp-month-cal">
@@ -6343,7 +6362,7 @@
                   <div class="exp-month-dow">목</div>
                   <div class="exp-month-dow">금</div>
                   <div class="exp-month-dow we">토</div>
-                  <div class="exp-month-dow wk">주합</div>
+                  <div class="exp-month-dow wk"></div>
                 </div>
                 ${calCells}
               </div>

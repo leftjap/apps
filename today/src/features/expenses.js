@@ -195,20 +195,20 @@ function pickModeCategory(catCounts) {
  *     ${memo} <span class="recent-share recent-share--amount">${formatAmount}</span>
  *   </div>
  */
-export function renderExpenseRecentsFromRows(rows, doc = document) {
+export function renderExpenseRecentsFromRows(rows, doc = document, month = null) {
   const list = doc.getElementById('recentsList');
   if (!list) return false;
   if (!rows || !rows.length) return false;
-  // 최근 5건 (spent_at desc — listExpensesByMonth 가 이미 desc 정렬)
+  // 최근 5건 (spent_at desc — listExpensesByMonth 가 이미 desc 정렬). 금액은 숫자만 (시안 03)
   const items = rows.slice(0, 5).map((r) => {
     const id = escapeHtml(r.id);
     const memo = escapeHtml(r.memo || r.merchant || r.brand || r.category || '거래');
-    const amt = `${(r.amount_krw || 0).toLocaleString('ko-KR')}원`;
+    const amt = (r.amount_krw || 0).toLocaleString('ko-KR');
     return `<div class="sb__item sb__item--recent is-exp" data-tx-id="${id}" onclick="jumpToExpenseTx('${id}')"><span class="rc-title">${memo}</span><span class="meta">${amt}</span></div>`;
   }).join('');
   list.innerHTML = items;
-  // 최근 섹션 라벨 — 활성 카테고리명 + 당월 거래 건수 (작업지시서 §3.4)
-  setRecentsLabel('가계부', rows.length, doc);
+  // 최근 섹션 라벨 — "최근 거래" + 우측 월 (시안 03)
+  setRecentsLabel('최근 거래', month != null ? `${month}월` : '', doc);
   return true;
 }
 
@@ -434,10 +434,13 @@ export function patchFeedMiniStats(rows, month = null, doc = document) {
     const sorted = [...totals.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
     const max = sorted.length ? sorted[0][1] : 1;
     const top = sorted.slice(0, 5);
-    const rest = sorted.length - top.length;
+    const restItems = sorted.slice(5);
+    const restSum = restItems.reduce((s, [, v]) => s + v, 0);
     catList.innerHTML = top.map(([name, amt]) =>
       `<div class="exp-cat-row"><span class="exp-cat-row__name">${escapeHtml(name)}</span><div class="exp-cat-row__bar"><div class="exp-cat-row__fill" style="width:${Math.round((amt / max) * 100)}%"></div></div><span class="exp-cat-row__amt">${amt.toLocaleString('ko-KR')} 원</span></div>`,
-    ).join('') + (rest > 0 ? `<div class="exp-cat-rest">그 외 ${rest}개</div>` : '');
+    ).join('') + (restItems.length > 0
+      ? `<div class="exp-cat-rest"><span>그 외 ${restItems.length}개</span><span class="exp-cat-rest__amt">${restSum.toLocaleString('ko-KR')} 원</span></div>`
+      : '');
   }
   if (brandRows) {
     const { topBrand, brands } = rankMerchantsByMonth(list);
@@ -853,7 +856,7 @@ export async function loadAndRenderMonth(year, month, doc = document) {
       patchRailFromRows([], year, month, { todayDay }, doc);
       return;
     }
-    renderExpenseRecentsFromRows(rows);
+    renderExpenseRecentsFromRows(rows, doc, month);
     patchHeadlineFromRows(rows, { todayDay, month });
     patchCalendarFromRows(rows, { todayDay });
     renderTimelineFromRows(rows, { todayDay }, doc, year);
@@ -1945,7 +1948,7 @@ export async function refreshSidebarExpenseTotal(doc = (typeof document !== 'und
   try {
     const now = new Date();
     const total = await Queries.sumExpensesMonth(now.getFullYear(), now.getMonth() + 1);
-    meta.textContent = `${(total || 0).toLocaleString('ko-KR')}원`;
+    meta.textContent = (total || 0).toLocaleString('ko-KR');   // 시안 06 — 숫자만 ('원' 없음)
   } catch (e) {
     console.warn('[expenses] refreshSidebarExpenseTotal 실패', e?.message || e);
   }

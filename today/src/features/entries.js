@@ -223,7 +223,8 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
     return `<div class="sb__item sb__item--recent is-doc" data-doc-id="${id}"><div class="rc-main"><span class="rc-title">${title}</span>${unread ? '<span class="rc-dot"></span>' : ''}${shHtml}</div>${sub ? `<div class="rc-sub">${sub}</div>` : ''}</div>`;
   }).join('');
   list.innerHTML = docsHtml;
-  setRecentsLabel(KIND_LABEL_KO[kind] || kind, rows.length, doc);
+  // 라벨 건수 = 리스트 표시 항목 수 (시안 06 — 7개 표시 시 '7')
+  setRecentsLabel(KIND_LABEL_KO[kind] || kind, visible.length, doc);
   ensureRecentsMore(kind, rows.length, doc);
   return true;
 }
