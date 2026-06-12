@@ -16,6 +16,8 @@ import { mountSessionNew } from './pages/session-new.js';
 import { mountSessionReview } from './pages/session-review.js';
 import { mountSessionMath } from './pages/session-math.js';
 import { mountSummary } from './pages/summary.js';
+import { mountLogin } from './pages/login.js';
+import { mountSettings } from './pages/settings.js';
 
 const ROUTES = {
   login: loginHtml,
@@ -32,11 +34,13 @@ const ROUTES = {
 // + prod 번들에 /src/pages/*.js 절대경로 미존재 → 404. 따라서 SPA 라우터가 직접 mount 함수 호출.
 // mocks 단독 preview (multi-page input) 는 인라인 스크립트로 그대로 동작.
 const PAGE_MOUNTS = {
+  login: mountLogin,
   home: mountHome,
   'session-new': mountSessionNew,
   'session-review': mountSessionReview,
   'session-math': mountSessionMath,
   summary: mountSummary,
+  settings: mountSettings,
 };
 
 const DEFAULT_ROUTE = 'login';
