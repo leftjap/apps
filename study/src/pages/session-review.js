@@ -39,9 +39,16 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { h } from '../components/d1/dom.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, buildD1ExplainRight, buildD1Judges, exprOf } from '../components/d1/sessionShell.js';
+import { renderSessionReviewV2 } from './sessionReviewV2.js';
+import { demoReviewCards } from './sessionReviewDemo.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
+
+function isDemoMode() {
+  try { return new URLSearchParams(window.location.search).get('demo') === '1'; }
+  catch { return false; }
+}
 
 function getStoredLang() {
   try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; }
@@ -75,7 +82,7 @@ export function mountSessionReview(host) {
   };
 
   const saveSnapshot = () => {
-    if (state.ended || !window.studyDB || !state.loaded) return;
+    if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return; // 데모 격리
     saveActiveSession(window.studyDB, {
       mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
@@ -87,6 +94,7 @@ export function mountSessionReview(host) {
 
   const endSession = async (finishedAll) => {
     state.ended = true;
+    if (isDemoMode()) { window.location.hash = '#/summary'; return; } // 데모 — 실 DB write 차단
     const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
     const durationSec = Math.floor((Date.now() - startTime) / 1000);
     try {
@@ -119,10 +127,12 @@ export function mountSessionReview(host) {
       try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       const currentCard = state.cards[state.step - 1];
       if (kind === 'got' || kind === 'hmm' || kind === 'no') state.judged[kind] += 1;
-      try {
-        await applySrsUpdate(window.studyDB, currentCard, kind, getTodayISO());
-      } catch (e) {
-        console.error('[session-review] applySrsUpdate', e);
+      if (!isDemoMode()) { // 데모 — SRS DB write 차단
+        try {
+          await applySrsUpdate(window.studyDB, currentCard, kind, getTodayISO());
+        } catch (e) {
+          console.error('[session-review] applySrsUpdate', e);
+        }
       }
       const r = advanceCard(state.cards, state.step);
       if (r.done) { endSession(true); return; }
@@ -171,6 +181,18 @@ export function mountSessionReview(host) {
       rerender();
     }
   });
+
+  if (isDemoMode()) {
+    state.cards = demoReviewCards();
+    state.total = state.cards.length;
+    state.demo = true; // sessionReviewV2 녹음 시뮬
+    state.micBlocked = true;
+    state.step = 1;
+    state.sentence = pickCardFields(state.cards[0]) || EMPTY_SENTENCE;
+    state.loaded = true;
+    rerender();
+    return () => { cleanup(); stop(); clearInterval(tickId); document.removeEventListener('visibilitychange', onVis); };
+  }
 
   // P1 — stats 클릭 진입 (goReview 가 저장한 studyReviewQueue) 우선 시도.
   // 큐 있으면 해당 카드만, 없으면 기존 due/free 폴백. fromSessionQueue 플래그는 endSession 의 returnTo 분기에 사용.
@@ -221,9 +243,9 @@ export function mountSessionReview(host) {
 function render(host, state, handlers = {}) {
   host.innerHTML = '';
 
-  // 데스크탑 = D1 재디자인 복습. phone/tablet = 기존 경로 (아래).
+  // 데스크탑 = C 파이널 v2 복습. phone/tablet = 기존 경로 (아래).
   if (state.size === 'desktop') {
-    return renderD1Review(host, state, handlers);
+    return renderSessionReviewV2(host, state, handlers);
   }
 
   // returnTo 별 좌상단 라벨 분기 — onHome 동작 (returnTo 별 라우팅) 과 일관.
