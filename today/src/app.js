@@ -18,6 +18,11 @@ import { Auth } from './services/auth.js';
 import { storageKey } from './services/supabase.js';
 import { mountDiag, unmountDiag } from './services/auth-diag.js';
 import { Queries } from './db/queries.js';
+import * as SheetGesture from './features/sheetGesture.js';
+
+// 바텀 시트 1:1 추적 + snap 순수 로직을 mock 인라인 스크립트(initMobileSheet)에 노출.
+// 모듈 로드(top-level) 시점에 세팅 → injectMocks 의 mock 스크립트 재실행보다 먼저 준비됨.
+if (typeof window !== 'undefined') window.__todaySheetGesture = SheetGesture;
 
 const ROUTES = ['navi', 'fiction', 'blog', 'memo', 'expense', 'admin'];
 const DEFAULT_ROUTE = 'navi';
