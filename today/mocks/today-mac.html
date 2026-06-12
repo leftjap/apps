@@ -5065,14 +5065,17 @@
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
+      // rect 기반 상대 정렬 — offsetParent/트랜지션 영향 없이 현재 보이는 위치에서 보정 (자기수렴)
       const align = () => {
         const msgs = list.querySelectorAll('.cv-msg');
         const last = msgs[msgs.length - 1];
-        if (last) list.scrollTop = Math.max(0, last.offsetTop - 2);
+        if (!last) return;
+        const delta = last.getBoundingClientRect().top - list.getBoundingClientRect().top;
+        list.scrollTop = Math.max(0, list.scrollTop + delta - 2);
       };
       requestAnimationFrame(() => requestAnimationFrame(align));
-      setTimeout(align, 180);   // AI 클램프 재측정 등 늦은 높이 변화 정착 후 재정렬
-      setTimeout(align, 450);   // 닫힘 트랜지션(260ms) 후 최종 정렬 — 추가 직후 닫기 경로 잔차 보정
+      setTimeout(align, 180);   // 늦은 높이 변화(클램프 재측정 등) 정착 후 재정렬
+      setTimeout(align, 450);   // 닫힘 트랜지션(260ms) 후 최종 정렬
     });
     // 가계부 타임라인 시트 — 닫힘(peek): 최신 거래(목록 상단)부터 (피드백 5)
     initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', (open) => {
