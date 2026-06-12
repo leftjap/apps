@@ -314,8 +314,10 @@ function derive(state) {
   const sayUnit = sayOver ? ` / ${target}회 · +${sayN - target} 초과` : ` / ${target}회`;
 
   const scenePrefix = state.lang === 'math' ? '오늘의 문제' : '오늘의 장면';
-  const sceneTitle = state.sessionTitle || scenePrefix;
-  const sceneChip = state.sessionTitle ? `${scenePrefix} — ${state.sessionTitle}` : scenePrefix;
+  // 실데이터 sceneTitle 이 프리픽스와 같으면('오늘의 장면') 중복 표기 방지.
+  const hasTitle = !!state.sessionTitle && state.sessionTitle !== scenePrefix;
+  const sceneTitle = hasTitle ? state.sessionTitle : scenePrefix;
+  const sceneChip = hasTitle ? `${scenePrefix} — ${state.sessionTitle}` : scenePrefix;
   const newMin = state.newMin || Math.max(state.newCount * 3, 4);
   const reviewMin = state.reviewMin || Math.max((state.reviewCount || state.totalReview) * 2, 2);
 
@@ -325,7 +327,10 @@ function derive(state) {
 
   let msg;
   if (phase === 'fresh') {
-    msg = `<span>오늘의 장면 <b>'${sceneTitle}'</b>이 준비됐어요.<br/>다 해도 약 ${newMin + reviewMin}분이면 충분해요.</span>`;
+    const lead = hasTitle
+      ? `${scenePrefix} <b>'${state.sessionTitle}'</b>이 준비됐어요.`
+      : (state.lang === 'math' ? '오늘 풀 새 문제가 준비됐어요.' : '오늘 익힐 새 표현이 준비됐어요.');
+    msg = `<span>${lead}<br/>다 해도 약 ${newMin + reviewMin}분이면 충분해요.</span>`;
   } else if (phase === 'done') {
     msg = `<span>오늘 분량 끝!${state.pronAvg ? ` 새 표현 평균 <b class="c">${state.pronAvg}점</b> —<br/>이번 주 최고 기록이에요.` : ' 수고했어요.'}</span>`;
   } else {
