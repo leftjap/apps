@@ -35,9 +35,21 @@ import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
+import { renderDialogueV2 } from './dialogueV2.js';
+import { demoNewCards, DEMO_EXCLUDE_IDS } from './sessionNewDemo.js';
 
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
+
+// 데모 모드 (?demo=1) — 인증/DB 없이 시안 검증. view=dialog(기본)|session.
+function isDemoMode() {
+  try { return new URLSearchParams(window.location.search).get('demo') === '1'; }
+  catch { return false; }
+}
+function demoView() {
+  try { return new URLSearchParams(window.location.search).get('view') === 'session' ? 'session' : 'dialog'; }
+  catch { return 'dialog'; }
+}
 
 function getStoredLang() {
   try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; }
@@ -169,6 +181,19 @@ export function mountSessionNew(host) {
     }
   });
 
+  if (isDemoMode()) {
+    state.cards = demoNewCards();
+    state.exprExclude = DEMO_EXCLUDE_IDS;
+    state.total = state.cards.length;
+    state.micBlocked = true; // 데모 — 진행 게이트 무력화
+    const idx = demoView() === 'session' ? 1 : 0;
+    state.step = idx + 1;
+    state.sentence = pickCardFields(state.cards[idx]) || EMPTY_SENTENCE;
+    state.loaded = true;
+    rerender();
+    return () => { cleanup(); stop(); clearInterval(tickId); document.removeEventListener('visibilitychange', onVis); };
+  }
+
   Promise.all([
     loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
     loadActiveSession(window.studyDB),
@@ -213,7 +238,7 @@ function render(host, state, handlers = {}) {
   const isDialogue = sceneEx && Array.isArray(sceneEx.dialogue);
   // 데스크탑 = D1 재디자인 (다이얼로그 / 표현별 학습). phone/tablet = 기존 경로 (아래).
   if (state.size === 'desktop') {
-    return isDialogue ? renderD1Dialogue(host, state, handlers) : renderD1New(host, state, handlers);
+    return isDialogue ? renderDialogueV2(host, state, handlers) : renderD1New(host, state, handlers);
   }
 
   const layout = createSessionLayout({

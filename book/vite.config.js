@@ -53,7 +53,7 @@ export default defineConfig(({ mode }) => {
         // window.location.reload() 를 자동 호출 → book 배포마다 열린 어구록이 통째로 리로드되는
         // "수시 깜빡임"(표지 전부 재생성·스크롤 리셋)을 유발. 'prompt' 는 새 버전을 대기시키고
         // 다음 콜드스타트에 자연 적용(강제 reload 없음). gym 이 같은 이유로 먼저 전환함(회귀 주의).
-        registerType: 'prompt',
+        registerType: 'autoUpdate',
         injectRegister: 'auto',
         devOptions: {
           enabled: false,
@@ -77,8 +77,8 @@ export default defineConfig(({ mode }) => {
         workbox: {
           globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
           navigateFallback: `${BASE}index.html`,
-          // skipWaiting/clientsClaim 미설정 — 새 SW 는 열린 탭이 모두 닫힐 때까지 대기.
-          // (열린 어구록을 구 SW/구 번들에 고정 → 강제 리로드·청크 불일치 차단. 'prompt' 전제)
+          skipWaiting: true,
+          clientsClaim: true,
           cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
