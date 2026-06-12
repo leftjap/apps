@@ -5060,13 +5060,17 @@
     }
 
     // 댓글 시트 — 열림: 타임라인 맨 아래 / 닫힘(peek): 최신 댓글 첫 줄부터 (피드백 3)
+    // 닫힘 정렬은 더블 rAF — peek 패딩(60dvh) 적용 후 scrollTop 설정 (클램프 방지)
     initMobileSheet('convoPanel', 'convoHandle', '.convo__head', (open) => {
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
-      const msgs = list.querySelectorAll('.cv-msg');
-      const last = msgs[msgs.length - 1];
-      if (last) list.scrollTop = Math.max(0, last.offsetTop - 2);
+      const align = () => {
+        const msgs = list.querySelectorAll('.cv-msg');
+        const last = msgs[msgs.length - 1];
+        if (last) list.scrollTop = Math.max(0, last.offsetTop - 2);
+      };
+      requestAnimationFrame(() => requestAnimationFrame(align));
     });
     // 가계부 타임라인 시트 — 닫힘(peek): 최신 거래(목록 상단)부터 (피드백 5)
     initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', (open) => {
