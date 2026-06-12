@@ -17,6 +17,7 @@ import { pickSize, watchSize } from '../components/session/index.js';
 import { loadActiveSession } from '../services/activeSession.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
+import { renderHomeDesktopV2 } from './homeDesktopV2.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -30,32 +31,78 @@ function isDemoMode() {
   return false;
 }
 
-const DEMO_FIXTURES = {
-  newCount: 5, reviewCount: 8, streak: 7, tried: 14, passed: 9,
-  bestStreak: 12, weekUtter: 108, weekPass: 72, todayISO: '2026-05-04',
-  todayNewDone: 7, todayReviewDone: 12,
+function demoPhase() {
+  try {
+    const sp = new URLSearchParams(window.location.search);
+    const p = sp.get('phase');
+    if (p === 'fresh' || p === 'mid' || p === 'done') return p;
+  } catch { /* noop */ }
+  return 'fresh';
+}
+
+// C 파이널 v2 데스크톱 3상태 데모 — 시안(작업지시서 §1) 카피·수치 재현 (검증용).
+const DEMO_COMMON = {
+  todayISO: '2026-06-12', lang: 'en', speechTarget: 30,
+  sessionTitle: '레슬리의 다짐',
+  pronBars: [62, 66, 64, 68, 70, 72, 74, 76, 80, 82, 84, 86, 88, 90],
+  cumMaster: 89,
+};
+const DEMO_BY_PHASE = {
+  fresh: {
+    ...DEMO_COMMON, phase: 'fresh',
+    newCount: 5, reviewCount: 2, totalReview: 89, streak: 12, bestStreak: 14,
+    tried: 0, passed: 0, weekUtter: 0, weekPass: 0, todayNewDone: 0, todayReviewDone: 0,
+    newMin: 15, reviewMin: 4, newMetaText: '전체 대화 8줄 듣기 → 표현 5개',
+    reviewPreview: '"Count on it." 외 1문장',
+    slimHtml: '어제: 시도 14 · 통과 9 — 통과율 <b>64%</b>로 이번 주 최고였어요',
+    pronAvg: 86, pronDelta: 4, cumExpr: 127, cumUtter: 1240,
+    grass: ['f', 'f', 'ff', 'f', 't', '', ''], weekDoneText: '4일 완료 · 오늘 진행 중',
+  },
+  mid: {
+    ...DEMO_COMMON, phase: 'mid',
+    newCount: 4, reviewCount: 2, totalReview: 89, streak: 12, bestStreak: 14,
+    tried: 18, passed: 11, weekUtter: 14, weekPass: 9, todayNewDone: 1, todayReviewDone: 0,
+    resume: 'new', newMin: 12, reviewMin: 4,
+    reviewPreview: '"Count on it." 외 1문장',
+    slimHtml: '어제: 시도 14 · 통과 9 — 통과율 <b>64%</b>로 이번 주 최고였어요',
+    pronAvg: 86, pronDelta: 4, cumExpr: 127, cumUtter: 1240,
+    grass: ['f', 'f', 'ff', 'f', 't', '', ''], weekDoneText: '4일 완료 · 오늘 진행 중',
+  },
+  done: {
+    ...DEMO_COMMON, phase: 'done',
+    newCount: 0, reviewCount: 0, totalReview: 89, streak: 13, bestStreak: 14,
+    tried: 32, passed: 23, weekUtter: 122, weekPass: 84, todayNewDone: 5, todayReviewDone: 2,
+    reviewMin: 4,
+    doneNewMeta: '표현 5개 평균 88점 · 발화 19회 · 오후 9:02',
+    doneReviewMeta: '"Count on it." 외 1문장 · 다음 복습 6월 15일',
+    slimHtml: "내일 미리보기: 새 장면 <b class=\"c\">'회의실의 침묵'</b> · 표현 5개가 준비돼 있어요",
+    pronAvg: 88, pronDelta: 6, cumExpr: 132, cumUtter: 1272,
+    grass: ['f', 'f', 'ff', 'f', 'tg', '', ''], weekDoneText: '5일 연속 완료',
+  },
 };
 
 export function mountHome(host) {
   const demo = isDemoMode();
+  const fx = demo ? DEMO_BY_PHASE[demoPhase()] : null;
   const state = {
     size: pickSize(),
-    lang: getStoredLang(),
-    newCount: demo ? DEMO_FIXTURES.newCount : 0,
-    reviewCount: demo ? DEMO_FIXTURES.reviewCount : 0,
-    totalReview: demo ? DEMO_FIXTURES.reviewCount : 0,
-    streak: demo ? DEMO_FIXTURES.streak : 0,
-    tried: demo ? DEMO_FIXTURES.tried : 0,
-    passed: demo ? DEMO_FIXTURES.passed : 0,
-    bestStreak: demo ? DEMO_FIXTURES.bestStreak : null,
-    weekUtter: demo ? DEMO_FIXTURES.weekUtter : 0,
-    weekPass: demo ? DEMO_FIXTURES.weekPass : 0,
-    todayNewDone: demo ? DEMO_FIXTURES.todayNewDone : 0,
-    todayReviewDone: demo ? DEMO_FIXTURES.todayReviewDone : 0,
-    todayISO: demo ? DEMO_FIXTURES.todayISO : (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10)),
+    lang: fx ? fx.lang : getStoredLang(),
+    newCount: 0,
+    reviewCount: 0,
+    totalReview: 0,
+    streak: 0,
+    tried: 0,
+    passed: 0,
+    bestStreak: null,
+    weekUtter: 0,
+    weekPass: 0,
+    todayNewDone: 0,
+    todayReviewDone: 0,
+    todayISO: window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10),
     resume: null, // 'new' | 'review' | null — activeSession 매치 시
     sessionTitle: '', // #5 — AI 생성 세션 타이틀(scene/skit). 첫 미완료 카드 explanation 에서 산출.
   };
+  if (fx) Object.assign(state, fx);
 
   let cleanup = render(host, state);
   const rerender = () => { cleanup(); cleanup = render(host, state); };
@@ -226,7 +273,35 @@ async function loadStats(state) {
       if (cands[0]?.value?.value != null) bestStreak = cands[0].value.value;
     } catch { /* meta 미존재 ok */ }
 
-    return { newCount, reviewCount, totalReview, streak, tried, passed, bestStreak, weekUtter, weekPass, todayNewDone, todayReviewDone, sessionTitle };
+    // ── C 파이널 v2 데스크톱 하단 스트립 (실데이터) ──
+    // 발음 점수 일별 시계열은 미저장(sessionLogs=발화/통과만) → 앱이 실제 추적하는 '일일 발화' 추이로 정직 표기.
+    const byDate = {};
+    for (const l of logs) byDate[l.date] = (byDate[l.date] || 0) + (Number(l.utteranceCount) || 0);
+    const pronBars = [];
+    for (let i = 13; i >= 0; i--) {
+      const dt = new Date(todayISO + 'T00:00:00Z'); dt.setUTCDate(dt.getUTCDate() - i);
+      pronBars.push(byDate[dt.toISOString().slice(0, 10)] || 0);
+    }
+    const grass = [];
+    let weekDays = 0;
+    for (let i = 0; i < 7; i++) {
+      const dt = new Date(weekStart + 'T00:00:00Z'); dt.setUTCDate(dt.getUTCDate() + i);
+      const iso = dt.toISOString().slice(0, 10);
+      const has = (byDate[iso] || 0) > 0;
+      if (has && iso <= todayISO) weekDays++;
+      grass.push(iso === todayISO ? (has ? 'tg' : 't') : iso > todayISO ? '' : has ? 'f' : '');
+    }
+    const cumUtter = logs.reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
+    const cumExpr = logs.reduce((s, l) => s + (l.mode === 'new' ? (l.newSentenceIds?.length || 0) : 0), 0);
+    const weekDoneText = todayLogs.length > 0 ? `${weekDays}일 학습 · 오늘 진행 중` : `${weekDays}일 학습`;
+
+    return {
+      newCount, reviewCount, totalReview, streak, tried, passed, bestStreak,
+      weekUtter, weekPass, todayNewDone, todayReviewDone, sessionTitle,
+      pronBars, grass, cumUtter, cumExpr, cumMaster: totalReview, weekDoneText,
+      pronAvg: weekUtter, pronDelta: 0,
+      stripLeftLabel: '일일 발화 · 14일', stripLeftHead: '이번 주 발화', stripLeftUnit: '회',
+    };
   } catch (e) {
     console.error('[home loadStats]', e);
     return null;
@@ -241,7 +316,7 @@ function todayLabel(iso) {
 
 function render(host, state) {
   host.innerHTML = '';
-  if (state.size === 'desktop') host.appendChild(renderDesktop(state));
+  if (state.size === 'desktop') host.appendChild(renderHomeDesktopV2(state));
   else if (state.size === 'tablet') host.appendChild(renderTablet(state));
   else host.appendChild(renderPhone(state));
   return () => { host.innerHTML = ''; };
