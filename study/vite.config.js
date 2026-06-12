@@ -28,6 +28,12 @@ export default defineConfig({
         mocksHome: 'mocks/home.html',
         mocksSessionNew: 'mocks/session-new.html',
         mocksSessionReview: 'mocks/session-review.html',
+        // v2 검증용 데모 mock — 배포(?demo=1)로 인증 없이 화면 검증.
+        mocksSessionMath: 'mocks/session-math.html',
+        mocksSummary: 'mocks/summary.html',
+        mocksSettings: 'mocks/settings.html',
+        mocksLogin: 'mocks/login.html',
+        mocksStats: 'mocks/stats.html',
       },
       output: {
         // 함수 형태 — sub-path import (`@supabase/auth-js/dist/module/GoTrueClient.js` 등) 도 매치.

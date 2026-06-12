@@ -10,9 +10,28 @@ import { checkAnswer } from '../services/mathAnswer.js';
 import { todayPlusDays } from '../services/srs.js';
 import { h } from '../components/d1/dom.js';
 import { buildD1Side } from '../components/d1/sessionShell.js';
+import { renderMathV2 } from './sessionMathV2.js';
 
 const LS_KEY = 'mathProgress';
 const todayISO = () => (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10));
+
+function isDemoMode() {
+  try { return new URLSearchParams(window.location.search).get('demo') === '1'; }
+  catch { return false; }
+}
+
+// 이번 주(월–일) 정답률 — progress.logs 기반.
+function weekPassRate(progress) {
+  const t = todayISO();
+  const d = new Date(t + 'T00:00:00Z'); const w = d.getUTCDay();
+  d.setUTCDate(d.getUTCDate() + (w === 0 ? -6 : 1 - w));
+  const start = d.toISOString().slice(0, 10);
+  let tried = 0, passed = 0;
+  for (const dk in (progress.logs || {})) {
+    if (dk >= start && dk <= t) { tried += progress.logs[dk]?.tried || 0; passed += progress.logs[dk]?.passed || 0; }
+  }
+  return tried > 0 ? Math.round((passed / tried) * 100) : null;
+}
 
 function load() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || { done: {}, srs: {}, logs: {} }; }
@@ -307,6 +326,23 @@ export function mountSessionMath(host) {
   let queue = [];
   let i = 0, tries = 0, tried = 0, passed = 0, layout = null;
 
+  // 자기 채점(v2) — SRS·진행·로그 갱신. 데모(?demo=1)는 localStorage 미저장(격리).
+  function gradeMath(c, correct) {
+    const kindR = correct ? 'got' : 'no';
+    tried += 1; if (correct) passed += 1;
+    const t = todayISO();
+    const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
+    progress.done[c.id] = true;
+    if (st.graduate) delete progress.srs[c.id];
+    else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+    progress.logs = progress.logs || {};
+    const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
+    lg.tried += 1; if (correct) lg.passed += 1;
+    if (mode === 'review') lg.reviewDone += 1; else lg.newDone += 1;
+    progress.logs[t] = lg;
+    if (!isDemoMode()) save(progress);
+  }
+
   function renderDone() {
     host.innerHTML = '';
     const root = document.createElement('div');
@@ -488,7 +524,20 @@ export function mountSessionMath(host) {
     host.innerHTML = '';
     if (i >= queue.length) { renderDone(); return; }
     const c = queue[i]; tries = 0;
-    if (size === 'desktop') { renderD1Math(c); return; }
+    if (size === 'desktop') {
+      renderMathV2(host, c, {
+        idx: i, total: queue.length || 1, mode, figureNode,
+        alreadyGraded: !!progress.done[c.id],
+        alreadyGradedCorrect: progress.srs[c.id]?.lastResult !== 'no',
+        passRate: weekPassRate(progress),
+        onGrade: (correct) => gradeMath(c, correct),
+        onNext: () => { i += 1; render(); },
+        onJump: (n) => { i = Math.max(0, Math.min(queue.length - 1, n)); render(); },
+        onHome: () => { window.location.hash = '#/home'; },
+        onConceptDone: () => { progress.done[c.id] = true; if (!isDemoMode()) save(progress); i += 1; render(); },
+      });
+      return;
+    }
     layout = createSessionLayout({
       size,
       kind: mode === 'review' ? 'review' : 'new',
