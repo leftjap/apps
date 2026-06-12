@@ -250,5 +250,11 @@ document.getElementById('btnStats').addEventListener('click', () => {
   window.location.href = 'stats.html';
 });
 </script>
+<!-- C 파이널 v2: 데스크톱은 mountSummary→renderSummaryV2 가 body 를 v2 로 교체. 위 인라인은 phone 정적 폴백.
+     SPA 진입 시 app.js 가 인라인 script 제거 + PAGE_MOUNTS.summary 호출 (중복 없음). -->
+<script type="module">
+  import { mountSummary } from '/src/pages/summary.js';
+  mountSummary(document.body);
+</script>
 </body>
 </html>
