@@ -3576,9 +3576,10 @@
     }
     body[data-drawer-open] .sidebar { transform: translateX(0); }
     body[data-drawer-open] .drawer-backdrop { opacity: 1; pointer-events: auto; }
-    /* 드로어 열림 — 바텀 시트는 backdrop 아래로 (본문과 함께 dim) */
-    body[data-drawer-open] .convo,
-    body[data-drawer-open] .exp-rail { z-index: 30; }
+    /* 드로어 열림 — 바텀 시트는 backdrop 아래로 (본문과 함께 dim).
+       시트 자체 z:60 규칙(동률 specificity, 후행 선언)에 밀리지 않게 한 단계 높임 */
+    body[data-convo="1"][data-drawer-open] .convo,
+    body.is-expense[data-drawer-open] .exp-rail { z-index: 30; }
 
     /* 본문 고정 — drawer 는 본문 위로 슬라이드 (오버레이). 본문을 밀면 사이드바·본문 사이
        빈 면이 노출돼 3단처럼 보이는 문제 (아이폰 PWA 피드백 1, 2026-06-12). dim 은 backdrop 담당. */
