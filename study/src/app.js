@@ -18,6 +18,7 @@ import { mountSessionMath } from './pages/session-math.js';
 import { mountSummary } from './pages/summary.js';
 import { mountLogin } from './pages/login.js';
 import { mountSettings } from './pages/settings.js';
+import { mountStats } from './pages/stats.js';
 
 const ROUTES = {
   login: loginHtml,
@@ -41,6 +42,7 @@ const PAGE_MOUNTS = {
   'session-math': mountSessionMath,
   summary: mountSummary,
   settings: mountSettings,
+  stats: mountStats,
 };
 
 const DEFAULT_ROUTE = 'login';
