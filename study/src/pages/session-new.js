@@ -36,6 +36,7 @@ import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
 import { renderDialogueV2 } from './dialogueV2.js';
+import { renderSessionExprV2 } from './sessionExprV2.js';
 import { demoNewCards, DEMO_EXCLUDE_IDS } from './sessionNewDemo.js';
 
 const PASS_THRESHOLD = 80;
@@ -238,7 +239,7 @@ function render(host, state, handlers = {}) {
   const isDialogue = sceneEx && Array.isArray(sceneEx.dialogue);
   // 데스크탑 = D1 재디자인 (다이얼로그 / 표현별 학습). phone/tablet = 기존 경로 (아래).
   if (state.size === 'desktop') {
-    return isDialogue ? renderDialogueV2(host, state, handlers) : renderD1New(host, state, handlers);
+    return isDialogue ? renderDialogueV2(host, state, handlers) : renderSessionExprV2(host, state, handlers);
   }
 
   const layout = createSessionLayout({
