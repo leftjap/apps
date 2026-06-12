@@ -142,10 +142,24 @@ function updateConvoCount(doc = (typeof document !== 'undefined' ? document : nu
   countEl.textContent = String(n);
 }
 
-/** 타임라인 스크롤 — 컨테이너 scrollTop 제어 (scrollIntoView 금지, 작업지시서 §6). */
+/** 타임라인 스크롤 — 컨테이너 scrollTop 제어 (scrollIntoView 금지, 작업지시서 §6).
+ *  모바일 시트가 닫힌(peek) 상태면 최신 댓글의 첫 줄부터 보이게 마지막 메시지를 리스트
+ *  상단에 정렬 (아이폰 PWA 피드백 3, 2026-06-12). 그 외엔 맨 아래(최신이 하단). */
 function scrollListToBottom(doc) {
   const list = panelList(doc);
   if (!list) return;
+  const win = doc.defaultView || (typeof window !== 'undefined' ? window : null);
+  const panel = doc.getElementById?.('convoPanel');
+  const peekClosed = !!(win?.matchMedia?.('(max-width: 768px)')?.matches
+    && panel && !panel.classList?.contains?.('is-open'));
+  if (peekClosed) {
+    const msgs = list.querySelectorAll?.('.cv-msg') || [];
+    const last = msgs[msgs.length - 1];
+    if (last && typeof last.offsetTop === 'number') {
+      list.scrollTop = Math.max(0, last.offsetTop - 2);
+      return;
+    }
+  }
   list.scrollTop = list.scrollHeight;
 }
 
