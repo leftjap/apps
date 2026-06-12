@@ -99,8 +99,17 @@ export async function pullTable(mapping, db, userId) {
     if (collected.length === 0) return { table: mapping.dexie, status: 'empty', count: 0 };
     const store = db[mapping.dexie];
     if (!store?.bulkPut) return { table: mapping.dexie, status: 'error', reason: 'no_store' };
-    await store.bulkPut(collected.map(normalizeRow));
-    return { table: mapping.dexie, status: 'ok', count: collected.length };
+    // 로컬 미동기 변경(pending_sync=1)은 pull 로 덮어쓰지 않는다 — push 전 삭제(빈 톰스톤)·수정 보존.
+    // (안 하면 삭제 톰스톤이 서버 옛값에 덮여 flush 대상에서 사라짐 → 형광펜이 새로고침 후 부활.)
+    const pk = store.schema.primKey.keyPath;
+    let pendingKeys = new Set();
+    try {
+      const pendingRows = await store.where('pending_sync').equals(1).toArray();
+      pendingKeys = new Set(pendingRows.map((r) => r[pk]));
+    } catch (_) { /* pending_sync 인덱스 없으면 기존 동작 유지 */ }
+    const incoming = collected.map(normalizeRow).filter((r) => !pendingKeys.has(r[pk]));
+    if (incoming.length) await store.bulkPut(incoming);
+    return { table: mapping.dexie, status: 'ok', count: incoming.length, skippedPending: collected.length - incoming.length };
   } catch (e) {
     console.error(`[sync] pullTable ${mapping.supabase} 예외:`, formatError(e));
     return { table: mapping.dexie, status: 'error', error: e };
