@@ -308,20 +308,6 @@ export function patchCalendarFromRows(rows, opts = {}, doc = document) {
     if (total > 0) cell.classList.add(`s${quantileTier(total, sorted)}`);
     cell.classList.toggle('is-zero', total === 0);
   });
-  // 주합 열 — 캘린더 grid 행 순서 기준 (rebuildCalendarGrid 가 data-week 부여)
-  const weekEls = doc.querySelectorAll('.exp-week-sum[data-week]');
-  if (weekEls.length) {
-    const allCells = [...doc.querySelectorAll('.exp-month-grid .exp-month-day')];
-    weekEls.forEach((el) => {
-      const w = Number(el.getAttribute('data-week'));
-      let sum = 0;
-      allCells.slice(w * 7, w * 7 + 7).forEach((c) => {
-        const ds = c.getAttribute?.('data-date');
-        if (ds) sum += totals[ds] || 0;
-      });
-      el.textContent = sum > 0 ? fmtCalAmount(sum) : '';
-    });
-  }
   return true;
 }
 
@@ -609,8 +595,6 @@ export function clearExpensesFixture(doc = document, month = null) {
     cell.classList.remove(...CAL_TIER_CLASSES);
     cell.classList.add('is-zero');
   });
-  // 주합 열 비우기
-  doc.querySelectorAll('.exp-week-sum').forEach((el) => { el.textContent = ''; });
   // 우측 레일 — 0원 요약 + 빈 타임라인
   const totalEl = doc.getElementById?.('expRailTotal');
   if (totalEl) totalEl.innerHTML = '<b>0</b> <span class="unit">원</span>';
@@ -658,7 +642,7 @@ export function rebuildCalendarGrid(year, month, doc = document) {
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
   const todayDay = isCurrentMonth ? now.getDate() : -1;
   const mm = String(month).padStart(2, '0');
-  // 7열 + 주합 열 — 주 단위로 cells + .exp-week-sum (작업지시서 §5.1)
+  // 7열 — 일자 cell (주합 열 제거: 지오 요청 2026-06-13)
   let calCells = '';
   for (let w = 0; w < cells.length / 7; w++) {
     for (let i = 0; i < 7; i++) {
@@ -669,7 +653,6 @@ export function rebuildCalendarGrid(year, month, doc = document) {
       if (d === todayDay) cls.splice(1, 0, 'today');
       calCells += `<div class="${cls.join(' ')}" data-date="${ds}"><div class="exp-month-day-num">${d}</div><div class="exp-month-day-amount"></div></div>`;
     }
-    calCells += `<div class="exp-week-sum" data-week="${w}"></div>`;
   }
   // dow-row 보존 후 cells 갈아치움
   const dowRow = grid.querySelector('.exp-month-dow-row');

@@ -1178,12 +1178,12 @@
   .exp-month-cal { padding: 0 0 8px; }
   .exp-month-grid {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr)) 54px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 7px;
   }
   .exp-month-dow-row {
     display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr)) 54px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 7px;
     grid-column: 1 / -1;
     margin-bottom: 2px;
@@ -1200,7 +1200,6 @@
     white-space: nowrap;
   }
   .exp-month-dow.we { color: oklch(70% 0.06 50); }
-  .exp-month-dow.wk { text-align: right; padding-right: 4px; }
   /* 캘린더 타일 — 지출 있는 날 = 라운드 타일 R13 / 없는 날 = 날짜 숫자만 (§5.1) */
   .exp-month-day {
     min-height: 66px;
@@ -1253,17 +1252,6 @@
   .exp-month-day.s5 .exp-month-day-amount { color: #fff; }
   /* 오늘 — 이중 링 (tokens .c3.tdy) */
   .exp-month-day.today { box-shadow: 0 0 0 2px var(--shell), 0 0 0 4px var(--crail-deep); }
-  /* 주합 열 — 모노 11px 우정렬 (§5.1) */
-  .exp-week-sum {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--ink-3);
-    white-space: nowrap;
-    padding-right: 4px;
-  }
 
   /* 간이 통계 2열 — 카테고리(회색 막대) / 브랜드 TOP 5 (작업지시서 §5.2) */
   .exp-mini-stats {
@@ -1445,7 +1433,6 @@
   @media (max-width: 600px) {
     .exp-month-day { min-height: 54px; padding: 6px 6px; border-radius: 11px; min-width: 0; overflow: hidden; }
     .exp-month-grid, .exp-month-dow-row { gap: 4px; grid-template-columns: repeat(7, minmax(0, 1fr)); }
-    .exp-week-sum, .exp-month-dow.wk { display: none; }
     .exp-month-day-num { font-size: 10px; }
     .exp-month-day-amount { font-size: 11.5px; letter-spacing: -0.03em; }
     .exp-mini-stats { grid-template-columns: 1fr; gap: 28px; }
@@ -6263,13 +6250,11 @@
       const fmtCal = n => n >= 10000 ? `${n/10000 % 1 === 0 ? n/10000 : (n/10000).toFixed(1)}만` : `${Math.round(n/1000)}천`;
       let calCells = '';
       for (let w = 0; w < cells.length / 7; w++) {
-        let weekSum = 0;
         for (let i = 0; i < 7; i++) {
           const d = cells[w * 7 + i];
           if (d === null) { calCells += '<div class="exp-month-day empty"></div>'; continue; }
           const ds = `${mm}-${String(d).padStart(2, '0')}`;
           const total = dailyTotals[ds] || 0;
-          weekSum += total;
           const cls = ['exp-month-day'];
           if (d === data.today) cls.push('today');
           // 지출 없는 날 = 타일 없음 + 클릭 비활성 (작업지시서 §5.1)
@@ -6277,7 +6262,6 @@
           else cls.push('s' + calTier(total));
           calCells += `<div class="${cls.join(' ')}" data-date="${ds}"><div class="exp-month-day-num">${d}</div><div class="exp-month-day-amount">${total > 0 ? fmtCal(total) : ''}</div></div>`;
         }
-        calCells += `<div class="exp-week-sum" data-week="${w}">${weekSum > 0 ? fmtCal(weekSum) : ''}</div>`;
       }
 
       // 선택일 상세
@@ -6425,7 +6409,6 @@
                   <div class="exp-month-dow">목</div>
                   <div class="exp-month-dow">금</div>
                   <div class="exp-month-dow we">토</div>
-                  <div class="exp-month-dow wk"></div>
                 </div>
                 ${calCells}
               </div>
