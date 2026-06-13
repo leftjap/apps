@@ -46,6 +46,18 @@ if (typeof window !== 'undefined') {
       console.warn('[main] online flush expenses 실패', e),
     );
   });
+  // 새 빌드 자동 적용 — 새 SW 가 페이지 제어를 잡으면(controllerchange) 1회 reload.
+  // 기본 registerSW 는 SW skipWaiting/clientsClaim 만 하고 실행 중 페이지는 옛 JS 를 유지 →
+  // iOS PWA 에서 백그라운드 복귀만으론 새 배포가 안 닿던 문제(드로어·로더 수정 미반영). controller
+  // 존재(이미 SW 제어 중 = 첫 설치 아님) 시에만 arm → 첫 설치 reload·루프 방지.
+  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    let _swReloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (_swReloaded) return;
+      _swReloaded = true;
+      window.location.reload();
+    });
+  }
 }
 
 async function handleSession(session) {
