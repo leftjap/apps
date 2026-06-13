@@ -101,6 +101,30 @@ const VT2_CSS = `
 .vt2-leg i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
 .vt2-hint{font-size:11.5px;color:var(--faint);margin-top:18px;line-height:1.6}
 @media (max-width:880px){.vt2-body{grid-template-columns:1fr}}
+@media (max-width:599px){
+  .vt2{overflow-x:hidden}
+  .vt2-top{height:auto}
+  .vt2-top-in{padding:calc(8px + env(safe-area-inset-top)) 20px 8px;max-width:none}
+  .vt2-wrap{padding:18px 20px calc(40px + env(safe-area-inset-bottom));max-width:none}
+  .vt2-hd{gap:10px 12px}
+  .vt2-h1{font-size:24px}
+  .vt2-mnav{margin-left:0;width:100%;gap:10px;margin-top:2px}
+  .vt2-mnav .ml{font-size:15px;margin:0 auto 0 4px}
+  .vt2-body{margin-top:14px;gap:0}
+  .vt2-cal{gap:5px}
+  .vt2-dow{font-size:10.5px;padding:2px 0 5px}
+  .vt2-cell{aspect-ratio:1/1;border-radius:10px}
+  .vt2-cell .dt{font-size:9.5px;margin-bottom:3px}
+  .vt2-cell .vv.i1{font-size:12px}
+  .vt2-cell .vv.i2{font-size:15px}
+  .vt2-cell .vv.i3{font-size:18px}
+  .vt2-msum{gap:20px;margin-top:16px}
+  .vt2-chart{height:60px}
+  .vt2-day{padding:18px;margin-top:16px}
+  .vt2-rail{padding:18px;margin-top:16px}
+  .vt2-lrow{gap:11px;padding:13px 2px}
+  .vt2-lrow .en{font-size:15px}
+}
 `;
 
 // ── 데모 폴백 (studyDB 없을 때) ──
