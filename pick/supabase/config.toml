@@ -14,3 +14,7 @@ verify_jwt = false
 [functions.aladin]
 # 공개 도서검색 프록시 — 클라이언트가 인증 헤더 없이 직접 fetch. ttbkey 는 secret(ALADIN_TTB_KEY) 주입.
 verify_jwt = false
+
+[functions.tmdb]
+# 공개 영화·드라마 검색 프록시 — 클라이언트가 인증 헤더 없이 직접 fetch. api_key 는 secret(TMDB_API_KEY) 주입.
+verify_jwt = false

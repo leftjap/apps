@@ -3,6 +3,7 @@
 import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString } from '../ui/poster.js';
 import { Aladin } from '../db/aladin.js';
+import { Tmdb } from '../db/tmdb.js';
 import { Queries } from '../db/queries.js';
 import { trailReset } from '../app.js';
 
@@ -71,18 +72,29 @@ export function openSearch({ userId } = {}) {
     if (ql) loc = loc.filter((r) => `${r.title} ${r.meta?.author || ''} ${r.meta?.director || ''} ${Array.isArray(r.meta?.cast) ? r.meta.cast.join(' ') : r.meta?.cast || ''}`.toLowerCase().includes(ql));
     else loc = loc.slice(0, 10);
 
-    let ali = [];
-    if (q && (type === 'all' || type === 'book')) {
-      try {
-        const ratedIsbn = new Set(local.filter((r) => r.external_id).map((r) => r.external_id));
-        ali = (await Aladin.searchBooks(q, { max: 8 })).filter((b) => b.isbn && !ratedIsbn.has(b.isbn));
-      } catch (e) { /* 알라딘 실패 무시 */ }
+    // 라이브 외부 검색(책=알라딘, 영화·드라마=TMDB). 로컬에 이미 평가한 external_id 는 제외(중복 방지).
+    // 책=전체/책, 영화=전체/영화, 드라마=전체/드라마 탭에서 도는 대칭 규칙.
+    let ali = [], mov = [], tv = [];
+    if (q) {
+      const ratedExt = new Set(local.filter((r) => r.external_id).map((r) => String(r.external_id)));
+      const [aliR, movR, tvR] = await Promise.all([
+        (type === 'all' || type === 'book') ? Aladin.searchBooks(q, { max: 8 }).catch(() => []) : [],
+        (type === 'all' || type === 'movie') ? Tmdb.searchMovies(q, { max: 8 }).catch(() => []) : [],
+        (type === 'all' || type === 'drama') ? Tmdb.searchTv(q, { max: 8 }).catch(() => []) : [],
+      ]);
+      ali = aliR.filter((b) => b.isbn && !ratedExt.has(b.isbn));
+      mov = movR.filter((m) => !ratedExt.has(m.tmdbId));
+      tv = tvR.filter((t) => !ratedExt.has(t.tmdbId));
     }
     window.__pickOpen = window.__pickOpen || {};
     ali.forEach((b) => { window.__pickOpen['isbn:' + b.isbn] = { media_type: 'book', title: b.title, year: b.year, external_id: b.isbn, meta: { author: b.author, publisher: b.publisher, poster_url: b.coverUrl, sub: b.sub } }; });
+    mov.forEach((m) => { window.__pickOpen['tmdb:movie:' + m.tmdbId] = { media_type: 'movie', title: m.title, year: m.year, external_id: m.tmdbId, meta: { poster_url: m.posterUrl, summary: m.overview } }; });
+    tv.forEach((t) => { window.__pickOpen['tmdb:tv:' + t.tmdbId] = { media_type: 'movie', title: t.title, year: t.year, external_id: t.tmdbId, meta: { subtype: 'tv', poster_url: t.posterUrl, summary: t.overview } }; });
 
     const rows = [
       ...loc.map((r) => ({ id: r.id, mtype: r.media_type, title: r.title, sub: subOf(r), kind: r.media_type === 'movie' && r.meta?.subtype === 'tv' ? '드라마' : null })),
+      ...mov.map((m) => ({ id: 'tmdb:movie:' + m.tmdbId, mtype: 'movie', title: m.title, sub: m.year ? String(m.year) : '', kind: '영화' })),
+      ...tv.map((t) => ({ id: 'tmdb:tv:' + t.tmdbId, mtype: 'movie', title: t.title, sub: t.year ? String(t.year) : '', kind: '드라마' })),
       ...ali.map((b) => ({ id: 'isbn:' + b.isbn, mtype: 'book', title: b.title, sub: [b.author, b.publisher].filter(Boolean).join(' · ') })),
     ];
     clear(results);

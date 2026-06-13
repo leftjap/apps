@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
   // .env / .env.local 에서 ALADIN_TTB_KEY 로드 (서버측만 — 클라 번들 미노출). book 미러.
   const env = loadEnv(mode, process.cwd(), '');
   const ALADIN_KEY = env.ALADIN_TTB_KEY || '';
+  const TMDB_KEY = env.TMDB_API_KEY || '';
 
   return {
     root: '.',
@@ -40,6 +41,17 @@ export default defineConfig(({ mode }) => {
             const rest = p.replace(/^\/api\/aladin/, '');
             const sep = rest.includes('?') ? '&' : '?';
             return '/ttb/api' + rest + sep + 'ttbkey=' + encodeURIComponent(ALADIN_KEY);
+          },
+        },
+        // dev 전용 TMDB 프록시 — api_key 서버측 주입. 클라: fetch('/api/tmdb/search/tv?query=...').
+        // 배포(정적)에선 미동작 → Supabase Edge Function(tmdb) 프록시.
+        '/api/tmdb': {
+          target: 'https://api.themoviedb.org',
+          changeOrigin: true,
+          rewrite: (p) => {
+            const rest = p.replace(/^\/api\/tmdb/, '');
+            const sep = rest.includes('?') ? '&' : '?';
+            return '/3' + rest + sep + 'api_key=' + encodeURIComponent(TMDB_KEY);
           },
         },
       },
