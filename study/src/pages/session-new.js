@@ -245,6 +245,8 @@ function render(host, state, handlers = {}) {
   if (state.size === 'desktop') {
     return isDialogue ? renderDialogueV2(host, state, handlers) : renderSessionExprV2(host, state, handlers);
   }
+  // phone/tablet 다이얼로그 — 모바일 v2 단일 칼럼 (따라 말하기 연습은 후속 wave 까지 기존 경로 유지).
+  if (isDialogue) return renderDialogueV2(host, state, handlers);
 
   const layout = createSessionLayout({
     size: state.size,

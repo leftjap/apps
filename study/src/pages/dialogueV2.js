@@ -97,6 +97,63 @@ function deriveLines(sceneEx, cards) {
   });
 }
 
+/* 모바일(phone/tablet) — 동일 마크업, 단일 칼럼 셸 + 하단 sticky CTA (작업지시서 모바일 §3-2) */
+const VDM_CSS = `
+.vd{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
+.vd *{box-sizing:border-box;margin:0}
+.vd button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}
+.vd-top{position:sticky;top:0;z-index:6;background:oklch(97.5% .009 95/.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(9px + env(safe-area-inset-top)) 20px 11px;flex:0 0 auto;height:auto}
+.vd-top-in{display:flex;align-items:center;justify-content:space-between;gap:12px;max-width:none;margin:0;padding:0}
+.vd-home{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut);white-space:nowrap}
+.vd-meta{font-family:Outfit,sans-serif;font-size:12px;color:var(--faint);letter-spacing:.04em;white-space:nowrap}
+.vd-wrap{flex:1 1 auto;padding:0 20px 96px;max-width:560px;margin:0 auto;width:100%}
+.vd-eyebrow{font-family:Outfit;font-size:11px;letter-spacing:.14em;color:var(--faint);font-weight:600;text-transform:uppercase;margin-top:16px}
+.vd-h1{font-family:Outfit;font-size:25px;font-weight:700;letter-spacing:-.03em;margin:9px 0 0;color:var(--teal-deep);line-height:1.15}
+.vd-sub{font-size:13.5px;color:var(--mut);margin-top:8px;line-height:1.5}
+.vd-ctl{display:flex;flex-wrap:wrap;align-items:center;gap:11px 12px;margin-top:16px}
+.vd-listen{position:relative;display:inline-flex;align-items:center;gap:9px;background:var(--blue-soft);color:var(--blue-deep);border:1.5px solid var(--blue-line);border-radius:999px;padding:11px 18px;font-size:13.5px;font-weight:700;white-space:nowrap;overflow:hidden}
+.vd-listen .pr{position:absolute;left:0;bottom:0;height:2.5px;background:var(--blue);width:0}
+.vd-listen.on .pr{animation:vd-lineprog 6s linear infinite}
+@keyframes vd-lineprog{to{width:100%}}
+.vd-said{font-size:12px;color:var(--mut);display:inline-flex;align-items:center;gap:7px;white-space:nowrap;margin-left:auto}
+.vd-said .d{display:inline-flex;gap:4px}
+.vd-said .d i{width:6px;height:6px;border-radius:50%;background:#ddd9c9}
+.vd-said .d i.f{background:var(--teal)}
+.vd-shadow{flex-basis:100%;display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--mut);font-weight:600;text-align:left}
+.vd-shadow .sw{width:34px;height:20px;border-radius:999px;background:var(--teal);position:relative;flex:0 0 auto;transition:background .2s}
+.vd-shadow .sw i{position:absolute;top:2.5px;left:17px;width:15px;height:15px;border-radius:50%;background:#fff;transition:left .2s}
+.vd-shadow.off .sw{background:#ddd9c9}.vd-shadow.off .sw i{left:2.5px}
+.vd-shadow b{color:var(--ink)}
+.vd-selrow{margin-top:14px;display:flex;align-items:center;gap:9px;font-size:12px;color:var(--mut);flex-wrap:wrap}
+.vd-selcount{font-family:Outfit;font-size:11.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:4px 11px;animation:v-settle .5s both}
+.vd-list{margin-top:12px;display:flex;flex-direction:column;gap:2px}
+.vd-line{position:relative;display:flex;align-items:center;gap:10px;padding:9px 8px;border-radius:13px}
+.vd-line.playing{background:var(--blue-soft)}
+.vd-line.playing::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--blue);animation:v-blink 1.6s ease-in-out infinite}
+.vd-sel{width:19px;height:19px;border-radius:6px;border:1.5px solid #d5d1c2;display:grid;place-items:center;color:#fff;flex:0 0 auto;padding:0}
+.vd-sel.on{background:var(--teal);border-color:var(--teal)}
+.vd-sel.add{border-style:dashed;color:var(--faint);font-size:13px;font-weight:700}
+.vd-num{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--teal-line);color:var(--teal-deep);font-size:10px;font-weight:800;display:grid;place-items:center;font-family:Outfit;flex:0 0 auto}
+.vd-num.ctx{border-color:transparent}
+.vd-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;flex:0 0 auto;font-family:Outfit}
+.vd-av.a{background:var(--teal-soft);color:var(--teal-deep)}
+.vd-av.l{background:var(--coral-soft);color:var(--coral-deep)}
+.vd-line > div{min-width:0;flex:1 1 auto}
+.vd-line .enw{position:relative;display:inline}
+.vd-line .en{font-size:15px;font-weight:600;letter-spacing:-.005em;line-height:1.35}
+.vd-line .en b{font-weight:800;text-decoration:underline 2.5px oklch(44% .062 192/.3);text-underline-offset:3px}
+.vd-line.unsel .en{color:var(--mut)}
+.vd-line.unsel .en b{color:var(--mut);text-decoration-color:#d8d4c6}
+.vd-line .ko{font-size:11.5px;color:var(--faint);margin-top:2px}
+.vd-grow{flex:0 0 auto}
+.vd-chip{font-size:10px;font-weight:700;color:var(--teal-deep);white-space:nowrap;font-family:Outfit;flex:0 0 auto}
+.vd-cir{width:30px;height:30px;border-radius:50%;border:1.5px solid var(--line);background:var(--card);color:var(--mut);display:grid;place-items:center;flex:0 0 auto;padding:0}
+.vd-foot{position:sticky;bottom:0;flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom));margin:0;max-width:none}
+.vd-foot .hh{display:none}
+.vd-cta{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.vd-cta:disabled{opacity:.5;animation:none}
+`;
+
 export function renderDialogueV2(host, state, handlers = {}) {
   ensureV2Fonts();
   const sceneEx = state.sentence.explanation || {};
@@ -235,7 +292,7 @@ export function renderDialogueV2(host, state, handlers = {}) {
   listEl = h('div', { class: 'vd-list' });
 
   const root = h('div', { class: 'vd' },
-    v2Style(VD_CSS),
+    v2Style(state.size === 'desktop' ? VD_CSS : VDM_CSS),
     h('div', { class: 'vd-top' }, h('div', { class: 'vd-top-in' },
       h('button', { class: 'vd-home', type: 'button', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
       h('span', { class: 'vd-meta' }, `신규 학습 · ${subjLabel} — ${state.time || '00:00'}`),
