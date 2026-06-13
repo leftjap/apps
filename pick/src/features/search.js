@@ -48,10 +48,10 @@ export function openSearch({ userId } = {}) {
     ? [r.meta?.director, r.year].filter(Boolean).join(' · ')
     : [r.meta?.author, r.meta?.publisher].filter(Boolean).join(' · '));
 
-  function rowEl({ id, mtype, title, sub, kind }) {
+  function rowEl({ id, mtype, title, sub, kind, posterUrl }) {
     const isFilm = mtype === 'movie';
     return el('button', { class: 'sresult', onClick: () => pick(id) },
-      poster({ type: isFilm ? 'film' : 'book', title, hue: hueFromString(title), w: 36, rounded: 6, label: false }),
+      poster({ type: isFilm ? 'film' : 'book', title, hue: hueFromString(title), w: 36, rounded: 6, label: false, src: posterUrl || null }),
       el('div', { class: 'sresult__text' }, el('span', { class: 'sresult__title' }, title), el('span', { class: 'sresult__sub' }, sub || '')),
       el('span', { class: 'sresult__kind' }, kind || (isFilm ? '영화' : '책')));
   }
@@ -87,15 +87,15 @@ export function openSearch({ userId } = {}) {
       tv = tvR.filter((t) => !ratedExt.has(t.tmdbId));
     }
     window.__pickOpen = window.__pickOpen || {};
-    ali.forEach((b) => { window.__pickOpen['isbn:' + b.isbn] = { media_type: 'book', title: b.title, year: b.year, external_id: b.isbn, meta: { author: b.author, publisher: b.publisher, poster_url: b.coverUrl, sub: b.sub } }; });
+    ali.forEach((b) => { window.__pickOpen['isbn:' + b.isbn] = { media_type: 'book', title: b.title, year: b.year, external_id: b.isbn, meta: { author: b.author, publisher: b.publisher, poster_url: b.coverUrl, sub: b.sub, summary: b.description } }; });
     mov.forEach((m) => { window.__pickOpen['tmdb:movie:' + m.tmdbId] = { media_type: 'movie', title: m.title, year: m.year, external_id: m.tmdbId, meta: { poster_url: m.posterUrl, summary: m.overview } }; });
     tv.forEach((t) => { window.__pickOpen['tmdb:tv:' + t.tmdbId] = { media_type: 'movie', title: t.title, year: t.year, external_id: t.tmdbId, meta: { subtype: 'tv', poster_url: t.posterUrl, summary: t.overview } }; });
 
     const rows = [
-      ...loc.map((r) => ({ id: r.id, mtype: r.media_type, title: r.title, sub: subOf(r), kind: r.media_type === 'movie' && r.meta?.subtype === 'tv' ? '드라마' : null })),
-      ...mov.map((m) => ({ id: 'tmdb:movie:' + m.tmdbId, mtype: 'movie', title: m.title, sub: m.year ? String(m.year) : '', kind: '영화' })),
-      ...tv.map((t) => ({ id: 'tmdb:tv:' + t.tmdbId, mtype: 'movie', title: t.title, sub: t.year ? String(t.year) : '', kind: '드라마' })),
-      ...ali.map((b) => ({ id: 'isbn:' + b.isbn, mtype: 'book', title: b.title, sub: [b.author, b.publisher].filter(Boolean).join(' · ') })),
+      ...loc.map((r) => ({ id: r.id, mtype: r.media_type, title: r.title, sub: subOf(r), kind: r.media_type === 'movie' && r.meta?.subtype === 'tv' ? '드라마' : null, posterUrl: r.meta?.poster_url })),
+      ...mov.map((m) => ({ id: 'tmdb:movie:' + m.tmdbId, mtype: 'movie', title: m.title, sub: m.year ? String(m.year) : '', kind: '영화', posterUrl: m.posterUrl })),
+      ...tv.map((t) => ({ id: 'tmdb:tv:' + t.tmdbId, mtype: 'movie', title: t.title, sub: t.year ? String(t.year) : '', kind: '드라마', posterUrl: t.posterUrl })),
+      ...ali.map((b) => ({ id: 'isbn:' + b.isbn, mtype: 'book', title: b.title, sub: [b.author, b.publisher].filter(Boolean).join(' · '), posterUrl: b.coverUrl })),
     ];
     clear(results);
     countEl.textContent = `${rows.length}건`;

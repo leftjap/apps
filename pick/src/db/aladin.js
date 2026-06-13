@@ -34,6 +34,7 @@ function normalize(item) {
     year: yearOf(item.pubDate),
     category: item.categoryName || '',
     coverUrl: item.cover || '',
+    description: item.description || '',   // 줄거리(출판사 제공 요약). ItemSearch·ItemLookUp 공통 반환.
   };
 }
 

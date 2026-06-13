@@ -2,7 +2,7 @@
 // 클라이언트: src/db/tmdb.js BASE=`${SUPA}/functions/v1/tmdb` (인증 헤더 없음 → config.toml verify_jwt=false).
 // TMDB 는 CORS 지원하나 키 은닉 위해 프록시 경유. aladin 함수 미러.
 // Origin 게이트: Pages origin 만 허용해 무인증 직접 호출(TMDB 쿼터 소진)을 차단(헤더 위조까진 못 막음, 저위험 수용).
-const ALLOW = /^search\/(movie|tv|multi)$/;
+const ALLOW = /^(search\/(movie|tv|multi)|(movie|tv)\/\d+)$/;
 const ORIGIN = 'https://leftjap.github.io';
 const CORS = {
   'Access-Control-Allow-Origin': ORIGIN,
@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
   if (req.headers.get('origin') !== ORIGIN) return json(403, { error: 'forbidden origin' });
   const url = new URL(req.url);
-  const path = url.pathname.match(/\/tmdb\/(search\/[^/]+)$/)?.[1] ?? '';
+  const path = url.pathname.match(/\/tmdb\/(.+)$/)?.[1] ?? '';
   if (req.method !== 'GET' || !ALLOW.test(path)) return json(404, { error: 'not found' });
   const key = Deno.env.get('TMDB_API_KEY') ?? '';
   if (!key) return json(500, { error: 'TMDB_API_KEY secret 미설정' });

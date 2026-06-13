@@ -58,4 +58,41 @@ export async function searchTv(query, { max = 8 } = {}) {
   return (data.results || []).map(normTv).filter(Boolean).slice(0, max);
 }
 
-export const Tmdb = { searchMovies, searchTv };
+function names(arr, n) {
+  return (Array.isArray(arr) ? arr : []).slice(0, n).map((x) => x && x.name).filter(Boolean);
+}
+function countryOf(d) {
+  const pc = (d.production_countries || []).map((c) => c.name).filter(Boolean);
+  return pc.join(', ');
+}
+
+/** 영화 상세 보강 → { summary, runtime, director, cast[], country, genres[] }. */
+export async function detailMovie(id) {
+  if (!id) return null;
+  const d = await call('movie/' + id, { language: 'ko-KR', append_to_response: 'credits' });
+  const crew = (d.credits && d.credits.crew) || [];
+  return {
+    summary: d.overview || '',
+    runtime: d.runtime || null,
+    director: crew.filter((c) => c.job === 'Director').map((c) => c.name).join(', '),
+    cast: names((d.credits && d.credits.cast) || [], 3),
+    country: countryOf(d),
+    genres: (d.genres || []).map((g) => g.name).filter(Boolean),
+  };
+}
+
+/** 드라마 상세 보강 → { summary, runtime, director(=연출/created_by), cast[], country, genres[] }. */
+export async function detailTv(id) {
+  if (!id) return null;
+  const d = await call('tv/' + id, { language: 'ko-KR', append_to_response: 'credits' });
+  return {
+    summary: d.overview || '',
+    runtime: (Array.isArray(d.episode_run_time) && d.episode_run_time[0]) || null,
+    director: names(d.created_by, 9).join(', '), // TV는 단일 감독 없음 → 크리에이터(연출/제작)
+    cast: names((d.credits && d.credits.cast) || [], 3),
+    country: countryOf(d),
+    genres: (d.genres || []).map((g) => g.name).filter(Boolean),
+  };
+}
+
+export const Tmdb = { searchMovies, searchTv, detailMovie, detailTv };

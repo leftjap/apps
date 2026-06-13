@@ -4,6 +4,7 @@ import { el, clear } from '../ui/dom.js';
 import { poster, hueFromString, chip, dot } from '../ui/poster.js';
 import { starRating } from '../ui/rating.js';
 import { Queries } from '../db/queries.js';
+import { Tmdb } from '../db/tmdb.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
 import { trailAppend, trailGo, trailSetTitle, onViewTeardown } from '../app.js';
@@ -24,6 +25,7 @@ function pickMeta(src) {
     director: meta.director ?? null,
     cast: meta.cast ?? null,
     writer: meta.writer ?? null,
+    country: meta.country ?? src.country ?? null,
     author: meta.author ?? null,
     translator: meta.translator ?? null,
     publisher: meta.publisher ?? null,
@@ -42,10 +44,29 @@ async function resolveWork(id, userId) {
   return null;
 }
 
+// 검색서 막 연 TMDB 작품(평가 전)은 cast/감독/제작국이 없음 — 상세 엔드포인트에서만 옴. 1회 보강.
+async function enrichTmdb(id, w) {
+  if (!w || w.cast || !w.external_id) return; // 이미 메타 있음(평가된 작품) → 보강 불필요
+  try {
+    let ext = null;
+    if (id.startsWith('tmdb:movie:')) ext = await Tmdb.detailMovie(w.external_id);
+    else if (id.startsWith('tmdb:tv:')) ext = await Tmdb.detailTv(w.external_id);
+    if (!ext) return;
+    if (ext.summary) w.summary = ext.summary;
+    if (ext.runtime) w.runtime = ext.runtime;
+    if (ext.director) w.director = ext.director;
+    if (ext.cast && ext.cast.length) w.cast = ext.cast;
+    if (ext.country) w.country = ext.country;
+    if (ext.genres && ext.genres.length) w.tags = ext.genres;
+  } catch (e) { /* 보강 실패 — 기본 메타로 렌더 */ }
+}
+
 export function mount({ userId, id, trail = [] } = {}) {
   const root = el('div', { class: 'detail' });
-  resolveWork(id, userId).then((w) => {
+  resolveWork(id, userId).then(async (w) => {
     if (!root.isConnected) return;   // 해석 중 라우트 이탈 — 구독·렌더 생략 (떠난 뷰가 teardown 등록하는 것 방지)
+    await enrichTmdb(id, w);
+    if (!root.isConnected) return;
     clear(root);
     if (!w) { root.appendChild(notFound()); return; }
     trailSetTitle(id, w.title);   // 직접 URL 진입 시 제목 backfill
@@ -78,7 +99,7 @@ function rail(w, userId, isFilm, onRated) {
   aside.appendChild(poster({ type: isFilm ? 'film' : 'book', title: w.title, year: w.year, hue: w.hue, w: 200, rounded: 12, label: false, src: w.poster_url }));
   const info = el('dl', { class: 'info' });
   const rows = isFilm
-    ? [['감독', w.director], ['출연', Array.isArray(w.cast) ? w.cast.join(', ') : w.cast], ['극본', w.writer]]
+    ? [[w.subtype === 'tv' ? '연출' : '감독', w.director], ['출연', Array.isArray(w.cast) ? w.cast.join(', ') : w.cast], ['제작', w.country], ['극본', w.writer]]
     : [['저자', w.author], ['옮김', w.translator], ['출판', w.publisher]];
   for (const [k, v] of rows) if (v) info.appendChild(inforow(k, v));
   if (info.childNodes.length) aside.appendChild(info);
@@ -88,7 +109,7 @@ function rail(w, userId, isFilm, onRated) {
 
 function metaForSave(w) {
   const m = {};
-  for (const k of ['author', 'publisher', 'translator', 'director', 'writer', 'poster_url', 'summary', 'runtime', 'pages']) if (w[k]) m[k] = w[k];
+  for (const k of ['author', 'publisher', 'translator', 'director', 'writer', 'country', 'poster_url', 'summary', 'runtime', 'pages']) if (w[k]) m[k] = w[k];
   if (Array.isArray(w.cast) && w.cast.length) m.cast = w.cast;
   if (Array.isArray(w.tags) && w.tags.length) m.tags = w.tags;
   return m;
