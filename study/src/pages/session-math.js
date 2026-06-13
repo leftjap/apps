@@ -524,8 +524,9 @@ export function mountSessionMath(host) {
     host.innerHTML = '';
     if (i >= queue.length) { renderDone(); return; }
     const c = queue[i]; tries = 0;
-    if (size === 'desktop') {
+    { // 전 사이즈 = C 파이널 v2 (renderMathV2 내부 size 분기). 구 SessionLayout 미사용(후속 정리).
       renderMathV2(host, c, {
+        size,
         idx: i, total: queue.length || 1, mode, figureNode,
         alreadyGraded: !!progress.done[c.id],
         alreadyGradedCorrect: progress.srs[c.id]?.lastResult !== 'no',

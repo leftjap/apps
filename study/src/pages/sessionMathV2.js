@@ -237,35 +237,39 @@ export function renderMathV2(host, c, ctx) {
     );
   }
 
-  const main = h('div', { class: 'vm-main' },
-    h('div', { class: 'vm-crumb' }, h('span', { class: 'vm-scene' }, (c.module || '응용') + ' · 수학'),
-      h('div', { class: 'vm-prog' }, Array.from({ length: total }, (_, i) => h('i', { class: i <= idx ? 'f' : '' }))),
-      h('span', { class: 'vm-prog-t' }, `${idx + 1} / ${total}`)),
-    h('div', { class: 'vm-card' },
-      h('div', { class: 'vm-eyebrow' }, `문제 ${idx + 1} / ${total}${ctx.mode === 'review' ? ' · 복습' : ' · 개념 응용'}`),
-      h('div', { class: 'vm-q' }, qNode(c.prompt)),
-      figs.length ? h('div', { class: 'vm-fig' }, figs.map((f) => ctx.figureNode?.(f)).filter(Boolean)) : null,
-      steps.length ? h('div', { class: 'vm-steps' }, steps.map((s, i) => h('div', { class: 'vm-step', style: `animation-delay:${i * 0.15}s` },
-        h('span', { class: 'ix' }, String(i + 1)), h('span', { class: 'tx', html: String(s).replace(/\^2/g, '<sup>2</sup>') })))) : null,
-      h('div', { class: 'vm-ans' }, h('span', { class: 'lb' }, '정답'), h('span', { class: 'v' }, String(c.answer ?? ''))),
-      gradeWrap,
-    ),
-  );
+  const card = h('div', { class: 'vm-card' },
+    h('div', { class: 'vm-eyebrow' }, `문제 ${idx + 1} / ${total}${ctx.mode === 'review' ? ' · 복습' : ' · 개념 응용'}`),
+    h('div', { class: 'vm-q' }, qNode(c.prompt)),
+    figs.length ? h('div', { class: 'vm-fig' }, figs.map((f) => ctx.figureNode?.(f)).filter(Boolean)) : null,
+    steps.length ? h('div', { class: 'vm-steps' }, steps.map((s, i) => h('div', { class: 'vm-step', style: `animation-delay:${i * 0.15}s` },
+      h('span', { class: 'ix' }, String(i + 1)), h('span', { class: 'tx', html: String(s).replace(/\^2/g, '<sup>2</sup>') })))) : null,
+    h('div', { class: 'vm-ans' }, h('span', { class: 'lb' }, '정답'), h('span', { class: 'v' }, String(c.answer ?? ''))),
+    gradeWrap);
+  const conceptPane = h('div', { class: 'vm-pane' },
+    h('span', { class: 'vm-klab' }, '개념 — ' + (sol.title || c.module || '핵심')),
+    sol.formula ? h('div', { class: 'vm-formula' }, sol.formula) : (sol.core ? h('div', { class: 'vm-formula', style: 'font-size:13px;' }, sol.core) : null),
+    sol.idea ? h('div', { class: 'vm-b2', html: String(sol.idea) }) : (sol.core ? h('div', { class: 'vm-b2' }, sol.core) : null));
 
-  const side = h('aside', { class: 'vm-side' },
-    h('div', { class: 'vm-pane' },
-      h('span', { class: 'vm-klab' }, '개념 — ' + (sol.title || c.module || '핵심')),
-      sol.formula ? h('div', { class: 'vm-formula' }, sol.formula) : (sol.core ? h('div', { class: 'vm-formula', style: 'font-size:13px;' }, sol.core) : null),
-      sol.idea ? h('div', { class: 'vm-b2', html: String(sol.idea) }) : (sol.core ? h('div', { class: 'vm-b2' }, sol.core) : null)),
-    h('div', { class: 'vm-pane' },
-      h('span', { class: 'vm-klab' }, '오늘 진행'),
-      h('div', { class: 'vm-kv' }, h('span', {}, '문제'), h('b', {}, `${idx + 1} / ${total}`)),
-      h('div', { class: 'v-bar' }, h('i', { style: `width:${Math.round(((idx + 1) / total) * 100)}%` })),
-      ctx.passRate != null ? h('div', { class: 'vm-kv' }, h('span', {}, '이번 주 정답률'), h('b', {}, `${ctx.passRate}%`)) : null),
-    nextBtn, gateEl,
-  );
-
-  const root = h('div', { class: 'vm' }, v2Style(VM_CSS), rail(ctx), h('div', { class: 'vm-mainwrap' }, main, side));
+  let root;
+  if (ctx.size !== 'desktop') {
+    const [mTopb, mSteps] = mMathTop(ctx, total, idx, '수학 · 응용', `${idx + 1} / ${total}`);
+    root = h('div', { class: 'vm' }, v2Style(VMM_CSS), mTopb, mSteps,
+      h('div', { class: 'm-pad' }, h('span', { class: 'scene-chip' }, (c.module || '응용') + ' · 수학'), card, conceptPane),
+      h('div', { class: 'm-cta' }, gateEl, nextBtn));
+  } else {
+    const main = h('div', { class: 'vm-main' },
+      h('div', { class: 'vm-crumb' }, h('span', { class: 'vm-scene' }, (c.module || '응용') + ' · 수학'),
+        h('div', { class: 'vm-prog' }, Array.from({ length: total }, (_, i) => h('i', { class: i <= idx ? 'f' : '' }))),
+        h('span', { class: 'vm-prog-t' }, `${idx + 1} / ${total}`)),
+      card);
+    const side = h('aside', { class: 'vm-side' }, conceptPane,
+      h('div', { class: 'vm-pane' }, h('span', { class: 'vm-klab' }, '오늘 진행'),
+        h('div', { class: 'vm-kv' }, h('span', {}, '문제'), h('b', {}, `${idx + 1} / ${total}`)),
+        h('div', { class: 'v-bar' }, h('i', { style: `width:${Math.round(((idx + 1) / total) * 100)}%` })),
+        ctx.passRate != null ? h('div', { class: 'vm-kv' }, h('span', {}, '이번 주 정답률'), h('b', {}, `${ctx.passRate}%`)) : null),
+      nextBtn, gateEl);
+    root = h('div', { class: 'vm' }, v2Style(VM_CSS), rail(ctx), h('div', { class: 'vm-mainwrap' }, main, side));
+  }
   host.appendChild(root);
   return { cleanup: () => { host.innerHTML = ''; }, layout: { update() {} } };
 }
