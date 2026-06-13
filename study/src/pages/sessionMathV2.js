@@ -92,6 +92,87 @@ function qNode(text) {
   return span;
 }
 
+/* 모바일(phone/tablet) — 단일 칼럼 셸 + 도형 폭맞춤 (작업지시서 모바일 §3-5) */
+const VMM_CSS = `
+.vm{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
+.vm *{box-sizing:border-box;margin:0}
+.vm button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}
+.m-topb{position:sticky;top:0;z-index:6;background:oklch(97.5% .009 95/.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(9px + env(safe-area-inset-top)) 16px 11px;flex:0 0 auto}
+.m-topb-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m-home{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut)}
+.m-topb-meta{font-family:Outfit,sans-serif;font-size:12px;color:var(--faint);letter-spacing:.04em;white-space:nowrap}
+.m-topb-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint)}
+.m-prog{display:flex;gap:4px;margin-top:9px}
+.m-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
+.m-prog i.f{background:var(--teal)}
+.m-steps{display:flex;align-items:center;gap:7px;padding:11px 20px 3px;flex:0 0 auto;overflow-x:auto}
+.m-rstep{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-family:Outfit;font-size:12.5px;font-weight:700;color:var(--faint);flex:0 0 auto}
+.m-rstep.on{background:var(--teal-soft);color:var(--teal-deep);animation:v-haloT 2.4s ease-in-out infinite}
+.m-rstep.done{color:var(--teal-deep)}
+.m-steps .sp{flex:1}
+.m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
+.m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
+.scene-chip{display:inline-flex;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap;margin-top:8px}
+.m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+.m-cta .vm-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-bottom:9px;white-space:nowrap}
+.m-cta .vm-gate.ok{color:var(--teal-deep);font-weight:600}
+.m-cta .vm-cbtn,.m-cta .vm-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap}
+.m-cta .vm-cbtn{background:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.m-cta .vm-next{background:transparent;border:1.5px solid var(--line);color:var(--faint)}
+.m-cta .vm-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.vm-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
+.vm-eyebrow{font-family:Outfit;font-size:11px;letter-spacing:.14em;color:var(--faint);font-weight:600;text-transform:uppercase}
+.vm-ctitle{font-family:Outfit;font-size:27px;font-weight:700;letter-spacing:-.025em;margin-top:10px}
+.vm-q{font-family:Outfit;font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.35;margin-top:10px}
+.vm-q sup{font-size:.6em}
+.vm-fig{margin-top:16px;display:flex;justify-content:center}
+.vm-fig svg{max-width:100%;height:auto}
+.vm-cbody{font-size:14.5px;color:var(--text,#3f4845);line-height:1.75;margin-top:12px}
+.vm-cbody b{color:var(--ink)}
+.vm-formula{background:var(--teal-soft);border-radius:12px;padding:12px 14px;margin-top:9px;font-family:Outfit;font-size:14px;font-weight:600;color:var(--teal-deep);text-align:center}
+.vm-csec{padding-left:13px;border-left:3px solid var(--teal-line);margin-top:14px}
+.vm-csec .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--teal-deep);text-transform:uppercase}
+.vm-csec p{font-size:13.5px;color:var(--mut);line-height:1.7;margin-top:5px}
+.vm-steps{margin-top:18px;border-top:1px solid var(--line)}
+.vm-step{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.vm-step .ix{font-family:Outfit;font-size:11px;color:var(--faint);width:14px;flex:0 0 auto}
+.vm-step .tx{font-size:14px;line-height:1.55;color:#4a5450}
+.vm-step .tx b{color:var(--ink);font-family:Outfit}
+.vm-ans{margin-top:16px;background:var(--teal-soft);border-radius:14px;padding:14px 18px;display:flex;align-items:baseline;gap:12px}
+.vm-ans .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--teal-deep);text-transform:uppercase;white-space:nowrap}
+.vm-ans .v{font-family:Outfit;font-size:20px;font-weight:700;color:var(--teal-deep)}
+.vm-grade{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+.vm-grade .hh{flex-basis:100%;font-size:11.5px;color:var(--faint);text-align:center}
+.vm-gbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:14px;font-weight:700;border-radius:13px;padding:14px 0;white-space:nowrap;min-height:50px}
+.vm-gbtn.ok{background:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.vm-gbtn.no{background:transparent;color:var(--coral-deep);border:1.5px solid oklch(58% .115 32/.45)}
+.vm-graded{display:inline-flex;align-items:center;gap:7px;font-size:13.5px;font-weight:700;border-radius:999px;padding:9px 16px}
+.vm-graded.ok{background:var(--teal-soft);color:var(--teal-deep)}
+.vm-graded.no{background:var(--coral-soft);color:var(--coral-deep)}
+.vm-pane{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
+.vm-klab{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vm-b2{font-size:12.5px;line-height:1.65;color:#4a5450;margin-top:9px;text-wrap:pretty}
+.vm-b2 b{color:var(--ink)}
+.vm-kv{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--mut);margin-top:9px}
+.vm-kv b{font-family:Outfit;font-size:15px;font-weight:700;color:var(--ink)}
+.vm-pane .v-bar{height:5px;margin-top:9px}
+.vm-pane .v-bar > i{background:var(--teal)}
+`;
+
+function mMathTop(ctx, total, idx, meta, ptLabel) {
+  const mProg = Array.from({ length: total }, (_, i) => h('i', { class: i <= idx ? 'f' : '' }));
+  const mSteps = h('div', { class: 'm-steps' },
+    Array.from({ length: total }, (_, i) => h('button', { class: 'm-rstep' + (i === idx ? ' on' : i < idx ? ' done' : ''), type: 'button', onClick: () => ctx.onJump?.(i) }, String(i + 1))),
+    h('span', { class: 'sp' }), h('span', { class: 'pt' }, ptLabel));
+  const mTopb = h('div', { class: 'm-topb' },
+    h('div', { class: 'm-topb-row' },
+      h('button', { class: 'm-home', type: 'button', onClick: ctx.onHome }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
+      h('span', { class: 'm-topb-meta' }, meta),
+      h('span', { class: 'm-topb-time' }, '')),
+    h('div', { class: 'm-prog' }, mProg));
+  return [mTopb, mSteps];
+}
+
 export function renderMathV2(host, c, ctx) {
   ensureV2Fonts();
   const total = ctx.total || 1;
@@ -101,20 +182,29 @@ export function renderMathV2(host, c, ctx) {
   if (c.kind === 'concept') {
     const sections = [['배경', c.background], ['왜 배울 가치', c.value], ['길러지는 사고', c.thinking], ['실생활', c.realLife]].filter(([, v]) => v);
     const figs = Array.isArray(c.figures) ? c.figures : (c.figure ? [c.figure] : []);
-    const main = h('div', { class: 'vm-main vm-concept' },
-      h('div', { class: 'vm-crumb' }, h('span', { class: 'vm-scene' }, (c.module || '개념') + ' · 수학'),
-        h('div', { class: 'vm-prog' }, Array.from({ length: total }, (_, i) => h('i', { class: i <= idx ? 'f' : '' }))),
-        h('span', { class: 'vm-prog-t' }, `${idx + 1} / ${total}`)),
-      h('div', { class: 'vm-card', style: 'margin-top:20px;' },
-        h('div', { class: 'vm-eyebrow' }, '개념'),
-        h('h1', { class: 'vm-ctitle' }, c.title || ''),
-        figs.length ? h('div', { class: 'vm-fig' }, figs.map((f) => ctx.figureNode?.(f)).filter(Boolean)) : null,
-        (c.body || []).map((p) => h('div', { class: 'vm-cbody' }, p)),
-        c.worked ? h('div', { class: 'vm-formula', style: 'text-align:left;margin-top:18px;' }, (c.worked.steps || []).join('  →  ')) : null,
-        sections.length ? h('div', {}, sections.map(([lb, tx]) => h('div', { class: 'vm-csec' }, h('div', { class: 'lb' }, lb), h('p', {}, tx)))) : null,
-        h('button', { class: 'vm-cbtn', type: 'button', onClick: () => ctx.onConceptDone?.() }, vIcon(VI.CHECK, { size: 14, sw: 2.4 }), '이해했어요 · 응용 풀기'),
-      ));
-    const root = h('div', { class: 'vm' }, v2Style(VM_CSS), rail(ctx), h('div', { class: 'vm-mainwrap' }, main));
+    const cbtn = h('button', { class: 'vm-cbtn', type: 'button', onClick: () => ctx.onConceptDone?.() }, vIcon(VI.CHECK, { size: 14, sw: 2.4 }), '이해했어요 · 응용 풀기');
+    const cardInner = [
+      h('div', { class: 'vm-eyebrow' }, '개념'),
+      h('h1', { class: 'vm-ctitle' }, c.title || ''),
+      figs.length ? h('div', { class: 'vm-fig' }, figs.map((f) => ctx.figureNode?.(f)).filter(Boolean)) : null,
+      (c.body || []).map((p) => h('div', { class: 'vm-cbody' }, p)),
+      c.worked ? h('div', { class: 'vm-formula', style: 'text-align:left;margin-top:18px;' }, (c.worked.steps || []).join('  →  ')) : null,
+      sections.length ? h('div', {}, sections.map(([lb, tx]) => h('div', { class: 'vm-csec' }, h('div', { class: 'lb' }, lb), h('p', {}, tx)))) : null,
+    ];
+    let root;
+    if (ctx.size !== 'desktop') {
+      const [mTopb, mSteps] = mMathTop(ctx, total, idx, '수학 · 개념', '개념');
+      root = h('div', { class: 'vm' }, v2Style(VMM_CSS), mTopb, mSteps,
+        h('div', { class: 'm-pad' }, h('span', { class: 'scene-chip' }, (c.module || '개념') + ' · 수학'), h('div', { class: 'vm-card' }, cardInner)),
+        h('div', { class: 'm-cta' }, cbtn));
+    } else {
+      const main = h('div', { class: 'vm-main vm-concept' },
+        h('div', { class: 'vm-crumb' }, h('span', { class: 'vm-scene' }, (c.module || '개념') + ' · 수학'),
+          h('div', { class: 'vm-prog' }, Array.from({ length: total }, (_, i) => h('i', { class: i <= idx ? 'f' : '' }))),
+          h('span', { class: 'vm-prog-t' }, `${idx + 1} / ${total}`)),
+        h('div', { class: 'vm-card', style: 'margin-top:20px;' }, cardInner, cbtn));
+      root = h('div', { class: 'vm' }, v2Style(VM_CSS), rail(ctx), h('div', { class: 'vm-mainwrap' }, main));
+    }
     host.appendChild(root);
     return { cleanup: () => { host.innerHTML = ''; }, layout: { update() {} } };
   }
