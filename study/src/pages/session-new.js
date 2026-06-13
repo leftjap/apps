@@ -242,11 +242,8 @@ function render(host, state, handlers = {}) {
   const sceneEx = state.sentence?.explanation;
   const isDialogue = sceneEx && Array.isArray(sceneEx.dialogue);
   // 데스크탑 = D1 재디자인 (다이얼로그 / 표현별 학습). phone/tablet = 기존 경로 (아래).
-  if (state.size === 'desktop') {
-    return isDialogue ? renderDialogueV2(host, state, handlers) : renderSessionExprV2(host, state, handlers);
-  }
-  // phone/tablet 다이얼로그 — 모바일 v2 단일 칼럼 (따라 말하기 연습은 후속 wave 까지 기존 경로 유지).
-  if (isDialogue) return renderDialogueV2(host, state, handlers);
+  // 다이얼로그 / 표현 연습 모두 v2 단일 칼럼 (데스크톱 + phone/tablet). 구 SessionLayout 경로는 미사용(후속 정리).
+  return isDialogue ? renderDialogueV2(host, state, handlers) : renderSessionExprV2(host, state, handlers);
 
   const layout = createSessionLayout({
     size: state.size,

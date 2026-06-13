@@ -202,6 +202,102 @@ function drillRows(drills, hlTerm, lang, speaker) {
   });
 }
 
+/* 모바일(phone/tablet) — 동일 로직, 단일 칼럼 셸(m-topb/m-steps/m-cta) + 해설 fold (작업지시서 모바일 §3-3) */
+const VSM_CSS = `
+.vs{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
+.vs *{box-sizing:border-box;margin:0}
+.vs button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}
+.m-topb{position:sticky;top:0;z-index:6;background:oklch(97.5% .009 95/.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(9px + env(safe-area-inset-top)) 16px 11px;flex:0 0 auto}
+.m-topb-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m-home{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut)}
+.m-topb-meta{font-family:Outfit,sans-serif;font-size:12px;color:var(--faint);letter-spacing:.04em;white-space:nowrap}
+.m-topb-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint)}
+.m-prog{display:flex;gap:4px;margin-top:9px}
+.m-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
+.m-prog i.f{background:var(--teal)}
+.m-steps{display:flex;align-items:center;gap:7px;padding:11px 20px 3px;flex:0 0 auto;overflow-x:auto}
+.m-rstep{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-family:Outfit;font-size:12.5px;font-weight:700;color:var(--faint);flex:0 0 auto}
+.m-rstep.on{background:var(--teal-soft);color:var(--teal-deep);animation:v-haloT 2.4s ease-in-out infinite}
+.m-rstep.done{color:var(--teal-deep)}
+.m-steps .sp{flex:1}
+.m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
+.m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
+.m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+.m-cta .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-bottom:9px;white-space:nowrap}
+.m-cta .vs-gate.ok{color:var(--teal-deep);font-weight:600}
+.m-cta .vs-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:transparent;border:1.5px solid var(--line);color:var(--faint)}
+.m-cta .vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.scene-chip{display:inline-flex;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap}
+.vs-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
+.vs-h1{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+.vs-h1 b{font-weight:700;text-decoration:underline 4px oklch(44% .062 192/.35);text-underline-offset:5px}
+.vs-ko{font-size:16px;color:var(--mut);margin-top:10px}
+.vs-pron{font-size:12.5px;color:var(--faint);margin-top:4px}
+.vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
+.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
+.vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
+.vs-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.vs-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
+.vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-ring{position:relative;width:50px;height:50px;flex:0 0 auto;margin-left:auto}
+.vs-ring svg{transform:rotate(-90deg)}
+.vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
+.vs-cap{display:none}
+.vs-meta{display:flex;align-items:center;gap:14px;margin-top:15px;flex-wrap:wrap}
+.vs-say{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
+.vs-say .d{display:inline-flex;gap:5px}
+.vs-say .d i{width:8px;height:8px;border-radius:50%;background:#ddd9c9}
+.vs-say .d i.f{background:var(--teal)}
+.vs-combo{display:inline-flex;align-items:center;gap:5px;font-family:Outfit;font-size:11.5px;font-weight:700;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:5px 11px;white-space:nowrap}
+.vs-pass{display:inline-flex;align-items:center;gap:5px;background:var(--coral-soft);color:var(--coral-deep);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;letter-spacing:.03em;white-space:nowrap;animation:v-settle .5s both}
+.vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:12px}
+.vs-rec .hd{display:flex;justify-content:space-between;align-items:center;min-height:21px}
+.vs-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vs-newrec{display:inline-flex;align-items:center;gap:4px;font-family:Outfit;font-size:10.5px;font-weight:800;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:4px 10px;white-space:nowrap;animation:v-settle .5s both}
+.vs-rec .nr{display:flex;align-items:baseline;gap:6px;margin-top:7px}
+.vs-rec .n{font-family:Outfit;font-size:26px;font-weight:700;line-height:1}
+.vs-rec .u{font-size:11.5px;color:var(--faint);font-weight:600}
+.vs-rec .v-bar{height:5px;margin-top:9px}
+.vs-rec .v-bar > i{background:var(--teal)}
+.vs-rec .msg{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.5}
+.vs-rec .msg b{color:var(--coral-deep)}
+.vs-labrow{display:flex;align-items:baseline;justify-content:space-between;margin-top:18px}
+.vs-lab{font-family:Outfit;font-size:10px;letter-spacing:.13em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vs-labrow .ct{font-family:Outfit;font-size:11px;color:var(--mut);font-weight:600}
+.vs-labrow .ct b{color:var(--teal-deep)}
+.vs-drow{display:flex;align-items:center;gap:11px;padding:12px 2px;border-bottom:1px solid var(--line)}
+.vs-drow:last-of-type{border-bottom:0}
+.vs-drow.recing{background:var(--coral-soft);margin:0 -10px;padding:12px 10px;border-radius:12px;border-bottom-color:transparent}
+.vs-drow .ix{font-family:Outfit;font-size:11px;color:var(--faint);width:14px;flex:0 0 auto}
+.vs-drow > div{min-width:0;flex:1}
+.vs-drow .en{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
+.vs-drow .en b{font-weight:800;text-decoration:underline 2px oklch(44% .062 192/.3);text-underline-offset:3px}
+.vs-drow .sub{font-size:11.5px;color:var(--faint);margin-top:2px}
+.vs-drow .grow{flex:0 0 auto}
+.vs-cir{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;flex:0 0 auto;position:relative;padding:0}
+.vs-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
+.vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
+.vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-gscore{font-family:Outfit;font-size:13px;font-weight:700;color:var(--teal-deep);white-space:nowrap}
+.vs-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
+.vs-fold .fhd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.vs-fold .ft{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vs-fold .chev{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);transition:transform .2s}
+.vs-fold.open .chev{transform:rotate(180deg)}
+.vs-fold .fbd{margin-top:13px}
+.vs-fold .vs-panel{padding:0;border:0;background:none;margin:0}
+.vs-fold .ph2d{display:none}
+.vs-kbox{background:var(--teal-soft);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.6}
+.vs-sec{margin-top:14px}
+.vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vs-sec .b2{font-size:12.5px;line-height:1.65;color:var(--mut);margin-top:5px;text-wrap:pretty}
+.vs-sec .b2 b{color:var(--ink)}
+.vs-ex{margin-top:8px;font-size:12.5px;line-height:1.6}
+.vs-ex .k{color:var(--mut)}
+.vs-chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
+.vs-chip{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:#fbf9f2;white-space:nowrap}
+`;
+
 export function renderSessionExprV2(host, state, handlers = {}) {
   ensureV2Fonts();
   const lang = state.sentence?.lang || 'en';
@@ -360,26 +456,53 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
 
-  const main = h('div', { class: 'vs-main' },
-    h('div', { class: 'vs-crumb' },
-      h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
-      h('div', { class: 'vs-prog' }, progBars),
-      h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-    h('div', { class: 'vs-card' },
-      h('h1', { class: 'vs-h1' }, hlNode(s?.sentence || '', expr || pickUnderline(s?.sentence))),
-      h('div', { class: 'vs-ko' }, s?.ko || ''),
-      s?.pron ? h('div', { class: 'vs-pron' }, s.pron) : null,
-      ctrl, meta),
-    drillsBlock,
-  );
+  const cardEl = h('div', { class: 'vs-card' },
+    h('h1', { class: 'vs-h1' }, hlNode(s?.sentence || '', expr || pickUnderline(s?.sentence))),
+    h('div', { class: 'vs-ko' }, s?.ko || ''),
+    s?.pron ? h('div', { class: 'vs-pron' }, s.pron) : null,
+    ctrl, meta);
 
-  const side = h('aside', { class: 'vs-side' }, recWidget, explainPanel(ex), nextBtn, gateEl);
-
-  const root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
+  let root, timeUpdate;
+  if (state.size !== 'desktop') {
+    // ── 모바일 단일 칼럼 ──
+    const mTime = h('span', { class: 'm-topb-time' }, state.time || '00:00');
+    const mTopb = h('div', { class: 'm-topb' },
+      h('div', { class: 'm-topb-row' },
+        h('button', { class: 'm-home', type: 'button', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
+        h('span', { class: 'm-topb-meta' }, '신규 학습 · ' + subjLabel),
+        mTime),
+      h('div', { class: 'm-prog' }, progBars));
+    const mSteps = h('div', { class: 'm-steps' },
+      Array.from({ length: total }, (_, i) => h('button', { class: 'm-rstep' + (i + 1 === idx ? ' on' : i + 1 < idx ? ' done' : ''), type: 'button', onClick: () => handlers.onJump?.(i + 1 + offset) }, String(i + 1))),
+      h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
+    const foldBd = h('div', { class: 'fbd', style: 'display:none;' }, explainPanel(ex));
+    const fhd = h('div', { class: 'fhd' }, h('span', { class: 'ft' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 })));
+    const fold = h('div', { class: 'vs-fold' }, fhd, foldBd);
+    fhd.addEventListener('click', () => { const open = fold.classList.toggle('open'); foldBd.style.display = open ? '' : 'none'; });
+    const sceneChip = sceneTitle ? `${sceneTitle} · ${subjLabel}` : `신규 학습 · ${subjLabel}`;
+    root = h('div', { class: 'vs' }, v2Style(VSM_CSS),
+      mTopb, mSteps,
+      h('div', { class: 'm-pad' },
+        h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
+        cardEl, recWidget, drillsBlock, fold),
+      h('div', { class: 'm-cta' }, gateEl, nextBtn));
+    timeUpdate = (t) => { mTime.textContent = t; };
+  } else {
+    // ── 데스크톱 3칼럼 ──
+    const main = h('div', { class: 'vs-main' },
+      h('div', { class: 'vs-crumb' },
+        h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
+        h('div', { class: 'vs-prog' }, progBars),
+        h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
+      cardEl, drillsBlock);
+    const side = h('aside', { class: 'vs-side' }, recWidget, explainPanel(ex), nextBtn, gateEl);
+    root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
+    timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
+  }
   host.appendChild(root);
   refreshDots(); refreshRecWidget();
 
-  const layout = { update(st) { if (st && 'time' in st) { const t = rail.querySelector('.tm'); if (t) t.textContent = st.time; } } };
+  const layout = { update(st) { if (st && 'time' in st) timeUpdate(st.time); } };
   return { cleanup: () => { try { window.studySpeech?.cancel?.(); if (recCtrl?.stop) recCtrl.stop(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
 }
 
