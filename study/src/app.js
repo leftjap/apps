@@ -161,11 +161,19 @@ function isAuthorized(routeName) {
   return Boolean(typeof window !== 'undefined' && window.studyDB);
 }
 
-function mount(route) {
+let currentCleanup = null;
+
+export function mount(route) {
   if (!isAuthorized(route.name)) {
     window.location.replace('#/login');
     return;
   }
+  // 직전 뷰 teardown — 페이지 mount 가 반환한 cleanup 을 라우터가 호출한다.
+  // (listener/interval 해제 + 세션 activeSession 스냅샷 저장 → 인앱 이탈 시 '이어하기' 보존)
+  if (typeof currentCleanup === 'function') {
+    try { currentCleanup(); } catch (e) { console.error('[router] view cleanup', e); }
+  }
+  currentCleanup = null;
   const raw = ROUTES[route.name];
   const html = rewriteMockLinks(raw);
   const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -195,7 +203,8 @@ function mount(route) {
   if (pageMount) {
     // home / session-* 은 #root 에 빌드. summary 등은 body 에 직접 DOM (mocks 원본 보존).
     const host = document.getElementById('root') || document.body;
-    pageMount(host);
+    const ret = pageMount(host);
+    currentCleanup = (typeof ret === 'function') ? ret : null;
   }
   // Wave 11.30 — mocks 의 .pv-bar (Normal/Free/Milestone 등 디버그 chip) SPA 모드에서 일괄 hide.
   // mocks 단독 진입 (iframe 허브) 에서는 그대로 노출 (시안 도구). SPA = 실 앱 = 디버그 chip 노출 X.
