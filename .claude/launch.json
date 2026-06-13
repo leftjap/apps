@@ -22,6 +22,15 @@
       "port": 5177
     },
     {
+      "name": "pick-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev"
+      ],
+      "cwd": "/Users/gio_c/apps/pick",
+      "port": 5177
+    },
+    {
       "name": "cue-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
