@@ -426,6 +426,18 @@ function removeCommentRow(row, doc) {
 }
 
 /**
+ * 댓글 시트 노출 여부 — article 존재 + 저장된 글(임시 new- id 아님)일 때만.
+ * 미저장 새 글(빈 글)은 댓글 달 단락이 없고 저장 전이라 시트 숨김 (지오 요청 2026-06-13).
+ * 첫 저장 시 article.dataset.entryId 가 실제 id 로 in-place 갱신되면(entries.js saveArticle)
+ * 옵저버(attributeFilter:['data-entry-id'])가 재발화 → 시트 자동 복귀.
+ */
+export function shouldShowConvo(article) {
+  if (!article) return false;
+  const id = article.dataset?.entryId || '';
+  return !!id && !id.startsWith('new-');
+}
+
+/**
  * #mainView 의 article.doc 변경 감지 — entryId 가 바뀌면 패널 다시 mount.
  * article 부재 (전체 목록/빈 카테고리) → 패널 비움 + body[data-convo] 해제.
  */
@@ -438,8 +450,8 @@ function installArticleObserver() {
   let lastEntryId = null;
   const handle = () => {
     const article = view.querySelector('article.doc');
-    // 패널 노출 여부 — article 존재 시에만 (expense/admin 은 CSS 가 추가 차단)
-    document.body.dataset.convo = article ? '1' : '';
+    // 패널 노출 여부 — 저장된 글일 때만 (expense/admin 은 CSS 가 추가 차단, 빈 새 글은 shouldShowConvo 가 차단)
+    document.body.dataset.convo = shouldShowConvo(article) ? '1' : '';
     if (!article) {
       lastEntryId = null;
       clearPanel(document);

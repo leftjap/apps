@@ -23,10 +23,27 @@ import {
   mountForArticle,
   syncComposerState,
   handleRealtimeCommentChange,
+  shouldShowConvo,
   __resetCommentsState,
 } from './comments.js';
 import { USER_ID_TO_DISPLAY_NAME } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
+
+describe('shouldShowConvo — 댓글 시트 노출 게이트 (글쓰기/빈 새 글에선 숨김)', () => {
+  it('article 없으면(목록·빈 카테고리) false', () => {
+    expect(shouldShowConvo(null)).toBe(false);
+    expect(shouldShowConvo(undefined)).toBe(false);
+  });
+  it('저장된 글(실제 id)이면 true', () => {
+    expect(shouldShowConvo({ dataset: { entryId: '550e8400-e29b-41d4-a716-446655440000' } })).toBe(true);
+  });
+  it('미저장 새 글(new- 임시 id)이면 false — 빈 글엔 댓글 달 단락이 없음', () => {
+    expect(shouldShowConvo({ dataset: { entryId: 'new-1717000000000' } })).toBe(false);
+  });
+  it('entryId 없으면 false', () => {
+    expect(shouldShowConvo({ dataset: {} })).toBe(false);
+  });
+});
 
 const OWNER = '11111111-2222-3333-4444-555555555555';
 const PARTNER = '22222222-3333-4444-5555-666666666666';
