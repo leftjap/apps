@@ -117,6 +117,76 @@ function deriveKind(score) {
   return 'no';
 }
 
+/* 모바일(phone/tablet) — 회상 우선 단일 칼럼 (작업지시서 모바일 §3-4). 코랄 step. */
+const VRM_CSS = `
+.vr{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
+.vr *{box-sizing:border-box;margin:0}
+.vr button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}
+@keyframes v-haloC{0%,100%{box-shadow:inset 0 0 0 1.5px oklch(58% .115 32/.4),0 0 0 0 oklch(58% .115 32/.25)}55%{box-shadow:inset 0 0 0 1.5px oklch(58% .115 32/.4),0 0 0 7px oklch(58% .115 32/0)}}
+.m-topb{position:sticky;top:0;z-index:6;background:oklch(97.5% .009 95/.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(9px + env(safe-area-inset-top)) 16px 11px;flex:0 0 auto}
+.m-topb-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m-home{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut)}
+.m-topb-meta{font-family:Outfit,sans-serif;font-size:12px;color:var(--faint);letter-spacing:.04em;white-space:nowrap}
+.m-topb-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint)}
+.m-prog{display:flex;gap:4px;margin-top:9px}
+.m-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
+.m-prog i.fc{background:var(--coral)}
+.m-steps{display:flex;align-items:center;gap:7px;padding:11px 20px 3px;flex:0 0 auto;overflow-x:auto}
+.m-rstep{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-family:Outfit;font-size:12.5px;font-weight:700;color:var(--faint);flex:0 0 auto}
+.m-rstep.on.c{background:var(--coral-soft);color:var(--coral-deep);animation:v-haloC 2.4s ease-in-out infinite}
+.m-rstep.done.c{color:var(--coral-deep)}
+.m-steps .sp{flex:1}
+.m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
+.m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
+.m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+.m-cta .vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-bottom:9px;white-space:nowrap}
+.m-cta .vr-gate.ok{color:var(--teal-deep);font-weight:600}
+.m-cta .vr-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:transparent;border:1.5px solid var(--line);color:var(--faint)}
+.m-cta .vr-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.vr-hint{margin-top:13px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
+.vr-hint i{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:v-blink 1.6s infinite;flex:0 0 auto}
+.vr-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:10px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
+.vr-h1{font-family:Outfit;font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+.vr-ko{font-size:16px;color:var(--mut);margin-top:10px}
+.vr-srs{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--faint);flex-wrap:wrap}
+.vr-srs b{color:var(--mut);font-weight:700}
+.vr-ctrl{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
+.vr-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
+.vr-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
+.vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vr-ring{position:relative;width:50px;height:50px;flex:0 0 auto}
+.vr-ring svg{transform:rotate(-90deg)}
+.vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
+.vr-cap{font-size:11px;color:var(--faint);white-space:nowrap}
+.vr-meta{display:flex;align-items:center;gap:14px;margin-top:15px;flex-wrap:wrap}
+.vr-say{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
+.vr-say .d{display:inline-flex;gap:5px}
+.vr-say .d i{width:8px;height:8px;border-radius:50%;background:#ddd9c9}
+.vr-say .d i.f{background:var(--teal)}
+.vr-hist{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--faint);flex-wrap:wrap}
+.vr-hist .hh{font-family:Outfit;font-weight:700;color:var(--mut);background:#f1eee2;border-radius:999px;padding:3px 9px;font-size:11px}
+.vr-hist .hh.q{color:var(--coral-deep);background:var(--coral-soft)}
+.vr-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:12px}
+.vr-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vr-rec .nr{display:flex;align-items:baseline;gap:6px;margin-top:7px}
+.vr-rec .n{font-family:Outfit;font-size:26px;font-weight:700;line-height:1}
+.vr-rec .u{font-size:11.5px;color:var(--faint);font-weight:600}
+.vr-rec .v-bar{height:5px;margin-top:9px}
+.vr-rec .v-bar > i{background:var(--teal)}
+.vr-rec .msg{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.5}
+.vr-rec .msg b{color:var(--coral-deep)}
+.vr-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
+.vr-fold .hd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.vr-fold .t{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vr-fold .chev{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);transition:transform .2s}
+.vr-fold.open .chev{transform:rotate(180deg)}
+.vr-fold .bd{margin-top:13px;font-size:12.5px;line-height:1.6;color:var(--mut)}
+.vr-fold .bd .kx{background:var(--teal-soft);border-radius:12px;padding:12px 14px}
+.vr-fold .bd .vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase;margin-top:12px}
+`;
+
 export function renderSessionReviewV2(host, state, handlers = {}) {
   ensureV2Fonts();
   const lang = state.sentence?.lang || 'en';
@@ -272,24 +342,44 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     handlers.onJudge?.(deriveKind(state.lastScore));
   });
 
-  const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
-  const main = h('div', { class: 'vr-main' },
-    h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
-      h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
-    h('div', { class: 'vr-hint' }, h('i'), '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요'),
-    h('div', { class: 'vr-card' },
-      h('h1', { class: 'vr-h1' }, s.sentence),
-      h('div', { class: 'vr-ko' }, s.ko || ''),
-      h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
-        lastScore != null ? h('span', {}, '지난 점수 ', h('b', {}, String(lastScore))) : null,
-        nextDate ? h('span', {}, '통과 시 다음 복습 ', h('b', {}, String(nextDate))) : null),
-      ctrl, meta),
-  );
-  const side = h('aside', { class: 'vr-side' }, recWidget, fold, nextBtn, gateEl);
+  const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
+    lastScore != null ? h('span', {}, '지난 점수 ', h('b', {}, String(lastScore))) : null,
+    nextDate ? h('span', {}, '통과 시 다음 복습 ', h('b', {}, String(nextDate))) : null);
+  const cardEl = h('div', { class: 'vr-card' }, h('h1', { class: 'vr-h1' }, s.sentence), h('div', { class: 'vr-ko' }, s.ko || ''), srsRow, ctrl, meta);
+  const hintEl = h('div', { class: 'vr-hint' }, h('i'), '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
 
-  const root = h('div', { class: 'vr' }, v2Style(VR_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
+  let root, timeUpdate;
+  if (state.size !== 'desktop') {
+    // ── 모바일 단일 칼럼 (회상 우선) ──
+    const mTime = h('span', { class: 'm-topb-time' }, state.time || '00:00');
+    const mProg = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'fc' : '' }));
+    const mTopb = h('div', { class: 'm-topb' },
+      h('div', { class: 'm-topb-row' },
+        h('button', { class: 'm-home', type: 'button', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
+        h('span', { class: 'm-topb-meta' }, '복습 · ' + subjLabel),
+        mTime),
+      h('div', { class: 'm-prog' }, mProg));
+    const mSteps = h('div', { class: 'm-steps' },
+      Array.from({ length: total }, (_, i) => h('button', { class: 'm-rstep c' + (i + 1 === idx ? ' on' : i + 1 < idx ? ' done' : ''), type: 'button', onClick: () => handlers.onJump?.(i + 1) }, String(i + 1))),
+      h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
+    root = h('div', { class: 'vr' }, v2Style(VRM_CSS),
+      mTopb, mSteps,
+      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold),
+      h('div', { class: 'm-cta' }, gateEl, nextBtn));
+    timeUpdate = (t) => { mTime.textContent = t; };
+  } else {
+    // ── 데스크톱 3칼럼 ──
+    const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
+    const main = h('div', { class: 'vr-main' },
+      h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
+        h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
+      hintEl, cardEl);
+    const side = h('aside', { class: 'vr-side' }, recWidget, fold, nextBtn, gateEl);
+    root = h('div', { class: 'vr' }, v2Style(VR_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
+    timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
+  }
   host.appendChild(root);
   refreshDots(); refreshRec();
-  const layout = { update(st) { if (st && 'time' in st) { const t = rail.querySelector('.tm'); if (t) t.textContent = st.time; } } };
+  const layout = { update(st) { if (st && 'time' in st) timeUpdate(st.time); } };
   return { cleanup: () => { try { window.studySpeech?.cancel?.(); if (recCtrl?.stop) recCtrl.stop(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
 }

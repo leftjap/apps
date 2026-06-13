@@ -243,10 +243,8 @@ export function mountSessionReview(host) {
 function render(host, state, handlers = {}) {
   host.innerHTML = '';
 
-  // 데스크탑 = C 파이널 v2 복습. phone/tablet = 기존 경로 (아래).
-  if (state.size === 'desktop') {
-    return renderSessionReviewV2(host, state, handlers);
-  }
+  // 전 사이즈 = C 파이널 v2 복습 (renderSessionReviewV2 내부 size 분기). 구 SessionLayout 경로 미사용(후속 정리).
+  return renderSessionReviewV2(host, state, handlers);
 
   // returnTo 별 좌상단 라벨 분기 — onHome 동작 (returnTo 별 라우팅) 과 일관.
   // fromSessionQueue 미설정 (일반 home 진입) 시 default '홈으로'.
