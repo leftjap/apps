@@ -47,8 +47,8 @@ function pronCls(score) {
 export function mountSummary(host) {
   const data = readSummary();
 
-  // 데스크탑 = C 파이널 v2 요약. phone/tablet = 기존 mock 채우기 (아래).
-  if (pickSize() === 'desktop') { renderSummaryV2(host, data); return; }
+  // 전 사이즈 = C 파이널 v2 요약 (renderSummaryV2 내부 size 분기). 구 mock-fill 미사용(후속 정리).
+  renderSummaryV2(host, data); return;
 
   const set = (id, val) => { const el = host.querySelector(`#${id}`); if (el) el.textContent = String(val); };
 

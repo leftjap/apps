@@ -7,6 +7,7 @@
  */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
+import { pickSize } from '../components/session/index.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -37,6 +38,46 @@ const VY_CSS = `
 .vy-pri{background:var(--teal);color:#fff;border:0;border-radius:13px;padding:15px 30px;font:inherit;font-size:14.5px;font-weight:700;cursor:pointer;animation:v-breathe 2.6s ease-in-out infinite;display:inline-flex;align-items:center;gap:9px}
 .vy-ghost{background:transparent;border:0;color:var(--mut);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
 @media (max-width:680px){.vy-stats{grid-template-columns:1fr 1fr}}
+`;
+
+/* 모바일(phone/tablet) — m-topb + 하단 sticky CTA (작업지시서 모바일 §3-6) */
+const VYM_CSS = `
+.vy{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
+.vy *{box-sizing:border-box;margin:0}
+.vy button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}
+.m-topb{position:sticky;top:0;z-index:6;background:oklch(97.5% .009 95/.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);padding:calc(9px + env(safe-area-inset-top)) 16px 11px;flex:0 0 auto}
+.m-topb-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.m-home{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut)}
+.m-topb-meta{font-family:Outfit,sans-serif;font-size:12px;color:var(--faint);letter-spacing:.04em;white-space:nowrap}
+.m-topb-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint)}
+.m-prog{display:flex;gap:4px;margin-top:9px}
+.m-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
+.m-prog i.f{background:var(--teal)}
+.vy-scroll{flex:1 1 auto}
+.vy-wrap{display:flex;flex-direction:column;align-items:center;text-align:center;padding:32px 24px 20px;max-width:560px;margin:0 auto;width:100%}
+.vy-ring{position:relative;width:100px;height:100px}
+.vy-ring svg{transform:rotate(-90deg)}
+.vy-ring .arc{animation:vy-sweep 1s cubic-bezier(.3,.7,.3,1) both}
+@keyframes vy-sweep{from{stroke-dashoffset:289}}
+.vy-ring .ck{position:absolute;inset:0;display:grid;place-items:center;color:var(--coral-deep)}
+.vy-h1{font-family:Outfit;font-size:29px;font-weight:700;letter-spacing:-.03em;margin-top:20px;animation:v-settle .6s .3s both}
+.vy-sub{font-size:13.5px;color:var(--mut);margin-top:9px;animation:v-settle .6s .45s both}
+.vy-banner{margin-top:18px;display:inline-flex;align-items:center;gap:8px;background:var(--coral-soft);color:var(--coral-deep);border-radius:999px;padding:9px 18px;font-size:13px;font-weight:800;white-space:nowrap;animation:v-settle .7s .6s both}
+.vy-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:26px;width:100%}
+.vy-st{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 0;text-align:center;animation:v-settle .6s both}
+.vy-st .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
+.vy-st .n{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;margin-top:9px;line-height:1}
+.vy-st .n em{font-style:normal;font-size:14px;color:var(--faint);font-weight:600}
+.vy-st .n.gold{color:var(--coral-deep)}
+.vy-st .d{font-size:11px;color:var(--mut);margin-top:7px}
+.vy-st .d b{color:var(--coral-deep)}
+.vy-chips{display:flex;gap:7px;margin-top:22px;align-items:center;flex-wrap:wrap;justify-content:center;animation:v-settle .6s 1.1s both}
+.vy-chips .lb{font-size:12px;color:var(--faint);white-space:nowrap}
+.vy-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:#fbf9f2;white-space:nowrap}
+.m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+.vy-ctas{display:flex;flex-direction:column;gap:9px;align-items:stretch}
+.vy-pri{background:var(--teal);color:#fff;border-radius:14px;min-height:52px;font-size:15px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;animation:v-breathe 2.6s ease-in-out infinite}
+.vy-ghost{background:transparent;color:var(--mut);font-size:13.5px;font-weight:600;min-height:40px;width:100%}
 `;
 
 function ringSvg() {
@@ -112,17 +153,24 @@ export function renderSummaryV2(host, data, handlers = {}) {
     );
   }
 
-  const root = h('div', { class: 'vy' }, v2Style(VY_CSS),
-    h('div', { class: 'vy-wrap' },
-      h('div', { class: 'vy-ring' }, ringSvg(), h('span', { class: 'ck' }, vCheck({ size: 38, sw: 2.4 }))),
-      h('h1', { class: 'vy-h1' }, title),
-      h('div', { class: 'vy-sub' }, sub),
-      banner,
-      stats,
-      chips,
-      ctas,
-    ),
-  );
+  const ringEl = h('div', { class: 'vy-ring' }, ringSvg(), h('span', { class: 'ck' }, vCheck({ size: 38, sw: 2.4 })));
+  const h1El = h('h1', { class: 'vy-h1' }, title);
+  const subEl = h('div', { class: 'vy-sub' }, sub);
+
+  let root;
+  if (pickSize() !== 'desktop') {
+    root = h('div', { class: 'vy' }, v2Style(VYM_CSS),
+      h('div', { class: 'm-topb' },
+        h('div', { class: 'm-topb-row' },
+          h('button', { class: 'm-home', type: 'button', onClick: goHome }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
+          h('span', { class: 'm-topb-meta' }, isReview ? '복습 완료' : '신규 학습 완료'),
+          h('span', { class: 'm-topb-time' }, `${mins}분`)),
+        h('div', { class: 'm-prog' }, Array.from({ length: 5 }, () => h('i', { class: 'f' })))),
+      h('div', { class: 'vy-scroll' }, h('div', { class: 'vy-wrap' }, ringEl, h1El, subEl, banner, stats, chips)),
+      h('div', { class: 'm-cta' }, ctas));
+  } else {
+    root = h('div', { class: 'vy' }, v2Style(VY_CSS), h('div', { class: 'vy-wrap' }, ringEl, h1El, subEl, banner, stats, chips, ctas));
+  }
   host.appendChild(root);
   return { cleanup: () => { host.innerHTML = ''; } };
 }
