@@ -1,6 +1,6 @@
 // pick 추천 엔진 순수 로직 단위 테스트 (Node vitest). edge fn 과 공용인 logic.js 검증.
 import { describe, it, expect } from 'vitest';
-import { constantTimeEqual, ratedKey, pendingOwners, toOwnerContext } from './logic.js';
+import { constantTimeEqual, ratedKey, pendingOwners, toOwnerContext, excludeRatedRecs } from './logic.js';
 
 describe('constantTimeEqual', () => {
   it('동일 문자열 → true', () => expect(constantTimeEqual('s3cr3t', 's3cr3t')).toBe(true));
@@ -54,6 +54,29 @@ describe('pendingOwners (settle 디바운스)', () => {
     ];
     const recos = [{ owner_id: 'u2', generated_at: '2026-06-06T12:00:00Z' }];
     expect(pendingOwners(ratings, recos, settle, now)).toEqual(['u1']);
+  });
+});
+
+describe('excludeRatedRecs (생성 단계 결정적 제외)', () => {
+  it('평가작(ratedKey 일치)은 추천에서 제외 — LLM 누락 대비', () => {
+    const recs = [
+      { media_type: 'movie', title: 'D.P. 시즌 1', year: 2021, reason: 'a' },
+      { media_type: 'movie', title: '소년심판', year: 2022, reason: 'b' },
+    ];
+    const ratedKeys = ['movie|d.p. 시즌 1|2021', 'movie|버닝|2018'];
+    expect(excludeRatedRecs(recs, ratedKeys).map((r) => r.title)).toEqual(['소년심판']);
+  });
+  it('Set/배열 양쪽 입력 허용 + 정규화(대소문자·공백)', () => {
+    const recs = [{ media_type: 'movie', title: '  The Bear ', year: 2022 }];
+    expect(excludeRatedRecs(recs, new Set(['movie|the bear|2022']))).toEqual([]);
+  });
+  it('year/media_type 다르면 유지', () => {
+    const recs = [{ media_type: 'book', title: '버닝', year: 2018 }];
+    expect(excludeRatedRecs(recs, ['movie|버닝|2018'])).toHaveLength(1);
+  });
+  it('빈 입력 안전', () => {
+    expect(excludeRatedRecs(null, null)).toEqual([]);
+    expect(excludeRatedRecs([{ media_type: 'movie', title: 'X', year: 1 }], [])).toHaveLength(1);
   });
 });
 

@@ -20,6 +20,17 @@ export function ratedKey(media_type, title, year) {
 }
 
 /**
+ * 생성된 추천 중 이미 평가한 작품(ratedKey 일치)을 결정적으로 제외.
+ * 에이전트(LLM)에 rated_keys 제외를 지시하지만 소프트라 누락 가능 → submit 게이트웨이에서 강제.
+ * @param {{media_type,title,year}[]} recommendations
+ * @param {Set<string>|string[]} ratedKeys
+ */
+export function excludeRatedRecs(recommendations, ratedKeys) {
+  const set = ratedKeys instanceof Set ? ratedKeys : new Set(ratedKeys || []);
+  return (recommendations || []).filter((r) => !set.has(ratedKey(r.media_type, r.title, r.year)));
+}
+
+/**
  * 추천 재생성이 필요한 owner 목록.
  *   조건: 평가 有 + (추천 없음[콜드스타트] 또는 최신평가 > 최신추천) + settle 경과(now - 최신평가 >= settleMs).
  * settle = 벌크 import 등 연속 변경이 멎은 뒤에만 재생성(Today decide 의 settle 미러).

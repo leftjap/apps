@@ -20,7 +20,7 @@
 // @ts-ignore — Deno std
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 // @ts-ignore — 로컬 순수 로직 (Deno 가 .js 임포트)
-import { constantTimeEqual, pendingOwners, toOwnerContext } from './logic.js';
+import { constantTimeEqual, pendingOwners, toOwnerContext, ratedKey, excludeRatedRecs } from './logic.js';
 
 // @ts-ignore — Deno globals
 declare const Deno: { env: { get(k: string): string | undefined }; serve: (h: (req: Request) => Response | Promise<Response>) => void };
@@ -75,7 +75,13 @@ async function runContext(owner_id?: string) {
 type Replace = { kind?: string; source_work?: string };
 async function runSubmit(owner_id: string, batch_id: string, recommendations: Array<Record<string, unknown>>, replace?: Replace) {
   const now = new Date().toISOString();
-  const rows = recommendations.map((r) => ({
+  // 생성 단계 결정적 제외 — 이미 평가한 작품은 추천(홈·갈래)에 넣지 않는다.
+  // 에이전트(LLM)에 rated_keys 제외를 지시하지만 소프트라 누락 가능 + 평가가 생성 이후일 수도 있음 → 여기서 강제.
+  const ratings = await readAll<Rating>('pick_ratings', 'media_type,title,year,deleted_at', ['owner_id', owner_id]);
+  const ratedKeys = new Set(ratings.filter((r) => !r.deleted_at).map((r) => ratedKey(r.media_type, r.title, r.year)));
+  const fresh = excludeRatedRecs(recommendations, ratedKeys);
+  const dropped = recommendations.length - fresh.length;
+  const rows = fresh.map((r) => ({
     owner_id,
     media_type: r.media_type,
     title: r.title,
@@ -96,9 +102,11 @@ async function runSubmit(owner_id: string, batch_id: string, recommendations: Ar
   else if (replace?.kind === 'branch') del = del.eq('kind', 'branch').eq('source_work', replace.source_work ?? '');
   const { error: delErr } = await del;
   if (delErr) return json(500, { status: 'error', message: `delete: ${delErr.message}` });
-  const { error: insErr } = await sb.from('pick_recommendations').insert(rows);
-  if (insErr) return json(500, { status: 'error', message: `insert: ${insErr.message}` });
-  return json(200, { status: 'ok', owner_id, inserted: rows.length, scope: replace?.kind ?? 'all' });
+  if (rows.length) {
+    const { error: insErr } = await sb.from('pick_recommendations').insert(rows);
+    if (insErr) return json(500, { status: 'error', message: `insert: ${insErr.message}` });
+  }
+  return json(200, { status: 'ok', owner_id, inserted: rows.length, dropped, scope: replace?.kind ?? 'all' });
 }
 
 Deno.serve(async (req: Request) => {
