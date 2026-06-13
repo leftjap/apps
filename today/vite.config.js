@@ -5,10 +5,20 @@ import { VitePWA } from 'vite-plugin-pwa';
 // 로컬 dev/preview 는 GH_PAGES 미설정 → / (기본 동작 유지).
 const BASE = process.env.GH_PAGES ? '/apps/today/' : '/';
 
+// 빌드 식별자 — 사이드바 하단에 표시. 지오가 폰에서 "보는 빌드" 를 읽어 옛 캐시/최신 판별.
+// CI 는 commit SHA(7자), 로컬은 'dev'. 날짜시각(분 단위) 동반 — 사람이 비교하기 쉽게.
+const BUILD_ID = [
+  (process.env.GITHUB_SHA || 'dev').slice(0, 7),
+  new Date().toISOString().slice(2, 16).replace('T', ' '),
+].join(' · ');
+
 export default defineConfig({
   root: '.',
   publicDir: 'public',
   base: BASE,
+  define: {
+    __BUILD_ID__: JSON.stringify(BUILD_ID),
+  },
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**'],
   },

@@ -54,6 +54,7 @@ export function showAuthenticated() {
   unmountDiag();
   if (!_mocksMounted) {
     injectMocks();
+    stampBuildId();
     _mocksMounted = true;
   }
   if (!_hashListenerBound) {
@@ -124,6 +125,19 @@ function injectMocks() {
     ns.textContent = original.textContent || '';
     document.body.appendChild(ns);
   }
+}
+
+/* global __BUILD_ID__ */
+// 빌드 식별자를 사이드바 하단(.sb__settings-wrap)에 주입. vite define 으로 빌드시 치환된
+// __BUILD_ID__ 표시 — mock(?raw) 문자열엔 define 치환이 안 돼 여기 JS 에서 DOM 주입한다.
+function stampBuildId() {
+  const wrap = document.querySelector('#today-mocks-host .sb__settings-wrap');
+  if (!wrap || wrap.querySelector('.sb__build')) return;
+  const id = typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev';
+  const tag = document.createElement('div');
+  tag.className = 'sb__build';
+  tag.textContent = `build ${id}`;
+  wrap.appendChild(tag);
 }
 
 function syncFromHash() {

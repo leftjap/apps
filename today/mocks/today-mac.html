@@ -403,6 +403,16 @@
     justify-content: stretch;
   }
   .sb__settings-wrap { position: relative; width: 100%; }
+  /* 빌드 식별자 — 지오가 폰에서 "보는 빌드" 를 읽어 옛 캐시/최신 판별 (값은 app.js 가 주입).
+     ID/메타 성격 → mono 11 + ink-4 토큰. 사이드바 collapse 시 숨김. */
+  .sb__build {
+    font-family: var(--font-mono);
+    font-size: 11px; font-weight: 500; line-height: 1.4; letter-spacing: 0.02em;
+    color: var(--ink-4); text-align: center;
+    padding: var(--sp-1) var(--sp-2) 0;
+    user-select: text; -webkit-user-select: text;
+  }
+  .app.is-sidebar-collapsed .sb__build { display: none; }
 
   /* 사용자 카드 — Claude 웹 스타일 (아바타 + 이름 + 플랜) */
   .sb__user {
@@ -699,6 +709,10 @@
        visible→auto 로 강제 계산돼 가로 스크롤이 살아남던 버그. 긴 토큰은 .doc__body 가 줄바꿈.) */
     overflow-x: hidden;
     overflow-y: auto;
+    /* 세로 pan 은 컴포지터 fast-path, 가로 pan 은 JS(드로어 스와이프)로 위임 — 본문 어디서나
+       우스와이프로 드로어를 열 때도 본문 세로 스크롤이 메인스레드에 묶이지 않게 (소연 보고 회귀 방지).
+       가로 스크롤러 없음(overflow-x:hidden) → pan-y 가 자손 가로 스크롤을 막을 일 없음. */
+    touch-action: pan-y;
     /* 내부 스크롤이 body 로 전파(chain) 안 되게 — 끝까지 스크롤해도 화면 안 흔들림 */
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;  /* iOS 관성 스크롤 */
@@ -7936,7 +7950,6 @@
       const backdrop = document.getElementById('drawerBackdrop');
       if (!sidebar) return;
 
-      const EDGE_PX = 24;
       const DECIDE_PX = 6;
       const ANGLE = 1.2;
       const SNAP_RATIO = 0.4;
@@ -7945,8 +7958,10 @@
       const CURVE = 'cubic-bezier(.25,.46,.45,.94)';
 
       let sx = 0, sy = 0, sxOrig = 0, t0 = 0, decided = false, swiping = false;
-      let startOpen = false, panelW = 0;
+      let startOpen = false, panelW = 0, baseProgress = 0;
       let moveBound = false; // drawer 드래그용 non-passive touchmove 등록 여부 (제스처 중에만 true)
+      // 진행 중 snap 의 정리 타이머 핸들 — 새 제스처(re-grab)가 가로채면 취소 (mid-snap 점프 방지).
+      let snapRaf = 0, snapCleanT = 0, snapTransT = 0;
 
       const setTrack = (progress) => {
         const p = Math.max(0, Math.min(1, progress));
@@ -7970,9 +7985,9 @@
           sidebar.style.transform = '';
           if (backdrop) { backdrop.style.opacity = ''; backdrop.style.pointerEvents = ''; }
         };
-        requestAnimationFrame(clean);
-        setTimeout(clean, 32); // raf 누락 환경 fallback
-        setTimeout(() => {
+        snapRaf = requestAnimationFrame(clean);
+        snapCleanT = setTimeout(clean, 32); // raf 누락 환경 fallback
+        snapTransT = setTimeout(() => {
           sidebar.style.transition = '';
           if (backdrop) backdrop.style.transition = '';
         }, dur * 1000 + 60);
@@ -7989,20 +8004,30 @@
         if (!decided) {
           if (Math.abs(dx) < DECIDE_PX && Math.abs(dy) < DECIDE_PX) return;
           decided = true;
-          if (Math.abs(dy) > Math.abs(dx) * ANGLE) { panelW = 0; return; }
+          // 비드로어(세로/역방향) 판정 시 즉시 unbind — non-passive touchmove 를 떼어 본문 세로
+          // 스크롤 fast-path 를 되돌림 (open-from-anywhere 의 스크롤 회귀 방지 defense-in-depth).
+          if (Math.abs(dy) > Math.abs(dx) * ANGLE) { panelW = 0; unbindDrawerMove(); return; }
           const dir = dx > 0 ? 'right' : 'left';
           // closed → 우 swipe(open), open → 좌 swipe(close) 만 유효
-          if ((!startOpen && dir !== 'right') || (startOpen && dir !== 'left')) { panelW = 0; return; }
+          if ((!startOpen && dir !== 'right') || (startOpen && dir !== 'left')) { panelW = 0; unbindDrawerMove(); return; }
           swiping = true;
+          // 진행 중 snap 가로채기(re-grab): 정리 타이머 취소 + 현재 렌더 위치를 base 로 잡아 첫
+          // setTrack 이 0/1 로 튀지 않게 (mid-snap 점프 결함 수정). 정상 단발 제스처면 렌더 위치가
+          // 곧 startOpen?1:0 이라 base=startOpen?1:0 → 기존 공식과 수학적으로 동일 (무회귀).
+          if (snapRaf) { cancelAnimationFrame(snapRaf); snapRaf = 0; }
+          if (snapCleanT) { clearTimeout(snapCleanT); snapCleanT = 0; }
+          if (snapTransT) { clearTimeout(snapTransT); snapTransT = 0; }
+          const tf = getComputedStyle(sidebar).transform;
+          const m41 = (tf && tf !== 'none') ? new DOMMatrixReadOnly(tf).m41 : (startOpen ? 0 : -panelW);
+          baseProgress = Math.max(0, Math.min(1, 1 + m41 / panelW));
           // 결정점부터 시각추적 — sx 를 현재 손가락 위치로 재기준. 안 하면 데드존(첫 프레임 dx,
-          // 빠른 플릭은 수십 px) 만큼 사이드바가 팝인돼 "점프"로 보임. 닫기는 grab 점이 ~6px 만
-          // 이동해 무영향. (snap 판정은 sxOrig=원래 touchstart 기준 — touchend 참고.)
+          // 빠른 플릭은 수십 px) 만큼 사이드바가 팝인돼 "점프"로 보임. (snap 판정은 sxOrig 기준.)
           sx = e.touches[0].clientX; sy = e.touches[0].clientY;
         }
         if (!swiping) return;
         if (e.cancelable) e.preventDefault();
         const dxTrack = e.touches[0].clientX - sx; // re-baseline 반영 (결정 직후 0 = 휴지)
-        const progress = startOpen ? 1 + dxTrack / panelW : dxTrack / panelW;
+        const progress = baseProgress + dxTrack / panelW; // 현재 렌더 위치에서 1:1 이어받기 (open=close 대칭)
         setTrack(progress);
       };
       const bindDrawerMove = () => {
@@ -8025,8 +8050,9 @@
         if (t.closest && t.closest('[contenteditable]:not([contenteditable="false"])')) return;
         startOpen = !!document.body.dataset.drawerOpen;
         const x = e.touches[0].clientX;
-        // edge swipe 만 — closed 일 때 좌측 edge 안에서만 시작
-        if (!startOpen && x > EDGE_PX) return;
+        // open-from-anywhere — 본문 어디서나 우스와이프로 열기 (지오 요구 2026-06-13). 엣지 한정
+        // 게이트 제거. 세로/방향 게이트(onDrawerMove) + #mainView touch-action:pan-y 가
+        // 오작동·세로스크롤 회귀를 막는다. 닫기와 동일하게 어디서든 손가락 1:1 추적.
         sx = x; sxOrig = x; sy = e.touches[0].clientY; t0 = Date.now();
         decided = false; swiping = false;
         panelW = sidebar.getBoundingClientRect().width || (window.innerWidth * 0.85);
