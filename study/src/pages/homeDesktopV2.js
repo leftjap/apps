@@ -382,7 +382,7 @@ const VHM_CSS = `
 .m-seg button{font-size:14px;font-weight:600;color:var(--faint);display:inline-flex;align-items:center;gap:6px;white-space:nowrap;min-height:36px}
 .m-seg button.on{color:var(--teal-deep)}
 .m-seg button.on i{width:5px;height:5px;border-radius:50%;background:var(--coral)}
-.m-icons{display:flex;gap:6px;color:var(--faint)}
+.m-icons{display:flex;gap:6px;color:var(--faint);margin-right:-10px}
 .m-icons button{display:inline-flex;align-items:center;justify-content:center;color:inherit;width:38px;height:38px;border-radius:10px}
 .m-pad{padding:0 20px calc(24px + env(safe-area-inset-bottom));max-width:540px;margin:0 auto;width:100%}
 .vh-ringcard{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 24px 22px;display:flex;flex-direction:column;align-items:center;box-shadow:0 1px 0 rgba(25,35,32,.02),0 10px 22px -18px rgba(25,35,32,.12);margin-top:16px}
