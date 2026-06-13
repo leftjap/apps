@@ -7,7 +7,7 @@ import { V_VARS, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
 
 const VL_CSS = `
 .vl{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:grid;place-items:center;word-break:keep-all;padding:24px;${V_VARS}}
-.vl *{box-sizing:border-box;margin:0}
+.vl,.vl *{box-sizing:border-box;margin:0}
 .vl-card{width:100%;max-width:380px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:44px 40px;text-align:center;
   box-shadow:0 1px 0 rgba(25,35,32,.02),0 18px 40px -28px rgba(25,35,32,.25);animation:v-settle .6s both}
 .vl-logo{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-0.02em;color:var(--teal-deep)}
