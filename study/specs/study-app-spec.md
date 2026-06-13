@@ -21,7 +21,7 @@
 - 클라우드: **Supabase** (무료 티어, Auth + DB + Edge Functions)
 - 발음: **Azure Speech SDK** (Pronunciation Assessment)
 - 콘텐츠 생성: **Claude Code** (Max 플랜 내 수동 트리거, 추가 API 비용 $0)
-- 배포: GitHub Pages (leftjap.github.io/study)
+- 배포: GitHub Pages (leftjap.github.io/apps/study/)
 - PWA: 서비스워커, 매니페스트, 오프라인 동작
 
 ### 디자인 참조
@@ -258,7 +258,7 @@ CREATE POLICY "Users can only access own data"
    - 양쪽 lang 요청 시 lang 별로 본 절차 2회 반복
    - 콩트 분량은 단계 5 에서 콩트 호흡상 결정 (Stage 별 분량 가드 범위)
 
-2. **사용자 식별** — `auth.users.email` 가 `ALLOWED_EMAILS` (3명) 중 하나 → `user_id` 확정. RLS 정합 위해 모든 후속 SELECT/INSERT 는 `user_id` 명시.
+2. **사용자 식별** — `auth.users.email` 가 `ALLOWED_EMAILS` (2명) 중 하나 → `user_id` 확정. RLS 정합 위해 모든 후속 SELECT/INSERT 는 `user_id` 명시.
 
 3. **학습자 메타 조회** (`study_user_meta` SELECT)
    - `lang_<lang>.currentStage` (1~4, Wave 11.67 신규 — LANG_META 스키마 §4 참조)

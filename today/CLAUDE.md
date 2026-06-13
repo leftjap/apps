@@ -4,7 +4,7 @@
 
 ## 도메인
 
-글 + 댓글 시스템.
+글(entries)·가계부(expenses)·댓글(comments) + SMS 카드결제 ingest 파이프라인. (코드 규모: entries 2685줄·expenses 2178줄 ≫ comments 576줄)
 
 ## 설계 원칙
 
@@ -19,10 +19,10 @@
 
 ## 관련 스킬
 
-`supabase-pattern` — `src/db/sync.js`·`schema.js`·`auth.js` 수정 시.
+`supabase-pattern` — `src/db/sync.js`·`schema.js`·`src/services/auth.js` 수정 시.
 
 ## SMS 카드 결제 ingest
 
 `specs/sms-ingest-pipeline.md` 참조 — 단축어 spec, iOS 한계, launchd backfill, Edge Function API, 디버깅 절차 모두 거기.
 
-**카드 정보(발신번호·친화명·채널·자동화 매핑)는 spec의 "카드·발신번호 마스터" 섹션이 single source of truth.** 매번 사용자에 묻거나 chat.db 쿼리 금지. 카드 추가/변경 시 (1) 마스터 테이블, (2) `_shared/cardSmsParser.js`의 `CARD_ALIASES`, (3) 자동화 트리거 섹션 셋 다 한 commit으로 갱신.
+**카드 정보(발신번호·친화명·채널·자동화 매핑)는 spec의 "카드·발신번호 마스터" 섹션이 single source of truth.** 매번 사용자에 묻거나 chat.db 쿼리 금지. 카드 추가/변경 시 (1) 마스터 테이블, (2) `_shared/cardSmsParser.js`의 `CARD_ALIASES`, (3) 자동화 트리거 섹션, (4) 필요 시 `scripts/backfill-sms-from-chatdb.py`의 SQL 발신번호 필터 — 한 commit으로 갱신 (spec "카드·발신번호 마스터" §).

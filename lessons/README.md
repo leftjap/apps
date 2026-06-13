@@ -22,13 +22,13 @@
 
 ## 트리거
 
-환경·명령어·빌드·tooling 함정 발견 시 즉시 신규 파일 생성. 분류 규칙 = `~/apps/memory.md` "## 실수 재발 방지" 참조.
+환경·명령어·빌드·tooling 함정 발견 시 즉시 신규 파일 생성. 분류 규칙 = `~/apps/CLAUDE.md` "기록 위치" 참조.
 
 ## 인용 패턴
 
 `CLAUDE.md` 에서 참조 시:
 ```
-**pnpm 10 함정**: `~/apps/lessons/pnpm-electron.md` 참조
+**hook 함정**: `~/apps/lessons/regex-hook-shell-limits.md` 참조
 ```
 
 `@import` 형태 (`@~/apps/lessons/X.md`) 금지 — auto-load 시 토큰 절감 효과 무효화.
@@ -44,9 +44,12 @@
 |---|---|---|
 | `azure-speech-sdk-mic-silent.md` | azure,speech,microphone,mic,silent,SDK,getUserMedia,SpeechRecognizer | src/services/speech*.js,src/features/voice*.js,src/features/study/listening*.js |
 | `chrome-devtools-mcp-autoconnect.md` | chrome-devtools,MCP,autoConnect,attach,OAuth 세션,별 chrome,debugging chrome,통합 검증 | - |
+| `github-pages-pwa-path-migration.md` | github-pages,PWA,서브경로,base path,서비스워커,SW,navigateFallback,redirect 스텁,self-destroying,sw.js,캐시,경로 이관 | */vite.config.js,*/public/sw.js |
 | `happy-dom-image-api-limits.md` | happy-dom,createImageBitmap,canvas,toDataURL,ClipboardItem,vitest 이미지,image API,jsdom,압축 | src/features/*image*.js,src/features/*editor*.test.js,src/features/entries.test.js |
-| `import-acceptance-not-db-only.md` | import,migration,seed,bulk-update,acceptance,더미,실 데이터,교체,더미 제거,데이터 들어갔,upsert,backfill | scripts/import-*.js,scripts/migration-*.js,scripts/seed-*.js,scripts/verify-import*.js,src/main.js,src/features/*.js,src/features/*.test.js,src/db/sync.js,src/db/devSeed.js,mocks/*.html,STATUS.md |
+| `import-acceptance-not-db-only.md` | import,migration,seed,bulk-update,acceptance,더미,실 데이터,교체,더미 제거,데이터 들어갔,upsert,backfill | scripts/import-*.js,scripts/migration-*.js,scripts/seed-*.js,scripts/verify-import*.js,src/main.js,src/features/*.js,src/features/*.test.js,src/db/sync.js,src/db/devSeed.js,mocks/*.html |
+| `iphone-safari-pwa-2026.md` | iPhone,Safari,PWA,iOS,Web Push,IndexedDB,SW,Service Worker,manifest,홈 화면,standalone,apple-mobile-web-app-capable,Badge API | */public/manifest.webmanifest,*/index.html,*/sw.js,*/service-worker.js,*/src/db/**,*/src/**/*push* |
 | `regex-hook-shell-limits.md` | hook,PreToolUse,regex,substring,false positive,bash -c,백틱,shell parser,차단,Bash freeze | .claude/settings.json,.claude/hooks/*.sh |
+| `supabase-migration-management-api.md` | supabase,migration,마이그레이션,db push,management API,대시보드,수동 적용,SQL Editor,히스토리 충돌,CLI | */supabase/migrations/*.sql,*/supabase/config.toml |
 | `supabase-select-default-1000-limit.md` | supabase,pagination,select,1000,row,limit,head:true,count:exact,truncation | src/db/sync.js,src/db/queries.js,scripts/import-*.js,scripts/verify-*.js |
 | `verification-layer-mismatch.md` | layer,검증,단정,통과,화면,사용자 입장,evidence,acceptance,vitest 통과,e2e 통과,사각 | - |
 

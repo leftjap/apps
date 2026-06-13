@@ -1,8 +1,8 @@
 # _pending-classify.md — 분류 대기 교훈
 
-> STATUS.md 변경 이력에서 이관된 교훈 단락. 분류 4축은 `~/apps/memory.md` "## 실수 재발 방지" 참조.
+> 구 STATUS 변경 이력에서 이관된 교훈 단락. 분류 4축은 `~/apps/CLAUDE.md` "기록 위치" 참조.
 >
-> **분류 후 처리:** 적절한 위치 (skill / docs/lessons/<topic>.md / spec / memory.md) 로 이동 + 본 파일에서 제거. 영구 가치 낮은 항목은 단순 삭제.
+> **분류 후 처리:** 적절한 위치 (skill / lessons/<topic>.md / spec / CLAUDE.md) 로 이동 + 본 파일에서 제거. 영구 가치 낮은 항목은 단순 삭제.
 
 이관 일자: 2026-05-01
 

@@ -1,3 +1,4 @@
+<!-- trigger: github-pages,PWA,서브경로,base path,서비스워커,SW,navigateFallback,redirect 스텁,self-destroying,sw.js,캐시,경로 이관 | match-paths: */vite.config.js,*/public/sw.js -->
 # GitHub Pages PWA 서브경로 이관 함정 (taste→pick, 2026-06-10)
 
 한 origin(leftjap.github.io)을 여러 PWA 가 `/apps/<name>/` 스코프로 공유할 때 경로를 옮기면:

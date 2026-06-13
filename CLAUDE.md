@@ -1,8 +1,8 @@
 # ~/apps
 
 ## 프로젝트 구조
-- 4앱: Study/Gym/Today (PWA) + Board (Electron, git 미업로드 — `~/apps/board/CLAUDE.md` 별도)
-- 앱별 스펙: `~/apps/<app>/specs/<app>-app-spec.md` (현재 study/gym 만, today/board 미작성)
+- 앱: Study/Gym/Today/Book/Pick/Cue (PWA, GitHub Pages `/apps/<app>/` 배포) + Board (Electron, git 미업로드 — `~/apps/board/CLAUDE.md` 별도). `launcher/` 는 디자인 브리프 스텁(앱 아님).
+- 앱별 스펙: `~/apps/<app>/specs/<app>-app-spec.md` (현재 study/gym/pick)
 - `~/apps/lessons/` — 환경 함정 (lazy load, 인용 시 직접 Read)
 - `~/apps/scripts/` — `claude-wip-snapshot.sh` (Stop hook 자동 호출)
 - 커밋: Conventional Commits. 마일스톤은 `git tag`.
@@ -40,4 +40,4 @@
 ## 환경 함정
 
 - **vitest watch**: Study/Gym/Today `pnpm test` = watch 모드 → Bash freeze. 항상 `pnpm vitest run` 직접 호출. Board 만 `pnpm test` 정상.
-- **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 3앱 `["esbuild"]`. Board 는 `~/apps/board/CLAUDE.md` 참조.
+- **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 앱(study/gym/today/book/pick/cue) `["esbuild"]`. Board 는 `~/apps/board/CLAUDE.md` 참조.

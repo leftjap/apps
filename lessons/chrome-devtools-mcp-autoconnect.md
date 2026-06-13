@@ -78,7 +78,7 @@ profile 생성: chrome 우상단 프로필 아이콘 → "추가" → 빈 profil
 - `evaluate_script` 우선 — return JSON 만 반환 (0.5-3K). 1 호출 안에 click + 검증 + return batch
 - `take_snapshot` / `take_screenshot` 명시적 호출만, 시각 검증 정말 필요할 때
 - 자동 snapshot 도구 (click/fill/hover 등) 최소화
-- 60% 컨텍스트 도달 시 `/compact` 또는 새 세션 (memory.md `## 둠 루프 탈출` 정합)
+- 60% 컨텍스트 도달 시 `/compact` 또는 새 세션 (`~/.claude/CLAUDE.md` `## 둠 루프 자동 탈출` 정합)
 
 **1 evaluate_script 호출 안에 batch 예시:**
 ```js

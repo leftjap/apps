@@ -1,3 +1,4 @@
+<!-- trigger: supabase,migration,마이그레이션,db push,management API,대시보드,수동 적용,SQL Editor,히스토리 충돌,CLI | match-paths: */supabase/migrations/*.sql,*/supabase/config.toml -->
 # Supabase 마이그레이션 — "대시보드 수동 적용" 불필요 (Management API 경로)
 
 **증상**: geo-apps 공유 프로젝트에서 `supabase db push` 가 마이그레이션 히스토리

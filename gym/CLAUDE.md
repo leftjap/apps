@@ -12,4 +12,4 @@
 
 ## 관련 스킬 (자동 활성화)
 
-`supabase-pattern` — `src/db/sync.js`·`schema.js`·`auth.js` 수정·RLS·OAuth·Auth 작업 시.
+`supabase-pattern` — `src/db/sync.js`·`schema.js`·`src/services/auth.js` 수정·RLS·OAuth·Auth 작업 시.

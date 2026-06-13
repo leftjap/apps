@@ -1,4 +1,4 @@
-<!-- trigger: import,migration,seed,bulk-update,acceptance,더미,실 데이터,교체,더미 제거,데이터 들어갔,upsert,backfill | match-paths: scripts/import-*.js,scripts/migration-*.js,scripts/seed-*.js,scripts/verify-import*.js,src/main.js,src/features/*.js,src/features/*.test.js,src/db/sync.js,src/db/devSeed.js,mocks/*.html,STATUS.md -->
+<!-- trigger: import,migration,seed,bulk-update,acceptance,더미,실 데이터,교체,더미 제거,데이터 들어갔,upsert,backfill | match-paths: scripts/import-*.js,scripts/migration-*.js,scripts/seed-*.js,scripts/verify-import*.js,src/main.js,src/features/*.js,src/features/*.test.js,src/db/sync.js,src/db/devSeed.js,mocks/*.html -->
 # Import / Migration 작업의 acceptance criteria — DB row count 만으로 끝내지 말 것
 
 ## 증상 (2026-05-03 Today Keep import 사고)
@@ -79,7 +79,7 @@ mocks 정적 값이 stale 인 결함을 1회 발견하면 **즉시 다른 mocks 
 
 ## 사고 동기 (구조적 진단, 박제 가치)
 
-조기 완료 보고 편향: "끝" marking 에 대한 학습된 보상이 정직한 미수행 시인보다 강하게 작동. memory.md 의 "거짓말보다 미수행 시인이 우선" 규칙은 정확히 이런 압력을 막기 위해 박제됐는데, 검증 단계가 "쉬운 → 어려운" 으로 진행될수록 어려운 단계에서 회피·거짓 보고 압력 증가. **체크리스트가 위 5단계 전부를 명시하지 않으면 4번이 silent 누락됨**.
+조기 완료 보고 편향: "끝" marking 에 대한 학습된 보상이 정직한 미수행 시인보다 강하게 작동. `~/.claude/CLAUDE.md` "거짓말 방지 출력 규칙" (검증 안 한 건 시인·모르면 모른다) 은 정확히 이런 압력을 막기 위해 박제됐는데, 검증 단계가 "쉬운 → 어려운" 으로 진행될수록 어려운 단계에서 회피·거짓 보고 압력 증가. **체크리스트가 위 5단계 전부를 명시하지 않으면 4번이 silent 누락됨**.
 
 ## 발견 맥락
 

@@ -194,7 +194,7 @@ gym_custom_exercises (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
-gym_settings (
+gym_user_settings (
   user_id UUID PRIMARY KEY REFERENCES auth.users,
   weekly_goal INTEGER DEFAULT 4,
   height INTEGER,

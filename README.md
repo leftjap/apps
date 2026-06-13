@@ -1,6 +1,6 @@
 # ~/apps — PWA 리빌드 허브
 
-Board(Electron, git 미업로드) + PWA 3앱 (Study/Gym/Today) 단일 트리. 메타 (`CLAUDE.md`/`memory.md`/`DESIGN.md`/`lessons/`/`scripts/`/`.claude/`) 와 코드·앱별 spec 모두 여기.
+Board(Electron, git 미업로드) + PWA 6앱 (Study/Gym/Today/Book/Pick/Cue) 단일 트리. 메타 (`CLAUDE.md`/`DESIGN.md`/`lessons/`/`scripts/`/`.claude/`) 와 코드·앱별 spec 모두 여기.
 
 ## 앱 목록
 
@@ -9,8 +9,11 @@ Board(Electron, git 미업로드) + PWA 3앱 (Study/Gym/Today) 단일 트리. �
 | Study | `~/apps/study/` | Wave 11.13 진행 중 | 5174 | 4174 |
 | Gym | `~/apps/gym/` | Wave 11.7 진행 중 | 5173 | 4173 |
 | Today | `~/apps/today/` | Wave 11.7.2 진행 중 | **5175** | **4175** |
+| Book | `~/apps/book/` | 활성 (배포 중) | 5176 | 4176 |
+| Pick | `~/apps/pick/` | 활성 (배포 중, 구 taste) | 5177 | 4177 |
+| Cue | `~/apps/cue/` | 활성 (배포 중, React) | 5178 | 4178 |
 
-신규 앱 추가 시 dev/preview port 는 위 목록과 충돌 없게 할당 (gym 5173 → study 5174 → today 5175 → 다음 5176/4176 ...).
+신규 앱 추가 시 dev/preview port 는 위 목록과 충돌 없게 할당 (gym 5173 → study 5174 → today 5175 → book 5176 → pick 5177 → cue 5178 → 다음 5179/4179 ...).
 
 ---
 
@@ -93,4 +96,4 @@ soyoun312@gmail.com
 
 ## 메타 파일 위치
 
-`CLAUDE.md` / `memory.md` / `DESIGN.md` 는 `~/apps/` 루트. 앱별 spec 은 `~/apps/<app>/specs/`. 변경 이력은 git log (STATUS 체계 폐기).
+`CLAUDE.md` / `DESIGN.md` 는 `~/apps/` 루트. 앱별 spec 은 `~/apps/<app>/specs/`. 변경 이력은 git log (STATUS·memory.md 체계 폐기).

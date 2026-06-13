@@ -58,7 +58,7 @@ return { originalWidth, originalHeight, ... };
 
 bitmap/canvas 통합 로직 변경 시 단위 테스트만으론 부족. 다음 도구 1개 이상 검증:
 
-- **preview MCP (`preview_eval`)** — 빠른 module 노출 + 동작 검증. 별 chrome profile = OAuth 미공유 (memory.md 명시) 한계
+- **preview MCP (`preview_eval`)** — 빠른 module 노출 + 동작 검증. 별 chrome profile = OAuth 미공유 (`verification-layer-mismatch.md` 참조) 한계
 - **chrome-devtools MCP (`evaluate_script` + `list_network_requests`)** — Network 탭 + cumulative 검증 가능. SW 캐시 무효화 (`caches.delete`) 필요
 - **사용자 환경 Chrome / iPhone Safari** — 마지막 단계. PWA standalone / Web Share Target / 카메라 직접 접근은 desktop 모방 불가
 

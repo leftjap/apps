@@ -5,7 +5,7 @@
 # 사용: bash ~/apps/scripts/regenerate-lesson-index.sh
 set -euo pipefail
 
-LESSONS_DIR="${HOME}/code/docs/lessons"
+LESSONS_DIR="${HOME}/apps/lessons"
 README="${LESSONS_DIR}/README.md"
 MARKER_BEGIN="<!-- LESSON_INDEX_BEGIN (auto-generated) -->"
 MARKER_END="<!-- LESSON_INDEX_END -->"
