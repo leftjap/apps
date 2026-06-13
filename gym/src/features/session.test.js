@@ -31,6 +31,7 @@ import {
   computeDropIdx,
   performBlockReorder,
   resolveDotDisplay,
+  computeFooterOrder,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -2303,5 +2304,50 @@ describe('resolveDotDisplay (D — dot preview 우선순위)', () => {
     ];
     // i=2 (upcoming): 현재 세트(reps 20) 전파
     expect(resolveDotDisplay(sets, 2, 1, null, 'bodyweight')).toEqual({ text: '20', isPreview: true });
+  });
+});
+
+describe('computeFooterOrder — 푸터 칩 고정 배열 [완료 좌·현재 중앙·예정 우]', () => {
+  const single = (exerciseId, finishedAt) => {
+    const b = { type: 'single', exerciseId, sets: [{ weight: 10, reps: 5, done: true }] };
+    if (finishedAt != null) b.finishedAt = finishedAt;
+    return b;
+  };
+
+  it('완료=좌(완료순), 현재=중앙, 예정=우(원래순)', () => {
+    const A = single('A', 200); // 완료
+    const B = single('B', null); // 현재 (미완료)
+    const C = single('C', null); // 예정
+    const D = single('D', 100); // 완료 (먼저 끝남)
+    const blocks = [A, B, C, D];
+    const order = computeFooterOrder(blocks, B).map((e) => e.block.exerciseId);
+    // 완료 D(100)→A(200), 현재 B, 예정 C
+    expect(order).toEqual(['D', 'A', 'B', 'C']);
+  });
+
+  it('현재가 완료 블록이어도 중앙으로 (좌측 완료존에 안 둠)', () => {
+    const A = single('A', 100); // 완료
+    const B = single('B', 200); // 완료 + 현재(리뷰 중)
+    const C = single('C', null); // 예정
+    const blocks = [A, B, C];
+    const order = computeFooterOrder(blocks, B).map((e) => e.block.exerciseId);
+    expect(order).toEqual(['A', 'B', 'C']);
+  });
+
+  it('현재 없음(null) → [완료, 예정]만', () => {
+    const A = single('A', 100);
+    const C = single('C', null);
+    const blocks = [A, C];
+    const order = computeFooterOrder(blocks, null).map((e) => e.block.exerciseId);
+    expect(order).toEqual(['A', 'C']);
+  });
+
+  it('각 항목은 원본 인덱스 i 를 보존 (click·hold 핸들러용)', () => {
+    const A = single('A', 200);
+    const B = single('B', null);
+    const blocks = [A, B];
+    const order = computeFooterOrder(blocks, B);
+    expect(order.map((e) => e.i)).toEqual([0, 1]);
+    expect(order.map((e) => e.block.exerciseId)).toEqual(['A', 'B']);
   });
 });

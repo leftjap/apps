@@ -917,6 +917,16 @@ async function mountSessionActive(doc, block, session) {
       recordTagEl.style.opacity = '0';
     }
   }
+  // 우상단 총볼륨 링 (§8) — 오늘 누적 / 직전 총볼륨 비율로 채움. 돌파 시 완성(offset 0) + 펄스.
+  //   prevSessionVol 없으면(첫 세션) 빈 링. CSS transition 으로 채움 애니, count-up 숫자와 동기.
+  const ringFill = doc.getElementById('cardVolRingFill');
+  const ringPulse = doc.getElementById('cardVolRingPulse');
+  if (ringFill) {
+    const RING_C = 100.53; // 2π·16 (반지름 16)
+    const ratio = prevSessionVol > 0 ? Math.min(1, sessionDoneVol / prevSessionVol) : 0;
+    ringFill.style.strokeDashoffset = String(RING_C * (1 - ratio));
+  }
+  if (ringPulse) ringPulse.classList.toggle('is-record', topRecord);
   // 신기록 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 누적 숫자 펄스 + 태그 rise-in.
   if (countUp && topBefore <= prevSessionVol && sessionDoneVol > prevSessionVol) topRecordPulse(doc);
   _justCommittedExId = null; // 커밋 1회성 신호 소비 — 다음 재렌더(키패드·탭증감 등)는 비-커밋.
@@ -941,7 +951,8 @@ async function mountSessionActive(doc, block, session) {
           show = true;
         }
       }
-      prChip.style.display = show ? 'inline-flex' : 'none';
+      // absolute 슬롯(흐름 밖) — opacity 토글로 무게·횟수 레이아웃 불변 (display 토글 시 재중앙정렬 떨림 제거).
+      prChip.style.opacity = show ? '1' : '0';
     }
   } catch (e) { console.error('[gymSession] PR chip', e); }
 
@@ -1880,6 +1891,28 @@ function renderFooterPillHtml({ blockIdx, state, name, progress }) {
 }
 
 /**
+ * 푸터 칩 고정 배열 — [완료(완료순) 좌측 · 현재 중앙 · 예정(원래순) 우측].
+ *  - 현재 운동(currentBlock)은 완료 여부와 무관하게 항상 중앙존에 둠 (사용자 결정 2026-06-13:
+ *    "현재 운동중인 항목 늘 중앙"). centerActivePill 이 그 칩을 가시 영역 중앙으로 스크롤.
+ *  - 원본 인덱스 i 보존 (blockIdx — click·hold·reorder 핸들러가 session.blocks[i] 참조).
+ *  - single 블록만 (서킷 폐기 §16).
+ */
+export function computeFooterOrder(blocks, currentBlock) {
+  const entries = (Array.isArray(blocks) ? blocks : [])
+    .map((block, i) => ({ block, i }))
+    .filter(({ block }) => block && block.type === 'single');
+  const curIdx = Array.isArray(blocks) && currentBlock && currentBlock.type === 'single'
+    ? blocks.indexOf(currentBlock) : -1;
+  const isCurrent = (e) => e.i === curIdx;
+  const done = entries
+    .filter((e) => !isCurrent(e) && Number.isFinite(e.block.finishedAt))
+    .sort((a, b) => (a.block.finishedAt || 0) - (b.block.finishedAt || 0));
+  const current = entries.filter(isCurrent); // 0 또는 1개
+  const pending = entries.filter((e) => !isCurrent(e) && !Number.isFinite(e.block.finishedAt));
+  return [...done, ...current, ...pending];
+}
+
+/**
  * spec §6-8 — active session blocks → footer pill 동적 렌더.
  *  - currentBlock 은 mountSessionActive 가 사용 중인 그 block (accent + underline + dot + 진행도).
  *  - 다른 block 은 done/hold/pending 자동 판정.
@@ -1890,14 +1923,8 @@ function renderFooterPills(doc, session, currentBlock) {
     if (pillsEl) pillsEl.innerHTML = '';
     return;
   }
-  // 완료된 운동 (finishedAt) 을 완료 순서대로 좌측 정렬.
-  // 원본 인덱스는 유지 (blockIdx — click·hold 핸들러가 session.blocks[idx] 참조).
-  const entries = session.blocks.map((block, i) => ({ block, i }));
-  const done = entries
-    .filter(({ block }) => block && block.type === 'single' && Number.isFinite(block.finishedAt))
-    .sort((a, b) => (a.block.finishedAt || 0) - (b.block.finishedAt || 0));
-  const rest = entries.filter(({ block }) => !block || block.type !== 'single' || !Number.isFinite(block.finishedAt));
-  const ordered = [...done, ...rest];
+  // 고정 배열 — 완료(좌) · 현재(중앙) · 예정(우). 원본 인덱스 i 보존.
+  const ordered = computeFooterOrder(session.blocks, currentBlock);
   const html = ordered.map(({ block, i }) => {
     if (!block || block.type !== 'single') return ''; // 서킷 폐기 — non-single graceful skip
     const isCurrent = block === currentBlock;
@@ -3319,8 +3346,11 @@ function hookClicks(chipsEl, listEl) {
     }
     try {
       const res = await addExerciseToActiveSession(exerciseId, part);
-      // 추가된 최신 운동을 현재 세트로 표기 — _currentBlockIdx 초기화 시 mount 가 마지막 single 픽.
-      if (res && res.added) _currentBlockIdx = null;
+      // 추가 즉시 그 운동을 현재(중앙)로 선택 (사용자 결정 2026-06-13). 추가분은 blocks 맨 끝 append →
+      // 마지막 인덱스를 명시 지정. computeFooterOrder 가 이 블록을 중앙존에, centerActivePill 이 중앙 스크롤.
+      if (res && res.added && Array.isArray(res.session?.blocks)) {
+        _currentBlockIdx = res.session.blocks.length - 1;
+      }
     } catch (err) {
       console.error('[gymSession] addExerciseToActiveSession', err);
     }

@@ -56,7 +56,10 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 #volGoal.broken { background: var(--crail-deep); box-shadow: 0 0 7px rgba(217,119,87,0.6); }
 /* 우상단 신기록 (작업지시서 §8) — 직전 총볼륨 취소선 + 디밍 */
 #cardSessVolPrev.struck { text-decoration: line-through; opacity: 0.55; }
-@media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar, #volEdge, #cardProgressBar.is-over { animation: none; } }
+/* 우상단 총볼륨 링 — 직전 돌파 시 완성 링이 팽창·소멸 펄스 */
+@keyframes ringPulse { 0% { opacity: 0.5; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.34); } }
+#cardVolRingPulse.is-record { animation: ringPulse 1.6s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar, #volEdge, #cardProgressBar.is-over, #cardVolRingPulse.is-record { animation: none; } }
 /* P1 세트 진행 세그먼트바 (#cardSetDots — renderSetDotsDiff 출력). 완료=ink, 현재=crail 맥동, 예정=ghost. */
 #cardSetDots .seg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; cursor: pointer; }
 #cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; transform-origin: bottom center; }
@@ -169,10 +172,18 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- 타이틀: 운동명 / 세션 총볼륨 비교(이번·직전) -->
     <div style="flex-shrink:0;padding:12px 26px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
       <div id="cardExName" class="kr" style="font-size:23px;font-weight:600;color:var(--ink-1);letter-spacing:-0.02em;white-space:nowrap;">벤치프레스</div>
-      <div style="flex-shrink:0;text-align:right;">
-        <div class="mono" style="font-size:18px;font-weight:600;color:var(--ink-1);white-space:nowrap;"><span id="cardSetProgress" style="display:inline-block;">1,380</span><span style="font-size:11px;font-weight:500;color:var(--ink-4);margin-left:1px;">kg</span></div>
-        <div id="cardSessVolPrev" class="mono" style="margin-top:1px;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 2,940kg</div>
-        <div id="cardRecordTag" class="mono" style="margin-top:2px;font-size:12px;font-weight:700;color:var(--crail-deep);white-space:nowrap;opacity:0;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록</div>
+      <!-- 세션 총볼륨 — 링(오늘/직전 비율) + 숫자. #cardVolRingFill dashoffset 으로 채움, 돌파 시 #cardVolRingPulse 펄스 (session.js §8). -->
+      <div style="flex-shrink:0;display:flex;align-items:center;gap:9px;">
+        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" style="flex-shrink:0;">
+          <circle cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--line);"></circle>
+          <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
+          <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="100.53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
+        </svg>
+        <div style="text-align:right;">
+          <div class="mono" style="font-size:18px;font-weight:600;color:var(--ink-1);white-space:nowrap;"><span id="cardSetProgress" style="display:inline-block;">1,380</span><span style="font-size:11px;font-weight:500;color:var(--ink-4);margin-left:1px;">kg</span></div>
+          <div id="cardSessVolPrev" class="mono" style="margin-top:1px;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 2,940kg</div>
+          <div id="cardRecordTag" class="mono" style="margin-top:2px;font-size:12px;font-weight:700;color:var(--crail-deep);white-space:nowrap;opacity:0;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록</div>
+        </div>
       </div>
     </div>
     <!-- 세트 진행 세그먼트바 (직전 세션 per-set 기록) — renderSetDotsDiff 가 #cardSetDots 채움 -->
@@ -188,7 +199,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div id="completeReveal" style="position:absolute;right:22px;top:50%;transform:translateY(-50%) translateX(14px) scale(0.9);display:flex;align-items:center;gap:7px;padding:7px 14px 7px 11px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);color:var(--crail-deep);font-size:13px;font-weight:600;opacity:0;pointer-events:none;z-index:4;white-space:nowrap;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>완료</div>
       <!-- 햅틱 링 시각화 (부록 작업지시서) — iOS PWA 진동 미지원 대체. playSetHaptic 가 WAAPI 로 팽창·소멸. -->
       <div id="hapticRing" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:118px;height:118px;border-radius:50%;border:2px solid var(--crail-base);opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(0.4);z-index:6;"></div>
-      <div id="cardHeroVals" style="width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform;">
+      <div id="cardHeroVals" style="position:relative;width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform;">
       <div id="cardWeightZone" style="width:100%;text-align:center;cursor:pointer;">
         <div id="cardWeight" class="mono" style="font-size:120px;font-weight:400;line-height:0.82;color:var(--ink-1);letter-spacing:-0.06em;">65</div>
         <div id="cardWeightUnit" class="kr" style="display:none;font-size:15px;color:var(--ink-4);"></div>
@@ -201,7 +212,8 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <!-- 완료 상태 라벨 (작업지시서 §9) — 잠긴 운동 시 ✓ 와 함께 "N세트 완료". 기본 숨김. -->
       <div id="cardDoneLabel" class="kr" style="display:none;margin-top:18px;text-align:center;font-size:13px;font-weight:600;letter-spacing:0.14em;color:var(--sage);">5세트 완료</div>
       <div id="cardPaceZone" class="mono" style="display:none;margin-top:10px;text-align:center;font-size:15px;color:var(--crail-deep);letter-spacing:0.04em;"></div>
-      <div id="cardPrChip" style="display:none;margin-top:18px;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);">
+      <!-- PR 칩 — absolute(흐름 밖). reps 바로 아래 고정 슬롯 → 등장/소멸 시 무게·횟수 위치 불변. opacity 토글. -->
+      <div id="cardPrChip" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);opacity:0;pointer-events:none;transition:opacity 200ms ease;white-space:nowrap;">
         <span style="color:var(--crail-deep);font-size:9px;line-height:1;">▲</span>
         <span id="cardPrChipVal" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);white-space:nowrap;">+5kg</span>
       </div>
