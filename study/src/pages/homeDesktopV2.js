@@ -184,7 +184,7 @@ function tasksColumn(state, d) {
 
   const slim = h('div', { class: 'vh-task slim' }, h('div', { class: 'tt3', html: d.slimHtml }));
 
-  if (state.phase === 'done') {
+  if (d.phase === 'done') {
     return h('div', { class: 'vh-tasks' },
       h('div', { class: 'vh-task dn' },
         h('span', { class: 'vh-chk' }, vCheck()),
@@ -215,7 +215,7 @@ function tasksColumn(state, d) {
     );
   }
 
-  if (state.phase === 'mid') {
+  if (d.phase === 'mid') {
     return h('div', { class: 'vh-tasks' },
       h('div', { class: 'vh-task' },
         h('span', { class: 'num' }, String(state.newCount)),
@@ -478,7 +478,7 @@ function mTasks(state, d) {
   const slim = h('div', { class: 'vh-task slim' }, h('div', { class: 'tt3', html: d.slimHtml }));
   const items = [];
 
-  if (state.phase === 'done') {
+  if (d.phase === 'done') {
     items.push(h('div', { class: 'vh-task dn' },
       h('span', { class: 'vh-chk' }, vCheck()),
       h('div', { class: 'bd' },
@@ -507,7 +507,7 @@ function mTasks(state, d) {
   }
 
   // fresh / mid — 신규 카드
-  if (state.phase === 'mid') {
+  if (d.phase === 'mid') {
     items.push(h('div', { class: 'vh-task' },
       h('span', { class: 'num' }, String(state.newCount)),
       h('div', { class: 'bd' },
@@ -579,7 +579,6 @@ function mStrip(state, d) {
 export function renderHomeMobileV2(state) {
   ensureV2Fonts();
   const d = derive(state);
-  state.phase = d.phase;
 
   const ringCard = h('div', { class: 'vh-ringcard' },
     h('div', { class: 'vh-date' }, dateLabel(state.todayISO)),
@@ -612,7 +611,6 @@ export function renderHomeMobileV2(state) {
 export function renderHomeDesktopV2(state) {
   ensureV2Fonts();
   const d = derive(state);
-  state.phase = d.phase;
 
   const ringCard = h('div', { class: 'vh-ringcard' },
     h('div', { class: 'vh-date' }, dateLabel(state.todayISO)),
