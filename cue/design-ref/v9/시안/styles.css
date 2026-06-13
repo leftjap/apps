@@ -1,5 +1,5 @@
-/* cue.css — v8 대시보드 (design-ref/v8/시안-소스/style.css verbatim + 이식 보존분 말미).
-   팔레트는 v8 작업지시서 §4 전용 토큰 — DESIGN.md 일반 토큰 대신 앱 정본이 우선 (cue/CLAUDE.md). */
+/* styles.css — cue v8 디자인 토큰·레이아웃 (정본 cue/src/styles/cue.css 발췌·이식)
+   + 정보 재설계(작업지시서 §4·§5) 추가분. 팔레트는 v8 §4 전용 토큰 — 발명 금지. */
 
 :root { --cue: #D2602F; }
 * { box-sizing: border-box; }
@@ -7,16 +7,17 @@ html, body { margin: 0; padding: 0; }
 body {
   background: #FAF7F1;
   color: #27211A;
-  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
   font-feature-settings: 'tnum';
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 a { color: inherit; text-decoration: none; }
 h1, h2, p, ul { margin: 0; }
 ul { padding: 0; list-style: none; }
 button { font: inherit; color: inherit; }
 
-.page { max-width: 1060px; margin: 0 auto; padding: 40px 48px 72px; }
+.page { max-width: 1060px; margin: 0 auto; padding: 40px 48px 96px; }
 
 /* ---------- 마크 ---------- */
 .mark-ring { fill: none; stroke: #B9AD93; stroke-width: 2.2; stroke-linecap: round; }
@@ -71,8 +72,6 @@ button { font: inherit; color: inherit; }
 /* ---------- 오늘 흐름 ---------- */
 .flow { pointer-events: none; }
 .flow-rail { position: relative; height: 150px; }
-
-/* 지금 막대: 축에서 멈춤 — 아래 라벨과 겹치지 않음 */
 .flow-now { position: absolute; top: 0; height: 68px; transform: translateX(-50%); z-index: 2; display: flex; flex-direction: column; align-items: center; }
 .flow-now-pill { background: var(--cue); color: #fff; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; white-space: nowrap; }
 .flow-now-pill b { font-weight: 800; }
@@ -185,10 +184,6 @@ button { font: inherit; color: inherit; }
 .row.is-done .row-hook { color: #8A7F6B; }
 .row-sub { font-size: 12.5px; color: #A2967F; white-space: nowrap; }
 .row-sub b { color: #786C57; font-weight: 700; }
-/* 어학 SRS 복습 대기 sub — 미완성 과제 당김(약간 또렷). 포인트색 아님 (§3-3) */
-.row-sub .sub-strong { color: #786C57; font-weight: 700; }
-/* 장기 공백 카드 sub — 죄책감 아닌 사실(§3-3 죄책감 어법 금지). 색만 살짝 또렷 */
-.row-sub .gap-fact { color: #786C57; }
 .chev { color: #C9BCA1; transition: transform .18s ease; }
 .chev.open { transform: rotate(180deg); }
 
@@ -206,6 +201,7 @@ button { font: inherit; color: inherit; }
   background: #FDFBF7;
   border-radius: 999px;
   padding: 7px 14px 7px 8px;
+  cursor: pointer;
   transition: border-color .15s, background .15s, color .15s;
 }
 .cta-lb { flex: 1; text-align: center; }
@@ -266,7 +262,7 @@ button { font: inherit; color: inherit; }
 .cc.today { outline: 2px solid var(--cue); outline-offset: 1.5px; }
 .cc.pad { background: transparent; }
 
-/* 기록 3종 — 4행 subgrid 로 칸마다 라벨·값·진행막대·보조줄을 같은 baseline 에 정렬 (§6 정렬 필수) */
+/* 기록 3종 — 4행 subgrid로 칸마다 라벨·값·진행막대·보조줄을 같은 baseline에 정렬 */
 .recs {
   display: grid;
   grid-auto-flow: column;
@@ -285,27 +281,6 @@ button { font: inherit; color: inherit; }
 .rec-goalcell { display: flex; align-items: center; min-height: 5px; }
 .rec-note { font-size: 12px; color: #A2967F; white-space: nowrap; }
 
-/* 근접목표 칩 — 과강조 방지로 무채색 (액센트는 goalbar next 한 곳에만, §6 색 절제) */
-.rec-goal {
-  font-size: 10px; font-weight: 700; letter-spacing: .02em;
-  color: #A2967F;
-  background: #F6F1E7; border: 1px solid #E8DFCD;
-  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
-}
-/* 근접목표 막대 — 채운 칸 뉴트럴, 오늘 닿을 수 있는 다음 칸만 포인트색('경신 가능 지점') */
-.goalbar { display: flex; gap: 3px; }
-.goalbar i { width: 14px; height: 5px; border-radius: 3px; background: #ECE4D3; display: block; }
-.goalbar i.on { background: #C9BCA1; }
-.goalbar i.next { background: var(--cue); }
-/* 개인기록(PR) 배지 — 직전 운동에 신기록이 있으면. 강한 동기 신호라 포인트색 허용 (§6) */
-.rec-pr {
-  font-size: 10px; font-weight: 700; letter-spacing: .02em;
-  color: var(--cue);
-  background: color-mix(in oklab, var(--cue) 9%, #fff);
-  border: 1px solid color-mix(in oklab, var(--cue) 24%, #fff);
-  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
-}
-
 .beat {
   grid-column: 1 / -1;
   display: flex;
@@ -317,7 +292,7 @@ button { font: inherit; color: inherit; }
 }
 .beat-txt { font-size: 13.5px; font-weight: 700; color: color-mix(in oklab, var(--cue) 80%, #27211A); }
 .beat-txt b { font-weight: 800; }
-.beat-more { margin-left: auto; font-size: 12.5px; font-weight: 600; color: #A2967F; white-space: nowrap; border-bottom: 1px solid #DDD2BB; padding-bottom: 1px; }
+.beat-more { margin-left: auto; font-size: 12.5px; font-weight: 600; color: #A2967F; white-space: nowrap; border-bottom: 1px solid #DDD2BB; padding-bottom: 1px; cursor: pointer; }
 .beat-more:hover { color: var(--cue); border-color: var(--cue); }
 
 /* ---------- 전체 통계 ---------- */
@@ -337,10 +312,12 @@ button { font: inherit; color: inherit; }
 .stat-ic { width: 28px; height: 28px; border-radius: 50%; background: #F4EBDC; color: var(--cue); display: inline-flex; align-items: center; justify-content: center; }
 .stat-name { font-size: 16px; font-weight: 800; white-space: nowrap; }
 .stat-total { margin-left: auto; font-size: 12.5px; color: #A2967F; white-space: nowrap; }
-/* 목표 대비 페이스 (§4 — raw 누적 대신) */
+
+/* 목표 대비 페이스 (작업지시서 §6 — raw 누적 대신) */
 .stat-pace { margin-top: 14px; display: flex; align-items: baseline; gap: 7px; font-size: 12.5px; color: #786C57; white-space: nowrap; }
 .stat-pace b { font-size: 14px; font-weight: 800; color: var(--cue); }
 .stat-pace .pace-goal { color: #A2967F; }
+
 .stat-bars { margin-top: 16px; display: flex; gap: 9px; align-items: flex-end; height: 60px; }
 .sb { flex: 1; display: flex; align-items: flex-end; }
 .sb i { width: 100%; border-radius: 4px 4px 2px 2px; background: #DDD2BB; display: block; }
@@ -353,44 +330,76 @@ button { font: inherit; color: inherit; }
 .stat-rec em { font-style: normal; font-size: 11px; color: #A2967F; white-space: nowrap; }
 .stat-rec b { font-size: 15px; font-weight: 800; white-space: nowrap; }
 
-/* ---------- 반응형 ---------- */
+/* ════════ 정보 재설계 추가분 (작업지시서 §4·§5) ════════ */
+
+/* 근접목표 칩 — 과강조 방지로 무채색(액센트는 goalbar next 한 곳에만). */
+.rec-goal {
+  font-size: 10px; font-weight: 700; letter-spacing: .02em;
+  color: #A2967F;
+  background: #F6F1E7; border: 1px solid #E8DFCD;
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+
+/* 근접목표 막대 — 채운 칸은 뚜렷한 뉴트럴, 오늘 닿을 수 있는 다음 칸만 포인트색(§1 '경신 가능 기록'). */
+.goalbar { display: flex; gap: 3px; margin-top: 6px; }
+.goalbar i { width: 14px; height: 5px; border-radius: 3px; background: #ECE4D3; display: block; }
+.goalbar i.on { background: #C9BCA1; }
+.goalbar i.next { background: var(--cue); }
+
+/* 어학 SRS 복습 대기 sub — 미완성 과제 당김(약간 또렷). 포인트색 아님 */
+.row-sub .sub-strong { color: #786C57; font-weight: 700; }
+
+/* 개인기록(PR) 배지 — 직전 운동에 신기록이 있으면. 강한 동기 신호라 포인트색 허용 */
+.rec-pr {
+  font-size: 10px; font-weight: 700; letter-spacing: .02em;
+  color: var(--cue);
+  background: color-mix(in oklab, var(--cue) 9%, #fff);
+  border: 1px solid color-mix(in oklab, var(--cue) 24%, #fff);
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap;
+}
+
+/* 장기 공백 카드의 sub — 죄책감 아닌 사실(§3-3). 색만 살짝 또렷하게 */
+.row-sub .gap-fact { color: #786C57; }
+
+/* ───────── Tweaks 패널 ───────── */
+.tw-fab {
+  position: fixed; right: 22px; bottom: 22px; z-index: 200;
+  width: 46px; height: 46px; border-radius: 50%;
+  background: #27211A; color: #fff; border: none; cursor: pointer;
+  font-size: 19px; line-height: 1; display: grid; place-items: center;
+  box-shadow: 0 8px 22px -8px rgba(60, 45, 25, .5);
+  transition: transform .15s;
+}
+.tw-fab:hover { transform: rotate(45deg); }
+.tw {
+  position: fixed; right: 22px; bottom: 80px; z-index: 200;
+  width: 290px; background: #fff; border: 1px solid #ECE4D3; border-radius: 16px;
+  box-shadow: 0 16px 40px -16px rgba(60, 45, 25, .42); padding: 6px 6px 12px;
+  font-size: 13px;
+}
+.tw-head { display: flex; align-items: center; padding: 10px 12px 8px; }
+.tw-head span { font-weight: 800; font-size: 14px; }
+.tw-head button { margin-left: auto; background: none; border: none; cursor: pointer; color: #A2967F; font-size: 14px; }
+.tw-sec { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: #A2967F; padding: 10px 12px 4px; }
+.tw-row { display: block; padding: 6px 12px 10px; }
+.tw-row > span:first-child { display: block; font-weight: 600; color: #4A4232; margin-bottom: 7px; }
+.tw-row > span:first-child b { color: var(--cue); font-weight: 800; }
+.tw-row input[type=range] { width: 100%; accent-color: var(--cue); }
+.tw-hint { display: block; font-size: 11px; color: #B3A88F; line-height: 1.4; margin-top: 5px; }
+.tw-toggle { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 9px; padding: 8px 12px; cursor: pointer; }
+.tw-toggle input { accent-color: var(--cue); width: 15px; height: 15px; }
+.tw-toggle > span:nth-of-type(1) { font-weight: 600; color: #27211A; }
+.tw-toggle .tw-hint { grid-column: 2; margin-top: 2px; }
+
+/* 반응형 */
 @media (max-width: 920px) {
-  .page { padding: 28px 22px 56px; }
+  .page { padding: 28px 22px 72px; }
   .hero { grid-template-columns: 1fr; gap: 36px; }
   .clock b { font-size: 56px; }
   .row-head { grid-template-columns: 18px 1fr auto; }
   .row-mid { grid-column: 1 / -1; }
   .row-detail { grid-template-columns: 1fr; padding-left: 22px; }
-  /* 모바일: subgrid 대신 flex 2열 폴백 (§6) */
   .recs { grid-auto-flow: row; grid-auto-columns: auto; grid-template-rows: none; grid-template-columns: repeat(2, auto); column-gap: 32px; row-gap: 18px; }
   .rec { grid-row: auto; grid-template-rows: none; display: flex; flex-direction: column; gap: 5px; }
   .stats-grid { grid-template-columns: 1fr; }
 }
-
-/* ════════ 이식 보존분 (시안 외 — v8 팔레트로 치환) ════════ */
-
-/* 게이트(로딩·로그인)·데모 힌트 */
-.hint { font-size: 12.5px; color: #A2967F; text-align: center; margin-top: 28px; }
-.hint b { color: #786C57; font-weight: 700; }
-
-/* 계정 메뉴 (사용자 요청 승계: 이메일·로그아웃. 구 cue.css 이식, v8 토큰 치환) */
-.acct { position: relative; }
-.acct__btn { width: 34px; height: 34px; border-radius: 50%; background: #fff; border: 1px solid #E2D8C5;
-  font-size: 13px; font-weight: 600; color: #4A4232; cursor: pointer;
-  display: grid; place-items: center; transition: border-color .15s, background .15s; }
-.acct__btn:hover { border-color: var(--cue); color: var(--cue); }
-.acct__btn:focus-visible { outline: 2px solid var(--cue); outline-offset: 2px; }
-.acct__menu { position: absolute; top: 42px; right: 0; z-index: 120; width: 222px; background: #fff;
-  border: 1px solid #ECE4D3; border-radius: 14px; box-shadow: 0 8px 24px -12px rgba(60, 45, 25, .3); padding: 7px;
-  animation: acctrise .16s cubic-bezier(.2, .8, .2, 1); }
-@keyframes acctrise { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
-.no-motion .acct__menu { animation: none; }
-.acct__head { display: flex; align-items: center; gap: 10px; padding: 8px 9px 11px; }
-.acct__av { width: 30px; height: 30px; border-radius: 50%; background: #F4EBDC; border: 1px solid #ECE4D3;
-  display: grid; place-items: center; font-size: 12px; font-weight: 600; color: #4A4232; flex-shrink: 0; }
-.acct__email { font-size: 12px; color: #786C57; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.acct__sep { height: 1px; background: #F0EADC; margin: 3px 6px; }
-.acct__item { width: 100%; text-align: left; border: 0; background: transparent; padding: 9px 10px; border-radius: 9px;
-  font-size: 13.5px; font-weight: 500; color: #27211A; cursor: pointer; transition: background .12s; }
-.acct__item:hover { background: #FCFAF5; }
-.acct__item--quiet { color: #786C57; }

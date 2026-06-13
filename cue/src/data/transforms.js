@@ -221,6 +221,63 @@ export function weeks4Streak(counts, target = 4) {
   return { cur, best: Math.max(best, cur) };
 }
 
+/* ─── v9 정보 재설계 (직전/이번 주/추세 — 작업지시서 §7) ─────────────── */
+
+/** weeksAgo 주 전의 [월요일, (이번주는 오늘 / 과거는 일요일)] 키 범위 */
+export function weekKeyBounds(today, weeksAgo) {
+  const mon = weekStartMonday(today);
+  const start = new Date(mon); start.setDate(start.getDate() - weeksAgo * 7);
+  let end;
+  if (weeksAgo === 0) { end = new Date(today); end.setHours(0, 0, 0, 0); }
+  else { end = new Date(start); end.setDate(end.getDate() + 6); }
+  return { startKey: localDayKey(start), endKey: localDayKey(end) };
+}
+
+/** 그 주(월~오늘/일) 범위에 든 행 수 — 같은 날 중복도 셈 (글쓰기 편수·운동 회수) */
+export function countRowsInWeek(dateKeys, today, weeksAgo) {
+  const { startKey, endKey } = weekKeyBounds(today, weeksAgo);
+  let n = 0;
+  for (const k of dateKeys || []) if (k >= startKey && k <= endKey) n++;
+  return n;
+}
+
+/** monthsBack 달 전의 [1일, (이번달은 오늘 / 과거는 말일)] 키 범위 */
+export function monthKeyBounds(today, monthsBack) {
+  const base = new Date(today); base.setHours(0, 0, 0, 0);
+  const first = new Date(base.getFullYear(), base.getMonth() - monthsBack, 1);
+  const last = monthsBack === 0 ? base : new Date(base.getFullYear(), base.getMonth() - monthsBack + 1, 0);
+  return { startKey: localDayKey(first), endKey: localDayKey(last) };
+}
+
+/** 그 달 범위에 든 행 수 — 횟수(세션·편 수) 집계 */
+export function countRowsInMonth(dateKeys, today, monthsBack) {
+  const { startKey, endKey } = monthKeyBounds(today, monthsBack);
+  let n = 0;
+  for (const k of dateKeys || []) if (k >= startKey && k <= endKey) n++;
+  return n;
+}
+
+/** series(오늘로 끝남)에서 올해(1/1~오늘) 구간만 잘라낸다.
+    윈도우가 최소 길이(63일) 클램프로 전년까지 거슬러도 '올해' 누적·페이스는 올해만 셈. */
+export function thisYearSlice(series, today) {
+  const base = new Date(today); base.setHours(0, 0, 0, 0);
+  const jan1 = new Date(base.getFullYear(), 0, 1);
+  const realYtd = Math.round((base - jan1) / 86400000) + 1;
+  const n = Math.min(series.length, Math.max(1, realYtd));
+  return series.slice(series.length - n);
+}
+
+/** blocks 안에서 신기록(set.pr) 을 가진 운동 수 (gym session-summary 와 동일 의미) */
+export function countPRs(blocks) {
+  let n = 0;
+  for (const b of blocks || []) {
+    for (const ex of b.exercises || []) {
+      if ((ex.sets || []).some((s) => s && s.pr)) n++;
+    }
+  }
+  return n;
+}
+
 /** v8 작업지시서 §6 due 판정 — 보통 시각이 지난 미완료 중 가장 이른 것 (동시 0~1개) */
 export function dueOf(apps, nowMin) {
   const c = (apps || [])

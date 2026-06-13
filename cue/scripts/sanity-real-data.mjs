@@ -23,16 +23,22 @@ const client = createClient(url, key, { auth: { persistSession: false, autoRefre
 const apps = await buildRealApps(client, userId);
 
 const hookStr = (h) => h ? `${h.title}${h.strong ? ` [${h.strong}]` : ''}${h.tail || ''}` : '(없음)';
-console.log(`\n=== cue v8 실데이터 빌드 (user ${userId.slice(0, 8)}…) ===\n`);
+console.log(`\n=== cue v9 실데이터 빌드 (user ${userId.slice(0, 8)}…) ===\n`);
 for (const a of apps) {
   const calSum = Math.round(a.cal.reduce((x, y) => x + y, 0) * 10) / 10;
   console.log(`■ ${a.name} (${a.id}) — done=${a.done} usualMin=${a.usualMin} atMin=${a.atMin} tlMeta=${a.tlMeta ?? '-'}`);
   console.log(`  hook     : ${hookStr(a.hook)}`);
   if (a.hookDone) console.log(`  hookDone : ${hookStr(a.hookDone)}`);
-  console.log(`  sub      : ${a.sub}`);
-  console.log(`  beat     : ${a.beat}`);
-  for (const r of a.records) console.log(`  rec      : [${r.lb}] ${r.v}${r.note ? ` — ${r.note}` : ''}`);
-  console.log(`  cal      : 이번 달 합 ${calSum}${a.calUnit} / weekly8 [${a.weekly8.join(', ')}] / total "${a.total}"`);
+  console.log(`  sub      : ${a.sub}${a.subStrong ? ' [복습대기]' : a.subGap ? ' [공백사실]' : ''}`);
+  console.log(`  beat     : ${a.beat[0]}**${a.beat[1]}**${a.beat[2]}`);
+  for (const r of a.records) {
+    const g = r.goal ? `${r.goal.cur}/${r.goal.max}${r.goal.unit}${r.goal.proposed ? '(제안)' : ''}` : r.v;
+    const pr = r.pr > 0 ? ` ★신기록${r.pr}` : '';
+    console.log(`  rec      : [${r.lb}] ${g}${pr}${r.note ? ` — ${r.note}` : ''}`);
+  }
+  console.log(`  cal      : 이번 달 합 ${calSum}${a.calUnit} / weekly8(활동일) [${a.weekly8.join(', ')}] / total "${a.total}"`);
+  console.log(`  pace     : ${a.pace.now} · ${a.pace.goal}`);
+  for (const r of a.statRecords) console.log(`  stat     : [${r.lb}] ${r.v}`);
   console.log(`  cta      : ${a.cta}${a.ctaDone ? ` / done: ${a.ctaDone}` : ''} → ${a.url ?? '(iPhone 전용)'}\n`);
 }
 process.exit(0);

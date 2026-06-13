@@ -17,6 +17,10 @@ import {
   weeklyActiveDayCounts,
   weeks4Streak,
   dueOf,
+  countRowsInWeek,
+  countRowsInMonth,
+  countPRs,
+  thisYearSlice,
 } from './transforms.js';
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
@@ -237,5 +241,62 @@ describe('v8: dueOf — §6 due 판정 (동시 0~1개)', () => {
   });
   it('아무 것도 안 지났으면 null', () => {
     expect(dueOf(apps(), 700)).toBeNull();
+  });
+});
+
+/* ─── v9 정보 재설계 (작업지시서 2026-06 §7) ──────────────────────────── */
+
+describe('v9: countRowsInWeek — 주별 행 수(편/회, 중복 포함). 2026-06-13 토, 이번주 월=06-08', () => {
+  const today = new Date(2026, 5, 13);
+  const keys = ['2026-06-08', '2026-06-08', '2026-06-10', '2026-06-04', '2026-05-30'];
+  it('이번 주(월~오늘) 행 수 — 같은 날 중복도 셈', () => {
+    expect(countRowsInWeek(keys, today, 0)).toBe(3); // 08,08,10
+  });
+  it('지난 주(월~일) 행 수', () => {
+    expect(countRowsInWeek(keys, today, 1)).toBe(1); // 06-04 (05-30 은 2주 전)
+  });
+  it('빈/누락 → 0', () => {
+    expect(countRowsInWeek([], today, 0)).toBe(0);
+    expect(countRowsInWeek(null, today, 1)).toBe(0);
+  });
+});
+
+describe('v9: countRowsInMonth — 월별 행 수(횟수). 2026-06-13', () => {
+  const today = new Date(2026, 5, 13);
+  const keys = ['2026-06-13', '2026-06-02', '2026-06-02', '2026-05-20', '2026-04-30'];
+  it('이번 달(1일~오늘) 행 수', () => {
+    expect(countRowsInMonth(keys, today, 0)).toBe(3); // 13,02,02
+  });
+  it('지난 달(1일~말일) 행 수', () => {
+    expect(countRowsInMonth(keys, today, 1)).toBe(1); // 05-20
+  });
+});
+
+describe('v9: countPRs — 직전 세션 blocks 의 신기록 운동 수(set pr 보유 운동)', () => {
+  it('pr set 가진 운동만 카운트 (set 다중이어도 운동 1개)', () => {
+    const blocks = [
+      { type: 'single', exercises: [{ sets: [{ pr: true }, { pr: false }] }, { sets: [{ pr: false }] }] },
+      { type: 'circuit', exercises: [{ sets: [{ pr: true }] }] },
+    ];
+    expect(countPRs(blocks)).toBe(2);
+  });
+  it('빈 blocks / pr 없음 → 0', () => {
+    expect(countPRs([])).toBe(0);
+    expect(countPRs(null)).toBe(0);
+    expect(countPRs([{ exercises: [{ sets: [{ pr: false }] }] }])).toBe(0);
+  });
+});
+
+describe('v9: thisYearSlice — 윈도우가 전년으로 넘어가도 올해(1/1~오늘) 구간만 집계', () => {
+  it('연초 — 올해 경과일(<윈도우)만큼 뒤에서 자름', () => {
+    // 2026-01-10 = 올해 10일째. 63일 윈도우 중 마지막 10개만 올해
+    const series = Array.from({ length: 63 }, (_, i) => i); // 0..62
+    expect(thisYearSlice(series, new Date(2026, 0, 10))).toEqual(series.slice(53)); // 53..62 (10개)
+  });
+  it('연중 — 경과일이 윈도우보다 길면 전체', () => {
+    expect(thisYearSlice([1, 2, 3, 4, 5], new Date(2026, 5, 13))).toEqual([1, 2, 3, 4, 5]);
+  });
+  it('1월 1일 — 1개', () => {
+    expect(thisYearSlice([7, 8, 9], new Date(2026, 0, 1))).toEqual([9]);
   });
 });

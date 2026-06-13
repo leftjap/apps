@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cue 활동 카드 정보 재설계 — 구현 작업지시서</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: #F0EEE6; color: #232019;
+    font-family: 'Pretendard Variable', Pretendard, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14.5px; line-height: 1.72; font-feature-settings: 'tnum';
+    -webkit-font-smoothing: antialiased;
+  }
+  .page {
+    max-width: 840px; margin: 28px auto; background: #fff;
+    padding: 64px 72px; box-shadow: 0 2px 14px rgba(0,0,0,.08); border-radius: 3px;
+  }
+  h1 { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 8px; }
+  h2 {
+    font-size: 19px; font-weight: 800; letter-spacing: -0.01em;
+    margin: 46px 0 14px; padding-top: 18px; border-top: 2px solid #232019;
+  }
+  h2 .no { color: #D2602F; margin-right: 9px; }
+  h3 { font-size: 15.5px; font-weight: 800; margin: 26px 0 8px; }
+  h4 { font-size: 14px; font-weight: 800; margin: 18px 0 6px; color: #B9551F; }
+  p { margin: 0 0 11px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 5px; }
+  b { font-weight: 700; }
+  code {
+    font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 12.5px;
+    background: #F4F1E9; border-radius: 4px; padding: 1.5px 6px; color: #5A4A36;
+  }
+  .doc-meta { color: #8A8270; font-size: 13px; margin-bottom: 4px; }
+  .lede { font-size: 15.5px; color: #544C3E; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 13px; }
+  th { text-align: left; font-weight: 700; border-bottom: 2px solid #232019; padding: 8px 12px 8px 0; vertical-align: bottom; }
+  td { border-bottom: 1px solid #E5E0D2; padding: 8px 12px 8px 0; vertical-align: top; }
+  td:first-child, th:first-child { white-space: nowrap; }
+  .kv td:first-child { font-weight: 700; width: 150px; white-space: nowrap; }
+  .callout {
+    background: #FBF4EC; border: 1px solid #EBD9C6; border-radius: 8px;
+    padding: 14px 18px; margin: 14px 0 18px; font-size: 13.5px;
+  }
+  .callout b:first-child { color: #B9551F; }
+  .callout.warn { background: #FDF1EE; border-color: #EFCDC2; }
+  .callout.ok { background: #F1F5EC; border-color: #D6E2C8; }
+  .callout.ok b:first-child { color: #4F6B3E; }
+  figure { margin: 18px 0 8px; }
+  figure img { width: 100%; border: 1px solid #E5E0D2; border-radius: 8px; display: block; }
+  figcaption { font-size: 12.5px; color: #8A8270; margin: 8px 0 18px; }
+  .swatches { display: flex; gap: 10px; flex-wrap: wrap; margin: 10px 0 16px; }
+  .sw { width: 120px; font-size: 11.5px; color: #544C3E; }
+  .sw i { display: block; height: 42px; border-radius: 7px; border: 1px solid #E5E0D2; margin-bottom: 5px; }
+  .sw code { font-size: 11px; padding: 0 4px; }
+  .toc { columns: 2; font-size: 13.5px; margin: 14px 0 0; }
+  .toc li { margin-bottom: 3px; }
+  .copy-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; margin: 10px 0 16px; font-size: 13px; }
+  .copy-pair .bad, .copy-pair .good { padding: 9px 14px; border-radius: 7px; margin-bottom: 8px; }
+  .copy-pair .bad { background: #FDF1EE; color: #8C3A24; text-decoration: line-through; text-decoration-color: rgba(140,58,36,.45); }
+  .copy-pair .good { background: #F1F5EC; color: #3E5A33; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #F0EBDE; color: #6B5F49; white-space: nowrap; }
+  .tag-new { background: #E8F0DE; color: #4F6B3E; }
+  .tag-keep { background: #EFE7D5; color: #6B5F49; }
+  .tag-cut { background: #FBE2DA; color: #9A4326; }
+  .slots { margin: 8px 0 14px; }
+  .slots .slot { display: grid; grid-template-columns: 92px 1fr; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #E9E2D2; font-size: 13px; }
+  .slots .slot b { color: #232019; }
+  .slots .slot span:first-child { color: #B9551F; font-weight: 700; }
+  section { break-inside: avoid; }
+  h2, h3 { break-after: avoid; }
+  figure, table, .callout { break-inside: avoid; }
+  @media print {
+    body { background: none; }
+    .page { box-shadow: none; border-radius: 0; max-width: none; margin: 0; padding: 0; }
+    .callout, .copy-pair .bad, .copy-pair .good, .sw i, .pill, figure img { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    @page { margin: 0.7in; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<p class="doc-meta">작업지시서 · cue 활동 카드 정보 재설계 · 2026.06 · v9 (정보구조 통일안)</p>
+<h1>cue 활동 카드 정보 재설계 — 구현 작업지시서</h1>
+<p class="lede">독서·글쓰기·어학·운동 네 장의 활동 카드(접힘+펼침)와 전체 통계 화면을, <b>오늘 도구를 실제로 열게 만드는</b> 정보로 재설계한다. 이 문서는 무엇을 넣고/빼고/어떻게 배치할지와 실제 DB 필드 매핑·카피 규칙·근거를 담는다. 동작 시안은 동봉된 <code>시안/큐 대시보드 — 정보 재설계.html</code>을 브라우저에서 열어 확인한다(트윅 ⚙로 시각·목표 슬롯·애니메이션 토글).</p>
+
+<div class="callout"><b>리포지토리</b> &nbsp;<code>github.com/leftjap/apps</code> · 작업 대상은 <code>cue/</code>. 이 문서의 데이터 필드는 모두 실제 코드(테이블·컬럼·라벨맵)를 확인해 표기했다 — 검증 출처는 각 절에 명시.</div>
+
+<ul class="toc">
+  <li>0. 범위와 산출물</li>
+  <li>1. 설계 원칙 (정보구조 통일)</li>
+  <li>2. 공통 카드 골격</li>
+  <li>3. 카드별 명세 (독서·글쓰기·어학·운동)</li>
+  <li>4. 전체 통계</li>
+  <li>5. 카피 규칙</li>
+  <li>6. 디자인 토큰·정렬·색</li>
+  <li>7. 데이터 계약 (DB 매핑)</li>
+  <li>8. 근거 (재검증)</li>
+  <li>9. 구현 체크리스트 · 미결정</li>
+</ul>
+
+<h2><span class="no">0</span>범위와 산출물</h2>
+<table>
+<tr><th>구분</th><th>내용</th></tr>
+<tr><td><b>대상</b></td><td>활동 행 ×4 (접힘+펼침), 전체 통계 카드</td></tr>
+<tr><td><b>제외</b></td><td>히어로(시계·하루 고리·오늘 흐름 타임라인) — <b>손대지 않는다</b>. 시안엔 맥락용으로만 포함</td></tr>
+<tr><td><b>바꾸는 코드</b></td><td><code>cue/src/data/copy.js</code>(문장 생성 — 교체), <code>cue/src/data/adapter.js</code>(필드 계산 — 보강), <code>cue/src/components/AppRow.jsx</code>·<code>StatsView.jsx</code>(렌더), <code>cue/src/styles/cue.css</code>(정렬·색)</td></tr>
+<tr><td><b>한 줄 목적</b></td><td>끝없는 누적·끊긴 기록을 빼고, <b>직전에 하던 것 → 오늘 이어서 → 가까운 목표</b>로 재배치해 재개 충동을 만든다</td></tr>
+</table>
+
+<figure><img src="img/02-시안.png" alt="메인 화면 — 히어로 아래 4개 활동 카드"></figure>
+<figcaption>시안 1 — 메인. 히어로(범위 밖) 아래 활동 행 4개. 첫 행(독서) 기본 펼침. 어학은 ‘지금 할 일(due)’로 포인트색 강조.</figcaption>
+
+<h2><span class="no">1</span>설계 원칙 (정보구조 통일)</h2>
+<ol>
+<li><b>네 카드가 같은 골격으로 읽힌다.</b> 펼침의 기록 3종을 <span class="pill">직전(최근 한 일)</span> → <span class="pill">이번 주(근접목표)</span> → <span class="pill">추세(이번 달/진척)</span>의 동일한 역할로 정렬한다. 라벨·타이포·진행막대·보조줄이 카드마다 같은 자리에 온다.</li>
+<li><b>시간 단위는 일 → 주 → 월.</b> 연간 누적은 카드에서 빼고 전체 통계로 보낸다.</li>
+<li><b>직전 환기(이어보기)를 슬롯 1에.</b> “끝낸 누적”이 아니라 “하다 만 것”을 보여 재개를 유도한다(8절 근거).</li>
+<li><b>근접목표를 슬롯 2에.</b> “이번 주 N / 목표 M”처럼 가까운 목표를 현재/목표 한 쌍으로 보인다.</li>
+<li><b>색은 한 곳에만.</b> 포인트색(<code>#D2602F</code>)은 시간·지금 할 일·경신 가능 지점에만. 한 화면에서 세 군데 이상 동시 강조 금지.</li>
+<li><b>빈 격려·죄책감 어법 금지.</b> 모든 문장은 DB에서 온 구체값. 공백은 사실로, 복귀는 문턱을 낮춰서(5절).</li>
+</ol>
+
+<h2><span class="no">2</span>공통 카드 골격</h2>
+<h3>2-1. 접힘 행</h3>
+<div class="slots">
+  <div class="slot"><span>고리마크</span><span>완료=닫힌 원+체크 / due=포인트색 회전 / 대기=열린 고리</span></div>
+  <div class="slot"><span>이름</span><span>독서·글쓰기·어학·운동 (순서 고정)</span></div>
+  <div class="slot"><span>hook</span><span><b>재개 지점 1줄</b> — 구체 명사 + 굵은 수치 (예: 「제목」 <b>52%</b>까지 읽었어요)</span></div>
+  <div class="slot"><span>sub</span><span>보조 사실 1줄 — 직전 시점, 공백 사실, 또는 ‘지금 할 일’ 당김</span></div>
+  <div class="slot"><span>CTA</span><span>전 행 동일 폭 pill. 라벨은 데이터 그대로(이어 읽기/이어 쓰기/오늘 분량 시작/운동 기록 열기·보기)</span></div>
+</div>
+
+<h3>2-2. 펼침 (통일 4행 정렬)</h3>
+<p>좌측 이번 달 캘린더 히트맵(유지) + 우측 기록 3종. 기록 3종은 <b>라벨 · 값 · 진행막대 · 보조줄</b> 4행을 <code>grid subgrid</code>로 묶어, 칸이 달라도 네 줄이 같은 baseline에 정렬되게 한다(과거: 가운데 칸 막대 때문에 보조줄이 어긋났음 → 해결).</p>
+<div class="slots">
+  <div class="slot"><span>슬롯 1 · 직전</span><span>최근 한 일 (직전 읽기 분 / 직전 글 매수 / 직전 발화 문장 / 직전 운동 부위)</span></div>
+  <div class="slot"><span>슬롯 2 · 이번 주</span><span><b>현재 / 목표</b> (예: 3 / 5일) + 진행막대. 근접목표</span></div>
+  <div class="slot"><span>슬롯 3 · 추세</span><span>이번 달 또는 진척, 이전 대비 (예: 14회 · 지난달 12회)</span></div>
+  <div class="slot"><span>beat</span><span>“오늘 [최소 행동]이면 [가까운 결과] — [기준]” 한 줄</span></div>
+</div>
+
+<h2><span class="no">3</span>카드별 명세</h2>
+
+<!-- 독서 -->
+<h3>3-1. 독서 (read)</h3>
+<p class="doc-meta">데이터 출처: <code>book_reading_seconds</code>(밀리의서재 로컬, 외부 트래커가 채움) · 진도 %(EPUB라 쪽수 불가, <b>%만</b>) · 마지막 읽은 시각. 읽은 분은 macOS 스크린타임 근사.</p>
+<ul>
+<li><b>hook</b> — 책 제목 + 진도%. 예: 「어떤 생각들은 나의 세계가 된다」 <b>52%</b>까지 읽었어요</li>
+<li><b>sub</b> — 직전에 읽은 시점. 예: 어제 18분 읽었어요</li>
+</ul>
+<div class="slots">
+  <div class="slot"><span>직전 읽기</span><span><b>18분</b> · 어제</span></div>
+  <div class="slot"><span>이번 주</span><span><b>3 / 5일</b> + 막대 · 지난주 4일 &nbsp;<span class="pill">목표=제안값</span></span></div>
+  <div class="slot"><span>책 진척</span><span><b>52%</b> · 지난주 41% (책 완독을 향한 진행률)</span></div>
+</div>
+<p><span class="pill tag-cut">빼기</span> 올해 누적 시간(→통계) · 0일 최장연속 병치.</p>
+
+<!-- 글쓰기 -->
+<h3>3-2. 글쓰기 (write)</h3>
+<p class="doc-meta">데이터 출처: <code>today_entries</code> — <code>kind</code>(카테고리) · <code>title</code> · <code>content</code>(글자수→매수, 200자=1매) · <code>created_at</code>. 한 row = 한 편. 카테고리 라벨 고정(검증: <code>today/src/features/spotlight.js</code> KIND_TO_LABEL) — <code>navi</code>=오늘의 네비, <code>fiction</code>=단편, <code>blog</code>=블로그, <code>memo</code>=메모.</p>
+<ul>
+<li><b>hook</b> — 카테고리 + 「제목」 + 매수(직전 글을 이어쓰게). 예: 오늘의 네비 「정치는 인물」 <b>6.5매</b>까지 썼어요 &nbsp;<span class="pill">가짜 ‘6월 에세이’ 금지</span></li>
+<li><b>sub</b> — 공백은 사실로. 예: 마지막으로 쓴 날은 6월 4일이에요</li>
+</ul>
+<div class="slots">
+  <div class="slot"><span>직전 글</span><span><b>6.5매</b> · 오늘의 네비 · 6월 4일</span></div>
+  <div class="slot"><span>이번 주</span><span><b>0 / 3편</b> + 막대 · 지난주 2편 &nbsp;<span class="pill">목표=제안값</span></span></div>
+  <div class="slot"><span>이번 달</span><span><b>12매</b> · 지난달 38.4매</span></div>
+</div>
+<p><span class="pill tag-cut">빼기</span> ‘올해 누적 매수’를 대표 숫자로(→통계) · 카테고리 분포(올해 navi 84:fiction 1이라 무의미). 편당 평균·올해 편수는 <b>통계로</b> 이동(참고치).</p>
+
+<!-- 어학 -->
+<h3>3-3. 어학 (lang) <span class="pill tag-new">SRS 재설계</span></h3>
+<p class="doc-meta">데이터 출처(검증: <code>study/supabase/migrations/0001_study_init.sql</code>): <code>study_daily_stats</code>(utterance_count · study_time_sec · new_sentences · review_count) · <code>study_review_queue</code>(next_review · interval · consecutive_pass) · <code>study_today_lessons</code>(completed · explanation.sceneTitle). <b>발음 점수(<code>study_pronunciation_log.overall_score</code>)는 제거</b> — 동기 신호로 의미 약함(사용자 결정). pass_count는 <code>study_session_logs</code>에만 있어 <b>통과율 보류</b>.</p>
+<ul>
+<li><b>hook</b> — 마지막 학습 장면 + 날짜(이어보기). 예: 「구덩이 약속」 <b>5월 18일</b>이 마지막이에요</li>
+<li><b>sub</b> — <b>SRS 복습 대기</b>(미완성 과제 당김). 예: 복습할 문장 12개가 오늘 만료돼요 &nbsp;<span class="pill tag-new">신규</span></li>
+</ul>
+<div class="slots">
+  <div class="slot"><span>직전 발화</span><span><b>9문장</b> · 5월 18일 · 신규 6 (발화·시간은 별개 지표라 발화를 슬롯1로)</span></div>
+  <div class="slot"><span>이번 주</span><span><b>3 / 4일</b> + 막대 · 지난주 2일 &nbsp;<span class="pill">목표=제안값</span></span></div>
+  <div class="slot"><span>이번 달 익힘</span><span><b>+48문장</b> · 지난달 +32 (수집 성장 — 월 델타)</span></div>
+</div>
+<p><span class="pill tag-cut">빼기</span> 올해 누적 시간(대표 숫자→통계) · 0일 최장연속 · <b>발음 점수</b>. &nbsp;<span class="pill">보류</span> 통과율.</p>
+<div class="callout"><b>복습 대기 산출</b> — <code>study_review_queue</code>에서 <code>user_id</code> + <code>next_review &lt;= today</code> 카운트. SRS는 “잊을 때쯤 다시 보게” 하는 미완성 과제라 재개 동기가 강함(8절). 접힌 행 sub와 beat에 노출.</div>
+
+<!-- 운동 -->
+<h3>3-4. 운동 (gym) <span class="pill tag-new">부위·PR</span></h3>
+<p class="doc-meta">데이터 출처: <code>gym_sessions</code> — <code>tags</code>(multiEntry, 부위) · <code>blocks[].exerciseId</code>·<code>sets[]</code>(볼륨·<code>pr</code> 플래그) · <code>duration_min</code> · <code>start/end_time</code>. 주 4일 목표·연속 주. 부위 라벨 고정(검증: <code>gym/src/db/exercises.js</code> PARTS) — chest=가슴, back=등, shoulder=어깨, legs=하체, arms=팔, cardio=맨몸.</p>
+<ul>
+<li><b>hook(완료)</b> — 오늘 시각 · 부위 · 시간. 예: 오늘 07:40 · 가슴·어깨 <b>48분</b></li>
+<li><b>sub</b> — 이번 주 진행. 예: 이번 주 4회 · 주 4일 목표를 채웠어요</li>
+</ul>
+<div class="slots">
+  <div class="slot"><span>오늘 한 운동</span><span><b>가슴 · 어깨</b> — <b>부위 2개 이상</b>(session.tags). 시간·볼륨은 작게(48분 · 6,200kg). 신기록 있으면 <b>★ 신기록 N</b> 배지 &nbsp;<span class="pill tag-new">종목명 아닌 부위</span></span></div>
+  <div class="slot"><span>이번 주</span><span><b>4 / 4회</b> + 막대 · 3주 연속 &nbsp;<span class="pill">목표=실제값(주 4일)</span></span></div>
+  <div class="slot"><span>이번 달</span><span><b>14회</b> · 지난달 12회</span></div>
+</div>
+<p><span class="pill tag-cut">빼기</span> 올해 누적 회수(대표 숫자→통계) · 칼로리(분의 선형변환). &nbsp;<span class="pill">후속</span> 종목별 PR 상세는 jsonb 파싱 필요 — 이번엔 부위 + 신기록 개수까지.</p>
+
+<figure><img src="img/04-시안.png" alt="어학 카드 펼침 — 직전 발화 / 이번 주 3·4일 / 이번 달 익힘"></figure>
+<figcaption>시안 2 — 어학(due). hook=마지막 장면, sub=복습 대기 12개, 기록=직전 발화·이번 주(3/4일)·이번 달 익힘. 발음 점수 제거.</figcaption>
+<figure><img src="img/05-시안.png" alt="운동 카드 펼침 — 가슴·어깨 / 4·4회 / 14회"></figure>
+<figcaption>시안 3 — 운동(완료). 슬롯1이 <b>부위 2개(가슴·어깨)</b>, 시간·볼륨은 작게, 신기록은 ★ 배지. 이번 주 4/4회 달성.</figcaption>
+
+<h2><span class="no">4</span>전체 통계</h2>
+<p>카드에서 뺀 연간 누적·최장 기록을 여기로 모은다(자부심·회고). 앱별 카드: 아이콘+이름+연간 요약 / <b>올해 페이스</b>(raw 누적 대신 목표 대비) / 8주 막대(주별 활동 일수=빈도, 이번 주만 포인트색) / 기록 3종.</p>
+<ul>
+<li>페이스 예: 운동 “올해 평균 주 <b>3.2회</b> · 주 4일 목표”. 독서·글쓰기·어학은 “평균 주 N · 제안 주 M”.</li>
+<li>기록 3종(통계): 독서=최장 연속·올해 읽은 책·하루 최고 / 글쓰기=올해 편수·올해 매수·편당 평균 / 어학=올해 발화·익힌 문장·최장 연속 / 운동=올해 횟수·최고 주 연속·하루 최고.</li>
+<li>닫기 ✕ 또는 ESC.</li>
+</ul>
+<figure><img src="img/06-시안.png" alt="전체 통계 — 4개 앱 카드, 8주 막대와 페이스"></figure>
+<figcaption>시안 4 — 전체 통계. 연간 요약 + 올해 페이스 + 8주 빈도 + 기록 3종.</figcaption>
+
+<h2><span class="no">5</span>카피 규칙</h2>
+<p>정본(<code>cue/design-ref/v8/작업지시서.html §9</code>) 준수 + 사용자 선호:</p>
+<ol>
+<li><b>사용자에게 말하는 문장은 해요체.</b> 라벨·캡션(직전 읽기·이번 주·하루 최고 등)만 명사형.</li>
+<li><b>빈 격려·추상 평가 금지</b> — “잘하고 있어요”, “많이 했어요” 불가. 구체값만.</li>
+<li><b>죄책감 어법 금지</b> — 공백은 사실로(“마지막으로 쓴 날은 6월 4일이에요”), 복귀는 문턱 낮춰서(“오늘 10분이면 다시 시작할 수 있어요”).</li>
+<li><b>번역투·반말 종결 금지.</b></li>
+<li><b>은유·편집적 카피 지양</b>(사용자 선호) — “「제목」이 다시 자라요” 류 금지, 데이터 사실 위주.</li>
+<li><b>beat</b> = “오늘 [최소 행동]이면 [가까운 결과] — [기준 기록]”.</li>
+</ol>
+<div class="copy-pair">
+  <div class="bad">올해 412매 · 18일 썼어요</div><div class="good">오늘의 네비 「정치는 인물」 6.5매까지 썼어요</div>
+  <div class="bad">최장 14일 · 오늘 하면 1일째</div><div class="good">복습할 문장 12개가 오늘 만료돼요</div>
+  <div class="bad">「6월 에세이」가 다시 자라요</div><div class="good">오늘 1매면 이번 달 13매째 — 지난달은 38매였어요</div>
+  <div class="bad">발음 평균 76점</div><div class="good">직전 발화 9문장 · 5월 18일 · 신규 6</div>
+</div>
+
+<h2><span class="no">6</span>디자인 토큰 · 정렬 · 색</h2>
+<div class="swatches">
+  <div class="sw"><i style="background:#FAF7F1"></i><code>#FAF7F1</code> 배경</div>
+  <div class="sw"><i style="background:#FFFFFF"></i><code>#FFFFFF</code> 카드</div>
+  <div class="sw"><i style="background:#27211A"></i><code>#27211A</code> 본문 잉크</div>
+  <div class="sw"><i style="background:#A2967F"></i><code>#A2967F</code> 보조 텍스트</div>
+  <div class="sw"><i style="background:#ECE4D3"></i><code>#ECE4D3</code> 테두리</div>
+  <div class="sw"><i style="background:#D2602F"></i><code>#D2602F</code> 포인트(유일)</div>
+</div>
+<table class="kv">
+<tr><td>서체</td><td>Pretendard Variable · 숫자 <code>tnum</code>(고정폭)</td></tr>
+<tr><td>타입 스케일</td><td>행 이름 16.5/800 · hook 15 · sub 12.5 · 기록 라벨 11.5 · 기록 값 24/800 · 보조 12</td></tr>
+<tr><td>모서리</td><td>카드 18 · 안쪽 박스 10 · 캘린더 셀 5 · 버튼 pill</td></tr>
+<tr><td>히트맵</td><td>0 <code>#F0EADC</code> → 1 <code>#ECD2BB</code> → 2 <code>#DE9D6C</code> → 3 <code>#D2602F</code> (경계 34%·67%)</td></tr>
+</table>
+<h4>정렬 (필수)</h4>
+<p>기록 3종은 <code>.recs { display:grid; grid-auto-flow:column; grid-template-rows:repeat(4,auto); }</code> + 각 기록 <code>.rec { grid-template-rows:subgrid; grid-row:span 4 }</code>로 라벨·값·막대·보조줄을 칸 간 같은 줄에 맞춘다. 막대 없는 칸은 3행을 빈 셀로 두어 보조줄 baseline을 유지. (모바일 ≤920px는 flex 2열 폴백.)</p>
+<h4>색 절제 규칙</h4>
+<ul>
+<li><b>진행막대</b>: 채운 칸=뉴트럴 <code>#C9BCA1</code>, <b>오늘 닿을 수 있는 다음 칸 1개만</b> 포인트색(“경신 가능 지점”). 나머지 빈 칸 <code>#ECE4D3</code>.</li>
+<li><b>제안/목표 칩</b>: 제안값(독서·글쓰기·어학)은 무채색 “제안” 칩 + 값의 “/ 목표” 부분을 흐리게. 실제 목표(운동)는 칩 없이 “4 / 4회”.</li>
+<li><b>★ 신기록</b> 배지: 운동 직전 세션에 PR이 있을 때만 포인트색(강한 동기 신호라 허용).</li>
+<li>한 펼침에서 동시 강조는 due(있으면) + 막대 다음칸 + beat 정도로 제한. 히트맵은 데이터 시각화라 별도.</li>
+</ul>
+
+<h2><span class="no">7</span>데이터 계약 (DB 매핑)</h2>
+<table>
+<tr><th>슬롯</th><th>독서</th><th>글쓰기</th><th>어학</th><th>운동</th></tr>
+<tr><td><b>hook</b></td><td>책 제목 + 진도%</td><td>kind 라벨 + 「title」 + 매수</td><td>sceneTitle + 마지막일</td><td>오늘 시각·tags(부위)·분</td></tr>
+<tr><td><b>sub</b></td><td>직전 읽은 시점</td><td>마지막 쓴 날</td><td>복습 대기 수(next_review≤오늘)</td><td>이번 주 N회 / 목표</td></tr>
+<tr><td><b>슬롯1</b></td><td>직전 분</td><td>직전 글 매수</td><td>직전 발화 수(+신규)</td><td>부위 2개 + ★PR</td></tr>
+<tr><td><b>슬롯2</b></td><td colspan="4">이번 주 활동 일수 / 목표(운동만 실제값 4, 나머지 제안). 진행막대.</td></tr>
+<tr><td><b>슬롯3</b></td><td>책 진척%·지난주</td><td>이번 달 매수·지난달</td><td>이번 달 익힌 문장·지난달</td><td>이번 달 횟수·지난달</td></tr>
+</table>
+<ul>
+<li><b>매수</b> = <code>content</code> 글자수 / 200, 소수 1자리(<code>sheetsFromHtml</code> 참조).</li>
+<li><b>주간 활동 일수</b> = 해당 주 활동이 있던 날 수(빈도). 8주 막대도 동일 정의.</li>
+<li><b>복습 대기</b> = <code>study_review_queue</code> where <code>next_review ≤ today</code>.</li>
+<li><b>부위</b> = <code>session.tags</code>(대표 2개; 3개 이상이면 볼륨 큰 2개로 제한할지 9절 확인). <b>PR</b> = <code>blocks[].sets[].pr</code> true 개수.</li>
+<li><b>연간 누적·최장</b>은 전체 통계에서만 계산.</li>
+</ul>
+<div class="callout warn"><b>주의 — 주간 목표</b> 실제 ‘목표’가 설정된 건 <b>운동(주 4일)뿐</b>. 독서 5일·글쓰기 3편·어학 4일은 <b>이 문서의 제안값</b>이다. 디자인엔 슬롯·“제안” 칩만 두고, 사용자가 확정하기 전엔 수치를 진짜 목표로 쓰지 말 것.</div>
+
+<h2><span class="no">8</span>근거 (재검증)</h2>
+<p class="doc-meta">작업지시서 인용 연구를 코드와 별개로 직접 재확인한 결과:</p>
+<table>
+<tr><th>판단</th><th>근거</th><th>결론</th></tr>
+<tr><td>끊긴 최장연속 병치 제거</td><td>Silverman &amp; Barasch, <i>On or Off Track</i>, JCR 2023 (7개 연구)</td><td>끊긴 연속을 강조하면 이후 참여가 줄고, 유지된 연속은 늘린다 → 0일 상태에서 과거 최고 병치 금지. 연속은 살아있을 때만 노출.</td></tr>
+<tr><td>‘이어보기’ 슬롯의 근거</td><td>Zeigarnik·Ovsiankina 메타분석, <i>Nature HSSC</i> 2025</td><td>미완료 과제의 ‘기억 우위(자이가르닉)’는 재현 실패 → 근거로 쓰지 않음. 그러나 ‘재개 경향(오브시안키나)’은 신뢰할 만함 → 직전 환기·SRS 복습 대기의 토대.</td></tr>
+<tr><td>어학 SRS·복습 대기</td><td>SRS(Anki·Memrise 등) 통설</td><td>잊을 때쯤 다시 보게 하는 복습 대기는 재개 동기가 강함. 포인트·배지는 브랜드 원칙상 배제하고 진행막대·복습 대기·수집 성장으로 대체.</td></tr>
+<tr><td>글쓰기 최소 분량·매수 목표</td><td>글쓰기 습관 연구·실무 통설</td><td>매수 목표는 구체·측정가능·비판단적이라 동기를 유발. ‘오늘 한 매’ 최소 행동은 죄책감 없이 습관을 유지 → beat/hook에 반영.</td></tr>
+</table>
+
+<h2><span class="no">9</span>구현 체크리스트 · 미결정</h2>
+<h4>체크리스트</h4>
+<ol>
+<li><code>copy.js</code>: 연간 누적·최장연속 대표화 제거, 슬롯 1·2·3을 직전/이번 주/추세로 재작성(5절 문체 전수).</li>
+<li><code>adapter.js</code>: 복습 대기 수(<code>study_review_queue</code>), 부위 2개(<code>session.tags</code>)·PR 개수, 이번 달/지난달·지난주 비교값, 페이스 산출 추가.</li>
+<li><code>AppRow.jsx</code>: 기록 4행 subgrid 렌더 + 진행막대(다음 칸 1개 포인트색) + 제안/목표 칩 + ★신기록 배지.</li>
+<li><code>StatsView.jsx</code>: 페이스 줄 + 8주 빈도 + 통계용 기록 3종(누적·최장 이전).</li>
+<li>발음 점수 제거 확인. 글쓰기 ‘가짜 제목’ 미사용 확인.</li>
+<li>카피 전수 검사(해요체·죄책감 어법·번역투). 정렬 QA(칸 간 보조줄 baseline 일치).</li>
+</ol>
+<h4>미결정 (사용자 확인 필요)</h4>
+<ul>
+<li>주간 목표 실제 수치(독서·글쓰기·어학) — 확정 시 “제안” 칩 제거.</li>
+<li>운동 부위가 3개 이상인 세션에서 대표 2개 선정 기준(볼륨 순 vs 시간 순).</li>
+<li>4/4 ‘하루 마감’ 축하 연출 — 정본은 범위 밖. 추가 여부.</li>
+<li>슬롯1 보조줄 중복 정리(독서 “이어서 52%”↔hook, 운동 부위↔hook) 수용 여부.</li>
+</ul>
+
+<div class="callout ok"><b>동작 시안</b> 동봉 <a href="시안/큐 대시보드 — 정보 재설계.html"><code>시안/큐 대시보드 — 정보 재설계.html</code></a> — 브라우저로 열면 네 카드 펼침·전체 통계·트윅(지금 시각으로 due 재계산, 주간 목표 슬롯, 애니메이션)을 직접 확인할 수 있다. 정렬·색·카피의 최종 기준은 이 시안이다.</div>
+
+</div>
+</body>
+</html>
