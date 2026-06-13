@@ -17,7 +17,7 @@ import { pickSize, watchSize } from '../components/session/index.js';
 import { loadActiveSession } from '../services/activeSession.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
-import { renderHomeDesktopV2 } from './homeDesktopV2.js';
+import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -347,8 +347,7 @@ function todayLabel(iso) {
 function render(host, state) {
   host.innerHTML = '';
   if (state.size === 'desktop') host.appendChild(renderHomeDesktopV2(state));
-  else if (state.size === 'tablet') host.appendChild(renderTablet(state));
-  else host.appendChild(renderPhone(state));
+  else host.appendChild(renderHomeMobileV2(state));
   return () => { host.innerHTML = ''; };
 }
 
