@@ -201,11 +201,25 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const prevRecord = state.prevRecord || 27;
 
   if (total === 0 || !s?.sentence) {
-    const root = h('div', { class: 'vr' }, v2Style(VR_CSS),
-      h('div', { class: 'vr-rail' }, h('button', { class: 'hm', onClick: () => { window.location.hash = '#/home'; } }, vIcon(VI.HOME, { size: 17 }))),
-      h('div', { class: 'vr-mainwrap' }, h('div', { class: 'vr-main', style: 'text-align:center;padding-top:80px;color:var(--mut);' },
-        h('div', { class: 'vr-h1', style: 'font-size:30px;' }, '복습할 문장이 없어요'),
-        h('div', { style: 'margin-top:12px;' }, '신규 학습 후 다시 오세요.'))));
+    let root;
+    if (state.size !== 'desktop') {
+      // 모바일 빈 상태 — 데스크톱 레일(.vr-main 760px) 대신 모바일 셸 (가로 오버플로 방지)
+      root = h('div', { class: 'vr' }, v2Style(VRM_CSS),
+        h('div', { class: 'm-topb' },
+          h('div', { class: 'm-topb-row' },
+            h('button', { class: 'm-home', type: 'button', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
+            h('span', { class: 'm-topb-meta' }, '복습 · ' + subjLabel),
+            h('span', { class: 'm-topb-time' }, ''))),
+        h('div', { class: 'm-pad', style: 'text-align:center;padding-top:64px;color:var(--mut);' },
+          h('div', { class: 'vr-h1', style: 'font-size:24px;' }, '복습할 문장이 없어요'),
+          h('div', { style: 'margin-top:10px;' }, '신규 학습 후 다시 오세요.')));
+    } else {
+      root = h('div', { class: 'vr' }, v2Style(VR_CSS),
+        h('div', { class: 'vr-rail' }, h('button', { class: 'hm', onClick: () => { window.location.hash = '#/home'; } }, vIcon(VI.HOME, { size: 17 }))),
+        h('div', { class: 'vr-mainwrap' }, h('div', { class: 'vr-main', style: 'text-align:center;padding-top:80px;color:var(--mut);' },
+          h('div', { class: 'vr-h1', style: 'font-size:30px;' }, '복습할 문장이 없어요'),
+          h('div', { style: 'margin-top:12px;' }, '신규 학습 후 다시 오세요.'))));
+    }
     host.appendChild(root);
     return { cleanup: () => { host.innerHTML = ''; }, layout: { update() {} } };
   }
