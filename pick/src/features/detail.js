@@ -5,6 +5,7 @@ import { poster, hueFromString, chip, dot } from '../ui/poster.js';
 import { starRating } from '../ui/rating.js';
 import { Queries } from '../db/queries.js';
 import { Tmdb } from '../db/tmdb.js';
+import { excludeRated } from './branches-filter.js';
 import { supabase } from '../services/supabase.js';
 import { Sync } from '../db/sync.js';
 import { trailAppend, trailGo, trailSetTitle, onViewTeardown } from '../app.js';
@@ -164,7 +165,10 @@ async function readBranches(userId, key) {
   if (!db || !userId) return [];
   try {
     const all = await db.recommendations.where('source_work').equals(key).toArray();
-    return all.filter((r) => r.owner_id === userId && r.kind === 'branch');
+    const branches = all.filter((r) => r.owner_id === userId && r.kind === 'branch');
+    // 이미 평가한 작품은 갈래에서 제외 (엔진 LLM 제외 누락·평가 후 시점 대비 결정적 안전망).
+    const ratings = await db.ratings.toArray();
+    return excludeRated(branches, ratings);
   } catch (e) { return []; }
 }
 
