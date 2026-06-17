@@ -18,6 +18,9 @@ set -euo pipefail
 
 cd ~/apps 2>/dev/null || exit 0
 
+# goal-loop 활성 중엔 skip — 미통과(빨간) 중간 코드를 WIP 커밋하지 않음 (goal-harness 스킬)
+if [ -f .goal.json ] || compgen -G "*/.goal.json" >/dev/null 2>&1; then exit 0; fi
+
 # git repo 아니면 skip
 git rev-parse --git-dir >/dev/null 2>&1 || exit 0
 
@@ -38,7 +41,7 @@ git diff --cached --quiet 2>/dev/null && exit 0
 # 안전장치: 너무 많은 파일이 잡히면 세션 스코프 이탈 신호 → skip
 # 이전 세션 누적 미커밋이 섞여들어가 WIP 스냅샷이 거대한 커밋을 만드는 사고 방지
 SAFETY_THRESHOLD=10
-changed_count=$(git diff --cached --name-only | wc -l | tr -d ' ')
+changed_count=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ') || changed_count=0
 if [ "$changed_count" -gt "$SAFETY_THRESHOLD" ]; then
   git reset HEAD >/dev/null 2>&1 || true
   echo "[claude-wip-snapshot] $changed_count files staged, exceeds threshold $SAFETY_THRESHOLD. Skipping to prevent cross-session contamination. Resolve manually with: git status" >&2

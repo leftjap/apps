@@ -15,7 +15,7 @@
 ## 스펙
 
 - 앱 스펙: `~/apps/today/specs/today-app-spec.md` (착수 Wave 에서 작성)
-- 프로토타입 우선 적용 여부: 착수 시 재결정 (`~/apps/CLAUDE.md` PWA 가이드 참조)
+- 프로토타입 우선 적용 여부: 착수 시 재결정
 
 ## 관련 스킬
 
