@@ -618,7 +618,7 @@ function injectEditorStyles() {
       outline: 2px solid var(--crail-base, #d97757);
       outline-offset: 2px;
     }
-    /* 이미지 컨텍스트 메뉴 — DESIGN.md popover 토큰 */
+    /* 이미지 컨텍스트 메뉴 — popover 토큰 */
     .doc-img-ctxmenu {
       position: fixed;
       display: none;
@@ -1900,7 +1900,7 @@ function installImageContextMenu() {
 
 // ─── recents 우클릭(데스크톱) / 롱프레스(모바일·태블릿) → popover 메뉴 ("삭제") → 즉시 softDelete.
 //     모달 confirm 생략 — softDelete 는 휴지통 복구 가능 (위험도 낮음).
-//     스타일은 .doc-img-ctxmenu 와 공유 (DESIGN.md popover 토큰).
+//     스타일은 .doc-img-ctxmenu 와 공유 (popover 토큰).
 let _recentsDelInstalled = false;
 let _recentsLpTimer = null;
 let _recentsLpStartX = 0;

@@ -25,7 +25,7 @@
 - PWA: 서비스워커, 매니페스트, 오프라인 동작
 
 ### 디자인 참조
-- `DESIGN.md` — 전 앱 공통 디자인 토큰 (유일한 디자인 권위 문서)
+- `src/styles/tokens.css` — 디자인 토큰 정본 (+ 본 spec §14)
 - 폰트: Poppins (display/UI) + Noto Sans KR (body/본문)
 - 색상: `--bg: #faf9f5`, `--accent: #d97757`, `--sage: #788c5d`
 - **Inter, Roboto, Arial 사용 금지**
@@ -333,7 +333,7 @@ CREATE POLICY "Users can only access own data"
   - `remaining > 0` → `<span class="summary-item"><span class="summary-val">${remaining}</span> new</span>` (진행 가능)
   - `total > 0 && remaining === 0` → `<span class="summary-item summary-item-done">오늘 학습 완료</span>` (모두 완료)
 - **세션 분기 (Wave 11.22 후속 b 와 정합)**: `setupByMode('combined')` 가 `dueToday=0 + newCards=0` 시 `mode='free'` 자동 폴백 → free pool 0 시 `#/summary?source=empty` 즉시 이동. home 안내는 진입 전 사용자 인지 강화.
-- **CSS 토큰 (DESIGN.md restraint 정합)**:
+- **CSS 토큰 (restraint — 강조 절제)**:
   - `.summary-item-empty`: `color: var(--text-muted); font-style: italic` (미세 구분, 강조 X)
   - `.summary-item-done`: `color: var(--sage)` (긍정 신호)
 
@@ -653,7 +653,7 @@ ja explanation 스키마 요약 (상세는 위 ja 가이드):
 - 직전 세션 시점 누적: 직전 세션의 `utteranceCount` (단일 값) + `durationSec` 만 알면 충분 — 시점별 누적은 미저장. **단순화**: 직전 세션의 분당 평균 (`utteranceCount / (durationSec/60)`) × 현재 세션 경과 분 → 비교 기준선. 전체 종료 시 `직전 세션 합계 vs 이번 세션 합계` 도 함께 표시
 - 일 PR: §11-5 의 `daily_utterance.value`
 
-**디자인 토큰 (DESIGN.md restraint):**
+**디자인 토큰 (restraint — 강조 절제):**
 - 큰 숫자: `--text-primary` typography-driven (font-size scale)
 - 부호 라벨: `--text-muted` (긍정·부정 컬러 차이 없음 — 평가 톤 회피)
 - PR 임박 라벨: `--accent` (단 PR 달성 시 1회 glow)
@@ -787,7 +787,7 @@ PR 갱신 / streak / 평균 비교 등은 **숫자 + 짧은 라벨** 로 정보 
 - 우: 이번 주 합산 (큰 숫자) + "vs 지난주" 비교
 - 하단: 가장 최근 PR 갱신 ("일 발화 PR · 5월 1일 · 47회") — 7일 이내만 표시
 
-**디자인 토큰:** `--text-primary` / `--text-muted` / `--accent` (PR 갱신 시 1회 glow). 컬러 박스·도트 금지 (DESIGN.md restraint).
+**디자인 토큰:** `--text-primary` / `--text-muted` / `--accent` (PR 갱신 시 1회 glow). 컬러 박스·도트 금지 (restraint — 강조 절제).
 
 **0 케이스:**
 - PR 미존재 (첫 사용자): 위젯 hidden — 안내 문구 없음 (첫 세션 후 자연 표시)
@@ -836,7 +836,7 @@ AZURE_SPEECH_REGION=eastus
 
 ---
 
-## 14. 디자인 원칙 (DESIGN.md 준수)
+## 14. 디자인 원칙
 
 ### 컬러 팔레트
 | 토큰 | 값 | 용도 |

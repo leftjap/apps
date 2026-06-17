@@ -1,6 +1,6 @@
 # ~/apps — PWA 리빌드 허브
 
-Board(Electron, git 미업로드) + PWA 6앱 (Study/Gym/Today/Book/Pick/Cue) 단일 트리. 메타 (`CLAUDE.md`/`DESIGN.md`/`lessons/`/`scripts/`/`.claude/`) 와 코드·앱별 spec 모두 여기.
+Board(Electron, git 미업로드) + PWA 6앱 (Study/Gym/Today/Book/Pick/Cue) 단일 트리. 메타 (`CLAUDE.md`/`lessons/`/`scripts/`/`.claude/`) 와 코드·앱별 spec 모두 여기.
 
 ## 앱 목록
 
@@ -96,4 +96,4 @@ soyoun312@gmail.com
 
 ## 메타 파일 위치
 
-`CLAUDE.md` / `DESIGN.md` 는 `~/apps/` 루트. 앱별 spec 은 `~/apps/<app>/specs/`. 변경 이력은 git log (STATUS·memory.md 체계 폐기).
+`CLAUDE.md` 는 `~/apps/` 루트. 앱별 spec 은 `~/apps/<app>/specs/`, 디자인 토큰은 각 앱 CSS `:root` 가 정본. 변경 이력은 git log (STATUS·memory.md 체계 폐기).

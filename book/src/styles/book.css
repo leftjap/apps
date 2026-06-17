@@ -49,7 +49,7 @@ body {
 .bk { font-family: var(--sans); font-size: 15px; color: var(--ink-1); background: var(--bg); letter-spacing: -.012em; }
 .bk button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
 .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; letter-spacing: 0; }
-/* 정렬 숫자 — Pretendard 기반 tabular (점 없는 0). 통계 등 큰/표 숫자용. mono 는 메타(날짜·ID)만 (DESIGN.md §3). */
+/* 정렬 숫자 — Pretendard 기반 tabular (점 없는 0). 통계 등 큰/표 숫자용. mono 는 메타(날짜·ID)만. */
 .tnum { font-family: var(--sans); font-variant-numeric: tabular-nums; }
 .upper { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
 .i { stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }

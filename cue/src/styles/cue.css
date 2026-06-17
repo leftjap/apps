@@ -1,5 +1,5 @@
 /* cue.css — v8 대시보드 (design-ref/v8/시안-소스/style.css verbatim + 이식 보존분 말미).
-   팔레트는 v8 작업지시서 §4 전용 토큰 — DESIGN.md 일반 토큰 대신 앱 정본이 우선 (cue/CLAUDE.md). */
+   팔레트는 v8 작업지시서 §4 전용 토큰 — 앱 정본 (cue/CLAUDE.md). */
 
 :root { --cue: #D2602F; }
 * { box-sizing: border-box; }

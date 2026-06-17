@@ -30,10 +30,10 @@
 
 ## 0.7 레이아웃: 와이드 화면 중앙정렬 (2026-05-24)
 - **증상**: topbar 는 full-width 인데 콘텐츠(feed-grid)가 `maxWidth:1160` 좌측고정 → 와이드 모니터(1920)서 우측 760px 빈공간(불균형).
-- **수정**: 공유 `.bk .page { max-width:1240; margin:auto; width:100%; box-sizing:border-box }`(book.css) + 전 화면 최상위 컨테이너에 `class:'page'`(feed/stats/day/book-detail/author/word/thread/lists) + topbar 패딩 `16px max(36px, calc((100% - 1240px)/2 + 36px))`(자식구조 보존 → `@760` 모바일 규칙 유지) + feed cols `minmax(0,1fr) 380px` gap64(읽기≈724 ≈ DESIGN.md 720).
+- **수정**: 공유 `.bk .page { max-width:1240; margin:auto; width:100%; box-sizing:border-box }`(book.css) + 전 화면 최상위 컨테이너에 `class:'page'`(feed/stats/day/book-detail/author/word/thread/lists) + topbar 패딩 `16px max(36px, calc((100% - 1240px)/2 + 36px))`(자식구조 보존 → `@760` 모바일 규칙 유지) + feed cols `minmax(0,1fr) 380px` gap64(읽기≈724 ≈ 720 읽기폭).
 - **검증(preview)**: 1920 → 좌우여백 340=340·로고=읽기컬럼left·버튼=사이드바right(정합 0px) / 1280 → 20=20, feed·stats 동일 좌측 / 768 → 태블릿 피드 1열 / 375 → 모바일(패딩16·검색숨김·버튼우측). overflow 없음. vitest 28/28.
 - ⚠ **P2-E(어구록 본문 좌정렬)와 무관** — 이건 페이지 블록 위치 정렬. P2-E(텍스트 정렬)는 여전히 미수정.
-- 참고: book 은 `~/apps/DESIGN.md`(4앱 전용) 적용 대상 아님(자체 v14). 단 읽기폭 720·"negative space 의도" 원칙은 참고됨.
+- 참고: book 은 자체 v14 디자인 (공통 디자인 토큰 미적용). 단 읽기폭 720·"negative space 의도" 원칙은 참고됨.
 
 ## 0.8 데이터 전수 감사·수정: 저자 오염 (2026-05-24)
 

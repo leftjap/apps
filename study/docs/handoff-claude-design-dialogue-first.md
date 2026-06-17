@@ -12,7 +12,7 @@
 - **데이터**: Supabase `study_today_lessons` 테이블. 카드별 `explanation` 컬럼(JSONB)에 학습 메타가 들어감.
 - **시드(콘텐츠 적재)**: `study/scripts/seed-supabase.mjs` (payload JSON → study_today_lessons upsert). 워크플로 `.github/workflows/study-seed-supabase.yml` (수동 dispatch, repo secret `SUPABASE_SERVICE_ROLE_KEY` 사용).
 - **user_id**: `study/seeds/.user-defaults.json` (default = leftjap@gmail.com).
-- **디자인 정본**: `study/DESIGN.md` + `study/src/styles/tokens.css`. **토큰만 사용. 이모지 금지. 좌측 색보더/파랑·보라 그라디언트 금지.**
+- **디자인 정본**: `study/src/styles/tokens.css`. **토큰만 사용. 이모지 금지. 좌측 색보더/파랑·보라 그라디언트 금지.**
 - **테스트**: `study/` 에서 `pnpm vitest run` (watch 금지 — 반드시 `run`). 빌드 `pnpm build`.
 
 ---
@@ -61,7 +61,7 @@ RealClass(미드 스크립트) **개인 학습 발췌** 기반. 한 레슨 구�
 - 시드 `study/seeds/en-parks-s1e1.json` 의 scene `explanation` 에 `highlights` 추가 후 **재시드 필요**.
 
 ### C. 디자인 폴리시 (재량)
-- 다이얼로그 페이지/카드 간격·타이포·버튼 정합을 `study/DESIGN.md` 토큰으로 다듬기. 기존 컴포넌트 재사용(새 디자인 발명 X).
+- 다이얼로그 페이지/카드 간격·타이포·버튼 정합을 `study/src/styles/tokens.css` 토큰으로 다듬기. 기존 컴포넌트 재사용(새 디자인 발명 X).
 
 ---
 

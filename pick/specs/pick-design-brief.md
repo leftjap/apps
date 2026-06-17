@@ -53,7 +53,7 @@ pick — **책과 영화를 평가하면, 그 평가를 AI가 분석해 "다음�
 
 ## 8. 첨부 (디자인 시스템 흡수용)
 
-`~/apps/DESIGN.md` · `~/apps/book/src/styles/book.css` · `~/apps/study/src/styles/session.css`.
+`~/apps/book/src/styles/book.css` · `~/apps/study/src/styles/session.css`.
 → 색·폰트·그림자 같은 **토큰은 여기서 흡수**해라. 이 의뢰서엔 일부러 토큰 수치를 안 박았다(첨부가 정본).
 
 ---

@@ -5,7 +5,7 @@
 ## 참조 문서
 
 - **기능 명세**: `~/apps/gym/specs/gym-app-spec.md` (v2, 2026-04-17 재설계)
-- **디자인 가이드**: `~/apps/DESIGN.md` (앱 공통)
+- **디자인 토큰**: `src/styles/paper.css` `:root` (토큰 정본) + spec §14
 - **진행 상태**: git log + Conventional Commits
 - **공통 PWA 가이드**: `~/apps/CLAUDE.md` → "PWA 앱 빌드 가이드"
 
