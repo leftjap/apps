@@ -57,3 +57,6 @@ study/seeds/sources/
 
 # 세션 핸드오프 — 로컬 전용 (공개 repo: 개인정보·검증 스크린샷 커밋 금지. CLAUDE.md "세션 핸드오프" 참조)
 **/handoff/
+
+# goal-loop 마커 — 로컬 전용·트랜지언트 (활성 goal 상태. goal-harness 스킬·~/.claude/hooks/goal-loop.mjs)
+**/.goal.json
