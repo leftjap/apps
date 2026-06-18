@@ -104,8 +104,9 @@ describe('speech — Wave 11.22 getAzureToken', () => {
     await expect(Speech.getAzureToken()).rejects.toThrow(/session 없음/);
   });
 
-  it('Edge Function 500 응답 시 throw', async () => {
-    _fetchSpy.mockImplementationOnce(async () =>
+  it('Edge Function 지속 500 시 재시도 소진 후 throw (Wave A.16)', async () => {
+    // 일시적 500 은 재시도로 흡수 (별도 테스트). 지속 500 은 재시도 소진 후 throw.
+    _fetchSpy.mockImplementation(async () =>
       new Response('internal error', { status: 500 }),
     );
     const { Speech } = await import('./speech.js');
@@ -367,6 +368,122 @@ describe('speech — Wave 11.61 analyzeWavRest', () => {
     const result = await Speech.analyzeWavRest(fakeBlob, 'hello');
     expect(result.mockFallback).toBe(true);
     expect(result.fallbackReason).toBe('azure_init_fail');
+  });
+});
+
+// Wave A.16 — transient 재시도 (network throw / 429 / 5xx).
+// MS 공식 (speech-services-quotas-and-limits, 2026-06): F0 는 autoscaling 으로 한도 내에서도 429 발생 →
+// "every implementation should gracefully handle 429 errors with retry logic". 기존엔 단발 실패를 즉시
+// "네트워크 오류" 토스트로 종결 → 사용자 수동 재시도. 회귀 방지: token edge fetch + STT fetch 공용 재시도.
+describe('speech — Wave A.16 transient 재시도', () => {
+  const token200 = () => new Response(
+    JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
+  const REST_OK = {
+    RecognitionStatus: 'Success', DisplayText: 'hi',
+    NBest: [{ Display: 'hi', PronScore: 80, Words: [] }],
+  };
+  const okResponse = () => new Response(JSON.stringify(REST_OK), {
+    status: 200, headers: { 'Content-Type': 'application/json' },
+  });
+  const blob = () => new Blob([new ArrayBuffer(50)], { type: 'audio/wav' });
+
+  it('STT 429 1회 → 재시도 후 성공 (실 score, mockFallback 없음)', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) {
+        stt += 1;
+        return stt === 1 ? new Response('throttled', { status: 429 }) : okResponse();
+      }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'hi');
+    expect(stt).toBe(2);
+    expect(result.score).toBe(80);
+    expect(result.mockFallback).toBeUndefined();
+  });
+
+  it('STT network throw 1회 → 재시도 후 성공', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) {
+        stt += 1;
+        if (stt === 1) throw new TypeError('Failed to fetch');
+        return okResponse();
+      }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'hi');
+    expect(stt).toBe(2);
+    expect(result.score).toBe(80);
+    expect(result.mockFallback).toBeUndefined();
+  });
+
+  it('STT 지속 429 → 재시도 소진(총 3회) 후 mock 폴백 azure_recognize_fail', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return new Response('throttled', { status: 429 }); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'hi');
+    expect(stt).toBe(3); // 최초 1 + 재시도 2
+    expect(result.mockFallback).toBe(true);
+    expect(result.fallbackReason).toBe('azure_recognize_fail');
+  });
+
+  it('STT 지속 network throw → 재시도 소진 후 mock 폴백', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; throw new TypeError('Failed to fetch'); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'hi');
+    expect(stt).toBe(3);
+    expect(result.mockFallback).toBe(true);
+    expect(result.fallbackReason).toBe('azure_recognize_fail');
+  });
+
+  it('STT 400 (non-transient) → 재시도 안 함, 즉시 mock 폴백 (1회)', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return new Response('bad', { status: 400 }); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'hi');
+    expect(stt).toBe(1); // 재시도 없음
+    expect(result.mockFallback).toBe(true);
+  });
+
+  it('azure-token edge 일시적 500 → 재시도 후 성공', async () => {
+    let tok = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) {
+        tok += 1;
+        return tok === 1 ? new Response('err', { status: 500 }) : token200();
+      }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.getAzureToken();
+    expect(tok).toBe(2);
+    expect(r.token).toBe(FAKE_TOKEN);
   });
 });
 

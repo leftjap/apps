@@ -51,6 +51,45 @@ export function clearAzureTokenCache() {
   _tokenInFlight = null;
 }
 
+// ============================================================
+// Wave A.16 — transient 재시도 (network throw / 429 / 5xx)
+//
+// MS 공식 (speech-services-quotas-and-limits, 2026-06): F0 는 autoscaling 으로 한도 내에서도 429 발생 →
+// "every implementation should gracefully handle 429 errors with retry logic". 기존엔 단발 실패를 즉시
+// "네트워크 오류" 토스트로 종결 → 사용자가 수동 재시도. token edge fetch + STT fetch 공용.
+// 짧은 backoff (사용자 대기 중 — 문서의 1-2-4분 권장은 대량 워크로드용, 인터랙티브엔 부적합).
+// 4xx(429 제외)·정상 응답은 재시도 안 함 (재시도해도 무의미).
+// ============================================================
+const RETRY_DELAYS_MS = [400, 1000]; // 최대 2회 재시도 (총 3회 시도)
+
+function _sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function _fetchWithRetry(url, init, label = '') {
+  let lastErr;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      const res = await fetch(url, init);
+      if ((res.status === 429 || res.status >= 500) && attempt < RETRY_DELAYS_MS.length) {
+        _dbg('fetch transient 재시도', { label, status: res.status, attempt });
+        await _sleep(RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+      return res;
+    } catch (e) {
+      lastErr = e;
+      if (attempt < RETRY_DELAYS_MS.length) {
+        _dbg('fetch network 재시도', { label, attempt, err: e?.message ?? e });
+        await _sleep(RETRY_DELAYS_MS[attempt]);
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr; // 도달 불가 (안전망)
+}
+
 /**
  * Supabase Edge Function 호출 → Azure 토큰 발급.
  * 캐시 유효 (만료 1분 전 이상 남음) → 캐시 사용.
@@ -93,16 +132,18 @@ export async function getAzureToken() {
     }
 
     const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    const callEdge = async (tok) => {
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/azure-token`, {
+    // Wave A.16 — edge 콜드스타트/일시 5xx·network blip 은 재시도로 흡수. 401 은 retry 안 함(아래 refresh 경로).
+    const callEdge = async (tok) => _fetchWithRetry(
+      `${SUPABASE_URL}/functions/v1/azure-token`,
+      {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${tok}`,
           'Content-Type': 'application/json',
         },
-      });
-      return res;
-    };
+      },
+      'azure-token',
+    );
 
     let res = await callEdge(accessToken);
     // Wave 11.38 — 401 시 refresh 후 1회 재시도 (사용자 token 만료된 채 첫 호출 케이스).
@@ -715,7 +756,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
   try {
     const url = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(lang)}&format=detailed`;
     const paHeader = buildPronunciationAssessmentHeader(expectedText);
-    const res = await fetch(url, {
+    // Wave A.16 — 429/5xx/network blip 은 재시도로 흡수 (F0 autoscaling 429 빈발 — MS 공식 권장).
+    const res = await _fetchWithRetry(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -724,7 +766,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
         Accept: 'application/json',
       },
       body: wavBlob,
-    });
+    }, 'stt');
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);
       return analyzeMock(expectedText, 'azure_recognize_fail');
