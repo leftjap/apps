@@ -31,6 +31,7 @@ import {
   computeDropIdx,
   performBlockReorder,
   resolveDotDisplay,
+  formatSetSegment,
   computeFooterOrder,
 } from './session.js';
 
@@ -2304,6 +2305,33 @@ describe('resolveDotDisplay (D — dot preview 우선순위)', () => {
     ];
     // i=2 (upcoming): 현재 세트(reps 20) 전파
     expect(resolveDotDisplay(sets, 2, 1, null, 'bodyweight')).toEqual({ text: '20', isPreview: true });
+  });
+});
+
+describe('formatSetSegment (§B — 세트바 2줄 중량+×횟수)', () => {
+  it('weight — "90·8" → 중량/×횟수 분리', () => {
+    expect(formatSetSegment({ text: '90·8', isPreview: false }, 'weight')).toEqual({ top: '90', bottom: '×8' });
+  });
+
+  it('weight — 중량 0 도 분리', () => {
+    expect(formatSetSegment({ text: '0·10', isPreview: true }, 'weight')).toEqual({ top: '0', bottom: '×10' });
+  });
+
+  it('bodyweight — reps 만, 보조줄 "회"', () => {
+    expect(formatSetSegment({ text: '15', isPreview: false }, 'bodyweight')).toEqual({ top: '15', bottom: '회' });
+  });
+
+  it('미수행/대시 → top 대시, bottom 빈 문자열', () => {
+    expect(formatSetSegment({ text: '—', isPreview: true }, 'weight')).toEqual({ top: '—', bottom: '' });
+    expect(formatSetSegment({ text: '', isPreview: true }, 'weight')).toEqual({ top: '—', bottom: '' });
+  });
+
+  it('cardio — 분리 없이 top 만', () => {
+    expect(formatSetSegment({ text: '30', isPreview: false }, 'cardio')).toEqual({ top: '30', bottom: '' });
+  });
+
+  it('display 누락 → 안전 대시', () => {
+    expect(formatSetSegment(null, 'weight')).toEqual({ top: '—', bottom: '' });
   });
 });
 

@@ -706,12 +706,16 @@ async function mountSessionActive(doc, block, session) {
 
   // spec §6-4 / §6-3 — equipment 별 카드 분기 (cardio / bodyweight / weight)
   let exerciseEq = 'weight';
+  let exPartLabel = '';
   try {
     const exDef = await getExerciseDefaults(block.exerciseId);
     if (exDef?.equipment === 'cardio') exerciseEq = 'cardio';
     else if (exDef?.equipment === 'bodyweight') exerciseEq = 'bodyweight';
+    exPartLabel = PARTS[exDef?.part] || '';
   } catch (_) { /* graceful */ }
   applyCardKind(doc, exerciseEq);
+  // 작업지시서 §세션 — 타이틀에 부위 1단어.
+  setTextById(doc, 'cardExPart', exPartLabel);
 
   // 우상단 (§6-6 v2.2) — SET N/M 대신 세션 단위 볼륨 (오늘 누적 / 직전 세션 총 볼륨).
   //   set 진행도는 S1..Sn dot 이 이미 표시 → 중복 제거하고 워크아웃 단위 동기부여로 대체.
@@ -1097,7 +1101,8 @@ function applyCardKind(doc, kind) {
     if (paceEl) paceEl.style.display = 'none';
     setProgressVis(true);
   } else {
-    if (weightUnit) { weightUnit.textContent = ''; weightUnit.style.display = 'none'; }
+    // 작업지시서 §C 옵션 B — weight 종목은 'kg' 단위 라벨 노출 (무게 주인공 + 단위 명확).
+    if (weightUnit) { weightUnit.textContent = 'kg'; weightUnit.style.display = 'block'; }
     if (repsUnit) repsUnit.textContent = '회';
     if (weightEl) weightEl.style.fontSize = '120px';
     if (setDotsEl) setDotsEl.style.display = 'flex';
@@ -1159,6 +1164,23 @@ export function resolveDotDisplay(sets, i, cur, prevSessionSets, kind = 'weight'
   return { text: '—', isPreview: true };
 }
 
+/**
+ * 작업지시서 §B — 세트바 2줄 표기. resolveDotDisplay 의 text 를 중량(굵게)+×횟수(작게) 로 분리.
+ *  - weight: "90·8" → { top:'90', bottom:'×8' }
+ *  - bodyweight: "15" → { top:'15', bottom:'회' }
+ *  - 미수행/대시: { top:'—', bottom:'' }
+ * resolveDotDisplay 반환 형태(text/isPreview)는 불변 — 표시 분리만 담당.
+ */
+export function formatSetSegment(display, kind = 'weight') {
+  const text = display && typeof display.text === 'string' ? display.text : '—';
+  if (text === '—' || text === '') return { top: '—', bottom: '' };
+  if (kind === 'bodyweight') return { top: text, bottom: '회' };
+  if (kind === 'cardio') return { top: text, bottom: '' };
+  const dot = text.indexOf('·');
+  if (dot === -1) return { top: text, bottom: '' };
+  return { top: text.slice(0, dot), bottom: `×${text.slice(dot + 1)}` };
+}
+
 function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind = 'weight') {
   // P1 라이트 — 세그먼트(.seg = bar + 값). 초기 mount append 용. 후속은 renderSetDotsDiff 가 갱신.
   //   완료=.done(ink bar) / 현재=.now(crail 맥동 bar) / 예정=ghost(line 보더). 값=직전 세션 per-set 타깃.
@@ -1166,11 +1188,12 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind 
   const display = resolveDotDisplay(sets || [set], idx, isCurrent ? idx : -1, prevSessionSets, kind);
   const stateClass = isCurrent ? ' now' : (isDone ? ' done' : '');
   const currentAttr = isCurrent ? ' data-current="1"' : '';
+  const seg = formatSetSegment(display, kind);
   return `
         <div class="seg${stateClass}" data-set-idx="${idx}"${currentAttr} data-longpress="set-row">
           <i class="seg-flash"></i>
           <span class="seg-bar"></span>
-          <span class="seg-n">${escapeHtml(display.text)}</span>
+          <span class="seg-val"><b class="seg-w">${escapeHtml(seg.top)}</b><span class="seg-r">${escapeHtml(seg.bottom)}</span></span>
         </div>`;
 }
 
@@ -1221,9 +1244,12 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     }
     if (isCurrent) seg.setAttribute('data-current', '1');
     else seg.removeAttribute('data-current');
-    // 값 라벨 갱신 (.seg-n)
-    const nEl = seg.querySelector('.seg-n');
-    if (nEl) nEl.textContent = display.text;
+    // 값 라벨 갱신 — 중량(굵게) + ×횟수(작게) 2줄 (작업지시서 §B)
+    const parts = formatSetSegment(display, kind);
+    const wEl = seg.querySelector('.seg-w');
+    const rEl = seg.querySelector('.seg-r');
+    if (wEl) wEl.textContent = parts.top;
+    if (rEl) rEl.textContent = parts.bottom;
   }
 }
 
@@ -1864,30 +1890,34 @@ function blockDisplayName(block) {
   return '';
 }
 
-function renderFooterPillHtml({ blockIdx, state, name, progress }) {
+function renderFooterPillHtml({ blockIdx, state, name }) {
   // data-ex-state : 'active' | 'completed' | 'hold' | 'upcoming' (footer-exercise hold 메뉴와 호환)
   const exStateAttr = state === 'current' ? 'active'
     : state === 'done' ? 'completed'
     : state === 'hold' ? 'hold' : 'upcoming';
-  // P1 라이트 — 운동 전환 reel. 현재=crail 칩(중앙), 완료=ink ✓, 예정=흐린 ink. 진행도 텍스트 제거(세그먼트바로 이동).
-  const wrapStart = `<div data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}" style="flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer;">`;
-  const wrapEnd = `</div>`;
+  const base = `data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"`;
+  // 작업지시서 §D — 현재=솔리드 다크 칩(가장 강한 위계) + 상단 crail 마커(텍스트 없음).
   if (state === 'current') {
-    return wrapStart + `
-      <span style="font-size:15px;font-weight:600;color:var(--ink-1);padding:8px 15px;border-radius:999px;background:var(--crail-soft);box-shadow:inset 0 0 0 1px var(--crail-base);white-space:nowrap;">${escapeHtml(name)}</span>
-    ` + wrapEnd;
+    return `<div ${base} style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;">`
+      + `<span class="fp-mark" aria-hidden="true"></span>`
+      + `<span style="font-size:15px;font-weight:600;color:#fbf8f2;padding:9px 16px;border-radius:999px;background:var(--ink-1);box-shadow:0 8px 18px -10px rgba(20,18,14,0.55);white-space:nowrap;">${escapeHtml(name)}</span>`
+      + `</div>`;
   }
+  // 완료 — 체크(sage) + 이름, 가장 약한 위계.
   if (state === 'done') {
-    return wrapStart + `
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;color:var(--ink-4);"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">${escapeHtml(name)}</span>
-    ` + wrapEnd;
+    return `<div ${base} style="flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer;">`
+      + `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;color:var(--sage);"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      + `<span style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">${escapeHtml(name)}</span>`
+      + `</div>`;
   }
-  if (state === 'hold') {
-    return wrapStart + `<span style="font-size:13px;font-weight:500;color:var(--ink-3);white-space:nowrap;">${escapeHtml(name)}</span>` + wrapEnd;
-  }
-  // 예정(pending) — 가장 흐린 ink
-  return wrapStart + `<span style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">${escapeHtml(name)}</span>` + wrapEnd;
+  // 예정(pending) / hold — 외곽선 칩(중간 위계). hold 는 약한 crail 점으로 진행 표시.
+  const holdDot = state === 'hold'
+    ? `<span style="width:5px;height:5px;border-radius:50%;background:var(--crail-base);flex-shrink:0;"></span>`
+    : '';
+  const textColor = state === 'hold' ? 'var(--ink-2)' : 'var(--ink-3)';
+  return `<div ${base} style="flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer;">`
+    + `<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:${textColor};padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);white-space:nowrap;">${holdDot}${escapeHtml(name)}</span>`
+    + `</div>`;
 }
 
 /**
@@ -1923,52 +1953,25 @@ function renderFooterPills(doc, session, currentBlock) {
     if (pillsEl) pillsEl.innerHTML = '';
     return;
   }
-  // 고정 배열 — 완료(좌) · 현재(중앙) · 예정(우). 원본 인덱스 i 보존.
+  // 작업지시서 §D — 3그룹 레이아웃. done→.fp-left(좌) / now→.fp-mid(가로 중앙 고정) / todo·hold→.fp-right(우).
+  // computeFooterOrder 의 [완료, 현재, 예정] 순서를 state 로 그룹 분할. 원본 인덱스 i 보존.
   const ordered = computeFooterOrder(session.blocks, currentBlock);
-  const html = ordered.map(({ block, i }) => {
-    if (!block || block.type !== 'single') return ''; // 서킷 폐기 — non-single graceful skip
+  const left = [];
+  const mid = [];
+  const right = [];
+  for (const { block, i } of ordered) {
+    if (!block || block.type !== 'single') continue; // 서킷 폐기 — non-single graceful skip
     const isCurrent = block === currentBlock;
     const state = classifyBlockState(block, isCurrent);
-    const name = blockDisplayName(block);
-    const progress = blockProgressText(block, state);
-    return renderFooterPillHtml({ blockIdx: i, state, name, progress });
-  }).join('');
-  // 양끝 50% spacer 제거 — 칩 좌측 정렬 시작 (사용자 피드백 2026-06-10: 좌측 빈 공간 답답).
-  // 활성 칩 중앙 정렬(centerActivePill)은 스크롤 가능 범위 내에서만 동작 (scrollLeft 자동 clamp).
-  pillsEl.innerHTML = html;
-  // §6-8 UX — 활성 pill 가시 영역 중앙 정렬 (horizontal carousel).
-  // scrollIntoView({ inline: 'center' }) 가 iOS Safari PWA 등 일부 환경에서 동작 불완전 →
-  // 직접 scrollLeft 계산 + scrollTo 호출로 호환성 보장. rAF 로 layout 완료 후 paint frame 에서 호출.
-  const centerActivePill = () => {
-    const active = pillsEl.querySelector('[data-ex-state="active"]');
-    if (!active) return;
-    try {
-      const containerRect = pillsEl.getBoundingClientRect();
-      const activeRect = active.getBoundingClientRect();
-      const activeCenterRel = activeRect.left + activeRect.width / 2 - containerRect.left;
-      const targetScrollLeft = pillsEl.scrollLeft + activeCenterRel - containerRect.width / 2;
-      // 첫 정렬(mount 직후 — 새 DOM)은 즉시 점프. inline scroll-behavior:smooth 가 scrollLeft 대입도
-      // 애니메이션화하므로 임시 'auto' 로 덮어 즉시 점프 → 운동 pill 이 우→좌 슬라이드되는 체감 제거.
-      // 이후 운동 전환(같은 컨테이너 유지)만 smooth.
-      const firstAlign = pillsEl.dataset.aligned !== '1';
-      if (firstAlign) {
-        const prevSB = pillsEl.style.scrollBehavior;
-        pillsEl.style.scrollBehavior = 'auto';
-        pillsEl.scrollLeft = targetScrollLeft;
-        pillsEl.style.scrollBehavior = prevSB;
-        pillsEl.dataset.aligned = '1';
-      } else if (typeof pillsEl.scrollTo === 'function') {
-        pillsEl.scrollTo({ left: targetScrollLeft, behavior: 'smooth' });
-      } else {
-        pillsEl.scrollLeft = targetScrollLeft;
-      }
-    } catch (_) { /* fallback */ }
-  };
-  if (typeof requestAnimationFrame === 'function') {
-    requestAnimationFrame(centerActivePill);
-  } else {
-    centerActivePill();
+    const html = renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) });
+    if (state === 'current') mid.push(html);
+    else if (state === 'done') left.push(html);
+    else right.push(html); // pending + hold
   }
+  pillsEl.innerHTML =
+    `<div class="fp-left">${left.join('')}</div>`
+    + `<div class="fp-mid">${mid.join('')}</div>`
+    + `<div class="fp-right">${right.join('')}</div>`;
 }
 
 /**

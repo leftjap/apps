@@ -65,9 +65,13 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 #cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; transform-origin: bottom center; }
 #cardSetDots .seg.done .seg-bar { background: var(--ink-2); box-shadow: none; }
 #cardSetDots .seg.now .seg-bar { background: var(--crail-base); box-shadow: none; height: 11px; }
-#cardSetDots .seg .seg-n { font-size: 11px; font-weight: 500; color: var(--ink-4); white-space: nowrap; }
-#cardSetDots .seg.done .seg-n { color: var(--ink-3); }
-#cardSetDots .seg.now .seg-n { color: var(--crail-deep); font-weight: 600; }
+/* §B 세트바 2줄 — 중량(굵게) + ×횟수(작게). */
+#cardSetDots .seg .seg-val { display: flex; flex-direction: column; align-items: center; line-height: 1; white-space: nowrap; }
+#cardSetDots .seg .seg-w { font-size: 12px; font-weight: 700; color: var(--ink-3); }
+#cardSetDots .seg .seg-r { font-size: 10px; font-weight: 500; color: var(--ink-4); margin-top: 2px; }
+#cardSetDots .seg.done .seg-w { color: var(--ink-2); }
+#cardSetDots .seg.now .seg-w { color: var(--crail-deep); }
+#cardSetDots .seg.now .seg-r { color: var(--crail-deep); }
 /* 확정 플래시 (작업지시서 §6) — 완료 세그 바 하단 2px 라인. playSegConfirmFlash 가 WAAPI 로 scaleX 0→1 후 페이드. */
 #cardSetDots .seg .seg-flash { position: absolute; left: 0; right: 0; top: 9px; height: 2px; border-radius: 2px; transform: scaleX(0); transform-origin: left center; opacity: 0; background: var(--ink-1); pointer-events: none; }
 
@@ -112,9 +116,22 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 /* 좌우/상하 스크롤 컨테이너의 스크롤바 숨김 (터치 PWA — 미세 노출 방지) */
 #cardSetDots::-webkit-scrollbar, #sessionFooterPills::-webkit-scrollbar,
 #addexChips::-webkit-scrollbar, #sessionAddexChips::-webkit-scrollbar,
-#addexList::-webkit-scrollbar, #sessionAddexList::-webkit-scrollbar { display: none; width: 0; height: 0; }
+#addexList::-webkit-scrollbar, #sessionAddexList::-webkit-scrollbar,
+#sessionFooterPills .fp-left::-webkit-scrollbar, #sessionFooterPills .fp-right::-webkit-scrollbar { display: none; width: 0; height: 0; }
 #cardSetDots, #sessionFooterPills, #addexChips, #sessionAddexChips,
-#addexList, #sessionAddexList { scrollbar-width: none; -ms-overflow-style: none; }
+#addexList, #sessionAddexList,
+#sessionFooterPills .fp-left, #sessionFooterPills .fp-right { scrollbar-width: none; -ms-overflow-style: none; }
+/* 작업지시서 §D — 푸터 3그룹: 완료(좌)·현재(가로 중앙 고정)·예정(우). renderFooterPills 가 채움. */
+#sessionFooterPills .fp-left, #sessionFooterPills .fp-right { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 14px; overflow-x: auto; }
+#sessionFooterPills .fp-left { justify-content: flex-end; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30px); mask-image: linear-gradient(90deg, transparent 0, #000 30px); }
+#sessionFooterPills .fp-right { justify-content: flex-start; }
+#sessionFooterPills .fp-mid { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; }
+.fp-mark { width: 16px; height: 3px; border-radius: 2px; background: var(--crail-base); }
+/* reorder 중에는 그룹 오버플로/마스크 해제 (드래그 칩 클리핑 방지) */
+#sessionFooterPills[data-reorder="1"] .fp-left, #sessionFooterPills[data-reorder="1"] .fp-right { overflow: visible; -webkit-mask-image: none; mask-image: none; }
+/* 작업지시서 §E — 바텀시트 통일: 빈 세션(#addexSheet)·추가(#sessionAddexSheet) 동일 클래스.
+   카드 흰색 배경 · 높이 66% · 핸들 · 칩 · 아이템 · 토글. (추가 시트는 모달 — 뒤 backdrop 별도) */
+.addex-sheet { display: flex; flex-direction: column; background: var(--card); border-top-left-radius: var(--r-xl); border-top-right-radius: var(--r-xl); padding: 12px 0 24px; }
 /* 바텀시트 그림자 — 열렸을 때만. 닫힘(translateY(100%)) 상태에서 위로 뻗는 그림자가
    뷰포트 하단으로 새어 '구분선 같은 그라데이션' 으로 보이던 문제 차단. */
 #keypadSheet[data-open="true"], #actionSheet[data-open="true"] { box-shadow: 0 -20px 50px -18px rgba(20,18,14,0.4); }
@@ -142,9 +159,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div class="kr" style="margin-top:18px;font-size:25px;font-weight:600;color:var(--ink-1);line-height:1.35;letter-spacing:-0.02em;">오늘은 어디부터<br>시작할까요?</div>
       <div class="kr" style="margin-top:12px;font-size:14px;font-weight:500;color:var(--ink-3);">아래에서 종목을 추가하세요</div>
     </div>
-    <!-- 상시 하단 시트 (renderChips/renderList 가 #addexChips/#addexList 채움) -->
-    <div id="addexSheet" style="flex:1;min-height:0;margin-top:24px;background:var(--sunken);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);box-shadow:0 -14px 36px -18px rgba(20,18,14,0.14);display:flex;flex-direction:column;padding-top:12px;">
-      <div style="width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
+    <!-- 상시 하단 시트 (renderChips/renderList 가 #addexChips/#addexList 채움) — .addex-sheet 통일(§E) -->
+    <div id="addexSheet" class="addex-sheet" style="margin-top:auto;height:66dvh;box-shadow:0 -14px 36px -18px rgba(20,18,14,0.14);">
+      <div style="flex-shrink:0;width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
       <div id="addexChips" style="flex-shrink:0;display:flex;gap:8px;padding:0 18px;overflow-x:auto;">
       </div>
       <div id="addexList" style="flex:1;min-height:0;margin-top:12px;padding:0 10px 16px;overflow-y:auto;"></div>
@@ -169,19 +186,24 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       </span>
       <div id="sessionEndBtn" data-longpress="session-end" style="justify-self:end;font-size:14px;font-weight:600;color:var(--ink-3);padding:9px 4px 9px 14px;cursor:pointer;white-space:nowrap;" class="kr">종료</div>
     </div>
-    <!-- 타이틀: 운동명 / 세션 총볼륨 비교(이번·직전) -->
+    <!-- 타이틀: 운동명 + 부위 / 세션 총볼륨 게이지(이번·직전) -->
     <div style="flex-shrink:0;padding:12px 26px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
-      <div id="cardExName" class="kr" style="font-size:23px;font-weight:600;color:var(--ink-1);letter-spacing:-0.02em;white-space:nowrap;">벤치프레스</div>
-      <!-- 세션 총볼륨 — 링(오늘/직전 비율) + 숫자. #cardVolRingFill dashoffset 으로 채움, 돌파 시 #cardVolRingPulse 펄스 (session.js §8). -->
-      <div style="flex-shrink:0;display:flex;align-items:center;gap:9px;">
-        <svg width="40" height="40" viewBox="0 0 40 40" aria-hidden="true" style="flex-shrink:0;">
+      <div style="min-width:0;display:flex;flex-direction:column;gap:3px;">
+        <div id="cardExName" class="kr" style="font-size:23px;font-weight:600;color:var(--ink-1);letter-spacing:-0.02em;white-space:nowrap;">벤치프레스</div>
+        <div id="cardExPart" class="kr" style="font-size:12px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;white-space:nowrap;">가슴</div>
+      </div>
+      <!-- 세션 볼륨 — 숫자는 링 밖으로 크게(절대값), 링은 직전 대비 비율 게이지(역할 분리). (작업지시서 §A)
+           #cardVolRingFill dashoffset 으로 채움, 돌파 시 #cardVolRingPulse 펄스 (session.js §8). -->
+      <div style="flex-shrink:0;display:flex;align-items:center;gap:11px;">
+        <svg width="44" height="44" viewBox="0 0 40 40" aria-hidden="true" style="flex-shrink:0;">
           <circle cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--line);"></circle>
           <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
           <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="100.53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
         </svg>
         <div style="text-align:right;">
-          <div class="mono" style="font-size:18px;font-weight:600;color:var(--ink-1);white-space:nowrap;"><span id="cardSetProgress" style="display:inline-block;">1,380</span><span style="font-size:11px;font-weight:500;color:var(--ink-4);margin-left:1px;">kg</span></div>
-          <div id="cardSessVolPrev" class="mono" style="margin-top:1px;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 2,940kg</div>
+          <div class="kr" style="font-size:10px;font-weight:600;color:var(--ink-4);letter-spacing:0.08em;">세션 볼륨</div>
+          <div class="mono" style="margin-top:1px;font-size:26px;font-weight:600;color:var(--ink-1);line-height:1;letter-spacing:-0.02em;white-space:nowrap;"><span id="cardSetProgress" style="display:inline-block;">1,380</span><span style="font-size:13px;font-weight:500;color:var(--ink-4);margin-left:2px;">kg</span></div>
+          <div id="cardSessVolPrev" class="mono" style="margin-top:2px;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 2,940kg</div>
           <div id="cardRecordTag" class="mono" style="margin-top:2px;font-size:12px;font-weight:700;color:var(--crail-deep);white-space:nowrap;opacity:0;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록</div>
         </div>
       </div>
@@ -200,9 +222,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <!-- 햅틱 링 시각화 (부록 작업지시서) — iOS PWA 진동 미지원 대체. playSetHaptic 가 WAAPI 로 팽창·소멸. -->
       <div id="hapticRing" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:118px;height:118px;border-radius:50%;border:2px solid var(--crail-base);opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(0.4);z-index:6;"></div>
       <div id="cardHeroVals" style="position:relative;width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform;">
-      <div id="cardWeightZone" style="width:100%;text-align:center;cursor:pointer;">
-        <div id="cardWeight" class="mono" style="font-size:120px;font-weight:400;line-height:0.82;color:var(--ink-1);letter-spacing:-0.06em;">65</div>
-        <div id="cardWeightUnit" class="kr" style="display:none;font-size:15px;color:var(--ink-4);"></div>
+      <div id="cardWeightZone" style="width:100%;display:flex;align-items:baseline;justify-content:center;gap:8px;cursor:pointer;">
+        <div id="cardWeight" class="mono" style="font-size:120px;font-weight:600;line-height:0.82;color:var(--ink-1);letter-spacing:-0.06em;">65</div>
+        <div id="cardWeightUnit" class="kr" style="display:none;font-size:20px;font-weight:500;color:var(--ink-4);">kg</div>
       </div>
       <div id="cardRepsZone" style="width:100%;margin-top:14px;display:flex;align-items:baseline;justify-content:center;gap:8px;cursor:pointer;padding:6px 0;">
         <span class="mono" style="font-size:26px;font-weight:300;color:var(--ink-4);">×</span>
@@ -239,7 +261,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <!-- 하단 운동 전환 (renderFooterPills 리스타일) + 추가(+).
          좌측 44px 균형 spacer 제거 — 좌측 데드 스페이스 (사용자 피드백 2026-06-10). 칩은 좌측 정렬 시작. -->
     <div id="sessionFooter" style="flex-shrink:0;position:relative;margin-top:18px;padding:14px 16px 22px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:8px;">
-      <div id="sessionFooterPills" class="kr" style="flex:1;min-width:0;display:flex;gap:18px;align-items:center;overflow-x:auto;scroll-behavior:smooth;"></div>
+      <div id="sessionFooterPills" class="kr" style="flex:1;min-width:0;display:flex;align-items:center;"></div>
       <button id="sessionAddexBtn" type="button" aria-label="운동 추가" style="flex-shrink:0;width:44px;height:44px;border-radius:22px;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow-inset-soft);color:var(--ink-3);font-size:0;line-height:0;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
@@ -289,8 +311,8 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     </div>
     <!-- §6-2 / §6-10 — 운동 추가 바텀시트 (DOM 한 번 + transform 토글, active 분기 전용). 시트가 active 카드 위에 슬라이드업. -->
     <div id="sessionAddexBackdrop" data-open="false" style="position:absolute;inset:0;z-index:69;background:oklch(22% 0.008 60 / 0.32);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
-    <!-- 높이 71dvh = 빈 세션 #addexSheet 와 동일 체감 (시트 높이 불일치 수정 2026-06-11). list 는 flex:1 로 잔여 채움. -->
-    <div id="sessionAddexSheet" data-open="false" style="position:absolute;left:0;right:0;bottom:0;z-index:70;height:71dvh;display:flex;flex-direction:column;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:12px 0 24px;transform:translateY(100%);transition:transform 200ms ease;">
+    <!-- §E — 빈 세션 #addexSheet 와 동일 .addex-sheet (카드 흰색·66%). 모달이므로 뒤 backdrop 만 추가. -->
+    <div id="sessionAddexSheet" class="addex-sheet" data-open="false" style="position:absolute;left:0;right:0;bottom:0;z-index:70;height:66dvh;transform:translateY(100%);transition:transform 200ms ease;">
       <div style="flex-shrink:0;width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
       <div id="sessionAddexChips" style="flex-shrink:0;display:flex;gap:8px;padding:0 18px;overflow-x:auto;"></div>
       <div id="sessionAddexList" style="flex:1;min-height:0;margin-top:12px;padding:0 10px 16px;overflow-y:auto;"></div>

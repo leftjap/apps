@@ -5,6 +5,8 @@ import {
   summarizeActiveSession,
   summarizeNextBlocks,
   summarizeStreak,
+  summarizeWeeklyBalance,
+  categorizeBalancePart,
   partAbbreviation,
   buildWeekCalendar,
   wireHomeShortcuts,
@@ -343,6 +345,132 @@ describe('summarizeStreak', () => {
     expect(r.num).toBe('1');
     expect(r.part).toBe('가슴');
   });
+
+  it('직전 운동 행 필드 — 부위(맨몸 제외) · 요일 · N일 전', () => {
+    // 2026-04-29 = 수요일. NOW_THU = 4/30 목요일 → 1일 전.
+    const sessions = [{ date: '2026-04-29', tags: ['chest', 'shoulder', 'cardio'], status: 'completed' }];
+    const r = summarizeStreak(sessions, NOW_THU);
+    expect(r.lastWorkoutParts).toBe('가슴 · 어깨'); // 맨몸(cardio) 제외, 2개 표기
+    expect(r.weekdayLabel).toBe('수요일');
+    expect(r.sinceLabel).toBe('1일 전');
+  });
+
+  it('직전 운동 — 유산소만 한 날은 폴백으로 맨몸 표기', () => {
+    const sessions = [{ date: '2026-04-30', tags: ['cardio'], status: 'completed' }];
+    const r = summarizeStreak(sessions, NOW_THU);
+    expect(r.lastWorkoutParts).toBe('맨몸');
+    expect(r.sinceLabel).toBe('오늘');
+    expect(r.weekdayLabel).toBe('목요일');
+  });
+
+  it('empty 상태 — 직전 운동 필드 빈 문자열', () => {
+    const r = summarizeStreak([], NOW_THU);
+    expect(r.lastWorkoutParts).toBe('');
+    expect(r.weekdayLabel).toBe('');
+    expect(r.sinceLabel).toBe('');
+  });
+});
+
+describe('categorizeBalancePart (작업지시서 코어·유산소 정의)', () => {
+  it('근육 부위는 part 그대로', () => {
+    expect(categorizeBalancePart('squat')).toBe('legs');
+    expect(categorizeBalancePart('bench_press')).toBe('chest');
+    expect(categorizeBalancePart('shoulder_press')).toBe('shoulder');
+    expect(categorizeBalancePart('barbell_row')).toBe('back');
+    expect(categorizeBalancePart('bicep_curl')).toBe('arms');
+  });
+
+  it('데드리프트는 등(back) 유지 — 코어로 빠지지 않음', () => {
+    expect(categorizeBalancePart('deadlift')).toBe('back');
+    expect(categorizeBalancePart('romanian_deadlift')).toBe('back');
+  });
+
+  it('abs 맨몸 운동 → core', () => {
+    expect(categorizeBalancePart('hanging_leg_raise')).toBe('core');
+    expect(categorizeBalancePart('decline_situp')).toBe('core');
+  });
+
+  it('유산소 장비 → cardio (밸런스 제외)', () => {
+    expect(categorizeBalancePart('treadmill')).toBe('cardio');
+    expect(categorizeBalancePart('cycle')).toBe('cardio');
+    expect(categorizeBalancePart('elliptical')).toBe('cardio');
+  });
+
+  it('미해결 id → null', () => {
+    expect(categorizeBalancePart('unknown_xyz')).toBeNull();
+    expect(categorizeBalancePart('')).toBeNull();
+    expect(categorizeBalancePart(null)).toBeNull();
+  });
+});
+
+describe('summarizeWeeklyBalance', () => {
+  const NOW = new Date('2026-04-30T12:00:00').getTime(); // 목요일. this:[4/24,4/30] prev:[4/17,4/23]
+  const block = (exerciseId, doneCount, total = doneCount, extra = {}) => ({
+    type: 'single', exerciseId,
+    sets: Array.from({ length: total }, (_, i) => ({
+      weight: 50, reps: 10, done: i < doneCount, ...extra,
+    })),
+  });
+
+  it('빈 입력 → 6부위 0, focus null, cardio 0, max 1', () => {
+    const r = summarizeWeeklyBalance([], NOW);
+    expect(r.parts.map((p) => p.key)).toEqual(['legs', 'shoulder', 'back', 'chest', 'arms', 'core']);
+    expect(r.parts.every((p) => p.sets === 0 && p.prevSets === 0)).toBe(true);
+    expect(r.focusKey).toBeNull();
+    expect(r.cardio).toEqual({ min: 0, count: 0 });
+    expect(r.max).toBe(1);
+  });
+
+  it('이번 주 done 세트 부위별 집계 + 지난주 prevSets + max + focus(최소 부위)', () => {
+    const sessions = [
+      { date: '2026-04-28', status: 'completed', blocks: [block('squat', 3), block('bench_press', 5)] },
+      { date: '2026-04-20', status: 'completed', blocks: [block('squat', 2)] }, // 지난주
+    ];
+    const r = summarizeWeeklyBalance(sessions, NOW);
+    const legs = r.parts.find((p) => p.key === 'legs');
+    const chest = r.parts.find((p) => p.key === 'chest');
+    expect(legs).toMatchObject({ sets: 3, prevSets: 2 });
+    expect(chest).toMatchObject({ sets: 5, prevSets: 0 });
+    expect(r.max).toBe(5);
+    // 가장 부족: shoulder(0)가 고정순서상 먼저 0 → focus shoulder
+    expect(r.focusKey).toBe('shoulder');
+  });
+
+  it('미완료 세트는 카운트 제외', () => {
+    const sessions = [{ date: '2026-04-28', status: 'completed', blocks: [block('squat', 2, 5)] }];
+    const r = summarizeWeeklyBalance(sessions, NOW);
+    expect(r.parts.find((p) => p.key === 'legs').sets).toBe(2);
+  });
+
+  it('데드리프트 done 세트는 back 으로 집계', () => {
+    const sessions = [{ date: '2026-04-28', status: 'completed', blocks: [block('deadlift', 4)] }];
+    const r = summarizeWeeklyBalance(sessions, NOW);
+    expect(r.parts.find((p) => p.key === 'back').sets).toBe(4);
+    expect(r.parts.find((p) => p.key === 'core').sets).toBe(0);
+  });
+
+  it('abs 운동 → core, 유산소 → 별도 cardio(시간·횟수)', () => {
+    const sessions = [{
+      date: '2026-04-28', status: 'completed', blocks: [
+        block('hanging_leg_raise', 3),
+        block('treadmill', 1, 1, { duration: 1800 }), // 30분
+      ],
+    }];
+    const r = summarizeWeeklyBalance(sessions, NOW);
+    expect(r.parts.find((p) => p.key === 'core').sets).toBe(3);
+    expect(r.cardio).toEqual({ min: 30, count: 1 });
+    // cardio 는 parts 에 포함 안 됨
+    expect(r.parts.find((p) => p.key === 'cardio')).toBeUndefined();
+  });
+
+  it('지난주 유산소는 cardio 합산 제외 (이번 주만)', () => {
+    const sessions = [{
+      date: '2026-04-20', status: 'completed',
+      blocks: [block('treadmill', 1, 1, { duration: 1800 })],
+    }];
+    const r = summarizeWeeklyBalance(sessions, NOW);
+    expect(r.cardio).toEqual({ min: 0, count: 0 });
+  });
 });
 
 describe('partAbbreviation', () => {
@@ -423,6 +551,22 @@ describe('buildWeekCalendar', () => {
     });
     const cells = await buildWeekCalendar(NOW_THU);
     expect(cells[3].part).toBe('가·어');
+  });
+
+  it('직전 운동일 — 오늘 이전 가장 최근 worked 셀에만 옅은 링 플래그', async () => {
+    // 4/27(월) 가슴, 4/29(수) 등. 오늘=4/30(목). 직전 = 4/29 (수, cells[2]).
+    await db.sessions.put({
+      id: 's_p1', date: '2026-04-27', startTime: 0, endTime: 0,
+      blocks: [], tags: ['chest'], totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'completed',
+    });
+    await db.sessions.put({
+      id: 's_p2', date: '2026-04-29', startTime: 0, endTime: 0,
+      blocks: [], tags: ['back'], totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'completed',
+    });
+    const cells = await buildWeekCalendar(NOW_THU);
+    expect(cells[2].isPrevWorkout).toBe(true);  // 수 29 (가장 최근)
+    expect(cells[0].isPrevWorkout).toBeFalsy(); // 월 27
+    expect(cells.filter((c) => c.isPrevWorkout).length).toBe(1);
   });
 
   it('Wave D — 같은 날 다중 세션 → tag 합집합 (중복 dedupe + 모든 부위 표시)', async () => {

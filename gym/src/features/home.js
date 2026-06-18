@@ -218,6 +218,9 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
       weekCountNum: 0,
       goalNum: goal,
       weekStreak: 0,
+      lastWorkoutParts: '',
+      weekdayLabel: '',
+      sinceLabel: '',
     };
   }
   list.sort((a, b) => {
@@ -238,6 +241,12 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
 
   const tags = Array.isArray(last.tags) ? last.tags : [];
   const part = tags.map((t) => PARTS[t] || t).join(' · ');
+  // 직전 운동 행(작업지시서 홈) — 맨몸(cardio) 제외 부위만, 2개 이상 그대로 표기.
+  // 전부 유산소뿐이면 폴백으로 전체(맨몸 포함) 표기해 빈 줄 방지.
+  const partsNonCardio = tags.filter((t) => t !== 'cardio').map((t) => PARTS[t] || t);
+  const lastWorkoutParts = (partsNonCardio.length ? partsNonCardio : tags.map((t) => PARTS[t] || t)).join(' · ');
+  const weekdayLabel = `${WEEK_LABELS_KOR[isoToWeekdayIdx(last.date)] || ''}요일`;
+  const sinceLabel = daysSince === 0 ? '오늘' : `${daysSince}일 전`;
 
   let state;
   if (daysSince <= 2) state = 'active';
@@ -255,6 +264,113 @@ export function summarizeStreak(sessions, now = Date.now(), weeklyGoal = DEFAULT
     weekCountNum: weekCount,
     goalNum: goal,
     weekStreak: computeWeekStreak(list, now),
+    lastWorkoutParts,
+    weekdayLabel,
+    sinceLabel,
+  };
+}
+
+/* ───────── 부위 밸런스 위젯 (작업지시서 홈 — 신규 주역) ───────── */
+
+/** 밸런스 6분류 — 고정 순서 (하체·어깨·등·가슴·팔·코어). */
+export const BALANCE_PARTS = Object.freeze([
+  { key: 'legs', name: '하체' },
+  { key: 'shoulder', name: '어깨' },
+  { key: 'back', name: '등' },
+  { key: 'chest', name: '가슴' },
+  { key: 'arms', name: '팔' },
+  { key: 'core', name: '코어' },
+]);
+
+const BALANCE_MUSCLE_PARTS = ['chest', 'back', 'shoulder', 'legs', 'arms'];
+
+/**
+ * 운동 id → 밸런스 분류 (작업지시서 "코어·유산소 정의" 데이터 근거).
+ *  - equipment==='cardio' (트레드밀·사이클·엘립티컬) → 'cardio' (밸런스 제외, 별도 줄)
+ *  - part==='cardio' 이지만 유산소 장비 아님 (행잉레그레이즈·디클라인싯업 등 abs) → 'core'
+ *  - 그 외 part (chest/back/shoulder/legs/arms) → 그대로 (데드리프트는 back 유지)
+ * 빌트인 우선, 없으면 커스텀 캐시. 미해결 → null.
+ */
+export function categorizeBalancePart(exerciseId) {
+  const ex = getBuiltinExercise(exerciseId) || getCachedCustomExercise(exerciseId);
+  if (!ex) return null;
+  if (ex.equipment === 'cardio') return 'cardio';
+  if (ex.part === 'cardio') return 'core';
+  if (BALANCE_MUSCLE_PARTS.includes(ex.part)) return ex.part;
+  return null;
+}
+
+/**
+ * 최근 7일 부위별 완료(done) 세트 수 + 지난주(직전 7일) 비교 + 유산소 별도 집계.
+ * stats.js summarizeExerciseFrequency 의 done-세트 카운팅을 부위 단위로 재사용.
+ *
+ * 반환: {
+ *   parts: [{ key, name, sets, prevSets }] (BALANCE_PARTS 고정 순서),
+ *   cardio: { min, count },   // 이번 주 유산소 시간(분)·횟수
+ *   focusKey,                 // 가장 부족한 부위 1개 (이번 주 set 최소, 동률→고정순서 우선). 전부 0 → null
+ *   max,                      // 막대 스케일 기준 (이번·지난 주 부위 set 최댓값, 최소 1)
+ * }
+ */
+export function summarizeWeeklyBalance(sessions, now = Date.now()) {
+  const list = Array.isArray(sessions) ? sessions : [];
+  const today = new Date(now);
+  const todayISO = toISODate(today);
+  const dShift = (n) => { const d = new Date(today); d.setDate(today.getDate() + n); return toISODate(d); };
+  const thisFrom = dShift(-6);   // 최근 7일 [today-6, today]
+  const prevTo = dShift(-7);
+  const prevFrom = dShift(-13);  // 직전 7일 [today-13, today-7]
+
+  const thisSets = new Map();
+  const prevSets = new Map();
+  let cardioMin = 0;
+  let cardioCount = 0;
+
+  const accumulate = (s, setsMap, isThisWeek) => {
+    for (const b of (Array.isArray(s.blocks) ? s.blocks : [])) {
+      if (!b || b.type !== 'single' || !b.exerciseId) continue;
+      const cat = categorizeBalancePart(b.exerciseId);
+      if (!cat) continue;
+      const doneSets = (Array.isArray(b.sets) ? b.sets : []).filter((x) => x && x.done === true);
+      if (!doneSets.length) continue;
+      if (cat === 'cardio') {
+        if (isThisWeek) {
+          cardioCount += doneSets.length;
+          for (const st of doneSets) cardioMin += (Number(st.duration) || 0) / 60;
+        }
+        continue;
+      }
+      setsMap.set(cat, (setsMap.get(cat) || 0) + doneSets.length);
+    }
+  };
+
+  for (const s of list) {
+    if (!s || !s.date) continue;
+    if (s.date >= thisFrom && s.date <= todayISO) accumulate(s, thisSets, true);
+    else if (s.date >= prevFrom && s.date <= prevTo) accumulate(s, prevSets, false);
+  }
+
+  const parts = BALANCE_PARTS.map(({ key, name }) => ({
+    key,
+    name,
+    sets: thisSets.get(key) || 0,
+    prevSets: prevSets.get(key) || 0,
+  }));
+
+  const totalThis = parts.reduce((sum, p) => sum + p.sets, 0);
+  let focusKey = null;
+  if (totalThis > 0) {
+    let min = Infinity;
+    for (const p of parts) {
+      if (p.sets < min) { min = p.sets; focusKey = p.key; }
+    }
+  }
+  const max = Math.max(1, ...parts.map((p) => Math.max(p.sets, p.prevSets)));
+
+  return {
+    parts,
+    cardio: { min: Math.round(cardioMin), count: cardioCount },
+    focusKey,
+    max,
   };
 }
 
@@ -322,6 +438,12 @@ export async function buildWeekCalendar(now = Date.now()) {
       sessionId: matched?.sessionId || null,
     });
   }
+  // 직전 운동일(작업지시서 홈) — 이번 주 worked 셀 중 오늘 이전 가장 최근 1개에 옅은 링.
+  let prevIdx = -1;
+  for (let i = 0; i < cells.length; i += 1) {
+    if (cells[i].part && cells[i].iso < todayISO) prevIdx = i;
+  }
+  if (prevIdx >= 0) cells[prevIdx].isPrevWorkout = true;
   return cells;
 }
 
@@ -334,6 +456,7 @@ function renderWeekCalendarToDom(cells, doc) {
       'cal-day',
       c.part ? 'worked' : '',
       c.isToday ? 'today' : '',
+      c.isPrevWorkout ? 'prev-workout' : '',
       'spa-managed',
     ].filter(Boolean).join(' ');
     const partHtml = c.part ? escapeHtml(Array.from(String(c.part))[0] || '') : '&nbsp;'; // P5 — 종목 앞글자
@@ -467,6 +590,8 @@ export async function mountHomeView(now = Date.now()) {
       }
       const streak = summarizeStreak(sessions, now, weeklyGoal);
       applyStreakToDom(streak, doc);
+      applyLastWorkoutToDom(streak, doc);
+      applyBalanceToDom(summarizeWeeklyBalance(sessions, now), doc);
       streakApplied = true;
       // P5 — 오늘 체중 카드: 직전 체중 표시 + 입력 모달(weightKeypadSheet) wire
       try {
@@ -548,32 +673,61 @@ function applyToDom(v, doc) {
   if (doc.body?.dataset) doc.body.dataset.state = 'active';
 }
 
+/** 직전 운동 행(작업지시서 홈) — 부위(맨몸 제외 2개 이상) · 요일 · N일 전. */
+function applyLastWorkoutToDom(streak, doc) {
+  const row = doc.getElementById('homeLastWorkout');
+  if (!row) return;
+  if (streak.state === 'empty') {
+    row.style.display = 'none';
+    return;
+  }
+  row.style.display = '';
+  const partsEl = doc.getElementById('homeLastParts');
+  const metaEl = doc.getElementById('homeLastMeta');
+  if (partsEl) partsEl.textContent = streak.lastWorkoutParts || '운동';
+  if (metaEl) {
+    const meta = [streak.weekdayLabel, streak.sinceLabel].filter(Boolean).join(' · ');
+    metaEl.textContent = meta;
+  }
+}
+
+/** 부위 밸런스 위젯(작업지시서 홈 주역) — 6행 막대 + 지난주 고스트 + 가장 부족 1개 crail + 유산소 별도 줄. */
+function applyBalanceToDom(balance, doc) {
+  const wrap = doc.getElementById('homeBalance');
+  if (!wrap || !balance) return;
+  const max = balance.max || 1;
+  const rows = balance.parts.map((p) => {
+    const isFocus = p.key === balance.focusKey;
+    const w = Math.max(0, Math.min(100, Math.round((p.sets / max) * 100)));
+    const ghost = Math.max(0, Math.min(100, Math.round((p.prevSets / max) * 100)));
+    return `
+      <div class="bal-row${isFocus ? ' is-focus' : ''}">
+        <span class="bal-label kr">${escapeHtml(p.name)}</span>
+        <span class="bal-track">
+          <span class="bal-fill" style="width:${w}%;"></span>
+          ${p.prevSets > 0 ? `<span class="bal-ghost" style="left:${ghost}%;"></span>` : ''}
+        </span>
+        <span class="bal-val mono">${p.sets}</span>
+      </div>`;
+  }).join('');
+  const c = balance.cardio || { min: 0, count: 0 };
+  const cardioText = c.count > 0
+    ? `${c.min > 0 ? `${c.min}분 · ` : ''}${c.count}회`
+    : '기록 없음';
+  const cardioHtml = `
+    <div class="bal-cardio">
+      <span class="bal-label kr">유산소</span>
+      <span class="bal-cardio-val ${c.count > 0 ? 'mono' : 'kr'}">${escapeHtml(cardioText)}</span>
+    </div>`;
+  wrap.innerHTML = rows + cardioHtml;
+}
+
 /** Wave 11.10.3 — streak DOM 갱신. Wave 11.10.4 — CTA click → #/session. */
 function applyStreakToDom(streak, doc) {
   const setText = (id, text) => {
     const el = doc.getElementById(id);
     if (el) el.textContent = text;
   };
-  // P5 라이트 — 이번 주 운동 N / M회 + 4(=goal)세그먼트 + 연속 주 칩.
-  const goalN = Math.max(1, streak.goalNum ?? DEFAULT_WEEKLY_GOAL);
-  const weekN = Math.max(0, streak.weekCountNum ?? 0);
-  setText('homeWeekNum', String(weekN));
-  setText('homeWeekGoal', `/ ${goalN}회`);
-  const seg = doc.getElementById('homeWeekSeg');
-  if (seg) {
-    const filled = Math.min(goalN, weekN);
-    seg.innerHTML = Array.from({ length: goalN }, (_, i) => `<i class="${i < filled ? 'fill' : ''}"></i>`).join('');
-  }
-  const streakWrap = doc.getElementById('homeStreakWrap');
-  if (streakWrap) {
-    const ws = streak.weekStreak ?? 0;
-    if (ws >= 1) {
-      setText('homeStreak', String(ws));
-      streakWrap.style.display = 'inline-flex';
-    } else {
-      streakWrap.style.display = 'none';
-    }
-  }
   setText('ctaBtn', streak.state === 'empty' ? '첫 운동 시작' : '운동 시작');
   // Wave 11.10.4 — '운동 시작' / '첫 운동 시작' click → #/session.
   // session 화면 진입 후 사용자가 종목 클릭 시 addExerciseToActiveSession 가 active session 자동 생성 (spec §6-1).
@@ -651,6 +805,8 @@ if (typeof window !== 'undefined') {
     summarizeActiveSession,
     summarizeNextBlocks,
     summarizeStreak,
+    summarizeWeeklyBalance,
+    categorizeBalancePart,
     mountHomeView,
     buildWeekCalendar,
     fetchDayDetail,

@@ -48,11 +48,23 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .cal-num { font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--ink-4); letter-spacing: -0.02em; }
 .cal-day.worked .cal-num { color: var(--ink-2); }
 .cal-day.today .cal-num { width: 28px; height: 28px; border-radius: 50%; background: var(--crail-base); color: #fff; display: flex; align-items: center; justify-content: center; }
+/* 직전 운동일 — 옅은 crail 링 (작업지시서 홈) */
+.cal-day.prev-workout .cal-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px var(--crail-soft); }
 .cal-part { font-size: 10px; font-weight: 600; color: transparent; line-height: 1; min-height: 11px; }
 .cal-day.worked .cal-part { color: var(--crail-deep); }
-/* P5 이번 주 4세그먼트 (applyStreakToDom 렌더) */
-#homeWeekSeg i { height: 8px; border-radius: 4px; background: var(--line); }
-#homeWeekSeg i.fill { background: var(--crail-base); }
+/* 부위 밸런스 위젯 (작업지시서 홈 — applyBalanceToDom 렌더). 색 규율: 가장 부족 1개만 crail. */
+.bal-row { display: grid; grid-template-columns: 34px 1fr 24px; align-items: center; gap: 11px; }
+.bal-label { font-size: 13px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
+.bal-track { position: relative; height: 10px; border-radius: 5px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line-soft); }
+.bal-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 5px; background: var(--ink-3); transition: width 520ms cubic-bezier(.2,.7,.2,1); }
+.bal-ghost { position: absolute; top: -3px; height: 16px; width: 2px; border-radius: 1px; background: var(--ink-4); transform: translateX(-1px); }
+.bal-val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 600; color: var(--ink-3); text-align: right; }
+.bal-row.is-focus .bal-label { color: var(--crail-deep); font-weight: 600; }
+.bal-row.is-focus .bal-fill { background: var(--crail-base); }
+.bal-row.is-focus .bal-val { color: var(--crail-deep); }
+.bal-cardio { display: flex; align-items: center; justify-content: space-between; margin-top: 3px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.bal-cardio .bal-label { color: var(--ink-3); }
+.bal-cardio-val { font-size: 13px; font-weight: 500; color: var(--ink-3); }
 /* P6 이어하기 박스 (home-c · applyToDom) — 박스 전체 버튼, 브리딩. */
 #cardResume { width: 100%; background: var(--card); border: 1.5px solid var(--crail-base); border-radius: var(--r-xl); box-shadow: var(--shadow-pop); padding: 24px 24px 22px; cursor: pointer; animation: breath 2.8s ease-in-out infinite; }
 #cardResume:active { transform: scale(0.992); }
@@ -86,8 +98,29 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       </div>
       <!-- 주간 스트립 (renderWeekCalendarToDom 채움) -->
       <div id="weekCal" class="js-week-cal" style="flex-shrink:0;margin-top:22px;padding:0 18px;display:grid;grid-template-columns:repeat(7,1fr);"></div>
+      <!-- 직전 운동 (작업지시서 홈 — home.js applyLastWorkoutToDom 채움) -->
+      <div id="homeLastWorkout" style="flex-shrink:0;margin:18px 26px 0;display:flex;align-items:center;gap:11px;">
+        <span style="flex-shrink:0;width:34px;height:34px;border-radius:var(--r-sm);background:var(--sunken);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-3);">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10.5v3M20.5 10.5v3M6.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </span>
+        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
+          <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;">직전 운동</span>
+          <span style="display:flex;align-items:baseline;gap:8px;white-space:nowrap;">
+            <span id="homeLastParts" class="kr" style="font-size:16px;font-weight:600;color:var(--ink-1);">—</span>
+            <span id="homeLastMeta" class="kr" style="font-size:12px;font-weight:500;color:var(--ink-4);"></span>
+          </span>
+        </div>
+      </div>
+      <!-- 부위 밸런스 (작업지시서 홈 주역 — home.js applyBalanceToDom 채움) -->
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:26px 26px 0;">
+        <div style="flex-shrink:0;display:flex;align-items:baseline;justify-content:space-between;">
+          <span class="kr" style="font-size:13px;font-weight:600;color:var(--ink-2);">부위 밸런스</span>
+          <span class="kr" style="font-size:11px;font-weight:500;color:var(--ink-4);">최근 7일 · 세트</span>
+        </div>
+        <div id="homeBalance" style="flex:1;min-height:0;margin-top:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;"></div>
+      </div>
       <!-- 오늘 체중 카드 (탭 → weightKeypadSheet 입력 모달) -->
-      <div data-bind="weight-input-trigger" style="flex-shrink:0;margin:18px 26px 0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-inset-soft);cursor:pointer;">
+      <div data-bind="weight-input-trigger" style="flex-shrink:0;margin:16px 26px 0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-inset-soft);cursor:pointer;">
         <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
           <span class="kr" style="font-size:14px;font-weight:600;color:var(--ink-1);white-space:nowrap;">오늘 체중</span>
           <span id="homeWeightRef" class="kr" style="font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 —kg</span>
@@ -95,19 +128,6 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <span style="display:inline-flex;align-items:baseline;gap:5px;padding:8px 16px;border-radius:var(--r-sm);background:var(--crail-tint);box-shadow:inset 0 0 0 1px var(--crail-base);">
           <span class="kr" style="font-size:13px;font-weight:600;color:var(--crail-deep);white-space:nowrap;">기록하기</span>
         </span>
-      </div>
-      <!-- 히어로: 이번 주 운동 (상단 앵커, 위→아래) -->
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:flex-start;padding:36px 26px 0;">
-        <div class="kr" style="font-size:13px;font-weight:500;color:var(--ink-3);letter-spacing:0.01em;">이번 주 운동</div>
-        <div style="margin-top:12px;display:flex;align-items:baseline;gap:12px;">
-          <span id="homeWeekNum" class="mono" style="font-size:104px;font-weight:500;line-height:0.82;color:var(--ink-1);letter-spacing:-0.05em;">0</span>
-          <span id="homeWeekGoal" class="mono" style="font-size:24px;font-weight:400;color:var(--ink-4);white-space:nowrap;">/ 4회</span>
-        </div>
-        <div id="homeWeekSeg" style="margin-top:26px;display:grid;grid-template-columns:repeat(4,1fr);gap:7px;"></div>
-        <div id="homeStreakWrap" style="margin-top:18px;display:none;align-self:flex-start;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);white-space:nowrap;">
-          <span id="homeStreak" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);">0</span>
-          <span class="kr" style="font-size:12px;font-weight:500;color:var(--crail-deep);">주 연속</span>
-        </div>
       </div>
       <!-- CTA — 워밍 잉크. 하단 14px — 래퍼 8px + safe-area 가드(inset−22)와 합산 = inset 정렬 (하단 과여백 수정 2026-06-11) -->
       <div style="flex-shrink:0;padding:4px 26px 14px;">
