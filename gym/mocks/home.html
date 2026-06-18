@@ -50,8 +50,11 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .cal-day.today .cal-num { width: 28px; height: 28px; border-radius: 50%; background: var(--crail-base); color: #fff; display: flex; align-items: center; justify-content: center; }
 /* 직전 운동일 — 옅은 crail 링 (작업지시서 홈) */
 .cal-day.prev-workout .cal-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px var(--crail-soft); }
-.cal-part { font-size: 10px; font-weight: 600; color: transparent; line-height: 1; min-height: 11px; }
-.cal-day.worked .cal-part { color: var(--crail-deep); }
+/* 시안: 운동일 = crail 점 (부위 글자 폐기) */
+.cal-part { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
+.cal-day.worked .cal-part { background: var(--crail-base); }
+/* 오늘(채운 원)·직전 운동일(링)은 점 생략 — 시안 정합 */
+.cal-day.today .cal-part, .cal-day.prev-workout .cal-part { background: transparent; }
 /* 부위 밸런스 위젯 (작업지시서 홈 — applyBalanceToDom 렌더). 색 규율: 가장 부족 1개만 crail. */
 .bal-row { display: grid; grid-template-columns: 34px 1fr 24px; align-items: center; gap: 11px; }
 .bal-label { font-size: 13px; font-weight: 500; color: var(--ink-3); white-space: nowrap; }
@@ -115,7 +118,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:26px 26px 0;">
         <div style="flex-shrink:0;display:flex;align-items:baseline;justify-content:space-between;">
           <span class="kr" style="font-size:13px;font-weight:600;color:var(--ink-2);">부위 밸런스</span>
-          <span class="kr" style="font-size:11px;font-weight:500;color:var(--ink-4);">최근 7일 · 세트</span>
+          <span class="kr" style="font-size:11px;font-weight:500;color:var(--ink-4);">지난주</span>
         </div>
         <div id="homeBalance" style="flex:1;min-height:0;margin-top:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;"></div>
       </div>

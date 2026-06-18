@@ -930,6 +930,13 @@ async function mountSessionActive(doc, block, session) {
     const ratio = prevSessionVol > 0 ? Math.min(1, sessionDoneVol / prevSessionVol) : 0;
     ringFill.style.strokeDashoffset = String(RING_C * (1 - ratio));
   }
+  // 시안 §A — 링 가운데 직전 대비 달성률 %. 직전 기록 없으면 '—'.
+  const ringPct = doc.getElementById('cardVolRingPct');
+  if (ringPct) {
+    ringPct.textContent = prevSessionVol > 0
+      ? `${Math.round((sessionDoneVol / prevSessionVol) * 100)}%`
+      : '—';
+  }
   if (ringPulse) ringPulse.classList.toggle('is-record', topRecord);
   // 신기록 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 누적 숫자 펄스 + 태그 rise-in.
   if (countUp && topBefore <= prevSessionVol && sessionDoneVol > prevSessionVol) topRecordPulse(doc);

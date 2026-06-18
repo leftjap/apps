@@ -459,12 +459,12 @@ function renderWeekCalendarToDom(cells, doc) {
       c.isPrevWorkout ? 'prev-workout' : '',
       'spa-managed',
     ].filter(Boolean).join(' ');
-    const partHtml = c.part ? escapeHtml(Array.from(String(c.part))[0] || '') : '&nbsp;'; // P5 — 종목 앞글자
+    // 시안: 운동일 = crail 점(부위 글자 아님), 오늘 = 채운 원, 직전 운동일 = 옅은 링.
     return `
       <button class="${classes}" type="button" data-day="${isoToWeekdayIdx(c.iso)}" data-iso="${c.iso}">
         <span class="cal-label">${c.wdLabel}</span>
         <span class="cal-num">${c.num}</span>
-        <span class="cal-part">${partHtml}</span>
+        <span class="cal-part" aria-hidden="true"></span>
       </button>
     `;
   }).join('');

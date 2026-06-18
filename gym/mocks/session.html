@@ -157,7 +157,6 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
     <div style="flex-shrink:0;text-align:center;padding:36px 32px 0;">
       <div class="mono" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.18em;">NEW SESSION</div>
       <div class="kr" style="margin-top:18px;font-size:25px;font-weight:600;color:var(--ink-1);line-height:1.35;letter-spacing:-0.02em;">오늘은 어디부터<br>시작할까요?</div>
-      <div class="kr" style="margin-top:12px;font-size:14px;font-weight:500;color:var(--ink-3);">아래에서 종목을 추가하세요</div>
     </div>
     <!-- 상시 하단 시트 (renderChips/renderList 가 #addexChips/#addexList 채움) — .addex-sheet 통일(§E) -->
     <div id="addexSheet" class="addex-sheet" style="margin-top:auto;height:66dvh;box-shadow:0 -14px 36px -18px rgba(20,18,14,0.14);">
@@ -192,20 +191,21 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <div id="cardExName" class="kr" style="font-size:23px;font-weight:600;color:var(--ink-1);letter-spacing:-0.02em;white-space:nowrap;">벤치프레스</div>
         <div id="cardExPart" class="kr" style="font-size:12px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;white-space:nowrap;">가슴</div>
       </div>
-      <!-- 세션 볼륨 — 숫자는 링 밖으로 크게(절대값), 링은 직전 대비 비율 게이지(역할 분리). (작업지시서 §A)
-           #cardVolRingFill dashoffset 으로 채움, 돌파 시 #cardVolRingPulse 펄스 (session.js §8). -->
+      <!-- 세션 볼륨 — 시안: 숫자(절대값) 좌측·크게, 도넛 링(우측)은 직전 대비 달성률 % 표기(역할 분리). (작업지시서 §A)
+           #cardVolRingFill dashoffset 으로 채움, #cardVolRingPct 가운데 % 표기, 돌파 시 #cardVolRingPulse 펄스. -->
       <div style="flex-shrink:0;display:flex;align-items:center;gap:11px;">
-        <svg width="44" height="44" viewBox="0 0 40 40" aria-hidden="true" style="flex-shrink:0;">
-          <circle cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--line);"></circle>
-          <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
-          <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="100.53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
-        </svg>
         <div style="text-align:right;">
           <div class="kr" style="font-size:10px;font-weight:600;color:var(--ink-4);letter-spacing:0.08em;">세션 볼륨</div>
           <div class="mono" style="margin-top:1px;font-size:26px;font-weight:600;color:var(--ink-1);line-height:1;letter-spacing:-0.02em;white-space:nowrap;"><span id="cardSetProgress" style="display:inline-block;">1,380</span><span style="font-size:13px;font-weight:500;color:var(--ink-4);margin-left:2px;">kg</span></div>
           <div id="cardSessVolPrev" class="mono" style="margin-top:2px;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 2,940kg</div>
           <div id="cardRecordTag" class="mono" style="margin-top:2px;font-size:12px;font-weight:700;color:var(--crail-deep);white-space:nowrap;opacity:0;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록</div>
         </div>
+        <svg width="46" height="46" viewBox="0 0 40 40" style="flex-shrink:0;">
+          <circle cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--line);"></circle>
+          <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
+          <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="100.53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
+          <text id="cardVolRingPct" x="20" y="20" text-anchor="middle" dominant-baseline="central" style="font-family:var(--font-mono);font-size:10px;font-weight:600;fill:var(--ink-2);">47%</text>
+        </svg>
       </div>
     </div>
     <!-- 세트 진행 세그먼트바 (직전 세션 per-set 기록) — renderSetDotsDiff 가 #cardSetDots 채움 -->
