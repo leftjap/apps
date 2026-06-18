@@ -101,26 +101,24 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       </div>
       <!-- 주간 스트립 (renderWeekCalendarToDom 채움) -->
       <div id="weekCal" class="js-week-cal" style="flex-shrink:0;margin-top:22px;padding:0 18px;display:grid;grid-template-columns:repeat(7,1fr);"></div>
-      <!-- 직전 운동 (작업지시서 홈 — home.js applyLastWorkoutToDom 채움) -->
-      <div id="homeLastWorkout" style="flex-shrink:0;margin:18px 26px 0;display:flex;align-items:center;gap:11px;">
-        <span style="flex-shrink:0;width:34px;height:34px;border-radius:var(--r-sm);background:var(--sunken);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--ink-3);">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10.5v3M20.5 10.5v3M6.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-        </span>
-        <div style="display:flex;flex-direction:column;gap:2px;min-width:0;">
-          <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;">직전 운동</span>
-          <span style="display:flex;align-items:baseline;gap:8px;white-space:nowrap;">
-            <span id="homeLastParts" class="kr" style="font-size:16px;font-weight:600;color:var(--ink-1);">—</span>
-            <span id="homeLastMeta" class="kr" style="font-size:12px;font-weight:500;color:var(--ink-4);"></span>
+      <!-- 직전 운동 (작업지시서 홈 — home.js applyLastWorkoutToDom 채움). 시안: 한 줄 (아이콘·라벨·부위 좌, 요일·N일전 우). -->
+      <div id="homeLastWorkout" style="flex-shrink:0;margin:18px 26px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <span style="display:flex;align-items:center;gap:9px;min-width:0;">
+          <span style="flex-shrink:0;width:26px;height:26px;border-radius:7px;background:var(--sunken);display:flex;align-items:center;justify-content:center;color:var(--ink-3);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10.5v3M20.5 10.5v3M6.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
           </span>
-        </div>
+          <span class="kr" style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 운동</span>
+          <span id="homeLastParts" class="kr" style="font-size:15px;font-weight:600;color:var(--ink-1);white-space:nowrap;">—</span>
+        </span>
+        <span id="homeLastMeta" class="kr" style="flex-shrink:0;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;"></span>
       </div>
-      <!-- 부위 밸런스 (작업지시서 홈 주역 — home.js applyBalanceToDom 채움) -->
-      <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:26px 26px 0;">
-        <div style="flex-shrink:0;display:flex;align-items:baseline;justify-content:space-between;">
+      <!-- 부위 밸런스 (작업지시서 홈 주역 — home.js applyBalanceToDom 채움). 시안: 막대가 헤더 바로 아래부터 영역을 고르게 채움. -->
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:22px 26px 0;">
+        <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
           <span class="kr" style="font-size:13px;font-weight:600;color:var(--ink-2);">부위 밸런스</span>
-          <span class="kr" style="font-size:11px;font-weight:500;color:var(--ink-4);">지난주</span>
+          <span class="kr" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--ink-4);"><span style="display:inline-block;width:2px;height:11px;background:var(--ink-4);border-radius:1px;"></span>지난주</span>
         </div>
-        <div id="homeBalance" style="flex:1;min-height:0;margin-top:16px;display:flex;flex-direction:column;justify-content:center;gap:12px;"></div>
+        <div id="homeBalance" style="flex:1;min-height:0;margin:18px 0 6px;display:flex;flex-direction:column;justify-content:space-between;gap:12px;"></div>
       </div>
       <!-- 오늘 체중 카드 (탭 → weightKeypadSheet 입력 모달) -->
       <div data-bind="weight-input-trigger" style="flex-shrink:0;margin:16px 26px 0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-inset-soft);cursor:pointer;">

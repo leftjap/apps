@@ -681,7 +681,7 @@ function applyLastWorkoutToDom(streak, doc) {
     row.style.display = 'none';
     return;
   }
-  row.style.display = '';
+  row.style.display = 'flex'; // 인라인 display:flex 복원 ('' 는 flex 를 지워 block 으로 무너짐 — 직전운동 세로 적층 버그)
   const partsEl = doc.getElementById('homeLastParts');
   const metaEl = doc.getElementById('homeLastMeta');
   if (partsEl) partsEl.textContent = streak.lastWorkoutParts || '운동';
