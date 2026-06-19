@@ -67,6 +67,9 @@ const RETRY_DELAYS_MS = [400, 1000]; // 최대 2회 재시도 (총 3회 시도)
 // 충분히 긴 녹음인데 rms 가 이 값 미만이면 점수 매기지 않고 재시도 유도. (정상 발화는 한참 위라 오탐 여유)
 const CAPTURE_MIN_RMS = 0.005;
 const CAPTURE_GUARD_MIN_SAMPLES = 4000; // 0.25s 미만 클립은 음량 판정 안 함 (회귀 보호)
+// Wave A.19 — 부분 캡처 가드 임계. CompletenessScore = 발화단어/레퍼런스 비율(Azure 공식). 낮으면
+// 문장 일부만 포착(약한/끊긴 마이크 — 블루투스 패킷손실 등) → 무의미한 저점. 실측 저점 완성도 20~60, 정상 100.
+const CAPTURE_MIN_COMPLETENESS = 70;
 
 function _sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -807,6 +810,13 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
     // '따라 말하기' 드릴이 측정할 건 발음 정확도 → AccuracyScore 사용. PronScore 는 진단용으로 함께 반환.
     const score = nbest.AccuracyScore ?? nbest.PronScore ?? 0;
     if (!score) return analyzeMock(expectedText, 'no_match');
+    // Wave A.19 — 부분 캡처 가드. 문장의 일부만 포착되면(completeness 낮음) 점수가 무의미한 저점 →
+    // 매기지 말고 'incomplete_capture' 로 재시도+마이크 안내. (near-silent rms 가드 A.18 와 상보.)
+    const completeness = nbest.CompletenessScore;
+    if (completeness != null && completeness < CAPTURE_MIN_COMPLETENESS) {
+      console.warn('[speech][rest] 부분 캡처(completeness', completeness, '), 점수 스킵');
+      return analyzeMock(expectedText, 'incomplete_capture');
+    }
     const wordScores = [];
     const phonemeScores = [];
     const weakSet = new Set();

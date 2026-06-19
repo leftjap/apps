@@ -583,6 +583,57 @@ describe('speech — Wave A.18 near-silent 캡처 가드', () => {
   });
 });
 
+// Wave A.19 — 부분 캡처 가드. CompletenessScore(발화단어/레퍼런스 비율, Azure 공식)가 낮으면
+// 문장 일부만 포착된 것(약한/끊긴 마이크 — 특히 블루투스) → 무의미한 저점 방지, 재시도 유도.
+describe('speech — Wave A.19 부분 캡처(completeness) 가드', () => {
+  const token200 = () => new Response(
+    JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
+  // 정상 음량 WAV (가드 통과용 — rms 임계 초과)
+  const okWav = () => {
+    const n = 16000; const buf = new ArrayBuffer(44 + n * 2); const pcm = new Int16Array(buf, 44);
+    for (let i = 0; i < n; i++) pcm[i] = Math.round(Math.sin(i * 0.2) * 10000);
+    return new Blob([buf], { type: 'audio/wav' });
+  };
+  const fixture = (completeness) => ({
+    RecognitionStatus: 'Success', DisplayText: 'hi',
+    NBest: [{ Display: 'hi', AccuracyScore: 88, PronScore: 70, FluencyScore: 80, CompletenessScore: completeness, Words: [] }],
+  });
+  const mockFetch = (completeness) => _fetchSpy.mockImplementation(async (url) => {
+    if (String(url).includes('/functions/v1/azure-token')) return token200();
+    if (String(url).includes('.stt.speech.microsoft.com/')) return new Response(JSON.stringify(fixture(completeness)), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response('nf', { status: 404 });
+  });
+
+  it('완성도 40% (부분 캡처) → incomplete_capture mock 폴백', async () => {
+    mockFetch(40);
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(okWav(), 'hi');
+    expect(result.mockFallback).toBe(true);
+    expect(result.fallbackReason).toBe('incomplete_capture');
+  });
+
+  it('완성도 100% → 가드 통과, 실 score', async () => {
+    mockFetch(100);
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(okWav(), 'hi');
+    expect(result.score).toBe(88);
+    expect(result.mockFallback).toBeUndefined();
+  });
+
+  it('완성도 미제공(null) → 가드 미적용 (회귀 보호)', async () => {
+    mockFetch(undefined);
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(okWav(), 'hi');
+    expect(result.score).toBe(88);
+    expect(result.mockFallback).toBeUndefined();
+  });
+});
+
 // Wave 11.35 — preload 동작 검증.
 // 카드 진입 시 token+SDK warmup → 첫 클릭 지연 제거. 멱등 (중복 호출 시 promise 공유).
 describe('speech — Wave 11.35 preload', () => {
