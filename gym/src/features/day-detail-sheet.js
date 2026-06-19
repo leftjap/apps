@@ -19,7 +19,8 @@ function formatDayLabel(iso) {
   const d = parseInt(m[3], 10);
   const date = new Date(y, mo - 1, d);
   const wd = WEEKDAY_KR[date.getDay()];
-  return `${mo}월 ${d}일 (${wd})`;
+  // 구현 레퍼런스 - 통계.html(날짜 상세 시트): "5월 6일 · 수요일"
+  return `${mo}월 ${d}일 · ${wd}요일`;
 }
 
 function escapeText(s) {
@@ -57,14 +58,17 @@ function renderSummary(doc, iso, entry) {
 
   tagEl.textContent = entry.tag || '';
 
-  // 라이트 페이퍼 (사용자 피드백 2026-06-10: 다크 잔존·level(med) 디버그 노출·볼륨 단위 누락 수정)
+  // 구현 레퍼런스 - 통계.html(날짜 상세 시트): "52분 · 3종목 · 12세트 · 888kg" (분 sans / 종목·세트·볼륨 mono, 볼륨 강조).
+  const items = Array.isArray(entry.ex) ? entry.ex : [];
+  const exCount = items.length;
+  const setCount = items.reduce((sum, it) => sum + (Number(it?.setCount) || 0), 0);
   const chips = [];
-  if (entry.vol) chips.push(`<span>볼륨 <b style="font-family:var(--font-mono);font-weight:600;color:var(--ink-1);">${escapeText(Number(entry.vol).toLocaleString())}kg</b></span>`);
-  if (entry.min) chips.push(`<span><b style="font-family:var(--font-mono);font-weight:600;color:var(--ink-1);">${escapeText(entry.min)}</b>분</span>`);
-  if (entry.pr) chips.push(`<span style="color:var(--crail-deep);font-weight:600;">PR ${escapeText(entry.pr)}</span>`);
+  if (entry.min) chips.push(`<span>${escapeText(entry.min)}분</span>`);
+  if (exCount) chips.push(`<span class="num">${exCount}종목</span>`);
+  if (setCount) chips.push(`<span class="num">${setCount}세트</span>`);
+  if (entry.vol) chips.push(`<span class="num" style="color:var(--ink-1);font-weight:600;">${escapeText(Number(entry.vol).toLocaleString())}kg</span>`);
   metaEl.innerHTML = chips.join('');
 
-  const items = Array.isArray(entry.ex) ? entry.ex : [];
   if (items.length === 0) {
     listEl.innerHTML = '<div class="kr" style="font-size:14px;color:var(--ink-4);">운동 기록 없음</div>';
   } else {

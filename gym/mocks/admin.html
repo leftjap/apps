@@ -22,10 +22,11 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
 .tab-pane { display: none; }
 [data-tab="ex"] .pane-ex { display: flex; flex-direction: column; flex: 1; min-height: 0; position: relative; }
 [data-tab="weight"] .pane-weight { display: flex; flex-direction: column; flex: 1; min-height: 0; }
-[data-tab="profile"] .pane-profile { display: block; }
+[data-tab="profile"] .pane-profile { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 /* 관리화면 — 종목 리스트 자체 스크롤 + 하단 floating 버튼 겹침 해소 */
 .phone[data-tab="ex"] .phone-content,
-.phone[data-tab="weight"] .phone-content { display: flex; flex-direction: column; }
+.phone[data-tab="weight"] .phone-content,
+.phone[data-tab="profile"] .phone-content { display: flex; flex-direction: column; }
 .phone[data-tab="weight"] .phone-content { overflow-y: hidden; /* 체중 탭은 입력기록 리스트 자체 스크롤 + 버튼 고정 */ }
 #adminExList { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
 /* 체중 입력 기록 row */
@@ -198,7 +199,7 @@ body { margin: 0; min-height: 100vh; background: oklch(90% 0.006 60); display: f
     </div>
 
     <!-- Pane: 프로필 -->
-    <div class="tab-pane pane-profile" style="height:100%;">
+    <div class="tab-pane pane-profile">
       <div style="display:flex;flex-direction:column;height:100%;">
       <div style="flex-shrink:0;padding:10px 26px 0;">
         <div data-field="height" style="display:flex;justify-content:space-between;align-items:center;padding:16px 0;border-bottom:1px solid var(--line-soft);cursor:pointer;">

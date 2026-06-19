@@ -174,7 +174,7 @@ describe('sessionToWorkoutEntry', () => {
       ],
     };
     const r = sessionToWorkoutEntry(session);
-    expect(r.tag).toBe('가슴'); // 날짜 상세 시트 표기 — 풀네임 (2026-06-10, 구: 단글자 약어)
+    expect(r.tag).toBe('가슴 · 팔'); // 날짜 상세 시트 — 부위 전체 풀네임 (구현 레퍼런스 - 통계.html)
     expect(r.vol).toBe(4500);
     expect(r.level).toBe('med'); // 3000~6000
     expect(r.min).toBe(45);
@@ -640,23 +640,29 @@ describe('applyTrendToDom + applyBodyPartsToDom (W-I)', () => {
     expect(() => renderWeeklyTrendChart([], doc)).not.toThrow();
     expect(() => renderWeeklyTrendChart([{ weekStart: '2026-05-11', vol: 1000 }], doc)).not.toThrow();
   });
-  it('summarizeExerciseFrequency — done 세트만 종목별 누적 + 빈도순', async () => {
+  it('summarizeExerciseFrequency — 종목별 수행 빈도(회, 하루=종목당 1회 dedupe) + 빈도순', async () => {
     const { summarizeExerciseFrequency } = await import('./stats.js');
     const sessions = [
-      { blocks: [
+      { date: '2026-01-01', blocks: [
         { type: 'single', exerciseId: 'bench_press', sets: [{ done: true }, { done: true }, { done: false }] },
         { type: 'single', exerciseId: 'squat', sets: [{ done: true }] },
       ]},
-      { blocks: [
+      { date: '2026-01-01', blocks: [ // 같은 날 두 번째 세션의 bench → dedupe (1회 유지)
+        { type: 'single', exerciseId: 'bench_press', sets: [{ done: true }] },
+      ]},
+      { date: '2026-01-02', blocks: [
         { type: 'single', exerciseId: 'bench_press', sets: [{ done: true }] },
         { type: 'single', exerciseId: 'deadlift', sets: [{ done: true }, { done: true }] },
+      ]},
+      { date: '2026-01-03', blocks: [
+        { type: 'single', exerciseId: 'bench_press', sets: [{ done: true }] },
       ]},
     ];
     const rows = summarizeExerciseFrequency(sessions);
     expect(rows.length).toBe(3);
-    expect(rows[0]).toMatchObject({ exerciseId: 'bench_press', setCount: 3 });
-    expect(rows[1]).toMatchObject({ exerciseId: 'deadlift', setCount: 2 });
-    expect(rows[2]).toMatchObject({ exerciseId: 'squat', setCount: 1 });
+    expect(rows[0]).toMatchObject({ exerciseId: 'bench_press', count: 3 }); // d1·d2·d3 (d1 중복 dedupe)
+    expect(rows[1]).toMatchObject({ exerciseId: 'squat', count: 1 });
+    expect(rows[2]).toMatchObject({ exerciseId: 'deadlift', count: 1 });
   });
   it('applyExerciseFrequencyToDom 빈 rows → empty 표시', async () => {
     const { applyExerciseFrequencyToDom } = await import('./stats.js');

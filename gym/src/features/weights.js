@@ -232,31 +232,18 @@ function updateWeightStats(doc, rows) {
 }
 
 /**
- * chart-legend 의 3 span 갱신 — 30일 전 / 변화 / 오늘.
- *  - rows 가 0 건: 모두 — 표기.
- *  - 1 건: 오늘만 표시, 30일 전·변화 — 표기.
- *  - 2 건 이상: 가장 오래된 row 를 "30일 전" 으로 (실제로 30일 정확 일치 아님 — 라벨 의미는 "비교 시작점").
+ * chart-legend 의 3 span 갱신 — 구현 레퍼런스 - 관리.html(체중 탭) 정합.
+ * 컴팩트 차트(hero 우측) 범례는 시간 라벨만: "14일 전" / (가운데 빈칸) / "오늘".
+ * 값(현재·변화·시작·최저·평균)은 hero(delta)·하단 통계3에 이미 노출 → 범례 중복 제거 + 좁은 폭 오버플로 방지.
  */
 function updateChartLegend(doc, rows) {
   const legend = doc.querySelector('.chart-legend');
   if (!legend) return;
   const spans = legend.querySelectorAll('span');
   if (spans.length < 3) return;
-  if (!rows.length) {
-    spans[0].innerHTML = '<strong>—</strong>30일 전';
-    spans[1].innerHTML = '<strong>—</strong>변화';
-    spans[2].innerHTML = '<strong>—</strong>오늘';
-    return;
-  }
-  const last30 = rows.slice(-30);
-  const oldest = last30[0];
-  const newest = last30[last30.length - 1];
-  const diff = Number(newest.weight) - Number(oldest.weight);
-  const diffSign = diff > 0 ? '+' : (diff < 0 ? '−' : '');
-  const diffAbs = Math.round(Math.abs(diff) * 10) / 10;
-  spans[0].innerHTML = `<strong>${formatWeight(oldest.weight)} kg</strong>30일 전`;
-  spans[1].innerHTML = `<strong>${diffSign}${diffAbs.toFixed(1)} kg</strong>변화`;
-  spans[2].innerHTML = `<strong>${formatWeight(newest.weight)} kg</strong>오늘`;
+  spans[0].textContent = '14일 전';
+  spans[1].textContent = '';
+  spans[2].textContent = '오늘';
 }
 
 /**

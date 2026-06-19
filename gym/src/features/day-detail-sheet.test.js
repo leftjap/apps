@@ -14,8 +14,8 @@ function makeDoc() {
 }
 
 describe('formatDayLabel', () => {
-  it('정상 ISO → "M월 D일 (요일)"', () => {
-    expect(formatDayLabel('2026-05-12')).toMatch(/5월 12일 \(.\)/);
+  it('정상 ISO → "M월 D일 · 요일" (구현 레퍼런스 - 통계.html)', () => {
+    expect(formatDayLabel('2026-05-12')).toMatch(/^5월 12일 · .요일$/);
   });
   it('빈/이상 입력 → 빈 문자열', () => {
     expect(formatDayLabel('')).toBe('');

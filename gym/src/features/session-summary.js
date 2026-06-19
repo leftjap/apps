@@ -156,7 +156,8 @@ function formatReceiptDate(session) {
   const start = formatHHMM(session.startTime);
   const end = formatHHMM(session.endTime);
   const time = start && end ? ` · ${start}→${end}` : '';
-  return `${session.date} · ${weekday}${time}`;
+  // 구현 레퍼런스 - 요약.html: "2026-05-06 WED · 18:42→19:34" (날짜·요일 사이 공백, 불릿 없음)
+  return `${session.date} ${weekday}${time}`;
 }
 
 function buildReceiptNo(session) {

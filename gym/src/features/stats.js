@@ -191,10 +191,10 @@ export function sessionToWorkoutEntry(session) {
   const vol = Number(session.totalVolume) || 0;
   const level = vol < 3000 ? 'low' : vol < 6000 ? 'med' : 'high';
 
-  // 날짜 상세 시트 표기 — 부위 풀네임 (사용자 피드백 2026-06-10: 단글자 '맨' 어색). 첫 tag.
+  // 날짜 상세 시트 표기 — 부위 풀네임 전체 (구현 레퍼런스 - 통계.html: "가슴 · 어깨").
   // PARTS 미등록 tag(구 한글 약어 등)는 partAbbreviation fallback.
   const tags = Array.isArray(session.tags) ? session.tags : [];
-  const tag = tags.length ? (PARTS[tags[0]] || partAbbreviation(tags[0])) : '';
+  const tag = tags.map((t) => PARTS[t] || partAbbreviation(t)).filter(Boolean).join(' · ');
 
   return {
     tag,
@@ -217,11 +217,11 @@ function formatExEntrySpec(block) {
     const durSec = Number(firstSet.duration) || 0;
     const distKm = Number(firstSet.distance) || 0;
     const km = distKm ? ` · ${distKm}km` : '';
-    return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: block.exerciseId, kind: 'cardio', durSec, distKm };
+    return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: block.exerciseId, kind: 'cardio', durSec, distKm, setCount: doneSets.length };
   }
   // cardio 운동인데 duration 미입력(구버그 데이터) — 세트·kg 표기 부적절 → "—" (사용자 피드백 2026-06-10)
   if (getBuiltinExercise(block.exerciseId)?.equipment === 'cardio') {
-    return { n: name, s: '—', key: block.exerciseId, kind: 'cardio', durSec: 0, distKm: 0 };
+    return { n: name, s: '—', key: block.exerciseId, kind: 'cardio', durSec: 0, distKm: 0, setCount: doneSets.length };
   }
   const total = doneSets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
   // 값 미입력 done 세트(구 기록 — duration/weight 없이 완료만)는 "0kg" 표기 생략 (라이브 2026-06-10 발견).
@@ -239,7 +239,7 @@ function formatExEntryMocks(ex) {
     const durSec = Number(firstSet.duration) || 0;
     const distKm = Number(firstSet.distance) || 0;
     const km = distKm ? ` · ${distKm}km` : '';
-    return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: ex.exerciseId || name, kind: 'cardio', durSec, distKm };
+    return { n: name, s: `${Math.round(durSec / 60)}분${km}`, key: ex.exerciseId || name, kind: 'cardio', durSec, distKm, setCount: sets.length };
   }
   const total = sets.reduce((sum, s) => sum + (Number(s.weight) || 0) * (Number(s.reps) || 0), 0);
   const label = total > 0 ? `${sets.length}세트 · ${total.toLocaleString()}kg` : `${sets.length}세트`;
@@ -799,32 +799,39 @@ function escapeHtml(s) {
  */
 export function summarizeExerciseFrequency(sessions, getBuiltin) {
   const list = Array.isArray(sessions) ? sessions : [];
-  const map = new Map();
+  // 구현 레퍼런스 - 통계.html(종목 탭) 정합: "자주 한 운동 · N회" = 수행 빈도(occurrence).
+  // 부위 탭(summarizeBodyParts)과 동일 정책 — 하루 = 종목당 1회. (date, exerciseId) dedupe.
+  const dateKeySeen = new Set();
+  const counts = new Map();
   for (const s of list) {
     if (!s) continue;
+    const date = s.date || '';
     const blocks = Array.isArray(s.blocks) ? s.blocks : [];
     for (const b of blocks) {
       if (!b || b.type !== 'single' || !b.exerciseId) continue;
       const sets = Array.isArray(b.sets) ? b.sets : [];
-      const doneCount = sets.filter((x) => x && x.done === true).length;
-      if (doneCount <= 0) continue;
-      map.set(b.exerciseId, (map.get(b.exerciseId) || 0) + doneCount);
+      const hasDone = sets.some((x) => x && x.done === true);
+      if (!hasDone) continue;
+      const dk = `${date}|${b.exerciseId}`;
+      if (dateKeySeen.has(dk)) continue;
+      dateKeySeen.add(dk);
+      counts.set(b.exerciseId, (counts.get(b.exerciseId) || 0) + 1);
     }
   }
-  return Array.from(map.entries())
-    .map(([exerciseId, setCount]) => {
+  return Array.from(counts.entries())
+    .map(([exerciseId, count]) => {
       const ex = typeof getBuiltin === 'function' ? getBuiltin(exerciseId) : null;
       const part = ex?.part || null;
       const meta = part ? PART_META.find((p) => p.key === part) : null;
       return {
         exerciseId,
         name: exerciseIdToName(exerciseId),
-        setCount,
+        count,
         part,
         color: meta?.color || 'rgba(255,255,255,0.25)',
       };
     })
-    .sort((a, b) => b.setCount - a.setCount);
+    .sort((a, b) => b.count - a.count);
 }
 
 /** 종목 빈도 list 렌더 — 모바일 친화 행 단위 리스트.
@@ -844,10 +851,10 @@ export function applyExerciseFrequencyToDom(rows, doc) {
     return;
   }
   if (emptyEl) emptyEl.style.display = 'none';
-  const max = rows[0].setCount || 1;
-  // 색 규율: 1위(최다 빈도)만 크레일, 나머지는 중립 회색. PART_META 부위색 미사용.
+  const max = rows[0].count || 1;
+  // 색 규율(작업지시서 P8 통계·종목): 1위(최다 빈도)만 크레일, 나머지는 중립 회색. PART_META 부위색 미사용.
   const html = rows.map((r, i) => {
-    const pct = Math.max(4, Math.round((r.setCount / max) * 100));
+    const pct = Math.max(4, Math.round((r.count / max) * 100));
     const isTop = i === 0;
     const dot = isTop ? 'var(--crail-base)' : 'var(--ink-3)';
     const fill = isTop ? 'var(--crail-base)' : 'var(--ink-4)';
@@ -856,7 +863,7 @@ export function applyExerciseFrequencyToDom(rows, doc) {
       + `<div class="ex-freq-head">`
         + `<span class="ex-freq-dot" style="background:${dot};"></span>`
         + `<span class="ex-freq-name kr"${nameStyle}>${escapeHtml(r.name)}</span>`
-        + `<span class="ex-freq-count num">${r.setCount}<span class="kr">세트</span></span>`
+        + `<span class="ex-freq-count num">${r.count}<span class="kr">회</span></span>`
       + `</div>`
       + `<div class="ex-freq-bar"><span class="ex-freq-fill" style="width:${pct}%;background:${fill};"></span></div>`
       + `</div>`;
