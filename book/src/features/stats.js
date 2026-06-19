@@ -10,7 +10,6 @@
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { BOOKS, bookOf } from '../data/books.js';
 import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
@@ -21,7 +20,7 @@ import { tokenize } from '../ui/text.js';
 import { supabase } from '../services/supabase.js';
 
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 const dayKey = (iso) => (iso || '').slice(0, 10);
 const monthKey = (iso) => (iso || '').slice(0, 7);

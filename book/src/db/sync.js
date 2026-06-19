@@ -38,12 +38,12 @@ export function formatError(e) {
 
 /**
  * Dexie 스토어 ↔ Supabase 테이블 매핑.
- * filterColumn null = RLS 가 본인 + 파트너 자동 처리 (book 은 전부 공유).
+ * filterColumn null = RLS 가 본인 행 자동 처리.
  */
 export const TABLE_MAP = Object.freeze([
   Object.freeze({ dexie: 'quotes', supabase: 'book_quotes', filterColumn: null }),
   Object.freeze({ dexie: 'comments', supabase: 'book_comments', filterColumn: null }),
-  // 형광펜: 본인 행만 pull (부부 겹쳐보기는 후속 — 로컬 모델이 quote 당 1행).
+  // 형광펜: 본인 행만 pull (로컬 모델이 quote 당 1행).
   Object.freeze({ dexie: 'quote_highlights', supabase: 'book_quote_highlights', filterColumn: 'owner_id' }),
 ]);
 

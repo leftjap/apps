@@ -5,13 +5,12 @@
  *  - 메인(lx-main): 북바(표지 44px + serif 제목 + 저자·출판사 + 어구록 N · 핀 N +
  *    도구[정렬 토글·핀만·검색]) · 빠른 입력(lx-capture, 클릭→추가 모달 textarea 포커스)
  *    · 발췌 노트(lx-x — 인덱스·시간·작성자 비노출, 행 밀도↑) — 시안 SCREEN 02 결정.
- *  - 행 호버 액션: 핀 토글(본인 소유만) + ⋮ 메뉴. 댓글 있는 행은 우상단 말풍선(클릭→스레드).
+ *  - 행 호버 액션: 핀 토글 + ⋮ 메뉴. 댓글 있는 행은 우상단 말풍선(클릭→스레드).
  *  - 어구록 클릭 → QuoteModal. 우클릭/롱프레스 → 컨텍스트 메뉴 (기존 유지).
  * 데이터: BOOKS/REGISTRY + Queries.listAllQuotes(owners) 1회 → 책별 집계/필터.
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
 import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
@@ -22,7 +21,7 @@ import { segmentText, applyMark, removeRange, coveredColor } from '../ui/highlig
 import { rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 const genreOf = (b) => {
   const c = (b?.c || '').trim();
@@ -175,13 +174,10 @@ async function render(host, params, ctx) {
       try { await Queries.setHighlights(q.id, next, meId); }
       catch (err) { console.warn('[library] 하이라이트 저장 실패', err?.message || err); }
       // 형광펜=핀 — 칠해진 어구는 핀, 마지막 형광펜을 지우면 핀 해제 (사용자 결정 2026-06-12).
-      // 파트너 어구는 제외: 서버가 본인 행만 수정 허용(RLS) — 형광펜(로컬)만 칠해진다.
-      if (!meId || q.owner_id === meId) {
-        const shouldPin = next.length > 0 ? 1 : 0;
-        if ((q.pinned ? 1 : 0) !== shouldPin) {
-          try { await Queries.updateQuote(q.id, { pinned: shouldPin }); q.pinned = shouldPin; }
-          catch (err) { console.warn('[library] 핀 동기화 실패', err?.message || err); }
-        }
+      const shouldPin = next.length > 0 ? 1 : 0;
+      if ((q.pinned ? 1 : 0) !== shouldPin) {
+        try { await Queries.updateQuote(q.id, { pinned: shouldPin }); q.pinned = shouldPin; }
+        catch (err) { console.warn('[library] 핀 동기화 실패', err?.message || err); }
       }
       const sel = window.getSelection();
       if (sel) sel.removeAllRanges();
@@ -265,10 +261,10 @@ async function render(host, params, ctx) {
           (g?.pinned || 0) > 0 ? el('span', { class: 'pin' }, iconEl('star-fill', { sz: 9 })) : null,
           String(cnt)),
       );
-      // 책 삭제는 책의 어구록이 전부 본인 소유일 때만 노출 — 상대 글은 RLS write 거부(로컬만 변경, reload 시 복원).
+      // 책 삭제 — 책의 어구록을 전부 제거.
       attachContextMenu(row, () => {
         const bookQuotes = byBook.get(ref)?.quotes || [];
-        const canDelete = bookQuotes.length > 0 && bookQuotes.every((q) => q.owner_id === meId);
+        const canDelete = bookQuotes.length > 0;
         return el('div', { class: 'menu-pop', onClick: (e) => e.stopPropagation() },
           el('button', { onClick: () => { closePop(); ctx.openAdd && ctx.openAdd({ bookRef: ref }); } }, iconEl('plus', { sz: 14 }), '이 책에 어구록 추가'),
           canDelete ? el('hr', {}) : null,
@@ -327,7 +323,6 @@ async function render(host, params, ctx) {
       }, '저장된 어구록이 없습니다. 클릭해 추가하세요.'));
     }
     for (const q of qs) {
-      const isMine = !meId || q.owner_id === meId;
       const cN = commentCounts[q.id] || 0;
       const article = el('article', {
         // 행 좌클릭 모달 없음 — 본문은 드래그(형광펜)·mark 클릭(편집) 영역. 수정/삭제는 호버 ⋮·우클릭.
@@ -365,10 +360,10 @@ async function render(host, params, ctx) {
           onClick: (e) => { e.stopPropagation(); ctx.navigate(`/thread/${selectedId}/${q.id}`); },
         }, iconEl('comment', { sz: 14 })) : null,
         el('div', { class: 'lx-acts', onClick: (e) => e.stopPropagation() },
-          isMine ? el('button', {
+          el('button', {
             class: q.pinned ? 'on' : '', title: q.pinned ? '핀 해제' : '핀',
             onClick: () => togglePin(q),
-          }, iconEl(q.pinned ? 'star-fill' : 'star', { sz: 15 })) : null,
+          }, iconEl(q.pinned ? 'star-fill' : 'star', { sz: 15 })),
           rowMenuButton(q, ctx, { onChange: onQuoteChange }),
         ),
       );

@@ -9,7 +9,6 @@
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
 import { CURATION } from '../data/curation.js';
 import { el } from '../ui/dom.js';
@@ -19,7 +18,7 @@ import { topBar } from '../ui/components.js';
 import { openQuoteModal } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 const KDOW = ['일', '월', '화', '수', '목', '금', '토'];

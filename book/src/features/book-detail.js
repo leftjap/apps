@@ -5,7 +5,6 @@
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
 import { el } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
@@ -14,7 +13,7 @@ import { screenShell, crumb, btn } from '../ui/components.js';
 import { fmtDateTime } from '../ui/format.js';
 
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 
 function relAgo(iso) {

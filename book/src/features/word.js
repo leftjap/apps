@@ -6,7 +6,6 @@
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
 import { el } from '../ui/dom.js';
 import { cover } from '../ui/cover.js';
@@ -15,7 +14,7 @@ import { barChart } from '../ui/charts.js';
 import { tokenize } from '../ui/text.js';
 import { fmtDate, fmtDateTime } from '../ui/format.js';
 
-const owners = (u) => [u?.id, Profile.getPartnerUserIdForEmail(u?.email)].filter(Boolean);
+const owners = (u) => [u?.id].filter(Boolean);
 const topCat = (b) => (b?.c ? b.c.split('·')[0].trim() : '기타');
 const monthKey = (iso) => (iso || '').slice(0, 7);
 const occ = (text, word) => (text && word ? text.split(word).length - 1 : 0);

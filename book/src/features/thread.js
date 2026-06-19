@@ -8,7 +8,6 @@
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
-import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
 import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
@@ -17,33 +16,22 @@ import { screenShell, crumb, count as countEl } from '../ui/components.js';
 import { quoteText } from '../ui/quote-text.js';
 import { fmtDateTime, fmtMonthDay } from '../ui/format.js';
 
-// 알려진 사용자 id → 표시 이름 (커플 2인). 그 외는 '상대'.
-const ID_TO_NAME = {
-  '7bae5645-61c6-4476-9ff2-4c30a72812ff': '지오',
-  'aeafd9a7-4094-4e7c-a621-188d6b2e336d': '소연',
-};
-function nameOf(authorId, meId) {
-  if (authorId === meId) return '나';
-  return ID_TO_NAME[authorId] || '상대';
-}
-
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 
 // ─── 댓글 블록 ───────────────────────────────────────────────────────────────
 function renderComments({ quoteId, comments, allowInput, meId, onChanged }) {
   const wrap = el('div', { style: { marginTop: 18 } });
   comments.forEach((c, i) => {
-    const me = c.author_id === meId;
     const isLast = i === comments.length - 1 && !allowInput;
     const avatarCol = el('div', { style: { position: 'relative', width: 24, flexShrink: 0 } },
       !isLast ? el('div', { style: { position: 'absolute', left: 11, top: 22, bottom: -8, width: 1, background: 'var(--line)' } }) : null,
-      el('div', { style: { width: 22, height: 22, borderRadius: 50, background: me ? 'var(--ink-1)' : '#c2553a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, marginTop: 1 } }, nameOf(c.author_id, meId)[0]),
+      el('div', { style: { width: 22, height: 22, borderRadius: 50, background: 'var(--ink-1)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, marginTop: 1 } }, '나'),
     );
     const body = el('div', { style: { flex: 1, minWidth: 0, paddingBottom: i === comments.length - 1 ? 0 : 16 } },
       el('div', { style: { display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 } },
-        el('span', { style: { fontSize: 12.5, fontWeight: 700, color: me ? 'var(--ink-1)' : '#c2553a' } }, nameOf(c.author_id, meId)),
+        el('span', { style: { fontSize: 12.5, fontWeight: 700, color: 'var(--ink-1)' } }, '나'),
         el('span', { class: 'mono', style: { fontSize: 11, color: 'var(--ink-4)' } }, fmtMonthDay(c.created_at)),
       ),
       el('div', { style: { fontSize: 14, lineHeight: 1.65, color: 'var(--ink-2)' } }, c.body),

@@ -72,14 +72,6 @@ export function countPill({ n } = {}) {
   return el('span', { class: 'mono', style: { padding: '4px 10px', borderRadius: 99, background: 'var(--paper)', color: 'var(--ink-2)', fontSize: 12, fontWeight: 600, letterSpacing: '.02em' } }, String(n));
 }
 
-// ─── 소연 marker (core.jsx SoyeonMark) ──────────────────────────────────────
-export function soyeonMark({ size = 'sm' } = {}) {
-  return el('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: size === 'xs' ? 10.5 : 11, color: 'var(--ink-3)', fontWeight: 500, letterSpacing: '-.005em' } },
-    el('span', { style: { width: 5, height: 5, borderRadius: 50, background: '#9a9080' } }),
-    '소연',
-  );
-}
-
 // ─── 검색 트리거 (탑바) — 클릭/⌘K 로 검색 모달 열기 (ui/search-modal.js) ───────
 // 시안 §4·§8: 탑바 검색창은 모달 오버레이를 여는 트리거. (구 인라인 드롭다운 폐기 — 모달로 일원화)
 export function searchTrigger({ ctx } = {}) {
@@ -116,12 +108,11 @@ export function topBar({ tab = 'excerpt', ctx } = {}) {
 }
 
 // ─── BookRow (core-v14 BookRowV14) ──────────────────────────────────────────
-export function bookRow({ b, count: cnt, soyeon, meta, onClick } = {}) {
+export function bookRow({ b, count: cnt, meta, onClick } = {}) {
   const metaRow = el('div', { style: { fontSize: 13, color: 'var(--ink-3)', marginTop: 5, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 10 } },
     el('span', {}, b.a),
     meta ? el('span', { style: { color: 'var(--ink-4)' } }, '·') : null,
     meta ? el('span', {}, meta) : null,
-    soyeon ? soyeonMark({ size: 'xs' }) : null,
   );
   return el('div', {
     class: 'book-row', onClick,
@@ -233,6 +224,6 @@ export function screenShell({ tab = 'excerpt', ctx, mainStyle, crumbEl, children
 }
 
 export default {
-  btn, hoverActions, count, countPill, soyeonMark, topBar, bookRow, quoteRow,
+  btn, hoverActions, count, countPill, topBar, bookRow, quoteRow,
   pageTitle, panelHead, crumb, modal, screenShell,
 };

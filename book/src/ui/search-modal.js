@@ -10,7 +10,6 @@
  */
 import { Queries } from '../db/queries.js';
 import { bookOf } from '../data/books.js';
-import { Profile } from '../services/profile.js';
 import { CURATION } from '../data/curation.js';
 import { el, clear } from './dom.js';
 import { iconEl } from './icons.js';
@@ -18,7 +17,7 @@ import { cover } from './cover.js';
 
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 
 // ─── 최근 검색 (localStorage, 기기 로컬 — 서버 동기화 없음) ────────────────────

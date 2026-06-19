@@ -3,7 +3,7 @@
  *
  * 책임:
  *  - Supabase Auth (Google OAuth) wrapper
- *  - 허용 이메일 allowlist 검증 (커플 2계정 고정)
+ *  - 허용 이메일 allowlist 검증 (본인 1계정)
  *  - userHash(user) → 사용자별 IndexedDB 이름 격리 (book_<hash>)
  *  - ensureUserDB / closeUserDB — Dexie 인스턴스 동적 할당
  *  - signOut cleanup 콜백 (Realtime unsubscribe 등 등록)
@@ -19,7 +19,6 @@ import { createBookDB } from '../db/schema.js';
 /** 허용 이메일 (대소문자 무관) — Gym/Study/Today 와 동일 allowlist 공유 (D3). */
 export const ALLOWED_EMAILS = Object.freeze([
   'leftjap@gmail.com',
-  'soyoun312@gmail.com',
 ]);
 
 export const AUTH_ERROR_KEY = 'bookAuthError';

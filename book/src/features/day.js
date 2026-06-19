@@ -5,14 +5,13 @@
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { bookOf } from '../data/books.js';
 import { el } from '../ui/dom.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, crumb } from '../ui/components.js';
 import { barChart } from '../ui/charts.js';
 
-const owners = (u) => [u?.id, Profile.getPartnerUserIdForEmail(u?.email)].filter(Boolean);
+const owners = (u) => [u?.id].filter(Boolean);
 const DOW = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
 const dayKey = (iso) => (iso || '').slice(0, 10);
 

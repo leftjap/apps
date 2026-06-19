@@ -2,7 +2,7 @@
  * book IndexedDB 스키마 (spec §3.3 — today/gym 팩토리 패턴 답습).
  *
  * 스토어:
- *  - quotes   : 어구록 (책에서 옮긴 문장). 부부 공용 피드 = 본인 + 파트너 quotes.
+ *  - quotes   : 어구록 (책에서 옮긴 문장).
  *  - comments : 어구록 스레드 댓글.
  *
  * 인덱스:

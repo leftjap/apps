@@ -8,7 +8,6 @@ import { seedDemoData, cleanupDemoData, SEED_QUOTES } from './devSeed.js';
 import { listFeed, listPinned, listCommentsByQuote } from './queries.js';
 
 const ME = '11111111-2222-3333-4444-555555555555';
-const PARTNER = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
 beforeEach(() => {
   const dbName = 'book_test_' + Math.random().toString(36).slice(2, 10);
@@ -16,35 +15,33 @@ beforeEach(() => {
 });
 
 describe('seedDemoData', () => {
-  it('15 quotes + 4 comments 시드, who 매핑', async () => {
-    const r = await seedDemoData({ meId: ME, partnerId: PARTNER });
+  it('15 quotes + 4 comments 시드', async () => {
+    const r = await seedDemoData({ meId: ME });
     expect(r.ok).toBe(true);
     expect(r.quotesAdded).toBe(SEED_QUOTES.length); // 15
     expect(r.commentsAdded).toBe(4); // q1(3) + q6(1)
 
-    const feed = await listFeed([ME, PARTNER]);
+    const feed = await listFeed([ME]);
     expect(feed).toHaveLength(15);
-    // who:'y' (q5,q8,q11,q15) → partner owner
-    const partnerCount = feed.filter((q) => q.owner_id === PARTNER).length;
-    expect(partnerCount).toBe(4);
+    expect(feed.every((q) => q.owner_id === ME)).toBe(true);
   });
 
   it('pin 3건 (q1,q5,q7)', async () => {
-    await seedDemoData({ meId: ME, partnerId: PARTNER });
-    expect(await listPinned([ME, PARTNER])).toHaveLength(3);
+    await seedDemoData({ meId: ME });
+    expect(await listPinned([ME])).toHaveLength(3);
   });
 
   it('q1 댓글 3건 시드', async () => {
-    await seedDemoData({ meId: ME, partnerId: PARTNER });
-    const feed = await listFeed([ME, PARTNER]);
+    await seedDemoData({ meId: ME });
+    const feed = await listFeed([ME]);
     const q1 = feed.find((q) => q.text.startsWith('걷는 동안'));
     const comments = await listCommentsByQuote(q1.id);
     expect(comments).toHaveLength(3);
   });
 
   it('멱등 — 재호출 시 skip', async () => {
-    await seedDemoData({ meId: ME, partnerId: PARTNER });
-    const r2 = await seedDemoData({ meId: ME, partnerId: PARTNER });
+    await seedDemoData({ meId: ME });
+    const r2 = await seedDemoData({ meId: ME });
     expect(r2.quotesAdded).toBe(0);
     expect(r2.quotesSkipped).toBe(15);
   });
@@ -56,10 +53,10 @@ describe('seedDemoData', () => {
 
 describe('cleanupDemoData', () => {
   it('시드 전부 제거', async () => {
-    await seedDemoData({ meId: ME, partnerId: PARTNER });
+    await seedDemoData({ meId: ME });
     const r = await cleanupDemoData();
     expect(r.quotesRemoved).toBe(15);
     expect(r.commentsRemoved).toBe(4);
-    expect(await listFeed([ME, PARTNER])).toHaveLength(0);
+    expect(await listFeed([ME])).toHaveLength(0);
   });
 });

@@ -15,7 +15,7 @@ import {
 } from './queries.js';
 
 const ME = '11111111-2222-3333-4444-555555555555';
-const PARTNER = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+const OTHER = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
 
 beforeEach(() => {
   const dbName = 'book_test_' + Math.random().toString(36).slice(2, 10);
@@ -45,16 +45,16 @@ describe('quotes — create/get/validation', () => {
   });
 });
 
-describe('quotes — listFeed (부부 공유)', () => {
-  it('본인+파트너 합집합, deleted 제외, updated_at desc', async () => {
+describe('quotes — listFeed (owner 집합 필터)', () => {
+  it('여러 owner 합집합, deleted 제외, updated_at desc', async () => {
     await createQuote({ owner_id: ME, book_ref: '1', text: 'me 오래', updated_at: '2026-05-01T00:00:00.000Z' });
-    await createQuote({ owner_id: PARTNER, book_ref: '3', text: 'partner 최신', updated_at: '2026-05-10T00:00:00.000Z' });
+    await createQuote({ owner_id: OTHER, book_ref: '3', text: 'other 최신', updated_at: '2026-05-10T00:00:00.000Z' });
     const del = await createQuote({ owner_id: ME, book_ref: '1', text: '삭제됨' });
     await softDeleteQuote(del.id);
     await createQuote({ owner_id: 'cccccccc-cccc-cccc-cccc-cccccccccccc', book_ref: '2', text: '외부인' });
 
-    const feed = await listFeed([ME, PARTNER]);
-    expect(feed.map((q) => q.text)).toEqual(['partner 최신', 'me 오래']);
+    const feed = await listFeed([ME, OTHER]);
+    expect(feed.map((q) => q.text)).toEqual(['other 최신', 'me 오래']);
   });
 
   it('단일 owner 문자열 허용', async () => {
@@ -109,9 +109,9 @@ describe('quotes — search / all / pending', () => {
 
   it('listAllQuotes owner 필터', async () => {
     await createQuote({ owner_id: ME, book_ref: '1', text: 'mine' });
-    await createQuote({ owner_id: PARTNER, book_ref: '1', text: 'theirs' });
+    await createQuote({ owner_id: OTHER, book_ref: '1', text: 'theirs' });
     expect(await listAllQuotes([ME])).toHaveLength(1);
-    expect(await listAllQuotes([ME, PARTNER])).toHaveLength(2);
+    expect(await listAllQuotes([ME, OTHER])).toHaveLength(2);
   });
 
   it('setQuotePendingSync + listPendingQuotes', async () => {
@@ -127,7 +127,7 @@ describe('comments', () => {
   it('createComment → listCommentsByQuote (created_at asc) + count', async () => {
     const q = await createQuote({ owner_id: ME, book_ref: '1', text: 'q' });
     await createComment({ quote_id: q.id, author_id: ME, body: '첫', created_at: '2026-05-01T00:00:00.000Z' });
-    await createComment({ quote_id: q.id, author_id: PARTNER, body: '둘', created_at: '2026-05-02T00:00:00.000Z' });
+    await createComment({ quote_id: q.id, author_id: OTHER, body: '둘', created_at: '2026-05-02T00:00:00.000Z' });
     const list = await listCommentsByQuote(q.id);
     expect(list.map((c) => c.body)).toEqual(['첫', '둘']);
     expect(await countCommentsByQuote(q.id)).toBe(2);

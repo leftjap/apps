@@ -8,8 +8,7 @@
  *  - sync.js 업로드 큐 등록 (순환 참조 회피 — globalThis.bookSync 동적 lookup)
  *  - `window.bookQueries` 노출
  *
- * 부부 공유 모델: 어구록은 owner_id 로만 구분. is_shared 없음.
- * 피드/리스트는 (본인 + 파트너) owner 집합으로 필터.
+ * 어구록은 owner_id 로 구분. 피드/리스트는 owner 집합으로 필터 (단일 사용자 = 본인).
  */
 
 function db() {
@@ -59,8 +58,8 @@ function enqueueHighlightSync(quoteId) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 /**
- * 부부 피드 — (본인 + 파트너) owner 의 어구록, deleted 제외, updated_at desc.
- * @param {string|string[]} ownerIds 본인 id 또는 [본인, 파트너] 배열
+ * 피드 — owner 집합의 어구록, deleted 제외, updated_at desc.
+ * @param {string|string[]} ownerIds owner id 또는 owner 배열
  */
 export async function listFeed(ownerIds) {
   const owners = ownerSet(ownerIds);
@@ -93,7 +92,7 @@ export async function getQuote(id) {
   return await db().quotes.get(id);
 }
 
-/** 핀 어구록 ((본인+파트너) owner), updated_at desc. */
+/** 핀 어구록 (owner 집합), updated_at desc. */
 export async function listPinned(ownerIds) {
   const owners = ownerSet(ownerIds);
   const rows = await db().quotes.where('pinned').equals(1).toArray();
@@ -102,7 +101,7 @@ export async function listPinned(ownerIds) {
     .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
 }
 
-/** 전체 어구록 ((본인+파트너) owner, deleted 제외) — 통계/모두보기. updated_at desc. */
+/** 전체 어구록 (owner 집합, deleted 제외) — 통계/모두보기. updated_at desc. */
 export async function listAllQuotes(ownerIds) {
   const owners = ownerSet(ownerIds);
   let rows = owners.length
@@ -113,7 +112,7 @@ export async function listAllQuotes(ownerIds) {
     .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
 }
 
-/** 어구록 본문 부분 일치 검색 ((본인+파트너) owner). updated_at desc. */
+/** 어구록 본문 부분 일치 검색 (owner 집합). updated_at desc. */
 export async function searchQuotes(q, ownerIds) {
   const all = await listAllQuotes(ownerIds);
   const needle = (q == null ? '' : String(q)).trim().toLowerCase();

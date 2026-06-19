@@ -6,7 +6,6 @@
  */
 import { registerScreen } from '../app.js';
 import { Queries } from '../db/queries.js';
-import { Profile } from '../services/profile.js';
 import { BOOKS, bookOf, groupQuotes } from '../data/books.js';
 import { el } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
@@ -16,7 +15,7 @@ import { quoteText } from '../ui/quote-text.js';
 import { fmtDateTime } from '../ui/format.js';
 
 function ownerIdsOf(user) {
-  return [user?.id, Profile.getPartnerUserIdForEmail(user?.email)].filter(Boolean);
+  return [user?.id].filter(Boolean);
 }
 
 function countByBookRef(quotes) {
@@ -97,8 +96,8 @@ function viewPubs(ctx, countMap) {
 }
 
 // ─── pins ────────────────────────────────────────────────────────────────────
-function viewPins(ctx, pinned, meId) {
-  const views = pinned.map((q) => ({ ...q, who: q.owner_id === meId ? 'me' : 'y', book_ref: String(q.book_ref) }));
+function viewPins(ctx, pinned) {
+  const views = pinned.map((q) => ({ ...q, book_ref: String(q.book_ref) }));
   const groups = groupQuotes(views);
   const header = el('div', { style: { display: 'flex', alignItems: 'baseline', marginBottom: 36 } },
     iconEl('pin', { sz: 22, st: 1.8, style: 'color:#c2553a' }),
@@ -107,7 +106,7 @@ function viewPins(ctx, pinned, meId) {
   const sections = groups.map((g) => {
     const b = bookOf(g.book_ref);
     if (!b) return null;
-    const sec = el('section', { style: { margin: '0 0 36px' } }, bookRow({ b, count: g.q.length, soyeon: g.who === 'y', onClick: () => ctx.navigate(`/book/${g.book_ref}`) }));
+    const sec = el('section', { style: { margin: '0 0 36px' } }, bookRow({ b, count: g.q.length, onClick: () => ctx.navigate(`/book/${g.book_ref}`) }));
     for (const q of g.q) {
       sec.appendChild(el('div', {
         class: 'book-row', onClick: () => ctx.navigate(`/thread/${g.book_ref}/${q.id}`),
@@ -139,7 +138,7 @@ async function render(host, params, ctx) {
   let v;
   if (kind === 'authors') v = viewAuthors(ctx, countMap);
   else if (kind === 'pubs') v = viewPubs(ctx, countMap);
-  else if (kind === 'pins') v = viewPins(ctx, pinned, user?.id);
+  else if (kind === 'pins') v = viewPins(ctx, pinned);
   else v = viewBooks(ctx, countMap);
 
   const crumbEl = crumb({ ctx, path: [{ label: v.backLabel, back: true, onBack: () => ctx.navigate(v.back) }, { label: v.crumbLast, last: true }] });

@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'book',
           short_name: 'book',
-          description: '부부 공용 어구록 — 책에서 옮긴 문장과 댓글',
+          description: '내 어구록 — 책에서 옮긴 문장과 댓글',
           lang: 'ko',
           theme_color: '#ffffff',
           background_color: '#ffffff',
