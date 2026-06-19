@@ -305,8 +305,10 @@ describe('speech — Wave 11.61 analyzeWavRest', () => {
     expect(azureSttCalls[0].headers.Authorization).toBe(`Bearer ${FAKE_TOKEN}`);
     expect(azureSttCalls[0].headers['Pronunciation-Assessment']).toBeTruthy();
 
-    // score 파싱
-    expect(result.score).toBe(97);
+    // score = AccuracyScore (발음 정확도). PronScore(97) 아닌 AccuracyScore(95).
+    expect(result.score).toBe(95);
+    expect(result.accuracyScore).toBe(95);
+    expect(result.pronScore).toBe(97);
     expect(result.recognizedText).toBe('You got it.');
     expect(result.fluencyScore).toBe(100);
     expect(result.completenessScore).toBe(100);
@@ -318,6 +320,33 @@ describe('speech — Wave 11.61 analyzeWavRest', () => {
     expect(result.phonemeScores.length).toBe(7);
     // 약점 음소 (<70) — got의 t (55), it의 t (44). ih=76 은 임계 통과. Set 이라 't' 1회.
     expect(result.weakPhonemes).toEqual(['t']);
+    expect(result.mockFallback).toBeUndefined();
+  });
+
+  it('발음 점수 = AccuracyScore (유창성 끌림 분리) — 또박또박/끊어 말해도 정확하면 고득점', async () => {
+    // 실측 재현(score_diag): 중간에 끊어 읽으면 Accuracy 92인데 PronScore 65로 추락 (Fluency 45).
+    // 발음 연습 앱은 정확도가 점수여야 함 → PronScore(유창성·억양 가중) 대신 AccuracyScore.
+    const FLU_DRAGGED = {
+      RecognitionStatus: 'Success', DisplayText: 'Its more than a promise',
+      NBest: [{
+        Display: 'Its more than a promise', AccuracyScore: 92.0, FluencyScore: 45.0,
+        CompletenessScore: 100.0, ProsodyScore: 60.0, PronScore: 65.4,
+        Words: [{ Word: 'promise', AccuracyScore: 92.0, Phonemes: [{ Phoneme: 'p', AccuracyScore: 92.0 }] }],
+      }],
+    };
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) {
+        return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(JSON.stringify(FLU_DRAGGED), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(50)], { type: 'audio/wav' }), 'Its more than a promise');
+    expect(result.score).toBe(92);        // AccuracyScore — PronScore(65.4) 아님
+    expect(result.accuracyScore).toBe(92);
+    expect(result.pronScore).toBe(65.4);
+    expect(result.fluencyScore).toBe(45);
     expect(result.mockFallback).toBeUndefined();
   });
 

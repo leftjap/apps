@@ -778,7 +778,11 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
     }
     const nbest = json.NBest?.[0];
     if (!nbest) return analyzeMock(expectedText, 'parse_fail');
-    const score = nbest.PronScore ?? nbest.AccuracyScore ?? 0;
+    // Wave A.17 — 표시 점수 = AccuracyScore(발음 정확도).
+    // 기존 PronScore(Comprehensive)는 정확도+유창성+완성도+억양 가중합이라, 또박또박·끊어 말하는
+    // 학습자가 정확히 발음해도 유창성/억양에서 깎여 저점이 나옴(실측: Acc 92 → Pron 65, Fluency 45).
+    // '따라 말하기' 드릴이 측정할 건 발음 정확도 → AccuracyScore 사용. PronScore 는 진단용으로 함께 반환.
+    const score = nbest.AccuracyScore ?? nbest.PronScore ?? 0;
     if (!score) return analyzeMock(expectedText, 'no_match');
     const wordScores = [];
     const phonemeScores = [];
@@ -793,6 +797,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
     }
     return {
       score,
+      accuracyScore: nbest.AccuracyScore,
+      pronScore: nbest.PronScore,
       recognizedText: nbest.Display || json.DisplayText || '',
       phonemeScores,
       weakPhonemes: [...weakSet],
