@@ -417,7 +417,7 @@ describe('summarizeWeeklyBalance', () => {
     expect(r.parts.map((p) => p.key)).toEqual(['legs', 'shoulder', 'back', 'chest', 'arms', 'core']);
     expect(r.parts.every((p) => p.sets === 0 && p.prevSets === 0)).toBe(true);
     expect(r.focusKey).toBeNull();
-    expect(r.cardio).toEqual({ min: 0, count: 0 });
+    expect(r.cardio).toEqual({ min: 0, count: 0, deltaMin: 0 });
     expect(r.max).toBe(1);
   });
 
@@ -458,18 +458,27 @@ describe('summarizeWeeklyBalance', () => {
     }];
     const r = summarizeWeeklyBalance(sessions, NOW);
     expect(r.parts.find((p) => p.key === 'core').sets).toBe(3);
-    expect(r.cardio).toEqual({ min: 30, count: 1 });
+    expect(r.cardio).toEqual({ min: 30, count: 1, deltaMin: 30 }); // 이번 30 - 지난주 0
     // cardio 는 parts 에 포함 안 됨
     expect(r.parts.find((p) => p.key === 'cardio')).toBeUndefined();
   });
 
-  it('지난주 유산소는 cardio 합산 제외 (이번 주만)', () => {
+  it('지난주 유산소는 합산 제외하되 deltaMin 에는 반영 (이번 주만 - 지난주)', () => {
     const sessions = [{
       date: '2026-04-20', status: 'completed',
       blocks: [block('treadmill', 1, 1, { duration: 1800 })],
     }];
     const r = summarizeWeeklyBalance(sessions, NOW);
-    expect(r.cardio).toEqual({ min: 0, count: 0 });
+    expect(r.cardio).toEqual({ min: 0, count: 0, deltaMin: -30 }); // 이번 0 - 지난주 30
+  });
+
+  it('유산소 지난주 대비 시간 델타 — 이번 30분·지난주 10분 → +20분', () => {
+    const sessions = [
+      { date: '2026-04-28', status: 'completed', blocks: [block('treadmill', 1, 1, { duration: 1800 })] }, // 이번 30분
+      { date: '2026-04-20', status: 'completed', blocks: [block('cycle', 1, 1, { duration: 600 })] },       // 지난주 10분
+    ];
+    const r = summarizeWeeklyBalance(sessions, NOW);
+    expect(r.cardio).toEqual({ min: 30, count: 1, deltaMin: 20 });
   });
 });
 
