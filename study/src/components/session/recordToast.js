@@ -13,6 +13,9 @@ export function recordErrorMessage(reason) {
     case 'azure_init_fail':
     case 'azure_recognize_fail':
       return '네트워크 오류. 잠시 후 다시 시도해주세요';
+    case 'too_quiet':
+      // Wave A.18 — 마이크가 음성을 거의 못 잡음 (특히 블루투스/에어팟). 점수 미반영 + 재시도 유도.
+      return '음성이 약하게 들어왔어요. 마이크에 가까이, 또렷하게 다시 말해주세요';
     default:
       return '오류가 발생했어요. 다시 시도해주세요';
   }

@@ -516,6 +516,71 @@ describe('speech — Wave A.16 transient 재시도', () => {
   });
 });
 
+// Wave A.18 — near-silent 캡처 가드. 마이크(특히 블루투스)가 음성을 거의 못 잡은 회차를
+// Azure 에 보내면 무의미한 저점("들쭉날쭉")이 나옴 → 점수 매기지 말고 재시도 유도.
+describe('speech — Wave A.18 near-silent 캡처 가드', () => {
+  const token200 = () => new Response(
+    JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+    { status: 200, headers: { 'Content-Type': 'application/json' } },
+  );
+  // amplitude 진폭의 16kHz mono WAV blob (samples 개)
+  const makeWav = (amplitude, samples) => {
+    const buf = new ArrayBuffer(44 + samples * 2);
+    const pcm = new Int16Array(buf, 44);
+    for (let i = 0; i < samples; i++) pcm[i] = Math.round(Math.sin(i * 0.2) * amplitude);
+    return new Blob([buf], { type: 'audio/wav' });
+  };
+
+  it('충분히 긴 near-silent 녹음 → Azure 미호출 + too_quiet mock 폴백', async () => {
+    let sttCalled = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { sttCalled += 1; return new Response('{}', { status: 200 }); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    // 1초(16000 샘플), 진폭 30 → rms ≈ 0.0006 (임계 미만)
+    const result = await Speech.analyzeWavRest(makeWav(30, 16000), 'hi');
+    expect(sttCalled).toBe(0);                 // Azure STT 미호출
+    expect(result.mockFallback).toBe(true);
+    expect(result.fallbackReason).toBe('too_quiet');
+  });
+
+  it('정상 음량 녹음 → 가드 통과, Azure 호출', async () => {
+    let sttCalled = 0;
+    const REST_OK = { RecognitionStatus: 'Success', DisplayText: 'hi', NBest: [{ Display: 'hi', AccuracyScore: 88, PronScore: 90, Words: [] }] };
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { sttCalled += 1; return new Response(JSON.stringify(REST_OK), { status: 200, headers: { 'Content-Type': 'application/json' } }); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    // 1초, 진폭 10000 → rms ≈ 0.22 (임계 초과)
+    const result = await Speech.analyzeWavRest(makeWav(10000, 16000), 'hi');
+    expect(sttCalled).toBe(1);
+    expect(result.score).toBe(88);
+    expect(result.mockFallback).toBeUndefined();
+  });
+
+  it('아주 짧은 클립(가드 미적용 길이) → near-silent 여도 Azure 진행 (회귀 보호)', async () => {
+    let sttCalled = 0;
+    const REST_OK = { RecognitionStatus: 'Success', DisplayText: 'hi', NBest: [{ Display: 'hi', AccuracyScore: 80, Words: [] }] };
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return token200();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { sttCalled += 1; return new Response(JSON.stringify(REST_OK), { status: 200, headers: { 'Content-Type': 'application/json' } }); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    // 100 샘플(0.006s) — 가드 길이 미만 → 기존 동작 유지
+    const result = await Speech.analyzeWavRest(makeWav(0, 100), 'hi');
+    expect(sttCalled).toBe(1);
+    expect(result.mockFallback).toBeUndefined();
+  });
+});
+
 // Wave 11.35 — preload 동작 검증.
 // 카드 진입 시 token+SDK warmup → 첫 클릭 지연 제거. 멱등 (중복 호출 시 promise 공유).
 describe('speech — Wave 11.35 preload', () => {

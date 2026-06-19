@@ -62,6 +62,12 @@ export function clearAzureTokenCache() {
 // ============================================================
 const RETRY_DELAYS_MS = [400, 1000]; // 최대 2회 재시도 (총 3회 시도)
 
+// Wave A.18 — near-silent 캡처 가드 임계. 마이크(특히 블루투스/AirPods HFP)가 음성을 거의 못 잡으면
+// rms 가 바닥(실측 실패 회차 ~0.001~0.0026, 정상 회차 ~0.05+)이고 Azure 점수가 무의미한 저점이 됨.
+// 충분히 긴 녹음인데 rms 가 이 값 미만이면 점수 매기지 않고 재시도 유도. (정상 발화는 한참 위라 오탐 여유)
+const CAPTURE_MIN_RMS = 0.005;
+const CAPTURE_GUARD_MIN_SAMPLES = 4000; // 0.25s 미만 클립은 음량 판정 안 함 (회귀 보호)
+
 function _sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -745,6 +751,21 @@ export async function recordWav({
  *                              실패 시 analyzeMock 폴백 (mockFallback=true).
  */
 export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } = {}) {
+  // Wave A.18 — near-silent 캡처 가드. 마이크가 음성을 거의 못 잡은 회차를 Azure 에 보내면
+  // 무의미한 저점("들쭉날쭉")이 나와 통계 오염 → 점수 매기지 말고 'too_quiet' 로 재시도 유도.
+  try {
+    const ab = await wavBlob.arrayBuffer();
+    const pcm = new Int16Array(ab, 44);
+    if (pcm.length >= CAPTURE_GUARD_MIN_SAMPLES) {
+      let sum = 0;
+      for (let i = 0; i < pcm.length; i++) sum += pcm[i] * pcm[i];
+      const rms = Math.sqrt(sum / pcm.length) / 32768;
+      if (rms < CAPTURE_MIN_RMS) {
+        console.warn('[speech][rest] 캡처 음량 너무 낮음, 점수 스킵:', rms.toFixed(4));
+        return analyzeMock(expectedText, 'too_quiet');
+      }
+    }
+  } catch (_) { /* blob 읽기 실패 시 기존 경로 진행 */ }
   let token, region;
   try {
     const t = await getAzureToken();
