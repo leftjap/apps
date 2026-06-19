@@ -1154,13 +1154,19 @@ export function resolveDotDisplay(sets, i, cur, prevSessionSets, kind = 'weight'
   if (isDone && hasVal(set)) {
     return { text: fmt(set), isPreview: false };
   }
-  // preview 폴백 (spec §6-3-3 우선순위 — 이전 세션 우선):
-  // ① 이전 세션 같은 세트번호 — 지난번 기록이 있으면 세트별 타깃으로 우선 표시.
+  // preview 폴백 — 세트바는 "직전 세션 기록" 이므로 직전 세션 값이 우선이고, 직전에 없으면 '—'.
+  // ① 이전 세션 같은 세트번호 — 지난번 기록이 있으면 세트별 타깃으로 표시.
   const p = prevSessionSets && prevSessionSets[i];
   if (hasVal(p)) {
     return { text: fmt(p), isPreview: true };
   }
-  // ② 이번 세션 직전 세트 — 이전 세션 없을 때 i 이전의 done 세트 또는 현재 세트 값 폴백/전파.
+  // 직전 세션이 존재하지만 이 세트번호엔 기록이 없음(직전보다 세트를 더 추가) → '—'.
+  // 구현 레퍼런스 - 세션.html 정합: 직전에 없던 세트는 현재 세션 값으로 전파하지 않는다.
+  if (Array.isArray(prevSessionSets) && prevSessionSets.length > 0) {
+    return { text: '—', isPreview: true };
+  }
+  // 직전 세션 자체가 없을 때만(첫 운동) — 전부 '—' 방지 위해 현재 세션 값 폴백/전파:
+  // ② 이번 세션 직전 세트 (이전의 done 세트 또는 현재 세트 값).
   for (let j = i - 1; j >= 0; j -= 1) {
     const s = sets[j];
     if (meaningful(s) && (s.done || j === cur)) {
