@@ -753,15 +753,17 @@ export async function recordWav({
 export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } = {}) {
   // Wave A.18 — near-silent 캡처 가드. 마이크가 음성을 거의 못 잡은 회차를 Azure 에 보내면
   // 무의미한 저점("들쭉날쭉")이 나와 통계 오염 → 점수 매기지 말고 'too_quiet' 로 재시도 유도.
+  // Wave A.18.1 — captureRms 는 성공 경로 결과에도 반환(진단용 영속화 source).
+  let captureRms = null;
   try {
     const ab = await wavBlob.arrayBuffer();
     const pcm = new Int16Array(ab, 44);
-    if (pcm.length >= CAPTURE_GUARD_MIN_SAMPLES) {
+    if (pcm.length) {
       let sum = 0;
       for (let i = 0; i < pcm.length; i++) sum += pcm[i] * pcm[i];
-      const rms = Math.sqrt(sum / pcm.length) / 32768;
-      if (rms < CAPTURE_MIN_RMS) {
-        console.warn('[speech][rest] 캡처 음량 너무 낮음, 점수 스킵:', rms.toFixed(4));
+      captureRms = Math.sqrt(sum / pcm.length) / 32768;
+      if (pcm.length >= CAPTURE_GUARD_MIN_SAMPLES && captureRms < CAPTURE_MIN_RMS) {
+        console.warn('[speech][rest] 캡처 음량 너무 낮음, 점수 스킵:', captureRms.toFixed(4));
         return analyzeMock(expectedText, 'too_quiet');
       }
     }
@@ -820,6 +822,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
       score,
       accuracyScore: nbest.AccuracyScore,
       pronScore: nbest.PronScore,
+      captureRms: captureRms == null ? null : +captureRms.toFixed(4),
       recognizedText: nbest.Display || json.DisplayText || '',
       phonemeScores,
       weakPhonemes: [...weakSet],

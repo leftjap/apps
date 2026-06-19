@@ -22,6 +22,12 @@ export function buildPronunciationLog({ result, sentenceId, lang, date } = {}) {
     date,
     sentenceId: sentenceId ?? null,
     overallScore: Number(result.score) || 0,
+    // Wave A.18.1 — 진단용 하위점수 + 캡처 레벨(rms). 저점 원인 추적(정확도 vs 유창성·완성도 vs 약한 캡처).
+    pronScore: result.pronScore ?? null,
+    fluencyScore: result.fluencyScore ?? null,
+    completenessScore: result.completenessScore ?? null,
+    prosodyScore: result.prosodyScore ?? null,
+    captureRms: result.captureRms ?? null,
     phonemeScores: Array.isArray(result.phonemeScores) ? result.phonemeScores : [],
     weakPhonemes: Array.isArray(result.weakPhonemes) ? result.weakPhonemes : [],
     recognizedText: result.recognizedText ?? null,

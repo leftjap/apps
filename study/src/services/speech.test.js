@@ -562,6 +562,8 @@ describe('speech — Wave A.18 near-silent 캡처 가드', () => {
     expect(sttCalled).toBe(1);
     expect(result.score).toBe(88);
     expect(result.mockFallback).toBeUndefined();
+    // Wave A.18.1 — 캡처 레벨(rms)을 진단용으로 반환 (진폭 10000 sine → rms ≈ 0.22)
+    expect(result.captureRms).toBeGreaterThan(0.1);
   });
 
   it('아주 짧은 클립(가드 미적용 길이) → near-silent 여도 Azure 진행 (회귀 보호)', async () => {

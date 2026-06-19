@@ -23,6 +23,30 @@ describe('buildPronunciationLog', () => {
     expect(typeof log.createdAt).toBe('string');
   });
 
+  it('하위점수 + 캡처레벨 저장 (진단용 — Wave A.18.1)', () => {
+    const result = {
+      score: 92, accuracyScore: 92, pronScore: 65.4, fluencyScore: 45,
+      completenessScore: 80, prosodyScore: 60, captureRms: 0.0032,
+      phonemeScores: [], weakPhonemes: [],
+    };
+    const log = buildPronunciationLog({ result, sentenceId: 'c', lang: 'en', date: '2026-06-19' });
+    expect(log).toMatchObject({
+      overallScore: 92,
+      pronScore: 65.4,
+      fluencyScore: 45,
+      completenessScore: 80,
+      prosodyScore: 60,
+      captureRms: 0.0032,
+    });
+  });
+
+  it('하위점수 누락 → null 폴백 (회귀 보호)', () => {
+    const log = buildPronunciationLog({ result: baseResult, sentenceId: 'c', lang: 'en', date: '2026-05-08' });
+    expect(log.pronScore).toBeNull();
+    expect(log.fluencyScore).toBeNull();
+    expect(log.captureRms).toBeNull();
+  });
+
   it('mockFallback 결과 → null (저장 스킵)', () => {
     const mock = { score: 75, mockFallback: true, fallbackReason: 'no_recorder', phonemeScores: [], weakPhonemes: [] };
     expect(buildPronunciationLog({ result: mock, sentenceId: 'x', lang: 'en', date: '2026-05-08' })).toBeNull();
