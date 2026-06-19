@@ -1197,11 +1197,12 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind 
   const stateClass = isCurrent ? ' now' : (isDone ? ' done' : '');
   const currentAttr = isCurrent ? ' data-current="1"' : '';
   const seg = formatSetSegment(display, kind);
+  // 구현 레퍼런스 - 세션.html: .seg > .seg-bar + .seg-n > (.w 중량 + .r ×횟수). seg-flash 는 앱 확정 애니.
   return `
         <div class="seg${stateClass}" data-set-idx="${idx}"${currentAttr} data-longpress="set-row">
           <i class="seg-flash"></i>
           <span class="seg-bar"></span>
-          <span class="seg-val"><b class="seg-w">${escapeHtml(seg.top)}</b><span class="seg-r">${escapeHtml(seg.bottom)}</span></span>
+          <span class="seg-n"><span class="w">${escapeHtml(seg.top)}</span><span class="r">${escapeHtml(seg.bottom)}</span></span>
         </div>`;
 }
 
@@ -1254,8 +1255,8 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     else seg.removeAttribute('data-current');
     // 값 라벨 갱신 — 중량(굵게) + ×횟수(작게) 2줄 (작업지시서 §B)
     const parts = formatSetSegment(display, kind);
-    const wEl = seg.querySelector('.seg-w');
-    const rEl = seg.querySelector('.seg-r');
+    const wEl = seg.querySelector('.seg-n .w');
+    const rEl = seg.querySelector('.seg-n .r');
     if (wEl) wEl.textContent = parts.top;
     if (rEl) rEl.textContent = parts.bottom;
   }
@@ -1903,29 +1904,19 @@ function renderFooterPillHtml({ blockIdx, state, name }) {
   const exStateAttr = state === 'current' ? 'active'
     : state === 'done' ? 'completed'
     : state === 'hold' ? 'hold' : 'upcoming';
-  const base = `data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"`;
-  // 작업지시서 §D — 현재=솔리드 다크 칩(가장 강한 위계) + 상단 crail 마커(텍스트 없음).
+  const base = `type="button" data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"`;
+  // 구현 레퍼런스 - 세션.html: 현재=.fp-now(솔리드 다크) · 완료=.fp-done(sage 체크) · 예정=.fp-todo(외곽선).
   if (state === 'current') {
-    return `<div ${base} style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;">`
-      + `<span class="fp-mark" aria-hidden="true"></span>`
-      + `<span style="font-size:15px;font-weight:600;color:#fbf8f2;padding:9px 16px;border-radius:999px;background:var(--ink-1);box-shadow:0 8px 18px -10px rgba(20,18,14,0.55);white-space:nowrap;">${escapeHtml(name)}</span>`
-      + `</div>`;
+    return `<button class="fp-now" ${base}>${escapeHtml(name)}</button>`;
   }
-  // 완료 — 체크(sage) + 이름, 가장 약한 위계.
   if (state === 'done') {
-    return `<div ${base} style="flex-shrink:0;display:flex;align-items:center;gap:5px;cursor:pointer;">`
-      + `<svg width="12" height="12" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;color:var(--sage);"><path d="M2.5 6.5l2.5 2.5 4.5-5.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-      + `<span style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">${escapeHtml(name)}</span>`
-      + `</div>`;
+    return `<button class="fp-done" ${base}><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>${escapeHtml(name)}</button>`;
   }
-  // 예정(pending) / hold — 외곽선 칩(중간 위계). hold 는 약한 crail 점으로 진행 표시.
+  // 예정(pending) / hold — hold 는 약한 crail 점으로 진행 표시.
   const holdDot = state === 'hold'
     ? `<span style="width:5px;height:5px;border-radius:50%;background:var(--crail-base);flex-shrink:0;"></span>`
     : '';
-  const textColor = state === 'hold' ? 'var(--ink-2)' : 'var(--ink-3)';
-  return `<div ${base} style="flex-shrink:0;display:flex;align-items:center;gap:6px;cursor:pointer;">`
-    + `<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:500;color:${textColor};padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);white-space:nowrap;">${holdDot}${escapeHtml(name)}</span>`
-    + `</div>`;
+  return `<button class="fp-todo" ${base}>${holdDot}${escapeHtml(name)}</button>`;
 }
 
 /**
@@ -1976,10 +1967,12 @@ function renderFooterPills(doc, session, currentBlock) {
     else if (state === 'done') left.push(html);
     else right.push(html); // pending + hold
   }
+  // 구현 레퍼런스 - 세션.html: .fp-row > .fp-side.fp-left(완료) + .fp-now(현재, 직계) + .fp-side.fp-right(예정).
+  // 중앙 마커는 #sessionFooter 의 정적 .fp-center-mark (pill 밖).
   pillsEl.innerHTML =
-    `<div class="fp-left">${left.join('')}</div>`
-    + `<div class="fp-mid">${mid.join('')}</div>`
-    + `<div class="fp-right">${right.join('')}</div>`;
+    `<div class="fp-side fp-left">${left.join('')}</div>`
+    + mid.join('')
+    + `<div class="fp-side fp-right">${right.join('')}</div>`;
 }
 
 /**

@@ -455,21 +455,21 @@ export async function buildWeekCalendar(now = Date.now()) {
 function renderWeekCalendarToDom(cells, doc) {
   const cals = doc.querySelectorAll('.js-week-cal');
   if (!cals.length) return;
+  // 구현 레퍼런스 - 홈.html 정합: .cal-day(div) + .cal-label + .cal-num.
+  // 운동일=worked(.cal-num::after crail 점), 오늘=today(crail 원), 직전 운동일=last(옅은 링).
   const html = cells.map((c) => {
     const classes = [
       'cal-day',
       c.part ? 'worked' : '',
       c.isToday ? 'today' : '',
-      c.isPrevWorkout ? 'prev-workout' : '',
+      c.isPrevWorkout ? 'last' : '',
       'spa-managed',
     ].filter(Boolean).join(' ');
-    // 시안: 운동일 = crail 점(부위 글자 아님), 오늘 = 채운 원, 직전 운동일 = 옅은 링.
     return `
-      <button class="${classes}" type="button" data-day="${isoToWeekdayIdx(c.iso)}" data-iso="${c.iso}">
+      <div class="${classes}" data-day="${isoToWeekdayIdx(c.iso)}" data-iso="${c.iso}">
         <span class="cal-label">${c.wdLabel}</span>
         <span class="cal-num">${c.num}</span>
-        <span class="cal-part" aria-hidden="true"></span>
-      </button>
+      </div>
     `;
   }).join('');
   cals.forEach((cal) => { cal.innerHTML = html; });
@@ -706,56 +706,53 @@ async function applyWeightCardToDom(doc) {
       ref.textContent = '오늘 첫 기록';
       return;
     }
-    let s = `직전 ${latest.weight}kg`;
+    // 구현 레퍼런스 - 홈.html: "직전 73.4kg <span class="dn">· ▼0.3</span>" (증감은 ink-3)
+    let delta = '';
     if (prevW) {
       const d = Math.round((latest.weight - prevW.weight) * 10) / 10;
-      if (d !== 0) s += ` · ${d < 0 ? '▼' : '▲'}${Math.abs(d)}`;
+      if (d !== 0) delta = ` <span class="dn">· ${d < 0 ? '▼' : '▲'}${Math.abs(d)}</span>`;
     }
-    ref.textContent = s;
+    ref.innerHTML = `직전 ${escapeHtml(String(latest.weight))}kg${delta}`;
   } catch (wErr) {
     if (!(wErr && /window\.gymDB 미초기화/.test(String(wErr.message)))) console.error('[gymHome] weight card', wErr);
   }
 }
 
-/** 부위 밸런스 위젯(작업지시서 홈 주역) — 6행 막대 + 지난주 고스트 + 가장 부족 1개 crail + 유산소 별도 줄. */
+/**
+ * 부위 밸런스 위젯(작업지시서 홈 주역) — 구현 레퍼런스 - 홈.html 정합.
+ * #homeBalRows 에 .mg-row 6행(막대+고스트+값), #homeCardioRow 에 유산소 줄.
+ */
 function applyBalanceToDom(balance, doc) {
-  const wrap = doc.getElementById('homeBalance');
-  if (!wrap || !balance) return;
+  const rowsEl = doc.getElementById('homeBalRows');
+  if (!rowsEl || !balance) return;
   const max = balance.max || 1;
-  const scale = 88 / max; // 작업지시서 §4: maxSets → 88% (트랙 우측 여백 확보, 고스트도 동일 scale)
-  const rows = balance.parts.map((p) => {
+  const scale = 88 / max; // 작업지시서 §4: maxSets → 88% (고스트도 동일 scale)
+  rowsEl.innerHTML = balance.parts.map((p) => {
     const isFocus = p.key === balance.focusKey;
-    const w = Math.max(0, Math.min(88, Math.round(p.sets * scale)));
-    const ghost = Math.max(0, Math.min(88, Math.round(p.prevSets * scale)));
+    const w = Math.max(0, Math.min(88, Math.round(p.sets * scale * 10) / 10));
+    const ghost = Math.max(0, Math.min(88, Math.round(p.prevSets * scale * 10) / 10));
     return `
-      <div class="bal-row${isFocus ? ' is-focus' : ''}">
-        <span class="bal-label kr">${escapeHtml(p.name)}</span>
-        <span class="bal-track">
-          <span class="bal-fill" style="width:${w}%;"></span>
-          ${p.prevSets > 0 ? `<span class="bal-ghost" style="left:${ghost}%;"></span>` : ''}
+      <div class="mg-row${isFocus ? ' focus' : ''}">
+        <span class="mg-name kr">${escapeHtml(p.name)}</span>
+        <span class="mg-track">
+          <span class="mg-fill" style="width:${w}%;"></span>
+          ${p.prevSets > 0 ? `<span class="mg-ghost" style="left:${ghost}%;"></span>` : ''}
         </span>
-        <span class="bal-val mono">${p.sets}</span>
+        <span class="mg-val mono">${p.sets}</span>
       </div>`;
   }).join('');
+
+  const cardioEl = doc.getElementById('homeCardioRow');
+  if (!cardioEl) return;
   const c = balance.cardio || { min: 0, count: 0, deltaMin: 0 };
-  const cardioText = c.count > 0
-    ? `${c.min > 0 ? `${c.min}분 · ` : ''}${c.count}회`
-    : '기록 없음';
-  // 지난주 대비 시간 델타 (시안 §4: ▲15분 ink-3 회색). 0 이면 표기 생략.
+  const cardioIcon = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 10h3l1.5-4.5 2.8 9 1.7-4.5H18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  const sub = c.count > 0 ? `${c.min > 0 ? `${c.min}분 · ` : ''}${c.count}회` : '기록 없음';
   const dm = Number(c.deltaMin) || 0;
   const deltaHtml = (c.count > 0 && dm !== 0)
-    ? `<span class="bal-cardio-delta mono">${dm > 0 ? '▲' : '▼'}${Math.abs(dm)}분</span>`
+    ? `<span class="dl kr">${dm > 0 ? '▲' : '▼'}${Math.abs(dm)}분</span>`
     : '';
-  const cardioIcon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 12h3.5l2-6 4 13 2.5-7H21" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const cardioHtml = `
-    <div class="bal-cardio">
-      <span class="bal-label kr"><span class="bal-cardio-ic">${cardioIcon}</span>유산소</span>
-      <span class="bal-cardio-right">
-        <span class="bal-cardio-val ${c.count > 0 ? 'mono' : 'kr'}">${escapeHtml(cardioText)}</span>
-        ${deltaHtml}
-      </span>
-    </div>`;
-  wrap.innerHTML = '<div class="bal-rows">' + rows + '</div>' + cardioHtml;
+  cardioEl.innerHTML = `<span class="ic">${cardioIcon}</span><span class="nm kr">유산소</span><span class="sub mono">${escapeHtml(sub)}</span>${deltaHtml}`;
+  cardioEl.style.display = 'flex';
 }
 
 /** Wave 11.10.3 — streak DOM 갱신. Wave 11.10.4 — CTA click → #/session. */

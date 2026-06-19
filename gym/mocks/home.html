@@ -7,73 +7,86 @@
 <title>Gym · 홈 (v2 · HomeA/HomeC)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+/* 구현 레퍼런스 - 홈.html 정합 (0px). 토큰은 paper.css 와 동일 — 누락분만 로컬 보강. */
 :root {
   --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
   --surface: #ffffff; --surface-2: #f7f4ec;
   --ink: #1a1714; --ink-strong: #0c0a08;
-  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
-  --line: #e6e1d4; --line-soft: #efeae0;
-  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
-  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
-  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
-  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
-  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
+  --r-xl: 24px; --r-lg: 18px; --r-md: 12px; --r-sm: 8px;
   --font-display: "Space Grotesk", ui-monospace, monospace;
   --font-body: "Pretendard", "Inter", system-ui, sans-serif;
-  --font-mono: "Space Grotesk", ui-monospace, monospace;
 }
 * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
-.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.kr { font-family: var(--font-body); }
-.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
-.phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
-.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size:16px; letter-spacing: -0.01em; color: var(--ink-strong); }
-.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
-.phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
-.phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
-.phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; }
-.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
-.phone.dark { color: #f3efe6; }
-.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
-.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-sans); color: var(--ink-1); }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kr { font-family: var(--font-sans); }
+.phone { width: 360px; height: 740px; border-radius: 44px; position: relative; overflow: hidden; background: var(--shell); color: var(--ink-1); font-family: var(--font-sans); box-shadow: 0 0 0 1px oklch(88% 0.006 60), 0 2px 2px rgba(20,18,14,.04), 0 44px 80px -28px rgba(20,18,14,.32); }
+.phone-notch { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 100px; height: 28px; border-radius: 16px; background: #111; z-index: 50; }
+.phone-content { position: absolute; inset: 0; padding-top: 52px; }
+.phone-home { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); width: 124px; height: 5px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.18); }
 [data-state="active"] .home-a { display: none; }
 [data-state="idle"] .home-c { display: none; }
-/* 주간 스트립 — home.js renderWeekCalendarToDom (cal-day + cal-label/num/part). P5 라이트: 오늘=crail 원, 운동한 날 앞글자=crail. */
-.cal-day { display: flex; flex-direction: column; align-items: center; gap: 5px; background: transparent; border: 0; padding: 4px 0; cursor: pointer; font-family: inherit; }
-.cal-label { font-size: 12px; font-weight: 500; color: var(--ink-4); }
-.cal-day.today .cal-label { color: var(--crail-deep); font-weight: 600; }
-.cal-num { font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--ink-4); letter-spacing: -0.02em; }
-.cal-day.worked .cal-num { color: var(--ink-2); }
-.cal-day.today .cal-num { width: 28px; height: 28px; border-radius: 50%; background: var(--crail-base); color: #fff; display: flex; align-items: center; justify-content: center; }
-/* 직전 운동일 — 옅은 crail 링 (작업지시서 홈) */
-.cal-day.prev-workout .cal-num { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px var(--crail-soft); }
-/* 시안: 운동일 = crail 점 (부위 글자 폐기) */
-.cal-part { width: 5px; height: 5px; border-radius: 50%; background: transparent; }
-.cal-day.worked .cal-part { background: var(--crail-base); }
-/* 오늘(채운 원)·직전 운동일(링)은 점 생략 — 시안 정합 */
-.cal-day.today .cal-part, .cal-day.prev-workout .cal-part { background: transparent; }
-/* 부위 밸런스 위젯 (작업지시서 §4 .mg-row 실측 — applyBalanceToDom 렌더). 색 규율: 가장 부족 1개만 crail. */
-/* 작업지시서(3) 시안 — 막대 묶음은 라벨 아래에 붙고(위 여백 작게), 남는 세로 공간은
-   막대 아래(유산소·체중 쪽)로. flex:1 + flex-start 로 cardio-row 를 하단으로 밀어냄. */
-.bal-rows { display: flex; flex-direction: column; gap: 22px; flex: 1; justify-content: flex-start; }
-.bal-row { display: grid; grid-template-columns: 32px 1fr 20px; align-items: center; gap: 13px; }
-.bal-label { font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
-.bal-track { position: relative; height: 20px; border-radius: 10px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line-soft); }
-.bal-fill { position: absolute; left: 0; top: 0; height: 100%; border-radius: 10px; background: var(--neutral-bar); transition: width 520ms cubic-bezier(.2,.7,.2,1); }
-.bal-ghost { position: absolute; top: 4px; bottom: 4px; width: 2px; border-radius: 1px; background: var(--ink-4); opacity: .55; transform: translateX(-1px); }
-.bal-val { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 17px; font-weight: 600; color: var(--ink-2); text-align: right; }
-.bal-row.is-focus .bal-label { color: var(--crail-deep); }
-.bal-row.is-focus .bal-fill { background: var(--crail-base); }
-.bal-row.is-focus .bal-val { color: var(--crail-deep); }
-.bal-cardio { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--line-soft); }
-.bal-cardio .bal-label { display: inline-flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
-.bal-cardio-ic { display: inline-flex; color: var(--ink-4); }
-.bal-cardio-right { display: inline-flex; align-items: baseline; gap: 9px; }
-.bal-cardio-val { font-size: 12px; font-weight: 500; color: var(--ink-4); }
-.bal-cardio-delta { font-size: 12px; font-weight: 600; color: var(--ink-3); }
+
+/* ===== 헤더 ===== */
+.hdr { flex-shrink:0; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+.hdr .logo { font-size:23px; font-weight:700; letter-spacing:-0.03em; color:var(--ink-1); }
+.hdr .nav { display:flex; gap:2px; }
+.hdr .nav span { padding:8px 12px; border-radius:var(--r-sm); font-size:14px; font-weight:500; color:var(--ink-3); white-space:nowrap; cursor:pointer; }
+
+/* ===== 주간 캘린더 (.js-week-cal 유지) ===== */
+.wk { flex-shrink:0; display:grid; grid-template-columns:repeat(7,1fr); margin:18px 18px 0; }
+.cal-day { display:flex; flex-direction:column; align-items:center; gap:6px; padding:4px 0; background:transparent; border:0; font-family:inherit; }
+.cal-day.worked { cursor:pointer; }
+.cal-label { font-size:11px; font-weight:600; color:var(--ink-4); letter-spacing:0.04em; }
+.cal-num { font-family:var(--font-mono); font-size:14px; font-weight:500; color:var(--ink-4); width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; position:relative; }
+.cal-day.worked .cal-num { color:var(--ink-2); }
+.cal-day.worked .cal-num::after { content:""; position:absolute; margin-top:21px; width:4px; height:4px; border-radius:50%; background:var(--crail-base); }
+.cal-day.today .cal-label { color:var(--crail-deep); }
+.cal-day.today .cal-num { background:var(--crail-base); color:#fff; }
+.cal-day.today.worked .cal-num::after { background:#fff; }
+.cal-day.last .cal-num { box-shadow: inset 0 0 0 1.5px var(--crail-soft); }
+
+/* ===== 직전 운동 ===== */
+.last-row { flex-shrink:0; margin:18px 24px 0; display:flex; align-items:center; gap:10px; }
+.last-row .ic { width:30px; height:30px; border-radius:9px; background:var(--sunken); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.last-row .lb { font-size:12px; font-weight:600; color:var(--ink-4); letter-spacing:0.02em; white-space:nowrap; }
+.last-row .pt { font-size:15px; font-weight:700; color:var(--ink-1); white-space:nowrap; }
+.last-row .tm { font-size:12.5px; font-weight:500; color:var(--ink-4); margin-left:auto; white-space:nowrap; }
+
+/* ===== 부위 밸런스 (주역) ===== */
+.bal { flex:1; min-height:0; display:flex; flex-direction:column; padding:24px 26px 0; }
+.bal-head { flex-shrink:0; display:flex; align-items:baseline; justify-content:space-between; }
+.bal-title { font-size:14px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; white-space:nowrap; }
+.bal-legend { font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--ink-4); display:inline-flex; align-items:center; gap:6px; }
+.bal-legend i { width:2px; height:11px; background:var(--ink-4); display:inline-block; border-radius:1px; }
+.bal-rows { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:22px; padding:20px 0; }
+.mg-row { display:flex; align-items:center; gap:13px; }
+.mg-name { width:32px; flex-shrink:0; font-size:14px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; }
+.mg-track { position:relative; flex:1; height:20px; border-radius:10px; background:var(--sunken); box-shadow:var(--shadow-inset-soft); }
+.mg-fill { position:absolute; top:0; bottom:0; left:0; border-radius:10px; background:var(--neutral-bar); transition:width 520ms cubic-bezier(.2,.7,.2,1); }
+.mg-row.focus .mg-fill { background:var(--crail-base); box-shadow:0 2px 6px -2px oklch(67% 0.12 50 / .5); }
+.mg-ghost { position:absolute; top:4px; bottom:4px; width:2px; border-radius:1px; background:var(--ink-4); opacity:0.55; z-index:3; }
+.mg-val { flex-shrink:0; width:20px; text-align:right; font-family:var(--font-mono); font-size:17px; font-weight:600; color:var(--ink-2); line-height:1; }
+.mg-row.focus .mg-val { color:var(--crail-deep); }
+.cardio-row { flex-shrink:0; margin-top:16px; padding-top:15px; box-shadow:inset 0 1px 0 var(--line-soft); display:flex; align-items:center; gap:11px; }
+.cardio-row .ic { width:26px; height:26px; border-radius:8px; background:var(--sunken); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink-4); }
+.cardio-row .nm { font-size:13.5px; font-weight:600; color:var(--ink-2); white-space:nowrap; }
+.cardio-row .sub { font-size:12px; font-weight:500; color:var(--ink-4); margin-left:auto; font-family:var(--font-mono); white-space:nowrap; }
+.cardio-row .dl { font-family:var(--font-mono); font-size:12px; font-weight:600; color:var(--ink-3); margin-left:10px; white-space:nowrap; }
+
+/* ===== 체중 ([data-bind="weight-input-trigger"] 유지) ===== */
+.wt { flex-shrink:0; margin:0 24px; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-radius:var(--r-lg); background:var(--card); box-shadow:var(--shadow-float); cursor:pointer; }
+.wt .a { font-size:14px; font-weight:600; color:var(--ink-1); }
+.wt .b { font-size:12px; font-weight:500; color:var(--ink-4); margin-top:2px; white-space:nowrap; }
+.wt .b .dn { color:var(--ink-3); }
+.wt .chip { display:inline-flex; align-items:center; padding:10px 17px; border-radius:999px; background:var(--crail-tint); box-shadow:inset 0 0 0 1px var(--crail-soft); font-size:13px; font-weight:600; color:var(--crail-deep); white-space:nowrap; }
+
+/* ===== CTA (#ctaBtn 유지) ===== */
+.cta { flex-shrink:0; padding:14px 24px 24px; }
+.cta button { width:100%; height:56px; border-radius:var(--r-lg); border:0; background:var(--ink-1); color:#fbf8f2; font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 12px 24px -14px rgba(20,18,14,0.6); font-family:inherit; }
+
 /* P6 이어하기 박스 (home-c · applyToDom) — 박스 전체 버튼, 브리딩. */
 #cardResume { width: 100%; background: var(--card); border: 1.5px solid var(--crail-base); border-radius: var(--r-xl); box-shadow: var(--shadow-pop); padding: 24px 24px 22px; cursor: pointer; animation: breath 2.8s ease-in-out infinite; }
 #cardResume:active { transform: scale(0.992); }
@@ -87,59 +100,49 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 #cardResumeSeg .seg.now .n { color: var(--crail-deep); font-weight: 700; }
 .home-live { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes segGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(193,99,63,0); } 50% { box-shadow: 0 0 0 4px rgba(193,99,63,0.18); } }
-@media (prefers-reduced-motion: reduce) { #cardResume, #cardResumeSeg .seg.now .bar, .home-live { animation: none; } }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-/* 바텀시트 그림자 — 열렸을 때만. 닫힘(translateY(100%)) 상태에서 위로 뻗는 그림자가
-   뷰포트 하단으로 새어 '구분선 같은 그라데이션' 으로 보이던 문제 차단. */
+@media (prefers-reduced-motion: reduce) { #cardResume, #cardResumeSeg .seg.now .bar, .home-live { animation: none; } }
+/* 바텀시트 그림자 — 열렸을 때만. */
 #dayDetailSheet[data-open="true"], #weightKeypadSheet[data-open="true"] { box-shadow: 0 -20px 50px -18px rgba(20,18,14,0.4); }
 </style>
 </head>
 <body data-state="idle">
-<!-- HomeA — idle -->
+<!-- HomeA — idle (구현 레퍼런스 - 홈.html 정합) -->
 <div class="phone home-a" style="background:var(--shell);color:var(--ink-1);">
   <div class="phone-notch"></div>
   <div class="phone-content">
-    <div style="height:100%;display:flex;flex-direction:column;color:var(--ink-1);padding:8px 0;">
+    <div style="height:100%;display:flex;flex-direction:column;padding:8px 0 0;">
       <!-- 헤더 -->
-      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 26px;">
-        <div style="font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--ink-1);">Gym</div>
-        <div style="display:flex;gap:4px;" class="kr"><span class="js-home-stats" style="padding:8px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;">통계</span><span class="js-home-manage" style="padding:8px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;">관리</span></div>
+      <div class="hdr">
+        <div class="logo">Gym</div>
+        <div class="nav kr"><span class="js-home-stats">통계</span><span class="js-home-manage">관리</span></div>
       </div>
-      <!-- 주간 스트립 (renderWeekCalendarToDom 채움) -->
-      <div id="weekCal" class="js-week-cal" style="flex-shrink:0;margin-top:22px;padding:0 18px;display:grid;grid-template-columns:repeat(7,1fr);"></div>
-      <!-- 직전 운동 (작업지시서 홈 — home.js applyLastWorkoutToDom 채움). 시안: 한 줄 (아이콘·라벨·부위 좌, 요일·N일전 우). -->
-      <div id="homeLastWorkout" style="flex-shrink:0;margin:18px 26px 0;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-        <span style="display:flex;align-items:center;gap:9px;min-width:0;">
-          <span style="flex-shrink:0;width:26px;height:26px;border-radius:7px;background:var(--sunken);display:flex;align-items:center;justify-content:center;color:var(--ink-3);">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6.5 8v8M17.5 8v8M3.5 10.5v3M20.5 10.5v3M6.5 12h11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          </span>
-          <span class="kr" style="font-size:13px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 운동</span>
-          <span id="homeLastParts" class="kr" style="font-size:15px;font-weight:600;color:var(--ink-1);white-space:nowrap;">—</span>
-        </span>
-        <span id="homeLastMeta" class="kr" style="flex-shrink:0;font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;"></span>
+      <!-- 주간 캘린더 (renderWeekCalendarToDom 채움) -->
+      <div id="weekCal" class="wk js-week-cal"></div>
+      <!-- 직전 운동 (applyLastWorkoutToDom 채움) -->
+      <div id="homeLastWorkout" class="last-row">
+        <span class="ic"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M4 8v4M6.5 6.2v7.6M13.5 6.2v7.6M16 8v4M6.5 10h7" stroke="var(--ink-3)" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+        <span class="lb kr">직전 운동</span>
+        <span id="homeLastParts" class="pt kr">—</span>
+        <span id="homeLastMeta" class="tm kr"></span>
       </div>
-      <!-- 부위 밸런스 (작업지시서 홈 주역 — home.js applyBalanceToDom 채움). 시안: 막대가 헤더 바로 아래부터 영역을 고르게 채움. -->
-      <div style="flex:1;min-height:0;display:flex;flex-direction:column;padding:22px 26px 0;">
-        <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
-          <span class="kr" style="font-size:13px;font-weight:600;color:var(--ink-2);">부위 밸런스</span>
-          <span class="kr" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--ink-4);"><span style="display:inline-block;width:2px;height:11px;background:var(--ink-4);border-radius:1px;"></span>지난주</span>
+      <!-- 부위 밸런스 (주역 · applyBalanceToDom 채움). #homeBalance = .bal -->
+      <div id="homeBalance" class="bal">
+        <div class="bal-head">
+          <span class="bal-title kr">부위 밸런스</span>
+          <span class="bal-legend kr"><i></i>지난주</span>
         </div>
-        <div id="homeBalance" style="flex:1;min-height:0;display:flex;flex-direction:column;margin:18px 0 0;"></div>
+        <div id="homeBalRows" class="bal-rows"></div>
+        <div id="homeCardioRow" class="cardio-row" style="display:none;"></div>
       </div>
-      <!-- 오늘 체중 카드 (탭 → weightKeypadSheet 입력 모달) -->
-      <div data-bind="weight-input-trigger" style="flex-shrink:0;margin:16px 26px 0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-inset-soft);cursor:pointer;">
-        <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
-          <span class="kr" style="font-size:14px;font-weight:600;color:var(--ink-1);white-space:nowrap;">오늘 체중</span>
-          <span id="homeWeightRef" class="kr" style="font-size:12px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 —kg</span>
-        </div>
-        <span style="display:inline-flex;align-items:baseline;gap:5px;padding:8px 16px;border-radius:var(--r-sm);background:var(--crail-tint);box-shadow:inset 0 0 0 1px var(--crail-base);">
-          <span class="kr" style="font-size:13px;font-weight:600;color:var(--crail-deep);white-space:nowrap;">기록하기</span>
-        </span>
+      <div style="flex-shrink:0;height:18px;"></div>
+      <!-- 체중 ([data-bind="weight-input-trigger"] 유지) -->
+      <div class="wt" data-bind="weight-input-trigger" style="margin-bottom:0;">
+        <div><div class="a kr">오늘 체중</div><div id="homeWeightRef" class="b kr">직전 —kg</div></div>
+        <span class="chip kr">기록하기</span>
       </div>
-      <!-- CTA — 워밍 잉크. 하단 14px — 래퍼 8px + safe-area 가드(inset−22)와 합산 = inset 정렬 (하단 과여백 수정 2026-06-11) -->
-      <div style="flex-shrink:0;padding:4px 26px 14px;">
-        <button id="ctaBtn" type="button" class="kr" style="width:100%;height:52px;border-radius:var(--r-md);border:0;background:var(--ink-1);color:#fbf8f2;font-size:15px;font-weight:600;letter-spacing:0.01em;cursor:pointer;box-shadow:0 8px 20px -12px rgba(20,18,14,0.5);">운동 시작</button>
-      </div>
+      <!-- CTA (#ctaBtn 유지) -->
+      <div class="cta"><button id="ctaBtn" class="kr">운동 시작</button></div>
     </div>
     <!-- §9-1 — 날짜 탭 → 운동 요약 바텀시트 (src/features/day-detail-sheet.js) -->
     <div id="dayDetailBackdrop" data-open="false" style="position:absolute;inset:0;z-index:90;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
@@ -173,18 +176,16 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
   <div class="phone-home"></div>
 </div>
 
-<!-- HomeC — active -->
+<!-- HomeC — active (이어하기 카드) -->
 <div class="phone home-c" style="background:var(--shell);color:var(--ink-1);">
   <div class="phone-notch"></div>
   <div class="phone-content">
-    <div style="height:100%;display:flex;flex-direction:column;color:var(--ink-1);padding:8px 0;">
-      <!-- 헤더 -->
-      <div style="flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 26px;">
-        <div style="font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--ink-1);">Gym</div>
-        <div style="display:flex;gap:4px;" class="kr"><span class="js-home-stats" style="padding:8px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;">통계</span><span class="js-home-manage" style="padding:8px 12px;border-radius:var(--r-sm);font-size:14px;font-weight:500;color:var(--ink-3);cursor:pointer;">관리</span></div>
+    <div style="height:100%;display:flex;flex-direction:column;color:var(--ink-1);padding:8px 0 0;">
+      <div class="hdr">
+        <div class="logo">Gym</div>
+        <div class="nav kr"><span class="js-home-stats">통계</span><span class="js-home-manage">관리</span></div>
       </div>
-      <!-- 주간 스트립 (renderWeekCalendarToDom 채움) -->
-      <div class="js-week-cal" style="flex-shrink:0;margin:22px 18px 0;display:grid;grid-template-columns:repeat(7,1fr);"></div>
+      <div class="wk js-week-cal"></div>
       <!-- 이어하기 박스 (박스 전체가 버튼 + 브리딩) -->
       <div style="flex:1;display:flex;align-items:center;padding:0 22px;">
         <div id="cardResume" role="button" tabindex="0">

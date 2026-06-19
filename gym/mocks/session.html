@@ -4,304 +4,270 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0c0a08">
-<title>Gym · 세션 (v2 · SessionEmpty + SessionC)</title>
+<title>Gym · 세션 (v2)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;300;400;500;600;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #faf9f5; --bg-warm: #f3efe6; --bg-deep: #ece7db;
-  --surface: #ffffff; --surface-2: #f7f4ec;
-  --ink: #1a1714; --ink-strong: #0c0a08;
-  --ink-2: #5a544a; --ink-muted: #8d8678; --ink-faint: #c4beb1;
-  --line: #e6e1d4; --line-soft: #efeae0;
-  --accent: #d97757; --accent-soft: #ecb59f; --accent-deep: #b85a3e; --accent-tint: #fbe9df;
-  --sage: #788c5d; --sage-soft: #c0c9aa; --night: #1f1c18;
-  --r-xl: 22px; --r-lg: 16px; --r-md: 12px; --r-sm: 8px;
-  --shadow-card: 0 1px 2px rgba(28,22,16,.04), 0 8px 24px -8px rgba(28,22,16,.08);
-  --shadow-lift: 0 32px 64px -12px rgba(217,119,87,.22), 0 12px 28px -10px rgba(28,22,16,.18);
-  --font-display: "Space Grotesk", ui-monospace, monospace;
-  --font-body: "Pretendard", "Inter", system-ui, sans-serif;
-  --font-mono: "Space Grotesk", ui-monospace, monospace;
-}
+/* 구현 레퍼런스 - 세션.html 정합 (0px). 토큰은 paper.css 와 동일. */
+:root { --r-sm:8px; --r-md:12px; --r-lg:16px; --r-xl:22px;
+  --font-display:"Space Grotesk",ui-monospace,monospace; }
 * { box-sizing: border-box; -webkit-font-smoothing: antialiased; }
-body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-body); color: var(--ink); }
-.num { font-family: var(--font-display); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
-.kr { font-family: var(--font-body); }
-.phone { width: 360px; height: 740px; border-radius: 38px; position: relative; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 30px 60px -20px rgba(28,22,16,.18), 0 0 0 1px rgba(28,22,16,.06); font-family: var(--font-body); color: var(--ink); }
-.phone-notch { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 102px; height: 30px; border-radius: 20px; background: #0c0a08; z-index: 50; }
-.phone-clock { position: absolute; top: 16px; left: 24px; z-index: 49; font-family: var(--font-display); font-weight: 600; font-size:16px; letter-spacing: -0.01em; color: var(--ink-strong); }
-.phone-batt { position: absolute; top: 16px; right: 24px; z-index: 49; display: flex; gap: 5px; align-items: center; color: var(--ink-strong); }
-.phone-batt-cell { width: 16px; height: 10px; border-radius: 2px; border: 1.2px solid currentColor; position: relative; }
-.phone-batt-cell::after { content: ""; position: absolute; inset: 1.5px; background: currentColor; border-radius: 1px; display: block; }
-.phone-content { position: absolute; inset: 0; padding-top: 54px; padding-bottom: 24px; }
-.phone-home { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.22); }
-.phone.dark { color: #f3efe6; }
-.phone.dark .phone-clock, .phone.dark .phone-batt { color: #f3efe6; }
-.phone.dark .phone-home { background: rgba(255,255,255,.32); }
+body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display: flex; align-items: center; justify-content: center; padding: 24px; font-family: var(--font-sans); color: var(--ink-1); }
+.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.kr { font-family: var(--font-sans); }
+.phone { width: 360px; height: 760px; border-radius: 40px; position: relative; overflow: hidden; background: var(--shell); color: var(--ink-1); font-family: var(--font-sans); box-shadow: 0 0 0 1px oklch(88% 0.006 60), 0 2px 2px rgba(20,18,14,.04), 0 44px 80px -28px rgba(20,18,14,.32); }
+.phone-notch { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 100px; height: 28px; border-radius: 16px; background: #111; z-index: 50; }
+.phone-content { position: absolute; inset: 0; padding-top: 50px; }
+.phone-home { position: absolute; bottom: 9px; left: 50%; transform: translateX(-50%); width: 124px; height: 5px; border-radius: 100px; z-index: 60; background: rgba(0,0,0,.18); }
+[data-state="empty"] .session-active { display: none; }
+[data-state="active"] .session-empty { display: none; }
+
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-/* P1 라이트 세션 — 애니메이션 (작업지시서 P1). prefers-reduced-motion 에서 정지. */
-@keyframes shimmer { 0% { transform: translateX(-120%); } 60%, 100% { transform: translateX(360%); } }
-@keyframes barPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(193,99,63,0); } 50% { box-shadow: 0 0 0 4px rgba(193,99,63,0.16); } }
+@keyframes shimmer { 0% { transform: translateX(-120%); } 60%,100% { transform: translateX(360%); } }
+@keyframes barPulse { 0%,100% { box-shadow: 0 0 0 0 oklch(67% 0.12 50 / 0); } 50% { box-shadow: 0 0 0 4px oklch(67% 0.12 50 / 0.16); } }
 .sess-live { animation: pulse 1.8s ease-in-out infinite; }
 .vbar-shimmer { animation: shimmer 2.8s ease-in-out infinite; }
-.seg.now .seg-bar { animation: barPulse 1.8s ease-in-out infinite; }
-/* 볼륨바 리딩 엣지 점 맥동 (작업지시서 §7) */
 @keyframes edgePulse { 0%,100% { box-shadow: 0 0 0 3px var(--crail-base), 0 0 11px 3px rgba(217,119,87,0.6); transform: translate(-50%,-50%) scale(1); } 50% { box-shadow: 0 0 0 3px var(--crail-base), 0 0 24px 9px rgba(217,119,87,0.9); transform: translate(-50%,-50%) scale(1.16); } }
 #volEdge { animation: edgePulse 1.35s ease-in-out infinite; }
-/* over(직전 기록 돌파) 상태 (작업지시서 §7) — 글로우 맥동 + 골라인 점등 + shimmer 가속 */
 @keyframes overGlow { 0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 0 0 0 rgba(217,119,87,0), 0 2px 5px -1px rgba(217,119,87,0.45); } 50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), 0 0 13px 1px rgba(217,119,87,0.55), 0 2px 9px -1px rgba(217,119,87,0.6); } }
 #cardProgressBar.is-over { animation: overGlow 1.5s ease-in-out infinite; }
 #cardProgressBar.is-over .vbar-shimmer { animation-duration: 1.5s; }
 #volGoal.broken { background: var(--crail-deep); box-shadow: 0 0 7px rgba(217,119,87,0.6); }
-/* 우상단 신기록 (작업지시서 §8) — 직전 총볼륨 취소선 + 디밍 */
 #cardSessVolPrev.struck { text-decoration: line-through; opacity: 0.55; }
-/* 우상단 총볼륨 링 — 직전 돌파 시 완성 링이 팽창·소멸 펄스 */
-@keyframes ringPulse { 0% { opacity: 0.5; transform: scale(1); } 70%, 100% { opacity: 0; transform: scale(1.34); } }
+@keyframes ringPulse { 0% { opacity: 0.5; transform: scale(1); } 70%,100% { opacity: 0; transform: scale(1.34); } }
 #cardVolRingPulse.is-record { animation: ringPulse 1.6s ease-out infinite; }
-@media (prefers-reduced-motion: reduce) { .sess-live, .vbar-shimmer, .seg.now .seg-bar, #volEdge, #cardProgressBar.is-over, #cardVolRingPulse.is-record { animation: none; } }
-/* P1 세트 진행 세그먼트바 (#cardSetDots — renderSetDotsDiff 출력). 완료=ink, 현재=crail 맥동, 예정=ghost. */
-#cardSetDots .seg { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; cursor: pointer; }
-#cardSetDots .seg .seg-bar { width: 100%; height: 9px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px var(--line); transition: background 220ms ease, height 220ms ease; transform-origin: bottom center; }
-#cardSetDots .seg.done .seg-bar { background: var(--ink-2); box-shadow: none; }
-#cardSetDots .seg.now .seg-bar { background: var(--crail-base); box-shadow: none; height: 11px; }
-/* §B 세트바 2줄 — 중량(굵게) + ×횟수(작게). */
-#cardSetDots .seg .seg-val { display: flex; flex-direction: column; align-items: center; line-height: 1; white-space: nowrap; }
-#cardSetDots .seg .seg-w { font-size: 12px; font-weight: 700; color: var(--ink-3); }
-#cardSetDots .seg .seg-r { font-size: 10px; font-weight: 500; color: var(--ink-4); margin-top: 2px; }
-#cardSetDots .seg.done .seg-w { color: var(--ink-2); }
-#cardSetDots .seg.now .seg-w { color: var(--crail-deep); }
-#cardSetDots .seg.now .seg-r { color: var(--crail-deep); }
-/* 확정 플래시 (작업지시서 §6) — 완료 세그 바 하단 2px 라인. playSegConfirmFlash 가 WAAPI 로 scaleX 0→1 후 페이드. */
-#cardSetDots .seg .seg-flash { position: absolute; left: 0; right: 0; top: 9px; height: 2px; border-radius: 2px; transform: scaleX(0); transform-origin: left center; opacity: 0; background: var(--ink-1); pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { *{ animation: none !important; } }
 
-/* SessionEmpty / SessionActive 가시성 토글 (home.html HomeA/HomeC 패턴 답습) */
-[data-state="empty"] .session-active { display: none; }
-[data-state="active"] .session-empty { display: none; }
-/* §6-2 — 운동 추가 시트 chip / item (session.js renderChips/List 출력 마크업 정합). P2 라이트 페이퍼. */
-.addex-chip { flex-shrink: 0; padding: 8px 15px; border-radius: 999px; font-size: 14px; font-weight: 500; font-family: var(--font-sans); color: var(--ink-3); border: 1px solid var(--line); background: var(--card); cursor: pointer; white-space: nowrap; }
-.addex-chip.is-active { background: var(--crail-soft); color: var(--ink-1); font-weight: 600; border-color: var(--crail-base); }
-.addex-item { display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 14px; border-radius: var(--r-md); background: transparent; border: 0; cursor: pointer; font-family: inherit; text-align: left; }
-.addex-item:active { background: var(--hover-bg); }
-.addex-item .ex-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.addex-item .ex-name { font-size: 16px; color: var(--ink-1); font-weight: 500; font-family: var(--font-sans); }
-.addex-item .ex-meta { font-size: 13px; color: var(--ink-4); font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
-.addex-item .ex-toggle { flex-shrink: 0; width: 36px; height: 22px; background: var(--line); border-radius: 11px; position: relative; transition: background 200ms ease; }
-.addex-item .ex-toggle::after { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 9px; background: var(--card); box-shadow: 0 1px 2px rgba(20,18,14,0.15); transition: transform 160ms ease; }
-.addex-item.is-added .ex-toggle { background: var(--crail-base); }
-.addex-item.is-added .ex-toggle::after { transform: translateX(14px); }
-.addex-empty { padding: 24px 14px; text-align: center; font-size: 14px; color: var(--ink-4); }
-/* P2 빈 상태 시트(#addexList) — 토글 노출 (active 시트와 통일, 사용자 결정 2026-06-10. 구: 시안대로 숨김) */
-#addexList .ex-main { flex: 1; justify-content: space-between; margin-right: 12px; }
-/* P3 라이트 키패드 (무게/횟수 토글·캐럿·참조·빠른증분·페이퍼 3×4) */
-#keypadModeSeg { display: flex; gap: 6px; padding: 4px; background: var(--sunken); border-radius: var(--r-md); margin: 0 auto 14px; width: 200px; }
-#keypadModeSeg button { flex: 1; height: 36px; border-radius: var(--r-sm); border: 0; background: transparent; cursor: pointer; font-family: var(--font-sans); font-size: 14px; font-weight: 600; color: var(--ink-3); }
-#keypadModeSeg button.on { background: var(--card); color: var(--ink-1); box-shadow: var(--shadow-inset-soft); }
-#keypadCaret { width: 2px; height: 40px; background: var(--crail-base); border-radius: 1px; animation: kpcaret 1.1s step-end infinite; align-self: center; }
-@keyframes kpcaret { 50% { opacity: 0; } }
-#keypadRef { margin-top: 8px; text-align: center; font-size: 12px; font-weight: 500; color: var(--ink-4); min-height: 15px; }
-#keypadRef b { font-family: var(--font-mono); color: var(--crail-deep); font-weight: 600; }
-#keypadQuick { margin-top: 14px; display: flex; gap: 8px; justify-content: center; }
-#keypadQuick button { padding: 7px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-family: var(--font-mono); font-size: 13px; font-weight: 600; color: var(--ink-2); cursor: pointer; }
-#keypadGrid .keypad-key { height: 50px; border-radius: var(--r-md); border: 0; background: var(--sunken); cursor: pointer; font-family: var(--font-mono); font-size: 23px; font-weight: 500; color: var(--ink-1); display: flex; align-items: center; justify-content: center; }
-#keypadGrid .keypad-key.fn { background: transparent; color: var(--ink-3); font-size: 20px; }
-@media (prefers-reduced-motion: reduce) { #keypadCaret { animation: none; } }
-/* P4 액션 시트 항목 (openActionSheet/showConfirmStep 출력) — 풀폭, danger=red */
-#actionItems .action-item { width: 100%; height: 50px; border-radius: var(--r-md); border: 0; background: var(--sunken); cursor: pointer; font-family: var(--font-sans); font-size: 16px; font-weight: 500; color: var(--ink-1); display: flex; align-items: center; justify-content: center; gap: 8px; }
-#actionItems .action-item.danger { color: var(--danger); font-weight: 600; }
-#actionItems .action-confirm { width: 100%; height: 50px; border-radius: var(--r-md); border: 0; background: var(--danger); color: #fff; cursor: pointer; font-family: var(--font-sans); font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
-/* P4 길게 눌린 세트 — scale(0.98)은 wireLongPress 인라인, 여기선 crail 선택 링만 */
-#cardSetDots .seg.held::before { content: ""; position: absolute; top: -7px; left: -5px; right: -5px; bottom: -7px; border-radius: 10px; box-shadow: 0 0 0 2px var(--crail-base); background: var(--crail-tint); z-index: -1; }
-#cardSetDots .seg { position: relative; }
-/* 좌우/상하 스크롤 컨테이너의 스크롤바 숨김 (터치 PWA — 미세 노출 방지) */
-#cardSetDots::-webkit-scrollbar, #sessionFooterPills::-webkit-scrollbar,
-#addexChips::-webkit-scrollbar, #sessionAddexChips::-webkit-scrollbar,
-#addexList::-webkit-scrollbar, #sessionAddexList::-webkit-scrollbar,
-#sessionFooterPills .fp-left::-webkit-scrollbar, #sessionFooterPills .fp-right::-webkit-scrollbar { display: none; width: 0; height: 0; }
-#cardSetDots, #sessionFooterPills, #addexChips, #sessionAddexChips,
-#addexList, #sessionAddexList,
-#sessionFooterPills .fp-left, #sessionFooterPills .fp-right { scrollbar-width: none; -ms-overflow-style: none; }
-/* 작업지시서 §D — 푸터 3그룹: 완료(좌)·현재(가로 중앙 고정)·예정(우). renderFooterPills 가 채움. */
-#sessionFooterPills .fp-left, #sessionFooterPills .fp-right { flex: 1 1 0; min-width: 0; display: flex; align-items: center; gap: 14px; overflow-x: auto; }
-#sessionFooterPills .fp-left { justify-content: flex-end; -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30px); mask-image: linear-gradient(90deg, transparent 0, #000 30px); }
-#sessionFooterPills .fp-right { justify-content: flex-start; }
-#sessionFooterPills .fp-mid { flex: 0 0 auto; display: flex; align-items: center; padding: 0 10px; }
-.fp-mark { width: 16px; height: 3px; border-radius: 2px; background: var(--crail-base); }
-/* reorder 중에는 그룹 오버플로/마스크 해제 (드래그 칩 클리핑 방지) */
-#sessionFooterPills[data-reorder="1"] .fp-left, #sessionFooterPills[data-reorder="1"] .fp-right { overflow: visible; -webkit-mask-image: none; mask-image: none; }
-/* 작업지시서 §E — 바텀시트 통일: 빈 세션(#addexSheet)·추가(#sessionAddexSheet) 동일 클래스.
-   카드 흰색 배경 · 높이 66% · 핸들 · 칩 · 아이템 · 토글. (추가 시트는 모달 — 뒤 backdrop 별도) */
-.addex-sheet { display: flex; flex-direction: column; background: var(--card); border-top-left-radius: var(--r-xl); border-top-right-radius: var(--r-xl); padding: 12px 0 24px; }
-/* 바텀시트 그림자 — 열렸을 때만. 닫힘(translateY(100%)) 상태에서 위로 뻗는 그림자가
-   뷰포트 하단으로 새어 '구분선 같은 그라데이션' 으로 보이던 문제 차단. */
-#keypadSheet[data-open="true"], #actionSheet[data-open="true"] { box-shadow: 0 -20px 50px -18px rgba(20,18,14,0.4); }
-#sessionAddexSheet[data-open="true"] { box-shadow: 0 -16px 40px -10px rgba(20,18,14,0.18); }
+/* ===== 툴바 ===== */
+.sess-toolbar { flex-shrink:0; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; padding:0 16px; height:48px; }
+.sess-toolbar .home-btn { width:40px; height:40px; margin-left:-6px; border-radius:var(--r-sm); border:0; background:transparent; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--ink-3); }
+.sess-toolbar .timer { justify-self:center; display:flex; align-items:center; gap:8px; }
+.sess-toolbar .end { justify-self:end; font-size:14px; font-weight:600; color:var(--ink-3); padding:9px 4px 9px 14px; cursor:pointer; white-space:nowrap; }
+
+/* ===== 우상단 세션 볼륨 ===== */
+.sv { flex-shrink:0; display:flex; align-items:center; gap:11px; }
+.sv-text { text-align:right; }
+.sv-text .lbl { font-size:10.5px; font-weight:600; color:var(--ink-4); letter-spacing:0.02em; white-space:nowrap; }
+.sv-text .val { margin-top:2px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:20px; font-weight:700; color:var(--ink-1); letter-spacing:-0.02em; white-space:nowrap; line-height:1; }
+.sv-text .val .u { font-size:11px; font-weight:500; color:var(--ink-4); margin-left:1px; }
+.sv-text #cardSessVolPrev { margin-top:4px; font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--ink-4); white-space:nowrap; }
+.sv-text #cardRecordTag { margin-top:3px; font-size:10.5px; font-weight:700; color:var(--crail-deep); white-space:nowrap; opacity:0; display:flex; align-items:center; justify-content:flex-end; gap:3px; }
+.sv .ring-wrap { position:relative; width:56px; height:56px; flex-shrink:0; }
+.sv .ring-wrap svg { width:56px; height:56px; display:block; }
+.sv .ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:700; color:var(--crail-deep); letter-spacing:-0.02em; }
+
+/* ===== 직전 세션 세트바 ===== */
+#cardSetDots .seg { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0; cursor:pointer; position:relative; }
+#cardSetDots .seg .seg-bar { width:100%; height:9px; border-radius:5px; background:var(--sunken); box-shadow:inset 0 0 0 1.5px var(--line); transition:background .22s, height .22s; transform-origin:bottom center; }
+#cardSetDots .seg.done .seg-bar { background:var(--ink-2); box-shadow:none; }
+#cardSetDots .seg.now .seg-bar { background:var(--crail-base); box-shadow:none; height:11px; animation:barPulse 1.8s ease-in-out infinite; }
+#cardSetDots .seg .seg-n { display:flex; flex-direction:column; align-items:center; line-height:1.05; gap:2px; }
+#cardSetDots .seg .seg-n .w { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12.5px; font-weight:600; color:var(--ink-3); letter-spacing:-0.02em; }
+#cardSetDots .seg .seg-n .r { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px; font-weight:500; color:var(--ink-4); }
+#cardSetDots .seg.done .seg-n .w { color:var(--ink-2); }
+#cardSetDots .seg.now .seg-n .w { color:var(--crail-deep); font-weight:700; }
+#cardSetDots .seg.now .seg-n .r { color:var(--crail-deep); }
+/* 확정 플래시 (playSegConfirmFlash WAAPI) */
+#cardSetDots .seg .seg-flash { position:absolute; left:0; right:0; top:0; height:2px; border-radius:2px; transform:scaleX(0); transform-origin:left center; opacity:0; background:var(--ink-1); pointer-events:none; }
+/* 꾹누른 세트 — crail 선택 링 */
+#cardSetDots .seg.held::before { content:""; position:absolute; top:-7px; left:-5px; right:-5px; bottom:-7px; border-radius:10px; box-shadow:0 0 0 2px var(--crail-base); background:var(--crail-tint); z-index:-1; }
+
+/* ===== 히어로 무게×횟수 (옵션 B) ===== */
+.hero-weight { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:122px; font-weight:600; line-height:0.8; color:var(--ink-1); letter-spacing:-0.055em; }
+.hero-wunit { font-family:var(--font-sans); font-size:15px; font-weight:600; color:var(--ink-4); letter-spacing:0.02em; margin-top:6px; }
+.hero-reps-x { font-family:var(--font-mono); font-size:24px; font-weight:300; color:var(--ink-4); }
+.hero-reps { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:50px; font-weight:400; color:var(--ink-2); letter-spacing:-0.02em; line-height:1; }
+.hero-reps-u { font-family:var(--font-sans); font-size:16px; font-weight:500; color:var(--ink-3); }
+
+/* ===== 푸터 운동 전환 ===== */
+#sessionFooter { flex-shrink:0; position:relative; padding:14px 0 22px; box-shadow:inset 0 1px 0 var(--line-soft); }
+.fp-center-mark { position:absolute; top:0; left:50%; transform:translateX(-50%); width:26px; height:2px; border-radius:0 0 2px 2px; background:var(--crail-base); }
+.fp-row { display:flex; align-items:center; padding:14px 14px 0; }
+.fp-side { flex:1 1 0; min-width:0; display:flex; align-items:center; gap:10px; overflow:hidden; }
+.fp-side.fp-left { justify-content:flex-end; padding-right:12px; -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30px); mask-image:linear-gradient(90deg,transparent 0,#000 30px); }
+.fp-side.fp-right { justify-content:flex-start; padding-left:12px; }
+.fp-done { flex-shrink:0; display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:500; color:var(--ink-4); white-space:nowrap; cursor:pointer; border:0; background:transparent; font-family:var(--font-sans); padding:0; }
+.fp-done svg { color:var(--sage); flex-shrink:0; }
+.fp-todo { flex-shrink:0; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; border-radius:999px; font-size:14px; font-weight:500; color:var(--ink-3); background:var(--card); border:1px solid var(--line); white-space:nowrap; cursor:pointer; font-family:var(--font-sans); }
+.fp-now { flex-shrink:0; display:inline-flex; align-items:center; height:46px; padding:0 22px; border-radius:999px; font-size:16px; font-weight:700; letter-spacing:-0.01em; color:#fbf8f2; background:var(--ink-1); white-space:nowrap; cursor:pointer; border:0; font-family:var(--font-sans); box-shadow:0 12px 24px -12px rgba(20,18,14,.6); }
+.fp-add { position:absolute; right:14px; bottom:22px; height:46px; z-index:4; width:46px; border-radius:23px; border:1px solid var(--line); background:var(--card); box-shadow:0 0 0 9px var(--shell), var(--shadow-inset-soft); color:var(--ink-3); padding:0; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+.fp-fade { position:absolute; bottom:22px; height:46px; width:34px; z-index:2; pointer-events:none; }
+.fp-fade.l { left:0; background:linear-gradient(90deg, var(--shell), transparent); }
+.fp-fade.r { right:46px; background:linear-gradient(270deg, var(--shell), transparent); }
+#sessionFooterPills[data-reorder="1"] .fp-side { overflow:visible; -webkit-mask-image:none; mask-image:none; }
+
+/* ===== 통일 바텀시트 ===== */
+.addex-sheet { position:absolute; left:0; right:0; bottom:0; height:66%; background:var(--card); display:flex; flex-direction:column; border-top-left-radius:var(--r-xl); border-top-right-radius:var(--r-xl); padding:14px 0 22px; }
+.sheet-handle { flex-shrink:0; width:38px; height:4px; border-radius:2px; background:var(--line); margin:0 auto; }
+.addex-chips { flex-shrink:0; display:flex; gap:8px; padding:0 18px; overflow-x:auto; }
+.addex-chip { flex-shrink:0; padding:8px 15px; border-radius:999px; font-size:14px; font-weight:500; color:var(--ink-3); border:1px solid var(--line); background:var(--card); cursor:pointer; white-space:nowrap; font-family:var(--font-sans); }
+.addex-chip.is-active { background:var(--crail-soft); color:var(--ink-1); font-weight:600; border-color:var(--crail-base); }
+.addex-list { flex:1; min-height:0; padding:4px 12px 12px; overflow-y:auto; }
+.addex-item { display:flex; align-items:center; justify-content:space-between; width:100%; padding:14px 12px; border-radius:var(--r-md); background:transparent; border:0; cursor:pointer; font-family:inherit; text-align:left; }
+.addex-item:active { background:var(--hover-bg); }
+.addex-item + .addex-item { box-shadow:inset 0 1px 0 var(--line-soft); }
+.addex-item .ex-main { display:flex; align-items:baseline; gap:8px; flex:1; justify-content:space-between; margin-right:12px; min-width:0; }
+.addex-item .ex-name { font-size:16px; color:var(--ink-1); font-weight:500; white-space:nowrap; font-family:var(--font-sans); }
+.addex-item .ex-meta { font-family:var(--font-mono); font-size:13px; color:var(--ink-4); flex-shrink:0; white-space:nowrap; }
+.addex-item .ex-toggle { flex-shrink:0; width:36px; height:22px; background:var(--line); border-radius:11px; position:relative; transition:background .2s; }
+.addex-item .ex-toggle::after { content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:9px; background:var(--card); box-shadow:0 1px 2px rgba(20,18,14,.15); transition:transform .16s; }
+.addex-item.is-added .ex-toggle { background:var(--crail-base); }
+.addex-item.is-added .ex-toggle::after { transform:translateX(14px); }
+.addex-empty { padding:24px 14px; text-align:center; font-size:14px; color:var(--ink-4); }
+
+/* 스크롤바 숨김 (터치 PWA) */
+#cardSetDots::-webkit-scrollbar, #sessionFooterPills .fp-side::-webkit-scrollbar, #addexChips::-webkit-scrollbar, #sessionAddexChips::-webkit-scrollbar, #addexList::-webkit-scrollbar, #sessionAddexList::-webkit-scrollbar { display:none; width:0; height:0; }
+#cardSetDots, #sessionFooterPills .fp-side, #addexChips, #sessionAddexChips, #addexList, #sessionAddexList { scrollbar-width:none; -ms-overflow-style:none; }
+
+/* ===== 키패드 바텀시트 (앱 전용) ===== */
+#keypadModeSeg { display:flex; gap:6px; padding:4px; background:var(--sunken); border-radius:var(--r-md); margin:0 auto 14px; width:200px; }
+#keypadModeSeg button { flex:1; height:36px; border-radius:var(--r-sm); border:0; background:transparent; cursor:pointer; font-family:var(--font-sans); font-size:14px; font-weight:600; color:var(--ink-3); }
+#keypadModeSeg button.on { background:var(--card); color:var(--ink-1); box-shadow:var(--shadow-inset-soft); }
+#keypadCaret { width:2px; height:40px; background:var(--crail-base); border-radius:1px; animation:kpcaret 1.1s step-end infinite; align-self:center; }
+@keyframes kpcaret { 50% { opacity:0; } }
+#keypadRef { margin-top:8px; text-align:center; font-size:12px; font-weight:500; color:var(--ink-4); min-height:15px; }
+#keypadRef b { font-family:var(--font-mono); color:var(--crail-deep); font-weight:600; }
+#keypadQuick { margin-top:14px; display:flex; gap:8px; justify-content:center; }
+#keypadQuick button { padding:7px 13px; border-radius:999px; border:1px solid var(--line); background:var(--card); font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--ink-2); cursor:pointer; }
+#keypadGrid .keypad-key { height:50px; border-radius:var(--r-md); border:0; background:var(--sunken); cursor:pointer; font-family:var(--font-mono); font-size:23px; font-weight:500; color:var(--ink-1); display:flex; align-items:center; justify-content:center; }
+#keypadGrid .keypad-key.fn { background:transparent; color:var(--ink-3); font-size:20px; }
+/* ===== 액션 시트 (앱 전용) ===== */
+#actionItems .action-item { width:100%; height:50px; border-radius:var(--r-md); border:0; background:var(--sunken); cursor:pointer; font-family:var(--font-sans); font-size:16px; font-weight:500; color:var(--ink-1); display:flex; align-items:center; justify-content:center; gap:8px; }
+#actionItems .action-item.danger { color:var(--danger); font-weight:600; }
+#actionItems .action-confirm { width:100%; height:50px; border-radius:var(--r-md); border:0; background:var(--danger); color:#fff; cursor:pointer; font-family:var(--font-sans); font-size:16px; font-weight:600; display:flex; align-items:center; justify-content:center; }
+/* 바텀시트 그림자 — 열렸을 때만 */
+#keypadSheet[data-open="true"], #actionSheet[data-open="true"] { box-shadow:0 -20px 50px -18px rgba(20,18,14,0.4); }
+#sessionAddexSheet[data-open="true"] { box-shadow:0 -16px 40px -10px rgba(20,18,14,0.18); }
+@media (prefers-reduced-motion: reduce) { #keypadCaret { animation:none; } }
 </style>
 </head>
 <body data-state="empty">
-<!-- SessionEmpty — active 세션 부재 -->
+<!-- ② 시작 전 (빈 시트) — 구현 레퍼런스 - 세션.html 정합 -->
 <div class="phone session-empty" style="background:var(--shell);color:var(--ink-1);">
   <div class="phone-notch"></div>
-  <div class="phone-content" style="display:flex;flex-direction:column;padding-bottom:0;">
-    <!-- 툴바: 홈 / 00:00 / 종료 -->
-    <div style="flex-shrink:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 18px;height:48px;">
-      <div style="display:flex;align-items:center;">
-        <button type="button" class="js-session-home" style="width:40px;height:40px;margin-left:-8px;border-radius:var(--r-sm);border:0;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-3);">
-          <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 9l7-6 7 6v8a1 1 0 01-1 1h-3v-5h-6v5H4a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <span class="mono" style="justify-self:center;font-size:18px;font-weight:500;color:var(--ink-3);letter-spacing:-0.02em;">00:00</span>
-      <div style="justify-self:end;font-size:14px;font-weight:600;color:var(--ink-3);padding:9px 4px 9px 14px;cursor:pointer;white-space:nowrap;" class="kr">종료</div>
+  <div class="phone-content" style="display:flex;flex-direction:column;">
+    <div class="sess-toolbar">
+      <button type="button" class="js-session-home home-btn" aria-label="홈"><svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v8a1 1 0 01-1 1h-3v-5h-6v5H4a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      <span class="mono" style="justify-self:center;font-size:18px;font-weight:500;color:var(--ink-4);">00:00</span>
+      <div class="end kr">종료</div>
     </div>
-    <!-- 빈 메시지 -->
-    <div style="flex-shrink:0;text-align:center;padding:36px 32px 0;">
-      <div class="mono" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.18em;">NEW SESSION</div>
-      <div class="kr" style="margin-top:18px;font-size:25px;font-weight:600;color:var(--ink-1);line-height:1.35;letter-spacing:-0.02em;">오늘은 어디부터<br>시작할까요?</div>
+    <div style="flex-shrink:0;text-align:center;padding:32px 32px 0;">
+      <div class="mono" style="font-size:11px;font-weight:600;color:var(--crail-deep);letter-spacing:0.2em;">NEW SESSION</div>
+      <div class="kr" style="margin-top:18px;font-size:26px;font-weight:700;color:var(--ink-1);line-height:1.32;letter-spacing:-0.03em;">오늘은 어디부터<br>시작할까요?</div>
     </div>
-    <!-- 상시 하단 시트 (renderChips/renderList 가 #addexChips/#addexList 채움) — .addex-sheet 통일(§E) -->
-    <div id="addexSheet" class="addex-sheet" style="margin-top:auto;height:66dvh;box-shadow:0 -14px 36px -18px rgba(20,18,14,0.14);">
-      <div style="flex-shrink:0;width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
-      <div id="addexChips" style="flex-shrink:0;display:flex;gap:8px;padding:0 18px;overflow-x:auto;">
-      </div>
-      <div id="addexList" style="flex:1;min-height:0;margin-top:12px;padding:0 10px 16px;overflow-y:auto;"></div>
+    <div id="addexSheet" class="addex-sheet" style="box-shadow:0 -16px 40px -18px rgba(20,18,14,0.18);">
+      <div class="sheet-handle" style="margin-bottom:16px;"></div>
+      <div id="addexChips" class="addex-chips"></div>
+      <div id="addexList" class="addex-list" style="margin-top:12px;"></div>
     </div>
   </div>
   <div class="phone-home"></div>
 </div>
-<!-- SessionC — active 세션 진행 중 (SET 03/05 진행 카드) -->
+
+<!-- ① 진행 중 — 구현 레퍼런스 - 세션.html 정합 -->
 <div class="phone session-active" style="background:var(--shell);color:var(--ink-1);">
   <div class="phone-notch"></div>
-  <div class="phone-content" style="display:flex;flex-direction:column;padding-bottom:0;">
-    <!-- 툴바: 홈 / 라이브닷+타이머 / 종료 -->
-    <div style="flex-shrink:0;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 18px;height:48px;">
-      <div style="display:flex;align-items:center;">
-        <button type="button" class="js-session-home" style="width:40px;height:40px;margin-left:-8px;border-radius:var(--r-sm);border:0;background:transparent;padding:0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-3);">
-          <svg width="19" height="19" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 9l7-6 7 6v8a1 1 0 01-1 1h-3v-5h-6v5H4a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
-      <span style="justify-self:center;display:flex;align-items:center;gap:8px;">
-        <span class="sess-live" style="width:6px;height:6px;border-radius:50%;background:var(--crail-base);"></span>
-        <span id="sessionTime" class="mono" style="font-size:18px;font-weight:500;letter-spacing:-0.02em;color:var(--ink-2);">18:42</span>
-      </span>
-      <div id="sessionEndBtn" data-longpress="session-end" style="justify-self:end;font-size:14px;font-weight:600;color:var(--ink-3);padding:9px 4px 9px 14px;cursor:pointer;white-space:nowrap;" class="kr">종료</div>
+  <div class="phone-content" style="display:flex;flex-direction:column;">
+    <!-- 툴바 -->
+    <div class="sess-toolbar">
+      <button type="button" class="js-session-home home-btn" aria-label="홈"><svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v8a1 1 0 01-1 1h-3v-5h-6v5H4a1 1 0 01-1-1V9z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>
+      <span class="timer"><span class="sess-live" style="width:6px;height:6px;border-radius:50%;background:var(--crail-base);"></span><span id="sessionTime" class="mono" style="font-size:18px;font-weight:500;color:var(--ink-2);">18:42</span></span>
+      <div id="sessionEndBtn" data-longpress="session-end" class="end kr">종료</div>
     </div>
-    <!-- 타이틀: 운동명 + 부위 / 세션 총볼륨 게이지(이번·직전) -->
-    <div style="flex-shrink:0;padding:12px 26px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
-      <div style="min-width:0;display:flex;flex-direction:column;gap:3px;">
-        <div id="cardExName" class="kr" style="font-size:23px;font-weight:600;color:var(--ink-1);letter-spacing:-0.02em;white-space:nowrap;">벤치프레스</div>
-        <div id="cardExPart" class="kr" style="font-size:12px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;white-space:nowrap;">가슴</div>
+    <!-- 타이틀 + 세션 볼륨 게이지 -->
+    <div style="flex-shrink:0;padding:10px 24px 0;display:flex;align-items:flex-start;justify-content:space-between;gap:18px;">
+      <div style="min-width:0;">
+        <div id="cardExName" class="kr" style="font-size:25px;font-weight:700;color:var(--ink-1);letter-spacing:-0.02em;white-space:nowrap;">벤치프레스</div>
+        <div id="cardExPart" class="kr" style="margin-top:4px;font-size:12.5px;font-weight:500;color:var(--ink-4);white-space:nowrap;">가슴</div>
       </div>
-      <!-- 세션 볼륨 — 시안: 숫자(절대값) 좌측·크게, 도넛 링(우측)은 직전 대비 달성률 % 표기(역할 분리). (작업지시서 §A)
-           #cardVolRingFill dashoffset 으로 채움, #cardVolRingPct 가운데 % 표기, 돌파 시 #cardVolRingPulse 펄스. -->
-      <div style="flex-shrink:0;display:flex;align-items:center;gap:11px;">
-        <div style="text-align:right;">
-          <div class="kr" style="font-size:10.5px;font-weight:600;color:var(--ink-4);letter-spacing:0.08em;">세션 볼륨</div>
-          <div class="mono" style="margin-top:1px;font-size:20px;font-weight:700;color:var(--ink-1);line-height:1;letter-spacing:-0.02em;white-space:nowrap;"><span id="cardSetProgress" style="display:inline-block;">1,380</span><span style="font-size:11px;font-weight:500;color:var(--ink-4);margin-left:2px;">kg</span></div>
-          <div id="cardSessVolPrev" class="mono" style="margin-top:2px;font-size:11px;font-weight:500;color:var(--ink-4);white-space:nowrap;">직전 2,940kg</div>
-          <div id="cardRecordTag" class="mono" style="margin-top:2px;font-size:12px;font-weight:700;color:var(--crail-deep);white-space:nowrap;opacity:0;display:flex;align-items:center;justify-content:flex-end;gap:3px;"><span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록</div>
+      <div class="sv">
+        <div class="sv-text">
+          <div class="lbl kr">세션 볼륨</div>
+          <div class="val mono"><span id="cardSetProgress">1,380</span><span class="u">kg</span></div>
+          <div id="cardSessVolPrev">직전 2,940kg</div>
+          <div id="cardRecordTag" class="mono"><span class="arw" style="font-size:8px;">▲</span> 신기록</div>
         </div>
-        <svg width="56" height="56" viewBox="0 0 40 40" style="flex-shrink:0;">
-          <circle cx="20" cy="20" r="16" fill="none" stroke-width="5" style="stroke:var(--line);"></circle>
-          <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
-          <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="100.53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
-          <text id="cardVolRingPct" x="20" y="20" text-anchor="middle" dominant-baseline="central" style="font-family:var(--font-mono);font-size:10px;font-weight:700;fill:var(--crail-deep);">47%</text>
-        </svg>
+        <div class="ring-wrap">
+          <svg viewBox="0 0 40 40" aria-hidden="true">
+            <circle cx="20" cy="20" r="16" fill="none" stroke-width="5" style="stroke:var(--line);"></circle>
+            <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
+            <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
+          </svg>
+          <div id="cardVolRingPct" class="ring-center">47%</div>
+        </div>
       </div>
     </div>
-    <!-- 세트 진행 세그먼트바 (직전 세션 per-set 기록) — renderSetDotsDiff 가 #cardSetDots 채움 -->
-    <div style="flex-shrink:0;padding:18px 24px 0;">
-      <div class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;margin-bottom:9px;">직전 세션 기록</div>
+    <!-- 직전 세션 세트바 -->
+    <div style="flex-shrink:0;padding:16px 24px 0;">
+      <div class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;margin-bottom:10px;">직전 세션 기록</div>
       <div id="cardSetDots" class="mono" style="display:flex;gap:7px;align-items:flex-end;"></div>
     </div>
-    <!-- PR 팝 (transient e1RM PR — showPrPop 토글) -->
-    <div id="cardPrPop" class="mono" style="position:absolute;top:212px;left:0;right:0;text-align:center;font-weight:600;color:var(--crail-deep);font-size:22px;letter-spacing:0.04em;opacity:0;transform:translateY(0);transition:opacity 220ms ease, transform 700ms ease;pointer-events:none;z-index:5;">PR</div>
-    <!-- 히어로: 무게(중앙·좌우 빈공간 탭 증감) / 횟수 / PR 칩. cardSwipeArea = 스와이프+탭+꾹누르기 -->
+    <!-- PR 팝 (transient) -->
+    <div id="cardPrPop" class="mono" style="position:absolute;top:218px;left:0;right:0;text-align:center;font-weight:600;color:var(--crail-deep);font-size:22px;letter-spacing:0.04em;opacity:0;transform:translateY(0);transition:opacity 220ms ease, transform 700ms ease;pointer-events:none;z-index:5;">PR</div>
+    <!-- 히어로 -->
     <div id="cardSwipeArea" data-longpress="active-card" data-card-kind="weight" style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 26px;touch-action:pan-y;user-select:none;-webkit-user-select:none;">
-      <!-- 좌스와이프 드래그 시 당김량 비례 노출되는 "완료" 칩 (작업지시서 §4 / FIG 2). 카드와 함께 안 움직이게 cardHeroVals 밖. -->
       <div id="completeReveal" style="position:absolute;right:22px;top:50%;transform:translateY(-50%) translateX(14px) scale(0.9);display:flex;align-items:center;gap:7px;padding:7px 14px 7px 11px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);color:var(--crail-deep);font-size:13px;font-weight:600;opacity:0;pointer-events:none;z-index:4;white-space:nowrap;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>완료</div>
-      <!-- 햅틱 링 시각화 (부록 작업지시서) — iOS PWA 진동 미지원 대체. playSetHaptic 가 WAAPI 로 팽창·소멸. -->
       <div id="hapticRing" aria-hidden="true" style="position:absolute;left:50%;top:50%;width:118px;height:118px;border-radius:50%;border:2px solid var(--crail-base);opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(0.4);z-index:6;"></div>
       <div id="cardHeroVals" style="position:relative;width:100%;display:flex;flex-direction:column;align-items:center;will-change:transform;">
-      <div id="cardWeightZone" style="width:100%;display:flex;align-items:baseline;justify-content:center;gap:8px;cursor:pointer;">
-        <div id="cardWeight" class="mono" style="font-size:122px;font-weight:600;line-height:0.8;color:var(--ink-1);letter-spacing:-0.055em;">65</div>
-        <div id="cardWeightUnit" class="kr" style="display:none;font-size:15px;font-weight:600;color:var(--ink-4);letter-spacing:0.02em;">kg</div>
+        <div id="cardWeightZone" style="width:100%;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;">
+          <div id="cardWeight" class="hero-weight">65</div>
+          <div id="cardWeightUnit" class="hero-wunit kr">kg</div>
+        </div>
+        <div id="cardRepsZone" style="width:100%;margin-top:18px;display:flex;align-items:baseline;justify-content:center;gap:9px;cursor:pointer;padding:6px 0;">
+          <span class="hero-reps-x">×</span>
+          <span id="cardReps" class="hero-reps">10</span>
+          <span id="cardRepsUnit" class="hero-reps-u kr">회</span>
+        </div>
+        <div id="cardDoneLabel" class="kr" style="display:none;margin-top:18px;text-align:center;font-size:13px;font-weight:600;letter-spacing:0.14em;color:var(--sage);">5세트 완료</div>
+        <div id="cardPaceZone" class="mono" style="display:none;margin-top:10px;text-align:center;font-size:15px;color:var(--crail-deep);letter-spacing:0.04em;"></div>
+        <div id="cardPrChip" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;"><span style="color:var(--crail-deep);font-size:9px;line-height:1;">▲</span><span id="cardPrChipVal" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);">+5kg</span></div>
       </div>
-      <div id="cardRepsZone" style="width:100%;margin-top:18px;display:flex;align-items:baseline;justify-content:center;gap:9px;cursor:pointer;padding:6px 0;">
-        <span class="mono" style="font-size:24px;font-weight:300;color:var(--ink-4);">×</span>
-        <span id="cardReps" class="mono" style="font-size:50px;font-weight:400;color:var(--ink-2);letter-spacing:-0.02em;line-height:1;">10</span>
-        <span id="cardRepsUnit" class="kr" style="font-size:16px;font-weight:500;color:var(--ink-3);">회</span>
-      </div>
-      <!-- 완료 상태 라벨 (작업지시서 §9) — 잠긴 운동 시 ✓ 와 함께 "N세트 완료". 기본 숨김. -->
-      <div id="cardDoneLabel" class="kr" style="display:none;margin-top:18px;text-align:center;font-size:13px;font-weight:600;letter-spacing:0.14em;color:var(--sage);">5세트 완료</div>
-      <div id="cardPaceZone" class="mono" style="display:none;margin-top:10px;text-align:center;font-size:15px;color:var(--crail-deep);letter-spacing:0.04em;"></div>
-      <!-- PR 칩 — absolute(흐름 밖). reps 바로 아래 고정 슬롯 → 등장/소멸 시 무게·횟수 위치 불변. opacity 토글. -->
-      <div id="cardPrChip" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);opacity:0;pointer-events:none;transition:opacity 200ms ease;white-space:nowrap;">
-        <span style="color:var(--crail-deep);font-size:9px;line-height:1;">▲</span>
-        <span id="cardPrChipVal" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);white-space:nowrap;">+5kg</span>
-      </div>
-      </div><!-- /cardHeroVals -->
     </div>
-    <!-- 하단 볼륨 프로그레스 바 (이 종목 볼륨 진행 · shimmer) -->
+    <!-- 이 종목 볼륨 -->
     <div style="flex-shrink:0;padding:0 26px;">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;">
         <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.02em;white-space:nowrap;">이 종목 볼륨</span>
         <span class="mono" style="font-size:13px;font-weight:500;color:var(--ink-3);white-space:nowrap;"><span id="cardProgressVol">600 / 720kg</span><span id="cardProgressPct" style="display:none;"></span></span>
       </div>
-      <div class="vol-track" style="height:11px;border-radius:6px;background:var(--sunken);position:relative;box-shadow:var(--shadow-inset-soft);margin-bottom:20px;">
-        <div id="cardProgressBar" style="position:absolute;left:0;top:0;height:100%;width:47%;background:var(--crail-base);border-radius:6px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.32),0 2px 5px -1px rgba(217,119,87,0.45);transition:width 620ms cubic-bezier(.2,.7,.2,1);">
-          <span class="vbar-shimmer" style="position:absolute;top:0;bottom:0;left:0;width:42%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);pointer-events:none;"></span>
-        </div>
-        <span id="volEdge" style="position:absolute;left:47%;top:50%;width:15px;height:15px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 0 3px var(--crail-base),0 0 14px 4px rgba(217,119,87,0.75);transition:left 620ms cubic-bezier(.2,.7,.2,1);z-index:3;"></span>
+      <div class="vol-track" style="height:11px;border-radius:6px;background:var(--sunken);position:relative;box-shadow:var(--shadow-inset-soft);margin-bottom:22px;">
+        <div id="cardProgressBar" style="position:absolute;left:0;top:0;height:100%;width:83%;background:var(--crail-base);border-radius:6px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.32),0 2px 5px -1px oklch(67% 0.12 50 / .45);transition:width 620ms cubic-bezier(.2,.7,.2,1);"><span class="vbar-shimmer" style="position:absolute;top:0;bottom:0;left:0;width:42%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);"></span></div>
+        <span id="volEdge" style="position:absolute;left:83%;top:50%;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 0 3px var(--crail-base),0 0 12px 3px oklch(67% 0.12 50 / .6);transition:left 620ms cubic-bezier(.2,.7,.2,1);z-index:3;"></span>
         <div id="volGoal" style="position:absolute;top:-3px;right:0;height:17px;width:2px;border-radius:1px;background:var(--ink-4);z-index:2;"></div>
         <div id="volBurst" style="position:absolute;top:50%;right:0;width:12px;height:12px;border-radius:50%;transform:translate(50%,-50%) scale(0.4);border:2px solid var(--crail-base);opacity:0;pointer-events:none;z-index:1;"></div>
         <div id="volMarkCap" class="mono" style="position:absolute;top:15px;right:0;font-size:9px;font-weight:600;letter-spacing:0.03em;color:var(--ink-4);white-space:nowrap;">직전 기록</div>
         <div id="volBreak" class="kr" style="position:absolute;right:0;top:14px;display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--crail-deep);white-space:nowrap;opacity:0;pointer-events:none;"><span>직전 기록 돌파</span> <b id="volBreakAmt" class="mono">+0kg</b></div>
       </div>
     </div>
-    <!-- 하단 운동 전환 (renderFooterPills 리스타일) + 추가(+).
-         좌측 44px 균형 spacer 제거 — 좌측 데드 스페이스 (사용자 피드백 2026-06-10). 칩은 좌측 정렬 시작. -->
-    <div id="sessionFooter" style="flex-shrink:0;position:relative;margin-top:18px;padding:14px 16px 22px;border-top:1px solid var(--line-soft);display:flex;align-items:center;gap:8px;">
-      <div id="sessionFooterPills" class="kr" style="flex:1;min-width:0;display:flex;align-items:center;"></div>
-      <button id="sessionAddexBtn" type="button" aria-label="운동 추가" style="flex-shrink:0;width:44px;height:44px;border-radius:22px;border:1px solid var(--line);background:var(--card);box-shadow:var(--shadow-inset-soft);color:var(--ink-3);font-size:0;line-height:0;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-      </button>
+    <!-- 푸터 운동 전환 -->
+    <div id="sessionFooter">
+      <div class="fp-center-mark"></div>
+      <div id="sessionFooterPills" class="kr fp-row"></div>
+      <div class="fp-fade l"></div>
+      <div class="fp-fade r"></div>
+      <button id="sessionAddexBtn" type="button" class="fp-add" aria-label="운동 추가"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
     </div>
-    <!-- §6-3-2 / §6-10 — 키패드 바텀시트 (DOM 한 번 생성, transform 토글) -->
+    <!-- 키패드 바텀시트 (앱 전용) -->
     <div id="keypadBackdrop" data-open="false" style="position:absolute;inset:0;z-index:79;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
     <div id="keypadSheet" data-open="false" data-mode="weight" data-buf="" style="position:absolute;left:0;right:0;bottom:0;z-index:80;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:12px 20px 24px;transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
       <div style="width:40px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
-      <div id="keypadModeSeg">
-        <button type="button" data-kpmode="weight" class="on">무게</button>
-        <button type="button" data-kpmode="reps">횟수</button>
-      </div>
+      <div id="keypadModeSeg"><button type="button" data-kpmode="weight" class="on">무게</button><button type="button" data-kpmode="reps">횟수</button></div>
       <div style="display:flex;align-items:baseline;justify-content:center;gap:8px;">
         <div id="keypadValue" class="mono" style="font-size:52px;font-weight:500;color:var(--ink-1);letter-spacing:-0.03em;line-height:1;text-align:right;">0</div>
         <span id="keypadCaret"></span>
         <div id="keypadUnit" class="mono" style="font-size:17px;font-weight:500;color:var(--ink-4);">kg</div>
       </div>
       <div id="keypadRef" class="kr"></div>
-      <div id="keypadQuick">
-        <button type="button" data-kpdelta="-2.5">−2.5</button>
-        <button type="button" data-kpdelta="2.5">+2.5</button>
-        <button type="button" data-kpdelta="5">+5</button>
-      </div>
+      <div id="keypadQuick"><button type="button" data-kpdelta="-2.5">−2.5</button><button type="button" data-kpdelta="2.5">+2.5</button><button type="button" data-kpdelta="5">+5</button></div>
       <div id="keypadGrid" style="margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
-        <button class="keypad-key" data-key="1" type="button">1</button>
-        <button class="keypad-key" data-key="2" type="button">2</button>
-        <button class="keypad-key" data-key="3" type="button">3</button>
-        <button class="keypad-key" data-key="4" type="button">4</button>
-        <button class="keypad-key" data-key="5" type="button">5</button>
-        <button class="keypad-key" data-key="6" type="button">6</button>
-        <button class="keypad-key" data-key="7" type="button">7</button>
-        <button class="keypad-key" data-key="8" type="button">8</button>
-        <button class="keypad-key" data-key="9" type="button">9</button>
-        <button class="keypad-key fn" data-key="." type="button">.</button>
-        <button class="keypad-key" data-key="0" type="button">0</button>
-        <button class="keypad-key fn" data-key="del" type="button" aria-label="지우기">⌫</button>
+        <button class="keypad-key" data-key="1" type="button">1</button><button class="keypad-key" data-key="2" type="button">2</button><button class="keypad-key" data-key="3" type="button">3</button>
+        <button class="keypad-key" data-key="4" type="button">4</button><button class="keypad-key" data-key="5" type="button">5</button><button class="keypad-key" data-key="6" type="button">6</button>
+        <button class="keypad-key" data-key="7" type="button">7</button><button class="keypad-key" data-key="8" type="button">8</button><button class="keypad-key" data-key="9" type="button">9</button>
+        <button class="keypad-key fn" data-key="." type="button">.</button><button class="keypad-key" data-key="0" type="button">0</button><button class="keypad-key fn" data-key="del" type="button" aria-label="지우기">⌫</button>
       </div>
       <button id="keypadDone" type="button" class="kr" style="margin-top:12px;width:100%;height:52px;border-radius:var(--r-md);background:var(--ink-1);color:#fbf8f2;font-size:16px;font-weight:600;border:0;cursor:pointer;box-shadow:0 8px 20px -12px rgba(20,18,14,0.5);">완료</button>
     </div>
-    <!-- §6-9 / §6-10 — 액션 시트 (꾹누르기 메뉴, DOM 한 번 + transform 토글) -->
+    <!-- 액션 시트 (앱 전용) -->
     <div id="actionBackdrop" data-open="false" style="position:absolute;inset:0;z-index:90;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
     <div id="actionSheet" data-open="false" data-kind="" style="position:absolute;left:0;right:0;bottom:0;z-index:91;background:var(--card);border-top-left-radius:var(--r-xl);border-top-right-radius:var(--r-xl);padding:12px 16px 24px;transform:translateY(100%);transition:transform 200ms ease;touch-action:none;">
       <div style="width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
@@ -309,13 +275,12 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div id="actionItems" style="display:flex;flex-direction:column;gap:6px;"></div>
       <button id="actionCancel" type="button" class="kr" style="margin-top:14px;width:100%;height:48px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);color:var(--ink-3);font-size:15px;font-weight:600;cursor:pointer;">취소</button>
     </div>
-    <!-- §6-2 / §6-10 — 운동 추가 바텀시트 (DOM 한 번 + transform 토글, active 분기 전용). 시트가 active 카드 위에 슬라이드업. -->
-    <div id="sessionAddexBackdrop" data-open="false" style="position:absolute;inset:0;z-index:69;background:oklch(22% 0.008 60 / 0.32);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
-    <!-- §E — 빈 세션 #addexSheet 와 동일 .addex-sheet (카드 흰색·66%). 모달이므로 뒤 backdrop 만 추가. -->
-    <div id="sessionAddexSheet" class="addex-sheet" data-open="false" style="position:absolute;left:0;right:0;bottom:0;z-index:70;height:66dvh;transform:translateY(100%);transition:transform 200ms ease;">
-      <div style="flex-shrink:0;width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 14px;"></div>
-      <div id="sessionAddexChips" style="flex-shrink:0;display:flex;gap:8px;padding:0 18px;overflow-x:auto;"></div>
-      <div id="sessionAddexList" style="flex:1;min-height:0;margin-top:12px;padding:0 10px 16px;overflow-y:auto;"></div>
+    <!-- 운동 추가 바텀시트 (모달, 앱 전용) — ③ 추가 시트와 동일 .addex-sheet -->
+    <div id="sessionAddexBackdrop" data-open="false" style="position:absolute;inset:0;z-index:69;background:oklch(22% 0.008 60 / 0.32);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
+    <div id="sessionAddexSheet" class="addex-sheet" data-open="false" style="z-index:70;transform:translateY(100%);transition:transform 200ms ease;">
+      <div class="sheet-handle" style="margin-bottom:16px;"></div>
+      <div id="sessionAddexChips" class="addex-chips"></div>
+      <div id="sessionAddexList" class="addex-list" style="margin-top:12px;"></div>
     </div>
   </div>
   <div class="phone-home"></div>
