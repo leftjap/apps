@@ -56,7 +56,9 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 /* 오늘(채운 원)·직전 운동일(링)은 점 생략 — 시안 정합 */
 .cal-day.today .cal-part, .cal-day.prev-workout .cal-part { background: transparent; }
 /* 부위 밸런스 위젯 (작업지시서 §4 .mg-row 실측 — applyBalanceToDom 렌더). 색 규율: 가장 부족 1개만 crail. */
-.bal-rows { display: flex; flex-direction: column; gap: 22px; flex: 1; justify-content: center; }
+/* 작업지시서(3) 시안 — 막대 묶음은 라벨 아래에 붙고(위 여백 작게), 남는 세로 공간은
+   막대 아래(유산소·체중 쪽)로. flex:1 + flex-start 로 cardio-row 를 하단으로 밀어냄. */
+.bal-rows { display: flex; flex-direction: column; gap: 22px; flex: 1; justify-content: flex-start; }
 .bal-row { display: grid; grid-template-columns: 32px 1fr 20px; align-items: center; gap: 13px; }
 .bal-label { font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .bal-track { position: relative; height: 20px; border-radius: 10px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line-soft); }
