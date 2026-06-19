@@ -775,7 +775,8 @@ async function mountSessionActive(doc, block, session) {
   }
   if (cardRepsEl) {
     cardRepsEl.style.opacity = blockDone ? '1' : presetOpacity;
-    cardRepsEl.style.color = blockDone ? doneColor : activeColor;
+    // 작업지시서 §4 옵션 B — 무게(ink-1 주인공) 대비 횟수는 보조 위계(ink-2).
+    cardRepsEl.style.color = blockDone ? doneColor : 'var(--ink-2)';
   }
 
   // 완료 상태 (§9) — 잠긴 운동(blockDone) 은 히어로를 ✓(sage) + "N세트 완료" 요약으로 (기록 태그는 정적 잔류 → FIG 4).
@@ -1111,7 +1112,7 @@ function applyCardKind(doc, kind) {
     // 작업지시서 §C 옵션 B — weight 종목은 'kg' 단위 라벨 노출 (무게 주인공 + 단위 명확).
     if (weightUnit) { weightUnit.textContent = 'kg'; weightUnit.style.display = 'block'; }
     if (repsUnit) repsUnit.textContent = '회';
-    if (weightEl) weightEl.style.fontSize = '120px';
+    if (weightEl) weightEl.style.fontSize = '122px'; // 작업지시서 §4 히어로 weight 122px
     if (setDotsEl) setDotsEl.style.display = 'flex';
     if (paceEl) paceEl.style.display = 'none';
     setProgressVis(true);
@@ -3262,9 +3263,10 @@ async function renderList(listEl) {
       console.error('[gymSession] renderList getActiveSession', e);
     }
   }
+  const prevMap = await buildPrevTopWeightMap();
   listEl.innerHTML = list
     .map((ex) => {
-      const meta = formatMeta(ex);
+      const meta = formatMeta(ex, prevMap);
       const addedClass = activeIds.has(ex.id) ? ' is-added' : '';
       return `
         <button class="addex-item${addedClass}" data-ex="${escapeHtml(ex.id)}" data-name="${escapeHtml(ex.name)}" data-part="${escapeHtml(ex.part)}" ${VIEW_ATTR}="1">
@@ -3303,9 +3305,49 @@ export async function syncIsAddedState(listEl) {
   });
 }
 
-function formatMeta(ex) {
+/**
+ * 모든 completed 세션을 1회 조회해 exerciseId → 직전(가장 최근 세션) 톱 중량 Map.
+ * 시작 전/추가 시트 리스트 메타("직전 Nkg") 용 — 종목마다 getPrevSessionLastSets
+ * 재조회(N×테이블 스캔)를 피해 한 번에 빌드. 최신 세션 우선 채택.
+ */
+async function buildPrevTopWeightMap() {
+  const map = new Map();
+  try {
+    const db = (typeof window !== 'undefined' ? window.gymDB : null);
+    if (!db) return map;
+    const rows = await db.sessions.where('status').equals('completed').toArray();
+    if (!rows.length) return map;
+    rows.sort((a, b) => {
+      const da = String(a.date || ''), dbS = String(b.date || '');
+      if (da !== dbS) return da < dbS ? 1 : -1;
+      return (b.endTime || 0) - (a.endTime || 0);
+    });
+    for (const s of rows) {
+      for (const b of (s.blocks || [])) {
+        if (!b || b.type !== 'single' || !b.exerciseId) continue;
+        if (map.has(b.exerciseId)) continue; // 최신 세션의 값만 (이후 과거는 무시)
+        let top = 0;
+        for (const st of (Array.isArray(b.sets) ? b.sets : [])) {
+          const w = Number(st?.weight) || 0;
+          if (w > top) top = w;
+        }
+        map.set(b.exerciseId, top); // top=0 (맨몸 등) 도 기록해 과거값 덮어쓰기 차단
+      }
+    }
+  } catch (e) {
+    if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
+      console.error('[gymSession] buildPrevTopWeightMap', e);
+    }
+  }
+  return map;
+}
+
+function formatMeta(ex, prevMap) {
   if (ex.equipment === 'cardio') return `${ex.defaultSets ?? 1}회`;
   if (ex.equipment === 'bodyweight') return `맨몸 · ${ex.defaultReps ?? 0}회`;
+  // 시안 ② — weight 종목은 직전 사용 중량 우선("직전 Nkg"). 기록 없으면 기본값 폴백.
+  const prev = prevMap ? prevMap.get(ex.id) : undefined;
+  if (Number.isFinite(prev) && prev > 0) return `직전 ${prev}kg`;
   return `${ex.defaultWeight ?? 0}kg × ${ex.defaultReps ?? 0}회`;
 }
 

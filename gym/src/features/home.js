@@ -597,29 +597,7 @@ export async function mountHomeView(now = Date.now()) {
       applyBalanceToDom(summarizeWeeklyBalance(sessions, now), doc);
       streakApplied = true;
       // P5 — 오늘 체중 카드: 직전 체중 표시 + 입력 모달(weightKeypadSheet) wire
-      try {
-        const weightsRaw = await listAllWeights();
-        const weights = Array.isArray(weightsRaw) ? weightsRaw : [];
-        const n = weights.length;
-        const latest = n ? weights[n - 1] : null;
-        const prevW = n >= 2 ? weights[n - 2] : null;
-        const ref = doc.getElementById('homeWeightRef');
-        if (ref) {
-          if (!latest) {
-            ref.textContent = '오늘 첫 기록';
-          } else {
-            // 시안: "직전 73.4kg · ▼0.3" — 직전 대비 증감 (없으면 생략).
-            let s = `직전 ${latest.weight}kg`;
-            if (prevW) {
-              const d = Math.round((latest.weight - prevW.weight) * 10) / 10;
-              if (d !== 0) s += ` · ${d < 0 ? '▼' : '▲'}${Math.abs(d)}`;
-            }
-            ref.textContent = s;
-          }
-        }
-      } catch (wErr) {
-        if (!(wErr && /window\.gymDB 미초기화/.test(String(wErr.message)))) console.error('[gymHome] weight card', wErr);
-      }
+      await applyWeightCardToDom(doc);
       try { window.gymWeightKeypad?.wireWeightKeypad?.(doc); } catch (wkErr) { console.error('[gymHome] wireWeightKeypad', wkErr); }
     } catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
@@ -706,6 +684,35 @@ function applyLastWorkoutToDom(streak, doc) {
   if (metaEl) {
     const meta = [streak.weekdayLabel, streak.sinceLabel].filter(Boolean).join(' · ');
     metaEl.textContent = meta;
+  }
+}
+
+/**
+ * 오늘 체중 카드 갱신 (시안: "직전 73.4kg · ▼0.3"). mountHomeView 와 체중 저장 콜백(weights.saveWeightInput)이 공유.
+ * 저장 직후에도 홈 카드가 즉시 최신 체중을 반영하도록 별도 함수로 분리.
+ */
+async function applyWeightCardToDom(doc) {
+  if (!doc) return;
+  try {
+    const weightsRaw = await listAllWeights();
+    const weights = Array.isArray(weightsRaw) ? weightsRaw : [];
+    const n = weights.length;
+    const latest = n ? weights[n - 1] : null;
+    const prevW = n >= 2 ? weights[n - 2] : null;
+    const ref = doc.getElementById('homeWeightRef');
+    if (!ref) return;
+    if (!latest) {
+      ref.textContent = '오늘 첫 기록';
+      return;
+    }
+    let s = `직전 ${latest.weight}kg`;
+    if (prevW) {
+      const d = Math.round((latest.weight - prevW.weight) * 10) / 10;
+      if (d !== 0) s += ` · ${d < 0 ? '▼' : '▲'}${Math.abs(d)}`;
+    }
+    ref.textContent = s;
+  } catch (wErr) {
+    if (!(wErr && /window\.gymDB 미초기화/.test(String(wErr.message)))) console.error('[gymHome] weight card', wErr);
   }
 }
 
@@ -843,6 +850,7 @@ if (typeof window !== 'undefined') {
     summarizeWeeklyBalance,
     categorizeBalancePart,
     mountHomeView,
+    refreshWeightCard: applyWeightCardToDom,
     buildWeekCalendar,
     fetchDayDetail,
     partAbbreviation,
