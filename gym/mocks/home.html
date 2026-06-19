@@ -56,7 +56,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 /* 오늘(채운 원)·직전 운동일(링)은 점 생략 — 시안 정합 */
 .cal-day.today .cal-part, .cal-day.prev-workout .cal-part { background: transparent; }
 /* 부위 밸런스 위젯 (작업지시서 §4 .mg-row 실측 — applyBalanceToDom 렌더). 색 규율: 가장 부족 1개만 crail. */
-.bal-rows { display: flex; flex-direction: column; gap: 22px; }
+.bal-rows { display: flex; flex-direction: column; gap: 22px; flex: 1; justify-content: center; }
 .bal-row { display: grid; grid-template-columns: 32px 1fr 20px; align-items: center; gap: 13px; }
 .bal-label { font-size: 14px; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
 .bal-track { position: relative; height: 20px; border-radius: 10px; background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line-soft); }
@@ -122,7 +122,7 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
           <span class="kr" style="font-size:13px;font-weight:600;color:var(--ink-2);">부위 밸런스</span>
           <span class="kr" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--ink-4);"><span style="display:inline-block;width:2px;height:11px;background:var(--ink-4);border-radius:1px;"></span>지난주</span>
         </div>
-        <div id="homeBalance" style="margin:18px 0 0;"></div>
+        <div id="homeBalance" style="flex:1;min-height:0;display:flex;flex-direction:column;margin:18px 0 0;"></div>
       </div>
       <!-- 오늘 체중 카드 (탭 → weightKeypadSheet 입력 모달) -->
       <div data-bind="weight-input-trigger" style="flex-shrink:0;margin:16px 26px 0;display:flex;align-items:center;justify-content:space-between;padding:13px 18px;border-radius:var(--r-md);background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow-inset-soft);cursor:pointer;">

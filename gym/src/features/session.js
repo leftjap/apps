@@ -3306,9 +3306,9 @@ export async function syncIsAddedState(listEl) {
 }
 
 /**
- * 모든 completed 세션을 1회 조회해 exerciseId → 직전(가장 최근 세션) 톱 중량 Map.
- * 시작 전/추가 시트 리스트 메타("직전 Nkg") 용 — 종목마다 getPrevSessionLastSets
- * 재조회(N×테이블 스캔)를 피해 한 번에 빌드. 최신 세션 우선 채택.
+ * 모든 completed 세션을 1회 조회해 exerciseId → 직전(가장 최근 세션) { w: 톱중량, dur: 톱시간(분) } Map.
+ * 시작 전/추가 시트 리스트 메타("직전 Nkg" / 유산소 "직전 N분") 용 — 종목마다
+ * getPrevSessionLastSets 재조회(N×테이블 스캔)를 피해 한 번에 빌드. 최신 세션 우선 채택.
  */
 async function buildPrevTopWeightMap() {
   const map = new Map();
@@ -3326,12 +3326,12 @@ async function buildPrevTopWeightMap() {
       for (const b of (s.blocks || [])) {
         if (!b || b.type !== 'single' || !b.exerciseId) continue;
         if (map.has(b.exerciseId)) continue; // 최신 세션의 값만 (이후 과거는 무시)
-        let top = 0;
+        let top = 0, dur = 0;
         for (const st of (Array.isArray(b.sets) ? b.sets : [])) {
-          const w = Number(st?.weight) || 0;
-          if (w > top) top = w;
+          const w = Number(st?.weight) || 0; if (w > top) top = w;
+          const d = Number(st?.duration) || 0; if (d > dur) dur = d;
         }
-        map.set(b.exerciseId, top); // top=0 (맨몸 등) 도 기록해 과거값 덮어쓰기 차단
+        map.set(b.exerciseId, { w: top, dur: Math.round(dur / 60) }); // 맨몸(w=0)·유산소도 기록해 과거값 덮어쓰기 차단
       }
     }
   } catch (e) {
@@ -3342,12 +3342,19 @@ async function buildPrevTopWeightMap() {
   return map;
 }
 
+/**
+ * 작업지시서(3) 확정 [4] — 시작전/추가 시트 리스트 메타(.ex-meta).
+ *  - weight 종목: 직전 사용 중량 "직전 Nkg" (기록 없으면 기본값 폴백)
+ *  - 맨몸(bodyweight): "맨몸" (무게 없음)
+ *  - 유산소(cardio): "직전 N분" (기록 없으면 "유산소")
+ */
 function formatMeta(ex, prevMap) {
-  if (ex.equipment === 'cardio') return `${ex.defaultSets ?? 1}회`;
-  if (ex.equipment === 'bodyweight') return `맨몸 · ${ex.defaultReps ?? 0}회`;
-  // 시안 ② — weight 종목은 직전 사용 중량 우선("직전 Nkg"). 기록 없으면 기본값 폴백.
   const prev = prevMap ? prevMap.get(ex.id) : undefined;
-  if (Number.isFinite(prev) && prev > 0) return `직전 ${prev}kg`;
+  if (ex.equipment === 'cardio') {
+    return (prev && prev.dur > 0) ? `직전 ${prev.dur}분` : '유산소';
+  }
+  if (ex.equipment === 'bodyweight') return '맨몸';
+  if (prev && Number.isFinite(prev.w) && prev.w > 0) return `직전 ${prev.w}kg`;
   return `${ex.defaultWeight ?? 0}kg × ${ex.defaultReps ?? 0}회`;
 }
 

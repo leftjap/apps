@@ -4,7 +4,7 @@
  * BUILTIN_EXERCISES — 약 40종 기본 운동. 사용자 환경에서 마이그레이션 없이 코드 배포만으로
  * 갱신되는 정적 카탈로그. 사용자 추가 운동은 customExercises 스토어 (queries.js).
  *
- * 부위(part): chest / back / shoulder / legs / arms / cardio
+ * 부위(part): chest / back / legs / shoulder / arms / core / cardio
  * 장비(equipment): barbell / dumbbell / machine / cable / bodyweight / cardio
  *
  * 중량 증감: equipment 로 결정 (INCREMENT[equipment])
@@ -16,13 +16,16 @@
  *   total_kcal = MET × 체중(kg) × 시간(시) × 1.05
  */
 
+// 작업지시서(3) 확정 [3] — 부위 칩/택소노미: 가슴·등·하체·어깨·팔·코어·유산소.
+// 코어(abs)와 유산소(트레드밀 등)를 분리. PART_IDS(=Object.keys) 가 칩 순서를 결정하므로 순서 유지.
 export const PARTS = Object.freeze({
   chest: '가슴',
   back: '등',
-  shoulder: '어깨',
   legs: '하체',
+  shoulder: '어깨',
   arms: '팔',
-  cardio: '맨몸', // 표시명만 변경 (key 'cardio' 는 DB tags 저장값이라 유지 — 사용자 결정 2026-06-10)
+  core: '코어',      // abs (행잉 레그 레이즈·디클라인 싯업 등)
+  cardio: '유산소',  // 트레드밀·사이클·엘립티컬 (활동 분류 — 부위 아님, 칩 맨 끝)
 });
 
 export const PART_IDS = Object.freeze(Object.keys(PARTS));
@@ -88,12 +91,13 @@ export const BUILTIN_EXERCISES = Object.freeze([
   { id: 'dips',             name: '딥스',            part: 'arms',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 10, defaultWeight: 0,  met: 5.0 },
   { id: 'wrist_curl',       name: '리스트 컬',       part: 'arms',     equipment: 'dumbbell',  defaultSets: 3, defaultReps: 15, defaultWeight: 5,  met: 3.0 },
 
-  // cardio (5) — 사이클 머신·맨몸 코어 운동 (사용자 분류 결정 — abs part 미정의로 cardio 묶음)
+  // 유산소 (cardio) — 트레드밀·사이클·엘립티컬 (장비=cardio, 밸런스 제외·별도 줄)
   { id: 'treadmill',           name: '트레드밀',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 7.0 },
   { id: 'cycle',               name: '사이클',           part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 6.5 },
   { id: 'elliptical',          name: '엘립티컬',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 5.0 },
-  { id: 'hanging_leg_raise',   name: '행잉 레그 레이즈', part: 'cardio',   equipment: 'bodyweight', defaultSets: 3, defaultReps: 12, defaultWeight: 0, met: 4.0 },
-  { id: 'decline_situp',       name: '디클라인 싯업',    part: 'cardio',   equipment: 'bodyweight', defaultSets: 3, defaultReps: 15, defaultWeight: 0, met: 4.0 },
+  // 코어 (core) — abs (작업지시서(3) 확정 [3] — cardio 에서 분리, 주근육 부위로 흡수)
+  { id: 'hanging_leg_raise',   name: '행잉 레그 레이즈', part: 'core',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 12, defaultWeight: 0, met: 4.0 },
+  { id: 'decline_situp',       name: '디클라인 싯업',    part: 'core',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 15, defaultWeight: 0, met: 4.0 },
 ]);
 
 /** equipment 별 weightIncrement 자동 부여 (spec §11) */

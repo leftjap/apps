@@ -15,9 +15,9 @@ import {
 } from './exercises.js';
 
 describe('PARTS / PART_IDS', () => {
-  it('정확히 6 부위', () => {
-    expect(PART_IDS).toEqual(['chest', 'back', 'shoulder', 'legs', 'arms', 'cardio']);
-    expect(Object.keys(PARTS)).toHaveLength(6);
+  it('정확히 7 부위 (작업지시서(3) 확정 [3] — 코어·유산소 분리)', () => {
+    expect(PART_IDS).toEqual(['chest', 'back', 'legs', 'shoulder', 'arms', 'core', 'cardio']);
+    expect(Object.keys(PARTS)).toHaveLength(7);
   });
   it('모든 라벨이 한국어 1~3자', () => {
     Object.values(PARTS).forEach(label => {

@@ -229,7 +229,7 @@ describe('sessionToWorkoutEntry', () => {
       }],
     };
     const r = sessionToWorkoutEntry(session);
-    expect(r.tag).toBe('맨몸'); // 날짜 상세 시트 표기 — 풀네임 (2026-06-10)
+    expect(r.tag).toBe('유산소'); // 날짜 상세 시트 표기 — 작업지시서(3) 확정 [3]
     expect(r.ex).toHaveLength(1);
     expect(r.ex[0]).toMatchObject({ n: '트레드밀', s: '30분 · 5km', kind: 'cardio' });
   });

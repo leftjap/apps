@@ -355,10 +355,10 @@ describe('summarizeStreak', () => {
     expect(r.sinceLabel).toBe('1일 전');
   });
 
-  it('직전 운동 — 유산소만 한 날은 폴백으로 맨몸 표기', () => {
+  it('직전 운동 — 유산소만 한 날은 폴백으로 유산소 표기', () => {
     const sessions = [{ date: '2026-04-30', tags: ['cardio'], status: 'completed' }];
     const r = summarizeStreak(sessions, NOW_THU);
-    expect(r.lastWorkoutParts).toBe('맨몸');
+    expect(r.lastWorkoutParts).toBe('유산소');
     expect(r.sinceLabel).toBe('오늘');
     expect(r.weekdayLabel).toBe('목요일');
   });
@@ -489,7 +489,8 @@ describe('partAbbreviation', () => {
     expect(partAbbreviation('shoulder')).toBe('어');
     expect(partAbbreviation('legs')).toBe('하');
     expect(partAbbreviation('arms')).toBe('팔');
-    expect(partAbbreviation('cardio')).toBe('맨'); // 카테고리 표시명 유산소→맨몸 (2026-06-10)
+    expect(partAbbreviation('core')).toBe('코');
+    expect(partAbbreviation('cardio')).toBe('유'); // 유산소 (작업지시서(3) 확정 [3])
   });
 
   it('한국어 단일 글자 (mocks Wave 11.6D fallback) → 그대로', () => {

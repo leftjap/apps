@@ -39,7 +39,8 @@ export function partAbbreviation(tag) {
     case 'shoulder': return '어';
     case 'legs': return '하';
     case 'arms': return '팔';
-    case 'cardio': return '맨'; // 카테고리 표시명 유산소→맨몸 (사용자 결정 2026-06-10)
+    case 'core': return '코';
+    case 'cardio': return '유'; // 유산소 (작업지시서(3) 확정 [3])
     default:
       // 한국어 fallback (mocks Wave 11.6D 에서 이미 단일 글자) — 그대로 반환
       if (typeof tag === 'string' && tag.length === 1) return tag;
@@ -287,7 +288,7 @@ const BALANCE_MUSCLE_PARTS = ['chest', 'back', 'shoulder', 'legs', 'arms'];
 /**
  * 운동 id → 밸런스 분류 (작업지시서 "코어·유산소 정의" 데이터 근거).
  *  - equipment==='cardio' (트레드밀·사이클·엘립티컬) → 'cardio' (밸런스 제외, 별도 줄)
- *  - part==='cardio' 이지만 유산소 장비 아님 (행잉레그레이즈·디클라인싯업 등 abs) → 'core'
+ *  - part==='core' (행잉레그레이즈·디클라인싯업 등 abs) → 'core'. 구데이터 part==='cardio'+비유산소 장비도 흡수.
  *  - 그 외 part (chest/back/shoulder/legs/arms) → 그대로 (데드리프트는 back 유지)
  * 빌트인 우선, 없으면 커스텀 캐시. 미해결 → null.
  */
@@ -295,7 +296,7 @@ export function categorizeBalancePart(exerciseId) {
   const ex = getBuiltinExercise(exerciseId) || getCachedCustomExercise(exerciseId);
   if (!ex) return null;
   if (ex.equipment === 'cardio') return 'cardio';
-  if (ex.part === 'cardio') return 'core';
+  if (ex.part === 'core' || ex.part === 'cardio') return 'core'; // abs (신 part='core', 구데이터 'cardio' 폴백)
   if (BALANCE_MUSCLE_PARTS.includes(ex.part)) return ex.part;
   return null;
 }
