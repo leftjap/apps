@@ -137,7 +137,12 @@ function mount(route) {
   document.body.dataset.route = guarded;
   reExecuteScripts();
   window.scrollTo(0, 0);
-  if (guarded === 'login') mountDiag(storageKey).catch(() => {}); else unmountDiag();
+  // 인증 진단 라인은 구현 레퍼런스 - 로그인.html 에 없는 개발용 — 시안 정합 위해 프로덕션 로그인엔 기본 숨김.
+  // dev 서버(import.meta.env.DEV) 또는 localStorage gymDiag='1' opt-in 일 때만 표시 (라이브 OAuth 디버깅 보존).
+  let diagOptIn = false;
+  try { diagOptIn = localStorage.getItem('gymDiag') === '1'; } catch (_) { /* storage 차단 환경 */ }
+  if (guarded === 'login' && (import.meta.env.DEV || diagOptIn)) mountDiag(storageKey).catch(() => {});
+  else unmountDiag();
 
   const mountFn = ROUTE_MOUNTS[guarded];
   if (typeof mountFn === 'function') {
