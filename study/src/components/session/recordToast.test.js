@@ -15,16 +15,6 @@ describe('recordErrorMessage', () => {
   it('azure_recognize_fail → 네트워크 안내', () => {
     expect(recordErrorMessage('azure_recognize_fail')).toContain('네트워크');
   });
-  it('too_quiet → 음량 약함 재발화 안내 (Wave A.18)', () => {
-    const m = recordErrorMessage('too_quiet');
-    expect(m).toContain('약');
-    expect(m).toContain('다시');
-  });
-  it('incomplete_capture → 부분 캡처 안내 + 마이크 권장 (Wave A.19)', () => {
-    const m = recordErrorMessage('incomplete_capture');
-    expect(m).toContain('다시');
-    expect(m).toContain('마이크');
-  });
   it('알 수 없는 reason → 일반 오류 안내', () => {
     expect(recordErrorMessage('record_fail')).toContain('오류');
     expect(recordErrorMessage('unavailable')).toContain('오류');
