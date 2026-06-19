@@ -764,6 +764,13 @@ function applyStreakToDom(streak, doc) {
     cta.dataset.spaCta = '1';
     cta.addEventListener('click', goToSession, { once: true });
   }
+  // HomeA(idle) 노출 복원 — 직전 active 마운트(applyToDom)가 같은 DOM 에서 home-a 를
+  // 인라인 display:none 처리했을 수 있어, idle 재마운트 때 복원 안 하면 home-a(인라인 none)+home-c(CSS idle none)
+  // 동시 숨김 → 홈 백지. applyToDom 와 대칭으로 토글 복원해 mountHomeView 를 멱등화.
+  const homeA = doc.querySelector('.home-a');
+  const homeC = doc.querySelector('.home-c');
+  if (homeA) homeA.style.display = '';
+  if (homeC) homeC.style.display = 'none';
   // streak.state ('empty'|'gap'|'rest'|'active') 는 home.html CSS rule (active|idle) 과 다른 도메인.
   // idle 카드 (HomeA) 노출을 위해 body 에 'idle' 정규화. mocks 에 #app 없음.
   if (doc.body?.dataset) doc.body.dataset.state = 'idle';
