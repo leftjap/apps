@@ -18,7 +18,7 @@ import {
 } from '../components/session/index.js';
 import { loadNewCards, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
-import { finishSession } from '../services/sessionFinish.js';
+import { finishSession, flushLiveStats } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
@@ -79,18 +79,22 @@ export function mountSessionNew(host) {
     weakInSession: {},
     recLog: {}, // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착·진행 게이트 (2026-06-10)
     ended: false,
+    base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
   };
 
   const saveSnapshot = () => {
     // 데모(?demo=1)는 실 meta('activeSession')에 절대 쓰지 않는다 (격리). 인증 SPA 에서도 안전.
     if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return;
-    saveActiveSession(window.studyDB, {
-      mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime,
+    const snap = {
+      mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime, base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       recLog: { ...state.recLog },
       cardIds: state.cards.map((c) => c.id),
-    }).catch((e) => console.error('[session-new] saveActiveSession', e));
+    };
+    saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-new] saveActiveSession', e));
+    // 진행 중 진척을 오늘 dailyStats 에 라이브 반영 → cue 가 종료 전에도 '오늘 학습' 표시 (멱등)
+    flushLiveStats(window.studyDB, snap).catch((e) => console.error('[session-new] flushLiveStats', e));
   };
   const onVis = () => { if (document.hidden) saveSnapshot(); };
 
@@ -109,6 +113,7 @@ export function mountSessionNew(host) {
         tried: state.tried,
         passed: state.passed,
         completedNewCards: state.cards.slice(0, completedCount),
+        baseToday: state.base, // 진행 중 라이브 반영분 reconcile (base+최종, 이중집계 방지)
       });
     } catch (e) {
       console.error('[session-new] finishSession', e);
@@ -203,12 +208,12 @@ export function mountSessionNew(host) {
     loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
     loadActiveSession(window.studyDB),
   ])
-    .then(([cards, snapshot]) => {
+    .then(async ([cards, snapshot]) => {
       state.cards = cards;
       state.total = cards.length;
       const restore = restoreFromSnapshot(snapshot, cards, 'new');
       if (restore) {
-        Object.assign(state, restore);
+        Object.assign(state, restore); // base 포함 (원래 시작 시 캡처분 보존)
         startTime = restore.startTime;
         const idx = Math.max(0, restore.step - 1);
         state.sentence = pickCardFields(cards[idx]) || EMPTY_SENTENCE;
@@ -217,6 +222,9 @@ export function mountSessionNew(host) {
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
         // mode 일치하나 cardIds 불일치 → 스테일 snapshot 정리
         if (snapshot && snapshot.mode === 'new') clearActiveSession(window.studyDB).catch(() => {});
+        // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
+        try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
+        catch { state.base = null; }
       }
       state.loaded = true;
       rerender();

@@ -5,7 +5,7 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { createStudyDB } from '../db/schema.js';
-import { finishSession } from './sessionFinish.js';
+import { finishSession, flushLiveStats } from './sessionFinish.js';
 
 describe('finishSession (real Dexie)', () => {
   let db;
@@ -86,5 +86,69 @@ describe('finishSession (real Dexie)', () => {
 
   it('db null → null 반환, 에러 안 남', async () => {
     expect(await finishSession(null, { mode: 'new', lang: 'en', date: '2026-05-08' })).toBeNull();
+  });
+});
+
+describe('flushLiveStats + finishSession(baseToday) — 진행 중 라이브 반영, 이중집계 0', () => {
+  let db;
+  beforeEach(async () => {
+    db = createStudyDB(`live_test_${Date.now()}_${Math.random()}`);
+    await db.todayLessons.bulkPut([
+      { id: 'n1', lang: 'en', date: '2026-06-21', completed: false, order_index: 1, sentence: 'A', meaning: 'a', phonetic_kr: 'p1' },
+      { id: 'n2', lang: 'en', date: '2026-06-21', completed: false, order_index: 2, sentence: 'B', meaning: 'b', phonetic_kr: 'p2' },
+      { id: 'n3', lang: 'en', date: '2026-06-21', completed: false, order_index: 3, sentence: 'C', meaning: 'c', phonetic_kr: 'p3' },
+    ]);
+  });
+  afterEach(async () => { await db.delete(); });
+
+  it('flushLiveStats — 진행 중 세션을 오늘 dailyStats 에 멱등 기록(base+현재, 누적 X)', async () => {
+    const snap = { mode: 'new', lang: 'en', todayISO: '2026-06-21', startTime: Date.now() - 120000, step: 3, tried: 5, passed: 4, cardIds: ['n1', 'n2', 'n3'], base: null };
+    await flushLiveStats(db, snap); // step3 → 2카드 완료(n1,n2)
+    let s = await db.dailyStats.get('2026-06-21');
+    expect(s.newSentences).toBe(2);
+    expect(s.utteranceCount).toBe(5);
+    expect(s.studyTimeSec).toBeGreaterThan(0);
+    await flushLiveStats(db, snap); // 재호출 — 멱등 (누적 안 됨)
+    s = await db.dailyStats.get('2026-06-21');
+    expect(s.newSentences).toBe(2);
+    expect(s.utteranceCount).toBe(5);
+  });
+
+  it('flush(진행) → finish(baseToday) — 이중집계 없이 최종값만', async () => {
+    const snapMid = { mode: 'new', lang: 'en', todayISO: '2026-06-21', startTime: Date.now() - 300000, step: 2, tried: 3, passed: 2, cardIds: ['n1', 'n2', 'n3'], base: null };
+    await flushLiveStats(db, snapMid); // 진행 중 1카드(n1)
+    expect((await db.dailyStats.get('2026-06-21')).newSentences).toBe(1);
+    const completed = (await db.todayLessons.bulkGet(['n1', 'n2', 'n3'])).filter(Boolean);
+    await finishSession(db, { mode: 'new', lang: 'en', date: '2026-06-21', durationSec: 300, tried: 9, passed: 7, completedNewCards: completed, baseToday: null });
+    const s = await db.dailyStats.get('2026-06-21');
+    expect(s.newSentences).toBe(3); // 이중집계면 4 — 3이어야 정상
+    expect(s.utteranceCount).toBe(9); // 이중집계면 12 — 9
+    expect(s.studyTimeSec).toBe(300);
+  });
+
+  it('base 있는 날(이전 완료분 위) — flush/finish 가 base 위에 더함', async () => {
+    await finishSession(db, { mode: 'review', lang: 'en', date: '2026-06-21', durationSec: 60, tried: 4, passed: 3, completedReviewCount: 2 });
+    const base = await db.dailyStats.get('2026-06-21'); // utter4, review2, time60
+    const snap = { mode: 'new', lang: 'en', todayISO: '2026-06-21', startTime: Date.now() - 60000, step: 2, tried: 2, passed: 2, cardIds: ['n1', 'n2', 'n3'], base };
+    await flushLiveStats(db, snap);
+    let s = await db.dailyStats.get('2026-06-21');
+    expect(s.utteranceCount).toBe(6); // base4 + live2
+    expect(s.newSentences).toBe(1); // n1
+    expect(s.reviewCount).toBe(2); // base 유지
+    const completed = (await db.todayLessons.bulkGet(['n1', 'n2'])).filter(Boolean);
+    await finishSession(db, { mode: 'new', lang: 'en', date: '2026-06-21', durationSec: 120, tried: 5, passed: 4, completedNewCards: completed, baseToday: base });
+    s = await db.dailyStats.get('2026-06-21');
+    expect(s.utteranceCount).toBe(9); // base4 + final5 (live 덮어씀)
+    expect(s.newSentences).toBe(2); // n1,n2
+    expect(s.reviewCount).toBe(2);
+    expect(s.studyTimeSec).toBe(180); // base60 + final120
+  });
+
+  it('finishSession baseToday 미전달 → 기존 누적 동작 보존(하위호환)', async () => {
+    await finishSession(db, { mode: 'review', lang: 'en', date: '2026-06-21', durationSec: 60, tried: 3, passed: 2, completedReviewCount: 1 });
+    await finishSession(db, { mode: 'review', lang: 'en', date: '2026-06-21', durationSec: 90, tried: 4, passed: 3, completedReviewCount: 2 });
+    const s = await db.dailyStats.get('2026-06-21');
+    expect(s.utteranceCount).toBe(7);
+    expect(s.reviewCount).toBe(3);
   });
 });

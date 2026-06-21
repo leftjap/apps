@@ -24,7 +24,7 @@ import {
 import { loadReviewCards, loadFreeReviewCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
 import { applySrsUpdate } from '../services/srs.js';
-import { finishSession } from '../services/sessionFinish.js';
+import { finishSession, flushLiveStats } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
@@ -79,16 +79,20 @@ export function mountSessionReview(host) {
     weakInSession: {},
     judged: { got: 0, hmm: 0, no: 0 },
     ended: false,
+    base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
   };
 
   const saveSnapshot = () => {
     if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return; // 데모 격리
-    saveActiveSession(window.studyDB, {
-      mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime,
+    const snap = {
+      mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       judged: { ...state.judged }, cardIds: state.cards.map((c) => c.id),
-    }).catch((e) => console.error('[session-review] saveActiveSession', e));
+    };
+    saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-review] saveActiveSession', e));
+    // 진행 중 진척을 오늘 dailyStats 에 라이브 반영 → cue 가 종료 전에도 '오늘 학습' 표시 (멱등)
+    flushLiveStats(window.studyDB, snap).catch((e) => console.error('[session-review] flushLiveStats', e));
   };
   const onVis = () => { if (document.hidden) saveSnapshot(); };
 
@@ -106,6 +110,7 @@ export function mountSessionReview(host) {
         tried: state.tried,
         passed: state.passed,
         completedReviewCount: completedCount,
+        baseToday: state.base, // 진행 중 라이브 반영분 reconcile (base+최종, 이중집계 방지)
       });
     } catch (e) {
       console.error('[session-review] finishSession', e);
@@ -209,12 +214,12 @@ export function mountSessionReview(host) {
     })(),
     loadActiveSession(window.studyDB),
   ])
-    .then(([cards, snapshot]) => {
+    .then(async ([cards, snapshot]) => {
       state.cards = cards;
       state.total = cards.length;
       const restore = restoreFromSnapshot(snapshot, cards, sessionMode);
       if (restore) {
-        Object.assign(state, restore);
+        Object.assign(state, restore); // base 포함 (원래 시작 시 캡처분 보존)
         startTime = restore.startTime;
         const idx = Math.max(0, restore.step - 1);
         state.sentence = pickCardFields(cards[idx]) || EMPTY_SENTENCE;
@@ -222,6 +227,9 @@ export function mountSessionReview(host) {
         state.step = cards.length === 0 ? 0 : 1;
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
         if (snapshot && snapshot.mode === sessionMode) clearActiveSession(window.studyDB).catch(() => {});
+        // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
+        try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
+        catch { state.base = null; }
       }
       state.loaded = true;
       rerender();

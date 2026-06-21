@@ -71,6 +71,7 @@ export async function finalizeStaleSnapshot(db, snapshot) {
       tried: Number(snapshot.tried) || 0,
       passed: Number(snapshot.passed) || 0,
       completedNewCards,
+      baseToday: snapshot.base, // 진행 중 flushLiveStats 가 쓴 라이브 값 reconcile (이중집계 방지)
     });
   }
   if (snapshot.mode === 'review' || snapshot.mode === 'free') {
@@ -80,6 +81,7 @@ export async function finalizeStaleSnapshot(db, snapshot) {
       tried: Number(snapshot.tried) || 0,
       passed: Number(snapshot.passed) || 0,
       completedReviewCount: completed,
+      baseToday: snapshot.base,
     });
   }
   return null;
@@ -119,5 +121,6 @@ export function restoreFromSnapshot(snapshot, cards, mode) {
       ? { got: Number(snapshot.judged.got) || 0, hmm: Number(snapshot.judged.hmm) || 0, no: Number(snapshot.judged.no) || 0 }
       : { got: 0, hmm: 0, no: 0 },
     startTime: Number(snapshot.startTime) || Date.now(),
+    base: snapshot.base ?? null, // 세션 시작 시 캡처한 그날 dailyStats (라이브 반영 base)
   };
 }

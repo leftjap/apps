@@ -78,8 +78,10 @@ export async function finishSession(db, params) {
 
   await db.sessionLogs.put(log);
 
-  const prev = await db.dailyStats.get(log.date);
-  await db.dailyStats.put(mergeDailyStats(prev, log));
+  // baseToday(세션 시작 시 캡처한 그날 dailyStats) 가 있으면 base+최종 으로 reconcile —
+  // 진행 중 flushLiveStats 가 쓴 라이브 값을 덮어써 이중집계 방지. 없으면 기존 누적(하위호환).
+  const base = params.baseToday !== undefined ? params.baseToday : await db.dailyStats.get(log.date);
+  await db.dailyStats.put(mergeDailyStats(base, log));
 
   // Wave A.11 — lang_${lang} meta 의 totalDays/totalTime/streak 누적.
   await applyLangMeta(db, params.lang, log);
@@ -108,5 +110,37 @@ export async function finishSession(db, params) {
     }
   }
 
+  return log;
+}
+
+/**
+ * flushLiveStats — 진행 중(미종료) 세션의 현재 진척을 오늘 dailyStats 에 멱등 기록.
+ * cue 가 study_daily_stats 를 읽으므로, 세션을 끝내기 전에도 '오늘 학습'이 대시보드에 반영된다.
+ *  - snapshot.base = 세션 시작 시 캡처한 그날 dailyStats(없으면 null). 항상 base+현재세션 으로 써서
+ *    여러 번 호출해도 누적되지 않음(멱등). finishSession 이 같은 base 로 최종값을 덮어쓴다.
+ *  - dailyStats 만 건드림(sessionLogs/langMeta/reviewQueue 는 finishSession 에서 1회) → 이중집계 0.
+ *  - demo 모드 차단·db 가드는 호출부(세션 페이지)에서. 여기선 db/snapshot 만 방어.
+ */
+export async function flushLiveStats(db, snapshot) {
+  if (!db?.dailyStats || !snapshot) return null;
+  const { mode, lang, todayISO: date, startTime } = snapshot;
+  if (!lang || !date) return null;
+  const completed = Math.max(0, (Number(snapshot.step) || 0) - 1);
+  const durationSec = startTime ? Math.max(0, Math.floor((Date.now() - Number(startTime)) / 1000)) : 0;
+  let newSentenceIds = [];
+  let completedReviewCount = 0;
+  if (mode === 'new') {
+    const ids = Array.isArray(snapshot.cardIds) ? snapshot.cardIds.slice(0, completed) : [];
+    if (ids.length && db.todayLessons?.bulkGet) {
+      const cards = (await db.todayLessons.bulkGet(ids)).filter(Boolean);
+      const isSceneCard = (c) => c && c.explanation && Array.isArray(c.explanation.dialogue);
+      newSentenceIds = cards.filter((c) => !isSceneCard(c)).map((c) => c.id);
+    }
+  } else {
+    completedReviewCount = completed;
+  }
+  const log = buildSessionLog({ mode, lang, date, durationSec, tried: snapshot.tried, passed: snapshot.passed, newSentenceIds });
+  log.completedReviewCount = completedReviewCount;
+  await db.dailyStats.put(mergeDailyStats(snapshot.base ?? null, log));
   return log;
 }
