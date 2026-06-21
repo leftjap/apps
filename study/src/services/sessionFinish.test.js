@@ -1,5 +1,21 @@
 import { describe, it, expect } from 'vitest';
-import { buildSessionLog, mergeDailyStats } from './sessionFinish.js';
+import { buildSessionLog, mergeDailyStats, clampSessionDuration } from './sessionFinish.js';
+
+describe('clampSessionDuration', () => {
+  it('정상(<12h) 은 그대로 — legit 장시간 세션 보존', () => {
+    expect(clampSessionDuration(300, 5)).toBe(300);
+    expect(clampSessionDuration(7 * 3600, 50)).toBe(7 * 3600); // 7h 보존
+    expect(clampSessionDuration(12 * 3600, 10)).toBe(12 * 3600);
+  });
+  it('비정상(>12h, stale startTime) → 카드 기반 추정(카드당 90초, 최소 60초)', () => {
+    expect(clampSessionDuration(44 * 3600, 3)).toBe(270); // 3카드 → 270초
+    expect(clampSessionDuration(44 * 3600, 0)).toBe(60); // 카드 0 → 최소 60
+  });
+  it('음수/NaN → 0', () => {
+    expect(clampSessionDuration(-5, 2)).toBe(0);
+    expect(clampSessionDuration(NaN, 2)).toBe(0);
+  });
+});
 
 describe('buildSessionLog', () => {
   it('필드 매핑 + sessionType=normal 고정', () => {

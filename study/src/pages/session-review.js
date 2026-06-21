@@ -24,7 +24,7 @@ import {
 import { loadReviewCards, loadFreeReviewCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
 import { applySrsUpdate } from '../services/srs.js';
-import { finishSession, flushLiveStats } from '../services/sessionFinish.js';
+import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
@@ -100,7 +100,7 @@ export function mountSessionReview(host) {
     state.ended = true;
     if (isDemoMode()) { window.location.hash = '#/summary'; return; } // 데모 — 실 DB write 차단
     const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
-    const durationSec = Math.floor((Date.now() - startTime) / 1000);
+    const durationSec = clampSessionDuration(Math.floor((Date.now() - startTime) / 1000), completedCount);
     try {
       await finishSession(window.studyDB, {
         mode: sessionMode,

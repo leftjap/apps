@@ -18,7 +18,7 @@ import {
 } from '../components/session/index.js';
 import { loadNewCards, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
-import { finishSession, flushLiveStats } from '../services/sessionFinish.js';
+import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
@@ -103,7 +103,7 @@ export function mountSessionNew(host) {
     // 데모(?demo=1)는 finishSession/persistSummary/clearActiveSession 등 실 DB write 를 일절 하지 않는다.
     if (isDemoMode()) { window.location.hash = '#/summary'; return; }
     const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
-    const durationSec = Math.floor((Date.now() - startTime) / 1000);
+    const durationSec = clampSessionDuration(Math.floor((Date.now() - startTime) / 1000), completedCount);
     try {
       await finishSession(window.studyDB, {
         mode: 'new',

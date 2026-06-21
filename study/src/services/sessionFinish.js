@@ -17,6 +17,17 @@ function newId(prefix = 's') {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/**
+ * 세션 시간 보정 — startTime 이 비정상적으로 오래된(>12h) 세션(방치 후 재개)은 벽시계 시간이
+ * 무의미(예: 44h). 그 경우 완료 카드 기반 추정(카드당 90초)으로 대체. 정상(<12h)은 그대로 둬
+ * legit 장시간 세션을 보존한다.
+ */
+export function clampSessionDuration(rawSec, completed = 0) {
+  const raw = Math.max(0, Number(rawSec) || 0);
+  if (raw > 12 * 3600) return Math.max(60, (Number(completed) || 0) * 90);
+  return raw;
+}
+
 export function buildSessionLog({ mode, lang, date, durationSec, tried, passed, newSentenceIds = [], reviewedIds = [] }) {
   const newIds = Array.isArray(newSentenceIds) ? newSentenceIds : [];
   const reviewIds = Array.isArray(reviewedIds) ? reviewedIds : [];
@@ -126,7 +137,8 @@ export async function flushLiveStats(db, snapshot) {
   const { mode, lang, todayISO: date, startTime } = snapshot;
   if (!lang || !date) return null;
   const completed = Math.max(0, (Number(snapshot.step) || 0) - 1);
-  const durationSec = startTime ? Math.max(0, Math.floor((Date.now() - Number(startTime)) / 1000)) : 0;
+  const rawSec = startTime ? Math.floor((Date.now() - Number(startTime)) / 1000) : 0;
+  const durationSec = clampSessionDuration(rawSec, completed);
   let newSentenceIds = [];
   let completedReviewCount = 0;
   if (mode === 'new') {

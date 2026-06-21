@@ -144,6 +144,14 @@ describe('flushLiveStats + finishSession(baseToday) — 진행 중 라이브 반
     expect(s.studyTimeSec).toBe(180); // base60 + final120
   });
 
+  it('flushLiveStats — stale startTime(>12h) 면 study_time 을 카드 기반으로 보정(44h 방지)', async () => {
+    const snap = { mode: 'new', lang: 'en', todayISO: '2026-06-21', startTime: Date.now() - 44 * 3600 * 1000, step: 4, tried: 5, passed: 4, cardIds: ['n1', 'n2', 'n3'], base: null };
+    await flushLiveStats(db, snap); // 3카드 완료
+    const s = await db.dailyStats.get('2026-06-21');
+    expect(s.studyTimeSec).toBe(270); // 44h(158400s) 아니라 3*90=270
+    expect(s.newSentences).toBe(3);
+  });
+
   it('finishSession baseToday 미전달 → 기존 누적 동작 보존(하위호환)', async () => {
     await finishSession(db, { mode: 'review', lang: 'en', date: '2026-06-21', durationSec: 60, tried: 3, passed: 2, completedReviewCount: 1 });
     await finishSession(db, { mode: 'review', lang: 'en', date: '2026-06-21', durationSec: 90, tried: 4, passed: 3, completedReviewCount: 2 });
