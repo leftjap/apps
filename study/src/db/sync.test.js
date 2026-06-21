@@ -1798,3 +1798,69 @@ describe('sync — todayLessons 변환 ↔ UI 필드 정합 (2026-06-10 실기�
     expect(legacy.order_index).toBe(2);
   });
 });
+
+/**
+ * reconcileDailyStats — 서버에 없는 로컬 dailyStats 행만 재push (큐 유실/과거 push 실패 회복).
+ * 덮어쓰기 위험 0: 서버에 같은 id 가 있는 행은 절대 push 안 함(missing-only).
+ */
+function makeReconcileMock(serverIdRows) {
+  const upsertCalls = [];
+  const fromMock = vi.fn(() => {
+    const builder = {
+      select: vi.fn(() => builder),
+      eq: vi.fn(() => builder),
+      upsert: vi.fn((rows, opts) => { upsertCalls.push({ rows, opts }); return Promise.resolve({ error: null }); }),
+      then: (res, rej) => Promise.resolve({ data: serverIdRows, error: null }).then(res, rej),
+    };
+    return builder;
+  });
+  return { fromMock, upsertCalls };
+}
+
+describe('sync — reconcileDailyStats (서버 누락 로컬 행만 재push)', () => {
+  beforeEach(() => { vi.resetModules(); vi.unmock('../services/supabase.js'); });
+
+  const localRows = [
+    { date: '2026-06-13', lang: 'en', utteranceCount: 18, studyTimeSec: 3200, newSentences: 0, reviewCount: 0 },
+    { date: '2026-06-19', lang: 'en', utteranceCount: 64, studyTimeSec: 25728, newSentences: 0, reviewCount: 0 },
+  ];
+  function dbWith(rows) {
+    return {
+      dailyStats: {
+        toArray: vi.fn().mockResolvedValue(rows),
+        bulkGet: vi.fn((dates) => Promise.resolve(dates.map((d) => rows.find((r) => r.date === d)).filter(Boolean))),
+      },
+    };
+  }
+
+  it('서버에 없는 로컬 행(6/19)만 push — 서버에 있는 행(6/13)은 건드리지 않음', async () => {
+    const { fromMock, upsertCalls } = makeReconcileMock([{ id: '2026-06-13_en_user-1' }]); // 서버엔 6/13 만
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileDailyStats } = await import('./sync.js');
+    const r = await reconcileDailyStats(dbWith(localRows), 'user-1');
+    expect(r.status).toBe('ok');
+    expect(r.missing).toBe(1);
+    expect(r.pushed).toBe(1);
+    expect(upsertCalls.length).toBe(1);
+    expect(upsertCalls[0].rows.map((x) => x.id)).toEqual(['2026-06-19_en_user-1']); // 6/19 만, 6/13 제외
+  });
+
+  it('로컬이 모두 서버에 있으면 push 없음', async () => {
+    const { fromMock, upsertCalls } = makeReconcileMock([
+      { id: '2026-06-13_en_user-1' }, { id: '2026-06-19_en_user-1' },
+    ]);
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileDailyStats } = await import('./sync.js');
+    const r = await reconcileDailyStats(dbWith(localRows), 'user-1');
+    expect(r.status).toBe('ok');
+    expect(r.pushed).toBe(0);
+    expect(upsertCalls.length).toBe(0);
+  });
+
+  it('supabase=null → skipped (가드)', async () => {
+    vi.doMock('../services/supabase.js', () => ({ supabase: null, isSupabaseConfigured: false }));
+    const { reconcileDailyStats } = await import('./sync.js');
+    const r = await reconcileDailyStats(dbWith(localRows), 'user-1');
+    expect(r.status).toBe('skipped');
+  });
+});

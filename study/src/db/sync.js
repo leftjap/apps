@@ -603,6 +603,49 @@ export async function pushDailyStats(db, userId, dates = null) {
   }
 }
 
+/**
+ * 서버에 없는 로컬 dailyStats 행만 재push — 큐 유실(탭 닫힘)·과거 push 실패로
+ * 로컬에만 남은 완료 기록(예: 6/19)을 startSync 때 회복한다.
+ *  - 덮어쓰기 위험 0: 서버에 같은 id(`${date}_${lang}_${userId}`)가 있으면 절대 push 안 함
+ *    (서버가 더 최신인 행을 로컬 값으로 덮을 일 없음 — missing-only).
+ *  - server-empty 급감 차단(pushDailyStats 가드)은 그대로 적용.
+ */
+export async function reconcileDailyStats(db, userId) {
+  if (!supabase) return { table: 'dailyStats', status: 'skipped', reason: 'no_supabase' };
+  if (!db) return { table: 'dailyStats', status: 'skipped', reason: 'no_db' };
+  if (!userId) return { table: 'dailyStats', status: 'skipped', reason: 'no_user' };
+  try {
+    const store = db.dailyStats;
+    if (!store?.toArray) return { table: 'dailyStats', status: 'error', reason: 'no_store' };
+    const local = await store.toArray();
+    if (!local || local.length === 0) return { table: 'dailyStats', status: 'empty', pushed: 0 };
+    const { data, error } = await supabase
+      .from('study_daily_stats')
+      .select('id')
+      .eq('user_id', userId);
+    if (error) {
+      console.error('[sync] reconcileDailyStats 서버 조회 실패', error);
+      return { table: 'dailyStats', status: 'error', error };
+    }
+    const serverIds = new Set((data || []).map((r) => r.id));
+    const missingDates = local
+      .filter((r) => r && r.date && r.lang && !serverIds.has(`${r.date}_${r.lang}_${userId}`))
+      .map((r) => r.date);
+    if (missingDates.length === 0) return { table: 'dailyStats', status: 'ok', pushed: 0, missing: 0 };
+    const r = await pushDailyStats(db, userId, missingDates);
+    return {
+      table: 'dailyStats',
+      status: r.status,
+      pushed: r.status === 'ok' ? (r.count || 0) : 0,
+      missing: missingDates.length,
+      pushReason: r.reason,
+    };
+  } catch (e) {
+    console.error('[sync] reconcileDailyStats 예외', e);
+    return { table: 'dailyStats', status: 'error', error: e };
+  }
+}
+
 // ============================================================
 // Wave 11.13.x — user_meta 매핑 (1↔4 row 분해/합산)
 // 0001_study_init.sql L180-187: PK=user_id, 4 jsonb 컬럼 (lang_en/lang_ja/weak_phonemes_en/weak_phonemes_ja)
@@ -963,6 +1006,10 @@ export async function startSync(user) {
     console.warn('[sync] pullAll 부분 실패', result);
   }
   _hookHandlers = attachHooks(_currentDB);
+  // pull 이 못 가져온 '로컬에만 있는' 완료 dailyStats 를 재push — 큐 유실·과거 push 실패 회복.
+  // 서버 직접 upsert(미동기 행만) 라 Dexie hook 미발화 → 루프 없음. 실패해도 startSync 무영향.
+  try { await reconcileDailyStats(_currentDB, _currentUserId); }
+  catch (e) { console.warn('[sync] reconcileDailyStats', e); }
   return result;
 }
 
@@ -1120,6 +1167,7 @@ export const Sync = {
   dailyStatsSupabaseToDexie,
   pullDailyStats,
   pushDailyStats,
+  reconcileDailyStats,
   userMetaDexieToSupabase,
   userMetaSupabaseToDexie,
   pullUserMeta,
