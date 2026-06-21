@@ -220,6 +220,13 @@ async function fetchGym(client, userId, today, len, sinceKey, usualSinceKey) {
   const data = await rows(client, 'gym_sessions', 'date, status, duration_min, start_time, end_time, tags, blocks, total_volume',
     (q) => q.eq('user_id', userId).gte('date', sinceKey));
   const completed = data.filter((r) => r.status === 'completed');
+  // 미저장(active) 세션 — 오늘/어제 시작했으나 미완료(finalize 안 됨). 집계엔 미포함, '저장 전' nudge 용.
+  const activeDates = data.filter((r) => r.status === 'active').map((r) => r.date);
+  const todayKey = localDayKey(today);
+  const ydayKey = localDayKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1));
+  const pending = activeDates.includes(todayKey) ? { daysAgo: 0 }
+    : activeDates.includes(ydayKey) ? { daysAgo: 1 }
+      : null;
   const series = dailySeries(completed, (r) => r.date, (r) => r.duration_min, len, today);
   const s = seriesStats(series, today);
   const weekCount = countDaysInCurrentWeek(completed.map((r) => r.date), today);
@@ -241,7 +248,7 @@ async function fetchGym(client, userId, today, len, sinceKey, usualSinceKey) {
     parts, prCount: countPRs(lastSession?.blocks),
     todayVolume: Math.round(Number(lastSession?.total_volume) || 0),
     lastMin: Math.round(Number(lastSession?.duration_min) || 0),
-    weekCount, lastDaysAgo: s.lastDaysAgo, w4,
+    weekCount, lastDaysAgo: s.lastDaysAgo, w4, pending,
     monthCount: countRowsInMonth(completed.map((r) => r.date), today, 0),
     prevMonthCount: countRowsInMonth(completed.map((r) => r.date), today, 1),
     dayBest: s.dayBest, yearCount, yearMin: s.yearSum,

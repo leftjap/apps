@@ -106,9 +106,13 @@ export function buildLang(c) {
   const sceneToday = c.scene && c.scene.m === c.today.getMonth() + 1 && c.scene.d === c.today.getDate();
   const none = !c.scene && c.lastDaysAgo == null;
   const hasLast = c.lastUtter != null && c.lastDaysAgo != null;
+  // scene(마지막 제목 레슨) 날짜가 실제 마지막 학습일과 같을 때만 장면 hook — 다르면 학습일로 폴백.
+  // (제목 레슨 이후 무제목 학습이 더 있으면 scene 날짜가 '마지막 학습'으로 오독되어 직전 발화와 충돌)
+  const lastMeta = c.lastDaysAgo != null ? dayMeta(c.lastDaysAgo, c.today) : null;
+  const sceneIsLastStudy = c.scene && lastMeta && c.scene.m === lastMeta.m && c.scene.d === lastMeta.d;
   return {
     name: '어학', cta: '오늘 분량 시작',
-    hook: c.scene
+    hook: sceneIsLastStudy
       ? { title: `「${c.scene.title}」`, strong: `${c.scene.m}월 ${c.scene.d}일`, tail: '이 마지막이에요' }
       : c.lastDaysAgo != null
         ? { title: '마지막 학습은', strong: mdLabel(c.lastDaysAgo, c.today), tail: '이에요' }
@@ -178,6 +182,8 @@ export function buildGym(c) {
   };
 }
 function subGym(c) {
+  // 미저장(active) 세션 우선 — 어제/오늘 시작했으나 마무리 안 한 운동을 '저장 전' 으로 알림 (집계엔 미포함)
+  if (c.pending) return { sub: `${relativeDayLabel(c.pending.daysAgo)} 운동이 저장 전이에요 — 마무리하면 기록돼요`, subStrong: true };
   if (c.done) {
     return { sub: c.weekCount >= 4 ? `이번 주 ${c.weekCount}회 · 주 4일 목표를 채웠어요` : `이번 주 ${c.weekCount}회 · 주 4일 목표예요` };
   }

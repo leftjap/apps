@@ -127,6 +127,12 @@ describe('buildLang — sceneTitle hook · 복습 대기 sub · 익힘 델타', 
     const r = buildLang({ ...base, scene: null });
     expect(r.hook).toEqual({ title: '마지막 학습은', strong: '5월 18일', tail: '이에요' });
   });
+  it('scene 날짜 ≠ 마지막 학습일 — 실제 학습일로 폴백 (hook·직전발화 모순 제거)', () => {
+    // 마지막 제목 레슨=5/11 이지만 그 뒤로도 학습(마지막 학습일=5/18)한 경우:
+    // hook 이 5/11(장면)을 '마지막'으로 찍으면 직전 발화(5/18)와 충돌 → 실제 학습일로 폴백
+    const r = buildLang({ ...base, scene: { title: '공원 설문', m: 5, d: 11 }, lastDaysAgo: 26 });
+    expect(r.hook).toEqual({ title: '마지막 학습은', strong: '5월 18일', tail: '이에요' });
+  });
   it('완료 — 오늘 장면이면 hookDone 에 제목', () => {
     const r = buildLang({ ...base, done: true, todayMin: 40, lastDaysAgo: 0, streak: 1, scene: { title: '구덩이 약속', m: 6, d: 13 } });
     expect(r.hookDone).toEqual({ title: '오늘 「구덩이 약속」', strong: '40분', tail: ' 했어요' });
@@ -162,6 +168,14 @@ describe('buildGym — 부위 2개 + PR · 실제 주 4일 목표', () => {
     expect(r.records[0]).toEqual({ lb: '직전 운동', v: '가슴 · 어깨', pr: 1, note: '그제 · 44분' });
     expect(r.records[1].goal.cur).toBe(2);
     expect(r.beat).toEqual(['이번 주 ', '2번 더 하면 주 4일', ' — 최고 5주 연속이에요']);
+  });
+  it('미완료 + 미저장(active) 세션 — 마무리 nudge subStrong (진행 수치는 completed 그대로)', () => {
+    const r = buildGym({ ...base, done: false, weekCount: 2, lastDaysAgo: 2, lastMin: 44, pending: { daysAgo: 1 } });
+    expect(r.sub).toBe('어제 운동이 저장 전이에요 — 마무리하면 기록돼요');
+    expect(r.subStrong).toBe(true);
+    // hook/records 는 completed 기준 불변 (active 는 횟수에 미포함)
+    expect(r.hook).toEqual({ title: '이번 주', strong: '2회', tail: ' 했어요 — 목표는 주 4일' });
+    expect(r.records[1].goal.cur).toBe(2);
   });
   it('미완료 0회 — 첫 운동 전 hook', () => {
     const r = buildGym({ ...base, done: false, weekCount: 0, w4: { cur: 0, best: 0 }, parts: [], prCount: 0, lastDaysAgo: null });
