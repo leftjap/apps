@@ -76,7 +76,10 @@ async function bootstrap() {
         await Auth.ensureUserDB(session.user);
         // 콜드스타트 첫 paint 를 막지 않도록 startSync 는 비차단 (네트워크 다운로드 대기 → 빈 화면 리로드 체감 제거).
         // 부트스트랩 시점엔 in-flight stopSync 가 없어 await 불필요 (재인증 race 는 app.js subscribeAuth 가 처리).
-        Sync.startSync(session.user).catch((e) => console.error('[main] sync 시작 실패', e));
+        // startSync 가 hook attach 후 resolve → 그 뒤 sweepStaleSessions 의 finalize 가 push 큐에 올라간다(순서 보장).
+        Sync.startSync(session.user)
+          .then(() => window.gymSession?.sweepStaleSessions?.())
+          .catch((e) => console.error('[main] sync 시작/sweep 실패', e));
       } else {
         // 미허용 이메일 — 즉시 종료 + login 마커
         try { localStorage.setItem(Auth.AUTH_ERROR_KEY, 'not_allowed'); } catch {}

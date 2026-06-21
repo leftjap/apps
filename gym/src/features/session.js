@@ -366,7 +366,8 @@ function isBlockLocked(block) {
 
 export async function finalizeActiveSession(opts = {}) {
   try {
-    const session = await getActiveSession();
+    // opts.session 명시 시 그 세션을 마감 (sweepStaleSessions 가 최신 아닌 고아 active 를 지정). 없으면 최신 active.
+    const session = opts.session || await getActiveSession();
     if (!session) return { ok: false, reason: 'no_active_session' };
 
     // 완료(done) 세트만 보존 후, 완료 세트 0개인 single 운동 블록은 통째 제거
@@ -411,6 +412,48 @@ export async function finalizeActiveSession(opts = {}) {
     console.error('[gymSession] finalizeActiveSession', e);
     return { ok: false, reason: 'error', error: e?.message };
   }
+}
+
+/**
+ * 이전 날 미완료(active) 세션 자동 마감 — 사용자가 '종료'를 안 눌러 active 로 방치된
+ * 지난 운동을 기록으로 살린다(앱 부트스트랩에서 호출, sync hook attach 후).
+ *  - 오늘(또는 미래) 날짜 active 는 진행 중일 수 있어 건드리지 않음.
+ *  - 완료(done) 세트가 하나라도 있으면 finalize — endTime 은 '지금'이 아니라 마지막 활동
+ *    시각(블록 finishedAt 최대, 없으면 startTime)으로 둬 duration 과대계산을 막는다.
+ *  - 완료 세트가 전혀 없으면 폐기(discard) — 0볼륨 junk completed 세션 생성 방지.
+ *  getActiveSession 은 최신 1건만 반환하므로 여기서 전체 active 를 직접 순회한다.
+ */
+export async function sweepStaleSessions(now = Date.now()) {
+  const db = (typeof window !== 'undefined' ? window.gymDB : null);
+  if (!db) return { swept: 0, discarded: 0 };
+  const today = toISODate(new Date(now));
+  let swept = 0, discarded = 0;
+  try {
+    const actives = await db.sessions.where('status').equals('active').toArray();
+    for (const s of actives) {
+      if (!s || String(s.date) >= today) continue; // 오늘/미래 진행중 보존
+      const blocks = Array.isArray(s.blocks) ? s.blocks : [];
+      const hasDone = blocks.some(
+        (b) => b && b.type === 'single' && Array.isArray(b.sets) && b.sets.some((set) => set && set.done),
+      );
+      try {
+        if (!hasDone) {
+          await db.sessions.delete(s.id);
+          discarded += 1;
+          continue;
+        }
+        const finishedAts = blocks.map((b) => Number(b && b.finishedAt) || 0).filter(Boolean);
+        const endTime = finishedAts.length ? Math.max(...finishedAts) : (Number(s.startTime) || now);
+        const r = await finalizeActiveSession({ session: s, endTime });
+        if (r && r.ok) swept += 1;
+      } catch (e) {
+        console.error('[gymSession] sweepStaleSessions 세션', s.id, e);
+      }
+    }
+  } catch (e) {
+    console.error('[gymSession] sweepStaleSessions', e);
+  }
+  return { swept, discarded };
 }
 
 /**
@@ -3479,6 +3522,7 @@ if (typeof window !== 'undefined') {
     persistKeypadEdit,
     dumpActiveSessionFromState,
     finalizeActiveSession,
+    sweepStaleSessions,
     mountSessionView,
     handleLeftSwipe,
     handleRightSwipe,

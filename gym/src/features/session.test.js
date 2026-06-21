@@ -14,6 +14,7 @@ import {
   persistKeypadEdit,
   dumpActiveSessionFromState,
   finalizeActiveSession,
+  sweepStaleSessions,
   getActivePart,
   setActivePart,
   mountSessionView,
@@ -48,6 +49,14 @@ async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 })
     durationMin: 1,
     status: 'completed',
   });
+}
+
+function activeSessionRow({ id, date, startTime, blocks }) {
+  return {
+    id, date, startTime, endTime: null,
+    blocks: blocks || [], tags: [],
+    totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'active',
+  };
 }
 
 let db;
@@ -945,6 +954,81 @@ describe('finalizeActiveSession', () => {
     expect(r.session.blocks).toHaveLength(1);
     expect(r.session.blocks[0].exerciseId).toBe('bench_press');
     expect(r.session.blocks[0].sets).toHaveLength(1);
+  });
+
+  it('opts.session 지정 — 최신 active 가 아닌 특정 세션을 finalize', async () => {
+    // 두 active 공존: getActiveSession 은 startTime 큰 newer 를 반환하지만 older 를 명시 finalize
+    const newer = activeSessionRow({
+      id: 'sess_new', date: '2026-06-21', startTime: 9_000_000,
+      blocks: [{ type: 'single', exerciseId: 'bench_press', sets: [{ weight: 60, reps: 5, done: true }] }],
+    });
+    const older = activeSessionRow({
+      id: 'sess_old', date: '2026-06-20', startTime: 1_000_000,
+      blocks: [{ type: 'single', exerciseId: 'squat', finishedAt: 1_600_000, sets: [{ weight: 100, reps: 5, done: true }] }],
+    });
+    await db.sessions.put(newer);
+    await db.sessions.put(older);
+    const r = await finalizeActiveSession({ session: older, endTime: 1_600_000 });
+    expect(r.ok).toBe(true);
+    expect(r.session.id).toBe('sess_old');
+    expect((await db.sessions.get('sess_old')).status).toBe('completed');
+    expect((await db.sessions.get('sess_new')).status).toBe('active'); // 최신 active 는 보존
+  });
+});
+
+describe('sweepStaleSessions — 이전 날 미완료(active) 세션 자동 마감', () => {
+  it('이전 날 active(완료 세트 있음) → completed, endTime=마지막 finishedAt(현재 시각 아님)', async () => {
+    const start = new Date(2026, 5, 20, 10, 0, 0).getTime();
+    const fin1 = start + 20 * 60_000;
+    const fin2 = start + 40 * 60_000;
+    await db.sessions.put(activeSessionRow({
+      id: 'stale', date: '2026-06-20', startTime: start,
+      blocks: [
+        { type: 'single', exerciseId: 'military_press', finishedAt: fin1, sets: [{ weight: 40, reps: 10, done: true }] },
+        { type: 'single', exerciseId: 'leg_curl', finishedAt: fin2, sets: [{ weight: 50, reps: 8, done: true }, { weight: 50, reps: 8, done: false }] },
+      ],
+    }));
+    const now = new Date(2026, 5, 21, 9, 0, 0).getTime(); // 다음 날
+    const r = await sweepStaleSessions(now);
+    expect(r.swept).toBe(1);
+    const s = await db.sessions.get('stale');
+    expect(s.status).toBe('completed');
+    expect(s.endTime).toBe(fin2);              // 현재 시각(now) 아닌 마지막 활동 시각
+    expect(s.durationMin).toBe(40);            // (fin2 - start)/60000
+    expect(s.totalVolume).toBe(40 * 10 + 50 * 8); // done 세트만 = 800
+  });
+
+  it('오늘 active 는 보존 (진행 중일 수 있음)', async () => {
+    const now = new Date(2026, 5, 21, 12, 0, 0).getTime();
+    await db.sessions.put(activeSessionRow({
+      id: 'today', date: '2026-06-21', startTime: now - 3_600_000,
+      blocks: [{ type: 'single', exerciseId: 'bench_press', finishedAt: now - 600_000, sets: [{ weight: 60, reps: 5, done: true }] }],
+    }));
+    const r = await sweepStaleSessions(now);
+    expect(r.swept).toBe(0);
+    expect((await db.sessions.get('today')).status).toBe('active');
+  });
+
+  it('이전 날 active 인데 완료 세트 0개 → 폐기(discard, junk 미생성)', async () => {
+    const start = new Date(2026, 5, 19, 10, 0, 0).getTime();
+    await db.sessions.put(activeSessionRow({
+      id: 'empty', date: '2026-06-19', startTime: start,
+      blocks: [{ type: 'single', exerciseId: 'squat', sets: [{ weight: 0, reps: 0, done: false }] }],
+    }));
+    const now = new Date(2026, 5, 21, 9, 0, 0).getTime();
+    const r = await sweepStaleSessions(now);
+    expect(r.discarded).toBe(1);
+    expect(r.swept).toBe(0);
+    expect(await db.sessions.get('empty')).toBeUndefined();
+  });
+
+  it('completed 세션은 건드리지 않음', async () => {
+    await seedCompletedSession({ id: 'done', date: '2026-06-20', exerciseId: 'squat', sets: [{ weight: 100, reps: 5, done: true }], endTime: new Date(2026, 5, 20, 11, 0, 0).getTime() });
+    const now = new Date(2026, 5, 21, 9, 0, 0).getTime();
+    const r = await sweepStaleSessions(now);
+    expect(r.swept).toBe(0);
+    expect(r.discarded).toBe(0);
+    expect((await db.sessions.get('done')).status).toBe('completed');
   });
 });
 
