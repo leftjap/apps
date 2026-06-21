@@ -219,38 +219,55 @@ async function fetchLang(client, userId, today, len, sinceKey, usualSince) {
 async function fetchGym(client, userId, today, len, sinceKey, usualSinceKey) {
   const data = await rows(client, 'gym_sessions', 'date, status, duration_min, start_time, end_time, tags, blocks, total_volume',
     (q) => q.eq('user_id', userId).gte('date', sinceKey));
-  const completed = data.filter((r) => r.status === 'completed');
-  // 미저장(active) 세션 — 오늘/어제 시작했으나 미완료(finalize 안 됨). 집계엔 미포함, '저장 전' nudge 용.
-  const activeDates = data.filter((r) => r.status === 'active').map((r) => r.date);
+  // 운동 세션 = 완료 OR (진행중 + 완료세트 있음). 진행중도 '종료'만 안 눌렀을 뿐 실제 운동 → 카운트 포함.
+  const hasDoneSets = (r) => Array.isArray(r.blocks)
+    && r.blocks.some((b) => b && Array.isArray(b.sets) && b.sets.some((x) => x && x.done));
+  const workouts = data.filter((r) => r.status === 'completed' || (r.status === 'active' && hasDoneSets(r)));
+  // 진행중(미finalize) 세션 표시용 유효 시간·볼륨 — gym finalize 와 동일 계산(완료세트 weight×reps,
+  // 마지막 finishedAt−start). DB 는 안 바꾸고 cue 가 읽기 단에서 보정. 완료 세션은 저장값 그대로.
+  const effMin = (r) => {
+    const d = Number(r.duration_min) || 0; if (d > 0) return d;
+    const fins = (r.blocks || []).map((b) => Number(b && b.finishedAt) || 0).filter(Boolean);
+    const st = Number(r.start_time) || 0;
+    return fins.length && st ? Math.max(1, Math.round((Math.max(...fins) - st) / 60000)) : 0;
+  };
+  const effVol = (r) => {
+    const v = Number(r && r.total_volume) || 0; if (v > 0) return v;
+    let sum = 0;
+    for (const b of (r && r.blocks) || []) for (const set of b.sets || []) if (set && set.done) sum += (Number(set.weight) || 0) * (Number(set.reps) || 0);
+    return sum;
+  };
+  const effEnd = (r) => Number(r.end_time) || Math.max(0, ...(r.blocks || []).map((b) => Number(b && b.finishedAt) || 0));
+  // 미저장(진행중) 세션 — 오늘/어제 것을 '저장 전' nudge 로 (gym 에서 마무리하면 PR·볼륨까지 저장).
   const todayKey = localDayKey(today);
   const ydayKey = localDayKey(new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1));
-  const pending = activeDates.includes(todayKey) ? { daysAgo: 0 }
-    : activeDates.includes(ydayKey) ? { daysAgo: 1 }
+  const activeWDates = workouts.filter((r) => r.status === 'active').map((r) => r.date);
+  const pending = activeWDates.includes(todayKey) ? { daysAgo: 0 }
+    : activeWDates.includes(ydayKey) ? { daysAgo: 1 }
       : null;
-  const series = dailySeries(completed, (r) => r.date, (r) => r.duration_min, len, today);
+  const series = dailySeries(workouts, (r) => r.date, effMin, len, today);
   const s = seriesStats(series, today);
-  const weekCount = countDaysInCurrentWeek(completed.map((r) => r.date), today);
+  const weekCount = countDaysInCurrentWeek(workouts.map((r) => r.date), today);
   const w4 = weeks4Streak(weeklyActiveDayCounts(series, today, Math.ceil(len / 7)));
-  // 직전(가장 최근 완료) 세션 — done 이면 오늘 것, 아니면 마지막 운동
-  const lastSession = completed
+  // 직전 운동 = done 이면 오늘 것, 아니면 가장 최근(미저장 active 포함). 시각 동률은 effEnd 늦은 쪽.
+  const lastSession = workouts
     .slice()
-    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : Number(b.end_time || 0) - Number(a.end_time || 0)))[0] || null;
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : effEnd(b) - effEnd(a)))[0] || null;
   const parts = (lastSession?.tags || []).slice(0, 2).map((t) => PARTS[t] || t);
-  // 평소 시간대 = 최근 4주 완료 세션 시작 시각 중앙값
   const usualMin = medianMinuteOfDay(
-    completed.filter((r) => r.date >= usualSinceKey).map((r) => Number(r.start_time) || null),
+    workouts.filter((r) => r.date >= usualSinceKey).map((r) => Number(r.start_time) || null),
     META.gym.usualFallback);
-  const atMin = minuteOfDay(latestTodayTs(completed.map((r) => Number(r.end_time || r.start_time) || null), today));
-  const yearCount = completed.filter((r) => r.duration_min > 0 && r.date >= jan1Key(today)).length; // 윈도우 전년 제외
+  const atMin = minuteOfDay(latestTodayTs(workouts.map((r) => effEnd(r) || Number(r.start_time) || null), today));
+  const yearCount = workouts.filter((r) => r.date >= jan1Key(today)).length; // 윈도우 전년 제외
   const built = buildGym({
     done: s.done, todayMin: s.todayVal,
     atLabel: s.done ? fmtHM(atMin ?? usualMin) : null,
     parts, prCount: countPRs(lastSession?.blocks),
-    todayVolume: Math.round(Number(lastSession?.total_volume) || 0),
-    lastMin: Math.round(Number(lastSession?.duration_min) || 0),
+    todayVolume: Math.round(effVol(lastSession)),
+    lastMin: Math.round(effMin(lastSession || {})),
     weekCount, lastDaysAgo: s.lastDaysAgo, w4, pending,
-    monthCount: countRowsInMonth(completed.map((r) => r.date), today, 0),
-    prevMonthCount: countRowsInMonth(completed.map((r) => r.date), today, 1),
+    monthCount: countRowsInMonth(workouts.map((r) => r.date), today, 0),
+    prevMonthCount: countRowsInMonth(workouts.map((r) => r.date), today, 1),
     dayBest: s.dayBest, yearCount, yearMin: s.yearSum,
     paceAvg: round1(yearCount / weeksElapsed(today)), today,
   });

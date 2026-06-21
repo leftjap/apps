@@ -182,11 +182,12 @@ export function buildGym(c) {
   };
 }
 function subGym(c) {
-  // 미저장(active) 세션 우선 — 어제/오늘 시작했으나 마무리 안 한 운동을 '저장 전' 으로 알림 (집계엔 미포함)
-  if (c.pending) return { sub: `${relativeDayLabel(c.pending.daysAgo)} 운동이 저장 전이에요 — 마무리하면 기록돼요`, subStrong: true };
+  // 오늘 운동했으면(active 도 카운트 포함) 횟수·목표 달성을 우선 표시
   if (c.done) {
     return { sub: c.weekCount >= 4 ? `이번 주 ${c.weekCount}회 · 주 4일 목표를 채웠어요` : `이번 주 ${c.weekCount}회 · 주 4일 목표예요` };
   }
+  // 오늘 운동 전이지만 미저장(진행중) 세션이 있으면 '저장 전' 안내 (gym 에서 마무리하면 PR·볼륨까지 저장)
+  if (c.pending) return { sub: `${relativeDayLabel(c.pending.daysAgo)} 운동이 저장 전이에요 — 마무리하면 기록돼요`, subStrong: true };
   if (c.w4.cur > 0) return { sub: `${c.w4.cur}주 연속으로 주 4일을 지켰어요` };
   if (c.lastDaysAgo != null) return { sub: `마지막 운동은 ${relativeDayLabel(c.lastDaysAgo)}예요`, subGap: true };
   return { sub: '이번 주 4일이 목표예요' };

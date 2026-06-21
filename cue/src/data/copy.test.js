@@ -169,7 +169,12 @@ describe('buildGym — 부위 2개 + PR · 실제 주 4일 목표', () => {
     expect(r.records[1].goal.cur).toBe(2);
     expect(r.beat).toEqual(['이번 주 ', '2번 더 하면 주 4일', ' — 최고 5주 연속이에요']);
   });
-  it('미완료 + 미저장(active) 세션 — 마무리 nudge subStrong (진행 수치는 completed 그대로)', () => {
+  it('오늘 운동(active 포함) — done 이면 카운트/목표 달성 우선 (nudge 아님)', () => {
+    const r = buildGym({ ...base, done: true, weekCount: 4, pending: { daysAgo: 0 } });
+    expect(r.sub).toBe('이번 주 4회 · 주 4일 목표를 채웠어요');
+    expect(r.subStrong).toBeFalsy();
+  });
+  it('오늘 운동 전 + 미저장(active) 세션 — 마무리 nudge subStrong', () => {
     const r = buildGym({ ...base, done: false, weekCount: 2, lastDaysAgo: 2, lastMin: 44, pending: { daysAgo: 1 } });
     expect(r.sub).toBe('어제 운동이 저장 전이에요 — 마무리하면 기록돼요');
     expect(r.subStrong).toBe(true);
