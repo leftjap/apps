@@ -136,6 +136,10 @@ export async function flushLiveStats(db, snapshot) {
   if (!db?.dailyStats || !snapshot) return null;
   const { mode, lang, todayISO: date, startTime } = snapshot;
   if (!lang || !date) return null;
+  // 드리프트 가드: startTime 이 12h 넘게 지난(여러 날 열어둔/오래된) 세션은 활동일이 불확실해
+  // 라이브 반영 시 엉뚱한 날에 기록될 수 있다(예: 6/20 학습이 6/21 로). 정상 당일 세션만 반영하고,
+  // 오래된 세션은 종료/자동마감(finalizeStaleSnapshot) 경로가 처리하도록 둔다.
+  if (startTime && (Date.now() - Number(startTime)) > 12 * 3600 * 1000) return null;
   const completed = Math.max(0, (Number(snapshot.step) || 0) - 1);
   const rawSec = startTime ? Math.floor((Date.now() - Number(startTime)) / 1000) : 0;
   const durationSec = clampSessionDuration(rawSec, completed);
