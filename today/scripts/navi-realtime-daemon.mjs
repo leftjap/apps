@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * 오늘의 네비 — 클로드 자동 댓글 Realtime 데몬.
- * service role 로 today_entries INSERT 를 구독하고, 정착(10분) 후 claude -p 헤드리스로
+ * service role 로 today_entries INSERT 를 구독하고, 정착(1시간) 후 claude -p 헤드리스로
  * routines/ai-navi.md 지침대로 댓글을 단다. launchd KeepAlive 로 상주.
  *
  * env: today/.env.local 의 SUPABASE_URL(또는 VITE_), SUPABASE_SERVICE_ROLE_KEY, AI_COMMENT_TOKEN(워커용).
@@ -21,7 +21,7 @@ const STATE_DIR = path.join(HOME, '.local/state/navi-daemon');
 const LAST_SEEN = path.join(STATE_DIR, 'last_seen');
 const TOKEN_FILE = path.join(HOME, '.config/navi-daemon/oauth-token');
 const CLAUDE = '/opt/homebrew/bin/claude';
-const SETTLE_MS = Number(process.env.NAVI_SETTLE_MS) || 10 * 60 * 1000;
+const SETTLE_MS = Number(process.env.NAVI_SETTLE_MS) || 60 * 60 * 1000;
 const NAVI_KINDS = ['navi', 'soyoun_navi'];
 
 function loadEnv(p) {

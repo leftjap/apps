@@ -15,7 +15,7 @@
 
 **1. 대상 로드** — context 호출. **트리거 입력(text)에 `entry_id=<id>` 가 있으면**(버튼 즉시 요청)
 그 글만 즉시 처리: 본문 `{"action":"context","entry_id":"<id>"}` (settle 무시). **없으면**(정기 스캔)
-본문 `{"action":"context"}` (정착 10분 지난 대상 전체).
+본문 `{"action":"context"}` (정착 1시간 지난 대상 전체).
 ```bash
 curl -s -X POST "${SUPABASE_URL}/functions/v1/ai-comment" \
   -H "Content-Type: application/json" \
