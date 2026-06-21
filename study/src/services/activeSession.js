@@ -9,7 +9,7 @@
  * 종료 버튼 미누름 + 1시간 이탈 시에도 학습 기록 (sessionLog + reviewQueue) 보존.
  */
 
-import { finishSession } from './sessionFinish.js';
+import { finishSession, clampSessionDuration } from './sessionFinish.js';
 
 const KEY = 'activeSession';
 const TTL_MS = 60 * 60 * 1000; // 1시간
@@ -57,9 +57,11 @@ export async function finalizeStaleSnapshot(db, snapshot) {
 
   const startTime = Number(snapshot.startTime) || 0;
   const savedAt = Number(snapshot.savedAt) || 0;
-  const durationSec = startTime > 0 && savedAt > startTime
-    ? Math.floor((savedAt - startTime) / 1000)
-    : 0;
+  // 여러 날 열어둔 스냅샷은 (savedAt-startTime) 이 비정상적으로 큼(예: 45h) → clamp 로 보정.
+  const durationSec = clampSessionDuration(
+    startTime > 0 && savedAt > startTime ? Math.floor((savedAt - startTime) / 1000) : 0,
+    completed,
+  );
 
   if (snapshot.mode === 'new') {
     const cardIds = Array.isArray(snapshot.cardIds) ? snapshot.cardIds.slice(0, completed) : [];
