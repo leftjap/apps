@@ -14,7 +14,7 @@ import { CURATION } from '../data/curation.js';
 import { el, clear } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
-import { renderSnippet, quotePlainText } from './quote-md.js';
+import { renderSnippet, quotePreview } from './quote-md.js';
 import { tokenizeQuery, quoteMatches, bookMatches, contentTerm } from './search-match.js';
 
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
@@ -279,7 +279,7 @@ export function openSearchModal(ctx) {
         const cvw = el('div', { class: 'cvw' },
           b ? coverAt(b, 34, { lift: true }) : el('div', { class: 'cv-ph' }),
           q.pinned ? el('span', { class: 'pinbadge' }, iconEl('star-fill', { sz: 9 })) : null);
-        const plain = quotePlainText(q.text);
+        const plain = quotePreview(q.text);
         const col = el('div', { class: 'body' },
           // KWIC 맥락 스니펫 — 매치어 중심 ~3줄. 멀티 토큰이면 본문에 걸린 토큰 기준.
           el('div', { class: 'q snip' }, ...renderSnippet(plain, contentTerm(plain, tokens))),
