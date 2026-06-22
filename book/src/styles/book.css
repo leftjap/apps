@@ -257,6 +257,10 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #app::-webkit-scrollbar,
 .sx-qrow .pinbadge { position: absolute; top: -4px; right: -5px; width: 15px; height: 15px; border-radius: 50%; background: #fff; color: var(--pin); display: grid; place-items: center; box-shadow: 0 1px 3px rgba(20,18,14,.22); }
 .sx-qrow .body { min-width: 0; }
 .sx-qrow .body .q { margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink); word-break: keep-all; text-wrap: pretty; }
+/* KWIC 맥락 스니펫 — 매치어 중심 3줄 클램프 (검색 모달·단어 페이지 공용) */
+.snip { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.snip mark { background: var(--hl-yellow); color: inherit; border-radius: 2px; padding: 0 1px; }
+.sx-qrow { cursor: pointer; background: none; border: 0; text-align: left; font: inherit; color: inherit; width: 100%; }
 .sx-qrow .body .src { display: flex; align-items: center; gap: 8px; margin-top: 8px; font-size: 12px; color: var(--ink-3); min-width: 0; }
 .sx-qrow .body .src strong { font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sx-qrow .body .src .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-4); flex-shrink: 0; }

@@ -6,6 +6,7 @@
  *    library.js 의 TreeWalker 텍스트 오프셋과 동일 공간이라 0 마이그레이션으로 호환.
  */
 import { el } from './dom.js';
+import { snippetParts } from './search-match.js';
 
 /** `**볼드**` 만 인식 → [{text, bold}]. 미매칭 `**` 는 데이터 정리 단계에서 제거됨(여기선 리터럴). */
 export function parseInline(s) {
@@ -119,4 +120,16 @@ export function renderQuoteBody(text, marks = [], opts = {}) {
   });
 }
 
-export default { parseInline, parseQuoteBlocks, quotePreview, quoteSegments, renderQuoteBody };
+/** KWIC 스니펫 DOM 노드 — 매치어 중심 발췌(앞 … pre [mark] post … 뒤). term 없으면 앞부분. */
+export function renderSnippet(plain, term, opts = {}) {
+  const { pre, match, post, cutPre, cutPost } = snippetParts(plain, term, opts);
+  const nodes = [];
+  if (cutPre) nodes.push('…');
+  if (pre) nodes.push(pre);
+  if (match) nodes.push(el('mark', {}, match));
+  if (post) nodes.push(post);
+  if (cutPost) nodes.push('…');
+  return nodes;
+}
+
+export default { parseInline, parseQuoteBlocks, quotePreview, quoteSegments, renderQuoteBody, renderSnippet };

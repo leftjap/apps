@@ -73,8 +73,9 @@ async function render(host, params, ctx) {
   listWrap.appendChild(el('h3', { style: { margin: '0 0 14px', fontSize: 16, fontWeight: 700, letterSpacing: '-.015em' } }, '어구록 · 시간순'));
   if (!list.length) listWrap.appendChild(el('div', { style: { padding: '40px 0', color: 'var(--ink-3)' } }, '아직 어구록이 없습니다.'));
   for (const q of list) {
-    // 어구록 페이지처럼 전문 표시 + 행 클릭 없음(상세/모달 진입 제거).
+    // 어구록 페이지처럼 전문 표시 + 행 클릭 없음(상세/모달 진입 제거). id 로 검색→스크롤 타겟.
     listWrap.appendChild(el('article', {
+      id: `bq-${q.id}`,
       class: 'book-row',
       style: { padding: '16px 12px', margin: '0 -12px', borderRadius: 10 },
     },
@@ -89,6 +90,17 @@ async function render(host, params, ctx) {
   const inner = el('div', { class: 'page', style: { maxWidth: 1000, padding: '40px 44px 100px' } }, hero, listWrap);
   const crumbEl = crumb({ ctx, path: [{ label: '피드', back: true, onBack: () => ctx.navigate('/') }, { label: '책' }, { label: b.t, last: true }] });
   host.appendChild(screenShell({ tab: 'excerpt', ctx, crumbEl, children: inner }));
+
+  // 검색/단어에서 특정 어구로 진입 시 — 해당 어구로 스크롤 + 잠깐 강조.
+  if (params.quoteId) {
+    requestAnimationFrame(() => {
+      const tgt = document.getElementById(`bq-${params.quoteId}`);
+      if (!tgt) return;
+      tgt.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      tgt.classList.add('q-pulse');
+      setTimeout(() => tgt.classList.remove('q-pulse'), 1800);
+    });
+  }
 }
 
 registerScreen('book', render);

@@ -76,6 +76,10 @@
 .q-bq { margin: .72em 0; padding: 2px 0 2px 15px; border-left: 3px solid var(--ink-4); color: var(--ink-2); }
 .q-p strong, .q-bq strong { font-weight: 700; }
 
+/* 검색/단어에서 특정 어구로 진입 시 강조 펄스 (book-detail) */
+@keyframes qpulse { 0% { background: rgba(194,85,58,.16); } 100% { background: transparent; } }
+.bookv4 .q-pulse { animation: qpulse 1.8s ease-out; }
+
 /* 선택 팝오버 — 드래그 하이라이트 색상/액션 (떠오르는 박스, 시안 lx-selpop) */
 .bookv4 .lx-selpop { position: absolute; display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: #fff; border-radius: 10px; box-shadow: var(--shadow-lift); z-index: 10; }
 .bookv4 .lx-selpop::after { content: ''; position: absolute; left: 30px; top: -6px; width: 12px; height: 12px; background: #fff; transform: rotate(45deg); box-shadow: -3px -3px 6px -3px rgba(20,18,14,.18); }

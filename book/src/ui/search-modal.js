@@ -14,7 +14,8 @@ import { CURATION } from '../data/curation.js';
 import { el, clear } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
-import { renderQuoteBody, keywordMarks } from './quote-md.js';
+import { renderSnippet, quotePlainText } from './quote-md.js';
+import { tokenizeQuery, quoteMatches, bookMatches, contentTerm } from './search-match.js';
 
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 function ownerIdsOf(user) {
@@ -230,16 +231,12 @@ export function openSearchModal(ctx) {
     if (!_open) return;
     const all = quotes || [];
     const raw = query.trim();
-    const lc = raw.toLowerCase();
+    const tokens = tokenizeQuery(raw);
     const { countByRef, books } = ownedModel(all);
 
-    // 책 = 제목·저자·출판사 매칭 (가짜 분야 라벨 금지 — §4.2)
-    const matchedBooks = books.filter((b) =>
-      (b.t || '').toLowerCase().includes(lc)
-      || (b.a || '').toLowerCase().includes(lc)
-      || (b.p || '').toLowerCase().includes(lc));
-    // 어구록 = 본문 매칭
-    const matchedQuotes = all.filter((q) => (q.text || '').toLowerCase().includes(lc));
+    // 멀티 토큰 결합 — 각 토큰이 (제목/저자/출판사) 또는 (본문/제목/저자)에 걸리고 전체 AND.
+    const matchedBooks = books.filter((b) => bookMatches(b, tokens));
+    const matchedQuotes = all.filter((q) => quoteMatches(q.text, bookOf(q.book_ref), tokens));
     const counts = {
       전체: matchedBooks.length + matchedQuotes.length,
       책: matchedBooks.length,
@@ -282,15 +279,16 @@ export function openSearchModal(ctx) {
         const cvw = el('div', { class: 'cvw' },
           b ? coverAt(b, 34, { lift: true }) : el('div', { class: 'cv-ph' }),
           q.pinned ? el('span', { class: 'pinbadge' }, iconEl('star-fill', { sz: 9 })) : null);
+        const plain = quotePlainText(q.text);
         const col = el('div', { class: 'body' },
-          // 어구록 페이지처럼 전문 + 원본 구조(문단·볼드·인용) 노출, 검색어 하이라이트.
-          el('div', { class: 'q' }, ...renderQuoteBody(q.text, keywordMarks(q.text, raw))),
+          // KWIC 맥락 스니펫 — 매치어 중심 ~3줄. 멀티 토큰이면 본문에 걸린 토큰 기준.
+          el('div', { class: 'q snip' }, ...renderSnippet(plain, contentTerm(plain, tokens))),
           el('div', { class: 'src' },
             b ? el('strong', {}, b.t) : el('span', {}, '(책 미상)'),
             b ? el('span', { class: 'dot' }) : null,
             b ? el('span', {}, b.a) : null));
-        // 어구록 페이지처럼 전문을 그대로 노출 — 행 클릭으로 상세 진입하지 않음(네비/키보드 제외).
-        list.appendChild(el('div', { class: 'sx-qrow' }, cvw, col));
+        // 스니펫 클릭 → 책 상세의 해당 어구로 (전문은 거기서 맥락 속에 읽음).
+        list.appendChild(el('button', { class: 'sx-qrow sx-item', onClick: () => navTo(`/book/${q.book_ref}/${q.id}`) }, cvw, col));
       }
       const more = (filter === '전체' && matchedQuotes.length > limit)
         ? { label: '모두 보기', onClick: () => { filter = '어구록'; renderResults(); } } : null;

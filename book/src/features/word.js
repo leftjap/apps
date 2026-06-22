@@ -13,7 +13,7 @@ import { screenShell, crumb, btn } from '../ui/components.js';
 import { barChart } from '../ui/charts.js';
 import { tokenize } from '../ui/text.js';
 import { fmtDate, fmtDateTime } from '../ui/format.js';
-import { renderQuoteBody, keywordMarks } from '../ui/quote-md.js';
+import { renderSnippet, quotePlainText } from '../ui/quote-md.js';
 
 const owners = (u) => [u?.id].filter(Boolean);
 const topCat = (b) => (b?.c ? b.c.split('·')[0].trim() : '기타');
@@ -109,10 +109,11 @@ async function render(host, params, ctx) {
       el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-4)', marginLeft: 10 } }, String(matches.length)),
       el('div', { style: { flex: 1 } }),
       btn({ label: '최근순', variant: 'ghost', size: 'sm', iconR: 'chevD' })),
-    ...matches.map((q) => { const b = bookOf(q.book_ref); return el('div', { class: 'book-row', style: { padding: '14px 12px', margin: '0 -12px', borderRadius: 10, display: 'flex', gap: 18, alignItems: 'flex-start' } },
+    // 단어 검색 = 맥락 스니펫(단어 중심 ~3줄). 클릭 → 책 상세의 해당 어구로.
+    ...matches.map((q) => { const b = bookOf(q.book_ref); return el('div', { class: 'book-row', onClick: () => ctx.navigate(`/book/${q.book_ref}/${q.id}`), style: { padding: '14px 12px', margin: '0 -12px', borderRadius: 10, display: 'flex', gap: 18, alignItems: 'flex-start', cursor: 'pointer' } },
       b ? el('div', { style: { filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.07))', flexShrink: 0 } }, cover(b, { scale: 0.26, lift: false })) : null,
       el('div', { style: { flex: 1, minWidth: 0 } },
-        el('div', { class: 'q-body', style: { fontSize: 16, lineHeight: 1.65, fontWeight: 500 } }, ...renderQuoteBody(q.text, keywordMarks(q.text, word))),
+        el('div', { class: 'snip', style: { fontSize: 16, lineHeight: 1.65, fontWeight: 500 } }, ...renderSnippet(quotePlainText(q.text), word)),
         el('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, fontSize: 12, color: 'var(--ink-4)' } }, el('span', { style: { color: 'var(--ink-2)', fontWeight: 600 } }, b?.t || ''), el('span', {}, '·'), el('span', { class: 'mono' }, fmtDateTime(q.created_at))))); }));
 
   const inner = el('div', { class: 'page', style: { maxWidth: 1080, padding: '40px 44px 100px' } }, hero,
