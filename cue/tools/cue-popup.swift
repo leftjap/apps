@@ -7,8 +7,9 @@ let cardPath = "/Users/gio_c/apps/cue/tools/youtube-gate-card.html"
 let triggerPath = "/tmp/cue-popup-trigger"
 let logPath = "/tmp/cue-popup.log"
 let knownStates = ["독서", "글쓰기", "어학", "운동", "stale", "toast"]
+// 값이 "app:<bundleID>" 면 로컬 앱 실행, 그 외는 웹 URL 오픈.
 let appURLs: [String: String] = [
-  "독서": "https://leftjap.github.io/apps/book/",
+  "독서": "app:kr.co.millie.MillieShelf",   // 밀리의서재 (로컬 앱) — 실제 독서는 여기서
   "글쓰기": "https://leftjap.github.io/apps/today/",
   "어학": "https://leftjap.github.io/apps/study/",
   "운동": "https://leftjap.github.io/apps/cue/",
@@ -30,8 +31,16 @@ final class Controller: NSObject, WKScriptMessageHandler {
   func userContentController(_ u: WKUserContentController, didReceive m: WKScriptMessage) {
     guard let s = m.body as? String else { return }
     if s == "go" {
-      if let u = appURLs[state], let url = URL(string: u) { log("bridge go state=\(state) open=\(u)"); NSWorkspace.shared.open(url) }
-      else { log("bridge go state=\(state) (no url)") }
+      if let u = appURLs[state] {
+        if u.hasPrefix("app:") {                                    // 로컬 앱 실행
+          let bid = String(u.dropFirst(4))
+          if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bid) {
+            log("bridge go state=\(state) app=\(bid) at=\(appURL.path)"); NSWorkspace.shared.open(appURL)
+          } else { log("bridge go state=\(state) app NOT FOUND \(bid)") }
+        } else if let url = URL(string: u) {                        // 웹 URL
+          log("bridge go state=\(state) open=\(u)"); NSWorkspace.shared.open(url)
+        }
+      } else { log("bridge go state=\(state) (no url)") }
       closeCard()
     } else { log("bridge later state=\(state)"); closeCard() }
   }
