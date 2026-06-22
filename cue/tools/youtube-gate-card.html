@@ -44,7 +44,7 @@ body{font-family:'Pretendard',system-ui,sans-serif}
 @keyframes glowPing{0%,52%{opacity:0;transform:scale(.85)}62%{opacity:.5;transform:scale(1.1)}78%,100%{opacity:0;transform:scale(1.26)}}
 @keyframes beat{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}24%{transform:scale(1)}36%{transform:scale(1.1)}48%{transform:scale(1)}}
 @keyframes sweepRot{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-@keyframes laterCount{from{stroke-dashoffset:0}to{stroke-dashoffset:44}}
+@keyframes laterCount{from{stroke-dashoffset:44}to{stroke-dashoffset:0}}
 </style></head><body>
 <div id="stage"></div>
 <script>
@@ -102,7 +102,7 @@ body{font-family:'Pretendard',system-ui,sans-serif}
     '<div class="h1">'+c.h+'</div><div class="w1">'+c.w+'</div>'+
     '<div class="ctaw"><div style="position:absolute;inset:0;border-radius:16px;box-shadow:0 10px 26px '+a+'4D;animation:glowPulseOp 2.8s ease-in-out infinite"></div>'+
      '<button class="cta" onclick="window.cueGo&&window.cueGo()" style="background-color:'+a+';box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 20px '+a+'4D,0 2px 5px rgba(0,0,0,.14)"><span class="shim"></span><span style="position:relative;z-index:1">'+c.c+'</span></button></div>'+
-    '<button class="later" disabled onclick="window.cueLater&&window.cueLater()"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#E3E6EB" stroke-width="2"/><circle class="lring" cx="9" cy="9" r="7" stroke="'+a+'" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="0" transform="rotate(-90 9 9)" style="animation:laterCount 3s linear forwards"/><text class="lnum" x="9" y="11.7" text-anchor="middle" font-size="7.5" fill="#9CA2AC">3</text></svg>나중에</button>'+
+    '<button class="later" disabled onclick="window.cueLater&&window.cueLater()"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#E3E6EB" stroke-width="2"/><circle class="lring" cx="9" cy="9" r="7" stroke="'+a+'" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)" style="animation:laterCount 5s linear forwards"/><text class="lnum" x="9" y="11.7" text-anchor="middle" font-size="7.5" fill="#9CA2AC">5</text></svg>나중에</button>'+
    '</div></div>';
  }
  function toast(){
@@ -110,9 +110,9 @@ body{font-family:'Pretendard',system-ui,sans-serif}
  }
  var state=new URLSearchParams(location.search).get('state')||'독서';
  document.getElementById('stage').innerHTML = state==='toast'?toast():card(THEME[state]?state:'독서');
- // '나중에' = 시안의 마찰 카운트다운: 3초간 비활성(흐림·링 소진·숫자 3→1)→0에서 활성. 그동안 활동 CTA 를 누르도록 유도.
+ // '나중에' = 시안의 마찰 카운트다운: 5초간 비활성(흐림·링 fill 빔→가득·숫자 5→1)→0에서 활성. 그동안 활동 CTA 를 누르도록 유도.
  var lb=document.querySelector('.later');
- if(lb){ var ln=lb.querySelector('.lnum'), svg=lb.querySelector('svg'), n=3;
+ if(lb){ var ln=lb.querySelector('.lnum'), svg=lb.querySelector('svg'), n=5;
   var iv=setInterval(function(){ n-=1; if(n>=1){ if(ln) ln.textContent=n; return; } clearInterval(iv); lb.disabled=false; if(svg) svg.style.display='none'; },1000); }
 })();
 </script>
