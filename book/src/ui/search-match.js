@@ -18,10 +18,10 @@ export function quoteMatches(quoteText, book, tokens) {
   return tokens.every((t) => { const tl = lc(t); return hay.some((h) => h.includes(tl)); });
 }
 
-/** 책 매칭 — 각 토큰이 제목 OR 저자 OR 출판사 포함, 전체 AND. book: {t,a,p} */
+/** 책 매칭 — 각 토큰이 제목 OR 저자 포함, 전체 AND. 출판사는 제외(인사→"인사이트" 류 오탐 방지). */
 export function bookMatches(book, tokens) {
   if (!tokens || !tokens.length) return false;
-  const hay = [lc(book && book.t), lc(book && book.a), lc(book && book.p)];
+  const hay = [lc(book && book.t), lc(book && book.a)];
   return tokens.every((t) => { const tl = lc(t); return hay.some((h) => h.includes(tl)); });
 }
 
