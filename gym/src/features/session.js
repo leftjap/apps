@@ -1949,7 +1949,7 @@ function blockDisplayName(block) {
 }
 
 function renderFooterPillHtml({ blockIdx, state, name }) {
-  // 세그먼트 탭 칩 (작업지시서 §6.1). 글리프 + 운동명 세로 2단.
+  // 종이톤 슬라이드 레일 칩 (작업지시서 §6.1). 마커 슬롯 + 운동명 (가로).
   // data-ex-state : 'active' | 'completed' | 'hold' | 'upcoming' (footer-exercise hold 메뉴와 호환)
   const exStateAttr = state === 'current' ? 'active'
     : state === 'done' ? 'completed'
@@ -1958,21 +1958,21 @@ function renderFooterPillHtml({ blockIdx, state, name }) {
     : state === 'done' ? 'is-done'
     : state === 'hold' ? 'is-hold' : 'is-upcoming';
   const ariaCurrent = state === 'current' ? ' aria-current="true"' : '';
-  const base = `type="button" data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"`;
 
-  let glyph;
+  // fp-check stroke 색은 CSS(.fp-check path{stroke:var(--sage)})로 지정 — SVG 속성 var() 미작동.
+  let mk;
   if (state === 'current') {
-    glyph = `<span class="fp-dot-live"></span>`;
+    mk = `<span class="fp-dot-live"></span>`;
   } else if (state === 'done') {
-    glyph = `<span class="fp-ring-done"><svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+    mk = `<svg class="fp-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.4 6.3l2.4 2.4L9.6 3.4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
   } else if (state === 'hold') {
-    glyph = `<span class="fp-ring-hold"></span>`;
+    mk = `<span class="fp-dot-hold"></span>`;
   } else {
-    glyph = `<span class="fp-ring-todo"></span>`;
+    mk = `<span class="fp-dot-todo"></span>`;
   }
 
-  return `<button class="fp-chip ${stateClass}" ${base}${ariaCurrent}>`
-    + `<span class="fp-chip__glyph">${glyph}</span>`
+  return `<button class="fp-chip ${stateClass}" type="button" data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"${ariaCurrent}>`
+    + `<span class="fp-chip__mk">${mk}</span>`
     + `<span class="fp-chip__name">${escapeHtml(name)}</span>`
     + `</button>`;
 }
@@ -2011,7 +2011,7 @@ function renderFooterPills(doc, session, currentBlock) {
     return;
   }
   // R1 (작업지시서) — session.blocks 원래 인덱스 순서 그대로 (computeFooterOrder 재배열 미사용).
-  // 단일 가로 트랙(.fp-strip). 현재 칩은 centerActivePill 이 가시 영역 중앙으로 스크롤(R4).
+  // 칩을 래퍼 없이 직접 나열 — 레일(#sessionFooterPills.fp-rail)이 곧 flex 스크롤 컨테이너.
   const chips = [];
   session.blocks.forEach((block, i) => {
     if (!block || block.type !== 'single') return; // 서킷 폐기 §16 — non-single graceful skip
@@ -2019,28 +2019,24 @@ function renderFooterPills(doc, session, currentBlock) {
     const state = classifyBlockState(block, isCurrent);
     chips.push(renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) }));
   });
-  pillsEl.innerHTML = `<div class="fp-strip">${chips.join('')}</div>`;
+  pillsEl.innerHTML = chips.join('');
   centerActivePill(pillsEl); // R4
 }
 
 /**
- * 작업지시서 §6.3 — 현재 칩을 트랙 가시 영역 가운데로 정렬.
- *  - 세트 도트 centerActiveSet 와 동일 패턴. 트랙이 넘칠 때만 동작, 스크롤 끝 clamp.
+ * 작업지시서 §6.3 — 현재 칩을 레일 가시 영역 가운데로 정렬.
+ *  - 세트 도트 centerActiveSet 와 동일 패턴. 레일(pillsEl 자체)이 스크롤 컨테이너.
+ *  - 레일이 넘칠 때만 동작, 스크롤 끝 clamp.
  *  - 칩 탭 전환은 mountSessionView 재마운트 → 새 DOM → 매번 즉시(instant) 중앙 정렬(smooth 아님).
  */
 function centerActivePill(pillsEl) {
-  const strip = pillsEl && pillsEl.querySelector('.fp-strip');
-  const cur = strip && strip.querySelector('.fp-chip.is-current');
-  if (!strip || !cur) return;
+  const cur = pillsEl && pillsEl.querySelector('.fp-chip.is-current');
+  if (!cur) return;
   const align = () => {
     try {
-      if (strip.scrollWidth <= strip.clientWidth + 1) return; // 넘치지 않으면 정렬 불필요
-      const target = cur.offsetLeft - (strip.clientWidth - cur.offsetWidth) / 2;
-      const clamped = Math.max(0, Math.min(target, strip.scrollWidth - strip.clientWidth));
-      const prev = strip.style.scrollBehavior;
-      strip.style.scrollBehavior = 'auto'; // 즉시 점프 (날아오는 슬라이드 체감 제거)
-      strip.scrollLeft = clamped;
-      strip.style.scrollBehavior = prev;
+      if (pillsEl.scrollWidth <= pillsEl.clientWidth + 1) return; // 넘치지 않으면 정렬 불필요
+      const target = cur.offsetLeft - (pillsEl.clientWidth - cur.offsetWidth) / 2;
+      pillsEl.scrollLeft = Math.max(0, Math.min(target, pillsEl.scrollWidth - pillsEl.clientWidth));
     } catch (_) { /* fallback */ }
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(align);

@@ -80,55 +80,62 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .hero-reps { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:50px; font-weight:400; color:var(--ink-2); letter-spacing:-0.02em; line-height:1; }
 .hero-reps-u { font-family:var(--font-sans); font-size:16px; font-weight:500; color:var(--ink-3); }
 
-/* ===== 푸터 운동 전환 (세그먼트 탭) ===== */
+/* ===== 푸터 운동 전환 (종이톤 슬라이드 레일) ===== */
 #sessionFooter {
   flex-shrink:0;
-  display:flex; align-items:stretch; gap:8px;
-  padding:14px 14px 22px;
+  display:flex; align-items:center; gap:10px;
+  padding:15px 16px 22px;
   box-shadow:inset 0 1px 0 var(--line-soft);
 }
 
-/* 트랙 (sunken 컨테이너) — JS 가 innerHTML 채움 */
-.fp-track {
+/* 레일 — JS 가 칩을 채움 */
+.fp-rail {
   flex:1; min-width:0;
-  background:var(--sunken);
-  border-radius:14px;
-  padding:5px;
-}
-
-/* 스크롤 스트립 */
-.fp-strip {
-  display:flex; align-items:stretch; gap:3px;
+  display:flex; align-items:center; gap:5px;
   overflow-x:auto;
   scroll-snap-type:x proximity;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent);
-          mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent);
+  padding:6px 2px;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 14px),transparent);
+          mask-image:linear-gradient(90deg,transparent 0,#000 18px,#000 calc(100% - 14px),transparent);
 }
-.fp-strip::-webkit-scrollbar { display:none; width:0; height:0; }
-.fp-strip { scrollbar-width:none; -ms-overflow-style:none; }
+.fp-rail::-webkit-scrollbar { display:none; width:0; height:0; }
+.fp-rail { scrollbar-width:none; -ms-overflow-style:none; }
 
-/* 칩 (공통) */
+/* 칩 공통 — 배경 없음(평평) */
 .fp-chip {
-  flex:1 0 auto;             /* 내용 폭 — 3~4개면 채우고, 많으면 슬라이드. ellipsis 금지 */
-  height:54px;
-  border:0; background:transparent;
-  border-radius:10px;
+  flex-shrink:0;
+  scroll-snap-align:center;
+  height:40px; padding:0 13px;
+  border:0; border-radius:12px;
+  background:transparent;
   cursor:pointer;
   font-family:var(--font-sans);
-  scroll-snap-align:center;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  gap:7px; padding:0 14px;
+  display:inline-flex; align-items:center; gap:6px;
+  white-space:nowrap;            /* 이름 안 잘림 */
 }
-.fp-chip__glyph { height:15px; display:flex; align-items:center; justify-content:center; }
-.fp-chip__name  { font-size:13px; font-weight:500; white-space:nowrap; }
+.fp-chip__mk   { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; }
+.fp-chip__name { font-size:14px; font-weight:500; }
 
-/* 진행중 — 흰 카드 돌출 + 라이브 점 */
+/* 완료 — 가장 흐린 글자 + sage 체크 (가장 조용, 면 없음) */
+.fp-chip.is-done .fp-chip__name { color:var(--ink-4); }
+.fp-check path { stroke:var(--sage); }
+
+/* 보류 — 오렌지 꽉 찬 점 */
+.fp-chip.is-hold .fp-chip__name { color:var(--ink-2); }
+.fp-dot-hold { width:6px; height:6px; border-radius:50%; background:var(--crail-soft); }
+
+/* 예정 — 빈 점 */
+.fp-chip.is-upcoming .fp-chip__name { color:var(--ink-4); }
+.fp-dot-todo { width:6px; height:6px; border-radius:50%; border:1.5px solid var(--neutral-bar); box-sizing:border-box; }
+
+/* 진행중 — 유일한 면: 흰 카드 떠오름 + 오렌지 라이브 점 */
 .fp-chip.is-current {
+  height:44px; padding:0 17px; border-radius:13px;
   background:var(--card);
-  padding:0 18px;
-  box-shadow:0 2px 7px -1px rgba(20,18,14,.17), 0 0 0 1px oklch(67% 0.12 50 / .28);
+  box-shadow:0 3px 9px -2px rgba(20,18,14,.16), 0 0 0 1px oklch(67% 0.12 50 / .3);
+  gap:8px;
 }
-.fp-chip.is-current .fp-chip__name { font-size:13.5px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; }
+.fp-chip.is-current .fp-chip__name { font-size:15px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; }
 .fp-dot-live {
   width:7px; height:7px; border-radius:50%;
   background:var(--crail-base);
@@ -136,36 +143,11 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
   animation:fpPulse 1.8s ease-in-out infinite;
 }
 
-/* 완료 — 은은한 sage 체크 (가장 조용) */
-.fp-chip.is-done .fp-chip__name { color:var(--ink-4); }
-.fp-ring-done {
-  display:flex; align-items:center; justify-content:center;
-  width:14px; height:14px; border-radius:50%;
-  box-shadow:inset 0 0 0 1.5px var(--sage);
-}
-.fp-ring-done svg path { stroke:var(--sage); }
-
-/* 보류 — 속 빈 오렌지 링 */
-.fp-chip.is-hold .fp-chip__name { color:var(--ink-2); }
-.fp-ring-hold {
-  width:13px; height:13px; border-radius:50%;
-  border:2px solid var(--crail-soft); background:#fff;
-  box-sizing:border-box;
-}
-
-/* 예정 — 점선 링 (가장 약하게) */
-.fp-chip.is-upcoming .fp-chip__name { color:var(--ink-4); }
-.fp-ring-todo {
-  width:11px; height:11px; border-radius:50%;
-  border:1.5px dashed var(--ink-4);
-  box-sizing:border-box;
-}
-
-/* + 추가 버튼 — 트랙 밖, 셸 링/페이드 없음 */
+/* + 추가 버튼 — 레일 밖, 셸 링/페이드/구분선 없음 */
 .fp-add {
   flex-shrink:0;
-  width:48px; height:64px;
-  border-radius:14px;
+  width:40px; height:40px;
+  border-radius:12px;
   border:1px solid var(--line);
   background:var(--card);
   color:var(--ink-3);
@@ -173,12 +155,11 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
   display:flex; align-items:center; justify-content:center;
 }
 
-/* 라이브 점 펄스 */
 @keyframes fpPulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
 @media (prefers-reduced-motion:reduce){ .fp-dot-live{animation:none;} }
 
-/* reorder 모드 — 스트립 오버플로/마스크 해제 (드래그 칩이 트랙 밖으로 들리도록) */
-#sessionFooterPills[data-reorder="1"] .fp-strip {
+/* reorder 모드 — 마스크/오버플로 해제 (드래그 칩이 레일 밖으로 들리도록) */
+#sessionFooterPills[data-reorder="1"] {
   overflow:visible;
   -webkit-mask-image:none; mask-image:none;
 }
@@ -327,9 +308,9 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
     </div>
     <!-- 푸터 운동 전환 -->
     <div id="sessionFooter">
-      <div id="sessionFooterPills" class="kr fp-track"></div>
+      <div id="sessionFooterPills" class="kr fp-rail"></div>
       <button id="sessionAddexBtn" type="button" class="fp-add" aria-label="운동 추가">
-        <svg width="21" height="21" viewBox="0 0 20 20" fill="none">
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none">
           <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
         </svg>
       </button>
