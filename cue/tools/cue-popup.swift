@@ -43,10 +43,10 @@ final class Controller: NSObject, WKScriptMessageHandler {
     let cfg = WKWebViewConfiguration()
     let ucc = WKUserContentController()
     ucc.add(self, name: "cue")
+    // 시안 충실: 오버레이(바깥) 클릭으로 닫지 않음 — 닫기는 카운트다운 후 '나중에' 또는 CTA(go)만. (마찰 유지)
     let js = """
     window.cueGo = function(){ window.webkit.messageHandlers.cue.postMessage('go'); };
     window.cueLater = function(){ window.webkit.messageHandlers.cue.postMessage('later'); };
-    document.addEventListener('click', function(e){ if(e.target && e.target.classList && e.target.classList.contains('ov')){ window.webkit.messageHandlers.cue.postMessage('later'); } });
     """
     ucc.addUserScript(WKUserScript(source: js, injectionTime: .atDocumentEnd, forMainFrameOnly: true))
     cfg.userContentController = ucc
@@ -107,13 +107,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // 3) 버튼 라우팅 검증(go=CTA→앱오픈 / later=닫기). snap 이면 클릭 생략
         if action == "go" || action == "later" {
           let sel = action == "later" ? ".later" : ".cta"
-          Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { _ in
-            web.evaluateJavaScript("document.querySelector('\(sel)').click(); 'ok'") { res, err in
+          Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in   // '나중에' 3초 카운트다운 이후(force-enable 로 라우팅만 검증)
+            web.evaluateJavaScript("var e=document.querySelector('\(sel)'); e.disabled=false; e.click(); 'ok'") { res, err in
               log("selftest click \(sel) res=\(String(describing: res)) err=\(err.map { String(describing: $0) } ?? "nil")")
             }
           }
         }
-        Timer.scheduledTimer(withTimeInterval: 2.4, repeats: false) { _ in log("selftest done"); NSApp.terminate(nil) }
+        Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { _ in log("selftest done"); NSApp.terminate(nil) }
       }
       return
     }
