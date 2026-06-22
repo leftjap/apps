@@ -30,7 +30,8 @@ const PARTS = { chest: '가슴', back: '등', shoulder: '어깨', legs: '하체'
 
 // 앱별 정적 메타 (딥링크·usualMin 폴백·캘린더 단위)
 const META = {
-  read:  { url: 'https://leftjap.github.io/apps/book/',  usualFallback: 22 * 60 + 30, calUnit: '분' },
+  // 독서 CTA = 맥 밀리의서재 로컬앱(상시 실행) 포커스. flutterpcviewer:// = 맥앱 등록 스킴(Info.plist CFBundleURLSchemes). 맥앱 전용(iOS 스킴 상이).
+  read:  { url: 'flutterpcviewer://',  usualFallback: 22 * 60 + 30, calUnit: '분' },
   write: { url: 'https://leftjap.github.io/apps/today/', usualFallback: 6 * 60 + 40,  calUnit: '매' },
   lang:  { url: 'https://leftjap.github.io/apps/study/', usualFallback: 20 * 60,      calUnit: '분' },
   gym:   { url: null, usualFallback: 13 * 60 + 50, calUnit: '분' }, // iPhone 전용 — CTA 무동작
