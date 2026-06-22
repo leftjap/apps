@@ -14,6 +14,7 @@ import { CURATION } from '../data/curation.js';
 import { el, clear } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
+import { renderQuoteBody, keywordMarks } from './quote-md.js';
 
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 function ownerIdsOf(user) {
@@ -36,25 +37,6 @@ function pushRecent(term) {
 }
 function removeRecent(term) {
   try { localStorage.setItem(RECENT_KEY, JSON.stringify(loadRecent().filter((x) => x !== term))); } catch { /* noop */ }
-}
-
-/** 긴 본문(어구록)용 — 매치 키워드 주변만 발췌 + <mark>. 앞 24자·뒤 120자 트림(…). 매치 없으면 앞부분. */
-function snippetInto(node, text, needle) {
-  const t = String(text || '');
-  const n = (needle || '').trim();
-  const i = n ? t.toLowerCase().indexOf(n.toLowerCase()) : -1;
-  if (i < 0) {
-    node.appendChild(document.createTextNode(t.slice(0, 160) + (t.length > 160 ? '…' : '')));
-    return node;
-  }
-  const start = Math.max(0, i - 24);
-  if (start > 0) node.appendChild(document.createTextNode('…'));
-  node.appendChild(document.createTextNode(t.slice(start, i)));
-  node.appendChild(el('mark', {}, t.slice(i, i + n.length)));
-  const end = Math.min(t.length, i + n.length + 120);
-  node.appendChild(document.createTextNode(t.slice(i + n.length, end)));
-  if (end < t.length) node.appendChild(document.createTextNode('…'));
-  return node;
 }
 
 // ─── 모듈 상태 — 단일 인스턴스 + 핫키 바인딩 ────────────────────────────────
@@ -302,7 +284,8 @@ export function openSearchModal(ctx) {
           b ? coverAt(b, 34, { lift: true }) : el('div', { class: 'cv-ph' }),
           q.pinned ? el('span', { class: 'pinbadge' }, iconEl('star-fill', { sz: 9 })) : null);
         const col = el('div', { class: 'body' },
-          snippetInto(el('p', { class: 'q' }), q.text, raw),
+          // 어구록 페이지처럼 전문 + 원본 구조(문단·볼드·인용) 노출, 검색어 하이라이트.
+          el('div', { class: 'q' }, ...renderQuoteBody(q.text, keywordMarks(q.text, raw))),
           el('div', { class: 'src' },
             b ? el('strong', {}, b.t) : el('span', {}, '(책 미상)'),
             b ? el('span', { class: 'dot' }) : null,

@@ -12,6 +12,7 @@ import { screenShell, crumb, btn } from '../ui/components.js';
 import { barChart, wordCloud } from '../ui/charts.js';
 import { tokenize } from '../ui/text.js';
 import { fmtDate, fmtDateTime } from '../ui/format.js';
+import { renderQuoteBody } from '../ui/quote-md.js';
 
 const owners = (u) => [u?.id].filter(Boolean);
 const monthKey = (iso) => (iso || '').slice(0, 7);
@@ -75,8 +76,8 @@ async function render(host, params, ctx) {
       el('div', { style: { flex: 1 } }),
       btn({ label: '최근순', variant: 'ghost', size: 'sm', iconR: 'chevD' })),
     ...list.map((q) => el('article', { class: 'book-row', onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`), style: { padding: '16px 12px', margin: '0 -12px', borderRadius: 10, cursor: 'pointer' } },
-      el('div', { style: { fontSize: 16.5, lineHeight: 1.65, fontWeight: q.pinned ? 600 : 500 } },
-        el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), q.text, el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”')),
+      el('div', { class: 'q-body', style: { fontSize: 16.5, lineHeight: 1.65, fontWeight: q.pinned ? 600 : 500 } },
+        ...renderQuoteBody(q.text)),
       el('div', { class: 'mono', style: { marginTop: 8, fontSize: 12, color: 'var(--ink-4)' } }, fmtDateTime(q.created_at)))),
   );
 

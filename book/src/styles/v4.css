@@ -68,12 +68,13 @@
 .bookv4 .lx-x .txt mark.blue { background: var(--hl-blue); }
 .bookv4 .lx-x .txt mark.green { background: var(--hl-green); }
 
-/* 어구 본문 마크다운 블록 (quote-md.js) — 문단(빈 줄)·블록인용(>)·**볼드** */
-.bookv4 .q-p { margin: 0 0 .72em; }
-.bookv4 .q-p:first-child { margin-top: 0; }
-.bookv4 .q-p:last-child, .bookv4 .q-bq:last-child { margin-bottom: 0; }
-.bookv4 .q-bq { margin: .72em 0; padding: 2px 0 2px 15px; border-left: 3px solid var(--ink-4); color: var(--ink-2); }
-.bookv4 .q-body strong, .bookv4 .lx-x .txt strong { font-weight: 700; color: var(--ink); }
+/* 어구 본문 마크다운 블록 (quote-md.js) — 문단(빈 줄)·블록인용(>)·**볼드**.
+   library/thread 외 모달(quote-modal)·검색(search-modal)·작가·단어 뷰에도 적용 — 프리픽스 없음. */
+.q-p { margin: 0 0 .72em; }
+.q-p:first-child { margin-top: 0; }
+.q-p:last-child, .q-bq:last-child { margin-bottom: 0; }
+.q-bq { margin: .72em 0; padding: 2px 0 2px 15px; border-left: 3px solid var(--ink-4); color: var(--ink-2); }
+.q-p strong, .q-bq strong { font-weight: 700; }
 
 /* 선택 팝오버 — 드래그 하이라이트 색상/액션 (떠오르는 박스, 시안 lx-selpop) */
 .bookv4 .lx-selpop { position: absolute; display: inline-flex; align-items: center; gap: 4px; padding: 6px 8px; background: #fff; border-radius: 10px; box-shadow: var(--shadow-lift); z-index: 10; }

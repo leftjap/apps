@@ -13,22 +13,12 @@ import { screenShell, crumb, btn } from '../ui/components.js';
 import { barChart } from '../ui/charts.js';
 import { tokenize } from '../ui/text.js';
 import { fmtDate, fmtDateTime } from '../ui/format.js';
+import { renderQuoteBody, keywordMarks } from '../ui/quote-md.js';
 
 const owners = (u) => [u?.id].filter(Boolean);
 const topCat = (b) => (b?.c ? b.c.split('·')[0].trim() : '기타');
 const monthKey = (iso) => (iso || '').slice(0, 7);
 const occ = (text, word) => (text && word ? text.split(word).length - 1 : 0);
-
-function highlight(text, word) {
-  if (!word) return [text];
-  const out = [];
-  const parts = String(text).split(word);
-  parts.forEach((p, i) => {
-    if (p) out.push(p);
-    if (i < parts.length - 1) out.push(el('mark', { style: { background: 'rgba(194,85,58,0.18)', color: 'var(--ink-1)', padding: '0 3px', borderRadius: 3, fontWeight: 700 } }, word));
-  });
-  return out;
-}
 
 async function render(host, params, ctx) {
   const word = params.w || '';
@@ -122,7 +112,7 @@ async function render(host, params, ctx) {
     ...matches.map((q) => { const b = bookOf(q.book_ref); return el('div', { class: 'book-row', onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`), style: { padding: '14px 12px', margin: '0 -12px', borderRadius: 10, display: 'flex', gap: 18, alignItems: 'flex-start', cursor: 'pointer' } },
       b ? el('div', { style: { filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.07))', flexShrink: 0 } }, cover(b, { scale: 0.26, lift: false })) : null,
       el('div', { style: { flex: 1, minWidth: 0 } },
-        el('div', { style: { fontSize: 16, lineHeight: 1.65, fontWeight: 500 } }, el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), ...highlight(q.text, word), el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”')),
+        el('div', { class: 'q-body', style: { fontSize: 16, lineHeight: 1.65, fontWeight: 500 } }, ...renderQuoteBody(q.text, keywordMarks(q.text, word))),
         el('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, fontSize: 12, color: 'var(--ink-4)' } }, el('span', { style: { color: 'var(--ink-2)', fontWeight: 600 } }, b?.t || ''), el('span', {}, '·'), el('span', { class: 'mono' }, fmtDateTime(q.created_at))))); }));
 
   const inner = el('div', { class: 'page', style: { maxWidth: 1080, padding: '40px 44px 100px' } }, hero,

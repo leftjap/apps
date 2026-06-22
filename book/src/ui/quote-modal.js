@@ -13,6 +13,7 @@ import { el } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
 import { fmtDateTime } from './format.js';
+import { renderQuoteBody } from './quote-md.js';
 
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 
@@ -127,7 +128,7 @@ export function openQuoteModal(q, ctx, { commentCount = 0, container } = {}) {
   );
   modal.append(
     tools,
-    el('div', { class: 'modal-quote' }, q.text),
+    el('div', { class: 'modal-quote' }, ...renderQuoteBody(q.text)),
     el('div', { class: 'modal-source' },
       el('div', { class: 'cover-slot' }, coverAt(b, 60)),
       el('div', {},
