@@ -104,7 +104,6 @@ export function openSearchModal(ctx) {
   // ── 동작 ──
   function runQuery(term) { input.value = term; query = term; input.focus(); rerender(); }
   function navTo(route) { pushRecent(query); close(); (_ctx?.navigate || (() => {}))(route); }
-  function openQuote(q) { pushRecent(query); close(); (_ctx?.navigate || (() => {}))(`/thread/${q.book_ref}/${q.id}`); }
 
   async function ensureLoaded() {
     if (quotes != null) return;
@@ -290,7 +289,8 @@ export function openSearchModal(ctx) {
             b ? el('strong', {}, b.t) : el('span', {}, '(책 미상)'),
             b ? el('span', { class: 'dot' }) : null,
             b ? el('span', {}, b.a) : null));
-        list.appendChild(el('button', { class: 'sx-qrow sx-item', onClick: () => openQuote(q) }, cvw, col));
+        // 어구록 페이지처럼 전문을 그대로 노출 — 행 클릭으로 상세 진입하지 않음(네비/키보드 제외).
+        list.appendChild(el('div', { class: 'sx-qrow' }, cvw, col));
       }
       const more = (filter === '전체' && matchedQuotes.length > limit)
         ? { label: '모두 보기', onClick: () => { filter = '어구록'; renderResults(); } } : null;
