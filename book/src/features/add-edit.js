@@ -13,6 +13,7 @@ import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { modal, btn } from '../ui/components.js';
+import { quotePreview } from '../ui/quote-md.js';
 
 function mountOverlay(node) {
   const app = document.querySelector('#app');
@@ -221,7 +222,7 @@ async function openDelete(ctx, id) {
       cmtCount > 0 ? `이 어구록과 함께 댓글 ${cmtCount}개도 삭제됩니다. 되돌릴 수 없습니다.` : '이 어구록을 삭제합니다. 되돌릴 수 없습니다.'),
     el('div', { style: { padding: '14px 16px', background: 'var(--paper)', borderRadius: 8, marginBottom: 24 } },
       el('div', { style: { fontSize: 13.5, lineHeight: 1.6, color: 'var(--ink-2)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } },
-        el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), quote.text, el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”'))),
+        el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), quotePreview(quote.text), el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”'))),
     el('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } },
       btn({ label: '취소', variant: 'sec', size: 'md', onClick: () => close() }),
       btn({ label: '삭제', variant: 'warm', size: 'md', onClick: doDelete })),
