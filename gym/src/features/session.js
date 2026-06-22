@@ -351,7 +351,7 @@ function findFirstUnfinishedBlock(session) {
   if (!session || !Array.isArray(session.blocks)) return null;
   for (let i = 0; i < session.blocks.length; i += 1) {
     const b = session.blocks[i];
-    if (b && b.type === 'single' && !Number.isFinite(b.finishedAt)) return i;
+    if (b && b.type === 'single' && !isBlockDone(b)) return i;
   }
   return null;
 }
@@ -1902,9 +1902,21 @@ export function wireLongPress(doc, opts = {}) {
 /* ──────────────────── footer nav pill (spec §6-8 / f-5-1) ──────────────────── */
 
 /**
+ * 푸터 칩 '완료(done)' 판정 — 명시적 완료(finishedAt) 또는 세트 전부 done.
+ * classifyBlockState 의 done 표시(✓)와 computeFooterOrder 의 done 정렬(좌측)이
+ * 같은 기준을 쓰도록 공유 (불일치 시 ✓ 칩이 우측에 남는 버그 — 2026-06-22 사용자 보고).
+ */
+function isBlockDone(block) {
+  if (!block || block.type !== 'single') return false;
+  if (Number.isFinite(block.finishedAt)) return true;
+  const sets = Array.isArray(block.sets) ? block.sets : [];
+  return sets.length > 0 && sets.every((s) => s && s.done);
+}
+
+/**
  * spec §6-8 운동 상태 판정.
  *  - currentBlock 과 동일 → 'current'
- *  - single 블록의 sets 모두 done → 'done'
+ *  - 완료(finishedAt 또는 sets 전부 done) → 'done'
  *  - single 블록의 일부 set done → 'hold' (보류)
  *  - 그 외 (예정 또는 단일 아닌 타입) → 'pending'
  *  - 서킷 폐기 (spec §16) — block.type !== 'single' 은 graceful skip → pending.
@@ -1912,12 +1924,8 @@ export function wireLongPress(doc, opts = {}) {
 function classifyBlockState(block, isCurrent) {
   if (isCurrent) return 'current';
   if (!block || block.type !== 'single') return 'pending';
-  // 명시적 "완료" 액션 (finishedAt marker) → 항상 done 표시.
-  if (Number.isFinite(block.finishedAt)) return 'done';
+  if (isBlockDone(block)) return 'done'; // finishedAt 또는 세트 전부 done
   const sets = Array.isArray(block.sets) ? block.sets : [];
-  if (sets.length === 0) return 'pending';
-  const allDone = sets.every((s) => s && s.done);
-  if (allDone) return 'done';
   const anyDone = sets.some((s) => s && s.done);
   if (anyDone) return 'hold';
   return 'pending';
@@ -1994,10 +2002,10 @@ export function computeFooterOrder(blocks, currentBlock) {
     ? blocks.indexOf(currentBlock) : -1;
   const isCurrent = (e) => e.i === curIdx;
   const done = entries
-    .filter((e) => !isCurrent(e) && Number.isFinite(e.block.finishedAt))
+    .filter((e) => !isCurrent(e) && isBlockDone(e.block))
     .sort((a, b) => (a.block.finishedAt || 0) - (b.block.finishedAt || 0));
   const current = entries.filter(isCurrent); // 0 또는 1개
-  const pending = entries.filter((e) => !isCurrent(e) && !Number.isFinite(e.block.finishedAt));
+  const pending = entries.filter((e) => !isCurrent(e) && !isBlockDone(e.block));
   return [...done, ...current, ...pending];
 }
 

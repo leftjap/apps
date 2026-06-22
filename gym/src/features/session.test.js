@@ -2419,44 +2419,55 @@ describe('formatSetSegment (§B — 세트바 2줄 중량+×횟수)', () => {
   });
 });
 
-describe('computeFooterOrder — 푸터 칩 고정 배열 [완료 좌·현재 중앙·예정 우]', () => {
-  const single = (exerciseId, finishedAt) => {
-    const b = { type: 'single', exerciseId, sets: [{ weight: 10, reps: 5, done: true }] };
+describe('computeFooterOrder — 푸터 칩 서킷 배열 [완료 좌·현재·예정 우]', () => {
+  // 완료=finishedAt(명시적 완료) 또는 sets 전부 done. 예정/현재=세트 미완료(undone).
+  const single = (exerciseId, { finishedAt = null, setsDone = false } = {}) => {
+    const b = { type: 'single', exerciseId, sets: [{ weight: 10, reps: 5, done: setsDone }] };
     if (finishedAt != null) b.finishedAt = finishedAt;
     return b;
   };
 
   it('완료=좌(완료순), 현재=중앙, 예정=우(원래순)', () => {
-    const A = single('A', 200); // 완료
-    const B = single('B', null); // 현재 (미완료)
-    const C = single('C', null); // 예정
-    const D = single('D', 100); // 완료 (먼저 끝남)
+    const A = single('A', { finishedAt: 200 }); // 완료
+    const B = single('B'); // 현재 (미완료)
+    const C = single('C'); // 예정 (미완료)
+    const D = single('D', { finishedAt: 100 }); // 완료 (먼저 끝남)
     const blocks = [A, B, C, D];
     const order = computeFooterOrder(blocks, B).map((e) => e.block.exerciseId);
     // 완료 D(100)→A(200), 현재 B, 예정 C
     expect(order).toEqual(['D', 'A', 'B', 'C']);
   });
 
+  it('세트 전부 done(명시적 완료 아님)도 완료존(좌측)으로 — 버그 재발 방지', () => {
+    const A = single('A', { setsDone: true }); // all-sets-done, finishedAt 없음 → done
+    const B = single('B'); // 현재 (미완료)
+    const C = single('C'); // 예정 (미완료)
+    const blocks = [A, B, C];
+    const order = computeFooterOrder(blocks, B).map((e) => e.block.exerciseId);
+    // A 는 ✓(done) 이므로 좌측 완료존, B 현재, C 예정
+    expect(order).toEqual(['A', 'B', 'C']);
+  });
+
   it('현재가 완료 블록이어도 중앙으로 (좌측 완료존에 안 둠)', () => {
-    const A = single('A', 100); // 완료
-    const B = single('B', 200); // 완료 + 현재(리뷰 중)
-    const C = single('C', null); // 예정
+    const A = single('A', { finishedAt: 100 }); // 완료
+    const B = single('B', { finishedAt: 200 }); // 완료 + 현재(리뷰 중)
+    const C = single('C'); // 예정
     const blocks = [A, B, C];
     const order = computeFooterOrder(blocks, B).map((e) => e.block.exerciseId);
     expect(order).toEqual(['A', 'B', 'C']);
   });
 
   it('현재 없음(null) → [완료, 예정]만', () => {
-    const A = single('A', 100);
-    const C = single('C', null);
+    const A = single('A', { finishedAt: 100 });
+    const C = single('C');
     const blocks = [A, C];
     const order = computeFooterOrder(blocks, null).map((e) => e.block.exerciseId);
     expect(order).toEqual(['A', 'C']);
   });
 
   it('각 항목은 원본 인덱스 i 를 보존 (click·hold 핸들러용)', () => {
-    const A = single('A', 200);
-    const B = single('B', null);
+    const A = single('A', { finishedAt: 200 });
+    const B = single('B');
     const blocks = [A, B];
     const order = computeFooterOrder(blocks, B);
     expect(order.map((e) => e.i)).toEqual([0, 1]);
