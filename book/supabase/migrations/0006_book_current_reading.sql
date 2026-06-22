@@ -4,7 +4,7 @@
 -- (~/Library/Application Support/kr.co.millie.MillieShelf/db.sqlite, history_drift⋈book)
 -- 에서 millie-book-sync 가 최근 1권을 upsert. cue 독서 카드가 제목·진도 표시.
 -- 시간(초)은 기존 book_reading_seconds(스크린타임) 그대로 — 본 테이블은 '무슨 책'만 보강.
--- RLS: 0003 book_reading_seconds 패턴 동일 (본인 전체 + 파트너 읽기).
+-- RLS: 배포된 book_reading_seconds 실제 정책과 동일 — owner-only (book_partner_id() 미존재 확인).
 -- 비파괴: 신규 테이블만 추가. 기존 테이블 영향 없음.
 -- ═══════════════════════════════════════════════════════════════════════════
 
@@ -22,10 +22,9 @@ create table book_current_reading (
 
 alter table book_current_reading enable row level security;
 
--- 본인 전체 + 파트너 읽기
+-- 본인만 읽기 (book_reading_seconds 배포 정책과 동일)
 create policy book_current_reading_select on book_current_reading for select using (
   owner_id = auth.uid()
-  or owner_id = book_partner_id()
 );
 
 -- 본인 것만 쓰기 (insert/update/delete)
