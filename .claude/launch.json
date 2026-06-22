@@ -2,6 +2,19 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "gym-dev-seg",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "5190"
+      ],
+      "cwd": "/Users/gio_c/apps/gym",
+      "port": 5190
+    },
+    {
       "name": "study-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
