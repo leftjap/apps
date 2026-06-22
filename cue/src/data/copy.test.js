@@ -34,6 +34,15 @@ describe('buildRead — 직전/이번 주/이번 달 통일 구조', () => {
       { lb: '최장 연속', v: '11일' }, { lb: '하루 최고', v: '52분' }, { lb: '올해 읽은 날', v: '41일' },
     ]);
   });
+  it('현재 책(밀리) 있으면 — hook=제목+진도, 직전읽기 note 에 이어서 진도', () => {
+    const r = buildRead({ ...base, currentBook: { title: '웬만해선 아무렇지 않다', percent: 30 } });
+    expect(r.hook).toEqual({ title: '「웬만해선 아무렇지 않다」', strong: '30%', tail: '까지 읽었어요' });
+    expect(r.records[0]).toEqual({ lb: '직전 읽기', v: '18분', note: '어제 · 이어서 30%' });
+  });
+  it('현재 책 진도 null — 제목만, % 생략', () => {
+    const r = buildRead({ ...base, currentBook: { title: '순수이성비판', percent: null } });
+    expect(r.hook).toEqual({ title: '「순수이성비판」', strong: '', tail: '까지 읽었어요' });
+  });
   it('공백(끊김) — gap 사실 sub', () => {
     const r = buildRead({ ...base, streak: 0 });
     expect(r.sub).toBe('마지막으로 읽은 날은 6월 12일이에요');

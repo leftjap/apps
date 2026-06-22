@@ -122,13 +122,17 @@ async function fetchRead(client, userId, today, len, sinceKey) {
     (q) => q.eq('owner_id', userId).gte('day', sinceKey));
   const series = dailySeries(data, (r) => r.day, (r) => Math.round(r.seconds / 60), len, today);
   const s = seriesStats(series, today);
+  // 밀리 현재 책(제목·진도) — millie-book-sync 가 맥 밀리앱 로컬 DB 에서 적재. 테이블 없으면 rows()=[] (안전).
+  const cbRows = await rows(client, 'book_current_reading', 'title, read_percent',
+    (q) => q.eq('owner_id', userId).limit(1));
+  const currentBook = cbRows[0] ? { title: cbRows[0].title, percent: cbRows[0].read_percent } : null;
   const built = buildRead({
     done: s.done, todayMin: s.todayVal, lastVal: s.lastVal, lastDaysAgo: s.lastDaysAgo,
     weekDays: s.weekDays, lastWeekDays: s.lastWeekDays,
     monthMin: s.monthVal, prevMonthMin: s.prevMonthVal,
     streak: s.streak, best: s.best, dayBest: s.dayBest,
     yearMin: s.yearSum, yearDays: s.yearDays,
-    paceAvg: round1(s.yearDays / weeksElapsed(today)), today,
+    paceAvg: round1(s.yearDays / weeksElapsed(today)), today, currentBook,
   });
   // book 은 일별 집계 테이블 — 시각 없음 → 위치는 usualFallback, tlMeta 는 분량만
   return view('read', s, built, {

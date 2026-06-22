@@ -29,13 +29,16 @@ export function buildRead(c) {
   const hasLast = c.lastVal != null;
   return {
     name: '독서', cta: '이어 읽기',
-    hook: none
-      ? { title: '아직 기록이 없어요', strong: '', tail: '' }
-      : { title: relativeDayLabel(c.lastDaysAgo), strong: `${c.lastVal}분`, tail: ' 읽었어요' },
+    // 밀리 현재 책이 있으면 제목+진도 (v9 시안 원안 복원 — book_current_reading 연동). 없으면 직전 시점.
+    hook: c.currentBook
+      ? { title: `「${c.currentBook.title}」`, strong: c.currentBook.percent != null ? `${c.currentBook.percent}%` : '', tail: '까지 읽었어요' }
+      : none
+        ? { title: '아직 기록이 없어요', strong: '', tail: '' }
+        : { title: relativeDayLabel(c.lastDaysAgo), strong: `${c.lastVal}분`, tail: ' 읽었어요' },
     hookDone: { title: '오늘', strong: `${c.todayMin}분`, tail: ' 읽었어요' },
     ...subRead(c),
     records: [
-      { lb: '직전 읽기', v: hasLast ? `${c.lastVal}분` : '—', note: hasLast ? relativeDayLabel(c.lastDaysAgo) : '' },
+      { lb: '직전 읽기', v: hasLast ? `${c.lastVal}분` : '—', note: hasLast ? (c.currentBook?.percent != null ? `${relativeDayLabel(c.lastDaysAgo)} · 이어서 ${c.currentBook.percent}%` : relativeDayLabel(c.lastDaysAgo)) : '' },
       { lb: '이번 주', goal: { cur: c.weekDays, max: 5, unit: '일', proposed: true }, note: `지난주 ${c.lastWeekDays}일` },
       { lb: '이번 달', v: hoursLabel(c.monthMin), note: c.prevMonthMin != null ? `지난달 ${hoursLabel(c.prevMonthMin)}` : '' },
     ],
