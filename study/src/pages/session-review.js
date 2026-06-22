@@ -23,6 +23,7 @@ import {
 } from '../components/session/index.js';
 import { loadReviewCards, loadFreeReviewCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
+import { localISODate } from '../utils/today.js';
 import { applySrsUpdate } from '../services/srs.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
@@ -56,7 +57,7 @@ function getStoredLang() {
 }
 
 function getTodayISO() {
-  return window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10);
+  return window.studyDay?.TODAY_ISO || localISODate();
 }
 
 export function mountSessionReview(host) {

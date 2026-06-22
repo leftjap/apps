@@ -18,6 +18,7 @@ import { loadActiveSession } from '../services/activeSession.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
+import { localISODate } from '../utils/today.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -98,7 +99,7 @@ export function mountHome(host) {
     weekPass: 0,
     todayNewDone: 0,
     todayReviewDone: 0,
-    todayISO: window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10),
+    todayISO: window.studyDay?.TODAY_ISO || localISODate(),
     resume: null, // 'new' | 'review' | null — activeSession 매치 시
     sessionTitle: '', // #5 — AI 생성 세션 타이틀(scene/skit). 첫 미완료 카드 explanation 에서 산출.
   };

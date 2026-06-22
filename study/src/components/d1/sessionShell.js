@@ -9,9 +9,10 @@ import { startMicRecording, stopAndAnalyze } from '../../services/sessionAnalyze
 import { recordErrorMessage, showRecordToast } from '../session/recordToast.js';
 import { savePronunciationLog } from '../../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../../services/weakPhonemes.js';
+import { localISODate } from '../../utils/today.js';
 
 const PASS_THRESHOLD = 80;
-function getTodayISO() { return window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10); }
+function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
 /* 2-step stepper shown in the scene (dialogue) phase. active: 1 | 2 */
 export function d1Steps(active) {

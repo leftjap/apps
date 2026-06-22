@@ -25,6 +25,8 @@
  *  - applyPRUpdate(db, lang, sessionLog) — finish() 직후 호출
  */
 
+import { localISODate } from '../utils/today.js';
+
 const HISTORY_MAX = 5;
 const WINDOW_DAYS = 7;
 
@@ -144,7 +146,7 @@ export async function applyPRUpdate(db, lang) {
   if (!db.meta || !db.sessionLogs) return { updated: false, newPRs: [], prevPRs: [] };
 
   // 오늘 sessionLogs 합산
-  const today = new Date().toISOString().slice(0, 10);
+  const today = (typeof window !== 'undefined' && window.studyDay?.TODAY_ISO) || localISODate();
   const allLogs = await db.sessionLogs.toArray();
   const todayLogs = allLogs.filter((l) => l?.date === today && (lang === 'both' || l.lang === lang));
   const todayLog = {

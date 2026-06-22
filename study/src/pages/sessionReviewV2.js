@@ -14,10 +14,11 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
-function getTodayISO() { return window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10); }
+function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
 const VR_CSS = `
 .vr{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}

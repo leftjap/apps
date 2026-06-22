@@ -11,9 +11,10 @@ import { todayPlusDays } from '../services/srs.js';
 import { h } from '../components/d1/dom.js';
 import { buildD1Side } from '../components/d1/sessionShell.js';
 import { renderMathV2 } from './sessionMathV2.js';
+import { localISODate } from '../utils/today.js';
 
 const LS_KEY = 'mathProgress';
-const todayISO = () => (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10));
+const todayISO = () => (window.studyDay?.TODAY_ISO || localISODate());
 
 function isDemoMode() {
   try { return new URLSearchParams(window.location.search).get('demo') === '1'; }

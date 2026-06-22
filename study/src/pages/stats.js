@@ -6,8 +6,9 @@
  */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, vEq, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
+import { localISODate } from '../utils/today.js';
 
-const TODAY = () => (window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10));
+const TODAY = () => (window.studyDay?.TODAY_ISO || localISODate());
 const DOW = ['월', '화', '수', '목', '금', '토', '일'];
 const MONTHS_KO = (m) => `${m}월`;
 

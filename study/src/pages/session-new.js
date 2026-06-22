@@ -18,6 +18,7 @@ import {
 } from '../components/session/index.js';
 import { loadNewCards, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
+import { localISODate } from '../utils/today.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
@@ -58,7 +59,7 @@ function getStoredLang() {
 }
 
 function getTodayISO() {
-  return window.studyDay?.TODAY_ISO || new Date().toISOString().slice(0, 10);
+  return window.studyDay?.TODAY_ISO || localISODate();
 }
 
 export function mountSessionNew(host) {
