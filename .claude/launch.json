@@ -9,7 +9,7 @@
         "http.server",
         "5191",
         "--directory",
-        "/tmp/gym-design-spec/deliverable",
+        "/tmp/gym-design-spec2/deliverable",
         "--bind",
         "127.0.0.1"
       ],
