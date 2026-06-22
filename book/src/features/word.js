@@ -109,7 +109,7 @@ async function render(host, params, ctx) {
       el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-4)', marginLeft: 10 } }, String(matches.length)),
       el('div', { style: { flex: 1 } }),
       btn({ label: '최근순', variant: 'ghost', size: 'sm', iconR: 'chevD' })),
-    ...matches.map((q) => { const b = bookOf(q.book_ref); return el('div', { class: 'book-row', onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`), style: { padding: '14px 12px', margin: '0 -12px', borderRadius: 10, display: 'flex', gap: 18, alignItems: 'flex-start', cursor: 'pointer' } },
+    ...matches.map((q) => { const b = bookOf(q.book_ref); return el('div', { class: 'book-row', style: { padding: '14px 12px', margin: '0 -12px', borderRadius: 10, display: 'flex', gap: 18, alignItems: 'flex-start' } },
       b ? el('div', { style: { filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.07))', flexShrink: 0 } }, cover(b, { scale: 0.26, lift: false })) : null,
       el('div', { style: { flex: 1, minWidth: 0 } },
         el('div', { class: 'q-body', style: { fontSize: 16, lineHeight: 1.65, fontWeight: 500 } }, ...renderQuoteBody(q.text, keywordMarks(q.text, word))),

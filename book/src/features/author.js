@@ -75,7 +75,7 @@ async function render(host, params, ctx) {
       el('span', { class: 'mono', style: { fontSize: 12, color: 'var(--ink-4)', marginLeft: 10 } }, String(list.length)),
       el('div', { style: { flex: 1 } }),
       btn({ label: '최근순', variant: 'ghost', size: 'sm', iconR: 'chevD' })),
-    ...list.map((q) => el('article', { class: 'book-row', onClick: () => ctx.navigate(`/thread/${q.book_ref}/${q.id}`), style: { padding: '16px 12px', margin: '0 -12px', borderRadius: 10, cursor: 'pointer' } },
+    ...list.map((q) => el('article', { class: 'book-row', style: { padding: '16px 12px', margin: '0 -12px', borderRadius: 10 } },
       el('div', { class: 'q-body', style: { fontSize: 16.5, lineHeight: 1.65, fontWeight: q.pinned ? 600 : 500 } },
         ...renderQuoteBody(q.text)),
       el('div', { class: 'mono', style: { marginTop: 8, fontSize: 12, color: 'var(--ink-4)' } }, fmtDateTime(q.created_at)))),
