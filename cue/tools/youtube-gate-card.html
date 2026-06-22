@@ -1,0 +1,111 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;background:transparent}
+body{font-family:'Pretendard',system-ui,sans-serif}
+.ov{position:fixed;inset:0;background:rgba(14,12,10,.62);display:flex;align-items:center;justify-content:center}
+.amb{position:absolute;width:560px;height:560px;border-radius:50%;pointer-events:none;animation:ambGlow 4.8s ease-in-out infinite}
+.card{position:relative;z-index:1;width:480px;background:linear-gradient(176deg,#FFFFFF,#F7F7F8);border-radius:26px;padding:30px 32px 22px;
+ box-shadow:0 30px 80px rgba(0,0,0,.42),0 6px 18px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(40,45,55,.05);display:flex;flex-direction:column;animation:cuePopIn .46s cubic-bezier(.2,.8,.25,1)}
+.jrow{display:flex;align-items:center;justify-content:center;gap:12px}
+.ytchip{flex:none;display:flex;align-items:center;gap:7px;padding:6px 12px 6px 9px;background:linear-gradient(180deg,#fff,#F6F8FB);border:1px solid #E6E8EC;border-radius:999px;box-shadow:0 1px 3px rgba(30,33,40,.07),inset 0 1px 0 #fff}
+.ytico{width:19px;height:14px;background:#E33;border-radius:4px;display:flex;align-items:center;justify-content:center;flex:none}
+.tri{width:0;height:0;border-left:5px solid #fff;border-top:3px solid transparent;border-bottom:3px solid transparent;margin-left:1px}
+.ytt{font-size:12.5px;color:#9AA0AA;white-space:nowrap}
+.pill{flex:none;white-space:nowrap;display:flex;align-items:center;padding:6px 15px;color:#fff;border-radius:999px;font-size:13px;font-weight:500;letter-spacing:-.2px}
+.hero{position:relative;margin-top:22px;height:184px;border-radius:20px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.h1{font-size:25px;font-weight:600;color:#1A1C22;margin-top:24px;line-height:1.3;letter-spacing:-.5px;text-align:center;animation:headRise .5s .06s both}
+.w1{font-size:14.5px;font-weight:400;color:#9CA2AC;margin-top:8px;line-height:1.45;text-align:center;animation:headRise .5s .12s both}
+.ctaw{position:relative;width:100%;margin-top:26px}
+.cta{position:relative;width:100%;height:56px;border:none;border-radius:15px;color:#fff;font-size:16.5px;font-weight:600;letter-spacing:-.3px;overflow:hidden;display:flex;align-items:center;justify-content:center;cursor:pointer;
+ background-image:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,0) 50%)}
+.shim{position:absolute;top:0;bottom:0;left:0;width:38%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.32),transparent);animation:ctaShimmer 4.8s ease-in-out infinite}
+.later{align-self:center;margin-top:15px;display:inline-flex;align-items:center;gap:7px;color:#AEB4BE;font-size:13.5px;background:none;border:none;cursor:pointer}
+.toast{position:absolute;top:22px;right:22px;display:flex;align-items:center;gap:11px;background:#fff;border-radius:15px;padding:14px 18px;box-shadow:0 14px 40px rgba(0,0,0,.28);animation:cueToastIn .34s ease}
+.tchk{width:30px;height:30px;border-radius:50%;background:#E3F5EE;display:flex;align-items:center;justify-content:center;flex:none}
+
+@keyframes cuePopIn{0%{opacity:0;transform:translateY(14px) scale(.965)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes cueToastIn{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes ambGlow{0%,100%{opacity:.6;transform:scale(.92)}50%{opacity:1;transform:scale(1.05)}}
+@keyframes glowPulseOp{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes ctaShimmer{0%{transform:translateX(-140%)}34%{transform:translateX(260%)}100%{transform:translateX(260%)}}
+@keyframes headRise{0%{opacity:0;transform:translateY(7px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes dotGlide{0%{transform:translateX(0);opacity:0}12%{opacity:1}80%{opacity:1}100%{transform:translateX(46px);opacity:0}}
+@keyframes pageTurn{0%,50%{transform:rotateY(0deg);opacity:1}78%{transform:rotateY(-160deg);opacity:1}85%{transform:rotateY(-160deg);opacity:0}86%,93%{transform:rotateY(0deg);opacity:0}100%{transform:rotateY(0deg);opacity:1}}
+@keyframes ribbonSway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(5deg)}}
+@keyframes penGlide{0%{transform:translate(12px,52px)}60%{transform:translate(98px,52px)}82%{transform:translate(98px,52px)}100%{transform:translate(12px,52px)}}
+@keyframes penDraw{0%{stroke-dashoffset:172}60%{stroke-dashoffset:0}82%{stroke-dashoffset:0}100%{stroke-dashoffset:172}}
+@keyframes writeFade{0%{opacity:0}8%{opacity:1}80%{opacity:1}92%,100%{opacity:0}}
+@keyframes cardFlipX{0%,16%{transform:rotateX(0)}46%,66%{transform:rotateX(180deg)}100%{transform:rotateX(360deg)}}
+@keyframes ringClose{0%,6%{stroke-dashoffset:239;opacity:1}58%{stroke-dashoffset:18;opacity:1}82%{stroke-dashoffset:18;opacity:1}90%{stroke-dashoffset:18;opacity:0}91%{stroke-dashoffset:239;opacity:0}100%{stroke-dashoffset:239;opacity:1}}
+@keyframes glowPing{0%,52%{opacity:0;transform:scale(.85)}62%{opacity:.5;transform:scale(1.1)}78%,100%{opacity:0;transform:scale(1.26)}}
+@keyframes beat{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}24%{transform:scale(1)}36%{transform:scale(1.1)}48%{transform:scale(1)}}
+@keyframes sweepRot{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+</style></head><body>
+<div id="stage"></div>
+<script>
+(function(){
+ var THEME={
+  '독서':{a:'#3E6FE0',tint:'#ECF1FE',glow:'rgba(62,111,224,.18)'},
+  '글쓰기':{a:'#6A5AE0',tint:'#EFEDFD',glow:'rgba(106,90,224,.18)'},
+  '어학':{a:'#10A38B',tint:'#E3F5F1',glow:'rgba(16,163,139,.18)'},
+  '운동':{a:'#EE6B47',tint:'#FCEDE7',glow:'rgba(238,107,71,.20)'},
+  'stale':{a:'#5B6678',tint:'#EEF0F3',glow:'rgba(91,102,120,.14)'}
+ };
+ var COPY={
+  '독서':{h:'책 속으로 들어가 볼까요',w:'10분이면 충분해요',c:'책 펴기',p:'독서'},
+  '글쓰기':{h:'한 문장으로 시작해요',w:'다섯 문장이면 충분해요',c:'쓰기 시작',p:'글쓰기'},
+  '어학':{h:'오늘의 단어, 가볍게',w:'영어도 일본어도 좋아요',c:'복습 시작',p:'어학'},
+  '운동':{h:'몸이 깨어날 시간',w:'운동복부터 입으면 충분해요',c:'Cue 열기',p:'운동'},
+  'stale':{h:'오늘 할 일부터 시작할까요',w:'Cue에서 점검부터',c:'Cue 열기',p:'오늘 점검'}
+ };
+ var bookM='<div style="position:relative;width:212px;height:150px;perspective:1100px">'+
+  '<div style="position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);width:184px;height:18px;background:radial-gradient(ellipse,rgba(30,45,110,.22),rgba(0,0,0,0) 72%);filter:blur(2px)"></div>'+
+  '<div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;transform:rotateX(10deg)">'+
+   '<div style="position:absolute;left:8px;top:10px;width:96px;height:130px;background:linear-gradient(90deg,#FFFFFF 70%,#DCE6FB);border:1.5px solid #3E6FE0;border-right:none;border-radius:7px 0 0 7px;box-shadow:-3px 3px 0 #E7EDFC,-6px 6px 0 #D9E2FB,0 12px 18px rgba(40,60,140,.15);padding:16px 13px;display:flex;flex-direction:column;gap:9px"><div style="height:2px;background:#AEC2F0;border-radius:2px"></div><div style="height:2px;background:#AEC2F0;border-radius:2px"></div><div style="height:2px;width:68%;background:#AEC2F0;border-radius:2px"></div><div style="height:2px;background:#AEC2F0;border-radius:2px"></div></div>'+
+   '<div style="position:absolute;left:104px;top:10px;width:96px;height:130px;background:linear-gradient(90deg,#DCE6FB,#FFFFFF 30%);border:1.5px solid #3E6FE0;border-left:none;border-radius:0 7px 7px 0;box-shadow:3px 3px 0 #E7EDFC,6px 6px 0 #D9E2FB,0 12px 18px rgba(40,60,140,.15);padding:16px 13px;display:flex;flex-direction:column;gap:9px"><div style="height:2px;width:82%;background:#AEC2F0;border-radius:2px"></div><div style="height:2px;background:#AEC2F0;border-radius:2px"></div><div style="height:2px;width:60%;background:#AEC2F0;border-radius:2px"></div></div>'+
+   '<div style="position:absolute;left:103px;top:10px;width:3px;height:130px;background:#3E6FE0;opacity:.45"></div>'+
+   '<div style="position:absolute;left:104px;top:10px;width:96px;height:130px;transform-origin:left center;transform-style:preserve-3d;animation:pageTurn 4.2s ease-in-out infinite"><div style="position:absolute;inset:0;background:linear-gradient(90deg,#DDE7FB,#FFFFFF 62%);border:1.5px solid #3E6FE0;border-left:none;border-radius:0 7px 7px 0;backface-visibility:hidden;-webkit-backface-visibility:hidden;padding:16px 13px;display:flex;flex-direction:column;gap:9px"><div style="height:2px;width:75%;background:#AEC2F0;border-radius:2px"></div><div style="height:2px;background:#AEC2F0;border-radius:2px"></div></div><div style="position:absolute;inset:0;background:#ECF1FE;border:1.5px solid #3E6FE0;border-radius:0 7px 7px 0;transform:rotateY(180deg);backface-visibility:hidden;-webkit-backface-visibility:hidden"></div></div>'+
+   '<div style="position:absolute;left:152px;top:7px;width:12px;height:46px;background:#3E6FE0;clip-path:polygon(0 0,100% 0,100% 100%,50% 78%,0 100%);transform-origin:top center;animation:ribbonSway 3.4s ease-in-out infinite"></div>'+
+  '</div></div>';
+ var penM='<svg width="270" height="170" viewBox="0 0 120 76" fill="none"><defs><linearGradient id="pb" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#4B3FC0"/><stop offset="42%" stop-color="#8A7EF0"/><stop offset="100%" stop-color="#4B3FC0"/></linearGradient></defs>'+
+  '<path d="M12 60 H104" stroke="#C7CCD4" stroke-width="1.3" stroke-linecap="round"/>'+
+  '<g style="animation:writeFade 4.4s ease-in-out infinite">'+
+   '<path d="M14 54 C18 40 27 38 29 52 C31 64 37 64 41 53 C45 42 52 42 54 53 C56 64 62 64 66 53 C70 42 78 42 80 53 C82 62 89 62 96 48" stroke="#6A5AE0" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" style="stroke-dasharray:172;stroke-dashoffset:172;animation:penDraw 4.4s ease-in-out infinite"/>'+
+   '<g style="animation:penGlide 4.4s ease-in-out infinite"><g transform="rotate(-34)"><path d="M0 0 L-3 -10 L3 -10 Z" fill="#2A2E38"/><path d="M0 -1 L0 -9" stroke="#EFEDFD" stroke-width="0.9" stroke-linecap="round"/><path d="M-3.4 -10 H3.4 V-13 H-3.4 Z" fill="#6B7280"/><path d="M-3.2 -13 H3.2 Q3.6 -13 3.6 -16 L3.6 -40 Q3.6 -44 0 -44 Q-3.6 -44 -3.6 -40 L-3.6 -16 Q-3.6 -13 -3.2 -13 Z" fill="url(#pb)"/><path d="M-1.4 -17 L-1.4 -39" stroke="#C9C2F6" stroke-width="1.3" stroke-linecap="round" opacity=".85"/></g></g>'+
+  '</g></svg>';
+ var langM='<div style="width:96px;height:96px;perspective:360px"><div style="position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:cardFlipX 4s ease-in-out infinite">'+
+  '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:20px;border:2.2px solid #10A38B;background:linear-gradient(150deg,#FFFFFF,#E2F5F0);box-shadow:0 10px 22px rgba(13,150,127,.26),inset 0 2px 0 rgba(255,255,255,.9),inset 0 -3px 6px rgba(16,163,139,.12);backface-visibility:hidden;-webkit-backface-visibility:hidden;font-size:50px;font-weight:600;color:#10A38B;text-shadow:0 2px 3px rgba(16,163,139,.2)">A</div>'+
+  '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;border-radius:20px;border:2.2px solid #10A38B;background:linear-gradient(150deg,#EFF9F6,#DCEFEA);box-shadow:0 10px 22px rgba(13,150,127,.26),inset 0 2px 0 rgba(255,255,255,.85),inset 0 -3px 6px rgba(16,163,139,.12);backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:rotateX(180deg);font-size:50px;font-weight:600;color:#10A38B;text-shadow:0 2px 3px rgba(16,163,139,.2)">あ</div>'+
+  '</div></div>';
+ var exM='<svg width="162" height="162" viewBox="0 0 100 100" fill="none"><defs><linearGradient id="rg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#FF9270"/><stop offset="100%" stop-color="#D14E2C"/></linearGradient><radialGradient id="hg" cx="38%" cy="26%" r="88%"><stop offset="0%" stop-color="#FF9D7C"/><stop offset="50%" stop-color="#EE6B47"/><stop offset="100%" stop-color="#C0421F"/></radialGradient><radialGradient id="tg" cx="50%" cy="35%" r="70%"><stop offset="0%" stop-color="#FBE4DB"/><stop offset="100%" stop-color="#F4CFC2"/></radialGradient></defs>'+
+  '<circle cx="50" cy="50" r="38" stroke="url(#tg)" stroke-width="9"/>'+
+  '<circle cx="50" cy="50" r="38" stroke="#C9A395" stroke-width="9" opacity=".16" style="filter:blur(1px);transform:translateY(1.5px)"/>'+
+  '<g transform="rotate(-90 50 50)"><circle cx="50" cy="50" r="38" stroke="url(#rg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="239" stroke-dashoffset="239" style="animation:ringClose 3s ease-in-out infinite;filter:drop-shadow(0 2px 2px rgba(170,60,30,.3))"/></g>'+
+  '<circle cx="50" cy="50" r="38" stroke="#FF9270" stroke-width="9" opacity="0" style="transform-box:fill-box;transform-origin:center;animation:glowPing 3s ease-in-out infinite"/>'+
+  '<g style="transform-box:fill-box;transform-origin:center;animation:beat 1.5s ease-in-out infinite;filter:drop-shadow(0 3px 4px rgba(170,60,30,.42))"><path d="M50 65.5 C49 64 34 55.5 34 44.8 C34 39.4 38 36.2 42.4 37.5 C46 38.6 49 41.9 50 44.4 C51 41.9 54 38.6 57.6 37.5 C62 36.2 66 39.4 66 44.8 C66 55.5 51 64 50 65.5 Z" fill="url(#hg)"/><ellipse cx="42.8" cy="43.8" rx="3.6" ry="2.3" transform="rotate(-30 42.8 43.8)" fill="#FFFFFF" opacity=".45"/></g></svg>';
+ var staleM='<svg width="150" height="150" viewBox="0 0 42 42" fill="none"><circle cx="21" cy="21" r="14" stroke="#DCDFE5" stroke-width="2.2"/><path d="M21 7 A14 14 0 0 1 35 21" stroke="#5B6678" stroke-width="2.2" stroke-linecap="round" style="transform-origin:21px 21px;animation:sweepRot 1.6s linear infinite"/><path d="M15.5 21.2l3.6 3.6 7.4 -8" stroke="#5B6678" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+ var MOTIF={'독서':bookM,'글쓰기':penM,'어학':langM,'운동':exM,'stale':staleM};
+ function card(type){
+  var t=THEME[type],c=COPY[type],a=t.a;
+  var heroBg='background:radial-gradient(120% 80% at 50% 122%,'+a+'14,rgba(0,0,0,0) 56%),radial-gradient(125% 105% at 50% 16%,rgba(255,255,255,.6),rgba(255,255,255,0) 64%),'+t.tint+';box-shadow:inset 0 2px 7px rgba(30,33,42,.07),inset 0 -1px 0 rgba(255,255,255,.7),inset 0 0 0 1px '+a+'24';
+  return '<div class="ov"><div class="amb" style="background:radial-gradient(circle,'+t.glow+',rgba(0,0,0,0) 66%)"></div>'+
+   '<div class="card">'+
+    '<div class="jrow"><div class="ytchip"><div class="ytico"><div class="tri"></div></div><span class="ytt">유튜브 2시간 7분</span></div>'+
+     '<svg width="58" height="12" viewBox="0 0 58 12" fill="none"><line x1="3" y1="6" x2="55" y2="6" stroke="#DBD3C8" stroke-width="2" stroke-linecap="round" stroke-dasharray="1.5 5"/><circle cx="6" cy="6" r="3.2" fill="'+a+'" style="animation:dotGlide 2.6s ease-in-out infinite"/></svg>'+
+     '<div class="pill" style="background-image:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0) 60%);background-color:'+a+';box-shadow:0 2px 6px '+a+'3D,inset 0 1px 0 rgba(255,255,255,.3)">'+c.p+'</div></div>'+
+    '<div class="hero" style="'+heroBg+'">'+MOTIF[type]+'</div>'+
+    '<div class="h1">'+c.h+'</div><div class="w1">'+c.w+'</div>'+
+    '<div class="ctaw"><div style="position:absolute;inset:0;border-radius:16px;box-shadow:0 10px 26px '+a+'4D;animation:glowPulseOp 2.8s ease-in-out infinite"></div>'+
+     '<button class="cta" onclick="window.cueGo&&window.cueGo()" style="background-color:'+a+';box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 8px 20px '+a+'4D,0 2px 5px rgba(0,0,0,.14)"><span class="shim"></span><span style="position:relative;z-index:1">'+c.c+'</span></button></div>'+
+    '<button class="later" onclick="window.cueLater&&window.cueLater()"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#E3E6EB" stroke-width="2"/><circle cx="9" cy="9" r="7" stroke="'+a+'" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="26" transform="rotate(-90 9 9)"/><text x="9" y="11.7" text-anchor="middle" font-size="7.5" fill="#9CA2AC">3</text></svg>나중에</button>'+
+   '</div></div>';
+ }
+ function toast(){
+  return '<div style="position:absolute;inset:0;background:rgba(14,12,10,.18);display:flex;align-items:flex-start;justify-content:center;padding-top:130px"><div class="toast" style="position:static"><div class="tchk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10.5" stroke="#0C9A6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:14.5px;font-weight:500;color:#1d1b18;white-space:nowrap">오늘 4개 다 끝냈어요 · 편히 보세요</div></div></div>';
+ }
+ var state=new URLSearchParams(location.search).get('state')||'독서';
+ document.getElementById('stage').innerHTML = state==='toast'?toast():card(THEME[state]?state:'독서');
+})();
+</script>
+</body></html>
