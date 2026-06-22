@@ -11,7 +11,7 @@ import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, crumb, btn } from '../ui/components.js';
 import { fmtDateTime } from '../ui/format.js';
-import { renderQuoteBody } from '../ui/quote-md.js';
+import { renderQuoteBody, keywordMarks } from '../ui/quote-md.js';
 
 function ownerIdsOf(user) {
   return [user?.id].filter(Boolean);
@@ -81,7 +81,8 @@ async function render(host, params, ctx) {
     },
       q.pinned ? el('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#c2553a', fontWeight: 600, marginBottom: 5 } }, iconEl('pin', { sz: 11, st: 1.8 }), '핀') : null,
       el('div', { class: 'q-body', style: { fontSize: 16, lineHeight: 1.65, fontWeight: q.pinned ? 600 : 500 } },
-        ...renderQuoteBody(q.text)),
+        // 검색/단어에서 term 동반 진입 시 그 키워드를 형광 유지.
+        ...renderQuoteBody(q.text, params.term ? keywordMarks(q.text, params.term) : [])),
       el('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--ink-4)', display: 'flex', alignItems: 'center', gap: 10 } },
         el('span', { class: 'mono' }, fmtDateTime(q.created_at))),
     ));

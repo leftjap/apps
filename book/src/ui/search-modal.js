@@ -280,15 +280,19 @@ export function openSearchModal(ctx) {
           b ? coverAt(b, 34, { lift: true }) : el('div', { class: 'cv-ph' }),
           q.pinned ? el('span', { class: 'pinbadge' }, iconEl('star-fill', { sz: 9 })) : null);
         const plain = quotePreview(q.text);
+        const term = contentTerm(plain, tokens);
         const col = el('div', { class: 'body' },
           // KWIC 맥락 스니펫 — 매치어 중심 ~3줄. 멀티 토큰이면 본문에 걸린 토큰 기준.
-          el('div', { class: 'q snip' }, ...renderSnippet(plain, contentTerm(plain, tokens))),
+          el('div', { class: 'q snip' }, ...renderSnippet(plain, term)),
           el('div', { class: 'src' },
             b ? el('strong', {}, b.t) : el('span', {}, '(책 미상)'),
             b ? el('span', { class: 'dot' }) : null,
             b ? el('span', {}, b.a) : null));
-        // 스니펫 클릭 → 책 상세의 해당 어구로 (전문은 거기서 맥락 속에 읽음).
-        list.appendChild(el('button', { class: 'sx-qrow sx-item', onClick: () => navTo(`/book/${q.book_ref}/${q.id}`) }, cvw, col));
+        // 스니펫 클릭 → 책 상세의 해당 어구로. term 동반 시 그 어구에서 키워드 형광 유지.
+        const path = term
+          ? `/book/${q.book_ref}/${q.id}/${encodeURIComponent(term)}`
+          : `/book/${q.book_ref}/${q.id}`;
+        list.appendChild(el('button', { class: 'sx-qrow sx-item', onClick: () => navTo(path) }, cvw, col));
       }
       const more = (filter === '전체' && matchedQuotes.length > limit)
         ? { label: '모두 보기', onClick: () => { filter = '어구록'; renderResults(); } } : null;
