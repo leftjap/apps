@@ -24,10 +24,15 @@ describe('quoteMatches — 토큰별 본문/제목/저자 AND', () => {
   });
 });
 
-describe('bookMatches — 제목/저자/출판사 AND', () => {
+describe('bookMatches — 제목/저자 AND (출판사 제외)', () => {
   const book = { t: '결', a: '홍세화', p: '한겨레출판' };
-  it('저자만', () => { expect(bookMatches(book, ['홍세화'])).toBe(true); });
-  it('저자+출판사', () => { expect(bookMatches(book, ['홍세화', '한겨레'])).toBe(true); });
+  it('저자', () => { expect(bookMatches(book, ['홍세화'])).toBe(true); });
+  it('제목', () => { expect(bookMatches(book, ['결'])).toBe(true); });
+  it('출판사는 매칭 안 함 — 오탐 방지', () => {
+    // "인사" ⊄ 제목/저자 이지만 출판사 "스몰빅인사이트"엔 있음 → false 여야 함
+    expect(bookMatches({ t: '에이펙스 스피릿', a: '양은우', p: '스몰빅인사이트' }, ['인사'])).toBe(false);
+    expect(bookMatches(book, ['한겨레'])).toBe(false);
+  });
   it('없는 토큰', () => { expect(bookMatches(book, ['없음'])).toBe(false); });
 });
 
