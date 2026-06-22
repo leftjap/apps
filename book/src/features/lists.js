@@ -12,6 +12,7 @@ import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, crumb, pageTitle, bookRow } from '../ui/components.js';
 import { quoteText } from '../ui/quote-text.js';
+import { quotePreview } from '../ui/quote-md.js';
 import { fmtDateTime } from '../ui/format.js';
 
 function ownerIdsOf(user) {
@@ -112,7 +113,7 @@ function viewPins(ctx, pinned) {
         class: 'book-row', onClick: () => ctx.navigate(`/thread/${g.book_ref}/${q.id}`),
         style: { padding: '16px 12px', margin: '12px -12px 0 74px', borderRadius: 10, cursor: 'pointer' },
       },
-        quoteText({ text: q.text, fontSize: 18, lineHeight: 1.7, variant: 'inline', serif: true }),
+        quoteText({ text: quotePreview(q.text), fontSize: 18, lineHeight: 1.7, variant: 'inline', serif: true }),
         el('div', { class: 'mono', style: { fontSize: 11.5, color: 'var(--ink-4)', marginTop: 10 } }, fmtDateTime(q.created_at)),
       ));
     }

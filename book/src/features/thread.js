@@ -13,7 +13,7 @@ import { el, clear } from '../ui/dom.js';
 import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, crumb, count as countEl } from '../ui/components.js';
-import { quoteText } from '../ui/quote-text.js';
+import { renderQuoteBody } from '../ui/quote-md.js';
 import { fmtDateTime, fmtMonthDay } from '../ui/format.js';
 
 function ownerIdsOf(user) {
@@ -112,10 +112,11 @@ async function build(host, params, ctx) {
       article.appendChild(el('span', { style: { position: 'absolute', top: -2, left: 24, padding: '3px 10px', background: '#c2553a', color: '#fff', borderRadius: 99, fontFamily: 'var(--mono)', fontSize: 10, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase' } }, '지금 본 어구록'));
     }
     if (q.pinned) {
-      article.appendChild(el('div', { style: { padding: '8px 16px 8px' } }, quoteText({ text: q.text, fontSize: 20, lineHeight: 1.7, variant: 'flank', serif: true, align: 'center', maxW: 580, style: { margin: '0 auto' } })));
+      article.appendChild(el('div', { class: 'q-body', style: { padding: '8px 16px 8px', fontSize: 20, lineHeight: 1.7, fontWeight: 500, color: 'var(--ink-1)', fontFamily: 'var(--serif)', maxWidth: 580, margin: '0 auto', textAlign: 'center' } },
+        ...renderQuoteBody(q.text)));
     } else {
-      article.appendChild(el('div', { style: { fontSize: 18, lineHeight: 1.7, fontWeight: 500, letterSpacing: '-.012em', color: 'var(--ink-1)', fontFamily: 'var(--sans)' } },
-        el('span', { style: { fontFamily: 'var(--serif)', color: 'var(--ink-4)' } }, '“'), q.text, el('span', { style: { fontFamily: 'var(--serif)', color: 'var(--ink-4)' } }, '”')));
+      article.appendChild(el('div', { class: 'q-body', style: { fontSize: 18, lineHeight: 1.7, fontWeight: 500, letterSpacing: '-.012em', color: 'var(--ink-1)', fontFamily: 'var(--sans)' } },
+        ...renderQuoteBody(q.text)));
     }
     const pinToggle = el('span', {
       onClick: async (e) => { e.stopPropagation(); try { await Queries.togglePinQuote(q.id); rerender(); } catch (err) { console.warn('[thread] 핀 토글 실패', err?.message || err); } },

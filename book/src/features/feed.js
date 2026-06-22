@@ -16,6 +16,7 @@ import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
 import { openQuoteModal } from '../ui/quote-modal.js';
+import { quotePreview } from '../ui/quote-md.js';
 
 function ownerIdsOf(user) {
   return [user?.id].filter(Boolean);
@@ -57,7 +58,7 @@ async function render(host, params, ctx) {
   const hb = bookOf(hero.book_ref);
   wrap.appendChild(el('header', { class: 'h4-hero', onClick: () => open(hero) },
     el('div', { class: 'date' }, kDate(new Date())),
-    el('blockquote', {}, hero.text),
+    el('blockquote', {}, quotePreview(hero.text)),
     el('div', { class: 'src' },
       el('strong', {}, hb ? hb.t : ''),
       el('span', { class: 'au' }, hb ? hb.a : '')),
@@ -99,7 +100,7 @@ async function render(host, params, ctx) {
       tl.appendChild(el('button', { class: 'h4-item', onClick: () => open(q) },
         el('div', { class: 'rail' }, el('span', { class: q.pinned ? 'dot pin' : 'dot' })),
         el('div', { class: 'body' },
-          el('p', { class: 'q' }, q.text),
+          el('p', { class: 'q' }, quotePreview(q.text)),
           el('div', { class: 'src' },
             el('strong', {}, b ? b.t : ''),
             el('span', { class: 'dot' }),
@@ -116,7 +117,7 @@ async function render(host, params, ctx) {
     .find((e) => e.qa && e.qb);
   if (echo) {
     const side = (q) => el('div', { class: 'side', onClick: () => open(q) },
-      el('p', {}, q.text),
+      el('p', {}, quotePreview(q.text)),
       el('div', { class: 'src' }, srcLine(bookOf(q.book_ref))));
     wrap.appendChild(el('section', { class: 'h4-sec' },
       el('div', { class: 'h4-lab' }, '연결', el('span', { class: 'by' }, 'CLAUDE')),

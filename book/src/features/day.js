@@ -10,6 +10,7 @@ import { el } from '../ui/dom.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, crumb } from '../ui/components.js';
 import { barChart } from '../ui/charts.js';
+import { quotePreview } from '../ui/quote-md.js';
 
 const owners = (u) => [u?.id].filter(Boolean);
 const DOW = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
@@ -84,7 +85,7 @@ async function render(host, params, ctx) {
           el('div', { style: { minWidth: 0, paddingTop: 1 } },
             el('div', { style: { fontSize: 12, color: 'var(--ink-3)', fontWeight: 600, marginBottom: 6 } }, b?.t || q.book_ref),
             el('div', { style: { fontSize: 15, lineHeight: 1.6, fontWeight: 500, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } },
-              el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), q.text, el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”'))));
+              el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), quotePreview(q.text), el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”'))));
       })));
 
   // ── aside: 이 주 · 읽은 책 · 인근 날

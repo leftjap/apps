@@ -11,6 +11,7 @@ import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { screenShell, crumb, btn } from '../ui/components.js';
 import { fmtDateTime } from '../ui/format.js';
+import { quotePreview } from '../ui/quote-md.js';
 
 function ownerIdsOf(user) {
   return [user?.id].filter(Boolean);
@@ -78,7 +79,7 @@ async function render(host, params, ctx) {
     },
       q.pinned ? el('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11.5, color: '#c2553a', fontWeight: 600, marginBottom: 5 } }, iconEl('pin', { sz: 11, st: 1.8 }), '핀') : null,
       el('div', { style: { fontSize: 16, lineHeight: 1.65, fontWeight: q.pinned ? 600 : 500, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' } },
-        el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), q.text, el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”')),
+        el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '“'), quotePreview(q.text), el('span', { style: { color: 'var(--ink-4)', fontFamily: 'var(--serif)' } }, '”')),
       el('div', { style: { marginTop: 8, fontSize: 12, color: 'var(--ink-4)', display: 'flex', alignItems: 'center', gap: 10 } },
         el('span', { class: 'mono' }, fmtDateTime(q.created_at))),
     ));

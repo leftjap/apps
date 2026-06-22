@@ -17,7 +17,8 @@ import { iconEl } from '../ui/icons.js';
 import { cover } from '../ui/cover.js';
 import { topBar } from '../ui/components.js';
 import { openSearchModal } from '../ui/search-modal.js';
-import { segmentText, applyMark, removeRange, coveredColor } from '../ui/highlight.js';
+import { applyMark, removeRange, coveredColor } from '../ui/highlight.js';
+import { renderQuoteBody, quotePlainText } from '../ui/quote-md.js';
 import { rowMenuButton, buildMenuPop, attachContextMenu, closePop } from '../ui/quote-modal.js';
 
 function ownerIdsOf(user) {
@@ -197,7 +198,7 @@ async function render(host, params, ctx) {
       el('button', { title: '댓글 달기 — 스레드 열기', onClick: () => { closeSelPop(); ctx.navigate(`/thread/${q.book_ref}/${q.id}`); } }, iconEl('comment', { sz: 15 })),
       el('button', {
         title: '선택 복사',
-        onClick: () => { try { navigator.clipboard?.writeText(q.text.slice(s, e)); } catch { /* noop */ } closeSelPop(); },
+        onClick: () => { try { navigator.clipboard?.writeText(quotePlainText(q.text).slice(s, e)); } catch { /* noop */ } closeSelPop(); },
       }, iconEl('copy', { sz: 15 })),
     );
     const aRect = article.getBoundingClientRect();
@@ -329,12 +330,9 @@ async function render(host, params, ctx) {
         class: q.pinned ? 'lx-x pinned' : 'lx-x',
       },
         el('div', { class: 'txt' },
-          ...(() => {
-            let cur = 0;
-            return segmentText(q.text, hlMap[q.id] || []).map((sg) => {
-              const segS = cur;
-              cur += sg.text.length;
-              if (!sg.c) return sg.text;
+          // 원본 구조(문단·**볼드**·> 인용) 렌더 — 마크(형광펜)는 보이는 평문 오프셋 기준 분할.
+          ...renderQuoteBody(q.text, hlMap[q.id] || [], {
+            makeMark: (seg) => {
               // 칠해진 형광펜: 좌클릭·우클릭 모두 같은 팝오버(색 변경/지우기).
               // 우클릭은 행 컨텍스트 메뉴(수정/삭제)를 가로채 하이라이트 메뉴로 — 마크 밖 우클릭은 행 메뉴 유지.
               const openMarkPop = (ev) => {
@@ -344,17 +342,17 @@ async function render(host, params, ctx) {
                 ev.stopPropagation();
                 openSelPop({
                   article: ev.currentTarget.closest('.lx-x'), q,
-                  s: segS, e: segS + sg.text.length,
+                  s: seg.s, e: seg.s + seg.text.length,
                   rect: ev.currentTarget.getBoundingClientRect(),
                 });
               };
               return el('mark', {
-                ...(sg.c === 'y' ? {} : { class: { p: 'pink', g: 'green', b: 'blue' }[sg.c] }),
+                ...(seg.color === 'y' ? {} : { class: { p: 'pink', g: 'green', b: 'blue' }[seg.color] }),
                 onClick: openMarkPop,
                 onContextmenu: openMarkPop,
-              }, sg.text);
-            });
-          })()),
+              }, seg.text);
+            },
+          })),
         cN > 0 ? el('button', {
           class: 'lx-memoflag', title: `댓글 ${cN} — 스레드 열기`,
           onClick: (e) => { e.stopPropagation(); ctx.navigate(`/thread/${selectedId}/${q.id}`); },
