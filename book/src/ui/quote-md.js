@@ -56,6 +56,19 @@ export function quotePlainText(text) {
   return parseQuoteBlocks(text).map((b) => b.runs.map((r) => r.text).join('')).join('');
 }
 
+/** 검색어/단어를 보이는 평문 오프셋의 마크([{s,e,c}])로 — 전체 매치(비겹침). */
+export function keywordMarks(text, needle, color = 'y') {
+  const n = (needle || '').trim();
+  if (!n) return [];
+  const plain = quotePlainText(text);
+  const lc = plain.toLowerCase();
+  const ln = n.toLowerCase();
+  const marks = [];
+  let i = 0;
+  while ((i = lc.indexOf(ln, i)) >= 0) { marks.push({ s: i, e: i + n.length, c: color }); i += n.length; }
+  return marks;
+}
+
 /**
  * 블록 + 전역 평문 오프셋 + 마크 색상 세그먼트.
  * marks: [{s,e,c}] — 보이는 평문(블록 텍스트를 구분자 없이 이은 것) 오프셋.

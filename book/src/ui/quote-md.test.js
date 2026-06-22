@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseInline, parseQuoteBlocks, quotePreview, quoteSegments } from './quote-md.js';
+import { parseInline, parseQuoteBlocks, quotePreview, quoteSegments, keywordMarks } from './quote-md.js';
 
 describe('parseInline', () => {
   it('볼드 없으면 단일 plain run', () => {
@@ -63,5 +63,21 @@ describe('quoteSegments — 마크 오프셋(보이는 평문 기준)', () => {
     expect(colored.map((r) => r.text).join('')).toBe('BCD');
     // 'CD' 세그먼트는 bold + color
     expect(segs.some((r) => r.text === 'CD' && r.bold && r.color === 'p')).toBe(true);
+  });
+});
+
+describe('keywordMarks — 검색어 → 보이는 평문 오프셋', () => {
+  it('볼드/문단 마커 건너뛴 평문 기준으로 매치', () => {
+    // plain = "첫 강조 문단. 둘째." → '문단' 은 index 5
+    const m = keywordMarks('첫 **강조** 문단.\n\n둘째.', '문단');
+    expect(m).toEqual([{ s: 5, e: 7, c: 'y' }]);
+  });
+  it('여러 매치 전부', () => {
+    expect(keywordMarks('가가가', '가')).toEqual([
+      { s: 0, e: 1, c: 'y' }, { s: 1, e: 2, c: 'y' }, { s: 2, e: 3, c: 'y' },
+    ]);
+  });
+  it('빈 검색어 → 빈 배열', () => {
+    expect(keywordMarks('가나다', '')).toEqual([]);
   });
 });
