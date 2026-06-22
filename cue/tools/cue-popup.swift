@@ -84,22 +84,36 @@ final class Controller: NSObject, WKScriptMessageHandler {
 final class AppDelegate: NSObject, NSApplicationDelegate {
   let ctrl = Controller()
   func applicationDidFinishLaunching(_ n: Notification) {
-    // 셀프테스트: --selftest <state> <go|later> → 카드 표시 후 내부 버튼 클릭 발화 → 브리지 체인 검증
+    // 셀프테스트: --selftest <state> <go|later|snap> → 카드 표시 → 렌더 PNG 스냅샷 + 애니 점검 + (go/later 시)버튼 클릭 발화로 브리지 체인 검증
     let args = CommandLine.arguments
     if let i = args.firstIndex(of: "--selftest"), i + 2 < args.count {
-      let st = args[i + 1], action = args[i + 2]
+      let st = args[i + 1], action = args[i + 2]   // action: go | later | snap
       log("selftest start state=\(st) action=\(action)")
       ctrl.showCard(st)
-      Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { [weak self] _ in
-        // WKWebView(WebKit) 내부에서 애니메이션이 실제 구동되는지 검증
-        self?.ctrl.web?.evaluateJavaScript("JSON.stringify({n:document.getAnimations().length,names:[...new Set(document.getAnimations().map(a=>a.animationName))].sort()})") { res, _ in
+      Timer.scheduledTimer(withTimeInterval: 1.6, repeats: false) { [weak self] _ in
+        guard let web = self?.ctrl.web else { return }
+        // 1) 네이티브 WKWebView 가 실제 렌더한 픽셀을 PNG 로 저장(컴포지터 필터 우회 화면 검증)
+        web.takeSnapshot(with: WKSnapshotConfiguration()) { image, err in
+          if let image = image, let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+             let png = rep.representation(using: .png, properties: [:]) {
+            let p = "/tmp/cue-card-\(st).png"; try? png.write(to: URL(fileURLWithPath: p))
+            log("selftest snapshot \(p) bytes=\(png.count)")
+          } else { log("selftest snapshot FAILED err=\(String(describing: err))") }
+        }
+        // 2) WKWebView(WebKit) 내부에서 애니메이션이 실제 구동되는지 검증
+        web.evaluateJavaScript("JSON.stringify({n:document.getAnimations().length,names:[...new Set(document.getAnimations().map(a=>a.animationName))].sort()})") { res, _ in
           log("selftest anims \(res.map { String(describing: $0) } ?? "nil")")
         }
-        let sel = action == "later" ? ".later" : ".cta"
-        self?.ctrl.web?.evaluateJavaScript("document.querySelector('\(sel)').click(); 'ok'") { res, err in
-          log("selftest click \(sel) res=\(String(describing: res)) err=\(err.map { String(describing: $0) } ?? "nil")")
+        // 3) 버튼 라우팅 검증(go=CTA→앱오픈 / later=닫기). snap 이면 클릭 생략
+        if action == "go" || action == "later" {
+          let sel = action == "later" ? ".later" : ".cta"
+          Timer.scheduledTimer(withTimeInterval: 0.8, repeats: false) { _ in
+            web.evaluateJavaScript("document.querySelector('\(sel)').click(); 'ok'") { res, err in
+              log("selftest click \(sel) res=\(String(describing: res)) err=\(err.map { String(describing: $0) } ?? "nil")")
+            }
+          }
         }
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: false) { _ in log("selftest done"); NSApp.terminate(nil) }
+        Timer.scheduledTimer(withTimeInterval: 2.4, repeats: false) { _ in log("selftest done"); NSApp.terminate(nil) }
       }
       return
     }
