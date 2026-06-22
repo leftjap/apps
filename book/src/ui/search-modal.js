@@ -230,23 +230,32 @@ export function openSearchModal(ctx) {
     // 책은 어구록의 컨테이너 — 결과를 책 단위로 묶어 표시(별도 '책' 섹션 없음, 참조: Kindle/Readwise).
     const groups = groupByBook(matchedQuotes, matchedBooks, bookOf);
 
-    filters.replaceChildren();
     clear(body);
 
     if (!groups.length) {
+      filters.replaceChildren();
       body.appendChild(el('div', { class: 'sx-empty' },
         el('b', {}, `'${raw}'에 대한 결과가 없어요`), '다른 단어로 찾아보거나, 주제 칩을 눌러보세요.'));
       curIdx = -1;
       return;
     }
 
+    // 책 그룹별 본문 매치 어구 미리 계산(요약·렌더 공용) — 제목/저자만 일치한 어구는 제외.
     const PER_BOOK = 3;
-    for (const g of groups) {
-      const b = g.book;
-      // 본문에 매치어가 실제로 있는 어구만 스니펫 — 제목/저자 토큰만으로 걸린 어구는 제외.
-      const cq = g.quotes
+    const prepared = groups.map((g) => ({
+      g,
+      cq: g.quotes
         .map((q) => { const plain = quotePreview(q.text); return { q, plain, term: contentTerm(plain, tokens) }; })
-        .filter((x) => x.term);
+        .filter((x) => x.term),
+    }));
+    const totalQuotes = prepared.reduce((s, p) => s + p.cq.length, 0);
+
+    // 요약 헤더 — 검색 필드 아래 결과 건수(참조: results header = count). 칩 자리에 고정.
+    filters.replaceChildren(el('div', { class: 'sx-summary' },
+      `책 ${groups.length}권 · 어구록 ${totalQuotes}개`));
+
+    for (const { g, cq } of prepared) {
+      const b = g.book;
       const bookTerm = cq.length ? cq[0].term : null;
       // 책 헤더 — 클릭 시 책 상세(매치어 형광 동반). quoteId 자리에 '_'(스크롤 타겟 없음).
       const headPath = bookTerm ? `/book/${g.ref}/_/${encodeURIComponent(bookTerm)}` : `/book/${g.ref}`;

@@ -174,6 +174,8 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #app::-webkit-scrollbar,
 .sxm-chip.on .lb { color: #fff; }
 .sxm-chip .ct { font-family: var(--mono); font-size: 11px; color: var(--ink-4); }
 .sxm-chip.on .ct { color: rgba(255,255,255,.6); }
+/* 결과 요약 — 검색 필드 아래 건수 헤더 (책 N권 · 어구록 M개) */
+.sx-summary { font-family: var(--mono); font-size: 12.5px; letter-spacing: -.01em; color: var(--ink-3); padding: 1px 0; }
 
 /* 바디 (스크롤) */
 .sxm-body { overflow-y: auto; padding: 20px; }
