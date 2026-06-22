@@ -32,6 +32,7 @@
   --cloudy-soft: oklch(88% 0.04 240);
   --cloudy-base: oklch(65% 0.08 240);
   --cloudy-deep: oklch(42% 0.12 240);
+  --sage: oklch(66% 0.055 150); /* 완료 칩 체크 — 시안 sage 톤 (작업지시서 §3.1) */
 
   --warning: #c98a3f;
   --danger: #c5544a;

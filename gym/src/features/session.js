@@ -1949,29 +1949,38 @@ function blockDisplayName(block) {
 }
 
 function renderFooterPillHtml({ blockIdx, state, name }) {
+  // 세그먼트 탭 칩 (작업지시서 §6.1). 글리프 + 운동명 세로 2단.
   // data-ex-state : 'active' | 'completed' | 'hold' | 'upcoming' (footer-exercise hold 메뉴와 호환)
   const exStateAttr = state === 'current' ? 'active'
     : state === 'done' ? 'completed'
     : state === 'hold' ? 'hold' : 'upcoming';
+  const stateClass = state === 'current' ? 'is-current'
+    : state === 'done' ? 'is-done'
+    : state === 'hold' ? 'is-hold' : 'is-upcoming';
+  const ariaCurrent = state === 'current' ? ' aria-current="true"' : '';
   const base = `type="button" data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"`;
-  // 구현 레퍼런스 - 세션.html: 현재=.fp-now(솔리드 다크) · 완료=.fp-done(sage 체크) · 예정=.fp-todo(외곽선).
+
+  let glyph;
   if (state === 'current') {
-    return `<button class="fp-now" ${base}>${escapeHtml(name)}</button>`;
+    glyph = `<span class="fp-dot-live"></span>`;
+  } else if (state === 'done') {
+    glyph = `<span class="fp-ring-done"><svg width="8" height="8" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.2l2.3 2.3L9.5 3.5" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`;
+  } else if (state === 'hold') {
+    glyph = `<span class="fp-ring-hold"></span>`;
+  } else {
+    glyph = `<span class="fp-ring-todo"></span>`;
   }
-  if (state === 'done') {
-    return `<button class="fp-done" ${base}><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>${escapeHtml(name)}</button>`;
-  }
-  // 예정(pending) / hold — hold 는 약한 crail 점으로 진행 표시.
-  const holdDot = state === 'hold'
-    ? `<span style="width:5px;height:5px;border-radius:50%;background:var(--crail-base);flex-shrink:0;"></span>`
-    : '';
-  return `<button class="fp-todo" ${base}>${holdDot}${escapeHtml(name)}</button>`;
+
+  return `<button class="fp-chip ${stateClass}" ${base}${ariaCurrent}>`
+    + `<span class="fp-chip__glyph">${glyph}</span>`
+    + `<span class="fp-chip__name">${escapeHtml(name)}</span>`
+    + `</button>`;
 }
 
 /**
  * 푸터 칩 고정 배열 — [완료(완료순) 좌측 · 현재 중앙 · 예정(원래순) 우측].
- *  - 현재 운동(currentBlock)은 완료 여부와 무관하게 항상 중앙존에 둠 (사용자 결정 2026-06-13:
- *    "현재 운동중인 항목 늘 중앙"). centerActivePill 이 그 칩을 가시 영역 중앙으로 스크롤.
+ *  - DOM 순서에는 미사용 — 고정 순서로 전환(작업지시서 R1). 단위테스트 유지용 export.
+ *    (renderFooterPills 는 session.blocks 원래 인덱스 순서로 렌더하고 centerActivePill 로 중앙 스크롤.)
  *  - 원본 인덱스 i 보존 (blockIdx — click·hold·reorder 핸들러가 session.blocks[i] 참조).
  *  - single 블록만 (서킷 폐기 §16).
  */
@@ -2001,27 +2010,41 @@ function renderFooterPills(doc, session, currentBlock) {
     if (pillsEl) pillsEl.innerHTML = '';
     return;
   }
-  // 작업지시서 §D — 3그룹 레이아웃. done→.fp-left(좌) / now→.fp-mid(가로 중앙 고정) / todo·hold→.fp-right(우).
-  // computeFooterOrder 의 [완료, 현재, 예정] 순서를 state 로 그룹 분할. 원본 인덱스 i 보존.
-  const ordered = computeFooterOrder(session.blocks, currentBlock);
-  const left = [];
-  const mid = [];
-  const right = [];
-  for (const { block, i } of ordered) {
-    if (!block || block.type !== 'single') continue; // 서킷 폐기 — non-single graceful skip
+  // R1 (작업지시서) — session.blocks 원래 인덱스 순서 그대로 (computeFooterOrder 재배열 미사용).
+  // 단일 가로 트랙(.fp-strip). 현재 칩은 centerActivePill 이 가시 영역 중앙으로 스크롤(R4).
+  const chips = [];
+  session.blocks.forEach((block, i) => {
+    if (!block || block.type !== 'single') return; // 서킷 폐기 §16 — non-single graceful skip
     const isCurrent = block === currentBlock;
     const state = classifyBlockState(block, isCurrent);
-    const html = renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) });
-    if (state === 'current') mid.push(html);
-    else if (state === 'done') left.push(html);
-    else right.push(html); // pending + hold
-  }
-  // 구현 레퍼런스 - 세션.html: .fp-row > .fp-side.fp-left(완료) + .fp-now(현재, 직계) + .fp-side.fp-right(예정).
-  // 중앙 마커는 #sessionFooter 의 정적 .fp-center-mark (pill 밖).
-  pillsEl.innerHTML =
-    `<div class="fp-side fp-left">${left.join('')}</div>`
-    + mid.join('')
-    + `<div class="fp-side fp-right">${right.join('')}</div>`;
+    chips.push(renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) }));
+  });
+  pillsEl.innerHTML = `<div class="fp-strip">${chips.join('')}</div>`;
+  centerActivePill(pillsEl); // R4
+}
+
+/**
+ * 작업지시서 §6.3 — 현재 칩을 트랙 가시 영역 가운데로 정렬.
+ *  - 세트 도트 centerActiveSet 와 동일 패턴. 트랙이 넘칠 때만 동작, 스크롤 끝 clamp.
+ *  - 칩 탭 전환은 mountSessionView 재마운트 → 새 DOM → 매번 즉시(instant) 중앙 정렬(smooth 아님).
+ */
+function centerActivePill(pillsEl) {
+  const strip = pillsEl && pillsEl.querySelector('.fp-strip');
+  const cur = strip && strip.querySelector('.fp-chip.is-current');
+  if (!strip || !cur) return;
+  const align = () => {
+    try {
+      if (strip.scrollWidth <= strip.clientWidth + 1) return; // 넘치지 않으면 정렬 불필요
+      const target = cur.offsetLeft - (strip.clientWidth - cur.offsetWidth) / 2;
+      const clamped = Math.max(0, Math.min(target, strip.scrollWidth - strip.clientWidth));
+      const prev = strip.style.scrollBehavior;
+      strip.style.scrollBehavior = 'auto'; // 즉시 점프 (날아오는 슬라이드 체감 제거)
+      strip.scrollLeft = clamped;
+      strip.style.scrollBehavior = prev;
+    } catch (_) { /* fallback */ }
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(align);
+  else align();
 }
 
 /**
@@ -3447,8 +3470,8 @@ function hookClicks(chipsEl, listEl) {
     }
     try {
       const res = await addExerciseToActiveSession(exerciseId, part);
-      // 추가 즉시 그 운동을 현재(중앙)로 선택 (사용자 결정 2026-06-13). 추가분은 blocks 맨 끝 append →
-      // 마지막 인덱스를 명시 지정. computeFooterOrder 가 이 블록을 중앙존에, centerActivePill 이 중앙 스크롤.
+      // 추가 즉시 그 운동을 현재로 선택 (사용자 결정 2026-06-13). 추가분은 blocks 맨 끝 append →
+      // 마지막 인덱스를 명시 지정. 칩은 맨 끝에 렌더되고 centerActivePill 이 가운데로 스크롤.
       if (res && res.added && Array.isArray(res.session?.blocks)) {
         _currentBlockIdx = res.session.blocks.length - 1;
       }

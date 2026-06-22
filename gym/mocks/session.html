@@ -80,22 +80,108 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .hero-reps { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:50px; font-weight:400; color:var(--ink-2); letter-spacing:-0.02em; line-height:1; }
 .hero-reps-u { font-family:var(--font-sans); font-size:16px; font-weight:500; color:var(--ink-3); }
 
-/* ===== 푸터 운동 전환 ===== */
-#sessionFooter { flex-shrink:0; position:relative; padding:14px 0 22px; box-shadow:inset 0 1px 0 var(--line-soft); }
-.fp-center-mark { position:absolute; top:0; left:50%; transform:translateX(-50%); width:26px; height:2px; border-radius:0 0 2px 2px; background:var(--crail-base); }
-.fp-row { display:flex; align-items:center; padding:14px 14px 0; }
-.fp-side { flex:1 1 0; min-width:0; display:flex; align-items:center; gap:10px; overflow:hidden; }
-.fp-side.fp-left { justify-content:flex-end; padding-right:12px; -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 30px); mask-image:linear-gradient(90deg,transparent 0,#000 30px); }
-.fp-side.fp-right { justify-content:flex-start; padding-left:12px; }
-.fp-done { flex-shrink:0; display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:500; color:var(--ink-4); white-space:nowrap; cursor:pointer; border:0; background:transparent; font-family:var(--font-sans); padding:0; }
-.fp-done svg { color:var(--sage); flex-shrink:0; }
-.fp-todo { flex-shrink:0; display:inline-flex; align-items:center; gap:6px; height:38px; padding:0 16px; border-radius:999px; font-size:14px; font-weight:500; color:var(--ink-3); background:var(--card); border:1px solid var(--line); white-space:nowrap; cursor:pointer; font-family:var(--font-sans); }
-.fp-now { flex-shrink:0; display:inline-flex; align-items:center; height:46px; padding:0 22px; border-radius:999px; font-size:16px; font-weight:700; letter-spacing:-0.01em; color:#fbf8f2; background:var(--ink-1); white-space:nowrap; cursor:pointer; border:0; font-family:var(--font-sans); box-shadow:0 12px 24px -12px rgba(20,18,14,.6); }
-.fp-add { position:absolute; right:14px; bottom:22px; height:46px; z-index:4; width:46px; border-radius:23px; border:1px solid var(--line); background:var(--card); box-shadow:0 0 0 9px var(--shell), var(--shadow-inset-soft); color:var(--ink-3); padding:0; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-.fp-fade { position:absolute; bottom:22px; height:46px; width:34px; z-index:2; pointer-events:none; }
-.fp-fade.l { left:0; background:linear-gradient(90deg, var(--shell), transparent); }
-.fp-fade.r { right:46px; background:linear-gradient(270deg, var(--shell), transparent); }
-#sessionFooterPills[data-reorder="1"] .fp-side { overflow:visible; -webkit-mask-image:none; mask-image:none; }
+/* ===== 푸터 운동 전환 (세그먼트 탭) ===== */
+#sessionFooter {
+  flex-shrink:0;
+  display:flex; align-items:stretch; gap:8px;
+  padding:14px 14px 22px;
+  box-shadow:inset 0 1px 0 var(--line-soft);
+}
+
+/* 트랙 (sunken 컨테이너) — JS 가 innerHTML 채움 */
+.fp-track {
+  flex:1; min-width:0;
+  background:var(--sunken);
+  border-radius:14px;
+  padding:5px;
+}
+
+/* 스크롤 스트립 */
+.fp-strip {
+  display:flex; align-items:stretch; gap:3px;
+  overflow-x:auto;
+  scroll-snap-type:x proximity;
+  -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent);
+          mask-image:linear-gradient(90deg,transparent 0,#000 16px,#000 calc(100% - 16px),transparent);
+}
+.fp-strip::-webkit-scrollbar { display:none; width:0; height:0; }
+.fp-strip { scrollbar-width:none; -ms-overflow-style:none; }
+
+/* 칩 (공통) */
+.fp-chip {
+  flex:1 0 auto;             /* 내용 폭 — 3~4개면 채우고, 많으면 슬라이드. ellipsis 금지 */
+  height:54px;
+  border:0; background:transparent;
+  border-radius:10px;
+  cursor:pointer;
+  font-family:var(--font-sans);
+  scroll-snap-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:7px; padding:0 14px;
+}
+.fp-chip__glyph { height:15px; display:flex; align-items:center; justify-content:center; }
+.fp-chip__name  { font-size:13px; font-weight:500; white-space:nowrap; }
+
+/* 진행중 — 흰 카드 돌출 + 라이브 점 */
+.fp-chip.is-current {
+  background:var(--card);
+  padding:0 18px;
+  box-shadow:0 2px 7px -1px rgba(20,18,14,.17), 0 0 0 1px oklch(67% 0.12 50 / .28);
+}
+.fp-chip.is-current .fp-chip__name { font-size:13.5px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; }
+.fp-dot-live {
+  width:7px; height:7px; border-radius:50%;
+  background:var(--crail-base);
+  box-shadow:0 0 0 3px oklch(67% 0.12 50 / .16);
+  animation:fpPulse 1.8s ease-in-out infinite;
+}
+
+/* 완료 — 은은한 sage 체크 (가장 조용) */
+.fp-chip.is-done .fp-chip__name { color:var(--ink-4); }
+.fp-ring-done {
+  display:flex; align-items:center; justify-content:center;
+  width:14px; height:14px; border-radius:50%;
+  box-shadow:inset 0 0 0 1.5px var(--sage);
+}
+.fp-ring-done svg path { stroke:var(--sage); }
+
+/* 보류 — 속 빈 오렌지 링 */
+.fp-chip.is-hold .fp-chip__name { color:var(--ink-2); }
+.fp-ring-hold {
+  width:13px; height:13px; border-radius:50%;
+  border:2px solid var(--crail-soft); background:#fff;
+  box-sizing:border-box;
+}
+
+/* 예정 — 점선 링 (가장 약하게) */
+.fp-chip.is-upcoming .fp-chip__name { color:var(--ink-4); }
+.fp-ring-todo {
+  width:11px; height:11px; border-radius:50%;
+  border:1.5px dashed var(--ink-4);
+  box-sizing:border-box;
+}
+
+/* + 추가 버튼 — 트랙 밖, 셸 링/페이드 없음 */
+.fp-add {
+  flex-shrink:0;
+  width:48px; height:64px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:var(--card);
+  color:var(--ink-3);
+  padding:0; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* 라이브 점 펄스 */
+@keyframes fpPulse { 0%,100%{opacity:1;} 50%{opacity:.35;} }
+@media (prefers-reduced-motion:reduce){ .fp-dot-live{animation:none;} }
+
+/* reorder 모드 — 스트립 오버플로/마스크 해제 (드래그 칩이 트랙 밖으로 들리도록) */
+#sessionFooterPills[data-reorder="1"] .fp-strip {
+  overflow:visible;
+  -webkit-mask-image:none; mask-image:none;
+}
 
 /* ===== 통일 바텀시트 ===== */
 .addex-sheet { position:absolute; left:0; right:0; bottom:0; height:66%; background:var(--card); display:flex; flex-direction:column; border-top-left-radius:var(--r-xl); border-top-right-radius:var(--r-xl); padding:14px 0 22px; }
@@ -117,8 +203,8 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .addex-empty { padding:24px 14px; text-align:center; font-size:14px; color:var(--ink-4); }
 
 /* 스크롤바 숨김 (터치 PWA) */
-#cardSetDots::-webkit-scrollbar, #sessionFooterPills .fp-side::-webkit-scrollbar, #addexChips::-webkit-scrollbar, #sessionAddexChips::-webkit-scrollbar, #addexList::-webkit-scrollbar, #sessionAddexList::-webkit-scrollbar { display:none; width:0; height:0; }
-#cardSetDots, #sessionFooterPills .fp-side, #addexChips, #sessionAddexChips, #addexList, #sessionAddexList { scrollbar-width:none; -ms-overflow-style:none; }
+#cardSetDots::-webkit-scrollbar, #addexChips::-webkit-scrollbar, #sessionAddexChips::-webkit-scrollbar, #addexList::-webkit-scrollbar, #sessionAddexList::-webkit-scrollbar { display:none; width:0; height:0; }
+#cardSetDots, #addexChips, #sessionAddexChips, #addexList, #sessionAddexList { scrollbar-width:none; -ms-overflow-style:none; }
 
 /* ===== 키패드 바텀시트 (앱 전용) ===== */
 #keypadModeSeg { display:flex; gap:6px; padding:4px; background:var(--sunken); border-radius:var(--r-md); margin:0 auto 14px; width:200px; }
@@ -241,11 +327,12 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
     </div>
     <!-- 푸터 운동 전환 -->
     <div id="sessionFooter">
-      <div class="fp-center-mark"></div>
-      <div id="sessionFooterPills" class="kr fp-row"></div>
-      <div class="fp-fade l"></div>
-      <div class="fp-fade r"></div>
-      <button id="sessionAddexBtn" type="button" class="fp-add" aria-label="운동 추가"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></button>
+      <div id="sessionFooterPills" class="kr fp-track"></div>
+      <button id="sessionAddexBtn" type="button" class="fp-add" aria-label="운동 추가">
+        <svg width="21" height="21" viewBox="0 0 20 20" fill="none">
+          <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
     <!-- 키패드 바텀시트 (앱 전용) -->
     <div id="keypadBackdrop" data-open="false" style="position:absolute;inset:0;z-index:79;background:oklch(22% 0.008 60 / 0.42);opacity:0;pointer-events:none;transition:opacity 200ms ease;"></div>
