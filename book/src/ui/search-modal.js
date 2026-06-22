@@ -15,7 +15,7 @@ import { el, clear } from './dom.js';
 import { iconEl } from './icons.js';
 import { cover } from './cover.js';
 import { renderSnippet, quotePreview } from './quote-md.js';
-import { tokenizeQuery, quoteMatches, bookMatches, contentTerm } from './search-match.js';
+import { tokenizeQuery, quoteMatches, bookMatches, contentTerm, groupByBook } from './search-match.js';
 
 const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130), lift: false, ...opts });
 function ownerIdsOf(user) {
@@ -67,7 +67,6 @@ export function openSearchModal(ctx) {
   const owners = ownerIdsOf(_ctx?.user);
   let quotes = null;        // lazy: listAllQuotes
   let query = '';
-  let filter = '전체';      // 전체 | 책 | 어구록
   let curIdx = -1;          // 키보드 내비
 
   // ── 셸 ──
@@ -133,15 +132,6 @@ export function openSearchModal(ctx) {
     return el('section', { class: 'sxm-sec' },
       el('div', { class: 'sxm-sec-head' }, el('h2', {}, title), r), bodyEl);
   }
-  function sxGroup(title, count, bodyEl, more) {
-    return el('section', { class: 'sx-group' },
-      el('div', { class: 'sx-group-head' },
-        el('h3', {}, title), el('span', { class: 'gct' }, String(count)),
-        el('span', { class: 'sp' }),
-        more ? el('span', { class: 'more', onClick: more.onClick }, more.label, iconEl('chev', { sz: 12 })) : null),
-      bodyEl);
-  }
-
   // ── 둘러보기 (검색어 없음) ──
   async function renderZero() {
     await ensureLoaded();
@@ -232,76 +222,52 @@ export function openSearchModal(ctx) {
     const all = quotes || [];
     const raw = query.trim();
     const tokens = tokenizeQuery(raw);
-    const { countByRef, books } = ownedModel(all);
+    const { books } = ownedModel(all);
 
     // 멀티 토큰 결합 — 각 토큰이 (제목/저자/출판사) 또는 (본문/제목/저자)에 걸리고 전체 AND.
     const matchedBooks = books.filter((b) => bookMatches(b, tokens));
     const matchedQuotes = all.filter((q) => quoteMatches(q.text, bookOf(q.book_ref), tokens));
-    const counts = {
-      전체: matchedBooks.length + matchedQuotes.length,
-      책: matchedBooks.length,
-      어구록: matchedQuotes.length,
-    };
+    // 책은 어구록의 컨테이너 — 결과를 책 단위로 묶어 표시(별도 '책' 섹션 없음, 참조: Kindle/Readwise).
+    const groups = groupByBook(matchedQuotes, matchedBooks, bookOf);
 
-    // 필터 칩 (전체/책/어구록)
     filters.replaceChildren();
-    for (const k of ['전체', '책', '어구록']) {
-      filters.appendChild(el('button', {
-        class: 'sxm-chip' + (filter === k ? ' on' : ''),
-        onClick: () => { filter = k; renderResults(); },
-      }, el('span', { class: 'lb' }, k), el('span', { class: 'ct' }, String(counts[k]))));
-    }
-
     clear(body);
-    const showBooks = (filter === '전체' || filter === '책') && matchedBooks.length;
-    const showQuotes = (filter === '전체' || filter === '어구록') && matchedQuotes.length;
 
-    // 책 그룹
-    if (showBooks) {
-      const cards = el('div', { class: 'sx-bookcards' });
-      for (const b of matchedBooks.slice(0, filter === '책' ? 60 : 6)) {
-        cards.appendChild(el('button', { class: 'sx-bookcard sx-item', onClick: () => navTo(`/book/${b.id}`) },
-          el('div', { class: 'cv' }, coverAt(b, 46, { lift: true })),
-          el('div', { class: 'meta' },
-            el('div', { class: 'tt' }, b.t),
-            el('div', { class: 'by' }, [b.a, b.p].filter(Boolean).join(' · ')),
-            el('div', { class: 'cnt' }, iconEl('quote', { sz: 12 }), `어구록 ${countByRef.get(String(b.id)) || 0}`))));
-      }
-      body.appendChild(sxGroup('책', matchedBooks.length, cards));
-    }
-
-    // 어구록 그룹
-    if (showQuotes) {
-      const limit = filter === '어구록' ? 60 : 6;
-      const list = el('div', { class: 'sx-qlist' });
-      for (const q of matchedQuotes.slice(0, limit)) {
-        const b = bookOf(q.book_ref);
-        const cvw = el('div', { class: 'cvw' },
-          b ? coverAt(b, 34, { lift: true }) : el('div', { class: 'cv-ph' }),
-          q.pinned ? el('span', { class: 'pinbadge' }, iconEl('star-fill', { sz: 9 })) : null);
-        const plain = quotePreview(q.text);
-        const term = contentTerm(plain, tokens);
-        const col = el('div', { class: 'body' },
-          // KWIC 맥락 스니펫 — 매치어 중심 ~3줄. 멀티 토큰이면 본문에 걸린 토큰 기준.
-          el('div', { class: 'q snip' }, ...renderSnippet(plain, term)),
-          el('div', { class: 'src' },
-            b ? el('strong', {}, b.t) : el('span', {}, '(책 미상)'),
-            b ? el('span', { class: 'dot' }) : null,
-            b ? el('span', {}, b.a) : null));
-        // 스니펫 클릭 → 책 상세의 해당 어구로. term 동반 시 그 어구에서 키워드 형광 유지.
-        const path = term
-          ? `/book/${q.book_ref}/${q.id}/${encodeURIComponent(term)}`
-          : `/book/${q.book_ref}/${q.id}`;
-        list.appendChild(el('button', { class: 'sx-qrow sx-item', onClick: () => navTo(path) }, cvw, col));
-      }
-      const more = (filter === '전체' && matchedQuotes.length > limit)
-        ? { label: '모두 보기', onClick: () => { filter = '어구록'; renderResults(); } } : null;
-      body.appendChild(sxGroup('어구록', matchedQuotes.length, list, more));
-    }
-
-    if (!showBooks && !showQuotes) {
+    if (!groups.length) {
       body.appendChild(el('div', { class: 'sx-empty' },
         el('b', {}, `'${raw}'에 대한 결과가 없어요`), '다른 단어로 찾아보거나, 주제 칩을 눌러보세요.'));
+      curIdx = -1;
+      return;
+    }
+
+    const PER_BOOK = 3;
+    for (const g of groups) {
+      const b = g.book;
+      // 본문에 매치어가 실제로 있는 어구만 스니펫 — 제목/저자 토큰만으로 걸린 어구는 제외.
+      const cq = g.quotes
+        .map((q) => { const plain = quotePreview(q.text); return { q, plain, term: contentTerm(plain, tokens) }; })
+        .filter((x) => x.term);
+      const bookTerm = cq.length ? cq[0].term : null;
+      // 책 헤더 — 클릭 시 책 상세(매치어 형광 동반). quoteId 자리에 '_'(스크롤 타겟 없음).
+      const headPath = bookTerm ? `/book/${g.ref}/_/${encodeURIComponent(bookTerm)}` : `/book/${g.ref}`;
+      const head = el('button', { class: 'sx-bhead sx-item', onClick: () => navTo(headPath) },
+        el('div', { class: 'cv' }, coverAt(b, 30, { lift: true })),
+        el('div', { class: 'meta' },
+          el('div', { class: 'tt' }, b.t),
+          el('div', { class: 'by' }, b.a)),
+        cq.length
+          ? el('span', { class: 'cnt' }, iconEl('quote', { sz: 11 }), String(cq.length))
+          : el('span', { class: 'tag' }, '제목·저자 일치'));
+      const grp = el('section', { class: 'sx-bgrp' }, head);
+      for (const { q, plain, term } of cq.slice(0, PER_BOOK)) {
+        grp.appendChild(el('button', { class: 'sx-qsnip sx-item', onClick: () => navTo(`/book/${g.ref}/${q.id}/${encodeURIComponent(term)}`) },
+          el('div', { class: 'q snip' }, ...renderSnippet(plain, term))));
+      }
+      if (cq.length > PER_BOOK) {
+        grp.appendChild(el('button', { class: 'sx-bmore sx-item', onClick: () => navTo(headPath) },
+          `이 책에서 ${cq.length - PER_BOOK}개 더`, iconEl('chev', { sz: 12 })));
+      }
+      body.appendChild(grp);
     }
     curIdx = -1;
   }

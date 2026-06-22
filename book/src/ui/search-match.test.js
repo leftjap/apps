@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { tokenizeQuery, quoteMatches, bookMatches, contentTerm, snippetParts } from './search-match.js';
+import { tokenizeQuery, quoteMatches, bookMatches, contentTerm, snippetParts, groupByBook } from './search-match.js';
 
 describe('tokenizeQuery', () => {
   it('공백으로 분리', () => { expect(tokenizeQuery('홍세화 인사')).toEqual(['홍세화', '인사']); });
@@ -61,5 +61,28 @@ describe('snippetParts — 매치어 중심 발췌', () => {
     expect(s.match).toBe('');
     expect(s.pre).toBe('가나다라마');
     expect(s.cutPost).toBe(true);
+  });
+});
+
+describe('groupByBook — 책 단위 그룹화', () => {
+  const bookOf = (ref) => ({ A: { id: 'A', t: '책A' }, B: { id: 'B', t: '책B' }, C: { id: 'C', t: '책C' } }[ref] || null);
+  it('어구를 책별로 묶고 매치 수 desc 정렬', () => {
+    const mq = [{ book_ref: 'A' }, { book_ref: 'B' }, { book_ref: 'A' }];
+    const g = groupByBook(mq, [], bookOf);
+    expect(g.map((x) => [x.ref, x.quotes.length])).toEqual([['A', 2], ['B', 1]]);
+  });
+  it('제목 일치 책은 어구 없어도 포함 + 최상단', () => {
+    const mq = [{ book_ref: 'A' }];
+    const g = groupByBook(mq, [{ id: 'C', t: '책C' }], bookOf);
+    expect(g[0].ref).toBe('C');
+    expect(g[0].titleMatched).toBe(true);
+    expect(g[0].quotes.length).toBe(0);
+    expect(g[1].ref).toBe('A');
+  });
+  it('어구 매치 + 제목 매치 동시 → titleMatched true', () => {
+    const g = groupByBook([{ book_ref: 'A' }], [{ id: 'A', t: '책A' }], bookOf);
+    expect(g[0].ref).toBe('A');
+    expect(g[0].titleMatched).toBe(true);
+    expect(g[0].quotes.length).toBe(1);
   });
 });

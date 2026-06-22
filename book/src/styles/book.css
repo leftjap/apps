@@ -265,6 +265,21 @@ html::-webkit-scrollbar, body::-webkit-scrollbar, #app::-webkit-scrollbar,
 .sx-qrow .body .src strong { font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .sx-qrow .body .src .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-4); flex-shrink: 0; }
 
+/* 책 단위 그룹 — 책 헤더 + 그 책의 매치 어구 스니펫 (검색 결과) */
+.sx-bgrp { margin: 0; }
+.sx-bgrp + .sx-bgrp { border-top: 1px solid var(--line-soft); margin-top: 6px; padding-top: 6px; }
+.sx-bhead { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; margin: 0 -10px; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: 8px; }
+.sx-bhead .cv { flex-shrink: 0; }
+.sx-bhead .meta { min-width: 0; flex: 1; }
+.sx-bhead .meta .tt { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sx-bhead .meta .by { font-size: 12px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.sx-bhead .cnt { flex-shrink: 0; display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+.sx-bhead .tag { flex-shrink: 0; font-size: 11px; color: var(--ink-3); background: var(--paper-2); border-radius: 999px; padding: 3px 9px; }
+.sx-qsnip { display: block; width: 100%; padding: 7px 10px 7px 54px; margin: 0 -10px; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; border-radius: 8px; }
+.sx-qsnip .q { margin: 0; font-size: 14px; line-height: 1.6; color: var(--ink-2); word-break: keep-all; text-wrap: pretty; }
+.sx-bmore { display: inline-flex; align-items: center; gap: 3px; margin: 0 0 4px 54px; padding: 4px 8px; border: 0; background: none; font: inherit; font-size: 12px; color: var(--ink-3); cursor: pointer; border-radius: 6px; }
+.sx-bhead:hover, .sx-qsnip:hover, .sx-bmore:hover { background: var(--hover); }
+
 /* 상태 */
 .sx-loading { padding: 28px; text-align: center; color: var(--ink-3); font-size: 13px; }
 .sx-empty { padding: 44px 24px; text-align: center; color: var(--ink-3); font-size: 14px; }

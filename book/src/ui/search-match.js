@@ -55,4 +55,26 @@ export function snippetParts(plain, term, { before = 40, after = 120 } = {}) {
   };
 }
 
-export default { tokenizeQuery, quoteMatches, bookMatches, contentTerm, snippetParts };
+/**
+ * 매치 어구를 책 단위로 그룹화. 제목/저자 일치 책은 어구가 없어도 그룹에 포함.
+ * 정렬: 제목·저자 일치 책 먼저, 그다음 매치 어구 수 desc.
+ * 반환: [{ ref, book, quotes, titleMatched }]
+ */
+export function groupByBook(matchedQuotes, matchedBooks, bookOf) {
+  const groups = new Map();
+  for (const q of (matchedQuotes || [])) {
+    const ref = String(q.book_ref);
+    if (!groups.has(ref)) groups.set(ref, { ref, book: bookOf(ref), quotes: [], titleMatched: false });
+    groups.get(ref).quotes.push(q);
+  }
+  for (const b of (matchedBooks || [])) {
+    const ref = String(b.id);
+    if (!groups.has(ref)) groups.set(ref, { ref, book: b, quotes: [], titleMatched: true });
+    else groups.get(ref).titleMatched = true;
+  }
+  const arr = [...groups.values()].filter((g) => g.book);
+  arr.sort((a, c) => (Number(c.titleMatched) - Number(a.titleMatched)) || (c.quotes.length - a.quotes.length));
+  return arr;
+}
+
+export default { tokenizeQuery, quoteMatches, bookMatches, contentTerm, snippetParts, groupByBook };
