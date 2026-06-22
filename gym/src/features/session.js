@@ -342,15 +342,16 @@ function pruneEmptySets(block) {
 }
 
 /**
- * 운동 완료 후 자동 이동 대상 — currentIdx 이후 첫 single block idx.
- * 없으면 null (마지막 운동 — 현재 카드 그대로 회색 read-only 표시).
+ * 운동 완료 후 현재 종목 — 첫 미완료(finishedAt 없음) single block idx (원래 인덱스 순서).
+ * 서킷 재정렬상 완료분은 좌측에 완료순으로 쌓이고, 남은 것 중 첫째가 현재가 된다 (사용자 결정 2026-06-22).
+ * 전부 완료면 null (방금 완료한 카드 그대로 read-only 유지).
  * spec §16 — circuit/cardio 폐기, single 만 대상.
  */
-function findNextSingleBlock(session, currentIdx) {
+function findFirstUnfinishedBlock(session) {
   if (!session || !Array.isArray(session.blocks)) return null;
-  for (let i = currentIdx + 1; i < session.blocks.length; i += 1) {
+  for (let i = 0; i < session.blocks.length; i += 1) {
     const b = session.blocks[i];
-    if (b && b.type === 'single') return i;
+    if (b && b.type === 'single' && !Number.isFinite(b.finishedAt)) return i;
   }
   return null;
 }
@@ -1978,11 +1979,12 @@ function renderFooterPillHtml({ blockIdx, state, name }) {
 }
 
 /**
- * 푸터 칩 고정 배열 — [완료(완료순) 좌측 · 현재 중앙 · 예정(원래순) 우측].
- *  - DOM 순서에는 미사용 — 고정 순서로 전환(작업지시서 R1). 단위테스트 유지용 export.
- *    (renderFooterPills 는 session.blocks 원래 인덱스 순서로 렌더하고 centerActivePill 로 중앙 스크롤.)
+ * 푸터 칩 서킷 배열 — [완료(완료순) 좌측 · 현재 · 예정(원래순) 우측].
+ *  - 서킷 트레이닝(종목 번갈아 기록·완료)에서 완료분은 좌측에 완료순으로 쌓이고, 지금 기록 중인
+ *    종목(current)이 그 오른쪽 첫 자리, 나머지 예정은 원래 인덱스 순서 (사용자 결정 2026-06-22).
+ *  - renderFooterPills 가 이 순서로 DOM 렌더 + centerActivePill 로 현재를 가시 영역 가운데로 스크롤.
  *  - 원본 인덱스 i 보존 (blockIdx — click·hold·reorder 핸들러가 session.blocks[i] 참조).
- *  - single 블록만 (서킷 폐기 §16).
+ *  - single 블록만 (서킷 폐기 §16 — non-single 제외).
  */
 export function computeFooterOrder(blocks, currentBlock) {
   const entries = (Array.isArray(blocks) ? blocks : [])
@@ -2010,17 +2012,15 @@ function renderFooterPills(doc, session, currentBlock) {
     if (pillsEl) pillsEl.innerHTML = '';
     return;
   }
-  // R1 (작업지시서) — session.blocks 원래 인덱스 순서 그대로 (computeFooterOrder 재배열 미사용).
+  // 서킷 재정렬 — [완료(완료순) 좌 · 현재 · 예정(원래순) 우] (computeFooterOrder, 원본 인덱스 i 보존).
   // 칩을 래퍼 없이 직접 나열 — 레일(#sessionFooterPills.fp-rail)이 곧 flex 스크롤 컨테이너.
-  const chips = [];
-  session.blocks.forEach((block, i) => {
-    if (!block || block.type !== 'single') return; // 서킷 폐기 §16 — non-single graceful skip
-    const isCurrent = block === currentBlock;
-    const state = classifyBlockState(block, isCurrent);
-    chips.push(renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) }));
+  const ordered = computeFooterOrder(session.blocks, currentBlock);
+  const chips = ordered.map(({ block, i }) => {
+    const state = classifyBlockState(block, block === currentBlock);
+    return renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) });
   });
   pillsEl.innerHTML = chips.join('');
-  centerActivePill(pillsEl); // R4
+  centerActivePill(pillsEl); // 현재 칩 가시 영역 가운데로
 }
 
 /**
@@ -2408,7 +2408,8 @@ async function handleActionSelect(doc, kind, actionId, target) {
           const pruned = pruneEmptySets(ctx.block);
           blocks[ctx.blockIdx] = { ...pruned, finishedAt: Date.now() };
           await upsertSession({ ...session, blocks });
-          const nextIdx = findNextSingleBlock({ ...session, blocks }, ctx.blockIdx);
+          // 서킷 재정렬 — 완료 후 현재는 첫 미완료 종목 (완료분은 좌측에 쌓임).
+          const nextIdx = findFirstUnfinishedBlock({ ...session, blocks });
           if (nextIdx != null) _currentBlockIdx = nextIdx;
         }
         await mountSessionView();
@@ -2448,8 +2449,8 @@ async function handleActionSelect(doc, kind, actionId, target) {
       const blockIdx = parseInt(target?.dataset?.blockIdx, 10);
       if (!Number.isFinite(blockIdx)) return;
       if (actionId === 'finish') {
-        // active state pill — 빈 세트 폐기 + finishedAt marker + 다음 single block 자동 이동.
-        // 마지막이면 _currentBlockIdx 유지 (회색 read-only).
+        // active state pill — 빈 세트 폐기 + finishedAt marker + 첫 미완료로 현재 이동(서킷 재정렬).
+        // 전부 완료면 _currentBlockIdx 유지 (read-only).
         _currentBlockIdx = blockIdx;
         const session = await getActiveSession();
         if (session) {
@@ -2457,7 +2458,7 @@ async function handleActionSelect(doc, kind, actionId, target) {
           const pruned = pruneEmptySets(blocks[blockIdx]);
           blocks[blockIdx] = { ...pruned, finishedAt: Date.now() };
           await upsertSession({ ...session, blocks });
-          const nextIdx = findNextSingleBlock({ ...session, blocks }, blockIdx);
+          const nextIdx = findFirstUnfinishedBlock({ ...session, blocks });
           if (nextIdx != null) _currentBlockIdx = nextIdx;
         }
         await mountSessionView();
