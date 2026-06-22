@@ -2,6 +2,20 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "gym-sian-ref",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5191",
+        "--directory",
+        "/tmp/gym-design-spec/deliverable",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 5191
+    },
+    {
       "name": "gym-dev-seg",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
