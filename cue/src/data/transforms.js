@@ -78,6 +78,21 @@ export function dailySeries(rows, getKey, getVal, len, today) {
   return series;
 }
 
+/** 사용자의 활성 학습 언어 = study_daily_stats 최신 학습일의 lang (동률은 study_time 큰 쪽).
+    study 앱은 en/ja 둘 다 매일 today_lessons 를 시딩하지만, 실제 학습은 daily_stats 에만 남는다 →
+    미학습 언어 시드가 어학 카드에 누출되지 않도록 '실제로 한 언어'만 신호로 삼는다. 없으면 fallback. */
+export function pickActiveLang(statRows, fallback = 'en') {
+  let best = null;
+  for (const r of statRows || []) {
+    if (!r || !r.lang || !r.date) continue;
+    const t = Number(r.study_time_sec) || 0;
+    if (!best || r.date > best.date || (r.date === best.date && t > best.t)) {
+      best = { date: r.date, lang: r.lang, t };
+    }
+  }
+  return best ? best.lang : fallback;
+}
+
 /** 며칠 전 → 한국어 라벨 */
 export function relativeDayLabel(daysAgo) {
   if (daysAgo === 0) return "오늘";

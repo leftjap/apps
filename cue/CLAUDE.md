@@ -36,7 +36,7 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 |---|---|---|
 | 독서 read | `book_reading_seconds` | `seconds`/60 (분). 제목·진도% 미연동 → 직전=직전 읽은 분·시점, 이번 주=활동일/제안5일, 추세=이번 달 시간 |
 | 글쓰기 write | `today_entries` | 매수(200자=1매), kind 라벨(KIND_LABEL). 직전=직전 글 매수·kind·날짜, 이번 주=편수(행)/제안3편, 추세=이번 달 매수 |
-| 어학 lang | `study_daily_stats` + `study_review_queue` + `study_today_lessons` | utterance·new_sentences·study_time. 직전=직전 발화·신규, sub=복습 대기(next_review≤오늘), 추세=이번 달 익힘 델타. 익힌 문장=큐 전체 |
+| 어학 lang | `study_daily_stats` + `study_review_queue` + `study_today_lessons` | utterance·new_sentences·study_time. 직전=직전 발화·신규, sub=복습 대기(next_review≤오늘), 추세=이번 달 익힘 델타. 익힌 문장=활성 언어 큐. **활성 언어 한정**: study 는 en/ja 둘 다 매일 today_lessons 시딩하나 daily_stats 는 실제 학습만 기록 → `pickActiveLang`(최신 daily_stats lang) 으로 전 study 쿼리 필터 (미학습 언어 시드 누출 차단) |
 | 운동 gym | `gym_sessions` | `duration_min`·`total_volume`·`tags`(부위 2개, PARTS)·`blocks` PR. 주 4일 실제 목표, 직전=부위2+★PR, 추세=이번 달 횟수. iPhone 전용 — CTA 무동작 |
 
 `src/data/transforms.js`·`copy.js` = 순수 함수 — 단위 테스트 대상 (`pnpm vitest run`).

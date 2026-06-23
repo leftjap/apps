@@ -21,7 +21,31 @@ import {
   countRowsInMonth,
   countPRs,
   thisYearSlice,
+  pickActiveLang,
 } from './transforms.js';
+
+describe('pickActiveLang — 활성 학습 언어 (최신 daily_stats lang)', () => {
+  it('최신 학습일의 lang 을 고른다', () => {
+    expect(pickActiveLang([
+      { date: '2026-05-13', lang: 'ja', study_time_sec: 240 },
+      { date: '2026-06-23', lang: 'en', study_time_sec: 7200 },
+    ])).toBe('en');
+  });
+  it('같은 날 복수 언어면 study_time 큰 쪽', () => {
+    expect(pickActiveLang([
+      { date: '2026-06-23', lang: 'ja', study_time_sec: 100 },
+      { date: '2026-06-23', lang: 'en', study_time_sec: 7200 },
+    ])).toBe('en');
+  });
+  it('빈 배열·null → fallback en', () => {
+    expect(pickActiveLang([])).toBe('en');
+    expect(pickActiveLang(null)).toBe('en');
+    expect(pickActiveLang(undefined, 'ja')).toBe('ja');
+  });
+  it('일본어만 학습했으면 ja', () => {
+    expect(pickActiveLang([{ date: '2026-06-20', lang: 'ja', study_time_sec: 600 }])).toBe('ja');
+  });
+});
 
 describe('sheetsFromHtml — 원고지 매수 (today 앱 charCount/sheetCount 공식 복제)', () => {
   it('공백 제외 글자수 / 200, 0.1 단위 반올림', () => {

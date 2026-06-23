@@ -14,7 +14,7 @@
    문장 생성은 copy.js (§5·§9), 수치 함수는 transforms.js. */
 import {
   dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun,
-  lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday,
+  lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, pickActiveLang,
   latestTodayTs, minuteOfDay, medianMinuteOfDay, p2,
   monthSeries, monthSum, weeklyActiveDayCounts, weeks4Streak,
   countRowsInWeek, countRowsInMonth, countPRs, thisYearSlice,
@@ -171,8 +171,13 @@ async function fetchWrite(client, userId, today, len, sinceKey, usualSinceKey) {
 }
 
 async function fetchLang(client, userId, today, len, sinceKey, usualSince) {
-  const data = await rows(client, 'study_daily_stats', 'date, study_time_sec, utterance_count, new_sentences',
+  // 활성 언어로 한정 — study 앱은 en/ja 둘 다 매일 today_lessons 를 시딩하지만 daily_stats 는
+  // 실제 학습 시에만 생성된다. 최신 학습일의 lang 이 사용자가 하는 언어 → 모든 study 쿼리를 그
+  // lang 으로 필터해 미학습 언어 시드 누출(예: 영어만 했는데 일본어 레슨 제목 표시)을 차단.
+  const statRows = await rows(client, 'study_daily_stats', 'date, lang, study_time_sec, utterance_count, new_sentences',
     (q) => q.eq('user_id', userId).gte('date', sinceKey));
+  const lang = pickActiveLang(statRows);
+  const data = statRows.filter((r) => r.lang === lang);
   const series = dailySeries(data, (r) => r.date, (r) => r.study_time_sec / 60, len, today)
     .map((v) => Math.round(v));
   const utterSeries = dailySeries(data, (r) => r.date, (r) => r.utterance_count, len, today);
@@ -185,7 +190,7 @@ async function fetchLang(client, userId, today, len, sinceKey, usualSince) {
     const keys = dayKeysEndingToday(len, today);
     const lastActiveKey = keys[len - 1 - s.lastDaysAgo];
     const lessons = await rows(client, 'study_today_lessons', 'date, explanation',
-      (q) => q.eq('user_id', userId)
+      (q) => q.eq('user_id', userId).eq('lang', lang)
         .or('explanation->>sceneTitle.not.is.null,explanation->>scene_title.not.is.null')
         .lte('date', lastActiveKey)
         .order('date', { ascending: false }).limit(1));
@@ -197,11 +202,11 @@ async function fetchLang(client, userId, today, len, sinceKey, usualSince) {
     }
   }
   const todayKey = localDayKey(today);
-  // SRS 복습 대기(오늘 만료) · 익힌 문장(큐 전체) — en/ja 둘 다 (lang 필터 없음)
-  const reviewDue = await countRows(client, 'study_review_queue', (q) => q.eq('user_id', userId).lte('next_review', todayKey));
-  const collected = await countRows(client, 'study_review_queue', (q) => q.eq('user_id', userId));
+  // SRS 복습 대기(오늘 만료) · 익힌 문장(큐 전체) — 활성 언어(lang) 한정
+  const reviewDue = await countRows(client, 'study_review_queue', (q) => q.eq('user_id', userId).eq('lang', lang).lte('next_review', todayKey));
+  const collected = await countRows(client, 'study_review_queue', (q) => q.eq('user_id', userId).eq('lang', lang));
   const logs = await rows(client, 'study_session_logs', 'created_at',
-    (q) => q.eq('user_id', userId).gte('created_at', usualSince.toISOString()).order('created_at', { ascending: false }));
+    (q) => q.eq('user_id', userId).eq('lang', lang).gte('created_at', usualSince.toISOString()).order('created_at', { ascending: false }));
   const usualMin = medianMinuteOfDay(logs.map((r) => r.created_at), META.lang.usualFallback);
   const atMin = minuteOfDay(latestTodayTs([logs[0]?.created_at], today));
   const built = buildLang({
