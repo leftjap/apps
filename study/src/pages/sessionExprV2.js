@@ -171,8 +171,9 @@ function explainPanel(ex) {
   );
 }
 
-/* 응용 연습 행 — 듣기/녹음 (services 재사용). */
-function drillRows(drills, hlTerm, lang, speaker) {
+/* 응용 연습 행 — 듣기/녹음 (services 재사용). onScore(i, result): 채점 성공 시 세션 집계 위임.
+ * demo=true 면 마이크 없이 시뮬 채점 (?demo=1 화면 검증용 — 메인 recPill 데모 분기와 동일). */
+function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
@@ -185,6 +186,18 @@ function drillRows(drills, hlTerm, lang, speaker) {
       h('span', { class: 'grow' }), scoreEl, playBtn, recBtn,
     );
     recBtn.addEventListener('click', async () => {
+      if (demo) {
+        // 데모 — 마이크 없이 시뮬 채점 (화면 검증). 행 단위 진행 표시.
+        if (row.classList.contains('recing')) return;
+        row.classList.add('recing'); recBtn.classList.add('recing');
+        setTimeout(() => {
+          row.classList.remove('recing'); recBtn.classList.remove('recing');
+          const result = { score: Math.min(82 + i * 4, 99), weakPhonemes: ['ð'] };
+          scoreEl.textContent = Math.round(result.score) + ' ✓'; scoreEl.style.display = '';
+          onScore?.(i, result);
+        }, 800);
+        return;
+      }
       if (recCtrl && recRow === row) {
         const ctrl = recCtrl; recCtrl = null; recRow = null;
         row.classList.remove('recing'); recBtn.classList.remove('recing');
@@ -192,6 +205,7 @@ function drillRows(drills, hlTerm, lang, speaker) {
         if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
         const score = Math.round(result?.score ?? 0);
         scoreEl.textContent = score + ' ✓'; scoreEl.style.display = '';
+        onScore?.(i, result);
         return;
       }
       const r = await startMicRecording();
@@ -448,11 +462,25 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const nextBtn = h('button', { class: 'vs-next', type: 'button', onClick: handlers.onNext }, idx >= total ? '학습 완료 →' : '다음 표현 →');
   const gateEl = h('div', { class: 'vs-gate' }, '');
 
-  // 응용 연습
+  // 응용 연습 — 드릴 녹음도 세션 발화 1건으로 집계 ('오늘 발화' + 요약 통과율/평균/약점음소).
+  // 메인 표현 전용 장치(recLog 게이트·dots·콤보·점수 링·PASS 칩)는 의도적으로 미반영 — 게이트는 메인 표현 3회용.
   const drills = Array.isArray(ex.drills) ? ex.drills : [];
+  const drillCountEl = h('b', {}, '0');
+  const recordedDrills = new Set();
+  const onDrillScore = (i, result) => {
+    const score = Math.round(Number(result?.score) || 0);
+    state.tried = (state.tried || 0) + 1;
+    if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
+    if (!Array.isArray(state.pronScores)) state.pronScores = [];
+    state.pronScores.push(score);
+    if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
+    if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(Math.min(recordedDrills.size, drills.length)); }
+    refreshRecWidget();
+    handlers.saveSnapshot?.();
+  };
   const drillsBlock = drills.length ? h('div', {},
-    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'), h('span', { class: 'ct' }, '녹음 ', h('b', {}, '0'), ' / ' + drills.length)),
-    h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker)),
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'), h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
+    h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker, onDrillScore, state.demo)),
   ) : null;
 
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));

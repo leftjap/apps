@@ -98,3 +98,87 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     expect(savePronunciationLog).not.toHaveBeenCalled();
   });
 });
+
+// 응용 연습(drill) 녹음 = 세션 발화 1건 — '오늘 발화' 카운트 누락 버그 회귀 방지.
+function makeStateWithDrills() {
+  const drills = [
+    { en: "It's more than a job.", kr: '잇츠 모어 대너 잡', ko: '그건 직업 그 이상이에요.' },
+    { en: "He's more than a friend.", kr: '히즈 모어 대너 프렌드', ko: '걔는 친구 그 이상이야.' },
+  ];
+  const explanation = { key: 'Is that a promise? = 약속하는 거예요?', drills };
+  return {
+    size: 'desktop', recording: false, lastScore: null, tried: 0, passed: 0, combo: 0,
+    pronScores: [], weakInSession: {}, recLog: {}, step: 2, total: 1,
+    cards: [
+      { id: 'scene', explanation: { dialogue: [{ speaker: 'A', en: 'Is that a promise?', ko: '약속하는 거예요?' }], sceneTitle: '데모' } },
+      { id: 'e1', lang: 'en', sentence: 'Is that a promise?', ko: '약속하는 거예요?', pron: '이즈 대러 프라미스', explanation },
+    ],
+    sentence: { id: 'e1', lang: 'en', sentence: 'Is that a promise?', ko: '약속하는 거예요?', pron: '이즈 대러 프라미스', explanation },
+  };
+}
+
+describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  const drillRecBtns = (host) => [...host.querySelectorAll('.vs-drow')].map((r) => r.querySelector('button[aria-label="녹음"]'));
+
+  it('drill 녹음 1회 → tried/passed/pronScores/weakInSession 반영 · 오늘 발화·녹음 N/M 갱신 · 행 점수 배지', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+
+    const recBtn = drillRecBtns(host)[0];
+    expect(recBtn).toBeTruthy();
+    recBtn.click(); await tick();                          // 녹음 시작
+    recBtn.click(); await tick(); await tick();            // 멈춤 + 채점 (mock score 92)
+
+    // 세션 집계 — drill 도 발화 1건
+    expect(state.tried).toBe(1);
+    expect(state.passed).toBe(1);                          // 92 >= 80
+    expect(state.pronScores).toEqual([92]);
+    expect(state.weakInSession).toEqual({ 'ð': 1 });
+
+    // '오늘 발화' 위젯 + ' 녹음 N/M' 카운터 라이브 갱신
+    expect(host.querySelector('.vs-rec .n').textContent).toBe('1');
+    expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('1');
+
+    // 행 점수 배지
+    expect(drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore').textContent).toContain('92');
+  });
+
+  it('drill 녹음은 메인 표현 게이트(recLog)·콤보를 건드리지 않음', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    recBtn.click(); await tick();
+    recBtn.click(); await tick(); await tick();
+    expect(state.recLog).toEqual({});                      // 메인 3회 게이트 무관
+    expect(state.combo).toBe(0);                           // 메인 콤보 무관
+    expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(false);
+  });
+
+  it('같은 drill 재녹음 → tried 누적(+1)하되 녹음 N/M 카운터는 중복 안 셈', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    recBtn.click(); await tick(); recBtn.click(); await tick(); await tick();
+    recBtn.click(); await tick(); recBtn.click(); await tick(); await tick();
+    expect(state.tried).toBe(2);                           // 발화 2건
+    expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('1'); // 행 1개만 녹음됨
+  });
+
+  it('drill 녹음 실패(mockFallback) → state 미변경 · 카운터 미갱신', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ mockFallback: true, fallbackReason: 'no_match' });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    recBtn.click(); await tick();
+    recBtn.click(); await tick(); await tick();
+    expect(state.tried).toBe(0);
+    expect(host.querySelector('.vs-rec .n').textContent).toBe('0');
+    expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('0');
+  });
+});
