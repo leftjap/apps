@@ -9,6 +9,10 @@ describe('recordErrorMessage', () => {
   it('no_match → 재발화 안내', () => {
     expect(recordErrorMessage('no_match')).toContain('다시 말해');
   });
+  it('mic_silent → 마이크 입력 점검 안내 (no_match 와 구분)', () => {
+    expect(recordErrorMessage('mic_silent')).toContain('마이크 입력');
+    expect(recordErrorMessage('mic_silent')).not.toContain('다시 말해');
+  });
   it('azure_init_fail → 네트워크 안내', () => {
     expect(recordErrorMessage('azure_init_fail')).toContain('네트워크');
   });

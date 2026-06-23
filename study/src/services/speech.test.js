@@ -350,24 +350,47 @@ describe('speech — Wave 11.61 analyzeWavRest', () => {
     expect(result.mockFallback).toBeUndefined();
   });
 
-  it('NoMatch 응답 → mock 폴백', async () => {
-    _fetchSpy.mockImplementation(async (url) => {
-      if (String(url).includes('/functions/v1/azure-token')) {
-        return new Response(
-          JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
-          { status: 200, headers: { 'Content-Type': 'application/json' } },
-        );
-      }
-      return new Response(JSON.stringify({ RecognitionStatus: 'NoMatch' }), {
-        status: 200, headers: { 'Content-Type': 'application/json' },
-      });
-    });
+  // WAV blob 헬퍼 — amp(진폭) 으로 captureRms 제어. amp=0 → 무음(rms 0), amp 큼 → 발화 수준.
+  const wavBlob = (amp, samples = 400) => {
+    const buf = new ArrayBuffer(44 + samples * 2);
+    if (amp) new Int16Array(buf, 44).fill(amp);
+    return new Blob([buf], { type: 'audio/wav' });
+  };
+  const mockTokenThen = (sttBody) => _fetchSpy.mockImplementation(async (url) => {
+    if (String(url).includes('/functions/v1/azure-token')) {
+      return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response(JSON.stringify(sttBody), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  });
+
+  it('NoMatch + 발화 수준 캡처 → fallbackReason no_match (마이크는 잡혔으나 미인식)', async () => {
+    mockTokenThen({ RecognitionStatus: 'NoMatch' });
     const { Speech } = await import('./speech.js');
     Speech.clearAzureTokenCache();
-    const fakeBlob = new Blob([new ArrayBuffer(100)], { type: 'audio/wav' });
-    const result = await Speech.analyzeWavRest(fakeBlob, 'hello');
+    const result = await Speech.analyzeWavRest(wavBlob(8000), 'hello'); // rms≈0.24 (발화 수준)
     expect(result.mockFallback).toBe(true);
     expect(result.fallbackReason).toBe('no_match');
+  });
+
+  it('InitialSilenceTimeout + 무음 캡처(rms~0) → fallbackReason mic_silent (점수 차단 아님, 메시지만 정정)', async () => {
+    mockTokenThen({ RecognitionStatus: 'InitialSilenceTimeout' });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(wavBlob(0), 'hello'); // 무음 → rms 0
+    expect(result.mockFallback).toBe(true);
+    expect(result.fallbackReason).toBe('mic_silent');
+  });
+
+  it('Success + AccuracyScore 0 + 무음 → mic_silent / 발화수준이면 no_match', async () => {
+    const { Speech } = await import('./speech.js');
+    // 무음
+    mockTokenThen({ RecognitionStatus: 'Success', NBest: [{ AccuracyScore: 0, Display: '' }] });
+    Speech.clearAzureTokenCache();
+    expect((await Speech.analyzeWavRest(wavBlob(0), 'hi')).fallbackReason).toBe('mic_silent');
+    // 발화 수준
+    mockTokenThen({ RecognitionStatus: 'Success', NBest: [{ AccuracyScore: 0, Display: 'xyz' }] });
+    Speech.clearAzureTokenCache();
+    expect((await Speech.analyzeWavRest(wavBlob(8000), 'hi')).fallbackReason).toBe('no_match');
   });
 
   it('HTTP 401 응답 → mock 폴백', async () => {

@@ -8,6 +8,8 @@ export function recordErrorMessage(reason) {
   switch (reason) {
     case 'permission_denied':
       return '마이크 권한이 필요해요. 브라우저 설정에서 허용해주세요';
+    case 'mic_silent':
+      return '마이크 입력이 잡히지 않았어요. 입력 장치·음소거를 확인해 주세요';
     case 'no_match':
       return '음성이 인식되지 않았어요. 다시 말해주세요';
     case 'azure_init_fail':

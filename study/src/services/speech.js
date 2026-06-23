@@ -758,6 +758,11 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
       captureRms = Math.sqrt(sum / pcm.length) / 32768;
     }
   } catch (_) { /* blob 읽기 실패 시 진행 */ }
+  // captureRms 이 거의 0 = 마이크가 무음을 캡처(입력 없음·음소거·입력장치 오선택). 이때 no_match 를
+  // 더 정확한 안내(mic_silent)로 분기. A.18 가드(점수 차단) 철회 교훈 유지 — 점수는 절대 차단하지 않고
+  // '이미 실패한 no_match' 의 메시지만 정정. 임계값은 실측 발화 RMS(0.04~0.18) 보다 훨씬 낮게.
+  const SILENCE_RMS = 0.005;
+  const noSpeechReason = () => (captureRms != null && captureRms < SILENCE_RMS ? 'mic_silent' : 'no_match');
   let token, region;
   try {
     const t = await getAzureToken();
@@ -786,8 +791,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
     }
     const json = await res.json();
     if (json.RecognitionStatus !== 'Success') {
-      console.warn('[speech][rest] NoMatch:', json.RecognitionStatus);
-      return analyzeMock(expectedText, 'no_match');
+      console.warn('[speech][rest] 인식 실패', { status: json.RecognitionStatus, captureRms });
+      return analyzeMock(expectedText, noSpeechReason());
     }
     const nbest = json.NBest?.[0];
     if (!nbest) return analyzeMock(expectedText, 'parse_fail');
@@ -796,7 +801,10 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
     // 학습자가 정확히 발음해도 유창성/억양에서 깎여 저점이 나옴(실측: Acc 92 → Pron 65, Fluency 45).
     // '따라 말하기' 드릴이 측정할 건 발음 정확도 → AccuracyScore 사용. PronScore 는 진단용으로 함께 반환.
     const score = nbest.AccuracyScore ?? nbest.PronScore ?? 0;
-    if (!score) return analyzeMock(expectedText, 'no_match');
+    if (!score) {
+      console.warn('[speech][rest] 인식됐으나 점수 0', { captureRms, display: nbest.Display });
+      return analyzeMock(expectedText, noSpeechReason());
+    }
     const wordScores = [];
     const phonemeScores = [];
     const weakSet = new Set();
