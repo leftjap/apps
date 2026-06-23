@@ -41,4 +41,4 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 
 `src/data/transforms.js`·`copy.js` = 순수 함수 — 단위 테스트 대상 (`pnpm vitest run`).
 데모 모드(Tweaks, localStorage 키 `cue.tweaks.v8`)는 `mock.js` 시안 목업 사용 — due 는 데모에서도 실제 `dueOf` 가 시각으로 판정.
-로컬 실데이터 검증: `scripts/sanity-real-data.mjs` (service-role, 주석의 실행법 참조).
+로컬 실데이터 검증: `scripts/sanity-real-data.mjs` (adapter 출력 덤프·육안) / `scripts/audit-faithfulness.mjs` (adapter vs raw 1:1 PASS/FAIL — "보이는 값이 팩트인가" 증명). 둘 다 service-role, 주석의 실행법 참조.
