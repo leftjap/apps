@@ -21,5 +21,6 @@ if [[ "$cur" == "yt" && "$prev" != "yt" ]]; then
   [[ -z "$due" ]] && due=stale
   print -r -- "$(date '+%H:%M:%S') due=$due" >> "$LOG"
   # 표시는 상주 CuePopup 에이전트가 담당 — 트리거 파일에 상태만 쓴다(중복은 CuePopup 이 처리).
-  printf '%s' "$due" > /tmp/cue-popup-trigger
+  # 4개 다 완료(toast)면 팝업 안 띄움 — 마칠 일 없으니 마찰 불필요
+  [[ "$due" == "toast" ]] || printf '%s' "$due" > /tmp/cue-popup-trigger
 fi

@@ -6,7 +6,7 @@ import WebKit
 let cardPath = "/Users/gio_c/apps/cue/tools/youtube-gate-card.html"
 let triggerPath = "/tmp/cue-popup-trigger"
 let logPath = "/tmp/cue-popup.log"
-let knownStates = ["독서", "글쓰기", "어학", "운동", "stale", "toast"]
+let knownStates = ["독서", "글쓰기", "어학", "운동", "stale"]
 // 값이 "app:<bundleID>" 면 로컬 앱 실행, 그 외는 웹 URL 오픈.
 let appURLs: [String: String] = [
   "독서": "app:kr.co.millie.MillieShelf",   // 밀리의서재 (로컬 앱) — 실제 독서는 여기서

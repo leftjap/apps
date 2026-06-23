@@ -24,11 +24,8 @@ body{font-family:'Pretendard',system-ui,sans-serif}
 .shim{position:absolute;top:0;bottom:0;left:0;width:38%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.32),transparent);animation:ctaShimmer 4.8s ease-in-out infinite}
 .later{align-self:center;margin-top:15px;display:inline-flex;align-items:center;gap:7px;color:#AEB4BE;font-size:13.5px;background:none;border:none;cursor:pointer;transition:color .2s}
 .later[disabled]{cursor:default;color:#CDC6BC}
-.toast{position:absolute;top:22px;right:22px;display:flex;align-items:center;gap:11px;background:#fff;border-radius:15px;padding:14px 18px;box-shadow:0 14px 40px rgba(0,0,0,.28);animation:cueToastIn .34s ease}
-.tchk{width:30px;height:30px;border-radius:50%;background:#E3F5EE;display:flex;align-items:center;justify-content:center;flex:none}
 
 @keyframes cuePopIn{0%{opacity:0;transform:translateY(14px) scale(.965)}100%{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes cueToastIn{0%{opacity:0;transform:translateY(-10px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes ambGlow{0%,100%{opacity:.6;transform:scale(.92)}50%{opacity:1;transform:scale(1.05)}}
 @keyframes glowPulseOp{0%,100%{opacity:.55}50%{opacity:1}}
 @keyframes ctaShimmer{0%{transform:translateX(-140%)}34%{transform:translateX(260%)}100%{transform:translateX(260%)}}
@@ -105,11 +102,8 @@ body{font-family:'Pretendard',system-ui,sans-serif}
     '<button class="later" disabled onclick="window.cueLater&&window.cueLater()"><svg width="16" height="16" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#E3E6EB" stroke-width="2"/><circle class="lring" cx="9" cy="9" r="7" stroke="'+a+'" stroke-width="2" fill="none" stroke-linecap="round" stroke-dasharray="44" stroke-dashoffset="44" transform="rotate(-90 9 9)" style="animation:laterCount 5s linear forwards"/><text class="lnum" x="9" y="11.7" text-anchor="middle" font-size="7.5" fill="#9CA2AC">5</text></svg>나중에</button>'+
    '</div></div>';
  }
- function toast(){
-  return '<div style="position:absolute;inset:0;background:rgba(14,12,10,.18);display:flex;align-items:flex-start;justify-content:center;padding-top:130px"><div class="toast" style="position:static"><div class="tchk"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4 4 10-10.5" stroke="#0C9A6E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div style="font-size:14.5px;font-weight:500;color:#1d1b18;white-space:nowrap">오늘 4개 다 끝냈어요 · 편히 보세요</div></div></div>';
- }
  var state=new URLSearchParams(location.search).get('state')||'독서';
- document.getElementById('stage').innerHTML = state==='toast'?toast():card(THEME[state]?state:'독서');
+ document.getElementById('stage').innerHTML = card(THEME[state]?state:'독서');
  // '나중에' = 시안의 마찰 카운트다운: 5초간 비활성(흐림·링 fill 빔→가득·숫자 5→1)→0에서 활성. 그동안 활동 CTA 를 누르도록 유도.
  var lb=document.querySelector('.later');
  if(lb){ var ln=lb.querySelector('.lnum'), svg=lb.querySelector('svg'), n=5;
