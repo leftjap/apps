@@ -1,0 +1,207 @@
+{
+  "_note": "RealClass-mining — Parks and Recreation S1E1 '공개 토론회 — 첫 입장 소동' 장면 (소스 스크립트 #42~55 발췌·압축 → dialogue 10줄). 표현 6장: Thank you so much for coming / What an amazing turnout / take questions / having a meeting in here / Does anybody have any questions about / take two. 약점 음소 가중 적용 (단계 3-4 컨텍스트 2026-06-24: weak_phonemes_en 상위 3 = /s/(77) /t/(64) /ɪ/(59) — 표현 6/6 가 약점 음소 포함, §6.3 약점 음소 가중). 발췌 기준 4종 통과 — 인사·리액션 단독 0 (#42 Are you ready·#44 Here we go·#45 It's locked 은 dialogue 맥락에만 두고 카드化 X), 행정 디테일 0 (#49 'My name is Leslie Knope' 는 06-11 dialogue 와 중복이라 제외), 일상 전이 (감사·감탄·질의응답·재시도 패턴), 화자 교차 (Leslie/Tom/Bystander 3화자, 단일 화자 연속 3줄 이하, 독백 0). 'We're having a meeting in here' 화자는 원작 대본 무라벨(엉뚱한 방의 회의 참석자) → 이름 추측 없이 역할명 Bystander 처리 (06-11 미끄럼틀 행인과 동일 역할명·등록 voice 재사용). 기존 Parks 시드 (#3~16 설문 · #56~103 토론회 Q&A · #107~116 핑키 프라미스 · #133~145 브레인스토밍) 와 dialogue·표현·_source 구간 중복 0. 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_source": { "episode": "s1e1", "lines": [42, 55] },
+  "_context": { "weakPhonemes": ["/s/", "/t/", "/ɪ/"] },
+  "lang": "en",
+  "date": "2026-06-24",
+  "cards": [
+    {
+      "id": "en-parks-s1e1-forum-entrance-scene",
+      "sentence": "공개 토론회 — 첫 입장 소동",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "공개 토론회 — 첫 입장 소동",
+        "sceneSummary": "레슬리가 톰과 함께 토론회장에 들어서려는데 문은 잠겨 있고, 엉뚱한 방에 들어가 회의 중인 사람들에게 당당히 환영 인사를 건넨다.",
+        "dialogue": [
+          { "speaker": "Leslie", "en": "Are you ready?", "ko": "준비됐어요?" },
+          { "speaker": "Tom", "en": "Yeah. Okay.", "ko": "네. 좋아요." },
+          { "speaker": "Leslie", "en": "Here we go!", "ko": "자, 가자!" },
+          { "speaker": "Tom", "en": "It's locked.", "ko": "잠겼어요." },
+          { "speaker": "Leslie", "en": "Thank you so much for coming.", "ko": "와 주셔서 정말 감사합니다." },
+          { "speaker": "Leslie", "en": "What an amazing turnout.", "ko": "정말 많이들 와 주셨네요." },
+          { "speaker": "Leslie", "en": "We're gonna be taking some of your questions. Hello?", "ko": "여러분의 질문을 받아보겠습니다. 저기요?" },
+          { "speaker": "Bystander", "en": "We're having a meeting in here.", "ko": "여기서 회의 중인데요." },
+          { "speaker": "Leslie", "en": "Does anybody have any questions about permits?", "ko": "허가에 관해 질문 있으신 분 계세요?" },
+          { "speaker": "Leslie", "en": "So, take two.", "ko": "자, 다시 갑시다." }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e1-thank-you-for-coming",
+      "sentence": "Thank you so much for coming.",
+      "meaning": "와 주셔서 정말 감사합니다.",
+      "reading": null,
+      "phonetic_kr": "땡큐 쏘 머치 포 커밍",
+      "order_index": 1,
+      "explanation": {
+        "key": "Thank you so much for coming. = 와 주셔서 정말 감사합니다. 행사·모임·초대 자리의 환영 인사 1순위.",
+        "situation": "장면 · 레슬리가 토론회장에 들어서며 참석자에게 인사",
+        "drills": [
+          { "en": "Thank you so much for coming.", "ko": "와 주셔서 정말 감사합니다.", "kr": "땡큐 쏘 머치 포 커밍." },
+          { "en": "Thanks for coming in today.", "ko": "오늘 와 주셔서 감사해요.", "kr": "땡스 포 커밍 인 투데이." },
+          { "en": "Thank you for waiting.", "ko": "기다려 주셔서 감사합니다.", "kr": "땡큐 포 웨이링." },
+          { "en": "Thanks for having me.", "ko": "초대해 주셔서 감사해요.", "kr": "땡스 포 해빙 미." },
+          { "en": "Thank you all for being here.", "ko": "모두 와 주셔서 감사합니다.", "kr": "땡큐 올 포 비잉 히어." }
+        ],
+        "grammar": [
+          { "struct": "Thank you for + ~ing", "body": "'~해 주셔서 감사합니다'. for 뒤엔 동명사(-ing). coming·waiting·inviting 등 상대의 '행동'에 감사." },
+          { "struct": "so much (강조 삽입)", "body": "Thank you 와 for 사이에 끼워 감사 정도를 키운다. '정말·너무'." }
+        ],
+        "chunks": [["Thank you", "땡큐"], ["so much", "쏘 머치"], ["for coming", "포 커밍"]],
+        "phonemes": [["/s/", "so much — 무성 '쓰'"], ["/θ/", "thank — 혀끝 이 사이 'th'"]],
+        "mistake": "for coming 의 o 는 '오' 아닌 '어' — '포 커밍'. thank 의 th 는 된소리 'ㅆ' 아닌 혀끝 마찰음.",
+        "similar": "Thanks for coming. (캐주얼) / Thanks for having me. (초대받은 쪽)",
+        "category": "chunk/greeting",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-parks-s1e1-what-an-turnout",
+      "sentence": "What an amazing turnout.",
+      "reading": null,
+      "meaning": "정말 많이들 와 주셨네요.",
+      "phonetic_kr": "와런 어메이징 턴아웃",
+      "order_index": 2,
+      "explanation": {
+        "key": "What an amazing turnout! = 정말 많이들 오셨네요! 'What a(n) + 형용사 + 명사' 감탄 골격.",
+        "situation": "장면 · 레슬리가 참석 인원에 감탄",
+        "drills": [
+          { "en": "What an amazing turnout!", "ko": "정말 많이들 오셨네요!", "kr": "와런 어메이징 턴아웃!" },
+          { "en": "What a beautiful day!", "ko": "정말 날씨 좋다!", "kr": "와러 뷰리풀 데이!" },
+          { "en": "What a great idea!", "ko": "진짜 좋은 생각이야!", "kr": "와러 그뤠잇 아이디어!" },
+          { "en": "What a surprise!", "ko": "이게 웬일이야!", "kr": "와러 써프라이즈!" },
+          { "en": "What a mess.", "ko": "엉망진창이네.", "kr": "와러 메스." }
+        ],
+        "grammar": [
+          { "struct": "What a(n) + 형용사 + 명사!", "body": "'정말 ~한 ~네!' 감탄문. 명사를 감탄의 중심에 둔다. 모음 앞에선 an (amazing)." },
+          { "struct": "turnout (명사)", "body": "행사 참석 인원·투표율. a good/big/great turnout = 많이 옴." }
+        ],
+        "chunks": [["What an", "와런"], ["amazing", "어메이징"], ["turnout", "턴아웃"]],
+        "phonemes": [["/t/", "What an·turnout — flap-t '와런'·받침 t"], ["/aʊ/", "turnout — '아우' 이중모음"]],
+        "mistake": "What an 을 '왓 앤' 끊지 말고 flap 연음 '와런' 한 호흡. turnout 은 turn+out 합성 '턴아웃'.",
+        "similar": "What a great crowd! / So many people showed up!",
+        "category": "chunk/exclaim",
+        "frequency": 7
+      }
+    },
+    {
+      "id": "en-parks-s1e1-take-questions",
+      "sentence": "We're gonna be taking some of your questions.",
+      "reading": null,
+      "meaning": "여러분의 질문을 좀 받아보겠습니다.",
+      "phonetic_kr": "위어 거너 비 테이킹 썸 어브 유어 퀘스천스",
+      "order_index": 3,
+      "explanation": {
+        "key": "We're gonna take your questions. = 질문을 받겠습니다. 'take questions' = 질문을 받다 (회의·발표 빈출).",
+        "situation": "장면 · 레슬리가 질의응답을 열며",
+        "drills": [
+          { "en": "We're gonna take some of your questions.", "ko": "여러분 질문을 좀 받겠습니다.", "kr": "위어 거너 테익 썸 어뷰어 퀘스천스." },
+          { "en": "I'll take questions at the end.", "ko": "질문은 마지막에 받을게요.", "kr": "아일 테익 퀘스천스 앳 디 엔드." },
+          { "en": "Can I take one more question?", "ko": "질문 하나만 더 받을까요?", "kr": "캔 아이 테익 원 모어 퀘스천?" },
+          { "en": "We're gonna start in five minutes.", "ko": "5분 뒤에 시작하겠습니다.", "kr": "위어 거너 스타린 파이브 미닛츠." },
+          { "en": "Any questions so far?", "ko": "여기까지 질문 있나요?", "kr": "애니 퀘스천스 쏘 파?" }
+        ],
+        "grammar": [
+          { "struct": "gonna = going to", "body": "구어 축약. be gonna + 동사 = 곧 ~할 거다. 격식 자리·문어에선 going to / will." },
+          { "struct": "take questions", "body": "'질문을 받다'. 발표·회견에서 질의응답을 여는 관용. answer 보다 자리를 '여는' 뉘앙스." }
+        ],
+        "chunks": [["We're gonna", "위어 거너"], ["be taking", "비 테이킹"], ["some of", "썸 어브"], ["your questions", "유어 퀘스천스"]],
+        "phonemes": [["/s/", "some·questions — '쓰/즈'"], ["/t/", "taking — '테이킹'"], ["/ɪ/", "taking — 짧은 '이'"]],
+        "mistake": "gonna 를 '곤나'(X) → '거너'. some of your 는 '썸 어뷰어' 연음. 격식 자리에선 going to 로.",
+        "similar": "We'll take your questions now. / Let's open it up for questions.",
+        "category": "chunk/meeting",
+        "frequency": 7
+      }
+    },
+    {
+      "id": "en-parks-s1e1-having-a-meeting",
+      "sentence": "We're having a meeting in here.",
+      "reading": null,
+      "meaning": "여기서 회의 중이에요.",
+      "phonetic_kr": "위어 해빙 어 미링 인 히어",
+      "order_index": 4,
+      "explanation": {
+        "key": "We're having a meeting in here. = 여기서 회의 중이에요. 현재진행으로 '지금 ~하는 중' — 공간 점유를 알림.",
+        "situation": "장면 · 엉뚱한 방의 사람이 레슬리를 제지",
+        "drills": [
+          { "en": "We're having a meeting in here.", "ko": "여기서 회의 중이에요.", "kr": "위어 해빙 어 미링 인 히어." },
+          { "en": "We're having lunch right now.", "ko": "지금 점심 먹는 중이에요.", "kr": "위어 해빙 런치 롸잇 나우." },
+          { "en": "They're having a party next door.", "ko": "옆집에서 파티 중이야.", "kr": "데어 해빙 어 파리 넥스트 도어." },
+          { "en": "Sorry, this room is taken.", "ko": "죄송한데 이 방은 사용 중이에요.", "kr": "쏘리, 디스 룸 이즈 테이큰." },
+          { "en": "Are you having a meeting now?", "ko": "지금 회의 중이세요?", "kr": "아유 해빙 어 미링 나우?" }
+        ],
+        "grammar": [
+          { "struct": "be having + 명사 (진행)", "body": "have 가 '소유'가 아닌 '진행 중인 활동'. having lunch/a party/a meeting = ~하는 중. 진행형 전용 용법." },
+          { "struct": "in here", "body": "'이 안에서' — here 앞에 in 을 붙여 실내 공간 안쪽을 강조." }
+        ],
+        "chunks": [["We're having", "위어 해빙"], ["a meeting", "어 미링"], ["in here", "인 히어"]],
+        "phonemes": [["/ɪ/", "meeting·in — 짧은 '이'"], ["/t/", "meeting — flap '미링'"]],
+        "mistake": "meeting 의 t 는 모음 사이라 flap '미링'(미팅 X). have 를 '가지다'로 직역하면 어색 — 여기선 '하는 중'.",
+        "similar": "There's a meeting going on in here. / This room is taken.",
+        "category": "chunk/daily",
+        "frequency": 7
+      }
+    },
+    {
+      "id": "en-parks-s1e1-anybody-have-questions",
+      "sentence": "Does anybody have any questions about permits?",
+      "reading": null,
+      "meaning": "허가에 관해 질문 있으신 분 계세요?",
+      "phonetic_kr": "더즈 애니바리 해브 애니 퀘스천스 어바웃 퍼밋츠?",
+      "order_index": 5,
+      "explanation": {
+        "key": "Does anybody have any questions about ~? = ~에 대해 질문 있으신 분? 청중에게 질문을 청하는 표준형.",
+        "situation": "장면 · 레슬리가 (엉뚱한 방에서) 질문을 청함",
+        "drills": [
+          { "en": "Does anybody have any questions?", "ko": "질문 있으신 분 계세요?", "kr": "더즈 애니바리 해브 애니 퀘스천스?" },
+          { "en": "Does anybody have a pen?", "ko": "누구 펜 있는 사람?", "kr": "더즈 애니바리 해버 펜?" },
+          { "en": "Do you have any questions for me?", "ko": "저한테 질문 있으세요?", "kr": "두유 해브 애니 퀘스천스 포 미?" },
+          { "en": "Any questions about the schedule?", "ko": "일정에 대해 질문 있나요?", "kr": "애니 퀘스천스 어바웃 더 스케줄?" },
+          { "en": "If anybody has questions, just ask.", "ko": "질문 있으면 그냥 물어보세요.", "kr": "이프 애니바리 해즈 퀘스천스, 저슷 애스크." },
+          { "en": "Anyone have any thoughts?", "ko": "의견 있으신 분?", "kr": "애니원 해브 애니 쏘츠?" }
+        ],
+        "grammar": [
+          { "struct": "Does anybody have ~?", "body": "불특정 다수에게 묻기. anybody=anyone, 단수 취급이라 Does. 회의·교실 빈출." },
+          { "struct": "any questions about + 명사", "body": "'~에 관한 질문'. about 뒤에 주제. 의문문엔 some 대신 any." }
+        ],
+        "chunks": [["Does anybody", "더즈 애니바리"], ["have any", "해브 애니"], ["questions", "퀘스천스"], ["about permits?", "어바웃 퍼밋츠?"]],
+        "phonemes": [["/s/", "Does·questions·permits — '즈/스'"], ["/t/", "permits — 받침 t"], ["/ɪ/", "permits — 짧은 '이'"]],
+        "mistake": "anybody 의 -bo- 는 flap 연음 '바리'에 가깝게. about permits 를 또박또박 말고 '어바웃 퍼밋츠' 흘려서.",
+        "similar": "Any questions? / Does anyone want to ask something?",
+        "category": "chunk/meeting",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-parks-s1e1-take-two",
+      "sentence": "So, take two.",
+      "reading": null,
+      "meaning": "자, 다시 가죠.",
+      "phonetic_kr": "쏘, 테익 투.",
+      "order_index": 6,
+      "explanation": {
+        "key": "Take two. = 다시 한 번 가죠 / 재시도. 영화 '두 번째 테이크'에서 온 표현 — 실수 뒤 다시 시작.",
+        "situation": "장면 · 레슬리가 첫 시도가 어그러지자 다시 시작",
+        "drills": [
+          { "en": "So, take two.", "ko": "자, 다시 가죠.", "kr": "쏘, 테익 투." },
+          { "en": "Let's take it from the top.", "ko": "처음부터 다시 해 봅시다.", "kr": "렛츠 테이킷 프롬 더 탑." },
+          { "en": "Okay, let's try that again.", "ko": "좋아요, 다시 해 봐요.", "kr": "오케이, 렛츠 트라이 댓 어겐." },
+          { "en": "Can we do another take?", "ko": "한 번 더 가도 될까요?", "kr": "캔 위 두 어나더 테익?" }
+        ],
+        "grammar": [
+          { "struct": "take two (관용)", "body": "영화 촬영 '테이크2'. 일상에선 '한 번 더·다시 가자'. 첫 시도가 어그러졌을 때 가볍게." },
+          { "struct": "So, ~ (전환)", "body": "문장 앞 So = '자, 그럼' — 화제 전환·재시작 신호." }
+        ],
+        "chunks": [["So,", "쏘,"], ["take two.", "테익 투."]],
+        "phonemes": [["/t/", "take·two — 또렷한 't'"], ["/oʊ/", "So — '오우' 이중모음"]],
+        "mistake": "two 의 t 뒤 w 는 묵음 '투'. So 는 '쏘우'에 가깝게 — 짧은 '소' 아님.",
+        "similar": "Let's try that again. / From the top.",
+        "category": "idiom/daily",
+        "frequency": 6
+      }
+    }
+  ]
+}
