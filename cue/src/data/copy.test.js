@@ -48,11 +48,17 @@ describe('buildRead — 직전/이번 주/이번 달 통일 구조', () => {
     expect(r.sub).toBe('마지막으로 읽은 날은 6월 12일이에요');
     expect(r.subGap).toBe(true);
   });
-  it('완료 — hookDone, slot1=오늘', () => {
+  it('완료 — hookDone 없음(시안: 독서는 hook 항상 표시), 현재책 없으면 오늘 폴백', () => {
     const r = buildRead({ ...base, done: true, todayMin: 22, lastVal: 22, lastDaysAgo: 0, streak: 3 });
-    expect(r.hookDone).toEqual({ title: '오늘', strong: '22분', tail: ' 읽었어요' });
+    expect(r.hookDone).toBeUndefined();
+    expect(r.hook).toEqual({ title: '오늘', strong: '22분', tail: ' 읽었어요' });
     expect(r.records[0]).toEqual({ lb: '직전 읽기', v: '22분', note: '오늘' });
     expect(r.sub).toBe('3일 연속이에요');
+  });
+  it('완료 + 현재 책 — done 이어도 책 제목·진도 유지(가리지 않음)', () => {
+    const r = buildRead({ ...base, done: true, todayMin: 22, lastDaysAgo: 0, streak: 3, currentBook: { title: '웬만해선 아무렇지 않다', percent: 48 } });
+    expect(r.hookDone).toBeUndefined();
+    expect(r.hook).toEqual({ title: '「웬만해선 아무렇지 않다」', strong: '48%', tail: '까지 읽었어요' });
   });
   it('기록 전무 — 빈 슬롯·시작 문턱', () => {
     const r = buildRead({ ...base, lastVal: null, lastDaysAgo: null, streak: 0, best: 0, dayBest: 0, monthMin: 0, prevMonthMin: null, yearMin: 0, yearDays: 0 });
@@ -136,11 +142,12 @@ describe('buildLang — sceneTitle hook · 복습 대기 sub · 익힘 델타', 
     const r = buildLang({ ...base, scene: null });
     expect(r.hook).toEqual({ title: '마지막 학습은', strong: '5월 18일', tail: '이에요' });
   });
-  it('scene 날짜 ≠ 마지막 학습일 — 실제 학습일로 폴백 (hook·직전발화 모순 제거)', () => {
+  it('scene 날짜 ≠ 마지막 학습일 — 장면명 표시하되 날짜는 실제 학습일 (주제 보존·모순 제거)', () => {
     // 마지막 제목 레슨=5/11 이지만 그 뒤로도 학습(마지막 학습일=5/18)한 경우:
-    // hook 이 5/11(장면)을 '마지막'으로 찍으면 직전 발화(5/18)와 충돌 → 실제 학습일로 폴백
+    // 장면명(주제)은 보이되 날짜는 scene 자체(5/11)가 아닌 '실제 마지막 학습일'(5/18) 사용 →
+    // 직전 발화(5/18)와 일치해 모순 없이 '어떤 주제를 학습했는지' 표시.
     const r = buildLang({ ...base, scene: { title: '공원 설문', m: 5, d: 11 }, lastDaysAgo: 26 });
-    expect(r.hook).toEqual({ title: '마지막 학습은', strong: '5월 18일', tail: '이에요' });
+    expect(r.hook).toEqual({ title: '「공원 설문」', strong: '5월 18일', tail: '이 마지막이에요' });
   });
   it('완료 — 오늘 장면이면 hookDone 에 제목', () => {
     const r = buildLang({ ...base, done: true, todayMin: 40, lastDaysAgo: 0, streak: 1, scene: { title: '구덩이 약속', m: 6, d: 13 } });

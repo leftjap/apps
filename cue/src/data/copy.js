@@ -35,7 +35,7 @@ export function buildRead(c) {
       : none
         ? { title: '아직 기록이 없어요', strong: '', tail: '' }
         : { title: relativeDayLabel(c.lastDaysAgo), strong: `${c.lastVal}분`, tail: ' 읽었어요' },
-    hookDone: { title: '오늘', strong: `${c.todayMin}분`, tail: ' 읽었어요' },
+    // hookDone 없음 — 시안대로 독서는 done 이어도 책 제목·진도(hook)를 가리지 않고 항상 표시.
     ...subRead(c),
     records: [
       { lb: '직전 읽기', v: hasLast ? `${c.lastVal}분` : '—', note: hasLast ? (c.currentBook?.percent != null ? `${relativeDayLabel(c.lastDaysAgo)} · 이어서 ${c.currentBook.percent}%` : relativeDayLabel(c.lastDaysAgo)) : '' },
@@ -109,14 +109,12 @@ export function buildLang(c) {
   const sceneToday = c.scene && c.scene.m === c.today.getMonth() + 1 && c.scene.d === c.today.getDate();
   const none = !c.scene && c.lastDaysAgo == null;
   const hasLast = c.lastUtter != null && c.lastDaysAgo != null;
-  // scene(마지막 제목 레슨) 날짜가 실제 마지막 학습일과 같을 때만 장면 hook — 다르면 학습일로 폴백.
-  // (제목 레슨 이후 무제목 학습이 더 있으면 scene 날짜가 '마지막 학습'으로 오독되어 직전 발화와 충돌)
-  const lastMeta = c.lastDaysAgo != null ? dayMeta(c.lastDaysAgo, c.today) : null;
-  const sceneIsLastStudy = c.scene && lastMeta && c.scene.m === lastMeta.m && c.scene.d === lastMeta.d;
+  // hook = 마지막 학습 장면명(주제) + 날짜. 날짜는 scene 자체가 아닌 '실제 마지막 학습일'(lastDaysAgo)
+  // 을 써서, 제목 레슨 이후 무제목 학습이 더 있어도 직전 발화 날짜와 일치(모순 없이 주제 표시).
   return {
     name: '어학', cta: '오늘 분량 시작',
-    hook: sceneIsLastStudy
-      ? { title: `「${c.scene.title}」`, strong: `${c.scene.m}월 ${c.scene.d}일`, tail: '이 마지막이에요' }
+    hook: c.scene && c.lastDaysAgo != null
+      ? { title: `「${c.scene.title}」`, strong: mdLabel(c.lastDaysAgo, c.today), tail: '이 마지막이에요' }
       : c.lastDaysAgo != null
         ? { title: '마지막 학습은', strong: mdLabel(c.lastDaysAgo, c.today), tail: '이에요' }
         : { title: '아직 기록이 없어요', strong: '', tail: '' },
