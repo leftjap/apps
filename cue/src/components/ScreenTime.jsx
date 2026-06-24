@@ -89,14 +89,14 @@ function ModalRankCol({ label, rows }) {
 }
 
 /** 전체 기록 상세 모달 (화면 ②). period 는 레일과 공유 상태. 라벨은 일반형 고정(§4). */
-function DetailModal({ v, period, onPick, onClose }) {
+function DetailModal({ v, period, onPick, onClose, isMock }) {
   return (
     <div className="st-scrim" onClick={onClose}>
       <div className="st-card" onClick={(e) => e.stopPropagation()}>
         <div className="st-card-hd">
           <MonitorIcon size={18} stroke="#8a8676" />
           <span className="st-card-title">화면 시간 · 전체 기록</span>
-          <span className="st-flag">확인 필요 · 목업</span>
+          {isMock && <span className="st-flag">확인 필요 · 목업</span>}
           <PeriodToggle period={period} onPick={onPick} variant="modal" />
           <button className="st-close" onClick={onClose} aria-label="닫기">✕</button>
         </div>
@@ -141,10 +141,11 @@ function DetailModal({ v, period, onPick, onClose }) {
   );
 }
 
-export default function ScreenTime() {
+export default function ScreenTime({ data }) {
   const [period, setPeriod] = useState('day');
   const [detailOpen, setDetailOpen] = useState(false);
-  const v = screenTimeView(SCREENTIME_DATA, period);
+  const isMock = !data; // 실데이터(screentime_daily) 없으면 시안 목업 폴백 + "확인 필요·목업" 플래그
+  const v = screenTimeView(data || SCREENTIME_DATA, period);
 
   return (
     <aside className="st-rail" data-screen-label="화면시간 레일">
@@ -178,7 +179,7 @@ export default function ScreenTime() {
       </button>
 
       {detailOpen && (
-        <DetailModal v={v} period={period} onPick={setPeriod} onClose={() => setDetailOpen(false)} />
+        <DetailModal v={v} period={period} onPick={setPeriod} onClose={() => setDetailOpen(false)} isMock={isMock} />
       )}
     </aside>
   );

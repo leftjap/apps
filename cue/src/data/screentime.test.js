@@ -1,5 +1,84 @@
 import { describe, it, expect } from 'vitest';
-import { SCREENTIME_DATA, screenTimeRows, stackedTrend, screenTimeView } from './screentime.js';
+import {
+  SCREENTIME_DATA, screenTimeRows, stackedTrend, screenTimeView,
+  fmtDur, deltaLabel, appName, rankRows, buildScreenTimeData, TOOL_APP, TOOL_SITE,
+} from './screentime.js';
+
+describe('fmtDur — 초 → 시간 라벨', () => {
+  it('포맷 규칙', () => {
+    expect(fmtDur(0)).toBe('0분');
+    expect(fmtDur(2460)).toBe('41분');        // 41분
+    expect(fmtDur(6720)).toBe('1시간 52분');   // 112분
+    expect(fmtDur(14400)).toBe('4시간');       // 240분 정각
+    expect(fmtDur(32400)).toBe('9시간');       // 540분 정각
+  });
+});
+
+describe('deltaLabel — 증감 (▲/▼ + 접두)', () => {
+  it('감소·증가·접두', () => {
+    expect(deltaLabel(2460, 3780, '어제보다')).toBe('어제보다 ▼22분'); // 41-63
+    expect(deltaLabel(2460, 1500, '')).toBe('▲16분');                  // 41-25
+    expect(deltaLabel(2460, 0, '')).toBe('▲41분');                     // prev 0 → 현재값만큼 증가
+  });
+});
+
+describe('appName — 번들 ID → 표시 이름', () => {
+  it('알려진 앱·도구·폴백', () => {
+    expect(appName('com.google.Chrome')).toBe('Chrome');
+    expect(appName('kr.co.millie.MillieShelf')).toBe('밀리의 서재');
+    expect(appName('com.apple.finder')).toBe('Finder');     // 폴백: 마지막 세그먼트
+    expect(appName('xyz.foo.bar')).toBe('Bar');
+  });
+});
+
+describe('rankRows — 상위 N + 기타 병합 + 도구 보장', () => {
+  it('도구는 topN 밖이어도 표시·올리브, 나머지는 기타', () => {
+    const agg = { 'com.google.Chrome': 6000, 'com.blizzard.Starcraft': 3000, 'md.obsidian': 1000, 'x.y.z': 500, 'kr.co.millie.MillieShelf': 60 };
+    const rows = rankRows(agg, (n) => n === TOOL_APP, appName, 3);
+    expect(rows[0]).toMatchObject({ n: 'Chrome', v: 100 });
+    const tool = rows.find((r) => r.tool);
+    expect(tool).toMatchObject({ n: '밀리의 서재', v: 1, tool: true }); // topN(3) 밖이지만 포함
+    const etc = rows.find((r) => r.other);
+    expect(etc).toMatchObject({ n: '기타', other: true });
+  });
+});
+
+describe('buildScreenTimeData — screentime_daily → 뷰 shape (실데이터 경로)', () => {
+  const today = new Date(2026, 5, 24); // 2026-06-24
+  const rows = [
+    { date: '2026-06-24', kind: 'app', name: 'com.google.Chrome', seconds: 6000 },          // 100분
+    { date: '2026-06-24', kind: 'app', name: 'kr.co.millie.MillieShelf', seconds: 1200 },    // 20분 (도구)
+    { date: '2026-06-24', kind: 'site', name: 'leftjap.github.io', seconds: 900 },           // 15분 (도구)
+    { date: '2026-06-24', kind: 'site', name: 'youtube.com', seconds: 1800 },                // 30분
+    { date: '2026-06-23', kind: 'app', name: 'com.google.Chrome', seconds: 12000 },          // 200분
+    { date: '2026-06-23', kind: 'app', name: 'kr.co.millie.MillieShelf', seconds: 600 },     // 10분
+  ];
+  const d = buildScreenTimeData(rows, today).day;
+
+  it('total = 앱 합(사이트는 브라우저 내부 분해라 중복 제외)', () => {
+    expect(d.total).toBe('2시간');           // 6000+1200=7200s=120분
+  });
+  it('내 도구 = 밀리(앱)+leftjap(사이트), 그 외 = total−도구', () => {
+    expect(d.toolTotal).toBe('35분');        // 1200+900=2100s=35분
+    expect(d.otherTotal).toBe('1시간 25분');  // 7200-2100=5100s=85분
+    expect(d.toolShare).toBe('29%');         // round(2100/7200*100)
+    expect(d.bkRead).toBe('20분');           // 밀리 앱
+    expect(d.bkWeb).toBe('15분');            // leftjap 사이트
+  });
+  it('어제 대비 증감', () => {
+    expect(d.totalDelta).toBe('어제보다 ▼1시간 30분'); // 120 - 210 = -90분
+  });
+  it('앱·사이트 랭킹 + 도구 플래그', () => {
+    expect(d.apps[0]).toMatchObject({ n: 'Chrome', t: '1시간 40분', v: 100 });
+    expect(d.apps.find((a) => a.tool)).toMatchObject({ n: '밀리의 서재', v: 20, tool: true });
+    expect(d.sites.find((s) => s.tool)).toMatchObject({ n: 'leftjap.github.io', v: 15, tool: true });
+  });
+  it('추세 7일 (오늘=120, 어제=210)', () => {
+    expect(d.trendTotals).toHaveLength(7);
+    expect(d.trendTotals[6]).toBe(120);
+    expect(d.trendTotals[5]).toBe(210);
+  });
+});
 
 describe('screenTimeRows — §5 막대 색 규칙 (lerp 보간·강조·올리브 도구)', () => {
   const rows = screenTimeRows(SCREENTIME_DATA.day.apps); // max=112

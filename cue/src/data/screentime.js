@@ -116,6 +116,143 @@ export function stackedTrend(totals, tool, height) {
 
 const SPAN_LABEL = { day: '오늘', week: '이번 주', month: '이번 달' };
 
+/* ───────── 실데이터 어댑터 (screentime_daily → 뷰 shape) ─────────
+   screentime_daily(owner_id·date·kind('app'|'site')·name·seconds) 를 일/주/월 뷰로.
+   total = 앱 합(사이트는 브라우저 내부 도메인 분해라 중복 제외, §8.1 정합성).
+   내 도구 = 밀리의 서재(앱) + leftjap.github.io(사이트). 그 외 = total − 도구. */
+
+// 내 도구(올리브) — cue 가 정체를 확실히 아는 자기 도구만 (§3·§8)
+export const TOOL_APP = 'kr.co.millie.MillieShelf';   // 독서 = 밀리의 서재
+export const TOOL_SITE = 'leftjap.github.io';          // 글쓰기·어학
+
+// 앱 번들 ID → 표시 이름 (상위·알려진 앱. 미상은 fallback). 사이트는 도메인 그대로.
+const APP_NAMES = {
+  'com.google.Chrome': 'Chrome', 'com.blizzard.Starcraft': '스타크래프트',
+  'com.anthropic.claudefordesktop': 'Claude', 'md.obsidian': 'Obsidian',
+  'kr.co.millie.MillieShelf': '밀리의 서재', 'ru.keepcoder.Telegram': 'Telegram',
+  'net.battle.app': 'Battle.net', 'com.apple.MobileSMS': '메시지', 'com.apple.finder': 'Finder',
+  'com.tinyspeck.slackmacgap': 'Slack', 'com.kakao.KakaoTalkMac': '카카오톡',
+  'com.microsoft.VSCode': 'VS Code', 'com.microsoft.onenote.mac': 'OneNote',
+  'com.apple.systempreferences': '시스템 설정', 'com.apple.Preview': '미리보기',
+  'com.apple.AppStore': 'App Store', 'com.apple.FaceTime': 'FaceTime', 'net.shinyfrog.bear': 'Bear',
+};
+
+/** 번들 ID → 표시 이름. 미상이면 마지막 세그먼트 대문자화. */
+export function appName(id) {
+  if (APP_NAMES[id]) return APP_NAMES[id];
+  const seg = String(id || '').split('.').pop() || '';
+  return seg ? seg.charAt(0).toUpperCase() + seg.slice(1) : '(알 수 없음)';
+}
+
+/** 초 → "N시간 M분" / "N시간" / "M분" (0 → "0분"). 분은 반올림. */
+export function fmtDur(sec) {
+  const min = Math.round((Number(sec) || 0) / 60);
+  const h = Math.floor(min / 60), m = min % 60;
+  if (h === 0) return `${m}분`;
+  if (m === 0) return `${h}시간`;
+  return `${h}시간 ${m}분`;
+}
+
+/** 증감 라벨 — "▲6분" / "어제보다 ▼22분". prev 0 이면 현재값만큼 증가로 표시. */
+export function deltaLabel(curSec, prevSec, prefix = '') {
+  const diffMin = Math.round((Number(curSec) || 0) / 60) - Math.round((Number(prevSec) || 0) / 60);
+  const arrow = diffMin >= 0 ? '▲' : '▼';
+  return `${prefix ? prefix + ' ' : ''}${arrow}${fmtDur(Math.abs(diffMin) * 60)}`;
+}
+
+/** {name:sec} → 랭킹 행 [{n,t,v,tool?,other?}]. 상위 topN(+도구 보장) + 나머지 기타 병합. */
+export function rankRows(agg, isTool, displayFn, topN) {
+  const items = Object.entries(agg).map(([name, sec]) => ({ name, sec }))
+    .filter((x) => x.sec > 0).sort((a, b) => b.sec - a.sec);
+  const named = [], rest = [];
+  for (const x of items) {
+    if (named.length < topN || isTool(x.name)) named.push(x);
+    else rest.push(x);
+  }
+  const rows = named.map((x) => {
+    const r = { n: displayFn(x.name), t: fmtDur(x.sec), v: Math.round(x.sec / 60) };
+    if (isTool(x.name)) r.tool = true;
+    return r;
+  });
+  const restSec = rest.reduce((a, x) => a + x.sec, 0);
+  if (restSec > 0) rows.push({ n: '기타', t: fmtDur(restSec), v: Math.round(restSec / 60), other: true });
+  return rows;
+}
+
+const _p2 = (n) => String(n).padStart(2, '0');
+const _key = (d) => `${d.getFullYear()}-${_p2(d.getMonth() + 1)}-${_p2(d.getDate())}`;
+const _addDays = (base, n) => { const x = new Date(base); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + n); return x; };
+const _weekMon = (base) => { const x = new Date(base); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+
+const _sumApps = (rows, s, e) => rows.reduce((t, r) => (r.kind === 'app' && r.date >= s && r.date <= e ? t + r.seconds : t), 0);
+const _sumOne = (rows, s, e, kind, name) => rows.reduce((t, r) => (r.kind === kind && r.name === name && r.date >= s && r.date <= e ? t + r.seconds : t), 0);
+const _toolSec = (rows, s, e) => _sumOne(rows, s, e, 'app', TOOL_APP) + _sumOne(rows, s, e, 'site', TOOL_SITE);
+function _aggKind(rows, s, e, kind) {
+  const a = {};
+  for (const r of rows) if (r.kind === kind && r.date >= s && r.date <= e) a[r.name] = (a[r.name] || 0) + r.seconds;
+  return a;
+}
+
+/** 한 기간(day|week|month) 의 뷰 shape — SCREENTIME_DATA[period] 와 동일 키. */
+function buildPeriod(rows, today, period) {
+  const base = new Date(today); base.setHours(0, 0, 0, 0);
+  const curE = _key(base);
+  let curS, prevS, prevE, buckets, axisStart, axisEnd, prefix;
+  if (period === 'day') {
+    curS = curE;
+    prevS = prevE = _key(_addDays(base, -1));
+    buckets = Array.from({ length: 7 }, (_, i) => { const k = _key(_addDays(base, i - 6)); return [k, k]; });
+    axisStart = '7일 전'; axisEnd = '오늘'; prefix = '어제보다';
+  } else if (period === 'week') {
+    const mon = _weekMon(base); curS = _key(mon);
+    prevS = _key(_addDays(mon, -7)); prevE = _key(_addDays(mon, -1));
+    buckets = Array.from({ length: 8 }, (_, i) => { const m = _addDays(mon, (i - 7) * 7); return [_key(m), i === 7 ? curE : _key(_addDays(m, 6))]; });
+    axisStart = '8주 전'; axisEnd = '이번 주'; prefix = '지난주보다';
+  } else {
+    curS = _key(new Date(base.getFullYear(), base.getMonth(), 1));
+    prevS = _key(new Date(base.getFullYear(), base.getMonth() - 1, 1));
+    prevE = _key(new Date(base.getFullYear(), base.getMonth(), 0));
+    buckets = Array.from({ length: 6 }, (_, i) => {
+      const mf = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
+      return [_key(mf), i === 5 ? curE : _key(new Date(mf.getFullYear(), mf.getMonth() + 1, 0))];
+    });
+    axisStart = `${new Date(base.getFullYear(), base.getMonth() - 5, 1).getMonth() + 1}월`;
+    axisEnd = `${base.getMonth() + 1}월`; prefix = '지난달보다';
+  }
+  const total = _sumApps(rows, curS, curE);
+  const toolSec = _toolSec(rows, curS, curE);
+  const prevTotal = _sumApps(rows, prevS, prevE);
+  // 비중은 '표시되는 분' 기준으로 계산해 헤드라인 숫자와 어긋나지 않게 (예: 5분/69분 ↔ 7%)
+  const totalMin = Math.round(total / 60), toolMin = Math.round(toolSec / 60);
+  const share = totalMin > 0 ? `${Math.round((toolMin / totalMin) * 100)}%` : '0%';
+  // 이전 기간에 데이터가 전혀 없으면(추적 시작 전) 오해 소지의 증감 미표시
+  const hasPrev = prevTotal > 0;
+  return {
+    total: fmtDur(total),
+    totalDelta: hasPrev ? deltaLabel(total, prevTotal, prefix) : '',
+    toolTotal: fmtDur(toolSec),
+    toolDelta: hasPrev ? deltaLabel(toolSec, _toolSec(rows, prevS, prevE), '') : '',
+    toolShare: share, toolPct: share,
+    otherTotal: fmtDur(Math.max(total - toolSec, 0)),
+    bkRead: fmtDur(_sumOne(rows, curS, curE, 'app', TOOL_APP)),
+    bkWeb: fmtDur(_sumOne(rows, curS, curE, 'site', TOOL_SITE)),
+    axisStart, axisEnd,
+    trendTotals: buckets.map(([s, e]) => Math.round(_sumApps(rows, s, e) / 60)),
+    trendTool: buckets.map(([s, e]) => Math.round(_toolSec(rows, s, e) / 60)),
+    apps: rankRows(_aggKind(rows, curS, curE, 'app'), (n) => n === TOOL_APP, appName, 6),
+    sites: rankRows(_aggKind(rows, curS, curE, 'site'), (n) => n === TOOL_SITE, (n) => n, 6),
+  };
+}
+
+/** screentime_daily 행 배열 → { day, week, month } (screenTimeView 입력). */
+export function buildScreenTimeData(rows, today) {
+  return {
+    day: buildPeriod(rows, today, 'day'),
+    week: buildPeriod(rows, today, 'week'),
+    month: buildPeriod(rows, today, 'month'),
+  };
+}
+
 /** 기간 → 파생 렌더 입력 (§7). period 변경 시 라벨·헤드라인·랭킹·추세 일괄 재계산. */
 export function screenTimeView(data, period) {
   const d = data[period];

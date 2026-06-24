@@ -6,6 +6,7 @@ import {
   useTweaks, TweaksPanel, TweakSection, TweakSlider, TweakToggle,
 } from './Tweaks.jsx';
 import { useApps } from '../data/useApps.js';
+import { useScreenTime } from '../data/useScreenTime.js';
 import { dueOf, p2, startOfToday, WD } from '../data/transforms.js';
 import { signInWithGoogle } from '../services/auth.js';
 import AccountMenu from './AccountMenu.jsx';
@@ -43,6 +44,7 @@ function useClock(live, demoHour) {
 
 function Dashboard({ apps, t }) {
   const clock = useClock(t.liveTime, t.demoHour);
+  const screenData = useScreenTime(t.demoMode);
   const today = startOfToday();
   const [openId, setOpenId] = useState('read'); // 첫 행 기본 펼침 (§2 시안 1)
   const [stats, setStats] = useState(false);
@@ -77,7 +79,7 @@ function Dashboard({ apps, t }) {
               ))}
             </ul>
           </main>
-          <ScreenTime />
+          <ScreenTime data={screenData} />
         </div>
       )}
     </div>

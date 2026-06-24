@@ -25,7 +25,7 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 
 - 레이아웃: App 의 `.layout`(2단 grid `minmax(0,1fr) 296px`) = 메인(Hero+활동행) + 화면시간 레일(`ScreenTime`). 좁은 화면은 1단 폴백.
 - `src/components/` — App(조립·Gate·Tweaks·2단 레이아웃) / Hero(시계·하루 고리·타임라인) / AppRow(활동 행+월 캘린더+펼침) / StatsView(8주 통계) / ScreenTime(화면시간 레일+전체기록 모달) / icons / AccountMenu / Tweaks
-- `src/data/` — adapter(`buildRealApps`: Supabase→v9 shape(직전/이번 주/추세·pace·statRecords), YTD 윈도우) / copy(모든 사용자 문장·beat 3분할 배열 — §5·§9 단일 검사 지점) / transforms(순수 수치 함수, `countRowsInWeek/Month`·`countPRs` 등) / flow(`clusterPoints`·`sweepLefts` — 타임라인 클러스터 라벨) / mock(`MOCK_APPS` 데모=v9 시안 스냅샷) / screentime(화면시간 §5 `screenTimeRows`·§6 `stackedTrend`·§8 목업 `SCREENTIME_DATA` — ⚠️ 전부 placeholder, 실 스키마 미정 "확인 필요·목업") / useApps / launch
+- `src/data/` — adapter(`buildRealApps`: Supabase→v9 shape(직전/이번 주/추세·pace·statRecords), YTD 윈도우) / copy(모든 사용자 문장·beat 3분할 배열 — §5·§9 단일 검사 지점) / transforms(순수 수치 함수, `countRowsInWeek/Month`·`countPRs` 등) / flow(`clusterPoints`·`sweepLefts` — 타임라인 클러스터 라벨) / mock(`MOCK_APPS` 데모=v9 시안 스냅샷) / screentime(화면시간 §5 `screenTimeRows`·§6 `stackedTrend` + **실데이터 어댑터** `buildScreenTimeData`(screentime_daily→일/주/월: total=앱합·내도구=밀리앱+leftjap사이트·랭킹·추세·증감) / `SCREENTIME_DATA`=데모 목업 폴백) / useScreenTime(screentime_daily fetch·hook) / useApps / launch
 - due 판정(§6): `transforms.dueOf` — 보통 시각(최근 4주 중앙값) 지난 미완료 중 가장 이른 1개
 
 ## 데이터 (실연동)
@@ -39,6 +39,7 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 | 글쓰기 write | `today_entries` | 매수(200자=1매), kind 라벨(KIND_LABEL). 직전=직전 글 매수·kind·날짜, 이번 주=편수(행)/제안3편, 추세=이번 달 매수 |
 | 어학 lang | `study_daily_stats` + `study_review_queue` + `study_today_lessons` | utterance·new_sentences·study_time. 직전=직전 발화·신규, sub=복습 대기(next_review≤오늘), 추세=이번 달 익힘 델타. 익힌 문장=활성 언어 큐. **활성 언어 한정**: study 는 en/ja 둘 다 매일 today_lessons 시딩하나 daily_stats 는 실제 학습만 기록 → `pickActiveLang`(최신 daily_stats lang) 으로 전 study 쿼리 필터 (미학습 언어 시드 누출 차단) |
 | 운동 gym | `gym_sessions` | `duration_min`·`total_volume`·`tags`(부위 2개, PARTS)·`blocks` PR. 주 4일 실제 목표, 직전=부위2+★PR, 추세=이번 달 횟수. iPhone 전용 — CTA 무동작 |
+| 화면시간 | `screentime_daily` | `date`·`kind`(app/site)·`name`(앱 번들ID/도메인)·`seconds`. 로컬 데몬 적재. 내 도구(올리브)=밀리앱(`kr.co.millie.MillieShelf`)+leftjap사이트. total=앱 합(사이트는 브라우저 내부 분해). `useScreenTime`→`buildScreenTimeData`. 데모는 `SCREENTIME_DATA` 목업 |
 
 `src/data/transforms.js`·`copy.js` = 순수 함수 — 단위 테스트 대상 (`pnpm vitest run`).
 데모 모드(Tweaks, localStorage 키 `cue.tweaks.v8`)는 `mock.js` 시안 목업 사용 — due 는 데모에서도 실제 `dueOf` 가 시각으로 판정.
