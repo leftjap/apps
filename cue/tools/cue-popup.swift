@@ -22,6 +22,12 @@ func log(_ s: String) {
   else { try? line.write(toFile: logPath, atomically: true, encoding: .utf8) }
 }
 
+// borderless 창은 기본 canBecomeKey=false → key 가 못 돼 AppKit 이 커서(cursor:pointer)를 갱신 안 함. 오버라이드로 key 가능하게.
+final class KeyableWindow: NSWindow {
+  override var canBecomeKey: Bool { true }
+  override var canBecomeMain: Bool { true }
+}
+
 final class Controller: NSObject, WKScriptMessageHandler {
   var window: NSWindow?
   var web: WKWebView?
@@ -64,7 +70,7 @@ final class Controller: NSObject, WKScriptMessageHandler {
     var c = URLComponents(string: "file://\(cardPath)")!
     c.queryItems = [URLQueryItem(name: "state", value: state)]
     w.load(URLRequest(url: c.url!))
-    let win = NSWindow(contentRect: screen, styleMask: [.borderless], backing: .buffered, defer: false)
+    let win = KeyableWindow(contentRect: screen, styleMask: [.borderless], backing: .buffered, defer: false)
     win.isOpaque = false; win.backgroundColor = .clear; win.level = .modalPanel
     win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
     win.contentView = w
@@ -101,6 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       ctrl.showCard(st)
       Timer.scheduledTimer(withTimeInterval: 1.6, repeats: false) { [weak self] _ in
         guard let web = self?.ctrl.web else { return }
+        if let win = self?.ctrl.window { log("selftest keywin canBecomeKey=\(win.canBecomeKey) isKey=\(win.isKeyWindow) appActive=\(NSApp.isActive)") }
         // 1) 네이티브 WKWebView 가 실제 렌더한 픽셀을 PNG 로 저장(컴포지터 필터 우회 화면 검증)
         web.takeSnapshot(with: WKSnapshotConfiguration()) { image, err in
           if let image = image, let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
