@@ -78,6 +78,25 @@ describe('buildScreenTimeData — screentime_daily → 뷰 shape (실데이터 �
     expect(d.trendTotals[6]).toBe(120);
     expect(d.trendTotals[5]).toBe(210);
   });
+
+  it('주 증감 — 같은 경과 구간끼리 (이번주 월~수 vs 지난주 월~수, 부분vs전체 왜곡 방지)', () => {
+    const wed = new Date(2026, 5, 24); // 수요일, 이번주 월=06-22
+    const r = [
+      { date: '2026-06-22', kind: 'app', name: 'com.google.Chrome', seconds: 600 }, // 이번주 월
+      { date: '2026-06-24', kind: 'app', name: 'com.google.Chrome', seconds: 600 }, // 이번주 수 → 합 20분
+      { date: '2026-06-15', kind: 'app', name: 'com.google.Chrome', seconds: 300 }, // 지난주 월 (비교 포함)
+      { date: '2026-06-17', kind: 'app', name: 'com.google.Chrome', seconds: 300 }, // 지난주 수 (비교 포함) → 10분
+      { date: '2026-06-20', kind: 'app', name: 'com.google.Chrome', seconds: 9000 }, // 지난주 토 (경과 구간 밖 → 제외)
+    ];
+    const w = buildScreenTimeData(r, wed).week;
+    expect(w.totalDelta).toBe('지난주보다 ▲10분'); // 06-20(토) 150분은 비교에서 제외돼야 정상
+  });
+
+  it('월 증감 — 지난달 같은 날짜까지 데이터 없으면 미표시 (오해성 거대 증감 방지)', () => {
+    const r = [{ date: '2026-06-10', kind: 'app', name: 'com.google.Chrome', seconds: 6000 }];
+    const m = buildScreenTimeData(r, new Date(2026, 5, 24)).month; // 5월 1~24 데이터 없음
+    expect(m.totalDelta).toBe('');
+  });
 });
 
 describe('screenTimeRows — §5 막대 색 규칙 (lerp 보간·강조·올리브 도구)', () => {

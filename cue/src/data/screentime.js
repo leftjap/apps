@@ -205,13 +205,19 @@ function buildPeriod(rows, today, period) {
     axisStart = '7일 전'; axisEnd = '오늘'; prefix = '어제보다';
   } else if (period === 'week') {
     const mon = _weekMon(base); curS = _key(mon);
-    prevS = _key(_addDays(mon, -7)); prevE = _key(_addDays(mon, -1));
+    // 증감은 '같은 경과 구간'끼리 — 지난주 월~(이번 주 경과일과 동일)까지 (부분 vs 전체 왜곡 방지)
+    const elapsed = Math.round((base - mon) / 86400000); // 이번 주 경과일 (월=0)
+    prevS = _key(_addDays(mon, -7)); prevE = _key(_addDays(mon, -7 + elapsed));
     buckets = Array.from({ length: 8 }, (_, i) => { const m = _addDays(mon, (i - 7) * 7); return [_key(m), i === 7 ? curE : _key(_addDays(m, 6))]; });
     axisStart = '8주 전'; axisEnd = '이번 주'; prefix = '지난주보다';
   } else {
     curS = _key(new Date(base.getFullYear(), base.getMonth(), 1));
-    prevS = _key(new Date(base.getFullYear(), base.getMonth() - 1, 1));
-    prevE = _key(new Date(base.getFullYear(), base.getMonth(), 0));
+    // 증감은 지난달 1일~(이번 달과 동일한 날짜)까지 — month-to-date 동일 비교
+    const dom = base.getDate();
+    const pFirst = new Date(base.getFullYear(), base.getMonth() - 1, 1);
+    const pLastDom = new Date(base.getFullYear(), base.getMonth(), 0).getDate();
+    prevS = _key(pFirst);
+    prevE = _key(new Date(pFirst.getFullYear(), pFirst.getMonth(), Math.min(dom, pLastDom)));
     buckets = Array.from({ length: 6 }, (_, i) => {
       const mf = new Date(base.getFullYear(), base.getMonth() - (5 - i), 1);
       return [_key(mf), i === 5 ? curE : _key(new Date(mf.getFullYear(), mf.getMonth() + 1, 0))];

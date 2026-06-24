@@ -39,7 +39,9 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 | 글쓰기 write | `today_entries` | 매수(200자=1매), kind 라벨(KIND_LABEL). 직전=직전 글 매수·kind·날짜, 이번 주=편수(행)/제안3편, 추세=이번 달 매수 |
 | 어학 lang | `study_daily_stats` + `study_review_queue` + `study_today_lessons` | utterance·new_sentences·study_time. 직전=직전 발화·신규, sub=복습 대기(next_review≤오늘), 추세=이번 달 익힘 델타. 익힌 문장=활성 언어 큐. **활성 언어 한정**: study 는 en/ja 둘 다 매일 today_lessons 시딩하나 daily_stats 는 실제 학습만 기록 → `pickActiveLang`(최신 daily_stats lang) 으로 전 study 쿼리 필터 (미학습 언어 시드 누출 차단) |
 | 운동 gym | `gym_sessions` | `duration_min`·`total_volume`·`tags`(부위 2개, PARTS)·`blocks` PR. 주 4일 실제 목표, 직전=부위2+★PR, 추세=이번 달 횟수. iPhone 전용 — CTA 무동작 |
-| 화면시간 | `screentime_daily` | `date`·`kind`(app/site)·`name`(앱 번들ID/도메인)·`seconds`. 로컬 데몬 적재. 내 도구(올리브)=밀리앱(`kr.co.millie.MillieShelf`)+leftjap사이트. total=앱 합(사이트는 브라우저 내부 분해). `useScreenTime`→`buildScreenTimeData`. 데모는 `SCREENTIME_DATA` 목업 |
+| 화면시간 | `screentime_daily` | `date`·`kind`(app/site)·`name`(앱 번들ID/도메인)·`seconds`. 내 도구(올리브)=밀리앱(`kr.co.millie.MillieShelf`)+leftjap사이트. total=앱 합(사이트는 브라우저 내부 분해). `useScreenTime`→`buildScreenTimeData`. 증감=**같은 경과 구간 비교**(이번주 월~today vs 지난주 동일·이번달 1~today vs 지난달 동일), 비교 데이터 없으면 미표시. 데모는 `SCREENTIME_DATA` 목업 |
+
+**화면시간 데몬 (시스템, repo 밖 `~/.local/bin/`)**: `app-usage-sync.py`(앱=macOS knowledgeC `/app/usage` **∩ `/display/isBacklit`(화면 켜짐)** — knowledgeC 는 화면 OFF/자리비움 중에도 앱을 '사용중'으로 기록해 과대(예 06-19 raw 691분→교정 253분), 화면켜짐 교차로 제거. `APP_SYNC_DAYS` env=윈도우, 기본 3) + `chrome-site-poll.py`(사이트=30초 폴링, Chrome 최전면+idle<5분) + `.sh` 래퍼(launchd 호출). launchd: `com.gio.app-usage-sync`(900초)·`com.gio.chrome-site-poll`(30초).
 
 `src/data/transforms.js`·`copy.js` = 순수 함수 — 단위 테스트 대상 (`pnpm vitest run`).
 데모 모드(Tweaks, localStorage 키 `cue.tweaks.v8`)는 `mock.js` 시안 목업 사용 — due 는 데모에서도 실제 `dueOf` 가 시각으로 판정.
