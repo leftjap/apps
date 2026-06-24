@@ -23,8 +23,9 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 
 ## 구조
 
-- `src/components/` — App(조립·Gate·Tweaks) / Hero(시계·하루 고리·타임라인) / AppRow(활동 행+월 캘린더+펼침) / StatsView(8주 통계) / icons / AccountMenu / Tweaks
-- `src/data/` — adapter(`buildRealApps`: Supabase→v9 shape(직전/이번 주/추세·pace·statRecords), YTD 윈도우) / copy(모든 사용자 문장·beat 3분할 배열 — §5·§9 단일 검사 지점) / transforms(순수 수치 함수, `countRowsInWeek/Month`·`countPRs` 등) / flow(`clusterPoints`·`sweepLefts` — 타임라인 클러스터 라벨) / mock(`MOCK_APPS` 데모=v9 시안 스냅샷) / useApps / launch
+- 레이아웃: App 의 `.layout`(2단 grid `minmax(0,1fr) 296px`) = 메인(Hero+활동행) + 화면시간 레일(`ScreenTime`). 좁은 화면은 1단 폴백.
+- `src/components/` — App(조립·Gate·Tweaks·2단 레이아웃) / Hero(시계·하루 고리·타임라인) / AppRow(활동 행+월 캘린더+펼침) / StatsView(8주 통계) / ScreenTime(화면시간 레일+전체기록 모달) / icons / AccountMenu / Tweaks
+- `src/data/` — adapter(`buildRealApps`: Supabase→v9 shape(직전/이번 주/추세·pace·statRecords), YTD 윈도우) / copy(모든 사용자 문장·beat 3분할 배열 — §5·§9 단일 검사 지점) / transforms(순수 수치 함수, `countRowsInWeek/Month`·`countPRs` 등) / flow(`clusterPoints`·`sweepLefts` — 타임라인 클러스터 라벨) / mock(`MOCK_APPS` 데모=v9 시안 스냅샷) / screentime(화면시간 §5 `screenTimeRows`·§6 `stackedTrend`·§8 목업 `SCREENTIME_DATA` — ⚠️ 전부 placeholder, 실 스키마 미정 "확인 필요·목업") / useApps / launch
 - due 판정(§6): `transforms.dueOf` — 보통 시각(최근 4주 중앙값) 지난 미완료 중 가장 이른 1개
 
 ## 데이터 (실연동)

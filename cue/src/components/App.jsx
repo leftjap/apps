@@ -12,6 +12,7 @@ import AccountMenu from './AccountMenu.jsx';
 import Hero from './Hero.jsx';
 import AppRow from './AppRow.jsx';
 import StatsView from './StatsView.jsx';
+import ScreenTime from './ScreenTime.jsx';
 
 const TWEAK_DEFAULTS = {
   demoMode: false, // 기본 실데이터 — 데모는 Tweaks 에서
@@ -59,22 +60,25 @@ function Dashboard({ apps, t }) {
       {stats ? (
         <StatsView apps={apps} onClose={() => setStats(false)} />
       ) : (
-        <>
-          <Hero clock={clock} showSec={t.showSec} apps={apps} dueId={dueId} />
-          <ul className="rows" data-screen-label="활동 목록">
-            {apps.map((app) => (
-              <AppRow
-                key={app.id}
-                app={app}
-                due={app.id === dueId}
-                open={openId === app.id}
-                today={today}
-                onToggle={() => setOpenId(openId === app.id ? null : app.id)}
-                onStats={() => setStats(true)}
-              />
-            ))}
-          </ul>
-        </>
+        <div className="layout">
+          <main className="dash-main">
+            <Hero clock={clock} showSec={t.showSec} apps={apps} dueId={dueId} />
+            <ul className="rows" data-screen-label="활동 목록">
+              {apps.map((app) => (
+                <AppRow
+                  key={app.id}
+                  app={app}
+                  due={app.id === dueId}
+                  open={openId === app.id}
+                  today={today}
+                  onToggle={() => setOpenId(openId === app.id ? null : app.id)}
+                  onStats={() => setStats(true)}
+                />
+              ))}
+            </ul>
+          </main>
+          <ScreenTime />
+        </div>
       )}
     </div>
   );
