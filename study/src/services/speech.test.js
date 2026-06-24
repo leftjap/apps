@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { pickVoice, buildAzureSSML, VOICE_DEFAULTS, SPEAKER_VOICES, normalizeReferenceText } from './speech.js';
+import { pickVoice, buildAzureSSML, VOICE_DEFAULTS, SPEAKER_VOICES, normalizeReferenceText, createSilenceAutoStop } from './speech.js';
 
 // Wave 11.22 — speech.js Azure adapter 단위 테스트
 // vi.mock 의 hoisting 으로 import 전에 mock. fetch 는 globalThis 패치.
@@ -835,5 +835,39 @@ describe('Azure SSML — voice/style 매핑', () => {
     expect(ssml).toContain('<voice name="en-US-DavisMultilingualNeural">');
     expect(ssml).toContain('<mstts:express-as style="empathetic">');
     expect(ssml).toContain('<prosody rate="0.9">');
+  });
+});
+
+// 녹음 자동종료 VAD 판정 (말 끝나면 자동 멈춤). 순수 함수 — chunk 마다 feed(peak, nowMs).
+describe('createSilenceAutoStop — 무음 자동종료 판정', () => {
+  it('발화 전 앞 침묵에는 멈추지 않음 (복습 떠올리기 보호)', () => {
+    const vad = createSilenceAutoStop({ speechPeak: 0.08, silencePeak: 0.05, hangoverMs: 1200 });
+    for (let t = 0; t <= 5000; t += 100) expect(vad.feed(0, t)).toBe(false); // 5초 무음이어도 안 멈춤
+    expect(vad.speechStarted).toBe(false);
+  });
+
+  it('발화 후 hangover 만큼 무음 지속 → 종료', () => {
+    const vad = createSilenceAutoStop({ speechPeak: 0.08, silencePeak: 0.05, hangoverMs: 1200 });
+    expect(vad.feed(0.3, 0)).toBe(false);    // 발화 시작
+    expect(vad.feed(0.0, 500)).toBe(false);  // 0.5s 무음
+    expect(vad.feed(0.0, 1100)).toBe(false); // 1.1s (아직)
+    expect(vad.feed(0.0, 1300)).toBe(true);  // 1.3s ≥ hangover → 종료
+  });
+
+  it('발화 중 단어 사이 짧은 무음은 리셋 (조기 종료 안 함)', () => {
+    const vad = createSilenceAutoStop({ speechPeak: 0.08, silencePeak: 0.05, hangoverMs: 1200 });
+    vad.feed(0.3, 0);
+    expect(vad.feed(0, 300)).toBe(false);    // 0.3s 무음
+    expect(vad.feed(0.3, 400)).toBe(false);  // 다시 발화 → 리셋
+    expect(vad.feed(0, 1000)).toBe(false);   // 리셋 후 0.6s
+    expect(vad.feed(0, 1700)).toBe(true);    // 리셋 후 1.3s → 종료
+  });
+
+  it('중간 레벨(silencePeak~speechPeak)은 voice 로 간주해 hangover 리셋', () => {
+    const vad = createSilenceAutoStop({ speechPeak: 0.08, silencePeak: 0.05, hangoverMs: 1000 });
+    vad.feed(0.3, 0);                          // 발화 시작
+    expect(vad.feed(0.06, 900)).toBe(false);  // 중간 레벨 → voice → 리셋
+    expect(vad.feed(0, 1700)).toBe(false);    // 리셋 후 0.8s
+    expect(vad.feed(0, 2000)).toBe(true);     // 리셋 후 1.1s → 종료
   });
 });

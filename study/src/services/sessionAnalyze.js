@@ -30,12 +30,12 @@ function mockResult(reason) {
  *   - 권한 거부: { error: 'permission_denied' }
  *   - 그 외 (미지원·앱 미주입·throw): { error: 'unavailable' }
  */
-export async function startMicRecording() {
+export async function startMicRecording(opts = {}) {
   if (typeof window === 'undefined' || !window.studySpeech?.recordWav) {
     return { error: 'unavailable' };
   }
   try {
-    const controller = await window.studySpeech.recordWav({ maxSeconds: 15 });
+    const controller = await window.studySpeech.recordWav({ maxSeconds: 15, ...opts });
     return { controller };
   } catch (e) {
     console.warn('[sessionAnalyze] recordWav 실패', e?.message ?? e);

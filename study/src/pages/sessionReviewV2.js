@@ -324,6 +324,22 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     setTimeout(stopPlaying, 30000);
   });
 
+  // 녹음 종료·채점 — 수동 '멈추기' 클릭과 무음 자동종료가 공유. recCtrl null 가드로 중복 방지.
+  async function finishRecording() {
+    if (!state.recording || !recCtrl) return;
+    const ctrlR = recCtrl; recCtrl = null;
+    const result = await stopAndAnalyze(ctrlR, s.sentence, s);
+    state.recording = false;
+    if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+    applyScore(Number(result?.score) || 0);
+    setRecVisual(false);
+    try {
+      await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
+      await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);
+    } catch (e) { console.error('[sessionReviewV2] pron persist', e); }
+    handlers.saveSnapshot?.();
+  }
+
   recPill.addEventListener('click', async () => {
     if (state.demo) {
       if (state.recording) return;
@@ -333,21 +349,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     }
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
-      const rec = await startMicRecording();
+      // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
+      const rec = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => { finishRecording(); } });
       if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); showRecordToast(recordErrorMessage(rec.error)); return; }
       recCtrl = rec.controller;
     } else {
-      const ctrlR = recCtrl; recCtrl = null;
-      const result = await stopAndAnalyze(ctrlR, s.sentence, s);
-      state.recording = false;
-      if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-      applyScore(Number(result?.score) || 0);
-      setRecVisual(false);
-      try {
-        await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
-        await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);
-      } catch (e) { console.error('[sessionReviewV2] pron persist', e); }
-      handlers.saveSnapshot?.();
+      finishRecording();
     }
   });
 

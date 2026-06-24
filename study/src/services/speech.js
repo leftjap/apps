@@ -626,6 +626,27 @@ export function buildPronunciationAssessmentHeader(referenceText) {
 const _workletRegistered = new WeakSet();
 
 /**
+ * 무음 자동종료 VAD 판정 (말 끝나면 자동 멈춤). 순수 함수 — recordWav 가 chunk peak 마다 feed.
+ *  - 발화(peak>=speechPeak) 전 앞 침묵엔 종료 안 함 (복습 '떠올리기' 앞 침묵 보호).
+ *  - 발화 후 hangoverMs 동안 무음(peak<silencePeak) 지속 시 종료.
+ *  - 중간 레벨(silencePeak~speechPeak)·재발화는 voice 로 보고 hangover 리셋 (단어 사이 조기종료 방지).
+ * 임계값 기본은 실측 보정 (발화 peak median≈0.12 / 무음=0, Playwright fake-audio).
+ */
+export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, hangoverMs = 1200 } = {}) {
+  let speechStarted = false;
+  let lastVoiceAt = 0;
+  return {
+    feed(peak, now) {
+      if (peak >= speechPeak) { speechStarted = true; lastVoiceAt = now; return false; }
+      if (peak >= silencePeak) { if (speechStarted) lastVoiceAt = now; return false; }
+      if (!speechStarted) return false; // 앞 침묵 보호
+      return (now - lastVoiceAt) >= hangoverMs;
+    },
+    get speechStarted() { return speechStarted; },
+  };
+}
+
+/**
  * 마이크 녹음 → WAV Blob (AudioWorkletNode 사용, Wave 11.63).
  *
  * 흐름: getUserMedia → AudioContext → AudioWorklet (16kHz Int16 PCM 변환 — audio thread)
@@ -637,13 +658,19 @@ const _workletRegistered = new WeakSet();
  *
  * @param {object} opts
  * @param {number} [opts.maxSeconds=15] - 자동 종료 상한
- * @param {(level:number)=>void} [opts.onLevel] - 0~1 RMS 레벨 콜백 (UI 게이지용)
+ * @param {(level:number)=>void} [opts.onLevel] - 0~1 peak 레벨 콜백 (UI 게이지용)
+ * @param {number} [opts.autoStopSilenceMs=0] - >0 이면 발화 후 이만큼 무음 지속 시 자동종료 (0=끔)
+ * @param {()=>void} [opts.onAutoStop] - 무음 자동종료 발생 콜백 (호출자가 채점 흐름 실행)
  * @param {string} [opts.workletUrl='/audio-worklet/recorder-worklet.js'] - worklet 모듈 path
  * @returns {{ stop: () => void, blobPromise: Promise<Blob> }}
  */
 export async function recordWav({
   maxSeconds = 15,
   onLevel,
+  autoStopSilenceMs = 0,
+  onAutoStop,
+  speechPeak = 0.08,
+  silencePeak = 0.05,
   workletUrl = `${import.meta.env.BASE_URL}audio-worklet/recorder-worklet.js`,
 } = {}) {
   if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
@@ -682,19 +709,30 @@ export async function recordWav({
   let resolveDone, rejectDone;
   const blobPromise = new Promise((res, rej) => { resolveDone = res; rejectDone = rej; });
 
+  // 무음 자동종료 VAD (말 끝나면 자동 멈춤). autoStopSilenceMs>0 일 때만.
+  const vad = autoStopSilenceMs > 0
+    ? createSilenceAutoStop({ speechPeak, silencePeak, hangoverMs: autoStopSilenceMs })
+    : null;
+  const needPeak = !!onLevel || !!vad;
+
   node.port.onmessage = (e) => {
     if (stopped) return;
     const buf = e.data;
     if (!buf || !buf.byteLength) return;
     const int16 = new Int16Array(buf);
     chunks.push(int16);
-    if (onLevel) {
+    if (needPeak) {
       let peak = 0;
       for (let i = 0; i < int16.length; i++) {
         const abs = Math.abs(int16[i]);
         if (abs > peak) peak = abs;
       }
-      onLevel(peak / 0x7FFF);
+      const level = peak / 0x7FFF;
+      if (onLevel) onLevel(level);
+      if (vad && vad.feed(level, Date.now())) {
+        stop();                      // 무음 자동종료 → blob resolve
+        try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
+      }
     }
   };
 

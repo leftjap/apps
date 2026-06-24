@@ -198,21 +198,24 @@ function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
         }, 800);
         return;
       }
-      if (recCtrl && recRow === row) {
-        const ctrl = recCtrl; recCtrl = null; recRow = null;
-        row.classList.remove('recing'); recBtn.classList.remove('recing');
-        const result = await stopAndAnalyze(ctrl, d.en || '', { lang });
-        if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-        const score = Math.round(result?.score ?? 0);
-        scoreEl.textContent = score + ' ✓'; scoreEl.style.display = '';
-        onScore?.(i, result);
-        return;
-      }
-      const r = await startMicRecording();
+      if (recCtrl && recRow === row) { finishDrill(); return; }
+      // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 메인 카드와 동일. 수동 멈추기도 유지.
+      const r = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => finishDrill() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
     });
+    // 드릴 녹음 종료·채점 — 수동 멈추기와 무음 자동종료 공유. recRow 가드로 중복/오행 방지.
+    async function finishDrill() {
+      if (!(recCtrl && recRow === row)) return;
+      const ctrl = recCtrl; recCtrl = null; recRow = null;
+      row.classList.remove('recing'); recBtn.classList.remove('recing');
+      const result = await stopAndAnalyze(ctrl, d.en || '', { lang });
+      if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      const score = Math.round(result?.score ?? 0);
+      scoreEl.textContent = score + ' ✓'; scoreEl.style.display = '';
+      onScore?.(i, result);
+    }
     return row;
   });
 }
@@ -435,7 +438,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     }
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
-      const rec = await startMicRecording();
+      // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
+      const rec = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => { finishRecording(); } });
       if (rec.error) {
         state.recording = false; recCtrl = null; state.micBlocked = true;
         setRecVisual(false);
@@ -444,19 +448,25 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       }
       recCtrl = rec.controller;
     } else {
-      const ctrlR = recCtrl; recCtrl = null;
-      const result = await stopAndAnalyze(ctrlR, s.sentence, s);
-      state.recording = false;
-      if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-      applyScore(Number(result?.score) || 0, result?.weakPhonemes);
-      setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
-      try {
-        await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
-        await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);
-      } catch (e) { console.error('[sessionExprV2] pron persist', e); }
-      handlers.saveSnapshot?.();
+      finishRecording();
     }
   });
+
+  // 녹음 종료·채점 — 수동 '멈추기' 클릭과 무음 자동종료가 공유. recCtrl null 가드로 중복 방지.
+  async function finishRecording() {
+    if (!state.recording || !recCtrl) return;
+    const ctrlR = recCtrl; recCtrl = null;
+    const result = await stopAndAnalyze(ctrlR, s.sentence, s);
+    state.recording = false;
+    if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+    applyScore(Number(result?.score) || 0, result?.weakPhonemes);
+    setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
+    try {
+      await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
+      await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);
+    } catch (e) { console.error('[sessionExprV2] pron persist', e); }
+    handlers.saveSnapshot?.();
+  }
 
   // 다음 표현 버튼 + 게이트
   const nextBtn = h('button', { class: 'vs-next', type: 'button', onClick: handlers.onNext }, idx >= total ? '학습 완료 →' : '다음 표현 →');
