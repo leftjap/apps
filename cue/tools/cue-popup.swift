@@ -6,6 +6,7 @@ import WebKit
 let cardPath = "/Users/gio_c/apps/cue/tools/youtube-gate-card.html"
 let triggerPath = "/tmp/cue-popup-trigger"
 let logPath = "/tmp/cue-popup.log"
+let flagPath = "/tmp/cue-popup-disabled"   // 존재 시 기능 OFF(잠시 끄기). 재부팅 시 자동 복귀.
 let knownStates = ["독서", "글쓰기", "어학", "운동", "stale"]
 // 값이 "app:<bundleID>" 면 로컬 앱 실행, 그 외는 웹 URL 오픈.
 let appURLs: [String: String] = [
@@ -92,12 +93,40 @@ final class Controller: NSObject, WKScriptMessageHandler {
     let st = raw.trimmingCharacters(in: .whitespacesAndNewlines)
     if st.isEmpty { return }
     try? "".write(toFile: triggerPath, atomically: true, encoding: .utf8)  // 소비(중복 방지)
+    if FileManager.default.fileExists(atPath: flagPath) { return }   // 꺼짐(잠시 끄기): 소비만 하고 표시 안 함
     showCard(st)
   }
 }
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
   let ctrl = Controller()
+  var statusItem: NSStatusItem?
+
+  var disabled: Bool { FileManager.default.fileExists(atPath: flagPath) }
+  func setDisabled(_ off: Bool) {
+    if off { FileManager.default.createFile(atPath: flagPath, contents: nil) }
+    else { try? FileManager.default.removeItem(atPath: flagPath) }
+    log("popup \(off ? "OFF(사용자가 끔)" : "ON")"); refreshStatus()
+  }
+  @objc func toggleClicked() { setDisabled(!disabled) }
+  func refreshStatus() {
+    guard let btn = statusItem?.button else { return }
+    let off = disabled
+    if let img = NSImage(systemSymbolName: off ? "bell.slash" : "bell", accessibilityDescription: "Cue 팝업") { btn.image = img; btn.title = "" }
+    else { btn.image = nil; btn.title = off ? "팝업꺼짐" : "팝업" }
+    if let t = statusItem?.menu?.item(withTag: 1) { t.state = off ? .off : .on; t.title = off ? "꺼짐 — 클릭해 켜기" : "켜짐 — 클릭해 끄기" }
+  }
+  func setupStatusItem() {
+    let si = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+    let menu = NSMenu(); menu.delegate = self
+    let head = NSMenuItem(title: "유튜브 진입 팝업", action: nil, keyEquivalent: ""); head.isEnabled = false
+    menu.addItem(head)
+    let tg = NSMenuItem(title: "켜짐", action: #selector(toggleClicked), keyEquivalent: ""); tg.target = self; tg.tag = 1
+    menu.addItem(tg)
+    si.menu = menu; statusItem = si; refreshStatus()
+    log("status item ready button=\(si.button != nil) icon=\(si.button?.image != nil) visible=\(si.isVisible)")
+  }
+
   func applicationDidFinishLaunching(_ n: Notification) {
     // 셀프테스트: --selftest <state> <go|later|snap> → 카드 표시 → 렌더 PNG 스냅샷 + 애니 점검 + (go/later 시)버튼 클릭 발화로 브리지 체인 검증
     let args = CommandLine.arguments
@@ -133,10 +162,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
       }
       return
     }
+    // CLI 토글(검증·스크립트용): --off / --on / --status
+    if args.contains("--off") { setDisabled(true); NSApp.terminate(nil); return }
+    if args.contains("--on") { setDisabled(false); NSApp.terminate(nil); return }
+    if args.contains("--status") { print(disabled ? "off" : "on"); NSApp.terminate(nil); return }
+    setupStatusItem()
     try? "".write(toFile: triggerPath, atomically: true, encoding: .utf8)  // 시작 시 트리거 비움
-    log("agent started")
+    log("agent started\(disabled ? " (현재 OFF)" : "")")
     Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.ctrl.poll() }
   }
+}
+
+extension AppDelegate: NSMenuDelegate {
+  func menuWillOpen(_ menu: NSMenu) { refreshStatus() }   // 외부(CLI) 변경도 메뉴 열 때 반영
 }
 
 let app = NSApplication.shared

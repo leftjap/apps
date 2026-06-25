@@ -4,6 +4,8 @@
 LOG=/tmp/cue-yt-gate.log
 STATE=/tmp/cue-yt-gate.state
 
+[[ -f /tmp/cue-popup-disabled ]] && exit 0   # 사용자가 팝업 끔(잠시 끄기) → 감지 안 함
+
 url=$(osascript -e 'tell application "Google Chrome" to if (count of windows) > 0 then return URL of active tab of front window' 2>/dev/null)
 case "$url" in
   *youtube.com/*) cur=yt ;;
