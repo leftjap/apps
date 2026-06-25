@@ -25,6 +25,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
+import { getSceneShadow, setSceneShadow, clearSceneShadow } from '../services/sceneProgress.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
 import { createSceneHeader } from '../components/session/sceneHeader.js';
@@ -124,6 +125,11 @@ export function mountSessionNew(host) {
     }));
     try { await clearActiveSession(window.studyDB); }
     catch (e) { console.error('[session-new] clearActiveSession', e); }
+    // 세션 완주 시 씬 쉐도잉 기록 정리 (씬이 더는 carry-forward 안 됨 → stale 방지)
+    if (finishedAll) {
+      const scene = state.cards.find((c) => Array.isArray(c.explanation?.dialogue));
+      if (scene) clearSceneShadow(window.studyDB, scene.id).catch(() => {});
+    }
     window.location.hash = '#/summary';
   };
 
@@ -165,6 +171,11 @@ export function mountSessionNew(host) {
     },
     onEnd: () => showEndConfirm({ onConfirm: () => endSession(false) }),
     saveSnapshot,
+    // 씬 쉐도잉 한 줄 진행 시 durable 저장 (다음날 재진입에도 '따라 말한 줄' 유지)
+    saveSceneShadow: (count) => {
+      const scene = state.cards.find((c) => Array.isArray(c.explanation?.dialogue));
+      if (scene) setSceneShadow(window.studyDB, scene.id, count).catch((e) => console.error('[session-new] saveSceneShadow', e));
+    },
   };
 
   let r = render(host, state, handlers);
@@ -227,6 +238,9 @@ export function mountSessionNew(host) {
         try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
         catch { state.base = null; }
       }
+      // 씬 쉐도잉 진행 복원 (스냅샷 1시간 TTL 과 분리 — 다음날 재진입에도 유지)
+      const scene = cards.find((c) => Array.isArray(c.explanation?.dialogue));
+      if (scene) { try { state.shadowed = await getSceneShadow(window.studyDB, scene.id); } catch { /* noop */ } }
       state.loaded = true;
       rerender();
     })

@@ -184,7 +184,10 @@ export function renderDialogueV2(host, state, handlers = {}) {
 
   const onPlayLine = (l) => {
     speak(l.en, l.spk);
-    if (shadowOn && shadowed < lines.length) { shadowed += 1; state.shadowed = shadowed; renderSaidDots(); }
+    if (shadowOn && shadowed < lines.length) {
+      shadowed += 1; state.shadowed = shadowed; renderSaidDots();
+      handlers.saveSceneShadow?.(shadowed); // durable 저장 (다음날 재진입 유지)
+    }
   };
 
   const speakAll = () => {
