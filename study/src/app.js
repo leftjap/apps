@@ -255,8 +255,12 @@ function bindAuthEvents() {
       // Wave 11.13.1 — sync 시작 (signOut hook 은 main.js 에서 등록)
       // Wave 11.14 — 모든 테이블 empty 시 신규 사용자 자동 unlock (allowEmptyServerPush)
       if (typeof window !== 'undefined' && window.studySync) {
-        window.studySync
-          .startSync(user)
+        const syncPromise = window.studySync.startSync(user);
+        // iOS 비동기 세션복원(SIGNED_IN/INITIAL_SESSION) 경로에서도 home.js 의 __syncReady.then(refreshStats)
+        // 가 동작하도록 노출 — 미설정 시 빈 IndexedDB 기기가 서버 데이터를 받아도 홈이 0 으로 굳음(2026-06
+        // 멀티기기 버그). main.js boot 가 이미 real-pull promise 를 넣었으면(데스크톱) ??= 로 보존.
+        window.__syncReady ??= syncPromise;
+        syncPromise
           .then((result) => {
             if (
               result?.ok &&

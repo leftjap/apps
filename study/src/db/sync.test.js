@@ -1864,3 +1864,59 @@ describe('sync — reconcileDailyStats (서버 누락 로컬 행만 재push)', (
     expect(r.status).toBe('skipped');
   });
 });
+
+describe('sync — reconcileTable (서버-빈 테이블 멀티기기 동기화 보강)', () => {
+  beforeEach(() => { vi.resetModules(); vi.unmock('../services/supabase.js'); });
+
+  const mapping = {
+    dexie: 'sessionLogs', supabase: 'study_session_logs',
+    toSupabase: (r, uid) => ({ id: r.id, user_id: uid, utterance_count: r.utteranceCount }),
+  };
+  const dbWith = (rows) => ({ sessionLogs: { toArray: vi.fn().mockResolvedValue(rows) } });
+
+  it('서버-빈 테이블 + 로컬 행 → 전체 upsert (급감 가드 우회 = iPad/타기기 0 버그 회복)', async () => {
+    const { fromMock, upsertCalls } = makeReconcileMock([]); // 서버 0행
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileTable } = await import('./sync.js');
+    const r = await reconcileTable(dbWith([{ id: 'sl1', utteranceCount: 45 }, { id: 'sl2', utteranceCount: 12 }]), 'u1', mapping);
+    expect(r.status).toBe('ok');
+    expect(r.pushed).toBe(2);
+    expect(upsertCalls.length).toBe(1);
+    expect(upsertCalls[0].opts).toEqual({ onConflict: 'id' });
+    expect(upsertCalls[0].rows.map((x) => x.id)).toEqual(['sl1', 'sl2']);
+    expect(upsertCalls[0].rows[0]).toEqual({ id: 'sl1', user_id: 'u1', utterance_count: 45 });
+  });
+
+  it('서버에 있는 id 는 제외, 누락분만 upsert (삭제 부활·덮어쓰기 없음)', async () => {
+    const { fromMock, upsertCalls } = makeReconcileMock([{ id: 'sl1' }]); // 서버엔 sl1 만
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileTable } = await import('./sync.js');
+    const r = await reconcileTable(dbWith([{ id: 'sl1', utteranceCount: 45 }, { id: 'sl2', utteranceCount: 12 }]), 'u1', mapping);
+    expect(r.pushed).toBe(1);
+    expect(upsertCalls[0].rows.map((x) => x.id)).toEqual(['sl2']);
+  });
+
+  it('로컬 전부 서버에 있으면 upsert 없음', async () => {
+    const { fromMock, upsertCalls } = makeReconcileMock([{ id: 'sl1' }, { id: 'sl2' }]);
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileTable } = await import('./sync.js');
+    const r = await reconcileTable(dbWith([{ id: 'sl1' }, { id: 'sl2' }]), 'u1', mapping);
+    expect(r.pushed).toBe(0);
+    expect(upsertCalls.length).toBe(0);
+  });
+
+  it('로컬 비어있으면 empty (upsert 없음)', async () => {
+    const { fromMock, upsertCalls } = makeReconcileMock([]);
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileTable } = await import('./sync.js');
+    const r = await reconcileTable(dbWith([]), 'u1', mapping);
+    expect(r.status).toBe('empty');
+    expect(upsertCalls.length).toBe(0);
+  });
+
+  it('supabase=null → skipped', async () => {
+    vi.doMock('../services/supabase.js', () => ({ supabase: null, isSupabaseConfigured: false }));
+    const { reconcileTable } = await import('./sync.js');
+    expect((await reconcileTable(dbWith([{ id: 'x' }]), 'u1', mapping)).status).toBe('skipped');
+  });
+});

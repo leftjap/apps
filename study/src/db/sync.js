@@ -646,6 +646,47 @@ export async function reconcileDailyStats(db, userId) {
   }
 }
 
+/**
+ * reconcileTable — pull 이 못 가져온 '로컬 전용' 행을 서버에 직접 upsert (급감 가드 우회).
+ *
+ * 배경(2026-06): 급감 가드(pushTable 의 server_empty_local_nonempty)는 서버 count=0 인 테이블의
+ * push 를 차단한다. 해제 장치 allowEmptyServerPush 는 '모든 테이블 empty(신규 유저)' 일 때만 발동 →
+ * 일부 테이블엔 서버 데이터가 있으나 sessionLogs/reviewQueue 만 서버-빈 '기존 유저' 는 그 두 테이블이
+ * 영구 차단돼 멀티기기(다른 브라우저·iOS 홈화면 PWA)에서 0 으로 보인다. reconcileDailyStats 와 동일
+ * 철학으로, 서버에 '이미 있는 id' 를 제외한 누락분만 직접 upsert → 삭제 행 부활·발산 행 덮어쓰기 없이
+ * 보강. 첫 보강으로 서버 count>0 이 되면 이후엔 일반 hook push 가 정상 동작. startSync 의 pull 후 호출.
+ */
+export async function reconcileTable(db, userId, mapping) {
+  if (!supabase) return { table: mapping?.dexie, status: 'skipped', reason: 'no_supabase' };
+  if (!db || !userId || !mapping) return { table: mapping?.dexie, status: 'skipped', reason: 'preconditions' };
+  try {
+    const store = db[mapping.dexie];
+    if (!store?.toArray) return { table: mapping.dexie, status: 'error', reason: 'no_store' };
+    const local = await store.toArray();
+    if (!local || local.length === 0) return { table: mapping.dexie, status: 'empty', pushed: 0 };
+    const { data, error } = await supabase.from(mapping.supabase).select('id').eq('user_id', userId);
+    if (error) {
+      console.error(`[sync] reconcileTable ${mapping.supabase} 서버 조회 실패`, error);
+      return { table: mapping.dexie, status: 'error', error };
+    }
+    const serverIds = new Set((data || []).map((r) => r.id));
+    const missing = local.filter((r) => r && r.id != null && !serverIds.has(r.id));
+    if (missing.length === 0) return { table: mapping.dexie, status: 'ok', pushed: 0, missing: 0 };
+    const rows = typeof mapping.toSupabase === 'function'
+      ? missing.map((r) => mapping.toSupabase(r, userId)).filter(Boolean)
+      : missing.map((r) => ({ ...r, user_id: userId }));
+    const { error: upErr } = await supabase.from(mapping.supabase).upsert(rows, { onConflict: 'id' });
+    if (upErr) {
+      console.error(`[sync] reconcileTable ${mapping.supabase} upsert 실패`, upErr);
+      return { table: mapping.dexie, status: 'error', error: upErr };
+    }
+    return { table: mapping.dexie, status: 'ok', pushed: rows.length, missing: missing.length };
+  } catch (e) {
+    console.error(`[sync] reconcileTable ${mapping?.supabase} 예외`, e);
+    return { table: mapping?.dexie, status: 'error', error: e };
+  }
+}
+
 // ============================================================
 // Wave 11.13.x — user_meta 매핑 (1↔4 row 분해/합산)
 // 0001_study_init.sql L180-187: PK=user_id, 4 jsonb 컬럼 (lang_en/lang_ja/weak_phonemes_en/weak_phonemes_ja)
@@ -1010,6 +1051,14 @@ export async function startSync(user) {
   // 서버 직접 upsert(미동기 행만) 라 Dexie hook 미발화 → 루프 없음. 실패해도 startSync 무영향.
   try { await reconcileDailyStats(_currentDB, _currentUserId); }
   catch (e) { console.warn('[sync] reconcileDailyStats', e); }
+  // 급감 가드에 막혀 서버-빈 채로 남는 sessionLogs/reviewQueue 를 멀티기기 동기화 (누락 행만 직접 upsert).
+  // 기존 유저(일부 테이블만 서버-빈)에서 다른 브라우저·iOS PWA 가 0 으로 보이던 버그 보강. 실패해도 무영향.
+  try {
+    for (const dexie of ['sessionLogs', 'reviewQueue']) {
+      const m = TABLE_MAP.find((x) => x.dexie === dexie);
+      if (m) await reconcileTable(_currentDB, _currentUserId, m);
+    }
+  } catch (e) { console.warn('[sync] reconcileTable', e); }
   return result;
 }
 
@@ -1168,6 +1217,7 @@ export const Sync = {
   pullDailyStats,
   pushDailyStats,
   reconcileDailyStats,
+  reconcileTable,
   userMetaDexieToSupabase,
   userMetaSupabaseToDexie,
   pullUserMeta,
