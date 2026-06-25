@@ -20,6 +20,10 @@ describe('deltaLabel — 증감 (▲/▼ + 접두)', () => {
     expect(deltaLabel(2460, 1500, '')).toBe('▲16분');                  // 41-25
     expect(deltaLabel(2460, 0, '')).toBe('▲41분');                     // prev 0 → 현재값만큼 증가
   });
+  it('초 차이를 먼저 구해 1회 반올림 (각 항 따로 반올림한 ±1분 과대 방지)', () => {
+    // (90-29)/60 = 1.02 → ▲1분. 각각 반올림하면 round(1.5)-round(0.48)=2-0=2분으로 과대.
+    expect(deltaLabel(90, 29, '')).toBe('▲1분');
+  });
 });
 
 describe('appName — 번들 ID → 표시 이름', () => {
@@ -96,6 +100,39 @@ describe('buildScreenTimeData — screentime_daily → 뷰 shape (실데이터 �
     const r = [{ date: '2026-06-10', kind: 'app', name: 'com.google.Chrome', seconds: 6000 }];
     const m = buildScreenTimeData(r, new Date(2026, 5, 24)).month; // 5월 1~24 데이터 없음
     expect(m.totalDelta).toBe('');
+  });
+
+  it('내 도구(밀리앱+leftjap사이트)가 앱합을 초과해도 비중≤100%·toolTotal≤total·otherTotal≥0 (incoherent 데이터 방어)', () => {
+    // 사이트는 앱-분모에 안 들어가므로 leftjap 사이트>Chrome앱이면 비중이 100% 초과·other 음수가 됨 → 클램프.
+    const r = [
+      { date: '2026-06-25', kind: 'app', name: 'com.google.Chrome', seconds: 1800 },   // 30분 (앱합)
+      { date: '2026-06-25', kind: 'site', name: 'leftjap.github.io', seconds: 4800 },   // 80분 (도구·사이트>앱)
+    ];
+    const d = buildScreenTimeData(r, new Date(2026, 5, 25)).day;
+    expect(d.total).toBe('30분');
+    expect(d.toolShare).toBe('100%');   // 클램프 (raw 267%)
+    expect(d.toolTotal).toBe('30분');   // 클램프 to total (raw 1시간 20분)
+    expect(d.otherTotal).toBe('0분');
+  });
+
+  it('주==월 — 데이터가 전부 이번 주 안이면 week.total===month.total (정상, 버그 아님: 누적되면 분기)', () => {
+    const r = [
+      { date: '2026-06-22', kind: 'app', name: 'com.google.Chrome', seconds: 3600 },
+      { date: '2026-06-24', kind: 'app', name: 'com.google.Chrome', seconds: 1800 },
+    ];
+    const v = buildScreenTimeData(r, new Date(2026, 5, 25)); // 06-22(월)~06-25 전부 이번 주·이번 달
+    expect(v.week.total).toBe(v.month.total);
+  });
+
+  it('월 증감 — 지난달이 더 짧으면 prev 윈도우가 지난달 말일로 클램프 (3/31→2/1~2/28, 3월 초가 prev로 누출 안 됨)', () => {
+    const r = [
+      { date: '2026-03-31', kind: 'app', name: 'com.google.Chrome', seconds: 600 },    // 이번달
+      { date: '2026-03-03', kind: 'app', name: 'com.google.Chrome', seconds: 9000 },   // 이번달 초 (prev 아님)
+      { date: '2026-02-28', kind: 'app', name: 'com.google.Chrome', seconds: 300 },    // 지난달 말일 (prev 포함)
+    ];
+    const m = buildScreenTimeData(r, new Date(2026, 2, 31)).month; // 3/31
+    // cur(3월)=9600s=160분, prev(2/1~2/28)=300s=5분 → ▲155분. 클램프 깨지면 3/3이 prev로 새 ▲5분.
+    expect(m.totalDelta).toBe('지난달보다 ▲2시간 35분');
   });
 });
 

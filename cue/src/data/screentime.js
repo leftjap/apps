@@ -153,9 +153,10 @@ export function fmtDur(sec) {
   return `${h}시간 ${m}분`;
 }
 
-/** 증감 라벨 — "▲6분" / "어제보다 ▼22분". prev 0 이면 현재값만큼 증가로 표시. */
+/** 증감 라벨 — "▲6분" / "어제보다 ▼22분". prev 0 이면 현재값만큼 증가로 표시.
+    초 차이를 먼저 구해 1회만 반올림한다 — 각 항을 따로 분 반올림하면 차이가 최대 ±1분 부풀려짐. */
 export function deltaLabel(curSec, prevSec, prefix = '') {
-  const diffMin = Math.round((Number(curSec) || 0) / 60) - Math.round((Number(prevSec) || 0) / 60);
+  const diffMin = Math.round(((Number(curSec) || 0) - (Number(prevSec) || 0)) / 60);
   const arrow = diffMin >= 0 ? '▲' : '▼';
   return `${prefix ? prefix + ' ' : ''}${arrow}${fmtDur(Math.abs(diffMin) * 60)}`;
 }
@@ -226,18 +227,22 @@ function buildPeriod(rows, today, period) {
     axisEnd = `${base.getMonth() + 1}월`; prefix = '지난달보다';
   }
   const total = _sumApps(rows, curS, curE);
-  const toolSec = _toolSec(rows, curS, curE);
+  // 내 도구 = 밀리(앱) + leftjap(사이트). 사이트는 앱-합(total)에 안 들어가므로, 측정 불일치로
+  // 도구가 total 을 넘으면 비중>100%·otherTotal 음수가 됨. 물리적으로 도구시간 ≤ 전체시간이라
+  // total 로 클램프(정상 데이터에선 도구 ≤ Chrome ≤ total 이라 항상 no-op).
+  const toolSec = Math.min(_toolSec(rows, curS, curE), total);
   const prevTotal = _sumApps(rows, prevS, prevE);
+  const prevToolSec = Math.min(_toolSec(rows, prevS, prevE), prevTotal);
   // 비중은 '표시되는 분' 기준으로 계산해 헤드라인 숫자와 어긋나지 않게 (예: 5분/69분 ↔ 7%)
   const totalMin = Math.round(total / 60), toolMin = Math.round(toolSec / 60);
-  const share = totalMin > 0 ? `${Math.round((toolMin / totalMin) * 100)}%` : '0%';
+  const share = totalMin > 0 ? `${Math.min(Math.round((toolMin / totalMin) * 100), 100)}%` : '0%';
   // 이전 기간에 데이터가 전혀 없으면(추적 시작 전) 오해 소지의 증감 미표시
   const hasPrev = prevTotal > 0;
   return {
     total: fmtDur(total),
     totalDelta: hasPrev ? deltaLabel(total, prevTotal, prefix) : '',
     toolTotal: fmtDur(toolSec),
-    toolDelta: hasPrev ? deltaLabel(toolSec, _toolSec(rows, prevS, prevE), '') : '',
+    toolDelta: hasPrev ? deltaLabel(toolSec, prevToolSec, '') : '',
     toolShare: share, toolPct: share,
     otherTotal: fmtDur(Math.max(total - toolSec, 0)),
     bkRead: fmtDur(_sumOne(rows, curS, curE, 'app', TOOL_APP)),
