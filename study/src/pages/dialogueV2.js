@@ -46,7 +46,7 @@ const VD_CSS = `
 .vd-num{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--teal-line);color:var(--teal-deep);font-size:10.5px;font-weight:800;display:grid;place-items:center;font-family:Outfit;flex:0 0 auto}
 .vd-num.ctx{border-color:transparent}
 .vd-num.off{border-style:dashed;border-color:#d5d1c2;color:transparent}
-.vd-av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:800;flex:0 0 auto;font-family:Outfit}
+.vd-av{max-width:112px;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700;flex:0 0 auto;font-family:Outfit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vd-av.a{background:var(--teal-soft);color:var(--teal-deep)}
 .vd-av.l{background:var(--coral-soft);color:var(--coral-deep)}
 .vd-line .enw{position:relative;display:inline-block}
@@ -135,7 +135,7 @@ const VDM_CSS = `
 .vd-sel.add{border-style:dashed;color:var(--faint);font-size:13px;font-weight:700}
 .vd-num{width:19px;height:19px;border-radius:50%;border:1.5px solid var(--teal-line);color:var(--teal-deep);font-size:10px;font-weight:800;display:grid;place-items:center;font-family:Outfit;flex:0 0 auto}
 .vd-num.ctx{border-color:transparent}
-.vd-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;flex:0 0 auto;font-family:Outfit}
+.vd-av{max-width:92px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;flex:0 0 auto;font-family:Outfit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .vd-av.a{background:var(--teal-soft);color:var(--teal-deep)}
 .vd-av.l{background:var(--coral-soft);color:var(--coral-deep)}
 .vd-line > div{min-width:0;flex:1 1 auto}
@@ -163,6 +163,7 @@ export function renderDialogueV2(host, state, handlers = {}) {
   const sceneTitle = sceneEx.sceneTitle || '오늘의 장면';
   const lines = deriveLines(sceneEx, state.cards);
   const exprLines = lines.filter((l) => l.num != null);
+  const firstSpk = lines.find((l) => l.spk)?.spk; // 첫 화자=주인공 → 2톤(.a/.l) 색 구분
 
   // 선택 상태 — 표현 카드 id Set. 기본 전체 선택(데모 제외 id 반영).
   if (!(state.exprSel instanceof Set)) {
@@ -239,7 +240,7 @@ export function renderDialogueV2(host, state, handlers = {}) {
 
     return h('div', { class: 'vd-line' + (unsel ? ' unsel' : '') },
       selBox, numEl,
-      h('span', { class: 'vd-av ' + (l.spk === 'A' ? 'a' : 'l'), title: l.spk }, (l.spk || '').trim().charAt(0).toUpperCase()),
+      h('span', { class: 'vd-av ' + (l.spk && l.spk === firstSpk ? 'a' : 'l'), title: l.spk }, l.spk),
       h('div', {}, h('span', { class: 'enw' }, h('span', { class: 'en' }, hlFragment(l.en, l.hl))), h('div', { class: 'ko' }, l.ko)),
       h('span', { class: 'vd-grow' }),
       i < shadowed ? h('span', { class: 'vd-chip' }, '발화 ✓') : null,
