@@ -239,7 +239,7 @@ export function renderDialogueV2(host, state, handlers = {}) {
 
     return h('div', { class: 'vd-line' + (unsel ? ' unsel' : '') },
       selBox, numEl,
-      h('span', { class: 'vd-av ' + (l.spk === 'A' ? 'a' : 'l') }, l.spk),
+      h('span', { class: 'vd-av ' + (l.spk === 'A' ? 'a' : 'l'), title: l.spk }, (l.spk || '').trim().charAt(0).toUpperCase()),
       h('div', {}, h('span', { class: 'enw' }, h('span', { class: 'en' }, hlFragment(l.en, l.hl))), h('div', { class: 'ko' }, l.ko)),
       h('span', { class: 'vd-grow' }),
       i < shadowed ? h('span', { class: 'vd-chip' }, '발화 ✓') : null,
