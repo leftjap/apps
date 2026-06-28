@@ -472,13 +472,13 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 > 기계 게이트: [`scripts/validate-seed.mjs`](../scripts/validate-seed.mjs) 가 본 § 체크리스트의 기계화 가능 항목을
 > INSERT 전 결정적으로 차단 (`seed-supabase.mjs` 자동 호출).
 
-본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation S1E1. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
+본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation **S1E1~S1E6** (`seeds/sources/realclass-parks-s1e{1..6}.txt`, 2026-06-28 ep2~6 추가). S1E1 은 99/145문장 사용(잔여 46문장은 §발췌기준 4 미달 — 인터뷰 독백·파편·일방통화) → **신규 화(S1E2~S1E6) 우선 마이닝**. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
 
 **형식 정본** = [`seeds/en-2026-06-10.json`](../seeds/en-2026-06-10.json) (한국인 해설 8필드 — 2026-06-10 발음·문법 복원판). 렌더링: `src/components/session/scenePage.js` (다이얼로그 페이지) + `src/components/session/explanationPanel.js` (해설 8필드 + drills) / D1 = `src/components/d1/sessionShell.js`.
 
 ### 소스 (로컬 전용 — 커밋 금지)
 
-- 경로: `~/apps/study/seeds/sources/realclass-parks-s1e1.txt` (145문장, `EN:`/`KO:` 쌍, 문장번호)
+- 경로: `~/apps/study/seeds/sources/realclass-parks-s1e{1..6}.txt` (각 화 `EN:`/`KO:` 쌍, 문장번호. S1E1=145문장, S1E2~6 = 2026-06-28 추가)
 - **gitignored** (`study/seeds/sources/`) — repo 가 PUBLIC 이므로 유료 콘텐츠 전문 커밋 금지. 시드에는 학습 발췌 (다이얼로그 6~10줄 압축 + 표현 카드) 만 커밋
 - **소스 파일 부재 시 생성 중단** — 사용자에게 소스 파일 요청. 기억·추측으로 대사 재구성 금지
 - **화자 귀속 검증** (2026-06-10): 소스에 화자 라벨이 없음 (`EN:/KO:` 쌍뿐) → 화자 배정은 에피소드 지식 의존. **귀속이 불확실하면 외부 transcript 대조로 검증, 불가 시 그 장면 생성 보류** (다른 장면 선택). 검증 출처를 `_note` 에 남김
