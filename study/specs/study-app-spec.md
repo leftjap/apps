@@ -480,20 +480,18 @@ ja explanation 스키마 요약 (상세는 위 ja 가이드):
 - 타이머 시작 (타임스탬프 기반, `Date.now()`)
 - 순서: 복습 카드 먼저 → 신규 레슨 카드
 
-### 8-2. 복습 카드 인터랙션
-- 카드: 한글 의미(프롬프트) + 카운터
-- "정답 보기" 탭 → 답안 표시:
-  - 문장/표현, 읽기(일본어), 의미
-  - 오디오 재생 (웨이브 바 애니메이션)
-  - "따라 말하기" 버튼 → 발음 분석
-  - 해설 (접기/펼치기)
-  - **판정 버튼 3개** (언어별 텍스트):
-    - English: "No" / "Hmm" / "Got it"
-    - 日本語: "だめ" / "微妙" / "わかった"
-    - 텍스트 레이블만 (도형/심볼 없음)
-    - 각 상태 색상의 25% 보더로 구분
-    - No/だめ = `--danger`, Hmm/微妙 = `--amber`, Got it/わかった = `--sage`
-- **스와이프 제스처**: 좌=No/だめ, 상=Hmm/微妙, 우=Got it/わかった
+### 8-2. 복습 카드 인터랙션 (sessionReviewV2 — 현행)
+- 활성 렌더러: `src/pages/sessionReviewV2.js` (`session-review.js` 가 전 사이즈 위임; 구 "정답 보기 → 3판정/스와이프" 경로는 dead code).
+- 기본: 상단 프롬프트(Rung 별, 아래) + 한글. "떠올려 말하기"(녹음·Azure 발음채점)가 1순위, "듣기"(TTS) 보조. 해설 기본 접힘. 발화 1회 이상 시 "다음 문장" 잠금 해제(`canAdvance`).
+- 자동 채점: 수동 판정 버튼 없음. 발음 점수 → SRS 판정 자동 변환 (`deriveKind`: ≥80 got / ≥60 hmm / 그 외 no / 미측정 hmm) → `onJudge` → `applySrsUpdate`(§6).
+
+#### 8-2-0. 단계화 복습 (영어 한정 — `pickReviewRung(interval, lang)`)
+항목 성숙도(SRS `interval`)에 따라 회상 난이도를 점진적으로 올린다. 일본어(콩트)·신규·interval 미정은 Rung 1(현행 동작 유지).
+- **Rung 1 · 수용+발음 (interval < 3)**: 영어 문장 + 한글 그대로 표시. 듣고 따라 말하기.
+- **Rung 2 · 클로즈 (3 ≤ interval < 21)**: 영어 문장의 마지막 청크(`explanation.chunks` 끝)를 빈칸 처리 + 한글. 청크 없거나 매칭 실패 시 전체 문장 폴백 (`clozeBlank`).
+- **Rung 3 · 생산회상 (interval ≥ 21)**: 영어 숨김, 한글을 큰 프롬프트로(서브: "영어로 떠올려 말해 보세요"). 첫(숨김) 시도 점수로 채점(`state.recallScore`) — 정답 공개 후 재녹음(읽기)이 SRS 를 흐리지 않게.
+- **피드백 필수**: Rung 2/3 은 첫 녹음 직후 영어 정답 즉시 공개(`reveal`). 근거: 과한 회상도 정답 피드백이 있으면 학습이 됨(Kornell/Klein/Rawson 2015).
+- 설계 근거: 답 숨김+회상 강제(Karpicke&Roediger 2008), MC→클로즈→자유회상 scaffold(Fiechter&Benjamin 2019), 신규 cold-produce 회피(수용 우세·"바람직한 어려움"은 성공 가능 시에만). 클로즈는 최상위 포맷이 아니라 난이도 사다리의 중간 발판(플래시카드 우위 — Webb/Yanagisawa/Uchihara 2020). 경계값은 조정 가능(현 SRS 사다리 [1,3,7,21,60] 기준).
 
 ### 8-2-1. autoTTS 자동 재생 (Wave 11.23)
 - `settings.autoTTS=true` (default true) 시 "정답 보기" → answer stage 진입 후 300ms 자동 TTS 재생

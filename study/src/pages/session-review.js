@@ -146,6 +146,7 @@ export function mountSessionReview(host) {
       state.sentence = r.sentence || EMPTY_SENTENCE;
       state.recording = false;
       state.lastScore = null;
+      state.recallScore = null;
       rerender();
       saveSnapshot();
     },
@@ -158,6 +159,7 @@ export function mountSessionReview(host) {
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
       state.recording = false;
       state.lastScore = null;
+      state.recallScore = null;
       rerender();
       saveSnapshot();
     },

@@ -20,6 +20,31 @@ const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
+/* 복습 단계(Rung) — 항목 성숙도(SRS interval)에 따라 회상 난이도를 단계적으로 올린다 (en 한정).
+ *   1: 수용+발음 (영어 표시)  ·  2: 클로즈 (핵심 청크 빈칸)  ·  3: 생산회상 (한글→영어, 영어 숨김)
+ * 근거: 답 숨김+회상 강제(Karpicke&Roediger 2008), MC→클로즈→자유회상 scaffold(Fiechter&Benjamin 2019),
+ *   신규는 cold-produce 회피(수용 우세·"바람직한 어려움"은 성공 가능할 때만). ja(콩트)는 단계화하지 않음.
+ *   경계값은 조정 가능 — 현 SRS 사다리 [1,3,7,21,60] 기준. */
+export function pickReviewRung(interval, lang) {
+  if (lang !== 'en') return 1;
+  const iv = Number(interval);
+  if (!Number.isFinite(iv) || iv < 3) return 1;
+  if (iv < 21) return 2;
+  return 3;
+}
+
+/* clozeBlank — 마지막 청크(chunks[last][0])를 문장에서 빈칸으로 가린 문자열 반환.
+ * chunks 형식 [[영어, 음차]] (explanation-schema.md). 청크 없거나 문장에서 못 찾으면 null → 호출자 폴백. */
+export function clozeBlank(sentence, chunks) {
+  if (typeof sentence !== 'string' || !Array.isArray(chunks) || chunks.length === 0) return null;
+  const last = chunks[chunks.length - 1];
+  const target = Array.isArray(last) ? last[0] : null;
+  if (typeof target !== 'string' || !target) return null;
+  const idx = sentence.lastIndexOf(target);
+  if (idx === -1) return null;
+  return sentence.slice(0, idx) + '_____' + sentence.slice(idx + target.length);
+}
+
 const VR_CSS = `
 .vr{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
 .vr *{box-sizing:border-box;margin:0}
@@ -225,6 +250,22 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     return { cleanup: () => { host.innerHTML = ''; }, layout: { update() {} } };
   }
 
+  // 복습 단계(Rung) — 성숙도(card.interval) 기반. ja·신규·미정은 Rung 1(현행 동작).
+  const rung = pickReviewRung(card.interval, lang);
+  const clozeText = rung === 2 ? clozeBlank(s.sentence, ex.chunks) : null;
+  // Rung 2/3 은 답(영어)을 숨겼다가 첫 시도 후 공개 — 피드백은 필수(과한 회상도 정답 보여주면 학습됨).
+  let revealed = rung === 1;
+  const h1El = h('h1', { class: 'vr-h1' },
+    rung === 3 ? (s.ko || '') : (rung === 2 ? (clozeText || s.sentence) : s.sentence));
+  const koEl = h('div', { class: 'vr-ko' },
+    rung === 3 ? '영어로 떠올려 말해 보세요' : (s.ko || ''));
+  function reveal() {
+    if (revealed) return;
+    revealed = true;
+    h1El.textContent = s.sentence;
+    koEl.textContent = s.ko || '';
+  }
+
   // SRS 메타
   const reviewNo = (Number.isInteger(card.reviewCount) ? card.reviewCount + 1 : 1);
   const lastScore = Number.isFinite(card.lastScore) ? card.lastScore : null;
@@ -306,6 +347,10 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     bumpRecLog(state, s?.id, score);
     const nr = ringEl(score); curRing.replaceWith(nr); curRing = nr;
     ringHost.lastChild.textContent = `${recCount()}회 떠올림`;
+    if (!revealed) {
+      if (rung === 3) state.recallScore = score; // 첫(숨김) 시도 점수 = 회상 신호 (읽기 점수 아님)
+      reveal();
+    }
     refreshDots(); refreshRec();
   }
   const setRecVisual = (on) => {
@@ -361,14 +406,18 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 다음 문장 → 점수 자동 채점(SRS) + 전진 (onJudge 가 applySrsUpdate + advance 수행)
   nextBtn.addEventListener('click', () => {
     if (!nextBtn.classList.contains('unlock')) { showRecordToast('먼저 떠올려 말해 보세요'); return; }
-    handlers.onJudge?.(deriveKind(state.lastScore));
+    // Rung 3 은 첫(숨김) 시도 점수로 채점 — 정답 공개 후 재녹음(읽기)이 SRS 를 흐리지 않게.
+    handlers.onJudge?.(deriveKind(rung === 3 ? (state.recallScore ?? state.lastScore) : state.lastScore));
   });
 
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
     lastScore != null ? h('span', {}, '지난 점수 ', h('b', {}, String(lastScore))) : null,
     nextDate ? h('span', {}, '통과 시 다음 복습 ', h('b', {}, String(nextDate))) : null);
-  const cardEl = h('div', { class: 'vr-card' }, h('h1', { class: 'vr-h1' }, s.sentence), h('div', { class: 'vr-ko' }, s.ko || ''), srsRow, ctrl, meta);
-  const hintEl = h('div', { class: 'vr-hint' }, h('i'), '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
+  const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, srsRow, ctrl, meta);
+  const hintEl = h('div', { class: 'vr-hint' }, h('i'),
+    rung === 3 ? '한글을 보고 영어로 떠올려 말해 보세요 — 떠올린 뒤 녹음하면 정답이 나와요'
+      : rung === 2 ? '빈칸을 채워 문장 전체를 떠올려 말해 보세요'
+      : '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {
