@@ -101,6 +101,7 @@ final class Controller: NSObject, WKScriptMessageHandler {
 final class AppDelegate: NSObject, NSApplicationDelegate {
   let ctrl = Controller()
   var statusItem: NSStatusItem?
+  var lastDisabled: Bool?
 
   var disabled: Bool { FileManager.default.fileExists(atPath: flagPath) }
   func setDisabled(_ off: Bool) {
@@ -169,7 +170,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     setupStatusItem()
     try? "".write(toFile: triggerPath, atomically: true, encoding: .utf8)  // 시작 시 트리거 비움
     log("agent started\(disabled ? " (현재 OFF)" : "")")
-    Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.ctrl.poll() }
+    Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+      guard let self = self else { return }
+      self.ctrl.poll()
+      if self.lastDisabled != self.disabled { self.lastDisabled = self.disabled; self.refreshStatus() }  // 외부(CLI/플래그) 변경도 메뉴 바 아이콘에 반영
+    }
   }
 }
 
