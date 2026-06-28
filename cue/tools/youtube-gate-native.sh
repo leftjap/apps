@@ -8,7 +8,9 @@ STATE=/tmp/cue-yt-gate.state
 while true; do
   if [[ -f /tmp/cue-popup-disabled ]]; then sleep 3; continue; fi   # 사용자가 팝업 끔 → 감지 스킵(루프 유지)
 
-  url=$(osascript -e 'tell application "Google Chrome" to if (count of windows) > 0 then return URL of active tab of front window' 2>/dev/null)
+  # 타임아웃으로 Chrome 무응답(특히 wake 직후) 시 무한 행 방지. 실패하면 상태 안 바꾸고 다음 사이클로(스퓨리어스 transition 방지).
+  url=$(osascript -e 'with timeout of 4 seconds' -e 'tell application "Google Chrome" to if (count of windows) > 0 then return URL of active tab of front window' -e 'end timeout' 2>/dev/null)
+  if [[ $? -ne 0 ]]; then sleep 3; continue; fi
   case "$url" in
     *youtube.com/*) cur=yt ;;
     *)              cur=no ;;

@@ -22,7 +22,7 @@ const isWorkout = (r) => r.status === 'completed' || (r.status === 'active' && A
 const effMin = (r) => { const d = Number(r.duration_min) || 0; if (d > 0) return d; const fins = (r.blocks || []).map((b) => Number(b && b.finishedAt) || 0).filter(Boolean); const st = Number(r.start_time) || 0; return fins.length && st ? Math.max(1, Math.round((Math.max(...fins) - st) / 60000)) : 0; };
 
 async function api(path) {
-  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` } });
+  const r = await fetch(`${SB_URL}/rest/v1/${path}`, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` }, signal: AbortSignal.timeout(5000) });
   if (!r.ok) throw new Error(`${r.status} ${(await r.text()).slice(0, 120)}`);
   return r.json();
 }
