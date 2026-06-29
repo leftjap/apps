@@ -1,0 +1,222 @@
+{
+  "_note": "RealClass-mining (PPP) — The Office S1E1 파일럿 오프닝 콜드오픈 장면 (소스 스크립트 #1·2·3·4·6·8 발췌 → dialogue 6줄, 화자 Michael/Jim, 단어변경 0·웹검증 완료). P1=진짜 장면, P2=핵심 표현 2개 집중 추출 후 지오님 개인화 변형 연습. 표현 카드 2장: 'How are things going?' (장면 2번 줄·안부 초고빈출) + 'let me show you how it's done.' (장면 6번 줄·시범 으스대는 뉘앙스). 발췌 기준 3종 통과 — 인사 단독이 아닌 안부 chunk·시범 관용표현, 미국 행정 디테일 0, 일상/여행 전이 우선. 개인화: 아내 직장·고양이·중년 듣기 약점·여행 일상 상황으로 drills 변형. 한국인 해설 8필드 (가이드 §6.3). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_source": {
+    "episode": "office-s1e1",
+    "lines": [
+      1,
+      8
+    ]
+  },
+  "lang": "en",
+  "date": "2026-06-29",
+  "cards": [
+    {
+      "id": "en-office-s1e1-opening-scene",
+      "sentence": "분기 실적과 도서관 — 마이클의 시범",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "분기 실적과 도서관 — 마이클의 시범",
+        "sceneSummary": "지점장 마이클이 짐의 분기 실적을 칭찬하며 일이 어떻게 되어가는지 묻고, 자기가 '전문가'라며 일처리를 직접 보여주겠다고 으스댄다. 짐은 데드팬으로 받아친다.",
+        "dialogue": [
+          {
+            "speaker": "Michael",
+            "en": "All right, Jim. Your quarterlies look very good.",
+            "ko": "좋아, 짐. 자네 분기 실적이 아주 좋아 보이는군."
+          },
+          {
+            "speaker": "Michael",
+            "en": "How are things going at the library?",
+            "ko": "도서관 건은 어떻게 되어가고 있나?"
+          },
+          {
+            "speaker": "Jim",
+            "en": "Oh, I told you, I couldn't close it.",
+            "ko": "아, 말씀드렸잖아요, 그건 최종 계약을 못 했어요."
+          },
+          {
+            "speaker": "Michael",
+            "en": "So, you've come to the master for guidance?",
+            "ko": "그래서 전문가님께 한 수 배우러 온 건가?"
+          },
+          {
+            "speaker": "Jim",
+            "en": "Actually, you called me in here.",
+            "ko": "사실, 지점장님이 절 부르셔서 온 건데요."
+          },
+          {
+            "speaker": "Michael",
+            "en": "All right, well, let me show you how it's done.",
+            "ko": "좋아, 그럼 일처리는 어떻게 하는 건지 보여주지."
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-office-s1e1-how-are-things-going",
+      "sentence": "How are things going?",
+      "meaning": "어떻게 지내요? / 일은 잘 되어가요?",
+      "reading": null,
+      "phonetic_kr": "하워 띵스 고잉?",
+      "order_index": 1,
+      "explanation": {
+        "key": "How are things going? = 요즘 어때요?·일은 잘 돼가요? 근황·진행 상황을 한 번에 묻는 안부 인사.",
+        "situation": "장면 · 마이클이 짐에게 도서관 건이 어떻게 되어가는지 안부 겸 진행을 물음",
+        "drills": [
+          {
+            "en": "How are things going at work?",
+            "ko": "회사 일은 잘 돼가세요?",
+            "kr": "하워 띵스 고잉 앳 워크?"
+          },
+          {
+            "en": "How are things going with your wife?",
+            "ko": "사모님이랑은 잘 지내세요?",
+            "kr": "하워 띵스 고잉 위듀어 와이프?"
+          },
+          {
+            "en": "Hey buddy, how are things going?",
+            "ko": "어이 친구야 (고양이한테), 요즘 어떻게 지내?",
+            "kr": "헤이 버디, 하워 띵스 고잉?"
+          },
+          {
+            "en": "How are things going so far?",
+            "ko": "지금까지는 어떻게 돼가요? (여행 중 일정 점검)",
+            "kr": "하워 띵스 고잉 쏘 파?"
+          },
+          {
+            "en": "How's it going at the office?",
+            "ko": "사무실은 잘 돌아가요?",
+            "kr": "하우짓 고잉 앳 디 오피스?"
+          },
+          {
+            "en": "How are things going at home?",
+            "ko": "집은 별일 없죠?",
+            "kr": "하워 띵스 고잉 앳 호움?"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "How are + 주어 + going?",
+            "body": "things(상황·일들) 를 주어로 '일이 어떻게 굴러가요?'. 사람한테는 How are you going (X) — 안부는 things·it 이 주어."
+          }
+        ],
+        "chunks": [
+          [
+            "How are",
+            "하워"
+          ],
+          [
+            "things",
+            "띵스"
+          ],
+          [
+            "going?",
+            "고잉?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/",
+            "things — 혀끝 이 사이 '띵'"
+          ],
+          [
+            "/ŋ/",
+            "going — 콧소리 '잉' (g 안 튐)"
+          ]
+        ],
+        "mistake": "how are 를 또박또박 '하우 아' (X) → 한 호흡 연음 '하워'. things 를 '띵즈'(X) 무성 '띵스'. going 끝 '고잉그'(X) 콧소리 '고잉'.",
+        "similar": "How's it going? / How are you doing? / How's everything?",
+        "category": "greeting/smalltalk",
+        "frequency": 10
+      }
+    },
+    {
+      "id": "en-office-s1e1-let-me-show-you",
+      "sentence": "let me show you how it's done.",
+      "meaning": "내가 어떻게 하는 건지 보여줄게.",
+      "reading": null,
+      "phonetic_kr": "레미 쇼우 유 하우 잇츠 던.",
+      "order_index": 2,
+      "explanation": {
+        "key": "let me show you how it's done = 어떻게 하는 건지 (내가) 보여줄게. 직접 시범 보일 때 — 으스대는 뉘앙스도 가능.",
+        "situation": "장면 · 마이클이 자기가 전문가라며 일처리를 직접 보여주겠다고 으스댐",
+        "drills": [
+          {
+            "en": "Sit back. Let me show you how it's done.",
+            "ko": "(아내한테) 가만 있어봐, 어떻게 하는 건지 내가 보여줄게.",
+            "kr": "씻 백. 레미 쇼우 유 하우 잇츠 던."
+          },
+          {
+            "en": "Let me show you how it works.",
+            "ko": "이거 어떻게 작동하는지 보여줄게요.",
+            "kr": "레미 쇼우 유 하우 잇 웍스."
+          },
+          {
+            "en": "Watch the cat. Let me show you how it's done.",
+            "ko": "고양이 봐봐, 어떻게 하는 건지 보여줄게.",
+            "kr": "와치 더 캣. 레미 쇼우 유 하우 잇츠 던."
+          },
+          {
+            "en": "Let me show you the way.",
+            "ko": "제가 길 안내해 드릴게요. (여행 중)",
+            "kr": "레미 쇼우 유 더 웨이."
+          },
+          {
+            "en": "Let me show you around.",
+            "ko": "제가 여기 구경시켜 드릴게요.",
+            "kr": "레미 쇼우 유 어라운드."
+          },
+          {
+            "en": "Don't worry, let me show you how it's done.",
+            "ko": "걱정 마요, 어떻게 하는 건지 보여줄게요.",
+            "kr": "돈 워리, 레미 쇼우 유 하우 잇츠 던."
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Let me + 동사원형",
+            "body": "'내가 ~할게' — 허락 구하며 자청. let me show you = 보여줄게."
+          },
+          {
+            "struct": "how it's done (수동)",
+            "body": "'그게 어떻게 행해지는지' = 일처리 방식. 주어 없이 it's done 으로 '하는 방법'을 통째로 가리킴."
+          }
+        ],
+        "chunks": [
+          [
+            "let me",
+            "레미"
+          ],
+          [
+            "show you",
+            "쇼우 유"
+          ],
+          [
+            "how it's",
+            "하우 잇츠"
+          ],
+          [
+            "done.",
+            "던."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/t/",
+            "let me → '레미' (t 탈락·동화)"
+          ],
+          [
+            "/ʌ/",
+            "done — 짧은 '어' '던'"
+          ]
+        ],
+        "mistake": "let me 를 '렛 미'(X) → t 탈락 '레미' 한 덩어리. done 을 '돈/둔'(X) → 짧은 '던'. show 의 ow 는 '쇼우' 이중모음.",
+        "similar": "Let me show you the ropes. / Here's how you do it. / Watch and learn.",
+        "category": "chunk/demonstration",
+        "frequency": 8
+      }
+    }
+  ]
+}
