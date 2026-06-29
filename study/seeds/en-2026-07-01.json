@@ -1,0 +1,221 @@
+{
+  "_note": "RealClass-mining (PPP) — Parks and Recreation S1E2 'Canvassing' 의 방문유세 휴식 장면 (소스 스크립트 #37~45 발췌 → dialogue 9줄, 화자 Leslie/Ann, 단어변경 0). 레슬리가 더위 속에서도 'Nose to the grindstone'으로 계속 돌자고 밀어붙이는데, 간호사 앤이 너무 덥고 지친다며 멈추자고 한다. 레슬리가 서로 얼굴에 입김 불자는 4차원 제안을 하다가 그냥 물 마시자로 정리되고, 앤이 자기 집이 가까우니 한두 시간 쉬자고 한다. 화자 귀속 검증: 2009 셋 테이블 드래프트(archive.org screenplay-collection PDF) 대조 — LESLIE='nose to the grindstone'·'I'm hot, too. Let's blow on each others' faces.'·'Or we could drink some water.', ANN='Can we ... take a break?'·'Yeah, let's do that.' 확인. #44~45(My house is really close by / take a break)는 집을 가진 앤(간호사·앤디 여친) 귀속(에피소드 정합). P1=진짜 장면(verbatim, 듣기·쉐도잉), P2=핵심 표현 2개 집중 추출(close by / take a break — 둘 다 NGSL-Spoken/PHaVE 고빈도, ≤3단어, 여행·일상 전이) 후 지오님 개인화 변형 연습. 발췌 기준 4종 통과 — 인사 단독 0, 미국 행정 디테일 0, 일상/여행 전이 우선, 2화자 교차(Leslie↔Ann) 독백 0. 개인화: 아내·아내 직장·고양이·여행·일상 상황으로 drills 변형. 한국인 해설 8필드 (가이드 §6.3). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_source": {
+    "episode": "s1e2",
+    "lines": [
+      37,
+      45
+    ]
+  },
+  "lang": "en",
+  "date": "2026-07-01",
+  "cards": [
+    {
+      "id": "en-parks-s1e2-take-a-break-scene",
+      "sentence": "방문 유세 — 더위 속 휴식",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "방문 유세 — 더위 속 휴식",
+        "sceneSummary": "레슬리가 공원 사업 지지를 모으려 방문 유세를 도는 중인데, 너무 더워서 간호사 앤이 그만 쉬자고 한다. 레슬리가 서로 얼굴에 입김을 불자는 엉뚱한 제안을 하다가 결국 물 마시며 쉬기로 하고, 앤이 자기 집이 가까우니 한두 시간 쉬자고 한다.",
+        "dialogue": [
+          {
+            "speaker": "Leslie",
+            "en": "Nose to the grindstone, no means yes.",
+            "ko": "쉬지 않고 열심히 하는 거예요, 반대는 곧 찬성이니까."
+          },
+          {
+            "speaker": "Ann",
+            "en": "Can we stop, please?",
+            "ko": "그만하면 안 돼요, 제발요?"
+          },
+          {
+            "speaker": "Ann",
+            "en": "Because it's really hot, and I'm tired.",
+            "ko": "너무 덥고 지치네요."
+          },
+          {
+            "speaker": "Leslie",
+            "en": "Yeah, I'm hot, too.",
+            "ko": "그래요, 저도 더워요."
+          },
+          {
+            "speaker": "Leslie",
+            "en": "Let's blow on each other's faces.",
+            "ko": "서로의 얼굴에 입김을 불어 줍시다."
+          },
+          {
+            "speaker": "Leslie",
+            "en": "Or we could drink some water.",
+            "ko": "아니면 물이라도 마실 수 있죠."
+          },
+          {
+            "speaker": "Ann",
+            "en": "Yeah, let's do that.",
+            "ko": "네, 그렇게 해요."
+          },
+          {
+            "speaker": "Ann",
+            "en": "My house is really close by.",
+            "ko": "저희 집이 가까이에 있으니까."
+          },
+          {
+            "speaker": "Ann",
+            "en": "Let's just go take a break for an hour or so.",
+            "ko": "가서 한두 시간 정도 쉬죠."
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e2-close-by",
+      "sentence": "close by",
+      "reading": null,
+      "phonetic_kr": "클로우스 바이",
+      "order_index": 1,
+      "explanation": {
+        "key": "close by = (거리가) 가까이에·바로 근처에. it is close by 처럼 길찾기·여행에서 위치 말할 때 필수 표현.",
+        "situation": "장면 · 앤이 '우리 집이 가까이에 있다(close by)'며 거기서 쉬자고 함",
+        "drills": [
+          {
+            "en": "The hotel is close by.",
+            "ko": "호텔이 가까이에 있어요. (여행 중)",
+            "kr": "더 호텔 이즈 클로우스 바이."
+          },
+          {
+            "en": "Is there a pharmacy close by?",
+            "ko": "근처에 약국 있나요?",
+            "kr": "이즈 데어러 파머시 클로우스 바이?"
+          },
+          {
+            "en": "My wife's office is close by.",
+            "ko": "아내 직장이 가까이에 있어요.",
+            "kr": "마이 와이프스 오피스 이즈 클로우스 바이."
+          },
+          {
+            "en": "Let's eat somewhere close by.",
+            "ko": "가까운 데서 뭐 좀 먹어요.",
+            "kr": "렛츠 잇 썸웨어 클로우스 바이."
+          },
+          {
+            "en": "The vet is close by, so the cat is fine.",
+            "ko": "동물병원이 가까워서 고양이는 괜찮아요.",
+            "kr": "더 벳 이즈 클로우스 바이, 쏘 더 캣 이즈 파인."
+          },
+          {
+            "en": "Stay close by, please.",
+            "ko": "가까이 붙어 계세요.",
+            "kr": "스테이 클로우스 바이, 플리즈."
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "be + close by (close = 형용사 '가까운', by = 부사 '곁에')",
+            "body": "close 가 동사 '닫다'가 아니라 형용사 '가까운'. 여기서 발음도 '클로우즈'(닫다)가 아니라 끝을 /s/로 '클로우스'. close by 통째로 '바로 근처에'."
+          }
+        ],
+        "chunks": [
+          [
+            "close",
+            "클로우스"
+          ],
+          [
+            "by",
+            "바이"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/s/",
+            "close — 끝을 /s/ '클로우스' (동사 '닫다'는 /z/ '클로우즈')"
+          ],
+          [
+            "/oʊ/",
+            "close — 입 동그랗게 '오우' (단모음 '오' 아님)"
+          ]
+        ],
+        "mistake": "close 를 '클로즈'(닫다)로 발음(X) → 형용사 '가까운'은 끝이 /s/ '클로우스'. close by 를 '클로즈 바이'로 또박또박(X) → '가까이에' 한 덩어리 의미.",
+        "similar": "nearby / not far / right around the corner",
+        "category": "idiom/travel",
+        "frequency": 8
+      },
+      "meaning": "가까이에·바로 근처에."
+    },
+    {
+      "id": "en-parks-s1e2-take-a-break",
+      "sentence": "take a break",
+      "reading": null,
+      "phonetic_kr": "테이커 브레익",
+      "order_index": 2,
+      "explanation": {
+        "key": "take a break = 잠깐 쉬다·휴식하다. 일·여행 중 '좀 쉬자' 할 때 매일 쓰는 기본동사 표현.",
+        "situation": "장면 · 앤이 더위에 지쳐 '가서 한두 시간 쉬자(take a break)'고 제안",
+        "drills": [
+          {
+            "en": "Let's take a break for a bit.",
+            "ko": "잠깐 좀 쉬어요.",
+            "kr": "렛츠 테이커 브레익 포러 빗."
+          },
+          {
+            "en": "I need to take a break.",
+            "ko": "나 좀 쉬어야겠어요.",
+            "kr": "아이 니투 테이커 브레익."
+          },
+          {
+            "en": "Let's take a break and call my wife.",
+            "ko": "잠깐 쉬면서 아내한테 전화하자.",
+            "kr": "렛츠 테이커 브레익 앤 콜 마이 와이프."
+          },
+          {
+            "en": "Can we take a break? My feet hurt.",
+            "ko": "좀 쉬어도 될까요? 발이 아파서요. (여행 중)",
+            "kr": "캔위 테이커 브레익? 마이 핏 헛."
+          },
+          {
+            "en": "The cat needs a break from us.",
+            "ko": "고양이가 우리한테서 좀 쉬어야 해요.",
+            "kr": "더 캣 니즈 어 브레익 프럼 어스."
+          },
+          {
+            "en": "Let's take a break and grab some coffee.",
+            "ko": "잠깐 쉬면서 커피 한잔 해요.",
+            "kr": "렛츠 테이커 브레익 앤 그랩 썸 커피."
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "take + a + break (기본동사 take + 명사 break)",
+            "body": "여기서 break 는 '쉬는 시간'(명사). take a break = 휴식을 '취하다'. 한국어 '쉬다'(동사 하나)와 달리 영어는 take(동사) + a break(명사) 조합으로 표현."
+          }
+        ],
+        "chunks": [
+          [
+            "take a",
+            "테이커"
+          ],
+          [
+            "break",
+            "브레익"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/eɪ/",
+            "take, break — '에이' (take '테이ㅋ', break '브레익')"
+          ],
+          [
+            "/ɹ/",
+            "break — b 다음 혀 굴리는 r '브뤠익'"
+          ]
+        ],
+        "mistake": "take a 를 또박또박 '테이크 어'(X) → 이어서 '테이커' 한 덩어리. break 를 '브레이크'로 끝까지(X) → 끝 k 살짝, '브레익'. break 를 '부레이크'처럼 모음 넣지 않기 — br 한 번에.",
+        "similar": "take five / take a breather / rest for a bit",
+        "category": "phrasal/daily",
+        "frequency": 10
+      },
+      "meaning": "잠깐 쉬다·휴식하다."
+    }
+  ]
+}
