@@ -349,6 +349,10 @@ export function staleIdsToDelete(serverIds, localIds) {
   return (localIds || []).filter((id) => !serverIds.has(id));
 }
 
+// Supabase REST 기본 행 상한. pull 이 이 수에 닿으면 페이지가 잘렸을 수 있어(전체 서버 id 미확보)
+// 삭제 전파 시 1000행 밖 정상 카드를 stale 로 오삭제할 위험 → 상한 도달 시 삭제 보류(2026-06-29).
+export const PULL_PAGE_LIMIT = 1000;
+
 export async function pullTable(mapping, db, userId) {
   if (!supabase) return { table: mapping.dexie, status: 'skipped', reason: 'no_supabase' };
   if (!db) return { table: mapping.dexie, status: 'skipped', reason: 'no_db' };
@@ -382,7 +386,10 @@ export async function pullTable(mapping, db, userId) {
     }
     await store.bulkPut(rowsToPut);
     // 서버 삭제 전파 (serverOwned 만, 'ok' pull 에서만 — data≥1 확인됨). Dexie store 한정 가드.
-    if (mapping.serverOwned && typeof store.toCollection === 'function' && typeof store.bulkDelete === 'function') {
+    // 페이지네이션 가드: data 가 REST 상한(PULL_PAGE_LIMIT)에 닿으면 잘렸을 수 있어 stale 판정 불가 → 삭제 보류.
+    if (mapping.serverOwned && data.length >= PULL_PAGE_LIMIT) {
+      console.warn(`[sync] pullTable ${mapping.supabase} ${data.length}행(상한 도달) — 삭제 전파 보류(페이지 잘림 가능)`);
+    } else if (mapping.serverOwned && typeof store.toCollection === 'function' && typeof store.bulkDelete === 'function') {
       try {
         const serverIds = new Set(rowsToPut.map((r) => r.id));
         const localIds = await store.toCollection().primaryKeys();

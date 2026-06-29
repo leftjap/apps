@@ -2,8 +2,11 @@
 /**
  * generate-review-prompt.mjs — 클로드 음성모드(Haiku 4.5) 영어 복습 프롬프트 생성기.
  *
- * 스터디앱 세션의 학습 표현(study_today_lessons) + 학습자 프로필(~/.config/study/learner-profile.json)
- * → "영어 몰입 음성 대화" 복습 프롬프트를 stdout 출력. 매 새 세션(라우틴 단계 9) + 복습 세션에서 호출.
+ * 스터디앱 세션의 학습 표현 + 학습자 프로필(~/.config/study/learner-profile.json)
+ * → "영어 몰입 음성 대화" 복습 프롬프트를 stdout 출력.
+ *  - --mode new    : 가장 최근 세션(study_today_lessons)의 표현 → 직후 말하기 워밍업
+ *  - --mode review : 복습 큐(study_review_queue)의 due 표현 → 인앱 SRS 와 동일 선정(2026-06-29 정합).
+ *                    졸업 카드는 큐에서 빠지므로 영구 재출력 안 됨.
  *
  * 설계 근거(검증): 영어 주도 대화 + comprehensible(쉽게·천천히) + 전략적 L1 최소(SLA L1 논쟁 — 영어-only 도그마 아님).
  * Voice Mode = Haiku 4.5 → 규칙·예시 명시형.
@@ -14,6 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { argv, env, exit } from 'node:process';
 
 function parseArgs(a) {
@@ -37,41 +41,40 @@ async function rest(url, key, path) {
 }
 
 /** 표현 카드 → 학습 대상 청크 (key 의 '=' 앞부분 = 타깃 표현). */
-function targetExpr(card) {
+export function targetExpr(card) {
   const k = card.explanation?.key || '';
   const left = k.split('=')[0].trim();
   return left || card.sentence || card.id;
 }
 
-async function main() {
-  const args = parseArgs(argv.slice(2));
-  if (!args.userId) { console.error('usage: --user-id <uuid> [--mode new|review] [--lang en]'); exit(1); }
-  const url = env.SUPABASE_URL, key = env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) { console.error('Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY'); exit(1); }
+/** 새 세션: study_today_lessons 행들 → 가장 최근(또는 dateArg) date 의 표현 카드(order_index>0, scene 제외). */
+export function pickNewExprs(rows, dateArg) {
+  const exprCards = (rows || []).filter((r) => (r.order_index ?? 0) > 0);
+  if (!exprCards.length) return [];
+  const latest = dateArg || exprCards.map((r) => r.date).filter(Boolean).sort().slice(-1)[0];
+  return exprCards.filter((r) => r.date === latest);
+}
 
-  const rows = await rest(url, key,
-    `/study_today_lessons?user_id=eq.${args.userId}&lang=eq.${args.lang}&select=id,date,order_index,sentence,explanation,completed&order=date.desc,order_index.asc`);
-  const exprCards = rows.filter((r) => (r.order_index ?? 0) > 0);
-  if (exprCards.length === 0) { console.error('표현 카드 없음 (시드된 세션 없음)'); exit(1); }
+/**
+ * 복습: reviewQueue 행들 → due(nextReview<=today 또는 미정) 우선, 기한 오래된 순(미정 최우선), 상한 limit.
+ * due 0건이면 다가오는 것이라도 오래된 순 폴백(항상 연습거리 제공). 인앱 loadReviewCards 와 동일 정책.
+ */
+export function pickReviewExprs(queueRows, todayISO, limit = 8) {
+  const asc = (a, b) => {
+    const av = a.nextReview ?? '';
+    const bv = b.nextReview ?? '';
+    return av < bv ? -1 : av > bv ? 1 : 0;
+  };
+  const rows = queueRows || [];
+  const due = rows.filter((r) => !r.nextReview || r.nextReview <= todayISO);
+  const pool = due.length ? due : rows;
+  return pool.slice().sort(asc).slice(0, Math.max(0, limit));
+}
 
-  let picked;
-  if (args.mode === 'review') {
-    // 복습: 완료된 표현 중 오래된 것 우선(spaced retrieval) 최대 8개. 완료 0이면 전체에서.
-    const done = exprCards.filter((r) => r.completed);
-    picked = (done.length ? done : exprCards).sort((a, b) => (a.date < b.date ? -1 : 1)).slice(0, 8);
-  } else {
-    // 새 세션: 가장 최근 date 의 표현
-    const latest = args.date || exprCards[0].date;
-    picked = exprCards.filter((r) => r.date === latest);
-  }
-  const exprs = [...new Set(picked.map(targetExpr))];
-
-  let p = {};
-  try { p = JSON.parse(readFileSync(join(homedir(), '.config', 'study', 'learner-profile.json'), 'utf8')).lang_en || {}; } catch { /* 프로필 부재 시 기본값 */ }
-  const goals = (p.goals_priority || ['simple English for traveling', 'understanding dramas without subtitles']).join('; ');
-  const household = (p.persona && p.persona.household) || 'I have a wife and a cat';
-
-  const out = `[클로드 음성모드 영어 복습 프롬프트 — 클로드 Project 지시문에 붙여넣고 음파 아이콘 누르세요]
+function buildPrompt(exprs, profile) {
+  const goals = (profile.goals_priority || ['simple English for traveling', 'understanding dramas without subtitles']).join('; ');
+  const household = (profile.persona && profile.persona.household) || 'I have a wife and a cat';
+  return `[클로드 음성모드 영어 복습 프롬프트 — 클로드 Project 지시문에 붙여넣고 음파 아이콘 누르세요]
 
 You are my English conversation partner. We talk by VOICE. SPEAK ENGLISH ONLY.
 
@@ -97,7 +100,37 @@ ${exprs.map((e) => `- ${e}`).join('\n')}
 (1) Greet me + set the scene in one short sentence -> (2) lead the roleplay, one expression at a time -> (3) I answer -> (4) brief praise/fix -> (5) next -> (6) wrap up.
 
 Start now with (1). Make your first turn very short. English only.`;
-  console.log(out);
 }
 
-main().catch((e) => { console.error('FAILED:', e.message); exit(1); });
+function loadProfile() {
+  try { return JSON.parse(readFileSync(join(homedir(), '.config', 'study', 'learner-profile.json'), 'utf8')).lang_en || {}; }
+  catch { return {}; }
+}
+
+async function main() {
+  const args = parseArgs(argv.slice(2));
+  if (!args.userId) { console.error('usage: --user-id <uuid> [--mode new|review] [--lang en]'); exit(1); }
+  const url = env.SUPABASE_URL, key = env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) { console.error('Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY'); exit(1); }
+
+  let picked;
+  if (args.mode === 'review') {
+    // 복습 = 인앱 SRS 와 동일하게 reviewQueue 의 due 표현 (졸업 카드는 큐에서 제거돼 제외됨).
+    const rows = await rest(url, key,
+      `/study_review_queue?user_id=eq.${args.userId}&lang=eq.${args.lang}&select=id,sentence,explanation,next_review`);
+    const mapped = rows.map((r) => ({ id: r.id, sentence: r.sentence, explanation: r.explanation, nextReview: r.next_review }));
+    const today = args.date || new Date().toISOString().slice(0, 10);
+    picked = pickReviewExprs(mapped, today);
+    if (picked.length === 0) { console.error('복습 큐 비어 있음 (이관된 표현 없음)'); exit(1); }
+  } else {
+    const rows = await rest(url, key,
+      `/study_today_lessons?user_id=eq.${args.userId}&lang=eq.${args.lang}&select=id,date,order_index,sentence,explanation,completed&order=date.desc,order_index.asc`);
+    picked = pickNewExprs(rows, args.date);
+    if (picked.length === 0) { console.error('표현 카드 없음 (시드된 세션 없음)'); exit(1); }
+  }
+  const exprs = [...new Set(picked.map(targetExpr))];
+  console.log(buildPrompt(exprs, loadProfile()));
+}
+
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) main().catch((e) => { console.error('FAILED:', e.message); exit(1); });

@@ -122,7 +122,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   const isRealClass = payload?.lang === 'en';
   if (!isRealClass) return { ok: errors.length === 0, errors, warnings };
 
-  // ── 구조: scene 1장 (oi 0) + 표현 5~7장 ──
+  // ── 구조: scene 1장 (oi 0) + 표현 1~2장 (PPP 집중 추출 — 최소 1장 차단 / 3장 초과 경고) ──
   const scenes = sorted.filter(isSceneCard);
   const exprs = sorted.filter((c) => !isSceneCard(c));
   if (scenes.length !== 1) errors.push(`scene 카드는 정확히 1장이어야 함 (현재 ${scenes.length})`);

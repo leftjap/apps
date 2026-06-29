@@ -1936,3 +1936,69 @@ describe('sync — reconcileTable (서버-빈 테이블 멀티기기 동기화 �
     expect((await reconcileTable(dbWith([{ id: 'x' }]), 'u1', mapping)).status).toBe('skipped');
   });
 });
+
+describe('sync — pullTable 서버 삭제 전파 통합 (serverOwned + 페이지네이션 가드)', () => {
+  beforeEach(() => { vi.resetModules(); vi.unmock('../services/supabase.js'); });
+
+  function pullFromMock(data) {
+    return vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => builder),
+        then: (res, rej) => Promise.resolve({ data, error: null }).then(res, rej),
+      };
+      return builder;
+    });
+  }
+  function ownedStore(localIds) {
+    const store = {
+      bulkPut: vi.fn(),
+      bulkGet: vi.fn().mockResolvedValue([]),
+      toCollection: () => ({ primaryKeys: () => Promise.resolve(localIds) }),
+      bulkDelete: vi.fn(async () => {}),
+    };
+    return store;
+  }
+
+  it('serverOwned: 서버에 없는 로컬 유령 카드 bulkDelete', async () => {
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: pullFromMock([{ id: 'a' }, { id: 'b' }]) }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'todayLessons');
+    const store = ownedStore(['a', 'b', 'ghost']);
+    const res = await pullTable(mapping, { todayLessons: store }, 'u1');
+    expect(res.status).toBe('ok');
+    expect(store.bulkDelete).toHaveBeenCalledWith(['ghost']);
+  });
+
+  it('서버 0행(empty) → 삭제 전파 안 함 (급감 차단)', async () => {
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: pullFromMock([]) }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'todayLessons');
+    const store = ownedStore(['a', 'b']);
+    const res = await pullTable(mapping, { todayLessons: store }, 'u1');
+    expect(res.status).toBe('empty');
+    expect(store.bulkDelete).not.toHaveBeenCalled();
+  });
+
+  it('페이지 상한(1000행) 도달 → 잘림 가능 → 삭제 전파 보류 (1000행 밖 오삭제 방지)', async () => {
+    const full = Array.from({ length: 1000 }, (_, i) => ({ id: `s${i}` }));
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: pullFromMock(full) }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'todayLessons');
+    const store = ownedStore(['s0', 'beyond-page-row']); // beyond-page-row = 1001번째라 페이지 밖(정상 행)
+    const res = await pullTable(mapping, { todayLessons: store }, 'u1');
+    expect(res.status).toBe('ok');
+    expect(store.bulkDelete).not.toHaveBeenCalled();
+  });
+
+  it('non-serverOwned(reviewQueue): 삭제 전파 안 함 (미푸시 보호)', async () => {
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: pullFromMock([{ id: 'a' }]) }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'reviewQueue');
+    const store = ownedStore(['a', 'localonly']);
+    store.bulkGet = vi.fn().mockResolvedValue([undefined]);
+    const res = await pullTable(mapping, { reviewQueue: store }, 'u1');
+    expect(res.status).toBe('ok');
+    expect(store.bulkDelete).not.toHaveBeenCalled();
+  });
+});

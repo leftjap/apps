@@ -477,7 +477,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 > - **P1 = 진짜 장면**: 소스 verbatim 6~10줄(듣기·쉐도잉 노출). 충실성 게이트(소스 대조)가 단어/화자/순서 변경·합성 차단.
 > - **추출 = 핵심 표현 1~2개 (목표적합)**: 장면 *명대사*가 아니라 **학습자 목표(여행·일상·미드 듣기)에 빈출인 짧은 청크**만. 우선 = 기본동사 구동사·관용구(PHaVE 빈출 / NGSL-Spoken 코어 — look good·how are things going·take care of·move on·find out·pick up). 지양(자동 경고) = 긴 절·명대사성·상황한정·라틴/추상 (validate-seed 가 타깃표현 ≥6단어 경고).
 > - **P2 = 개인화 변형**: 표현 카드 `drills` = 그 표현의 **레벨 맞춘 다양한 변형**을 학습자 개인 상황(`~/.config/study/learner-profile.json` `persona` — 아내·아내직장·고양이·여행·일상)으로 개인화. 장면 원문 난이도가 아니라 **쉬운 문장**. → i+1/1T 가 비로소 성립(연습이 저작이라 레벨 통제 가능).
-> - **P3 = 음성 복습**: 세션 후 `scripts/generate-review-prompt.mjs --mode new` 가 클로드 음성모드(영어 몰입·Haiku) 복습 프롬프트 생성.
+> - **P3 = 음성 복습**: 세션 후 `scripts/generate-review-prompt.mjs --mode new`(방금 세션 표현 워밍업) / 복습 세션용은 `--mode review`(reviewQueue due 표현 — 인앱 SRS loadReviewCards 와 동일 선정, 졸업분 제외) 가 클로드 음성모드(영어 몰입·Haiku) 프롬프트 생성.
 > 소스 = Parks **+ The Office** S1E1~6 (`seeds/sources/realclass-{parks,office}-s1e{1..6}.txt`). 표현 카드 = **1~2장**(과다추출 금지 — 집중).
 
 본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation **S1E1~S1E6** (`seeds/sources/realclass-parks-s1e{1..6}.txt`, 2026-06-28 ep2~6 추가). S1E1 은 99/145문장 사용(잔여 46문장은 §발췌기준 4 미달 — 인터뷰 독백·파편·일방통화) → **신규 화(S1E2~S1E6) 우선 마이닝**. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
@@ -570,7 +570,7 @@ spec §5-0 단계 3-4 가 조회하는 학습자 컨텍스트를 장면 선정�
 > 🅖 표시 = `scripts/validate-seed.mjs` 가 기계 차단 (INSERT 전 자동). 나머지는 판단형 — 수동 확인.
 
 - [ ] 🅖 scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비)
-- [ ] 🅖 표현 카드 5~7장 — 각 `drills` 3~8개 (en 필수, ko 동반, **kr 음차 의무**. 개수는 schema §drills 정본 — 핵심·헷갈리는 표현 6~8 / 쉬운 표현 3, 하한 일괄 깔기 금지 — 전 카드 ≤4 면 게이트 경고)
+- [ ] 🅖 표현 카드 **1~2장** (PPP 집중 추출 — 최소 1장 = 게이트 차단 / 3장 초과 = 과다추출 경고. 구 5~7장 폐기 2026-06-29) — 각 `drills` 3~8개 (en 필수, ko 동반, **kr 음차 의무**. 개수는 schema §drills 정본 — 핵심·헷갈리는 표현 6~8 / 쉬운 표현 3, 하한 일괄 깔기 금지 — 전 카드 ≤4 면 게이트 경고)
 - [ ] 🅖 표현 카드마다 `grammar` 1~2건 + `chunks` + `phonemes` 1~3건 (한국인 해설 8필드 완비)
 - [ ] 🅖 `chunks` 가 본문 모든 단어 포함 + `phonetic_kr` = chunks kr 이어붙임과 일치
 - [ ] 🅖 다이얼로그 매칭 계약 — 표현 전수 번호 부여 (위 "다이얼로그 매칭 계약")
