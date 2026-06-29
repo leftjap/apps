@@ -110,11 +110,24 @@ describe('validateSeedContent — 구조', () => {
     expect(r.ok).toBe(false);
   });
 
-  it('표현 카드 4장 (<5) → 차단', () => {
+  it('표현 카드 0장 → 차단 (PPP 최소 1장)', () => {
     const p = makePayload();
-    p.cards = p.cards.slice(0, 5); // scene + 표현 4
+    p.cards = p.cards.slice(0, 1); // scene 만, 표현 0
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('표현 카드 최소 1장');
+  });
+
+  it('표현 카드 1~2장 (PPP 집중) → 통과', () => {
+    const p = makePayload();
+    p.cards = p.cards.slice(0, 3); // scene + 표현 2 (move on 등 집중)
+    const r = validateSeedContent(p, okOpts);
+    expect(r.errors.filter((e) => e.includes('표현 카드'))).toEqual([]);
+  });
+
+  it('표현 카드 5장 (과다) → 경고 (차단 아님)', () => {
+    const r = validateSeedContent(makePayload(), okOpts); // makePayload = 표현 5장
+    expect(r.warnings.join(' ')).toContain('과다 추출');
   });
 
   it('8필드 누락 (mistake 없음) → 차단', () => {

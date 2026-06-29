@@ -124,7 +124,9 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   if (scenes.length !== 1) errors.push(`scene 카드는 정확히 1장이어야 함 (현재 ${scenes.length})`);
   const scene = scenes[0];
   if (scene && (scene.order_index ?? null) !== 0) errors.push(`scene 카드 order_index 는 0 (현재 ${scene.order_index})`);
-  if (exprs.length < 5 || exprs.length > 7) errors.push(`표현 카드는 5~7장 (현재 ${exprs.length})`);
+  // PPP(2026-06-29): 진짜 장면(P1) → 핵심 표현 1~2개 집중 추출 → 레벨 변형 연습(P2). 과다추출 지양.
+  if (exprs.length < 1) errors.push(`표현 카드 최소 1장 필요 (현재 ${exprs.length})`);
+  if (exprs.length > 3) warnings.push(`표현 ${exprs.length}장 — PPP 집중 추출은 1~2개 권장 (과다 추출 — 핵심만 깊이)`);
 
   // ── scene: dialogue 6~10줄, speaker/en/ko 완비, 화자 TTS 등록 ──
   const dialogue = scene?.explanation?.dialogue ?? [];
