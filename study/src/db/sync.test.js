@@ -117,6 +117,22 @@ describe('sync — Wave 11.13.1 다운로드', () => {
   });
 });
 
+describe('sync — 서버 삭제 전파 (staleIdsToDelete + serverOwned)', () => {
+  it('staleIdsToDelete: 서버에 없는 로컬 id 만 반환', async () => {
+    const { Sync } = await import('./sync.js');
+    expect(typeof Sync.staleIdsToDelete).toBe('function');
+    expect(Sync.staleIdsToDelete(new Set(['a', 'b']), ['a', 'b', 'ghost1', 'ghost2'])).toEqual(['ghost1', 'ghost2']);
+    expect(Sync.staleIdsToDelete(new Set(['a']), ['a'])).toEqual([]);
+    expect(Sync.staleIdsToDelete(new Set(['a']), [])).toEqual([]);
+  });
+
+  it('serverOwned 플래그: today_lessons·math_problems 만 (기기-작성 테이블 제외)', async () => {
+    const { Sync } = await import('./sync.js');
+    const owned = Sync.TABLE_MAP.filter((m) => m.serverOwned).map((m) => m.dexie).sort();
+    expect(owned).toEqual(['mathProblems', 'todayLessons']);
+  });
+});
+
 describe('sync — Wave 11.13.2 업로드 가드 (supabase=null)', () => {
   beforeEach(() => {
     vi.resetModules();

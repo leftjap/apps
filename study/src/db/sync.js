@@ -255,6 +255,7 @@ export const TABLE_MAP = Object.freeze([
     supabase: 'study_today_lessons',
     toSupabase: todayLessonsDexieToSupabase,
     toDexie: todayLessonsSupabaseToDexie,
+    serverOwned: true, // 서버 시드, 기기는 완료만 → 서버 삭제 전파 대상 (staleIdsToDelete)
   }),
   Object.freeze({
     dexie: 'sessionLogs',
@@ -273,6 +274,7 @@ export const TABLE_MAP = Object.freeze([
     supabase: 'study_math_problems',
     toSupabase: mathProblemsDexieToSupabase,
     toDexie: mathProblemsSupabaseToDexie,
+    serverOwned: true, // 서버 시드 → 서버 삭제 전파 대상
   }),
   Object.freeze({
     dexie: 'mathQueue',
@@ -336,6 +338,17 @@ export function resolveConflict(local, server) {
  *
  * Wave 11.13.3 — reviewQueue 만 bulkGet → resolveConflict 후 bulkPut.
  */
+/**
+ * 서버 삭제 전파 (2026-06-29): 서버-소유 테이블의 서버 id 집합에 없는 로컬 id 반환.
+ * 배경: pullTable 이 bulkPut 만 해서 서버에서 삭제된 카드가 Dexie 에 영구 잔존 →
+ * 실험·구 시드가 기기에 유령으로 남아 FIFO 최상단 노출(2026-06-29 결함 토론회 잔존 사고).
+ * serverOwned(today_lessons/math_problems) 에만: 기기는 완료만 하고 생성 안 함 → 서버에 없으면 삭제된 것.
+ * session_logs/reviewQueue 등 기기-작성 테이블엔 미적용(미푸시 데이터 보호). 'ok'(서버≥1행) pull 에서만.
+ */
+export function staleIdsToDelete(serverIds, localIds) {
+  return (localIds || []).filter((id) => !serverIds.has(id));
+}
+
 export async function pullTable(mapping, db, userId) {
   if (!supabase) return { table: mapping.dexie, status: 'skipped', reason: 'no_supabase' };
   if (!db) return { table: mapping.dexie, status: 'skipped', reason: 'no_db' };
@@ -368,6 +381,17 @@ export async function pullTable(mapping, db, userId) {
       rowsToPut = transformed.map((serverRow, i) => resolveConflict(localRows[i], serverRow));
     }
     await store.bulkPut(rowsToPut);
+    // 서버 삭제 전파 (serverOwned 만, 'ok' pull 에서만 — data≥1 확인됨). Dexie store 한정 가드.
+    if (mapping.serverOwned && typeof store.toCollection === 'function' && typeof store.bulkDelete === 'function') {
+      try {
+        const serverIds = new Set(rowsToPut.map((r) => r.id));
+        const localIds = await store.toCollection().primaryKeys();
+        const stale = staleIdsToDelete(serverIds, localIds);
+        if (stale.length) await store.bulkDelete(stale);
+      } catch (e) {
+        console.error(`[sync] pullTable ${mapping.supabase} stale 삭제 전파 실패`, e);
+      }
+    }
     return { table: mapping.dexie, status: 'ok', count: rowsToPut.length };
   } catch (e) {
     console.error(`[sync] pullTable ${mapping.supabase} 예외`, e);
@@ -1210,6 +1234,7 @@ export const Sync = {
   queueUpload,
   flushPendingUploads,
   resolveConflict,
+  staleIdsToDelete,
   allowEmptyServerPush,
   // Wave 11.13.x — dailyStats / user_meta (PK 차이 + camelCase↔snake_case + 1↔4 row)
   dailyStatsDexieToSupabase,
