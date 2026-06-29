@@ -206,6 +206,18 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     warnings.push(`기본동사 비중 낮음: 표현 ${exprs.length}장 중 ${basicVerbCards}장만 기본동사/구동사 포함 (<60%) — 일상 전이 가능 기본동사 우선 (학습 anchor)`);
   }
 
+  // ── 목표적합 추출 (2026-06-29 PPP): 학습 대상은 '짧은 고빈도 청크'여야 함 ──
+  // key 의 '=' 앞(타깃 표현)이 6단어 이상이면 '긴 절·명대사성' 추출 의심 → 경고.
+  // (예: 'let me show you how it's done'(7) 탈락 / 'how are things going'(4)·'look good'(2) 통과)
+  // 빈도 우선순위(NGSL-Spoken/PHaVE)는 §6.3 추출 rubric 이 에이전트에 지시 — 게이트는 길이 backstop.
+  for (const c of exprs) {
+    const chunk = String(c.explanation?.key ?? '').split('=')[0].trim();
+    const wc = chunk ? chunk.split(/\s+/).filter(Boolean).length : 0;
+    if (wc > 5) {
+      warnings.push(`${c.id}: 타깃 표현 ${wc}단어 ("${chunk}") — 긴 절·명대사성 의심. 짧은 고빈도 청크(구동사·관용구, ≤5단어)로 추출 권장 (목표적합 — guide §6.3 추출 rubric)`);
+    }
+  }
+
   // ── 매칭 계약: deriveDialogue 순차 커서 시뮬레이션 — 표현 전수 번호 부여 의무 ──
   if (scene && exprs.length) {
     let ci = 0;

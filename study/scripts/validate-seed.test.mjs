@@ -379,3 +379,19 @@ describe('validateSeedContent — 기본동사 중심 / 어려운 어휘 차단 
     expect(r.warnings.filter((w) => w.includes('기본동사 비중'))).toEqual([]);
   });
 });
+
+describe('validateSeedContent — 목표적합 추출 (PPP: 짧은 고빈도 청크)', () => {
+  it('타깃 표현이 긴 절(>5단어, 명대사성) → 경고', () => {
+    const p = makePayload();
+    p.cards[1].explanation.key = "let me show you how it's done = 보여줄게."; // 7단어
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.join(' ')).toContain('긴 절');
+  });
+
+  it('타깃 표현이 짧은 청크(≤5단어) → 경고 없음', () => {
+    const p = makePayload();
+    p.cards[1].explanation.key = 'move on = 넘어가다.'; // 2단어
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('긴 절'))).toEqual([]);
+  });
+});
