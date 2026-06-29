@@ -14,6 +14,23 @@ describe('buildSummaryData', () => {
     });
   });
 
+  it('exprs — state.cards 의 표현(scene 제외) key 청크 추출 (음성복습 프롬프트용)', () => {
+    const out = buildSummaryData({
+      mode: 'new',
+      state: { cards: [
+        { id: 's', explanation: { dialogue: [{}] } },
+        { id: 'a', sentence: 'My house is really close by.', explanation: { key: 'close by = 가까이.' } },
+        { id: 'b', sentence: 'X', explanation: { key: 'take a break = 쉬다.' } },
+      ], pronScores: [] },
+      durationSec: 10, completedNewCount: 2,
+    });
+    expect(out.exprs).toEqual(['close by', 'take a break']);
+  });
+
+  it('exprs — cards 없으면 빈 배열', () => {
+    expect(buildSummaryData({ mode: 'review', state: { pronScores: [] } }).exprs).toEqual([]);
+  });
+
   it('mode=review — newCount=0, total=completedReviewCount, judged 반영', () => {
     const out = buildSummaryData({
       mode: 'review', state: { tried: 4, passed: 2, judged: { got: 2, hmm: 1, no: 1 }, pronScores: [70, 80, 90, 75], weakInSession: {} },

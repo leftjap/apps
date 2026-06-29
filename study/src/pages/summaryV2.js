@@ -8,6 +8,28 @@
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
 import { pickSize } from '../components/session/index.js';
+import { buildVoicePrompt } from '../services/voicePrompt.js';
+
+// 음성모드(클로드 아이폰 Haiku) 말하기 연습 프롬프트 블록 — 세션 끝에서 복사 → 붙여넣기.
+function buildVoiceEl(exprs) {
+  const prompt = buildVoicePrompt(exprs);
+  const ta = h('textarea', { readonly: 'readonly', rows: '8',
+    style: 'width:100%;box-sizing:border-box;margin-top:8px;padding:12px 14px;border:1px solid var(--line,#e3ded2);border-radius:12px;background:var(--card,#fff);color:var(--text,#2c2a26);font-size:12.5px;line-height:1.5;resize:vertical;font-family:inherit;' });
+  ta.value = prompt;
+  const LABEL = '📋 프롬프트 복사';
+  const copyBtn = h('button', { type: 'button',
+    style: 'margin-top:10px;padding:10px 18px;border:1px solid var(--line,#cfc8b8);border-radius:10px;background:var(--card,#fff);color:var(--text,#2c2a26);font-size:14px;font-weight:700;cursor:pointer;' }, LABEL);
+  copyBtn.addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText(prompt); }
+    catch { try { ta.focus(); ta.select(); document.execCommand('copy'); } catch { /* noop */ } }
+    copyBtn.textContent = '복사됨 ✓';
+    setTimeout(() => { copyBtn.textContent = LABEL; }, 1500);
+  });
+  return h('div', { style: 'width:100%;max-width:520px;margin:30px auto 0;text-align:left;' },
+    h('div', { style: 'font-size:13.5px;font-weight:800;color:var(--text,#2c2a26);' }, '🎙 음성모드로 말하기 연습'),
+    h('div', { style: 'font-size:12.5px;color:var(--mut,#8a8170);margin-top:3px;line-height:1.45;' }, '클로드 아이폰 앱 음성모드에 붙여넣고 오늘 표현으로 대화하세요 (연구 기반 코칭 규칙 포함).'),
+    ta, copyBtn);
+}
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -135,6 +157,10 @@ export function renderSummaryV2(host, data, handlers = {}) {
   const chips = weak.length ? h('div', { class: 'vy-chips' }, h('span', { class: 'lb' }, '다음에 신경 쓸 발음'),
     weak.map((w) => h('span', { class: 'vy-chip' }, w))) : null;
 
+  // 음성모드 말하기 연습 프롬프트 (en 전용 — 오늘 표현으로 빌드, 복사 가능)
+  const vpLang = (() => { try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; } catch { return 'en'; } })();
+  const voiceEl = vpLang === 'en' ? buildVoiceEl(Array.isArray(data.exprs) ? data.exprs : []) : null;
+
   const rt = data.returnTo || 'home';
   const goHome = handlers.onDone || (() => {
     try { sessionStorage.removeItem('studySummary'); sessionStorage.removeItem('studyReturnTo'); } catch { /* noop */ }
@@ -166,10 +192,10 @@ export function renderSummaryV2(host, data, handlers = {}) {
           h('span', { class: 'm-topb-meta' }, isReview ? '복습 완료' : '신규 학습 완료'),
           h('span', { class: 'm-topb-time' }, `${mins}분`)),
         h('div', { class: 'm-prog' }, Array.from({ length: 5 }, () => h('i', { class: 'f' })))),
-      h('div', { class: 'vy-scroll' }, h('div', { class: 'vy-wrap' }, ringEl, h1El, subEl, banner, stats, chips)),
+      h('div', { class: 'vy-scroll' }, h('div', { class: 'vy-wrap' }, ringEl, h1El, subEl, banner, stats, chips, voiceEl)),
       h('div', { class: 'm-cta' }, ctas));
   } else {
-    root = h('div', { class: 'vy' }, v2Style(VY_CSS), h('div', { class: 'vy-wrap' }, ringEl, h1El, subEl, banner, stats, chips, ctas));
+    root = h('div', { class: 'vy' }, v2Style(VY_CSS), h('div', { class: 'vy-wrap' }, ringEl, h1El, subEl, banner, stats, chips, voiceEl, ctas));
   }
   host.appendChild(root);
   return { cleanup: () => { host.innerHTML = ''; } };

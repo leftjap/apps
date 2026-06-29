@@ -27,7 +27,17 @@ export function buildSummaryData({ mode, state, durationSec, completedNewCount, 
     .slice(0, 3)
     .map(([sym]) => sym);
 
-  return { mode, durationSec: Number(durationSec) || 0, newCount, judged, tryCount, passCount, total, pronAvg, weakTop3, returnTo };
+  // 음성복습 프롬프트용 타깃 표현 — scene 제외, explanation.key 의 '=' 앞 청크(없으면 sentence).
+  const cards = Array.isArray(state?.cards) ? state.cards : [];
+  const exprs = [...new Set(cards
+    .filter((c) => c && !(c.explanation && Array.isArray(c.explanation.dialogue)))
+    .map((c) => {
+      const left = String(c.explanation?.key ?? '').split('=')[0].trim();
+      return left || c.sentence || '';
+    })
+    .filter(Boolean))];
+
+  return { mode, durationSec: Number(durationSec) || 0, newCount, judged, tryCount, passCount, total, pronAvg, weakTop3, exprs, returnTo };
 }
 
 export function persistSummary(payload) {
