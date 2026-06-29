@@ -220,6 +220,18 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     if (wc > 5) {
       warnings.push(`${c.id}: 타깃 표현 ${wc}단어 ("${chunk}") — 긴 절·명대사성 의심. 짧은 고빈도 청크(구동사·관용구, ≤5단어)로 추출 권장 (목표적합 — guide §6.3 추출 rubric)`);
     }
+    // sentence 가 맨 구문이면 차단 (2026-06-30): 복습/녹음은 card.sentence 를 쓰므로 sentence=구문이면
+    // 복습이 구문 조각이 된다. sentence = 장면 원문 전체 문장(구문은 key 에). 그 구문을 품은 더 긴 원문
+    // 라인이 있으면 그 라인을 sentence 로 써야 함. (구문이 곧 완전한 한 줄이면 — 더 긴 라인 없음 — 통과)
+    const nSent = norm(c.sentence);
+    const nChunk = norm(chunk);
+    if (nChunk && nSent === nChunk) {
+      const fuller = dialogue.find((l) => {
+        const nl = norm(l?.en);
+        return nl.includes(nChunk) && nl.split(' ').filter(Boolean).length > nChunk.split(' ').filter(Boolean).length;
+      });
+      if (fuller) errors.push(`${c.id}: sentence 가 맨 구문 "${c.sentence}" — 장면 원문 전체 문장("${fuller.en}")을 sentence 로, 구문은 key 로 (복습이 구문 조각이 됨)`);
+    }
   }
 
   // ── 매칭 계약: deriveDialogue 순차 커서 시뮬레이션 — 표현 전수 번호 부여 의무 ──

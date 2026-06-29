@@ -405,3 +405,44 @@ describe('validateSeedContent — seed-supabase 필수 필드 정합 (meaning)',
     expect(r.errors.join(' ')).toContain('meaning 누락');
   });
 });
+
+describe('validateSeedContent — sentence 가 맨 구문 차단 (복습=문장, 2026-06-30)', () => {
+  function bareChunkPayload() {
+    const scene = {
+      id: 'en-parks-s1e2-bc-scene', sentence: '장면', meaning: "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      reading: null, phonetic_kr: null, order_index: 0,
+      explanation: { sceneTitle: '장면', sceneSummary: '요약', dialogue: [
+        { speaker: 'Leslie', en: 'Nose to the grindstone.', ko: '1' },
+        { speaker: 'Ann', en: 'Can we stop, please?', ko: '2' },
+        { speaker: 'Ann', en: 'Because it is hot.', ko: '3' },
+        { speaker: 'Leslie', en: 'Yeah, I am hot, too.', ko: '4' },
+        { speaker: 'Ann', en: 'My house is really close by.', ko: '5' },
+        { speaker: 'Ann', en: 'Let us take a break here.', ko: '6' },
+      ] },
+    };
+    const card = {
+      id: 'en-parks-s1e2-close-by', sentence: 'close by', meaning: '가까이', reading: null,
+      phonetic_kr: '클로우스 바이', order_index: 1,
+      explanation: { key: 'close by = 가까이.', situation: '장면',
+        drills: Array.from({ length: 5 }, (_, i) => ({ en: `D${i}.`, ko: '뜻', kr: '드릴' })),
+        grammar: [{ struct: 'a', body: 'b' }], chunks: [['close', '클로우스'], ['by', '바이']],
+        phonemes: [['/k/', 'close']], mistake: 'm', similar: 's', category: 'chunk', frequency: 7 },
+    };
+    return makePayload({ _source: { episode: 's1e2', lines: [1, 9] }, cards: [scene, card] });
+  }
+
+  it('sentence=맨 구문 + 더 긴 원문 라인 존재 → 차단', () => {
+    const r = validateSeedContent(bareChunkPayload(), okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('맨 구문');
+  });
+
+  it('sentence=전체 원문 라인이면 통과 (구문은 key 에)', () => {
+    const p = bareChunkPayload();
+    p.cards[1].sentence = 'My house is really close by.';
+    p.cards[1].phonetic_kr = '마이 하우스 이즈 리얼리 클로우스 바이';
+    p.cards[1].explanation.chunks = [['My', '마이'], ['house', '하우스'], ['is', '이즈'], ['really', '리얼리'], ['close', '클로우스'], ['by', '바이']];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.errors.filter((e) => e.includes('맨 구문'))).toEqual([]);
+  });
+});

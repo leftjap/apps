@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from 'vitest';
-import { pickCardFields, loadNewCards, loadReviewCards, loadFreeReviewCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, advanceCard } from './cardLoader.js';
+import { pickCardFields, loadNewCards, loadReviewCards, loadFreeReviewCards, loadReplayCards, loadQueueFromSession, clearSessionQueue, getSessionReturnTo, advanceCard } from './cardLoader.js';
 
 function createMockDB({ todayLessons = [], reviewQueue = [] } = {}) {
   const where = (rows) => (key) => ({
@@ -311,5 +311,57 @@ describe('getSessionReturnTo', () => {
     expect(getSessionReturnTo()).toBe('stats');
     sessionStorage.setItem('studyReturnTo', 'malicious');
     expect(getSessionReturnTo()).toBe('home');
+  });
+});
+
+describe('loadReplayCards — 완료 세션 다시 듣기 (최신 완료 그룹)', () => {
+  const scene = (id, date) => ({ id, lang: 'en', date, order_index: 0, completed: true, explanation: { dialogue: [{}] } });
+  const expr = (id, date, oi) => ({ id, lang: 'en', date, order_index: oi, completed: true, explanation: { key: 'k' } });
+
+  it('가장 최근 완료 date 의 그룹만 order_index 순으로 반환', async () => {
+    const db = createMockDB({ todayLessons: [
+      expr('old-1', '2026-06-24', 1), scene('old-s', '2026-06-24'),
+      expr('new-2', '2026-07-01', 2), scene('new-s', '2026-07-01'), expr('new-1', '2026-07-01', 1),
+    ] });
+    const out = await loadReplayCards(db, 'en', '2026-07-01');
+    expect(out.map((c) => c.id)).toEqual(['new-s', 'new-1', 'new-2']);
+  });
+
+  it('미완료 카드는 제외 (완료분만 replay)', async () => {
+    const db = createMockDB({ todayLessons: [
+      scene('s', '2026-07-01'), expr('done', '2026-07-01', 1),
+      { id: 'undone', lang: 'en', date: '2026-07-01', order_index: 2, completed: false, explanation: { key: 'k' } },
+    ] });
+    const out = await loadReplayCards(db, 'en', '2026-07-01');
+    expect(out.map((c) => c.id)).toEqual(['s', 'done']);
+  });
+
+  it('완료 카드 없으면 빈 배열', async () => {
+    const db = createMockDB({ todayLessons: [{ id: 'x', lang: 'en', date: '2026-07-01', order_index: 0, completed: false, explanation: { dialogue: [] } }] });
+    expect(await loadReplayCards(db, 'en', '2026-07-01')).toEqual([]);
+  });
+
+  it('db/lang 누락 안전', async () => {
+    expect(await loadReplayCards(null, 'en')).toEqual([]);
+    expect(await loadReplayCards(createMockDB(), null)).toEqual([]);
+  });
+});
+
+describe('pickCardFields — pron 파생 (review_queue 동기화 갭 보완)', () => {
+  it('phonetic_kr 없으면 explanation.chunks kr 이어붙임으로 파생', () => {
+    const out = pickCardFields({
+      id: 'c', sentence: 'My house is really close by.',
+      explanation: { chunks: [['My', '마이'], ['house', '하우스'], ['is', '이즈'], ['really', '리얼리'], ['close', '클로우스'], ['by', '바이']] },
+    });
+    expect(out.pron).toBe('마이 하우스 이즈 리얼리 클로우스 바이');
+  });
+
+  it('phonetic_kr 있으면 그대로 (chunks 파생 안 함)', () => {
+    const out = pickCardFields({ id: 'c', sentence: 'X', phonetic_kr: '직접 발음', explanation: { chunks: [['a', 'b']] } });
+    expect(out.pron).toBe('직접 발음');
+  });
+
+  it('phonetic_kr·chunks 둘 다 없으면 빈 문자열', () => {
+    expect(pickCardFields({ id: 'c', sentence: 'X' }).pron).toBe('');
   });
 });

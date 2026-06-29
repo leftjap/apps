@@ -6,12 +6,20 @@
  * loadReviewCards(db, lang, todayISO) — reviewQueue 의 due 카드 (nextReview <= today, 미정 nextReview 도 due)
  */
 
+// explanation.chunks 의 kr 이어붙임 = 발음. review_queue 는 phonetic_kr 컬럼이 없어 서버 동기화 시
+// pron 이 유실되므로(2026-06-30), phonetic_kr 부재 시 chunks 에서 파생(게이트가 둘을 일치 강제).
+function chunksKr(card) {
+  const ch = card?.explanation?.chunks;
+  if (!Array.isArray(ch) || !ch.length) return '';
+  return ch.map((x) => (Array.isArray(x) ? x[1] : '') ?? '').join(' ').trim();
+}
+
 export function pickCardFields(card) {
   if (!card) return null;
   return {
     id: card.id,
     sentence: card.sentence ?? '',
-    pron: card.phonetic_kr ?? '',
+    pron: card.phonetic_kr || chunksKr(card),
     ko: card.meaning ?? '',
     reading: card.reading ?? null,
     lang: card.lang ?? null,
@@ -97,6 +105,22 @@ export async function loadFreeReviewCards(db, lang, limit = 20) {
     return av < bv ? -1 : av > bv ? 1 : 0;
   });
   return rows.slice(0, Math.max(0, Number(limit) || 0));
+}
+
+/**
+ * loadReplayCards — 완료한 신규 세션 '다시 듣기' (home done 상태 버튼).
+ * 가장 최근 완료 date 의 그룹(scene + 표현, 1일 1장면)을 order_index 순으로 반환. 읽기 전용 replay —
+ * loadNewCards 가 빈 배열(전부 완료)일 때 session-new 가 폴백 로드. 호출부는 replay 모드에서
+ * finishSession(복습 이관·통계)을 건너뛴다(완료 카드 재이관 시 SRS interval 리셋 방지).
+ */
+export async function loadReplayCards(db, lang) {
+  if (!db || !lang) return [];
+  const rows = await db.todayLessons.where('lang').equals(lang).toArray();
+  const done = rows.filter((r) => r.completed === true);
+  if (!done.length) return [];
+  const latestDate = done.reduce((m, r) => ((r.date || '') > m ? r.date : m), done[0].date || '');
+  return done.filter((r) => r.date === latestDate)
+    .sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
 }
 
 /**

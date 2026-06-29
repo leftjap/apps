@@ -529,7 +529,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 | `similar` | 같은 뜻 대체 표현 1~2개 |
 | `category` / `frequency` | 분류 / 1~10 빈도 |
 
-- `sentence` = 장면 속 원문 (학습용 최소 단순화 허용) / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
+- `sentence` = 장면 속 **원문 전체 문장** (학습용 최소 단순화 허용) — **맨 구문 금지**. 추출한 구동사·관용구는 `key` 에 넣고, `sentence` 는 그 구문을 품은 **완전한 한 줄**이어야 한다 (복습·녹음이 `sentence` 를 쓰므로 구문 조각이면 복습이 빈약해짐. 예: 추출 "close by" → `sentence`="My house is really close by.", `key`="close by = …"). `validate-seed.mjs` 가 sentence==구문(더 긴 원문 라인 존재)을 차단. / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
 - **발음 정합 룰** (구 §11 부활): `phonetic_kr` = chunks 의 kr 이어붙임과 일치 / chunks 가 본문 전단어 커버 / 사전 표기 X·실발화 기준
 - **다이얼로그 매칭 계약** (2026-06-10 — `session-new.js` `deriveDialogue` 코드 결합): 다이얼로그 번호·하이라이트는 **순차 커서**로 부여된다 — ① 표현 카드 순서(order_index) = dialogue 등장 순서 ② 카드 `sentence` 가 해당 dialogue 줄에 포함 (소문자·기호 제거 정규화 기준) ③ 한 줄당 표현 1개 (한 줄에 표현 2개면 줄을 쪼개 발췌). 위반 시 그 카드부터 번호 전멸 ("표현 0개" 버그의 원인) — `validate-seed.mjs` 가 시뮬레이션으로 차단
 - 콩트 메타 (skit*/scene_id/stage/newElements/knownElements) **미사용** — s1e1 정본 기준

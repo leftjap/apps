@@ -16,7 +16,7 @@ import {
   pickSize,
   watchSize,
 } from '../components/session/index.js';
-import { loadNewCards, pickCardFields, advanceCard } from './cardLoader.js';
+import { loadNewCards, loadReplayCards, pickCardFields, advanceCard } from './cardLoader.js';
 import { formatElapsed } from '../utils/elapsed.js';
 import { localISODate } from '../utils/today.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
@@ -82,11 +82,12 @@ export function mountSessionNew(host) {
     recLog: {}, // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착·진행 게이트 (2026-06-10)
     ended: false,
     base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
+    replay: false, // 다시 듣기 — 완료 그룹 재청취(읽기전용). finishSession·스냅샷·라이브통계 건너뜀(SRS 리셋·이중집계 방지)
   };
 
   const saveSnapshot = () => {
     // 데모(?demo=1)는 실 meta('activeSession')에 절대 쓰지 않는다 (격리). 인증 SPA 에서도 안전.
-    if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return;
+    if (isDemoMode() || state.replay || state.ended || !window.studyDB || !state.loaded) return;
     const snap = {
       mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime, base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
@@ -104,6 +105,9 @@ export function mountSessionNew(host) {
     state.ended = true;
     // 데모(?demo=1)는 finishSession/persistSummary/clearActiveSession 등 실 DB write 를 일절 하지 않는다.
     if (isDemoMode()) { window.location.hash = '#/summary'; return; }
+    // 다시 듣기(replay): 완료 카드 재청취 — finishSession(복습 이관·통계) 건너뜀(완료 카드 재이관 시
+    // reviewQueue interval=1 리셋 + dailyStats 이중집계 방지). 그냥 홈 복귀.
+    if (state.replay) { window.location.hash = '#/'; return; }
     const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
     const durationSec = clampSessionDuration(Math.floor((Date.now() - startTime) / 1000), completedCount);
     try {
@@ -221,6 +225,24 @@ export function mountSessionNew(host) {
     loadActiveSession(window.studyDB),
   ])
     .then(async ([cards, snapshot]) => {
+      // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
+      // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
+      if (cards.length === 0) {
+        const replay = await loadReplayCards(window.studyDB, getStoredLang());
+        if (replay.length > 0) {
+          if (snapshot && snapshot.mode === 'new') clearActiveSession(window.studyDB).catch(() => {});
+          state.replay = true;
+          state.cards = replay;
+          state.total = replay.length;
+          state.step = 1;
+          state.sentence = pickCardFields(replay[0]) || EMPTY_SENTENCE;
+          const sc = replay.find((c) => Array.isArray(c.explanation?.dialogue));
+          if (sc) { try { state.shadowed = await getSceneShadow(window.studyDB, sc.id); } catch { /* noop */ } }
+          state.loaded = true;
+          rerender();
+          return;
+        }
+      }
       state.cards = cards;
       state.total = cards.length;
       const restore = restoreFromSnapshot(snapshot, cards, 'new');
