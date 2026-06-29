@@ -14,6 +14,7 @@ import {
   validateSeedContent,
   evaluateServerGuards,
   parseSpeakerVoiceNames,
+  loadSourceEnLines,
 } from './validate-seed.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -302,5 +303,66 @@ describe('validateSeedContent — 약점 음소 가중 (_context.weakPhonemes, 2
   it('컨텍스트 없음 → 경고 없음 (구 시드 호환)', () => {
     const r = validateSeedContent(makePayload(), okOpts);
     expect(r.warnings.filter((w) => w.includes('약점 음소'))).toEqual([]);
+  });
+});
+
+describe('validateSeedContent — 충실성 게이트 (소스 대조)', () => {
+  // makePayload dialogue = Alpha~Zeta line. sourceEnLines 로 소스 실재 여부 주입.
+  const SRC_ALL = ['Alpha line one. And more.', 'Beta line two.', 'Gamma line three.', 'Delta line four.', 'Epsilon line five.', 'Zeta line six.'];
+
+  it('dialogue 줄이 소스에 없음(재구성·둔갑) → 차단', () => {
+    const src = [...SRC_ALL.slice(0, 5), 'A totally different fabricated sentence.']; // Zeta 누락
+    const r = validateSeedContent(makePayload(), { ...okOpts, sourceEnLines: src });
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('충실성 위반');
+  });
+
+  it('모든 dialogue 줄 소스 실재(말미 trim 포함) → 충실성 error 없음', () => {
+    const r = validateSeedContent(makePayload(), { ...okOpts, sourceEnLines: SRC_ALL });
+    expect(r.errors.filter((e) => e.includes('충실성'))).toEqual([]);
+  });
+
+  it('sourceEnLines 미제공 → 충실성 미검증 경고 (ok 유지)', () => {
+    const r = validateSeedContent(makePayload(), okOpts);
+    expect(r.warnings.join(' ')).toContain('충실성 미검증');
+    expect(r.errors.filter((e) => e.includes('충실성'))).toEqual([]);
+  });
+
+  it('loadSourceEnLines — 소스 부재 episode → null / 존재 시 해당 EN 추출', () => {
+    expect(loadSourceEnLines(seedsDir, { episode: 's9e9-nonexistent', lines: [1, 2] })).toBeNull();
+    const lines = loadSourceEnLines(seedsDir, { episode: 's1e1', lines: [72, 73] });
+    if (lines) expect(lines.join(' ')).toContain('Ann Perkins'); // gitignored 소스 로컬 존재 시
+    else expect(lines).toBeNull(); // CI(소스 부재) 그레이스풀
+  });
+});
+
+describe('validateSeedContent — 기본동사 중심 / 어려운 어휘 차단 (학습 anchor)', () => {
+  it('라틴계·추상 어휘(utilize) → 차단', () => {
+    const p = makePayload();
+    p.cards[1].explanation.key = 'Please utilize the form.';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('어려운 어휘');
+  });
+
+  it('기본동사 비중 <60% → 경고', () => {
+    const r = validateSeedContent(makePayload(), okOpts); // Alpha~ 표현엔 기본동사 0
+    expect(r.warnings.join(' ')).toContain('기본동사 비중');
+  });
+
+  it('기본동사 포함 표현 ≥60% → 기본동사 경고 없음', () => {
+    const p = makePayload();
+    // 표현 sentence 를 기본동사 포함으로 교체 (dialogue 도 동기화해 매칭 계약 유지)
+    const verbs = ['I get it.', 'Take care.', 'Let it go.', 'Make do.', 'Come on.'];
+    p.cards[0].explanation.dialogue = verbs.map((en, i) => ({ speaker: i % 2 ? 'Leslie' : 'Ann', en, ko: '뜻' }))
+      .concat([{ speaker: 'Leslie', en: 'Zeta line six.', ko: '여섯' }]);
+    verbs.forEach((en, i) => {
+      p.cards[i + 1].sentence = en;
+      p.cards[i + 1].explanation.chunks = [[en, '음차']];
+      p.cards[i + 1].phonetic_kr = '음차';
+      p.cards[i + 1].explanation.key = `${en} = 뜻.`;
+    });
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('기본동사 비중'))).toEqual([]);
   });
 });

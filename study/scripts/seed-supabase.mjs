@@ -44,6 +44,7 @@ import {
   evaluateServerGuards,
   parseSpeakerVoiceNames,
   loadExistingSeeds,
+  loadSourceEnLines,
 } from './validate-seed.mjs';
 
 function parseArgs(args) {
@@ -143,6 +144,7 @@ async function main() {
   const content = validateSeedContent(payload, {
     existingSeeds,
     speakerNames: parseSpeakerVoiceNames(speechSrc),
+    sourceEnLines: loadSourceEnLines(join(rootDir, 'seeds'), payload._source),
   });
   for (const w of content.warnings) console.warn(`[seed] WARN: ${w}`);
   if (!content.ok) {

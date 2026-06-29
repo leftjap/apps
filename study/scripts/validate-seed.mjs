@@ -55,11 +55,50 @@ export function loadExistingSeeds(dir, excludeFile) {
 
 const EXPL_REQUIRED = ['key', 'situation', 'drills', 'grammar', 'chunks', 'phonemes', 'mistake', 'similar', 'category', 'frequency'];
 
+// 학습 anchor (2026-06-29 복원): 기본동사 중심 + 어려운(라틴계·추상) 어휘 차단.
+// 배경: 2026-06-08 콩트→RealClass 전환 시 '기본동사 70%+ / 라틴 차단' 원칙이 §6.2(archive)로
+// 강등돼 활성 경로에서 기계 강제가 소멸 → 페다고지 회귀. 산문이 아닌 게이트로 박제.
+const HARD_VOCAB = new Set(['construct', 'decline', 'require', 'warrior', 'utilize', 'endeavor', 'commence', 'facilitate', 'ascertain', 'subsequently', 'nevertheless', 'demonstrate', 'implement', 'sufficient', 'obtain', 'acquire', 'comprehend', 'terminate', 'initiate', 'prior', 'regarding', 'pertaining', 'accordingly']);
+const BASIC_VERBS = new Set(['be', 'am', 'is', 'are', 'was', 'were', 'been', 'have', 'has', 'had', 'get', 'got', 'gotten', 'take', 'took', 'taken', 'give', 'gave', 'given', 'make', 'made', 'do', 'did', 'done', 'go', 'went', 'gone', 'come', 'came', 'put', 'keep', 'kept', 'let', 'look', 'find', 'found', 'tell', 'told', 'ask', 'turn', 'move', 'help', 'fix', 'care', 'hit', 'run', 'ran', 'call', 'feel', 'felt', 'need', 'want', 'like', 'work', 'talk', 'show', 'bring', 'set', 'hold', 'pay', 'leave', 'left', 'stop', 'start', 'try', 'use', 'mean', 'meant']);
+
+/** 소스 대본 파일에서 문장번호→EN 텍스트 맵 파싱 (s1e1 'EN:/KO:' + ep2~ 'N. EN/KO' 양식 모두). */
+function parseSourceEnByNum(text) {
+  const map = new Map();
+  let cur = null;
+  for (const raw of String(text).split('\n')) {
+    const m = raw.match(/^(\d+)\.\s*(.*)$/);
+    if (m) {
+      cur = parseInt(m[1], 10);
+      const rest = m[2].trim();
+      if (rest && !/^EN:/i.test(rest)) { map.set(cur, rest); cur = null; }
+      continue;
+    }
+    const em = raw.match(/^EN:\s*(.*)$/i);
+    if (em && cur != null) { map.set(cur, em[1].trim()); cur = null; }
+  }
+  return map;
+}
+
+/** _source(episode, lines[, show]) → 그 구간 EN 대사 배열. 소스 파일 부재 시 null (충실성 검증 생략). */
+export function loadSourceEnLines(seedsDir, source) {
+  if (!source?.episode || !Array.isArray(source?.lines) || source.lines.length !== 2) return null;
+  const show = source.show || (/^office/i.test(source.episode) ? 'office' : 'parks');
+  const ep = String(source.episode).replace(/^office-?/i, '');
+  let text;
+  try { text = readFileSync(join(seedsDir, 'sources', `realclass-${show}-${ep}.txt`), 'utf8'); }
+  catch { return null; }
+  const byNum = parseSourceEnByNum(text);
+  const [a, b] = source.lines;
+  const out = [];
+  for (let i = a; i <= b; i += 1) if (byNum.has(i)) out.push(byNum.get(i));
+  return out;
+}
+
 /**
  * 콘텐츠 검증 본체. 반환 { ok, errors[], warnings[] }.
  * RealClass 분기: lang==='en' && 첫 정렬 카드에 dialogue 존재. 그 외(ja 등)는 generic 만.
  */
-export function validateSeedContent(payload, { existingSeeds = [], speakerNames = new Set() } = {}) {
+export function validateSeedContent(payload, { existingSeeds = [], speakerNames = new Set(), sourceEnLines = null } = {}) {
   const errors = [];
   const warnings = [];
   const cards = Array.isArray(payload?.cards) ? payload.cards : [];
@@ -97,6 +136,23 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     }
   });
 
+  // ── 충실성 게이트 (2026-06-29 신설): dialogue 각 en 이 소스 _source 구간에 실재해야 함 ──
+  // 배경: 직전 시드(forum-discussion)가 민원인 대사를 진행자 대사로 둔갑·합성했는데 통과됨.
+  // 소스 대사 발췌만 허용(말미 trim·선택), 단어/화자/순서 변경·합성 차단. 소스 부재 시 검증 생략(경고).
+  if (Array.isArray(sourceEnLines)) {
+    const normedSrc = sourceEnLines.map(norm).filter(Boolean);
+    if (normedSrc.length) {
+      dialogue.forEach((l, i) => {
+        const nl = norm(l?.en);
+        if (nl && !normedSrc.some((sl) => sl.includes(nl))) {
+          errors.push(`충실성 위반: dialogue ${i + 1}줄 이 소스 #${payload._source?.lines?.[0]}~${payload._source?.lines?.[1]} 에 실재하지 않음 — 원문 발췌만(단어/화자/순서 변경·합성 금지): "${l?.en}"`);
+        }
+      });
+    }
+  } else if (isRealClass) {
+    warnings.push('충실성 미검증: 소스 파일 미제공 — dialogue 가 실제 대사인지 기계 확인 불가 (로컬 seeds/sources 필요)');
+  }
+
   // ── 표현 카드: 8필드 + 발음 정합 + drills ──
   let allDrillsAtFloor = exprs.length > 0;
   for (const c of exprs) {
@@ -131,6 +187,21 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   }
   if (allDrillsAtFloor) {
     warnings.push('전 표현 카드 drills ≤4 — 하한 일괄 깔기 의심 (schema §drills: 핵심·헷갈림 6~8 / 쉬움 3)');
+  }
+
+  // ── 기본동사 중심 + 어려운 어휘 차단 (학습 anchor, 2026-06-29 복원) ──
+  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사/구동사 비중 <60% = 경고.
+  let basicVerbCards = 0;
+  for (const c of exprs) {
+    const words = norm(`${c.sentence} ${c.explanation?.key ?? ''}`).split(' ').filter(Boolean);
+    const hard = [...new Set(words.filter((w) => HARD_VOCAB.has(w)))];
+    if (hard.length) {
+      errors.push(`${c.id}: 어려운 어휘 차단 — 라틴계·추상 어휘 (${hard.join(', ')}). 기본동사 구동사·관용구로 교체 (학습 anchor: 기본동사 중심)`);
+    }
+    if (words.some((w) => BASIC_VERBS.has(w))) basicVerbCards += 1;
+  }
+  if (exprs.length && basicVerbCards / exprs.length < 0.6) {
+    warnings.push(`기본동사 비중 낮음: 표현 ${exprs.length}장 중 ${basicVerbCards}장만 기본동사/구동사 포함 (<60%) — 일상 전이 가능 기본동사 우선 (학습 anchor)`);
   }
 
   // ── 매칭 계약: deriveDialogue 순차 커서 시뮬레이션 — 표현 전수 번호 부여 의무 ──
@@ -217,7 +288,8 @@ if (isMain) {
   const seedsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'seeds');
   const existingSeeds = loadExistingSeeds(seedsDir, basename(args.payload));
   const speechSrc = readFileSync(join(seedsDir, '..', 'src', 'services', 'speech.js'), 'utf8');
-  const r = validateSeedContent(payload, { existingSeeds, speakerNames: parseSpeakerVoiceNames(speechSrc) });
+  const sourceEnLines = loadSourceEnLines(seedsDir, payload._source);
+  const r = validateSeedContent(payload, { existingSeeds, speakerNames: parseSpeakerVoiceNames(speechSrc), sourceEnLines });
   for (const w of r.warnings) console.warn(`[validate] WARN: ${w}`);
   if (!r.ok) {
     for (const e of r.errors) console.error(`[validate] FAIL: ${e}`);
