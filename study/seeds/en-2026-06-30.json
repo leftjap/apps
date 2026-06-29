@@ -1,0 +1,211 @@
+{
+  "_note": "RealClass-mining (PPP) — The Office S1E2 'Diversity Day' 콜드오픈 후반 장면 (소스 스크립트 #71~77 발췌 → dialogue 7줄, 화자 Michael/Jim, 단어변경 0·웹검증 완료). 짐이 연중 최대 매출 전화(데커드 씨)를 붙들고 있는데 마이클이 '다양성의 날'이라며 끊으라고 끼어든다. 화자 귀속 검증: Office Ladies / Fandom / OfficeQuotes 대조 — 짐이 전화 중(43~50 짐 인터뷰 '연중 최대 매출' 정합), 마이클이 'wrap it up'으로 끼어듦, 짐이 'call you back'으로 통화 종료. P1=진짜 장면(verbatim, 듣기·쉐도잉), P2=핵심 표현 2개 집중 추출(wrap it up / call you back — 둘 다 NGSL-Spoken/PHaVE 고빈도 구동사, ≤3단어) 후 지오님 개인화 변형 연습. 발췌 기준 4종 통과 — 인사 단독 0, 미국 행정 디테일 0, 일상/전화/여행 전이 우선, 2화자 교차(Michael↔Jim) 독백 0. 개인화: 아내 직장·고양이·여행·일상 상황으로 drills 변형. 한국인 해설 8필드 (가이드 §6.3). 출처: 본인 구독 리얼클래스 스크립트의 개인 학습 발췌.",
+  "_source": {
+    "episode": "office-s1e2",
+    "lines": [
+      71,
+      77
+    ]
+  },
+  "lang": "en",
+  "date": "2026-06-30",
+  "cards": [
+    {
+      "id": "en-office-s1e2-wrap-it-up-scene",
+      "sentence": "다양성의 날 — 짐의 전화를 끊으라는 마이클",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "다양성의 날 — 짐의 전화를 끊으라는 마이클",
+        "sceneSummary": "짐이 연중 최대 매출 고객(데커드 씨)과 통화하고 있는데, 지점장 마이클이 '다양성의 날' 행사를 시작해야 한다며 전화를 마무리하라고 끼어든다. 짐은 어쩔 수 없이 고객에게 나중에 다시 걸겠다고 한다.",
+        "dialogue": [
+          {
+            "speaker": "Michael",
+            "en": "Jim, can you, uh, wrap it up, please?",
+            "ko": "짐, 그거 좀 마무리해 줄래?"
+          },
+          {
+            "speaker": "Jim",
+            "en": "Mr. Deckerd, please.",
+            "ko": "(전화에) 데커드 씨, 잠시만요."
+          },
+          {
+            "speaker": "Michael",
+            "en": "I- it's Diversity Day, Jim.",
+            "ko": "오늘 다양성의 날이잖아, 짐."
+          },
+          {
+            "speaker": "Michael",
+            "en": "I wish every day was Diversity Day.",
+            "ko": "매일이 다양성의 날이면 좋겠어."
+          },
+          {
+            "speaker": "Jim",
+            "en": "You know what, um, I'm actually gonna have to call you back.",
+            "ko": "(전화에) 저기, 제가 사실 다시 전화 드려야 할 것 같아요."
+          },
+          {
+            "speaker": "Jim",
+            "en": "Thank you.",
+            "ko": "감사합니다."
+          },
+          {
+            "speaker": "Jim",
+            "en": "Sorry about that.",
+            "ko": "(마이클에게) 죄송해요, 방금 그건."
+          }
+        ]
+      }
+    },
+    {
+      "id": "en-office-s1e2-wrap-it-up",
+      "sentence": "wrap it up",
+      "reading": null,
+      "phonetic_kr": "래핏 업",
+      "order_index": 1,
+      "explanation": {
+        "key": "wrap it up = (하던 일을) 마무리하다·끝내다. let's get it done 직전 마무리 신호 구동사.",
+        "situation": "장면 · 마이클이 짐에게 통화를 그만 끝내고 행사에 오라고 'wrap it up' 으로 재촉",
+        "drills": [
+          {
+            "en": "Let's wrap it up for today.",
+            "ko": "오늘은 이쯤에서 마무리하죠.",
+            "kr": "렛츠 래핏 업 포 투데이."
+          },
+          {
+            "en": "Can you wrap it up? My wife is waiting.",
+            "ko": "좀 마무리해 줄래요? 아내가 기다려서요.",
+            "kr": "캔유 래핏 업? 마이 와이프 이즈 웨이링."
+          },
+          {
+            "en": "I need to wrap up this report.",
+            "ko": "이 보고서 좀 마무리해야 해요.",
+            "kr": "아이 니투 래법 디스 리폿."
+          },
+          {
+            "en": "Let's wrap up and go home to the cat.",
+            "ko": "마무리하고 집에 가서 고양이 보자.",
+            "kr": "렛츠 래법 앤 고 호움 투 더 캣."
+          },
+          {
+            "en": "The tour is wrapping up soon.",
+            "ko": "투어가 곧 마무리돼요. (여행 중)",
+            "kr": "더 투어 이즈 래핑 업 쑨."
+          },
+          {
+            "en": "Let me wrap up this call real quick.",
+            "ko": "이 전화 좀 빨리 마무리할게요.",
+            "kr": "레미 래법 디스 콜 리얼 퀵."
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "wrap + it + up (구동사 — 목적어가 대명사면 사이에)",
+            "body": "wrap up 사이에 목적어. 대명사 it 은 반드시 wrap '과' up '사이'에 — wrap up it (X). 명사면 wrap up the meeting / wrap the meeting up 둘 다 OK."
+          }
+        ],
+        "chunks": [
+          [
+            "wrap it",
+            "래핏"
+          ],
+          [
+            "up",
+            "업"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/æ/",
+            "wrap — 입 옆으로 벌린 '애' '뢔'"
+          ],
+          [
+            "/p/",
+            "wrap it → '래핏' (p 가 it 으로 연음)"
+          ]
+        ],
+        "mistake": "wrap 을 '랩'(O)이지만 it 과 붙어 '래핏' 한 덩어리로 연음. wrap up it (X) — 대명사 it 은 wrap·up 사이. w 는 묵음 아니고 입술 동그랗게 '우' 시작.",
+        "similar": "finish up / wind it up / call it a day",
+        "category": "phrasal-verb/daily",
+        "frequency": 9
+      },
+      "meaning": "마무리하다·끝내다."
+    },
+    {
+      "id": "en-office-s1e2-call-you-back",
+      "sentence": "call you back",
+      "reading": null,
+      "phonetic_kr": "콜 유 백",
+      "order_index": 2,
+      "explanation": {
+        "key": "call you back = 다시 전화하다·회신하다. 통화를 끊으며 '나중에 다시 걸게요' 하는 필수 전화 표현.",
+        "situation": "장면 · 짐이 마이클 때문에 고객 통화를 끊으며 '나중에 다시 걸겠다' 고 함",
+        "drills": [
+          {
+            "en": "Can I call you back later?",
+            "ko": "나중에 다시 전화드려도 될까요?",
+            "kr": "캔아이 콜 유 백 레이러?"
+          },
+          {
+            "en": "I'll call you back after work.",
+            "ko": "퇴근하고 다시 전화할게.",
+            "kr": "아일 콜 유 백 애프터 웍."
+          },
+          {
+            "en": "Let me call my wife back real quick.",
+            "ko": "아내한테 빨리 다시 전화 좀 할게요.",
+            "kr": "레미 콜 마이 와이프 백 리얼 퀵."
+          },
+          {
+            "en": "Sorry, I'll call you back in five minutes.",
+            "ko": "미안해요, 5분 뒤에 다시 걸게요.",
+            "kr": "쏘리, 아일 콜 유 백 인 파이브 미닛츠."
+          },
+          {
+            "en": "The hotel will call you back about the room.",
+            "ko": "호텔에서 방 건으로 다시 전화 줄 거예요. (여행 중)",
+            "kr": "더 호텔 윌 콜 유 백 어바웃 더 룸."
+          },
+          {
+            "en": "I have to go. I'll call you right back.",
+            "ko": "가봐야 해요. 바로 다시 전화할게요.",
+            "kr": "아이 햅투 고. 아일 콜 유 라잇 백."
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "call + you + back (구동사 — 목적어가 대명사면 사이에)",
+            "body": "call back 사이에 대상. 대명사는 반드시 사이에 — call you back (O), call back you (X). '나중에·다시'는 back 한 단어가 전부 담당."
+          }
+        ],
+        "chunks": [
+          [
+            "call you",
+            "콜 유"
+          ],
+          [
+            "back",
+            "백"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ɔ/",
+            "call — 입 동그랗게 길게 '코올'"
+          ],
+          [
+            "/æ/",
+            "back — 옆으로 벌린 '애' '뱅'"
+          ]
+        ],
+        "mistake": "call 을 '콜'로 짧게(X) → 입 동그란 긴 '코올'. back 의 끝 k 는 거의 안 터뜨리고 '백'. call you 를 '콜 유'로 또박또박(X) → 살짝 이어 '콜류' 느낌.",
+        "similar": "get back to you / return your call / ring you back",
+        "category": "phrasal-verb/phone",
+        "frequency": 10
+      },
+      "meaning": "다시 전화하다·회신하다."
+    }
+  ]
+}

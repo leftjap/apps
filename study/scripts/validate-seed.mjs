@@ -111,6 +111,10 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     for (const ex of existingSeeds) {
       if (ex.ids.has(c.id)) errors.push(`ID 중복 (기존 시드 ${ex.file}): ${c.id}`);
     }
+    // seed-supabase validatePayload 필수 필드 (2026-06-29: 게이트↔시드 정합 — meaning 누락이
+    // validate 통과 후 seed 에서 터지던 갭 차단). id/explanation 은 구조 검증이 별도 커버.
+    if (!c.sentence) errors.push(`${c.id}: card.sentence 누락 (seed-supabase 필수)`);
+    if (!c.meaning) errors.push(`${c.id}: card.meaning 누락 (seed-supabase 필수)`);
   }
 
   const sorted = [...cards].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));

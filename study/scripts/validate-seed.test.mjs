@@ -395,3 +395,13 @@ describe('validateSeedContent — 목표적합 추출 (PPP: 짧은 고빈도 청
     expect(r.warnings.filter((w) => w.includes('긴 절'))).toEqual([]);
   });
 });
+
+describe('validateSeedContent — seed-supabase 필수 필드 정합 (meaning)', () => {
+  it('표현 카드 meaning 누락 → 차단 (validate↔seed 갭)', () => {
+    const p = makePayload();
+    delete p.cards[1].meaning;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('meaning 누락');
+  });
+});
