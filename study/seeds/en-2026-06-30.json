@@ -61,9 +61,9 @@
     },
     {
       "id": "en-office-s1e2-wrap-it-up",
-      "sentence": "wrap it up",
+      "sentence": "Jim, can you, uh, wrap it up, please?",
       "reading": null,
-      "phonetic_kr": "래핏 업",
+      "phonetic_kr": "짐 캔유 어 래핏 업 플리즈",
       "order_index": 1,
       "explanation": {
         "key": "wrap it up = (하던 일을) 마무리하다·끝내다. let's get it done 직전 마무리 신호 구동사.",
@@ -108,12 +108,24 @@
         ],
         "chunks": [
           [
-            "wrap it",
-            "래핏"
+            "Jim",
+            "짐"
           ],
           [
-            "up",
-            "업"
+            "can you",
+            "캔유"
+          ],
+          [
+            "uh",
+            "어"
+          ],
+          [
+            "wrap it up",
+            "래핏 업"
+          ],
+          [
+            "please",
+            "플리즈"
           ]
         ],
         "phonemes": [
@@ -135,9 +147,9 @@
     },
     {
       "id": "en-office-s1e2-call-you-back",
-      "sentence": "call you back",
+      "sentence": "You know what, um, I'm actually gonna have to call you back.",
       "reading": null,
-      "phonetic_kr": "콜 유 백",
+      "phonetic_kr": "유 노 왓 엄 아임 액츄얼리 가나 햅투 콜 유 백",
       "order_index": 2,
       "explanation": {
         "key": "call you back = 다시 전화하다·회신하다. 통화를 끊으며 '나중에 다시 걸게요' 하는 필수 전화 표현.",
@@ -182,12 +194,24 @@
         ],
         "chunks": [
           [
-            "call you",
-            "콜 유"
+            "You know what",
+            "유 노 왓"
           ],
           [
-            "back",
-            "백"
+            "um",
+            "엄"
+          ],
+          [
+            "I'm actually",
+            "아임 액츄얼리"
+          ],
+          [
+            "gonna have to",
+            "가나 햅투"
+          ],
+          [
+            "call you back",
+            "콜 유 백"
           ]
         ],
         "phonemes": [
