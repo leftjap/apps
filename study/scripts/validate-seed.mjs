@@ -59,7 +59,9 @@ const EXPL_REQUIRED = ['key', 'situation', 'drills', 'grammar', 'chunks', 'phone
 // 배경: 2026-06-08 콩트→RealClass 전환 시 '기본동사 70%+ / 라틴 차단' 원칙이 §6.2(archive)로
 // 강등돼 활성 경로에서 기계 강제가 소멸 → 페다고지 회귀. 산문이 아닌 게이트로 박제.
 const HARD_VOCAB = new Set(['construct', 'decline', 'require', 'warrior', 'utilize', 'endeavor', 'commence', 'facilitate', 'ascertain', 'subsequently', 'nevertheless', 'demonstrate', 'implement', 'sufficient', 'obtain', 'acquire', 'comprehend', 'terminate', 'initiate', 'prior', 'regarding', 'pertaining', 'accordingly']);
-const BASIC_VERBS = new Set(['be', 'am', 'is', 'are', 'was', 'were', 'been', 'have', 'has', 'had', 'get', 'got', 'gotten', 'take', 'took', 'taken', 'give', 'gave', 'given', 'make', 'made', 'do', 'did', 'done', 'go', 'went', 'gone', 'come', 'came', 'put', 'keep', 'kept', 'let', 'look', 'find', 'found', 'tell', 'told', 'ask', 'turn', 'move', 'help', 'fix', 'care', 'hit', 'run', 'ran', 'call', 'feel', 'felt', 'need', 'want', 'like', 'work', 'talk', 'show', 'bring', 'set', 'hold', 'pay', 'leave', 'left', 'stop', 'start', 'try', 'use', 'mean', 'meant']);
+export const BASIC_VERBS = new Set(['be', 'am', 'is', 'are', 'was', 'were', 'been', 'have', 'has', 'had', 'get', 'got', 'gotten', 'take', 'took', 'taken', 'give', 'gave', 'given', 'make', 'made', 'do', 'did', 'done', 'go', 'went', 'gone', 'come', 'came', 'put', 'keep', 'kept', 'let', 'look', 'find', 'found', 'tell', 'told', 'ask', 'turn', 'move', 'help', 'fix', 'care', 'hit', 'run', 'ran', 'call', 'feel', 'felt', 'need', 'want', 'like', 'work', 'talk', 'show', 'bring', 'set', 'hold', 'pay', 'leave', 'left', 'stop', 'start', 'try', 'use', 'mean', 'meant']);
+// 구동사 particle (phrasal verb 끝). validate-seed 비기본동사 구동사 판정 + scan-source-chunks 공용.
+export const PARTICLES = new Set(['up', 'out', 'on', 'off', 'in', 'back', 'over', 'down', 'away', 'around', 'through', 'along']);
 
 /** 소스 대본 파일에서 문장번호→EN 텍스트 맵 파싱 (s1e1 'EN:/KO:' + ep2~ 'N. EN/KO' 양식 모두). */
 function parseSourceEnByNum(text) {
@@ -196,8 +198,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   }
 
   // ── 기본동사 중심 + 어려운 어휘 차단 (학습 anchor, 2026-06-29 복원) ──
-  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사 비중 <60% = 경고. 비기본동사 구동사 = 차단.
-  const PARTICLES = new Set(['up', 'out', 'on', 'off', 'in', 'back', 'over', 'down', 'away', 'around', 'through', 'along']);
+  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사 비중 <60% = 경고. 비기본동사 구동사 = 경고.
   let basicVerbCards = 0;
   for (const c of exprs) {
     const sentWords = norm(`${c.sentence} ${c.explanation?.key ?? ''}`).split(' ').filter(Boolean);
