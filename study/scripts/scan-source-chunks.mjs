@@ -4,8 +4,9 @@
  *
  * 라우틴(study-daily-9am) 추출 단계 전에 실행 → 화면의 'salient한' 비기본동사 관용구(wrap it up 류)를
  * 집는 대신, 기본동사(go/take/come/call/help/hold…) 구동사·콜로케이션 중에서 고르도록 후보를 surface.
- * (2026-06-30 'wrap it up' 사고 — office-s1e2 에 hold on·help out·come in 이 있었는데 빈약한 구간을 골라
- *  wrap it up 을 뽑은 게 원인. 이 도구로 기본동사 후보를 먼저 본다.)
+ * (2026-06-30 'wrap it up' 사고 — office-s1e2 #1~50 엔 hold on·help out·come in 등 기본동사 후보 7종이
+ *  있었으나, 후보가 #75 한 줄(have to·call back)에만 몰린 71~77 구간에서 추출이 salient한 비기본동사
+ *  wrap it up 을 집은 게 원인. 이 도구로 기본동사 후보를 먼저 보고, 후보가 한두 줄에 몰리면 다른 구간을 고른다.)
  *
  * 사용: node scripts/scan-source-chunks.mjs --episode office-s1e2 [--lines 1,50]
  */

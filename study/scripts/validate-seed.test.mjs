@@ -492,3 +492,42 @@ describe('validateSeedContent — 비기본동사 구동사 차단 (기본동사
     expect(r.warnings.filter((w) => w.includes('비기본동사 구동사'))).toEqual([]);
   });
 });
+
+describe('validateSeedContent — 기본동사 추출 시뮬 고정 (A/B, 2026-07-02 재현)', () => {
+  // 삭제됐던 임시 sim 을 영구 테스트로 고정. office-s1e2 기본동사 타깃(go with/come in) vs wrap it up.
+  const scene = (dlg) => ({
+    id: 'en-office-s1e2-ab-scene', sentence: '장면', meaning: "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+    reading: null, phonetic_kr: null, order_index: 0,
+    explanation: { sceneTitle: '장면', sceneSummary: '요약', dialogue: dlg },
+  });
+  const card = (id, oi, sentence, key, chunks) => ({
+    id, sentence, meaning: '뜻', reading: null, phonetic_kr: chunks.map((c) => c[1]).join(' '), order_index: oi,
+    explanation: { key, situation: '장면', drills: Array.from({ length: 5 }, (_, i) => ({ en: `D${i}.`, ko: '뜻', kr: '드릴' })),
+      grammar: [{ struct: 'a', body: 'b' }], chunks, phonemes: [['/g/', 'go']], mistake: 'm', similar: 's', category: 'c', frequency: 8 },
+  });
+  const dlg = [
+    { speaker: 'Jim', en: "I'd go with the rows.", ko: '1' },
+    { speaker: 'Michael', en: 'That is a good idea.', ko: '2' },
+    { speaker: 'Michael', en: 'Today is the day.', ko: '3' },
+    { speaker: 'Michael', en: 'Someone will come in soon.', ko: '4' },
+    { speaker: 'Michael', en: 'It is a big day.', ko: '5' },
+    { speaker: 'Michael', en: 'And it should wrap it up.', ko: '6' },
+  ];
+  const goWith = card('ab-go-with', 1, "I'd go with the rows.", 'go with = 택하다.',
+    [["I'd", '아이드'], ['go with', '고우 위드'], ['the rows.', '더 로우즈']]);
+  const comeIn = card('ab-come-in', 2, 'Someone will come in soon.', 'come in = 들어오다.',
+    [['Someone', '썸원'], ['will', '윌'], ['come in', '컴 인'], ['soon.', '순']]);
+
+  it('A. 기본동사 타깃 2장(go with/come in) → 기본동사·비기본동사 경고 0 (비중 2/2=100%)', () => {
+    const r = validateSeedContent(makePayload({ _source: { episode: 'office-s1e2', lines: [4, 9] }, cards: [scene(dlg), goWith, comeIn] }), okOpts);
+    expect(r.warnings.filter((w) => /비중 낮음|비기본동사 구동사/.test(w))).toEqual([]);
+  });
+
+  it('B. 비기본동사 wrap it up 섞이면 → 비중 경고 + 비기본동사 구동사 경고 (call you back 류는 무관)', () => {
+    const wrapUp = card('ab-wrap-up', 2, 'And it should wrap it up.', 'wrap it up = 마무리하다.',
+      [['And it', '앤 잇'], ['should', '슈드'], ['wrap it', '랩 잇'], ['up.', '업']]);
+    const r = validateSeedContent(makePayload({ _source: { episode: 'office-s1e2', lines: [4, 9] }, cards: [scene(dlg), goWith, wrapUp] }), okOpts);
+    expect(r.warnings.join(' ')).toContain('비중 낮음'); // 1/2 = 50%
+    expect(r.warnings.join(' ')).toContain('비기본동사 구동사'); // wrap it up
+  });
+});
