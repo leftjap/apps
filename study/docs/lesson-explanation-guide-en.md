@@ -475,7 +475,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 > **⭐ PPP 구조 + 목표적합 추출 + 개인화 (2026-06-29 — 라우틴 정본. 학습 anchor 복원)**
 > en 레슨 = **PPP (Presentation → Practice → Production)**. "원문 통째 verbatim"도 "맥락 없는 기본문장"도 아니다.
 > - **P1 = 진짜 장면**: 소스 verbatim 6~10줄(듣기·쉐도잉 노출). 충실성 게이트(소스 대조)가 단어/화자/순서 변경·합성 차단.
-> - **추출 = 핵심 표현 1~2개 (목표적합)**: 장면 *명대사*가 아니라 **학습자 목표(여행·일상·미드 듣기)에 빈출인 짧은 청크**만. 우선 = 기본동사 구동사·관용구(PHaVE 빈출 / NGSL-Spoken 코어 — look good·how are things going·take care of·move on·find out·pick up). 지양(자동 경고) = 긴 절·명대사성·상황한정·라틴/추상 (validate-seed 가 타깃표현 ≥6단어 경고).
+> - **추출 = 핵심 표현 1~2개 (목표적합)**: 장면 *명대사*가 아니라 **학습자 목표(여행·일상·미드 듣기)에 빈출인 짧은 청크**만. 우선 = **기본동사**(get/take/put/come/go/look/find/call/make/do…) 머리 구동사·관용구(PHaVE 빈출 / NGSL-Spoken 코어 — look good·how are things going·take care of·move on·find out·pick up·take a break·call you back). 지양(자동 경고) = 긴 절·명대사성·상황한정·라틴/추상 + **비기본동사 머리 구동사**(wrap up·hang on·fill in 류 — `wrap`/`hang`은 기본동사 아님. 게이트가 타깃 청크(key) 기준으로 경고. 정말 고빈도 일상 표현이고 장면에 기본동사 청크가 없을 때만 채택). validate-seed 가 타깃표현 ≥6단어 + 비기본동사 구동사 + 기본동사 비중<60% 를 경고 — **경고는 해소가 원칙**(더 나은 기본동사 청크로 재추출).
 > - **P2 = 개인화 변형**: 표현 카드 `drills` = 그 표현의 **레벨 맞춘 다양한 변형**을 학습자 개인 상황(`~/.config/study/learner-profile.json` `persona` — 아내·아내직장·고양이·여행·일상)으로 개인화. 장면 원문 난이도가 아니라 **쉬운 문장**. → i+1/1T 가 비로소 성립(연습이 저작이라 레벨 통제 가능).
 > - **P3 = 음성 복습**: 세션 후 `scripts/generate-review-prompt.mjs --mode new`(방금 세션 표현 워밍업) / 복습 세션용은 `--mode review`(reviewQueue due 표현 — 인앱 SRS loadReviewCards 와 동일 선정, 졸업분 제외) 가 클로드 음성모드(영어 몰입·Haiku) 프롬프트 생성.
 > 소스 = Parks **+ The Office** S1E1~6 (`seeds/sources/realclass-{parks,office}-s1e{1..6}.txt`). 표현 카드 = **1~2장**(과다추출 금지 — 집중).
@@ -529,7 +529,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 | `similar` | 같은 뜻 대체 표현 1~2개 |
 | `category` / `frequency` | 분류 / 1~10 빈도 |
 
-- `sentence` = 장면 속 **원문 전체 문장** (학습용 최소 단순화 허용) — **맨 구문 금지**. 추출한 구동사·관용구는 `key` 에 넣고, `sentence` 는 그 구문을 품은 **완전한 한 줄**이어야 한다 (복습·녹음이 `sentence` 를 쓰므로 구문 조각이면 복습이 빈약해짐. 예: 추출 "close by" → `sentence`="My house is really close by.", `key`="close by = …"). `validate-seed.mjs` 가 sentence==구문(더 긴 원문 라인 존재)을 차단. / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
+- `sentence` = 장면 속 **원문 전체 문장** (학습용 최소 단순화 허용) — **맨 구문 금지**. 추출한 구동사·관용구는 `key` 에 넣고, `sentence` 는 그 구문을 품은 **완전한 한 줄**이어야 한다 (복습·녹음이 `sentence` 를 쓰므로 구문 조각이면 복습이 빈약해짐. 예: 추출 "close by" → `sentence`="My house is really close by.", `key`="close by = …"). `validate-seed.mjs` 가 sentence==구문(더 긴 원문 라인 존재)을 차단. / `meaning` = **문장 전체의 한국어 번역** (구문 뜻풀이 아님 — 구문 뜻은 `key` 에. 예: sentence "Jim, can you wrap it up?" → `meaning`="짐, 마무리 좀 해줄래요?" / `key`="wrap it up = 마무리하다". meaning 에 구문 뜻만 넣으면 화면에 문장 해석이 사라짐). / `phonetic_kr` = 연음 반영 음차 (§7 규칙 동일)
 - **발음 정합 룰** (구 §11 부활): `phonetic_kr` = chunks 의 kr 이어붙임과 일치 / chunks 가 본문 전단어 커버 / 사전 표기 X·실발화 기준
 - **다이얼로그 매칭 계약** (2026-06-10 — `session-new.js` `deriveDialogue` 코드 결합): 다이얼로그 번호·하이라이트는 **순차 커서**로 부여된다 — ① 표현 카드 순서(order_index) = dialogue 등장 순서 ② 카드 `sentence` 가 해당 dialogue 줄에 포함 (소문자·기호 제거 정규화 기준) ③ 한 줄당 표현 1개 (한 줄에 표현 2개면 줄을 쪼개 발췌). 위반 시 그 카드부터 번호 전멸 ("표현 0개" 버그의 원인) — `validate-seed.mjs` 가 시뮬레이션으로 차단
 - 콩트 메타 (skit*/scene_id/stage/newElements/knownElements) **미사용** — s1e1 정본 기준

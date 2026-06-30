@@ -446,3 +446,49 @@ describe('validateSeedContent — sentence 가 맨 구문 차단 (복습=문장,
     expect(r.errors.filter((e) => e.includes('맨 구문'))).toEqual([]);
   });
 });
+
+describe('validateSeedContent — 비기본동사 구동사 차단 (기본동사 우선, 2026-06-30 wrap it up)', () => {
+  function withTarget(key, sentence, chunks) {
+    const scene = {
+      id: 'en-parks-s1e2-bv-scene', sentence: '장면', meaning: "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      reading: null, phonetic_kr: null, order_index: 0,
+      explanation: { sceneTitle: '장면', sceneSummary: '요약', dialogue: [
+        { speaker: 'Ann', en: sentence, ko: '1' },
+        { speaker: 'Leslie', en: 'Beta line two.', ko: '2' },
+        { speaker: 'Ann', en: 'Gamma line three.', ko: '3' },
+        { speaker: 'Leslie', en: 'Delta line four.', ko: '4' },
+        { speaker: 'Ann', en: 'Epsilon line five.', ko: '5' },
+        { speaker: 'Leslie', en: 'Zeta line six.', ko: '6' },
+      ] },
+    };
+    const card = {
+      id: 'en-parks-s1e2-tgt', sentence, meaning: '뜻', reading: null,
+      phonetic_kr: chunks.map((c) => c[1]).join(' '), order_index: 1,
+      explanation: { key, situation: '장면', drills: Array.from({ length: 5 }, (_, i) => ({ en: `D${i}.`, ko: '뜻', kr: '드릴' })),
+        grammar: [{ struct: 'a', body: 'b' }], chunks, phonemes: [['/k/', 'x']], mistake: 'm', similar: 's', category: 'c', frequency: 7 },
+    };
+    return makePayload({ _source: { episode: 's1e2', lines: [1, 9] }, cards: [scene, card] });
+  }
+
+  it('타깃이 비기본동사 구동사("wrap it up") → 경고 (차단 아님 — 라우틴/가이드 판단)', () => {
+    const p = withTarget('wrap it up = 마무리하다.', 'Please wrap it up now.',
+      [['Please', '플리즈'], ['wrap it', '랩 잇'], ['up now.', '업 나우']]);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.join(' ')).toContain('비기본동사 구동사');
+    expect(r.errors.filter((e) => e.includes('비기본동사 구동사'))).toEqual([]); // 차단 아님
+  });
+
+  it('타깃이 기본동사 구동사("call you back") → 경고 없음', () => {
+    const p = withTarget('call you back = 다시 전화하다.', 'I will call you back.',
+      [['I will', '아윌'], ['call you', '콜 유'], ['back.', '백']]);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('비기본동사 구동사'))).toEqual([]);
+  });
+
+  it('타깃이 비동사 고빈도 청크("close by")는 오탐 없음 (구동사 아님)', () => {
+    const p = withTarget('close by = 가까이.', 'My house is close by.',
+      [['My', '마이'], ['house', '하우스'], ['is', '이즈'], ['close', '클로우스'], ['by', '바이']]);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('비기본동사 구동사'))).toEqual([]);
+  });
+});

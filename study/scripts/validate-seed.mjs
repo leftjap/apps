@@ -196,18 +196,31 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   }
 
   // ── 기본동사 중심 + 어려운 어휘 차단 (학습 anchor, 2026-06-29 복원) ──
-  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사/구동사 비중 <60% = 경고.
+  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사 비중 <60% = 경고. 비기본동사 구동사 = 차단.
+  const PARTICLES = new Set(['up', 'out', 'on', 'off', 'in', 'back', 'over', 'down', 'away', 'around', 'through', 'along']);
   let basicVerbCards = 0;
   for (const c of exprs) {
-    const words = norm(`${c.sentence} ${c.explanation?.key ?? ''}`).split(' ').filter(Boolean);
-    const hard = [...new Set(words.filter((w) => HARD_VOCAB.has(w)))];
+    const sentWords = norm(`${c.sentence} ${c.explanation?.key ?? ''}`).split(' ').filter(Boolean);
+    const hard = [...new Set(sentWords.filter((w) => HARD_VOCAB.has(w)))];
     if (hard.length) {
       errors.push(`${c.id}: 어려운 어휘 차단 — 라틴계·추상 어휘 (${hard.join(', ')}). 기본동사 구동사·관용구로 교체 (학습 anchor: 기본동사 중심)`);
     }
-    if (words.some((w) => BASIC_VERBS.has(w))) basicVerbCards += 1;
+    // 기본동사 판정·구동사 검사는 '타깃 청크'(key 의 '=' 앞) 기준 — 해설 산문이 신호를 오염시키지 않게
+    // (2026-06-30 'wrap it up' 사고: key 해설의 "let's get it done" 의 기본동사로 비기본동사 타깃이 통과됨).
+    const chunk = String(c.explanation?.key ?? '').split('=')[0].trim();
+    const chunkW = norm(chunk).split(' ').filter(Boolean);
+    const hasBasicVerb = chunkW.some((w) => BASIC_VERBS.has(w));
+    if (hasBasicVerb) basicVerbCards += 1;
+    // 구동사(끝 단어가 particle)인데 기본동사 머리가 아니면 경고 — 기본동사 '다양 활용' 중점에서 벗어남.
+    // 경고(차단 X)인 이유: wrap up/hang on/fill in/write down 등 비기본동사 구동사는 구조가 같아 verb-set
+    // 으로 '좋은 것(fill in)'과 '덜 좋은 것(wrap it up)'을 자동 구분 불가 → 라우틴/가이드가 판단(2026-06-30).
+    // close by 처럼 비동사 청크는 particle 끝 아님 → 오탐 없음.
+    if (chunkW.length >= 2 && PARTICLES.has(chunkW[chunkW.length - 1]) && !hasBasicVerb) {
+      warnings.push(`${c.id}: 타깃 "${chunk}" 가 비기본동사 구동사 — 기본동사(get/take/put/come/go/look/find/call…) 머리 구동사·고빈도 일상 청크 우선 검토 (기본동사 다양 활용 중점)`);
+    }
   }
   if (exprs.length && basicVerbCards / exprs.length < 0.6) {
-    warnings.push(`기본동사 비중 낮음: 표현 ${exprs.length}장 중 ${basicVerbCards}장만 기본동사/구동사 포함 (<60%) — 일상 전이 가능 기본동사 우선 (학습 anchor)`);
+    warnings.push(`기본동사 비중 낮음: 표현 ${exprs.length}장 중 ${basicVerbCards}장만 기본동사 타깃 (<60%) — 일상 전이 가능 기본동사 우선 (학습 anchor)`);
   }
 
   // ── 목표적합 추출 (2026-06-29 PPP): 학습 대상은 '짧은 고빈도 청크'여야 함 ──
