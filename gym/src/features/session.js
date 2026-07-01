@@ -1257,37 +1257,42 @@ function setVolume(set) {
   return (Number(set?.weight) || 0) * (Number(set?.reps) || 0);
 }
 
+/** 최고(천장) 슬롯 막대 고정 높이 — working 볼륨 캡(SET_BAR_WORK_HI)보다 항상 높은 천장 (사용자 결정 2026-07 B안). */
+const SET_BAR_BEST_H = 24;
+/** working 막대 볼륨 정규화 상한 — 최고 천장(24)보다 낮게 캡해 최고 슬롯이 항상 제일 높게. */
+const SET_BAR_WORK_HI = 20;
+
 /**
- * 막대 높이 = 볼륨(중량×횟수) 정규화 (사용자 결정 2026-07 — 작업지시서 §8 볼륨 금지를 override).
- *  - [최소 볼륨 → 9px, 최대 볼륨 → 24px] 로 정규화. 차트 아닌 9~24px 텍스처. max ≤ min 이면 하한 9px.
+ * working 막대 높이 = 볼륨(중량×횟수) 정규화 (사용자 결정 2026-07 — 작업지시서 §8 override).
+ *  - [최소 볼륨 → 9px, 최대 볼륨 → hiPx] 로 정규화. hiPx 기본 24. max ≤ min 이면 하한 9px.
  */
-export function barHeightForVolume(volume, minVol, maxVol) {
+export function barHeightForVolume(volume, minVol, maxVol, hiPx = 24) {
   const v = Number(volume) || 0;
   const lo = Number(minVol) || 0;
   const hi = Number(maxVol) || 0;
+  const top = Number(hiPx) || 24;
   if (hi <= lo) return 9;
-  return Math.round(Math.max(9, Math.min(24, 9 + ((v - lo) / (hi - lo)) * 15)));
+  return Math.round(Math.max(9, Math.min(top, 9 + ((v - lo) / (hi - lo)) * (top - 9))));
 }
 
 /**
- * 세트바 볼륨 정규화 범위 {min, max} (사용자 결정 2026-07).
- *  - min = working 세트 최소 볼륨 (최약 세트가 하한 9px). max = max(최고 세트 볼륨, working 최대 볼륨).
+ * working 세트 볼륨 정규화 범위 {min, max} (사용자 결정 2026-07 B안 — 최고 슬롯은 고정 천장이라 제외).
+ *  - min = working 세트 최소 볼륨 (최약 세트가 하한 9px). max = working 세트 최대 볼륨.
  *  - 유효 working 세트가 없으면(전부 맨몸·미입력) {0,0} → barHeightForVolume 가 9px 로 방어.
  */
-export function setBarVolumeRange(sets, bestVolume) {
+export function setBarVolumeRange(sets) {
   let min = Infinity;
-  let workMax = 0;
+  let max = 0;
   if (Array.isArray(sets)) {
     for (const s of sets) {
       const v = setVolume(s);
       if (v > 0) {
         if (v < min) min = v;
-        if (v > workMax) workMax = v;
+        if (v > max) max = v;
       }
     }
   }
   if (!Number.isFinite(min)) min = 0; // 유효 working 없음
-  const max = Math.max(Number(bestVolume) || 0, workMax);
   return { min, max };
 }
 
@@ -1368,11 +1373,10 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
   if (appendedCount > 0) {
     void setDotsEl.offsetHeight;
   }
-  // 사용자 결정 2026-07 — 막대 높이 = 볼륨(중량×횟수) (무게 종목만; 맨몸·유산소는 볼륨 무의미 → 기존 높이 유지).
-  //   [working 최소 볼륨 → 9px, max(최고 세트 볼륨, working) → 24px] 정규화.
+  // 사용자 결정 2026-07 B안 — working 막대 높이 = 볼륨(중량×횟수) (무게 종목만; 맨몸·유산소 제외).
+  //   working 은 [최소 볼륨 → 9px, 최대 볼륨 → SET_BAR_WORK_HI] 정규화. 최고 슬롯은 항상 SET_BAR_BEST_H 고정 천장.
   const encodeHeight = kind === 'weight';
-  const bestVol = best ? setVolume(best) : 0;
-  const volRange = encodeHeight ? setBarVolumeRange(sets, bestVol) : { min: 0, max: 0 };
+  const volRange = encodeHeight ? setBarVolumeRange(sets) : { min: 0, max: 0 };
   // 각 세그먼트 상태 갱신 (클래스 토글 + 값)
   for (let i = 0; i < sets.length; i++) {
     const seg = setDotsEl.children[i];
@@ -1402,14 +1406,14 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     //   비-무게 종목(맨몸·유산소)은 인라인 높이 제거 → CSS 기본 높이 복원 (무게→맨몸 전환 시 stale 높이 잔존 방지).
     const barEl = seg.querySelector('.seg-bar');
     if (barEl) {
-      if (encodeHeight) barEl.style.height = `${barHeightForVolume(setVolume(set), volRange.min, volRange.max)}px`;
+      if (encodeHeight) barEl.style.height = `${barHeightForVolume(setVolume(set), volRange.min, volRange.max, SET_BAR_WORK_HI)}px`;
       else if (barEl.style.height) barEl.style.height = '';
     }
   }
   // 작업지시서 §3-3 R1 — 세트바 끝에 역대 최고(e1RM) 슬롯 병기 (무게 종목 + 최고 존재 시만; §3-5 graceful).
-  //   슬롯 막대 높이도 볼륨 기준 (최고 세트의 중량×횟수).
+  //   슬롯 막대는 항상 제일 높은 고정 천장(SET_BAR_BEST_H) — working 볼륨 캡보다 높게 (사용자 결정 B안).
   if (encodeHeight && best) {
-    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, barHeightForVolume(bestVol, volRange.min, volRange.max)));
+    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, SET_BAR_BEST_H));
   }
 }
 
