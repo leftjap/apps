@@ -1646,7 +1646,11 @@ export async function applyTapDelta(field, deltaSign) {
   }
 
   const curVal = Number(set[field]) || 0;
-  let nextVal = curVal + deltaSign * delta;
+  // 증분 그리드에 스냅 — 값이 delta 배수가 아니어도 다음(+)/이전(-) 배수로 이동.
+  //   예: 리스트 컬(5단위) 19 +1 → 20, -1 → 15. 이미 배수면 정확히 ±delta (add 와 동일).
+  let nextVal = deltaSign > 0
+    ? (Math.floor(curVal / delta) + 1) * delta
+    : (Math.ceil(curVal / delta) - 1) * delta;
   if (nextVal < 0) nextVal = 0;
   if (nextVal === curVal) return; // no-op
 

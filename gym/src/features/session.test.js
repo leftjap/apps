@@ -1544,18 +1544,27 @@ describe('applyTapDelta (spec §6-3)', () => {
     expect(s.weight).toBe(14);
   });
 
-  it('리스트 컬(wrist_curl) — weightIncrement 5 override → +1 은 +5kg (덤벨 기본 2 아님, 사용자 요청)', async () => {
+  it('리스트 컬(wrist_curl) — 5단위 그리드 스냅 → 19 +1 은 20 (5의 배수, 24 아님)', async () => {
     await seedActiveWristCurl(19, 12);
     await applyTapDelta('weight', +1);
     const s = await getActiveSet0();
-    expect(s.weight).toBe(24);
+    expect(s.weight).toBe(20);
   });
 
-  it('리스트 컬(wrist_curl) — -1 은 -5kg', async () => {
+  it('리스트 컬(wrist_curl) — 19 -1 은 15 (다음 낮은 5의 배수)', async () => {
     await seedActiveWristCurl(19, 12);
     await applyTapDelta('weight', -1);
     const s = await getActiveSet0();
-    expect(s.weight).toBe(14);
+    expect(s.weight).toBe(15);
+  });
+
+  it('리스트 컬(wrist_curl) — 이미 5배수(20) → +1 은 25, -1 은 15', async () => {
+    await seedActiveWristCurl(20, 12);
+    await applyTapDelta('weight', +1);
+    expect((await getActiveSet0()).weight).toBe(25);
+    await seedActiveWristCurl(20, 12);
+    await applyTapDelta('weight', -1);
+    expect((await getActiveSet0()).weight).toBe(15);
   });
 
   it('bodyweight weight 증감 불가 (no-op)', async () => {
