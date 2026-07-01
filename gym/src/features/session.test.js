@@ -35,7 +35,7 @@ import {
   formatSetSegment,
   computeFooterOrder,
   barHeightForVolume,
-  setBarVolumeRange,
+  setBarVolumeMax,
   buildSetBestSlotHtml,
 } from './session.js';
 
@@ -2464,50 +2464,43 @@ describe('formatSetSegment (§B — 세트바 2줄 중량+×횟수)', () => {
   });
 });
 
-// 사용자 결정 2026-07 — working 막대 높이 = 볼륨(중량×횟수). (작업지시서 §8 override.)
-//   working 을 [working최소 볼륨 → 9px, working최대 볼륨 → hiPx] 로 정규화. hiPx 기본 24, working 은 20 캡
-//   (최고 슬롯은 항상 24 고정 천장이라 working 이 그보다 낮게). max ≤ min 이면 9px.
-describe('barHeightForVolume (working 막대 = 볼륨 정규화, hiPx 캡)', () => {
-  it('볼륨 = max, 기본 hiPx=24 → 24px', () => {
-    expect(barHeightForVolume(600, 400, 600)).toBe(24);
+// 사용자 결정 2026-07 — working 막대 높이 = 볼륨(중량×횟수)에 비례 (proportional, min-max 아님).
+//   높이 = (볼륨/최대볼륨) × hiPx, [9, hiPx] 클램프. 최대볼륨 세트 = 만액(hiPx), 절반 볼륨 ≈ 절반 높이.
+//   min-max 는 최소 세트를 볼륨 무관 9px 로 눌러 과장 → 볼륨 미반영이라 폐기.
+describe('barHeightForVolume (working 막대 = 볼륨 비례)', () => {
+  it('볼륨 = max, working hiPx=20 → 20px', () => {
+    expect(barHeightForVolume(700, 700, 20)).toBe(20);
   });
-  it('볼륨 = max, working hiPx=20 → 20px (최고 천장 24 아래)', () => {
-    expect(barHeightForVolume(600, 400, 600, 20)).toBe(20);
+  it('볼륨 비례 — 500/700·600/700 (min-max 9/15 아니라 비례 14/17)', () => {
+    expect(barHeightForVolume(500, 700, 20)).toBe(14); // 500/700*20 = 14.28 → 14
+    expect(barHeightForVolume(600, 700, 20)).toBe(17); // 600/700*20 = 17.14 → 17
   });
-  it('볼륨 = min → 하한 9px', () => {
-    expect(barHeightForVolume(400, 400, 600, 20)).toBe(9);
+  it('절반 볼륨 → 절반 높이', () => {
+    expect(barHeightForVolume(350, 700, 20)).toBe(10); // 350/700*20 = 10
   });
-  it('중간값 비례 — 9 + (vol-min)/(max-min)*(hiPx-9), 반올림', () => {
-    expect(barHeightForVolume(500, 400, 600, 20)).toBe(15); // 9 + (100/200)*11 = 14.5 → 15
-    expect(barHeightForVolume(500, 400, 600)).toBe(17);      // 기본 24: 9 + 0.5*15 = 16.5 → 17
+  it('아주 작은 볼륨 → 9px 하한(가시성)', () => {
+    expect(barHeightForVolume(100, 700, 20)).toBe(9); // 2.86 → 하한 9
+    expect(barHeightForVolume(0, 700, 20)).toBe(9);
   });
-  it('볼륨 < min → 9 클램프 / 볼륨 > max → hiPx 클램프', () => {
-    expect(barHeightForVolume(200, 400, 600, 20)).toBe(9);
-    expect(barHeightForVolume(1000, 400, 600, 20)).toBe(20);
+  it('기본 hiPx=24 (최고 슬롯 스케일)', () => {
+    expect(barHeightForVolume(650, 650)).toBe(24);
   });
-  it('max ≤ min (전부 동일·맨몸/미입력) → 0 나눗셈 없이 9px', () => {
-    expect(barHeightForVolume(500, 500, 500, 20)).toBe(9);
-    expect(barHeightForVolume(50, 0, 0)).toBe(9);
+  it('maxVol ≤ 0 (맨몸/미입력) → 0 나눗셈 없이 9px', () => {
+    expect(barHeightForVolume(500, 0, 20)).toBe(9);
   });
 });
 
-// 사용자 결정 2026-07 — working 세트 볼륨 정규화 범위 {min, max} (최고 슬롯은 고정 천장이라 제외).
-describe('setBarVolumeRange (working 세트 볼륨 min/max)', () => {
-  it('working 최소~최대 볼륨', () => {
-    // 60×10=600, 80×5=400
-    const r = setBarVolumeRange([{ weight: 60, reps: 10 }, { weight: 80, reps: 5 }]);
-    expect(r.min).toBe(400);
-    expect(r.max).toBe(600);
+// 사용자 결정 2026-07 — working 세트 최대 볼륨 (비례 분모). 최고 슬롯은 고정 천장이라 제외.
+describe('setBarVolumeMax (working 세트 최대 볼륨)', () => {
+  it('working 최대 볼륨', () => {
+    // 60×10=600, 80×5=400 → 600
+    expect(setBarVolumeMax([{ weight: 60, reps: 10 }, { weight: 80, reps: 5 }])).toBe(600);
   });
-  it('단일 working → min=max', () => {
-    const r = setBarVolumeRange([{ weight: 65, reps: 10 }]); // 650
-    expect(r.min).toBe(650);
-    expect(r.max).toBe(650);
+  it('단일 working → 그 볼륨', () => {
+    expect(setBarVolumeMax([{ weight: 65, reps: 10 }])).toBe(650);
   });
-  it('맨몸/미입력(weight null) 세트만 → min=0, max=0', () => {
-    const r = setBarVolumeRange([{ weight: null, reps: 12 }]);
-    expect(r.min).toBe(0);
-    expect(r.max).toBe(0);
+  it('맨몸/미입력(weight null) 세트만 → 0', () => {
+    expect(setBarVolumeMax([{ weight: null, reps: 12 }])).toBe(0);
   });
 });
 
