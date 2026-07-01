@@ -192,4 +192,17 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(host.querySelector('.vs-rec .n').textContent).toBe('0');
     expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('0');
   });
+
+  it('메인 미녹음 + drill 만 녹음 → 점수링 캡션은 "직전 점수" 안 씀 (점수 없음, 링 —)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    recBtn.click(); await tick();
+    recBtn.click(); await tick(); await tick();
+    const cap = host.querySelector('.vs-cap').textContent;
+    expect(cap).not.toContain('직전 점수');   // 메인 점수 없으면 '직전 점수' 문구 금지
+    expect(cap).toContain('1회 시도');         // 시도 횟수는 표기 (게이트 dots 와 정합)
+    expect(host.querySelector('.vs-ring .cn').textContent).toBe('—'); // 링 = 점수 없음
+  });
 });

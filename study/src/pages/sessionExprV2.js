@@ -349,9 +349,11 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const listenPill = h('button', { class: 'vs-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
   const recPill = h('button', { class: 'vs-pill pri', type: 'button' }, vIcon(VI.MIC, { size: 14, sw: 2 }), '따라 말하기');
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
+  // 점수링 캡션 — 메인 점수 있으면 '직전 점수 · N회 시도', 점수 없이 시도만(응용 발화 등) 있으면 'N회 시도', 없으면 '아직 시도 전'.
+  const capText = () => (state.lastScore != null ? `직전 점수 · ${recCount()}회 시도` : (recCount() > 0 ? `${recCount()}회 시도` : '아직 시도 전'));
   const ring = ringEl(state.lastScore);
   const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, ring,
-    h('span', { class: 'vs-cap', id: 'vs-cap' }, recCount() > 0 ? `직전 점수\n${recCount()}회 시도`.replace('\n', ' · ') : '아직 시도 전'));
+    h('span', { class: 'vs-cap', id: 'vs-cap' }, capText()));
   const ctrl = h('div', { class: 'vs-ctrl' }, listenPill, recPill, ringHost);
 
   const stopPlaying = () => { playing = false; listenPill.classList.remove('playing'); listenPill.lastChild.textContent = '듣기'; };
@@ -413,7 +415,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
     const newRing = ringEl(score); curRing.replaceWith(newRing); curRing = newRing;
-    ringHost.lastChild.textContent = `직전 점수 · ${recCount()}회 시도`;
+    ringHost.lastChild.textContent = capText();
     if (passed) { passChip.style.display = ''; passChip.lastChild.textContent = `PASS · 콤보 ×${state.combo}`; }
     else passChip.style.display = 'none';
     refreshDots(); refreshRecWidget();
@@ -488,7 +490,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(Math.min(recordedDrills.size, drills.length)); }
     bumpRecLog(state, s?.id, score);  // 응용 발화도 '다음 표현' 3회 게이트에 카운트
     refreshDots();                    // 게이트·발화 dots 갱신 (recCount 반영)
-    ringHost.lastChild.textContent = `직전 점수 · ${recCount()}회 시도`;
+    ringHost.lastChild.textContent = capText();
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
