@@ -22,6 +22,12 @@ import { localISODate } from '../utils/today.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+// scene(전체 대화 듣기) 카드 = explanation.dialogue 배열 보유 (cardLoader isScene · sessionFinish isSceneCard 동일 판정).
+export const isSceneCard = (l) => Array.isArray(l?.explanation?.dialogue);
+// 신규 '표현' 카운트 — 미완료 카드 중 scene 제외 (표현만). hero '표현 N개' 라벨 + todayNewDone(=newSentenceIds,
+// scene 미포함) 단위와 정합해 진행 dots·done 게이트도 일치. (2026-07-01 과대카운트 수정 — scene 이 표현으로 세지던 버그)
+export const countNewExpressions = (cards) => (Array.isArray(cards) ? cards : []).filter((l) => l && l.completed !== true && !isSceneCard(l)).length;
+
 function isDemoMode() {
   if (typeof window === 'undefined') return false;
   if (window.studyDemo === true) return true;
@@ -245,7 +251,8 @@ async function loadStats(state) {
     const langLessons = await db.todayLessons.where('lang').equals(lang).toArray();
     // carry-forward: 미완료 신규는 date 무관 전부 카운트 (cardLoader.loadNewCards 와 동일 정책).
     const incomplete = langLessons.filter((l) => l.completed !== true);
-    const newCount = incomplete.length;
+    // newCount = 신규 '표현' 수 (scene 제외). scene 은 '전체 대화 듣기'로 별도 표기 — 표현 라벨/진행 dots 정합.
+    const newCount = countNewExpressions(langLessons);
     // #5 — AI 생성 세션 타이틀: 곧 시작할 첫 카드(loadNewCards 정렬 동일: date ASC → order_index ASC)의
     // scene/skit 타이틀. 콩트/장면 제목을 home hero 에 노출 (없으면 '' → 기본 카피 fallback).
     const firstNew = incomplete.slice().sort((a, b) => {
