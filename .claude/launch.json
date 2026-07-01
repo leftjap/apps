@@ -2,6 +2,21 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "readingtime",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5321",
+        "--directory",
+        "/Users/gio_c/apps/readingtime",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 5321,
+      "autoPort": false
+    },
+    {
       "name": "gym-sian-ref",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
@@ -147,6 +162,20 @@
         "127.0.0.1"
       ],
       "port": 8085
+    },
+    {
+      "name": "today-sian-ref",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8087",
+        "--directory",
+        "/private/tmp/claude-501/-Users-gio-c-apps/2f51be24-c0eb-4d43-a437-1cc7f61bd542/scratchpad/today-zip/extracted/작업지시서/mockup",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 8087
     },
     {
       "name": "today-redesign-ref",
