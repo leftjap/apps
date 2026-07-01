@@ -198,7 +198,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   }
 
   // ── 기본동사 중심 + 어려운 어휘 차단 (학습 anchor, 2026-06-29 복원) ──
-  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사 비중 <60% = 경고. 비기본동사 구동사 = 경고.
+  // 어려운(라틴계·추상) 어휘 = 차단(error). 기본동사 비중 <60% = 경고. 비기본동사 구동사 = 차단(error).
   let basicVerbCards = 0;
   for (const c of exprs) {
     const sentWords = norm(`${c.sentence} ${c.explanation?.key ?? ''}`).split(' ').filter(Boolean);
@@ -212,12 +212,13 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     const chunkW = norm(chunk).split(' ').filter(Boolean);
     const hasBasicVerb = chunkW.some((w) => BASIC_VERBS.has(w));
     if (hasBasicVerb) basicVerbCards += 1;
-    // 구동사(끝 단어가 particle)인데 기본동사 머리가 아니면 경고 — 기본동사 '다양 활용' 중점에서 벗어남.
-    // 경고(차단 X)인 이유: wrap up/hang on/fill in/write down 등 비기본동사 구동사는 구조가 같아 verb-set
-    // 으로 '좋은 것(fill in)'과 '덜 좋은 것(wrap it up)'을 자동 구분 불가 → 라우틴/가이드가 판단(2026-06-30).
-    // close by 처럼 비동사 청크는 particle 끝 아님 → 오탐 없음.
+    // 구동사(끝 단어가 particle)인데 기본동사 머리가 아니면 **차단(error)** — 기본동사 '다양 활용' 중점 위배.
+    // 하드 차단(2026-07-01, 사용자 요구): wrap it up 류가 seed-supabase INSERT 전 구조적으로 못 들어가게.
+    // wrap/hang/fill/write 등 비기본동사 머리 구동사를 일괄 차단(경고로는 라우틴이 무시해 재발 → 하드 차단).
+    // 기존 적재분(fill in 등)은 재INSERT 안 하므로 grandfather. 소스에 기본동사 청크 없으면 다른 구간/화 선택
+    // (scan-source-chunks 로 확인). close by 는 particle 끝 아님 → 통과.
     if (chunkW.length >= 2 && PARTICLES.has(chunkW[chunkW.length - 1]) && !hasBasicVerb) {
-      warnings.push(`${c.id}: 타깃 "${chunk}" 가 비기본동사 구동사 — 기본동사(get/take/put/come/go/look/find/call…) 머리 구동사·고빈도 일상 청크 우선 검토 (기본동사 다양 활용 중점)`);
+      errors.push(`${c.id}: 타깃 "${chunk}" 는 비기본동사 구동사 — 차단. 구동사는 기본동사(get/take/put/come/go/look/find/call…) 머리여야 함. scan-source-chunks 로 기본동사 청크 후보를 뽑아 교체하거나 다른 구간 선택`);
     }
   }
   if (exprs.length && basicVerbCards / exprs.length < 0.6) {

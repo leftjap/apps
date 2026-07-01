@@ -470,26 +470,26 @@ describe('validateSeedContent — 비기본동사 구동사 차단 (기본동사
     return makePayload({ _source: { episode: 's1e2', lines: [1, 9] }, cards: [scene, card] });
   }
 
-  it('타깃이 비기본동사 구동사("wrap it up") → 경고 (차단 아님 — 라우틴/가이드 판단)', () => {
+  it('타깃이 비기본동사 구동사("wrap it up") → 차단(error) — 구조적으로 못 들어감', () => {
     const p = withTarget('wrap it up = 마무리하다.', 'Please wrap it up now.',
       [['Please', '플리즈'], ['wrap it', '랩 잇'], ['up now.', '업 나우']]);
     const r = validateSeedContent(p, okOpts);
-    expect(r.warnings.join(' ')).toContain('비기본동사 구동사');
-    expect(r.errors.filter((e) => e.includes('비기본동사 구동사'))).toEqual([]); // 차단 아님
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('비기본동사 구동사');
   });
 
-  it('타깃이 기본동사 구동사("call you back") → 경고 없음', () => {
+  it('타깃이 기본동사 구동사("call you back") → 통과 (error·경고 없음)', () => {
     const p = withTarget('call you back = 다시 전화하다.', 'I will call you back.',
       [['I will', '아윌'], ['call you', '콜 유'], ['back.', '백']]);
     const r = validateSeedContent(p, okOpts);
-    expect(r.warnings.filter((w) => w.includes('비기본동사 구동사'))).toEqual([]);
+    expect(r.errors.filter((e) => e.includes('비기본동사 구동사'))).toEqual([]);
   });
 
   it('타깃이 비동사 고빈도 청크("close by")는 오탐 없음 (구동사 아님)', () => {
     const p = withTarget('close by = 가까이.', 'My house is close by.',
       [['My', '마이'], ['house', '하우스'], ['is', '이즈'], ['close', '클로우스'], ['by', '바이']]);
     const r = validateSeedContent(p, okOpts);
-    expect(r.warnings.filter((w) => w.includes('비기본동사 구동사'))).toEqual([]);
+    expect(r.errors.filter((e) => e.includes('비기본동사 구동사'))).toEqual([]);
   });
 });
 
@@ -523,11 +523,12 @@ describe('validateSeedContent — 기본동사 추출 시뮬 고정 (A/B, 2026-0
     expect(r.warnings.filter((w) => /비중 낮음|비기본동사 구동사/.test(w))).toEqual([]);
   });
 
-  it('B. 비기본동사 wrap it up 섞이면 → 비중 경고 + 비기본동사 구동사 경고 (call you back 류는 무관)', () => {
+  it('B. 비기본동사 wrap it up 섞이면 → 차단(error) + 비중 경고 (구조적으로 못 들어감)', () => {
     const wrapUp = card('ab-wrap-up', 2, 'And it should wrap it up.', 'wrap it up = 마무리하다.',
       [['And it', '앤 잇'], ['should', '슈드'], ['wrap it', '랩 잇'], ['up.', '업']]);
     const r = validateSeedContent(makePayload({ _source: { episode: 'office-s1e2', lines: [4, 9] }, cards: [scene(dlg), goWith, wrapUp] }), okOpts);
-    expect(r.warnings.join(' ')).toContain('비중 낮음'); // 1/2 = 50%
-    expect(r.warnings.join(' ')).toContain('비기본동사 구동사'); // wrap it up
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('비기본동사 구동사'); // wrap it up 차단
+    expect(r.warnings.join(' ')).toContain('비중 낮음'); // 1/2 = 50% (비중은 경고 유지)
   });
 });
