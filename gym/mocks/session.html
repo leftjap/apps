@@ -116,16 +116,16 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .fp-chip__mk   { display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; }
 .fp-chip__name { font-size:14px; font-weight:500; }
 
-/* 완료 — 가장 흐린 글자 + sage 체크 (가장 조용, 면 없음) */
-.fp-chip.is-done .fp-chip__name { color:var(--ink-4); }
+/* 완료 — sage 체크 + sage-deep 이름 (완료를 초록으로 의미화, 작업지시서 §5-1 델타) */
+.fp-chip.is-done .fp-chip__name { color:var(--sage-deep); }
 .fp-check path { stroke:var(--sage); }
 
 /* 보류 — 오렌지 꽉 찬 점 */
 .fp-chip.is-hold .fp-chip__name { color:var(--ink-2); }
 .fp-dot-hold { width:6px; height:6px; border-radius:50%; background:var(--crail-soft); }
 
-/* 예정 — 빈 점 */
-.fp-chip.is-upcoming .fp-chip__name { color:var(--ink-4); }
+/* 예정 — 빈 점 + 가시성 강화 이름 (열어둔 종목 잘 보이게, 작업지시서 §5-1 델타) */
+.fp-chip.is-upcoming .fp-chip__name { color:var(--ink-2); font-size:15px; font-weight:600; }
 .fp-dot-todo { width:6px; height:6px; border-radius:50%; border:1.5px solid var(--neutral-bar); box-sizing:border-box; }
 
 /* 진행중 — 유일한 면: 흰 카드 떠오름 + 오렌지 라이브 점 */
@@ -267,7 +267,10 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
     </div>
     <!-- 직전 세션 세트바 -->
     <div style="flex-shrink:0;padding:16px 24px 0;">
-      <div class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;margin-bottom:10px;">직전 세션 기록</div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
+        <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;">직전 세션 기록</span>
+        <span id="cardSetBarHint" class="kr" style="font-size:10px;font-weight:500;color:var(--ink-4);letter-spacing:0.02em;">높이 = 강도</span>
+      </div>
       <div id="cardSetDots" class="mono" style="display:flex;gap:7px;align-items:flex-end;"></div>
     </div>
     <!-- PR 팝 (transient) -->

@@ -33,6 +33,7 @@
   --cloudy-base: oklch(65% 0.08 240);
   --cloudy-deep: oklch(42% 0.12 240);
   --sage: oklch(66% 0.055 150); /* 완료 칩 체크 — 시안 sage 톤 (작업지시서 §3.1) */
+  --sage-deep: oklch(46% 0.075 150); /* 완료 칩 이름 — 완료를 초록으로 의미화 (작업지시서 §5-1 푸터 델타) */
 
   --warning: #c98a3f;
   --danger: #c5544a;

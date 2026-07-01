@@ -34,6 +34,9 @@ import {
   resolveDotDisplay,
   formatSetSegment,
   computeFooterOrder,
+  barHeightForE1RM,
+  setBarMaxE1RM,
+  buildSetBestSlotHtml,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -2416,6 +2419,65 @@ describe('formatSetSegment (§B — 세트바 2줄 중량+×횟수)', () => {
 
   it('display 누락 → 안전 대시', () => {
     expect(formatSetSegment(null, 'weight')).toEqual({ top: '—', bottom: '' });
+  });
+});
+
+// 작업지시서 §3-4 / §11 R1 — 막대 높이 = e1RM 강도 인코딩 (9~24px 클램프, maxE1 0 방어).
+describe('barHeightForE1RM (§3-4 막대 높이 = e1RM 강도)', () => {
+  it('e1RM = maxE1 (최고) → 상한 24px', () => {
+    expect(barHeightForE1RM(105, 105)).toBe(24);
+  });
+  it('e1RM = 0 → 하한 9px', () => {
+    expect(barHeightForE1RM(0, 105)).toBe(9);
+  });
+  it('중간값 비례 — 9 + (e1/maxE1)*15, 반올림', () => {
+    expect(barHeightForE1RM(52.5, 105)).toBe(17); // 9 + 0.5*15 = 16.5 → 17
+  });
+  it('e1RM > maxE1 (이론상 초과) → 24 클램프', () => {
+    expect(barHeightForE1RM(200, 105)).toBe(24);
+  });
+  it('maxE1 = 0 (전부 맨몸/미입력) → 0 나눗셈 없이 9px', () => {
+    expect(barHeightForE1RM(50, 0)).toBe(9);
+    expect(barHeightForE1RM(0, 0)).toBe(9);
+  });
+});
+
+// 작업지시서 §3-4 / §11 R1 — maxE1 = max(최고 e1RM, working 세트 epley). 최고 없으면 working 최댓값 폴백.
+describe('setBarMaxE1RM (§3-4 최고+working 세트 중 최대 e1RM)', () => {
+  it('최고 e1RM 이 working 보다 크면 최고 채택', () => {
+    const sets = [{ weight: 65, reps: 10 }, { weight: 70, reps: 8 }];
+    expect(setBarMaxE1RM(sets, 105)).toBe(105);
+  });
+  it('최고 없음(0) → working 세트 최댓값 폴백 (0 나눗셈 방지)', () => {
+    const sets = [{ weight: 65, reps: 10 }]; // epley = 65*(1+10/30) = 86.6667
+    expect(setBarMaxE1RM(sets, 0)).toBeCloseTo(86.6667, 3);
+  });
+  it('working 이 최고보다 크면 working 채택 (진행 중 돌파)', () => {
+    const sets = [{ weight: 100, reps: 5 }]; // epley = 116.6667
+    expect(setBarMaxE1RM(sets, 105)).toBeCloseTo(116.6667, 3);
+  });
+  it('맨몸/미입력(weight null) 세트 → epley 0, 최고 없으면 0', () => {
+    expect(setBarMaxE1RM([{ weight: null, reps: 12 }], 0)).toBe(0);
+  });
+});
+
+// 작업지시서 §3-3 / §11 R1 — 최고 슬롯 HTML. null → 미생성(빈 문자열), row → 무게×횟수 + diff 보호 마커.
+describe('buildSetBestSlotHtml (§3-3 최고 슬롯 DOM)', () => {
+  it('최고 null → 빈 문자열 (구분선·슬롯 미생성, §3-5 graceful)', () => {
+    expect(buildSetBestSlotHtml(null, 24)).toBe('');
+  });
+  it('무게/횟수 비숫자 → 빈 문자열', () => {
+    expect(buildSetBestSlotHtml({ weight: null, reps: 5, e1rm: 105 }, 24)).toBe('');
+  });
+  it('최고 row → 무게 kg × 횟수 표기 + data-best-slot(diff 보호) + 구분선', () => {
+    const html = buildSetBestSlotHtml({ weight: 90, reps: 5, e1rm: 105 }, 24);
+    expect(html).toContain('data-best-slot="1"');     // renderSetDotsDiff 초과 제거 보호 마커
+    expect(html).toContain('data-best-divider="1"');  // 직전 ┃ 최고 구분선
+    expect(html).toContain('>90<');                   // 무게 (볼륨 아님)
+    expect(html).toContain('×5');                     // 횟수
+    expect(html).toContain('최고');                    // ▲최고 라벨
+    expect(html).toContain('height:24px');            // §3-4 e1RM 높이
+    expect(html).toContain('dashed');                 // 점선 천장 슬롯
   });
 });
 

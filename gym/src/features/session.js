@@ -17,10 +17,12 @@ import {
   upsertSession,
   listExercisesForUser,
   listCustomExercises,
+  getBestE1RM,
   toISODate,
 } from '../db/queries.js';
 import { PART_IDS, PARTS, getBuiltinExercise, resolveExerciseName, primeCustomExerciseCache } from '../db/exercises.js';
 import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
+import { epley } from '../services/pr.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
@@ -845,10 +847,22 @@ async function mountSessionActive(doc, block, session) {
     prevSessionSets = await getPrevSessionLastSets(block.exerciseId);
   } catch (e) { console.error('[gymSession] prev session lookup', e); }
 
+  // 작업지시서 §3 R1 — 역대 최고(e1RM) 세트 (무게×횟수 슬롯 + 막대 높이 정규화). 무게 종목만·없으면 null(§3-5).
+  let bestE1RMRow = null;
+  if (exerciseEq === 'weight') {
+    try { bestE1RMRow = await getBestE1RM(block.exerciseId); }
+    catch (e) {
+      if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) console.error('[gymSession] getBestE1RM', e);
+    }
+  }
+  // 작업지시서 §3-3 — 세트바 헤더 '높이 = 강도' 보조 라벨은 무게 종목(높이 인코딩 유효)일 때만.
+  const setBarHintEl = doc.getElementById('cardSetBarHint');
+  if (setBarHintEl) setBarHintEl.style.display = exerciseEq === 'weight' ? '' : 'none';
+
   // S1..Sn 도트 — diff-based 갱신 (DOM 유지로 transition 트리거) + 활성 set 가운데 정렬
   const setDotsEl = doc.getElementById('cardSetDots');
   if (setDotsEl) {
-    renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, exerciseEq);
+    renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, exerciseEq, bestE1RMRow);
     const centerActiveSet = () => {
       const active = setDotsEl.querySelector('[data-current="1"]');
       if (!active) return;
@@ -1239,6 +1253,56 @@ export function formatSetSegment(display, kind = 'weight') {
   return { top: text.slice(0, dot), bottom: `×${text.slice(dot + 1)}` };
 }
 
+/**
+ * 작업지시서 §3-4 R1 — 막대 높이 = e1RM 강도 인코딩 (차트 아님, 9~24px 텍스처).
+ *  - e1 / maxE1 비례로 9~24px 클램프. maxE1 ≤ 0 (전부 맨몸·미입력) 이면 0 나눗셈 없이 하한 9px.
+ */
+export function barHeightForE1RM(e1, maxE1) {
+  const e = Number(e1) || 0;
+  const m = Number(maxE1) || 0;
+  if (m <= 0) return 9;
+  return Math.round(Math.max(9, Math.min(24, 9 + (e / m) * 15)));
+}
+
+/**
+ * 작업지시서 §3-4 R1 — 세트바 높이 정규화 분모. 최고 e1RM 과 working 세트 epley 중 최댓값.
+ *  - 최고(bestE1rm)가 없으면 working 세트 최댓값으로 폴백 (§3-5 graceful, 0 나눗셈 방지).
+ */
+export function setBarMaxE1RM(sets, bestE1rm) {
+  let max = Number(bestE1rm) || 0;
+  if (Array.isArray(sets)) {
+    for (const s of sets) {
+      const e = epley(s?.weight, s?.reps);
+      if (e > max) max = e;
+    }
+  }
+  return max;
+}
+
+/**
+ * 작업지시서 §3-3 R1 — 역대 최고(e1RM) 세트를 세트바 끝 별도 슬롯으로 병기하는 DOM.
+ *  - best 는 getBestE1RM row {weight,reps,e1rm,...}. null 또는 무게·횟수 비숫자면 '' (§3-5 미생성).
+ *  - 표기는 무게×횟수 (볼륨 금지 §8). 막대 높이는 barH (e1RM 강도).
+ *  - 구분선(data-best-divider)·슬롯(data-best-slot) 둘 다 renderSetDotsDiff 초과 제거 보호 마커를 단다.
+ */
+export function buildSetBestSlotHtml(best, barH) {
+  if (!best || !Number.isFinite(best.weight) || !Number.isFinite(best.reps)) return '';
+  const h = Number.isFinite(Number(barH)) ? Number(barH) : 9;
+  return (
+    // 구분선 (직전 ┃ 최고 경계)
+    `<div data-best-divider="1" style="width:1px;align-self:flex-end;height:44px;background:var(--line);margin:0 2px;flex:none;"></div>`
+    // 최고 슬롯 (data-best-slot 로 diff 보호)
+    + `<div class="seg-best" data-best-slot="1" style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;">`
+    + `<span style="font-size:8px;font-weight:700;color:var(--crail-deep);letter-spacing:0.04em;display:flex;align-items:center;gap:3px;line-height:1;">`
+    + `<span style="font-size:7px;">▲</span>최고</span>`
+    + `<span style="width:100%;height:${h}px;border-radius:5px;background:var(--crail-tint);border:1.5px dashed var(--crail-base);"></span>`
+    + `<span style="display:flex;flex-direction:column;align-items:center;line-height:1.05;gap:2px;">`
+    + `<span style="font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:12.5px;font-weight:700;color:var(--crail-deep);letter-spacing:-0.02em;">${escapeHtml(String(best.weight))}</span>`
+    + `<span style="font-family:var(--font-mono);font-size:10px;font-weight:500;color:var(--crail-deep);">×${escapeHtml(String(best.reps))}</span>`
+    + `</span></div>`
+  );
+}
+
 function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind = 'weight') {
   // P1 라이트 — 세그먼트(.seg = bar + 값). 초기 mount append 용. 후속은 renderSetDotsDiff 가 갱신.
   //   완료=.done(ink bar) / 현재=.now(crail 맥동 bar) / 예정=ghost(line 보더). 값=직전 세션 per-set 타깃.
@@ -1262,8 +1326,16 @@ function renderSetDotHtml(idx, set, isCurrent, sets, cur, prevSessionSets, kind 
  *  - 부족하면 append, 초과하면 remove
  *  - 활성 set 변경 시 font-size 220ms transition 자연 트리거 (DOM 유지)
  */
-function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight') {
+function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight', best = null) {
   if (!setDotsEl) return;
+  // 작업지시서 §3-2 R1 — 최고(e1RM) 슬롯·구분선은 diff 대상에서 제외한다. 매 렌더 앞단에서 제거해
+  //   아래 세그먼트 diff(부족 append / 초과 remove)가 세트 도트만 세도록 보장 (data-best-slot 오제거 방지).
+  //   슬롯은 정적(세트별 애니 불필요)이라 재빌드가 저렴 — strip → diff → re-append 로 구조적으로 보호.
+  Array.from(setDotsEl.children).forEach((c) => {
+    if (c.dataset && (c.dataset.bestSlot === '1' || c.dataset.bestDivider === '1')) {
+      setDotsEl.removeChild(c);
+    }
+  });
   let appendedCount = 0;
   // 부족한 세그먼트 추가 (초기 non-current 로 박은 뒤 아래 루프가 상태 클래스 확정 → bar transition).
   while (setDotsEl.children.length < sets.length) {
@@ -1284,6 +1356,10 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
   if (appendedCount > 0) {
     void setDotsEl.offsetHeight;
   }
+  // 작업지시서 §3-4 R1 — 막대 높이 = e1RM 강도 (무게 종목만; 맨몸·유산소는 e1RM 무의미 → 기존 높이 유지).
+  //   maxE1 은 최고 e1RM 과 working 세트 최댓값 중 큰 값 (§3-5 최고 없으면 working 폴백, 0 나눗셈 방지).
+  const encodeHeight = kind === 'weight';
+  const maxE1 = encodeHeight ? setBarMaxE1RM(sets, best ? best.e1rm : 0) : 0;
   // 각 세그먼트 상태 갱신 (클래스 토글 + 값)
   for (let i = 0; i < sets.length; i++) {
     const seg = setDotsEl.children[i];
@@ -1309,6 +1385,17 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     const rEl = seg.querySelector('.seg-n .r');
     if (wEl) wEl.textContent = parts.top;
     if (rEl) rEl.textContent = parts.bottom;
+    // 작업지시서 §3-4 — 막대 높이 인코딩 (.seg-bar transition:height .22s 로 애니 유지). 상태 색·펄스는 CSS 가 계속 담당.
+    //   비-무게 종목(맨몸·유산소)은 인라인 높이 제거 → CSS 기본 높이 복원 (무게→맨몸 전환 시 stale 높이 잔존 방지).
+    const barEl = seg.querySelector('.seg-bar');
+    if (barEl) {
+      if (encodeHeight) barEl.style.height = `${barHeightForE1RM(epley(set?.weight, set?.reps), maxE1)}px`;
+      else if (barEl.style.height) barEl.style.height = '';
+    }
+  }
+  // 작업지시서 §3-3 R1 — 세트바 끝에 역대 최고(e1RM) 슬롯 병기 (무게 종목 + 최고 존재 시만; §3-5 graceful).
+  if (encodeHeight && best) {
+    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, barHeightForE1RM(best.e1rm, maxE1)));
   }
 }
 
@@ -3014,7 +3101,7 @@ export async function handleLeftSwipe(options = {}) {
 
   // (g) PR 판정 — cur 유효 + commit 시점만. cur===-1 (advance only) 분기는 PR 발화 없음.
   //   ① e1RM PR (persistSetPR): 통계 기록 + set.pr 영구 마크(renderSetDotHtml accent).
-  //   ② PR 모먼트(팝+세그 crail 글로우+강햅틱): 작업지시서 §9 조건 = "직전 동일 종목 최대 무게 초과" (무게 기반, cardPrChip 과 동일).
+  //   ② PR 모먼트(팝+세그 crail 글로우+강햅틱): 작업지시서 §4 R2 = "역대 e1RM 신기록" 일 때만 (persistSetPR isPR 재사용).
   let prResult = null;
   let prMoment = false;
   if (cur !== -1) {
@@ -3038,18 +3125,9 @@ export async function handleLeftSwipe(options = {}) {
           console.error('[gymSession] handleLeftSwipe PR', e);
         }
       }
-      // §9 PR 모먼트 — 직전 동일 종목 최대 무게 초과 (무게 종목 한정 — cardio/bodyweight 는 weight 0 → 미발화).
-      try {
-        const prevSets = await getPrevSessionLastSets(block.exerciseId);
-        if (Array.isArray(prevSets)) {
-          let prevMax = 0;
-          for (const s of prevSets) {
-            const w = Number(s?.weight) || 0;
-            if ((Number(s?.reps) || 0) > 0 && w > prevMax) prevMax = w;
-          }
-          if (prevMax > 0 && committed.weight > prevMax) prMoment = true;
-        }
-      } catch (_) { /* graceful — prev 기록 없으면 PR 모먼트 없음 */ }
+      // §4 R2 — PR 모먼트는 역대 e1RM 신기록(엄격 초과)만. persistSetPR 의 isPR 재사용 (직전 최대무게 기반 폐기).
+      //   무게 종목 한정 가드는 위 if(weight>0 && reps>0) 로 유지 — cardio/bodyweight 는 weight 0 → prResult.isPR false.
+      prMoment = !!(prResult && prResult.isPR);
     }
   }
 

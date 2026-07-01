@@ -104,6 +104,33 @@ describe('evaluateSetPR', () => {
   });
 });
 
+// 작업지시서 §11 R2 재현 — prMoment(축하 발화)은 handleLeftSwipe 에서 prResult.isPR 과 동치.
+// 버그: 과거엔 "직전 동일 종목 최대 무게 초과" 로 발화 → 역대 e1RM 미달인데도 축하 오발화.
+// 수정 후: 역대 e1RM 신기록(엄격 초과) 일 때만 발화 = evaluateSetPR().isPR.
+describe('evaluateSetPR — R2 회귀 (prMoment = 역대 e1RM 신기록)', () => {
+  // 역대 최고 e1RM = 90×5 → roundE1RM(90*(1+5/30)) = 105.0. 직전 세션 최대무게는 80(무게는 높으나 e1RM 낮음) 가정.
+  const exId = 'bench_press';
+  const prs = [{ exerciseId: exId, type: 'e1rm', weight: 90, reps: 5, e1rm: 105 }];
+
+  it('직전 최대무게(80) 초과하는 82.5×5 → e1RM 96.25 < 105 → isPR=false (prMoment=false)', () => {
+    const r = evaluateSetPR({ weight: 82.5, reps: 5 }, prs, exId);
+    expect(r.e1rm).toBeCloseTo(96.3, 5); // roundE1RM(82.5*(1+5/30)) = 96.25 → 96.3 (0.1 반올림)
+    expect(r.isPR).toBe(false);
+  });
+
+  it('역대 e1RM 초과하는 95×5 → e1RM 110.8 > 105 → isPR=true (prMoment=true)', () => {
+    const r = evaluateSetPR({ weight: 95, reps: 5 }, prs, exId);
+    expect(r.e1rm).toBeCloseTo(110.8, 5); // roundE1RM(95*(1+5/30)) = 110.833... → 110.8
+    expect(r.isPR).toBe(true);
+  });
+
+  it('역대 e1RM 동률(정확히 105) → 엄격 초과 아니므로 isPR=false (prMoment=false)', () => {
+    const r = evaluateSetPR({ weight: 90, reps: 5 }, prs, exId);
+    expect(r.e1rm).toBeCloseTo(105, 5);
+    expect(r.isPR).toBe(false);
+  });
+});
+
 describe('buildPR', () => {
   it('정상 — type=e1rm default, e1rm 자동 계산', () => {
     const pr = buildPR({
