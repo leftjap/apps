@@ -1254,29 +1254,39 @@ export function formatSetSegment(display, kind = 'weight') {
 }
 
 /**
- * 작업지시서 §3-4 R1 — 막대 높이 = e1RM 강도 인코딩 (차트 아님, 9~24px 텍스처).
- *  - e1 / maxE1 비례로 9~24px 클램프. maxE1 ≤ 0 (전부 맨몸·미입력) 이면 0 나눗셈 없이 하한 9px.
+ * 작업지시서 §1 시안 R1 — 막대 높이 = e1RM 강도 (차트 아님, 9~24px 텍스처).
+ *  - working 세트를 [최소 e1RM → 9px, 최대(천장) e1RM → 24px] 로 정규화 (시안 측정: working 9~15px + 최고 24px).
+ *  - §3-4 원공식 `9+(e1/maxE1)*15` 은 working 이 최고에 근접하면 21~22px 로 압축돼 "높이=강도"가 안 보임 →
+ *    시안(얇은 working 밴드 + 또렷한 최고 천장) 기준으로 min→9 정규화로 정정. maxE1 ≤ minE1 이면 하한 9px.
  */
-export function barHeightForE1RM(e1, maxE1) {
+export function barHeightForE1RM(e1, minE1, maxE1) {
   const e = Number(e1) || 0;
-  const m = Number(maxE1) || 0;
-  if (m <= 0) return 9;
-  return Math.round(Math.max(9, Math.min(24, 9 + (e / m) * 15)));
+  const lo = Number(minE1) || 0;
+  const hi = Number(maxE1) || 0;
+  if (hi <= lo) return 9;
+  return Math.round(Math.max(9, Math.min(24, 9 + ((e - lo) / (hi - lo)) * 15)));
 }
 
 /**
- * 작업지시서 §3-4 R1 — 세트바 높이 정규화 분모. 최고 e1RM 과 working 세트 epley 중 최댓값.
- *  - 최고(bestE1rm)가 없으면 working 세트 최댓값으로 폴백 (§3-5 graceful, 0 나눗셈 방지).
+ * 작업지시서 §3-4 R1 — 세트바 높이 정규화 범위 {min, max}.
+ *  - min = working 세트 최소 e1RM (최약 세트가 하한 9px). max = max(최고 e1RM, working 최대) (천장/돌파).
+ *  - 유효 working 세트가 없으면(전부 맨몸·미입력) {0,0} → barHeightForE1RM 가 9px 로 방어.
  */
-export function setBarMaxE1RM(sets, bestE1rm) {
-  let max = Number(bestE1rm) || 0;
+export function setBarE1Range(sets, bestE1rm) {
+  let min = Infinity;
+  let workMax = 0;
   if (Array.isArray(sets)) {
     for (const s of sets) {
       const e = epley(s?.weight, s?.reps);
-      if (e > max) max = e;
+      if (e > 0) {
+        if (e < min) min = e;
+        if (e > workMax) workMax = e;
+      }
     }
   }
-  return max;
+  if (!Number.isFinite(min)) min = 0; // 유효 working 없음
+  const max = Math.max(Number(bestE1rm) || 0, workMax);
+  return { min, max };
 }
 
 /**
@@ -1356,10 +1366,10 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
   if (appendedCount > 0) {
     void setDotsEl.offsetHeight;
   }
-  // 작업지시서 §3-4 R1 — 막대 높이 = e1RM 강도 (무게 종목만; 맨몸·유산소는 e1RM 무의미 → 기존 높이 유지).
-  //   maxE1 은 최고 e1RM 과 working 세트 최댓값 중 큰 값 (§3-5 최고 없으면 working 폴백, 0 나눗셈 방지).
+  // 작업지시서 §1 시안 R1 — 막대 높이 = e1RM 강도 (무게 종목만; 맨몸·유산소는 e1RM 무의미 → 기존 높이 유지).
+  //   [working 최소 → 9px, max(최고, working) → 24px] 정규화 (시안: 얇은 working 밴드 + 또렷한 최고 천장).
   const encodeHeight = kind === 'weight';
-  const maxE1 = encodeHeight ? setBarMaxE1RM(sets, best ? best.e1rm : 0) : 0;
+  const e1Range = encodeHeight ? setBarE1Range(sets, best ? best.e1rm : 0) : { min: 0, max: 0 };
   // 각 세그먼트 상태 갱신 (클래스 토글 + 값)
   for (let i = 0; i < sets.length; i++) {
     const seg = setDotsEl.children[i];
@@ -1389,13 +1399,13 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     //   비-무게 종목(맨몸·유산소)은 인라인 높이 제거 → CSS 기본 높이 복원 (무게→맨몸 전환 시 stale 높이 잔존 방지).
     const barEl = seg.querySelector('.seg-bar');
     if (barEl) {
-      if (encodeHeight) barEl.style.height = `${barHeightForE1RM(epley(set?.weight, set?.reps), maxE1)}px`;
+      if (encodeHeight) barEl.style.height = `${barHeightForE1RM(epley(set?.weight, set?.reps), e1Range.min, e1Range.max)}px`;
       else if (barEl.style.height) barEl.style.height = '';
     }
   }
   // 작업지시서 §3-3 R1 — 세트바 끝에 역대 최고(e1RM) 슬롯 병기 (무게 종목 + 최고 존재 시만; §3-5 graceful).
   if (encodeHeight && best) {
-    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, barHeightForE1RM(best.e1rm, maxE1)));
+    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, barHeightForE1RM(best.e1rm, e1Range.min, e1Range.max)));
   }
 }
 

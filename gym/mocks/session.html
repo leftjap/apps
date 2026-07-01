@@ -128,14 +128,16 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .fp-chip.is-upcoming .fp-chip__name { color:var(--ink-2); font-size:15px; font-weight:600; }
 .fp-dot-todo { width:6px; height:6px; border-radius:50%; border:1.5px solid var(--neutral-bar); box-sizing:border-box; }
 
-/* 진행중 — 유일한 면: 흰 카드 떠오름 + 오렌지 라이브 점 */
+/* 진행중 — 탈박스(작업지시서 §1 시안 A안): 흰 카드 제거 + ink-1 700 이름 + crail 밑줄 + 라이브 점 */
 .fp-chip.is-current {
-  height:44px; padding:0 17px; border-radius:13px;
-  background:var(--card);
-  box-shadow:0 3px 9px -2px rgba(20,18,14,.16), 0 0 0 1px oklch(67% 0.12 50 / .3);
+  height:40px; padding:0 13px; border-radius:12px;
+  background:transparent; box-shadow:none;
   gap:8px;
 }
-.fp-chip.is-current .fp-chip__name { font-size:15px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; }
+.fp-chip.is-current .fp-chip__name {
+  font-size:15px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em;
+  border-bottom:2px solid var(--crail-base); padding-bottom:3px;
+}
 .fp-dot-live {
   width:7px; height:7px; border-radius:50%;
   background:var(--crail-base);
@@ -143,11 +145,11 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
   animation:fpPulse 1.8s ease-in-out infinite;
 }
 
-/* + 추가 버튼 — 레일 밖, 셸 링/페이드/구분선 없음 */
+/* + 추가 버튼 — 레일 밖, 원형(작업지시서 §1 시안 "추가=원형") · 44px 탭 타깃 */
 .fp-add {
   flex-shrink:0;
-  width:40px; height:40px;
-  border-radius:12px;
+  width:44px; height:44px;
+  border-radius:50%;
   border:1px solid var(--line);
   background:var(--card);
   color:var(--ink-3);
