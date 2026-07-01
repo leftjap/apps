@@ -34,8 +34,8 @@ import {
   resolveDotDisplay,
   formatSetSegment,
   computeFooterOrder,
-  barHeightForE1RM,
-  setBarE1Range,
+  barHeightForVolume,
+  setBarVolumeRange,
   buildSetBestSlotHtml,
 } from './session.js';
 
@@ -2422,56 +2422,51 @@ describe('formatSetSegment (§B — 세트바 2줄 중량+×횟수)', () => {
   });
 });
 
-// 작업지시서 §1 시안 / §3-4 R1 — 막대 높이 = e1RM 강도. 시안 대조(측정): working 9~15px + 최고 24px.
-//   working 을 [working최소 e1RM → 9px, 전체최대 e1RM → 24px] 로 정규화해 강도차를 또렷이(§3-4 원공식은
-//   working 이 최고에 근접하면 21~22px 로 압축돼 "높이=강도"가 안 보임 → 시안 기준으로 정정).
-describe('barHeightForE1RM (§1 시안 막대 높이 = e1RM 강도, [min→9, max→24] 정규화)', () => {
-  it('e1RM = maxE1 (최고/천장) → 상한 24px', () => {
-    expect(barHeightForE1RM(105, 84, 105)).toBe(24);
+// 사용자 결정 2026-07 — 막대 높이 = 볼륨(중량×횟수). (작업지시서 §8 "볼륨 높이 금지"를 사용자가 override.)
+//   working 을 [working최소 볼륨 → 9px, max(최고, working) 볼륨 → 24px] 로 정규화. 볼륨 세기차를 높이로.
+describe('barHeightForVolume (막대 높이 = 볼륨, [min→9, max→24] 정규화)', () => {
+  it('볼륨 = max → 상한 24px', () => {
+    expect(barHeightForVolume(600, 400, 600)).toBe(24);
   });
-  it('e1RM = minE1 (working 최약) → 하한 9px', () => {
-    expect(barHeightForE1RM(84, 84, 105)).toBe(9);
+  it('볼륨 = min → 하한 9px', () => {
+    expect(barHeightForVolume(400, 400, 600)).toBe(9);
   });
-  it('중간값 비례 — 9 + (e1-min)/(max-min)*15, 반올림', () => {
-    expect(barHeightForE1RM(94.5, 84, 105)).toBe(17); // 9 + (10.5/21)*15 = 16.5 → 17
+  it('중간값 비례 — 9 + (vol-min)/(max-min)*15, 반올림', () => {
+    expect(barHeightForVolume(500, 400, 600)).toBe(17); // 9 + (100/200)*15 = 16.5 → 17
   });
-  it('시안 데이터 재현 — 65×10(86.7), 70×8(88.7), 70×6(84), 최고 105 → working 은 얇은 밴드', () => {
-    expect(barHeightForE1RM(86.6667, 84, 105)).toBe(11); // 65×10 (시안 11)
-    expect(barHeightForE1RM(84, 84, 105)).toBe(9);        // 70×6 (시안 9)
-    expect(barHeightForE1RM(105, 84, 105)).toBe(24);      // 최고 (시안 24)
+  it('볼륨 < min → 9 클램프 / 볼륨 > max → 24 클램프', () => {
+    expect(barHeightForVolume(200, 400, 600)).toBe(9);
+    expect(barHeightForVolume(1000, 400, 600)).toBe(24);
   });
-  it('e1RM < minE1 (이론상) → 9 클램프 / e1RM > maxE1 (돌파) → 24 클램프', () => {
-    expect(barHeightForE1RM(50, 84, 105)).toBe(9);
-    expect(barHeightForE1RM(200, 84, 105)).toBe(24);
-  });
-  it('maxE1 ≤ minE1 (전부 동일·맨몸/미입력) → 0 나눗셈 없이 9px', () => {
-    expect(barHeightForE1RM(90, 90, 90)).toBe(9);
-    expect(barHeightForE1RM(50, 0, 0)).toBe(9);
+  it('max ≤ min (전부 동일·맨몸/미입력) → 0 나눗셈 없이 9px', () => {
+    expect(barHeightForVolume(500, 500, 500)).toBe(9);
+    expect(barHeightForVolume(50, 0, 0)).toBe(9);
   });
 });
 
-// 작업지시서 §3-4 R1 — 정규화 범위 {min: working 최소 e1RM, max: max(최고, working 최대)}.
-describe('setBarE1Range (§3-4 세트바 높이 정규화 범위)', () => {
-  it('working 최소~최대 + 최고(천장) 반영', () => {
-    // 65×10=86.6667, 70×8=88.6667, 최고 105
-    const sets = [{ weight: 65, reps: 10 }, { weight: 70, reps: 8 }];
-    const r = setBarE1Range(sets, 105);
-    expect(r.min).toBeCloseTo(86.6667, 3);
-    expect(r.max).toBe(105);
+// 사용자 결정 2026-07 — 정규화 범위 {min: working 최소 볼륨, max: max(최고 세트 볼륨, working 최대 볼륨)}.
+describe('setBarVolumeRange (세트바 볼륨 정규화 범위)', () => {
+  it('working 최소~최대 볼륨 + 최고 세트 볼륨 반영', () => {
+    // 60×10=600, 80×5=400, 최고 세트 볼륨 500
+    const sets = [{ weight: 60, reps: 10 }, { weight: 80, reps: 5 }];
+    const r = setBarVolumeRange(sets, 500);
+    expect(r.min).toBe(400);
+    expect(r.max).toBe(600); // max(500, 600)
   });
-  it('최고 없음(0) → max = working 최댓값 (0 나눗셈은 barHeight 가 방어)', () => {
-    const sets = [{ weight: 65, reps: 10 }]; // 86.6667 (min=max)
-    const r = setBarE1Range(sets, 0);
-    expect(r.min).toBeCloseTo(86.6667, 3);
-    expect(r.max).toBeCloseTo(86.6667, 3);
+  it('최고 세트 볼륨이 working 보다 큼 → max = 최고 볼륨(천장)', () => {
+    const sets = [{ weight: 100, reps: 5 }]; // 볼륨 500
+    const r = setBarVolumeRange(sets, 700);
+    expect(r.min).toBe(500);
+    expect(r.max).toBe(700);
   });
-  it('working 이 최고보다 큼(돌파) → max = working (최고 천장 추월)', () => {
-    const sets = [{ weight: 100, reps: 5 }]; // 116.6667
-    const r = setBarE1Range(sets, 105);
-    expect(r.max).toBeCloseTo(116.6667, 3);
+  it('최고 없음(0) → max = working 최댓값', () => {
+    const sets = [{ weight: 65, reps: 10 }]; // 650 (min=max)
+    const r = setBarVolumeRange(sets, 0);
+    expect(r.min).toBe(650);
+    expect(r.max).toBe(650);
   });
   it('맨몸/미입력(weight null) 세트만 → min=0, max=0', () => {
-    const r = setBarE1Range([{ weight: null, reps: 12 }], 0);
+    const r = setBarVolumeRange([{ weight: null, reps: 12 }], 0);
     expect(r.min).toBe(0);
     expect(r.max).toBe(0);
   });

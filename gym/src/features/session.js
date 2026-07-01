@@ -22,7 +22,6 @@ import {
 } from '../db/queries.js';
 import { PART_IDS, PARTS, getBuiltinExercise, resolveExerciseName, primeCustomExerciseCache } from '../db/exercises.js';
 import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
-import { epley } from '../services/pr.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
@@ -855,7 +854,7 @@ async function mountSessionActive(doc, block, session) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) console.error('[gymSession] getBestE1RM', e);
     }
   }
-  // 작업지시서 §3-3 — 세트바 헤더 '높이 = 강도' 보조 라벨은 무게 종목(높이 인코딩 유효)일 때만.
+  // 세트바 헤더 '높이 = 볼륨' 보조 라벨은 무게 종목(높이 인코딩 유효)일 때만.
   const setBarHintEl = doc.getElementById('cardSetBarHint');
   if (setBarHintEl) setBarHintEl.style.display = exerciseEq === 'weight' ? '' : 'none';
 
@@ -1253,39 +1252,42 @@ export function formatSetSegment(display, kind = 'weight') {
   return { top: text.slice(0, dot), bottom: `×${text.slice(dot + 1)}` };
 }
 
-/**
- * 작업지시서 §1 시안 R1 — 막대 높이 = e1RM 강도 (차트 아님, 9~24px 텍스처).
- *  - working 세트를 [최소 e1RM → 9px, 최대(천장) e1RM → 24px] 로 정규화 (시안 측정: working 9~15px + 최고 24px).
- *  - §3-4 원공식 `9+(e1/maxE1)*15` 은 working 이 최고에 근접하면 21~22px 로 압축돼 "높이=강도"가 안 보임 →
- *    시안(얇은 working 밴드 + 또렷한 최고 천장) 기준으로 min→9 정규화로 정정. maxE1 ≤ minE1 이면 하한 9px.
- */
-export function barHeightForE1RM(e1, minE1, maxE1) {
-  const e = Number(e1) || 0;
-  const lo = Number(minE1) || 0;
-  const hi = Number(maxE1) || 0;
-  if (hi <= lo) return 9;
-  return Math.round(Math.max(9, Math.min(24, 9 + ((e - lo) / (hi - lo)) * 15)));
+/** 세트 볼륨 = 중량 × 횟수 (0 방어). 사용자 결정 2026-07 — 막대 높이 기준. */
+function setVolume(set) {
+  return (Number(set?.weight) || 0) * (Number(set?.reps) || 0);
 }
 
 /**
- * 작업지시서 §3-4 R1 — 세트바 높이 정규화 범위 {min, max}.
- *  - min = working 세트 최소 e1RM (최약 세트가 하한 9px). max = max(최고 e1RM, working 최대) (천장/돌파).
- *  - 유효 working 세트가 없으면(전부 맨몸·미입력) {0,0} → barHeightForE1RM 가 9px 로 방어.
+ * 막대 높이 = 볼륨(중량×횟수) 정규화 (사용자 결정 2026-07 — 작업지시서 §8 볼륨 금지를 override).
+ *  - [최소 볼륨 → 9px, 최대 볼륨 → 24px] 로 정규화. 차트 아닌 9~24px 텍스처. max ≤ min 이면 하한 9px.
  */
-export function setBarE1Range(sets, bestE1rm) {
+export function barHeightForVolume(volume, minVol, maxVol) {
+  const v = Number(volume) || 0;
+  const lo = Number(minVol) || 0;
+  const hi = Number(maxVol) || 0;
+  if (hi <= lo) return 9;
+  return Math.round(Math.max(9, Math.min(24, 9 + ((v - lo) / (hi - lo)) * 15)));
+}
+
+/**
+ * 세트바 볼륨 정규화 범위 {min, max} (사용자 결정 2026-07).
+ *  - min = working 세트 최소 볼륨 (최약 세트가 하한 9px). max = max(최고 세트 볼륨, working 최대 볼륨).
+ *  - 유효 working 세트가 없으면(전부 맨몸·미입력) {0,0} → barHeightForVolume 가 9px 로 방어.
+ */
+export function setBarVolumeRange(sets, bestVolume) {
   let min = Infinity;
   let workMax = 0;
   if (Array.isArray(sets)) {
     for (const s of sets) {
-      const e = epley(s?.weight, s?.reps);
-      if (e > 0) {
-        if (e < min) min = e;
-        if (e > workMax) workMax = e;
+      const v = setVolume(s);
+      if (v > 0) {
+        if (v < min) min = v;
+        if (v > workMax) workMax = v;
       }
     }
   }
   if (!Number.isFinite(min)) min = 0; // 유효 working 없음
-  const max = Math.max(Number(bestE1rm) || 0, workMax);
+  const max = Math.max(Number(bestVolume) || 0, workMax);
   return { min, max };
 }
 
@@ -1366,10 +1368,11 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
   if (appendedCount > 0) {
     void setDotsEl.offsetHeight;
   }
-  // 작업지시서 §1 시안 R1 — 막대 높이 = e1RM 강도 (무게 종목만; 맨몸·유산소는 e1RM 무의미 → 기존 높이 유지).
-  //   [working 최소 → 9px, max(최고, working) → 24px] 정규화 (시안: 얇은 working 밴드 + 또렷한 최고 천장).
+  // 사용자 결정 2026-07 — 막대 높이 = 볼륨(중량×횟수) (무게 종목만; 맨몸·유산소는 볼륨 무의미 → 기존 높이 유지).
+  //   [working 최소 볼륨 → 9px, max(최고 세트 볼륨, working) → 24px] 정규화.
   const encodeHeight = kind === 'weight';
-  const e1Range = encodeHeight ? setBarE1Range(sets, best ? best.e1rm : 0) : { min: 0, max: 0 };
+  const bestVol = best ? setVolume(best) : 0;
+  const volRange = encodeHeight ? setBarVolumeRange(sets, bestVol) : { min: 0, max: 0 };
   // 각 세그먼트 상태 갱신 (클래스 토글 + 값)
   for (let i = 0; i < sets.length; i++) {
     const seg = setDotsEl.children[i];
@@ -1395,17 +1398,18 @@ function renderSetDotsDiff(setDotsEl, sets, cur, prevSessionSets, kind = 'weight
     const rEl = seg.querySelector('.seg-n .r');
     if (wEl) wEl.textContent = parts.top;
     if (rEl) rEl.textContent = parts.bottom;
-    // 작업지시서 §3-4 — 막대 높이 인코딩 (.seg-bar transition:height .22s 로 애니 유지). 상태 색·펄스는 CSS 가 계속 담당.
+    // 막대 높이 = 볼륨 인코딩 (.seg-bar transition:height .22s 로 애니 유지). 상태 색·펄스는 CSS 가 계속 담당.
     //   비-무게 종목(맨몸·유산소)은 인라인 높이 제거 → CSS 기본 높이 복원 (무게→맨몸 전환 시 stale 높이 잔존 방지).
     const barEl = seg.querySelector('.seg-bar');
     if (barEl) {
-      if (encodeHeight) barEl.style.height = `${barHeightForE1RM(epley(set?.weight, set?.reps), e1Range.min, e1Range.max)}px`;
+      if (encodeHeight) barEl.style.height = `${barHeightForVolume(setVolume(set), volRange.min, volRange.max)}px`;
       else if (barEl.style.height) barEl.style.height = '';
     }
   }
   // 작업지시서 §3-3 R1 — 세트바 끝에 역대 최고(e1RM) 슬롯 병기 (무게 종목 + 최고 존재 시만; §3-5 graceful).
+  //   슬롯 막대 높이도 볼륨 기준 (최고 세트의 중량×횟수).
   if (encodeHeight && best) {
-    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, barHeightForE1RM(best.e1rm, e1Range.min, e1Range.max)));
+    setDotsEl.insertAdjacentHTML('beforeend', buildSetBestSlotHtml(best, barHeightForVolume(bestVol, volRange.min, volRange.max)));
   }
 }
 
