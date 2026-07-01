@@ -81,7 +81,7 @@ describe('validateSeedContent — 기준선', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('현행 적재 시드 en-2026-06-10-2.json → 통과 (기존 시드 2종을 existingSeeds 로)', () => {
+  it('현행 적재 시드 en-2026-06-10-2.json → 구조 통과 (fill in 은 신규 하드차단이나 grandfather)', () => {
     const load = (f) => JSON.parse(readFileSync(join(seedsDir, f), 'utf8'));
     const payload = load('en-2026-06-10-2.json');
     const existing = ['en-parks-s1e1.json', 'en-2026-06-10.json'].map((f) => {
@@ -89,8 +89,11 @@ describe('validateSeedContent — 기준선', () => {
       return { file: f, ids: new Set(p.cards.map((c) => c.id)), source: p._source ?? null };
     });
     const r = validateSeedContent(payload, { existingSeeds: existing, speakerNames: SPEAKERS });
-    expect(r.errors).toEqual([]);
-    expect(r.ok).toBe(true);
+    // 이 시드는 'fill in'(비기본동사 구동사) 타깃을 씀 — 2026-07-01 하드 차단 신설로 이제 error.
+    // 이미 적재·학습된 grandfather 시드라 재INSERT 안 함(게이트는 신규 payload 용). 그 외 구조 에러는 0이어야 함.
+    const nonPolicyErrors = r.errors.filter((e) => !e.includes('비기본동사 구동사'));
+    expect(nonPolicyErrors).toEqual([]);
+    expect(r.errors.some((e) => e.includes('비기본동사 구동사'))).toBe(true); // fill in 이 이제 차단됨(정책 확인)
   });
 });
 
