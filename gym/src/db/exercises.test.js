@@ -114,6 +114,11 @@ describe('getBuiltinExercise', () => {
     const ex = getBuiltinExercise('dumbbell_curl');
     expect(ex.weightIncrement).toBe(2);
   });
+  it('리스트 컬(wrist_curl) — 명시 weightIncrement 5 가 덤벨 기본(2) override (사용자 요청)', () => {
+    const ex = getBuiltinExercise('wrist_curl');
+    expect(ex.equipment).toBe('dumbbell');
+    expect(ex.weightIncrement).toBe(5);
+  });
   it('cardio 운동 → weightIncrement 0', () => {
     const ex = getBuiltinExercise('treadmill');
     expect(ex.weightIncrement).toBe(0);

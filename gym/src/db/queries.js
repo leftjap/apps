@@ -16,7 +16,7 @@ import {
   PART_IDS,
   INCREMENT,
   getBuiltinExercise,
-  getIncrementForEquipment,
+  resolveWeightIncrement,
   listBuiltinByPart,
   listAllBuiltin,
 } from './exercises.js';
@@ -349,7 +349,7 @@ export async function listExercisesForUser({ part = null, includeHidden = true }
   list = list.map(e => ({
     ...e,
     hidden: hidden.has(e.id),
-    weightIncrement: getIncrementForEquipment(e.equipment),
+    weightIncrement: resolveWeightIncrement(e),
   }));
 
   // 5) exerciseOrder 적용 — part 별 order 만 사용 (전체 정렬은 BUILTIN 정의 순서 유지)

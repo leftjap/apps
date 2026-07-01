@@ -1639,7 +1639,10 @@ export async function applyTapDelta(field, deltaSign) {
     catch (_) { ex = null; }
     const eq = ex?.equipment;
     if (eq === 'bodyweight' || eq === 'cardio') return; // 중량 증감 불가
-    delta = eq === 'dumbbell' ? 2 : 5;
+    // 운동의 weightIncrement (명시 override 우선 — 예: 리스트 컬 5단위) → 없으면 장비 기본(덤벨 2 / 그 외 5).
+    delta = Number.isFinite(ex?.weightIncrement) && ex.weightIncrement > 0
+      ? ex.weightIncrement
+      : (eq === 'dumbbell' ? 2 : 5);
   }
 
   const curVal = Number(set[field]) || 0;

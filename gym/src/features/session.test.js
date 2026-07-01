@@ -1471,6 +1471,25 @@ async function seedActiveDumbbell(weight, reps) {
   });
 }
 
+async function seedActiveWristCurl(weight, reps) {
+  await db.sessions.put({
+    id: 'active-tap-test',
+    date: '2026-05-10',
+    startTime: Date.now() - 10 * 60_000,
+    endTime: null,
+    blocks: [{
+      type: 'single',
+      exerciseId: 'wrist_curl', // dumbbell 이지만 weightIncrement 5 override (사용자 요청)
+      sets: [{ weight, reps, done: false, preset: true, pr: false }],
+    }],
+    tags: ['arms'],
+    totalVolume: 0,
+    totalCalories: 0,
+    durationMin: 0,
+    status: 'active',
+  });
+}
+
 async function seedActiveBodyweight(reps) {
   await db.sessions.put({
     id: 'active-tap-test',
@@ -1520,6 +1539,20 @@ describe('applyTapDelta (spec §6-3)', () => {
 
   it('dumbbell weight -1 → -2kg', async () => {
     await seedActiveDumbbell(16, 10);
+    await applyTapDelta('weight', -1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(14);
+  });
+
+  it('리스트 컬(wrist_curl) — weightIncrement 5 override → +1 은 +5kg (덤벨 기본 2 아님, 사용자 요청)', async () => {
+    await seedActiveWristCurl(19, 12);
+    await applyTapDelta('weight', +1);
+    const s = await getActiveSet0();
+    expect(s.weight).toBe(24);
+  });
+
+  it('리스트 컬(wrist_curl) — -1 은 -5kg', async () => {
+    await seedActiveWristCurl(19, 12);
     await applyTapDelta('weight', -1);
     const s = await getActiveSet0();
     expect(s.weight).toBe(14);

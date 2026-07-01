@@ -89,7 +89,7 @@ export const BUILTIN_EXERCISES = Object.freeze([
   { id: 'tricep_extension', name: '트라이셉 익스텐션', part: 'arms',     equipment: 'dumbbell',  defaultSets: 3, defaultReps: 12, defaultWeight: 12, met: 3.5 },
   { id: 'tricep_pushdown',  name: '트라이셉 푸시다운', part: 'arms',     equipment: 'cable',     defaultSets: 4, defaultReps: 12, defaultWeight: 25, met: 3.5 },
   { id: 'dips',             name: '딥스',            part: 'arms',     equipment: 'bodyweight', defaultSets: 3, defaultReps: 10, defaultWeight: 0,  met: 5.0 },
-  { id: 'wrist_curl',       name: '리스트 컬',       part: 'arms',     equipment: 'dumbbell',  defaultSets: 3, defaultReps: 15, defaultWeight: 5,  met: 3.0 },
+  { id: 'wrist_curl',       name: '리스트 컬',       part: 'arms',     equipment: 'dumbbell',  defaultSets: 3, defaultReps: 15, defaultWeight: 5,  met: 3.0, weightIncrement: 5 },
 
   // 유산소 (cardio) — 트레드밀·사이클·엘립티컬 (장비=cardio, 밸런스 제외·별도 줄)
   { id: 'treadmill',           name: '트레드밀',         part: 'cardio',   equipment: 'cardio',    defaultSets: 1, defaultReps: 0,  defaultWeight: 0, met: 7.0 },
@@ -105,25 +105,35 @@ export function getIncrementForEquipment(equipment) {
   return INCREMENT[equipment] ?? 0;
 }
 
-/** 빌트인 운동 id → 객체 (weightIncrement 자동 합성) */
+/**
+ * 운동의 중량 증감 단위 — 운동 정의의 명시 weightIncrement 가 있으면 그것(장비 기본 override),
+ * 없으면 장비별 기본. (예: 리스트 컬은 덤벨(기본 2)이지만 5단위 — 사용자 요청.)
+ */
+export function resolveWeightIncrement(ex) {
+  const explicit = ex && ex.weightIncrement;
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+  return getIncrementForEquipment(ex?.equipment);
+}
+
+/** 빌트인 운동 id → 객체 (weightIncrement 합성 — 명시 override 우선) */
 export function getBuiltinExercise(id) {
   const ex = BUILTIN_EXERCISES.find(e => e.id === id);
   if (!ex) return null;
-  return { ...ex, weightIncrement: getIncrementForEquipment(ex.equipment) };
+  return { ...ex, weightIncrement: resolveWeightIncrement(ex) };
 }
 
 /** 빌트인 운동 부위별 필터 (정의 순서 유지) */
 export function listBuiltinByPart(part) {
   return BUILTIN_EXERCISES
     .filter(e => e.part === part)
-    .map(e => ({ ...e, weightIncrement: getIncrementForEquipment(e.equipment) }));
+    .map(e => ({ ...e, weightIncrement: resolveWeightIncrement(e) }));
 }
 
 /** 모든 빌트인 운동 (weightIncrement 합성) */
 export function listAllBuiltin() {
   return BUILTIN_EXERCISES.map(e => ({
     ...e,
-    weightIncrement: getIncrementForEquipment(e.equipment),
+    weightIncrement: resolveWeightIncrement(e),
   }));
 }
 
