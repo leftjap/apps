@@ -1409,6 +1409,14 @@
     font-weight: 500;
     color: var(--ink-4);
   }
+  /* 아이콘·∧·크레일 카운트 배지는 모바일 얇은 탭 전용 — 데스크톱 우측 레일은 라벨 + detail */
+  .exp-rail-tl-ico, .exp-rail-tl-chev, .exp-rail-tl-count { display: none; }
+  .exp-rail-tl-detail {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--ink-4);
+  }
   .exp-rail .exp-tl-list {
     flex: 1;
     min-height: 0;
@@ -1956,6 +1964,8 @@
     color: var(--ink-4);
     margin-left: 3px;
   }
+  /* 아이콘·∧ 는 모바일 얇은 탭 전용 — 데스크톱 우측 카드 헤더에선 숨김 */
+  .convo__head-ico, .convo__head-chev { display: none; }
   .convo__list {
     flex: 1;
     min-height: 0;
@@ -2100,7 +2110,7 @@
     min-width: 0;
     border: 0; outline: 0; background: transparent;
     font-family: var(--font-sans);
-    font-size: 13.5px;
+    font-size: 16px;
     color: var(--ink-1);
     padding: 7px 0;
   }
@@ -3580,8 +3590,8 @@
     /* 본문 가독성 — 모바일에선 max-width 자동, 좌우 padding 최소 */
     .doc { max-width: 100%; }
 
-    /* 댓글 패널 → 바텀 시트 (글 위에 슬라이드 업 — 작업지시서 §4.3).
-       peek 196px = 핸들+헤더+최신 댓글 2줄 (아이폰 피드백 3) / 상단 그림자 강화 (피드백 2) */
+    /* 댓글 패널 → 바텀 시트: 기본 얇은 탭(핸들+"댓글 N"+∧), 탭·스와이프로 64dvh 펼침 (작업지시서 §1.1).
+       peek 196 → 얇은 탭. 강한 상단 그림자로 구분선 많은 화면에서도 콘텐츠 위에 부상. */
     .main__body { flex-direction: column; gap: 0; }
     body[data-convo="1"] .convo {
       position: fixed;
@@ -3589,33 +3599,70 @@
       width: auto;
       margin: 0;
       z-index: 60;
-      border-radius: 18px 18px 0 0;
-      box-shadow: 0 -12px 32px rgba(20, 18, 14, 0.18), 0 -2px 10px rgba(20, 18, 14, 0.10);
-      padding: 2px 16px calc(10px + env(safe-area-inset-bottom));
+      --convo-peek: 56px;
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 -0.5px 0 rgba(20, 18, 14, 0.08), 0 -15px 34px -10px rgba(20, 18, 14, 0.22), 0 -4px 12px -7px rgba(20, 18, 14, 0.13);
+      padding: 0 16px calc(10px + env(safe-area-inset-bottom));
       height: 64dvh;
-      transform: translateY(calc(100% - 196px));
+      transform: translateY(calc(100% - var(--convo-peek) - env(safe-area-inset-bottom)));
       transition: transform .26s ease;
     }
     body[data-convo="1"] .convo.is-open { transform: translateY(0); }
+    /* 그래버 — 접힘: crail-soft 42×5 r3 / 펼침: line 44×4.5 (시안) */
     .convo__handle {
       display: grid; place-items: center;
-      height: 28px; width: 100%;
-      background: transparent; border: 0; padding: 0;
+      height: auto; width: 100%;
+      background: transparent; border: 0; padding: 11px 0 0;
       cursor: grab; flex: none;
       touch-action: none;
     }
     .convo__handle i {
-      width: 44px; height: 4.5px;
-      border-radius: 999px;
-      background: var(--line);
+      width: 42px; height: 5px;
+      border-radius: 3px;
+      background: var(--crail-soft);
       display: block;
     }
-    .convo__head { padding: 0 4px 8px; }
-    /* peek(닫힘) — 마지막 댓글을 리스트 상단에 정렬할 스크롤 여지 확보 (다댓글 글에서
-       scrollHeight-clientHeight 한계로 정렬 불가하던 문제, 아이폰 피드백 3) */
+    body[data-convo="1"] .convo.is-open .convo__handle { padding-top: 10px; }
+    body[data-convo="1"] .convo.is-open .convo__handle i {
+      width: 44px; height: 4.5px; border-radius: 999px; background: var(--line);
+    }
+    /* 헤더 = 얇은 탭 행(접힘): 말풍선 아이콘 + "댓글" + 크레일 카운트 배지 + ∧(미세 바운스) */
+    .convo__head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 4px calc(11px + env(safe-area-inset-bottom));
+      font-size: 14px; font-weight: 600;
+    }
+    .convo__head-ico { display: block; width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
+    .convo__head-label { font-size: 14px; font-weight: 600; color: var(--ink-1); }
+    body[data-convo="1"] .convo__count {
+      min-width: 18px; height: 18px; padding: 0 5px; margin-left: 0;
+      border-radius: 9px; background: var(--crail-base); color: #fff;
+      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+      display: inline-grid; place-items: center;
+    }
+    .convo__head-chev {
+      display: inline-flex; margin-left: auto; color: var(--crail-base);
+      animation: convoNudge 1.8s ease-in-out infinite;
+    }
+    .convo__head-chev svg { width: 18px; height: 18px; display: block; }
+    @keyframes convoNudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+    /* 펼침 상태 — 탭 행 → 시트 헤더("댓글" 15/600 + mono 카운트 + 하단 구분선) */
+    body[data-convo="1"] .convo.is-open .convo__head {
+      align-items: baseline;
+      padding: 2px 4px 10px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    body[data-convo="1"] .convo.is-open .convo__head-ico,
+    body[data-convo="1"] .convo.is-open .convo__head-chev { display: none; }
+    body[data-convo="1"] .convo.is-open .convo__head-label { font-size: 15px; font-weight: 600; }
+    body[data-convo="1"] .convo.is-open .convo__count {
+      min-width: 0; height: auto; padding: 0; border-radius: 0; background: transparent;
+      color: var(--ink-4); font-size: 11.5px; font-weight: 500;
+    }
+    /* peek(닫힘): 리스트는 폴드 아래(숨김). 펼침 시 최신 정렬 여지 확보 (아이폰 피드백 3) */
     body[data-convo="1"] .convo:not(.is-open) .convo__list { padding-bottom: 60dvh; }
-    /* 시트 peek (196px) 에 본문 하단이 가리지 않게 여백 확보 */
-    body[data-convo="1"] #mainView { padding-bottom: 208px; }
+    /* 얇은 탭 높이만큼 본문 하단 여백 — 탭이 본문 마지막 줄을 가리지 않게 */
+    body[data-convo="1"] #mainView { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
     .share__ro-long { display: none; }
 
@@ -3640,8 +3687,8 @@
     .exp-mhead-sub strong { color: var(--crail-deep); font-weight: 600; }
     .exp-month-cal { order: 2; }
     .exp-mini-stats { order: 3; }
-    /* 우측 레일 → 타임라인 바텀 시트 (요약 카드는 월 헤더 서브가 대체).
-       댓글 시트와 동일 처리 — peek 156px·강한 상단 그림자·전체 스와이프 (아이폰 피드백 5) */
+    /* 우측 레일 → 타임라인 바텀 시트: 기본 얇은 탭(핸들+"타임라인 N건"+∧), 탭·스와이프로 64dvh 펼침.
+       댓글 시트와 동일 패턴 — peek 156 → 얇은 탭·강한 상단 그림자 (작업지시서 §2). */
     body.is-expense:not(.is-exp-stats) .exp-rail {
       position: fixed;
       left: 0; right: 0; bottom: 0;
@@ -3649,34 +3696,73 @@
       margin: 0;
       z-index: 60;
       gap: 0;
+      --exp-peek: 56px;
       background: var(--sidebar);
-      border-radius: 18px 18px 0 0;
-      box-shadow: 0 -12px 32px rgba(20, 18, 14, 0.18), 0 -2px 10px rgba(20, 18, 14, 0.10);
-      padding: 2px 16px calc(10px + env(safe-area-inset-bottom));
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 -0.5px 0 rgba(20, 18, 14, 0.08), 0 -15px 34px -10px rgba(20, 18, 14, 0.22), 0 -4px 12px -7px rgba(20, 18, 14, 0.13);
+      padding: 0 16px calc(10px + env(safe-area-inset-bottom));
       height: 64dvh;
-      transform: translateY(calc(100% - 156px));
+      transform: translateY(calc(100% - var(--exp-peek) - env(safe-area-inset-bottom)));
       transition: transform .26s ease;
     }
     body.is-expense:not(.is-exp-stats) .exp-rail.is-open { transform: translateY(0); }
+    /* 그래버 — 접힘: crail-soft 42×5 r3 / 펼침: line 44×4.5 (시안) */
     .exp-rail-handle {
       display: grid; place-items: center;
-      height: 28px; width: 100%;
-      background: transparent; border: 0; padding: 0;
+      height: auto; width: 100%;
+      background: transparent; border: 0; padding: 11px 0 0;
       cursor: grab; flex: none;
       touch-action: none;
     }
     .exp-rail-handle i {
-      width: 44px; height: 4.5px;
-      border-radius: 999px;
-      background: var(--line);
+      width: 42px; height: 5px;
+      border-radius: 3px;
+      background: var(--crail-soft);
       display: block;
+    }
+    body.is-expense .exp-rail.is-open .exp-rail-handle { padding-top: 10px; }
+    body.is-expense .exp-rail.is-open .exp-rail-handle i {
+      width: 44px; height: 4.5px; border-radius: 999px; background: var(--line);
     }
     .exp-rail-summary { display: none; }
     .exp-rail-card { box-shadow: none; border-radius: 0; background: transparent; padding: 0 2px; }
     .exp-rail-tlwrap::after { display: none; }
+    /* 헤더 = 얇은 탭 행(접힘): 리스트 아이콘 + "타임라인" + 크레일 카운트 배지 + ∧(미세 바운스) */
+    .exp-rail-tl-head {
+      display: flex; align-items: center; justify-content: flex-start; gap: 8px;
+      padding: 11px 2px calc(11px + env(safe-area-inset-bottom));
+      font-size: 14px; font-weight: 600;
+    }
+    .exp-rail-tl-ico { display: block; width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
+    #expRailTlLabel { font-size: 14px; font-weight: 600; color: var(--ink-1); }
+    body.is-expense .exp-rail-tl-count {
+      display: inline-grid; place-items: center;
+      min-width: 18px; height: 18px; padding: 0 6px;
+      border-radius: 9px; background: var(--crail-base); color: #fff;
+      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    }
+    .exp-rail-tl-detail { display: none; }
+    .exp-rail-tl-chev {
+      display: inline-flex; margin-left: auto; color: var(--crail-base);
+      animation: convoNudge 1.8s ease-in-out infinite;
+    }
+    .exp-rail-tl-chev svg { width: 18px; height: 18px; display: block; }
+    /* 펼침 상태 — 탭 행 → 시트 헤더("타임라인" 15/600 + "N월 · N건" mono + 하단 구분선) */
+    body.is-expense .exp-rail.is-open .exp-rail-tl-head {
+      align-items: baseline;
+      padding: 2px 2px 10px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    body.is-expense .exp-rail.is-open .exp-rail-tl-ico,
+    body.is-expense .exp-rail.is-open .exp-rail-tl-chev,
+    body.is-expense .exp-rail.is-open .exp-rail-tl-count { display: none; }
+    body.is-expense .exp-rail.is-open #expRailTlLabel { font-size: 15px; font-weight: 600; }
+    body.is-expense .exp-rail.is-open .exp-rail-tl-detail {
+      display: inline; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; color: var(--ink-4);
+    }
     .exp-rail .exp-tl-list { padding-bottom: 8px; }
-    /* 시트 peek (156px) 에 본문 하단이 가리지 않게 여백 확보 */
-    body.is-expense #mainView { padding-bottom: 168px; }
+    /* 얇은 탭 높이만큼 본문 하단 여백 — 탭이 캘린더/통계를 가리지 않게 */
+    body.is-expense #mainView { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
 
     /* 폰트 — 사용자 의도 "한 사이즈씩" +1 일괄. 메타(≤12px) 보존.
        모바일에서 .doc__body 직접 텍스트 노드와 <div> 래퍼 단락이 다른 폰트로 보이는
@@ -4936,7 +5022,7 @@
       <!-- 댓글 패널 — 글 전체에 대한 단일 타임라인 (작업지시서 §4.2). 모바일은 바텀 시트 (§4.3) -->
       <aside class="convo" id="convoPanel" aria-label="댓글">
         <button class="convo__handle" id="convoHandle" type="button" aria-label="댓글 시트 열기/닫기"><i></i></button>
-        <div class="convo__head">댓글 <span class="convo__count" id="convoCount"></span></div>
+        <div class="convo__head"><svg class="convo__head-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5A1.5 1.5 0 0 1 5 3.5h6A1.5 1.5 0 0 1 12.5 5v4A1.5 1.5 0 0 1 11 10.5H8l-2.8 2.2V10.5H5A1.5 1.5 0 0 1 3.5 9z"/></svg><span class="convo__head-label">댓글</span> <span class="convo__count" id="convoCount"></span><span class="convo__head-chev" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg></span></div>
         <div class="convo__list" id="convoList"></div>
         <div class="convo__composer">
           <div class="composer">
@@ -4959,7 +5045,7 @@
           <div class="exp-rail-stats" id="expRailStats"></div>
         </div>
         <div class="exp-rail-card exp-rail-tlwrap">
-          <div class="exp-rail-tl-head"><span id="expRailTlLabel">타임라인</span><span class="exp-rail-tl-count" id="expRailTlCount"></span></div>
+          <div class="exp-rail-tl-head"><svg class="exp-rail-tl-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"/></svg><span id="expRailTlLabel">타임라인</span><span class="exp-rail-tl-count" id="expRailTlCount"></span><span class="exp-rail-tl-detail" id="expRailTlDetail"></span><span class="exp-rail-tl-chev" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg></span></div>
           <div class="exp-tl-list" id="expRailTlList"></div>
         </div>
       </aside>
@@ -5095,7 +5181,7 @@
 
     // 댓글 시트 — 열림: 타임라인 맨 아래 / 닫힘(peek): 최신 댓글 첫 줄부터 (피드백 3)
     // 닫힘 정렬은 더블 rAF — peek 패딩(60dvh) 적용 후 scrollTop 설정 (클램프 방지)
-    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 196, (open) => {
+    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 56, (open) => {
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
@@ -5112,7 +5198,7 @@
       setTimeout(align, 450);   // 닫힘 트랜지션(260ms) 후 최종 정렬
     });
     // 가계부 타임라인 시트 — 닫힘(peek): 최신 거래(목록 상단)부터 (피드백 5)
-    initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', 'expRailTlList', 156, (open) => {
+    initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', 'expRailTlList', 56, (open) => {
       const list = document.getElementById('expRailTlList');
       if (list && !open) list.scrollTop = 0;
     });
@@ -6190,8 +6276,10 @@
         <div class="exp-rail-stat"><span>하루 평균</span><b>${data.dailyAvg.toLocaleString('ko-KR')} 원</b></div>
         <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>${maxDayLabel}</b></div>
         <div class="exp-rail-stat"><span>기록된 거래</span><b>${data.txns.length}건</b></div>`;
-      if (tlLabel) tlLabel.textContent = `${data.month}월 타임라인`;
+      if (tlLabel) tlLabel.textContent = '타임라인';
       if (tlCount) tlCount.textContent = `${data.txns.length}건`;
+      const tlDetail = document.getElementById('expRailTlDetail');
+      if (tlDetail) tlDetail.textContent = `${data.month}월 · ${data.txns.length}건`;
       // tl6 행 — 좌측 42px 날짜 블록 / 거래(지출처+메타) / 금액 (작업지시서 §5.3)
       const byDate = {};
       data.txns.forEach(t => { (byDate[t.date] = byDate[t.date] || []).push(t); });

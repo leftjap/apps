@@ -376,6 +376,7 @@ export function patchRailFromRows(rows, year, month, opts = {}, doc = document) 
   const statsEl = doc.getElementById('expRailStats');
   const tlLabel = doc.getElementById('expRailTlLabel');
   const tlCount = doc.getElementById('expRailTlCount');
+  const tlDetail = doc.getElementById('expRailTlDetail');
   monthEl.textContent = `${MONTH_EN[month - 1] || ''} ${year}`;
   const list = rows || [];
   const { total, dailyAvg } = summarizeMonth(list, opts.todayDay);
@@ -393,8 +394,9 @@ export function patchRailFromRows(rows, year, month, opts = {}, doc = document) 
       <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>${maxDayLabel}</b></div>
       <div class="exp-rail-stat"><span>기록된 거래</span><b>${list.length}건</b></div>`;
   }
-  if (tlLabel) tlLabel.textContent = `${month}월 타임라인`;
+  if (tlLabel) tlLabel.textContent = '타임라인';
   if (tlCount) tlCount.textContent = `${list.length}건`;
+  if (tlDetail) tlDetail.textContent = `${month}월 · ${list.length}건`;
   return true;
 }
 
