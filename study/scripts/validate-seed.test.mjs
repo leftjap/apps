@@ -535,3 +535,36 @@ describe('validateSeedContent — 기본동사 추출 시뮬 고정 (A/B, 2026-0
     expect(r.warnings.join(' ')).toContain('비중 낮음'); // 1/2 = 50% (비중은 경고 유지)
   });
 });
+
+describe('validateSeedContent — 소스 순서 가드 (finish-parks-first, 2026-07-01 뒤죽박죽 방지)', () => {
+  // existingSeeds 는 source.episode 만 쓰므로 최소 스텁으로 사용맵 구성
+  const seedsFrom = (eps) => eps.map((ep, i) => ({ file: `en-x${i}.json`, ids: new Set(), source: { episode: ep, lines: [1, 10] } }));
+  const optsWith = (eps) => ({ existingSeeds: seedsFrom(eps), speakerNames: SPEAKERS });
+  const withSource = (episode) => makePayload({ _source: { episode, lines: [1, 20] } });
+  const hasWarn = (r, needle) => r.warnings.some((w) => w.includes(needle));
+
+  it('office 선택 + parks 미착수 화(s1e3~6) 존재 → finish-parks-first 경고', () => {
+    const r = validateSeedContent(withSource('office-s1e3'), optsWith(['s1e1', 's1e2', 'office-s1e1', 'office-s1e2']));
+    expect(hasWarn(r, 'finish-parks-first')).toBe(true);
+  });
+
+  it('parks 선택(우선 쇼) → finish-parks-first 경고 없음', () => {
+    const r = validateSeedContent(withSource('s1e3'), optsWith(['s1e1', 's1e2', 'office-s1e1', 'office-s1e2']));
+    expect(hasWarn(r, 'finish-parks-first')).toBe(false);
+  });
+
+  it('parks 전 6화 착수 완료 후 office 선택 → finish-parks-first 경고 없음', () => {
+    const r = validateSeedContent(withSource('office-s1e1'), optsWith(['s1e1', 's1e2', 's1e3', 's1e4', 's1e5', 's1e6']));
+    expect(hasWarn(r, 'finish-parks-first')).toBe(false);
+  });
+
+  it('낮은 화 전량 미착수인데 높은 화 선택(parks s1e4, s1e3 미착수) → 에피소드 순서 경고', () => {
+    const r = validateSeedContent(withSource('s1e4'), optsWith(['s1e1', 's1e2']));
+    expect(hasWarn(r, '에피소드 순서')).toBe(true);
+  });
+
+  it('가장 이른 미사용 화 선택(parks s1e3, s1e1·s1e2 착수) → 에피소드 순서 경고 없음', () => {
+    const r = validateSeedContent(withSource('s1e3'), optsWith(['s1e1', 's1e2']));
+    expect(hasWarn(r, '에피소드 순서')).toBe(false);
+  });
+});

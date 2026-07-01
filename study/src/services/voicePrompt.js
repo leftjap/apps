@@ -3,8 +3,9 @@
  *
  * 세션 종료 화면(summary)에서 그날 학습/복습한 표현으로 프롬프트를 만들어 "복사 → 음성모드 붙여넣기"로
  * 실전 말하기 연습에 쓴다. 규칙은 SLA 이론 + AI 튜터 실증 웹조사(2026-06-30 voice-practice-research)에 근거:
- *  - 입력·정서는 SLA(Krashen i+1·affective filter, Long interaction), 교정 행동은 실증(Meng 2025: 안 시키면
- *    교정 거의 0)대로 명시 강제.  - 질문 주도 후 발화 양보(referential Q, STT 70~80%, 긴 wait).
+ *  - 입력·정서는 SLA(Krashen i+1·affective filter, Long interaction), 교정 행동은 명시 강제(자가수정 유도).
+ *    ※ 'Meng 2025: 안 시키면 교정 거의 0' 인용은 2026-07-01 스팟체크(4회 검색) 미발견 → **미검증**(출처 확보 전까지 단정 근거 아님). 검증된 인접 근거 = 저숙련엔 recast보다 prompt 효과(Ammar&Spada 2006, SSLA 28(4):543-574).
+ *  - 질문 주도 후 발화 양보(referential Q, STT 70~80%, 긴 wait).
  *  - 턴 ≤2문장·학습자 3배(TTT/STT, 음성 응답 60~70% 짧게).  - 교정 = prompt(자가수정 유도) 우선, 저숙련엔
  *    recast보다 효과(Ammar&Spada 2006), 1~2개·칭찬 먼저, 모호하지 않게 명시 마무리, 유창성=지연/정확성=즉시.
  *  - L1(한국어)은 2회 단순화 후 최후 수단(전략적 L1).  - 듣기 약점 → 천천히·또렷이·정상→분절→정상, shadowing.

@@ -306,6 +306,8 @@ export const SPEAKER_VOICES = {
     // The Office S1E1 오프닝 (en-office-s1e1) — Michael(지점장, 빠르고 으스대는) + Jim(데드팬). 화자 웹검증(IMDb/Fandom).
     'Michael': { voice: 'en-US-BrianMultilingualNeural', style: null, rate: 1.05 },
     'Jim': { voice: 'en-US-GuyNeural', style: null, rate: 0.95 },
+    // The Office S1E2 'Diversity Day' 콜드오픈 (en-office-s1e2 #25~32) — Dwight(제지기 돌리며 짐 통화 방해, 무뚝뚝·단호). 화자 웹검증(officequotes/officeladies/bestofficelines).
+    'Dwight': { voice: 'en-US-EricNeural', style: null, rate: 1.0 },
     // archive — 라쿤+빅맨 친구 여행 (5/17 시드 회귀 보호 + 미래 wave 복원용)
     '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
     '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },

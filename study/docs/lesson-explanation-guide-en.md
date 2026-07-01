@@ -478,9 +478,17 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 > - **추출 = 핵심 표현 1~2개 (목표적합)**: 장면 *명대사*가 아니라 **학습자 목표(여행·일상·미드 듣기)에 빈출인 짧은 청크**만. 우선 = **기본동사**(get/take/put/come/go/look/find/call/make/do…) 머리 구동사·관용구(PHaVE 빈출 / NGSL-Spoken 코어 — look good·how are things going·take care of·move on·find out·pick up·take a break·call you back). 지양(자동 경고) = 긴 절·명대사성·상황한정·라틴/추상 + **비기본동사 머리 구동사**(wrap up·hang on·fill in 류 — `wrap`/`hang`은 기본동사 아님. 게이트가 타깃 청크(key) 기준으로 경고. 정말 고빈도 일상 표현이고 장면에 기본동사 청크가 없을 때만 채택). validate-seed 가 타깃표현 ≥6단어 + 비기본동사 구동사 + 기본동사 비중<60% 를 경고 — **경고는 해소가 원칙**(더 나은 기본동사 청크로 재추출). **추출 전 `node scripts/scan-source-chunks.mjs --episode <ep> --lines <a,b>` 로 구간의 기본동사 청크 후보를 먼저 나열하고 그 안에서 고른다** (후보가 한두 줄에 몰리거나 비면 다른 구간/화 선택 — 2026-06-30 wrap it up 사고: 71~77 은 기본동사 후보가 #75 한 줄(have to·call back)에만 몰려 둘째 타깃 여지가 없어 salient한 wrap it up 을 집음. 반면 #1~50 엔 hold on·help out·come in 등 7종 존재).
 > - **P2 = 개인화 변형**: 표현 카드 `drills` = 그 표현의 **레벨 맞춘 다양한 변형**을 학습자 개인 상황(`~/.config/study/learner-profile.json` `persona` — 아내·아내직장·고양이·여행·일상)으로 개인화. 장면 원문 난이도가 아니라 **쉬운 문장**. → i+1/1T 가 비로소 성립(연습이 저작이라 레벨 통제 가능).
 > - **P3 = 음성 복습**: 세션 후 `scripts/generate-review-prompt.mjs --mode new`(방금 세션 표현 워밍업) / 복습 세션용은 `--mode review`(reviewQueue due 표현 — 인앱 SRS loadReviewCards 와 동일 선정, 졸업분 제외) 가 클로드 음성모드(영어 몰입·Haiku) 프롬프트 생성.
-> 소스 = Parks **+ The Office** S1E1~6 (`seeds/sources/realclass-{parks,office}-s1e{1..6}.txt`). 표현 카드 = **1~2장**(과다추출 금지 — 집중).
+> 소스 = Parks **+ The Office** S1E1~6 (`seeds/sources/realclass-{parks,office}-s1e{1..6}.txt`). **소스 순서 = finish-parks-first (2026-07-01 뒤죽박죽 수정): 한 드라마 완주 후 다음 쇼 — Parks(s1e1→s1e6, 화별 가장 이른 미사용 구간부터) 완주 → Office. validate-seed 가 순서 이탈 경고.** 표현 카드 = **1~2장**(과다추출 금지 — 집중).
 
-본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 현재 소스 = Parks and Recreation **S1E1~S1E6** (`seeds/sources/realclass-parks-s1e{1..6}.txt`, 2026-06-28 ep2~6 추가). S1E1 은 99/145문장 사용(잔여 46문장은 §발췌기준 4 미달 — 인터뷰 독백·파편·일방통화) → **신규 화(S1E2~S1E6) 우선 마이닝**. 실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
+본인 유료 구독 **리얼클래스(RealClass) 미드 스크립트의 개인 학습 발췌** 기반. 소스 = Parks and Recreation + The Office **각 S1E1~S1E6** (`seeds/sources/realclass-{parks,office}-s1e{1..6}.txt`, 2026-06-28 ep2~6 추가).
+
+**⭐ 진행 정책 = finish-parks-first (사용자 결정 2026-07-01 — "한 드라마를 완주"해야 세계관·인물 몰입이 끊기지 않음. 2026-06~07 Parks↔Office 왕복 뒤죽박죽 수정):**
+- **쇼 우선순위 = Parks → Office.** Parks 6화 완주 후에만 Office 착수.
+- 각 쇼는 **s1e1→s1e6 순차**, 각 화 안에서 **가장 이른 미사용 구간부터** 소진.
+- 한 화의 발췌가능 미사용 구간이 소진(잔여가 §발췌기준 미달 — 인터뷰 독백·파편·일방통화)되면 다음 화로. Parks S1E1 은 ~57%(83/145) 사용, 잔여 대부분 기준 미달.
+- **커서 정본 = `seeds/en-*.json` 의 `_source`** (즉흥·기억 기반 선택 금지). `validate-seed.mjs` 순서 가드가 이탈(office 를 parks 미완주에 선택 / 낮은 화 건너뜀)을 **경고** — 경고는 해소 원칙, 정당한 스킵이면 `_note` 에 사유 기록. 겹침은 error 차단.
+
+실제 미드 맥락 (화자·관계·상황) 을 **전체 다이얼로그로 먼저** 접하고 → 문장(표현) 단위 학습으로 진입 (사용자 합의 — 맥락이 학습에 도움).
 
 **형식 정본** = [`seeds/en-2026-06-10.json`](../seeds/en-2026-06-10.json) (한국인 해설 8필드 — 2026-06-10 발음·문법 복원판). 렌더링: `src/components/session/scenePage.js` (다이얼로그 페이지) + `src/components/session/explanationPanel.js` (해설 8필드 + drills) / D1 = `src/components/d1/sessionShell.js`.
 
@@ -563,7 +571,7 @@ spec §5-0 단계 3-4 가 조회하는 학습자 컨텍스트를 장면 선정�
 - 파일명 `seeds/en-<YYYY-MM-DD>.json` (자동화 워크플로 `study-seed-supabase.yml` 인자 정합). 같은 날 재생성 시 `-2` 접미사 허용
 - **1일 1장면** (2026-06-10): 같은 (user, lang, date) 에는 한 그룹만 — 같은 date 에 scene 2장이 들어오면 `order_index` 가 그룹 간 충돌해 세션 정렬이 섞인다 (`loadNewCards` date→order_index 정렬). 같은 날 교체는 **서버 기존 그룹 삭제 후 적재** — `validate-seed.mjs` 서버 게이트 (1일 1장면·completed) 가 차단
 - payload `_note` 에 모델·출처 장면 명시 + **`_source: { episode, lines: [시작, 끝] }` 구조화 필드 의무** (2026-06-10 — 사용 구간 기계 검증·잔여 풀 산출용. `_note` 산문은 사람용 보조)
-- 카드 id `en-parks-<se>-<slug>` — 전 시드 통틀어 고유
+- 카드 id `en-<show>-<se>-<slug>` (show = `parks`|`office`, se = `s1e2` 등. 예: `en-parks-s1e2-take-a-break`, `en-office-s1e2-hold-on`) — 전 시드 통틀어 고유. (2026-07-01 정정: 구 규칙 `en-parks-<se>` 는 Office 편입 전 잔재 — Office 시드는 `en-office-` 사용 중)
 
 ### 생성 후 자체 체크리스트 (en 활성 트랙)
 

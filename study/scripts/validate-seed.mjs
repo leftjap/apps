@@ -63,6 +63,13 @@ export const BASIC_VERBS = new Set(['be', 'am', 'is', 'are', 'was', 'were', 'bee
 // 구동사 particle (phrasal verb 끝). validate-seed 비기본동사 구동사 판정 + scan-source-chunks 공용.
 export const PARTICLES = new Set(['up', 'out', 'on', 'off', 'in', 'back', 'over', 'down', 'away', 'around', 'through', 'along']);
 
+// 소스 순서 정책 (2026-07-01, Parks/Office 뒤죽박죽 방지 — 사용자 결정 "한 드라마 완주 후 다음").
+// finish-parks-first: Parks 완주 후 Office. 각 쇼는 s1e1→s1e6 순차. 정본 = 가이드 §6.3.
+export const SHOW_PRIORITY = ['parks', 'office'];
+const EPISODE_NUMS = [1, 2, 3, 4, 5, 6]; // realclass-{show}-s1e{1..6} — 화당 소스 파일 존재
+const showOfEpisode = (ep) => (/^office/i.test(String(ep)) ? 'office' : 'parks');
+const epNumOfEpisode = (ep) => { const m = String(ep).match(/s1e(\d+)/i); return m ? parseInt(m[1], 10) : null; };
+
 /** 소스 대본 파일에서 문장번호→EN 텍스트 맵 파싱 (s1e1 'EN:/KO:' + ep2~ 'N. EN/KO' 양식 모두). */
 function parseSourceEnByNum(text) {
   const map = new Map();
@@ -289,6 +296,36 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       const [b1, b2] = s.lines;
       if (a1 <= b2 && b1 <= a2) {
         errors.push(`_source 구간 겹침: ${src.episode} #${a1}~${a2} ↔ ${ex.file} #${b1}~${b2}`);
+      }
+    }
+  }
+
+  // ── 소스 순서 가드 (2026-07-01, Parks/Office 뒤죽박죽 방지): finish-parks-first + 에피소드 순차 ──
+  // 경고만(차단 아님) — 발췌기준 미달로 정당하게 스킵한 경우는 _note 에 사유 기록. 정책 정본 = 가이드 §6.3.
+  // 신호는 '전량 미착수 화'(existingSeeds 에 해당 화 사용구간 0)로 판정 — coarse 하지만 오탐 없이 왕복만 잡음.
+  if (src?.episode && Array.isArray(src?.lines)) {
+    const usedByShow = { parks: new Set(), office: new Set() };
+    for (const ex of existingSeeds) {
+      const e = ex.source?.episode;
+      const n = e != null ? epNumOfEpisode(e) : null;
+      if (n != null) usedByShow[showOfEpisode(e)].add(n);
+    }
+    const payShow = showOfEpisode(src.episode);
+    const payEp = epNumOfEpisode(src.episode);
+    // (i) finish-parks-first: 더 높은 우선순위 쇼에 '전량 미착수' 화가 남아있는데 뒤 쇼를 고르면 경고
+    for (const higher of SHOW_PRIORITY) {
+      if (higher === payShow) break;
+      const untouched = EPISODE_NUMS.find((n) => !usedByShow[higher].has(n));
+      if (untouched != null) {
+        warnings.push(`finish-parks-first 순서 이탈: ${higher} s1e${untouched} 미착수인데 ${payShow} 선택 — 한 쇼 완주 후 전환 (뒤죽박죽 방지, 가이드 §6.3). 정당한 전환이면 _note 에 ${higher} 소진 사유 기록`);
+        break;
+      }
+    }
+    // (ii) 에피소드 순차: 같은 쇼에서 더 이른 '전량 미착수' 화를 건너뛰고 뒤 화를 고르면 경고
+    if (payEp != null) {
+      const earlier = EPISODE_NUMS.find((n) => n < payEp && !usedByShow[payShow].has(n));
+      if (earlier != null) {
+        warnings.push(`에피소드 순서 이탈: ${payShow} s1e${earlier} 미착수인데 s1e${payEp} 선택 — 낮은 화부터 순차 소진 권장 (가이드 §6.3)`);
       }
     }
   }
