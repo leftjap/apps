@@ -269,7 +269,7 @@ CREATE POLICY "Users can only access own data"
 4. **최근 학습 이력 조회** (`study_today_lessons` + `study_session_logs` SELECT)
    - 최근 30일 `sentence` 목록 → **중복 방지** (Levenshtein 또는 정확 일치 reject)
    - 최근 7일 `review_results` 비율 (O / △ / X) → 정답률 < 70% 시 newElements 난이도 한 단계 다운
-   - 미완료 (`completed = false`) 카드 카운트 → 5건 초과 시 신규 생성 보류 + 사용자에게 안내
+   - **stale 정리(2026-07-01 데드락 수정)**: 14일+ 방치된 미완료 카드 삭제(`scripts/expire-stale-lessons.mjs`) → 그 다음 미완료 (`completed = false`) 카드 카운트 → 5건 초과 시 신규 생성 보류 + 사용자에게 안내. (stale 정리 없이 카운트만 하면 완료 불가·방치 미완료가 영구 잔존해 en 생성이 매일 HOLD 되는 데드락 발생 — 2026-06-08 결함 배치가 3주간 en 을 막았음)
 
 5. **i+1 + 약점 음소 가중 알고리즘 (콩트 단위 — ja 정본. en 은 RealClass 장면 발췌에 약점 음소 가중 반영 — en 가이드 §6.3 "약점 음소 가중", 2026-06-10 연결)**
    - `i` = 현재 stage 의 `lang_<lang>.userKnown` 단어/구/문법 모음 (학습자가 이미 아는 것)
