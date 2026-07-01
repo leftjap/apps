@@ -1,0 +1,86 @@
+{
+  "_note": "RealClass-mining (PPP) — The Office S1E2 'Diversity Day' 콜드오픈 전화 장면 (소스 #25~32 발췌 → dialogue 8줄, 화자 Jim/Michael, 단어변경 0). 짐이 데커드 씨와 통화 중 마이클이 다양성의 날로 끊으라며 방해. 기본동사 타깃 2개: hold on(Jim, 통화 대기) / have to(Michael, 의무). scan-source-chunks 로 기본동사 후보 확인 후 추출. 2026-07-01 데드락 수정 후 첫 en 레슨.",
+  "_source": { "episode": "office-s1e2", "lines": [25, 32] },
+  "lang": "en",
+  "date": "2026-07-02",
+  "cards": [
+    {
+      "id": "en-office-s1e2-holdon-scene",
+      "sentence": "다양성의 날 — 통화 중 방해",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "다양성의 날 — 통화 중 방해",
+        "sceneSummary": "짐이 데커드 씨와 중요한 통화 중인데, 마이클이 '다양성의 날'이라며 전화를 끊으라고 방해한다.",
+        "dialogue": [
+          { "speaker": "Jim", "en": "Hold on one sec- I don't know.", "ko": "잠시만 기다리세요. 잘 안 들려서요." },
+          { "speaker": "Jim", "en": "Hold on one second.", "ko": "잠시만요." },
+          { "speaker": "Michael", "en": "Do you really have to do that right now?", "ko": "지금 꼭 그걸 해야겠어?" },
+          { "speaker": "Jim", "en": "Yes, I do.", "ko": "네, 해야 해요." },
+          { "speaker": "Michael", "en": "I should have done this weeks ago, actually.", "ko": "사실 몇 주 전에 했어야 하는 일이야." },
+          { "speaker": "Jim", "en": "Mr. Deckerd.", "ko": "데커드 씨." },
+          { "speaker": "Jim", "en": "I'm sorry about that.", "ko": "죄송합니다." },
+          { "speaker": "Jim", "en": "What were you- Can you hold on one second?", "ko": "뭐라고 하셨- 잠시만 기다려주실 수 있나요?" }
+        ]
+      }
+    },
+    {
+      "id": "en-office-s1e2-hold-on",
+      "sentence": "Hold on one second.",
+      "meaning": "잠깐만 기다려 주세요.",
+      "reading": null,
+      "phonetic_kr": "홀돈 원 세컨드",
+      "order_index": 1,
+      "explanation": {
+        "key": "hold on = 잠깐 기다리다. 통화·줄에서 '잠깐만요' 할 때 매일 쓰는 기본동사 표현.",
+        "situation": "장면 · 짐이 데커드 씨에게 잠깐 기다리라고 함",
+        "drills": [
+          { "en": "Hold on, my wife is calling.", "ko": "잠깐만요, 아내한테 전화 와서요.", "kr": "홀돈 마이 와이프 이즈 콜링" },
+          { "en": "Can you hold on a second?", "ko": "잠깐만 기다려 줄래요?", "kr": "캔유 홀돈 어 세컨드" },
+          { "en": "Hold on, let me check the map.", "ko": "잠깐만요, 지도 좀 볼게요. (여행)", "kr": "홀돈 렛미 첵 더 맵" },
+          { "en": "Hold on, the cat wants food.", "ko": "잠깐, 고양이가 밥 달래요.", "kr": "홀돈 더 캣 원츠 푸드" },
+          { "en": "Hold on, I'll be right back.", "ko": "잠깐만요, 금방 올게요.", "kr": "홀돈 아일 비 라잇 백" }
+        ],
+        "grammar": [
+          { "struct": "hold on (구동사 — 자동사)", "body": "목적어 없이 '기다리다'. hold(잡다)+on 이 '(끊지 말고) 붙잡고 있다→기다리다'. 전화·대기에서 필수." }
+        ],
+        "chunks": [ ["Hold on", "홀돈"], ["one", "원"], ["second.", "세컨드"] ],
+        "phonemes": [ ["/l/", "hold"] ],
+        "mistake": "'홀드 온'이라 또박또박 X → 실제 '홀돈' 연음. hold on 은 '손에 들다'가 아니라 '잠깐 기다려요'.",
+        "similar": "wait a second · just a moment · hang on",
+        "category": "phrasal/basic",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-office-s1e2-have-to",
+      "sentence": "Do you really have to do that right now?",
+      "meaning": "그걸 정말 지금 해야 해요?",
+      "reading": null,
+      "phonetic_kr": "두유 리얼리 해브투 두댓 라잇나우",
+      "order_index": 2,
+      "explanation": {
+        "key": "have to = ~해야 하다. 의무·필수를 말할 때 일상·여행에서 매일 쓰는 기본동사 표현.",
+        "situation": "장면 · 마이클이 짐에게 지금 꼭 통화해야 하냐고 따짐",
+        "drills": [
+          { "en": "I have to catch the train.", "ko": "기차를 타야 해요. (여행)", "kr": "아이 해브투 캐치 더 트레인" },
+          { "en": "Do you have to go now?", "ko": "지금 가야 해요?", "kr": "두유 해브투 고우 나우" },
+          { "en": "I have to feed the cat first.", "ko": "고양이 밥부터 줘야 해요.", "kr": "아이 해브투 피드 더 캣 퍼스트" },
+          { "en": "My wife has to work today.", "ko": "아내가 오늘 일해야 해요.", "kr": "마이 와이프 해즈투 웍 투데이" },
+          { "en": "You have to try this food.", "ko": "이 음식 꼭 먹어봐야 해요. (여행)", "kr": "유 해브투 트라이 디스 푸드" }
+        ],
+        "grammar": [
+          { "struct": "have to + 동사원형", "body": "'~해야 한다'(의무). have to do / have to go. 부정은 don't have to(안 해도 된다 — must not 과 뜻 다름)." }
+        ],
+        "chunks": [ ["Do you", "두유"], ["really", "리얼리"], ["have to", "해브투"], ["do that", "두댓"], ["right now?", "라잇나우"] ],
+        "phonemes": [ ["/v/", "have"] ],
+        "mistake": "'해브 투' 또박또박 X → 실제 '해브타/해프타' 연음. must 보다 일상에서 훨씬 자주 씀.",
+        "similar": "need to · must · got to",
+        "category": "modal/basic",
+        "frequency": 10
+      }
+    }
+  ]
+}
