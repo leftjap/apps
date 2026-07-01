@@ -46,6 +46,22 @@ import {
   loadExistingSeeds,
   loadSourceEnLines,
 } from './validate-seed.mjs';
+import { staleIncompleteIds } from './expire-stale-lessons.mjs';
+
+const STALE_DAYS = 14; // 이 일수 이상 방치된 미완료는 INSERT 전 강제 삭제 (hold 데드락 근본 수정)
+
+/** payload.lang 의 미완료(completed=false) 카드 {id,date} 조회. */
+async function selectIncompleteByLang(supabaseUrl, serviceKey, userId, lang) {
+  const path = `/study_today_lessons?select=id,date,completed&user_id=eq.${userId}&lang=eq.${lang}&completed=eq.false`;
+  const { text } = await rest(supabaseUrl, serviceKey, path, { method: 'GET' });
+  return JSON.parse(text);
+}
+
+/** id 목록 삭제. */
+async function deleteByIds(supabaseUrl, serviceKey, userId, ids) {
+  const inList = `(${ids.map((s) => `"${s}"`).join(',')})`;
+  await rest(supabaseUrl, serviceKey, `/study_today_lessons?user_id=eq.${userId}&id=in.${inList}`, { method: 'DELETE' });
+}
 
 function parseArgs(args) {
   const out = { dryRun: false };
@@ -170,6 +186,16 @@ async function main() {
   if (args.dryRun) {
     console.log('[seed] dry-run — INSERT skipped');
     return;
+  }
+
+  // 강제 stale 정리(2026-07-01, hold 데드락 근본 수정): INSERT 전 payload.lang 의 14일+ 방치 미완료를
+  // seed 파이프라인 '코드'로 삭제. 라우틴의 "미완료 5건 초과 보류"(에이전트 판단)를 제거하고 이 코드가
+  // 강제하므로, 완료 불가·방치 카드가 쌓여 미완료>5 로 en 생성이 막히던 데드락이 구조적으로 재발 불가.
+  const incompletes = await selectIncompleteByLang(supabaseUrl, serviceKey, args.userId, payload.lang);
+  const stale = staleIncompleteIds(incompletes, payload.date, STALE_DAYS);
+  if (stale.length) {
+    await deleteByIds(supabaseUrl, serviceKey, args.userId, stale);
+    console.log(`[seed] stale 정리(강제): ${stale.length}건 삭제 — ${STALE_DAYS}일+ 방치 미완료 (${stale.join(', ')})`);
   }
 
   const rows = payload.cards.map((c) => ({
