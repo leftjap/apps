@@ -303,6 +303,8 @@ export const SPEAKER_VOICES = {
     'Tom': { voice: 'en-US-AndrewMultilingualNeural', style: null, rate: 0.98 },
     // s1e1 오프닝 '미끄럼틀 소동' 행인 — 원작 대본 무라벨이라 역할명 처리, 남성 추정 (시드 _note 박제)
     'Bystander': { voice: 'en-US-GuyNeural', style: null, rate: 1.0 },
+    // Parks S1E2 'Canvassing' 방문 유세 (en-parks-s1e2 #13~22) — 주민(집주인, 아이 둔 아빠). 소스 무라벨 → 역할명, 남성. 화자는 대화 논리 유추(설득자=Leslie).
+    '주민': { voice: 'en-US-DavisNeural', style: null, rate: 1.0 },
     // The Office S1E1 오프닝 (en-office-s1e1) — Michael(지점장, 빠르고 으스대는) + Jim(데드팬). 화자 웹검증(IMDb/Fandom).
     'Michael': { voice: 'en-US-BrianMultilingualNeural', style: null, rate: 1.05 },
     'Jim': { voice: 'en-US-GuyNeural', style: null, rate: 0.95 },

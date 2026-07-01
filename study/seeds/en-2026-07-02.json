@@ -1,85 +1,87 @@
 {
-  "_note": "RealClass-mining (PPP) — The Office S1E2 'Diversity Day' 콜드오픈 전화 장면 (소스 #25~32 발췌 → dialogue 8줄, 화자 Jim/Dwight, 단어변경 0). 짐이 데커드 씨와 통화 중 드와이트가 옆에서 제지기(셔레더)를 돌려 방해. 기본동사 타깃 2개: hold on(Jim, 통화 대기) / have to(Jim이 드와이트에게, 의무). 화자 웹검증(theofficequotes/officeladies/bestofficelines — #27 Jim 질문, #28·#29 Dwight 응답, Michael 은 이 구간 미등장). scan-source-chunks 로 기본동사 후보 확인 후 추출. 2026-07-01 데드락 수정 후 첫 en 레슨 (화자 2026-07-01 웹대조 정정: 이전 Michael 오귀속).",
-  "_source": { "episode": "office-s1e2", "lines": [25, 32] },
+  "_note": "RealClass-mining (PPP) — Parks S1E2 'Canvassing' 방문 유세 (소스 #13~22 발췌 → dialogue 10줄, 단어변경 0). 레슬리가 주민에게 '구덩이를 공원으로' 안을 설득하는데, 주민은 토론회에 가려면 베이비시터를 구해야 한다며 난색. 기본동사 타깃 2개: get a babysitter(주민, get+명사 콜로케이션) / how old are ~(Leslie, 나이 묻기). ▲화자 귀속: RealClass 소스는 무라벨 → 대화 논리로 유추(설득자=Leslie — 구덩이-공원은 Leslie 프로젝트이고 '4살이 2살 볼래?'는 Leslie 특유 / 나머지=주민 집주인). 외부 transcript 웹검증 시도했으나 소스 접근 차단(subslikescript JS렌더 · 대본PDF/포럼 403) → 논리 유추 기반, 외부 미확정(Mark 동석 가능성 있어 일부 설득자 라인이 Mark일 수 있음). ▲finish-parks-first 정렬(2026-07-01): s1e1 잔여 미사용은 발췌기준 미달(취객 미끄럼틀 파편 + Leslie 인터뷰 독백)이라 소진 처리 → s1e2 최이른 minable 구간. 구 07-02 office(hold on/have to) 대체.",
+  "_source": { "episode": "s1e2", "lines": [13, 22] },
   "lang": "en",
   "date": "2026-07-02",
   "cards": [
     {
-      "id": "en-office-s1e2-holdon-scene",
-      "sentence": "다양성의 날 — 통화 중 방해",
+      "id": "en-parks-s1e2-canvass-scene",
+      "sentence": "방문 유세 — 구덩이를 공원으로",
       "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
       "reading": null,
       "phonetic_kr": null,
       "order_index": 0,
       "explanation": {
-        "sceneTitle": "다양성의 날 — 통화 중 방해",
-        "sceneSummary": "짐이 데커드 씨와 중요한 통화 중인데, 드와이트가 옆에서 제지기(셔레더)를 돌려 통화를 방해한다.",
+        "sceneTitle": "방문 유세 — 구덩이를 공원으로",
+        "sceneSummary": "레슬리가 집집마다 다니며 '구덩이를 공원으로' 만드는 안을 설득한다. 한 주민은 좋은 생각이라면서도, 토론회에 가려면 베이비시터를 구해야 한다며 난색을 표한다.",
         "dialogue": [
-          { "speaker": "Jim", "en": "Hold on one sec- I don't know.", "ko": "잠시만 기다리세요. 잘 안 들려서요." },
-          { "speaker": "Jim", "en": "Hold on one second.", "ko": "잠시만요." },
-          { "speaker": "Jim", "en": "Do you really have to do that right now?", "ko": "지금 꼭 그걸 해야겠어요?" },
-          { "speaker": "Dwight", "en": "Yes, I do.", "ko": "당연하죠." },
-          { "speaker": "Dwight", "en": "I should have done this weeks ago, actually.", "ko": "사실 몇 주 전에 끝냈어야 하는 일이에요." },
-          { "speaker": "Jim", "en": "Mr. Deckerd.", "ko": "데커드 씨." },
-          { "speaker": "Jim", "en": "I'm sorry about that.", "ko": "죄송합니다." },
-          { "speaker": "Jim", "en": "What were you- Can you hold on one second?", "ko": "뭐라고 하셨- 잠시만 기다려주실 수 있나요?" }
+          { "speaker": "주민", "en": "It's a good idea.", "ko": "좋은 생각이긴 해요." },
+          { "speaker": "주민", "en": "But I'm just not sure.", "ko": "근데 확신은 잘 안 서네요." },
+          { "speaker": "Leslie", "en": "Okay, which part are you not sure about?", "ko": "그럼, 어떤 부분이 확신이 안 가세요?" },
+          { "speaker": "주민", "en": "Turning the pit into a park.", "ko": "구덩이를 공원으로 만드는 거요." },
+          { "speaker": "Leslie", "en": "That's... kind of the whole thing.", "ko": "그게... 사실상 전부인데요." },
+          { "speaker": "주민", "en": "Look, I think this is a great idea, but I can't make any forum.", "ko": "저기, 좋은 생각 같긴 한데, 저는 토론회엔 못 가요." },
+          { "speaker": "주민", "en": "I would have to get a babysitter.", "ko": "베이비시터를 구해야 하잖아요." },
+          { "speaker": "Leslie", "en": "How old are your kids?", "ko": "아이들이 몇 살이에요?" },
+          { "speaker": "주민", "en": "Four and two.", "ko": "네 살이랑 두 살요." },
+          { "speaker": "Leslie", "en": "Could the four-year-old watch the two-year-old?", "ko": "네 살짜리가 두 살짜리를 봐줄 순 없나요?" }
         ]
       }
     },
     {
-      "id": "en-office-s1e2-hold-on",
-      "sentence": "Hold on one second.",
-      "meaning": "잠깐만 기다려 주세요.",
+      "id": "en-parks-s1e2-get-a-babysitter",
+      "sentence": "I would have to get a babysitter.",
+      "meaning": "베이비시터를 구해야 할 거예요.",
       "reading": null,
-      "phonetic_kr": "홀돈 원 세컨드",
+      "phonetic_kr": "아이 우드 해브투 게러 베이비씨러",
       "order_index": 1,
       "explanation": {
-        "key": "hold on = 잠깐 기다리다. 통화·줄에서 '잠깐만요' 할 때 매일 쓰는 기본동사 표현.",
-        "situation": "장면 · 짐이 데커드 씨에게 잠깐 기다리라고 함",
+        "key": "get a babysitter = 베이비시터를 구하다. get + 명사로 '~를 구하다/잡다/얻다' — 여행·일상에서 매일 쓰는 기본동사 콜로케이션.",
+        "situation": "장면 · 주민이 토론회에 가려면 베이비시터를 구해야 한다며 난색",
         "drills": [
-          { "en": "Hold on, my wife is calling.", "ko": "잠깐만요, 아내한테 전화 와서요.", "kr": "홀돈 마이 와이프 이즈 콜링" },
-          { "en": "Can you hold on a second?", "ko": "잠깐만 기다려 줄래요?", "kr": "캔유 홀돈 어 세컨드" },
-          { "en": "Hold on, let me check the map.", "ko": "잠깐만요, 지도 좀 볼게요. (여행)", "kr": "홀돈 렛미 첵 더 맵" },
-          { "en": "Hold on, the cat wants food.", "ko": "잠깐, 고양이가 밥 달래요.", "kr": "홀돈 더 캣 원츠 푸드" },
-          { "en": "Hold on, I'll be right back.", "ko": "잠깐만요, 금방 올게요.", "kr": "홀돈 아일 비 라잇 백" }
+          { "en": "I need to get a taxi.", "ko": "택시를 잡아야 해요. (여행)", "kr": "아이 니투 게러 택시" },
+          { "en": "Let's get a table for two.", "ko": "2인 자리 하나 잡아요. (식당)", "kr": "렛츠 게러 테이블 포 투" },
+          { "en": "Can you get a room for tonight?", "ko": "오늘 밤 묵을 방 하나 잡아줄래요? (여행)", "kr": "캔유 게러 룸 포 투나잇" },
+          { "en": "I have to get some rest.", "ko": "좀 쉬어야겠어요.", "kr": "아이 해브투 겟 썸 레스트" },
+          { "en": "My wife wants to get a cat sitter.", "ko": "아내가 고양이 봐줄 사람을 구하고 싶어 해요.", "kr": "마이 와이프 원츠투 게러 캣 씨러" }
         ],
         "grammar": [
-          { "struct": "hold on (구동사 — 자동사)", "body": "목적어 없이 '기다리다'. hold(잡다)+on 이 '(끊지 말고) 붙잡고 있다→기다리다'. 전화·대기에서 필수." }
+          { "struct": "get + 명사 (구하다/잡다/얻다)", "body": "get 은 '가지다' 하나가 아니라 상황에 따라 '구하다·잡다·사다·받다'. get a taxi(잡다)·get a room(잡다)·get some rest(취하다). 여기선 '(봐줄 사람을) 구하다'." }
         ],
-        "chunks": [ ["Hold on", "홀돈"], ["one", "원"], ["second.", "세컨드"] ],
-        "phonemes": [ ["/l/", "hold"] ],
-        "mistake": "'홀드 온'이라 또박또박 X → 실제 '홀돈' 연음. hold on 은 '손에 들다'가 아니라 '잠깐 기다려요'.",
-        "similar": "wait a second · just a moment · hang on",
-        "category": "phrasal/basic",
-        "frequency": 9
+        "chunks": [ ["I would", "아이 우드"], ["have to", "해브투"], ["get a", "게러"], ["babysitter.", "베이비씨러"] ],
+        "phonemes": [ ["/ɾ/", "get a"] ],
+        "mistake": "'겟 어'라 또박또박 X → 실제 '게러' 연음(flap). babysitter 도 가운데 t 가 약해져 '베이비씨러'.",
+        "similar": "find a babysitter · book a room · grab a taxi",
+        "category": "collocation/basic",
+        "frequency": 8
       }
     },
     {
-      "id": "en-office-s1e2-have-to",
-      "sentence": "Do you really have to do that right now?",
-      "meaning": "그걸 정말 지금 해야 해요?",
+      "id": "en-parks-s1e2-how-old-are",
+      "sentence": "How old are your kids?",
+      "meaning": "아이들이 몇 살이에요?",
       "reading": null,
-      "phonetic_kr": "두유 리얼리 해브투 두댓 라잇나우",
+      "phonetic_kr": "하우 올드 아 유어 키즈",
       "order_index": 2,
       "explanation": {
-        "key": "have to = ~해야 하다. 의무·필수를 말할 때 일상·여행에서 매일 쓰는 기본동사 표현.",
-        "situation": "장면 · 짐이 드와이트에게 지금 꼭 (제지기를) 해야 하냐고 물음",
+        "key": "how old are ~ = ~는 몇 살이에요? 나이·연식을 물을 때 쓰는 가장 기본적인 질문 패턴.",
+        "situation": "장면 · 레슬리가 주민에게 아이들 나이를 물음",
         "drills": [
-          { "en": "I have to catch the train.", "ko": "기차를 타야 해요. (여행)", "kr": "아이 해브투 캐치 더 트레인" },
-          { "en": "Do you have to go now?", "ko": "지금 가야 해요?", "kr": "두유 해브투 고우 나우" },
-          { "en": "I have to feed the cat first.", "ko": "고양이 밥부터 줘야 해요.", "kr": "아이 해브투 피드 더 캣 퍼스트" },
-          { "en": "My wife has to work today.", "ko": "아내가 오늘 일해야 해요.", "kr": "마이 와이프 해즈투 웍 투데이" },
-          { "en": "You have to try this food.", "ko": "이 음식 꼭 먹어봐야 해요. (여행)", "kr": "유 해브투 트라이 디스 푸드" }
+          { "en": "How old are you?", "ko": "몇 살이에요?", "kr": "하우 올드 아 유" },
+          { "en": "How old is your cat?", "ko": "고양이가 몇 살이에요?", "kr": "하우 올드 이즈 유어 캣" },
+          { "en": "How old is this building?", "ko": "이 건물은 얼마나 오래됐어요? (여행)", "kr": "하우 올드 이즈 디스 빌딩" },
+          { "en": "How old do you have to be?", "ko": "몇 살이어야 해요?", "kr": "하우 올드 두유 해브투 비" },
+          { "en": "How old are your parents?", "ko": "부모님은 연세가 어떻게 되세요?", "kr": "하우 올드 아 유어 페어런츠" }
         ],
         "grammar": [
-          { "struct": "have to + 동사원형", "body": "'~해야 한다'(의무). have to do / have to go. 부정은 don't have to(안 해도 된다 — must not 과 뜻 다름)." }
+          { "struct": "How old + be동사 + 주어?", "body": "나이·연식을 묻는 의문문. 사람=How old are you? / 사물=How old is it? 주어에 따라 are/is 를 씀." }
         ],
-        "chunks": [ ["Do you", "두유"], ["really", "리얼리"], ["have to", "해브투"], ["do that", "두댓"], ["right now?", "라잇나우"] ],
-        "phonemes": [ ["/v/", "have"] ],
-        "mistake": "'해브 투' 또박또박 X → 실제 '해브타/해프타' 연음. must 보다 일상에서 훨씬 자주 씀.",
-        "similar": "need to · must · got to",
-        "category": "modal/basic",
-        "frequency": 10
+        "chunks": [ ["How old", "하우 올드"], ["are", "아"], ["your", "유어"], ["kids?", "키즈"] ],
+        "phonemes": [ ["/oʊ/", "old"] ],
+        "mistake": "'하우 올드' 뒤 be동사 빠뜨리기 쉬움 (How old you? X → How old ARE you? O).",
+        "similar": "What's your age? (딱딱함) · How old is it?",
+        "category": "question/basic",
+        "frequency": 9
       }
     }
   ]
