@@ -472,8 +472,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const nextBtn = h('button', { class: 'vs-next', type: 'button', onClick: handlers.onNext }, idx >= total ? '학습 완료 →' : '다음 표현 →');
   const gateEl = h('div', { class: 'vs-gate' }, '');
 
-  // 응용 연습 — 드릴 녹음도 세션 발화 1건으로 집계 ('오늘 발화' + 요약 통과율/평균/약점음소).
-  // 메인 표현 전용 장치(recLog 게이트·dots·콤보·점수 링·PASS 칩)는 의도적으로 미반영 — 게이트는 메인 표현 3회용.
+  // 응용 연습 — 드릴 녹음도 세션 발화 1건으로 집계 ('오늘 발화' + 요약 통과율/평균/약점음소)
+  // + 다음-표현 게이트(recLog count)에도 포함 (2026-07-01 사용자 지시 — 응용 발화도 3회 게이트에 셈).
+  // 단 콤보·PASS 칩(연속 PASS 게이미피케이션)은 메인 표현 전용 — drill 미반영 유지.
   const drills = Array.isArray(ex.drills) ? ex.drills : [];
   const drillCountEl = h('b', {}, '0');
   const recordedDrills = new Set();
@@ -485,6 +486,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(Math.min(recordedDrills.size, drills.length)); }
+    bumpRecLog(state, s?.id, score);  // 응용 발화도 '다음 표현' 3회 게이트에 카운트
+    refreshDots();                    // 게이트·발화 dots 갱신 (recCount 반영)
+    ringHost.lastChild.textContent = `직전 점수 · ${recCount()}회 시도`;
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };

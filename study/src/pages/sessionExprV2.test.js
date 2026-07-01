@@ -146,16 +146,27 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore').textContent).toContain('92');
   });
 
-  it('drill 녹음은 메인 표현 게이트(recLog)·콤보를 건드리지 않음', async () => {
+  it('drill 녹음도 다음-표현 게이트(recLog count)에 포함 — 콤보는 메인 전용(무관)', async () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = makeStateWithDrills();
     renderSessionExprV2(host, state, {});
     const recBtn = drillRecBtns(host)[0];
     recBtn.click(); await tick();
     recBtn.click(); await tick(); await tick();
-    expect(state.recLog).toEqual({});                      // 메인 3회 게이트 무관
-    expect(state.combo).toBe(0);                           // 메인 콤보 무관
-    expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(false);
+    expect(state.recLog.e1?.count).toBe(1);                // 응용 발화도 3회 게이트에 카운트 (2026-07-01 사용자 지시)
+    expect(state.combo).toBe(0);                           // 콤보(연속 PASS)는 메인 전용 — drill 무관
+    expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(false); // 아직 1/3
+  });
+
+  it('drill 녹음 3회 → 게이트 해제 (응용 발화만으로도 다음 표현 열림)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    for (let k = 0; k < 3; k++) { recBtn.click(); await tick(); recBtn.click(); await tick(); await tick(); }
+    expect(state.recLog.e1.count).toBe(3);
+    expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(true);
+    expect(host.querySelector('.vs-gate').classList.contains('ok')).toBe(true);
   });
 
   it('같은 drill 재녹음 → tried 누적(+1)하되 녹음 N/M 카운터는 중복 안 셈', async () => {
