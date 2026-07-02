@@ -567,4 +567,15 @@ describe('validateSeedContent — 소스 순서 가드 (finish-parks-first, 2026
     const r = validateSeedContent(withSource('s1e3'), optsWith(['s1e1', 's1e2']));
     expect(hasWarn(r, '에피소드 순서')).toBe(false);
   });
+
+  it('화 번호 파싱 실패(s2e1 — s1eN 형식 아님) → 순서 검사 skip + 파싱 실패 경고 1줄 (silent skip 가시화)', () => {
+    const r = validateSeedContent(withSource('s2e1'), optsWith(['s1e1', 's1e2']));
+    expect(hasWarn(r, '에피소드 순서')).toBe(false); // null → 순차 검사 skip (오판 없음)
+    expect(hasWarn(r, '파싱 실패')).toBe(true);      // 단 무증상 통과는 금지 — 경고로 가시화
+  });
+
+  it('대소문자 episode(OFFICE-S1E3) 도 가드 정상 진입 → finish-parks-first 경고', () => {
+    const r = validateSeedContent(withSource('OFFICE-S1E3'), optsWith(['s1e1', 's1e2', 'office-s1e1', 'office-s1e2']));
+    expect(hasWarn(r, 'finish-parks-first')).toBe(true);
+  });
 });

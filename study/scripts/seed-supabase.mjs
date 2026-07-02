@@ -50,9 +50,9 @@ import { staleIncompleteIds } from './expire-stale-lessons.mjs';
 
 const STALE_DAYS = 14; // 이 일수 이상 방치된 미완료는 INSERT 전 강제 삭제 (hold 데드락 근본 수정)
 
-/** payload.lang 의 미완료(completed=false) 카드 {id,date} 조회. */
+/** payload.lang 의 미완료(completed=false) 카드 {id,date,sentence} 조회 — sentence 는 삭제 전 백업 덤프용. */
 async function selectIncompleteByLang(supabaseUrl, serviceKey, userId, lang) {
-  const path = `/study_today_lessons?select=id,date,completed&user_id=eq.${userId}&lang=eq.${lang}&completed=eq.false`;
+  const path = `/study_today_lessons?select=id,date,completed,sentence&user_id=eq.${userId}&lang=eq.${lang}&completed=eq.false`;
   const { text } = await rest(supabaseUrl, serviceKey, path, { method: 'GET' });
   return JSON.parse(text);
 }
@@ -194,6 +194,8 @@ async function main() {
   const incompletes = await selectIncompleteByLang(supabaseUrl, serviceKey, args.userId, payload.lang);
   const stale = staleIncompleteIds(incompletes, payload.date, STALE_DAYS);
   if (stale.length) {
+    // 삭제 전 백업 덤프 (2026-07-01): 무인(라우틴) 경로의 불가역 DELETE — 오탐 시 복구용으로 행 JSON 을 로그에 보존.
+    console.log(`[seed] stale 백업(JSON): ${JSON.stringify(incompletes.filter((r) => stale.includes(r.id)))}`);
     await deleteByIds(supabaseUrl, serviceKey, args.userId, stale);
     console.log(`[seed] stale 정리(강제): ${stale.length}건 삭제 — ${STALE_DAYS}일+ 방치 미완료 (${stale.join(', ')})`);
   }

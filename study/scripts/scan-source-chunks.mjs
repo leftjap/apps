@@ -14,7 +14,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { argv, exit } from 'node:process';
-import { BASIC_VERBS, PARTICLES } from './validate-seed.mjs';
+import { BASIC_VERBS, PARTICLES, showOfEpisode, epFileStem } from './validate-seed.mjs';
 
 const OBJ_PRON = new Set(['it', 'me', 'you', 'him', 'her', 'us', 'them', 'that', 'this']);
 const PREP = new Set([...PARTICLES, 'with', 'at', 'for', 'to', 'about', 'of', 'by', 'from', 'into']);
@@ -66,8 +66,8 @@ if (isMain) {
   const args = parseArgs(argv.slice(2));
   if (!args.episode) { console.error('usage: --episode office-s1e2 [--lines 1,50]'); exit(1); }
   const seedsDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'seeds');
-  const show = /^office/i.test(args.episode) ? 'office' : 'parks';
-  const ep = String(args.episode).replace(/^office-?/i, '');
+  const show = showOfEpisode(args.episode);
+  const ep = epFileStem(args.episode);
   const text = readFileSync(join(seedsDir, 'sources', `realclass-${show}-${ep}.txt`), 'utf8');
   const lines = parseSource(text);
   const [a, b] = (args.lines || '1,9999').split(',').map(Number);

@@ -36,9 +36,10 @@ Repo Secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` 의존. 로컬 .env �
 - `~/apps/study/docs/explanation-schema.md` — §scene 카드 + §drills + 메타 박제
 
 **en 전용 (RealClass-mining):**
-- 소스 스크립트: `~/apps/study/seeds/sources/realclass-parks-s1e1.txt` (로컬 전용·gitignored — 전문 커밋 금지). **부재 시 생성 중단 + 사용자에게 요청** (기억으로 대사 재구성 금지)
-- 형식 정본 시드: `~/apps/study/seeds/en-parks-s1e1.json`
-- 사용 이력: 기존 `seeds/en-*.json` 의 Parks 출처 시드 (`_note`) 와 장면·표현 중복 금지
+- 소스 스크립트: `~/apps/study/seeds/sources/realclass-{parks,office}-s1e{1..6}.txt` (12파일, 로컬 전용·gitignored — 전문 커밋 금지). **부재 시 생성 중단 + 사용자에게 요청** (기억으로 대사 재구성 금지)
+- **소스 순서 = finish-parks-first (2026-07-01)**: Parks s1e1→s1e6 을 화별 가장 이른 미사용 구간부터 완주 후에만 Office s1e1→s1e6. 커서 정본 = `seeds/en-*.json` 의 `_source`. validate-seed 가 순서 이탈 경고·구간 겹침 차단
+- 형식 정본 시드: `~/apps/study/seeds/en-2026-06-10.json` (가이드 §6.3 "형식 정본")
+- 사용 이력: 기존 `seeds/en-*.json` 의 `_source:{episode,lines}` 와 구간 겹침 0 (validate-seed 기계 차단 — `_note` 산문은 사람용 보조)
 
 ## 카드 작성 자체 체크리스트 (요약 — 정본은 위 docs)
 
@@ -55,21 +56,24 @@ Repo Secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` 의존. 로컬 .env �
 - [ ] `variations` / `varData` 미포함 (Stage 1~2)
 - [ ] explanation 9키 정확 일치 (whenToUse/grammar/pronPoints/similar + stage/newElements/knownElements/frequency/category)
 
-### en — ⭐ RealClass-mining (가이드 §6.3, 9항. 구 콩트 체크 13항은 §6.2 archive 와 함께 폐기)
-- [ ] 소스 스크립트 (`seeds/sources/realclass-parks-s1e1.txt`) 에서 발췌 — 부재 시 생성 중단 + 사용자 요청
+### en — ⭐ RealClass-mining (가이드 §6.3 활성 정본. 구 콩트 체크는 §6.2 archive 와 함께 폐기)
+- [ ] 소스 스크립트 (`seeds/sources/realclass-{parks,office}-s1e{1..6}.txt`) 에서 발췌 — 부재 시 생성 중단 + 사용자 요청
+- [ ] **소스 순서 finish-parks-first**: Parks 완주 전 Office 금지 + 화 건너뜀 금지 (validate-seed 순서 가드 경고 — 정당한 스킵은 `_note` 사유 기록)
 - [ ] scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비) + `sceneTitle`/`sceneSummary`
-- [ ] 표현 카드 5~7장 — 각 `explanation` = `key/situation/drills/mistake/similar/category/frequency`
-- [ ] `drills` 카드당 3~8개 (`[{en,ko}]` — en 필수, ko 동반)
-- [ ] 발췌 기준 3종: 단순 인사·리액션 단독 0 / 미국 지방정부 행정 디테일 0 / 일상 전이 가능 표현 (구동사·관용구·기본동사 chunk) 우선
-- [ ] 기존 Parks 시드 (`seeds/en-*.json` `_note` 출처 확인) 와 dialogue·표현 중복 0
-- [ ] 카드 id `en-parks-<se>-<slug>` 전 시드 고유 / 파일명 `en-<date>.json` / `_note` 에 출처 장면 문장 범위
-- [ ] `phonetic_kr` 연음/flap/약음 반영 (사전 표기 X — 표현 카드만, scene 카드는 null)
-- [ ] INSERT 전 라이브 미완료 en 신규 ≤ 5 확인 (초과 시 보류 + 사용자 안내)
+- [ ] 표현 카드 **1~2장** (PPP 집중 추출 — 구 5~7장 폐기 2026-06-29) — 한국인 해설 8필드 (`key/situation/drills/grammar/chunks/phonemes/mistake/similar` + `category/frequency`)
+- [ ] `drills` 카드당 3~8개 (`{en,ko,kr}` — **kr 음차 의무**. 핵심 6~8 / 쉬움 3, 하한 일괄 깔기 금지)
+- [ ] `phonetic_kr` = chunks kr 이어붙임 일치 + chunks 본문 전단어 커버 (연음/flap, 사전 표기 X — 표현 카드만, scene 카드는 null)
+- [ ] 표현 카드 순서 = dialogue 등장 순서 (deriveDialogue 매칭 계약)
+- [ ] `_source: {episode, lines}` 의무 — 기존 시드 구간 겹침 0 (validate-seed 기계 차단)
+- [ ] dialogue 화자 전원 `SPEAKER_VOICES` (src/services/speech.js) 등록 + **화자 귀속 불확실 시 외부 transcript 웹 대조** (2026-07-01 Michael 오귀속 사고)
+- [ ] 발췌 기준 통과 (인사 단독 0 / 행정 디테일 0 / 일상 전이성 / 화자 교차 / 기본동사 청크 — 추출 전 `scan-source-chunks` 로 후보 확인)
+- [ ] 카드 id `en-<show>-<se>-<slug>` (show=parks|office) 전 시드 고유 / 파일명 `en-<date>.json`
+- [ ] **항상 생성** (hold 게이트 폐지 2026-07-01 — 미완료 카운트로 보류 금지. seed-supabase 가 14일+ 방치 미완료를 코드로 강제 정리)
 
 ## 거짓말 방지 메커니즘
 
-- 본 스킬은 [spec-compliance.test.js](~/apps/study/src/db/spec-compliance.test.js) (ja 14 axis 자동) 와 짝. **en 측 spec-compliance 자동 테스트는 없음** → en 카드 §11 체크는 콘텐츠 작성 시 수동으로 짚을 것
-- 작성 직후 `pnpm vitest run src/db/spec-compliance.test.js src/db/seed.test.js --reporter=dot` 1회
+- 본 스킬은 [spec-compliance.test.js](~/apps/study/src/db/spec-compliance.test.js) (ja 14 axis 자동) 와 짝. **en 콘텐츠 게이트 = `scripts/validate-seed.mjs`** (seed-supabase.mjs 가 INSERT 전 자동 차단 — 구조·발음 정합·매칭 계약·충실성(소스 대조)·기본동사·`_source` 겹침·소스 순서·화자 등록. 판단형(발췌 기준·드릴 분포)만 수동)
+- 작성 직후 `pnpm vitest run src/db/spec-compliance.test.js src/db/seed.test.js scripts/validate-seed.test.mjs --reporter=dot` 1회 + `node scripts/validate-seed.mjs --payload seeds/<f>.json`
 - "spec 정합" 단정 발화 전 — 본 docs 인용 라인 명시 (글로벌 거짓말 방지 axis A)
 
 ## 트리거 / 비트리거
@@ -85,9 +89,9 @@ Repo Secrets `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` 의존. 로컬 .env �
 - `sync.js`·`auth.js`·`schema.js` 수정 (`supabase-pattern` 스킬 영역)
 - 단순 텍스트 라벨 변경, 버그 수정
 
-## 알려진 drift (explanation-schema.md 박제)
+## 알려진 drift (explanation-schema.md §4 박제)
 
-- **en 신규 시드는 drift 논의 비대상** — RealClass-mining 형식 (scene 카드 + `key/situation/drills/…` 표현 카드) 이 2026-06-08 부터 정본. 구 8필드 콩트 형식 (`grammar:[{struct,body}]`/`chunks`/`phonemes`) 은 5/29 이전 시드 잔존분만
+- en 표현 카드 현행 형식 = `key`/`grammar:[{struct,body}]`/`chunks:[[en,kr]]`/`phonemes:[[ipa,word]]`/`mistake` 등 8필드 (`renderExplain()` 호환 — validate-seed EXPL_REQUIRED 가 기계 강제). 메타 5필드 (stage/newElements/knownElements/frequency/category 중 stage·Elements) 는 en **현재 미박힘** — multi-wave fix 영역
 - ja 시드 카드는 mocks fixture 형식 (`key`/`grammar:[{struct,body}]`/`chunks:[[ja,kr]]`/`phonemes`/`mistake`) 사용 중 — `renderExplain()` 호환
 
 ## 관련 스킬

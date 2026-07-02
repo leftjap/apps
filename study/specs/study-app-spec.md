@@ -241,7 +241,7 @@ CREATE POLICY "Users can only access own data"
 | "오늘 콘텐츠 비워줘" | 양쪽 | 0 (DELETE) | 잘못 생성 시 reset |
 
 **⭐ en/ja 모델 분기 (2026-06-08 — en 콩트 모델 폐기, `seeds/en-parks-s1e1.json` `_note` 박제):**
-- **en = RealClass-mining 1장면** (위 표의 "콩트 N편" 은 en 에서 "장면 N개" 로 읽음). 1세션 = scene 카드 1장 (`order_index: 0`, 전체 다이얼로그 — 세션 첫 페이지) + 표현 카드 5~7장 (drills 응용). **생성 정본 = en 가이드 §6.3** (소스 스크립트·발췌 기준 3종·중복 방지·ID 규칙·체크리스트). 아래 단계 5·7·8 의 콩트 단위 본문은 en 에 비적용
+- **en = RealClass-mining 1장면** (위 표의 "콩트 N편" 은 en 에서 "장면 N개" 로 읽음). 1세션 = scene 카드 1장 (`order_index: 0`, 전체 다이얼로그 — 세션 첫 페이지) + 표현 카드 1~2장 (PPP 집중 추출 — 구 5~7장 폐기 2026-06-29, drills 응용). **생성 정본 = en 가이드 §6.3** (소스 스크립트·발췌 기준 3종·finish-parks-first 소스 순서·중복 방지·ID 규칙·체크리스트). 아래 단계 5·7·8 의 콩트 단위 본문은 en 에 비적용
 - **ja = 콩트 1편** (아래 콩트 단위 본문 = ja 정본, 변경 없음)
 
 **분량 룰 (Wave 11.7x — 시트콤/콩트 호흡 정본):**
@@ -285,8 +285,8 @@ CREATE POLICY "Users can only access own data"
    - explanation 스키마: `~/apps/study/docs/explanation-schema.md` (en/ja 공통 메타 5필드)
    - 한자 병기 한글 표기 (Wave 11.65): ja sentence 가 한자 포함 시 `phonetic_kr` 의무
 
-7. **`study_today_lessons` INSERT** (ja: 콩트 1편 = skitTotal 건 / en: 1장면 = scene 카드 1 + 표현 카드 5~7 건)
-   - 필수 컬럼: `id` (결정적 ID — ja `<lang>-<date>-skit<N>-<order>` / en `en-parks-<se>-<slug>`), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
+7. **`study_today_lessons` INSERT** (ja: 콩트 1편 = skitTotal 건 / en: 1장면 = scene 카드 1 + 표현 카드 1~2 건)
+   - 필수 컬럼: `id` (결정적 ID — ja `<lang>-<date>-skit<N>-<order>` / en `en-<show>-<se>-<slug>`, show=parks|office), `user_id`, `lang`, `date`, `sentence`, `meaning`, `reading` (ja 만), `phonetic_kr`, `explanation` (JSONB), `completed=false`, `order_index`
    - explanation JSONB nested 메타:
      - ja: 5필드 (stage / newElements / knownElements / frequency / category) + **콩트 메타 4필드** (skitId / skitTitle / skitOrder / skitTotal) — explanation-schema.md §"콩트 메타" 참조
      - en: **en 가이드 §6.3 유일 정본** (scene 카드 + 표현 카드 한국인 해설 8필드 — 필드 열거 재서술 금지, SSOT 2026-06-10)

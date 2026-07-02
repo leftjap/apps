@@ -67,7 +67,9 @@ export const PARTICLES = new Set(['up', 'out', 'on', 'off', 'in', 'back', 'over'
 // finish-parks-first: Parks 완주 후 Office. 각 쇼는 s1e1→s1e6 순차. 정본 = 가이드 §6.3.
 export const SHOW_PRIORITY = ['parks', 'office'];
 const EPISODE_NUMS = [1, 2, 3, 4, 5, 6]; // realclass-{show}-s1e{1..6} — 화당 소스 파일 존재
-const showOfEpisode = (ep) => (/^office/i.test(String(ep)) ? 'office' : 'parks');
+// show 판정·파일스템은 본 모듈이 단일 출처 (scan-source-chunks 가 import 재사용 — 3쇼 확장 시 여기만 갱신).
+export const showOfEpisode = (ep) => (/^office/i.test(String(ep)) ? 'office' : 'parks');
+export const epFileStem = (ep) => String(ep).replace(/^office-?/i, ''); // 'office-s1e2'→'s1e2' (소스 파일명 스템)
 const epNumOfEpisode = (ep) => { const m = String(ep).match(/s1e(\d+)/i); return m ? parseInt(m[1], 10) : null; };
 
 /** 소스 대본 파일에서 문장번호→EN 텍스트 맵 파싱 (s1e1 'EN:/KO:' + ep2~ 'N. EN/KO' 양식 모두). */
@@ -91,8 +93,8 @@ function parseSourceEnByNum(text) {
 /** _source(episode, lines[, show]) → 그 구간 EN 대사 배열. 소스 파일 부재 시 null (충실성 검증 생략). */
 export function loadSourceEnLines(seedsDir, source) {
   if (!source?.episode || !Array.isArray(source?.lines) || source.lines.length !== 2) return null;
-  const show = source.show || (/^office/i.test(source.episode) ? 'office' : 'parks');
-  const ep = String(source.episode).replace(/^office-?/i, '');
+  const show = source.show || showOfEpisode(source.episode);
+  const ep = epFileStem(source.episode);
   let text;
   try { text = readFileSync(join(seedsDir, 'sources', `realclass-${show}-${ep}.txt`), 'utf8'); }
   catch { return null; }
@@ -327,6 +329,9 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       if (earlier != null) {
         warnings.push(`에피소드 순서 이탈: ${payShow} s1e${earlier} 미착수인데 s1e${payEp} 선택 — 낮은 화부터 순차 소진 권장 (가이드 §6.3)`);
       }
+    } else {
+      // 파싱 실패 가시화: s1eN 형식이 아니면(시즌2·오타) 순차 검사가 조용히 skip 되므로 경고로 노출 (무증상 통과 금지)
+      warnings.push(`_source.episode '${src.episode}' 화 번호 파싱 실패(s1eN 형식 아님) — 순차 검사 skip. 형식 확인 또는 시즌 확장 시 가드 갱신 필요`);
     }
   }
 

@@ -48,6 +48,8 @@ if (isMain) {
   const stale = staleIncompleteIds(rows, today, args.days);
   console.log(`[expire] 미완료 ${rows.length}건 중 stale(${args.days}일+ 방치) = ${stale.length}건`);
   for (const id of stale) console.log(`  - ${id}`);
+  // 삭제 전 백업 덤프 (2026-07-01): DELETE 는 불가역인데 id 만 남으면 오탐 시 복구 불가 → 대상 행 JSON 을 로그에 보존.
+  if (stale.length) console.log(`[expire] 삭제 대상 백업(JSON): ${JSON.stringify(rows.filter((r) => stale.includes(r.id)))}`);
   if (!stale.length) { console.log('[expire] 정리 대상 없음'); exit(0); }
   if (args.dryRun) { console.log('[expire] dry-run — 삭제 안 함'); exit(0); }
 
