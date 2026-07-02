@@ -1,7 +1,7 @@
 # ~/apps
 
 ## 프로젝트 구조
-- 앱: Study/Gym/Today/Book/Pick/Cue (PWA, GitHub Pages `/apps/<app>/` 배포) + Board (Electron, git 미업로드 — `~/apps/board/CLAUDE.md` 별도). `launcher/` 는 디자인 브리프 스텁(앱 아님).
+- 앱: Study/Gym/Today/Book/Pick/Cue (PWA, GitHub Pages `/apps/<app>/` 배포) + Board (Electron, git 미업로드 — `~/apps/board/CLAUDE.md` 별도). `launcher/` 는 디자인 브리프 스텁(앱 아님). `readingtime/` 는 iOS 네이티브 준비 중 — 웹 프로토타입(`prototype/`)이 픽셀 정본, 시안은 `design-ref/v3`(v8 최종).
 - 앱별 스펙: `~/apps/<app>/specs/<app>-app-spec.md` (현재 study/gym/pick)
 - `~/apps/lessons/` — 환경 함정 (lazy load, 인용 시 직접 Read)
 - `~/apps/scripts/` — `claude-wip-snapshot.sh` (Stop hook 자동 호출)

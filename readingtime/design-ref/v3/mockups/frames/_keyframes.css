@@ -1,0 +1,34 @@
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:#e6e2d7;font-family:'Noto Sans KR',system-ui,sans-serif;-webkit-font-smoothing:antialiased;letter-spacing:-.005em;word-break:keep-all}
+.srf{font-family:'Noto Serif KR',serif}
+.mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums}
+@keyframes v4Float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes v4Blink{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes v4Arc{to{stroke-dashoffset:0}}
+@keyframes v4Fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes v4Grow{from{transform:scaleY(.001)}to{transform:scaleY(1)}}
+@keyframes v4Pop{0%{transform:scale(.7);opacity:.3}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+@keyframes v4Lamp{0%,100%{opacity:.5;transform:translateX(-50%) scale(1)}50%{opacity:.85;transform:translateX(-50%) scale(1.06)}}
+@keyframes v4Halo{0%{transform:scale(.92);opacity:.55}70%{opacity:0}100%{transform:scale(1.7);opacity:0}}
+@keyframes v4Stamp{0%{transform:rotate(-9deg) scale(1.7);opacity:0}55%{opacity:1}80%{transform:rotate(-9deg) scale(.96)}100%{transform:rotate(-9deg) scale(1);opacity:1}}
+@keyframes v5Tick{0%,54%{opacity:1}55%,100%{opacity:.15}}
+@keyframes v5Ripple{0%{transform:translate(-50%,-50%) scale(.5);opacity:.55}100%{transform:translate(-50%,-50%) scale(1.65);opacity:0}}
+@keyframes v5RippleBtn{0%{transform:scale(1);opacity:.55}100%{transform:scale(1.22);opacity:0}}
+@keyframes v5Stack{0%{transform:scaleY(.001)}70%{transform:scaleY(1.06)}100%{transform:scaleY(1)}}
+@keyframes v5Sweep{from{transform:scaleX(.001)}to{transform:scaleX(1)}}
+@keyframes v5Drop{0%{transform:translateY(-16px);opacity:0}60%{transform:translateY(2px);opacity:1}100%{transform:translateY(0);opacity:1}}
+@keyframes v5Draw{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+@keyframes v5Pop{0%{transform:scale(.6);opacity:0}65%{transform:scale(1.1);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes v5Fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes v6Flip{0%,12%{transform:rotateX(0)}42%,58%{transform:rotateX(180deg)}88%,100%{transform:rotateX(360deg)}}
+@keyframes v6Pulse{0%,100%{transform:scale(1);border-color:rgba(232,213,158,.4)}50%{transform:scale(1.012);border-color:rgba(232,213,158,.75)}}
+@keyframes v6Spin{to{transform:rotate(360deg)}}
+@keyframes v6Breath{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes v7Shadow{0%,12%{transform:scale(1);opacity:.32}42%,58%{transform:scale(1.28);opacity:.6}88%,100%{transform:scale(1);opacity:.32}}
+@keyframes v7Tap{0%{transform:scale(.55);opacity:.7}100%{transform:scale(1.9);opacity:0}}
+@keyframes v7Star{0%{transform:scale(.4) rotate(-18deg);opacity:0}62%{transform:scale(1.14) rotate(4deg);opacity:1}100%{transform:scale(1) rotate(0deg);opacity:1}}
+@keyframes v7TipPop{0%{transform:translateX(-50%) scale(.55);opacity:0}100%{transform:translateX(-50%) scale(1);opacity:1}}
+@keyframes v8Up{from{transform:translateY(46px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes v8Dim{0%,100%{opacity:.85}50%{opacity:.58}}
