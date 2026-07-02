@@ -63,3 +63,6 @@ study/seeds/sources/
 
 # goal-loop 마커 — 로컬 전용·트랜지언트 (활성 goal 상태. goal-harness 스킬·~/.claude/hooks/goal-loop.mjs)
 **/.goal.json
+
+# Swift Package Manager 빌드 산출물 (readingtime ReadingTimeKit)
+.build/
