@@ -171,7 +171,7 @@
         "http.server",
         "8087",
         "--directory",
-        "/private/tmp/claude-501/-Users-gio-c-apps/2f51be24-c0eb-4d43-a437-1cc7f61bd542/scratchpad/today-zip/extracted/작업지시서/mockup",
+        "/private/tmp/claude-501/-Users-gio-c-apps/2f51be24-c0eb-4d43-a437-1cc7f61bd542/scratchpad/today-zip2/extracted/작업지시서/mockup",
         "--bind",
         "127.0.0.1"
       ],
