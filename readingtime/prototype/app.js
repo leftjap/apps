@@ -140,7 +140,7 @@ function renderHome() {
         </div>
         <div class="s02-cta-wrap">
           <div class="s02-cta-ring"></div>
-          <button class="s02-cta" data-act="start">${IC.play(17, '#f2eedd')}<span>읽기 시작</span></button>
+          <button class="s02-cta" data-act="start">${IC.play(17, '#f2eedd')}<span style="letter-spacing:-.01em">읽기 시작</span></button>
         </div>
       </div>
       <div class="s02-stats">
@@ -285,7 +285,9 @@ function renderFlipTimer() {
         </button>
       </div>
       ${paused ? `<div class="s04-cap">탭하여 이어 읽기</div>` : ''}
-      <div class="mono s04-timer${paused ? ' dim' : ''}"><span id="t-h">${h}</span><span class="s04-colon${paused ? '' : ' tick'}">:</span><span id="t-m">${m}</span><span class="s04-colon${paused ? '' : ' tick'}">:</span><span id="t-s">${sec}</span></div>
+      ${paused
+        ? `<div class="mono s04-timer dim">${h}:${m}:${sec}</div>`
+        : `<div class="mono s04-timer"><span id="t-h">${h}</span><span class="s04-colon tick">:</span><span id="t-m">${m}</span><span class="s04-colon tick">:</span><span id="t-s">${sec}</span></div>`}
       ${paused ? `
       <div class="s04-hint">
         <span class="s04-miniflip-wrap"><span class="s04-miniflip"></span></span>
@@ -590,7 +592,7 @@ function renderStatsMonth() {
       </div>
       <div class="s11-grid">
         ${CAL.map((c, i) => {
-          if (!c) return '<div class="s11-cell"></div>';
+          if (!c) return '<div class="s11-cell"><span class="mono" style="font-weight:500;color:var(--faint)"></span></div>';
           const sun = sundayIdx.has(i);
           const nc = c.today ? 'var(--terra)' : c.future ? (sun ? '#e2bbac' : '#cfc7b1') : sun ? 'var(--terra)' : 'var(--muted)';
           const ring = c.today ? 'box-shadow:0 0 0 2px #c2553a, 0 2px 4px -1px rgba(58,44,28,.25)' : 'box-shadow:0 2px 4px -1px rgba(58,44,28,.25)';
@@ -909,7 +911,7 @@ function sheetFinish() {
       <div class="sh09-tile"><div class="mono">8<span>회</span></div><div>세션</div></div>
       <div class="sh09-tile"><div class="mono">18<span>일</span></div><div>함께한 기간</div></div>
     </div>
-    <button class="sheet-cta" style="margin-top:16px" data-act="save-finished"><span>완독으로 저장</span></button>
+    <button class="sheet-cta" style="margin-top:16px" data-act="save-finished"><span style="font-size:15.5px">완독으로 저장</span></button>
   </div>`;
 }
 
