@@ -1409,14 +1409,8 @@
     font-weight: 500;
     color: var(--ink-4);
   }
-  /* 아이콘·∧·크레일 카운트 배지는 모바일 얇은 탭 전용 — 데스크톱 우측 레일은 라벨 + detail */
-  .exp-rail-tl-ico, .exp-rail-tl-chev, .exp-rail-tl-count { display: none; }
-  .exp-rail-tl-detail {
-    font-family: var(--font-mono);
-    font-size: 10.5px;
-    font-weight: 500;
-    color: var(--ink-4);
-  }
+  /* 인라인 타임라인·선택일 카드는 모바일 전용 — 데스크톱 숨김 (우측 레일 사용) */
+  .exp-inline-tl, .exp-day-inline { display: none; }
   .exp-rail .exp-tl-list {
     flex: 1;
     min-height: 0;
@@ -3591,7 +3585,7 @@
     .doc { max-width: 100%; }
 
     /* 댓글 패널 → 바텀 시트: 기본 얇은 탭(핸들+"댓글 N"+∧), 탭·스와이프로 64dvh 펼침 (작업지시서 §1.1).
-       peek 196 → 얇은 탭. 강한 상단 그림자로 구분선 많은 화면에서도 콘텐츠 위에 부상. */
+       peek 196 → ~52 얇은 탭. 스크롤 다운 시 숨김 · 업/문서끝에서 복귀. 그래버·그림자는 코드 그대로. */
     .main__body { flex-direction: column; gap: 0; }
     body[data-convo="1"] .convo {
       position: fixed;
@@ -3599,37 +3593,35 @@
       width: auto;
       margin: 0;
       z-index: 60;
-      --convo-peek: 56px;
-      border-radius: 22px 22px 0 0;
-      box-shadow: 0 -0.5px 0 rgba(20, 18, 14, 0.08), 0 -15px 34px -10px rgba(20, 18, 14, 0.22), 0 -4px 12px -7px rgba(20, 18, 14, 0.13);
+      --convo-peek: 52px;
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 -12px 32px rgba(20, 18, 14, 0.18), 0 -2px 10px rgba(20, 18, 14, 0.10);
       padding: 0 16px calc(10px + env(safe-area-inset-bottom));
       height: 64dvh;
       transform: translateY(calc(100% - var(--convo-peek) - env(safe-area-inset-bottom)));
-      transition: transform .26s ease;
+      transition: transform .32s cubic-bezier(.32, .72, 0, 1);
     }
     body[data-convo="1"] .convo.is-open { transform: translateY(0); }
-    /* 그래버 — 접힘: crail-soft 42×5 r3 / 펼침: line 44×4.5 (시안) */
+    /* 스크롤 다운 시 얇은 탭 숨김 (펼침 상태에는 미적용) */
+    body[data-convo="1"] .convo.is-tab-hidden:not(.is-open) { transform: translateY(112%); }
+    /* 그래버 — 기존 핸들 그대로 (44×4.5 r999 --line), 접힘·펼침 동일 */
     .convo__handle {
       display: grid; place-items: center;
       height: auto; width: 100%;
-      background: transparent; border: 0; padding: 11px 0 0;
+      background: transparent; border: 0; padding: 9px 0 0;
       cursor: grab; flex: none;
       touch-action: none;
     }
     .convo__handle i {
-      width: 42px; height: 5px;
-      border-radius: 3px;
-      background: var(--crail-soft);
+      width: 44px; height: 4.5px;
+      border-radius: 999px;
+      background: var(--line);
       display: block;
     }
-    body[data-convo="1"] .convo.is-open .convo__handle { padding-top: 10px; }
-    body[data-convo="1"] .convo.is-open .convo__handle i {
-      width: 44px; height: 4.5px; border-radius: 999px; background: var(--line);
-    }
-    /* 헤더 = 얇은 탭 행(접힘): 말풍선 아이콘 + "댓글" + 크레일 카운트 배지 + ∧(미세 바운스) */
+    /* 헤더 = 얇은 탭 행(접힘): 말풍선 아이콘 + "댓글" + 크레일 카운트 배지 + ∧(정적 ink3) */
     .convo__head {
       display: flex; align-items: center; gap: 8px;
-      padding: 11px 4px calc(11px + env(safe-area-inset-bottom));
+      padding: 9px 4px calc(11px + env(safe-area-inset-bottom));
       font-size: 14px; font-weight: 600;
     }
     .convo__head-ico { display: block; width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
@@ -3641,11 +3633,9 @@
       display: inline-grid; place-items: center;
     }
     .convo__head-chev {
-      display: inline-flex; margin-left: auto; color: var(--crail-base);
-      animation: convoNudge 1.8s ease-in-out infinite;
+      display: inline-flex; margin-left: auto; color: var(--ink-3);
     }
-    .convo__head-chev svg { width: 18px; height: 18px; display: block; }
-    @keyframes convoNudge { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
+    .convo__head-chev svg { width: 16px; height: 16px; display: block; }
     /* 펼침 상태 — 탭 행 → 시트 헤더("댓글" 15/600 + mono 카운트 + 하단 구분선) */
     body[data-convo="1"] .convo.is-open .convo__head {
       align-items: baseline;
@@ -3662,7 +3652,7 @@
     /* peek(닫힘): 리스트는 폴드 아래(숨김). 펼침 시 최신 정렬 여지 확보 (아이폰 피드백 3) */
     body[data-convo="1"] .convo:not(.is-open) .convo__list { padding-bottom: 60dvh; }
     /* 얇은 탭 높이만큼 본문 하단 여백 — 탭이 본문 마지막 줄을 가리지 않게 */
-    body[data-convo="1"] #mainView { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    body[data-convo="1"] #mainView { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
     .share__ro-long { display: none; }
 
@@ -3686,83 +3676,44 @@
     }
     .exp-mhead-sub strong { color: var(--crail-deep); font-weight: 600; }
     .exp-month-cal { order: 2; }
-    .exp-mini-stats { order: 3; }
-    /* 우측 레일 → 타임라인 바텀 시트: 기본 얇은 탭(핸들+"타임라인 N건"+∧), 탭·스와이프로 64dvh 펼침.
-       댓글 시트와 동일 패턴 — peek 156 → 얇은 탭·강한 상단 그림자 (작업지시서 §2). */
-    body.is-expense:not(.is-exp-stats) .exp-rail {
-      position: fixed;
-      left: 0; right: 0; bottom: 0;
-      width: auto;
-      margin: 0;
-      z-index: 60;
-      gap: 0;
-      --exp-peek: 56px;
-      background: var(--sidebar);
-      border-radius: 22px 22px 0 0;
-      box-shadow: 0 -0.5px 0 rgba(20, 18, 14, 0.08), 0 -15px 34px -10px rgba(20, 18, 14, 0.22), 0 -4px 12px -7px rgba(20, 18, 14, 0.13);
-      padding: 0 16px calc(10px + env(safe-area-inset-bottom));
-      height: 64dvh;
-      transform: translateY(calc(100% - var(--exp-peek) - env(safe-area-inset-bottom)));
-      transition: transform .26s ease;
+    .exp-day-inline { order: 3; }
+    .exp-inline-tl { order: 4; }
+    .exp-mini-stats { order: 5; margin-top: 28px; }
+    /* 가계부 모바일 (작업지시서 §2) — 바텀시트 폐기, 타임라인·선택일을 캘린더 아래 인라인으로.
+       데스크톱(>768px) 우측 레일은 변경 없음. */
+    body.is-expense:not(.is-exp-stats) .exp-rail { display: none; }
+    body.is-expense #mainView { padding-bottom: calc(44px + env(safe-area-inset-bottom)); }
+    /* 인라인 타임라인 섹션 — "N월 타임라인 N건" 헤더(.exp-mini-head 패밀리) + .exp-tl-row 행 */
+    .exp-inline-tl { display: block; margin-top: 26px; }
+    .exp-inline-tl-head {
+      display: flex; align-items: baseline; gap: 8px;
+      padding-bottom: 4px; border-bottom: 1px solid var(--line);
     }
-    body.is-expense:not(.is-exp-stats) .exp-rail.is-open { transform: translateY(0); }
-    /* 그래버 — 접힘: crail-soft 42×5 r3 / 펼침: line 44×4.5 (시안) */
-    .exp-rail-handle {
-      display: grid; place-items: center;
-      height: auto; width: 100%;
-      background: transparent; border: 0; padding: 11px 0 0;
-      cursor: grab; flex: none;
-      touch-action: none;
+    #expInlineTlLabel { font-size: 13px; font-weight: 600; color: var(--ink-2); letter-spacing: -0.01em; }
+    .exp-inline-tl-count { font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.06em; color: var(--ink-4); }
+    .exp-inline-tl .exp-tl-list { padding: 0; overflow: visible; }
+    /* 선택일 상세 — 인라인 카드 (팝오버 아님, 캘린더 아래 슬라이드인). 날짜 탭 시 .is-open */
+    .exp-day-inline.is-open {
+      display: block; margin-top: 16px;
+      background: var(--sidebar); border: 1px solid var(--line); border-radius: 12px;
+      padding: 13px 16px 5px;
+      box-shadow: 0 12px 26px -16px rgba(20, 18, 14, 0.22);
+      animation: expDayIn .2s ease;
     }
-    .exp-rail-handle i {
-      width: 42px; height: 5px;
-      border-radius: 3px;
-      background: var(--crail-soft);
-      display: block;
-    }
-    body.is-expense .exp-rail.is-open .exp-rail-handle { padding-top: 10px; }
-    body.is-expense .exp-rail.is-open .exp-rail-handle i {
-      width: 44px; height: 4.5px; border-radius: 999px; background: var(--line);
-    }
-    .exp-rail-summary { display: none; }
-    .exp-rail-card { box-shadow: none; border-radius: 0; background: transparent; padding: 0 2px; }
-    .exp-rail-tlwrap::after { display: none; }
-    /* 헤더 = 얇은 탭 행(접힘): 리스트 아이콘 + "타임라인" + 크레일 카운트 배지 + ∧(미세 바운스) */
-    .exp-rail-tl-head {
-      display: flex; align-items: center; justify-content: flex-start; gap: 8px;
-      padding: 11px 2px calc(11px + env(safe-area-inset-bottom));
-      font-size: 14px; font-weight: 600;
-    }
-    .exp-rail-tl-ico { display: block; width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
-    #expRailTlLabel { font-size: 14px; font-weight: 600; color: var(--ink-1); }
-    body.is-expense .exp-rail-tl-count {
-      display: inline-grid; place-items: center;
-      min-width: 18px; height: 18px; padding: 0 6px;
-      border-radius: 9px; background: var(--crail-base); color: #fff;
-      font-family: var(--font-mono); font-size: 11px; font-weight: 600;
-    }
-    .exp-rail-tl-detail { display: none; }
-    .exp-rail-tl-chev {
-      display: inline-flex; margin-left: auto; color: var(--crail-base);
-      animation: convoNudge 1.8s ease-in-out infinite;
-    }
-    .exp-rail-tl-chev svg { width: 18px; height: 18px; display: block; }
-    /* 펼침 상태 — 탭 행 → 시트 헤더("타임라인" 15/600 + "N월 · N건" mono + 하단 구분선) */
-    body.is-expense .exp-rail.is-open .exp-rail-tl-head {
-      align-items: baseline;
-      padding: 2px 2px 10px;
-      border-bottom: 1px solid var(--line-soft);
-    }
-    body.is-expense .exp-rail.is-open .exp-rail-tl-ico,
-    body.is-expense .exp-rail.is-open .exp-rail-tl-chev,
-    body.is-expense .exp-rail.is-open .exp-rail-tl-count { display: none; }
-    body.is-expense .exp-rail.is-open #expRailTlLabel { font-size: 15px; font-weight: 600; }
-    body.is-expense .exp-rail.is-open .exp-rail-tl-detail {
-      display: inline; font-family: var(--font-mono); font-size: 11.5px; font-weight: 500; color: var(--ink-4);
-    }
-    .exp-rail .exp-tl-list { padding-bottom: 8px; }
-    /* 얇은 탭 높이만큼 본문 하단 여백 — 탭이 캘린더/통계를 가리지 않게 */
-    body.is-expense #mainView { padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    @keyframes expDayIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+    .exp-day-inline__head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding-bottom: 8px; }
+    .exp-day-inline__date { font-size: 14.5px; font-weight: 600; color: var(--ink-1); }
+    .exp-day-inline__sum { font-family: var(--font-mono); font-size: 12.5px; font-weight: 600; color: var(--crail-deep); }
+    /* 인라인 선택일 행 — 날짜 열 없는 타임라인 행 (시안: 이름 13.5/600 · 메타 10.5 · 금액 12.5) */
+    .exp-day-inline .exp-day-row { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line-soft); cursor: pointer; }
+    .exp-day-inline .exp-day-row:hover { background: transparent; border-radius: 0; }
+    .exp-day-inline .exp-day-row__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+    .exp-day-inline .exp-day-row__merchant { font-size: 13.5px; font-weight: 600; color: var(--ink-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exp-day-inline .exp-day-row__meta { font-size: 10.5px; color: var(--ink-4); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .exp-day-inline .exp-day-row__amt { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-1); white-space: nowrap; }
+    .exp-day-inline .exp-day-row__amt .amt-unit { color: var(--ink-3); font-weight: 400; }
+    /* 선택 타일 하이라이트 (오늘 링 토큰 차용) */
+    .exp-month-day.is-selected { box-shadow: 0 0 0 2px var(--shell), 0 0 0 4px var(--crail-deep); }
 
     /* 폰트 — 사용자 의도 "한 사이즈씩" +1 일괄. 메타(≤12px) 보존.
        모바일에서 .doc__body 직접 텍스트 노드와 <div> 래퍼 단락이 다른 폰트로 보이는
@@ -5022,7 +4973,7 @@
       <!-- 댓글 패널 — 글 전체에 대한 단일 타임라인 (작업지시서 §4.2). 모바일은 바텀 시트 (§4.3) -->
       <aside class="convo" id="convoPanel" aria-label="댓글">
         <button class="convo__handle" id="convoHandle" type="button" aria-label="댓글 시트 열기/닫기"><i></i></button>
-        <div class="convo__head"><svg class="convo__head-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5A1.5 1.5 0 0 1 5 3.5h6A1.5 1.5 0 0 1 12.5 5v4A1.5 1.5 0 0 1 11 10.5H8l-2.8 2.2V10.5H5A1.5 1.5 0 0 1 3.5 9z"/></svg><span class="convo__head-label">댓글</span> <span class="convo__count" id="convoCount"></span><span class="convo__head-chev" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg></span></div>
+        <div class="convo__head"><svg class="convo__head-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 5A1.5 1.5 0 0 1 5 3.5h6A1.5 1.5 0 0 1 12.5 5v4A1.5 1.5 0 0 1 11 10.5H8l-2.8 2.2V10.5H5A1.5 1.5 0 0 1 3.5 9z"/></svg><span class="convo__head-label">댓글</span> <span class="convo__count" id="convoCount"></span><span class="convo__head-chev" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg></span></div>
         <div class="convo__list" id="convoList"></div>
         <div class="convo__composer">
           <div class="composer">
@@ -5045,7 +4996,7 @@
           <div class="exp-rail-stats" id="expRailStats"></div>
         </div>
         <div class="exp-rail-card exp-rail-tlwrap">
-          <div class="exp-rail-tl-head"><svg class="exp-rail-tl-ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"/></svg><span id="expRailTlLabel">타임라인</span><span class="exp-rail-tl-count" id="expRailTlCount"></span><span class="exp-rail-tl-detail" id="expRailTlDetail"></span><span class="exp-rail-tl-chev" aria-hidden="true"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10l4-4 4 4"/></svg></span></div>
+          <div class="exp-rail-tl-head"><span id="expRailTlLabel">타임라인</span><span class="exp-rail-tl-count" id="expRailTlCount"></span></div>
           <div class="exp-tl-list" id="expRailTlList"></div>
         </div>
       </aside>
@@ -5181,7 +5132,7 @@
 
     // 댓글 시트 — 열림: 타임라인 맨 아래 / 닫힘(peek): 최신 댓글 첫 줄부터 (피드백 3)
     // 닫힘 정렬은 더블 rAF — peek 패딩(60dvh) 적용 후 scrollTop 설정 (클램프 방지)
-    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 56, (open) => {
+    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 52, (open) => {
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
@@ -5197,11 +5148,35 @@
       setTimeout(align, 180);   // 늦은 높이 변화(클램프 재측정 등) 정착 후 재정렬
       setTimeout(align, 450);   // 닫힘 트랜지션(260ms) 후 최종 정렬
     });
-    // 가계부 타임라인 시트 — 닫힘(peek): 최신 거래(목록 상단)부터 (피드백 5)
-    initMobileSheet('expRail', 'expRailHandle', '.exp-rail-tl-head', 'expRailTlList', 56, (open) => {
-      const list = document.getElementById('expRailTlList');
-      if (list && !open) list.scrollTop = 0;
-    });
+    // 가계부 타임라인 — 모바일 바텀시트 폐기 (작업지시서 §2), 캘린더 아래 인라인. 데스크톱 우측 레일만 유지.
+  })();
+
+  // 댓글 얇은 탭 — 본문(#mainView) 스크롤 다운 시 숨김, 업/상단/문서끝에서 복귀 (작업지시서 §1.1).
+  //  가드: 스크롤 여유 160px 미만 글에서는 숨김 미적용(깜박임 방지). 펼침(is-open) 상태엔 미적용.
+  (function(){
+    const mv = document.getElementById('mainView');
+    const convo = document.getElementById('convoPanel');
+    if (!mv || !convo) return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const HIDE_DELTA = 6, SHOW_DELTA = 6, TOP_NEAR = 40, END_NEAR = 48, MIN_ROOM = 160;
+    let lastY = 0;
+    const evaluate = () => {
+      if (!mq.matches || convo.classList.contains('is-open') || document.body.dataset.convo !== '1') {
+        convo.classList.remove('is-tab-hidden'); lastY = mv.scrollTop; return;
+      }
+      const y = mv.scrollTop;
+      const room = mv.scrollHeight - mv.clientHeight;
+      const dy = y - lastY;
+      lastY = y;
+      if (room < MIN_ROOM) { convo.classList.remove('is-tab-hidden'); return; }   // 여유 부족 → 항상 노출
+      if (y < TOP_NEAR || y > room - END_NEAR) { convo.classList.remove('is-tab-hidden'); return; } // 상단·문서끝 → 노출
+      if (dy > HIDE_DELTA) convo.classList.add('is-tab-hidden');                  // 다운 → 숨김
+      else if (dy < -SHOW_DELTA) convo.classList.remove('is-tab-hidden');         // 업 → 노출
+    };
+    // 스크롤 이벤트는 브라우저가 프레임 단위로 coalesce — passive 리스너에서 직접 평가 (rAF 불필요).
+    mv.addEventListener('scroll', evaluate, { passive: true });
+    // 데스크톱 전환·글 이동 시 잔존 숨김 해제
+    mq.addEventListener?.('change', (e) => { if (!e.matches) convo.classList.remove('is-tab-hidden'); });
   })();
 
   // 편집 도구 토글 — 클릭시 상단 툴바 슬라이드 다운 / 올라감
@@ -6276,15 +6251,13 @@
         <div class="exp-rail-stat"><span>하루 평균</span><b>${data.dailyAvg.toLocaleString('ko-KR')} 원</b></div>
         <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>${maxDayLabel}</b></div>
         <div class="exp-rail-stat"><span>기록된 거래</span><b>${data.txns.length}건</b></div>`;
-      if (tlLabel) tlLabel.textContent = '타임라인';
+      if (tlLabel) tlLabel.textContent = `${data.month}월 타임라인`;
       if (tlCount) tlCount.textContent = `${data.txns.length}건`;
-      const tlDetail = document.getElementById('expRailTlDetail');
-      if (tlDetail) tlDetail.textContent = `${data.month}월 · ${data.txns.length}건`;
       // tl6 행 — 좌측 42px 날짜 블록 / 거래(지출처+메타) / 금액 (작업지시서 §5.3)
       const byDate = {};
       data.txns.forEach(t => { (byDate[t.date] = byDate[t.date] || []).push(t); });
       const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a));
-      tlList.innerHTML = dates.map(ds => {
+      const rowsHtml = dates.map(ds => {
         const [tm, td] = ds.split('-').map(Number);
         const dn = ['일','월','화','수','목','금','토'][new Date(data.year, tm - 1, td).getDay()];
         return byDate[ds].map((t, i) => `
@@ -6297,6 +6270,7 @@
             <div class="exp-tl-row__amount">${(t.amount || 0).toLocaleString('ko-KR')} 원</div>
           </div>`).join('');
       }).join('');
+      tlList.innerHTML = rowsHtml;
     }
 
     function renderExpense() {
@@ -6502,6 +6476,14 @@
               </div>
             </div>
 
+            <!-- 모바일 인라인 선택일 상세 (날짜 탭 시 채워짐·표시). 데스크톱 숨김 (우측 레일 팝오버 사용) -->
+            <div class="exp-day-inline" id="expDayInline"></div>
+            <!-- 모바일 인라인 타임라인 (작업지시서 §2) — 데스크톱은 우측 레일 -->
+            <div class="exp-inline-tl">
+              <div class="exp-inline-tl-head"><span id="expInlineTlLabel">타임라인</span><span class="exp-inline-tl-count" id="expInlineTlCount"></span></div>
+              <div class="exp-tl-list" id="expInlineTlList"></div>
+            </div>
+
             <!-- 간이 통계 2열 — 카테고리 / 브랜드 TOP (작업지시서 §5.2) -->
             <div class="exp-mini-stats">
               <div class="exp-mini-col">
@@ -6555,6 +6537,14 @@
 
         </article>
       `;
+      // 모바일 인라인 타임라인 = 레일 타임라인 복제 (feed 렌더 후 — 인라인 컨테이너 존재 시점, 작업지시서 §2)
+      const _railTl = document.getElementById('expRailTlList');
+      const _inlineTl = document.getElementById('expInlineTlList');
+      if (_railTl && _inlineTl) _inlineTl.innerHTML = _railTl.innerHTML;
+      const _inlineLabel = document.getElementById('expInlineTlLabel');
+      if (_inlineLabel) _inlineLabel.textContent = `${data.month}월 타임라인`;
+      const _inlineCount = document.getElementById('expInlineTlCount');
+      if (_inlineCount) _inlineCount.textContent = `${data.txns.length}건`;
     }
 
     function addExpenseInputRow() {
@@ -6699,6 +6689,24 @@
     });
 
     // ═══ 가계부 캘린더 셀 클릭 → 날짜 모달 (시안 04) ═══
+    // 인라인 선택일 상세 (모바일) — 캘린더 아래 카드. 재탭 시 닫힘 (작업지시서 §2). window 노출 → SPA(expenses.js)도 재사용.
+    window.renderExpDayInline = function(o) {
+      const inline = document.getElementById('expDayInline');
+      if (!inline) return;
+      if (inline.dataset.date === o.monthDay && inline.classList.contains('is-open')) { window.closeExpDayInline(); return; }
+      const [m, d] = o.monthDay.split('-').map(Number);
+      inline.innerHTML = '<div class="exp-day-inline__head"><span class="exp-day-inline__date">' + m + '월 ' + d + '일 (' + o.dowName + ')</span><span class="exp-day-inline__sum">' + (o.sum || 0).toLocaleString('ko-KR') + ' 원</span></div>' + (o.rowsHtml || '');
+      inline.dataset.date = o.monthDay;
+      inline.classList.add('is-open');
+      document.querySelectorAll('.exp-month-day.is-selected').forEach(el => el.classList.remove('is-selected'));
+      if (o.cellEl && !o.cellEl.classList.contains('today')) o.cellEl.classList.add('is-selected');
+    };
+    window.closeExpDayInline = function() {
+      const inline = document.getElementById('expDayInline');
+      if (!inline) return;
+      inline.classList.remove('is-open'); inline.innerHTML = ''; delete inline.dataset.date;
+      document.querySelectorAll('.exp-month-day.is-selected').forEach(el => el.classList.remove('is-selected'));
+    };
     function openExpDayPopover(cellEl) {
       const popover = document.getElementById('expDayPopover');
       if (!popover) return;
@@ -6723,6 +6731,12 @@
             `;
           }).join('')
         : '<div class="exp-day-detail__empty">이 날의 거래가 없습니다.</div>';
+
+      // 모바일 — 팝오버 대신 캘린더 아래 인라인 카드 (작업지시서 §2)
+      if (window.matchMedia('(max-width: 768px)').matches) {
+        window.renderExpDayInline({ monthDay: _selectedDate, dowName, sum: daySum, rowsHtml: dayRows, cellEl });
+        return;
+      }
 
       popover.dataset.date = _selectedDate;
       popover.querySelector('.exp-day-detail__date').innerHTML = `${sm}월 ${sd}일<span class="dow">${dowName}요일</span>`;

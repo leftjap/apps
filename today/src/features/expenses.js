@@ -321,8 +321,9 @@ export function patchCalendarFromRows(rows, opts = {}, doc = document) {
  * 메타 "카테고리 · 카드명" 10.5px) / 금액 모노 13px 우정렬. 같은 날 여러 거래는 날짜 블록 공유 (.is-cont).
  */
 export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
-  const list = doc.querySelector('.exp-tl-list');
-  if (!list) return false;
+  // 우측 레일(#expRailTlList) + 모바일 인라인(#expInlineTlList) 모두 갱신 (작업지시서 §2)
+  const lists = doc.querySelectorAll('.exp-tl-list');
+  if (!lists.length) return false;
   if (!rows || !rows.length) return false;
   const yr = year || new Date().getFullYear();
   const txByDate = {};
@@ -358,7 +359,7 @@ export function renderTimelineFromRows(rows, opts = {}, doc = document, year) {
       return `<div class="exp-tl-row${isCont ? ' is-cont' : ''}${isToday ? ' today' : ''}" data-tx-id="${id}" onclick="openExpenseModal('edit', '${id}')">${dateCell}<div class="exp-tl-row__body"><div class="exp-tl-row__merchant">${merchant}${recur}</div><div class="exp-tl-row__meta">${meta}</div></div><div class="exp-tl-row__amount">${amt}</div></div>`;
     }).join('');
   }).join('');
-  list.innerHTML = html;
+  lists.forEach((l) => { l.innerHTML = html; });
   return true;
 }
 
@@ -376,7 +377,6 @@ export function patchRailFromRows(rows, year, month, opts = {}, doc = document) 
   const statsEl = doc.getElementById('expRailStats');
   const tlLabel = doc.getElementById('expRailTlLabel');
   const tlCount = doc.getElementById('expRailTlCount');
-  const tlDetail = doc.getElementById('expRailTlDetail');
   monthEl.textContent = `${MONTH_EN[month - 1] || ''} ${year}`;
   const list = rows || [];
   const { total, dailyAvg } = summarizeMonth(list, opts.todayDay);
@@ -394,9 +394,13 @@ export function patchRailFromRows(rows, year, month, opts = {}, doc = document) 
       <div class="exp-rail-stat"><span>가장 많이 쓴 날</span><b>${maxDayLabel}</b></div>
       <div class="exp-rail-stat"><span>기록된 거래</span><b>${list.length}건</b></div>`;
   }
-  if (tlLabel) tlLabel.textContent = '타임라인';
+  if (tlLabel) tlLabel.textContent = `${month}월 타임라인`;
   if (tlCount) tlCount.textContent = `${list.length}건`;
-  if (tlDetail) tlDetail.textContent = `${month}월 · ${list.length}건`;
+  // 모바일 인라인 타임라인 헤더 (작업지시서 §2)
+  const inlineLabel = doc.getElementById('expInlineTlLabel');
+  if (inlineLabel) inlineLabel.textContent = `${month}월 타임라인`;
+  const inlineCount = doc.getElementById('expInlineTlCount');
+  if (inlineCount) inlineCount.textContent = `${list.length}건`;
   return true;
 }
 
@@ -614,9 +618,10 @@ export function clearExpensesFixture(doc = document, month = null) {
   if (catList) catList.innerHTML = '';
   const brandRows = doc.querySelector?.('.exp-brand-rows');
   if (brandRows) brandRows.innerHTML = '';
-  // 타임라인 비우기
-  const tl = doc.querySelector('.exp-tl-list');
-  if (tl) tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:14px;">이 달의 거래가 없습니다.</div>';
+  // 타임라인 비우기 (레일 + 인라인)
+  doc.querySelectorAll('.exp-tl-list').forEach((tl) => {
+    tl.innerHTML = '<div class="exp-tl-empty" style="padding:32px;text-align:center;color:var(--ink-4,#b5ad9e);font-size:14px;">이 달의 거래가 없습니다.</div>';
+  });
   // Recents 비우기 (사이드바) + 라벨 갱신
   const list = doc.getElementById('recentsList');
   if (list) list.innerHTML = '';
@@ -1519,6 +1524,14 @@ export function patchDayPopoverHandlers({ doc = (typeof document !== 'undefined'
     // is-zero class 미부착되는 mocks 정책 보강). 사용자 의도 — 빈 날짜 클릭 자체 비활성.
     if (rows.length === 0) {
       return { applied: false, reason: 'is_zero_runtime' };
+    }
+    // 모바일 — 팝오버 대신 캘린더 아래 인라인 카드 (작업지시서 §2). window.renderExpDayInline 은 mocks 가 정의.
+    if (win.matchMedia?.('(max-width: 768px)')?.matches && typeof win.renderExpDayInline === 'function') {
+      const dowName = dayOfWeekFromMonthDay(monthDay);
+      const sum = rows.reduce((s, r) => s + (r.amount_krw || 0), 0);
+      const rowsHtml = rows.map((r) => dayRowToHtml(r)).join('');
+      win.renderExpDayInline({ monthDay, dowName: dowName || '', sum, rowsHtml, cellEl });
+      return { applied: true, count: rows.length, inline: true };
     }
     patchDayPopoverFromRows({ monthDay, rows, doc });
     if (doc) {
