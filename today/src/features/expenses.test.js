@@ -121,6 +121,7 @@ describe('clearExpensesFixture — 빈 월 시 mocks fixture 더미 표시 차�
       },
       querySelectorAll(sel) {
         if (sel === '.exp-month-day[data-date]') return this._cells;
+        if (sel === '.exp-tl-list') return this._tl ? [this._tl] : [];
         return [];
       },
       getElementById(id) {
