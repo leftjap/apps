@@ -227,7 +227,8 @@ function darkBookChip() {
   return `<div class="sd-chip sd-chip-book"><div class="sd-chip-cover"><div class="sd-chip-spine"></div></div><span>몰입</span></div>`;
 }
 const pauseGlyph = (s, c) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="${c}"><rect x="7" y="5" width="3.4" height="14" rx="1.3"/><rect x="13.6" y="5" width="3.4" height="14" rx="1.3"/></svg>`;
-const tapZoneIcon = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#e2cf9e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5V6a2 2 0 0 1 4 0v5"/><path d="M13 10a2 2 0 0 1 4 0v4.5a6 6 0 0 1-6 6h-.8a5 5 0 0 1-3.6-1.5l-3.3-3.4a1.9 1.9 0 0 1 2.7-2.6l1.5 1.4"/></svg>`;
+const handIcon = (s, c, sw) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${sw}" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11.5V6a2 2 0 0 1 4 0v5"/><path d="M13 10a2 2 0 0 1 4 0v4.5a6 6 0 0 1-6 6h-.8a5 5 0 0 1-3.6-1.5l-3.3-3.4a1.9 1.9 0 0 1 2.7-2.6l1.5 1.4"/></svg>`;
+const tapZoneIcon = handIcon(24, '#e2cf9e', 1.8);
 
 function livePill() {
   return `<div class="sd-live-pill"><span class="sd-live-dot"></span><span>기록 중</span></div>`;
@@ -392,7 +393,7 @@ const DETAIL_LOG = [
 
 function methodTile(method) {
   if (method === 'flip') return `<div class="s08-tile" style="background:var(--green-tint)">${IC.flip(15, '#2c4a3c')}</div>`;
-  if (method === 'tap') return `<div class="s08-tile" style="background:var(--seg-bg)">${IC.tap(15, '#8c8570', 2)}</div>`;
+  if (method === 'tap') return `<div class="s08-tile" style="background:var(--seg-bg)">${handIcon(15, '#8c8570', 2)}</div>`;
   return `<div class="s08-tile" style="background:var(--seg-bg)">${IC.clock(15, '#8c8570')}</div>`;
 }
 

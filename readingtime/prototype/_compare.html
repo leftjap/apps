@@ -84,6 +84,7 @@ function collect(win, root, excludeSel) {
       x: +(r.left - origin.left).toFixed(1), y: +(r.top - origin.top).toFixed(1),
       fs: cs.fontSize, fw: cs.fontWeight, col: cs.color,
       fam: cs.fontFamily.split(',')[0].replace(/["']/g, '').trim(), ls: cs.letterSpacing,
+      op: cs.opacity,
     });
   }
   for (const e of root.querySelectorAll('*')) {
@@ -93,7 +94,8 @@ function collect(win, root, excludeSel) {
     const hasBg = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' || cs.backgroundImage !== 'none';
     const hasBorder = parseFloat(cs.borderTopWidth) > 0 && cs.borderTopStyle !== 'none';
     const hasShadow = cs.boxShadow !== 'none';
-    if (!hasBg && !hasBorder && !hasShadow) continue;
+    const hasOpacity = parseFloat(cs.opacity) < 1;
+    if (!hasBg && !hasBorder && !hasShadow && !hasOpacity) continue;
     const r = e.getBoundingClientRect();
     if (r.width < 1 || r.height < 1) continue;
     boxes.push({
@@ -102,6 +104,7 @@ function collect(win, root, excludeSel) {
       bg: cs.backgroundColor, bgi: cs.backgroundImage === 'none' ? '-' : cs.backgroundImage,
       br: cs.borderRadius, bw: cs.borderTopWidth, bc: cs.borderTopColor, bs: cs.borderTopStyle,
       sh: cs.boxShadow === 'none' ? '-' : cs.boxShadow,
+      op: cs.opacity,
     });
   }
   return { texts, boxes };
@@ -120,7 +123,9 @@ function collectAnims(win, root, excludeSel) {
     const delays = cs.animationDelay.split(', ');
     const tfs = cs.animationTimingFunction.split(/, (?![^(]*\))/);
     const iters = cs.animationIterationCount.split(', ');
-    names.forEach((nm, i) => out.push(`${nm}|${durs[i % durs.length]}|${delays[i % delays.length]}|${tfs[i % tfs.length]}|${iters[i % iters.length]}`));
+    const fills = cs.animationFillMode.split(', ');
+    const dirs = cs.animationDirection.split(', ');
+    names.forEach((nm, i) => out.push(`${nm}|${durs[i % durs.length]}|${delays[i % delays.length]}|${tfs[i % tfs.length]}|${iters[i % iters.length]}|${fills[i % fills.length]}|${dirs[i % dirs.length]}`));
   }
   return out.sort();
 }
@@ -147,6 +152,7 @@ function diffTexts(spec, proto, tol) {
       if (s.col !== p.col) d.push(`color ${s.col}→${p.col}`);
       if (s.fam !== p.fam) d.push(`family ${s.fam}→${p.fam}`);
       if (s.ls !== p.ls) d.push(`letterSpacing ${s.ls}→${p.ls}`);
+      if (s.op !== p.op) d.push(`opacity ${s.op}→${p.op}`);
       if (d.length) problems.push(`"${k}"[${i}]: ${d.join(' / ')}`);
     }
   }
@@ -177,8 +183,59 @@ function diffBoxes(spec, proto, tol) {
     const pVisible = p.bs !== 'none' && parseFloat(p.bw) > 0;
     if ((sVisible || pVisible) && (p.bw !== s.bw || p.bc !== s.bc || p.bs !== s.bs)) d.push(`border ${s.bw} ${s.bs} ${s.bc} → ${p.bw} ${p.bs} ${p.bc}`);
     if (p.sh !== s.sh) d.push(`shadow ${s.sh.slice(0, 60)} → ${p.sh.slice(0, 60)}`);
+    if (p.op !== s.op) d.push(`opacity ${s.op}→${p.op}`);
     if (d.length) problems.push(`박스 (${s.x},${s.y} ${s.w}×${s.h}): ${d.join(' / ')}`);
   }
+  return problems;
+}
+
+/* SVG 인벤토리 — 위치/크기 + viewBox + 내부 도형 시그니처(d·fill·stroke·두께·캡) */
+function collectSvgs(win, root, excludeSel) {
+  const excluded = e => excludeSel && e.closest(excludeSel);
+  const origin = root.getBoundingClientRect();
+  const out = [];
+  for (const svg of root.querySelectorAll('svg')) {
+    if (excluded(svg)) continue;
+    const cs = win.getComputedStyle(svg);
+    if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+    const r = svg.getBoundingClientRect();
+    if (r.width < 1 && r.height < 1) continue;
+    const shapes = [...svg.querySelectorAll('path,rect,circle,line,polyline,polygon,ellipse')].map(s => {
+      const scs = win.getComputedStyle(s);
+      const geo = s.getAttribute('d') || [s.getAttribute('x'), s.getAttribute('y'), s.getAttribute('width'), s.getAttribute('height'), s.getAttribute('rx'), s.getAttribute('cx'), s.getAttribute('cy'), s.getAttribute('r'), s.getAttribute('points')].filter(v => v != null).join(',');
+      return `${s.tagName}|${geo}|f:${scs.fill}|s:${scs.stroke}|sw:${scs.strokeWidth}|cap:${scs.strokeLinecap}|join:${scs.strokeLinejoin}|da:${scs.strokeDasharray}`;
+    }).sort().join(' ;; ');
+    out.push({
+      x: +(r.left - origin.left).toFixed(1), y: +(r.top - origin.top).toFixed(1),
+      w: +r.width.toFixed(1), h: +r.height.toFixed(1),
+      vb: svg.getAttribute('viewBox') || '-', shapes,
+    });
+  }
+  return out;
+}
+
+function diffSvgs(spec, proto, tol) {
+  const problems = [];
+  const used = new Set();
+  for (const s of spec) {
+    let best = -1, bestDist = 1e9;
+    proto.forEach((p, i) => {
+      if (used.has(i)) return;
+      if (Math.abs(p.w - s.w) > 2 || Math.abs(p.h - s.h) > 2) return;
+      const dist = Math.abs(p.x - s.x) + Math.abs(p.y - s.y);
+      if (dist < bestDist) { bestDist = dist; best = i; }
+    });
+    if (best === -1 || bestDist > tol * 2) {
+      problems.push(`스펙 SVG 미매칭 (${s.x},${s.y} ${s.w}×${s.h} vb:${s.vb} ${s.shapes.slice(0, 60)})${best !== -1 ? ` — 최근접 ${bestDist.toFixed(1)}` : ''}`);
+      continue;
+    }
+    used.add(best);
+    const p = proto[best], d = [];
+    if (p.vb !== s.vb) d.push(`viewBox ${s.vb}→${p.vb}`);
+    if (p.shapes !== s.shapes) d.push(`shapes\n  spec:  ${s.shapes.slice(0, 220)}\n  proto: ${p.shapes.slice(0, 220)}`);
+    if (d.length) problems.push(`SVG (${s.x},${s.y} ${s.w}×${s.h}): ${d.join(' / ')}`);
+  }
+  proto.forEach((p, i) => { if (!used.has(i)) problems.push(`프로토 전용 SVG (${p.x},${p.y} ${p.w}×${p.h} ${p.shapes.slice(0, 60)})`); });
   return problems;
 }
 
@@ -274,12 +331,23 @@ window.compareScreen = async function (nn, tol = 1.5) {
   const p = collect(protoWin, protoRoot, exclude);
   const textProblems = diffTexts(s.texts, p.texts, tol);
   const boxProblems = diffBoxes(s.boxes, p.boxes, tol);
+  const svgProblems = diffSvgs(collectSvgs(specWin, specRoot, null), collectSvgs(protoWin, protoRoot, exclude), tol);
+  // 시트 화면: 딤 오버레이(색·불투명도)도 대조
+  if (SHEET_SCREENS.includes(nn)) {
+    const sDim = specRoot.previousElementSibling;
+    const pDim = protoWin.document.querySelector('.sheet-dim');
+    if (sDim && pDim) {
+      const a = specWin.getComputedStyle(sDim), b = protoWin.getComputedStyle(pDim);
+      if (a.backgroundColor !== b.backgroundColor || a.opacity !== b.opacity)
+        boxProblems.push(`딤 오버레이 ${a.backgroundColor}/${a.opacity} → ${b.backgroundColor}/${b.opacity}`);
+    } else boxProblems.push('딤 오버레이 미발견');
+  }
 
   const result = {
     screen: `${nn} ${LABELS[nn]}`,
-    counts: { specTexts: s.texts.length, protoTexts: p.texts.length, specBoxes: s.boxes.length, protoBoxes: p.boxes.length },
-    textProblems, boxProblems, animProblems,
-    ok: !textProblems.length && !boxProblems.length && !animProblems.length,
+    counts: { specTexts: s.texts.length, protoTexts: p.texts.length, specBoxes: s.boxes.length, protoBoxes: p.boxes.length, specSvgs: collectSvgs(specWin, specRoot, null).length },
+    textProblems, boxProblems, animProblems, svgProblems,
+    ok: !textProblems.length && !boxProblems.length && !animProblems.length && !svgProblems.length,
   };
   log(JSON.stringify(result, null, 1));
   return result;
