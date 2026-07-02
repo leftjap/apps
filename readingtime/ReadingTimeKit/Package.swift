@@ -18,6 +18,16 @@ let package = Package(
             name: "ReadingTimeKit",
             dependencies: [.product(name: "Supabase", package: "supabase-swift")]
         ),
+        // SwiftUI 화면 라이브러리 (iOS 앱 타깃과 rtshot 이 공유). 폰트는 fetch-fonts.sh 로 수급.
+        .target(
+            name: "RTViews",
+            resources: [.copy("Fonts")]
+        ),
+        // 헤드리스 렌더 CLI (macOS) — ImageRenderer 로 화면 PNG 출력, 프로토타입 대조용
+        .executableTarget(
+            name: "rtshot",
+            dependencies: ["RTViews"]
+        ),
         .testTarget(
             name: "ReadingTimeKitTests",
             dependencies: ["ReadingTimeKit"],
