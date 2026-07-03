@@ -8,6 +8,9 @@ public enum RTScreens {
         case "probe": return AnyView(ProbeScreen())
         case "01": return AnyView(Screen01Login())
         case "02": return AnyView(Screen02Home())
+        case "03": return AnyView(Screen03FlipWait())
+        case "04": return AnyView(Screen04FlipPaused())
+        case "05": return AnyView(Screen05TapRecording())
         case "14": return AnyView(Screen14EmptyHome())
         default: return nil
         }
