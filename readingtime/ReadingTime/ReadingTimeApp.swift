@@ -11,6 +11,7 @@ struct ReadingTimeApp: App {
     @StateObject private var flip: FlipEngine
     @StateObject private var keepAlive = KeepAlive()
     private let cloud: CloudStore
+    private let liveActivity = LiveActivityController()
 
     init() {
         let regErrors = RTFonts.register()
@@ -72,6 +73,10 @@ struct ReadingTimeApp: App {
                         flip.stopMonitoring()
                         keepAlive.stop()
                     }
+                }
+                .onReceive(model.$session) { session in
+                    // 잠금 화면 Live Activity — 상태 전환만 반영(초 틱은 시스템 자동 타이머)
+                    liveActivity.sync(session: session)
                 }
                 .onChange(of: scenePhase) { _, phase in
                     // 백그라운드↔포그라운드 전환마다 모션 스트림 재시작 (iOS 11+ 버그 대응)

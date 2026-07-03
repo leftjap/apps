@@ -47,6 +47,24 @@ public enum RTScreens {
         actions.forEach { m.apply($0) }
         return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(m.route.rawValue)) })
     }
+
+    // 잠금 화면 Live Activity 배너 렌더 (위젯이 쓰는 그 뷰) — la-rec / la-paused.
+    // startedAt 은 고정 기준시각(rtshot 은 Date.now 불가) → 기록중은 26:14 경과로 표시.
+    @MainActor
+    public static func liveActivityView(paused: Bool) -> AnyView {
+        let ref = Date(timeIntervalSinceReferenceDate: 800_000_000) // 고정
+        return AnyView(
+            RTLiveActivityLockView(
+                bookTitle: "몰입",
+                paused: paused,
+                startedAt: ref,
+                pausedElapsed: RTAppModel.demoElapsed,
+                staticElapsed: RTAppModel.demoElapsed   // 헤드리스: 26:14 고정 표시
+            )
+            .frame(width: 390, height: 96)
+            .background(Color(red: 0.075, green: 0.11, blue: 0.09))
+        )
+    }
 }
 
 // 파이프라인 검증용 — 토큰 색 스와치 + 폰트 페이스 라인

@@ -9,10 +9,37 @@
 /* Begin PBXBuildFile section */
 		A00000000000000000000021 /* RTViews in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000031 /* RTViews */; };
 		A00000000000000000000022 /* ReadingTimeKit in Frameworks */ = {isa = PBXBuildFile; productRef = A00000000000000000000032 /* ReadingTimeKit */; };
+		B00000000000000000000023 /* ReadingTimeWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B00000000000000000000002 /* ReadingTimeWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B00000000000000000000024 /* RTViews in Frameworks */ = {isa = PBXBuildFile; productRef = B00000000000000000000034 /* RTViews */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B00000000000000000000021 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A00000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B00000000000000000000007;
+			remoteInfo = ReadingTimeWidgets;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B00000000000000000000022 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B00000000000000000000023 /* ReadingTimeWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A00000000000000000000002 /* ReadingTime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ReadingTime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B00000000000000000000002 /* ReadingTimeWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ReadingTimeWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -23,10 +50,19 @@
 			);
 			target = A00000000000000000000007 /* ReadingTime */;
 		};
+		B00000000000000000000040 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B00000000000000000000007 /* ReadingTimeWidgets */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		A00000000000000000000003 /* ReadingTime */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (A00000000000000000000040 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ReadingTime; sourceTree = "<group>"; };
+		B00000000000000000000003 /* ReadingTimeWidgets */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (B00000000000000000000040 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = ReadingTimeWidgets; sourceTree = "<group>"; };
+		B00000000000000000000044 /* ReadingTimeShared */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = ReadingTimeShared; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -39,6 +75,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B00000000000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B00000000000000000000024 /* RTViews in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +90,8 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000003 /* ReadingTime */,
+				B00000000000000000000003 /* ReadingTimeWidgets */,
+				B00000000000000000000044 /* ReadingTimeShared */,
 				A00000000000000000000006 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				A00000000000000000000002 /* ReadingTime.app */,
+				B00000000000000000000002 /* ReadingTimeWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,13 +115,16 @@
 				A00000000000000000000008 /* Sources */,
 				A00000000000000000000004 /* Frameworks */,
 				A00000000000000000000009 /* Resources */,
+				B00000000000000000000022 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				B00000000000000000000020 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A00000000000000000000003 /* ReadingTime */,
+				B00000000000000000000044 /* ReadingTimeShared */,
 			);
 			name = ReadingTime;
 			packageProductDependencies = (
@@ -84,6 +134,30 @@
 			productName = ReadingTime;
 			productReference = A00000000000000000000002 /* ReadingTime.app */;
 			productType = "com.apple.product-type.application";
+		};
+		B00000000000000000000007 /* ReadingTimeWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B00000000000000000000010 /* Build configuration list for PBXNativeTarget "ReadingTimeWidgets" */;
+			buildPhases = (
+				B00000000000000000000008 /* Sources */,
+				B00000000000000000000005 /* Frameworks */,
+				B00000000000000000000009 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				B00000000000000000000003 /* ReadingTimeWidgets */,
+				B00000000000000000000044 /* ReadingTimeShared */,
+			);
+			name = ReadingTimeWidgets;
+			packageProductDependencies = (
+				B00000000000000000000034 /* RTViews */,
+			);
+			productName = ReadingTimeWidgets;
+			productReference = B00000000000000000000002 /* ReadingTimeWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -96,6 +170,9 @@
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					A00000000000000000000007 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					B00000000000000000000007 = {
 						CreatedOnToolsVersion = 26.0;
 					};
 				};
@@ -117,12 +194,20 @@
 			projectRoot = "";
 			targets = (
 				A00000000000000000000007 /* ReadingTime */,
+				B00000000000000000000007 /* ReadingTimeWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		A00000000000000000000009 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B00000000000000000000009 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -139,7 +224,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		B00000000000000000000008 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B00000000000000000000020 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B00000000000000000000007 /* ReadingTimeWidgets */;
+			targetProxy = B00000000000000000000021 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A00000000000000000000012 /* Debug */ = {
@@ -235,6 +335,50 @@
 			};
 			name = Release;
 		};
+		B00000000000000000000014 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FNXM5SF6PX;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ReadingTimeWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.leftjap.readingtime.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B00000000000000000000015 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = FNXM5SF6PX;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ReadingTimeWidgets/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.leftjap.readingtime.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -256,6 +400,15 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		B00000000000000000000010 /* Build configuration list for PBXNativeTarget "ReadingTimeWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B00000000000000000000014 /* Debug */,
+				B00000000000000000000015 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
@@ -273,6 +426,10 @@
 		A00000000000000000000032 /* ReadingTimeKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ReadingTimeKit;
+		};
+		B00000000000000000000034 /* RTViews */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = RTViews;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
