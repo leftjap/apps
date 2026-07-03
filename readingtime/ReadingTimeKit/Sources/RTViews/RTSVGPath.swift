@@ -189,8 +189,10 @@ public enum RTSVG {
 // 스트로크 아이콘 뷰 — 시안 svg(viewBox 24 기본, stroke/fill/두께/캡) 재현
 public struct RTIcon: View {
     let d: [String]
-    let size: CGFloat
-    let viewBox: CGFloat
+    let w: CGFloat
+    let h: CGFloat
+    let vbW: CGFloat
+    let vbH: CGFloat
     let stroke: Color?
     let fill: Color?
     let lineWidth: CGFloat
@@ -200,9 +202,18 @@ public struct RTIcon: View {
     public init(_ d: [String], size: CGFloat, viewBox: CGFloat = 24,
                 stroke: Color? = nil, fill: Color? = nil,
                 lineWidth: CGFloat = 2, cap: CGLineCap = .round, join: CGLineJoin = .round) {
+        self.init(d, width: size, height: size, viewBoxW: viewBox, viewBoxH: viewBox,
+                  stroke: stroke, fill: fill, lineWidth: lineWidth, cap: cap, join: join)
+    }
+
+    public init(_ d: [String], width: CGFloat, height: CGFloat, viewBoxW: CGFloat, viewBoxH: CGFloat,
+                stroke: Color? = nil, fill: Color? = nil,
+                lineWidth: CGFloat = 2, cap: CGLineCap = .round, join: CGLineJoin = .round) {
         self.d = d
-        self.size = size
-        self.viewBox = viewBox
+        self.w = width
+        self.h = height
+        self.vbW = viewBoxW
+        self.vbH = viewBoxH
         self.stroke = stroke
         self.fill = fill
         self.lineWidth = lineWidth
@@ -211,7 +222,7 @@ public struct RTIcon: View {
     }
 
     public var body: some View {
-        let scale = size / viewBox
+        let scale = min(w / vbW, h / vbH)
         ZStack {
             ForEach(Array(d.enumerated()), id: \.offset) { _, dd in
                 let path = RTSVG.path(dd).applying(CGAffineTransform(scaleX: scale, y: scale))
@@ -224,6 +235,6 @@ public struct RTIcon: View {
                 }
             }
         }
-        .frame(width: size, height: size)
+        .frame(width: w, height: h)
     }
 }
