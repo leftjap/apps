@@ -146,9 +146,30 @@ public final class RTAppModel: ObservableObject {
             .reduce(0) { $0 + $1.seconds }
     }
 
-    public var weekSeconds: Int {
-        guard let d = userData, let week = cal.dateInterval(of: .weekOfYear, for: now()) else { return 0 }
+    public var weekSeconds: Int { weekSeconds(offset: 0) }
+
+    /// offset 주(0=이번 주, -1=지난주) 총 초
+    public func weekSeconds(offset: Int) -> Int {
+        guard let d = userData,
+              let base = cal.date(byAdding: .weekOfYear, value: offset, to: now()),
+              let week = cal.dateInterval(of: .weekOfYear, for: base) else { return 0 }
         return d.sessions.filter { week.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+    }
+
+    /// 이번 주(월~일) 일별 분
+    public var weekDayMinutes: [Int] {
+        var per = [Int](repeating: 0, count: 7)
+        guard let d = userData, let week = cal.dateInterval(of: .weekOfYear, for: now()) else { return per }
+        for s in d.sessions where week.contains(s.endedAt) {
+            let idx = cal.dateComponents([.day], from: week.start, to: cal.startOfDay(for: s.endedAt)).day ?? 0
+            if (0..<7).contains(idx) { per[idx] += s.seconds }
+        }
+        return per.map { $0 / 60 }
+    }
+
+    /// 이번 주 시작일 (월요일)
+    public var weekStart: Date {
+        cal.dateInterval(of: .weekOfYear, for: now())?.start ?? now()
     }
 
     public func totalSeconds(isbn: String) -> Int {
@@ -334,6 +355,11 @@ public final class RTAppModel: ObservableObject {
     }
 
     public func addTime() {
+        if userData != nil {
+            let rec = RTSessionRecord(isbn: selectedBook?.isbn, mode: "manual",
+                                      seconds: addtimeValue * 60, endedAt: now(), pauseCount: 0)
+            mutateUserData { $0.sessions.append(rec) }
+        }
         addtimeValue = 35
         addtimePreset = 15
         closeSheet()

@@ -142,6 +142,21 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.weekTodayIndex == 5)
     }
 
+    @Test func weekOffsetAndDayMinutes() {
+        let m = liveModel(now: day("2026-07-04", hour: 23))   // 토
+        m.userData = RTUserData(sessions: [
+            .init(isbn: nil, mode: "flip", seconds: 600, endedAt: day("2026-07-04"), pauseCount: 0),
+            .init(isbn: nil, mode: "flip", seconds: 400, endedAt: day("2026-07-03"), pauseCount: 0),
+            .init(isbn: nil, mode: "flip", seconds: 200, endedAt: day("2026-06-28"), pauseCount: 0), // 지난주 일
+        ])
+        #expect(m.weekSeconds(offset: -1) == 200)
+        let mins = m.weekDayMinutes
+        #expect(mins.count == 7)
+        #expect(mins[4] == 6)    // 금 7/3 = 400s → 6분
+        #expect(mins[5] == 10)   // 토 7/4
+        #expect(mins[0] == 0)
+    }
+
     @Test func formatHelpers() {
         #expect(RTAppModel.hmString(26_760) == "7:26")
         #expect(RTAppModel.hmString(0) == "0:00")
@@ -159,6 +174,20 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         m.deleteBook()
         #expect(m.userData?.books.isEmpty == true)
         #expect(m.route == .library)
+    }
+
+    @Test func addTimeAppendsManualRecord() {
+        let m = liveModel()
+        m.searchResults = [Self.hit]
+        m.toggleAdd(Self.hit.isbn)
+        m.addtimeValue = 45
+        m.addTime()
+        let rec = m.userData?.sessions.first
+        #expect(rec?.mode == "manual")
+        #expect(rec?.seconds == 45 * 60)
+        #expect(rec?.isbn == Self.hit.isbn)
+        #expect(m.sheet == nil)
+        #expect(m.addtimeValue == 35)   // 데모 리셋 규칙 유지
     }
 
     @Test func streakZeroWhenNoRecent() {
