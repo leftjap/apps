@@ -3570,10 +3570,14 @@
        빈 면이 노출돼 3단처럼 보이는 문제 (아이폰 PWA 피드백 1, 2026-06-12). dim 은 backdrop 담당. */
     .main {
       /* status-bar-style: black-translucent → main 컨텐츠가 status bar 영역 잠식 차단 (safe-area-inset-top).
-         시안: 상단바가 status bar 바로 아래 — 상단 여백 없음 */
-      padding: env(safe-area-inset-top) 16px calc(20px + env(safe-area-inset-bottom));
+         시안: 상단바가 status bar 바로 아래 — 상단 여백 없음.
+         하단 0 — 시안은 스크롤 영역이 화면 끝까지 닿고 인셋은 #mainView padding 이 담당
+         (홈 인디케이터는 콘텐츠 위에 오버레이). 실기기 스샷 피드백 2026-07-03. */
+      padding: env(safe-area-inset-top) 16px 0;
       min-width: 0;
     }
+    /* 탭 없는 화면(새 글·빈 카테고리 등) 기본 하단 인셋 */
+    #mainView { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
     body[data-drawer-open] .main {
       pointer-events: none;
     }
@@ -3612,12 +3616,14 @@
       width: auto;
       margin: 0;
       z-index: 60;
-      --convo-peek: 52px;
+      /* peek = 그래버존 13.5 + 헤드(9 + 행 19 + 24) ≈ 66 고정.
+         시안: 하단 24px 존 위에 홈 인디케이터 오버레이 — safe-area 가산 금지 (실기기 스샷 2026-07-03) */
+      --convo-peek: 66px;
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -12px 32px rgba(20, 18, 14, 0.18), 0 -2px 10px rgba(20, 18, 14, 0.10);
-      padding: 0 16px calc(10px + env(safe-area-inset-bottom));
+      padding: 0 16px 10px;
       height: 64dvh;
-      transform: translateY(calc(100% - var(--convo-peek) - env(safe-area-inset-bottom)));
+      transform: translateY(calc(100% - var(--convo-peek)));
       transition: transform .32s cubic-bezier(.32, .72, 0, 1);
     }
     body[data-convo="1"] .convo.is-open { transform: translateY(0); }
@@ -3640,7 +3646,7 @@
     /* 헤더 = 얇은 탭 행(접힘): 말풍선 아이콘 + "댓글" + 크레일 카운트 배지 + ∧(정적 ink3) */
     .convo__head {
       display: flex; align-items: center; gap: 8px;
-      padding: 9px 4px calc(11px + env(safe-area-inset-bottom));
+      padding: 9px 4px 24px;   /* 하단 24 고정 — 인디케이터가 이 존 위에 뜸 (시안) */
       font-size: 14px; font-weight: 600;
     }
     .convo__head-ico { display: block; width: 15px; height: 15px; color: var(--ink-3); flex-shrink: 0; }
@@ -3699,8 +3705,8 @@
     .composer input { padding: 8px 0; }
     /* 공유 필 — 시안: h32 · padding 0 11 0 7 · bg crail-soft/.32 */
     .share { height: 32px; padding: 0 11px 0 7px; background: oklch(0.85 0.05 50 / 0.32); }
-    /* 얇은 탭 높이만큼 본문 하단 여백 — 탭이 본문 마지막 줄을 가리지 않게 */
-    body[data-convo="1"] #mainView { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
+    /* 얇은 탭 높이만큼 본문 하단 여백 — 시안 article padding-bottom 84 고정 (탭 66 + 여유 18) */
+    body[data-convo="1"] #mainView { padding-bottom: 84px; }
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
     .share__ro-long { display: none; }
 
@@ -3730,8 +3736,8 @@
     /* 가계부 모바일 (작업지시서 §2) — 바텀시트 폐기, 타임라인·선택일을 캘린더 아래 인라인으로.
        데스크톱(>768px) 우측 레일은 변경 없음. */
     body.is-expense:not(.is-exp-stats) .exp-rail { display: none; }
-    /* 하단 여백 — .main 의 calc(20px + safe-area) 와 합쳐 시안 44px */
-    body.is-expense #mainView { padding-bottom: 24px; }
+    /* 하단 여백 — 시안 44px 고정 (.main 하단 패딩 0) */
+    body.is-expense #mainView { padding-bottom: 44px; }
     /* 인라인 타임라인 섹션 — "N월 타임라인 N건" 헤더(.exp-mini-head 패밀리) + .exp-tl-row 행 */
     .exp-inline-tl { display: block; margin-top: 26px; }
     .exp-inline-tl-head {
@@ -5220,7 +5226,7 @@
 
     // 댓글 시트 — 열림: 타임라인 맨 아래 / 닫힘(peek): 최신 댓글 첫 줄부터 (피드백 3)
     // 닫힘 정렬은 더블 rAF — peek 패딩(60dvh) 적용 후 scrollTop 설정 (클램프 방지)
-    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 52, (open) => {
+    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 66, (open) => {
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
