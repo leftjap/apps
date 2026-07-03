@@ -1,6 +1,7 @@
 import UIKit
 import CoreHaptics
 import UserNotifications
+import os.log
 
 // 엎기/들기 신호 — 사용자가 화면을 못 보는 상황에서 상태 전환을 확실히 알린다.
 // · 포그라운드: CoreHaptics 최대 강도 버즈 (UIFeedbackGenerator 의 "띡"보다 훨씬 강함)
@@ -50,21 +51,26 @@ final class RTFlipSignals {
 
     private func playHaptic(_ segments: [(TimeInterval, TimeInterval)]) {
         guard let engine, CHHapticEngine.capabilitiesForHardware().supportsHaptics else {
+            Self.log.info("haptic 폴백(UIFeedback) — CoreHaptics 미지원 하드웨어")
             UINotificationFeedbackGenerator().notificationOccurred(.success)   // 구형 폴백
             return
         }
-        try? engine.start()
-        let events = segments.map { start, duration in
-            CHHapticEvent(eventType: .hapticContinuous,
-                          parameters: [
-                              CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
-                              CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6),
-                          ],
-                          relativeTime: start, duration: duration)
+        do {
+            try engine.start()
+            let events = segments.map { start, duration in
+                CHHapticEvent(eventType: .hapticContinuous,
+                              parameters: [
+                                  CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                                  CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.6),
+                              ],
+                              relativeTime: start, duration: duration)
+            }
+            let player = try engine.makePlayer(with: CHHapticPattern(events: events, parameters: []))
+            try player.start(atTime: 0)
+            Self.log.info("haptic 재생 성공 (\(segments.count, privacy: .public)버즈)")
+        } catch {
+            Self.log.error("haptic 재생 실패: \(String(describing: error), privacy: .public)")
         }
-        guard let pattern = try? CHHapticPattern(events: events, parameters: []),
-              let player = try? engine.makePlayer(with: pattern) else { return }
-        try? player.start(atTime: 0)
     }
 
     private func postNotification(title: String, body: String) {
@@ -73,8 +79,16 @@ final class RTFlipSignals {
         content.body = body
         content.sound = .default
         let request = UNNotificationRequest(identifier: "rt.flip.signal", content: content, trigger: nil)
-        UNUserNotificationCenter.current().add(request)
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error {
+                Self.log.error("잠금 알림 게시 실패: \(String(describing: error), privacy: .public)")
+            } else {
+                Self.log.info("잠금 알림 게시 성공: \(title, privacy: .public)")
+            }
+        }
     }
+
+    private static let log = Logger(subsystem: "com.leftjap.readingtime", category: "signals")
 
     static func hms(_ sec: Int) -> String {
         sec >= 3600 ? String(format: "%d시간 %d분", sec / 3600, sec / 60 % 60)
