@@ -1,9 +1,49 @@
 import SwiftUI
 
-// v8 08 책 상세 — 스펙: frames/08.html
+// v8 08 책 상세 — 스펙: frames/08.html. userData 주입 시 selectedBook 실데이터 (init 스냅샷).
 public struct Screen08Detail: View {
+    struct Live {
+        let book: RTBook
+        let total: String            // "0:01"
+        let count: Int
+        let days: Int
+        let rows: [(tile: Tile, min: String, label: String, right: Right)]
+    }
+
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let live: Live?
+
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        if let m = model, m.userData != nil, let book = m.selectedBook {
+            let cal = Calendar(identifier: .gregorian)
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "HH:mm"
+            let modeLabel = ["flip": "엎기", "tap": "탭"]
+            let rows = (m.userData?.sessions ?? [])
+                .filter { $0.isbn == book.isbn }
+                .sorted { $0.endedAt > $1.endedAt }
+                .prefix(5)
+                .map { r -> (Tile, String, String, Right) in
+                    let tile: Tile = r.mode == "flip" ? .flip : (r.mode == "tap" ? .tap : .manual)
+                    let label = r.mode == "manual" ? "직접 추가" : "\(modeLabel[r.mode] ?? r.mode) · \(f.string(from: r.endedAt))"
+                    let right: Right = cal.isDate(r.endedAt, inSameDayAs: m.now())
+                        ? .today
+                        : .date("\(cal.component(.month, from: r.endedAt)).\(cal.component(.day, from: r.endedAt))")
+                    return (tile, "\(max(1, r.seconds / 60))분", label, right)
+                }
+            let days = (cal.dateComponents([.day], from: cal.startOfDay(for: book.addedAt),
+                                           to: cal.startOfDay(for: m.now())).day ?? 0) + 1
+            self.live = Live(book: book,
+                             total: RTAppModel.hmString(m.totalSeconds(isbn: book.isbn)),
+                             count: m.sessionCount(isbn: book.isbn),
+                             days: days,
+                             rows: rows)
+        } else {
+            self.live = nil
+        }
+    }
 
     public var body: some View {
         ZStack(alignment: .top) {
@@ -12,11 +52,18 @@ public struct Screen08Detail: View {
                 topBlock
                 ctas.padding(.top, 18)
                 logHead.padding(EdgeInsets(top: 26, leading: 0, bottom: 6, trailing: 0))
-                logRow(tile: .flip, min: "26분", label: "엎기 · 14:14", right: .today, divider: true)
-                logRow(tile: .flip, min: "41분", label: "엎기 · 21:40", right: .date("5.20"), divider: true)
-                logRow(tile: .tap, min: "33분", label: "탭 · 08:32", right: .date("5.19"), divider: true)
-                logRow(tile: .manual, min: "28분", label: "직접 추가", right: .date("5.18"), divider: true)
-                logRow(tile: .flip, min: "19분", label: "엎기 · 22:05", right: .date("5.17"), divider: false)
+                if let live {
+                    ForEach(Array(live.rows.enumerated()), id: \.offset) { i, r in
+                        logRow(tile: r.tile, min: r.min, label: r.label, right: r.right,
+                               divider: i < live.rows.count - 1)
+                    }
+                } else {
+                    logRow(tile: .flip, min: "26분", label: "엎기 · 14:14", right: .today, divider: true)
+                    logRow(tile: .flip, min: "41분", label: "엎기 · 21:40", right: .date("5.20"), divider: true)
+                    logRow(tile: .tap, min: "33분", label: "탭 · 08:32", right: .date("5.19"), divider: true)
+                    logRow(tile: .manual, min: "28분", label: "직접 추가", right: .date("5.18"), divider: true)
+                    logRow(tile: .flip, min: "19분", label: "엎기 · 22:05", right: .date("5.17"), divider: false)
+                }
                 Spacer(minLength: 0)
             }
             .padding(EdgeInsets(top: 100 + 2, leading: 24, bottom: 20, trailing: 24))
@@ -47,26 +94,37 @@ public struct Screen08Detail: View {
 
     var topBlock: some View {
         HStack(alignment: .top, spacing: 18) {
-            FlowCover(.init(width: 104, height: 152, spine: 4, frameInset: 7,
-                            padTop: 15, padBottom: 11, authorEN: 5,
-                            titleSize: 29, titleTop: 17, flowSize: 6.5, flowTop: 6,
-                            ruleWidth: 24, authorKR: 6.5))
-                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 12, x: 0, y: 16)
-                .rtFloat(duration: 8)
+            Group {
+                if let live {
+                    RTRemoteCover(url: live.book.coverUrl, size: .init(width: 104, height: 152), radius: 5)
+                } else {
+                    FlowCover(.init(width: 104, height: 152, spine: 4, frameInset: 7,
+                                    padTop: 15, padBottom: 11, authorEN: 5,
+                                    titleSize: 29, titleTop: 17, flowSize: 6.5, flowTop: 6,
+                                    ruleWidth: 24, authorKR: 6.5))
+                }
+            }
+            .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 12, x: 0, y: 16)
+            .rtFloat(duration: 8)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 6) {
                     Circle().fill(RT.green).frame(width: 5, height: 5)
-                    Text("읽는 중").font(.sans(10.5, 700)).foregroundColor(RT.green)
+                    Text(live?.book.finished == true ? "완독" : "읽는 중")
+                        .font(.sans(10.5, 700)).foregroundColor(RT.green)
                 }
                 .padding(EdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 10))
                 .background(RoundedRectangle(cornerRadius: 12).fill(RT.greenTint))
-                Text("몰입").font(.sans(23, 900)).tracking(23 * -0.03)
+                Text(live?.book.title ?? "몰입").font(.sans(23, 900)).tracking(23 * -0.03)
                     .foregroundColor(RT.ink).padding(.top, 11)
-                Text("미하이 칙센트미하이 · 한울림").font(.sans(12.5, 500))
+                    .lineLimit(2)
+                Text(live.map { "\($0.book.author) · \($0.book.publisher)" } ?? "미하이 칙센트미하이 · 한울림")
+                    .font(.sans(12.5, 500))
                     .foregroundColor(RT.muted).padding(.top, 5)
+                    .lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("4:12").font(.mono(28, 700)).tracking(28 * -0.03).foregroundColor(RT.ink)
-                    Text("누적 · 8회 · 18일째").font(.mono(11, 500)).foregroundColor(RT.faint)
+                    Text(live?.total ?? "4:12").font(.mono(28, 700)).tracking(28 * -0.03).foregroundColor(RT.ink)
+                    Text(live.map { "누적 · \($0.count)회 · \($0.days)일째" } ?? "누적 · 8회 · 18일째")
+                        .font(.mono(11, 500)).foregroundColor(RT.faint)
                 }
                 .padding(.top, 14)
             }

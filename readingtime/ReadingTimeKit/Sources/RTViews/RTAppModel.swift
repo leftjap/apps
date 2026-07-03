@@ -31,6 +31,7 @@ public struct RTSession: Sendable {
     public var status: RTSessionStatus
     public var elapsed: Int          // 초 (데모 셸: app.js 와 동일하게 초 틱 누적)
     public var pauseCount: Int
+    public var startedAt: Date       // 세션 시작 시각 (06 원장 표시용 — 데모 렌더는 미사용)
 }
 
 public enum RTLibraryFilter: String, Sendable { case all, reading, finished }
@@ -403,7 +404,7 @@ public final class RTAppModel: ObservableObject {
     // ── 세션 시작 (app.js startSession — 시드는 sessionSeed) ──
     public func startSession(_ mode: RTMode) {
         session = RTSession(mode: mode, status: .recording,
-                            elapsed: sessionSeed, pauseCount: 0)
+                            elapsed: sessionSeed, pauseCount: 0, startedAt: now())
     }
 
     /// wall-clock 재동기화 (iOS: 백그라운드 경과를 FlipEngine 이 실측 → UI 반영)
