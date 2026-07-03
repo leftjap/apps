@@ -55,6 +55,7 @@ export function showAuthenticated() {
   if (!_mocksMounted) {
     injectMocks();
     stampBuildId();
+    mountSheetDiag();
     _mocksMounted = true;
   }
   if (!_hashListenerBound) {
@@ -138,6 +139,31 @@ function stampBuildId() {
   tag.className = 'sb__build';
   tag.textContent = `build ${id}`;
   wrap.appendChild(tag);
+}
+
+// [임시 진단 2026-07-03 — 실기기 댓글 시트 지오메트리 규명 후 제거]
+// 미러링/스샷으로 읽는 한 줄: 빌드 7자 · innerHeight · visualViewport · safe-area-bottom ·
+// convo rect top/bottom. cB≠ih 이면 fixed 기준 이탈, ih≠852 면 뷰포트 미커버가 원인.
+function mountSheetDiag() {
+  if (!window.matchMedia('(max-width: 768px)').matches) return;
+  if (document.getElementById('sheetDiag')) return;
+  const probe = document.createElement('div');
+  probe.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:0;padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;';
+  document.body.appendChild(probe);
+  const el = document.createElement('div');
+  el.id = 'sheetDiag';
+  el.style.cssText = 'position:fixed;left:0;right:0;bottom:1px;z-index:99999;font:10px ui-monospace,monospace;color:#a49e96;text-align:center;pointer-events:none;';
+  document.body.appendChild(el);
+  const upd = () => {
+    const convo = document.getElementById('convoPanel');
+    const r = convo && document.body.dataset.convo === '1' ? convo.getBoundingClientRect() : null;
+    const sab = Math.round(probe.getBoundingClientRect().height);
+    const bid = (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev').slice(0, 7);
+    el.textContent = `${bid} ih${window.innerHeight} vv${Math.round(window.visualViewport?.height ?? 0)} sab${sab}`
+      + (r ? ` cT${Math.round(r.top)} cH${Math.round(r.height)} cB${Math.round(r.bottom)}` : ' c-');
+  };
+  upd();
+  setInterval(upd, 1000);
 }
 
 function syncFromHash() {
