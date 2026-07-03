@@ -3616,9 +3616,9 @@
       width: auto;
       margin: 0;
       z-index: 60;
-      /* peek = 그래버존 13.5 + 헤드(9 + 행 19 + 24) ≈ 66 고정.
+      /* peek = 그래버존 13.5 + 헤드(9 + 행 19) + 하단존 (시안 실측 64.5 ≈ 65).
          시안: 하단 24px 존 위에 홈 인디케이터 오버레이 — safe-area 가산 금지 (실기기 스샷 2026-07-03) */
-      --convo-peek: 66px;
+      --convo-peek: 65px;
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -12px 32px rgba(20, 18, 14, 0.18), 0 -2px 10px rgba(20, 18, 14, 0.10);
       padding: 0 16px 10px;
@@ -5226,7 +5226,7 @@
 
     // 댓글 시트 — 열림: 타임라인 맨 아래 / 닫힘(peek): 최신 댓글 첫 줄부터 (피드백 3)
     // 닫힘 정렬은 더블 rAF — peek 패딩(60dvh) 적용 후 scrollTop 설정 (클램프 방지)
-    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 66, (open) => {
+    initMobileSheet('convoPanel', 'convoHandle', '.convo__head', 'convoList', 65, (open) => {
       const list = document.getElementById('convoList');
       if (!list) return;
       if (open) { list.scrollTop = list.scrollHeight; return; }
