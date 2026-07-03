@@ -25,6 +25,23 @@ struct ReadingTimeApp: App {
         let model = RTAppModel()
         model.sessionSeed = 0   // 실앱: 세션은 0초부터 (데모 시드 26:14 는 rtshot/rtapp 전용)
 
+        // 실데이터 정본 (§6-④) — UserDefaults JSON 영속 (개인 앱: 로컬이 정본)
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        if let raw = UserDefaults.standard.data(forKey: "rt.userData"),
+           let saved = try? dec.decode(RTUserData.self, from: raw) {
+            model.userData = saved
+        } else {
+            model.userData = RTUserData()
+        }
+        model.onUserDataChange = { data in
+            let enc = JSONEncoder()
+            enc.dateEncodingStrategy = .iso8601
+            if let raw = try? enc.encode(data) {
+                UserDefaults.standard.set(raw, forKey: "rt.userData")
+            }
+        }
+
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
         model.onAuthChange = { loggedIn in
             UserDefaults.standard.set(loggedIn, forKey: "rt.loggedIn")

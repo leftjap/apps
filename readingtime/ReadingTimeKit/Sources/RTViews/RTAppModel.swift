@@ -102,6 +102,62 @@ public final class RTAppModel: ObservableObject {
     public var searchProvider: ((String) async throws -> [RTBookHit])?
     /// 로그인 버튼 핸들러 (iOS OAuth 배선) — nil 이면 즉시 login() (rtshot/rtapp 데모 경로)
     public var loginHandler: (() -> Void)?
+
+    // ── 실데이터 정본 (§6-④) — nil 이면 데모 모드 (rtshot/rtapp 픽셀 오라클 불변) ──
+    @Published public var userData: RTUserData? {
+        didSet { if let d = userData { added = Set(d.books.map(\.isbn)) } }
+    }
+    /// 변경 영속 훅 (앱: UserDefaults JSON 저장)
+    public var onUserDataChange: ((RTUserData) -> Void)?
+    /// 시간 주입 (테스트 결정적 실행)
+    public var now: () -> Date = { Date() }
+
+    private func mutateUserData(_ mutate: (inout RTUserData) -> Void) {
+        guard var d = userData else { return }
+        mutate(&d)
+        userData = d
+        onUserDataChange?(d)
+    }
+
+    /// 읽는 중(미완독) 최신 책
+    public var currentBook: RTBook? {
+        userData?.books.filter { !$0.finished }.max { $0.addedAt < $1.addedAt }
+    }
+
+    private var cal: Calendar {
+        var c = Calendar(identifier: .gregorian)
+        c.firstWeekday = 2   // 월요일 시작 (v8 주간 통계)
+        return c
+    }
+
+    public var todaySeconds: Int {
+        guard let d = userData else { return 0 }
+        let t = now()
+        return d.sessions.filter { cal.isDate($0.endedAt, inSameDayAs: t) }
+            .reduce(0) { $0 + $1.seconds }
+    }
+
+    public var weekSeconds: Int {
+        guard let d = userData, let week = cal.dateInterval(of: .weekOfYear, for: now()) else { return 0 }
+        return d.sessions.filter { week.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+    }
+
+    /// 연속 기록일 — 오늘 기록 없으면 어제까지의 연속을 유지 표시
+    public var streakDays: Int {
+        guard let d = userData, !d.sessions.isEmpty else { return 0 }
+        let days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        var cursor = cal.startOfDay(for: now())
+        if !days.contains(cursor) {
+            cursor = cal.date(byAdding: .day, value: -1, to: cursor)!
+            if !days.contains(cursor) { return 0 }
+        }
+        var n = 0
+        while days.contains(cursor) {
+            n += 1
+            cursor = cal.date(byAdding: .day, value: -1, to: cursor)!
+        }
+        return n
+    }
     @Published public var searchQuery = "몰입"
     @Published public var searchResults: [RTBookHit]?
 
@@ -177,7 +233,15 @@ public final class RTAppModel: ObservableObject {
     }
 
     public func saveSession() {
-        if let s = session { onSessionSaved?(s.mode, s.elapsed) }
+        if let s = session {
+            onSessionSaved?(s.mode, s.elapsed)
+            if userData != nil {
+                let rec = RTSessionRecord(isbn: currentBook?.isbn, mode: s.mode.rawValue,
+                                          seconds: s.elapsed, endedAt: now(),
+                                          pauseCount: s.pauseCount)
+                mutateUserData { $0.sessions.append(rec) }
+            }
+        }
         session = nil
         nav(.home)
     }
@@ -220,11 +284,35 @@ public final class RTAppModel: ObservableObject {
 
     // ── 09 완독 별점 ──
     public func rate(_ n: Int) { rating = n }
-    public func saveFinished() { closeSheet(); nav(.library) }
+    public func saveFinished() {
+        if let cur = currentBook {
+            mutateUserData { d in
+                if let i = d.books.firstIndex(where: { $0.isbn == cur.isbn }) {
+                    d.books[i].finished = true
+                    d.books[i].rating = rating
+                    d.books[i].finishedAt = now()
+                }
+            }
+        }
+        closeSheet()
+        nav(.library)
+    }
 
-    // ── 13 책 추가 ──
+    // ── 13 책 추가 (라이브: userData 책 목록 동기, 데모: added 집합만) ──
     public func toggleAdd(_ key: String) {
         if added.contains(key) { added.remove(key) } else { added.insert(key) }
+        guard userData != nil else { return }
+        if added.contains(key) {
+            guard let hit = searchResults?.first(where: { $0.isbn == key }),
+                  userData?.books.contains(where: { $0.isbn == key }) != true else { return }
+            mutateUserData {
+                $0.books.append(RTBook(isbn: hit.isbn, title: hit.title, author: hit.author,
+                                       publisher: hit.publisher, coverUrl: hit.coverUrl,
+                                       addedAt: now()))
+            }
+        } else {
+            mutateUserData { $0.books.removeAll { $0.isbn == key } }
+        }
     }
 
     // ── 설정·책 메뉴 ──
