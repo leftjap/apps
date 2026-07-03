@@ -55,7 +55,7 @@ let _realtimeUnregister = null;
 /** 숫자 → mocks formatAmount HTML (today-mac.html L3845-3847 답습). */
 export function formatAmount(n) {
   const v = Number(n) || 0;
-  return `<span class="amt-num">${v.toLocaleString('ko-KR')}</span> <span class="amt-unit">원</span>`;
+  return `<span class="amt-num">${v.toLocaleString('ko-KR')}</span><span class="amt-unit">원</span>`;
 }
 
 /** ISO spent_at → "MM-DD" (mocks tx.date 형식). 날짜 파트만 추출. */
@@ -427,11 +427,10 @@ export function patchFeedMiniStats(rows, month = null, doc = document) {
     const max = sorted.length ? sorted[0][1] : 1;
     const top = sorted.slice(0, 5);
     const restItems = sorted.slice(5);
-    const restSum = restItems.reduce((s, [, v]) => s + v, 0);
-    catList.innerHTML = top.map(([name, amt]) =>
-      `<div class="exp-cat-row"><span class="exp-cat-row__name">${escapeHtml(name)}</span><div class="exp-cat-row__bar"><div class="exp-cat-row__fill" style="width:${Math.round((amt / max) * 100)}%"></div></div><span class="exp-cat-row__amt">${amt.toLocaleString('ko-KR')} 원</span></div>`,
+    catList.innerHTML = top.map(([name, amt], i) =>
+      `<div class="exp-cat-row"><span class="exp-cat-row__name">${escapeHtml(name)}</span><div class="exp-cat-row__bar"><div class="exp-cat-row__fill${i === 0 ? ' is-first' : ''}" style="width:${Math.round((amt / max) * 100)}%"></div></div><span class="exp-cat-row__amt">${amt.toLocaleString('ko-KR')} 원</span></div>`,
     ).join('') + (restItems.length > 0
-      ? `<div class="exp-cat-rest"><span>그 외 ${restItems.length}개</span><span class="exp-cat-rest__amt">${restSum.toLocaleString('ko-KR')} 원</span></div>`
+      ? `<div class="exp-cat-rest">그 외 ${restItems.length}개</div>`
       : '');
   }
   if (brandRows) {
