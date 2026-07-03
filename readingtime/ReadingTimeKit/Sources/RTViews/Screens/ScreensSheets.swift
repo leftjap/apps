@@ -49,7 +49,11 @@ public struct Sheet07AddTime: View {
     public init(model: RTAppModel? = nil) { self.model = model }
 
     var value: Int { model?.addtimeValue ?? 35 }
-    var selPreset: Int? { model?.addtimePreset ?? 15 }
+    var selPreset: Int? {
+        // model 없음(정적 데모) = +15 선택 / model 있고 preset nil = 미선택 (이중 옵셔널 구분)
+        if let model { return model.addtimePreset }
+        return 15
+    }
 
     public var body: some View {
         SheetShell {

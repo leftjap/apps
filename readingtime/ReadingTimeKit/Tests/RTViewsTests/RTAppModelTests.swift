@@ -335,3 +335,28 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(m2.searchResults == nil)   // provider 없으면 데모 rows 유지
     }
 }
+
+@MainActor
+@Suite struct RTAppModelApplyTests {
+    @Test func appliesActionSequence() {
+        let m = RTAppModel()
+        for a in ["login", "simFlip", "togglePause", "togglePause"] { m.apply(a) }
+        #expect(m.route == .flipTimer)
+        #expect(m.session?.status == .recording)
+
+        let m2 = RTAppModel()
+        for a in ["login", "mode:tap", "start", "togglePause"] { m2.apply(a) }
+        #expect(m2.route == .tapTimer)
+        #expect(m2.session?.status == .paused)
+
+        let m3 = RTAppModel()
+        for a in ["login", "nav:12", "filter:finished", "sort:rating", "sheet:sort", "week:0", "rate:2", "step:-5", "preset:30", "toggleAdd:money", "tick"] { m3.apply(a) }
+        #expect(m3.libraryFilter == .finished)
+        #expect(m3.librarySort == .rating)
+        #expect(m3.sheet == .sort)
+        #expect(m3.weekSel == 0)
+        #expect(m3.rating == 2)
+        #expect(m3.addtimeValue == 60)   // 35 -5 +30
+        #expect(m3.added.contains("money"))
+    }
+}

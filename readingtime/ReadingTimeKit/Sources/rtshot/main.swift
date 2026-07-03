@@ -21,24 +21,35 @@ if args.contains("--list-fonts") {
 }
 
 guard args.count >= 3 else {
-    print("usage: rtshot --list-fonts | rtshot <screenID> <out.png> | rtshot --app <screenID> <out.png>")
+    print("""
+    usage: rtshot --list-fonts
+           rtshot <screenID> <out.png>            # 정적 캐노니컬 렌더
+           rtshot --app <screenID> <out.png>      # 시드 모델 경유 (라우팅 오라클)
+           rtshot --seq <a1,a2,...> <out.png>     # 임의 액션 시퀀스 상태 렌더
+    """)
     exit(1)
 }
 
 // --app: 시드 모델 + RTRootView 경로 (라우팅 오라클 — 정적 렌더와 픽셀 일치해야 함)
-let appMode = args[1] == "--app"
-let screenID = appMode ? args[2] : args[1]
-let outPath = appMode ? args[3] : args[2]
+// --seq: 임의 액션 시퀀스 (예: "login,simFlip" = 04 기록 중 상태)
+let mode = args[1].hasPrefix("--") ? args[1] : ""
+let target = mode.isEmpty ? args[1] : args[2]
+let outPath = mode.isEmpty ? args[2] : (args.count > 3 ? args[3] : "")
 
-if appMode && args.count < 4 {
-    print("usage: rtshot --app <screenID> <out.png>")
+if !mode.isEmpty && outPath.isEmpty {
+    print("usage: rtshot \(mode) <arg> <out.png>")
     exit(1)
 }
 
 Task { @MainActor in
-    guard let view = appMode ? RTScreens.appSnapshotView(id: screenID)
-                             : RTScreens.snapshotView(id: screenID) else {
-        FileHandle.standardError.write("unknown screen: \(screenID)\n".data(using: .utf8)!)
+    let view: AnyView?
+    switch mode {
+    case "--app": view = RTScreens.appSnapshotView(id: target)
+    case "--seq": view = RTScreens.seqSnapshotView(actions: target.split(separator: ",").map(String.init))
+    default: view = RTScreens.snapshotView(id: target)
+    }
+    guard let view else {
+        FileHandle.standardError.write("unknown screen: \(target)\n".data(using: .utf8)!)
         exit(1)
     }
     let renderer = ImageRenderer(content: view)

@@ -39,6 +39,14 @@ public enum RTScreens {
         guard let m = RTAppModel.seeded(id) else { return nil }
         return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(id)) })
     }
+
+    // 상태 파라미터 렌더: 임의 액션 시퀀스 적용 후 렌더 (비캐노니컬 상태 검증용)
+    @MainActor
+    public static func seqSnapshotView(actions: [String]) -> AnyView {
+        let m = RTAppModel()
+        actions.forEach { m.apply($0) }
+        return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(m.route.rawValue)) })
+    }
 }
 
 // 파이프라인 검증용 — 토큰 색 스와치 + 폰트 페이스 라인

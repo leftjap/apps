@@ -236,6 +236,42 @@ public final class RTAppModel: ObservableObject {
                             elapsed: Self.demoElapsed, pauseCount: 0)
     }
 
+    // ── 액션 문자열 적용 (rtshot --seq 상태 파라미터 렌더용) ──
+    public func apply(_ action: String) {
+        let parts = action.split(separator: ":", maxSplits: 1).map(String.init)
+        let arg = parts.count > 1 ? parts[1] : ""
+        switch parts[0] {
+        case "login": login()
+        case "nav": navScreenID(arg)
+        case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
+        case "closeSheet": closeSheet()
+        case "mode": RTMode(rawValue: arg).map { setMode($0) }
+        case "start": start()
+        case "cancelSession": cancelSession()
+        case "simFlip": simFlip()
+        case "switchTap": switchTap()
+        case "togglePause": togglePause()
+        case "endSession": endSession()
+        case "tapZone": tapZone()
+        case "save": saveSession()
+        case "delete": deleteSession()
+        case "continueReading": continueReading()
+        case "step": Int(arg).map { step($0) }
+        case "preset": Int(arg).map { preset($0) }
+        case "addTime": addTime()
+        case "rate": Int(arg).map { rate($0) }
+        case "saveFinished": saveFinished()
+        case "toggleAdd": toggleAdd(arg)
+        case "logout": logout()
+        case "deleteBook": deleteBook()
+        case "filter": RTLibraryFilter(rawValue: arg).map { setLibraryFilter($0) }
+        case "sort": RTLibrarySort(rawValue: arg).map { setLibrarySort($0) }
+        case "week": Int(arg).map { selectWeek($0) }
+        case "tick": tick()
+        default: break
+        }
+    }
+
     // ── 파생값 (app.js hmsParts·sessionMin) ──
     public var sessionMinutes: Int { (session?.elapsed ?? 0) / 60 }
 
