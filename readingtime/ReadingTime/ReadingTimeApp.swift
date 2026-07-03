@@ -23,10 +23,15 @@ struct ReadingTimeApp: App {
         let model = RTAppModel()
         model.sessionSeed = 0   // 실앱: 세션은 0초부터 (데모 시드 26:14 는 rtshot/rtapp 전용)
 
-        // 시뮬레이터 검증용: simctl launch ... -- --seq "login,simFlip" (rtapp 과 동일 문법)
+        // 시뮬레이터 검증용: simctl launch ... --seq "login,start" --sim-motion "1:0.95,8:0.2"
+        // (--seq = 상태 진입, --sim-motion = 합성 gravity.z 주입 — CoreMotion 없는 시뮬에서 flip 재현)
         let launchArgs = ProcessInfo.processInfo.arguments
         if let i = launchArgs.firstIndex(of: "--seq"), launchArgs.count > i + 1 {
             launchArgs[i + 1].split(separator: ",").forEach { model.apply(String($0)) }
+        }
+        var motionScript: String?
+        if let i = launchArgs.firstIndex(of: "--sim-motion"), launchArgs.count > i + 1 {
+            motionScript = launchArgs[i + 1]
         }
 
         let aladin = AladinClient()
@@ -42,7 +47,7 @@ struct ReadingTimeApp: App {
             }
         }
         _model = StateObject(wrappedValue: model)
-        _flip = StateObject(wrappedValue: FlipEngine(model: model))
+        _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
     }
 
     var body: some Scene {

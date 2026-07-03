@@ -4,7 +4,10 @@ import SwiftUI
 // render()/renderSheet() 대응. 화면 뷰는 model 을 주입받아 렌더만 한다 (nil = 정적 데모).
 public struct RTRootView: View {
     @ObservedObject var model: RTAppModel
-    private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    // static 필수: 인스턴스 프로퍼티면 부모 재평가로 struct 재생성 시마다 새 타이머가 만들어져
+    // 1초를 채우지 못하고 리셋된다 (시뮬 합성모션 검증에서 발견)
+    private static let sharedTicker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let ticker = RTRootView.sharedTicker
 
     public init(model: RTAppModel) {
         self.model = model
