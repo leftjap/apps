@@ -8,6 +8,7 @@ let package = Package(
     platforms: [.iOS(.v16), .macOS(.v13)],
     products: [
         .library(name: "ReadingTimeKit", targets: ["ReadingTimeKit"]),
+        .library(name: "RTViews", targets: ["RTViews"]),   // iOS 앱 타깃이 링크
     ],
     dependencies: [
         // 핸드오프 §3-② 확정 의존성 (이전 세션 CloudStore 스캐폴딩이 채택)

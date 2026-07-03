@@ -87,6 +87,9 @@ public final class RTAppModel: ObservableObject {
     // 데모 시드: 시안 데모 값(00:26:14)과 일치 — 세션 시작 시 26:14 경과로 시작
     public static let demoElapsed = 26 * 60 + 14
 
+    /// 세션 시작 경과 시드 — 데모(rtshot·rtapp)는 26:14, iOS 실앱은 0 으로 설정
+    public var sessionSeed = RTAppModel.demoElapsed
+
     public static let ratingLabels = [1: "아쉬웠어요", 2: "그저 그랬어요", 3: "좋았어요",
                                       4: "아주 좋았어요", 5: "최고였어요"] // 4★=시안 확정, 나머지 임시
 
@@ -230,10 +233,17 @@ public final class RTAppModel: ObservableObject {
         session = s
     }
 
-    // ── 세션 시작 (app.js startSession — 데모 시드) ──
+    // ── 세션 시작 (app.js startSession — 시드는 sessionSeed) ──
     public func startSession(_ mode: RTMode) {
         session = RTSession(mode: mode, status: .recording,
-                            elapsed: Self.demoElapsed, pauseCount: 0)
+                            elapsed: sessionSeed, pauseCount: 0)
+    }
+
+    /// wall-clock 재동기화 (iOS: 백그라운드 경과를 FlipEngine 이 실측 → UI 반영)
+    public func syncElapsed(_ seconds: Int) {
+        guard var s = session else { return }
+        s.elapsed = seconds
+        session = s
     }
 
     // ── 액션 문자열 적용 (rtshot --seq 상태 파라미터 렌더용) ──

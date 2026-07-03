@@ -384,3 +384,40 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
     }
 }
 
+
+// iOS 실앱 지원: 세션 시드(데모 26:14 vs 실앱 0초) + wall-clock 동기화
+@MainActor
+@Suite struct RTAppModelRealSessionTests {
+    @Test func sessionSeedZeroForRealApp() {
+        let m = RTAppModel()
+        m.sessionSeed = 0          // iOS 앱: 실측 시작
+        m.simFlip()
+        #expect(m.session?.elapsed == 0)
+        m.cancelSession()
+        m.setMode(.tap)
+        m.start()
+        #expect(m.session?.elapsed == 0)
+    }
+
+    @Test func demoSeedRemainsDefault() {
+        let m = RTAppModel()
+        m.simFlip()
+        #expect(m.session?.elapsed == RTAppModel.demoElapsed)
+    }
+
+    @Test func syncElapsedOverridesTickDrift() {
+        let m = RTAppModel()
+        m.sessionSeed = 0
+        m.simFlip()
+        m.tick(); m.tick()
+        m.syncElapsed(120)         // 백그라운드 복귀: wall-clock 재동기화
+        #expect(m.session?.elapsed == 120)
+        m.togglePause()
+        m.syncElapsed(121)         // 일시정지 중에도 동기화 허용
+        #expect(m.session?.elapsed == 121)
+
+        let m2 = RTAppModel()
+        m2.syncElapsed(50)         // 세션 없으면 no-op
+        #expect(m2.session == nil)
+    }
+}
