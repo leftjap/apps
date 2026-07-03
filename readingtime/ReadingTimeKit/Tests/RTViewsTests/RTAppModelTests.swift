@@ -360,3 +360,27 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(m3.added.contains("money"))
     }
 }
+
+// 12 정렬 — 프로토타입 오라클 (node localeCompare('ko') / JS 안정 정렬 실측값)
+@MainActor
+@Suite struct Screen12SortTests {
+    func keys(_ sort: RTLibrarySort) -> [String] {
+        let m = RTAppModel()
+        m.setLibrarySort(sort)
+        return Screen12Library(model: m).sortedFinished.map(\.key)
+    }
+
+    @Test func nameSortMatchesPrototype() {
+        #expect(keys(.name) == ["focus", "money", "same", "light", "farewell", "trend"])
+    }
+
+    @Test func ratingSortIsStableLikePrototype() {
+        // 동률(5·5, 4·4, 3·3)은 원본 순서 유지 — JS 안정 정렬과 동일해야 함
+        #expect(keys(.rating) == ["farewell", "light", "money", "same", "trend", "focus"])
+    }
+
+    @Test func recentKeepsOriginalOrder() {
+        #expect(keys(.recent) == ["money", "farewell", "trend", "light", "same", "focus"])
+    }
+}
+

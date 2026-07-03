@@ -156,7 +156,13 @@ public struct Screen12Library: View {
         switch sort {
         case .recent: return Self.finished
         case .name: return Self.finished.sorted { $0.title.compare($1.title, locale: Locale(identifier: "ko")) == .orderedAscending }
-        case .rating: return Self.finished.sorted { $0.rating > $1.rating }
+        case .rating:
+            // 동률은 원본 순서 유지 — Swift sort 는 안정성 비보장이라 인덱스로 명시 (프로토타입 JS 안정 정렬 정합)
+            return Self.finished.enumerated()
+                .sorted { $0.element.rating != $1.element.rating
+                    ? $0.element.rating > $1.element.rating
+                    : $0.offset < $1.offset }
+                .map(\.element)
         }
     }
 
