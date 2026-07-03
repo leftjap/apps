@@ -179,3 +179,28 @@ public struct TopRoundedOpenRect: Shape {
         return p
     }
 }
+
+// 원격 표지 이미지 (실데이터 책 — 알라딘 coverUrl). 로딩/실패 시 베이지 플레이스홀더.
+public struct RTRemoteCover: View {
+    let url: String
+    let size: CGSize
+    let radius: CGFloat
+
+    public init(url: String, size: CGSize, radius: CGFloat = 6) {
+        self.url = url
+        self.size = size
+        self.radius = radius
+    }
+
+    public var body: some View {
+        AsyncImage(url: URL(string: url)) { phase in
+            if case .success(let img) = phase {
+                img.resizable().aspectRatio(contentMode: .fill)
+            } else {
+                Rectangle().fill(Color(hex: 0xE8E2D2))
+            }
+        }
+        .frame(width: size.width, height: size.height)
+        .clipShape(RoundedRectangle(cornerRadius: radius))
+    }
+}

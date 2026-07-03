@@ -114,6 +114,42 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.streakDays == 2)
     }
 
+    @Test func perBookTotalsAndRecent() {
+        let m = liveModel(now: day("2026-07-04", hour: 23))
+        m.userData = RTUserData(sessions: [
+            .init(isbn: "A", mode: "flip", seconds: 300, endedAt: day("2026-07-04", hour: 9), pauseCount: 0),
+            .init(isbn: "A", mode: "tap", seconds: 400, endedAt: day("2026-07-02"), pauseCount: 0),
+            .init(isbn: "B", mode: "flip", seconds: 100, endedAt: day("2026-07-01"), pauseCount: 0),
+        ])
+        #expect(m.totalSeconds(isbn: "A") == 700)
+        #expect(m.sessionCount(isbn: "A") == 2)
+        let r = m.recentRecords(2)
+        #expect(r.count == 2)
+        #expect(r[0].endedAt == day("2026-07-04", hour: 9))   // 최신순
+    }
+
+    @Test func weekBarRatiosNormalized() {
+        let m = liveModel(now: day("2026-07-04", hour: 23))   // 토
+        m.userData = RTUserData(sessions: [
+            .init(isbn: nil, mode: "flip", seconds: 600, endedAt: day("2026-06-29"), pauseCount: 0), // 월
+            .init(isbn: nil, mode: "flip", seconds: 300, endedAt: day("2026-07-04"), pauseCount: 0), // 토
+        ])
+        let bars = m.weekBarRatios
+        #expect(bars.count == 7)
+        #expect(bars[0] == 1.0)
+        #expect(bars[5] == 0.5)
+        #expect(bars[2] == 0)
+        #expect(m.weekTodayIndex == 5)
+    }
+
+    @Test func formatHelpers() {
+        #expect(RTAppModel.hmString(26_760) == "7:26")
+        #expect(RTAppModel.hmString(0) == "0:00")
+        let now = day("2026-07-04", hour: 23)
+        #expect(RTAppModel.recentWhen(day("2026-07-04", hour: 14), now: now) == "오늘 14:00")
+        #expect(RTAppModel.recentWhen(day("2026-05-20"), now: now) == "5.20")
+    }
+
     @Test func streakZeroWhenNoRecent() {
         let m = liveModel(now: day("2026-07-04"))
         m.userData = RTUserData(sessions: [

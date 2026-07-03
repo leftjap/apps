@@ -34,7 +34,13 @@ public struct RTRootView: View {
     @ViewBuilder private var screen: some View {
         switch model.route {
         case .login: Screen01Login(model: model)
-        case .home: Screen02Home(model: model)
+        case .home:
+            // 실앱(userData 주입)에서 읽는 중 책이 없으면 빈 홈(14) — 데모 경로는 항상 02
+            if model.userData != nil, model.currentBook == nil {
+                Screen14EmptyHome(model: model)
+            } else {
+                Screen02Home(model: model)
+            }
         case .flipWait: Screen03FlipWait(model: model)
         case .flipTimer: Screen04FlipPaused(model: model)
         case .tapTimer: Screen05TapRecording(model: model)

@@ -142,6 +142,54 @@ public final class RTAppModel: ObservableObject {
         return d.sessions.filter { week.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
     }
 
+    public func totalSeconds(isbn: String) -> Int {
+        userData?.sessions.filter { $0.isbn == isbn }.reduce(0) { $0 + $1.seconds } ?? 0
+    }
+
+    public func sessionCount(isbn: String) -> Int {
+        userData?.sessions.filter { $0.isbn == isbn }.count ?? 0
+    }
+
+    /// 최신순 세션 기록
+    public func recentRecords(_ limit: Int) -> [RTSessionRecord] {
+        Array((userData?.sessions ?? []).sorted { $0.endedAt > $1.endedAt }.prefix(limit))
+    }
+
+    /// 이번 주(월~일) 일별 비율 (최댓값=1, 기록 없으면 0)
+    public var weekBarRatios: [Double] {
+        var per = [Double](repeating: 0, count: 7)
+        guard let d = userData, let week = cal.dateInterval(of: .weekOfYear, for: now()) else { return per }
+        for s in d.sessions where week.contains(s.endedAt) {
+            let idx = cal.dateComponents([.day], from: week.start, to: cal.startOfDay(for: s.endedAt)).day ?? 0
+            if (0..<7).contains(idx) { per[idx] += Double(s.seconds) }
+        }
+        let mx = per.max() ?? 0
+        return mx > 0 ? per.map { $0 / mx } : per
+    }
+
+    /// 오늘의 주간 인덱스 (0=월)
+    public var weekTodayIndex: Int {
+        guard let week = cal.dateInterval(of: .weekOfYear, for: now()) else { return 0 }
+        return min(6, max(0, cal.dateComponents([.day], from: week.start, to: cal.startOfDay(for: now())).day ?? 0))
+    }
+
+    /// "7:26" (시:분)
+    public static func hmString(_ sec: Int) -> String {
+        "\(sec / 3600):" + String(format: "%02d", sec / 60 % 60)
+    }
+
+    /// 최근 기록 시점 표기 — 오늘이면 "오늘 HH:mm", 아니면 "M.d"
+    public static func recentWhen(_ date: Date, now: Date) -> String {
+        let c = Calendar(identifier: .gregorian)
+        if c.isDate(date, inSameDayAs: now) {
+            let f = DateFormatter()
+            f.locale = Locale(identifier: "en_US_POSIX")
+            f.dateFormat = "HH:mm"
+            return "오늘 " + f.string(from: date)
+        }
+        return "\(c.component(.month, from: date)).\(c.component(.day, from: date))"
+    }
+
     /// 연속 기록일 — 오늘 기록 없으면 어제까지의 연속을 유지 표시
     public var streakDays: Int {
         guard let d = userData, !d.sessions.isEmpty else { return 0 }
