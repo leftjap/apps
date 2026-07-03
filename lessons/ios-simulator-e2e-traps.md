@@ -1,0 +1,46 @@
+# iOS 시뮬레이터 E2E 자동화 함정 (readingtime, 2026-07-04 실측)
+
+## 1. terminate 후 무인자 자동 재기동 → launch 인자 소실
+CLBackgroundActivitySession(위치 keep-alive)을 한 번이라도 등록한 앱은 `simctl terminate` 후
+**0.5초 내에 시스템(locationd)이 인자 없이 재기동**한다. 이어지는 `simctl launch` 는 그 기존
+pid 를 반환하며 런치 인자를 조용히 버린다 (`--terminate-running-process` 도 경쟁에서 짐).
+- **증상**: `--seq`/`--sim-motion` 미적용, 앱이 홈 라우트로 뜸. 에러 없음.
+- **판정**: 매 launch 후 `ps aux | grep <app>` 로 인자 실재 확인 의무 (스크린샷보다 먼저).
+- **해법**: `simctl privacy <UD> reset location <bundle>` + **시뮬 재부팅** → 재기동 루프 소멸.
+
+## 2. 잠금 후 ~30초에 앱 서스펜드 — 시뮬은 keep-alive 검증 불가
+위치 권한을 허용해도 시뮬의 CLBackgroundActivitySession + CLLocationUpdate.liveUpdates 는
+(정적 시뮬 위치라 스트림이 지속되지 않아) 백그라운드 유예 ~30초를 넘기지 못한다 (2회 재현).
+잠금 +16초 이벤트는 발화, +37초는 미발화. **긴 잠금 keep-alive 는 실기기에서만 검증 가능.**
+서스펜드 중 놓친 모션 이벤트는 프로세스가 깨어나는 순간 지연 발화한다 (오판 주의).
+
+## 3. System Events `click at` 은 SwiftUI onTapGesture 를 못 누른다
+TextField 포커스·시스템 다이얼로그 버튼(UIKit)은 눌리지만 SwiftUI `.onTapGesture` 는 무반응.
+**HID 레벨 CGEvent 합성으로 해결** (accessibility 권한만 있으면 됨):
+```swift
+// click.swift — swift click.swift <x> <y>
+import CoreGraphics; import Foundation
+let x = Double(CommandLine.arguments[1])!, y = Double(CommandLine.arguments[2])!
+let pt = CGPoint(x: x, y: y)
+CGEvent(mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: pt, mouseButton: .left)?.post(tap: .cghidEventTap)
+usleep(80_000)
+CGEvent(mouseEventSource: nil, mouseType: .leftMouseDown, mouseCursorPosition: pt, mouseButton: .left)?.post(tap: .cghidEventTap)
+usleep(70_000)
+CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: pt, mouseButton: .left)?.post(tap: .cghidEventTap)
+```
+
+## 4. 좌표 매핑: 창 AXGroup = 디바이스 포인트 1:1
+`tell process "Simulator" to tell window <이름> to get {position,size} of group 1`
+→ (예: 795,128 / 390×844). 디바이스 포인트 (x,y) → 화면 (795+x, 128+y). 창 이동 후 재측정.
+스크린샷(@3x px) → 포인트는 /3. 메뉴(Device>Lock/Home, Edit>Paste)는 menu item 클릭이 안정적.
+
+## 5. 시뮬 TextField 한글 입력 — keystroke·pbcopy 모두 실패
+`simctl pbcopy` 는 한글 인코딩 에러, System Events keystroke 는 IME 미경유라 무효,
+호스트 pbcopy + Cmd+V/Edit>Paste 도 미반영 (Return 만 전달됨). ASCII 쿼리로 우회하거나
+검색 제출은 기본 쿼리 + Return 으로 검증.
+
+## 6. 무료 Personal 팀: Time Sensitive Notifications capability 불가
+`com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
+실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
+표시가 되므로 시뮬 성공 ≠ 실기기 자격. 코드의 `interruptionLevel = .timeSensitive` 자체는
+무자격 시 시스템이 일반 알림으로 강등하므로 남겨도 무해.
