@@ -47,10 +47,16 @@ struct ReadingTimeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RTRootView(model: model)
-                .rtMotion(true)
-                .frame(width: 390, height: 844)
-                .ignoresSafeArea()
+            // 시안 뷰포트 390×844 고정 — 작은 화면(iPhone 11 Pro 375×812 등)은 비율 유지 축소·중앙 배치
+            GeometryReader { geo in
+                let scale = min(1, min(geo.size.width / 390, geo.size.height / 844))
+                RTRootView(model: model)
+                    .rtMotion(true)
+                    .frame(width: 390, height: 844)
+                    .scaleEffect(scale)
+                    .position(x: geo.size.width / 2, y: geo.size.height / 2)
+            }
+            .ignoresSafeArea()
                 .task { await cloud.restore() }
                 .onReceive(model.$route) { route in
                     // 엎기 대기·타이머 화면에서만 센서 + keep-alive 가동
