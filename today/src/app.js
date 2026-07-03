@@ -150,6 +150,9 @@ function mountSheetDiag() {
   const probe = document.createElement('div');
   probe.style.cssText = 'position:fixed;left:0;bottom:0;width:1px;height:0;padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none;';
   document.body.appendChild(probe);
+  const probeTop = document.createElement('div');
+  probeTop.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:0;padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none;';
+  document.body.appendChild(probeTop);
   const el = document.createElement('div');
   el.id = 'sheetDiag';
   el.style.cssText = 'position:fixed;left:0;right:0;bottom:1px;z-index:99999;font:10px ui-monospace,monospace;color:#a49e96;text-align:center;pointer-events:none;';
@@ -158,9 +161,10 @@ function mountSheetDiag() {
     const convo = document.getElementById('convoPanel');
     const r = convo && document.body.dataset.convo === '1' ? convo.getBoundingClientRect() : null;
     const sab = Math.round(probe.getBoundingClientRect().height);
+    const sat = Math.round(probeTop.getBoundingClientRect().height);
     const bid = (typeof __BUILD_ID__ !== 'undefined' ? __BUILD_ID__ : 'dev').slice(0, 7);
-    el.textContent = `${bid} ih${window.innerHeight} vv${Math.round(window.visualViewport?.height ?? 0)} sab${sab}`
-      + (r ? ` cT${Math.round(r.top)} cH${Math.round(r.height)} cB${Math.round(r.bottom)}` : ' c-');
+    el.textContent = `${bid} sc${screen.width}x${screen.height} iw${window.innerWidth} ih${window.innerHeight} sat${sat} sab${sab}`
+      + (r ? ` cT${Math.round(r.top)}` : ' c-');
   };
   upd();
   setInterval(upd, 1000);
