@@ -19,11 +19,12 @@ public struct FlowCover: View {
         let flowTop: CGFloat
         let ruleWidth: CGFloat?  // nil = 미표시
         let authorKR: CGFloat?   // nil = 미표시
+        let centered: Bool       // 09: 내용 수직 중앙
         public init(width: CGFloat, height: CGFloat, radius: CGFloat = 4, spine: CGFloat = 4,
                     frameInset: CGFloat = 6, padTop: CGFloat = 13, padBottom: CGFloat = 10,
                     authorEN: CGFloat? = 4.5, titleSize: CGFloat = 26, titleTop: CGFloat = 15,
                     flowSize: CGFloat = 6, flowTop: CGFloat = 5,
-                    ruleWidth: CGFloat? = 22, authorKR: CGFloat? = 6) {
+                    ruleWidth: CGFloat? = 22, authorKR: CGFloat? = 6, centered: Bool = false) {
             self.width = width
             self.height = height
             self.radius = radius
@@ -38,6 +39,7 @@ public struct FlowCover: View {
             self.flowTop = flowTop
             self.ruleWidth = ruleWidth
             self.authorKR = authorKR
+            self.centered = centered
         }
     }
 
@@ -54,6 +56,7 @@ public struct FlowCover: View {
                 .stroke(Color(hex: 0x7A602C, alpha: 0.4), lineWidth: 1)
                 .padding(c.frameInset)
             VStack(spacing: 0) {
+                if c.centered { Spacer(minLength: 0) }
                 if let en = c.authorEN {
                     Text("MIHALY CSIKSZENTMIHALYI")
                         .font(.mono(en, 600)).tracking(en * 0.24)
@@ -76,6 +79,7 @@ public struct FlowCover: View {
                         .foregroundColor(Color(hex: 0x7C6A42))
                         .padding(.top, 5)
                 }
+                if c.centered { Spacer(minLength: 0) }
             }
             .frame(maxWidth: .infinity)
             .padding(EdgeInsets(top: c.padTop, leading: 8, bottom: c.padBottom, trailing: 8))

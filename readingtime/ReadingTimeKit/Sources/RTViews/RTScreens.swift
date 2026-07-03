@@ -12,6 +12,9 @@ public enum RTScreens {
         case "04": return AnyView(Screen04FlipPaused())
         case "05": return AnyView(Screen05TapRecording())
         case "06": return AnyView(Screen06Done())
+        case "07": return AnyView(SheetSnapshot(base: Screen02Home(), dim: Color(hex: 0x17120C), dimOpacity: 0.4, sheet: Sheet07AddTime()))
+        case "08": return AnyView(Screen08Detail())
+        case "09": return AnyView(SheetSnapshot(base: Screen08Detail(), dim: Color(hex: 0x191510), dimOpacity: 0.42, sheet: Sheet09Finish()))
         case "14": return AnyView(Screen14EmptyHome())
         default: return nil
         }
