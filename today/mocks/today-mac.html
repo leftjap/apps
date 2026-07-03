@@ -3629,7 +3629,12 @@
       transform: translateY(calc(100% - var(--convo-peek)));
       transition: transform .32s cubic-bezier(.32, .72, 0, 1);
     }
-    body[data-convo="1"] .convo.is-open { transform: translateY(0); }
+    /* 펼침 — 키보드 열림 시(--kb = 키보드 높이, visualViewport IIFE 가 세팅) 시트를 키보드 위로
+       부착하고 높이를 줄여 상단바+본문 일부(160px)가 계속 보이게 (아이폰 피드백 2026-07-03) */
+    body[data-convo="1"] .convo.is-open {
+      transform: translateY(calc(-1 * var(--kb, 0px)));
+      height: min(64dvh, calc(100dvh - var(--kb, 0px) - 160px));
+    }
     /* 스크롤 다운 시 얇은 탭 숨김 (펼침 상태에는 미적용) */
     body[data-convo="1"] .convo.is-tab-hidden:not(.is-open) { transform: translateY(112%); }
     /* 그래버 — 기존 핸들 그대로 (44×4.5 r999 --line), 접힘·펼침 동일 */
@@ -5274,6 +5279,27 @@
     mv.addEventListener('scroll', evaluate, { passive: true });
     // 데스크톱 전환·글 이동 시 잔존 숨김 해제
     mq.addEventListener?.('change', (e) => { if (!e.matches) convo.classList.remove('is-tab-hidden'); });
+  })();
+
+  // 댓글 시트 — iOS 키보드 열림 시 시트를 키보드 위로 축소·부착 (본문 일부 노출 유지).
+  //  키보드는 layout viewport 를 안 줄이고 visualViewport 만 줄이므로, 그 차(--kb)만큼
+  //  시트를 translate + 높이 축소. iOS 의 자동 pan 은 scrollTo(0,0) 으로 되돌림.
+  (function(){
+    const vv = window.visualViewport;
+    const convo = document.getElementById('convoPanel');
+    if (!vv || !convo) return;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const apply = () => {
+      if (!mq.matches || !convo.classList.contains('is-open')) {
+        convo.style.removeProperty('--kb');
+        return;
+      }
+      const kb = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      convo.style.setProperty('--kb', kb + 'px');
+      if (kb > 0) window.scrollTo(0, 0);   // 컴포저가 이미 키보드 위 — iOS pan 불필요
+    };
+    vv.addEventListener('resize', apply);
+    vv.addEventListener('scroll', apply);
   })();
 
   // 편집 도구 토글 — 클릭시 상단 툴바 슬라이드 다운 / 올라감
