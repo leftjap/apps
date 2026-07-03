@@ -77,22 +77,18 @@ public struct RTChrome: View {
     }
 
     var batteryIcon: some View {
-        ZStack {
+        ZStack(alignment: .topLeading) {
             RoundedRectangle(cornerRadius: 3)
                 .stroke(fg.opacity(0.4), lineWidth: 1)
                 .frame(width: 21, height: 11)
-                .offset(x: -2)
+                .offset(x: 0.5, y: 0.5)
             RoundedRectangle(cornerRadius: 1.6)
                 .fill(fg)
                 .frame(width: 14.76, height: 8)
-                .offset(x: -2 - (21 - 14.76) / 2 + 1.5)
-            Path { p in
-                p.addPath(RTSVG.path("M23.5 4v4c.9-.35 1.5-1.1 1.5-2s-.6-1.65-1.5-2z"))
-            }
-            .fill(fg.opacity(0.5))
-            .frame(width: 26, height: 12)
-            .offset(x: -13, y: -6)
+                .offset(x: 2, y: 2)
+            Path { $0.addPath(RTSVG.path("M23.5 4v4c.9-.35 1.5-1.1 1.5-2s-.6-1.65-1.5-2z")) }
+                .fill(fg.opacity(0.5))
         }
-        .frame(width: 26, height: 12)
+        .frame(width: 26, height: 12, alignment: .topLeading)
     }
 }
