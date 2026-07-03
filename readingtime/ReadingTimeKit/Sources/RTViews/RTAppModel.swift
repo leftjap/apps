@@ -96,6 +96,8 @@ public final class RTAppModel: ObservableObject {
     // ── 통합 훅 (rtapp/iOS 앱이 배선: CloudStore·AladinClient) ──
     /// 저장하기 시 (모드, 경과초) — CloudStore.addPaperSeconds 배선용. 삭제는 미발화.
     public var onSessionSaved: ((RTMode, Int) -> Void)?
+    /// 로그인(true)/로그아웃(false) — 개인 앱: 앱이 UserDefaults 로 영속해 1회 로그인 유지
+    public var onAuthChange: ((Bool) -> Void)?
     /// 검색 프로바이더 (알라딘 라이브) — nil 이면 시트 13 은 시안 데모 rows 유지
     public var searchProvider: ((String) async throws -> [RTBookHit])?
     @Published public var searchQuery = "몰입"
@@ -137,7 +139,10 @@ public final class RTAppModel: ObservableObject {
     public func closeSheet() { sheet = nil }
 
     // ── 액션 (app.js data-act 대응) ──
-    public func login() { nav(.home) }
+    public func login() {
+        nav(.home)
+        onAuthChange?(true)
+    }
 
     public func setMode(_ m: RTMode) { mode = m }
 
@@ -216,7 +221,11 @@ public final class RTAppModel: ObservableObject {
     }
 
     // ── 설정·책 메뉴 ──
-    public func logout() { closeSheet(); nav(.login) }
+    public func logout() {
+        closeSheet()
+        nav(.login)
+        onAuthChange?(false)
+    }
     public func deleteBook() { closeSheet(); nav(.library) }
 
     // ── 12 서재 ──

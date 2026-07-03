@@ -24,6 +24,15 @@ struct ReadingTimeApp: App {
         let model = RTAppModel()
         model.sessionSeed = 0   // 실앱: 세션은 0초부터 (데모 시드 26:14 는 rtshot/rtapp 전용)
 
+        // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
+        model.onAuthChange = {
+            UserDefaults.standard.set($0, forKey: "rt.loggedIn")
+            UserDefaults.standard.synchronize()   // 즉시 플러시 — 강제 종료에도 로그인 상태 유지
+        }
+        if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+            model.nav(.home)
+        }
+
         // 시뮬레이터 검증용: simctl launch ... --seq "login,start" --sim-motion "1:0.95,8:0.2"
         // (--seq = 상태 진입, --sim-motion = 합성 gravity.z 주입 — CoreMotion 없는 시뮬에서 flip 재현)
         let launchArgs = ProcessInfo.processInfo.arguments

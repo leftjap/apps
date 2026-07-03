@@ -466,3 +466,29 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(s.elapsed(at: t0.addingTimeInterval(999)) == 130)
     }
 }
+
+// 로그인 상태 영속(개인 앱: 1회 로그인 유지, 로그아웃 시까지)
+@MainActor
+@Suite struct RTAppModelAuthPersistTests {
+    @Test func loginAndLogoutFireAuthChange() {
+        let m = RTAppModel()
+        var events: [Bool] = []
+        m.onAuthChange = { events.append($0) }
+        m.login()
+        #expect(events == [true])
+        m.openSheet(.settings)
+        m.logout()
+        #expect(events == [true, false])
+    }
+
+    @Test func navigationDoesNotFireAuthChange() {
+        let m = RTAppModel()
+        var fired = 0
+        m.onAuthChange = { _ in fired += 1 }
+        m.login()
+        m.nav(.library)
+        m.nav(.home)
+        m.navScreenID("07")
+        #expect(fired == 1)   // login 1회만
+    }
+}
