@@ -21,6 +21,7 @@ final class FlipEngine: ObservableObject {
     private let queue = OperationQueue()
     private var detector = FlipDetector()
     private var session = WallClockSession()
+    private let signals = RTFlipSignals()
 
     // 합성 모션 스크립트 (시뮬레이터/검증 전용)
     private let script: [(t: TimeInterval, z: Double)]
@@ -33,6 +34,7 @@ final class FlipEngine: ObservableObject {
     }
 
     func startMonitoring() {
+        signals.prepare()
         if !script.isEmpty {
             startScript()
             return
@@ -80,12 +82,12 @@ final class FlipEngine: ObservableObject {
             if model.route == .flipWait {
                 session.start(at: now)
                 model.simFlip()
-                haptic(.start)   // 화면이 안 보이는 상태의 "기록 시작" 신호
+                signals.signalStart(elapsed: 0)   // 화면이 안 보이는 상태의 "기록 시작" 신호
             } else if model.route == .flipTimer, model.session?.mode == .flip,
                       model.session?.status == .paused {
                 session.resume(at: now)
                 model.togglePause()   // 다시 엎으면 이어서
-                haptic(.start)
+                signals.signalStart(elapsed: session.elapsed(at: now))
             }
         case .up:
             if model.route == .flipTimer, model.session?.mode == .flip,
@@ -93,18 +95,8 @@ final class FlipEngine: ObservableObject {
                 session.pause(at: now)
                 model.togglePause()   // 들어올림 → 일시정지
                 model.syncElapsed(session.elapsed(at: now))
-                haptic(.pause)
+                signals.signalPause(elapsed: session.elapsed(at: now))
             }
-        }
-    }
-
-    // ── 햅틱: 시작/재개 = 성공 노티(또렷한 이중 톡), 일시정지 = 무거운 단일 임팩트 ──
-    // 주의: 잠금/백그라운드 상태에선 시스템이 햅틱을 막을 수 있음(실기기 확인 대상)
-    private enum HapticKind { case start, pause }
-    private func haptic(_ kind: HapticKind) {
-        switch kind {
-        case .start: UINotificationFeedbackGenerator().notificationOccurred(.success)
-        case .pause: UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         }
     }
 

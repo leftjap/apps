@@ -44,10 +44,12 @@ if !mode.isEmpty && outPath.isEmpty {
 Task { @MainActor in
     let view: AnyView?
     var size = ProposedViewSize(width: 390, height: 844)
+    var scale: CGFloat = 2
     switch mode {
     case "--app": view = RTScreens.appSnapshotView(id: target)
     case "--seq": view = RTScreens.seqSnapshotView(actions: target.split(separator: ",").map(String.init))
     case "--la": view = RTScreens.liveActivityView(paused: target == "paused"); size = ProposedViewSize(width: 390, height: 96)
+    case "--icon": view = RTScreens.appIconView(); size = ProposedViewSize(width: 1024, height: 1024); scale = 1
     default: view = RTScreens.snapshotView(id: target)
     }
     guard let view else {
@@ -55,7 +57,7 @@ Task { @MainActor in
         exit(1)
     }
     let renderer = ImageRenderer(content: view)
-    renderer.scale = 2
+    renderer.scale = scale
     renderer.proposedSize = size
     guard let cg = renderer.cgImage else {
         FileHandle.standardError.write("render 실패\n".data(using: .utf8)!)

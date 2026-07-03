@@ -1,6 +1,7 @@
 import Foundation
 import ActivityKit
 import RTViews
+import os.log
 
 // 잠금 화면 Live Activity 수명 관리 — 엎기 세션과 동기화.
 // 기록 중엔 startedAt(=now−elapsed) 기준으로 시스템이 잠금 화면에서 초를 자동으로 굴리고,
@@ -28,12 +29,20 @@ final class LiveActivityController {
         if let activity {
             Task { await activity.update(ActivityContent(state: state, staleDate: nil)) }
         } else {
-            activity = try? Activity.request(
-                attributes: RTReadingActivityAttributes(bookTitle: "몰입"),
-                content: ActivityContent(state: state, staleDate: nil)
-            )
+            do {
+                let a = try Activity.request(
+                    attributes: RTReadingActivityAttributes(bookTitle: "몰입"),
+                    content: ActivityContent(state: state, staleDate: nil)
+                )
+                activity = a
+                Self.log.info("live activity 등록 성공 id=\(a.id, privacy: .public) enabled=\(ActivityAuthorizationInfo().areActivitiesEnabled, privacy: .public)")
+            } catch {
+                Self.log.error("live activity 등록 실패: \(String(describing: error), privacy: .public)")
+            }
         }
     }
+
+    private static let log = Logger(subsystem: "com.leftjap.readingtime", category: "liveactivity")
 
     func end() {
         lastKey = nil

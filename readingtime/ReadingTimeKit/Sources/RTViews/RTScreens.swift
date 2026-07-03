@@ -48,6 +48,21 @@ public enum RTScreens {
         return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(m.route.rawValue)) })
     }
 
+    // 앱 아이콘 (1024×1024) — 로그인 로고와 동일 문법: ctaGrad + 북 글리프 (마스킹은 iOS 가)
+    @MainActor
+    public static func appIconView() -> AnyView {
+        AnyView(
+            ZStack {
+                Rectangle().fill(RT.ctaGrad(CGSize(width: 1024, height: 1024)))
+                RTIcon([
+                    "M12 5.8C9.6 4.2 6.5 3.8 3.6 4.5v14.2c2.9-.7 6-.3 8.4 1.3 2.4-1.6 5.5-2 8.4-1.3V4.5c-2.9-.7-6-.3-8.4 1.3z",
+                    "M12 5.8v14.2",
+                ], size: 620, stroke: RT.ctaText, lineWidth: 1.6, cap: .butt, join: .round)
+            }
+            .frame(width: 1024, height: 1024)
+        )
+    }
+
     // 잠금 화면 Live Activity 배너 렌더 (위젯이 쓰는 그 뷰) — la-rec / la-paused.
     // startedAt 은 고정 기준시각(rtshot 은 Date.now 불가) → 기록중은 26:14 경과로 표시.
     @MainActor
