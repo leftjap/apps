@@ -1,21 +1,29 @@
 # 빌드·실기기 검증 절차
 
-목표: **flip 자동 감지**가 iPhone 17 실기기에서 되는지, 특히 **잠금 상태에서 시간이 정확히 쌓이는지** 확인.
+목표: **flip 자동 감지**가 실기기에서 되는지, 특히 **잠금 상태에서 시간이 정확히 쌓이는지** 확인.
 무료 Apple ID(Personal Team) 서명 기준.
 
-프로젝트는 이미 있음: `ReadingTime.xcodeproj` (시뮬레이터 빌드·실행 검증 완료 — 2026-07-03).
+**진행 상태 (2026-07-03)**: 서명(Team `FNXM5SF6PX`)·기기 페어링·설치·실행까지 완료 —
+검증 기기 iPhone 11 Pro(iPhone12,3, 375×812pt, iOS 18.7.3), 연결은 로컬 네트워크 터널
+(`devicectl` transportType=localNetwork 실측 — 페어링 후 케이블 불필요). 남은 것 = §4 flip 시나리오.
 
-## 1. 서명 (사용자 액션 — 1회)
+## 1. 서명 — ✅ 완료됨 (새 맥/계정에서 다시 할 때만)
 1. `open ReadingTime.xcodeproj`
-2. Xcode → Settings → Accounts → `+` → 본인 Apple ID 로그인 (Personal Team 자동 생성)
-3. 타깃 ReadingTime → Signing & Capabilities → Team = 본인 Personal Team
-   - Bundle Identifier `com.leftjap.readingtime` 가 충돌하면 뒤에 숫자 등 붙여 유니크하게
+2. Xcode → Settings → Accounts → `+` → Apple ID 로그인 (Personal Team 자동 생성)
+3. 타깃 ReadingTime → Signing & Capabilities → Team 선택 (DEVELOPMENT_TEAM 은 pbxproj 에 기록됨)
    - Background Modes(Location updates)·위치 문구·URL 스킴(readingtime)은 **Info.plist 에 이미 설정됨**
 4. ※ Push Notifications·App Groups 등 추가 금지 (무료 Personal Team 서명 실패 원인)
 
-## 2. 기기 연결·실행
+## 2. 기기 연결·실행 — ✅ 완료됨 (절차 기록)
 - iPhone: 설정 → 개인정보 보호 및 보안 → **개발자 모드 ON** → 재부팅
-- 케이블 연결 → Xcode 상단 기기 선택 → **Run**
+- 첫 페어링만 케이블(신뢰 탭) — 이후 무선. CLI:
+  ```sh
+  export DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+  xcodebuild -project ReadingTime.xcodeproj -scheme ReadingTime \
+    -destination "platform=iOS,id=<UDID>" -allowProvisioningUpdates build
+  xcrun devicectl device install app --device <UDID> <DerivedData>/Debug-iphoneos/ReadingTime.app
+  xcrun devicectl device process launch --device <UDID> com.leftjap.readingtime
+  ```
 - 첫 실행: "신뢰하지 않는 개발자" → iPhone 설정 → 일반 → VPN 및 기기 관리 → 신뢰
 - 위치 권한: **앱을 사용하는 동안 허용** (03/04 화면 진입 시 요청됨)
 

@@ -67,3 +67,6 @@ study/seeds/sources/
 # Swift Package Manager 빌드 산출물 (readingtime ReadingTimeKit)
 .build/
 readingtime/ReadingTimeKit/Sources/RTViews/Fonts/
+# Xcode 개인 상태
+**/xcuserdata/
+**/.swiftpm/
