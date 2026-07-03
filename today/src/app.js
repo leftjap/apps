@@ -55,6 +55,7 @@ export function showAuthenticated() {
   if (!_mocksMounted) {
     injectMocks();
     stampBuildId();
+    syncViewportGap();
     mountSheetDiag();
     _mocksMounted = true;
   }
@@ -139,6 +140,28 @@ function stampBuildId() {
   tag.className = 'sb__build';
   tag.textContent = `build ${id}`;
   wrap.appendChild(tag);
+}
+
+/**
+ * iOS 26 standalone 뷰포트 결손 보정 (2026-07-03 실기기 진단 sc375x812·ih768·sat44).
+ * 홈 화면 웹앱에서 layout viewport 가 상태바 높이만큼 짧게 잡혀(812−44=768) 화면 하단
+ * 44pt 가 웹뷰 밖 흰 띠가 됨 — fixed bottom:0 요소(댓글 시트·드로어·FAB)가 거기 못 닿음.
+ * 결손 = screen.height − innerHeight 를 --vp-gap 으로 노출, CSS 가 그만큼 아래로 내려 붙임.
+ * 정상 기기(결손 0)·비 standalone·가로모드(결손 >80)는 0 — 무영향.
+ */
+function syncViewportGap() {
+  const standalone = window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+  const apply = () => {
+    let gap = 0;
+    if (standalone) {
+      const raw = (window.screen?.height || 0) - window.innerHeight;
+      if (raw > 0 && raw <= 80) gap = raw;
+    }
+    document.documentElement.style.setProperty('--vp-gap', `${gap}px`);
+  };
+  apply();
+  window.addEventListener('resize', apply);
 }
 
 // [임시 진단 2026-07-03 — 실기기 댓글 시트 지오메트리 규명 후 제거]

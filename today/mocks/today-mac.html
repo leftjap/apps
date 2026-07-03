@@ -1485,7 +1485,7 @@
   /* — Day popover (캘린더 셀 클릭 — 중앙 모달 + backdrop overlay) — */
   .exp-day-popover-overlay {
     position: fixed;
-    inset: 0;
+    inset: 0 0 calc(-1 * var(--vp-gap, 0px)) 0;
     z-index: 49;
     background: rgba(20, 18, 14, 0.34);
     backdrop-filter: blur(2px);
@@ -3516,7 +3516,7 @@
   /* drawer backdrop — 모바일 한정 노출 */
   .drawer-backdrop {
     position: fixed;
-    inset: 0;
+    inset: 0 0 calc(-1 * var(--vp-gap, 0px)) 0;
     background: rgba(20, 18, 14, 0.32);
     backdrop-filter: blur(2px);
     -webkit-backdrop-filter: blur(2px);
@@ -3548,8 +3548,9 @@
     .sidebar {
       position: fixed;
       left: 0; top: 0;
-      /* 100dvh — iOS dynamic toolbar/home-indicator 영역 포함 정확 viewport (100vh 는 미포함) */
-      height: 100dvh;
+      /* 100dvh — iOS dynamic toolbar/home-indicator 영역 포함 정확 viewport (100vh 는 미포함).
+         +--vp-gap: iOS 26 standalone 뷰포트 결손 보정 (물리 바닥까지) */
+      height: calc(100dvh + var(--vp-gap, 0px));
       width: calc(100% - 72px);
       max-width: 340px;
       margin: 0;
@@ -3576,8 +3577,8 @@
       padding: env(safe-area-inset-top) 16px 0;
       min-width: 0;
     }
-    /* 탭 없는 화면(새 글·빈 카테고리 등) 기본 하단 인셋 */
-    #mainView { padding-bottom: calc(24px + env(safe-area-inset-bottom)); }
+    /* 탭 없는 화면(새 글·빈 카테고리 등) 기본 하단 인셋. −-vp-gap: 결손 띠가 시각 인셋을 대신함 */
+    #mainView { padding-bottom: calc(24px + env(safe-area-inset-bottom) - var(--vp-gap, 0px)); }
     body[data-drawer-open] .main {
       pointer-events: none;
     }
@@ -3612,7 +3613,8 @@
     .main__body { flex-direction: column; gap: 0; }
     body[data-convo="1"] .convo {
       position: fixed;
-      left: 0; right: 0; bottom: 0;
+      /* bottom: viewport 결손(--vp-gap, iOS 26 standalone) 만큼 내려 물리 화면 바닥에 붙임 */
+      left: 0; right: 0; bottom: calc(-1 * var(--vp-gap, 0px));
       width: auto;
       margin: 0;
       z-index: 60;
@@ -3682,7 +3684,7 @@
     body[data-convo="1"] #convoBackdrop {
       display: block;
       position: fixed;
-      inset: 0;
+      inset: 0 0 calc(-1 * var(--vp-gap, 0px)) 0;
       z-index: 55;
       background: rgba(20, 18, 14, 0.28);
       opacity: 0;
@@ -3705,8 +3707,9 @@
     .composer input { padding: 8px 0; }
     /* 공유 필 — 시안: h32 · padding 0 11 0 7 · bg crail-soft/.32 */
     .share { height: 32px; padding: 0 11px 0 7px; background: oklch(0.85 0.05 50 / 0.32); }
-    /* 얇은 탭 높이만큼 본문 하단 여백 — 시안 article padding-bottom 84 고정 (탭 66 + 여유 18) */
-    body[data-convo="1"] #mainView { padding-bottom: 84px; }
+    /* 얇은 탭 높이만큼 본문 하단 여백 — 시안 article padding-bottom 84 고정 (탭 65 + 여유).
+       탭이 --vp-gap 만큼 내려가므로 본문 인셋은 그만큼 줄여 시각 합 84 유지 */
+    body[data-convo="1"] #mainView { padding-bottom: calc(84px - var(--vp-gap, 0px)); }
     /* 읽기 전용 필 — 모바일은 "읽기 전용" 만 (시안 02) */
     .share__ro-long { display: none; }
 
@@ -3736,8 +3739,8 @@
     /* 가계부 모바일 (작업지시서 §2) — 바텀시트 폐기, 타임라인·선택일을 캘린더 아래 인라인으로.
        데스크톱(>768px) 우측 레일은 변경 없음. */
     body.is-expense:not(.is-exp-stats) .exp-rail { display: none; }
-    /* 하단 여백 — 시안 44px 고정 (.main 하단 패딩 0) */
-    body.is-expense #mainView { padding-bottom: 44px; }
+    /* 하단 여백 — 시안 44px 고정 (.main 하단 패딩 0). 결손 띠 포함 시각 합 44 */
+    body.is-expense #mainView { padding-bottom: calc(44px - var(--vp-gap, 0px)); }
     /* 인라인 타임라인 섹션 — "N월 타임라인 N건" 헤더(.exp-mini-head 패밀리) + .exp-tl-row 행 */
     .exp-inline-tl { display: block; margin-top: 26px; }
     .exp-inline-tl-head {
@@ -3875,7 +3878,7 @@
   .t-fab {
     position: fixed;
     right: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom));
+    bottom: calc(16px + env(safe-area-inset-bottom) - var(--vp-gap, 0px));
     width: 56px;
     height: 56px;
     padding: 0;
@@ -4179,7 +4182,7 @@
 
   /* ═══ Phase D — 가계부 거래 입력/수정 모달 (Wave 11.1.5+) ═══ */
   .exp-modal-overlay {
-    position: fixed; inset: 0;
+    position: fixed; inset: 0 0 calc(-1 * var(--vp-gap, 0px)) 0;
     background: oklch(22% 0.008 60 / 0.32);   /* DESIGN.md §6 모달 backdrop */
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
