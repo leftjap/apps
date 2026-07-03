@@ -2,13 +2,16 @@ import SwiftUI
 
 // v8 14 홈 · 빈 상태 — 스펙: frames/14.html
 public struct Screen14EmptyHome: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
 
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
             RTHomeHeader {
                 RTAvatar("지")
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.openSheet(.settings) }
             }
             VStack(spacing: 0) {
                 hero
@@ -33,6 +36,7 @@ public struct Screen14EmptyHome: View {
                     .strokeBorder(Color(hex: 0xCFC7B0), style: StrokeStyle(lineWidth: 1.5, dash: [4.5, 4.5]))
                     .frame(width: 88, height: 128)
                     .overlay(RTIcon(["M12 5v14M5 12h14"], size: 26, stroke: Color(hex: 0xCFC7B0), lineWidth: 1.8))
+                    .rtFloat(duration: 6)
                 Text("무슨 책부터\n시작해 볼까요?")
                     .font(.sans(20, 900)).tracking(20 * -0.03)
                     .foregroundColor(RT.ink)
@@ -41,6 +45,8 @@ public struct Screen14EmptyHome: View {
             }
             RTCTA("첫 책 추가하기", fontSize: 15.5, radius: 16, gap: 9,
                   icon: AnyView(RTIcon(["M12 5v14M5 12h14"], size: 17, stroke: RT.ctaText, lineWidth: 2.6)))
+                .contentShape(Rectangle())
+                .onTapGesture { model?.openSheet(.addbook) }
                 .padding(.top, 20)
         }
         .padding(EdgeInsets(top: 26, leading: 22, bottom: 26, trailing: 22))

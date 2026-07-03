@@ -28,10 +28,20 @@ let package = Package(
             name: "rtshot",
             dependencies: ["RTViews"]
         ),
+        // macOS 데모 셸 (390×844 창) — RTRootView + 알라딘/클라우드 배선. --verify-search 헤드리스 검증 지원.
+        .executableTarget(
+            name: "rtapp",
+            dependencies: ["RTViews", "ReadingTimeKit"]
+        ),
         .testTarget(
             name: "ReadingTimeKitTests",
             dependencies: ["ReadingTimeKit"],
             resources: [.copy("Resources")]
+        ),
+        // RTAppModel(앱 상태 머신) 테스트 — 인터랙션 정본 prototype/app.js 정합
+        .testTarget(
+            name: "RTViewsTests",
+            dependencies: ["RTViews"]
         ),
     ]
 )

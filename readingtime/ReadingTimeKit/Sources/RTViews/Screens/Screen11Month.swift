@@ -2,7 +2,8 @@ import SwiftUI
 
 // v8 11 기록 · 월간 — 스펙: frames/11.html + 라이브 시안 DOM 추출 셀 데이터
 public struct Screen11Month: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
 
     struct Cell {
         let d: Int
@@ -52,7 +53,7 @@ public struct Screen11Month: View {
             }
             .padding(.horizontal, 22)
             .padding(.top, 106)
-            StatsHeader(active: .month)
+            StatsHeader(active: .month, model: model)
         }
         .frame(width: 390, height: 844)
     }

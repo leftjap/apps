@@ -2,7 +2,10 @@ import SwiftUI
 
 // v8 10 기록 · 주간 — 스펙: frames/10.html
 public struct Screen10Stats: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
+
+    var sel: Int { min(max(model?.weekSel ?? 3, 0), Self.week.count - 1) }
 
     static let week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)] = [
         ("월", "5.18", 38, 47, false, false), ("화", "5.19", 52, 64, false, false),
@@ -31,7 +34,7 @@ public struct Screen10Stats: View {
             }
             .padding(.horizontal, 22)
             .padding(.top, 102)
-            StatsHeader(active: .week)
+            StatsHeader(active: .week, model: model)
         }
         .frame(width: 390, height: 844)
     }
@@ -75,21 +78,29 @@ public struct Screen10Stats: View {
 
     var popover: some View {
         GeometryReader { geo in
+            // app.js weekPopover: left=(sel+.5)/7, 카드만 차트 안으로 클램프(커넥터는 바 중심 유지)
+            let w = Self.week[sel]
+            let flow = Int((Double(w.v) * 0.68).rounded())
+            let center = (CGFloat(sel) + 0.5) / 7 * geo.size.width
+            let half: CGFloat = 75 // min-width 150 의 절반
+            let shift = max(0, half - center) - max(0, center + half - geo.size.width)
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("5.21 목 · 68분").font(.mono(9.5, 600)).tracking(9.5 * 0.06)
+                    Text("\(w.date) \(w.d) · \(w.v)분").font(.mono(9.5, 600)).tracking(9.5 * 0.06)
                         .foregroundColor(Color(hex: 0x8F897B))
-                    tipRow(dot: Color(hex: 0xD8C184), name: "몰입", min: "46분").padding(.top, 8)
-                    tipRow(dot: Color(hex: 0x3D5575), name: "돈의 심리학", min: "22분").padding(.top, 5)
+                    tipRow(dot: Color(hex: 0xD8C184), name: "몰입", min: "\(flow)분").padding(.top, 8)
+                    tipRow(dot: Color(hex: 0x3D5575), name: "돈의 심리학", min: "\(w.v - flow)분").padding(.top, 5)
                 }
                 .padding(EdgeInsets(top: 9, leading: 12, bottom: 9, trailing: 12))
                 .frame(minWidth: 150, alignment: .leading)
                 .background(RoundedRectangle(cornerRadius: 13).fill(RT.ink))
                 .shadow(color: Color(hex: 0x16140F, alpha: 0.55), radius: 13, x: 0, y: 12)
+                .offset(x: shift)
                 Rectangle().fill(RT.ink).frame(width: 2, height: 10)
             }
             .fixedSize()
-            .position(x: geo.size.width / 2, y: 41) // left 50%, 팁 전체 h≈82 의 중심
+            .rtTipPop()
+            .position(x: center, y: 41) // 팁 전체 h≈82 의 중심
         }
     }
 
@@ -104,7 +115,7 @@ public struct Screen10Stats: View {
 
     var bars: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            ForEach(Array(Self.week.enumerated()), id: \.offset) { _, d in
+            ForEach(Array(Self.week.enumerated()), id: \.offset) { i, d in
                 VStack(spacing: 5) {
                     Spacer(minLength: 0)
                     Text("\(d.v)").font(.mono(9, d.today ? 700 : 500))
@@ -121,10 +132,13 @@ public struct Screen10Stats: View {
                     }
                     .frame(maxWidth: 26)
                     .frame(height: d.h)
+                    .rtStack(delay: Double(i) * 0.06)
                     Text(d.d).font(.mono(9.5, d.today ? 700 : 500))
                         .foregroundColor(d.today ? RT.ink : (d.sun ? RT.terra : RT.faint))
                 }
                 .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.selectWeek(i) }
             }
         }
         .frame(height: 118)
@@ -146,7 +160,10 @@ public struct Screen10Stats: View {
                     )
                 Circle().fill(RT.surface)
                     .frame(width: 13, height: 13)
-                    .overlay(RTIcon(["M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"], size: 11, stroke: RT.amberDeep, lineWidth: 2.4))
+                    .overlay(
+                        RTIcon(["M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"], size: 11, stroke: RT.amberDeep, lineWidth: 2.4)
+                            .rtSpin(duration: 5)
+                    )
                     .offset(x: 4, y: -4)
             }
             HStack(spacing: 8) {
@@ -272,18 +289,21 @@ public struct Screen10Stats: View {
 struct StatsHeader: View {
     enum Active { case week, month }
     let active: Active
+    var model: RTAppModel? = nil
 
     var body: some View {
         HStack {
             HStack(spacing: 4) {
                 RTIcon(RTIconPath.back, size: 17, viewBox: 20, stroke: RT.body, lineWidth: 2.2)
                     .frame(width: 38, height: 38)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.nav(.home) }
                 Text("기록").font(.sans(17, 800)).foregroundColor(RT.ink)
             }
             Spacer()
             HStack(spacing: 0) {
-                seg("주", on: active == .week)
-                seg("월", on: active == .month)
+                seg("주", on: active == .week) { model?.nav(.statsWeek) }
+                seg("월", on: active == .month) { model?.nav(.statsMonth) }
             }
             .padding(3)
             .background(Capsule().fill(RT.segBg))
@@ -292,10 +312,12 @@ struct StatsHeader: View {
         .padding(EdgeInsets(top: 52, leading: 18, bottom: 0, trailing: 18))
     }
 
-    func seg(_ t: String, on: Bool) -> some View {
+    func seg(_ t: String, on: Bool, action: @escaping () -> Void) -> some View {
         Text(t).font(.sans(11.5, on ? 700 : 600))
             .foregroundColor(on ? Color(hex: 0xF6F3EA) : RT.muted)
             .padding(EdgeInsets(top: 5, leading: 14, bottom: 5, trailing: 14))
             .background(Capsule().fill(on ? RT.ink : Color.clear))
+            .contentShape(Capsule())
+            .onTapGesture { action() }
     }
 }

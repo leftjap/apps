@@ -2,7 +2,8 @@ import SwiftUI
 
 // v8 08 책 상세 — 스펙: frames/08.html
 public struct Screen08Detail: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
 
     public var body: some View {
         ZStack(alignment: .top) {
@@ -28,6 +29,8 @@ public struct Screen08Detail: View {
         HStack {
             RTIcon(RTIconPath.back, size: 17, viewBox: 20, stroke: RT.body, lineWidth: 2.2)
                 .frame(width: 38, height: 38)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.nav(.library) }
             Spacer()
             VStack(spacing: 3.2) {
                 ForEach(0..<3, id: \.self) { _ in
@@ -35,6 +38,8 @@ public struct Screen08Detail: View {
                 }
             }
             .frame(width: 38, height: 38)
+            .contentShape(Rectangle())
+            .onTapGesture { model?.openSheet(.bookmenu) }
         }
         .padding(EdgeInsets(top: 52, leading: 18, bottom: 8, trailing: 18))
         .background(RT.paper)
@@ -47,6 +52,7 @@ public struct Screen08Detail: View {
                             titleSize: 29, titleTop: 17, flowSize: 6.5, flowTop: 6,
                             ruleWidth: 24, authorKR: 6.5))
                 .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 12, x: 0, y: 16)
+                .rtFloat(duration: 8)
             VStack(alignment: .leading, spacing: 0) {
                 HStack(spacing: 6) {
                     Circle().fill(RT.green).frame(width: 5, height: 5)
@@ -80,6 +86,8 @@ public struct Screen08Detail: View {
                 .background(RT.ctaGrad(CGSize(width: mainW, height: 52)))
                 .clipShape(RoundedRectangle(cornerRadius: 15))
                 .shadow(color: Color(hex: 0x26413A, alpha: 0.35), radius: 8, x: 0, y: 10) // 0 14 24 -10 근사
+                .contentShape(Rectangle())
+                .onTapGesture { model?.continueReading() }
                 HStack(spacing: 6) {
                     RTIcon(RTIconPath.check, size: 15, stroke: RT.green, lineWidth: 2.4)
                     Text("완독").font(.sans(13.5, 700)).foregroundColor(Color(hex: 0x4A5A44))
@@ -88,6 +96,8 @@ public struct Screen08Detail: View {
                 .frame(height: 52)
                 .background(RoundedRectangle(cornerRadius: 15).fill(RT.surface))
                 .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color(hex: 0xE5DFCD), lineWidth: 1))
+                .contentShape(Rectangle())
+                .onTapGesture { model?.openSheet(.finish) }
             }
         }
         .frame(height: 52)
@@ -104,6 +114,8 @@ public struct Screen08Detail: View {
                 }
                 Text("직접 추가").font(.sans(11.5, 600)).foregroundColor(RT.muted)
             }
+            .contentShape(Rectangle())
+            .onTapGesture { model?.openSheet(.addtime) }
         }
     }
 

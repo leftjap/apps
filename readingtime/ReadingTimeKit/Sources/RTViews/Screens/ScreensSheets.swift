@@ -29,6 +29,7 @@ struct SheetShell<Content: View>: View {
 
 struct SheetHead: View {
     let title: String
+    var onClose: (() -> Void)? = nil
     var body: some View {
         HStack {
             Text(title).font(.sans(20, 900)).tracking(20 * -0.02).foregroundColor(RT.ink)
@@ -36,22 +37,32 @@ struct SheetHead: View {
             RoundedRectangle(cornerRadius: 9).fill(RT.segBg)
                 .frame(width: 32, height: 32)
                 .overlay(RTIcon(["M6 6l12 12M18 6L6 18"], size: 14, stroke: RT.muted, lineWidth: 2.4, cap: .round, join: .miter))
+                .contentShape(Rectangle())
+                .onTapGesture { onClose?() }
         }
     }
 }
 
 // ── 07 시간 직접 추가 ──
 public struct Sheet07AddTime: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
+
+    var value: Int { model?.addtimeValue ?? 35 }
+    var selPreset: Int? { model?.addtimePreset ?? 15 }
+
     public var body: some View {
         SheetShell {
             VStack(spacing: 0) {
-                SheetHead(title: "시간 직접 추가")
+                SheetHead(title: "시간 직접 추가", onClose: { model?.closeSheet() })
                 bookRow.padding(.top, 18)
                 stepper.padding(.top, 24)
                 presets.padding(.top, 20)
                 whenRow.padding(.top, 20)
-                RTCTAPlain("35분 추가하기").padding(.top, 18)
+                RTCTAPlain("\(value)분 추가하기")
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.addTime() }
+                    .padding(.top, 18)
             }
         }
     }
@@ -87,8 +98,10 @@ public struct Sheet07AddTime: View {
                 .overlay(Circle().stroke(Color(hex: 0xE5DFCD), lineWidth: 1))
                 .overlay(RTIcon(["M5 12h14"], size: 16, stroke: RT.body, lineWidth: 2.4))
                 .shadow(color: Color(hex: 0x16140F, alpha: 0.15), radius: 4, x: 0, y: 3)
+                .contentShape(Circle())
+                .onTapGesture { model?.step(-5) }
             HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text("35").font(.mono(56, 700)).tracking(56 * -0.04).foregroundColor(RT.ink)
+                Text("\(value)").font(.mono(56, 700)).tracking(56 * -0.04).foregroundColor(RT.ink)
                 Text("분").font(.sans(19, 700)).foregroundColor(RT.muted)
             }
             .frame(minWidth: 130)
@@ -96,23 +109,28 @@ public struct Sheet07AddTime: View {
                 .frame(width: 46, height: 46)
                 .overlay(RTIcon(RTIconPath.plus, size: 16, stroke: RT.ctaText, lineWidth: 2.4))
                 .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
+                .contentShape(Circle())
+                .onTapGesture { model?.step(5) }
         }
     }
 
     var presets: some View {
         HStack(spacing: 8) {
-            preset("+5", sel: false)
-            preset("+10", sel: false)
-            preset("+15", sel: true)
-            preset("+30", sel: false)
+            preset(5)
+            preset(10)
+            preset(15)
+            preset(30)
         }
     }
 
-    func preset(_ t: String, sel: Bool) -> some View {
-        Text(t).font(.mono(12.5, 600))
+    func preset(_ n: Int) -> some View {
+        let sel = selPreset == n
+        return Text("+\(n)").font(.mono(12.5, 600))
             .foregroundColor(sel ? RT.ctaText : RT.body)
             .padding(EdgeInsets(top: 8, leading: 15, bottom: 8, trailing: 15))
             .background(Capsule().fill(sel ? RT.ink : RT.segBg))
+            .contentShape(Capsule())
+            .onTapGesture { model?.preset(n) }
     }
 
     var whenRow: some View {
@@ -133,7 +151,11 @@ public struct Sheet07AddTime: View {
 
 // ── 09 완독 · 별점 ──
 public struct Sheet09Finish: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
+
+    var rating: Int { model?.rating ?? 4 }
+
     public var body: some View {
         SheetShell(topPadding: 13) {
             VStack(spacing: 0) {
@@ -145,10 +167,13 @@ public struct Sheet09Finish: View {
                 Text("이 책, 어떠셨나요?").font(.sans(12.5, 700))
                     .foregroundColor(Color(hex: 0x4A5A44)).padding(.top, 22)
                 stars.padding(.top, 13)
-                Text("아주 좋았어요").font(.sans(12.5, 700))
+                Text(RTAppModel.ratingLabels[rating] ?? "").font(.sans(12.5, 700))
                     .foregroundColor(Color(hex: 0xB3841F)).padding(.top, 12)
                 tiles.padding(.top, 22)
-                ctaFinish.padding(.top, 16)
+                ctaFinish
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.saveFinished() }
+                    .padding(.top, 16)
             }
         }
     }
@@ -157,11 +182,13 @@ public struct Sheet09Finish: View {
         ZStack {
             Ellipse().stroke(Color(hex: 0x3A5C4B, alpha: 0.35), lineWidth: 1.5)
                 .frame(width: 110, height: 146) // inset -16, border-radius 50% = 타원
+                .rtRippleLoop(duration: 3, delay: 0.4)
             FlowCover(.init(width: 78, height: 114, frameInset: 6,
                             padTop: 0, padBottom: 0, authorEN: nil,
                             titleSize: 21, titleTop: 0, flowSize: 5.5, flowTop: 5,
                             ruleWidth: nil, authorKR: nil, centered: true))
                 .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 13, x: 0, y: 16)
+                .rtPop(duration: 0.5)
             Circle().fill(RT.ctaGrad(CGSize(width: 30, height: 30)))
                 .frame(width: 30, height: 30)
                 .overlay(RTIcon(RTIconPath.check, size: 14, stroke: RT.ctaText, lineWidth: 3))
@@ -176,14 +203,19 @@ public struct Sheet09Finish: View {
     var stars: some View {
         HStack(spacing: 11) {
             ForEach(0..<5, id: \.self) { i in
-                if i < 4 {
-                    ZStack {
-                        RTIcon([Self.starPath], size: 34, fill: Color(hex: 0xC9973B))
-                        RTIcon([Self.starPath], size: 34, stroke: Color(hex: 0xB3841F), lineWidth: 1, join: .round)
+                Group {
+                    if i < rating {
+                        ZStack {
+                            RTIcon([Self.starPath], size: 34, fill: Color(hex: 0xC9973B))
+                            RTIcon([Self.starPath], size: 34, stroke: Color(hex: 0xB3841F), lineWidth: 1, join: .round)
+                        }
+                        .rtStarPop(delay: Double(i) * 0.08)
+                    } else {
+                        RTIcon([Self.starPath], size: 34, stroke: Color(hex: 0xD8D2C1), lineWidth: 1.6, join: .round)
                     }
-                } else {
-                    RTIcon([Self.starPath], size: 34, stroke: Color(hex: 0xD8D2C1), lineWidth: 1.6, join: .round)
                 }
+                .contentShape(Rectangle())
+                .onTapGesture { model?.rate(i + 1) }
             }
         }
     }

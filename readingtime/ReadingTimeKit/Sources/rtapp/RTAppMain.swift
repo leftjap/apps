@@ -1,0 +1,53 @@
+import SwiftUI
+import RTViews
+import ReadingTimeKit
+
+// 데모 셸 배선 — 인터랙션은 전부 RTAppModel(정본 prototype/app.js), 여기선 실서비스 연결만.
+@MainActor
+enum RTAppWiring {
+    static func makeModel(cloud: CloudStore) -> RTAppModel {
+        let model = RTAppModel()
+        let aladin = AladinClient()
+
+        // 시트 13 라이브 검색 — 배포 프록시 (Origin 게이트는 AladinClient 가 처리)
+        model.searchProvider = { query in
+            try await aladin.search(query: query, maxResults: 10).map {
+                RTBookHit(title: $0.title, author: Aladin.cleanAuthor($0.author),
+                          publisher: $0.publisher, isbn: $0.isbn, coverUrl: $0.coverUrl)
+            }
+        }
+
+        // 저장하기 → readingtime_daily 오늘치 upsert (로그인돼 있을 때만 실쓰기)
+        model.onSessionSaved = { mode, seconds in
+            Task {
+                try? await cloud.addPaperSeconds(seconds, source: mode == .flip ? .flip : .tap, on: Date())
+            }
+        }
+        return model
+    }
+}
+
+struct RTAppMain: App {
+    @StateObject private var model: RTAppModel
+    private let cloud: CloudStore
+
+    init() {
+        let regErrors = RTFonts.register()
+        if !regErrors.isEmpty {
+            FileHandle.standardError.write(("폰트 등록 실패: " + regErrors.joined(separator: "; ") + "\n").data(using: .utf8)!)
+        }
+        let cloud = CloudStore()
+        self.cloud = cloud
+        _model = StateObject(wrappedValue: RTAppWiring.makeModel(cloud: cloud))
+    }
+
+    var body: some Scene {
+        WindowGroup("리딩타임") {
+            RTRootView(model: model)
+                .rtMotion(true)
+                .frame(width: 390, height: 844)
+                .task { await cloud.restore() }
+        }
+        .windowResizability(.contentSize)
+    }
+}

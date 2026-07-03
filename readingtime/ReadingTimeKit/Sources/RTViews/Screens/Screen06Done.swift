@@ -2,7 +2,12 @@ import SwiftUI
 
 // v8 06 세션 완료 — 스펙: frames/06.html (모션 종료 상태 = 타임라인 완료 프레임)
 public struct Screen06Done: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
+
+    var minutes: Int { (model?.session?.elapsed ?? RTAppModel.demoElapsed) / 60 }
+    var seconds: Int { (model?.session?.elapsed ?? RTAppModel.demoElapsed) % 60 }
+    var isFlip: Bool { model.map { $0.session?.mode != .tap } ?? true }
 
     public var body: some View {
         ZStack(alignment: .top) {
@@ -11,20 +16,33 @@ public struct Screen06Done: View {
                 ZStack {
                     Circle().stroke(Color(hex: 0x3A5C4B, alpha: 0.4), lineWidth: 1.5)
                         .frame(width: 116, height: 116) // inset -14 정지 프레임
+                        .rtRippleLoop(duration: 2.8, delay: 0.5)
                     Circle().fill(RT.ctaGrad(CGSize(width: 88, height: 88)))
                         .frame(width: 88, height: 88)
                         .shadow(color: Color(hex: 0x26413A, alpha: 0.45), radius: 11, x: 0, y: 14)
-                        .overlay(RTIcon(RTIconPath.check, size: 38, stroke: RT.ctaText, lineWidth: 2.6))
+                        .overlay(
+                            RTIcon(RTIconPath.check, size: 38, stroke: RT.ctaText, lineWidth: 2.6)
+                                .rtFadeIn(delay: 0.35, duration: 0.7)   // v5Draw 근사
+                        )
+                        .rtPop(duration: 0.45)
                 }
                 .frame(width: 88, height: 88)
                 Text("기록됐어요").font(.sans(14, 700)).foregroundColor(RT.muted)
                     .padding(.top, 20)
-                Text("26:14").font(.mono(52, 700)).tracking(52 * -0.04)
+                    .rtEntrance(delay: 0.5, duration: 0.6)
+                Text("\(minutes):\(String(format: "%02d", seconds))")
+                    .font(.mono(52, 700)).tracking(52 * -0.04)
                     .foregroundColor(RT.ink).padding(.top, 8)
+                    .rtEntrance(delay: 0.65, duration: 0.6)
                 HStack(spacing: 7) {
                     HStack(spacing: 6) {
-                        FlipIcon(size: 12, color: RT.green, lineWidth: 2)
-                        Text("엎기 · 자동").font(.sans(11.5, 600)).foregroundColor(RT.green)
+                        if isFlip {
+                            FlipIcon(size: 12, color: RT.green, lineWidth: 2)
+                            Text("엎기 · 자동").font(.sans(11.5, 600)).foregroundColor(RT.green)
+                        } else {
+                            TapIcon(size: 12, color: RT.green)
+                            Text("탭").font(.sans(11.5, 600)).foregroundColor(RT.green)
+                        }
                     }
                     .padding(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
                     .background(Capsule().fill(RT.greenTint))
@@ -33,6 +51,7 @@ public struct Screen06Done: View {
                         .background(Capsule().fill(RT.segBg))
                 }
                 .padding(.top, 14)
+                .rtEntrance(delay: 0.8, duration: 0.6)
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 112)
@@ -45,8 +64,12 @@ public struct Screen06Done: View {
             VStack(spacing: 0) {
                 Spacer()
                 RTCTAPlain("저장하기")
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.saveSession() }
                 Text("이 기록 삭제").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
                     .padding(.top, 12)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.deleteSession() }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 36)
@@ -60,7 +83,7 @@ public struct Screen06Done: View {
                 Text("오늘의 리딩타임").font(.sans(14, 800)).foregroundColor(RT.ink)
                 Spacer()
                 (Text("32분 → ").foregroundColor(RT.faint)
-                    + Text("58분").fontWeight(.bold).foregroundColor(RT.green))
+                    + Text("\(32 + minutes)분").fontWeight(.bold).foregroundColor(RT.green))
                     .font(.mono(12, 500))
             }
             bar.padding(.top, 28)
@@ -91,10 +114,12 @@ public struct Screen06Done: View {
                     .fill(Color(hex: 0x729A80))
                     .frame(width: w * 0.29, height: 12)
                     .offset(x: w * 0.36)
-                Text("+26분").font(.mono(11, 600)).foregroundColor(RT.ctaText)
+                    .rtSweep(delay: 1.2, duration: 1.1)
+                Text("+\(minutes)분").font(.mono(11, 600)).foregroundColor(RT.ctaText)
                     .padding(EdgeInsets(top: 3, leading: 9, bottom: 3, trailing: 9))
                     .background(RoundedRectangle(cornerRadius: 8).fill(RT.ink))
                     .fixedSize()
+                    .rtDrop(delay: 1.9)
                     .position(x: w * 0.5, y: -27 + 10.5) // top -27, 칩 h≈21 의 중심
             }
         }

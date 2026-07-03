@@ -32,6 +32,13 @@ public enum RTScreens {
         guard let v = view(id: id) else { return nil }
         return AnyView(ZStack { v; RTChrome(dark: darkScreens.contains(id)) })
     }
+
+    // 액션 경로 오라클: 시드된 모델로 RTRootView 를 렌더 — 정적 snapshotView 와 픽셀 일치해야 함
+    @MainActor
+    public static func appSnapshotView(id: String) -> AnyView? {
+        guard let m = RTAppModel.seeded(id) else { return nil }
+        return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(id)) })
+    }
 }
 
 // 파이프라인 검증용 — 토큰 색 스와치 + 폰트 페이스 라인

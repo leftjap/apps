@@ -21,15 +21,23 @@ if args.contains("--list-fonts") {
 }
 
 guard args.count >= 3 else {
-    print("usage: rtshot --list-fonts | rtshot <screenID> <out.png>")
+    print("usage: rtshot --list-fonts | rtshot <screenID> <out.png> | rtshot --app <screenID> <out.png>")
     exit(1)
 }
 
-let screenID = args[1]
-let outPath = args[2]
+// --app: 시드 모델 + RTRootView 경로 (라우팅 오라클 — 정적 렌더와 픽셀 일치해야 함)
+let appMode = args[1] == "--app"
+let screenID = appMode ? args[2] : args[1]
+let outPath = appMode ? args[3] : args[2]
+
+if appMode && args.count < 4 {
+    print("usage: rtshot --app <screenID> <out.png>")
+    exit(1)
+}
 
 Task { @MainActor in
-    guard let view = RTScreens.snapshotView(id: screenID) else {
+    guard let view = appMode ? RTScreens.appSnapshotView(id: screenID)
+                             : RTScreens.snapshotView(id: screenID) else {
         FileHandle.standardError.write("unknown screen: \(screenID)\n".data(using: .utf8)!)
         exit(1)
     }

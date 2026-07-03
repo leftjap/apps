@@ -86,6 +86,7 @@ public struct RTCTA: View {
             .overlay(
                 RoundedRectangle(cornerRadius: radius)
                     .stroke(Color(hex: 0x3A5C4B, alpha: 0.4), lineWidth: 2)
+                    .rtRippleBtn()
             )
         }
         .frame(height: 54)

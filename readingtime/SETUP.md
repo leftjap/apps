@@ -6,7 +6,8 @@
 ## 1. Xcode 새 프로젝트
 - New Project → iOS App / Interface **SwiftUI** / Language **Swift** / Storage None
 - Deployment Target **iOS 17.0** 이상
-- 이 폴더의 `.swift` 5개를 넣고, 생성된 기본 App·ContentView는 이 폴더 것으로 대체
+- 앱 진입점: `ReadingTimeKit`의 **`RTRootView(model:)`** 를 루트로 (참고 배선 = `ReadingTimeKit/Sources/rtapp/RTAppMain.swift` — 알라딘 검색·세션 저장 훅 포함, `.rtMotion(true)` 로 모션 활성). 폰트는 `RTFonts.register()` 1회 (`fetch-fonts.sh` 로 수급).
+- 센서 연동: 루트 폴더 `ReadingTimer.swift`(flip 감지)·`KeepAlive.swift`(잠금 유지)를 앱 타깃에 추가하고 `ReadingTimer.onSessionEnd`/`RTAppModel` 액션과 배선 (이 두 파일은 **컴파일 미검증** — iOS SDK 필요).
 
 ## 2. Info.plist (2개 — 둘 다 entitlement 아님 → 무료 서명 OK)
 - **Privacy - Location When In Use Usage Description**

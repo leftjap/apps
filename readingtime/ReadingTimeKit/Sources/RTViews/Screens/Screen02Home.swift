@@ -1,26 +1,35 @@
 import SwiftUI
 
-// v8 02 홈 (허브) — 스펙: frames/02.html
+// v8 02 홈 (허브) — 스펙: frames/02.html. model 주입 시 인터랙션 활성 (nil = 정적 데모).
 public struct Screen02Home: View {
-    public init() {}
+    var model: RTAppModel?
+    public init(model: RTAppModel? = nil) { self.model = model }
+
+    var mode: RTMode { model?.mode ?? .flip }
 
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
             RTHomeHeader {
                 RTHeaderPlus()
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.openSheet(.addbook) }
                 RTAvatar("지")
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.openSheet(.settings) }
             }
             VStack(spacing: 0) {
-                hero
+                hero.rtEntrance(duration: 0.45)
                 RTStatsStrip(items: [
                     (.init("32", unit: "분"), "오늘"),
                     (.init("7:26"), "이번 주"),
                     (.init("12", unit: "일", valueColor: RT.terra), "연속"),
                 ])
                 .padding(.top, 11)
+                .rtEntrance(delay: 0.08, duration: 0.45)
                 entryCards.padding(.top, 11)
                 recentHead.padding(EdgeInsets(top: 16, leading: 4, bottom: 8, trailing: 4))
+                    .rtEntrance(delay: 0.16, duration: 0.45)
                 recentRow(tint: RT.greenTint,
                           icon: AnyView(FlipIcon(size: 14, color: RT.green, lineWidth: 2)),
                           min: "26분", label: "몰입 · 엎기", when: "오늘 14:14", divider: true)
@@ -40,6 +49,7 @@ public struct Screen02Home: View {
             HStack(alignment: .top, spacing: 15) {
                 FlowCover(.init(width: 94, height: 137))
                     .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 12, x: 0, y: 14)
+                    .rtFloat(duration: 8)
                 VStack(alignment: .leading, spacing: 0) {
                     liveChip
                     Text("몰입").font(.sans(21, 900)).tracking(21 * -0.03)
@@ -58,6 +68,8 @@ public struct Screen02Home: View {
             segment.padding(.top, 14)
             RTCTA("읽기 시작", fontSize: 16, radius: 15, gap: 10, tracking: 16 * -0.01,
                   icon: AnyView(RTIcon(RTIconPath.play, size: 17, fill: RT.ctaText)))
+                .contentShape(Rectangle())
+                .onTapGesture { model?.start() }
                 .padding(.top, 10)
         }
         .padding(EdgeInsets(top: 16, leading: 16, bottom: 14, trailing: 16))
@@ -67,6 +79,7 @@ public struct Screen02Home: View {
     var liveChip: some View {
         HStack(spacing: 6) {
             Circle().fill(RT.green).frame(width: 6, height: 6)
+                .rtBlink(duration: 2.2)
             Text("읽는 중").font(.sans(11, 700)).foregroundColor(RT.green)
         }
         .padding(EdgeInsets(top: 4, leading: 11, bottom: 4, trailing: 11))
@@ -75,23 +88,28 @@ public struct Screen02Home: View {
 
     var segment: some View {
         HStack(spacing: 3) {
-            HStack(spacing: 6) {
-                FlipIcon(size: 13, color: Color(hex: 0xF6F3EA), lineWidth: 2)
-                Text("엎기").font(.sans(12.5, 700)).foregroundColor(Color(hex: 0xF6F3EA))
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
-            .background(RoundedRectangle(cornerRadius: 10).fill(RT.ink))
-            .shadow(color: Color(hex: 0x16140F, alpha: 0.2), radius: 2.5, x: 0, y: 2)
-            HStack(spacing: 6) {
-                TapIcon(size: 13, color: RT.muted)
-                Text("탭").font(.sans(12.5, 600)).foregroundColor(RT.muted)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 8)
+            segItem(.flip, label: "엎기",
+                    icon: { c in AnyView(FlipIcon(size: 13, color: c, lineWidth: 2)) })
+            segItem(.tap, label: "탭",
+                    icon: { c in AnyView(TapIcon(size: 13, color: c)) })
         }
         .padding(3)
         .background(RoundedRectangle(cornerRadius: 13).fill(RT.segBg))
+    }
+
+    func segItem(_ m: RTMode, label: String, icon: (Color) -> AnyView) -> some View {
+        let on = mode == m
+        return HStack(spacing: 6) {
+            icon(on ? Color(hex: 0xF6F3EA) : RT.muted)
+            Text(label).font(.sans(12.5, on ? 700 : 600))
+                .foregroundColor(on ? Color(hex: 0xF6F3EA) : RT.muted)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(on ? AnyView(RoundedRectangle(cornerRadius: 10).fill(RT.ink)) : AnyView(Color.clear))
+        .shadow(color: on ? Color(hex: 0x16140F, alpha: 0.2) : .clear, radius: 2.5, x: 0, y: 2)
+        .contentShape(Rectangle())
+        .onTapGesture { model?.setMode(m) }
     }
 
     var entryCards: some View {
@@ -116,6 +134,8 @@ public struct Screen02Home: View {
             }
             .frame(maxWidth: .infinity)
             .rtCard(radius: 18)
+            .contentShape(Rectangle())
+            .onTapGesture { model?.nav(.library) }
             // 기록
             ZStack(alignment: .bottomTrailing) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -133,6 +153,8 @@ public struct Screen02Home: View {
             }
             .frame(maxWidth: .infinity)
             .rtCard(radius: 18)
+            .contentShape(Rectangle())
+            .onTapGesture { model?.nav(.statsWeek) }
         }
     }
 
@@ -161,6 +183,8 @@ public struct Screen02Home: View {
             Text("최근 기록").font(.sans(13.5, 800)).foregroundColor(RT.ink)
             Spacer()
             Text("전체 보기").font(.sans(11.5, 500)).foregroundColor(RT.faint)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.nav(.statsWeek) }
         }
     }
 

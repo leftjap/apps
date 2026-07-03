@@ -8,25 +8,32 @@ public struct Screen01Login: View {
         self.onLogin = onLogin
     }
 
+    public init(model: RTAppModel?) {
+        self.onLogin = { [weak model] in model?.login() }
+    }
+
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Spacer()
-            logo
+            logo.rtFloat(duration: 7)
             Text("리딩타임")
                 .font(.sans(40, 900)).tracking(40 * -0.045)
                 .foregroundColor(RT.ink)
                 .padding(.top, 34)
+                .rtEntrance(delay: 0.05, duration: 0.5)
             RoundedRectangle(cornerRadius: 2)
                 .fill(RT.green)
                 .frame(width: 44, height: 3)
                 .padding(.top, 16)
+                .rtSweep(delay: 0.3, duration: 0.9)
             Text("당신의 리딩타임을 기록해 보세요.\n독서 습관이 바뀌면 책 읽기가 더 즐거워집니다.")
                 .font(.sans(15, 500)).tracking(15 * -0.005)
                 .foregroundColor(RT.muted)
                 .lineSpacing(15 * 1.66 - 22.5) // line-height 1.66 근사 (Noto 기본 행높이 ≈ 1.5em)
                 .padding(.top, 20)
+                .rtEntrance(delay: 0.15, duration: 0.5)
             Spacer()
-            googleButton
+            googleButton.rtEntrance(delay: 0.25, duration: 0.5)
             Text("계속하면 이용약관과 개인정보 처리방침에 동의합니다")
                 .font(.sans(11.5, 400)).tracking(11.5 * -0.005)
                 .foregroundColor(Color(hex: 0xB3AB97))
