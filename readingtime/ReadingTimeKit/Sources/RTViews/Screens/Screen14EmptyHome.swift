@@ -1,9 +1,19 @@
 import SwiftUI
 
 // v8 14 홈 · 빈 상태 — 스펙: frames/14.html
+// userData 주입 시 통계는 실기록 (읽는 중 책이 없어도 세션 기록은 있을 수 있음)
 public struct Screen14EmptyHome: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let stats: (today: Int, week: String, streak: Int)?   // init 스냅샷
+
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        if let m = model, m.userData != nil {
+            self.stats = (m.todaySeconds / 60, RTAppModel.hmString(m.weekSeconds), m.streakDays)
+        } else {
+            self.stats = nil
+        }
+    }
 
     public var body: some View {
         ZStack(alignment: .top) {
@@ -16,9 +26,9 @@ public struct Screen14EmptyHome: View {
             VStack(spacing: 0) {
                 hero
                 RTStatsStrip(items: [
-                    (.init("0", unit: "분"), "오늘"),
-                    (.init("0:00"), "이번 주"),
-                    (.init("—"), "연속"),
+                    (.init("\(stats?.today ?? 0)", unit: "분"), "오늘"),
+                    (.init(stats?.week ?? "0:00"), "이번 주"),
+                    (stats.map { $0.streak > 0 ? .init("\($0.streak)", unit: "일") : .init("—") } ?? .init("—"), "연속"),
                 ], ghost: true)
                 .padding(.top, 13)
                 shelf.padding(.top, 38)

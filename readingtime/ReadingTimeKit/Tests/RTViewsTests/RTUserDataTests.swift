@@ -150,6 +150,17 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(RTAppModel.recentWhen(day("2026-05-20"), now: now) == "5.20")
     }
 
+    @Test func selectedBookFallsBackAndDeletes() {
+        let m = liveModel()
+        m.searchResults = [Self.hit]
+        m.toggleAdd(Self.hit.isbn)
+        #expect(m.selectedBook?.isbn == Self.hit.isbn)   // selectedISBN nil → currentBook 폴백
+        m.selectedISBN = Self.hit.isbn
+        m.deleteBook()
+        #expect(m.userData?.books.isEmpty == true)
+        #expect(m.route == .library)
+    }
+
     @Test func streakZeroWhenNoRecent() {
         let m = liveModel(now: day("2026-07-04"))
         m.userData = RTUserData(sessions: [

@@ -124,6 +124,14 @@ public final class RTAppModel: ObservableObject {
         userData?.books.filter { !$0.finished }.max { $0.addedAt < $1.addedAt }
     }
 
+    /// 상세(08)·완독(09)·책메뉴 대상 — 서재에서 탭한 책, 미지정이면 읽는 중 책
+    @Published public var selectedISBN: String?
+    public var selectedBook: RTBook? {
+        guard let d = userData else { return nil }
+        if let isbn = selectedISBN, let b = d.books.first(where: { $0.isbn == isbn }) { return b }
+        return currentBook
+    }
+
     private var cal: Calendar {
         var c = Calendar(identifier: .gregorian)
         c.firstWeekday = 2   // 월요일 시작 (v8 주간 통계)
@@ -333,7 +341,7 @@ public final class RTAppModel: ObservableObject {
     // ── 09 완독 별점 ──
     public func rate(_ n: Int) { rating = n }
     public func saveFinished() {
-        if let cur = currentBook {
+        if let cur = selectedBook {
             mutateUserData { d in
                 if let i = d.books.firstIndex(where: { $0.isbn == cur.isbn }) {
                     d.books[i].finished = true
@@ -369,7 +377,14 @@ public final class RTAppModel: ObservableObject {
         nav(.login)
         onAuthChange?(false)
     }
-    public func deleteBook() { closeSheet(); nav(.library) }
+    public func deleteBook() {
+        if let b = selectedBook {
+            mutateUserData { $0.books.removeAll { $0.isbn == b.isbn } }
+            selectedISBN = nil
+        }
+        closeSheet()
+        nav(.library)
+    }
 
     // ── 12 서재 ──
     public func setLibraryFilter(_ f: RTLibraryFilter) { libraryFilter = f }

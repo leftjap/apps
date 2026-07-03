@@ -1,15 +1,37 @@
 import SwiftUI
 
-// v8 12 서재 — 스펙: frames/12.html
+// v8 12 서재 — 스펙: frames/12.html. userData 주입 시 실데이터 (init 스냅샷).
 public struct Screen12Library: View {
+    struct Live {
+        let total: Int
+        let reading: [RTBook]
+        let readingMeta: [String: String]   // isbn → "0:01 · 1회 · 1일째"
+        let finished: [RTBook]
+    }
+
     var model: RTAppModel?
     private let filter: RTLibraryFilter
     private let sort: RTLibrarySort
+    private let live: Live?
 
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.filter = model?.libraryFilter ?? .all
         self.sort = model?.librarySort ?? .recent
+        if let m = model, let d = m.userData {
+            let cal = Calendar(identifier: .gregorian)
+            let reading = d.books.filter { !$0.finished }.sorted { $0.addedAt > $1.addedAt }
+            var meta: [String: String] = [:]
+            for b in reading {
+                let days = (cal.dateComponents([.day], from: cal.startOfDay(for: b.addedAt),
+                                               to: cal.startOfDay(for: m.now())).day ?? 0) + 1
+                meta[b.isbn] = "\(RTAppModel.hmString(m.totalSeconds(isbn: b.isbn))) · \(m.sessionCount(isbn: b.isbn))회 · \(days)일째"
+            }
+            self.live = Live(total: d.books.count, reading: reading, readingMeta: meta,
+                             finished: d.books.filter { $0.finished })
+        } else {
+            self.live = nil
+        }
     }
 
     public var body: some View {
@@ -18,16 +40,25 @@ public struct Screen12Library: View {
             VStack(alignment: .leading, spacing: 0) {
                 search
                 toolbar.padding(.top, 12)
-                if filter != .finished {
+                if filter != .finished, live == nil || !(live!.reading.isEmpty) {
                     Text("읽는 중").font(.mono(10, 600)).tracking(10 * 0.18)
                         .foregroundColor(RT.faint)
                         .padding(EdgeInsets(top: 16, leading: 2, bottom: 10, trailing: 0))
-                    readingCard
+                    if let live {
+                        VStack(spacing: 10) {
+                            ForEach(live.reading, id: \.isbn) { b in
+                                liveReadingCard(b)
+                            }
+                        }
+                    } else {
+                        readingCard
+                    }
                 }
-                if filter != .reading {
+                if filter != .reading, live == nil || !(live!.finished.isEmpty) {
                     HStack(spacing: 4) {
                         Text("완독").font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.faint)
-                        Text("13").font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.ghost)
+                        Text(live.map { "\($0.finished.count)" } ?? "13")
+                            .font(.mono(10, 600)).tracking(10 * 0.18).foregroundColor(RT.ghost)
                     }
                     .padding(EdgeInsets(top: 20, leading: 2, bottom: 12, trailing: 0))
                     grid
@@ -49,7 +80,8 @@ public struct Screen12Library: View {
                     .contentShape(Rectangle())
                     .onTapGesture { model?.nav(.home) }
                 Text("서재").font(.sans(17, 800)).foregroundColor(RT.ink)
-                Text("14").font(.mono(12, 600)).foregroundColor(RT.faint).padding(.leading, 3)
+                Text(live.map { "\($0.total)" } ?? "14")
+                    .font(.mono(12, 600)).foregroundColor(RT.faint).padding(.leading, 3)
             }
             Spacer()
             RoundedRectangle(cornerRadius: 11).fill(RT.ctaGrad(CGSize(width: 36, height: 36)))
@@ -144,6 +176,39 @@ public struct Screen12Library: View {
         .onTapGesture { model?.nav(.detail) }
     }
 
+    // 라이브 읽는 중 카드 — 데모 readingCard 와 동일 레이아웃, 원격 표지·실 메타
+    func liveReadingCard(_ b: RTBook) -> some View {
+        HStack(spacing: 14) {
+            RTRemoteCover(url: b.coverUrl, size: .init(width: 54, height: 79), radius: 4)
+                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.4), radius: 7, x: 0, y: 8)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(b.title).font(.sans(15.5, 800)).foregroundColor(RT.ink).lineLimit(1)
+                Text(b.author).font(.sans(11.5, 500)).foregroundColor(RT.muted)
+                    .padding(.top, 3).lineLimit(1)
+                Text(live?.readingMeta[b.isbn] ?? "").font(.mono(11, 600)).foregroundColor(RT.faint)
+                    .padding(.top, 9)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            Circle().fill(RT.ctaGrad(CGSize(width: 40, height: 40)))
+                .frame(width: 40, height: 40)
+                .overlay(RTIcon(RTIconPath.play, size: 15, fill: RT.ctaText))
+                .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
+                .contentShape(Circle())
+                .onTapGesture { model?.start() }
+        }
+        .padding(12)
+        .background(RT.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(RoundedRectangle(cornerRadius: 18).stroke(RT.hair, lineWidth: 1))
+        .shadow(color: Color(hex: 0x16140F, alpha: 0.03), radius: 1, x: 0, y: 1)
+        .shadow(color: Color(hex: 0x16140F, alpha: 0.12), radius: 5, x: 0, y: 6)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            model?.selectedISBN = b.isbn
+            model?.nav(.detail)
+        }
+    }
+
     // 완독 목록 (prototype FINISHED — 정렬용 제목 포함)
     static let finished: [(key: String, title: String, rating: Int)] = [
         ("money", "돈의 심리학", 4), ("farewell", "작별하지 않는다", 5), ("trend", "트렌드 코리아 2026", 3),
@@ -170,22 +235,70 @@ public struct Screen12Library: View {
         }
     }
 
+    /// 라이브 완독 정렬 (데모 sortedFinished 와 동일 규칙)
+    var sortedLiveFinished: [RTBook] {
+        guard let items = live?.finished else { return [] }
+        switch sort {
+        case .recent:
+            return items.sorted { ($0.finishedAt ?? $0.addedAt) > ($1.finishedAt ?? $1.addedAt) }
+        case .name:
+            return items.sorted { $0.title.compare($1.title, locale: Locale(identifier: "ko")) == .orderedAscending }
+        case .rating:
+            return items.enumerated()
+                .sorted { ($0.element.rating ?? 0) != ($1.element.rating ?? 0)
+                    ? ($0.element.rating ?? 0) > ($1.element.rating ?? 0)
+                    : $0.offset < $1.offset }
+                .map(\.element)
+        }
+    }
+
     var grid: some View {
-        let items = sortedFinished
-        let rows = stride(from: 0, to: items.count, by: 3).map { Array(items[$0..<min($0 + 3, items.count)]) }
-        return VStack(spacing: 16) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { r, row in
-                HStack(spacing: 12) {
-                    ForEach(Array(row.enumerated()), id: \.offset) { c, item in
-                        VStack(spacing: 7) {
-                            (Self.gridCovers[item.key] ?? AnyView(EmptyView()))
-                                .frame(width: 86, height: 124)
-                                .clipShape(RoundedRectangle(cornerRadius: 4))
-                                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.42), radius: 9, x: 0, y: 10)
-                            stars(item.rating)
+        Group {
+            if live != nil {
+                let items = sortedLiveFinished
+                let rows = stride(from: 0, to: items.count, by: 3).map { Array(items[$0..<min($0 + 3, items.count)]) }
+                VStack(spacing: 16) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { r, row in
+                        HStack(spacing: 12) {
+                            ForEach(Array(row.enumerated()), id: \.offset) { c, b in
+                                VStack(spacing: 7) {
+                                    RTRemoteCover(url: b.coverUrl, size: .init(width: 86, height: 124), radius: 4)
+                                        .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.42), radius: 9, x: 0, y: 10)
+                                    stars(b.rating ?? 0)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .rtEntrance(delay: 0.05 + Double(r * 3 + c) * 0.05, duration: 0.45)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    model?.selectedISBN = b.isbn
+                                    model?.nav(.detail)
+                                }
+                            }
+                            // 마지막 행 빈 칸 채움 (3열 균등폭 유지 — 높이 0 고정: Color 세로 팽창 방지)
+                            ForEach(0..<(3 - row.count), id: \.self) { _ in
+                                Color.clear.frame(maxWidth: .infinity).frame(height: 0)
+                            }
                         }
-                        .frame(maxWidth: .infinity)
-                        .rtEntrance(delay: 0.05 + Double(r * 3 + c) * 0.05, duration: 0.45)
+                    }
+                }
+            } else {
+                let items = sortedFinished
+                let rows = stride(from: 0, to: items.count, by: 3).map { Array(items[$0..<min($0 + 3, items.count)]) }
+                VStack(spacing: 16) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { r, row in
+                        HStack(spacing: 12) {
+                            ForEach(Array(row.enumerated()), id: \.offset) { c, item in
+                                VStack(spacing: 7) {
+                                    (Self.gridCovers[item.key] ?? AnyView(EmptyView()))
+                                        .frame(width: 86, height: 124)
+                                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                                        .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.42), radius: 9, x: 0, y: 10)
+                                    stars(item.rating)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .rtEntrance(delay: 0.05 + Double(r * 3 + c) * 0.05, duration: 0.45)
+                            }
+                        }
                     }
                 }
             }
