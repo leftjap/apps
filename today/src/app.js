@@ -55,7 +55,7 @@ export function showAuthenticated() {
   if (!_mocksMounted) {
     injectMocks();
     stampBuildId();
-    syncViewportGap();
+    kickViewportCover();
     mountSheetDiag();
     _mocksMounted = true;
   }
@@ -143,25 +143,30 @@ function stampBuildId() {
 }
 
 /**
- * iOS 26 standalone 뷰포트 결손 보정 (2026-07-03 실기기 진단 sc375x812·ih768·sat44).
- * 홈 화면 웹앱에서 layout viewport 가 상태바 높이만큼 짧게 잡혀(812−44=768) 화면 하단
- * 44pt 가 웹뷰 밖 흰 띠가 됨 — fixed bottom:0 요소(댓글 시트·드로어·FAB)가 거기 못 닿음.
- * 결손 = screen.height − innerHeight 를 --vp-gap 으로 노출, CSS 가 그만큼 아래로 내려 붙임.
- * 정상 기기(결손 0)·비 standalone·가로모드(결손 >80)는 0 — 무영향.
+ * iOS 26 standalone cold start 에서 viewport-fit=cover 가 조용히 비활성화돼
+ * layout viewport 가 상태바만큼 짧아지는 회귀(실기기 진단 sc375x812·ih768·sat44) 보정.
+ * viewport-fit auto↔cover 토글이 기기 회전과 동급의 기하 재계산을 강제해 뷰포트를
+ * 전체 화면(812)으로 복원한다. 뷰포트 밖(768~812)은 fixed 요소가 렌더되지 않아
+ * CSS 오프셋 보정(--vp-gap)은 불가함이 실기기에서 확인됨 — 뷰포트 자체를 고치는 게 유일 경로.
+ * 비 standalone 은 no-op. 재계산 후에도 결손이 남으면 1회 재시도.
  */
-function syncViewportGap() {
+function kickViewportCover() {
   const standalone = window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
-  const apply = () => {
-    let gap = 0;
-    if (standalone) {
-      const raw = (window.screen?.height || 0) - window.innerHeight;
-      if (raw > 0 && raw <= 80) gap = raw;
-    }
-    document.documentElement.style.setProperty('--vp-gap', `${gap}px`);
+  if (!standalone) return;
+  const meta = document.querySelector('meta[name="viewport"]');
+  const cover = meta?.getAttribute('content') || '';
+  if (!cover.includes('viewport-fit=cover')) return;
+  const toggle = () => {
+    meta.setAttribute('content', cover.replace('viewport-fit=cover', 'viewport-fit=auto'));
+    requestAnimationFrame(() => meta.setAttribute('content', cover));
   };
-  apply();
-  window.addEventListener('resize', apply);
+  toggle();
+  // cold start 직후 1회로 안 잡히는 경우 대비 — 결손이 남아 있으면(상태바 폭 이내) 한 번 더
+  setTimeout(() => {
+    const raw = (window.screen?.height || 0) - window.innerHeight;
+    if (raw > 0 && raw <= 80) toggle();
+  }, 700);
 }
 
 // [임시 진단 2026-07-03 — 실기기 댓글 시트 지오메트리 규명 후 제거]
