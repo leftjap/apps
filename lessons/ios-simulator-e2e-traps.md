@@ -39,7 +39,17 @@ CGEvent(mouseEventSource: nil, mouseType: .leftMouseUp, mouseCursorPosition: pt,
 호스트 pbcopy + Cmd+V/Edit>Paste 도 미반영 (Return 만 전달됨). ASCII 쿼리로 우회하거나
 검색 제출은 기본 쿼리 + Return 으로 검증.
 
-## 6. 무료 Personal 팀: Time Sensitive Notifications capability 불가
+## 6. 시뮬 unified log: `log show --info` 필수, stream 은 무출력
+`simctl spawn <UD> log stream --predicate ...` 은 앱이 로깅해도 아무것도 안 잡혔다 (원인 미상).
+`log show --info --last Nm --predicate 'subsystem == "..."'` 는 확실히 동작 — Logger `.info()` 는
+`--info` 플래그 없으면 안 보인다. 검증 계측은 stream 말고 show 사후 조회로.
+
+## 7. simctl push 는 잠자는 디스플레이를 못 깨운다
+sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). 앱 자체의 로컬 알림/LA alert
+경로는 깨웠음(r5) — 웨이크 검증은 앱 신호로만 가능. 잠금 직후 시뮬 디스플레이는 즉시 소등되고
+탭·클릭으로도 안 깨어남 → 잠금 화면 스샷은 앱 신호 도착 직후 타이밍에만 가능.
+
+## 8. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
 표시가 되므로 시뮬 성공 ≠ 실기기 자격. 코드의 `interruptionLevel = .timeSensitive` 자체는

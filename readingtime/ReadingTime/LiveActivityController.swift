@@ -62,6 +62,7 @@ final class LiveActivityController {
             if let mine { await mine.end(nil, dismissalPolicy: .immediate) }
             // 크래시/강제종료 후 잔존하는 좀비 Live Activity 일괄 정리
             for a in Activity<RTReadingActivityAttributes>.activities where a.id != mine?.id {
+                Self.log.info("좀비 live activity 정리 id=\(a.id, privacy: .public)")
                 await a.end(nil, dismissalPolicy: .immediate)
             }
         }
