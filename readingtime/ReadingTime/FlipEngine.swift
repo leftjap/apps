@@ -66,6 +66,11 @@ final class FlipEngine: ObservableObject {
         model.syncElapsed(session.elapsed(at: Date()))
     }
 
+    /// 포그라운드 복귀 시 아직 발화 전인 잠금 신호 알림 취소
+    func cancelPendingSignals() {
+        signals.cancelPending()
+    }
+
     private func startUpdates() {
         motion.startDeviceMotionUpdates(to: queue) { [weak self] data, _ in
             guard let z = data?.gravity.z else { return }

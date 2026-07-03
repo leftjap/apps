@@ -1,6 +1,7 @@
 import SwiftUI
 import RTViews
 import ReadingTimeKit
+import os.log
 
 // 리딩타임 iOS 앱 진입점 — UI/상태는 전부 RTViews(RTRootView + RTAppModel),
 // 여기선 실서비스 배선만: 알라딘 검색·클라우드 저장·엎기 센서·keep-alive.
@@ -25,12 +26,28 @@ struct ReadingTimeApp: App {
         model.sessionSeed = 0   // 실앱: 세션은 0초부터 (데모 시드 26:14 는 rtshot/rtapp 전용)
 
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
-        model.onAuthChange = {
-            UserDefaults.standard.set($0, forKey: "rt.loggedIn")
+        model.onAuthChange = { loggedIn in
+            UserDefaults.standard.set(loggedIn, forKey: "rt.loggedIn")
             UserDefaults.standard.synchronize()   // 즉시 플러시 — 강제 종료에도 로그인 상태 유지
+            if !loggedIn {
+                Task { await cloud.signOut() }    // 로그아웃 시 Supabase 세션도 제거
+            }
         }
         if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
             model.nav(.home)
+        }
+
+        // 로그인 버튼 → Google OAuth (ASWebAuthenticationSession) → 성공 시 홈 진입
+        model.loginHandler = { [weak model] in
+            Task { @MainActor in
+                do {
+                    try await cloud.signInWithGoogle()
+                    model?.login()
+                } catch {
+                    Logger(subsystem: "com.leftjap.readingtime", category: "auth")
+                        .error("google 로그인 실패/취소: \(String(describing: error), privacy: .public)")
+                }
+            }
         }
 
         // 시뮬레이터 검증용: simctl launch ... --seq "login,start" --sim-motion "1:0.95,8:0.2"
@@ -94,6 +111,7 @@ struct ReadingTimeApp: App {
                     }
                     if phase == .active {
                         flip.syncModel()   // 백그라운드 경과 wall-clock 보정
+                        flip.cancelPendingSignals()   // 발화 전 잠금 신호 알림은 불필요
                     }
                 }
         }

@@ -28,6 +28,21 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(m.route == .home)
     }
 
+    // OAuth 배선: 핸들러가 있으면 즉시 라우팅 대신 핸들러에 위임(성공 시 핸들러가 login() 호출),
+    // 없으면 기존 즉시 로그인 (rtshot/rtapp 데모 경로 보존)
+    @Test func requestLoginDelegatesToHandler() {
+        let m = RTAppModel()
+        var called = 0
+        m.loginHandler = { called += 1 }
+        m.requestLogin()
+        #expect(called == 1)
+        #expect(m.route == .login)
+
+        m.loginHandler = nil
+        m.requestLogin()
+        #expect(m.route == .home)
+    }
+
     @Test func startFlipGoesWaitWithoutSession() {
         let m = RTAppModel()
         m.login()

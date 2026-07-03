@@ -100,6 +100,8 @@ public final class RTAppModel: ObservableObject {
     public var onAuthChange: ((Bool) -> Void)?
     /// 검색 프로바이더 (알라딘 라이브) — nil 이면 시트 13 은 시안 데모 rows 유지
     public var searchProvider: ((String) async throws -> [RTBookHit])?
+    /// 로그인 버튼 핸들러 (iOS OAuth 배선) — nil 이면 즉시 login() (rtshot/rtapp 데모 경로)
+    public var loginHandler: (() -> Void)?
     @Published public var searchQuery = "몰입"
     @Published public var searchResults: [RTBookHit]?
 
@@ -142,6 +144,11 @@ public final class RTAppModel: ObservableObject {
     public func login() {
         nav(.home)
         onAuthChange?(true)
+    }
+
+    /// 로그인 버튼 진입점 — OAuth 핸들러가 있으면 위임(성공 시 핸들러가 login() 호출)
+    public func requestLogin() {
+        if let loginHandler { loginHandler() } else { login() }
     }
 
     public func setMode(_ m: RTMode) { mode = m }

@@ -9,7 +9,7 @@ public struct Screen01Login: View {
     }
 
     public init(model: RTAppModel?) {
-        self.onLogin = { [weak model] in model?.login() }
+        self.onLogin = { [weak model] in model?.requestLogin() }
     }
 
     public var body: some View {

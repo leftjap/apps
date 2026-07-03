@@ -51,6 +51,13 @@ public final class CloudStore: ObservableObject {
         signedIn = true
     }
 
+    // 로그아웃 — 로컬 세션 제거 (개인 앱: 실패해도 UI 로그아웃은 진행)
+    public func signOut() async {
+        try? await client.auth.signOut()
+        ownerID = nil
+        signedIn = false
+    }
+
     // 종이책 세션 종료 시 오늘치에 delta 초를 더해 upsert (read-modify-write; 단일 사용자라 경쟁 무시)
     public func addPaperSeconds(_ delta: Int, source: SessionSource, on date: Date) async throws {
         guard let owner = ownerID, delta > 0 else { return }
