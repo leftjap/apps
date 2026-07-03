@@ -44,7 +44,12 @@ public struct SheetSettings: View {
 // 정렬 — 최근순/이름순/별점순 (현재 항목 체크)
 public struct SheetSort: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let current: RTLibrarySort
+
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.current = model?.librarySort ?? .recent
+    }
 
     static let rows: [(RTLibrarySort, String)] = [(.recent, "최근순"), (.name, "이름순"), (.rating, "별점순")]
 
@@ -57,7 +62,7 @@ public struct SheetSort: View {
                         HStack {
                             Text(label).font(.sans(13.5, 600)).foregroundColor(RT.ink)
                             Spacer()
-                            if (model?.librarySort ?? .recent) == sort {
+                            if current == sort {
                                 RTIcon(RTIconPath.check, size: 15, stroke: RT.green, lineWidth: 2.4)
                             }
                         }

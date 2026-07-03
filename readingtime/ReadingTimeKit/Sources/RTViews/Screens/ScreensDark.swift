@@ -141,12 +141,19 @@ public struct Screen03FlipWait: View {
 }
 
 // ── 04 엎기 타이머 (paused 기본 = 시안 캐노니컬 / recording 변형) ──
+// 동적 값은 저장 프로퍼티로 스냅샷 — model 참조만 들고 있으면 SwiftUI 가
+// 자식 뷰를 "변화 없음"으로 스킵해 tick 이 화면에 반영되지 않는다 (실창 검증에서 발견).
 public struct Screen04FlipPaused: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let paused: Bool
+    private let elapsed: Int
 
-    var paused: Bool { model.map { $0.session?.status != .recording } ?? true }
-    var elapsed: Int { model?.session?.elapsed ?? RTAppModel.demoElapsed }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.paused = model.map { $0.session?.status != .recording } ?? true
+        self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
+    }
+
     var sessionMin: Int { elapsed / 60 }
 
     public var body: some View {
@@ -273,10 +280,14 @@ public struct Screen04FlipPaused: View {
 // ── 05 탭 모드 (recording 기본 = 시안 캐노니컬 / paused 변형) ──
 public struct Screen05TapRecording: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let paused: Bool
+    private let elapsed: Int
 
-    var paused: Bool { model.map { $0.session?.status != .recording } ?? false }
-    var elapsed: Int { model?.session?.elapsed ?? RTAppModel.demoElapsed }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.paused = model.map { $0.session?.status != .recording } ?? false
+        self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
+    }
 
     public var body: some View {
         let t = RTAppModel.hms(elapsed)

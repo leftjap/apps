@@ -3,9 +3,12 @@ import SwiftUI
 // v8 02 홈 (허브) — 스펙: frames/02.html. model 주입 시 인터랙션 활성 (nil = 정적 데모).
 public struct Screen02Home: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let mode: RTMode   // 저장 스냅샷 — 참조만 들면 SwiftUI 가 갱신을 스킵 (§ScreensDark 주석)
 
-    var mode: RTMode { model?.mode ?? .flip }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.mode = model?.mode ?? .flip
+    }
 
     public var body: some View {
         ZStack(alignment: .top) {

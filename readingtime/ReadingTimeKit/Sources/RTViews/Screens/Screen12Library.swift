@@ -3,10 +3,14 @@ import SwiftUI
 // v8 12 서재 — 스펙: frames/12.html
 public struct Screen12Library: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let filter: RTLibraryFilter
+    private let sort: RTLibrarySort
 
-    var filter: RTLibraryFilter { model?.libraryFilter ?? .all }
-    var sort: RTLibrarySort { model?.librarySort ?? .recent }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.filter = model?.libraryFilter ?? .all
+        self.sort = model?.librarySort ?? .recent
+    }
 
     public var body: some View {
         ZStack(alignment: .top) {
@@ -201,9 +205,14 @@ public struct Screen12Library: View {
 // ── 13 책 추가 (검색 시트, top 96 고정) ──
 public struct Sheet13AddBook: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let added: Set<String>
+    private let results: [RTBookHit]?
 
-    var added: Set<String> { model?.added ?? ["flow"] }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.added = model?.added ?? ["flow"]
+        self.results = model?.searchResults
+    }
 
     // 데모 검색 결과 (prototype SEARCH_ROWS)
     static let searchRows: [(key: String, title: String, meta: String)] = [
@@ -263,13 +272,13 @@ public struct Sheet13AddBook: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.green, lineWidth: 1.5))
                     .shadow(color: Color(hex: 0x16140F, alpha: 0.05), radius: 3, x: 0, y: 2)
-                    Text("검색 결과 · \(model?.searchResults.map { "\($0.count)" } ?? "32")건")
+                    Text("검색 결과 · \(results.map { "\($0.count)" } ?? "32")건")
                         .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
                         .foregroundColor(RT.faint)
                 }
                 .padding(EdgeInsets(top: 0, leading: 24, bottom: 12, trailing: 24))
                 Group {
-                    if let results = model?.searchResults {
+                    if let results {
                         ScrollView(showsIndicators: false) {
                             VStack(spacing: 0) {
                                 ForEach(results, id: \.isbn) { hit in

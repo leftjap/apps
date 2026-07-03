@@ -3,11 +3,17 @@ import SwiftUI
 // v8 06 세션 완료 — 스펙: frames/06.html (모션 종료 상태 = 타임라인 완료 프레임)
 public struct Screen06Done: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let elapsed: Int
+    private let isFlip: Bool
 
-    var minutes: Int { (model?.session?.elapsed ?? RTAppModel.demoElapsed) / 60 }
-    var seconds: Int { (model?.session?.elapsed ?? RTAppModel.demoElapsed) % 60 }
-    var isFlip: Bool { model.map { $0.session?.mode != .tap } ?? true }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
+        self.isFlip = model.map { $0.session?.mode != .tap } ?? true
+    }
+
+    var minutes: Int { elapsed / 60 }
+    var seconds: Int { elapsed % 60 }
 
     public var body: some View {
         ZStack(alignment: .top) {

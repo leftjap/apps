@@ -3,9 +3,12 @@ import SwiftUI
 // v8 10 기록 · 주간 — 스펙: frames/10.html
 public struct Screen10Stats: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let sel: Int
 
-    var sel: Int { min(max(model?.weekSel ?? 3, 0), Self.week.count - 1) }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.sel = min(max(model?.weekSel ?? 3, 0), Self.week.count - 1)
+    }
 
     static let week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)] = [
         ("월", "5.18", 38, 47, false, false), ("화", "5.19", 52, 64, false, false),

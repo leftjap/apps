@@ -38,7 +38,13 @@ struct RTAppMain: App {
         }
         let cloud = CloudStore()
         self.cloud = cloud
-        _model = StateObject(wrappedValue: RTAppWiring.makeModel(cloud: cloud))
+        let model = RTAppWiring.makeModel(cloud: cloud)
+        // --seq "login,simFlip": 지정 상태로 시작 (데모·검증용)
+        let args = CommandLine.arguments
+        if let i = args.firstIndex(of: "--seq"), args.count > i + 1 {
+            args[i + 1].split(separator: ",").forEach { model.apply(String($0)) }
+        }
+        _model = StateObject(wrappedValue: model)
     }
 
     var body: some Scene {

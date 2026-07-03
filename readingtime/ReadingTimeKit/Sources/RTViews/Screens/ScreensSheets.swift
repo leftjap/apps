@@ -46,13 +46,14 @@ struct SheetHead: View {
 // ── 07 시간 직접 추가 ──
 public struct Sheet07AddTime: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let value: Int
+    private let selPreset: Int?
 
-    var value: Int { model?.addtimeValue ?? 35 }
-    var selPreset: Int? {
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.value = model?.addtimeValue ?? 35
         // model 없음(정적 데모) = +15 선택 / model 있고 preset nil = 미선택 (이중 옵셔널 구분)
-        if let model { return model.addtimePreset }
-        return 15
+        self.selPreset = model.map(\.addtimePreset) ?? 15
     }
 
     public var body: some View {
@@ -156,9 +157,12 @@ public struct Sheet07AddTime: View {
 // ── 09 완독 · 별점 ──
 public struct Sheet09Finish: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let rating: Int
 
-    var rating: Int { model?.rating ?? 4 }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.rating = model?.rating ?? 4
+    }
 
     public var body: some View {
         SheetShell(topPadding: 13) {
