@@ -66,10 +66,6 @@ final class FlipEngine: ObservableObject {
         model.syncElapsed(session.elapsed(at: Date()))
     }
 
-    /// 포그라운드 복귀 시 아직 발화 전인 잠금 신호 알림 취소
-    func cancelPendingSignals() {
-        signals.cancelPending()
-    }
 
     private func startUpdates() {
         motion.startDeviceMotionUpdates(to: queue) { [weak self] data, _ in
@@ -87,12 +83,12 @@ final class FlipEngine: ObservableObject {
             if model.route == .flipWait {
                 session.start(at: now)
                 model.simFlip()
-                signals.signalStart(elapsed: 0)   // 화면이 안 보이는 상태의 "기록 시작" 신호
+                signals.signalStart()   // 화면이 안 보이는 상태의 "기록 시작" 신호
             } else if model.route == .flipTimer, model.session?.mode == .flip,
                       model.session?.status == .paused {
                 session.resume(at: now)
                 model.togglePause()   // 다시 엎으면 이어서
-                signals.signalStart(elapsed: session.elapsed(at: now))
+                signals.signalStart()
             }
         case .up:
             if model.route == .flipTimer, model.session?.mode == .flip,
@@ -100,7 +96,7 @@ final class FlipEngine: ObservableObject {
                 session.pause(at: now)
                 model.togglePause()   // 들어올림 → 일시정지
                 model.syncElapsed(session.elapsed(at: now))
-                signals.signalPause(elapsed: session.elapsed(at: now))
+                signals.signalPause()
             }
         }
     }

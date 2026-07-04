@@ -128,7 +128,6 @@ struct ReadingTimeApp: App {
                     }
                     if phase == .active {
                         flip.syncModel()   // 백그라운드 경과 wall-clock 보정
-                        flip.cancelPendingSignals()   // 발화 전 잠금 신호 알림은 불필요
                     }
                 }
         }
