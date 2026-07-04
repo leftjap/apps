@@ -41,29 +41,55 @@ final class FlipEngine: ObservableObject {
         self.model = model
         self.script = motionScript.map(Self.parseScript) ?? []
         deviceLocked = !UIApplication.shared.isProtectedDataAvailable
+        // 1차 신호: Darwin lockstate — 잠금 "순간" 발화 (개인 사이드로드 앱이라 사용 무방).
+        // protected data 신호(~10초 지연, Apple 문서)만 쓰면 잠그자마자 엎었을 때
+        // 진동이 수 초 늦는다 (8차 실기기 피드백 "3초 딜레이") → 즉시 신호로 해소.
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque(),
+            { _, observer, _, _, _ in
+                guard let observer else { return }
+                let engine = Unmanaged<FlipEngine>.fromOpaque(observer).takeUnretainedValue()
+                Task { @MainActor in engine.handleLockStateChange() }
+            },
+            "com.apple.springboard.lockstate" as CFString,
+            nil, .deliverImmediately)
+        // 2차(백업) 신호: protected data — 방향이 명확해 상태 보정용으로 유지
         NotificationCenter.default.addObserver(
             forName: UIApplication.protectedDataWillBecomeUnavailableNotification,
             object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in
-                guard let self else { return }
-                self.deviceLocked = true
-                // 잠금 확정 — 보류 중이던 엎힘이 있으면 그 시점으로 소급 적용.
-                // 15초 초과 스테일 보류는 미적용 (서스펜드로 폐기 타이머가 못 돈 경우 안전망)
-                if let at = self.pendingDown {
-                    self.pendingDown = nil
-                    if Date().timeIntervalSince(at) < 15 {
-                        Self.log.info("잠금 확인 — 보류 엎힘 소급 적용")
-                        self.performDown(at: at)
-                    } else {
-                        Self.log.info("스테일 보류 엎힘 폐기")
-                    }
-                }
-            }
+            Task { @MainActor in self?.markLocked() }
         }
         NotificationCenter.default.addObserver(
             forName: UIApplication.protectedDataDidBecomeAvailableNotification,
             object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.deviceLocked = false }
+        }
+    }
+
+    /// Darwin lockstate 는 잠금/해제 양쪽에서 페이로드 없이 발화 — 방향은 상태로 추론:
+    /// 앱이 화면을 점유하지 않은 상태에서 미잠금이었다면 → 잠금, 잠금 상태였다면 → 해제.
+    private func handleLockStateChange() {
+        if !deviceLocked, UIApplication.shared.applicationState != .active {
+            Self.log.info("잠금 신호 수신 (lockstate)")
+            markLocked()
+        } else if deviceLocked {
+            deviceLocked = false
+        }
+    }
+
+    private func markLocked() {
+        deviceLocked = true
+        // 잠금 확정 — 보류 중이던 엎힘이 있으면 그 시점으로 소급 적용.
+        // 15초 초과 스테일 보류는 미적용 (서스펜드로 폐기 타이머가 못 돈 경우 안전망)
+        if let at = pendingDown {
+            pendingDown = nil
+            if Date().timeIntervalSince(at) < 15 {
+                Self.log.info("잠금 확인 — 보류 엎힘 소급 적용")
+                performDown(at: at)
+            } else {
+                Self.log.info("스테일 보류 엎힘 폐기")
+            }
         }
     }
 
