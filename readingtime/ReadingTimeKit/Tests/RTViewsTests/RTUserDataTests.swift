@@ -30,6 +30,7 @@ private func day(_ s: String, hour: Int = 12) -> Date {
     @Test func liveToggleAddAddsAndRemovesBook() {
         let m = liveModel()
         m.searchResults = [Self.hit]
+        m.openSheet(.addbook)
         var changes = 0
         m.onUserDataChange = { _ in changes += 1 }
 
@@ -38,11 +39,21 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.userData?.books.first?.title == "몰입 Flow")
         #expect(m.added.contains(Self.hit.isbn))
         #expect(changes == 1)
+        #expect(m.sheet == nil)   // 검색 결과 선택 → 시트 자동 닫힘 (실기기 피드백)
 
+        m.openSheet(.addbook)
         m.toggleAdd(Self.hit.isbn)
         #expect(m.userData?.books.isEmpty == true)
         #expect(!m.added.contains(Self.hit.isbn))
         #expect(changes == 2)
+        #expect(m.sheet == .addbook)   // 해제는 시트 유지
+    }
+
+    @Test func demoToggleAddKeepsSheetOpen() {
+        let m = RTAppModel()   // 데모: rtshot 13 시드가 시트 열림+체크 상태를 렌더해야 함
+        m.openSheet(.addbook)
+        m.toggleAdd("money")
+        #expect(m.sheet == .addbook)
     }
 
     @Test func demoToggleAddKeepsSetOnly() {

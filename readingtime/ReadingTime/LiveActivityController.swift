@@ -1,14 +1,12 @@
 import Foundation
 import ActivityKit
-import UIKit
 import RTViews
 import os.log
 
 // 잠금 화면 Live Activity 수명 관리 — 엎기 세션과 동기화.
 // 기록 중엔 startedAt(=now−elapsed) 기준으로 시스템이 잠금 화면에서 초를 자동으로 굴리고,
 // 일시정지/재개/종료는 앱 프로세스(keep-alive 로 백그라운드 생존)가 update/end 로 반영한다.
-// 잠금 중 상태 전환은 alertConfiguration 으로 갱신 — 잠금 화면에서 주의를 끌도록
-// (화면 웨이크·사운드) 설계된 경로. 로컬 알림(RTFlipSignals)과 이중 채널.
+// 갱신은 무음(alertConfiguration 미사용) — 실기기 실측상 웨이크 효과 없이 사운드만 냈음.
 @MainActor
 final class LiveActivityController {
     private var activity: Activity<RTReadingActivityAttributes>?
@@ -30,14 +28,9 @@ final class LiveActivityController {
             pausedElapsed: s.elapsed
         )
         if let activity {
-            // 화면을 못 보는 상태(잠금·백그라운드)에서만 alert — 포그라운드에선 무음 갱신
-            let alert: AlertConfiguration? = UIApplication.shared.applicationState == .active ? nil
-                : AlertConfiguration(
-                    title: "\(s.status == .paused ? "일시정지됨" : "기록 중")",
-                    body: "\(s.status == .paused ? "다시 엎으면 이어서 기록됩니다" : "리딩타임이 기록하고 있어요")",
-                    sound: .default)
-            Task { await activity.update(ActivityContent(state: state, staleDate: nil),
-                                         alertConfiguration: alert) }
+            // alertConfiguration 제거 — 실기기 실측(2026-07-04): 화면 웨이크 효과는 없고
+            // 사운드만 냄(사용자 불만). 상태 갱신은 무음으로 충분.
+            Task { await activity.update(ActivityContent(state: state, staleDate: nil)) }
         } else {
             do {
                 let a = try Activity.request(

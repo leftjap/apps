@@ -393,6 +393,7 @@ public final class RTAppModel: ObservableObject {
                                        publisher: hit.publisher, coverUrl: hit.coverUrl,
                                        addedAt: now()))
             }
+            closeSheet()   // 검색 결과 선택 → 시트 자동 닫힘 (실기기 피드백 2026-07-04)
         } else {
             mutateUserData { $0.books.removeAll { $0.isbn == key } }
         }

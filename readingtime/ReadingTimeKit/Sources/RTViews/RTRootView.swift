@@ -9,13 +9,36 @@ public struct RTRootView: View {
     private static let sharedTicker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let ticker = RTRootView.sharedTicker
 
+    // 스와이프 뒤로가기 (today 제스처 질감 포팅 — RTSwipeBack)
+    @State private var swipeX: CGFloat = 0
+    @State private var swipeDecision: RTSwipeBack.Decision?
+
     public init(model: RTAppModel) {
         self.model = model
     }
 
+    /// 좌→우 스와이프의 뒤로가기 목적지 (헤더 back 버튼과 동일 매핑). nil = 스와이프 없음.
+    private var backRoute: RTRoute? {
+        guard model.sheet == nil else { return nil }
+        switch model.route {
+        case .detail: return .library
+        case .library, .statsWeek, .statsMonth: return .home
+        default: return nil
+        }
+    }
+
     public var body: some View {
         ZStack {
+            if let back = backRoute, swipeX > 0 {
+                // 뒤 화면: iOS 내비 팝 질감 — 30% 시차 + 걷히는 딤
+                screenView(back)
+                    .offset(x: (swipeX - 390) * 0.3)
+                Color.black.opacity(0.10 * Double(1 - swipeX / 390))
+                    .allowsHitTesting(false)
+            }
             screen
+                .offset(x: swipeX)
+                .shadow(color: Color.black.opacity(swipeX > 0 ? 0.18 : 0), radius: 14, x: -5, y: 0)
             if let sheet = model.sheet {
                 sheetDim(sheet)
                     .contentShape(Rectangle())
@@ -25,14 +48,54 @@ public struct RTRootView: View {
             }
         }
         .frame(width: 390, height: 844)
+        .simultaneousGesture(backRoute == nil ? nil : swipeBack)
         .onReceive(ticker) { _ in
             // app.js startTick: 04·05 에서 recording 일 때만
             if model.route == .flipTimer || model.route == .tapTimer { model.tick() }
         }
     }
 
+    private var swipeBack: some Gesture {
+        DragGesture(minimumDistance: RTSwipeBack.decidePt)
+            .onChanged { v in
+                if swipeDecision == nil {
+                    swipeDecision = RTSwipeBack.classify(dx: v.translation.width, dy: v.translation.height)
+                }
+                if swipeDecision == .active {
+                    swipeX = max(0, v.translation.width)   // 손가락 1:1 추적
+                }
+            }
+            .onEnded { v in
+                let decided = swipeDecision
+                swipeDecision = nil
+                guard decided == .active, let back = backRoute else {
+                    if swipeX != 0 { withAnimation(Self.swipeCurve) { swipeX = 0 } }
+                    return
+                }
+                // 관성: predictedEnd 로 릴리즈 속도 근사 (pt/s)
+                let velocity = (v.predictedEndTranslation.width - v.translation.width) * 4
+                if RTSwipeBack.shouldPop(dx: swipeX, width: 390, velocity: velocity) {
+                    withAnimation(Self.swipeCurve) { swipeX = 390 }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
+                        model.nav(back)
+                        swipeX = 0
+                    }
+                } else {
+                    withAnimation(Self.swipeCurve) { swipeX = 0 }
+                }
+            }
+    }
+
+    private static let swipeCurve = Animation.timingCurve(
+        RTSwipeBack.curve.0, RTSwipeBack.curve.1, RTSwipeBack.curve.2, RTSwipeBack.curve.3,
+        duration: 0.26)
+
     @ViewBuilder private var screen: some View {
-        switch model.route {
+        screenView(model.route)
+    }
+
+    @ViewBuilder private func screenView(_ route: RTRoute) -> some View {
+        switch route {
         case .login: Screen01Login(model: model)
         case .home:
             // 실앱(userData 주입)에서 읽는 중 책이 없으면 빈 홈(14) — 데모 경로는 항상 02

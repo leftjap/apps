@@ -1,6 +1,7 @@
 import UIKit
 import CoreHaptics
 import UserNotifications
+import AudioToolbox
 import os.log
 
 // 엎기/들기 신호 — 사용자가 화면을 못 보는 상황에서 상태 전환을 확실히 알린다.
@@ -90,12 +91,18 @@ final class RTFlipSignals {
     private static let notificationID = "rt.flip.signal"
 
     private func postNotification(title: String, body: String, delay: TimeInterval) {
+        // 즉시 진동 — 프로세스가 keep-alive 로 살아있으므로 백그라운드에서도 시도.
+        // (실기기 실측 2026-07-04: 알림 사운드는 시끄럽고, 무음 알림만으론 진동이 안 옴)
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default
+        // 소리 금지(실기기 피드백) — 무음 사운드 파일이면 iOS 가 '사운드 있음' 으로 취급해
+        // 설정에 따른 진동은 유지하면서 가청음은 없음
+        content.sound = UNNotificationSound(named: UNNotificationSoundName("silent.caf"))
         // 무료 Personal 팀은 Time Sensitive capability 미지원(2026-07-04 빌드 실측) —
-        // 자격 없으면 시스템이 일반(active)로 강등하나, 지연 도착 + 사운드만으로 웨이크·진동은 성립
+        // 자격 없으면 시스템이 일반(active)로 강등
         content.interruptionLevel = .timeSensitive
         // 같은 identifier 재사용 → 1s 내 lift↔re-flip 연타 시 pending 이 최신 신호로 대체됨
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
@@ -104,7 +111,7 @@ final class RTFlipSignals {
             if let error {
                 Self.log.error("잠금 알림 게시 실패: \(String(describing: error), privacy: .public)")
             } else {
-                Self.log.info("잠금 알림 예약(+\(delay, privacy: .public)s): \(title, privacy: .public)")
+                Self.log.info("잠금 알림 예약(+\(delay, privacy: .public)s, 무음): \(title, privacy: .public)")
             }
         }
     }
