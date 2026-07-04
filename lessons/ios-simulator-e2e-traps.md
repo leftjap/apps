@@ -65,6 +65,13 @@ sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). �
 - 교훈: 신호 타이밍 가설은 stdout 계측(print — devicectl --console 은 os.log 미표시)으로
   실측 후 수정할 것. 추론만으로 3회 연속 수정 실패했다.
 
+추가 (15차): **"12초 내 잠금 신호 없으면 홈 이탈 엎기로 폐기" 가드는 실기기 도달 불가** —
+엎어놓기만 해도 face-down 감지 → 화면 오프 → 수 초 내 자동 잠금 신호가 발생해 보류가 항상
+소급된다 (시뮬엔 face-down 자동잠금이 없어 시뮬 실증이 이를 못 잡았음). 잠금 신호만으로
+독서 잠금/홈 이탈 구분 불가 → 이탈 컨텍스트(무장 모델: 앱에서 잠금으로 이탈했을 때만 배경
+엎힘 유효)로 구분. 해제 직후 잔여 lockstate 는 키백 열림(`isProtectedDataAvailable`)이면
+stray 로 무시 — 실제 잠금은 protected data 신호가 동시각 도착해 커버 (12·14차 실측).
+
 ## 9. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
