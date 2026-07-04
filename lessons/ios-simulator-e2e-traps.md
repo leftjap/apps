@@ -55,6 +55,12 @@ sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). �
 두 번째 발화에 뒤집혀 잠금 오판 회귀를 냈다 (2026-07-04 9차). **잠금 설정만 멱등으로 하고,
 해제는 방향 명확한 신호(protectedDataDidBecomeAvailable·앱 활성 복귀)로만.**
 
+추가 (10차): 포그라운드 중 측면 버튼 잠금은 lockstate 가 `.deliverImmediately` 로 UIKit
+resign 처리보다 먼저 도착해 **버스트 전체가 applicationState == .active 로 읽힌다** —
+`.active` guard 로 즉시 기각하면 잠금 감지가 protected data(~3초+)까지 공백 (재엎기 진동
+지연이 8차 수준으로 회귀). 상태를 그 순간 값으로 비가역 판정하지 말고 **짧은 지연 후
+재판정** (0.5초 뒤 non-active 면 잠금, 여전히 active 면 해제 직후 잔여 발화로 무시).
+
 ## 9. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"

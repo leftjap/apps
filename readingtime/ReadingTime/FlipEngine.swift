@@ -73,10 +73,26 @@ final class FlipEngine: ObservableObject {
     ///   protectedDataDidBecomeAvailable / 앱 포그라운드 복귀(setUnlockedOnActive).
     /// 해제 중 lockstate 오발화로 잠깐 true 가 되어도, 그 순간의 엎기 = 손에 든 폰을
     /// 엎는 독서 의도라 무해하며 곧 available 신호가 보정한다.
+    ///
+    /// 10차 실기기: 포그라운드 중 측면 버튼 잠금은 lockstate 가 UIKit resign 처리보다
+    /// 먼저 도착해 버스트 전체가 .active 로 읽힘 → 즉시 기각하면 protected data(~3초+)
+    /// 까지 잠금 감지 공백 (재엎기 진동 지연). 기각 대신 0.5초 뒤 재판정한다:
+    /// 진짜 잠금이면 그 사이 앱이 배경으로 내려가 있고, 해제 직후 잔여 발화면
+    /// 여전히 .active 라 무시된다 (0.5초 < .down 디바운스 0.7초 — 체감 지연 없음).
     private func handleLockStateChange() {
-        guard !deviceLocked, UIApplication.shared.applicationState != .active else { return }
-        Self.log.info("잠금 신호 수신 (lockstate)")
-        markLocked()
+        guard !deviceLocked else { return }
+        guard UIApplication.shared.applicationState == .active else {
+            Self.log.info("잠금 신호 수신 (lockstate)")
+            markLocked()
+            return
+        }
+        Self.log.info("lockstate@active — 0.5초 재판정 예약")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self, !self.deviceLocked,
+                  UIApplication.shared.applicationState != .active else { return }
+            Self.log.info("잠금 신호 수신 (lockstate 재판정)")
+            self.markLocked()
+        }
     }
 
     /// 포그라운드 복귀 = 확실한 비잠금 (ReadingTimeApp scenePhase 배선)
