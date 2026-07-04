@@ -172,6 +172,9 @@ struct ReadingTimeApp: App {
                     if phase == .background || phase == .active {
                         flip.handleScenePhaseChange()
                     }
+                    if phase == .background {
+                        flip.noteBackgrounded()   // 비잠금 배경 진입 = 홈 이탈 → 엎힘 무장 해제
+                    }
                     if phase == .active {
                         flip.setUnlockedOnActive()   // 포그라운드 = 확실한 비잠금 (lockstate 오발화 보정)
                         flip.syncModel()   // 백그라운드 경과 wall-clock 보정 (flip)

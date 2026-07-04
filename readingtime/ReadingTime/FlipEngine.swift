@@ -66,7 +66,17 @@ final class FlipEngine: ObservableObject {
     // 패스코드 기기에서 잠금 시 protected data 가 무효화되는 신호를 사용.
     // 주의: 이 신호는 잠금 후 ~10초 지연 발화(파일 보호 유예) — 잠그자마자 엎는 자연스러운
     // 동작이 "비잠금"으로 오판되는 회귀가 있었음 → 애매한 엎힘은 보류 후 재판정한다.
+    //
+    // 무장(armed) 모델 (15차): 잠금 신호만으론 "독서 잠금 엎기"와 "홈 이탈 엎기"를 구분할
+    // 수 없다 — 엎어놓기만 해도 face-down 감지 → 화면 오프 → 수 초 내 자동 잠금 신호가
+    // 발생해 12초 폐기가 실기기에서 사실상 도달 불가(보류가 소급돼 오기록). 그래서 배경
+    // 엎힘은 "앱에서 잠금으로 이탈한 컨텍스트"(armed)에서만 유효:
+    //   무장 = 포그라운드(전환 중 포함) 잠금 or 배경 진입 ±1.5초 내 잠금
+    //   해제 = 비잠금 배경 진입(홈 이탈) / 해제 후 15초 무재잠금(타앱 실사용) / 앱 활성 복귀
     private var deviceLocked = false
+    private var armed = false
+    private var backgroundedAt: Date?
+    private var lastAvailableAt: Date?
     private var pendingDown: Date?
 
     init(model: RTAppModel, motionScript: String? = nil) {
@@ -99,8 +109,20 @@ final class FlipEngine: ObservableObject {
             forName: UIApplication.protectedDataDidBecomeAvailableNotification,
             object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
+                guard let self else { return }
                 RTDbg.p("flip: protected data 해제 신호")
-                self?.deviceLocked = false
+                self.deviceLocked = false
+                // 글랜스(잠금 화면 탭)는 수 초 내 재잠금이 따라온다 (12·14차 실측 2~5초).
+                // 재잠금 없이 15초가 지나면 실사용 해제(홈·타앱) — 배경 엎힘 무장 해제 (15차).
+                // 잔여: 해제 후 15초 내 앱 미복귀 엎기는 글랜스와 구분 불가한 회색지대.
+                let at = Date()
+                self.lastAvailableAt = at
+                DispatchQueue.main.asyncAfter(deadline: .now() + 15) { [weak self] in
+                    guard let self, self.lastAvailableAt == at, !self.deviceLocked, self.armed,
+                          UIApplication.shared.applicationState == .background else { return }
+                    self.armed = false
+                    RTDbg.p("flip: 무장 해제 (해제 후 15초 무재잠금)")
+                }
             }
         }
     }
@@ -117,6 +139,14 @@ final class FlipEngine: ObservableObject {
         let state = UIApplication.shared.applicationState
         RTDbg.p("flip: lockstate 발화 (locked=\(deviceLocked), state=\(state.rawValue))")
         guard !deviceLocked, state != .active else { return }
+        // 키백이 열려 있으면 실제 잠금이 아니라 해제 직후 잔여/화면 이벤트 발화(stray) —
+        // stray 가 deviceLocked 를 재래치하면 홈에서 폰 사용 중 엎기가 잠금 직행 경로로
+        // 오기록된다 (15차 트레이스). 실제 잠금은 protected data 신호가 같은 순간 도착해
+        // markLocked 를 보장한다 (12·14차 실측: 두 신호 동시각 도착).
+        guard !UIApplication.shared.isProtectedDataAvailable else {
+            RTDbg.p("flip: lockstate 무시 (키백 열림 — stray)")
+            return
+        }
         Self.log.info("잠금 신호 수신 (lockstate)")
         RTDbg.p("flip: 잠금 확정 (lockstate)")
         markLocked()
@@ -126,10 +156,30 @@ final class FlipEngine: ObservableObject {
     func setUnlockedOnActive() {
         RTDbg.p("flip: 활성 복귀 — 잠금 해제")
         deviceLocked = false
+        armed = false        // 다음 무장은 다음 잠금 이탈에서
+        backgroundedAt = nil
+    }
+
+    /// 배경 진입 (ReadingTimeApp scenePhase 배선) — 비잠금 배경 진입 = 홈/타앱 이탈.
+    /// 측면 잠금 이탈은 잠금 신호가 ±1.5초 내 따라와 markLocked 에서 재무장된다.
+    func noteBackgrounded() {
+        backgroundedAt = Date()
+        if !deviceLocked, armed {
+            armed = false
+            RTDbg.p("flip: 무장 해제 (비잠금 배경 진입)")
+        }
     }
 
     private func markLocked() {
         deviceLocked = true
+        // 무장 판정: 포그라운드(전환 중 포함) 잠금 or 배경 진입 직후(1.5초 내) 잠금 =
+        // "앱에서 잠금으로 이탈". 홈 이탈 후 한참 뒤 잠금(엎기가 유발한 자동 잠금 포함)은
+        // 무장하지 않는다 — 15차: 홈 이탈 엎기의 face-down 자동 잠금이 소급 오기록을 만듦.
+        if UIApplication.shared.applicationState != .background
+            || backgroundedAt.map({ Date().timeIntervalSince($0) < 1.5 }) ?? false {
+            if !armed { RTDbg.p("flip: 무장 (잠금 이탈)") }
+            armed = true
+        }
         // 잠금 확정 — 보류 중이던 엎힘이 있으면 그 시점으로 소급 적용.
         // 15초 초과 스테일 보류는 미적용 (서스펜드로 폐기 타이머가 못 돈 경우 안전망)
         if let at = pendingDown {
@@ -195,27 +245,33 @@ final class FlipEngine: ObservableObject {
         guard let transition = detector.process(z: z, at: now) else { return }
         switch transition {
         case .down:
-            RTDbg.p("flip: 엎힘 감지 (locked=\(deviceLocked), state=\(UIApplication.shared.applicationState.rawValue))")
-            // 앱이 보이지도 잠기지도 않은 상태(홈·타앱)의 엎힘은 오기록 후보 — 단 잠금
-            // 신호가 ~10초 지연되므로 즉시 버리지 않고 보류: 잠금이 확인되면 소급 적용
-            // (엎은 시점부터 wall-clock 정산), 12초 내 확인 안 되면 앱 밖 동작으로 폐기.
-            if UIApplication.shared.applicationState == .background && !deviceLocked {
-                let at = now
-                pendingDown = at
-                Self.log.info("배경 엎힘 보류 — 잠금 여부 재판정 대기")
-                RTDbg.p("flip: 배경 엎힘 보류 (12초 재판정 대기) — 낙관 진동")
-                // 12차 계측: Face ID 기기는 잠금 화면 탭(글랜스)만으로 protected data 가
-                // 재해제돼, 잠금 엎기가 이 보류 경로로 강등된다. 기록은 재잠금 신호에서
-                // 소급돼 정확하지만 진동까지 2~5초 지연 — 진동만 지금 낙관 발화한다.
-                // 홈 이탈 오탐이면 12초 뒤 조용히 폐기 (헛진동 1회 수용, 소급 시 중복 억제).
-                signals.signalStart()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
-                    guard let self, self.pendingDown == at else { return }
-                    self.pendingDown = nil
-                    Self.log.info("앱 밖 엎힘 무시 (비잠금 백그라운드)")
-                    RTDbg.p("flip: 보류 폐기 — 비잠금 배경")
+            RTDbg.p("flip: 엎힘 감지 (locked=\(deviceLocked), armed=\(armed), state=\(UIApplication.shared.applicationState.rawValue))")
+            if UIApplication.shared.applicationState == .background {
+                // 비무장 배경 = 홈/타앱 이탈 컨텍스트 — 엎힘 완전 무시 (기록도 진동도 없음).
+                // 잠금 신호로는 구분 불가 (엎기 자체가 수 초 내 자동 잠금을 유발) — 15차.
+                guard armed else {
+                    Self.log.info("배경 엎힘 무시 (비무장 — 홈/타앱 이탈)")
+                    RTDbg.p("flip: 배경 엎힘 무시 (비무장)")
+                    return
                 }
-                return
+                // 무장 상태의 비잠금 엎힘 = 글랜스로 키백만 풀린 잠금 화면 엎기 — 보류:
+                // 재잠금 신호에서 소급 적용(엎은 시점부터 wall-clock 정산), 12초 내
+                // 미확인 시 폐기. 진동은 지금 낙관 발화 (12차: 재잠금까지 2~5초 지연 해소,
+                // 소급 시 중복 억제).
+                if !deviceLocked {
+                    let at = now
+                    pendingDown = at
+                    Self.log.info("배경 엎힘 보류 — 잠금 여부 재판정 대기")
+                    RTDbg.p("flip: 배경 엎힘 보류 (12초 재판정 대기) — 낙관 진동")
+                    signals.signalStart()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
+                        guard let self, self.pendingDown == at else { return }
+                        self.pendingDown = nil
+                        Self.log.info("앱 밖 엎힘 무시 (비잠금 백그라운드)")
+                        RTDbg.p("flip: 보류 폐기 — 비잠금 배경")
+                    }
+                    return
+                }
             }
             performDown(at: now)
         case .up:
