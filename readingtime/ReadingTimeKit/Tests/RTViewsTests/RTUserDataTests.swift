@@ -176,6 +176,21 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.route == .library)
     }
 
+    @Test func librarySortRules() {
+        func book(_ isbn: String, _ title: String, added: String, rating: Int?, finished: String?) -> RTBook {
+            RTBook(isbn: isbn, title: title, author: "a", publisher: "p", coverUrl: "",
+                   addedAt: day(added), finished: true, rating: rating,
+                   finishedAt: finished.map { day($0) })
+        }
+        let a = book("1", "나", added: "2026-07-01", rating: 4, finished: "2026-07-02")
+        let b = book("2", "가", added: "2026-07-03", rating: 5, finished: "2026-07-01")
+        let c = book("3", "다", added: "2026-06-30", rating: 4, finished: nil)   // finishedAt 없으면 addedAt
+        let books = [a, b, c]
+        #expect(books.sortedForLibrary(.recent).map(\.isbn) == ["1", "2", "3"])
+        #expect(books.sortedForLibrary(.name).map(\.isbn) == ["2", "1", "3"])
+        #expect(books.sortedForLibrary(.rating).map(\.isbn) == ["2", "1", "3"])   // 동률(4) 은 원순서 안정
+    }
+
     @Test func addTimeAppendsManualRecord() {
         let m = liveModel()
         m.searchResults = [Self.hit]

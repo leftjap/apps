@@ -54,3 +54,22 @@ public struct RTUserData: Codable, Equatable, Sendable {
         self.sessions = sessions
     }
 }
+
+public extension Array where Element == RTBook {
+    /// 서재 완독 정렬 — 프로토타입 규칙 정합: 최근(finishedAt, 없으면 addedAt)·
+    /// 이름(ko 비교)·별점(내림차순, 동률은 원순서 안정)
+    func sortedForLibrary(_ sort: RTLibrarySort) -> [RTBook] {
+        switch sort {
+        case .recent:
+            return sorted { ($0.finishedAt ?? $0.addedAt) > ($1.finishedAt ?? $1.addedAt) }
+        case .name:
+            return sorted { $0.title.compare($1.title, locale: Locale(identifier: "ko")) == .orderedAscending }
+        case .rating:
+            return enumerated()
+                .sorted { ($0.element.rating ?? 0) != ($1.element.rating ?? 0)
+                    ? ($0.element.rating ?? 0) > ($1.element.rating ?? 0)
+                    : $0.offset < $1.offset }
+                .map(\.element)
+        }
+    }
+}

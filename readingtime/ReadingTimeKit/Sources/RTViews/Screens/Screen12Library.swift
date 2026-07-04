@@ -235,21 +235,9 @@ public struct Screen12Library: View {
         }
     }
 
-    /// 라이브 완독 정렬 (데모 sortedFinished 와 동일 규칙)
+    /// 라이브 완독 정렬 (데모 sortedFinished 와 동일 규칙 — RTUserData 확장, 유닛 고정)
     var sortedLiveFinished: [RTBook] {
-        guard let items = live?.finished else { return [] }
-        switch sort {
-        case .recent:
-            return items.sorted { ($0.finishedAt ?? $0.addedAt) > ($1.finishedAt ?? $1.addedAt) }
-        case .name:
-            return items.sorted { $0.title.compare($1.title, locale: Locale(identifier: "ko")) == .orderedAscending }
-        case .rating:
-            return items.enumerated()
-                .sorted { ($0.element.rating ?? 0) != ($1.element.rating ?? 0)
-                    ? ($0.element.rating ?? 0) > ($1.element.rating ?? 0)
-                    : $0.offset < $1.offset }
-                .map(\.element)
-        }
+        live?.finished.sortedForLibrary(sort) ?? []
     }
 
     var grid: some View {
