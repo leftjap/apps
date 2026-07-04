@@ -43,12 +43,14 @@ export function violations(rows, logCount = () => null) {
   return out;
 }
 
-// ── 자가검증 — 2026-07-04 실측 오염 원본이 전부 걸리고, 정상 행은 통과해야 함 ──
+// ── 자가검증 — 오염 케이스가 전부 걸리고, 정상 행은 통과해야 함 ──
+// 앞 2건은 2026-07-04 실측 원본값. 3번째는 실측(06-29 22338s)을 일일상한 아래로 조정한
+// 변형값(12338s) — 상한 규칙에 먼저 걸리지 않게 해 증거결핍 규칙을 단독 검증하기 위함.
 if (process.argv.includes('--self-test')) {
   const bad = [
-    { date: '2026-07-04', lang: 'en', study_time_sec: 16967, utterance_count: 0, new_sentences: 0, review_count: 0 }, // 팬텀
-    { date: '2026-06-23', lang: 'en', study_time_sec: 25575, utterance_count: 20, new_sentences: 4, review_count: 0 }, // 일일상한
-    { date: '2026-06-29', lang: 'en', study_time_sec: 12338, utterance_count: 25, new_sentences: 2, review_count: 2 }, // 증거결핍(로그 2건 가정)
+    { date: '2026-07-04', lang: 'en', study_time_sec: 16967, utterance_count: 0, new_sentences: 0, review_count: 0 }, // 팬텀 (실측)
+    { date: '2026-06-23', lang: 'en', study_time_sec: 25575, utterance_count: 20, new_sentences: 4, review_count: 0 }, // 일일상한 (실측)
+    { date: '2026-06-29', lang: 'en', study_time_sec: 12338, utterance_count: 25, new_sentences: 2, review_count: 2 }, // 증거결핍(변형값·로그 2건 가정)
   ];
   const good = [
     { date: '2026-06-25', lang: 'en', study_time_sec: 2820, utterance_count: 45, new_sentences: 11, review_count: 5 }, // 정상 학습
