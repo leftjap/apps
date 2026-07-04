@@ -175,7 +175,11 @@ final class FlipEngine: ObservableObject {
         // 무장 판정: 포그라운드(전환 중 포함) 잠금 or 배경 진입 직후(1.5초 내) 잠금 =
         // "앱에서 잠금으로 이탈". 홈 이탈 후 한참 뒤 잠금(엎기가 유발한 자동 잠금 포함)은
         // 무장하지 않는다 — 15차: 홈 이탈 엎기의 face-down 자동 잠금이 소급 오기록을 만듦.
+        // backgroundedAt == nil 도 무장: 잠금 신호가 scenePhase .background 처리보다 먼저
+        // 도착한 "같은 전환"이라는 뜻 (마지막 활성 이후 배경 진입 기록 없음 = 방금까지
+        // 포그라운드) — 도착 순서 경합에서 A 플로우 무장이 누락되는 회귀 차단 (리뷰 확정).
         if UIApplication.shared.applicationState != .background
+            || backgroundedAt == nil
             || backgroundedAt.map({ Date().timeIntervalSince($0) < 1.5 }) ?? false {
             if !armed { RTDbg.p("flip: 무장 (잠금 이탈)") }
             armed = true
