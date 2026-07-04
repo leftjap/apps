@@ -108,8 +108,15 @@ struct ReadingTimeApp: App {
             .ignoresSafeArea()
                 .task { await cloud.restore() }
                 .onReceive(model.$route) { route in
-                    // 엎기 대기·타이머 화면에서만 센서 + keep-alive 가동
-                    if route == .flipWait || route == .flipTimer {
+                    let flipSession = route == .flipWait || route == .flipTimer
+                    // 세션 중 자동 잠금 방지 — "들면 화면이 이미 켜져 있는" UX 의 핵심.
+                    // 서드파티는 잠긴 화면을 깨울 수 없음(알림·LA alert 실기기 실측 무효, 2026-07-04)
+                    UIApplication.shared.isIdleTimerDisabled = flipSession || route == .tapTimer
+                    // 엎기 모드: 근접 센서로 엎힌 동안 화면 하드웨어 오프(통화와 동일 메커니즘)
+                    // → 배터리 소모 없이, 들어올리면 즉시 04 타이머 화면 + 포그라운드 강햅틱
+                    UIDevice.current.isProximityMonitoringEnabled = flipSession
+                    // 엎기 대기·타이머 화면에서만 센서 + keep-alive 가동 (수동 잠금 폴백용)
+                    if flipSession {
                         keepAlive.start()
                         flip.startMonitoring()
                     } else {
