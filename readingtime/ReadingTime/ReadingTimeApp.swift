@@ -142,8 +142,9 @@ struct ReadingTimeApp: App {
                     let flipSession = route == .flipWait || route == .flipTimer
                     Self.updateAwake(route: route, session: model.session)
                     // 엎기 모드: 근접 센서로 엎힌 동안 화면 하드웨어 오프(통화와 동일 메커니즘)
-                    // → 배터리 소모 없이, 들어올리면 즉시 04 타이머 화면 + 포그라운드 강햅틱
-                    UIDevice.current.isProximityMonitoringEnabled = flipSession
+                    // → 배터리 소모 없이, 들어올리면 즉시 04 타이머 화면 + 포그라운드 강햅틱.
+                    // 포그라운드 전용 (잠금 중 진동 간섭 배제 — scenePhase 핸들러와 동일 규칙)
+                    UIDevice.current.isProximityMonitoringEnabled = flipSession && scenePhase == .active
                     // 엎기 대기·타이머 화면에서만 센서 + keep-alive 가동 (수동 잠금 폴백용)
                     if flipSession {
                         keepAlive.start()
@@ -162,6 +163,11 @@ struct ReadingTimeApp: App {
                     tapClock.clock.track(session, at: Date())
                 }
                 .onChange(of: scenePhase) { _, phase in
+                    // 근접 센서는 포그라운드 전용 — 비잠금 엎힘의 화면 오프용이며 잠금 시엔
+                    // 화면이 이미 꺼져 있어 무용. 잠금+센서 덮임이 AudioServices 진동을
+                    // 간섭하는 정황(7차 실기기: 진동 미발생) 배제 목적.
+                    UIDevice.current.isProximityMonitoringEnabled =
+                        phase == .active && (model.route == .flipWait || model.route == .flipTimer)
                     // 백그라운드↔포그라운드 전환마다 모션 스트림 재시작 (iOS 11+ 버그 대응)
                     if phase == .background || phase == .active {
                         flip.handleScenePhaseChange()
