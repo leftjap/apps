@@ -4,15 +4,36 @@ import UIKit
 import RTViews
 import os.log
 
-// 실기기 진단용 stdout 미러 — devicectl --console 은 프로세스 stdout/stderr 만 표시하고
-// Logger(os.log) 는 유니파이드 로깅으로 가서 안 보인다. Logger 는 유지, 콘솔 판독용 병행.
+// 실기기 진단용 이중 싱크 — devicectl --console 은 os.log 미표시(stdout 만)인데,
+// 무선 콘솔은 잠금 대기 중 Wi-Fi 이탈로 끊기고 호스트 종료 시 앱까지 죽는다(SIGTERM 포워딩).
+// → stdout(라이브 가능 시) + Documents/rtdbg.log 파일(사후 회수 정본) 병행.
+// 회수: devicectl device copy from --source Documents/rtdbg.log
+//       --domain-type appDataContainer --domain-identifier com.leftjap.readingtime
 enum RTDbg {
     private static let f: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "HH:mm:ss.SSS"
         return f
     }()
-    static func p(_ s: String) { print("[\(f.string(from: Date()))] \(s)") }
+    private static let fileURL = FileManager.default
+        .urls(for: .documentDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("rtdbg.log")
+    static func p(_ s: String) {
+        let line = "[\(f.string(from: Date()))] \(s)"
+        print(line)
+        guard let data = (line + "\n").data(using: .utf8) else { return }
+        if let size = try? fileURL.resourceValues(forKeys: [.fileSizeKey]).fileSize,
+           size > 512 * 1024 {
+            try? FileManager.default.removeItem(at: fileURL)   // 512KB 초과 시 리셋
+        }
+        if let h = try? FileHandle(forWritingTo: fileURL) {
+            defer { try? h.close() }
+            _ = try? h.seekToEnd()
+            try? h.write(contentsOf: data)
+        } else {
+            try? data.write(to: fileURL)   // 최초 생성 (기본 보호 클래스 — 잠금 중 기록 가능)
+        }
+    }
 }
 
 // 엎기(face-down) 감지 → RTAppModel 브리지.
