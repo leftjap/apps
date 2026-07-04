@@ -158,6 +158,9 @@ final class FlipEngine: ObservableObject {
         deviceLocked = false
         armed = false        // 다음 무장은 다음 잠금 이탈에서
         backgroundedAt = nil
+        // 앱 복귀 = 배경 엎힘 컨텍스트 종료 — 보류가 남으면 이후 잠금에 과거 시각으로
+        // 소급돼 시간 부풀림 (stopMonitoring 과 동일 선례). 복귀했으니 무효화.
+        pendingDown = nil
     }
 
     /// 배경 진입 (ReadingTimeApp scenePhase 배선) — 비잠금 배경 진입 = 홈/타앱 이탈.
