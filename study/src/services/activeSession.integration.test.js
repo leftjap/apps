@@ -115,6 +115,20 @@ describe('activeSession (real Dexie)', () => {
       expect(logs[0].lang).toBe('ja');
     });
 
+    it('snapshot.activeSec 있으면 벽시계(savedAt-startTime) 대신 활성 시간으로 finalize', async () => {
+      await db.todayLessons.bulkPut([
+        { id: 'n1', lang: 'en', date: '2026-05-08', completed: false, sentence: 's', meaning: 'm', explanation: {}, order_index: 1 },
+        { id: 'n2', lang: 'en', date: '2026-05-08', completed: false, sentence: 's', meaning: 'm', explanation: {}, order_index: 2 },
+      ]);
+      const result = await finalizeStaleSnapshot(db, {
+        mode: 'new', lang: 'en', todayISO: '2026-05-08',
+        startTime: 1_700_000_000_000, savedAt: 1_700_000_000_000 + 5 * 3600 * 1000, // 벽시계 5h 방치
+        activeSec: 150, // 실제 활동은 150초
+        step: 2, tried: 3, passed: 2, cardIds: ['n1', 'n2'],
+      });
+      expect(result.durationSec).toBe(150);
+    });
+
     it('loadActiveSession 만료 분기 → finalize 자동 호출 + clear', async () => {
       const cards = [
         { id: 'a', lang: 'en', date: '2026-05-08', completed: false, sentence: 'A', meaning: 'a', explanation: {}, order_index: 1 },

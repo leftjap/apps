@@ -158,4 +158,26 @@ describe('flushLiveStats + finishSession(baseToday) — 진행 중 라이브 반
     expect(s.utteranceCount).toBe(7);
     expect(s.reviewCount).toBe(3);
   });
+
+  it('flushLiveStats — snapshot.activeSec 있으면 벽시계 대신 활성 시간만 기록 (방치 폭주 차단)', async () => {
+    // startTime 4h 전(12h 가드 미만) — 종전엔 ~14400초가 기록되던 케이스
+    const snap = {
+      mode: 'new', lang: 'en', todayISO: '2026-06-21', startTime: Date.now() - 4 * 3600 * 1000,
+      activeSec: 90, step: 2, tried: 0, passed: 0, cardIds: ['n1', 'n2', 'n3'], base: null,
+    };
+    await flushLiveStats(db, snap);
+    const s = await db.dailyStats.get('2026-06-21');
+    expect(s.studyTimeSec).toBe(90);
+  });
+
+  it('flushLiveStats — activeSec 없는 legacy snapshot 은 벽시계 폴백(하위호환)', async () => {
+    const snap = {
+      mode: 'new', lang: 'en', todayISO: '2026-06-21', startTime: Date.now() - 120000,
+      step: 2, tried: 1, passed: 1, cardIds: ['n1', 'n2', 'n3'], base: null,
+    };
+    await flushLiveStats(db, snap);
+    const s = await db.dailyStats.get('2026-06-21');
+    expect(s.studyTimeSec).toBeGreaterThanOrEqual(120);
+    expect(s.studyTimeSec).toBeLessThan(130);
+  });
 });

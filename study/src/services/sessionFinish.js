@@ -141,7 +141,12 @@ export async function flushLiveStats(db, snapshot) {
   // 오래된 세션은 종료/자동마감(finalizeStaleSnapshot) 경로가 처리하도록 둔다.
   if (startTime && (Date.now() - Number(startTime)) > 12 * 3600 * 1000) return null;
   const completed = Math.max(0, (Number(snapshot.step) || 0) - 1);
-  const rawSec = startTime ? Math.floor((Date.now() - Number(startTime)) / 1000) : 0;
+  // activeSec(가시+비유휴 활성 시간, activeTimer) 우선 — 벽시계는 탭 방치 시 폭주
+  // (발화 0회 study_time_sec 7h, 2026-07-04 진단). 없는 legacy 스냅샷만 벽시계 폴백.
+  const activeSec = Math.floor(Number(snapshot.activeSec));
+  const rawSec = Number.isFinite(activeSec) && activeSec >= 0
+    ? activeSec
+    : (startTime ? Math.floor((Date.now() - Number(startTime)) / 1000) : 0);
   const durationSec = clampSessionDuration(rawSec, completed);
   let newSentenceIds = [];
   let completedReviewCount = 0;

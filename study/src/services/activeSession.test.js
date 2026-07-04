@@ -84,3 +84,13 @@ describe('restoreFromSnapshot — recLog (2026-06-10 녹음 진행 복원)', () 
     expect(noLog.recLog).toEqual({});
   });
 });
+
+describe('restoreFromSnapshot — activeSec (방치 폭주 차단)', () => {
+  it('snapshot.activeSec 복원, 없으면 0 — 복원 세션이 옛 startTime 벽시계를 승계하지 않음', () => {
+    const cards = [{ id: 'a' }, { id: 'b' }];
+    const base = { mode: 'new', cardIds: ['a', 'b'], step: 2 };
+    expect(restoreFromSnapshot({ ...base, activeSec: 77 }, cards, 'new').activeSec).toBe(77);
+    expect(restoreFromSnapshot(base, cards, 'new').activeSec).toBe(0);
+    expect(restoreFromSnapshot({ ...base, activeSec: NaN }, cards, 'new').activeSec).toBe(0);
+  });
+});

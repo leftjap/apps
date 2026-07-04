@@ -57,9 +57,12 @@ export async function finalizeStaleSnapshot(db, snapshot) {
 
   const startTime = Number(snapshot.startTime) || 0;
   const savedAt = Number(snapshot.savedAt) || 0;
-  // 여러 날 열어둔 스냅샷은 (savedAt-startTime) 이 비정상적으로 큼(예: 45h) → clamp 로 보정.
+  // activeSec(활성 시간) 우선 — 벽시계(savedAt-startTime)는 방치 시 폭주. legacy 만 벽시계+clamp.
+  const activeSec = Math.floor(Number(snapshot.activeSec));
   const durationSec = clampSessionDuration(
-    startTime > 0 && savedAt > startTime ? Math.floor((savedAt - startTime) / 1000) : 0,
+    Number.isFinite(activeSec) && activeSec >= 0
+      ? activeSec
+      : (startTime > 0 && savedAt > startTime ? Math.floor((savedAt - startTime) / 1000) : 0),
     completed,
   );
 
@@ -123,6 +126,8 @@ export function restoreFromSnapshot(snapshot, cards, mode) {
       ? { got: Number(snapshot.judged.got) || 0, hmm: Number(snapshot.judged.hmm) || 0, no: Number(snapshot.judged.no) || 0 }
       : { got: 0, hmm: 0, no: 0 },
     startTime: Number(snapshot.startTime) || Date.now(),
+    // 활성 시간 누적 시드 — 복원 세션이 옛 startTime 벽시계를 승계하지 않도록 (없으면 0)
+    activeSec: (() => { const v = Math.floor(Number(snapshot.activeSec)); return Number.isFinite(v) && v > 0 ? v : 0; })(),
     base: snapshot.base ?? null, // 세션 시작 시 캡처한 그날 dailyStats (라이브 반영 base)
   };
 }

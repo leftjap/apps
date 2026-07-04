@@ -528,8 +528,12 @@ ja explanation 스키마 요약 (상세는 위 ja 가이드):
 
 ### 8-5. 학습 타이머
 - 헤더에 경과 시간 (MM:SS) 표시
-- 타임스탬프 기반 (`Date.now() - startTime`)
-- 화면 복귀 시 재계산
+- **활성 시간 기반** (`services/activeTimer.js`, 2026-07-04): 페이지 가시(visible) + 마지막
+  활동(입력·녹음·듣기) 5분 이내 구간만 누적. 탭 숨김·자리비움·방치는 흐르지 않음
+- 배경: 벽시계(`Date.now() - startTime`) 방식은 탭 방치·스냅샷 복원 시 폭주해
+  발화 0회인데 `study_time_sec` 7시간대가 기록되던 버그 (cue 어학 ✔ 오탐의 근원)
+- 스냅샷에 `activeSec` 로 저장/복원 — 복원 세션이 옛 startTime 벽시계를 승계하지 않음
+  (`activeSec` 없는 legacy 스냅샷만 벽시계 + 12h clamp 폴백)
 
 ### 8-6. 세션 지속성
 - 앱 이탈 시 세션 상태 자동 저장 (IndexedDB)

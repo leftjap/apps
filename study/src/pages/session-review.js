@@ -31,6 +31,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
+import { createActiveTimer } from '../services/activeTimer.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
 import { createSceneHeader } from '../components/session/sceneHeader.js';
@@ -83,10 +84,13 @@ export function mountSessionReview(host) {
     base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
   };
 
+  // 활성 시간 타이머 — 가시+비유휴 구간만 누적 (벽시계 방치 폭주 차단)
+  const activeTimer = createActiveTimer();
+
   const saveSnapshot = () => {
     if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return; // 데모 격리
     const snap = {
-      mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, base: state.base,
+      mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       judged: { ...state.judged }, cardIds: state.cards.map((c) => c.id),
@@ -95,13 +99,14 @@ export function mountSessionReview(host) {
     // 진행 중 진척을 오늘 dailyStats 에 라이브 반영 → cue 가 종료 전에도 '오늘 학습' 표시 (멱등)
     flushLiveStats(window.studyDB, snap).catch((e) => console.error('[session-review] flushLiveStats', e));
   };
-  const onVis = () => { if (document.hidden) saveSnapshot(); };
+  const onVis = () => { activeTimer.setHidden(document.hidden); if (document.hidden) saveSnapshot(); };
+  const onActivity = () => activeTimer.activity();
 
   const endSession = async (finishedAll) => {
     state.ended = true;
     if (isDemoMode()) { window.location.hash = '#/summary'; return; } // 데모 — 실 DB write 차단
     const completedCount = finishedAll ? state.cards.length : Math.max(0, state.step - 1);
-    const durationSec = clampSessionDuration(Math.floor((Date.now() - startTime) / 1000), completedCount);
+    const durationSec = clampSessionDuration(activeTimer.seconds(), completedCount);
     try {
       await finishSession(window.studyDB, {
         mode: sessionMode,
@@ -178,8 +183,11 @@ export function mountSessionReview(host) {
 
   let startTime = Date.now();
   document.addEventListener('visibilitychange', onVis);
+  // 입력 = 활동 신호 (녹음·듣기·판정 버튼 포함 — 모두 클릭/키 입력으로 시작됨)
+  document.addEventListener('pointerdown', onActivity, true);
+  document.addEventListener('keydown', onActivity, true);
   const tickId = setInterval(() => {
-    state.time = formatElapsed(Date.now() - startTime);
+    state.time = formatElapsed(activeTimer.seconds() * 1000);
     layoutRef?.update({ time: state.time });
   }, 1000);
 
@@ -199,7 +207,12 @@ export function mountSessionReview(host) {
     state.sentence = pickCardFields(state.cards[0]) || EMPTY_SENTENCE;
     state.loaded = true;
     rerender();
-    return () => { cleanup(); stop(); clearInterval(tickId); document.removeEventListener('visibilitychange', onVis); };
+    return () => {
+      cleanup(); stop(); clearInterval(tickId);
+      document.removeEventListener('visibilitychange', onVis);
+      document.removeEventListener('pointerdown', onActivity, true);
+      document.removeEventListener('keydown', onActivity, true);
+    };
   }
 
   // P1 — stats 클릭 진입 (goReview 가 저장한 studyReviewQueue) 우선 시도.
@@ -224,6 +237,7 @@ export function mountSessionReview(host) {
       if (restore) {
         Object.assign(state, restore); // base 포함 (원래 시작 시 캡처분 보존)
         startTime = restore.startTime;
+        activeTimer.restore(restore.activeSec); // 활성 시간만 승계 — 방치 벽시계는 승계 안 함
         const idx = Math.max(0, restore.step - 1);
         state.sentence = pickCardFields(cards[idx]) || EMPTY_SENTENCE;
       } else {
@@ -246,6 +260,8 @@ export function mountSessionReview(host) {
   return () => {
     cleanup(); stop(); clearInterval(tickId);
     document.removeEventListener('visibilitychange', onVis);
+    document.removeEventListener('pointerdown', onActivity, true);
+    document.removeEventListener('keydown', onActivity, true);
     if (!state.ended) saveSnapshot();
     if (state.recCtrl?.stop) { try { state.recCtrl.stop(); } catch { /* noop */ } state.recCtrl = null; }
   };
