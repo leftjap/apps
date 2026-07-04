@@ -86,39 +86,19 @@ final class FlipEngine: ObservableObject {
 
     /// Darwin lockstate 는 페이로드 없이 잠금/해제/화면 이벤트에서 "여러 번" 발화할 수 있다
     /// (9차 실기기 회귀: 토글 추론이 두 번째 발화에 뒤집혀 잠금 오판 → 엎기 무시).
-    /// → 여기서는 "잠금 설정"만 한다 (멱등). 해제는 방향이 명확한 신호 2개로만:
-    ///   protectedDataDidBecomeAvailable / 앱 포그라운드 복귀(setUnlockedOnActive).
-    /// 해제 중 lockstate 오발화로 잠깐 true 가 되어도, 그 순간의 엎기 = 손에 든 폰을
-    /// 엎는 독서 의도라 무해하며 곧 available 신호가 보정한다.
-    ///
-    /// 10차 실기기: 포그라운드 중 측면 버튼 잠금은 lockstate 가 UIKit resign 처리보다
-    /// 먼저 도착해 버스트 전체가 .active 로 읽힘 → 즉시 기각하면 protected data(~3초+)
-    /// 까지 잠금 감지 공백 (재엎기 진동 지연). 기각 대신 0.5초 뒤 재판정한다:
-    /// 진짜 잠금이면 그 사이 앱이 배경으로 내려가 있고, 해제 직후 잔여 발화면
-    /// 여전히 .active 라 무시된다 (0.5초 < .down 디바운스 0.7초 — 체감 지연 없음).
+    /// → 여기서는 "잠금 설정"만 한다 (멱등). 해제는 protectedDataDidBecomeAvailable /
+    ///   앱 포그라운드 복귀(setUnlockedOnActive)로만.
+    /// 12차 계측 (2026-07-04, 6/6 사이클): 잠금 순간 발화는 항상 배경 상태(state=2)로
+    /// 도착 — resign 처리가 신호 전달보다 빠르다 (10차의 ".active 경합" 가설·0.5초
+    /// 재판정은 반증돼 제거). 해제 직후 잔여 발화가 잠금을 잠깐 재래치하는 것도 실측
+    /// 확인 — 활성 복귀가 보정하는 수용 잔여.
     private func handleLockStateChange() {
         let state = UIApplication.shared.applicationState
         RTDbg.p("flip: lockstate 발화 (locked=\(deviceLocked), state=\(state.rawValue))")
-        guard !deviceLocked else { return }
-        guard state == .active else {
-            Self.log.info("잠금 신호 수신 (lockstate)")
-            RTDbg.p("flip: 잠금 확정 (lockstate 즉시)")
-            markLocked()
-            return
-        }
-        Self.log.info("lockstate@active — 0.5초 재판정 예약")
-        RTDbg.p("flip: lockstate@active — 0.5초 재판정 예약")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self, !self.deviceLocked else { return }
-            let s = UIApplication.shared.applicationState
-            guard s != .active else {
-                RTDbg.p("flip: 재판정 — 여전히 active, 무시")
-                return
-            }
-            Self.log.info("잠금 신호 수신 (lockstate 재판정)")
-            RTDbg.p("flip: 잠금 확정 (lockstate 재판정, state=\(s.rawValue))")
-            self.markLocked()
-        }
+        guard !deviceLocked, state != .active else { return }
+        Self.log.info("잠금 신호 수신 (lockstate)")
+        RTDbg.p("flip: 잠금 확정 (lockstate)")
+        markLocked()
     }
 
     /// 포그라운드 복귀 = 확실한 비잠금 (ReadingTimeApp scenePhase 배선)
@@ -136,7 +116,7 @@ final class FlipEngine: ObservableObject {
             if Date().timeIntervalSince(at) < 15 {
                 Self.log.info("잠금 확인 — 보류 엎힘 소급 적용")
                 RTDbg.p("flip: 보류 엎힘 소급 적용 (\(String(format: "%.1f", Date().timeIntervalSince(at)))초 전 엎힘)")
-                performDown(at: at)
+                performDown(at: at, signal: false)   // 보류 시점에 낙관 진동 완료 — 중복 억제
             } else {
                 Self.log.info("스테일 보류 엎힘 폐기")
                 RTDbg.p("flip: 스테일 보류 폐기")
@@ -202,7 +182,12 @@ final class FlipEngine: ObservableObject {
                 let at = now
                 pendingDown = at
                 Self.log.info("배경 엎힘 보류 — 잠금 여부 재판정 대기")
-                RTDbg.p("flip: 배경 엎힘 보류 (12초 재판정 대기)")
+                RTDbg.p("flip: 배경 엎힘 보류 (12초 재판정 대기) — 낙관 진동")
+                // 12차 계측: Face ID 기기는 잠금 화면 탭(글랜스)만으로 protected data 가
+                // 재해제돼, 잠금 엎기가 이 보류 경로로 강등된다. 기록은 재잠금 신호에서
+                // 소급돼 정확하지만 진동까지 2~5초 지연 — 진동만 지금 낙관 발화한다.
+                // 홈 이탈 오탐이면 12초 뒤 조용히 폐기 (헛진동 1회 수용, 소급 시 중복 억제).
+                signals.signalStart()
                 DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
                     guard let self, self.pendingDown == at else { return }
                     self.pendingDown = nil
@@ -225,17 +210,17 @@ final class FlipEngine: ObservableObject {
         }
     }
 
-    private func performDown(at now: Date) {
+    private func performDown(at now: Date, signal: Bool = true) {
         if model.route == .flipWait {
             session.start(at: now)
             model.simFlip()
-            signals.signalStart()   // 화면이 안 보이는 상태의 "기록 시작" 신호
+            if signal { signals.signalStart() }   // 화면이 안 보이는 상태의 "기록 시작" 신호
         } else if model.route == .flipTimer, model.session?.mode == .flip,
                   model.session?.status == .paused {
             session.resume(at: now)
             model.togglePause()   // 다시 엎으면 이어서
             model.syncElapsed(session.elapsed(at: now))
-            signals.signalStart()
+            if signal { signals.signalStart() }
         }
     }
 

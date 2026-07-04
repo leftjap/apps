@@ -55,11 +55,15 @@ sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). �
 두 번째 발화에 뒤집혀 잠금 오판 회귀를 냈다 (2026-07-04 9차). **잠금 설정만 멱등으로 하고,
 해제는 방향 명확한 신호(protectedDataDidBecomeAvailable·앱 활성 복귀)로만.**
 
-추가 (10차): 포그라운드 중 측면 버튼 잠금은 lockstate 가 `.deliverImmediately` 로 UIKit
-resign 처리보다 먼저 도착해 **버스트 전체가 applicationState == .active 로 읽힌다** —
-`.active` guard 로 즉시 기각하면 잠금 감지가 protected data(~3초+)까지 공백 (재엎기 진동
-지연이 8차 수준으로 회귀). 상태를 그 순간 값으로 비가역 판정하지 말고 **짧은 지연 후
-재판정** (0.5초 뒤 non-active 면 잠금, 여전히 active 면 해제 직후 잔여 발화로 무시).
+추가 (12차 stdout 계측으로 확정 — 10차의 ".active 경합" 추정은 **반증**):
+- 잠금 순간 lockstate·protectedDataWillBecomeUnavailable 는 **즉시, 항상 배경 상태(state=2)**
+  로 도착한다 (6/6 사이클). "protected data ~10초 유예"도 이 기기 잠금 순간엔 미관측.
+- **진짜 함정: Face ID 기기는 잠금 화면 탭(글랜스)만으로 `protectedDataDidBecomeAvailable`
+  가 발화한다** — 키백 해제 ≠ 사용 재개. available 을 "해제" 신호로 쓰면 잠금 화면 위의
+  엎기가 비잠금으로 오판되고, 엎어서 화면이 덮여 재잠금될 때(2~5초)까지 감지가 지연된다.
+- 해제 직후 잔여 lockstate 발화(state=1/2)가 잠금을 잠깐 재래치한다 — 앱 활성 복귀가 보정.
+- 교훈: 신호 타이밍 가설은 stdout 계측(print — devicectl --console 은 os.log 미표시)으로
+  실측 후 수정할 것. 추론만으로 3회 연속 수정 실패했다.
 
 ## 9. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
