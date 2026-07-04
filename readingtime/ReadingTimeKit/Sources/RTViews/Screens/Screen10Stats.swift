@@ -183,7 +183,8 @@ public struct Screen10Stats: View {
             let w = week[sel]
             let flow = Int((Double(w.v) * 0.68).rounded())
             let center = (CGFloat(sel) + 0.5) / 7 * geo.size.width
-            let half: CGFloat = 75 // min-width 150 의 절반
+            // 데모 min-width 150 의 절반 = 75. 라이브는 실제 제목 폭(≤155)까지 카드가 넓어져 120 로 클램프
+            let half: CGFloat = live == nil ? 75 : 120
             let shift = max(0, half - center) - max(0, center + half - geo.size.width)
             VStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 0) {
@@ -216,6 +217,9 @@ public struct Screen10Stats: View {
         HStack(spacing: 6) {
             RoundedRectangle(cornerRadius: 2).fill(dot).frame(width: 7, height: 7)
             Text(name).font(.sans(11, 600)).foregroundColor(RT.ctaText)
+                .lineLimit(1)
+                .frame(maxWidth: 155, alignment: .leading)   // 긴 실제 제목이 분 값을 밀어내지 않게
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 14)
             Text(min).font(.mono(11, 600)).foregroundColor(RT.faint)
         }
