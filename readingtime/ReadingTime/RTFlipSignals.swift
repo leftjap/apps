@@ -35,7 +35,9 @@ final class RTFlipSignals {
     }
 
     private func signal(buzz: [(TimeInterval, TimeInterval)], vibrations: Int) {
-        if UIApplication.shared.applicationState == .active {
+        let state = UIApplication.shared.applicationState
+        RTDbg.p("signals: \(state == .active ? "햅틱" : "진동") 경로 (state=\(state.rawValue))")
+        if state == .active {
             playHaptic(buzz)
         } else {
             vibrate(times: vibrations)
@@ -45,6 +47,7 @@ final class RTFlipSignals {
     /// 백그라운드/잠금 진동 — 전환 순간 즉시. 2회면 0.5s 간격 (시작=2·정지=1 구분감)
     private func vibrate(times: Int) {
         Self.log.info("잠금 진동 신호 x\(times, privacy: .public)")
+        RTDbg.p("signals: 진동 x\(times)")
         for i in 0..<times {
             DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.5) {
                 AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)

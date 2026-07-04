@@ -4,6 +4,17 @@ import UIKit
 import RTViews
 import os.log
 
+// 실기기 진단용 stdout 미러 — devicectl --console 은 프로세스 stdout/stderr 만 표시하고
+// Logger(os.log) 는 유니파이드 로깅으로 가서 안 보인다. Logger 는 유지, 콘솔 판독용 병행.
+enum RTDbg {
+    private static let f: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss.SSS"
+        return f
+    }()
+    static func p(_ s: String) { print("[\(f.string(from: Date()))] \(s)") }
+}
+
 // 엎기(face-down) 감지 → RTAppModel 브리지.
 // 감지·누적 로직은 순수 코어(FlipDetector·WallClockSession — RTViews, 유닛 테스트됨)로 분리,
 // 여기는 CMMotionManager 어댑터 + 모델 액션 매핑만.
@@ -58,12 +69,18 @@ final class FlipEngine: ObservableObject {
         NotificationCenter.default.addObserver(
             forName: UIApplication.protectedDataWillBecomeUnavailableNotification,
             object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.markLocked() }
+            Task { @MainActor in
+                RTDbg.p("flip: protected data 잠금 신호")
+                self?.markLocked()
+            }
         }
         NotificationCenter.default.addObserver(
             forName: UIApplication.protectedDataDidBecomeAvailableNotification,
             object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.deviceLocked = false }
+            Task { @MainActor in
+                RTDbg.p("flip: protected data 해제 신호")
+                self?.deviceLocked = false
+            }
         }
     }
 
@@ -80,23 +97,33 @@ final class FlipEngine: ObservableObject {
     /// 진짜 잠금이면 그 사이 앱이 배경으로 내려가 있고, 해제 직후 잔여 발화면
     /// 여전히 .active 라 무시된다 (0.5초 < .down 디바운스 0.7초 — 체감 지연 없음).
     private func handleLockStateChange() {
+        let state = UIApplication.shared.applicationState
+        RTDbg.p("flip: lockstate 발화 (locked=\(deviceLocked), state=\(state.rawValue))")
         guard !deviceLocked else { return }
-        guard UIApplication.shared.applicationState == .active else {
+        guard state == .active else {
             Self.log.info("잠금 신호 수신 (lockstate)")
+            RTDbg.p("flip: 잠금 확정 (lockstate 즉시)")
             markLocked()
             return
         }
         Self.log.info("lockstate@active — 0.5초 재판정 예약")
+        RTDbg.p("flip: lockstate@active — 0.5초 재판정 예약")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self, !self.deviceLocked,
-                  UIApplication.shared.applicationState != .active else { return }
+            guard let self, !self.deviceLocked else { return }
+            let s = UIApplication.shared.applicationState
+            guard s != .active else {
+                RTDbg.p("flip: 재판정 — 여전히 active, 무시")
+                return
+            }
             Self.log.info("잠금 신호 수신 (lockstate 재판정)")
+            RTDbg.p("flip: 잠금 확정 (lockstate 재판정, state=\(s.rawValue))")
             self.markLocked()
         }
     }
 
     /// 포그라운드 복귀 = 확실한 비잠금 (ReadingTimeApp scenePhase 배선)
     func setUnlockedOnActive() {
+        RTDbg.p("flip: 활성 복귀 — 잠금 해제")
         deviceLocked = false
     }
 
@@ -108,9 +135,11 @@ final class FlipEngine: ObservableObject {
             pendingDown = nil
             if Date().timeIntervalSince(at) < 15 {
                 Self.log.info("잠금 확인 — 보류 엎힘 소급 적용")
+                RTDbg.p("flip: 보류 엎힘 소급 적용 (\(String(format: "%.1f", Date().timeIntervalSince(at)))초 전 엎힘)")
                 performDown(at: at)
             } else {
                 Self.log.info("스테일 보류 엎힘 폐기")
+                RTDbg.p("flip: 스테일 보류 폐기")
             }
         }
     }
@@ -165,6 +194,7 @@ final class FlipEngine: ObservableObject {
         guard let transition = detector.process(z: z, at: now) else { return }
         switch transition {
         case .down:
+            RTDbg.p("flip: 엎힘 감지 (locked=\(deviceLocked), state=\(UIApplication.shared.applicationState.rawValue))")
             // 앱이 보이지도 잠기지도 않은 상태(홈·타앱)의 엎힘은 오기록 후보 — 단 잠금
             // 신호가 ~10초 지연되므로 즉시 버리지 않고 보류: 잠금이 확인되면 소급 적용
             // (엎은 시점부터 wall-clock 정산), 12초 내 확인 안 되면 앱 밖 동작으로 폐기.
@@ -172,15 +202,18 @@ final class FlipEngine: ObservableObject {
                 let at = now
                 pendingDown = at
                 Self.log.info("배경 엎힘 보류 — 잠금 여부 재판정 대기")
+                RTDbg.p("flip: 배경 엎힘 보류 (12초 재판정 대기)")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
                     guard let self, self.pendingDown == at else { return }
                     self.pendingDown = nil
                     Self.log.info("앱 밖 엎힘 무시 (비잠금 백그라운드)")
+                    RTDbg.p("flip: 보류 폐기 — 비잠금 배경")
                 }
                 return
             }
             performDown(at: now)
         case .up:
+            RTDbg.p("flip: 들어올림 감지")
             pendingDown = nil   // 판정 전 들어올림 → 보류 취소
             if model.route == .flipTimer, model.session?.mode == .flip,
                model.session?.status == .recording {
