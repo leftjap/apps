@@ -67,15 +67,21 @@ final class FlipEngine: ObservableObject {
         }
     }
 
-    /// Darwin lockstate 는 잠금/해제 양쪽에서 페이로드 없이 발화 — 방향은 상태로 추론:
-    /// 앱이 화면을 점유하지 않은 상태에서 미잠금이었다면 → 잠금, 잠금 상태였다면 → 해제.
+    /// Darwin lockstate 는 페이로드 없이 잠금/해제/화면 이벤트에서 "여러 번" 발화할 수 있다
+    /// (9차 실기기 회귀: 토글 추론이 두 번째 발화에 뒤집혀 잠금 오판 → 엎기 무시).
+    /// → 여기서는 "잠금 설정"만 한다 (멱등). 해제는 방향이 명확한 신호 2개로만:
+    ///   protectedDataDidBecomeAvailable / 앱 포그라운드 복귀(setUnlockedOnActive).
+    /// 해제 중 lockstate 오발화로 잠깐 true 가 되어도, 그 순간의 엎기 = 손에 든 폰을
+    /// 엎는 독서 의도라 무해하며 곧 available 신호가 보정한다.
     private func handleLockStateChange() {
-        if !deviceLocked, UIApplication.shared.applicationState != .active {
-            Self.log.info("잠금 신호 수신 (lockstate)")
-            markLocked()
-        } else if deviceLocked {
-            deviceLocked = false
-        }
+        guard !deviceLocked, UIApplication.shared.applicationState != .active else { return }
+        Self.log.info("잠금 신호 수신 (lockstate)")
+        markLocked()
+    }
+
+    /// 포그라운드 복귀 = 확실한 비잠금 (ReadingTimeApp scenePhase 배선)
+    func setUnlockedOnActive() {
+        deviceLocked = false
     }
 
     private func markLocked() {

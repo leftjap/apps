@@ -173,6 +173,7 @@ struct ReadingTimeApp: App {
                         flip.handleScenePhaseChange()
                     }
                     if phase == .active {
+                        flip.setUnlockedOnActive()   // 포그라운드 = 확실한 비잠금 (lockstate 오발화 보정)
                         flip.syncModel()   // 백그라운드 경과 wall-clock 보정 (flip)
                         if model.session?.mode == .tap, tapClock.clock.isTracking {
                             model.syncElapsed(tapClock.clock.elapsed(at: Date()))   // tap 보정

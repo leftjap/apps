@@ -49,7 +49,13 @@ sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). �
 경로는 깨웠음(r5) — 웨이크 검증은 앱 신호로만 가능. 잠금 직후 시뮬 디스플레이는 즉시 소등되고
 탭·클릭으로도 안 깨어남 → 잠금 화면 스샷은 앱 신호 도착 직후 타이밍에만 가능.
 
-## 8. 무료 Personal 팀: Time Sensitive Notifications capability 불가
+## 8. Darwin lockstate: 시뮬은 잠금당 1회, 실기기는 다회 발화 — 토글 추론 금지
+`com.apple.springboard.lockstate` 는 페이로드가 없어 방향을 알 수 없다. 시뮬(잠금당 1회)로
+검증한 "미잠금이면 잠금, 잠금이면 해제" 토글 추론이 실기기(잠금·화면 이벤트 다회 발화)에서
+두 번째 발화에 뒤집혀 잠금 오판 회귀를 냈다 (2026-07-04 9차). **잠금 설정만 멱등으로 하고,
+해제는 방향 명확한 신호(protectedDataDidBecomeAvailable·앱 활성 복귀)로만.**
+
+## 9. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
 표시가 되므로 시뮬 성공 ≠ 실기기 자격. 코드의 `interruptionLevel = .timeSensitive` 자체는
