@@ -2,6 +2,7 @@ import Foundation
 import CoreMotion
 import UIKit
 import RTViews
+import os.log
 
 // 엎기(face-down) 감지 → RTAppModel 브리지.
 // 감지·누적 로직은 순수 코어(FlipDetector·WallClockSession — RTViews, 유닛 테스트됨)로 분리,
@@ -28,9 +29,25 @@ final class FlipEngine: ObservableObject {
     private var scriptTimer: Timer?
     private var scriptStart: Date?
 
+    // 기기 잠금 추적 — "직접 잠근 폰의 엎힘"(독서 의도, 기록 계속)과 "앱 밖(홈·타앱)
+    // 엎힘"(무관한 동작, 무시)을 구분한다 (실기기 피드백 2026-07-04).
+    // 패스코드 기기에서 잠금 시 protected data 가 무효화되는 신호를 사용.
+    private var deviceLocked = false
+
     init(model: RTAppModel, motionScript: String? = nil) {
         self.model = model
         self.script = motionScript.map(Self.parseScript) ?? []
+        deviceLocked = !UIApplication.shared.isProtectedDataAvailable
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.protectedDataWillBecomeUnavailableNotification,
+            object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.deviceLocked = true }
+        }
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.protectedDataDidBecomeAvailableNotification,
+            object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.deviceLocked = false }
+        }
     }
 
     func startMonitoring() {
@@ -80,6 +97,12 @@ final class FlipEngine: ObservableObject {
         guard let transition = detector.process(z: z, at: now) else { return }
         switch transition {
         case .down:
+            // 앱이 보이지도 잠기지도 않은 상태(홈·타앱)의 엎힘은 무시 — 오기록 방지.
+            // 직접 잠근 폰의 엎힘(deviceLocked)은 의도된 독서로 보고 계속 기록.
+            if UIApplication.shared.applicationState == .background && !deviceLocked {
+                Self.log.info("앱 밖 엎힘 무시 (비잠금 백그라운드)")
+                return
+            }
             if model.route == .flipWait {
                 session.start(at: now)
                 model.simFlip()
@@ -100,6 +123,8 @@ final class FlipEngine: ObservableObject {
             }
         }
     }
+
+    private static let log = Logger(subsystem: "com.leftjap.readingtime", category: "flip")
 
     // ── 합성 모션 (시뮬레이터 검증) ──
     static func parseScript(_ s: String) -> [(t: TimeInterval, z: Double)] {
