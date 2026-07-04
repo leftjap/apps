@@ -32,7 +32,10 @@ final class FlipEngine: ObservableObject {
     // 기기 잠금 추적 — "직접 잠근 폰의 엎힘"(독서 의도, 기록 계속)과 "앱 밖(홈·타앱)
     // 엎힘"(무관한 동작, 무시)을 구분한다 (실기기 피드백 2026-07-04).
     // 패스코드 기기에서 잠금 시 protected data 가 무효화되는 신호를 사용.
+    // 주의: 이 신호는 잠금 후 ~10초 지연 발화(파일 보호 유예) — 잠그자마자 엎는 자연스러운
+    // 동작이 "비잠금"으로 오판되는 회귀가 있었음 → 애매한 엎힘은 보류 후 재판정한다.
     private var deviceLocked = false
+    private var pendingDown: Date?
 
     init(model: RTAppModel, motionScript: String? = nil) {
         self.model = model
@@ -41,7 +44,21 @@ final class FlipEngine: ObservableObject {
         NotificationCenter.default.addObserver(
             forName: UIApplication.protectedDataWillBecomeUnavailableNotification,
             object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.deviceLocked = true }
+            Task { @MainActor in
+                guard let self else { return }
+                self.deviceLocked = true
+                // 잠금 확정 — 보류 중이던 엎힘이 있으면 그 시점으로 소급 적용.
+                // 15초 초과 스테일 보류는 미적용 (서스펜드로 폐기 타이머가 못 돈 경우 안전망)
+                if let at = self.pendingDown {
+                    self.pendingDown = nil
+                    if Date().timeIntervalSince(at) < 15 {
+                        Self.log.info("잠금 확인 — 보류 엎힘 소급 적용")
+                        self.performDown(at: at)
+                    } else {
+                        Self.log.info("스테일 보류 엎힘 폐기")
+                    }
+                }
+            }
         }
         NotificationCenter.default.addObserver(
             forName: UIApplication.protectedDataDidBecomeAvailableNotification,
@@ -97,23 +114,23 @@ final class FlipEngine: ObservableObject {
         guard let transition = detector.process(z: z, at: now) else { return }
         switch transition {
         case .down:
-            // 앱이 보이지도 잠기지도 않은 상태(홈·타앱)의 엎힘은 무시 — 오기록 방지.
-            // 직접 잠근 폰의 엎힘(deviceLocked)은 의도된 독서로 보고 계속 기록.
+            // 앱이 보이지도 잠기지도 않은 상태(홈·타앱)의 엎힘은 오기록 후보 — 단 잠금
+            // 신호가 ~10초 지연되므로 즉시 버리지 않고 보류: 잠금이 확인되면 소급 적용
+            // (엎은 시점부터 wall-clock 정산), 12초 내 확인 안 되면 앱 밖 동작으로 폐기.
             if UIApplication.shared.applicationState == .background && !deviceLocked {
-                Self.log.info("앱 밖 엎힘 무시 (비잠금 백그라운드)")
+                let at = now
+                pendingDown = at
+                Self.log.info("배경 엎힘 보류 — 잠금 여부 재판정 대기")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 12) { [weak self] in
+                    guard let self, self.pendingDown == at else { return }
+                    self.pendingDown = nil
+                    Self.log.info("앱 밖 엎힘 무시 (비잠금 백그라운드)")
+                }
                 return
             }
-            if model.route == .flipWait {
-                session.start(at: now)
-                model.simFlip()
-                signals.signalStart()   // 화면이 안 보이는 상태의 "기록 시작" 신호
-            } else if model.route == .flipTimer, model.session?.mode == .flip,
-                      model.session?.status == .paused {
-                session.resume(at: now)
-                model.togglePause()   // 다시 엎으면 이어서
-                signals.signalStart()
-            }
+            performDown(at: now)
         case .up:
+            pendingDown = nil   // 판정 전 들어올림 → 보류 취소
             if model.route == .flipTimer, model.session?.mode == .flip,
                model.session?.status == .recording {
                 session.pause(at: now)
@@ -121,6 +138,20 @@ final class FlipEngine: ObservableObject {
                 model.syncElapsed(session.elapsed(at: now))
                 signals.signalPause()
             }
+        }
+    }
+
+    private func performDown(at now: Date) {
+        if model.route == .flipWait {
+            session.start(at: now)
+            model.simFlip()
+            signals.signalStart()   // 화면이 안 보이는 상태의 "기록 시작" 신호
+        } else if model.route == .flipTimer, model.session?.mode == .flip,
+                  model.session?.status == .paused {
+            session.resume(at: now)
+            model.togglePause()   // 다시 엎으면 이어서
+            model.syncElapsed(session.elapsed(at: now))
+            signals.signalStart()
         }
     }
 

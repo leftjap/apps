@@ -17,6 +17,7 @@ public struct Screen06Done: View {
     private let elapsed: Int
     private let isFlip: Bool
     private let live: Live?
+    @State private var confirmDelete = false   // 파괴적 액션 확인 뎁스 (2026-07-04 피드백)
 
     public init(model: RTAppModel? = nil) {
         self.model = model
@@ -106,7 +107,13 @@ public struct Screen06Done: View {
                 Text("이 기록 삭제").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
                     .padding(.top, 12)
                     .contentShape(Rectangle())
-                    .onTapGesture { model?.deleteSession() }
+                    .onTapGesture { confirmDelete = true }
+                    .confirmationDialog("이 기록을 삭제할까요?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                        Button("삭제", role: .destructive) { model?.deleteSession() }
+                        Button("취소", role: .cancel) {}
+                    } message: {
+                        Text("이번 세션 기록이 저장되지 않고 사라집니다.")
+                    }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 36)

@@ -6,6 +6,7 @@ import SwiftUI
 // 설정 — 이름 수정 / 밀리 연동 / 로그아웃
 public struct SheetSettings: View {
     var model: RTAppModel?
+    @State private var confirmLogout = false
     public init(model: RTAppModel? = nil) { self.model = model }
 
     public var body: some View {
@@ -20,7 +21,11 @@ public struct SheetSettings: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 20)
                     .contentShape(Rectangle())
-                    .onTapGesture { model?.logout() }
+                    .onTapGesture { confirmLogout = true }
+                    .confirmationDialog("로그아웃할까요?", isPresented: $confirmLogout, titleVisibility: .visible) {
+                        Button("로그아웃", role: .destructive) { model?.logout() }
+                        Button("취소", role: .cancel) {}
+                    }
             }
         }
     }
@@ -83,17 +88,29 @@ public struct SheetSort: View {
 // ⋯ 책 메뉴 — 책 삭제
 public struct SheetBookMenu: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let title: String
+    @State private var confirmDelete = false
+
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.title = model?.selectedBook?.title ?? "몰입"
+    }
 
     public var body: some View {
         SheetShell {
             VStack(spacing: 0) {
-                SheetHead(title: "몰입", onClose: { model?.closeSheet() })
+                SheetHead(title: title, onClose: { model?.closeSheet() })
                 Text("책 삭제").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
                     .frame(maxWidth: .infinity)
                     .padding(.top, 20)
                     .contentShape(Rectangle())
-                    .onTapGesture { model?.deleteBook() }
+                    .onTapGesture { confirmDelete = true }
+                    .confirmationDialog("'\(title)' 을(를) 삭제할까요?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                        Button("삭제", role: .destructive) { model?.deleteBook() }
+                        Button("취소", role: .cancel) {}
+                    } message: {
+                        Text("서재에서 책이 사라집니다. 읽기 기록은 남아요.")
+                    }
             }
         }
     }

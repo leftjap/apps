@@ -7,6 +7,7 @@ import SwiftUI
 // 공용 다크 요소
 struct DarkTopBar<Trailing: View>: View {
     let showBookChip: Bool
+    var bookTitle = "몰입"   // 라이브: 현재 책 제목 (데모 기본 = 시안 값)
     @ViewBuilder var trailing: () -> Trailing
 
     var body: some View {
@@ -19,7 +20,10 @@ struct DarkTopBar<Trailing: View>: View {
                     }
                     .frame(width: 22, height: 31)
                     .clipShape(RoundedRectangle(cornerRadius: 2.5))
-                    Text("몰입").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xDDD8C2))
+                    Text(bookTitle).font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xDDD8C2))
+                        .lineLimit(1)
+                        .frame(maxWidth: 170, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(EdgeInsets(top: 7, leading: 8, bottom: 7, trailing: 12))
                 .background(Capsule().fill(Color.white.opacity(0.06)))
@@ -38,6 +42,43 @@ struct DarkTopBar<Trailing: View>: View {
         }
         .padding(.horizontal, 20)
         .padding(.top, 56)
+    }
+}
+
+// 04·05 공용 하단 블록 — 통계 스트립 + "여기까지 읽기" CTA (디자인 통일, 2026-07-04 피드백)
+struct DarkSessionFooter: View {
+    let sessionMin: Int
+    let todayBase: Int
+    let onEnd: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("이 세션").font(.sans(12.5, 500)).foregroundColor(RT.darkSub)
+                Spacer()
+                Text("\(sessionMin)분").font(.mono(13, 600)).foregroundColor(Color(hex: 0xDDD8C2))
+                Spacer()
+                Rectangle().fill(Color.white.opacity(0.12)).frame(width: 1, height: 16)
+                Spacer()
+                Text("오늘 누적").font(.sans(12.5, 500)).foregroundColor(RT.darkSub)
+                Spacer()
+                Text("\(todayBase + sessionMin)분").font(.mono(13, 600)).foregroundColor(Color(hex: 0xDDD8C2))
+            }
+            .padding(EdgeInsets(top: 13, leading: 16, bottom: 13, trailing: 16))
+            .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.05)))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
+            HStack(spacing: 9) {
+                RTIcon(RTIconPath.check, size: 16, stroke: Color(hex: 0x26413A), lineWidth: 2.6)
+                Text("여기까지 읽기").font(.sans(15.5, 800)).foregroundColor(Color(hex: 0x1D2F28))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(RoundedRectangle(cornerRadius: 16).fill(RT.ctaText))
+            .shadow(color: Color.black.opacity(0.5), radius: 15, x: 0, y: 16)
+            .contentShape(Rectangle())
+            .onTapGesture { onEnd() }
+            .padding(.top, 14)
+        }
     }
 }
 
@@ -78,12 +119,17 @@ struct LivePill: View {
 // ── 03 엎기 · 시작 대기 ──
 public struct Screen03FlipWait: View {
     var model: RTAppModel?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    private let bookTitle: String
+
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.bookTitle = model?.currentBook?.title ?? "몰입"
+    }
 
     public var body: some View {
         ZStack(alignment: .top) {
             RT.darkGrad(CGSize(width: 390, height: 844))
-            DarkTopBar(showBookChip: true) {
+            DarkTopBar(showBookChip: true, bookTitle: bookTitle) {
                 Text("취소").font(.sans(13, 600)).foregroundColor(Color(hex: 0xB9C4B4))
                     .padding(EdgeInsets(top: 9, leading: 16, bottom: 9, trailing: 16))
                     .background(Capsule().fill(Color.white.opacity(0.06)))
@@ -147,11 +193,16 @@ public struct Screen04FlipPaused: View {
     var model: RTAppModel?
     private let paused: Bool
     private let elapsed: Int
+    private let bookTitle: String
+    private let todayBase: Int
 
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.paused = model.map { $0.session?.status != .recording } ?? true
         self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
+        self.bookTitle = model?.currentBook?.title ?? "몰입"
+        // 라이브: 오늘 실누적(진행 세션 제외), 데모: 시안 값 32분
+        self.todayBase = (model?.userData != nil) ? (model!.todaySeconds / 60) : 32
     }
 
     var sessionMin: Int { elapsed / 60 }
@@ -167,7 +218,7 @@ public struct Screen04FlipPaused: View {
                         .position(x: 195, y: 844 * 0.31)
                 }
             }
-            DarkTopBar(showBookChip: true) {
+            DarkTopBar(showBookChip: true, bookTitle: bookTitle) {
                 if paused { PausedPill() } else { LivePill() }
             }
             VStack(spacing: 0) {
@@ -209,31 +260,9 @@ public struct Screen04FlipPaused: View {
             .padding(.top, 186)
             VStack(spacing: 0) {
                 Spacer()
-                HStack {
-                    Text("이 세션").font(.sans(12.5, 500)).foregroundColor(RT.darkSub)
-                    Spacer()
-                    Text("\(sessionMin)분").font(.mono(13, 600)).foregroundColor(Color(hex: 0xDDD8C2))
-                    Spacer()
-                    Rectangle().fill(Color.white.opacity(0.12)).frame(width: 1, height: 16)
-                    Spacer()
-                    Text("오늘 누적").font(.sans(12.5, 500)).foregroundColor(RT.darkSub)
-                    Spacer()
-                    Text("\(32 + sessionMin)분").font(.mono(13, 600)).foregroundColor(Color(hex: 0xDDD8C2))
+                DarkSessionFooter(sessionMin: sessionMin, todayBase: todayBase) {
+                    model?.endSession()
                 }
-                .padding(EdgeInsets(top: 13, leading: 16, bottom: 13, trailing: 16))
-                .background(RoundedRectangle(cornerRadius: 16).fill(Color.white.opacity(0.05)))
-                .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.1), lineWidth: 1))
-                HStack(spacing: 9) {
-                    RTIcon(RTIconPath.check, size: 16, stroke: Color(hex: 0x26413A), lineWidth: 2.6)
-                    Text("여기까지 읽기").font(.sans(15.5, 800)).foregroundColor(Color(hex: 0x1D2F28))
-                }
-                .frame(maxWidth: .infinity)
-                .frame(height: 54)
-                .background(RoundedRectangle(cornerRadius: 16).fill(RT.ctaText))
-                .shadow(color: Color.black.opacity(0.5), radius: 15, x: 0, y: 16)
-                .contentShape(Rectangle())
-                .onTapGesture { model?.endSession() }
-                .padding(.top, 14)
             }
             .padding(.horizontal, 22)
             .padding(.bottom, 44)
@@ -278,16 +307,28 @@ public struct Screen04FlipPaused: View {
 }
 
 // ── 05 탭 모드 (recording 기본 = 시안 캐노니컬 / paused 변형) ──
+// 2026-07-04 실기기 피드백: 04(엎기)와 디자인 통일 — 우상단 종료 캡슐 제거,
+// 상태 필은 우상단(04 문법), 하단은 공용 DarkSessionFooter(통계+여기까지 읽기).
 public struct Screen05TapRecording: View {
     var model: RTAppModel?
     private let paused: Bool
     private let elapsed: Int
+    private let subtitle: String
+    private let todayBase: Int
 
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.paused = model.map { $0.session?.status != .recording } ?? false
         self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
+        if let b = model?.currentBook {
+            self.subtitle = "\(b.author), 《\(b.title)》"
+        } else {
+            self.subtitle = "미하이 칙센트미하이, 《몰입》"
+        }
+        self.todayBase = (model?.userData != nil) ? (model!.todaySeconds / 60) : 32
     }
+
+    var sessionMin: Int { elapsed / 60 }
 
     public var body: some View {
         let t = RTAppModel.hms(elapsed)
@@ -301,22 +342,18 @@ public struct Screen05TapRecording: View {
                 }
             }
             DarkTopBar(showBookChip: false) {
-                Text("종료").font(.sans(13, 700)).foregroundColor(Color(hex: 0xF0ECD9))
-                    .padding(EdgeInsets(top: 9, leading: 16, bottom: 9, trailing: 16))
-                    .background(Capsule().fill(Color.white.opacity(0.12)))
-                    .overlay(Capsule().stroke(Color.white.opacity(0.18), lineWidth: 1))
-                    .contentShape(Rectangle())
-                    .onTapGesture { model?.endSession() }
+                if paused { PausedPill() } else { LivePill() }
             }
             VStack(spacing: 0) {
-                if paused { PausedPill() } else { LivePill() }
-                timerText(t).padding(.top, 24)
-                Text("미하이 칙센트미하이, 《몰입》").font(.sans(13, 500))
+                timerText(t)
+                Text(subtitle).font(.sans(13, 500))
                     .foregroundColor(RT.darkSub).padding(.top, 16)
+                    .lineLimit(1)
+                    .padding(.horizontal, 30)
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, 172)
-            VStack {
+            .padding(.top, 196)
+            VStack(spacing: 0) {
                 Spacer()
                 VStack(spacing: 10) {
                     ZStack {
@@ -339,15 +376,13 @@ public struct Screen05TapRecording: View {
                 )
                 .contentShape(Rectangle())
                 .onTapGesture { model?.tapZone() }
-                .padding(.horizontal, 22)
-                .padding(.bottom, 112)
+                DarkSessionFooter(sessionMin: sessionMin, todayBase: todayBase) {
+                    model?.endSession()
+                }
+                .padding(.top, 14)
             }
-            VStack {
-                Spacer()
-                Text("두 번 탭 = 종료").font(.mono(10, 500)).tracking(10 * 0.16)
-                    .foregroundColor(Color(hex: 0x5C6F60))
-                    .padding(.bottom, 48)
-            }
+            .padding(.horizontal, 22)
+            .padding(.bottom, 44)
         }
         .frame(width: 390, height: 844)
     }
