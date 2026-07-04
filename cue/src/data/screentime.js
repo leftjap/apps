@@ -125,6 +125,11 @@ const SPAN_LABEL = { day: '오늘', week: '이번 주', month: '이번 달' };
 export const TOOL_APP = 'kr.co.millie.MillieShelf';   // 독서 = 밀리의 서재
 export const TOOL_SITE = 'leftjap.github.io';          // 글쓰기·어학
 
+// 사용시간이 아닌 시스템 UI — 집계·랭킹 제외 (잠금화면 300s/일 오염, 2026-07-04 진단).
+// 데몬(chrome-site-poll.py SKIP_BUNDLES)이 1차 차단하지만, 과거 적재분·롤백 대비 이중 방어.
+const EXCLUDED_APPS = new Set(['com.apple.loginwindow', 'com.apple.SecurityAgent',
+  'com.apple.ScreenSaver.Engine', 'com.apple.ScreenSaverEngine']);
+
 // 앱 번들 ID → 표시 이름 (상위·알려진 앱. 미상은 fallback). 사이트는 도메인 그대로.
 const APP_NAMES = {
   'com.google.Chrome': 'Chrome', 'com.blizzard.Starcraft': '스타크래프트',
@@ -135,6 +140,9 @@ const APP_NAMES = {
   'com.microsoft.VSCode': 'VS Code', 'com.microsoft.onenote.mac': 'OneNote',
   'com.apple.systempreferences': '시스템 설정', 'com.apple.Preview': '미리보기',
   'com.apple.AppStore': 'App Store', 'com.apple.FaceTime': 'FaceTime', 'net.shinyfrog.bear': 'Bear',
+  'com.apple.iphonesimulator': 'iPhone 시뮬레이터', 'com.apple.dt.Xcode': 'Xcode',
+  'com.apple.ScreenContinuity': 'iPhone 미러링', 'com.apple.Safari': 'Safari',
+  'com.logi.ghub.agent': 'Logitech G HUB',
 };
 
 /** 번들 ID → 표시 이름. 미상이면 마지막 세그먼트 대문자화. */
@@ -164,7 +172,8 @@ export function deltaLabel(curSec, prevSec, prefix = '') {
 /** {name:sec} → 랭킹 행 [{n,t,v,tool?,other?}]. 상위 topN(+도구 보장) + 나머지 기타 병합. */
 export function rankRows(agg, isTool, displayFn, topN) {
   const items = Object.entries(agg).map(([name, sec]) => ({ name, sec }))
-    .filter((x) => x.sec > 0).sort((a, b) => b.sec - a.sec);
+    .filter((x) => x.sec > 0)
+    .sort((a, b) => b.sec - a.sec || a.name.localeCompare(b.name)); // 동점 이름순 — DB 순서 무관 결정적
   const named = [], rest = [];
   for (const x of items) {
     if (named.length < topN || isTool(x.name)) named.push(x);
@@ -185,12 +194,15 @@ const _key = (d) => `${d.getFullYear()}-${_p2(d.getMonth() + 1)}-${_p2(d.getDate
 const _addDays = (base, n) => { const x = new Date(base); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() + n); return x; };
 const _weekMon = (base) => { const x = new Date(base); x.setHours(0, 0, 0, 0); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
 
-const _sumApps = (rows, s, e) => rows.reduce((t, r) => (r.kind === 'app' && r.date >= s && r.date <= e ? t + r.seconds : t), 0);
+const _sumApps = (rows, s, e) => rows.reduce((t, r) => (r.kind === 'app' && !EXCLUDED_APPS.has(r.name) && r.date >= s && r.date <= e ? t + r.seconds : t), 0);
 const _sumOne = (rows, s, e, kind, name) => rows.reduce((t, r) => (r.kind === kind && r.name === name && r.date >= s && r.date <= e ? t + r.seconds : t), 0);
 const _toolSec = (rows, s, e) => _sumOne(rows, s, e, 'app', TOOL_APP) + _sumOne(rows, s, e, 'site', TOOL_SITE);
 function _aggKind(rows, s, e, kind) {
   const a = {};
-  for (const r of rows) if (r.kind === kind && r.date >= s && r.date <= e) a[r.name] = (a[r.name] || 0) + r.seconds;
+  for (const r of rows) {
+    if (kind === 'app' && EXCLUDED_APPS.has(r.name)) continue;
+    if (r.kind === kind && r.date >= s && r.date <= e) a[r.name] = (a[r.name] || 0) + r.seconds;
+  }
   return a;
 }
 
@@ -249,7 +261,8 @@ function buildPeriod(rows, today, period) {
     bkWeb: fmtDur(_sumOne(rows, curS, curE, 'site', TOOL_SITE)),
     axisStart, axisEnd,
     trendTotals: buckets.map(([s, e]) => Math.round(_sumApps(rows, s, e) / 60)),
-    trendTool: buckets.map(([s, e]) => Math.round(_toolSec(rows, s, e) / 60)),
+    // headline toolSec 와 동일한 total 클램프 — incoherent 데이터에서 추세·헤드라인 비중 일치
+    trendTool: buckets.map(([s, e]) => Math.round(Math.min(_toolSec(rows, s, e), _sumApps(rows, s, e)) / 60)),
     apps: rankRows(_aggKind(rows, curS, curE, 'app'), (n) => n === TOOL_APP, appName, 6),
     sites: rankRows(_aggKind(rows, curS, curE, 'site'), (n) => n === TOOL_SITE, (n) => n, 6),
   };

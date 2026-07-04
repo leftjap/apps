@@ -85,3 +85,67 @@ describe('buildRealApps 어학 — 언어 분리 (일본어 시드 누출 차단
     expect(lang.sub).toContain('1개');
   });
 });
+
+describe('buildRealApps 어학 — 실학습 신호 게이트 (발화 0 잔류 세션 오탐 차단, 2026-07-04)', () => {
+  const today = startOfToday();
+  const todayKey = localDayKey(today);
+  const threeAgo = new Date(today); threeAgo.setDate(threeAgo.getDate() - 3);
+  const threeAgoKey = localDayKey(threeAgo);
+  const U = 'u1';
+
+  // 오늘: 세션 탭 방치로 study_time 만 쌓임 (발화·신규·복습 0) — 실학습 아님.
+  // 3일 전: 발화 7 실학습. today_lessons 는 학습 여부와 무관하게 매일 시딩됨.
+  const canned = {
+    study_daily_stats: [
+      { user_id: U, date: todayKey, lang: 'en', study_time_sec: 1445, utterance_count: 0, new_sentences: 0, review_count: 0 },
+      { user_id: U, date: threeAgoKey, lang: 'en', study_time_sec: 112, utterance_count: 7, new_sentences: 0, review_count: 0 },
+    ],
+    study_today_lessons: [
+      { user_id: U, date: todayKey, lang: 'en', explanation: { sceneTitle: '방문 유세 — 공원에 관심 없다는 주민' } },
+      { user_id: U, date: threeAgoKey, lang: 'en', explanation: { sceneTitle: '공원 설문' } },
+    ],
+    study_review_queue: [],
+    study_session_logs: [],
+  };
+
+  it('발화·신규·복습 0 이면 study_time>0 이어도 done=false (✔ 오탐 제거)', async () => {
+    const apps = await buildRealApps(makeClient(canned), 'u1');
+    const lang = apps[2];
+    expect(lang.id).toBe('lang');
+    expect(lang.done).toBe(false);
+    expect(lang.tlMeta).toBeNull(); // 타임라인 '오늘 N분' 메타도 없어야 함
+  });
+
+  it('팬텀 날은 캘린더 활동일로도 안 잡히고, 직전 학습은 3일 전(실학습일)', async () => {
+    const apps = await buildRealApps(makeClient(canned), 'u1');
+    const lang = apps[2];
+    expect(lang.cal[new Date(today).getDate() - 1]).toBe(0); // 오늘 칸 = 무활동
+    // 오늘 시드 제목이 '한 것'처럼 누출되지 않아야 함 (직전 학습 = 3일 전 '공원 설문')
+    expect(JSON.stringify(lang)).not.toContain('방문 유세');
+  });
+
+  it('활성 언어 판정도 실학습 신호 기준 — 타 언어 팬텀 행이 언어를 뺏지 않는다', async () => {
+    const yesterAgo = new Date(today); yesterAgo.setDate(yesterAgo.getDate() - 1);
+    const yKey = localDayKey(yesterAgo);
+    const c2 = {
+      study_daily_stats: [
+        { user_id: U, date: todayKey, lang: 'ja', study_time_sec: 999, utterance_count: 0, new_sentences: 0, review_count: 0 },
+        { user_id: U, date: yKey, lang: 'en', study_time_sec: 300, utterance_count: 5, new_sentences: 1, review_count: 0 },
+      ],
+      study_today_lessons: [
+        { user_id: U, date: todayKey, lang: 'ja', explanation: { sceneTitle: 'べつに、めんどくさい' } },
+        { user_id: U, date: yKey, lang: 'en', explanation: { sceneTitle: '공원 설문' } },
+      ],
+      study_review_queue: [
+        { user_id: U, lang: 'en', next_review: yKey }, { user_id: U, lang: 'en', next_review: '2099-01-01' },
+        { user_id: U, lang: 'ja', next_review: yKey }, { user_id: U, lang: 'ja', next_review: yKey },
+      ],
+      study_session_logs: [],
+    };
+    const apps = await buildRealApps(makeClient(c2), 'u1');
+    const lang = apps[2];
+    expect(JSON.stringify(lang)).not.toContain('べつに'); // ja 팬텀이 활성 언어를 못 뺏음
+    const collected = lang.statRecords.find((r) => r.lb === '익힌 문장');
+    expect(collected.v).toBe('2개'); // en 큐만
+  });
+});

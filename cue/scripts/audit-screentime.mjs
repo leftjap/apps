@@ -29,6 +29,9 @@ const weekMon = (base) => { const x = new Date(base); x.setHours(0, 0, 0, 0); x.
 const today = new Date(); today.setHours(0, 0, 0, 0);
 const tk = K(today);
 const CHROME = 'com.google.Chrome';
+// 어댑터 EXCLUDED_APPS(screentime.js)와 동일 사양 — 시스템 UI 는 사용시간 아님
+const EXCLUDED_APPS = new Set(['com.apple.loginwindow', 'com.apple.SecurityAgent',
+  'com.apple.ScreenSaver.Engine', 'com.apple.ScreenSaverEngine']);
 
 const { data: rows, error } = await c.from('screentime_daily')
   .select('date, kind, name, seconds').eq('owner_id', uid).order('date', { ascending: true });
@@ -36,13 +39,16 @@ if (error) { console.error(error.message); process.exit(1); }
 const view = buildScreenTimeData(rows, today);
 
 // ── 독립 재계산 헬퍼 (어댑터 내부 함수 미경유) ──
-const sumApp = (s, e) => rows.filter((r) => r.kind === 'app' && r.date >= s && r.date <= e).reduce((a, r) => a + r.seconds, 0);
+const sumApp = (s, e) => rows.filter((r) => r.kind === 'app' && !EXCLUDED_APPS.has(r.name) && r.date >= s && r.date <= e).reduce((a, r) => a + r.seconds, 0);
 const sumOne = (kind, name, s, e) => rows.filter((r) => r.kind === kind && r.name === name && r.date >= s && r.date <= e).reduce((a, r) => a + r.seconds, 0);
 const rawTool = (s, e) => sumOne('app', TOOL_APP, s, e) + sumOne('site', TOOL_SITE, s, e);
 const toolShown = (s, e) => Math.min(rawTool(s, e), sumApp(s, e)); // 어댑터 클램프와 동일 (도구 ≤ 전체)
 const aggKind = (kind, s, e) => {
   const a = {};
-  for (const r of rows) if (r.kind === kind && r.date >= s && r.date <= e) a[r.name] = (a[r.name] || 0) + r.seconds;
+  for (const r of rows) {
+    if (kind === 'app' && EXCLUDED_APPS.has(r.name)) continue;
+    if (r.kind === kind && r.date >= s && r.date <= e) a[r.name] = (a[r.name] || 0) + r.seconds;
+  }
   return a;
 };
 // rankRows 독립 재현 — 어댑터가 올바른 윈도우/집계를 먹였는지 교차검증
@@ -109,12 +115,21 @@ for (const [p, def] of Object.entries(PERIODS)) {
   // 증감 — 같은-경과-구간(prev 데이터 없으면 미표시)
   cmp('totalDelta', ptot > 0 ? deltaLabel(tot, ptot, def.prefix) : '', view[p].totalDelta);
   cmp('toolDelta', ptot > 0 ? deltaLabel(tsec, Math.min(rawTool(ps, pe), ptot), '') : '', view[p].toolDelta);
-  // 추세 (어댑터 trend 는 toolMin 비클램프 raw — 동일하게 raw 로 대조)
+  // 추세 (trendTool 은 headline 과 동일하게 버킷별 total 클램프 — 어댑터와 같은 사양)
   cmpJSON('trendTotals', def.buckets.map(([bs, be]) => Math.round(sumApp(bs, be) / 60)), view[p].trendTotals);
-  cmpJSON('trendTool', def.buckets.map(([bs, be]) => Math.round(rawTool(bs, be) / 60)), view[p].trendTool);
+  cmpJSON('trendTool', def.buckets.map(([bs, be]) => Math.round(Math.min(rawTool(bs, be), sumApp(bs, be)) / 60)), view[p].trendTool);
   // 랭킹 (앱/사이트 — 독립 rankRows)
   cmpJSON('apps랭킹', rankIndep(aggKind('app', s, e), (n) => n === TOOL_APP, appName, 6), view[p].apps.map((r) => ({ n: r.n, v: r.v })));
   cmpJSON('sites랭킹', rankIndep(aggKind('site', s, e), (n) => n === TOOL_SITE, (n) => n, 6), view[p].sites.map((r) => ({ n: r.n, v: r.v })));
+}
+
+// ── ①-b DB 위생 게이트 — 시스템 UI 행이 DB 에 남아 있으면 FAIL (데몬 SKIP_BUNDLES 회귀 감지) ──
+console.log('\n■ [위생] screentime_daily 에 시스템 UI(잠금화면 등) 행 부재');
+{
+  const dirty = rows.filter((r) => r.kind === 'app' && EXCLUDED_APPS.has(r.name));
+  const ok = dirty.length === 0;
+  if (ok) pass++; else fail++;
+  console.log(`  ${ok ? '✅' : '❌'} 데니리스트 행 ${dirty.length}건${ok ? '' : ` — ${[...new Set(dirty.map((r) => `${r.date}:${r.name}`))].slice(0, 5).join(', ')}`}`);
 }
 
 // ── ② 코히어런스 (데이터 물리성 — 경고만, exit code 비반영) ──

@@ -49,10 +49,12 @@ console.log(`### 전수 충실성 감사 — 오늘 ${tk} (user ${uid.slice(0, 8
 
 // ─────────── 어학 (en-only) ───────────
 console.log('■ 어학 (lang) — 영어만 반영되어야 함');
-const { data: sdsAll } = await c.from('study_daily_stats').select('date,lang,study_time_sec,utterance_count,new_sentences').eq('user_id', uid);
-const en = sdsAll.filter((r) => r.lang === 'en');
-const ja = sdsAll.filter((r) => r.lang === 'ja');
-console.log(`  (참고) en 행 ${en.length} · ja 행 ${ja.length} → adapter 는 en 만 집계해야`);
+const { data: sdsAll } = await c.from('study_daily_stats').select('date,lang,study_time_sec,utterance_count,new_sentences,review_count').eq('user_id', uid);
+// 실학습 신호 게이트(adapter hasLearningSignal 과 동일 사양) — study_time 만 있는 잔류 세션 행 제외
+const hasSignal = (r) => (r.utterance_count || 0) > 0 || (r.new_sentences || 0) > 0 || (r.review_count || 0) > 0;
+const en = sdsAll.filter((r) => r.lang === 'en' && hasSignal(r));
+const ja = sdsAll.filter((r) => r.lang === 'ja' && hasSignal(r));
+console.log(`  (참고) en 행 ${en.length} · ja 행 ${ja.length} (실학습 신호 有) → adapter 는 en 만 집계해야`);
 const enToday = en.find((r) => r.date === tk);
 const langTodayMin = enToday ? Math.round(enToday.study_time_sec / 60) : 0;
 cmp('오늘 분(todayVal)', langTodayMin, lang.done ? parseInt(lang.tlMeta.match(/· (\d+)분/)[1]) : 0);

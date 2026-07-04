@@ -23,7 +23,7 @@ function mdLabel(daysAgo, today) {
   return `${m}월 ${d}일`;
 }
 
-/* ───────── 독서 (출처: book_reading_seconds — 일별 분. 제목·진도% 미연동) ───────── */
+/* ───────── 독서 (출처: book_reading_seconds — 일별 분 + book_current_reading — 제목·진도%) ───────── */
 export function buildRead(c) {
   const none = c.lastDaysAgo == null && !c.done;
   const hasLast = c.lastVal != null;

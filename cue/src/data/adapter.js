@@ -7,14 +7,15 @@
    → 두 경로 모두 owner 컬럼을 명시 필터(study/gym=user_id, today/book=owner_id).
 
    슬롯 구조(§7 — 직전 → 이번 주 근접목표 → 추세/이번 달):
-     독서 read   = book_reading_seconds.seconds/60 (분). 제목·진도% 미연동 → hook=직전 시점·slot3=이번 달 시간
+     독서 read   = book_reading_seconds.seconds/60 (분) + book_current_reading(제목·진도%, millie-book-sync 적재) → hook=「제목」 N%
      글쓰기 write = today_entries (kind 라벨·title·매수·created_at). 이번 주=편수(행), 이번 달=매수
-     어학 lang   = study_daily_stats(utterance·study_time·new_sentences) + study_review_queue(복습 대기·익힌 문장) + sceneTitle
+     어학 lang   = study_daily_stats(utterance·study_time·new_sentences·review) + study_review_queue(복습 대기·익힌 문장) + sceneTitle.
+                   실학습 신호(hasLearningSignal — 발화·신규·복습 >0) 있는 행만 집계 (study_time 단독 잔류 세션 오탐 차단)
      운동 gym    = gym_sessions (tags=부위 2개·blocks PR·total_volume·duration_min). 주 4일 목표·이번 달 횟수
    문장 생성은 copy.js (§5·§9), 수치 함수는 transforms.js. */
 import {
   dailySeries, dayKeysEndingToday, localDayKey, runDays, longestRun,
-  lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, pickActiveLang,
+  lastActiveDaysAgo, sheetsFromHtml, countDaysInCurrentWeek, startOfToday, pickActiveLang, hasLearningSignal,
   latestTodayTs, minuteOfDay, medianMinuteOfDay, p2,
   monthSeries, monthSum, weeklyActiveDayCounts, weeks4Streak,
   countRowsInWeek, countRowsInMonth, countPRs, thisYearSlice,
@@ -174,10 +175,13 @@ async function fetchLang(client, userId, today, len, sinceKey, usualSince) {
   // 활성 언어로 한정 — study 앱은 en/ja 둘 다 매일 today_lessons 를 시딩하지만 daily_stats 는
   // 실제 학습 시에만 생성된다. 최신 학습일의 lang 이 사용자가 하는 언어 → 모든 study 쿼리를 그
   // lang 으로 필터해 미학습 언어 시드 누출(예: 영어만 했는데 일본어 레슨 제목 표시)을 차단.
-  const statRows = await rows(client, 'study_daily_stats', 'date, lang, study_time_sec, utterance_count, new_sentences',
+  const statRows = await rows(client, 'study_daily_stats', 'date, lang, study_time_sec, utterance_count, new_sentences, review_count',
     (q) => q.eq('user_id', userId).gte('date', sinceKey));
-  const lang = pickActiveLang(statRows);
-  const data = statRows.filter((r) => r.lang === lang);
+  // 실학습 신호(발화·신규·복습) 게이트 — study_time 만 있는 잔류 세션 행은 학습이 아니므로
+  // done·캘린더·streak·활성언어 판정에서 제외 (발화 0·study_time 1445초 ✔ 오탐, 2026-07-04).
+  const learnedRows = statRows.filter(hasLearningSignal);
+  const lang = pickActiveLang(learnedRows);
+  const data = learnedRows.filter((r) => r.lang === lang);
   const series = dailySeries(data, (r) => r.date, (r) => r.study_time_sec / 60, len, today)
     .map((v) => Math.round(v));
   const utterSeries = dailySeries(data, (r) => r.date, (r) => r.utterance_count, len, today);

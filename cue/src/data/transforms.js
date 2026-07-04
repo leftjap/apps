@@ -78,6 +78,15 @@ export function dailySeries(rows, getKey, getVal, len, today) {
   return series;
 }
 
+/** 실학습 신호 — 발화·신규·복습 중 하나라도 >0. study_time_sec 는 세션 탭을 열어두기만 해도
+    쌓이는 체류 시간이라(2026-07-04 발화 0·1445초 오탐) 단독으로는 학습 증거가 아니다. */
+export function hasLearningSignal(r) {
+  if (!r) return false;
+  return (Number(r.utterance_count) || 0) > 0
+    || (Number(r.new_sentences) || 0) > 0
+    || (Number(r.review_count) || 0) > 0;
+}
+
 /** 사용자의 활성 학습 언어 = study_daily_stats 최신 학습일의 lang (동률은 study_time 큰 쪽).
     study 앱은 en/ja 둘 다 매일 today_lessons 를 시딩하지만, 실제 학습은 daily_stats 에만 남는다 →
     미학습 언어 시드가 어학 카드에 누출되지 않도록 '실제로 한 언어'만 신호로 삼는다. 없으면 fallback. */

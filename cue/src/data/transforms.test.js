@@ -22,6 +22,7 @@ import {
   countPRs,
   thisYearSlice,
   pickActiveLang,
+  hasLearningSignal,
 } from './transforms.js';
 
 describe('pickActiveLang — 활성 학습 언어 (최신 daily_stats lang)', () => {
@@ -44,6 +45,21 @@ describe('pickActiveLang — 활성 학습 언어 (최신 daily_stats lang)', ()
   });
   it('일본어만 학습했으면 ja', () => {
     expect(pickActiveLang([{ date: '2026-06-20', lang: 'ja', study_time_sec: 600 }])).toBe('ja');
+  });
+});
+
+describe('hasLearningSignal — 실학습 신호 (발화·신규·복습 중 하나라도 >0)', () => {
+  it('발화·신규·복습 전부 0 이면 study_time 이 있어도 false (탭 방치 잔류 세션)', () => {
+    expect(hasLearningSignal({ study_time_sec: 1445, utterance_count: 0, new_sentences: 0, review_count: 0 })).toBe(false);
+  });
+  it('발화 / 신규 / 복습 하나라도 있으면 true', () => {
+    expect(hasLearningSignal({ study_time_sec: 112, utterance_count: 7, new_sentences: 0, review_count: 0 })).toBe(true);
+    expect(hasLearningSignal({ study_time_sec: 0, utterance_count: 0, new_sentences: 2, review_count: 0 })).toBe(true);
+    expect(hasLearningSignal({ study_time_sec: 0, utterance_count: 0, new_sentences: 0, review_count: 3 })).toBe(true);
+  });
+  it('null·필드 누락 안전', () => {
+    expect(hasLearningSignal(null)).toBe(false);
+    expect(hasLearningSignal({})).toBe(false);
   });
 });
 

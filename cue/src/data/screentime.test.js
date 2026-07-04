@@ -33,6 +33,13 @@ describe('appName — 번들 ID → 표시 이름', () => {
     expect(appName('com.apple.finder')).toBe('Finder');     // 폴백: 마지막 세그먼트
     expect(appName('xyz.foo.bar')).toBe('Bar');
   });
+  it('상시 사용 시스템·개발 앱 표시명 ("Iphonesimulator" 같은 무의미 폴백 방지)', () => {
+    expect(appName('com.apple.iphonesimulator')).toBe('iPhone 시뮬레이터');
+    expect(appName('com.apple.dt.Xcode')).toBe('Xcode');
+    expect(appName('com.apple.ScreenContinuity')).toBe('iPhone 미러링');
+    expect(appName('com.apple.Safari')).toBe('Safari');
+    expect(appName('com.logi.ghub.agent')).toBe('Logitech G HUB');
+  });
 });
 
 describe('rankRows — 상위 N + 기타 병합 + 도구 보장', () => {
@@ -44,6 +51,11 @@ describe('rankRows — 상위 N + 기타 병합 + 도구 보장', () => {
     expect(tool).toMatchObject({ n: '밀리의 서재', v: 1, tool: true }); // topN(3) 밖이지만 포함
     const etc = rows.find((r) => r.other);
     expect(etc).toMatchObject({ n: '기타', other: true });
+  });
+  it('동점은 이름순 tiebreak — DB 반환 순서와 무관하게 결정적', () => {
+    const a = rankRows({ 'ru.keepcoder.Telegram': 60, 'com.apple.dt.Xcode': 60 }, () => false, (n) => n, 1);
+    const b = rankRows({ 'com.apple.dt.Xcode': 60, 'ru.keepcoder.Telegram': 60 }, () => false, (n) => n, 1);
+    expect(a.map((r) => r.n)).toEqual(b.map((r) => r.n));
   });
 });
 
@@ -133,6 +145,27 @@ describe('buildScreenTimeData — screentime_daily → 뷰 shape (실데이터 �
     const m = buildScreenTimeData(r, new Date(2026, 2, 31)).month; // 3/31
     // cur(3월)=9600s=160분, prev(2/1~2/28)=300s=5분 → ▲155분. 클램프 깨지면 3/3이 prev로 새 ▲5분.
     expect(m.totalDelta).toBe('지난달보다 ▲2시간 35분');
+  });
+
+  it('시스템 UI(잠금화면 등)는 total·랭킹에서 제외 — 사용시간 아님 (2026-07-04 loginwindow 300s 오염)', () => {
+    const r = [
+      { date: '2026-06-24', kind: 'app', name: 'com.google.Chrome', seconds: 6000 },      // 100분
+      { date: '2026-06-24', kind: 'app', name: 'com.apple.loginwindow', seconds: 300 },   // 잠금화면 — 제외
+      { date: '2026-06-24', kind: 'app', name: 'com.apple.SecurityAgent', seconds: 120 }, // 인증 대화상자 — 제외
+    ];
+    const d = buildScreenTimeData(r, new Date(2026, 5, 24)).day;
+    expect(d.total).toBe('1시간 40분'); // 6000s 만 — 300/120 미포함
+    expect(JSON.stringify(d.apps)).not.toContain('oginwindow');
+    expect(JSON.stringify(d.apps)).not.toContain('SecurityAgent');
+  });
+
+  it('추세 trendTool 도 headline 과 동일하게 total 로 클램프 (incoherent 데이터 대칭 방어)', () => {
+    const r = [
+      { date: '2026-06-25', kind: 'app', name: 'com.google.Chrome', seconds: 1800 },  // 30분
+      { date: '2026-06-25', kind: 'site', name: 'leftjap.github.io', seconds: 4800 }, // 80분 (도구>앱합)
+    ];
+    const d = buildScreenTimeData(r, new Date(2026, 5, 25)).day;
+    expect(d.trendTool[6]).toBeLessThanOrEqual(d.trendTotals[6]); // 30 이하 (raw 80 아님)
   });
 });
 
