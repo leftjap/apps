@@ -31,8 +31,10 @@ final class LiveActivityController {
         if let activity {
             // alertConfiguration 제거 — 실기기 실측(2026-07-04): 화면 웨이크 효과는 없고
             // 사운드만 냄(사용자 불만). 상태 갱신은 무음으로 충분.
+            RTDbg.p("la: 갱신 (\(key))")
             Task { await activity.update(ActivityContent(state: state, staleDate: nil)) }
         } else {
+            RTDbg.p("la: 등록 시도 (\(key), enabled=\(ActivityAuthorizationInfo().areActivitiesEnabled))")
             do {
                 let a = try Activity.request(
                     attributes: RTReadingActivityAttributes(bookTitle: bookTitle ?? "리딩타임"),
@@ -40,8 +42,13 @@ final class LiveActivityController {
                 )
                 activity = a
                 Self.log.info("live activity 등록 성공 id=\(a.id, privacy: .public) enabled=\(ActivityAuthorizationInfo().areActivitiesEnabled, privacy: .public)")
+                RTDbg.p("la: 등록 성공 id=\(a.id)")
             } catch {
+                // 실패 래치 방지 — lastKey 를 되돌려 다음 sync(경과 틱 포함)에서 재시도.
+                // (기존엔 실패해도 key 가 커밋돼 다음 상태 전환까지 LA 부재가 고착됐음)
+                lastKey = nil
                 Self.log.error("live activity 등록 실패: \(String(describing: error), privacy: .public)")
+                RTDbg.p("la: 등록 실패 — \(String(describing: error))")
             }
         }
     }
@@ -53,10 +60,14 @@ final class LiveActivityController {
         let mine = activity
         activity = nil
         Task {
-            if let mine { await mine.end(nil, dismissalPolicy: .immediate) }
+            if let mine {
+                RTDbg.p("la: 종료 id=\(mine.id)")
+                await mine.end(nil, dismissalPolicy: .immediate)
+            }
             // 크래시/강제종료 후 잔존하는 좀비 Live Activity 일괄 정리
             for a in Activity<RTReadingActivityAttributes>.activities where a.id != mine?.id {
                 Self.log.info("좀비 live activity 정리 id=\(a.id, privacy: .public)")
+                RTDbg.p("la: 좀비 정리 id=\(a.id)")
                 await a.end(nil, dismissalPolicy: .immediate)
             }
         }
