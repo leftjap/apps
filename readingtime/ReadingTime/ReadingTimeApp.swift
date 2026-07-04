@@ -7,10 +7,16 @@ import os.log
 // 여기선 실서비스 배선만: 알라딘 검색·클라우드 저장·엎기 센서·keep-alive.
 @main
 struct ReadingTimeApp: App {
+    // 탭 세션 wall-clock 홀더 — 잠금/서스펜드로 UI 틱이 멈춰도 실제 경과 보전
+    @MainActor final class TapClock: ObservableObject {
+        var clock = RTTapSessionClock()
+    }
+
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var model: RTAppModel
     @StateObject private var flip: FlipEngine
     @StateObject private var keepAlive = KeepAlive()
+    @StateObject private var tapClock = TapClock()
     private let cloud: CloudStore
     private let liveActivity = LiveActivityController()
 
@@ -118,7 +124,7 @@ struct ReadingTimeApp: App {
             GeometryReader { geo in
                 let scale = min(1, min(geo.size.width / 390, geo.size.height / 844))
                 RTRootView(model: model)
-                    .rtMotion(true)
+                    .rtMotion(!faceDownDark)   // 엎힘(검은 화면) 중 무한 모션 동결 — GPU 절전
                     .frame(width: 390, height: 844)
                     .scaleEffect(scale)
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
@@ -152,7 +158,8 @@ struct ReadingTimeApp: App {
                 }
                 .onReceive(model.$session) { session in
                     // 잠금 화면 Live Activity — 상태 전환만 반영(초 틱은 시스템 자동 타이머)
-                    liveActivity.sync(session: session)
+                    liveActivity.sync(session: session, bookTitle: model.currentBook?.title)
+                    tapClock.clock.track(session, at: Date())
                 }
                 .onChange(of: scenePhase) { _, phase in
                     // 백그라운드↔포그라운드 전환마다 모션 스트림 재시작 (iOS 11+ 버그 대응)
@@ -160,7 +167,10 @@ struct ReadingTimeApp: App {
                         flip.handleScenePhaseChange()
                     }
                     if phase == .active {
-                        flip.syncModel()   // 백그라운드 경과 wall-clock 보정
+                        flip.syncModel()   // 백그라운드 경과 wall-clock 보정 (flip)
+                        if model.session?.mode == .tap, tapClock.clock.isTracking {
+                            model.syncElapsed(tapClock.clock.elapsed(at: Date()))   // tap 보정
+                        }
                     }
                 }
         }

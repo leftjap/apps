@@ -12,9 +12,10 @@ final class LiveActivityController {
     private var activity: Activity<RTReadingActivityAttributes>?
     private var lastKey: String?
 
-    /// 세션 상태 변화에 맞춰 시작/갱신/종료 (elapsed 초 단위 틱은 무시 — 상태 전환만 반영)
-    func sync(session: RTSession?, now: Date = Date()) {
-        guard let s = session, s.mode == .flip else {
+    /// 세션 상태 변화에 맞춰 시작/갱신/종료 (elapsed 초 단위 틱은 무시 — 상태 전환만 반영).
+    /// flip·tap 공통 — 잠금 화면에서 어느 모드든 타이머 현황이 보여야 한다 (실기기 피드백).
+    func sync(session: RTSession?, bookTitle: String?, now: Date = Date()) {
+        guard let s = session else {
             end()
             return
         }
@@ -34,7 +35,7 @@ final class LiveActivityController {
         } else {
             do {
                 let a = try Activity.request(
-                    attributes: RTReadingActivityAttributes(bookTitle: "몰입"),
+                    attributes: RTReadingActivityAttributes(bookTitle: bookTitle ?? "리딩타임"),
                     content: ActivityContent(state: state, staleDate: nil)
                 )
                 activity = a

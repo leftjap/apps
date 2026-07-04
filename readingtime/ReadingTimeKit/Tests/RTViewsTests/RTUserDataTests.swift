@@ -224,3 +224,50 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.streakDays == 0)
     }
 }
+
+// 탭 세션 wall-clock — UI 틱 유실(잠금·서스펜드)과 무관하게 실제 경과 보전
+@MainActor
+@Suite struct RTTapSessionClockTests {
+    func session(_ mode: RTMode, _ status: RTSessionStatus) -> RTSession {
+        RTSession(mode: mode, status: status, elapsed: 0, pauseCount: 0, startedAt: day("2026-07-04"))
+    }
+
+    @Test func tracksTapWallClockAcrossSuspend() {
+        var c = RTTapSessionClock()
+        let t0 = day("2026-07-04", hour: 10)
+        c.track(session(.tap, .recording), at: t0)
+        #expect(c.isTracking)
+        // 틱 유실 상황: 55초 뒤 상태 변화 없이 elapsed 조회 → 실제 경과 반환
+        #expect(c.elapsed(at: t0.addingTimeInterval(55)) == 55)
+    }
+
+    @Test func pauseAndResume() {
+        var c = RTTapSessionClock()
+        let t0 = day("2026-07-04", hour: 10)
+        c.track(session(.tap, .recording), at: t0)
+        c.track(session(.tap, .paused), at: t0.addingTimeInterval(30))
+        #expect(c.elapsed(at: t0.addingTimeInterval(100)) == 30)   // 정지 중 경과 없음
+        c.track(session(.tap, .recording), at: t0.addingTimeInterval(100))
+        #expect(c.elapsed(at: t0.addingTimeInterval(130)) == 60)   // 30 + 30
+    }
+
+    @Test func ignoresFlipAndResets() {
+        var c = RTTapSessionClock()
+        let t0 = day("2026-07-04", hour: 10)
+        c.track(session(.flip, .recording), at: t0)
+        #expect(!c.isTracking)
+        c.track(session(.tap, .recording), at: t0)
+        #expect(c.isTracking)
+        c.track(nil, at: t0.addingTimeInterval(10))   // 세션 종료 → 리셋
+        #expect(!c.isTracking)
+    }
+
+    @Test func repeatedTicksDontDisturb() {
+        var c = RTTapSessionClock()
+        let t0 = day("2026-07-04", hour: 10)
+        c.track(session(.tap, .recording), at: t0)
+        c.track(session(.tap, .recording), at: t0.addingTimeInterval(1))   // 틱로 인한 재발행
+        c.track(session(.tap, .recording), at: t0.addingTimeInterval(2))
+        #expect(c.elapsed(at: t0.addingTimeInterval(20)) == 20)
+    }
+}

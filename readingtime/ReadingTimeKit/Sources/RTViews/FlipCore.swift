@@ -49,6 +49,40 @@ public struct FlipDetector {
     }
 }
 
+/// 탭 세션 wall-clock 추적 — UI 틱 유실(잠금·서스펜드)과 무관하게 실제 경과를 보전.
+/// flip 모드는 FlipEngine(WallClockSession + 모션 전환)이 담당 — 여기는 tap 전용으로
+/// 세션 상태 전이($session 발행)만 보고 시계를 굴린다.
+public struct RTTapSessionClock {
+    private var clock = WallClockSession()
+    private var lastStatus: RTSessionStatus?
+    public private(set) var isTracking = false
+
+    public init() {}
+
+    public mutating func track(_ session: RTSession?, at now: Date) {
+        guard let s = session, s.mode == .tap else {
+            isTracking = false
+            lastStatus = nil
+            return
+        }
+        if !isTracking {
+            isTracking = true
+            clock.start(at: now)
+            if s.status == .paused { clock.pause(at: now) }
+            lastStatus = s.status
+            return
+        }
+        if lastStatus == .recording, s.status == .paused {
+            clock.pause(at: now)
+        } else if lastStatus == .paused, s.status == .recording {
+            clock.resume(at: now)
+        }
+        lastStatus = s.status
+    }
+
+    public func elapsed(at now: Date) -> Int { clock.elapsed(at: now) }
+}
+
 /// wall-clock 세션 누적 — 백그라운드에서도 경과가 정확하도록 Date 기준
 public struct WallClockSession {
     private var segmentStart: Date?
