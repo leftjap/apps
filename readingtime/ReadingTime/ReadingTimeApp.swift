@@ -94,6 +94,18 @@ struct ReadingTimeApp: App {
         _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
     }
 
+    /// 세션 자동 잠금 정책 — 서드파티는 잠긴 화면을 깨울 수 없으므로(알림·LA alert
+    /// 실기기 실측 무효, 2026-07-04) "기록·대기 중 = 사용 중"으로 잠금 자체를 방지.
+    /// 일시정지 상태는 일반 자동 잠금 복귀 (방치 시 영구 미잠금 방지 — 잠기면
+    /// keep-alive+LA 폴백이 이어받고, 다시 엎으면 기록 재개).
+    private static func updateAwake(route: RTRoute, session: RTSession?) {
+        let recording = session?.status == .recording
+        let keepAwake = route == .flipWait
+            || (route == .flipTimer && recording)
+            || (route == .tapTimer && recording)
+        UIApplication.shared.isIdleTimerDisabled = keepAwake
+    }
+
     var body: some Scene {
         WindowGroup {
             // 시안 뷰포트 390×844 고정 — 작은 화면(iPhone 11 Pro 375×812 등)은 비율 유지 축소·중앙 배치
@@ -109,9 +121,7 @@ struct ReadingTimeApp: App {
                 .task { await cloud.restore() }
                 .onReceive(model.$route) { route in
                     let flipSession = route == .flipWait || route == .flipTimer
-                    // 세션 중 자동 잠금 방지 — "들면 화면이 이미 켜져 있는" UX 의 핵심.
-                    // 서드파티는 잠긴 화면을 깨울 수 없음(알림·LA alert 실기기 실측 무효, 2026-07-04)
-                    UIApplication.shared.isIdleTimerDisabled = flipSession || route == .tapTimer
+                    Self.updateAwake(route: route, session: model.session)
                     // 엎기 모드: 근접 센서로 엎힌 동안 화면 하드웨어 오프(통화와 동일 메커니즘)
                     // → 배터리 소모 없이, 들어올리면 즉시 04 타이머 화면 + 포그라운드 강햅틱
                     UIDevice.current.isProximityMonitoringEnabled = flipSession
@@ -123,6 +133,9 @@ struct ReadingTimeApp: App {
                         flip.stopMonitoring()
                         keepAlive.stop()
                     }
+                }
+                .onReceive(model.$session) { session in
+                    Self.updateAwake(route: model.route, session: session)
                 }
                 .onReceive(model.$session) { session in
                     // 잠금 화면 Live Activity — 상태 전환만 반영(초 틱은 시스템 자동 타이머)
