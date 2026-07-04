@@ -106,6 +106,12 @@ struct ReadingTimeApp: App {
         UIApplication.shared.isIdleTimerDisabled = keepAwake
     }
 
+    /// 엎혀서 기록 중 = 화면이 바닥을 향한 상태 — 완전 검은 오버레이로 OLED 픽셀 오프(절전).
+    /// 근접 센서(하드웨어 오프)의 백업이자, 센서가 안 덮이는 표면에서도 배터리를 지킨다.
+    private var faceDownDark: Bool {
+        model.route == .flipTimer && model.session?.status == .recording
+    }
+
     var body: some Scene {
         WindowGroup {
             // 시안 뷰포트 390×844 고정 — 작은 화면(iPhone 11 Pro 375×812 등)은 비율 유지 축소·중앙 배치
@@ -118,6 +124,13 @@ struct ReadingTimeApp: App {
                     .position(x: geo.size.width / 2, y: geo.size.height / 2)
             }
             .ignoresSafeArea()
+            .overlay {
+                if faceDownDark {
+                    Color.black.ignoresSafeArea()
+                }
+            }
+            .animation(.easeOut(duration: 0.25), value: faceDownDark)
+            .statusBarHidden(faceDownDark)
                 .task { await cloud.restore() }
                 .onReceive(model.$route) { route in
                     let flipSession = route == .flipWait || route == .flipTimer
