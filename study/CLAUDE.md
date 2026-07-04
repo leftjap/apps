@@ -23,3 +23,4 @@
 - `study-read-user-context.yml` — 단계 3-4 SELECT (repo root `.github/workflows/`, working-directory: study)
 - `study-seed-supabase.yml` — 단계 7 INSERT (repo root `.github/workflows/`, working-directory: study)
 - `seeds/.user-defaults.json` — default user_id
+- `data-sentinel.yml` — 매일 07:30 KST study_daily_stats 위생 감사(팬텀·폭주 행 — 스크립트는 `cue/scripts/audit-study-hygiene.mjs`). deploy-pages.yml 은 study vitest 실패 시 배포 차단 (둘 다 2026-07-04 데이터 정확성 사고 후속)

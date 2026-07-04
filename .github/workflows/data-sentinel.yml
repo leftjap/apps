@@ -1,0 +1,46 @@
+# 데이터 무결성 센티널 — cue 대시보드가 읽는 실데이터의 오염 재발 감지 (2026-07-04 신설).
+# 배경: 화면시간(잠금화면 계상)·어학(study_time 폭주) 오염이 수동 감사로만 잡히던 구조 →
+# 매일 아침 CI 가 세 게이트를 돌리고, FAIL 이면 워크플로 실패로 GitHub 알림 발송.
+#   ① audit-screentime  — 화면시간 충실성 + DB 위생(데니리스트 행 존재 시 FAIL)
+#   ② audit-faithfulness — 4활동 adapter vs raw 1:1 (어학 실학습 신호 게이트 정합)
+#   ③ audit-study-hygiene — study_daily_stats 팬텀·폭주·증거결핍 행 감지
+name: Data integrity sentinel
+
+on:
+  schedule:
+    - cron: '30 22 * * *' # 07:30 KST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: cue/pnpm-lock.yaml
+
+      - name: Run audits
+        env:
+          TZ: Asia/Seoul # 일/주/월 경계 = 사용자(KST) 기준 — UTC 러너 오탐 방지
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          cd cue
+          pnpm install --frozen-lockfile
+          # user_id 는 repo 내 정본(study/seeds/.user-defaults.json)에서 — 시크릿 추가 불필요
+          export USER_ID_LEFTJAP=$(node -p "require('../study/seeds/.user-defaults.json').default.user_id")
+          node scripts/audit-study-hygiene.mjs --self-test
+          node scripts/audit-study-hygiene.mjs
+          node scripts/audit-screentime.mjs
+          node scripts/audit-faithfulness.mjs

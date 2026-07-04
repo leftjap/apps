@@ -47,6 +47,24 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm vitest run
 
+      # 회귀 게이트 확장 (2026-07-04, 데이터 정확성 사고 후속) — study(세션 타이머 activeSec)·
+      # cue(어학 실학습 신호 게이트·화면시간 EXCLUDED_APPS) 회귀가 테스트 없이 배포되던 공백 차단.
+      - name: Test study (vitest)
+        env:
+          TZ: Asia/Seoul
+        run: |
+          cd study
+          pnpm install --frozen-lockfile
+          pnpm vitest run
+
+      - name: Test cue (vitest)
+        env:
+          TZ: Asia/Seoul
+        run: |
+          cd cue
+          pnpm install --frozen-lockfile
+          pnpm vitest run
+
       - name: Build gym
         env:
           GH_PAGES: '1'
