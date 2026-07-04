@@ -116,6 +116,9 @@ final class FlipEngine: ObservableObject {
         scriptTimer = nil
         scriptStart = nil
         detector.reset()
+        // 세션 경계 넘는 소급 방지 — 이전 세션의 보류 엎힘이 새 세션 시작 후
+        // 잠금 신호에 소급 적용되면 세션이 과거 시점으로 오기록된다
+        pendingDown = nil
     }
 
     // iOS 11+ 백그라운드 전환 시 모션 스트림이 멈추는 버그 대응: stop→start 재시작
