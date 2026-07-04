@@ -88,6 +88,7 @@ export function mountSessionNew(host) {
 
   // 활성 시간 타이머 — 가시+비유휴 구간만 누적 (벽시계 방치 폭주 차단)
   const activeTimer = createActiveTimer();
+  activeTimer.setHidden(document.hidden); // 백그라운드 탭에서 로드(새로고침)돼도 숨김 구간 미계상
 
   const saveSnapshot = () => {
     // 데모(?demo=1)는 실 meta('activeSession')에 절대 쓰지 않는다 (격리). 인증 SPA 에서도 안전.
