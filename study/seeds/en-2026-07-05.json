@@ -1,0 +1,90 @@
+{
+  "_note": "RealClass-mining (PPP) — Parks S1E2 'Canvassing' 조작 설문 장면 (소스 #46~55 발췌 → dialogue 10줄, 단어변경 0). 레슬리가 앤에게 밀봉 봉투를 열게 하고 '칼 로브식' 유도 질문 기법을 공개 — 원하는 답이 나오게 질문을 설계한다. 앤이 미심쩍어하자 레슬리는 '통계는 다 지어냈다'고 태연히 답한다. 기본동사 타깃 2개(scan-source-chunks 후보 내 최빈 2종 want to(2)/have to(1) 선정): want to(레슬리 #49 — →wanna 연음) / have to(레슬리 #47 — →hafta 연음). 두 타깃은 욕구↔의무의 짝이자 둘 다 목표 #1(자막 없이 듣기)의 핵심 축약(wanna/hafta) — 리스닝 전이 최상. ▲화자 귀속: RealClass 소스 무라벨 → 대화 논리 유추(설득 코칭·'내가 다 지어냈다'=Leslie / 미심쩍어하는 견습=Ann). Leslie·Ann 모두 SPEAKER_VOICES 기등록. ▲finish-parks-first(2026-07-01): s1e2 저번호 미사용(1~12=기본동사후보 0·23~36=후보 1 파편)은 발췌기준 미달로 정당 스킵 → s1e2 최이른 minable 미사용 구간 46~57(후보 7종, #47·48·49·50·55 분산). 07-04 는 58~67 사용 → 겹침 없음.",
+  "_source": { "episode": "s1e2", "lines": [46, 55] },
+  "lang": "en",
+  "date": "2026-07-05",
+  "cards": [
+    {
+      "id": "en-parks-s1e2-pushpoll-scene",
+      "sentence": "방문 유세 — 조작된 설문 (칼 로브식)",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "방문 유세 — 조작된 설문 (칼 로브식)",
+        "sceneSummary": "공원 안건에 시큰둥한 주민들 사이에서, 레슬리가 앤에게 밀봉된 봉투를 열게 한다. '칼 로브에게 배운' 유도 질문 기법 — 원하는 답이 나오도록 질문을 설계하는 것. 앤이 '좀 미심쩍다'고 하자 레슬리는 '통계는 다 지어냈다'고 태연히 답하고, 유도 질문을 시연한다.",
+        "dialogue": [
+          { "speaker": "Leslie", "en": "Okay, okay.", "ko": "좋아요, 좋아요." },
+          { "speaker": "Leslie", "en": "Look, I didn't want it to have to come to this, but, Ann, please open the sealed envelope that's in your binder.", "ko": "이렇게까지 하고 싶지 않았지만, 앤, 바인더 안에 있는 밀봉된 봉투 좀 열어 주세요." },
+          { "speaker": "Leslie", "en": "This is a little something I learned from Karl Rove.", "ko": "이건 칼 로브에게서 배운 간단한 기술이에요." },
+          { "speaker": "Leslie", "en": "If you want to guarantee the results of a survey, you design the question to give you the answer that you want.", "ko": "설문 조사에서 결과를 보장받고 싶다면, 원하는 답이 나오게끔 질문을 만드는 거죠." },
+          { "speaker": "Leslie", "en": "Wouldn't you rather have a park than a storage facility for nuclear waste?", "ko": "핵폐기물 저장소보다 공원을 짓는 게 더 낫지 않을까요?" },
+          { "speaker": "Ann", "en": "That seems iffy.", "ko": "뭔가 의심스러운데요?" },
+          { "speaker": "Leslie", "en": "Yeah, don't worry about it. I made it all up.", "ko": "네, 걱정 마요. 내가 전부 지어낸 거니까." },
+          { "speaker": "Ann", "en": "Yeah, that's- that's what I mean.", "ko": "네, 제 말이 그 말이에요." },
+          { "speaker": "Leslie", "en": "Wouldn't you agree, like most decent Americans,", "ko": "대부분의 교양 있는 미국인들처럼, 동의하시지 않으시겠어요," },
+          { "speaker": "Leslie", "en": "that it would be a good idea to turn the abandoned lot on Sullivan Street into a beautiful community park?", "ko": "설리번 가의 버려진 부지를 아름다운 지역 공원으로 만드는 게 좋은 생각이라는 것에 말이죠?" }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e2-have-to",
+      "sentence": "Look, I didn't want it to have to come to this, but, Ann, please open the sealed envelope that's in your binder.",
+      "meaning": "이렇게까지 하고 싶지 않았지만, 앤, 바인더 안에 있는 밀봉된 봉투 좀 열어 주세요.",
+      "reading": null,
+      "phonetic_kr": "룩 아이 디든 워닛투 해프투 컴 투 디스 벗 앤 플리즈 오픈 더 씰드 엔벌로프 댓츠 인 유어 바인더",
+      "order_index": 1,
+      "explanation": {
+        "key": "have to = ~해야 한다 (의무·필요). have(기본동사) + to + 동사원형. 회화에선 거의 '해프투'(v가 f로), 3인칭 has to 는 '해즈투/해스투'로 이어 발음. 자막 없이 들을 때 꼭 익혀야 할 축약.",
+        "situation": "장면 · 레슬리가 '이렇게까지 할 필요 없었지만'이라며 봉투를 열게 함",
+        "drills": [
+          { "en": "I have to go now.", "ko": "이제 가 봐야 해요.", "kr": "아이 해프투 고우 나우" },
+          { "en": "Do we have to book in advance?", "ko": "미리 예약해야 하나요? (여행)", "kr": "두 위 해프투 북 인 어드밴스" },
+          { "en": "I have to feed the cat.", "ko": "고양이 밥 줘야 해요.", "kr": "아이 해프투 피드 더 캣" },
+          { "en": "My wife has to work late today.", "ko": "아내가 오늘 늦게까지 일해야 해요.", "kr": "마이 와이프 해즈투 워크 레잇 투데이" },
+          { "en": "Do I have to pay now?", "ko": "지금 내야 하나요? (가게/여행)", "kr": "두 아이 해프투 페이 나우" },
+          { "en": "We don't have to hurry.", "ko": "서두를 필요 없어요.", "kr": "위 돈 해프투 허리" }
+        ],
+        "grammar": [
+          { "struct": "have to + 동사원형 (~해야 한다)", "body": "의무·필요를 나타냄. 3인칭 단수는 has to. 부정 don't have to 는 '~할 필요 없다'(금지 아님, must not 과 다름). 여행·일상에서 매일 쓰는 기본 패턴." }
+        ],
+        "chunks": [ ["Look,", "룩"], ["I didn't", "아이 디든"], ["want it to", "워닛투"], ["have to", "해프투"], ["come to this,", "컴 투 디스"], ["but, Ann,", "벗 앤"], ["please open", "플리즈 오픈"], ["the sealed", "더 씰드"], ["envelope", "엔벌로프"], ["that's in", "댓츠 인"], ["your binder.", "유어 바인더"] ],
+        "phonemes": [ ["/f/", "have to"] ],
+        "mistake": "'해브 투'라 또박또박 X → 실제 'have to' 는 v가 f로 바뀌어 '해프투', 'has to' 는 '해즈투'. come to 도 '컴투'로 이어짐.",
+        "similar": "have got to (gotta) · need to · must",
+        "category": "modal/basic",
+        "frequency": 10
+      }
+    },
+    {
+      "id": "en-parks-s1e2-want-to",
+      "sentence": "If you want to guarantee the results of a survey, you design the question to give you the answer that you want.",
+      "meaning": "설문 조사에서 결과를 보장받고 싶다면, 원하는 답이 나오게끔 질문을 만드는 거죠.",
+      "reading": null,
+      "phonetic_kr": "이퓨 워너 개런티 더 리절츠 오버 써베이 유 디자인 더 퀘스천 투 기뷰 디 앤서 댓 유 원트",
+      "order_index": 2,
+      "explanation": {
+        "key": "want to = ~하고 싶다 (욕구·의향). want(기본동사) + to + 동사원형. 회화에선 거의 '워너(wanna)'로 축약 — 자막 없이 미드를 들으려면 반드시 귀에 익혀야 할 대표 연음.",
+        "situation": "장면 · 레슬리가 '원하는 답을 보장받고 싶다면' 질문을 설계하라고 코칭",
+        "drills": [
+          { "en": "I want to go home.", "ko": "집에 가고 싶어요.", "kr": "아이 워너 고우 홈" },
+          { "en": "Do you want to grab a coffee?", "ko": "커피 한잔 할래요?", "kr": "두유 워너 그랩 어 커피" },
+          { "en": "I want to see the cat.", "ko": "고양이 보고 싶어요.", "kr": "아이 워너 씨 더 캣" },
+          { "en": "Where do you want to go?", "ko": "어디 가고 싶어요? (여행)", "kr": "웨어 두유 워너 고우" },
+          { "en": "Does your wife want to come?", "ko": "아내분도 오고 싶어 하세요?", "kr": "더즈 유어 와이프 워너 컴" },
+          { "en": "I don't want to be late.", "ko": "늦고 싶지 않아요.", "kr": "아이 돈 워너 비 레잇" }
+        ],
+        "grammar": [
+          { "struct": "want to + 동사원형 (~하고 싶다)", "body": "욕구·의향을 나타냄. 회화에선 want to → wanna('워너')로 거의 항상 축약. 정중히는 would like to. 부정은 don't want to('돈 워너')." }
+        ],
+        "chunks": [ ["If you", "이퓨"], ["want to", "워너"], ["guarantee", "개런티"], ["the results", "더 리절츠"], ["of a survey,", "오버 써베이"], ["you design", "유 디자인"], ["the question", "더 퀘스천"], ["to give you", "투 기뷰"], ["the answer", "디 앤서"], ["that you want.", "댓 유 원트"] ],
+        "phonemes": [ ["/t/", "want to"] ],
+        "mistake": "'원트 투'라 또박또박 X → 회화에선 거의 '워너(wanna)'. want 의 t 가 탈락·연결됨. 자막 없이 듣기의 핵심 연음이니 귀에 박아 둘 것.",
+        "similar": "would like to · feel like -ing · wanna(축약)",
+        "category": "modal/basic",
+        "frequency": 10
+      }
+    }
+  ]
+}
