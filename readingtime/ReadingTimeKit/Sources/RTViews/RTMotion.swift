@@ -49,11 +49,17 @@ private struct RTAnimated<V: Equatable>: ViewModifier {
 
 // ── v4Float: translateY 0→-6→0, 6~8s ease-in-out ∞ (로고·홈 표지·빈 표지 부유) ──
 public extension View {
-    func rtFloat(duration: Double = 7) -> some View {
+    func rtFloat(duration: Double = 7, delay: Double = 0) -> some View {
         modifier(RTAnimated(
             rest: CGFloat(0), from: CGFloat(0), to: CGFloat(-6),
-            animation: .easeInOut(duration: duration / 2).repeatForever(autoreverses: true),
+            animation: .easeInOut(duration: duration / 2).delay(delay).repeatForever(autoreverses: true),
             apply: { v, y in AnyView(v.offset(y: y)) }))
+    }
+
+    // ── rtShadow8: scale 1↔.86, opacity .42↔.26 ∞ (홈 표지 바닥 그림자, 부유 동기) ──
+    // 정적(모션 off) = scale 1 · opacity .42 (시안 0% 키프레임)
+    func rtFloorShadow(duration: Double = 10) -> some View {
+        modifier(RTFloorShadow(duration: duration))
     }
 
     // ── v4Blink: opacity 1→.25→1 ∞ (라이브 점·스트릭 마지막 점·검색 캐럿) ──
@@ -129,6 +135,25 @@ struct RTRippleBtn: ViewModifier {
                 withAnimation(.easeOut(duration: duration).repeatForever(autoreverses: false)) {
                     animating = true
                 }
+            }
+    }
+}
+
+// rtShadow8 — scale 1↔.86, opacity .42↔.26 (부유 동기). 정적 = scale 1 · opacity .42
+struct RTFloorShadow: ViewModifier {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let duration: Double
+    @State private var t = false
+
+    func body(content: Content) -> some View {
+        let active = enabled && !reduceMotion
+        content
+            .scaleEffect(active && t ? 0.86 : 1)
+            .opacity(active && t ? 0.26 : 0.42)
+            .onAppear {
+                guard active else { return }
+                withAnimation(.easeInOut(duration: duration / 2).repeatForever(autoreverses: true)) { t = true }
             }
     }
 }
@@ -516,6 +541,148 @@ public struct RTZoneTapRing: View {
                     }
                 }
         }
+    }
+}
+
+// ── 하루 첫 실행 안무 (#7a) — 1.55s 집어 들기 ──
+// 축 분리(§4): 수직 y / 수평 x+기울기 / 크기 / 초점 을 각각 독립 KeyframeTrack 으로 (구간 이음매 제거).
+// 비활성(정지 홈 #7b·모션 off·Reduce Motion) = 최종 정지 상태 + 부유(rtFloat) — rtshot 픽셀 오라클 불변.
+public extension View {
+    /// 책 표지 집어 들기 (수직/수평·기울기/크기/초점 4트랙). 비활성 시 정지 + rtFloat.
+    func rtPickupCover(_ firstRun: Bool) -> some View {
+        modifier(RTPickupCover(firstRun: firstRun))
+    }
+    /// 크롬 지연 페이드인 (착지 후 기록 탭·탭 링·데이터). 비활성 시 즉시 표시.
+    func rtPickupChrome(_ firstRun: Bool, delay: Double) -> some View {
+        modifier(RTPickupChrome(firstRun: firstRun, delay: delay))
+    }
+    /// 바닥 그림자 진입 (rtShadowIn: 46%까지 없음→78% 1.04/.85→100% 1.0, 1.55s ease-out).
+    /// 표지 착지에 맞춰 그림자가 자라 들어온다. 비활성 시 즉시 표시(부유는 rtFloorShadow 담당).
+    func rtPickupShadow(_ firstRun: Bool) -> some View {
+        modifier(RTPickupShadow(firstRun: firstRun))
+    }
+}
+
+struct RTPickupShadow: ViewModifier {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let firstRun: Bool
+    @State private var run = false
+    private var active: Bool { firstRun && enabled && !reduceMotion }
+
+    struct Pose { var op: Double; var sc: CGFloat }
+
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .keyframeAnimator(initialValue: Pose(op: 0, sc: 0.46), trigger: run) { view, p in
+                    view.opacity(p.op).scaleEffect(p.sc)
+                } keyframes: { _ in
+                    KeyframeTrack(\.op) {
+                        LinearKeyframe(0, duration: 1.55 * 0.46)
+                        LinearKeyframe(0.85, duration: 1.55 * 0.32, timingCurve: .easeOut)
+                        LinearKeyframe(1, duration: 1.55 * 0.22, timingCurve: .easeOut)
+                    }
+                    KeyframeTrack(\.sc) {
+                        LinearKeyframe(0.46, duration: 1.55 * 0.46)
+                        LinearKeyframe(1.04, duration: 1.55 * 0.32, timingCurve: .easeOut)
+                        LinearKeyframe(1, duration: 1.55 * 0.22, timingCurve: .easeOut)
+                    }
+                }
+                .onAppear { run = true }
+        } else {
+            content
+        }
+    }
+}
+
+struct RTPickupPose {
+    var y: CGFloat
+    var x: CGFloat
+    var rot: Double
+    var scale: CGFloat
+    var blur: CGFloat
+    var bright: Double
+    static let start = RTPickupPose(y: -282, x: 52, rot: 0, scale: 0.42, blur: 2.4, bright: 0.955)
+}
+
+struct RTPickupCover: ViewModifier {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let firstRun: Bool
+    @State private var run = false
+    private var active: Bool { firstRun && enabled && !reduceMotion }
+
+    func body(content: Content) -> some View {
+        if active {
+            content
+                .keyframeAnimator(initialValue: RTPickupPose.start, trigger: run) { view, p in
+                    view
+                        .brightness(p.bright - 1)                 // 초점(밝기)
+                        .blur(radius: p.blur)                     // 초점(블러)
+                        .scaleEffect(p.scale, anchor: UnitPoint(x: 0.5, y: 0.62))  // 크기
+                        .rotationEffect(.degrees(p.rot))          // 수평(기울기)
+                        .offset(x: p.x, y: p.y)                   // 수평/수직 이동 (최외곽)
+                } keyframes: { _ in
+                    // 수직 y: -282 → -296(14%, 들어올림) → 0. 정점 속도 0.
+                    KeyframeTrack(\.y) {
+                        LinearKeyframe(-296, duration: 1.55 * 0.14,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.45, y: 0), endControlPoint: .init(x: 0.35, y: 1)))
+                        LinearKeyframe(0, duration: 1.55 * 0.86,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.5, y: 0), endControlPoint: .init(x: 0.16, y: 1)))
+                    }
+                    // 수평 x: 52 → 55(22%) → 0 — 늦게 출발해 호
+                    KeyframeTrack(\.x) {
+                        LinearKeyframe(55, duration: 1.55 * 0.22,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.45, y: 0), endControlPoint: .init(x: 0.4, y: 1)))
+                        LinearKeyframe(0, duration: 1.55 * 0.78,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.5, y: 0.05), endControlPoint: .init(x: 0.2, y: 1)))
+                    }
+                    // 기울기: 0 → -1.4°(22%) → 0
+                    KeyframeTrack(\.rot) {
+                        LinearKeyframe(-1.4, duration: 1.55 * 0.22,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.45, y: 0), endControlPoint: .init(x: 0.4, y: 1)))
+                        LinearKeyframe(0, duration: 1.55 * 0.78,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.5, y: 0.05), endControlPoint: .init(x: 0.2, y: 1)))
+                    }
+                    // 크기: 0.42 → 1.0
+                    KeyframeTrack(\.scale) {
+                        LinearKeyframe(1.0, duration: 1.55,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.55, y: 0.05), endControlPoint: .init(x: 0.18, y: 1)))
+                    }
+                    // 초점: blur 2.4→0 · 밝기 .955→1 (1.45s)
+                    KeyframeTrack(\.blur) {
+                        LinearKeyframe(0, duration: 1.45,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.4, y: 0.3), endControlPoint: .init(x: 0.3, y: 0.3)))
+                    }
+                    KeyframeTrack(\.bright) {
+                        LinearKeyframe(1.0, duration: 1.45,
+                            timingCurve: .bezier(startControlPoint: .init(x: 0.4, y: 0.3), endControlPoint: .init(x: 0.3, y: 0.3)))
+                    }
+                }
+                .rtFloat(duration: 10, delay: 1.75)   // 착지(1.55s)+200ms 후 부유 시작 (속도 0 핸드오프)
+                .onAppear { run = true }
+        } else {
+            content.rtFloat(duration: 10)   // 정지 홈 #7b: 부유
+        }
+    }
+}
+
+struct RTPickupChrome: ViewModifier {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let firstRun: Bool
+    let delay: Double
+    @State private var shown = false
+    private var active: Bool { firstRun && enabled && !reduceMotion }
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(active && !shown ? 0 : 1)
+            .onAppear {
+                guard active else { return }
+                withAnimation(.easeOut(duration: 0.55).delay(delay)) { shown = true }
+            }
     }
 }
 

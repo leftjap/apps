@@ -1,9 +1,12 @@
 import SwiftUI
 
-// v8 02 홈 (허브) — 스펙: frames/02.html. model 주입 시 인터랙션 활성 (nil = 정적 데모).
-// userData 주입 시(iOS 실앱) 실데이터 렌더 — 값은 전부 init 스냅샷 (§ScreensDark 주석).
+// v8→TURN7 02 홈 (읽던 책 있음) — 스펙: 리딩타임 홈 시안 #7b.
+// 흐릿한 서가 배경 앞 실물 스케일 표지. 읽기 버튼·세그먼트·카드 없음 — 홈에서 폰을 엎으면 즉시 기록.
+// 탭 모드는 우하단 점선 링만. 서재=배경 탭, 기록=우측 엣지 탭, 책추가=헤더 +.
+//
+// 데모/라이브 이중 경로 유지 (userData==nil = 시안 데모값 = rtshot 픽셀 오라클 경로).
 public struct Screen02Home: View {
-    // 실데이터 스냅샷 (nil = 시안 데모 값 그대로 — rtshot 픽셀 오라클 경로)
+    // 실데이터 스냅샷 (nil = 시안 데모 값 그대로)
     struct Live {
         let title: String
         let author: String
@@ -13,24 +16,17 @@ public struct Screen02Home: View {
         let todayMin: Int
         let weekHM: String
         let streak: Int
-        let libCount: Int
         let monthLabel: String
-        let bars: [Double]
-        let barToday: Int
-        let recents: [(min: String, label: String, when: String, flip: Bool)]
     }
 
     var model: RTAppModel?
-    private let mode: RTMode   // 저장 스냅샷 — 참조만 들면 SwiftUI 가 갱신을 스킵 (§ScreensDark 주석)
     private let live: Live?
+    private let firstRun: Bool   // 하루 첫 실행 안무 (#7a) — 모션 on + 이 플래그일 때만
 
     public init(model: RTAppModel? = nil) {
         self.model = model
-        self.mode = model?.mode ?? .flip
+        self.firstRun = model?.playPickup ?? false
         if let m = model, m.userData != nil, let book = m.currentBook {
-            let books = m.userData?.books ?? []
-            let titles = Dictionary(uniqueKeysWithValues: books.map { ($0.isbn, $0.title) })
-            let modeLabel = ["flip": "엎기", "tap": "탭", "manual": "직접 추가"]
             self.live = Live(
                 title: book.title,
                 author: book.author,
@@ -40,16 +36,7 @@ public struct Screen02Home: View {
                 todayMin: m.todaySeconds / 60,
                 weekHM: RTAppModel.hmString(m.weekSeconds),
                 streak: m.streakDays,
-                libCount: books.count,
-                monthLabel: "\(Calendar(identifier: .gregorian).component(.month, from: m.now()))월",
-                bars: m.weekBarRatios,
-                barToday: m.weekTodayIndex,
-                recents: m.recentRecords(2).map { r in
-                    (min: "\(max(1, r.seconds / 60))분",
-                     label: "\(r.isbn.flatMap { titles[$0] } ?? "기록") · \(modeLabel[r.mode] ?? r.mode)",
-                     when: RTAppModel.recentWhen(r.endedAt, now: m.now()),
-                     flip: r.mode == "flip")
-                })
+                monthLabel: "\(Calendar(identifier: .gregorian).component(.month, from: m.now()))월")
         } else {
             self.live = nil
         }
@@ -58,241 +45,137 @@ public struct Screen02Home: View {
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
-            RTHomeHeader {
-                RTHeaderPlus()
-                    .contentShape(Rectangle())
-                    .onTapGesture { model?.openSheet(.addbook) }
-                RTAvatar("지")
-                    .contentShape(Rectangle())
-                    .onTapGesture { model?.openSheet(.settings) }
-            }
+            // 1. 배경 서가 (z0) — 탭 → 서재
+            RTBookshelf(showSlot: true, pickup: firstRun)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.nav(.library) }
+            // 2·3·4. 헤더 + 데이터 블록 + 책 카드
             VStack(spacing: 0) {
-                hero.rtEntrance(duration: 0.45)
-                RTStatsStrip(items: live.map { l in
-                    [
-                        (.init("\(l.todayMin)", unit: "분"), "오늘"),
-                        (.init(l.weekHM), "이번 주"),
-                        (l.streak > 0 ? .init("\(l.streak)", unit: "일", valueColor: RT.terra)
-                                      : .init("-", valueColor: RT.terra), "연속"),
-                    ]
-                } ?? [
-                    (.init("32", unit: "분"), "오늘"),
-                    (.init("7:26"), "이번 주"),
-                    (.init("12", unit: "일", valueColor: RT.terra), "연속"),
-                ])
-                .padding(.top, 11)
-                .rtEntrance(delay: 0.08, duration: 0.45)
-                entryCards.padding(.top, 11)
-                recentHead.padding(EdgeInsets(top: 16, leading: 4, bottom: 8, trailing: 4))
-                    .rtEntrance(delay: 0.16, duration: 0.45)
-                if let live {
-                    ForEach(Array(live.recents.enumerated()), id: \.offset) { i, r in
-                        recentRow(tint: r.flip ? RT.greenTint : RT.amberTint,
-                                  icon: r.flip ? AnyView(FlipIcon(size: 14, color: RT.green, lineWidth: 2))
-                                               : AnyView(TapIcon(size: 14, color: RT.amberDeep)),
-                                  min: r.min, label: r.label, when: r.when,
-                                  divider: i < live.recents.count - 1)
-                    }
-                } else {
-                    recentRow(tint: RT.greenTint,
-                              icon: AnyView(FlipIcon(size: 14, color: RT.green, lineWidth: 2)),
-                              min: "26분", label: "몰입 · 엎기", when: "오늘 14:14", divider: true)
-                    recentRow(tint: RT.amberTint,
-                              icon: AnyView(monitorIcon(14, RT.amberDeep, 1.8)),
-                              min: "48분", label: "도둑맞은 집중력 · 밀리 PC", when: "오늘", divider: false)
+                RTHomeHeader {
+                    RTHeaderPlus()
+                        .contentShape(Rectangle())
+                        .onTapGesture { model?.openSheet(.addbook) }
+                    RTAvatar("지")
+                        .contentShape(Rectangle())
+                        .onTapGesture { model?.openSheet(.settings) }
                 }
+                dataBlock
+                    .padding(EdgeInsets(top: 26, leading: 26, bottom: 0, trailing: 26))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .rtPickupChrome(firstRun, delay: 0.55)
+                    .allowsHitTesting(false)
+                bookBlock
+                    .padding(.top, 88)
+                    .frame(maxWidth: .infinity)
+                    .allowsHitTesting(false)
+                Spacer(minLength: 0)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 106)
+            // 5. 우측 엣지 탭 (기록) — 탭 → 주간 통계
+            .overlay(alignment: .topTrailing) {
+                edgeTab
+                    .rtPickupChrome(firstRun, delay: 1.5)
+                    .offset(y: 440)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model?.nav(.statsWeek) }
+            }
+            // 6. 탭 모드 링 — 탭 → 탭 세션 시작
+            .overlay(alignment: .bottomTrailing) {
+                tapRing
+                    .rtPickupChrome(firstRun, delay: 1.62)
+                    .padding(EdgeInsets(top: 0, leading: 0, bottom: 28, trailing: 24))
+                    .contentShape(Circle())
+                    .onTapGesture { model?.switchTap() }
+            }
         }
         .frame(width: 390, height: 844)
     }
 
-    // 히어로 카드
-    var hero: some View {
+    // ── 데이터 블록 (좌측, 26pt 패딩) ──
+    var dataBlock: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 7) {
+                Circle().fill(RT.green).frame(width: 6, height: 6).rtBlink(duration: 2.2)
+                Text("읽는 중").font(.sans(11, 700)).foregroundColor(RT.green)
+            }
+            Text("오늘").font(.sans(11.5, 700)).tracking(11.5 * 0.22)
+                .foregroundColor(RT.muted).padding(.top, 16)
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                Text("\(live?.todayMin ?? 32)").font(.mono(64, 700)).tracking(64 * -0.04)
+                    .foregroundColor(RT.ink)
+                Text("분").font(.sans(22, 800)).foregroundColor(RT.body).padding(.leading, 5)
+            }
+            .padding(.top, 6)
+            Rectangle().fill(RT.green).frame(width: 46, height: 3)
+                .rtSweep(delay: firstRun ? 1.05 : 0.45, duration: 0.9)
+                .padding(.top, 12)
+            HStack(spacing: 0) {
+                Text("이번 주 \(live?.weekHM ?? "7:26") · ").font(.mono(12, 500)).foregroundColor(RT.muted)
+                Text("\(live?.streak ?? 12)일 연속").font(.mono(12, 600)).foregroundColor(RT.terra)
+            }
+            .padding(.top, 14)
+        }
+    }
+
+    // ── 책 카드 (중앙) ──
+    var bookBlock: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 15) {
-                Group {
-                    if let live {
-                        RTRemoteCover(url: live.coverUrl, size: .init(width: 94, height: 137))
-                    } else {
-                        FlowCover(.init(width: 94, height: 137))
-                    }
-                }
-                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 12, x: 0, y: 14)
-                .rtFloat(duration: 8)
-                VStack(alignment: .leading, spacing: 0) {
-                    liveChip
-                    Text(live?.title ?? "몰입").font(.sans(21, 900)).tracking(21 * -0.03)
-                        .foregroundColor(RT.ink).padding(.top, 10)
-                        .lineLimit(2)
-                    Text(live?.author ?? "미하이 칙센트미하이").font(.sans(12.5, 500))
-                        .foregroundColor(RT.muted).padding(.top, 3)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(live?.totalHM ?? "4:12").font(.mono(19, 700)).tracking(19 * -0.02).foregroundColor(RT.ink)
-                        Text("누적 · \(live?.count ?? 8)회").font(.sans(11, 500)).foregroundColor(RT.faint)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: 137)
-            segment.padding(.top, 14)
-            RTCTA("읽기 시작", fontSize: 16, radius: 15, gap: 10, tracking: 16 * -0.01,
-                  icon: AnyView(RTIcon(RTIconPath.play, size: 17, fill: RT.ctaText)))
-                .contentShape(Rectangle())
-                .onTapGesture { model?.start() }
-                .padding(.top, 10)
-        }
-        .padding(EdgeInsets(top: 16, leading: 16, bottom: 14, trailing: 16))
-        .rtCard(radius: 22, hero: true)
-    }
-
-    var liveChip: some View {
-        HStack(spacing: 6) {
-            Circle().fill(RT.green).frame(width: 6, height: 6)
-                .rtBlink(duration: 2.2)
-            Text("읽는 중").font(.sans(11, 700)).foregroundColor(RT.green)
-        }
-        .padding(EdgeInsets(top: 4, leading: 11, bottom: 4, trailing: 11))
-        .background(Capsule().fill(RT.greenTint))
-    }
-
-    var segment: some View {
-        HStack(spacing: 3) {
-            segItem(.flip, label: "엎기",
-                    icon: { c in AnyView(FlipIcon(size: 13, color: c, lineWidth: 2)) })
-            segItem(.tap, label: "탭",
-                    icon: { c in AnyView(TapIcon(size: 13, color: c)) })
-        }
-        .padding(3)
-        .background(RoundedRectangle(cornerRadius: 13).fill(RT.segBg))
-    }
-
-    func segItem(_ m: RTMode, label: String, icon: (Color) -> AnyView) -> some View {
-        let on = mode == m
-        return HStack(spacing: 6) {
-            icon(on ? Color(hex: 0xF6F3EA) : RT.muted)
-            Text(label).font(.sans(12.5, on ? 700 : 600))
-                .foregroundColor(on ? Color(hex: 0xF6F3EA) : RT.muted)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 8)
-        .background(on ? AnyView(RoundedRectangle(cornerRadius: 10).fill(RT.ink)) : AnyView(Color.clear))
-        .shadow(color: on ? Color(hex: 0x16140F, alpha: 0.2) : .clear, radius: 2.5, x: 0, y: 2)
-        .contentShape(Rectangle())
-        .onTapGesture { model?.setMode(m) }
-    }
-
-    var entryCards: some View {
-        HStack(spacing: 11) {
-            // 서재
-            ZStack(alignment: .bottomTrailing) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("서재").font(.sans(14, 800)).foregroundColor(RT.ink)
-                        Spacer()
-                        Text(live.map { "\($0.libCount)" } ?? "14").font(.mono(11, 600)).foregroundColor(RT.faint)
-                    }
-                    HStack(alignment: .bottom, spacing: 0) {
-                        FanCovers().padding(.leading, 6)
-                        Spacer(minLength: 0)
-                    }
-                    .frame(height: 54, alignment: .bottom)
-                    .padding(.top, 12)
-                }
-                .padding(EdgeInsets(top: 14, leading: 14, bottom: 12, trailing: 14))
-                chevronBadge.padding(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 12))
-            }
-            .frame(maxWidth: .infinity)
-            .rtCard(radius: 18)
-            .contentShape(Rectangle())
-            .onTapGesture { model?.nav(.library) }
-            // 기록
-            ZStack(alignment: .bottomTrailing) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text("기록").font(.sans(14, 800)).foregroundColor(RT.ink)
-                        Spacer()
-                        Text(live?.monthLabel ?? "5월").font(.mono(11, 600)).foregroundColor(RT.faint)
-                    }
-                    miniBars.padding(.top, 12)
-                    Text("이번 주 \(live?.weekHM ?? "7:26")").font(.mono(11, 600)).foregroundColor(RT.muted)
-                        .padding(.top, 9)
-                }
-                .padding(EdgeInsets(top: 14, leading: 14, bottom: 12, trailing: 14))
-                chevronBadge.padding(EdgeInsets(top: 0, leading: 0, bottom: 12, trailing: 12))
-            }
-            .frame(maxWidth: .infinity)
-            .rtCard(radius: 18)
-            .contentShape(Rectangle())
-            .onTapGesture { model?.nav(.statsWeek) }
-        }
-    }
-
-    var chevronBadge: some View {
-        Circle().fill(RT.segBg).frame(width: 26, height: 26)
-            .overlay(ChevronRight(color: RT.muted))
-    }
-
-    var miniBars: some View {
-        // 라이브: 이번 주 실기록 비율(오늘 강조), 데모: 시안 고정 값(목 강조)
-        let pcts = live.map { l in l.bars.map { Swift.max(8.0, $0 * 100) } } ?? [38, 52, 30, 70, 44, 20, 55]
-        let hot = live?.barToday ?? 3
-        return GeometryReader { geo in
-            HStack(alignment: .bottom, spacing: 4) {
-                ForEach(Array(pcts.enumerated()), id: \.offset) { i, pct in
-                    RoundedRectangle(cornerRadius: 2.5)
-                        .fill(i == hot ? Color(hex: 0x3A5C4B) : Color(hex: 0xDDD5BD))
-                        .frame(height: geo.size.height * CGFloat(pct) / 100)
+            Group {
+                if let live {
+                    RTRemoteCover(url: live.coverUrl, size: .init(width: 150, height: 219), radius: 4.5)
+                } else {
+                    HomeBookCover()
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .padding(.horizontal, 2)
-        }
-        .frame(height: 38)
-    }
-
-    var recentHead: some View {
-        HStack {
-            Text("최근 기록").font(.sans(13.5, 800)).foregroundColor(RT.ink)
-            Spacer()
-            Text("전체 보기").font(.sans(11.5, 500)).foregroundColor(RT.faint)
-                .contentShape(Rectangle())
-                .onTapGesture { model?.nav(.statsWeek) }
-        }
-    }
-
-    func monitorIcon(_ size: CGFloat, _ color: Color, _ lw: CGFloat) -> some View {
-        let sc = size / 24
-        return ZStack {
-            RoundedRectangle(cornerRadius: 2 * sc)
-                .stroke(color, lineWidth: lw * sc)
-                .frame(width: 18 * sc, height: 12 * sc)
-                .position(x: 12 * sc, y: 11 * sc)
-            RTIcon(["M8 21h8M12 17v4"], size: size, stroke: color, lineWidth: lw)
-        }
-        .frame(width: size, height: size)
-    }
-
-    func recentRow(tint: Color, icon: AnyView, min: String, label: String, when: String, divider: Bool) -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                RoundedRectangle(cornerRadius: 9).fill(tint)
-                    .frame(width: 30, height: 30)
-                    .overlay(icon)
-                HStack(spacing: 8) {
-                    Text(min).font(.mono(14, 700)).foregroundColor(RT.ink)
-                    Text(label).font(.sans(12.5, 500)).foregroundColor(RT.muted)
-                }
-                Spacer()
-                Text(when).font(.mono(11, 500)).foregroundColor(RT.faint)
+            .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.2), radius: 2.5, x: 0, y: 2)
+            .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.45), radius: 14, x: 0, y: 16) // 시안 0 18 30 -12 rgba(.48) 근사
+            .rtPickupCover(firstRun)
+            Ellipse().fill(Color(hex: 0x3A2C1C, alpha: 0.5))
+                .frame(width: 104, height: 12)
+                .blur(radius: 8)
+                .rtFloorShadow(duration: 10)     // 부유 동기 (rtShadow8)
+                .rtPickupShadow(firstRun)        // 첫 실행: 착지에 맞춰 자라 들어옴 (rtShadowIn)
+                .padding(.top, 16)
+            Text(live?.title ?? "몰입").font(.sans(20, 900)).tracking(20 * -0.03)
+                .foregroundColor(RT.ink).padding(.top, 20).lineLimit(1)
+            Text(live?.author ?? "미하이 칙센트미하이").font(.sans(12.5, 500))
+                .foregroundColor(RT.muted).padding(.top, 4).lineLimit(1)
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
+                Text(live?.totalHM ?? "4:12").font(.mono(16, 700)).tracking(16 * -0.02)
+                    .foregroundColor(RT.ink)
+                Text("누적 · \(live?.count ?? 8)회").font(.sans(11, 500)).foregroundColor(RT.faint)
             }
-            .padding(EdgeInsets(top: 9, leading: 4, bottom: 9, trailing: 4))
-            if divider {
-                Rectangle().fill(RT.hair2).frame(height: 1)
-            }
+            .padding(.top, 13)
         }
+    }
+
+    // ── 우측 엣지 탭 (기록) — 좌측 3pt terra 바 + 세로쓰기 "기록" + 월 ──
+    var edgeTab: some View {
+        VStack(spacing: 7) {
+            VStack(spacing: 2) {
+                Text("기").font(.sans(11.5, 700))
+                Text("록").font(.sans(11.5, 700))
+            }
+            .foregroundColor(RT.body)
+            Text(live?.monthLabel ?? "5월").font(.mono(10, 600)).foregroundColor(RT.faint)
+        }
+        .padding(EdgeInsets(top: 12, leading: 11, bottom: 12, trailing: 8))   // leading 11 = 3(bar)+8
+        .background(RT.surface)
+        .overlay(alignment: .leading) { Rectangle().fill(RT.terra).frame(width: 3) }
+        .clipShape(UnevenRoundedRectangle(topLeadingRadius: 11, bottomLeadingRadius: 11))
+        .overlay(
+            UnevenRoundedRectangle(topLeadingRadius: 11, bottomLeadingRadius: 11)
+                .stroke(RT.hair, lineWidth: 1)
+        )
+        .shadow(color: Color(hex: 0x16140F, alpha: 0.18), radius: 7, x: 0, y: 6)
+        .fixedSize()
+    }
+
+    // ── 탭 모드 링 (우하단) ──
+    var tapRing: some View {
+        Circle()
+            .strokeBorder(Color(hex: 0x8C8570, alpha: 0.55),
+                          style: StrokeStyle(lineWidth: 1.5, dash: [3.5, 3.5]))
+            .frame(width: 46, height: 46)
+            .overlay(RTIcon(RTIconPath.tapSeg, size: 15, stroke: RT.muted, lineWidth: 1.9))
     }
 }

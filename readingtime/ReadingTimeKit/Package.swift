@@ -5,7 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "ReadingTimeKit",
-    platforms: [.iOS(.v16), .macOS(.v13)],
+    platforms: [.iOS(.v17), .macOS(.v14)],   // 첫 실행 안무 keyframeAnimator(§4) + 앱 타깃 iOS 17+
     products: [
         .library(name: "ReadingTimeKit", targets: ["ReadingTimeKit"]),
         .library(name: "RTViews", targets: ["RTViews"]),   // iOS 앱 타깃이 링크

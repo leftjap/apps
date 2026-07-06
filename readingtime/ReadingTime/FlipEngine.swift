@@ -295,7 +295,8 @@ final class FlipEngine: ObservableObject {
     }
 
     private func performDown(at now: Date, signal: Bool = true) {
-        if model.route == .flipWait {
+        if model.route == .home {
+            // 읽기 뎁스 제거(§4-1): 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
             session.start(at: now)
             model.simFlip()
             if signal { signals.signalStart() }   // 화면이 안 보이는 상태의 "기록 시작" 신호

@@ -18,6 +18,8 @@ public struct Screen14EmptyHome: View {
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
+            // 배경 서가 — §3 통일 (슬롯 강조 없음, 집어드는 안무 없음)
+            RTBookshelf(showSlot: false)
             RTHomeHeader {
                 RTAvatar("지")
                     .contentShape(Rectangle())
@@ -31,7 +33,6 @@ public struct Screen14EmptyHome: View {
                     (stats.map { $0.streak > 0 ? .init("\($0.streak)", unit: "일") : .init("—") } ?? .init("—"), "연속"),
                 ], ghost: true)
                 .padding(.top, 13)
-                shelf.padding(.top, 38)
             }
             .padding(.horizontal, 24)
             .padding(.top, 128)
@@ -61,21 +62,5 @@ public struct Screen14EmptyHome: View {
         }
         .padding(EdgeInsets(top: 26, leading: 22, bottom: 26, trailing: 22))
         .rtCard(radius: 22, hero: true)
-    }
-
-    var shelf: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .bottom, spacing: 12) {
-                ForEach([64, 76, 68], id: \.self) { h in
-                    TopRoundedOpenRect(radius: 3)
-                        .stroke(Color(hex: 0xD5CDB8), style: StrokeStyle(lineWidth: 1.5, dash: [4.5, 4.5]))
-                        .frame(width: 46, height: CGFloat(h))
-                }
-            }
-            RoundedRectangle(cornerRadius: 2)
-                .fill(Color(hex: 0xDED6C0))
-                .frame(width: 210, height: 3)
-                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.25), radius: 2.5, x: 0, y: 3)
-        }
     }
 }

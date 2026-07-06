@@ -58,6 +58,7 @@ struct ReadingTimeApp: App {
         }
         if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
             model.nav(.home)
+            Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
         }
 
         // 로그인 버튼 → Google OAuth (ASWebAuthenticationSession) → 성공 시 홈 진입
@@ -100,6 +101,20 @@ struct ReadingTimeApp: App {
         _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
     }
 
+    /// 하루 첫 실행 안무(#7a) 무장 — 읽던 책이 있고 그 날짜 첫 진입일 때 1회 playPickup 세팅.
+    /// UserDefaults 에 마지막 재생 날짜(로컬 타임존=KST) 저장. 안무는 Reduce Motion 시 뷰에서 생략.
+    /// 소비 후 즉시 해제(2s 후 — 안무 1.55s 초과)해 같은 날 재진입 시 재생 방지.
+    private static func armPickupIfFirstToday(_ model: RTAppModel) {
+        guard model.currentBook != nil else { return }   // 집을 책이 없으면 안무 없음
+        let d = Calendar(identifier: .gregorian).dateComponents([.year, .month, .day], from: Date())
+        let today = "\(d.year ?? 0)-\(d.month ?? 0)-\(d.day ?? 0)"
+        let key = "rt.lastPickupDay"
+        guard UserDefaults.standard.string(forKey: key) != today else { return }
+        UserDefaults.standard.set(today, forKey: key)
+        model.playPickup = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { model.playPickup = false }
+    }
+
     /// 세션 자동 잠금 정책 — 서드파티는 잠긴 화면을 깨울 수 없으므로(알림·LA alert
     /// 실기기 실측 무효, 2026-07-04) "기록·대기 중 = 사용 중"으로 잠금 자체를 방지.
     /// 일시정지 상태는 일반 자동 잠금 복귀 (방치 시 영구 미잠금 방지 — 잠기면
@@ -139,20 +154,19 @@ struct ReadingTimeApp: App {
             .statusBarHidden(faceDownDark)
                 .task { await cloud.restore() }
                 .onReceive(model.$route) { route in
-                    let flipSession = route == .flipWait || route == .flipTimer
+                    // 센서·근접: 홈 추가 (§4-1) — 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
+                    let sensorSession = route == .flipWait || route == .flipTimer || route == .home
+                    // keep-alive(잠금 유지)·keep-awake: 녹화 대기/중에만 (홈 제외 — 배터리·영구
+                    // 미잠금 방지, 홈은 "포그라운드로 떠 있는 동안만 무장"). (§4-1 주의)
+                    let awakeSession = route == .flipWait || route == .flipTimer
                     Self.updateAwake(route: route, session: model.session)
                     // 엎기 모드: 근접 센서로 엎힌 동안 화면 하드웨어 오프(통화와 동일 메커니즘)
                     // → 배터리 소모 없이, 들어올리면 즉시 04 타이머 화면 + 포그라운드 강햅틱.
                     // 포그라운드 전용 (잠금 중 진동 간섭 배제 — scenePhase 핸들러와 동일 규칙)
-                    UIDevice.current.isProximityMonitoringEnabled = flipSession && scenePhase == .active
-                    // 엎기 대기·타이머 화면에서만 센서 + keep-alive 가동 (수동 잠금 폴백용)
-                    if flipSession {
-                        keepAlive.start()
-                        flip.startMonitoring()
-                    } else {
-                        flip.stopMonitoring()
-                        keepAlive.stop()
-                    }
+                    UIDevice.current.isProximityMonitoringEnabled = sensorSession && scenePhase == .active
+                    // 홈·엎기 대기·타이머 화면에서 센서 가동. keep-alive 는 녹화 대기/중에만.
+                    if sensorSession { flip.startMonitoring() } else { flip.stopMonitoring() }
+                    if awakeSession { keepAlive.start() } else { keepAlive.stop() }
                 }
                 .onReceive(model.$session) { session in
                     Self.updateAwake(route: model.route, session: session)
@@ -167,7 +181,7 @@ struct ReadingTimeApp: App {
                     // 화면이 이미 꺼져 있어 무용. 잠금+센서 덮임이 AudioServices 진동을
                     // 간섭하는 정황(7차 실기기: 진동 미발생) 배제 목적.
                     UIDevice.current.isProximityMonitoringEnabled =
-                        phase == .active && (model.route == .flipWait || model.route == .flipTimer)
+                        phase == .active && (model.route == .flipWait || model.route == .flipTimer || model.route == .home)
                     // 백그라운드↔포그라운드 전환마다 모션 스트림 재시작 (iOS 11+ 버그 대응)
                     if phase == .background || phase == .active {
                         flip.handleScenePhaseChange()
@@ -181,6 +195,8 @@ struct ReadingTimeApp: App {
                         if model.session?.mode == .tap, tapClock.clock.isTracking {
                             model.syncElapsed(tapClock.clock.elapsed(at: Date()))   // tap 보정
                         }
+                        // 홈으로 복귀 시 그 날짜 첫 진입이면 집어드는 안무 (§4)
+                        if model.route == .home { Self.armPickupIfFirstToday(model) }
                     }
                 }
         }
