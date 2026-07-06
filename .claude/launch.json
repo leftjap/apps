@@ -17,6 +17,21 @@
       "autoPort": false
     },
     {
+      "name": "rt-home-sian",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5322",
+        "--directory",
+        "/private/tmp/claude-501/-Users-gio-c-apps/4165c8b0-612c-484d-884b-0213eeefffbd/scratchpad/reading-home",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 5322,
+      "autoPort": false
+    },
+    {
       "name": "gym-sian-ref",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
