@@ -310,6 +310,9 @@ export const SPEAKER_VOICES = {
     'Jim': { voice: 'en-US-GuyNeural', style: null, rate: 0.95 },
     // The Office S1E2 'Diversity Day' 콜드오픈 (en-office-s1e2 #25~32) — Dwight(제지기 돌리며 짐 통화 방해, 무뚝뚝·단호). 화자 웹검증(officequotes/officeladies/bestofficelines).
     'Dwight': { voice: 'en-US-EricNeural', style: null, rate: 1.0 },
+    // Parks S1E2 시청 장면 (en-parks-s1e2 #101~107) — Paul(시행정 담당관, 활기찬 중년 남성) + Ron(부서장, 깊고 무뚝뚝한 데드팬). 화자 웹검증(Parks Fandom: Paul Iaresco·Ron Swanson).
+    'Paul': { voice: 'en-US-RogerNeural', style: null, rate: 1.02 },
+    'Ron': { voice: 'en-US-ChristopherNeural', style: null, rate: 0.92 },
     // archive — 라쿤+빅맨 친구 여행 (5/17 시드 회귀 보호 + 미래 wave 복원용)
     '라쿤': { voice: 'en-US-TonyNeural', style: 'unfriendly', rate: 1.1 },
     '빅맨': { voice: 'en-US-DavisMultilingualNeural', style: 'empathetic', rate: 0.9 },
