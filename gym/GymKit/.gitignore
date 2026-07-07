@@ -1,3 +1,5 @@
 .build/
 .swiftpm/
 *.xcodeproj/xcuserdata/
+# 폰트 바이너리(OFL) 미커밋 — fetch-fonts.sh 로 빌드 전 수급 (ReadingTime 방식)
+Sources/GymViews/Fonts/

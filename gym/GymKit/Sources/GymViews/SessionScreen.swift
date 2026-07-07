@@ -19,13 +19,13 @@ struct SessionToolbar: View {
             HStack(spacing: 8) {  // 타이머 (중앙)
                 Circle().fill(GY.crailBase).frame(width: 6, height: 6)
                 Text(time)
-                    .font(.system(size: 18, weight: .medium).monospacedDigit())
+                    .font(.mono(18, 500))
                     .foregroundStyle(GY.ink2)
             }
             HStack {
                 Spacer()
                 Text("종료")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.sans(14, 600))
                     .foregroundStyle(GY.ink3)
                     .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 9)
             }
@@ -45,24 +45,24 @@ struct SessionHeader: View {
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
-                Text(exName).font(.system(size: 25, weight: .bold)).tracking(-0.5)
+                Text(exName).font(.sans(25, 700)).tracking(-0.5)
                     .foregroundStyle(GY.ink1).lineLimit(1)
-                Text(part).font(.system(size: 12.5, weight: .medium))
+                Text(part).font(.sans(12.5, 500))
                     .foregroundStyle(GY.ink4).lineLimit(1)
             }
             Spacer(minLength: 0)
             HStack(spacing: 11) {   // .sv
                 VStack(alignment: .trailing, spacing: 3) {  // .sv-text
-                    Text("세션 볼륨").font(.system(size: 10.5, weight: .semibold))
+                    Text("세션 볼륨").font(.sans(10.5, 600))
                         .tracking(0.42).foregroundStyle(GY.ink4)
-                    (Text(volCur + " ").font(.system(size: 13, weight: .semibold).monospacedDigit()).foregroundStyle(GY.ink2)
-                     + Text("/ \(volTotal)kg").font(.system(size: 13, weight: .medium).monospacedDigit()).foregroundStyle(GY.ink4))
+                    (Text(volCur + " ").font(.mono(13, 600)).foregroundStyle(GY.ink2)
+                     + Text("/ \(volTotal)kg").font(.mono(13, 500)).foregroundStyle(GY.ink4))
                         .lineLimit(1).fixedSize(horizontal: true, vertical: false)  // white-space:nowrap
                 }
                 ZStack {  // .ring-wrap 56
                     GymRing(size: 56, lineWidth: 4.76, progress: Double(pct) / 100,
                             track: Color(oklch: 0.92, 0.006, 60), fill: GY.cloudyBase)
-                    Text("\(pct)%").font(.system(size: 14, weight: .bold).monospacedDigit())
+                    Text("\(pct)%").font(.mono(14, 700))
                         .tracking(-0.28).foregroundStyle(GY.cloudyDeep)
                 }
             }

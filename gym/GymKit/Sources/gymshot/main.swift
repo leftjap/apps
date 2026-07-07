@@ -5,8 +5,17 @@ import GymViews
 // gymshot — 헤드리스 화면 렌더 CLI (macOS, ImageRenderer). rtshot 미러.
 // 사용: gymshot <screenID> <out.png>   (예: gymshot rail out.png)
 let args = CommandLine.arguments
+
+// 폰트 등록 (모든 렌더 전) + PostScript 이름 실측 모드.
+let fontErrors = GymFonts.register()
+if args.contains("--list-fonts") {
+    if !fontErrors.isEmpty { FileHandle.standardError.write(("폰트 등록 오류: " + fontErrors.joined(separator: "; ") + "\n").data(using: .utf8)!) }
+    for line in GymFonts.faces(matching: ["Pretendard", "Space Grotesk"]) { print(line) }
+    exit(0)
+}
+
 guard args.count >= 3 else {
-    print("usage: gymshot <screenID> <out.png>   ids: rail | rail-single | tokens")
+    print("usage: gymshot <screenID> <out.png>   ids: rail | rail-single | session | session-top | tokens")
     exit(1)
 }
 let screenID = args[1]

@@ -15,7 +15,7 @@ struct DoneChip: View {
                 .font(.system(size: 8.5, weight: .semibold))
                 .foregroundStyle(Color(oklch: 0.72, 0.006, 60))
             Text(name)
-                .font(.system(size: 14.5, weight: .medium))
+                .font(.sans(14.5, 500))
                 .lineLimit(1)
                 .foregroundStyle(Color(oklch: 0.62, 0.008, 60))
         }
@@ -37,7 +37,7 @@ struct UpcomingChip: View {
     let name: String
     var body: some View {
         Text(name)
-            .font(.system(size: 14.5, weight: .semibold))
+            .font(.sans(14.5, 600))
             .lineLimit(1)
             .foregroundStyle(Color(oklch: 0.60, 0.008, 60))
             .padding(.horizontal, 15)
@@ -53,7 +53,7 @@ struct CurrentChip: View {
     @State private var breathe = false
     var body: some View {
         Text(name)
-            .font(.system(size: 19, weight: .heavy))
+            .font(.sans(19, 800))
             .lineLimit(1)
             .foregroundStyle(GY.ink1)
             .tracking(-0.38) // -0.02em @19px

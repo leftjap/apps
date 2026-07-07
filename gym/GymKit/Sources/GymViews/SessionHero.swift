@@ -8,22 +8,22 @@ struct SessionHero: View {
     let reps: String     // "10"
     var body: some View {
         VStack(spacing: 0) {
-            // 중량
+            // 중량 (mono 600)
             Text(weight)
-                .font(.system(size: 122, weight: .semibold, design: .monospaced))
+                .font(.mono(122, 600))
                 .tracking(-6.7)                 // -0.055em @122
                 .foregroundStyle(GY.ink1)
                 .lineSpacing(0)
             Text(unit)
-                .font(.system(size: 15, weight: .semibold))
+                .font(.sans(15, 600))
                 .tracking(0.3).foregroundStyle(GY.ink4)
                 .padding(.top, 6)
             // 횟수
             HStack(alignment: .firstTextBaseline, spacing: 9) {
-                Text("×").font(.system(size: 24, weight: .light, design: .monospaced)).foregroundStyle(GY.ink4)
-                Text(reps).font(.system(size: 50, weight: .regular, design: .monospaced))
+                Text("×").font(.mono(24, 300)).foregroundStyle(GY.ink4)
+                Text(reps).font(.mono(50, 400))
                     .tracking(-1).foregroundStyle(GY.ink2)
-                Text("회").font(.system(size: 16, weight: .medium)).foregroundStyle(GY.ink3)
+                Text("회").font(.sans(16, 500)).foregroundStyle(GY.ink3)
             }
             .padding(.top, 18)
         }
