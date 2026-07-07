@@ -9,6 +9,7 @@ public enum GymScreens {
         case "rail-single":  return AnyView(RailDemo(single: true))
         case "session-top":  return AnyView(SessionTopBlock())
         case "session":      return AnyView(SessionScreenView())
+        case "home":         return AnyView(HomeScreenView())
         case "tokens":       return AnyView(TokenSwatch())
         default:             return nil
         }
