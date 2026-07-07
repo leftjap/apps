@@ -2220,17 +2220,24 @@ function renderFooterPills(doc, session, currentBlock) {
 }
 
 /**
- * 작업지시서 §6.3 — 현재 칩을 레일 가시 영역 가운데로 정렬.
+ * 작업지시서 §3·수용기준6 — 현재 칩을 레일 가시 영역 가운데로 정렬.
  *  - 세트 도트 centerActiveSet 와 동일 패턴. 레일(pillsEl 자체)이 스크롤 컨테이너.
- *  - 레일이 넘칠 때만 동작, 스크롤 끝 clamp.
+ *  - 넘칠 때: 좌측 정렬 + scrollLeft 로 현재 칩 중앙(완료칩 좌측 노출·우측 페이드 유지).
+ *  - 안 넘칠 때(단일/소수 종목): justify-content:center 로 현재 카드가 좌측에 붙지 않게 중앙 정렬.
  *  - 칩 탭 전환은 mountSessionView 재마운트 → 새 DOM → 매번 즉시(instant) 중앙 정렬(smooth 아님).
  */
-function centerActivePill(pillsEl) {
+export function centerActivePill(pillsEl) {
   const cur = pillsEl && pillsEl.querySelector('.fp-chip.is-current');
   if (!cur) return;
   const align = () => {
     try {
-      if (pillsEl.scrollWidth <= pillsEl.clientWidth + 1) return; // 넘치지 않으면 정렬 불필요
+      if (pillsEl.scrollWidth <= pillsEl.clientWidth + 1) {
+        // 넘치지 않음 — 콘텐츠를 중앙 정렬 (현재 카드 좌측 밀착 방지, 사용자 1종목 케이스)
+        pillsEl.style.justifyContent = 'center';
+        pillsEl.scrollLeft = 0;
+        return;
+      }
+      pillsEl.style.justifyContent = 'flex-start'; // 넘치면 좌측 정렬 + 스크롤 중앙
       const target = cur.offsetLeft - (pillsEl.clientWidth - cur.offsetWidth) / 2;
       pillsEl.scrollLeft = Math.max(0, Math.min(target, pillsEl.scrollWidth - pillsEl.clientWidth));
     } catch (_) { /* fallback */ }
