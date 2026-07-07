@@ -10,10 +10,19 @@ public enum GymRoute: Equatable { case home, session, stats, summary, admin }
 @MainActor
 public final class GymAppModel: ObservableObject {
     @Published public var route: GymRoute = .home
-    @Published public var session: GymSession = GymAppModel.demoSession()
+    @Published public var session: GymSession { didSet { LocalStore.saveSession(session) } }
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
 
-    public init() {}
+    public init() {
+        // 로컬 영속 우선 로드 (앱 재시작 유지), 없으면 데모 시드. (init 할당은 didSet 미발화 → 저장 안 함)
+        session = LocalStore.loadSession() ?? GymAppModel.demoSession()
+    }
+
+    // 검증/새 세션용 — 영속 초기화 + 데모 재시드.
+    public func resetSession() {
+        LocalStore.clearSession()
+        session = GymAppModel.demoSession()
+    }
 
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }
 

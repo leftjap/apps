@@ -47,7 +47,7 @@ final class GymNavigationUITests: XCTestCase {
     // 좌스와이프 = 세트완료 → 현재 세트 중량이 다음 세트로 갱신 (상태머신 실 인터랙션)
     func testSwipeCompletesSet() {
         let app = XCUIApplication()
-        app.launchArguments = ["--route", "session"]
+        app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
         let hero = app.staticTexts["hero-weight"]
         XCTAssertTrue(hero.waitForExistence(timeout: 10), "히어로 중량이 있어야 한다")
@@ -57,6 +57,27 @@ final class GymNavigationUITests: XCTestCase {
         let expect = expectation(for: NSPredicate(format: "label == %@", "72"), evaluatedWith: hero)
         wait(for: [expect], timeout: 5)
         XCTAssertEqual(hero.label, "72", "세트완료 후 다음 세트 72kg 로 갱신돼야 한다")
+    }
+
+    // 로컬 영속 — 세트완료 후 앱 재시작해도 상태 유지 (UserDefaults JSON)
+    func testSessionPersistsAcrossRelaunch() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--route", "session", "--reset"]   // 깨끗한 시작
+        app.launch()
+        let hero = app.staticTexts["hero-weight"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 10))
+        XCTAssertEqual(hero.label, "70")
+        hero.swipeLeft()   // 세트완료 → 72 + 영속 저장
+        let e = expectation(for: NSPredicate(format: "label == %@", "72"), evaluatedWith: hero)
+        wait(for: [e], timeout: 5)
+
+        // 앱 재시작 (--reset 없이 = 영속 로드)
+        app.terminate()
+        app.launchArguments = ["--route", "session"]
+        app.launch()
+        let hero2 = app.staticTexts["hero-weight"]
+        XCTAssertTrue(hero2.waitForExistence(timeout: 10))
+        XCTAssertEqual(hero2.label, "72", "재시작해도 완료한 세트 상태가 유지돼야 한다(72)")
     }
 
     // 세션 → 홈 (툴바 홈 버튼) 역방향 검증

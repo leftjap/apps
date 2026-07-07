@@ -12,8 +12,9 @@ struct GymApp: App {
         let errs = GymFonts.register()
         if !errs.isEmpty { assertionFailure("폰트 등록 실패: \(errs.joined(separator: "; "))") }
         let model = GymAppModel()
-        // 검증 훅 — simctl launch ... --route session (ReadingTime --seq 패턴)
         let args = ProcessInfo.processInfo.arguments
+        if args.contains("--reset") { model.resetSession() }   // 검증용 영속 초기화
+        // 검증 훅 — simctl launch ... --route session (ReadingTime --seq 패턴)
         if let i = args.firstIndex(of: "--route"), args.count > i + 1 {
             switch args[i + 1] {
             case "session": model.route = .session
