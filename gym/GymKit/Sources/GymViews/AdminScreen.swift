@@ -1,37 +1,42 @@
 import SwiftUI
 import GymCore
 
-// 관리 화면 — mocks/admin.html 이식. 3탭(운동/체중/프로필). 운동/체중은 데모, 프로필은 실 로그인 상태.
+// 관리 화면 — mocks/admin.html 이식. 3탭(운동/체중/프로필) GymAppModel 실데이터 구동.
 public struct AdminScreenView: View {
     public enum Tab: String { case ex, weight, profile }
+    @ObservedObject var model: GymAppModel
     @State private var tab: Tab
-    @State private var activePart = "가슴"
-    @ObservedObject var cloud: CloudStore
+    @State private var activePart = "chest"
+    var embedScroll: Bool
     var onHome: () -> Void
     var onStats: () -> Void
     var onLogin: () -> Void
     var onLogout: () -> Void
-    public init(initialTab: Tab = .ex, cloud: CloudStore,
+
+    public init(model: GymAppModel, initialTab: Tab = .ex, embedScroll: Bool = true,
                 onHome: @escaping () -> Void = {}, onStats: @escaping () -> Void = {},
                 onLogin: @escaping () -> Void = {}, onLogout: @escaping () -> Void = {}) {
-        _tab = State(initialValue: initialTab); self.cloud = cloud
+        self.model = model; _tab = State(initialValue: initialTab); self.embedScroll = embedScroll
         self.onHome = onHome; self.onStats = onStats; self.onLogin = onLogin; self.onLogout = onLogout
     }
+
+    var cloud: CloudStore { model.cloud }
 
     public var body: some View {
         VStack(spacing: 0) {
             header
             tabBar
-            ScrollView {
-                switch tab {
-                case .ex: exPane
-                case .weight: weightPane
-                case .profile: profilePane
-                }
-            }
+            if embedScroll { ScrollView { paneContent } } else { paneContent }
         }
-        .frame(width: 390).frame(maxHeight: .infinity, alignment: .top)
-        .background(GY.shell)
+        .frame(width: 390).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
+    }
+
+    @ViewBuilder var paneContent: some View {
+        switch tab {
+        case .ex: exPane
+        case .weight: weightPane
+        case .profile: profilePane
+        }
     }
 
     var header: some View {
@@ -64,29 +69,32 @@ public struct AdminScreenView: View {
         }.buttonStyle(.plain).accessibilityIdentifier("admin-tab-\(label)")
     }
 
-    // 운동 탭 — 부위 칩 + 운동 행(토글)
+    // MARK: - 운동 탭 (부위 칩 + 카탈로그 행 + 숨김 토글)
+    static let wf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 1; return f }()
+    func detail(_ ex: GymExerciseDef) -> String {
+        if ex.equipment == "cardio" { return "유산소" }
+        if ex.equipment == "bodyweight" { return "자체 × \(ex.defaultReps)" }
+        let w = Self.wf.string(from: NSNumber(value: ex.defaultWeight)) ?? "\(ex.defaultWeight)"
+        return "\(w)kg × \(ex.defaultReps)"
+    }
     var exPane: some View {
-        let parts = ["가슴", "등", "어깨", "하체", "팔", "맨몸"]
-        let rows: [(String, String, Bool)] = [
-            ("벤치프레스", "60kg × 10", true), ("인클라인 벤치", "45kg × 10", true),
-            ("케이블 플라이", "20kg × 12", true), ("체스트 프레스", "50kg × 10", false),
-            ("딥스", "자체 × 12", true),
-        ]
+        let rows = model.exercisesForPart(activePart)
         return VStack(alignment: .leading, spacing: 0) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(parts, id: \.self) { p in partChip(p) }
+                    ForEach(GymExercises.partOrder, id: \.self) { p in partChip(p) }
                 }.padding(.horizontal, 20)
             }.padding(.top, 14)
             VStack(spacing: 0) {
-                ForEach(rows.indices, id: \.self) { i in
-                    let r = rows[i]
+                ForEach(rows) { ex in
+                    let shown = !model.isHidden(ex.id)
                     HStack(spacing: 12) {
                         Image(systemName: "line.3.horizontal").font(.system(size: 14)).foregroundStyle(GY.ink4).frame(width: 24, height: 36)
-                        Text(r.0).font(.sans(16, 500)).foregroundStyle(r.2 ? GY.ink1 : GY.ink4).lineLimit(1)
+                        Text(ex.name).font(.sans(16, 500)).foregroundStyle(shown ? GY.ink1 : GY.ink4).lineLimit(1)
                         Spacer()
-                        Text(r.1).font(.mono(13, 500)).foregroundStyle(GY.ink4)
-                        ToggleSwitch(on: r.2)
+                        Text(detail(ex)).font(.mono(13, 500)).foregroundStyle(GY.ink4)
+                        Button { model.toggleHidden(ex.id) } label: { ToggleSwitch(on: shown) }
+                            .buttonStyle(.plain).accessibilityIdentifier("admin-toggle-\(ex.id)")
                     }
                     .padding(.vertical, 16).padding(.horizontal, 8)
                     .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
@@ -97,27 +105,35 @@ public struct AdminScreenView: View {
     func partChip(_ p: String) -> some View {
         let on = activePart == p
         return Button { activePart = p } label: {
-            Text(p).font(.sans(14, on ? 600 : 500)).foregroundStyle(on ? GY.ink1 : GY.ink3)
+            Text(GymExercises.partName(p)).font(.sans(14, on ? 600 : 500)).foregroundStyle(on ? GY.ink1 : GY.ink3)
                 .padding(.horizontal, 14).padding(.vertical, 7)
                 .background(on ? GY.crailSoft : GY.card, in: Capsule())
                 .overlay(Capsule().strokeBorder(on ? GY.crailBase : GY.line, lineWidth: 1))
         }.buttonStyle(.plain)
     }
 
-    // 체중 탭 — 기록 list
+    // MARK: - 체중 탭 (실 기록)
+    static let md: DateFormatter = { let f = DateFormatter(); f.dateFormat = "M월 d일"; f.locale = Locale(identifier: "ko_KR"); f.timeZone = TimeZone(identifier: "Asia/Seoul"); return f }()
+    func mdLabel(_ dayStr: String) -> String {
+        guard let d = GymAppModel.dayFmt.date(from: dayStr) else { return dayStr }
+        return Self.md.string(from: d)
+    }
     var weightPane: some View {
-        let entries: [(String, String, String)] = [
-            ("5월 6일", "72.4", "−0.2"), ("5월 4일", "72.6", "+0.1"),
-            ("5월 2일", "72.5", "−0.3"), ("4월 29일", "72.8", "−0.1"),
-        ]
+        let entries = model.weightEntries()
         return VStack(spacing: 0) {
+            if entries.isEmpty {
+                Text("체중 기록 없음").font(.sans(13, 400)).foregroundStyle(GY.ink4).padding(.vertical, 24)
+            }
             ForEach(entries.indices, id: \.self) { i in
                 let e = entries[i]
                 HStack {
-                    Text(e.0).font(.sans(15, 500)).foregroundStyle(GY.ink1)
+                    Text(mdLabel(e.w.date)).font(.sans(15, 500)).foregroundStyle(GY.ink1)
                     Spacer()
-                    Text(e.2).font(.mono(12, 500)).foregroundStyle(GY.ink4)
-                    (Text(e.1).font(.mono(16, 600)).foregroundStyle(GY.ink1)
+                    if let d = e.delta {
+                        Text("\(d > 0 ? "+" : (d < 0 ? "−" : ""))\(Self.wf.string(from: NSNumber(value: abs(d))) ?? "")")
+                            .font(.mono(12, 500)).foregroundStyle(GY.ink4)
+                    }
+                    (Text(Self.wf.string(from: NSNumber(value: e.w.kg)) ?? "\(e.w.kg)").font(.mono(16, 600)).foregroundStyle(GY.ink1)
                      + Text("kg").font(.sans(12, 500)).foregroundStyle(GY.ink4))
                         .padding(.leading, 12)
                 }
@@ -127,17 +143,16 @@ public struct AdminScreenView: View {
         }.padding(.top, 8)
     }
 
-    // 프로필 탭 — 실 로그인 상태 + 설정 행
+    // MARK: - 프로필 탭 (실 설정 + 계정)
     var profilePane: some View {
-        let items: [(String, String)] = [
-            ("단위", "kg"), ("휴식 타이머", "90초"), ("버전", "1.0"),
-        ]
+        let s = model.settings
         return VStack(spacing: 0) {
-            // 계정 / 동기화 상태 (실 CloudStore)
             settingRow("계정", cloud.signedIn ? "로그인됨" : "로그인 안 됨")
             settingRow("데이터 동기화", cloud.signedIn ? "켜짐" : "꺼짐")
-            ForEach(items.indices, id: \.self) { i in settingRow(items[i].0, items[i].1) }
-            // Google 로그인/로그아웃 (local-first — 로그인은 sync 활성화용)
+            settingRow("키", s.height.map { "\($0) cm" } ?? "미설정")
+            settingRow("생년", s.birthYear.map { "\($0)" } ?? "미설정")
+            settingRow("주간 목표", "\(s.weeklyGoal)회")
+            settingRow("목표 체중", "\(Self.wf.string(from: NSNumber(value: s.goalWeight)) ?? "\(s.goalWeight)") kg")
             Button(action: cloud.signedIn ? onLogout : onLogin) {
                 Text(cloud.signedIn ? "로그아웃" : "Google 로그인")
                     .font(.sans(15, 600)).foregroundStyle(cloud.signedIn ? GY.danger : GY.crailDeep)
@@ -167,8 +182,7 @@ struct ToggleSwitch: View {
         Capsule().fill(on ? GY.crailBase : GY.line)
             .frame(width: 38, height: 23)
             .overlay(alignment: on ? .trailing : .leading) {
-                Circle().fill(.white)
-                    .frame(width: 19, height: 19)
+                Circle().fill(.white).frame(width: 19, height: 19)
                     .shadow(color: Color(hex: 0x14120E).opacity(0.2), radius: 1.5, y: 1)
                     .padding(2)
             }

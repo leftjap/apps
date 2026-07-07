@@ -19,7 +19,7 @@ public struct GymRootView: View {
             case .summary:
                 SummaryScreenView(model: model, onHome: { model.goHome() })
             case .admin:
-                AdminScreenView(initialTab: model.adminInitialTab, cloud: model.cloud,
+                AdminScreenView(model: model, initialTab: model.adminInitialTab,
                                 onHome: { model.goHome() }, onStats: { model.openStats() },
                                 onLogin: { Task { await model.login() } },
                                 onLogout: { Task { await model.logout() } })

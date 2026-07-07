@@ -41,6 +41,9 @@ public enum GymScreens {
         case "stats-ex":     return AnyView(StatsScreenView(model: demoModel(), initialTab: .exercise, embedScroll: false).frame(width: 390, height: 844))
         case "stats-body":   return AnyView(StatsScreenView(model: demoModel(), initialTab: .body, embedScroll: false).frame(width: 390, height: 844))
         case "home":         return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
+        case "admin":        return AnyView(AdminScreenView(model: demoModel(), initialTab: .ex, embedScroll: false).frame(width: 390, height: 844))
+        case "admin-weight": return AnyView(AdminScreenView(model: demoModel(), initialTab: .weight, embedScroll: false).frame(width: 390, height: 844))
+        case "admin-profile":return AnyView(AdminScreenView(model: demoModel(), initialTab: .profile, embedScroll: false).frame(width: 390, height: 844))
         case "root":         return AnyView(GymRootView(model: demoModel()).frame(width: 390, height: 844))
         case "tokens":       return AnyView(TokenSwatch())
         default:             return nil

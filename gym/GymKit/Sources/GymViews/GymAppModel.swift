@@ -14,10 +14,10 @@ public final class GymAppModel: ObservableObject {
     @Published public var history: [GymSession]      // 완료 세션 이력 (홈·통계·직전기록·프리셋)
     @Published public var prs: [GymPR]               // 개인 기록 (PR 감지)
     @Published public var prMoment: Int = 0          // PR 팝 트리거 (증가 시 뷰가 팝)
-    public var custom: [GymCustomExercise]           // 커스텀 운동 (이름·부위 resolve)
-    public var weights: [GymWeight]                  // 체중 로그
-    public var settings: GymUserSettings             // 사용자 설정
-    public var referenceToday: Date = Date()         // 홈/통계 "오늘" 기준 (스냅샷은 고정 주입)
+    @Published public var custom: [GymCustomExercise]    // 커스텀 운동 (이름·부위 resolve)
+    @Published public var weights: [GymWeight]           // 체중 로그
+    @Published public var settings: GymUserSettings      // 사용자 설정 (관리 편집 → 반응형)
+    public var referenceToday: Date = Date()             // 홈/통계 "오늘" 기준 (스냅샷은 고정 주입)
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
     public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)
@@ -206,6 +206,34 @@ public final class GymAppModel: ObservableObject {
               let sunday = cal.date(byAdding: .day, value: 6, to: monday) else { return 0 }
         let lo = Self.dayFmt.string(from: monday), hi = Self.dayFmt.string(from: sunday)
         return Set(allWorkedSessions().filter { $0.date >= lo && $0.date <= hi }.map(\.date)).count
+    }
+
+    // MARK: - 관리 (운동 목록·숨김·체중·설정)
+
+    // 부위별 관리 목록 (빌트인 삭제 제외 + 커스텀). 숨김도 포함(흐리게 표시).
+    public func exercisesForPart(_ part: String) -> [GymExerciseDef] {
+        let builtins = GymExercises.listByPart(part).filter { !settings.deletedExercises.contains($0.id) }
+        let customs = custom.filter { $0.part == part }.map {
+            GymExerciseDef(id: $0.id, name: $0.name, part: $0.part, equipment: $0.equipment,
+                           defaultSets: $0.defaultSets, defaultReps: $0.defaultReps,
+                           defaultWeight: $0.defaultWeight, met: $0.met)
+        }
+        return builtins + customs
+    }
+    public func isHidden(_ exId: String) -> Bool { settings.hiddenExercises.contains(exId) }
+    public func toggleHidden(_ exId: String) {
+        if let i = settings.hiddenExercises.firstIndex(of: exId) { settings.hiddenExercises.remove(at: i) }
+        else { settings.hiddenExercises.append(exId) }
+        LocalStore.saveSettings(settings)
+    }
+    // 체중 기록 + 직전 대비 증감 (관리 체중 탭).
+    public func weightEntries() -> [(w: GymWeight, delta: Double?)] {
+        weights.enumerated().map { i, w in
+            (w: w, delta: i + 1 < weights.count ? w.kg - weights[i + 1].kg : nil)
+        }
+    }
+    public func updateSettings(_ mutate: (inout GymUserSettings) -> Void) {
+        mutate(&settings); LocalStore.saveSettings(settings)
     }
 
     // MARK: - 클라우드 (선택적 sync)
@@ -441,6 +469,7 @@ public final class GymAppModel: ObservableObject {
         let hist = seedHistory()
         LocalStore.saveSessions(hist)
         LocalStore.saveWeights(seedWeights())
+        LocalStore.saveSettings(GymUserSettings(weeklyGoal: 4, height: 173, birthYear: 1976, goalWeight: 69))
         var best: [String: GymPR] = [:]
         for s in hist {
             for (exId, bs) in GymPRLogic.findBestSetsInSession(s) {
