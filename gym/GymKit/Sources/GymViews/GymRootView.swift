@@ -9,7 +9,8 @@ public struct GymRootView: View {
         ZStack {
             switch model.route {
             case .home:
-                HomeScreenView(onStart: { model.startSession() }, onStats: { model.openStats() })
+                HomeScreenView(model: model, onStart: { model.startSession() },
+                               onStats: { model.openStats() }, onAdmin: { model.openAdmin() })
             case .session:
                 SessionScreenView(model: model, onHome: { model.goHome() })
             case .stats:

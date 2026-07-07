@@ -17,6 +17,7 @@ public final class GymAppModel: ObservableObject {
     public var custom: [GymCustomExercise]           // 커스텀 운동 (이름·부위 resolve)
     public var weights: [GymWeight]                  // 체중 로그
     public var settings: GymUserSettings             // 사용자 설정
+    public var referenceToday: Date = Date()         // 홈/통계 "오늘" 기준 (스냅샷은 고정 주입)
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
     public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)
@@ -66,6 +67,90 @@ public final class GymAppModel: ObservableObject {
     // 가장 최근 완료 세션 (우상단 세션 볼륨 분모용).
     public var prevSession: GymSession? {
         history.first { $0.id != session.id && $0.status == .completed }
+    }
+
+    // MARK: - 홈/통계 집계 (KST 기준)
+
+    static let kst: Calendar = {
+        var c = Calendar(identifier: .gregorian)
+        c.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        c.firstWeekday = 2   // 월요일 시작
+        return c
+    }()
+    static let dayFmt: DateFormatter = {
+        let f = DateFormatter()
+        f.calendar = kst; f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
+        return f
+    }()
+
+    // 완료 이력 + (활성 세션에 done 세트 있으면) 진행 중 세션.
+    public func allWorkedSessions() -> [GymSession] {
+        var xs = history.filter { $0.status == .completed }
+        if session.blocks.contains(where: { $0.sets.contains { $0.done } }) { xs.append(session) }
+        return xs
+    }
+    // 특정 날짜에 운동한 세션들.
+    public func sessionsOn(_ dayStr: String) -> [GymSession] {
+        allWorkedSessions().filter { $0.date == dayStr }
+    }
+    // 가장 최근 완료 세션 (직전 운동 카드).
+    public func lastCompletedSession() -> GymSession? { history.first { $0.status == .completed } }
+
+    // dayStr 이 ref 기준 며칠 전인지 (오늘=0, 어제=1).
+    public func daysAgo(_ dayStr: String, from ref: Date) -> Int {
+        guard let d = Self.dayFmt.date(from: dayStr) else { return 0 }
+        return Self.kst.dateComponents([.day], from: Self.kst.startOfDay(for: d),
+                                       to: Self.kst.startOfDay(for: ref)).day ?? 0
+    }
+
+    public struct HomeWeekCell: Identifiable {
+        public let id = UUID()
+        public let label: String; public let num: Int
+        public let worked: Bool; public let partName: String?
+        public let isToday: Bool; public let isLast: Bool
+    }
+    // 주간(월~일) 캘린더 셀 — ref 가 속한 주.
+    public func weekCells(around ref: Date) -> [HomeWeekCell] {
+        let cal = Self.kst
+        guard let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref)) else { return [] }
+        let refDay = Self.dayFmt.string(from: ref)
+        let labels = ["월", "화", "수", "목", "금", "토", "일"]
+        let worked = Set(allWorkedSessions().map(\.date))
+        let lastWorked = worked.filter { $0 <= refDay }.max()
+        return (0..<7).compactMap { i in
+            guard let d = cal.date(byAdding: .day, value: i, to: monday) else { return nil }
+            let ds = Self.dayFmt.string(from: d)
+            let part = sessionsOn(ds).first?.tags.first.map { GymExercises.partName($0) }
+            return HomeWeekCell(label: labels[i], num: cal.component(.day, from: d),
+                                worked: worked.contains(ds), partName: part,
+                                isToday: ds == refDay, isLast: ds == lastWorked)
+        }
+    }
+    // 이번 주/지난 주 부위별 완료 세트 수 (부위 밸런스). offset 0=이번주, -1=지난주.
+    public func partDoneSets(weekOffset: Int, from ref: Date) -> [String: Int] {
+        let cal = Self.kst
+        guard let thisMon = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref)),
+              let monday = cal.date(byAdding: .day, value: 7 * weekOffset, to: thisMon),
+              let sunday = cal.date(byAdding: .day, value: 6, to: monday) else { return [:] }
+        let lo = Self.dayFmt.string(from: monday), hi = Self.dayFmt.string(from: sunday)
+        var counts: [String: Int] = [:]
+        for s in allWorkedSessions() where s.date >= lo && s.date <= hi {
+            for b in s.blocks {
+                let part = GymExercises.resolvePart(b.exerciseId, custom: custom)
+                guard !part.isEmpty else { continue }
+                counts[part, default: 0] += b.sets.filter(\.done).count
+            }
+        }
+        return counts
+    }
+    // 이번 주 운동 횟수 (주간 목표 대비).
+    public func sessionsThisWeek(from ref: Date) -> Int {
+        let cal = Self.kst
+        guard let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref)),
+              let sunday = cal.date(byAdding: .day, value: 6, to: monday) else { return 0 }
+        let lo = Self.dayFmt.string(from: monday), hi = Self.dayFmt.string(from: sunday)
+        return Set(allWorkedSessions().filter { $0.date >= lo && $0.date <= hi }.map(\.date)).count
     }
 
     // MARK: - 클라우드 (선택적 sync)
@@ -260,6 +345,12 @@ public final class GymAppModel: ObservableObject {
         }
         func done(_ w: Double, _ r: Int) -> GymSet { GymSet(weight: w, reps: r, done: true) }
         return [
+            // 이번 주 하체 (5/5) — 홈 주간 캘린더·부위밸런스 이번주 소스.
+            mk("h_0505", "2026-05-05", 1_746_410_000_000, 57, ["legs"], [
+                GymBlock(exerciseId: "squat", sets: [done(72, 10), done(76, 8), done(80, 6), done(80, 6)]),
+                GymBlock(exerciseId: "leg_press", sets: [done(110, 10), done(120, 10), done(130, 8)]),
+                GymBlock(exerciseId: "leg_curl", sets: [done(32, 12), done(32, 12), done(36, 10)]),
+            ]),
             // 직전 가슴 (5/3) — bench_press 4세트 = 직전기록 바 소스.
             mk("h_0503", "2026-05-03", 1_746_240_000_000, 54, ["chest"], [
                 GymBlock(exerciseId: "incline_bench", sets: [done(45, 10), done(45, 10), done(45, 9), done(45, 8)]),

@@ -22,6 +22,13 @@ public enum GymScreens {
         return s
     }
 
+    // 데모 모델 — 기준일을 시드 주(2026-05-06)로 고정해 홈/통계가 채워지게.
+    @MainActor static func demoModel() -> GymAppModel {
+        let m = GymAppModel()
+        if let d = GymAppModel.dayFmt.date(from: "2026-05-06") { m.referenceToday = d }
+        return m
+    }
+
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
         switch id {
@@ -30,8 +37,8 @@ public enum GymScreens {
         case "session-top":  return AnyView(SessionTopBlock())
         case "session":      return AnyView(SessionScreenView().frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
-        case "home":         return AnyView(HomeScreenView().frame(width: 390, height: 844))
-        case "root":         return AnyView(GymRootView(model: GymAppModel()).frame(width: 390, height: 844))
+        case "home":         return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
+        case "root":         return AnyView(GymRootView(model: demoModel()).frame(width: 390, height: 844))
         case "tokens":       return AnyView(TokenSwatch())
         default:             return nil
         }
