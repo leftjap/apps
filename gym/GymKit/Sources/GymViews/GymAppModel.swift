@@ -144,6 +144,61 @@ public final class GymAppModel: ObservableObject {
         }
         return counts
     }
+    // 세션의 완료 세트 볼륨 (active/completed 공통).
+    public func doneVolume(_ s: GymSession) -> Double {
+        s.blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0.0) { $0 + $1.volume } }
+    }
+    // 특정 연-월의 운동한 일자 집합 (통계 월 캘린더).
+    public func workedDays(year: Int, month: Int) -> Set<Int> {
+        let prefix = String(format: "%04d-%02d-", year, month)
+        return Set(allWorkedSessions().filter { $0.date.hasPrefix(prefix) }.compactMap { Int($0.date.suffix(2)) })
+    }
+    // 최근 N주 주간 총볼륨 (오래된→최신, 8주 추이).
+    public func weeklyVolumes(weeks: Int, from ref: Date) -> [Double] {
+        let cal = Self.kst
+        guard let thisMon = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref)) else { return [] }
+        return stride(from: weeks - 1, through: 0, by: -1).map { i in
+            guard let mon = cal.date(byAdding: .day, value: -7 * i, to: thisMon),
+                  let sun = cal.date(byAdding: .day, value: 6, to: mon) else { return 0 }
+            let lo = Self.dayFmt.string(from: mon), hi = Self.dayFmt.string(from: sun)
+            return allWorkedSessions().filter { $0.date >= lo && $0.date <= hi }.reduce(0.0) { $0 + doneVolume($1) }
+        }
+    }
+    // 최근 days 일 종목별 완료 세트 수 (내림차순 top).
+    public func exerciseFrequency(days: Int, from ref: Date, top: Int) -> [(exId: String, sets: Int)] {
+        guard let lo = Self.kst.date(byAdding: .day, value: -days, to: ref) else { return [] }
+        let loStr = Self.dayFmt.string(from: lo)
+        var counts: [String: Int] = [:]
+        for s in allWorkedSessions() where s.date >= loStr {
+            for b in s.blocks {
+                let done = b.sets.filter(\.done).count
+                if done > 0 { counts[b.exerciseId, default: 0] += done }   // 0-set 종목 제외
+            }
+        }
+        return counts.sorted { $0.value > $1.value }.prefix(top).map { (exId: $0.key, sets: $0.value) }
+    }
+    // 최근 days 일 부위별 완료 세트 수 (내림차순).
+    public func partDistribution(days: Int, from ref: Date) -> [(part: String, sets: Int)] {
+        guard let lo = Self.kst.date(byAdding: .day, value: -days, to: ref) else { return [] }
+        let loStr = Self.dayFmt.string(from: lo)
+        var counts: [String: Int] = [:]
+        for s in allWorkedSessions() where s.date >= loStr {
+            for b in s.blocks {
+                let part = GymExercises.resolvePart(b.exerciseId, custom: custom)
+                let done = b.sets.filter(\.done).count
+                guard !part.isEmpty, part != "cardio", done > 0 else { continue }
+                counts[part, default: 0] += done
+            }
+        }
+        return counts.sorted { $0.value > $1.value }.map { (part: $0.key, sets: $0.value) }
+    }
+    // 최근 days 일 총 운동 횟수 (부위 도넛 중앙).
+    public func sessionCount(days: Int, from ref: Date) -> Int {
+        guard let lo = Self.kst.date(byAdding: .day, value: -days, to: ref) else { return 0 }
+        let loStr = Self.dayFmt.string(from: lo)
+        return allWorkedSessions().filter { $0.date >= loStr }.count
+    }
+
     // 이번 주 운동 횟수 (주간 목표 대비).
     public func sessionsThisWeek(from ref: Date) -> Int {
         let cal = Self.kst
