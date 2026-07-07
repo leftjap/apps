@@ -40,3 +40,8 @@ test-results/
 
 # Misc
 *.local
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/

@@ -52,7 +52,8 @@ public struct HomeScreenView: View {
             weightRow.padding(.horizontal, 24)
             cta
         }
-        .frame(width: 390, height: 844)
+        .frame(width: 390)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(GY.shell)
     }
 

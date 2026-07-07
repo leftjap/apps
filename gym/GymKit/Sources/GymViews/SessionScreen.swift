@@ -121,7 +121,8 @@ public struct SessionScreenView: View {
                 .init(name: "케이블 플라이", state: .upcoming),
             ])
         }
-        .frame(width: 390, height: 844)
+        .frame(width: 390)
+        .frame(maxHeight: .infinity, alignment: .top)
         .background(GY.shell)
     }
 }

@@ -8,9 +8,9 @@ public enum GymScreens {
         case "rail":         return AnyView(RailDemo(single: false))
         case "rail-single":  return AnyView(RailDemo(single: true))
         case "session-top":  return AnyView(SessionTopBlock())
-        case "session":      return AnyView(SessionScreenView())
-        case "home":         return AnyView(HomeScreenView())
-        case "root":         return AnyView(GymRootView(model: GymAppModel()))
+        case "session":      return AnyView(SessionScreenView().frame(width: 390, height: 844))
+        case "home":         return AnyView(HomeScreenView().frame(width: 390, height: 844))
+        case "root":         return AnyView(GymRootView(model: GymAppModel()).frame(width: 390, height: 844))
         case "tokens":       return AnyView(TokenSwatch())
         default:             return nil
         }
