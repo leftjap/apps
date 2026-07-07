@@ -18,6 +18,7 @@ struct GymApp: App {
             case "session": model.route = .session
             case "stats": model.route = .stats
             case "summary": model.route = .summary
+            case "admin": model.route = .admin
             default: break
             }
         }
