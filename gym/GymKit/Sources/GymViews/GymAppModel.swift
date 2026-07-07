@@ -11,13 +11,61 @@ public enum GymRoute: Equatable { case home, session, stats, summary, admin }
 public final class GymAppModel: ObservableObject {
     @Published public var route: GymRoute = .home
     @Published public var session: GymSession { didSet { LocalStore.saveSession(session) } }
+    @Published public var history: [GymSession]      // 완료 세션 이력 (홈·통계·직전기록·프리셋)
+    @Published public var prs: [GymPR]               // 개인 기록 (PR 감지)
+    @Published public var prMoment: Int = 0          // PR 팝 트리거 (증가 시 뷰가 팝)
+    public var custom: [GymCustomExercise]           // 커스텀 운동 (이름·부위 resolve)
+    public var weights: [GymWeight]                  // 체중 로그
+    public var settings: GymUserSettings             // 사용자 설정
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
     public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)
 
     public init() {
-        // 로컬 영속 우선 로드 (앱 재시작 유지), 없으면 데모 시드. (init 할당은 didSet 미발화 → 저장 안 함)
-        session = LocalStore.loadSession() ?? GymAppModel.demoSession()
+        // 첫 실행 시 데모 이력·PR·체중 시드 (빈 상태일 때만) → 홈·통계·직전기록이 실데이터 구동.
+        GymAppModel.seedIfEmpty()
+        // 로컬 영속 우선 로드 (init 할당은 didSet 미발화 → 저장 안 함).
+        if let loaded = LocalStore.loadSession() {
+            session = loaded
+        } else {
+            // 데모: 진행 중처럼 보이도록 시작 시각을 18분 전으로 (라이브 타이머 현실값).
+            var demo = GymAppModel.demoSession()
+            demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
+            session = demo
+        }
+        history = LocalStore.loadSessions()
+        prs = LocalStore.loadPRs()
+        custom = LocalStore.loadCustomExercises()
+        weights = LocalStore.loadWeights()
+        settings = LocalStore.loadSettings()
+    }
+
+    // MARK: - 운동 카탈로그 헬퍼 (Exercises.swift resolve)
+
+    public var currentExerciseId: String { currentBlock?.exerciseId ?? "" }
+    public func exerciseName(_ id: String) -> String { GymExercises.resolveName(id, custom: custom) }
+    public var currentExerciseName: String { exerciseName(currentExerciseId) }
+    public var currentPartId: String { GymExercises.resolvePart(currentExerciseId, custom: custom) }
+    public var currentPartName: String { GymExercises.partName(currentPartId) }
+    public func increment(for exId: String) -> Double { GymExercises.increment(forExercise: exId, custom: custom) }
+    public var currentIsCardio: Bool { GymExercises.def(currentExerciseId, custom: custom)?.isCardio ?? false }
+
+    // MARK: - 직전 세션 조회 (프리셋·직전기록 바·프로그레스바 분모)
+
+    // 이 종목을 포함한 가장 최근 완료 세션의 블록 (현재 세션 제외). history 는 startTime desc.
+    public func prevBlock(forExercise exId: String) -> GymBlock? {
+        for s in history where s.id != session.id && s.status == .completed {
+            if let b = s.blocks.first(where: { $0.exerciseId == exId }) { return b }
+        }
+        return nil
+    }
+    // 직전 이 종목 총 볼륨 (프로그레스바 고정 분모, spec §6-7). 없으면 0.
+    public func prevExerciseVolume(forExercise exId: String) -> Double {
+        prevBlock(forExercise: exId)?.sets.reduce(0) { $0 + $1.volume } ?? 0
+    }
+    // 가장 최근 완료 세션 (우상단 세션 볼륨 분모용).
+    public var prevSession: GymSession? {
+        history.first { $0.id != session.id && $0.status == .completed }
     }
 
     // MARK: - 클라우드 (선택적 sync)
@@ -25,15 +73,21 @@ public final class GymAppModel: ObservableObject {
     public func restoreCloud() async { await cloud.restore() }
     public func login() async { try? await cloud.signInWithGoogle(); await syncNow() }
     public func logout() async { await cloud.signOut() }
-    // 로그인돼 있으면 현재 세션 upsert (backend 계약은 REST 라운드트립으로 검증됨).
     public func syncNow() async {
         guard cloud.signedIn else { return }
         try? await cloud.upsertSession(session)
     }
 
-    // 세션 종료 = 완료 처리 + 요약 + (로그인 시) 클라우드 upsert.
+    // 세션 종료 = 완료 처리 + 이력 저장 + 요약 + (로그인 시) 클라우드 upsert.
     public func endSession() {
         session.status = .completed
+        session.endTime = nowMillis()
+        session.totalVolume = sessionDoneVolume
+        session.durationMin = elapsedMinutes()
+        session.tags = sessionParts()
+        session.totalCalories = estimatedCalories()
+        LocalStore.upsertSessionHistory(session)
+        history = LocalStore.loadSessions()
         route = .summary
         Task { await syncNow() }
     }
@@ -54,7 +108,6 @@ public final class GymAppModel: ObservableObject {
 
     // MARK: - 세션 상태머신 (session.js 이식)
 
-    // 현재 블록 = 미완료(세트 중 하나라도 미완료) 첫 블록.
     public var currentBlockIdx: Int {
         for (i, blk) in session.blocks.enumerated() {
             if blk.sets.contains(where: { !$0.done }) { return i }
@@ -64,7 +117,6 @@ public final class GymAppModel: ObservableObject {
     public var currentBlock: GymBlock? {
         session.blocks.indices.contains(currentBlockIdx) ? session.blocks[currentBlockIdx] : nil
     }
-    // 현재 세트 = 현재 블록의 첫 미완료 세트.
     public var currentSetIdx: Int {
         currentBlock?.sets.firstIndex { !$0.done } ?? 0
     }
@@ -73,11 +125,13 @@ public final class GymAppModel: ObservableObject {
         return b.sets[currentSetIdx]
     }
 
-    // 세션 볼륨 = 전 블록 완료 세트 볼륨 합 / 계획 볼륨 합.
+    // 세션 볼륨 = 전 블록 완료/계획 세트 볼륨 합.
     public var sessionDoneVolume: Double { blockVols { $0.done } }
     public var sessionTotalVolume: Double { blockVols { _ in true } }
     public var sessionPct: Int {
-        sessionTotalVolume > 0 ? Int((sessionDoneVolume / sessionTotalVolume * 100).rounded()) : 0
+        // 우상단 세션 볼륨 = 오늘 done / 직전 세션 총볼륨 (spec §6-7). 직전 없으면 오늘 계획 대비.
+        let denom = (prevSession?.totalVolume ?? 0) > 0 ? prevSession!.totalVolume : sessionTotalVolume
+        return denom > 0 ? Int((sessionDoneVolume / denom * 100).rounded()) : 0
     }
     private func blockVols(_ pred: (GymSet) -> Bool) -> Double {
         var total = 0.0
@@ -87,45 +141,169 @@ public final class GymAppModel: ObservableObject {
         return total
     }
 
-    // 세트 완료 = 현재 세트 done → 다음 세트/블록 진행 + 햅틱.
+    // 세트 완료 = PR 판정 → done → PR 저장/팝 + 햅틱 (spec §6-11).
     public func completeCurrentSet() {
         let bi = currentBlockIdx, si = currentSetIdx
         guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
+        let exId = session.blocks[bi].exerciseId
+        let set = session.blocks[bi].sets[si]
+        let w = set.weight ?? 0, r = set.reps ?? 0
+        let res = GymPRLogic.evaluateSetPR(weight: w, reps: r, prs: prs, exerciseId: exId)
         session.blocks[bi].sets[si].done = true
-        impact(.medium)
+        if res.isPR {
+            session.blocks[bi].sets[si].pr = true
+            LocalStore.upsertPR(GymPRLogic.buildPR(exerciseId: exId, weight: w, reps: r,
+                                                   date: session.date, sessionId: session.id))
+            prs = LocalStore.loadPRs()
+            prMoment += 1
+            impact(.heavy)
+        } else {
+            impact(.medium)
+        }
     }
-    // 현재 세트 중량 증감 (탭 델타).
-    public func adjustCurrentWeight(_ delta: Double) {
+    // 이전 세트로 되돌리기 (우 스와이프 — 마지막 완료 세트를 미완료로, spec §6-3-1).
+    public func revertToPreviousSet() {
+        let bi = currentBlockIdx
+        guard session.blocks.indices.contains(bi) else { return }
+        let sets = session.blocks[bi].sets
+        guard let lastDone = sets.lastIndex(where: { $0.done }) else { return }
+        session.blocks[bi].sets[lastDone].done = false
+        session.blocks[bi].sets[lastDone].pr = false
+        impact(.light)
+    }
+
+    // 현재 세트 중량 증감 — 장비별 증분 (spec §6-3). dir = ±1. 맨몸·유산소는 미동작.
+    public func adjustWeight(_ dir: Int) {
+        let inc = increment(for: currentExerciseId)
+        guard inc > 0 else { return }
         let bi = currentBlockIdx, si = currentSetIdx
         guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
         let cur = session.blocks[bi].sets[si].weight ?? 0
-        session.blocks[bi].sets[si].weight = max(0, cur + delta)
+        session.blocks[bi].sets[si].weight = max(0, cur + Double(dir) * inc)
         impact(.light)
     }
+    // 현재 세트 횟수 증감 (±1).
+    public func adjustReps(_ dir: Int) {
+        let bi = currentBlockIdx, si = currentSetIdx
+        guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
+        let cur = session.blocks[bi].sets[si].reps ?? 0
+        session.blocks[bi].sets[si].reps = max(0, cur + dir)
+        impact(.light)
+    }
+
+    // MARK: - 세션 파생값 (요약·칼로리)
+
+    private func sessionParts() -> [String] {
+        var seen: [String] = []
+        for b in session.blocks {
+            let p = GymExercises.resolvePart(b.exerciseId, custom: custom)
+            if !p.isEmpty && !seen.contains(p) { seen.append(p) }
+        }
+        return seen
+    }
+    public func elapsedMinutes() -> Int {
+        guard let st = session.startTime, st > 0 else { return 0 }
+        let end = session.endTime ?? nowMillis()
+        return max(0, Int((end - st) / 60000))
+    }
+    // 칼로리 = Σ(MET × 체중 × 시간(시) × 1.05), 종목별 시간 균등 배분 (spec §7-3).
+    public func estimatedCalories() -> Int {
+        let mins = elapsedMinutes()
+        guard mins > 0, !session.blocks.isEmpty else { return 0 }
+        let bodyKg = weights.first?.kg ?? 70
+        let perBlockHr = (Double(mins) / 60.0) / Double(session.blocks.count)
+        var kcal = 0.0
+        for b in session.blocks {
+            let met = GymExercises.def(b.exerciseId, custom: custom)?.met ?? 4.0
+            kcal += met * bodyKg * perBlockHr * 1.05
+        }
+        return Int(kcal.rounded())
+    }
+
+    private func nowMillis() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
 
     #if canImport(UIKit)
     private func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
     #else
-    private enum Dummy { case light, medium }
+    private enum Dummy { case light, medium, heavy }
     private func impact(_ style: Dummy) {}
     #endif
 
-    // 데모 진행 중 세션 (실 데이터 배선 전 시드 — session.js 시연값 정합).
+    // MARK: - 시드 (실 데이터 배선 전 데모 — 실 snake_case ID)
+
+    // 진행 중 세션 (오늘, 가슴). session.js 시연값 정합.
     static func demoSession() -> GymSession {
-        GymSession(id: "demo", date: "2026-05-06", startTime: 0, blocks: [
-            GymBlock(exerciseId: "체스트 프레스", sets: [
+        GymSession(id: "demo", date: "2026-05-06", startTime: 1_746_500_000_000, blocks: [
+            GymBlock(exerciseId: "incline_bench", sets: [
                 GymSet(weight: 50, reps: 10, done: true), GymSet(weight: 50, reps: 10, done: true),
                 GymSet(weight: 50, reps: 8, done: true)], finishedAt: 1),
-            GymBlock(exerciseId: "벤치프레스", sets: [
+            GymBlock(exerciseId: "bench_press", sets: [
                 GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 65, reps: 10, done: true),
                 GymSet(weight: 70, reps: 8, done: false), GymSet(weight: 72, reps: 8, done: false),
                 GymSet(weight: 75, reps: 6, done: false)]),
-            GymBlock(exerciseId: "인클라인 덤벨 프레스", sets: [
-                GymSet(weight: 22, reps: 10, done: false), GymSet(weight: 22, reps: 10, done: false)]),
-            GymBlock(exerciseId: "케이블 플라이", sets: [
+            GymBlock(exerciseId: "dumbbell_fly", sets: [
+                GymSet(weight: 20, reps: 10, done: false), GymSet(weight: 20, reps: 10, done: false)]),
+            GymBlock(exerciseId: "cable_crossover", sets: [
                 GymSet(weight: 20, reps: 12, done: false), GymSet(weight: 20, reps: 12, done: false)]),
         ], tags: ["chest"], status: .active)
+    }
+
+    // 완료 세션 이력 (홈 캘린더·통계·직전기록·프리셋 구동). 총볼륨은 done 세트 합산.
+    static func seedHistory() -> [GymSession] {
+        func mk(_ id: String, _ date: String, _ start: Int64, _ dur: Int, _ tags: [String],
+                _ blocks: [GymBlock]) -> GymSession {
+            let vol = blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0) { $0 + $1.volume } }
+            return GymSession(id: id, date: date, startTime: start, endTime: start + Int64(dur) * 60000,
+                              blocks: blocks, tags: tags, totalVolume: vol, durationMin: dur, status: .completed)
+        }
+        func done(_ w: Double, _ r: Int) -> GymSet { GymSet(weight: w, reps: r, done: true) }
+        return [
+            // 직전 가슴 (5/3) — bench_press 4세트 = 직전기록 바 소스.
+            mk("h_0503", "2026-05-03", 1_746_240_000_000, 54, ["chest"], [
+                GymBlock(exerciseId: "incline_bench", sets: [done(45, 10), done(45, 10), done(45, 9), done(45, 8)]),
+                GymBlock(exerciseId: "bench_press", sets: [done(60, 10), done(62, 10), done(64, 8), done(64, 7)]),
+                GymBlock(exerciseId: "dumbbell_fly", sets: [done(18, 12), done(18, 12), done(18, 10)]),
+            ]),
+            // 등 (5/1)
+            mk("h_0501", "2026-05-01", 1_746_070_000_000, 58, ["back"], [
+                GymBlock(exerciseId: "deadlift", sets: [done(90, 8), done(90, 8), done(95, 6), done(95, 5)]),
+                GymBlock(exerciseId: "barbell_row", sets: [done(55, 10), done(55, 10), done(57, 8)]),
+                GymBlock(exerciseId: "lat_pulldown", sets: [done(50, 10), done(50, 10), done(55, 8)]),
+            ]),
+            // 하체 (4/29)
+            mk("h_0429", "2026-04-29", 1_745_900_000_000, 61, ["legs"], [
+                GymBlock(exerciseId: "squat", sets: [done(70, 10), done(75, 8), done(80, 6), done(80, 6)]),
+                GymBlock(exerciseId: "leg_press", sets: [done(100, 10), done(110, 10), done(120, 8)]),
+                GymBlock(exerciseId: "leg_curl", sets: [done(30, 12), done(30, 12), done(35, 10)]),
+            ]),
+        ]
+    }
+
+    // 체중 로그 (관리·홈·칼로리 body 기준).
+    static func seedWeights() -> [GymWeight] {
+        [GymWeight(date: "2026-05-06", kg: 72.4, height: 173),
+         GymWeight(date: "2026-05-04", kg: 72.6, height: 173),
+         GymWeight(date: "2026-05-02", kg: 72.5, height: 173),
+         GymWeight(date: "2026-04-29", kg: 72.8, height: 173)]
+    }
+
+    // 빈 상태일 때만 시드 (이력·체중 저장 + 이력에서 PR 유도).
+    static func seedIfEmpty() {
+        guard LocalStore.loadSessions().isEmpty, LocalStore.loadWeights().isEmpty else { return }
+        let hist = seedHistory()
+        LocalStore.saveSessions(hist)
+        LocalStore.saveWeights(seedWeights())
+        var best: [String: GymPR] = [:]
+        for s in hist {
+            for (exId, bs) in GymPRLogic.findBestSetsInSession(s) {
+                if best[exId] == nil || bs.e1rm > best[exId]!.e1rm {
+                    best[exId] = GymPRLogic.buildPR(exerciseId: exId, weight: bs.weight, reps: bs.reps,
+                                                    date: s.date, sessionId: s.id)
+                }
+            }
+        }
+        LocalStore.savePRs(Array(best.values))
     }
 }
