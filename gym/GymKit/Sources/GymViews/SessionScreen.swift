@@ -8,13 +8,16 @@ import GymCore
 // 상단 툴바 — grid 1fr auto 1fr, height 48 (mocks .sess-toolbar).
 struct SessionToolbar: View {
     let time: String
+    var onHome: () -> Void = {}
     var body: some View {
         ZStack {
             HStack {
-                Image(systemName: "house")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundStyle(GY.ink3)
-                    .frame(width: 40, height: 40)
+                Button(action: onHome) {
+                    Image(systemName: "house")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(GY.ink3)
+                        .frame(width: 40, height: 40)
+                }.buttonStyle(.plain)
                 Spacer()
             }
             HStack(spacing: 8) {  // 타이머 (중앙)

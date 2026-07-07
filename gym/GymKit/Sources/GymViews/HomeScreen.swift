@@ -22,7 +22,8 @@ struct BalPart: Identifiable {
 }
 
 public struct HomeScreenView: View {
-    public init() {}
+    var onStart: () -> Void
+    public init(onStart: @escaping () -> Void = {}) { self.onStart = onStart }
 
     let week: [CalDay] = [
         .init(label: "월", num: 6, worked: true, today: false, last: true),
@@ -185,9 +186,12 @@ public struct HomeScreenView: View {
     }
 
     var cta: some View {
-        Text("운동 시작").font(.sans(16, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
-            .frame(maxWidth: .infinity).frame(height: 56)
-            .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rLg))
-            .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+        Button(action: onStart) {
+            Text("운동 시작").font(.sans(16, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
+                .frame(maxWidth: .infinity).frame(height: 56)
+                .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rLg))
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
     }
 }
