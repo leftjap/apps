@@ -211,14 +211,18 @@ public final class RTAppModel: ObservableObject {
         "\(sec / 3600):" + String(format: "%02d", sec / 60 % 60)
     }
 
-    /// 최근 기록 시점 표기 — 오늘이면 "오늘 HH:mm", 아니면 "M.d"
+    /// 최근 기록 시점 표기 — 오늘="오늘 HH:mm", 어제="어제 HH:mm", 그 외="M.d"
     public static func recentWhen(_ date: Date, now: Date) -> String {
         let c = Calendar(identifier: .gregorian)
-        if c.isDate(date, inSameDayAs: now) {
+        func hhmm() -> String {
             let f = DateFormatter()
             f.locale = Locale(identifier: "en_US_POSIX")
             f.dateFormat = "HH:mm"
-            return "오늘 " + f.string(from: date)
+            return f.string(from: date)
+        }
+        if c.isDate(date, inSameDayAs: now) { return "오늘 " + hhmm() }
+        if let y = c.date(byAdding: .day, value: -1, to: now), c.isDate(date, inSameDayAs: y) {
+            return "어제 " + hhmm()
         }
         return "\(c.component(.month, from: date)).\(c.component(.day, from: date))"
     }

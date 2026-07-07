@@ -8,8 +8,8 @@ import Foundation
 @Suite struct RTHomeDerivedTests {
     let cal = Calendar(identifier: .gregorian)
 
-    func date(_ y: Int, _ mo: Int, _ d: Int, _ h: Int = 12) -> Date {
-        cal.date(from: DateComponents(year: y, month: mo, day: d, hour: h))!
+    func date(_ y: Int, _ mo: Int, _ d: Int, _ h: Int = 12, _ min: Int = 0) -> Date {
+        cal.date(from: DateComponents(year: y, month: mo, day: d, hour: h, minute: min))!
     }
     func model(now: Date) -> RTAppModel {
         let m = RTAppModel(); m.now = { now }; return m
@@ -54,5 +54,18 @@ import Foundation
     @Test func streakChainEmptyWhenNoUserData() {
         let m = RTAppModel()   // userData nil (데모)
         #expect(m.streakChain(4) == [false, false, false, false])
+    }
+
+    // recentWhen 에 "어제 HH:mm" 케이스 추가 (홈 마지막 기록 데모 표기 "어제 22:14" 를
+    // 라이브 경로도 재현하도록 — 리뷰 지적 #5, 스펙이 "필요 시 추가" 명시).
+    @Test func recentWhenYesterday() {
+        let now = date(2026, 6, 18, 9)
+        let yesterday = date(2026, 6, 17, 22, 14)
+        #expect(RTAppModel.recentWhen(yesterday, now: now) == "어제 22:14")
+    }
+    @Test func recentWhenTodayAndOlderUnchanged() {
+        let now = date(2026, 6, 18, 9)
+        #expect(RTAppModel.recentWhen(date(2026, 6, 18, 8, 5), now: now) == "오늘 08:05")
+        #expect(RTAppModel.recentWhen(date(2026, 6, 15, 22), now: now) == "6.15")   // 이틀 전은 M.d
     }
 }

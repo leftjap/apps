@@ -44,7 +44,9 @@ public struct Screen02Home: View {
                 weekHM: RTAppModel.hmString(m.weekSeconds),
                 streak: m.streakDays,
                 chain: m.streakChain(Self.chainDays),
-                lastBook: last.flatMap { r in m.userData?.books.first { $0.isbn == r.isbn }?.title },
+                // isbn 이 nil(수동/미연결 세션)이거나 매칭 책이 없으면 현재 책 제목으로 폴백
+                // (라이브에서 데모 기본값 "몰입" 이 새는 것 방지, 리뷰 #4)
+                lastBook: last.flatMap { r in m.userData?.books.first { $0.isbn == r.isbn }?.title } ?? book.title,
                 lastMin: last.map { $0.seconds / 60 },
                 lastWhen: last.map { RTAppModel.recentWhen($0.endedAt, now: m.now()) })
         } else {
@@ -174,7 +176,7 @@ public struct Screen02Home: View {
         RTMotionFrame {
             floorShadowShape(scaleX: 1, alpha: 0.5)
         } anim: { t in
-            let floatY = sin(t * 0.7) * 3.5   // RTBook3D 부유와 동일 공식
+            let floatY = Double(rtBookFloatY(t))   // RTBook3D 부유와 동일 단일 소스
             return floorShadowShape(scaleX: 1 - floatY * 0.01, alpha: 0.5 - floatY * 0.008)
         }
     }
@@ -343,15 +345,17 @@ public struct Screen02Home: View {
         .shadow(color: Color.black.opacity(0.5), radius: 12, x: 0, y: 12)
     }
 
-    // "오늘 읽음" 숫자 — 정지=목표값, 모션=0→목표 카운트업(~1s ease-out cubic)
+    // "오늘 읽음" 숫자 — 정지=목표값, 모션=0→목표 카운트업(~1s ease-out cubic).
+    // t = 등장 후 경과초(RTMotionFrame 이 라이브에서도 경과초를 넘김) → rtCountUpValue 로 값 산출.
     func countUp(_ target: Int) -> some View {
         RTMotionFrame {
-            Text("\(target)").font(.mono(27, 700)).tracking(27 * -0.02).foregroundColor(RT.ink)
+            countUpText(target)
         } anim: { t in
-            let p = min(1, t / 1.0)
-            let v = Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
-            return Text("\(v)").font(.mono(27, 700)).tracking(27 * -0.02).foregroundColor(RT.ink)
+            countUpText(rtCountUpValue(target, elapsed: t))
         }
+    }
+    private func countUpText(_ v: Int) -> some View {
+        Text("\(v)").font(.mono(27, 700)).tracking(27 * -0.02).foregroundColor(RT.ink)
     }
 
     // 탭 시작 버튼

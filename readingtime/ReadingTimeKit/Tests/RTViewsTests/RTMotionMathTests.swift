@@ -28,4 +28,31 @@ import Testing
             #expect(abs(rtCubicBezier(0.25, 0.25, 0.75, 0.75, at: t) - t) < 1e-4)
         }
     }
+
+    // rtBookFloatY — 책 부유 위상. RTBook3D 부유와 접지 그림자 동기가 같은 공식을 쓰도록
+    // 단일 소스로 추출(이전엔 두 파일에 복제 → desync 위험, 리뷰 지적).
+    @Test func floatYZeroAtOrigin() {
+        #expect(rtBookFloatY(0) == 0)
+    }
+    @Test func floatYReachesAmplitude() {
+        let peak = rtBookFloatY(Double.pi / 2 / 0.7)   // sin(π/2)=1 → +3.5
+        #expect(abs(peak - 3.5) < 1e-6)
+        let trough = rtBookFloatY(3 * Double.pi / 2 / 0.7)   // sin(3π/2)=-1 → -3.5
+        #expect(abs(trough + 3.5) < 1e-6)
+    }
+
+    // rtCountUpValue — "오늘 읽음" 카운트업 값. RTMotionFrame 이 라이브에서 등장-후-경과초를
+    // 넘기도록 고친 뒤, 이 순수 함수가 진행률→값을 담당(라이브 즉시-스냅 회귀 방지).
+    @Test func countUpStartsAtZeroEndsAtTarget() {
+        #expect(rtCountUpValue(32, elapsed: 0) == 0)
+        #expect(rtCountUpValue(32, elapsed: 1.0) == 32)
+        #expect(rtCountUpValue(32, elapsed: 5.0) == 32)   // 이후에도 목표 유지
+    }
+    @Test func countUpMidpointEaseOut() {
+        // ease-out cubic: elapsed .5 → 32·(1-(.5)^3)=28
+        #expect(rtCountUpValue(32, elapsed: 0.5) == 28)
+    }
+    @Test func countUpClampsNegative() {
+        #expect(rtCountUpValue(32, elapsed: -1) == 0)
+    }
 }

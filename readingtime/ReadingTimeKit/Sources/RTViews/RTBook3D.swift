@@ -49,12 +49,13 @@ func rtHomography(w: CGFloat, h: CGFloat,
     let sx = x0 - x1 + x2 - x3
     let sy = y0 - y1 + y2 - y3
     var a: CGFloat, b: CGFloat, c: CGFloat, d: CGFloat, e: CGFloat, f: CGFloat, g: CGFloat, hh: CGFloat
-    if abs(sx) < 1e-9 && abs(sy) < 1e-9 {
+    let det = ax * by - bx * ay
+    // sx,sy≈0(어파인) 또는 det≈0(퇴화 사각형) → 원근항 없이 어파인 근사 (NaN 방지, 리뷰 #6)
+    if (abs(sx) < 1e-9 && abs(sy) < 1e-9) || abs(det) < 1e-9 {
         a = x1 - x0; b = x3 - x0; c = x0
         d = y1 - y0; e = y3 - y0; f = y0
         g = 0; hh = 0
     } else {
-        let det = ax * by - bx * ay
         g = (sx * by - bx * sy) / det
         hh = (ax * sy - sx * ay) / det
         a = x1 - x0 + g * x1; b = x3 - x0 + hh * x3; c = x0
@@ -131,10 +132,10 @@ public struct RTBook3D: View {
             composite(cam: makeCam(ryDeg: Self.baseRy, rxDeg: Self.baseRx), floatY: 0)
         } anim: { t in
             // 부유+sway (support.js: floatY=sin(.7t)·3.5, ry=9+sin(.45t)·1.5, rx=5+sin(.6t+1)·0.8)
+            // floatY 는 접지 그림자와 공유하는 단일 소스 rtBookFloatY 사용(desync 방지, 리뷰 #2)
             let ry = Self.baseRy + sin(t * 0.45) * 1.5
             let rx = Self.baseRx + sin(t * 0.6 + 1) * 0.8
-            let fy = CGFloat(sin(t * 0.7) * 3.5)
-            return composite(cam: makeCam(ryDeg: ry, rxDeg: rx), floatY: fy)
+            return composite(cam: makeCam(ryDeg: ry, rxDeg: rx), floatY: rtBookFloatY(t))
         }
     }
 
@@ -167,6 +168,18 @@ public struct RTBook3D: View {
                                with: .color(Color.black.opacity(0.28)), lineWidth: 1.2)
                     ctx.stroke(lerpQuadV(sq, t: 1 - 26 / Double(Self.H)),
                                with: .color(Color.black.opacity(0.28)), lineWidth: 1.2)
+                    // 세로쓰기 제목 (시안: #efe1bd 12/900) — 책등 슬리버 안에 클립. 얇아 흐릿하나 존재.
+                    if !spineTitle.isEmpty {
+                        let cx = (sq[0].x + sq[1].x + sq[2].x + sq[3].x) / 4
+                        let cy = (sq[0].y + sq[1].y + sq[2].y + sq[3].y) / 4
+                        ctx.drawLayer { lc in
+                            lc.clip(to: path(sq))
+                            lc.translateBy(x: cx, y: cy)
+                            lc.rotate(by: .degrees(90))
+                            lc.draw(Text(spineTitle).font(.sans(9, 900))
+                                .foregroundColor(Color(hex: 0xEFE1BD)), at: .zero, anchor: .center)
+                        }
+                    }
                 }
             }
             .frame(width: Self.cw, height: Self.ch)

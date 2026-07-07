@@ -24,6 +24,16 @@ public extension View {
     }
 }
 
+// 책 부유 위상 — 단일 소스(RTBook3D 부유 + 접지 그림자 동기가 공유). support.js: sin(.7t)·3.5.
+public func rtBookFloatY(_ t: Double) -> CGFloat { CGFloat(sin(t * 0.7) * 3.5) }
+
+// "오늘 읽음" 카운트업 값 — 등장 후 경과초(elapsed) → 정수값. ease-out cubic, ~1s.
+// RTMotionFrame 이 라이브에서 등장-후-경과초를 넘기므로(절대시각 아님) 이 함수가 진행을 담당.
+public func rtCountUpValue(_ target: Int, elapsed: Double) -> Int {
+    let p = min(1, max(0, elapsed / 1.0))
+    return Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
+}
+
 // rtEnter/rtRise 진입 스태거 (홈 02: 칩 dy10·.5s·.04s / 제목블록·카드 dy16·.6s / .18s·.26s) —
 // opacity 0→1 + translateY dy→0, ease-out 근사. rtFrozenTime 으로 결정적 검증 가능(RTEntrance 와
 // 달리 delay/dy 파라미터화 + --at 프레임 지원).
@@ -115,12 +125,17 @@ struct RTBookDropIn: ViewModifier {
     }
 }
 
-// 모션 프레임 래퍼: 정지 렌더(픽셀 오라클)=rest, 라이브=TimelineView(t), 검증=고정 t.
-// t = "등장 후 경과초"(연속 모션은 주기적, 일회성 진입은 clamp 진행률로 사용).
+// 모션 프레임 래퍼: 정지 렌더(픽셀 오라클)=rest, 라이브=등장 후 경과초, 검증=고정 t.
+// t 는 반드시 "등장 후 경과초" — 라이브도 절대시각이 아니라 등장 시점 기준 경과초를 넘긴다.
+// (이전엔 timeIntervalSinceReferenceDate(절대초 ~8e8)를 넘겨 ① 일회성 카운트업이 라이브에서
+//  즉시 스냅되고 ② 주기 모션의 라이브 위상이 --at 검증 프레임과 어긋났음 — 리뷰 지적 #1 수정.)
+// start 는 onAppear(라이브 경로에서만) 에 캡처 — frozen/rest 렌더 경로는 Date() 를 호출하지 않아
+// rtshot 결정성 유지.
 public struct RTMotionFrame<Rest: View, Anim: View>: View {
     @Environment(\.rtMotionEnabled) private var enabled
     @Environment(\.accessibilityReduceMotion) private var reduce
     @Environment(\.rtFrozenTime) private var frozen
+    @State private var start: Date?
     let rest: () -> Rest
     let anim: (Double) -> Anim
     public init(@ViewBuilder rest: @escaping () -> Rest, @ViewBuilder anim: @escaping (Double) -> Anim) {
@@ -131,8 +146,9 @@ public struct RTMotionFrame<Rest: View, Anim: View>: View {
             anim(frozen)
         } else if enabled && !reduce {
             TimelineView(.animation) { ctx in
-                anim(ctx.date.timeIntervalSinceReferenceDate)
+                anim(ctx.date.timeIntervalSince(start ?? ctx.date))
             }
+            .onAppear { if start == nil { start = Date() } }
         } else {
             rest()
         }
