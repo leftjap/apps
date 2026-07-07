@@ -90,6 +90,37 @@ function makePayload(overrides = {}) {
 
 const okOpts = { existingSeeds: [], speakerNames: SPEAKERS };
 
+describe('validateSeedContent — ladder (선택 확장 사다리, base→확장)', () => {
+  const validLadder = [
+    { en: 'A coffee.', ko: '커피.', kr: '어 커피', adds: 'base' },
+    { en: 'A coffee, please.', ko: '커피 주세요.', kr: '어 커피 플리즈', adds: 'object' },
+    { en: 'Can I get a coffee, please?', ko: '커피 하나 주시겠어요?', kr: '캔 아이 게러 커피 플리즈', adds: 'particle' },
+    { en: 'Can I get an iced coffee to go, please?', ko: '아이스커피 포장 주시겠어요?', kr: '캔 아이 게런 아이스 커피 투고 플리즈', adds: 'adverbial' },
+  ];
+  const withLadder = (ladder) => { const p = makePayload(); p.cards[1].explanation.ladder = ladder; return p; };
+  const ladderErrs = (p) => validateSeedContent(p, okOpts).errors.filter((e) => e.includes('ladder'));
+
+  it('유효 ladder → ladder error 0', () => {
+    expect(ladderErrs(withLadder(validLadder))).toEqual([]);
+  });
+  it('ladder 미존재 → 하위호환 (ladder error 0)', () => {
+    expect(ladderErrs(makePayload())).toEqual([]);
+  });
+  it('단수 1 (부족) → 차단', () => {
+    expect(ladderErrs(withLadder([validLadder[0]])).some((e) => e.includes('2~6'))).toBe(true);
+  });
+  it('단수 7 (초과) → 차단', () => {
+    expect(ladderErrs(withLadder([...validLadder, ...validLadder.slice(0, 3)])).some((e) => e.includes('2~6'))).toBe(true);
+  });
+  it('rung kr 음차 누락 → 차단', () => {
+    const bad = validLadder.map((x, i) => (i === 1 ? { ...x, kr: '' } : x));
+    expect(ladderErrs(withLadder(bad)).some((e) => e.includes('kr'))).toBe(true);
+  });
+  it('단조 확장 위배 (단어수 감소) → 차단', () => {
+    expect(ladderErrs(withLadder([validLadder[0], validLadder[3], validLadder[1]])).some((e) => e.includes('단조'))).toBe(true);
+  });
+});
+
 describe('validateSeedContent — 기준선', () => {
   it('유효 payload → ok, errors 0', () => {
     const r = validateSeedContent(makePayload(), okOpts);

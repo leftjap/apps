@@ -264,6 +264,28 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     }
   }
 
+  // ── (선택) 확장 사다리 ladder: base 청크를 단당 1요소씩 키우는 수직 확장 (guide §6.3 — video2 '핵심절→확장' +
+  // sentence-expansion). 선택 필드 → 미존재 시 skip(하위호환). 존재 시 구조·kr음차·단조 확장만 검사(내용 판단은 rubric).
+  for (const c of exprs) {
+    const ladder = c.explanation?.ladder;
+    if (ladder === undefined) continue;
+    if (!Array.isArray(ladder) || ladder.length < 2 || ladder.length > 6) {
+      errors.push(`${c.id}: ladder 는 2~6단 배열이어야 함 (현재 ${Array.isArray(ladder) ? `${ladder.length}단` : typeof ladder})`);
+      continue;
+    }
+    let prevWords = 0;
+    ladder.forEach((rung, i) => {
+      for (const f of ['en', 'ko', 'kr']) {
+        if (typeof rung?.[f] !== 'string' || !rung[f].trim()) {
+          errors.push(`${c.id}: ladder[${i}] ${f} 누락/빈값 — 각 단 en·ko·kr(음차) 의무`);
+        }
+      }
+      const wc = String(rung?.en ?? '').trim().split(/\s+/).filter(Boolean).length;
+      if (wc < prevWords) errors.push(`${c.id}: ladder[${i}] 가 이전 단보다 짧음 (${wc}<${prevWords}) — 단조 확장(base→길게) 위배`);
+      prevWords = wc;
+    });
+  }
+
   // ── 매칭 계약: deriveDialogue 순차 커서 시뮬레이션 — 표현 전수 번호 부여 의무 ──
   if (scene && exprs.length) {
     let ci = 0;
