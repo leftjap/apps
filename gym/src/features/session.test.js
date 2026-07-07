@@ -34,6 +34,7 @@ import {
   resolveDotDisplay,
   formatSetSegment,
   computeFooterOrder,
+  renderFooterPillHtml,
   barHeightForVolume,
   setBarVolumeMax,
   buildSetBestSlotHtml,
@@ -2643,5 +2644,43 @@ describe('computeFooterOrder — 푸터 칩 서킷 배열 [완료 좌·현재·�
     const order = computeFooterOrder(blocks, B);
     expect(order.map((e) => e.i)).toEqual([0, 1]);
     expect(order.map((e) => e.block.exerciseId)).toEqual(['A', 'B']);
+  });
+});
+
+// 운동세션 레일 3단 깊이 재디자인 (작업지시서 §4) — renderFooterPillHtml 실제 출력 구조 회귀 방지.
+describe('renderFooterPillHtml — 레일 3단 깊이 마크업', () => {
+  it('done: 눌린 회색칩 = is-done + fp-chip__mk(fp-check) + 종목명', () => {
+    const html = renderFooterPillHtml({ blockIdx: 0, state: 'done', name: '체스트 프레스' });
+    expect(html).toContain('class="fp-chip is-done"');
+    expect(html).toContain('data-ex-state="completed"');
+    expect(html).toContain('data-block-idx="0"');
+    expect(html).toContain('<span class="fp-chip__mk">');
+    expect(html).toContain('class="fp-check"');
+    expect(html).toContain('<span class="fp-chip__name">체스트 프레스</span>');
+    // 완료엔 라이브 점·하이라이트 없음
+    expect(html).not.toContain('fp-chip__hl');
+  });
+  it('current: 떠오른 흰 카드 = is-current + fp-chip__hl 오버레이 + 종목명, aria-current', () => {
+    const html = renderFooterPillHtml({ blockIdx: 1, state: 'current', name: '벤치프레스' });
+    expect(html).toContain('class="fp-chip is-current"');
+    expect(html).toContain('data-ex-state="active"');
+    expect(html).toContain('aria-current="true"');
+    expect(html).toContain('<span class="fp-chip__hl" aria-hidden="true"></span>');
+    expect(html).toContain('<span class="fp-chip__name">벤치프레스</span>');
+    // 부위 라벨·밑줄·점·마커 없음 (§7 수용기준)
+    expect(html).not.toContain('fp-chip__mk');
+    expect(html).not.toContain('fp-dot');
+  });
+  it('upcoming: 평면 아웃라인 = is-upcoming + 종목명만 (마커 없음)', () => {
+    const html = renderFooterPillHtml({ blockIdx: 2, state: 'upcoming', name: '케이블 플라이' });
+    expect(html).toContain('class="fp-chip is-upcoming"');
+    expect(html).toContain('<span class="fp-chip__name">케이블 플라이</span>');
+    expect(html).not.toContain('fp-chip__mk');
+    expect(html).not.toContain('fp-chip__hl');
+  });
+  it('종목명 XSS 이스케이프', () => {
+    const html = renderFooterPillHtml({ blockIdx: 0, state: 'upcoming', name: '<img src=x>' });
+    expect(html).toContain('&lt;img src=x&gt;');
+    expect(html).not.toContain('<img src=x>');
   });
 });

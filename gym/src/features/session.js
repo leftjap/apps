@@ -2145,7 +2145,7 @@ function blockDisplayName(block) {
   return '';
 }
 
-function renderFooterPillHtml({ blockIdx, state, name }) {
+export function renderFooterPillHtml({ blockIdx, state, name }) {
   // 종이톤 슬라이드 레일 칩 (작업지시서 §6.1). 마커 슬롯 + 운동명 (가로).
   // data-ex-state : 'active' | 'completed' | 'hold' | 'upcoming' (footer-exercise hold 메뉴와 호환)
   const exStateAttr = state === 'current' ? 'active'
