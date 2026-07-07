@@ -35,6 +35,13 @@
   --sage: oklch(66% 0.055 150); /* 완료 칩 체크 — 시안 sage 톤 (작업지시서 §3.1) */
   --sage-deep: oklch(46% 0.075 150); /* 완료 칩 이름 — 완료를 초록으로 의미화 (작업지시서 §5-1 푸터 델타) */
 
+  /* Record surplus(에메랄드) — 직전 기록 100% 돌파분 전용 (작업지시서 §3.2).
+     고채도 그린으로 crail(주황) 보색 대비. 완료칩 --sage(저채도)와 채도 분리:
+     sage=운동완료, record=볼륨 초과달성. */
+  --record-base: oklch(62% 0.18 152);
+  --record-deep: oklch(44% 0.16 152);
+  --record-tint: oklch(93% 0.06 152);
+
   --warning: #c98a3f;
   --danger: #c5544a;
 

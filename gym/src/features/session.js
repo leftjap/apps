@@ -778,7 +778,13 @@ async function mountSessionActive(doc, block, session) {
   // P1 라이트 — 타이틀 우상단: 이번(숫자만, kg 라벨은 markup static) / 직전(별도 줄).
   // 우상단 누적(최종값) — 단, count-up 분기는 아래에서 시작값으로 덮어써 역방향 깜빡임 방지(리뷰 #8/#9).
   setTextById(doc, 'cardSetProgress', Math.round(sessionDoneVol).toLocaleString());
-  setTextById(doc, 'cardSessVolPrev', prevSessionVol > 0 ? `직전 ${Math.round(prevSessionVol).toLocaleString()}kg` : '');
+  // 우상단 세션(블루) 링 총합(분모) — 직전 세션 총볼륨. 없으면 'kg'만 (§5.2 · 시안 #6b "{누적} / {총}kg").
+  const cardSessTotalWrap = doc.getElementById('cardSessTotalWrap');
+  if (cardSessTotalWrap) {
+    cardSessTotalWrap.innerHTML = prevSessionVol > 0
+      ? `/ ${Math.round(prevSessionVol).toLocaleString()}kg`
+      : 'kg';
+  }
 
   const isPreset = !!currentSet.preset;
   // preset/input 모두 흰색 (사용자 가독성 우선) — 구분은 font-weight + setDots accent 로.
@@ -892,9 +898,8 @@ async function mountSessionActive(doc, block, session) {
     else centerActiveSet();
   }
 
-  // 진행바 (§6-7) — 이번 운동 현재 누적 볼륨 / 직전 이 운동의 총 볼륨.
-  //   분모는 직전 세션 같은 종목의 총 볼륨(prevSessionSets 합) — "오늘 계획"이 아니라 고정된
-  //   "지난번 넘기" 타깃. 분자(done)가 분모를 넘으면 pct>100% (직전 기록 돌파).
+  // ── 중앙 종목 세그먼트 링 (작업지시서 §5.1) — 세트별 볼륨 세그먼트 + 초과 아크(에메랄드) + 팁 도트 ──
+  //   분모 = 직전 세션 같은 종목 총 볼륨(고정 "지난번 넘기" 타깃). 분자(done)가 분모 초과 시 pct>100% = 돌파.
   let exDoneVol = 0;
   for (const s of sets) {
     if (s && s.done) exDoneVol += (Number(s.weight) || 0) * (Number(s.reps) || 0);
@@ -906,71 +911,94 @@ async function mountSessionActive(doc, block, session) {
       if (r > 0) prevExVol += (Number(s?.weight) || 0) * r; // 의미값(reps>0) 만
     }
   }
-  // 직전 기록 없으면(첫 세션) 오늘 계획 볼륨으로 폴백 — 바가 빈 채로 남지 않게.
+  // 직전 기록 없으면(첫 세션) 오늘 계획 볼륨으로 폴백.
   let denom = prevExVol;
   if (denom <= 0) {
     for (const s of sets) denom += (Number(s?.weight) || 0) * (Number(s?.reps) || 0);
   }
   const pct = denom > 0 ? Math.round((exDoneVol / denom) * 100) : 0;
-  const widthPct = Math.min(100, pct); // 바 fill 은 100% cap, 초과는 over 상태(§7-over) 로
-  const bar = doc.getElementById('cardProgressBar');
-  const edge = doc.getElementById('volEdge');
-  const exVolText = (v) => (prevExVol > 0
-    ? `${Math.round(v).toLocaleString()} / 직전 ${Math.round(denom).toLocaleString()}kg`
-    : `${Math.round(v).toLocaleString()} / ${Math.round(denom).toLocaleString()}kg`);
   const RMV = prefersReducedMotion();
-  // 커밋 카운트업 — handleLeftSwipe 가 세운 1회성 커밋 플래그가 이 종목과 일치 + 직전 렌더 대비 exDoneVol 증가 + 비-RM.
-  //   키패드 done-세트 수정·탭증감·우스와이프·reload 는 플래그 없음 → 오발화 차단 (리뷰 #6).
-  const prevExNum = bar ? Number(bar.dataset.exVol) : NaN;
-  const sameEx = bar && bar.dataset.exId === block.exerciseId && Number.isFinite(prevExNum);
+
+  // 커밋 카운트업 감지 — #exVolSegs.dataset 로 직전 렌더 볼륨 추적(기존 bar.dataset 패턴 이식).
+  //   handleLeftSwipe 커밋 플래그 + exDoneVol 증가 + 비-RM 일 때만 (키패드 수정·탭·reload 오발화 차단).
+  const segWrap = doc.getElementById('exVolSegs');
+  const prevExNum = segWrap ? Number(segWrap.dataset.exVol) : NaN;
+  const sameEx = segWrap && segWrap.dataset.exId === String(block.exerciseId) && Number.isFinite(prevExNum);
   const isCommit = _justCommittedExId === block.exerciseId;
   const countUp = sameEx && exDoneVol > prevExNum && !RMV && isCommit;
   const topBefore = sessionDoneVol - (exDoneVol - (Number.isFinite(prevExNum) ? prevExNum : exDoneVol));
+
+  // 세그먼트 렌더 (완료=잉크 5.2 / 진행=주황 6.3 맥동 / 예정=연톤 4). 직전기록 막대차트와 1:1 (§5.1).
+  if (segWrap) {
+    const { segs } = computeVolSegments(sets, cur);
+    segWrap.innerHTML = segs.map((s) => {
+      const w = s.state === 'active' ? 6.3 : (s.state === 'done' ? 5.2 : 4);
+      const color = s.state === 'active' ? 'var(--crail-base)' : (s.state === 'done' ? 'var(--ink-2)' : 'oklch(94% 0.025 50)');
+      const anim = (s.state === 'active' && !RMV) ? 'animation:pulse 1.8s ease-in-out infinite;' : '';
+      return `<circle cx="20" cy="20" r="16" fill="none" stroke-width="${w}" stroke-dasharray="${s.arc} ${(100.53 - s.arc).toFixed(2)}" style="stroke:${color};transform:rotate(${s.rot}deg);transform-box:fill-box;transform-origin:center;${anim}"></circle>`;
+    }).join('');
+    segWrap.dataset.exVol = String(exDoneVol);
+    segWrap.dataset.exId = String(block.exerciseId);
+  }
+  // 중앙 % (직전 대비 달성률; 직전 없으면 '—', §5.1)
+  const pctEl = doc.getElementById('cardProgressPct');
+  const pctUEl = doc.getElementById('cardProgressPctU');
+  if (pctEl) pctEl.textContent = prevExVol > 0 ? String(pct) : '—';
+  if (pctUEl) pctUEl.style.display = prevExVol > 0 ? '' : 'none';
+
+  // over(직전 기록 돌파) 상태 (§5.4). exOver=100% 달성(링 완성) / over.isOver=100% 초과(에메랄드 아크).
+  const exOver = prevExVol > 0 && exDoneVol >= prevExVol;
+  const over = computeOverflowArc(exDoneVol, prevExVol);
+
+  // 볼륨 숫자 — "{done} / {denom}kg" (숫자만, §5.1). 초과 시 crail + 직전 취소선.
+  const volTotEl = doc.getElementById('cardProgressTotal');
+  const volCurEl = doc.getElementById('cardProgressVol');
+  if (volTotEl) {
+    volTotEl.innerHTML = `/ ${Math.round(denom).toLocaleString()}<span class="u">kg</span>`;
+    volTotEl.classList.toggle('struck', over.isOver);
+  }
+  if (volCurEl) volCurEl.classList.toggle('over', over.isOver);
   if (countUp) {
-    // 바·엣지는 CSS transition(620ms) 가 자동으로 width/left 보간 (DOM 영속).
-    if (bar) bar.style.width = `${widthPct}%`;
-    if (edge) edge.style.left = `${widthPct}%`;
-    // 시작값 즉시 세팅 — 725 의 cardSetProgress 최종값 선-paint 역방향 점프 방지 (animNum 첫 tick 은 다음 프레임, 리뷰 #8/#9).
-    setTextById(doc, 'cardProgressVol', exVolText(prevExNum));
+    // 시작값 즉시 세팅 — cardProgressVol/cardSetProgress 최종값 선-paint 역방향 점프 방지(리뷰 #8/#9).
+    setTextById(doc, 'cardProgressVol', Math.round(prevExNum).toLocaleString());
     setTextById(doc, 'cardSetProgress', Math.round(topBefore).toLocaleString());
     animNum(prevExNum, exDoneVol, 620, (v, isFinal) => {
-      setTextById(doc, 'cardProgressVol', exVolText(isFinal ? exDoneVol : v));
+      setTextById(doc, 'cardProgressVol', Math.round(isFinal ? exDoneVol : v).toLocaleString());
       setTextById(doc, 'cardSetProgress', Math.round(isFinal ? sessionDoneVol : topBefore + (v - prevExNum)).toLocaleString());
     });
   } else {
-    // 첫 마운트 / 종목 변경 / 감소 / reduced-motion / 비-커밋 → 즉시 (transition 일시 차단으로 fill-in 방지).
-    if (bar) { const t = bar.style.transition; bar.style.transition = 'none'; bar.style.width = `${widthPct}%`; void bar.offsetWidth; bar.style.transition = t; }
-    if (edge) { const t = edge.style.transition; edge.style.transition = 'none'; edge.style.left = `${widthPct}%`; void edge.offsetWidth; edge.style.transition = t; }
-    setTextById(doc, 'cardProgressVol', exVolText(exDoneVol));
+    setTextById(doc, 'cardProgressVol', Math.round(exDoneVol).toLocaleString());
   }
-  if (bar) { bar.dataset.exVol = String(exDoneVol); bar.dataset.exId = String(block.exerciseId); }
-  setTextById(doc, 'cardProgressPct', `${pct}%`);
 
-  // over(직전 기록 돌파) 상태 (§7) — 정적 (reload/재렌더 반영). prevExVol>0 (실제 직전 기록 존재) 한정.
-  const exOver = prevExVol > 0 && exDoneVol >= prevExVol;
-  const volGoalEl = doc.getElementById('volGoal');
-  const volMarkCapEl = doc.getElementById('volMarkCap');
-  const volBreakEl = doc.getElementById('volBreak');
-  const volBreakAmtEl = doc.getElementById('volBreakAmt');
-  if (bar) bar.classList.toggle('is-over', exOver);
-  if (volGoalEl) volGoalEl.classList.toggle('broken', exOver);
-  if (volMarkCapEl) volMarkCapEl.style.opacity = exOver ? '0' : '';
-  if (volBreakEl) {
-    if (exOver) {
-      if (volBreakAmtEl) volBreakAmtEl.textContent = `+${Math.round(exDoneVol - prevExVol).toLocaleString()}kg`;
-      volBreakEl.style.opacity = '1'; // inline opacity 로 가시성 보장 — 모션은 transform 만 (§7 콜아웃, throttle 시 0 갇힘 방지)
-    } else {
-      volBreakEl.style.opacity = '0';
-    }
+  // 초과분 아크(에메랄드 r=21) + 팁 도트 (§5.4 · §6.3)
+  const arcEl = doc.getElementById('exVolArc');
+  const tipEl = doc.getElementById('exVolTip');
+  const drawWrap = doc.getElementById('exVolDrawWrap');
+  const chipEl = doc.getElementById('exVolChip');
+  if (arcEl) {
+    arcEl.setAttribute('stroke-dasharray', `${over.arcDash} ${(131.95 - over.arcDash).toFixed(2)}`);
+    arcEl.style.opacity = over.isOver ? '1' : '0';
   }
-  // 돌파 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 버스트 + 바 팝 + 태그 rise-in.
+  if (tipEl) {
+    tipEl.setAttribute('cx', String(over.tipX));
+    tipEl.setAttribute('cy', String(over.tipY));
+    tipEl.style.opacity = String(over.tipOpacity);
+    tipEl.classList.toggle('on', over.isOver && over.tipOpacity > 0 && !RMV);
+  }
+  // 100% 달성 crail 풀링 표시(정적 over). 돌파 순간엔 exRecordBurst 가 gRingDraw 스윕 재생.
+  if (drawWrap) drawWrap.style.display = exOver ? 'block' : 'none';
+  // 플로팅 ▲칩(에메랄드, 레이아웃 불변 — absolute).
+  if (chipEl) {
+    chipEl.style.opacity = over.isOver ? '1' : '0';
+    if (over.isOver) setTextById(doc, 'exVolChipAmt', `+${over.overAmt.toLocaleString()}`);
+  }
+  // 돌파 순간 1회성 — 커밋 증가 + 임계 교차 시 링 완성 스윕 + 버스트 + 칩 팝.
   if (countUp && prevExNum < prevExVol && exDoneVol >= prevExVol) exRecordBurst(doc);
 
-  // 우상단 워크아웃 총볼륨 신기록 (§8) — 정적 (reload/재렌더 반영). prevSessionVol>0 + 오늘 누적이 직전 총볼륨 초과 시.
+  // ── 우상단 세션(블루) 링 신기록 (§5.4 연동) — 정적. prevSessionVol>0 + 오늘 누적>직전 총볼륨. ──
   const topRecord = prevSessionVol > 0 && sessionDoneVol > prevSessionVol;
-  const sessPrevEl = doc.getElementById('cardSessVolPrev');
   const recordTagEl = doc.getElementById('cardRecordTag');
-  if (sessPrevEl) sessPrevEl.classList.toggle('struck', topRecord);
+  if (cardSessTotalWrap) cardSessTotalWrap.classList.toggle('struck', topRecord);
   if (recordTagEl) {
     if (topRecord) {
       recordTagEl.innerHTML = `<span class="arw" style="font-size:8px;line-height:1;">▲</span> 신기록 +${Math.round(sessionDoneVol - prevSessionVol).toLocaleString()}kg`;
@@ -979,24 +1007,22 @@ async function mountSessionActive(doc, block, session) {
       recordTagEl.style.opacity = '0';
     }
   }
-  // 우상단 총볼륨 링 (§8) — 오늘 누적 / 직전 총볼륨 비율로 채움. 돌파 시 완성(offset 0) + 펄스.
-  //   prevSessionVol 없으면(첫 세션) 빈 링. CSS transition 으로 채움 애니, count-up 숫자와 동기.
+  // 우상단 세션 링 채움 — 오늘 누적 / 직전 총볼륨 비율. 세트 완료 시 실시간 상승(§5.2).
   const ringFill = doc.getElementById('cardVolRingFill');
-  const ringPulse = doc.getElementById('cardVolRingPulse');
+  const ringPulseEl = doc.getElementById('cardVolRingPulse');
   if (ringFill) {
     const RING_C = 100.53; // 2π·16 (반지름 16)
     const ratio = prevSessionVol > 0 ? Math.min(1, sessionDoneVol / prevSessionVol) : 0;
     ringFill.style.strokeDashoffset = String(RING_C * (1 - ratio));
   }
-  // 시안 §A — 링 가운데 직전 대비 달성률 %. 직전 기록 없으면 '—'.
   const ringPct = doc.getElementById('cardVolRingPct');
   if (ringPct) {
     ringPct.textContent = prevSessionVol > 0
       ? `${Math.round((sessionDoneVol / prevSessionVol) * 100)}%`
       : '—';
   }
-  if (ringPulse) ringPulse.classList.toggle('is-record', topRecord);
-  // 신기록 순간 1회성 — 커밋 증가(countUp) + 임계 교차 시 누적 숫자 펄스 + 태그 rise-in.
+  if (ringPulseEl) ringPulseEl.classList.toggle('is-record', topRecord);
+  // 신기록 순간 1회성 — 커밋 증가 + 임계 교차 시 누적 숫자 펄스 + 태그 rise-in.
   if (countUp && topBefore <= prevSessionVol && sessionDoneVol > prevSessionVol) topRecordPulse(doc);
   _justCommittedExId = null; // 커밋 1회성 신호 소비 — 다음 재렌더(키패드·탭증감 등)는 비-커밋.
 
@@ -1140,15 +1166,11 @@ function applyCardKind(doc, kind) {
   const weightEl = doc.getElementById('cardWeight');
   const setDotsEl = doc.getElementById('cardSetDots');
   const paceEl = doc.getElementById('cardPaceZone');
-  const progressBar = doc.getElementById('cardProgressBar');
   const progressVol = doc.getElementById('cardProgressVol');
-  const progressPct = doc.getElementById('cardProgressPct');
-  // mocks/session.html 의 cardSetDots / progressVol 부모는 inline display:flex.
-  // style.display='' 는 inline 을 wipe → block 으로 fallback (세로 쌓임 회귀).
-  // 따라서 hide 외엔 'flex' 로 명시. progressBar 부모는 inline display 없음 → 'block' 명시.
+  // 중앙 종목 세그먼트 링(.exvol) 가시성 — cardio 는 볼륨 링 없음 → 숨김. show 시 flex 복원(inline wipe 방지).
+  const exvolEl = progressVol ? progressVol.closest('.exvol') : null;
   const setProgressVis = (show) => {
-    if (progressBar?.parentElement) progressBar.parentElement.style.display = show ? 'block' : 'none';
-    if (progressVol?.parentElement) progressVol.parentElement.style.display = show ? 'flex' : 'none';
+    if (exvolEl) exvolEl.style.display = show ? 'flex' : 'none';
   };
   // P1 라이트 — weight 종목은 KG 라벨 없음(단위 숨김), 큰 숫자 중앙. cardio 만 '분' 단위 노출.
   if (kind === 'cardio') {
@@ -1289,6 +1311,62 @@ export function setBarVolumeMax(sets) {
     }
   }
   return max;
+}
+
+/* ── 중앙 종목 세그먼트 링 (작업지시서 §5.1 · §6.3 — 시안 support.js 계산 이식) ── */
+const VOL_RING_C = 100.53; // 2π·16 (세그먼트 링 반지름 16)
+const VOL_SEG_GAP = 2.2;   // 세그먼트 사이 갭 (시안 실측 — #6b/#7b 회전 역산)
+const VOL_ARC_C = 131.95;  // 2π·21 (초과 아크 반지름 21, §6.3)
+
+/**
+ * 세트별 볼륨 세그먼트 (작업지시서 §5.1) — 직전기록 막대차트와 1:1 대응.
+ *  - 각 세그 arc ∝ setVolume(중량×횟수). 가용호(C − N·gap)를 볼륨 비율로 분배, 세그 사이 2.2 갭.
+ *  - 상태: done(완료) / active(현재 미완료 = cur) / upcoming(예정). 시작 12시(-90°) 시계방향.
+ * 반환: { segs:[{arc, rot, state}], planned }
+ */
+export function computeVolSegments(sets, cur) {
+  const list = Array.isArray(sets) ? sets : [];
+  const N = list.length;
+  const vols = list.map((s) => (Number(s?.weight) || 0) * (Number(s?.reps) || 0));
+  const planned = vols.reduce((a, b) => a + b, 0);
+  const avail = Math.max(0, VOL_RING_C - N * VOL_SEG_GAP);
+  const segs = [];
+  let cum = 0;
+  for (let i = 0; i < N; i += 1) {
+    const arc = planned > 0 ? (vols[i] / planned) * avail : 0;
+    const rot = -90 + ((cum + i * VOL_SEG_GAP) / VOL_RING_C) * 360;
+    const isDone = !!(list[i] && list[i].done);
+    const isActive = i === cur && !isDone;
+    segs.push({
+      arc: Math.round(arc * 100) / 100,
+      rot: Math.round(rot * 100) / 100,
+      state: isActive ? 'active' : (isDone ? 'done' : 'upcoming'),
+    });
+    cum += arc;
+  }
+  return { segs, planned };
+}
+
+/**
+ * 초과 아크(r=21, C=131.95) + 팁 도트 좌표 (작업지시서 §6.3).
+ *  - arcDash = 초과비율 × C. 팁 각도 θ=-90+(arcDash/C)·360, 좌표=(20+21cosθ, 20+21sinθ).
+ *  - 팁은 arcDash>1.2 일 때만 표시(tipOpacity).
+ */
+export function computeOverflowArc(exDoneVol, prevExVol) {
+  if (!(prevExVol > 0) || exDoneVol <= prevExVol) {
+    return { isOver: false, arcDash: 0, tipX: 20, tipY: -1, tipOpacity: 0, overAmt: 0 };
+  }
+  const overRatio = exDoneVol / prevExVol - 1;
+  const arc = Math.min(VOL_ARC_C, overRatio * VOL_ARC_C);
+  const theta = (-90 + (arc / VOL_ARC_C) * 360) * Math.PI / 180;
+  return {
+    isOver: true,
+    arcDash: Math.round(arc * 100) / 100,
+    tipX: Math.round((20 + 21 * Math.cos(theta)) * 100) / 100,
+    tipY: Math.round((20 + 21 * Math.sin(theta)) * 100) / 100,
+    tipOpacity: arc > 1.2 ? 1 : 0,
+    overAmt: Math.round(exDoneVol - prevExVol),
+  };
 }
 
 /**
@@ -2947,41 +3025,68 @@ function animNum(from, to, dur, onUpd) {
   setTimeout(() => { if (!done) { done = true; onUpd(to, true); } }, dur + 90);
 }
 
-/** 볼륨 진행바 리딩 엣지 플레어 (작업지시서 §7) — 완료 시 한 번 강하게. reduced-motion 은 호출부 게이트. */
-function flareVolEdge(doc) {
+/**
+ * 좌스와이프 방향 큐 (작업지시서 §5.3) — 좌향 crail 스트릭 + 삼중 셰브런 + 리딩 엣지 라인이
+ * 함께 왼쪽으로 흐름(gSwipeHint 760ms). 전부 pointer-events:none — 스와이프/탭 히트영역 불간섭(§2).
+ * reduced-motion 은 호출부 게이트.
+ */
+function playSwipeCue(doc) {
   if (prefersReducedMotion()) return;
+  const area = doc?.getElementById('cardSwipeArea');
+  if (!area) return;
   try {
-    const edge = doc?.getElementById('volEdge');
-    if (!edge || typeof edge.animate !== 'function') return;
-    edge.animate([
-      { boxShadow: '0 0 0 2px var(--crail-base), 0 0 8px 2px rgba(217,119,87,0.45)', transform: 'translate(-50%,-50%) scale(1)' },
-      { boxShadow: '0 0 0 3px var(--crail-base), 0 0 20px 7px rgba(217,119,87,0.7)', transform: 'translate(-50%,-50%) scale(1.4)', offset: 0.3 },
-      { boxShadow: '0 0 0 2px var(--crail-base), 0 0 8px 2px rgba(217,119,87,0.45)', transform: 'translate(-50%,-50%) scale(1)' },
-    ], { duration: 560, easing: 'ease-out' });
-  } catch (_) { /* WAAPI 미지원 graceful */ }
+    const cue = doc.createElement('div');
+    cue.setAttribute('aria-hidden', 'true');
+    cue.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden;';
+    const hint = 'animation:gSwipeHint 760ms cubic-bezier(.32,.72,.18,1) both;';
+    const chevron = '<svg width="42" height="42" viewBox="0 0 24 24" fill="none"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    cue.innerHTML =
+      `<span style="position:absolute;top:50%;left:-16%;right:-16%;height:128px;transform:translateY(-50%);background:linear-gradient(90deg,transparent,oklch(67% 0.12 50 / 0.10) 28%,oklch(67% 0.12 50 / 0.32) 60%,oklch(67% 0.12 50 / 0.05) 72%,transparent);border-radius:64px;${hint}"></span>`
+      + `<span style="position:absolute;top:8%;right:-2%;bottom:8%;width:3px;border-radius:2px;background:linear-gradient(180deg,transparent,oklch(67% 0.12 50 / 0.85),transparent);${hint}"></span>`
+      + `<span style="position:absolute;top:42%;right:2%;display:flex;align-items:center;color:oklch(48% 0.14 50);${hint}">`
+      + `${chevron}`
+      + `<span style="margin-left:-24px;opacity:0.55;display:inline-flex;">${chevron}</span>`
+      + `<span style="margin-left:-24px;opacity:0.28;display:inline-flex;">${chevron}</span>`
+      + `</span>`;
+    area.appendChild(cue);
+    setTimeout(() => { try { cue.remove(); } catch (_) { /* noop */ } }, 820);
+  } catch (_) { /* graceful */ }
 }
 
 /**
- * 직전 기록 돌파 순간 1회성 (작업지시서 §7-over) — 끝점 버스트 링 + 바 brightness 팝 + 돌파 태그 rise-in.
- * 정적 over 상태(is-over/broken/태그)는 mountSessionActive 가 담당. reduced-motion 은 호출부 게이트.
+ * 직전 기록 100% 돌파 순간 1회성 (작업지시서 §5.4) — crail 풀링 완성 스윕(gRingDraw) +
+ * 버스트 확산 링(gRingPulse) + 에메랄드 ▲칩 플로팅 팝(gPop2).
+ * 정적 over 상태(아크·팁·칩·취소선)는 mountSessionActive 가 담당. reduced-motion 은 호출부 게이트.
  */
 function exRecordBurst(doc) {
   if (prefersReducedMotion()) return;
   try {
-    const burst = doc?.getElementById('volBurst');
-    const bar = doc?.getElementById('cardProgressBar');
-    const brk = doc?.getElementById('volBreak');
-    if (burst && typeof burst.animate === 'function') burst.animate([
-      { opacity: 0, transform: 'translate(50%,-50%) scale(0.4)' },
-      { opacity: 0.85, transform: 'translate(50%,-50%) scale(1.8)', offset: 0.3 },
-      { opacity: 0, transform: 'translate(50%,-50%) scale(3.6)' },
-    ], { duration: 660, easing: 'cubic-bezier(.2,.7,.2,1)' });
-    if (bar && typeof bar.animate === 'function') bar.animate([
-      { filter: 'brightness(1)' }, { filter: 'brightness(1.28)', offset: 0.3 }, { filter: 'brightness(1)' },
-    ], { duration: 520, easing: 'ease-out' });
-    if (brk && typeof brk.animate === 'function') brk.animate([
-      { transform: 'translateY(7px)' }, { transform: 'translateY(0)' },
-    ], { duration: 360, easing: 'cubic-bezier(.2,.8,.3,1)' });
+    const drawWrap = doc?.getElementById('exVolDrawWrap');
+    const draw = doc?.getElementById('exVolDraw');
+    const burstWrap = doc?.getElementById('exVolBurstWrap');
+    const burst = doc?.getElementById('exVolBurst');
+    const chip = doc?.getElementById('exVolChip');
+    // ① 링 완성 스윕 — crail 풀링이 gRingDraw(650ms)로 그려지며 100% 확정.
+    if (drawWrap) drawWrap.style.display = 'block';
+    if (draw && typeof draw.animate === 'function') {
+      draw.animate([{ strokeDashoffset: 100.53 }, { strokeDashoffset: 0 }], { duration: 650, easing: 'cubic-bezier(.3,.7,.2,1)' });
+    }
+    // ② 버스트 확산 링 (gRingPulse 1회) — 재생 후 숨김(루프 방지).
+    if (burstWrap) burstWrap.style.display = 'block';
+    if (burst && typeof burst.animate === 'function') {
+      burst.animate([
+        { opacity: 0.5, transform: 'scale(1)' },
+        { opacity: 0, transform: 'scale(1.34)' },
+      ], { duration: 1600, easing: 'ease-out' });
+    }
+    if (burstWrap) setTimeout(() => { burstWrap.style.display = 'none'; }, 1650);
+    // ③ ▲칩 플로팅 팝 (gPop2) — 레이아웃 불변(absolute).
+    if (chip && typeof chip.animate === 'function') {
+      chip.animate([
+        { opacity: 0, transform: 'scale(0.55) translateY(4px)' },
+        { opacity: 1, transform: 'scale(1) translateY(0)' },
+      ], { duration: 380, easing: 'cubic-bezier(.2,.9,.3,1.4)' });
+    }
   } catch (_) { /* WAAPI 미지원 graceful */ }
 }
 
@@ -3187,15 +3292,18 @@ export async function handleLeftSwipe(options = {}) {
     return;
   }
 
-  // OUT 시작 — fromDrag 면 현재 끌린 위치에서 페이드만(점프 방지), 아니면 방향 C 슬라이드(가속).
+  // 좌스와이프 방향 큐 (§5.3) — 완료 커밋 시 좌향 스트릭·삼중 셰브런·리딩 엣지 (advance-only cur===-1 제외).
+  if (cur !== -1) playSwipeCue(doc);
+
+  // OUT — 완료 값이 왼쪽으로 크게(−96px) 빠지며 skewX(-6deg)+페이드 (§5.3 gHeroSwap 0~24%).
+  //   fromDrag 면 끌린 위치에서 이어짐. opacity 0 보장 → 이후 우측 jump 가 invisible.
   if (fromDrag) {
-    heroVals.style.transition = 'opacity 150ms ease-out';
-    heroVals.style.opacity = '0';
+    heroVals.style.transition = 'transform 150ms cubic-bezier(.4,0,1,1), opacity 150ms ease-out';
   } else {
     heroVals.style.transition = 'transform 187ms cubic-bezier(.4,0,1,1), opacity 187ms cubic-bezier(.4,0,1,1)';
-    heroVals.style.transform = 'translateX(-26px)';
-    heroVals.style.opacity = '0';
   }
+  heroVals.style.transform = 'translateX(-96px) skewX(-6deg) scale(.86)';
+  heroVals.style.opacity = '0';
   const outDone = new Promise((r) => setTimeout(r, fromDrag ? 150 : 187));
 
   // 병렬로 DB + mount 진행 (OUT 시간 동안 가려진 채로 데이터 갱신)
@@ -3222,8 +3330,8 @@ export async function handleLeftSwipe(options = {}) {
     return;
   }
 
-  // 세그먼트 확정 플래시 (§6) + 볼륨바 끝점 플레어 (§7) — 방금 완료한 세그(cur). advance-only(cur===-1) 제외.
-  if (cur !== -1) { playSegConfirmFlash(doc, cur); flareVolEdge(doc); }
+  // 직전기록 막대차트 세그먼트 확정 플래시 (§6) — 방금 완료한 세그(cur). advance-only(cur===-1) 제외.
+  if (cur !== -1) playSegConfirmFlash(doc, cur);
 
   // 자식 transition (set dot font-size 등) 시작 보장 — 다음 paint frame 까지 대기.
   // 이 대기 없이 곧장 swipeArea force reflow 호출하면 자식들의 transition trigger 가 skip 됨.
@@ -3236,23 +3344,33 @@ export async function handleLeftSwipe(options = {}) {
     setTimeout(go, 32);
   });
 
-  // IN 시작점 jump (invisible — opacity 0 이라 사용자 안 보임)
+  // IN 시작점 jump (invisible) — 다음 세트 값이 오른쪽(+88px)에서 skewX(5deg) 로 진입 준비 (§5.3).
   heroVals.style.transition = 'none';
-  heroVals.style.transform = 'translateX(26px)';
+  heroVals.style.transform = 'translateX(88px) skewX(5deg) scale(.86)';
   heroVals.style.opacity = '0';
   // 강제 reflow 로 style flush 보장 (rAF 대기 없이도 transition 트리거)
   void heroVals.offsetHeight;
-  // IN 트랜지션 (방향 C — 감속 이징)
-  heroVals.style.transition = 'transform 220ms cubic-bezier(.16,.84,.3,1), opacity 220ms cubic-bezier(.16,.84,.3,1)';
-  heroVals.style.transform = 'translateX(0)';
+  // IN 트랜지션 — 오른쪽에서 진입 → 착지(감속 이징, §5.3 gHeroSwap 38~100%).
+  heroVals.style.transition = 'transform 300ms cubic-bezier(.16,.84,.3,1), opacity 240ms cubic-bezier(.16,.84,.3,1)';
+  heroVals.style.transform = 'translateX(0) skewX(0deg) scale(1)';
   heroVals.style.opacity = '1';
-  // 볼륨바 동반 강조 — brightness 1 → 1.14 → 1 (방향 C §5). WAAPI fill:none → 자동 복귀(throttle 안전).
+  // 착지 팝(내부 존 scale 1.08) + crail 플래시 → ink 정착 (§5.3). 외부 slide 와 다른 요소 → transform 비충돌.
   try {
-    const volBarEl = doc.getElementById('cardProgressBar');
-    if (volBarEl && typeof volBarEl.animate === 'function') {
-      volBarEl.animate(
-        [{ filter: 'brightness(1)' }, { filter: 'brightness(1.14)', offset: 0.4 }, { filter: 'brightness(1)' }],
-        { duration: 440, easing: 'ease-out' },
+    for (const zoneId of ['cardWeightZone', 'cardRepsZone']) {
+      const z = doc.getElementById(zoneId);
+      if (z && typeof z.animate === 'function') {
+        z.animate(
+          [{ transform: 'scale(1)' }, { transform: 'scale(1.08)', offset: 0.5 }, { transform: 'scale(1)' }],
+          { duration: 320, easing: 'cubic-bezier(.2,.8,.3,1)', delay: 40 },
+        );
+      }
+    }
+    const wEl = doc.getElementById('cardWeight');
+    if (wEl && typeof wEl.animate === 'function') {
+      const base = (typeof getComputedStyle === 'function') ? getComputedStyle(wEl).color : 'rgb(46,42,38)';
+      wEl.animate(
+        [{ color: 'oklch(48% 0.14 50)' }, { color: 'oklch(48% 0.14 50)', offset: 0.5 }, { color: base }],
+        { duration: 380, easing: 'ease-out' },
       );
     }
   } catch (_) { /* WAAPI 미지원 graceful */ }

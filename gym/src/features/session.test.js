@@ -37,6 +37,8 @@ import {
   barHeightForVolume,
   setBarVolumeMax,
   buildSetBestSlotHtml,
+  computeVolSegments,
+  computeOverflowArc,
 } from './session.js';
 
 async function seedCompletedSession({ id, date, exerciseId, sets, endTime = 0 }) {
@@ -2521,6 +2523,69 @@ describe('buildSetBestSlotHtml (§3-3 최고 슬롯 DOM)', () => {
     expect(html).toContain('최고');                    // ▲최고 라벨
     expect(html).toContain('height:24px');            // §3-4 e1RM 높이
     expect(html).toContain('dashed');                 // 점선 천장 슬롯
+  });
+});
+
+// 작업지시서 §5.1 — 중앙 종목 세그먼트 링. 세트별 볼륨 비례 arc + 가용호(C−N·gap) 분배 + 상태.
+describe('computeVolSegments (§5.1 세그먼트 링)', () => {
+  const mockupSets = [
+    { weight: 60, reps: 12, done: true },
+    { weight: 65, reps: 10, done: true },
+    { weight: 65, reps: 10, done: true },
+    { weight: 65, reps: 8 },   // 현재(active) — cur=3
+    { weight: 60, reps: 8 },   // 예정(upcoming)
+  ];
+  it('세트 수만큼 세그먼트 + planned = 볼륨 합', () => {
+    const { segs, planned } = computeVolSegments(mockupSets, 3);
+    expect(segs).toHaveLength(5);
+    expect(planned).toBe(3020); // 720+650+650+520+480
+  });
+  it('첫 세그 arc ∝ 볼륨, 시작 12시(-90°)', () => {
+    const { segs } = computeVolSegments(mockupSets, 3);
+    // 720/3020 × (100.53 − 5·2.2) = 720/3020 × 89.53 = 21.34
+    expect(segs[0].arc).toBe(21.34);
+    expect(segs[0].rot).toBe(-90);
+  });
+  it('상태: done(완료) / active(현재 미완료=cur) / upcoming(예정)', () => {
+    const { segs } = computeVolSegments(mockupSets, 3);
+    expect(segs.map((s) => s.state)).toEqual(['done', 'done', 'done', 'active', 'upcoming']);
+  });
+  it('전부 done 이면 active 없음(cur=마지막 done 이어도 done)', () => {
+    const allDone = mockupSets.map((s) => ({ ...s, done: true }));
+    const { segs } = computeVolSegments(allDone, 4);
+    expect(segs.every((s) => s.state === 'done')).toBe(true);
+  });
+  it('볼륨 0(맨몸/미입력) 전부 → arc 0 (0 나눗셈 없음)', () => {
+    const { segs, planned } = computeVolSegments([{ weight: 0, reps: 0 }, { weight: 0, reps: 0 }], 0);
+    expect(planned).toBe(0);
+    expect(segs.every((s) => s.arc === 0)).toBe(true);
+  });
+});
+
+// 작업지시서 §6.3 — 초과 아크(r=21, C=131.95) + 팁 도트 삼각함수 좌표.
+describe('computeOverflowArc (§6.3 에메랄드 초과 아크)', () => {
+  it('직전 이하 → 미초과 (arc 0, 팁 숨김)', () => {
+    expect(computeOverflowArc(1000, 1000)).toMatchObject({ isOver: false, arcDash: 0, tipOpacity: 0, overAmt: 0 });
+    expect(computeOverflowArc(900, 1000).isOver).toBe(false);
+  });
+  it('직전 없으면(0) 미초과', () => {
+    expect(computeOverflowArc(500, 0).isOver).toBe(false);
+  });
+  it('+7% 초과 → arc = 0.07×131.95 = 9.24, overAmt=70, 팁 표시', () => {
+    const r = computeOverflowArc(1070, 1000);
+    expect(r.isOver).toBe(true);
+    expect(r.arcDash).toBe(9.24);
+    expect(r.overAmt).toBe(70);
+    expect(r.tipOpacity).toBe(1);
+    // 팁은 12시에서 시계방향 소각도 → 우상단(1시) 사분면: x>20, y<20.
+    expect(r.tipX).toBeGreaterThan(20);
+    expect(r.tipY).toBeLessThan(20);
+  });
+  it('미세 초과(arc ≤ 1.2) → 팁 숨김이지만 isOver 는 true', () => {
+    const r = computeOverflowArc(1005, 1000); // 0.005×131.95 = 0.66
+    expect(r.isOver).toBe(true);
+    expect(r.arcDash).toBe(0.66);
+    expect(r.tipOpacity).toBe(0);
   });
 });
 

@@ -55,22 +55,41 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .last-row .pt { font-size:15px; font-weight:700; color:var(--ink-1); white-space:nowrap; }
 .last-row .tm { font-size:12.5px; font-weight:500; color:var(--ink-4); margin-left:auto; white-space:nowrap; }
 
-/* ===== 부위 밸런스 (주역) ===== */
-.bal { flex:1; min-height:0; display:flex; flex-direction:column; padding:24px 26px 0; }
+/* ===== 부위 밸런스 (주역 · 주간 페어 컬럼, 작업지시서 §4) ===== */
+.bal { flex:1; min-height:0; display:flex; flex-direction:column; padding:22px 26px 0; }
 .bal-head { flex-shrink:0; display:flex; align-items:baseline; justify-content:space-between; }
 .bal-title { font-size:14px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; white-space:nowrap; }
-.bal-legend { font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--ink-4); display:inline-flex; align-items:center; gap:6px; }
-.bal-legend i { width:2px; height:11px; background:var(--ink-4); display:inline-block; border-radius:1px; }
-.bal-rows { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; gap:22px; padding:20px 0; }
-.mg-row { display:flex; align-items:center; gap:13px; }
-.mg-name { width:32px; flex-shrink:0; font-size:14px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; }
-.mg-track { position:relative; flex:1; height:20px; border-radius:10px; background:var(--sunken); box-shadow:var(--shadow-inset-soft); }
-.mg-fill { position:absolute; top:0; bottom:0; left:0; border-radius:10px; background:var(--neutral-bar); transition:width 520ms cubic-bezier(.2,.7,.2,1); }
-.mg-row.focus .mg-fill { background:var(--crail-base); box-shadow:0 2px 6px -2px oklch(67% 0.12 50 / .5); }
-.mg-ghost { position:absolute; top:4px; bottom:4px; width:2px; border-radius:1px; background:var(--ink-4); opacity:0.55; z-index:3; }
-.mg-val { flex-shrink:0; width:20px; text-align:right; font-family:var(--font-mono); font-size:17px; font-weight:600; color:var(--ink-2); line-height:1; }
-.mg-row.focus .mg-val { color:var(--crail-deep); }
-.cardio-row { flex-shrink:0; margin-top:16px; padding-top:15px; box-shadow:inset 0 1px 0 var(--line-soft); display:flex; align-items:center; gap:11px; }
+/* 범례 — 9px 스와치: 지난주=고스트(웜그레이) / 이번주=잉크 (§4.1 · §3.3) */
+.bal-legend { font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--ink-4); display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+.bal-legend i { width:9px; height:9px; border-radius:2.5px; display:inline-block; }
+.bal-legend .lg-ghost { background:oklch(91% 0.012 65); }               /* §3.3 지난주 고스트 */
+.bal-legend .lg-ink { background:oklch(26% 0.01 60); margin-left:4px; } /* §3.3 이번주 잉크 */
+
+/* 요약 행 — 헤드라인(총 세트) + ▲개선(sage) + 최소부위(crail) 칩 (§4.1) */
+.bal-summary { flex-shrink:0; display:flex; align-items:flex-end; gap:9px; margin-top:14px; }
+.bal-hl { display:inline-flex; align-items:baseline; gap:6px; }
+.bal-hl-num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:33px; font-weight:700; color:var(--ink-1); letter-spacing:-0.035em; line-height:1; display:inline-block; transform-origin:left bottom; }
+.bal-hl-unit { font-size:12.5px; font-weight:600; color:var(--ink-4); }
+.bal-chip { display:inline-flex; align-items:center; gap:5px; margin-bottom:2px; padding:4px 9px; border-radius:999px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:700; white-space:nowrap; }
+.bal-chip.up { background:oklch(94% 0.03 150); box-shadow:inset 0 0 0 1px oklch(84% 0.05 150); color:oklch(42% 0.08 150); animation:gPopIn 380ms cubic-bezier(.2,.8,.3,1.2) 180ms both; }        /* sage 주간 개선 */
+.bal-chip.focus { margin-left:auto; background:var(--crail-tint); box-shadow:inset 0 0 0 1px var(--crail-soft); color:var(--crail-deep); animation:gPopIn 380ms cubic-bezier(.2,.8,.3,1.2) 280ms both, gChipGlow 1.8s ease-in-out 660ms infinite; }  /* crail 최소 부위 */
+.bal-chip.focus .dot { width:5px; height:5px; border-radius:50%; background:var(--crail-base); animation:pulse 1.8s ease-in-out infinite; }
+
+/* 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px], 7px/세트 (§4.1) */
+.bal-chart { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
+.bal-groups { display:flex; align-items:flex-end; }
+.bal-grp { flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; }
+.bal-grp-val { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:700; color:var(--ink-1); line-height:1; }
+.bal-grp.focus .bal-grp-val { color:var(--crail-deep); }
+.bal-bars { display:flex; align-items:flex-end; gap:3px; }
+.bal-bar-ghost { width:12px; border-radius:4px 4px 0 0; background:oklch(91% 0.012 65); }          /* §3.3 지난주 고스트 */
+.bal-bar-ink { width:15px; border-radius:4.5px 4.5px 0 0; background:oklch(26% 0.01 60); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18); transform-origin:bottom center; }  /* §3.3 이번주 잉크 + 재질감 */
+.bal-grp.focus .bal-bar-ink { background:var(--crail-base); box-shadow:inset 0 1px 0 rgba(255,255,255,0.25); animation:gCoreAlert 1.7s ease-in-out infinite; }  /* 최소부위 경고 펄스 (§4.1·§6) */
+/* 라벨 행 — 부위명, 코어(최소)만 crail 볼드 (§4.1) */
+.bal-labels { display:flex; border-top:1.5px solid oklch(88% 0.008 60); padding-top:8px; }
+.bal-labels span { flex:1; text-align:center; font-size:12.5px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; }
+.bal-labels span.focus { color:var(--crail-deep); font-weight:700; }
+.cardio-row { flex-shrink:0; margin-top:10px; padding-top:14px; box-shadow:inset 0 1px 0 var(--line-soft); display:flex; align-items:center; gap:11px; }
 .cardio-row .ic { width:26px; height:26px; border-radius:8px; background:var(--sunken); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink-4); }
 .cardio-row .nm { font-size:13.5px; font-weight:600; color:var(--ink-2); white-space:nowrap; }
 .cardio-row .sub { font-size:12px; font-weight:500; color:var(--ink-4); margin-left:auto; font-family:var(--font-mono); white-space:nowrap; }
@@ -101,7 +120,12 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .home-live { animation: pulse 1.6s ease-in-out infinite; }
 @keyframes segGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(193,99,63,0); } 50% { box-shadow: 0 0 0 4px rgba(193,99,63,0.18); } }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-@media (prefers-reduced-motion: reduce) { #cardResume, #cardResumeSeg .seg.now .bar, .home-live { animation: none; } }
+/* 부위 밸런스 진입/상시 모션 (작업지시서 §4.2 · §6) — 데모 루프를 앱 1회 재생용으로 이식 */
+@keyframes gGrow { 0% { transform: scaleY(0.12); } 82% { transform: scaleY(1.08); } 100% { transform: scaleY(1); } }        /* 이번주 막대 웨이브 성장(오버슈트 8%) */
+@keyframes gPopIn { 0% { opacity: 0; transform: scale(0.5) translateY(5px); } 70% { opacity: 1; transform: scale(1.14) translateY(0); } 100% { opacity: 1; transform: scale(1) translateY(0); } }   /* 칩 순차 팝인 */
+@keyframes gCoreAlert { 0%,100% { box-shadow: 0 0 0 0 rgba(217,119,87,0); transform: scaleY(1); } 50% { box-shadow: 0 0 14px 3px rgba(217,119,87,0.5); transform: scaleY(1.12); } }   /* 최소부위 상시 경고 펄스 */
+@keyframes gChipGlow { 0%,100% { box-shadow: inset 0 0 0 1px oklch(85% 0.05 50), 0 0 0 0 rgba(217,119,87,0); } 50% { box-shadow: inset 0 0 0 1px oklch(85% 0.05 50), 0 0 0 6px rgba(217,119,87,0.16); } }   /* 최소부위 칩 글로우 링 */
+@media (prefers-reduced-motion: reduce) { #cardResume, #cardResumeSeg .seg.now .bar, .home-live, .bal-bar-ink, .bal-grp.focus .bal-bar-ink, .bal-chip, .bal-chip.up, .bal-chip.focus, .bal-chip .dot, .bal-hl-num { animation: none !important; } }
 /* 바텀시트 그림자 — 열렸을 때만. */
 #dayDetailSheet[data-open="true"], #weightKeypadSheet[data-open="true"] { box-shadow: 0 -20px 50px -18px rgba(20,18,14,0.4); }
 </style>
@@ -126,13 +150,17 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
         <span id="homeLastParts" class="pt kr">—</span>
         <span id="homeLastMeta" class="tm kr"></span>
       </div>
-      <!-- 부위 밸런스 (주역 · applyBalanceToDom 채움). #homeBalance = .bal -->
+      <!-- 부위 밸런스 (주역 · applyBalanceToDom 채움). 주간 페어 컬럼 (작업지시서 §4). -->
       <div id="homeBalance" class="bal">
         <div class="bal-head">
           <span class="bal-title kr">부위 밸런스</span>
-          <span class="bal-legend kr"><i></i>지난주</span>
+          <span class="bal-legend mono"><i class="lg-ghost"></i>지난주<i class="lg-ink"></i>이번 주</span>
         </div>
-        <div id="homeBalRows" class="bal-rows"></div>
+        <div id="homeBalSummary" class="bal-summary"></div>
+        <div class="bal-chart">
+          <div id="homeBalRows" class="bal-groups"></div>
+          <div id="homeBalLabels" class="bal-labels"></div>
+        </div>
         <div id="homeCardioRow" class="cardio-row" style="display:none;"></div>
       </div>
       <div style="flex-shrink:0;height:18px;"></div>

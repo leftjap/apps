@@ -24,19 +24,18 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 [data-state="active"] .session-empty { display: none; }
 
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-@keyframes shimmer { 0% { transform: translateX(-120%); } 60%,100% { transform: translateX(360%); } }
 @keyframes barPulse { 0%,100% { box-shadow: 0 0 0 0 oklch(67% 0.12 50 / 0); } 50% { box-shadow: 0 0 0 4px oklch(67% 0.12 50 / 0.16); } }
 .sess-live { animation: pulse 1.8s ease-in-out infinite; }
-.vbar-shimmer { animation: shimmer 2.8s ease-in-out infinite; }
-@keyframes edgePulse { 0%,100% { box-shadow: 0 0 0 3px var(--crail-base), 0 0 11px 3px rgba(217,119,87,0.6); transform: translate(-50%,-50%) scale(1); } 50% { box-shadow: 0 0 0 3px var(--crail-base), 0 0 24px 9px rgba(217,119,87,0.9); transform: translate(-50%,-50%) scale(1.16); } }
-#volEdge { animation: edgePulse 1.35s ease-in-out infinite; }
-@keyframes overGlow { 0%,100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.32), 0 0 0 0 rgba(217,119,87,0), 0 2px 5px -1px rgba(217,119,87,0.45); } 50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.42), 0 0 13px 1px rgba(217,119,87,0.55), 0 2px 9px -1px rgba(217,119,87,0.6); } }
-#cardProgressBar.is-over { animation: overGlow 1.5s ease-in-out infinite; }
-#cardProgressBar.is-over .vbar-shimmer { animation-duration: 1.5s; }
-#volGoal.broken { background: var(--crail-deep); box-shadow: 0 0 7px rgba(217,119,87,0.6); }
-#cardSessVolPrev.struck { text-decoration: line-through; opacity: 0.55; }
+#cardSessTotalWrap.struck { text-decoration: line-through; opacity: 0.55; }
 @keyframes ringPulse { 0% { opacity: 0.5; transform: scale(1); } 70%,100% { opacity: 0; transform: scale(1.34); } }
 #cardVolRingPulse.is-record { animation: ringPulse 1.6s ease-out infinite; }
+/* 중앙 종목 세그먼트 링 · 돌파 모션 (작업지시서 §5 · §6 — 시안 #7b 이식) */
+@keyframes gRingDraw { from { stroke-dashoffset: 100.53; } to { stroke-dashoffset: 0; } }   /* r=16 풀링 완성 스윕 */
+@keyframes gTipPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.55); } }    /* 에메랄드 팁 도트 */
+@keyframes gPop2 { from { opacity: 0; transform: scale(0.55) translateY(4px); } to { opacity: 1; transform: scale(1) translateY(0); } }   /* ▲칩 플로팅 팝 */
+#exVolTip.on { animation: gTipPulse 1.2s ease-in-out infinite; }                             /* 초과 유지 중 팁 루프 */
+/* 좌스와이프 방향 큐 (스트릭·셰브런·엣지, pointer-events:none — §5.3) */
+@keyframes gSwipeHint { 0% { opacity: 0; transform: translateX(52px); } 18% { opacity: 1; } 52% { opacity: 0.6; transform: translateX(-52px); } 100% { opacity: 0; transform: translateX(-108px); } }
 @media (prefers-reduced-motion: reduce) { *{ animation: none !important; } }
 
 /* ===== 툴바 ===== */
@@ -45,17 +44,32 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .sess-toolbar .timer { justify-self:center; display:flex; align-items:center; gap:8px; }
 .sess-toolbar .end { justify-self:end; font-size:14px; font-weight:600; color:var(--ink-3); padding:9px 4px 9px 14px; cursor:pointer; white-space:nowrap; }
 
-/* ===== 우상단 세션 볼륨 ===== */
-.sv { flex-shrink:0; display:flex; align-items:center; gap:11px; }
+/* ===== 우상단 세션 볼륨 (블루=세션 스코프 · 38px 후퇴, 작업지시서 §5.2 · §6b) ===== */
+.sv { flex-shrink:0; display:flex; align-items:center; gap:9px; }
 .sv-text { text-align:right; }
-.sv-text .lbl { font-size:10.5px; font-weight:600; color:var(--ink-4); letter-spacing:0.02em; white-space:nowrap; }
-.sv-text .val { margin-top:2px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:20px; font-weight:700; color:var(--ink-1); letter-spacing:-0.02em; white-space:nowrap; line-height:1; }
-.sv-text .val .u { font-size:11px; font-weight:500; color:var(--ink-4); margin-left:1px; }
-.sv-text #cardSessVolPrev { margin-top:4px; font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--ink-4); white-space:nowrap; }
-.sv-text #cardRecordTag { margin-top:3px; font-size:10.5px; font-weight:700; color:var(--crail-deep); white-space:nowrap; opacity:0; display:flex; align-items:center; justify-content:flex-end; gap:3px; }
-.sv .ring-wrap { position:relative; width:56px; height:56px; flex-shrink:0; }
-.sv .ring-wrap svg { width:56px; height:56px; display:block; }
-.sv .ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:700; color:var(--crail-deep); letter-spacing:-0.02em; }
+.sv-text .lbl { font-size:10px; font-weight:600; color:var(--ink-4); letter-spacing:0.04em; white-space:nowrap; }
+.sv-text .val { margin-top:3px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:13px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; white-space:nowrap; line-height:1; }
+.sv-text .val .u { font-weight:500; color:var(--ink-4); }
+.sv-text #cardSessTotalWrap.struck { text-decoration:line-through; opacity:0.55; }
+.sv-text #cardRecordTag { margin-top:3px; font-size:10.5px; font-weight:700; color:var(--cloudy-deep); white-space:nowrap; opacity:0; display:flex; align-items:center; justify-content:flex-end; gap:3px; }
+.sv .ring-wrap { position:relative; width:38px; height:38px; flex-shrink:0; }
+.sv .ring-wrap svg { width:38px; height:38px; display:block; }
+.sv .ring-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:10px; font-weight:700; color:var(--cloudy-deep); letter-spacing:-0.02em; }
+
+/* ===== 중앙 종목 세그먼트 링 (주황=종목 스코프 · 볼륨 32px 승격, 작업지시서 §5.1) ===== */
+.exvol { display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:15px; }
+.exvol .exring { position:relative; width:68px; height:68px; flex-shrink:0; display:block; }
+.exvol .exring > svg { width:68px; height:68px; display:block; overflow:visible; }
+.exvol .exring-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:700; color:var(--crail-deep); letter-spacing:-0.02em; }
+.exvol .exring-pct .u { font-size:9.5px; font-weight:600; margin-left:1px; }
+.exvol .exnums { display:inline-flex; align-items:baseline; gap:8px; position:relative; }
+.exvol .exnums .cur { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:32px; font-weight:700; color:var(--ink-1); letter-spacing:-0.035em; line-height:1; }
+.exvol .exnums .cur.over { color:var(--crail-deep); }
+.exvol .exnums .tot { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:13.5px; font-weight:500; color:var(--ink-4); white-space:nowrap; }
+.exvol .exnums .tot.struck { text-decoration:line-through; opacity:0.55; }
+.exvol .exnums .tot .u { font-size:10.5px; }
+.exvol .exchip { position:absolute; left:0; bottom:calc(100% + 9px); pointer-events:none; opacity:0; }
+.exvol .exchip-inner { display:inline-flex; align-items:center; gap:2px; padding:6px 11px; border-radius:999px; background:var(--record-tint); box-shadow:inset 0 0 0 1px oklch(78% 0.10 152), 0 6px 14px -6px oklch(62% 0.18 152 / 0.45); font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12.5px; font-weight:700; color:var(--record-deep); white-space:nowrap; }
 
 /* ===== 직전 세션 세트바 ===== */
 #cardSetDots .seg { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; min-width:0; cursor:pointer; position:relative; }
@@ -253,17 +267,16 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
       <div class="sv">
         <div class="sv-text">
           <div class="lbl kr">세션 볼륨</div>
-          <div class="val mono"><span id="cardSetProgress">1,380</span><span class="u">kg</span></div>
-          <div id="cardSessVolPrev">직전 2,940kg</div>
+          <div class="val mono"><span id="cardSetProgress">4,800</span> <span class="u" id="cardSessTotalWrap">/ <span id="cardSessTotal">8,940</span>kg</span></div>
           <div id="cardRecordTag" class="mono"><span class="arw" style="font-size:8px;">▲</span> 신기록</div>
         </div>
         <div class="ring-wrap">
           <svg viewBox="0 0 40 40" aria-hidden="true">
-            <circle cx="20" cy="20" r="16" fill="none" stroke-width="5" style="stroke:var(--line);"></circle>
-            <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="5" style="stroke:var(--crail-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
-            <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="53" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
+            <circle cx="20" cy="20" r="16" fill="none" stroke-width="2.5" style="stroke:var(--line);"></circle>
+            <circle id="cardVolRingPulse" cx="20" cy="20" r="16" fill="none" stroke-width="2.5" style="stroke:var(--cloudy-base);opacity:0;transform-box:fill-box;transform-origin:center;"></circle>
+            <circle id="cardVolRingFill" cx="20" cy="20" r="16" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="53" style="stroke:var(--cloudy-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;transition:stroke-dashoffset 620ms cubic-bezier(.2,.7,.2,1);"></circle>
           </svg>
-          <div id="cardVolRingPct" class="ring-center">47%</div>
+          <div id="cardVolRingPct" class="ring-center">54%</div>
         </div>
       </div>
     </div>
@@ -296,19 +309,28 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
         <div id="cardPrChip" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;"><span style="color:var(--crail-deep);font-size:9px;line-height:1;">▲</span><span id="cardPrChipVal" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);">+5kg</span></div>
       </div>
     </div>
-    <!-- 이 종목 볼륨 -->
+    <!-- 이 종목 볼륨 — 세그먼트 도넛 링 (숫자만, 작업지시서 §5.1) -->
     <div style="flex-shrink:0;padding:0 26px;">
-      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;">
-        <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.02em;white-space:nowrap;">이 종목 볼륨</span>
-        <span class="mono" style="font-size:13px;font-weight:500;color:var(--ink-3);white-space:nowrap;"><span id="cardProgressVol">600 / 720kg</span><span id="cardProgressPct" style="display:none;"></span></span>
-      </div>
-      <div class="vol-track" style="height:11px;border-radius:6px;background:var(--sunken);position:relative;box-shadow:var(--shadow-inset-soft);margin-bottom:22px;">
-        <div id="cardProgressBar" style="position:absolute;left:0;top:0;height:100%;width:83%;background:var(--crail-base);border-radius:6px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.32),0 2px 5px -1px oklch(67% 0.12 50 / .45);transition:width 620ms cubic-bezier(.2,.7,.2,1);"><span class="vbar-shimmer" style="position:absolute;top:0;bottom:0;left:0;width:42%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.55),transparent);"></span></div>
-        <span id="volEdge" style="position:absolute;left:83%;top:50%;width:14px;height:14px;border-radius:50%;transform:translate(-50%,-50%);background:#fff;box-shadow:0 0 0 3px var(--crail-base),0 0 12px 3px oklch(67% 0.12 50 / .6);transition:left 620ms cubic-bezier(.2,.7,.2,1);z-index:3;"></span>
-        <div id="volGoal" style="position:absolute;top:-3px;right:0;height:17px;width:2px;border-radius:1px;background:var(--ink-4);z-index:2;"></div>
-        <div id="volBurst" style="position:absolute;top:50%;right:0;width:12px;height:12px;border-radius:50%;transform:translate(50%,-50%) scale(0.4);border:2px solid var(--crail-base);opacity:0;pointer-events:none;z-index:1;"></div>
-        <div id="volMarkCap" class="mono" style="position:absolute;top:15px;right:0;font-size:9px;font-weight:600;letter-spacing:0.03em;color:var(--ink-4);white-space:nowrap;">직전 기록</div>
-        <div id="volBreak" class="kr" style="position:absolute;right:0;top:14px;display:flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;color:var(--crail-deep);white-space:nowrap;opacity:0;pointer-events:none;"><span>직전 기록 돌파</span> <b id="volBreakAmt" class="mono">+0kg</b></div>
+      <div class="exvol">
+        <span class="exring">
+          <svg viewBox="0 0 40 40" aria-hidden="true">
+            <g id="exVolSegs"></g>
+            <circle id="exVolArc" cx="20" cy="20" r="21" fill="none" stroke-width="3" stroke-linecap="round" stroke-dasharray="0 131.95" style="stroke:var(--record-base);filter:drop-shadow(0 0 3px oklch(62% 0.18 152 / 0.75));transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;opacity:0;"></circle>
+            <circle id="exVolTip" cx="20" cy="-1" r="2.7" style="fill:var(--record-base);opacity:0;filter:drop-shadow(0 0 3px oklch(62% 0.18 152 / 0.9));transform-box:fill-box;transform-origin:center;"></circle>
+          </svg>
+          <svg id="exVolDrawWrap" viewBox="0 0 40 40" style="position:absolute;inset:0;width:68px;height:68px;overflow:visible;display:none;" aria-hidden="true">
+            <circle id="exVolDraw" cx="20" cy="20" r="16" fill="none" stroke-width="6.3" stroke-linecap="round" stroke-dasharray="100.53" stroke-dashoffset="0" style="stroke:var(--crail-base);transform:rotate(-90deg);transform-box:fill-box;transform-origin:center;"></circle>
+          </svg>
+          <svg id="exVolBurstWrap" viewBox="0 0 40 40" style="position:absolute;inset:0;width:68px;height:68px;overflow:visible;display:none;" aria-hidden="true">
+            <circle id="exVolBurst" cx="20" cy="20" r="16" fill="none" stroke-width="5.5" style="stroke:var(--crail-base);opacity:0.5;transform-box:fill-box;transform-origin:center;"></circle>
+          </svg>
+          <span class="exring-pct"><span id="cardProgressPct">67</span><span class="u" id="cardProgressPctU">%</span></span>
+        </span>
+        <span class="exnums">
+          <span id="cardProgressVol" class="cur">2,020</span>
+          <span id="cardProgressTotal" class="tot">/ 3,020<span class="u">kg</span></span>
+          <span id="exVolChip" class="exchip"><span class="exchip-inner"><span style="font-size:9px;">▲</span> <span id="exVolChipAmt">+220</span></span></span>
+        </span>
       </div>
     </div>
     <!-- 푸터 운동 전환 -->

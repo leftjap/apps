@@ -720,27 +720,74 @@ async function applyWeightCardToDom(doc) {
 
 /**
  * 부위 밸런스 위젯(작업지시서 홈 주역) — 구현 레퍼런스 - 홈.html 정합.
- * #homeBalRows 에 .mg-row 6행(막대+고스트+값), #homeCardioRow 에 유산소 줄.
+ * #homeBalSummary(헤드라인+칩) · #homeBalRows(6부위 페어 컬럼) · #homeBalLabels(부위명) · #homeCardioRow(유산소).
  */
 function applyBalanceToDom(balance, doc) {
   const rowsEl = doc.getElementById('homeBalRows');
   if (!rowsEl || !balance) return;
-  const max = balance.max || 1;
-  const scale = 88 / max; // 작업지시서 §4: maxSets → 88% (고스트도 동일 scale)
-  rowsEl.innerHTML = balance.parts.map((p) => {
-    const isFocus = p.key === balance.focusKey;
-    const w = Math.max(0, Math.min(88, Math.round(p.sets * scale * 10) / 10));
-    const ghost = Math.max(0, Math.min(88, Math.round(p.prevSets * scale * 10) / 10));
-    return `
-      <div class="mg-row${isFocus ? ' focus' : ''}">
-        <span class="mg-name kr">${escapeHtml(p.name)}</span>
-        <span class="mg-track">
-          <span class="mg-fill" style="width:${w}%;"></span>
-          ${p.prevSets > 0 ? `<span class="mg-ghost" style="left:${ghost}%;"></span>` : ''}
-        </span>
-        <span class="mg-val mono">${p.sets}</span>
-      </div>`;
+  const parts = Array.isArray(balance.parts) ? balance.parts : [];
+  const focusKey = balance.focusKey;
+  const thisTotal = parts.reduce((s, p) => s + (Number(p.sets) || 0), 0);
+  const prevTotal = parts.reduce((s, p) => s + (Number(p.prevSets) || 0), 0);
+  const delta = thisTotal - prevTotal;
+  const rmr = prefersReducedMotionHome();
+
+  // 요약 행 — 헤드라인(총 세트) + ▲개선(sage, delta>0) + 최소부위 델타(crail) 칩 (작업지시서 §4.1)
+  const summaryEl = doc.getElementById('homeBalSummary');
+  if (summaryEl) {
+    const focus = parts.find((p) => p.key === focusKey) || null;
+    const upChip = delta > 0 ? `<span class="bal-chip up">▲ ${delta}</span>` : '';
+    let focusChip = '';
+    if (focus) {
+      const fd = (Number(focus.sets) || 0) - (Number(focus.prevSets) || 0);
+      const fdStr = fd > 0 ? `+${fd}` : String(fd); // 시안 "코어 -3" = 이번주−지난주 (§4.1)
+      focusChip = `<span class="bal-chip focus"><i class="dot"></i>${escapeHtml(focus.name)} ${fdStr}</span>`;
+    }
+    // 카운트업 시작값(prevTotal)으로 선-paint (RM 은 최종값) — animNum 첫 tick 역방향 점프 방지.
+    summaryEl.innerHTML =
+      `<span class="bal-hl"><span id="homeBalHlNum" class="bal-hl-num">${rmr ? thisTotal : prevTotal}</span>`
+      + `<span class="bal-hl-unit kr">세트</span></span>${upChip}${focusChip}`;
+  }
+
+  // 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px], 7px/세트 (작업지시서 §4.1)
+  const PX_PER_SET = 7; // 스케일 통일 (§4.1: 6세트=42px, 14세트=98px)
+  rowsEl.innerHTML = parts.map((p, i) => {
+    const isFocus = p.key === focusKey;
+    const sets = Number(p.sets) || 0;
+    const prev = Number(p.prevSets) || 0;
+    const inkH = Math.max(0, sets * PX_PER_SET);
+    const ghostH = Math.max(0, prev * PX_PER_SET);
+    // 이번주 막대 진입 웨이브 — 60ms 스태거 grow. 최소부위는 상시 경고펄스라 grow 제외 (시안 #7a 정합).
+    const inkAnim = (!isFocus && !rmr) ? `animation:gGrow 520ms cubic-bezier(.2,.7,.2,1) ${i * 60}ms both;` : '';
+    const ghost = prev > 0 ? `<i class="bal-bar-ghost" style="height:${ghostH}px;"></i>` : '';
+    return `<div class="bal-grp${isFocus ? ' focus' : ''}">`
+      + `<span class="bal-grp-val mono">${sets}</span>`
+      + `<span class="bal-bars">${ghost}<i class="bal-bar-ink" style="height:${inkH}px;${inkAnim}"></i></span>`
+      + `</div>`;
   }).join('');
+
+  const labelsEl = doc.getElementById('homeBalLabels');
+  if (labelsEl) {
+    labelsEl.innerHTML = parts.map((p) =>
+      `<span class="kr${p.key === focusKey ? ' focus' : ''}">${escapeHtml(p.name)}</span>`,
+    ).join('');
+  }
+
+  // 헤드라인 카운트업 45→48 + 랜딩 팝 (홈 진입 1회, 작업지시서 §4.2). RM 은 즉시 최종값(위에서 선-paint).
+  const numEl = doc.getElementById('homeBalHlNum');
+  if (numEl && !rmr) {
+    animNumHome(prevTotal, thisTotal, 620, (v, isFinal) => {
+      numEl.textContent = String(isFinal ? thisTotal : Math.round(v));
+      if (isFinal && typeof numEl.animate === 'function') {
+        try {
+          numEl.animate(
+            [{ transform: 'scale(1)' }, { transform: 'scale(1.16)', offset: 0.45 }, { transform: 'scale(1)' }],
+            { duration: 420, easing: 'cubic-bezier(.2,.8,.3,1.2)' },
+          );
+        } catch (_) { /* WAAPI 미지원 graceful */ }
+      }
+    });
+  }
 
   const cardioEl = doc.getElementById('homeCardioRow');
   if (!cardioEl) return;
@@ -806,6 +853,27 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
   })[c]);
+}
+
+/** 부위 밸런스 진입 모션 게이트 (작업지시서 §8). */
+function prefersReducedMotionHome() {
+  return typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** 헤드라인 카운트업 (작업지시서 §4.2) — from→to ease-out-cubic. rAF + setTimeout 폴백. */
+function animNumHome(from, to, dur, onUpd) {
+  if (typeof requestAnimationFrame !== 'function' || typeof performance === 'undefined') { onUpd(to, true); return; }
+  const t0 = performance.now();
+  let done = false;
+  const tick = (now) => {
+    if (done) return;
+    const p = Math.min(1, (now - t0) / dur);
+    if (p < 1) { const e = 1 - Math.pow(1 - p, 3); onUpd(from + (to - from) * e, false); requestAnimationFrame(tick); }
+    else { done = true; onUpd(to, true); }
+  };
+  requestAnimationFrame(tick);
+  setTimeout(() => { if (!done) { done = true; onUpd(to, true); } }, dur + 90);
 }
 
 function goToSession() {
