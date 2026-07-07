@@ -9,9 +9,11 @@ public struct GymRootView: View {
         ZStack {
             switch model.route {
             case .home:
-                HomeScreenView(onStart: { model.startSession() })
+                HomeScreenView(onStart: { model.startSession() }, onStats: { model.openStats() })
             case .session:
                 SessionScreenView(onHome: { model.goHome() })
+            case .stats:
+                StatsScreenView(onHome: { model.goHome() })
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

@@ -23,7 +23,10 @@ struct BalPart: Identifiable {
 
 public struct HomeScreenView: View {
     var onStart: () -> Void
-    public init(onStart: @escaping () -> Void = {}) { self.onStart = onStart }
+    var onStats: () -> Void
+    public init(onStart: @escaping () -> Void = {}, onStats: @escaping () -> Void = {}) {
+        self.onStart = onStart; self.onStats = onStats
+    }
 
     let week: [CalDay] = [
         .init(label: "월", num: 6, worked: true, today: false, last: true),
@@ -62,7 +65,9 @@ public struct HomeScreenView: View {
             Text("Gym").font(.sans(23, 700)).tracking(-0.69).foregroundStyle(GY.ink1)
             Spacer()
             HStack(spacing: 2) {
-                Text("통계").font(.sans(14, 500)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
+                Button(action: onStats) {
+                    Text("통계").font(.sans(14, 500)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
+                }.buttonStyle(.plain).accessibilityIdentifier("home-stats")
                 Text("관리").font(.sans(14, 500)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
             }
         }

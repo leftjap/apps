@@ -25,6 +25,25 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["종료"].exists, "세션 툴바 종료가 있어야 한다")
     }
 
+    // 홈 → 통계 → 탭 전환(종목) → 홈 복귀
+    func testStatsNavigationAndTabs() {
+        let app = XCUIApplication()
+        app.launch()
+        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 10))
+        app.buttons["home-stats"].tap()
+        // 통계 캘린더 탭
+        XCTAssertTrue(app.staticTexts["이번 주 볼륨"].waitForExistence(timeout: 5), "통계 캘린더가 떠야 한다")
+        // 종목 탭 전환
+        app.buttons["stats-tab-종목"].tap()
+        XCTAssertTrue(app.staticTexts["자주 한 운동 · 최근 60일"].waitForExistence(timeout: 5), "종목 탭 내용이 떠야 한다")
+        // 부위 탭 전환
+        app.buttons["stats-tab-부위"].tap()
+        XCTAssertTrue(app.staticTexts["최근 60일 부위 분포"].waitForExistence(timeout: 5), "부위 탭 내용이 떠야 한다")
+        // 홈 복귀
+        app.buttons["stats-home"].tap()
+        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 5), "홈으로 돌아와야 한다")
+    }
+
     // 세션 → 홈 (툴바 홈 버튼) 역방향 검증
     func testHomeButtonReturnsHome() {
         let app = XCUIApplication()

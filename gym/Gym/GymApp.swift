@@ -13,8 +13,12 @@ struct GymApp: App {
         let model = GymAppModel()
         // 검증 훅 — simctl launch ... --route session (ReadingTime --seq 패턴)
         let args = ProcessInfo.processInfo.arguments
-        if let i = args.firstIndex(of: "--route"), args.count > i + 1, args[i + 1] == "session" {
-            model.route = .session
+        if let i = args.firstIndex(of: "--route"), args.count > i + 1 {
+            switch args[i + 1] {
+            case "session": model.route = .session
+            case "stats": model.route = .stats
+            default: break
+            }
         }
         _model = StateObject(wrappedValue: model)
     }
