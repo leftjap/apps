@@ -189,3 +189,40 @@ describe('drillsSection — 녹음 후 행 상태·점수 배지 (phone, 2026-06
     expect(badge.style.display).toBe('none'); // 시작 단계 — 배지 비노출
   });
 });
+
+describe('createExplanationPanel — ladder (확장 사다리)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; });
+  const ladder = [
+    { en: 'A coffee.', ko: '커피.', kr: '어 커피', adds: 'base' },
+    { en: 'A coffee, please.', ko: '커피 주세요.', kr: '어 커피 플리즈', adds: 'object' },
+    { en: 'Can I get a coffee, please?', ko: '커피 하나?', kr: '캔 아이 게러 커피 플리즈', adds: 'particle' },
+  ];
+
+  it('ladder 있으면 확장 사다리 섹션 + 단별 rung 렌더', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', ladder }, lang: 'en' });
+    const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
+    expect(labels).toContain('확장 사다리');
+    expect(panelEl.querySelectorAll('.ladder-rung').length).toBe(3);
+    expect(panelEl.querySelector('.ladder-en').textContent).toBe('A coffee.');
+  });
+
+  it('듣기 버튼 클릭 → onListen(rung.en) 호출', () => {
+    const heard = [];
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', ladder }, lang: 'en', onListen: (en) => heard.push(en) });
+    const btns = panelEl.querySelectorAll('.ladder-rung .drill-listen');
+    expect(btns.length).toBe(3);
+    btns[1].click();
+    expect(heard).toEqual(['A coffee, please.']);
+  });
+
+  it('마지막 단(완성 발화)만 녹음 버튼', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', ladder }, lang: 'en', onRecord: () => {} });
+    expect(panelEl.querySelectorAll('.ladder-rung .drill-rec').length).toBe(1);
+  });
+
+  it('ladder 없으면 확장 사다리 섹션 미렌더 (하위호환)', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k' }, lang: 'en' });
+    const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
+    expect(labels).not.toContain('확장 사다리');
+  });
+});

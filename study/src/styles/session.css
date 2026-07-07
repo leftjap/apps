@@ -241,5 +241,13 @@
 .drill-acts{align-items:center}
 .drill-score{font-family:var(--font-display);font-size:12px;font-weight:800;color:var(--accent);border:1px solid rgba(217,119,87,0.35);border-radius:var(--r-pill);padding:4px 10px;white-space:nowrap}
 .drill-rec.rec-done{color:var(--accent);border-color:rgba(217,119,87,0.45)}
+/* 확장 사다리 (ladder) — drill 스타일 미러 + step 뱃지 (짧게→길게 수직 확장) */
+.ladder-rung{display:grid;grid-template-columns:auto 1fr auto;gap:2px var(--s-3);align-items:center;padding:var(--s-3) 0;border-top:1px dashed var(--border)}
+.ladder-rung:first-of-type{border-top:none}
+.ladder-step{align-self:start;width:20px;height:20px;border-radius:var(--r-pill);background:var(--bg-warm);color:var(--text-muted);font-family:var(--font-display);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.ladder-body{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ladder-en{font-family:var(--font-display);font-size:15px;font-weight:500;color:var(--text-strong)}
+.ladder-kr{font-size:12px;color:var(--text-faint)}
+.ladder-ko{font-size:13px;color:var(--text-muted)}
 @keyframes scorePop{0%{transform:scale(1.55) translateY(-10px);opacity:0}60%{transform:scale(1.06) translateY(1px);opacity:1}100%{transform:scale(1) translateY(0)}}
 .score-pop{animation:scorePop .45s cubic-bezier(.2,.8,.3,1.1)}
