@@ -1,14 +1,21 @@
 import SwiftUI
+import GymCore
 
-// 관리 화면 — mocks/admin.html 이식. 3탭(운동/체중/프로필). 정적 데모 데이터.
+// 관리 화면 — mocks/admin.html 이식. 3탭(운동/체중/프로필). 운동/체중은 데모, 프로필은 실 로그인 상태.
 public struct AdminScreenView: View {
     public enum Tab: String { case ex, weight, profile }
     @State private var tab: Tab
     @State private var activePart = "가슴"
+    @ObservedObject var cloud: CloudStore
     var onHome: () -> Void
     var onStats: () -> Void
-    public init(initialTab: Tab = .ex, onHome: @escaping () -> Void = {}, onStats: @escaping () -> Void = {}) {
-        _tab = State(initialValue: initialTab); self.onHome = onHome; self.onStats = onStats
+    var onLogin: () -> Void
+    var onLogout: () -> Void
+    public init(initialTab: Tab = .ex, cloud: CloudStore,
+                onHome: @escaping () -> Void = {}, onStats: @escaping () -> Void = {},
+                onLogin: @escaping () -> Void = {}, onLogout: @escaping () -> Void = {}) {
+        _tab = State(initialValue: initialTab); self.cloud = cloud
+        self.onHome = onHome; self.onStats = onStats; self.onLogin = onLogin; self.onLogout = onLogout
     }
 
     public var body: some View {
@@ -120,24 +127,36 @@ public struct AdminScreenView: View {
         }.padding(.top, 8)
     }
 
-    // 프로필 탭 — 설정 행
+    // 프로필 탭 — 실 로그인 상태 + 설정 행
     var profilePane: some View {
         let items: [(String, String)] = [
-            ("계정", "leftjap@gmail.com"), ("단위", "kg"), ("휴식 타이머", "90초"),
-            ("데이터 동기화", "켜짐"), ("버전", "1.0"),
+            ("단위", "kg"), ("휴식 타이머", "90초"), ("버전", "1.0"),
         ]
         return VStack(spacing: 0) {
-            ForEach(items.indices, id: \.self) { i in
-                let it = items[i]
-                HStack {
-                    Text(it.0).font(.sans(15, 500)).foregroundStyle(GY.ink1)
-                    Spacer()
-                    Text(it.1).font(.sans(14, 400)).foregroundStyle(GY.ink4)
-                }
-                .padding(.vertical, 16).padding(.horizontal, 24)
-                .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+            // 계정 / 동기화 상태 (실 CloudStore)
+            settingRow("계정", cloud.signedIn ? "로그인됨" : "로그인 안 됨")
+            settingRow("데이터 동기화", cloud.signedIn ? "켜짐" : "꺼짐")
+            ForEach(items.indices, id: \.self) { i in settingRow(items[i].0, items[i].1) }
+            // Google 로그인/로그아웃 (local-first — 로그인은 sync 활성화용)
+            Button(action: cloud.signedIn ? onLogout : onLogin) {
+                Text(cloud.signedIn ? "로그아웃" : "Google 로그인")
+                    .font(.sans(15, 600)).foregroundStyle(cloud.signedIn ? GY.danger : GY.crailDeep)
+                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .background(cloud.signedIn ? GY.card : GY.crailTint, in: RoundedRectangle(cornerRadius: GY.rMd))
+                    .overlay(RoundedRectangle(cornerRadius: GY.rMd).strokeBorder(cloud.signedIn ? GY.line : GY.crailSoft, lineWidth: 1))
             }
+            .buttonStyle(.plain).accessibilityIdentifier("profile-auth")
+            .padding(.horizontal, 24).padding(.top, 18)
         }.padding(.top, 8)
+    }
+    func settingRow(_ k: String, _ v: String) -> some View {
+        HStack {
+            Text(k).font(.sans(15, 500)).foregroundStyle(GY.ink1)
+            Spacer()
+            Text(v).font(.sans(14, 400)).foregroundStyle(GY.ink4)
+        }
+        .padding(.vertical, 16).padding(.horizontal, 24)
+        .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
     }
 }
 

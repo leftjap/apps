@@ -6,7 +6,6 @@ import GymCore
 @main
 struct GymApp: App {
     @StateObject private var model: GymAppModel
-    private let cloud = CloudStore()
 
     init() {
         let errs = GymFonts.register()
@@ -15,7 +14,9 @@ struct GymApp: App {
         let args = ProcessInfo.processInfo.arguments
         if args.contains("--reset") { model.resetSession() }   // 검증용 영속 초기화
         // 검증 훅 — simctl launch ... --route session (ReadingTime --seq 패턴)
+        var routeArg: String?
         if let i = args.firstIndex(of: "--route"), args.count > i + 1 {
+            routeArg = args[i + 1]
             switch args[i + 1] {
             case "session": model.route = .session
             case "stats": model.route = .stats
@@ -24,9 +25,12 @@ struct GymApp: App {
             default: break
             }
         }
-        if let i = args.firstIndex(of: "--tab"), args.count > i + 1,
-           let t = GymAppModel.statsTab(args[i + 1]) {
-            model.statsInitialTab = t
+        if let i = args.firstIndex(of: "--tab"), args.count > i + 1 {
+            if routeArg == "admin", let t = GymAppModel.adminTab(args[i + 1]) {
+                model.adminInitialTab = t
+            } else if let t = GymAppModel.statsTab(args[i + 1]) {
+                model.statsInitialTab = t
+            }
         }
         _model = StateObject(wrappedValue: model)
     }
@@ -37,7 +41,7 @@ struct GymApp: App {
             GymRootView(model: model)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(GY.shell.ignoresSafeArea())
-                .task { await cloud.restore() }   // 기존 로그인 복원 (미로그인 시 no-op)
+                .task { await model.restoreCloud() }   // 기존 로그인 복원 (미로그인 시 no-op)
         }
     }
 }

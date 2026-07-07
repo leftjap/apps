@@ -120,7 +120,7 @@ public struct SessionScreenView: View {
         let blockPct = blockTotal > 0 ? Int((blockDone / blockTotal * 100).rounded()) : 0
         let cur = model.currentSet
         return VStack(spacing: 0) {
-            SessionToolbar(time: "18:42", onHome: onHome, onEnd: { model.route = .summary })
+            SessionToolbar(time: "18:42", onHome: onHome, onEnd: { model.endSession() })
             SessionHeader(exName: block?.exerciseId ?? "—", part: "가슴",
                           volCur: Self.fmt(model.sessionDoneVolume),
                           volTotal: Self.fmt(model.sessionTotalVolume), pct: model.sessionPct)

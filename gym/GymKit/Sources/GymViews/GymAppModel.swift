@@ -12,10 +12,30 @@ public final class GymAppModel: ObservableObject {
     @Published public var route: GymRoute = .home
     @Published public var session: GymSession { didSet { LocalStore.saveSession(session) } }
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
+    public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
+    public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)
 
     public init() {
         // 로컬 영속 우선 로드 (앱 재시작 유지), 없으면 데모 시드. (init 할당은 didSet 미발화 → 저장 안 함)
         session = LocalStore.loadSession() ?? GymAppModel.demoSession()
+    }
+
+    // MARK: - 클라우드 (선택적 sync)
+
+    public func restoreCloud() async { await cloud.restore() }
+    public func login() async { try? await cloud.signInWithGoogle(); await syncNow() }
+    public func logout() async { await cloud.signOut() }
+    // 로그인돼 있으면 현재 세션 upsert (backend 계약은 REST 라운드트립으로 검증됨).
+    public func syncNow() async {
+        guard cloud.signedIn else { return }
+        try? await cloud.upsertSession(session)
+    }
+
+    // 세션 종료 = 완료 처리 + 요약 + (로그인 시) 클라우드 upsert.
+    public func endSession() {
+        session.status = .completed
+        route = .summary
+        Task { await syncNow() }
     }
 
     // 검증/새 세션용 — 영속 초기화 + 데모 재시드.
@@ -25,6 +45,7 @@ public final class GymAppModel: ObservableObject {
     }
 
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }
+    public static func adminTab(_ s: String) -> AdminScreenView.Tab? { AdminScreenView.Tab(rawValue: s) }
 
     public func startSession() { route = .session }
     public func goHome() { route = .home }
