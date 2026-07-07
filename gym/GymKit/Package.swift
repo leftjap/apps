@@ -11,9 +11,12 @@ let package = Package(
         .library(name: "GymCore", targets: ["GymCore"]),
         .library(name: "GymViews", targets: ["GymViews"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/supabase/supabase-swift", from: "2.0.0"),
+    ],
     targets: [
-        // 순수 로직·모델 (UI 없음). Supabase 배선(CloudStore)은 다음 증분에서 supabase-swift 의존 추가.
-        .target(name: "GymCore"),
+        // 로직·모델 + Supabase 배선(CloudStore).
+        .target(name: "GymCore", dependencies: [.product(name: "Supabase", package: "supabase-swift")]),
         // SwiftUI 화면 라이브러리 — iOS 앱 타깃과 gymshot 이 공유. 폰트는 fetch-fonts.sh 로 수급.
         .target(name: "GymViews", dependencies: ["GymCore"], resources: [.copy("Fonts")]),
         // 헤드리스 렌더 CLI (macOS, ImageRenderer) — mocks/*.html 픽셀 정본 대조용.

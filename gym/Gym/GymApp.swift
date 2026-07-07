@@ -1,11 +1,12 @@
 import SwiftUI
 import GymViews
+import GymCore
 
-// Gym iOS 앱 진입점 — UI/상태는 GymViews(GymRootView + GymAppModel).
-// 시안 뷰포트 390×844 고정 → 기기 크기에 비율 유지 스케일·중앙 배치 (ReadingTimeApp 패턴).
+// Gym iOS 앱 진입점 — UI/상태는 GymViews(GymRootView + GymAppModel), 데이터는 GymCore(CloudStore).
 @main
 struct GymApp: App {
     @StateObject private var model: GymAppModel
+    private let cloud = CloudStore()
 
     init() {
         let errs = GymFonts.register()
@@ -35,6 +36,7 @@ struct GymApp: App {
             GymRootView(model: model)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(GY.shell.ignoresSafeArea())
+                .task { await cloud.restore() }   // 기존 로그인 복원 (미로그인 시 no-op)
         }
     }
 }

@@ -132,8 +132,7 @@ public struct HomeScreenView: View {
                 balChip("● 코어", tint: GY.crailTint, border: GY.crailSoft, fg: GY.crailDeep)
             }
             .padding(.top, 14)
-            // 차트 (페어 컬럼)
-            let maxSets = parts.flatMap { [$0.lastSets, $0.thisSets] }.max() ?? 1
+            // 차트 (페어 컬럼) — 7px/세트 (작업지시서 §4.1)
             HStack(alignment: .bottom, spacing: 0) {
                 ForEach(parts) { p in
                     VStack(spacing: 7) {
