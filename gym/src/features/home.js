@@ -750,16 +750,12 @@ function applyBalanceToDom(balance, doc) {
   }
 
   // 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px] (작업지시서 §4.1).
-  //   기본 7px/세트(§4.1: 6세트=42px, 14세트=98px). 단 최고 세트수가 차트 영역을 넘으면 비례 축소 —
-  //   실기기(짧은 화면)에서 고세트(예: 31세트=217px) 막대가 헤드라인과 겹치던 버그 수정. 차트 높이 실측 후 캡.
-  const chartEl = rowsEl.closest('.bal-chart');
+  //   기본 7px/세트(§4.1: 6세트=42px, 14세트=98px). 단 최고 세트수 막대는 MAX_BAR_PX 로 캡 —
+  //   실기기 짧은 화면에서 고세트(예: 31세트=217px) 막대가 헤드라인과 겹치던 버그 수정 (사용자 2026-07-07).
+  //   시안 최대(14세트=98px) 밀도를 유지하도록 100px 캡: maxVal≤14 는 7px/세트 정확 유지, 초과분만 비례 축소.
+  const MAX_BAR_PX = 100;
   const maxVal = Math.max(1, ...parts.map((p) => Math.max(Number(p.sets) || 0, Number(p.prevSets) || 0)));
-  let maxBarPx = 108; // 폴백 (레이아웃 미측정 시)
-  if (chartEl && chartEl.clientHeight > 80) {
-    // 차트 높이 − 값라벨(14)+갭(7) − 라벨행(≈23) − 여유(4)
-    maxBarPx = Math.max(49, chartEl.clientHeight - 48);
-  }
-  const pxPerSet = Math.min(7, maxBarPx / maxVal); // 데모 범위(≤14세트≈98px)는 정확히 7px/세트 유지
+  const pxPerSet = Math.min(7, MAX_BAR_PX / maxVal);
   rowsEl.innerHTML = parts.map((p, i) => {
     const isFocus = p.key === focusKey;
     const sets = Number(p.sets) || 0;
