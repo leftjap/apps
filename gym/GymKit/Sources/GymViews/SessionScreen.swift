@@ -1,4 +1,5 @@
 import SwiftUI
+import GymCore
 
 // 세션 화면 — mocks/session.html .session-active 이식. "최신 디자인" = 시안 #15a 값 채택
 // (헤더 링 56px·align center·gap 11 — 사용자 지적 반영. 앱의 50px/flex-start 편차 교정).
@@ -86,7 +87,7 @@ public struct SessionTopBlock: View {
     }
 }
 
-// 세션 화면 골격 — 툴바+헤더+히어로+레일. (직전기록 막대·종목볼륨 세그먼트 링 = 다음 증분)
+// 세션 화면 전체 — mocks/session.html .session-active 정합 (정적 데모 데이터).
 public struct SessionScreenView: View {
     public init() {}
     public var body: some View {
@@ -94,11 +95,21 @@ public struct SessionScreenView: View {
             SessionToolbar(time: "18:42")
             SessionHeader(exName: "벤치프레스", part: "가슴",
                           volCur: "4,800", volTotal: "8,940", pct: 54)
-            // TODO(다음 증분): 직전 세션 기록 막대 차트
+            PrevRecordBars(
+                sets: [.init(weight: 20, reps: 15, state: .done),
+                       .init(weight: 40, reps: 7, state: .done),
+                       .init(weight: 40, reps: 9, state: .done),
+                       .init(weight: 40, reps: 7, state: .now)],
+                best: (weight: 45, reps: 10))
             Spacer()
             SessionHero(weight: "65", unit: "kg", reps: "10")
             Spacer()
-            // TODO(다음 증분): 이 종목 볼륨 세그먼트 링
+            ExerciseVolumeRing(
+                sets: [GymSet(weight: 60, reps: 10, done: true),
+                       GymSet(weight: 60, reps: 10, done: true),
+                       GymSet(weight: 65, reps: 8, done: true),
+                       GymSet(weight: 65, reps: 8, done: false)],
+                cur: 3, pct: 67, curVol: "2,020", totVol: "3,020", overAmt: "+220")
             GymFooterRail(items: [
                 .init(name: "체스트 프레스", state: .done),
                 .init(name: "벤치프레스", state: .current),
