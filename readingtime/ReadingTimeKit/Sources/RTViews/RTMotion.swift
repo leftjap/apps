@@ -24,6 +24,40 @@ public extension View {
     }
 }
 
+// rtEnter/rtRise 진입 스태거 (홈 02: 칩 dy10·.5s·.04s / 제목블록·카드 dy16·.6s / .18s·.26s) —
+// opacity 0→1 + translateY dy→0, ease-out 근사. rtFrozenTime 으로 결정적 검증 가능(RTEntrance 와
+// 달리 delay/dy 파라미터화 + --at 프레임 지원).
+public extension View {
+    func rtRiseIn(dy: CGFloat = 16, duration: Double = 0.6, delay: Double = 0) -> some View {
+        modifier(RTRiseIn(dy: dy, duration: duration, delay: delay))
+    }
+}
+struct RTRiseIn: ViewModifier {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.rtFrozenTime) private var frozen
+    let dy: CGFloat
+    let duration: Double
+    let delay: Double
+    @State private var shown = false
+
+    private func pose(_ content: Content, _ p: Double) -> some View {
+        content.opacity(p).offset(y: dy * (1 - p))
+    }
+    func body(content: Content) -> some View {
+        if let frozen {
+            let raw = min(1, max(0, (frozen - delay) / duration))
+            return AnyView(pose(content, 1 - pow(1 - raw, 3)))   // ease-out cubic 근사
+        } else if enabled && !reduce {
+            return AnyView(pose(content, shown ? 1 : 0).onAppear {
+                withAnimation(.easeOut(duration: duration).delay(delay)) { shown = true }
+            })
+        } else {
+            return AnyView(content)
+        }
+    }
+}
+
 // CSS cubic-bezier(x1,y1,x2,y2) 와 동일 정의(P0=(0,0), P3=(1,1)) — x=progress 에서의 y(진행값).
 // 뉴턴-랩슨으로 베지어 매개변수 t 를 역산. 고정-시간 검증 프레임이 실제 라이브 .timingCurve
 // 애니메이션(오버슈트 포함)과 일치하도록 사용 — .rtBookDropIn() 등.

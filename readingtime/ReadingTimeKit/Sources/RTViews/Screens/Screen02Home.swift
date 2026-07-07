@@ -142,6 +142,7 @@ public struct Screen02Home: View {
             }
             .padding(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
             .background(Capsule().fill(RT.greenTint))
+            .rtRiseIn(dy: 10, duration: 0.5, delay: 0.04)
             // 3D 책 + 접지 그림자 (부유·sway 는 RTBook3D 내부, 진입 드롭인은 여기)
             VStack(spacing: 0) {
                 bookView.rtBookDropIn().padding(.top, 24)
@@ -161,6 +162,7 @@ public struct Screen02Home: View {
                 .padding(.top, 9)
             }
             .padding(.top, 16)
+            .rtRiseIn(delay: 0.18)
         }
     }
 
@@ -265,6 +267,7 @@ public struct Screen02Home: View {
                 .overlay(alignment: .top) { Rectangle().fill(RT.hair).frame(height: 1) }
                 .shadow(color: Color(hex: 0x16140F, alpha: 0.16), radius: 15, x: 0, y: -8)
         )
+        .rtRiseIn(delay: 0.26)
     }
 
     // 읽기(엎기) CTA — 정지=그린 앞면. 모션: 리빙 그라데이션(8s) + 주기 플립(4.6s)으로
