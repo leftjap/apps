@@ -376,6 +376,34 @@ function ladderSection(ladder, { onListen, onRecord } = {}) {
       ko.textContent = rung.ko;
       body.appendChild(ko);
     }
+    // back-chaining pass: 끝→처음 tail-anchored 청크 (연결발화 훈련). body 아래에 서브블록.
+    if (Array.isArray(rung.back) && rung.back.length >= 2) {
+      const bwrap = document.createElement('div');
+      bwrap.className = 'ladder-back';
+      const blab = document.createElement('div');
+      blab.className = 'ladder-back-label';
+      blab.textContent = '이어 말하기 (끝부터)';
+      bwrap.appendChild(blab);
+      rung.back.forEach((bc) => {
+        if (!Array.isArray(bc)) return;
+        const brow = document.createElement('div');
+        brow.className = 'ladder-back-chunk';
+        const ben = document.createElement('span');
+        ben.className = 'ladder-back-en';
+        ben.textContent = bc[0] || '';
+        const bkr = document.createElement('span');
+        bkr.className = 'ladder-back-kr';
+        bkr.textContent = bc[1] || '';
+        const blisten = document.createElement('button');
+        blisten.type = 'button';
+        blisten.className = 'drill-listen';
+        blisten.textContent = '듣기';
+        blisten.addEventListener('click', () => { if (onListen) onListen(bc[0] || ''); });
+        brow.append(ben, bkr, blisten);
+        bwrap.appendChild(brow);
+      });
+      body.appendChild(bwrap);
+    }
     const acts = document.createElement('div');
     acts.className = 'drill-acts';
     const listen = document.createElement('button');

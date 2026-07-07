@@ -283,6 +283,22 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       const wc = String(rung?.en ?? '').trim().split(/\s+/).filter(Boolean).length;
       if (wc < prevWords) errors.push(`${c.id}: ladder[${i}] 가 이전 단보다 짧음 (${wc}<${prevWords}) — 단조 확장(base→길게) 위배`);
       prevWords = wc;
+      // (선택) back-chaining pass: 이 단을 끝→처음 tail-anchored 청크로 재조립 (연결발화 훈련). [[en,kr]…] 2~4개, tail 성장.
+      const back = rung?.back;
+      if (back !== undefined) {
+        if (!Array.isArray(back) || back.length < 2 || back.length > 4) {
+          errors.push(`${c.id}: ladder[${i}].back 는 2~4개 tail 청크 배열이어야 함 (현재 ${Array.isArray(back) ? `${back.length}개` : typeof back})`);
+        } else {
+          let bw = 0;
+          back.forEach((bc, j) => {
+            const ok = Array.isArray(bc) && typeof bc[0] === 'string' && bc[0].trim() && typeof bc[1] === 'string' && bc[1].trim();
+            if (!ok) { errors.push(`${c.id}: ladder[${i}].back[${j}] 는 [en, kr음차] 쌍이어야 함`); return; }
+            const w = bc[0].trim().split(/\s+/).filter(Boolean).length;
+            if (w < bw) errors.push(`${c.id}: ladder[${i}].back[${j}] 가 이전보다 짧음 (${w}<${bw}) — 끝→처음(tail-anchored) 성장 위배`);
+            bw = w;
+          });
+        }
+      }
     });
   }
 

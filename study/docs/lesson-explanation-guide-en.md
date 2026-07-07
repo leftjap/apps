@@ -560,7 +560,8 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **규칙** (`validate-seed.mjs` 기계 검사): 선택 필드(미존재 시 skip·하위호환) · **2~6단** · 각 단 `en`/`ko`/`kr`(음차) 의무 · **단조 확장**(뒤 단이 앞 단보다 짧으면 차단). 권장 4~6단.
 - `adds` ∈ `base`\|`object`\|`particle`\|`adverbial`\|`reason`\|`hedge` (도입 요소 라벨). 0단 = 카드 key 의 BASE(기본동사/구동사 머리, ≤5단어).
 - **Stage 2 가드**: scripted **read+shadow+record**만 (§8 자유 production 금지 — 녹음은 모델 대비 shadow-compare). 최종 단 길이 상한 권장 ≤12단어.
-- ✅ **렌더**: `explanationPanel.js` `ladderSection` 이 단별 스테퍼로 표시(step 뱃지 + en/kr음차/ko · 각 단 **듣기** · 마지막 단만 **녹음**) — 라이브 시드에 넣으면 렌더된다. 심화(수용 게이트·back-chaining pass·3-take A/B)는 미구현(후속 wave).
+- **`back` — back-chaining pass (선택, 최종 단 권장)**: 한 단을 **끝→처음**으로 재조립한 tail-anchored 청크 `[[en, kr음차], …]` 2~4개(tail 성장). 연음·약형·구동사 강세(연결발화) 직격 — 리얼스피킹 전방 체이닝이 못 하는 차별점. 예: `[["to go, please?","투 고 플리즈"], ["an iced coffee to go, please?","…"], ["Can I get an iced coffee to go, please?","…"]]`. 게이트: 2~4개·각 `[en,kr]` 쌍·tail 단조 성장.
+- ✅ **렌더**: `explanationPanel.js` `ladderSection` — 단별 스테퍼(step 뱃지 + en/kr음차/ko · 각 단 **듣기** · 마지막 단만 **녹음**) + `back` 있으면 그 단 아래 **"이어 말하기 (끝부터)"** 서브블록(tail 청크별 듣기). 라이브 시드에 넣으면 렌더된다. 심화 잔여(수용 게이트·3-take A/B)는 후속 wave.
 
 ### 발췌 기준 (4종 — 사용자 합의 3종 + 화자 교차 2026-06-10 추가)
 

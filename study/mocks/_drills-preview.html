@@ -38,7 +38,12 @@ if (sentenceCards[0]) sentenceCards[0].explanation.ladder = [
   { en:'Get a coffee.', ko:'커피 하나.', kr:'게러 커피', adds:'base' },
   { en:'Can I get a coffee?', ko:'커피 하나 될까요?', kr:'캔 아이 게러 커피', adds:'object' },
   { en:'Can I get a coffee, please?', ko:'커피 하나 주시겠어요?', kr:'캔 아이 게러 커피 플리즈', adds:'hedge' },
-  { en:'Can I get an iced coffee to go, please?', ko:'아이스커피 하나 포장 주시겠어요?', kr:'캔 아이 게런 아이스 커피 투고 플리즈', adds:'adverbial' },
+  { en:'Can I get an iced coffee to go, please?', ko:'아이스커피 하나 포장 주시겠어요?', kr:'캔 아이 게런 아이스 커피 투고 플리즈', adds:'adverbial',
+    back:[
+      ['to go, please?', '투 고 플리즈'],
+      ['an iced coffee to go, please?', '언 아이스 커피 투 고 플리즈'],
+      ['Can I get an iced coffee to go, please?', '캔 아이 게런 아이스 커피 투 고 플리즈'],
+    ] },
 ];
 
 // STEP 1 — 실제 scenePage 컴포넌트 (세션 첫 페이지)

@@ -119,6 +119,35 @@ describe('validateSeedContent — ladder (선택 확장 사다리, base→확장
   it('단조 확장 위배 (단어수 감소) → 차단', () => {
     expect(ladderErrs(withLadder([validLadder[0], validLadder[3], validLadder[1]])).some((e) => e.includes('단조'))).toBe(true);
   });
+
+  // back-chaining pass — 최종 단을 끝→처음(tail-anchored) 청크로 재조립 (연결발화 훈련)
+  const validBack = [
+    ['to go, please?', '투 고 플리즈'],
+    ['an iced coffee to go, please?', '언 아이스 커피 투 고 플리즈'],
+    ['Can I get an iced coffee to go, please?', '캔 아이 게런 아이스 커피 투 고 플리즈'],
+  ];
+  const withBack = (back) => {
+    const l = validLadder.map((r) => ({ ...r }));
+    l[l.length - 1] = { ...l[l.length - 1], back };
+    return withLadder(l);
+  };
+  const backErrs = (p) => ladderErrs(p).filter((e) => e.includes('back'));
+
+  it('유효 back(끝→처음 성장) → back error 0', () => {
+    expect(backErrs(withBack(validBack))).toEqual([]);
+  });
+  it('back 미존재 → 하위호환 (back error 0)', () => {
+    expect(backErrs(withLadder(validLadder))).toEqual([]);
+  });
+  it('back 1개 (부족) → 차단', () => {
+    expect(backErrs(withBack([validBack[0]])).some((e) => e.includes('2~4'))).toBe(true);
+  });
+  it('back 항목이 [en, kr] 쌍 아님 → 차단', () => {
+    expect(backErrs(withBack([validBack[0], ['only-en'], validBack[2]])).some((e) => e.includes('en'))).toBe(true);
+  });
+  it('back tail 성장 위배 (단어수 감소) → 차단', () => {
+    expect(backErrs(withBack([validBack[2], validBack[0], validBack[1]])).some((e) => e.includes('tail'))).toBe(true);
+  });
 });
 
 describe('validateSeedContent — 기준선', () => {

@@ -225,4 +225,33 @@ describe('createExplanationPanel — ladder (확장 사다리)', () => {
     const labels = [...panelEl.querySelectorAll('.ex-label')].map((n) => n.textContent);
     expect(labels).not.toContain('확장 사다리');
   });
+
+  // back-chaining pass 렌더 (최종 단 끝→처음 tail 청크)
+  const backChunks = [
+    ['a coffee, please?', '어 커피 플리즈'],
+    ['get a coffee, please?', '게러 커피 플리즈'],
+    ['Can I get a coffee, please?', '캔 아이 게러 커피 플리즈'],
+  ];
+  const ladderB = ladder.map((r, i) => (i === ladder.length - 1 ? { ...r, back: backChunks } : r));
+
+  it('back 있으면 이어말하기 블록 + tail 청크 렌더', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', ladder: ladderB }, lang: 'en' });
+    expect(panelEl.querySelector('.ladder-back')).toBeTruthy();
+    expect(panelEl.querySelectorAll('.ladder-back-chunk').length).toBe(3);
+    expect([...panelEl.querySelectorAll('.ladder-back-label')].map((n) => n.textContent)).toContain('이어 말하기 (끝부터)');
+  });
+
+  it('back 듣기 클릭 → onListen(tail 청크 en)', () => {
+    const heard = [];
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', ladder: ladderB }, lang: 'en', onListen: (en) => heard.push(en) });
+    const btns = panelEl.querySelectorAll('.ladder-back .drill-listen');
+    expect(btns.length).toBe(3);
+    btns[1].click();
+    expect(heard).toEqual(['get a coffee, please?']);
+  });
+
+  it('back 없으면 이어말하기 블록 미렌더', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', ladder }, lang: 'en' });
+    expect(panelEl.querySelector('.ladder-back')).toBeFalsy();
+  });
 });
