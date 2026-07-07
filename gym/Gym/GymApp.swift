@@ -17,8 +17,13 @@ struct GymApp: App {
             switch args[i + 1] {
             case "session": model.route = .session
             case "stats": model.route = .stats
+            case "summary": model.route = .summary
             default: break
             }
+        }
+        if let i = args.firstIndex(of: "--tab"), args.count > i + 1,
+           let t = GymAppModel.statsTab(args[i + 1]) {
+            model.statsInitialTab = t
         }
         _model = StateObject(wrappedValue: model)
     }

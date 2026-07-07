@@ -14,6 +14,8 @@ public struct GymRootView: View {
                 SessionScreenView(onHome: { model.goHome() })
             case .stats:
                 StatsScreenView(initialTab: model.statsInitialTab, onHome: { model.goHome() })
+            case .summary:
+                SummaryScreenView(onHome: { model.goHome() })
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
