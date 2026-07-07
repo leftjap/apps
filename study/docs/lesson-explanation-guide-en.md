@@ -544,7 +544,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - TTS·녹음·다이얼로그 색 강조 전부 코드 자동 — 시드 측 추가 필드 불필요
 - ⚠️ **재INSERT 안전**: 시드 재적재(upsert)는 `completed=false` 로 merge → **사용자가 해당 카드 학습을 시작한 뒤에는 같은 카드 재INSERT 금지** (학습 완료 리셋됨). 보강은 학습 전에만
 
-#### `ladder` — 확장 사다리 (선택, ⏳ Wave2 UI 렌더 예정)
+#### `ladder` — 확장 사다리 (선택, ✅ 렌더 구현됨)
 
 핵심문(BASE)을 **단당 요소 1개씩** 키우는 수직 확장 드릴. 근거 = 검토 영상2(핵심절 먼저→이유절 append→수식어) + sentence-expansion/combining(초급 ELL 표준 스캐폴드) + shadowing. 현행 `drills`(같은 표현의 **가로** 변형)와 **겹치지 않는 세로 확장** — 회화 약한 Stage 2 학습자용. **리얼스피킹 '체이닝'(전방 확장)과 달리, 최종 단 tail-first `chunks` 재조립(back-chaining)으로 연음·구동사 강세를 노린다 = 우리 차별점.**
 
@@ -560,7 +560,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - **규칙** (`validate-seed.mjs` 기계 검사): 선택 필드(미존재 시 skip·하위호환) · **2~6단** · 각 단 `en`/`ko`/`kr`(음차) 의무 · **단조 확장**(뒤 단이 앞 단보다 짧으면 차단). 권장 4~6단.
 - `adds` ∈ `base`\|`object`\|`particle`\|`adverbial`\|`reason`\|`hedge` (도입 요소 라벨). 0단 = 카드 key 의 BASE(기본동사/구동사 머리, ≤5단어).
 - **Stage 2 가드**: scripted **read+shadow+record**만 (§8 자유 production 금지 — 녹음은 모델 대비 shadow-compare). 최종 단 길이 상한 권장 ≤12단어.
-- ⏳ **미렌더**: 현재 `explanationPanel.js` 미지원 → **라이브 시드에 아직 넣지 말 것**(Wave2 스테퍼 렌더 후). 스키마·게이트만 선반영.
+- ✅ **렌더**: `explanationPanel.js` `ladderSection` 이 단별 스테퍼로 표시(step 뱃지 + en/kr음차/ko · 각 단 **듣기** · 마지막 단만 **녹음**) — 라이브 시드에 넣으면 렌더된다. 심화(수용 게이트·back-chaining pass·3-take A/B)는 미구현(후속 wave).
 
 ### 발췌 기준 (4종 — 사용자 합의 3종 + 화자 교차 2026-06-10 추가)
 
