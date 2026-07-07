@@ -35,6 +35,7 @@ import {
   formatSetSegment,
   computeFooterOrder,
   renderFooterPillHtml,
+  centerActivePill,
   barHeightForVolume,
   setBarVolumeMax,
   buildSetBestSlotHtml,
@@ -2682,5 +2683,39 @@ describe('renderFooterPillHtml — 레일 3단 깊이 마크업', () => {
     const html = renderFooterPillHtml({ blockIdx: 0, state: 'upcoming', name: '<img src=x>' });
     expect(html).toContain('&lt;img src=x&gt;');
     expect(html).not.toContain('<img src=x>');
+  });
+});
+
+// 레일 중앙 정렬 회귀 (실기기 1종목 케이스 — 카드가 좌측에 밀착하던 버그, 작업지시서 §3·수용기준6).
+describe('centerActivePill — 오버플로 여부별 현재 카드 중앙 정렬', () => {
+  const origRAF = globalThis.requestAnimationFrame;
+  beforeEach(() => { globalThis.requestAnimationFrame = (fn) => { fn(); return 0; }; });
+  afterEach(() => { globalThis.requestAnimationFrame = origRAF; });
+
+  const fakeRail = ({ scrollWidth, clientWidth, cur }) => ({
+    scrollWidth, clientWidth, scrollLeft: -1, style: {},
+    querySelector: (sel) => (sel.includes('is-current') ? cur : null),
+  });
+
+  it('넘치지 않으면(단일/소수 종목) justify-content:center — 좌측 밀착 방지', () => {
+    const rail = fakeRail({ scrollWidth: 138, clientWidth: 299, cur: { offsetLeft: 4, offsetWidth: 138 } });
+    centerActivePill(rail);
+    expect(rail.style.justifyContent).toBe('center');
+    expect(rail.scrollLeft).toBe(0);
+  });
+
+  it('넘치면 flex-start + scrollLeft 로 현재 카드 중앙 스크롤', () => {
+    const rail = fakeRail({ scrollWidth: 723, clientWidth: 299, cur: { offsetLeft: 300, offsetWidth: 138 } });
+    centerActivePill(rail);
+    expect(rail.style.justifyContent).toBe('flex-start');
+    // target = 300 - (299-138)/2 = 300 - 80.5 = 219.5, clamp [0, 723-299=424]
+    expect(rail.scrollLeft).toBeCloseTo(219.5, 1);
+  });
+
+  it('현재 칩 없으면 no-op (레이아웃 미변경)', () => {
+    const rail = fakeRail({ scrollWidth: 723, clientWidth: 299, cur: null });
+    centerActivePill(rail);
+    expect(rail.style.justifyContent).toBeUndefined();
+    expect(rail.scrollLeft).toBe(-1);
   });
 });
