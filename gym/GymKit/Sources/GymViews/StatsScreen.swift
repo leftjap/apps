@@ -2,10 +2,12 @@ import SwiftUI
 
 // 통계 화면 — mocks/stats.html 이식. 3탭(캘린더/종목/부위) 실제 전환. 정적 데모 데이터.
 public struct StatsScreenView: View {
-    enum Tab { case cal, exercise, body }
-    @State private var tab: Tab = .cal
+    public enum Tab: String { case cal, exercise, body }
+    @State private var tab: Tab
     var onHome: () -> Void
-    public init(onHome: @escaping () -> Void = {}) { self.onHome = onHome }
+    public init(initialTab: Tab = .cal, onHome: @escaping () -> Void = {}) {
+        _tab = State(initialValue: initialTab); self.onHome = onHome
+    }
 
     public var body: some View {
         VStack(spacing: 0) {

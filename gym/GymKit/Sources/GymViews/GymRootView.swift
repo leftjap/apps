@@ -13,7 +13,7 @@ public struct GymRootView: View {
             case .session:
                 SessionScreenView(onHome: { model.goHome() })
             case .stats:
-                StatsScreenView(onHome: { model.goHome() })
+                StatsScreenView(initialTab: model.statsInitialTab, onHome: { model.goHome() })
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
