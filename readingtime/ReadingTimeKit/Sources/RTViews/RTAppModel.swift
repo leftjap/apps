@@ -239,6 +239,24 @@ public final class RTAppModel: ObservableObject {
         }
         return n
     }
+    /// 이 책과 함께한 날수 ("N일째") — addedAt 당일 = 1 (홈 라이브 칩). 데모는 시안 고정("18일째").
+    public func daysSinceAdded(_ book: RTBook) -> Int {
+        let from = cal.startOfDay(for: book.addedAt)
+        let to = cal.startOfDay(for: now())
+        return (cal.dateComponents([.day], from: from, to: to).day ?? 0) + 1
+    }
+
+    /// 최근 count 일의 기록 달성 여부 (index 0 = count-1일 전 … 마지막 = 오늘). 홈 연속 체인.
+    /// userData 없으면(데모) 전부 false — 화면이 시안 고정 패턴을 그린다.
+    public func streakChain(_ count: Int) -> [Bool] {
+        guard let d = userData else { return [Bool](repeating: false, count: count) }
+        let days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        let today = cal.startOfDay(for: now())
+        return (0..<count).map { i in
+            guard let day = cal.date(byAdding: .day, value: -(count - 1 - i), to: today) else { return false }
+            return days.contains(day)
+        }
+    }
     @Published public var searchQuery = "몰입"
     @Published public var searchResults: [RTBookHit]?
 
