@@ -193,6 +193,7 @@ public struct HomeScreenView: View {
                 .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rLg))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("home-cta")
         .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
     }
 }

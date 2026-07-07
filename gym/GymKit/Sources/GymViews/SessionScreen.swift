@@ -18,6 +18,7 @@ struct SessionToolbar: View {
                         .foregroundStyle(GY.ink3)
                         .frame(width: 40, height: 40)
                 }.buttonStyle(.plain)
+                .accessibilityIdentifier("session-home")
                 Spacer()
             }
             HStack(spacing: 8) {  // 타이머 (중앙)
