@@ -22,7 +22,7 @@ final class GymNavigationUITests: XCTestCase {
         // 세션 화면 전환 확인 (직전 세션 기록 + 종료)
         XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 5),
                       "CTA 탭 후 세션 화면(직전 세션 기록)이 떠야 한다")
-        XCTAssertTrue(app.staticTexts["종료"].exists, "세션 툴바 종료가 있어야 한다")
+        XCTAssertTrue(app.buttons["session-end"].exists, "세션 툴바 종료가 있어야 한다")
     }
 
     // 홈 → 통계 → 탭 전환(종목) → 홈 복귀
