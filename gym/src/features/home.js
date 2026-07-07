@@ -749,14 +749,23 @@ function applyBalanceToDom(balance, doc) {
       + `<span class="bal-hl-unit kr">세트</span></span>${upChip}${focusChip}`;
   }
 
-  // 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px], 7px/세트 (작업지시서 §4.1)
-  const PX_PER_SET = 7; // 스케일 통일 (§4.1: 6세트=42px, 14세트=98px)
+  // 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px] (작업지시서 §4.1).
+  //   기본 7px/세트(§4.1: 6세트=42px, 14세트=98px). 단 최고 세트수가 차트 영역을 넘으면 비례 축소 —
+  //   실기기(짧은 화면)에서 고세트(예: 31세트=217px) 막대가 헤드라인과 겹치던 버그 수정. 차트 높이 실측 후 캡.
+  const chartEl = rowsEl.closest('.bal-chart');
+  const maxVal = Math.max(1, ...parts.map((p) => Math.max(Number(p.sets) || 0, Number(p.prevSets) || 0)));
+  let maxBarPx = 108; // 폴백 (레이아웃 미측정 시)
+  if (chartEl && chartEl.clientHeight > 80) {
+    // 차트 높이 − 값라벨(14)+갭(7) − 라벨행(≈23) − 여유(4)
+    maxBarPx = Math.max(49, chartEl.clientHeight - 48);
+  }
+  const pxPerSet = Math.min(7, maxBarPx / maxVal); // 데모 범위(≤14세트≈98px)는 정확히 7px/세트 유지
   rowsEl.innerHTML = parts.map((p, i) => {
     const isFocus = p.key === focusKey;
     const sets = Number(p.sets) || 0;
     const prev = Number(p.prevSets) || 0;
-    const inkH = Math.max(0, sets * PX_PER_SET);
-    const ghostH = Math.max(0, prev * PX_PER_SET);
+    const inkH = Math.round(sets * pxPerSet);
+    const ghostH = Math.round(prev * pxPerSet);
     // 이번주 막대 진입 웨이브 — 60ms 스태거 grow. 최소부위는 상시 경고펄스라 grow 제외 (시안 #7a 정합).
     const inkAnim = (!isFocus && !rmr) ? `animation:gGrow 520ms cubic-bezier(.2,.7,.2,1) ${i * 60}ms both;` : '';
     const ghost = prev > 0 ? `<i class="bal-bar-ghost" style="height:${ghostH}px;"></i>` : '';
