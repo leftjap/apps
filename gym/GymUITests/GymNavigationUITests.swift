@@ -44,6 +44,21 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 5), "홈으로 돌아와야 한다")
     }
 
+    // 좌스와이프 = 세트완료 → 현재 세트 중량이 다음 세트로 갱신 (상태머신 실 인터랙션)
+    func testSwipeCompletesSet() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--route", "session"]
+        app.launch()
+        let hero = app.staticTexts["hero-weight"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 10), "히어로 중량이 있어야 한다")
+        XCTAssertEqual(hero.label, "70", "현재 세트(벤치프레스 3번째)는 70kg")
+        // 히어로 좌스와이프 = 세트완료 → 다음 세트(72kg)로 진행
+        hero.swipeLeft()
+        let expect = expectation(for: NSPredicate(format: "label == %@", "72"), evaluatedWith: hero)
+        wait(for: [expect], timeout: 5)
+        XCTAssertEqual(hero.label, "72", "세트완료 후 다음 세트 72kg 로 갱신돼야 한다")
+    }
+
     // 세션 → 홈 (툴바 홈 버튼) 역방향 검증
     func testHomeButtonReturnsHome() {
         let app = XCUIApplication()

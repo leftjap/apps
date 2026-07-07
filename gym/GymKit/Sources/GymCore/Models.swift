@@ -17,6 +17,9 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
         self.reps = reps
         self.done = done
     }
+
+    // 세트 볼륨 = 중량 × 횟수 (nil 방어).
+    public var volume: Double { Double(weight ?? 0) * Double(reps ?? 0) }
 }
 
 // 블록 — 현재 single 만 (circuit 폐기, spec §16). { type:'single', exerciseId, sets }.

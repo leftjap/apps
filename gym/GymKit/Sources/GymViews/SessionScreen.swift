@@ -109,8 +109,8 @@ public struct SessionScreenView: View {
     public var body: some View {
         let block = model.currentBlock
         let sets = block?.sets ?? []
-        let blockTotal = sets.reduce(0.0) { $0 + Double($1.weight ?? 0) * Double($1.reps ?? 0) }
-        let blockDone = sets.filter(\.done).reduce(0.0) { $0 + Double($1.weight ?? 0) * Double($1.reps ?? 0) }
+        let blockTotal = sets.reduce(0.0) { $0 + $1.volume }
+        let blockDone = sets.filter(\.done).reduce(0.0) { $0 + $1.volume }
         let blockPct = blockTotal > 0 ? Int((blockDone / blockTotal * 100).rounded()) : 0
         let cur = model.currentSet
         return VStack(spacing: 0) {
@@ -132,7 +132,6 @@ public struct SessionScreenView: View {
                     .onEnded { v in
                         if v.translation.width < -30 { model.completeCurrentSet() }   // 좌스와이프 = 세트완료
                     })
-                .accessibilityIdentifier("session-hero")
             Spacer()
             ExerciseVolumeRing(
                 sets: sets, cur: model.currentSetIdx, pct: blockPct,

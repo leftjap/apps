@@ -14,6 +14,7 @@ struct SessionHero: View {
                 .tracking(-6.7)                 // -0.055em @122
                 .foregroundStyle(GY.ink1)
                 .lineSpacing(0)
+                .accessibilityIdentifier("hero-weight")
             Text(unit)
                 .font(.sans(15, 600))
                 .tracking(0.3).foregroundStyle(GY.ink4)

@@ -26,7 +26,10 @@ public final class GymAppModel: ObservableObject {
 
     // 현재 블록 = 미완료(세트 중 하나라도 미완료) 첫 블록.
     public var currentBlockIdx: Int {
-        session.blocks.firstIndex { blk in blk.sets.contains { !$0.done } } ?? max(0, session.blocks.count - 1)
+        for (i, blk) in session.blocks.enumerated() {
+            if blk.sets.contains(where: { !$0.done }) { return i }
+        }
+        return max(0, session.blocks.count - 1)
     }
     public var currentBlock: GymBlock? {
         session.blocks.indices.contains(currentBlockIdx) ? session.blocks[currentBlockIdx] : nil
@@ -47,9 +50,11 @@ public final class GymAppModel: ObservableObject {
         sessionTotalVolume > 0 ? Int((sessionDoneVolume / sessionTotalVolume * 100).rounded()) : 0
     }
     private func blockVols(_ pred: (GymSet) -> Bool) -> Double {
-        session.blocks.reduce(0) { acc, b in
-            acc + b.sets.filter(pred).reduce(0) { $0 + Double($1.weight ?? 0) * Double($1.reps ?? 0) }
+        var total = 0.0
+        for b in session.blocks {
+            for s in b.sets where pred(s) { total += s.volume }
         }
+        return total
     }
 
     // 세트 완료 = 현재 세트 done → 다음 세트/블록 진행 + 햅틱.
