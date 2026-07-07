@@ -164,22 +164,27 @@ public struct Screen02Home: View {
         }
     }
 
-    // 접지 그림자 — RTBook3D 와 동일 부유 위상(sin(.7t)·3.5)으로 동기: 위로 뜰수록 옅고 좁게.
+    // 접지 그림자 — RTBook3D 와 동일 부유 위상(sin(.7t)·3.5)으로 동기. support.js 실측 수치 그대로:
+    // 책이 가라앉을수록(floatY>0) 옅고 좁게 / 뜰수록(floatY<0) 진하고 넓게 — README 프로즈 요약
+    // ("위로 뜰수록 옅고 좁게")과 방향이 반대이나, §Fidelity 원칙(HTML 인라인 수치가 원본)에 따라
+    // 실제 참조 코드(support.js sc=1-floatY·.01, opacity=.5-floatY·.008)를 정본으로 채택.
     var floorShadow: some View {
         RTMotionFrame {
-            floorShadowShape(scaleX: 1, opacity: 1)
+            floorShadowShape(scaleX: 1, alpha: 0.5)
         } anim: { t in
             let floatY = sin(t * 0.7) * 3.5   // RTBook3D 부유와 동일 공식
-            return floorShadowShape(scaleX: 1 - floatY * 0.01, opacity: 1 - floatY * 0.016)
+            return floorShadowShape(scaleX: 1 - floatY * 0.01, alpha: 0.5 - floatY * 0.008)
         }
     }
-    private func floorShadowShape(scaleX: CGFloat, opacity: Double) -> some View {
+    // alpha 는 그라디언트에 직접 bake — .opacity() 배수(>1 clamp) 로는 "위로 뜰수록 진해짐"
+    // 방향을 표현 불가(REST alpha=.5 가 이미 상한 부근이라 배수 상향이 무효화됨). 절대값으로 계산.
+    private func floorShadowShape(scaleX: CGFloat, alpha: Double) -> some View {
         Ellipse().fill(RadialGradient(gradient: Gradient(stops: [
-            .init(color: Color(hex: 0x3A2C1C, alpha: 0.5), location: 0),
+            .init(color: Color(hex: 0x3A2C1C, alpha: alpha), location: 0),
             .init(color: Color(hex: 0x3A2C1C, alpha: 0), location: 0.7)]),
             center: .center, startRadius: 0, endRadius: 88))
             .frame(width: 176, height: 26).blur(radius: 8)
-            .scaleEffect(x: scaleX, y: 1).opacity(opacity)
+            .scaleEffect(x: scaleX, y: 1)
     }
 
     private var chipText: String {
