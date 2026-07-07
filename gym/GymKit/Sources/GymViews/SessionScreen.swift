@@ -91,15 +91,33 @@ public struct SessionTopBlock: View {
     }
 }
 
-// 세션 화면 전체 — mocks/session.html .session-active 정합 (정적 데모 데이터).
+// 세션 화면 전체 — mocks/session.html .session-active. GymAppModel(실 세션) 구동.
 public struct SessionScreenView: View {
+    @ObservedObject var model: GymAppModel
     var onHome: () -> Void
-    public init(onHome: @escaping () -> Void = {}) { self.onHome = onHome }
+    public init(model: GymAppModel, onHome: @escaping () -> Void = {}) {
+        self.model = model; self.onHome = onHome
+    }
+    // 데모 편의 init (프리뷰/스냅샷) — 자체 모델 시드.
+    public init(onHome: @escaping () -> Void = {}) {
+        self.model = GymAppModel(); self.onHome = onHome
+    }
+
+    static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
+    static func fmt(_ n: Double) -> String { nf.string(from: NSNumber(value: n)) ?? "\(Int(n))" }
+
     public var body: some View {
-        VStack(spacing: 0) {
+        let block = model.currentBlock
+        let sets = block?.sets ?? []
+        let blockTotal = sets.reduce(0.0) { $0 + Double($1.weight ?? 0) * Double($1.reps ?? 0) }
+        let blockDone = sets.filter(\.done).reduce(0.0) { $0 + Double($1.weight ?? 0) * Double($1.reps ?? 0) }
+        let blockPct = blockTotal > 0 ? Int((blockDone / blockTotal * 100).rounded()) : 0
+        let cur = model.currentSet
+        return VStack(spacing: 0) {
             SessionToolbar(time: "18:42", onHome: onHome)
-            SessionHeader(exName: "벤치프레스", part: "가슴",
-                          volCur: "4,800", volTotal: "8,940", pct: 54)
+            SessionHeader(exName: block?.exerciseId ?? "—", part: "가슴",
+                          volCur: Self.fmt(model.sessionDoneVolume),
+                          volTotal: Self.fmt(model.sessionTotalVolume), pct: model.sessionPct)
             PrevRecordBars(
                 sets: [.init(weight: 20, reps: 15, state: .done),
                        .init(weight: 40, reps: 7, state: .done),
@@ -107,20 +125,23 @@ public struct SessionScreenView: View {
                        .init(weight: 40, reps: 7, state: .now)],
                 best: (weight: 45, reps: 10))
             Spacer()
-            SessionHero(weight: "65", unit: "kg", reps: "10")
+            SessionHero(weight: cur?.weight.map { Self.fmt($0) } ?? "—", unit: "kg",
+                        reps: cur?.reps.map { "\($0)" } ?? "—")
+                .contentShape(Rectangle())
+                .gesture(DragGesture(minimumDistance: 30)
+                    .onEnded { v in
+                        if v.translation.width < -30 { model.completeCurrentSet() }   // 좌스와이프 = 세트완료
+                    })
+                .accessibilityIdentifier("session-hero")
             Spacer()
             ExerciseVolumeRing(
-                sets: [GymSet(weight: 60, reps: 10, done: true),
-                       GymSet(weight: 60, reps: 10, done: true),
-                       GymSet(weight: 65, reps: 8, done: true),
-                       GymSet(weight: 65, reps: 8, done: false)],
-                cur: 3, pct: 67, curVol: "2,020", totVol: "3,020", overAmt: "+220")
-            GymFooterRail(items: [
-                .init(name: "체스트 프레스", state: .done),
-                .init(name: "벤치프레스", state: .current),
-                .init(name: "인클라인 덤벨 프레스", state: .upcoming),
-                .init(name: "케이블 플라이", state: .upcoming),
-            ])
+                sets: sets, cur: model.currentSetIdx, pct: blockPct,
+                curVol: Self.fmt(blockDone), totVol: Self.fmt(blockTotal), overAmt: nil)
+            GymFooterRail(items: model.session.blocks.enumerated().map { i, b in
+                let allDone = b.sets.allSatisfy(\.done)
+                let state: RailState = i == model.currentBlockIdx ? .current : (allDone ? .done : .upcoming)
+                return GymFooterRail.Item(name: b.exerciseId, state: state)
+            })
         }
         .frame(width: 390)
         .frame(maxHeight: .infinity, alignment: .top)

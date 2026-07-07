@@ -11,7 +11,7 @@ public struct GymRootView: View {
             case .home:
                 HomeScreenView(onStart: { model.startSession() }, onStats: { model.openStats() })
             case .session:
-                SessionScreenView(onHome: { model.goHome() })
+                SessionScreenView(model: model, onHome: { model.goHome() })
             case .stats:
                 StatsScreenView(initialTab: model.statsInitialTab, onHome: { model.goHome() })
             case .summary:
