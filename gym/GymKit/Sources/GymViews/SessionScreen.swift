@@ -92,10 +92,11 @@ public struct SessionTopBlock: View {
 
 // 세션 화면 전체 — mocks/session.html .session-active 정합 (정적 데모 데이터).
 public struct SessionScreenView: View {
-    public init() {}
+    var onHome: () -> Void
+    public init(onHome: @escaping () -> Void = {}) { self.onHome = onHome }
     public var body: some View {
         VStack(spacing: 0) {
-            SessionToolbar(time: "18:42")
+            SessionToolbar(time: "18:42", onHome: onHome)
             SessionHeader(exName: "벤치프레스", part: "가슴",
                           volCur: "4,800", volTotal: "8,940", pct: 54)
             PrevRecordBars(

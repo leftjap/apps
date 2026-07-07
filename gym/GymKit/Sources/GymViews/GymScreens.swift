@@ -10,6 +10,7 @@ public enum GymScreens {
         case "session-top":  return AnyView(SessionTopBlock())
         case "session":      return AnyView(SessionScreenView())
         case "home":         return AnyView(HomeScreenView())
+        case "root":         return AnyView(GymRootView(model: GymAppModel()))
         case "tokens":       return AnyView(TokenSwatch())
         default:             return nil
         }
