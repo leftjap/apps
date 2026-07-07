@@ -60,10 +60,26 @@ if (typeof window !== 'undefined') {
   }
 }
 
+// 사용자별 부팅 가드 — handleSession 의 전체 인증 부팅(뷰 mount + startSync + realtime 구독)을
+// "사용자당 1회" 로 제한. supabase-js 는 콜드부팅 시 _recoverAndRefresh(SIGNED_IN 또는 TOKEN_REFRESHED)
+// 를 먼저, 이어서 _emitInitialSession(INITIAL_SESSION) 을 발화 → 두 이벤트 모두 아래 핸들러의
+// qualifying set 이라 가드가 없으면 handleSession 이 2~3회 실행돼 화면이 두 번 로딩된다(이중 부팅).
+// 재로그인·사용자 전환은 아래 resetBootAndShowLogin / user.id 불일치로 정상 재부팅됨.
+let _bootedUserId = null;
+
+// showLogin 진입 시 부팅 가드 리셋 — 이후 (재)로그인이 정상 부팅되도록.
+// 반드시 "showLogin 이 실제 실행되는 지점" 에서만 리셋해야 함:
+//  - restore 성공(SIGNED_OUT → r.restored) · guard recovered:true 경로에서는 호출되지 않아
+//    부팅 상태가 유지됨 → 뒤따르는 동일 사용자 SIGNED_IN 이 dedup 돼 잘못된 재부팅 방지.
+function resetBootAndShowLogin() {
+  _bootedUserId = null;
+  showLogin();
+}
+
 async function handleSession(session) {
   const user = session?.user;
   if (!user) {
-    showLogin();
+    resetBootAndShowLogin();
     return;
   }
   // allowlist 검증 — 비허용 이메일은 즉시 로그아웃 + 차단 메시지
@@ -73,9 +89,14 @@ async function handleSession(session) {
       `허용되지 않은 계정입니다: ${user.email || '(이메일 없음)'}`,
     );
     await Auth.signOut();
-    showLogin();
+    resetBootAndShowLogin();
     return;
   }
+  // 이미 이 사용자로 부팅 완료 → 반복 auth 이벤트(재-INITIAL_SESSION/SIGNED_IN/TOKEN_REFRESHED/
+  // USER_UPDATED)는 재마운트·재싱크 skip. supabase client 가 새 토큰을 내부 반영하므로 할 일 없음.
+  // set-before-await — 두 이벤트가 첫 await 전에 도착해도 동기 가드로 이중 부팅 차단(JS 단일 스레드).
+  if (_bootedUserId === user.id) return;
+  _bootedUserId = user.id;
   // Dexie DB 인스턴스 (Wave 11.5.1) — Supabase 미설정·오프라인에서도 로컬 동작 확보
   await Auth.ensureUserDB(user);
   // 2026-05-03 변경: Keep import 데이터 진입 후 dev fixture 시딩 비활성 + cleanup.
@@ -213,8 +234,11 @@ async function bootstrap() {
       // 비정상 제거면 백업으로 복원 (명시 로그아웃은 백업이 이미 폐기돼 복원 안 됨)
       const r = await restoreSessionIfMissing(supabase, storageKey);
       if (r.restored) return;
-      if (guard) await guard.handleSignedOutWithRetry(showLogin);
-      else showLogin();
+      // resetBootAndShowLogin 을 콜백으로 전달 — guard 가 실제 로그아웃(explicit/cooldown/
+      // 미복원)일 때만 이를 호출해 부팅 가드를 리셋 → 동일 계정 재로그인이 정상 재부팅됨.
+      // recovered:true(조용히 복원)면 콜백 미호출 → 부팅 유지(불필요 재부팅 방지).
+      if (guard) await guard.handleSignedOutWithRetry(resetBootAndShowLogin);
+      else resetBootAndShowLogin();
     }
   });
 }
