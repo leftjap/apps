@@ -1,0 +1,87 @@
+{
+  "_note": "RealClass-mining (PPP) — Parks S1E2 시청 장면 (소스 #85~91 발췌 → dialogue 7줄, 단어변경 0). 방문 유세 후 캠페인 사무실. 레슬리가 화난 주민과 통화한 뒤 '언짢은 말을 들었다'고 팀에게 토로하고, 팀원(앤)이 '집 전화번호까지 줬냐'며 놀라자 '난 공무원이라 쉽게 연락돼야 한다'고 답한다. 사람들 반응에 답답해하며 '앤디 병원비라도 보여주면 동정심이 생길까' 궁리한다(곧 판세를 뒤집을 아이디어로 이어짐). 기본동사 타깃 2개(scan-source-chunks 후보 내 선정) = need to(레슬리 #88, need) / have a little(레슬리 #91, have). need to 는 목표 #2(여행·일상 회화)의 초고빈도 semi-auxiliary(d+to 축약연음 '니투') — 리스닝·스피킹 전이 최상. have a little 은 have a little + 명사(time/patience/water) 여행·식당 실용 청크. 둘 다 ≤3단어(6단어 게이트 회피). ▲화자 귀속: RealClass 소스 무라벨 → 장면 논리 유추(#85 통화한 화난 주민 언급·#87 '공무원'=Leslie 캠페인 주도자 / #86 놀라는 팀원 interjection=Ann). Leslie·Ann 기등록(speech.js SPEAKER_VOICES) — 신규 등록 불필요. ▲finish-parks-first(2026-07-01): s1e2 저번호 미사용 구간은 발췌기준 미달로 정당 스킵 → 1~12(기본동사후보 0·canvassing 파편)·23~36(후보 1='be a bitch' 저질)·56~57(파편)·68~75(#73 대체테이크 'Ah it's next month'/'Oh it's tomorrow' 병기=충실성 위험 + 유일 청크 'I'll be there'는 07-06 #107로 기사용 중복)·76~84(Tom 일방통화)·108~140(111~114 Ron confessional 독백·118~123 Andy 노래 가사·125~137 Leslie confessional 독백 — 강청크 want to/look at/come on 이 전부 제외 구간 내부, 실대화는 115~117 간호사의상 3줄뿐). 85~91 = 팀 상대 실대화(앤 interjection 포함) + scan 기본동사 후보 2종(need to #88 / have a little #91) 밀집. 07-04(58~67)·07-05(46~55)·07-06(101~107)과 겹침 0. 어제(07-06) note가 85~100을 '산발'로 예비 스킵했으나, 108~140 재스캔 결과 그쪽이 독백/노래로 실대화가 더 빈약해 85~91이 최저 미사용 viable 구간으로 확정. 매칭계약: 카드 순서=대화 등장순(#88→#91).",
+  "_source": { "episode": "s1e2", "lines": [85, 91] },
+  "lang": "en",
+  "date": "2026-07-07",
+  "cards": [
+    {
+      "id": "en-parks-s1e2-campaign-office-scene",
+      "sentence": "캠페인 사무실 — 레슬리가 팀에게 토로",
+      "meaning": "전체 장면을 먼저 듣고 '시작하기'를 누르세요.",
+      "reading": null,
+      "phonetic_kr": null,
+      "order_index": 0,
+      "explanation": {
+        "sceneTitle": "캠페인 사무실 — 레슬리가 팀에게 토로",
+        "sceneSummary": "방문 유세 후 캠페인 사무실. 레슬리가 화난 주민과 통화한 뒤 '언짢은 말을 들었다'고 팀에게 토로한다. 팀원 앤이 '집 전화번호까지 줬냐'며 놀라자 레슬리는 '난 공무원이라 쉽게 연락이 닿아야 한다'고 답한다. 사람들 반응에 답답해하며 '앤디 병원비라도 보여주면 동정심이 조금은 생길까' 궁리한다 — 이 궁리가 곧 판세를 뒤집을 아이디어로 이어진다.",
+        "dialogue": [
+          { "speaker": "Leslie", "en": "Hmm, he said some upsetting things.", "ko": "음, 언짢은 말을 좀 하더라고요." },
+          { "speaker": "Ann", "en": "Can't believe you gave him your home phone number.", "ko": "집 전화번호까지 줬다니 믿기지가 않아요." },
+          { "speaker": "Leslie", "en": "Well, I'm a public servant.", "ko": "뭐, 전 공무원이잖아요." },
+          { "speaker": "Leslie", "en": "I need to be accessible.", "ko": "쉽게 연락이 닿아야죠." },
+          { "speaker": "Leslie", "en": "What the hell is wrong with people?", "ko": "사람들 대체 왜 이러는 걸까요?" },
+          { "speaker": "Leslie", "en": "I should show them Andy's medical bills.", "ko": "앤디 병원비라도 보여줘야겠어요." },
+          { "speaker": "Leslie", "en": "Maybe they'd have a little sympathy.", "ko": "그러면 동정심이 조금은 생길지도 몰라요." }
+        ]
+      }
+    },
+    {
+      "id": "en-parks-s1e2-need-to",
+      "sentence": "I need to be accessible.",
+      "meaning": "쉽게 연락이 닿아야 해요.",
+      "reading": null,
+      "phonetic_kr": "아이 니투 비 액쎄서블",
+      "order_index": 1,
+      "explanation": {
+        "key": "need to = ~해야 해요 (need + to + 동사원형). '~할 필요가 있다 → ~해야 한다'는 뜻으로 매일·여행에서 초고빈도. need to 는 이어서 '니투/니러' — d와 t가 붙어 부드럽게 축약. 뒤엔 항상 동사원형(need to go/find/check).",
+        "situation": "장면 · 레슬리가 '공무원이라 쉽게 연락돼야 한다'고 함",
+        "drills": [
+          { "en": "I need to go now.", "ko": "지금 가야 해요.", "kr": "아이 니투 고 나우" },
+          { "en": "I need to check in first.", "ko": "먼저 체크인해야 해요. (여행/호텔)", "kr": "아이 니투 체크 인 퍼스트" },
+          { "en": "Honey, I need to feed the cat.", "ko": "여보, 고양이 밥 줘야 해요. (아내/고양이)", "kr": "허니 아이 니투 피드 더 캣" },
+          { "en": "Do you need to work tomorrow?", "ko": "내일 출근해야 해요? (아내 안부)", "kr": "두 유 니투 워크 투마로우" },
+          { "en": "I need to find the station.", "ko": "역을 찾아야 해요. (여행)", "kr": "아이 니투 파인 더 스테이션" },
+          { "en": "We need to take a break.", "ko": "우리 좀 쉬어야 해요. (일상)", "kr": "위 니투 테이커 브레익" }
+        ],
+        "grammar": [
+          { "struct": "need to + 동사원형 (~해야 해요)", "body": "'~할 필요가 있다 → ~해야 한다'. have to 와 비슷하나 need to 가 좀 더 부드러움. 뒤엔 항상 동사원형: I need to go / check / find. 부정은 'I don't need to ~'(~할 필요 없어요), 질문은 'Do you need to ~?'(~해야 해요?). 여행·일상 요청·계획에 매일 씀." }
+        ],
+        "chunks": [ ["I", "아이"], ["need to", "니투"], ["be", "비"], ["accessible.", "액쎄서블"] ],
+        "phonemes": [ ["/t/", "need to"] ],
+        "mistake": "'니드 투'라 또박또박 X → need to 는 d와 t가 붙어 '니투/니러'로 축약되고 뒤 동사에 바로 이어짐. 자연스럽게 '아이 니투 비 액쎄서블'.",
+        "similar": "I have to ~ · I've got to ~ · I gotta ~",
+        "category": "daily/basic",
+        "frequency": 10
+      }
+    },
+    {
+      "id": "en-parks-s1e2-have-a-little",
+      "sentence": "Maybe they'd have a little sympathy.",
+      "meaning": "그러면 사람들이 동정심을 조금은 가질지도 몰라요.",
+      "reading": null,
+      "phonetic_kr": "메이비 데이드 해버 리를 씸퍼씨",
+      "order_index": 2,
+      "explanation": {
+        "key": "have a little = 조금 가지다/있다 (have + a little + 명사). a little 은 '조금'(셀 수 없는 명사 앞). have a little time/patience/water 처럼 '조금 ~있다/주다'로 여행·식당에서 실용적. have a 는 이어서 '해버', little 은 t가 부드러운 ㄹ로 '리를'.",
+        "situation": "장면 · 레슬리가 '동정심이 조금은 생길지도'라며 궁리함",
+        "drills": [
+          { "en": "Have a little patience.", "ko": "조금만 참아요.", "kr": "해버 리를 페이션스" },
+          { "en": "Do you have a little time?", "ko": "잠깐 시간 있어요? (여행/길 묻기)", "kr": "두 유 해버 리를 타임" },
+          { "en": "Can I have a little water?", "ko": "물 조금 주시겠어요? (여행/식당)", "kr": "캔 아이 해버 리를 워러" },
+          { "en": "We have a little time before dinner.", "ko": "저녁 전에 시간이 조금 있어요.", "kr": "위 해버 리를 타임 비포 디너" },
+          { "en": "Honey, have a little rest.", "ko": "여보, 좀 쉬어요. (아내)", "kr": "허니 해버 리를 레스트" },
+          { "en": "Let's have a little fun on the trip.", "ko": "여행에서 좀 즐겨요. (여행)", "kr": "렛츠 해버 리를 펀 온 더 트립" }
+        ],
+        "grammar": [
+          { "struct": "have a little + 명사 (조금 ~있다/가지다)", "body": "a little 은 셀 수 없는 명사(time·water·patience·money) 앞에서 '조금'. have a little time = 시간이 조금 있다. 셀 수 있는 명사엔 a few 를 씀(a few minutes). 요청·제안에 부드럽게: 'Can I have a little water?'(물 조금요), 'Have a little patience'(조금만 참아요)." }
+        ],
+        "chunks": [ ["Maybe", "메이비"], ["they'd", "데이드"], ["have a little", "해버 리를"], ["sympathy.", "씸퍼씨"] ],
+        "phonemes": [ ["/t/", "little"] ],
+        "mistake": "'해브 어 리틀'이라 또박또박 X → have a 는 붙어서 '해버', little 의 t 는 모음 사이에서 부드러운 ㄹ(flap)로 '리를/리럴'. 자연스럽게 '해버 리를'.",
+        "similar": "have a bit of ~ · a little more · just a little",
+        "category": "daily/basic",
+        "frequency": 9
+      }
+    }
+  ]
+}
