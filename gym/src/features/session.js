@@ -2156,21 +2156,21 @@ function renderFooterPillHtml({ blockIdx, state, name }) {
     : state === 'hold' ? 'is-hold' : 'is-upcoming';
   const ariaCurrent = state === 'current' ? ' aria-current="true"' : '';
 
-  // fp-check stroke 색은 CSS(.fp-check path{stroke:var(--sage)})로 지정 — SVG 속성 var() 미작동.
-  let mk;
-  if (state === 'current') {
-    mk = `<span class="fp-dot-live"></span>`;
-  } else if (state === 'done') {
-    mk = `<svg class="fp-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.4 6.3l2.4 2.4L9.6 3.4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-  } else if (state === 'hold') {
-    mk = `<span class="fp-dot-hold"></span>`;
+  // 작업지시서 §4 — 완료: 무채색 체크 / 현재: 상단 하이라이트 오버레이 / 예정·보류: 종목명만.
+  // fp-check stroke 색은 CSS(.fp-check path{stroke:oklch(...)})로 지정 — SVG 속성 var() 미작동.
+  let inner;
+  if (state === 'done') {
+    inner = `<span class="fp-chip__mk"><svg class="fp-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.4 6.3l2.4 2.4L9.6 3.4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`
+      + `<span class="fp-chip__name">${escapeHtml(name)}</span>`;
+  } else if (state === 'current') {
+    inner = `<span class="fp-chip__hl" aria-hidden="true"></span>`
+      + `<span class="fp-chip__name">${escapeHtml(name)}</span>`;
   } else {
-    mk = `<span class="fp-dot-todo"></span>`;
+    inner = `<span class="fp-chip__name">${escapeHtml(name)}</span>`;
   }
 
   return `<button class="fp-chip ${stateClass}" type="button" data-longpress="footer-exercise" data-ex-state="${exStateAttr}" data-block-idx="${blockIdx}"${ariaCurrent}>`
-    + `<span class="fp-chip__mk">${mk}</span>`
-    + `<span class="fp-chip__name">${escapeHtml(name)}</span>`
+    + inner
     + `</button>`;
 }
 
