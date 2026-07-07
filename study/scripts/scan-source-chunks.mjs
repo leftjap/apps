@@ -10,7 +10,7 @@
  *
  * 사용: node scripts/scan-source-chunks.mjs --episode office-s1e2 [--lines 1,50]
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { argv, exit } from 'node:process';
@@ -32,6 +32,41 @@ export function extractBasicVerbChunks(sentence) {
     else if (w[i + 1] && ARTICLES.has(w[i + 1]) && w[i + 2]) out.push(`${v} ${w[i + 1]} ${w[i + 2]}`);
   }
   return [...new Set(out)];
+}
+
+/** 불규칙 활용 → lemma (BASIC_VERBS 안 활용형만; 규칙형은 자기 자신). 동사별 커버리지 집계용. */
+const VERB_LEMMA = {
+  am: 'be', is: 'be', are: 'be', was: 'be', were: 'be', been: 'be',
+  has: 'have', had: 'have', got: 'get', gotten: 'get', took: 'take', taken: 'take',
+  gave: 'give', given: 'give', made: 'make', did: 'do', done: 'do', went: 'go', gone: 'go',
+  came: 'come', kept: 'keep', found: 'find', told: 'tell', ran: 'run', felt: 'feel', left: 'leave', meant: 'mean',
+};
+
+/** 청크 머리동사 lemma (첫 토큰 기준). 예: "gave him a hand" → "give". */
+export function headVerbLemma(chunk) {
+  const first = String(chunk || '').toLowerCase().replace(/[^a-z' ]/g, ' ').split(/\s+/).filter(Boolean)[0] || '';
+  return VERB_LEMMA[first] || first;
+}
+
+/**
+ * 기존 en 시드 배열 → 동사 lemma 별 학습 이력 횟수.
+ * 표현 카드 `explanation.key` 의 '=' 앞 타깃에서 **머리 기본동사 1개**만 lemma 로 집계 (목적어 명사는 제외).
+ * scene 카드(order_index === 0)는 무시. 학습자가 어떤 기본동사를 이미 배웠나(=저커버 판정)의 근거.
+ */
+export function verbCoverage(seeds) {
+  const cov = new Map();
+  for (const seed of seeds || []) {
+    for (const c of (seed?.cards || [])) {
+      if (c?.order_index === 0) continue;
+      const target = String(c?.explanation?.key || '').split('=')[0];
+      const words = target.toLowerCase().replace(/[^a-z' ]/g, ' ').split(/\s+/).filter(Boolean);
+      const head = words.find((w) => BASIC_VERBS.has(w));
+      if (!head) continue;
+      const lm = VERB_LEMMA[head] || head;
+      cov.set(lm, (cov.get(lm) || 0) + 1);
+    }
+  }
+  return cov;
 }
 
 /** 소스 파일 텍스트 → {num, en} 라인 배열 (s1e1 'EN:' + ep2~ 'N. EN' 양식). */
@@ -83,4 +118,17 @@ if (isMain) {
   }
   const top = [...counter.entries()].sort((x, y) => y[1] - x[1]);
   console.log(`\n빈도순 후보 ${top.length}종: ${top.map(([c, n]) => `${c}(${n})`).join(', ') || '(없음 — 다른 구간/화 선택 권장)'}`);
+
+  // 학습자 이력 커버리지 (기존 en-*.json) — 저커버 기본동사 우선 표시. source-driven 의 우연성 보정.
+  const seeds = [];
+  for (const f of readdirSync(seedsDir).filter((n) => /^en-.*\.json$/.test(n))) {
+    try { seeds.push(JSON.parse(readFileSync(join(seedsDir, f), 'utf8'))); } catch { /* 손상 시드 무시 */ }
+  }
+  const cov = verbCoverage(seeds);
+  const covLine = [...cov.entries()].sort((a, b) => a[1] - b[1]).map(([v, n]) => `${v}(${n})`).join(', ');
+  console.log(`\n[이력 커버리지] en 시드 ${seeds.length}개 — 동사별 학습 횟수(낮을수록 미학습): ${covLine || '(이력 없음)'}`);
+  const byCov = top
+    .map(([c, n]) => ({ c, n, cov: cov.get(headVerbLemma(c)) || 0 }))
+    .sort((x, y) => x.cov - y.cov || y.n - x.n);
+  console.log(`저커버 우선 후보(이력↑·창빈도): ${byCov.map((x) => `${x.c}[이력${x.cov}·창${x.n}]`).join(', ') || '(없음)'}`);
 }

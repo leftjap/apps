@@ -15,10 +15,26 @@ import {
   evaluateServerGuards,
   parseSpeakerVoiceNames,
   loadSourceEnLines,
+  epFileStem,
+  showOfEpisode,
 } from './validate-seed.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const seedsDir = join(__dir, '..', 'seeds');
+
+describe('epFileStem — 소스 파일명 스템 (show 접두어 벗김, 양 쇼 대칭)', () => {
+  it('office 접두어 제거', () => {
+    expect(epFileStem('office-s1e2')).toBe('s1e2');
+  });
+  it('parks 접두어 제거 (기존 버그: parks- 미스트립 → realclass-parks-parks-* ENOENT)', () => {
+    expect(epFileStem('parks-s1e2')).toBe('s1e2');
+    expect(showOfEpisode('parks-s1e2')).toBe('parks');
+  });
+  it('bare 스템(parks 시드 _source 규칙)은 그대로', () => {
+    expect(epFileStem('s1e2')).toBe('s1e2');
+    expect(showOfEpisode('s1e2')).toBe('parks');
+  });
+});
 
 const SPEAKERS = new Set(['Leslie', 'Ann', 'Tom']);
 

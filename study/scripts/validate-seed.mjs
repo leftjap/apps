@@ -69,7 +69,7 @@ export const SHOW_PRIORITY = ['parks', 'office'];
 const EPISODE_NUMS = [1, 2, 3, 4, 5, 6]; // realclass-{show}-s1e{1..6} — 화당 소스 파일 존재
 // show 판정·파일스템은 본 모듈이 단일 출처 (scan-source-chunks 가 import 재사용 — 3쇼 확장 시 여기만 갱신).
 export const showOfEpisode = (ep) => (/^office/i.test(String(ep)) ? 'office' : 'parks');
-export const epFileStem = (ep) => String(ep).replace(/^office-?/i, ''); // 'office-s1e2'→'s1e2' (소스 파일명 스템)
+export const epFileStem = (ep) => String(ep).replace(/^(office|parks)-?/i, ''); // 'office-s1e2'|'parks-s1e2'→'s1e2' (소스 파일명 스템)
 const epNumOfEpisode = (ep) => { const m = String(ep).match(/s1e(\d+)/i); return m ? parseInt(m[1], 10) : null; };
 
 /** 소스 대본 파일에서 문장번호→EN 텍스트 맵 파싱 (s1e1 'EN:/KO:' + ep2~ 'N. EN/KO' 양식 모두). */
