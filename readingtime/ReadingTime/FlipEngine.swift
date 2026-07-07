@@ -295,8 +295,9 @@ final class FlipEngine: ObservableObject {
     }
 
     private func performDown(at now: Date, signal: Bool = true) {
-        if model.route == .home {
-            // 읽기 뎁스 제거(§4-1): 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
+        if model.route == .home, model.currentBook != nil {
+            // 읽기 뎁스 제거(§4-1): 홈(책 있음, 포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
+            // 빈 홈(책 없음)은 기록 대상이 없으므로 시작하지 않는다 (수용기준#1 — 빈 홈은 책 추가 유도).
             session.start(at: now)
             model.simFlip()
             if signal { signals.signalStart() }   // 화면이 안 보이는 상태의 "기록 시작" 신호
