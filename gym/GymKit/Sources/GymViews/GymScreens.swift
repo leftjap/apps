@@ -1,7 +1,27 @@
 import SwiftUI
+import GymCore
 
 // gymshot 이 렌더할 화면/컴포넌트 스냅샷 카탈로그.
 public enum GymScreens {
+    // 요약 스냅샷용 완료 세션 (실 ID + PR 플래그 + 소요/칼로리).
+    static func demoCompletedSession() -> GymSession {
+        var s = GymSession(id: "sum-demo", date: "2026-05-06",
+            startTime: 1_746_500_000_000, endTime: 1_746_500_000_000 + 52 * 60000, blocks: [
+                GymBlock(exerciseId: "bench_press", sets: [
+                    GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 65, reps: 10, done: true),
+                    GymSet(weight: 70, reps: 8, done: true, pr: true), GymSet(weight: 72, reps: 6, done: true),
+                    GymSet(weight: 72, reps: 5, done: true)]),
+                GymBlock(exerciseId: "incline_bench", sets: [
+                    GymSet(weight: 45, reps: 10, done: true), GymSet(weight: 45, reps: 10, done: true),
+                    GymSet(weight: 45, reps: 9, done: true), GymSet(weight: 45, reps: 8, done: true)]),
+                GymBlock(exerciseId: "dumbbell_fly", sets: [
+                    GymSet(weight: 18, reps: 12, done: true), GymSet(weight: 18, reps: 12, done: true),
+                    GymSet(weight: 18, reps: 10, done: true)]),
+            ], tags: ["chest"], status: .completed)
+        s.durationMin = 52; s.totalCalories = 423
+        return s
+    }
+
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
         switch id {
@@ -9,6 +29,7 @@ public enum GymScreens {
         case "rail-single":  return AnyView(RailDemo(single: true))
         case "session-top":  return AnyView(SessionTopBlock())
         case "session":      return AnyView(SessionScreenView().frame(width: 390, height: 844))
+        case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         case "home":         return AnyView(HomeScreenView().frame(width: 390, height: 844))
         case "root":         return AnyView(GymRootView(model: GymAppModel()).frame(width: 390, height: 844))
         case "tokens":       return AnyView(TokenSwatch())

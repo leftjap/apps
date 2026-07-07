@@ -1,6 +1,7 @@
 import SwiftUI
+import GymCore
 
-// 세션 요약 — mocks/summary.html 영수증 카드 이식. 정적 데모 데이터.
+// 세션 요약 — mocks/summary.html 영수증 카드 이식. 방금 끝낸 실 세션(GymSession) 구동 (spec §7-2·§7-3).
 
 // 하단 톱니(찢긴 종이) 영수증 형태 — clip-path zigzag 근사.
 struct ReceiptShape: Shape {
@@ -36,19 +37,51 @@ struct DashedDivider: View {
 }
 
 public struct SummaryScreenView: View {
+    let session: GymSession
+    let custom: [GymCustomExercise]
+    let sessionNo: Int        // 누적 세션 번호 (#0142)
+    let totalCount: Int       // 누적 완료 세션 수 (스탬프)
     var onHome: () -> Void
-    public init(onHome: @escaping () -> Void = {}) { self.onHome = onHome }
 
-    struct ExRow { let name: String; let sets: Int; let vol: Int; let pr: Bool }
-    let rows: [ExRow] = [
-        .init(name: "벤치프레스", sets: 5, vol: 600, pr: true),
-        .init(name: "인클라인 덤벨", sets: 4, vol: 168, pr: false),
-        .init(name: "케이블 플라이", sets: 3, vol: 120, pr: false),
-    ]
+    // 앱 경로 — 방금 완료된 model.session 구동.
+    public init(model: GymAppModel, onHome: @escaping () -> Void = {}) {
+        session = model.session; custom = model.custom
+        sessionNo = model.history.count; totalCount = model.history.count
+        self.onHome = onHome
+    }
+    // 스냅샷/데모 경로.
+    public init(session: GymSession, custom: [GymCustomExercise] = [], sessionNo: Int = 42,
+                totalCount: Int = 42, onHome: @escaping () -> Void = {}) {
+        self.session = session; self.custom = custom; self.sessionNo = sessionNo
+        self.totalCount = totalCount; self.onHome = onHome
+    }
+
+    // MARK: - 파생값 (실 세션 집계)
+    struct ExRow: Identifiable { let id = UUID(); let name: String; let sets: Int; let vol: Int; let pr: Bool }
+    var rows: [ExRow] {
+        session.blocks.map { b in
+            let done = b.sets.filter(\.done)
+            return ExRow(name: GymExercises.resolveName(b.exerciseId, custom: custom),
+                         sets: done.count,
+                         vol: Int(done.reduce(0) { $0 + $1.volume }.rounded()),
+                         pr: b.sets.contains { $0.pr })
+        }
+    }
+    var totalVolume: Int { Int(session.blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0) { $0 + $1.volume } }.rounded()) }
+    var totalSets: Int { session.blocks.reduce(0) { $0 + $1.sets.filter(\.done).count } }
+    var prCount: Int { session.blocks.filter { $0.sets.contains { $0.pr } }.count }
+
+    static let hm: DateFormatter = { let f = DateFormatter(); f.dateFormat = "HH:mm"; f.timeZone = TimeZone(identifier: "Asia/Seoul"); return f }()
+    static let wd: DateFormatter = { let f = DateFormatter(); f.dateFormat = "EEE"; f.locale = Locale(identifier: "en_US_POSIX"); f.timeZone = TimeZone(identifier: "Asia/Seoul"); return f }()
+    func hhmm(_ ms: Int64?) -> String { guard let ms else { return "--:--" }; return Self.hm.string(from: Date(timeIntervalSince1970: Double(ms) / 1000)) }
+    var weekday: String {
+        let f = DateFormatter(); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(identifier: "Asia/Seoul")
+        guard let d = f.date(from: session.date) else { return "" }
+        return Self.wd.string(from: d).uppercased()
+    }
 
     public var body: some View {
         ZStack {
-            // 배경 — radial glow + shell
             RadialGradient(colors: [Color(oklch: 0.96, 0.012, 60), .clear], center: .init(x: 0.2, y: -0.1), startRadius: 0, endRadius: 500)
                 .background(RadialGradient(colors: [Color(oklch: 0.95, 0.02, 50).opacity(0.6), .clear], center: .init(x: 1.1, y: 1.15), startRadius: 0, endRadius: 400))
                 .background(GY.shell)
@@ -66,14 +99,14 @@ public struct SummaryScreenView: View {
             // 헤더
             VStack(spacing: 0) {
                 Text("GYM").font(.mono(22, 600)).tracking(3.5).foregroundStyle(GY.ink1)
-                Text("SESSION · #0142").font(.mono(11, 500)).tracking(2).foregroundStyle(GY.ink3).padding(.top, 7)
-                Text("2026-05-06 WED · 18:42→19:34").font(.mono(11, 400)).tracking(0.2).foregroundStyle(GY.ink4).padding(.top, 5)
+                Text("SESSION · #\(String(format: "%04d", sessionNo))").font(.mono(11, 500)).tracking(2).foregroundStyle(GY.ink3).padding(.top, 7)
+                Text("\(session.date) \(weekday) · \(hhmm(session.startTime))→\(hhmm(session.endTime))")
+                    .font(.mono(11, 400)).tracking(0.2).foregroundStyle(GY.ink4).padding(.top, 5)
             }.padding(.bottom, 16)
             DashedDivider()
-            // 운동 행
+            // 운동 행 (실 세션 블록)
             VStack(spacing: 0) {
-                ForEach(rows.indices, id: \.self) { i in
-                    let r = rows[i]
+                ForEach(rows) { r in
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
                         HStack(spacing: 6) {
                             Text(r.name).font(.sans(13, 500)).foregroundStyle(r.pr ? GY.crailDeep : GY.ink1).lineLimit(1)
@@ -81,8 +114,7 @@ public struct SummaryScreenView: View {
                         }
                         Spacer()
                         Text("\(r.sets)세트").font(.mono(12, 400)).foregroundStyle(GY.ink4)
-                        Text("\(r.vol)kg").font(.mono(13, 600)).foregroundStyle(GY.ink2)
-                            .frame(minWidth: 56, alignment: .trailing)
+                        Text("\(r.vol)kg").font(.mono(13, 600)).foregroundStyle(GY.ink2).frame(minWidth: 56, alignment: .trailing)
                     }
                     .padding(.vertical, 7)
                 }
@@ -92,21 +124,26 @@ public struct SummaryScreenView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text("TOTAL").font(.mono(12, 600)).tracking(1.44).foregroundStyle(GY.ink3)
                 Spacer()
-                (Text("888").font(.mono(38, 500)).tracking(-1.14).foregroundStyle(GY.ink1)
+                (Text("\(totalVolume)").font(.mono(38, 500)).tracking(-1.14).foregroundStyle(GY.ink1)
                  + Text(" kg").font(.mono(15, 500)).foregroundStyle(GY.ink4))
             }.padding(.vertical, 14)
+            // 칼로리 (부각 안 함, spec §7-3)
+            if session.totalCalories > 0 {
+                Text("약 \(session.totalCalories) kcal 소모").font(.mono(10.5, 400)).tracking(0.3)
+                    .foregroundStyle(GY.ink4).frame(maxWidth: .infinity, alignment: .trailing).padding(.bottom, 8)
+            }
             DashedDivider()
             // 메타 3열
             HStack(spacing: 0) {
-                metaCol("52분", "소요", .leading)
-                metaCol("1", "신기록", .center, crail: true)
-                metaCol("12", "세트", .trailing)
+                metaCol("\(session.durationMin)분", "소요", .leading)
+                metaCol("\(prCount)", "신기록", .center, crail: true)
+                metaCol("\(totalSets)", "세트", .trailing)
             }.padding(.vertical, 13)
             DashedDivider()
-            // 스탬프
+            // 스탬프 (누적 완료 세션)
             HStack(spacing: 7) {
                 Text("★").font(.system(size: 11)).foregroundStyle(GY.crailDeep)
-                Text("3주 연속 달성").font(.mono(12, 600)).tracking(0.48).foregroundStyle(GY.ink1)
+                Text("누적 \(totalCount)회 달성").font(.mono(12, 600)).tracking(0.48).foregroundStyle(GY.ink1)
             }
             .padding(.horizontal, 16).padding(.vertical, 7)
             .overlay(Capsule().strokeBorder(GY.crailBase, lineWidth: 1.5))
