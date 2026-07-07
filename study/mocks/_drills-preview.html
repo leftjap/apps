@@ -33,6 +33,13 @@ const data = await (await fetch('/seeds/en-parks-s1e1.json')).json();
 const root = document.getElementById('root');
 const sceneCard = data.cards.find(c => Array.isArray(c.explanation?.dialogue));
 const sentenceCards = data.cards.filter(c => !c.explanation?.dialogue);
+// 확장 사다리(ladder) 렌더 데모 — 실 시드엔 anchor 표현 1개에 저작(guide §6.3). 여기선 프리뷰 확인용 예시.
+if (sentenceCards[0]) sentenceCards[0].explanation.ladder = [
+  { en:'Get a coffee.', ko:'커피 하나.', kr:'게러 커피', adds:'base' },
+  { en:'Can I get a coffee?', ko:'커피 하나 될까요?', kr:'캔 아이 게러 커피', adds:'object' },
+  { en:'Can I get a coffee, please?', ko:'커피 하나 주시겠어요?', kr:'캔 아이 게러 커피 플리즈', adds:'hedge' },
+  { en:'Can I get an iced coffee to go, please?', ko:'아이스커피 하나 포장 주시겠어요?', kr:'캔 아이 게런 아이스 커피 투고 플리즈', adds:'adverbial' },
+];
 
 // STEP 1 — 실제 scenePage 컴포넌트 (세션 첫 페이지)
 const s1 = document.createElement('div'); s1.className='step'; s1.textContent='1. 세션 첫 페이지 — 전체 다이얼로그 (실 컴포넌트)'; root.appendChild(s1);
