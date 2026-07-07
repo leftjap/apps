@@ -113,6 +113,53 @@ describe('validateSeedContent — 기준선', () => {
   });
 });
 
+describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예외)', () => {
+  const moduExpr = (id, oi, sentence, chunks) => ({
+    id, sentence, meaning: '뜻', reading: null,
+    phonetic_kr: chunks.map((c) => c[1]).join(' '),
+    order_index: oi,
+    explanation: {
+      key: `${sentence} = 뜻.`,
+      situation: '영상 클립 맥락',
+      drills: Array.from({ length: 5 }, (_, i) => ({ en: `Drill ${i}.`, ko: '뜻', kr: '드릴' })),
+      grammar: [{ struct: '구조', body: '설명' }],
+      chunks,
+      phonemes: [['/ð/', 'that']],
+      mistake: '함정', similar: '대체', category: 'chunk/test', frequency: 7,
+    },
+  });
+  const makeModu = (overrides = {}) => ({
+    track: 'moduyeongeo', lang: 'en', ep: 1,
+    cards: [
+      moduExpr('en-moduyeongeo-ep1-a', 1, 'It is no big deal.', [['It is no', '잇츠 노우'], ['big deal.', '빅 디일.']]),
+      moduExpr('en-moduyeongeo-ep1-b', 2, 'Let us move on.', [['Let us', '레츠'], ['move on.', '무v 온.']]),
+    ],
+    ...overrides,
+  });
+
+  it('scene·_source 없어도 통과 (트랙 예외)', () => {
+    const r = validateSeedContent(makeModu(), okOpts);
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('표현카드 품질검사는 유지 — phonetic_kr 불일치는 여전히 차단', () => {
+    const p = makeModu();
+    p.cards[0].phonetic_kr = '틀린 발음';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
+  it('회귀: track 없는 정상 en 은 여전히 scene 강제 (예외 누수 방지)', () => {
+    const p = makeModu();
+    delete p.track;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('scene');
+  });
+});
+
 describe('validateSeedContent — 구조', () => {
   it('scene 카드 부재 → 차단', () => {
     const p = makePayload();

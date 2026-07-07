@@ -6,6 +6,7 @@ public enum RTScreens {
     public static func view(id: String) -> AnyView? {
         switch id {
         case "probe": return AnyView(ProbeScreen())
+        case "box": return AnyView(_Probe3D())
         case "01": return AnyView(Screen01Login())
         case "02": return AnyView(Screen02Home())
         case "03": return AnyView(Screen03FlipWait())

@@ -132,26 +132,32 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   // en 신규 시드 = RealClass 트랙 의무 (guide §6.3 활성 정본) — scene 부재도 RealClass 규칙으로 차단
   const isRealClass = payload?.lang === 'en';
   if (!isRealClass) return { ok: errors.length === 0, errors, warnings };
+  // 한시 트랙(모두영어 유튜브 발췌, 사용자 결정): scene·_source 없는 표현 전용 세션. 표현카드 품질검사(8필드·
+  // 발음정합·drills·기본동사)는 유지하되 scene/dialogue/충실성/_source 게이트만 면제. 예외는 track==='moduyeongeo'
+  // payload 에만 발동 → 정상 en 시드(track 필드 없음)는 불변. 105편 완료 후 이 트랙 미사용 시 규칙 자동 원복.
+  const isModuTrack = payload?.track === 'moduyeongeo';
 
   // ── 구조: scene 1장 (oi 0) + 표현 1~2장 (PPP 집중 추출 — 최소 1장 차단 / 3장 초과 경고) ──
   const scenes = sorted.filter(isSceneCard);
   const exprs = sorted.filter((c) => !isSceneCard(c));
-  if (scenes.length !== 1) errors.push(`scene 카드는 정확히 1장이어야 함 (현재 ${scenes.length})`);
+  if (!isModuTrack && scenes.length !== 1) errors.push(`scene 카드는 정확히 1장이어야 함 (현재 ${scenes.length})`);
   const scene = scenes[0];
   if (scene && (scene.order_index ?? null) !== 0) errors.push(`scene 카드 order_index 는 0 (현재 ${scene.order_index})`);
   // PPP(2026-06-29): 진짜 장면(P1) → 핵심 표현 1~2개 집중 추출 → 레벨 변형 연습(P2). 과다추출 지양.
   if (exprs.length < 1) errors.push(`표현 카드 최소 1장 필요 (현재 ${exprs.length})`);
-  if (exprs.length > 3) warnings.push(`표현 ${exprs.length}장 — PPP 집중 추출은 1~2개 권장 (과다 추출 — 핵심만 깊이)`);
+  if (!isModuTrack && exprs.length > 3) warnings.push(`표현 ${exprs.length}장 — PPP 집중 추출은 1~2개 권장 (과다 추출 — 핵심만 깊이)`);
 
-  // ── scene: dialogue 6~10줄, speaker/en/ko 완비, 화자 TTS 등록 ──
+  // ── scene: dialogue 6~10줄, speaker/en/ko 완비, 화자 TTS 등록 (moduyeongeo 트랙은 scene 없음 → 면제) ──
   const dialogue = scene?.explanation?.dialogue ?? [];
-  if (dialogue.length < 6 || dialogue.length > 10) errors.push(`dialogue 는 6~10줄 (현재 ${dialogue.length})`);
-  dialogue.forEach((l, i) => {
-    if (!l?.speaker || !l?.en || !l?.ko) errors.push(`dialogue ${i + 1}줄 speaker/en/ko 누락`);
-    else if (speakerNames.size && !speakerNames.has(l.speaker)) {
-      errors.push(`화자 '${l.speaker}' 가 SPEAKER_VOICES 미등록 — speech.js 에 voice(성별·rate) 등록 후 적재 (미등록 시 Aria 폴백으로 성별 불일치)`);
-    }
-  });
+  if (!isModuTrack) {
+    if (dialogue.length < 6 || dialogue.length > 10) errors.push(`dialogue 는 6~10줄 (현재 ${dialogue.length})`);
+    dialogue.forEach((l, i) => {
+      if (!l?.speaker || !l?.en || !l?.ko) errors.push(`dialogue ${i + 1}줄 speaker/en/ko 누락`);
+      else if (speakerNames.size && !speakerNames.has(l.speaker)) {
+        errors.push(`화자 '${l.speaker}' 가 SPEAKER_VOICES 미등록 — speech.js 에 voice(성별·rate) 등록 후 적재 (미등록 시 Aria 폴백으로 성별 불일치)`);
+      }
+    });
+  }
 
   // ── 충실성 게이트 (2026-06-29 신설): dialogue 각 en 이 소스 _source 구간에 실재해야 함 ──
   // 배경: 직전 시드(forum-discussion)가 민원인 대사를 진행자 대사로 둔갑·합성했는데 통과됨.
@@ -166,7 +172,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
         }
       });
     }
-  } else if (isRealClass) {
+  } else if (isRealClass && !isModuTrack) {
     warnings.push('충실성 미검증: 소스 파일 미제공 — dialogue 가 실제 대사인지 기계 확인 불가 (로컬 seeds/sources 필요)');
   }
 
@@ -286,18 +292,20 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     }
   }
 
-  // ── _source 구조화 + 기존 시드 구간 겹침 ──
+  // ── _source 구조화 + 기존 시드 구간 겹침 (moduyeongeo 트랙은 소스 구간 개념 없음 → 면제) ──
   const src = payload._source;
-  if (!src?.episode || !Array.isArray(src?.lines) || src.lines.length !== 2) {
-    errors.push('_source 누락 — { episode, lines: [시작, 끝] } 구조 의무 (사용 구간 기계 검증용)');
-  } else {
-    for (const ex of existingSeeds) {
-      const s = ex.source;
-      if (!s?.episode || s.episode !== src.episode || !Array.isArray(s.lines)) continue;
-      const [a1, a2] = src.lines;
-      const [b1, b2] = s.lines;
-      if (a1 <= b2 && b1 <= a2) {
-        errors.push(`_source 구간 겹침: ${src.episode} #${a1}~${a2} ↔ ${ex.file} #${b1}~${b2}`);
+  if (!isModuTrack) {
+    if (!src?.episode || !Array.isArray(src?.lines) || src.lines.length !== 2) {
+      errors.push('_source 누락 — { episode, lines: [시작, 끝] } 구조 의무 (사용 구간 기계 검증용)');
+    } else {
+      for (const ex of existingSeeds) {
+        const s = ex.source;
+        if (!s?.episode || s.episode !== src.episode || !Array.isArray(s.lines)) continue;
+        const [a1, a2] = src.lines;
+        const [b1, b2] = s.lines;
+        if (a1 <= b2 && b1 <= a2) {
+          errors.push(`_source 구간 겹침: ${src.episode} #${a1}~${a2} ↔ ${ex.file} #${b1}~${b2}`);
+        }
       }
     }
   }
@@ -382,5 +390,5 @@ if (isMain) {
     for (const e of r.errors) console.error(`[validate] FAIL: ${e}`);
     exit(1);
   }
-  console.log(`[validate] OK — ${payload.lang} ${payload.date} cards=${payload.cards.length}`);
+  console.log(`[validate] OK — ${payload.lang} ${payload.track === 'moduyeongeo' ? `ep${payload.ep}` : payload.date} cards=${payload.cards.length}`);
 }
