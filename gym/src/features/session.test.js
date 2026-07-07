@@ -2540,11 +2540,12 @@ describe('computeVolSegments (§5.1 세그먼트 링)', () => {
     expect(segs).toHaveLength(5);
     expect(planned).toBe(3020); // 720+650+650+520+480
   });
-  it('첫 세그 arc ∝ 볼륨, 시작 12시(-90°)', () => {
+  it('arc·rot = 시안 #6b/#7b 실측값 (슬롯 − 갭 모델)', () => {
     const { segs } = computeVolSegments(mockupSets, 3);
-    // 720/3020 × (100.53 − 5·2.2) = 720/3020 × 89.53 = 21.34
-    expect(segs[0].arc).toBe(21.34);
-    expect(segs[0].rot).toBe(-90);
+    // 슬롯 = 볼륨/3020×100.53, arc = 슬롯 − 2.2 → 시안 실측: 21.77/19.44/19.44/15.11/13.78
+    expect(segs.map((s) => s.arc)).toEqual([21.77, 19.44, 19.44, 15.11, 13.78]);
+    // rot = -90 + 누적볼륨/3020×360 → 시안 실측: -90/-4.17/73.31/150.79/212.78
+    expect(segs.map((s) => s.rot)).toEqual([-90, -4.17, 73.31, 150.79, 212.78]);
   });
   it('상태: done(완료) / active(현재 미완료=cur) / upcoming(예정)', () => {
     const { segs } = computeVolSegments(mockupSets, 3);

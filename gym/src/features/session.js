@@ -1320,8 +1320,11 @@ const VOL_ARC_C = 131.95;  // 2π·21 (초과 아크 반지름 21, §6.3)
 
 /**
  * 세트별 볼륨 세그먼트 (작업지시서 §5.1) — 직전기록 막대차트와 1:1 대응.
- *  - 각 세그 arc ∝ setVolume(중량×횟수). 가용호(C − N·gap)를 볼륨 비율로 분배, 세그 사이 2.2 갭.
- *  - 상태: done(완료) / active(현재 미완료 = cur) / upcoming(예정). 시작 12시(-90°) 시계방향.
+ * 시안 #6b/#7b 실측 모델 (회전·dash 역산으로 확정):
+ *  - 각 세트 슬롯 = (볼륨/총합)×C 를 차지, arc = 슬롯 − 갭(2.2) — 갭은 슬롯 뒷부분.
+ *  - 세그 시작각 rot = -90(12시) + (누적볼륨/총합)×360, 시계방향.
+ *  - 예: 720/3020 → 슬롯 23.97, arc 21.77(시안 정합), rot -90.
+ *  - 상태: done(완료) / active(현재 미완료 = cur) / upcoming(예정).
  * 반환: { segs:[{arc, rot, state}], planned }
  */
 export function computeVolSegments(sets, cur) {
@@ -1329,12 +1332,12 @@ export function computeVolSegments(sets, cur) {
   const N = list.length;
   const vols = list.map((s) => (Number(s?.weight) || 0) * (Number(s?.reps) || 0));
   const planned = vols.reduce((a, b) => a + b, 0);
-  const avail = Math.max(0, VOL_RING_C - N * VOL_SEG_GAP);
   const segs = [];
-  let cum = 0;
+  let cumVol = 0;
   for (let i = 0; i < N; i += 1) {
-    const arc = planned > 0 ? (vols[i] / planned) * avail : 0;
-    const rot = -90 + ((cum + i * VOL_SEG_GAP) / VOL_RING_C) * 360;
+    const slot = planned > 0 ? (vols[i] / planned) * VOL_RING_C : 0;
+    const arc = Math.max(0, slot - VOL_SEG_GAP);
+    const rot = -90 + (planned > 0 ? (cumVol / planned) * 360 : 0);
     const isDone = !!(list[i] && list[i].done);
     const isActive = i === cur && !isDone;
     segs.push({
@@ -1342,7 +1345,7 @@ export function computeVolSegments(sets, cur) {
       rot: Math.round(rot * 100) / 100,
       state: isActive ? 'active' : (isDone ? 'done' : 'upcoming'),
     });
-    cum += arc;
+    cumVol += vols[i];
   }
   return { segs, planned };
 }
