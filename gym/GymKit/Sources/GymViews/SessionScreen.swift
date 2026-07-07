@@ -9,6 +9,7 @@ import GymCore
 struct SessionToolbar: View {
     let time: String
     var onHome: () -> Void = {}
+    var onEnd: () -> Void = {}
     var body: some View {
         ZStack {
             HStack {
@@ -29,10 +30,12 @@ struct SessionToolbar: View {
             }
             HStack {
                 Spacer()
-                Text("종료")
-                    .font(.sans(14, 600))
-                    .foregroundStyle(GY.ink3)
-                    .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 9)
+                Button(action: onEnd) {
+                    Text("종료")
+                        .font(.sans(14, 600))
+                        .foregroundStyle(GY.ink3)
+                        .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 9)
+                }.buttonStyle(.plain).accessibilityIdentifier("session-end")
             }
         }
         .padding(.horizontal, 16)
@@ -105,6 +108,9 @@ public struct SessionScreenView: View {
 
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
     static func fmt(_ n: Double) -> String { nf.string(from: NSNumber(value: n)) ?? "\(Int(n))" }
+    // 중량 — 2.5 단위라 소수 1자리까지 (70 → "70", 72.5 → "72.5")
+    static let wf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 1; return f }()
+    static func fmtW(_ n: Double) -> String { wf.string(from: NSNumber(value: n)) ?? "\(n)" }
 
     public var body: some View {
         let block = model.currentBlock
@@ -114,7 +120,7 @@ public struct SessionScreenView: View {
         let blockPct = blockTotal > 0 ? Int((blockDone / blockTotal * 100).rounded()) : 0
         let cur = model.currentSet
         return VStack(spacing: 0) {
-            SessionToolbar(time: "18:42", onHome: onHome)
+            SessionToolbar(time: "18:42", onHome: onHome, onEnd: { model.route = .summary })
             SessionHeader(exName: block?.exerciseId ?? "—", part: "가슴",
                           volCur: Self.fmt(model.sessionDoneVolume),
                           volTotal: Self.fmt(model.sessionTotalVolume), pct: model.sessionPct)
@@ -125,13 +131,25 @@ public struct SessionScreenView: View {
                        .init(weight: 40, reps: 7, state: .now)],
                 best: (weight: 45, reps: 10))
             Spacer()
-            SessionHero(weight: cur?.weight.map { Self.fmt($0) } ?? "—", unit: "kg",
-                        reps: cur?.reps.map { "\($0)" } ?? "—")
-                .contentShape(Rectangle())
-                .gesture(DragGesture(minimumDistance: 30)
-                    .onEnded { v in
-                        if v.translation.width < -30 { model.completeCurrentSet() }   // 좌스와이프 = 세트완료
-                    })
+            ZStack {
+                SessionHero(weight: cur?.weight.map { Self.fmtW($0) } ?? "—", unit: "kg",
+                            reps: cur?.reps.map { "\($0)" } ?? "—")
+                // 좌/우 빈 영역 탭 = 중량 증감 (session.js applyTapDelta, 중앙은 키패드 영역·후속)
+                HStack(spacing: 0) {
+                    Color.clear.contentShape(Rectangle())
+                        .onTapGesture { model.adjustCurrentWeight(-2.5) }
+                        .accessibilityIdentifier("hero-minus")
+                    Spacer().frame(width: 150)
+                    Color.clear.contentShape(Rectangle())
+                        .onTapGesture { model.adjustCurrentWeight(2.5) }
+                        .accessibilityIdentifier("hero-plus")
+                }
+            }
+            .contentShape(Rectangle())
+            .gesture(DragGesture(minimumDistance: 30)
+                .onEnded { v in
+                    if v.translation.width < -30 { model.completeCurrentSet() }   // 좌스와이프 = 세트완료
+                })
             Spacer()
             ExerciseVolumeRing(
                 sets: sets, cur: model.currentSetIdx, pct: blockPct,

@@ -18,8 +18,6 @@ public struct Screen14EmptyHome: View {
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
-            // 배경 서가 — §3 통일 (슬롯 강조 없음, 집어드는 안무 없음)
-            RTBookshelf(showSlot: false)
             RTHomeHeader {
                 RTAvatar("지")
                     .contentShape(Rectangle())

@@ -77,7 +77,7 @@ public struct Screen02Home: View {
             .init(color: Color(hex: 0xFFE4B4, alpha: 0), location: 0.62)]),
             center: .center, startRadius: 0, endRadius: 260)
             .frame(width: 520, height: 520)
-            .position(x: 195, y: 338)
+            .position(x: 195, y: 300)
     }
 
     // ── 5. 가장자리 비네트 (저녁 딤) ──

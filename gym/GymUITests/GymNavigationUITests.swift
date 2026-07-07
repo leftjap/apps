@@ -59,6 +59,30 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertEqual(hero.label, "72", "세트완료 후 다음 세트 72kg 로 갱신돼야 한다")
     }
 
+    // 우측 빈영역 탭 = 중량 증가 (session.js applyTapDelta)
+    func testTapAdjustsWeight() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--route", "session", "--reset"]
+        app.launch()
+        let hero = app.staticTexts["hero-weight"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 10))
+        XCTAssertEqual(hero.label, "70")
+        app.otherElements["hero-plus"].tap()   // +2.5
+        let e = expectation(for: NSPredicate(format: "label == %@", "72.5"), evaluatedWith: hero)
+        wait(for: [e], timeout: 5)
+        XCTAssertEqual(hero.label, "72.5", "우측 탭 후 중량 +2.5")
+    }
+
+    // 종료 버튼 = 요약 화면 진입
+    func testSessionEndToSummary() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--route", "session", "--reset"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10))
+        app.buttons["session-end"].tap()
+        XCTAssertTrue(app.staticTexts["TOTAL"].waitForExistence(timeout: 5), "종료 후 요약(TOTAL)이 떠야 한다")
+    }
+
     // 로컬 영속 — 세트완료 후 앱 재시작해도 상태 유지 (UserDefaults JSON)
     func testSessionPersistsAcrossRelaunch() {
         let app = XCUIApplication()
