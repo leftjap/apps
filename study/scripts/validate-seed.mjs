@@ -133,7 +133,8 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   const isRealClass = payload?.lang === 'en';
   if (!isRealClass) return { ok: errors.length === 0, errors, warnings };
   // 한시 트랙(모두영어 유튜브 발췌, 사용자 결정): scene·_source 없는 표현 전용 세션. 표현카드 품질검사(8필드·
-  // 발음정합·drills·기본동사)는 유지하되 scene/dialogue/충실성/_source 게이트만 면제. 예외는 track==='moduyeongeo'
+  // 발음정합·drills·기본동사 비중 경고)는 유지하되 scene/dialogue/충실성/_source 게이트 + 비기본동사 구동사
+  // 하드 차단(고정 커리큘럼 표현이라 '다른 구간 선택' 불가)만 면제. 예외는 track==='moduyeongeo'
   // payload 에만 발동 → 정상 en 시드(track 필드 없음)는 불변. 105편 완료 후 이 트랙 미사용 시 규칙 자동 원복.
   const isModuTrack = payload?.track === 'moduyeongeo';
 
@@ -232,7 +233,10 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     // wrap/hang/fill/write 등 비기본동사 머리 구동사를 일괄 차단(경고로는 라우틴이 무시해 재발 → 하드 차단).
     // 기존 적재분(fill in 등)은 재INSERT 안 하므로 grandfather. 소스에 기본동사 청크 없으면 다른 구간/화 선택
     // (scan-source-chunks 로 확인). close by 는 particle 끝 아님 → 통과.
-    if (chunkW.length >= 2 && PARTICLES.has(chunkW[chunkW.length - 1]) && !hasBasicVerb) {
+    // moduyeongeo 트랙 면제(2026-07-08): 표현이 유튜브 커리큘럼에 고정 지정 → 에이전트가 '다른 구간 선택' 불가.
+    // 하드 차단의 취지(RealClass 마이닝이 wrap it up 류를 고르는 '선택'을 막음)가 고정표현엔 적용 안 됨.
+    // 기본동사 비중 경고는 유지되므로 '기본동사' 신호는 남음. (ep92 count me in/out — count 는 비기본동사 구동사)
+    if (!isModuTrack && chunkW.length >= 2 && PARTICLES.has(chunkW[chunkW.length - 1]) && !hasBasicVerb) {
       errors.push(`${c.id}: 타깃 "${chunk}" 는 비기본동사 구동사 — 차단. 구동사는 기본동사(get/take/put/come/go/look/find/call…) 머리여야 함. scan-source-chunks 로 기본동사 청크 후보를 뽑아 교체하거나 다른 구간 선택`);
     }
   }

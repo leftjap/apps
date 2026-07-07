@@ -24,6 +24,26 @@ public extension View {
     }
 }
 
+// CSS cubic-bezier(x1,y1,x2,y2) 와 동일 정의(P0=(0,0), P3=(1,1)) — x=progress 에서의 y(진행값).
+// 뉴턴-랩슨으로 베지어 매개변수 t 를 역산. 고정-시간 검증 프레임이 실제 라이브 .timingCurve
+// 애니메이션(오버슈트 포함)과 일치하도록 사용 — .rtBookDropIn() 등.
+func rtCubicBezier(_ x1: Double, _ y1: Double, _ x2: Double, _ y2: Double, at progress: Double) -> Double {
+    let x = min(1, max(0, progress))
+    if x == 0 { return 0 }
+    if x == 1 { return 1 }
+    func bx(_ t: Double) -> Double { 3 * (1 - t) * (1 - t) * t * x1 + 3 * (1 - t) * t * t * x2 + t * t * t }
+    func by(_ t: Double) -> Double { 3 * (1 - t) * (1 - t) * t * y1 + 3 * (1 - t) * t * t * y2 + t * t * t }
+    func dbx(_ t: Double) -> Double { 3 * (1 - t) * (1 - t) * x1 + 6 * (1 - t) * t * (x2 - x1) + 3 * t * t * (1 - x2) }
+    var t = x
+    for _ in 0..<8 {
+        let dx = dbx(t)
+        if abs(dx) < 1e-6 { break }
+        t -= (bx(t) - x) / dx
+        t = min(1, max(0, t))
+    }
+    return by(t)
+}
+
 // 고정 시간 주입 — rtshot --at <t> 가 특정 모션 프레임을 결정적으로 렌더(화면 검증)하도록.
 // nil = 라이브(TimelineView 실시간). 값 = 등장 후 경과초 t 로 고정.
 private struct RTFrozenTimeKey: EnvironmentKey { static let defaultValue: Double? = nil }
@@ -49,7 +69,8 @@ struct RTBookDropIn: ViewModifier {
     }
     func body(content: Content) -> some View {
         if let frozen {
-            pose(content, min(1, max(0, (frozen - 0.12) / 0.9)))
+            let raw = min(1, max(0, (frozen - 0.12) / 0.9))
+            pose(content, rtCubicBezier(0.2, 1.05, 0.3, 1, at: raw))
         } else if enabled && !reduce {
             pose(content, p).onAppear {
                 withAnimation(.timingCurve(0.2, 1.05, 0.3, 1, duration: 0.9).delay(0.12)) { p = 1 }

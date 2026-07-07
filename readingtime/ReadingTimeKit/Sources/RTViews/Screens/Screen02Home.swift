@@ -145,11 +145,7 @@ public struct Screen02Home: View {
             // 3D 책 + 접지 그림자 (부유·sway 는 RTBook3D 내부, 진입 드롭인은 여기)
             VStack(spacing: 0) {
                 bookView.rtBookDropIn().padding(.top, 24)
-                Ellipse().fill(RadialGradient(gradient: Gradient(stops: [
-                    .init(color: Color(hex: 0x3A2C1C, alpha: 0.5), location: 0),
-                    .init(color: Color(hex: 0x3A2C1C, alpha: 0), location: 0.7)]),
-                    center: .center, startRadius: 0, endRadius: 88))
-                    .frame(width: 176, height: 26).blur(radius: 8).padding(.top, 2)
+                floorShadow.padding(.top, 2)
             }
             // 제목 / 저자 / 누적
             VStack(spacing: 0) {
@@ -166,6 +162,24 @@ public struct Screen02Home: View {
             }
             .padding(.top, 16)
         }
+    }
+
+    // 접지 그림자 — RTBook3D 와 동일 부유 위상(sin(.7t)·3.5)으로 동기: 위로 뜰수록 옅고 좁게.
+    var floorShadow: some View {
+        RTMotionFrame {
+            floorShadowShape(scaleX: 1, opacity: 1)
+        } anim: { t in
+            let floatY = sin(t * 0.7) * 3.5   // RTBook3D 부유와 동일 공식
+            return floorShadowShape(scaleX: 1 - floatY * 0.01, opacity: 1 - floatY * 0.016)
+        }
+    }
+    private func floorShadowShape(scaleX: CGFloat, opacity: Double) -> some View {
+        Ellipse().fill(RadialGradient(gradient: Gradient(stops: [
+            .init(color: Color(hex: 0x3A2C1C, alpha: 0.5), location: 0),
+            .init(color: Color(hex: 0x3A2C1C, alpha: 0), location: 0.7)]),
+            center: .center, startRadius: 0, endRadius: 88))
+            .frame(width: 176, height: 26).blur(radius: 8)
+            .scaleEffect(x: scaleX, y: 1).opacity(opacity)
     }
 
     private var chipText: String {
