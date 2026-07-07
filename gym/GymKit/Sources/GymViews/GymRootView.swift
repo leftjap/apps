@@ -16,6 +16,8 @@ public struct GymRootView: View {
                 StatsScreenView(initialTab: model.statsInitialTab, onHome: { model.goHome() })
             case .summary:
                 SummaryScreenView(onHome: { model.goHome() })
+            case .admin:
+                AdminScreenView(onHome: { model.goHome() }, onStats: { model.openStats() })
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
