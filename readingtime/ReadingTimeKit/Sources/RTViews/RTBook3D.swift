@@ -88,8 +88,11 @@ public struct RTBook3D: View {
         self.spineTitle = spineTitle
     }
 
-    private var cam: Cam {
-        Cam(ry: 9 * .pi / 180, rx: 5 * .pi / 180, p: 1000,
+    // idle 3/4 각. sway 는 이 값 주위로 미세 진동.
+    static let baseRy = 9.0
+    static let baseRx = 5.0
+    private func makeCam(ryDeg: Double, rxDeg: Double) -> Cam {
+        Cam(ry: ryDeg * .pi / 180, rx: rxDeg * .pi / 180, p: 1000,
             cx: Self.cw / 2, cy: Self.ch / 2)
     }
 
@@ -99,22 +102,22 @@ public struct RTBook3D: View {
     private var hd: Double { Double(Self.D) / 2 }
 
     // 앞면 4코너 투영 (좌상,우상,우하,좌하)
-    private var frontQuad: [CGPoint] {
+    private func frontQuad(_ cam: Cam) -> [CGPoint] {
         [cam.project(SIMD3(-hw, -hh, hd)), cam.project(SIMD3(hw, -hh, hd)),
          cam.project(SIMD3(hw, hh, hd)),  cam.project(SIMD3(-hw, hh, hd))]
     }
     // 책등(좌측 x=-hw) 4코너: 앞-좌상, 뒤-좌상, 뒤-좌하, 앞-좌하
-    private var spineQuad: [CGPoint] {
+    private func spineQuad(_ cam: Cam) -> [CGPoint] {
         [cam.project(SIMD3(-hw, -hh, hd)), cam.project(SIMD3(-hw, -hh, -hd)),
          cam.project(SIMD3(-hw, hh, -hd)), cam.project(SIMD3(-hw, hh, hd))]
     }
     // 하단 단면(y=hh): 앞-좌하, 앞-우하, 뒤-우하, 뒤-좌하
-    private var bottomQuad: [CGPoint] {
+    private func bottomQuad(_ cam: Cam) -> [CGPoint] {
         [cam.project(SIMD3(-hw, hh, hd)), cam.project(SIMD3(hw, hh, hd)),
          cam.project(SIMD3(hw, hh, -hd)), cam.project(SIMD3(-hw, hh, -hd))]
     }
     // 상단 단면(y=-hh)
-    private var topQuad: [CGPoint] {
+    private func topQuad(_ cam: Cam) -> [CGPoint] {
         [cam.project(SIMD3(-hw, -hh, -hd)), cam.project(SIMD3(hw, -hh, -hd)),
          cam.project(SIMD3(hw, -hh, hd)), cam.project(SIMD3(-hw, -hh, hd))]
     }
@@ -124,45 +127,54 @@ public struct RTBook3D: View {
     }
 
     public var body: some View {
+        RTMotionFrame {
+            composite(cam: makeCam(ryDeg: Self.baseRy, rxDeg: Self.baseRx), floatY: 0)
+        } anim: { t in
+            // 부유+sway (support.js: floatY=sin(.7t)·3.5, ry=9+sin(.45t)·1.5, rx=5+sin(.6t+1)·0.8)
+            let ry = Self.baseRy + sin(t * 0.45) * 1.5
+            let rx = Self.baseRx + sin(t * 0.6 + 1) * 0.8
+            let fy = CGFloat(sin(t * 0.7) * 3.5)
+            return composite(cam: makeCam(ryDeg: ry, rxDeg: rx), floatY: fy)
+        }
+    }
+
+    private func composite(cam: Cam, floatY: CGFloat) -> some View {
         ZStack {
             // 뒤 면들 먼저 (앞면이 이음매를 덮음)
             Canvas { ctx, _ in
                 let spineVisible = cam.faceVisible(normal: SIMD3(-1, 0, 0))
                 let bottomVisible = cam.faceVisible(normal: SIMD3(0, 1, 0))
                 let topVisible = cam.faceVisible(normal: SIMD3(0, -1, 0))
-                // 하단/상단 단면 (크림 페이지단)
                 if bottomVisible {
-                    ctx.fill(path(bottomQuad), with: .linearGradient(
+                    ctx.fill(path(bottomQuad(cam)), with: .linearGradient(
                         Gradient(colors: [Color(hex: 0xE6DABD), Color(hex: 0xD8CCAA)]),
-                        startPoint: bottomQuad[0], endPoint: bottomQuad[2]))
+                        startPoint: bottomQuad(cam)[0], endPoint: bottomQuad(cam)[2]))
                 }
                 if topVisible {
-                    ctx.fill(path(topQuad), with: .linearGradient(
+                    ctx.fill(path(topQuad(cam)), with: .linearGradient(
                         Gradient(colors: [Color(hex: 0xF2EBD5), Color(hex: 0xDCCFAD)]),
-                        startPoint: topQuad[0], endPoint: topQuad[2]))
+                        startPoint: topQuad(cam)[0], endPoint: topQuad(cam)[2]))
                 }
-                // 책등 (좌측) — 90deg #584627→#736039 45%→#836d43
                 if spineVisible {
-                    ctx.fill(path(spineQuad), with: .linearGradient(
+                    let sq = spineQuad(cam)
+                    ctx.fill(path(sq), with: .linearGradient(
                         Gradient(stops: [
                             .init(color: Color(hex: 0x584627), location: 0),
                             .init(color: Color(hex: 0x736039), location: 0.45),
                             .init(color: Color(hex: 0x836D43), location: 1)]),
-                        startPoint: spineQuad[0], endPoint: spineQuad[1]))
-                    // 상하 밴드 2줄 (책등 안쪽 26px 지점)
-                    let bandTop = lerpQuadV(spineQuad, t: 26 / Double(Self.H))
-                    let bandBot = lerpQuadV(spineQuad, t: 1 - 26 / Double(Self.H))
-                    ctx.stroke(bandTop, with: .color(Color.black.opacity(0.28)), lineWidth: 1.2)
-                    ctx.stroke(bandBot, with: .color(Color.black.opacity(0.28)), lineWidth: 1.2)
+                        startPoint: sq[0], endPoint: sq[1]))
+                    ctx.stroke(lerpQuadV(sq, t: 26 / Double(Self.H)),
+                               with: .color(Color.black.opacity(0.28)), lineWidth: 1.2)
+                    ctx.stroke(lerpQuadV(sq, t: 1 - 26 / Double(Self.H)),
+                               with: .color(Color.black.opacity(0.28)), lineWidth: 1.2)
                 }
             }
             .frame(width: Self.cw, height: Self.ch)
 
-            // 앞표지 (homography 워핑)
-            frontCoverWarped
+            frontCoverWarped(cam)
         }
         .frame(width: Self.cw, height: Self.ch)
-        // 책 자체 캐스트 섀도 (부드럽게)
+        .offset(y: floatY)
         .shadow(color: Color(hex: 0x2E2110, alpha: 0.28), radius: 16, x: -6, y: 18)
     }
 
@@ -177,8 +189,8 @@ public struct RTBook3D: View {
         CGPoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t)
     }
 
-    fileprivate var frontCoverWarped: some View {
-        let q = frontQuad
+    fileprivate func frontCoverWarped(_ cam: Cam) -> some View {
+        let q = frontQuad(cam)
         let coverX = (Self.cw - Self.W) / 2
         let coverY = (Self.ch - Self.H) / 2
         let H = rtHomography(

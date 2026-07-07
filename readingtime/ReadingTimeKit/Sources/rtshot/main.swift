@@ -26,8 +26,39 @@ guard args.count >= 3 else {
            rtshot <screenID> <out.png>            # 정적 캐노니컬 렌더
            rtshot --app <screenID> <out.png>      # 시드 모델 경유 (라우팅 오라클)
            rtshot --seq <a1,a2,...> <out.png>     # 임의 액션 시퀀스 상태 렌더
+           rtshot --at <t> <screenID> <out.png>   # 모션 프레임(등장 후 t초) 결정적 렌더
     """)
     exit(1)
+}
+
+// --at <t> <screenID> <out.png> — 모션 켠 채 고정 시간 t 프레임 렌더 (화면 검증)
+if args[1] == "--at" {
+    guard args.count >= 5, let t = Double(args[2]) else {
+        print("usage: rtshot --at <t> <screenID> <out.png>")
+        exit(1)
+    }
+    let id = args[3]
+    let atOut = args[4]
+    Task { @MainActor in
+        guard let v = RTScreens.snapshotView(id: id) else {
+            FileHandle.standardError.write("unknown screen: \(id)\n".data(using: .utf8)!)
+            exit(1)
+        }
+        let framed = v.rtMotion(true).environment(\.rtFrozenTime, t)
+        let renderer = ImageRenderer(content: framed)
+        renderer.scale = 2
+        renderer.proposedSize = ProposedViewSize(width: 390, height: 844)
+        guard let cg = renderer.cgImage else {
+            FileHandle.standardError.write("render 실패\n".data(using: .utf8)!)
+            exit(3)
+        }
+        let rep = NSBitmapImageRep(cgImage: cg)
+        guard let png = rep.representation(using: .png, properties: [:]) else { exit(3) }
+        try! png.write(to: URL(fileURLWithPath: atOut))
+        print("written \(atOut) \(cg.width)x\(cg.height) @t=\(t)")
+        exit(0)
+    }
+    RunLoop.main.run()
 }
 
 // --app: 시드 모델 + RTRootView 경로 (라우팅 오라클 — 정적 렌더와 픽셀 일치해야 함)

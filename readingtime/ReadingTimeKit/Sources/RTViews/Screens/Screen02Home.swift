@@ -142,9 +142,9 @@ public struct Screen02Home: View {
             }
             .padding(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
             .background(Capsule().fill(RT.greenTint))
-            // 3D 책 + 접지 그림자
+            // 3D 책 + 접지 그림자 (부유·sway 는 RTBook3D 내부, 진입 드롭인은 여기)
             VStack(spacing: 0) {
-                bookView.padding(.top, 24).rtFloat(duration: 9)
+                bookView.rtBookDropIn().padding(.top, 24)
                 Ellipse().fill(RadialGradient(gradient: Gradient(stops: [
                     .init(color: Color(hex: 0x3A2C1C, alpha: 0.5), location: 0),
                     .init(color: Color(hex: 0x3A2C1C, alpha: 0), location: 0.7)]),
@@ -200,8 +200,7 @@ public struct Screen02Home: View {
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        Text("\(live?.todayMin ?? 32)").font(.mono(27, 700)).tracking(27 * -0.02)
-                            .foregroundColor(RT.ink)
+                        countUp(live?.todayMin ?? 32)
                         Text("분").font(.sans(13, 700)).foregroundColor(RT.body)
                     }
                     Text("오늘 읽음").font(.sans(10.5, 600)).foregroundColor(RT.muted)
@@ -249,20 +248,88 @@ public struct Screen02Home: View {
         )
     }
 
-    // 읽기(엎기) CTA
+    // 읽기(엎기) CTA — 정지=그린 앞면. 모션: 리빙 그라데이션(8s) + 주기 플립(4.6s)으로
+    // 다크 뒷면(00:00:00 기록 시작) 예고. "엎으면 이렇게 기록된다"를 정지 상태서도 시연.
     var readCTA: some View {
+        RTMotionFrame {
+            ctaFront(living: nil)
+        } anim: { t in
+            let angle = ctaFlipAngle(t)
+            let showFront = angle < 90 || angle > 270
+            return Group {
+                if showFront { ctaFront(living: sin(t * 2 * .pi / 8) * 70) }
+                else { ctaBack().scaleEffect(x: 1, y: -1) }   // 뒤집힘 보정(rotateX 180 후 정립)
+            }
+            .rotation3DEffect(.degrees(angle), axis: (x: 1, y: 0, z: 0), perspective: 0.5)
+        }
+        .frame(maxWidth: .infinity).frame(height: 60)
+        .contentShape(RoundedRectangle(cornerRadius: 16))
+        .onTapGesture { model?.start() }
+    }
+
+    // rtBtnFlip 주기 4.6s: 0~60% 0°, 60~72% 0→180, 72~84% hold 180(뒷면), 84~96% 180→360.
+    private func ctaFlipAngle(_ t: Double) -> Double {
+        let p = t.truncatingRemainder(dividingBy: 4.6) / 4.6
+        func ease(_ x: Double) -> Double { x < 0.5 ? 2 * x * x : 1 - pow(-2 * x + 2, 2) / 2 }
+        switch p {
+        case ..<0.60: return 0
+        case ..<0.72: return 180 * ease((p - 0.60) / 0.12)
+        case ..<0.84: return 180
+        case ..<0.96: return 180 + 180 * ease((p - 0.84) / 0.12)
+        default: return 360
+        }
+    }
+
+    // CTA 앞면 (living=nil → 정지 정확 그라데이션 / 값 → 리빙 팬)
+    func ctaFront(living: CGFloat?) -> some View {
         HStack(spacing: 10) {
             CTAFlipGlyph()
             Text("엎으면 이어 읽어요").font(.sans(15.5, 700)).tracking(15.5 * -0.01)
                 .foregroundColor(RT.ctaText)
         }
-        .frame(maxWidth: .infinity).frame(height: 60)
-        .background(LinearGradient.css(135, size: CGSize(width: 276, height: 60),
-                                       [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)]))
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(ctaLivingBG(living))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color(hex: 0x26413A, alpha: 0.5), radius: 12, x: 0, y: 12)
-        .contentShape(RoundedRectangle(cornerRadius: 16))
-        .onTapGesture { model?.start() }
+    }
+
+    @ViewBuilder private func ctaLivingBG(_ shift: CGFloat?) -> some View {
+        if let shift {
+            LinearGradient.css(135, size: CGSize(width: 607, height: 60),
+                               [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)])
+                .frame(width: 607, height: 60).offset(x: shift)
+        } else {
+            LinearGradient.css(135, size: CGSize(width: 276, height: 60),
+                               [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)])
+        }
+    }
+
+    // CTA 다크 뒷면 (타이머 프리뷰)
+    func ctaBack() -> some View {
+        ZStack {
+            RT.darkGrad(CGSize(width: 276, height: 60))
+            Circle().stroke(Color(hex: 0xE2CF9E, alpha: 0.45), lineWidth: 1.5).frame(width: 50, height: 50)
+            HStack(spacing: 9) {
+                Circle().fill(RT.gold).frame(width: 8, height: 8)
+                    .shadow(color: Color(hex: 0xE2CF9E, alpha: 0.85), radius: 4)
+                Text("00:00:00").font(.mono(15, 600)).tracking(15 * 0.02).foregroundColor(RT.ctaText)
+                Text("기록 시작").font(.sans(13.5, 700)).foregroundColor(RT.gold)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: Color.black.opacity(0.5), radius: 12, x: 0, y: 12)
+    }
+
+    // "오늘 읽음" 숫자 — 정지=목표값, 모션=0→목표 카운트업(~1s ease-out cubic)
+    func countUp(_ target: Int) -> some View {
+        RTMotionFrame {
+            Text("\(target)").font(.mono(27, 700)).tracking(27 * -0.02).foregroundColor(RT.ink)
+        } anim: { t in
+            let p = min(1, t / 1.0)
+            let v = Int((Double(target) * (1 - pow(1 - p, 3))).rounded())
+            return Text("\(v)").font(.mono(27, 700)).tracking(27 * -0.02).foregroundColor(RT.ink)
+        }
     }
 
     // 탭 시작 버튼
@@ -295,7 +362,13 @@ public struct Screen02Home: View {
                 .frame(width: isToday ? 8 : 7, height: isToday ? 8 : 7)
                 .background {
                     if isToday && !dot.ring {
-                        Circle().fill(RT.terra.opacity(0.18)).frame(width: 14, height: 14)
+                        RTMotionFrame {
+                            Circle().fill(RT.terra.opacity(0.18)).frame(width: 14, height: 14)
+                        } anim: { t in
+                            let ph = (sin(t * 2 * .pi / 2.6 - .pi / 2) + 1) / 2
+                            Circle().fill(RT.terra.opacity(0.24 - 0.19 * ph))
+                                .frame(width: 14 + 8 * ph, height: 14 + 8 * ph)
+                        }
                     }
                 }
                 .rtPop(delay: 0.5 + Double(i) * 0.05)

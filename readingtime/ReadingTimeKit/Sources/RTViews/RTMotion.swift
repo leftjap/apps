@@ -24,6 +24,66 @@ public extension View {
     }
 }
 
+// 고정 시간 주입 — rtshot --at <t> 가 특정 모션 프레임을 결정적으로 렌더(화면 검증)하도록.
+// nil = 라이브(TimelineView 실시간). 값 = 등장 후 경과초 t 로 고정.
+private struct RTFrozenTimeKey: EnvironmentKey { static let defaultValue: Double? = nil }
+public extension EnvironmentValues {
+    var rtFrozenTime: Double? {
+        get { self[RTFrozenTimeKey.self] }
+        set { self[RTFrozenTimeKey.self] = newValue }
+    }
+}
+
+// 책 드롭-인 진입 (rtBookIn): opacity 0→1 + translateY -28→0 + scale .9→1→1.02→1,
+// ~0.9s cubic-bezier(.2,1.05,.3,1) delay .12s. 정지=정립, 라이브=onAppear 1회, 검증=고정 진행률.
+public extension View {
+    func rtBookDropIn() -> some View { modifier(RTBookDropIn()) }
+}
+struct RTBookDropIn: ViewModifier {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.rtFrozenTime) private var frozen
+    @State private var p: Double = 0
+    @ViewBuilder private func pose(_ content: Content, _ pp: Double) -> some View {
+        content.opacity(pp).offset(y: -28 * (1 - pp)).scaleEffect(0.9 + 0.1 * pp)
+    }
+    func body(content: Content) -> some View {
+        if let frozen {
+            pose(content, min(1, max(0, (frozen - 0.12) / 0.9)))
+        } else if enabled && !reduce {
+            pose(content, p).onAppear {
+                withAnimation(.timingCurve(0.2, 1.05, 0.3, 1, duration: 0.9).delay(0.12)) { p = 1 }
+            }
+        } else {
+            content
+        }
+    }
+}
+
+// 모션 프레임 래퍼: 정지 렌더(픽셀 오라클)=rest, 라이브=TimelineView(t), 검증=고정 t.
+// t = "등장 후 경과초"(연속 모션은 주기적, 일회성 진입은 clamp 진행률로 사용).
+public struct RTMotionFrame<Rest: View, Anim: View>: View {
+    @Environment(\.rtMotionEnabled) private var enabled
+    @Environment(\.accessibilityReduceMotion) private var reduce
+    @Environment(\.rtFrozenTime) private var frozen
+    let rest: () -> Rest
+    let anim: (Double) -> Anim
+    public init(@ViewBuilder rest: @escaping () -> Rest, @ViewBuilder anim: @escaping (Double) -> Anim) {
+        self.rest = rest; self.anim = anim
+    }
+    public var body: some View {
+        if let frozen {
+            anim(frozen)
+        } else if enabled && !reduce {
+            TimelineView(.animation) { ctx in
+                anim(ctx.date.timeIntervalSinceReferenceDate)
+            }
+        } else {
+            rest()
+        }
+    }
+}
+
 // 공통: 모션 허용 여부(플래그 + reduce-motion) 판단 후 무한 왕복 애니메이션 구동.
 // rest = 비활성(정적 렌더) 값 — CSS 의 "애니메이션 없는 기본 스타일"과 동일해야 한다.
 private struct RTAnimated<V: Equatable>: ViewModifier {
