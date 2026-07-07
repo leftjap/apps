@@ -5,10 +5,11 @@ public enum GymScreens {
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
         switch id {
-        case "rail":        return AnyView(RailDemo(single: false))
-        case "rail-single": return AnyView(RailDemo(single: true))
-        case "tokens":      return AnyView(TokenSwatch())
-        default:            return nil
+        case "rail":         return AnyView(RailDemo(single: false))
+        case "rail-single":  return AnyView(RailDemo(single: true))
+        case "session-top":  return AnyView(SessionTopBlock())
+        case "tokens":       return AnyView(TokenSwatch())
+        default:             return nil
         }
     }
 }
