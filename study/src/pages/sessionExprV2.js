@@ -499,6 +499,21 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker, onDrillScore, state.demo)),
   ) : null;
 
+  // 확장 사다리(ladder, guide §6.3) — 짧게→길게 수직 확장 + 끝부터 이어 말하기(back-chaining). 응용(수평 변주)과 별개.
+  // rung 은 {en,ko,kr} 이라 drillRows 재사용(단 gate 카운트는 no-op — 메인/응용 발화만 3회 게이트에 셈).
+  const ladder = Array.isArray(ex.ladder) ? ex.ladder : [];
+  const ladderBack = ladder.find((r) => Array.isArray(r?.back) && r.back.length >= 2)?.back;
+  const ladderBlock = ladder.length >= 2 ? h('div', { style: 'margin-top:28px;' },
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '확장 사다리 — 짧게 → 길게, 한 단씩')),
+    h('div', { style: 'margin-top:4px;' }, drillRows(ladder, expr, lang, s?.speaker, () => {}, state.demo)),
+    ladderBack ? h('div', { class: 'vs-sec', style: 'margin-top:12px;' },
+      h('div', { class: 'vs-klab' }, '이어 말하기 (끝부터)'),
+      h('div', { style: 'display:grid;gap:6px;margin-top:4px;' }, ladderBack.map((bc) => h('div', { style: 'display:flex;gap:10px;align-items:baseline;' },
+        h('span', { style: 'font-weight:600;font-size:15px;' }, Array.isArray(bc) ? (bc[0] || '') : ''),
+        (Array.isArray(bc) && bc[1]) ? h('span', { class: 'b2', style: 'font-size:12.5px;' }, bc[1]) : null,
+      )))) : null,
+  ) : null;
+
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
 
   const cardEl = h('div', { class: 'vs-card' },
@@ -529,7 +544,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
         h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        cardEl, recWidget, drillsBlock, fold),
+        cardEl, recWidget, drillsBlock, ladderBlock, fold),
       h('div', { class: 'm-cta' }, gateEl, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -539,7 +554,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
         h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-      cardEl, drillsBlock);
+      cardEl, drillsBlock, ladderBlock);
     const side = h('aside', { class: 'vs-side' }, recWidget, explainPanel(ex), nextBtn, gateEl);
     root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };

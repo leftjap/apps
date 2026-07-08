@@ -29,6 +29,33 @@ function makeState() {
   };
 }
 
+describe('sessionExprV2 — 확장 사다리(ladder) 렌더', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  function ladderState() {
+    const s = makeState();
+    s.sentence.explanation.ladder = [
+      { en: 'A coffee.', ko: '커피.', kr: '어 커피' },
+      { en: 'A coffee, please.', ko: '커피 주세요.', kr: '어 커피 플리즈' },
+      { en: 'Can I get a coffee, please?', ko: '커피 하나 주시겠어요?', kr: '캔 아이 게러 커피 플리즈',
+        back: [['please?', '플리즈'], ['a coffee, please?', '어 커피 플리즈'], ['Can I get a coffee, please?', '캔 아이 게러 커피 플리즈']] },
+    ];
+    return s;
+  }
+  it('ladder ≥2단 → "확장 사다리" + rung + "이어 말하기 (끝부터)" 렌더', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, ladderState(), {});
+    expect(host.textContent).toContain('확장 사다리');
+    expect(host.textContent).toContain('A coffee.');
+    expect(host.textContent).toContain('Can I get a coffee, please?');
+    expect(host.textContent).toContain('이어 말하기 (끝부터)');
+  });
+  it('ladder 없음 → 확장 사다리 미렌더 (기존 시드 호환)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    expect(host.textContent).not.toContain('확장 사다리');
+  });
+});
+
 describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
 
