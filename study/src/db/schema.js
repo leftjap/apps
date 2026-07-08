@@ -57,6 +57,14 @@ export function createStudyDB(name = 'study') {
     await tx.table('todayLessons').where('lang').equals('en').delete();
     await tx.table('reviewQueue').where('id').startsWith('en-park').delete();
   });
+  // v6: 모두영어 트랙 전환(2026-07-08 사용자 지시 "복습도 기존 전부 없애고 #1부터"). 서버(Supabase)에서
+  // 옛 en today_lessons(Parks)·review_queue 를 삭제했으나 sync 는 pull-only(서버 삭제 미반영)라 기기 Dexie 에
+  // 옛 en 이 잔존 → 홈에 옛 Parks 장면이 계속 노출됨. 버전범프로 기기 en 을 전면 정리(v5 전례). 이후 sync 가
+  // 모두영어 #1(서버 잔존분)만 재구축. 정리 순서: DB 오픈→v6 upgrade(정리)→sync(옛 en push 없음, 모두영어 pull).
+  db.version(6).upgrade(async (tx) => {
+    await tx.table('todayLessons').where('lang').equals('en').delete();
+    await tx.table('reviewQueue').where('lang').equals('en').delete();
+  });
   return db;
 }
 

@@ -26,8 +26,8 @@ function createV4DB(name) {
   return db;
 }
 
-describe('schema v5 upgrade (v4 → v5)', () => {
-  it('todayLessons en 전체 + reviewQueue en-park* 삭제, ja·math·en-2026-05 보존', async () => {
+describe('schema v4 → v5 → v6 누적 upgrade', () => {
+  it('todayLessons en 전체 + reviewQueue en 전체 삭제(v6 가 5월 자산 포함 전량), ja·math 보존', async () => {
     const name = `test_v5_${Date.now()}_${Math.random()}`;
     const v4 = createV4DB(name);
     await v4.todayLessons.bulkPut([
@@ -39,7 +39,7 @@ describe('schema v5 upgrade (v4 → v5)', () => {
     await v4.reviewQueue.bulkPut([
       { id: 'en-park-s1e1-fire-away', lang: 'en', nextReview: '2026-06-11' }, // 오늘 이관 → 삭제
       { id: 'en-parks-s1e1-make-it-happen', lang: 'en', nextReview: '2026-06-11' }, // 오늘 이관 → 삭제
-      { id: 'en-2026-05-20-coffee', lang: 'en', nextReview: '2026-06-12' }, // 5월 자산 → 보존
+      { id: 'en-2026-05-20-coffee', lang: 'en', nextReview: '2026-06-12' }, // v5 는 보존했으나 v6 가 삭제(en 전량)
       { id: 'ja-2026-06-01-x', lang: 'ja', nextReview: '2026-06-11' }, // ja → 보존
     ]);
     await v4.mathProblems.put({ id: 'math-1', date: '2026-06-08', module: 'geometry' });
@@ -48,8 +48,24 @@ describe('schema v5 upgrade (v4 → v5)', () => {
     const db = createStudyDB(name);
     expect(await db.todayLessons.where('lang').equals('en').count()).toBe(0);
     expect((await db.todayLessons.toArray()).map((r) => r.id)).toEqual(['ja-konte-1']);
-    expect((await db.reviewQueue.toArray()).map((r) => r.id).sort()).toEqual(['en-2026-05-20-coffee', 'ja-2026-06-01-x']);
+    expect((await db.reviewQueue.toArray()).map((r) => r.id).sort()).toEqual(['ja-2026-06-01-x']); // v6: en 전량 삭제(5월 자산 포함)
     expect(await db.mathProblems.count()).toBe(1);
+    await db.delete();
+  });
+
+  it('v6: en 복습 전량 삭제(모두영어 트랙 전환) — 여러 날짜 en 전부 제거, ja 보존', async () => {
+    const name = `test_v6_${Date.now()}_${Math.random()}`;
+    const v4 = createV4DB(name);
+    await v4.reviewQueue.bulkPut([
+      { id: 'en-parks-s1e2-care-about', lang: 'en', nextReview: '2026-07-07' },
+      { id: 'en-2026-05-20-coffee', lang: 'en', nextReview: '2026-06-12' },
+      { id: 'en-office-s1e1-how-are-things', lang: 'en', nextReview: '2026-07-01' },
+      { id: 'ja-konte-x', lang: 'ja', nextReview: '2026-07-05' },
+    ]);
+    v4.close();
+    const db = createStudyDB(name);
+    expect(await db.reviewQueue.where('lang').equals('en').count()).toBe(0);
+    expect((await db.reviewQueue.toArray()).map((r) => r.id)).toEqual(['ja-konte-x']);
     await db.delete();
   });
 
