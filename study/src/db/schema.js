@@ -65,6 +65,16 @@ export function createStudyDB(name = 'study') {
     await tx.table('todayLessons').where('lang').equals('en').delete();
     await tx.table('reviewQueue').where('lang').equals('en').delete();
   });
+  // v7: 복습 큐 옛 en 재정리 (2026-07-08). v6 이 en review 를 지웠으나, 당시 Supabase 에 옛 en review
+  // (parks/office/5월 콩트)가 남아 직후 pull(bulkPut — 삭제 미전파)이 재유입 → v6 clear 가 무효화됐고,
+  // 게다가 push(upsert)가 기기의 옛 행을 서버로 되돌려 서버 정리도 무효화되는 왕복 오염. 해소책: 서버 정리 +
+  // 기기 재정리(v6 은 소진). 단 이후 완료로 쌓일 모두영어 복습은 지우면 안 되므로 **non-moduyeongeo en 만** 삭제.
+  // (todayLessons 는 serverOwned pull 이 서버-삭제를 전파 → 자가치유, v7 클리어 불요 — 실기기 검증 완료.)
+  db.version(7).upgrade(async (tx) => {
+    await tx.table('reviewQueue').where('lang').equals('en')
+      .and((r) => !String(r?.id ?? '').startsWith('en-moduyeongeo'))
+      .delete();
+  });
   return db;
 }
 

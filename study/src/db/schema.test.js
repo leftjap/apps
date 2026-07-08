@@ -69,6 +69,38 @@ describe('schema v4 → v5 → v6 누적 upgrade', () => {
     await db.delete();
   });
 
+  it('v7: 이미 v6 인 기기 → 옛 en 복습만 삭제, 모두영어(en-moduyeongeo)·ja 복습 보존', async () => {
+    // 기기가 이미 v6(모두영어 전환) 인 상태 재현 — createStudyDB(v7) 재오픈 시 v7 upgrade 만 발동.
+    // 배경: v6 이 en review 를 지웠으나 당시 서버에 옛 en 이 남아 pull(bulkPut) 이 재유입 → v6 무효화.
+    // 서버 정리 후 v7 이 한 번 더 정리하되, 이후 완료로 쌓일 모두영어 복습은 보존해야 하므로 non-moduyeongeo en 만.
+    const name = `test_v7_${Date.now()}_${Math.random()}`;
+    const v6 = new Dexie(name);
+    v6.version(6).stores({
+      reviewQueue: 'id, lang, nextReview, interval',
+      todayLessons: 'id, lang, date',
+      sessionLogs: 'id, lang, date',
+      dailyStats: 'date, lang',
+      pronunciationLog: 'id, date, lang',
+      meta: 'key',
+      mathProblems: 'id, date, module',
+      mathQueue: 'id, nextReview, module',
+    });
+    await v6.reviewQueue.bulkPut([
+      { id: 'en-parks-s1e1-fill-in', lang: 'en', nextReview: '2026-07-07' },              // 옛 en(parks) → 삭제
+      { id: 'en-2026-05-26-skit1-1', lang: 'en', nextReview: '2026-06-12' },               // 옛 en(콩트) → 삭제
+      { id: 'en-office-s1e2-call-you-back', lang: 'en', nextReview: '2026-07-01' },         // 옛 en(office) → 삭제
+      { id: 'en-moduyeongeo-ep1-01-no-appetite', lang: 'en', nextReview: '2026-07-09' },    // 모두영어 → 보존
+      { id: 'ja-konte-x', lang: 'ja', nextReview: '2026-07-05' },                           // ja → 보존
+    ]);
+    v6.close();
+
+    const db = createStudyDB(name);
+    const ids = (await db.reviewQueue.toArray()).map((r) => r.id).sort();
+    expect(ids).toEqual(['en-moduyeongeo-ep1-01-no-appetite', 'ja-konte-x']);
+    expect(await db.reviewQueue.where('lang').equals('en').count()).toBe(1); // 모두영어 1개만 en 잔존
+    await db.delete();
+  });
+
   it('신규 생성(v5 직행)에선 upgrade 미실행 — en 삽입 정상 (preview 주입 전제)', async () => {
     const db = createStudyDB(`test_v5_fresh_${Date.now()}_${Math.random()}`);
     await db.todayLessons.put({ id: 'en-park-s1e1-scene', lang: 'en', date: '2026-06-04', completed: false });
