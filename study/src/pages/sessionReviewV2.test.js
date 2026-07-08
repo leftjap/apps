@@ -105,6 +105,40 @@ describe('renderSessionReviewV2 — Rung별 카드 프롬프트', () => {
   });
 });
 
+describe('renderSessionReviewV2 — 확장 사다리(체이닝) 렌더', () => {
+  const LADDER = [
+    { en: 'Move on.', ko: '넘어가.', kr: '무v 온', adds: 'base' },
+    { en: "Let's move on.", ko: '넘어가자.', kr: '레츠 무v 온', adds: 'object' },
+    { en: "Let's just move on to the next thing.", ko: '그냥 다음 걸로 넘어가자.', kr: '레츠 저스트 무v 온 투 더 넥스트 띵', adds: 'adverbial',
+      back: [['to the next thing', '투 더 넥스트 띵'], ['move on to the next thing', '무v 온 투 더 넥스트 띵'], ["Let's just move on to the next thing", '레츠 저스트 무v 온 투 더 넥스트 띵']] },
+  ];
+  function mountWithLadder(size, ladder = LADDER) {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: 'k', chunks: CHUNKS, ladder };
+    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation };
+    const state = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0 };
+    renderSessionReviewV2(host, state, {});
+    return host;
+  }
+  it('데스크톱: ladder가 있으면 확장 사다리 섹션과 이어 말하기(back)를 렌더한다', () => {
+    const host = mountWithLadder('desktop');
+    const ladder = host.querySelector('.vr-ladder');
+    expect(ladder).not.toBeNull();
+    expect(ladder.textContent).toContain("Let's just move on to the next thing");
+    expect(ladder.textContent).toContain('이어 말하기');
+  });
+  it('모바일: ladder 섹션이 모바일 셸에도 렌더된다', () => {
+    const host = mountWithLadder('phone');
+    expect(host.querySelector('.vr-ladder')).not.toBeNull();
+  });
+  it('ladder 없으면(또는 1단) 확장 사다리 섹션은 렌더되지 않는다', () => {
+    expect(mountCard({ interval: 1 }).querySelector('.vr-ladder')).toBeNull();
+    expect(mountWithLadder('desktop', [LADDER[0]]).querySelector('.vr-ladder')).toBeNull();
+  });
+});
+
 describe('renderSessionReviewV2 — Rung 3 시도 후 정답 공개(피드백) + 회상 채점', () => {
   it('녹음(데모) 후 숨겼던 영어 정답이 공개된다', () => {
     vi.useFakeTimers();

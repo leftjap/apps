@@ -419,6 +419,29 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       : rung === 2 ? '빈칸을 채워 문장 전체를 떠올려 말해 보세요'
       : '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
 
+  // 확장 사다리(체이닝, 가이드 §6.3) — 복습에서도 짧게→길게 수직 확장 + 끝부터 이어 말하기 재현.
+  // 회상(메인 카드) 후 응용: 각 단 듣기(shadow), 마지막 단 back-chaining 청크. 녹음/게이트는 메인 회상 전용(여긴 듣기만).
+  const ladderArr = Array.isArray(ex.ladder) ? ex.ladder : [];
+  const ladderBack = ladderArr.find((r) => Array.isArray(r?.back) && r.back.length >= 2)?.back;
+  const speakLadder = (t) => { if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang, speaker: s?.speaker }); };
+  const lLab = 'font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase';
+  const lPlay = 'border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;flex:0 0 auto;cursor:pointer;padding:0';
+  const ladderBlock = ladderArr.length >= 2 ? h('div', { class: 'vr-ladder', style: 'margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px' },
+    h('div', { style: lLab }, '확장 사다리 — 짧게 → 길게, 한 단씩'),
+    h('div', { style: 'margin-top:8px;display:grid;gap:2px' }, ladderArr.map((d, i) => h('div', { style: 'display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)' },
+      h('span', { style: 'font-family:Outfit;font-size:11px;color:var(--faint);width:14px;flex:0 0 auto;text-align:right' }, String(i + 1)),
+      h('div', { style: 'flex:1;min-width:0' },
+        h('div', { style: 'font-size:14.5px;font-weight:700;letter-spacing:-.01em' }, d.en || ''),
+        h('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:2px' }, [d.kr, d.ko].filter(Boolean).join(' · '))),
+      h('button', { class: 'vr-lplay', type: 'button', 'aria-label': '듣기', style: 'width:32px;height:32px;' + lPlay, onClick: () => speakLadder(d.en) }, vIcon(VI.PLAY, { size: 11, fill: true }))))),
+    ladderBack ? h('div', { style: 'margin-top:12px' },
+      h('div', { style: lLab }, '이어 말하기 (끝부터)'),
+      h('div', { style: 'display:grid;gap:6px;margin-top:6px' }, ladderBack.map((bc) => h('div', { style: 'display:flex;align-items:center;gap:10px' },
+        h('span', { style: 'flex:1;font-weight:600;font-size:14px' }, Array.isArray(bc) ? (bc[0] || '') : ''),
+        (Array.isArray(bc) && bc[1]) ? h('span', { style: 'font-size:11.5px;color:var(--faint)' }, bc[1]) : null,
+        h('button', { class: 'vr-lplay', type: 'button', 'aria-label': '듣기', style: 'width:28px;height:28px;' + lPlay, onClick: () => speakLadder(Array.isArray(bc) ? bc[0] : '') }, vIcon(VI.PLAY, { size: 10, fill: true })))))) : null,
+  ) : null;
+
   let root, timeUpdate;
   if (state.size !== 'desktop') {
     // ── 모바일 단일 칼럼 (회상 우선) ──
@@ -435,7 +458,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
     root = h('div', { class: 'vr' }, v2Style(VRM_CSS),
       mTopb, mSteps,
-      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold),
+      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold, ladderBlock),
       h('div', { class: 'm-cta' }, gateEl, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -444,7 +467,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     const main = h('div', { class: 'vr-main' },
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
-      hintEl, cardEl);
+      hintEl, cardEl, ladderBlock);
     const side = h('aside', { class: 'vr-side' }, recWidget, fold, nextBtn, gateEl);
     root = h('div', { class: 'vr' }, v2Style(VR_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
