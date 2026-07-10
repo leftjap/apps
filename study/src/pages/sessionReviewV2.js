@@ -10,7 +10,7 @@
  */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
-import { exprOf, bumpRecLog, REC_TARGET } from '../components/d1/sessionShell.js';
+import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
@@ -74,9 +74,6 @@ const VR_CSS = `
 .vr-cap{font-size:11.5px;color:var(--faint);white-space:nowrap}
 .vr-meta{display:flex;align-items:center;gap:20px;margin-top:16px;flex-wrap:wrap}
 .vr-say{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--mut);font-weight:600;white-space:nowrap}
-.vr-say .d{display:inline-flex;gap:5px}
-.vr-say .d i{width:8px;height:8px;border-radius:50%;background:#ddd9c9}
-.vr-say .d i.f{background:var(--teal)}
 .vr-hist{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--faint);white-space:nowrap;flex-wrap:wrap}
 .vr-hist .hh{font-family:Outfit;font-weight:700;color:var(--mut);background:#f1eee2;border-radius:999px;padding:3px 10px;font-size:11.5px}
 .vr-hist .hh.q{color:var(--coral-deep);background:var(--coral-soft)}
@@ -100,7 +97,6 @@ const VR_CSS = `
 .vr-fold .bd .kx{background:var(--teal-soft);border-radius:10px;padding:10px 12px;color:#3f4845}
 .vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px}
 .vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
-.vr-gate.ok{color:var(--teal-deep);font-weight:600}
 @media (max-width:1100px){.vr-mainwrap{flex-direction:column;align-items:center}.vr-side{width:760px;max-width:100%}}
 `;
 
@@ -146,11 +142,8 @@ const VRM_CSS = `
 .m-steps .sp{flex:1}
 .m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
 .m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
-.m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
 .vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
-.m-cta .vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-bottom:9px;white-space:nowrap}
-.m-cta .vr-gate.ok{color:var(--teal-deep);font-weight:600}
-.m-cta .m-cta .vr-hint{margin-top:13px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
+.vr-hint{margin-top:13px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
 .vr-hint i{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:v-blink 1.6s infinite;flex:0 0 auto}
 .vr-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:10px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
 .vr-h1{font-family:Outfit;font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
@@ -169,9 +162,6 @@ const VRM_CSS = `
 .vr-cap{font-size:11px;color:var(--faint);white-space:nowrap}
 .vr-meta{display:flex;align-items:center;gap:14px;margin-top:15px;flex-wrap:wrap}
 .vr-say{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
-.vr-say .d{display:inline-flex;gap:5px}
-.vr-say .d i{width:8px;height:8px;border-radius:50%;background:#ddd9c9}
-.vr-say .d i.f{background:var(--teal)}
 .vr-hist{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--faint);flex-wrap:wrap}
 .vr-hist .hh{font-family:Outfit;font-weight:700;color:var(--mut);background:#f1eee2;border-radius:999px;padding:3px 9px;font-size:11px}
 .vr-hist .hh.q{color:var(--coral-deep);background:var(--coral-soft)}
@@ -273,9 +263,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, curRing, h('span', { class: 'vr-cap' }, lastScore != null ? `지난 점수` : '첫 복습'));
   const ctrl = h('div', { class: 'vr-ctrl' }, recPill, listenPill, ringHost);
 
+  // 복습에서 발화는 전진 조건이 아니다 (사용자 지시) — 목표 없이 횟수만 센다.
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
-  const dotsEl = h('span', { class: 'd' });
-  const sayLine = h('span', { class: 'vr-say' }, h('span', {}, '발화'), dotsEl, h('span', { class: 'vr-say-n' }, ''));
+  const sayLine = h('span', { class: 'vr-say' }, h('span', {}, '발화'), h('span', { class: 'vr-say-n' }, ''));
   const todayHist = h('span', { class: 'hh q' }, '오늘 ?');
   const histRow = h('span', { class: 'vr-hist' }, h('span', {}, '이 문장 기록'),
     ...(Array.isArray(card.history) ? card.history.map((hv, i) => h('span', { class: 'hh' }, `${i + 1}차 ${hv}`)) : (lastScore != null ? [h('span', { class: 'hh' }, `지난 ${lastScore}`)] : [])),
@@ -289,18 +279,6 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const recWidget = h('div', { class: 'vr-rec' }, h('span', { class: 'lb' }, '오늘 발화'),
     h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, `회 / 직전 세션 기록 ${prevRecord}회`)), recBar, recMsg);
 
-  // 해설 접힘 (떠올린 다음 펼치기)
-  const foldBd = h('div', { class: 'bd' },
-    h('div', {}, '먼저 떠올려 말해 본 다음 펼쳐 보세요. 해설을 보기 전에 꺼내 보는 게 복습 효과가 가장 커요.'),
-    ex.key ? h('div', { class: 'kx', style: 'margin-top:12px;' }, String(ex.key)) : null,
-    (ex.situation || ex.whenToUse) ? [h('div', { class: 'vs-klab' }, '이런 상황에서 써요'), h('div', { style: 'margin-top:4px;' }, String(ex.situation || ex.whenToUse))] : null,
-  );
-  foldBd.style.display = 'none';
-  const fold = h('div', { class: 'vr-fold' },
-    h('div', { class: 'hd', onClick: () => { const open = fold.classList.toggle('open'); foldBd.style.display = open ? '' : 'none'; } },
-      h('span', { class: 't' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 }))),
-    foldBd);
-
   // 자기평가가 SRS 의 유일한 입력 — 발음 점수는 약점 음소 수집용일 뿐 간격을 정하지 않는다.
   const judgeRow = createJudgeRow({
     size: state.size === 'desktop' ? 'desktop' : 'phone',
@@ -312,15 +290,29 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const judgeBtns = [...judgeRow.el.querySelectorAll('.judge-btn')];
   const refreshJudge = () => { judgeBtns.forEach((b) => { b.disabled = !revealed; }); };
   refreshJudge();
-  const gateEl = h('div', { class: 'vr-gate' }, '');
+  const gateEl = h('div', { class: 'vr-gate' }, '어땠나요? 아래에서 골라주세요');
+
+  // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리하고, 하단에 평가를 단다 (사용자 지시).
+  const foldBd = h('div', { class: 'bd' },
+    h('div', {}, '먼저 떠올려 말해 본 다음 펼쳐 보세요. 해설을 보기 전에 꺼내 보는 게 복습 효과가 가장 커요.'),
+    ex.key ? h('div', { class: 'kx', style: 'margin-top:12px;' }, String(ex.key)) : null,
+    (ex.situation || ex.whenToUse) ? [h('div', { class: 'vs-klab' }, '이런 상황에서 써요'), h('div', { style: 'margin-top:4px;' }, String(ex.situation || ex.whenToUse))] : null,
+    h('div', { style: 'margin-top:18px;border-top:1px solid var(--line);padding-top:14px;' }, gateEl, judgeRow.el),
+  );
+  foldBd.style.display = 'none';
+  const fold = h('div', { class: 'vr-fold' },
+    h('div', {
+      class: 'hd',
+      onClick: () => {
+        const open = fold.classList.toggle('open');
+        foldBd.style.display = open ? '' : 'none';
+        if (open) reveal(); // 해설엔 영어가 들어 있다 — 펼치는 순간이 곧 정답 공개
+      },
+    }, h('span', { class: 't' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 }))),
+    foldBd);
 
   const refreshDots = () => {
-    dotsEl.innerHTML = '';
-    const c = Math.min(recCount(), REC_TARGET);
-    for (let i = 0; i < REC_TARGET; i++) dotsEl.appendChild(h('i', { class: i < c ? 'f' : '' }));
-    sayLine.querySelector('.vr-say-n').textContent = `${Math.min(recCount(), REC_TARGET)} / ${REC_TARGET}`;
-    gateEl.className = 'vr-gate' + (revealed ? ' ok' : '');
-    gateEl.textContent = revealed ? '어땠나요? 아래에서 골라주세요' : '떠올려 말하면 정답이 열려요';
+    sayLine.querySelector('.vr-say-n').textContent = `${recCount()}회`;
     if (state.lastScore != null) todayHist.textContent = `오늘 ${state.lastScore}`;
   };
   const refreshRec = () => {
@@ -397,7 +389,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     nextDate ? h('span', {}, '통과 시 다음 복습 ', h('b', {}, String(nextDate))) : null);
   const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, srsRow, ctrl, meta);
   const hintEl = h('div', { class: 'vr-hint' }, h('i'),
-    recallMode ? '한글을 보고 영어로 떠올려 말해 보세요 — 안 떠오르면 그대로 두세요. 말하면 정답이 열려요'
+    recallMode ? '한글을 보고 영어로 떠올려 말해 보세요 — 안 떠오르면 그대로 두고 해설을 펼치면 정답과 평가가 나와요'
       : '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
 
   // 체이닝 재시험 (2026-07-09 — 확장 사다리 폐기 후속). 자막 없이 '한 번 듣고 전체 재현'(최상 난도).
@@ -523,8 +515,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
     root = h('div', { class: 'vr' }, v2Style(VRM_CSS),
       mTopb, mSteps,
-      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold, chainBlock),
-      h('div', { class: 'm-cta' }, gateEl, judgeRow.el));
+      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold, chainBlock));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
@@ -533,7 +524,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
       hintEl, cardEl, chainBlock);
-    const side = h('aside', { class: 'vr-side' }, recWidget, fold, gateEl, judgeRow.el);
+    const side = h('aside', { class: 'vr-side' }, recWidget, fold);
     root = h('div', { class: 'vr' }, v2Style(VR_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
   }

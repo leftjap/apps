@@ -218,6 +218,38 @@ describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판�
     btns.forEach((b) => expect(b.disabled).toBe(true));
   });
 
+  /* 사용자 지시(2026-07-10): 평가는 해설 하단에. 해설을 펼치면 정답이 나오고 거기서 평가한다. */
+  it('판정 버튼은 해설(fold) 안 하단에 있다 — 별도 CTA 바가 아니다', () => {
+    const host = mountCard({ interval: 1 });
+    expect(host.querySelector('.vr-fold .judge-row')).not.toBeNull();
+    expect(host.querySelector('.m-cta')).toBeNull();
+  });
+
+  it('해설은 기본 접힘, 클릭하면 펼쳐진다', () => {
+    const host = mountCard({ interval: 1 });
+    const bd = host.querySelector('.vr-fold .bd');
+    expect(bd.style.display).toBe('none');
+    host.querySelector('.vr-fold .hd').click();
+    expect(bd.style.display).not.toBe('none');
+  });
+
+  /* 발화는 전진 조건이 아니다 — 녹음 없이 해설만 펼쳐도 정답이 나오고 평가할 수 있다. */
+  it('녹음 없이 해설을 펼치면 정답 공개 + 판정 활성 (발화는 전진 조건이 아님)', () => {
+    const seen = [];
+    const host = mountCard({ interval: 1, handlers: { onJudge: (k) => seen.push(k) } });
+    expect(host.querySelector('.vr-h1').textContent).toBe(KO);
+    host.querySelector('.vr-fold .hd').click();            // 해설 펼침
+    expect(host.querySelector('.vr-h1').textContent).toBe(EN);
+    expect(host.querySelector('.vr-listen').disabled).toBe(false);
+    host.querySelector('.judge-btn[data-kind="got"]').click();
+    expect(seen).toEqual(['got']);                          // 녹음 0회여도 전진
+  });
+
+  it('발화 카운터에 3회 목표를 표시하지 않는다 (게이트가 아니므로)', () => {
+    const host = mountCard({ interval: 1 });
+    expect(host.querySelector('.vr-say').textContent).not.toContain('/ 3');
+  });
+
   it('공개 후 판정 클릭 → onJudge(kind) 를 그대로 전달', () => {
     vi.useFakeTimers();
     const seen = [];
