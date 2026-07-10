@@ -8,7 +8,7 @@ vi.mock('../services/sessionAnalyze.js', () => ({
 }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionReviewV2, pickReviewRung, clozeBlank } from './sessionReviewV2.js';
+import { renderSessionReviewV2, isRecallMode } from './sessionReviewV2.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -50,68 +50,47 @@ function mountCard({ interval, lang = 'en', sentence = EN, ko = KO, chunks = CHU
   return host;
 }
 
-describe('pickReviewRung — interval(성숙도) 기반 복습 단계 (en 한정)', () => {
-  it('신규/저성숙(interval<3)은 Rung 1 (수용+발음)', () => {
-    expect(pickReviewRung(1, 'en')).toBe(1);
-    expect(pickReviewRung(2, 'en')).toBe(1);
+/* 2026-07-10 사용자 결정 — 복습 단계(rung 1/2/3)를 폐기하고 단일 모드로.
+ * 근거: (a) interval≥21 이라야 닿는 3단계가 사실상 안 쓰였고 (오늘 due 15장 전부 interval 1),
+ *       (b) 1단계는 영어를 보여준 채 "떠올려 보세요"라 인출이 아니라 낭독이었으며,
+ *       (c) 그 낭독 발음 점수가 SRS 간격을 정하고 있었다.
+ * 힌트는 두지 않는다 — 미리 주는 단서는 인출을 쉽게 만들어 이득의 근거가 없다
+ * (Pyc & Rawson 2009 / Smith et al. 2016). 실패는 그대로 두고 정답을 공개한다 (Kornell et al. 2009). */
+describe('isRecallMode — 영어는 항상 한글→영어 회상, 일본어는 현행 유지', () => {
+  it('영어는 회상 모드 (interval 무관)', () => {
+    expect(isRecallMode('en')).toBe(true);
   });
-  it('중간 성숙(3≤interval<21)은 Rung 2 (클로즈)', () => {
-    expect(pickReviewRung(3, 'en')).toBe(2);
-    expect(pickReviewRung(7, 'en')).toBe(2);
-    expect(pickReviewRung(14, 'en')).toBe(2);
-  });
-  it('고성숙(interval≥21)은 Rung 3 (한글→영어 생산회상)', () => {
-    expect(pickReviewRung(21, 'en')).toBe(3);
-    expect(pickReviewRung(60, 'en')).toBe(3);
-  });
-  it('일본어는 단계화하지 않고 항상 Rung 1 (현행 유지)', () => {
-    expect(pickReviewRung(60, 'ja')).toBe(1);
-    expect(pickReviewRung(21, 'ja')).toBe(1);
-  });
-  it('interval 미정/비정상은 안전하게 Rung 1', () => {
-    expect(pickReviewRung(undefined, 'en')).toBe(1);
-    expect(pickReviewRung(null, 'en')).toBe(1);
-    expect(pickReviewRung(NaN, 'en')).toBe(1);
+  it('일본어·미정은 회상 모드 아님 (문장을 그대로 보여줌)', () => {
+    expect(isRecallMode('ja')).toBe(false);
+    expect(isRecallMode(undefined)).toBe(false);
+    expect(isRecallMode(null)).toBe(false);
   });
 });
 
-describe('clozeBlank — 마지막 청크 빈칸 처리', () => {
-  it('마지막 청크를 빈칸으로 가린다 (앞 청크는 유지)', () => {
-    const out = clozeBlank(EN, CHUNKS);
-    expect(out).toContain('_____');
-    expect(out).not.toContain('for coming');
-    expect(out).toContain('Thank you so much');
+describe('renderSessionReviewV2 — 회상 프롬프트 (한글만, 영어 숨김)', () => {
+  it('영어는 interval 과 무관하게 한글 뜻 + 단어 수를 보여주고 영어를 숨긴다', () => {
+    for (const interval of [1, 3, 7, 21, 60]) {
+      const host = mountCard({ interval });
+      expect(host.querySelector('.vr-h1').textContent).toBe(KO);
+      expect(host.querySelector('.vr-card').textContent).not.toContain('Thank you');
+      expect(host.querySelector('.vr-card').textContent).toContain('6단어'); // 정답 범위를 좁혀줌
+    }
   });
-  it('청크 없으면 null (호출자 폴백)', () => {
-    expect(clozeBlank(EN, [])).toBeNull();
-    expect(clozeBlank(EN, null)).toBeNull();
-  });
-  it('마지막 청크가 문장에 없으면 null', () => {
-    expect(clozeBlank(EN, [['nope', '노프']])).toBeNull();
-  });
-});
 
-describe('renderSessionReviewV2 — Rung별 카드 프롬프트', () => {
-  it('Rung 1: 영어 문장을 그대로 표시', () => {
-    const host = mountCard({ interval: 1 });
-    expect(host.querySelector('.vr-h1').textContent).toBe(EN);
-  });
-  it('Rung 2: 마지막 청크를 빈칸으로 가린 영어 표시', () => {
-    const host = mountCard({ interval: 7 });
-    const h1 = host.querySelector('.vr-h1').textContent;
-    expect(h1).toContain('_____');
-    expect(h1).not.toContain('for coming');
-    expect(h1).toContain('Thank you');
-  });
-  it('Rung 3: 영어를 숨기고 한글 뜻을 프롬프트로 표시', () => {
-    const host = mountCard({ interval: 21 });
-    const h1 = host.querySelector('.vr-h1').textContent;
-    expect(h1).toBe(KO);
-    expect(h1).not.toContain('Thank you');
-  });
-  it('일본어는 interval 높아도 문장을 그대로 표시 (Rung 1)', () => {
+  it('일본어는 문장을 그대로 표시 (일본어 경로 불변 — 회귀 방지)', () => {
     const host = mountCard({ interval: 60, lang: 'ja', sentence: 'ありがとうございます。', ko: '감사합니다.', chunks: [['ありがとう', '아리가또'], ['ございます', '고자이마스']] });
     expect(host.querySelector('.vr-h1').textContent).toBe('ありがとうございます。');
+    expect(host.querySelector('.vr-listen').disabled).toBe(false); // 숨김이 없으니 듣기도 즉시 가능
+  });
+
+  it('공개 전에는 듣기 버튼이 잠긴다 (정답 오디오 유출 방지)', () => {
+    expect(mountCard({ interval: 1 }).querySelector('.vr-listen').disabled).toBe(true);
+  });
+
+  it('힌트 사다리를 두지 않는다 — 안내문만', () => {
+    const host = mountCard({ interval: 1 });
+    expect(host.querySelector('.vr-hint').textContent).toContain('떠올려');
+    expect(host.textContent).not.toContain('힌트');
   });
 });
 
@@ -153,6 +132,33 @@ describe('renderSessionReviewV2 — 체이닝 재시험 렌더', () => {
     expect(mountWithChain('phone').querySelector('.vr-chain')).not.toBeNull();
   });
 
+  /* chain.target 은 기본문장을 통째로 품는다 (실측 21/22 카드, 19개는 첫머리부터).
+   * 영어를 숨긴 채 체이닝 '듣기'를 누르면 정답을 들려주는 셈 → 공개 전에는 감춘다. */
+  it('정답 공개 전에는 체이닝 블록이 감춰진다 (chain 오디오가 기본문장을 포함)', () => {
+    const host = mountWithChain('desktop');
+    expect(host.querySelector('.vr-chain').style.display).toBe('none');
+  });
+
+  it('정답 공개 후 체이닝 블록이 열린다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountWithChain('desktop', CHAIN, true);
+      host.querySelector('.vr-pill.pri').click();   // 회상 시도(데모)
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelector('.vr-chain').style.display).not.toBe('none');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('일본어는 체이닝을 즉시 노출 (숨김 모드가 아니므로)', () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: 'k', chunks: CHUNKS, chain: CHAIN };
+    const s = { id: 'c1', lang: 'ja', sentence: 'x', ko: 'ㅇ', explanation };
+    const card = { id: 'c1', lang: 'ja', sentence: 'x', meaning: 'ㅇ', interval: 1, explanation };
+    renderSessionReviewV2(host, { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0 }, {});
+    expect(host.querySelector('.vr-chain').style.display).not.toBe('none');
+  });
+
   it('chain 없으면(또는 청크 1개) 체이닝 블록은 렌더되지 않는다', () => {
     expect(mountCard({ interval: 1 }).querySelector('.vr-chain')).toBeNull();
     expect(mountWithChain('desktop', { target: 'x', chunks: ['x'], ko: 'ㅇ' }).querySelector('.vr-chain')).toBeNull();
@@ -189,28 +195,60 @@ describe('renderSessionReviewV2 — 체이닝 재시험 렌더', () => {
   });
 });
 
-describe('renderSessionReviewV2 — Rung 3 시도 후 정답 공개(피드백) + 회상 채점', () => {
+/* 회상 시도 → 정답 공개 → 자기평가. 발음 점수는 SRS 에 관여하지 않는다(약점 음소 수집용). */
+describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판정', () => {
+  const recall = (host) => host.querySelector('.vr-pill.pri').click();
+
   it('녹음(데모) 후 숨겼던 영어 정답이 공개된다', () => {
     vi.useFakeTimers();
     try {
-      const host = mountCard({ interval: 21, demo: true });
-      expect(host.querySelector('.vr-h1').textContent).toBe(KO); // 시도 전: 한글 프롬프트
-      host.querySelector('.vr-pill.pri').click();                // 떠올려 말하기(녹음)
+      const host = mountCard({ interval: 1, demo: true });
+      expect(host.querySelector('.vr-h1').textContent).toBe(KO);
+      recall(host);
       vi.advanceTimersByTime(1100);
-      expect(host.querySelector('.vr-h1').textContent).toBe(EN); // 시도 후: 영어 정답 공개
+      expect(host.querySelector('.vr-h1').textContent).toBe(EN);
+      expect(host.querySelector('.vr-listen').disabled).toBe(false); // 듣기 해제
     } finally { vi.useRealTimers(); }
   });
-  it('첫(숨김) 시도 점수로 SRS 채점한다', () => {
+
+  it('판정 버튼 3개(다시/애매/완료)를 렌더하고, 공개 전에는 비활성', () => {
+    const host = mountCard({ interval: 1 });
+    const btns = [...host.querySelectorAll('.judge-btn')];
+    expect(btns.map((b) => b.dataset.kind)).toEqual(['no', 'hmm', 'got']);
+    btns.forEach((b) => expect(b.disabled).toBe(true));
+  });
+
+  it('공개 후 판정 클릭 → onJudge(kind) 를 그대로 전달', () => {
     vi.useFakeTimers();
-    let judged = null;
+    const seen = [];
     try {
-      const host = mountCard({ interval: 21, demo: true, handlers: { onJudge: (k) => { judged = k; } } });
-      host.querySelector('.vr-pill.pri').click();
+      const host = mountCard({ interval: 1, demo: true, handlers: { onJudge: (k) => seen.push(k) } });
+      recall(host);
       vi.advanceTimersByTime(1100);
-      const next = host.querySelector('.vr-next');
-      expect(next.classList.contains('unlock')).toBe(true);
-      next.click();
-      expect(judged).toBe('got'); // 데모 첫 점수 84 ≥ PASS_THRESHOLD(80)
+      host.querySelector('.judge-btn[data-kind="hmm"]').click();
+      expect(seen).toEqual(['hmm']);
     } finally { vi.useRealTimers(); }
+  });
+
+  it('발음 점수만으로는 SRS 를 채점하지 않는다 (자기평가가 유일한 경로)', () => {
+    vi.useFakeTimers();
+    const seen = [];
+    try {
+      const host = mountCard({ interval: 1, demo: true, handlers: { onJudge: (k) => seen.push(k) } });
+      recall(host);
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelector('.vr-h1').textContent).toBe(EN); // 채점(84점)은 났지만
+      expect(seen).toEqual([]);                                  // onJudge 는 호출되지 않음
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('마이크 불가(micBlocked)면 즉시 공개 + 판정 가능 (막다른 길 방지)', () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: 'k', chunks: CHUNKS } };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation: s.explanation };
+    renderSessionReviewV2(host, { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0, micBlocked: true }, {});
+    expect(host.querySelector('.vr-h1').textContent).toBe(EN);
+    expect(host.querySelector('.judge-btn[data-kind="got"]').disabled).toBe(false);
   });
 });

@@ -1,19 +1,21 @@
 /* 복습 세션 — 데스크톱 C 파이널 v2 (작업지시서 §5)
  * 떠올리기 우선: '떠올려 말하기'가 1순위 CTA, 듣기는 보조. 해설 기본 접힘.
- * SRS 메타(회차·지난 점수·다음 복습일) + 문장별 점수 기록 노출. 발화 게이트 후 다음 문장.
+ * SRS 메타(회차·지난 점수·다음 복습일) + 문장별 점수 기록 노출.
  * 정본 시안: 작업지시서 v-review.jsx (SessReview)
  *
- * SRS 판정: 시안에 수동 판정(다시/애매/완벽) 없음 → 떠올려 말하기 점수로 자동 채점해 기존
- *   onJudge(applySrsUpdate) 파이프라인 보존. (점수 없으면 'hmm' 중립)
+ * SRS 판정(2026-07-10 사용자 결정): **자기평가(다시/애매/완료)가 유일한 입력**.
+ *   발음 점수는 SRS 를 정하지 않는다 — 약점 음소 수집·표시용. 구 자동채점(deriveKind)은 폐기.
+ *   이유: 영어는 정답을 숨기므로 첫 시도 점수가 '기억'이 아니라 '발음'을 재고, 공개 후 재녹음은 낭독이다.
  * 라이브 녹음/채점은 기존 services 재사용. 데모(?demo=1)는 마이크 없이 시뮬.
  */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
-import { exprOf, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
+import { exprOf, bumpRecLog, REC_TARGET } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { createJudgeRow } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, pickChainVoice } from '../components/session/applied.js';
 import { passesCoverage } from '../services/speech.js';
 import { localISODate } from '../utils/today.js';
@@ -22,30 +24,16 @@ const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
-/* 복습 단계(Rung) — 항목 성숙도(SRS interval)에 따라 회상 난이도를 단계적으로 올린다 (en 한정).
- *   1: 수용+발음 (영어 표시)  ·  2: 클로즈 (핵심 청크 빈칸)  ·  3: 생산회상 (한글→영어, 영어 숨김)
- * 근거: 답 숨김+회상 강제(Karpicke&Roediger 2008), MC→클로즈→자유회상 scaffold(Fiechter&Benjamin 2019),
- *   신규는 cold-produce 회피(수용 우세·"바람직한 어려움"은 성공 가능할 때만). ja(콩트)는 단계화하지 않음.
- *   경계값은 조정 가능 — 현 SRS 사다리 [1,3,7,21,60] 기준. */
-export function pickReviewRung(interval, lang) {
-  if (lang !== 'en') return 1;
-  const iv = Number(interval);
-  if (!Number.isFinite(iv) || iv < 3) return 1;
-  if (iv < 21) return 2;
-  return 3;
+/* 회상 모드 — 한글 뜻만 보여주고 영어를 떠올려 말하게 한다 (en 한정, 2026-07-10 사용자 결정).
+ * 구 rung 1/2/3(수용→클로즈→생산)은 폐기: interval≥21 이라야 닿는 3단계가 사실상 안 쓰였고,
+ * 1단계는 영어를 띄운 채 "떠올려 보세요"라 낭독이었으며, 그 낭독 발음 점수가 SRS 를 정했다.
+ * 힌트는 두지 않는다 — 미리 주는 단서는 인출을 쉽게 만들어 이득의 근거가 없다.
+ * 실패는 그대로 두고 시도 직후 정답을 공개한다(피드백). ja 는 현행 유지(문장 노출). */
+export function isRecallMode(lang) {
+  return lang === 'en';
 }
 
-/* clozeBlank — 마지막 청크(chunks[last][0])를 문장에서 빈칸으로 가린 문자열 반환.
- * chunks 형식 [[영어, 음차]] (explanation-schema.md). 청크 없거나 문장에서 못 찾으면 null → 호출자 폴백. */
-export function clozeBlank(sentence, chunks) {
-  if (typeof sentence !== 'string' || !Array.isArray(chunks) || chunks.length === 0) return null;
-  const last = chunks[chunks.length - 1];
-  const target = Array.isArray(last) ? last[0] : null;
-  if (typeof target !== 'string' || !target) return null;
-  const idx = sentence.lastIndexOf(target);
-  if (idx === -1) return null;
-  return sentence.slice(0, idx) + '_____' + sentence.slice(idx + target.length);
-}
+const wordCountOf = (s) => String(s ?? '').trim().split(/\s+/).filter(Boolean).length;
 
 const VR_CSS = `
 .vr{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
@@ -110,9 +98,8 @@ const VR_CSS = `
 .vr-fold .bd{font-size:12.5px;color:var(--mut);margin-top:12px;line-height:1.6}
 .vr-fold .bd .vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase;margin-top:12px}
 .vr-fold .bd .kx{background:var(--teal-soft);border-radius:10px;padding:10px 12px;color:#3f4845}
-.vr-next{width:100%;margin-top:14px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
-.vr-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px}
+.vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
 .vr-gate.ok{color:var(--teal-deep);font-weight:600}
 @media (max-width:1100px){.vr-mainwrap{flex-direction:column;align-items:center}.vr-side{width:760px;max-width:100%}}
 `;
@@ -138,13 +125,6 @@ function ringEl(score) {
 }
 
 // 점수 → SRS 판정 (수동 판정 없는 시안 대응). 점수 미측정 시 중립('hmm').
-function deriveKind(score) {
-  if (score == null) return 'hmm';
-  if (score >= PASS_THRESHOLD) return 'got';
-  if (score >= 60) return 'hmm';
-  return 'no';
-}
-
 /* 모바일(phone/tablet) — 회상 우선 단일 칼럼 (작업지시서 모바일 §3-4). 코랄 step. */
 const VRM_CSS = `
 .vr{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
@@ -167,11 +147,10 @@ const VRM_CSS = `
 .m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
 .m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
 .m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+.vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
 .m-cta .vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-bottom:9px;white-space:nowrap}
 .m-cta .vr-gate.ok{color:var(--teal-deep);font-weight:600}
-.m-cta .vr-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:transparent;border:1.5px solid var(--line);color:var(--faint)}
-.m-cta .vr-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
-.vr-hint{margin-top:13px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
+.m-cta .m-cta .vr-hint{margin-top:13px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
 .vr-hint i{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:v-blink 1.6s infinite;flex:0 0 auto}
 .vr-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:10px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
 .vr-h1{font-family:Outfit;font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
@@ -252,20 +231,20 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     return { cleanup: () => { host.innerHTML = ''; }, layout: { update() {} } };
   }
 
-  // 복습 단계(Rung) — 성숙도(card.interval) 기반. ja·신규·미정은 Rung 1(현행 동작).
-  const rung = pickReviewRung(card.interval, lang);
-  const clozeText = rung === 2 ? clozeBlank(s.sentence, ex.chunks) : null;
-  // Rung 2/3 은 답(영어)을 숨겼다가 첫 시도 후 공개 — 피드백은 필수(과한 회상도 정답 보여주면 학습됨).
-  let revealed = rung === 1;
-  const h1El = h('h1', { class: 'vr-h1' },
-    rung === 3 ? (s.ko || '') : (rung === 2 ? (clozeText || s.sentence) : s.sentence));
+  // 회상 모드(en) — 답을 숨겼다가 첫 시도 후 공개. 마이크 불가면 막다른 길이 되므로 즉시 공개.
+  const recallMode = isRecallMode(lang);
+  let revealed = !recallMode || state.micBlocked === true;
+  const h1El = h('h1', { class: 'vr-h1' }, revealed ? s.sentence : (s.ko || ''));
   const koEl = h('div', { class: 'vr-ko' },
-    rung === 3 ? '영어로 떠올려 말해 보세요' : (s.ko || ''));
+    revealed ? (s.ko || '') : `영어로 떠올려 말해 보세요 · ${wordCountOf(s.sentence)}단어`);
   function reveal() {
     if (revealed) return;
     revealed = true;
     h1El.textContent = s.sentence;
     koEl.textContent = s.ko || '';
+    listenPill.disabled = false;
+    if (chainBlock) chainBlock.style.display = '';
+    refreshJudge();
   }
 
   // SRS 메타
@@ -287,7 +266,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 컨트롤 — 떠올려 말하기(1순위 mic) + 듣기 + 점수 링
   let playing = false, recCtrl = null;
   const recPill = h('button', { class: 'vr-pill pri', type: 'button' }, vIcon(VI.MIC, { size: 14, sw: 2 }), '떠올려 말하기');
-  const listenPill = h('button', { class: 'vr-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
+  // 듣기는 정답 오디오다 — 회상 시도 전에는 잠근다 (공개 후 해제).
+  const listenPill = h('button', { class: 'vr-pill vr-listen', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
+  listenPill.disabled = !revealed;
   let curRing = ringEl(state.lastScore);
   const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, curRing, h('span', { class: 'vr-cap' }, lastScore != null ? `지난 점수` : '첫 복습'));
   const ctrl = h('div', { class: 'vr-ctrl' }, recPill, listenPill, ringHost);
@@ -320,7 +301,17 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 't' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 }))),
     foldBd);
 
-  const nextBtn = h('button', { class: 'vr-next', type: 'button' }, idx >= total ? '복습 완료 →' : '다음 문장 →');
+  // 자기평가가 SRS 의 유일한 입력 — 발음 점수는 약점 음소 수집용일 뿐 간격을 정하지 않는다.
+  const judgeRow = createJudgeRow({
+    size: state.size === 'desktop' ? 'desktop' : 'phone',
+    onJudge: (kind) => {
+      if (!revealed) { showRecordToast('먼저 떠올려 말해 보세요'); return; }
+      handlers.onJudge?.(kind);
+    },
+  });
+  const judgeBtns = [...judgeRow.el.querySelectorAll('.judge-btn')];
+  const refreshJudge = () => { judgeBtns.forEach((b) => { b.disabled = !revealed; }); };
+  refreshJudge();
   const gateEl = h('div', { class: 'vr-gate' }, '');
 
   const refreshDots = () => {
@@ -328,10 +319,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     const c = Math.min(recCount(), REC_TARGET);
     for (let i = 0; i < REC_TARGET; i++) dotsEl.appendChild(h('i', { class: i < c ? 'f' : '' }));
     sayLine.querySelector('.vr-say-n').textContent = `${Math.min(recCount(), REC_TARGET)} / ${REC_TARGET}`;
-    const ok = canAdvance(state, s?.id) && recCount() >= 1;
-    nextBtn.classList.toggle('unlock', ok);
-    gateEl.className = 'vr-gate' + (ok ? ' ok' : '');
-    gateEl.textContent = ok ? '떠올려 말했어요 — 다음 문장이 열렸어요' : `발화 ${REC_TARGET}회를 채우면 열려요 (${recCount()}/${REC_TARGET})`;
+    gateEl.className = 'vr-gate' + (revealed ? ' ok' : '');
+    gateEl.textContent = revealed ? '어땠나요? 아래에서 골라주세요' : '떠올려 말하면 정답이 열려요';
     if (state.lastScore != null) todayHist.textContent = `오늘 ${state.lastScore}`;
   };
   const refreshRec = () => {
@@ -349,10 +338,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     bumpRecLog(state, s?.id, score);
     const nr = ringEl(score); curRing.replaceWith(nr); curRing = nr;
     ringHost.lastChild.textContent = `${recCount()}회 떠올림`;
-    if (!revealed) {
-      if (rung === 3) state.recallScore = score; // 첫(숨김) 시도 점수 = 회상 신호 (읽기 점수 아님)
-      reveal();
-    }
+    if (!revealed) reveal(); // 시도 직후 정답 공개 (피드백) — 실패해도 학습된다
     refreshDots(); refreshRec();
   }
   const setRecVisual = (on) => {
@@ -398,18 +384,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       state.recording = true; setRecVisual(true);
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
       const rec = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => { finishRecording(); } });
-      if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); showRecordToast(recordErrorMessage(rec.error)); return; }
+      // 마이크 불가 — 회상 시도를 할 수 없으니 정답을 열어 막다른 길을 피한다(판정은 사용자가).
+      if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); reveal(); refreshDots(); showRecordToast(recordErrorMessage(rec.error)); return; }
       recCtrl = rec.controller;
     } else {
       finishRecording();
     }
-  });
-
-  // 다음 문장 → 점수 자동 채점(SRS) + 전진 (onJudge 가 applySrsUpdate + advance 수행)
-  nextBtn.addEventListener('click', () => {
-    if (!nextBtn.classList.contains('unlock')) { showRecordToast('먼저 떠올려 말해 보세요'); return; }
-    // Rung 3 은 첫(숨김) 시도 점수로 채점 — 정답 공개 후 재녹음(읽기)이 SRS 를 흐리지 않게.
-    handlers.onJudge?.(deriveKind(rung === 3 ? (state.recallScore ?? state.lastScore) : state.lastScore));
   });
 
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
@@ -417,8 +397,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     nextDate ? h('span', {}, '통과 시 다음 복습 ', h('b', {}, String(nextDate))) : null);
   const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, srsRow, ctrl, meta);
   const hintEl = h('div', { class: 'vr-hint' }, h('i'),
-    rung === 3 ? '한글을 보고 영어로 떠올려 말해 보세요 — 떠올린 뒤 녹음하면 정답이 나와요'
-      : rung === 2 ? '빈칸을 채워 문장 전체를 떠올려 말해 보세요'
+    recallMode ? '한글을 보고 영어로 떠올려 말해 보세요 — 안 떠오르면 그대로 두세요. 말하면 정답이 열려요'
       : '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
 
   // 체이닝 재시험 (2026-07-09 — 확장 사다리 폐기 후속). 자막 없이 '한 번 듣고 전체 재현'(최상 난도).
@@ -525,6 +504,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     return block;
   })() : null;
 
+  // chain.target 은 기본문장을 통째로 품는다(실측 21/22 카드) → 회상 시도 전엔 정답 오디오다. 감춘다.
+  if (chainBlock && !revealed) chainBlock.style.display = 'none';
+
   let root, timeUpdate;
   if (state.size !== 'desktop') {
     // ── 모바일 단일 칼럼 (회상 우선) ──
@@ -542,7 +524,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     root = h('div', { class: 'vr' }, v2Style(VRM_CSS),
       mTopb, mSteps,
       h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold, chainBlock),
-      h('div', { class: 'm-cta' }, gateEl, nextBtn));
+      h('div', { class: 'm-cta' }, gateEl, judgeRow.el));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
@@ -551,7 +533,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
       hintEl, cardEl, chainBlock);
-    const side = h('aside', { class: 'vr-side' }, recWidget, fold, nextBtn, gateEl);
+    const side = h('aside', { class: 'vr-side' }, recWidget, fold, gateEl, judgeRow.el);
     root = h('div', { class: 'vr' }, v2Style(VR_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
   }

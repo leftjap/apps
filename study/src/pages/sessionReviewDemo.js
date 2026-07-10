@@ -1,6 +1,6 @@
 /* 복습 세션 데모 픽스처 — 인증 없이 시각 검증용 (작업지시서 §5).
  * mountSessionReview 의 ?demo=1 분기가 사용. 실 DB 무영향.
- * interval 로 Rung 1·2·3 모두 시연 (pickReviewRung: <3→1, 3~20→2, ≥21→3).
+ * en 은 interval 무관하게 회상 모드(한글→영어, 영어 숨김) — 구 Rung 1·2·3 은 2026-07-10 폐기.
  * 필드명은 실제 reviewQueue row 와 동일하게 (meaning/phonetic_kr) — pickCardFields 가 읽는 키.
  */
 export function demoReviewCards() {
