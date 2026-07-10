@@ -615,14 +615,18 @@ export function pcmToWavBlob(int16, sampleRate = 16000) {
   return new Blob([buf], { type: 'audio/wav' });
 }
 
-/** Pronunciation-Assessment 헤더 — UTF-8 JSON → base64 (no line wrap). */
-export function buildPronunciationAssessmentHeader(referenceText) {
+/** Pronunciation-Assessment 헤더 — UTF-8 JSON → base64 (no line wrap).
+ * enableMiscue: 발화 단어를 참조 텍스트와 비교해 ErrorType=Omission/Insertion 을 받는다(MS 문서).
+ *   false(기본) = 누락/삽입을 무시하고 발음 품질만 → 기본 카드 '따라 말하기' 현행 유지.
+ *   true        = 체이닝 coverage 판정용 ('단어를 다 말했는가').
+ */
+export function buildPronunciationAssessmentHeader(referenceText, { enableMiscue = false } = {}) {
   const config = {
     ReferenceText: referenceText || '',
     GradingSystem: 'HundredMark',
     Granularity: 'Phoneme',
     Dimension: 'Comprehensive',
-    EnableMiscue: false,
+    EnableMiscue: enableMiscue === true,
   };
   const json = JSON.stringify(config);
   // UTF-8 안전 base64. 영문/일본어 모두 처리.
@@ -630,6 +634,25 @@ export function buildPronunciationAssessmentHeader(referenceText) {
   let bin = '';
   for (let i = 0; i < utf8.length; i++) bin += String.fromCharCode(utf8[i]);
   return btoa(bin);
+}
+
+/** Azure Words[] → 누락/삽입 단어. EnableMiscue:true 일 때만 ErrorType 에 Omission/Insertion 이 실린다.
+ * Mispronunciation(발음 틀림)은 누락이 아니므로 제외 — coverage 는 '말했는가'만 본다. */
+export function extractMiscues(words) {
+  const omissions = [];
+  const insertions = [];
+  for (const w of words ?? []) {
+    if (w?.ErrorType === 'Omission') omissions.push(w.Word);
+    else if (w?.ErrorType === 'Insertion') insertions.push(w.Word);
+  }
+  return { omissions, insertions };
+}
+
+/** 체이닝 통과 판정 (사용자 결정 2026-07-09) — 발음 정확도 하한 없음. 단어를 다 말했으면 통과.
+ * 덧붙인 말(Insertion)은 허용. 인식 실패(mockFallback) 및 coverage 아닌 결과(omissions 부재)는 불통과. */
+export function passesCoverage(result) {
+  if (!result || result.mockFallback) return false;
+  return Array.isArray(result.omissions) && result.omissions.length === 0;
 }
 
 // Wave 11.63 — AudioWorklet 모듈 등록 캐시 (AudioContext 별 1회).
@@ -792,7 +815,7 @@ export async function recordWav({
  * @returns {Promise<object>} - { score, recognizedText, phonemeScores, weakPhonemes, wordScores, fluencyScore, completenessScore, prosodyScore }
  *                              실패 시 analyzeMock 폴백 (mockFallback=true).
  */
-export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } = {}) {
+export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false } = {}) {
   // Wave A.18.1 — captureRms 계산 (진단용 저장 source). A.18/A.19 캡처 가드는 철회:
   // 낮은 점수/완성도는 "마이크 캡처 실패"가 아니라 "발음이 레퍼런스와 어긋남"인 경우가 많아(실측 검증),
   // 가드가 정상 발화를 'too_quiet/incomplete_capture' 로 오차단 → 점수 차단엔 미사용, 값만 기록.
@@ -821,7 +844,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
   }
   try {
     const url = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(lang)}&format=detailed`;
-    const paHeader = buildPronunciationAssessmentHeader(expectedText);
+    const paHeader = buildPronunciationAssessmentHeader(expectedText, { enableMiscue });
     // Wave A.16 — 429/5xx/network blip 은 재시도로 흡수 (F0 autoscaling 429 빈발 — MS 공식 권장).
     const res = await _fetchWithRetry(url, {
       method: 'POST',
@@ -864,6 +887,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
         if (s < 70) weakSet.add(ph.Phoneme);
       }
     }
+    // coverage 모드(enableMiscue) 에서만 omissions/insertions 가 채워진다 → passesCoverage 판정 소스.
+    const { omissions, insertions } = enableMiscue ? extractMiscues(nbest.Words) : { omissions: undefined, insertions: undefined };
     return {
       score,
       accuracyScore: nbest.AccuracyScore,
@@ -876,6 +901,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US' } =
       fluencyScore: nbest.FluencyScore,
       completenessScore: nbest.CompletenessScore,
       prosodyScore: nbest.ProsodyScore,
+      omissions,
+      insertions,
     };
   } catch (e) {
     console.warn('[speech][rest] error:', e?.message ?? e);
@@ -905,6 +932,8 @@ export const Speech = {
   analyzeWavRest, // Wave 11.61 — REST API Pronunciation Assessment
   pcmToWavBlob, // Wave 11.61 — utility
   buildPronunciationAssessmentHeader, // Wave 11.61 — utility
+  extractMiscues, // 2026-07-09 — coverage(누락) 추출
+  passesCoverage, // 2026-07-09 — 체이닝 pass/fail
   preload, // Wave 11.35 — token+SDK warmup, Wave 11.36 — synthesizer warmup 옵션
   setSpeechBackend,
   getSpeechBackend,

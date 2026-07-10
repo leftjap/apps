@@ -167,13 +167,15 @@ public struct GymUserSettings: Codable, Sendable {
     public var deletedExercises: [String]     // 빌트인 영속 삭제 (spec §10-1)
     public var exerciseOrder: [String: [String]]        // 부위별 정렬
     public var exercisePartOverride: [String: String]   // 운동 부위 변경
+    public var updatedAt: Double              // ms epoch — 설정 LWW 병합용 (sync.js 정합)
     public init(weeklyGoal: Int = 4, height: Int? = nil, birthYear: Int? = nil, goalWeight: Double = 69,
                 hiddenExercises: [String] = [], deletedExercises: [String] = [],
-                exerciseOrder: [String: [String]] = [:], exercisePartOverride: [String: String] = [:]) {
+                exerciseOrder: [String: [String]] = [:], exercisePartOverride: [String: String] = [:],
+                updatedAt: Double = 0) {
         self.weeklyGoal = weeklyGoal; self.height = height; self.birthYear = birthYear
         self.goalWeight = goalWeight; self.hiddenExercises = hiddenExercises
         self.deletedExercises = deletedExercises; self.exerciseOrder = exerciseOrder
-        self.exercisePartOverride = exercisePartOverride
+        self.exercisePartOverride = exercisePartOverride; self.updatedAt = updatedAt
     }
     // 구 데이터 관용 디코딩 — 필드 추가 시 파손 방지.
     public init(from decoder: Decoder) throws {
@@ -186,5 +188,6 @@ public struct GymUserSettings: Codable, Sendable {
         deletedExercises = try c.decodeIfPresent([String].self, forKey: .deletedExercises) ?? []
         exerciseOrder = try c.decodeIfPresent([String: [String]].self, forKey: .exerciseOrder) ?? [:]
         exercisePartOverride = try c.decodeIfPresent([String: String].self, forKey: .exercisePartOverride) ?? [:]
+        updatedAt = try c.decodeIfPresent(Double.self, forKey: .updatedAt) ?? 0
     }
 }

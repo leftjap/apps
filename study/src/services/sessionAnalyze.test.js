@@ -82,6 +82,15 @@ describe('stopAndAnalyze', () => {
     expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'ja-JP' });
   });
 
+  // 체이닝(coverage) — enableMiscue 를 켜야 Azure 가 Omission 을 돌려준다. 기본 경로는 인자 불변.
+  it('enableMiscue:true 를 넘기면 analyzeWavRest 에 그대로 전달된다', async () => {
+    const ctrl = { stop: vi.fn(), blobPromise: Promise.resolve(new Blob()) };
+    const analyzeWavRest = vi.fn().mockResolvedValue({ score: 70, omissions: [] });
+    globalThis.window = { studySpeech: { analyzeWavRest } };
+    await stopAndAnalyze(ctrl, "It's been a while.", { lang: 'en' }, { enableMiscue: true });
+    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'en-US', enableMiscue: true });
+  });
+
   it('blobPromise reject → reason=record_fail', async () => {
     const ctrl = { stop: vi.fn(), blobPromise: Promise.reject(new Error('rec')) };
     globalThis.window = { studySpeech: { analyzeWavRest: vi.fn() } };

@@ -56,24 +56,113 @@ public final class CloudStore: ObservableObject {
         try? await client.auth.signOut(); ownerID = nil; signedIn = false
     }
 
+    // push/pull 일시 실패 자동 재시도 — spec §4 "5초, 15초, 45초" (sync.js withRetry 정합).
+    static let retryDelaysSec: [UInt64] = [5, 15, 45]
+    func withRetry<T>(_ op: () async throws -> T) async throws -> T {
+        var lastError: Error?
+        for (i, delay) in ([0] + Self.retryDelaysSec).enumerated() {
+            if delay > 0 { try? await Task.sleep(nanoseconds: delay * 1_000_000_000) }
+            do { return try await op() }
+            catch {
+                lastError = error
+                if i == Self.retryDelaysSec.count { break }
+            }
+        }
+        throw lastError ?? URLError(.unknown)
+    }
+
+    // MARK: - sessions
+
     // 세션 upsert (id PK, owner 격리 RLS)
     public func upsertSession(_ s: GymSession) async throws {
         guard let owner = ownerID else { return }
-        try await client.from("gym_sessions").upsert(SessionRow(from: s, owner: owner), onConflict: "id").execute()
+        try await withRetry {
+            try await client.from("gym_sessions").upsert(SessionRow(from: s, owner: owner), onConflict: "id").execute()
+        }
     }
-
+    public func upsertSessions(_ xs: [GymSession]) async throws {
+        guard let owner = ownerID, !xs.isEmpty else { return }
+        let rows = xs.map { SessionRow(from: $0, owner: owner) }
+        try await withRetry {
+            try await client.from("gym_sessions").upsert(rows, onConflict: "id").execute()
+        }
+    }
     // 내 세션 조회 (RLS owner-only)
     public func fetchSessions() async throws -> [GymSession] {
-        let rows: [SessionRow] = try await client.from("gym_sessions")
-            .select("id,date,status,start_time,end_time,blocks,tags,total_volume,total_calories,duration_min")
-            .order("date", ascending: false).execute().value
-        return rows.map { $0.toModel() }
+        try await withRetry {
+            let rows: [SessionRow] = try await client.from("gym_sessions")
+                .select("id,date,status,start_time,end_time,blocks,tags,total_volume,total_calories,duration_min")
+                .order("date", ascending: false).execute().value
+            return rows.map { $0.toModel() }
+        }
     }
 
-    public func upsertWeight(_ w: GymWeight, on date: Date) async throws {
+    // MARK: - prs
+
+    public func upsertPRs(_ xs: [GymPR]) async throws {
+        guard let owner = ownerID, !xs.isEmpty else { return }
+        let rows = xs.map { PRRow(from: $0, owner: owner) }
+        try await withRetry {
+            try await client.from("gym_prs").upsert(rows, onConflict: "id").execute()
+        }
+    }
+    public func fetchPRs() async throws -> [GymPR] {
+        try await withRetry {
+            let rows: [PRRow] = try await client.from("gym_prs")
+                .select("id,exercise_id,type,weight,reps,e1rm,date,session_id").execute().value
+            return rows.map { $0.toModel() }
+        }
+    }
+
+    // MARK: - weights (0002 마이그레이션 컬럼: user_id/date/weight/height)
+
+    public func upsertWeights(_ xs: [GymWeight]) async throws {
+        guard let owner = ownerID, !xs.isEmpty else { return }
+        let rows = xs.map { WeightRow(from: $0, owner: owner) }
+        try await withRetry {
+            try await client.from("gym_weights").upsert(rows, onConflict: "user_id,date").execute()
+        }
+    }
+    public func fetchWeights() async throws -> [GymWeight] {
+        try await withRetry {
+            let rows: [WeightRow] = try await client.from("gym_weights")
+                .select("date,weight,height").order("date", ascending: false).execute().value
+            return rows.map { $0.toModel() }
+        }
+    }
+
+    // MARK: - custom exercises
+
+    public func upsertCustomExercises(_ xs: [GymCustomExercise]) async throws {
+        guard let owner = ownerID, !xs.isEmpty else { return }
+        let rows = xs.map { CustomExerciseRow(from: $0, owner: owner) }
+        try await withRetry {
+            try await client.from("gym_custom_exercises").upsert(rows, onConflict: "id").execute()
+        }
+    }
+    public func fetchCustomExercises() async throws -> [GymCustomExercise] {
+        try await withRetry {
+            let rows: [CustomExerciseRow] = try await client.from("gym_custom_exercises")
+                .select("id,name,part,equipment,default_sets,default_reps,default_weight,met").execute().value
+            return rows.map { $0.toModel() }
+        }
+    }
+
+    // MARK: - settings (user_id PK 단일 row, settings jsonb — updatedAt 은 jsonb 동행 LWW)
+
+    public func upsertSettings(_ s: GymUserSettings) async throws {
         guard let owner = ownerID else { return }
-        try await client.from("gym_weights")
-            .upsert(WeightRow(owner_id: owner.uuidString, day: w.date, kg: w.kg), onConflict: "owner_id,day").execute()
+        try await withRetry {
+            try await client.from("gym_user_settings")
+                .upsert(SettingsRow(from: s, owner: owner), onConflict: "user_id").execute()
+        }
+    }
+    public func fetchSettings() async throws -> GymUserSettings? {
+        try await withRetry {
+            let rows: [SettingsRow] = try await client.from("gym_user_settings")
+                .select("user_id,settings").execute().value
+            return rows.first?.settings
+        }
     }
 }
 
@@ -103,4 +192,70 @@ struct SessionRow: Codable {
     }
 }
 
-struct WeightRow: Encodable { let owner_id: String; let day: String; let kg: Double }
+// gym_prs row — PK = `<exerciseId>_<type>` 합성 (sync.js toSupabasePR 정합).
+struct PRRow: Codable {
+    let id: String
+    let user_id: String?
+    let exercise_id: String
+    let type: String
+    let weight: Double
+    let reps: Int
+    let e1rm: Double
+    let date: String?
+    let session_id: String?
+
+    init(from p: GymPR, owner: UUID) {
+        id = p.id; user_id = owner.uuidString; exercise_id = p.exerciseId; type = p.type.rawValue
+        weight = p.weight; reps = p.reps; e1rm = p.e1rm; date = p.date; session_id = p.sessionId
+    }
+    func toModel() -> GymPR {
+        GymPR(exerciseId: exercise_id, type: GymPRType(rawValue: type) ?? .e1rm,
+              weight: weight, reps: reps, e1rm: e1rm, date: date ?? "", sessionId: session_id)
+    }
+}
+
+// gym_weights row — 0002 마이그레이션 컬럼 (user_id/date/weight/height).
+struct WeightRow: Codable {
+    let user_id: String?
+    let date: String
+    let weight: Double
+    let height: Int?
+
+    init(from w: GymWeight, owner: UUID) {
+        user_id = owner.uuidString; date = w.date; weight = w.kg; height = w.height
+    }
+    func toModel() -> GymWeight { GymWeight(date: date, kg: weight, height: height) }
+}
+
+// gym_custom_exercises row.
+struct CustomExerciseRow: Codable {
+    let id: String
+    let user_id: String?
+    let name: String
+    let part: String
+    let equipment: String
+    let default_sets: Int
+    let default_reps: Int
+    let default_weight: Double
+    let met: Double
+
+    init(from c: GymCustomExercise, owner: UUID) {
+        id = c.id; user_id = owner.uuidString; name = c.name; part = c.part; equipment = c.equipment
+        default_sets = c.defaultSets; default_reps = c.defaultReps; default_weight = c.defaultWeight; met = c.met
+    }
+    func toModel() -> GymCustomExercise {
+        GymCustomExercise(id: id, name: name, part: part, equipment: equipment,
+                          defaultSets: default_sets, defaultReps: default_reps,
+                          defaultWeight: default_weight, met: met)
+    }
+}
+
+// gym_user_settings row — settings jsonb (updatedAt 은 jsonb 안에 동행, LWW 클럭 일관).
+struct SettingsRow: Codable {
+    let user_id: String?
+    let settings: GymUserSettings
+
+    init(from s: GymUserSettings, owner: UUID) {
+        user_id = owner.uuidString; settings = s
+    }
+}

@@ -17,6 +17,7 @@ import {
   loadSourceEnLines,
   epFileStem,
   showOfEpisode,
+  countNearDupDrills,
 } from './validate-seed.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -209,6 +210,77 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(false);
     expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
+  // ── chain (무자막 청각 확장, 2026-07-09) — ladder 대체. 앱이 chunks 누적으로 단계를 만든다. ──
+  const CHAIN_OK = {
+    target: "It's been a while since we caught up. We should grab dinner sometime.",
+    chunks: ["It's been a while", 'since we caught up', 'We should grab dinner', 'sometime'],
+    ko: '오랜만이야. 언제 저녁이나 먹자.',
+  };
+
+  it('chain 미존재는 통과 (선택 필드·하위호환)', () => {
+    const r = validateSeedContent(makeModu(), okOpts);
+    expect(r.ok).toBe(true);
+  });
+
+  it('chain 정상 — chunks 를 이어붙이면 target 과 같으면 통과', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = CHAIN_OK;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('chain.chunks 를 이어붙여도 target 이 안 되면 차단 (앱 단계 생성이 깨짐)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = { ...CHAIN_OK, chunks: ["It's been a while", 'and then something else'] };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('chain.chunks');
+  });
+
+  it('chain.ko 누락은 차단 (3회 실패 힌트가 한국어 뜻을 쓴다)', () => {
+    const p = makeModu();
+    const { ko, ...noKo } = CHAIN_OK;
+    p.cards[0].explanation.chain = noKo;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('chain.ko');
+  });
+
+  it('chain.chunks 2개 미만은 차단', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = { target: 'Hello there', chunks: ['Hello there'], ko: '안녕' };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('chain.chunks');
+  });
+
+  // ── drills 근접중복 (2026-07-09 감사: 3610 드릴 중 34.2%) ──
+  it('countNearDupDrills — base 를 그대로 두고 2단어 이하만 덧붙인 드릴을 센다', () => {
+    const base = 'Are you in line?';
+    expect(countNearDupDrills(base, [
+      { en: 'Are you in line?' },                       // 동일 → 1
+      { en: 'Sorry, are you in line?' },                // +1단어 → 2
+      { en: 'Honey, are you in line?' },                // +1단어 → 3
+      { en: 'Are you in line for the bathroom?' },      // +3단어 → 제외
+      { en: 'Is this the line?' },                      // base 미포함 → 제외
+    ])).toBe(3);
+    expect(countNearDupDrills(base, [{ en: 'Are you in line?' }])).toBe(1);
+    expect(countNearDupDrills(base, [])).toBe(0);
+  });
+
+  it('moduyeongeo 는 근접중복이 많아도 경고만 (완성 콘텐츠 — 렌더에서 걸러냄)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.drills = [
+      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },
+      { en: 'Honey, it is no big deal.', ko: '뜻', kr: '드릴' },
+      { en: 'Sorry, it is no big deal.', ko: '뜻', kr: '드릴' },
+    ];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);                                    // 차단 안 함
+    expect(r.warnings.join(' ')).toContain('근접중복');          // 경고는 뜸
   });
 
   it('회귀: track 없는 정상 en 은 여전히 scene 강제 (예외 누수 방지)', () => {

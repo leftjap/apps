@@ -43,7 +43,7 @@ export async function startMicRecording(opts = {}) {
   }
 }
 
-export async function stopAndAnalyze(controller, expectedText, card) {
+export async function stopAndAnalyze(controller, expectedText, card, { enableMiscue = false } = {}) {
   if (!controller) return mockResult('no_recorder');
   try { controller.stop(); } catch { /* noop */ }
   let blob;
@@ -54,5 +54,8 @@ export async function stopAndAnalyze(controller, expectedText, card) {
   }
   const ref = normalizeReferenceText(expectedText);
   const lang = pickAnalyzeLang(card);
-  return window.studySpeech.analyzeWavRest(blob, ref, { lang });
+  // enableMiscue=true (체이닝) → 결과에 omissions/insertions 가 실린다 (passesCoverage 판정용).
+  // 기본 경로는 인자를 건드리지 않는다 (기존 '따라 말하기' 계약 보존).
+  const opts = enableMiscue ? { lang, enableMiscue: true } : { lang };
+  return window.studySpeech.analyzeWavRest(blob, ref, opts);
 }

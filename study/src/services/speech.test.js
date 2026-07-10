@@ -243,6 +243,48 @@ describe('speech — Wave 11.61 buildPronunciationAssessmentHeader', () => {
   });
 });
 
+/* coverage 모드 — 체이닝 pass/fail (2026-07-09 사용자 결정 "단어를 다 말했는가만 본다").
+ * 기본 카드 '따라 말하기'는 EnableMiscue:false + AccuracyScore 표시(현행 유지).
+ * 체이닝은 EnableMiscue:true 로 Azure 가 반환하는 ErrorType=Omission 을 보고 통과/실패만 판정.
+ * 근거: MS 문서 — EnableMiscue 는 발화 단어를 참조 텍스트와 비교해 Omission/Insertion 을 표시. */
+describe('speech — coverage 모드(누락 감지)', () => {
+  const decode = (b64) => {
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return JSON.parse(new TextDecoder().decode(bytes));
+  };
+
+  it('enableMiscue:true 면 EnableMiscue=true, 미지정이면 false (기존 동작 보존)', async () => {
+    const { buildPronunciationAssessmentHeader } = await import('./speech.js');
+    expect(decode(buildPronunciationAssessmentHeader("It's been a while")).EnableMiscue).toBe(false);
+    expect(decode(buildPronunciationAssessmentHeader("It's been a while", { enableMiscue: true })).EnableMiscue).toBe(true);
+  });
+
+  it('extractMiscues — Words[].ErrorType 에서 누락/삽입 단어만 뽑는다', async () => {
+    const { extractMiscues } = await import('./speech.js');
+    const words = [
+      { Word: "It's", ErrorType: 'None' },
+      { Word: 'been', ErrorType: 'Omission' },
+      { Word: 'a', ErrorType: 'None' },
+      { Word: 'while', ErrorType: 'Mispronunciation' }, // 발음 틀림은 누락 아님
+      { Word: 'um', ErrorType: 'Insertion' },
+    ];
+    expect(extractMiscues(words)).toEqual({ omissions: ['been'], insertions: ['um'] });
+    expect(extractMiscues(undefined)).toEqual({ omissions: [], insertions: [] });
+  });
+
+  it('passesCoverage — 단어를 다 말했으면 발음이 나빠도 통과, 하나라도 빠뜨리면 실패', async () => {
+    const { passesCoverage } = await import('./speech.js');
+    expect(passesCoverage({ omissions: [], score: 41 })).toBe(true);           // 발음 41점이어도 통과
+    expect(passesCoverage({ omissions: ['been'], score: 98 })).toBe(false);    // 98점이어도 누락이면 실패
+    expect(passesCoverage({ omissions: [], insertions: ['um'] })).toBe(true);  // 덧붙인 말은 허용
+    expect(passesCoverage({ mockFallback: true, omissions: [] })).toBe(false); // 인식 실패는 불통과
+    expect(passesCoverage(null)).toBe(false);
+    expect(passesCoverage({ score: 90 })).toBe(false);                         // omissions 부재(비-coverage)면 불통과
+  });
+});
+
 describe('speech — Wave 11.61 analyzeWavRest', () => {
   // REST API 응답 fixture — 실 검증 (Wave 11.61) 에서 회수한 데이터 그대로
   const REST_FIXTURE = {

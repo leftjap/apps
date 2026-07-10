@@ -277,9 +277,10 @@ public final class GymAppModel: ObservableObject {
     }
     public func isHidden(_ exId: String) -> Bool { settings.hiddenExercises.contains(exId) }
     public func toggleHidden(_ exId: String) {
-        if let i = settings.hiddenExercises.firstIndex(of: exId) { settings.hiddenExercises.remove(at: i) }
-        else { settings.hiddenExercises.append(exId) }
-        LocalStore.saveSettings(settings)
+        updateSettings { s in
+            if let i = s.hiddenExercises.firstIndex(of: exId) { s.hiddenExercises.remove(at: i) }
+            else { s.hiddenExercises.append(exId) }
+        }
     }
     // 체중 기록 + 직전 대비 증감 (관리 체중 탭).
     public func weightEntries() -> [(w: GymWeight, delta: Double?)] {
@@ -288,17 +289,58 @@ public final class GymAppModel: ObservableObject {
         }
     }
     public func updateSettings(_ mutate: (inout GymUserSettings) -> Void) {
-        mutate(&settings); LocalStore.saveSettings(settings)
+        mutate(&settings)
+        settings.updatedAt = Double(nowMillis())   // LWW 클럭 (sync.js 정합 — push/pull 동행)
+        LocalStore.saveSettings(settings)
     }
 
-    // MARK: - 클라우드 (선택적 sync)
+    // MARK: - 클라우드 (선택적 sync — spec §4 양방향 병합·안전장치)
 
-    public func restoreCloud() async { await cloud.restore() }
+    public func restoreCloud() async {
+        await cloud.restore()
+        if cloud.signedIn { await syncNow() }
+    }
     public func login() async { try? await cloud.signInWithGoogle(); await syncNow() }
     public func logout() async { await cloud.signOut() }
+
+    // 전체 동기화: pull → 충돌 병합(서버 규칙) → 로컬 저장 → push (50% 급감 차단).
+    // 부분 실패 시 로컬 보존 (sync.js pullAll/pushAll 정합). 실 왕복은 실기기 검증 필요.
     public func syncNow() async {
         guard cloud.signedIn else { return }
-        try? await cloud.upsertSession(session)
+        do {
+            // 1. pull
+            let serverSessions = try await cloud.fetchSessions()
+            let serverPRs = try await cloud.fetchPRs()
+            let serverWeights = try await cloud.fetchWeights()
+            let serverCustom = try await cloud.fetchCustomExercises()
+            let serverSettings = try await cloud.fetchSettings()
+            // 2. 병합 — completed 만 이력으로 (진행 세션은 로컬 정본 유지)
+            let serverCompleted = serverSessions.filter { $0.status == .completed }
+            history = GymSyncLogic.mergeSessions(local: history, server: serverCompleted)
+            LocalStore.saveSessions(history)
+            prs = GymSyncLogic.mergePRs(local: prs, server: serverPRs)
+            LocalStore.savePRs(prs)
+            weights = GymSyncLogic.mergeWeights(local: weights, server: serverWeights)
+            LocalStore.saveWeights(weights)
+            custom = GymSyncLogic.mergeCustom(local: custom, server: serverCustom)
+            LocalStore.saveCustomExercises(custom)
+            if let ss = serverSettings {
+                settings = GymSyncLogic.resolveSettings(local: settings, server: ss)
+                LocalStore.saveSettings(settings)
+            }
+            // 3. push — 전체 push 한정 50% 급감 차단 (병합 후라 통상 통과, 방어적 유지)
+            if !GymSyncLogic.isShrinkBlocked(localCount: history.count, serverCount: serverCompleted.count) {
+                var toPush = history
+                if !session.blocks.isEmpty { toPush.append(session) }   // 진행 세션 백업
+                try await cloud.upsertSessions(toPush)
+            }
+            try await cloud.upsertPRs(prs)
+            try await cloud.upsertWeights(weights)
+            try await cloud.upsertCustomExercises(custom)
+            try await cloud.upsertSettings(settings)
+        } catch {
+            // 일시 실패 — 로컬 보존, 다음 sync 시 재시도 (재시도 5/15/45s 는 CloudStore withRetry)
+        }
     }
 
     // 세션 종료 (§7-1) — done 세트만 보존·빈 블록 제거(finalize) + 칼로리(MET) + 이력 저장 + 요약.
