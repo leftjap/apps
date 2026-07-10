@@ -109,15 +109,26 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
 **규칙:**
 - **개수**: 내용·레벨 기반. 핵심·헷갈리는 요소 6~8개, 쉬운 요소 3개. 고정 quota 금지
 - **구성**: 같은 뜻 패턴 치환 ~70%(패턴 그루빙) + 뜻 범위 ~30%(응용 폭). 자연·빈출·레벨맞춤만 — 기계적 슬롯 채우기 금지
-- ⛔ **근접중복 금지 (게이트 차단, 2026-07-10)**: base 를 통째로 품은 채 **쉼표로 호칭·감탄사·담화표지·문미태그만 덧붙인 것**은 변주가 아니다.
-  변주 = **다른 문법 맥락**으로의 이식 (주어·시제·극성·문형·목적어 변경).
-  - `base` 와 **완전 동일한** 드릴(영상 원문 반복)은 **1개까지** 허용
-  - 호칭류 덧붙임은 **0개** — `scripts/validate-seed.mjs` 가 차단(트랙 무관, moduyeongeo 포함)
-  - 판정 단일 출처 = `src/components/session/applied.js` `nearDupDrills()`
-  - ⚠️ **쉼표 조건이 핵심**이다. `base 포함 + 2단어 이하 추가`만 보면 **주어 추가를 오탐**한다 —
-    `Seems like yesterday.` → `Our wedding seems like yesterday.` 는 진짜 변주다 (105편에서 433건 오탐, 2026-07-10 루틴 실행 중 발견)
-  - ❌ `It's been a while.` → `It's been a while, honey.` / `Seems like yesterday, doesn't it?`
+- ⛔ **근접중복 금지 (게이트 차단, 2026-07-10)**: **base 의 문법 맥락이 그대로면 변주가 아니다.**
+  변주 = **주어·시제·극성·문형·목적어 중 하나 이상을 바꾼 것.**
+
+  차단 두 종류:
+  1. **호칭류** — 쉼표로 호칭·감탄사·담화표지·문미태그만 덧붙인 것
+     ❌ `It's been a while, honey.` · `Seems like yesterday, doesn't it?` · `Sir, is there a problem?`
+  2. **꼬리확장** — base 를 통째로 앞에 두고 **뒤에 말만 덧붙인 것** (2026-07-10 사용자 지적)
+     ❌ `Is there a problem?` → `Is there a problem here?` · `Is there a problem with that?`
+     ❌ `I have no appetite.` → `I have no appetite these days.` · `It's your turn.` → `It's your turn now.`
+     → 주어·시제·극성·문형·목적어가 **하나도 안 바뀐다.**
+
+  통과:
+  - `base` 와 **완전 동일한** 드릴(영상 원문 반복)은 **1개까지**
+  - **앞에 주어를 붙인 것**은 변주 — `Seems like yesterday.` → `Our wedding seems like yesterday.`
+  - **종결부호가 바뀌면**(평서→의문) 문형 변경이므로 변주 — `It's your turn.` → `It's your turn now?`
+  - ✅ `Is there a problem?` → `Do we have a problem?` (주어·문형 변경)
   - ✅ `It's been a while.` → `Has it been a while since your last trip?` / `It hasn't been long since I fed the cat.`
+
+  판정 단일 출처 = `src/components/session/applied.js` `nearDupDrills()` (게이트·렌더 공유).
+  ⚠️ 쉼표 조건 없이 `base 포함 + 2단어 이하 추가`만 보면 **주어 추가를 오탐**한다(105편 433건). 반대로 쉼표만 보면 **꼬리확장을 놓친다**(105편 772건). 둘 다 필요하다.
 - **UI**: 각 drill 행에 🔊(TTS `studySpeech.speak`) + ⏺(녹음→발음채점 `services/sessionAnalyze.js`) 자동 부착 → 듣기·말하기·녹음. kr 음차는 en 아래 faint 줄
 - **렌더**: phone/tablet = `components/session/explanationPanel.js` `drillsSection` / D1 데스크탑 = `components/d1/sessionShell.js` `buildD1DrillRows` (양쪽 kr 지원, 누락 시 미표시 — 구 시드 호환). 신규 세션은 `sessionExprV2.js` 가 `filterNearDupDrills()` 로 구 데이터를 한 번 더 거른다(안전망)
 

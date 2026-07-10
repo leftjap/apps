@@ -67,19 +67,18 @@ describe('firstWordsHint — 앞 단어만 노출', () => {
   });
 });
 
-describe('filterNearDupDrills — 호칭·감탄사만 붙인 근접중복은 1개만 남긴다', () => {
-  it('근접중복은 첫 1개(영상 원문)만 유지, 진짜 변주는 전부 유지, 순서 보존', () => {
+describe('filterNearDupDrills — 호칭류·꼬리확장은 걷어내고 영상 원문 1개만 남긴다', () => {
+  it('영상 원문 1개 + 진짜 변주만 유지, 순서 보존', () => {
     const base = 'Are you in line?';
     const drills = [
       { en: 'Are you in line?' },                  // 동일 → 유지(1개째)
-      { en: 'Sorry, are you in line?' },           // 근접중복 → 제거
-      { en: 'Honey, are you in line?' },           // 근접중복 → 제거
-      { en: 'Are you in line for the bathroom?' }, // +3단어 → 유지
+      { en: 'Sorry, are you in line?' },           // 호칭류 → 제거
+      { en: 'Honey, are you in line?' },           // 호칭류 → 제거
+      { en: 'Are you in line for the bathroom?' }, // 꼬리확장 → 제거
       { en: 'Is this the line?' },                 // base 미포함 → 유지
     ];
     expect(filterNearDupDrills(base, drills).map((d) => d.en)).toEqual([
       'Are you in line?',
-      'Are you in line for the bathroom?',
       'Is this the line?',
     ]);
   });
@@ -120,14 +119,14 @@ describe('chainHint — 중간 단계에서 전체 뜻을 노출하지 않는다
 /* 게이트가 '영상 원문 반복(exact)'과 '호칭·감탄사만 덧붙인 것(added)'을 구분해야
  * 전자는 1개 허용, 후자는 0개로 차단할 수 있다. (2026-07-10) */
 describe('nearDupDrills — base 완전동일(exact)과 덧붙인 근접중복(added)을 분리', () => {
-  it('exact 1 · added 2 · 진짜 변주는 세지 않음', () => {
+  it('exact 1 · added 3(호칭 2 + 꼬리확장 1) · 진짜 변주는 세지 않음', () => {
     expect(nearDupDrills('Are you in line?', [
       { en: 'Are you in line?' },                  // exact
-      { en: 'Sorry, are you in line?' },           // added
-      { en: 'Honey, are you in line?' },           // added
-      { en: 'Are you in line for the bathroom?' }, // +3단어 → 변주
-      { en: 'Is this the line?' },                 // base 미포함
-    ])).toEqual({ exact: 1, added: 2 });
+      { en: 'Sorry, are you in line?' },           // 호칭류
+      { en: 'Honey, are you in line?' },           // 호칭류
+      { en: 'Are you in line for the bathroom?' }, // 꼬리확장 — 문법 맥락 불변
+      { en: 'Is this the line?' },                 // base 미포함 → 변주
+    ])).toEqual({ exact: 1, added: 3 });
   });
 
   /* added 는 정의상 **호칭·감탄사·담화표지·문미태그**만이다(설계 정본).

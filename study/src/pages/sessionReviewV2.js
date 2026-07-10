@@ -97,6 +97,8 @@ const VR_CSS = `
 .vr-fold .bd{font-size:12.5px;color:var(--mut);margin-top:12px;line-height:1.6}
 .vr-fold .bd .vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase;margin-top:12px}
 .vr-fold .bd .kx{background:var(--teal-soft);border-radius:10px;padding:10px 12px;color:#3f4845}
+.vr-fold .vs-panel{padding:0;border:0;background:none;margin:0}
+.vr-fold .vs-panel .inner{padding:0;max-height:none;overflow:visible}
 .vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px}
 .vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
 @media (max-width:1100px){.vr-mainwrap{flex-direction:column;align-items:center}.vr-side{width:760px;max-width:100%}}
@@ -183,6 +185,8 @@ const VRM_CSS = `
 .vr-fold.open .chev{transform:rotate(180deg)}
 .vr-fold .bd{margin-top:13px;font-size:12.5px;line-height:1.6;color:var(--mut)}
 .vr-fold .bd .kx{background:var(--teal-soft);border-radius:12px;padding:12px 14px}
+.vr-fold .vs-panel{padding:0;border:0;background:none;margin:0}
+.vr-fold .vs-panel .inner{padding:0;max-height:none;overflow:visible}
 .vr-fold .bd .vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase;margin-top:12px}
 `;
 
@@ -337,7 +341,6 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
   // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리한다. 안쪽은 해설 패널 + 하단 평가.
   const foldBd = h('div', { class: 'bd' },
-    h('div', {}, '먼저 떠올려 말해 본 다음 펼쳐 보세요. 해설을 보기 전에 꺼내 보는 게 복습 효과가 가장 커요.'),
     explainPanel(ex, false),
     h('div', { style: 'margin-top:18px;border-top:1px solid var(--line);padding-top:14px;' }, gateEl, judgeRow.el),
   );
