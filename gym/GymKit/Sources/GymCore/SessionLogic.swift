@@ -147,9 +147,14 @@ public enum GymSessionLogic {
         public let state: GymRailState
     }
 
-    /// 현재 블록 — 명시 선택 우선, 없으면 첫 미완료. **전부 완료면 nil** (session.js currentBlock=null 정합).
+    /// 현재 블록 — 명시 선택 우선, 없으면 첫 미완료. **전부 완료면 nil**.
     /// 히어로는 read-only 표시용으로 마지막 블록을 쓰지만, 레일·액션시트는 nil 을 그대로 써야
     /// 완료된 종목이 current(흰 카드)로 남지 않는다.
+    ///
+    /// ⚠ PWA 정합 아님 — 사용자 요구(2026-07-10 실기기 보고)로 의도적으로 다르다.
+    /// session.js:2615 는 `if (nextIdx != null) _currentBlockIdx = nextIdx` 라 전부 완료 시
+    /// 커서가 완료된 블록에 남고(2606 주석 "마지막이면 현재 block 유지"), 레일에도 current 로 그려진다.
+    /// 즉 PWA 쪽이 같은 결함을 갖고 있다 (별도 수정 필요).
     public static func activeBlockIdx(session: GymSession, selected: Int?) -> Int? {
         if let s = selected, session.blocks.indices.contains(s) { return s }
         return firstUnfinishedBlockIdx(session)

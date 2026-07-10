@@ -454,7 +454,8 @@ public final class GymAppModel: ObservableObject {
     public var currentBlockIdx: Int {
         activeBlockIdx ?? max(0, session.blocks.count - 1)
     }
-    // 레일·액션시트용 — 전부 완료면 nil (완료된 종목이 current 로 남지 않게, session.js 정합).
+    // 레일·액션시트용 — 전부 완료면 nil (완료된 종목이 current 로 남지 않게).
+    // PWA 는 커서를 완료 블록에 남긴다(session.js:2615) — 여기만 의도적으로 다르다.
     public var activeBlockIdx: Int? {
         GymSessionLogic.activeBlockIdx(session: session, selected: selectedBlockIdx)
     }
