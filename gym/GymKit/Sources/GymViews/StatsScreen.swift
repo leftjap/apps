@@ -336,57 +336,44 @@ public struct StatsScreenView: View {
         .padding(.horizontal, 24)
     }
 
-    // 8주 추이 — stats.js applyWeeklyTrend 이식 (막대 + 선 overlay + 점 + x축 라벨).
-    // 좌표계: viewBox 320×160, padTop/padBot 14 → chartH 132, slot = W/n, barW = slot×0.55.
+    // 8주 추이 — stats.js renderWeeklyTrendChart 이식 (막대 + 선 overlay + 점 + x축 라벨).
+    // 기하는 GymTrendChart(viewBox 320×160 + xMidYMid meet 레터박스). 유닛 6.
     struct WeeklyTrendChart: View {
         let trend: [Double]
-        static let padTop: CGFloat = 14, padBot: CGFloat = 14
-
         var n: Int { max(1, trend.count) }
         var maxV: Double { trend.max() ?? 0 }
-
-        func barRect(_ i: Int, _ size: CGSize) -> CGRect {
-            let chartH = size.height - Self.padTop - Self.padBot
-            let slot = size.width / CGFloat(n), barW = slot * 0.55
-            let ratio = maxV > 0 ? CGFloat(trend[i] / maxV) : 0
-            let h = ratio > 0 ? max(4, ratio * chartH) : max(8, chartH * 0.08)   // 0인 주 placeholder
-            return CGRect(x: CGFloat(i) * slot + (slot - barW) / 2,
-                          y: Self.padTop + (chartH - h), width: barW, height: h)
-        }
-        func point(_ i: Int, _ size: CGSize) -> CGPoint {
-            let chartH = size.height - Self.padTop - Self.padBot
-            let step = n > 1 ? size.width / CGFloat(n - 1) : 0
-            return CGPoint(x: CGFloat(i) * step,
-                           y: Self.padTop + (chartH - CGFloat(trend[i] / max(maxV, 1)) * chartH))
-        }
 
         var body: some View {
             VStack(spacing: 8) {
                 GeometryReader { g in
+                    let f = GymTrendChart.fit(width: g.size.width, height: g.size.height)
                     ZStack(alignment: .topLeading) {
                         ForEach(trend.indices, id: \.self) { i in
-                            let r = barRect(i, g.size)
-                            RoundedRectangle(cornerRadius: 3)
+                            let r = GymTrendChart.bar(index: i, count: n, value: trend[i], maxValue: maxV)
+                            RoundedRectangle(cornerRadius: f.len(3))
                                 .fill(trend[i] <= 0 ? StatsScreenView.trendZero
                                       : (i == n - 1 ? StatsScreenView.trendCurrent : StatsScreenView.trendPast))
-                                .frame(width: r.width, height: r.height)
-                                .offset(x: r.minX, y: r.minY)
+                                .frame(width: f.len(r.width), height: f.len(r.height))
+                                .offset(x: f.x(r.minX), y: f.y(r.minY))
                         }
                         if maxV > 0 {
                             Path { p in
-                                p.move(to: point(0, g.size))
-                                for i in 1..<n { p.addLine(to: point(i, g.size)) }
+                                for i in 0..<n {
+                                    let pt = GymTrendChart.point(index: i, count: n, value: trend[i], maxValue: maxV)
+                                    let m = CGPoint(x: f.x(pt.x), y: f.y(pt.y))
+                                    i == 0 ? p.move(to: m) : p.addLine(to: m)
+                                }
                             }
                             .stroke(StatsScreenView.trendLine,
-                                    style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                                    style: StrokeStyle(lineWidth: f.len(1.6), lineCap: .round, lineJoin: .round))
                             ForEach(trend.indices, id: \.self) { i in
                                 let cur = i == n - 1
-                                let rad: CGFloat = cur ? 4 : 2.5
-                                let pt = point(i, g.size)
+                                let rad = f.len(cur ? 4 : 2.5)
+                                let pt = GymTrendChart.point(index: i, count: n, value: trend[i], maxValue: maxV)
                                 Circle().fill(cur ? StatsScreenView.trendCurrent : StatsScreenView.trendDot)
-                                    .overlay(cur ? Circle().strokeBorder(Color(hex: 0xFFFDF8), lineWidth: 2) : nil)
+                                    .overlay(cur ? Circle().strokeBorder(Color(hex: 0xFFFDF8), lineWidth: f.len(2)) : nil)
                                     .frame(width: rad * 2, height: rad * 2)
-                                    .offset(x: pt.x - rad, y: pt.y - rad)
+                                    .offset(x: f.x(pt.x) - rad, y: f.y(pt.y) - rad)
                             }
                         }
                     }
