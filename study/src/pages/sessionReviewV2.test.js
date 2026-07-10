@@ -125,26 +125,53 @@ describe('renderSessionReviewV2 — 해설 = 신규 세션과 동일(해설·응
     expect(host.textContent).not.toContain('체이닝 재시험');
   });
 
-  it('해설 안에 해설 패널 · 응용 연습 · 체이닝 · 평가가 이 순서로 들어있다', () => {
-    const host = mountFull();
-    const bd = host.querySelector('.vr-fold .bd');
-    expect(bd.querySelector('.vs-panel')).not.toBeNull();      // 해설 (신규와 동일 컴포넌트)
-    expect(bd.textContent).toContain('응용 연습');              // 응용문장
-    expect(bd.querySelector('.vs-chain')).not.toBeNull();      // 체이닝 (신규와 동일)
-    expect(bd.querySelector('.judge-row')).not.toBeNull();     // 평가는 맨 아래
-    const order = [...bd.querySelectorAll('.vs-panel, .vs-chain, .judge-row')].map((el) => el.className.split(' ')[0]);
-    expect(order).toEqual(['vs-panel', 'vs-chain', 'judge-row']);
+  /* 데스크톱이 기준 — 신규 세션과 같은 3칼럼:
+   *   main(760px) = 카드 · 응용 연습 · 체이닝   /   side(324px) = 오늘 발화 · 표현 해설(+평가)
+   * 해설을 메인에 넣으면 데스크톱이 모바일 단일 칼럼처럼 보인다 (2026-07-10 사용자 지적). */
+  it('데스크톱: 응용·체이닝은 메인 칼럼, 해설·평가는 사이드바 (신규와 동일 3칼럼)', () => {
+    const host = mountFull('desktop');
+    expect(host.querySelector('.vr-main .vr-drills')).not.toBeNull();
+    expect(host.querySelector('.vr-main .vs-chain')).not.toBeNull();
+    expect(host.querySelector('.vr-side .vr-fold .judge-row')).not.toBeNull();
+    expect(host.querySelector('.vr-main .vr-fold')).toBeNull();   // 해설이 메인에 오면 단일 칼럼처럼 보인다
+    expect(host.querySelector('.vr-side .vs-chain')).toBeNull();  // 체이닝이 324px 에 끼면 줄바꿈 투성이
+  });
+
+  it('해설 안에는 해설 패널과 평가만 (응용·체이닝은 바깥)', () => {
+    const bd = mountFull('desktop').querySelector('.vr-fold .bd');
+    expect(bd.querySelector('.vs-panel')).not.toBeNull();
+    expect(bd.querySelector('.judge-row')).not.toBeNull();
+    expect(bd.querySelector('.vs-chain')).toBeNull();
+  });
+
+  it('공개 전에는 응용·체이닝이 감춰진다 (둘 다 정답을 품는다)', () => {
+    const host = mountFull('desktop');
+    expect(host.querySelector('.vr-drills').style.display).toBe('none');
+    expect(host.querySelector('.vs-chain').style.display).toBe('none');
+  });
+
+  it('해설을 펼치면 응용·체이닝이 함께 나타난다', () => {
+    const host = mountFull('desktop');
+    host.querySelector('.vr-fold .hd').click();
+    expect(host.querySelector('.vr-drills').style.display).not.toBe('none');
+    expect(host.querySelector('.vs-chain').style.display).not.toBe('none');
+  });
+
+  it('모바일: 단일 칼럼에 카드 → 응용 → 체이닝 → 해설(평가) 순', () => {
+    const pad = mountFull('phone').querySelector('.m-pad');
+    const order = [...pad.children].map((el) => el.className.split(' ')[0])
+      .filter((c) => ['vr-card', 'vr-drills', 'vs-chain', 'vr-fold'].includes(c));
+    expect(order).toEqual(['vr-card', 'vr-drills', 'vs-chain', 'vr-fold']);
   });
 
   it('응용 연습은 근접중복(base 반복)을 걸러 진짜 변주만 보여준다', () => {
-    const bd = mountFull().querySelector('.vr-fold .bd');
-    expect(bd.textContent).toContain('Did they thank you for coming?');  // 진짜 변주 → 유지
-    expect(bd.querySelectorAll('.vs-drow .en').length).toBeGreaterThan(0);
+    const drills = mountFull('desktop').querySelector('.vr-drills');
+    expect(drills.textContent).toContain('Did they thank you for coming?');  // 진짜 변주 → 유지
+    expect(drills.querySelectorAll('.vs-drow .en').length).toBeGreaterThan(0);
   });
 
   it('체이닝은 자막이 없다 (신규와 동일 계약)', () => {
-    const bd = mountFull().querySelector('.vr-fold .bd');
-    const chain = bd.querySelector('.vs-chain');
+    const chain = mountFull('desktop').querySelector('.vs-chain');
     expect(chain.textContent).not.toContain('move on to the next thing');
     expect(chain.textContent).not.toContain("It's over anyway");
   });
@@ -156,9 +183,9 @@ describe('renderSessionReviewV2 — 해설 = 신규 세션과 동일(해설·응
     expect(host.querySelector('.vr-fold .judge-row')).not.toBeNull();
   });
 
-  it('해설 안 체이닝 발화도 오늘 발화(tried/pronScores)로 집계된다', async () => {
+  it('체이닝 발화도 오늘 발화(tried/pronScores)로 집계된다', async () => {
     const host = mountFull('desktop', false);
-    host.querySelector('.vr-fold .hd').click();          // 펼침
+    host.querySelector('.vr-fold .hd').click();          // 해설 펼침 → 응용·체이닝 노출
     const rec = host.querySelector('.vs-chain .vs-drow button[aria-label="녹음"]');
     rec.click(); await tick();
     rec.click(); await tick(); await tick();             // mock: score 88, omissions []

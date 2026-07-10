@@ -236,7 +236,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     revealed = true;
     h1El.textContent = s.sentence;
     koEl.textContent = s.ko || '';
-    listenPill.disabled = false;   // 응용·체이닝은 해설 안이라 펼침 자체가 곧 공개다
+    listenPill.disabled = false;
+    if (drillsBlock) drillsBlock.style.display = '';   // 응용·체이닝도 정답을 품으므로 함께 공개
+    if (chainBlock) chainBlock.style.display = '';
     refreshJudge();
   }
 
@@ -315,7 +317,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const drills = filterNearDupDrills(s?.sentence, ex.drills);
   const drillCountEl = h('b', {}, '0');
   const recordedDrills = new Set();
-  const drillsBlock = drills.length ? h('div', {},
+  const drillsBlock = drills.length ? h('div', { class: 'vr-drills' },
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'),
       h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker, (i, result) => {
@@ -327,12 +329,16 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적).
   const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore);
 
-  // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리한다. 안쪽은 신규 세션과 동일 구성 + 하단 평가.
+  // 응용·체이닝은 신규와 같은 자리(메인 칼럼)에 두되, 정답을 품으므로 공개 전에는 감춘다.
+  if (!revealed) {
+    if (drillsBlock) drillsBlock.style.display = 'none';
+    if (chainBlock) chainBlock.style.display = 'none';
+  }
+
+  // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리한다. 안쪽은 해설 패널 + 하단 평가.
   const foldBd = h('div', { class: 'bd' },
     h('div', {}, '먼저 떠올려 말해 본 다음 펼쳐 보세요. 해설을 보기 전에 꺼내 보는 게 복습 효과가 가장 커요.'),
     explainPanel(ex, false),
-    drillsBlock,
-    chainBlock,
     h('div', { style: 'margin-top:18px;border-top:1px solid var(--line);padding-top:14px;' }, gateEl, judgeRow.el),
   );
   foldBd.style.display = 'none';
@@ -445,17 +451,18 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
     root = h('div', { class: 'vr' }, v2Style(VRM_CSS), v2Style(VSM_CSS),
       mTopb, mSteps,
-      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold));
+      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, drillsBlock, chainBlock, fold));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
     const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
-    // 해설은 넓은 메인 칼럼에 둔다 — 안에 응용 연습·체이닝이 들어가므로 324px 사이드바로는 좁다.
+    // 신규 세션과 동일한 3칼럼: main(760) = 카드·응용·체이닝 / side(324) = 오늘 발화·표현 해설(+평가).
+    // 해설을 메인에 넣으면 데스크톱이 모바일 단일 칼럼처럼 보인다 (2026-07-10 사용자 지적).
     const main = h('div', { class: 'vr-main' },
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
-      hintEl, cardEl, h('div', { style: 'margin-top:14px;' }, fold));
-    const side = h('aside', { class: 'vr-side' }, recWidget);
+      hintEl, cardEl, drillsBlock, chainBlock);
+    const side = h('aside', { class: 'vr-side' }, recWidget, fold);
     root = h('div', { class: 'vr' }, v2Style(VR_CSS), v2Style(VS_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
   }
