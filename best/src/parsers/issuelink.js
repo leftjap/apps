@@ -1,4 +1,4 @@
-const stripTags = (s) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+import { stripTags } from './text.js'
 
 // 이슈링크 listview HTML → 행 배열. 행 구분자 = 제목 앵커의 go 링크 href.
 export function parseIssuelink(html, site) {

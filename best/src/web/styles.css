@@ -1,0 +1,182 @@
+/* 디자인 토큰 — 작업지시서 §4 (시안 실측) */
+:root {
+  --bg: #ffffff;
+  --bg-side: #fcfcfb;
+  --tx: #17181a;
+  --tx-2: #6e7075;
+  --tx-3: #9a9ca1;
+  --tx-4: #b2b4b8;
+  --tx-read: #adafb3;
+  --line: #ecece8;
+  --line-row: #f2f2ef;
+  --accent: #35373e;
+  --accent-hover: #212228;
+  --accent-tint: #ececee;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: 'Pretendard Variable', Pretendard, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  font-size: 14px;
+}
+button { font: inherit; border: 0; background: none; cursor: pointer; color: inherit; padding: 0; }
+a { color: inherit; text-decoration: none; }
+#app { height: 100%; }
+
+/* ── 로그인 게이트 (시안 01) ── */
+.gate {
+  height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--bg-side); gap: 0;
+}
+.gate .brand { font-size: 44px; font-weight: 800; letter-spacing: -0.02em; }
+.gate .brand em { font-style: normal; }
+.gate .tagline { margin-top: 14px; color: var(--tx-2); font-size: 15px; }
+.gate .google-btn {
+  margin-top: 44px; display: flex; align-items: center; gap: 10px;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 46px; font-size: 15px; font-weight: 600;
+}
+.gate .google-btn:hover { border-color: #d8d8d4; }
+.gate .hint { margin-top: 22px; color: var(--tx-4); font-size: 12.5px; }
+.gate .error { margin-top: 16px; color: #c0392b; font-size: 13px; }
+
+/* ── 앱 레이아웃 ── */
+.layout { display: flex; min-height: 100vh; }
+.sidebar {
+  width: 264px; flex-shrink: 0; background: var(--bg-side);
+  border-right: 1px solid var(--line);
+  position: fixed; top: 0; bottom: 0; left: 0;
+  display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none;
+}
+.sidebar::-webkit-scrollbar { display: none; }
+.main { margin-left: 264px; flex: 1; min-width: 0; }
+.content { max-width: 960px; margin: 0 auto; padding: 0 24px 60px; }
+
+/* 사이드바 */
+.side-head { padding: 22px 20px 18px; }
+.side-brand { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+.side-sub { margin-top: 4px; color: var(--tx-3); font-size: 12.5px; }
+.side-nav { padding: 6px 12px; display: flex; flex-direction: column; gap: 2px; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+  border-radius: 9px; color: var(--tx-2); font-weight: 500; text-align: left;
+}
+.nav-item svg { flex-shrink: 0; }
+.nav-item:hover { background: #f4f4f2; }
+.nav-item.active { background: var(--accent-tint); color: var(--tx); font-weight: 600; }
+.nav-badge {
+  margin-left: auto; font-family: var(--mono); font-size: 11.5px;
+  background: var(--accent); color: #fff; border-radius: 20px; padding: 1px 8px;
+}
+.nav-item:not(.active) .nav-badge { background: #e3e3e0; color: var(--tx-2); }
+
+.side-section { padding: 18px 20px 8px; display: flex; align-items: baseline; justify-content: space-between; }
+.side-label { font-size: 11.5px; color: var(--tx-3); letter-spacing: 0.04em; }
+.side-toggle-all { font-size: 12px; color: var(--tx-2); }
+.side-toggle-all:hover { color: var(--tx); }
+.comm-list { padding: 0 12px; display: flex; flex-direction: column; }
+.comm-item {
+  display: flex; align-items: center; gap: 10px; padding: 7px 10px;
+  border-radius: 8px; text-align: left; color: var(--tx);
+}
+.comm-item:hover { background: #f4f4f2; }
+.comm-dot { width: 12px; height: 12px; border-radius: 4px; flex-shrink: 0; }
+.comm-item.off { color: var(--tx-4); }
+.comm-item.off .comm-dot { background: #dcdcd8 !important; }
+.comm-count { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--tx-3); }
+.comm-item.off .comm-count { color: var(--tx-4); }
+
+.side-foot { margin-top: auto; padding: 18px 20px; border-top: 1px solid var(--line); }
+.side-foot .when { font-size: 12.5px; color: var(--tx-2); font-weight: 600; }
+.side-foot .desc { margin-top: 3px; font-size: 12px; color: var(--tx-4); }
+.side-foot .signout { margin-top: 10px; font-size: 12px; color: var(--tx-4); }
+.side-foot .signout:hover { color: var(--tx-2); }
+
+/* ── 홈 헤더 ── */
+.home-head {
+  display: flex; align-items: center; gap: 14px;
+  padding: 18px 0 14px; position: sticky; top: 0; background: var(--bg); z-index: 5;
+  border-bottom: 1px solid var(--line);
+}
+.tabs { display: flex; background: #f4f4f2; border-radius: 11px; padding: 3px; }
+.tab { padding: 7px 20px; border-radius: 9px; color: var(--tx-2); font-weight: 500; font-size: 13.5px; }
+.tab.active { background: var(--bg); color: var(--tx); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+.result-count { font-family: var(--mono); font-size: 12.5px; color: var(--tx-3); }
+.head-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+.switch-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--tx-2); cursor: pointer; }
+.switch { position: relative; width: 34px; height: 20px; background: #dcdcd8; border-radius: 20px; transition: background 0.15s; }
+.switch::after {
+  content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+  border-radius: 50%; background: #fff; transition: left 0.15s;
+}
+.switch.on { background: var(--accent); }
+.switch.on::after { left: 16px; }
+
+.view-title { display: flex; align-items: baseline; gap: 10px; padding: 24px 0 14px; }
+.view-title h1 { font-size: 20px; font-weight: 700; margin: 0; }
+.sort-tabs { margin-left: auto; display: flex; background: #f4f4f2; border-radius: 10px; padding: 3px; }
+.sort-tabs .tab { padding: 5px 14px; font-size: 12.5px; }
+
+/* ── 리스트 행 (PostRow) ── */
+.rows { display: flex; flex-direction: column; }
+.row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 8px; border-bottom: 1px solid var(--line-row); border-radius: 8px;
+}
+.row:hover { background: #fafaf8; }
+.row .rank {
+  width: 26px; text-align: right; font-family: var(--mono);
+  font-size: 12.5px; color: var(--tx-4); flex-shrink: 0;
+}
+.row .rank.top { color: var(--tx-2); font-weight: 600; }
+.row .comm { width: 44px; flex-shrink: 0; font-size: 12.5px; font-weight: 700; }
+.row .title {
+  flex: 1; min-width: 0; font-size: 15px; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.row .title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.row .title.read { color: var(--tx-read); }
+.row .ext { opacity: 0; color: var(--tx-3); flex-shrink: 0; display: flex; }
+.row:hover .ext, .row:focus-within .ext { opacity: 1; }
+.row .meta {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+  font-size: 12px; color: var(--tx-3); font-family: var(--mono);
+}
+.row .meta .board { font-family: 'Pretendard Variable', Pretendard, sans-serif; color: var(--tx-3); }
+.row .meta .m { display: inline-flex; align-items: center; gap: 3px; }
+.row .meta svg { opacity: 0.65; }
+.row .time { font-size: 11.5px; color: var(--tx-4); width: 58px; text-align: right; }
+.row .save { color: #c9cbce; display: flex; padding: 4px; border-radius: 6px; }
+.row .save:hover { color: var(--tx-2); background: #f0f0ed; }
+.row .save.on { color: var(--accent); }
+
+.load-more {
+  margin: 18px auto; display: block; padding: 9px 26px;
+  border: 1px solid var(--line); border-radius: 10px; color: var(--tx-2); font-weight: 500;
+}
+.load-more:hover { border-color: #d8d8d4; color: var(--tx); }
+
+/* ── 검색 ── */
+.search-box {
+  display: flex; align-items: center; gap: 10px;
+  border: 1px solid var(--line); border-radius: 11px; padding: 12px 16px; margin-top: 6px;
+  color: var(--tx-3);
+}
+.search-box:focus-within { border-color: var(--accent); }
+.search-box input { flex: 1; border: 0; outline: 0; font: inherit; font-size: 14.5px; color: var(--tx); background: none; }
+.chips-label { margin: 26px 0 10px; font-size: 12.5px; color: var(--tx-3); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: 20px; padding: 7px 14px;
+  font-size: 13px; color: var(--tx-2);
+}
+.chip:hover { border-color: #d8d8d4; color: var(--tx); }
+
+/* ── 상태 ── */
+.state { padding: 60px 0; text-align: center; color: var(--tx-3); font-size: 13.5px; }
+.state.error { color: #c0392b; }

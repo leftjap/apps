@@ -1,4 +1,4 @@
-const stripTags = (s) => s.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+import { stripTags } from './text.js'
 
 // 디시 dcbest 목록 HTML → 행 배열. 일반글 = class 에 us-post 가 있는 tr 만 (공지·설문 제외).
 export function parseDcbest(html) {

@@ -35,6 +35,7 @@ jobs:
             book/pnpm-lock.yaml
             pick/pnpm-lock.yaml
             cue/pnpm-lock.yaml
+            best/pnpm-lock.yaml
 
       # 회귀 게이트 — today 테스트 실패 시 전체 배포 차단 (2026-06-10, 가계부 점검 후속).
       # env 불필요: 스위트는 supabase mock 기반 (.env.local 부재 모드로 로컬 검증 완료).
@@ -62,6 +63,15 @@ jobs:
           TZ: Asia/Seoul
         run: |
           cd cue
+          pnpm install --frozen-lockfile
+          pnpm vitest run
+
+      # best 파서는 사이트 개편이 주된 고장 원인 — 픽스처 스냅샷 테스트가 회귀를 막는다.
+      - name: Test best (vitest)
+        env:
+          TZ: Asia/Seoul
+        run: |
+          cd best
           pnpm install --frozen-lockfile
           pnpm vitest run
 
@@ -136,6 +146,18 @@ jobs:
           pnpm build
           cp dist/index.html dist/404.html
 
+      - name: Build best
+        continue-on-error: true
+        env:
+          GH_PAGES: '1'
+          VITE_SUPABASE_URL: ${{ secrets.BEST_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.BEST_SUPABASE_ANON_KEY }}
+        run: |
+          cd best
+          pnpm install --frozen-lockfile
+          pnpm build
+          cp dist/index.html dist/404.html
+
       - name: Combine into _site
         run: |
           mkdir -p _site
@@ -145,6 +167,7 @@ jobs:
           [ -d book/dist ] && cp -r book/dist _site/book || echo "::warning::book build missing — skipping"
           [ -d pick/dist ] && cp -r pick/dist _site/pick || echo "::warning::pick build missing — skipping"
           [ -d cue/dist ] && cp -r cue/dist _site/cue || echo "::warning::cue build missing — skipping"
+          [ -d best/dist ] && cp -r best/dist _site/best || echo "::warning::best build missing — skipping"
           # 정식 경로 이관 (2026-06-10): pick/dist → /apps/pick/ (vite base 도 /apps/pick/). 폴더도 taste→pick 리네임 완료.
           # 구 /apps/taste/ 는 redirect 스텁 + kill-SW — 구 SW 가 캐시된 옛 앱을 계속 서빙하는 것 차단.
           # (한 origin 을 6개 앱이 공유 → kill-SW 캐시 삭제는 /apps/taste/ 스코프 키만 한정)
@@ -183,6 +206,7 @@ jobs:
           <a href="book/">📖 Book</a>
           <a href="pick/">🎬 Pick</a>
           <a href="cue/">⚡ cue (런처)</a>
+          <a href="best/">🔥 best (커뮤 인기글)</a>
           </body></html>
           HTML
 
