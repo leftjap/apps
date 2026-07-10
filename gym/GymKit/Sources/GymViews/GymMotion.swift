@@ -52,6 +52,7 @@ extension View {
 // (커밋 시에만 호출부가 애니 래핑 → 키패드 수정·리로드 오발화 없음, PWA countUp 가드 정합).
 struct CountUpVolumeText: View, Animatable {
     var value: Double
+    var tint: Color = GY.ink1   // 초과(over) 시 crail-deep (mock .cur.over)
     var animatableData: Double {
         get { value }
         set { value = newValue }
@@ -61,7 +62,7 @@ struct CountUpVolumeText: View, Animatable {
     }()
     var body: some View {
         Text(Self.nf.string(from: NSNumber(value: value.rounded())) ?? "0")
-            .font(.mono(32, 700)).tracking(-1.12).foregroundStyle(GY.ink1)
+            .font(.mono(32, 700)).tracking(-1.12).foregroundStyle(tint)
     }
 }
 

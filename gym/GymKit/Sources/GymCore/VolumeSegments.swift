@@ -51,3 +51,15 @@ public enum VolumeRing {
                         tipOpacity: arc > 1.2 ? 1 : 0, overAmt: Int((exDoneVol - prevExVol).rounded()))
     }
 }
+
+// 기록 돌파 "순간" 판정 — 커밋 1회성 팝 트리거 (session.js exRecordBurst/topRecordPulse 조건 정합).
+public enum GymRecordMoments {
+    // 종목 직전기록 100% 돌파: before < prev && after >= prev (도달 포함).
+    public static func exRecordCrossed(before: Double, after: Double, prevExVol: Double) -> Bool {
+        prevExVol > 0 && before < prevExVol && after >= prevExVol
+    }
+    // 세션 총볼륨 신기록: before <= prev && after > prev (엄격 초과).
+    public static func topRecordCrossed(before: Double, after: Double, prevSessionVol: Double) -> Bool {
+        prevSessionVol > 0 && before <= prevSessionVol && after > prevSessionVol
+    }
+}

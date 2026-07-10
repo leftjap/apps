@@ -52,6 +52,17 @@ public enum GymScreens {
         GymAppModel(snapshotSession: GymSession(id: "empty-demo", date: "2026-05-06", status: .active))
     }
 
+    // 세션 신기록 데모 — 오늘 누적 > 직전 총볼륨 (§5.4 헤더 취소선·신기록 태그·링 펄스 정적).
+    @MainActor static func demoRecordModel() -> GymAppModel {
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let done = (0..<7).map { _ in GymSet(weight: 100, reps: 10, done: true) }
+        let s = GymSession(id: "record-demo", date: "2026-05-06", startTime: now - 40 * 60 * 1000,
+                           blocks: [GymBlock(exerciseId: "bench_press",
+                                             sets: done + [GymSet(weight: 100, reps: 10, preset: true)])],
+                           tags: ["chest"], status: .active)
+        return GymAppModel(snapshotSession: s)
+    }
+
     // 홈 idle 데모 — 진행 중 세션 없음 (HomeA 분기).
     @MainActor static func demoIdleModel() -> GymAppModel {
         let m = demoEmptyModel()
@@ -72,6 +83,7 @@ public enum GymScreens {
         case "session-addex": return AnyView(SessionScreenView(initialAddex: true).frame(width: 390, height: 844))
         case "session-action": return AnyView(SessionScreenView(initialAction: true).frame(width: 390, height: 844))
         case "session-drag":  return AnyView(SessionScreenView(initialDragX: -70).frame(width: 390, height: 844))
+        case "session-record": return AnyView(SessionScreenView(model: demoRecordModel()).frame(width: 390, height: 844))
         case "session-empty": return AnyView(SessionScreenView(model: demoEmptyModel()).frame(width: 390, height: 844))
         case "session-cardio": return AnyView(SessionScreenView(model: demoCardioModel()).frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))

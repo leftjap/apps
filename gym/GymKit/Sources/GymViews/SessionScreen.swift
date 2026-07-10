@@ -58,12 +58,22 @@ struct SessionToolbar: View {
 }
 
 // 타이틀 + 세션 볼륨 링 (시안 #15a 헤더: align center, gap 16 / .sv gap 11 / ring 56).
+// 신기록(오늘 누적 > 직전 총볼륨): 직전 취소선 + "▲ 신기록 +Nkg" 태그(cloudy) + 링 펄스 (mock §5.4).
 struct SessionHeader: View {
     let exName: String
     let part: String
     let volCur: String
     let volTotal: String
     let pct: Int
+    var record: Bool = false      // 정적 — 취소선·태그·링 펄스
+    var recordAmt: Int = 0
+    var pulseMoment: Int = 0      // 돌파 1회성 — 누적 숫자 펄스 (topRecordPulse)
+    @State private var pulsing = false
+    @State private var ringPulseOn = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    static let amtF: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
+
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
@@ -76,18 +86,56 @@ struct SessionHeader: View {
             HStack(spacing: 11) {
                 VStack(alignment: .trailing, spacing: 3) {
                     Text("세션 볼륨").font(.sans(10.5, 600)).tracking(0.42).foregroundStyle(GY.ink4)
-                    (Text(volCur + " ").font(.mono(13, 600)).foregroundStyle(GY.ink2)
-                     + Text("/ \(volTotal)kg").font(.mono(13, 500)).foregroundStyle(GY.ink4))
-                        .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                    HStack(alignment: .firstTextBaseline, spacing: 3) {
+                        // 누적 숫자만 펄스 (mock topRecordPulse — #cardSetProgress 한정)
+                        Text(volCur).font(.mono(13, 600)).foregroundStyle(pulsing ? GY.crailDeep : GY.ink2)
+                            .scaleEffect(pulsing ? 1.16 : 1, anchor: .trailing)
+                        // 신기록 시 직전 총볼륨 취소선 + 흐림 (mock #cardSessTotalWrap.struck)
+                        Text("/ \(volTotal)kg").font(.mono(13, 500)).foregroundStyle(GY.ink4)
+                            .strikethrough(record)
+                            .opacity(record ? 0.55 : 1)
+                    }
+                    .lineLimit(1).fixedSize(horizontal: true, vertical: false)
+                    if record {   // mock #cardRecordTag — cloudy-deep 10.5/700, 삽입 시 rise-in
+                        HStack(spacing: 3) {
+                            Text("▲").font(.system(size: 8))
+                            Text("신기록 +\(Self.amtF.string(from: NSNumber(value: recordAmt)) ?? "\(recordAmt)")kg")
+                                .font(.mono(10.5, 700))
+                        }
+                        .foregroundStyle(GY.cloudyDeep)
+                        .transition(.offset(y: 6).combined(with: .opacity))
+                        .accessibilityIdentifier("session-record-tag")
+                    }
                 }
                 ZStack {
                     GymRing(size: 56, lineWidth: 4.76, progress: Double(pct) / 100,
                             track: Color(oklch: 0.92, 0.006, 60), fill: GY.cloudyBase)
+                    if record {   // mock #cardVolRingPulse.is-record — cloudy 확산 링 1.6s 루프
+                        Circle().stroke(GY.cloudyBase, lineWidth: 2.5)
+                            .frame(width: 45, height: 45)
+                            .scaleEffect(ringPulseOn ? 1.34 : 1)
+                            .opacity(ringPulseOn ? 0 : 0.5)
+                            .allowsHitTesting(false)
+                    }
                     Text("\(pct)%").font(.mono(14, 700)).tracking(-0.28).foregroundStyle(GY.cloudyDeep)
                 }
             }
         }
         .padding(.horizontal, 24).padding(.top, 12)
+        .onAppear { startRingPulseIfNeeded(record) }
+        .onChange(of: record) { _, on in startRingPulseIfNeeded(on) }
+        .onChange(of: pulseMoment) { _, _ in
+            guard !reduceMotion else { return }
+            withAnimation(.timingCurve(0.2, 0.7, 0.2, 1, duration: 0.19)) { pulsing = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
+                withAnimation(.timingCurve(0.2, 0.7, 0.2, 1, duration: 0.39)) { pulsing = false }
+            }
+        }
+    }
+
+    func startRingPulseIfNeeded(_ on: Bool) {
+        guard on, !ringPulseOn, !GymSnapshot.isActive, !reduceMotion else { return }
+        withAnimation(.easeOut(duration: 1.6).repeatForever(autoreverses: false)) { ringPulseOn = true }
     }
 }
 
@@ -123,6 +171,8 @@ public struct SessionScreenView: View {
     @State private var ringVisible = false     // 햅틱 링 (커밋 1회)
     @State private var ringIsPR = false
     @State private var ringMoment = 0          // 재생 id (연속 커밋 재마운트)
+    @State private var burstMoment = 0         // 종목 직전기록 돌파 1회성 (exRecordBurst)
+    @State private var headerPulseMoment = 0   // 세션 신기록 돌파 1회성 (topRecordPulse)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // 꾹누르기 액션시트 대상 (§6-9)
@@ -243,8 +293,10 @@ public struct SessionScreenView: View {
         let exPct = exDenom > 0 ? Int((blockDone / exDenom * 100).rounded()) : 0
         let ov = VolumeRing.overflow(exDoneVol: blockDone, prevExVol: prevExVol)
 
-        // 세션 볼륨 분모 = 직전 세션 총볼륨 (없으면 오늘 계획).
-        let sessDenom = (model.prevSession?.totalVolume ?? 0) > 0 ? model.prevSession!.totalVolume : model.sessionTotalVolume
+        // 세션 볼륨 분모 = 직전 세션 총볼륨 (없으면 오늘 계획). 신기록 = 직전 존재 + 누적 초과 (§5.4).
+        let prevTotal = model.prevSession?.totalVolume ?? 0
+        let sessDenom = prevTotal > 0 ? prevTotal : model.sessionTotalVolume
+        let topRecord = prevTotal > 0 && model.sessionDoneVolume > prevTotal
 
         // 세트바 — 슬롯 = 현재 세션 세트, 값 = done/current 실값 + 미입력 preview(직전 세션 타깃), §6-3-3.
         let slots: [SetBarSlot] = sets.indices.map { i in
@@ -289,7 +341,10 @@ public struct SessionScreenView: View {
                            onEndLongPress: { actionTarget = .end })
             SessionHeader(exName: model.currentExerciseName, part: model.currentPartName,
                           volCur: Self.fmt(model.sessionDoneVolume),
-                          volTotal: Self.fmt(sessDenom), pct: model.sessionPct)
+                          volTotal: Self.fmt(sessDenom), pct: model.sessionPct,
+                          record: topRecord,
+                          recordAmt: Int((model.sessionDoneVolume - prevTotal).rounded()),
+                          pulseMoment: headerPulseMoment)
             let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
             if !slots.isEmpty && kind != .cardio {
                 PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
@@ -357,7 +412,8 @@ public struct SessionScreenView: View {
                 ExerciseVolumeRing(
                     sets: sets, cur: model.currentSetIdx, pct: exPct,
                     curVol: blockDone, totVol: Self.fmt(exDenom),
-                    overAmt: ov.isOver ? "+\(ov.overAmt)" : nil)
+                    exOver: prevExVol > 0 && blockDone >= prevExVol,
+                    over: ov, burstMoment: burstMoment)
             }
             GymFooterRail(items: model.session.blocks.enumerated().map { i, b in
                 let state: RailState = i == model.currentBlockIdx
@@ -378,16 +434,34 @@ public struct SessionScreenView: View {
     func springBackHero() {
         withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) { heroDragX = 0 }
     }
+    // 현재 블록 완료 볼륨 (돌파 전/후 비교용).
+    func blockDoneVol(_ bi: Int) -> Double {
+        guard model.session.blocks.indices.contains(bi) else { return 0 }
+        return model.session.blocks[bi].sets.filter(\.done).reduce(0) { $0 + $1.volume }
+    }
     // 좌스와이프 커밋 — 카운트업은 커밋 트랜잭션만 애니 (PWA countUp 가드: 키패드 수정·리로드 미발화).
     func commitSwipe() {
+        let bi = model.currentBlockIdx
+        let exId = model.session.blocks.indices.contains(bi) ? model.session.blocks[bi].exerciseId : ""
+        let prevExVol = model.prevExerciseVolume(forExercise: exId)
+        let prevTotal = model.prevSession?.totalVolume ?? 0
+        let exBefore = blockDoneVol(bi)
+        let sessBefore = model.sessionDoneVolume
         let doneBefore = sessionDoneCount()
         let prBefore = model.prMoment
         withAnimation(.timingCurve(0.33, 1, 0.68, 1, duration: 0.62)) {
             model.completeCurrentSet()
         }
         withAnimation(.easeOut(duration: 0.18)) { heroDragX = 0 }   // 커밋 — 위치 점프 없이 복귀
-        if sessionDoneCount() > doneBefore {
-            fireRing(isPR: model.prMoment > prBefore)
+        guard sessionDoneCount() > doneBefore else { return }
+        fireRing(isPR: model.prMoment > prBefore)
+        guard !reduceMotion else { return }   // 1회성 팝 — PWA countUp RM 게이트 정합
+        if GymRecordMoments.exRecordCrossed(before: exBefore, after: blockDoneVol(bi), prevExVol: prevExVol) {
+            burstMoment += 1
+        }
+        if GymRecordMoments.topRecordCrossed(before: sessBefore, after: model.sessionDoneVolume,
+                                             prevSessionVol: prevTotal) {
+            headerPulseMoment += 1
         }
     }
     // 햅틱 링 재생 (부록 햅틱 링 — 일반 420ms / PR 540ms). reduced-motion 스킵.
