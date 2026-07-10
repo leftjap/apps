@@ -22,6 +22,11 @@ let screenID = args[1]
 let outPath = args[2]
 
 Task { @MainActor in
+    // 플로우 하네스 — gymshot flow <outdir> (전 여정 구동 + 단언 + 단계별 렌더)
+    if screenID == "flow" {
+        FlowHarness.run(outdir: outPath)
+        return
+    }
     guard let view = GymScreens.snapshotView(id: screenID) else {
         FileHandle.standardError.write("unknown screen: \(screenID)\n".data(using: .utf8)!)
         exit(1)

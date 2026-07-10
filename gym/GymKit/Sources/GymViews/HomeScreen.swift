@@ -16,8 +16,7 @@ public struct HomeScreenView: View {
         self.model = GymAppModel(); self.onStart = onStart; self.onStats = onStats; self.onAdmin = {}
     }
 
-    // 부위 밸런스 표시 순서 (mock 가슴/등/어깨/팔/코어/하체).
-    static let balanceOrder = ["chest", "back", "shoulder", "arms", "core", "legs"]
+    // 부위 밸런스 — home.js summarizeWeeklyBalance (롤링 7일·고정 순서 하체~코어·유산소 별도 행).
 
     // 진행 중 세션 존재 → HomeC(이어하기), 아니면 HomeA(idle) — mocks home.html 이중 분기 (spec §5-5).
     var isActiveSession: Bool {
@@ -70,14 +69,14 @@ public struct HomeScreenView: View {
         let ref = model.referenceToday
         let week = model.weekCells(around: ref)
         let last = model.lastCompletedSession()
-        let thisW = model.partDoneSets(weekOffset: 0, from: ref)
-        let lastW = model.partDoneSets(weekOffset: -1, from: ref)
+        let bal = GymHomeLogic.weeklyBalance(sessions: model.allWorkedSessions(),
+                                             custom: model.custom, now: ref)
 
         return VStack(spacing: 0) {
             header
             weekCalendar(week).padding(.horizontal, 18).padding(.top, 18)
             if last != nil { lastWorkoutRow(last, ref: ref) }   // empty 시 행 숨김 (home.js)
-            balance(thisW: thisW, lastW: lastW)
+            balance(bal)
             weightRow(model.weights.first, prev: model.weights.count >= 2 ? model.weights[1] : nil)
                 .padding(.horizontal, 24)
             cta(empty: last == nil)
@@ -256,17 +255,13 @@ public struct HomeScreenView: View {
         .padding(.horizontal, 24).padding(.top, 18)
     }
 
-    func balance(thisW: [String: Int], lastW: [String: Int]) -> some View {
-        let parts = Self.balanceOrder.map { pid in
-            (name: GymExercises.partName(pid), last: lastW[pid] ?? 0, this: thisW[pid] ?? 0, pid: pid)
-        }
-        let totalThis = parts.map(\.this).reduce(0, +)
-        let totalLast = parts.map(\.last).reduce(0, +)
+    func balance(_ bal: GymHomeLogic.WeeklyBalance) -> some View {
+        let parts = bal.parts
+        let totalThis = parts.map(\.sets).reduce(0, +)
+        let totalLast = parts.map(\.prevSets).reduce(0, +)
         let diff = totalThis - totalLast
-        // 초점 부위 = 이번 주 최소 세트 (동률 시 balanceOrder 우선).
-        let focusPid = parts.min { $0.this < $1.this }?.pid ?? ""
-        let focusName = GymExercises.partName(focusPid)
-        let maxSets = max(1, parts.flatMap { [$0.last, $0.this] }.max() ?? 1)
+        let focusPid = bal.focusKey
+        let maxSets = bal.max
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
@@ -284,24 +279,29 @@ public struct HomeScreenView: View {
                     Text("\(totalThis)").font(.mono(33, 700)).tracking(-1.15).foregroundStyle(GY.ink1)
                     Text("세트").font(.sans(12.5, 600)).foregroundStyle(GY.ink4)
                 }
-                balChip(diff >= 0 ? "▲ +\(diff)" : "▼ \(diff)",
-                        tint: Color(oklch: 0.94, 0.03, 150), border: Color(oklch: 0.84, 0.05, 150), fg: Color(oklch: 0.42, 0.08, 150))
+                if diff != 0 {
+                    balChip(diff > 0 ? "▲ +\(diff)" : "▼ \(diff)",
+                            tint: Color(oklch: 0.94, 0.03, 150), border: Color(oklch: 0.84, 0.05, 150), fg: Color(oklch: 0.42, 0.08, 150))
+                }
                 Spacer()
-                balChip("● \(focusName)", tint: GY.crailTint, border: GY.crailSoft, fg: GY.crailDeep)
+                if let focusPid {
+                    balChip("● \(GymExercises.partName(focusPid))",
+                            tint: GY.crailTint, border: GY.crailSoft, fg: GY.crailDeep)
+                }
             }
             .padding(.top, 14)
             // 페어 컬럼 — 최대세트 기준 스케일(최대 56px), 최소 3px.
             HStack(alignment: .bottom, spacing: 0) {
-                ForEach(parts, id: \.pid) { p in
-                    let focus = p.pid == focusPid
+                ForEach(parts, id: \.key) { p in
+                    let focus = p.key == focusPid
                     VStack(spacing: 7) {
-                        Text("\(p.this)").font(.mono(14, 700)).foregroundStyle(focus ? GY.crailDeep : GY.ink1)
+                        Text("\(p.sets)").font(.mono(14, 700)).foregroundStyle(focus ? GY.crailDeep : GY.ink1)
                         HStack(alignment: .bottom, spacing: 3) {
                             RoundedRectangle(cornerRadius: 4).fill(Color(oklch: 0.91, 0.012, 65))
-                                .frame(width: 12, height: barH(p.last, maxSets))
+                                .frame(width: 12, height: barH(p.prevSets, maxSets))
                             UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4.5, topTrailing: 4.5))
                                 .fill(focus ? GY.crailBase : Color(oklch: 0.26, 0.01, 60))
-                                .frame(width: 15, height: barH(p.this, maxSets))
+                                .frame(width: 15, height: barH(p.sets, maxSets))
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -309,14 +309,29 @@ public struct HomeScreenView: View {
             }
             .padding(.top, 18)
             HStack(spacing: 0) {
-                ForEach(parts, id: \.pid) { p in
-                    Text(p.name).font(.sans(12.5, p.pid == focusPid ? 700 : 600)).tracking(-0.13)
-                        .foregroundStyle(p.pid == focusPid ? GY.crailDeep : GY.ink2)
+                ForEach(parts, id: \.key) { p in
+                    Text(p.name).font(.sans(12.5, p.key == focusPid ? 700 : 600)).tracking(-0.13)
+                        .foregroundStyle(p.key == focusPid ? GY.crailDeep : GY.ink2)
                         .frame(maxWidth: .infinity)
                 }
             }
             .padding(.top, 8)
             .overlay(alignment: .top) { Rectangle().fill(Color(oklch: 0.88, 0.008, 60)).frame(height: 1.5) }
+            // 유산소 별도 행 (home.js homeCardioRow — 이번 주 분·회 + 지난주 대비)
+            if bal.cardioCount > 0 {
+                HStack(spacing: 8) {
+                    Image(systemName: "waveform.path.ecg").font(.system(size: 13)).foregroundStyle(GY.ink3)
+                    Text("유산소").font(.sans(13, 600)).foregroundStyle(GY.ink2)
+                    Text(bal.cardioMin > 0 ? "\(bal.cardioMin)분 · \(bal.cardioCount)회" : "\(bal.cardioCount)회")
+                        .font(.mono(12.5, 500)).foregroundStyle(GY.ink3)
+                    if bal.cardioDeltaMin != 0 {
+                        Text("\(bal.cardioDeltaMin > 0 ? "▲" : "▼")\(abs(bal.cardioDeltaMin))분")
+                            .font(.sans(11.5, 600)).foregroundStyle(GY.ink4)
+                    }
+                    Spacer()
+                }
+                .padding(.top, 12)
+            }
         }
         .frame(maxHeight: .infinity)
         .padding(.horizontal, 26).padding(.top, 22)

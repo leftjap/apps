@@ -12,14 +12,17 @@ struct SessionHero: View {
     let locked: Bool         // block.finishedAt read-only
     let doneSetCount: Int
     let pace: String?        // cardio "9:23/km" (시간·거리 둘 다 있을 때)
+    let prChip: String?      // "+5kg" — 직전 세션 최대 무게 초과 넛지 (§6-11 progressive overload)
     var onTopTap: ((HeroZone) -> Void)? = nil     // 좌30 감소 / 중40 키패드 / 우30 증가
     var onBottomTap: ((HeroZone) -> Void)? = nil
 
     init(kind: GymCardKind = .weight, topValue: String, bottomValue: String,
          preset: Bool = false, locked: Bool = false, doneSetCount: Int = 0, pace: String? = nil,
+         prChip: String? = nil,
          onTopTap: ((HeroZone) -> Void)? = nil, onBottomTap: ((HeroZone) -> Void)? = nil) {
         self.kind = kind; self.topValue = topValue; self.bottomValue = bottomValue
         self.preset = preset; self.locked = locked; self.doneSetCount = doneSetCount; self.pace = pace
+        self.prChip = prChip
         self.onTopTap = onTopTap; self.onBottomTap = onBottomTap
     }
 
@@ -36,6 +39,17 @@ struct SessionHero: View {
                 case .weight:
                     big(topValue, unit: "kg").overlay { zones(onTopTap) }
                     repsRow(bottomValue, unit: "회").overlay { zones(onBottomTap) }
+                    if let prChip {   // mocks #cardPrChip — ▲ +Nkg (crail-soft pill)
+                        HStack(spacing: 6) {
+                            Text("▲").font(.system(size: 9)).foregroundStyle(GY.crailDeep)
+                            Text(prChip).font(.mono(13, 600)).foregroundStyle(GY.ink1)
+                        }
+                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .background(GY.crailSoft, in: Capsule())
+                        .overlay(Capsule().strokeBorder(GY.crailBase, lineWidth: 1))
+                        .padding(.top, 18)
+                        .accessibilityIdentifier("hero-prchip")
+                    }
                 case .bodyweight:
                     Text("맨몸").font(.sans(64, 700)).tracking(-1.9)
                         .foregroundStyle(GY.ink3)

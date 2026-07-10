@@ -57,13 +57,23 @@ public struct SummaryScreenView: View {
     }
 
     // MARK: - 파생값 (실 세션 집계)
-    struct ExRow: Identifiable { let id = UUID(); let name: String; let sets: Int; let vol: Int; let pr: Bool }
+    struct ExRow: Identifiable { let id = UUID(); let name: String; let sets: Int; let vol: String; let pr: Bool }
+    static let vf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
     var rows: [ExRow] {
-        session.blocks.map { b in
+        session.blocks.compactMap { b in
             let done = b.sets.filter(\.done)
-            return ExRow(name: GymExercises.resolveName(b.exerciseId, custom: custom),
-                         sets: done.count,
-                         vol: Int(done.reduce(0) { $0 + $1.volume }.rounded()),
+            guard !done.isEmpty else { return nil }   // 완료 세트 없으면 표시 제외 (session-summary.js)
+            let name = GymExercises.resolveName(b.exerciseId, custom: custom)
+            // 시간 기반(유산소) — 볼륨 열에 "25분 · 3km" (formatTimeBased 정합)
+            if let dur = done[0].duration {
+                let km = done[0].distance.map { " · \(String(format: "%g", $0))km" } ?? ""
+                return ExRow(name: name, sets: done.count,
+                             vol: "\(Int((dur / 60).rounded()))분\(km)",
+                             pr: b.sets.contains { $0.pr })
+            }
+            let total = done.reduce(0.0) { $0 + $1.volume }
+            return ExRow(name: name, sets: done.count,
+                         vol: "\(Self.vf.string(from: NSNumber(value: total.rounded())) ?? "0")kg",
                          pr: b.sets.contains { $0.pr })
         }
     }
@@ -114,7 +124,7 @@ public struct SummaryScreenView: View {
                         }
                         Spacer()
                         Text("\(r.sets)세트").font(.mono(12, 400)).foregroundStyle(GY.ink4)
-                        Text("\(r.vol)kg").font(.mono(13, 600)).foregroundStyle(GY.ink2).frame(minWidth: 56, alignment: .trailing)
+                        Text(r.vol).font(.mono(13, 600)).foregroundStyle(GY.ink2).frame(minWidth: 56, alignment: .trailing)
                     }
                     .padding(.vertical, 7)
                 }

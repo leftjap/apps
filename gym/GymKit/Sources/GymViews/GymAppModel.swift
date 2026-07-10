@@ -77,13 +77,13 @@ public final class GymAppModel: ObservableObject {
 
     // MARK: - 홈/통계 집계 (KST 기준)
 
-    static let kst: Calendar = {
+    public static let kst: Calendar = {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Seoul")!
         c.firstWeekday = 2   // 월요일 시작
         return c
     }()
-    static let dayFmt: DateFormatter = {
+    public static let dayFmt: DateFormatter = {
         let f = DateFormatter()
         f.calendar = kst; f.timeZone = TimeZone(identifier: "Asia/Seoul")
         f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"
@@ -91,9 +91,12 @@ public final class GymAppModel: ObservableObject {
     }()
 
     // 완료 이력 + (활성 세션에 done 세트 있으면) 진행 중 세션.
+    // status 가드 필수 — 종료 직후(요약 화면) 완료 세션이 이력과 이중 계상되던 버그 (플로우 하네스 검출).
     public func allWorkedSessions() -> [GymSession] {
         var xs = history.filter { $0.status == .completed }
-        if session.blocks.contains(where: { $0.sets.contains { $0.done } }) { xs.append(session) }
+        if session.status == .active, session.blocks.contains(where: { $0.sets.contains { $0.done } }) {
+            xs.append(session)
+        }
         return xs
     }
     // 특정 날짜에 운동한 세션들.
@@ -227,15 +230,19 @@ public final class GymAppModel: ObservableObject {
 
     // MARK: - 관리 (운동 목록·숨김·체중·설정)
 
-    // 부위별 관리 목록 (빌트인 삭제 제외 + 커스텀 + 관리 순서 반영). 숨김도 포함(흐리게 표시).
+    // 부위별 관리 목록 (빌트인 삭제 제외 + 커스텀 + 부위 변경 재할당 + 관리 순서 반영). 숨김도 포함.
+    // exercisePartOverride 는 queries.js getExercisesByPart 정합 — 원 부위에서 빼고 대상 부위에 넣음.
     public func exercisesForPart(_ part: String) -> [GymExerciseDef] {
-        let builtins = GymExercises.listByPart(part).filter { !settings.deletedExercises.contains($0.id) }
-        let customs = custom.filter { $0.part == part }.map {
+        let override = settings.exercisePartOverride
+        let deleted = settings.deletedExercises
+        func effectivePart(_ def: GymExerciseDef) -> String { override[def.id] ?? def.part }
+        let builtinAll = GymExercises.partOrder.flatMap { GymExercises.listByPart($0) }
+        let customDefs = custom.map {
             GymExerciseDef(id: $0.id, name: $0.name, part: $0.part, equipment: $0.equipment,
                            defaultSets: $0.defaultSets, defaultReps: $0.defaultReps,
                            defaultWeight: $0.defaultWeight, met: $0.met)
         }
-        let all = builtins + customs
+        let all = (builtinAll + customDefs).filter { !deleted.contains($0.id) && effectivePart($0) == part }
         guard let order = settings.exerciseOrder[part], !order.isEmpty else { return all }
         return all.enumerated()
             .sorted { a, b in
@@ -541,8 +548,7 @@ public final class GymAppModel: ObservableObject {
               !GymSessionLogic.isBlockLocked(session.blocks[bi]) else { return }
         let sets = session.blocks[bi].sets
         guard let lastDone = sets.lastIndex(where: { $0.done }) else { return }
-        session.blocks[bi].sets[lastDone].done = false
-        session.blocks[bi].sets[lastDone].pr = false
+        session.blocks[bi].sets[lastDone].done = false   // pr 플래그는 유지 (handleRightSwipe 정합)
         impact(.light)
     }
 

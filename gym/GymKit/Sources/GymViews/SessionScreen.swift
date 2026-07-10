@@ -263,6 +263,16 @@ public struct SessionScreenView: View {
             }
         }()
 
+        // PR 칩 (progressive overload 넛지) — 현재 무게 > 직전 세션 최대 무게 (session.js 정합).
+        let prChip: String? = {
+            guard kind == .weight, !locked, let prevSets = prevBlk?.sets else { return nil }
+            let curW = dispSet?.weight ?? 0
+            let prevMax = prevSets.filter { ($0.reps ?? 0) > 0 }.compactMap(\.weight).max() ?? 0
+            let delta = curW - prevMax
+            guard prevMax > 0, delta > 0 else { return nil }
+            return delta == delta.rounded() ? "+\(Int(delta))kg" : String(format: "+%.1fkg", delta)
+        }()
+
         return VStack(spacing: 0) {
             SessionToolbar(startMillis: model.session.startTime, onHome: onHome,
                            onEndLongPress: { actionTarget = .end })
@@ -280,6 +290,7 @@ public struct SessionScreenView: View {
                         pace: kind == .cardio
                             ? GymSessionLogic.paceText(durationSec: dispSet?.duration, distanceKm: dispSet?.distance)
                             : nil,
+                        prChip: prChip,
                         onTopTap: locked ? nil : { zone in heroTap(row: .top, zone: zone, kind: kind) },
                         onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) })
             .frame(maxWidth: .infinity)
