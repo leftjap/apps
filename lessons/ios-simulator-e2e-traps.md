@@ -72,7 +72,17 @@ sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). �
 엎힘 유효)로 구분. 해제 직후 잔여 lockstate 는 키백 열림(`isProtectedDataAvailable`)이면
 stray 로 무시 — 실제 잠금은 protected data 신호가 동시각 도착해 커버 (12·14차 실측).
 
-## 9. 무료 Personal 팀: Time Sensitive Notifications capability 불가
+## 9. `simctl addmedia` 는 Shutdown 기기에 조용히 실패 → 빈 보관함 위 XCUITest 가 가짜 통과
+`xcodebuild test` 는 끝나면 시뮬을 Shutdown 시킨다. 다음 `addmedia` 는 exit≠0 + "Unable to
+lookup in current state: Shutdown" 만 남기고 넘어가므로, 파이프라인에서 놓치기 쉽다.
+사진 0장 상태로 PhotosPicker 테스트를 돌렸더니 **통과**했다 — 오라클이 "행을 탭했다"였기 때문.
+- **교훈**: UI 테스트 오라클은 상호작용이 아니라 **결과**로 쓴다 (`photoRow.value == "photo"`).
+  탭·존재 확인만 하는 단언은 대상이 없어도 통과한다.
+- 앱 샌드박스 밖 결과(파일 생성)는 테스트 후 셸이 `simctl get_app_container … data` 로 확인.
+- PHPicker 그리드 셀(iOS 26.5): `app.images.matching(identifier: "PXGGridLayout-Info")`,
+  hittable=false 라 `.coordinate(withNormalizedOffset:).tap()` 필요. 상단 온보딩 배너는 무시 가능.
+
+## 10. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
 표시가 되므로 시뮬 성공 ≠ 실기기 자격. 코드의 `interruptionLevel = .timeSensitive` 자체는

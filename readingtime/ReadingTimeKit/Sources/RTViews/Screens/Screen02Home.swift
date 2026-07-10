@@ -24,12 +24,14 @@ public struct Screen02Home: View {
 
     var model: RTAppModel?
     private let live: Live?
+    private let avatar: CGImage?   // init 스냅샷 (사진 선택 즉시 반영용 — live 와 같은 이유)
     @State private var menuOpen: Bool
 
     static let chainDays = 13
 
     public init(model: RTAppModel? = nil, menuOpen: Bool = false) {
         self.model = model
+        self.avatar = model?.avatarImage
         _menuOpen = State(initialValue: menuOpen)
         if let m = model, m.userData != nil, let book = m.currentBook {
             let last = m.recentRecords(1).first
@@ -433,7 +435,7 @@ public struct Screen02Home: View {
                 menuRow(bg: Color(hex: 0xF1F5EE), padding: EdgeInsets(top: 15, leading: 15, bottom: 15, trailing: 15)) {
                     Circle().fill(RT.ctaGrad(CGSize(width: 40, height: 40)))
                         .frame(width: 40, height: 40)
-                        .overlay(RTAvatarFill(initial: model?.displayInitial ?? "지", photo: model?.avatarImage,
+                        .overlay(RTAvatarFill(initial: model?.displayInitial ?? "지", photo: avatar,
                                               size: 40, fontSize: 15, initialColor: RT.ctaText))
                     VStack(alignment: .leading, spacing: 1) {
                         Text(model?.displayNameOrDemo ?? "지훈").font(.sans(14.5, 800)).tracking(14.5 * -0.01).foregroundColor(RT.ink)

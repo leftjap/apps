@@ -5,9 +5,11 @@ import SwiftUI
 public struct Screen14EmptyHome: View {
     var model: RTAppModel?
     private let stats: (today: Int, week: String, streak: Int)?   // init 스냅샷
+    private let avatar: CGImage?                                  // init 스냅샷 (사진 선택 즉시 반영용)
 
     public init(model: RTAppModel? = nil) {
         self.model = model
+        self.avatar = model?.avatarImage
         if let m = model, m.userData != nil {
             self.stats = (m.todaySeconds / 60, RTAppModel.hmString(m.weekSeconds), m.streakDays)
         } else {
@@ -19,7 +21,7 @@ public struct Screen14EmptyHome: View {
         ZStack(alignment: .top) {
             RT.paper
             RTHomeHeader {
-                RTAvatar(model?.displayInitial ?? "지", photo: model?.avatarImage)
+                RTAvatar(model?.displayInitial ?? "지", photo: avatar)
                     .contentShape(Rectangle())
                     .onTapGesture { model?.openSheet(.settings) }
             }

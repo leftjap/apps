@@ -7,11 +7,17 @@ import PhotosUI
 // 설정 — 사진 / 이름 수정 / 밀리 연동 / 로그아웃
 public struct SheetSettings: View {
     var model: RTAppModel?
+    // init 스냅샷 — model 을 평범한 var 로 들면 SwiftUI 가 "저장값 불변"으로 보고 본문 재평가를 건너뛴다.
+    // 아바타를 저장 프로퍼티로 잡아야 사진 선택 직후 미리보기가 갱신된다 (Screen14EmptyHome 의 stats 와 같은 이유)
+    private let avatar: CGImage?
     @State private var confirmLogout = false
     @State private var editingName = false
     @State private var nameDraft = ""
     @State private var photoPick: PhotosPickerItem?
-    public init(model: RTAppModel? = nil) { self.model = model }
+    public init(model: RTAppModel? = nil) {
+        self.model = model
+        self.avatar = model?.avatarImage
+    }
 
     public var body: some View {
         SheetShell {
@@ -55,7 +61,7 @@ public struct SheetSettings: View {
                 HStack(spacing: 7) {
                     Circle().fill(RT.segBg)
                         .frame(width: 28, height: 28)
-                        .overlay(RTAvatarFill(initial: model?.displayInitial ?? "지", photo: model?.avatarImage,
+                        .overlay(RTAvatarFill(initial: model?.displayInitial ?? "지", photo: avatar,
                                               size: 28, fontSize: 11.5, initialColor: RT.body))
                     ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6))
                 }
@@ -66,6 +72,8 @@ public struct SheetSettings: View {
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.hair, lineWidth: 1))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("settings.photoRow")
+        .accessibilityValue(avatar == nil ? "initial" : "photo")   // 현재 아바타 종류
         .onChange(of: photoPick) { _, item in
             guard let item else { return }
             Task {
