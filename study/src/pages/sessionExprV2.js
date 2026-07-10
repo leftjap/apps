@@ -20,7 +20,7 @@ const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
-const VS_CSS = `
+export const VS_CSS = `
 .vs{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
 .vs *{box-sizing:border-box;margin:0}
 .vs-rail{width:88px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:8px;flex:0 0 auto}
@@ -140,8 +140,10 @@ function hlNode(text, term) {
   return frag;
 }
 
-/* 표현 해설 패널 — 단일 스크롤 (탭 금지). ex 필드 graceful. */
-function explainPanel(ex) {
+/* 표현 해설 패널 — 단일 스크롤 (탭 금지). ex 필드 graceful.
+ * 복습 세션(sessionReviewV2)도 같은 패널을 쓴다 — 해설이 두 화면에서 달라지지 않게 (2026-07-10 사용자 지시).
+ * 복습은 자체 '표현 해설' 헤더를 이미 가지므로 showHeader=false 로 부른다. */
+export function explainPanel(ex, showHeader = true) {
   const inner = h('div', { class: 'inner' });
   if (ex?.key) inner.appendChild(h('div', { class: 'vs-kbox', style: 'margin-top:10px;' }, hlNode(String(ex.key), null)));
   const situation = ex?.situation || ex?.whenToUse;
@@ -168,14 +170,14 @@ function explainPanel(ex) {
   if (similar) inner.appendChild(h('div', { class: 'vs-sec' }, h('div', { class: 'vs-klab' }, '비슷한 표현'), h('div', { class: 'b2' }, similar)));
 
   return h('div', { class: 'vs-panel' },
-    h('div', { class: 'ph2d' }, h('span', { class: 'vs-klab' }, '표현 해설'), h('span', { class: 'vs-klab', style: 'letter-spacing:.08em' }, '스크롤 ↓')),
+    showHeader ? h('div', { class: 'ph2d' }, h('span', { class: 'vs-klab' }, '표현 해설'), h('span', { class: 'vs-klab', style: 'letter-spacing:.08em' }, '스크롤 ↓')) : null,
     inner,
   );
 }
 
 /* 응용 연습 행 — 듣기/녹음 (services 재사용). onScore(i, result): 채점 성공 시 세션 집계 위임.
  * demo=true 면 마이크 없이 시뮬 채점 (?demo=1 화면 검증용 — 메인 recPill 데모 분기와 동일). */
-function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
+export function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
@@ -228,7 +230,7 @@ function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
  * (Azure EnableMiscue → passesCoverage). 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
  * 체이닝 발화도 '오늘 발화' 1건 — onUtterance(result) 로 세션 집계·3회 게이트에 반영(응용 드릴과 동일).
  * demo(?demo=1) 는 마이크 없이 통과 시뮬. */
-function chainBlockEl(chain, lang, card, demo, onUtterance) {
+export function chainBlockEl(chain, lang, card, demo, onUtterance) {
   const steps = buildChainSteps(chain);
   if (!steps.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
@@ -324,7 +326,7 @@ function chainBlockEl(chain, lang, card, demo, onUtterance) {
 }
 
 /* 모바일(phone/tablet) — 동일 로직, 단일 칼럼 셸(m-topb/m-steps/m-cta) + 해설 fold (작업지시서 모바일 §3-3) */
-const VSM_CSS = `
+export const VSM_CSS = `
 .vs{min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;display:flex;flex-direction:column;${V_VARS}}
 .vs *{box-sizing:border-box;margin:0}
 .vs button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}

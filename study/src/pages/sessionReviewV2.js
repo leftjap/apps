@@ -16,9 +16,11 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { createJudgeRow } from '../components/session/atoms.js';
-import { buildChainSteps, chainHint, pickChainVoice } from '../components/session/applied.js';
-import { passesCoverage } from '../services/speech.js';
+import { filterNearDupDrills } from '../components/session/applied.js';
 import { localISODate } from '../utils/today.js';
+// 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
+// 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
+import { explainPanel, drillRows, chainBlockEl, VS_CSS, VSM_CSS } from './sessionExprV2.js';
 
 const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -234,8 +236,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     revealed = true;
     h1El.textContent = s.sentence;
     koEl.textContent = s.ko || '';
-    listenPill.disabled = false;
-    if (chainBlock) chainBlock.style.display = '';
+    listenPill.disabled = false;   // 응용·체이닝은 해설 안이라 펼침 자체가 곧 공개다
     refreshJudge();
   }
 
@@ -294,11 +295,44 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   refreshJudge();
   const gateEl = h('div', { class: 'vr-gate' }, '어땠나요? 아래에서 골라주세요');
 
-  // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리하고, 하단에 평가를 단다 (사용자 지시).
+  // 응용/체이닝 발화 집계 — '오늘 발화'·약점 음소에만 반영. SRS 는 자기평가가 정한다.
+  const onAppliedScore = (result) => {
+    const score = Math.round(Number(result?.score) || 0);
+    state.tried = (state.tried || 0) + 1;
+    if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
+    if (!Array.isArray(state.pronScores)) state.pronScores = [];
+    state.pronScores.push(score);
+    if (Array.isArray(result?.weakPhonemes)) {
+      if (!state.weakInSession) state.weakInSession = {};
+      for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1;
+    }
+    bumpRecLog(state, s?.id, score);
+    refreshDots(); refreshRec();
+    handlers.saveSnapshot?.();
+  };
+
+  // 응용 연습 — 신규 세션과 동일 (근접중복은 렌더에서 제외).
+  const drills = filterNearDupDrills(s?.sentence, ex.drills);
+  const drillCountEl = h('b', {}, '0');
+  const recordedDrills = new Set();
+  const drillsBlock = drills.length ? h('div', {},
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'),
+      h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
+    h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker, (i, result) => {
+      if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
+      onAppliedScore(result);
+    }, state.demo)),
+  ) : null;
+
+  // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적).
+  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore);
+
+  // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리한다. 안쪽은 신규 세션과 동일 구성 + 하단 평가.
   const foldBd = h('div', { class: 'bd' },
     h('div', {}, '먼저 떠올려 말해 본 다음 펼쳐 보세요. 해설을 보기 전에 꺼내 보는 게 복습 효과가 가장 커요.'),
-    ex.key ? h('div', { class: 'kx', style: 'margin-top:12px;' }, String(ex.key)) : null,
-    (ex.situation || ex.whenToUse) ? [h('div', { class: 'vs-klab' }, '이런 상황에서 써요'), h('div', { style: 'margin-top:4px;' }, String(ex.situation || ex.whenToUse))] : null,
+    explainPanel(ex, false),
+    drillsBlock,
+    chainBlock,
     h('div', { style: 'margin-top:18px;border-top:1px solid var(--line);padding-top:14px;' }, gateEl, judgeRow.el),
   );
   foldBd.style.display = 'none';
@@ -394,112 +428,6 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     recallMode ? '한글을 보고 영어로 떠올려 말해 보세요 — 안 떠오르면 그대로 두고 해설을 펼치면 정답과 평가가 나와요'
       : '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
 
-  // 체이닝 재시험 (2026-07-09 — 확장 사다리 폐기 후속). 자막 없이 '한 번 듣고 전체 재현'(최상 난도).
-  // 실패하면 단계 분해로 폴백. 통과 = 단어 누락 0(발음 점수 무관, speech.passesCoverage). 3회 실패부터 힌트.
-  const chainBlock = buildChainSteps(ex.chain).length ? (() => {
-    const steps = buildChainSteps(ex.chain);
-    const target = String(ex.chain.target ?? '');
-    let cur = -1;            // -1 = 전체 재현 모드, 0.. = 단계 폴백
-    let fails = 0, plays = 0, recCtrl = null, recRow = null;
-
-    const lab = 'font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase';
-    const cir = 'border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;flex:0 0 auto;cursor:pointer;padding:0';
-    const rowSty = 'display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)';
-    const cHint = h('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:10px;min-height:16px' }, '한 번만 듣고 전체를 말해 보세요 (자막 없음)');
-    const stepsWrap = h('div', { class: 'vr-chain-steps', style: 'display:none;margin-top:12px' });
-
-    const speakVaried = (t) => { plays += 1; const v = pickChainVoice(plays); if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang, voice: v.voice, rate: v.rate }); };
-    const showHint = (text) => {
-      // 전체 재현(cur=-1)·마지막 단계에서만 뜻 힌트. 중간 단계에서 띄우면 뒷 문장을 미리 알려준다.
-      const isLast = cur === -1 || cur === steps.length - 1;
-      const { kind, text: hint } = chainHint(fails, { stepText: text, ko: ex.chain.ko, isLast });
-      if (kind === 'none') cHint.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '한 번만 듣고 전체를 말해 보세요 (자막 없음)';
-      else if (kind === 'ko') cHint.textContent = `힌트 · 뜻: ${hint}`;
-      else if (kind === 'first') cHint.textContent = `힌트 · 시작: ${hint}`;
-      else cHint.textContent = `힌트 · 전체: ${hint}`;
-    };
-
-    // 단계 폴백 행 (전체 실패 후 노출)
-    const stepRows = steps.map((step, i) => {
-      const mark = h('span', { style: 'display:none;font-family:Outfit;font-size:12px;font-weight:700;color:var(--teal-deep)' }, '통과 ✓');
-      const play = h('button', { type: 'button', 'aria-label': '듣기', style: 'width:30px;height:30px;' + cir }, vIcon(VI.PLAY, { size: 10, fill: true }));
-      const rec = h('button', { type: 'button', 'aria-label': '녹음', style: 'width:30px;height:30px;' + cir }, vIcon(VI.MIC, { size: 12, sw: 2 }));
-      const wc = step.text.trim().split(/\s+/).filter(Boolean).length;
-      const row = h('div', { class: 'vr-chain-step', style: rowSty },
-        h('span', { style: 'font-family:Outfit;font-size:11px;color:var(--faint);width:14px;text-align:right' }, String(i + 1)),
-        h('div', { style: 'flex:1;min-width:0' }, h('div', { style: 'font-size:14px;font-weight:700' }, `${i + 1}단계 · ${wc}단어`)),
-        mark, play, rec);
-      play.addEventListener('click', () => { if (i === cur) speakVaried(step.text); });
-      rec.addEventListener('click', () => { if (i === cur) attempt(step.text, row, rec, () => { cur += 1; fails = 0; refresh(); }); });
-      return { row, play, rec, mark };
-    });
-    stepsWrap.append(h('div', { style: lab }, '단계로 나눠 다시'), h('div', { style: 'margin-top:6px' }, stepRows.map((r) => r.row)));
-
-    // 전체 재현 행
-    const fullMark = h('span', { style: 'display:none;font-family:Outfit;font-size:12px;font-weight:700;color:var(--teal-deep)' }, '통과 ✓');
-    const fullPlay = h('button', { type: 'button', 'aria-label': '듣기', style: 'width:32px;height:32px;' + cir }, vIcon(VI.PLAY, { size: 11, fill: true }));
-    const fullRec = h('button', { type: 'button', 'aria-label': '녹음', style: 'width:32px;height:32px;' + cir }, vIcon(VI.MIC, { size: 13, sw: 2 }));
-    const fullWc = target.trim().split(/\s+/).filter(Boolean).length;
-    const fullRow = h('div', { class: 'vr-chain-full', style: rowSty },
-      h('div', { style: 'flex:1;min-width:0' },
-        h('div', { style: 'font-size:14.5px;font-weight:700' }, `전체 · ${fullWc}단어`),
-        h('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:2px' }, '한 번 듣고 통째로 재현')),
-      fullMark, fullPlay, fullRec);
-    fullPlay.addEventListener('click', () => { if (cur === -1) speakVaried(target); });
-    fullRec.addEventListener('click', () => { if (cur === -1) attempt(target, fullRow, fullRec, () => { fullMark.style.display = ''; cur = steps.length; refresh(); }); });
-
-    function refresh() {
-      const done = cur >= steps.length;
-      fullPlay.disabled = cur !== -1; fullRec.disabled = cur !== -1;
-      stepRows.forEach((r, i) => {
-        const active = i === cur;
-        r.row.style.opacity = i < cur ? '0.5' : active ? '1' : '0.3';
-        r.play.disabled = !active; r.rec.disabled = !active;
-        r.mark.style.display = i < cur ? '' : 'none';
-      });
-      if (done) { cHint.textContent = '체이닝 완료 ✓'; return; }
-      showHint(cur === -1 ? target : steps[cur].text);
-    }
-
-    // 공통 시도 — coverage(누락 0) 통과 판정. demo 는 마이크 없이 통과 시뮬.
-    async function attempt(text, row, btn, onPass) {
-      if (state.demo) { setTimeout(onPass, 600); return; }
-      if (recCtrl && recRow === row) { finish(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => finish() });
-      if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
-      recCtrl = r.controller; recRow = row; btn.style.background = 'var(--coral)';
-      async function finish() {
-        if (!(recCtrl && recRow === row)) return;
-        const ctrl = recCtrl; recCtrl = null; recRow = null; btn.style.background = '#fff';
-        const result = await stopAndAnalyze(ctrl, text, s, { enableMiscue: true });
-        if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-        // 체이닝 발화도 '오늘 발화' 1건. 단 회상 게이트(bumpRecLog)에는 넣지 않는다 —
-        // 복습의 관문은 '떠올려 말하기'이지 듣고 따라하기가 아니므로.
-        const sc = Math.round(Number(result?.score) || 0);
-        state.tried = (state.tried || 0) + 1;
-        if (sc >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
-        if (!Array.isArray(state.pronScores)) state.pronScores = [];
-        state.pronScores.push(sc);
-        refreshRec();
-        handlers.saveSnapshot?.();
-        if (passesCoverage(result)) { onPass(); return; }
-        fails += 1;
-        if (cur === -1) { stepsWrap.style.display = ''; cur = 0; fails = 0; refresh(); return; } // 전체 실패 → 단계 폴백
-        const miss = result?.omissions?.length ?? 0;
-        showRecordToast(miss ? `${miss}개 빠뜨렸어요` : '다시 말해 보세요');
-        refresh();
-      }
-    }
-
-    const block = h('div', { class: 'vr-chain', style: 'margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px' },
-      h('div', { style: lab }, '체이닝 재시험 — 자막 없이'),
-      h('div', { style: 'margin-top:8px' }, fullRow), stepsWrap, cHint);
-    refresh();
-    return block;
-  })() : null;
-
-  // chain.target 은 기본문장을 통째로 품는다(실측 21/22 카드) → 회상 시도 전엔 정답 오디오다. 감춘다.
-  if (chainBlock && !revealed) chainBlock.style.display = 'none';
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {
@@ -515,19 +443,20 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     const mSteps = h('div', { class: 'm-steps' },
       Array.from({ length: total }, (_, i) => h('button', { class: 'm-rstep c' + (i + 1 === idx ? ' on' : i + 1 < idx ? ' done' : ''), type: 'button', onClick: () => handlers.onJump?.(i + 1) }, String(i + 1))),
       h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
-    root = h('div', { class: 'vr' }, v2Style(VRM_CSS),
+    root = h('div', { class: 'vr' }, v2Style(VRM_CSS), v2Style(VSM_CSS),
       mTopb, mSteps,
-      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold, chainBlock));
+      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, fold));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
     const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
+    // 해설은 넓은 메인 칼럼에 둔다 — 안에 응용 연습·체이닝이 들어가므로 324px 사이드바로는 좁다.
     const main = h('div', { class: 'vr-main' },
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
-      hintEl, cardEl, chainBlock);
-    const side = h('aside', { class: 'vr-side' }, recWidget, fold);
-    root = h('div', { class: 'vr' }, v2Style(VR_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
+      hintEl, cardEl, h('div', { style: 'margin-top:14px;' }, fold));
+    const side = h('aside', { class: 'vr-side' }, recWidget);
+    root = h('div', { class: 'vr' }, v2Style(VR_CSS), v2Style(VS_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
   }
   host.appendChild(root);

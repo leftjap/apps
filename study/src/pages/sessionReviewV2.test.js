@@ -94,104 +94,77 @@ describe('renderSessionReviewV2 — 회상 프롬프트 (한글만, 영어 숨�
   });
 });
 
-/* 체이닝 재시험 — 자막 없이 '한 번 듣고 전체 재현', 실패 시 단계 폴백 (2026-07-09). */
-describe('renderSessionReviewV2 — 체이닝 재시험 렌더', () => {
+/* 사용자 지시(2026-07-10): 해설을 펼치면 **신규 세션과 동일하게** 해설·응용문장·체이닝이 함께 뜬다.
+ * 복습 전용이던 '전체 재현 → 단계 폴백'(.vr-chain) 변형은 폐기 — 화면만 보면 '전체 · 10단어'가 뭔지 알 수 없었다. */
+describe('renderSessionReviewV2 — 해설 = 신규 세션과 동일(해설·응용문장·체이닝) + 하단 평가', () => {
   const CHAIN = {
     target: "Let's just move on to the next thing. It's over anyway.",
     chunks: ["Let's just move on", 'to the next thing', "It's over anyway"],
     ko: '그냥 다음 걸로 넘어가자. 어차피 끝난 일이야.',
   };
-  function mountWithChain(size, chain = CHAIN, demo = false) {
+  const DRILLS = [
+    { en: 'Thank you so much for coming.', ko: '와 주셔서 감사합니다.', kr: '땡큐' },
+    { en: 'Did they thank you for coming?', ko: '고맙다고 했어?', kr: '디드' },
+  ];
+  let lastState;
+  function mountFull(size = 'desktop', demo = false) {
     document.body.innerHTML = '<div id="root"></div>';
     const host = document.getElementById('root');
-    const explanation = { key: 'k', chunks: CHUNKS, chain };
+    const explanation = { key: 'k', situation: '상황', chunks: CHUNKS, drills: DRILLS, chain: CHAIN };
     const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
     const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation };
-    const state = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0, demo };
-    renderSessionReviewV2(host, state, {});
+    lastState = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0, passed: 0, pronScores: [], demo };
+    renderSessionReviewV2(host, lastState, {});
     return host;
   }
 
-  it('데스크톱: 전체 재현 행을 렌더하고, 영어 원문은 화면에 노출되지 않는다(자막 없음)', () => {
-    const host = mountWithChain('desktop');
-    const chain = host.querySelector('.vr-chain');
-    expect(chain).not.toBeNull();
-    expect(chain.textContent).toContain('체이닝 재시험');
-    expect(host.querySelector('.vr-chain-full')).not.toBeNull();
-    expect(host.textContent).not.toContain('move on to the next thing');
-    expect(host.textContent).not.toContain("It's over anyway");
+  it('구 복습 전용 체이닝(.vr-chain / 전체 재현)은 더 이상 렌더되지 않는다', () => {
+    const host = mountFull();
+    expect(host.querySelector('.vr-chain')).toBeNull();
+    expect(host.querySelector('.vr-chain-full')).toBeNull();
+    expect(host.textContent).not.toContain('체이닝 재시험');
   });
 
-  it('단계 폴백은 처음엔 숨겨져 있다 (전체 재현이 먼저)', () => {
-    const host = mountWithChain('desktop');
-    expect(host.querySelectorAll('.vr-chain-step').length).toBe(3); // 청크 수만큼 준비는 됨
-    expect(host.querySelector('.vr-chain-steps').style.display).toBe('none'); // 감춰짐
+  it('해설 안에 해설 패널 · 응용 연습 · 체이닝 · 평가가 이 순서로 들어있다', () => {
+    const host = mountFull();
+    const bd = host.querySelector('.vr-fold .bd');
+    expect(bd.querySelector('.vs-panel')).not.toBeNull();      // 해설 (신규와 동일 컴포넌트)
+    expect(bd.textContent).toContain('응용 연습');              // 응용문장
+    expect(bd.querySelector('.vs-chain')).not.toBeNull();      // 체이닝 (신규와 동일)
+    expect(bd.querySelector('.judge-row')).not.toBeNull();     // 평가는 맨 아래
+    const order = [...bd.querySelectorAll('.vs-panel, .vs-chain, .judge-row')].map((el) => el.className.split(' ')[0]);
+    expect(order).toEqual(['vs-panel', 'vs-chain', 'judge-row']);
   });
 
-  it('모바일 셸에도 렌더된다', () => {
-    expect(mountWithChain('phone').querySelector('.vr-chain')).not.toBeNull();
+  it('응용 연습은 근접중복(base 반복)을 걸러 진짜 변주만 보여준다', () => {
+    const bd = mountFull().querySelector('.vr-fold .bd');
+    expect(bd.textContent).toContain('Did they thank you for coming?');  // 진짜 변주 → 유지
+    expect(bd.querySelectorAll('.vs-drow .en').length).toBeGreaterThan(0);
   });
 
-  /* chain.target 은 기본문장을 통째로 품는다 (실측 21/22 카드, 19개는 첫머리부터).
-   * 영어를 숨긴 채 체이닝 '듣기'를 누르면 정답을 들려주는 셈 → 공개 전에는 감춘다. */
-  it('정답 공개 전에는 체이닝 블록이 감춰진다 (chain 오디오가 기본문장을 포함)', () => {
-    const host = mountWithChain('desktop');
-    expect(host.querySelector('.vr-chain').style.display).toBe('none');
+  it('체이닝은 자막이 없다 (신규와 동일 계약)', () => {
+    const bd = mountFull().querySelector('.vr-fold .bd');
+    const chain = bd.querySelector('.vs-chain');
+    expect(chain.textContent).not.toContain('move on to the next thing');
+    expect(chain.textContent).not.toContain("It's over anyway");
   });
 
-  it('정답 공개 후 체이닝 블록이 열린다', () => {
-    vi.useFakeTimers();
-    try {
-      const host = mountWithChain('desktop', CHAIN, true);
-      host.querySelector('.vr-pill.pri').click();   // 회상 시도(데모)
-      vi.advanceTimersByTime(1100);
-      expect(host.querySelector('.vr-chain').style.display).not.toBe('none');
-    } finally { vi.useRealTimers(); }
+  it('chain 없으면 체이닝 블록만 빠지고 해설·평가는 남는다', () => {
+    const host = mountCard({ interval: 1 });
+    expect(host.querySelector('.vs-chain')).toBeNull();
+    expect(host.querySelector('.vr-fold .bd .vs-panel')).not.toBeNull();
+    expect(host.querySelector('.vr-fold .judge-row')).not.toBeNull();
   });
 
-  it('일본어는 체이닝을 즉시 노출 (숨김 모드가 아니므로)', () => {
-    document.body.innerHTML = '<div id="root"></div>';
-    const host = document.getElementById('root');
-    const explanation = { key: 'k', chunks: CHUNKS, chain: CHAIN };
-    const s = { id: 'c1', lang: 'ja', sentence: 'x', ko: 'ㅇ', explanation };
-    const card = { id: 'c1', lang: 'ja', sentence: 'x', meaning: 'ㅇ', interval: 1, explanation };
-    renderSessionReviewV2(host, { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0 }, {});
-    expect(host.querySelector('.vr-chain').style.display).not.toBe('none');
-  });
-
-  it('chain 없으면(또는 청크 1개) 체이닝 블록은 렌더되지 않는다', () => {
-    expect(mountCard({ interval: 1 }).querySelector('.vr-chain')).toBeNull();
-    expect(mountWithChain('desktop', { target: 'x', chunks: ['x'], ko: 'ㅇ' }).querySelector('.vr-chain')).toBeNull();
-  });
-
-  it('데모: 전체 재현 녹음 통과 → 완료 표시', () => {
-    vi.useFakeTimers();
-    try {
-      const host = mountWithChain('desktop', CHAIN, true);
-      host.querySelector('.vr-chain-full button[aria-label="녹음"]').click();
-      vi.advanceTimersByTime(700);
-      expect(host.querySelector('.vr-chain').textContent).toContain('체이닝 완료');
-    } finally { vi.useRealTimers(); }
-  });
-
-  // 체이닝 발화는 '오늘 발화'로 세지만, 복습의 관문은 '떠올려 말하기'이므로 회상 게이트에는 안 넣는다.
-  it('체이닝 발화 → tried/pronScores 집계, 회상 게이트(recLog)는 미반영', async () => {
-    document.body.innerHTML = '<div id="root"></div>';
-    const host = document.getElementById('root');
-    const explanation = { key: 'k', chunks: CHUNKS, chain: CHAIN };
-    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
-    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation };
-    const state = { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0, passed: 0, pronScores: [] };
-    renderSessionReviewV2(host, state, {});
-
-    const rec = host.querySelector('.vr-chain-full button[aria-label="녹음"]');
-    rec.click(); await tick();                     // 녹음 시작
-    rec.click(); await tick(); await tick();       // 멈춤 + 채점 (mock: score 88, omissions [])
-
-    expect(state.tried).toBe(1);
-    expect(state.pronScores).toEqual([88]);
-    expect(state.passed).toBe(1);                  // 88 >= 80
-    expect(state.recLog.c1).toBeUndefined();       // 회상 게이트엔 미포함
+  it('해설 안 체이닝 발화도 오늘 발화(tried/pronScores)로 집계된다', async () => {
+    const host = mountFull('desktop', false);
+    host.querySelector('.vr-fold .hd').click();          // 펼침
+    const rec = host.querySelector('.vs-chain .vs-drow button[aria-label="녹음"]');
+    rec.click(); await tick();
+    rec.click(); await tick(); await tick();             // mock: score 88, omissions []
+    expect(lastState.tried).toBe(1);
+    expect(lastState.pronScores).toEqual([88]);
+    expect(lastState.passed).toBe(1);                    // 88 >= PASS_THRESHOLD(80)
   });
 });
 

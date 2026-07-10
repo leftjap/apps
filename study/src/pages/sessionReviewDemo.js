@@ -12,6 +12,12 @@ export function demoReviewCards() {
         key: 'Count on it. = 믿어도 돼 / 장담해. 상대에게 확실함을 약속하는 표현.',
         situation: '약속이나 다짐을 확실히 못박을 때. "꼭 그렇게 될 거야"라는 자신감을 줘요.',
         chunks: [['Count on', '카운트 온'], ['it', '잇']],
+        // 응용 연습 — 복습 해설에서도 신규 세션과 동일하게 뜬다 (2026-07-10)
+        drills: [
+          { en: 'Count on it.', ko: '믿어도 돼.', kr: '카운트 온 잇' },
+          { en: 'Can I count on you?', ko: '너 믿어도 돼?', kr: '캔 아이 카운트 온 유' },
+          { en: "Don't count on it.", ko: '기대하지 마.', kr: '돈트 카운트 온 잇' },
+        ],
         // 체이닝 재시험 데모 — 자막 없이 듣고 재현 (ladder 폐기 후속, 2026-07-09)
         chain: {
           target: 'You can count on it. I will not let you down.',
