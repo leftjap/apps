@@ -57,7 +57,9 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertTrue(app.buttons["home-resume"].waitForExistence(timeout: 5), "홈(HomeC)으로 돌아와야 한다")
     }
 
-    // 좌스와이프 = 세트완료 → 현재 세트 중량이 다음 세트로 갱신 (상태머신 실 인터랙션)
+    // 좌스와이프 = 세트완료 (상태머신 실 인터랙션). --reset = 히메틱(무이력·로그아웃) —
+    // 커밋 마커는 세션 볼륨 1,250→1,810 (결정값). 무이력 상속(§6-3-3)으로 다음 세트 중량은 70 유지.
+    // (구버전 기대값 "72"는 컨테이너에 벤치 이력이 있을 때만 성립 — 2026-07-10 계측으로 규명)
     func testSwipeCompletesSet() {
         let app = XCUIApplication()
         app.launchArguments = ["--route", "session", "--reset"]
@@ -65,11 +67,10 @@ final class GymNavigationUITests: XCTestCase {
         let hero = app.staticTexts["hero-weight"]
         XCTAssertTrue(hero.waitForExistence(timeout: 10), "히어로 중량이 있어야 한다")
         XCTAssertEqual(hero.label, "70", "현재 세트(벤치프레스 3번째)는 70kg")
-        // 히어로 좌스와이프 = 세트완료 → 다음 세트(72kg)로 진행
         hero.swipeLeft()
-        let expect = expectation(for: NSPredicate(format: "label == %@", "72"), evaluatedWith: hero)
-        wait(for: [expect], timeout: 5)
-        XCTAssertEqual(hero.label, "72", "세트완료 후 다음 세트 72kg 로 갱신돼야 한다")
+        XCTAssertTrue(app.staticTexts["1,810"].firstMatch.waitForExistence(timeout: 5),
+                      "세트완료 후 세션 볼륨 1,810 이 떠야 한다 (1,250+70×8)")
+        XCTAssertEqual(hero.label, "70", "무이력 — 커밋값 70 이 다음 프리셋에 상속돼야 한다")
     }
 
     // 우측 존 탭 = 중량 증가 (§6-3 — 좌30/중40/우30, 바벨 증분 +5)
@@ -99,25 +100,24 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["TOTAL"].waitForExistence(timeout: 5), "종료 후 요약(TOTAL)이 떠야 한다")
     }
 
-    // 로컬 영속 — 세트완료 후 앱 재시작해도 상태 유지 (UserDefaults JSON)
+    // 로컬 영속 — 세트완료 후 앱 재시작해도 상태 유지 (UserDefaults JSON). 히메틱 마커 1,810.
     func testSessionPersistsAcrossRelaunch() {
         let app = XCUIApplication()
-        app.launchArguments = ["--route", "session", "--reset"]   // 깨끗한 시작
+        app.launchArguments = ["--route", "session", "--reset"]   // 히메틱 시작
         app.launch()
         let hero = app.staticTexts["hero-weight"]
         XCTAssertTrue(hero.waitForExistence(timeout: 10))
         XCTAssertEqual(hero.label, "70")
-        hero.swipeLeft()   // 세트완료 → 72 + 영속 저장
-        let e = expectation(for: NSPredicate(format: "label == %@", "72"), evaluatedWith: hero)
-        wait(for: [e], timeout: 5)
+        hero.swipeLeft()   // 세트완료 → 볼륨 1,810 + 영속 저장
+        XCTAssertTrue(app.staticTexts["1,810"].firstMatch.waitForExistence(timeout: 5))
 
         // 앱 재시작 (--reset 없이 = 영속 로드)
         app.terminate()
         app.launchArguments = ["--route", "session"]
         app.launch()
-        let hero2 = app.staticTexts["hero-weight"]
-        XCTAssertTrue(hero2.waitForExistence(timeout: 10))
-        XCTAssertEqual(hero2.label, "72", "재시작해도 완료한 세트 상태가 유지돼야 한다(72)")
+        XCTAssertTrue(app.staticTexts["hero-weight"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["1,810"].firstMatch.waitForExistence(timeout: 5),
+                      "재시작해도 완료 세트 볼륨(1,810)이 유지돼야 한다")
     }
 
     // 세션 → 홈 (툴바 홈 버튼) — 활성 세션 유지 중이므로 HomeC(이어하기)로 복귀 (spec §5-5)
@@ -184,7 +184,7 @@ final class GymNavigationUITests: XCTestCase {
     //  필요해 여기서 진행하지 않음(그 지점 이후만 사용자 자격증명 필요 — 정직한 경계).
     func testGoogleLoginButtonOpensAuthSession() {
         let app = XCUIApplication()
-        app.launchArguments = ["--route", "admin", "--tab", "profile"]
+        app.launchArguments = ["--route", "admin", "--tab", "profile", "--reset"]   // 히메틱 — 주입 세션(키체인) 잔존 시 버튼이 로그아웃이 됨
         app.launch()
 
         let loginBtn = app.buttons["profile-auth"]

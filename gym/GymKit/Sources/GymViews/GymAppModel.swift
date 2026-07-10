@@ -49,6 +49,23 @@ public final class GymAppModel: ObservableObject {
         if snapshotSession == nil, session.id != "demo" {
             sweepStaleSessionIfNeeded()
         }
+        // 레거시 시드 퍼지 — 시드 격리(2026-07-10) 이전 컨테이너에 남은 스캐폴딩이 로그인 sync 로
+        // 서버 실데이터를 오염시킨 사고 복구. 스냅샷 컨텍스트는 시드가 픽스처라 제외.
+        if !GymSnapshot.isActive { purgeLegacySeedData() }
+    }
+
+    // MARK: - 레거시 시드 퍼지 (실앱 전용 — 서버 재오염 차단)
+
+    static let legacySeedSessionIds: Set<String> = ["demo", "h_0505", "h_0503", "h_0501", "h_0429"]
+    static let legacySeedWeightDates: Set<String> = ["2026-05-06", "2026-05-04", "2026-05-02", "2026-04-29"]
+    func purgeLegacySeedData() {
+        let h2 = history.filter { !Self.legacySeedSessionIds.contains($0.id) }
+        if h2.count != history.count { LocalStore.saveSessions(h2); history = h2 }
+        let p2 = prs.filter { pr in pr.sessionId.map { !Self.legacySeedSessionIds.contains($0) } ?? true }
+        if p2.count != prs.count { LocalStore.savePRs(p2); prs = p2 }
+        // 체중은 날짜+시드 값 범위(72.3~72.9) 동시 일치만 — 실기록 오삭 방지
+        let w2 = weights.filter { !(Self.legacySeedWeightDates.contains($0.date) && (72.3...72.9).contains($0.kg)) }
+        if w2.count != weights.count { LocalStore.saveWeights(w2); weights = w2 }
     }
 
     // MARK: - 운동 카탈로그 헬퍼 (Exercises.swift resolve)
@@ -393,10 +410,23 @@ public final class GymAppModel: ObservableObject {
         selectedBlockIdx = nil
     }
 
-    // 검증/새 세션용 — 영속 초기화 + 데모 재시드.
+    // 검증용(--reset) — 완전 히메틱 초기화: 로그아웃 + 로컬 전체 클리어 + 데모 세션.
+    // 이력/로그인 잔존 시 상속·prevBlock 이 컨테이너 상태에 따라 달라져 UI 테스트가 비결정적이 됨
+    // (2026-07-10 실측: 무이력=커밋값 상속 70, 이력존재=프리셋 보존 72 — 둘 다 정본 동작).
+    // startTime 조정 필수 — demoSession() 고정 epoch(1_746_500_000_000)는 2025-05-06 이라
+    // 그대로 쓰면 경과 타이머가 "10324:01:47"(430일) 로 표기됨 (시뮬 프레임 캡처 실측).
     public func resetSession() {
         LocalStore.clearSession()
-        session = GymAppModel.demoSession()
+        LocalStore.saveSessions([]); history = []
+        LocalStore.savePRs([]); prs = []
+        LocalStore.saveWeights([]); weights = []
+        LocalStore.saveCustomExercises([]); custom = []
+        LocalStore.saveSettings(GymUserSettings()); settings = GymUserSettings()
+        Task { await cloud.signOut() }   // sync 간섭 차단 (키체인 세션은 앱 삭제에도 생존)
+        var demo = GymAppModel.demoSession()
+        demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
+        session = demo
+        selectedBlockIdx = nil
     }
 
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }

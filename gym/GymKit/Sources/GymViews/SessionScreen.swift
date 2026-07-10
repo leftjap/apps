@@ -91,7 +91,9 @@ struct SessionHeader: View {
                     Text("세션 볼륨").font(.sans(10.5, 600)).tracking(0.42).foregroundStyle(GY.ink4)
                     HStack(alignment: .firstTextBaseline, spacing: 3) {
                         // 누적 숫자만 펄스 (mock topRecordPulse — #cardSetProgress 한정)
+                        // numericText — 커밋 트랜잭션 크로스페이드 이중 노출 방지 + §7 숫자 롤 정합
                         Text(volCur).font(.mono(13, 600)).foregroundStyle(pulsing ? GY.crailDeep : GY.ink2)
+                            .contentTransition(.numericText())
                             .scaleEffect(pulsing ? 1.16 : 1, anchor: .trailing)
                         // 신기록 시 직전 총볼륨 취소선 + 흐림 (mock #cardSessTotalWrap.struck)
                         Text("/ \(volTotal)kg").font(.mono(13, 500)).foregroundStyle(GY.ink4)
@@ -122,6 +124,7 @@ struct SessionHeader: View {
                             .allowsHitTesting(false)
                     }
                     Text("\(pct)%").font(.mono(14, 700)).tracking(-0.28).foregroundStyle(GY.cloudyDeep)
+                        .contentTransition(.numericText())
                 }
             }
         }

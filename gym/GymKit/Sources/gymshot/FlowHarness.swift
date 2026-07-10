@@ -33,11 +33,14 @@ enum FlowHarness {
         try? FileManager.default.createDirectory(atPath: outdir, withIntermediateDirectories: true)
         let today = GymAppModel.dayFmt.string(from: Date())
 
-        print("[0a] 실앱 첫 실행 경로 — 시드·데모 전무 (서버 오염·가짜 이력·거대 타이머 회귀 방지)")
+        print("[0a] 실앱 첫 실행 경로 — 시드·데모 전무 + 레거시 시드 퍼지 (서버 오염 회귀 방지)")
         GymSnapshot.isActive = false   // 실앱과 동일 조건 (스냅샷 스캐폴딩 미주입)
+        // 시드 격리 이전 컨테이너 재현 — 스캐폴딩 잔존분이 자동 퍼지되어야 sync 재오염이 없다
+        LocalStore.saveSessions([GymSession(id: "h_0505", date: "2026-05-05", status: .completed)])
+        LocalStore.saveWeights([GymWeight(date: "2026-05-06", kg: 72.4)])
         let mApp = GymAppModel()
         check(mApp.history.isEmpty && mApp.weights.isEmpty && mApp.prs.isEmpty,
-              "실앱 첫 실행 = 이력·체중·PR 완전 빈 상태 (시드 미주입 — sync push 오염 방지)")
+              "실앱 첫 실행 = 빈 상태 + 레거시 시드(h_0505·72.4kg) 자동 퍼지")
         check(mApp.session.blocks.isEmpty && mApp.session.status == .active,
               "실앱 첫 실행 = 빈 활성 세션 (데모 미주입 → 홈 idle)")
         GymSnapshot.isActive = true

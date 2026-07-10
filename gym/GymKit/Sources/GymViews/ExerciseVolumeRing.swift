@@ -112,6 +112,7 @@ struct ExerciseVolumeRing: View {
                 }
                 HStack(spacing: 1) {   // .exring-pct
                     Text("\(pct)").font(.mono(14, 700)).tracking(-0.28)
+                        .contentTransition(.numericText())   // 커밋 크로스페이드 이중 노출 방지
                     Text("%").font(.mono(9.5, 600))
                 }.foregroundStyle(GY.crailDeep)
             }

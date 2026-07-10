@@ -58,8 +58,10 @@ struct PrevRecordBars: View {
                                 .foregroundStyle(s.pr ? GY.crailDeep
                                                  : s.isPreview ? GY.ink4
                                                  : s.state == .now ? GY.ink1 : GY.ink2)
+                                .contentTransition(.numericText())   // 커밋 크로스페이드 이중 노출 방지
                             Text(s.bottom.isEmpty ? " " : s.bottom).font(.mono(10, 500))
                                 .foregroundStyle(s.pr ? GY.crailDeep : GY.ink4)
+                                .contentTransition(.numericText())
                         }
                     }
                     .contentShape(Rectangle())
