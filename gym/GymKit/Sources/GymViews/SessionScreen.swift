@@ -121,8 +121,19 @@ public struct SessionScreenView: View {
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false) {
         self.model = model; self.onHome = onHome
         _prPopVisible = State(initialValue: initialPRPop)
-        if let f = initialKeypadField {
-            _keypad = State(initialValue: KeypadContext(field: f, buffer: "", fresh: false, pairHidesWeight: false))
+        if let f = initialKeypadField {   // 검증 훅 — 실 openKeypad 와 동일 prefill
+            let set = model.currentSet ?? model.currentBlock?.sets.last
+            let pre: Double? = {
+                switch f {
+                case .weight:   return set?.weight
+                case .reps:     return set?.reps.map(Double.init)
+                case .duration: return set?.duration.map { ($0 / 60).rounded() }
+                case .distance: return set?.distance
+                }
+            }()
+            _keypad = State(initialValue: KeypadContext(
+                field: f, buffer: pre.map { Self.fmtW($0) } ?? "", fresh: pre != nil,
+                pairHidesWeight: model.currentCardKind == .bodyweight))
         }
     }
     // 데모 편의 init (프리뷰/스냅샷) — 자체 모델 시드.
