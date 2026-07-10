@@ -498,6 +498,15 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
         const ctrl = recCtrl; recCtrl = null; recRow = null; btn.style.background = '#fff';
         const result = await stopAndAnalyze(ctrl, text, s, { enableMiscue: true });
         if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+        // 체이닝 발화도 '오늘 발화' 1건. 단 회상 게이트(bumpRecLog)에는 넣지 않는다 —
+        // 복습의 관문은 '떠올려 말하기'이지 듣고 따라하기가 아니므로.
+        const sc = Math.round(Number(result?.score) || 0);
+        state.tried = (state.tried || 0) + 1;
+        if (sc >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
+        if (!Array.isArray(state.pronScores)) state.pronScores = [];
+        state.pronScores.push(sc);
+        refreshRec();
+        handlers.saveSnapshot?.();
         if (passesCoverage(result)) { onPass(); return; }
         fails += 1;
         if (cur === -1) { stepsWrap.style.display = ''; cur = 0; fails = 0; refresh(); return; } // 전체 실패 → 단계 폴백

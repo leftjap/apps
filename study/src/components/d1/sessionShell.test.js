@@ -69,29 +69,6 @@ describe('buildD1ExplainRight — 우측 해설 (D1, phone 패널과 섹션 pari
     expect(labels).not.toContain('발음 — 청크 단위');
     expect(labels).not.toContain('주의 음소');
   });
-
-  it('ladder → "확장 사다리" 섹션 (짧게→길게 단 + 이어 말하기 back-chaining)', () => {
-    const withLadder = {
-      ...ex,
-      ladder: [
-        { en: 'A coffee.', ko: '커피.', kr: '어 커피', adds: 'base' },
-        { en: 'A coffee, please.', ko: '커피 주세요.', kr: '어 커피 플리즈', adds: 'object' },
-        { en: 'Can I get a coffee, please?', ko: '커피 하나 주시겠어요?', kr: '캔 아이 게러 커피 플리즈', adds: 'particle',
-          back: [['please?', '플리즈'], ['a coffee, please?', '어 커피 플리즈'], ['Can I get a coffee, please?', '캔 아이 게러 커피 플리즈']] },
-      ],
-    };
-    const el = buildD1ExplainRight(withLadder, 'en');
-    document.body.appendChild(el);
-    expect(labelsOf(el)).toContain('확장 사다리');
-    expect(el.textContent).toContain('A coffee.');
-    expect(el.textContent).toContain('Can I get a coffee, please?');
-    expect(labelsOf(el)).toContain('이어 말하기 (끝부터)');
-  });
-
-  it('ladder 없음/1단: 확장 사다리 섹션 hidden', () => {
-    expect(labelsOf(buildD1ExplainRight(ex, 'en'))).not.toContain('확장 사다리');
-    expect(labelsOf(buildD1ExplainRight({ ...ex, ladder: [{ en: 'A.', ko: 'ㄱ', kr: '어' }] }, 'en'))).not.toContain('확장 사다리');
-  });
 });
 
 // ── 2026-06-10 녹음 상태·점수 안착·반복 진행 (사용자 지시) ──

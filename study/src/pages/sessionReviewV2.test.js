@@ -1,6 +1,16 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
+
+// 체이닝 실경로(비-demo) 검증용 — 데모 경로 테스트들은 services 를 타지 않으므로 영향 없음.
+vi.mock('../services/sessionAnalyze.js', () => ({
+  startMicRecording: vi.fn(async () => ({ controller: { stop() {} } })),
+  stopAndAnalyze: vi.fn(async () => ({ score: 88, omissions: [] })),
+}));
+vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
+
 import { renderSessionReviewV2, pickReviewRung, clozeBlank } from './sessionReviewV2.js';
+
+const tick = () => new Promise((r) => setTimeout(r, 0));
 
 function renderEmpty(size) {
   document.body.innerHTML = '<div id="root"></div>';
@@ -156,6 +166,26 @@ describe('renderSessionReviewV2 — 체이닝 재시험 렌더', () => {
       vi.advanceTimersByTime(700);
       expect(host.querySelector('.vr-chain').textContent).toContain('체이닝 완료');
     } finally { vi.useRealTimers(); }
+  });
+
+  // 체이닝 발화는 '오늘 발화'로 세지만, 복습의 관문은 '떠올려 말하기'이므로 회상 게이트에는 안 넣는다.
+  it('체이닝 발화 → tried/pronScores 집계, 회상 게이트(recLog)는 미반영', async () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: 'k', chunks: CHUNKS, chain: CHAIN };
+    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation };
+    const state = { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0, passed: 0, pronScores: [] };
+    renderSessionReviewV2(host, state, {});
+
+    const rec = host.querySelector('.vr-chain-full button[aria-label="녹음"]');
+    rec.click(); await tick();                     // 녹음 시작
+    rec.click(); await tick(); await tick();       // 멈춤 + 채점 (mock: score 88, omissions [])
+
+    expect(state.tried).toBe(1);
+    expect(state.pronScores).toEqual([88]);
+    expect(state.passed).toBe(1);                  // 88 >= 80
+    expect(state.recLog.c1).toBeUndefined();       // 회상 게이트엔 미포함
   });
 });
 

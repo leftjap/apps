@@ -285,9 +285,11 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
 
   // ── (선택) 확장 사다리 ladder: base 청크를 단당 1요소씩 키우는 수직 확장 (guide §6.3 — video2 '핵심절→확장' +
   // sentence-expansion). 선택 필드 → 미존재 시 skip(하위호환). 존재 시 구조·kr음차·단조 확장만 검사(내용 판단은 rubric).
+  // ⚠️ ladder 는 2026-07-09 폐기 (렌더 제거). chain(무자막 청각 확장)으로 대체. 구조 검사는 하위호환 유지.
   for (const c of exprs) {
     const ladder = c.explanation?.ladder;
     if (ladder === undefined) continue;
+    warnings.push(`${c.id}: ladder 는 폐기된 필드입니다 (렌더 제거됨) — chain{target,chunks,ko} 를 쓰세요.`);
     if (!Array.isArray(ladder) || ladder.length < 2 || ladder.length > 6) {
       errors.push(`${c.id}: ladder 는 2~6단 배열이어야 함 (현재 ${Array.isArray(ladder) ? `${ladder.length}단` : typeof ladder})`);
       continue;

@@ -338,93 +338,6 @@ function drillsSection(drills, { onListen, onRecord } = {}) {
   return s;
 }
 
-// 확장 사다리 (ladder, guide §6.3): base 청크를 단당 1요소씩 키우는 수직 확장.
-// 각 단 듣기(shadow), 마지막 단(완성 발화)만 녹음. onListen/onRecord 는 drills 와 동일 배선.
-function ladderSection(ladder, { onListen, onRecord } = {}) {
-  if (!Array.isArray(ladder) || ladder.length < 2) return null;
-  const s = document.createElement('div');
-  s.className = 'ex-section';
-  const lab = document.createElement('div');
-  lab.className = 'ex-label';
-  lab.textContent = '확장 사다리';
-  const sub = document.createElement('div');
-  sub.className = 'ex-text';
-  sub.textContent = '짧게 → 길게. 한 단씩 듣고 따라 말해 보세요.';
-  s.append(lab, sub);
-  ladder.forEach((rung, i) => {
-    if (!rung || typeof rung !== 'object') return;
-    const row = document.createElement('div');
-    row.className = 'ladder-rung';
-    const step = document.createElement('span');
-    step.className = 'ladder-step';
-    step.textContent = String(i + 1);
-    const body = document.createElement('div');
-    body.className = 'ladder-body';
-    const en = document.createElement('div');
-    en.className = 'ladder-en';
-    en.textContent = rung.en || '';
-    body.appendChild(en);
-    if (rung.kr) {
-      const kr = document.createElement('div');
-      kr.className = 'ladder-kr';
-      kr.textContent = rung.kr;
-      body.appendChild(kr);
-    }
-    if (rung.ko) {
-      const ko = document.createElement('div');
-      ko.className = 'ladder-ko';
-      ko.textContent = rung.ko;
-      body.appendChild(ko);
-    }
-    // back-chaining pass: 끝→처음 tail-anchored 청크 (연결발화 훈련). body 아래에 서브블록.
-    if (Array.isArray(rung.back) && rung.back.length >= 2) {
-      const bwrap = document.createElement('div');
-      bwrap.className = 'ladder-back';
-      const blab = document.createElement('div');
-      blab.className = 'ladder-back-label';
-      blab.textContent = '이어 말하기 (끝부터)';
-      bwrap.appendChild(blab);
-      rung.back.forEach((bc) => {
-        if (!Array.isArray(bc)) return;
-        const brow = document.createElement('div');
-        brow.className = 'ladder-back-chunk';
-        const ben = document.createElement('span');
-        ben.className = 'ladder-back-en';
-        ben.textContent = bc[0] || '';
-        const bkr = document.createElement('span');
-        bkr.className = 'ladder-back-kr';
-        bkr.textContent = bc[1] || '';
-        const blisten = document.createElement('button');
-        blisten.type = 'button';
-        blisten.className = 'drill-listen';
-        blisten.textContent = '듣기';
-        blisten.addEventListener('click', () => { if (onListen) onListen(bc[0] || ''); });
-        brow.append(ben, bkr, blisten);
-        bwrap.appendChild(brow);
-      });
-      body.appendChild(bwrap);
-    }
-    const acts = document.createElement('div');
-    acts.className = 'drill-acts';
-    const listen = document.createElement('button');
-    listen.type = 'button';
-    listen.className = 'drill-listen';
-    listen.textContent = '듣기';
-    listen.addEventListener('click', () => { if (onListen) onListen(rung.en || ''); });
-    acts.appendChild(listen);
-    if (i === ladder.length - 1 && onRecord) {
-      const rec = document.createElement('button');
-      rec.type = 'button';
-      rec.className = 'drill-rec';
-      rec.textContent = '녹음';
-      rec.addEventListener('click', () => { onRecord(rung.en || '', rec); });
-      acts.appendChild(rec);
-    }
-    row.append(step, body, acts);
-    s.appendChild(row);
-  });
-  return s;
-}
 
 export function createExplanationPanel({ explanation, lang, onListen, onRecord } = {}) {
   void lang;
@@ -470,8 +383,6 @@ export function createExplanationPanel({ explanation, lang, onListen, onRecord }
     if (ex.key) panelEl.appendChild(section('핵심 포인트', String(ex.key)));
     const drillsEl = drillsSection(ex.drills, { onListen, onRecord });
     if (drillsEl) panelEl.appendChild(drillsEl);
-    const ladderEl = ladderSection(ex.ladder, { onListen, onRecord });
-    if (ladderEl) panelEl.appendChild(ladderEl);
     if (ex.situation) panelEl.appendChild(section('이런 상황에서 써요', String(ex.situation)));
     const g = grammarSection(ex.grammar);
     if (g) panelEl.appendChild(g);

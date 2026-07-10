@@ -226,9 +226,9 @@ function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
  * 단계 = chunks 누적. 화면에 영어를 보여주지 않는다(= 인출 강제, "보고 따라 읽기" 폐기).
  * 재생마다 화자·속도를 바꿔 '리듬 통째 암기'를 막는다. 통과 판정은 발음 점수가 아니라 **단어 누락 0**
  * (Azure EnableMiscue → passesCoverage). 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
- * 게이트·통계는 건드리지 않는다 (기존 ladder 와 동일 — 메인/응용 발화만 집계).
+ * 체이닝 발화도 '오늘 발화' 1건 — onUtterance(result) 로 세션 집계·3회 게이트에 반영(응용 드릴과 동일).
  * demo(?demo=1) 는 마이크 없이 통과 시뮬. */
-function chainBlockEl(chain, lang, card, demo) {
+function chainBlockEl(chain, lang, card, demo, onUtterance) {
   const steps = buildChainSteps(chain);
   if (!steps.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
@@ -284,6 +284,7 @@ function chainBlockEl(chain, lang, card, demo) {
       row.classList.remove('recing'); recBtn.classList.remove('recing');
       const result = await stopAndAnalyze(ctrl, step.text, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      onUtterance?.(result); // 통과 여부와 무관 — 말했으면 발화 1건
       if (passesCoverage(result)) { advance(); return; }
       fails += 1;
       const miss = result?.omissions?.length ?? 0;
@@ -296,7 +297,11 @@ function chainBlockEl(chain, lang, card, demo) {
       if (demo) {
         if (row.classList.contains('recing')) return;
         row.classList.add('recing'); recBtn.classList.add('recing');
-        setTimeout(() => { row.classList.remove('recing'); recBtn.classList.remove('recing'); advance(); }, 800);
+        setTimeout(() => {
+          row.classList.remove('recing'); recBtn.classList.remove('recing');
+          onUtterance?.({ score: 90, omissions: [], weakPhonemes: [] });
+          advance();
+        }, 800);
         return;
       }
       if (recCtrl && recRow === row) { finish(); return; }
@@ -599,7 +604,22 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   ) : null;
 
   // 체이닝(chain) — 확장 사다리(ladder) 폐기 후속. 자막 없이 듣고 따라 말하기 + 단어 누락 0 통과.
-  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo);
+  // 체이닝 발화도 세션 발화 1건 (드릴과 동일하게 '오늘 발화'·3회 게이트에 집계).
+  // 단 '통과'(passed) 는 발음 점수 기준을 유지 — 체이닝의 통과/실패는 단계 진행에만 쓰인다.
+  const onChainScore = (result) => {
+    const score = Math.round(Number(result?.score) || 0);
+    state.tried = (state.tried || 0) + 1;
+    if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
+    if (!Array.isArray(state.pronScores)) state.pronScores = [];
+    state.pronScores.push(score);
+    if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
+    bumpRecLog(state, s?.id, score);
+    refreshDots();
+    ringHost.lastChild.textContent = capText();
+    refreshRecWidget();
+    handlers.saveSnapshot?.();
+  };
+  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onChainScore);
 
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
 

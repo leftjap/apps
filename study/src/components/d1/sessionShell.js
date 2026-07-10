@@ -232,24 +232,6 @@ export function buildD1ExplainRight(ex, lang, opts = {}) {
         h('div', { style: 'margin-top:4px;' }, buildD1DrillRows(drills, hl, lang, speaker))));
     }
   }
-  // 확장 사다리(ladder) — 짧게→길게 단계 확장 + 끝부터 이어 말하기(back-chaining). 2026-07-08 데스크톱 렌더 배선
-  // (phone createExplanationPanel ladderSection 과 parity). rung 은 {en,ko,kr} 이라 buildD1DrillRows 재사용.
-  if (Array.isArray(ex?.ladder) && ex.ladder.length >= 2) {
-    const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
-    const back = ex.ladder.find((r) => Array.isArray(r?.back) && r.back.length >= 2)?.back;
-    kids.push(h('div', { style: 'margin-top:24px;' },
-      h('div', { class: 'd1-panel-lab' }, '확장 사다리'),
-      h('div', { style: 'font-size:12.5px;color:var(--mut);margin-top:2px;margin-bottom:8px;' }, '짧게 → 길게. 한 단씩 듣고 따라 말해 보세요.'),
-      h('div', {}, buildD1DrillRows(ex.ladder, hl, lang, speaker)),
-      back ? h('div', { style: 'margin-top:14px;' },
-        h('div', { class: 'd1-panel-lab' }, '이어 말하기 (끝부터)'),
-        h('div', { style: 'display:grid;gap:6px;margin-top:4px;' }, back.map((bc) => h('div', { style: 'display:flex;gap:10px;align-items:center;' },
-          h('span', { style: 'font-size:14px;font-weight:600;' }, Array.isArray(bc) ? (bc[0] || '') : ''),
-          Array.isArray(bc) && bc[1] ? h('span', { style: 'font-size:12px;color:var(--faint);' }, bc[1]) : null,
-          h('button', { class: 'd1-chip', style: 'color:var(--mut);', onClick: () => { const t = Array.isArray(bc) ? bc[0] : ''; if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang, speaker }); } }, d1Icon('play', 12), '듣기'),
-        )))) : null,
-    ));
-  }
   const sects = [];
   const situation = ex?.situation || ex?.whenToUse;
   if (situation) sects.push(d1Section('이런 상황에서 써요', String(situation)));

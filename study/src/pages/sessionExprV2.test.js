@@ -77,6 +77,23 @@ describe('sessionExprV2 — 체이닝(chain) 렌더', () => {
     expect(typeof v1.rate).toBe('number');
   });
 
+  // 체이닝 발화도 응용 드릴과 동일하게 '오늘 발화' + 3회 게이트에 집계 (2026-07-10).
+  it('체이닝 발화 → tried/passed/pronScores/recLog 집계 (다음-표현 게이트 포함)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const state = chainState(true);
+      renderSessionExprV2(host, state, {});
+      chainRows(host)[0].querySelector('button[aria-label="녹음"]').click();
+      vi.advanceTimersByTime(900);
+      expect(state.tried).toBe(1);
+      expect(state.pronScores).toEqual([90]);
+      expect(state.passed).toBe(1);            // 90 >= 80
+      expect(state.recLog.e1?.count).toBe(1);  // 3회 게이트에 포함
+      expect(host.querySelector('.vs-rec .n').textContent).toBe('1'); // '오늘 발화' 위젯 갱신
+    } finally { vi.useRealTimers(); }
+  });
+
   it('통과하면 다음 단계가 열리고, 통과 전 단계의 녹음 버튼은 비활성', async () => {
     vi.useFakeTimers();
     try {
