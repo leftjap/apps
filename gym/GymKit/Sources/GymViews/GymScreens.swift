@@ -52,6 +52,13 @@ public enum GymScreens {
         GymAppModel(snapshotSession: GymSession(id: "empty-demo", date: "2026-05-06", status: .active))
     }
 
+    // 홈 idle 데모 — 진행 중 세션 없음 (HomeA 분기).
+    @MainActor static func demoIdleModel() -> GymAppModel {
+        let m = demoEmptyModel()
+        if let d = GymAppModel.dayFmt.date(from: "2026-05-06") { m.referenceToday = d }
+        return m
+    }
+
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
         GymSnapshot.isActive = true
@@ -70,7 +77,8 @@ public enum GymScreens {
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))
         case "stats-ex":     return AnyView(StatsScreenView(model: demoModel(), initialTab: .exercise, embedScroll: false).frame(width: 390, height: 844))
         case "stats-body":   return AnyView(StatsScreenView(model: demoModel(), initialTab: .body, embedScroll: false).frame(width: 390, height: 844))
-        case "home":         return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
+        case "home":         return AnyView(HomeScreenView(model: demoIdleModel()).frame(width: 390, height: 844))
+        case "home-active":  return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
         case "admin":        return AnyView(AdminScreenView(model: demoModel(), initialTab: .ex, embedScroll: false).frame(width: 390, height: 844))
         case "admin-weight": return AnyView(AdminScreenView(model: demoModel(), initialTab: .weight, embedScroll: false).frame(width: 390, height: 844))
         case "admin-profile":return AnyView(AdminScreenView(model: demoModel(), initialTab: .profile, embedScroll: false).frame(width: 390, height: 844))

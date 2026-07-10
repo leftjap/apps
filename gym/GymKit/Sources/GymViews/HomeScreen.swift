@@ -19,25 +19,131 @@ public struct HomeScreenView: View {
     // 부위 밸런스 표시 순서 (mock 가슴/등/어깨/팔/코어/하체).
     static let balanceOrder = ["chest", "back", "shoulder", "arms", "core", "legs"]
 
+    // 진행 중 세션 존재 → HomeC(이어하기), 아니면 HomeA(idle) — mocks home.html 이중 분기 (spec §5-5).
+    var isActiveSession: Bool {
+        model.session.status == .active && !model.session.blocks.isEmpty
+    }
+
     public var body: some View {
+        Group {
+            if isActiveSession { homeC } else { homeA }
+        }
+        .frame(width: 390)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(GY.shell)
+    }
+
+    var homeA: some View {
         let ref = model.referenceToday
         let week = model.weekCells(around: ref)
         let last = model.lastCompletedSession()
         let thisW = model.partDoneSets(weekOffset: 0, from: ref)
         let lastW = model.partDoneSets(weekOffset: -1, from: ref)
-        let latestWeight = model.weights.first
 
         return VStack(spacing: 0) {
             header
             weekCalendar(week).padding(.horizontal, 18).padding(.top, 18)
-            lastWorkoutRow(last, ref: ref)
+            if last != nil { lastWorkoutRow(last, ref: ref) }   // empty 시 행 숨김 (home.js)
             balance(thisW: thisW, lastW: lastW)
-            weightRow(latestWeight).padding(.horizontal, 24)
-            cta
+            weightRow(model.weights.first, prev: model.weights.count >= 2 ? model.weights[1] : nil)
+                .padding(.horizontal, 24)
+            cta(empty: last == nil)
         }
-        .frame(width: 390)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(GY.shell)
+    }
+
+    // HomeC — 이어하기 카드 (mocks #cardResume, spec §5-5). 박스 전체 = 이어가기 버튼.
+    var homeC: some View {
+        let session = model.session
+        let singles = session.blocks.filter { $0.type == "single" }
+        let completed = singles.filter { !$0.sets.isEmpty && $0.sets.allSatisfy(\.done) }.count
+        // 현재 블록 = 첫 미완료 + 위치 (home.js summarizeActiveSession)
+        var curBlock: GymBlock? = nil
+        var curPos = 0
+        for (i, b) in singles.enumerated() where curBlock == nil {
+            if !(!b.sets.isEmpty && b.sets.allSatisfy(\.done)) { curBlock = b; curPos = i + 1 }
+        }
+        let curSets = curBlock?.sets ?? []
+        let curSetIdx = curSets.firstIndex { !$0.done } ?? max(0, curSets.count - 1)
+        let exName = curBlock.map { model.exerciseName($0.exerciseId) } ?? ""
+        let partNames = session.tags.map { GymExercises.partName($0) }.joined(separator: " · ")
+        let subLine = "\(partNames.isEmpty ? "" : partNames + " · ")\(singles.count)종목 중 \(max(1, curPos))번째"
+        let totalVol = model.sessionDoneVolume
+
+        return VStack(spacing: 0) {
+            header
+            weekCalendar(model.weekCells(around: model.referenceToday))
+                .padding(.horizontal, 18).padding(.top, 18)
+            Spacer()
+            Button(action: onStart) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack {
+                        HStack(spacing: 7) {
+                            Circle().fill(GY.crailBase).frame(width: 7, height: 7)
+                            Text("운동 중").font(.sans(12, 600)).tracking(0.72).foregroundStyle(GY.crailDeep)
+                        }
+                        Spacer()
+                        HStack(alignment: .firstTextBaseline, spacing: 4) {
+                            TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                                Text(Self.fmtResume(session.startTime, now: ctx.date))
+                                    .font(.mono(18, 500)).tracking(-0.36).foregroundStyle(GY.ink1)
+                            }
+                            Text("경과").font(.sans(11, 500)).foregroundStyle(GY.ink4)
+                        }
+                    }
+                    Text(exName).font(.sans(30, 700)).tracking(-0.6).lineLimit(1)
+                        .foregroundStyle(GY.ink1).padding(.top, 18)
+                        .accessibilityIdentifier("resume-exname")
+                    Text(subLine).font(.sans(13, 500)).foregroundStyle(GY.ink4)
+                        .lineLimit(1).padding(.top, 5)
+                    // 세트 세그먼트 (mock #cardResumeSeg — done ink bar / now crail 굵게)
+                    HStack(spacing: 6) {
+                        ForEach(Array(curSets.enumerated()), id: \.offset) { i, s in
+                            VStack(spacing: 7) {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .fill(i == curSetIdx ? GY.crailBase : (s.done ? GY.ink2 : .clear))
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: i == curSetIdx ? 10 : 8)
+                                    .overlay(!s.done && i != curSetIdx
+                                             ? RoundedRectangle(cornerRadius: 4).strokeBorder(GY.line, lineWidth: 1.5) : nil)
+                                Text(i == curSetIdx ? "\(i + 1)세트"
+                                     : (s.done && (s.reps ?? 0) > 0 ? "\(Int((s.weight ?? 0).rounded()))·\(s.reps ?? 0)" : "·"))
+                                    .font(.mono(10, i == curSetIdx ? 700 : 500))
+                                    .foregroundStyle(i == curSetIdx ? GY.crailDeep : GY.ink4)
+                                    .lineLimit(1)
+                            }
+                        }
+                    }
+                    .padding(.top, 20)
+                    HStack {
+                        Text("SET \(curSetIdx + 1) / \(curSets.count)")
+                            .font(.mono(13, 600)).foregroundStyle(GY.ink2)
+                        Spacer()
+                        (Text("누적 ").font(.mono(13, 500)).foregroundStyle(GY.ink4)
+                         + Text(Self.volF.string(from: NSNumber(value: totalVol)) ?? "0")
+                            .font(.mono(13, 600)).foregroundStyle(GY.crailDeep)
+                         + Text("kg").font(.mono(13, 500)).foregroundStyle(GY.ink4))
+                    }
+                    .padding(.top, 16)
+                    .overlay(alignment: .top) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+                    .padding(.top, 22)
+                }
+                .padding(.init(top: 24, leading: 24, bottom: 22, trailing: 24))
+                .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rXl))
+                .overlay(RoundedRectangle(cornerRadius: GY.rXl).strokeBorder(GY.crailBase, lineWidth: 1.5))
+                .shadow(color: Color(hex: 0x14120E).opacity(0.14), radius: 18, y: 10)
+            }
+            .buttonStyle(.plain).accessibilityIdentifier("home-resume")
+            .padding(.horizontal, 22)
+            Spacer()
+        }
+    }
+
+    static let volF: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
+    // 경과 mm:ss (home.js padStart 정합 — "18:42", "05:03").
+    static func fmtResume(_ startMillis: Int64?, now: Date) -> String {
+        guard let st = startMillis, st > 0 else { return "00:00" }
+        let total = max(0, Int(Int64(now.timeIntervalSince1970 * 1000) - st) / 1000)
+        return String(format: "%02d:%02d", total / 60, total % 60)
     }
 
     var header: some View {
@@ -78,13 +184,23 @@ public struct HomeScreenView: View {
         }
     }
 
+    static let weekdayKor = ["", "일", "월", "화", "수", "목", "금", "토"]   // Calendar.weekday 1=일
+    // 직전 운동 행 — 부위(맨몸 제외) · 요일 · N일 전 (home.js applyLastWorkoutToDom 정합).
     func lastWorkoutRow(_ last: GymSession?, ref: Date) -> some View {
-        let parts = (last?.tags ?? []).map { GymExercises.partName($0) }.joined(separator: " · ")
+        let tags = last?.tags ?? []
+        let nonCardio = tags.filter { $0 != "cardio" }
+        let parts = (nonCardio.isEmpty ? tags : nonCardio)
+            .map { GymExercises.partName($0) }.joined(separator: " · ")
         let ago: String = {
             guard let last else { return "기록 없음" }
             let d = model.daysAgo(last.date, from: ref)
-            let rel = d <= 0 ? "오늘" : (d == 1 ? "어제" : "\(d)일 전")
-            return "\(rel) · \(last.durationMin)분"
+            let since = d <= 0 ? "오늘" : "\(d)일 전"
+            let wd: String = {
+                guard let date = GymAppModel.dayFmt.date(from: last.date) else { return "" }
+                let i = GymAppModel.kst.component(.weekday, from: date)
+                return "\(Self.weekdayKor[i])요일"
+            }()
+            return [wd, since].filter { !$0.isEmpty }.joined(separator: " · ")
         }()
         return HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 9).fill(GY.sunken).frame(width: 30, height: 30)
@@ -176,12 +292,20 @@ public struct HomeScreenView: View {
             .padding(.bottom, 2)
     }
 
-    func weightRow(_ latest: GymWeight?) -> some View {
-        HStack {
+    // "직전 73.4kg · ▼0.3" (home.js applyWeightCardToDom 정합 — 증감은 보조 톤).
+    func weightRow(_ latest: GymWeight?, prev: GymWeight? = nil) -> some View {
+        let deltaText: String = {
+            guard let latest, let prev else { return "" }
+            let d = ((latest.kg - prev.kg) * 10).rounded() / 10
+            guard d != 0 else { return "" }
+            return " · \(d < 0 ? "▼" : "▲")\(Self.wf.string(from: NSNumber(value: abs(d))) ?? "\(abs(d))")"
+        }()
+        return HStack {
             VStack(alignment: .leading, spacing: 2) {
                 Text("오늘 체중").font(.sans(14, 600)).foregroundStyle(GY.ink1)
-                Text(latest.map { "직전 \(Self.wf.string(from: NSNumber(value: $0.kg)) ?? "\($0.kg)")kg" } ?? "기록 없음")
+                (Text(latest.map { "직전 \(Self.wf.string(from: NSNumber(value: $0.kg)) ?? "\($0.kg)")kg" } ?? "오늘 첫 기록")
                     .font(.sans(12, 500)).foregroundStyle(GY.ink4)
+                 + Text(deltaText).font(.sans(12, 500)).foregroundStyle(GY.ink3))
             }
             Spacer()
             Text("기록하기").font(.sans(13, 600)).foregroundStyle(GY.crailDeep)
@@ -195,9 +319,10 @@ public struct HomeScreenView: View {
     }
     static let wf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 1; return f }()
 
-    var cta: some View {
+    // CTA — 이력 없으면 "첫 운동 시작" (home.js applyStreakToDom 정합).
+    func cta(empty: Bool) -> some View {
         Button(action: onStart) {
-            Text("운동 시작").font(.sans(16, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
+            Text(empty ? "첫 운동 시작" : "운동 시작").font(.sans(16, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
                 .frame(maxWidth: .infinity).frame(height: 56)
                 .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rLg))
         }
