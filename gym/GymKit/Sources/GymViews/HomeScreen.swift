@@ -25,6 +25,7 @@ public struct HomeScreenView: View {
     }
 
     @State private var detailISO: String? = nil   // 날짜 탭 → 상세 바텀시트 (§5-2)
+    @State private var weightKeypad: KeypadContext? = nil   // 오늘 체중 입력 (§10-2 home 공유)
 
     public var body: some View {
         Group {
@@ -41,6 +42,25 @@ public struct HomeScreenView: View {
                         .onTapGesture { detailISO = nil }
                     DayDetailSheet(iso: iso, entry: model.dayEntry(iso),
                                    onDelete: { detailISO = nil }, onCancel: { detailISO = nil })
+                }
+            }
+        }
+        // 오늘 체중 입력 키패드 (home/admin 공유 — mock #weightKeypadSheet)
+        .overlay {
+            if weightKeypad != nil {
+                ZStack(alignment: .bottom) {
+                    Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                        .contentShape(Rectangle()).onTapGesture { weightKeypad = nil }
+                    KeypadSheet(ctx: weightKeypad!,
+                                refValue: model.weights.first.map { Self.wf.string(from: NSNumber(value: $0.kg)) ?? "\($0.kg)" },
+                                bare: true, doneLabel: "저장",
+                                onKey: { k in if weightKeypad != nil { KeypadBuffer.apply(k, to: &weightKeypad!) } },
+                                onQuick: { _ in }, onMode: { _ in },
+                                onDone: {
+                                    defer { weightKeypad = nil }
+                                    guard let kp = weightKeypad, let v = Double(kp.buffer), v > 0 else { return }
+                                    model.saveWeight((v * 10).rounded() / 10)
+                                })
                 }
             }
         }
@@ -331,10 +351,17 @@ public struct HomeScreenView: View {
                  + Text(deltaText).font(.sans(12, 500)).foregroundStyle(GY.ink3))
             }
             Spacer()
-            Text("기록하기").font(.sans(13, 600)).foregroundStyle(GY.crailDeep)
-                .padding(.horizontal, 17).padding(.vertical, 10)
-                .background(GY.crailTint, in: Capsule())
-                .overlay(Capsule().strokeBorder(GY.crailSoft, lineWidth: 1))
+            Button {
+                let pre = model.weights.first?.kg
+                weightKeypad = KeypadContext(field: .weight,
+                                             buffer: pre.map { Self.wf.string(from: NSNumber(value: $0)) ?? "\($0)" } ?? "",
+                                             fresh: pre != nil, pairHidesWeight: false)
+            } label: {
+                Text("기록하기").font(.sans(13, 600)).foregroundStyle(GY.crailDeep)
+                    .padding(.horizontal, 17).padding(.vertical, 10)
+                    .background(GY.crailTint, in: Capsule())
+                    .overlay(Capsule().strokeBorder(GY.crailSoft, lineWidth: 1))
+            }.buttonStyle(.plain).accessibilityIdentifier("home-weight-input")
         }
         .padding(.horizontal, 18).padding(.vertical, 14)
         .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rLg))

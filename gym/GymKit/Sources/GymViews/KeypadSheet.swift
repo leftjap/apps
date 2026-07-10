@@ -26,6 +26,8 @@ struct KeypadContext: Equatable {
 struct KeypadSheet: View {
     let ctx: KeypadContext
     let refValue: String?                                  // "직전 N" prefill 표시값
+    var bare: Bool = false                                 // 체중 입력용 — 세그·quick 없음 (mock #weightKeypadSheet)
+    var doneLabel: String = "완료"
     let onKey: (String) -> Void                            // "0"-"9" "." "del"
     let onQuick: (Double) -> Void                          // ±2.5/+5 (weight 만)
     let onMode: (GymAppModel.KeypadField) -> Void
@@ -35,22 +37,24 @@ struct KeypadSheet: View {
         VStack(spacing: 0) {
             Capsule().fill(GY.line).frame(width: 40, height: 4).padding(.bottom, 14)
             // 모드 세그 (200px, sunken)
-            HStack(spacing: 6) {
-                ForEach(ctx.pair, id: \.0.rawValue) { (mode, label) in
-                    if !(ctx.pairHidesWeight && mode == .weight) {
-                        Button { onMode(mode) } label: {
-                            Text(label).font(.sans(14, 600))
-                                .foregroundStyle(mode == ctx.field ? GY.ink1 : GY.ink3)
-                                .frame(maxWidth: .infinity).frame(height: 36)
-                                .background(mode == ctx.field ? GY.card : .clear,
-                                            in: RoundedRectangle(cornerRadius: GY.rSm))
-                        }.buttonStyle(.plain)
+            if !bare {
+                HStack(spacing: 6) {
+                    ForEach(ctx.pair, id: \.0.rawValue) { (mode, label) in
+                        if !(ctx.pairHidesWeight && mode == .weight) {
+                            Button { onMode(mode) } label: {
+                                Text(label).font(.sans(14, 600))
+                                    .foregroundStyle(mode == ctx.field ? GY.ink1 : GY.ink3)
+                                    .frame(maxWidth: .infinity).frame(height: 36)
+                                    .background(mode == ctx.field ? GY.card : .clear,
+                                                in: RoundedRectangle(cornerRadius: GY.rSm))
+                            }.buttonStyle(.plain)
+                        }
                     }
                 }
+                .padding(4).frame(width: 200)
+                .background(GY.sunken, in: RoundedRectangle(cornerRadius: GY.rMd))
+                .padding(.bottom, 14)
             }
-            .padding(4).frame(width: 200)
-            .background(GY.sunken, in: RoundedRectangle(cornerRadius: GY.rMd))
-            .padding(.bottom, 14)
             // 현재 입력값 + 캐럿 + 단위
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 Text(ctx.buffer.isEmpty ? "0" : ctx.buffer)
@@ -73,7 +77,7 @@ struct KeypadSheet: View {
             }
             .padding(.top, 8)
             // 빠른 증분 (weight 만, ±원판 단위)
-            if ctx.field == .weight {
+            if ctx.field == .weight && !bare {
                 HStack(spacing: 8) {
                     quickBtn("−2.5", -2.5)
                     quickBtn("+2.5", 2.5)
@@ -104,7 +108,7 @@ struct KeypadSheet: View {
             }
             .padding(.top, 14)
             Button(action: onDone) {
-                Text("완료").font(.sans(16, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
+                Text(doneLabel).font(.sans(16, 600)).foregroundStyle(Color(hex: 0xFBF8F2))
                     .frame(maxWidth: .infinity).frame(height: 52)
                     .background(GY.ink1, in: RoundedRectangle(cornerRadius: GY.rMd))
                     .shadow(color: Color(hex: 0x14120E).opacity(0.5), radius: 10, y: 4)

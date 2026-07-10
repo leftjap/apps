@@ -223,7 +223,7 @@ public final class GymAppModel: ObservableObject {
 
     // MARK: - 관리 (운동 목록·숨김·체중·설정)
 
-    // 부위별 관리 목록 (빌트인 삭제 제외 + 커스텀). 숨김도 포함(흐리게 표시).
+    // 부위별 관리 목록 (빌트인 삭제 제외 + 커스텀 + 관리 순서 반영). 숨김도 포함(흐리게 표시).
     public func exercisesForPart(_ part: String) -> [GymExerciseDef] {
         let builtins = GymExercises.listByPart(part).filter { !settings.deletedExercises.contains($0.id) }
         let customs = custom.filter { $0.part == part }.map {
@@ -231,7 +231,45 @@ public final class GymAppModel: ObservableObject {
                            defaultSets: $0.defaultSets, defaultReps: $0.defaultReps,
                            defaultWeight: $0.defaultWeight, met: $0.met)
         }
-        return builtins + customs
+        let all = builtins + customs
+        guard let order = settings.exerciseOrder[part], !order.isEmpty else { return all }
+        return all.enumerated()
+            .sorted { a, b in
+                let ia = order.firstIndex(of: a.element.id) ?? (order.count + a.offset)
+                let ib = order.firstIndex(of: b.element.id) ?? (order.count + b.offset)
+                return ia < ib
+            }
+            .map(\.element)
+    }
+    // 커스텀 운동 추가 (§10-1) — 활성 부위, 장비는 cardio 탭이면 cardio (exercises-admin.js 정합).
+    public func createCustomExercise(name: String, part: String) {
+        let id = "cust_" + String(UUID().uuidString.replacingOccurrences(of: "-", with: "").prefix(8)).lowercased()
+        LocalStore.upsertCustomExercise(GymCustomExercise(
+            id: id, name: name, part: part, equipment: part == "cardio" ? "cardio" : "barbell",
+            defaultSets: 3, defaultReps: 10, defaultWeight: 0, met: 4.0))
+        custom = LocalStore.loadCustomExercises()
+    }
+    // 운동 영구 삭제 (§10-1 꾹누르기) — 커스텀은 행 삭제, 빌트인은 deletedExercises 기록.
+    public func deleteExercise(_ exId: String) {
+        if custom.contains(where: { $0.id == exId }) {
+            LocalStore.saveCustomExercises(custom.filter { $0.id != exId })
+            custom = LocalStore.loadCustomExercises()
+        } else {
+            updateSettings { if !$0.deletedExercises.contains(exId) { $0.deletedExercises.append(exId) } }
+        }
+    }
+    // 부위 내 순서 영속 (§10-1 드래그 정렬).
+    public func setExerciseOrder(part: String, ids: [String]) {
+        updateSettings { $0.exerciseOrder[part] = ids }
+    }
+    // 오늘 체중 저장 — 최저 신기록 여부 반환 (§10-2 PR 팝).
+    @discardableResult
+    public func saveWeight(_ kg: Double) -> Bool {
+        let today = Self.dayFmt.string(from: Date())
+        let isPR = GymWeightLogic.isWeightPR(kg, prev: weights.filter { $0.date != today }.map(\.kg))
+        LocalStore.upsertWeight(GymWeight(date: today, kg: kg, height: settings.height))
+        weights = LocalStore.loadWeights()
+        return isPR
     }
     public func isHidden(_ exId: String) -> Bool { settings.hiddenExercises.contains(exId) }
     public func toggleHidden(_ exId: String) {
@@ -356,17 +394,9 @@ public final class GymAppModel: ObservableObject {
     public func hasExercise(_ exId: String) -> Bool {
         session.blocks.contains { $0.type == "single" && $0.exerciseId == exId }
     }
-    // 운동 선택 목록 (§6-2) — 숨김·삭제 제외 + 관리 순서 반영.
+    // 운동 선택 목록 (§6-2) — 숨김·삭제 제외 (순서는 exercisesForPart 가 반영).
     public func selectableExercises(part: String) -> [GymExerciseDef] {
-        let all = exercisesForPart(part).filter { !isHidden($0.id) }
-        guard let order = settings.exerciseOrder[part], !order.isEmpty else { return all }
-        return all.enumerated()
-            .sorted { a, b in
-                let ia = order.firstIndex(of: a.element.id) ?? (order.count + a.offset)
-                let ib = order.firstIndex(of: b.element.id) ?? (order.count + b.offset)
-                return ia < ib
-            }
-            .map(\.element)
+        exercisesForPart(part).filter { !isHidden($0.id) }
     }
     // 세트 삭제 (§6-9 세트 행 꾹누르기).
     public func removeSet(blockIdx: Int, setIdx: Int) {
