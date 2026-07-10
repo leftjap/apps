@@ -86,15 +86,15 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertEqual(hero.label, "75", "우측 존 탭 후 중량 +5 (바벨)")
     }
 
-    // 종료 = 꾹누르기 → 액션시트 "종료" → 요약 (§6-9·§7-1 — PWA 탭 무동작 정합)
+    // 종료 = 탭 → 액션시트 "종료" → 요약 (PWA #sessionEndBtn click 정합 — 실기기 사용자 보고로 수정)
     func testSessionEndToSummary() {
         let app = XCUIApplication()
         app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
         XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10))
-        app.staticTexts["session-end"].press(forDuration: 0.8)
+        app.staticTexts["session-end"].tap()   // 탭으로 열려야 한다 (longpress 도 동일 메뉴)
         let finish = app.buttons["action-finish"]
-        XCTAssertTrue(finish.waitForExistence(timeout: 5), "종료 액션시트가 떠야 한다")
+        XCTAssertTrue(finish.waitForExistence(timeout: 5), "종료 탭으로 액션시트가 떠야 한다")
         finish.tap()
         XCTAssertTrue(app.staticTexts["TOTAL"].waitForExistence(timeout: 5), "종료 후 요약(TOTAL)이 떠야 한다")
     }

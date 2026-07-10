@@ -46,9 +46,12 @@ struct SessionToolbar: View {
             }
             HStack {
                 Spacer()
+                // PWA 정합: #sessionEndBtn 은 click 과 longpress 둘 다 동일 액션시트 (session.js §585 — UX 보강).
+                // 구 구현의 "탭 무동작 정합" 주석은 오독이었음 (실기기 사용자 보고 2026-07-10).
                 Text("종료").font(.sans(14, 600)).foregroundStyle(GY.ink3)
                     .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 9)
                     .contentShape(Rectangle())
+                    .onTapGesture(perform: onEndLongPress)
                     .onLongPressGesture(minimumDuration: 0.5, perform: onEndLongPress)
                     .accessibilityIdentifier("session-end")
             }

@@ -492,7 +492,7 @@ public final class GymAppModel: ObservableObject {
         guard session.blocks.indices.contains(bi) else { return }
         session.blocks[bi] = GymSessionLogic.finishBlock(session.blocks[bi], now: Double(nowMillis()))
         selectedBlockIdx = GymSessionLogic.firstUnfinishedBlockIdx(session)
-        impact(.medium)
+        impact(.heavy)
     }
     // 블록 순서 이동 (§6-9 "이동").
     public func moveBlock(from: Int, to: Int) {
@@ -520,6 +520,7 @@ public final class GymAppModel: ObservableObject {
 
     // 세트 완료 (좌 스와이프, §6-3-1) — 커밋/자동 세트 추가/상속은 GymSessionLogic.completeSet.
     // PR 판정은 유의미 중량 세트만 (isPRCandidate — 0·맨몸 오발화 방지), spec §6-11.
+    // 햅틱: 커밋 heavy · PR heavy 더블펄스(PWA vibrate [12,28,12] 정합) — 사용자 강화 요청 2026-07-10.
     public func completeCurrentSet() {
         let bi = currentBlockIdx
         guard session.blocks.indices.contains(bi),
@@ -539,11 +540,11 @@ public final class GymAppModel: ObservableObject {
                                                        date: session.date, sessionId: session.id))
                 prs = LocalStore.loadPRs()
                 prMoment += 1
-                impact(.heavy)
+                impactPRDouble()
                 return
             }
         }
-        impact(.medium)
+        impact(.heavy)
     }
     // 이전 세트로 되돌리기 (우 스와이프 — 마지막 완료 세트를 미완료로, spec §6-3-1).
     public func revertToPreviousSet() {
@@ -553,7 +554,7 @@ public final class GymAppModel: ObservableObject {
         let sets = session.blocks[bi].sets
         guard let lastDone = sets.lastIndex(where: { $0.done }) else { return }
         session.blocks[bi].sets[lastDone].done = false   // pr 플래그는 유지 (handleRightSwipe 정합)
-        impact(.light)
+        impact(.medium)
     }
 
     // 현재 세트 중량 증감 — 장비별 증분 (spec §6-3). dir = ±1. 맨몸·유산소는 미동작.
@@ -629,11 +630,18 @@ public final class GymAppModel: ObservableObject {
 
     #if canImport(UIKit)
     private func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
-        UIImpactFeedbackGenerator(style: style).impactOccurred()
+        UIImpactFeedbackGenerator(style: style).impactOccurred(intensity: 1.0)
+    }
+    // PR 더블 펄스 — PWA navigator.vibrate([12,28,12]) 정합 (두 번 진동, 사용자 강화 요청).
+    private func impactPRDouble() {
+        let g = UIImpactFeedbackGenerator(style: .heavy)
+        g.impactOccurred(intensity: 1.0)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { g.impactOccurred(intensity: 1.0) }
     }
     #else
     private enum Dummy { case light, medium, heavy }
     private func impact(_ style: Dummy) {}
+    private func impactPRDouble() {}
     #endif
 
     // MARK: - 시드 (실 데이터 배선 전 데모 — 실 snake_case ID)
@@ -701,7 +709,9 @@ public final class GymAppModel: ObservableObject {
     }
 
     // 빈 상태일 때만 시드 (이력·체중 저장 + 이력에서 PR 유도).
+    // 스냅샷(gymshot) 전용 — 실앱에 주입하면 가짜 이력이 첫 로그인 sync 때 서버 실데이터에 push 되어 오염된다.
     static func seedIfEmpty() {
+        guard GymSnapshot.isActive else { return }
         guard LocalStore.loadSessions().isEmpty, LocalStore.loadWeights().isEmpty else { return }
         let hist = seedHistory()
         LocalStore.saveSessions(hist)

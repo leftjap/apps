@@ -60,6 +60,17 @@ public struct GymBlock: Codable, Sendable, Identifiable, Hashable {
         self.sets = sets
         self.finishedAt = finishedAt
     }
+
+    // 실서버(PWA 저장) blocks jsonb 는 블록에 id 가 없다 — 관용 디코딩 필수
+    // (2026-07-10 프로덕션 전수 스캔: block keys = type/exerciseId/sets/finishedAt).
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        type = try c.decodeIfPresent(String.self, forKey: .type) ?? "single"
+        exerciseId = try c.decodeIfPresent(String.self, forKey: .exerciseId) ?? ""
+        sets = try c.decodeIfPresent([GymSet].self, forKey: .sets) ?? []
+        finishedAt = try c.decodeIfPresent(Double.self, forKey: .finishedAt)
+    }
 }
 
 public enum GymSessionStatus: String, Codable, Sendable {

@@ -30,21 +30,23 @@ enum FlowHarness {
     }
 
     static func run(outdir: String) {
-        GymSnapshot.isActive = true
         try? FileManager.default.createDirectory(atPath: outdir, withIntermediateDirectories: true)
         let today = GymAppModel.dayFmt.string(from: Date())
-        let m = GymAppModel()
 
-        print("[0] 초기 상태 (첫 실행 시드)")
-        check(m.history.count == 4, "시드 이력 4건 로드 (실측 \(m.history.count))")
-        check(m.weights.count == 4, "시드 체중 4건 로드")
-        // 실앱 첫 실행 경로 — 데모 활성 세션은 스냅샷 전용 (실기기 첫 실행 거대 경과 타이머 결함 회귀 방지)
-        GymSnapshot.isActive = false
-        LocalStore.clearSession()
+        print("[0a] 실앱 첫 실행 경로 — 시드·데모 전무 (서버 오염·가짜 이력·거대 타이머 회귀 방지)")
+        GymSnapshot.isActive = false   // 실앱과 동일 조건 (스냅샷 스캐폴딩 미주입)
         let mApp = GymAppModel()
+        check(mApp.history.isEmpty && mApp.weights.isEmpty && mApp.prs.isEmpty,
+              "실앱 첫 실행 = 이력·체중·PR 완전 빈 상태 (시드 미주입 — sync push 오염 방지)")
         check(mApp.session.blocks.isEmpty && mApp.session.status == .active,
               "실앱 첫 실행 = 빈 활성 세션 (데모 미주입 → 홈 idle)")
         GymSnapshot.isActive = true
+        render(HomeScreenView(model: mApp), outdir, "flow-00-home-first-launch")
+
+        print("[0] 초기 상태 (스냅샷 시드)")
+        let m = GymAppModel()
+        check(m.history.count == 4, "시드 이력 4건 로드 (실측 \(m.history.count))")
+        check(m.weights.count == 4, "시드 체중 4건 로드")
         m.discardSession()   // 데모 진행 세션 정리 → 빈 활성
         check(m.session.blocks.isEmpty && m.session.status == .active, "빈 활성 세션")
         render(HomeScreenView(model: m), outdir, "flow-01-home-idle")
