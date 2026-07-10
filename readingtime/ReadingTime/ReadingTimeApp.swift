@@ -55,9 +55,24 @@ struct ReadingTimeApp: App {
             if !loggedIn {
                 UserDefaults.standard.removeObject(forKey: "rt.displayName")
                 model?.displayName = nil
+                try? FileManager.default.removeItem(at: Self.avatarURL)
+                model?.avatarImage = nil
                 Task { await cloud.signOut() }    // 로그아웃 시 Supabase 세션도 제거
             }
         }
+
+        // 아바타 사진 — 기기 로컬이 정본 (Documents 는 백업 대상이라 기기 교체 시 따라옴).
+        // 저장 데이터는 이미 256px PNG (setAvatar 가 규격화) → 로드 시 재규격화는 사실상 무비용.
+        if let raw = try? Data(contentsOf: Self.avatarURL) {
+            model.avatarImage = RTAppModel.prepareAvatar(raw)?.image
+        }
+        model.onAvatarChange = { data in
+            do { try data.write(to: Self.avatarURL) } catch {
+                Logger(subsystem: "com.leftjap.readingtime", category: "avatar")
+                    .error("아바타 저장 실패: \(String(describing: error), privacy: .public)")
+            }
+        }
+
         if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
             // 표시 이름: 마지막 로그인 값으로 즉시 표시 (오프라인 콜드스타트) — restore() 가 갱신
             model.displayName = UserDefaults.standard.string(forKey: "rt.displayName")
@@ -125,6 +140,11 @@ struct ReadingTimeApp: App {
         _model = StateObject(wrappedValue: model)
         _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
     }
+
+    /// 아바타 사진 파일 (256px PNG) — Documents 라 iCloud/iTunes 백업 포함
+    private static let avatarURL = FileManager.default
+        .urls(for: .documentDirectory, in: .userDomainMask)[0]
+        .appendingPathComponent("rt-avatar.png")
 
     /// 로그인/복원 성공 시 auth 표시 이름을 모델에 주입 + UserDefaults 영속 (오프라인 콜드스타트용)
     @MainActor private static func applyDisplayName(from cloud: CloudStore, to model: RTAppModel?) {

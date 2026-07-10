@@ -1,22 +1,26 @@
 import SwiftUI
+import PhotosUI
 
 // 시안 외 스펙 시트 3종 — 07 시트 문법(prototype sheetSettings·sheetSort·sheetBookMenu 대응).
 // 픽셀 캐노니컬 아님(frames 없음): 구조·수치는 prototype/styles.css 를 따른다.
 
-// 설정 — 이름 수정 / 밀리 연동 / 로그아웃
+// 설정 — 사진 / 이름 수정 / 밀리 연동 / 로그아웃
 public struct SheetSettings: View {
     var model: RTAppModel?
     @State private var confirmLogout = false
     @State private var editingName = false
     @State private var nameDraft = ""
+    @State private var photoPick: PhotosPickerItem?
     public init(model: RTAppModel? = nil) { self.model = model }
 
     public var body: some View {
         SheetShell {
             VStack(spacing: 0) {
                 SheetHead(title: "설정", onClose: { model?.closeSheet() })
-                settingRow(label: "이름", value: model?.displayNameOrDemo ?? "지훈", valueColor: RT.ink)
+                photoRow
                     .padding(.top, 18)
+                settingRow(label: "이름", value: model?.displayNameOrDemo ?? "지훈", valueColor: RT.ink)
+                    .padding(.top, 10)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         nameDraft = model?.displayNameOrDemo ?? ""
@@ -38,6 +42,36 @@ public struct SheetSettings: View {
                         Button("로그아웃", role: .destructive) { model?.logout() }
                         Button("취소", role: .cancel) {}
                     }
+            }
+        }
+    }
+
+    // 사진 — 탭하면 사진 보관함에서 고르고, 고른 즉시 아바타에 반영된다.
+    var photoRow: some View {
+        PhotosPicker(selection: $photoPick, matching: .images) {
+            HStack {
+                Text("사진").font(.sans(13, 500)).foregroundColor(RT.muted)
+                Spacer()
+                HStack(spacing: 7) {
+                    Circle().fill(RT.segBg)
+                        .frame(width: 28, height: 28)
+                        .overlay(RTAvatarFill(initial: model?.displayInitial ?? "지", photo: model?.avatarImage,
+                                              size: 28, fontSize: 11.5, initialColor: RT.body))
+                    ChevronRight(width: 7, height: 12, color: Color(hex: 0xC4BCA6))
+                }
+            }
+            .padding(EdgeInsets(top: 10, leading: 15, bottom: 10, trailing: 15))
+            .background(RT.surface)
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.hair, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .onChange(of: photoPick) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    model?.setAvatar(data)
+                }
             }
         }
     }

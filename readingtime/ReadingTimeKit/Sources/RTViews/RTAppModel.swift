@@ -1,5 +1,8 @@
 import Foundation
 import Combine
+import CoreGraphics
+import ImageIO
+import UniformTypeIdentifiers
 
 // 앱 상태 머신 — 인터랙션 정본 prototype/app.js 이식.
 // 라우트·모드·세션·시트·데모 상태 전부 여기서 관리. 화면은 이 모델을 주입받아 렌더만 한다.
@@ -96,8 +99,43 @@ public final class RTAppModel: ObservableObject {
         if let n = displayName, !n.isEmpty { return n }
         return "지훈"
     }
-    /// 아바타 이니셜 — 표시 이름 첫 글자
+    /// 아바타 이니셜 — 표시 이름 첫 글자 (사진이 없을 때 쓰는 폴백)
     public var displayInitial: String { String(displayNameOrDemo.prefix(1)) }
+
+    /// 아바타 사진 — 앱 셸이 Documents/rt-avatar.png 에서 주입.
+    /// nil = 이니셜 폴백 (rtshot/rtapp 데모 픽셀 오라클 불변)
+    @Published public var avatarImage: CGImage?
+
+    /// 사진 선택 저장 시 (설정 시트) — 앱 셸이 배선: Documents 파일 영속
+    public var onAvatarChange: ((Data) -> Void)?
+
+    /// 아바타 렌더 최대 변: 40pt 원 × 화면 스케일(≤1.13) × @3x ≈ 136px → 256 으로 충분
+    public static let avatarMaxPixel = 256
+
+    /// 원본 사진 데이터를 아바타 규격(긴 변 ≤ 256px)으로 줄이고 PNG 로 재인코딩.
+    /// 디코딩 불가한 데이터면 nil. (ImageIO — iOS/macOS 공용이라 헤드리스 테스트 가능)
+    nonisolated public static func prepareAvatar(_ raw: Data) -> (image: CGImage, data: Data)? {
+        guard let src = CGImageSourceCreateWithData(raw as CFData, nil),
+              let img = CGImageSourceCreateThumbnailAtIndex(src, 0, [
+                  kCGImageSourceCreateThumbnailFromImageAlways: true,
+                  kCGImageSourceThumbnailMaxPixelSize: avatarMaxPixel,
+              ] as CFDictionary)
+        else { return nil }
+        let out = NSMutableData()
+        guard let dest = CGImageDestinationCreateWithData(out, UTType.png.identifier as CFString, 1, nil)
+        else { return nil }
+        CGImageDestinationAddImage(dest, img, nil)
+        guard CGImageDestinationFinalize(dest) else { return nil }
+        return (img, out as Data)
+    }
+
+    /// 사진 선택 (설정 시트) — 규격화 후 모델 반영 + onAvatarChange 발화.
+    /// 디코딩 실패 시 기존 아바타·파일 유지 (rename 의 빈값 거부와 같은 규칙)
+    public func setAvatar(_ raw: Data) {
+        guard let p = Self.prepareAvatar(raw) else { return }
+        avatarImage = p.image
+        onAvatarChange?(p.data)
+    }
 
     /// 이름 수정 저장 시 (설정 시트) — 앱 셸이 배선: UserDefaults 영속 + auth user_metadata 갱신
     public var onRename: ((String) -> Void)?

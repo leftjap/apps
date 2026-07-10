@@ -19,7 +19,7 @@ public struct Screen14EmptyHome: View {
         ZStack(alignment: .top) {
             RT.paper
             RTHomeHeader {
-                RTAvatar(model?.displayInitial ?? "지")
+                RTAvatar(model?.displayInitial ?? "지", photo: model?.avatarImage)
                     .contentShape(Rectangle())
                     .onTapGesture { model?.openSheet(.settings) }
             }

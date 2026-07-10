@@ -31,14 +31,39 @@ public struct RTHomeHeader<Actions: View>: View {
     }
 }
 
-// 아바타 34 (segBg, 이니셜 13.5/800)
+// 아바타 34 (segBg, 이니셜 13.5/800) — 사진이 있으면 사진, 없으면 이니셜
 public struct RTAvatar: View {
     let initial: String
-    public init(_ initial: String) { self.initial = initial }
+    let photo: CGImage?
+    public init(_ initial: String, photo: CGImage? = nil) {
+        self.initial = initial
+        self.photo = photo
+    }
     public var body: some View {
         Circle().fill(RT.segBg)
             .frame(width: 34, height: 34)
-            .overlay(Text(initial).font(.sans(13.5, 800)).foregroundColor(RT.body))
+            .overlay(RTAvatarFill(initial: initial, photo: photo, size: 34,
+                                  fontSize: 13.5, initialColor: RT.body))
+    }
+}
+
+// 아바타 내용물 — 사진(원형 클립·꽉 채움) 또는 이니셜. 34/40 두 자리에서 공유.
+struct RTAvatarFill: View {
+    let initial: String
+    let photo: CGImage?
+    let size: CGFloat
+    let fontSize: CGFloat
+    let initialColor: Color
+    var body: some View {
+        if let photo {
+            Image(decorative: photo, scale: 1)
+                .resizable()
+                .scaledToFill()
+                .frame(width: size, height: size)
+                .clipShape(Circle())
+        } else {
+            Text(initial).font(.sans(fontSize, 800)).foregroundColor(initialColor)
+        }
     }
 }
 
