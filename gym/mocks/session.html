@@ -24,7 +24,8 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 [data-state="active"] .session-empty { display: none; }
 
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-@keyframes barPulse { 0%,100% { box-shadow: 0 0 0 0 oklch(67% 0.12 50 / 0); } 50% { box-shadow: 0 0 0 4px oklch(67% 0.12 50 / 0.16); } }
+/* 시안 gBarPulse (짐앱_작업지시서 167행) — 6px / 0.22. 네이티브 PrevRecordBars.segGlowIf 와 동일. */
+@keyframes barPulse { 0%,100% { box-shadow: 0 0 0 0 oklch(67% 0.12 50 / 0); } 50% { box-shadow: 0 0 0 6px oklch(67% 0.12 50 / 0.22); } }
 .sess-live { animation: pulse 1.8s ease-in-out infinite; }
 #cardSessTotalWrap.struck { text-decoration: line-through; opacity: 0.55; }
 @keyframes ringPulse { 0% { opacity: 0.5; transform: scale(1); } 70%,100% { opacity: 0; transform: scale(1.34); } }

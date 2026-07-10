@@ -52,6 +52,12 @@ final class GymBlockFinishUITests: XCTestCase {
         for name in ["인클라인 벤치", "벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
             XCTAssertFalse(chip(app, "current", name).exists, "\(name) 가 current 로 남으면 안 된다")
         }
+        // 레일 작업지시서 §7 — 완료 종목이 왼쪽에 잘리지 않고 전부 보인다.
+        // current 가 사라져도 ScrollView 오프셋이 남으면 앞쪽 완료 칩이 화면 밖으로 밀린다.
+        let firstDone = chip(app, "done", "인클라인 벤치")
+        XCTAssertTrue(firstDone.exists, "첫 완료 칩이 레일에 있어야 한다")
+        XCTAssertGreaterThanOrEqual(firstDone.frame.minX, 0, "첫 완료 칩이 좌측으로 잘리면 안 된다")
+        XCTAssertTrue(firstDone.isHittable, "첫 완료 칩은 보이고 누를 수 있어야 한다")
         shot(app, "20-all-done")
     }
 }

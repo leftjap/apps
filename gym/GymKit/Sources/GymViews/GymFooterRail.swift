@@ -16,6 +16,9 @@ public enum RailState {
         case .upcoming: self = .upcoming
         }
     }
+    var core: GymSessionLogic.GymRailState {
+        switch self { case .done: .done; case .current: .current; case .upcoming: .upcoming }
+    }
 }
 
 // 시안 #15a 체크 — "M2.4 6.3l2.4 2.4L9.6 3.4" (viewBox 12×12, 11px, stroke 1.7)
@@ -215,10 +218,17 @@ public struct GymFooterRail: View {
     }
 
     // 현재 카드가 뷰포트 안에 온전히 들어오면 좌측 정렬 유지, 아니면 중앙 정렬.
+    // 전 종목 완료(current 없음)면 선두로 되돌려 완료 칩이 좌측에 잘리지 않게 한다.
     func align(_ proxy: ScrollViewProxy, viewportW: CGFloat, animated: Bool) {
-        guard let idx = items.firstIndex(where: { $0.state == .current }) else { return }
-        let fits = curMaxX > 0 && curMaxX <= viewportW
-        let apply = { fits ? proxy.scrollTo(0, anchor: .leading) : proxy.scrollTo(idx, anchor: .center) }
+        guard let target = GymSessionLogic.railScrollTarget(
+            states: items.map(\.state.core),
+            currentChipMaxX: Double(curMaxX), viewportWidth: Double(viewportW)) else { return }
+        let apply = {
+            switch target {
+            case .leading: proxy.scrollTo(0, anchor: .leading)
+            case .center(let idx): proxy.scrollTo(idx, anchor: .center)
+            }
+        }
         if animated { withAnimation(.easeOut(duration: 0.3)) { apply() } } else { apply() }
     }
 

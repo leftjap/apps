@@ -184,6 +184,25 @@ public enum GymSessionLogic {
             + pending.map { GymFooterItem(index: $0.offset, state: .upcoming) }
     }
 
+    // 레일 스크롤 정렬 대상. `.id(items 위치)` 로 스크롤한다.
+    public enum GymRailScroll: Equatable, Sendable {
+        case leading        // 선두(완료 칩)부터 보이게 — 스크롤 안 함과 동치
+        case center(Int)    // 현재 칩을 트랙 중앙으로
+    }
+
+    /// 현재 칩이 뷰포트에 온전히 들어오면 선두 정렬, 벗어나면 중앙 정렬.
+    /// **현재 칩이 없으면(전 종목 완료) 선두로 되돌린다** — 안 그러면 SwiftUI ScrollView 가
+    /// 직전 오프셋을 유지해 완료 칩이 좌측으로 잘린다 (레일 작업지시서 §7 · PWA scrollLeft 0).
+    /// currentChipMaxX == 0 은 preference 미측정 — 현재 칩이 있으면 중앙 정렬로 보장.
+    public static func railScrollTarget(states: [GymRailState],
+                                        currentChipMaxX: Double,
+                                        viewportWidth: Double) -> GymRailScroll? {
+        guard !states.isEmpty else { return nil }
+        guard let idx = states.firstIndex(of: .current) else { return .leading }
+        let fits = currentChipMaxX > 0 && currentChipMaxX <= viewportWidth
+        return fits ? .leading : .center(idx)
+    }
+
     // MARK: - 세트바 표시 (resolveDotDisplay + formatSetSegment)
 
     // done/current 는 실값, 미입력 preview 는 ① 직전 세션 같은 세트번호 → (직전 세션 없을 때만)

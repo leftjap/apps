@@ -34,6 +34,7 @@ import {
   resolveDotDisplay,
   formatSetSegment,
   computeFooterOrder,
+  footerCurrentBlock,
   renderFooterPillHtml,
   centerActivePill,
   barHeightForVolume,
@@ -2645,6 +2646,53 @@ describe('computeFooterOrder — 푸터 칩 서킷 배열 [완료 좌·현재·�
     const order = computeFooterOrder(blocks, B);
     expect(order.map((e) => e.i)).toEqual([0, 1]);
     expect(order.map((e) => e.block.exerciseId)).toEqual(['A', 'B']);
+  });
+});
+
+// 전 종목 완료 후 레일에 현재(흰 카드)가 남지 않는다 (사용자 2026-07-10 실기기 보고).
+// 히어로는 마지막 블록을 read-only 로 계속 그려야 하므로 _currentBlockIdx 는 유지하고,
+// 레일에 넘기는 currentBlock 만 분리한다 (네이티브 GymSessionLogic.activeBlockIdx 와 같은 의미).
+describe('footerCurrentBlock — 전부 완료면 레일 current 없음', () => {
+  const single = (exerciseId, { finishedAt = null, setsDone = false } = {}) => {
+    const b = { type: 'single', exerciseId, sets: [{ weight: 10, reps: 5, done: setsDone }] };
+    if (finishedAt != null) b.finishedAt = finishedAt;
+    return b;
+  };
+
+  it('미완료 블록이 남아 있으면 히어로 블록을 그대로 current 로', () => {
+    const A = single('A', { finishedAt: 100 });
+    const B = single('B');
+    const session = { blocks: [A, B] };
+    expect(footerCurrentBlock(session, B)).toBe(B);
+  });
+
+  it('완료 블록을 리뷰 중이어도(다른 미완료 존재) current 유지', () => {
+    const A = single('A', { finishedAt: 100 });
+    const B = single('B');
+    const session = { blocks: [A, B] };
+    expect(footerCurrentBlock(session, A)).toBe(A);
+  });
+
+  it('전 종목 완료면 null — 마지막 종목이 흰 카드로 남지 않는다', () => {
+    const A = single('A', { finishedAt: 100 });
+    const B = single('B', { finishedAt: 200 });
+    const session = { blocks: [A, B] };
+    expect(footerCurrentBlock(session, B)).toBeNull();
+  });
+
+  it('finishedAt 없이 세트 전부 done 인 경우도 완료로 본다', () => {
+    const A = single('A', { setsDone: true });
+    const session = { blocks: [A] };
+    expect(footerCurrentBlock(session, A)).toBeNull();
+  });
+
+  it('전부 완료 → computeFooterOrder 가 완료순으로 전부 done 그룹', () => {
+    const A = single('A', { finishedAt: 200 });
+    const B = single('B', { finishedAt: 100 });
+    const session = { blocks: [A, B] };
+    const order = computeFooterOrder(session.blocks, footerCurrentBlock(session, B));
+    expect(order.map((e) => e.block.exerciseId)).toEqual(['B', 'A']); // finishedAt 오름차순
+    expect(order.map((e) => e.i)).toEqual([1, 0]);
   });
 });
 

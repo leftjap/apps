@@ -1052,7 +1052,8 @@ async function mountSessionActive(doc, block, session) {
   } catch (e) { console.error('[gymSession] PR chip', e); }
 
   // (f-5-1) spec §6-8 — footer nav pill 동적 렌더 + click handler
-  try { renderFooterPills(doc, session, block); } catch (e) { console.error('[gymSession] renderFooterPills', e); }
+  // 전 종목 완료면 레일 current 없음 (히어로만 read-only 유지) — footerCurrentBlock.
+  try { renderFooterPills(doc, session, footerCurrentBlock(session, block)); } catch (e) { console.error('[gymSession] renderFooterPills', e); }
   try { wireFooterPillClick(doc); } catch (e) { console.error('[gymSession] wireFooterPillClick', e); }
   // (f-5-3a) spec §6-9 — reorder mode drag 추적 (idempotent)
   try { wireReorderDrag(doc); } catch (e) { console.error('[gymSession] wireReorderDrag', e); }
@@ -2195,6 +2196,16 @@ export function computeFooterOrder(blocks, currentBlock) {
   const current = entries.filter(isCurrent); // 0 또는 1개
   const pending = entries.filter((e) => !isCurrent(e) && !isBlockDone(e.block));
   return [...done, ...current, ...pending];
+}
+
+/**
+ * 레일에 넘길 현재 블록 — 히어로가 쓰는 pickedBlock 과 분리한다.
+ * 전 종목 완료면 null: 히어로는 마지막 블록을 read-only 로 계속 그리지만, 레일·액션시트는
+ * 그 블록을 완료 칩으로 표시해야 한다 (사용자 2026-07-10 실기기 보고).
+ * 네이티브 GymSessionLogic.activeBlockIdx 와 같은 의미.
+ */
+export function footerCurrentBlock(session, pickedBlock) {
+  return findFirstUnfinishedBlock(session) == null ? null : pickedBlock;
 }
 
 /**
