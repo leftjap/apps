@@ -128,7 +128,7 @@ struct SessionHeader: View {
                 }
             }
         }
-        .padding(.horizontal, 24).padding(.top, 12)
+        .padding(.horizontal, 24).padding(.top, 10)   // 시안 #6b 581행 padding:10px 24px 0
         .onAppear { startRingPulseIfNeeded(record) }
         .onChange(of: record) { _, on in startRingPulseIfNeeded(on) }
         .onChange(of: pulseMoment) { _, _ in

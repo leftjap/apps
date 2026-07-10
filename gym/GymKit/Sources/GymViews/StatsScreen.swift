@@ -33,6 +33,31 @@ public struct StatsScreenView: View {
     static let vf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
     static func fmt(_ n: Double) -> String { vf.string(from: NSNumber(value: n)) ?? "\(Int(n))" }
 
+    // 캘린더 셀 — mocks/stats.html aspect-ratio:1 (본문 폭 390 · 좌우 18 · gap 4×6).
+    static let cellSide: CGFloat = (390 - 18 * 2 - 4 * 6) / 7
+    // 히트맵 색 — PWA stats.js rgba(193,99,63,a) 리터럴 정합 (crail-base 토큰과 다름, CalendarHeat 주석 참조).
+    static func heat(_ alpha: Double) -> Color { Color(hex: 0xC1633F, alpha: alpha) }
+
+    // 색 규율 (stats.js §종목·§부위) — 1위만 크레일, 나머지는 중립 회색. 부위색 팔레트 미사용.
+    static let rankGray: [Color] = [Color(hex: 0xC2BBAC), Color(hex: 0xD0CABD),
+                                    Color(hex: 0xDDD8CD), Color(hex: 0xE9E5DC)]
+    static func rankColor(_ i: Int) -> Color {
+        i == 0 ? GY.crailBase : rankGray[min(i - 1, rankGray.count - 1)]
+    }
+    // 8주 추이 팔레트 (stats.js applyWeeklyTrend — 리터럴)
+    static let trendCurrent = Color(hex: 0xC1633F)
+    static let trendPast = Color(hex: 0xDFD9CD)
+    static let trendZero = Color(hex: 0xE9E5DC)
+    static let trendLine = Color(hex: 0xB3AC9E)
+    static let trendDot = Color(hex: 0xC4BCAE)
+
+    // --shadow-float (paper.css) 근사 — 3중 레이어.
+    func shadowFloat<V: View>(_ v: V) -> some View {
+        v.shadow(color: Color(hex: 0x14120E).opacity(0.02), radius: 0, y: 1)
+            .shadow(color: Color(hex: 0x14120E).opacity(0.08), radius: 7, y: 6)
+            .shadow(color: Color(hex: 0x14120E).opacity(0.18), radius: 24, y: 24)
+    }
+
     public var body: some View {
         VStack(spacing: 0) {
             header
@@ -76,10 +101,10 @@ public struct StatsScreenView: View {
             Spacer()
             HStack(spacing: 4) {
                 Button(action: onHome) {
-                    Text("홈").font(.sans(14, 500)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
+                    Text("홈").font(.sans(14, 400)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
                 }.buttonStyle(.plain).accessibilityIdentifier("stats-home")
                 Button(action: onAdmin) {
-                    Text("관리").font(.sans(14, 500)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
+                    Text("관리").font(.sans(14, 400)).foregroundStyle(GY.ink3).padding(.horizontal, 12).padding(.vertical, 8)
                 }.buttonStyle(.plain)
             }
         }
@@ -87,11 +112,11 @@ public struct StatsScreenView: View {
     }
 
     var tabBar: some View {
-        HStack(spacing: 22) {
+        HStack(spacing: 24) {   // stats.html:75 gap:24px, margin-top:20px, border-bottom --line
             tabItem("캘린더", .cal); tabItem("종목", .exercise); tabItem("부위", .body); Spacer()
         }
-        .padding(.horizontal, 24).padding(.top, 8)
-        .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+        .padding(.horizontal, 24).padding(.top, 20)
+        .overlay(alignment: .bottom) { Rectangle().fill(GY.line).frame(height: 1) }
     }
     func tabItem(_ label: String, _ t: Tab) -> some View {
         let on = tab == t
@@ -116,7 +141,9 @@ public struct StatsScreenView: View {
         let weekday = cal.component(.weekday, from: first)   // 1=Sun..7=Sat
         let leadMon = (weekday + 5) % 7                       // Mon=0 기준 선행 빈칸
         let daysInMonth = cal.range(of: .day, in: .month, for: first)?.count ?? 30
-        let worked = model.workedDays(year: year, month: month)
+        // 볼륨 히트맵 — stats.js applyWorkedToCalendar 정합 (완료 세션만, 0kg 운동일도 worked).
+        let vols = GymCalendarHeat.dayVolumes(sessions: model.history, year: year, month: month)
+        let heatMax = vols.values.max() ?? 0
         let todayStr = GymAppModel.dayFmt.string(from: model.referenceToday)
         let cells = Array(repeating: 0, count: leadMon) + Array(1...daysInMonth)
         let rows = stride(from: 0, to: cells.count, by: 7).map { Array(cells[$0..<min($0 + 7, cells.count)]) }
@@ -125,7 +152,6 @@ public struct StatsScreenView: View {
         let thisVol = trend.last ?? 0
         let lastVol = trend.count >= 2 ? trend[trend.count - 2] : 0
         let delta = lastVol > 0 ? Int(((thisVol - lastVol) / lastVol * 100).rounded()) : 0
-        let maxVol = max(1, trend.max() ?? 1)
 
         return VStack(spacing: 0) {
             HStack {
@@ -153,23 +179,27 @@ public struct StatsScreenView: View {
                             let day = rows[r][c]
                             let dayStr = String(format: "%04d-%02d-%02d", year, month, day)
                             let isToday = dayStr == todayStr
+                            let dayVol = vols[day]
+                            let a = dayVol.map { GymCalendarHeat.alpha(dayVol: $0, maxVol: heatMax) }
                             ZStack {
                                 if day > 0 {
                                     RoundedRectangle(cornerRadius: 8)
-                                        .fill(worked.contains(day) ? GY.crailTint : Color.clear)
-                                        .overlay(isToday ? RoundedRectangle(cornerRadius: 8).strokeBorder(GY.crailBase, lineWidth: 1.5) : nil)
-                                    Text("\(day)").font(.mono(13, 500))
-                                        .foregroundStyle(worked.contains(day) ? GY.crailDeep : GY.ink3)
+                                        .fill(a.map { Self.heat($0) } ?? Color.clear)
+                                        .overlay(isToday ? RoundedRectangle(cornerRadius: 8).strokeBorder(GY.crailDeep, lineWidth: 1.5) : nil)
+                                    Text("\(day)")
+                                        .font(.mono(13, a.map { GymCalendarHeat.numberIsBold(alpha: $0) } == true ? 600 : 500))
+                                        .foregroundStyle(a.map { GymCalendarHeat.numberIsWhite(alpha: $0) } == true
+                                                         ? Color.white : (a != nil ? GY.crailDeep : GY.ink4))
                                 }
                             }
-                            .frame(maxWidth: .infinity).frame(height: 40)
+                            .frame(maxWidth: .infinity).frame(height: Self.cellSide)
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 guard day > 0 else { return }
                                 detailStep = .summary; detailISO = dayStr   // §9-1 날짜 탭 → 상세
                             }
                             .onLongPressGesture(minimumDuration: 0.5) {
-                                guard day > 0, worked.contains(day) else { return }
+                                guard day > 0, vols[day] != nil else { return }
                                 detailStep = .confirm; detailISO = dayStr   // §9-1 꾹누르기 → 삭제
                             }
                         }
@@ -187,30 +217,23 @@ public struct StatsScreenView: View {
                             (Text(Self.fmt(thisVol)).font(.mono(26, 600)).tracking(-0.52).foregroundStyle(GY.ink1)
                              + Text("kg").font(.sans(13, 400)).foregroundStyle(GY.ink4))
                             if delta != 0 {
+                                // stats.js:115 — 증가/신규 = crail-deep, 감소 = ink-3.
                                 Text("\(delta > 0 ? "+" : "")\(delta)%").font(.sans(13, 600))
-                                    .foregroundStyle(delta >= 0 ? GY.crailDeep : GY.ink4)
+                                    .foregroundStyle(delta > 0 ? GY.crailDeep : GY.ink3)
                             }
                         }
                     }
                     Spacer()
                     Text("지난 주 \(Self.fmt(lastVol))kg").font(.sans(12, 400)).foregroundStyle(GY.ink4)
                 }
-                HStack(alignment: .bottom, spacing: 8) {
-                    ForEach(trend.indices, id: \.self) { i in
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(i == trend.count - 1 ? GY.crailBase : GY.neutralBar)
-                            .frame(maxWidth: .infinity).frame(height: max(3, 90 * trend[i] / maxVol))
-                    }
-                }.frame(height: 90)
+                WeeklyTrendChart(trend: trend)
             }
-            .padding(.horizontal, 20).padding(.vertical, 18)
-            .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rLg))
+            .padding(.horizontal, 20).padding(.top, 18).padding(.bottom, 22)
+            .background(shadowFloat(RoundedRectangle(cornerRadius: GY.rLg).fill(GY.card)))
             .overlay(RoundedRectangle(cornerRadius: GY.rLg).strokeBorder(GY.line, lineWidth: 1))
-            .padding(.horizontal, 22).padding(.vertical, 24)
+            .padding(.horizontal, 22).padding(.top, 24).padding(.bottom, 28)
         }
     }
-
-    static let palette: [Color] = [GY.crailBase, GY.cloudyBase, GY.sage, GY.recordBase, GY.ink3]
 
     // 종목 pane — 최근 60일 종목별 세트 빈도.
     var exercisePane: some View {
@@ -218,20 +241,23 @@ public struct StatsScreenView: View {
         let distinct = Set(model.exerciseFrequency(days: 60, from: model.referenceToday, top: 999).map(\.exId)).count
         let maxSets = max(1, items.map(\.sets).max() ?? 1)
         return VStack(alignment: .leading, spacing: 0) {
-            Text("자주 한 운동 · 최근 60일").font(.sans(12, 400)).tracking(0.24).foregroundStyle(GY.ink3).padding(.top, 18)
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
+            Text("자주 한 운동 · 최근 60일").font(.sans(12, 400)).tracking(0.24).foregroundStyle(GY.ink3).padding(.top, 22)
+            HStack(alignment: .firstTextBaseline, spacing: 7) {
                 Text("\(distinct)").font(.mono(34, 600)).tracking(-1.02).foregroundStyle(GY.ink1)
                 Text("종목").font(.sans(14, 400)).foregroundStyle(GY.ink4)
-            }.padding(.top, 4).padding(.bottom, 10)
+            }.padding(.top, 6).padding(.bottom, 10)
             if items.isEmpty {
                 Text("최근 60일 기록 없음").font(.sans(13, 400)).foregroundStyle(GY.ink4).padding(.vertical, 20)
             }
             ForEach(items.indices, id: \.self) { i in
-                let it = items[i]; let color = Self.palette[i % Self.palette.count]
+                let it = items[i]
+                // 색 규율 (stats.js:855) — 1위만 crail, 나머지 dot=ink-3 / fill=ink-4.
+                let isTop = i == 0
                 VStack(spacing: 6) {
                     HStack(spacing: 10) {
-                        Circle().fill(color).frame(width: 8, height: 8)
-                        Text(model.exerciseName(it.exId)).font(.sans(15, 500)).foregroundStyle(GY.ink1).lineLimit(1)
+                        Circle().fill(isTop ? GY.crailBase : GY.ink3).frame(width: 8, height: 8)
+                        Text(model.exerciseName(it.exId)).font(.sans(15, 500))
+                            .foregroundStyle(isTop ? GY.crailDeep : GY.ink1).lineLimit(1)
                         Spacer()
                         (Text("\(it.sets)").font(.mono(13, 500)).foregroundStyle(GY.ink3)
                          + Text("세트").font(.sans(11, 400)).foregroundStyle(GY.ink4))
@@ -239,7 +265,8 @@ public struct StatsScreenView: View {
                     GeometryReader { g in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 3).fill(GY.sunken)
-                            RoundedRectangle(cornerRadius: 3).fill(color).frame(width: g.size.width * CGFloat(Double(it.sets) / Double(maxSets)))
+                            RoundedRectangle(cornerRadius: 3).fill(isTop ? GY.crailBase : GY.ink4)
+                                .frame(width: g.size.width * CGFloat(Double(it.sets) / Double(maxSets)))
                         }
                     }.frame(height: 6)
                 }
@@ -255,22 +282,40 @@ public struct StatsScreenView: View {
         let dist = model.partDistribution(days: 60, from: model.referenceToday)
         let total = max(1, dist.reduce(0) { $0 + $1.sets })
         let sessions = model.sessionCount(days: 60, from: model.referenceToday)
+        // 색 규율 (stats.js partRankColor) — 1위 crail, 나머지 회색 ramp.
         let parts = dist.enumerated().map { i, d in
-            (name: GymExercises.partName(d.part), color: Self.palette[i % Self.palette.count],
+            (name: GymExercises.partName(d.part), color: Self.rankColor(i),
              sets: d.sets, pct: Int((Double(d.sets) / Double(total) * 100).rounded()))
         }
         return VStack(spacing: 0) {
             Text("최근 60일 부위 분포").font(.sans(12, 400)).tracking(0.24).foregroundStyle(GY.ink3)
-                .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 18)
+                .frame(maxWidth: .infinity, alignment: .leading).padding(.top, 22)
             ZStack {
+                // conic-gradient 는 12시부터 시계방향 — AngularGradient 는 3시 시작이라 -90° 회전.
                 Circle().fill(AngularGradient(gradient: Gradient(stops: donutStops(parts.map { ($0.color, $0.sets) }, total: total)), center: .center))
+                    .rotationEffect(.degrees(-90))
                 Circle().fill(GY.shell).frame(width: 168 - 52, height: 168 - 52)
                 VStack(spacing: 1) {
                     Text("\(sessions)").font(.mono(30, 600)).tracking(-0.9).foregroundStyle(GY.ink1)
                     Text("회 운동").font(.sans(11, 500)).foregroundStyle(GY.ink4)
                 }
             }
-            .frame(width: 168, height: 168).padding(.vertical, 22)
+            .frame(width: 168, height: 168).padding(.top, 22).padding(.bottom, 6)
+            // 비율 막대 (얇은 stacked, stats.html:151) — margin:14px 4px 0, h8, radius4, bg sunken
+            if !parts.isEmpty {
+                GeometryReader { g in
+                    HStack(spacing: 0) {
+                        ForEach(parts.indices, id: \.self) { i in
+                            Rectangle().fill(parts[i].color)
+                                .frame(width: g.size.width * CGFloat(Double(parts[i].sets) / Double(total)))
+                        }
+                    }
+                }
+                .frame(height: 8)
+                .background(GY.sunken)
+                .clipShape(RoundedRectangle(cornerRadius: 4))
+                .padding(.horizontal, 4).padding(.top, 14)
+            }
             VStack(spacing: 0) {
                 ForEach(parts.indices, id: \.self) { i in
                     let p = parts[i]
@@ -279,14 +324,85 @@ public struct StatsScreenView: View {
                         Text(p.name).font(.sans(15, 500)).foregroundStyle(GY.ink1)
                         Spacer()
                         (Text("\(p.sets)").font(.mono(13, 500)) + Text("세트").font(.sans(11, 400))).foregroundStyle(GY.ink3)
-                        Text("\(p.pct)%").font(.mono(13, 600)).foregroundStyle(GY.ink1).frame(width: 42, alignment: .trailing)
+                        Text("\(p.pct)%").font(.mono(13, 600)).foregroundStyle(GY.ink1)
+                            .frame(minWidth: 38, alignment: .trailing)   // .lrow .pc min-width:38px
                     }
                     .padding(.vertical, 11)
                     .overlay(alignment: .top) { if i > 0 { Rectangle().fill(GY.lineSoft).frame(height: 1) } }
                 }
             }
+            .padding(.top, 14)   // body-list margin-top:14px
         }
         .padding(.horizontal, 24)
+    }
+
+    // 8주 추이 — stats.js applyWeeklyTrend 이식 (막대 + 선 overlay + 점 + x축 라벨).
+    // 좌표계: viewBox 320×160, padTop/padBot 14 → chartH 132, slot = W/n, barW = slot×0.55.
+    struct WeeklyTrendChart: View {
+        let trend: [Double]
+        static let padTop: CGFloat = 14, padBot: CGFloat = 14
+
+        var n: Int { max(1, trend.count) }
+        var maxV: Double { trend.max() ?? 0 }
+
+        func barRect(_ i: Int, _ size: CGSize) -> CGRect {
+            let chartH = size.height - Self.padTop - Self.padBot
+            let slot = size.width / CGFloat(n), barW = slot * 0.55
+            let ratio = maxV > 0 ? CGFloat(trend[i] / maxV) : 0
+            let h = ratio > 0 ? max(4, ratio * chartH) : max(8, chartH * 0.08)   // 0인 주 placeholder
+            return CGRect(x: CGFloat(i) * slot + (slot - barW) / 2,
+                          y: Self.padTop + (chartH - h), width: barW, height: h)
+        }
+        func point(_ i: Int, _ size: CGSize) -> CGPoint {
+            let chartH = size.height - Self.padTop - Self.padBot
+            let step = n > 1 ? size.width / CGFloat(n - 1) : 0
+            return CGPoint(x: CGFloat(i) * step,
+                           y: Self.padTop + (chartH - CGFloat(trend[i] / max(maxV, 1)) * chartH))
+        }
+
+        var body: some View {
+            VStack(spacing: 8) {
+                GeometryReader { g in
+                    ZStack(alignment: .topLeading) {
+                        ForEach(trend.indices, id: \.self) { i in
+                            let r = barRect(i, g.size)
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(trend[i] <= 0 ? StatsScreenView.trendZero
+                                      : (i == n - 1 ? StatsScreenView.trendCurrent : StatsScreenView.trendPast))
+                                .frame(width: r.width, height: r.height)
+                                .offset(x: r.minX, y: r.minY)
+                        }
+                        if maxV > 0 {
+                            Path { p in
+                                p.move(to: point(0, g.size))
+                                for i in 1..<n { p.addLine(to: point(i, g.size)) }
+                            }
+                            .stroke(StatsScreenView.trendLine,
+                                    style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round))
+                            ForEach(trend.indices, id: \.self) { i in
+                                let cur = i == n - 1
+                                let rad: CGFloat = cur ? 4 : 2.5
+                                let pt = point(i, g.size)
+                                Circle().fill(cur ? StatsScreenView.trendCurrent : StatsScreenView.trendDot)
+                                    .overlay(cur ? Circle().strokeBorder(Color(hex: 0xFFFDF8), lineWidth: 2) : nil)
+                                    .frame(width: rad * 2, height: rad * 2)
+                                    .offset(x: pt.x - rad, y: pt.y - rad)
+                            }
+                        }
+                    }
+                }
+                .frame(height: 150)   // stats.html:118 svg height:150px (라벨은 margin-top 8 아래)
+                HStack(spacing: 0) {   // x축 라벨 — 첫 칸·이번주 + 짝수 주만 (stats.js:780)
+                    ForEach(trend.indices, id: \.self) { i in
+                        let ago = n - 1 - i
+                        let label = i == n - 1 ? "이번" : (i == 0 ? "\(n - 1)주전" : (ago % 2 == 0 ? "\(ago)주전" : ""))
+                        Text(label).font(.mono(10, 400)).foregroundStyle(GY.ink4)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.horizontal, 2)
+            }
+        }
     }
 
     func donutStops(_ parts: [(Color, Int)], total: Int) -> [Gradient.Stop] {

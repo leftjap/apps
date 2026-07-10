@@ -6,14 +6,42 @@ import GymCore
 
 public enum RailState { case done, current, upcoming }
 
+// 시안 #15a 체크 — "M2.4 6.3l2.4 2.4L9.6 3.4" (viewBox 12×12, 11px, stroke 1.7)
+struct CheckGlyph: Shape {
+    static func stroke(_ size: CGFloat) -> StrokeStyle {
+        StrokeStyle(lineWidth: 1.7 * size / 12, lineCap: .round, lineJoin: .round)
+    }
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height) / 12
+        var p = Path()
+        p.move(to: CGPoint(x: 2.4 * s, y: 6.3 * s))
+        p.addLine(to: CGPoint(x: 4.8 * s, y: 8.7 * s))
+        p.addLine(to: CGPoint(x: 9.6 * s, y: 3.4 * s))
+        return p
+    }
+}
+
+// 시안 #15a ＋ — "M10 4v12M4 10h12" (viewBox 20×20, 19px, stroke 1.7)
+struct PlusGlyph: Shape {
+    static func stroke(_ size: CGFloat) -> StrokeStyle {
+        StrokeStyle(lineWidth: 1.7 * size / 20, lineCap: .round)
+    }
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height) / 20
+        var p = Path()
+        p.move(to: CGPoint(x: 10 * s, y: 4 * s)); p.addLine(to: CGPoint(x: 10 * s, y: 16 * s))
+        p.move(to: CGPoint(x: 4 * s, y: 10 * s)); p.addLine(to: CGPoint(x: 16 * s, y: 10 * s))
+        return p
+    }
+}
+
 // 완료(done) — 눌린 회색 칩 + 무채색 체크 (§4.2)
 struct DoneChip: View {
     let name: String
     var body: some View {
         HStack(spacing: 7) {
-            Image(systemName: "checkmark")
-                .font(.system(size: 8.5, weight: .semibold))
-                .foregroundStyle(Color(oklch: 0.72, 0.006, 60))
+            CheckGlyph().stroke(Color(oklch: 0.72, 0.006, 60), style: CheckGlyph.stroke(11))
+                .frame(width: 11, height: 11)
             Text(name)
                 .font(.sans(14.5, 500))
                 .lineLimit(1)
@@ -65,8 +93,8 @@ struct CurrentChip: View {
                 LinearGradient(colors: [Color(hex: 0xFFFFFF), Color(hex: 0xFAF9F5)],
                                startPoint: .top, endPoint: .bottom),
                 in: RoundedRectangle(cornerRadius: 15))
-            .overlay(alignment: .top) {  // 상단 하이라이트 오버레이 (fp-chip__hl)
-                RoundedRectangle(cornerRadius: 15)
+            .overlay(alignment: .top) {  // 상단 하이라이트 오버레이 (fp-chip__hl — radius 15 15 0 0)
+                UnevenRoundedRectangle(cornerRadii: .init(topLeading: 15, topTrailing: 15))
                     .fill(LinearGradient(colors: [.white.opacity(0.7), .clear], startPoint: .top, endPoint: .bottom))
                     .frame(height: 25)
                     .allowsHitTesting(false)
@@ -91,9 +119,8 @@ struct AddExerciseButton: View {
     var action: () -> Void = {}
     var body: some View {
         Button(action: action) {
-            Image(systemName: "plus")
-                .font(.system(size: 17, weight: .medium))
-                .foregroundStyle(GY.ink3)
+            PlusGlyph().stroke(GY.ink3, style: PlusGlyph.stroke(19))
+                .frame(width: 19, height: 19)
                 .frame(width: 44, height: 44)
                 .background(GY.card, in: Circle())
                 .overlay(Circle().strokeBorder(GY.line, lineWidth: 1))

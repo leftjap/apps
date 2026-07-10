@@ -121,7 +121,7 @@ struct ExerciseVolumeRing: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {  // .exnums — 초과 시 crail 숫자 + 취소선
                 CountUpVolumeText(value: curVol, tint: over.isOver ? GY.crailDeep : GY.ink1)
                 (Text("/ \(totVol)").font(.mono(13.5, 500))
-                 + Text("kg").font(.mono(13.5, 500)))
+                 + Text("kg").font(.mono(10.5, 500)))   // .tot .u — 시안 #6b 680행 / mocks 70행 모두 10.5
                     .foregroundStyle(GY.ink4).lineLimit(1).fixedSize()
                     .strikethrough(over.isOver)
                     .opacity(over.isOver ? 0.55 : 1)

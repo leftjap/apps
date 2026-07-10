@@ -56,3 +56,25 @@ import Testing
         #expect(b.parts.allSatisfy { $0.key != "cardio" })
     }
 }
+
+// 유산소 행 문구 — home.js applyBalanceToDom 정합 (행은 항상 표시, 0회 시 "기록 없음"·델타 숨김).
+@Suite struct CardioRowTextTests {
+    @Test func subTextShowsMinutesAndCount() {
+        #expect(GymHomeLogic.cardioSubText(min: 84, count: 3) == "84분 · 3회")
+    }
+    @Test func subTextOmitsMinutesWhenZero() {
+        #expect(GymHomeLogic.cardioSubText(min: 0, count: 2) == "2회")
+    }
+    @Test func subTextIsEmptyLabelWhenNoCardio() {
+        #expect(GymHomeLogic.cardioSubText(min: 0, count: 0) == "기록 없음")
+        #expect(GymHomeLogic.cardioSubText(min: 30, count: 0) == "기록 없음")
+    }
+    @Test func deltaTextHiddenWhenNoCardioOrNoChange() {
+        #expect(GymHomeLogic.cardioDeltaText(count: 0, deltaMin: 12) == nil)
+        #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: 0) == nil)
+    }
+    @Test func deltaTextArrowsMatchSign() {
+        #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: 12) == "▲12분")
+        #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: -5) == "▼5분")
+    }
+}

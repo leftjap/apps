@@ -85,10 +85,11 @@ private let fontsRegistered: Bool = {
         #expect(rendersMagenta(SheetSettings(model: m)) == true)
     }
 
-    /// 메뉴가 닫혀 있으면 홈 헤더엔 아바타가 없다 (기어 아이콘) — 사진이 새는지 확인
-    @Test func closedHomeHeaderHasNoPhoto() {
+    /// 홈 헤더 우상단 (34pt) — 기어 아이콘 자리를 아바타가 대신한다 (SCREENS.md §02 "아바타(이니셜 34)")
+    @Test func homeHeaderShowsPhoto() {
         let m = RTAppModel()
-        m.avatarImage = magentaAvatar()
         #expect(rendersMagenta(Screen02Home(model: m, menuOpen: false)) == false)
+        m.avatarImage = magentaAvatar()
+        #expect(rendersMagenta(Screen02Home(model: m, menuOpen: false)) == true)
     }
 }

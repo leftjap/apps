@@ -91,6 +91,20 @@ public enum GymHomeLogic {
                              focusKey: focusKey, max: maxBar)
     }
 
+    // MARK: - 유산소 행 문구 (home.js applyBalanceToDom — 행은 항상 표시)
+
+    /// "84분 · 3회" / "2회"(분 0) / "기록 없음"(회 0).
+    public static func cardioSubText(min: Int, count: Int) -> String {
+        guard count > 0 else { return "기록 없음" }
+        return min > 0 ? "\(min)분 · \(count)회" : "\(count)회"
+    }
+
+    /// "▲12분" / "▼5분". 유산소가 없거나 증감이 없으면 nil (표시 안 함).
+    public static func cardioDeltaText(count: Int, deltaMin: Int) -> String? {
+        guard count > 0, deltaMin != 0 else { return nil }
+        return "\(deltaMin > 0 ? "▲" : "▼")\(abs(deltaMin))분"
+    }
+
     // MARK: - HomeC "다음" 미리보기 (home.js summarizeNextBlocks + formatBlockPreview 정합)
 
     // 미완료 판정 — home.js isSingleBlockIncomplete: single + finishedAt 없음 + (빈 세트 or 일부 미완료).

@@ -84,7 +84,17 @@ stray 로 무시 — 실제 잠금은 protected data 신호가 동시각 도착�
 - PHPicker 그리드 셀(iOS 26.5): `app.images.matching(identifier: "PXGGridLayout-Info")`,
   hittable=false 라 `.coordinate(withNormalizedOffset:).tap()` 필요. 상단 온보딩 배너는 무시 가능.
 
-## 10. 무료 Personal 팀: Time Sensitive Notifications capability 불가
+## 10. 실기기 `--capture`: 잠긴 기기는 흰 화면, 그리고 **예전 rtscreen.png 를 그대로 회수한다**
+`devicectl process launch` 는 잠긴 기기에서도 "Launched application" 을 찍지만, 화면이 렌더되지
+않아 `captureWindow()` 가 흰 이미지를 쓰거나 아예 안 쓴다. 그 상태로 `copy from` 하면 **며칠 전
+캡처가 그대로 딸려온다** — 구 UI 스크린샷을 최신 실행 결과로 오독하게 된다 (2026-07-10, 14:27
+파일을 17:36 결과로 착각해 "설치가 반영 안 됐다"고 오진).
+- **판정**: 회수한 파일의 mtime 을 반드시 확인. 또는 실행 전에 sentinel 이미지로 덮어써 둔다:
+  `devicectl device copy to … --source sentinel.png --destination Documents/rtscreen.png`
+- 기기가 자면 `launch` 자체가 `CoreDeviceError 4000 (device disconnected immediately)` 로 실패.
+  설치(`install app`)는 성공해도 실행·캡처는 별개 — 설치 성공을 렌더 검증으로 쓰지 말 것.
+
+## 11. 무료 Personal 팀: Time Sensitive Notifications capability 불가
 `com.apple.developer.usernotifications.time-sensitive` entitlement 추가 시 실기기 프로비저닝
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
 표시가 되므로 시뮬 성공 ≠ 실기기 자격. 코드의 `interruptionLevel = .timeSensitive` 자체는

@@ -123,6 +123,7 @@ struct SessionHero: View {
                 .accessibilityIdentifier("hero-reps")
             Text(unit).font(.sans(16, 500)).foregroundStyle(GY.ink3)
         }
+        .padding(.vertical, 6)   // 시안 #6b 658행 padding:6px 0 (히트 영역)
         .padding(.top, 18)
         .frame(maxWidth: .infinity)
     }

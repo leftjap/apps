@@ -118,22 +118,15 @@ public struct Screen02Home: View {
                     .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 4)
                     .contentShape(Circle())
                     .onTapGesture { model?.openSheet(.addbook) }
-                Circle().fill(RT.segBg)
-                    .frame(width: 34, height: 34)
-                    .overlay(Circle().stroke(Color(hex: 0xE0D8C4), lineWidth: 1))
-                    .overlay(gearIcon)
+                // 우상단은 아바타 (SCREENS.md §02 "아바타(이니셜 34)") — 탭하면 설정 메뉴
+                RTAvatar(model?.displayInitial ?? "지", photo: avatar)
+                    .accessibilityIdentifier("home.avatar")
+                    .accessibilityValue(avatar == nil ? "initial" : "photo")
                     .contentShape(Circle())
                     .onTapGesture { menuOpen = true }
             }
         }
         .padding(EdgeInsets(top: 52, leading: 22, bottom: 0, trailing: 22))
-    }
-
-    var gearIcon: some View {
-        RTIcon([
-            "M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z",
-            "M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6z",
-        ], size: 17, stroke: RT.body, lineWidth: 1.8)
     }
 
     // ── 히어로 스테이지 (칩 + 책 + 제목) ──

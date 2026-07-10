@@ -84,7 +84,7 @@ public struct HomeScreenView: View {
             if last != nil { lastWorkoutRow(last, ref: ref) }   // empty 시 행 숨김 (home.js)
             balance(bal)
             weightRow(model.weights.first, prev: model.weights.count >= 2 ? model.weights[1] : nil)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 24).padding(.top, 18)   // 시안 #6a — 밸런스와 체중 카드 사이 18px
             cta(empty: last == nil)
         }
     }
@@ -235,8 +235,9 @@ public struct HomeScreenView: View {
                         Text("\(d.num)").font(.mono(14, 500))
                             .foregroundStyle(d.isToday ? .white : (d.worked ? GY.ink2 : GY.ink4))
                         if d.worked {
+                            // 시안 #6a 실측 — 도트 중심이 28px 원 중심에서 19px 아래 (원 밖).
                             Circle().fill(d.isToday ? Color.white : GY.crailBase)
-                                .frame(width: 4, height: 4).offset(y: 13)
+                                .frame(width: 4, height: 4).offset(y: 19)
                         }
                     }.frame(height: 28)
                 }
@@ -271,7 +272,8 @@ public struct HomeScreenView: View {
         }()
         return HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 9).fill(GY.sunken).frame(width: 30, height: 30)
-                .overlay(Image(systemName: "dumbbell.fill").font(.system(size: 12)).foregroundStyle(GY.ink3))
+                .overlay(BarbellGlyph().stroke(GY.ink3, style: BarbellGlyph.stroke(17))
+                    .frame(width: 17, height: 17))
             Text("직전 운동").font(.sans(12, 600)).tracking(0.24).foregroundStyle(GY.ink4)
             Text(parts.isEmpty ? "—" : parts).font(.sans(15, 700)).foregroundStyle(GY.ink1).lineLimit(1)
             Spacer()
@@ -323,53 +325,69 @@ public struct HomeScreenView: View {
                 }
             }
             .padding(.top, 14)
-            // 페어 컬럼 — [지난주 고스트 12px(prev>0만)] + [이번주 잉크 15px], 웨이브 진입 (§4.1·§4.2)
-            HStack(alignment: .bottom, spacing: 0) {
-                ForEach(Array(parts.enumerated()), id: \.element.key) { i, p in
-                    let isFocus = p.key == focusPid
-                    VStack(spacing: 7) {
-                        Text("\(p.sets)").font(.mono(14, 700)).foregroundStyle(isFocus ? GY.crailDeep : GY.ink1)
-                        HStack(alignment: .bottom, spacing: 3) {
-                            if p.prevSets > 0 {
-                                UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4, topTrailing: 4))
-                                    .fill(Color(oklch: 0.91, 0.012, 65))
-                                    .frame(width: 12, height: CGFloat((Double(p.prevSets) * pxPerSet).rounded()))
+            // .bal-chart — flex:1 + justify-content:center: 차트만 남는 공간 중앙에 (시안 #6a 실측).
+            VStack(alignment: .leading, spacing: 0) {
+                Spacer(minLength: 0)
+                // 페어 컬럼 — [지난주 고스트 12px(prev>0만)] + [이번주 잉크 15px], 웨이브 진입 (§4.1·§4.2)
+                HStack(alignment: .bottom, spacing: 0) {
+                    ForEach(Array(parts.enumerated()), id: \.element.key) { i, p in
+                        let isFocus = p.key == focusPid
+                        VStack(spacing: 7) {
+                            Text("\(p.sets)").font(.mono(14, 700)).foregroundStyle(isFocus ? GY.crailDeep : GY.ink1)
+                            HStack(alignment: .bottom, spacing: 3) {
+                                if p.prevSets > 0 {
+                                    UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4, topTrailing: 4))
+                                        .fill(Color(oklch: 0.91, 0.012, 65))
+                                        .frame(width: 12, height: CGFloat((Double(p.prevSets) * pxPerSet).rounded()))
+                                }
+                                BalanceInkBar(height: CGFloat((Double(p.sets) * pxPerSet).rounded()),
+                                              isFocus: isFocus, index: i)
                             }
-                            BalanceInkBar(height: CGFloat((Double(p.sets) * pxPerSet).rounded()),
-                                          isFocus: isFocus, index: i)
                         }
-                    }
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.top, 18)
-            HStack(spacing: 0) {
-                ForEach(parts, id: \.key) { p in
-                    Text(p.name).font(.sans(12.5, p.key == focusPid ? 700 : 600)).tracking(-0.13)
-                        .foregroundStyle(p.key == focusPid ? GY.crailDeep : GY.ink2)
                         .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.top, 8)
-            .overlay(alignment: .top) { Rectangle().fill(Color(oklch: 0.88, 0.008, 60)).frame(height: 1.5) }
-            // 유산소 별도 행 (home.js homeCardioRow — 이번 주 분·회 + 지난주 대비)
-            if bal.cardioCount > 0 {
-                HStack(spacing: 8) {
-                    Image(systemName: "waveform.path.ecg").font(.system(size: 13)).foregroundStyle(GY.ink3)
-                    Text("유산소").font(.sans(13, 600)).foregroundStyle(GY.ink2)
-                    Text(bal.cardioMin > 0 ? "\(bal.cardioMin)분 · \(bal.cardioCount)회" : "\(bal.cardioCount)회")
-                        .font(.mono(12.5, 500)).foregroundStyle(GY.ink3)
-                    if bal.cardioDeltaMin != 0 {
-                        Text("\(bal.cardioDeltaMin > 0 ? "▲" : "▼")\(abs(bal.cardioDeltaMin))분")
-                            .font(.sans(11.5, 600)).foregroundStyle(GY.ink4)
                     }
-                    Spacer()
                 }
-                .padding(.top, 12)
+                HStack(spacing: 0) {
+                    ForEach(parts, id: \.key) { p in
+                        Text(p.name).font(.sans(12.5, p.key == focusPid ? 700 : 600)).tracking(-0.13)
+                            .foregroundStyle(p.key == focusPid ? GY.crailDeep : GY.ink2)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .padding(.top, 8)
+                .overlay(alignment: .top) { Rectangle().fill(Color(oklch: 0.88, 0.008, 60)).frame(height: 1.5) }
+                Spacer(minLength: 0)
             }
+            .frame(maxHeight: .infinity)
+            cardioRow(bal)
         }
         .frame(maxHeight: .infinity)
         .padding(.horizontal, 26).padding(.top, 22)
+    }
+
+    // 유산소 행 — mocks/home.html .cardio-row + 시안 #6a 실측 (행은 항상 표시, 0회 시 "기록 없음").
+    // 상단 line-soft 구분선(margin-top 10 → padding-top 14), 아이콘 26px sunken 배지, 수치는 우측 정렬.
+    func cardioRow(_ bal: GymHomeLogic.WeeklyBalance) -> some View {
+        let delta = GymHomeLogic.cardioDeltaText(count: bal.cardioCount, deltaMin: bal.cardioDeltaMin)
+        return HStack(spacing: 11) {
+            RoundedRectangle(cornerRadius: 8).fill(GY.sunken).frame(width: 26, height: 26)
+                .overlay(EcgGlyph().stroke(GY.ink4, style: EcgGlyph.stroke(16)).frame(width: 16, height: 16))
+            Text("유산소").font(.sans(13.5, 600)).foregroundStyle(GY.ink2)
+            Spacer(minLength: 11)
+            Text(GymHomeLogic.cardioSubText(min: bal.cardioMin, count: bal.cardioCount))
+                .font(.mono(12, 500)).foregroundStyle(GY.ink4)
+            if let delta {
+                // 시안 #6a: 개선(▲)은 sage-deep. 감소(▼)는 시안에 없어 PWA(.dl = ink-3) 를 따름.
+                Text(delta).font(.mono(12, 600))
+                    .foregroundStyle(delta.hasPrefix("▲") ? GY.sageDeep : GY.ink3)
+                    .padding(.leading, 10)
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 14)
+        .overlay(alignment: .top) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+        .padding(.top, 10)
+        .accessibilityIdentifier("home-cardio-row")
     }
 
     // 밸런스 칩 — gPopIn(380ms 오버슈트, §4.2 순차 팝인)
@@ -439,6 +457,44 @@ public struct HomeScreenView: View {
         }
         .buttonStyle(.plain).accessibilityIdentifier("home-cta")
         .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+    }
+}
+
+// MARK: - 시안 SVG 글리프 (viewBox 20×20 좌표 그대로, stroke-width 1.6)
+
+// 유산소 아이콘 — "M2 10h3l1.5-4.5 2.8 9 1.7-4.5H18" (시안 #6a · mocks/home.html cardioIcon).
+struct EcgGlyph: Shape {
+    static func stroke(_ size: CGFloat) -> StrokeStyle {
+        StrokeStyle(lineWidth: 1.6 * size / 20, lineCap: .round, lineJoin: .round)
+    }
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height) / 20
+        var p = Path()
+        p.move(to: CGPoint(x: 2 * s, y: 10 * s))
+        p.addLine(to: CGPoint(x: 5 * s, y: 10 * s))
+        p.addLine(to: CGPoint(x: 6.5 * s, y: 5.5 * s))
+        p.addLine(to: CGPoint(x: 9.3 * s, y: 14.5 * s))
+        p.addLine(to: CGPoint(x: 11 * s, y: 10 * s))
+        p.addLine(to: CGPoint(x: 18 * s, y: 10 * s))
+        return p
+    }
+}
+
+// 직전 운동 아이콘 — "M4 8v4M6.5 6.2v7.6M13.5 6.2v7.6M16 8v4M6.5 10h7" (시안 #6a 라인 바벨).
+struct BarbellGlyph: Shape {
+    static func stroke(_ size: CGFloat) -> StrokeStyle {
+        StrokeStyle(lineWidth: 1.6 * size / 20, lineCap: .round)
+    }
+    func path(in rect: CGRect) -> Path {
+        let s = min(rect.width, rect.height) / 20
+        var p = Path()
+        for (x, y0, y1) in [(4.0, 8.0, 12.0), (6.5, 6.2, 13.8), (13.5, 6.2, 13.8), (16.0, 8.0, 12.0)] {
+            p.move(to: CGPoint(x: x * s, y: y0 * s))
+            p.addLine(to: CGPoint(x: x * s, y: y1 * s))
+        }
+        p.move(to: CGPoint(x: 6.5 * s, y: 10 * s))
+        p.addLine(to: CGPoint(x: 13.5 * s, y: 10 * s))
+        return p
     }
 }
 

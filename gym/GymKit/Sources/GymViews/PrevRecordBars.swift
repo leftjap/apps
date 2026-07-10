@@ -55,6 +55,7 @@ struct PrevRecordBars: View {
                             .segGlowIf(s.state == .now, cornerRadius: 5)
                         VStack(spacing: 2) {
                             Text(s.top).font(.mono(12.5, s.isPreview ? 500 : 600))
+                                .tracking(-0.25)   // -0.02em @12.5 (시안 609행 · mocks .seg-n .w)
                                 .foregroundStyle(s.pr ? GY.crailDeep
                                                  : s.isPreview ? GY.ink4
                                                  : s.state == .now ? GY.ink1 : GY.ink2)
@@ -80,7 +81,7 @@ struct PrevRecordBars: View {
                             .overlay(RoundedRectangle(cornerRadius: 5)
                                 .strokeBorder(GY.crailBase, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2])))
                         VStack(spacing: 2) {
-                            Text("\(best.weight)").font(.mono(12.5, 700)).foregroundStyle(GY.crailDeep)
+                            Text("\(best.weight)").font(.mono(12.5, 700)).tracking(-0.25).foregroundStyle(GY.crailDeep)
                             Text("×\(best.reps)").font(.mono(10, 500)).foregroundStyle(GY.crailDeep)
                         }
                     }
