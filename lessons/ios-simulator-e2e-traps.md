@@ -72,12 +72,14 @@ sound+time-sensitive 를 넣어도 잠금 소등 화면 유지 (2회 실측). �
 엎힘 유효)로 구분. 해제 직후 잔여 lockstate 는 키백 열림(`isProtectedDataAvailable`)이면
 stray 로 무시 — 실제 잠금은 protected data 신호가 동시각 도착해 커버 (12·14차 실측).
 
-## 9. `simctl addmedia` 는 Shutdown 기기에 조용히 실패 → 빈 보관함 위 XCUITest 가 가짜 통과
-`xcodebuild test` 는 끝나면 시뮬을 Shutdown 시킨다. 다음 `addmedia` 는 exit≠0 + "Unable to
-lookup in current state: Shutdown" 만 남기고 넘어가므로, 파이프라인에서 놓치기 쉽다.
-사진 0장 상태로 PhotosPicker 테스트를 돌렸더니 **통과**했다 — 오라클이 "행을 탭했다"였기 때문.
-- **교훈**: UI 테스트 오라클은 상호작용이 아니라 **결과**로 쓴다 (`photoRow.value == "photo"`).
+## 9. 빈 사진 보관함 위에서 XCUITest 가 가짜로 통과한다
+`xcodebuild test` 는 끝나면 시뮬을 Shutdown 시킨다. 이어지는 `simctl addmedia` 는 exit≠0 과
+"Unable to lookup in current state: Shutdown" 을 **똑똑히 출력**하지만, 스크립트가 종료코드를
+검사하지 않으면 그대로 다음 단계로 넘어간다 (실제로 그렇게 넘어갔다).
+그 상태로 PhotosPicker 테스트를 돌렸더니 **통과**했다 — 오라클이 "행을 탭했다"였기 때문.
+- **교훈 1**: UI 테스트 오라클은 상호작용이 아니라 **결과**로 쓴다 (`photoRow.value == "photo"`).
   탭·존재 확인만 하는 단언은 대상이 없어도 통과한다.
+- **교훈 2**: 테스트가 통과하면 그 테스트가 실패할 수 있는지부터 확인한다 (결함을 되살려 돌연변이 검증).
 - 앱 샌드박스 밖 결과(파일 생성)는 테스트 후 셸이 `simctl get_app_container … data` 로 확인.
 - PHPicker 그리드 셀(iOS 26.5): `app.images.matching(identifier: "PXGGridLayout-Info")`,
   hittable=false 라 `.coordinate(withNormalizedOffset:).tap()` 필요. 상단 온보딩 배너는 무시 가능.

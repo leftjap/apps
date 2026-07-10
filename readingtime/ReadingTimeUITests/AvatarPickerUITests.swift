@@ -34,24 +34,29 @@ final class AvatarPickerUITests: XCTestCase {
         // 그리드 셀 Image 는 hittable 이 아니다 (실측) → 중심 좌표를 직접 탭
         firstPhoto.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
 
-        // loadTransferable 은 비동기 — 아바타가 사진으로 바뀔 때까지 기다린다.
-        var became = false
-        for _ in 0..<30 {
-            if photoRow.exists, photoRow.value as? String == "photo" { became = true; break }
-            Thread.sleep(forTimeInterval: 0.5)
-        }
-        if !became {
-            XCTFail("""
-            아바타가 사진으로 안 바뀜.
-            photoRow.exists=\(photoRow.exists) value=\(String(describing: photoRow.value))
-            트리:
-            \(app.debugDescription)
-            """)
-        }
+        // loadTransferable 은 비동기 — 시트 미리보기가 사진으로 바뀔 때까지 기다린다.
+        XCTAssertTrue(waitForValue("photo", on: photoRow),
+                      "설정 시트 미리보기가 사진으로 안 바뀜 (value=\(String(describing: photoRow.value)))")
+
+        // 시트를 닫고 홈 헤더 아바타(34pt)도 즉시 갱신됐는지 — 시트만 고치면 놓치는 자리
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        let homeAvatar = app.descendants(matching: .any)["home.avatar"]
+        XCTAssertTrue(homeAvatar.waitForExistence(timeout: 10), "홈으로 안 돌아옴")
+        XCTAssertTrue(waitForValue("photo", on: homeAvatar),
+                      "홈 헤더 아바타가 사진으로 안 바뀜 (value=\(String(describing: homeAvatar.value)))")
 
         let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         shot.name = "after-pick"
         shot.lifetime = .keepAlways
         add(shot)
+    }
+
+    /// 접근성 value 가 기대값이 될 때까지 폴링 (최대 15초)
+    private func waitForValue(_ expected: String, on element: XCUIElement) -> Bool {
+        for _ in 0..<30 {
+            if element.exists, element.value as? String == expected { return true }
+            Thread.sleep(forTimeInterval: 0.5)
+        }
+        return false
     }
 }

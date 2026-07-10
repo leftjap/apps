@@ -24,6 +24,8 @@ public struct Screen14EmptyHome: View {
                 RTAvatar(model?.displayInitial ?? "지", photo: avatar)
                     .contentShape(Rectangle())
                     .onTapGesture { model?.openSheet(.settings) }
+                    .accessibilityIdentifier("home.avatar")
+                    .accessibilityValue(avatar == nil ? "initial" : "photo")
             }
             VStack(spacing: 0) {
                 hero
