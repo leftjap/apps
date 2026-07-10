@@ -61,6 +61,9 @@ study/seeds/sources/
 # 검증 스크린샷 — 로컬 전용 (공개 repo: 개인 일기·가계부 등 사생활 노출 방지)
 **/verify/
 
+# best 크롤 픽스처 — 로컬 전용 (스크랩 데이터 공개 repo 커밋 금지. best-app-spec.md 참조)
+best/fixtures/
+
 # goal-loop 마커 — 로컬 전용·트랜지언트 (활성 goal 상태. goal-harness 스킬·~/.claude/hooks/goal-loop.mjs)
 **/.goal.json
 
