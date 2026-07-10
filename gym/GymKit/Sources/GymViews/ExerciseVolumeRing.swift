@@ -110,10 +110,12 @@ struct ExerciseVolumeRing: View {
                 if burstVisible {
                     ExVolBurst().id(burstMoment)
                 }
-                HStack(spacing: 1) {   // .exring-pct
-                    Text("\(pct)").font(.mono(14, 700)).tracking(-0.28)
+                // .exring-pct — 시안 #6b 676행(미돌파 15/10) · 693행(돌파 13.5/9.5). letter-spacing -0.02em.
+                let pctFont = GymSessionLogic.exRingPctFont(isOver: over.isOver)
+                HStack(spacing: 1) {
+                    Text("\(pct)").font(.mono(pctFont.num, 700)).tracking(pctFont.num * -0.02)
                         .contentTransition(.numericText())   // 커밋 크로스페이드 이중 노출 방지
-                    Text("%").font(.mono(9.5, 600))
+                    Text("%").font(.mono(pctFont.unit, 600))
                 }.foregroundStyle(GY.crailDeep)
             }
             .frame(width: 68, height: 68)

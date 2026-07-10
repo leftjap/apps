@@ -61,8 +61,11 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .exvol { display:flex; align-items:center; justify-content:center; gap:18px; margin-bottom:15px; }
 .exvol .exring { position:relative; width:68px; height:68px; flex-shrink:0; display:block; }
 .exvol .exring > svg { width:68px; height:68px; display:block; overflow:visible; }
-.exvol .exring-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:700; color:var(--crail-deep); letter-spacing:-0.02em; }
-.exvol .exring-pct .u { font-size:9.5px; font-weight:600; margin-left:1px; }
+/* 시안 #6b 676행 미돌파 15/10 · 693행 돌파 13.5/9.5 (3자리 대비 축소) */
+.exvol .exring-pct { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:15px; font-weight:700; color:var(--crail-deep); letter-spacing:-0.02em; }
+.exvol .exring-pct .u { font-size:10px; font-weight:600; margin-left:1px; }
+.exvol .exring-pct.over { font-size:13.5px; }
+.exvol .exring-pct.over .u { font-size:9.5px; }
 .exvol .exnums { display:inline-flex; align-items:baseline; gap:8px; position:relative; }
 .exvol .exnums .cur { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:32px; font-weight:700; color:var(--ink-1); letter-spacing:-0.035em; line-height:1; }
 .exvol .exnums .cur.over { color:var(--crail-deep); }

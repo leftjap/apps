@@ -50,6 +50,31 @@ import Testing
         #expect(GymSessionLogic.activeBlockIdx(session: s, selected: 9) == 0)
     }
 
+    // 전부 완료 상태에서 완료 칩을 탭하면(selected 지정) 레일 current 는 여전히 없어야 한다.
+    // 히어로만 그 종목으로 이동한다 (PWA 실렌더 정본: footerCurrentBlock=null, pickedBlock=탭한 블록).
+    @Test func activeIdxStaysNilWhenEveryBlockDoneEvenIfSelected() {
+        let s = sess([blk("a", done: true, finishedAt: 1), blk("b", done: true, finishedAt: 2)])
+        #expect(GymSessionLogic.activeBlockIdx(session: s, selected: 0) == nil)
+    }
+
+    // MARK: 히어로 블록 (레일과 분리 — 전부 완료여도 read-only 카드를 그린다)
+
+    @Test func heroFollowsSelectionWhenEveryBlockDone() {
+        let s = sess([blk("a", done: true, finishedAt: 1), blk("b", done: true, finishedAt: 2)])
+        #expect(GymSessionLogic.heroBlockIdx(session: s, selected: 0) == 0)
+    }
+    @Test func heroFallsBackToLastBlockWhenEveryBlockDoneAndNothingSelected() {
+        let s = sess([blk("a", done: true, finishedAt: 1), blk("b", done: true, finishedAt: 2)])
+        #expect(GymSessionLogic.heroBlockIdx(session: s, selected: nil) == 1)
+    }
+    @Test func heroIsFirstUnfinishedWhenNothingSelected() {
+        let s = sess([blk("a", done: true, finishedAt: 1), blk("b", done: false)])
+        #expect(GymSessionLogic.heroBlockIdx(session: s, selected: nil) == 1)
+    }
+    @Test func heroIsNilWhenNoBlocks() {
+        #expect(GymSessionLogic.heroBlockIdx(session: sess([]), selected: nil) == nil)
+    }
+
     // MARK: 레일 — 전부 완료면 current 칩 없음 (전부 체크)
 
     @Test func railShowsAllDoneWhenSessionComplete() {

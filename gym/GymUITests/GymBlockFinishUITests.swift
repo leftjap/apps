@@ -60,4 +60,34 @@ final class GymBlockFinishUITests: XCTestCase {
         XCTAssertTrue(firstDone.isHittable, "첫 완료 칩은 보이고 누를 수 있어야 한다")
         shot(app, "20-all-done")
     }
+
+    // 전부 완료 후 완료 칩을 탭하면 히어로만 그 종목으로 바뀌고, 레일은 계속 전부 완료여야 한다.
+    // (PWA 실렌더 정본: 히어로 이름은 탭을 따라가고 current 칩은 0개)
+    func testTappingDoneChipAfterAllFinishedKeepsRailAllDone() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        for name in ["벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
+            let cur = chip(app, "current", name)
+            XCTAssertTrue(cur.waitForExistence(timeout: 5))
+            cur.press(forDuration: 0.8)
+            XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+            app.buttons["action-finish"].tap()
+        }
+        XCTAssertTrue(app.staticTexts["hero-done"].waitForExistence(timeout: 5))
+
+        // 완료 칩 탭 → 히어로는 그 종목으로 이동
+        chip(app, "done", "벤치프레스").tap()
+        let exname = app.staticTexts["session-exname"]
+        XCTAssertTrue(exname.waitForExistence(timeout: 5))
+        XCTAssertEqual(exname.label, "벤치프레스", "히어로는 탭한 종목을 보여야 한다")
+
+        // 레일은 여전히 전부 완료 — 탭했다고 흰 카드가 되살아나면 안 된다
+        for name in ["인클라인 벤치", "벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
+            XCTAssertFalse(chip(app, "current", name).exists, "\(name) 가 current 로 되살아나면 안 된다")
+        }
+        shot(app, "30-tap-done-chip")
+    }
 }

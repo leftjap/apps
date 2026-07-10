@@ -147,17 +147,21 @@ public enum GymSessionLogic {
         public let state: GymRailState
     }
 
-    /// 현재 블록 — 명시 선택 우선, 없으면 첫 미완료. **전부 완료면 nil**.
-    /// 히어로는 read-only 표시용으로 마지막 블록을 쓰지만, 레일·액션시트는 nil 을 그대로 써야
-    /// 완료된 종목이 current(흰 카드)로 남지 않는다.
-    ///
-    /// ⚠ PWA 정합 아님 — 사용자 요구(2026-07-10 실기기 보고)로 의도적으로 다르다.
-    /// session.js:2615 는 `if (nextIdx != null) _currentBlockIdx = nextIdx` 라 전부 완료 시
-    /// 커서가 완료된 블록에 남고(2606 주석 "마지막이면 현재 block 유지"), 레일에도 current 로 그려진다.
-    /// 즉 PWA 쪽이 같은 결함을 갖고 있다 (별도 수정 필요).
+    /// 레일·액션시트용 현재 블록 — **전 종목 완료면 nil** (완료 칩을 탭해 selected 가 잡혀도 nil).
+    /// 히어로는 heroBlockIdx 로 따로 뽑아 read-only 카드를 계속 그린다.
+    /// PWA session.js footerCurrentBlock 과 같은 규칙 (전부 완료면 null, 그 외 pickedBlock).
     public static func activeBlockIdx(session: GymSession, selected: Int?) -> Int? {
+        guard firstUnfinishedBlockIdx(session) != nil else { return nil }  // 전부 완료 — 선택돼 있어도 nil
+        return heroBlockIdx(session: session, selected: selected)
+    }
+
+    /// 히어로 표시용 블록 — 명시 선택 우선, 없으면 첫 미완료, 그마저 없으면(전부 완료) 마지막 블록.
+    /// 레일과 달리 전부 완료여도 nil 이 아니다 (read-only 카드를 계속 그려야 한다).
+    /// PWA session.js:702 pickedBlock 과 같은 규칙.
+    public static func heroBlockIdx(session: GymSession, selected: Int?) -> Int? {
+        guard !session.blocks.isEmpty else { return nil }
         if let s = selected, session.blocks.indices.contains(s) { return s }
-        return firstUnfinishedBlockIdx(session)
+        return firstUnfinishedBlockIdx(session) ?? (session.blocks.count - 1)
     }
 
     // 꾹누르기 액션시트 항목 (session.js:1943 getActionMenuFor 'footer-exercise').
@@ -201,6 +205,12 @@ public enum GymSessionLogic {
         guard let idx = states.firstIndex(of: .current) else { return .leading }
         let fits = currentChipMaxX > 0 && currentChipMaxX <= viewportWidth
         return fits ? .leading : .center(idx)
+    }
+
+    /// 종목 볼륨 링 중앙 % 글꼴 (pt). 시안 #6b 676행 미돌파 15/10 · 693행 돌파 13.5/9.5.
+    /// 돌파 시 3자리(`107%`)가 되므로 시안이 한 단계 축소한다.
+    public static func exRingPctFont(isOver: Bool) -> (num: Double, unit: Double) {
+        isOver ? (num: 13.5, unit: 9.5) : (num: 15, unit: 10)
     }
 
     // MARK: - 세트바 표시 (resolveDotDisplay + formatSetSegment)

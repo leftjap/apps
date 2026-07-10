@@ -450,12 +450,11 @@ public final class GymAppModel: ObservableObject {
     // 명시적 블록 커서 (푸터 pill 탭 = 이동, §6-8). nil 이면 첫 미완료 블록.
     @Published public var selectedBlockIdx: Int? = nil
 
-    // 히어로 표시용 — 전부 완료면 마지막 블록(read-only 카드 유지).
+    // 히어로 표시용 — 전부 완료여도 read-only 카드 유지 (탭한 블록 → 첫 미완료 → 마지막).
     public var currentBlockIdx: Int {
-        activeBlockIdx ?? max(0, session.blocks.count - 1)
+        GymSessionLogic.heroBlockIdx(session: session, selected: selectedBlockIdx) ?? 0
     }
-    // 레일·액션시트용 — 전부 완료면 nil (완료된 종목이 current 로 남지 않게).
-    // PWA 는 커서를 완료 블록에 남긴다(session.js:2615) — 여기만 의도적으로 다르다.
+    // 레일·액션시트용 — 전부 완료면 nil (완료된 종목이 current 흰 카드로 남지 않게).
     public var activeBlockIdx: Int? {
         GymSessionLogic.activeBlockIdx(session: session, selected: selectedBlockIdx)
     }

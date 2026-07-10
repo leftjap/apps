@@ -84,3 +84,20 @@ import Testing
         #expect(GymSessionLogic.railScrollTarget(states: [], currentChipMaxX: 0, viewportWidth: 300) == nil)
     }
 }
+
+// 종목 볼륨 링 중앙 % 글꼴 — 시안 #6b 는 상태별 두 값을 쓴다.
+//   676행 미돌파: 숫자 15px/700 · '%' 10px/600
+//   693행 돌파  : 숫자 13.5px/700 · '%' 9.5px/600  (3자리 대비 축소)
+// letter-spacing 은 -0.02em 이므로 tracking = -0.02 × 숫자 크기.
+@Suite struct ExRingPctFontTests {
+    @Test func underTargetUsesLargeFont() {
+        let f = GymSessionLogic.exRingPctFont(isOver: false)
+        #expect(f.num == 15.0)
+        #expect(f.unit == 10.0)
+    }
+    @Test func overTargetShrinksForThreeDigits() {
+        let f = GymSessionLogic.exRingPctFont(isOver: true)
+        #expect(f.num == 13.5)
+        #expect(f.unit == 9.5)
+    }
+}

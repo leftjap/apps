@@ -2760,10 +2760,20 @@ describe('centerActivePill — 오버플로 여부별 현재 카드 중앙 정�
     expect(rail.scrollLeft).toBeCloseTo(219.5, 1);
   });
 
-  it('현재 칩 없으면 no-op (레이아웃 미변경)', () => {
+  // 전 종목 완료 → current 없음. 레일 엘리먼트는 재마운트 후에도 동일 노드라 scrollLeft 가 남는다.
+  // 스크롤된 채 마지막 종목을 완료하면 완료 칩이 좌측으로 잘리므로 선두로 되돌려야 한다 (레일 §7).
+  it('현재 칩 없고 넘치면 flex-start + scrollLeft 0 (완료 칩 좌측 미절단)', () => {
     const rail = fakeRail({ scrollWidth: 723, clientWidth: 299, cur: null });
+    rail.scrollLeft = 120; // 사용자가 우측으로 스크롤해 둔 상태
     centerActivePill(rail);
-    expect(rail.style.justifyContent).toBeUndefined();
-    expect(rail.scrollLeft).toBe(-1);
+    expect(rail.style.justifyContent).toBe('flex-start');
+    expect(rail.scrollLeft).toBe(0);
+  });
+
+  it('현재 칩 없고 안 넘치면 center + scrollLeft 0', () => {
+    const rail = fakeRail({ scrollWidth: 138, clientWidth: 299, cur: null });
+    centerActivePill(rail);
+    expect(rail.style.justifyContent).toBe('center');
+    expect(rail.scrollLeft).toBe(0);
   });
 });

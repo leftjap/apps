@@ -958,6 +958,9 @@ async function mountSessionActive(doc, block, session) {
     volTotEl.classList.toggle('struck', over.isOver);
   }
   if (volCurEl) volCurEl.classList.toggle('over', over.isOver);
+  // 링 중앙 % — 돌파(3자리) 시 한 단계 축소 (시안 #6b 693행).
+  const pctWrapEl = doc.querySelector('.exring-pct');
+  if (pctWrapEl) pctWrapEl.classList.toggle('over', over.isOver);
   if (countUp) {
     // 시작값 즉시 세팅 — cardProgressVol/cardSetProgress 최종값 선-paint 역방향 점프 방지(리뷰 #8/#9).
     setTextById(doc, 'cardProgressVol', Math.round(prevExNum).toLocaleString());
@@ -2236,12 +2239,21 @@ function renderFooterPills(doc, session, currentBlock) {
  *  - 넘칠 때: 좌측 정렬 + scrollLeft 로 현재 칩 중앙(완료칩 좌측 노출·우측 페이드 유지).
  *  - 안 넘칠 때(단일/소수 종목): justify-content:center 로 현재 카드가 좌측에 붙지 않게 중앙 정렬.
  *  - 칩 탭 전환은 mountSessionView 재마운트 → 새 DOM → 매번 즉시(instant) 중앙 정렬(smooth 아님).
+ *  - 현재 칩 없음(전 종목 완료): 선두로 되돌린다. 레일 엘리먼트는 재마운트 후에도 동일 노드라
+ *    scrollLeft 가 유지되므로, 스크롤된 채 마지막 종목을 완료하면 완료 칩이 좌측으로 잘린다
+ *    (레일 작업지시서 §7 — 완료 종목이 왼쪽에 잘리지 않고 전부 보인다).
  */
 export function centerActivePill(pillsEl) {
-  const cur = pillsEl && pillsEl.querySelector('.fp-chip.is-current');
-  if (!cur) return;
+  if (!pillsEl) return;
+  const cur = pillsEl.querySelector('.fp-chip.is-current');
   const align = () => {
     try {
+      if (!cur) {
+        // 전 종목 완료 — 선두로 되돌려 완료 칩이 좌측에 잘리지 않게 (레일 작업지시서 §7).
+        pillsEl.style.justifyContent = pillsEl.scrollWidth <= pillsEl.clientWidth + 1 ? 'center' : 'flex-start';
+        pillsEl.scrollLeft = 0;
+        return;
+      }
       if (pillsEl.scrollWidth <= pillsEl.clientWidth + 1) {
         // 넘치지 않음 — 콘텐츠를 중앙 정렬 (현재 카드 좌측 밀착 방지, 사용자 1종목 케이스)
         pillsEl.style.justifyContent = 'center';
