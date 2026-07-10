@@ -36,6 +36,8 @@ public enum GymScreens {
         case "rail-single":  return AnyView(RailDemo(single: true))
         case "session-top":  return AnyView(SessionTopBlock())
         case "session":      return AnyView(SessionScreenView().frame(width: 390, height: 844))
+        case "session-keypad": return AnyView(SessionScreenView(initialKeypadField: .weight).frame(width: 390, height: 844))
+        case "session-pr":   return AnyView(SessionScreenView(initialPRPop: true).frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))
         case "stats-ex":     return AnyView(StatsScreenView(model: demoModel(), initialTab: .exercise, embedScroll: false).frame(width: 390, height: 844))

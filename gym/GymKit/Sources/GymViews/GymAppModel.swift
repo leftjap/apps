@@ -495,12 +495,12 @@ public final class GymAppModel: ObservableObject {
                 GymSet(weight: 50, reps: 8, done: true)], finishedAt: 1),
             GymBlock(exerciseId: "bench_press", sets: [
                 GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 65, reps: 10, done: true),
-                GymSet(weight: 70, reps: 8, done: false), GymSet(weight: 72, reps: 8, done: false),
-                GymSet(weight: 75, reps: 6, done: false)]),
+                GymSet(weight: 70, reps: 8, preset: true), GymSet(weight: 72, reps: 8, preset: true),
+                GymSet(weight: 75, reps: 6, preset: true)]),
             GymBlock(exerciseId: "dumbbell_fly", sets: [
-                GymSet(weight: 20, reps: 10, done: false), GymSet(weight: 20, reps: 10, done: false)]),
+                GymSet(weight: 20, reps: 10, preset: true), GymSet(weight: 20, reps: 10, preset: true)]),
             GymBlock(exerciseId: "cable_crossover", sets: [
-                GymSet(weight: 20, reps: 12, done: false), GymSet(weight: 20, reps: 12, done: false)]),
+                GymSet(weight: 20, reps: 12, preset: true), GymSet(weight: 20, reps: 12, preset: true)]),
         ], tags: ["chest"], status: .active)
     }
 

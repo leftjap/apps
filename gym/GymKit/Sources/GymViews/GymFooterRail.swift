@@ -80,36 +80,54 @@ struct CurrentChip: View {
     }
 }
 
-// ＋ 종목 추가 버튼 (§4.4)
+// ＋ 종목 추가 버튼 (§4.4) — 탭 → 운동 선택 바텀시트 (§6-2)
 struct AddExerciseButton: View {
+    var action: () -> Void = {}
     var body: some View {
-        Image(systemName: "plus")
-            .font(.system(size: 17, weight: .medium))
-            .foregroundStyle(GY.ink3)
-            .frame(width: 44, height: 44)
-            .background(GY.card, in: Circle())
-            .overlay(Circle().strokeBorder(GY.line, lineWidth: 1))
+        Button(action: action) {
+            Image(systemName: "plus")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(GY.ink3)
+                .frame(width: 44, height: 44)
+                .background(GY.card, in: Circle())
+                .overlay(Circle().strokeBorder(GY.line, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("rail-add")
     }
 }
 
 // 레일 컨테이너 — 트랙(스크롤) + ＋버튼(고정). 현재 카드 중앙 정렬은 스크롤/정렬 로직(다음 증분).
+// 칩 탭 = 블록 이동(§6-8), 꾹누르기(500ms) = 액션시트(§6-9).
 public struct GymFooterRail: View {
     public struct Item: Identifiable { public let id = UUID(); public let name: String; public let state: RailState
         public init(name: String, state: RailState) { self.name = name; self.state = state } }
     let items: [Item]
-    public init(items: [Item]) { self.items = items }
+    var onTapItem: (Int) -> Void
+    var onLongPressItem: (Int) -> Void
+    var onAdd: () -> Void
+    public init(items: [Item], onTapItem: @escaping (Int) -> Void = { _ in },
+                onLongPressItem: @escaping (Int) -> Void = { _ in },
+                onAdd: @escaping () -> Void = {}) {
+        self.items = items
+        self.onTapItem = onTapItem; self.onLongPressItem = onLongPressItem; self.onAdd = onAdd
+    }
 
     public var body: some View {
         // NOTE: 가로 스크롤 + 현재 카드 중앙 정렬은 실 세션 화면 배선 증분에서 ScrollViewReader 로 구현.
         // (ImageRenderer 는 ScrollView 내부 미렌더 → 스냅샷 단계는 평면 HStack.)
         HStack(spacing: 8) {
             HStack(spacing: 10) {
-                ForEach(items) { item in
-                    switch item.state {
-                    case .done: DoneChip(name: item.name)
-                    case .current: CurrentChip(name: item.name)
-                    case .upcoming: UpcomingChip(name: item.name)
+                ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
+                    Group {
+                        switch item.state {
+                        case .done: DoneChip(name: item.name)
+                        case .current: CurrentChip(name: item.name)
+                        case .upcoming: UpcomingChip(name: item.name)
+                        }
                     }
+                    .onTapGesture { onTapItem(i) }
+                    .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(i) }
                 }
             }
             .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
@@ -117,7 +135,7 @@ public struct GymFooterRail: View {
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity, alignment: items.count <= 1 ? .center : .leading)
             .clipped()
-            AddExerciseButton()
+            AddExerciseButton(action: onAdd)
         }
         .padding(.top, 16).padding(.bottom, 22).padding(.horizontal, 12)
         .overlay(alignment: .top) { Rectangle().fill(GY.lineSoft).frame(height: 1) } // inset 상단 구분선
