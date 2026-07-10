@@ -2,7 +2,9 @@ import Foundation
 import Testing
 @testable import GymCore
 
-// 꾹누르기 액션시트 항목 + 현재 블록 판정 — PWA session.js getActionMenuFor / currentBlock 정합.
+// 꾹누르기 액션시트 항목 — PWA session.js:1943 getActionMenuFor('footer-exercise') 정합.
+// 현재 블록 판정(전부 완료면 nil) — PWA 정합 **아님**. 사용자 요구(2026-07-10 실기기 보고)로
+// 의도적 분기: session.js:2615 는 전부 완료 시 커서를 완료 블록에 남긴다.
 @Suite struct BlockActionTests {
 
     func blk(_ ex: String, done: Bool, finishedAt: Double? = nil) -> GymBlock {
