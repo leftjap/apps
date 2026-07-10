@@ -105,37 +105,57 @@ describe('renderSessionReviewV2 — Rung별 카드 프롬프트', () => {
   });
 });
 
-describe('renderSessionReviewV2 — 확장 사다리(체이닝) 렌더', () => {
-  const LADDER = [
-    { en: 'Move on.', ko: '넘어가.', kr: '무v 온', adds: 'base' },
-    { en: "Let's move on.", ko: '넘어가자.', kr: '레츠 무v 온', adds: 'object' },
-    { en: "Let's just move on to the next thing.", ko: '그냥 다음 걸로 넘어가자.', kr: '레츠 저스트 무v 온 투 더 넥스트 띵', adds: 'adverbial',
-      back: [['to the next thing', '투 더 넥스트 띵'], ['move on to the next thing', '무v 온 투 더 넥스트 띵'], ["Let's just move on to the next thing", '레츠 저스트 무v 온 투 더 넥스트 띵']] },
-  ];
-  function mountWithLadder(size, ladder = LADDER) {
+/* 체이닝 재시험 — 자막 없이 '한 번 듣고 전체 재현', 실패 시 단계 폴백 (2026-07-09). */
+describe('renderSessionReviewV2 — 체이닝 재시험 렌더', () => {
+  const CHAIN = {
+    target: "Let's just move on to the next thing. It's over anyway.",
+    chunks: ["Let's just move on", 'to the next thing', "It's over anyway"],
+    ko: '그냥 다음 걸로 넘어가자. 어차피 끝난 일이야.',
+  };
+  function mountWithChain(size, chain = CHAIN, demo = false) {
     document.body.innerHTML = '<div id="root"></div>';
     const host = document.getElementById('root');
-    const explanation = { key: 'k', chunks: CHUNKS, ladder };
+    const explanation = { key: 'k', chunks: CHUNKS, chain };
     const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
     const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation };
-    const state = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0 };
+    const state = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0, demo };
     renderSessionReviewV2(host, state, {});
     return host;
   }
-  it('데스크톱: ladder가 있으면 확장 사다리 섹션과 이어 말하기(back)를 렌더한다', () => {
-    const host = mountWithLadder('desktop');
-    const ladder = host.querySelector('.vr-ladder');
-    expect(ladder).not.toBeNull();
-    expect(ladder.textContent).toContain("Let's just move on to the next thing");
-    expect(ladder.textContent).toContain('이어 말하기');
+
+  it('데스크톱: 전체 재현 행을 렌더하고, 영어 원문은 화면에 노출되지 않는다(자막 없음)', () => {
+    const host = mountWithChain('desktop');
+    const chain = host.querySelector('.vr-chain');
+    expect(chain).not.toBeNull();
+    expect(chain.textContent).toContain('체이닝 재시험');
+    expect(host.querySelector('.vr-chain-full')).not.toBeNull();
+    expect(host.textContent).not.toContain('move on to the next thing');
+    expect(host.textContent).not.toContain("It's over anyway");
   });
-  it('모바일: ladder 섹션이 모바일 셸에도 렌더된다', () => {
-    const host = mountWithLadder('phone');
-    expect(host.querySelector('.vr-ladder')).not.toBeNull();
+
+  it('단계 폴백은 처음엔 숨겨져 있다 (전체 재현이 먼저)', () => {
+    const host = mountWithChain('desktop');
+    expect(host.querySelectorAll('.vr-chain-step').length).toBe(3); // 청크 수만큼 준비는 됨
+    expect(host.querySelector('.vr-chain-steps').style.display).toBe('none'); // 감춰짐
   });
-  it('ladder 없으면(또는 1단) 확장 사다리 섹션은 렌더되지 않는다', () => {
-    expect(mountCard({ interval: 1 }).querySelector('.vr-ladder')).toBeNull();
-    expect(mountWithLadder('desktop', [LADDER[0]]).querySelector('.vr-ladder')).toBeNull();
+
+  it('모바일 셸에도 렌더된다', () => {
+    expect(mountWithChain('phone').querySelector('.vr-chain')).not.toBeNull();
+  });
+
+  it('chain 없으면(또는 청크 1개) 체이닝 블록은 렌더되지 않는다', () => {
+    expect(mountCard({ interval: 1 }).querySelector('.vr-chain')).toBeNull();
+    expect(mountWithChain('desktop', { target: 'x', chunks: ['x'], ko: 'ㅇ' }).querySelector('.vr-chain')).toBeNull();
+  });
+
+  it('데모: 전체 재현 녹음 통과 → 완료 표시', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountWithChain('desktop', CHAIN, true);
+      host.querySelector('.vr-chain-full button[aria-label="녹음"]').click();
+      vi.advanceTimersByTime(700);
+      expect(host.querySelector('.vr-chain').textContent).toContain('체이닝 완료');
+    } finally { vi.useRealTimers(); }
   });
 });
 

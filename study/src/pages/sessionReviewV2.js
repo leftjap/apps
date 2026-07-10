@@ -432,16 +432,16 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     const lab = 'font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase';
     const cir = 'border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;flex:0 0 auto;cursor:pointer;padding:0';
     const rowSty = 'display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--line)';
-    const hintEl = h('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:10px;min-height:16px' }, '한 번만 듣고 전체를 말해 보세요 (자막 없음)');
-    const stepsWrap = h('div', { style: 'display:none;margin-top:12px' });
+    const cHint = h('div', { style: 'font-size:11.5px;color:var(--faint);margin-top:10px;min-height:16px' }, '한 번만 듣고 전체를 말해 보세요 (자막 없음)');
+    const stepsWrap = h('div', { class: 'vr-chain-steps', style: 'display:none;margin-top:12px' });
 
     const speakVaried = (t) => { plays += 1; const v = pickChainVoice(plays); if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang, voice: v.voice, rate: v.rate }); };
     const showHint = (text) => {
       const lv = hintLevelFor(fails);
-      if (lv === 0) hintEl.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '한 번만 듣고 전체를 말해 보세요 (자막 없음)';
-      else if (lv === 1) hintEl.textContent = `힌트 · 뜻: ${ex.chain.ko || ''}`;
-      else if (lv === 2) hintEl.textContent = `힌트 · 시작: ${firstWordsHint(text)}`;
-      else hintEl.textContent = `힌트 · 전체: ${text}`;
+      if (lv === 0) cHint.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '한 번만 듣고 전체를 말해 보세요 (자막 없음)';
+      else if (lv === 1) cHint.textContent = `힌트 · 뜻: ${ex.chain.ko || ''}`;
+      else if (lv === 2) cHint.textContent = `힌트 · 시작: ${firstWordsHint(text)}`;
+      else cHint.textContent = `힌트 · 전체: ${text}`;
     };
 
     // 단계 폴백 행 (전체 실패 후 노출)
@@ -482,7 +482,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
         r.play.disabled = !active; r.rec.disabled = !active;
         r.mark.style.display = i < cur ? '' : 'none';
       });
-      if (done) { hintEl.textContent = '체이닝 완료 ✓'; return; }
+      if (done) { cHint.textContent = '체이닝 완료 ✓'; return; }
       showHint(cur === -1 ? target : steps[cur].text);
     }
 
@@ -509,7 +509,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
     const block = h('div', { class: 'vr-chain', style: 'margin-top:16px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px' },
       h('div', { style: lab }, '체이닝 재시험 — 자막 없이'),
-      h('div', { style: 'margin-top:8px' }, fullRow), stepsWrap, hintEl);
+      h('div', { style: 'margin-top:8px' }, fullRow), stepsWrap, cHint);
     refresh();
     return block;
   })() : null;
