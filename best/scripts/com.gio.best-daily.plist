@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.gio.best-daily</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/zsh</string>
+    <string>/Users/gio_c/.local/bin/best-daily-collect.sh</string>
+  </array>
+
+  <!-- 매일 08:00. 슬립 중이면 깨어난 직후 실행된다.
+       launchd.plist(5): "Unlike cron which skips job invocations when the computer is asleep,
+       launchd will start the job the next time the computer wakes up." -->
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>8</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+
+  <!-- 안전망 1: 매시간 점검. (launchd 가 머신을 깨우진 않는다. 그리고 launchd.plist(5) 에 따르면
+       StartInterval 은 슬립 중 발화를 "놓친다" — 다만 깨어난 뒤 다음 주기에 돌므로 최대 1시간 지연으로 복구된다.)
+       --if-missing 가드가 이미 수집된 날은 0.4초에 종료하므로(요청 0건) 비용은 사실상 없다. -->
+  <key>StartInterval</key>
+  <integer>3600</integer>
+
+  <!-- 안전망 2: 전원을 껐다 켠 경우. 로그인 직후 실행된다 (문서에 powered-off catch-up 서술은 없으므로 이 키가 담당). -->
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardOutPath</key>
+  <string>/Users/gio_c/.local/share/best/collect-stdout.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/gio_c/.local/share/best/collect-stderr.log</string>
+</dict>
+</plist>

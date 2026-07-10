@@ -106,6 +106,23 @@ create table best_ingest_log (
 
 ## 3. 수집 파이프라인 규칙
 
+### 3-0. 실행기 — launchd 주(主), Claude 루틴 백업 (2026-07-11)
+
+Claude scheduled-task 는 앱이 열려 있어야 발화한다(study 는 17일 중 2일 결손). 그래서 OS 레벨 러너를 주로 둔다.
+
+| | |
+|---|---|
+| 주 | launchd `com.gio.best-daily` → `scripts/best-daily-collect.sh` → `node src/collect.mjs --if-missing` |
+| 트리거 | `StartCalendarInterval` 08:00 (슬립 시 **깨어난 직후** 실행 — launchd.plist(5) 명시) + `RunAtLoad`(로그인·부팅 직후) + `StartInterval` 3600(매시간 점검. 슬립 중 발화는 놓치나 깨어난 뒤 다음 주기에 복구) |
+| 백업 | Claude `best-daily` 08:03. launchd 가 이미 했으면 가드가 즉시 건너뜀 |
+| 중복 방지 | `--if-missing` → `alreadyCollected(ingest_log, kstToday())` 가 9곳 전부 `ok` 면 종료(0.4초, 요청 0건). 일부라도 결손이면 다시 돈다 |
+| 로그 | `~/.local/share/best/collect-std{out,err}.log` |
+
+설치 자산은 `best/scripts/` 에 사본이 있다 (실제 위치는 `~/.local/bin/`, `~/Library/LaunchAgents/`).
+
+**실측 (2026-07-11)**: Claude 루틴을 `fireAt` 로 강제 발화 → 9곳 전부 `ok`, 2,073건 수집(`run_on=2026-07-11`).
+그 직후 launchd `kickstart` → `이미 9곳 전부 수집됨 — 건너뜀`, exit 0. `StartInterval` 을 60초로 낮춰 자동 반복 발화 확인 후 3600 원복.
+
 ### 3-1. 크롤 예절·안전
 - **호스트 라운드로빈** + 요청 간 0.5~1s. UA 는 일반 브라우저 문자열.
 - **4xx(특히 430) 감지 시 그 사이트 즉시 중단, 자동 재시도 금지** (펨코 사례 — 차단은 상태로 남고 재시도가 악화).
