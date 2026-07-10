@@ -130,9 +130,45 @@ describe('nearDupDrills — base 완전동일(exact)과 덧붙인 근접중복(a
     ])).toEqual({ exact: 1, added: 2 });
   });
 
+  /* added 는 정의상 **호칭·감탄사·담화표지·문미태그**만이다(설계 정본).
+   * 이들은 쉼표로 분리된 앞/뒤 조각으로 붙는다 — 쉼표 없이 붙는 주어·부사는 진짜 문법 변주다.
+   * 대리규칙을 'base 포함 + 2단어 이하'로만 두면 주어 추가를 오탐한다. (2026-07-10 루틴 실행 중 발견) */
+  it('쉼표로 붙은 호칭·감탄사·문미태그만 added', () => {
+    const base = "It's been a while.";
+    expect(nearDupDrills(base, [
+      { en: "It's been a while, honey." },   // 뒤 호칭
+      { en: "It's been a while, Mikey." },   // 뒤 호칭(이름)
+      { en: "Honey, it's been a while." },   // 앞 호칭
+      { en: "It's been a while, right?" },   // 문미태그
+    ])).toEqual({ exact: 0, added: 4 });
+  });
+
+  it('쉼표 없이 주어·부사를 붙인 것은 변주 — 막지 않는다', () => {
+    expect(nearDupDrills('Seems like yesterday.', [
+      { en: 'Our wedding seems like yesterday.' }, // 주어 추가 → 변주
+      { en: 'The trip seems like yesterday.' },    // 주어 추가 → 변주
+    ])).toEqual({ exact: 0, added: 0 });
+
+    expect(nearDupDrills('How have you been?', [
+      { en: 'How have you been lately?' },         // 부사 추가 → 변주
+      { en: 'How have you been, honey?' },         // 호칭 → added
+    ])).toEqual({ exact: 0, added: 1 });
+  });
+
   it('빈 입력은 0/0', () => {
     expect(nearDupDrills('', [{ en: 'x' }])).toEqual({ exact: 0, added: 0 });
     expect(nearDupDrills('a', [])).toEqual({ exact: 0, added: 0 });
+  });
+});
+
+describe('filterNearDupDrills — 호칭류만 걷어내고 진짜 변주는 남긴다', () => {
+  it('주어를 붙인 변주는 화면에서 지우지 않는다 (구 규칙은 지웠음)', () => {
+    const kept = filterNearDupDrills('Seems like yesterday.', [
+      { en: 'Seems like yesterday.' },             // exact → 1개 유지
+      { en: 'Seems like yesterday, doesn\'t it?' }, // 문미태그 → 제거
+      { en: 'Our wedding seems like yesterday.' }, // 변주 → 유지
+    ]).map((d) => d.en);
+    expect(kept).toEqual(['Seems like yesterday.', 'Our wedding seems like yesterday.']);
   });
 });
 

@@ -61,13 +61,27 @@ export function chainHint(fails, { stepText, ko, isLast } = {}) {
   return { kind: 'full', text: String(stepText ?? '') };
 }
 
-/** 근접중복 = base 를 통째로 품고 2단어 이하만 덧붙인 드릴. */
-const isNearDup = (base, bw, en) => {
-  const dn = norm(en);
-  return !!dn && dn.includes(base) && wordCount(en) - bw <= 2;
-};
+/* 덧붙은 말이 **호칭·감탄사·담화표지·문미태그**인지 판정 (설계 정본의 '변주 아님' 4범주).
+ * 이들은 쉼표로 분리된 앞/뒤 조각으로 붙는다 — `Honey, …` / `…, honey.` / `…, right?`
+ * 쉼표 없이 붙는 주어(`Our wedding seems like…`)·부사(`How have you been lately?`)는 진짜 변주이므로 제외.
+ * (쉼표 조건 없이 '2단어 이하 추가'만 보면 주어 추가를 오탐한다 — 2026-07-10) */
+function addedIsOnlyVocative(base, en) {
+  const segs = String(en ?? '').split(',');
+  if (segs.length < 2) return false;
+  const candidates = [segs.slice(1).join(','), segs.slice(0, -1).join(','), segs.slice(1, -1).join(',')];
+  return candidates.some((c) => norm(c) === base);
+}
 
-/** 근접중복을 둘로 나눠 센다 — exact(영상 원문 반복, 1개 허용) · added(호칭·감탄사만 덧붙임, 0개).
+/** 드릴 분류 — 'exact'(영상 원문 반복) · 'vocative'(호칭류만 덧붙임) · 'variation'(진짜 변주) */
+function classifyDrill(base, bw, en) {
+  const dn = norm(en);
+  if (!dn) return 'variation';
+  if (dn === base) return 'exact';
+  if (!dn.includes(base) || wordCount(en) - bw > 2) return 'variation';
+  return addedIsOnlyVocative(base, en) ? 'vocative' : 'variation';
+}
+
+/** 근접중복을 둘로 나눠 센다 — exact(1개 허용) · added(호칭류, 0개).
  * 게이트(scripts/validate-seed.mjs)와 렌더가 이 함수를 공유해야 판정이 갈리지 않는다. */
 export function nearDupDrills(sentence, drills) {
   const base = norm(sentence);
@@ -76,24 +90,26 @@ export function nearDupDrills(sentence, drills) {
   let exact = 0;
   let added = 0;
   for (const d of drills ?? []) {
-    if (!isNearDup(base, bw, d?.en)) continue;
-    if (norm(d?.en) === base) exact += 1;
-    else added += 1;
+    const kind = classifyDrill(base, bw, d?.en);
+    if (kind === 'exact') exact += 1;
+    else if (kind === 'vocative') added += 1;
   }
   return { exact, added };
 }
 
-/** 근접중복 드릴을 첫 1개만 남기고 제거 (구 데이터 안전망 — 생성 차단은 게이트가 한다). */
+/** 호칭류는 전부 제거하고 영상 원문(exact)은 첫 1개만 남긴다 (구 데이터 안전망 — 생성 차단은 게이트가 한다). */
 export function filterNearDupDrills(sentence, drills) {
   const base = norm(sentence);
   const list = Array.isArray(drills) ? drills : [];
   if (!base) return list;
   const bw = wordCount(sentence);
-  let kept = 0;
+  let keptExact = 0;
   return list.filter((d) => {
-    if (!isNearDup(base, bw, d?.en)) return true;
-    kept += 1;
-    return kept === 1; // 영상 원문 1개만 남김
+    const kind = classifyDrill(base, bw, d?.en);
+    if (kind === 'vocative') return false;
+    if (kind !== 'exact') return true;
+    keptExact += 1;
+    return keptExact === 1;
   });
 }
 
