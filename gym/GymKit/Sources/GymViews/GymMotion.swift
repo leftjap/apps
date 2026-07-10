@@ -33,13 +33,15 @@ struct PulseGlow: ViewModifier {
 }
 
 extension View {
-    // 세트 세그 글로우 (mocks barPulse/segGlow — crail 4px 링 펄스)
-    func segGlow(cornerRadius: CGFloat, alpha: Double = 0.16) -> some View {
-        modifier(PulseGlow(color: GY.crailBase, maxAlpha: alpha, spread: 4, cornerRadius: cornerRadius))
+    // 세트 세그 글로우 — 홈 이어하기 카드는 mocks segGlow(4px/0.18),
+    // 세션 세트바는 시안 gBarPulse(6px/0.22). 호출부가 명시.
+    func segGlow(cornerRadius: CGFloat, alpha: Double = 0.16, spread: CGFloat = 4) -> some View {
+        modifier(PulseGlow(color: GY.crailBase, maxAlpha: alpha, spread: spread, cornerRadius: cornerRadius))
     }
     // 조건부 세그 글로우 — now 세그에만 (뷰 타입 안정 위해 ViewBuilder 분기)
-    @ViewBuilder func segGlowIf(_ cond: Bool, cornerRadius: CGFloat, alpha: Double = 0.16) -> some View {
-        if cond { segGlow(cornerRadius: cornerRadius, alpha: alpha) } else { self }
+    @ViewBuilder func segGlowIf(_ cond: Bool, cornerRadius: CGFloat,
+                                alpha: Double = 0.16, spread: CGFloat = 4) -> some View {
+        if cond { segGlow(cornerRadius: cornerRadius, alpha: alpha, spread: spread) } else { self }
     }
     // 이어하기 카드 숨쉬기 (mocks breath — crail 5px 링 펄스, 2.8s)
     func breathGlow(cornerRadius: CGFloat) -> some View {

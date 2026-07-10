@@ -52,16 +52,18 @@ struct PrevRecordBars: View {
                                      ? RoundedRectangle(cornerRadius: 5).strokeBorder(GY.line, lineWidth: 1.5) : nil)
                             // now 세그 — 상시 글로우(barPulse) + 좌드래그 비례 부풀림 (session.js 드래그 추종)
                             .scaleEffect(x: 1, y: s.state == .now ? 1 + dragP * 0.28 : 1, anchor: .bottom)
-                            .segGlowIf(s.state == .now, cornerRadius: 5)
+                            // gBarPulse — 시안 §6: 0 0 0 6px crail/0.22 (PWA barPulse 는 4px/0.16)
+                            .segGlowIf(s.state == .now, cornerRadius: 5, alpha: 0.22, spread: 6)
+                        // 숫자 위계 (시안 #6b) — 진행중=crail-deep 700 / 완료=ink-2 600 / 예정=ink-3 600
                         VStack(spacing: 2) {
-                            Text(s.top).font(.mono(12.5, s.isPreview ? 500 : 600))
+                            Text(s.top)
+                                .font(.mono(12.5, s.state == .now ? 700 : 600))
                                 .tracking(-0.25)   // -0.02em @12.5 (시안 609행 · mocks .seg-n .w)
-                                .foregroundStyle(s.pr ? GY.crailDeep
-                                                 : s.isPreview ? GY.ink4
-                                                 : s.state == .now ? GY.ink1 : GY.ink2)
+                                .foregroundStyle(s.pr || s.state == .now ? GY.crailDeep
+                                                 : s.state == .done ? GY.ink2 : GY.ink3)
                                 .contentTransition(.numericText())   // 커밋 크로스페이드 이중 노출 방지
                             Text(s.bottom.isEmpty ? " " : s.bottom).font(.mono(10, 500))
-                                .foregroundStyle(s.pr ? GY.crailDeep : GY.ink4)
+                                .foregroundStyle(s.pr || s.state == .now ? GY.crailDeep : GY.ink4)
                                 .contentTransition(.numericText())
                         }
                     }

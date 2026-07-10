@@ -138,6 +138,28 @@ public enum GymSessionLogic {
         session.blocks.firstIndex { $0.type == "single" && !isBlockDone($0) }
     }
 
+    // MARK: - 하단 운동종목 레일 (session.js computeFooterOrder + classifyBlockState 정합)
+
+    // 레일 칩 3단 깊이 (작업지시서 §4). PWA 'hold'(일부만 완료)는 예정과 같은 평면 아웃라인 룩.
+    public enum GymRailState: String, Sendable { case done, current, upcoming }
+    public struct GymFooterItem: Equatable, Sendable {
+        public let index: Int          // 원본 blocks 인덱스 (탭·꾹누르기 타깃)
+        public let state: GymRailState
+    }
+
+    /// [완료(finishedAt 오름차순) · 현재 · 예정(원래순)]. single 블록만. 현재는 완료여도 current.
+    public static func footerOrder(blocks: [GymBlock], currentIdx: Int) -> [GymFooterItem] {
+        let entries = blocks.enumerated().filter { $0.element.type == "single" }
+        let isCur = { (i: Int) in i == currentIdx }
+        let done = entries.filter { !isCur($0.offset) && isBlockDone($0.element) }
+            .sorted { ($0.element.finishedAt ?? 0) < ($1.element.finishedAt ?? 0) }
+        let current = entries.filter { isCur($0.offset) }
+        let pending = entries.filter { !isCur($0.offset) && !isBlockDone($0.element) }
+        return done.map { GymFooterItem(index: $0.offset, state: .done) }
+            + current.map { GymFooterItem(index: $0.offset, state: .current) }
+            + pending.map { GymFooterItem(index: $0.offset, state: .upcoming) }
+    }
+
     // MARK: - 세트바 표시 (resolveDotDisplay + formatSetSegment)
 
     // done/current 는 실값, 미입력 preview 는 ① 직전 세션 같은 세트번호 → (직전 세션 없을 때만)

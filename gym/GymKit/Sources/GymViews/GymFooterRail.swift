@@ -4,7 +4,16 @@ import GymCore
 // 세션 하단 운동종목 레일 — 작업지시서 §4 3단 깊이(완료=눌림/현재=떠오름/예정=평면) 네이티브 이식.
 // PWA mocks/session.html .fp-* 정합. 상태: done / current / upcoming.
 
-public enum RailState { case done, current, upcoming }
+public enum RailState {
+    case done, current, upcoming
+    init(core: GymSessionLogic.GymRailState) {
+        switch core {
+        case .done: self = .done
+        case .current: self = .current
+        case .upcoming: self = .upcoming
+        }
+    }
+}
 
 // 시안 #15a 체크 — "M2.4 6.3l2.4 2.4L9.6 3.4" (viewBox 12×12, 11px, stroke 1.7)
 struct CheckGlyph: Shape {
@@ -50,13 +59,16 @@ struct DoneChip: View {
         .padding(.horizontal, 15)
         .frame(height: 40)
         .background(Color(oklch: 0.965, 0.004, 60), in: RoundedRectangle(cornerRadius: 13))
+        // inset 0 1px 3px rgba(20,18,14,.09) — 상단 안쪽 4px 만 어둡게 (blur 3 + y 1)
+        .overlay(alignment: .top) {
+            LinearGradient(colors: [Color(hex: 0x14120E).opacity(0.09), .clear],
+                           startPoint: .top, endPoint: .bottom)
+                .frame(height: 4)
+                .allowsHitTesting(false)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 13))
         .overlay(  // inset 0 0 0 1px oklch(93.5% .005 60) — 눌림 테두리
             RoundedRectangle(cornerRadius: 13).strokeBorder(Color(oklch: 0.935, 0.005, 60), lineWidth: 1))
-        .overlay(  // inset 0 1px 3px rgba(20,18,14,.09) 근사 — 상단 내부 그림자
-            RoundedRectangle(cornerRadius: 13)
-                .fill(LinearGradient(colors: [Color(hex: 0x14120E).opacity(0.09), .clear],
-                                     startPoint: .top, endPoint: .init(x: 0.5, y: 0.35)))
-                .allowsHitTesting(false))
     }
 }
 
@@ -102,9 +114,22 @@ struct CurrentChip: View {
             .overlay(  // crail 테두리 링 — 피크에 진해짐 (fpCurrent)
                 RoundedRectangle(cornerRadius: 15)
                     .strokeBorder(breathe ? Color(oklch: 0.62, 0.15, 47) : GY.crailBase, lineWidth: 1.5))
+            // 드롭 섀도 — CSS 는 음수 spread(-6/-12)로 그림자 도형을 줄인다. SwiftUI 엔 spread 가 없으므로
+            // 안쪽으로 줄인 불투명 사각형이 그림자를 던지게 하고, 칩 본체가 그 위를 덮는다.
+            .background {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9).fill(Color.black)
+                        .padding(6)     // spread -6px
+                        .shadow(color: Color(hex: 0x14120E).opacity(breathe ? 0.34 : 0.30),
+                                radius: breathe ? 10 : 6, y: breathe ? 11 : 5)
+                    RoundedRectangle(cornerRadius: 3).fill(Color.black)
+                        .padding(12)    // spread -12px
+                        .shadow(color: Color(hex: 0x14120E).opacity(breathe ? 0.36 : 0.32),
+                                radius: breathe ? 18 : 12, y: breathe ? 22 : 14)
+                }
+                .allowsHitTesting(false)   // 안쪽으로 줄인 도형이라 칩의 불투명 배경에 완전히 가려진다
+            }
             .shadow(color: GY.crailBase.opacity(breathe ? 0.42 : 0), radius: 5.5)   // 피크 crail 글로우
-            .shadow(color: Color(hex: 0x14120E).opacity(breathe ? 0.34 : 0.30), radius: breathe ? 10 : 6, x: 0, y: breathe ? 11 : 5)
-            .shadow(color: Color(hex: 0x14120E).opacity(breathe ? 0.36 : 0.32), radius: breathe ? 18 : 12, x: 0, y: breathe ? 22 : 14)
             .scaleEffect(breathe ? 1.035 : 1)
             .offset(y: breathe ? -5 : -3)
             .onAppear {
@@ -133,8 +158,13 @@ struct AddExerciseButton: View {
 // 레일 컨테이너 — 트랙(스크롤) + ＋버튼(고정). 현재 카드 중앙 정렬은 스크롤/정렬 로직(다음 증분).
 // 칩 탭 = 블록 이동(§6-8), 꾹누르기(500ms) = 액션시트(§6-9).
 public struct GymFooterRail: View {
-    public struct Item: Identifiable { public let id = UUID(); public let name: String; public let state: RailState
-        public init(name: String, state: RailState) { self.name = name; self.state = state } }
+    public struct Item: Identifiable {
+        public let id = UUID(); public let name: String; public let state: RailState
+        public let blockIdx: Int   // 원본 blocks 인덱스 (재정렬돼도 탭 타깃 보존)
+        public init(name: String, state: RailState, blockIdx: Int = 0) {
+            self.name = name; self.state = state; self.blockIdx = blockIdx
+        }
+    }
     let items: [Item]
     var onTapItem: (Int) -> Void
     var onLongPressItem: (Int) -> Void
@@ -146,24 +176,46 @@ public struct GymFooterRail: View {
         self.onTapItem = onTapItem; self.onLongPressItem = onLongPressItem; self.onAdd = onAdd
     }
 
+    // 현재 칩의 우측 끝(콘텐츠 좌표) — 뷰포트 안에 다 들어오면 스크롤하지 않는다.
+    struct CurChipMaxXKey: PreferenceKey {
+        static let defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            let n = nextValue(); if n > 0 { value = n }
+        }
+    }
+    @State private var curMaxX: CGFloat = 0
+
     var chipsRow: some View {
         HStack(spacing: 10) {
             ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
                 Group {
                     switch item.state {
                     case .done: DoneChip(name: item.name)
-                    case .current: CurrentChip(name: item.name)
+                    case .current:
+                        CurrentChip(name: item.name)
+                            .background(GeometryReader { g in
+                                Color.clear.preference(key: CurChipMaxXKey.self,
+                                                       value: g.frame(in: .named("railContent")).maxX)
+                            })
                     case .upcoming: UpcomingChip(name: item.name)
                     }
                 }
                 .id(i)
-                .onTapGesture { onTapItem(i) }
-                .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(i) }
+                .onTapGesture { onTapItem(item.blockIdx) }
+                .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(item.blockIdx) }
             }
         }
         .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
         .padding(.vertical, 12)
         .padding(.horizontal, 4)
+    }
+
+    // 현재 카드가 뷰포트 안에 온전히 들어오면 좌측 정렬 유지, 아니면 중앙 정렬.
+    func align(_ proxy: ScrollViewProxy, viewportW: CGFloat, animated: Bool) {
+        guard let idx = items.firstIndex(where: { $0.state == .current }) else { return }
+        let fits = curMaxX > 0 && curMaxX <= viewportW
+        let apply = { fits ? proxy.scrollTo(0, anchor: .leading) : proxy.scrollTo(idx, anchor: .center) }
+        if animated { withAnimation(.easeOut(duration: 0.3)) { apply() } } else { apply() }
     }
 
     public var body: some View {
@@ -176,19 +228,25 @@ public struct GymFooterRail: View {
                         .frame(maxWidth: .infinity, alignment: items.count <= 1 ? .center : .leading)
                         .clipped()
                 } else {
-                    // 실앱 — 가로 스크롤 + 현재 카드 중앙 정렬 (§3, scrollIntoView 정합)
-                    ScrollViewReader { proxy in
-                        ScrollView(.horizontal, showsIndicators: false) { chipsRow }
-                            .onAppear {
-                                if let currentIdx { proxy.scrollTo(currentIdx, anchor: .center) }
+                    // 실앱 — 가로 스크롤. 현재 카드가 이미 전부 보이면 스크롤하지 않고(= scrollLeft 0,
+                    // 완료 칩이 왼쪽에 다 보임 · §7 수용기준 · 시안 #15a/#14a 렌더 · PWA .fp-rail 정합),
+                    // 뷰포트를 벗어날 때만 트랙 중앙으로 정렬한다 (§3).
+                    GeometryReader { vp in
+                        ScrollViewReader { proxy in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                chipsRow.coordinateSpace(name: "railContent")
                             }
-                            .onChange(of: currentIdx) { _, idx in
-                                guard let idx else { return }
-                                withAnimation(.easeOut(duration: 0.3)) {
-                                    proxy.scrollTo(idx, anchor: .center)
-                                }
+                            .onPreferenceChange(CurChipMaxXKey.self) { curMaxX = $0 }
+                            .onAppear { align(proxy, viewportW: vp.size.width, animated: false) }
+                            .onChange(of: currentIdx) { _, _ in
+                                align(proxy, viewportW: vp.size.width, animated: true)
                             }
+                            .onChange(of: curMaxX) { _, _ in
+                                align(proxy, viewportW: vp.size.width, animated: false)
+                            }
+                        }
                     }
+                    .frame(height: 74)   // track = padding 12 + 현재카드 50 + padding 12
                 }
             }
             // 우측만 페이드 마스크 (§3 — 완료 종목은 왼쪽에 다 보이게, 우측만 "더 있음" 암시)

@@ -374,9 +374,9 @@ public struct SessionScreenView: View {
                 .offset(x: heroDragX)   // 드래그 추종 — 히어로 값만 이동 (칩·링은 고정)
                 // 옛 값 고스트 — 좌향 퇴장 (드래그 커밋은 끌린 위치에서 제자리 페이드)
                 if let g = heroGhost {
-                    SessionHero(kind: g.kind, topValue: g.top, bottomValue: g.bottom)
+                    // 행별 OUT — 중량 -96 / 횟수 -88(55ms 지연). 시안 §6 gHeroSwapW/R.
+                    SessionHero(kind: g.kind, topValue: g.top, bottomValue: g.bottom, ghostOut: g.fromDrag)
                         .offset(x: g.fromDrag ? heroGhostDragX : 0)
-                        .modifier(HeroGhostOut(fromDrag: g.fromDrag))
                         .accessibilityHidden(true)   // 고스트 — a11y 트리 중복 방지 (UI 테스트 쿼리 오염 차단)
                         .id(heroSwapMoment)
                 }
@@ -409,7 +409,8 @@ public struct SessionScreenView: View {
             // 스와이프 방향 큐 (gSwipeHint — 커밋 1회, 좌향 스트릭+셰브런+엣지)
             .overlay {
                 if cueVisible {
-                    SwipeCue().id(heroSwapMoment)
+                    // 시안 #7b 의 % 좌표는 히어로 컨테이너(padding:0 26px) 기준 — 같은 폭을 준다.
+                    SwipeCue().id(heroSwapMoment).padding(.horizontal, 26)
                 }
             }
             .gesture(DragGesture(minimumDistance: 8)
@@ -440,10 +441,13 @@ public struct SessionScreenView: View {
                     exOver: prevExVol > 0 && blockDone >= prevExVol,
                     over: ov, burstMoment: burstMoment)
             }
-            GymFooterRail(items: model.session.blocks.enumerated().map { i, b in
-                let state: RailState = i == model.currentBlockIdx
-                    ? .current : (GymSessionLogic.isBlockDone(b) ? .done : .upcoming)
-                return GymFooterRail.Item(name: model.exerciseName(b.exerciseId), state: state)
+            // 레일 순서 = [완료(완료순) · 현재 · 예정(원래순)] — session.js computeFooterOrder 정합.
+            // 탭·꾹누르기는 원본 블록 인덱스(it.index)로 전달.
+            let railItems = GymSessionLogic.footerOrder(blocks: model.session.blocks,
+                                                        currentIdx: model.currentBlockIdx)
+            GymFooterRail(items: railItems.map {
+                GymFooterRail.Item(name: model.exerciseName(model.session.blocks[$0.index].exerciseId),
+                                   state: RailState(core: $0.state), blockIdx: $0.index)
             }, onTapItem: { model.selectBlock($0) },
                onLongPressItem: { actionTarget = .block($0) },
                onAdd: { addexOpen = true })
