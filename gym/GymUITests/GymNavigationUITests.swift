@@ -136,6 +136,33 @@ final class GymNavigationUITests: XCTestCase {
                       "홈 버튼 탭 후 이어하기 카드(HomeC)로 돌아와야 한다")
     }
 
+    // 실계정 세션 주입 → 실서버 5테이블 pull → 홈에 실데이터 반영 (E2E — 실기기 검증용).
+    // 토큰은 TEST_RUNNER_GYM_AT / TEST_RUNNER_GYM_RT 환경변수로 전달 (없으면 skip — 평시 스위트 무영향).
+    // 단언값은 2026-07-10 프로덕션 실측: 마지막 세션 2026-07-09(목) → "목요일 · 1일 전",
+    // 마지막 체중 2026-06-29 73.3kg → "직전 73.3kg". 날짜가 지나면 이 테스트의 기대값 갱신 필요.
+    func testRealDataAfterAuth() throws {
+        guard let at = ProcessInfo.processInfo.environment["GYM_AT"],
+              let rt = ProcessInfo.processInfo.environment["GYM_RT"] else {
+            throw XCTSkip("GYM_AT/GYM_RT 미설정 — 실계정 sync 검증은 토큰 주입 실행에서만")
+        }
+        let app = XCUIApplication()
+        app.launchArguments = ["--auth-tokens", at, rt]
+        app.launch()
+
+        // 네트워크 pull 대기 — 직전 운동 행(실데이터 마커)이 뜰 때까지
+        let lastRow = app.staticTexts["목요일 · 1일 전"]
+        XCTAssertTrue(lastRow.waitForExistence(timeout: 30),
+                      "로그인 sync 후 직전 운동(2026-07-09 목 · 1일 전)이 홈에 떠야 한다")
+        let weight = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "직전 73.3kg")).firstMatch
+        XCTAssertTrue(weight.waitForExistence(timeout: 10), "실체중(직전 73.3kg)이 홈에 떠야 한다")
+
+        let shot = XCUIScreen.main.screenshot()
+        let attach = XCTAttachment(screenshot: shot)
+        attach.name = "real-data-home"
+        attach.lifetime = .keepAlways
+        add(attach)
+    }
+
     // 프로필 탭 → Google 로그인 버튼 실제 탭 → 실 OAuth 플로우 개시 검증.
     //
     // 자동 어써션 범위(접근성 트리로 쿼리 가능):

@@ -307,8 +307,15 @@ public final class GymAppModel: ObservableObject {
 
     // MARK: - 클라우드 (선택적 sync — spec §4 양방향 병합·안전장치)
 
+    public var pendingAuthTokens: (access: String, refresh: String)? = nil   // 검증 훅 (--auth-tokens)
+
     public func restoreCloud() async {
-        await cloud.restore()
+        if let t = pendingAuthTokens {
+            pendingAuthTokens = nil
+            await cloud.setSession(accessToken: t.access, refreshToken: t.refresh)
+        } else {
+            await cloud.restore()
+        }
         if cloud.signedIn { await syncNow() }
     }
     public func login() async { try? await cloud.signInWithGoogle(); await syncNow() }

@@ -57,6 +57,15 @@ public final class CloudStore: ObservableObject {
         try? await client.auth.signOut(); ownerID = nil; signedIn = false; userEmail = nil
     }
 
+    // 검증 훅 — 발급된 세션 토큰 직접 주입 (실기기 E2E: OAuth 웹플로우 없이 실계정 sync 검증).
+    // SDK 가 세션을 영속하므로 이후 실행은 restore() 로 로그인 유지. 화이트리스트 가드 동일 적용.
+    public func setSession(accessToken: String, refreshToken: String) async {
+        guard let session = try? await client.auth.setSession(accessToken: accessToken,
+                                                              refreshToken: refreshToken) else { return }
+        guard Self.isAllowedEmail(session.user.email) else { await signOut(); return }
+        ownerID = session.user.id; signedIn = true; userEmail = session.user.email
+    }
+
     // push/pull 일시 실패 자동 재시도 — spec §4 "5초, 15초, 45초" (sync.js withRetry 정합).
     static let retryDelaysSec: [UInt64] = [5, 15, 45]
     func withRetry<T>(_ op: () async throws -> T) async throws -> T {

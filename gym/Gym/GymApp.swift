@@ -32,6 +32,10 @@ struct GymApp: App {
                 model.statsInitialTab = t
             }
         }
+        // 검증 훅 — 발급 세션 토큰 주입 (실기기 E2E sync 검증, restoreCloud 가 소비)
+        if let i = args.firstIndex(of: "--auth-tokens"), args.count > i + 2 {
+            model.pendingAuthTokens = (args[i + 1], args[i + 2])
+        }
         _model = StateObject(wrappedValue: model)
     }
 
