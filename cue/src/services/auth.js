@@ -42,8 +42,8 @@ export async function signInWithGoogle() {
   });
 }
 
-/** 로그아웃. */
+/** 로그아웃. 이 기기에서만 — scope 기본값 global 은 다른 기기 세션까지 서버에서 삭제한다. */
 export async function signOut() {
   if (!supabase) return;
-  await supabase.auth.signOut();
+  await supabase.auth.signOut({ scope: 'local' });
 }

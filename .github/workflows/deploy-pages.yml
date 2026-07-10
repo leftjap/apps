@@ -37,6 +37,14 @@ jobs:
             cue/pnpm-lock.yaml
             best/pnpm-lock.yaml
 
+      # 인증 게이트 (2026-07-11) — Supabase signOut() 의 기본 scope 는 global 이라
+      # 한 기기 로그아웃이 그 계정의 모든 기기 세션을 서버에서 삭제한다(폰의 study·today 동반 로그아웃).
+      # 어느 앱이든 scope: 'local' 을 빠뜨리면 배포를 막는다.
+      - name: Check signOut scope (all apps)
+        run: |
+          node scripts/check-signout-scope.mjs --self-test
+          node scripts/check-signout-scope.mjs
+
       # 회귀 게이트 — today 테스트 실패 시 전체 배포 차단 (2026-06-10, 가계부 점검 후속).
       # env 불필요: 스위트는 supabase mock 기반 (.env.local 부재 모드로 로컬 검증 완료).
       # TZ 고정: isoToMockDate 등 날짜 표시가 사용자 로컬 시간대(KST) 전제 — UTC 러너에서 오탐 방지.

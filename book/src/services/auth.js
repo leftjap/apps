@@ -107,7 +107,9 @@ async function signOut() {
     return;
   }
   markExplicitSignOut();
-  const { error } = await supabase.auth.signOut();
+  // scope: 'local' 필수 — 기본값 global 은 서버에서 그 계정의 모든 refresh token 을 지워
+  // 같은 Supabase 프로젝트를 쓰는 다른 기기·다른 앱(폰의 study·today 등)까지 로그아웃시킨다.
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) console.error('[auth] signOut 실패', error);
 }
 
