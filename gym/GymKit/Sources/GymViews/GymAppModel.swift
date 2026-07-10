@@ -30,11 +30,15 @@ public final class GymAppModel: ObservableObject {
             session = snapshotSession   // 스냅샷 검증용 — 영속 오염 없음
         } else if let loaded = LocalStore.loadSession() {
             session = loaded
-        } else {
-            // 데모: 진행 중처럼 보이도록 시작 시각을 18분 전으로 (라이브 타이머 현실값).
+        } else if GymSnapshot.isActive {
+            // 데모 활성 세션 = gymshot 스냅샷 전용 스캐폴딩. 진행 중처럼 보이도록 시작 시각 18분 전.
             var demo = GymAppModel.demoSession()
             demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
             session = demo
+        } else {
+            // 실앱 첫 실행 — 빈 활성 세션 → 홈 idle (PWA 정합: 데모 활성 세션 없음.
+            // 구 동작은 date 2026-05-06 데모가 스윕 제외라 영구 생존 → 경과 수십만 분 표기 결함)
+            session = GymSession(id: UUID().uuidString, date: Self.dayFmt.string(from: Date()), status: .active)
         }
         history = LocalStore.loadSessions()
         prs = LocalStore.loadPRs()

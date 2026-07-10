@@ -38,6 +38,13 @@ enum FlowHarness {
         print("[0] 초기 상태 (첫 실행 시드)")
         check(m.history.count == 4, "시드 이력 4건 로드 (실측 \(m.history.count))")
         check(m.weights.count == 4, "시드 체중 4건 로드")
+        // 실앱 첫 실행 경로 — 데모 활성 세션은 스냅샷 전용 (실기기 첫 실행 거대 경과 타이머 결함 회귀 방지)
+        GymSnapshot.isActive = false
+        LocalStore.clearSession()
+        let mApp = GymAppModel()
+        check(mApp.session.blocks.isEmpty && mApp.session.status == .active,
+              "실앱 첫 실행 = 빈 활성 세션 (데모 미주입 → 홈 idle)")
+        GymSnapshot.isActive = true
         m.discardSession()   // 데모 진행 세션 정리 → 빈 활성
         check(m.session.blocks.isEmpty && m.session.status == .active, "빈 활성 세션")
         render(HomeScreenView(model: m), outdir, "flow-01-home-idle")

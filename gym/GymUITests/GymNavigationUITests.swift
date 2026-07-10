@@ -4,32 +4,45 @@ import XCTest
 final class GymNavigationUITests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
+    // 리셋(데모 활성 세션) → HomeC 이어하기 → 세션 → 꾹누르기 종료 → 세션 삭제(2단계 확인)
+    // → HomeA(idle) → CTA → 빈 세션 (spec §5-5·§6-9·§6-1 실탭 여정).
     func testCTANavigatesToSession() {
         let app = XCUIApplication()
+        app.launchArguments = ["--reset"]
         app.launch()
 
-        // 홈 화면 확인
-        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 10),
-                      "홈 화면(부위 밸런스)이 떠야 한다")
-        XCTAssertFalse(app.staticTexts["직전 세션 기록"].exists,
-                       "세션 전환 전엔 직전 세션 기록이 없어야 한다")
+        // --reset = 데모 활성 세션 복원 → 홈은 HomeC(이어하기 카드) 분기 (spec §5-5)
+        let resume = app.buttons["home-resume"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10), "리셋 직후 홈은 이어하기 카드(HomeC)여야 한다")
+        resume.tap()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 5),
+                      "이어하기 탭 후 세션 화면이 떠야 한다")
 
-        // 운동 시작 CTA 실제 탭
+        // 꾹누르기 종료 → 세션 삭제(danger 2단계 확인) → 빈 세션으로 홈 복귀 = HomeA (§6-9)
+        app.staticTexts["session-end"].press(forDuration: 0.8)
+        let discard = app.buttons["action-discard"]
+        XCTAssertTrue(discard.waitForExistence(timeout: 5), "종료 액션시트(세션 삭제)가 떠야 한다")
+        discard.tap()
+        let confirm = app.buttons["action-confirm"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5), "삭제 확인 단계가 떠야 한다")
+        confirm.tap()
+
+        // HomeA 확인 + CTA → 빈 세션 (NEW SESSION + 인라인 운동추가)
+        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 5),
+                      "세션 삭제 후 홈은 idle(부위 밸런스)이어야 한다")
         let cta = app.buttons["home-cta"]
         XCTAssertTrue(cta.waitForExistence(timeout: 5), "운동 시작 버튼이 있어야 한다")
         cta.tap()
-
-        // 세션 화면 전환 확인 (직전 세션 기록 + 종료)
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 5),
-                      "CTA 탭 후 세션 화면(직전 세션 기록)이 떠야 한다")
-        XCTAssertTrue(app.buttons["session-end"].exists, "세션 툴바 종료가 있어야 한다")
+        XCTAssertTrue(app.staticTexts["NEW SESSION"].waitForExistence(timeout: 5),
+                      "빈 세션(NEW SESSION)이 떠야 한다")
     }
 
-    // 홈 → 통계 → 탭 전환(종목) → 홈 복귀
+    // 홈(HomeC) → 통계 → 탭 전환(종목·부위) → 홈 복귀
     func testStatsNavigationAndTabs() {
         let app = XCUIApplication()
+        app.launchArguments = ["--reset"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["home-resume"].waitForExistence(timeout: 10), "리셋 홈은 HomeC")
         app.buttons["home-stats"].tap()
         // 통계 캘린더 탭
         XCTAssertTrue(app.staticTexts["이번 주 볼륨"].waitForExistence(timeout: 5), "통계 캘린더가 떠야 한다")
@@ -39,9 +52,9 @@ final class GymNavigationUITests: XCTestCase {
         // 부위 탭 전환
         app.buttons["stats-tab-부위"].tap()
         XCTAssertTrue(app.staticTexts["최근 60일 부위 분포"].waitForExistence(timeout: 5), "부위 탭 내용이 떠야 한다")
-        // 홈 복귀
+        // 홈 복귀 (활성 세션 유지 → HomeC)
         app.buttons["stats-home"].tap()
-        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 5), "홈으로 돌아와야 한다")
+        XCTAssertTrue(app.buttons["home-resume"].waitForExistence(timeout: 5), "홈(HomeC)으로 돌아와야 한다")
     }
 
     // 좌스와이프 = 세트완료 → 현재 세트 중량이 다음 세트로 갱신 (상태머신 실 인터랙션)
@@ -59,7 +72,7 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertEqual(hero.label, "72", "세트완료 후 다음 세트 72kg 로 갱신돼야 한다")
     }
 
-    // 우측 빈영역 탭 = 중량 증가 (session.js applyTapDelta)
+    // 우측 존 탭 = 중량 증가 (§6-3 — 좌30/중40/우30, 바벨 증분 +5)
     func testTapAdjustsWeight() {
         let app = XCUIApplication()
         app.launchArguments = ["--route", "session", "--reset"]
@@ -67,19 +80,22 @@ final class GymNavigationUITests: XCTestCase {
         let hero = app.staticTexts["hero-weight"]
         XCTAssertTrue(hero.waitForExistence(timeout: 10))
         XCTAssertEqual(hero.label, "70")
-        app.otherElements["hero-plus"].tap()   // +2.5
-        let e = expectation(for: NSPredicate(format: "label == %@", "72.5"), evaluatedWith: hero)
+        app.otherElements["zone-plus"].firstMatch.tap()   // 상단(중량) 행 우측 존 — 바벨 +5
+        let e = expectation(for: NSPredicate(format: "label == %@", "75"), evaluatedWith: hero)
         wait(for: [e], timeout: 5)
-        XCTAssertEqual(hero.label, "72.5", "우측 탭 후 중량 +2.5")
+        XCTAssertEqual(hero.label, "75", "우측 존 탭 후 중량 +5 (바벨)")
     }
 
-    // 종료 버튼 = 요약 화면 진입
+    // 종료 = 꾹누르기 → 액션시트 "종료" → 요약 (§6-9·§7-1 — PWA 탭 무동작 정합)
     func testSessionEndToSummary() {
         let app = XCUIApplication()
         app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
         XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10))
-        app.buttons["session-end"].tap()
+        app.staticTexts["session-end"].press(forDuration: 0.8)
+        let finish = app.buttons["action-finish"]
+        XCTAssertTrue(finish.waitForExistence(timeout: 5), "종료 액션시트가 떠야 한다")
+        finish.tap()
         XCTAssertTrue(app.staticTexts["TOTAL"].waitForExistence(timeout: 5), "종료 후 요약(TOTAL)이 떠야 한다")
     }
 
@@ -104,10 +120,10 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertEqual(hero2.label, "72", "재시작해도 완료한 세트 상태가 유지돼야 한다(72)")
     }
 
-    // 세션 → 홈 (툴바 홈 버튼) 역방향 검증
+    // 세션 → 홈 (툴바 홈 버튼) — 활성 세션 유지 중이므로 HomeC(이어하기)로 복귀 (spec §5-5)
     func testHomeButtonReturnsHome() {
         let app = XCUIApplication()
-        app.launchArguments = ["--route", "session"]
+        app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
 
         XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10),
@@ -116,8 +132,8 @@ final class GymNavigationUITests: XCTestCase {
         let homeBtn = app.buttons["session-home"]
         XCTAssertTrue(homeBtn.waitForExistence(timeout: 5), "세션 툴바 홈 버튼이 있어야 한다")
         homeBtn.tap()
-        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 5),
-                      "홈 버튼 탭 후 홈(부위 밸런스)으로 돌아와야 한다")
+        XCTAssertTrue(app.buttons["home-resume"].waitForExistence(timeout: 5),
+                      "홈 버튼 탭 후 이어하기 카드(HomeC)로 돌아와야 한다")
     }
 
     // 프로필 탭 → Google 로그인 버튼 실제 탭 → 실 OAuth 플로우 개시 검증.
