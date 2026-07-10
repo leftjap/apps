@@ -136,29 +136,34 @@ final class GymNavigationUITests: XCTestCase {
                       "홈 버튼 탭 후 이어하기 카드(HomeC)로 돌아와야 한다")
     }
 
-    // 실계정 세션 주입 → 실서버 5테이블 pull → 홈에 실데이터 반영 (E2E — 실기기 검증용).
+    // 실계정 세션 주입 → 실서버 5테이블 pull 반영 (E2E — 실기기 검증용).
     // 토큰은 TEST_RUNNER_GYM_AT / TEST_RUNNER_GYM_RT 환경변수로 전달 (없으면 skip — 평시 스위트 무영향).
-    // 단언값은 2026-07-10 프로덕션 실측: 마지막 세션 2026-07-09(목) → "목요일 · 1일 전",
-    // 마지막 체중 2026-06-29 73.3kg → "직전 73.3kg". 날짜가 지나면 이 테스트의 기대값 갱신 필요.
+    // 마커는 홈 상태·날짜 무관: 프로필 동기화 카드 실계정 이메일 + 체중 탭 실측치.
+    // (구버전은 "목요일 · 1일 전" 고정 문구라 사용자가 운동 중(HomeC)이면 오탐 — 2026-07-10 실기기 확인)
     func testRealDataAfterAuth() throws {
         guard let at = ProcessInfo.processInfo.environment["GYM_AT"],
               let rt = ProcessInfo.processInfo.environment["GYM_RT"] else {
             throw XCTSkip("GYM_AT/GYM_RT 미설정 — 실계정 sync 검증은 토큰 주입 실행에서만")
         }
         let app = XCUIApplication()
-        app.launchArguments = ["--auth-tokens", at, rt]
+        app.launchArguments = ["--auth-tokens", at, rt, "--route", "admin", "--tab", "profile"]
         app.launch()
 
-        // 네트워크 pull 대기 — 직전 운동 행(실데이터 마커)이 뜰 때까지
-        let lastRow = app.staticTexts["목요일 · 1일 전"]
-        XCTAssertTrue(lastRow.waitForExistence(timeout: 30),
-                      "로그인 sync 후 직전 운동(2026-07-09 목 · 1일 전)이 홈에 떠야 한다")
-        let weight = app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "직전 73.3kg")).firstMatch
-        XCTAssertTrue(weight.waitForExistence(timeout: 10), "실체중(직전 73.3kg)이 홈에 떠야 한다")
+        // 로그인 반영 — 동기화 카드에 실계정 이메일 (setSession 성공 증거)
+        let email = app.staticTexts.matching(
+            NSPredicate(format: "label CONTAINS %@", "leftjap@gmail.com")).firstMatch
+        XCTAssertTrue(email.waitForExistence(timeout: 30), "동기화 카드에 실계정 이메일이 떠야 한다")
+
+        // 실데이터 pull 반영 — 체중 탭 현재 체중이 '—'가 아닌 실측치 (서버 gym_weights)
+        app.buttons["admin-tab-체중"].tap()
+        let heroNum = app.staticTexts["weight-hero-num"]
+        XCTAssertTrue(heroNum.waitForExistence(timeout: 20), "체중 히어로가 있어야 한다")
+        let notEmpty = expectation(for: NSPredicate(format: "label != %@", "—"), evaluatedWith: heroNum)
+        wait(for: [notEmpty], timeout: 20)
 
         let shot = XCUIScreen.main.screenshot()
         let attach = XCTAttachment(screenshot: shot)
-        attach.name = "real-data-home"
+        attach.name = "real-data-weight"
         attach.lifetime = .keepAlways
         add(attach)
     }
