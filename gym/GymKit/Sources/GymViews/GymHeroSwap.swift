@@ -6,7 +6,8 @@ import GymCore
 // 라이브 히어로(새 값) = IN 트랙, 고스트(옛 값) = OUT 트랙. 전부 pointer-events 불간섭.
 
 // IN — 새 값이 우측(+88/+82)에서 진입, 착지 오버슈트(1.08/1.09) + crail 플래시 후 정착.
-// 시간축: 0~38% 대기(고스트 퇴장 구간) → 55% 착지 → 74% 플래시 유지 → 100% 정착. 횟수 행은 55ms 지연.
+// 시안 gHeroSwapW/R: 0~38% 대기(투명) → 55% 착지 → 74% 플래시 유지 → 100% 정착. 횟수 행은 55ms 지연.
+// 진행 p 는 선형, 모션 값은 HeroSwapMotion 이 구간별 베지어로 계산 (CSS 정확 이식).
 struct HeroRowSwapIn: ViewModifier {
     var trigger: Int
     var delay: Double         // 0 (중량) / 0.055 (횟수)
@@ -14,51 +15,22 @@ struct HeroRowSwapIn: ViewModifier {
     var landScale: CGFloat    // 1.08 / 1.09
     var landOvershoot: CGFloat = -8   // 착지 오버슈트 — 중량 -8 / 횟수 -6 (시안 gHeroSwapW/R 55%)
     var baseColor: Color = GY.ink1    // 정착 색 — 중량 ink-1 / 횟수 ink-2 (시안 §6)
-    struct V {
-        var x: CGFloat = 0; var s: CGFloat = 1; var o: CGFloat = 1
-        var skew: CGFloat = 0; var flash: CGFloat = 0
-    }
+
     func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: V(), trigger: trigger) { view, v in
+        // p: idle=1(정착·가시) → 트리거 시 0 으로 리셋 후 선형 1 까지.
+        content.keyframeAnimator(initialValue: 1.0, trigger: trigger) { view, p in
+            let ep = HeroSwapMotion.effectiveP(p, delay: delay)
+            let f = HeroSwapMotion.live(dxIn: Double(dxIn), landOvershoot: Double(landOvershoot),
+                                        landScale: Double(landScale), at: ep)
             view
-                // 착지 색 플래시 — gHeroSwapW/R 의 color 키프레임 (55%~74% crail-deep → 100% 정착)
-                .foregroundStyle(Color.lerpSRGB(baseColor, GY.crailDeep, v.flash))
-                .opacity(v.o)
-                .scaleEffect(v.s)
-                .transformEffect(CGAffineTransform(a: 1, b: 0, c: tan(v.skew * .pi / 180), d: 1, tx: 0, ty: 0))
-                .offset(x: v.x)
+                .foregroundStyle(Color.lerpSRGB(baseColor, GY.crailDeep, f.flash))
+                .opacity(f.opacity)
+                .scaleEffect(f.scale)
+                .transformEffect(CGAffineTransform(a: 1, b: 0, c: tan(f.skew * .pi / 180), d: 1, tx: 0, ty: 0))
+                .offset(x: f.x)
         } keyframes: { _ in
-            KeyframeTrack(\.x) {
-                MoveKeyframe(dxIn)
-                LinearKeyframe(dxIn, duration: 0.29 + delay)
-                CubicKeyframe(landOvershoot, duration: 0.13)
-                CubicKeyframe(0, duration: 0.34)
-            }
-            KeyframeTrack(\.s) {
-                MoveKeyframe(0.86)
-                LinearKeyframe(0.86, duration: 0.29 + delay)
-                CubicKeyframe(landScale, duration: 0.13)
-                CubicKeyframe(1, duration: 0.34)
-            }
-            KeyframeTrack(\.o) {
-                MoveKeyframe(0)
-                LinearKeyframe(0, duration: 0.29 + delay)
-                CubicKeyframe(1, duration: 0.13)
-                LinearKeyframe(1, duration: 0.34)
-            }
-            KeyframeTrack(\.skew) {
-                MoveKeyframe(5)
-                LinearKeyframe(5, duration: 0.29 + delay)
-                CubicKeyframe(0, duration: 0.13)
-                LinearKeyframe(0, duration: 0.34)
-            }
-            KeyframeTrack(\.flash) {
-                MoveKeyframe(0)
-                LinearKeyframe(0, duration: 0.29 + delay)
-                LinearKeyframe(1, duration: 0.13)
-                LinearKeyframe(1, duration: 0.14)   // 74% 까지 유지
-                LinearKeyframe(0, duration: 0.20)
-            }
+            MoveKeyframe(0.0)   // 트리거마다 진입 상태로 리셋
+            LinearKeyframe(1.0, duration: HeroSwapMotion.duration + delay)
         }
     }
 }
@@ -70,35 +42,19 @@ struct HeroGhostOut: ViewModifier {
     var dxOut: CGFloat = -96    // 시안 §6 gHeroSwapW -96 / gHeroSwapR -88
     var delay: Double = 0       // 횟수 행 55ms
     @State private var fired = false
-    struct V { var x: CGFloat = 0; var s: CGFloat = 1; var o: CGFloat = 1; var skew: CGFloat = 0 }
+
     func body(content: Content) -> some View {
-        content.keyframeAnimator(initialValue: V(), trigger: fired) { view, v in
+        // 고스트는 스왑마다 새로 생성(.id) — idle=0(가시) 에서 onAppear 로 1(퇴장)까지.
+        content.keyframeAnimator(initialValue: 0.0, trigger: fired) { view, p in
+            let ep = HeroSwapMotion.effectiveP(p, delay: delay)
+            let f = HeroSwapMotion.ghost(dxOut: Double(dxOut), fromDrag: fromDrag, at: ep)
             view
-                .opacity(v.o)
-                .scaleEffect(v.s)
-                .transformEffect(CGAffineTransform(a: 1, b: 0, c: tan(v.skew * .pi / 180), d: 1, tx: 0, ty: 0))
-                .offset(x: v.x)
+                .opacity(f.opacity)
+                .scaleEffect(f.scale)
+                .transformEffect(CGAffineTransform(a: 1, b: 0, c: tan(f.skew * .pi / 180), d: 1, tx: 0, ty: 0))
+                .offset(x: f.x)
         } keyframes: { _ in
-            KeyframeTrack(\.x) {
-                LinearKeyframe(0, duration: delay)
-                CubicKeyframe(fromDrag ? 0 : dxOut, duration: 0.182)
-                LinearKeyframe(fromDrag ? 0 : dxOut, duration: 0.6)
-            }
-            KeyframeTrack(\.s) {
-                LinearKeyframe(1, duration: delay)
-                CubicKeyframe(fromDrag ? 1 : 0.86, duration: 0.182)
-                LinearKeyframe(fromDrag ? 1 : 0.86, duration: 0.6)
-            }
-            KeyframeTrack(\.o) {
-                LinearKeyframe(1, duration: delay)
-                CubicKeyframe(0, duration: fromDrag ? 0.15 : 0.182)
-                LinearKeyframe(0, duration: 0.6)
-            }
-            KeyframeTrack(\.skew) {
-                LinearKeyframe(0, duration: delay)
-                CubicKeyframe(fromDrag ? 0 : -6, duration: 0.182)
-                LinearKeyframe(fromDrag ? 0 : -6, duration: 0.6)
-            }
+            LinearKeyframe(1.0, duration: HeroSwapMotion.duration + delay)
         }
         .onAppear { fired = true }
         .allowsHitTesting(false)
@@ -144,7 +100,6 @@ struct ChevronLeftGlyph: Shape {
 // 위치는 전부 시안 #7b 의 % 기준 (컨테이너 폭·높이 비례) — 고정 pt 하드코딩 금지.
 struct SwipeCue: View {
     @State private var fired = false
-    struct V { var x: CGFloat = 52; var o: CGFloat = 0 }
     var body: some View {
         GeometryReader { g in
             let w = g.size.width, h = g.size.height
@@ -182,20 +137,13 @@ struct SwipeCue: View {
                 .offset(x: w * 1.02 - 78, y: h * 0.30)   // 3칩 폭 = 42*3 - 24*2 = 78
             }
         }
-        .keyframeAnimator(initialValue: V(), trigger: fired) { view, v in
-            view.offset(x: v.x).opacity(v.o)
+        // gSwipeHint 760ms cubic-bezier(.32,.72,.18,1) — 구간별 베지어(HeroSwapCurve).
+        .keyframeAnimator(initialValue: 0.0, trigger: fired) { view, p in
+            let x = HeroSwapCurve.eval([(0, 52), (0.52, -52), (1, -108)], at: p)
+            let o = HeroSwapCurve.eval([(0, 0), (0.18, 1), (0.52, 0.6), (1, 0)], at: p)
+            return view.offset(x: x).opacity(o)
         } keyframes: { _ in
-            KeyframeTrack(\.x) {
-                MoveKeyframe(52)
-                LinearKeyframe(-52, duration: 0.395)   // 52%
-                LinearKeyframe(-108, duration: 0.365)  // 100%
-            }
-            KeyframeTrack(\.o) {
-                MoveKeyframe(0)
-                LinearKeyframe(1, duration: 0.137)     // 18%
-                LinearKeyframe(0.6, duration: 0.258)   // 52%
-                LinearKeyframe(0, duration: 0.365)     // 100%
-            }
+            LinearKeyframe(1.0, duration: HeroSwapMotion.duration)
         }
         .onAppear { fired = true }
         .allowsHitTesting(false)
