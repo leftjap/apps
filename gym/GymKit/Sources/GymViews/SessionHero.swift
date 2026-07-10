@@ -33,7 +33,10 @@ struct SessionHero: View {
     @ViewBuilder func heroNumber(_ v: String, font: Font, tracking: CGFloat, id: String,
                                  dxIn: CGFloat, dxOut: CGFloat, landScale: CGFloat,
                                  delay: Double, base: Color) -> some View {
-        let t = Text(v).font(font).tracking(tracking)
+        // iOS Text.tracking 은 마지막 글자 뒤에도 자간을 적용해 프레임이 좁아지고, 그 좁은 프레임에
+        // 마지막 글자 잉크를 자른다(브라우저는 letter-spacing 를 넣어도 잉크를 안 자름).
+        // → 글자 사이에만 kern 을 넣는 AttributedString 으로 프레임을 넓혀 클립을 없앤다 (중앙 정렬 유지).
+        let t = Text(HeroNumberText.kerned(v, tracking: tracking)).font(font)
         if let fromDrag = ghostOut {
             t.foregroundStyle(base)
                 .modifier(HeroGhostOut(fromDrag: fromDrag, dxOut: dxOut, delay: delay))
@@ -110,10 +113,14 @@ struct SessionHero: View {
         }
     }
 
-    // 중량/시간 (mono, 프리셋은 300 가늘게). 스왑은 숫자만 — 단위는 정지.
+    // 히어로 큰 숫자 굵기 — 시안·PWA 고정. 프리셋이라고 얇게 그리지 않는다(증량 시 굵기 튐 방지).
+    static func weightMonoWeight(preset: Bool) -> Int { 600 }   // .hero-weight 600 고정
+    static func repsMonoWeight(preset: Bool) -> Int { 400 }     // .hero-reps 400 고정
+
+    // 중량/시간 (mono). 스왑은 숫자만 — 단위는 정지.
     func big(_ v: String, unit: String) -> some View {
         VStack(spacing: 0) {
-            heroNumber(v, font: .mono(122, preset ? 300 : 600), tracking: -6.7,   // -0.055em @122
+            heroNumber(v, font: .mono(122, Self.weightMonoWeight(preset: preset)), tracking: -6.7,   // -0.055em @122
                        id: "hero-weight", dxIn: 88, dxOut: -96, landScale: 1.08, delay: 0,
                        base: locked ? GY.ink4 : GY.ink1)
                 .lineSpacing(0)
@@ -133,7 +140,7 @@ struct SessionHero: View {
                 Text("×").font(.mono(24, 300)).foregroundStyle(GY.ink4)
                     .opacity(ghostOut == nil ? 1 : 0)
             }
-            heroNumber(v, font: .mono(50, preset ? 300 : 400), tracking: -1,   // -0.02em @50
+            heroNumber(v, font: .mono(50, Self.repsMonoWeight(preset: preset)), tracking: -1,   // -0.02em @50
                        id: "hero-reps", dxIn: 82, dxOut: -88, landScale: 1.09, delay: repsDelay,
                        base: locked ? GY.ink4 : GY.ink2)
             Text(unit).font(.sans(16, 500)).foregroundStyle(GY.ink3)

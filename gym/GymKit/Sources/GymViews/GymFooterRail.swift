@@ -135,6 +135,10 @@ struct CurrentChip: View {
                 }
                 .allowsHitTesting(false)   // 안쪽으로 줄인 도형이라 칩의 불투명 배경에 완전히 가려진다
             }
+            // compositingGroup — 칩(배경+테두리+하이라이트)을 불투명 레이어로 평탄화한 뒤 그림자를 던진다.
+            // 이게 없으면 crail 글로우가 반투명 합성을 통해 칩 내부로 번져 흰 바탕이 탁해진다
+            // (시안 box-shadow 는 요소 배경 안에 절대 안 그려짐).
+            .compositingGroup()
             .shadow(color: GY.crailBase.opacity(breathe ? 0.42 : 0), radius: 5.5)   // 피크 crail 글로우
             .scaleEffect(breathe ? 1.035 : 1)
             .offset(y: breathe ? -5 : -3)

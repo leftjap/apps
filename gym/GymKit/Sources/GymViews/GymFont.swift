@@ -17,16 +17,9 @@ public extension Font {
         return .custom(name, fixedSize: size)
     }
 
-    // Space Grotesk 가변: 실측 인스턴스 Light(300)/Light_Regular(400)/Light_Medium(500)/Light_Bold(700).
-    // 600 → Bold(700) 근사 (600 named instance 미노출).
+    // Space Grotesk 가변 — wght 축 정확 지정 + tabular_nums (GymMonoFont).
+    // named instance 근사(600→700)·프로포셔널 숫자 폭 문제를 피한다. 시안 tabular-nums 정합.
     static func mono(_ size: CGFloat, _ weight: Int) -> Font {
-        let name: String
-        switch weight {
-        case ..<350: name = "SpaceGrotesk-Light"
-        case ..<450: name = "SpaceGrotesk-Light_Regular"
-        case ..<550: name = "SpaceGrotesk-Light_Medium"
-        default:     name = "SpaceGrotesk-Light_Bold"  // 600·700
-        }
-        return .custom(name, fixedSize: size)
+        GymMonoFont.font(size: size, weight: weight)
     }
 }

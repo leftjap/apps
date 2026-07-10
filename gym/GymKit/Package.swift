@@ -22,5 +22,6 @@ let package = Package(
         // 헤드리스 렌더 CLI (macOS, ImageRenderer) — mocks/*.html 픽셀 정본 대조용.
         .executableTarget(name: "gymshot", dependencies: ["GymViews"]),
         .testTarget(name: "GymCoreTests", dependencies: ["GymCore"]),
+        .testTarget(name: "GymViewsTests", dependencies: ["GymViews"]),
     ]
 )
