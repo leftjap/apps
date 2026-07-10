@@ -276,21 +276,78 @@ public final class GymAppModel: ObservableObject {
 
     // MARK: - 세션 상태머신 (session.js 이식)
 
+    // 명시적 블록 커서 (푸터 pill 탭 = 이동, §6-8). nil 이면 첫 미완료 블록.
+    @Published public var selectedBlockIdx: Int? = nil
+
     public var currentBlockIdx: Int {
-        for (i, blk) in session.blocks.enumerated() {
-            if blk.sets.contains(where: { !$0.done }) { return i }
-        }
-        return max(0, session.blocks.count - 1)
+        if let sel = selectedBlockIdx, session.blocks.indices.contains(sel) { return sel }
+        return GymSessionLogic.firstUnfinishedBlockIdx(session) ?? max(0, session.blocks.count - 1)
     }
     public var currentBlock: GymBlock? {
         session.blocks.indices.contains(currentBlockIdx) ? session.blocks[currentBlockIdx] : nil
     }
-    public var currentSetIdx: Int {
-        currentBlock?.sets.firstIndex { !$0.done } ?? 0
+    // 커서 — 첫 미완료 세트, 전부 done 이면 -1 (session.js cur 정합).
+    public var currentSetCursor: Int {
+        currentBlock.map { $0.sets.firstIndex { !$0.done } ?? -1 } ?? -1
     }
+    public var currentSetIdx: Int { max(0, currentSetCursor) }
     public var currentSet: GymSet? {
-        guard let b = currentBlock, b.sets.indices.contains(currentSetIdx) else { return nil }
-        return b.sets[currentSetIdx]
+        guard let b = currentBlock, currentSetCursor >= 0 else { return nil }
+        return b.sets[currentSetCursor]
+    }
+    // 현재 카드 종류 (weight/bodyweight/cardio — §6-3·§6-4 분기).
+    public var currentCardKind: GymCardKind {
+        GymCardKind.from(equipment: GymExercises.def(currentExerciseId, custom: custom)?.equipment ?? "barbell")
+    }
+    // 현재 블록 잠금 (명시적 완료 read-only, §6-9).
+    public var currentBlockLocked: Bool { currentBlock.map { GymSessionLogic.isBlockLocked($0) } ?? false }
+
+    // 푸터 pill 탭 = 해당 블록으로 이동 (완료 아님, §6-8).
+    public func selectBlock(_ bi: Int) {
+        guard session.blocks.indices.contains(bi) else { return }
+        selectedBlockIdx = bi
+    }
+    // 운동 추가 (§6-2) — 프리셋 ① 직전 세션 카피 → ③ 기본값. 첫 종목 = startTime.
+    public func addExercise(_ exId: String) {
+        let part = GymExercises.resolvePart(exId, custom: custom)
+        let sets: [GymSet]
+        if let prev = prevBlock(forExercise: exId)?.sets, !prev.isEmpty {
+            sets = GymSessionLogic.presetSets(fromPrev: prev)
+        } else {
+            sets = GymSessionLogic.buildPresetSets(GymExercises.def(exId, custom: custom))
+        }
+        let r = GymSessionLogic.addExercise(to: session, exerciseId: exId, part: part,
+                                            presetSets: sets, now: nowMillis())
+        guard r.added else { return }
+        session = r.session
+        impact(.light)
+    }
+    // 운동 제거 (§6-2 토글 OFF·§6-9 삭제).
+    public func removeExercise(_ exId: String) {
+        let r = GymSessionLogic.removeExercise(from: session, exerciseId: exId) {
+            GymExercises.resolvePart($0, custom: custom)
+        }
+        guard r.removed else { return }
+        session = r.session
+        if let sel = selectedBlockIdx, !session.blocks.indices.contains(sel) { selectedBlockIdx = nil }
+    }
+    // 세션 내 종목 포함 여부 (운동추가 시트 토글 상태).
+    public func hasExercise(_ exId: String) -> Bool {
+        session.blocks.contains { $0.type == "single" && $0.exerciseId == exId }
+    }
+    // 블록 명시적 완료 (§6-9 꾹누르기 "완료") — 빈 세트 폐기 + finishedAt + 첫 미완료로 이동.
+    public func finishBlock(at bi: Int) {
+        guard session.blocks.indices.contains(bi) else { return }
+        session.blocks[bi] = GymSessionLogic.finishBlock(session.blocks[bi], now: Double(nowMillis()))
+        selectedBlockIdx = GymSessionLogic.firstUnfinishedBlockIdx(session)
+        impact(.medium)
+    }
+    // 블록 순서 이동 (§6-9 "이동").
+    public func moveBlock(from: Int, to: Int) {
+        guard session.blocks.indices.contains(from), session.blocks.indices.contains(to), from != to else { return }
+        let b = session.blocks.remove(at: from)
+        session.blocks.insert(b, at: to)
+        selectedBlockIdx = to
     }
 
     // 세션 볼륨 = 전 블록 완료/계획 세트 볼륨 합.

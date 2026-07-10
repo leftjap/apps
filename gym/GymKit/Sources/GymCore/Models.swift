@@ -11,16 +11,23 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
     public var reps: Int?
     public var done: Bool
     public var pr: Bool          // 이 세트가 역대 e1RM 신기록이면 true (spec §12, §6-11)
+    public var preset: Bool      // 프리셋(미수정 placeholder) 여부 — 사용자 입력/완료 시 false (spec §6-3-3)
+    public var duration: Double? // 유산소 — 초 단위 (표시·입력은 분, spec §6-4)
+    public var distance: Double? // 유산소 — km
 
-    public init(id: UUID = UUID(), weight: Double? = nil, reps: Int? = nil, done: Bool = false, pr: Bool = false) {
+    public init(id: UUID = UUID(), weight: Double? = nil, reps: Int? = nil, done: Bool = false,
+                pr: Bool = false, preset: Bool = false, duration: Double? = nil, distance: Double? = nil) {
         self.id = id
         self.weight = weight
         self.reps = reps
         self.done = done
         self.pr = pr
+        self.preset = preset
+        self.duration = duration
+        self.distance = distance
     }
 
-    // 구 데이터(pr 키 없음) 관용 디코딩 — 온디바이스 진행 세션 파손 방지.
+    // 구 데이터(pr·preset·duration·distance 키 없음) 관용 디코딩 — 온디바이스 진행 세션 파손 방지.
     public init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         id = try c.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
@@ -28,6 +35,9 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
         reps = try c.decodeIfPresent(Int.self, forKey: .reps)
         done = try c.decodeIfPresent(Bool.self, forKey: .done) ?? false
         pr = try c.decodeIfPresent(Bool.self, forKey: .pr) ?? false
+        preset = try c.decodeIfPresent(Bool.self, forKey: .preset) ?? false
+        duration = try c.decodeIfPresent(Double.self, forKey: .duration)
+        distance = try c.decodeIfPresent(Double.self, forKey: .distance)
     }
 
     // 세트 볼륨 = 중량 × 횟수 (nil 방어).
