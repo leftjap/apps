@@ -24,6 +24,8 @@ public struct HomeScreenView: View {
         model.session.status == .active && !model.session.blocks.isEmpty
     }
 
+    @State private var detailISO: String? = nil   // 날짜 탭 → 상세 바텀시트 (§5-2)
+
     public var body: some View {
         Group {
             if isActiveSession { homeC } else { homeA }
@@ -31,6 +33,17 @@ public struct HomeScreenView: View {
         .frame(width: 390)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(GY.shell)
+        .overlay {
+            if let iso = detailISO {
+                ZStack(alignment: .bottom) {
+                    Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                        .contentShape(Rectangle())
+                        .onTapGesture { detailISO = nil }
+                    DayDetailSheet(iso: iso, entry: model.dayEntry(iso),
+                                   onDelete: { detailISO = nil }, onCancel: { detailISO = nil })
+                }
+            }
+        }
     }
 
     var homeA: some View {
@@ -162,9 +175,13 @@ public struct HomeScreenView: View {
         .padding(.horizontal, 24).padding(.top, 8)
     }
 
-    func weekCalendar(_ week: [GymAppModel.HomeWeekCell]) -> some View {
-        HStack(spacing: 0) {
-            ForEach(week) { d in
+    // 주간 캘린더 — 날짜 탭 → 해당 날짜 상세 바텀시트 (spec §5-2).
+    func weekCalendar(_ week: [GymAppModel.HomeWeekCell], tappable: Bool = true) -> some View {
+        let ref = model.referenceToday
+        let cal = GymAppModel.kst
+        let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref))
+        return HStack(spacing: 0) {
+            ForEach(Array(week.enumerated()), id: \.element.id) { i, d in
                 VStack(spacing: 6) {
                     Text(d.label).font(.sans(11, 600)).tracking(0.44)
                         .foregroundStyle(d.isToday ? GY.crailDeep : GY.ink4)
@@ -180,6 +197,12 @@ public struct HomeScreenView: View {
                     }.frame(height: 28)
                 }
                 .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard tappable, let monday,
+                          let date = cal.date(byAdding: .day, value: i, to: monday) else { return }
+                    detailISO = GymAppModel.dayFmt.string(from: date)
+                }
             }
         }
     }

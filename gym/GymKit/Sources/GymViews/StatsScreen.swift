@@ -8,16 +8,21 @@ public struct StatsScreenView: View {
     @State private var tab: Tab
     @State private var year: Int
     @State private var month: Int
+    @State private var detailISO: String? = nil            // 날짜 상세 시트 (§9-1)
+    @State private var detailStep: DayDetailSheet.Step = .summary
     var onHome: () -> Void
     var onAdmin: () -> Void
     var embedScroll: Bool   // gymshot(ImageRenderer)는 ScrollView 내부 미렌더 → 스냅샷은 false
 
     public init(model: GymAppModel, initialTab: Tab = .cal, embedScroll: Bool = true,
+                initialDetailISO: String? = nil, initialDetailConfirm: Bool = false,
                 onHome: @escaping () -> Void = {}, onAdmin: @escaping () -> Void = {}) {
         self.model = model; _tab = State(initialValue: initialTab); self.embedScroll = embedScroll
         let cal = GymAppModel.kst
         _year = State(initialValue: cal.component(.year, from: model.referenceToday))
         _month = State(initialValue: cal.component(.month, from: model.referenceToday))
+        _detailISO = State(initialValue: initialDetailISO)
+        _detailStep = State(initialValue: initialDetailConfirm ? .confirm : .summary)
         self.onHome = onHome; self.onAdmin = onAdmin
     }
     // 데모/스냅샷 편의 init.
@@ -39,6 +44,19 @@ public struct StatsScreenView: View {
             }
         }
         .frame(width: 390).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
+        // 날짜 탭 → 상세 바텀시트, 꾹누르기 → 삭제 확인 (spec §9-1)
+        .overlay {
+            if let iso = detailISO {
+                ZStack(alignment: .bottom) {
+                    Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                        .contentShape(Rectangle())
+                        .onTapGesture { detailISO = nil }
+                    DayDetailSheet(iso: iso, entry: model.dayEntry(iso), step: detailStep,
+                                   onDelete: { model.deleteSessions(on: iso); detailISO = nil },
+                                   onCancel: { detailISO = nil })
+                }
+            }
+        }
     }
 
     @ViewBuilder var paneContent: some View {
@@ -142,6 +160,15 @@ public struct StatsScreenView: View {
                                 }
                             }
                             .frame(maxWidth: .infinity).frame(height: 40)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                guard day > 0 else { return }
+                                detailStep = .summary; detailISO = dayStr   // §9-1 날짜 탭 → 상세
+                            }
+                            .onLongPressGesture(minimumDuration: 0.5) {
+                                guard day > 0, worked.contains(day) else { return }
+                                detailStep = .confirm; detailISO = dayStr   // §9-1 꾹누르기 → 삭제
+                            }
                         }
                         if rows[r].count < 7 { ForEach(0..<(7 - rows[r].count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity) } }
                     }

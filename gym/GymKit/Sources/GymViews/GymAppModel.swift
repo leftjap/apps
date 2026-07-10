@@ -150,6 +150,17 @@ public final class GymAppModel: ObservableObject {
     public func doneVolume(_ s: GymSession) -> Double {
         s.blocks.reduce(0.0) { $0 + $1.sets.filter(\.done).reduce(0.0) { $0 + $1.volume } }
     }
+    // 날짜 상세 entry (§9-1·§5-2 바텀시트) — 같은 날 다중 세션 병합. 기록 없으면 nil.
+    public func dayEntry(_ iso: String) -> GymDayEntry? {
+        let xs = sessionsOn(iso)
+        guard !xs.isEmpty else { return nil }
+        return GymDayDetailLogic.merged(xs.map { GymDayDetailLogic.entry(for: $0, custom: custom) })
+    }
+    // 해당 날짜 완료 세션 삭제 (§9-1 꾹누르기 → 삭제 확인).
+    public func deleteSessions(on iso: String) {
+        LocalStore.saveSessions(LocalStore.loadSessions().filter { $0.date != iso })
+        history = LocalStore.loadSessions()
+    }
     // 특정 연-월의 운동한 일자 집합 (통계 월 캘린더).
     public func workedDays(year: Int, month: Int) -> Set<Int> {
         let prefix = String(format: "%04d-%02d-", year, month)
