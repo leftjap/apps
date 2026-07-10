@@ -14,7 +14,7 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
-import { buildChainSteps, hintLevelFor, firstWordsHint, pickChainVoice } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, pickChainVoice } from '../components/session/applied.js';
 import { passesCoverage } from '../services/speech.js';
 import { localISODate } from '../utils/today.js';
 
@@ -437,11 +437,13 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
     const speakVaried = (t) => { plays += 1; const v = pickChainVoice(plays); if (t && window.studySpeech?.speak) window.studySpeech.speak(t, { lang: ttsLang, voice: v.voice, rate: v.rate }); };
     const showHint = (text) => {
-      const lv = hintLevelFor(fails);
-      if (lv === 0) cHint.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '한 번만 듣고 전체를 말해 보세요 (자막 없음)';
-      else if (lv === 1) cHint.textContent = `힌트 · 뜻: ${ex.chain.ko || ''}`;
-      else if (lv === 2) cHint.textContent = `힌트 · 시작: ${firstWordsHint(text)}`;
-      else cHint.textContent = `힌트 · 전체: ${text}`;
+      // 전체 재현(cur=-1)·마지막 단계에서만 뜻 힌트. 중간 단계에서 띄우면 뒷 문장을 미리 알려준다.
+      const isLast = cur === -1 || cur === steps.length - 1;
+      const { kind, text: hint } = chainHint(fails, { stepText: text, ko: ex.chain.ko, isLast });
+      if (kind === 'none') cHint.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '한 번만 듣고 전체를 말해 보세요 (자막 없음)';
+      else if (kind === 'ko') cHint.textContent = `힌트 · 뜻: ${hint}`;
+      else if (kind === 'first') cHint.textContent = `힌트 · 시작: ${hint}`;
+      else cHint.textContent = `힌트 · 전체: ${hint}`;
     };
 
     // 단계 폴백 행 (전체 실패 후 노출)

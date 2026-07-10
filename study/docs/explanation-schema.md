@@ -109,9 +109,40 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
 **규칙:**
 - **개수**: 내용·레벨 기반. 핵심·헷갈리는 요소 6~8개, 쉬운 요소 3개. 고정 quota 금지
 - **구성**: 같은 뜻 패턴 치환 ~70%(패턴 그루빙) + 뜻 범위 ~30%(응용 폭). 자연·빈출·레벨맞춤만 — 기계적 슬롯 채우기 금지
+- ⛔ **근접중복 금지 (게이트 차단, 2026-07-10)**: base 문장을 **통째로 품은 채 2단어 이하만 덧붙인 것은 변주가 아니다.**
+  호칭(`honey`)·감탄사(`okay`)·담화표지(`look`)·문미태그(`right?`) 추가가 대표 사례.
+  변주 = **다른 문법 맥락**으로의 이식 (주어·시제·극성·문형·목적어 변경).
+  - `base` 와 **완전 동일한** 드릴(영상 원문 반복)은 **1개까지** 허용
+  - 덧붙인 근접중복은 **0개** — `scripts/validate-seed.mjs` 가 차단(전 en 트랙, moduyeongeo 포함)
+  - 판정 단일 출처 = `src/components/session/applied.js` `nearDupDrills()`
+  - ❌ `It's getting late.` → `You're right, it's getting late.` / ✅ → `Was it getting late when you left?`
 - **UI**: 각 drill 행에 🔊(TTS `studySpeech.speak`) + ⏺(녹음→발음채점 `services/sessionAnalyze.js`) 자동 부착 → 듣기·말하기·녹음. kr 음차는 en 아래 faint 줄
-- **렌더**: phone/tablet = `components/session/explanationPanel.js` `drillsSection` / D1 데스크탑 = `components/d1/sessionShell.js` `buildD1DrillRows` (양쪽 kr 지원, 누락 시 미표시 — 구 시드 호환)
-- **표현 카드 동반 필드 (en RealClass)**: `grammar:[{struct,body}]` + `chunks:[[en,kr]]` + `phonemes:[[ipa,word]]` 의무 — 렌더는 phone(explanationPanel) + D1(buildD1ExplainRight) 양 경로 지원 (2026-06-10 D1 parity 추가)
+- **렌더**: phone/tablet = `components/session/explanationPanel.js` `drillsSection` / D1 데스크탑 = `components/d1/sessionShell.js` `buildD1DrillRows` (양쪽 kr 지원, 누락 시 미표시 — 구 시드 호환). 신규 세션은 `sessionExprV2.js` 가 `filterNearDupDrills()` 로 구 데이터를 한 번 더 거른다(안전망)
+
+## chain — 무자막 체이닝 (2026-07-09 신설, `ladder` 대체)
+
+자막 없이 **듣고 따라 말하며** base 를 2문장 수준까지 확장 (elicited imitation). 표현 카드 `explanation.chain`.
+
+```json
+"chain": {
+  "target": "Is there a problem with that? Just tell me straight.",
+  "chunks": ["Is there a problem", "with that", "Just tell me straight"],
+  "ko": "그게 뭐 문제 있어? 그냥 솔직하게 말해."
+}
+```
+
+| 필드 | 규칙 |
+|---|---|
+| `target` | 약 2문장(8단어+). 짧으면 앵무새 반복이 된다 |
+| `chunks` | 2~8개. **순서대로 이어붙이면 `target` 과 일치**해야 함(정규화 기준). 앱이 누적해 단계를 만든다 — 단계 수를 고정하지 않는다 |
+| `ko` | **의무**. 마지막 단계 3회 실패 시 첫 힌트 |
+
+- **자막 금지가 계약**: 화면에 영어를 절대 노출하지 않는다. 회귀 테스트 = `src/pages/sessionExprV2.test.js` · `sessionReviewV2.test.js`
+- **단계 텍스트는 `target` 의 원문 접두부**다 (`buildChainSteps`). `chunks` 는 끊는 위치만 정한다 — 이어붙이면 구두점이 사라져 `…with that`(물음표 소실)·`…caught up We should`(런온) 오디오가 나온다 (2026-07-10 수정)
+- **통과 = 단어 누락 0** (`EnableMiscue` → `passesCoverage`). 발음 정확도 하한 없음
+- **힌트**: 3회 실패부터. 마지막 단계는 뜻 → 첫 단어 → 전체, **중간 단계는 뜻을 건너뛴다**(전체 뜻이 뒷 문장을 미리 알려주므로)
+- 재생마다 화자·속도 변주 (`pickChainVoice`) — 리듬 통째 암기 차단
+- ⚠️ `ladder`(확장 사다리)는 **2026-07-09 폐기**. 저작 금지, 렌더 제거됨
 
 ## 필드별 규칙
 

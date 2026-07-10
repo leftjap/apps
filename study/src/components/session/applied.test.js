@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, pickChainVoice, CHAIN_VOICES } from './applied.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickChainVoice, CHAIN_VOICES } from './applied.js';
 
 const CHAIN = {
   target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -8,14 +8,37 @@ const CHAIN = {
 };
 
 describe('buildChainSteps — 청크 누적으로 단계 생성 (단계 수 고정 X)', () => {
-  it('청크 수만큼 단계, 앞에서부터 누적, 마지막 단계는 target 원문(구두점 보존)', () => {
+  it('청크 수만큼 단계, 앞에서부터 누적, 마지막 단계는 target 원문', () => {
     const steps = buildChainSteps(CHAIN);
     expect(steps).toHaveLength(4);
     expect(steps[0].text).toBe("It's been a while");
-    expect(steps[1].text).toBe("It's been a while since we caught up");
-    expect(steps[2].text).toBe("It's been a while since we caught up We should grab dinner");
-    expect(steps[3].text).toBe(CHAIN.target); // 마지막은 자연스러운 원문
+    expect(steps[3].text).toBe(CHAIN.target);
     expect(steps.map((s) => s.index)).toEqual([0, 1, 2, 3]);
+  });
+
+  /* 중간 단계도 target 의 원문 접두부여야 한다. 청크를 이어붙이면 구두점이 사라져
+   * "…caught up We should grab dinner"(런온) · "…with that"(물음표 소실) 같은 오디오가 나온다.
+   * 무자막 체이닝은 억양 자체가 훈련 대상이므로 구두점 소실은 곧 훈련 내용 손상. (2026-07-10) */
+  it('중간 단계가 문장 경계를 넘으면 원문 구두점을 보존한다 (런온 금지)', () => {
+    const steps = buildChainSteps(CHAIN);
+    expect(steps[1].text).toBe("It's been a while since we caught up.");
+    expect(steps[2].text).toBe("It's been a while since we caught up. We should grab dinner");
+  });
+
+  it('의문문 접두부는 물음표를 유지한다 (평서문 억양으로 읽히면 안 됨)', () => {
+    const steps = buildChainSteps({
+      target: 'Is there a problem with that? Just tell me straight.',
+      chunks: ['Is there a problem', 'with that', 'Just tell me straight'],
+      ko: '그게 뭐 문제 있어? 그냥 솔직하게 말해.',
+    });
+    expect(steps[0].text).toBe('Is there a problem');
+    expect(steps[1].text).toBe('Is there a problem with that?');
+  });
+
+  it('청크 단어수 합이 target 과 어긋나면 청크 이어붙이기로 폴백 (토큰화 불일치 안전망)', () => {
+    const steps = buildChainSteps({ target: "I'm fine", chunks: ['I am', 'fine'] });
+    expect(steps[0].text).toBe('I am');
+    expect(steps[1].text).toBe("I'm fine");
   });
 
   it('chain 부재·청크 2개 미만이면 빈 배열 (렌더 안 함)', () => {
@@ -64,6 +87,52 @@ describe('filterNearDupDrills — 호칭·감탄사만 붙인 근접중복은 1�
   it('빈 입력·base 없음은 원본 그대로', () => {
     expect(filterNearDupDrills('', [{ en: 'x' }])).toEqual([{ en: 'x' }]);
     expect(filterNearDupDrills('a', [])).toEqual([]);
+  });
+});
+
+/* 힌트 lv1(뜻)은 target 전체의 뜻이라, 1단계에서 띄우면 아직 듣지도 않은 뒷 문장을 미리 알려준다.
+ * → 중간 단계에서는 뜻을 건너뛰고 첫 단어부터. 마지막 단계에서만 전체 뜻. (2026-07-10) */
+describe('chainHint — 중간 단계에서 전체 뜻을 노출하지 않는다', () => {
+  const opts = (isLast) => ({ stepText: "It's been a while", ko: '오랜만이야. 언제 저녁이나 먹자.', isLast });
+
+  it('2회까지는 힌트 없음 (단계 무관)', () => {
+    expect(chainHint(0, opts(false)).kind).toBe('none');
+    expect(chainHint(2, opts(true)).kind).toBe('none');
+  });
+
+  it('마지막 단계: 3회=뜻 → 4회=첫 단어 → 5회=전체', () => {
+    expect(chainHint(3, opts(true))).toEqual({ kind: 'ko', text: '오랜만이야. 언제 저녁이나 먹자.' });
+    expect(chainHint(4, opts(true))).toEqual({ kind: 'first', text: "It's been …" });
+    expect(chainHint(5, opts(true))).toEqual({ kind: 'full', text: "It's been a while" });
+  });
+
+  it('중간 단계: 뜻을 건너뛰고 3회=첫 단어 → 4회 이상=전체', () => {
+    expect(chainHint(3, opts(false))).toEqual({ kind: 'first', text: "It's been …" });
+    expect(chainHint(4, opts(false))).toEqual({ kind: 'full', text: "It's been a while" });
+    expect(chainHint(9, opts(false)).kind).toBe('full');
+  });
+
+  it('중간 단계에서는 어떤 실패 횟수에도 ko 를 반환하지 않는다', () => {
+    for (let f = 0; f <= 9; f += 1) expect(chainHint(f, opts(false)).kind).not.toBe('ko');
+  });
+});
+
+/* 게이트가 '영상 원문 반복(exact)'과 '호칭·감탄사만 덧붙인 것(added)'을 구분해야
+ * 전자는 1개 허용, 후자는 0개로 차단할 수 있다. (2026-07-10) */
+describe('nearDupDrills — base 완전동일(exact)과 덧붙인 근접중복(added)을 분리', () => {
+  it('exact 1 · added 2 · 진짜 변주는 세지 않음', () => {
+    expect(nearDupDrills('Are you in line?', [
+      { en: 'Are you in line?' },                  // exact
+      { en: 'Sorry, are you in line?' },           // added
+      { en: 'Honey, are you in line?' },           // added
+      { en: 'Are you in line for the bathroom?' }, // +3단어 → 변주
+      { en: 'Is this the line?' },                 // base 미포함
+    ])).toEqual({ exact: 1, added: 2 });
+  });
+
+  it('빈 입력은 0/0', () => {
+    expect(nearDupDrills('', [{ en: 'x' }])).toEqual({ exact: 0, added: 0 });
+    expect(nearDupDrills('a', [])).toEqual({ exact: 0, added: 0 });
   });
 });
 

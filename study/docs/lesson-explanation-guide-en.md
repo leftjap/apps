@@ -529,7 +529,7 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 |---|---|
 | `key` | 핵심 한 줄 — "표현 = 뜻. 성격." |
 | `situation` | "장면 · …" — 장면 안 맥락 한 줄 |
-| `drills` | `[{en, ko, kr}]` 3~8개 — **kr = 한글 음차 의무** (녹음 연습 발음 가이드, 연음/flap 반영). 개수·구성은 [explanation-schema.md](./explanation-schema.md) §drills 규칙 |
+| `drills` | `[{en, ko, kr}]` 3~8개 — **kr = 한글 음차 의무** (녹음 연습 발음 가이드, 연음/flap 반영). 개수·구성은 [explanation-schema.md](./explanation-schema.md) §drills 규칙. ⛔ **근접중복 금지** — base 를 통째로 두고 호칭·감탄사만 덧붙인 건 변주가 아니며 게이트가 차단 |
 | `grammar` | `[{struct, body}]` 1~2건 — 문장 구조 + 한국어 어순 관점 설명 ("문법 뜯어보기") |
 | `chunks` | `[[en, kr]]` — 본문을 한 호흡 단위로 분리, **모든 단어 빠짐없이** ("발음 — 청크 단위") |
 | `phonemes` | `[[ipa, word]]` 1~3건 — 한국인 약점 음소 (θ ð ɹ f v ʌ æ ɪ flap-t 등) ("주의 음소") |
@@ -544,9 +544,13 @@ ja 와 동일 알고리즘. `user_known_*` 조회 → 1T 만족 필터 → frequ
 - TTS·녹음·다이얼로그 색 강조 전부 코드 자동 — 시드 측 추가 필드 불필요
 - ⚠️ **재INSERT 안전**: 시드 재적재(upsert)는 `completed=false` 로 merge → **사용자가 해당 카드 학습을 시작한 뒤에는 같은 카드 재INSERT 금지** (학습 완료 리셋됨). 보강은 학습 전에만
 
-#### `ladder` — 확장 사다리 (선택, ✅ 렌더 구현됨)
+#### `ladder` — 확장 사다리 (⛔ **2026-07-09 폐기 — 저작 금지**)
 
-핵심문(BASE)을 **단당 요소 1개씩** 키우는 수직 확장 드릴. 근거 = 검토 영상2(핵심절 먼저→이유절 append→수식어) + sentence-expansion/combining(초급 ELL 표준 스캐폴드) + shadowing. 현행 `drills`(같은 표현의 **가로** 변형)와 **겹치지 않는 세로 확장** — 회화 약한 Stage 2 학습자용. **리얼스피킹 '체이닝'(전방 확장)과 달리, 최종 단 tail-first `chunks` 재조립(back-chaining)으로 연음·구동사 강세를 노린다 = 우리 차별점.**
+> **무효.** 렌더·CSS·시드에서 제거됐고, 게이트는 `ladder` 필드를 만나면 폐기 경고를 낸다.
+> **대체 = `chain`(무자막 체이닝)** — 스키마·규칙은 [`explanation-schema.md` §chain](./explanation-schema.md) 이 정본.
+> 아래는 이력 참고용. ladder 는 화면에 영어를 **보여주고** 읽게 했으나, 그건 인출이 아니라 낭독이라는 판단으로 폐기됐다.
+
+핵심문(BASE)을 **단당 요소 1개씩** 키우는 수직 확장 드릴. 근거 = 검토 영상2(핵심절 먼저→이유절 append→수식어) + sentence-expansion/combining(초급 ELL 표준 스캐폴드) + shadowing.
 
 ```json
 "ladder": [
@@ -598,6 +602,7 @@ spec §5-0 단계 3-4 가 조회하는 학습자 컨텍스트를 장면 선정�
 
 - [ ] 🅖 scene 카드 1장 — `order_index: 0` + `explanation.dialogue` 배열 (6~10줄, speaker/en/ko 완비)
 - [ ] 🅖 표현 카드 **1~2장** (PPP 집중 추출 — 최소 1장 = 게이트 차단 / 3장 초과 = 과다추출 경고. 구 5~7장 폐기 2026-06-29) — 각 `drills` 3~8개 (en 필수, ko 동반, **kr 음차 의무**. 개수는 schema §drills 정본 — 핵심·헷갈리는 표현 6~8 / 쉬운 표현 3, 하한 일괄 깔기 금지 — 전 카드 ≤4 면 게이트 경고)
+- [ ] 🅖 `drills` **근접중복 0개** — base 를 통째로 품고 2단어 이하만 덧붙인 드릴 금지(호칭 `honey`·감탄사 `okay`·문미태그 `right?`). base 완전동일(영상 원문)은 1개까지. **게이트 차단** (2026-07-10)
 - [ ] 🅖 표현 카드마다 `grammar` 1~2건 + `chunks` + `phonemes` 1~3건 (한국인 해설 8필드 완비)
 - [ ] 🅖 `chunks` 가 본문 모든 단어 포함 + `phonetic_kr` = chunks kr 이어붙임과 일치
 - [ ] 🅖 다이얼로그 매칭 계약 — 표현 전수 번호 부여 (위 "다이얼로그 매칭 계약")

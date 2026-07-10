@@ -12,7 +12,7 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, pickChainVoice } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, filterNearDupDrills, pickChainVoice } from '../components/session/applied.js';
 import { passesCoverage } from '../services/speech.js';
 import { localISODate } from '../utils/today.js';
 
@@ -241,11 +241,11 @@ function chainBlockEl(chain, lang, card, demo, onUtterance) {
   const renderHint = () => {
     const step = steps[cur];
     if (!step) { hintEl.textContent = ''; return; }
-    const lv = hintLevelFor(fails);
-    if (lv === 0) { hintEl.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '자막 없이, 들은 그대로 말해 보세요'; return; }
-    if (lv === 1) hintEl.textContent = `힌트 · 뜻: ${chain.ko || ''}`;
-    else if (lv === 2) hintEl.textContent = `힌트 · 시작: ${firstWordsHint(step.text)}`;
-    else hintEl.textContent = `힌트 · 전체: ${step.text}`;
+    const { kind, text } = chainHint(fails, { stepText: step.text, ko: chain.ko, isLast: cur === steps.length - 1 });
+    if (kind === 'none') { hintEl.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '자막 없이, 들은 그대로 말해 보세요'; return; }
+    if (kind === 'ko') hintEl.textContent = `힌트 · 뜻: ${text}`;
+    else if (kind === 'first') hintEl.textContent = `힌트 · 시작: ${text}`;
+    else hintEl.textContent = `힌트 · 전체: ${text}`;
   };
   const refresh = () => {
     rowEls.forEach((r, i) => {

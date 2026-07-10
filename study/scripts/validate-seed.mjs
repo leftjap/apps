@@ -19,8 +19,11 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { argv, exit } from 'node:process';
+import { nearDupDrills } from '../src/components/session/applied.js';
 
 // session-new.js deriveDialogue 와 동일 정규화 (매칭 계약 시뮬레이션용 — 로직 변경 시 양쪽 동기화)
+// ⚠️ 근접중복 판정엔 쓰지 말 것 — 아포스트로피를 지워 `it's` 를 2단어로 세므로 렌더(applied.js)와 결과가 갈린다.
+//    근접중복은 applied.js 의 nearDupDrills 가 단일 출처 (2026-07-10).
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 
 const isSceneCard = (c) => Array.isArray(c?.explanation?.dialogue);
@@ -71,21 +74,6 @@ const EPISODE_NUMS = [1, 2, 3, 4, 5, 6]; // realclass-{show}-s1e{1..6} — 화�
 export const showOfEpisode = (ep) => (/^office/i.test(String(ep)) ? 'office' : 'parks');
 export const epFileStem = (ep) => String(ep).replace(/^(office|parks)-?/i, ''); // 'office-s1e2'|'parks-s1e2'→'s1e2' (소스 파일명 스템)
 const epNumOfEpisode = (ep) => { const m = String(ep).match(/s1e(\d+)/i); return m ? parseInt(m[1], 10) : null; };
-
-/** 근접중복 드릴 수 — base 문장을 통째로 품은 채 2단어 이하만 덧붙인 드릴 (호칭·감탄사 추가는 변주 아님).
- * 2026-07-09 감사: 3610 드릴 중 34.2%가 여기 해당 (덧붙는 말 1위 'honey' 87회). 카드당 1개(영상 원문)까지 허용. */
-export function countNearDupDrills(sentence, drills) {
-  const base = norm(sentence);
-  if (!base) return 0;
-  const baseWords = base.split(' ').filter(Boolean).length;
-  let n = 0;
-  for (const d of drills ?? []) {
-    const dn = norm(d?.en);
-    if (!dn || !dn.includes(base)) continue;
-    if (dn.split(' ').filter(Boolean).length - baseWords <= 2) n += 1;
-  }
-  return n;
-}
 
 /** 소스 대본 파일에서 문장번호→EN 텍스트 맵 파싱 (s1e1 'EN:/KO:' + ep2~ 'N. EN/KO' 양식 모두). */
 function parseSourceEnByNum(text) {
@@ -351,14 +339,19 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     if (tw && tw < 8) warnings.push(`${c.id}: chain.target 이 ${tw}단어 — 약 2문장(8단어+)까지 확장 권장 (짧으면 앵무새 반복이 됨)`);
   }
 
-  // ── drills 근접중복: 호칭('honey')·감탄사('okay')만 덧붙인 건 변주가 아니다 (2026-07-09 전수감사 34.2%).
-  // moduyeongeo 는 이미 완성된 105편이라 재저작 불가 → 경고만(렌더가 걸러냄). 신규 저작(Parks/Office)은 차단.
+  // ── drills 근접중복: 호칭('honey')·감탄사('okay')만 덧붙인 건 변주가 아니다.
+  // 2026-07-10 — moduyeongeo 도 차단으로 승격(사용자 지시: 렌더에서 감추지 말고 생성에서 막을 것).
+  // 방출 payload 만 깨끗하면 되므로 원본 seeds/moduyeongeo/epNNN.json 은 손대지 않는다 — 루틴이 그날 편만 교체 저작.
+  //   exact = base 와 완전 동일(영상 원문 반복) → 1개까지 허용
+  //   added = base 를 통째로 품고 2단어 이하만 덧붙임 → 0개 (진짜 변주로 교체할 것)
   for (const c of exprs) {
-    const n = countNearDupDrills(c.sentence, c.explanation?.drills);
-    if (n <= 1) continue;
-    const msg = `${c.id}: 근접중복 드릴 ${n}개 — base 를 그대로 두고 2단어 이하만 덧붙임(호칭/감탄사는 변주 아님). 카드당 1개까지.`;
-    if (isModuTrack) warnings.push(msg);
-    else errors.push(msg);
+    const { exact, added } = nearDupDrills(c.sentence, c.explanation?.drills);
+    if (added > 0) {
+      errors.push(`${c.id}: 근접중복 드릴 ${added}개 — base 를 그대로 두고 2단어 이하만 덧붙임(호칭/감탄사는 변주 아님). 다른 문법 맥락의 변주로 교체할 것.`);
+    }
+    if (exact > 1) {
+      errors.push(`${c.id}: 근접중복 — base 와 완전 동일한 드릴 ${exact}개. 영상 원문은 1개까지.`);
+    }
   }
 
   // ── 매칭 계약: deriveDialogue 순차 커서 시뮬레이션 — 표현 전수 번호 부여 의무 ──

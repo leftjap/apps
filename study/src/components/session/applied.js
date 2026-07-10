@@ -14,15 +14,24 @@
 const norm = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9' ]/g, ' ').replace(/\s+/g, ' ').trim();
 const wordCount = (s) => norm(s).split(' ').filter(Boolean).length;
 
-/** chain{target,chunks} → 앞에서부터 누적한 단계 배열. 마지막 단계만 target 원문(구두점 보존). */
+/** chain{target,chunks} → 앞에서부터 누적한 단계 배열. 각 단계는 target 의 **원문 접두부**(구두점 보존).
+ * chunks 는 끊는 위치(단어 수)만 정한다 — 이어붙이면 구두점이 사라져 런온·물음표 소실이 생긴다.
+ * chunks 단어수 합이 target 과 어긋나면(토큰화 불일치) 청크 이어붙이기로 폴백. */
 export function buildChainSteps(chain) {
   const chunks = Array.isArray(chain?.chunks) ? chain.chunks : [];
   if (chunks.length < 2) return [];
+  const words = (s) => String(s ?? '').split(/\s+/).filter(Boolean);
+  const target = String(chain?.target ?? '');
+  const tWords = words(target);
+  const counts = chunks.map((c) => words(c).length);
+  const aligned = tWords.length > 0 && counts.reduce((a, b) => a + b, 0) === tWords.length;
   const last = chunks.length - 1;
-  return chunks.map((_, i) => ({
-    index: i,
-    text: i === last ? String(chain.target ?? chunks.join(' ')) : chunks.slice(0, i + 1).join(' '),
-  }));
+  let acc = 0;
+  return chunks.map((_, i) => {
+    acc += counts[i];
+    if (i === last) return { index: i, text: target || chunks.join(' ') };
+    return { index: i, text: aligned ? tWords.slice(0, acc).join(' ') : chunks.slice(0, i + 1).join(' ') };
+  });
 }
 
 /** 실패 횟수 → 힌트 단계. 0=없음 · 1=한국어 뜻 · 2=첫 단어 · 3=전체 텍스트 공개. */
@@ -41,7 +50,40 @@ export function firstWordsHint(text, n = 2) {
   return words.slice(0, n).join(' ') + ' …';
 }
 
-/** 근접중복 드릴(= base 를 통째로 품고 2단어 이하만 덧붙임)을 첫 1개만 남기고 제거. */
+/** 체이닝 힌트 → { kind: 'none'|'ko'|'first'|'full', text }.
+ * `ko` 는 target 전체의 뜻이라 중간 단계에서 띄우면 아직 듣지 않은 뒷 문장을 미리 알려준다.
+ * → 마지막 단계에서만 뜻을 쓰고, 중간 단계는 첫 단어 → 전체 로 건너뛴다. */
+export function chainHint(fails, { stepText, ko, isLast } = {}) {
+  const lv = hintLevelFor(fails);
+  if (lv === 0) return { kind: 'none', text: '' };
+  if (isLast && lv === 1) return { kind: 'ko', text: String(ko ?? '') };
+  if (lv === 1 || (isLast && lv === 2)) return { kind: 'first', text: firstWordsHint(stepText) };
+  return { kind: 'full', text: String(stepText ?? '') };
+}
+
+/** 근접중복 = base 를 통째로 품고 2단어 이하만 덧붙인 드릴. */
+const isNearDup = (base, bw, en) => {
+  const dn = norm(en);
+  return !!dn && dn.includes(base) && wordCount(en) - bw <= 2;
+};
+
+/** 근접중복을 둘로 나눠 센다 — exact(영상 원문 반복, 1개 허용) · added(호칭·감탄사만 덧붙임, 0개).
+ * 게이트(scripts/validate-seed.mjs)와 렌더가 이 함수를 공유해야 판정이 갈리지 않는다. */
+export function nearDupDrills(sentence, drills) {
+  const base = norm(sentence);
+  if (!base) return { exact: 0, added: 0 };
+  const bw = wordCount(sentence);
+  let exact = 0;
+  let added = 0;
+  for (const d of drills ?? []) {
+    if (!isNearDup(base, bw, d?.en)) continue;
+    if (norm(d?.en) === base) exact += 1;
+    else added += 1;
+  }
+  return { exact, added };
+}
+
+/** 근접중복 드릴을 첫 1개만 남기고 제거 (구 데이터 안전망 — 생성 차단은 게이트가 한다). */
 export function filterNearDupDrills(sentence, drills) {
   const base = norm(sentence);
   const list = Array.isArray(drills) ? drills : [];
@@ -49,9 +91,7 @@ export function filterNearDupDrills(sentence, drills) {
   const bw = wordCount(sentence);
   let kept = 0;
   return list.filter((d) => {
-    const dn = norm(d?.en);
-    const near = !!dn && dn.includes(base) && wordCount(d?.en) - bw <= 2;
-    if (!near) return true;
+    if (!isNearDup(base, bw, d?.en)) return true;
     kept += 1;
     return kept === 1; // 영상 원문 1개만 남김
   });

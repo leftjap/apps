@@ -17,7 +17,6 @@ import {
   loadSourceEnLines,
   epFileStem,
   showOfEpisode,
-  countNearDupDrills,
 } from './validate-seed.mjs';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
@@ -257,30 +256,42 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('chain.chunks');
   });
 
-  // ── drills 근접중복 (2026-07-09 감사: 3610 드릴 중 34.2%) ──
-  it('countNearDupDrills — base 를 그대로 두고 2단어 이하만 덧붙인 드릴을 센다', () => {
-    const base = 'Are you in line?';
-    expect(countNearDupDrills(base, [
-      { en: 'Are you in line?' },                       // 동일 → 1
-      { en: 'Sorry, are you in line?' },                // +1단어 → 2
-      { en: 'Honey, are you in line?' },                // +1단어 → 3
-      { en: 'Are you in line for the bathroom?' },      // +3단어 → 제외
-      { en: 'Is this the line?' },                      // base 미포함 → 제외
-    ])).toBe(3);
-    expect(countNearDupDrills(base, [{ en: 'Are you in line?' }])).toBe(1);
-    expect(countNearDupDrills(base, [])).toBe(0);
+  // ── drills 근접중복 (판정 단일 출처 = applied.js nearDupDrills — 거기서 단위 테스트) ──
+  /* 2026-07-10 — moduyeongeo 도 차단으로 승격. 렌더 필터는 구 데이터 안전망일 뿐,
+   * 저작(생성) 단계에서 막지 않으면 근접중복이 계속 만들어진다(사용자 지시). */
+  it('moduyeongeo 도 덧붙인 근접중복은 차단 (호칭·감탄사는 변주가 아니다)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.drills = [
+      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },        // exact — 영상 원문 1개 허용
+      { en: 'Honey, it is no big deal.', ko: '뜻', kr: '드릴' }, // added → 차단
+      { en: 'Sorry, it is no big deal.', ko: '뜻', kr: '드릴' }, // added → 차단
+    ];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('근접중복');
   });
 
-  it('moduyeongeo 는 근접중복이 많아도 경고만 (완성 콘텐츠 — 렌더에서 걸러냄)', () => {
+  it('영상 원문 1개 + 진짜 변주만 있으면 통과 (정상 카드를 막지 않는다)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.drills = [
+      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },              // exact 1개 — 허용
+      { en: 'Was it a big deal to you?', ko: '뜻', kr: '드릴' },       // 진짜 변주
+      { en: 'They said it was no big deal at all.', ko: '뜻', kr: '드릴' },
+    ];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.errors.join(' ')).not.toContain('근접중복');
+  });
+
+  it('영상 원문 반복이 2개 이상이면 차단 (같은 문장 되풀이)', () => {
     const p = makeModu();
     p.cards[0].explanation.drills = [
       { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },
-      { en: 'Honey, it is no big deal.', ko: '뜻', kr: '드릴' },
-      { en: 'Sorry, it is no big deal.', ko: '뜻', kr: '드릴' },
+      { en: 'It is no big deal!', ko: '뜻', kr: '드릴' },  // 구두점만 다름 → exact 2개
+      { en: 'Was it a big deal to you?', ko: '뜻', kr: '드릴' },
     ];
     const r = validateSeedContent(p, okOpts);
-    expect(r.ok).toBe(true);                                    // 차단 안 함
-    expect(r.warnings.join(' ')).toContain('근접중복');          // 경고는 뜸
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('근접중복');
   });
 
   it('회귀: track 없는 정상 en 은 여전히 scene 강제 (예외 누수 방지)', () => {
