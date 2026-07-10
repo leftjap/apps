@@ -450,9 +450,13 @@ public final class GymAppModel: ObservableObject {
     // 명시적 블록 커서 (푸터 pill 탭 = 이동, §6-8). nil 이면 첫 미완료 블록.
     @Published public var selectedBlockIdx: Int? = nil
 
+    // 히어로 표시용 — 전부 완료면 마지막 블록(read-only 카드 유지).
     public var currentBlockIdx: Int {
-        if let sel = selectedBlockIdx, session.blocks.indices.contains(sel) { return sel }
-        return GymSessionLogic.firstUnfinishedBlockIdx(session) ?? max(0, session.blocks.count - 1)
+        activeBlockIdx ?? max(0, session.blocks.count - 1)
+    }
+    // 레일·액션시트용 — 전부 완료면 nil (완료된 종목이 current 로 남지 않게, session.js 정합).
+    public var activeBlockIdx: Int? {
+        GymSessionLogic.activeBlockIdx(session: session, selected: selectedBlockIdx)
     }
     public var currentBlock: GymBlock? {
         session.blocks.indices.contains(currentBlockIdx) ? session.blocks[currentBlockIdx] : nil
@@ -530,13 +534,6 @@ public final class GymAppModel: ObservableObject {
         session.blocks[bi] = GymSessionLogic.finishBlock(session.blocks[bi], now: Double(nowMillis()))
         selectedBlockIdx = GymSessionLogic.firstUnfinishedBlockIdx(session)
         impact(.heavy)
-    }
-    // 블록 순서 이동 (§6-9 "이동").
-    public func moveBlock(from: Int, to: Int) {
-        guard session.blocks.indices.contains(from), session.blocks.indices.contains(to), from != to else { return }
-        let b = session.blocks.remove(at: from)
-        session.blocks.insert(b, at: to)
-        selectedBlockIdx = to
     }
 
     // 세션 볼륨 = 전 블록 완료/계획 세트 볼륨 합.

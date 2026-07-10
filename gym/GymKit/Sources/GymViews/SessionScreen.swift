@@ -192,7 +192,6 @@ public struct SessionScreenView: View {
         case block(Int)      // 푸터 레일 칩
         case setRow(Int)     // 세트바 슬롯
         case end             // 종료 버튼
-        case move(Int)       // 이동 — 위치 선택 단계
     }
 
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
@@ -443,8 +442,9 @@ public struct SessionScreenView: View {
             }
             // 레일 순서 = [완료(완료순) · 현재 · 예정(원래순)] — session.js computeFooterOrder 정합.
             // 탭·꾹누르기는 원본 블록 인덱스(it.index)로 전달.
+            // 전부 완료면 current 없음 → 완료된 종목이 흰 카드로 남지 않고 체크 칩이 된다.
             let railItems = GymSessionLogic.footerOrder(blocks: model.session.blocks,
-                                                        currentIdx: model.currentBlockIdx)
+                                                        currentIdx: model.activeBlockIdx ?? -1)
             GymFooterRail(items: railItems.map {
                 GymFooterRail.Item(name: model.exerciseName(model.session.blocks[$0.index].exerciseId),
                                    state: RailState(core: $0.state), blockIdx: $0.index)
@@ -634,41 +634,27 @@ public struct SessionScreenView: View {
     func actionSheetSpec(_ target: ActionTarget) -> (title: String, items: [GymActionItem]) {
         switch target {
         case .block(let i):
-            guard model.session.blocks.indices.contains(i) else { return ("메뉴", []) }
-            let b = model.session.blocks[i]
-            let name = model.exerciseName(b.exerciseId)
-            if GymSessionLogic.isBlockDone(b) {
-                return (name, [.init(id: "edit", label: "수정"),
-                               .init(id: "delete", label: "삭제", danger: true),
-                               .init(id: "move", label: "이동")])
-            }
-            if b.sets.contains(where: \.done) || i == model.currentBlockIdx {
-                return (name, [.init(id: "finish", label: "완료"),
-                               .init(id: "delete", label: "삭제", danger: true),
-                               .init(id: "move", label: "이동")])
-            }
-            return (name, [.init(id: "delete", label: "삭제", danger: true),
-                           .init(id: "move", label: "이동")])
+            guard model.session.blocks.indices.contains(i) else { return ("운동 옵션", []) }
+            // session.js getActionMenuFor('footer-exercise') — 항목은 blockActions 가 정본. '이동' 없음.
+            let state: GymSessionLogic.GymRailState = i == model.activeBlockIdx
+                ? .current : (GymSessionLogic.isBlockDone(model.session.blocks[i]) ? .done : .upcoming)
+            let labels: [GymSessionLogic.GymBlockAction: (String, Bool)] = [
+                .finish: ("완료", false), .edit: ("수정", false), .delete: ("삭제", true),
+            ]
+            return ("운동 옵션", GymSessionLogic.blockActions(state: state).map {
+                .init(id: $0.rawValue, label: labels[$0]!.0, danger: labels[$0]!.1)
+            })
         case .setRow(let i):
             return ("\(i + 1)세트", [.init(id: "edit", label: "수정"),
                                      .init(id: "delete", label: "삭제", danger: true)])
         case .end:
             return ("세션", [.init(id: "finish", label: "종료"),
                             .init(id: "discard", label: "세션 삭제", danger: true)])
-        case .move(let from):
-            let name = model.session.blocks.indices.contains(from)
-                ? model.exerciseName(model.session.blocks[from].exerciseId) : ""
-            return ("\(name) 이동 — 위치 선택",
-                    model.session.blocks.enumerated().map { i, b in
-                        .init(id: "to-\(i)", label: i == from
-                              ? "\(i + 1). \(model.exerciseName(b.exerciseId)) (현재)"
-                              : "\(i + 1). \(model.exerciseName(b.exerciseId))")
-                    })
         }
     }
 
     func handleAction(_ id: String, target: ActionTarget) {
-        defer { if case .block(let f) = target, id == "move" { actionTarget = .move(f) } else { actionTarget = nil } }
+        defer { actionTarget = nil }
         switch target {
         case .block(let i):
             switch id {
@@ -690,10 +676,6 @@ public struct SessionScreenView: View {
             case "finish": model.endSession()
             case "discard": model.discardSession()
             default: break
-            }
-        case .move(let from):
-            if id.hasPrefix("to-"), let to = Int(id.dropFirst(3)) {
-                model.moveBlock(from: from, to: to)
             }
         }
     }

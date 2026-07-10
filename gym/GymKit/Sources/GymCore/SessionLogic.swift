@@ -147,6 +147,25 @@ public enum GymSessionLogic {
         public let state: GymRailState
     }
 
+    /// 현재 블록 — 명시 선택 우선, 없으면 첫 미완료. **전부 완료면 nil** (session.js currentBlock=null 정합).
+    /// 히어로는 read-only 표시용으로 마지막 블록을 쓰지만, 레일·액션시트는 nil 을 그대로 써야
+    /// 완료된 종목이 current(흰 카드)로 남지 않는다.
+    public static func activeBlockIdx(session: GymSession, selected: Int?) -> Int? {
+        if let s = selected, session.blocks.indices.contains(s) { return s }
+        return firstUnfinishedBlockIdx(session)
+    }
+
+    // 꾹누르기 액션시트 항목 (session.js:1943 getActionMenuFor 'footer-exercise').
+    // '이동' 은 PWA 에서 제거됨 — long-press hold + drag 재정렬로 대체 (spec §6-9 갱신).
+    public enum GymBlockAction: String, Sendable { case finish, edit, delete }
+    public static func blockActions(state: GymRailState) -> [GymBlockAction] {
+        switch state {
+        case .current: return [.finish, .delete]     // exState 'active'
+        case .done: return [.edit, .delete]          // exState 'completed'
+        case .upcoming: return [.delete]             // exState 'hold' | 'upcoming'
+        }
+    }
+
     /// [완료(finishedAt 오름차순) · 현재 · 예정(원래순)]. single 블록만. 현재는 완료여도 current.
     public static func footerOrder(blocks: [GymBlock], currentIdx: Int) -> [GymFooterItem] {
         let entries = blocks.enumerated().filter { $0.element.type == "single" }

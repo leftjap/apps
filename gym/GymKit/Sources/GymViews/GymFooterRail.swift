@@ -6,6 +6,9 @@ import GymCore
 
 public enum RailState {
     case done, current, upcoming
+    var idName: String {
+        switch self { case .done: "done"; case .current: "current"; case .upcoming: "upcoming" }
+    }
     init(core: GymSessionLogic.GymRailState) {
         switch core {
         case .done: self = .done
@@ -201,6 +204,7 @@ public struct GymFooterRail: View {
                     }
                 }
                 .id(i)
+                .accessibilityIdentifier("rail-\(item.state.idName)-\(item.name)")
                 .onTapGesture { onTapItem(item.blockIdx) }
                 .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(item.blockIdx) }
             }
