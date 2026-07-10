@@ -1,0 +1,18 @@
+{
+  "name": "best",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "collect": "node src/collect.mjs"
+  },
+  "devDependencies": {
+    "vitest": "^2.1.8"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
