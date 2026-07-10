@@ -31,19 +31,19 @@ struct SessionHero: View {
     // 스왑 모션은 **숫자 요소에만** 건다 (시안 #7b 310·315행 — kg·×·회 는 정지).
     // 색은 modifier 가 준다(Text 에 직접 걸면 바깥 foregroundStyle 이 무시됨 → 착지 플래시 소실).
     @ViewBuilder func heroNumber(_ v: String, font: Font, tracking: CGFloat, id: String,
-                                 dxIn: CGFloat, dxOut: CGFloat, landScale: CGFloat,
-                                 delay: Double, base: Color) -> some View {
+                                 spec: HeroSwapSpec, base: Color) -> some View {
         // iOS Text.tracking 은 마지막 글자 뒤에도 자간을 적용해 프레임이 좁아지고, 그 좁은 프레임에
         // 마지막 글자 잉크를 자른다(브라우저는 letter-spacing 를 넣어도 잉크를 안 자름).
         // → 글자 사이에만 kern 을 넣는 AttributedString 으로 프레임을 넓혀 클립을 없앤다 (중앙 정렬 유지).
         let t = Text(HeroNumberText.kerned(v, tracking: tracking)).font(font)
         if let fromDrag = ghostOut {
             t.foregroundStyle(base)
-                .modifier(HeroGhostOut(fromDrag: fromDrag, dxOut: dxOut, delay: delay))
+                .modifier(HeroGhostOut(fromDrag: fromDrag, dxOut: spec.dxOut, delay: spec.delay))
                 .accessibilityIdentifier(id)
         } else {
-            t.modifier(HeroRowSwapIn(trigger: swapMoment, delay: delay, dxIn: dxIn,
-                                     landScale: landScale, baseColor: base))
+            t.modifier(HeroRowSwapIn(trigger: swapMoment, delay: spec.delay, dxIn: spec.dxIn,
+                                     landScale: spec.landScale, landOvershoot: spec.landOvershoot,
+                                     baseColor: base))
                 .accessibilityIdentifier(id)
         }
     }
@@ -121,7 +121,7 @@ struct SessionHero: View {
     func big(_ v: String, unit: String) -> some View {
         VStack(spacing: 0) {
             heroNumber(v, font: .mono(122, Self.weightMonoWeight(preset: preset)), tracking: -6.7,   // -0.055em @122
-                       id: "hero-weight", dxIn: 88, dxOut: -96, landScale: 1.08, delay: 0,
+                       id: "hero-weight", spec: .weight,
                        base: locked ? GY.ink4 : GY.ink1)
                 .lineSpacing(0)
             Text(unit)
@@ -140,8 +140,12 @@ struct SessionHero: View {
                 Text("×").font(.mono(24, 300)).foregroundStyle(GY.ink4)
                     .opacity(ghostOut == nil ? 1 : 0)
             }
+            // 횟수 스왑 스펙 — 착지 -6·scale 1.09 (시안 gHeroSwapR). 지연은 호출 컨텍스트별(맨몸/유산소는 0).
+            let repsSpec = HeroSwapSpec(dxIn: HeroSwapSpec.reps.dxIn, dxOut: HeroSwapSpec.reps.dxOut,
+                                        landOvershoot: HeroSwapSpec.reps.landOvershoot,
+                                        landScale: HeroSwapSpec.reps.landScale, delay: repsDelay)
             heroNumber(v, font: .mono(50, Self.repsMonoWeight(preset: preset)), tracking: -1,   // -0.02em @50
-                       id: "hero-reps", dxIn: 82, dxOut: -88, landScale: 1.09, delay: repsDelay,
+                       id: "hero-reps", spec: repsSpec,
                        base: locked ? GY.ink4 : GY.ink2)
             Text(unit).font(.sans(16, 500)).foregroundStyle(GY.ink3)
                 .opacity(ghostOut == nil ? 1 : 0)

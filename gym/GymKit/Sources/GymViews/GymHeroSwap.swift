@@ -9,10 +9,11 @@ import GymCore
 // 시간축: 0~38% 대기(고스트 퇴장 구간) → 55% 착지 → 74% 플래시 유지 → 100% 정착. 횟수 행은 55ms 지연.
 struct HeroRowSwapIn: ViewModifier {
     var trigger: Int
-    var delay: Double        // 0 (중량) / 0.055 (횟수)
-    var dxIn: CGFloat        // 88 / 82
-    var landScale: CGFloat   // 1.08 / 1.09
-    var baseColor: Color = GY.ink1     // 정착 색 — 중량 ink-1 / 횟수 ink-2 (시안 §6)
+    var delay: Double         // 0 (중량) / 0.055 (횟수)
+    var dxIn: CGFloat         // 88 / 82
+    var landScale: CGFloat    // 1.08 / 1.09
+    var landOvershoot: CGFloat = -8   // 착지 오버슈트 — 중량 -8 / 횟수 -6 (시안 gHeroSwapW/R 55%)
+    var baseColor: Color = GY.ink1    // 정착 색 — 중량 ink-1 / 횟수 ink-2 (시안 §6)
     struct V {
         var x: CGFloat = 0; var s: CGFloat = 1; var o: CGFloat = 1
         var skew: CGFloat = 0; var flash: CGFloat = 0
@@ -30,7 +31,7 @@ struct HeroRowSwapIn: ViewModifier {
             KeyframeTrack(\.x) {
                 MoveKeyframe(dxIn)
                 LinearKeyframe(dxIn, duration: 0.29 + delay)
-                CubicKeyframe(-8, duration: 0.13)
+                CubicKeyframe(landOvershoot, duration: 0.13)
                 CubicKeyframe(0, duration: 0.34)
             }
             KeyframeTrack(\.s) {
