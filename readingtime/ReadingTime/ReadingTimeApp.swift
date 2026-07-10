@@ -183,9 +183,11 @@ struct ReadingTimeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // 시안 뷰포트 390×844 고정 — 작은 화면(iPhone 11 Pro 375×812 등)은 비율 유지 축소·중앙 배치
+            // 시안 뷰포트 390×844 고정 — 화면 크기 무관 비율 유지 스케일·중앙 배치.
+            // 축소(11 Pro 375×812 → 0.96)·확대(XR 414×896 → 1.06) 모두 허용: 최신 아이폰 종횡비가
+            // 시안과 사실상 동일(±0.01%)해 레터박스가 소수점 픽셀로 사라짐. (XR 여백 결함 수정)
             GeometryReader { geo in
-                let scale = min(1, min(geo.size.width / 390, geo.size.height / 844))
+                let scale = min(geo.size.width / 390, geo.size.height / 844)
                 RTRootView(model: model)
                     .rtMotion(!faceDownDark)   // 엎힘(검은 화면) 중 무한 모션 동결 — GPU 절전
                     .frame(width: 390, height: 844)
