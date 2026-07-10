@@ -49,14 +49,18 @@ struct ReadingTimeApp: App {
         }
 
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
-        model.onAuthChange = { loggedIn in
+        model.onAuthChange = { [weak model] loggedIn in
             UserDefaults.standard.set(loggedIn, forKey: "rt.loggedIn")
             UserDefaults.standard.synchronize()   // 즉시 플러시 — 강제 종료에도 로그인 상태 유지
             if !loggedIn {
+                UserDefaults.standard.removeObject(forKey: "rt.displayName")
+                model?.displayName = nil
                 Task { await cloud.signOut() }    // 로그아웃 시 Supabase 세션도 제거
             }
         }
         if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+            // 표시 이름: 마지막 로그인 값으로 즉시 표시 (오프라인 콜드스타트) — restore() 가 갱신
+            model.displayName = UserDefaults.standard.string(forKey: "rt.displayName")
             model.nav(.home)
             Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
         }
@@ -66,6 +70,7 @@ struct ReadingTimeApp: App {
             Task { @MainActor in
                 do {
                     try await cloud.signInWithGoogle()
+                    Self.applyDisplayName(from: cloud, to: model)
                     model?.login()
                 } catch {
                     Logger(subsystem: "com.leftjap.readingtime", category: "auth")
@@ -86,7 +91,8 @@ struct ReadingTimeApp: App {
         }
         // --capture: 4초 후 실제 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (실기기 화면 검증).
         // devicectl 엔 스크린샷 명령이 없어 앱이 자기 화면을 남기고 아래로 회수한다:
-        //   xcrun devicectl device process launch --device <UDID> --activate <bundle> --arguments --capture
+        //   xcrun devicectl device process launch --device <UDID> --terminate-existing <bundle> -- --capture
+        //   (-- 종결자 필수: 없으면 devicectl 이 대시 인자를 삼켜 앱에 미전달. terminate 필수: 실행 중이면 인자 소실)
         //   xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer \
         //     --domain-identifier <bundle> --source Documents/rtscreen.png --destination out.png
         if launchArgs.contains("--capture") {
@@ -107,6 +113,13 @@ struct ReadingTimeApp: App {
         }
         _model = StateObject(wrappedValue: model)
         _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
+    }
+
+    /// 로그인/복원 성공 시 auth 표시 이름을 모델에 주입 + UserDefaults 영속 (오프라인 콜드스타트용)
+    @MainActor private static func applyDisplayName(from cloud: CloudStore, to model: RTAppModel?) {
+        guard let n = cloud.displayName, !n.isEmpty else { return }
+        model?.displayName = n
+        UserDefaults.standard.set(n, forKey: "rt.displayName")
     }
 
     /// 현재 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (--capture 전용, 실기기 화면 검증).
@@ -176,7 +189,10 @@ struct ReadingTimeApp: App {
             }
             .animation(.easeOut(duration: 0.25), value: faceDownDark)
             .statusBarHidden(faceDownDark)
-                .task { await cloud.restore() }
+                .task {
+                    await cloud.restore()
+                    Self.applyDisplayName(from: cloud, to: model)
+                }
                 .onReceive(model.$route) { route in
                     // 센서·근접: 홈 추가 (§4-1) — 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
                     let sensorSession = route == .flipWait || route == .flipTimer || route == .home

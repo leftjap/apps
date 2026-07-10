@@ -20,6 +20,8 @@ public final class CloudStore: ObservableObject {
     public init() {}
 
     @Published public private(set) var signedIn = false
+    // 프로필 표시 이름 — user_metadata.display_name(수동 설정) 우선, 없으면 구글 full_name
+    @Published public private(set) var displayName: String?
 
     private let client = SupabaseClient(supabaseURL: Config.supabaseURL, supabaseKey: Config.supabaseAnonKey)
     private var ownerID: UUID?
@@ -39,7 +41,12 @@ public final class CloudStore: ObservableObject {
         if let user = try? await client.auth.user() {
             ownerID = user.id
             signedIn = true
+            displayName = Self.displayName(of: user)
         }
+    }
+
+    private static func displayName(of user: User) -> String? {
+        user.userMetadata["display_name"]?.stringValue ?? user.userMetadata["full_name"]?.stringValue
     }
 
     // Google 로그인 → owner_id = auth.uid().
@@ -49,6 +56,7 @@ public final class CloudStore: ObservableObject {
         let session = try await client.auth.signInWithOAuth(provider: .google, redirectTo: Config.oauthRedirect)
         ownerID = session.user.id
         signedIn = true
+        displayName = Self.displayName(of: session.user)
     }
 
     // 로그아웃 — 로컬 세션 제거 (개인 앱: 실패해도 UI 로그아웃은 진행)

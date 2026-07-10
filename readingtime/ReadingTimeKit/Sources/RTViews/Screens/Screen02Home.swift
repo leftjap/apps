@@ -433,9 +433,9 @@ public struct Screen02Home: View {
                 menuRow(bg: Color(hex: 0xF1F5EE), padding: EdgeInsets(top: 15, leading: 15, bottom: 15, trailing: 15)) {
                     Circle().fill(RT.ctaGrad(CGSize(width: 40, height: 40)))
                         .frame(width: 40, height: 40)
-                        .overlay(Text("지").font(.sans(15, 800)).foregroundColor(RT.ctaText))
+                        .overlay(Text(model?.displayInitial ?? "지").font(.sans(15, 800)).foregroundColor(RT.ctaText))
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("지훈").font(.sans(14.5, 800)).tracking(14.5 * -0.01).foregroundColor(RT.ink)
+                        Text(model?.displayNameOrDemo ?? "지훈").font(.sans(14.5, 800)).tracking(14.5 * -0.01).foregroundColor(RT.ink)
                         Text("프로필 수정").font(.sans(11.5, 600)).foregroundColor(RT.green)
                     }
                     Spacer(minLength: 0)

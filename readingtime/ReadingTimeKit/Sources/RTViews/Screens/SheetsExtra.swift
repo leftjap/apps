@@ -13,7 +13,7 @@ public struct SheetSettings: View {
         SheetShell {
             VStack(spacing: 0) {
                 SheetHead(title: "설정", onClose: { model?.closeSheet() })
-                settingRow(label: "이름", value: "지훈", valueColor: RT.ink)
+                settingRow(label: "이름", value: model?.displayNameOrDemo ?? "지훈", valueColor: RT.ink)
                     .padding(.top, 18)
                 settingRow(label: "밀리의서재", value: "연결됨", valueColor: RT.green)
                     .padding(.top, 10)

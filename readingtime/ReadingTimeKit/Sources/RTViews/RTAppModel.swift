@@ -87,6 +87,17 @@ public final class RTAppModel: ObservableObject {
     // 하루 첫 실행 안무(#7a) 재생 플래그 — 앱 셸이 UserDefaults 날짜 판정 후 홈 진입 시 1회 set.
     // 데모(rtshot/rtapp)·기본은 false → 홈은 정지 #7b (픽셀 오라클 불변)
     @Published public var playPickup = false
+    // 프로필 표시 이름 — 앱 셸이 auth user_metadata.display_name 에서 주입.
+    // nil/빈값 = 데모 정본 "지훈"/"지" 폴백 (rtshot/rtapp 픽셀 오라클 불변)
+    @Published public var displayName: String?
+
+    /// 표시 이름 (데모 폴백) — 홈 메뉴·설정 시트가 사용
+    public var displayNameOrDemo: String {
+        if let n = displayName, !n.isEmpty { return n }
+        return "지훈"
+    }
+    /// 아바타 이니셜 — 표시 이름 첫 글자
+    public var displayInitial: String { String(displayNameOrDemo.prefix(1)) }
 
     // 데모 시드: 시안 데모 값(00:26:14)과 일치 — 세션 시작 시 26:14 경과로 시작
     public static let demoElapsed = 26 * 60 + 14

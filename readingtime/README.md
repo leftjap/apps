@@ -26,6 +26,7 @@
 | ├ `rtshot` | 헤드리스 렌더 CLI — `rtshot <NN> out.png` / `rtshot --app <NN>`(라우팅 오라클) |
 | └ `rtapp` | macOS 데모 셸(390×844 창, 모션 on, 알라딘 라이브 검색) — `rtapp --verify-search <q>` |
 | `SETUP.md` | 실기기 배포·검증 절차 |
+| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 자동화 — launchd `com.leftjap.readingtime.resign` 매일 21:30, 만료 <4일 시 재빌드 후 두 기기(지오 11 Pro·소연 XR) 설치, 로그 `~/Library/Logs/readingtime-resign.log` |
 
 ## 데이터·통합 (결정됨)
 - **종이책(엎어놓기/수동)** = 리딩타임 전용 테이블 `readingtime_daily`(공유 Supabase, source flip/manual). 마이그: `supabase/migrations/0001_readingtime_daily.sql`.
