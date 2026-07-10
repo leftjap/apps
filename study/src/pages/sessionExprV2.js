@@ -12,6 +12,8 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, pickChainVoice } from '../components/session/applied.js';
+import { passesCoverage } from '../services/speech.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
@@ -218,6 +220,102 @@ function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
     }
     return row;
   });
+}
+
+/* 체이닝 — 무자막 청각 확장 (elicited imitation, 2026-07-09 사용자 결정).
+ * 단계 = chunks 누적. 화면에 영어를 보여주지 않는다(= 인출 강제, "보고 따라 읽기" 폐기).
+ * 재생마다 화자·속도를 바꿔 '리듬 통째 암기'를 막는다. 통과 판정은 발음 점수가 아니라 **단어 누락 0**
+ * (Azure EnableMiscue → passesCoverage). 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
+ * 게이트·통계는 건드리지 않는다 (기존 ladder 와 동일 — 메인/응용 발화만 집계).
+ * demo(?demo=1) 는 마이크 없이 통과 시뮬. */
+function chainBlockEl(chain, lang, card, demo) {
+  const steps = buildChainSteps(chain);
+  if (!steps.length) return null;
+  const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
+  let cur = 0, plays = 0, fails = 0, recCtrl = null, recRow = null;
+
+  const hintEl = h('div', { class: 'vs-gate', style: 'text-align:left;margin-top:10px;min-height:18px;white-space:normal;' }, '');
+  const doneEl = h('div', { style: 'display:none;margin-top:10px;' }, h('span', { class: 'vs-pass' }, vIcon(VI.ZAP, { size: 11, fill: true }), '체이닝 완료'));
+  const rowEls = [];
+
+  const renderHint = () => {
+    const step = steps[cur];
+    if (!step) { hintEl.textContent = ''; return; }
+    const lv = hintLevelFor(fails);
+    if (lv === 0) { hintEl.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '자막 없이, 들은 그대로 말해 보세요'; return; }
+    if (lv === 1) hintEl.textContent = `힌트 · 뜻: ${chain.ko || ''}`;
+    else if (lv === 2) hintEl.textContent = `힌트 · 시작: ${firstWordsHint(step.text)}`;
+    else hintEl.textContent = `힌트 · 전체: ${step.text}`;
+  };
+  const refresh = () => {
+    rowEls.forEach((r, i) => {
+      const active = i === cur;
+      r.row.style.opacity = i < cur ? '0.5' : active ? '1' : '0.3';
+      r.playBtn.disabled = !active;
+      r.recBtn.disabled = !active;
+      r.mark.style.display = i < cur ? '' : 'none';
+    });
+    if (cur >= steps.length) { doneEl.style.display = ''; hintEl.textContent = ''; }
+    else { doneEl.style.display = 'none'; renderHint(); }
+  };
+  const advance = () => { cur += 1; fails = 0; refresh(); };
+
+  steps.forEach((step, i) => {
+    const wc = step.text.trim().split(/\s+/).filter(Boolean).length;
+    const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, '통과 ✓');
+    const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
+    const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
+    const row = h('div', { class: 'vs-drow' },
+      h('span', { class: 'ix' }, String(i + 1)),
+      h('div', {}, h('div', { class: 'en' }, `${i + 1}단계 · ${wc}단어`),
+        h('div', { class: 'sub' }, i === 0 ? '듣고 그대로 따라 말하기' : '앞 단계에 이어 붙습니다')),
+      h('span', { class: 'grow' }), mark, playBtn, recBtn);
+
+    playBtn.addEventListener('click', () => {
+      if (i !== cur || !window.studySpeech?.speak) return;
+      plays += 1;
+      const v = pickChainVoice(plays); // 매 재생마다 화자·속도 변주
+      window.studySpeech.speak(step.text, { lang: ttsLang, voice: v.voice, rate: v.rate });
+    });
+
+    async function finish() {
+      if (!(recCtrl && recRow === row)) return;
+      const ctrl = recCtrl; recCtrl = null; recRow = null;
+      row.classList.remove('recing'); recBtn.classList.remove('recing');
+      const result = await stopAndAnalyze(ctrl, step.text, card, { enableMiscue: true });
+      if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      if (passesCoverage(result)) { advance(); return; }
+      fails += 1;
+      const miss = result?.omissions?.length ?? 0;
+      showRecordToast(miss ? `${miss}개 빠뜨렸어요 — 다시 들어보세요` : '다시 한 번 말해 보세요');
+      refresh();
+    }
+
+    recBtn.addEventListener('click', async () => {
+      if (i !== cur) return;
+      if (demo) {
+        if (row.classList.contains('recing')) return;
+        row.classList.add('recing'); recBtn.classList.add('recing');
+        setTimeout(() => { row.classList.remove('recing'); recBtn.classList.remove('recing'); advance(); }, 800);
+        return;
+      }
+      if (recCtrl && recRow === row) { finish(); return; }
+      const r = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => finish() });
+      if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
+      recCtrl = r.controller; recRow = row;
+      row.classList.add('recing'); recBtn.classList.add('recing');
+    });
+
+    rowEls.push({ row, playBtn, recBtn, mark });
+  });
+
+  const block = h('div', { class: 'vs-chain', style: 'margin-top:28px;' },
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '체이닝 — 자막 없이 듣고 따라 말하기'),
+      h('span', { class: 'ct' }, '통과 = 단어를 다 말하기')),
+    h('div', { style: 'margin-top:4px;' }, rowEls.map((r) => r.row)),
+    hintEl, doneEl);
+  refresh();
+  return block;
 }
 
 /* 모바일(phone/tablet) — 동일 로직, 단일 칼럼 셸(m-topb/m-steps/m-cta) + 해설 fold (작업지시서 모바일 §3-3) */
@@ -477,7 +575,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   // 응용 연습 — 드릴 녹음도 세션 발화 1건으로 집계 ('오늘 발화' + 요약 통과율/평균/약점음소)
   // + 다음-표현 게이트(recLog count)에도 포함 (2026-07-01 사용자 지시 — 응용 발화도 3회 게이트에 셈).
   // 단 콤보·PASS 칩(연속 PASS 게이미피케이션)은 메인 표현 전용 — drill 미반영 유지.
-  const drills = Array.isArray(ex.drills) ? ex.drills : [];
+  // 근접중복(호칭·감탄사만 덧붙인 드릴)은 렌더에서 제외 — 원본 데이터는 손대지 않음(사용자 결정 2026-07-09).
+  const drills = filterNearDupDrills(s?.sentence, ex.drills);
   const drillCountEl = h('b', {}, '0');
   const recordedDrills = new Set();
   const onDrillScore = (i, result) => {
@@ -499,20 +598,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker, onDrillScore, state.demo)),
   ) : null;
 
-  // 확장 사다리(ladder, guide §6.3) — 짧게→길게 수직 확장 + 끝부터 이어 말하기(back-chaining). 응용(수평 변주)과 별개.
-  // rung 은 {en,ko,kr} 이라 drillRows 재사용(단 gate 카운트는 no-op — 메인/응용 발화만 3회 게이트에 셈).
-  const ladder = Array.isArray(ex.ladder) ? ex.ladder : [];
-  const ladderBack = ladder.find((r) => Array.isArray(r?.back) && r.back.length >= 2)?.back;
-  const ladderBlock = ladder.length >= 2 ? h('div', { style: 'margin-top:28px;' },
-    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '확장 사다리 — 짧게 → 길게, 한 단씩')),
-    h('div', { style: 'margin-top:4px;' }, drillRows(ladder, expr, lang, s?.speaker, () => {}, state.demo)),
-    ladderBack ? h('div', { class: 'vs-sec', style: 'margin-top:12px;' },
-      h('div', { class: 'vs-klab' }, '이어 말하기 (끝부터)'),
-      h('div', { style: 'display:grid;gap:6px;margin-top:4px;' }, ladderBack.map((bc) => h('div', { style: 'display:flex;gap:10px;align-items:baseline;' },
-        h('span', { style: 'font-weight:600;font-size:15px;' }, Array.isArray(bc) ? (bc[0] || '') : ''),
-        (Array.isArray(bc) && bc[1]) ? h('span', { class: 'b2', style: 'font-size:12.5px;' }, bc[1]) : null,
-      )))) : null,
-  ) : null;
+  // 체이닝(chain) — 확장 사다리(ladder) 폐기 후속. 자막 없이 듣고 따라 말하기 + 단어 누락 0 통과.
+  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo);
 
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
 
@@ -544,7 +631,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
         h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        cardEl, recWidget, drillsBlock, ladderBlock, fold),
+        cardEl, recWidget, drillsBlock, chainBlock, fold),
       h('div', { class: 'm-cta' }, gateEl, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -554,7 +641,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
         h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-      cardEl, drillsBlock, ladderBlock);
+      cardEl, drillsBlock, chainBlock);
     const side = h('aside', { class: 'vs-side' }, recWidget, explainPanel(ex), nextBtn, gateEl);
     root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
