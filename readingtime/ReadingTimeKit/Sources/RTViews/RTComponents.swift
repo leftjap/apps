@@ -180,27 +180,99 @@ public struct TopRoundedOpenRect: Shape {
     }
 }
 
-// 원격 표지 이미지 (실데이터 책 — 알라딘 coverUrl). 로딩/실패 시 베이지 플레이스홀더.
+// 원격 표지 이미지 (실데이터 책 — 알라딘 coverUrl).
+// coverUrl 이 비었거나 로드 실패 시: title 이 주어지면 디자인된 대체 표지, 아니면 베이지 플레이스홀더.
+// (표지 없는 책이 홈 3D 히어로에서 "빈 사각형"으로 보여 입체감이 전혀 안 읽히던 문제 — 실기기 확인)
 public struct RTRemoteCover: View {
     let url: String
     let size: CGSize
     let radius: CGFloat
+    let title: String?
+    let author: String?
 
-    public init(url: String, size: CGSize, radius: CGFloat = 6) {
+    public init(url: String, size: CGSize, radius: CGFloat = 6,
+                title: String? = nil, author: String? = nil) {
         self.url = url
         self.size = size
         self.radius = radius
+        self.title = title
+        self.author = author
     }
 
     public var body: some View {
         AsyncImage(url: URL(string: url)) { phase in
             if case .success(let img) = phase {
                 img.resizable().aspectRatio(contentMode: .fill)
+            } else if let title {
+                RTPlaceholderCover(title: title, author: author, size: size)
             } else {
                 Rectangle().fill(Color(hex: 0xE8E2D2))
             }
         }
         .frame(width: size.width, height: size.height)
         .clipShape(RoundedRectangle(cornerRadius: radius))
+    }
+}
+
+// 표지 이미지가 없는 책의 대체 표지 — 크래프트 종이 + 내부 프레임 + 제목/저자.
+// 치수 비례 스케일(기준 172pt 폭)이라 작은 썸네일에서도 깨지지 않는다.
+public struct RTPlaceholderCover: View {
+    let title: String
+    let author: String?
+    let size: CGSize
+
+    public init(title: String, author: String? = nil, size: CGSize) {
+        self.title = title
+        self.author = author
+        self.size = size
+    }
+
+    private var k: CGFloat { size.width / 172 }   // 기준 폭 대비 스케일
+
+    public var body: some View {
+        ZStack {
+            RT.kraftGrad(size)
+            // 수평 종이결
+            Canvas { ctx, s in
+                var y: CGFloat = 0
+                while y < s.height {
+                    ctx.fill(Path(CGRect(x: 0, y: y, width: s.width, height: 1)),
+                             with: .color(Color(hex: 0x7A602C, alpha: 0.05)))
+                    y += max(2, 3 * k)
+                }
+            }
+            // 좌측 책등 음영 / 우측 책배
+            HStack(spacing: 0) {
+                LinearGradient.css(90, size: CGSize(width: 6 * k, height: size.height),
+                                   [(Color.black.opacity(0.22), 0), (Color.black.opacity(0), 1)])
+                    .frame(width: 6 * k)
+                Spacer(minLength: 0)
+                Rectangle().fill(Color(hex: 0xEDE1C2)).frame(width: 3 * k)
+                    .padding(.vertical, 3 * k)
+            }
+            // 내부 프레임
+            Rectangle().stroke(Color(hex: 0x7A602C, alpha: 0.4), lineWidth: max(0.5, k))
+                .padding(8 * k)
+            // 제목 / 저자
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                Text(title)
+                    .font(.sans(max(9, 28 * k), 900)).tracking(28 * k * 0.02)
+                    .foregroundColor(Color(hex: 0x241C0D))
+                    .multilineTextAlignment(.center).lineLimit(3)
+                    .minimumScaleFactor(0.5)
+                Spacer(minLength: 0)
+                if let author, !author.isEmpty, k > 0.4 {
+                    Rectangle().fill(Color(hex: 0x9A7C40).opacity(0.6))
+                        .frame(width: 34 * k, height: max(1, 2 * k))
+                    Text(author).font(.sans(max(6, 10 * k), 600))
+                        .foregroundColor(Color(hex: 0x7C6A42))
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                        .padding(.top, 9 * k)
+                }
+            }
+            .padding(EdgeInsets(top: 23 * k, leading: 14 * k, bottom: 16 * k, trailing: 14 * k))
+        }
+        .frame(width: size.width, height: size.height)
     }
 }

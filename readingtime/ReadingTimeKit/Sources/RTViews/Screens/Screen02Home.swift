@@ -199,7 +199,8 @@ public struct Screen02Home: View {
     @ViewBuilder var bookView: some View {
         if let live {
             RTBook3D(front: AnyView(
-                RTRemoteCover(url: live.coverUrl, size: .init(width: 172, height: 252), radius: 0)),
+                RTRemoteCover(url: live.coverUrl, size: .init(width: 172, height: 252), radius: 0,
+                              title: live.title, author: live.author)),
                      spineTitle: live.title)
         } else {
             RTBook3D { HomeBook3DFront() }

@@ -122,6 +122,16 @@ public struct RTBook3D: View {
         [cam.project(SIMD3(-hw, -hh, -hd)), cam.project(SIMD3(hw, -hh, -hd)),
          cam.project(SIMD3(hw, -hh, hd)), cam.project(SIMD3(-hw, -hh, hd))]
     }
+    // 뒤표지(z=-hd) — idle 각에선 컬링되나 6면 박스 완성(각도 변화 시 갈라짐 방지)
+    private func backQuad(_ cam: Cam) -> [CGPoint] {
+        [cam.project(SIMD3(hw, -hh, -hd)), cam.project(SIMD3(-hw, -hh, -hd)),
+         cam.project(SIMD3(-hw, hh, -hd)), cam.project(SIMD3(hw, hh, -hd))]
+    }
+    // 우측 책배(페이지 단면, x=hw)
+    private func foreQuad(_ cam: Cam) -> [CGPoint] {
+        [cam.project(SIMD3(hw, -hh, -hd)), cam.project(SIMD3(hw, -hh, hd)),
+         cam.project(SIMD3(hw, hh, hd)), cam.project(SIMD3(hw, hh, -hd))]
+    }
 
     private func path(_ q: [CGPoint]) -> Path {
         var p = Path(); p.move(to: q[0]); q.dropFirst().forEach { p.addLine(to: $0) }; p.closeSubpath(); return p
@@ -146,6 +156,17 @@ public struct RTBook3D: View {
                 let spineVisible = cam.faceVisible(normal: SIMD3(-1, 0, 0))
                 let bottomVisible = cam.faceVisible(normal: SIMD3(0, 1, 0))
                 let topVisible = cam.faceVisible(normal: SIMD3(0, -1, 0))
+                // 뒤표지·우측 책배 (idle 각에선 컬링됨) — 가장 뒤에 먼저
+                if cam.faceVisible(normal: SIMD3(0, 0, -1)) {
+                    ctx.fill(path(backQuad(cam)), with: .linearGradient(
+                        Gradient(colors: [Color(hex: 0xE3D09E), Color(hex: 0xD6C087)]),
+                        startPoint: backQuad(cam)[0], endPoint: backQuad(cam)[2]))
+                }
+                if cam.faceVisible(normal: SIMD3(1, 0, 0)) {
+                    ctx.fill(path(foreQuad(cam)), with: .linearGradient(
+                        Gradient(colors: [Color(hex: 0xF2EBD5), Color(hex: 0xD7CAA6)]),
+                        startPoint: foreQuad(cam)[0], endPoint: foreQuad(cam)[1]))
+                }
                 if bottomVisible {
                     ctx.fill(path(bottomQuad(cam)), with: .linearGradient(
                         Gradient(colors: [Color(hex: 0xE6DABD), Color(hex: 0xD8CCAA)]),
