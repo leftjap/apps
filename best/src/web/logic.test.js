@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COMMUNITIES, boardLabel, rankSort, searchPlan, periodStart, periodFilter, suggestKeywords } from './logic.js'
+import { COMMUNITIES, boardLabel, rankSort, searchPlan, periodFilter, suggestKeywords } from './logic.js'
 
 describe('COMMUNITIES — 시안 9곳, 색·짧은이름·검색 별칭', () => {
   it('9곳이고 사이트 슬러그가 수집기와 일치한다', () => {
