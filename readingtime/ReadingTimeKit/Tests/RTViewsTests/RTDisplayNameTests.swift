@@ -34,3 +34,38 @@ import Testing
         #expect(m.displayInitial == "지")
     }
 }
+
+// 이름 수정 (설정 시트 — SCREENS.md §설정 "이름 수정") — rename() 이 모델 반영 + onRename 훅 발화.
+@MainActor
+@Suite struct RTRenameTests {
+    @Test func renameUpdatesAndFiresHook() {
+        let m = RTAppModel()
+        var fired: String?
+        m.onRename = { fired = $0 }
+        m.rename("나니c")
+        #expect(m.displayName == "나니c")
+        #expect(fired == "나니c")
+    }
+
+    @Test func renameTrimsWhitespace() {
+        let m = RTAppModel()
+        m.rename("  지오c ")
+        #expect(m.displayName == "지오c")
+    }
+
+    @Test func renameRejectsEmpty() {
+        let m = RTAppModel()
+        m.displayName = "지오c"
+        var fired = false
+        m.onRename = { _ in fired = true }
+        m.rename("   ")
+        #expect(m.displayName == "지오c")   // 기존 유지
+        #expect(fired == false)
+    }
+
+    @Test func renameViaSeqToken() {
+        let m = RTAppModel()
+        m.apply("rename:나니c")
+        #expect(m.displayName == "나니c")
+    }
+}

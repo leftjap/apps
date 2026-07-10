@@ -440,7 +440,7 @@ public struct Screen02Home: View {
                     }
                     Spacer(minLength: 0)
                     chev(Color(hex: 0xA99F86))
-                } action: { menuOpen = false }
+                } action: { menuOpen = false; model?.openSheet(.settings) }   // 프로필 수정 = 설정 시트(이름 수정)
                 menuDivider
                 menuRow {
                     menuTile(RT.greenTint) {

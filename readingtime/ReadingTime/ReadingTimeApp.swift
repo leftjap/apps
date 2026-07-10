@@ -65,6 +65,17 @@ struct ReadingTimeApp: App {
             Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
         }
 
+        // 이름 수정 저장 → 즉시 영속 + 서버 갱신 (실패해도 로컬 유지 — 다음 restore() 가 서버 정본으로 수렴)
+        model.onRename = { name in
+            UserDefaults.standard.set(name, forKey: "rt.displayName")
+            Task {
+                do { try await cloud.updateDisplayName(name) } catch {
+                    Logger(subsystem: "com.leftjap.readingtime", category: "auth")
+                        .error("이름 서버 갱신 실패: \(String(describing: error), privacy: .public)")
+                }
+            }
+        }
+
         // 로그인 버튼 → Google OAuth (ASWebAuthenticationSession) → 성공 시 홈 진입
         model.loginHandler = { [weak model] in
             Task { @MainActor in

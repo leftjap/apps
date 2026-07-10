@@ -59,6 +59,13 @@ public final class CloudStore: ObservableObject {
         displayName = Self.displayName(of: session.user)
     }
 
+    // 이름 수정 → auth user_metadata.display_name 갱신 (문서·소스 확인: update(user:) → PUT /user, data 는 병합)
+    public func updateDisplayName(_ name: String) async throws {
+        guard signedIn else { return }   // 데모/미로그인: 로컬 표시만 (서버 없음)
+        let user = try await client.auth.update(user: UserAttributes(data: ["display_name": .string(name)]))
+        displayName = Self.displayName(of: user)
+    }
+
     // 로그아웃 — 로컬 세션 제거 (개인 앱: 실패해도 UI 로그아웃은 진행)
     public func signOut() async {
         try? await client.auth.signOut()

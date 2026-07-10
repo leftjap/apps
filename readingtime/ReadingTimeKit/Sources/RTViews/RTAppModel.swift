@@ -99,6 +99,17 @@ public final class RTAppModel: ObservableObject {
     /// 아바타 이니셜 — 표시 이름 첫 글자
     public var displayInitial: String { String(displayNameOrDemo.prefix(1)) }
 
+    /// 이름 수정 저장 시 (설정 시트) — 앱 셸이 배선: UserDefaults 영속 + auth user_metadata 갱신
+    public var onRename: ((String) -> Void)?
+
+    /// 이름 수정 (SCREENS.md §설정 "이름 수정") — trim 후 빈값 거부, 모델 반영 + onRename 발화
+    public func rename(_ raw: String) {
+        let name = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        displayName = name
+        onRename?(name)
+    }
+
     // 데모 시드: 시안 데모 값(00:26:14)과 일치 — 세션 시작 시 26:14 경과로 시작
     public static let demoElapsed = 26 * 60 + 14
 
@@ -487,6 +498,7 @@ public final class RTAppModel: ObservableObject {
         case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
         case "closeSheet": closeSheet()
         case "mode": RTMode(rawValue: arg).map { setMode($0) }
+        case "rename": rename(arg)
         case "start": start()
         case "cancelSession": cancelSession()
         case "simFlip": simFlip()

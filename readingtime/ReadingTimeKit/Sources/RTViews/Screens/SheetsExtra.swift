@@ -7,6 +7,8 @@ import SwiftUI
 public struct SheetSettings: View {
     var model: RTAppModel?
     @State private var confirmLogout = false
+    @State private var editingName = false
+    @State private var nameDraft = ""
     public init(model: RTAppModel? = nil) { self.model = model }
 
     public var body: some View {
@@ -15,6 +17,16 @@ public struct SheetSettings: View {
                 SheetHead(title: "설정", onClose: { model?.closeSheet() })
                 settingRow(label: "이름", value: model?.displayNameOrDemo ?? "지훈", valueColor: RT.ink)
                     .padding(.top, 18)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        nameDraft = model?.displayNameOrDemo ?? ""
+                        editingName = true
+                    }
+                    .alert("이름 수정", isPresented: $editingName) {
+                        TextField("이름", text: $nameDraft)
+                        Button("저장") { model?.rename(nameDraft) }
+                        Button("취소", role: .cancel) {}
+                    }
                 settingRow(label: "밀리의서재", value: "연결됨", valueColor: RT.green)
                     .padding(.top, 10)
                 Text("로그아웃").font(.sans(12.5, 600)).foregroundColor(Color(hex: 0xB56A55))
