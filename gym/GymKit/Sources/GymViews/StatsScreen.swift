@@ -33,8 +33,7 @@ public struct StatsScreenView: View {
     static let vf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
     static func fmt(_ n: Double) -> String { vf.string(from: NSNumber(value: n)) ?? "\(Int(n))" }
 
-    // 캘린더 셀 — mocks/stats.html aspect-ratio:1 (본문 폭 390 · 좌우 18 · gap 4×6).
-    static let cellSide: CGFloat = (390 - 18 * 2 - 4 * 6) / 7
+    // 캘린더 셀 — mocks/stats.html `aspect-ratio:1`. 폭 하드코딩 금지: 비율 제약으로 화면 폭 추종.
     // 히트맵 색 — PWA stats.js rgba(193,99,63,a) 리터럴 정합 (crail-base 토큰과 다름, CalendarHeat 주석 참조).
     static func heat(_ alpha: Double) -> Color { Color(hex: 0xC1633F, alpha: alpha) }
 
@@ -68,7 +67,7 @@ public struct StatsScreenView: View {
                 paneContent   // 스냅샷: ScrollView 우회 (ImageRenderer 미렌더 회피)
             }
         }
-        .frame(width: 390).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
+        .frame(maxWidth: .infinity).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
         // 날짜 탭 → 상세 바텀시트, 꾹누르기 → 삭제 확인 (spec §9-1). 슬라이드업 (mock 200ms ease)
         .overlay {
             ZStack(alignment: .bottom) {
@@ -192,7 +191,8 @@ public struct StatsScreenView: View {
                                                          ? Color.white : (a != nil ? GY.crailDeep : GY.ink4))
                                 }
                             }
-                            .frame(maxWidth: .infinity).frame(height: Self.cellSide)
+                            .frame(maxWidth: .infinity)
+                            .aspectRatio(1, contentMode: .fit)   // aspect-ratio:1
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 guard day > 0 else { return }
@@ -203,7 +203,11 @@ public struct StatsScreenView: View {
                                 detailStep = .confirm; detailISO = dayStr   // §9-1 꾹누르기 → 삭제
                             }
                         }
-                        if rows[r].count < 7 { ForEach(0..<(7 - rows[r].count), id: \.self) { _ in Color.clear.frame(maxWidth: .infinity) } }
+                        if rows[r].count < 7 {
+                            ForEach(0..<(7 - rows[r].count), id: \.self) { _ in
+                                Color.clear.frame(maxWidth: .infinity).aspectRatio(1, contentMode: .fit)
+                            }
+                        }
                     }
                 }
             }

@@ -247,7 +247,7 @@ public struct SessionScreenView: View {
         Group {
             if model.session.blocks.isEmpty { emptyState } else { activeContent }
         }
-        .frame(width: 390)
+        .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(GY.shell)
         // PR 팝 (§6-11) — "PR" 텍스트만 짧게, 위로 떠오르며 1초 내 페이드아웃. mocks #cardPrPop.

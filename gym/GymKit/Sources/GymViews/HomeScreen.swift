@@ -30,7 +30,9 @@ public struct HomeScreenView: View {
         Group {
             if isActiveSession { homeC } else { homeA }
         }
-        .frame(width: 390)
+        // 화면 폭에 맞춘다 — 390 고정 시 375pt 기기(iPhone SE·11 Pro)에서 좌우 7.5pt 씩 잘린다
+        // (2026-07-10 실기기 실측: CTA 여백 24 → 16.67pt).
+        .frame(maxWidth: .infinity)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(GY.shell)
         .overlay {

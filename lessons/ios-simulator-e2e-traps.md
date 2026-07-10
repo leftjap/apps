@@ -99,3 +99,22 @@ stray 로 무시 — 실제 잠금은 protected data 신호가 동시각 도착�
 실패 ("Personal development teams ... do not support"). 시뮬은 entitlement 미검증이라 "긴급"
 표시가 되므로 시뮬 성공 ≠ 실기기 자격. 코드의 `interruptionLevel = .timeSensitive` 자체는
 무자격 시 시스템이 일반 알림으로 강등하므로 남겨도 무해.
+
+## 12. `.frame(width: 390)` — 넓은 시뮬은 이 버그를 **구조적으로 못 잡는다**
+화면 루트에 `.frame(width: 390)` 을 박으면, 390 **이상**인 시뮬(iPhone 17 = 402pt)에서는 그냥
+가운데 정렬돼 좌우 여유만 생긴다. 반면 375pt 기기(iPhone 11 Pro·SE·X/XS/12 mini)에서는
+좌우 7.5pt 씩 **잘려 나간다**. 시뮬 스크린샷·XCUITest·픽셀 대조를 아무리 돌려도 안 보인다.
+- 2026-07-10 Gym 실측: CTA(`padding(.horizontal, 24)`) 좌우 여백이 기기에서 **16.67pt**.
+  `24 - (390 - 374.67)/2 = 16.33` 예측과 일치 → 클립 확정. 402pt 시뮬은 30.00pt(역시 24 아님).
+- **판정법**: 고정 폭 대신 `.frame(maxWidth: .infinity)`. 폭 파생 상수(`(390-36-24)/7` 같은 셀 크기)도
+  같이 제거하고 `.aspectRatio(1, contentMode: .fit)` 등 비율 제약으로.
+- **회귀 게이트**: 레이아웃 변경 시 **375pt 시뮬 교차 검증** 필수.
+  `xcrun simctl create GymSE375 com.apple.CoreSimulator.SimDeviceType.iPhone-SE-3rd-generation <runtime>`
+  좌우 여백을 스크린샷에서 픽셀로 재서 설계값과 대조한다 (눈으로 보면 놓친다).
+
+## 13. 실기기 캡처용 UI 테스트는 `--reset` 계열과 **반드시 분리**
+Gym 의 `GymNavigationUITests` 는 `--reset`(로그아웃 + 로컬 전체 클리어)으로 시작한다. 이걸 실기기에
+돌리면 사용자의 로그인 세션·실데이터가 날아간다. 화면 확인만 필요할 땐 인자 없이 실행하고
+`XCTAttachment(screenshot:)` 만 남기는 **별도 클래스**(`GymCaptureUITests`)를 만들어
+`-only-testing:` 로 지정 실행할 것. 설치도 `uninstall` 없이 업그레이드 설치.
+회수한 첨부는 `xcrun xcresulttool export attachments` → **mtime + 색 수**로 빈화면/스테일 판정(§10).

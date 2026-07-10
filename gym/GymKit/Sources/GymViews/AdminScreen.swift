@@ -42,7 +42,7 @@ public struct AdminScreenView: View {
             tabBar
             if embedScroll { ScrollView { paneContent } } else { paneContent }
         }
-        .frame(width: 390).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
+        .frame(maxWidth: .infinity).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
         // 꾹누르기 삭제 확인 (§10-1 — 커스텀 행 삭제 / 빌트인 영구 제거)
         .overlay {
             ZStack(alignment: .bottom) {
