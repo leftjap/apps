@@ -84,6 +84,14 @@ struct ReadingTimeApp: App {
         if let i = launchArgs.firstIndex(of: "--sim-motion"), launchArgs.count > i + 1 {
             motionScript = launchArgs[i + 1]
         }
+        // --capture: 4초 후 실제 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (실기기 화면 검증).
+        // devicectl 엔 스크린샷 명령이 없어 앱이 자기 화면을 남기고 아래로 회수한다:
+        //   xcrun devicectl device process launch --device <UDID> --activate <bundle> --arguments --capture
+        //   xcrun devicectl device copy from --device <UDID> --domain-type appDataContainer \
+        //     --domain-identifier <bundle> --source Documents/rtscreen.png --destination out.png
+        if launchArgs.contains("--capture") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Self.captureWindow() }
+        }
 
         let aladin = AladinClient()
         model.searchProvider = { query in
@@ -99,6 +107,22 @@ struct ReadingTimeApp: App {
         }
         _model = StateObject(wrappedValue: model)
         _flip = StateObject(wrappedValue: FlipEngine(model: model, motionScript: motionScript))
+    }
+
+    /// 현재 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (--capture 전용, 실기기 화면 검증).
+    @MainActor private static func captureWindow() {
+        guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene }).first,
+              let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first
+        else { return }
+        let renderer = UIGraphicsImageRenderer(bounds: window.bounds)
+        let img = renderer.image { _ in
+            window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        guard let data = img.pngData(),
+              let dir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+        else { return }
+        try? data.write(to: dir.appendingPathComponent("rtscreen.png"))
     }
 
     /// 하루 첫 실행 안무(#7a) 무장 — 읽던 책이 있고 그 날짜 첫 진입일 때 1회 playPickup 세팅.
