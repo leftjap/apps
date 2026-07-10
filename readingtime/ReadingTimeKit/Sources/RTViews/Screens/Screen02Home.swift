@@ -153,9 +153,9 @@ public struct Screen02Home: View {
             // 제목 / 저자 / 누적
             VStack(spacing: 0) {
                 Text(live?.title ?? "몰입").font(.sans(23, 900)).tracking(23 * -0.03)
-                    .foregroundColor(RT.ink).lineLimit(1)
+                    .foregroundColor(RT.ink).lineLimit(1).minimumScaleFactor(0.6)
                 Text(live?.author ?? "미하이 칙센트미하이").font(.sans(12.5, 500))
-                    .foregroundColor(RT.muted).padding(.top, 3).lineLimit(1)
+                    .foregroundColor(RT.muted).padding(.top, 3).lineLimit(1).minimumScaleFactor(0.8)
                 HStack(spacing: 8) {
                     Text(live?.totalHM ?? "4:12").font(.mono(14, 700)).foregroundColor(RT.ink)
                     Circle().fill(RT.ghost).frame(width: 3, height: 3)
@@ -166,6 +166,7 @@ public struct Screen02Home: View {
             .padding(.top, 16)
             .rtRiseIn(delay: 0.18)
         }
+        .padding(.horizontal, 26)   // 시안 스테이지 padding: 0 26px (누락돼 긴 제목이 화면 끝까지 닿았음)
     }
 
     // 접지 그림자 — RTBook3D 와 동일 부유 위상(sin(.7t)·3.5)으로 동기. support.js 실측 수치 그대로:
@@ -198,9 +199,12 @@ public struct Screen02Home: View {
 
     @ViewBuilder var bookView: some View {
         if let live {
+            // 라이브 표지에도 시안의 앞면 처리(책등 음영·책배·광택) 적용 — 없으면 실표지 책이
+            // 밋밋해 3D 가 안 읽힘. 데모(HomeBook3DFront)는 baked-in 이라 그대로 둔다.
             RTBook3D(front: AnyView(
                 RTRemoteCover(url: live.coverUrl, size: .init(width: 172, height: 252), radius: 0,
-                              title: live.title, author: live.author)),
+                              title: live.title, author: live.author)
+                    .rtBookFace(size: .init(width: 172, height: 252))),
                      spineTitle: live.title)
         } else {
             RTBook3D { HomeBook3DFront() }
@@ -254,6 +258,7 @@ public struct Screen02Home: View {
                      + Text("\(live?.lastMin ?? 26)").font(.mono(13, 700))
                      + Text("분 읽음").font(.sans(13, 700)))
                         .foregroundColor(RT.ink)
+                        .lineLimit(1).minimumScaleFactor(0.65)   // 긴 책 제목이 2줄로 카드 깨뜨리던 것
                 }
                 Spacer(minLength: 0)
                 Text(live?.lastWhen ?? "어제 22:14").font(.mono(11, 600)).foregroundColor(RT.faint)

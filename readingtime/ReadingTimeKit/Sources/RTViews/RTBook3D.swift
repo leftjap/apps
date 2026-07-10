@@ -293,3 +293,36 @@ public struct HomeBook3DFront: View {
         .frame(width: 172, height: 252)
     }
 }
+
+// 앞표지 면 처리 — 시안(2A 라인 111·112·114)의 책등 음영·책배·광택·내부 보더.
+// 데모 표지(HomeBook3DFront)엔 baked-in 이지만 라이브(원격 표지 이미지)엔 없어서
+// 실제 표지 책은 입체감이 안 읽혔다(실기기 데이터 재현으로 확인). 두 경로 모두 이 처리를 받아야 함.
+public struct RTBookFaceTreatment: ViewModifier {
+    let size: CGSize
+    public init(size: CGSize) { self.size = size }
+    public func body(content: Content) -> some View {
+        ZStack {
+            content
+            // 좌측 책등 쪽 음영(6) / 우측 책배 종이단(3)
+            HStack(spacing: 0) {
+                LinearGradient.css(90, size: CGSize(width: 6, height: size.height),
+                                   [(Color.black.opacity(0.22), 0), (Color.black.opacity(0), 1)])
+                    .frame(width: 6)
+                Spacer(minLength: 0)
+                Rectangle().fill(Color(hex: 0xEDE1C2)).frame(width: 3).padding(.vertical, 3)
+            }
+            // 158deg 광택(빛 방향)
+            LinearGradient.css(158, size: size,
+                               [(Color(hex: 0xFFFBEE, alpha: 0.4), 0),
+                                (Color(hex: 0xFFFBEE, alpha: 0), 0.42),
+                                (Color(hex: 0x4A381A, alpha: 0.06), 1)])
+            // 면 1px 내부 보더 (시안 inset 0 0 0 1px rgba(122,96,44,.12))
+            Rectangle().stroke(Color(hex: 0x7A602C, alpha: 0.12), lineWidth: 1)
+        }
+        .frame(width: size.width, height: size.height)
+    }
+}
+
+public extension View {
+    func rtBookFace(size: CGSize) -> some View { modifier(RTBookFaceTreatment(size: size)) }
+}
