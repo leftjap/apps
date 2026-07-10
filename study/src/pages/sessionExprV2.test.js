@@ -29,30 +29,70 @@ function makeState() {
   };
 }
 
-describe('sessionExprV2 — 확장 사다리(ladder) 렌더', () => {
+/* 체이닝(chain) — ladder 폐기 후속(2026-07-09). 자막 없이 듣고 따라 말하기가 핵심 계약이므로
+ * "영어 원문이 화면에 새지 않는다"를 회귀 방지로 못박는다. */
+describe('sessionExprV2 — 체이닝(chain) 렌더', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
-  function ladderState() {
+  const CHAIN = {
+    target: "It's been a while since we caught up. We should grab dinner sometime.",
+    chunks: ["It's been a while", 'since we caught up', 'We should grab dinner', 'sometime'],
+    ko: '오랜만이야. 언제 저녁이나 먹자.',
+  };
+  function chainState(demo = false) {
     const s = makeState();
-    s.sentence.explanation.ladder = [
-      { en: 'A coffee.', ko: '커피.', kr: '어 커피' },
-      { en: 'A coffee, please.', ko: '커피 주세요.', kr: '어 커피 플리즈' },
-      { en: 'Can I get a coffee, please?', ko: '커피 하나 주시겠어요?', kr: '캔 아이 게러 커피 플리즈',
-        back: [['please?', '플리즈'], ['a coffee, please?', '어 커피 플리즈'], ['Can I get a coffee, please?', '캔 아이 게러 커피 플리즈']] },
-    ];
+    s.demo = demo;
+    s.sentence.explanation.chain = CHAIN;
     return s;
   }
-  it('ladder ≥2단 → "확장 사다리" + rung + "이어 말하기 (끝부터)" 렌더', () => {
+  const chainRows = (host) => [...host.querySelectorAll('.vs-chain .vs-drow')];
+
+  it('chain → 단계 수만큼 행 렌더 + 영어 원문은 화면에 노출되지 않음(자막 없음)', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
-    renderSessionExprV2(host, ladderState(), {});
-    expect(host.textContent).toContain('확장 사다리');
-    expect(host.textContent).toContain('A coffee.');
-    expect(host.textContent).toContain('Can I get a coffee, please?');
-    expect(host.textContent).toContain('이어 말하기 (끝부터)');
+    renderSessionExprV2(host, chainState(), {});
+    expect(host.textContent).toContain('체이닝');
+    expect(chainRows(host)).toHaveLength(4);
+    expect(host.textContent).toContain('1단계');
+    expect(host.textContent).toContain('4단계');
+    // 자막 금지 — 어떤 단계의 영어도 텍스트로 노출되면 안 됨
+    expect(host.textContent).not.toContain("It's been a while");
+    expect(host.textContent).not.toContain('grab dinner');
   });
-  it('ladder 없음 → 확장 사다리 미렌더 (기존 시드 호환)', () => {
+
+  it('chain 없음 → 체이닝 블록 미렌더 (기존 시드 호환)', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, makeState(), {});
-    expect(host.textContent).not.toContain('확장 사다리');
+    expect(host.querySelector('.vs-chain')).toBeNull();
+  });
+
+  it('재생할 때마다 화자·속도가 바뀐다 (리듬 통째 암기 차단)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    renderSessionExprV2(host, chainState(), {});
+    const play = chainRows(host)[0].querySelector('button[aria-label="듣기"]');
+    play.click(); play.click();
+    expect(speak).toHaveBeenCalledTimes(2);
+    const v1 = speak.mock.calls[0][1], v2 = speak.mock.calls[1][1];
+    expect(v1.voice).not.toBe(v2.voice);
+    expect(typeof v1.rate).toBe('number');
+  });
+
+  it('통과하면 다음 단계가 열리고, 통과 전 단계의 녹음 버튼은 비활성', async () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      renderSessionExprV2(host, chainState(true), {}); // demo — 마이크 없이 통과 시뮬
+      const rows = chainRows(host);
+      const rec = (i) => rows[i].querySelector('button[aria-label="녹음"]');
+      expect(rec(0).disabled).toBe(false);
+      expect(rec(1).disabled).toBe(true);   // 2단계는 아직 잠김
+
+      rec(0).click();
+      vi.advanceTimersByTime(900);
+      expect(rows[0].querySelector('.vs-gscore').style.display).not.toBe('none'); // 1단계 통과 ✓
+      expect(rec(1).disabled).toBe(false);  // 2단계 열림
+      expect(rec(0).disabled).toBe(true);   // 통과한 단계는 잠김
+    } finally { vi.useRealTimers(); }
   });
 });
 
