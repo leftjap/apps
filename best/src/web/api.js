@@ -1,8 +1,14 @@
 // 데이터 접근 (PostgREST)
 import { pg } from './supabase.js'
-import { periodStart, COMMUNITIES } from './logic.js'
+import { periodFilter, COMMUNITIES } from './logic.js'
 
 const POST_COLS = 'id,site,board,title,url,views,comments,posted_at,percentile,collected_on'
+
+// 기간 필터를 PostgREST 쿼리에 적용 (일간=collected_on eq, 그 외=posted_at gte)
+function applyPeriod(q, period, latest) {
+  const f = periodFilter(period, latest)
+  return f.op === 'eq' ? q.eq(f.column, f.value) : q.gte(f.column, f.value)
+}
 
 // 최신 수집 실행 (푸터 "오늘 HH:MM 수집" + 기간 기준일)
 export async function fetchLatestRun() {
@@ -16,11 +22,7 @@ export async function fetchLatestRun() {
 }
 
 export async function fetchPosts({ period, latest, sites, offset = 0, limit = 100 }) {
-  let q = pg
-    .from('best_posts')
-    .select(POST_COLS, { count: 'exact' })
-    .eq('is_ad', false)
-    .gte('posted_at', periodStart(period, latest))
+  let q = applyPeriod(pg.from('best_posts').select(POST_COLS, { count: 'exact' }).eq('is_ad', false), period, latest)
     .order('percentile', { ascending: false, nullsFirst: false })
     .order('views', { ascending: false, nullsFirst: false })
     .order('id', { ascending: true })
@@ -34,15 +36,14 @@ export async function fetchPosts({ period, latest, sites, offset = 0, limit = 10
 // 커뮤니티별 글 수 (사이드바) — 사이트별 head count.
 // 행을 받아 세면 PostgREST 기본 1000행 상한에 잘린다 (2026-07-11 실측: 6개 커뮤가 0으로 표시).
 export async function fetchSiteCounts({ period, latest, sites }) {
-  const from = periodStart(period, latest)
   const entries = await Promise.all(
     sites.map(async (site) => {
-      const { count, error } = await pg
-        .from('best_posts')
-        .select('id', { count: 'exact', head: true })
-        .eq('is_ad', false)
-        .eq('site', site)
-        .gte('posted_at', from)
+      const q = applyPeriod(
+        pg.from('best_posts').select('id', { count: 'exact', head: true }).eq('is_ad', false).eq('site', site),
+        period,
+        latest,
+      )
+      const { count, error } = await q
       if (error) throw error
       return [site, count ?? 0]
     }),

@@ -70,12 +70,21 @@ export function suggestKeywords(titles, n = 8) {
     .map(([tok]) => tok)
 }
 
-// 기간 시작 시각 — 최신 수집일(latest, 'YYYY-MM-DD') 기준, KST 자정.
-// 축은 collected_on 이 아니라 posted_at 이다: 결손일 14일 소급분이 전부 '오늘 수집'으로 들어와
-// 주/월/연 집계를 왜곡하기 때문 (2026-07-11 설계 정정).
-const PERIOD_DAYS = { day: 0, week: 6, month: 29, year: 364 }
+// posted_at 창 시작 시각 — 최신 수집일(latest, 'YYYY-MM-DD') 기준, KST 자정.
+const PERIOD_DAYS = { week: 6, month: 29, year: 364 }
 export function periodStart(period, latest) {
   const d = new Date(`${latest}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() - PERIOD_DAYS[period])
   return `${d.toISOString().slice(0, 10)}T00:00:00+09:00`
+}
+
+// 기간별 DB 필터. 축이 기간마다 다르다:
+//   일간 = collected_on = 최신 수집일 (최신 스냅샷 전체).
+//     이유: 수집은 하루 1회(08:00)인데 커뮤 인기글은 대부분 "전날" 게시된다.
+//     posted_at >= 오늘0시 로 자르면 새벽엔 0건이 된다 (2026-07-11 실측 버그).
+//   주/월/연 = posted_at >= (최신일 - N일).
+//     이유: 소급 복구분도 실제 게시일로 배치되고, 7일 이상 창이라 새벽에도 안 빈다.
+export function periodFilter(period, latest) {
+  if (period === 'day') return { column: 'collected_on', op: 'eq', value: latest }
+  return { column: 'posted_at', op: 'gte', value: periodStart(period, latest) }
 }

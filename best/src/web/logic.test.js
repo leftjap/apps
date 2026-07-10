@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { COMMUNITIES, boardLabel, rankSort, searchPlan, periodStart, suggestKeywords } from './logic.js'
+import { COMMUNITIES, boardLabel, rankSort, searchPlan, periodStart, periodFilter, suggestKeywords } from './logic.js'
 
 describe('COMMUNITIES — 시안 9곳, 색·짧은이름·검색 별칭', () => {
   it('9곳이고 사이트 슬러그가 수집기와 일치한다', () => {
@@ -89,11 +89,24 @@ describe('suggestKeywords — 추천 검색어 (제목 빈도 상위, 2자 이�
   })
 })
 
-describe('periodStart — 기간 시작 시각 (게시 시각 축, KST)', () => {
-  it('최신 수집일 기준 ISO 시작 시각 — 일=당일 0시, 주=7일, 월=30일, 연=365일', () => {
-    expect(periodStart('day', '2026-07-11')).toBe('2026-07-11T00:00:00+09:00')
-    expect(periodStart('week', '2026-07-11')).toBe('2026-07-05T00:00:00+09:00')
-    expect(periodStart('month', '2026-07-11')).toBe('2026-06-12T00:00:00+09:00')
-    expect(periodStart('year', '2026-07-11')).toBe('2025-07-12T00:00:00+09:00')
+describe('periodFilter — 기간별 DB 필터 (일간=스냅샷, 그 외=게시 시각 창)', () => {
+  // 일간: 수집은 하루 1회(08:00)인데 인기글은 대부분 "전날" 게시된다.
+  // posted_at >= 오늘0시 로 자르면 새벽엔 0건이 된다(실측 버그) → 일간은 최신 수집 스냅샷 자체다.
+  it('일간은 collected_on = 최신 수집일 (스냅샷 전체)', () => {
+    expect(periodFilter('day', '2026-07-11')).toEqual({
+      column: 'collected_on', op: 'eq', value: '2026-07-11',
+    })
+  })
+  // 주/월/연: posted_at 창. 소급 복구분도 실제 게시일로 올바르게 배치되고, 7일 이상이라 새벽에도 안 빈다.
+  it('주/월/연은 posted_at >= (최신 수집일 - N일) KST', () => {
+    expect(periodFilter('week', '2026-07-11')).toEqual({
+      column: 'posted_at', op: 'gte', value: '2026-07-05T00:00:00+09:00',
+    })
+    expect(periodFilter('month', '2026-07-11')).toEqual({
+      column: 'posted_at', op: 'gte', value: '2026-06-12T00:00:00+09:00',
+    })
+    expect(periodFilter('year', '2026-07-11')).toEqual({
+      column: 'posted_at', op: 'gte', value: '2025-07-12T00:00:00+09:00',
+    })
   })
 })
