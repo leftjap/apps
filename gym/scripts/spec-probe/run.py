@@ -492,7 +492,9 @@ def main():
         if not ok:
             print(f"{'':<5}{'':<{w+2}}      ↳ 정본: {src}")
     print("-" * (w + 70))
-    print(f"{len(rows)}개 프로브 · 실패 {failed}")
+    nprobes = len({r[1] for r in rows})
+    ndev = len({r[0] for r in rows})
+    print(f"{len(rows)}개 측정 (프로브 {nprobes} × 기기 {ndev}) · 실패 {failed}")
     return 1 if failed else 0
 
 

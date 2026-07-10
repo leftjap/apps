@@ -14,7 +14,7 @@
 | 3 | `StatsScreen`: 도넛 `.rotationEffect(.degrees(-90))` 제거 | conic-gradient 12시 시작 위반 |
 | 4 | `PrevRecordBars`: 진행 세트 숫자를 `GY.ink1` 로 | 세트 완료 전후 위계 소실 (사용자 보고) |
 
-## 결과 — 26개 프로브 중 14개 FAIL (두 폭 모두)
+## 결과 — 26개 측정(프로브 13 × 기기 2) 중 14개 FAIL
 
 ```
 402  home.cta.margin                  FAIL  좌 30.00pt · 우 30.00pt (기대 24.0)
@@ -31,7 +31,7 @@
 375  stats.cal.heatZeroVolumeDay      FAIL  (동일)
 375  stats.donut.startsAt12           FAIL  crail 아크 최상단이 중심에서 58.5pt
 375  session.setbar.nowNumberColor    FAIL  숫자 잉크 (29,26,23)
-26개 프로브 · 실패 14
+26개 측정 (프로브 13 × 기기 2) · 실패 14
 ```
 
 주목할 점: 고정폭 390 회귀가 **402pt 에서도 FAIL** 로 잡힌다 (여백 24 → 30pt).
@@ -39,7 +39,7 @@
 
 ## 복원 후
 
-주입을 되돌리고 (`git diff` 로 3파일이 커밋 상태와 동일함 확인) 재실행 → **26개 프로브 · 실패 0, exit 0**.
+주입을 되돌리고 (`git diff` 로 3파일이 커밋 상태와 동일함 확인) 재실행 → **26개 측정 · 실패 0, exit 0**.
 
 ## 하네스 자체의 오탐도 이때 잡혔다
 
