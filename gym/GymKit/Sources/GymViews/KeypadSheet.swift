@@ -9,6 +9,9 @@ struct KeypadContext: Equatable {
     var fresh: Bool           // prefill 그대로 = 첫 키 입력 시 교체
     var pairHidesWeight: Bool // bodyweight — 무게 토글 숨김(횟수 전용)
     var setIdx: Int? = nil    // 특정 세트 편집 (§6-9 세트 행 수정) — nil 이면 현재 세트
+    var unitOverride: String? = nil   // 프로필 등 field 매핑 밖 단위 ("cm"·"")
+    var digitLimit: Int = 6           // 버퍼 최대 자릿수 (생년월일 8)
+    var asDate: Bool = false          // YYYYMMDD 버퍼 → "YYYY.MM.DD" 점진 표시
 
     // 모드 세그 페어 — weight↔reps / duration↔distance.
     var pair: [(GymAppModel.KeypadField, String)] {
@@ -17,9 +20,15 @@ struct KeypadContext: Equatable {
             : [(.weight, "무게"), (.reps, "횟수")]
     }
     var unit: String {
+        if let unitOverride { return unitOverride }
         switch field {
-        case .weight: "kg"; case .reps: "회"; case .duration: "분"; case .distance: "km"
+        case .weight: return "kg"; case .reps: return "회"
+        case .duration: return "분"; case .distance: return "km"
         }
+    }
+    var displayBuffer: String {
+        asDate ? GymProfileFields.birthdateBufferDisplay(buffer)
+               : (buffer.isEmpty ? "0" : buffer)
     }
 }
 
@@ -27,6 +36,7 @@ struct KeypadSheet: View {
     let ctx: KeypadContext
     let refValue: String?                                  // "직전 N" prefill 표시값
     var bare: Bool = false                                 // 체중 입력용 — 세그·quick 없음 (mock #weightKeypadSheet)
+    var title: String? = nil                               // bare 타이틀 (mock "오늘 체중" 행)
     var doneLabel: String = "완료"
     let onKey: (String) -> Void                            // "0"-"9" "." "del"
     let onQuick: (Double) -> Void                          // ±2.5/+5 (weight 만)
@@ -36,6 +46,11 @@ struct KeypadSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Capsule().fill(GY.line).frame(width: 40, height: 4).padding(.bottom, 14)
+            // bare 타이틀 (mock #weightKeypadSheet 타이틀 행)
+            if let title {
+                Text(title).font(.sans(13, 600)).tracking(0.26).foregroundStyle(GY.ink3)
+                    .padding(.bottom, 10)
+            }
             // 모드 세그 (200px, sunken)
             if !bare {
                 HStack(spacing: 6) {
@@ -57,8 +72,9 @@ struct KeypadSheet: View {
             }
             // 현재 입력값 + 캐럿 + 단위
             HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(ctx.buffer.isEmpty ? "0" : ctx.buffer)
+                Text(ctx.displayBuffer)
                     .font(.mono(52, 500)).tracking(-1.56).foregroundStyle(GY.ink1)
+                    .lineLimit(1).minimumScaleFactor(0.55)   // 생년월일 10자 오버플로 방어
                     .accessibilityIdentifier("keypad-value")
                 RoundedRectangle(cornerRadius: 1).fill(GY.crailBase).frame(width: 2, height: 40)
                     .alignmentGuide(.firstTextBaseline) { d in d[.bottom] - 4 }
@@ -142,12 +158,12 @@ enum KeypadBuffer {
             ctx.fresh = false
             if !ctx.buffer.isEmpty { ctx.buffer.removeLast() }
         case ".":
-            if ctx.field == .reps { return }            // 횟수는 정수만
+            if ctx.field == .reps || ctx.asDate { return }   // 횟수·생년월일은 정수만
             if ctx.fresh { ctx.buffer = "0"; ctx.fresh = false }
             if !ctx.buffer.contains(".") { ctx.buffer += ctx.buffer.isEmpty ? "0." : "." }
         default:
             if ctx.fresh { ctx.buffer = ""; ctx.fresh = false }
-            guard ctx.buffer.count < 6 else { return }   // 과입력 방어
+            guard ctx.buffer.count < ctx.digitLimit else { return }   // 과입력 방어
             ctx.buffer += key
         }
     }

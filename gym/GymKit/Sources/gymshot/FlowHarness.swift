@@ -88,7 +88,15 @@ enum FlowHarness {
         check(m.session.blocks[0].sets[4].pr, "되돌려도 PR 마크 유지 (handleRightSwipe 정합)")
         m.completeCurrentSet()    // 재완료 — 95 동률 → PR 재발화 없음 (엄격 초과)
         check(m.prMoment == 2, "재완료 동률 e1rm → PR 미발화")
+        // 드래그 추종 수식 (GymSwipeMath — 제스처 핸들러가 그대로 사용)
+        check(GymSwipeMath.heroTranslate(-200) == -150 && GymSwipeMath.heroTranslate(40) == 10,
+              "드래그 추종 좌클램프 -150·우저항 ×0.25")
+        check(GymSwipeMath.endAction(dx: -60, dy: 0) == .commit
+              && GymSwipeMath.endAction(dx: 60, dy: 10) == .revert
+              && GymSwipeMath.endAction(dx: -30, dy: 5) == .springBack,
+              "종료 판정 좌커밋·우되돌림·스프링백")
         render(SessionScreenView(model: m), outdir, "flow-04-session-after-sets")
+        render(SessionScreenView(model: m, initialDragX: -70), outdir, "flow-04b-session-drag")
 
         print("[4] 블록 완료(꾹누르기 '완료') + 종목 추가 — 스쿼트")
         m.finishBlock(at: 0)
@@ -113,6 +121,11 @@ enum FlowHarness {
         check(m.currentSet?.duration == 1500 && m.currentSet?.distance == 3.0, "25분 → 1500초·3km 저장")
         check(GymSessionLogic.paceText(durationSec: 1500, distanceKm: 3.0) == "8:20/km", "페이스 8:20/km")
         render(SessionScreenView(model: m), outdir, "flow-06-session-cardio")
+        // HomeC "다음" 미리보기 — current=스쿼트(2/4 진행), 다음=[트레드밀 25분·3km]
+        let nexts = GymHomeLogic.nextBlockPreviews(session: m.session, custom: m.custom)
+        check(nexts == [GymNextBlockPreview(name: "트레드밀", summary: "25분 · 3km")],
+              "홈 다음 미리보기 = 트레드밀 25분 · 3km (실측 \(nexts))")
+        render(HomeScreenView(model: m), outdir, "flow-06b-home-next")
         m.completeCurrentSet()
         check(m.prMoment == 2, "유산소 완료 — PR 미발화 (0중량 가드)")
         m.finishBlock(at: 2)
@@ -173,7 +186,22 @@ enum FlowHarness {
         render(AdminScreenView(model: m, initialTab: .ex, embedScroll: false), outdir, "flow-11-admin-ex")
         render(AdminScreenView(model: m, initialTab: .weight, embedScroll: false), outdir, "flow-12-admin-weight")
 
-        print("[10] 영속 재로드 — 새 프로세스 기동 시뮬레이션")
+        print("[9b] 프로필 편집 — 검증 규칙 + 설정 반영 (§10-3, profile.js FIELD_DEFS 정합)")
+        check(GymProfileFields.parseHeight("99") == nil && GymProfileFields.parseWeeklyGoal("8") == nil
+              && GymProfileFields.parseGoalWeight("0") == nil
+              && GymProfileFields.parseBirthdateDigits("19761301") == nil,
+              "범위 밖 입력 전부 거부 (키 99·주간 8·목표 0·13월)")
+        if let h = GymProfileFields.parseHeight("178") { m.updateSettings { $0.height = h } }
+        if let bd = GymProfileFields.parseBirthdateDigits("19760512") { m.updateSettings { $0.birthDate = bd } }
+        if let gw = GymProfileFields.parseGoalWeight("68.5") { m.updateSettings { $0.goalWeight = gw } }
+        if let wg = GymProfileFields.parseWeeklyGoal("5") { m.updateSettings { $0.weeklyGoal = wg } }
+        check(m.settings.height == 178 && m.settings.birthDate == "1976-05-12", "키 178·생년월일 1976-05-12 반영")
+        check(m.settings.goalWeight == 68.5 && m.settings.weeklyGoal == 5, "목표 68.5·주간 목표 5 반영")
+        render(AdminScreenView(model: m, initialTab: .profile, embedScroll: false), outdir, "flow-12b-admin-profile")
+        render(AdminScreenView(model: m, initialTab: .profile, embedScroll: false,
+                               initialProfileField: "birthdate"), outdir, "flow-12c-profile-keypad")
+
+        print("[10] 영속 재로드 — 동일 프로세스 내 새 모델 인스턴스 (크로스 프로세스는 gymshot 재실행 별도)")
         let m2 = GymAppModel()
         check(m2.history.count == 5, "이력 5건 영속")
         check(m2.prs.first { $0.exerciseId == "bench_press" }?.e1rm == 95, "PR 영속")
@@ -181,6 +209,8 @@ enum FlowHarness {
         check(m2.custom.count == 1, "커스텀 영속")
         check(m2.settings.hiddenExercises.contains("decline_bench")
               && m2.settings.deletedExercises.contains("cable_crossover"), "설정(숨김·삭제) 영속")
+        check(m2.settings.height == 178 && m2.settings.birthDate == "1976-05-12"
+              && m2.settings.goalWeight == 68.5 && m2.settings.weeklyGoal == 5, "프로필 4필드 영속")
         check(m2.settings.updatedAt > 0, "설정 LWW 타임스탬프 스탬핑")
         check(m2.session.status == .completed, "완료 세션 유지 (스윕 미발동)")
         m2.startSession()

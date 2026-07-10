@@ -117,6 +117,13 @@ public struct SessionScreenView: View {
     @State private var actionTarget: ActionTarget? = nil
     @State private var prPopVisible: Bool
     @State private var prPopRise = false
+    // 드래그 추종 커밋 (작업지시서 §4 / FIG 2 — GymSwipeMath 수식 구동)
+    @State private var heroDragX: CGFloat
+    @State private var heroDragging = false
+    @State private var ringVisible = false     // 햅틱 링 (커밋 1회)
+    @State private var ringIsPR = false
+    @State private var ringMoment = 0          // 재생 id (연속 커밋 재마운트)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // 꾹누르기 액션시트 대상 (§6-9)
     enum ActionTarget: Equatable {
@@ -128,10 +135,12 @@ public struct SessionScreenView: View {
 
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
-                initialAddex: Bool = false, initialAction: Bool = false) {
+                initialAddex: Bool = false, initialAction: Bool = false,
+                initialDragX: CGFloat = 0) {
         self.model = model; self.onHome = onHome
         _prPopVisible = State(initialValue: initialPRPop)
         _addexOpen = State(initialValue: initialAddex)
+        _heroDragX = State(initialValue: initialDragX)
         if initialAction { _actionTarget = State(initialValue: .block(model.currentBlockIdx)) }
         if let f = initialKeypadField {   // 검증 훅 — 실 openKeypad 와 동일 prefill
             let set = model.currentSet ?? model.currentBlock?.sets.last
@@ -151,10 +160,12 @@ public struct SessionScreenView: View {
     // 데모 편의 init (프리뷰/스냅샷) — 자체 모델 시드.
     public init(onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
-                initialAddex: Bool = false, initialAction: Bool = false) {
+                initialAddex: Bool = false, initialAction: Bool = false,
+                initialDragX: CGFloat = 0) {
         self.init(model: GymAppModel(), onHome: onHome,
                   initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
-                  initialAddex: initialAddex, initialAction: initialAction)
+                  initialAddex: initialAddex, initialAction: initialAction,
+                  initialDragX: initialDragX)
     }
 
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
@@ -279,8 +290,10 @@ public struct SessionScreenView: View {
             SessionHeader(exName: model.currentExerciseName, part: model.currentPartName,
                           volCur: Self.fmt(model.sessionDoneVolume),
                           volTotal: Self.fmt(sessDenom), pct: model.sessionPct)
+            let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
             if !slots.isEmpty && kind != .cardio {
                 PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
+                               dragP: CGFloat(revealP),
                                onLongPressSlot: { i in actionTarget = .setRow(i) })
             }
             Spacer()
@@ -293,19 +306,57 @@ public struct SessionScreenView: View {
                         prChip: prChip,
                         onTopTap: locked ? nil : { zone in heroTap(row: .top, zone: zone, kind: kind) },
                         onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) })
+            .offset(x: heroDragX)   // 드래그 추종 — 히어로 값만 이동 (칩·링은 고정)
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 60)
+            // "완료" 칩 비례 노출 (mock #completeReveal — 좌드래그 p 에 비례)
+            .overlay(alignment: .trailing) {
+                HStack(spacing: 7) {
+                    Image(systemName: "checkmark").font(.system(size: 12, weight: .bold))
+                    Text("완료").font(.sans(13, 600))
+                }
+                .foregroundStyle(GY.crailDeep)
+                .padding(.init(top: 7, leading: 11, bottom: 7, trailing: 14))
+                .background(GY.crailSoft, in: Capsule())
+                .overlay(Capsule().strokeBorder(GY.crailBase, lineWidth: 1))
+                .opacity(revealP)
+                .scaleEffect(0.9 + CGFloat(revealP) * 0.1)
+                .offset(x: (1 - CGFloat(revealP)) * 14)
+                .padding(.trailing, 22)
+                .allowsHitTesting(false)
+                .accessibilityIdentifier("complete-reveal")
+            }
+            // 햅틱 링 (mock #hapticRing — 커밋 직후 1회, PR 은 확장 강화)
+            .overlay {
+                if ringVisible {
+                    HapticRing(isPR: ringIsPR).id(ringMoment)
+                }
+            }
+            .gesture(DragGesture(minimumDistance: 8)
+                .onChanged { v in
+                    let dx = Double(v.translation.width), dy = Double(v.translation.height)
+                    if !heroDragging {
+                        guard GymSwipeMath.engaged(dx: dx, dy: dy) else { return }   // 수직 스크롤 양보
+                        heroDragging = true
+                    }
+                    heroDragX = CGFloat(GymSwipeMath.heroTranslate(dx))   // 우저항 ×0.25 · 좌 -150 클램프
+                }
                 .onEnded { v in
-                    guard abs(v.translation.width) > abs(v.translation.height) else { return }   // 수직 스크롤 우선
-                    if v.translation.width < -60 { model.completeCurrentSet() }        // 좌 = 세트완료
-                    else if v.translation.width > 60 { model.revertToPreviousSet() }    // 우 = 이전 세트
+                    let wasDragging = heroDragging
+                    heroDragging = false
+                    guard wasDragging else { return }
+                    switch GymSwipeMath.endAction(dx: Double(v.translation.width),
+                                                  dy: Double(v.translation.height)) {
+                    case .commit: commitSwipe()                            // 좌 = 세트완료
+                    case .revert: model.revertToPreviousSet(); springBackHero()   // 우 = 이전 세트
+                    case .tap, .springBack: springBackHero()
+                    }
                 })
             Spacer()
             if kind != .cardio {   // 유산소는 볼륨 링 없음 (§6-4)
                 ExerciseVolumeRing(
                     sets: sets, cur: model.currentSetIdx, pct: exPct,
-                    curVol: Self.fmt(blockDone), totVol: Self.fmt(exDenom),
+                    curVol: blockDone, totVol: Self.fmt(exDenom),
                     overAmt: ov.isOver ? "+\(ov.overAmt)" : nil)
             }
             GymFooterRail(items: model.session.blocks.enumerated().map { i, b in
@@ -316,6 +367,36 @@ public struct SessionScreenView: View {
                onLongPressItem: { actionTarget = .block($0) },
                onAdd: { addexOpen = true })
         }
+    }
+
+    // MARK: - 드래그 커밋 (§6-3-1 — 카운트업·햅틱 링·스프링백)
+
+    func sessionDoneCount() -> Int {
+        model.session.blocks.reduce(0) { $0 + $1.sets.filter(\.done).count }
+    }
+    // 스프링백 — session.js springBack(320ms cubic-bezier(.2,.8,.3,1) 오버슈트) 근사.
+    func springBackHero() {
+        withAnimation(.spring(response: 0.32, dampingFraction: 0.72)) { heroDragX = 0 }
+    }
+    // 좌스와이프 커밋 — 카운트업은 커밋 트랜잭션만 애니 (PWA countUp 가드: 키패드 수정·리로드 미발화).
+    func commitSwipe() {
+        let doneBefore = sessionDoneCount()
+        let prBefore = model.prMoment
+        withAnimation(.timingCurve(0.33, 1, 0.68, 1, duration: 0.62)) {
+            model.completeCurrentSet()
+        }
+        withAnimation(.easeOut(duration: 0.18)) { heroDragX = 0 }   // 커밋 — 위치 점프 없이 복귀
+        if sessionDoneCount() > doneBefore {
+            fireRing(isPR: model.prMoment > prBefore)
+        }
+    }
+    // 햅틱 링 재생 (부록 햅틱 링 — 일반 420ms / PR 540ms). reduced-motion 스킵.
+    func fireRing(isPR: Bool) {
+        guard !reduceMotion else { return }
+        ringIsPR = isPR
+        ringMoment += 1
+        ringVisible = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + (isPR ? 0.6 : 0.5)) { ringVisible = false }
     }
 
     // MARK: - 히어로 존 → 모델 액션 매핑 (§6-3·§6-4)
@@ -389,33 +470,40 @@ public struct SessionScreenView: View {
         model.applyKeypad(kp.field, value: v, setIdx: kp.setIdx)
     }
 
-    @ViewBuilder var keypadOverlay: some View {
-        if keypad != nil {
-            ZStack(alignment: .bottom) {
+    var keypadOverlay: some View {
+        // 슬라이드업 (mock translateY(100%)→0 200ms ease + 백드롭 페이드)
+        ZStack(alignment: .bottom) {
+            if keypad != nil {
                 Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                     .contentShape(Rectangle())
                     .onTapGesture { keypadDone() }   // 배경 탭 = 적용 (PWA backdrop apply)
+                    .transition(.opacity)
                 KeypadSheet(ctx: keypad!,
                             refValue: prefillValue(keypad!.field, setIdx: keypad!.setIdx).map { Self.fmtW($0) },
                             onKey: { k in if keypad != nil { KeypadBuffer.apply(k, to: &keypad!) } },
                             onQuick: { d in quickDelta(d) },
                             onMode: { m in switchKeypadMode(m) },
                             onDone: { keypadDone() })
+                    .transition(.move(edge: .bottom))
             }
         }
+        .animation(.easeOut(duration: 0.2), value: keypad != nil)
     }
 
     // MARK: - 운동 추가 시트 (§6-2)
 
-    @ViewBuilder var addexOverlay: some View {
-        if addexOpen {
-            ZStack(alignment: .bottom) {
+    var addexOverlay: some View {
+        ZStack(alignment: .bottom) {
+            if addexOpen {
                 Color(oklch: 0.22, 0.008, 60).opacity(0.32)
                     .contentShape(Rectangle())
                     .onTapGesture { addexOpen = false }
+                    .transition(.opacity)
                 AddExerciseSheet(model: model, initialPart: model.currentPartId.isEmpty ? "chest" : model.currentPartId)
+                    .transition(.move(edge: .bottom))
             }
         }
+        .animation(.easeOut(duration: 0.2), value: addexOpen)
     }
 
     // MARK: - 꾹누르기 액션시트 (§6-9)
@@ -487,17 +575,20 @@ public struct SessionScreenView: View {
         }
     }
 
-    @ViewBuilder var actionOverlay: some View {
-        if let target = actionTarget {
-            let spec = actionSheetSpec(target)
-            ZStack(alignment: .bottom) {
+    var actionOverlay: some View {
+        ZStack(alignment: .bottom) {
+            if let target = actionTarget {
+                let spec = actionSheetSpec(target)
                 Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                     .contentShape(Rectangle())
                     .onTapGesture { actionTarget = nil }
+                    .transition(.opacity)
                 GymActionSheet(title: spec.title, items: spec.items,
                                onSelect: { handleAction($0, target: target) },
                                onCancel: { actionTarget = nil })
+                    .transition(.move(edge: .bottom))
             }
         }
+        .animation(.easeOut(duration: 0.2), value: actionTarget != nil)
     }
 }

@@ -71,6 +71,7 @@ public enum GymScreens {
         case "session-pr":   return AnyView(SessionScreenView(initialPRPop: true).frame(width: 390, height: 844))
         case "session-addex": return AnyView(SessionScreenView(initialAddex: true).frame(width: 390, height: 844))
         case "session-action": return AnyView(SessionScreenView(initialAction: true).frame(width: 390, height: 844))
+        case "session-drag":  return AnyView(SessionScreenView(initialDragX: -70).frame(width: 390, height: 844))
         case "session-empty": return AnyView(SessionScreenView(model: demoEmptyModel()).frame(width: 390, height: 844))
         case "session-cardio": return AnyView(SessionScreenView(model: demoCardioModel()).frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
@@ -84,6 +85,7 @@ public enum GymScreens {
         case "admin":        return AnyView(AdminScreenView(model: demoModel(), initialTab: .ex, embedScroll: false).frame(width: 390, height: 844))
         case "admin-weight": return AnyView(AdminScreenView(model: demoModel(), initialTab: .weight, embedScroll: false).frame(width: 390, height: 844))
         case "admin-profile":return AnyView(AdminScreenView(model: demoModel(), initialTab: .profile, embedScroll: false).frame(width: 390, height: 844))
+        case "admin-profile-edit": return AnyView(AdminScreenView(model: demoModel(), initialTab: .profile, embedScroll: false, initialProfileField: "birthdate").frame(width: 390, height: 844))
         case "root":         return AnyView(GymRootView(model: demoModel()).frame(width: 390, height: 844))
         case "tokens":       return AnyView(TokenSwatch())
         default:             return nil

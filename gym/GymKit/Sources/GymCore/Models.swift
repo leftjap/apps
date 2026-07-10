@@ -162,17 +162,20 @@ public struct GymUserSettings: Codable, Sendable {
     public var weeklyGoal: Int
     public var height: Int?
     public var birthYear: Int?
+    public var birthDate: String?             // "YYYY-MM-DD" — 프로필 생년월일 (profile.js birthDate 정합)
     public var goalWeight: Double
     public var hiddenExercises: [String]      // 숨김(임시 비활성)
     public var deletedExercises: [String]     // 빌트인 영속 삭제 (spec §10-1)
     public var exerciseOrder: [String: [String]]        // 부위별 정렬
     public var exercisePartOverride: [String: String]   // 운동 부위 변경
     public var updatedAt: Double              // ms epoch — 설정 LWW 병합용 (sync.js 정합)
-    public init(weeklyGoal: Int = 4, height: Int? = nil, birthYear: Int? = nil, goalWeight: Double = 69,
+    public init(weeklyGoal: Int = 4, height: Int? = nil, birthYear: Int? = nil, birthDate: String? = nil,
+                goalWeight: Double = 69,
                 hiddenExercises: [String] = [], deletedExercises: [String] = [],
                 exerciseOrder: [String: [String]] = [:], exercisePartOverride: [String: String] = [:],
                 updatedAt: Double = 0) {
         self.weeklyGoal = weeklyGoal; self.height = height; self.birthYear = birthYear
+        self.birthDate = birthDate
         self.goalWeight = goalWeight; self.hiddenExercises = hiddenExercises
         self.deletedExercises = deletedExercises; self.exerciseOrder = exerciseOrder
         self.exercisePartOverride = exercisePartOverride; self.updatedAt = updatedAt
@@ -183,6 +186,7 @@ public struct GymUserSettings: Codable, Sendable {
         weeklyGoal = try c.decodeIfPresent(Int.self, forKey: .weeklyGoal) ?? 4
         height = try c.decodeIfPresent(Int.self, forKey: .height)
         birthYear = try c.decodeIfPresent(Int.self, forKey: .birthYear)
+        birthDate = try c.decodeIfPresent(String.self, forKey: .birthDate)
         goalWeight = try c.decodeIfPresent(Double.self, forKey: .goalWeight) ?? 69
         hiddenExercises = try c.decodeIfPresent([String].self, forKey: .hiddenExercises) ?? []
         deletedExercises = try c.decodeIfPresent([String].self, forKey: .deletedExercises) ?? []

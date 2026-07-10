@@ -19,6 +19,7 @@ struct PrevRecordBars: View {
     let slots: [SetBarSlot]
     let best: (weight: Int, reps: Int)?   // 역대 최고(e1RM) 슬롯 — 무게 종목 + 존재 시만 (§3-5)
     var encodeHeight: Bool = true          // 볼륨 → 높이 인코딩 (무게 종목만)
+    var dragP: CGFloat = 0                 // 좌드래그 진행도 — now 세그 미세 부풀림 scaleY(1+p·0.28)
     var onLongPressSlot: ((Int) -> Void)? = nil   // 세트 행 꾹누르기 → 수정/삭제 (§6-9)
 
     static let workHi: CGFloat = 20   // SET_BAR_WORK_HI
@@ -49,6 +50,9 @@ struct PrevRecordBars: View {
                             .frame(maxWidth: .infinity).frame(height: s.state == .now ? h + 2 : h)
                             .overlay(s.state == .upcoming
                                      ? RoundedRectangle(cornerRadius: 5).strokeBorder(GY.line, lineWidth: 1.5) : nil)
+                            // now 세그 — 상시 글로우(barPulse) + 좌드래그 비례 부풀림 (session.js 드래그 추종)
+                            .scaleEffect(x: 1, y: s.state == .now ? 1 + dragP * 0.28 : 1, anchor: .bottom)
+                            .segGlowIf(s.state == .now, cornerRadius: 5)
                         VStack(spacing: 2) {
                             Text(s.top).font(.mono(12.5, s.isPreview ? 500 : 600))
                                 .foregroundStyle(s.pr ? GY.crailDeep

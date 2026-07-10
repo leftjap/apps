@@ -1,5 +1,12 @@
 import Foundation
 
+// HomeC "다음" 미리보기 항목 — home.js formatBlockPreview 반환 shape.
+public struct GymNextBlockPreview: Equatable, Sendable {
+    public let name: String
+    public let summary: String
+    public init(name: String, summary: String) { self.name = name; self.summary = summary }
+}
+
 // 홈 부위 밸런스 — PWA home.js summarizeWeeklyBalance 1:1 포팅.
 // 롤링 7일 창([today-6, today] vs [today-13, today-7]) · 고정 부위순서 · 유산소 별도 행 · core 흡수.
 public enum GymHomeLogic {
@@ -82,5 +89,47 @@ public enum GymHomeLogic {
                              cardioCount: cardioCount,
                              cardioDeltaMin: Int(cardioMin.rounded()) - Int(prevCardioMin.rounded()),
                              focusKey: focusKey, max: maxBar)
+    }
+
+    // MARK: - HomeC "다음" 미리보기 (home.js summarizeNextBlocks + formatBlockPreview 정합)
+
+    // 미완료 판정 — home.js isSingleBlockIncomplete: single + finishedAt 없음 + (빈 세트 or 일부 미완료).
+    static func isSingleBlockIncomplete(_ b: GymBlock) -> Bool {
+        guard b.type == "single", b.finishedAt == nil else { return false }
+        if b.sets.isEmpty { return true }
+        return b.sets.contains { !$0.done }
+    }
+
+    static func blockPreview(_ b: GymBlock, custom: [GymCustomExercise]) -> GymNextBlockPreview {
+        let name = GymExercises.resolveName(b.exerciseId, custom: custom)
+        let equipment = GymExercises.def(b.exerciseId, custom: custom)?.equipment
+        let first = b.sets.first
+        func g(_ v: Double) -> String { String(format: "%g", v) }
+        switch equipment {
+        case "cardio":
+            let mins = Int(((first?.duration ?? 0) / 60).rounded())
+            let dist = first?.distance ?? 0
+            return GymNextBlockPreview(name: name,
+                                       summary: dist > 0 ? "\(mins)분 · \(g(dist))km" : "\(mins)분")
+        case "bodyweight":
+            return GymNextBlockPreview(name: name,
+                                       summary: "맨몸 \(first?.reps ?? 0)회 · \(b.sets.count)세트")
+        default:
+            return GymNextBlockPreview(name: name,
+                                       summary: "\(g(first?.weight ?? 0))×\(first?.reps ?? 0) · \(b.sets.count)세트")
+        }
+    }
+
+    // 현재 진행 블록(첫 미완료) 이후의 미완료 블록 미리보기 — active 세션만, 최대 limit 개.
+    public static func nextBlockPreviews(session: GymSession, custom: [GymCustomExercise],
+                                         limit: Int = 2) -> [GymNextBlockPreview] {
+        guard session.status == .active,
+              let curIdx = session.blocks.firstIndex(where: { isSingleBlockIncomplete($0) }) else { return [] }
+        var out: [GymNextBlockPreview] = []
+        for b in session.blocks.dropFirst(curIdx + 1) where isSingleBlockIncomplete(b) {
+            out.append(blockPreview(b, custom: custom))
+            if out.count >= limit { break }
+        }
+        return out
     }
 }

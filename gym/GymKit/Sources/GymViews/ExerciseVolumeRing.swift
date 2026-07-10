@@ -29,7 +29,7 @@ struct ExerciseVolumeRing: View {
     let sets: [GymSet]
     let cur: Int
     let pct: Int           // 67 (직전 대비)
-    let curVol: String     // "2,020"
+    let curVol: Double     // 2020 — 커밋 시 카운트업 (호출부 withAnimation 게이트)
     let totVol: String     // "3,020"
     let overAmt: String?   // "+220" (초과 시)
 
@@ -46,7 +46,7 @@ struct ExerciseVolumeRing: View {
             .frame(width: 68, height: 68)
 
             HStack(alignment: .firstTextBaseline, spacing: 8) {  // .exnums
-                Text(curVol).font(.mono(32, 700)).tracking(-1.12).foregroundStyle(GY.ink1)
+                CountUpVolumeText(value: curVol)   // 커밋 카운트업 (animNum 620ms 정합)
                 (Text("/ \(totVol)").font(.mono(13.5, 500))
                  + Text("kg").font(.mono(13.5, 500)))
                     .foregroundStyle(GY.ink4).lineLimit(1).fixedSize()

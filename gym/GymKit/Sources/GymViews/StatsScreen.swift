@@ -44,18 +44,21 @@ public struct StatsScreenView: View {
             }
         }
         .frame(width: 390).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
-        // 날짜 탭 → 상세 바텀시트, 꾹누르기 → 삭제 확인 (spec §9-1)
+        // 날짜 탭 → 상세 바텀시트, 꾹누르기 → 삭제 확인 (spec §9-1). 슬라이드업 (mock 200ms ease)
         .overlay {
-            if let iso = detailISO {
-                ZStack(alignment: .bottom) {
+            ZStack(alignment: .bottom) {
+                if let iso = detailISO {
                     Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                         .contentShape(Rectangle())
                         .onTapGesture { detailISO = nil }
+                        .transition(.opacity)
                     DayDetailSheet(iso: iso, entry: model.dayEntry(iso), step: detailStep,
                                    onDelete: { model.deleteSessions(on: iso); detailISO = nil },
                                    onCancel: { detailISO = nil })
+                        .transition(.move(edge: .bottom))
                 }
             }
+            .animation(.easeOut(duration: 0.2), value: detailISO != nil)
         }
     }
 

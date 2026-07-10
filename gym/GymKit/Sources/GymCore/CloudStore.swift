@@ -13,6 +13,7 @@ public final class CloudStore: ObservableObject {
     public init() {}
 
     @Published public private(set) var signedIn = false
+    @Published public private(set) var userEmail: String?   // 프로필 동기화 카드 표시용 (profile.js sync-user)
 
     private let client = SupabaseClient(supabaseURL: Config.supabaseURL, supabaseKey: Config.supabaseAnonKey)
     private var ownerID: UUID?
@@ -39,7 +40,7 @@ public final class CloudStore: ObservableObject {
     public func restore() async {
         if let user = try? await client.auth.user() {
             guard Self.isAllowedEmail(user.email) else { await signOut(); return }
-            ownerID = user.id; signedIn = true
+            ownerID = user.id; signedIn = true; userEmail = user.email
         }
     }
 
@@ -49,11 +50,11 @@ public final class CloudStore: ObservableObject {
             await signOut()
             throw AuthError.emailNotAllowed
         }
-        ownerID = session.user.id; signedIn = true
+        ownerID = session.user.id; signedIn = true; userEmail = session.user.email
     }
 
     public func signOut() async {
-        try? await client.auth.signOut(); ownerID = nil; signedIn = false
+        try? await client.auth.signOut(); ownerID = nil; signedIn = false; userEmail = nil
     }
 
     // push/pull 일시 실패 자동 재시도 — spec §4 "5초, 15초, 45초" (sync.js withRetry 정합).

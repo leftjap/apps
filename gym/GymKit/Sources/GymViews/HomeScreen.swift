@@ -34,25 +34,29 @@ public struct HomeScreenView: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .background(GY.shell)
         .overlay {
-            if let iso = detailISO {
-                ZStack(alignment: .bottom) {
+            ZStack(alignment: .bottom) {
+                if let iso = detailISO {
                     Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                         .contentShape(Rectangle())
                         .onTapGesture { detailISO = nil }
+                        .transition(.opacity)
                     DayDetailSheet(iso: iso, entry: model.dayEntry(iso),
                                    onDelete: { detailISO = nil }, onCancel: { detailISO = nil })
+                        .transition(.move(edge: .bottom))
                 }
             }
+            .animation(.easeOut(duration: 0.2), value: detailISO != nil)
         }
         // 오늘 체중 입력 키패드 (home/admin 공유 — mock #weightKeypadSheet)
         .overlay {
-            if weightKeypad != nil {
-                ZStack(alignment: .bottom) {
+            ZStack(alignment: .bottom) {
+                if weightKeypad != nil {
                     Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                         .contentShape(Rectangle()).onTapGesture { weightKeypad = nil }
+                        .transition(.opacity)
                     KeypadSheet(ctx: weightKeypad!,
                                 refValue: model.weights.first.map { Self.wf.string(from: NSNumber(value: $0.kg)) ?? "\($0.kg)" },
-                                bare: true, doneLabel: "저장",
+                                bare: true, title: "오늘 체중", doneLabel: "저장",
                                 onKey: { k in if weightKeypad != nil { KeypadBuffer.apply(k, to: &weightKeypad!) } },
                                 onQuick: { _ in }, onMode: { _ in },
                                 onDone: {
@@ -60,8 +64,10 @@ public struct HomeScreenView: View {
                                     guard let kp = weightKeypad, let v = Double(kp.buffer), v > 0 else { return }
                                     model.saveWeight((v * 10).rounded() / 10)
                                 })
+                        .transition(.move(edge: .bottom))
                 }
             }
+            .animation(.easeOut(duration: 0.2), value: weightKeypad != nil)
         }
     }
 
@@ -127,7 +133,7 @@ public struct HomeScreenView: View {
                         .accessibilityIdentifier("resume-exname")
                     Text(subLine).font(.sans(13, 500)).foregroundStyle(GY.ink4)
                         .lineLimit(1).padding(.top, 5)
-                    // 세트 세그먼트 (mock #cardResumeSeg — done ink bar / now crail 굵게)
+                    // 세트 세그먼트 (mock #cardResumeSeg — done ink bar / now crail 굵게 + segGlow)
                     HStack(spacing: 6) {
                         ForEach(Array(curSets.enumerated()), id: \.offset) { i, s in
                             VStack(spacing: 7) {
@@ -137,6 +143,7 @@ public struct HomeScreenView: View {
                                     .frame(height: i == curSetIdx ? 10 : 8)
                                     .overlay(!s.done && i != curSetIdx
                                              ? RoundedRectangle(cornerRadius: 4).strokeBorder(GY.line, lineWidth: 1.5) : nil)
+                                    .segGlowIf(i == curSetIdx, cornerRadius: 4, alpha: 0.18)
                                 Text(i == curSetIdx ? "\(i + 1)세트"
                                      : (s.done && (s.reps ?? 0) > 0 ? "\(Int((s.weight ?? 0).rounded()))·\(s.reps ?? 0)" : "·"))
                                     .font(.mono(10, i == curSetIdx ? 700 : 500))
@@ -162,10 +169,28 @@ public struct HomeScreenView: View {
                 .padding(.init(top: 24, leading: 24, bottom: 22, trailing: 24))
                 .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rXl))
                 .overlay(RoundedRectangle(cornerRadius: GY.rXl).strokeBorder(GY.crailBase, lineWidth: 1.5))
+                .breathGlow(cornerRadius: GY.rXl)   // mock #cardResume breath (2.8s crail 링)
                 .shadow(color: Color(hex: 0x14120E).opacity(0.14), radius: 18, y: 10)
             }
             .buttonStyle(.plain).accessibilityIdentifier("home-resume")
             .padding(.horizontal, 22)
+            // "다음" 미리보기 — home.js applyNextBlocksToDom (현재 이후 미완료 2개, 없으면 숨김)
+            let nexts = GymHomeLogic.nextBlockPreviews(session: session, custom: model.custom)
+            if !nexts.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("다음").font(.sans(12, 600)).tracking(0.24).foregroundStyle(GY.ink4)
+                    ForEach(Array(nexts.enumerated()), id: \.offset) { _, n in
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(n.name).font(.sans(15, 500)).foregroundStyle(GY.ink1).lineLimit(1)
+                            Spacer(minLength: 12)
+                            Text(n.summary).font(.mono(14, 500)).foregroundStyle(GY.ink4)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 46).padding(.top, 20)
+                .accessibilityIdentifier("home-next-blocks")
+            }
             Spacer()
         }
     }

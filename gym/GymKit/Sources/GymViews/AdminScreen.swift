@@ -14,6 +14,8 @@ public struct AdminScreenView: View {
     @State private var dragOffset: CGFloat = 0
     @State private var weightKeypad: KeypadContext? = nil    // 오늘 체중 입력 (§10-2)
     @State private var weightPRPop = false                   // 최저 신기록 팝
+    @State private var profileKeypad: KeypadContext? = nil   // 프로필 필드 편집 (§10-3)
+    @State private var profileField: ProfileField? = nil
     var embedScroll: Bool
     var onHome: () -> Void
     var onStats: () -> Void
@@ -21,10 +23,15 @@ public struct AdminScreenView: View {
     var onLogout: () -> Void
 
     public init(model: GymAppModel, initialTab: Tab = .ex, embedScroll: Bool = true,
+                initialProfileField: String? = nil,
                 onHome: @escaping () -> Void = {}, onStats: @escaping () -> Void = {},
                 onLogin: @escaping () -> Void = {}, onLogout: @escaping () -> Void = {}) {
         self.model = model; _tab = State(initialValue: initialTab); self.embedScroll = embedScroll
         self.onHome = onHome; self.onStats = onStats; self.onLogin = onLogin; self.onLogout = onLogout
+        if let f = initialProfileField.flatMap(ProfileField.init(rawValue:)) {   // 검증 훅 — 실 탭과 동일 prefill
+            _profileField = State(initialValue: f)
+            _profileKeypad = State(initialValue: Self.profileKeypadContext(f, settings: model.settings))
+        }
     }
 
     var cloud: CloudStore { model.cloud }
@@ -38,10 +45,11 @@ public struct AdminScreenView: View {
         .frame(width: 390).frame(maxHeight: .infinity, alignment: .top).background(GY.shell)
         // 꾹누르기 삭제 확인 (§10-1 — 커스텀 행 삭제 / 빌트인 영구 제거)
         .overlay {
-            if let target = deleteTarget {
-                ZStack(alignment: .bottom) {
+            ZStack(alignment: .bottom) {
+                if let target = deleteTarget {
                     Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                         .contentShape(Rectangle()).onTapGesture { deleteTarget = nil }
+                        .transition(.opacity)
                     GymActionSheet(title: target.name,
                                    items: [.init(id: "delete", label: "삭제", danger: true)],
                                    onSelect: { id in
@@ -49,23 +57,48 @@ public struct AdminScreenView: View {
                                        deleteTarget = nil
                                    },
                                    onCancel: { deleteTarget = nil })
+                        .transition(.move(edge: .bottom))
                 }
             }
+            .animation(.easeOut(duration: 0.2), value: deleteTarget != nil)
         }
         // 오늘 체중 입력 키패드 (§10-2, mock #weightKeypadSheet — 세그·quick 없음, 저장 버튼)
         .overlay {
-            if weightKeypad != nil {
-                ZStack(alignment: .bottom) {
+            ZStack(alignment: .bottom) {
+                if weightKeypad != nil {
                     Color(oklch: 0.22, 0.008, 60).opacity(0.42)
                         .contentShape(Rectangle()).onTapGesture { weightKeypad = nil }
+                        .transition(.opacity)
                     KeypadSheet(ctx: weightKeypad!,
                                 refValue: model.weights.first.map { Self.wf.string(from: NSNumber(value: $0.kg)) ?? "\($0.kg)" },
-                                bare: true, doneLabel: "저장",
+                                bare: true, title: "오늘 체중", doneLabel: "저장",
                                 onKey: { k in if weightKeypad != nil { KeypadBuffer.apply(k, to: &weightKeypad!) } },
                                 onQuick: { _ in }, onMode: { _ in },
                                 onDone: { saveWeightFromKeypad() })
+                        .transition(.move(edge: .bottom))
                 }
             }
+            .animation(.easeOut(duration: 0.2), value: weightKeypad != nil)
+        }
+        // 프로필 필드 편집 키패드 (§10-3 — bare + 필드 타이틀, 저장. 배경 탭 = 취소)
+        .overlay {
+            ZStack(alignment: .bottom) {
+                if profileKeypad != nil {
+                    Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                        .contentShape(Rectangle())
+                        .onTapGesture { profileKeypad = nil; profileField = nil }
+                        .transition(.opacity)
+                    KeypadSheet(ctx: profileKeypad!,
+                                refValue: nil,
+                                bare: true, title: profileField.map { Self.profileFieldLabel($0) },
+                                doneLabel: "저장",
+                                onKey: { k in if profileKeypad != nil { KeypadBuffer.apply(k, to: &profileKeypad!) } },
+                                onQuick: { _ in }, onMode: { _ in },
+                                onDone: { saveProfileKeypad() })
+                        .transition(.move(edge: .bottom))
+                }
+            }
+            .animation(.easeOut(duration: 0.2), value: profileKeypad != nil)
         }
         // 체중 최저 신기록 팝 (§10-2 — §6-11 과 동일 방식)
         .overlay(alignment: .top) {
@@ -406,35 +439,130 @@ public struct AdminScreenView: View {
         }
     }
 
-    // MARK: - 프로필 탭 (실 설정 + 계정)
+    // MARK: - 프로필 탭 (mocks pane-profile — 4필드 편집 + 동기화 카드 + 로그아웃 + 푸터, §10-3)
+
+    enum ProfileField: String { case height, birthdate, goalWeight = "goal-weight", weeklyGoal = "weekly-goal" }
+
+    // 필드 → 키패드 컨텍스트 (prefill = 현재값 ?? PWA FIELD_DEFS fallback).
+    static func profileKeypadContext(_ f: ProfileField, settings s: GymUserSettings) -> KeypadContext {
+        switch f {
+        case .height:
+            return KeypadContext(field: .reps, buffer: "\(s.height ?? 173)", fresh: true,
+                                 pairHidesWeight: false, unitOverride: "cm")
+        case .birthdate:
+            let digits = s.birthDate.map { $0.replacingOccurrences(of: "-", with: "") } ?? ""
+            return KeypadContext(field: .reps, buffer: digits, fresh: !digits.isEmpty,
+                                 pairHidesWeight: false, unitOverride: "", digitLimit: 8, asDate: true)
+        case .goalWeight:
+            return KeypadContext(field: .weight,
+                                 buffer: wf.string(from: NSNumber(value: s.goalWeight)) ?? "\(s.goalWeight)",
+                                 fresh: true, pairHidesWeight: false)
+        case .weeklyGoal:
+            return KeypadContext(field: .reps, buffer: "\(s.weeklyGoal)", fresh: true,
+                                 pairHidesWeight: false, digitLimit: 1)
+        }
+    }
+    static func profileFieldLabel(_ f: ProfileField) -> String {
+        switch f {
+        case .height: "키"; case .birthdate: "생년월일"
+        case .goalWeight: "목표 체중"; case .weeklyGoal: "주간 목표"
+        }
+    }
+
+    // 저장 — profile.js editProfileField 정합 (검증 실패·빈 입력은 no-op).
+    func saveProfileKeypad() {
+        defer { profileKeypad = nil; profileField = nil }
+        guard let kp = profileKeypad, let f = profileField, !kp.buffer.isEmpty else { return }
+        switch f {
+        case .height:
+            guard let v = GymProfileFields.parseHeight(kp.buffer) else { return }
+            model.updateSettings { $0.height = v }
+        case .birthdate:
+            guard let iso = GymProfileFields.parseBirthdateDigits(kp.buffer) else { return }
+            model.updateSettings { $0.birthDate = iso }
+        case .goalWeight:
+            guard let v = GymProfileFields.parseGoalWeight(kp.buffer) else { return }
+            model.updateSettings { $0.goalWeight = v }
+        case .weeklyGoal:
+            guard let v = GymProfileFields.parseWeeklyGoal(kp.buffer) else { return }
+            model.updateSettings { $0.weeklyGoal = v }
+        }
+    }
+
     var profilePane: some View {
         let s = model.settings
         return VStack(spacing: 0) {
-            settingRow("계정", cloud.signedIn ? "로그인됨" : "로그인 안 됨")
-            settingRow("데이터 동기화", cloud.signedIn ? "켜짐" : "꺼짐")
-            settingRow("키", s.height.map { "\($0) cm" } ?? "미설정")
-            settingRow("생년", s.birthYear.map { "\($0)" } ?? "미설정")
-            settingRow("주간 목표", "\(s.weeklyGoal)회")
-            settingRow("목표 체중", "\(Self.wf.string(from: NSNumber(value: s.goalWeight)) ?? "\(s.goalWeight)") kg")
+            // 4필드 (mock data-field 행 — 값 ?? FIELD_DEFS fallback, 미입력 birthdate 는 dim "입력")
+            VStack(spacing: 0) {
+                profileRow(.height, value: "\(s.height ?? 173)", unit: "cm")
+                profileRow(.birthdate, value: GymProfileFields.birthdateDisplay(s.birthDate),
+                           unit: nil, empty: s.birthDate == nil)
+                profileRow(.goalWeight, value: Self.wf.string(from: NSNumber(value: s.goalWeight)) ?? "\(s.goalWeight)",
+                           unit: "kg")
+                profileRow(.weeklyGoal, value: "\(s.weeklyGoal)", unit: "회")
+            }
+            .padding(.horizontal, 26).padding(.top, 10)
+            // 동기화 카드 (mock sync-card — 점+텍스트, 사용자 줄)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Circle().fill(cloud.signedIn ? GY.crailBase : GY.ink4).frame(width: 7, height: 7)
+                    Text(cloud.signedIn ? "동기화 정상" : "로그인 필요")
+                        .font(.sans(13, 600)).tracking(0.26).foregroundStyle(GY.ink2)
+                }
+                Text(cloud.userEmail ?? "로그인하지 않음")
+                    .font(.sans(13, 500)).foregroundStyle(GY.ink4).lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.init(top: 16, leading: 18, bottom: 16, trailing: 18))
+            .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rLg))
+            .overlay(RoundedRectangle(cornerRadius: GY.rLg).strokeBorder(GY.line, lineWidth: 1))
+            .shadow(color: Color(hex: 0x14120E).opacity(0.06), radius: 10, y: 4)
+            .padding(.horizontal, 26).padding(.top, 24)
+            // 로그아웃 (mock logout-trigger) / 미로그인 시 Google 로그인
             Button(action: cloud.signedIn ? onLogout : onLogin) {
                 Text(cloud.signedIn ? "로그아웃" : "Google 로그인")
-                    .font(.sans(15, 600)).foregroundStyle(cloud.signedIn ? GY.danger : GY.crailDeep)
-                    .frame(maxWidth: .infinity).frame(height: 50)
+                    .font(.sans(15, 600)).foregroundStyle(cloud.signedIn ? GY.ink3 : GY.crailDeep)
+                    .frame(maxWidth: .infinity).frame(height: 48)
                     .background(cloud.signedIn ? GY.card : GY.crailTint, in: RoundedRectangle(cornerRadius: GY.rMd))
-                    .overlay(RoundedRectangle(cornerRadius: GY.rMd).strokeBorder(cloud.signedIn ? GY.line : GY.crailSoft, lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: GY.rMd)
+                        .strokeBorder(cloud.signedIn ? GY.line : GY.crailSoft, lineWidth: 1))
             }
             .buttonStyle(.plain).accessibilityIdentifier("profile-auth")
-            .padding(.horizontal, 24).padding(.top, 18)
-        }.padding(.top, 8)
-    }
-    func settingRow(_ k: String, _ v: String) -> some View {
-        HStack {
-            Text(k).font(.sans(15, 500)).foregroundStyle(GY.ink1)
-            Spacer()
-            Text(v).font(.sans(14, 400)).foregroundStyle(GY.ink4)
+            .padding(.horizontal, 26).padding(.top, 16)
+            // 푸터 (mock "GYM · EST 2026")
+            Spacer(minLength: 40)
+            Text("GYM · EST 2026").font(.mono(12, 500)).tracking(1.92).foregroundStyle(GY.ink4)
+                .padding(.bottom, 26)
         }
-        .padding(.vertical, 16).padding(.horizontal, 24)
-        .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+        .padding(.top, 8)
+        .frame(maxHeight: .infinity)
+    }
+
+    func profileRow(_ f: ProfileField, value: String, unit: String?, empty: Bool = false) -> some View {
+        Button {
+            profileField = f
+            profileKeypad = Self.profileKeypadContext(f, settings: model.settings)
+        } label: {
+            HStack {
+                Text(Self.profileFieldLabel(f)).font(.sans(15, 500)).foregroundStyle(GY.ink2)
+                Spacer()
+                HStack(alignment: .firstTextBaseline, spacing: 4) {
+                    Text(value).font(.mono(17, empty ? 500 : 600))
+                        .foregroundStyle(empty ? GY.ink4 : GY.ink1)   // 미입력 dim placeholder (P14)
+                    if let unit {
+                        Text(unit).font(.sans(13, 500)).foregroundStyle(GY.ink4)
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 11, weight: .medium)).foregroundStyle(GY.ink4)
+                        .padding(.leading, 4)
+                }
+            }
+            .padding(.vertical, 16)
+            .overlay(alignment: .bottom) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("profile-field-\(f.rawValue)")
     }
 }
 
