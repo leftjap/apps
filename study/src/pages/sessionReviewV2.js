@@ -221,9 +221,11 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     return { cleanup: () => { host.innerHTML = ''; }, layout: { update() {} } };
   }
 
-  // 회상 모드(en) — 답을 숨겼다가 첫 시도 후 공개. 마이크 불가면 막다른 길이 되므로 즉시 공개.
+  // 회상 모드(en) — 답을 숨겼다가 시도 후(또는 해설 펼침 시) 공개.
+  // micBlocked 로 자동 공개하지 말 것: 데모 모드가 그 플래그를 세우고(session-review.js:206),
+  // 마이크 없는 기기에서 정답이 그냥 노출된다. 해설 펼침이 공개 경로라 막다른 길이 아니다.
   const recallMode = isRecallMode(lang);
-  let revealed = !recallMode || state.micBlocked === true;
+  let revealed = !recallMode;
   const h1El = h('h1', { class: 'vr-h1' }, revealed ? s.sentence : (s.ko || ''));
   const koEl = h('div', { class: 'vr-ko' },
     revealed ? (s.ko || '') : `영어로 떠올려 말해 보세요 · ${wordCountOf(s.sentence)}단어`);
@@ -376,8 +378,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       state.recording = true; setRecVisual(true);
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
       const rec = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => { finishRecording(); } });
-      // 마이크 불가 — 회상 시도를 할 수 없으니 정답을 열어 막다른 길을 피한다(판정은 사용자가).
-      if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); reveal(); refreshDots(); showRecordToast(recordErrorMessage(rec.error)); return; }
+      // 마이크 불가 — 정답을 열지 않는다. 해설을 펼치면 공개되므로 막다른 길이 아니다.
+      if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); showRecordToast(recordErrorMessage(rec.error)); return; }
       recCtrl = rec.controller;
     } else {
       finishRecording();

@@ -274,13 +274,22 @@ describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판�
     } finally { vi.useRealTimers(); }
   });
 
-  it('마이크 불가(micBlocked)면 즉시 공개 + 판정 가능 (막다른 길 방지)', () => {
+  /* micBlocked 는 데모 모드가 세우는 플래그이기도 하다(session-review.js:206).
+   * 여기에 자동 공개를 걸면 데모/마이크 없는 기기에서 정답이 그냥 노출된다.
+   * 해설 펼침이 공개 경로이므로 막다른 길이 아니다 → 자동 공개하지 않는다. (2026-07-10) */
+  it('micBlocked 여도 정답을 미리 열지 않는다 — 해설로만 공개', () => {
     document.body.innerHTML = '<div id="root"></div>';
     const host = document.getElementById('root');
     const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: 'k', chunks: CHUNKS } };
     const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation: s.explanation };
-    renderSessionReviewV2(host, { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0, micBlocked: true }, {});
+    // 데모 경로(session-review.js:202-206)와 동일: demo + micBlocked 동시 세팅
+    renderSessionReviewV2(host, { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0, demo: true, micBlocked: true }, {});
+    expect(host.querySelector('.vr-h1').textContent).toBe(KO);
+    expect(host.querySelector('.vr-listen').disabled).toBe(true);
+    expect(host.querySelector('.judge-btn[data-kind="got"]').disabled).toBe(true);
+    host.querySelector('.vr-fold .hd').click();          // 마이크 없어도 해설로 열 수 있다
     expect(host.querySelector('.vr-h1').textContent).toBe(EN);
+    expect(host.querySelector('.vr-listen').disabled).toBe(false);
     expect(host.querySelector('.judge-btn[data-kind="got"]').disabled).toBe(false);
   });
 });
