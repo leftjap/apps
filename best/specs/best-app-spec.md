@@ -23,15 +23,17 @@
 **이슈링크 주(主) + 직접 크롤 2곳(디시 dcbest·보배 best) 패치.** 디시 포함은 사용자 결정
 (디시 robots 가 `User-agent:*` 에는 dcbest 허용이나 ClaudeBot·anthropic-ai·Claude-Web 를 명시 차단함을 고지한 상태에서 승인).
 
-### 1-1. 이슈링크 (15개 사이트)
+### 1-1. 이슈링크
 
 ```
 URL   https://www.issuelink.co.kr/community/listview/<site>/<hours>/<sort>/_self/blank/[blank/blank/<page>]
       robots: User-agent:* / Allow:/  (전문 2줄)
-수집  15사이트 × 24h × read(조회순) 상위 2페이지 = 사이트당 최대 200건, 하루 30요청
+수집  8사이트 × 24h × read(조회순) 상위 2페이지 = 사이트당 최대 200건
 필드  순위·제목(class="title")·댓글수(<small>)·조회수(class="hit")·초단위 게시시각·go 링크
 원문  /community/go/<site>/<id> → HTTP 307 → 원문 URL. 수집 시 리다이렉트 실행 금지(go URL 저장)
 ```
+
+**수집 범위 (2026-07-11 사용자 확정 — 시안의 9개 커뮤만)**: 디시(직접) + 보배(직접+이슈링크) + 이슈링크 8곳(bobae·clien·humoruniv·ppomppu·ruliweb·slr·theqoo·todayhumor). **제외 7곳**: 82cook·etoland·fmkorea(에펨코리아)·instiz(인스티즈)·inven·mlbpark(엠팍)·ygosu — 복구는 `collect.mjs` 의 `IL_SITES` 배열에 슬러그 추가면 끝(아래 표의 측정값은 보존). 하루 볼륨 ≈ 2,050건 (2026-07-10 실측 사이트별 합산 기준).
 
 사이트별 미러 판 (리다이렉트 표본 실측, 2026-07-10):
 
