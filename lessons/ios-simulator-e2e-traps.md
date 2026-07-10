@@ -118,3 +118,20 @@ Gym 의 `GymNavigationUITests` 는 `--reset`(로그아웃 + 로컬 전체 클리
 `XCTAttachment(screenshot:)` 만 남기는 **별도 클래스**(`GymCaptureUITests`)를 만들어
 `-only-testing:` 로 지정 실행할 것. 설치도 `uninstall` 없이 업그레이드 설치.
 회수한 첨부는 `xcrun xcresulttool export attachments` → **mtime + 색 수**로 빈화면/스테일 판정(§10).
+
+## 14. 하네스를 만들면 **회귀를 주입해 FAIL 을 재현**하라
+스크린샷 픽셀 프로브 게이트를 붙였는데 전부 PASS 였다. 그 자체로는 아무 뜻도 없다 — 아무것도
+못 잡는 게이트일 수 있다. 실제로 고쳤던 결함 4종을 코드에 되돌려 넣고 돌려서 14/26 FAIL 을
+재현한 뒤에야 검출력이 증명됐다 (`gym/scripts/spec-probe/REGRESSION-PROOF.md`).
+- 첫 실행의 FAIL 4건 중 **4건 전부 프로브 버그**였다(막대 폭 상한, 탐색 밴드에 다른 요소 혼입).
+  FAIL 을 앱 결함으로 단정하지 말고 반드시 스크린샷으로 1차 확인할 것.
+- 기대값에는 반드시 `source`(시안 행 / PWA 파일:행)를 단다. 근거 없이 지어낸 기대값은
+  하네스가 거짓말을 영구 고정시킨다.
+
+## 15. 시안 HTML 은 SwiftUI 앱에 "그대로 적용"할 수 없다 — 그래서 새는 것을 기계로 막는다
+PWA(`gym/mocks/*.html`)는 시안을 직접 소비하지만, 네이티브는 값을 손으로 전사해야 한다.
+2026-07-10 한 세션에서만 전사 누락이 반복 발견됐다: `gBarPulse` 6px→4px, 히어로 스왑 대상이
+행 전체(단위까지 이동), CSS 음수 spread 무시, 레일 순서 누락, 셰브런 SF Symbol 대체.
+- **PWA 가 시안과 일치한다고 가정하지 말 것.** PWA 도 시안과 어긋난 지점이 여럿이다
+  (barPulse 4px/0.16, `.exring-pct` 14px, 유산소 델타 ink-3, 세션 링 50px).
+- 대책: `gym/scripts/spec-probe/` — 시안/PWA 정본값을 선언하고 시뮬 스크린샷 픽셀로 대조.
