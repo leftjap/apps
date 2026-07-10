@@ -83,6 +83,11 @@ enum FlowHarness {
         check(m.session.blocks[0].sets[4].pr, "PR 세트 영구 마크")
         check(m.prs.first { $0.exerciseId == "bench_press" }?.e1rm == 95, "PR 저장 e1rm 95")
         check(m.session.blocks[0].sets.count == 6, "PR 세트도 마지막 → 6번째 자동 추가")
+        m.revertToPreviousSet()   // 우스와이프 — 직전 완료 세트 되돌리기 (§6-3-1)
+        check(m.session.blocks[0].sets[4].done == false, "우스와이프 → set5 미완료 복귀")
+        check(m.session.blocks[0].sets[4].pr, "되돌려도 PR 마크 유지 (handleRightSwipe 정합)")
+        m.completeCurrentSet()    // 재완료 — 95 동률 → PR 재발화 없음 (엄격 초과)
+        check(m.prMoment == 2, "재완료 동률 e1rm → PR 미발화")
         render(SessionScreenView(model: m), outdir, "flow-04-session-after-sets")
 
         print("[4] 블록 완료(꾹누르기 '완료') + 종목 추가 — 스쿼트")
@@ -159,6 +164,9 @@ enum FlowHarness {
         let chestIds = m.exercisesForPart("chest").map(\.id)
         m.setExerciseOrder(part: "chest", ids: chestIds.reversed())
         check(m.exercisesForPart("chest").first?.id == chestIds.last, "드래그 순서 영속 반영")
+        m.updateSettings { $0.exercisePartOverride["dumbbell_fly"] = "arms" }   // §10-1 부위 변경
+        check(m.exercisesForPart("arms").contains { $0.id == "dumbbell_fly" }, "부위 변경 → 팔 목록 재할당")
+        check(!m.exercisesForPart("chest").contains { $0.id == "dumbbell_fly" }, "원 부위(가슴)에서 제거")
         let wasPR = m.saveWeight(71.9)
         check(wasPR, "71.9kg = 최저 신기록 → PR 팝")
         check(m.weights.first?.kg == 71.9 && m.weights.first?.date == today, "오늘 체중 적재")
