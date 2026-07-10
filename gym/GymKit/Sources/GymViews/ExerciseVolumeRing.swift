@@ -9,6 +9,8 @@ private let sf: CGFloat = 68.0 / 40.0   // viewBox40 → 68px
 
 struct SegmentRing: View {
     let segs: [VolSegment]
+    @State private var pulse = false   // 진행 세그 맥동 (gPulse — opacity 1↔.35, session.js 정합)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         ZStack {
             ForEach(segs.indices, id: \.self) { i in
@@ -21,9 +23,30 @@ struct SegmentRing: View {
                     .stroke(color, style: StrokeStyle(lineWidth: w * sf, lineCap: .butt))
                     .rotationEffect(.degrees(s.rot))
                     .frame(width: 16 * sf * 2, height: 16 * sf * 2)  // r=16 centerline
+                    .opacity(s.state == .active && pulse ? 0.35 : 1)
             }
         }
         .frame(width: 68, height: 68)
+        .onAppear {
+            guard !GymSnapshot.isActive, !reduceMotion else { return }
+            withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { pulse = true }
+        }
+    }
+}
+
+// 에메랄드 성장 팁 도트 — gTipPulse(1.2s, scale 1↔1.55) 초과 유지 중 상시 루프 (§5.4-3).
+struct TipDot: View {
+    @State private var big = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        Circle().fill(GY.recordBase)
+            .frame(width: 2.7 * sf * 2, height: 2.7 * sf * 2)
+            .shadow(color: GY.recordBase.opacity(0.9), radius: 3)
+            .scaleEffect(big ? 1.55 : 1)
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { big = true }
+            }
     }
 }
 
@@ -80,9 +103,7 @@ struct ExerciseVolumeRing: View {
                         .frame(width: 21 * sf * 2, height: 21 * sf * 2)
                         .shadow(color: GY.recordBase.opacity(0.75), radius: 3)
                     if over.tipOpacity > 0 {
-                        Circle().fill(GY.recordBase)
-                            .frame(width: 2.7 * sf * 2, height: 2.7 * sf * 2)
-                            .shadow(color: GY.recordBase.opacity(0.9), radius: 3)
+                        TipDot()   // 성장 팁 도트 — gTipPulse 1.2s scale 1↔1.55 (초과 유지 중 루프)
                             .offset(x: (over.tipX - 20) * sf, y: (over.tipY - 20) * sf)
                     }
                 }

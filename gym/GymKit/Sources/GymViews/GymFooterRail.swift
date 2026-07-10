@@ -47,10 +47,12 @@ struct UpcomingChip: View {
     }
 }
 
-// 현재(current) — 떠오른 흰 카드 + crail 테두리 + 브리드 (§4.1 · §5 fpCurrent)
+// 현재(current) — 떠오른 흰 카드 + crail 테두리 + 브리드 (§4.1 · §5 fpCurrent 2.4s)
+// 피크: 리프트 -5px + scale 1.035 + 테두리 진해짐(oklch 62% .15 47) + crail 글로우(0 0 11px .42) + 그림자 심화.
 struct CurrentChip: View {
     let name: String
     @State private var breathe = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         Text(name)
             .font(.sans(19, 800))
@@ -69,14 +71,18 @@ struct CurrentChip: View {
                     .frame(height: 25)
                     .allowsHitTesting(false)
             }
-            .overlay(  // crail 테두리 링 (box-shadow 0 0 0 1.5px)
-                RoundedRectangle(cornerRadius: 15).strokeBorder(GY.crailBase, lineWidth: 1.5))
-            .shadow(color: Color(hex: 0x14120E).opacity(0.30), radius: 6, x: 0, y: 5)
-            .shadow(color: Color(hex: 0x14120E).opacity(0.32), radius: 12, x: 0, y: 14)
+            .overlay(  // crail 테두리 링 — 피크에 진해짐 (fpCurrent)
+                RoundedRectangle(cornerRadius: 15)
+                    .strokeBorder(breathe ? Color(oklch: 0.62, 0.15, 47) : GY.crailBase, lineWidth: 1.5))
+            .shadow(color: GY.crailBase.opacity(breathe ? 0.42 : 0), radius: 5.5)   // 피크 crail 글로우
+            .shadow(color: Color(hex: 0x14120E).opacity(breathe ? 0.34 : 0.30), radius: breathe ? 10 : 6, x: 0, y: breathe ? 11 : 5)
+            .shadow(color: Color(hex: 0x14120E).opacity(breathe ? 0.36 : 0.32), radius: breathe ? 18 : 12, x: 0, y: breathe ? 22 : 14)
             .scaleEffect(breathe ? 1.035 : 1)
             .offset(y: breathe ? -5 : -3)
-            .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: breathe)
-            .onAppear { breathe = true }
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) { breathe = true }
+            }
     }
 }
 
@@ -113,28 +119,59 @@ public struct GymFooterRail: View {
         self.onTapItem = onTapItem; self.onLongPressItem = onLongPressItem; self.onAdd = onAdd
     }
 
-    public var body: some View {
-        // NOTE: 가로 스크롤 + 현재 카드 중앙 정렬은 실 세션 화면 배선 증분에서 ScrollViewReader 로 구현.
-        // (ImageRenderer 는 ScrollView 내부 미렌더 → 스냅샷 단계는 평면 HStack.)
-        HStack(spacing: 8) {
-            HStack(spacing: 10) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
-                    Group {
-                        switch item.state {
-                        case .done: DoneChip(name: item.name)
-                        case .current: CurrentChip(name: item.name)
-                        case .upcoming: UpcomingChip(name: item.name)
-                        }
+    var chipsRow: some View {
+        HStack(spacing: 10) {
+            ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
+                Group {
+                    switch item.state {
+                    case .done: DoneChip(name: item.name)
+                    case .current: CurrentChip(name: item.name)
+                    case .upcoming: UpcomingChip(name: item.name)
                     }
-                    .onTapGesture { onTapItem(i) }
-                    .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(i) }
+                }
+                .id(i)
+                .onTapGesture { onTapItem(i) }
+                .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(i) }
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
+        .padding(.vertical, 12)
+        .padding(.horizontal, 4)
+    }
+
+    public var body: some View {
+        let currentIdx = items.firstIndex { $0.state == .current }
+        HStack(spacing: 8) {
+            Group {
+                if GymSnapshot.isActive {
+                    // 스냅샷 — ImageRenderer 는 ScrollView 내부 미렌더 → 평면
+                    chipsRow
+                        .frame(maxWidth: .infinity, alignment: items.count <= 1 ? .center : .leading)
+                        .clipped()
+                } else {
+                    // 실앱 — 가로 스크롤 + 현재 카드 중앙 정렬 (§3, scrollIntoView 정합)
+                    ScrollViewReader { proxy in
+                        ScrollView(.horizontal, showsIndicators: false) { chipsRow }
+                            .onAppear {
+                                if let currentIdx { proxy.scrollTo(currentIdx, anchor: .center) }
+                            }
+                            .onChange(of: currentIdx) { _, idx in
+                                guard let idx else { return }
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    proxy.scrollTo(idx, anchor: .center)
+                                }
+                            }
+                    }
                 }
             }
-            .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
-            .padding(.vertical, 12)
-            .padding(.horizontal, 4)
-            .frame(maxWidth: .infinity, alignment: items.count <= 1 ? .center : .leading)
-            .clipped()
+            // 우측만 페이드 마스크 (§3 — 완료 종목은 왼쪽에 다 보이게, 우측만 "더 있음" 암시)
+            .mask(
+                HStack(spacing: 0) {
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: 22)
+                }
+            )
             AddExerciseButton(action: onAdd)
         }
         .padding(.top, 16).padding(.bottom, 22).padding(.horizontal, 12)

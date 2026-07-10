@@ -113,6 +113,7 @@ struct SessionHeader: View {
                 ZStack {
                     GymRing(size: 56, lineWidth: 4.76, progress: Double(pct) / 100,
                             track: Color(oklch: 0.92, 0.006, 60), fill: GY.cloudyBase)
+                        .animation(.linear(duration: 0.2), value: pct)   // 세트 완료 실시간 상승 (§7 — 200ms linear)
                     if record {   // mock #cardVolRingPulse.is-record — cloudy 확산 링 1.6s 루프
                         Circle().stroke(GY.cloudyBase, lineWidth: 2.5)
                             .frame(width: 45, height: 45)
@@ -176,6 +177,11 @@ public struct SessionScreenView: View {
     @State private var ringMoment = 0          // 재생 id (연속 커밋 재마운트)
     @State private var burstMoment = 0         // 종목 직전기록 돌파 1회성 (exRecordBurst)
     @State private var headerPulseMoment = 0   // 세션 신기록 돌파 1회성 (topRecordPulse)
+    // 히어로 수평 스왑 (§5.3) — 커밋 시 옛 값 고스트 OUT + 새 값 IN + 스와이프 큐
+    @State private var heroSwapMoment = 0
+    @State private var heroGhost: (top: String, bottom: String, kind: GymCardKind, fromDrag: Bool)? = nil
+    @State private var heroGhostDragX: CGFloat = 0   // 드래그 커밋 시 고스트 시작 위치
+    @State private var cueVisible = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // 꾹누르기 액션시트 대상 (§6-9)
@@ -224,6 +230,15 @@ public struct SessionScreenView: View {
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
     static func fmt(_ n: Double) -> String { nf.string(from: NSNumber(value: n)) ?? "\(Int(n))" }
     static func fmtW(_ n: Double) -> String { String(format: "%g", n) }
+
+    // 히어로 표시값 (kind 분기) — 본문 렌더·스왑 고스트 캡처 공용.
+    static func heroValues(kind: GymCardKind, set: GymSet?) -> (String, String) {
+        switch kind {
+        case .weight:     return (set?.weight.map { fmtW($0) } ?? "—", set?.reps.map { "\($0)" } ?? "—")
+        case .bodyweight: return ("맨몸", set?.reps.map { "\($0)" } ?? "—")
+        case .cardio:     return ("\(Int(((set?.duration ?? 0) / 60).rounded()))", set?.distance.map { fmtW($0) } ?? "0")
+        }
+    }
 
     public var body: some View {
         Group {
@@ -315,19 +330,7 @@ public struct SessionScreenView: View {
 
         // 히어로 표시 세트 — 커서 세트, 전부 done 이면 마지막 세트.
         let dispSet = model.currentSet ?? sets.last
-        let heroTop: String = {
-            switch kind {
-            case .weight:     return dispSet?.weight.map { Self.fmtW($0) } ?? "—"
-            case .bodyweight: return "맨몸"
-            case .cardio:     return "\(Int(((dispSet?.duration ?? 0) / 60).rounded()))"
-            }
-        }()
-        let heroBottom: String = {
-            switch kind {
-            case .weight, .bodyweight: return dispSet?.reps.map { "\($0)" } ?? "—"
-            case .cardio:              return dispSet?.distance.map { Self.fmtW($0) } ?? "0"
-            }
-        }()
+        let (heroTop, heroBottom) = Self.heroValues(kind: kind, set: dispSet)
 
         // PR 칩 (progressive overload 넛지) — 현재 무게 > 직전 세션 최대 무게 (session.js 정합).
         let prChip: String? = {
@@ -355,16 +358,26 @@ public struct SessionScreenView: View {
                                onLongPressSlot: { i in actionTarget = .setRow(i) })
             }
             Spacer()
-            SessionHero(kind: kind, topValue: heroTop, bottomValue: heroBottom,
-                        preset: dispSet?.preset ?? false, locked: locked,
-                        doneSetCount: sets.filter(\.done).count,
-                        pace: kind == .cardio
-                            ? GymSessionLogic.paceText(durationSec: dispSet?.duration, distanceKm: dispSet?.distance)
-                            : nil,
-                        prChip: prChip,
-                        onTopTap: locked ? nil : { zone in heroTap(row: .top, zone: zone, kind: kind) },
-                        onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) })
-            .offset(x: heroDragX)   // 드래그 추종 — 히어로 값만 이동 (칩·링은 고정)
+            ZStack {
+                SessionHero(kind: kind, topValue: heroTop, bottomValue: heroBottom,
+                            preset: dispSet?.preset ?? false, locked: locked,
+                            doneSetCount: sets.filter(\.done).count,
+                            pace: kind == .cardio
+                                ? GymSessionLogic.paceText(durationSec: dispSet?.duration, distanceKm: dispSet?.distance)
+                                : nil,
+                            prChip: prChip, swapMoment: heroSwapMoment,
+                            onTopTap: locked ? nil : { zone in heroTap(row: .top, zone: zone, kind: kind) },
+                            onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) })
+                .offset(x: heroDragX)   // 드래그 추종 — 히어로 값만 이동 (칩·링은 고정)
+                // 옛 값 고스트 — 좌향 퇴장 (드래그 커밋은 끌린 위치에서 제자리 페이드)
+                if let g = heroGhost {
+                    SessionHero(kind: g.kind, topValue: g.top, bottomValue: g.bottom)
+                        .offset(x: g.fromDrag ? heroGhostDragX : 0)
+                        .modifier(HeroGhostOut(fromDrag: g.fromDrag))
+                        .accessibilityHidden(true)   // 고스트 — a11y 트리 중복 방지 (UI 테스트 쿼리 오염 차단)
+                        .id(heroSwapMoment)
+                }
+            }
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             // "완료" 칩 비례 노출 (mock #completeReveal — 좌드래그 p 에 비례)
@@ -388,6 +401,12 @@ public struct SessionScreenView: View {
             .overlay {
                 if ringVisible {
                     HapticRing(isPR: ringIsPR).id(ringMoment)
+                }
+            }
+            // 스와이프 방향 큐 (gSwipeHint — 커밋 1회, 좌향 스트릭+셰브런+엣지)
+            .overlay {
+                if cueVisible {
+                    SwipeCue().id(heroSwapMoment)
                 }
             }
             .gesture(DragGesture(minimumDistance: 8)
@@ -452,11 +471,31 @@ public struct SessionScreenView: View {
         let sessBefore = model.sessionDoneVolume
         let doneBefore = sessionDoneCount()
         let prBefore = model.prMoment
+        // 스왑 고스트용 옛 값 캡처 (§5.3 — 커밋 확정 후 사용)
+        let ghostKind = model.currentCardKind
+        let ghostVals = Self.heroValues(kind: ghostKind, set: model.currentSet ?? model.currentBlock?.sets.last)
+        let dragXAtCommit = heroDragX
         withAnimation(.timingCurve(0.33, 1, 0.68, 1, duration: 0.62)) {
             model.completeCurrentSet()
         }
-        withAnimation(.easeOut(duration: 0.18)) { heroDragX = 0 }   // 커밋 — 위치 점프 없이 복귀
-        guard sessionDoneCount() > doneBefore else { return }
+        guard sessionDoneCount() > doneBefore else {
+            withAnimation(.easeOut(duration: 0.18)) { heroDragX = 0 }
+            return
+        }
+        if reduceMotion {
+            withAnimation(.easeOut(duration: 0.18)) { heroDragX = 0 }
+        } else {
+            // 히어로 수평 스왑 + 스와이프 큐 (gHeroSwap*/gSwipeHint 760ms, 1회)
+            heroGhostDragX = dragXAtCommit
+            heroGhost = (ghostVals.0, ghostVals.1, ghostKind, true)
+            heroSwapMoment += 1
+            cueVisible = true
+            heroDragX = 0   // 즉시 — 퇴장 시각은 고스트가 담당 (fromDrag 정합)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
+                heroGhost = nil
+                cueVisible = false
+            }
+        }
         fireRing(isPR: model.prMoment > prBefore)
         guard !reduceMotion else { return }   // 1회성 팝 — PWA countUp RM 게이트 정합
         if GymRecordMoments.exRecordCrossed(before: exBefore, after: blockDoneVol(bi), prevExVol: prevExVol) {

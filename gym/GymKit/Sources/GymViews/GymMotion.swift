@@ -53,6 +53,8 @@ extension View {
 struct CountUpVolumeText: View, Animatable {
     var value: Double
     var tint: Color = GY.ink1   // 초과(over) 시 crail-deep (mock .cur.over)
+    var size: CGFloat = 32      // 홈 밸런스 헤드라인은 33 (§4.1)
+    var tracking: CGFloat = -1.12
     var animatableData: Double {
         get { value }
         set { value = newValue }
@@ -62,7 +64,7 @@ struct CountUpVolumeText: View, Animatable {
     }()
     var body: some View {
         Text(Self.nf.string(from: NSNumber(value: value.rounded())) ?? "0")
-            .font(.mono(32, 700)).tracking(-1.12).foregroundStyle(tint)
+            .font(.mono(size, 700)).tracking(tracking).foregroundStyle(tint)
     }
 }
 

@@ -280,13 +280,19 @@ public struct HomeScreenView: View {
         .padding(.horizontal, 24).padding(.top, 18)
     }
 
+    // 부위 밸런스 — 작업지시서 §4.1/§4.2 정본 (home.js applyBalanceToDom 1:1).
+    // 스케일 7px/세트(최고막대 100px 캡), 개선칩(▲, delta>0만), 최소부위 칩 "이름 ±N"+도트 펄스+글로우,
+    // 진입 모션: 잉크바 웨이브(520ms·60ms 스태거) + 카운트업(620ms)+착지팝 + 칩 팝인(380ms @180/280ms).
     func balance(_ bal: GymHomeLogic.WeeklyBalance) -> some View {
         let parts = bal.parts
         let totalThis = parts.map(\.sets).reduce(0, +)
         let totalLast = parts.map(\.prevSets).reduce(0, +)
-        let diff = totalThis - totalLast
+        let delta = totalThis - totalLast
         let focusPid = bal.focusKey
-        let maxSets = bal.max
+        // 7px/세트, 최고 막대 100px 캡 (사용자 2026-07-07 겹침 버그 수정 정합)
+        let maxVal = max(1, parts.map { max($0.sets, $0.prevSets) }.max() ?? 1)
+        let pxPerSet = min(7.0, 100.0 / Double(maxVal))
+        let focus = parts.first { $0.key == focusPid }
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
@@ -301,32 +307,36 @@ public struct HomeScreenView: View {
             }
             HStack(alignment: .bottom, spacing: 9) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text("\(totalThis)").font(.mono(33, 700)).tracking(-1.15).foregroundStyle(GY.ink1)
+                    // 헤드라인 카운트업 prevTotal→thisTotal + 착지 팝 (§4.2, animNumHome 620ms 정합)
+                    BalanceHeadline(from: totalLast, to: totalThis)
                     Text("세트").font(.sans(12.5, 600)).foregroundStyle(GY.ink4)
                 }
-                if diff != 0 {
-                    balChip(diff > 0 ? "▲ +\(diff)" : "▼ \(diff)",
-                            tint: Color(oklch: 0.94, 0.03, 150), border: Color(oklch: 0.84, 0.05, 150), fg: Color(oklch: 0.42, 0.08, 150))
+                if delta > 0 {   // 개선 칩 — delta>0 만 (정본: 감소 칩 없음)
+                    balChip("▲ \(delta)",
+                            tint: Color(oklch: 0.94, 0.03, 150), border: Color(oklch: 0.84, 0.05, 150),
+                            fg: Color(oklch: 0.42, 0.08, 150), popDelay: 0.18)
                 }
                 Spacer()
-                if let focusPid {
-                    balChip("● \(GymExercises.partName(focusPid))",
-                            tint: GY.crailTint, border: GY.crailSoft, fg: GY.crailDeep)
+                if let focus {   // 최소 부위 칩 "코어 -3" — 도트 펄스 + 글로우 (§4.1)
+                    let fd = focus.sets - focus.prevSets
+                    focusBalChip(name: focus.name, fdText: fd > 0 ? "+\(fd)" : "\(fd)")
                 }
             }
             .padding(.top, 14)
-            // 페어 컬럼 — 최대세트 기준 스케일(최대 56px), 최소 3px.
+            // 페어 컬럼 — [지난주 고스트 12px(prev>0만)] + [이번주 잉크 15px], 웨이브 진입 (§4.1·§4.2)
             HStack(alignment: .bottom, spacing: 0) {
-                ForEach(parts, id: \.key) { p in
-                    let focus = p.key == focusPid
+                ForEach(Array(parts.enumerated()), id: \.element.key) { i, p in
+                    let isFocus = p.key == focusPid
                     VStack(spacing: 7) {
-                        Text("\(p.sets)").font(.mono(14, 700)).foregroundStyle(focus ? GY.crailDeep : GY.ink1)
+                        Text("\(p.sets)").font(.mono(14, 700)).foregroundStyle(isFocus ? GY.crailDeep : GY.ink1)
                         HStack(alignment: .bottom, spacing: 3) {
-                            RoundedRectangle(cornerRadius: 4).fill(Color(oklch: 0.91, 0.012, 65))
-                                .frame(width: 12, height: barH(p.prevSets, maxSets))
-                            UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4.5, topTrailing: 4.5))
-                                .fill(focus ? GY.crailBase : Color(oklch: 0.26, 0.01, 60))
-                                .frame(width: 15, height: barH(p.sets, maxSets))
+                            if p.prevSets > 0 {
+                                UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4, topTrailing: 4))
+                                    .fill(Color(oklch: 0.91, 0.012, 65))
+                                    .frame(width: 12, height: CGFloat((Double(p.prevSets) * pxPerSet).rounded()))
+                            }
+                            BalanceInkBar(height: CGFloat((Double(p.sets) * pxPerSet).rounded()),
+                                          isFocus: isFocus, index: i)
                         }
                     }
                     .frame(maxWidth: .infinity)
@@ -362,17 +372,28 @@ public struct HomeScreenView: View {
         .padding(.horizontal, 26).padding(.top, 22)
     }
 
-    // 세트수 → 막대 높이 (최대 56px 스케일, 0=3px).
-    func barH(_ sets: Int, _ maxSets: Int) -> CGFloat {
-        sets <= 0 ? 3 : CGFloat((Double(sets) / Double(maxSets) * 56).rounded())
-    }
-
-    func balChip(_ text: String, tint: Color, border: Color, fg: Color) -> some View {
+    // 밸런스 칩 — gPopIn(380ms 오버슈트, §4.2 순차 팝인)
+    func balChip(_ text: String, tint: Color, border: Color, fg: Color, popDelay: Double) -> some View {
         Text(text).font(.mono(11.5, 700)).foregroundStyle(fg)
             .padding(.horizontal, 9).padding(.vertical, 4)
             .background(tint, in: Capsule())
             .overlay(Capsule().strokeBorder(border, lineWidth: 1))
             .padding(.bottom, 2)
+            .modifier(BalChipPopIn(delay: popDelay))
+    }
+
+    // 최소 부위 칩 — 도트 펄스(pulse 1.8s) + 칩 글로우(gChipGlow) + 팝인 280ms (§4.1)
+    func focusBalChip(name: String, fdText: String) -> some View {
+        HStack(spacing: 5) {
+            BalanceDot()
+            Text("\(name) \(fdText)").font(.mono(11.5, 700)).foregroundStyle(GY.crailDeep)
+        }
+        .padding(.horizontal, 9).padding(.vertical, 4)
+        .background(GY.crailTint, in: Capsule())
+        .overlay(Capsule().strokeBorder(GY.crailSoft, lineWidth: 1))
+        .modifier(PulseGlow(color: GY.crailBase, maxAlpha: 0.16, spread: 6, cornerRadius: 999))   // gChipGlow
+        .padding(.bottom, 2)
+        .modifier(BalChipPopIn(delay: 0.28))
     }
 
     // "직전 73.4kg · ▼0.3" (home.js applyWeightCardToDom 정합 — 증감은 보조 톤).
@@ -418,5 +439,99 @@ public struct HomeScreenView: View {
         }
         .buttonStyle(.plain).accessibilityIdentifier("home-cta")
         .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+    }
+}
+
+// MARK: - 부위 밸런스 진입 모션 컴포넌트 (작업지시서 §4.2 · §6 — 스냅샷·reduced-motion 은 정적 최종 상태)
+
+// 헤드라인 카운트업(620ms ease-out-cubic, animNumHome 정합) + 착지 팝(scale 1.16, 420ms 오버슈트).
+struct BalanceHeadline: View {
+    let from: Int
+    let to: Int
+    @State private var shown: Double
+    @State private var landed = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    init(from: Int, to: Int) {
+        self.from = from; self.to = to
+        _shown = State(initialValue: Double(to))
+    }
+    var body: some View {
+        CountUpVolumeText(value: shown, size: 33, tracking: -1.15)
+            .scaleEffect(landed ? 1 : 1.16, anchor: .bottomLeading)
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion, from != to else { return }
+                shown = Double(from)
+                withAnimation(.timingCurve(0.33, 1, 0.68, 1, duration: 0.62)) { shown = Double(to) }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.62) {
+                    withAnimation(.timingCurve(0.2, 0.8, 0.3, 1.2, duration: 0.19)) { landed = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.19) {
+                        withAnimation(.timingCurve(0.2, 0.8, 0.3, 1.2, duration: 0.23)) { landed = true }
+                    }
+                }
+            }
+    }
+}
+
+// 이번주 잉크 막대 — 재질감 하이라이트 + 웨이브 성장(gGrow 520ms·60ms 스태거) + 최소부위 경고펄스(gCoreAlert 1.7s).
+struct BalanceInkBar: View {
+    let height: CGFloat
+    let isFocus: Bool
+    let index: Int
+    @State private var grown = false
+    @State private var alert = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4.5, topTrailing: 4.5))
+            .fill(isFocus ? GY.crailBase : Color(oklch: 0.26, 0.01, 60))
+            .overlay(alignment: .top) {   // inset 0 1px 0 rgba(255,255,255,.18/.25) 재질감
+                UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4.5, topTrailing: 4.5))
+                    .fill(.white.opacity(isFocus ? 0.25 : 0.18))
+                    .frame(height: 1)
+            }
+            .frame(width: 15, height: max(height, 0))
+            .scaleEffect(y: grown ? (alert && isFocus ? 1.12 : 1) : 0.12, anchor: .bottom)
+            .shadow(color: Color(oklch: 0.67, 0.12, 50).opacity(isFocus && alert ? 0.5 : 0),
+                    radius: 7)   // gCoreAlert 글로우 근사 (0 0 14px 3px)
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion else { grown = true; return }
+                if isFocus {
+                    grown = true   // 최소부위는 grow 제외 — 상시 경고펄스 (#7a 정합)
+                    withAnimation(.easeInOut(duration: 0.85).repeatForever(autoreverses: true)) { alert = true }
+                } else {
+                    withAnimation(.spring(response: 0.52, dampingFraction: 0.62)
+                        .delay(Double(index) * 0.06)) { grown = true }   // gGrow 오버슈트 근사
+                }
+            }
+    }
+}
+
+// 최소부위 칩 도트 — 5px crail, pulse 1.8s (opacity 1↔.35).
+struct BalanceDot: View {
+    @State private var dim = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    var body: some View {
+        Circle().fill(GY.crailBase).frame(width: 5, height: 5)
+            .opacity(dim ? 0.35 : 1)
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion else { return }
+                withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { dim = true }
+            }
+    }
+}
+
+// 칩 팝인 — gPopIn 380ms cubic-bezier(.2,.8,.3,1.2), 순차 지연 (§4.2).
+struct BalChipPopIn: ViewModifier {
+    let delay: Double
+    @State private var shown = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func body(content: Content) -> some View {
+        content
+            .opacity(shown ? 1 : 0)
+            .scaleEffect(shown ? 1 : 0.5)
+            .offset(y: shown ? 0 : 5)
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion else { shown = true; return }
+                withAnimation(.timingCurve(0.2, 0.8, 0.3, 1.2, duration: 0.38).delay(delay)) { shown = true }
+            }
     }
 }
