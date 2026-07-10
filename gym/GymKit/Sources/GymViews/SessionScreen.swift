@@ -1,16 +1,16 @@
 import SwiftUI
 import GymCore
 
-// 세션 화면 — mocks/session.html .session-active 이식. GymAppModel(실 세션) 구동.
+// 세션 화면 — mocks/session.html .session-active/.session-empty 이식. GymAppModel(실 세션) 구동.
 // 폰트: 실앱은 번들 Pretendard/Space Grotesk. 스캐폴딩은 시스템 폴백(.monospaced for mono).
 
 // 상단 툴바 — grid 1fr auto 1fr, height 48 (mocks .sess-toolbar). 타이머는 startTime 기반 라이브(spec §6-6).
+// "종료"는 꾹누르기 → 종료/삭제 확인 (§6-9·§7-1, PWA 탭 무동작 정합).
 struct SessionToolbar: View {
     var startMillis: Int64? = nil     // 세션 시작 epoch(ms) — 경과 = now - startTime
     var displayTime: String? = nil    // 정적 표시(컴포넌트 데모용). nil 이면 라이브.
     var onHome: () -> Void = {}
-    var onEnd: () -> Void = {}
-    var onEndLongPress: () -> Void = {}   // 꾹누르기 → 종료/삭제 확인 (§6-9)
+    var onEndLongPress: () -> Void = {}
 
     // 경과 포맷 — <1h: m:ss, ≥1h: h:mm:ss (spec §6-6 "18:42").
     static func fmtElapsed(_ startMillis: Int64?, now: Date) -> String {
@@ -49,7 +49,6 @@ struct SessionToolbar: View {
                 Text("종료").font(.sans(14, 600)).foregroundStyle(GY.ink3)
                     .padding(.leading, 14).padding(.trailing, 4).padding(.vertical, 9)
                     .contentShape(Rectangle())
-                    .onTapGesture(perform: onEnd)
                     .onLongPressGesture(minimumDuration: 0.5, perform: onEndLongPress)
                     .accessibilityIdentifier("session-end")
             }
@@ -109,18 +108,31 @@ public struct SessionTopBlock: View {
 // 히어로 탭 존 — 좌 30% 감소 / 중앙 40% 키패드 / 우 30% 증가 (spec §6-3-2, session.js ratio 0.3/0.7).
 enum HeroZone { case minus, center, plus }
 
-// 세션 화면 전체 — mocks/session.html .session-active. GymAppModel(실 세션) 구동.
+// 세션 화면 전체 — mocks/session.html. GymAppModel(실 세션) 구동.
 public struct SessionScreenView: View {
     @ObservedObject var model: GymAppModel
     var onHome: () -> Void
     @State private var keypad: KeypadContext? = nil
+    @State private var addexOpen: Bool
+    @State private var actionTarget: ActionTarget? = nil
     @State private var prPopVisible: Bool
     @State private var prPopRise = false
 
+    // 꾹누르기 액션시트 대상 (§6-9)
+    enum ActionTarget: Equatable {
+        case block(Int)      // 푸터 레일 칩
+        case setRow(Int)     // 세트바 슬롯
+        case end             // 종료 버튼
+        case move(Int)       // 이동 — 위치 선택 단계
+    }
+
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
-                initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false) {
+                initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
+                initialAddex: Bool = false, initialAction: Bool = false) {
         self.model = model; self.onHome = onHome
         _prPopVisible = State(initialValue: initialPRPop)
+        _addexOpen = State(initialValue: initialAddex)
+        if initialAction { _actionTarget = State(initialValue: .block(model.currentBlockIdx)) }
         if let f = initialKeypadField {   // 검증 훅 — 실 openKeypad 와 동일 prefill
             let set = model.currentSet ?? model.currentBlock?.sets.last
             let pre: Double? = {
@@ -138,9 +150,11 @@ public struct SessionScreenView: View {
     }
     // 데모 편의 init (프리뷰/스냅샷) — 자체 모델 시드.
     public init(onHome: @escaping () -> Void = {},
-                initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false) {
+                initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
+                initialAddex: Bool = false, initialAction: Bool = false) {
         self.init(model: GymAppModel(), onHome: onHome,
-                  initialKeypadField: initialKeypadField, initialPRPop: initialPRPop)
+                  initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
+                  initialAddex: initialAddex, initialAction: initialAction)
     }
 
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
@@ -148,6 +162,60 @@ public struct SessionScreenView: View {
     static func fmtW(_ n: Double) -> String { String(format: "%g", n) }
 
     public var body: some View {
+        Group {
+            if model.session.blocks.isEmpty { emptyState } else { activeContent }
+        }
+        .frame(width: 390)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(GY.shell)
+        // PR 팝 (§6-11) — "PR" 텍스트만 짧게, 위로 떠오르며 1초 내 페이드아웃. mocks #cardPrPop.
+        .overlay(alignment: .top) {
+            if prPopVisible {
+                Text("PR").font(.mono(22, 600)).tracking(0.88).foregroundStyle(GY.crailDeep)
+                    .opacity(prPopRise ? 0 : 1)
+                    .offset(y: prPopRise ? -16 : 0)
+                    .padding(.top, 218)
+                    .allowsHitTesting(false)
+                    .accessibilityIdentifier("pr-pop")
+            }
+        }
+        .onChange(of: model.prMoment) { _, _ in
+            prPopRise = false
+            prPopVisible = true
+            withAnimation(.easeOut(duration: 0.7).delay(0.22)) { prPopRise = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                prPopVisible = false; prPopRise = false
+            }
+        }
+        // 오버레이 z 순서 — 운동추가(69) < 키패드(79) < 액션시트(90), mock z-index 정합.
+        .overlay { addexOverlay }
+        .overlay { keypadOverlay }
+        .overlay { actionOverlay }
+    }
+
+    // MARK: - 빈 세션 (mocks .session-empty) — 인라인 운동추가 시트, 타이머 0:00 (§6-1)
+
+    var emptyState: some View {
+        VStack(spacing: 0) {
+            SessionToolbar(startMillis: nil, onHome: onHome,
+                           onEndLongPress: { actionTarget = .end })
+            VStack(spacing: 0) {
+                Text("NEW SESSION").font(.mono(11, 600)).tracking(2.2).foregroundStyle(GY.crailDeep)
+                Text("오늘은 어디부터\n시작할까요?")
+                    .font(.sans(26, 700)).tracking(-0.78).lineSpacing(8)
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(GY.ink1)
+                    .padding(.top, 18)
+            }
+            .padding(.top, 32).padding(.horizontal, 32)
+            Spacer()
+            AddExerciseSheet(model: model, inline: true)
+        }
+    }
+
+    // MARK: - 진행 중 (mocks .session-active)
+
+    var activeContent: some View {
         let exId = model.currentExerciseId
         let block = model.currentBlock
         let sets = block?.sets ?? []
@@ -196,12 +264,14 @@ public struct SessionScreenView: View {
         }()
 
         return VStack(spacing: 0) {
-            SessionToolbar(startMillis: model.session.startTime, onHome: onHome, onEnd: { model.endSession() })
+            SessionToolbar(startMillis: model.session.startTime, onHome: onHome,
+                           onEndLongPress: { actionTarget = .end })
             SessionHeader(exName: model.currentExerciseName, part: model.currentPartName,
                           volCur: Self.fmt(model.sessionDoneVolume),
                           volTotal: Self.fmt(sessDenom), pct: model.sessionPct)
             if !slots.isEmpty && kind != .cardio {
-                PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight)
+                PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
+                               onLongPressSlot: { i in actionTarget = .setRow(i) })
             }
             Spacer()
             SessionHero(kind: kind, topValue: heroTop, bottomValue: heroBottom,
@@ -231,45 +301,9 @@ public struct SessionScreenView: View {
                 let state: RailState = i == model.currentBlockIdx
                     ? .current : (GymSessionLogic.isBlockDone(b) ? .done : .upcoming)
                 return GymFooterRail.Item(name: model.exerciseName(b.exerciseId), state: state)
-            }, onTapItem: { model.selectBlock($0) })
-        }
-        .frame(width: 390)
-        .frame(maxHeight: .infinity, alignment: .top)
-        .background(GY.shell)
-        // PR 팝 (§6-11) — "PR" 텍스트만 짧게, 위로 떠오르며 1초 내 페이드아웃. mocks #cardPrPop.
-        .overlay(alignment: .top) {
-            if prPopVisible {
-                Text("PR").font(.mono(22, 600)).tracking(0.88).foregroundStyle(GY.crailDeep)
-                    .opacity(prPopRise ? 0 : 1)
-                    .offset(y: prPopRise ? -16 : 0)
-                    .padding(.top, 218)
-                    .allowsHitTesting(false)
-                    .accessibilityIdentifier("pr-pop")
-            }
-        }
-        .onChange(of: model.prMoment) { _, _ in
-            prPopRise = false
-            prPopVisible = true
-            withAnimation(.easeOut(duration: 0.7).delay(0.22)) { prPopRise = true }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                prPopVisible = false; prPopRise = false
-            }
-        }
-        // 키패드 바텀시트 (§6-3-2) — 배경 탭 = 값 적용 (PWA backdrop apply 정합).
-        .overlay {
-            if keypad != nil {
-                ZStack(alignment: .bottom) {
-                    Color(oklch: 0.22, 0.008, 60).opacity(0.42)
-                        .contentShape(Rectangle())
-                        .onTapGesture { keypadDone() }
-                    KeypadSheet(ctx: keypad!,
-                                refValue: keypadRef(),
-                                onKey: { k in if keypad != nil { KeypadBuffer.apply(k, to: &keypad!) } },
-                                onQuick: { d in quickDelta(d) },
-                                onMode: { m in switchKeypadMode(m) },
-                                onDone: { keypadDone() })
-                }
-            }
+            }, onTapItem: { model.selectBlock($0) },
+               onLongPressItem: { actionTarget = .block($0) },
+               onAdd: { addexOpen = true })
         }
     }
 
@@ -299,10 +333,13 @@ public struct SessionScreenView: View {
         }
     }
 
-    // MARK: - 키패드 상태 (prefill = 현재 세트 값, duration 은 분 변환)
+    // MARK: - 키패드 (§6-3-2) — prefill = 대상 세트 값, duration 은 분 변환
 
-    func prefillValue(_ field: GymAppModel.KeypadField) -> Double? {
-        let set = model.currentSet ?? model.currentBlock?.sets.last
+    func prefillValue(_ field: GymAppModel.KeypadField, setIdx: Int? = nil) -> Double? {
+        let set: GymSet? = {
+            if let si = setIdx, let b = model.currentBlock, b.sets.indices.contains(si) { return b.sets[si] }
+            return model.currentSet ?? model.currentBlock?.sets.last
+        }()
         switch field {
         case .weight:   return set?.weight
         case .reps:     return set?.reps.map(Double.init)
@@ -310,18 +347,18 @@ public struct SessionScreenView: View {
         case .distance: return set?.distance
         }
     }
-    func openKeypad(_ field: GymAppModel.KeypadField) {
+    func openKeypad(_ field: GymAppModel.KeypadField, setIdx: Int? = nil) {
         guard !model.currentBlockLocked else { return }
-        let pre = prefillValue(field)
+        let pre = prefillValue(field, setIdx: setIdx)
         keypad = KeypadContext(field: field,
                                buffer: pre.map { Self.fmtW($0) } ?? "",
                                fresh: pre != nil,
-                               pairHidesWeight: model.currentCardKind == .bodyweight)
+                               pairHidesWeight: model.currentCardKind == .bodyweight,
+                               setIdx: setIdx)
     }
-    func keypadRef() -> String? { keypad.flatMap { _ in prefillValue(keypad!.field).map { Self.fmtW($0) } } }
     func switchKeypadMode(_ field: GymAppModel.KeypadField) {
         guard var kp = keypad, kp.field != field else { return }
-        let pre = prefillValue(field)
+        let pre = prefillValue(field, setIdx: kp.setIdx)
         kp.field = field
         kp.buffer = pre.map { Self.fmtW($0) } ?? ""
         kp.fresh = pre != nil
@@ -338,6 +375,118 @@ public struct SessionScreenView: View {
     func keypadDone() {
         defer { keypad = nil }
         guard let kp = keypad, let v = Double(kp.buffer), v >= 0 else { return }
-        model.applyKeypad(kp.field, value: v)
+        model.applyKeypad(kp.field, value: v, setIdx: kp.setIdx)
+    }
+
+    @ViewBuilder var keypadOverlay: some View {
+        if keypad != nil {
+            ZStack(alignment: .bottom) {
+                Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                    .contentShape(Rectangle())
+                    .onTapGesture { keypadDone() }   // 배경 탭 = 적용 (PWA backdrop apply)
+                KeypadSheet(ctx: keypad!,
+                            refValue: prefillValue(keypad!.field, setIdx: keypad!.setIdx).map { Self.fmtW($0) },
+                            onKey: { k in if keypad != nil { KeypadBuffer.apply(k, to: &keypad!) } },
+                            onQuick: { d in quickDelta(d) },
+                            onMode: { m in switchKeypadMode(m) },
+                            onDone: { keypadDone() })
+            }
+        }
+    }
+
+    // MARK: - 운동 추가 시트 (§6-2)
+
+    @ViewBuilder var addexOverlay: some View {
+        if addexOpen {
+            ZStack(alignment: .bottom) {
+                Color(oklch: 0.22, 0.008, 60).opacity(0.32)
+                    .contentShape(Rectangle())
+                    .onTapGesture { addexOpen = false }
+                AddExerciseSheet(model: model, initialPart: model.currentPartId.isEmpty ? "chest" : model.currentPartId)
+            }
+        }
+    }
+
+    // MARK: - 꾹누르기 액션시트 (§6-9)
+
+    func actionSheetSpec(_ target: ActionTarget) -> (title: String, items: [GymActionItem]) {
+        switch target {
+        case .block(let i):
+            guard model.session.blocks.indices.contains(i) else { return ("메뉴", []) }
+            let b = model.session.blocks[i]
+            let name = model.exerciseName(b.exerciseId)
+            if GymSessionLogic.isBlockDone(b) {
+                return (name, [.init(id: "edit", label: "수정"),
+                               .init(id: "delete", label: "삭제", danger: true),
+                               .init(id: "move", label: "이동")])
+            }
+            if b.sets.contains(where: \.done) || i == model.currentBlockIdx {
+                return (name, [.init(id: "finish", label: "완료"),
+                               .init(id: "delete", label: "삭제", danger: true),
+                               .init(id: "move", label: "이동")])
+            }
+            return (name, [.init(id: "delete", label: "삭제", danger: true),
+                           .init(id: "move", label: "이동")])
+        case .setRow(let i):
+            return ("\(i + 1)세트", [.init(id: "edit", label: "수정"),
+                                     .init(id: "delete", label: "삭제", danger: true)])
+        case .end:
+            return ("세션", [.init(id: "finish", label: "종료"),
+                            .init(id: "discard", label: "세션 삭제", danger: true)])
+        case .move(let from):
+            let name = model.session.blocks.indices.contains(from)
+                ? model.exerciseName(model.session.blocks[from].exerciseId) : ""
+            return ("\(name) 이동 — 위치 선택",
+                    model.session.blocks.enumerated().map { i, b in
+                        .init(id: "to-\(i)", label: i == from
+                              ? "\(i + 1). \(model.exerciseName(b.exerciseId)) (현재)"
+                              : "\(i + 1). \(model.exerciseName(b.exerciseId))")
+                    })
+        }
+    }
+
+    func handleAction(_ id: String, target: ActionTarget) {
+        defer { if case .block(let f) = target, id == "move" { actionTarget = .move(f) } else { actionTarget = nil } }
+        switch target {
+        case .block(let i):
+            switch id {
+            case "finish": model.finishBlock(at: i)
+            case "delete":
+                guard model.session.blocks.indices.contains(i) else { return }
+                model.removeExercise(model.session.blocks[i].exerciseId)
+            case "edit": model.selectBlock(i)
+            default: break
+            }
+        case .setRow(let i):
+            switch id {
+            case "edit": openKeypad(.weight, setIdx: i)
+            case "delete": model.removeSet(blockIdx: model.currentBlockIdx, setIdx: i)
+            default: break
+            }
+        case .end:
+            switch id {
+            case "finish": model.endSession()
+            case "discard": model.discardSession()
+            default: break
+            }
+        case .move(let from):
+            if id.hasPrefix("to-"), let to = Int(id.dropFirst(3)) {
+                model.moveBlock(from: from, to: to)
+            }
+        }
+    }
+
+    @ViewBuilder var actionOverlay: some View {
+        if let target = actionTarget {
+            let spec = actionSheetSpec(target)
+            ZStack(alignment: .bottom) {
+                Color(oklch: 0.22, 0.008, 60).opacity(0.42)
+                    .contentShape(Rectangle())
+                    .onTapGesture { actionTarget = nil }
+                GymActionSheet(title: spec.title, items: spec.items,
+                               onSelect: { handleAction($0, target: target) },
+                               onCancel: { actionTarget = nil })
+            }
+        }
     }
 }

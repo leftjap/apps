@@ -22,11 +22,13 @@ public final class GymAppModel: ObservableObject {
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
     public let cloud = CloudStore()   // 클라우드 sync (local-first — 로그인은 선택)
 
-    public init() {
+    public init(snapshotSession: GymSession? = nil) {
         // 첫 실행 시 데모 이력·PR·체중 시드 (빈 상태일 때만) → 홈·통계·직전기록이 실데이터 구동.
         GymAppModel.seedIfEmpty()
         // 로컬 영속 우선 로드 (init 할당은 didSet 미발화 → 저장 안 함).
-        if let loaded = LocalStore.loadSession() {
+        if let snapshotSession {
+            session = snapshotSession   // 스냅샷 검증용 — 영속 오염 없음
+        } else if let loaded = LocalStore.loadSession() {
             session = loaded
         } else {
             // 데모: 진행 중처럼 보이도록 시작 시각을 18분 전으로 (라이브 타이머 현실값).
@@ -269,7 +271,15 @@ public final class GymAppModel: ObservableObject {
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }
     public static func adminTab(_ s: String) -> AdminScreenView.Tab? { AdminScreenView.Tab(rawValue: s) }
 
-    public func startSession() { route = .session }
+    // 운동 시작 (§6-1) — 활성 세션 없으면 빈 세션 생성 (첫 종목 선택 순간이 startTime).
+    public func startSession() {
+        if session.status != .active {
+            LocalStore.clearSession()
+            session = GymSession(id: UUID().uuidString, date: Self.dayFmt.string(from: Date()), status: .active)
+            selectedBlockIdx = nil
+        }
+        route = .session
+    }
     public func goHome() { route = .home }
     public func openStats() { route = .stats }
     public func openAdmin() { route = .admin }
@@ -334,6 +344,32 @@ public final class GymAppModel: ObservableObject {
     // 세션 내 종목 포함 여부 (운동추가 시트 토글 상태).
     public func hasExercise(_ exId: String) -> Bool {
         session.blocks.contains { $0.type == "single" && $0.exerciseId == exId }
+    }
+    // 운동 선택 목록 (§6-2) — 숨김·삭제 제외 + 관리 순서 반영.
+    public func selectableExercises(part: String) -> [GymExerciseDef] {
+        let all = exercisesForPart(part).filter { !isHidden($0.id) }
+        guard let order = settings.exerciseOrder[part], !order.isEmpty else { return all }
+        return all.enumerated()
+            .sorted { a, b in
+                let ia = order.firstIndex(of: a.element.id) ?? (order.count + a.offset)
+                let ib = order.firstIndex(of: b.element.id) ?? (order.count + b.offset)
+                return ia < ib
+            }
+            .map(\.element)
+    }
+    // 세트 삭제 (§6-9 세트 행 꾹누르기).
+    public func removeSet(blockIdx: Int, setIdx: Int) {
+        guard session.blocks.indices.contains(blockIdx),
+              session.blocks[blockIdx].sets.indices.contains(setIdx),
+              !GymSessionLogic.isBlockLocked(session.blocks[blockIdx]) else { return }
+        session.blocks[blockIdx].sets.remove(at: setIdx)
+    }
+    // 세션 삭제 (§6-9 종료 꾹누르기 → 삭제) — 빈 활성 세션으로 교체 + 홈.
+    public func discardSession() {
+        LocalStore.clearSession()
+        session = GymSession(id: UUID().uuidString, date: Self.dayFmt.string(from: Date()), status: .active)
+        selectedBlockIdx = nil
+        route = .home
     }
     // 블록 명시적 완료 (§6-9 꾹누르기 "완료") — 빈 세트 폐기 + finishedAt + 첫 미완료로 이동.
     public func finishBlock(at bi: Int) {

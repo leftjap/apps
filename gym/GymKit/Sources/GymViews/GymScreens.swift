@@ -1,6 +1,11 @@
 import SwiftUI
 import GymCore
 
+// gymshot 스냅샷 모드 — ImageRenderer 는 ScrollView 내부 미렌더 → 시트류가 평면 스택으로 우회.
+public enum GymSnapshot {
+    @MainActor public static var isActive = false
+}
+
 // gymshot 이 렌더할 화면/컴포넌트 스냅샷 카탈로그.
 public enum GymScreens {
     // 요약 스냅샷용 완료 세션 (실 ID + PR 플래그 + 소요/칼로리).
@@ -29,8 +34,27 @@ public enum GymScreens {
         return m
     }
 
+    // 유산소 데모 — 트레드밀 진행 중 (시간 30분·거리 3.2km → 페이스 9:23/km).
+    @MainActor static func demoCardioModel() -> GymAppModel {
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let s = GymSession(id: "cardio-demo", date: "2026-05-06", startTime: now - 18 * 60 * 1000, blocks: [
+            GymBlock(exerciseId: "bench_press", sets: [
+                GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 65, reps: 10, done: true)],
+                     finishedAt: 1),
+            GymBlock(exerciseId: "treadmill", sets: [
+                GymSet(preset: true, duration: 1800, distance: 3.2)]),
+        ], tags: ["chest", "cardio"], status: .active)
+        return GymAppModel(snapshotSession: s)
+    }
+
+    // 빈 세션 데모 (§6-1 — NEW SESSION + 인라인 운동추가 시트).
+    @MainActor static func demoEmptyModel() -> GymAppModel {
+        GymAppModel(snapshotSession: GymSession(id: "empty-demo", date: "2026-05-06", status: .active))
+    }
+
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
+        GymSnapshot.isActive = true
         switch id {
         case "rail":         return AnyView(RailDemo(single: false))
         case "rail-single":  return AnyView(RailDemo(single: true))
@@ -38,6 +62,10 @@ public enum GymScreens {
         case "session":      return AnyView(SessionScreenView().frame(width: 390, height: 844))
         case "session-keypad": return AnyView(SessionScreenView(initialKeypadField: .weight).frame(width: 390, height: 844))
         case "session-pr":   return AnyView(SessionScreenView(initialPRPop: true).frame(width: 390, height: 844))
+        case "session-addex": return AnyView(SessionScreenView(initialAddex: true).frame(width: 390, height: 844))
+        case "session-action": return AnyView(SessionScreenView(initialAction: true).frame(width: 390, height: 844))
+        case "session-empty": return AnyView(SessionScreenView(model: demoEmptyModel()).frame(width: 390, height: 844))
+        case "session-cardio": return AnyView(SessionScreenView(model: demoCardioModel()).frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))
         case "stats-ex":     return AnyView(StatsScreenView(model: demoModel(), initialTab: .exercise, embedScroll: false).frame(width: 390, height: 844))

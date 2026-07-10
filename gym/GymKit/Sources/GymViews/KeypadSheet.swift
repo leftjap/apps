@@ -8,6 +8,7 @@ struct KeypadContext: Equatable {
     var buffer: String        // 입력 버퍼 — prefill 로 시작
     var fresh: Bool           // prefill 그대로 = 첫 키 입력 시 교체
     var pairHidesWeight: Bool // bodyweight — 무게 토글 숨김(횟수 전용)
+    var setIdx: Int? = nil    // 특정 세트 편집 (§6-9 세트 행 수정) — nil 이면 현재 세트
 
     // 모드 세그 페어 — weight↔reps / duration↔distance.
     var pair: [(GymAppModel.KeypadField, String)] {

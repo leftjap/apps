@@ -44,7 +44,7 @@ struct SessionHero: View {
                     repsRow(bottomValue, unit: "회").overlay { zones(onBottomTap) }
                 case .cardio:
                     big(topValue, unit: "분").overlay { zones(onTopTap) }
-                    repsRow(bottomValue, unit: "km").overlay { zones(onBottomTap) }
+                    repsRow(bottomValue, unit: "km", showX: false).overlay { zones(onBottomTap) }
                     if let pace {
                         Text(pace).font(.mono(15, 500)).tracking(0.6)
                             .foregroundStyle(GY.crailDeep).padding(.top, 10)
@@ -94,10 +94,10 @@ struct SessionHero: View {
         .frame(maxWidth: .infinity)   // 탭 존 전폭 (§6-3 hit area)
     }
 
-    // 횟수/거리
-    func repsRow(_ v: String, unit: String) -> some View {
+    // 횟수/거리 (cardio 는 × 기호 없음)
+    func repsRow(_ v: String, unit: String, showX: Bool = true) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 9) {
-            Text("×").font(.mono(24, 300)).foregroundStyle(GY.ink4)
+            if showX { Text("×").font(.mono(24, 300)).foregroundStyle(GY.ink4) }
             Text(v).font(.mono(50, preset ? 300 : 400))
                 .tracking(-1).foregroundStyle(locked ? GY.ink4 : GY.ink2)
                 .accessibilityIdentifier("hero-reps")

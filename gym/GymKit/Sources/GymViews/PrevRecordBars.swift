@@ -19,6 +19,7 @@ struct PrevRecordBars: View {
     let slots: [SetBarSlot]
     let best: (weight: Int, reps: Int)?   // 역대 최고(e1RM) 슬롯 — 무게 종목 + 존재 시만 (§3-5)
     var encodeHeight: Bool = true          // 볼륨 → 높이 인코딩 (무게 종목만)
+    var onLongPressSlot: ((Int) -> Void)? = nil   // 세트 행 꾹누르기 → 수정/삭제 (§6-9)
 
     static let workHi: CGFloat = 20   // SET_BAR_WORK_HI
     static let bestH: CGFloat = 24    // SET_BAR_BEST_H
@@ -57,6 +58,8 @@ struct PrevRecordBars: View {
                                 .foregroundStyle(s.pr ? GY.crailDeep : GY.ink4)
                         }
                     }
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 0.5) { onLongPressSlot?(s.id) }
                 }
                 if let best {   // ▲최고 슬롯 — 고정 천장 24px
                     Rectangle().fill(GY.line).frame(width: 1, height: 44).padding(.horizontal, 2)
