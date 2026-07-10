@@ -237,6 +237,40 @@ import Testing
         #expect(d.top == "15" && d.bottom == "회" && d.isPreview == false)
     }
 
+    // MARK: - 세션 마감 (finalizeActiveSession 정합 — §7-1·§8)
+
+    @Test func finalizePrunesAndComputes() {
+        let s = GymSession(id: "f1", date: "2026-07-09", startTime: 1_000_000, blocks: [
+            GymBlock(exerciseId: "bench_press", sets: [
+                GymSet(weight: 60, reps: 10, done: true),
+                GymSet(weight: 65, reps: 10, preset: true)]),      // 미완료 세트 폐기
+            GymBlock(exerciseId: "dumbbell_fly", sets: [
+                GymSet(weight: 18, reps: 12, preset: true)]),       // done 0 → 블록 통째 제거
+        ], tags: ["chest"], status: .active)
+        let f = GymSessionLogic.finalize(s, endTime: 1_000_000 + 52 * 60_000)
+        #expect(f.status == .completed)
+        #expect(f.blocks.count == 1)
+        #expect(f.blocks[0].sets.count == 1)
+        #expect(f.totalVolume == 600)
+        #expect(f.durationMin == 52)
+        #expect(f.date == "2026-07-09")   // 세션 생성일 유지 (PWA 정합)
+        // durationMin 최소 1
+        let quick = GymSessionLogic.finalize(s, endTime: 1_000_001)
+        #expect(quick.durationMin == 1)
+    }
+
+    @Test func staleSessionEndTimeUsesLastActivity() {
+        // 마지막 활동 = 블록 finishedAt 최대 (없으면 startTime) — duration 과대계산 방지 (§8 sweep)
+        let s = GymSession(id: "f2", date: "2026-07-09", startTime: 1_000, blocks: [
+            GymBlock(exerciseId: "a", sets: [GymSet(weight: 1, reps: 1, done: true)], finishedAt: 5_000),
+            GymBlock(exerciseId: "b", sets: [GymSet(weight: 1, reps: 1, done: true)], finishedAt: 9_000),
+        ], status: .active)
+        #expect(GymSessionLogic.lastActivityMillis(s) == 9_000)
+        let none = GymSession(id: "f3", date: "2026-07-09", startTime: 1_000, blocks: [
+            GymBlock(exerciseId: "a", sets: [GymSet(weight: 1, reps: 1, done: true)])], status: .active)
+        #expect(GymSessionLogic.lastActivityMillis(none) == 1_000)
+    }
+
     // MARK: - 유산소 페이스 (§6-4)
 
     @Test func paceTextFromDurationAndDistance() {

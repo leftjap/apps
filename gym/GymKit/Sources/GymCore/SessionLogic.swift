@@ -179,6 +179,30 @@ public enum GymSessionLogic {
         return dash(true)
     }
 
+    // MARK: - 세션 마감 (finalizeActiveSession 정합 — §7-1·§8)
+
+    // done 세트만 보존 + 빈 블록 제거 + totalVolume/durationMin(최소 1)/completed.
+    // date 는 세션 생성일 유지 (PWA 정합 — 지난 밤 넘긴 세션도 시작일 기록).
+    public static func finalize(_ session: GymSession, endTime: Int64) -> GymSession {
+        var s = session
+        s.blocks = s.blocks
+            .map { b -> GymBlock in var x = b; x.sets = x.sets.filter(\.done); return x }
+            .filter { !($0.type == "single" && $0.sets.isEmpty) }
+        s.totalVolume = s.blocks.reduce(0.0) { $0 + $1.sets.reduce(0.0) { $0 + $1.volume } }
+        s.endTime = endTime
+        let start = s.startTime ?? endTime
+        s.durationMin = max(1, Int((Double(endTime - start) / 60_000).rounded()))
+        s.status = .completed
+        return s
+    }
+
+    // 마지막 활동 시각 — 블록 finishedAt 최대, 없으면 startTime (§8 sweep — duration 과대계산 방지).
+    public static func lastActivityMillis(_ session: GymSession) -> Int64 {
+        let finished = session.blocks.compactMap(\.finishedAt).max()
+        if let f = finished { return Int64(f) }
+        return session.startTime ?? 0
+    }
+
     // MARK: - 유산소 페이스 (spec §6-4) — "9:23/km". 시간·거리 둘 다 있어야 표시.
 
     public static func paceText(durationSec: Double?, distanceKm: Double?) -> String? {

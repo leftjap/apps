@@ -24,6 +24,15 @@ import Foundation
         #expect(model.totalCalories == 12)
     }
 
+    @Test func emailWhitelist() {
+        // spec §3 — 허용 이메일 외 로그인 거부 (대소문자·공백 관용)
+        #expect(CloudStore.isAllowedEmail("leftjap@gmail.com") == true)
+        #expect(CloudStore.isAllowedEmail("soyoun312@gmail.com") == true)
+        #expect(CloudStore.isAllowedEmail(" LeftJap@Gmail.com ") == true)
+        #expect(CloudStore.isAllowedEmail("stranger@gmail.com") == false)
+        #expect(CloudStore.isAllowedEmail(nil) == false)
+    }
+
     @Test func kstDayFormat() {
         // KST 자정 경계 (UTC 15:00 = KST 다음날 00:00)
         let d = Date(timeIntervalSince1970: 1_700_000_000)  // 고정 시각

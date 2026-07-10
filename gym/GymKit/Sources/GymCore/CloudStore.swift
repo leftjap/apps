@@ -17,6 +17,14 @@ public final class CloudStore: ObservableObject {
     private let client = SupabaseClient(supabaseURL: Config.supabaseURL, supabaseKey: Config.supabaseAnonKey)
     private var ownerID: UUID?
 
+    // 허용 이메일 화이트리스트 (spec §3 — auth.js ALLOWED_EMAILS 정합).
+    public static let allowedEmails = ["leftjap@gmail.com", "soyoun312@gmail.com"]
+    public nonisolated static func isAllowedEmail(_ email: String?) -> Bool {
+        guard let e = email?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(), !e.isEmpty else { return false }
+        return allowedEmails.contains(e)
+    }
+    public enum AuthError: Error { case emailNotAllowed }
+
     // KST 실발생일 (study UTC 드리프트 회피)
     static let dayFmt: DateFormatter = {
         let f = DateFormatter()
@@ -27,15 +35,20 @@ public final class CloudStore: ObservableObject {
         return f
     }()
 
-    // 기존 세션 복원 (재로그인 불필요)
+    // 기존 세션 복원 (재로그인 불필요) — 화이트리스트 외 계정은 즉시 로그아웃 (spec §3).
     public func restore() async {
         if let user = try? await client.auth.user() {
+            guard Self.isAllowedEmail(user.email) else { await signOut(); return }
             ownerID = user.id; signedIn = true
         }
     }
 
     public func signInWithGoogle() async throws {
         let session = try await client.auth.signInWithOAuth(provider: .google, redirectTo: Config.oauthRedirect)
+        guard Self.isAllowedEmail(session.user.email) else {
+            await signOut()
+            throw AuthError.emailNotAllowed
+        }
         ownerID = session.user.id; signedIn = true
     }
 

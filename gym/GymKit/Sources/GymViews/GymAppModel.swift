@@ -41,6 +41,10 @@ public final class GymAppModel: ObservableObject {
         custom = LocalStore.loadCustomExercises()
         weights = LocalStore.loadWeights()
         settings = LocalStore.loadSettings()
+        // 지난 날짜 방치 세션 자동 마감 (§8). 데모/스냅샷 세션은 스캐폴딩 보존 위해 제외.
+        if snapshotSession == nil, session.id != "demo" {
+            sweepStaleSessionIfNeeded()
+        }
     }
 
     // MARK: - 운동 카탈로그 헬퍼 (Exercises.swift resolve)
@@ -297,18 +301,36 @@ public final class GymAppModel: ObservableObject {
         try? await cloud.upsertSession(session)
     }
 
-    // 세션 종료 = 완료 처리 + 이력 저장 + 요약 + (로그인 시) 클라우드 upsert.
+    // 세션 종료 (§7-1) — done 세트만 보존·빈 블록 제거(finalize) + 칼로리(MET) + 이력 저장 + 요약.
     public func endSession() {
-        session.status = .completed
-        session.endTime = nowMillis()
-        session.totalVolume = sessionDoneVolume
-        session.durationMin = elapsedMinutes()
+        session.totalCalories = estimatedCalories()   // finalize 전 — 블록 수 기반 균등 배분
         session.tags = sessionParts()
-        session.totalCalories = estimatedCalories()
+        session = GymSessionLogic.finalize(session, endTime: nowMillis())
         LocalStore.upsertSessionHistory(session)
         history = LocalStore.loadSessions()
+        selectedBlockIdx = nil
         route = .summary
         Task { await syncNow() }
+    }
+
+    // 지난 날짜 방치 active 세션 자동 마감 (§8 — sweepStaleSessions 정합, 앱 부트 시 호출).
+    // done 세트 있으면 마지막 활동 시각으로 finalize 해 이력 보존, 없으면 폐기.
+    func sweepStaleSessionIfNeeded(now: Date = Date()) {
+        let today = Self.dayFmt.string(from: now)
+        guard session.status == .active, !session.blocks.isEmpty, session.date < today else { return }
+        let hasDone = session.blocks.contains { $0.sets.contains(where: \.done) }
+        if hasDone {
+            let last = GymSessionLogic.lastActivityMillis(session)
+            let endTime = last > 0 ? last : Int64(now.timeIntervalSince1970 * 1000)
+            var stale = session
+            stale.totalCalories = estimatedCalories()
+            stale = GymSessionLogic.finalize(stale, endTime: endTime)
+            LocalStore.upsertSessionHistory(stale)
+            history = LocalStore.loadSessions()
+        }
+        LocalStore.clearSession()
+        session = GymSession(id: UUID().uuidString, date: today, status: .active)
+        selectedBlockIdx = nil
     }
 
     // 검증/새 세션용 — 영속 초기화 + 데모 재시드.
