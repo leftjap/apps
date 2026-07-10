@@ -72,16 +72,26 @@ function addedIsOnlyVocative(base, en) {
   return candidates.some((c) => norm(c) === base);
 }
 
-/** 드릴 분류 — 'exact'(영상 원문 반복) · 'vocative'(호칭류만 덧붙임) · 'variation'(진짜 변주) */
-function classifyDrill(base, bw, en) {
+/* 꼬리확장 — base 를 통째로 앞에 두고 뒤에 말만 덧붙인 것.
+ *   "Is there a problem?" → "Is there a problem here?" / "…with that?"
+ * 주어·시제·극성·문형·목적어가 하나도 안 바뀌므로 변주가 아니다 (2026-07-10 사용자 지적).
+ * 단 종결부호가 바뀌면(평서→의문) 문형 변경이므로 변주로 본다. */
+const terminalMark = (s) => (String(s ?? '').trim().match(/[.!?]$/) || [''])[0];
+
+/** 드릴 분류 — 'exact'(영상 원문) · 'vocative'(호칭류) · 'tail'(꼬리확장) · 'variation'(진짜 변주) */
+function classifyDrill(sentence, base, bw, en) {
   const dn = norm(en);
   if (!dn) return 'variation';
   if (dn === base) return 'exact';
-  if (!dn.includes(base) || wordCount(en) - bw > 2) return 'variation';
-  return addedIsOnlyVocative(base, en) ? 'vocative' : 'variation';
+  if (!dn.includes(base)) return 'variation';
+  if (wordCount(en) - bw <= 2 && addedIsOnlyVocative(base, en)) return 'vocative';
+  if (dn.startsWith(base + ' ')) {
+    return terminalMark(en) === terminalMark(sentence) ? 'tail' : 'variation';
+  }
+  return 'variation';
 }
 
-/** 근접중복을 둘로 나눠 센다 — exact(1개 허용) · added(호칭류, 0개).
+/** 근접중복을 둘로 나눠 센다 — exact(1개 허용) · added(호칭류 + 꼬리확장, 0개).
  * 게이트(scripts/validate-seed.mjs)와 렌더가 이 함수를 공유해야 판정이 갈리지 않는다. */
 export function nearDupDrills(sentence, drills) {
   const base = norm(sentence);
@@ -90,14 +100,14 @@ export function nearDupDrills(sentence, drills) {
   let exact = 0;
   let added = 0;
   for (const d of drills ?? []) {
-    const kind = classifyDrill(base, bw, d?.en);
+    const kind = classifyDrill(sentence, base, bw, d?.en);
     if (kind === 'exact') exact += 1;
-    else if (kind === 'vocative') added += 1;
+    else if (kind === 'vocative' || kind === 'tail') added += 1;
   }
   return { exact, added };
 }
 
-/** 호칭류는 전부 제거하고 영상 원문(exact)은 첫 1개만 남긴다 (구 데이터 안전망 — 생성 차단은 게이트가 한다). */
+/** 호칭류·꼬리확장을 제거하고 영상 원문(exact)은 첫 1개만 남긴다 (구 데이터 안전망 — 생성 차단은 게이트가 한다). */
 export function filterNearDupDrills(sentence, drills) {
   const base = norm(sentence);
   const list = Array.isArray(drills) ? drills : [];
@@ -105,8 +115,8 @@ export function filterNearDupDrills(sentence, drills) {
   const bw = wordCount(sentence);
   let keptExact = 0;
   return list.filter((d) => {
-    const kind = classifyDrill(base, bw, d?.en);
-    if (kind === 'vocative') return false;
+    const kind = classifyDrill(sentence, base, bw, d?.en);
+    if (kind === 'vocative' || kind === 'tail') return false;
     if (kind !== 'exact') return true;
     keptExact += 1;
     return keptExact === 1;

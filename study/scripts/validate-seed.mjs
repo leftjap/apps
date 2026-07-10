@@ -347,7 +347,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   for (const c of exprs) {
     const { exact, added } = nearDupDrills(c.sentence, c.explanation?.drills);
     if (added > 0) {
-      errors.push(`${c.id}: 근접중복 드릴 ${added}개 — base 를 그대로 두고 2단어 이하만 덧붙임(호칭/감탄사는 변주 아님). 다른 문법 맥락의 변주로 교체할 것.`);
+      errors.push(`${c.id}: 근접중복 드릴 ${added}개 — base 를 그대로 둔 채 호칭·감탄사(", honey")를 붙이거나 뒤에 말만 덧붙인 꼬리확장("Is there a problem here?"). 주어·시제·극성·문형·목적어 중 하나를 바꾼 변주로 교체할 것.`);
     }
     if (exact > 1) {
       errors.push(`${c.id}: 근접중복 — base 와 완전 동일한 드릴 ${exact}개. 영상 원문은 1개까지.`);

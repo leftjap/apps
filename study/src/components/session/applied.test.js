@@ -143,16 +143,33 @@ describe('nearDupDrills — base 완전동일(exact)과 덧붙인 근접중복(a
     ])).toEqual({ exact: 0, added: 4 });
   });
 
-  it('쉼표 없이 주어·부사를 붙인 것은 변주 — 막지 않는다', () => {
+  it('앞에 주어를 붙인 것은 변주 — 막지 않는다', () => {
     expect(nearDupDrills('Seems like yesterday.', [
       { en: 'Our wedding seems like yesterday.' }, // 주어 추가 → 변주
       { en: 'The trip seems like yesterday.' },    // 주어 추가 → 변주
     ])).toEqual({ exact: 0, added: 0 });
+  });
+
+  /* 꼬리확장 — base 를 통째로 앞에 두고 뒤에 말만 덧붙인 것. 주어·시제·극성·문형·목적어가
+   * 하나도 안 바뀌므로 변주가 아니다. (2026-07-10 사용자 지적: "무의미한 변주 문장들") */
+  it('꼬리확장(base + 뒤에 말만 덧붙임)은 변주가 아니다', () => {
+    expect(nearDupDrills('Is there a problem?', [
+      { en: 'Is there a problem?' },               // exact — 영상 원문
+      { en: 'Is there a problem here?' },          // 꼬리확장
+      { en: 'Is there a problem with that?' },     // 꼬리확장
+      { en: 'Do we have a problem?' },             // 문형·주어 변경 → 진짜 변주
+    ])).toEqual({ exact: 1, added: 2 });
 
     expect(nearDupDrills('How have you been?', [
-      { en: 'How have you been lately?' },         // 부사 추가 → 변주
+      { en: 'How have you been lately?' },         // 부사 꼬리 → added
       { en: 'How have you been, honey?' },         // 호칭 → added
-    ])).toEqual({ exact: 0, added: 1 });
+    ])).toEqual({ exact: 0, added: 2 });
+  });
+
+  it('문형이 바뀌면(평서→의문) 꼬리확장으로 보지 않는다', () => {
+    expect(nearDupDrills("It's your turn.", [
+      { en: "It's your turn now?" },               // 종결부호가 바뀜 → 문형 변경 → 변주
+    ])).toEqual({ exact: 0, added: 0 });
   });
 
   it('빈 입력은 0/0', () => {
@@ -161,14 +178,26 @@ describe('nearDupDrills — base 완전동일(exact)과 덧붙인 근접중복(a
   });
 });
 
-describe('filterNearDupDrills — 호칭류만 걷어내고 진짜 변주는 남긴다', () => {
-  it('주어를 붙인 변주는 화면에서 지우지 않는다 (구 규칙은 지웠음)', () => {
+describe('filterNearDupDrills — 호칭류·꼬리확장을 걷어내고 진짜 변주만 남긴다', () => {
+  it('주어를 붙인 변주는 화면에서 지우지 않는다', () => {
     const kept = filterNearDupDrills('Seems like yesterday.', [
       { en: 'Seems like yesterday.' },             // exact → 1개 유지
       { en: 'Seems like yesterday, doesn\'t it?' }, // 문미태그 → 제거
       { en: 'Our wedding seems like yesterday.' }, // 변주 → 유지
     ]).map((d) => d.en);
     expect(kept).toEqual(['Seems like yesterday.', 'Our wedding seems like yesterday.']);
+  });
+
+  it('꼬리확장은 화면에서 제거한다 (스샷5 사례)', () => {
+    const kept = filterNearDupDrills('Is there a problem?', [
+      { en: 'Is there a problem?' },
+      { en: 'Is there a problem here?' },
+      { en: 'Is there a problem with that?' },
+      { en: 'Is there a problem, officer?' },
+      { en: 'Sir, is there a problem?' },
+      { en: 'Do we have a problem?' },
+    ]).map((d) => d.en);
+    expect(kept).toEqual(['Is there a problem?', 'Do we have a problem?']);
   });
 });
 
