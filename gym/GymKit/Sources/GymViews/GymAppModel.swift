@@ -366,30 +366,38 @@ public final class GymAppModel: ObservableObject {
         return total
     }
 
-    // 세트 완료 = PR 판정 → done → PR 저장/팝 + 햅틱 (spec §6-11).
+    // 세트 완료 (좌 스와이프, §6-3-1) — 커밋/자동 세트 추가/상속은 GymSessionLogic.completeSet.
+    // PR 판정은 유의미 중량 세트만 (isPRCandidate — 0·맨몸 오발화 방지), spec §6-11.
     public func completeCurrentSet() {
-        let bi = currentBlockIdx, si = currentSetIdx
-        guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
+        let bi = currentBlockIdx
+        guard session.blocks.indices.contains(bi),
+              !GymSessionLogic.isBlockLocked(session.blocks[bi]) else { return }
         let exId = session.blocks[bi].exerciseId
-        let set = session.blocks[bi].sets[si]
-        let w = set.weight ?? 0, r = set.reps ?? 0
-        let res = GymPRLogic.evaluateSetPR(weight: w, reps: r, prs: prs, exerciseId: exId)
-        session.blocks[bi].sets[si].done = true
-        if res.isPR {
-            session.blocks[bi].sets[si].pr = true
-            LocalStore.upsertPR(GymPRLogic.buildPR(exerciseId: exId, weight: w, reps: r,
-                                                   date: session.date, sessionId: session.id))
-            prs = LocalStore.loadPRs()
-            prMoment += 1
-            impact(.heavy)
-        } else {
-            impact(.medium)
+        let r = GymSessionLogic.completeSet(sets: session.blocks[bi].sets, cur: currentSetCursor,
+                                            prevSessionSets: prevBlock(forExercise: exId)?.sets)
+        session.blocks[bi].sets = r.sets
+        guard let ci = r.committed else { impact(.light); return }
+        let committed = r.sets[ci]
+        if GymSessionLogic.isPRCandidate(committed) {
+            let w = committed.weight ?? 0, reps = committed.reps ?? 0
+            let res = GymPRLogic.evaluateSetPR(weight: w, reps: reps, prs: prs, exerciseId: exId)
+            if res.isPR {
+                session.blocks[bi].sets[ci].pr = true
+                LocalStore.upsertPR(GymPRLogic.buildPR(exerciseId: exId, weight: w, reps: reps,
+                                                       date: session.date, sessionId: session.id))
+                prs = LocalStore.loadPRs()
+                prMoment += 1
+                impact(.heavy)
+                return
+            }
         }
+        impact(.medium)
     }
     // 이전 세트로 되돌리기 (우 스와이프 — 마지막 완료 세트를 미완료로, spec §6-3-1).
     public func revertToPreviousSet() {
         let bi = currentBlockIdx
-        guard session.blocks.indices.contains(bi) else { return }
+        guard session.blocks.indices.contains(bi),
+              !GymSessionLogic.isBlockLocked(session.blocks[bi]) else { return }
         let sets = session.blocks[bi].sets
         guard let lastDone = sets.lastIndex(where: { $0.done }) else { return }
         session.blocks[bi].sets[lastDone].done = false
@@ -400,19 +408,40 @@ public final class GymAppModel: ObservableObject {
     // 현재 세트 중량 증감 — 장비별 증분 (spec §6-3). dir = ±1. 맨몸·유산소는 미동작.
     public func adjustWeight(_ dir: Int) {
         let inc = increment(for: currentExerciseId)
-        guard inc > 0 else { return }
+        guard inc > 0, !currentBlockLocked else { return }
         let bi = currentBlockIdx, si = currentSetIdx
         guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
         let cur = session.blocks[bi].sets[si].weight ?? 0
         session.blocks[bi].sets[si].weight = max(0, cur + Double(dir) * inc)
+        session.blocks[bi].sets[si].preset = false   // 사용자 입력 → placeholder 해제 (§6-3-3)
         impact(.light)
     }
     // 현재 세트 횟수 증감 (±1).
     public func adjustReps(_ dir: Int) {
+        guard !currentBlockLocked else { return }
         let bi = currentBlockIdx, si = currentSetIdx
         guard session.blocks.indices.contains(bi), session.blocks[bi].sets.indices.contains(si) else { return }
         let cur = session.blocks[bi].sets[si].reps ?? 0
         session.blocks[bi].sets[si].reps = max(0, cur + dir)
+        session.blocks[bi].sets[si].preset = false
+        impact(.light)
+    }
+
+    // 키패드 값 적용 (§6-3-2) — duration 은 분 입력 → 초 저장 (§6-4).
+    public enum KeypadField: String { case weight, reps, duration, distance }
+    public func applyKeypad(_ field: KeypadField, value: Double, setIdx: Int? = nil) {
+        let bi = currentBlockIdx
+        guard session.blocks.indices.contains(bi),
+              !GymSessionLogic.isBlockLocked(session.blocks[bi]) else { return }
+        let si = setIdx ?? currentSetIdx
+        guard session.blocks[bi].sets.indices.contains(si) else { return }
+        switch field {
+        case .weight:   session.blocks[bi].sets[si].weight = max(0, (value * 10).rounded() / 10)
+        case .reps:     session.blocks[bi].sets[si].reps = max(0, Int(value))
+        case .duration: session.blocks[bi].sets[si].duration = max(0, (value * 60).rounded())
+        case .distance: session.blocks[bi].sets[si].distance = max(0, (value * 10).rounded() / 10)
+        }
+        session.blocks[bi].sets[si].preset = false
         impact(.light)
     }
 
