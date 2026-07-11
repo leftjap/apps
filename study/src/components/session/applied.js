@@ -107,7 +107,10 @@ export function nearDupDrills(sentence, drills) {
   return { exact, added };
 }
 
-/** 호칭류·꼬리확장을 제거하고 영상 원문(exact)은 첫 1개만 남긴다 (구 데이터 안전망 — 생성 차단은 게이트가 한다). */
+/** 호칭류·꼬리확장을 제거하고 영상 원문(exact)은 첫 1개만 남긴다 (구 데이터 안전망 — 생성 차단은 게이트가 한다).
+ * ※ 2026-07-11 divergence: 게이트(validate-seed)는 신규 payload 에서 exact 를 **0개**로 차단한다.
+ *   여기 렌더는 exact 1개를 남겨 **이미 시드된 기존 데이터(ep1-3 등)는 base 가 그대로 보인다** — 사용자 결정
+ *   ("기존은 두고 새 세션만 적용"). 새 세션은 payload 에 base 가 없어 이 안전망이 걸릴 일이 없다. */
 export function filterNearDupDrills(sentence, drills) {
   const base = norm(sentence);
   const list = Array.isArray(drills) ? drills : [];

@@ -165,11 +165,13 @@ describe('validateSeedContent — 기준선', () => {
       return { file: f, ids: new Set(p.cards.map((c) => c.id)), source: p._source ?? null };
     });
     const r = validateSeedContent(payload, { existingSeeds: existing, speakerNames: SPEAKERS });
-    // 이 시드는 'fill in'(비기본동사 구동사) 타깃을 씀 — 2026-07-01 하드 차단 신설로 이제 error.
-    // 이미 적재·학습된 grandfather 시드라 재INSERT 안 함(게이트는 신규 payload 용). 그 외 구조 에러는 0이어야 함.
-    const nonPolicyErrors = r.errors.filter((e) => !e.includes('비기본동사 구동사'));
+    // 이 시드는 'fill in'(비기본동사 구동사) 타깃 + base 반복 드릴을 씀 — 각각 2026-07-01·2026-07-11
+    // 하드 차단 신설로 이제 error. 이미 적재·학습된 grandfather 시드라 재INSERT 안 함(게이트는 신규 payload 용).
+    // 그 두 정책 에러를 뺀 나머지 구조 에러는 0이어야 한다.
+    const nonPolicyErrors = r.errors.filter((e) => !e.includes('비기본동사 구동사') && !e.includes('영상 원문(base)'));
     expect(nonPolicyErrors).toEqual([]);
     expect(r.errors.some((e) => e.includes('비기본동사 구동사'))).toBe(true); // fill in 이 이제 차단됨(정책 확인)
+    expect(r.errors.some((e) => e.includes('영상 원문(base)'))).toBe(true); // base 반복이 이제 차단됨(새 세션 정책 확인)
   });
 });
 
@@ -262,7 +264,7 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
   it('moduyeongeo 도 덧붙인 근접중복은 차단 (호칭·감탄사는 변주가 아니다)', () => {
     const p = makeModu();
     p.cards[0].explanation.drills = [
-      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },        // exact — 영상 원문 1개 허용
+      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },        // exact = base → 차단
       { en: 'Honey, it is no big deal.', ko: '뜻', kr: '드릴' }, // added → 차단
       { en: 'Sorry, it is no big deal.', ko: '뜻', kr: '드릴' }, // added → 차단
     ];
@@ -271,12 +273,24 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('근접중복');
   });
 
-  it('영상 원문 1개 + 진짜 변주만 있으면 통과 (정상 카드를 막지 않는다)', () => {
+  it('영상 원문(base) 반복은 1개라도 차단 — 응용에 base 를 넣지 않는다 (2026-07-11, 새 세션 정책)', () => {
     const p = makeModu();
     p.cards[0].explanation.drills = [
-      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },              // exact 1개 — 허용
+      { en: 'It is no big deal.', ko: '뜻', kr: '드릴' },              // exact = base → 차단
       { en: 'Was it a big deal to you?', ko: '뜻', kr: '드릴' },       // 진짜 변주
       { en: 'They said it was no big deal at all.', ko: '뜻', kr: '드릴' },
+    ];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('근접중복');
+  });
+
+  it('base 없이 진짜 변주만 있으면 통과 (정상 카드를 막지 않는다)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.drills = [
+      { en: 'Was it a big deal to you?', ko: '뜻', kr: '드릴' },       // 진짜 변주
+      { en: 'They said it was no big deal at all.', ko: '뜻', kr: '드릴' },
+      { en: 'Why is it such a big deal?', ko: '뜻', kr: '드릴' },
     ];
     const r = validateSeedContent(p, okOpts);
     expect(r.errors.join(' ')).not.toContain('근접중복');

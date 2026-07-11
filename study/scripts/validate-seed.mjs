@@ -342,15 +342,17 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   // ── drills 근접중복: 호칭('honey')·감탄사('okay')만 덧붙인 건 변주가 아니다.
   // 2026-07-10 — moduyeongeo 도 차단으로 승격(사용자 지시: 렌더에서 감추지 말고 생성에서 막을 것).
   // 방출 payload 만 깨끗하면 되므로 원본 seeds/moduyeongeo/epNNN.json 은 손대지 않는다 — 루틴이 그날 편만 교체 저작.
-  //   exact = base 와 완전 동일(영상 원문 반복) → 1개까지 허용
+  //   exact = base 와 완전 동일(영상 원문 반복) → 0개 (2026-07-11 사용자 지시: 응용에 base 반복 금지)
   //   added = base 를 통째로 품고 2단어 이하만 덧붙임 → 0개 (진짜 변주로 교체할 것)
+  //   ※ 새 세션(방출 payload)에만 적용. 렌더 필터 filterNearDupDrills 는 exact 1개를 남겨
+  //     이미 시드된 ep1-3 등 기존 데이터는 base 가 그대로 보인다 — 의도된 divergence.
   for (const c of exprs) {
     const { exact, added } = nearDupDrills(c.sentence, c.explanation?.drills);
     if (added > 0) {
       errors.push(`${c.id}: 근접중복 드릴 ${added}개 — base 를 그대로 둔 채 호칭·감탄사(", honey")를 붙이거나 뒤에 말만 덧붙인 꼬리확장("Is there a problem here?"). 주어·시제·극성·문형·목적어 중 하나를 바꾼 변주로 교체할 것.`);
     }
-    if (exact > 1) {
-      errors.push(`${c.id}: 근접중복 — base 와 완전 동일한 드릴 ${exact}개. 영상 원문은 1개까지.`);
+    if (exact > 0) {
+      errors.push(`${c.id}: 근접중복 — 응용에 영상 원문(base)과 완전 동일한 드릴 ${exact}개. base 는 응용에 넣지 말고 진짜 변주로 교체할 것.`);
     }
   }
 
