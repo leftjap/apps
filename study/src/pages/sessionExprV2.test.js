@@ -107,6 +107,7 @@ describe('sessionExprV2 — 체이닝(chain) 렌더', () => {
       rec(0).click();
       vi.advanceTimersByTime(900);
       expect(rows[0].querySelector('.vs-gscore').style.display).not.toBe('none'); // 1단계 통과 ✓
+      expect(rows[0].querySelector('.vs-gscore').classList.contains('score-pop')).toBe(true); // 통과 애니
       expect(rec(1).disabled).toBe(false);  // 2단계 열림
       expect(rec(0).disabled).toBe(true);   // 통과한 단계는 잠김
     } finally { vi.useRealTimers(); }
@@ -151,6 +152,7 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
 
     // 리빌 DOM — 점수 링 92 · PASS 칩 · 발화 dot 1 · 게이트 진행
     expect(host.querySelector('.vs-ring .cn').textContent).toBe('92');
+    expect(host.querySelector('.vs-ring').classList.contains('score-pop')).toBe(true); // 점수 등장 애니
     expect(host.querySelector('.vs-pass').style.display).not.toBe('none');
     expect(host.querySelectorAll('.vs-say .d i.f').length).toBe(1);
     expect(host.querySelector('.vs-combo').textContent).toContain('×1');
@@ -226,8 +228,10 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(host.querySelector('.vs-rec .n').textContent).toBe('1');
     expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('1');
 
-    // 행 점수 배지
-    expect(drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore').textContent).toContain('92');
+    // 행 점수 배지 + 등장 애니
+    const drillScoreEl = drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore');
+    expect(drillScoreEl.textContent).toContain('92');
+    expect(drillScoreEl.classList.contains('score-pop')).toBe(true);
   });
 
   it('drill 녹음도 다음-표현 게이트(recLog count)에 포함 — 콤보는 메인 전용(무관)', async () => {

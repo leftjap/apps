@@ -18,6 +18,15 @@ import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+// 점수·통과 배지 등장 애니 재트리거 (전역 .score-pop = scorePop 키프레임, src/styles/session.css).
+// remove→reflow→add 로 같은 요소에 반복 재생. reduce-motion 은 CSS 가 알아서 무시.
+function popScore(el) {
+  if (!el) return;
+  el.classList.remove('score-pop');
+  void el.offsetWidth; // 강제 reflow — 애니 재시작
+  el.classList.add('score-pop');
+}
 function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
 export const VS_CSS = `
@@ -197,7 +206,7 @@ export function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
         setTimeout(() => {
           row.classList.remove('recing'); recBtn.classList.remove('recing');
           const result = { score: Math.min(82 + i * 4, 99), weakPhonemes: ['ð'] };
-          scoreEl.textContent = Math.round(result.score) + ' ✓'; scoreEl.style.display = '';
+          scoreEl.textContent = Math.round(result.score) + ' ✓'; scoreEl.style.display = ''; popScore(scoreEl);
           onScore?.(i, result);
         }, 800);
         return;
@@ -217,7 +226,7 @@ export function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
       const result = await stopAndAnalyze(ctrl, d.en || '', { lang });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       const score = Math.round(result?.score ?? 0);
-      scoreEl.textContent = score + ' ✓'; scoreEl.style.display = '';
+      scoreEl.textContent = score + ' ✓'; scoreEl.style.display = ''; popScore(scoreEl);
       onScore?.(i, result);
     }
     return row;
@@ -287,7 +296,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
       const result = await stopAndAnalyze(ctrl, step.text, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       onUtterance?.(result); // 통과 여부와 무관 — 말했으면 발화 1건
-      if (passesCoverage(result)) { advance(); return; }
+      if (passesCoverage(result)) { advance(); popScore(mark); return; } // 방금 통과한 단계 mark 팝
       fails += 1;
       const miss = result?.omissions?.length ?? 0;
       showRecordToast(miss ? `${miss}개 빠뜨렸어요 — 다시 들어보세요` : '다시 한 번 말해 보세요');
@@ -302,7 +311,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
         setTimeout(() => {
           row.classList.remove('recing'); recBtn.classList.remove('recing');
           onUtterance?.({ score: 90, omissions: [], weakPhonemes: [] });
-          advance();
+          advance(); popScore(mark); // 방금 통과한 단계 mark 팝 (실경로와 동일)
         }, 800);
         return;
       }
@@ -519,7 +528,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
-    const newRing = ringEl(score); curRing.replaceWith(newRing); curRing = newRing;
+    const newRing = ringEl(score); curRing.replaceWith(newRing); curRing = newRing; popScore(newRing);
     ringHost.lastChild.textContent = capText();
     if (passed) { passChip.style.display = ''; passChip.lastChild.textContent = `PASS · 콤보 ×${state.combo}`; }
     else passChip.style.display = 'none';

@@ -912,4 +912,29 @@ describe('createSilenceAutoStop — 무음 자동종료 판정', () => {
     expect(vad.feed(0, 1700)).toBe(false);    // 리셋 후 0.8s
     expect(vad.feed(0, 2000)).toBe(true);     // 리셋 후 1.1s → 종료
   });
+
+  // 2026-07-11 — 조용히 말하거나 마이크 게인이 낮아 발화 peak 이 speechPeak(0.08) 에 못 미치면
+  // 옛 코드는 영영 무장(speechStarted)이 안 돼 자동종료가 안 됐다(실측 재현). 무장 임계를
+  // 화자 자기 최고 peak 에 적응시켜(마이크 게인 독립) 이 경우도 무장·종료되게 한다.
+  it('조용한 발화(peak 0.06, speechPeak 미만)도 무장·자동종료 — 마이크 게인 독립', () => {
+    const vad = createSilenceAutoStop({ hangoverMs: 1200 }); // 실사용 경로와 동일한 기본 임계
+    expect(vad.feed(0.06, 0)).toBe(false);     // 발화 전체가 옛 speechPeak 아래
+    expect(vad.speechStarted).toBe(true);      // 그래도 무장돼야 한다 (옛 코드는 false 였음)
+    expect(vad.feed(0.0, 600)).toBe(false);
+    expect(vad.feed(0.0, 1300)).toBe(true);    // hangover 후 종료
+  });
+
+  it('순수 무음/노이즈(peak ≤ silencePeak)는 무장하지 않음 (오작동 방지)', () => {
+    const vad = createSilenceAutoStop({ hangoverMs: 1200 });
+    for (let t = 0; t <= 3000; t += 100) vad.feed(0.03, t); // 노이즈 수준 지속
+    expect(vad.speechStarted).toBe(false);
+  });
+
+  it('큰 발화(peak 0.3)의 무장·종료 동작은 옛 절대임계와 동일 (회귀 없음)', () => {
+    const vad = createSilenceAutoStop({ hangoverMs: 1200 });
+    expect(vad.feed(0.3, 0)).toBe(false);
+    expect(vad.speechStarted).toBe(true);
+    expect(vad.feed(0.0, 1100)).toBe(false);
+    expect(vad.feed(0.0, 1300)).toBe(true);
+  });
 });

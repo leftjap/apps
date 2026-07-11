@@ -660,19 +660,28 @@ const _workletRegistered = new WeakSet();
 
 /**
  * 무음 자동종료 VAD 판정 (말 끝나면 자동 멈춤). 순수 함수 — recordWav 가 chunk peak 마다 feed.
- *  - 발화(peak>=speechPeak) 전 앞 침묵엔 종료 안 함 (복습 '떠올리기' 앞 침묵 보호).
- *  - 발화 후 hangoverMs 동안 무음(peak<silencePeak) 지속 시 종료.
- *  - 중간 레벨(silencePeak~speechPeak)·재발화는 voice 로 보고 hangover 리셋 (단어 사이 조기종료 방지).
- * 임계값 기본은 실측 보정 (발화 peak median≈0.12 / 무음=0, Playwright fake-audio).
+ *  - 무장 임계 armAt = min(speechPeak, max(silencePeak, maxPeak*0.6)) — 화자 자기 최고 peak 에 적응.
+ *    큰 발화는 speechPeak(0.08)에서, 조용한 발화는 silencePeak(0.05)까지 내려가 무장(마이크 게인 독립).
+ *    무장 전 앞 침묵엔 종료 안 함 (복습 '떠올리기' 앞 침묵 보호).
+ *  - 발화 후 hangoverMs 동안 무음(peak<silencePeak) 지속 시 종료. peak>=silencePeak 은 voice 로 리셋.
+ * 2026-07-11 — 옛 절대임계(speechPeak 0.08 고정)는 조용한 발화·낮은 마이크 게인에서 무장 실패 → 자동종료 안 됨(실측).
  */
 export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, hangoverMs = 1200 } = {}) {
   let speechStarted = false;
   let lastVoiceAt = 0;
+  let maxPeak = 0;
   return {
     feed(peak, now) {
-      if (peak >= speechPeak) { speechStarted = true; lastVoiceAt = now; return false; }
-      if (peak >= silencePeak) { if (speechStarted) lastVoiceAt = now; return false; }
-      if (!speechStarted) return false; // 앞 침묵 보호
+      if (peak > maxPeak) maxPeak = peak;
+      // 무장 임계를 화자 자기 최고 peak 에 적응시킨다(마이크 게인 독립). 조용히 말해 발화 전체가
+      // speechPeak(0.08) 아래여도 silencePeak 위이면 무장한다. 단 silencePeak 아래(무음·노이즈)로는
+      // 절대 내려가지 않고(오작동 방지), speechPeak 위로도 안 올라간다(큰 발화 회귀 없음).
+      const armAt = Math.min(speechPeak, Math.max(silencePeak, maxPeak * 0.6));
+      if (!speechStarted) {
+        if (peak >= armAt) { speechStarted = true; lastVoiceAt = now; }
+        return false; // 앞 침묵 보호 — 무장 전에는 종료 안 함
+      }
+      if (peak >= silencePeak) { lastVoiceAt = now; return false; }
       return (now - lastVoiceAt) >= hangoverMs;
     },
     get speechStarted() { return speechStarted; },
