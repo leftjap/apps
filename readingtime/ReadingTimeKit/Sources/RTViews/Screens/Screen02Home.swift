@@ -260,6 +260,10 @@ public struct Screen02Home: View {
             }
             .padding(EdgeInsets(top: 11, leading: 4, bottom: 11, trailing: 4))
             .overlay(alignment: .top) { Rectangle().fill(RT.hair2).frame(height: 1) }
+            .contentShape(Rectangle())
+            .onTapGesture { model?.openRecentDetail() }   // 마지막 기록 → 그 책 상세(08)
+            .accessibilityElement(children: .combine)     // 자식 전파 방지 — 단일 요소(테스트 오라클)
+            .accessibilityIdentifier("home.recentRow")
             // 홈 인디케이터 여백 (막대는 RTChrome/시스템이 그림)
             Color.clear.frame(height: 26)
         }

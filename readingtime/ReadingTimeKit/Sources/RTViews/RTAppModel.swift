@@ -248,6 +248,13 @@ public final class RTAppModel: ObservableObject {
         Array((userData?.sessions ?? []).sorted { $0.endedAt > $1.endedAt }.prefix(limit))
     }
 
+    /// 홈 '마지막 기록' 행 탭 — 그 기록의 책 상세(08).
+    /// 기록 isbn 없음(수동 세션)·기록 없음이면 selectedISBN=nil → selectedBook 이 읽는 중 책 폴백.
+    public func openRecentDetail() {
+        selectedISBN = recentRecords(1).first?.isbn
+        nav(.detail)
+    }
+
     /// 이번 주(월~일) 일별 비율 (최댓값=1, 기록 없으면 0)
     public var weekBarRatios: [Double] {
         var per = [Double](repeating: 0, count: 7)
@@ -339,9 +346,14 @@ public final class RTAppModel: ObservableObject {
         }
     }
 
+    /// 상세(08) 뒤로가기 목적지 — 진입 시점의 출처로 자동 유도 (홈 '마지막 기록' 진입이 생기며
+    /// 기존 서재 하드코딩이 결함이 됨). 상세 내 재진입(09 완독 등)은 출처 유지.
+    public private(set) var detailOrigin: RTRoute = .library
+
     // ── 라우팅 (app.js nav) ──
     public func nav(_ to: RTRoute) {
         if sheet != nil { sheet = nil }
+        if to == .detail && route != .detail { detailOrigin = route == .home ? .home : .library }
         route = to
     }
 

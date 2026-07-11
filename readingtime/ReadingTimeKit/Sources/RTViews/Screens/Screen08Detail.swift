@@ -70,6 +70,7 @@ public struct Screen08Detail: View {
             header
         }
         .frame(width: 390, height: 844)
+        .accessibilityIdentifier("detail.screen")
     }
 
     var header: some View {
@@ -77,7 +78,7 @@ public struct Screen08Detail: View {
             RTIcon(RTIconPath.back, size: 17, viewBox: 20, stroke: RT.body, lineWidth: 2.2)
                 .frame(width: 38, height: 38)
                 .contentShape(Rectangle())
-                .onTapGesture { model?.nav(.library) }
+                .onTapGesture { model.map { $0.nav($0.detailOrigin) } }   // 진입 출처로 복귀 (홈/서재)
             Spacer()
             VStack(spacing: 3.2) {
                 ForEach(0..<3, id: \.self) { _ in

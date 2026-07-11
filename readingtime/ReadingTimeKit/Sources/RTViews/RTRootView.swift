@@ -21,7 +21,7 @@ public struct RTRootView: View {
     private var backRoute: RTRoute? {
         guard model.sheet == nil else { return nil }
         switch model.route {
-        case .detail: return .library
+        case .detail: return model.detailOrigin
         case .library, .statsWeek, .statsMonth: return .home
         default: return nil
         }
