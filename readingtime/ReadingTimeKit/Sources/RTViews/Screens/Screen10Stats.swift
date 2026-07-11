@@ -26,8 +26,12 @@ public struct Screen10Stats: View {
         let sel = min(max(model?.weekSel ?? 3, 0), 6)
         self.sel = sel
         if model?.statsSubject == .partner {
-            // 파트너 통계 — 시안 데모값(README). 백엔드 partnerData 배선 후 실계산으로 교체.
-            self.live = Self.partnerDemoLive
+            // 파트너 통계 — 실데이터(partnerData) 있으면 그걸로 계산, 없으면 시안 데모값.
+            if let m = model, let pd = m.partnerData {
+                self.live = Self.buildLive(data: pd, now: m.now(), sel: sel)
+            } else {
+                self.live = Self.partnerDemoLive
+            }
         } else if let m = model, let data = m.userData {
             let cal = Calendar(identifier: .gregorian)
             let labels = ["월", "화", "수", "목", "금", "토", "일"]
@@ -93,6 +97,81 @@ public struct Screen10Stats: View {
         } else {
             self.live = nil
         }
+    }
+
+    // 실데이터 RTUserData → Live (파트너 통계용 자립 빌더 — self 경로 로직 미러, 데이터 주체만 파라미터).
+    static func buildLive(data: RTUserData, now: Date, sel: Int) -> Live {
+        var cal = Calendar(identifier: .gregorian); cal.firstWeekday = 2   // 월요일 시작
+        let labels = ["월", "화", "수", "목", "금", "토", "일"]
+        func md(_ d: Date) -> String { "\(cal.component(.month, from: d)).\(cal.component(.day, from: d))" }
+        func weekTotal(_ offset: Int) -> Int {
+            guard let base = cal.date(byAdding: .weekOfYear, value: offset, to: now),
+                  let wk = cal.dateInterval(of: .weekOfYear, for: base) else { return 0 }
+            return data.sessions.filter { wk.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+        }
+        let start = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
+        // 일별 분
+        var perSec = [Int](repeating: 0, count: 7)
+        if let wk = cal.dateInterval(of: .weekOfYear, for: now) {
+            for s in data.sessions where wk.contains(s.endedAt) {
+                let i = cal.dateComponents([.day], from: wk.start, to: cal.startOfDay(for: s.endedAt)).day ?? 0
+                if (0..<7).contains(i) { perSec[i] += s.seconds }
+            }
+        }
+        let mins = perSec.map { $0 / 60 }
+        let maxV = mins.max() ?? 0
+        let today = min(6, max(0, cal.dateComponents([.day], from: start, to: cal.startOfDay(for: now)).day ?? 0))
+        let week = (0..<7).map { i -> (String, String, Int, CGFloat, Bool, Bool) in
+            let date = cal.date(byAdding: .day, value: i, to: start)!
+            let h: CGFloat = maxV > 0 && mins[i] > 0 ? max(4, CGFloat(mins[i]) / CGFloat(maxV) * 84) : 2
+            return (labels[i], md(date), mins[i], h, i == today, i == 6)
+        }
+        let titles = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.title) })
+        let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
+        // 선택일 책별 분해 (상위 2)
+        let selDate = cal.date(byAdding: .day, value: sel, to: start)!
+        var perBook: [String: Int] = [:]
+        for s in data.sessions where cal.isDate(s.endedAt, inSameDayAs: selDate) {
+            perBook[s.isbn.flatMap { titles[$0] } ?? "기록", default: 0] += s.seconds
+        }
+        let popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
+            .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: palette[i % palette.count]) }
+        // 최근 14일 스트릭 도트
+        let dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        let streakDays = (0..<14).map { i -> Bool in
+            dayset.contains(cal.date(byAdding: .day, value: i - 13, to: cal.startOfDay(for: now))!)
+        }
+        // 연속일
+        var streak = 0
+        var cursor = cal.startOfDay(for: now)
+        if !dayset.contains(cursor) { cursor = cal.date(byAdding: .day, value: -1, to: cursor)! }
+        while dayset.contains(cursor) { streak += 1; cursor = cal.date(byAdding: .day, value: -1, to: cursor)! }
+        // 시간대 peak
+        var hourHist = [Int](repeating: 0, count: 24)
+        for s in data.sessions { hourHist[cal.component(.hour, from: s.endedAt)] += s.seconds }
+        var peak: (label: String, frac: CGFloat, width: CGFloat)?
+        if let top = hourHist.enumerated().max(by: { $0.element < $1.element }), top.element > 0 {
+            let names = ["새벽", "새벽", "새벽", "새벽", "새벽", "새벽", "아침", "아침", "아침", "아침", "아침",
+                         "낮", "낮", "낮", "낮", "낮", "낮", "저녁", "저녁", "저녁", "저녁", "밤", "밤", "밤"]
+            func h12(_ h: Int) -> Int { let v = h % 12; return v == 0 ? 12 : v }
+            let h0 = top.offset
+            peak = ("주로 \(names[h0]) \(h12(h0))–\(h12(min(23, h0 + 2)))시", CGFloat(h0) / 24, max(0.1, 2.0 / 24))
+        }
+        // 이번 주 많이 읽은 책 (상위 3)
+        var weekBook: [String: Int] = [:]
+        if let wk = cal.dateInterval(of: .weekOfYear, for: now) {
+            for s in data.sessions where wk.contains(s.endedAt) { if let isbn = s.isbn { weekBook[isbn, default: 0] += s.seconds } }
+        }
+        let maxBook = weekBook.values.max() ?? 0
+        let ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
+            .map { (i, kv) in (title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
+                               fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
+                               color: palette[i % palette.count], value: RTAppModel.hmString(kv.value)) }
+        let total = weekTotal(0)
+        let end = cal.date(byAdding: .day, value: 6, to: start)!
+        return Live(range: "\(md(start)) – \(md(end))", hours: total / 3600, mins: total / 60 % 60,
+                    deltaMin: (total - weekTotal(-1)) / 60, week: week, popRows: popRows,
+                    streak: streak, streakDays: streakDays, peak: peak, ranks: ranks)
     }
 
     // 파트너 데모 통계 (README §② 데모값, 합계 내적 정합: 주간 합 408 = 6:48)

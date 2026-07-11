@@ -115,8 +115,9 @@ public final class RTAppModel: ObservableObject {
     @Published public var partnerData: RTUserData?
     /// 파트너 사진 (미커밋 → nil, 이니셜 "소" 폴백)
     @Published public var partnerAvatar: CGImage?
-    /// 파트너 이름 — 데모 정본 "소연" (실서비스: soyoun→소연 이메일 매핑)
-    public var partnerName: String { "소연" }
+    /// 파트너 이름 — 보는 사람 기준(지오 폰=소연, 소연 폰=지오). 앱이 uid→이름 주입.
+    /// 데모/미로그인 기본 "소연"(시안, 뷰어=지오 가정). rtshot 픽셀 오라클 불변.
+    @Published public var partnerName: String = "소연"
     public var partnerInitial: String { String(partnerName.prefix(1)) }
     /// 파트너 "지금 읽는 중" 프레즌스 — 백엔드가 활성 세션 신호로 세팅(현재 미배선 → false)
     @Published public var partnerReadingNow = false
@@ -204,6 +205,9 @@ public final class RTAppModel: ObservableObject {
     public var searchProvider: ((String) async throws -> [RTBookHit])?
     /// 로그인 버튼 핸들러 (iOS OAuth 배선) — nil 이면 즉시 login() (rtshot/rtapp 데모 경로)
     public var loginHandler: (() -> Void)?
+    /// 읽는 중 프레즌스 변화 (true=recording 시작, false=정지/종료) — 앱이 CloudStore.setReadingSince 배선
+    public var onReadingPresence: ((Bool) -> Void)?
+    private func emitPresence() { onReadingPresence?(session?.status == .recording) }
 
     // ── 실데이터 정본 (§6-④) — nil 이면 데모 모드 (rtshot/rtapp 픽셀 오라클 불변) ──
     @Published public var userData: RTUserData? {
@@ -437,7 +441,7 @@ public final class RTAppModel: ObservableObject {
         else { startSession(.tap); nav(.tapTimer) }
     }
 
-    public func cancelSession() { session = nil; nav(.home) }
+    public func cancelSession() { session = nil; emitPresence(); nav(.home) }
 
     public func simFlip() { startSession(.flip); nav(.flipTimer) }
 
@@ -448,10 +452,12 @@ public final class RTAppModel: ObservableObject {
         if s.status == .recording { s.status = .paused; s.pauseCount += 1 }
         else { s.status = .recording; justResumed = true }
         session = s
+        emitPresence()
     }
 
     public func endSession() {
         if var s = session { s.status = .paused; session = s }
+        emitPresence()
         nav(.done)
     }
 
@@ -466,6 +472,7 @@ public final class RTAppModel: ObservableObject {
             }
         }
         session = nil
+        emitPresence()
         nav(.home)
     }
 
@@ -577,6 +584,7 @@ public final class RTAppModel: ObservableObject {
     public func startSession(_ mode: RTMode) {
         session = RTSession(mode: mode, status: .recording,
                             elapsed: sessionSeed, pauseCount: 0, startedAt: now())
+        emitPresence()
     }
 
     /// wall-clock 재동기화 (iOS: 백그라운드 경과를 FlipEngine 이 실측 → UI 반영)

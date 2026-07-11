@@ -45,7 +45,15 @@ struct ReadingTimeApp: App {
             enc.dateEncodingStrategy = .iso8601
             if let raw = try? enc.encode(data) {
                 UserDefaults.standard.set(raw, forKey: "rt.userData")
+                // 함께 읽기 — 파트너가 읽도록 스냅샷 업로드 (로그인 시에만 실동작)
+                if let json = String(data: raw, encoding: .utf8) {
+                    Task { try? await cloud.uploadUserData(json) }
+                }
             }
+        }
+        // 읽는 중 프레즌스 — 세션 시작/정지 시 reading_since 갱신
+        model.onReadingPresence = { reading in
+            Task { try? await cloud.setReadingSince(reading ? Date() : nil) }
         }
 
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
@@ -153,6 +161,27 @@ struct ReadingTimeApp: App {
         UserDefaults.standard.set(n, forKey: "rt.displayName")
     }
 
+    /// 내 RTUserData 스냅샷을 클라우드에 1회 업로드 (앱 시작 시 — 파트너가 최신 상태를 읽도록).
+    @MainActor private static func uploadSnapshot(from model: RTAppModel?, to cloud: CloudStore) {
+        guard let data = model?.userData else { return }
+        let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
+        guard let raw = try? enc.encode(data), let json = String(data: raw, encoding: .utf8) else { return }
+        Task { try? await cloud.uploadUserData(json) }
+    }
+
+    /// 함께 읽기 — 파트너 스냅샷(RTUserData JSON + 프레즌스)을 클라우드에서 받아 모델에 주입.
+    /// reading_since 가 최근(≤12h — 크래시 스테일 가드)이면 "지금 읽는 중". 실패/미로그인은 무시.
+    @MainActor private static func loadPartner(from cloud: CloudStore, to model: RTAppModel?) async {
+        if let name = cloud.partnerName { model?.partnerName = name }   // 보는 사람 기준 이름
+        guard let snap = try? await cloud.fetchPartner() else { return }
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        guard let raw = snap.data.data(using: .utf8),
+              let pdata = try? dec.decode(RTUserData.self, from: raw) else { return }
+        model?.partnerData = pdata
+        model?.partnerReadingNow = snap.readingSince.map { Date().timeIntervalSince($0) < 12 * 3600 } ?? false
+    }
+
     /// 현재 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (--capture 전용, 실기기 화면 검증).
     @MainActor private static func captureWindow() {
         guard let scene = UIApplication.shared.connectedScenes
@@ -225,6 +254,8 @@ struct ReadingTimeApp: App {
                 .task {
                     await cloud.restore()
                     Self.applyDisplayName(from: cloud, to: model)
+                    Self.uploadSnapshot(from: model, to: cloud)       // 내 스냅샷 1회 올림(파트너가 읽도록)
+                    await Self.loadPartner(from: cloud, to: model)   // 함께 읽기 — 파트너 스냅샷
                 }
                 .onReceive(model.$route) { route in
                     // 센서·근접: 홈 추가 (§4-1) — 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
@@ -270,6 +301,8 @@ struct ReadingTimeApp: App {
                         }
                         // 홈으로 복귀 시 그 날짜 첫 진입이면 집어드는 안무 (§4)
                         if model.route == .home { Self.armPickupIfFirstToday(model) }
+                        // 함께 읽기 — 포그라운드 복귀마다 파트너 프레즌스 갱신
+                        Task { await Self.loadPartner(from: cloud, to: model) }
                     }
                 }
         }

@@ -95,6 +95,59 @@ public final class CloudStore: ObservableObject {
         return rows.first?.seconds ?? 0
     }
 
+    // ── 함께 읽기 — RTUserData 스냅샷 공유(파트너가 읽음) + 프레즌스 ──
+    // data = 앱이 인코딩한 RTUserData JSON. CloudStore 는 문자열만 저장/전달(인코딩은 앱 레이어).
+    public func uploadUserData(_ json: String) async throws {
+        guard let owner = ownerID else { return }
+        let row = UserDataUpsert(owner_id: owner.uuidString, data: json,
+                                 updated_at: ISO8601DateFormatter().string(from: Date()))
+        try await client.from("readingtime_userdata")
+            .upsert(row, onConflict: "owner_id")
+            .execute()
+    }
+
+    // 프레즌스 — 세션 recording 시작 시 now, 종료/일시정지 시 nil. (upsert 가 행을 보장하므로 update)
+    public func setReadingSince(_ date: Date?) async throws {
+        guard let owner = ownerID else { return }
+        let iso = date.map { ISO8601DateFormatter().string(from: $0) }
+        try await client.from("readingtime_userdata")
+            .update(ReadingSincePatch(reading_since: iso))
+            .eq("owner_id", value: owner.uuidString)
+            .execute()
+    }
+
+    // 파트너 uid — 본인 아닌 household 멤버. UUID.uuidString 은 대문자라 소문자로 비교(Config=소문자).
+    private var partnerOwnerID: String? {
+        guard let owner = ownerID else { return nil }
+        let me = owner.uuidString.lowercased()
+        return Config.householdOwners.first { $0.lowercased() != me }
+    }
+
+    /// 파트너 표시 이름 (보는 사람 기준 — 본인 아닌 household 멤버). 미로그인 시 nil.
+    public var partnerName: String? {
+        partnerOwnerID.flatMap { Config.householdNames[$0] }
+    }
+
+    // 파트너 스냅샷 로드 (household 상대 — RLS 로 파트너 것만 읽힘). data JSON + 프레즌스 시각.
+    public func fetchPartner() async throws -> (data: String, readingSince: Date?)? {
+        guard let partner = partnerOwnerID else { return nil }
+        let rows: [PartnerSnapshotRow] = try await client.from("readingtime_userdata")
+            .select("data,reading_since")
+            .eq("owner_id", value: partner)
+            .execute().value
+        guard let r = rows.first else { return nil }
+        return (r.data, r.reading_since.flatMap(Self.parseTimestamp))
+    }
+
+    // timestamptz 파싱 — 소수초 유무 둘 다 허용
+    private static func parseTimestamp(_ s: String) -> Date? {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: s) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: s)
+    }
+
     // 종이책 일별 (내 readingtime_daily — RLS로 본인 것만)
     public func fetchPaperDaily() async throws -> [DailyRow] {
         try await client.from("readingtime_daily").select("day,seconds").execute().value
@@ -113,6 +166,9 @@ private struct PaperDailyRow: Encodable {
     let source: String
 }
 private struct SecondsRow: Decodable { let seconds: Int }
+private struct UserDataUpsert: Encodable { let owner_id: String; let data: String; let updated_at: String }
+private struct ReadingSincePatch: Encodable { let reading_since: String? }
+private struct PartnerSnapshotRow: Decodable { let data: String; let reading_since: String? }
 public struct DailyRow: Decodable, Sendable {
     public let day: String
     public let seconds: Int

@@ -40,6 +40,14 @@ import Foundation
         #expect(m.partnerInitial == "소")
     }
 
+    // 양방향: 파트너 이름은 보는 사람 기준(소연이 지오를 보면 "지오"). 앱이 uid→이름 주입.
+    @Test func partnerNameIsSettableForViewer() {
+        let m = RTAppModel()
+        m.partnerName = "지오"          // 소연 폰에서 파트너 = 지오
+        #expect(m.partnerName == "지오")
+        #expect(m.partnerInitial == "지")
+    }
+
     // idle 상대시간 "N시간 전" (README §설정 idle 배지)
     @Test func agoTextRelativeBuckets() {
         let now = Date(timeIntervalSinceReferenceDate: 1_000_000)
