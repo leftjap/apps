@@ -22,9 +22,21 @@ public struct Screen02Home: View {
         let lastWhen: String?      // "오늘 22:14"
     }
 
+    // 파트너 행 (함께 읽기) — 도킹 카드 최하단. nil 이면 행 숨김(README AC #6).
+    struct Partner {
+        let name: String
+        let initial: String
+        let avatar: CGImage?
+        let reading: Bool          // 지금 읽는 중 = 회전 링+헤일로+"지금 읽는 중"
+        let idleText: String       // idle 배지 "N시간 전"
+        let book: String?          // 현재 읽는 책 (없으면 2행 생략)
+        let todayMin: Int
+    }
+
     var model: RTAppModel?
     private let live: Live?
     private let avatar: CGImage?   // init 스냅샷 (사진 선택 즉시 반영용 — live 와 같은 이유)
+    private let partner: Partner?
     @State private var menuOpen: Bool
 
     static let chainDays = 13
@@ -53,6 +65,28 @@ public struct Screen02Home: View {
                 lastWhen: last.map { RTAppModel.recentWhen($0.endedAt, now: m.now()) })
         } else {
             self.live = nil
+        }
+        // 파트너 행: 실데이터(partnerData) 있으면 그걸로, 없으면(데모/시안 픽셀 경로) 시안 데모값.
+        // partnerData 미로드 + 라이브(내 실데이터)면 nil → 행 숨김(백엔드 배선 전, README AC #6).
+        if let m = model, let pdata = m.partnerData {
+            let cal = Calendar(identifier: .gregorian)
+            let last = pdata.sessions.max { $0.endedAt < $1.endedAt }
+            let todaySec = pdata.sessions.filter { cal.isDate($0.endedAt, inSameDayAs: m.now()) }
+                .reduce(0) { $0 + $1.seconds }
+            self.partner = Partner(
+                name: m.partnerName, initial: m.partnerInitial, avatar: m.partnerAvatar,
+                reading: m.partnerReadingNow,
+                idleText: last.map { RTAppModel.agoText($0.endedAt, now: m.now()) } ?? "기록 없음",
+                book: pdata.books.last { !$0.finished }?.title,
+                todayMin: todaySec / 60)
+        } else if model?.userData == nil {
+            // 데모/시안 픽셀 경로 — README 데모값 (소연 · 지금 읽는 중 · 작별하지 않는다 · 24분)
+            self.partner = Partner(
+                name: model?.partnerName ?? "소연", initial: model?.partnerInitial ?? "소",
+                avatar: nil, reading: true, idleText: "3시간 전",
+                book: "작별하지 않는다", todayMin: 24)
+        } else {
+            self.partner = nil
         }
     }
 
@@ -264,6 +298,8 @@ public struct Screen02Home: View {
             .onTapGesture { model?.openRecentDetail() }   // 마지막 기록 → 그 책 상세(08)
             .accessibilityElement(children: .combine)     // 자식 전파 방지 — 단일 요소(테스트 오라클)
             .accessibilityIdentifier("home.recentRow")
+            // 파트너 행 (함께 읽기) — 도킹 카드 최하위. 위계: 내 책 > 내 기록 > 소연.
+            if let p = partner { partnerRow(p) }
             // 홈 인디케이터 여백 (막대는 RTChrome/시스템이 그림)
             Color.clear.frame(height: 26)
         }
@@ -275,6 +311,67 @@ public struct Screen02Home: View {
                 .shadow(color: Color(hex: 0x16140F, alpha: 0.16), radius: 15, x: 0, y: -8)
         )
         .rtRiseIn(delay: 0.26)
+    }
+
+    // ── 파트너 행 (함께 읽기) — 마지막 기록 행과 같은 행 문법. 탭 → 파트너 통계 ──
+    func partnerRow(_ p: Partner) -> some View {
+        HStack(spacing: 11) {
+            // 아바타 38pt 프레임 (헤일로 + 회전 라이브 링 + 30pt 아바타)
+            ZStack {
+                if p.reading {
+                    // 은은한 초록 헤일로 (50pt)
+                    RadialGradient(gradient: Gradient(stops: [
+                        .init(color: Color(hex: 0x2C4A3C, alpha: 0.15), location: 0),
+                        .init(color: Color(hex: 0x2C4A3C, alpha: 0), location: 0.68)]),
+                        center: .center, startRadius: 0, endRadius: 25)
+                        .frame(width: 50, height: 50)
+                    // 회전 라이브 타이머 링 (트랙 + 짧은 아크, 4.5s linear ∞)
+                    ZStack {
+                        Circle().stroke(RT.green.opacity(0.12), lineWidth: 2)
+                        Circle().trim(from: 0, to: 0.25)          // dasharray "27 200" ≈ 원주 25%
+                            .stroke(RT.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                    }
+                    .frame(width: 34, height: 34)
+                    .rtSpin(duration: 4.5)
+                }
+                Circle().fill(RT.segBg)
+                    .frame(width: 30, height: 30)
+                    .overlay(RTAvatarFill(initial: p.initial, photo: p.avatar,
+                                          size: 30, fontSize: 12, initialColor: RT.body))
+            }
+            .frame(width: 38, height: 38)
+            // 텍스트 열
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) {
+                    Text(p.name).font(.sans(13, 700)).foregroundColor(RT.ink)
+                    if p.reading {
+                        Text("지금 읽는 중").font(.sans(11, 600)).foregroundColor(RT.green)
+                    } else {
+                        Text(p.idleText).font(.mono(11, 500)).foregroundColor(RT.faint)
+                    }
+                }
+                if let book = p.book {
+                    Text(book).font(.sans(11.5, 500)).foregroundColor(RT.muted).lineLimit(1)
+                }
+            }
+            Spacer(minLength: 0)
+            // 우측 오늘 시간
+            VStack(alignment: .trailing, spacing: 1) {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
+                    Text("\(p.todayMin)").font(.mono(13, 700)).foregroundColor(RT.ink)
+                    Text("분").font(.sans(10, 600)).foregroundColor(RT.muted)
+                }
+                Text("오늘").font(.sans(9.5, 500)).foregroundColor(RT.faint)
+            }
+            RTIcon(["M9 6l6 6-6 6"], size: 9, stroke: RT.ghost, lineWidth: 2.4)
+        }
+        .padding(EdgeInsets(top: 11, leading: 4, bottom: 11, trailing: 4))
+        .overlay(alignment: .top) { Rectangle().fill(RT.hair2).frame(height: 1) }
+        .contentShape(Rectangle())
+        .onTapGesture { model?.openPartnerStats() }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("home.partnerRow")
     }
 
     // 읽기(엎기) CTA — 정지=그린 앞면. 모션: 리빙 그라데이션(8s) + 주기 플립(4.6s)으로

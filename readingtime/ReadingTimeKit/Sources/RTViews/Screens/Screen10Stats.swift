@@ -25,7 +25,10 @@ public struct Screen10Stats: View {
         self.model = model
         let sel = min(max(model?.weekSel ?? 3, 0), 6)
         self.sel = sel
-        if let m = model, let data = m.userData {
+        if model?.statsSubject == .partner {
+            // 파트너 통계 — 시안 데모값(README). 백엔드 partnerData 배선 후 실계산으로 교체.
+            self.live = Self.partnerDemoLive
+        } else if let m = model, let data = m.userData {
             let cal = Calendar(identifier: .gregorian)
             let labels = ["월", "화", "수", "목", "금", "토", "일"]
             let mins = m.weekDayMinutes
@@ -91,6 +94,20 @@ public struct Screen10Stats: View {
             self.live = nil
         }
     }
+
+    // 파트너 데모 통계 (README §② 데모값, 합계 내적 정합: 주간 합 408 = 6:48)
+    static let partnerDemoLive = Live(
+        range: "5.19 – 5.25", hours: 6, mins: 48, deltaMin: 36,
+        week: [("월", "5.19", 64, 64, false, false), ("화", "5.20", 78, 78, false, false),
+               ("수", "5.21", 40, 40, false, false), ("목", "5.22", 24, 24, true, false),
+               ("금", "5.23", 70, 70, false, false), ("토", "5.24", 48, 48, false, false),
+               ("일", "5.25", 84, 84, false, true)],
+        popRows: [(name: "작별하지 않는다", min: 24, dot: palette[0])],
+        streak: 9, streakDays: Array(repeating: true, count: 14),
+        peak: (label: "주로 아침 7–9시", frac: 7.0 / 24, width: 2.0 / 24),
+        ranks: [(title: "작별하지 않는다", coverUrl: "", fill: 1.0, color: palette[0], value: "4:20"),
+                (title: "아몬드", coverUrl: "", fill: 0.365, color: palette[1], value: "1:35"),
+                (title: "달러구트 꿈 백화점", coverUrl: "", fill: 0.204, color: palette[2], value: "0:53")])
 
     static let week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)] = [
         ("월", "5.18", 38, 47, false, false), ("화", "5.19", 52, 64, false, false),
@@ -429,7 +446,16 @@ struct StatsHeader: View {
                     .frame(width: 38, height: 38)
                     .contentShape(Rectangle())
                     .onTapGesture { model?.nav(.home) }
-                Text("기록").font(.sans(17, 800)).foregroundColor(RT.ink)
+                if model?.statsSubject == .partner, let m = model {
+                    // 파트너 통계 — 아바타 26pt + "{이름}의 기록"
+                    Circle().fill(RT.segBg).frame(width: 26, height: 26)
+                        .overlay(RTAvatarFill(initial: m.partnerInitial, photo: m.partnerAvatar,
+                                              size: 26, fontSize: 11, initialColor: RT.body))
+                        .padding(.trailing, 3)
+                    Text("\(m.partnerName)의 기록").font(.sans(17, 800)).foregroundColor(RT.ink)
+                } else {
+                    Text("기록").font(.sans(17, 800)).foregroundColor(RT.ink)
+                }
             }
             Spacer()
             HStack(spacing: 0) {

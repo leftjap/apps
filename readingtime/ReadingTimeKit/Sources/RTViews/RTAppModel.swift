@@ -106,6 +106,44 @@ public final class RTAppModel: ObservableObject {
     /// nil = 이니셜 폴백 (rtshot/rtapp 데모 픽셀 오라클 불변)
     @Published public var avatarImage: CGImage?
 
+    // ── 함께 읽기(파트너 프레즌스) — README design_handoff_reading_together ──
+    /// 통계 화면 주체: 내 통계(.me) vs 파트너 통계(.partner). 홈 파트너 행 탭 시 .partner.
+    public enum StatsSubject: Sendable { case me, partner }
+    @Published public var statsSubject: StatsSubject = .me
+
+    /// 파트너 데이터 (공유 Supabase 로드 — 백엔드 RLS/프레즌스는 별도 작업). nil = 데모(시안 값)로 렌더.
+    @Published public var partnerData: RTUserData?
+    /// 파트너 사진 (미커밋 → nil, 이니셜 "소" 폴백)
+    @Published public var partnerAvatar: CGImage?
+    /// 파트너 이름 — 데모 정본 "소연" (실서비스: soyoun→소연 이메일 매핑)
+    public var partnerName: String { "소연" }
+    public var partnerInitial: String { String(partnerName.prefix(1)) }
+    /// 파트너 "지금 읽는 중" 프레즌스 — 백엔드가 활성 세션 신호로 세팅(현재 미배선 → false)
+    @Published public var partnerReadingNow = false
+
+    /// 홈 파트너 행 탭 → 파트너 통계(주간)
+    public func openPartnerStats() {
+        statsSubject = .partner
+        nav(.statsWeek)
+    }
+    /// 내 통계 진입 (홈 메뉴) — 주체 .me 리셋
+    public func openMyStats() {
+        statsSubject = .me
+        nav(.statsWeek)
+    }
+
+    /// 데모 파트너 주입 (검증·기기 데모용 — 백엔드 배선 전) — 시안값(소연·작별하지 않는다·오늘 24분)
+    /// reading=false 면 idle(3시간 전) — 마지막 세션 3시간 전, 링/헤일로 없음.
+    public func loadDemoPartner(reading: Bool = true) {
+        let t = now()
+        let ended = reading ? t : t.addingTimeInterval(-3 * 3600)
+        let book = RTBook(isbn: "9788954682152", title: "작별하지 않는다", author: "한강",
+                          publisher: "문학동네", coverUrl: "", addedAt: t)
+        partnerData = RTUserData(books: [book],
+            sessions: [RTSessionRecord(isbn: book.isbn, mode: "flip", seconds: 24 * 60, endedAt: ended, pauseCount: 0)])
+        partnerReadingNow = reading
+    }
+
     /// 사진 선택 저장 시 (설정 시트) — 앱 셸이 배선: Documents 파일 영속
     public var onAvatarChange: ((Data) -> Void)?
 
@@ -294,6 +332,15 @@ public final class RTAppModel: ObservableObject {
         return "\(c.component(.month, from: date)).\(c.component(.day, from: date))"
     }
 
+    /// 상대시간 "방금 / N분 전 / N시간 전 / N일 전" (파트너 idle 배지)
+    public static func agoText(_ date: Date, now: Date) -> String {
+        let s = max(0, Int(now.timeIntervalSince(date)))
+        if s < 60 { return "방금" }
+        if s < 3600 { return "\(s / 60)분 전" }
+        if s < 86400 { return "\(s / 3600)시간 전" }
+        return "\(s / 86400)일 전"
+    }
+
     /// 연속 기록일 — 오늘 기록 없으면 어제까지의 연속을 유지 표시
     public var streakDays: Int {
         guard let d = userData, !d.sessions.isEmpty else { return 0 }
@@ -354,6 +401,7 @@ public final class RTAppModel: ObservableObject {
     public func nav(_ to: RTRoute) {
         if sheet != nil { sheet = nil }
         if to == .detail && route != .detail { detailOrigin = route == .home ? .home : .library }
+        if to == .home { statsSubject = .me }   // 홈 복귀 시 파트너 통계 주체 리셋
         route = to
     }
 
@@ -549,6 +597,9 @@ public final class RTAppModel: ObservableObject {
         case "closeSheet": closeSheet()
         case "mode": RTMode(rawValue: arg).map { setMode($0) }
         case "rename": rename(arg)
+        case "partnerStats": openPartnerStats()   // 파트너 통계 진입(검증·데모)
+        case "demoPartner": loadDemoPartner()      // 데모 파트너 주입(검증·기기 데모)
+        case "demoPartnerIdle": loadDemoPartner(reading: false)   // idle 상태 검증
         case "start": start()
         case "cancelSession": cancelSession()
         case "simFlip": simFlip()
