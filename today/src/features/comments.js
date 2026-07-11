@@ -15,6 +15,7 @@ import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
 import { USER_ID_TO_DISPLAY_NAME } from './entries.js';
 import { summarizeReactions, reactionBarHtml, decideToggle } from './reactions.js';
+import { Profile } from '../services/profile.js';
 
 /** 클로드 자동 댓글 author UUID (supabase/migrations/0024_ai_comment_cron.sql 과 동일). */
 export const CLAUDE_AUTHOR_ID = 'f74a3d8a-f449-4c25-82d1-509dc70a9988';
@@ -27,6 +28,22 @@ let _moreToggleInstalled = false;
 let _reactionHandlerInstalled = false;
 let _realtimeUnregister = null;
 let _articleObserver = null;
+// author_id → avatar_url (본인 + 파트너). 댓글 아바타를 설정한 프로필 사진으로 렌더.
+let _avatarByUser = new Map();
+
+/** 본인·파트너 프로필의 avatar_url 로드 (댓글 아바타용). 1회/마운트. */
+async function loadAvatars() {
+  try {
+    const [me, partner] = await Promise.all([Profile.getMyProfile(), Profile.getPartnerProfile()]);
+    const m = new Map();
+    for (const p of [me, partner]) {
+      if (p?.user_id && p.avatar_url) m.set(p.user_id, p.avatar_url);
+    }
+    _avatarByUser = m;
+  } catch (e) {
+    console.warn('[comments] loadAvatars 실패:', e?.message || e);
+  }
+}
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
 const _pendingCommentIds = new Set();
 // Wave 11.6.10 — composer 처리 중 (in-flight) flag. 빠른 Enter 두 번 시 createComment 재호출 차단.
@@ -107,7 +124,12 @@ export function commentToHtml(comment, opts = {}) {
   }
   const avatarClass = mine ? 'cv-msg__avatar--me' : 'cv-msg__avatar--partner';
   const initial = escapeHtml(name.charAt(0));
-  return `<div class="cv-msg" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}" data-day="${escapeHtml(dayKeyOf(comment?.created_at))}"><span class="cv-msg__avatar ${avatarClass}">${initial}</span><div class="cv-msg__main"><div class="cv-msg__head"><span class="cv-msg__name">${name}</span>${deleteBtn}<span class="cv-msg__time">${time}</span></div><div class="cv-msg__body">${body}</div>${rxBar}</div></div>`;
+  // 설정한 프로필 사진(avatar_url)이 있으면 이니셜 대신 <img>, 없으면 이니셜 fallback.
+  const avatarUrl = opts.avatarByUser?.get?.(comment?.author_id) || null;
+  const avatarInner = avatarUrl
+    ? `<img class="cv-msg__avatar-img" src="${escapeHtml(avatarUrl)}" alt="" />`
+    : initial;
+  return `<div class="cv-msg" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}" data-day="${escapeHtml(dayKeyOf(comment?.created_at))}"><span class="cv-msg__avatar ${avatarClass}">${avatarInner}</span><div class="cv-msg__main"><div class="cv-msg__head"><span class="cv-msg__name">${name}</span>${deleteBtn}<span class="cv-msg__time">${time}</span></div><div class="cv-msg__body">${body}</div>${rxBar}</div></div>`;
 }
 
 /** 날짜 구분 HTML. */
@@ -272,6 +294,7 @@ export async function mountForArticle(article, opts = {}) {
   }</div>`;
   list.innerHTML = postBar + commentsToSectionHtml(comments, {
     currentUserId: userId, partnerName: opts.partnerName, reactionsByComment,
+    avatarByUser: _avatarByUser,
   });
   updateConvoCount(doc);
   scrollListToBottom(doc);
@@ -303,7 +326,7 @@ function appendCommentToList(row, doc) {
   if (day && (!lastDivider || lastDivider.getAttribute('data-day') !== day)) {
     list.insertAdjacentHTML('beforeend', dayDividerHtml(row.created_at));
   }
-  list.insertAdjacentHTML('beforeend', commentToHtml(row, { currentUserId: _currentUser?.id }));
+  list.insertAdjacentHTML('beforeend', commentToHtml(row, { currentUserId: _currentUser?.id, avatarByUser: _avatarByUser }));
   updateConvoCount(doc);
   scrollListToBottom(doc);
   measureAiClamp(doc);
@@ -550,6 +573,7 @@ function injectReactionStyles(doc = (typeof document !== 'undefined' ? document 
     .rx-pick:hover { background: var(--hover, #f5f2ec); }
     .rx-postbar { padding: 0 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line, #f0ece3); }
     .rx-postbar .rx-bar { margin-top: 0; }
+    .cv-msg__avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
   `;
   (doc.head || doc.documentElement)?.appendChild(style);
 }
@@ -661,6 +685,7 @@ export async function mountCommentsView(user) {
   installMoreToggleHandler();
   installReactionHandler();
   injectReactionStyles();
+  await loadAvatars();
   installArticleObserver();
   if (_realtimeUnregister) _realtimeUnregister();
   _realtimeUnregister = Sync.onRealtimeChange((payload) => {
@@ -687,6 +712,7 @@ export function __resetCommentsState() {
   _moreToggleInstalled = false;
   _reactionHandlerInstalled = false;
   _composerSubmitting = false;
+  _avatarByUser = new Map();
   _pendingCommentIds.clear();
   if (_articleObserver) {
     try { _articleObserver.disconnect(); } catch (_) {}

@@ -193,6 +193,54 @@ describe('commentToHtml', () => {
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
   });
+
+  it('avatarByUser 에 avatar_url 있으면 이니셜 대신 <img> 렌더 (mine)', () => {
+    const url = 'https://x.supabase.co/storage/v1/object/public/today-avatars/me/avatar.jpg?t=1';
+    const html = commentToHtml(
+      { id: 'a1', body: '나', author_id: OWNER },
+      { currentUserId: OWNER, avatarByUser: new Map([[OWNER, url]]) },
+    );
+    expect(html).toContain('cv-msg__avatar-img');
+    expect(html).toContain(`src="${url}"`);
+    expect(html).toContain('cv-msg__avatar--me');
+  });
+
+  it('avatarByUser 에 partner avatar_url → <img> (partner)', () => {
+    const url = 'https://x.supabase.co/.../soyoun/avatar.webp';
+    const html = commentToHtml(
+      { id: 'a2', body: 'p', author_id: PARTNER },
+      { currentUserId: OWNER, partnerName: '소연', avatarByUser: new Map([[PARTNER, url]]) },
+    );
+    expect(html).toContain('cv-msg__avatar-img');
+    expect(html).toContain(`src="${url}"`);
+  });
+
+  it('avatar_url 없으면 기존대로 이니셜 fallback (img 없음)', () => {
+    const html = commentToHtml(
+      { id: 'a3', body: 'x', author_id: PARTNER },
+      { currentUserId: OWNER, partnerName: '소연', avatarByUser: new Map() },
+    );
+    expect(html).not.toContain('cv-msg__avatar-img');
+    expect(html).toContain('>소</span>'); // 이니셜
+  });
+
+  it('avatar url 은 속성 이스케이프', () => {
+    const html = commentToHtml(
+      { id: 'a4', body: 'x', author_id: PARTNER },
+      { currentUserId: OWNER, avatarByUser: new Map([[PARTNER, 'https://x/a".jpg"><b>']]) },
+    );
+    expect(html).not.toContain('"><b>');
+    expect(html).toContain('&quot;');
+  });
+
+  it('클로드는 avatarByUser 무관 — 스파클 유지(img 없음)', () => {
+    const html = commentToHtml(
+      { id: 'ai2', body: 'x', author_id: CLAUDE_AUTHOR_ID },
+      { currentUserId: OWNER, avatarByUser: new Map([[CLAUDE_AUTHOR_ID, 'https://x/a.jpg']]) },
+    );
+    expect(html).toContain('cv-msg__avatar--ai');
+    expect(html).not.toContain('cv-msg__avatar-img');
+  });
 });
 
 describe('commentsToSectionHtml — 타임라인 + 날짜 구분', () => {
