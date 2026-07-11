@@ -626,6 +626,75 @@ function enqueueCommentSync(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// reactions (이모지 리액션) — 0027 마이그 / schema v8. entry/comment 이중타겟 토글.
+// 순수 집계·토글 판정은 features/reactions.js. 여기선 Dexie CRUD + 조회만.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** 리액션 추가. entry_id/comment_id 중 정확히 하나 필수. */
+export async function createReaction(input) {
+  if (!input?.author_id) throw new Error('[todayQueries] reaction author_id 누락');
+  if (!input?.emoji) throw new Error('[todayQueries] reaction emoji 누락');
+  const hasEntry = !!input.entry_id;
+  const hasComment = !!input.comment_id;
+  if (hasEntry === hasComment) throw new Error('[todayQueries] reaction 은 entry_id/comment_id 중 정확히 하나');
+  const row = {
+    id: input.id || newId(),
+    entry_id: input.entry_id ?? null,
+    comment_id: input.comment_id ?? null,
+    author_id: input.author_id,
+    emoji: input.emoji,
+    created_at: input.created_at || nowIso(),
+    pending_sync: 0,
+  };
+  await db().reactions.add(row);
+  enqueueReactionSync(row.id);
+  return row;
+}
+
+/** 리액션 제거 (토글 오프) — Dexie 삭제 + 원격 delete. */
+export async function removeReaction(id) {
+  if (!id) return;
+  await db().reactions.delete(id);
+  const sync = globalThis.todaySync;
+  if (sync && typeof sync.deleteReactionRemote === 'function') sync.deleteReactionRemote(id);
+}
+
+/** comment_id 별 리액션 rows. */
+export async function listReactionsByComment(commentId) {
+  return await db().reactions.where('comment_id').equals(commentId).toArray();
+}
+
+/** entry_id 별 리액션 rows. */
+export async function listReactionsByEntry(entryId) {
+  return await db().reactions.where('entry_id').equals(entryId).toArray();
+}
+
+/** comment_id 배열별 리액션 map (N+1 회피). */
+export async function listReactionsForComments(commentIds) {
+  if (!commentIds?.length) return new Map();
+  const rows = await db().reactions.where('comment_id').anyOf(commentIds).toArray();
+  const map = new Map(commentIds.map((id) => [id, []]));
+  for (const r of rows) { if (map.has(r.comment_id)) map.get(r.comment_id).push(r); }
+  return map;
+}
+
+/** entry_id 배열별 리액션 map. */
+export async function listReactionsForEntries(entryIds) {
+  if (!entryIds?.length) return new Map();
+  const rows = await db().reactions.where('entry_id').anyOf(entryIds).toArray();
+  const map = new Map(entryIds.map((id) => [id, []]));
+  for (const r of rows) { if (map.has(r.entry_id)) map.get(r.entry_id).push(r); }
+  return map;
+}
+
+function enqueueReactionSync(id) {
+  const sync = globalThis.todaySync;
+  if (sync && typeof sync.queueUploadReaction === 'function') {
+    sync.queueUploadReaction(id);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // notifications (Wave 11.7.1) — spec §6 line 247-259 / §11 line 401-433
 // 인박스 메시지 — DB trigger 가 INSERT 만 함. 클라이언트는 read_at 갱신·목록 조회만.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -727,6 +796,13 @@ export const Queries = {
   countUnreadNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  // reactions (이모지 리액션)
+  createReaction,
+  removeReaction,
+  listReactionsByComment,
+  listReactionsByEntry,
+  listReactionsForComments,
+  listReactionsForEntries,
 };
 
 if (typeof window !== 'undefined') {

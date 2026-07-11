@@ -14,6 +14,7 @@
 import { Queries } from '../db/queries.js';
 import { Sync } from '../db/sync.js';
 import { USER_ID_TO_DISPLAY_NAME } from './entries.js';
+import { summarizeReactions, reactionBarHtml, decideToggle } from './reactions.js';
 
 /** 클로드 자동 댓글 author UUID (supabase/migrations/0024_ai_comment_cron.sql 과 동일). */
 export const CLAUDE_AUTHOR_ID = 'f74a3d8a-f449-4c25-82d1-509dc70a9988';
@@ -23,6 +24,7 @@ let _composerInstalled = false;
 let _articleObserverInstalled = false;
 let _commentDeleteInstalled = false;
 let _moreToggleInstalled = false;
+let _reactionHandlerInstalled = false;
 let _realtimeUnregister = null;
 let _articleObserver = null;
 // Wave 11.6.8a — 댓글 입력 직후 즉시 UI append 한 id 추적. Realtime echo 가 같은 id 로 도달 시 skip (race 방어)
@@ -95,12 +97,17 @@ export function commentToHtml(comment, opts = {}) {
   const deleteBtn = mine
     ? `<button class="cv-msg__del" data-comment-id="${id}" aria-label="댓글 삭제" type="button">삭제</button>`
     : '';
+  // 리액션 바 — 이 댓글의 리액션 요약(opts.reactions) → 칩 + 추가 버튼.
+  const rxBar = reactionBarHtml(
+    summarizeReactions(opts.reactions, { currentUserId: opts.currentUserId }),
+    { targetType: 'comment', targetId: comment?.id || '' },
+  );
   if (isAi) {
-    return `<div class="cv-msg cv-msg--ai" data-comment-id="${id}" data-mine="0" data-day="${escapeHtml(dayKeyOf(comment?.created_at))}"><span class="cv-msg__avatar cv-msg__avatar--ai">${AI_SPARK_SVG}</span><div class="cv-msg__main"><div class="cv-msg__card"><div class="cv-msg__head"><span class="cv-msg__name">${name}</span><span class="ai-tag">자동</span><span class="cv-msg__time">${time}</span></div><div class="cv-msg__body is-clamped">${body}</div><button class="cv-msg__more" type="button" hidden>더 보기</button></div></div></div>`;
+    return `<div class="cv-msg cv-msg--ai" data-comment-id="${id}" data-mine="0" data-day="${escapeHtml(dayKeyOf(comment?.created_at))}"><span class="cv-msg__avatar cv-msg__avatar--ai">${AI_SPARK_SVG}</span><div class="cv-msg__main"><div class="cv-msg__card"><div class="cv-msg__head"><span class="cv-msg__name">${name}</span><span class="ai-tag">자동</span><span class="cv-msg__time">${time}</span></div><div class="cv-msg__body is-clamped">${body}</div><button class="cv-msg__more" type="button" hidden>더 보기</button></div>${rxBar}</div></div>`;
   }
   const avatarClass = mine ? 'cv-msg__avatar--me' : 'cv-msg__avatar--partner';
   const initial = escapeHtml(name.charAt(0));
-  return `<div class="cv-msg" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}" data-day="${escapeHtml(dayKeyOf(comment?.created_at))}"><span class="cv-msg__avatar ${avatarClass}">${initial}</span><div class="cv-msg__main"><div class="cv-msg__head"><span class="cv-msg__name">${name}</span>${deleteBtn}<span class="cv-msg__time">${time}</span></div><div class="cv-msg__body">${body}</div></div></div>`;
+  return `<div class="cv-msg" data-comment-id="${id}" data-mine="${mine ? '1' : '0'}" data-day="${escapeHtml(dayKeyOf(comment?.created_at))}"><span class="cv-msg__avatar ${avatarClass}">${initial}</span><div class="cv-msg__main"><div class="cv-msg__head"><span class="cv-msg__name">${name}</span>${deleteBtn}<span class="cv-msg__time">${time}</span></div><div class="cv-msg__body">${body}</div>${rxBar}</div></div>`;
 }
 
 /** 날짜 구분 HTML. */
@@ -112,6 +119,7 @@ export function dayDividerHtml(iso) {
 export function commentsToSectionHtml(comments, opts = {}) {
   const rows = comments || [];
   if (!rows.length) return '';
+  const rxMap = opts.reactionsByComment || null;
   let html = '';
   let lastDay = null;
   for (const c of rows) {
@@ -120,7 +128,8 @@ export function commentsToSectionHtml(comments, opts = {}) {
       html += dayDividerHtml(c.created_at);
       lastDay = day;
     }
-    html += commentToHtml(c, opts);
+    const perComment = rxMap ? { ...opts, reactions: rxMap.get(c.id) || [] } : opts;
+    html += commentToHtml(c, perComment);
   }
   return html;
 }
@@ -244,7 +253,26 @@ export async function mountForArticle(article, opts = {}) {
   } catch (e) {
     console.warn('[comments] listCommentsByEntry 실패:', e?.message || e);
   }
-  list.innerHTML = commentsToSectionHtml(comments, { currentUserId: userId, partnerName: opts.partnerName });
+  // 댓글별 리액션 로드 (N+1 회피 — 배열 1회 조회).
+  let reactionsByComment = new Map();
+  try {
+    reactionsByComment = await Queries.listReactionsForComments(comments.map((c) => c.id));
+  } catch (e) {
+    console.warn('[comments] listReactionsForComments 실패:', e?.message || e);
+  }
+  // 게시물(글) 단위 리액션 — 패널 상단 반응 바 (data-target-type="entry").
+  let entryReactions = [];
+  try {
+    entryReactions = await Queries.listReactionsByEntry(id);
+  } catch (e) {
+    console.warn('[comments] listReactionsByEntry 실패:', e?.message || e);
+  }
+  const postBar = `<div class="rx-postbar" role="group" aria-label="이 글에 대한 반응">${
+    reactionBarHtml(summarizeReactions(entryReactions, { currentUserId: userId }), { targetType: 'entry', targetId: id })
+  }</div>`;
+  list.innerHTML = postBar + commentsToSectionHtml(comments, {
+    currentUserId: userId, partnerName: opts.partnerName, reactionsByComment,
+  });
   updateConvoCount(doc);
   scrollListToBottom(doc);
   measureAiClamp(doc);
@@ -412,6 +440,120 @@ function installMoreToggleHandler() {
   }, true);
 }
 
+// ───────────────────────────────────────────────────────────────────────────
+// 이모지 리액션 — 클릭 위임(칩 토글 / +버튼 picker / picker 선택) + 바 재렌더 + CSS.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** 타겟(entry|comment) 의 리액션 rows 조회. */
+function listReactionsFor(targetType, targetId) {
+  return targetType === 'comment'
+    ? Queries.listReactionsByComment(targetId)
+    : Queries.listReactionsByEntry(targetId);
+}
+
+/** 리액션 바 1개를 최신 Dexie 상태로 다시 그림. */
+async function rerenderReactionBar(targetType, targetId, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc || !targetId) return;
+  const bar = doc.querySelector?.(`.rx-bar[data-target-type="${targetType}"][data-target-id="${targetId}"]`);
+  if (!bar) return;
+  let rows = [];
+  try { rows = await listReactionsFor(targetType, targetId); } catch (_) { /* 무시 */ }
+  const summary = summarizeReactions(rows, { currentUserId: _currentUser?.id });
+  bar.outerHTML = reactionBarHtml(summary, { targetType, targetId });
+}
+
+/** 이모지 토글 — 낙관적: DB 반영 후 해당 바만 재렌더. */
+async function toggleReaction(targetType, targetId, emoji) {
+  const authorId = _currentUser?.id;
+  if (!authorId || !targetId || !emoji) return;
+  try {
+    const rows = await listReactionsFor(targetType, targetId);
+    const decision = decideToggle(rows, { currentUserId: authorId, emoji });
+    if (decision.action === 'remove') {
+      await Queries.removeReaction(decision.id);
+    } else {
+      const key = targetType === 'comment' ? 'comment_id' : 'entry_id';
+      await Queries.createReaction({ [key]: targetId, author_id: authorId, emoji });
+    }
+  } catch (e) {
+    console.warn('[comments] toggleReaction 실패:', e?.message || e);
+  }
+  await rerenderReactionBar(targetType, targetId);
+}
+
+function closeAllPickers(doc) {
+  (doc.querySelectorAll?.('.rx-picker:not([hidden])') || []).forEach((p) => {
+    p.hidden = true;
+    const add = p.parentElement?.querySelector?.('.rx-add');
+    if (add) add.setAttribute('aria-expanded', 'false');
+  });
+}
+
+/** 리액션 클릭 위임 — 칩 토글 / +버튼 picker 열기 / picker 이모지 선택. */
+function installReactionHandler() {
+  if (_reactionHandlerInstalled) return;
+  if (typeof document === 'undefined') return;
+  _reactionHandlerInstalled = true;
+  document.addEventListener('click', (e) => {
+    const chip = e.target?.closest?.('.rx-chip[data-emoji]');
+    const add = e.target?.closest?.('.rx-add');
+    const pick = e.target?.closest?.('.rx-pick[data-emoji]');
+    const bar = e.target?.closest?.('.rx-bar');
+    if (!chip && !add && !pick) {
+      closeAllPickers(document); // 바깥 클릭 → picker 닫기
+      return;
+    }
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    if (!bar) return;
+    const targetType = bar.dataset?.targetType || 'comment';
+    const targetId = bar.dataset?.targetId;
+    if (chip) {
+      closeAllPickers(document);
+      toggleReaction(targetType, targetId, chip.dataset.emoji);
+    } else if (add) {
+      const picker = bar.querySelector?.('.rx-picker');
+      const willOpen = picker?.hidden;
+      closeAllPickers(document);
+      if (picker && willOpen) { picker.hidden = false; add.setAttribute('aria-expanded', 'true'); }
+    } else if (pick) {
+      closeAllPickers(document);
+      toggleReaction(targetType, targetId, pick.dataset.emoji);
+    }
+  }, true);
+}
+
+/** 리액션 바 스타일 1회 주입 (댓글·게시물 공용). */
+function injectReactionStyles(doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc || doc.getElementById?.('today-reaction-styles')) return;
+  const style = doc.createElement('style');
+  style.id = 'today-reaction-styles';
+  style.textContent = `
+    .rx-bar { display: flex; align-items: center; gap: 4px; margin-top: 6px; flex-wrap: wrap; position: relative; }
+    .rx-chip { display: inline-flex; align-items: center; gap: 3px; height: 24px; padding: 0 8px; border-radius: 12px;
+      border: 1px solid var(--line, #e8e4dc); background: var(--surface, #fff); font-size: 12.5px;
+      color: var(--ink-2, #55504a); cursor: pointer; line-height: 1; transition: background .12s, border-color .12s; }
+    .rx-chip:hover { background: var(--hover, #f5f2ec); }
+    .rx-chip.is-mine { background: #fdeede; border-color: #f0c896; color: #9a5b12; }
+    .rx-chip .rx-n { font-size: 11.5px; font-variant-numeric: tabular-nums; }
+    .rx-add { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+      border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--ink-4, #b5ad9e);
+      cursor: pointer; font-size: 14px; opacity: .55; transition: opacity .12s, background .12s, color .12s; }
+    .rx-bar:hover .rx-add, .cv-msg:hover .rx-add, .rx-add:focus-visible { opacity: 1; }
+    .rx-add:hover { background: var(--hover, #f5f2ec); color: var(--ink-2, #55504a); }
+    .rx-picker { position: absolute; bottom: 30px; left: 0; display: flex; gap: 2px; padding: 4px;
+      background: var(--surface, #fff); border: 1px solid var(--line, #e8e4dc); border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(20,20,19,.12); z-index: 30; }
+    .rx-picker[hidden] { display: none; }
+    .rx-pick { width: 30px; height: 30px; border: none; background: transparent; border-radius: 8px;
+      font-size: 17px; cursor: pointer; line-height: 1; }
+    .rx-pick:hover { background: var(--hover, #f5f2ec); }
+    .rx-postbar { padding: 0 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line, #f0ece3); }
+    .rx-postbar .rx-bar { margin-top: 0; }
+  `;
+  (doc.head || doc.documentElement)?.appendChild(style);
+}
+
 /** 메시지 row 제거 + 날짜 구분 정리 (그 날 마지막 메시지였으면 divider 도 제거). */
 function removeCommentRow(row, doc) {
   if (!row || typeof row.remove !== 'function') return;
@@ -517,9 +659,20 @@ export async function mountCommentsView(user) {
   installComposerHandler();
   installCommentDeleteHandler();
   installMoreToggleHandler();
+  installReactionHandler();
+  injectReactionStyles();
   installArticleObserver();
   if (_realtimeUnregister) _realtimeUnregister();
   _realtimeUnregister = Sync.onRealtimeChange((payload) => {
+    // 리액션 변경 → 해당 타겟 바만 재렌더 (상대 반응 실시간 반영).
+    if (payload?.table === 'today_reactions') {
+      const row = payload.new || payload.old;
+      if (row) {
+        rerenderReactionBar(row.comment_id ? 'comment' : 'entry', row.comment_id || row.entry_id)
+          .catch(() => { /* 무시 */ });
+      }
+      return;
+    }
     handleRealtimeCommentChange(payload).catch((e) =>
       console.warn('[comments] realtime handler 실패:', e?.message || e),
     );
@@ -532,6 +685,7 @@ export function __resetCommentsState() {
   _articleObserverInstalled = false;
   _commentDeleteInstalled = false;
   _moreToggleInstalled = false;
+  _reactionHandlerInstalled = false;
   _composerSubmitting = false;
   _pendingCommentIds.clear();
   if (_articleObserver) {

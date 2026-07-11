@@ -73,6 +73,9 @@ export const TABLE_MAP = Object.freeze([
   Object.freeze({ dexie: 'comments', supabase: 'today_comments', filterColumn: null }),
   // notifications 는 recipient_id 필터.
   Object.freeze({ dexie: 'notifications', supabase: 'today_notifications', filterColumn: 'recipient_id' }),
+  // reactions (이모지 리액션) — RLS 가 본인 + 파트너 공유글 가시성 처리. replace: 하드삭제 반영 위해
+  // 콜드 pull 시 clear+refill(권위적). raw: is_shared/pinned 정규화 대상 아님.
+  Object.freeze({ dexie: 'reactions', supabase: 'today_reactions', filterColumn: null, replace: true, raw: true }),
   // Wave 11.8 — 사용자별 매핑 (admin UI 편집 대상).
   // user_id 필터 — 본인 매핑만. RLS 가 강제하지만 client-side 도 명시.
   Object.freeze({ dexie: 'user_categories', supabase: 'today_user_categories', filterColumn: 'user_id' }),
@@ -122,14 +125,22 @@ export async function pullTable(mapping, db, userId) {
       if (page.length < PULL_PAGE_SIZE) break;
       from += PULL_PAGE_SIZE;
     }
-    if (collected.length === 0) {
-      return { table: mapping.dexie, status: 'empty', count: 0 };
-    }
     const store = db[mapping.dexie];
     if (!store?.bulkPut) {
       return { table: mapping.dexie, status: 'error', reason: 'no_store' };
     }
-    await store.bulkPut(collected.map(normalizeRow));
+    // replace: 하드삭제(리액션 토글 오프)를 콜드 pull 에 반영 — clear 후 refill(빈 결과여도 clear).
+    if (mapping.replace && typeof store.clear === 'function') {
+      await store.clear();
+    }
+    if (collected.length === 0) {
+      return { table: mapping.dexie, status: 'empty', count: 0 };
+    }
+    // raw: is_shared/pinned 없는 테이블(reactions)은 정규화 스킵 + pending_sync 초기화.
+    const rows = mapping.raw
+      ? collected.map((r) => ({ ...r, pending_sync: 0 }))
+      : collected.map(normalizeRow);
+    await store.bulkPut(rows);
     return { table: mapping.dexie, status: 'ok', count: collected.length };
   } catch (e) {
     console.error(`[sync] pullTable ${mapping.supabase} 예외:`, formatError(e));
@@ -178,6 +189,9 @@ export async function startSync(user) {
   flushPendingCommentsFromDexie().catch((e) =>
     console.warn('[sync] flushPendingCommentsFromDexie 실패:', formatError(e)),
   );
+  flushPendingReactionsFromDexie().catch((e) =>
+    console.warn('[sync] flushPendingReactionsFromDexie 실패:', formatError(e)),
+  );
   return result;
 }
 
@@ -195,6 +209,8 @@ export function stopSync() {
   _commentUploadTimers.clear();
   for (const t of _notifUploadTimers.values()) clearTimeout(t);
   _notifUploadTimers.clear();
+  for (const t of _reactionUploadTimers.values()) clearTimeout(t);
+  _reactionUploadTimers.clear();
   // Realtime 도 함께 종료 (Wave 11.5.4)
   stopRealtime();
 }
@@ -486,6 +502,85 @@ export async function flushPendingCommentsFromDexie() {
 }
 
 // ───────────────────────────────────────────────────────────────────────────
+// reactions 업로드/삭제 (이모지 리액션) — 추가는 upsert(debounce), 토글 오프는 즉시 delete.
+// ───────────────────────────────────────────────────────────────────────────
+
+const _reactionUploadTimers = new Map();
+
+export async function pushReaction(id) {
+  if (!supabase) return { id, status: 'skipped', reason: 'no_supabase' };
+  const db = globalThis.todayDB;
+  if (!db) return { id, status: 'skipped', reason: 'no_db' };
+  const row = await db.reactions.get(id);
+  if (!row) return { id, status: 'skipped', reason: 'not_found' };
+  const targetId = row.entry_id || row.comment_id;
+  if (!isValidUuid(id) || !isValidUuid(targetId)) {
+    try { await db.reactions.put({ ...row, pending_sync: 0 }); } catch (_) { /* 무시 */ }
+    return { id, status: 'skipped', reason: 'non_uuid_local_only' };
+  }
+  try {
+    const payload = {
+      id: row.id, entry_id: row.entry_id ?? null, comment_id: row.comment_id ?? null,
+      author_id: row.author_id, emoji: row.emoji, created_at: row.created_at,
+    };
+    const { error } = await supabase.from('today_reactions').upsert(payload, { onConflict: 'id' });
+    if (error) {
+      // RLS 거부(42501) 또는 유니크 충돌(23505: 이미 같은 반응) — 재시도 무의미. outbox 에서 제거.
+      if (error?.code === '42501' || error?.code === '23505') {
+        try { await db.reactions.put({ ...row, pending_sync: 0 }); } catch (_) {}
+        return { id, status: 'error', error, reason: 'rls_or_dup' };
+      }
+      try { await db.reactions.put({ ...row, pending_sync: 1 }); } catch (_) {}
+      return { id, status: 'error', error };
+    }
+    try { await db.reactions.put({ ...row, pending_sync: 0 }); } catch (_) {}
+    return { id, status: 'ok' };
+  } catch (e) {
+    try { await db.reactions.put({ ...row, pending_sync: 1 }); } catch (_) {}
+    return { id, status: 'error', error: e };
+  }
+}
+
+/** 토글 오프 — 원격 리액션 삭제. (Dexie 삭제는 queries.removeReaction 이 선행.) */
+export async function deleteReactionRemote(id) {
+  if (!supabase) return { id, status: 'skipped', reason: 'no_supabase' };
+  if (!isValidUuid(id)) return { id, status: 'skipped', reason: 'non_uuid_local_only' };
+  try {
+    const { error } = await supabase.from('today_reactions').delete().eq('id', id);
+    if (error) return { id, status: 'error', error };
+    return { id, status: 'ok' };
+  } catch (e) {
+    return { id, status: 'error', error: e };
+  }
+}
+
+export function queueUploadReaction(id) {
+  if (!id) return;
+  const existing = _reactionUploadTimers.get(id);
+  if (existing) clearTimeout(existing);
+  const t = setTimeout(() => {
+    _reactionUploadTimers.delete(id);
+    pushReaction(id);
+  }, UPLOAD_DEBOUNCE_MS);
+  _reactionUploadTimers.set(id, t);
+}
+
+export async function flushPendingReactionsFromDexie() {
+  if (!supabase) return { count: 0, reason: 'no_supabase', results: [] };
+  const db = globalThis.todayDB;
+  if (!db) return { count: 0, reason: 'no_db', results: [] };
+  let pending;
+  try {
+    pending = await db.reactions.where('pending_sync').equals(1).toArray();
+  } catch (e) {
+    return { count: 0, reason: 'list_failed', error: e, results: [] };
+  }
+  if (!pending.length) return { count: 0, results: [] };
+  const results = await Promise.all(pending.map((p) => pushReaction(p.id)));
+  return { count: pending.length, results };
+}
+
+// ───────────────────────────────────────────────────────────────────────────
 // notifications read_at 갱신 (Wave 11.7.2)
 // 알림은 서버 INSERT (트리거) — 클라이언트는 read_at 만 update.
 // ───────────────────────────────────────────────────────────────────────────
@@ -566,6 +661,11 @@ export function startRealtime() {
     )
     .on(
       'postgres_changes',
+      { event: '*', schema: 'public', table: 'today_reactions' },
+      (payload) => handleReactionChange(payload),
+    )
+    .on(
+      'postgres_changes',
       { event: '*', schema: 'public', table: 'today_user_categories' },
       (payload) => handleUserMappingChange('user_categories', ['user_id', 'id'], payload),
     )
@@ -627,6 +727,25 @@ function handleCommentChange(payload) {
     }
   } catch (e) {
     console.error('[sync] realtime comment put 실패:', formatError(e));
+  }
+  for (const fn of _realtimeListeners) {
+    try { fn(payload); } catch (e) { console.error('[sync] listener 실패:', formatError(e)); }
+  }
+}
+
+/** Realtime reaction payload → Dexie 동기화 + 리스너 통지(UI 바 재렌더). */
+function handleReactionChange(payload) {
+  const db = globalThis.todayDB;
+  if (!db?.reactions) return;
+  const { eventType, new: newRow, old: oldRow } = payload;
+  try {
+    if (eventType === 'DELETE') {
+      if (oldRow?.id) db.reactions.delete(oldRow.id);
+    } else if (newRow) {
+      db.reactions.put({ ...newRow, pending_sync: 0 });
+    }
+  } catch (e) {
+    console.error('[sync] realtime reaction put 실패:', formatError(e));
   }
   for (const fn of _realtimeListeners) {
     try { fn(payload); } catch (e) { console.error('[sync] listener 실패:', formatError(e)); }
@@ -740,6 +859,11 @@ export const Sync = {
   flushPendingCommentsFromDexie,
   pushNotification,
   queueUploadNotification,
+  // reactions (이모지 리액션)
+  pushReaction,
+  deleteReactionRemote,
+  queueUploadReaction,
+  flushPendingReactionsFromDexie,
   _clearUploadTimers,
   _clearExpenseUploadTimers,
   _getLastUploadResult,

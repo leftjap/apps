@@ -88,6 +88,12 @@ export function createTodayDB(name = 'today') {
     entries:
       '&id, owner_id, kind, updated_at, deleted_at, is_shared, pinned, [kind+updated_at], pending_sync, [owner_id+kind+kind_number]',
   });
+  // v8 — reactions (이모지 리액션). 0027 마이그: entry/comment 이중타겟, 토글.
+  //   조회: comment_id / entry_id 별. 토글: 내 반응(author+emoji) 탐색.
+  db.version(8).stores({
+    reactions:
+      '&id, entry_id, comment_id, author_id, emoji, [entry_id+author_id], [comment_id+author_id], pending_sync',
+  });
   return db;
 }
 

@@ -269,7 +269,7 @@ describe('mountForArticle', () => {
     expect(list.innerHTML).toBe('');
   });
 
-  it('shared entry + 댓글 0건 → ok=true count=0 mounted=false + 빈 타임라인', async () => {
+  it('shared entry + 댓글 0건 → ok=true count=0 mounted=false + 댓글 없음(글 반응 바만)', async () => {
     const { Queries } = await import('../db/queries.js');
     const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', title: '글', is_shared: 1 });
     const { doc, list } = makePanelDoc();
@@ -279,7 +279,10 @@ describe('mountForArticle', () => {
     expect(r.canComment).toBe(true);
     expect(r.count).toBe(0);
     expect(r.mounted).toBe(false);
-    expect(list.innerHTML).toBe('');
+    // 댓글 0건이어도 글(entry) 반응 바는 항상 렌더 — 댓글 메시지(cv-msg)는 없음.
+    expect(list.innerHTML).toContain('rx-postbar');
+    expect(list.innerHTML).toContain('data-target-type="entry"');
+    expect(list.innerHTML).not.toContain('cv-msg');
   });
 
   it('shared entry + 댓글 2건 → count=2 + 타임라인 메시지 2개', async () => {
