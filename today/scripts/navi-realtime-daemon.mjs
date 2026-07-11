@@ -14,8 +14,9 @@ import { promisify } from 'node:util';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { selectPendingInitial } from './navi-pending.mjs';
+import { selectPendingInitial, selectPendingReplies } from './navi-pending.mjs';
 import { parseVerdict, gateDecision, buildFixText } from './navi-verify.mjs';
+import { nameFor } from '../supabase/functions/ai-comment/logic.js';
 
 const execFileP = promisify(execFile);
 const HOME = os.homedir();
@@ -57,7 +58,8 @@ if (!SUPABASE_URL || !SERVICE_KEY) { log('FATAL: SUPABASE_URL / SERVICE_ROLE_KEY
 fs.mkdirSync(STATE_DIR, { recursive: true });
 
 const sb = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
-const seen = new Set();
+const seen = new Set();       // 초기 댓글 in-flight (entry id)
+const replying = new Set();   // 대댓글 in-flight (entry id) — 초기와 상호배타(초기=클로드댓글無, 대댓글=有)
 let DRY_RUN = false; // --dry-run: 검증만 하고 댓글 insert 는 생략(통합 테스트용).
 
 function schedule(row) {
@@ -68,6 +70,26 @@ function schedule(row) {
   const delay = Math.max(0, SETTLE_MS - age);
   log(`schedule ${row.id} kind=${row.kind} delay=${Math.round(delay / 1000)}s`);
   setTimeout(() => { runClaude(row); }, delay);
+}
+
+// 대댓글은 settle gate 없음(사람 댓글엔 즉시 응답). 중복 발사만 replying 으로 막는다.
+function scheduleReply(row) {
+  if (!row || !NAVI_KINDS.includes(row.kind)) return;
+  if (replying.has(row.id) || seen.has(row.id)) return;
+  replying.add(row.id);
+  log(`schedule-reply ${row.id} kind=${row.kind}`);
+  processPipeline(row, { mode: 'reply' }).finally(() => replying.delete(row.id));
+}
+
+// 사람 댓글 INSERT 즉시 경로: 해당 글이 대댓글 대상이면 발사 (순수 selectPendingReplies 재사용).
+async function checkReplyForEntry(entryId) {
+  const { data: e } = await sb.from('today_entries')
+    .select('id,kind,is_shared,deleted_at,created_at').eq('id', entryId).single();
+  if (!e || e.deleted_at || e.is_shared !== true || !NAVI_KINDS.includes(e.kind)) return;
+  const { data: cmts } = await sb.from('today_comments')
+    .select('entry_id,author_id,created_at').eq('entry_id', entryId).is('deleted_at', null);
+  const replies = selectPendingReplies([e], new Map([[entryId, cmts || []]]), { claudeId: CLAUDE_AUTHOR_ID });
+  if (replies.length) scheduleReply(e);
 }
 
 function readMaybe(p) { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return ''; } }
@@ -102,6 +124,13 @@ const draftPrompt = (work) =>
     `${work}/entry.txt (대상 일기)를 Read 로 읽고, 두 지침(유머·개그·과장·비유 + 최신 연구/학문 보강)대로 댓글 본문을 작성하라.`,
     `작성한 댓글 전문만 ${work}/draft.txt 에 기록하라(Bash). 제출하지 마라.`].join('\n');
 
+// 대댓글용 초안 — 일기 + 지금까지의 댓글 스레드를 읽고, 마지막 사람 댓글에 답한다(새 주제 시작 아님).
+const replyDraftPrompt = (work) =>
+  [`너는 투데이 "오늘의 네비" 댓글 봇 클로드다. ${TODAY_DIR}/routines/ai-navi.md 의 지침을 Read 로 읽고 그대로 따른다.`,
+    `${work}/entry.txt (대상 일기)와 ${work}/thread.txt (지금까지의 댓글 대화)를 Read 로 읽어라.`,
+    'thread 의 "마지막 사람 댓글"에 대댓글로 답하라 — 새 주제를 시작하지 말고 그 말에 직접 반응·답변한다. 지적/농담/반문이면 거기에 맞게 응수. 지침(유머·개그·과장·비유, 필요 시 최신 연구)은 유지하되 대화 흐름에 자연스럽게.',
+    `작성한 대댓글 전문만 ${work}/draft.txt 에 기록하라(Bash). 제출하지 마라.`].join('\n');
+
 const factPrompt = (work) =>
   [`너는 독립 팩트체커다(작성자 아님, 초안을 의심). ${work}/entry.txt 와 ${work}/draft.txt 를 Read 로 읽어라.`,
     '초안이 인용한 모든 연구·학술 주장을 WebSearch 로 검증하라: 실재? 저자·출처 정확? 적용·분류 정확(과장·느슨/반대 분류 아님)?',
@@ -133,8 +162,9 @@ async function runClaude(row) {
   await processPipeline(row);
 }
 
-// DRAFT → VERIFY(fact+tone) → GATE → (REVISE) → SUBMIT. settle 통과 후/단발(--once) 에서 호출.
-async function processPipeline(row) {
+// DRAFT → VERIFY(fact+tone) → GATE → (REVISE) → SUBMIT. settle 통과 후/단발(--once/--reply) 에서 호출.
+// mode: 'initial'(기본) | 'reply'. reply 는 thread.txt(댓글 대화)를 추가로 주입해 마지막 사람 댓글에 응답.
+async function processPipeline(row, { mode = 'initial' } = {}) {
   const work = path.join(os.tmpdir(), `navi-verify-${row.id}-${Date.now()}`);
   try {
     fs.mkdirSync(work, { recursive: true });
@@ -144,8 +174,23 @@ async function processPipeline(row) {
     const plain = String(ent.content || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').trim();
     fs.writeFileSync(path.join(work, 'entry.txt'), `제목: ${ent.title || ''}\n\n${plain}`);
 
-    // DRAFT — 지침대로 댓글 작성(제출 안 함)
-    await claudePass(draftPrompt(work), 'Read,Bash', TODAY_DIR);
+    // reply 모드: 비삭제 댓글 스레드를 시간순으로 thread.txt 에 기록(작성자 이름 라벨).
+    if (mode === 'reply') {
+      const { data: cmts } = await sb.from('today_comments')
+        .select('author_id,body,created_at').eq('entry_id', row.id).is('deleted_at', null)
+        .order('created_at', { ascending: true });
+      if (!cmts || cmts.length === 0) { log(`skip reply ${row.id} (댓글 없음)`); return; }
+      if (cmts[cmts.length - 1].author_id === CLAUDE_AUTHOR_ID) { log(`skip reply ${row.id} (마지막이 클로드 — 응답 불필요)`); return; }
+      const thread = cmts.map((c) => {
+        const who = nameFor(c.author_id, CLAUDE_AUTHOR_ID);
+        const body = String(c.body || '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+        return `${who}: ${body}`;
+      }).join('\n\n');
+      fs.writeFileSync(path.join(work, 'thread.txt'), thread);
+    }
+
+    // DRAFT — 지침대로 (대)댓글 작성(제출 안 함)
+    await claudePass((mode === 'reply' ? replyDraftPrompt : draftPrompt)(work), 'Read,Bash', TODAY_DIR);
     let draft = readMaybe(path.join(work, 'draft.txt'));
     if (!draft) { log(`draft 비어있음 ${row.id} — 미게시(재시도)`); return; }
 
@@ -190,30 +235,42 @@ async function catchUp() {
     .gte('created_at', since).order('created_at', { ascending: true });
   if (error) { log('catchup err', error.message); return; }
   const ids = entries.map((e) => e.id);
-  let commented = new Set();
+  const commented = new Set();           // 초기용: 삭제 이력 포함 클로드 댓글 있는 entry(부활 금지)
+  const commentsByEntry = new Map();     // 대댓글용: 비삭제 댓글(마지막-저자 판정)
   if (ids.length) {
-    // 삭제 이력 포함 클로드 댓글(일부러 지운 댓글은 부활 금지) → deleted_at 필터 없음.
     const { data: cmts, error: ce } = await sb.from('today_comments')
-      .select('entry_id').eq('author_id', CLAUDE_AUTHOR_ID).in('entry_id', ids);
+      .select('entry_id,author_id,created_at,deleted_at').in('entry_id', ids);
     if (ce) { log('catchup comments err', ce.message); return; }
-    commented = new Set(cmts.map((c) => c.entry_id));
+    for (const c of cmts) {
+      if (c.author_id === CLAUDE_AUTHOR_ID) commented.add(c.entry_id);
+      if (!c.deleted_at) {
+        if (!commentsByEntry.has(c.entry_id)) commentsByEntry.set(c.entry_id, []);
+        commentsByEntry.get(c.entry_id).push(c);
+      }
+    }
   }
   const pending = selectPendingInitial(entries, commented, { windowMs: CATCHUP_WINDOW_MS, nowMs: Date.now() });
-  log(`catchup: navi ${entries.length}건 중 미답 ${pending.length}건`);
+  const replies = selectPendingReplies(entries, commentsByEntry, { claudeId: CLAUDE_AUTHOR_ID });
+  log(`catchup: navi ${entries.length}건 중 미답 ${pending.length}건, 대댓글대기 ${replies.length}건`);
   const byId = new Map(entries.map((e) => [e.id, e]));
   for (const id of pending) schedule(byId.get(id));
+  for (const id of replies) scheduleReply(byId.get(id));
 }
 
-// CLI 단발 실행 (테스트·수동 트리거): node navi-realtime-daemon.mjs --once <entry_id> [--dry-run]
+// CLI 단발 실행 (테스트·수동 트리거):
+//   초기 댓글: node navi-realtime-daemon.mjs --once  <entry_id> [--dry-run]
+//   대댓글:    node navi-realtime-daemon.mjs --reply <entry_id> [--dry-run]
 const _argv = process.argv.slice(2);
-if (_argv.includes('--once')) {
+const _onceMode = _argv.includes('--reply') ? 'reply' : (_argv.includes('--once') ? 'initial' : null);
+if (_onceMode) {
   DRY_RUN = _argv.includes('--dry-run');
-  const id = _argv[_argv.indexOf('--once') + 1];
-  if (!id) { log('usage: --once <entry_id> [--dry-run]'); process.exit(1); }
+  const flag = _onceMode === 'reply' ? '--reply' : '--once';
+  const id = _argv[_argv.indexOf(flag) + 1];
+  if (!id) { log(`usage: ${flag} <entry_id> [--dry-run]`); process.exit(1); }
   const { data: row, error } = await sb.from('today_entries').select('id,kind,created_at,updated_at').eq('id', id).single();
   if (error || !row) { log(`entry ${id} 없음`); process.exit(1); }
-  log(`--once ${id} dry-run=${DRY_RUN} (settle 무시)`);
-  await processPipeline(row);
+  log(`${flag} ${id} dry-run=${DRY_RUN} (settle 무시)`);
+  await processPipeline(row, { mode: _onceMode });
   process.exit(0);
 }
 
@@ -221,6 +278,13 @@ sb.channel('navi-daemon')
   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'today_entries' }, (p) => {
     log('INSERT', p.new?.id, p.new?.kind);
     schedule(p.new);
+  })
+  // 사람 댓글 INSERT 즉시 반응(대댓글). 클로드 자신의 insert 는 checkReplyForEntry 가 걸러 무한루프 방지.
+  .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'today_comments' }, (p) => {
+    const c = p.new;
+    if (!c || c.author_id === CLAUDE_AUTHOR_ID) return;
+    log('COMMENT INSERT', c.entry_id, String(c.author_id || '').slice(0, 8));
+    checkReplyForEntry(c.entry_id).catch((e) => log(`checkReply err ${c.entry_id}: ${e.message}`));
   })
   .subscribe((s) => { log('realtime:', s); if (s === 'SUBSCRIBED') catchUp(); });
 

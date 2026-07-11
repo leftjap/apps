@@ -34,3 +34,28 @@ export function selectPendingInitial(entries, commentedIds, { windowMs, nowMs })
     .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     .map((e) => e.id);
 }
+
+/**
+ * 클로드 대댓글(reply)이 필요한 글 id 목록 (마지막 사람 댓글 시각 오름차순 = 오래 기다린 순).
+ * 조건(배포된 today_ai_has_pending() 경로 b · decide() reply 분기와 동일):
+ *   삭제 안 됨 · is_shared=true · 클로드 비삭제 댓글 존재 · 마지막(비삭제) 댓글이 사람.
+ * settle(정착) gate 없음 — 사람 댓글엔 즉시 응답.
+ * @param {{id:string, is_shared?:boolean, deleted_at?:string|null}[]} entries
+ * @param {Map<string, {author_id:string, created_at:string}[]>} commentsByEntry  entry_id → 비삭제 댓글
+ * @param {{claudeId:string}} opts
+ * @returns {string[]}
+ */
+export function selectPendingReplies(entries, commentsByEntry, { claudeId }) {
+  const cmts = commentsByEntry instanceof Map ? commentsByEntry : new Map(Object.entries(commentsByEntry || {}));
+  const lastAt = (list) => list.reduce((m, c) => Math.max(m, new Date(c.created_at).getTime()), -Infinity);
+  return (entries || [])
+    .filter((e) => e && !e.deleted_at && e.is_shared === true)
+    .map((e) => ({ e, list: (cmts.get(e.id) || []).slice().sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) }))
+    .filter(({ list }) => {
+      if (!list.length) return false;
+      const hasClaude = list.some((c) => c.author_id === claudeId);
+      return hasClaude && list[list.length - 1].author_id !== claudeId;
+    })
+    .sort((a, b) => lastAt(a.list) - lastAt(b.list))
+    .map(({ e }) => e.id);
+}
