@@ -10,6 +10,7 @@
  */
 
 import { normalizeReferenceText } from './speech.js';
+import { buildDiagnosticSample, recordDiagnostic } from './speechDiag.js';
 
 export function pickAnalyzeLang(card) {
   return card?.lang === 'ja' ? 'ja-JP' : 'en-US';
@@ -57,5 +58,13 @@ export async function stopAndAnalyze(controller, expectedText, card, { enableMis
   // enableMiscue=true (체이닝) → 결과에 omissions/insertions 가 실린다 (passesCoverage 판정용).
   // 기본 경로는 인자를 건드리지 않는다 (기존 '따라 말하기' 계약 보존).
   const opts = enableMiscue ? { lang, enableMiscue: true } : { lang };
-  return window.studySpeech.analyzeWavRest(blob, ref, opts);
+  const result = await window.studySpeech.analyzeWavRest(blob, ref, opts);
+  // 무료 진단 로깅(게이트). window.__SPEECH_DIAG 또는 studySpeechDiag.enable() 시에만 로컬 수집.
+  // OFF 면 recordDiagnostic 이 즉시 false 반환 → 판정 흐름·성능 무영향.
+  try {
+    recordDiagnostic(buildDiagnosticSample(result, {
+      expected: ref, lang, mode: enableMiscue ? 'chain' : 'repeat', ts: Date.now(),
+    }));
+  } catch (_) { /* 진단 실패는 판정에 영향 없음 */ }
+  return result;
 }
