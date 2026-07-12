@@ -12,16 +12,22 @@ public struct Screen08Detail: View {
 
     var model: RTAppModel?
     private let live: Live?
+    private let readOnly: Bool   // 파트너 책 상세 = 읽기전용(CTA·책메뉴 숨김)
 
     public init(model: RTAppModel? = nil) {
         self.model = model
-        if let m = model, m.userData != nil, let book = m.selectedBook {
+        // 파트너 통계에서 진입 시 partnerData 기준(읽기전용), 아니면 본인 selectedBook
+        let partner = model?.statsSubject == .partner
+        self.readOnly = partner
+        let data: RTUserData? = partner ? model?.partnerData : model?.userData
+        let book: RTBook? = partner ? model?.partnerSelectedBook : model?.selectedBook
+        if let m = model, let data, let book {
             let cal = Calendar(identifier: .gregorian)
             let f = DateFormatter()
             f.locale = Locale(identifier: "en_US_POSIX")
             f.dateFormat = "HH:mm"
             let modeLabel = ["flip": "엎기", "tap": "탭"]
-            let rows = (m.userData?.sessions ?? [])
+            let rows = data.sessions
                 .filter { $0.isbn == book.isbn }
                 .sorted { $0.endedAt > $1.endedAt }
                 .prefix(5)
@@ -35,9 +41,10 @@ public struct Screen08Detail: View {
                 }
             let days = (cal.dateComponents([.day], from: cal.startOfDay(for: book.addedAt),
                                            to: cal.startOfDay(for: m.now())).day ?? 0) + 1
+            let forBook = data.sessions.filter { $0.isbn == book.isbn }
             self.live = Live(book: book,
-                             total: RTAppModel.hmString(m.totalSeconds(isbn: book.isbn)),
-                             count: m.sessionCount(isbn: book.isbn),
+                             total: RTAppModel.hmString(forBook.reduce(0) { $0 + $1.seconds }),
+                             count: forBook.count,
                              days: days,
                              rows: rows)
         } else {
@@ -50,8 +57,8 @@ public struct Screen08Detail: View {
             RT.paper
             VStack(alignment: .leading, spacing: 0) {
                 topBlock
-                ctas.padding(.top, 18)
-                logHead.padding(EdgeInsets(top: 26, leading: 0, bottom: 6, trailing: 0))
+                if !readOnly { ctas.padding(.top, 18) }   // 파트너 책 = 읽기전용, CTA 숨김
+                logHead.padding(EdgeInsets(top: readOnly ? 20 : 26, leading: 0, bottom: 6, trailing: 0))
                 if let live {
                     ForEach(Array(live.rows.enumerated()), id: \.offset) { i, r in
                         logRow(tile: r.tile, min: r.min, label: r.label, right: r.right,
@@ -80,14 +87,18 @@ public struct Screen08Detail: View {
                 .contentShape(Rectangle())
                 .onTapGesture { model.map { $0.nav($0.detailOrigin) } }   // 진입 출처로 복귀 (홈/서재)
             Spacer()
-            VStack(spacing: 3.2) {
-                ForEach(0..<3, id: \.self) { _ in
-                    Circle().fill(RT.muted).frame(width: 4.8, height: 4.8)
+            if !readOnly {   // 파트너 책엔 책 메뉴(삭제) 없음
+                VStack(spacing: 3.2) {
+                    ForEach(0..<3, id: \.self) { _ in
+                        Circle().fill(RT.muted).frame(width: 4.8, height: 4.8)
+                    }
                 }
+                .frame(width: 38, height: 38)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.openSheet(.bookmenu) }
+            } else {
+                Color.clear.frame(width: 38, height: 38)
             }
-            .frame(width: 38, height: 38)
-            .contentShape(Rectangle())
-            .onTapGesture { model?.openSheet(.bookmenu) }
         }
         .padding(EdgeInsets(top: 52, leading: 18, bottom: 8, trailing: 18))
         .background(RT.paper)
@@ -166,15 +177,17 @@ public struct Screen08Detail: View {
         HStack {
             Text("기록").font(.sans(14.5, 800)).foregroundColor(RT.ink)
             Spacer()
-            HStack(spacing: 5) {
-                ZStack {
-                    Circle().stroke(RT.muted, lineWidth: 2 * 12 / 24).frame(width: 8, height: 8)
-                    RTIcon(RTIconPath.clock, size: 12, stroke: RT.muted, lineWidth: 2)
+            if !readOnly {   // 파트너 책엔 '직접 추가' 없음
+                HStack(spacing: 5) {
+                    ZStack {
+                        Circle().stroke(RT.muted, lineWidth: 2 * 12 / 24).frame(width: 8, height: 8)
+                        RTIcon(RTIconPath.clock, size: 12, stroke: RT.muted, lineWidth: 2)
+                    }
+                    Text("직접 추가").font(.sans(11.5, 600)).foregroundColor(RT.muted)
                 }
-                Text("직접 추가").font(.sans(11.5, 600)).foregroundColor(RT.muted)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.openSheet(.addtime) }
             }
-            .contentShape(Rectangle())
-            .onTapGesture { model?.openSheet(.addtime) }
         }
     }
 

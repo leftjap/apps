@@ -240,6 +240,17 @@ public final class RTAppModel: ObservableObject {
         if let isbn = selectedISBN, let b = d.books.first(where: { $0.isbn == isbn }) { return b }
         return currentBook
     }
+    /// 파트너 상세 대상 책 — 파트너 통계에서 탭한 책(partnerData 기준, 읽기전용)
+    public var partnerSelectedBook: RTBook? {
+        guard let isbn = selectedISBN else { return nil }
+        return partnerData?.books.first { $0.isbn == isbn }
+    }
+
+    /// 통계 랭킹 책 탭 → 그 책 상세(08). statsSubject 유지(파트너면 파트너 상세).
+    public func openBookDetail(isbn: String) {
+        selectedISBN = isbn
+        nav(.detail)
+    }
 
     private var cal: Calendar {
         var c = Calendar(identifier: .gregorian)
@@ -407,7 +418,10 @@ public final class RTAppModel: ObservableObject {
     // ── 라우팅 (app.js nav) ──
     public func nav(_ to: RTRoute) {
         if sheet != nil { sheet = nil }
-        if to == .detail && route != .detail { detailOrigin = route == .home ? .home : .library }
+        // 상세 뒤로가기 목적지 = 진입 출처. 홈·서재·통계(주/월)에서 진입 가능 → 그 route 유지.
+        if to == .detail && route != .detail {
+            detailOrigin = [.home, .library, .statsWeek, .statsMonth].contains(route) ? route : .library
+        }
         if to == .home { statsSubject = .me }   // 홈 복귀 시 파트너 통계 주체 리셋
         route = to
     }

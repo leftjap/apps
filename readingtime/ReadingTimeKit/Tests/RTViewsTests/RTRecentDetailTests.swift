@@ -69,3 +69,37 @@ import Foundation
         #expect(m.detailOrigin == .home)         // 출처 유지 — 서재로 오염되면 안 됨
     }
 }
+
+// 통계 랭킹 책 탭 → 그 책 상세(08). 뒤로가기는 통계로 복귀(detailOrigin=statsWeek).
+@MainActor
+@Suite struct RTStatsBookDetailTests {
+    @Test func openBookDetailFromStatsSetsIsbnAndNavigates() {
+        let m = RTAppModel()
+        m.nav(.statsWeek)
+        m.openBookDetail(isbn: "9788937473135")
+        #expect(m.selectedISBN == "9788937473135")
+        #expect(m.route == .detail)
+    }
+    @Test func backFromStatsBookReturnsToStats() {
+        let m = RTAppModel()
+        m.nav(.statsWeek)
+        m.openBookDetail(isbn: "X")
+        #expect(m.detailOrigin == .statsWeek)   // 서재가 아니라 통계로 복귀
+    }
+    @Test func partnerStatsBookKeepsPartnerAndReturnsToStats() {
+        let m = RTAppModel()
+        m.openPartnerStats()            // statsSubject=.partner, route=statsWeek
+        m.openBookDetail(isbn: "X")
+        #expect(m.route == .detail)
+        #expect(m.detailOrigin == .statsWeek)
+        #expect(m.statsSubject == .partner)   // nav(.detail)는 파트너 리셋 안 함
+    }
+    @Test func partnerSelectedBookResolvesFromPartnerData() {
+        let m = RTAppModel()
+        let book = RTBook(isbn: "P1", title: "차남들의 세계사", author: "이기호",
+                          publisher: "민음사", coverUrl: "", addedAt: Date())
+        m.partnerData = RTUserData(books: [book], sessions: [])
+        m.selectedISBN = "P1"
+        #expect(m.partnerSelectedBook?.title == "차남들의 세계사")
+    }
+}
