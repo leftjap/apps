@@ -36,8 +36,16 @@ public final class CloudStore: ObservableObject {
         return f
     }()
 
-    // 기존 세션 복원 (이미 로그인했으면 재로그인 불필요). 문서 확인: auth.user() → 현재 User.
+    // 기존 세션 복원 (이미 로그인했으면 재로그인 불필요).
+    // currentSession = 로컬 저장 세션(네트워크 불필요) 우선 — auth.user()만 쓰면 네트워크 지연/실패 시
+    // 유효 세션도 signedIn=false 오탐(실기기 실측: 지오 폰). 로컬 세션 있으면 즉시 인증 확정.
     public func restore() async {
+        if let session = client.auth.currentSession {
+            ownerID = session.user.id
+            signedIn = true
+            displayName = Self.displayName(of: session.user)
+            return
+        }
         if let user = try? await client.auth.user() {
             ownerID = user.id
             signedIn = true

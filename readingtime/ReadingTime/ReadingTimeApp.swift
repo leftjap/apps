@@ -106,6 +106,11 @@ struct ReadingTimeApp: App {
                     try await cloud.signInWithGoogle()
                     Self.applyDisplayName(from: cloud, to: model)
                     model?.login()
+                    // 로그인 직후 동기화 (앱 시작 .task 는 이미 지나감) — 스냅샷 올림 + 파트너 로드
+                    if let model {
+                        Self.uploadSnapshot(from: model, to: cloud)
+                        await Self.loadPartner(from: cloud, to: model)
+                    }
                 } catch {
                     Logger(subsystem: "com.leftjap.readingtime", category: "auth")
                         .error("google 로그인 실패/취소: \(String(describing: error), privacy: .public)")
@@ -253,11 +258,16 @@ struct ReadingTimeApp: App {
             .statusBarHidden(faceDownDark)
                 .task {
                     await cloud.restore()
-                    RTDbg.p("sync: restore signedIn=\(cloud.signedIn) partnerName=\(cloud.partnerName ?? "nil") userData=\(model.userData != nil)")
-                    Self.applyDisplayName(from: cloud, to: model)
-                    Self.uploadSnapshot(from: model, to: cloud)       // 내 스냅샷 1회 올림(파트너가 읽도록)
-                    await Self.loadPartner(from: cloud, to: model)   // 함께 읽기 — 파트너 스냅샷
-                    RTDbg.p("sync: loadPartner done partnerData=\(model.partnerData != nil) readingNow=\(model.partnerReadingNow)")
+                    if !cloud.signedIn && UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+                        // 세션 소실(만료/미인증) — 로컬 플래그만 로그인 상태라 홈은 뜨나 클라우드 동기화 불가.
+                        // 재로그인 유도(로컬 데이터·아바타 보존 — onAuthChange 미발화). 재로그인 시 동기화 재개.
+                        UserDefaults.standard.set(false, forKey: "rt.loggedIn")
+                        model.nav(.login)
+                    } else {
+                        Self.applyDisplayName(from: cloud, to: model)
+                        Self.uploadSnapshot(from: model, to: cloud)       // 내 스냅샷 1회 올림(파트너가 읽도록)
+                        await Self.loadPartner(from: cloud, to: model)   // 함께 읽기 — 파트너 스냅샷
+                    }
                 }
                 .onReceive(model.$route) { route in
                     // 센서·근접: 홈 추가 (§4-1) — 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
