@@ -258,6 +258,40 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('chain.chunks');
   });
 
+  /* 2026-07-13 — 단계 세분화(사용자 결정): 한 단계 = 성분 1개(1~4단어, 절 최대 5).
+   * 경고만 — 차단하면 경고를 끄려고 성분 내부를 작위 분절하게 된다(분절은 자연 쉼 경계만). */
+  it('chain 증분 과대 — 비첫 chunk 가 5단어를 넘으면 경고 (한 단계 = 성분 1개)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = {
+      target: 'It is no big deal because we can always try again tomorrow morning.',
+      chunks: ['It is no big deal', 'because we can always try again tomorrow morning.'],
+      ko: '별일 아니야, 내일 아침에 다시 하면 되니까.',
+    };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true); // 경고지 차단 아님
+    expect(r.warnings.join(' ')).toContain('증분');
+  });
+
+  it('chain 분절 과소 — target 10단어+ 인데 단계 3개 이하면 경고 (확장 감각 학습)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = {
+      target: "It's been a while since we caught up. We should grab dinner sometime.",
+      chunks: ["It's been a while", 'since we caught up', 'We should grab dinner sometime.'],
+      ko: '오랜만이야. 언제 저녁이나 먹자.',
+    };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.join(' ')).toContain('단계');
+  });
+
+  it('chain 성분 단위 세분(증분 ≤5단어, 4단계+)은 경고 없음', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = CHAIN_OK; // 4단계, 증분 4/4/1단어
+    const r = validateSeedContent(p, okOpts);
+    const chainWarns = r.warnings.filter((w) => w.includes('chain'));
+    expect(chainWarns).toEqual([]);
+  });
+
   // ── drills 근접중복 (판정 단일 출처 = applied.js nearDupDrills — 거기서 단위 테스트) ──
   /* 2026-07-10 — moduyeongeo 도 차단으로 승격. 렌더 필터는 구 데이터 안전망일 뿐,
    * 저작(생성) 단계에서 막지 않으면 근접중복이 계속 만들어진다(사용자 지시). */
