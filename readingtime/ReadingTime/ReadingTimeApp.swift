@@ -258,7 +258,9 @@ struct ReadingTimeApp: App {
             .statusBarHidden(faceDownDark)
                 .task {
                     await cloud.restore()
-                    if !cloud.signedIn && UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+                    // --seq 데모/테스트 실행은 로컬 상태를 명시 주입 → 죽은 세션 리다이렉트 건너뜀
+                    let demoLaunch = ProcessInfo.processInfo.arguments.contains("--seq")
+                    if !demoLaunch && !cloud.signedIn && UserDefaults.standard.bool(forKey: "rt.loggedIn") {
                         // 세션 소실(만료/미인증) — 로컬 플래그만 로그인 상태라 홈은 뜨나 클라우드 동기화 불가.
                         // 재로그인 유도(로컬 데이터·아바타 보존 — onAuthChange 미발화). 재로그인 시 동기화 재개.
                         UserDefaults.standard.set(false, forKey: "rt.loggedIn")

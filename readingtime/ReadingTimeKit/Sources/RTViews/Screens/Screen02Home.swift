@@ -316,31 +316,33 @@ public struct Screen02Home: View {
     // ── 파트너 행 (함께 읽기) — 마지막 기록 행과 같은 행 문법. 탭 → 파트너 통계 ──
     func partnerRow(_ p: Partner) -> some View {
         HStack(spacing: 11) {
-            // 아바타 38pt 프레임 (헤일로 + 회전 라이브 링 + 30pt 아바타)
-            ZStack {
-                if p.reading {
-                    // 은은한 초록 헤일로 (50pt)
-                    RadialGradient(gradient: Gradient(stops: [
-                        .init(color: Color(hex: 0x2C4A3C, alpha: 0.15), location: 0),
-                        .init(color: Color(hex: 0x2C4A3C, alpha: 0), location: 0.68)]),
-                        center: .center, startRadius: 0, endRadius: 25)
-                        .frame(width: 50, height: 50)
-                    // 회전 라이브 타이머 링 (트랙 + 짧은 아크, 4.5s linear ∞)
-                    ZStack {
-                        Circle().stroke(RT.green.opacity(0.12), lineWidth: 2)
-                        Circle().trim(from: 0, to: 0.25)          // dasharray "27 200" ≈ 원주 25%
-                            .stroke(RT.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
-                            .rotationEffect(.degrees(-90))
+            // 아바타 30pt = 위 '마지막 기록' 아이콘과 동일 크기·시작점(leading 정렬).
+            // 헤일로(50pt)·링(34pt)은 background/overlay 로 레이아웃 밖에 그려 행 시작점을 밀지 않음.
+            Circle().fill(RT.segBg)
+                .frame(width: 30, height: 30)
+                .overlay(RTAvatarFill(initial: p.initial, photo: p.avatar,
+                                      size: 30, fontSize: 12, initialColor: RT.body))
+                .background {
+                    if p.reading {   // 은은한 초록 헤일로 (뒤, 레이아웃 무영향)
+                        RadialGradient(gradient: Gradient(stops: [
+                            .init(color: Color(hex: 0x2C4A3C, alpha: 0.15), location: 0),
+                            .init(color: Color(hex: 0x2C4A3C, alpha: 0), location: 0.68)]),
+                            center: .center, startRadius: 0, endRadius: 25)
+                            .frame(width: 50, height: 50)
                     }
-                    .frame(width: 34, height: 34)
-                    .rtSpin(duration: 4.5)
                 }
-                Circle().fill(RT.segBg)
-                    .frame(width: 30, height: 30)
-                    .overlay(RTAvatarFill(initial: p.initial, photo: p.avatar,
-                                          size: 30, fontSize: 12, initialColor: RT.body))
-            }
-            .frame(width: 38, height: 38)
+                .overlay {
+                    if p.reading {   // 회전 라이브 타이머 링 (아바타 중심, 34pt·4.5s ∞)
+                        ZStack {
+                            Circle().stroke(RT.green.opacity(0.12), lineWidth: 2)
+                            Circle().trim(from: 0, to: 0.25)          // dasharray "27 200" ≈ 원주 25%
+                                .stroke(RT.green, style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                                .rotationEffect(.degrees(-90))
+                        }
+                        .frame(width: 34, height: 34)
+                        .rtSpin(duration: 4.5)
+                    }
+                }
             // 텍스트 열
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
