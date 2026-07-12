@@ -420,7 +420,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
-      const rec = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => { finishRecording(); } });
+      const rec = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => { finishRecording(); } });
       // 마이크 불가 — 정답을 열지 않는다. 해설을 펼치면 공개되므로 막다른 길이 아니다.
       if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); showRecordToast(recordErrorMessage(rec.error)); return; }
       recCtrl = rec.controller;

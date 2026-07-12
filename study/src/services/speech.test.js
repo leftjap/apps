@@ -938,3 +938,114 @@ describe('createSilenceAutoStop — 무음 자동종료 판정', () => {
     expect(vad.feed(0.0, 1300)).toBe(true);
   });
 });
+
+// 2026-07-12 — 녹음 머리 잘림 수정 (실데이터: 문장 앞머리 음소 연속 0점 → Δ61.8 스윙).
+// (1) 캡처 라이브 게이트: recordWav 는 첫 오디오 청크가 실제로 흐른 뒤 resolve
+//     → "await 후 UI 전환" 하는 호출자들이 자동으로 '진짜 녹음 중'일 때만 표시.
+// (2) AudioContext 싱글턴 재사용: 매 녹음 new AudioContext + worklet 재로드 (WeakSet 이
+//     매번 새 ctx 에 키됨) 가 시작 지연의 원인 → 재사용으로 지연 자체를 축소.
+describe('recordWav — 캡처 라이브 게이트 + AudioContext 재사용', () => {
+  function setupAudioMocks() {
+    const state = { acCount: 0, addModuleCalls: 0, closeCalls: 0, nodes: [], trackStops: 0 };
+    class FakeAudioContext {
+      constructor() {
+        state.acCount += 1;
+        this.state = 'running';
+        this.destination = {};
+        this.audioWorklet = { addModule: async () => { state.addModuleCalls += 1; } };
+      }
+      async resume() { this.state = 'running'; }
+      async close() { state.closeCalls += 1; this.state = 'closed'; }
+      createMediaStreamSource() { return { connect: () => {}, disconnect: () => {} }; }
+      createGain() { return { gain: { value: 1 }, connect: () => {}, disconnect: () => {} }; }
+    }
+    class FakeWorkletNode {
+      constructor() {
+        this.port = { onmessage: null, postMessage: () => {} };
+        state.nodes.push(this);
+      }
+      connect() {}
+      disconnect() {}
+    }
+    const stream = { getTracks: () => [{ stop: () => { state.trackStops += 1; } }] };
+    vi.stubGlobal('window', { AudioContext: FakeAudioContext });
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => stream } });
+    vi.stubGlobal('AudioWorkletNode', FakeWorkletNode);
+    return state;
+  }
+
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+  const feedChunk = (node, n = 160) => {
+    node.port.onmessage?.({ data: new Int16Array(n).fill(100).buffer });
+  };
+
+  it('첫 오디오 청크 도착 전에는 resolve 하지 않는다 (캡처 라이브 게이트)', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    let resolved = false;
+    const p = Speech.recordWav().then((c) => { resolved = true; return c; });
+    await flush();
+    expect(m.nodes.length).toBe(1); // 파이프라인 셋업은 끝남
+    expect(resolved).toBe(false);   // 그러나 첫 청크 전 — 아직 pending
+    feedChunk(m.nodes[0]);
+    const ctrl = await p;
+    expect(resolved).toBe(true);
+    ctrl.stop();
+    await ctrl.blobPromise;
+  });
+
+  it('첫 청크가 안 와도 2초 안전망으로 resolve (마이크 무신호 행 방지)', async () => {
+    vi.useFakeTimers();
+    try {
+      const m = setupAudioMocks();
+      const { Speech } = await import('./speech.js');
+      let resolved = false;
+      const p = Speech.recordWav().then((c) => { resolved = true; return c; });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(resolved).toBe(false);
+      await vi.advanceTimersByTimeAsync(2100);
+      const ctrl = await p;
+      expect(resolved).toBe(true);
+      expect(m.nodes.length).toBe(1);
+      ctrl.stop();
+      await ctrl.blobPromise;
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('AudioContext 를 재사용하고 worklet 모듈은 1회만 등록한다', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    const p1 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0]);
+    const c1 = await p1;
+    c1.stop();
+    await c1.blobPromise;
+
+    const p2 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[1]);
+    const c2 = await p2;
+    c2.stop();
+    await c2.blobPromise;
+
+    expect(m.acCount).toBe(1);        // 컨텍스트 재사용
+    expect(m.addModuleCalls).toBe(1); // 워클릿 1회 등록
+  });
+
+  it('stop() 은 마이크 트랙만 해제하고 공유 컨텍스트는 close 하지 않는다', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    const p = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0]);
+    const ctrl = await p;
+    ctrl.stop();
+    const blob = await ctrl.blobPromise;
+    expect(blob.size).toBeGreaterThan(44); // 청크 1개 이상 담긴 WAV
+    expect(m.trackStops).toBeGreaterThan(0); // 마이크 해제 (프라이버시 표시등 꺼짐)
+    expect(m.closeCalls).toBe(0);            // 컨텍스트는 유지 (재사용)
+  });
+});

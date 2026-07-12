@@ -345,17 +345,23 @@ export function buildD1Practice(state, lang, handlers = {}) {
   else if (state.lastScore != null) showScore(state.lastScore);
   if (recCount() > 0) recLabel.textContent = '다시 말하기';
 
+  let recStarting = false; // 시작 중 재클릭 가드 (setRec 이 await 뒤로 이동하며 필요)
   recBtn.addEventListener('click', async () => {
     if (!state.recording) {
-      setRec(true);
+      if (recStarting) return;
+      recStarting = true;
+      // 2026-07-12 — '녹음 중' 표시를 캡처 라이브 이후로: recordWav 가 첫 청크 도착 후
+      // resolve 하므로, await 뒤 setRec(true) = 진짜 캡처 중일 때만 표시 (머리 잘림 수정).
       const rec = await startMicRecording();
+      recStarting = false;
       if (rec.error) {
-        setRec(false); recCtrl = null;
+        recCtrl = null;
         state.micBlocked = true; // 마이크 불가 환경 — 진행 게이트 자동 escape
         showRecordToast(recordErrorMessage(rec.error));
         return;
       }
       recCtrl = rec.controller;
+      setRec(true);
     } else {
       const ctrl = recCtrl; recCtrl = null;
       const result = await stopAndAnalyze(ctrl, s.sentence, s);

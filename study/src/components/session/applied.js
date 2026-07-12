@@ -7,7 +7,7 @@
  * 축2 체이닝(chain): 스크립트 없이 '듣고 따라 말하기'로 base 를 2문장 수준까지 확장 (elicited imitation).
  *   - 단계 = chunks 누적 (단계 수 고정 X — 청크 수가 곧 단계 수)
  *   - 매 재생마다 화자·속도를 바꿔 '리듬 통째 암기'를 막는다 (사용자 관찰)
- *   - 통과 판정은 발음 점수가 아니라 '단어를 다 말했는가' (speech.passesCoverage)
+ *   - 통과 판정은 발음 점수가 아니라 '단어를 다 말했는가' (전사 비교 — services/coverageJudge.judgeCoverage)
  *   - 3회 실패부터 단계적 힌트 (뜻 → 첫 단어 → 전체)
  */
 

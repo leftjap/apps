@@ -13,7 +13,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickChainVoice } from '../components/session/applied.js';
-import { passesCoverage } from '../services/speech.js';
+import { judgeCoverage } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
@@ -213,7 +213,7 @@ export function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
       }
       if (recCtrl && recRow === row) { finishDrill(); return; }
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 메인 카드와 동일. 수동 멈추기도 유지.
-      const r = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => finishDrill() });
+      const r = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => finishDrill() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -236,7 +236,8 @@ export function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
 /* 체이닝 — 무자막 청각 확장 (elicited imitation, 2026-07-09 사용자 결정).
  * 단계 = chunks 누적. 화면에 영어를 보여주지 않는다(= 인출 강제, "보고 따라 읽기" 폐기).
  * 재생마다 화자·속도를 바꿔 '리듬 통째 암기'를 막는다. 통과 판정은 발음 점수가 아니라 **단어 누락 0**
- * (Azure EnableMiscue → passesCoverage). 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
+ * (전사 vs 기대문 — judgeCoverage. Azure omission 판정은 false omission 실측으로 폐기 2026-07-12).
+ * 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
  * 체이닝 발화도 '오늘 발화' 1건 — onUtterance(result) 로 세션 집계·3회 게이트에 반영(응용 드릴과 동일).
  * demo(?demo=1) 는 마이크 없이 통과 시뮬. */
 export function chainBlockEl(chain, lang, card, demo, onUtterance) {
@@ -296,9 +297,13 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
       const result = await stopAndAnalyze(ctrl, step.text, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       onUtterance?.(result); // 통과 여부와 무관 — 말했으면 발화 1건
-      if (passesCoverage(result)) { advance(); popScore(mark); return; } // 방금 통과한 단계 mark 팝
+      // 2026-07-12 — 통과 판정을 Azure omission(passesCoverage) → 전사 비교(judgeCoverage)로 교체.
+      // Azure 가 긴 L2 문장에서 false omission 을 내던 실측(coverageJudge.js 박제) 후속 배선.
+      // ※ enableMiscue:true 유지 필수 — false 면 recognizedText 가 레퍼런스를 에코해 항상 통과(실측 2026-07-12).
+      const judge = judgeCoverage(result?.recognizedText, step.text);
+      if (judge.pass) { advance(); popScore(mark); return; } // 방금 통과한 단계 mark 팝
       fails += 1;
-      const miss = result?.omissions?.length ?? 0;
+      const miss = judge.missing.length;
       showRecordToast(miss ? `${miss}개 빠뜨렸어요 — 다시 들어보세요` : '다시 한 번 말해 보세요');
       refresh();
     }
@@ -316,7 +321,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
         return;
       }
       if (recCtrl && recRow === row) { finish(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => finish() });
+      const r = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => finish() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -555,7 +560,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
-      const rec = await startMicRecording({ autoStopSilenceMs: 1200, onAutoStop: () => { finishRecording(); } });
+      const rec = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => { finishRecording(); } });
       if (rec.error) {
         state.recording = false; recCtrl = null; state.micBlocked = true;
         setRecVisual(false);

@@ -658,6 +658,16 @@ export function passesCoverage(result) {
 // Wave 11.63 — AudioWorklet 모듈 등록 캐시 (AudioContext 별 1회).
 const _workletRegistered = new WeakSet();
 
+// 2026-07-12 — 녹음용 AudioContext 싱글턴. 종전엔 매 녹음 new AudioContext → _workletRegistered
+// 가 매번 새 ctx 에 키돼 worklet 모듈을 매 녹음 재로드 → 시작 지연(=머리 잘림 창)이 커졌다.
+// 재사용하면 등록 캐시가 실제로 히트하고, stop() 은 ctx 를 close 하지 않는다 (트랙만 해제).
+let _recCtx = null;
+async function getRecAudioContext(AC) {
+  if (!_recCtx || _recCtx.state === 'closed') _recCtx = new AC();
+  if (_recCtx.state === 'suspended') await _recCtx.resume();
+  return _recCtx;
+}
+
 /**
  * 무음 자동종료 VAD 판정 (말 끝나면 자동 멈춤). 순수 함수 — recordWav 가 chunk peak 마다 feed.
  *  - 무장 임계 armAt = min(speechPeak, max(silencePeak, maxPeak*0.6)) — 화자 자기 최고 peak 에 적응.
@@ -691,8 +701,9 @@ export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, h
 /**
  * 마이크 녹음 → WAV Blob (AudioWorkletNode 사용, Wave 11.63).
  *
- * 흐름: getUserMedia → AudioContext → AudioWorklet (16kHz Int16 PCM 변환 — audio thread)
+ * 흐름: getUserMedia → AudioContext(싱글턴 재사용) → AudioWorklet (16kHz Int16 PCM 변환 — audio thread)
  *      → port.message → main thread chunks 누적 → 종료 시 WAV.
+ * resolve 는 첫 오디오 청크 도착 후 (캡처 라이브 게이트, 무신호 안전망 2초) — 2026-07-12.
  * stop() 호출 또는 maxSeconds 도달 시 종료. `blobPromise` 가 Blob 으로 resolve.
  *
  * iOS Safari: 사용자 제스처 안에서 호출해야 권한 통과. session.html 의 click handler 가 보장.
@@ -732,11 +743,9 @@ export async function recordWav({
     }
     throw Object.assign(new Error(e?.message || 'getUserMedia 실패'), { code: 'unavailable' });
   }
-  const ac = new AC();
-  if (ac.state === 'suspended') await ac.resume();
+  const ac = await getRecAudioContext(AC);
   if (!ac.audioWorklet?.addModule) {
     try { stream.getTracks().forEach((t) => t.stop()); } catch {}
-    try { ac.close(); } catch {}
     throw Object.assign(new Error('AudioWorklet 미지원 브라우저 (iOS Safari < 14.1 등)'), { code: 'unsupported' });
   }
   if (!_workletRegistered.has(ac)) {
@@ -757,10 +766,13 @@ export async function recordWav({
     : null;
   const needPeak = !!onLevel || !!vad;
 
+  let onFirstChunk = null; // 캡처 라이브 게이트 — 첫 청크 도착 시 resolve (아래 참조)
+
   node.port.onmessage = (e) => {
     if (stopped) return;
     const buf = e.data;
     if (!buf || !buf.byteLength) return;
+    if (onFirstChunk) { onFirstChunk(); onFirstChunk = null; }
     const int16 = new Int16Array(buf);
     chunks.push(int16);
     if (needPeak) {
@@ -798,7 +810,7 @@ export async function recordWav({
     try { muteGain.disconnect(); } catch {}
     try { src.disconnect(); } catch {}
     try { stream.getTracks().forEach((t) => t.stop()); } catch {}
-    try { ac.close(); } catch {}
+    // 2026-07-12 — 공유 컨텍스트는 close 안 함 (다음 녹음이 재사용 — 시작 지연 축소).
     try {
       let total = 0;
       for (const c of chunks) total += c.length;
@@ -810,6 +822,15 @@ export async function recordWav({
       rejectDone(e);
     }
   }
+
+  // 2026-07-12 — 캡처 라이브 게이트: 첫 청크가 실제로 흐른 뒤 resolve. 호출자의 "await 후
+  // UI 전환"이 '진짜 녹음 중'과 일치하게 된다 (실데이터: 준비 지연 중 발화 시작 → 앞머리
+  // 음소 연속 0점 → 같은 문장 Δ50+ 점수 스윙). 무신호 안전망 2초 — 이후엔 기존 흐름과 동일
+  // (끝내 무음이면 analyzeWavRest 의 no_match/mic_silent 경로가 안내).
+  await new Promise((resolve) => {
+    const guard = setTimeout(() => { onFirstChunk = null; resolve(); }, 2000);
+    onFirstChunk = () => { clearTimeout(guard); resolve(); };
+  });
 
   return { stop, blobPromise };
 }
