@@ -172,7 +172,10 @@ public struct HomeScreenView: View {
                 .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rXl))
                 .overlay(RoundedRectangle(cornerRadius: GY.rXl).strokeBorder(GY.crailBase, lineWidth: 1.5))
                 .breathGlow(cornerRadius: GY.rXl)   // mock #cardResume breath (2.8s crail 링)
-                .shadow(color: Color(hex: 0x14120E).opacity(0.14), radius: 18, y: 10)
+                // 시안 --shadow-pop 은 음수 spread(-10/-24)로 좁게 조인 깊은 그림자. 표준 .shadow 는
+                // spread 가 없어 radius 18 이 카드 전 폭으로 퍼져 "막힌 벽"처럼 보였다(실기기 보고).
+                // radius·opacity 를 낮춰 카드 아래로 좁게 떨어지게 한다.
+                .shadow(color: Color(hex: 0x14120E).opacity(0.08), radius: 11, y: 7)
             }
             .buttonStyle(.plain).accessibilityIdentifier("home-resume")
             .padding(.horizontal, 22)
