@@ -1088,6 +1088,51 @@ describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll',
     expect(pcm[0]).toBeGreaterThanOrEqual(10 + 10); // 오래된 앞 청크들은 탈락
   });
 
+  it('탭 hidden 시 워밍 마이크 해제 — 단 녹음 중엔 유지', async () => {
+    const m = setupAudioMocks();
+    let visHandler = null;
+    const doc = {
+      visibilityState: 'visible',
+      addEventListener: (ev, fn) => { if (ev === 'visibilitychange') visHandler = fn; },
+      removeEventListener: () => {},
+    };
+    vi.stubGlobal('document', doc);
+    const { Speech } = await import('./speech.js');
+    const p = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0]);
+    const ctrl = await p;
+    // 녹음 중 hidden → 해제하지 않음 (진행 중 녹음 보호)
+    doc.visibilityState = 'hidden';
+    visHandler?.();
+    expect(m.trackStops).toBe(0);
+    ctrl.stop();
+    await ctrl.blobPromise;
+    // 녹음 종료 후 hidden → 즉시 해제 (마이크 표시등 소등)
+    visHandler?.();
+    expect(m.trackStops).toBeGreaterThan(0);
+  });
+
+  it('녹음 중 재호출(재클릭 race) 시 이전 녹음을 강제 확정하고 새 녹음 시작', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    const p1 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0], 100, 1);
+    const c1 = await p1;
+    // stop 없이 곧바로 두 번째 녹음 시작
+    const p2 = Speech.recordWav();
+    await flush();
+    const blob1 = await c1.blobPromise; // 이전 녹음은 그 시점까지로 자동 확정
+    expect((await pcmOf(blob1))[0]).toBe(1);
+    feedChunk(m.nodes[0], 100, 4);
+    const c2 = await p2;
+    c2.stop();
+    const pcm2 = await pcmOf(await c2.blobPromise);
+    expect(pcm2.length).toBe(100);
+    expect(pcm2[0]).toBe(4); // 새 녹음엔 이전 청크 미혼입
+  });
+
   it('stop() 후 트랙 유지(워밍), 60초 유휴 시 자동 해제 후 재오픈', async () => {
     vi.useFakeTimers();
     try {
