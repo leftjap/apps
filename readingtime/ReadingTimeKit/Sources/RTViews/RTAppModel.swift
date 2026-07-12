@@ -625,6 +625,7 @@ public final class RTAppModel: ObservableObject {
         case "partnerStats": openPartnerStats()   // 파트너 통계 진입(검증·데모)
         case "demoPartner": loadDemoPartner()      // 데모 파트너 주입(검증·기기 데모)
         case "demoPartnerIdle": loadDemoPartner(reading: false)   // idle 상태 검증
+        case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)
         case "start": start()
         case "cancelSession": cancelSession()
         case "simFlip": simFlip()
