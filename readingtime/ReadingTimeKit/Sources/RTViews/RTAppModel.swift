@@ -138,8 +138,11 @@ public final class RTAppModel: ObservableObject {
     public func loadDemoPartner(reading: Bool = true) {
         let t = now()
         let ended = reading ? t : t.addingTimeInterval(-3 * 3600)
-        let book = RTBook(isbn: "9788954682152", title: "작별하지 않는다", author: "한강",
-                          publisher: "문학동네", coverUrl: "", addedAt: t)
+        // 실 표지 URL(알라딘) — 파트너 통계 표지 로딩 검증용 실데이터
+        let book = RTBook(isbn: "9788937489341", title: "차남들의 세계사", author: "이기호",
+                          publisher: "민음사",
+                          coverUrl: "https://image.aladin.co.kr/product/4443/8/cover200/8937489341_1.jpg",
+                          addedAt: t)
         partnerData = RTUserData(books: [book],
             sessions: [RTSessionRecord(isbn: book.isbn, mode: "flip", seconds: 24 * 60, endedAt: ended, pauseCount: 0)])
         partnerReadingNow = reading

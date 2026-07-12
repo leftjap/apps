@@ -116,16 +116,14 @@ public final class CloudStore: ObservableObject {
             .execute()
     }
 
-    // 파트너 uid — 본인 아닌 household 멤버. UUID.uuidString 은 대문자라 소문자로 비교(Config=소문자).
+    // 파트너 uid — 본인 아닌 household 멤버 (순수 로직은 Config, 대소문자 정합 테스트됨).
     private var partnerOwnerID: String? {
-        guard let owner = ownerID else { return nil }
-        let me = owner.uuidString.lowercased()
-        return Config.householdOwners.first { $0.lowercased() != me }
+        ownerID.flatMap { Config.partnerOwnerID(myOwnerID: $0.uuidString) }
     }
 
     /// 파트너 표시 이름 (보는 사람 기준 — 본인 아닌 household 멤버). 미로그인 시 nil.
     public var partnerName: String? {
-        partnerOwnerID.flatMap { Config.householdNames[$0] }
+        ownerID.flatMap { Config.partnerName(myOwnerID: $0.uuidString) }
     }
 
     // 파트너 스냅샷 로드 (household 상대 — RLS 로 파트너 것만 읽힘). data JSON + 프레즌스 시각.

@@ -17,4 +17,14 @@ public enum Config {
         "7bae5645-61c6-4476-9ff2-4c30a72812ff": "지오",
         "aeafd9a7-4094-4e7c-a621-188d6b2e336d": "소연",
     ]
+
+    // 파트너 uid — 본인 아닌 household 멤버. UUID.uuidString(대문자) vs Config(소문자) 소문자 비교.
+    public static func partnerOwnerID(myOwnerID: String) -> String? {
+        let me = myOwnerID.lowercased()
+        return householdOwners.first { $0.lowercased() != me }
+    }
+    // 파트너 표시 이름 (보는 사람 기준 — 지오 폰=소연, 소연 폰=지오)
+    public static func partnerName(myOwnerID: String) -> String? {
+        partnerOwnerID(myOwnerID: myOwnerID).flatMap { householdNames[$0] }
+    }
 }
