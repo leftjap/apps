@@ -102,7 +102,7 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 #sessionFooter {
   flex-shrink:0;
   display:flex; align-items:center; gap:8px;
-  padding:16px 12px 22px;
+  padding:16px 12px 6px;   /* 하단 22 → 6: 트랙이 늘어난 만큼 컨테이너 축소(총 높이 유지) */
   box-shadow:inset 0 1px 0 var(--line-soft);
 }
 
@@ -111,7 +111,8 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
   flex:1; min-width:0;
   display:flex; align-items:center; gap:10px;
   overflow-x:auto;
-  padding:12px 4px;
+  /* 하단 30: 현재 카드 드롭섀도를 트랙 안에서 완결시켜 overflow-y 절단선 제거 (레일 그림자픽스 작업지시서) */
+  padding:12px 4px 30px;
   /* 우측만 페이드 — 완료 종목이 왼쪽에 잘리지 않고 다 보이게 (작업지시서 §3) */
   -webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent);
           mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 22px),transparent);

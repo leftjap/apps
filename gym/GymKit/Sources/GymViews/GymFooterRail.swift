@@ -217,7 +217,9 @@ public struct GymFooterRail: View {
             }
         }
         .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
-        .padding(.vertical, 12)
+        // 하단 30: 현재 카드 드롭섀도를 스크롤 트랙 안에서 완결시켜 ScrollView·마스크 경계의
+        // 절단선을 없앤다 (레일 그림자픽스 작업지시서 · PWA .fp-rail padding 12 4 30 정합).
+        .padding(.top, 12).padding(.bottom, 30)
         .padding(.horizontal, 4)
     }
 
@@ -264,7 +266,7 @@ public struct GymFooterRail: View {
                             }
                         }
                     }
-                    .frame(height: 74)   // track = padding 12 + 현재카드 50 + padding 12
+                    .frame(height: 92)   // track = padding 12 + 현재카드 50 + padding 30 (그림자 여백)
                 }
             }
             // 우측만 페이드 마스크 (§3 — 완료 종목은 왼쪽에 다 보이게, 우측만 "더 있음" 암시)
@@ -277,7 +279,7 @@ public struct GymFooterRail: View {
             )
             AddExerciseButton(action: onAdd)
         }
-        .padding(.top, 16).padding(.bottom, 22).padding(.horizontal, 12)
+        .padding(.top, 16).padding(.bottom, 6).padding(.horizontal, 12)   // 하단 22→6: 트랙 여백 늘린 만큼 축소(총 높이 유지)
         .overlay(alignment: .top) { Rectangle().fill(GY.lineSoft).frame(height: 1) } // inset 상단 구분선
         .background(GY.shell)
     }
