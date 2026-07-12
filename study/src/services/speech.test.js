@@ -939,14 +939,14 @@ describe('createSilenceAutoStop — 무음 자동종료 판정', () => {
   });
 });
 
-// 2026-07-12 — 녹음 머리 잘림 수정 (실데이터: 문장 앞머리 음소 연속 0점 → Δ61.8 스윙).
-// (1) 캡처 라이브 게이트: recordWav 는 첫 오디오 청크가 실제로 흐른 뒤 resolve
-//     → "await 후 UI 전환" 하는 호출자들이 자동으로 '진짜 녹음 중'일 때만 표시.
-// (2) AudioContext 싱글턴 재사용: 매 녹음 new AudioContext + worklet 재로드 (WeakSet 이
-//     매번 새 ctx 에 키됨) 가 시작 지연의 원인 → 재사용으로 지연 자체를 축소.
-describe('recordWav — 캡처 라이브 게이트 + AudioContext 재사용', () => {
+// 2026-07-12 — 녹음 머리 잘림 수정 2단계.
+// 1차(캡처 라이브 게이트 + ctx 재사용)로 완전 잘림(전체 0점)은 소멸했으나, 실데이터에
+// 부분 잘림(첫 단어만 저점 — Are:20~56)이 잔존. 합성 재현: 머리 300ms 절단 = Are:44 you:40.
+// 2차 — 워밍 마이크 + pre-roll: 스트림·워클릿을 녹음 사이에 유지하고 최근 0.5초를
+// 링버퍼에 상시 보관 → 녹음 시작 시 소급 포함. 클릭보다 먼저 말해도 잡힌다.
+describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll', () => {
   function setupAudioMocks() {
-    const state = { acCount: 0, addModuleCalls: 0, closeCalls: 0, nodes: [], trackStops: 0 };
+    const state = { acCount: 0, addModuleCalls: 0, closeCalls: 0, nodes: [], trackStops: 0, gumCalls: 0 };
     class FakeAudioContext {
       constructor() {
         state.acCount += 1;
@@ -967,17 +967,18 @@ describe('recordWav — 캡처 라이브 게이트 + AudioContext 재사용', ()
       connect() {}
       disconnect() {}
     }
-    const stream = { getTracks: () => [{ stop: () => { state.trackStops += 1; } }] };
+    const makeStream = () => ({ getTracks: () => [{ stop: () => { state.trackStops += 1; } }] });
     vi.stubGlobal('window', { AudioContext: FakeAudioContext });
-    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => stream } });
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => { state.gumCalls += 1; return makeStream(); } } });
     vi.stubGlobal('AudioWorkletNode', FakeWorkletNode);
     return state;
   }
 
   const flush = () => new Promise((r) => setTimeout(r, 0));
-  const feedChunk = (node, n = 160) => {
-    node.port.onmessage?.({ data: new Int16Array(n).fill(100).buffer });
+  const feedChunk = (node, n = 160, value = 100) => {
+    node.port.onmessage?.({ data: new Int16Array(n).fill(value).buffer });
   };
+  const pcmOf = async (blob) => new Int16Array(await blob.arrayBuffer(), 44);
 
   it('첫 오디오 청크 도착 전에는 resolve 하지 않는다 (캡처 라이브 게이트)', async () => {
     const m = setupAudioMocks();
@@ -1014,7 +1015,7 @@ describe('recordWav — 캡처 라이브 게이트 + AudioContext 재사용', ()
     }
   });
 
-  it('AudioContext 를 재사용하고 worklet 모듈은 1회만 등록한다', async () => {
+  it('워밍 파이프라인 재사용: ctx·worklet·getUserMedia 1회, 노드 재사용', async () => {
     const m = setupAudioMocks();
     const { Speech } = await import('./speech.js');
     const p1 = Speech.recordWav();
@@ -1026,26 +1027,93 @@ describe('recordWav — 캡처 라이브 게이트 + AudioContext 재사용', ()
 
     const p2 = Speech.recordWav();
     await flush();
-    feedChunk(m.nodes[1]);
+    feedChunk(m.nodes[0]); // 같은 노드 재사용 — 새 노드 생성 없음
     const c2 = await p2;
     c2.stop();
     await c2.blobPromise;
 
     expect(m.acCount).toBe(1);        // 컨텍스트 재사용
     expect(m.addModuleCalls).toBe(1); // 워클릿 1회 등록
+    expect(m.gumCalls).toBe(1);       // 마이크 스트림 재사용 (재오픈 지연 제거)
+    expect(m.nodes.length).toBe(1);   // 워클릿 노드 재사용
   });
 
-  it('stop() 은 마이크 트랙만 해제하고 공유 컨텍스트는 close 하지 않는다', async () => {
+  it('pre-roll: 클릭 이전(대기 중) 오디오가 다음 녹음 앞에 소급 포함된다', async () => {
     const m = setupAudioMocks();
     const { Speech } = await import('./speech.js');
-    const p = Speech.recordWav();
+    // 1차 녹음으로 워밍 (value 1 은 1차 녹음에만 속함)
+    const p1 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0], 100, 1);
+    const c1 = await p1;
+    c1.stop();
+    await c1.blobPromise;
+    // 대기 중(클릭 전) 오디오 — 링버퍼로
+    feedChunk(m.nodes[0], 100, 2);
+    feedChunk(m.nodes[0], 100, 3);
+    // 2차 녹음 — pre-roll(2,3) + 라이브(4)
+    const p2 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0], 100, 4);
+    const c2 = await p2;
+    c2.stop();
+    const pcm = await pcmOf(await c2.blobPromise);
+    expect(pcm.length).toBe(300);
+    expect(pcm[0]).toBe(2);    // 클릭 이전 오디오가 맨 앞에
+    expect(pcm[100]).toBe(3);
+    expect(pcm[200]).toBe(4);  // 라이브 오디오가 뒤에
+    expect([...pcm].includes(1)).toBe(false); // 1차 녹음분은 미포함 (링 초기화)
+  });
+
+  it('링버퍼는 pre-roll 상한(0.5초 = 8000샘플)으로 잘린다', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    const p1 = Speech.recordWav();
     await flush();
     feedChunk(m.nodes[0]);
-    const ctrl = await p;
-    ctrl.stop();
-    const blob = await ctrl.blobPromise;
-    expect(blob.size).toBeGreaterThan(44); // 청크 1개 이상 담긴 WAV
-    expect(m.trackStops).toBeGreaterThan(0); // 마이크 해제 (프라이버시 표시등 꺼짐)
-    expect(m.closeCalls).toBe(0);            // 컨텍스트는 유지 (재사용)
+    const c1 = await p1;
+    c1.stop();
+    await c1.blobPromise;
+    // 대기 중 12000샘플 유입 (상한 8000 초과)
+    for (let i = 0; i < 30; i++) feedChunk(m.nodes[0], 400, i + 10);
+    const p2 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0], 100, 99);
+    const c2 = await p2;
+    c2.stop();
+    const pcm = await pcmOf(await c2.blobPromise);
+    // pre-roll ≤ 8000+청크1개 미만 + 라이브 100
+    expect(pcm.length - 100).toBeLessThan(8400);
+    expect(pcm.length - 100).toBeGreaterThanOrEqual(8000);
+    expect(pcm[0]).toBeGreaterThanOrEqual(10 + 10); // 오래된 앞 청크들은 탈락
+  });
+
+  it('stop() 후 트랙 유지(워밍), 60초 유휴 시 자동 해제 후 재오픈', async () => {
+    vi.useFakeTimers();
+    try {
+      const m = setupAudioMocks();
+      const { Speech } = await import('./speech.js');
+      const p = Speech.recordWav();
+      await vi.advanceTimersByTimeAsync(0);
+      feedChunk(m.nodes[0]);
+      const ctrl = await p;
+      ctrl.stop();
+      const blob = await ctrl.blobPromise;
+      expect(blob.size).toBeGreaterThan(44);
+      expect(m.trackStops).toBe(0);   // 워밍 유지 — 즉시 해제 안 함
+      expect(m.closeCalls).toBe(0);   // 컨텍스트도 유지
+      await vi.advanceTimersByTimeAsync(61_000);
+      expect(m.trackStops).toBeGreaterThan(0); // 유휴 해제 (프라이버시 표시등 꺼짐)
+      // 해제 후 다음 녹음은 재오픈
+      const p2 = Speech.recordWav();
+      await vi.advanceTimersByTimeAsync(0);
+      feedChunk(m.nodes[1]);
+      const c2 = await p2;
+      c2.stop();
+      await c2.blobPromise;
+      expect(m.gumCalls).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -660,12 +660,101 @@ const _workletRegistered = new WeakSet();
 
 // 2026-07-12 — 녹음용 AudioContext 싱글턴. 종전엔 매 녹음 new AudioContext → _workletRegistered
 // 가 매번 새 ctx 에 키돼 worklet 모듈을 매 녹음 재로드 → 시작 지연(=머리 잘림 창)이 커졌다.
-// 재사용하면 등록 캐시가 실제로 히트하고, stop() 은 ctx 를 close 하지 않는다 (트랙만 해제).
 let _recCtx = null;
 async function getRecAudioContext(AC) {
   if (!_recCtx || _recCtx.state === 'closed') _recCtx = new AC();
   if (_recCtx.state === 'suspended') await _recCtx.resume();
   return _recCtx;
+}
+
+// ============================================================
+// 2026-07-12 — 워밍 마이크 + pre-roll (부분 머리 잘림 잔여분 제거)
+//
+// 1차 수정(캡처 게이트 + ctx 재사용) 후에도 실데이터에 첫 단어 부분 잘림이 남았다
+// (Are:20~56 + 나머지 건강). 합성 재현: 머리 150ms 절단까진 무해(Are:86), 300ms 절단은
+// Are:44 you:40 — 실측 프로필과 일치. 남은 원인 = 매 녹음 getUserMedia 재오픈 지연 +
+// 표시 전 발화 습관. 대응: 스트림·워클릿 노드를 녹음 사이에 유지하고, 대기 중 오디오를
+// 링버퍼(최근 0.5초)에 보관 → 녹음 시작 시 소급 포함. 클릭보다 먼저 말해도 잡힌다.
+// 프라이버시: 유휴 60초 또는 탭 hidden 시 자동 해제 (마이크 표시등 소등).
+// ============================================================
+const PREROLL_MAX_SAMPLES = 8000; // 0.5s @16kHz
+const MIC_IDLE_RELEASE_MS = 60_000;
+
+let _warmMic = null; // { stream, src, node, muteGain, ring, ringLen, active, idleTimer, onVis }
+
+/** 워밍 마이크 즉시 해제 (트랙 stop → 표시등 소등). 유휴 타이머·hidden 핸들러가 호출. */
+export function releaseWarmMic() {
+  const wm = _warmMic;
+  if (!wm) return;
+  _warmMic = null;
+  if (wm.idleTimer) clearTimeout(wm.idleTimer);
+  if (wm.onVis && typeof document !== 'undefined') {
+    try { document.removeEventListener('visibilitychange', wm.onVis); } catch { /* noop */ }
+  }
+  try { wm.node.port.postMessage('stop'); } catch { /* noop */ }
+  try { wm.node.port.onmessage = null; } catch { /* noop */ }
+  try { wm.node.disconnect(); } catch { /* noop */ }
+  try { wm.muteGain.disconnect(); } catch { /* noop */ }
+  try { wm.src.disconnect(); } catch { /* noop */ }
+  try { wm.stream.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+}
+
+async function ensureWarmMic(workletUrl) {
+  if (_warmMic) {
+    if (_warmMic.idleTimer) { clearTimeout(_warmMic.idleTimer); _warmMic.idleTimer = null; }
+    return _warmMic;
+  }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    // NotAllowedError = 사용자 거부 또는 insecure context (HTTP).
+    if (e?.name === 'NotAllowedError') {
+      throw Object.assign(new Error('마이크 권한 거부'), { code: 'permission_denied' });
+    }
+    throw Object.assign(new Error(e?.message || 'getUserMedia 실패'), { code: 'unavailable' });
+  }
+  const AC = window.AudioContext || window.webkitAudioContext;
+  const ac = await getRecAudioContext(AC);
+  if (!ac.audioWorklet?.addModule) {
+    try { stream.getTracks().forEach((t) => t.stop()); } catch { /* noop */ }
+    throw Object.assign(new Error('AudioWorklet 미지원 브라우저 (iOS Safari < 14.1 등)'), { code: 'unsupported' });
+  }
+  if (!_workletRegistered.has(ac)) {
+    await ac.audioWorklet.addModule(workletUrl);
+    _workletRegistered.add(ac);
+  }
+  const src = ac.createMediaStreamSource(stream);
+  const node = new AudioWorkletNode(ac, 'recorder-worklet');
+  src.connect(node);
+  // AudioWorkletNode 는 destination 미연결 시에도 process() 호출됨.
+  // 단 Chrome 일부 버전에서 graph "live" 유지 위해 destination 연결 권장 → muted 상태로 연결.
+  const muteGain = ac.createGain();
+  muteGain.gain.value = 0;
+  node.connect(muteGain);
+  muteGain.connect(ac.destination);
+
+  const wm = { stream, src, node, muteGain, ring: [], ringLen: 0, active: null, idleTimer: null, onVis: null };
+  node.port.onmessage = (e) => {
+    const buf = e.data;
+    if (!buf || !buf.byteLength) return;
+    const int16 = new Int16Array(buf);
+    if (wm.active) { wm.active.onChunk(int16); return; }
+    // 대기 중(녹음 밖) — pre-roll 링버퍼. 최근 PREROLL_MAX_SAMPLES 만 유지.
+    wm.ring.push(int16);
+    wm.ringLen += int16.length;
+    while (wm.ring.length > 1 && wm.ringLen - wm.ring[0].length >= PREROLL_MAX_SAMPLES) {
+      wm.ringLen -= wm.ring.shift().length;
+    }
+  };
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    wm.onVis = () => {
+      if (document.visibilityState === 'hidden' && !wm.active) releaseWarmMic();
+    };
+    document.addEventListener('visibilitychange', wm.onVis);
+  }
+  _warmMic = wm;
+  return wm;
 }
 
 /**
@@ -701,10 +790,11 @@ export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, h
 /**
  * 마이크 녹음 → WAV Blob (AudioWorkletNode 사용, Wave 11.63).
  *
- * 흐름: getUserMedia → AudioContext(싱글턴 재사용) → AudioWorklet (16kHz Int16 PCM 변환 — audio thread)
- *      → port.message → main thread chunks 누적 → 종료 시 WAV.
- * resolve 는 첫 오디오 청크 도착 후 (캡처 라이브 게이트, 무신호 안전망 2초) — 2026-07-12.
+ * 흐름: 워밍 마이크(스트림·워클릿 유지 + pre-roll 링버퍼) → 녹음 시작 시 클릭 이전 최근
+ *      0.5초 소급 포함 → port.message chunks 누적 → 종료 시 WAV. — 2026-07-12
+ * resolve 는 첫 오디오 청크 도착 후 (캡처 라이브 게이트, 무신호 안전망 2초). 워밍 상태에선 수 ms.
  * stop() 호출 또는 maxSeconds 도달 시 종료. `blobPromise` 가 Blob 으로 resolve.
+ * stop() 은 마이크를 즉시 끄지 않는다 — 유휴 60초/탭 hidden 시 자동 해제 (releaseWarmMic).
  *
  * iOS Safari: 사용자 제스처 안에서 호출해야 권한 통과. session.html 의 click handler 가 보장.
  * iOS Safari 14.1+ / Chrome 66+ / Firefox 76+ AudioWorklet 지원. 미지원 환경은 throw.
@@ -732,33 +822,9 @@ export async function recordWav({
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) throw Object.assign(new Error('AudioContext 미지원 환경'), { code: 'unsupported' });
 
-  let stream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-  } catch (e) {
-    // NotAllowedError = 사용자 거부 또는 insecure context (HTTP).
-    // NotFoundError = 디바이스 없음 — 모바일에선 거의 발생 안 함.
-    if (e?.name === 'NotAllowedError') {
-      throw Object.assign(new Error('마이크 권한 거부'), { code: 'permission_denied' });
-    }
-    throw Object.assign(new Error(e?.message || 'getUserMedia 실패'), { code: 'unavailable' });
-  }
-  const ac = await getRecAudioContext(AC);
-  if (!ac.audioWorklet?.addModule) {
-    try { stream.getTracks().forEach((t) => t.stop()); } catch {}
-    throw Object.assign(new Error('AudioWorklet 미지원 브라우저 (iOS Safari < 14.1 등)'), { code: 'unsupported' });
-  }
-  if (!_workletRegistered.has(ac)) {
-    await ac.audioWorklet.addModule(workletUrl);
-    _workletRegistered.add(ac);
-  }
-  const src = ac.createMediaStreamSource(stream);
-  const node = new AudioWorkletNode(ac, 'recorder-worklet');
-
-  const chunks = [];
-  let stopped = false;
-  let resolveDone, rejectDone;
-  const blobPromise = new Promise((res, rej) => { resolveDone = res; rejectDone = rej; });
+  const wm = await ensureWarmMic(workletUrl);
+  // 이전 녹음이 아직 active 면 강제 확정 (재클릭 race — 이전 blob 은 그 시점까지로 resolve)
+  if (wm.active) { try { wm.active.stop(); } catch { /* noop */ } }
 
   // 무음 자동종료 VAD (말 끝나면 자동 멈춤). autoStopSilenceMs>0 일 때만.
   const vad = autoStopSilenceMs > 0
@@ -766,37 +832,39 @@ export async function recordWav({
     : null;
   const needPeak = !!onLevel || !!vad;
 
-  let onFirstChunk = null; // 캡처 라이브 게이트 — 첫 청크 도착 시 resolve (아래 참조)
+  // pre-roll — 클릭 이전 최근 0.5초를 소급 포함. 링은 새 녹음 기준으로 비운다
+  // (이월 오디오가 다다음 녹음에 다시 실리는 것 방지).
+  const chunks = wm.ring;
+  wm.ring = [];
+  wm.ringLen = 0;
 
-  node.port.onmessage = (e) => {
-    if (stopped) return;
-    const buf = e.data;
-    if (!buf || !buf.byteLength) return;
-    if (onFirstChunk) { onFirstChunk(); onFirstChunk = null; }
-    const int16 = new Int16Array(buf);
-    chunks.push(int16);
-    if (needPeak) {
-      let peak = 0;
-      for (let i = 0; i < int16.length; i++) {
-        const abs = Math.abs(int16[i]);
-        if (abs > peak) peak = abs;
+  let stopped = false;
+  let resolveDone, rejectDone;
+  const blobPromise = new Promise((res, rej) => { resolveDone = res; rejectDone = rej; });
+  let onFirstChunk = null; // 캡처 라이브 게이트 — 첫 라이브 청크 도착 시 resolve (아래 참조)
+
+  const session = {
+    onChunk(int16) {
+      if (stopped) return;
+      if (onFirstChunk) { onFirstChunk(); onFirstChunk = null; }
+      chunks.push(int16);
+      if (needPeak) {
+        let peak = 0;
+        for (let i = 0; i < int16.length; i++) {
+          const abs = Math.abs(int16[i]);
+          if (abs > peak) peak = abs;
+        }
+        const level = peak / 0x7FFF;
+        if (onLevel) onLevel(level);
+        if (vad && vad.feed(level, Date.now())) {
+          stop();                      // 무음 자동종료 → blob resolve
+          try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
+        }
       }
-      const level = peak / 0x7FFF;
-      if (onLevel) onLevel(level);
-      if (vad && vad.feed(level, Date.now())) {
-        stop();                      // 무음 자동종료 → blob resolve
-        try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
-      }
-    }
+    },
+    stop,
   };
-
-  src.connect(node);
-  // AudioWorkletNode 는 destination 미연결 시에도 process() 호출됨.
-  // 단 Chrome 일부 버전에서 graph "live" 유지 위해 destination 연결 권장 → muted 상태로 연결.
-  const muteGain = ac.createGain();
-  muteGain.gain.value = 0;
-  node.connect(muteGain);
-  muteGain.connect(ac.destination);
+  wm.active = session;
 
   const timer = setTimeout(() => stop(), maxSeconds * 1000);
 
@@ -804,13 +872,11 @@ export async function recordWav({
     if (stopped) return;
     stopped = true;
     clearTimeout(timer);
-    try { node.port.postMessage('stop'); } catch {}
-    try { node.port.onmessage = null; } catch {}
-    try { node.disconnect(); } catch {}
-    try { muteGain.disconnect(); } catch {}
-    try { src.disconnect(); } catch {}
-    try { stream.getTracks().forEach((t) => t.stop()); } catch {}
-    // 2026-07-12 — 공유 컨텍스트는 close 안 함 (다음 녹음이 재사용 — 시작 지연 축소).
+    if (wm.active === session) {
+      wm.active = null;
+      // 워밍 유지 + 유휴 해제 예약 — 60초 내 다음 녹음이 오면 ensureWarmMic 이 취소.
+      wm.idleTimer = setTimeout(() => { if (_warmMic === wm && !wm.active) releaseWarmMic(); }, MIC_IDLE_RELEASE_MS);
+    }
     try {
       let total = 0;
       for (const c of chunks) total += c.length;
@@ -959,6 +1025,7 @@ export const Speech = {
   cancel, // 재생 중지 (Web speechSynthesis.cancel + Azure synth close)
   analyze, // deprecated — Wave 11.61. recordWav + analyzeWavRest 사용 권장
   recordWav, // Wave 11.61 — mic → WAV blob
+  releaseWarmMic, // 2026-07-12 — 워밍 마이크 즉시 해제 (pre-roll 유지 중 마이크 표시등 소등용)
   analyzeWavRest, // Wave 11.61 — REST API Pronunciation Assessment
   pcmToWavBlob, // Wave 11.61 — utility
   buildPronunciationAssessmentHeader, // Wave 11.61 — utility
