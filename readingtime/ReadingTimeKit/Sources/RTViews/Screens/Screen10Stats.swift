@@ -33,7 +33,7 @@ public struct Screen10Stats: View {
                 self.live = Self.partnerDemoLive
             }
         } else if let m = model, let data = m.userData {
-            let cal = Calendar(identifier: .gregorian)
+            var cal = Calendar(identifier: .gregorian); cal.firstWeekday = 2   // 월요일 시작(바·모델과 정합)
             let labels = ["월", "화", "수", "목", "금", "토", "일"]
             let mins = m.weekDayMinutes
             let maxV = mins.max() ?? 0
@@ -265,6 +265,8 @@ public struct Screen10Stats: View {
                 bars.padding(.top, 82)
                 if live == nil || week[sel].v > 0 { popover }
             }
+            .frame(height: 200)   // bars 118 + 팝오버 여백 82. 고정 안 하면 팝오버 GeometryReader 가
+                                  // 남는 공간을 삼켜 카드가 늘어남(랭킹 빈 희소 데이터에서 노출된 결함)
         }
         .padding(EdgeInsets(top: 16, leading: 15, bottom: 12, trailing: 15))
         .background(RT.surface)
