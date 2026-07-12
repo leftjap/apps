@@ -253,9 +253,11 @@ struct ReadingTimeApp: App {
             .statusBarHidden(faceDownDark)
                 .task {
                     await cloud.restore()
+                    RTDbg.p("sync: restore signedIn=\(cloud.signedIn) partnerName=\(cloud.partnerName ?? "nil") userData=\(model.userData != nil)")
                     Self.applyDisplayName(from: cloud, to: model)
                     Self.uploadSnapshot(from: model, to: cloud)       // 내 스냅샷 1회 올림(파트너가 읽도록)
                     await Self.loadPartner(from: cloud, to: model)   // 함께 읽기 — 파트너 스냅샷
+                    RTDbg.p("sync: loadPartner done partnerData=\(model.partnerData != nil) readingNow=\(model.partnerReadingNow)")
                 }
                 .onReceive(model.$route) { route in
                     // 센서·근접: 홈 추가 (§4-1) — 홈(포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
