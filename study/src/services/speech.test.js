@@ -1243,9 +1243,15 @@ describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll',
 // 연결 대기 중인 첫 호출을 두 번째 호출이 취소하지 못함 → 같은 synth 큐에 2건.
 describe('speak — 연타 시 대기 중 호출 선점 취소', () => {
   function setupSDKMocks() {
-    const state = { speakCalls: [] };
+    const state = { speakCalls: [], players: [] };
     class FakeSynth {
-      speakSsmlAsync(ssml, ok) { state.speakCalls.push(ssml); ok({ audioDuration: 0 }); }
+      // audioDuration 5e7 (100ns tick) = 5초 — playback 대기 상태를 유지시켜 재클릭 취소 경로 검증
+      speakSsmlAsync(ssml, ok) { state.speakCalls.push(ssml); ok({ audioDuration: 5e7 }); }
+      close() {}
+    }
+    class FakePlayer {
+      constructor() { this.pauseCalls = 0; state.players.push(this); }
+      pause() { this.pauseCalls += 1; }
       close() {}
     }
     vi.stubGlobal('window', {
@@ -1253,6 +1259,8 @@ describe('speak — 연타 시 대기 중 호출 선점 취소', () => {
         SpeechConfig: { fromAuthorizationToken: () => ({}) },
         SpeechSynthesizer: FakeSynth,
         Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakePlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
       },
     });
     return state;
@@ -1272,5 +1280,31 @@ describe('speak — 연타 시 대기 중 호출 선점 취소', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(m.speakCalls.length).toBe(1);              // 2연속 재생 없음
     expect(m.speakCalls[0]).toContain('second sentence'); // 살아남는 건 마지막 클릭
+  });
+
+  // 2026-07-13 실브라우저 실증: synth.close() 는 이미 버퍼된 재생 오디오를 멈추지 못한다
+  // (audio el currentTime 3.76→5.06 진행 계속 — A.15 주석 "close 로 중지 (검증됨)" 반증).
+  // SpeakerAudioDestination.pause() 는 즉시 정지 (currentTime 동결 실증) → 명시 player 필수.
+  it('재생 중 재클릭 → 이전 오디오를 player.pause() 로 즉시 정지', async () => {
+    const m = setupSDKMocks();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('first playing sentence', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 20)); // 합성 완료, playback 대기 중 (5초 타이머)
+    expect(m.speakCalls.length).toBe(1);
+    Speech.speak('interrupting sentence', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.players.length).toBeGreaterThanOrEqual(1); // 명시 player 로 재생
+    expect(m.players[0].pauseCalls).toBeGreaterThanOrEqual(1); // 이전 오디오 즉시 정지
+    expect(m.speakCalls.length).toBe(2); // 새 문장은 정상 재생
+  });
+
+  it('cancel() 도 재생 중 오디오를 player.pause() 로 정지', async () => {
+    const m = setupSDKMocks();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('to be cancelled', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 20));
+    Speech.cancel();
+    expect(m.players.length).toBeGreaterThanOrEqual(1);
+    expect(m.players[0].pauseCalls).toBeGreaterThanOrEqual(1);
   });
 });

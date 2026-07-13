@@ -357,7 +357,12 @@ async function getSynthesizer(lang) {
     const [{ token, region }, SDK] = await Promise.all([getAzureToken(), loadSpeechSDK()]);
     const config = SDK.SpeechConfig.fromAuthorizationToken(token, region);
     config.speechSynthesisLanguage = lang;
-    const synth = new SDK.SpeechSynthesizer(config);
+    // 2026-07-13 — 명시 SpeakerAudioDestination(player). synth.close() 는 이미 버퍼된 재생
+    // 오디오를 멈추지 못한다 (실브라우저 실증: close 후에도 currentTime 진행 — A.15 의
+    // "close 로 중지 (검증됨)" 반증). 재생 중지는 player.pause() 만 즉시 유효 (동결 실증).
+    // 같은 player 로 연속 utterance 이어 재생도 정상 (실증: secondAdvanced true).
+    const player = new SDK.SpeakerAudioDestination();
+    const synth = new SDK.SpeechSynthesizer(config, SDK.AudioConfig.fromSpeakerOutput(player));
     // pre-connect — 첫 호출 latency 감소.
     let connection = null;
     try {
@@ -366,7 +371,7 @@ async function getSynthesizer(lang) {
     } catch (e) {
       _dbg('getSynthesizer Connection.openConnection 실패', { lang, err: e?.message ?? e });
     }
-    const entry = { synth, connection, SDK };
+    const entry = { synth, connection, player, SDK };
     _synthCache[lang] = entry;
     _dbg('synthesizer 생성 + pre-connect', { lang, elapsedMs: Date.now() - t0 });
     return entry;
@@ -383,6 +388,7 @@ export function clearSynthesizerCache() {
   const langs = Object.keys(_synthCache);
   _dbg('clearSynthesizerCache', { langs });
   for (const lang of langs) {
+    try { _synthCache[lang].player?.pause?.(); } catch (_) {} // 재생 중 오디오 즉시 정지 (close 는 못 멈춤)
     try { _synthCache[lang].synth?.close(); } catch (_) {}
     delete _synthCache[lang];
   }
@@ -408,19 +414,20 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
   _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker, gen });
 
   // 이전 in-flight 호출 강제 중지 (race 차단).
-  // Azure SDK JS 의 SpeechSynthesizer 는 stopSpeakingAsync API 없음 (검증됨).
-  // 진행 중 audio 중지 = synth.close() + 캐시 invalidate. 다음 speak 가 새 synth 생성.
+  // 2026-07-13 — 재생 정지는 player.pause() 가 유일하게 유효 (실브라우저 실증: synth.close()
+  // 후에도 audio currentTime 진행 계속 — 옛 "close 로 중지 (검증됨)" 주석은 반증되어 폐기).
   if (_activeSpeak) {
     _dbg('speak 이전 호출 중지', { prevLang: _activeSpeak.lang });
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
+    try { _activeSpeak.player?.pause?.(); } catch (_) { /* noop */ }
     try { _activeSpeak.synth?.close?.(); } catch (_) { /* noop */ }
     try { clearSynthesizerCache(); } catch (_) { /* noop */ }
     _activeSpeak = null;
   }
 
   try {
-    const { synth } = await getSynthesizer(lang);
+    const { synth, player } = await getSynthesizer(lang);
     if (gen !== _speakGen) {
       _dbg('speak 선점 취소 — 대기 중 새 speak/cancel 발생', { gen, cur: _speakGen });
       return;
@@ -435,7 +442,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);
 
     // 새 in-flight 세션 등록.
-    const session = { lang, synth, playbackTimer: null, onEnd, cancelled: false };
+    const session = { lang, synth, player, playbackTimer: null, onEnd, cancelled: false };
     _activeSpeak = session;
 
     synth.speakSsmlAsync(
@@ -509,10 +516,11 @@ function cancel() {
     }
   } catch (_) { /* noop */ }
   // Azure — in-flight session 강제 중지 (Wave A.15).
-  // SDK 에 stopSpeakingAsync 없음 → synth.close() + 캐시 invalidate 로 audio 중지.
+  // 2026-07-13 — 재생 정지는 player.pause() (synth.close() 는 버퍼된 재생 못 멈춤 — 실증).
   if (_activeSpeak) {
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
+    try { _activeSpeak.player?.pause?.(); } catch (_) { /* noop */ }
     try { _activeSpeak.synth?.close?.(); } catch (_) { /* noop */ }
     _activeSpeak = null;
   }
