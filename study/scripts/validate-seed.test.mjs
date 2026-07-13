@@ -272,7 +272,10 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.warnings.join(' ')).toContain('증분');
   });
 
-  it('chain 분절 과소 — target 10단어+ 인데 단계 3개 이하면 경고 (확장 감각 학습)', () => {
+  /* 2026-07-13 — 단계 수는 규정하지 않는다(사용자 결정): 증분 규칙만 지키면 단계 수는
+   * target 길이가 자연 결정. 단계 하한을 경고하면 루틴이 경고를 끄려고 억지 확장·분절을 한다.
+   * (BNC 실회화 평균 발화 ~8.8단어 — 모든 target 을 길게 밀면 부자연) */
+  it('chain 단계 수는 자유 — 증분만 규칙(≤5단어) 내면 3단계·13단어도 경고 없음', () => {
     const p = makeModu();
     p.cards[0].explanation.chain = {
       target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -281,7 +284,7 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     };
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(true);
-    expect(r.warnings.join(' ')).toContain('단계');
+    expect(r.warnings.filter((w) => w.includes('chain'))).toEqual([]);
   });
 
   it('chain 성분 단위 세분(증분 ≤5단어, 4단계+)은 경고 없음', () => {

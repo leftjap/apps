@@ -338,14 +338,13 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     const tw = norm(chain.target).split(' ').filter(Boolean).length;
     if (tw && tw < 8) warnings.push(`${c.id}: chain.target 이 ${tw}단어 — 약 2문장(8단어+)까지 확장 권장 (짧으면 앵무새 반복이 됨)`);
     // 2026-07-13 — 단계 세분화(사용자 결정): 한 단계 = 성분 1개(부사구·전치사구·접속절, 1~4단어·절 최대 5).
-    // 경고만 — 차단하면 경고를 끄려고 성분 내부를 작위 분절한다. 분절은 자연 쉼·억양 경계에서만, 부족하면 target 재구성 우선.
+    // 억양 단위 연구(자연 발화 청크 = 1~4단어)와 일치. 경고만 — 차단하면 경고를 끄려고 성분 내부를 작위 분절한다.
+    // 분절은 자연 쉼·억양 경계에서만, 부족하면 target 재구성 우선. 단계 **수**는 규정하지 않는다(같은 날 사용자
+    // 결정) — 증분 규칙만 지키면 단계 수는 target 길이가 자연 결정하고, 하한 경고는 억지 확장을 유발한다.
     const incs = chain.chunks.slice(1).map((s) => norm(s).split(' ').filter(Boolean).length);
     const bigIdx = incs.findIndex((n) => n > 5);
     if (bigIdx >= 0) {
-      warnings.push(`${c.id}: chain 증분 과대 — ${bigIdx + 2}번째 chunk 가 ${incs[bigIdx]}단어. 한 단계 = 성분 1개(1~4단어, 절 최대 5). 성분 경계를 깨며 쪼개지 말고 target 을 재구성할 것`);
-    }
-    if (tw >= 10 && chain.chunks.length <= 3) {
-      warnings.push(`${c.id}: chain 단계 과소 — ${tw}단어 target 에 ${chain.chunks.length}단계. 확장 감각 학습엔 성분 단위 4단계+ 권장 (작위 분절 금지 — 확장요소를 하나씩 쌓는 target 설계로)`);
+      warnings.push(`${c.id}: chain 증분 과대 — ${bigIdx + 2}번째 chunk 가 ${incs[bigIdx]}단어. 한 단계 = 성분 1개(1~4단어, 절 최대 5). 성분 경계를 깨며 쪼개지 말고 target 을 재구성할 것 (재구성도 부자연스러우면 경고를 남겨도 됨)`);
     }
   }
 
