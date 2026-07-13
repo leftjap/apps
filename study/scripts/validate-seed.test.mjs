@@ -258,36 +258,48 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('chain.chunks');
   });
 
-  /* 2026-07-13 — 단계 세분화(사용자 결정): 한 단계 = 성분 1개(1~4단어, 절 최대 5).
-   * 경고만 — 차단하면 경고를 끄려고 성분 내부를 작위 분절하게 된다(분절은 자연 쉼 경계만). */
-  it('chain 증분 과대 — 비첫 chunk 가 5단어를 넘으면 경고 (한 단계 = 성분 1개)', () => {
+  /* 2026-07-13 — 단계 세분화(사용자 결정): 증분 기본 1~3단어(분절 불가 절만 4).
+   * 목적 = base 다회 발화 + 듣기 집중 → 잘게. 단 끊는 지점은 자연 휴지점만(절 내부 휴지 = 비유창성 지표).
+   * 경고만 — 차단하면 경고를 끄려고 기능어 뒤 끊기 같은 작위 분절을 하게 된다. */
+  it('chain 증분 과대 — 비첫 chunk 가 4단어를 넘으면 경고 (기본 1~3, 최대 4)', () => {
     const p = makeModu();
     p.cards[0].explanation.chain = {
-      target: 'It is no big deal because we can always try again tomorrow morning.',
-      chunks: ['It is no big deal', 'because we can always try again tomorrow morning.'],
-      ko: '별일 아니야, 내일 아침에 다시 하면 되니까.',
+      target: 'It is no big deal because we can try again.',
+      chunks: ['It is no big deal', 'because we can try again.'],
+      ko: '별일 아니야, 다시 하면 되니까.',
     };
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(true); // 경고지 차단 아님
     expect(r.warnings.join(' ')).toContain('증분');
   });
 
+  it('chain 증분 4단어(분절 불가 절)까지는 경고 없음', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = {
+      target: 'It is no big deal. You should not worry about it.',
+      chunks: ['It is no big deal.', 'You should not worry', 'about it.'],
+      ko: '별일 아니야. 걱정하지 마.',
+    };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('chain'))).toEqual([]);
+  });
+
   /* 2026-07-13 — 단계 수는 규정하지 않는다(사용자 결정): 증분 규칙만 지키면 단계 수는
    * target 길이가 자연 결정. 단계 하한을 경고하면 루틴이 경고를 끄려고 억지 확장·분절을 한다.
    * (BNC 실회화 평균 발화 ~8.8단어 — 모든 target 을 길게 밀면 부자연) */
-  it('chain 단계 수는 자유 — 증분만 규칙(≤5단어) 내면 3단계·13단어도 경고 없음', () => {
+  it('chain 단계 수는 자유 — 증분만 규칙 내면 3단계·12단어도 경고 없음', () => {
     const p = makeModu();
     p.cards[0].explanation.chain = {
-      target: "It's been a while since we caught up. We should grab dinner sometime.",
-      chunks: ["It's been a while", 'since we caught up', 'We should grab dinner sometime.'],
-      ko: '오랜만이야. 언제 저녁이나 먹자.',
+      target: "It's been a while since we caught up. We should grab dinner.",
+      chunks: ["It's been a while", 'since we caught up', 'We should grab dinner.'],
+      ko: '오랜만이야. 저녁이나 먹자.',
     };
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(true);
     expect(r.warnings.filter((w) => w.includes('chain'))).toEqual([]);
   });
 
-  it('chain 성분 단위 세분(증분 ≤5단어, 4단계+)은 경고 없음', () => {
+  it('chain 자연 휴지 단위 세분(증분 ≤4단어)은 경고 없음', () => {
     const p = makeModu();
     p.cards[0].explanation.chain = CHAIN_OK; // 4단계, 증분 4/4/1단어
     const r = validateSeedContent(p, okOpts);

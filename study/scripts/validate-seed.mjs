@@ -337,14 +337,15 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     }
     const tw = norm(chain.target).split(' ').filter(Boolean).length;
     if (tw && tw < 8) warnings.push(`${c.id}: chain.target 이 ${tw}단어 — 약 2문장(8단어+)까지 확장 권장 (짧으면 앵무새 반복이 됨)`);
-    // 2026-07-13 — 단계 세분화(사용자 결정): 한 단계 = 성분 1개(부사구·전치사구·접속절, 1~4단어·절 최대 5).
-    // 억양 단위 연구(자연 발화 청크 = 1~4단어)와 일치. 경고만 — 차단하면 경고를 끄려고 성분 내부를 작위 분절한다.
-    // 분절은 자연 쉼·억양 경계에서만, 부족하면 target 재구성 우선. 단계 **수**는 규정하지 않는다(같은 날 사용자
-    // 결정) — 증분 규칙만 지키면 단계 수는 target 길이가 자연 결정하고, 하한 경고는 억지 확장을 유발한다.
+    // 2026-07-13 — 단계 세분화(사용자 결정): 증분 기본 1~3단어, 분절 불가한 절만 4단어.
+    // 목적 = base 다회 발화(매 단계 base 부터 누적 발화 — 반복이 유창성을 올린다, 4/3/2 연구) + 듣기 집중.
+    // 끊는 지점은 **자연 휴지점만** — 절 내부 휴지는 비유창성 최강 지표(휴지 위치 연구) → 기능어(접속사·
+    // 전치사) 뒤 끊기·목적어 스트랜딩 금지. 경고만 — 차단하면 경고를 끄려고 그런 작위 분절을 하게 된다.
+    // 단계 **수**는 규정하지 않는다 — 증분 규칙만 지키면 단계 수는 target 길이가 자연 결정.
     const incs = chain.chunks.slice(1).map((s) => norm(s).split(' ').filter(Boolean).length);
-    const bigIdx = incs.findIndex((n) => n > 5);
+    const bigIdx = incs.findIndex((n) => n > 4);
     if (bigIdx >= 0) {
-      warnings.push(`${c.id}: chain 증분 과대 — ${bigIdx + 2}번째 chunk 가 ${incs[bigIdx]}단어. 한 단계 = 성분 1개(1~4단어, 절 최대 5). 성분 경계를 깨며 쪼개지 말고 target 을 재구성할 것 (재구성도 부자연스러우면 경고를 남겨도 됨)`);
+      warnings.push(`${c.id}: chain 증분 과대 — ${bigIdx + 2}번째 chunk 가 ${incs[bigIdx]}단어. 증분은 기본 1~3단어(분절 불가 절만 4) — 자연 휴지점에서 더 끊거나 target 을 재구성할 것 (기능어 뒤 끊기·목적어 떼기 같은 작위 분절은 금지 — 그럴 바엔 경고를 남겨도 됨)`);
     }
   }
 
