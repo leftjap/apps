@@ -257,6 +257,8 @@ public struct Screen12Library: View {
                                 .frame(maxWidth: .infinity)
                                 .rtEntrance(delay: 0.05 + Double(r * 3 + c) * 0.05, duration: 0.45)
                                 .contentShape(Rectangle())
+                                .accessibilityLabel(b.title)   // 대체 표지엔 제목 텍스트가 없음 (VoiceOver·UI 테스트 앵커)
+                                .accessibilityIdentifier("library.grid.\(b.isbn)")
                                 .onTapGesture {
                                     model?.selectedISBN = b.isbn
                                     model?.nav(.detail)
