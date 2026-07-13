@@ -146,6 +146,19 @@ public struct Screen08Detail: View {
 
     var ctas: some View {
         GeometryReader { row in
+            if live?.book.finished == true {
+                // 완독 책: 다시 읽기 단일 CTA — 완독 해제(별점·완독일 보존) 후 그 책으로 세션 시작
+                HStack(spacing: 9) {
+                    RTIcon(RTIconPath.play, size: 16, fill: RT.ctaText)
+                    Text("다시 읽기").font(.sans(15, 800)).foregroundColor(RT.ctaText)
+                }
+                .frame(width: row.size.width, height: 52)
+                .background(RT.ctaGrad(CGSize(width: row.size.width, height: 52)))
+                .clipShape(RoundedRectangle(cornerRadius: 15))
+                .shadow(color: Color(hex: 0x26413A, alpha: 0.35), radius: 8, x: 0, y: 10)
+                .contentShape(Rectangle())
+                .onTapGesture { model?.rereadBook() }
+            } else {
             let mainW = (row.size.width - 9) * 1.6 / 2.6 // flex 1.6 : 1
             HStack(spacing: 9) {
                 HStack(spacing: 9) {
@@ -168,6 +181,7 @@ public struct Screen08Detail: View {
                 .overlay(RoundedRectangle(cornerRadius: 15).stroke(Color(hex: 0xE5DFCD), lineWidth: 1))
                 .contentShape(Rectangle())
                 .onTapGesture { model?.openSheet(.finish) }
+            }
             }
         }
         .frame(height: 52)

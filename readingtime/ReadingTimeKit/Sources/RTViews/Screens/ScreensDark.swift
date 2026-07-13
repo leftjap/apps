@@ -123,7 +123,7 @@ public struct Screen03FlipWait: View {
 
     public init(model: RTAppModel? = nil) {
         self.model = model
-        self.bookTitle = model?.currentBook?.title ?? "몰입"
+        self.bookTitle = model?.sessionBook?.title ?? model?.currentBook?.title ?? "몰입"
     }
 
     public var body: some View {
@@ -200,7 +200,7 @@ public struct Screen04FlipPaused: View {
         self.model = model
         self.paused = model.map { $0.session?.status != .recording } ?? true
         self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
-        self.bookTitle = model?.currentBook?.title ?? "몰입"
+        self.bookTitle = model?.sessionBook?.title ?? model?.currentBook?.title ?? "몰입"
         // 라이브: 오늘 실누적(진행 세션 제외), 데모: 시안 값 32분
         self.todayBase = (model?.userData != nil) ? (model!.todaySeconds / 60) : 32
     }
@@ -320,7 +320,7 @@ public struct Screen05TapRecording: View {
         self.model = model
         self.paused = model.map { $0.session?.status != .recording } ?? false
         self.elapsed = model?.session?.elapsed ?? RTAppModel.demoElapsed
-        if let b = model?.currentBook {
+        if let b = model?.sessionBook ?? model?.currentBook {
             self.subtitle = "\(b.author), 《\(b.title)》"
         } else {
             self.subtitle = "미하이 칙센트미하이, 《몰입》"

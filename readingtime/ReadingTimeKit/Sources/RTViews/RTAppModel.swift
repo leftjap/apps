@@ -35,6 +35,7 @@ public struct RTSession: Sendable {
     public var elapsed: Int          // 초 (데모 셸: app.js 와 동일하게 초 틱 누적)
     public var pauseCount: Int
     public var startedAt: Date       // 세션 시작 시각 (06 원장 표시용 — 데모 렌더는 미사용)
+    public var isbn: String? = nil   // 세션 대상 책 (시작 시점 캡처 — 기록 귀속·다크/완료/LA 표기)
 }
 
 public enum RTLibraryFilter: String, Sendable { case all, reading, finished }
@@ -228,9 +229,22 @@ public final class RTAppModel: ObservableObject {
         onUserDataChange?(d)
     }
 
-    /// 읽는 중(미완독) 최신 책
+    /// 홈 히어로 — 미완독 중 max(추가 시각, 마지막 세션 시각) 최신 책.
+    /// 새로 추가한 책이 히어로가 되되, 다시 읽기 등 세션을 기록한 책이 있으면 그 책 우선.
     public var currentBook: RTBook? {
-        userData?.books.filter { !$0.finished }.max { $0.addedAt < $1.addedAt }
+        guard let d = userData else { return nil }
+        var lastRead = [String: Date]()
+        for s in d.sessions {
+            if let i = s.isbn, s.endedAt > (lastRead[i] ?? .distantPast) { lastRead[i] = s.endedAt }
+        }
+        func key(_ b: RTBook) -> Date { max(b.addedAt, lastRead[b.isbn] ?? .distantPast) }
+        return d.books.filter { !$0.finished }.max { key($0) < key($1) }
+    }
+
+    /// 진행 중(또는 flip 대기로 보류 중) 세션의 대상 책 — 다크 03~05·완료 06·라이브 액티비티 표기용
+    public var sessionBook: RTBook? {
+        guard let isbn = session?.isbn ?? nextSessionISBN else { return nil }
+        return userData?.books.first { $0.isbn == isbn }
     }
 
     /// 상세(08)·완독(09)·책메뉴 대상 — 서재에서 탭한 책, 미지정이면 읽는 중 책
@@ -437,7 +451,11 @@ public final class RTAppModel: ObservableObject {
         }
     }
 
-    public func openSheet(_ s: RTSheet) { sheet = s }
+    public func openSheet(_ s: RTSheet) {
+        // 재완독: 기존 별점을 프리셋 (직전 다른 책 평가 잔존값 방지 겸)
+        if s == .finish, let r = selectedBook?.rating { rating = r }
+        sheet = s
+    }
     public func closeSheet() { sheet = nil }
 
     // ── 액션 (app.js data-act 대응) ──
@@ -453,12 +471,15 @@ public final class RTAppModel: ObservableObject {
 
     public func setMode(_ m: RTMode) { mode = m }
 
-    public func start() {
+    /// 세션 시작 의도 — isbn 미지정이면 홈 히어로(currentBook) 대상.
+    /// flip 은 대기(03)를 거쳐 startSession 에서 세션이 생기므로 대상을 보류해 둔다.
+    public func start(isbn: String? = nil) {
+        nextSessionISBN = isbn ?? currentBook?.isbn
         if mode == .flip { nav(.flipWait) }
         else { startSession(.tap); nav(.tapTimer) }
     }
 
-    public func cancelSession() { session = nil; emitPresence(); nav(.home) }
+    public func cancelSession() { session = nil; nextSessionISBN = nil; emitPresence(); nav(.home) }
 
     public func simFlip() { startSession(.flip); nav(.flipTimer) }
 
@@ -482,7 +503,7 @@ public final class RTAppModel: ObservableObject {
         if let s = session {
             onSessionSaved?(s.mode, s.elapsed)
             if userData != nil {
-                let rec = RTSessionRecord(isbn: currentBook?.isbn, mode: s.mode.rawValue,
+                let rec = RTSessionRecord(isbn: s.isbn, mode: s.mode.rawValue,
                                           seconds: s.elapsed, endedAt: now(),
                                           pauseCount: s.pauseCount)
                 mutateUserData { $0.sessions.append(rec) }
@@ -495,7 +516,18 @@ public final class RTAppModel: ObservableObject {
 
     public func deleteSession() { session = nil; nav(.home) }
 
-    public func continueReading() { start() }
+    public func continueReading() { start(isbn: selectedBook?.isbn) }
+
+    /// 완독 책 다시 읽기 — 완독만 해제(별점·완독일 보존)하고 그 책으로 세션 시작
+    public func rereadBook() {
+        guard let b = selectedBook, b.finished else { return }
+        mutateUserData { d in
+            if let i = d.books.firstIndex(where: { $0.isbn == b.isbn }) {
+                d.books[i].finished = false
+            }
+        }
+        start(isbn: b.isbn)
+    }
 
     // 탭 존: 단일 탭 = 일시정지/재개, 더블 탭 = 종료 (~250ms 디바운스, app.js handleTapZone)
     public func tapZone() {
@@ -597,10 +629,16 @@ public final class RTAppModel: ObservableObject {
         session = s
     }
 
+    /// start() 가 보류해 둔 세션 대상 (flip 대기 경유). FlipEngine 홈 엎기처럼
+    /// start() 를 거치지 않는 경로는 startSession 의 currentBook 폴백이 대상.
+    private var nextSessionISBN: String?
+
     // ── 세션 시작 (app.js startSession — 시드는 sessionSeed) ──
     public func startSession(_ mode: RTMode) {
         session = RTSession(mode: mode, status: .recording,
-                            elapsed: sessionSeed, pauseCount: 0, startedAt: now())
+                            elapsed: sessionSeed, pauseCount: 0, startedAt: now(),
+                            isbn: nextSessionISBN ?? currentBook?.isbn)
+        nextSessionISBN = nil
         emitPresence()
     }
 

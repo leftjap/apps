@@ -315,7 +315,7 @@ struct ReadingTimeApp: App {
                 }
                 .onReceive(model.$session) { session in
                     // 잠금 화면 Live Activity — 상태 전환만 반영(초 틱은 시스템 자동 타이머)
-                    liveActivity.sync(session: session, bookTitle: model.currentBook?.title)
+                    liveActivity.sync(session: session, bookTitle: model.sessionBook?.title ?? model.currentBook?.title)
                     tapClock.clock.track(session, at: Date())
                 }
                 .onChange(of: scenePhase) { _, phase in

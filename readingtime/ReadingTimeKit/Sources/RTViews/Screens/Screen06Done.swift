@@ -31,7 +31,7 @@ public struct Screen06Done: View {
             let pausedSec = max(0, Int(m.now().timeIntervalSince(s.startedAt)) - s.elapsed)
             let base = min(1.0, Double(today) / 3600)
             self.live = Live(
-                bookTitle: m.currentBook?.title ?? "기록",
+                bookTitle: m.sessionBook?.title ?? m.currentBook?.title ?? "기록",
                 todayMin: today / 60,
                 startHM: f.string(from: s.startedAt),
                 endHM: f.string(from: m.now()),
