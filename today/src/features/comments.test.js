@@ -63,6 +63,8 @@ function makePanelDoc() {
     querySelector: () => null,
     querySelectorAll: () => [],
   };
+  // 글(entry) 반응 바 전용 슬롯 — 스크롤 리스트(#convoList) 밖 고정 (픽커 클립 방지).
+  const postbarSlot = { innerHTML: '' };
   const count = { textContent: '' };
   const input = {
     attrs: {},
@@ -72,11 +74,12 @@ function makePanelDoc() {
     get disabled() { return 'disabled' in this.attrs; },
   };
   const doc = {
-    getElementById: (id) => (id === 'convoList' ? list : id === 'convoCount' ? count : null),
+    getElementById: (id) =>
+      (id === 'convoList' ? list : id === 'convoCount' ? count : id === 'convoPostbar' ? postbarSlot : null),
     querySelector: (sel) => (sel === '#convoPanel .composer input' ? input : null),
     querySelectorAll: () => [],
   };
-  return { doc, list, count, input };
+  return { doc, list, postbarSlot, count, input };
 }
 
 describe('Comments 인터페이스 노출', () => {
@@ -307,29 +310,33 @@ describe('mountForArticle', () => {
     }
   });
 
-  it('미저장 article → reason=unsaved + 패널 비움', async () => {
-    const { doc, list } = makePanelDoc();
+  it('미저장 article → reason=unsaved + 패널 비움(리스트+반응 슬롯)', async () => {
+    const { doc, list, postbarSlot } = makePanelDoc();
     list.innerHTML = '이전 글 잔재';
+    postbarSlot.innerHTML = '이전 반응 바 잔재';
     const article = { dataset: { entryId: 'new-1' } };
     const r = await mountForArticle(article, { currentUserId: OWNER, doc });
     expect(r.ok).toBe(false);
     expect(r.reason).toBe('unsaved');
     expect(list.innerHTML).toBe('');
+    expect(postbarSlot.innerHTML).toBe('');
   });
 
-  it('shared entry + 댓글 0건 → ok=true count=0 mounted=false + 댓글 없음(글 반응 바만)', async () => {
+  it('shared entry + 댓글 0건 → ok=true count=0 mounted=false + 글 반응 바는 슬롯에(리스트 밖)', async () => {
     const { Queries } = await import('../db/queries.js');
     const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', title: '글', is_shared: 1 });
-    const { doc, list } = makePanelDoc();
+    const { doc, list, postbarSlot } = makePanelDoc();
     const article = { dataset: { entryId: e.id } };
     const r = await mountForArticle(article, { currentUserId: OWNER, doc });
     expect(r.ok).toBe(true);
     expect(r.canComment).toBe(true);
     expect(r.count).toBe(0);
     expect(r.mounted).toBe(false);
-    // 댓글 0건이어도 글(entry) 반응 바는 항상 렌더 — 댓글 메시지(cv-msg)는 없음.
-    expect(list.innerHTML).toContain('rx-postbar');
-    expect(list.innerHTML).toContain('data-target-type="entry"');
+    // 댓글 0건이어도 글(entry) 반응 바는 항상 렌더 — 단 스크롤 리스트가 아닌 전용 슬롯에.
+    // (리스트 안에 넣으면 overflow:auto 상단 클립으로 픽커가 잘림 — 2026-07-13 게시물 리액션 미작동 원인)
+    expect(postbarSlot.innerHTML).toContain('rx-postbar');
+    expect(postbarSlot.innerHTML).toContain('data-target-type="entry"');
+    expect(list.innerHTML).not.toContain('rx-postbar');
     expect(list.innerHTML).not.toContain('cv-msg');
   });
 
@@ -348,14 +355,16 @@ describe('mountForArticle', () => {
     expect(list.innerHTML).toContain('class="cv-day"');
   });
 
-  it('파트너의 is_shared=false entry → canComment=false + 빈 타임라인', async () => {
+  it('파트너의 is_shared=false entry → canComment=false + 빈 타임라인 + 반응 슬롯 비움', async () => {
     const { Queries } = await import('../db/queries.js');
     const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', is_shared: 0 });
-    const { doc, input } = makePanelDoc();
+    const { doc, input, postbarSlot } = makePanelDoc();
+    postbarSlot.innerHTML = '이전 반응 바 잔재';
     const article = { dataset: { entryId: e.id } };
     const r = await mountForArticle(article, { currentUserId: 'u-partner-not-owner', doc });
     expect(r.canComment).toBe(false);
     expect(input.disabled).toBe(true);
+    expect(postbarSlot.innerHTML).toBe('');
   });
 
   it('본인 글은 is_shared=false 여도 canComment=true (2026-05-13 정책 — 메모·추가내용 용도)', async () => {

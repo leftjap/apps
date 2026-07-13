@@ -164,6 +164,11 @@ function panelList(doc = (typeof document !== 'undefined' ? document : null)) {
   return doc?.getElementById?.('convoList') || null;
 }
 
+/** 글(entry) 반응 바 슬롯 — 스크롤 리스트 밖 고정 (#convoList overflow 클립이 픽커를 가리는 문제 방지). */
+function panelPostbarSlot(doc = (typeof document !== 'undefined' ? document : null)) {
+  return doc?.getElementById?.('convoPostbar') || null;
+}
+
 function updateConvoCount(doc = (typeof document !== 'undefined' ? document : null)) {
   if (!doc) return;
   const countEl = doc.getElementById?.('convoCount');
@@ -231,6 +236,8 @@ export function clearPanel(doc = (typeof document !== 'undefined' ? document : n
   if (!doc) return false;
   const list = panelList(doc);
   if (list) list.innerHTML = '';
+  const slot = panelPostbarSlot(doc);
+  if (slot) slot.innerHTML = '';
   const countEl = doc.getElementById?.('convoCount');
   if (countEl) countEl.textContent = '';
   syncComposerState(false, doc);
@@ -263,8 +270,10 @@ export async function mountForArticle(article, opts = {}) {
   syncComposerState(canComment, doc);
   const list = panelList(doc);
   if (!list) return { ok: true, count: 0, canComment, mounted: false };
+  const postbarSlot = panelPostbarSlot(doc);
   if (!canComment) {
     list.innerHTML = '';
+    if (postbarSlot) postbarSlot.innerHTML = '';
     updateConvoCount(doc);
     return { ok: true, count: 0, canComment, mounted: false };
   }
@@ -292,7 +301,10 @@ export async function mountForArticle(article, opts = {}) {
   const postBar = `<div class="rx-postbar" role="group" aria-label="이 글에 대한 반응">${
     reactionBarHtml(summarizeReactions(entryReactions, { currentUserId: userId }), { targetType: 'entry', targetId: id })
   }</div>`;
-  list.innerHTML = postBar + commentsToSectionHtml(comments, {
+  // 글 반응 바는 스크롤 리스트 밖 전용 슬롯에 — 리스트 안에 두면 (1) overflow 클립으로
+  // 픽커가 잘려 클릭해도 안 보이고 (2) scrollListToBottom 이 바 자체를 밀어냄 (2026-07-13).
+  if (postbarSlot) postbarSlot.innerHTML = postBar;
+  list.innerHTML = commentsToSectionHtml(comments, {
     currentUserId: userId, partnerName: opts.partnerName, reactionsByComment,
     avatarByUser: _avatarByUser,
   });
@@ -571,8 +583,12 @@ function injectReactionStyles(doc = (typeof document !== 'undefined' ? document 
     .rx-pick { width: 30px; height: 30px; border: none; background: transparent; border-radius: 8px;
       font-size: 17px; cursor: pointer; line-height: 1; }
     .rx-pick:hover { background: var(--hover, #f5f2ec); }
+    .convo__postbar { flex: none; padding: 2px 4px 0; }
     .rx-postbar { padding: 0 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line, #f0ece3); }
     .rx-postbar .rx-bar { margin-top: 0; }
+    /* 글 반응 바: hover 의존 없이 상시 노출 (터치 기기 + 발견성) — 픽커는 아래로 열림 (위는 헤더) */
+    .rx-postbar .rx-add { opacity: 1; border-color: var(--line, #e8e4dc); background: var(--surface, #fff); }
+    .rx-postbar .rx-picker { bottom: auto; top: 30px; }
     .cv-msg__avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
   `;
   (doc.head || doc.documentElement)?.appendChild(style);
