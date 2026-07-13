@@ -397,9 +397,15 @@ export function clearSynthesizerCache() {
 // Wave A.15 — 진행 중 audio playback 추적. race 차단 (빠른 연타 / 카드 전환 시 두 audio 겹침 방지).
 let _activeSpeak = null; // { lang, synth, playbackTimer, onEnd, cancelled }
 
+// 2026-07-13 — 연타 선점 세대 카운터. _activeSpeak 은 synth 확보 *후* 등록되므로, 콜드 연결
+// 대기 중(~1s)의 첫 클릭을 두 번째 클릭이 취소하지 못해 같은 synth 큐에 2건 → 2연속 재생(실사용 보고).
+// 세대가 바뀌면 대기 중이던 호출은 synth 확보 직후 스스로 포기한다 (마지막 클릭만 재생).
+let _speakGen = 0;
+
 async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, onEnd } = {}) {
   const t0 = Date.now();
-  _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker });
+  const gen = ++_speakGen;
+  _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker, gen });
 
   // 이전 in-flight 호출 강제 중지 (race 차단).
   // Azure SDK JS 의 SpeechSynthesizer 는 stopSpeakingAsync API 없음 (검증됨).
@@ -415,6 +421,10 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
 
   try {
     const { synth } = await getSynthesizer(lang);
+    if (gen !== _speakGen) {
+      _dbg('speak 선점 취소 — 대기 중 새 speak/cancel 발생', { gen, cur: _speakGen });
+      return;
+    }
     _dbg('speak synthesizer 준비', { elapsedMs: Date.now() - t0 });
     const cfg = VOICE_DEFAULTS[lang] || {};
     const speakerCfg = (speaker && SPEAKER_VOICES[lang]) ? SPEAKER_VOICES[lang][speaker] : null;
@@ -491,6 +501,7 @@ function speak(text, opts = {}) {
  * window.speechSynthesis.cancel() 동등 + Azure 인스턴스 정리.
  */
 function cancel() {
+  _speakGen += 1; // 2026-07-13 — synth 연결 대기 중인 speak 도 선점 취소
   // Web
   try {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -701,8 +712,20 @@ export function releaseWarmMic() {
 
 async function ensureWarmMic(workletUrl) {
   if (_warmMic) {
-    if (_warmMic.idleTimer) { clearTimeout(_warmMic.idleTimer); _warmMic.idleTimer = null; }
-    return _warmMic;
+    // 2026-07-13 — 워밍 건강검진 (실사용 보고: 표시등 켜져 있는데 무입력). 보관한 스트림이
+    // OS 이벤트(장치 전환·절전)로 죽었으면 재생성하고, 컨텍스트가 suspended 면 재개한다
+    // (안 하면 청크가 안 흘러 빈 녹음 + VAD 자동종료 불발).
+    const tracks = _warmMic.stream.getTracks();
+    const healthy = tracks.length > 0 && tracks.every((t) => t.readyState === 'live');
+    if (healthy) {
+      if (_warmMic.idleTimer) { clearTimeout(_warmMic.idleTimer); _warmMic.idleTimer = null; }
+      if (_recCtx && _recCtx.state === 'suspended') {
+        try { await _recCtx.resume(); } catch (_) { /* 실패 시 무신호 재시도가 재생성으로 수습 */ }
+      }
+      return _warmMic;
+    }
+    _dbg('워밍 마이크 트랙 사망 → 재생성', { states: tracks.map((t) => t.readyState) });
+    releaseWarmMic();
   }
   let stream;
   try {
@@ -822,83 +845,99 @@ export async function recordWav({
   const AC = window.AudioContext || window.webkitAudioContext;
   if (!AC) throw Object.assign(new Error('AudioContext 미지원 환경'), { code: 'unsupported' });
 
-  const wm = await ensureWarmMic(workletUrl);
-  // 이전 녹음이 아직 active 면 강제 확정 (재클릭 race — 이전 blob 은 그 시점까지로 resolve)
-  if (wm.active) { try { wm.active.stop(); } catch { /* noop */ } }
+  // 2026-07-13 — 무신호 재시도: 워밍 재사용 파이프라인이 조용히 죽은 경우(muted 등 —
+  // readyState 로 안 잡힘), 게이트 2초 무신호면 폐기·재생성해 같은 클릭 안에서 복구한다.
+  // 콜드 경로(방금 새로 연 파이프라인)의 무신호는 재시도해도 무의미 → 기존처럼 그대로 진행.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const wasWarm = !!_warmMic;
+    const wm = await ensureWarmMic(workletUrl);
+    // 이전 녹음이 아직 active 면 강제 확정 (재클릭 race — 이전 blob 은 그 시점까지로 resolve)
+    if (wm.active) { try { wm.active.stop(); } catch { /* noop */ } }
 
-  // 무음 자동종료 VAD (말 끝나면 자동 멈춤). autoStopSilenceMs>0 일 때만.
-  const vad = autoStopSilenceMs > 0
-    ? createSilenceAutoStop({ speechPeak, silencePeak, hangoverMs: autoStopSilenceMs })
-    : null;
-  const needPeak = !!onLevel || !!vad;
+    // 무음 자동종료 VAD (말 끝나면 자동 멈춤). autoStopSilenceMs>0 일 때만.
+    const vad = autoStopSilenceMs > 0
+      ? createSilenceAutoStop({ speechPeak, silencePeak, hangoverMs: autoStopSilenceMs })
+      : null;
+    const needPeak = !!onLevel || !!vad;
 
-  // pre-roll — 클릭 이전 최근 0.5초를 소급 포함. 링은 새 녹음 기준으로 비운다
-  // (이월 오디오가 다다음 녹음에 다시 실리는 것 방지).
-  const chunks = wm.ring;
-  wm.ring = [];
-  wm.ringLen = 0;
+    // pre-roll — 클릭 이전 최근 0.5초를 소급 포함. 링은 새 녹음 기준으로 비운다
+    // (이월 오디오가 다다음 녹음에 다시 실리는 것 방지).
+    const chunks = wm.ring;
+    wm.ring = [];
+    wm.ringLen = 0;
 
-  let stopped = false;
-  let resolveDone, rejectDone;
-  const blobPromise = new Promise((res, rej) => { resolveDone = res; rejectDone = rej; });
-  let onFirstChunk = null; // 캡처 라이브 게이트 — 첫 라이브 청크 도착 시 resolve (아래 참조)
+    let stopped = false;
+    let resolveDone, rejectDone;
+    const blobPromise = new Promise((res, rej) => { resolveDone = res; rejectDone = rej; });
+    let onFirstChunk = null; // 캡처 라이브 게이트 — 첫 라이브 청크 도착 시 resolve (아래 참조)
 
-  const session = {
-    onChunk(int16) {
+    const session = {
+      onChunk(int16) {
+        if (stopped) return;
+        if (onFirstChunk) { onFirstChunk(); onFirstChunk = null; }
+        chunks.push(int16);
+        if (needPeak) {
+          let peak = 0;
+          for (let i = 0; i < int16.length; i++) {
+            const abs = Math.abs(int16[i]);
+            if (abs > peak) peak = abs;
+          }
+          const level = peak / 0x7FFF;
+          if (onLevel) onLevel(level);
+          if (vad && vad.feed(level, Date.now())) {
+            stop();                      // 무음 자동종료 → blob resolve
+            try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
+          }
+        }
+      },
+      stop,
+    };
+    wm.active = session;
+
+    const timer = setTimeout(() => stop(), maxSeconds * 1000);
+
+    function stop() {
       if (stopped) return;
-      if (onFirstChunk) { onFirstChunk(); onFirstChunk = null; }
-      chunks.push(int16);
-      if (needPeak) {
-        let peak = 0;
-        for (let i = 0; i < int16.length; i++) {
-          const abs = Math.abs(int16[i]);
-          if (abs > peak) peak = abs;
-        }
-        const level = peak / 0x7FFF;
-        if (onLevel) onLevel(level);
-        if (vad && vad.feed(level, Date.now())) {
-          stop();                      // 무음 자동종료 → blob resolve
-          try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
-        }
+      stopped = true;
+      clearTimeout(timer);
+      if (wm.active === session) {
+        wm.active = null;
+        // 워밍 유지 + 유휴 해제 예약 — 60초 내 다음 녹음이 오면 ensureWarmMic 이 취소.
+        wm.idleTimer = setTimeout(() => { if (_warmMic === wm && !wm.active) releaseWarmMic(); }, MIC_IDLE_RELEASE_MS);
       }
-    },
-    stop,
-  };
-  wm.active = session;
+      try {
+        let total = 0;
+        for (const c of chunks) total += c.length;
+        const merged = new Int16Array(total);
+        let off = 0;
+        for (const c of chunks) { merged.set(c, off); off += c.length; }
+        resolveDone(pcmToWavBlob(merged, 16000));
+      } catch (e) {
+        rejectDone(e);
+      }
+    }
 
-  const timer = setTimeout(() => stop(), maxSeconds * 1000);
+    // 2026-07-12 — 캡처 라이브 게이트: 첫 청크가 실제로 흐른 뒤 resolve. 호출자의 "await 후
+    // UI 전환"이 '진짜 녹음 중'과 일치하게 된다 (실데이터: 준비 지연 중 발화 시작 → 앞머리
+    // 음소 연속 0점 → 같은 문장 Δ50+ 점수 스윙). 무신호 안전망 2초 — 이후엔 기존 흐름과 동일
+    // (끝내 무음이면 analyzeWavRest 의 no_match/mic_silent 경로가 안내).
+    const gotChunk = await new Promise((resolve) => {
+      const guard = setTimeout(() => { onFirstChunk = null; resolve(false); }, 2000);
+      onFirstChunk = () => { clearTimeout(guard); resolve(true); };
+    });
 
-  function stop() {
-    if (stopped) return;
+    if (gotChunk || !wasWarm || attempt === 1) {
+      return { stop, blobPromise };
+    }
+    // 워밍 재사용인데 무신호 — 이 attempt 는 조용히 폐기 (controller 미반환 상태) 후 재생성.
+    _dbg('워밍 파이프라인 무신호 → 재생성 재시도', { attempt });
     stopped = true;
     clearTimeout(timer);
-    if (wm.active === session) {
-      wm.active = null;
-      // 워밍 유지 + 유휴 해제 예약 — 60초 내 다음 녹음이 오면 ensureWarmMic 이 취소.
-      wm.idleTimer = setTimeout(() => { if (_warmMic === wm && !wm.active) releaseWarmMic(); }, MIC_IDLE_RELEASE_MS);
-    }
-    try {
-      let total = 0;
-      for (const c of chunks) total += c.length;
-      const merged = new Int16Array(total);
-      let off = 0;
-      for (const c of chunks) { merged.set(c, off); off += c.length; }
-      resolveDone(pcmToWavBlob(merged, 16000));
-    } catch (e) {
-      rejectDone(e);
-    }
+    if (wm.active === session) wm.active = null;
+    releaseWarmMic();
   }
-
-  // 2026-07-12 — 캡처 라이브 게이트: 첫 청크가 실제로 흐른 뒤 resolve. 호출자의 "await 후
-  // UI 전환"이 '진짜 녹음 중'과 일치하게 된다 (실데이터: 준비 지연 중 발화 시작 → 앞머리
-  // 음소 연속 0점 → 같은 문장 Δ50+ 점수 스윙). 무신호 안전망 2초 — 이후엔 기존 흐름과 동일
-  // (끝내 무음이면 analyzeWavRest 의 no_match/mic_silent 경로가 안내).
-  await new Promise((resolve) => {
-    const guard = setTimeout(() => { onFirstChunk = null; resolve(); }, 2000);
-    onFirstChunk = () => { clearTimeout(guard); resolve(); };
-  });
-
-  return { stop, blobPromise };
+  // 도달 불가 (attempt===1 에서 항상 return) — 안전망
+  throw Object.assign(new Error('recordWav 재시도 실패'), { code: 'unavailable' });
 }
 
 /**

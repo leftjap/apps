@@ -946,15 +946,16 @@ describe('createSilenceAutoStop — 무음 자동종료 판정', () => {
 // 링버퍼에 상시 보관 → 녹음 시작 시 소급 포함. 클릭보다 먼저 말해도 잡힌다.
 describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll', () => {
   function setupAudioMocks() {
-    const state = { acCount: 0, addModuleCalls: 0, closeCalls: 0, nodes: [], trackStops: 0, gumCalls: 0 };
+    const state = { acCount: 0, addModuleCalls: 0, closeCalls: 0, nodes: [], trackStops: 0, gumCalls: 0, tracks: [], ctxs: [], resumeCalls: 0 };
     class FakeAudioContext {
       constructor() {
         state.acCount += 1;
         this.state = 'running';
         this.destination = {};
         this.audioWorklet = { addModule: async () => { state.addModuleCalls += 1; } };
+        state.ctxs.push(this);
       }
-      async resume() { this.state = 'running'; }
+      async resume() { state.resumeCalls += 1; this.state = 'running'; }
       async close() { state.closeCalls += 1; this.state = 'closed'; }
       createMediaStreamSource() { return { connect: () => {}, disconnect: () => {} }; }
       createGain() { return { gain: { value: 1 }, connect: () => {}, disconnect: () => {} }; }
@@ -967,7 +968,11 @@ describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll',
       connect() {}
       disconnect() {}
     }
-    const makeStream = () => ({ getTracks: () => [{ stop: () => { state.trackStops += 1; } }] });
+    const makeStream = () => {
+      const track = { readyState: 'live', stop: () => { state.trackStops += 1; } };
+      state.tracks.push(track);
+      return { getTracks: () => [track] };
+    };
     vi.stubGlobal('window', { AudioContext: FakeAudioContext });
     vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => { state.gumCalls += 1; return makeStream(); } } });
     vi.stubGlobal('AudioWorkletNode', FakeWorkletNode);
@@ -1160,5 +1165,112 @@ describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll',
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // 2026-07-13 — 실사용 보고: 맥 마이크 표시등이 켜져 있는데 "입력 안 됨" + 자동종료 불발.
+  // 워밍 재사용이 죽은 파이프라인(트랙 ended·ctx suspended·무신호)을 그대로 쓰던 회귀.
+  it('워밍 스트림 트랙이 죽으면(ended) 파이프라인 재생성', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    const p1 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0]);
+    const c1 = await p1;
+    c1.stop();
+    await c1.blobPromise;
+    // OS 이벤트(장치 전환·절전)로 트랙 사망 시뮬
+    m.tracks[0].readyState = 'ended';
+    const p2 = Speech.recordWav();
+    await flush();
+    expect(m.gumCalls).toBe(2);   // 재생성
+    expect(m.nodes.length).toBe(2);
+    feedChunk(m.nodes[1], 100, 7);
+    const c2 = await p2;
+    c2.stop();
+    expect((await pcmOf(await c2.blobPromise))[0]).toBe(7);
+  });
+
+  it('워밍 재사용 시 suspended 컨텍스트를 resume (청크 흐름 복구)', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    const p1 = Speech.recordWav();
+    await flush();
+    feedChunk(m.nodes[0]);
+    const c1 = await p1;
+    c1.stop();
+    await c1.blobPromise;
+    m.ctxs[0].state = 'suspended'; // 탭 복귀 등으로 정지된 컨텍스트
+    const resumesBefore = m.resumeCalls;
+    const p2 = Speech.recordWav();
+    await flush();
+    expect(m.resumeCalls).toBeGreaterThan(resumesBefore);
+    expect(m.ctxs[0].state).toBe('running');
+    feedChunk(m.nodes[0]);
+    const c2 = await p2;
+    c2.stop();
+    await c2.blobPromise;
+  });
+
+  it('워밍 재사용인데 2초 무신호 → 같은 호출 안에서 파이프라인 재생성 후 복구', async () => {
+    vi.useFakeTimers();
+    try {
+      const m = setupAudioMocks();
+      const { Speech } = await import('./speech.js');
+      const p1 = Speech.recordWav();
+      await vi.advanceTimersByTimeAsync(0);
+      feedChunk(m.nodes[0]);
+      const c1 = await p1;
+      c1.stop();
+      await c1.blobPromise;
+      // 파이프라인이 조용히 죽음(muted 등 — readyState 로는 안 잡히는 케이스) 시뮬: 무신호
+      const p2 = Speech.recordWav();
+      await vi.advanceTimersByTimeAsync(0);
+      await vi.advanceTimersByTimeAsync(2100); // 1차 게이트 무신호 → 폐기·재생성
+      expect(m.gumCalls).toBe(2);
+      expect(m.nodes.length).toBe(2);
+      feedChunk(m.nodes[1], 100, 7); // 새 파이프라인 정상
+      const c2 = await p2;
+      c2.stop();
+      expect((await pcmOf(await c2.blobPromise))[0]).toBe(7);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+// 2026-07-13 — 실사용 보고: 재생 버튼 첫 클릭 무반응(콜드 연결 지연) 후 재클릭 시 2연속 재생.
+// 원인: speakAzure 의 race 가드(_activeSpeak)가 await getSynthesizer() 뒤에 등록돼,
+// 연결 대기 중인 첫 호출을 두 번째 호출이 취소하지 못함 → 같은 synth 큐에 2건.
+describe('speak — 연타 시 대기 중 호출 선점 취소', () => {
+  function setupSDKMocks() {
+    const state = { speakCalls: [] };
+    class FakeSynth {
+      speakSsmlAsync(ssml, ok) { state.speakCalls.push(ssml); ok({ audioDuration: 0 }); }
+      close() {}
+    }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FakeSynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+      },
+    });
+    return state;
+  }
+
+  it('토큰/연결 대기 중 재클릭 → 마지막 1건만 speakSsmlAsync', async () => {
+    const m = setupSDKMocks();
+    // 토큰 fetch 를 인위로 지연시켜 두 speak 이 동시에 대기하는 상황 재현
+    let releaseToken;
+    const gate = new Promise((r) => { releaseToken = r; });
+    const orig = globalThis.fetch;
+    globalThis.fetch = async (...args) => { await gate; return orig(...args); };
+    const { Speech } = await import('./speech.js');
+    Speech.speak('first sentence', { lang: 'en-US' });
+    Speech.speak('second sentence', { lang: 'en-US' });
+    releaseToken();
+    await new Promise((r) => setTimeout(r, 20));
+    expect(m.speakCalls.length).toBe(1);              // 2연속 재생 없음
+    expect(m.speakCalls[0]).toContain('second sentence'); // 살아남는 건 마지막 클릭
   });
 });
