@@ -102,7 +102,7 @@ public struct Screen02Home: View {
                 card
             }
             vignette
-            if menuOpen { settingsMenu }
+            if menuOpen { RTHomeMenu(model: model, avatar: avatar) { menuOpen = false } }
         }
         .frame(width: 390, height: 844)
     }
@@ -520,12 +520,21 @@ public struct Screen02Home: View {
             + ramp.map { Dot(color: Color(hex: $0), ring: false) }
     }
 
-    // ── 설정 팝오버 메뉴 ──
-    var settingsMenu: some View {
+}
+
+// ── 아바타 메뉴 (02·14 공용) — 프로필/서재/통계/로그아웃 ──
+// 빈 홈(14)도 같은 메뉴를 쓴다: 설정 시트 직행이면 완독 직후(읽는 중 0권)
+// 서재 진입 경로가 없음 (실기기 보고 2026-07-13).
+struct RTHomeMenu: View {
+    var model: RTAppModel?
+    let avatar: CGImage?
+    let close: () -> Void
+
+    var body: some View {
         ZStack(alignment: .topTrailing) {
             Color(hex: 0x17150F, alpha: 0.28)
                 .contentShape(Rectangle())
-                .onTapGesture { menuOpen = false }
+                .onTapGesture { close() }
             VStack(spacing: 0) {
                 // 프로필 헤더
                 menuRow(bg: Color(hex: 0xF1F5EE), padding: EdgeInsets(top: 15, leading: 15, bottom: 15, trailing: 15)) {
@@ -539,7 +548,7 @@ public struct Screen02Home: View {
                     }
                     Spacer(minLength: 0)
                     chev(Color(hex: 0xA99F86))
-                } action: { menuOpen = false; model?.openSheet(.settings) }   // 프로필 수정 = 설정 시트(이름 수정)
+                } action: { close(); model?.openSheet(.settings) }   // 프로필 수정 = 설정 시트(이름 수정)
                 menuDivider
                 menuRow {
                     menuTile(RT.greenTint) {
@@ -551,7 +560,7 @@ public struct Screen02Home: View {
                     Spacer(minLength: 0)
                     Text("\(model?.userData?.books.count ?? 24)").font(.mono(12, 600)).foregroundColor(RT.faint)
                     chev(RT.ghost)
-                } action: { menuOpen = false; model?.nav(.library) }
+                } action: { close(); model?.nav(.library) }
                 menuDivider
                 menuRow {
                     menuTile(RT.greenTint) {
@@ -560,7 +569,7 @@ public struct Screen02Home: View {
                     Text("통계").font(.sans(13.5, 700)).foregroundColor(RT.ink)
                     Spacer(minLength: 0)
                     chev(RT.ghost)
-                } action: { menuOpen = false; model?.nav(.statsWeek) }
+                } action: { close(); model?.nav(.statsWeek) }
                 menuDivider
                 menuRow(padding: EdgeInsets(top: 12, leading: 15, bottom: 13, trailing: 15)) {
                     menuTile(RT.amberTint) {
@@ -569,7 +578,7 @@ public struct Screen02Home: View {
                     }
                     Text("로그아웃").font(.sans(13.5, 700)).foregroundColor(Color(hex: 0xB56A55))
                     Spacer(minLength: 0)
-                } action: { menuOpen = false; model?.logout() }
+                } action: { close(); model?.logout() }
             }
             .frame(width: 234)
             .background(RT.surface)

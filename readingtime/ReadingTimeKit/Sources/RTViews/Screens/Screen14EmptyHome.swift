@@ -7,6 +7,7 @@ public struct Screen14EmptyHome: View {
     private let stats: (today: Int, week: String, streak: Int)?   // init 스냅샷
     private let avatar: CGImage?                                  // init 스냅샷 (사진 선택 즉시 반영용)
     let nextBook: Bool   // 서재에 책 존재(전부 완독) = "다음 책" 문맥, 없으면 온보딩 카피
+    @State private var menuOpen = false
 
     public init(model: RTAppModel? = nil) {
         self.model = model
@@ -25,7 +26,8 @@ public struct Screen14EmptyHome: View {
             RTHomeHeader {
                 RTAvatar(model?.displayInitial ?? "지", photo: avatar)
                     .contentShape(Rectangle())
-                    .onTapGesture { model?.openSheet(.settings) }
+                    // 02와 동일 메뉴 — 설정 시트 직행이면 서재 진입 경로가 없음 (실기기 보고 2026-07-13)
+                    .onTapGesture { menuOpen = true }
                     .accessibilityIdentifier("home.avatar")
                     .accessibilityValue(avatar == nil ? "initial" : "photo")
             }
@@ -40,6 +42,7 @@ public struct Screen14EmptyHome: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 128)
+            if menuOpen { RTHomeMenu(model: model, avatar: avatar) { menuOpen = false } }
         }
         .frame(width: 390, height: 844)
     }
