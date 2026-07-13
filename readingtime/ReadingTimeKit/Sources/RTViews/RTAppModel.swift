@@ -272,11 +272,37 @@ public final class RTAppModel: ObservableObject {
         return c
     }
 
+    /// 전자책(밀리) 일별 초 — "yyyy-MM-dd"(실발생일) → seconds. book_reading_seconds 읽기 전용,
+    /// 통계는 표시 계층에서 종이+전자 합산 (README 결정: DB에선 안 섞음). 데모(userData nil) 미적용.
+    @Published public var ebookDaily: [String: Int] = [:]
+
+    private var dayFormatter: DateFormatter {
+        let f = DateFormatter()
+        f.calendar = cal
+        f.timeZone = cal.timeZone
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd"
+        return f
+    }
+    public func ebookSeconds(on date: Date) -> Int {
+        userData == nil ? 0 : ebookDaily[dayFormatter.string(from: date)] ?? 0
+    }
+    /// 기록 있는 날(startOfDay) — 종이 세션 ∪ 밀리(>0초). 연속·체인 판정 정본.
+    private var readDays: Set<Date> {
+        guard let d = userData else { return [] }
+        var days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        let f = dayFormatter
+        for (k, sec) in ebookDaily where sec > 0 {
+            if let dt = f.date(from: k) { days.insert(cal.startOfDay(for: dt)) }
+        }
+        return days
+    }
+
     public var todaySeconds: Int {
         guard let d = userData else { return 0 }
         let t = now()
         return d.sessions.filter { cal.isDate($0.endedAt, inSameDayAs: t) }
-            .reduce(0) { $0 + $1.seconds }
+            .reduce(0) { $0 + $1.seconds } + ebookSeconds(on: t)
     }
 
     public var weekSeconds: Int { weekSeconds(offset: 0) }
@@ -286,7 +312,10 @@ public final class RTAppModel: ObservableObject {
         guard let d = userData,
               let base = cal.date(byAdding: .weekOfYear, value: offset, to: now()),
               let week = cal.dateInterval(of: .weekOfYear, for: base) else { return 0 }
-        return d.sessions.filter { week.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+        let paper = d.sessions.filter { week.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+        return paper + (0..<7).reduce(0) { sum, i in
+            sum + (cal.date(byAdding: .day, value: i, to: week.start).map(ebookSeconds(on:)) ?? 0)
+        }
     }
 
     /// 이번 주(월~일) 일별 분
@@ -296,6 +325,9 @@ public final class RTAppModel: ObservableObject {
         for s in d.sessions where week.contains(s.endedAt) {
             let idx = cal.dateComponents([.day], from: week.start, to: cal.startOfDay(for: s.endedAt)).day ?? 0
             if (0..<7).contains(idx) { per[idx] += s.seconds }
+        }
+        for i in 0..<7 {
+            if let day = cal.date(byAdding: .day, value: i, to: week.start) { per[i] += ebookSeconds(on: day) }
         }
         return per.map { $0 / 60 }
     }
@@ -332,6 +364,9 @@ public final class RTAppModel: ObservableObject {
         for s in d.sessions where week.contains(s.endedAt) {
             let idx = cal.dateComponents([.day], from: week.start, to: cal.startOfDay(for: s.endedAt)).day ?? 0
             if (0..<7).contains(idx) { per[idx] += Double(s.seconds) }
+        }
+        for i in 0..<7 {
+            if let day = cal.date(byAdding: .day, value: i, to: week.start) { per[i] += Double(ebookSeconds(on: day)) }
         }
         let mx = per.max() ?? 0
         return mx > 0 ? per.map { $0 / mx } : per
@@ -375,8 +410,8 @@ public final class RTAppModel: ObservableObject {
 
     /// 연속 기록일 — 오늘 기록 없으면 어제까지의 연속을 유지 표시
     public var streakDays: Int {
-        guard let d = userData, !d.sessions.isEmpty else { return 0 }
-        let days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        let days = readDays
+        if days.isEmpty { return 0 }
         var cursor = cal.startOfDay(for: now())
         if !days.contains(cursor) {
             cursor = cal.date(byAdding: .day, value: -1, to: cursor)!
@@ -399,8 +434,8 @@ public final class RTAppModel: ObservableObject {
     /// 최근 count 일의 기록 달성 여부 (index 0 = count-1일 전 … 마지막 = 오늘). 홈 연속 체인.
     /// userData 없으면(데모) 전부 false — 화면이 시안 고정 패턴을 그린다.
     public func streakChain(_ count: Int) -> [Bool] {
-        guard let d = userData else { return [Bool](repeating: false, count: count) }
-        let days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        guard userData != nil else { return [Bool](repeating: false, count: count) }
+        let days = readDays
         let today = cal.startOfDay(for: now())
         return (0..<count).map { i in
             guard let day = cal.date(byAdding: .day, value: -(count - 1 - i), to: today) else { return false }
@@ -663,6 +698,12 @@ public final class RTAppModel: ObservableObject {
         case "partnerStats": openPartnerStats()   // 파트너 통계 진입(검증·데모)
         case "demoPartner": loadDemoPartner()      // 데모 파트너 주입(검증·기기 데모)
         case "demoPartnerIdle": loadDemoPartner(reading: false)   // idle 상태 검증
+        case "demoEbook":   // 밀리 일별 시드(오늘 29분·어제 10분·그제 20분) — 통계 합산 검증
+            let t = now()
+            let f = dayFormatter
+            ebookDaily = [f.string(from: t): 1740,
+                          f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): 600,
+                          f.string(from: cal.date(byAdding: .day, value: -2, to: t)!): 1200]
         case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)
         case "start": start()
         case "cancelSession": cancelSession()

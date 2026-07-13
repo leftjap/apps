@@ -116,6 +116,7 @@ struct ReadingTimeApp: App {
                     if let model {
                         Self.uploadSnapshot(from: model, to: cloud)
                         await Self.loadPartner(from: cloud, to: model)
+                        await Self.loadEbook(from: cloud, to: model)
                     }
                 } catch {
                     Logger(subsystem: "com.leftjap.readingtime", category: "auth")
@@ -178,6 +179,14 @@ struct ReadingTimeApp: App {
         let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
         guard let raw = try? enc.encode(data), let json = String(data: raw, encoding: .utf8) else { return }
         Task { try? await cloud.uploadUserData(json) }
+    }
+
+    /// 밀리(전자책) 일별 초 로드 — book_reading_seconds 읽기 전용, 통계 표시 계층 합산.
+    /// 실패/미로그인은 무시 (기존 값 유지).
+    @MainActor private static func loadEbook(from cloud: CloudStore, to model: RTAppModel?) async {
+        // 빈 응답 무시 — 미로그인 RLS 는 에러가 아니라 빈 배열(200)이라 데모 시드·기존 값을 지운다
+        guard let rows = try? await cloud.fetchEbookDaily(), !rows.isEmpty else { return }
+        model?.ebookDaily = Dictionary(rows.map { ($0.day, $0.seconds) }, uniquingKeysWith: +)
     }
 
     /// 함께 읽기 — 파트너 스냅샷(RTUserData JSON + 프레즌스)을 클라우드에서 받아 모델에 주입.
@@ -293,6 +302,7 @@ struct ReadingTimeApp: App {
                         Self.applyDisplayName(from: cloud, to: model)
                         Self.uploadSnapshot(from: model, to: cloud)       // 내 스냅샷 1회 올림(파트너가 읽도록)
                         await Self.loadPartner(from: cloud, to: model)   // 함께 읽기 — 파트너 스냅샷
+                        await Self.loadEbook(from: cloud, to: model)     // 밀리 일별 — 통계 합산
                     }
                 }
                 .onReceive(model.$route) { route in
@@ -340,7 +350,10 @@ struct ReadingTimeApp: App {
                         // 홈으로 복귀 시 그 날짜 첫 진입이면 집어드는 안무 (§4)
                         if model.route == .home { Self.armPickupIfFirstToday(model) }
                         // 함께 읽기 — 포그라운드 복귀마다 파트너 프레즌스 갱신
-                        Task { await Self.loadPartner(from: cloud, to: model) }
+                        Task {
+                            await Self.loadPartner(from: cloud, to: model)
+                            await Self.loadEbook(from: cloud, to: model)   // 밀리 갱신 (하루 중 적재)
+                        }
                     }
                 }
         }

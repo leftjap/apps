@@ -46,6 +46,13 @@ public struct Screen11Month: View {
                     perDayTop[d] = (isbn, s.seconds)
                 }
             }
+            // 밀리(전자책) 일별 합산 — 총 시간·읽은 날 포함 (스펙 §11 "밀리 포함")
+            for d in 1...daysInMonth {
+                if let date = cal.date(from: DateComponents(year: year, month: month, day: d)) {
+                    let sec = m.ebookSeconds(on: date)
+                    if sec > 0 { monthTotal += sec; readDaySet.insert(d) }
+                }
+            }
             var finishDays = Set<Int>()
             for b in data.books {
                 if let f = b.finishedAt, cal.component(.month, from: f) == month,
