@@ -65,6 +65,11 @@ struct ReadingTimeApp: App {
                 model?.displayName = nil
                 try? FileManager.default.removeItem(at: Self.avatarURL)
                 model?.avatarImage = nil
+                // 파트너 캐시도 제거 (로그아웃 후 스테일 파트너 표시 방지)
+                ["rt.partnerData", "rt.partnerName", "rt.partnerReadingSince"].forEach {
+                    UserDefaults.standard.removeObject(forKey: $0)
+                }
+                model?.partnerData = nil
                 Task { await cloud.signOut() }    // 로그아웃 시 Supabase 세션도 제거
             }
         }
@@ -86,6 +91,7 @@ struct ReadingTimeApp: App {
             model.displayName = UserDefaults.standard.string(forKey: "rt.displayName")
             model.nav(.home)
             Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
+            Self.applyCachedPartner(to: model)   // 함께 읽기 — 캐시된 파트너 즉시 표시(팝인 제거)
         }
 
         // 이름 수정 저장 → 즉시 영속 + 서버 갱신 (실패해도 로컬 유지 — 다음 restore() 가 서버 정본으로 수렴)
@@ -177,7 +183,10 @@ struct ReadingTimeApp: App {
     /// 함께 읽기 — 파트너 스냅샷(RTUserData JSON + 프레즌스)을 클라우드에서 받아 모델에 주입.
     /// reading_since 가 최근(≤12h — 크래시 스테일 가드)이면 "지금 읽는 중". 실패/미로그인은 무시.
     @MainActor private static func loadPartner(from cloud: CloudStore, to model: RTAppModel?) async {
-        if let name = cloud.partnerName { model?.partnerName = name }   // 보는 사람 기준 이름
+        if let name = cloud.partnerName {   // 보는 사람 기준 이름
+            model?.partnerName = name
+            UserDefaults.standard.set(name, forKey: "rt.partnerName")
+        }
         guard let snap = try? await cloud.fetchPartner() else { return }
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
@@ -185,6 +194,21 @@ struct ReadingTimeApp: App {
               let pdata = try? dec.decode(RTUserData.self, from: raw) else { return }
         model?.partnerData = pdata
         model?.partnerReadingNow = snap.readingSince.map { Date().timeIntervalSince($0) < 12 * 3600 } ?? false
+        // 캐시 — 다음 콜드스타트에 즉시 표시(네트워크 지연 팝인 제거, stale-while-revalidate)
+        UserDefaults.standard.set(raw, forKey: "rt.partnerData")
+        UserDefaults.standard.set(snap.readingSince, forKey: "rt.partnerReadingSince")
+    }
+
+    /// 캐시된 파트너 스냅샷을 즉시 주입 (콜드스타트 — 네트워크 loadPartner 전에 홈에 파트너 행 바로 표시)
+    @MainActor private static func applyCachedPartner(to model: RTAppModel?) {
+        let ud = UserDefaults.standard
+        if let name = ud.string(forKey: "rt.partnerName") { model?.partnerName = name }
+        guard let raw = ud.data(forKey: "rt.partnerData") else { return }
+        let dec = JSONDecoder(); dec.dateDecodingStrategy = .iso8601
+        guard let pdata = try? dec.decode(RTUserData.self, from: raw) else { return }
+        model?.partnerData = pdata
+        let since = ud.object(forKey: "rt.partnerReadingSince") as? Date
+        model?.partnerReadingNow = since.map { Date().timeIntervalSince($0) < 12 * 3600 } ?? false
     }
 
     /// 현재 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (--capture 전용, 실기기 화면 검증).
