@@ -63,7 +63,7 @@ function makePanelDoc() {
     querySelector: () => null,
     querySelectorAll: () => [],
   };
-  // 글(entry) 반응 바 전용 슬롯 — 스크롤 리스트(#convoList) 밖 고정 (픽커 클립 방지).
+  // 글(entry) 반응 바 슬롯 — 본문(article) 하단 형제 요소 #entryReactions (2026-07-13 위치 이동).
   const postbarSlot = { innerHTML: '' };
   const count = { textContent: '' };
   const input = {
@@ -75,7 +75,7 @@ function makePanelDoc() {
   };
   const doc = {
     getElementById: (id) =>
-      (id === 'convoList' ? list : id === 'convoCount' ? count : id === 'convoPostbar' ? postbarSlot : null),
+      (id === 'convoList' ? list : id === 'convoCount' ? count : id === 'entryReactions' ? postbarSlot : null),
     querySelector: (sel) => (sel === '#convoPanel .composer input' ? input : null),
     querySelectorAll: () => [],
   };
@@ -322,7 +322,7 @@ describe('mountForArticle', () => {
     expect(postbarSlot.innerHTML).toBe('');
   });
 
-  it('shared entry + 댓글 0건 → ok=true count=0 mounted=false + 글 반응 바는 슬롯에(리스트 밖)', async () => {
+  it('shared entry + 댓글 0건 → ok=true count=0 mounted=false + 글 반응 바는 본문 하단 슬롯에', async () => {
     const { Queries } = await import('../db/queries.js');
     const e = await Queries.createEntry({ owner_id: OWNER, kind: 'navi', title: '글', is_shared: 1 });
     const { doc, list, postbarSlot } = makePanelDoc();
@@ -332,8 +332,8 @@ describe('mountForArticle', () => {
     expect(r.canComment).toBe(true);
     expect(r.count).toBe(0);
     expect(r.mounted).toBe(false);
-    // 댓글 0건이어도 글(entry) 반응 바는 항상 렌더 — 단 스크롤 리스트가 아닌 전용 슬롯에.
-    // (리스트 안에 넣으면 overflow:auto 상단 클립으로 픽커가 잘림 — 2026-07-13 게시물 리액션 미작동 원인)
+    // 댓글 0건이어도 글(entry) 반응 바는 항상 렌더 — 본문(article) 하단 #entryReactions 슬롯에.
+    // (댓글 패널 리스트 안: overflow 클립으로 픽커 잘림 / 패널 상단: 게시물과 분리·발견성 낮음 — 2026-07-13)
     expect(postbarSlot.innerHTML).toContain('rx-postbar');
     expect(postbarSlot.innerHTML).toContain('data-target-type="entry"');
     expect(list.innerHTML).not.toContain('rx-postbar');

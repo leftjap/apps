@@ -164,9 +164,21 @@ function panelList(doc = (typeof document !== 'undefined' ? document : null)) {
   return doc?.getElementById?.('convoList') || null;
 }
 
-/** 글(entry) 반응 바 슬롯 — 스크롤 리스트 밖 고정 (#convoList overflow 클립이 픽커를 가리는 문제 방지). */
-function panelPostbarSlot(doc = (typeof document !== 'undefined' ? document : null)) {
-  return doc?.getElementById?.('convoPostbar') || null;
+/**
+ * 글(entry) 반응 바 슬롯 — 본문(article) 하단 형제 요소 #entryReactions (2026-07-13 위치 이동).
+ * article 밖인 이유: 에디터의 doc__body innerHTML 재설정(자동저장·realtime 패치)과 분리.
+ * 같은 entry 재렌더는 in-place patch 라 슬롯 생존, entry 전환은 #mainView 재작성으로 슬롯 소멸
+ * → articleObserver 가 mountForArticle 을 다시 불러 재생성.
+ */
+function entryReactionSlot(article, doc = (typeof document !== 'undefined' ? document : null)) {
+  const existing = doc?.getElementById?.('entryReactions');
+  if (existing) return existing;
+  if (!article?.insertAdjacentElement || !doc?.createElement) return null;
+  const slot = doc.createElement('div');
+  slot.id = 'entryReactions';
+  slot.className = 'entry-reactions';
+  article.insertAdjacentElement('afterend', slot);
+  return slot;
 }
 
 function updateConvoCount(doc = (typeof document !== 'undefined' ? document : null)) {
@@ -236,7 +248,7 @@ export function clearPanel(doc = (typeof document !== 'undefined' ? document : n
   if (!doc) return false;
   const list = panelList(doc);
   if (list) list.innerHTML = '';
-  const slot = panelPostbarSlot(doc);
+  const slot = doc.getElementById?.('entryReactions');
   if (slot) slot.innerHTML = '';
   const countEl = doc.getElementById?.('convoCount');
   if (countEl) countEl.textContent = '';
@@ -270,13 +282,14 @@ export async function mountForArticle(article, opts = {}) {
   syncComposerState(canComment, doc);
   const list = panelList(doc);
   if (!list) return { ok: true, count: 0, canComment, mounted: false };
-  const postbarSlot = panelPostbarSlot(doc);
   if (!canComment) {
     list.innerHTML = '';
-    if (postbarSlot) postbarSlot.innerHTML = '';
+    const staleSlot = doc.getElementById?.('entryReactions');
+    if (staleSlot) staleSlot.innerHTML = '';
     updateConvoCount(doc);
     return { ok: true, count: 0, canComment, mounted: false };
   }
+  const postbarSlot = entryReactionSlot(article, doc);
   // 댓글 목록 로드
   let comments = [];
   try {
@@ -301,8 +314,8 @@ export async function mountForArticle(article, opts = {}) {
   const postBar = `<div class="rx-postbar" role="group" aria-label="이 글에 대한 반응">${
     reactionBarHtml(summarizeReactions(entryReactions, { currentUserId: userId }), { targetType: 'entry', targetId: id })
   }</div>`;
-  // 글 반응 바는 스크롤 리스트 밖 전용 슬롯에 — 리스트 안에 두면 (1) overflow 클립으로
-  // 픽커가 잘려 클릭해도 안 보이고 (2) scrollListToBottom 이 바 자체를 밀어냄 (2026-07-13).
+  // 글 반응 바는 본문 하단 슬롯에 — 댓글 리스트 안은 overflow 클립으로 픽커가 잘리고,
+  // 댓글 패널 상단은 게시물과 분리돼 발견성이 낮음 (2026-07-13 위치 이동).
   if (postbarSlot) postbarSlot.innerHTML = postBar;
   list.innerHTML = commentsToSectionHtml(comments, {
     currentUserId: userId, partnerName: opts.partnerName, reactionsByComment,
@@ -583,12 +596,13 @@ function injectReactionStyles(doc = (typeof document !== 'undefined' ? document 
     .rx-pick { width: 30px; height: 30px; border: none; background: transparent; border-radius: 8px;
       font-size: 17px; cursor: pointer; line-height: 1; }
     .rx-pick:hover { background: var(--hover, #f5f2ec); }
-    .convo__postbar { flex: none; padding: 2px 4px 0; }
-    .rx-postbar { padding: 0 0 10px; margin-bottom: 4px; border-bottom: 1px solid var(--line, #f0ece3); }
+    /* 글 반응 바 — 본문 하단, .doc 칼럼(600px 중앙, 좌우 4px)과 정렬 (2026-07-13 위치 이동) */
+    .entry-reactions { max-width: 600px; margin: 0 auto; width: 100%; padding: 0 4px; }
+    @media (max-width: 768px) { .entry-reactions { padding: 0 6px; } }
+    .rx-postbar { padding: 14px 0 36px; margin-top: 12px; border-top: 1px solid var(--line, #f0ece3); }
     .rx-postbar .rx-bar { margin-top: 0; }
-    /* 글 반응 바: hover 의존 없이 상시 노출 (터치 기기 + 발견성) — 픽커는 아래로 열림 (위는 헤더) */
+    /* 글 반응 바: hover 의존 없이 상시 노출 (터치 기기 + 발견성) */
     .rx-postbar .rx-add { opacity: 1; border-color: var(--line, #e8e4dc); background: var(--surface, #fff); }
-    .rx-postbar .rx-picker { bottom: auto; top: 30px; }
     .cv-msg__avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
   `;
   (doc.head || doc.documentElement)?.appendChild(style);
