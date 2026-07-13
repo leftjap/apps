@@ -287,24 +287,65 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
   /* 2026-07-13 — 단계 수는 규정하지 않는다(사용자 결정): 증분 규칙만 지키면 단계 수는
    * target 길이가 자연 결정. 단계 하한을 경고하면 루틴이 경고를 끄려고 억지 확장·분절을 한다.
    * (BNC 실회화 평균 발화 ~8.8단어 — 모든 target 을 길게 밀면 부자연) */
-  it('chain 단계 수는 자유 — 증분만 규칙 내면 3단계·12단어도 경고 없음', () => {
+  it('chain 단계 수는 자유 — 증분만 규칙 내면 3단계·10단어도 경고 없음', () => {
     const p = makeModu();
     p.cards[0].explanation.chain = {
-      target: "It's been a while since we caught up. We should grab dinner.",
-      chunks: ["It's been a while", 'since we caught up', 'We should grab dinner.'],
-      ko: '오랜만이야. 저녁이나 먹자.',
+      target: 'It is no big deal. We can try again tomorrow.',
+      chunks: ['It is no big deal.', 'We can try', 'again tomorrow.'],
+      ko: '별일 아니야. 내일 다시 하면 돼.',
     };
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(true);
     expect(r.warnings.filter((w) => w.includes('chain'))).toEqual([]);
   });
 
-  it('chain 자연 휴지 단위 세분(증분 ≤4단어)은 경고 없음', () => {
+  it('chain 가이드 준수(base 시작·증분 ≤4·정상 말끝)는 경고 없음', () => {
     const p = makeModu();
-    p.cards[0].explanation.chain = CHAIN_OK; // 4단계, 증분 4/4/1단어
+    p.cards[0].explanation.chain = {
+      target: 'It is no big deal. You should not worry, okay?',
+      chunks: ['It is no big deal.', 'You should not worry,', 'okay?'],
+      ko: '별일 아니야. 걱정하지 마, 알았지?',
+    };
     const r = validateSeedContent(p, okOpts);
     const chainWarns = r.warnings.filter((w) => w.includes('chain'));
     expect(chainWarns).toEqual([]);
+  });
+
+  /* 2026-07-13 — 가이드 규칙 중 기계 판정 가능한 2개를 게이트로 승격 (예시 저작에서 위반이
+   * 게이트를 통과한 실증 후속). 둘 다 경고 — 품사 분석 없는 부분 휴리스틱이라 차단은 과함. */
+  it('chain 1번째 chunk 가 base(카드 원문)와 다르면 경고', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = {
+      target: 'Wait, it is no big deal, okay?',
+      chunks: ['Wait, it is no big deal,', 'okay?'],
+      ko: '잠깐, 별일 아니야, 알았지?',
+    };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.join(' ')).toContain('base');
+  });
+
+  it('chain 비마지막 chunk 가 관사·소유격·단음절 전치사로 끝나면 경고 (말끝 불가 지점)', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = {
+      target: 'It is no big deal. Look at the bright side.',
+      chunks: ['It is no big deal.', 'Look at the', 'bright side.'],
+      ko: '별일 아니야. 좋은 면을 봐.',
+    };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.join(' ')).toContain('말끝');
+  });
+
+  it('chain 구동사 불변화사(hold on 등)로 끝나는 chunk 는 오탐하지 않음', () => {
+    const p = makeModu();
+    p.cards[0].explanation.chain = {
+      target: 'It is no big deal, so hold on, okay?',
+      chunks: ['It is no big deal,', 'so', 'hold on,', 'okay?'],
+      ko: '별일 아니야, 그러니까 잠깐만, 알았지?',
+    };
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('말끝'))).toEqual([]);
   });
 
   // ── drills 근접중복 (판정 단일 출처 = applied.js nearDupDrills — 거기서 단위 테스트) ──

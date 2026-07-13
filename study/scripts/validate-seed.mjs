@@ -347,6 +347,22 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     if (bigIdx >= 0) {
       warnings.push(`${c.id}: chain 증분 과대 — ${bigIdx + 2}번째 chunk 가 ${incs[bigIdx]}단어. 증분은 기본 1~3단어(분절 불가 절만 4) — 자연 휴지점에서 더 끊거나 target 을 재구성할 것 (기능어 뒤 끊기·목적어 떼기 같은 작위 분절은 금지 — 그럴 바엔 경고를 남겨도 됨)`);
     }
+    // 2026-07-13 — 기계 판정 가능한 가이드 규칙 2개 승격 (예시 저작에서 위반이 게이트를 통과한 실증 후속).
+    // ① 1번째 chunk = base (체이닝은 base 학습 후 세션 — 아는 것에서 시작)
+    if (typeof c.sentence === 'string' && norm(chain.chunks[0]) !== norm(c.sentence)) {
+      warnings.push(`${c.id}: chain 1번째 chunk 가 base(카드 원문)와 다름 — 1단계는 base 로 시작해야 함 (현재 "${chain.chunks[0]}")`);
+    }
+    // ② 비마지막 chunk 의 끝 단어가 명사구를 열다 마는 기능어면 그 단계는 말끝이 될 수 없다.
+    //    부분 휴리스틱 — 품사 분석 없이 잡히는 것만(형용사 뒤 등 명사구 중간 끊김은 미탐지).
+    //    in/on/up/out/off/down 은 구동사 불변화사(hold on 등)와 겹쳐 제외.
+    const NP_OPENERS = new Set(['a', 'an', 'the', 'my', 'your', 'his', 'her', 'its', 'our', 'their', 'of', 'at', 'to', 'from', 'with', 'by', 'than']);
+    chain.chunks.slice(0, -1).forEach((ck, i) => {
+      const ws = norm(ck).split(' ').filter(Boolean);
+      const last = ws[ws.length - 1];
+      if (last && NP_OPENERS.has(last)) {
+        warnings.push(`${c.id}: chain ${i + 1}번째 chunk 가 "${last}"로 끝남 — 관사·소유격·단음절 전치사는 말끝이 될 수 없는 지점. 끊는 위치를 옮길 것`);
+      }
+    });
   }
 
   // ── drills 근접중복: 호칭('honey')·감탄사('okay')만 덧붙인 건 변주가 아니다.
