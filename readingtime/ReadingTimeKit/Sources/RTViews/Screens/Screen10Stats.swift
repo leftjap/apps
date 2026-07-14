@@ -54,9 +54,10 @@ public struct Screen10Stats: View {
             }
             var popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
                 .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: Self.palette[i % Self.palette.count]) }
-            // 밀리(전자책)는 책 정보가 없어(일별 합만) 전용 행으로 — 합계와 내역 정합
-            let selEbook = m.ebookSeconds(on: selDate)
-            if selEbook > 0 { popRows.append((name: (m.ebookTitle.map { "\($0) · 밀리" }) ?? "밀리의서재", min: selEbook / 60, dot: RT.amber)) }
+            // 밀리(전자책) — 그날 책별 귀속 행 ("제목 · 밀리")
+            for e in m.ebookBreakdown(on: selDate) {
+                popRows.append((name: "\(e.title) · 밀리", min: e.seconds / 60, dot: RT.amber))
+            }
             // 최근 14일 스트릭 도트
             let dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
             let streakDays = (0..<14).map { i -> Bool in
@@ -83,20 +84,25 @@ public struct Screen10Stats: View {
                 }
             }
             let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
-            let weekEbook = (0..<7).reduce(0) { sum, i in
-                sum + m.ebookSeconds(on: cal.date(byAdding: .day, value: i, to: start)!)
+            var ebookWeek: [String: Int] = [:]   // 밀리 주간 책별 (일별 귀속 합)
+            for i in 0..<7 {
+                for e in m.ebookBreakdown(on: cal.date(byAdding: .day, value: i, to: start)!) {
+                    ebookWeek[e.title, default: 0] += e.seconds
+                }
             }
-            let maxBook = max(weekBook.values.max() ?? 0, weekEbook)
+            let maxBook = max(weekBook.values.max() ?? 0, ebookWeek.values.max() ?? 0)
             var ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
                 .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
                                    tag: nil as String?,
                                    fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
                                    color: Self.palette[i % Self.palette.count],
                                    value: RTAppModel.hmString(kv.value)) }
-            if weekEbook > 0 {   // 밀리(전자책) — 현재 밀리 책 제목 + "밀리" 태그 (시안 랭킹 문법)
-                ranks.append((isbn: "", title: m.ebookTitle ?? "밀리의서재", coverUrl: "", tag: "밀리",
-                              fill: maxBook > 0 ? CGFloat(weekEbook) / CGFloat(maxBook) : 0,
-                              color: RT.amber, value: RTAppModel.hmString(weekEbook)))
+            if !ebookWeek.isEmpty {   // 밀리(전자책) 책별 행 — 제목 + "밀리" 태그 (시안 랭킹 문법)
+                for (t, sec) in ebookWeek where sec > 0 {
+                    ranks.append((isbn: "", title: t, coverUrl: "", tag: "밀리",
+                                  fill: maxBook > 0 ? CGFloat(sec) / CGFloat(maxBook) : 0,
+                                  color: RT.amber, value: RTAppModel.hmString(sec)))
+                }
                 ranks.sort { $0.fill > $1.fill }
                 if ranks.count > 3 { ranks.removeLast(ranks.count - 3) }
             }

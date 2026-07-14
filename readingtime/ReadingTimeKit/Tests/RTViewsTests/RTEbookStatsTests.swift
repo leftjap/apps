@@ -60,6 +60,35 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.todaySeconds == 0)
     }
 
+    @Test func ebookBreakdownUsesDayBook() {
+        let m = model()
+        m.ebookDaily = ["2026-07-13": 600]
+        m.ebookBooks = ["2026-07-13": ["디 마이너스"]]
+        let r = m.ebookBreakdown(on: day("2026-07-13"))
+        #expect(r.map(\.title) == ["디 마이너스"])
+        #expect(r.first?.seconds == 600)
+    }
+
+    @Test func ebookBreakdownSplitsMultiBookEvenly() {
+        let m = model()
+        m.ebookDaily = ["2026-07-13": 600]
+        m.ebookBooks = ["2026-07-13": ["A", "B"]]
+        #expect(m.ebookBreakdown(on: day("2026-07-13")).map(\.seconds) == [300, 300])
+    }
+
+    @Test func ebookBreakdownFallsBackToPreviousBook() {
+        let m = model()   // 진도 기록은 변경 시에만 남음 — 빈 날은 직전 책 귀속
+        m.ebookDaily = ["2026-07-13": 100]
+        m.ebookBooks = ["2026-07-10": ["그래서 브랜딩이 필요합니다"]]
+        #expect(m.ebookBreakdown(on: day("2026-07-13")).first?.title == "그래서 브랜딩이 필요합니다")
+    }
+
+    @Test func ebookBreakdownFallsBackToServiceName() {
+        let m = model()
+        m.ebookDaily = ["2026-07-13": 100]
+        #expect(m.ebookBreakdown(on: day("2026-07-13")).first?.title == "밀리의서재")
+    }
+
     @Test func demoModeUnaffected() {
         let m = RTAppModel()   // userData nil = 데모
         m.ebookDaily = ["2026-07-13": 999]

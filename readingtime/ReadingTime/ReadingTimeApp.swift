@@ -186,6 +186,9 @@ struct ReadingTimeApp: App {
     @MainActor private static func loadEbook(from cloud: CloudStore, to model: RTAppModel?) async {
         // 빈 응답 무시 — 미로그인 RLS 는 에러가 아니라 빈 배열(200)이라 데모 시드·기존 값을 지운다
         if let t = try? await cloud.fetchCurrentEbookTitle() { model?.ebookTitle = t }
+        if let books = try? await cloud.fetchEbookBooks(), !books.isEmpty {
+            model?.ebookBooks = Dictionary(grouping: books, by: \.day).mapValues { $0.map(\.title) }
+        }
         guard let rows = try? await cloud.fetchEbookDaily(), !rows.isEmpty else { return }
         model?.ebookDaily = Dictionary(rows.map { ($0.day, $0.seconds) }, uniquingKeysWith: +)
     }

@@ -277,6 +277,24 @@ public final class RTAppModel: ObservableObject {
     @Published public var ebookDaily: [String: Int] = [:]
     /// 밀리 현재 읽는 책 제목 (통계 밀리 행 표기 — 없으면 "밀리의서재" 폴백)
     @Published public var ebookTitle: String?
+    /// 밀리 일별×책별 — day "yyyy-MM-dd" → 그날 읽은 책 제목들 (book_reading_books)
+    @Published public var ebookBooks: [String: [String]] = [:]
+
+    /// 그날 밀리 시간의 책별 귀속 — 그날 책 균등 분할. 히스토리 없는 날(진도 기록은
+    /// 변경 시에만 남음)은 직전 책, 그것도 없으면 현재 책/서비스명 폴백.
+    public func ebookBreakdown(on date: Date) -> [(title: String, seconds: Int)] {
+        let total = ebookSeconds(on: date)
+        guard total > 0 else { return [] }
+        let key = dayFormatter.string(from: date)
+        if let titles = ebookBooks[key], !titles.isEmpty {
+            return titles.map { ($0, total / titles.count) }
+        }
+        if let prev = ebookBooks.keys.filter({ $0 < key }).max(),
+           let t = ebookBooks[prev]?.first {
+            return [(t, total)]
+        }
+        return [(ebookTitle ?? "밀리의서재", total)]
+    }
 
     private var dayFormatter: DateFormatter {
         let f = DateFormatter()
@@ -707,6 +725,8 @@ public final class RTAppModel: ObservableObject {
                           f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): 600,
                           f.string(from: cal.date(byAdding: .day, value: -2, to: t)!): 1200]
             ebookTitle = "도둑맞은 집중력"   // 시안 밀리 데모 책
+            ebookBooks = [f.string(from: t): ["도둑맞은 집중력"],
+                          f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): ["디 마이너스"]]
         case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)
         case "start": start()
         case "cancelSession": cancelSession()
