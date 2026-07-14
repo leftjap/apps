@@ -418,8 +418,9 @@ public final class GymAppModel: ObservableObject {
             }
             // 3. push — 전체 push 한정 50% 급감 차단 (병합 후라 통상 통과, 방어적 유지)
             if !GymSyncLogic.isShrinkBlocked(localCount: history.count, serverCount: serverCompleted.count) {
-                var toPush = history
-                if !session.blocks.isEmpty { toPush.append(session) }   // 진행 세션 백업
+                // 완료 세션은 이미 history 에 있다 — 슬롯을 그대로 붙이면 id 중복으로
+                // upsert 전체가 21000 으로 실패한다 (백업 4일 중단의 진짜 원인).
+                let toPush = GymSyncLogic.sessionsToPush(history: history, current: session)
                 try await cloud.upsertSessions(toPush)
             }
             try await cloud.upsertPRs(prs)

@@ -104,7 +104,10 @@ public final class CloudStore: ObservableObject {
     }
     public func upsertSessions(_ xs: [GymSession]) async throws {
         guard let owner = ownerID, !xs.isEmpty else { return }
-        let rows = xs.map { SessionRow(from: $0, owner: owner) }
+        // 마지막 방어선 — 같은 id 가 배치에 두 번 있으면 Postgres 가 upsert 를 통째로 거부한다
+        // (21000: ON CONFLICT DO UPDATE cannot affect row a second time) → 동기화 영구 실패.
+        var seen = Set<String>()
+        let rows = xs.filter { seen.insert($0.id).inserted }.map { SessionRow(from: $0, owner: owner) }
         try await withRetry {
             try await client.from("gym_sessions").upsert(rows, onConflict: "id").execute()
         }

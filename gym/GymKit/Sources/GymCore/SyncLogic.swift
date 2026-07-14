@@ -35,6 +35,24 @@ public enum GymSyncLogic {
         return Double(localCount) / Double(sc) < 0.5
     }
 
+    /// 서버로 올릴 세션 목록 (history + 진행 중 세션).
+    ///
+    /// 같은 id 가 두 번 들어가면 Postgres 가 upsert 를 통째로 거부한다 —
+    /// 21000 "ON CONFLICT DO UPDATE command cannot affect row a second time".
+    /// 운동을 끝내면 세션 슬롯에 '완료' 세션이 남고 같은 세션이 history 에도 들어가므로,
+    /// 슬롯을 그대로 붙이면 매번 중복이 되어 그 뒤 모든 동기화가 실패한다
+    /// (2026-07-14: 백업이 4일간 멈춘 진짜 원인. 빈 catch 가 에러를 삼켜 보이지 않았다).
+    /// → 진행 중(active) 이고 history 에 없는 세션만 추가하고, 최종적으로 id 중복을 제거한다.
+    public static func sessionsToPush(history: [GymSession], current: GymSession) -> [GymSession] {
+        var out = history
+        let alreadyInHistory = history.contains { $0.id == current.id }
+        if current.status == .active, !current.blocks.isEmpty, !alreadyInHistory {
+            out.append(current)
+        }
+        var seen = Set<String>()
+        return out.filter { seen.insert($0.id).inserted }
+    }
+
     // 세션 리스트 병합 — id union + 충돌 해결. 로컬 전용/서버 전용 모두 보존.
     public static func mergeSessions(local: [GymSession], server: [GymSession]) -> [GymSession] {
         var byId: [String: GymSession] = Dictionary(uniqueKeysWithValues: local.map { ($0.id, $0) })
