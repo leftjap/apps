@@ -378,10 +378,22 @@ public final class GymAppModel: ObservableObject {
 
     // 전체 동기화: pull → 충돌 병합(서버 규칙) → 로컬 저장 → push (50% 급감 차단).
     // 부분 실패 시 로컬 보존 (sync.js pullAll/pushAll 정합). 실 왕복은 실기기 검증 필요.
+    // 앱 포그라운드 복귀 시 재동기화 — sync 는 앱 종료/백그라운드 전환에 Task 가 죽어
+    // '시도만 하고 성공도 실패도 못 한 채' 끝날 수 있다(2026-07-14 실측: lastAttempt 만 남고
+    // lastSuccess·lastError 둘 다 없음). 콜드런치 말고도 매 포그라운드에서 재시도해 복구한다.
+    public func syncOnForeground() async {
+        if cloud.signedIn { await syncNow() } else { await restoreCloud() }
+    }
+
+    private var syncing = false   // 중복 sync 방지 (포그라운드 + endSession 동시 발화)
+
     public func syncNow() async {
         syncState.signedIn = cloud.signedIn
         syncState.userEmail = cloud.userEmail
         guard cloud.signedIn else { return }   // 미로그인은 restoreCloud 가 이미 위험으로 표시
+        guard !syncing else { return }
+        syncing = true
+        defer { syncing = false }
         syncState.lastAttemptAt = nowMillis()
         do {
             // 1. pull

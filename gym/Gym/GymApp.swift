@@ -48,6 +48,8 @@ struct GymApp: App {
         _model = StateObject(wrappedValue: model)
     }
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             // 세이프에어리어(상태바·홈 인디케이터) 준수 — 콘텐츠는 안전 영역 내, 배경만 전체.
@@ -55,6 +57,11 @@ struct GymApp: App {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(GY.shell.ignoresSafeArea())
                 .task { await model.restoreCloud() }   // 기존 로그인 복원 (미로그인 시 no-op)
+                // 포그라운드 복귀마다 재동기화 — 백그라운드 전환으로 죽은 sync 를 복구한다.
+                // (콜드런치의 .task 만으로는, 로그인 직후 앱을 닫으면 백업이 영영 안 올라간다)
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { Task { await model.syncOnForeground() } }
+                }
         }
     }
 }
