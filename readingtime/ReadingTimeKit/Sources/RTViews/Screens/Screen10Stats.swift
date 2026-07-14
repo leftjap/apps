@@ -52,8 +52,11 @@ public struct Screen10Stats: View {
             for s in data.sessions where cal.isDate(s.endedAt, inSameDayAs: selDate) {
                 perBook[s.isbn.flatMap { titles[$0] } ?? "기록", default: 0] += s.seconds
             }
-            let popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
+            var popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
                 .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: Self.palette[i % Self.palette.count]) }
+            // 밀리(전자책)는 책 정보가 없어(일별 합만) 전용 행으로 — 합계와 내역 정합
+            let selEbook = m.ebookSeconds(on: selDate)
+            if selEbook > 0 { popRows.append((name: "밀리의서재", min: selEbook / 60, dot: RT.amber)) }
             // 최근 14일 스트릭 도트
             let dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
             let streakDays = (0..<14).map { i -> Bool in
@@ -80,12 +83,22 @@ public struct Screen10Stats: View {
                 }
             }
             let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
-            let maxBook = weekBook.values.max() ?? 0
-            let ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
+            let weekEbook = (0..<7).reduce(0) { sum, i in
+                sum + m.ebookSeconds(on: cal.date(byAdding: .day, value: i, to: start)!)
+            }
+            let maxBook = max(weekBook.values.max() ?? 0, weekEbook)
+            var ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
                 .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
                                    fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
                                    color: Self.palette[i % Self.palette.count],
                                    value: RTAppModel.hmString(kv.value)) }
+            if weekEbook > 0 {   // 밀리(전자책) 행 — 책 단위 데이터 없음, 앰버(시안 밀리 색)
+                ranks.append((isbn: "", title: "밀리의서재", coverUrl: "",
+                              fill: maxBook > 0 ? CGFloat(weekEbook) / CGFloat(maxBook) : 0,
+                              color: RT.amber, value: RTAppModel.hmString(weekEbook)))
+                ranks.sort { $0.fill > $1.fill }
+                if ranks.count > 3 { ranks.removeLast(ranks.count - 3) }
+            }
             let total = m.weekSeconds
             let end = cal.date(byAdding: .day, value: 6, to: start)!
             self.live = Live(range: "\(md(start)) – \(md(end))",
