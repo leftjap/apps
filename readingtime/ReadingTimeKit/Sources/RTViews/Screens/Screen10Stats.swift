@@ -91,7 +91,7 @@ public struct Screen10Stats: View {
                 }
             }
             let maxBook = max(weekBook.values.max() ?? 0, ebookWeek.values.max() ?? 0)
-            var ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
+            var ranks = weekBook.sorted { $0.value > $1.value }.enumerated()
                 .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
                                    tag: nil as String?,
                                    fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
@@ -99,12 +99,11 @@ public struct Screen10Stats: View {
                                    value: RTAppModel.hmString(kv.value)) }
             if !ebookWeek.isEmpty {   // 밀리(전자책) 책별 행 — 제목 + "밀리" 태그 (시안 랭킹 문법)
                 for (t, sec) in ebookWeek where sec > 0 {
-                    ranks.append((isbn: "", title: t, coverUrl: "", tag: "밀리",
+                    ranks.append((isbn: "", title: t, coverUrl: m.ebookCovers[t] ?? "", tag: "밀리",
                                   fill: maxBook > 0 ? CGFloat(sec) / CGFloat(maxBook) : 0,
                                   color: RT.amber, value: RTAppModel.hmString(sec)))
                 }
                 ranks.sort { $0.fill > $1.fill }
-                if ranks.count > 3 { ranks.removeLast(ranks.count - 3) }
             }
             let total = m.weekSeconds
             let end = cal.date(byAdding: .day, value: 6, to: start)!

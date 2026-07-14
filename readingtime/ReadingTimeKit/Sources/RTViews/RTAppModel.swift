@@ -279,6 +279,8 @@ public final class RTAppModel: ObservableObject {
     @Published public var ebookTitle: String?
     /// 밀리 일별×책별 — day "yyyy-MM-dd" → 그날 읽은 책 제목들 (book_reading_books)
     @Published public var ebookBooks: [String: [String]] = [:]
+    /// 밀리 책 표지 (제목 → cover_url, 밀리 CDN) — 랭킹·월간 캘린더 표기
+    @Published public var ebookCovers: [String: String] = [:]
 
     /// 그날 밀리 시간의 책별 귀속 — 그날 책 균등 분할. 히스토리 없는 날(진도 기록은
     /// 변경 시에만 남음)은 직전 책, 그것도 없으면 현재 책/서비스명 폴백.
@@ -727,6 +729,7 @@ public final class RTAppModel: ObservableObject {
             ebookTitle = "도둑맞은 집중력"   // 시안 밀리 데모 책
             ebookBooks = [f.string(from: t): ["도둑맞은 집중력"],
                           f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): ["디 마이너스"]]
+            ebookCovers = ["디 마이너스": "https://img.millie.co.kr/200x/service/cover/7233614/7007cfd575de4dfab086f7ee0af373a4.jpg"]
         case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)
         case "start": start()
         case "cancelSession": cancelSession()

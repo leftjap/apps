@@ -168,9 +168,10 @@ public final class CloudStore: ObservableObject {
     public struct EbookBookRow: Decodable, Sendable {
         public let day: String
         public let title: String
+        public let cover_url: String?
     }
     public func fetchEbookBooks() async throws -> [EbookBookRow] {
-        try await client.from("book_reading_books").select("day,title").execute().value
+        try await client.from("book_reading_books").select("day,title,cover_url").execute().value
     }
 
     // 밀리 현재 읽는 책 제목 (book_current_reading, 읽기 전용) — 통계 밀리 행 표기

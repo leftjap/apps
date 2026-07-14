@@ -47,10 +47,17 @@ public struct Screen11Month: View {
                 }
             }
             // 밀리(전자책) 일별 합산 — 총 시간·읽은 날 포함 (스펙 §11 "밀리 포함")
+            var ebookDayCover: [Int: String] = [:]   // 밀리로만 읽은 날 = 그 전자책 표지 (스펙)
             for d in 1...daysInMonth {
                 if let date = cal.date(from: DateComponents(year: year, month: month, day: d)) {
                     let sec = m.ebookSeconds(on: date)
-                    if sec > 0 { monthTotal += sec; readDaySet.insert(d) }
+                    if sec > 0 {
+                        monthTotal += sec
+                        readDaySet.insert(d)
+                        if perDayTop[d] == nil,
+                           let t = m.ebookBreakdown(on: date).first?.title,
+                           let c = m.ebookCovers[t] { ebookDayCover[d] = c }
+                    }
                 }
             }
             var finishDays = Set<Int>()
@@ -64,7 +71,7 @@ public struct Screen11Month: View {
             for d in 1...daysInMonth {
                 cells.append(LiveCell(
                     d: d,
-                    coverUrl: readDaySet.contains(d) ? perDayTop[d].flatMap { covers[$0.isbn] } : nil,
+                    coverUrl: readDaySet.contains(d) ? (perDayTop[d].flatMap { covers[$0.isbn] } ?? ebookDayCover[d]) : nil,
                     dot: finishDays.contains(d),
                     today: d == todayDay,
                     future: d > todayDay))

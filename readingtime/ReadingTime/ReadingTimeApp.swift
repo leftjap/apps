@@ -188,6 +188,8 @@ struct ReadingTimeApp: App {
         if let t = try? await cloud.fetchCurrentEbookTitle() { model?.ebookTitle = t }
         if let books = try? await cloud.fetchEbookBooks(), !books.isEmpty {
             model?.ebookBooks = Dictionary(grouping: books, by: \.day).mapValues { $0.map(\.title) }
+            model?.ebookCovers = Dictionary(books.compactMap { r in r.cover_url.map { (r.title, $0) } },
+                                            uniquingKeysWith: { a, _ in a })
         }
         guard let rows = try? await cloud.fetchEbookDaily(), !rows.isEmpty else { return }
         model?.ebookDaily = Dictionary(rows.map { ($0.day, $0.seconds) }, uniquingKeysWith: +)
