@@ -44,17 +44,25 @@ public final class CloudStore: ObservableObject {
         }
     }
 
+    // prompt=select_account — Safari 의 기존 구글 세션을 그대로 쓰면 계정 선택 없이 즉시
+    // 통과해(허용 계정이 2개: leftjap·soyoun) 어느 계정으로 로그인되는지 고를 수 없다.
+    static let googleOAuthParams: [(name: String, value: String?)] = [(name: "prompt", value: "select_account")]
+
     public func signInWithGoogle() async throws {
-        // prompt=select_account — Safari 의 기존 구글 세션을 그대로 쓰면 계정 선택 없이 즉시
-        // 통과해(허용 계정이 2개: leftjap·soyoun) 어느 계정으로 로그인되는지 고를 수 없다.
         let session = try await client.auth.signInWithOAuth(
-            provider: .google, redirectTo: Config.oauthRedirect,
-            queryParams: [(name: "prompt", value: "select_account")])
+            provider: .google, redirectTo: Config.oauthRedirect, queryParams: Self.googleOAuthParams)
         guard Self.isAllowedEmail(session.user.email) else {
             await signOut()
             throw AuthError.emailNotAllowed
         }
         ownerID = session.user.id; signedIn = true; userEmail = session.user.email
+    }
+
+    /// 검증용 — 실제 OAuth 창을 띄우지 않고, 로그인 시 만들어질 URL 을 그대로 생성.
+    /// signInWithGoogle 과 **같은 파라미터**를 쓰므로 테스트가 실제 동작에서 어긋날 수 없다.
+    public func googleSignInURL() throws -> URL {
+        try client.auth.getOAuthSignInURL(provider: .google, redirectTo: Config.oauthRedirect,
+                                          queryParams: Self.googleOAuthParams)
     }
 
     public func signOut() async {
