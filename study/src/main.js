@@ -16,6 +16,11 @@ import { initApp } from './app.js';
 // signOut 시 sync 정리 (Wave 11.13.1)
 Auth.registerOnSignOut(() => Sync.stopSync());
 
+// 탭 종료/숨김 시 in-memory 업로드 큐 flush — 3초 debounce 창 유실 방지 (today 정합).
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+  installFlushOnHide(() => Sync.flushPendingUploads(), window, document);
+}
+
 // mocks 의 IIFE 스크립트가 참조할 수 있도록 window 에 노출 (Wave 11.6A).
 // iframe 허브는 main.js 미경유 → window.studyDay 없음 → mocks 에서 fallback '2026-04-15'.
 if (typeof window !== 'undefined') {
