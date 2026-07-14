@@ -1,13 +1,15 @@
 import SwiftUI
 
-// v8 10 기록 · 주간 — 스펙: frames/10.html. userData 주입 시 실데이터 (init 스냅샷).
+// 10 기록 · 주간 — 정본: 작업지시서 §3 + mockups/RTRecord.dc.html.
+// 데모(model 없음/userData nil) = 시안 §12 데이터로 1:1 재현. userData 주입 시 실데이터.
 public struct Screen10Stats: View {
     struct Live {
         let range: String
         let hours: Int
         let mins: Int
         let deltaMin: Int
-        let week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)]
+        let week: [(d: String, date: String, v: Int, today: Bool, sun: Bool)]
+        let maxMin: Int
         let popRows: [(name: String, min: Int, dot: Color)]
         let streak: Int
         let streakDays: [Bool]        // 최근 14일 (과거→오늘)
@@ -26,110 +28,33 @@ public struct Screen10Stats: View {
         let sel = min(max(model?.weekSel ?? 3, 0), 6)
         self.sel = sel
         if model?.statsSubject == .partner {
-            // 파트너 통계 — 실데이터(partnerData) 있으면 그걸로 계산, 없으면 시안 데모값.
             if let m = model, let pd = m.partnerData {
                 self.live = Self.buildLive(data: pd, now: m.now(), sel: sel)
             } else {
                 self.live = Self.partnerDemoLive
             }
         } else if let m = model, let data = m.userData {
-            var cal = Calendar(identifier: .gregorian); cal.firstWeekday = 2   // 월요일 시작(바·모델과 정합)
-            let labels = ["월", "화", "수", "목", "금", "토", "일"]
-            let mins = m.weekDayMinutes
-            let maxV = mins.max() ?? 0
-            let today = m.weekTodayIndex
-            let start = m.weekStart
-            func md(_ d: Date) -> String { "\(cal.component(.month, from: d)).\(cal.component(.day, from: d))" }
-            let week = (0..<7).map { i -> (String, String, Int, CGFloat, Bool, Bool) in
-                let date = cal.date(byAdding: .day, value: i, to: start)!
-                let h: CGFloat = maxV > 0 && mins[i] > 0 ? max(4, CGFloat(mins[i]) / CGFloat(maxV) * 84) : 2
-                return (labels[i], md(date), mins[i], h, i == today, i == 6)
-            }
-            // 선택일 책별 분해 (상위 2)
-            let selDate = cal.date(byAdding: .day, value: sel, to: start)!
-            let titles = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.title) })
-            var perBook: [String: Int] = [:]
-            for s in data.sessions where cal.isDate(s.endedAt, inSameDayAs: selDate) {
-                perBook[s.isbn.flatMap { titles[$0] } ?? "기록", default: 0] += s.seconds
-            }
-            var popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
-                .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: Self.palette[i % Self.palette.count]) }
-            // 밀리(전자책) — 그날 책별 귀속 행 ("제목 · 밀리")
-            for e in m.ebookBreakdown(on: selDate) {
-                popRows.append((name: "\(e.title) · 밀리", min: e.seconds / 60, dot: RT.amber))
-            }
-            // 최근 14일 스트릭 도트
-            let dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
-            let streakDays = (0..<14).map { i -> Bool in
-                let d = cal.date(byAdding: .day, value: i - 13, to: cal.startOfDay(for: m.now()))!
-                return dayset.contains(d)
-            }
-            // 주 시간대 (최다 시각 2시간 창)
-            var hourHist = [Int](repeating: 0, count: 24)
-            for s in data.sessions { hourHist[cal.component(.hour, from: s.endedAt)] += s.seconds }
-            var peak: (String, CGFloat, CGFloat)?
-            if let top = hourHist.enumerated().max(by: { $0.element < $1.element }), top.element > 0 {
-                let h0 = top.offset
-                let names = ["새벽", "새벽", "새벽", "새벽", "새벽", "새벽", "아침", "아침", "아침", "아침", "아침",
-                             "낮", "낮", "낮", "낮", "낮", "낮", "저녁", "저녁", "저녁", "저녁", "밤", "밤", "밤"]
-                func h12(_ h: Int) -> Int { let v = h % 12; return v == 0 ? 12 : v }
-                let label = "주로 \(names[h0]) \(h12(h0))–\(h12(min(23, h0 + 2)))시"
-                peak = (label, CGFloat(h0) / 24, max(0.1, 2.0 / 24))
-            }
-            // 이번 주 많이 읽은 책 (상위 3)
-            var weekBook: [String: Int] = [:]
-            if let wk = cal.dateInterval(of: .weekOfYear, for: m.now()) {
-                for s in data.sessions where wk.contains(s.endedAt) {
-                    if let isbn = s.isbn { weekBook[isbn, default: 0] += s.seconds }
-                }
-            }
-            let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
-            var ebookWeek: [String: Int] = [:]   // 밀리 주간 책별 (일별 귀속 합)
-            for i in 0..<7 {
-                for e in m.ebookBreakdown(on: cal.date(byAdding: .day, value: i, to: start)!) {
-                    ebookWeek[e.title, default: 0] += e.seconds
-                }
-            }
-            let maxBook = max(weekBook.values.max() ?? 0, ebookWeek.values.max() ?? 0)
-            var ranks = weekBook.sorted { $0.value > $1.value }.enumerated()
-                .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
-                                   tag: nil as String?,
-                                   fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
-                                   color: Self.palette[i % Self.palette.count],
-                                   value: RTAppModel.hmString(kv.value)) }
-            if !ebookWeek.isEmpty {   // 밀리(전자책) 책별 행 — 제목 + "밀리" 태그 (시안 랭킹 문법)
-                for (t, sec) in ebookWeek where sec > 0 {
-                    ranks.append((isbn: "", title: t, coverUrl: m.ebookCovers[t] ?? "", tag: "밀리",
-                                  fill: maxBook > 0 ? CGFloat(sec) / CGFloat(maxBook) : 0,
-                                  color: RT.amber, value: RTAppModel.hmString(sec)))
-                }
-                ranks.sort { $0.fill > $1.fill }
-            }
-            let total = m.weekSeconds
-            let end = cal.date(byAdding: .day, value: 6, to: start)!
-            self.live = Live(range: "\(md(start)) – \(md(end))",
-                             hours: total / 3600, mins: total / 60 % 60,
-                             deltaMin: (total - m.weekSeconds(offset: -1)) / 60,
-                             week: week, popRows: popRows,
-                             streak: m.streakDays, streakDays: streakDays,
-                             peak: peak, ranks: ranks)
+            self.live = Self.buildLive(data: data, now: m.now(), sel: sel, model: m)
         } else {
             self.live = nil
         }
     }
 
-    // 실데이터 RTUserData → Live (파트너 통계용 자립 빌더 — self 경로 로직 미러, 데이터 주체만 파라미터).
-    static func buildLive(data: RTUserData, now: Date, sel: Int) -> Live {
+    /// 실데이터 RTUserData → Live. model 이 있으면 내 밀리(전자책)·연속일을 합산 (파트너는 nil).
+    static func buildLive(data: RTUserData, now: Date, sel: Int, model: RTAppModel? = nil) -> Live {
         var cal = Calendar(identifier: .gregorian); cal.firstWeekday = 2   // 월요일 시작
         let labels = ["월", "화", "수", "목", "금", "토", "일"]
         func md(_ d: Date) -> String { "\(cal.component(.month, from: d)).\(cal.component(.day, from: d))" }
+        func ebook(_ d: Date) -> Int { model?.ebookSeconds(on: d) ?? 0 }
         func weekTotal(_ offset: Int) -> Int {
             guard let base = cal.date(byAdding: .weekOfYear, value: offset, to: now),
                   let wk = cal.dateInterval(of: .weekOfYear, for: base) else { return 0 }
-            return data.sessions.filter { wk.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+            let paper = data.sessions.filter { wk.contains($0.endedAt) }.reduce(0) { $0 + $1.seconds }
+            return paper + (0..<7).reduce(0) { s, i in
+                s + (cal.date(byAdding: .day, value: i, to: wk.start).map(ebook) ?? 0)
+            }
         }
         let start = cal.dateInterval(of: .weekOfYear, for: now)?.start ?? now
-        // 일별 분
         var perSec = [Int](repeating: 0, count: 7)
         if let wk = cal.dateInterval(of: .weekOfYear, for: now) {
             for s in data.sessions where wk.contains(s.endedAt) {
@@ -137,34 +62,44 @@ public struct Screen10Stats: View {
                 if (0..<7).contains(i) { perSec[i] += s.seconds }
             }
         }
+        for i in 0..<7 {
+            if let d = cal.date(byAdding: .day, value: i, to: start) { perSec[i] += ebook(d) }
+        }
         let mins = perSec.map { $0 / 60 }
-        let maxV = mins.max() ?? 0
         let today = min(6, max(0, cal.dateComponents([.day], from: start, to: cal.startOfDay(for: now)).day ?? 0))
-        let week = (0..<7).map { i -> (String, String, Int, CGFloat, Bool, Bool) in
+        let week = (0..<7).map { i -> (String, String, Int, Bool, Bool) in
             let date = cal.date(byAdding: .day, value: i, to: start)!
-            let h: CGFloat = maxV > 0 && mins[i] > 0 ? max(4, CGFloat(mins[i]) / CGFloat(maxV) * 84) : 2
-            return (labels[i], md(date), mins[i], h, i == today, i == 6)
+            return (labels[i], md(date), mins[i], i == today, i == 6)
         }
         let titles = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.title) })
         let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
-        // 선택일 책별 분해 (상위 2)
+
+        // 선택일 책별 분해 (상위 2) + 밀리 귀속
         let selDate = cal.date(byAdding: .day, value: sel, to: start)!
         var perBook: [String: Int] = [:]
         for s in data.sessions where cal.isDate(s.endedAt, inSameDayAs: selDate) {
             perBook[s.isbn.flatMap { titles[$0] } ?? "기록", default: 0] += s.seconds
         }
-        let popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
+        var popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
             .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: palette[i % palette.count]) }
-        // 최근 14일 스트릭 도트
-        let dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
-        let streakDays = (0..<14).map { i -> Bool in
-            dayset.contains(cal.date(byAdding: .day, value: i - 13, to: cal.startOfDay(for: now))!)
+        for e in model?.ebookBreakdown(on: selDate) ?? [] {
+            popRows.append((name: e.title, min: e.seconds / 60, dot: RT.amber))
         }
-        // 연속일
-        var streak = 0
-        var cursor = cal.startOfDay(for: now)
-        if !dayset.contains(cursor) { cursor = cal.date(byAdding: .day, value: -1, to: cursor)! }
-        while dayset.contains(cursor) { streak += 1; cursor = cal.date(byAdding: .day, value: -1, to: cursor)! }
+
+        // 최근 14일 스트릭 도트
+        var dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
+        let streakDays = (0..<14).map { i -> Bool in
+            let d = cal.date(byAdding: .day, value: i - 13, to: cal.startOfDay(for: now))!
+            if ebook(d) > 0 { dayset.insert(d) }
+            return dayset.contains(d)
+        }
+        var streak = model?.streakDays ?? 0
+        if model == nil {
+            var cursor = cal.startOfDay(for: now)
+            if !dayset.contains(cursor) { cursor = cal.date(byAdding: .day, value: -1, to: cursor)! }
+            while dayset.contains(cursor) { streak += 1; cursor = cal.date(byAdding: .day, value: -1, to: cursor)! }
+        }
+
         // 시간대 peak
         var hourHist = [Int](repeating: 0, count: 24)
         for s in data.sessions { hourHist[cal.component(.hour, from: s.endedAt)] += s.seconds }
@@ -176,30 +111,52 @@ public struct Screen10Stats: View {
             let h0 = top.offset
             peak = ("주로 \(names[h0]) \(h12(h0))–\(h12(min(23, h0 + 2)))시", CGFloat(h0) / 24, max(0.1, 2.0 / 24))
         }
-        // 이번 주 많이 읽은 책 (상위 3)
+
+        // 이번 주 많이 읽은 책 (상위 3) — 종이 + 밀리
         var weekBook: [String: Int] = [:]
         if let wk = cal.dateInterval(of: .weekOfYear, for: now) {
-            for s in data.sessions where wk.contains(s.endedAt) { if let isbn = s.isbn { weekBook[isbn, default: 0] += s.seconds } }
+            for s in data.sessions where wk.contains(s.endedAt) {
+                if let isbn = s.isbn { weekBook[isbn, default: 0] += s.seconds }
+            }
         }
-        let maxBook = weekBook.values.max() ?? 0
-        let ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
-            .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "", tag: nil as String?,
+        var ebookWeek: [String: Int] = [:]
+        for i in 0..<7 {
+            for e in model?.ebookBreakdown(on: cal.date(byAdding: .day, value: i, to: start)!) ?? [] {
+                ebookWeek[e.title, default: 0] += e.seconds
+            }
+        }
+        let maxBook = max(weekBook.values.max() ?? 0, ebookWeek.values.max() ?? 0)
+        var ranks = weekBook.sorted { $0.value > $1.value }.enumerated()
+            .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
+                               tag: nil as String?,
                                fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
-                               color: palette[i % palette.count], value: RTAppModel.hmString(kv.value)) }
+                               color: palette[i % palette.count],
+                               value: RTAppModel.hmString(kv.value)) }
+        for (t, sec) in ebookWeek where sec > 0 {
+            ranks.append((isbn: "", title: t, coverUrl: model?.ebookCovers[t] ?? "", tag: "밀리",
+                          fill: maxBook > 0 ? CGFloat(sec) / CGFloat(maxBook) : 0,
+                          color: RT.amber, value: RTAppModel.hmString(sec)))
+        }
+        ranks.sort { $0.fill > $1.fill }
+        ranks = Array(ranks.prefix(3))
+
         let total = weekTotal(0)
         let end = cal.date(byAdding: .day, value: 6, to: start)!
-        return Live(range: "\(md(start)) – \(md(end))", hours: total / 3600, mins: total / 60 % 60,
-                    deltaMin: (total - weekTotal(-1)) / 60, week: week, popRows: popRows,
+        return Live(range: "\(md(start)) – \(md(end))",
+                    hours: total / 3600, mins: total / 60 % 60,
+                    deltaMin: (total - weekTotal(-1)) / 60,
+                    week: week, maxMin: max(1, mins.max() ?? 1), popRows: popRows,
                     streak: streak, streakDays: streakDays, peak: peak, ranks: ranks)
     }
 
-    // 파트너 데모 통계 (README §② 데모값, 합계 내적 정합: 주간 합 408 = 6:48)
+    // 파트너 데모 통계 (주간 합 408 = 6:48)
     static let partnerDemoLive = Live(
         range: "5.19 – 5.25", hours: 6, mins: 48, deltaMin: 36,
-        week: [("월", "5.19", 64, 64, false, false), ("화", "5.20", 78, 78, false, false),
-               ("수", "5.21", 40, 40, false, false), ("목", "5.22", 24, 24, true, false),
-               ("금", "5.23", 70, 70, false, false), ("토", "5.24", 48, 48, false, false),
-               ("일", "5.25", 84, 84, false, true)],
+        week: [("월", "5.19", 64, false, false), ("화", "5.20", 78, false, false),
+               ("수", "5.21", 40, false, false), ("목", "5.22", 24, true, false),
+               ("금", "5.23", 70, false, false), ("토", "5.24", 48, false, false),
+               ("일", "5.25", 84, false, true)],
+        maxMin: 84,
         popRows: [(name: "작별하지 않는다", min: 24, dot: palette[0])],
         streak: 9, streakDays: Array(repeating: true, count: 14),
         peak: (label: "주로 아침 7–9시", frac: 7.0 / 24, width: 2.0 / 24),
@@ -207,127 +164,133 @@ public struct Screen10Stats: View {
                 (isbn: "", title: "아몬드", coverUrl: "", tag: nil, fill: 0.365, color: palette[1], value: "1:35"),
                 (isbn: "", title: "달러구트 꿈 백화점", coverUrl: "", tag: nil, fill: 0.204, color: palette[2], value: "0:53")])
 
-    static let week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)] = [
-        ("월", "5.18", 38, 47, false, false), ("화", "5.19", 52, 64, false, false),
-        ("수", "5.20", 30, 37, false, false), ("목", "5.21", 68, 84, true, false),
-        ("금", "5.22", 44, 54, false, false), ("토", "5.23", 21, 26, false, false),
-        ("일", "5.24", 55, 68, false, true),
-    ]
+    // ── 파생 (데모 = §12) ──
+    private var range: String { live?.range ?? RTRecordDemo.weekRange }
+    private var hours: Int { live?.hours ?? 7 }
+    private var mins: Int { live?.mins ?? 26 }
+    private var deltaMin: Int { live?.deltaMin ?? RTRecordDemo.weekDeltaMin }
 
-    var week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)] {
-        live?.week ?? Self.week
+    private struct Bar {
+        let lbl: String, min: Int, h: CGFloat
+        let today: Bool, sun: Bool, selected: Bool
+    }
+    private var bars: [Bar] {
+        if let live {
+            return live.week.enumerated().map { i, d in
+                Bar(lbl: d.d,
+                    min: d.v,
+                    h: CGFloat((12 + Double(d.v) / Double(live.maxMin) * 72).rounded()),
+                    today: d.today, sun: d.sun, selected: i == sel)
+            }
+        }
+        return RTRecordDemo.week.enumerated().map { i, d in
+            Bar(lbl: d.lbl, min: d.min, h: RTRecord.weekBarH(d.min),
+                today: d.today, sun: d.sun, selected: i == sel)
+        }
     }
 
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
-            VStack(alignment: .leading, spacing: 0) {
-                Text(live?.range ?? "5.15 – 5.21").font(.mono(10.5, 500)).tracking(10.5 * 0.1)
-                    .foregroundColor(RT.faint)
-                headline.padding(.top, 7)
-                delta.padding(.top, 7)
-                chartCard.padding(.top, 14)
-                if live == nil { millie.padding(.top, 11) }   // 밀리 연동 전 — 라이브에선 숨김
-                duo.padding(.top, 11)
-                if live == nil || !(live!.ranks.isEmpty) {
-                    Text("이번 주 많이 읽은 책").font(.sans(14, 800)).foregroundColor(RT.ink)
-                        .padding(EdgeInsets(top: 15, leading: 2, bottom: 8, trailing: 2))
-                }
-                if let live {
-                    ForEach(Array(live.ranks.enumerated()), id: \.offset) { _, r in
-                        rankRow(cover: AnyView(RTRemoteCover(url: r.coverUrl, size: .init(width: 30, height: 43), radius: 3)),
-                                title: r.title, tag: r.tag, fill: r.fill, color: r.color, value: r.value, isbn: r.isbn)
-                    }
-                } else {
-                    rankRow(cover: AnyView(rankFlow), title: "몰입", tag: nil, fill: 1.0, color: Color(hex: 0xD8C184), value: "4:12")
-                    rankRow(cover: AnyView(rankMoney), title: "돈의 심리학", tag: nil, fill: 0.42, color: Color(hex: 0x1F2D45), value: "1:36")
-                    rankRow(cover: AnyView(rankFocus), title: "도둑맞은 집중력", tag: "밀리", fill: 0.33, color: Color(hex: 0xE4572E), value: "1:38")
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 22)
-            .padding(.top, 102)
+            RTScrollArea { content }
             StatsHeader(active: .week, model: model)
         }
         .frame(width: 390, height: 844)
     }
 
+    var content: some View {
+        VStack(alignment: .leading, spacing: 0) {
+                Text(range).font(.mono(10.5, 500)).tracking(10.5 * 0.1)
+                    .foregroundColor(RT.faint)
+                    .rtLB(RTLB.m10_5)
+                headline.padding(.top, 7)
+                delta.padding(.top, 7)
+                chartCard.padding(.top, 14)
+                RTDuoRow(streak: live?.streak ?? RTRecordDemo.streak, dots: streakDots,
+                         peakLabel: peakLabel, dim: peakDim, peak: peakSeg)
+                    .padding(.top, 14)
+                if live == nil || !(live!.ranks.isEmpty) {
+                    Text("이번 주 많이 읽은 책").font(.sans(14, 800)).foregroundColor(RT.ink)
+                        .rtLB(RTLB.n14)
+                        .padding(EdgeInsets(top: 15, leading: 2, bottom: 8, trailing: 2))
+                }
+                ranksView
+        }
+    }
+
+    // "이번 주 7시간 26분" (숫자만 mono) — line-height 1.2
     var headline: some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text("이번 주 ").font(.sans(26, 900)).tracking(26 * -0.04)
-            Text("\(live?.hours ?? 7)").font(.mono(26, 900)).tracking(26 * -0.04)
+            Text("\(hours)").font(.mono(26, 900)).tracking(26 * -0.04)
             Text("시간 ").font(.sans(26, 900)).tracking(26 * -0.04)
-            Text("\(live?.mins ?? 26)").font(.mono(26, 900)).tracking(26 * -0.04)
+            Text("\(mins)").font(.mono(26, 900)).tracking(26 * -0.04)
             Text("분").font(.sans(26, 900)).tracking(26 * -0.04)
         }
         .foregroundColor(RT.ink)
+        .frame(height: RTLB.n26)
     }
 
     var delta: some View {
-        let d = live?.deltaMin ?? 52
+        let d = deltaMin
         let up = d >= 0
         return HStack(spacing: 7) {
             HStack(spacing: 4) {
                 RTIcon([up ? "M12 19V5M6 11l6-6 6 6" : "M12 5v14M6 13l6 6 6-6"], size: 10,
                        stroke: up ? RT.green : RT.terra, lineWidth: 3)
                 Text("\(abs(d))분").font(.sans(11.5, 700)).foregroundColor(up ? RT.green : RT.terra)
+                    .rtLB(RTLB.n11_5)
             }
             .padding(EdgeInsets(top: 4, leading: 10, bottom: 4, trailing: 10))
             .background(Capsule().fill(up ? RT.greenTint : RT.amberTint))
-            Text("vs 지난주").font(.mono(10.5, 500)).foregroundColor(RT.faint)
+            Text("vs 지난주").font(.mono(10.5, 500)).foregroundColor(RT.faint).rtLB(RTLB.m10_5)
         }
+        .frame(height: 25)
     }
 
+    // 막대 차트 카드 — 내부 padding-top:84(팝오버 공간) + 막대 행 120
     var chartCard: some View {
-        VStack(spacing: 0) {
-            ZStack(alignment: .topLeading) {
-                bars.padding(.top, 82)
-                if live == nil || week[sel].v > 0 { popover }
-            }
-            .frame(height: 200)   // bars 118 + 팝오버 여백 82. 고정 안 하면 팝오버 GeometryReader 가
-                                  // 남는 공간을 삼켜 카드가 늘어남(랭킹 빈 희소 데이터에서 노출된 결함)
+        ZStack(alignment: .top) {
+            barRow.padding(.top, 84)
+            if live == nil || bars[sel].min > 0 { popover }
         }
-        .padding(EdgeInsets(top: 16, leading: 15, bottom: 12, trailing: 15))
-        .background(RT.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(RT.hair, lineWidth: 1))
-        .shadow(color: Color(hex: 0x16140F, alpha: 0.03), radius: 1, x: 0, y: 1)
+        .frame(height: 204)
+        .rtRecCard(20, EdgeInsets(top: 16, leading: 15, bottom: 12, trailing: 15), shadow: true)
     }
+
+    // 팝오버 — left = (day+0.5)/7 (막대 중심), 카드는 차트 폭(314) 안으로 클램프
+    static let chartW: CGFloat = 314   // 346 - 2(border) - 30(padding)
 
     var popover: some View {
-        GeometryReader { geo in
-            // app.js weekPopover: left=(sel+.5)/7, 카드만 차트 안으로 클램프(커넥터는 바 중심 유지)
-            let w = week[sel]
-            let flow = Int((Double(w.v) * 0.68).rounded())
-            let center = (CGFloat(sel) + 0.5) / 7 * geo.size.width
-            // 데모 min-width 150 의 절반 = 75. 라이브는 실제 제목 폭(≤155)까지 카드가 넓어져 120 로 클램프
-            let half: CGFloat = live == nil ? 75 : 120
-            let shift = max(0, half - center) - max(0, center + half - geo.size.width)
-            VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("\(w.date) \(w.d) · \(w.v)분").font(.mono(9.5, 600)).tracking(9.5 * 0.06)
-                        .foregroundColor(Color(hex: 0x8F897B))
-                    if let live {
-                        ForEach(Array(live.popRows.enumerated()), id: \.offset) { i, r in
-                            tipRow(dot: r.dot, name: r.name, min: "\(max(1, r.min))분")
-                                .padding(.top, i == 0 ? 8 : 5)
-                        }
-                    } else {
-                        tipRow(dot: Color(hex: 0xD8C184), name: "몰입", min: "\(flow)분").padding(.top, 8)
-                        tipRow(dot: Color(hex: 0x3D5575), name: "돈의 심리학", min: "\(w.v - flow)분").padding(.top, 5)
-                    }
+        let center = (CGFloat(sel) + 0.5) / 7 * Self.chartW
+        let rows: [(dot: Color, title: String, min: Int)] = live.map { l in
+            l.popRows.map { (dot: $0.dot, title: $0.name, min: max(1, $0.min)) }
+        } ?? RTRecord.weekTip(day: sel).rows.map { (dot: Color(hex: $0.dot), title: $0.title, min: $0.min) }
+        let date = live.map { "\($0.week[sel].date) \($0.week[sel].d) · \($0.week[sel].v)분" }
+            ?? RTRecord.weekTip(day: sel).date
+        let half: CGFloat = live == nil ? 75 : 120
+        let shift = max(0, half - center) - max(0, center + half - Self.chartW)
+
+        return VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(date).font(.mono(9.5, 600)).tracking(9.5 * 0.06)
+                    .foregroundColor(Color(hex: 0x8F897B))
+                    .rtLB(RTLB.m9_5)
+                ForEach(Array(rows.enumerated()), id: \.offset) { _, r in
+                    tipRow(dot: r.dot, name: r.title, min: "\(r.min)분")
+                        .padding(.top, 7)
                 }
-                .padding(EdgeInsets(top: 9, leading: 12, bottom: 9, trailing: 12))
-                .frame(minWidth: 150, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 13).fill(RT.ink))
-                .shadow(color: Color(hex: 0x16140F, alpha: 0.55), radius: 13, x: 0, y: 12)
-                .offset(x: shift)
-                Rectangle().fill(RT.ink).frame(width: 2, height: 10)
             }
-            .fixedSize()
-            .rtTipPop()
-            .position(x: center, y: 41) // 팁 전체 h≈82 의 중심
+            .padding(EdgeInsets(top: 9, leading: 12, bottom: 9, trailing: 12))
+            .frame(minWidth: 150, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 13).fill(RT.ink))
+            .rtBoxShadow(RoundedRectangle(cornerRadius: 13), color: Color(hex: 0x16140F, alpha: 0.55),
+                         blur: 26, y: 12, spread: -12)
+            Rectangle().fill(RT.ink).frame(width: 2, height: 10)
         }
+        .fixedSize()
+        .offset(x: center + shift - Self.chartW / 2)
+        .rtTipPop()
     }
 
     func tipRow(dot: Color, name: String, min: String) -> some View {
@@ -335,249 +298,95 @@ public struct Screen10Stats: View {
             RoundedRectangle(cornerRadius: 2).fill(dot).frame(width: 7, height: 7)
             Text(name).font(.sans(11, 600)).foregroundColor(RT.ctaText)
                 .lineLimit(1)
-                .frame(maxWidth: 155, alignment: .leading)   // 긴 실제 제목이 분 값을 밀어내지 않게
+                .frame(maxWidth: 155, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 14)
             Text(min).font(.mono(11, 600)).foregroundColor(RT.faint)
         }
+        .frame(height: 16)
     }
 
-    var bars: some View {
+    // 막대 행 — height 120, gap 8. 값/막대/요일 색은 §3-4 상태표 그대로.
+    var barRow: some View {
         HStack(alignment: .bottom, spacing: 8) {
-            ForEach(Array(week.enumerated()), id: \.offset) { i, d in
-                VStack(spacing: 5) {
+            ForEach(Array(bars.enumerated()), id: \.offset) { i, d in
+                VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    Text("\(d.v)").font(.mono(9, d.today ? 700 : 500))
-                        .foregroundColor(d.today ? RT.green : RT.ghost)
+                    Text("\(d.min)")
+                        .font(.mono(9, d.today || d.selected ? 700 : 500))
+                        .foregroundColor(d.today ? RT.green : (d.selected ? RT.muted : RT.ghost))
+                        .rtLB(RTLB.m9)
                     Group {
-                        if d.today {
+                        if d.selected {
                             RoundedRectangle(cornerRadius: 7)
                                 .fill(LinearGradient.css(180, size: CGSize(width: 26, height: d.h),
                                                          [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)]))
-                                .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color(hex: 0x2C4A3C, alpha: 0.22), lineWidth: 2.5).padding(-2.5))
+                                .rtRing(7, Color(hex: 0x2C4A3C, alpha: 0.22), width: 2.5)
                         } else {
-                            RoundedRectangle(cornerRadius: 7).fill(Color(hex: 0xD6CBA9))
+                            RoundedRectangle(cornerRadius: 7)
+                                .fill(Color(hex: d.today ? 0xC9BE9C : 0xD6CBA9))
                         }
                     }
                     .frame(maxWidth: 26)
                     .frame(height: d.h)
                     .rtStack(delay: Double(i) * 0.06)
-                    Text(d.d).font(.mono(9.5, d.today ? 700 : 500))
+                    .padding(.top, 5)
+                    Text(d.lbl).font(.mono(9.5, d.today ? 700 : 500))
                         .foregroundColor(d.today ? RT.ink : (d.sun ? RT.terra : RT.faint))
+                        .rtLB(RTLB.m9_5)
+                        .padding(.top, 5)
                 }
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
                 .onTapGesture { model?.selectWeek(i) }
             }
         }
-        .frame(height: 118)
+        .frame(height: 120)
     }
 
-    var millie: some View {
-        HStack(spacing: 11) {
-            ZStack(alignment: .topTrailing) {
-                RoundedRectangle(cornerRadius: 9).fill(RT.amberTint)
-                    .frame(width: 30, height: 30)
-                    .overlay(
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 2 * 15 / 24)
-                                .stroke(RT.amberDeep, lineWidth: 1.8 * 15 / 24)
-                                .frame(width: 18 * 15 / 24, height: 12 * 15 / 24)
-                                .offset(y: -15 / 24)
-                            RTIcon(["M8 21h8M12 17v4"], size: 15, stroke: RT.amberDeep, lineWidth: 1.8)
-                        }
-                    )
-                Circle().fill(RT.surface)
-                    .frame(width: 13, height: 13)
-                    .overlay(
-                        RTIcon(["M21 12a9 9 0 1 1-3-6.7M21 4v5h-5"], size: 11, stroke: RT.amberDeep, lineWidth: 2.4)
-                            .rtSpin(duration: 5)
-                    )
-                    .offset(x: 4, y: -4)
+    var streakDots: [(color: Color, last: Bool)] {
+        if let live {
+            return live.streakDays.enumerated().map { i, has in
+                (Color(hex: has ? 0xC2553A : 0xEEE7D4), i == 13)
             }
-            HStack(spacing: 8) {
-                Text("밀리의서재").font(.sans(13, 800)).foregroundColor(RT.ink)
-                Text("오늘 07:00 동기화").font(.mono(10, 500)).foregroundColor(RT.faint)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Text("PC 1:12 · 모바일 0:26").font(.mono(11, 600)).foregroundColor(RT.muted)
         }
-        .padding(EdgeInsets(top: 12, leading: 15, bottom: 12, trailing: 15))
-        .background(RT.surface)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .overlay(RoundedRectangle(cornerRadius: 18).stroke(RT.hair, lineWidth: 1))
+        return RTRecord.streakDots().map { (Color(hex: $0.color), $0.isLast) }
+    }
+    var peakLabel: String {
+        live.map { $0.peak?.label ?? "기록 부족" } ?? RTRecordDemo.peakLabel
+    }
+    var peakDim: (left: Double, width: Double)? {
+        live == nil ? (0.56, 0.18) : nil     // 데모 보조 세그먼트
+    }
+    var peakSeg: (left: Double, width: Double)? {
+        if let live {
+            guard let p = live.peak else { return nil }
+            return (min(Double(p.frac), 1 - Double(p.width)), Double(p.width))
+        }
+        return (0.79, 0.15)
     }
 
-    var duo: some View {
-        HStack(spacing: 11) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 5) {
-                    Text("\(live?.streak ?? 12)").font(.mono(21, 700)).tracking(21 * -0.03).foregroundColor(RT.terra)
-                    Text("일 연속").font(.sans(11.5, 600)).foregroundColor(RT.muted)
-                }
-                HStack(spacing: 4) {
-                    if let live {
-                        ForEach(Array(live.streakDays.dropLast().enumerated()), id: \.offset) { _, has in
-                            Circle().fill(has ? RT.terra : Color(hex: 0xEEE7D4)).frame(width: 7, height: 7)
-                        }
-                        Circle().fill(live.streakDays.last == true ? RT.terra : Color(hex: 0xEEE7D4))
-                            .frame(width: 7, height: 7)
-                            .overlay(Circle().stroke(Color(hex: 0xC2553A, alpha: 0.25), lineWidth: 2.5).padding(-2.5))
-                    } else {
-                        ForEach(Array(["EEE7D4", "EEE7D4", "DD9C8B", "DD9C8B", "D67D63", "D67D63", "D67D63", "CD6647", "CD6647", "CD6647", "C2553A", "C2553A", "C2553A"].enumerated()), id: \.offset) { _, hexs in
-                            Circle().fill(Color(hex: UInt32(hexs, radix: 16)!)).frame(width: 7, height: 7)
-                        }
-                        Circle().fill(RT.terra).frame(width: 7, height: 7)
-                            .overlay(Circle().stroke(Color(hex: 0xC2553A, alpha: 0.25), lineWidth: 2.5).padding(-2.5))
-                    }
-                }
-                .padding(.top, 10)
+    // 이번 주 많이 읽은 책 (상위 3)
+    @ViewBuilder var ranksView: some View {
+        if let live {
+            ForEach(Array(live.ranks.enumerated()), id: \.offset) { _, r in
+                RTRankRow(cover: AnyView(RTRemoteCover(url: r.coverUrl, size: .init(width: 30, height: 43),
+                                                       radius: 3, title: r.title)),
+                          title: r.title, tag: r.tag, pct: r.fill, barColor: r.color, total: r.value,
+                          onTap: { if !r.isbn.isEmpty { model?.openBookDetail(isbn: r.isbn) } })
             }
-            .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RT.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(RT.hair, lineWidth: 1))
-            VStack(alignment: .leading, spacing: 0) {
-                Text(live.map { $0.peak?.label ?? "기록 부족" } ?? "주로 밤 9–11시")
-                    .font(.sans(13, 800)).foregroundColor(RT.ink)
-                GeometryReader { geo in
-                    ZStack(alignment: .topLeading) {
-                        Capsule().fill(Color(hex: 0xECE5D2))
-                        if let live {
-                            if let p = live.peak {
-                                Capsule().fill(LinearGradient.css(90, size: CGSize(width: geo.size.width * p.width, height: 8),
-                                                                  [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)]))
-                                    .frame(width: geo.size.width * p.width)
-                                    .offset(x: geo.size.width * min(p.frac, 1 - p.width))
-                            }
-                        } else {
-                            Capsule().fill(Color(hex: 0xC8B98F).opacity(0.55))
-                                .frame(width: geo.size.width * 0.18)
-                                .offset(x: geo.size.width * 0.56)
-                            Capsule().fill(LinearGradient.css(90, size: CGSize(width: geo.size.width * 0.15, height: 8),
-                                                              [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)]))
-                                .frame(width: geo.size.width * 0.15)
-                                .offset(x: geo.size.width * 0.79)
-                        }
-                    }
-                }
-                .frame(height: 8)
-                .padding(.top, 11)
-                HStack {
-                    Text("06").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                    Spacer()
-                    Text("12").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                    Spacer()
-                    Text("18").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                    Spacer()
-                    Text("24").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                }
-                .padding(.top, 7)
+        } else {
+            ForEach(Array(RTRecord.weekRanks().enumerated()), id: \.offset) { _, r in
+                RTRankRow(cover: AnyView(demoCover(r)), title: r.title, tag: r.tag,
+                          pct: CGFloat(r.pct) / 100, barColor: Color(hex: r.dot), total: r.total)
             }
-            .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(RT.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(RoundedRectangle(cornerRadius: 18).stroke(RT.hair, lineWidth: 1))
         }
     }
 
-    var rankFlow: some View {
-        ZStack(alignment: .topLeading) {
-            RT.kraftGrad(CGSize(width: 30, height: 43))
-            Rectangle().fill(Color.black.opacity(0.16)).frame(width: 2)
-            Text("몰입").font(.sans(8, 900)).foregroundColor(Color(hex: 0x241C0D))
-                .frame(maxWidth: .infinity).padding(.top, 13)
-        }
-    }
-    var rankMoney: some View {
-        ZStack(alignment: .top) {
-            Color(hex: 0x1F2D45)
-            Circle().fill(RadialGradient(colors: [Color(hex: 0xECD28C), Color(hex: 0xBD8F33)],
-                                         center: UnitPoint(x: 0.35, y: 0.3), startRadius: 0, endRadius: 5.5))
-                .frame(width: 8, height: 8).padding(.top, 8)
-        }
-    }
-    var rankFocus: some View {
-        ZStack(alignment: .top) {
-            Color(hex: 0xE4572E)
-            Ellipse().stroke(Color.white, lineWidth: 2)
-                .frame(width: 13, height: 13).rotationEffect(.degrees(-8)).padding(.top, 9)
-        }
-    }
-
-    func rankRow(cover: AnyView, title: String, tag: String?, fill: CGFloat, color: Color, value: String,
-                 isbn: String = "") -> some View {
-        HStack(spacing: 12) {
-            cover
-                .frame(width: 30, height: 43)
-                .clipShape(RoundedRectangle(cornerRadius: 3))
-                .shadow(color: Color(hex: 0x3A2C1C, alpha: 0.3), radius: 3.5, x: 0, y: 3)
-            VStack(alignment: .leading, spacing: 5) {
-                HStack(spacing: 4) {
-                    Text(title).font(.sans(13, 700)).foregroundColor(RT.ink)
-                    if let tag { Text(tag).font(.mono(9, 400)).foregroundColor(RT.faint) }
-                }
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color(hex: 0xECE5D2))
-                        Capsule().fill(color).frame(width: geo.size.width * fill)
-                    }
-                }
-                .frame(height: 5)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Text(value).font(.mono(12.5, 700)).foregroundColor(RT.ink)
-        }
-        .padding(EdgeInsets(top: 6, leading: 2, bottom: 6, trailing: 2))
-        .contentShape(Rectangle())
-        .onTapGesture { if !isbn.isEmpty { model?.openBookDetail(isbn: isbn) } }   // 책 탭 → 상세(08)
-    }
-}
-
-// 기록 헤더 (10·11 공용): back + "기록" | [주|월]
-struct StatsHeader: View {
-    enum Active { case week, month }
-    let active: Active
-    var model: RTAppModel? = nil
-
-    var body: some View {
-        HStack {
-            HStack(spacing: 4) {
-                RTIcon(RTIconPath.back, size: 17, viewBox: 20, stroke: RT.body, lineWidth: 2.2)
-                    .frame(width: 38, height: 38)
-                    .contentShape(Rectangle())
-                    .onTapGesture { model?.nav(.home) }
-                if model?.statsSubject == .partner, let m = model {
-                    // 파트너 통계 — 아바타 26pt + "{이름}의 기록"
-                    Circle().fill(RT.segBg).frame(width: 26, height: 26)
-                        .overlay(RTAvatarFill(initial: m.partnerInitial, photo: m.partnerAvatar,
-                                              size: 26, fontSize: 11, initialColor: RT.body))
-                        .padding(.trailing, 3)
-                    Text("\(m.partnerName)의 기록").font(.sans(17, 800)).foregroundColor(RT.ink)
-                } else {
-                    Text("기록").font(.sans(17, 800)).foregroundColor(RT.ink)
-                }
-            }
-            Spacer()
-            HStack(spacing: 0) {
-                seg("주", on: active == .week) { model?.nav(.statsWeek) }
-                seg("월", on: active == .month) { model?.nav(.statsMonth) }
-            }
-            .padding(3)
-            .background(Capsule().fill(RT.segBg))
-            .padding(.trailing, 4)
-        }
-        .padding(EdgeInsets(top: 52, leading: 18, bottom: 0, trailing: 18))
-    }
-
-    func seg(_ t: String, on: Bool, action: @escaping () -> Void) -> some View {
-        Text(t).font(.sans(11.5, on ? 700 : 600))
-            .foregroundColor(on ? Color(hex: 0xF6F3EA) : RT.muted)
-            .padding(EdgeInsets(top: 5, leading: 14, bottom: 5, trailing: 14))
-            .background(Capsule().fill(on ? RT.ink : Color.clear))
-            .contentShape(Capsule())
-            .onTapGesture { action() }
+    func demoCover(_ r: RTRecord.Rank) -> some View {
+        RTFillCover(fill: r.fill, tc: r.tc, title: r.title,
+                    size: CGSize(width: 30, height: 43), radius: 3,
+                    spine: 2, spineAlpha: 0.16, fontSize: 7.5, lineHeight: 7.875,
+                    pad: 2, topOffset: 14, wrap: true)
     }
 }

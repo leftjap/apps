@@ -20,6 +20,7 @@ public enum RTScreens {
         case "12": return AnyView(Screen12Library())
         case "13": return AnyView(SheetSnapshot(base: Screen12Library(), dim: Color(hex: 0x17120C), dimOpacity: 0.4, sheet: Sheet13AddBook()))
         case "14": return AnyView(Screen14EmptyHome())
+        case "15": return AnyView(Screen15Map())
         default: return nil
         }
     }
@@ -27,17 +28,18 @@ public enum RTScreens {
     // rtshot 대조용: 다크 크롬을 쓰는 화면
     public static let darkScreens: Set<String> = ["03", "04", "05"]
 
+    // rtshot 경로는 rtHeadless — ImageRenderer 가 ScrollView 를 못 그리므로 스크롤 영역을 상단 클립으로.
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
         guard let v = view(id: id) else { return nil }
-        return AnyView(ZStack { v; RTChrome(dark: darkScreens.contains(id)) })
+        return AnyView(ZStack { v; RTChrome(dark: darkScreens.contains(id)) }.rtHeadless())
     }
 
     // 액션 경로 오라클: 시드된 모델로 RTRootView 를 렌더 — 정적 snapshotView 와 픽셀 일치해야 함
     @MainActor
     public static func appSnapshotView(id: String) -> AnyView? {
         guard let m = RTAppModel.seeded(id) else { return nil }
-        return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(id)) })
+        return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(id)) }.rtHeadless())
     }
 
     // 상태 파라미터 렌더: 임의 액션 시퀀스 적용 후 렌더 (비캐노니컬 상태 검증용)
@@ -45,7 +47,8 @@ public enum RTScreens {
     public static func seqSnapshotView(actions: [String]) -> AnyView {
         let m = RTAppModel()
         actions.forEach { m.apply($0) }
-        return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(m.route.rawValue)) })
+        return AnyView(ZStack { RTRootView(model: m); RTChrome(dark: darkScreens.contains(m.route.rawValue)) }
+            .rtHeadless())
     }
 
     // 앱 아이콘 (1024×1024) — 로그인 로고와 동일 문법: ctaGrad + 북 글리프 (마스킹은 iOS 가)

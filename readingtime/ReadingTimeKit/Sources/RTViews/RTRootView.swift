@@ -19,10 +19,10 @@ public struct RTRootView: View {
 
     /// 좌→우 스와이프의 뒤로가기 목적지 (헤더 back 버튼과 동일 매핑). nil = 스와이프 없음.
     private var backRoute: RTRoute? {
-        guard model.sheet == nil else { return nil }
+        guard model.sheet == nil, model.placeSheet == nil, model.recordBook == nil else { return nil }
         switch model.route {
         case .detail: return model.detailOrigin
-        case .library, .statsWeek, .statsMonth: return .home
+        case .library, .statsWeek, .statsMonth, .statsMap: return .home
         default: return nil
         }
     }
@@ -45,6 +45,25 @@ public struct RTRootView: View {
                     .onTapGesture { model.closeSheet() }
                 sheetView(sheet)
                     .rtSheetUp()
+            }
+            // 기록 시트 (§6·§7) — 장소 시트 위에 책 상세가 겹쳐 열림
+            if let ids = model.placeSheet {
+                let rd = model.recordData
+                Color(hex: 0x17120C, alpha: 0.42)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.closePlaceSheet() }
+                RTPlaceSheetView(sheet: RTRecord.buildSheet(ids, places: rd.places, books: rd.books),
+                                 model: model)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
+            }
+            if let b = model.recordBook {
+                let rd = model.recordData
+                Color(hex: 0x17120C, alpha: 0.46)
+                    .contentShape(Rectangle())
+                    .onTapGesture { model.closeRecordBook() }
+                RTBookSheetView(book: RTRecord.buildBook(b, places: rd.places, books: rd.books),
+                                model: model)
+                    .frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
         .frame(width: 390, height: 844)
@@ -111,6 +130,7 @@ public struct RTRootView: View {
         case .detail: Screen08Detail(model: model)
         case .statsWeek: Screen10Stats(model: model)
         case .statsMonth: Screen11Month(model: model)
+        case .statsMap: Screen15Map(model: model)
         case .library: Screen12Library(model: model)
         case .emptyHome: Screen14EmptyHome(model: model)
         }
@@ -153,6 +173,7 @@ public extension RTAppModel {
         case "11": m.login(); m.nav(.statsMonth)
         case "12": m.login(); m.nav(.library)
         case "14": m.login(); m.nav(.emptyHome)
+        case "15": m.login(); m.nav(.statsMap)
         default: return nil
         }
         return m

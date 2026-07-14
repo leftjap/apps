@@ -36,12 +36,28 @@ public struct RTSessionRecord: Codable, Equatable, Sendable {
     public var endedAt: Date
     public var pauseCount: Int
 
-    public init(isbn: String?, mode: String, seconds: Int, endedAt: Date, pauseCount: Int) {
+    // ── 읽은 위치 (작업지시서 §13) ──
+    // 세션은 readingtime_userdata.data 의 JSON 스냅샷이라 SQL 스키마 변경 없이 필드 추가로 끝난다.
+    // 전부 옵셔널 → 위치 없는 기존 기록도 그대로 디코드된다(하위호환). nil = 지도에 안 뜸.
+    public var latitude: Double?
+    public var longitude: Double?
+    public var placeId: String?
+    public var placeName: String?
+    public var country: String?
+
+    public init(isbn: String?, mode: String, seconds: Int, endedAt: Date, pauseCount: Int,
+                latitude: Double? = nil, longitude: Double? = nil,
+                placeId: String? = nil, placeName: String? = nil, country: String? = nil) {
         self.isbn = isbn
         self.mode = mode
         self.seconds = seconds
         self.endedAt = endedAt
         self.pauseCount = pauseCount
+        self.latitude = latitude
+        self.longitude = longitude
+        self.placeId = placeId
+        self.placeName = placeName
+        self.country = country
     }
 }
 
