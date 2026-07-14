@@ -521,14 +521,16 @@ public struct AdminScreenView: View {
             .overlay(RoundedRectangle(cornerRadius: GY.rLg).strokeBorder(GY.line, lineWidth: 1))
             .shadow(color: Color(hex: 0x14120E).opacity(0.06), radius: 10, y: 4)
             .padding(.horizontal, 26).padding(.top, 24)
-            // 로그아웃 (mock logout-trigger) / 미로그인 시 Google 로그인
-            Button(action: cloud.signedIn ? onLogout : onLogin) {
-                Text(cloud.signedIn ? "로그아웃" : "Google 로그인")
-                    .font(.sans(15, 600)).foregroundStyle(cloud.signedIn ? GY.ink3 : GY.crailDeep)
+            // 로그아웃 / 미로그인 시 Google 로그인. cloud(별도 ObservableObject)는 이 뷰가
+            // observe 안 해 갱신 누락 → observe 되는 model.syncState.signedIn 으로 반응성 확보.
+            let signedIn = model.syncState.signedIn
+            Button(action: signedIn ? onLogout : onLogin) {
+                Text(signedIn ? "로그아웃" : "Google 로그인")
+                    .font(.sans(15, 600)).foregroundStyle(signedIn ? GY.ink3 : GY.crailDeep)
                     .frame(maxWidth: .infinity).frame(height: 48)
-                    .background(cloud.signedIn ? GY.card : GY.crailTint, in: RoundedRectangle(cornerRadius: GY.rMd))
+                    .background(signedIn ? GY.card : GY.crailTint, in: RoundedRectangle(cornerRadius: GY.rMd))
                     .overlay(RoundedRectangle(cornerRadius: GY.rMd)
-                        .strokeBorder(cloud.signedIn ? GY.line : GY.crailSoft, lineWidth: 1))
+                        .strokeBorder(signedIn ? GY.line : GY.crailSoft, lineWidth: 1))
             }
             .buttonStyle(.plain).accessibilityIdentifier("profile-auth")
             .padding(.horizontal, 26).padding(.top, 16)

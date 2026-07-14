@@ -354,7 +354,12 @@ public final class GymAppModel: ObservableObject {
         if cloud.signedIn { route = .home }        // 로그인 성공 → 게이트 통과
         await syncNow()
     }
-    public func logout() async { await cloud.signOut() }
+    public func logout() async {
+        await cloud.signOut()
+        syncState.signedIn = false
+        syncState.userEmail = nil
+        route = .login   // 로그아웃 → 게이트 복귀 (로컬 데이터는 보존, 재로그인 시 복원)
+    }
 
     // 전체 동기화: pull → 충돌 병합(서버 규칙) → 로컬 저장 → push (50% 급감 차단).
     // 부분 실패 시 로컬 보존 (sync.js pullAll/pushAll 정합). 실 왕복은 실기기 검증 필요.

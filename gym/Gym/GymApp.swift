@@ -36,6 +36,14 @@ struct GymApp: App {
         if let i = args.firstIndex(of: "--auth-tokens"), args.count > i + 2 {
             model.pendingAuthTokens = (args[i + 1], args[i + 2])
         }
+        // 검증 훅(시뮬 전용) — 실 OAuth 없이 로그인 상태 UI 구동 (로그아웃 플로우 테스트).
+        #if targetEnvironment(simulator)
+        if args.contains("--fake-signin") {
+            model.syncState = GymSyncState(signedIn: true, userEmail: "leftjap@gmail.com",
+                                           lastSuccessAt: Int64(Date().timeIntervalSince1970 * 1000))
+            if routeArg == nil { model.route = .home }
+        }
+        #endif
         _model = StateObject(wrappedValue: model)
     }
 

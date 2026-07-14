@@ -24,4 +24,15 @@ import GymCore
         #expect(GymAppModel.routeAfterAuth(signedIn: true) == .home)
         #expect(GymAppModel.routeAfterAuth(signedIn: false) == .login)
     }
+
+    // 로그아웃 → 로그인 게이트로 복귀 + 상태 반영 (관리화면에 잔류하던 결함).
+    @Test func logoutReturnsToGate() async {
+        let m = GymAppModel(snapshotSession: GymSession(id: "x", date: "2026-07-14"))
+        m.route = .admin
+        m.syncState = GymSyncState(signedIn: true, userEmail: "leftjap@gmail.com")
+        await m.logout()
+        #expect(m.route == .login)
+        #expect(m.syncState.signedIn == false)
+        #expect(m.syncState.userEmail == nil)
+    }
 }
