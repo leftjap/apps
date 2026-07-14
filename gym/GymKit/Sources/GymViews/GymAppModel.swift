@@ -193,9 +193,20 @@ public final class GymAppModel: ObservableObject {
         return GymDayDetailLogic.merged(xs.map { GymDayDetailLogic.entry(for: $0, custom: custom) })
     }
     // 해당 날짜 완료 세션 삭제 (§9-1 꾹누르기 → 삭제 확인).
+    // 삭제 대상 세션 id (그 날짜 전부) — 클라우드 전파용. 순수 함수(테스트 가능).
+    public static func sessionIdsToDelete(_ sessions: [GymSession], on iso: String) -> [String] {
+        sessions.filter { $0.date == iso }.map(\.id)
+    }
     public func deleteSessions(on iso: String) {
+        let ids = Self.sessionIdsToDelete(LocalStore.loadSessions(), on: iso)
         LocalStore.saveSessions(LocalStore.loadSessions().filter { $0.date != iso })
         history = LocalStore.loadSessions()
+        guard !ids.isEmpty else { return }
+        // 서버에서도 삭제 — 안 하면 다음 sync 에 부활. 실패는 상태에 남겨 배너가 알린다.
+        Task {
+            do { try await cloud.deleteSessions(ids: ids) }
+            catch { syncState.lastError = "삭제 동기화 실패: \(String(describing: error))" }
+        }
     }
     // 특정 연-월의 운동한 일자 집합 (통계 월 캘린더).
     public func workedDays(year: Int, month: Int) -> Set<Int> {

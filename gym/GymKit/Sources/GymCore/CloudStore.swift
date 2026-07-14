@@ -97,6 +97,15 @@ public final class CloudStore: ObservableObject {
             try await client.from("gym_sessions").upsert(rows, onConflict: "id").execute()
         }
     }
+    // 세션 삭제 (owner 격리 RLS). 로컬 삭제를 서버로 전파 — 안 하면 다음 sync 의
+    // mergeSessions(id-union) 가 서버 잔존 행을 되살린다 (2026-07-14 부활 회귀).
+    public func deleteSessions(ids: [String]) async throws {
+        guard let owner = ownerID, !ids.isEmpty else { return }
+        try await withRetry {
+            try await client.from("gym_sessions")
+                .delete().eq("user_id", value: owner.uuidString).in("id", values: ids).execute()
+        }
+    }
     // 내 세션 조회 (RLS owner-only)
     public func fetchSessions() async throws -> [GymSession] {
         try await withRetry {
