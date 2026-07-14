@@ -334,7 +334,11 @@ public final class GymAppModel: ObservableObject {
 
     public var pendingAuthTokens: (access: String, refresh: String)? = nil   // 검증 훅 (--auth-tokens)
 
+    // 검증 훅(시뮬 전용) — true 면 실 restore 를 건너뛰고 주입된 syncState 유지 (로그아웃 UI 테스트).
+    public var debugForceSignedIn = false
+
     public func restoreCloud() async {
+        if debugForceSignedIn { if route == .login { route = .home }; return }
         if let t = pendingAuthTokens {
             pendingAuthTokens = nil
             await cloud.setSession(accessToken: t.access, refreshToken: t.refresh)

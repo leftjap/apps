@@ -39,6 +39,7 @@ struct GymApp: App {
         // 검증 훅(시뮬 전용) — 실 OAuth 없이 로그인 상태 UI 구동 (로그아웃 플로우 테스트).
         #if targetEnvironment(simulator)
         if args.contains("--fake-signin") {
+            model.debugForceSignedIn = true   // restoreCloud 가 syncState 를 덮어쓰지 않게
             model.syncState = GymSyncState(signedIn: true, userEmail: "leftjap@gmail.com",
                                            lastSuccessAt: Int64(Date().timeIntervalSince1970 * 1000))
             if routeArg == nil { model.route = .home }
