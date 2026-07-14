@@ -275,6 +275,8 @@ public final class RTAppModel: ObservableObject {
     /// 전자책(밀리) 일별 초 — "yyyy-MM-dd"(실발생일) → seconds. book_reading_seconds 읽기 전용,
     /// 통계는 표시 계층에서 종이+전자 합산 (README 결정: DB에선 안 섞음). 데모(userData nil) 미적용.
     @Published public var ebookDaily: [String: Int] = [:]
+    /// 밀리 현재 읽는 책 제목 (통계 밀리 행 표기 — 없으면 "밀리의서재" 폴백)
+    @Published public var ebookTitle: String?
 
     private var dayFormatter: DateFormatter {
         let f = DateFormatter()
@@ -704,6 +706,7 @@ public final class RTAppModel: ObservableObject {
             ebookDaily = [f.string(from: t): 1740,
                           f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): 600,
                           f.string(from: cal.date(byAdding: .day, value: -2, to: t)!): 1200]
+            ebookTitle = "도둑맞은 집중력"   // 시안 밀리 데모 책
         case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)
         case "start": start()
         case "cancelSession": cancelSession()

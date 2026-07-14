@@ -12,7 +12,7 @@ public struct Screen10Stats: View {
         let streak: Int
         let streakDays: [Bool]        // 최근 14일 (과거→오늘)
         let peak: (label: String, frac: CGFloat, width: CGFloat)?
-        let ranks: [(isbn: String, title: String, coverUrl: String, fill: CGFloat, color: Color, value: String)]
+        let ranks: [(isbn: String, title: String, coverUrl: String, tag: String?, fill: CGFloat, color: Color, value: String)]
     }
 
     static let palette: [Color] = [Color(hex: 0xD8C184), Color(hex: 0x3D5575), Color(hex: 0xE4572E)]
@@ -56,7 +56,7 @@ public struct Screen10Stats: View {
                 .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: Self.palette[i % Self.palette.count]) }
             // 밀리(전자책)는 책 정보가 없어(일별 합만) 전용 행으로 — 합계와 내역 정합
             let selEbook = m.ebookSeconds(on: selDate)
-            if selEbook > 0 { popRows.append((name: "밀리의서재", min: selEbook / 60, dot: RT.amber)) }
+            if selEbook > 0 { popRows.append((name: (m.ebookTitle.map { "\($0) · 밀리" }) ?? "밀리의서재", min: selEbook / 60, dot: RT.amber)) }
             // 최근 14일 스트릭 도트
             let dayset = Set(data.sessions.map { cal.startOfDay(for: $0.endedAt) })
             let streakDays = (0..<14).map { i -> Bool in
@@ -89,11 +89,12 @@ public struct Screen10Stats: View {
             let maxBook = max(weekBook.values.max() ?? 0, weekEbook)
             var ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
                 .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
+                                   tag: nil as String?,
                                    fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
                                    color: Self.palette[i % Self.palette.count],
                                    value: RTAppModel.hmString(kv.value)) }
-            if weekEbook > 0 {   // 밀리(전자책) 행 — 책 단위 데이터 없음, 앰버(시안 밀리 색)
-                ranks.append((isbn: "", title: "밀리의서재", coverUrl: "",
+            if weekEbook > 0 {   // 밀리(전자책) — 현재 밀리 책 제목 + "밀리" 태그 (시안 랭킹 문법)
+                ranks.append((isbn: "", title: m.ebookTitle ?? "밀리의서재", coverUrl: "", tag: "밀리",
                               fill: maxBook > 0 ? CGFloat(weekEbook) / CGFloat(maxBook) : 0,
                               color: RT.amber, value: RTAppModel.hmString(weekEbook)))
                 ranks.sort { $0.fill > $1.fill }
@@ -177,7 +178,7 @@ public struct Screen10Stats: View {
         }
         let maxBook = weekBook.values.max() ?? 0
         let ranks = weekBook.sorted { $0.value > $1.value }.prefix(3).enumerated()
-            .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "",
+            .map { (i, kv) in (isbn: kv.key, title: titles[kv.key] ?? "기록", coverUrl: covers[kv.key] ?? "", tag: nil as String?,
                                fill: maxBook > 0 ? CGFloat(kv.value) / CGFloat(maxBook) : 0,
                                color: palette[i % palette.count], value: RTAppModel.hmString(kv.value)) }
         let total = weekTotal(0)
@@ -197,9 +198,9 @@ public struct Screen10Stats: View {
         popRows: [(name: "작별하지 않는다", min: 24, dot: palette[0])],
         streak: 9, streakDays: Array(repeating: true, count: 14),
         peak: (label: "주로 아침 7–9시", frac: 7.0 / 24, width: 2.0 / 24),
-        ranks: [(isbn: "", title: "작별하지 않는다", coverUrl: "", fill: 1.0, color: palette[0], value: "4:20"),
-                (isbn: "", title: "아몬드", coverUrl: "", fill: 0.365, color: palette[1], value: "1:35"),
-                (isbn: "", title: "달러구트 꿈 백화점", coverUrl: "", fill: 0.204, color: palette[2], value: "0:53")])
+        ranks: [(isbn: "", title: "작별하지 않는다", coverUrl: "", tag: nil, fill: 1.0, color: palette[0], value: "4:20"),
+                (isbn: "", title: "아몬드", coverUrl: "", tag: nil, fill: 0.365, color: palette[1], value: "1:35"),
+                (isbn: "", title: "달러구트 꿈 백화점", coverUrl: "", tag: nil, fill: 0.204, color: palette[2], value: "0:53")])
 
     static let week: [(d: String, date: String, v: Int, h: CGFloat, today: Bool, sun: Bool)] = [
         ("월", "5.18", 38, 47, false, false), ("화", "5.19", 52, 64, false, false),
@@ -230,7 +231,7 @@ public struct Screen10Stats: View {
                 if let live {
                     ForEach(Array(live.ranks.enumerated()), id: \.offset) { _, r in
                         rankRow(cover: AnyView(RTRemoteCover(url: r.coverUrl, size: .init(width: 30, height: 43), radius: 3)),
-                                title: r.title, tag: nil, fill: r.fill, color: r.color, value: r.value, isbn: r.isbn)
+                                title: r.title, tag: r.tag, fill: r.fill, color: r.color, value: r.value, isbn: r.isbn)
                     }
                 } else {
                     rankRow(cover: AnyView(rankFlow), title: "몰입", tag: nil, fill: 1.0, color: Color(hex: 0xD8C184), value: "4:12")
