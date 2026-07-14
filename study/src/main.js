@@ -6,6 +6,7 @@ import { TODAY_ISO, todayDayNumber } from './utils/today.js';
 import './services/speech.js'; // window.studySpeech 등록 (Wave 11.11)
 import { Auth } from './services/auth.js'; // window.studyAuth 등록 (Wave 11.12)
 import { Sync } from './db/sync.js'; // window.studySync 등록 (Wave 11.13.1)
+import { installFlushOnHide } from './db/flushOnHide.js';
 import './services/userMeta.js'; // window.studyUserMeta 등록 (Wave 11.67-impl)
 import './services/pr.js'; // window.studyPR 등록 (Wave 11.68-b)
 import './services/sessionStats.js'; // window.studySessionStats 등록 (Wave 11.68-d)
