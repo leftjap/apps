@@ -31,7 +31,13 @@ public enum GymScreens {
     @MainActor static func demoModel() -> GymAppModel {
         let m = GymAppModel()
         if let d = GymAppModel.dayFmt.date(from: "2026-05-06") { m.referenceToday = d }
-        return m
+        healthySync(m); return m
+    }
+
+    // 스냅샷은 백업 정상 상태로 고정 — 빈 syncState 로 두면 위험 배너가 모든 데모에 뜬다.
+    @MainActor static func healthySync(_ m: GymAppModel) {
+        m.syncState = GymSyncState(signedIn: true, userEmail: "leftjap@gmail.com",
+                                   lastSuccessAt: Int64(m.referenceToday.timeIntervalSince1970 * 1000))
     }
 
     // 유산소 데모 — 트레드밀 진행 중 (시간 30분·거리 3.2km → 페이스 9:23/km).
@@ -67,7 +73,7 @@ public enum GymScreens {
     @MainActor static func demoIdleModel() -> GymAppModel {
         let m = demoEmptyModel()
         if let d = GymAppModel.dayFmt.date(from: "2026-05-06") { m.referenceToday = d }
-        return m
+        healthySync(m); return m
     }
 
     // 홈 회귀 시나리오 — "어제(월 7/13) 앱만 열어 빈 활성 세션이 생기고, 오늘(화 7/14) 01:00 에 운동".
@@ -90,6 +96,13 @@ public enum GymScreens {
                      sets: (0..<6).map { _ in GymSet(weight: 60, reps: 10, done: true) }),
         ], tags: ["chest"], status: .completed)
         m.history = [GymSessionLogic.finalize(todays, endTime: start + 40 * 60_000), lastWeek]
+        healthySync(m); return m
+    }
+
+    // 백업 위험 홈 — 미로그인 상태에서 상단 경고 배너 노출 (2026-07-14 사고 안전장치 검증용).
+    @MainActor static func demoAtRiskModel() -> GymAppModel {
+        let m = demoIdleModel()
+        m.syncState = GymSyncState(signedIn: false, lastSuccessAt: nil)
         return m
     }
 
@@ -117,6 +130,7 @@ public enum GymScreens {
         case "stats-body":   return AnyView(StatsScreenView(model: demoModel(), initialTab: .body, embedScroll: false).frame(width: 390, height: 844))
         case "home":         return AnyView(HomeScreenView(model: demoIdleModel()).frame(width: 390, height: 844))
         case "home-stale":   return AnyView(HomeScreenView(model: demoStaleDayModel()).frame(width: 390, height: 844))
+        case "home-atrisk":  return AnyView(HomeScreenView(model: demoAtRiskModel()).frame(width: 390, height: 844))
         case "home-active":  return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
         case "admin":        return AnyView(AdminScreenView(model: demoModel(), initialTab: .ex, embedScroll: false).frame(width: 390, height: 844))
         case "admin-weight": return AnyView(AdminScreenView(model: demoModel(), initialTab: .weight, embedScroll: false).frame(width: 390, height: 844))

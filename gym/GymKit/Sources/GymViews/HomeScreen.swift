@@ -82,6 +82,7 @@ public struct HomeScreenView: View {
 
         return VStack(spacing: 0) {
             header
+            if GymSyncHealth.isAtRisk(model.syncState, now: ref) { syncBanner }
             weekCalendar(week).padding(.horizontal, 18).padding(.top, 18)
             if last != nil { lastWorkoutRow(last, ref: ref) }   // empty 시 행 숨김 (home.js)
             balance(bal)
@@ -206,6 +207,25 @@ public struct HomeScreenView: View {
         guard let st = startMillis, st > 0 else { return "00:00" }
         let total = max(0, Int(Int64(now.timeIntervalSince1970 * 1000) - st) / 1000)
         return String(format: "%02d:%02d", total / 60, total % 60)
+    }
+
+    // 백업 위험 배너 — 미로그인/오래된 백업/최근 실패 시 홈 상단 노출 (2026-07-14 데이터 소실 사고).
+    // 탭하면 관리>프로필(로그인·상태)로 이동.
+    var syncBanner: some View {
+        Button(action: onAdmin) {
+            HStack(spacing: 9) {
+                Circle().fill(GY.crailBase).frame(width: 7, height: 7)
+                Text(GymSyncHealth.statusText(model.syncState, now: model.referenceToday))
+                    .font(.sans(13, 600)).foregroundStyle(GY.crailDeep).lineLimit(1)
+                Spacer(minLength: 8)
+                Text("해결").font(.sans(12.5, 600)).foregroundStyle(GY.crailDeep)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 11)
+            .background(GY.crailTint, in: RoundedRectangle(cornerRadius: GY.rMd))
+            .overlay(RoundedRectangle(cornerRadius: GY.rMd).strokeBorder(GY.crailSoft, lineWidth: 1))
+        }
+        .buttonStyle(.plain).accessibilityIdentifier("home-sync-banner")
+        .padding(.horizontal, 24).padding(.top, 12)
     }
 
     var header: some View {

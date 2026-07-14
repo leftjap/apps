@@ -10,6 +10,7 @@ public enum LocalStore {
     static let weightsKey = "gym.weights.v1"
     static let customExKey = "gym.customExercises.v1"
     static let settingsKey = "gym.settings.v1"
+    static let syncStateKey = "gym.syncState.v1"      // 동기화 시도/성공/실패 (조용한 실패 차단)
 
     // MARK: - generic JSON persist
     static func save<T: Encodable>(_ v: T, _ key: String) {
@@ -74,4 +75,8 @@ public enum LocalStore {
     // MARK: - 설정 (단일 레코드, 없으면 기본값)
     public static func loadSettings() -> GymUserSettings { load(GymUserSettings.self, settingsKey) ?? GymUserSettings() }
     public static func saveSettings(_ s: GymUserSettings) { save(s, settingsKey) }
+
+    // MARK: - 동기화 상태 (백업이 멈춘 걸 화면·진단으로 알 수 있게)
+    public static func loadSyncState() -> GymSyncState { load(GymSyncState.self, syncStateKey) ?? GymSyncState() }
+    public static func saveSyncState(_ s: GymSyncState) { save(s, syncStateKey) }
 }

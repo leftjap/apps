@@ -44,4 +44,17 @@ final class GymCaptureUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Gym"].waitForExistence(timeout: 5), "홈으로 복귀해야 한다")
         shot(app, "05-home-back")
     }
+
+    // 동기화 카드 실측 — 관리>프로필의 "동기화 정상 / 로그인 필요". 비파괴(라우팅 인자만).
+    // 2026-07-14: 클라우드가 07-10 에서 정체돼 실기기 로그인 상태를 눈으로 확인하려고 추가.
+    func testCaptureSyncStatus() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--route", "admin", "--tab", "profile"]
+        app.launch()
+        _ = app.staticTexts["관리"].waitForExistence(timeout: 15)
+        shot(app, "10-admin-profile-sync")   // 잠금 등으로 못 떠도 일단 회수 (빈 이미지면 픽셀 분산으로 판정)
+        let tree = XCTAttachment(string: app.debugDescription)
+        tree.name = "11-element-tree"; tree.lifetime = .keepAlways
+        add(tree)
+    }
 }

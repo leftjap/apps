@@ -502,14 +502,17 @@ public struct AdminScreenView: View {
                 profileRow(.weeklyGoal, value: "\(s.weeklyGoal)", unit: "회")
             }
             .padding(.horizontal, 26).padding(.top, 10)
-            // 동기화 카드 (mock sync-card — 점+텍스트, 사용자 줄)
+            // 동기화 카드 (mock sync-card) — signedIn 만 보던 걸 실제 백업 상태로 교체.
+            // 미로그인·오래된 백업·최근 실패면 위험(crail 점 + 사유)을 드러낸다 (2026-07-14 사고).
+            let atRisk = GymSyncHealth.isAtRisk(model.syncState, now: model.referenceToday)
             VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 8) {
-                    Circle().fill(cloud.signedIn ? GY.crailBase : GY.ink4).frame(width: 7, height: 7)
-                    Text(cloud.signedIn ? "동기화 정상" : "로그인 필요")
-                        .font(.sans(13, 600)).tracking(0.26).foregroundStyle(GY.ink2)
+                    Circle().fill(atRisk ? GY.crailBase : GY.sageDeep).frame(width: 7, height: 7)
+                    Text(GymSyncHealth.statusText(model.syncState, now: model.referenceToday))
+                        .font(.sans(13, 600)).tracking(0.26)
+                        .foregroundStyle(atRisk ? GY.crailDeep : GY.ink2)
                 }
-                Text(cloud.userEmail ?? "로그인하지 않음")
+                Text(cloud.userEmail ?? model.syncState.userEmail ?? "로그인하지 않음")
                     .font(.sans(13, 500)).foregroundStyle(GY.ink4).lineLimit(1)
             }
             .frame(maxWidth: .infinity, alignment: .leading)

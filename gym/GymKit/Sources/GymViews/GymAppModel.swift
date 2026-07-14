@@ -17,6 +17,8 @@ public final class GymAppModel: ObservableObject {
     @Published public var custom: [GymCustomExercise]    // 커스텀 운동 (이름·부위 resolve)
     @Published public var weights: [GymWeight]           // 체중 로그
     @Published public var settings: GymUserSettings      // 사용자 설정 (관리 편집 → 반응형)
+    // 동기화 상태 — 실패를 화면에 드러내고, 기기 진단(컨테이너 덤프)으로도 읽을 수 있게 영속한다.
+    @Published public var syncState: GymSyncState { didSet { LocalStore.saveSyncState(syncState) } }
     public var referenceToday: Date = Date()             // 홈/통계 "오늘" 기준 (스냅샷은 고정 주입)
     public var statsInitialTab: StatsScreenView.Tab = .cal   // 검증 훅용 초기 탭
     public var adminInitialTab: AdminScreenView.Tab = .ex    // 검증 훅용 초기 탭
@@ -45,6 +47,7 @@ public final class GymAppModel: ObservableObject {
         custom = LocalStore.loadCustomExercises()
         weights = LocalStore.loadWeights()
         settings = LocalStore.loadSettings()
+        syncState = LocalStore.loadSyncState()
         // 지난 날짜 방치 세션 자동 마감 (§8). 데모/스냅샷 세션은 스캐폴딩 보존 위해 제외.
         if snapshotSession == nil, session.id != "demo" {
             sweepStaleSessionIfNeeded()
@@ -333,7 +336,10 @@ public final class GymAppModel: ObservableObject {
         } else {
             await cloud.restore()
         }
+        syncState.signedIn = cloud.signedIn
+        syncState.userEmail = cloud.userEmail
         if cloud.signedIn { await syncNow() }
+        // 미로그인은 '조용한 정상' 이 아니라 '백업 중단' 이다 — 상태를 남겨 화면이 경고하게 한다.
     }
     public func login() async { try? await cloud.signInWithGoogle(); await syncNow() }
     public func logout() async { await cloud.signOut() }
@@ -341,7 +347,10 @@ public final class GymAppModel: ObservableObject {
     // 전체 동기화: pull → 충돌 병합(서버 규칙) → 로컬 저장 → push (50% 급감 차단).
     // 부분 실패 시 로컬 보존 (sync.js pullAll/pushAll 정합). 실 왕복은 실기기 검증 필요.
     public func syncNow() async {
-        guard cloud.signedIn else { return }
+        syncState.signedIn = cloud.signedIn
+        syncState.userEmail = cloud.userEmail
+        guard cloud.signedIn else { return }   // 미로그인은 restoreCloud 가 이미 위험으로 표시
+        syncState.lastAttemptAt = nowMillis()
         do {
             // 1. pull
             let serverSessions = try await cloud.fetchSessions()
@@ -373,8 +382,12 @@ public final class GymAppModel: ObservableObject {
             try await cloud.upsertWeights(weights)
             try await cloud.upsertCustomExercises(custom)
             try await cloud.upsertSettings(settings)
+            syncState.lastSuccessAt = nowMillis()
+            syncState.lastError = nil
         } catch {
-            // 일시 실패 — 로컬 보존, 다음 sync 시 재시도 (재시도 5/15/45s 는 CloudStore withRetry)
+            // 일시 실패 — 로컬 보존, 다음 sync 시 재시도 (재시도 5/15/45s 는 CloudStore withRetry).
+            // 에러를 삼키지 않고 기록 → 프로필 카드·홈 배너가 드러낸다 (2026-07-14 사고 재발 차단).
+            syncState.lastError = String(describing: error)
         }
     }
 
@@ -418,6 +431,13 @@ public final class GymAppModel: ObservableObject {
     // startTime 조정 필수 — demoSession() 고정 epoch(1_746_500_000_000)는 2025-05-06 이라
     // 그대로 쓰면 경과 타이머가 "10324:01:47"(430일) 로 표기됨 (시뮬 프레임 캡처 실측).
     public func resetSession() {
+        // 파괴적 초기화(로그아웃 + 로컬 전면 삭제)는 시뮬레이터에서만 허용한다.
+        // 실기기에서 --reset 이 들어오면(자동 배포·오조작) 로그인 세션과 실데이터가 날아가
+        // 백업 없는 앱에서 영구 소실로 이어진다 (2026-07-14 데이터 소실 사고 재발 차단).
+        #if !targetEnvironment(simulator)
+        assertionFailure("resetSession()은 실기기에서 금지 — 데이터/로그인 소실 위험")
+        return
+        #else
         LocalStore.clearSession()
         LocalStore.saveSessions([]); history = []
         LocalStore.savePRs([]); prs = []
@@ -429,6 +449,7 @@ public final class GymAppModel: ObservableObject {
         demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
         session = demo
         selectedBlockIdx = nil
+        #endif
     }
 
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }
