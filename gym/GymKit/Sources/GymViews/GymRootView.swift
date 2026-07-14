@@ -8,6 +8,8 @@ public struct GymRootView: View {
     public var body: some View {
         ZStack {
             switch model.route {
+            case .login:
+                GymLoginView(onLogin: { Task { await model.login() } })
             case .home:
                 HomeScreenView(model: model, onStart: { model.startSession() },
                                onStats: { model.openStats() }, onAdmin: { model.openAdmin() })

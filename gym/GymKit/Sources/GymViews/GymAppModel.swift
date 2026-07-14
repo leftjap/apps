@@ -5,11 +5,16 @@ import UIKit
 #endif
 
 // 앱 상태 — 라우팅 + 세션 상태머신 (PWA app.js·session.js 이식). 화면이 이 모델을 구동한다.
-public enum GymRoute: Equatable { case home, session, stats, summary, admin }
+public enum GymRoute: Equatable { case login, home, session, stats, summary, admin }
 
 @MainActor
 public final class GymAppModel: ObservableObject {
-    @Published public var route: GymRoute = .home
+    // 로그인 게이트 — 형제 앱(readingtime·PWA) 정합. 미로그인은 .login 에서 막힌다.
+    // restoreCloud(부트) 가 기존 세션 복원 성공 시 .home 으로 전환한다.
+    @Published public var route: GymRoute = .login
+
+    /// 인증 상태 → 진입 라우트 (로그인됨=홈, 아니면 게이트).
+    public static func routeAfterAuth(signedIn: Bool) -> GymRoute { signedIn ? .home : .login }
     @Published public var session: GymSession { didSet { LocalStore.saveSession(session) } }
     @Published public var history: [GymSession]      // 완료 세션 이력 (홈·통계·직전기록·프리셋)
     @Published public var prs: [GymPR]               // 개인 기록 (PR 감지)
@@ -338,10 +343,17 @@ public final class GymAppModel: ObservableObject {
         }
         syncState.signedIn = cloud.signedIn
         syncState.userEmail = cloud.userEmail
-        if cloud.signedIn { await syncNow() }
-        // 미로그인은 '조용한 정상' 이 아니라 '백업 중단' 이다 — 상태를 남겨 화면이 경고하게 한다.
+        if cloud.signedIn {
+            if route == .login { route = .home }   // 기존 세션 복원 → 게이트 통과
+            await syncNow()
+        }
+        // 미로그인은 '조용한 정상' 이 아니라 '백업 중단' 이다 — .login 게이트에서 막고 상태도 남긴다.
     }
-    public func login() async { try? await cloud.signInWithGoogle(); await syncNow() }
+    public func login() async {
+        try? await cloud.signInWithGoogle()
+        if cloud.signedIn { route = .home }        // 로그인 성공 → 게이트 통과
+        await syncNow()
+    }
     public func logout() async { await cloud.signOut() }
 
     // 전체 동기화: pull → 충돌 병합(서버 규칙) → 로컬 저장 → push (50% 급감 차단).
@@ -449,6 +461,7 @@ public final class GymAppModel: ObservableObject {
         demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
         session = demo
         selectedBlockIdx = nil
+        route = .home   // 검증용 리셋은 로그인 게이트를 건너뛰고 홈부터 (UI 테스트 --reset 정합)
         #endif
     }
 
