@@ -220,9 +220,18 @@ CREATE POLICY "Users can only access own data"
 - IndexedDB가 주 저장소 (오프라인 동작 보장)
 - 온라인 시 Supabase와 양방향 동기화
 - 충돌 해결: "No"(실패) 상태 우선, 가장 먼 nextReview 우선
-- 세션 완료 시 즉시 동기화
+- 세션 완료 시 즉시 동기화 (`finishSession` → `flushPendingUploads`)
 - 디바운스 저장 (3초 배치)
+- 디바운스 창 보호 (2026-07-15): 업로드 큐를 localStorage 아웃박스(`study.syncOutbox.<userId>`)에 동기 기록 →
+  탭이 3초 창에서 죽어도 다음 로드의 `startSync` 가 복원해 재전송. push 성공 응답 후에만 아웃박스에서 제거
+  (at-least-once — 실패·차단분은 재큐잉). 백그라운드 진입·탭 닫기·온라인 복귀 시 즉시 flush.
+- push-before-pull (2026-07-15): dailyStats/meta/prRecords 는 로컬 read-modify-write 누적이라 pull(bulkPut)이
+  먼저 오면 미전송 증분이 서버 옛 값에 덮인다 → 기기-소유 테이블은 pull 전에 push. serverOwned(todayLessons/
+  mathProblems)만 pull 후 push (서버에서 삭제된 행 부활 방지)
 - 급감 감지 차단 (안전장치): 로컬 N>0, 서버 0일 때 업로드 차단
+  - 기기-작성 테이블(sessionLogs/reviewQueue/pronunciationLog/dailyStats/prRecords)은 `reconcile*` 이
+    '서버에 없는 행만' 직접 upsert 해 이 가드에 영구 차단되지 않도록 보강
+- 동기화 실패 가시화 (2026-07-15): 미전송분이 24h 넘게 안 올라가면 홈 상단 경고 배너 + 설정의 '마지막 동기화' 표시
 
 ---
 

@@ -16,7 +16,7 @@ import { initApp } from './app.js';
 // signOut 시 sync 정리 (Wave 11.13.1)
 Auth.registerOnSignOut(() => Sync.stopSync());
 
-// 탭 종료/숨김 시 in-memory 업로드 큐 flush — 3초 debounce 창 유실 방지 (today 정합).
+// 탭 종료/숨김·백그라운드 진입·온라인 복귀 시 pending 큐 즉시 flush — 3초 debounce 창 유실 방지.
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
   installFlushOnHide(() => Sync.flushPendingUploads(), window, document);
 }

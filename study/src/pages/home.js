@@ -15,6 +15,8 @@
 
 import { pickSize, watchSize } from '../components/session/index.js';
 import { loadActiveSession } from '../services/activeSession.js';
+import { Sync } from '../db/sync.js';
+import { syncStatus } from '../services/syncHealth.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
@@ -88,6 +90,25 @@ const DEMO_BY_PHASE = {
   },
 };
 
+/**
+ * 동기화 위험 배너 (2026-07-15) — 미푸시 기록이 24h 넘게 클라우드에 못 올라간 상태만 노출.
+ * gym 은 sync 가 4일간 조용히 멈춘 채 "정상" 을 표시하다 데이터를 잃을 뻔했다 (2026-07-14).
+ * 대기분이 없으면 띄우지 않는다 — 거짓 경보는 진짜 경보를 죽인다.
+ */
+export function showSyncRisk(host, demo = false) {
+  host.querySelector('.sync-risk')?.remove();
+  if (demo) return null;
+  const st = syncStatus(Sync.currentSyncHealth());
+  if (st.level !== 'risk') return null;
+  const el = h('button', {
+    class: 'sync-risk',
+    type: 'button',
+    onClick: () => { window.location.hash = '#/settings'; },
+  }, `⚠ ${st.text}`);
+  host.insertBefore(el, host.firstChild);
+  return el;
+}
+
 export function mountHome(host) {
   const demo = isDemoMode();
   const fx = demo ? DEMO_BY_PHASE[demoPhase()] : null;
@@ -112,7 +133,8 @@ export function mountHome(host) {
   if (fx) Object.assign(state, fx);
 
   let cleanup = render(host, state);
-  const rerender = () => { cleanup(); cleanup = render(host, state); };
+  showSyncRisk(host, demo);
+  const rerender = () => { cleanup(); cleanup = render(host, state); showSyncRisk(host, demo); };
   const stop = watchSize((s) => {
     if (s !== state.size) { state.size = s; rerender(); }
   });

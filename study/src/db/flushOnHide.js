@@ -19,4 +19,11 @@ export function installFlushOnHide(flush, win, doc) {
   win.addEventListener('visibilitychange', () => {
     if ((doc?.visibilityState ?? 'visible') === 'hidden') run();
   });
+  // 회복 신호 (2026-07-15) — 아웃박스가 durable 해지면서 '재시도 시점' 이 생겼다.
+  // freeze: iOS PWA 가 백그라운드 탭을 얼리기 직전 (pagehide 없이 오는 경로).
+  // online: 오프라인 중 쌓인 미전송분을 연결 복구 즉시 올린다.
+  // pageshow(persisted): BFCache 복원 — 얼어 있던 큐를 깨우자마자 재시도.
+  doc?.addEventListener?.('freeze', run);
+  win.addEventListener('online', run);
+  win.addEventListener('pageshow', (e) => { if (e?.persisted) run(); });
 }

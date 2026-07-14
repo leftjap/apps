@@ -20,6 +20,7 @@
  *  - user_id 자동 주입 (Dexie 스키마엔 없지만 Supabase RLS 매칭용).
  */
 import { supabase } from '../services/supabase.js';
+import { recordSyncResult, readSyncHealth } from '../services/syncHealth.js';
 
 // ============================================================
 // Wave 11.20 — 단순 4 테이블 camelCase ↔ snake_case 변환 함수
@@ -292,6 +293,85 @@ export const DEBOUNCE_MS = 3000;
 /** Dexie hook → queueUpload 가 채우는 변경 id 큐. dexieName → Set<id>. */
 const _pendingUploads = new Map();
 let _flushTimer = null;
+
+// ============================================================
+// 아웃박스 내구성 (2026-07-15 데이터 유실 감사)
+//
+// spec §4 (line 223-224) 는 "디바운스 저장 (3초 배치)" 를 "세션 완료 시 즉시 동기화" 와 한 쌍으로
+// 설계했는데 후자가 미구현이었다 (flushPendingUploads 호출자가 debounce 타이머와 stopSync 뿐).
+// 게다가 _pendingUploads 가 in-memory 라 debounce 창(마지막 쓰기 후 3초 무활동)에서 탭이 죽으면
+// tail 이 증발했고, flush 는 await 이전에 큐를 clear 해서 push 실패 시 id 가 영구 소실됐다.
+//
+// → pending id 집합을 localStorage 에 '동기적으로' 기록한다. IndexedDB 는 비동기라 탭 종료 직전
+//   커밋이 보장되지 않아 이 목적(죽는 순간의 목록 보존)에 부적합. 행 데이터 자체는 Dexie 에 이미
+//   있으므로 아웃박스는 'id 목록' 만 들고 있으면 된다 (유령 id 는 push 시 bulkGet undefined 로 탈락).
+// ============================================================
+
+/** 아웃박스 localStorage 키 prefix. 사용자별 분리. */
+const OUTBOX_PREFIX = 'study.syncOutbox.';
+let _outboxKey = null;
+
+/** serverOwned 테이블 (서버 시드 → 삭제 전파 대상). pull 이후에만 push 해야 유령 행 부활이 없다. */
+const SERVER_OWNED = new Set(TABLE_MAP.filter((m) => m.serverOwned).map((m) => m.dexie));
+
+/** localStorage 접근 (private mode/차단 환경·node 테스트에서 throw → null). */
+function outboxStore() {
+  try {
+    return typeof localStorage === 'undefined' ? null : localStorage;
+  } catch {
+    return null;
+  }
+}
+
+/** 디스크 아웃박스 읽기. `{ [dexieName]: id[] }`. */
+function readOutbox() {
+  const ls = outboxStore();
+  if (!ls || !_outboxKey) return {};
+  try {
+    const parsed = JSON.parse(ls.getItem(_outboxKey) || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 디스크 아웃박스 갱신.
+ *  - drained: 이번 flush 가 서버에 올린(또는 로컬에서 사라진) id — 디스크에서 제거.
+ *  - 나머지는 현재 in-memory 큐를 union (다른 탭이 적어둔 항목을 덮어쓰지 않도록 read-merge-write).
+ */
+function persistOutbox(drained = null) {
+  const ls = outboxStore();
+  if (!ls || !_outboxKey) return;
+  const disk = readOutbox();
+  if (drained) {
+    for (const [table, ids] of drained) {
+      const keep = (disk[table] || []).filter((id) => !ids.has(id));
+      if (keep.length) disk[table] = keep;
+      else delete disk[table];
+    }
+  }
+  for (const [table, set] of _pendingUploads) {
+    if (!set.size) continue;
+    disk[table] = Array.from(new Set([...(disk[table] || []), ...set]));
+  }
+  try {
+    if (Object.keys(disk).length === 0) ls.removeItem(_outboxKey);
+    else ls.setItem(_outboxKey, JSON.stringify(disk));
+  } catch (e) {
+    console.warn('[sync] 아웃박스 영속 실패', e?.message || e);
+  }
+}
+
+/** 디스크 아웃박스 → in-memory 큐 병합. 새 탭 부팅 시 이전 세션의 미푸시 tail 회복. */
+function restoreOutbox() {
+  for (const [table, ids] of Object.entries(readOutbox())) {
+    if (!Array.isArray(ids) || ids.length === 0) continue;
+    if (!_pendingUploads.has(table)) _pendingUploads.set(table, new Set());
+    const set = _pendingUploads.get(table);
+    for (const id of ids) set.add(id);
+  }
+}
 
 /** startSync 가 잡고 stopSync 가 비우는 push 컨텍스트. */
 let _currentDB = null;
@@ -711,6 +791,10 @@ export async function reconcileTable(db, userId, mapping) {
       console.error(`[sync] reconcileTable ${mapping.supabase} upsert 실패`, upErr);
       return { table: mapping.dexie, status: 'error', error: upErr };
     }
+    // 서버가 더 이상 비어 있지 않다 → 같은 세션의 후속 push 가 급감 가드에 막히지 않도록 마킹 갱신.
+    // (갱신 안 하면 아웃박스 항목이 그 세션 내내 blocked 로 재큐잉만 반복된다. 다음 로드의 pullAll 이
+    //  어차피 count>0 을 마킹하지만, 한 세션을 통째로 낭비할 이유가 없다.)
+    _serverCounts.set(mapping.dexie, serverIds.size + rows.length);
     return { table: mapping.dexie, status: 'ok', pushed: rows.length, missing: missing.length };
   } catch (e) {
     console.error(`[sync] reconcileTable ${mapping?.supabase} 예외`, e);
@@ -977,6 +1061,52 @@ export async function pushPrRecords(db, userId) {
 }
 
 /**
+ * prRecords 보강 (2026-07-15) — 서버에 pr_records 행이 없고 로컬에 PR 키가 있으면 직접 upsert.
+ *
+ * pushPrRecords 의 급감 가드(server count 0 → blocked)는 '기존 유저' (다른 테이블엔 서버 데이터가 있어
+ * allowEmptyServerPush 가 발동하지 않는 사용자) 에게 영구 차단으로 작동한다 → 역대 최고 기록(pr.js 가
+ * Dexie meta 에 쓰는 5 키)이 이 기기에만 남는다. pr_records 는 user_id PK 단일 행이라 서버가 비어 있으면
+ * 덮어쓸 것이 없으므로 직접 upsert 가 안전 (reconcileTable 의 missing-only 철학과 동일).
+ * 서버에 행이 이미 있으면 손대지 않는다 (일반 hook push 경로가 처리 — 서버 최신값 보호).
+ */
+export async function reconcilePrRecords(db, userId) {
+  if (!supabase) return { table: 'prRecords', status: 'skipped', reason: 'no_supabase' };
+  if (!db || !userId) return { table: 'prRecords', status: 'skipped', reason: 'preconditions' };
+  try {
+    const store = db.meta;
+    if (!store?.bulkGet) return { table: 'prRecords', status: 'error', reason: 'no_store' };
+    const keys = PR_RECORDS_KEY_MAP.map((m) => m.dexieKey);
+    const rows = (await store.bulkGet(keys)).filter(Boolean);
+    if (rows.length === 0) return { table: 'prRecords', status: 'empty', pushed: 0 };
+    const { data, error } = await supabase
+      .from('study_pr_records')
+      .select('user_id')
+      .eq('user_id', userId);
+    if (error) {
+      console.error('[sync] reconcilePrRecords 서버 조회 실패', error);
+      return { table: 'prRecords', status: 'error', error };
+    }
+    if (Array.isArray(data) && data.length > 0) {
+      return { table: 'prRecords', status: 'ok', pushed: 0 };
+    }
+    const supabaseRow = prRecordsDexieToSupabase(rows, userId);
+    if (!supabaseRow) return { table: 'prRecords', status: 'error', reason: 'transform_failed' };
+    const { error: upErr } = await supabase
+      .from('study_pr_records')
+      .upsert([supabaseRow], { onConflict: 'user_id' });
+    if (upErr) {
+      console.error('[sync] reconcilePrRecords upsert 실패', upErr);
+      return { table: 'prRecords', status: 'error', error: upErr };
+    }
+    _serverCounts.set('prRecords', 1);
+    return { table: 'prRecords', status: 'ok', pushed: 1 };
+  } catch (e) {
+    console.error('[sync] reconcilePrRecords 예외', e);
+    return { table: 'prRecords', status: 'error', error: e };
+  }
+}
+
+/**
  * 급감 차단 unlock (Wave 11.13.3 · spec §4 line 189 안전장치 해제).
  *
  * 사용 시나리오:
@@ -1001,6 +1131,8 @@ export function queueUpload(dexieName, id) {
     _pendingUploads.set(dexieName, new Set());
   }
   _pendingUploads.get(dexieName).add(id);
+  // 목록을 먼저 디스크에 적는다 — 타이머(3초)가 돌기 전에 탭이 죽어도 다음 로드가 회수.
+  persistOutbox();
   if (_flushTimer) clearTimeout(_flushTimer);
   _flushTimer = setTimeout(() => {
     _flushTimer = null;
@@ -1015,7 +1147,7 @@ export function queueUpload(dexieName, id) {
  * Wave 11.14 — 4 테이블 (pushAll) + dailyStats (pushDailyStats) + user_meta (pushUserMeta) 동시.
  * 반환: `{ ok, results, failed, reason? }`. results 는 4 + dailyStats? + meta? 결합.
  */
-export async function flushPendingUploads() {
+export async function flushPendingUploads({ skipServerOwned = false, onlyServerOwned = false } = {}) {
   if (_flushTimer) {
     clearTimeout(_flushTimer);
     _flushTimer = null;
@@ -1027,10 +1159,22 @@ export async function flushPendingUploads() {
     // hook 발화 후 stopSync 가 컨텍스트 비운 race — 큐 보존 (다음 startSync 에서 flush 가능)
     return { ok: false, reason: 'no_session', results: [], failed: 0 };
   }
-  // 큐를 스냅샷 후 비우고 push (push 도중 새 변경 들어오면 다음 debounce 에서 처리)
+  // 큐를 스냅샷 후 비우고 push (push 도중 새 변경 들어오면 hook 이 다시 큐에 넣음 → 다음 flush).
+  // startSync 는 이 큐를 두 번에 나눠 비운다 (skipServerOwned → pull → onlyServerOwned).
   const byTable = new Map();
-  for (const [k, set] of _pendingUploads) byTable.set(k, new Set(set));
-  _pendingUploads.clear();
+  for (const [k, set] of _pendingUploads) {
+    if (skipServerOwned && SERVER_OWNED.has(k)) continue;
+    if (onlyServerOwned && !SERVER_OWNED.has(k)) continue;
+    byTable.set(k, new Set(set));
+    _pendingUploads.delete(k);
+  }
+  if (byTable.size === 0) {
+    return { ok: true, results: [], failed: 0 };
+  }
+  // 디스크 아웃박스는 '서버 성공 응답 이후에만' 비운다 (at-least-once).
+  // 먼저 비우면 pagehide flush 도중 탭이 죽는 순간 — 이 기능이 지켜야 할 바로 그 시나리오 —
+  // 디스크는 이미 비었는데 응답이 안 와 재큐잉도 못 해 tail 이 증발한다 (2026-07-15 실기기에서 잡음).
+  // 중복 push 는 무해하다 (id 기준 upsert).
   // 4 테이블 + dailyStats + user_meta + pr_records (Wave 11.68-a) 동시 push
   const promises = [pushAll(_currentDB, _currentUserId, byTable)];
   if (byTable.has('dailyStats') && byTable.get('dailyStats').size > 0) {
@@ -1048,11 +1192,45 @@ export async function flushPendingUploads() {
   const extras = settled.slice(1);
   const allResults = [...(tableResult.results || []), ...extras];
   const failed = (tableResult.failed || 0) + extras.filter((r) => r.status === 'error').length;
+  // 올라간 것만 디스크에서 지우고, 못 올라간 것(error/blocked/skipped)은 큐에 되돌린다.
+  // 이전 구현은 await 이전에 clear 만 해서 실패 = 영구 소실이었다. 되돌린 항목은 다음 debounce·
+  // pagehide flush·online 복귀·다음 startSync 에서 재시도된다.
+  const drained = new Map();
+  const retry = [];
+  for (const r of allResults) {
+    if (!r || !byTable.has(r.table)) continue;
+    if (r.status === 'ok' || r.status === 'empty') drained.set(r.table, byTable.get(r.table));
+    else retry.push(r);
+  }
+  for (const r of retry) {
+    if (!_pendingUploads.has(r.table)) _pendingUploads.set(r.table, new Set());
+    const set = _pendingUploads.get(r.table);
+    for (const id of byTable.get(r.table)) set.add(id);
+  }
+  persistOutbox(drained);
+  // 사용자 가시화 — 실패가 조용히 쌓이는 상태(gym 2026-07-14 사고)를 앱이 알려줄 수 있게 기록.
+  recordSyncResult(_currentUserId, {
+    ok: failed === 0 && retry.length === 0,
+    pending: pendingCount(),
+    error: retry[0]?.reason || retry[0]?.error?.message || null,
+  });
   return {
     ok: failed === 0,
     results: allResults,
     failed,
   };
+}
+
+/** 미푸시 대기 id 총수 (아웃박스 = in-memory 큐와 동일 내용). */
+function pendingCount() {
+  let n = 0;
+  for (const set of _pendingUploads.values()) n += set.size;
+  return n;
+}
+
+/** 현재 사용자의 동기화 건강 상태 (UI 표시용). 세션 없으면 null. */
+export function currentSyncHealth() {
+  return _currentUserId ? readSyncHealth(_currentUserId) : null;
 }
 
 /**
@@ -1072,24 +1250,41 @@ export async function startSync(user) {
   _syncActive = true;
   _currentDB = window.studyDB;
   _currentUserId = user.id;
-  // pullAll 의 bulkPut 이 hook 발화 시 다운로드한 row 가 다시 push 큐로 — 순서: pull 먼저, hook 나중.
+  _outboxKey = OUTBOX_PREFIX + user.id;
+  // 1) 이전 세션의 미푸시 tail 을 pull '이전에' 올린다.
+  //    dailyStats/meta/prRecords 는 로컬 read-modify-write 누적(sessionFinish.js 의 mergeDailyStats)이라
+  //    pull(bulkPut)이 먼저 오면 로컬 증분이 서버의 옛 값으로 덮여 사라지고, 그 뒤 push 는 서버 값을
+  //    되밀 뿐인 no-op 이 된다 → push-before-pull 이 필수.
+  //    serverOwned(todayLessons/mathProblems)만 pull 뒤로 미룬다 (서버에서 삭제된 행을 되살리지 않도록 —
+  //    pull 의 staleIdsToDelete 가 로컬에서 지우면 push 대상이 자연 소멸).
+  //    이 시점 _serverCounts 는 비어 있어 급감 가드 미발동 → 서버-빈 테이블도 정상 push.
+  restoreOutbox();
+  try { await flushPendingUploads({ skipServerOwned: true }); }
+  catch (e) { console.warn('[sync] 아웃박스 선(先) flush 실패', e); }
+  // 2) pullAll 의 bulkPut 이 hook 발화 시 다운로드한 row 가 다시 push 큐로 — 순서: pull 먼저, hook 나중.
   const result = await pullAll(_currentDB, _currentUserId);
   if (!result.ok) {
     console.warn('[sync] pullAll 부분 실패', result);
   }
   _hookHandlers = attachHooks(_currentDB);
-  // pull 이 못 가져온 '로컬에만 있는' 완료 dailyStats 를 재push — 큐 유실·과거 push 실패 회복.
+  // 3) serverOwned tail (todayLessons 완료 플래그 등) — 서버 삭제 전파 후라 유령 행 부활 없음.
+  try { await flushPendingUploads({ onlyServerOwned: true }); }
+  catch (e) { console.warn('[sync] 아웃박스 후(後) flush 실패', e); }
+  // 4) pull 이 못 가져온 '로컬에만 있는' 완료 dailyStats 를 재push — 큐 유실·과거 push 실패 회복.
   // 서버 직접 upsert(미동기 행만) 라 Dexie hook 미발화 → 루프 없음. 실패해도 startSync 무영향.
   try { await reconcileDailyStats(_currentDB, _currentUserId); }
   catch (e) { console.warn('[sync] reconcileDailyStats', e); }
-  // 급감 가드에 막혀 서버-빈 채로 남는 sessionLogs/reviewQueue 를 멀티기기 동기화 (누락 행만 직접 upsert).
+  // 급감 가드에 막혀 서버-빈 채로 남는 기기-작성 테이블을 멀티기기 동기화 (누락 행만 직접 upsert).
   // 기존 유저(일부 테이블만 서버-빈)에서 다른 브라우저·iOS PWA 가 0 으로 보이던 버그 보강. 실패해도 무영향.
+  // mathQueue 는 앱 코드가 쓰지 않는 테이블(로컬 생성 행 0) → 대상 아님. mathProblems/todayLessons 는 serverOwned.
   try {
-    for (const dexie of ['sessionLogs', 'reviewQueue']) {
+    for (const dexie of ['sessionLogs', 'reviewQueue', 'pronunciationLog']) {
       const m = TABLE_MAP.find((x) => x.dexie === dexie);
       if (m) await reconcileTable(_currentDB, _currentUserId, m);
     }
   } catch (e) { console.warn('[sync] reconcileTable', e); }
+  try { await reconcilePrRecords(_currentDB, _currentUserId); }
+  catch (e) { console.warn('[sync] reconcilePrRecords', e); }
   return result;
 }
 
@@ -1112,6 +1307,9 @@ export async function stopSync() {
   _currentDB = null;
   _currentUserId = null;
   _syncActive = false;
+  // 아웃박스 localStorage 항목은 지우지 않는다 — flush 가 실패한 미푸시 id 는 다음 로그인의
+  // startSync 가 복원해 재시도해야 한다 (로그아웃이 유실 사유가 되면 안 됨).
+  _outboxKey = null;
   // Wave 11.13.3 — server count 마킹은 다음 startSync 의 pullAll 이 다시 채움
   _serverCounts.clear();
 }
@@ -1250,6 +1448,7 @@ export const Sync = {
   pushDailyStats,
   reconcileDailyStats,
   reconcileTable,
+  reconcilePrRecords,
   userMetaDexieToSupabase,
   userMetaSupabaseToDexie,
   pullUserMeta,
@@ -1271,6 +1470,7 @@ export const Sync = {
   startSync,
   stopSync,
   isSyncActive,
+  currentSyncHealth,
 };
 
 if (typeof window !== 'undefined') {

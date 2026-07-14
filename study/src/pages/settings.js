@@ -4,6 +4,8 @@
  */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
+import { Sync } from '../db/sync.js';
+import { syncStatus } from '../services/syncHealth.js';
 
 const VG_CSS = `
 .vg{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;word-break:keep-all;${V_VARS}}
@@ -19,6 +21,7 @@ const VG_CSS = `
 .vg-row:first-of-type{border-top:0}
 .vg-row .t{font-size:14.5px;font-weight:600}
 .vg-row .d{font-size:12px;color:var(--faint);margin-top:3px}
+.vg-row .d.vg-risk{color:#dc2626;font-weight:600}
 .vg-row .grow{flex:1}
 .vg-step{display:inline-flex;align-items:center;gap:14px}
 .vg-step button{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);font:inherit;font-size:15px;font-weight:700;cursor:pointer;display:grid;place-items:center}
@@ -134,6 +137,14 @@ export function mountSettings(host) {
     const email = window.studyAuth?.currentUserEmail?.() || (await currentEmail());
     const el = root.querySelector('#acctEmail');
     if (el && email) el.textContent = email;
+    // '마지막 동기화 —' 는 지금까지 아무도 채우지 않는 자리표시자였다 (거짓 UI).
+    // 실제 flush 결과를 표시하고, 미푸시분이 오래 남아 있으면 붉게 경고한다.
+    const sync = root.querySelector('#syncTime');
+    if (sync) {
+      const st = syncStatus(Sync.currentSyncHealth());
+      sync.textContent = st.text;
+      sync.classList.toggle('vg-risk', st.level === 'risk');
+    }
   })();
 
   function hydrate() {

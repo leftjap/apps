@@ -240,3 +240,7 @@
 .d1-chip.rec-done{background:#fff;color:var(--terra);border-color:var(--terra)}
 @keyframes scorePop{0%{transform:scale(1.55) translateY(-10px);opacity:0}60%{transform:scale(1.06) translateY(1px);opacity:1}100%{transform:scale(1) translateY(0)}}
 .score-pop{animation:scorePop .45s cubic-bezier(.2,.8,.3,1.1)}
+
+/* 동기화 위험 배너 (home.js showSyncRisk) — 미푸시 기록이 24h+ 클라우드에 못 올라간 상태만 노출 */
+.sync-risk{display:block;width:100%;border:0;border-bottom:1px solid #fecaca;background:#fef2f2;color:#b91c1c;font-family:inherit;font-size:13px;font-weight:600;text-align:left;padding:11px 20px;cursor:pointer;word-break:keep-all}
+.sync-risk:hover{background:#fee2e2}

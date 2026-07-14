@@ -11,6 +11,7 @@
 
 import { todayPlusDays } from './srs.js';
 import { applyLangMeta } from './langMeta.js';
+import { flushPendingUploads } from '../db/sync.js';
 
 function newId(prefix = 's') {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -120,6 +121,11 @@ export async function finishSession(db, params) {
       });
     }
   }
+
+  // spec §4 (line 223) "세션 완료 시 즉시 동기화" — 3초 debounce 를 기다리지 않는다.
+  // 세션의 산출물(sessionLog + dailyStats + 카드 이관)이 가장 크고, 완료 직후 앱을 닫는 게 정상 흐름이라
+  // 이 시점이 유실 노출의 정점이었다. 실패해도 로컬(Dexie)이 정본이고 아웃박스가 재시도 → await 안 함.
+  flushPendingUploads().catch((e) => console.warn('[sessionFinish] 즉시 flush 실패', e?.message || e));
 
   return log;
 }
