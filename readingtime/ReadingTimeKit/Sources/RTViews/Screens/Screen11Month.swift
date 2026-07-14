@@ -19,71 +19,83 @@ public struct Screen11Month: View {
     }
 
     var model: RTAppModel?
-    private let live: Live?
+    let live: Live?
 
     public init(model: RTAppModel? = nil) {
         self.model = model
-        if let m = model, let data = m.userData {
-            let cal = Calendar(identifier: .gregorian)
-            let now = m.now()
-            let year = cal.component(.year, from: now)
-            let month = cal.component(.month, from: now)
-            let todayDay = cal.component(.day, from: now)
-            let daysInMonth = cal.range(of: .day, in: .month, for: now)?.count ?? 30
-            let first = cal.date(from: DateComponents(year: year, month: month, day: 1))!
-            let monOffset = (cal.component(.weekday, from: first) + 5) % 7   // 월=0
-            let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
-            var monthTotal = 0
-            var readDaySet = Set<Int>()
-            var perDayTop: [Int: (isbn: String, sec: Int)] = [:]
-            for s in data.sessions {
-                guard cal.component(.month, from: s.endedAt) == month,
-                      cal.component(.year, from: s.endedAt) == year else { continue }
-                let d = cal.component(.day, from: s.endedAt)
-                monthTotal += s.seconds
-                readDaySet.insert(d)
-                if let isbn = s.isbn, s.seconds > (perDayTop[d]?.sec ?? -1) {
-                    perDayTop[d] = (isbn, s.seconds)
-                }
-            }
-            // 밀리(전자책) 일별 합산 — 총 시간·읽은 날 포함 (스펙 §11 "밀리 포함")
-            var ebookDayCover: [Int: String] = [:]   // 밀리로만 읽은 날 = 그 전자책 표지 (스펙)
-            for d in 1...daysInMonth {
-                if let date = cal.date(from: DateComponents(year: year, month: month, day: d)) {
-                    let sec = m.ebookSeconds(on: date)
-                    if sec > 0 {
-                        monthTotal += sec
-                        readDaySet.insert(d)
-                        if perDayTop[d] == nil,
-                           let t = m.ebookBreakdown(on: date).first?.title,
-                           let c = m.ebookCovers[t] { ebookDayCover[d] = c }
-                    }
-                }
-            }
-            var finishDays = Set<Int>()
-            for b in data.books {
-                if let f = b.finishedAt, cal.component(.month, from: f) == month,
-                   cal.component(.year, from: f) == year {
-                    finishDays.insert(cal.component(.day, from: f))
-                }
-            }
-            var cells: [LiveCell?] = Array(repeating: nil, count: monOffset)
-            for d in 1...daysInMonth {
-                cells.append(LiveCell(
-                    d: d,
-                    coverUrl: readDaySet.contains(d) ? (perDayTop[d].flatMap { covers[$0.isbn] } ?? ebookDayCover[d]) : nil,
-                    dot: finishDays.contains(d),
-                    today: d == todayDay,
-                    future: d > todayDay))
-            }
-            self.live = Live(title: "\(year)년 \(month)월",
-                             totalHM: RTAppModel.hmString(monthTotal),
-                             readDays: readDaySet.count,
-                             elapsedDays: todayDay,
-                             cells: cells)
+        let partner = model?.statsSubject == .partner
+        if partner, let m = model, let pd = m.partnerData {
+            // 파트너 월간 — 파트너 데이터만 (파트너 밀리는 미수집 → 종이 세션만)
+            self.live = Self.buildLive(data: pd, now: m.now())
+        } else if !partner, let m = model, let data = m.userData {
+            // 내 월간 — 종이 세션 + 내 밀리(전자책) 합산
+            self.live = Self.buildLive(data: data, now: m.now(),
+                ebookSec: { m.ebookSeconds(on: $0) },
+                ebookCover: { date in (m.ebookBreakdown(on: date).first?.title).flatMap { m.ebookCovers[$0] } })
         } else {
             self.live = nil
         }
+    }
+
+    /// 월간 집계 — 주체별 데이터 소스는 init 이 결정. ebook 클로저로 밀리 주입
+    /// (내 통계만; 파트너는 기본값 = 밀리 없음). 데모(data 없음)는 init 이 nil 처리.
+    static func buildLive(data: RTUserData, now: Date,
+                          ebookSec: (Date) -> Int = { _ in 0 },
+                          ebookCover: (Date) -> String? = { _ in nil }) -> Live {
+        let cal = Calendar(identifier: .gregorian)
+        let year = cal.component(.year, from: now)
+        let month = cal.component(.month, from: now)
+        let todayDay = cal.component(.day, from: now)
+        let daysInMonth = cal.range(of: .day, in: .month, for: now)?.count ?? 30
+        let first = cal.date(from: DateComponents(year: year, month: month, day: 1))!
+        let monOffset = (cal.component(.weekday, from: first) + 5) % 7   // 월=0
+        let covers = Dictionary(uniqueKeysWithValues: data.books.map { ($0.isbn, $0.coverUrl) })
+        var monthTotal = 0
+        var readDaySet = Set<Int>()
+        var perDayTop: [Int: (isbn: String, sec: Int)] = [:]
+        for s in data.sessions {
+            guard cal.component(.month, from: s.endedAt) == month,
+                  cal.component(.year, from: s.endedAt) == year else { continue }
+            let d = cal.component(.day, from: s.endedAt)
+            monthTotal += s.seconds
+            readDaySet.insert(d)
+            if let isbn = s.isbn, s.seconds > (perDayTop[d]?.sec ?? -1) {
+                perDayTop[d] = (isbn, s.seconds)
+            }
+        }
+        // 밀리(전자책) 일별 합산 — 총 시간·읽은 날 포함 (스펙 §11 "밀리 포함")
+        var ebookDayCover: [Int: String] = [:]   // 밀리로만 읽은 날 = 그 전자책 표지 (스펙)
+        for d in 1...daysInMonth {
+            if let date = cal.date(from: DateComponents(year: year, month: month, day: d)) {
+                let sec = ebookSec(date)
+                if sec > 0 {
+                    monthTotal += sec
+                    readDaySet.insert(d)
+                    if perDayTop[d] == nil, let c = ebookCover(date) { ebookDayCover[d] = c }
+                }
+            }
+        }
+        var finishDays = Set<Int>()
+        for b in data.books {
+            if let f = b.finishedAt, cal.component(.month, from: f) == month,
+               cal.component(.year, from: f) == year {
+                finishDays.insert(cal.component(.day, from: f))
+            }
+        }
+        var cells: [LiveCell?] = Array(repeating: nil, count: monOffset)
+        for d in 1...daysInMonth {
+            cells.append(LiveCell(
+                d: d,
+                coverUrl: readDaySet.contains(d) ? (perDayTop[d].flatMap { covers[$0.isbn] } ?? ebookDayCover[d]) : nil,
+                dot: finishDays.contains(d),
+                today: d == todayDay,
+                future: d > todayDay))
+        }
+        return Live(title: "\(year)년 \(month)월",
+                    totalHM: RTAppModel.hmString(monthTotal),
+                    readDays: readDaySet.count,
+                    elapsedDays: todayDay,
+                    cells: cells)
     }
 
     struct Cell {
