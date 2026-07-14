@@ -239,24 +239,55 @@ import Testing
 
     // MARK: - 세션 마감 (finalizeActiveSession 정합 — §7-1·§8)
 
+    /// KST iso 날짜 + 시각 → epoch ms.
+    func kstMillis(_ iso: String, hour: Int) -> Int64 {
+        let midnight = GymWeightLogic.isoFmt.date(from: iso)!
+        return Int64((midnight.timeIntervalSince1970 + Double(hour) * 3600) * 1000)
+    }
+
     @Test func finalizePrunesAndComputes() {
-        let s = GymSession(id: "f1", date: "2026-07-09", startTime: 1_000_000, blocks: [
+        let start = kstMillis("2026-07-09", hour: 19)
+        let s = GymSession(id: "f1", date: "2026-07-09", startTime: start, blocks: [
             GymBlock(exerciseId: "bench_press", sets: [
                 GymSet(weight: 60, reps: 10, done: true),
                 GymSet(weight: 65, reps: 10, preset: true)]),      // 미완료 세트 폐기
             GymBlock(exerciseId: "dumbbell_fly", sets: [
                 GymSet(weight: 18, reps: 12, preset: true)]),       // done 0 → 블록 통째 제거
         ], tags: ["chest"], status: .active)
-        let f = GymSessionLogic.finalize(s, endTime: 1_000_000 + 52 * 60_000)
+        let f = GymSessionLogic.finalize(s, endTime: start + 52 * 60_000)
         #expect(f.status == .completed)
         #expect(f.blocks.count == 1)
         #expect(f.blocks[0].sets.count == 1)
         #expect(f.totalVolume == 600)
         #expect(f.durationMin == 52)
-        #expect(f.date == "2026-07-09")   // 세션 생성일 유지 (PWA 정합)
+        #expect(f.date == "2026-07-09")   // 당일 완결 — 날짜 불변
         // durationMin 최소 1
-        let quick = GymSessionLogic.finalize(s, endTime: 1_000_001)
+        let quick = GymSessionLogic.finalize(s, endTime: start + 1)
         #expect(quick.durationMin == 1)
+    }
+
+    // 전날 생성돼 방치된 빈 활성 세션을 오늘 재사용하면(startSession 이 active 면 그대로 씀),
+    // 세션 date 는 어제인 채로 오늘 운동이 기록된다 → 홈 캘린더가 어제에 도트를 찍던 결함.
+    // 귀속일은 세션 생성일이 아니라 실제 운동 시각(startTime = 첫 종목 추가) 기준이어야 한다.
+    @Test func finalizeReDatesToActualWorkoutDay() {
+        let start = kstMillis("2026-07-14", hour: 1)      // 화요일 01:00 에 실제 운동
+        let s = GymSession(id: "stale", date: "2026-07-13",   // 월요일에 생성된 세션을 재사용
+                           startTime: start,
+                           blocks: [GymBlock(exerciseId: "squat",
+                                             sets: [GymSet(weight: 100, reps: 5, done: true)])],
+                           status: .active)
+        let f = GymSessionLogic.finalize(s, endTime: start + 40 * 60_000)
+        #expect(f.date == "2026-07-14")
+    }
+
+    // startTime 이 없는 세션(첫 종목 전 마감)은 endTime 으로 폴백.
+    @Test func finalizeFallsBackToEndTimeWhenNoStart() {
+        let end = kstMillis("2026-07-14", hour: 9)
+        let s = GymSession(id: "nostart", date: "2026-07-13", startTime: nil,
+                           blocks: [GymBlock(exerciseId: "squat",
+                                             sets: [GymSet(weight: 60, reps: 5, done: true)])],
+                           status: .active)
+        #expect(GymSessionLogic.finalize(s, endTime: end).date == "2026-07-14")
     }
 
     @Test func staleSessionEndTimeUsesLastActivity() {

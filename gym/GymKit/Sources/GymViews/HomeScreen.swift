@@ -16,7 +16,7 @@ public struct HomeScreenView: View {
         self.model = GymAppModel(); self.onStart = onStart; self.onStats = onStats; self.onAdmin = {}
     }
 
-    // 부위 밸런스 — home.js summarizeWeeklyBalance (롤링 7일·고정 순서 하체~코어·유산소 별도 행).
+    // 부위 밸런스 — GymHomeLogic.weeklyBalance (캘린더 주 비교·고정 순서 하체~코어·유산소 별도 행).
 
     // 진행 중 세션 존재 → HomeC(이어하기), 아니면 HomeA(idle) — mocks home.html 이중 분기 (spec §5-5).
     var isActiveSession: Bool {
@@ -241,7 +241,9 @@ public struct HomeScreenView: View {
                             .foregroundStyle(d.isToday ? .white : (d.worked ? GY.ink2 : GY.ink4))
                         if d.worked {
                             // 시안 #6a 실측 — 도트 중심이 28px 원 중심에서 19px 아래 (원 밖).
-                            Circle().fill(d.isToday ? Color.white : GY.crailBase)
+                            // 원 밖 = 셸 배경 위이므로 대비 상대는 배경이다. 오늘 셀만 흰색으로 칠하면
+                            // 크림 배경에 묻혀 "오늘 운동함" 신호가 사라진다 (실측 255,255,255 vs 배경 253,253,253).
+                            Circle().fill(GY.crailBase)
                                 .frame(width: 4, height: 4).offset(y: 19)
                         }
                     }.frame(height: 28)

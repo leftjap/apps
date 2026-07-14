@@ -267,6 +267,10 @@ public enum GymSessionLogic {
         s.endTime = endTime
         let start = s.startTime ?? endTime
         s.durationMin = max(1, Int((Double(endTime - start) / 60_000).rounded()))
+        // 귀속일 = 실제 운동 시각(startTime = 첫 종목 추가 순간, 없으면 endTime) 의 KST 날짜.
+        // 세션 생성일을 그대로 쓰면, 전날 만들어져 방치된 활성 세션을 오늘 재사용할 때
+        // (startSession 은 active 세션이 있으면 그대로 씀) 오늘 운동이 어제로 기록된다.
+        s.date = GymWeightLogic.isoFmt.string(from: Date(timeIntervalSince1970: Double(start) / 1000))
         s.status = .completed
         return s
     }

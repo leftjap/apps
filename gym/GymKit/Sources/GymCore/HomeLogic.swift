@@ -7,8 +7,9 @@ public struct GymNextBlockPreview: Equatable, Sendable {
     public init(name: String, summary: String) { self.name = name; self.summary = summary }
 }
 
-// 홈 부위 밸런스 — PWA home.js summarizeWeeklyBalance 1:1 포팅.
-// 롤링 7일 창([today-6, today] vs [today-13, today-7]) · 고정 부위순서 · 유산소 별도 행 · core 흡수.
+// 홈 부위 밸런스 — 캘린더 주 비교(이번 주 월~일 vs 지난 주 월~일) · 고정 부위순서 · 유산소 별도 행 · core 흡수.
+// 범례("지난주 / 이번 주")·상단 주간 캘린더(월~일)와 같은 기준. 구현은 롤링 7일이었어서 화요일에도
+// "이번 주" 가 지난주 수·목까지 합산되던 불일치를 바로잡았다.
 public enum GymHomeLogic {
 
     public struct BalancePart: Equatable, Sendable {
@@ -43,9 +44,13 @@ public enum GymHomeLogic {
                                      now: Date) -> WeeklyBalance {
         let cal = GymWeightLogic.kst
         let fmt = GymWeightLogic.isoFmt
-        func shift(_ n: Int) -> String { fmt.string(from: cal.date(byAdding: .day, value: n, to: now) ?? now) }
-        let todayISO = fmt.string(from: now)
-        let thisFrom = shift(-6), prevTo = shift(-7), prevFrom = shift(-13)
+        // 이번 주 월요일 (KST). GymWeightLogic.kst 는 firstWeekday 미설정(일요일 시작)이라
+        // weekOfYear 대신 weekday 성분으로 직접 계산한다 (1=일 … 7=토 → 월요일까지의 offset).
+        let weekday = cal.component(.weekday, from: now)
+        let monday = cal.date(byAdding: .day, value: -((weekday + 5) % 7), to: now) ?? now
+        func shift(_ n: Int) -> String { fmt.string(from: cal.date(byAdding: .day, value: n, to: monday) ?? monday) }
+        let thisFrom = shift(0), thisTo = shift(6)      // 이번 주 월~일
+        let prevFrom = shift(-7), prevTo = shift(-1)    // 지난 주 월~일
 
         var thisSets: [String: Int] = [:], prevSets: [String: Int] = [:]
         var cardioMin = 0.0, prevCardioMin = 0.0
@@ -70,7 +75,7 @@ public enum GymHomeLogic {
             }
         }
         for s in sessions {
-            if s.date >= thisFrom && s.date <= todayISO { accumulate(s, isThisWeek: true) }
+            if s.date >= thisFrom && s.date <= thisTo { accumulate(s, isThisWeek: true) }
             else if s.date >= prevFrom && s.date <= prevTo { accumulate(s, isThisWeek: false) }
         }
 

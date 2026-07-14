@@ -70,6 +70,29 @@ public enum GymScreens {
         return m
     }
 
+    // 홈 회귀 시나리오 — "어제(월 7/13) 앱만 열어 빈 활성 세션이 생기고, 오늘(화 7/14) 01:00 에 운동".
+    // 세션 date 는 어제인 채로 운동이 진행되므로, finalize 가 실제 운동 시각으로 재귀속해야
+    // 캘린더 도트·직전 운동이 '오늘' 로 찍힌다 (구결함: 어제에 찍힘).
+    @MainActor static func demoStaleDayModel() -> GymAppModel {
+        let stale = GymSession(id: "stale-empty", date: "2026-07-13", status: .active)  // 어제 생긴 빈 세션
+        let m = GymAppModel(snapshotSession: stale)
+        if let d = GymAppModel.dayFmt.date(from: "2026-07-14") { m.referenceToday = d }
+        let midnight = GymAppModel.dayFmt.date(from: "2026-07-14")!.timeIntervalSince1970
+        let start = Int64((midnight + 3600) * 1000)      // 오늘 01:00 에 첫 종목 추가
+        let todays = GymSession(id: "todays", date: "2026-07-13", startTime: start, blocks: [
+            GymBlock(exerciseId: "squat",
+                     sets: (0..<5).map { _ in GymSet(weight: 100, reps: 5, done: true) }),
+            GymBlock(exerciseId: "shoulder_press",
+                     sets: (0..<4).map { _ in GymSet(weight: 40, reps: 10, done: true) }),
+        ], tags: ["legs", "shoulder"], status: .active)
+        let lastWeek = GymSession(id: "lw", date: "2026-07-08", blocks: [
+            GymBlock(exerciseId: "bench_press",
+                     sets: (0..<6).map { _ in GymSet(weight: 60, reps: 10, done: true) }),
+        ], tags: ["chest"], status: .completed)
+        m.history = [GymSessionLogic.finalize(todays, endTime: start + 40 * 60_000), lastWeek]
+        return m
+    }
+
     @MainActor
     public static func snapshotView(id: String) -> AnyView? {
         GymSnapshot.isActive = true
@@ -93,6 +116,7 @@ public enum GymScreens {
         case "stats-ex":     return AnyView(StatsScreenView(model: demoModel(), initialTab: .exercise, embedScroll: false).frame(width: 390, height: 844))
         case "stats-body":   return AnyView(StatsScreenView(model: demoModel(), initialTab: .body, embedScroll: false).frame(width: 390, height: 844))
         case "home":         return AnyView(HomeScreenView(model: demoIdleModel()).frame(width: 390, height: 844))
+        case "home-stale":   return AnyView(HomeScreenView(model: demoStaleDayModel()).frame(width: 390, height: 844))
         case "home-active":  return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))
         case "admin":        return AnyView(AdminScreenView(model: demoModel(), initialTab: .ex, embedScroll: false).frame(width: 390, height: 844))
         case "admin-weight": return AnyView(AdminScreenView(model: demoModel(), initialTab: .weight, embedScroll: false).frame(width: 390, height: 844))

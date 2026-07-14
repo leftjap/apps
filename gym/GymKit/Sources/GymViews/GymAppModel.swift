@@ -391,10 +391,12 @@ public final class GymAppModel: ObservableObject {
     }
 
     // 지난 날짜 방치 active 세션 자동 마감 (§8 — sweepStaleSessions 정합, 앱 부트 시 호출).
-    // done 세트 있으면 마지막 활동 시각으로 finalize 해 이력 보존, 없으면 폐기.
+    // done 세트 있으면 마지막 활동 시각으로 finalize 해 이력 보존, 없으면 폐기 → 오늘 날짜 빈 세션으로 교체.
+    // 빈(blocks 없는) 세션도 교체 대상이다 — 어제 앱만 열어 생긴 빈 활성 세션을 startSession 이
+    // 그대로 재사용해(active 면 새로 안 만듦) 오늘 운동이 어제 날짜로 기록되던 결함.
     func sweepStaleSessionIfNeeded(now: Date = Date()) {
         let today = Self.dayFmt.string(from: now)
-        guard session.status == .active, !session.blocks.isEmpty, session.date < today else { return }
+        guard session.status == .active, session.date < today else { return }
         let hasDone = session.blocks.contains { $0.sets.contains(where: \.done) }
         if hasDone {
             let last = GymSessionLogic.lastActivityMillis(session)
