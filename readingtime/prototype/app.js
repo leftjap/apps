@@ -605,7 +605,6 @@ function renderStatsMonth() {
           </div>`;
         }).join('')}
       </div>
-      <div class="s11-legend"><span class="s11-fin"></span><span>완독</span></div>
     </div>
   </div>`;
 }

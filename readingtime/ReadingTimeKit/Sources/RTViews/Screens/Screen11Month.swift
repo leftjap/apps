@@ -137,11 +137,8 @@ public struct Screen11Month: View {
                 Rectangle().fill(RT.hair3).frame(height: 1).padding(.top, 14)
                 dowHeader.padding(EdgeInsets(top: 14, leading: 0, bottom: 8, trailing: 0))
                 grid
-                HStack(spacing: 6) {
-                    Circle().fill(RT.green).frame(width: 5, height: 5)
-                    Text("완독").font(.sans(11, 500)).foregroundColor(RT.faint)
-                }
-                .padding(.top, 12)
+                // 시안 §11 "범례 ● 완독 한 줄" 은 사용자 결정으로 제거 (2026-07-14).
+                // 캘린더 셀의 그린 점(완독일)은 유지.
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, 22)
