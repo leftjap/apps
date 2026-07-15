@@ -686,15 +686,12 @@ public final class RTAppModel: ObservableObject {
     public func selectWeek(_ i: Int) { weekSel = i }
 
     // ── 15 지도 (작업지시서 §5·§9 State) ──
-    @Published public var mapScale = RTRecord.defaultView.scale
-    @Published public var mapTx = RTRecord.defaultView.tx
-    @Published public var mapTy = RTRecord.defaultView.ty
+    // 카메라(팬·줌)는 MapKit(Screen15Map)이 소유 — §5.1 "투영·팬·줌·클러스터 로직은 SDK가 대체".
+    // 모델은 시트/책 상세 상태만 관리한다.
     /// 장소 시트 — 열린 place id 들 (nil = 닫힘)
     @Published public var placeSheet: [String]?
     /// 책 상세 시트 — 책 인덱스 (nil = 닫힘). 장소 시트 위에 겹쳐 열림.
     @Published public var recordBook: Int?
-    /// 팬 중 이동량 5px 초과 여부 — 드래그였던 pointerup 의 탭을 무시(§5.6-1)
-    public var mapMoved = false
 
     /// 지도·시트가 쓰는 데이터 — 위치 기록이 있으면 실데이터, 없으면 시안 데모(§12).
     /// (위치 획득(CoreLocation)은 §16 미확정 → 실데이터에 placeId 가 붙기 전까진 데모 경로)
@@ -706,32 +703,10 @@ public final class RTAppModel: ObservableObject {
         return (RTRecordDemo.places, RTRecordDemo.books)
     }
 
-    public func mapZoom(_ f: Double) {
-        let v = RTRecord.zoomAround(cx: RTRecord.viewportCenter.x, cy: RTRecord.viewportCenter.y, f: f,
-                                    scale: mapScale, tx: mapTx, ty: mapTy)
-        mapScale = v.scale; mapTx = v.tx; mapTy = v.ty
-    }
-    public func mapReset() {
-        mapScale = RTRecord.defaultView.scale
-        mapTx = RTRecord.defaultView.tx
-        mapTy = RTRecord.defaultView.ty
-    }
-    public func mapPan(tx: Double, ty: Double) { mapTx = tx; mapTy = ty }
-
-    /// §5.6 마커 탭 — 클러스터면 fitOrSheet, 단일이면 openTarget
+    /// §5.6 단일 마커 탭 — openTarget(1권 책상세 / N권 시트). 클러스터 탭의 줌 투 핏은 MapKit 뷰가 처리.
     public func tapMarker(_ m: RTRecord.Marker) {
-        guard !mapMoved else { return }
-        let places = recordData.places
-        if m.isCluster { applyFit(RTRecord.fitOrSheet(m.members, scale: mapScale, places: places)) }
-        else { applyTarget(RTRecord.openTarget([m.placeId], places: places)) }
-    }
-    func applyFit(_ r: RTRecord.FitResult) {
-        switch r {
-        case .zoom(let s, let tx, let ty):
-            mapScale = s; mapTx = tx; mapTy = ty; placeSheet = nil
-        case .sheet(let ids): openPlaceSheet(ids)
-        case .book(let b): openRecordBook(b)
-        }
+        guard !m.isCluster else { return }
+        applyTarget(RTRecord.openTarget([m.placeId], places: recordData.places))
     }
     func applyTarget(_ t: RTRecord.Target) {
         switch t {
@@ -837,15 +812,13 @@ public final class RTAppModel: ObservableObject {
         case "week": Int(arg).map { selectWeek($0) }
         case "tick": tick()
         // ── 15 지도 (검증·데모) ──
-        case "mapTapPin":   // 마커 라벨로 탭 (예: mapTapPin:뉴욕)
+        case "mapTapPin":   // 단일 마커 라벨로 탭 (예: mapTapPin:뉴욕) — 헤드리스 기본 뷰 기준
             let rd = recordData
-            RTRecord.markers(scale: mapScale, tx: mapTx, ty: mapTy, places: rd.places, books: rd.books)
+            let v = RTRecord.defaultView
+            RTRecord.markers(scale: v.scale, tx: v.tx, ty: v.ty, places: rd.places, books: rd.books)
                 .first { $0.label == arg }.map { tapMarker($0) }
         case "openPlace": openPlaceSheet(arg.split(separator: "+").map(String.init))
         case "openRecBook": Int(arg).map { openRecordBook($0) }
-        case "mapZoomIn": mapZoom(1.6)
-        case "mapZoomOut": mapZoom(1 / 1.6)
-        case "mapReset": mapReset()
         case "closePlace": closePlaceSheet()
         case "closeRecBook": closeRecordBook()
         default: break

@@ -338,10 +338,14 @@ public enum RTRecord {
     }
 
     // ── §5.3~5.4 클러스터 · 마커 ──
+    // 투영은 SDK가 담당(§5.1) — 클러스터링은 "각 place의 현재 화면좌표" 만 받아 52px 체인으로 묶는다.
+    // 실기기: MapKit 카메라 기준 좌표(MKMapPoint 투영). 헤드리스(rtshot): 목업 등장방형 투영.
     public struct Marker: Sendable, Identifiable {
         public let id: String
-        public let left: CGFloat
-        public let top: CGFloat
+        public let left: CGFloat        // centroid 화면 x (헤드리스 배치용)
+        public let top: CGFloat         // centroid 화면 y
+        public let centroidLat: Double  // centroid 위경도 (MapKit annotation 배치용)
+        public let centroidLng: Double
         public let coverFill: RTFill
         public let coverTC: UInt32
         public let coverTitle: String
@@ -364,11 +368,9 @@ public enum RTRecord {
     static let clusterTH: Double = 52   // 화면 거리 임계 (px)
 
     /// 체인(BFS/LIFO) 클러스터 — 목업 computeMarkers 그대로 (그룹 순서·시드 순서 보존).
-    static func groups(_ places: [RTRecPlace], scale: Double, tx: Double, ty: Double) -> [[Int]] {
-        let pts = places.map { p -> CGPoint in
-            let q = proj(lat: p.lat, lng: p.lng)
-            return CGPoint(x: q.x * scale + tx, y: q.y * scale + ty)
-        }
+    /// screenPos: place → 현재 화면좌표 (투영 주체가 주입).
+    static func groups(_ places: [RTRecPlace], _ screenPos: (RTRecPlace) -> CGPoint) -> [[Int]] {
+        let pts = places.map(screenPos)
         var used = [Bool](repeating: false, count: pts.count)
         var out: [[Int]] = []
         for i in pts.indices where !used[i] {
@@ -389,10 +391,11 @@ public enum RTRecord {
         return out
     }
 
-    public static func markers(scale: Double, tx: Double, ty: Double,
-                               places: [RTRecPlace] = RTRecordDemo.places,
-                               books: [RTRecBook] = RTRecordDemo.books) -> [Marker] {
-        groups(places, scale: scale, tx: tx, ty: ty).enumerated().map { idx, g in
+    /// 마커 파생 — screenPos 로 클러스터링 후 대표표지·배지·스택·라벨·centroid 계산.
+    public static func clusters(_ screenPos: (RTRecPlace) -> CGPoint,
+                                places: [RTRecPlace] = RTRecordDemo.places,
+                                books: [RTRecBook] = RTRecordDemo.books) -> [Marker] {
+        groups(places, screenPos).enumerated().map { idx, g in
             // 그룹 전 세션을 iso 내림차순 (동률은 삽입 순서 유지 = JS 안정 정렬)
             var all: [(b: Int, iso: String, place: Int)] = []
             for gi in g { for se in places[gi].s { all.append((se.book, se.iso, gi)) } }
@@ -407,17 +410,17 @@ public enum RTRecord {
             let distinct = distB.count
             let isCluster = g.count > 1
             let dom = g.max { places[$0].totalMin < places[$1].totalMin }!   // 누적 분 최대
-            let pts = g.map { gi -> CGPoint in
-                let q = proj(lat: places[gi].lat, lng: places[gi].lng)
-                return CGPoint(x: q.x * scale + tx, y: q.y * scale + ty)
-            }
+            let pts = g.map { screenPos(places[$0]) }
             let sx = pts.reduce(0.0) { $0 + $1.x } / Double(g.count)
             let sy = pts.reduce(0.0) { $0 + $1.y } / Double(g.count)
+            let cLat = g.reduce(0.0) { $0 + places[$1].lat } / Double(g.count)
+            let cLng = g.reduce(0.0) { $0 + places[$1].lng } / Double(g.count)
             let w: CGFloat = isCluster ? 36 : 32
 
             return Marker(
                 id: "c\(idx)",
                 left: CGFloat(sx.rounded()), top: CGFloat(sy.rounded()),
+                centroidLat: cLat, centroidLng: cLng,
                 coverFill: rep.fill, coverTC: rep.tc,
                 coverTitle: rep.short.isEmpty ? rep.title : rep.short,
                 count: distinct, showBadge: distinct > 1,
@@ -433,26 +436,23 @@ public enum RTRecord {
         }
     }
 
-    // ── §5.2 줌 ──
-    public static func zoomAround(cx: Double, cy: Double, f: Double,
-                                  scale: Double, tx: Double, ty: Double)
-        -> (scale: Double, tx: Double, ty: Double) {
-        let ns = clamp(scale * f, 0.34, 4.2)
-        let k = ns / scale
-        return (ns, cx - (cx - tx) * k, cy - (cy - ty) * k)
+    /// 헤드리스(rtshot) · 엔진 테스트용 — 목업 등장방형 투영(scale·tx·ty)으로 클러스터.
+    public static func markers(scale: Double, tx: Double, ty: Double,
+                               places: [RTRecPlace] = RTRecordDemo.places,
+                               books: [RTRecBook] = RTRecordDemo.books) -> [Marker] {
+        clusters({ p in
+            let q = proj(lat: p.lat, lng: p.lng)
+            return CGPoint(x: q.x * scale + tx, y: q.y * scale + ty)
+        }, places: places, books: books)
     }
+
+    /// 헤드리스 정적 렌더용 기본 뷰 (목업 기본 뷰 — 실기기는 MapKit 카메라가 대체)
     public static let defaultView: (scale: Double, tx: Double, ty: Double) = (0.46, -88, 258)
-    public static let viewportCenter = CGPoint(x: 195, y: 373)
 
     // ── §5.6 탭 규칙 ──
     public enum Target: Equatable, Sendable {
         case book(Int)
         case sheet([String])
-    }
-    public enum FitResult: Equatable, Sendable {
-        case zoom(scale: Double, tx: Double, ty: Double)
-        case sheet([String])
-        case book(Int)
     }
 
     static func place(_ id: String, _ places: [RTRecPlace]) -> RTRecPlace {
@@ -470,30 +470,10 @@ public enum RTRecord {
         return out
     }
 
-    /// distinct 책 1권 → 책 상세 직행, 2권 이상 → 장소 시트
+    /// 단일 place 탭 — distinct 책 1권 → 책 상세 직행, 2권 이상 → 장소 시트 (§5.6-4)
     public static func openTarget(_ ids: [String], places: [RTRecPlace] = RTRecordDemo.places) -> Target {
         let db = distinctBooks(ids, places: places)
         return db.count == 1 ? .book(db[0]) : .sheet(ids)
-    }
-
-    /// 클러스터 탭 — 줌 투 핏, 더 못 나뉘면(raw > 5.6) openTarget
-    public static func fitOrSheet(_ ids: [String], scale: Double,
-                                  places: [RTRecPlace] = RTRecordDemo.places) -> FitResult {
-        let ps = ids.map { place($0, places) }
-        let xs = ps.map { proj(lat: $0.lat, lng: $0.lng).x }
-        let ys = ps.map { proj(lat: $0.lat, lng: $0.lng).y }
-        let minx = xs.min()!, maxx = xs.max()!, miny = ys.min()!, maxy = ys.max()!
-        let bw = max(maxx - minx, 4), bh = max(maxy - miny, 4)
-        let raw = min(320 / bw, 300 / bh)
-        if raw > 5.6 {
-            switch openTarget(ids, places: places) {
-            case .book(let b): return .book(b)
-            case .sheet(let s): return .sheet(s)
-            }
-        }
-        let cx = (minx + maxx) / 2, cy = (miny + maxy) / 2
-        let ns = clamp(max(raw, scale * 1.5), 0.46, 5.6)
-        return .zoom(scale: ns, tx: 195 - cx * ns, ty: 360 - cy * ns)
     }
 
     // ── §6 장소 시트 ──

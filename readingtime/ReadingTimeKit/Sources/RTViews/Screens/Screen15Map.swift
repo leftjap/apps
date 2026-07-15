@@ -1,10 +1,15 @@
 import SwiftUI
+import MapKit
 
-// 15 기록 · 지도 — 정본: 작업지시서 §5 + mockups/RTRecord.dc.html.
-// 지형(대륙 타원)은 목업과 동일한 플레이스홀더. 투영·팬/줌·클러스터 규칙은 엔진(RTRecord)에 있고
-// 이 화면은 렌더만 한다. 지도 SDK 로 교체 시 RTMapWorld 만 갈아끼우면 된다(§0·§16).
+// 15 기록 · 지도 — 정본: 작업지시서 §5.
+// §0·§5.1·§14: 지형은 **실제 지도 SDK(MapKit)** 로 그리고, 그 위에 이 문서가 정의하는
+// 핀 / 클러스터 / 배지 / 시트 / 책 상세 레이어를 얹는다. 투영·팬·줌은 MapKit이 담당하고,
+// UI·상호작용 규칙(52px 체인 클러스터, 탭 분기)은 동일하게 유지한다.
+//
+// 헤드리스(rtshot)는 MapKit 타일을 렌더하지 못하므로, 픽셀 오라클 검증용으로만 목업의
+// 손그림 플레이스홀더(등장방형 월드)를 쓴다 — 실기기·데모 셸(rtapp)은 항상 MapKit.
 
-// ── 스킨 (§11) — mapStyle 기본 'paper' (확정) ──
+// ── 스킨 (핀 프레임 색 — MapKit 위/플레이스홀더 위 공용) ──
 public struct RTMapSkin {
     public let land: Color
     public let landStroke: Color
@@ -41,27 +46,24 @@ public struct RTMapSkin {
 }
 
 public struct Screen15Map: View {
+    @Environment(\.rtHeadless) private var headless
     var model: RTAppModel?
     private let skin = RTMapSkin.paper
 
     static let viewportH: CGFloat = 844 - 98   // 지도 전면 (top:98)
+    static let mapSize = CGSize(width: 390, height: viewportH)
+
+    @State private var camera: MapCameraPosition = .automatic
+    @State private var visibleRect: MKMapRect?
+    @State private var region: MKCoordinateRegion?
 
     public init(model: RTAppModel? = nil) { self.model = model }
 
-    private var scale: Double { model?.mapScale ?? RTRecord.defaultView.scale }
-    private var tx: Double { model?.mapTx ?? RTRecord.defaultView.tx }
-    private var ty: Double { model?.mapTy ?? RTRecord.defaultView.ty }
-    /// 위치 기록이 있으면 실데이터, 없으면 시안 데모(§12)
     private var rd: (places: [RTRecPlace], books: [RTRecBook]) {
         model?.recordData ?? (RTRecordDemo.places, RTRecordDemo.books)
     }
-    private var markers: [RTRecord.Marker] {
-        let d = rd
-        return RTRecord.markers(scale: scale, tx: tx, ty: ty, places: d.places, books: d.books)
-    }
-    /// §5.5 통계 칩 — 데모는 시안 상수, 실데이터는 집계(도시 수).
-    /// (목업의 "5개 대륙" 은 데이터에서 파생되지 않는 표시 상수 — 대륙 판정 규칙이 스펙에 없어
-    ///  실데이터에선 도시 수만 집계한다)
+
+    /// §5.5 통계 칩 — 데모는 시안 상수, 실데이터는 도시 수 집계.
     private var chipText: String {
         let places = rd.places
         let isDemo = places.count == RTRecordDemo.places.count
@@ -72,60 +74,110 @@ public struct Screen15Map: View {
     public var body: some View {
         ZStack(alignment: .top) {
             RT.paper
-            mapArea
-                .frame(width: 390, height: Self.viewportH)
-                .clipped()
-                .padding(.top, 98)
+            Group {
+                if headless { headlessMap } else { realMap }
+            }
+            .frame(width: 390, height: Self.viewportH)
+            .clipped()
+            .padding(.top, 98)
+            .overlay(alignment: .topLeading) { chip.padding(.top, 98) }
+            .overlay(alignment: .bottomTrailing) { zoomControls }
             StatsHeader(active: .map, model: model)
         }
         .frame(width: 390, height: 844)
     }
 
-    var mapArea: some View {
-        RTMapOcean()
+    // ── 실기기 · 데모 셸: MapKit ──
+    var realMap: some View {
+        Map(position: $camera, interactionModes: [.pan, .zoom]) {
+            ForEach(realClusters) { m in
+                Annotation("", coordinate: CLLocationCoordinate2D(latitude: m.centroidLat,
+                                                                  longitude: m.centroidLng),
+                           anchor: .bottom) {
+                    RTMapPin(m: m, skin: skin)
+                        .onTapGesture { tap(m) }
+                }
+            }
+        }
+        .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+        .onMapCameraChange(frequency: .continuous) { ctx in
+            visibleRect = ctx.rect
+            region = ctx.region
+        }
+        .onAppear { if region == nil { camera = .region(allRegion()) } }
+    }
+
+    /// MapKit 카메라(MKMapPoint 투영) 기준 화면좌표로 52px 체인 클러스터.
+    private var realClusters: [RTRecord.Marker] {
+        guard let rect = visibleRect, rect.size.width > 0 else { return [] }
+        let sz = Self.mapSize
+        return RTRecord.clusters({ p in
+            let mp = MKMapPoint(CLLocationCoordinate2D(latitude: p.lat, longitude: p.lng))
+            return CGPoint(x: (mp.x - rect.origin.x) / rect.size.width * sz.width,
+                           y: (mp.y - rect.origin.y) / rect.size.height * sz.height)
+        }, places: rd.places, books: rd.books)
+    }
+
+    // §5.6 탭 — 클러스터면 줌 투 핏(카메라), 단일이면 openTarget(모델)
+    private func tap(_ m: RTRecord.Marker) {
+        if m.isCluster { fitMembers(m.members) } else { model?.tapMarker(m) }
+    }
+
+    private func fitMembers(_ ids: [String]) {
+        let coords = ids.compactMap { id in rd.places.first { $0.id == id } }
+            .map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
+        guard !coords.isEmpty else { return }
+        withAnimation(.easeInOut(duration: 0.5)) { camera = .region(fitRegion(coords, pad: 2.4, min: 0.03)) }
+    }
+
+    private func allRegion() -> MKCoordinateRegion {
+        let coords = rd.places.map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
+        guard !coords.isEmpty else { return MKCoordinateRegion(.world) }
+        return fitRegion(coords, pad: 1.5, min: 8, maxLat: 140, maxLng: 320)
+    }
+
+    private func fitRegion(_ coords: [CLLocationCoordinate2D], pad: Double, min minSpan: Double,
+                           maxLat: Double = 160, maxLng: Double = 340) -> MKCoordinateRegion {
+        let lats = coords.map(\.latitude), lngs = coords.map(\.longitude)
+        let center = CLLocationCoordinate2D(latitude: (lats.min()! + lats.max()!) / 2,
+                                            longitude: (lngs.min()! + lngs.max()!) / 2)
+        let span = MKCoordinateSpan(
+            latitudeDelta: Swift.min(maxLat, Swift.max(minSpan, (lats.max()! - lats.min()!) * pad)),
+            longitudeDelta: Swift.min(maxLng, Swift.max(minSpan, (lngs.max()! - lngs.min()!) * pad)))
+        return MKCoordinateRegion(center: center, span: span)
+    }
+
+    private func zoom(_ factor: Double) {
+        guard let r = region else { return }
+        let span = MKCoordinateSpan(
+            latitudeDelta: Swift.min(160, Swift.max(0.002, r.span.latitudeDelta * factor)),
+            longitudeDelta: Swift.min(340, Swift.max(0.002, r.span.longitudeDelta * factor)))
+        withAnimation(.easeInOut(duration: 0.3)) { camera = .region(MKCoordinateRegion(center: r.center, span: span)) }
+    }
+
+    // ── 헤드리스(rtshot 픽셀 오라클): 목업 플레이스홀더 등장방형 월드 ──
+    var headlessMap: some View {
+        let v = RTRecord.defaultView
+        let markers = RTRecord.markers(scale: v.scale, tx: v.tx, ty: v.ty,
+                                       places: rd.places, books: rd.books)
+        return RTMapOcean()
             .frame(width: 390, height: Self.viewportH)
-            // 월드 레이어 — CSS transform: translate(tx,ty) scale(s), origin 0 0
             .overlay(alignment: .topLeading) {
                 RTMapWorld(skin: skin)
                     .frame(width: 1000, height: 500)
-                    .scaleEffect(scale, anchor: .topLeading)
-                    .offset(x: tx, y: ty)
+                    .scaleEffect(v.scale, anchor: .topLeading)
+                    .offset(x: v.tx, y: v.ty)
                     .allowsHitTesting(false)
             }
             .overlay(alignment: .topLeading) {
                 ForEach(markers) { m in
                     RTMapPin(m: m, skin: skin)
-                        .position(x: m.left, y: m.top - (m.hpx + 13) / 2)   // 꼬리 끝(하단)이 좌표 앵커
+                        .position(x: m.left, y: m.top - (m.hpx + 13) / 2)
                         .zIndex(m.z)
-                        .onTapGesture { model?.tapMarker(m) }
                 }
                 .frame(width: 390, height: Self.viewportH, alignment: .topLeading)
             }
-            .contentShape(Rectangle())
-            .gesture(pan)
-            .overlay(alignment: .topLeading) { chip }
-            .overlay(alignment: .bottomTrailing) { zoomControls }
     }
-
-    // §5.2 팬 — 이동량 5px 초과 시 _moved (탭 오인 방지), pointerup 60ms 뒤 해제
-    var pan: some Gesture {
-        DragGesture(minimumDistance: 0)
-            .onChanged { v in
-                guard let m = model else { return }
-                if abs(v.translation.width) > 5 || abs(v.translation.height) > 5 { m.mapMoved = true }
-                if m.mapMoved {
-                    if panStart == nil { panStart = (m.mapTx, m.mapTy) }
-                    m.mapPan(tx: (panStart?.0 ?? m.mapTx) + v.translation.width,
-                             ty: (panStart?.1 ?? m.mapTy) + v.translation.height)
-                }
-            }
-            .onEnded { _ in
-                guard let m = model else { return }
-                panStart = nil
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { m.mapMoved = false }
-            }
-    }
-    @State private var panStart: (Double, Double)?
 
     // §5.5 통계 칩
     var chip: some View {
@@ -133,23 +185,23 @@ public struct Screen15Map: View {
             RTPinIcon(size: 13, color: skin.chipIcon)
             Text(chipText).font(.mono(11, 600)).foregroundColor(skin.chipText).rtLB(RTLB.m11)
         }
-        .padding(EdgeInsets(top: 8, leading: 13, bottom: 8, trailing: 13))   // border 1 포함
+        .padding(EdgeInsets(top: 8, leading: 13, bottom: 8, trailing: 13))
         .background(Capsule().fill(skin.chipBg))
-        .overlay(Capsule().strokeBorder(skin.chipBorder, lineWidth: 1))   // CSS border = 박스 안쪽
+        .overlay(Capsule().strokeBorder(skin.chipBorder, lineWidth: 1))
         .rtBoxShadow(Capsule(), color: Color.black.opacity(0.3), blur: 12, y: 4, spread: -6)
         .padding(EdgeInsets(top: 12, leading: 14, bottom: 0, trailing: 0))
-        .allowsHitTesting(false)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // §5.5 줌 컨트롤
     var zoomControls: some View {
         VStack(spacing: 8) {
             ctrlBtn { RTIcon(RTMapIcon.plus, size: 17, stroke: skin.ctrlIcon, lineWidth: 2.4, join: .miter) }
-                .onTapGesture { model?.mapZoom(1.6) }
+                .onTapGesture { zoom(1 / 1.6) }
             ctrlBtn { RTIcon(RTMapIcon.minus, size: 17, stroke: skin.ctrlIcon, lineWidth: 2.4, join: .miter) }
-                .onTapGesture { model?.mapZoom(1 / 1.6) }
+                .onTapGesture { zoom(1.6) }
             ctrlBtn { RTResetIcon(size: 16, color: skin.ctrlIcon) }
-                .onTapGesture { model?.mapReset() }
+                .onTapGesture { withAnimation(.easeInOut(duration: 0.4)) { camera = .region(allRegion()) } }
         }
         .padding(EdgeInsets(top: 0, leading: 0, bottom: 24, trailing: 14))
     }
@@ -165,16 +217,14 @@ public struct Screen15Map: View {
     }
 }
 
-// ── 바다 배경 (§11 paper) ──
-// CSS radial-gradient(130% 100% at 28% 18%, #eef1ee 0%, #e5eae8 52%, #dce2df 100%)
-// SwiftUI 는 축별 반지름이 다른 타원 그라데이션이 없어, 원형 그라데를 축별로 스케일해 재현.
+// ── 바다 배경 (헤드리스 플레이스홀더, §11 paper) ──
 struct RTMapOcean: View {
     var body: some View {
         GeometryReader { geo in
             let w = geo.size.width, h = geo.size.height
             let r: CGFloat = 500
             ZStack {
-                Color(hex: 0xDCE2DF)   // 100% 스톱 — 그라데 바깥 영역
+                Color(hex: 0xDCE2DF)
                 Rectangle()
                     .fill(RadialGradient(
                         stops: [.init(color: Color(hex: 0xEEF1EE), location: 0),
@@ -189,12 +239,9 @@ struct RTMapOcean: View {
     }
 }
 
-// ── 월드 레이어 (1000×500 등장방형) — 그래티큘 + 대륙 플레이스홀더 ──
-// ⚠ 지형은 목업과 동일한 손그림 타원(§0 "플레이스홀더"). 지도 SDK 도입 시 이 뷰만 교체.
+// ── 월드 레이어 (헤드리스 플레이스홀더 — 실기기는 MapKit) ──
 struct RTMapWorld: View {
     let skin: RTMapSkin
-
-    // <ellipse cx cy rx ry>
     static let land: [(CGFloat, CGFloat, CGFloat, CGFloat)] = [
         (250, 112, 112, 46), (232, 152, 92, 66), (300, 180, 40, 30),
         (430, 66, 34, 26),
@@ -209,13 +256,10 @@ struct RTMapWorld: View {
 
     var body: some View {
         Canvas { ctx, _ in
-            // 그래티큘 (stroke-width 1, 월드 좌표 — 레이어와 함께 스케일)
             var grid = Path()
             for y in Self.hLines { grid.move(to: CGPoint(x: 0, y: y)); grid.addLine(to: CGPoint(x: 1000, y: y)) }
             for x in Self.vLines { grid.move(to: CGPoint(x: x, y: 0)); grid.addLine(to: CGPoint(x: x, y: 500)) }
             ctx.stroke(grid, with: .color(skin.grat), lineWidth: 1)
-
-            // 대륙 (fill + stroke 1.5)
             for e in Self.land {
                 let p = Path(ellipseIn: CGRect(x: e.0 - e.2, y: e.1 - e.3, width: e.2 * 2, height: e.3 * 2))
                 ctx.fill(p, with: .color(skin.land))
@@ -226,7 +270,7 @@ struct RTMapWorld: View {
     }
 }
 
-// ── 마커(핀) (§5.4) ──
+// ── 마커(핀) (§5.4) — MapKit 위/플레이스홀더 위 공용 ──
 struct RTMapPin: View {
     let m: RTRecord.Marker
     let skin: RTMapSkin
@@ -236,7 +280,6 @@ struct RTMapPin: View {
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
-                // 스택(겹친 표지) — 뒤에 2·3번째 책이 회전·오프셋된 폴라로이드로
                 if m.hasStack, let s1 = m.s1 {
                     stackCard(s1).rotationEffect(.degrees(7)).offset(x: 5, y: 3)
                 }
@@ -250,14 +293,12 @@ struct RTMapPin: View {
             }
             tail.padding(.top, -1)
         }
-        // 바닥 그림자 — 앵커(꼬리 끝) 중심의 타원
         .background(alignment: .bottom) {
             Ellipse().fill(Color(hex: 0x1E160C, alpha: 0.22))
                 .frame(width: m.shadowW, height: 6)
                 .blur(radius: 1.5)
                 .offset(y: 3)
         }
-        // 라벨 — 버튼 아래 3px
         .overlay(alignment: .bottom) {
             Text(m.label)
                 .font(.mono(9.5, 600)).tracking(9.5 * -0.01)
@@ -276,8 +317,7 @@ struct RTMapPin: View {
             .frame(width: m.w, height: m.hpx)
             .padding(3)
             .background(RoundedRectangle(cornerRadius: 7).fill(skin.pinFrame))
-            .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow,
-                         blur: 16, y: 9, spread: -7)
+            .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow, blur: 16, y: 9, spread: -7)
     }
 
     var frameCard: some View {
@@ -287,8 +327,7 @@ struct RTMapPin: View {
             .padding(3)
             .background(RoundedRectangle(cornerRadius: 7).fill(skin.pinFrame))
             .rtRing(7, skin.pinFrameLine, width: 1)   // CSS `outline` = 박스 바깥
-            .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow,
-                         blur: 16, y: 9, spread: -7)
+            .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow, blur: 16, y: 9, spread: -7)
     }
 
     var badge: some View {
@@ -302,7 +341,6 @@ struct RTMapPin: View {
             .rtBoxShadow(Capsule(), color: Color.black.opacity(0.42), blur: 7, y: 3, spread: -1)
     }
 
-    // 꼬리 — border-left/right 7 transparent + border-top 8 solid
     var tail: some View {
         Path { p in
             p.move(to: CGPoint(x: 0, y: 0))
@@ -317,7 +355,6 @@ struct RTMapPin: View {
 }
 
 // rtPinDrop — translate(-50%,-118%)scale.4 → (-50%,-100%)scale1, .4s cubic-bezier(.2,1.2,.4,1)
-// (좌표 앵커는 .position 이 잡으므로 여기선 -18% 상대 이동 + 스케일만)
 extension View {
     func rtPinDrop() -> some View { modifier(RTPinDrop()) }
 }

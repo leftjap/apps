@@ -160,36 +160,10 @@ import CoreGraphics
         #expect(RTRecord.openTarget(["ny"]) == .sheet(["ny"]))
     }
 
-    @Test func tightClusterFallsBackToOpenTarget() {
-        // 유럽(파리·런던·로마): raw = min(320/bw,300/bh) > 5.6 → 줌 불가 → openTarget → 5권 → 시트
+    @Test func multiPlaceMultiBookOpensSheet() {
+        // 유럽(파리·런던·로마) 전체 = 5권 → 장소 시트 (클러스터 확대 후 못 나뉠 때의 openTarget 규칙)
         let ids = ["paris", "london", "rome"]
-        #expect(RTRecord.fitOrSheet(ids, scale: 0.46) == .sheet(ids))
-    }
-
-    @Test func spreadClusterZoomsToFit() {
-        // 서울권 6곳: raw ≈ 2.94 ≤ 5.6 → 줌 투 핏
-        let ids = ["seoul", "jeju", "tokyo", "hongkong", "bangkok", "singapore"]
-        guard case .zoom(let s, let tx, let ty) = RTRecord.fitOrSheet(ids, scale: 0.46) else {
-            Issue.record("줌이어야 함"); return
-        }
-        #expect(abs(s - 2.9388) < 0.01)
-        #expect(abs(tx - (-2255.0)) < 1.0)
-        #expect(abs(ty - (-216.2)) < 1.0)
-    }
-
-    @Test func zoomAroundClampsAndAnchors() {
-        let v = RTRecord.zoomAround(cx: 195, cy: 373, f: 1.6, scale: 0.46, tx: -88, ty: 258)
-        #expect(abs(v.scale - 0.736) < 0.0001)
-        // tx = 195 - (195-(-88))*1.6 = 195 - 452.8 = -257.8
-        #expect(abs(v.tx - (-257.8)) < 0.01)
-        // ty = 373 - (373-258)*1.6 = 373 - 184 = 189
-        #expect(abs(v.ty - 189) < 0.01)
-        // 상한 clamp 4.2
-        let hi = RTRecord.zoomAround(cx: 195, cy: 373, f: 1.6, scale: 4.0, tx: 0, ty: 0)
-        #expect(abs(hi.scale - 4.2) < 0.0001)
-        // 하한 clamp 0.34
-        let lo = RTRecord.zoomAround(cx: 195, cy: 373, f: 1 / 1.6, scale: 0.4, tx: 0, ty: 0)
-        #expect(abs(lo.scale - 0.34) < 0.0001)
+        #expect(RTRecord.openTarget(ids) == .sheet(ids))
     }
 
     // ── §6 장소 시트 (screens/2) ──
