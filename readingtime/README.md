@@ -32,7 +32,7 @@
 
 ## 기록 화면 (주 · 월 · 지도)
 - 시안 정본 = `design-ref/design_handoff_record_stats/`. 화면 = `Screen10Stats`(주) / `Screen11Month`(월) / `Screen15Map`(지도) + `RecordSheets`(장소 시트·책 상세). 로직·데이터는 전부 `RTRecordData.swift`(순수 엔진 + §12 데모 데이터).
-- **지도**: 등장방형 투영(1000×500 월드) + 화면거리 52px 체인 클러스터 + 폴라로이드 핀. 대륙은 목업과 동일한 **플레이스홀더 타원** — 지도 SDK 도입 시 `RTMapWorld` 만 교체하면 된다(작업지시서 §0·§16, SDK 선택 미확정).
+- **지도**: **MapKit**(SwiftUI `Map`, iOS 17+) 실제 지도 타일 위에 폴라로이드 핀/클러스터/배지/시트를 얹는다(작업지시서 §0·§5.1·§14 — 지형은 fidelity 예외 = 실제 지도 SDK). 팬·줌은 MapKit이 담당하고, 클러스터링(화면거리 52px 체인)은 MapKit 카메라의 `MKMapPoint` 투영으로 화면좌표를 구해 동일 규칙 적용. 탭: 클러스터 → 카메라 줌 투 핏 / 단일 → openTarget(1권 책상세 · N권 시트). **헤드리스(rtshot)** 는 MapKit 타일을 렌더 못 하므로 픽셀 오라클 검증용으로만 목업 플레이스홀더(등장방형 `RTMapWorld`)를 유지(`rtHeadless` 분기).
 - **읽은 위치**: `RTSessionRecord` 에 `latitude/longitude/placeId/placeName/country`(옵셔널 → 기존 기록 하위호환). 세션은 `readingtime_userdata.data` 의 JSON 스냅샷이라 **SQL 마이그레이션 불필요**. 위치 획득(CoreLocation) 시점은 미확정(§16) → 실데이터에 `placeId` 가 붙기 전까진 지도가 시안 데모 데이터를 렌더한다.
 - 검증: `scripts/record-verify.sh <out>` — rtshot 렌더 vs 목업 오라클 픽셀 대조(`.oracle/README.md`).
 
