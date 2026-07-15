@@ -28,7 +28,7 @@
 | ├ `rtshot` | 헤드리스 렌더 CLI — `rtshot <NN> out.png` / `rtshot --app <NN>`(라우팅 오라클) / `rtshot --seq <액션들>` |
 | └ `rtapp` | macOS 데모 셸(390×844 창, 모션 on, 알라딘 라이브 검색) — `rtapp --verify-search <q>` |
 | `SETUP.md` | 실기기 배포·검증 절차 |
-| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 자동화 — launchd `com.leftjap.readingtime.resign` 매일 21:30, 만료 <4일 시 재빌드 후 두 기기(지오 11 Pro·소연 XR) 설치, 로그 `~/Library/Logs/readingtime-resign.log` |
+| `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. launchd `com.leftjap.readingtime.resign` 매일 21:30. 잔여 <4일 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급**(자유팀은 만료 전엔 갱신 안 됨) → **embedded 만료일 사후 검증**(조용한 실패 방지) → 두 기기(지오 11 Pro·소연 XR) 설치. 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
 
 ## 기록 화면 (주 · 월 · 지도)
 - 시안 정본 = `design-ref/design_handoff_record_stats/`. 화면 = `Screen10Stats`(주) / `Screen11Month`(월) / `Screen15Map`(지도) + `RecordSheets`(장소 시트·책 상세). 로직·데이터는 전부 `RTRecordData.swift`(순수 엔진 + §12 데모 데이터).
