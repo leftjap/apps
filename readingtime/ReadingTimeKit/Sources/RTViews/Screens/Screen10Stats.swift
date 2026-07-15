@@ -21,7 +21,7 @@ public struct Screen10Stats: View {
 
     var model: RTAppModel?
     private let sel: Int
-    private let live: Live?
+    let live: Live?
 
     public init(model: RTAppModel? = nil) {
         self.model = model
@@ -82,8 +82,10 @@ public struct Screen10Stats: View {
         }
         var popRows = perBook.sorted { $0.value > $1.value }.prefix(2).enumerated()
             .map { (i, kv) in (name: kv.key, min: kv.value / 60, dot: palette[i % palette.count]) }
+        // 밀리(전자책) 책은 팝오버에서도 "· 밀리" 로 별도 표시 (사용자 요청: 밀리 구분 유지).
+        // 시안 팝오버엔 밀리 라벨이 없지만, 밀리 관련 요소는 시안과 무관하게 구분을 유지한다.
         for e in model?.ebookBreakdown(on: selDate) ?? [] {
-            popRows.append((name: e.title, min: e.seconds / 60, dot: RT.amber))
+            popRows.append((name: "\(e.title) · 밀리", min: e.seconds / 60, dot: RT.amber))
         }
 
         // 최근 14일 스트릭 도트

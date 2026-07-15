@@ -796,6 +796,23 @@ public final class RTAppModel: ObservableObject {
             ebookBooks = [f.string(from: t): ["도둑맞은 집중력"],
                           f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): ["디 마이너스"]]
             ebookCovers = ["디 마이너스": "https://img.millie.co.kr/200x/service/cover/7233614/7007cfd575de4dfab086f7ee0af373a4.jpg"]
+        case "demoLive":   // 라이브 통계 시드(종이 3세션 + 목요일 밀리 36분) — 밀리 별도 표시 화면 검증
+            let f = dayFormatter
+            let ws = weekStart
+            func dd(_ i: Int) -> Date { cal.date(byAdding: .day, value: i, to: ws)! }
+            userData = RTUserData(
+                books: [
+                    RTBook(isbn: "P1", title: "작별하지 않는다", author: "한강", publisher: "문학동네", coverUrl: "", addedAt: dd(0)),
+                    RTBook(isbn: "P2", title: "파친코", author: "이민진", publisher: "인플루엔셜", coverUrl: "", addedAt: dd(0)),
+                ],
+                sessions: [
+                    RTSessionRecord(isbn: "P1", mode: "flip", seconds: 52 * 60, endedAt: dd(0), pauseCount: 0),  // 월
+                    RTSessionRecord(isbn: "P2", mode: "flip", seconds: 74 * 60, endedAt: dd(1), pauseCount: 0),  // 화
+                    RTSessionRecord(isbn: "P1", mode: "flip", seconds: 60 * 60, endedAt: dd(3), pauseCount: 0),  // 목(선택일)
+                ])
+            ebookTitle = "도둑맞은 집중력"
+            ebookDaily = [f.string(from: dd(3)): 36 * 60]                       // 목: 밀리 36분
+            ebookBooks = [f.string(from: dd(3)): ["도둑맞은 집중력"]]
         case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)
         case "start": start()
         case "cancelSession": cancelSession()
