@@ -29,7 +29,7 @@
 		<string>UIInterfaceOrientationPortrait</string>
 	</array>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>독서 시간을 재는 동안 백그라운드에서 타이머를 유지하는 데 사용됩니다.</string>
+	<string>읽은 위치를 기록 지도에 표시하고, 독서 시간을 재는 동안 백그라운드에서 타이머를 유지하는 데 사용됩니다.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>location</string>
