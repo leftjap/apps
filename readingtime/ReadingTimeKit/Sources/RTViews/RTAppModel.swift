@@ -492,7 +492,7 @@ public final class RTAppModel: ObservableObject {
         if sheet != nil { sheet = nil }
         // 상세 뒤로가기 목적지 = 진입 출처. 홈·서재·통계(주/월)에서 진입 가능 → 그 route 유지.
         if to == .detail && route != .detail {
-            detailOrigin = [.home, .library, .statsWeek, .statsMonth].contains(route) ? route : .library
+            detailOrigin = [.home, .library, .statsWeek, .statsMonth, .statsMap].contains(route) ? route : .library
         }
         if to == .home { statsSubject = .me }   // 홈 복귀 시 파트너 통계 주체 리셋
         // 목업 setTab: 탭 전환 시 열린 장소 시트·책 상세를 닫는다
@@ -736,8 +736,24 @@ public final class RTAppModel: ObservableObject {
     }
     func applyTarget(_ t: RTRecord.Target) {
         switch t {
-        case .book(let b): openRecordBook(b)
+        case .book(let b): openMapBook(b)
         case .sheet(let ids): openPlaceSheet(ids)
+        }
+    }
+
+    /// 지도에서 책 선택(단일 핀·장소 시트 커버) → 책상세 페이지(08) 이동 (사용자 요구 2026-07-15).
+    /// index = recordData.books 인덱스. 실데이터(서재에 있는 ISBN)면 페이지로, 데모/oracle 은 §7 기록 시트 폴백.
+    public func openMapBook(_ index: Int) {
+        let books = recordData.books
+        guard index >= 0, index < books.count else { return }
+        let isbn = books[index].isbn
+        if userData?.books.contains(where: { $0.isbn == isbn }) == true {
+            placeSheet = nil                 // 지도 오버레이 닫고 페이지로 (전역 오버레이라 겹침 방지)
+            recordBook = nil
+            statsSubject = .me               // 지도는 항상 내 데이터 → 파트너 잔존 subject 리셋
+            openBookDetail(isbn: isbn)       // selectedISBN + nav(.detail), detailOrigin = .statsMap
+        } else {
+            openRecordBook(index)            // 데모/oracle 폴백 (§7 기록 시트)
         }
     }
     public func openPlaceSheet(_ ids: [String]) { placeSheet = ids }
@@ -863,6 +879,8 @@ public final class RTAppModel: ObservableObject {
             }
         case "openPlace": openPlaceSheet(arg.split(separator: "+").map(String.init))
         case "openRecBook": Int(arg).map { openRecordBook($0) }
+        case "mapBook": Int(arg).map { openMapBook($0) }   // 지도 책 선택 → 책상세 페이지(실데이터)/§7(데모)
+
         case "closePlace": closePlaceSheet()
         case "closeRecBook": closeRecordBook()
         default: break

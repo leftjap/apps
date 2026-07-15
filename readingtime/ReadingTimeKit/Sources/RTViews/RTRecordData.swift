@@ -31,6 +31,7 @@ public struct RTRecBook: Sendable {
     public let dot: UInt32          // 강조색 (팝오버 점·랭킹 진행바)
     public let millie: Bool
     public var coverUrl = ""        // §14 실표지 (실데이터) — "" = 색+제목 플레이스홀더(데모)
+    public var isbn = ""            // 서재 책 식별자 (실데이터) — "" = 데모. 책상세 페이지 진입 키.
 }
 
 public struct RTRecSession: Sendable {
@@ -210,7 +211,7 @@ public enum RTRecord {
             bookIdx[isbn] = i
             books.append(RTRecBook(title: b.title, short: b.title, author: b.author,
                                    fill: .solid(0xE8E2D2), tc: 0x3A2C1C, dot: 0x8C8570, millie: false,
-                                   coverUrl: b.coverUrl))
+                                   coverUrl: b.coverUrl, isbn: b.isbn))
             return i
         }
 

@@ -27,11 +27,12 @@ import Foundation
         #expect(m.placeSheet == nil && m.recordBook == nil)
     }
 
-    // §5.6-2/4: 단일 마커 + distinct 1권 → 책 상세 직행
-    @Test func tapSinglePlaceOneBookOpensBookDetail() {
+    // §5.6-2/4: 단일 마커 + distinct 1권 → 책 상세 (데모 모드 = §7 기록 시트 폴백).
+    // 실데이터는 책상세 페이지(08)로 이동 — RTMapLiveDataTests.openMapBookNavigatesToDetailPageForLiveData.
+    @Test func tapSinglePlaceOneBookOpensRecordSheetInDemo() {
         let m = mapModel()
         m.tapMarker(marker(m, label: "시드니"))
-        #expect(m.recordBook == 8)          // 노르웨이의 숲
+        #expect(m.recordBook == 8)          // 노르웨이의 숲 (데모 폴백)
         #expect(m.placeSheet == nil)
     }
 

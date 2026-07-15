@@ -149,6 +149,62 @@ private let p1 = (lat: 37.54, lng: 127.05)
         #expect(ms.allSatisfy { $0.coverUrl.isEmpty && $0.s1Url == nil && $0.s2Url == nil })
     }
 
+    // §14 실책 ISBN — live() 가 지도 책에 서재 ISBN 을 보존해 책상세 페이지 진입을 가능케 한다
+    @Test func liveBooksCarryIsbn() {
+        let (_, books) = RTRecord.live(from: RTUserData(
+            books: [book("A", "몰입")], sessions: [located("A", "2026-07-10")]))
+        #expect(books.first?.isbn == "A")
+    }
+
+    // 지도 책 선택 → 책상세 페이지(08) 이동 (사용자 요구 2026-07-15: §7 바텀시트 아님)
+    @Test func openMapBookNavigatesToDetailPageForLiveData() {
+        let m = RTAppModel()
+        m.userData = RTUserData(books: [book("A", "몰입")], sessions: [located("A", "2026-07-10")])
+        m.nav(.statsMap)
+        let idx = m.recordData.books.firstIndex { $0.title == "몰입" }!
+        m.openMapBook(idx)
+        #expect(m.route == .detail)
+        #expect(m.selectedISBN == "A")
+        #expect(m.recordBook == nil)          // §7 기록 시트 안 열림
+        #expect(m.placeSheet == nil)
+        #expect(m.detailOrigin == .statsMap)  // 뒤로가기 = 지도 복귀
+    }
+
+    // 장소 시트에서 책 선택 → 지도 오버레이 닫고 책상세 페이지로 (책상세 위로 시트 안 겹침)
+    @Test func openMapBookFromPlaceSheetClosesOverlaysAndNavigates() {
+        let m = RTAppModel()
+        m.userData = RTUserData(
+            books: [book("A", "몰입"), book("B", "파친코")],
+            sessions: [located("A", "2026-07-10"), located("B", "2026-07-09")])   // 둘 다 성수동
+        m.nav(.statsMap)
+        m.openPlaceSheet(["KR:서울특별시:성수동"])
+        let idx = m.recordData.books.firstIndex { $0.title == "파친코" }!
+        m.openMapBook(idx)
+        #expect(m.placeSheet == nil)
+        #expect(m.route == .detail)
+        #expect(m.selectedISBN == "B")
+    }
+
+    // 지도는 항상 내 데이터 → 파트너 잔존 subject 리셋 (Screen08Detail 이 내 책을 렌더)
+    @Test func openMapBookResetsToOwnSubject() {
+        let m = RTAppModel()
+        m.userData = RTUserData(books: [book("A", "몰입")], sessions: [located("A", "2026-07-10")])
+        m.partnerData = RTUserData()
+        m.statsSubject = .partner
+        m.nav(.statsMap)
+        m.openMapBook(0)
+        #expect(m.statsSubject == .me)
+    }
+
+    // 데모(userData nil)는 §7 기록 시트 폴백 유지 (rtshot/rtapp oracle 경로 불변)
+    @Test func openMapBookDemoFallsBackToRecordSheet() {
+        let m = RTAppModel()   // userData nil = 데모
+        m.nav(.statsMap)
+        m.openMapBook(8)       // 노르웨이의 숲 (데모)
+        #expect(m.recordBook == 8)
+        #expect(m.route == .statsMap)   // 페이지 이동 없음 (바텀시트 유지)
+    }
+
     // 통계 칩 — 실데이터는 "N곳" 집계(§5.5 "실제앱은 집계값"), 0곳이면 숨김(nil), 데모는 시안 상수
     @Test func mapChipTextAggregatesLivePlaces() {
         let m = RTAppModel()

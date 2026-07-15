@@ -183,7 +183,7 @@ struct RTPlaceSheetView: View {
         }
         .frame(width: 66, height: RTPlaceSheetView.coverItemH, alignment: .topLeading)
         .contentShape(Rectangle())
-        .onTapGesture { model?.openRecordBook(cv.bookId) }
+        .onTapGesture { model?.openMapBook(cv.bookId) }   // 책상세 페이지(08)로 (데모는 §7 시트 폴백)
         .rtPop(delay: Double(index) * 0.05, duration: 0.42)
     }
 }
