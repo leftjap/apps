@@ -30,6 +30,7 @@ public struct RTRecBook: Sendable {
     public let tc: UInt32           // 표지 글자색
     public let dot: UInt32          // 강조색 (팝오버 점·랭킹 진행바)
     public let millie: Bool
+    public var coverUrl = ""        // §14 실표지 (실데이터) — "" = 색+제목 플레이스홀더(데모)
 }
 
 public struct RTRecSession: Sendable {
@@ -208,7 +209,8 @@ public enum RTRecord {
             let i = books.count
             bookIdx[isbn] = i
             books.append(RTRecBook(title: b.title, short: b.title, author: b.author,
-                                   fill: .solid(0xE8E2D2), tc: 0x3A2C1C, dot: 0x8C8570, millie: false))
+                                   fill: .solid(0xE8E2D2), tc: 0x3A2C1C, dot: 0x8C8570, millie: false,
+                                   coverUrl: b.coverUrl))
             return i
         }
 
@@ -349,6 +351,9 @@ public enum RTRecord {
         public let coverFill: RTFill
         public let coverTC: UInt32
         public let coverTitle: String
+        public let coverUrl: String     // §14 실표지 ("" = 플레이스홀더)
+        public let s1Url: String?
+        public let s2Url: String?
         public let count: Int
         public let showBadge: Bool
         public let hasStack: Bool
@@ -417,12 +422,17 @@ public enum RTRecord {
             let cLng = g.reduce(0.0) { $0 + places[$1].lng } / Double(g.count)
             let w: CGFloat = isCluster ? 36 : 32
 
+            func stackUrl(_ i: Int) -> String? {
+                guard distB.count > i, !books[distB[i]].coverUrl.isEmpty else { return nil }
+                return books[distB[i]].coverUrl
+            }
             return Marker(
                 id: "c\(idx)",
                 left: CGFloat(sx.rounded()), top: CGFloat(sy.rounded()),
                 centroidLat: cLat, centroidLng: cLng,
                 coverFill: rep.fill, coverTC: rep.tc,
                 coverTitle: rep.short.isEmpty ? rep.title : rep.short,
+                coverUrl: rep.coverUrl, s1Url: stackUrl(1), s2Url: stackUrl(2),
                 count: distinct, showBadge: distinct > 1,
                 hasStack: distinct > 1, hasS2: distinct > 2,
                 s1: distB.count > 1 ? books[distB[1]].fill : nil,
@@ -484,6 +494,7 @@ public enum RTRecord {
         public let tc: UInt32
         public let millie: Bool
         public let time: String
+        public let coverUrl: String     // §14 실표지 ("" = 플레이스홀더)
     }
     public struct PlaceSheet: Sendable {
         public let ids: [String]
@@ -525,7 +536,7 @@ public enum RTRecord {
             .map { (_, b) -> SheetCover in
                 let bk = books[b]
                 return SheetCover(bookId: b, title: bk.title, fill: bk.fill, tc: bk.tc,
-                                  millie: bk.millie, time: fmtKorMin(byBook[b]!))
+                                  millie: bk.millie, time: fmtKorMin(byBook[b]!), coverUrl: bk.coverUrl)
             }
         let totMin = allS.reduce(0) { $0 + $1.min }
         let dsort = allS.sorted { $0.iso < $1.iso }
@@ -548,6 +559,7 @@ public enum RTRecord {
         public let fill: RTFill
         public let tc: UInt32
         public let millie: Bool
+        public let coverUrl: String     // §14 실표지 ("" = 플레이스홀더)
         public let tag: String
         public let statTime: String
         public let statSessions: Int
@@ -574,6 +586,7 @@ public enum RTRecord {
 
         return BookDetail(
             id: id, title: bk.title, author: bk.author, fill: bk.fill, tc: bk.tc, millie: bk.millie,
+            coverUrl: bk.coverUrl,
             tag: bk.millie ? "밀리의서재" : "직접 기록",
             statTime: fmtHM(totMin), statSessions: sorted.count, statPlaces: pl.count,
             places: pl,

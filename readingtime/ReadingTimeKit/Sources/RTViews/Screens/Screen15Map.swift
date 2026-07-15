@@ -63,12 +63,9 @@ public struct Screen15Map: View {
         model?.recordData ?? (RTRecordDemo.places, RTRecordDemo.books)
     }
 
-    /// §5.5 통계 칩 — 데모는 시안 상수, 실데이터는 도시 수 집계.
-    private var chipText: String {
-        let places = rd.places
-        let isDemo = places.count == RTRecordDemo.places.count
-            && places.first?.id == RTRecordDemo.places.first?.id
-        return isDemo ? RTRecordDemo.mapChip : "\(places.count)개 도시"
+    /// §5.5 통계 칩 — 실데이터는 "N곳" 집계(0곳 = 숨김), 데모는 시안 상수 (모델 정본)
+    private var chipText: String? {
+        model?.mapChipText ?? RTRecordDemo.mapChip
     }
 
     public var body: some View {
@@ -104,7 +101,7 @@ public struct Screen15Map: View {
             visibleRect = ctx.rect
             region = ctx.region
         }
-        .onAppear { if region == nil { camera = .region(allRegion()) } }
+        .onAppear { if region == nil { camera = .region(defaultRegion()) } }
     }
 
     /// MapKit 카메라(MKMapPoint 투영) 기준 화면좌표로 52px 체인 클러스터.
@@ -128,6 +125,14 @@ public struct Screen15Map: View {
             .map { CLLocationCoordinate2D(latitude: $0.lat, longitude: $0.lng) }
         guard !coords.isEmpty else { return }
         withAnimation(.easeInOut(duration: 0.5)) { camera = .region(fitRegion(coords, pad: 2.4, min: 0.03)) }
+    }
+
+    /// 기본 카메라 — 가장 최근 위치 세션의 동네(~1.3km) 프레이밍 (사용자 결정 2026-07-15:
+    /// "기본값은 동네 지도" — 동에서 시작해 구→시→세계로 확장). 없으면 전체 뷰(데모).
+    private func defaultRegion() -> MKCoordinateRegion {
+        guard let c = model?.latestReadCoord else { return allRegion() }
+        return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: c.lat, longitude: c.lng),
+                                  latitudinalMeters: 1300, longitudinalMeters: 1300)
     }
 
     private func allRegion() -> MKCoordinateRegion {
@@ -179,11 +184,16 @@ public struct Screen15Map: View {
             }
     }
 
-    // §5.5 통계 칩
-    var chip: some View {
+    // §5.5 통계 칩 (0곳 = 숨김)
+    @ViewBuilder var chip: some View {
+        if let chipText {
+            chipBody(chipText)
+        }
+    }
+    func chipBody(_ text: String) -> some View {
         HStack(spacing: 8) {
             RTPinIcon(size: 13, color: skin.chipIcon)
-            Text(chipText).font(.mono(11, 600)).foregroundColor(skin.chipText).rtLB(RTLB.m11)
+            Text(text).font(.mono(11, 600)).foregroundColor(skin.chipText).rtLB(RTLB.m11)
         }
         .padding(EdgeInsets(top: 8, leading: 13, bottom: 8, trailing: 13))
         .background(Capsule().fill(skin.chipBg))
@@ -201,7 +211,7 @@ public struct Screen15Map: View {
             ctrlBtn { RTIcon(RTMapIcon.minus, size: 17, stroke: skin.ctrlIcon, lineWidth: 2.4, join: .miter) }
                 .onTapGesture { zoom(1.6) }
             ctrlBtn { RTResetIcon(size: 16, color: skin.ctrlIcon) }
-                .onTapGesture { withAnimation(.easeInOut(duration: 0.4)) { camera = .region(allRegion()) } }
+                .onTapGesture { withAnimation(.easeInOut(duration: 0.4)) { camera = .region(defaultRegion()) } }
         }
         .padding(EdgeInsets(top: 0, leading: 0, bottom: 24, trailing: 14))
     }
@@ -281,10 +291,10 @@ struct RTMapPin: View {
         VStack(spacing: 0) {
             ZStack {
                 if m.hasStack, let s1 = m.s1 {
-                    stackCard(s1).rotationEffect(.degrees(7)).offset(x: 5, y: 3)
+                    stackCard(s1, m.s1Url).rotationEffect(.degrees(7)).offset(x: 5, y: 3)
                 }
                 if m.hasS2, let s2 = m.s2 {
-                    stackCard(s2).rotationEffect(.degrees(-7)).offset(x: -5, y: 4)
+                    stackCard(s2, m.s2Url).rotationEffect(.degrees(-7)).offset(x: -5, y: 4)
                 }
                 frameCard
             }
@@ -311,23 +321,35 @@ struct RTMapPin: View {
         .rtPinDrop()
     }
 
-    func stackCard(_ fill: RTFill) -> some View {
-        RoundedRectangle(cornerRadius: 4)
-            .fill(fill.paint(coverSize))
-            .frame(width: m.w, height: m.hpx)
-            .padding(3)
-            .background(RoundedRectangle(cornerRadius: 7).fill(skin.pinFrame))
-            .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow, blur: 16, y: 9, spread: -7)
+    func stackCard(_ fill: RTFill, _ url: String?) -> some View {
+        Group {
+            if let url {                     // §14 실표지 (실데이터)
+                RTRemoteCover(url: url, size: CGSize(width: m.w, height: m.hpx), radius: 4)
+            } else {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(fill.paint(coverSize))
+                    .frame(width: m.w, height: m.hpx)
+            }
+        }
+        .padding(3)
+        .background(RoundedRectangle(cornerRadius: 7).fill(skin.pinFrame))
+        .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow, blur: 16, y: 9, spread: -7)
     }
 
     var frameCard: some View {
-        RTFillCover(fill: m.coverFill, tc: m.coverTC, title: m.coverTitle,
-                    size: coverSize, radius: 4, spine: 2, spineAlpha: 0.18,
-                    fontSize: 8, lineHeight: 8.4, pad: 2)
-            .padding(3)
-            .background(RoundedRectangle(cornerRadius: 7).fill(skin.pinFrame))
-            .rtRing(7, skin.pinFrameLine, width: 1)   // CSS `outline` = 박스 바깥
-            .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow, blur: 16, y: 9, spread: -7)
+        Group {
+            if m.coverUrl.isEmpty {          // 데모 — 색+제목 플레이스홀더 (픽셀 오라클 불변)
+                RTFillCover(fill: m.coverFill, tc: m.coverTC, title: m.coverTitle,
+                            size: coverSize, radius: 4, spine: 2, spineAlpha: 0.18,
+                            fontSize: 8, lineHeight: 8.4, pad: 2)
+            } else {                         // §14 실표지 (실데이터)
+                RTRemoteCover(url: m.coverUrl, size: coverSize, radius: 4, title: m.coverTitle)
+            }
+        }
+        .padding(3)
+        .background(RoundedRectangle(cornerRadius: 7).fill(skin.pinFrame))
+        .rtRing(7, skin.pinFrameLine, width: 1)   // CSS `outline` = 박스 바깥
+        .rtBoxShadow(RoundedRectangle(cornerRadius: 7), color: skin.pinShadow, blur: 16, y: 9, spread: -7)
     }
 
     var badge: some View {

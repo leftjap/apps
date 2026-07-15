@@ -566,9 +566,13 @@ public final class RTAppModel: ObservableObject {
         if let s = session {
             onSessionSaved?(s.mode, s.elapsed)
             if userData != nil {
+                let fix = locationProvider?()
                 let rec = RTSessionRecord(isbn: s.isbn, mode: s.mode.rawValue,
                                           seconds: s.elapsed, endedAt: now(),
-                                          pauseCount: s.pauseCount)
+                                          pauseCount: s.pauseCount,
+                                          latitude: fix?.latitude, longitude: fix?.longitude,
+                                          placeId: fix?.placeId, placeName: fix?.placeName,
+                                          country: fix?.country)
                 mutateUserData { $0.sessions.append(rec) }
             }
         }
@@ -620,8 +624,12 @@ public final class RTAppModel: ObservableObject {
 
     public func addTime() {
         if userData != nil {
+            let fix = locationProvider?()
             let rec = RTSessionRecord(isbn: selectedBook?.isbn, mode: "manual",
-                                      seconds: addtimeValue * 60, endedAt: now(), pauseCount: 0)
+                                      seconds: addtimeValue * 60, endedAt: now(), pauseCount: 0,
+                                      latitude: fix?.latitude, longitude: fix?.longitude,
+                                      placeId: fix?.placeId, placeName: fix?.placeName,
+                                      country: fix?.country)
             mutateUserData { $0.sessions.append(rec) }
         }
         addtimeValue = 35
@@ -693,15 +701,33 @@ public final class RTAppModel: ObservableObject {
     /// 책 상세 시트 — 책 인덱스 (nil = 닫힘). 장소 시트 위에 겹쳐 열림.
     @Published public var recordBook: Int?
 
-    /// 지도·시트가 쓰는 데이터 — 위치 기록이 있으면 실데이터, 없으면 시안 데모(§12).
-    /// (위치 획득(CoreLocation)은 §16 미확정 → 실데이터에 placeId 가 붙기 전까진 데모 경로)
+    /// 지도·시트가 쓰는 데이터 — 실데이터 모드(userData 있음)는 항상 실집계.
+    /// 위치 세션이 없으면 빈 지도가 정상 (위치 없는 책은 안 뜸 — 사용자 결정 2026-07-15).
+    /// 시안 데모(§12)는 rtshot/rtapp(userData nil) 픽셀 오라클 전용.
     public var recordData: (places: [RTRecPlace], books: [RTRecBook]) {
-        if let d = userData {
-            let l = RTRecord.live(from: d)
-            if !l.places.isEmpty { return l }
-        }
+        if let d = userData { return RTRecord.live(from: d) }
         return (RTRecordDemo.places, RTRecordDemo.books)
     }
+
+    /// 가장 최근 위치 세션의 좌표 — 지도 기본 카메라(동네 프레이밍) 중심.
+    /// 위치 없는 세션은 건너뛴다. 없으면 nil (뷰가 전체 뷰 폴백).
+    public var latestReadCoord: (lat: Double, lng: Double)? {
+        guard let d = userData else { return nil }
+        return d.sessions.filter { $0.latitude != nil && $0.longitude != nil && $0.placeId != nil }
+            .max { $0.endedAt < $1.endedAt }
+            .map { ($0.latitude!, $0.longitude!) }
+    }
+
+    /// §5.5 통계 칩 — 실데이터는 "N곳" 집계(0곳 = nil → 칩 숨김), 데모는 시안 상수.
+    public var mapChipText: String? {
+        guard userData != nil else { return RTRecordDemo.mapChip }
+        let n = recordData.places.count
+        return n > 0 ? "\(n)곳" : nil
+    }
+
+    /// 위치 픽스 공급 훅 — 앱 셸이 CoreLocation 배선 (§16: 세션 시작·시간추가 시트 열림 시 캡처).
+    /// nil 반환 = 위치 미확보 → 세션은 위치 없이 저장 (지도 미표시).
+    public var locationProvider: (() -> RTPlaceFix?)?
 
     /// §5.6 단일 마커 탭 — openTarget(1권 책상세 / N권 시트). 클러스터 탭의 줌 투 핏은 MapKit 뷰가 처리.
     public func tapMarker(_ m: RTRecord.Marker) {
@@ -777,8 +803,12 @@ public final class RTAppModel: ObservableObject {
             func dd(_ i: Int) -> Date { cal.date(byAdding: .day, value: i, to: ws)! }
             userData = RTUserData(
                 books: [
-                    RTBook(isbn: "P1", title: "작별하지 않는다", author: "한강", publisher: "문학동네", coverUrl: "", addedAt: dd(0)),
-                    RTBook(isbn: "P2", title: "파친코", author: "이민진", publisher: "인플루엔셜", coverUrl: "", addedAt: dd(0)),
+                    RTBook(isbn: "P1", title: "작별하지 않는다", author: "한강", publisher: "문학동네",
+                           coverUrl: "https://image.aladin.co.kr/product/27877/5/cover200/8954682154_3.jpg",
+                           addedAt: dd(0)),
+                    RTBook(isbn: "P2", title: "파친코", author: "이민진", publisher: "인플루엔셜",
+                           coverUrl: "https://image.aladin.co.kr/product/29496/39/cover200/s382931339_2.jpg",
+                           addedAt: dd(0)),
                 ],
                 sessions: [
                     RTSessionRecord(isbn: "P1", mode: "flip", seconds: 52 * 60, endedAt: dd(0), pauseCount: 0),  // 월
@@ -817,6 +847,20 @@ public final class RTAppModel: ObservableObject {
             let v = RTRecord.defaultView
             RTRecord.markers(scale: v.scale, tx: v.tx, ty: v.ty, places: rd.places, books: rd.books)
                 .first { $0.label == arg }.map { tapMarker($0) }
+        case "seedLoc":   // 기존 세션 위치 백필 (실기기 1회 실행) — "lat|lng|placeId|placeName|country"
+            // ("|" 구분: --seq 가 ","로 액션을 쪼개므로 콤마 사용 불가)
+            let p = arg.split(separator: "|").map(String.init)
+            if p.count == 5, let lat = Double(p[0]), let lng = Double(p[1]) {
+                mutateUserData { d in
+                    for i in d.sessions.indices where d.sessions[i].latitude == nil {
+                        d.sessions[i].latitude = lat
+                        d.sessions[i].longitude = lng
+                        d.sessions[i].placeId = p[2]
+                        d.sessions[i].placeName = p[3]
+                        d.sessions[i].country = p[4]
+                    }
+                }
+            }
         case "openPlace": openPlaceSheet(arg.split(separator: "+").map(String.init))
         case "openRecBook": Int(arg).map { openRecordBook($0) }
         case "closePlace": closePlaceSheet()

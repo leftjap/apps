@@ -149,10 +149,17 @@ struct RTPlaceSheetView: View {
     func coverButton(_ cv: RTRecord.SheetCover, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             ZStack(alignment: .bottomLeading) {
-                RTFillCover(fill: cv.fill, tc: cv.tc, title: cv.title,
-                            size: CGSize(width: 66, height: 95), radius: 5,
-                            spine: 3, spineAlpha: 0.18, fontSize: 12, lineHeight: 13.2,
-                            pad: 4, wrap: true)
+                Group {
+                    if cv.coverUrl.isEmpty {   // 데모 — 색+제목 플레이스홀더
+                        RTFillCover(fill: cv.fill, tc: cv.tc, title: cv.title,
+                                    size: CGSize(width: 66, height: 95), radius: 5,
+                                    spine: 3, spineAlpha: 0.18, fontSize: 12, lineHeight: 13.2,
+                                    pad: 4, wrap: true)
+                    } else {                   // §14 실표지 (실데이터)
+                        RTRemoteCover(url: cv.coverUrl, size: CGSize(width: 66, height: 95),
+                                      radius: 5, title: cv.title)
+                    }
+                }
                     .rtBoxShadow(RoundedRectangle(cornerRadius: 5),
                                  color: Color(hex: 0x3A2C1C, alpha: 0.42), blur: 16, y: 8, spread: -6)
                 if cv.millie {
@@ -244,10 +251,17 @@ struct RTBookSheetView: View {
 
     var header: some View {
         HStack(alignment: .top, spacing: 14) {
-            RTFillCover(fill: book.fill, tc: book.tc, title: book.title,
-                        size: CGSize(width: 72, height: 104), radius: 5,
-                        spine: 3, spineAlpha: 0.18, fontSize: 13, lineHeight: 14.56,
-                        pad: 5, wrap: true)
+            Group {
+                if book.coverUrl.isEmpty {     // 데모 — 색+제목 플레이스홀더
+                    RTFillCover(fill: book.fill, tc: book.tc, title: book.title,
+                                size: CGSize(width: 72, height: 104), radius: 5,
+                                spine: 3, spineAlpha: 0.18, fontSize: 13, lineHeight: 14.56,
+                                pad: 5, wrap: true)
+                } else {                       // §14 실표지 (실데이터)
+                    RTRemoteCover(url: book.coverUrl, size: CGSize(width: 72, height: 104),
+                                  radius: 5, title: book.title)
+                }
+            }
                 .rtBoxShadow(RoundedRectangle(cornerRadius: 5),
                              color: Color(hex: 0x3A2C1C, alpha: 0.45), blur: 20, y: 10, spread: -7)
             VStack(alignment: .leading, spacing: 0) {

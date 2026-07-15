@@ -19,6 +19,7 @@ struct ReadingTimeApp: App {
     @StateObject private var tapClock = TapClock()
     private let cloud: CloudStore
     private let liveActivity = LiveActivityController()
+    private let location: LocationCapture
 
     init() {
         let regErrors = RTFonts.register()
@@ -51,10 +52,15 @@ struct ReadingTimeApp: App {
                 }
             }
         }
-        // 읽는 중 프레즌스 — 세션 시작/정지 시 reading_since 갱신
+        // 읽는 중 프레즌스 — 세션 시작/정지 시 reading_since 갱신 + 시작 시 읽은 위치 캡처(§13)
+        let location = LocationCapture()
+        self.location = location
         model.onReadingPresence = { reading in
+            if reading { Task { @MainActor in location.capture() } }
             Task { try? await cloud.setReadingSince(reading ? Date() : nil) }
         }
+        // 저장 시점에 세션에 부착할 위치 스냅샷 (미확보면 nil → 위치 없이 저장)
+        model.locationProvider = { location.fix }
 
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
         model.onAuthChange = { [weak model] loggedIn in
@@ -328,6 +334,10 @@ struct ReadingTimeApp: App {
                 }
                 .onReceive(model.$session) { session in
                     Self.updateAwake(route: model.route, session: session)
+                }
+                .onReceive(model.$sheet) { sheet in
+                    // 시간 직접 추가도 읽은 위치 부착 — 시트 열림 시 캡처, 저장은 addTime 이 provider 로
+                    if sheet == .addtime { location.capture() }
                 }
                 .onReceive(model.$session) { session in
                     // 잠금 화면 Live Activity — 상태 전환만 반영(초 틱은 시스템 자동 타이머)

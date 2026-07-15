@@ -61,6 +61,25 @@ public struct RTSessionRecord: Codable, Equatable, Sendable {
     }
 }
 
+/// 위치 픽스 — 앱 셸(CoreLocation)이 locationProvider 로 공급하는 스냅샷 (§13·§16).
+/// placeId 는 지도 클러스터 키(동 단위), placeName/country 는 표시용.
+public struct RTPlaceFix: Equatable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+    public let placeId: String
+    public let placeName: String?
+    public let country: String?
+
+    public init(latitude: Double, longitude: Double, placeId: String,
+                placeName: String? = nil, country: String? = nil) {
+        self.latitude = latitude
+        self.longitude = longitude
+        self.placeId = placeId
+        self.placeName = placeName
+        self.country = country
+    }
+}
+
 public struct RTUserData: Codable, Equatable, Sendable {
     public var books: [RTBook]
     public var sessions: [RTSessionRecord]
