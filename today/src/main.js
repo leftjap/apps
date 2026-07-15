@@ -27,6 +27,7 @@ import { Spotlight } from './features/spotlight.js';
 import { Account } from './features/account.js';
 import { Admin } from './features/admin.js';
 import { Comments } from './features/comments.js';
+import { mountPushToggle } from './features/pushToggle.js';
 import { Sync } from './db/sync.js';
 import { DevSeed } from './db/devSeed.js';
 import { showAuthenticated, showLogin, setRouterUser } from './app.js';
@@ -132,6 +133,9 @@ async function handleSession(session) {
     );
     Account.mountAccountView(user).catch((e) =>
       console.warn('[main] mountAccountView 실패', e?.message || e),
+    );
+    mountPushToggle(user).catch((e) =>
+      console.warn('[main] mountPushToggle 실패', e?.message || e),
     );
     // Wave 11.8 — admin UI (사용자별 매핑 편집)
     Admin.mountAdminView(user).catch((e) =>

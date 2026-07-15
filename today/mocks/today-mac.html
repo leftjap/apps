@@ -4888,6 +4888,15 @@
             </svg>
             휴지통
           </div>
+          <!-- 댓글 알림 토글 (Web Push) — data-action 없음: openAccModal 우회, pushToggle.js 가 배선 -->
+          <div class="sb__menu-item" role="menuitemcheckbox" tabindex="0" id="pushToggleItem" aria-checked="false">
+            <svg class="ico" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 2a3.5 3.5 0 0 0-3.5 3.5c0 3-1.5 4-1.5 4h10s-1.5-1-1.5-4A3.5 3.5 0 0 0 8 2z"/>
+              <path d="M6.5 13a1.5 1.5 0 0 0 3 0"/>
+            </svg>
+            댓글 알림
+            <span class="shortcut" id="pushToggleState">꺼짐</span>
+          </div>
           <div class="sb__menu-divider"></div>
           <!-- 로그아웃 -->
           <div class="sb__menu-item" role="menuitem" tabindex="0" data-action="logout">

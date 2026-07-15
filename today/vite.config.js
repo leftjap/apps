@@ -49,6 +49,8 @@ export default defineConfig({
       includeAssets: ['icons/*.png'],
       manifest: false,
       workbox: {
+        // Web Push 핸들러 주입 — generateSW 유지(캐싱 무변경), public/push-sw.js 를 SW 에 importScripts.
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
         // Wave 11.9.1 — heic2any chunk (1.35 MB) 는 precache 제외 (HEIC 첨부 시점 lazy fetch).
         // 일반 사용자 (JPEG/PNG only) PWA 첫 설치 부담 1.95 → 0.6 MB.
