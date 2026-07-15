@@ -42,20 +42,56 @@ async function call(path, params) {
   return res.json();
 }
 
-/** 영화 키워드 검색 → 정규화 배열. */
-export async function searchMovies(query, { max = 8 } = {}) {
+// TMDB 검색은 한글 띄어쓰기에 민감(2026-07 실측): 질의를 공백으로 토큰화해 제목 토큰과 prefix 정렬 매칭.
+// "세븐 킹덤의 기사"(3토큰)는 제목 "세븐킹덤의 기사"(2토큰)와 정렬 실패 → 0건. 공백 하나만 지운
+// "세븐킹덤의 기사"는 매칭 ✓. 공백을 전부 지운 "세븐킹덤의기사"는 첫 토큰을 초과해 오히려 0건.
+// → 공백 포함 CJK 질의는 원본 + 인접 토큰 병합 변형(공백 1개씩 제거)을 병렬 검색해 id 합집합(원본 우선).
+// Aladin(책) 검색엔 없는 TMDB 한정 약점이라 클라이언트에서 보정.
+const CJK = /[぀-ヿ㐀-䶿一-鿿가-힯]/;
+
+function spaceVariants(q) {
+  if (!CJK.test(q) || !/\s/.test(q)) return [q];
+  const tokens = q.split(/\s+/).filter(Boolean);
+  const out = [q];
+  for (let i = 0; i < tokens.length - 1; i++) {
+    const merged = tokens.slice();
+    merged.splice(i, 2, tokens[i] + tokens[i + 1]); // i번째 공백만 제거(인접 토큰 병합)
+    out.push(merged.join(' '));
+  }
+  return out;
+}
+
+async function searchVariant(path, q, norm) {
+  const data = await call(path, { query: q, language: 'ko-KR', include_adult: 'false' });
+  return (data.results || []).map(norm).filter(Boolean);
+}
+
+async function search(path, query, norm, max) {
   const q = (query || '').trim();
   if (!q) return [];
-  const data = await call('search/movie', { query: q, language: 'ko-KR', include_adult: 'false' });
-  return (data.results || []).map(normMovie).filter(Boolean).slice(0, max);
+  const [primary, ...rest] = spaceVariants(q);
+  const lists = await Promise.all([
+    searchVariant(path, primary, norm),                              // 원본: 기존 throw 계약 유지
+    ...rest.map((v) => searchVariant(path, v, norm).catch(() => [])), // 병합 변형: best-effort
+  ]);
+  const seen = new Set();
+  const merged = [];
+  for (const list of lists) for (const item of list) {
+    if (seen.has(item.tmdbId)) continue;
+    seen.add(item.tmdbId);
+    merged.push(item);
+  }
+  return merged.slice(0, max);
+}
+
+/** 영화 키워드 검색 → 정규화 배열. */
+export async function searchMovies(query, { max = 8 } = {}) {
+  return search('search/movie', query, normMovie, max);
 }
 
 /** 드라마(TV) 키워드 검색 → 정규화 배열. */
 export async function searchTv(query, { max = 8 } = {}) {
-  const q = (query || '').trim();
-  if (!q) return [];
-  const data = await call('search/tv', { query: q, language: 'ko-KR', include_adult: 'false' });
-  return (data.results || []).map(normTv).filter(Boolean).slice(0, max);
+  return search('search/tv', query, normTv, max);
 }
 
 function names(arr, n) {

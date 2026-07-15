@@ -19,6 +19,14 @@ let lastUrl;
 function mockFetch(data) {
   global.fetch = vi.fn(async (url) => { lastUrl = url; return { ok: true, json: async () => data }; });
 }
+// query 값에 따라 다른 응답 — TMDB 한글 띄어쓰기 민감성 재현용.
+function mockFetchByQuery(mapFn) {
+  global.fetch = vi.fn(async (url) => {
+    const u = new URL(url, 'http://x');
+    lastUrl = url;
+    return { ok: true, json: async () => mapFn(u.searchParams.get('query'), u.pathname) };
+  });
+}
 beforeEach(() => { lastUrl = undefined; });
 
 describe('searchTv', () => {
@@ -114,6 +122,39 @@ describe('detailTv', () => {
       cast: ['김무열', '이성민', '진기주'], country: 'South Korea',
       genres: ['Action & Adventure', '드라마'],
     });
+  });
+});
+
+// TMDB 검색은 한글 띄어쓰기에 민감(2026-07 실측): "세븐 킹덤의 기사"(공백)는 0건,
+// "세븐킹덤의 기사"(공백제거)는 매칭. 반대로 "어벤져스 엔드게임"(공백)은 맞고 공백제거는 0건.
+// → 공백 포함 CJK 질의는 원본 + 공백제거본 합집합.
+describe('한글 띄어쓰기 민감성 (원본·공백제거 합집합)', () => {
+  const SHOW = { id: 224372, name: '세븐킹덤의 기사', original_name: 'A Knight of the Seven Kingdoms',
+    first_air_date: '2026-01-18', poster_path: '/p.jpg', overview: '', adult: false };
+
+  it('공백 입력이 0건이어도 공백제거 변형으로 찾는다 (세븐 킹덤의 기사 → HBO 드라마)', async () => {
+    mockFetchByQuery((q) => (q === '세븐킹덤의 기사' ? { results: [SHOW] } : { results: [] }));
+    const r = await searchTv('세븐 킹덤의 기사');
+    expect(r.map((x) => x.tmdbId)).toContain('224372');
+  });
+
+  it('공백제거 변형이 0건이어도 원본(띄어쓰기) 결과는 유지 (어벤져스 엔드게임)', async () => {
+    const AV = { id: 299534, title: '어벤져스: 엔드게임', release_date: '2019-04-24', poster_path: '/a.jpg', overview: '', adult: false, video: false };
+    mockFetchByQuery((q) => (q === '어벤져스 엔드게임' ? { results: [AV] } : { results: [] }));
+    const r = await searchMovies('어벤져스 엔드게임');
+    expect(r.map((x) => x.tmdbId)).toEqual(['299534']);
+  });
+
+  it('원본·공백제거 변형이 같은 작품 반환 시 중복 제거', async () => {
+    mockFetchByQuery(() => ({ results: [SHOW] }));
+    const r = await searchTv('세븐 킹덤의 기사');
+    expect(r.filter((x) => x.tmdbId === '224372')).toHaveLength(1);
+  });
+
+  it('영문/공백없는 질의는 단일 검색 (변형 미발동)', async () => {
+    mockFetch(MOVIE_RES);
+    await searchMovies('Parasite Movie');
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });
 
