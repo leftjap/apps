@@ -295,7 +295,10 @@ final class FlipEngine: ObservableObject {
     }
 
     private func performDown(at now: Date, signal: Bool = true) {
-        if model.route == .home, model.currentBook != nil {
+        // 03 대기(flipWait)는 책상세 '이어서 읽기'·'다시 읽기'(start(isbn:))가 여전히 진입한다 —
+        // bd711b1 이 홈 즉시 기록을 도입하며 "flipWait 도달 안 됨"으로 오판해 분기를 제거했던
+        // 회귀 (실기기 버그 2026-07-15: 03 에서 엎어도 기록 시작 안 됨).
+        if model.route == .flipWait || (model.route == .home && model.currentBook != nil) {
             // 읽기 뎁스 제거(§4-1): 홈(책 있음, 포그라운드)에서 엎으면 대기 화면 없이 즉시 기록.
             // 빈 홈(책 없음)은 기록 대상이 없으므로 시작하지 않는다 (수용기준#1 — 빈 홈은 책 추가 유도).
             session.start(at: now)
