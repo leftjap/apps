@@ -6,7 +6,12 @@ CLBackgroundActivitySession(위치 keep-alive)을 한 번이라도 등록한 앱
 pid 를 반환하며 런치 인자를 조용히 버린다 (`--terminate-running-process` 도 경쟁에서 짐).
 - **증상**: `--seq`/`--sim-motion` 미적용, 앱이 홈 라우트로 뜸. 에러 없음.
 - **판정**: 매 launch 후 `ps aux | grep <app>` 로 인자 실재 확인 의무 (스크린샷보다 먼저).
+  `ps -o command=` 는 경로(~185자)가 길어 `cut`/기본 폭에 인자가 잘림 — `ps -axww` 필수 (2026-07-16 재발).
 - **해법**: `simctl privacy <UD> reset location <bundle>` + **시뮬 재부팅** → 재기동 루프 소멸.
+- **해법(대안, 2026-07-16 검증)**: 시나리오마다 `uninstall → install → 첫 launch` — 설치 직후
+  첫 런치는 keep-alive 미등록이라 인자가 항상 전달된다. 앱 로그(rtdbg)로 스크립트 이벤트 실재 교차 확인.
+- **실기기 변형**: 기기가 **잠금 상태**면 `devicectl launch` 가 프로세스만 스폰하고 scenePhase 활성화가
+  안 돼 `--seq`/`--capture` 가 무효 (에러·로그 없음). 실기기 스크립트 E2E 는 잠금 해제 상태에서만.
 
 ## 2. 잠금 후 ~30초에 앱 서스펜드 — 시뮬은 keep-alive 검증 불가
 위치 권한을 허용해도 시뮬의 CLBackgroundActivitySession + CLLocationUpdate.liveUpdates 는
