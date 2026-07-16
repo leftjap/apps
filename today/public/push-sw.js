@@ -20,12 +20,18 @@ self.addEventListener('push', (event) => {
     (async () => {
       // userVisibleOnly 준수 — 반드시 알림 표시 (미표시 시 iOS 구독 취소됨).
       await self.registration.showNotification(title, options);
-      // 앱 아이콘 배지 — WebKit 문서상 SW push 핸들러에서 setAppBadge 갱신 작동(iOS 16.4+, webkit.org/blog/14112).
-      // 가시 배지는 홈화면 설치 PWA + 알림 권한 전제. 실측(Chrome 실 푸시): setAppBadge(n) 실행 성공(ok).
+      // 앱 아이콘 배지 = 서버가 payload.badge 로 준 미읽음 수(정본). 없으면 표시된 알림 수로 폴백.
+      // WebKit 문서상 SW push 핸들러에서 setAppBadge 갱신 작동(iOS 16.4+, webkit.org/blog/14112) — 홈화면 설치 PWA + 권한 전제.
       try {
         if (self.navigator && self.navigator.setAppBadge) {
-          const n = (await self.registration.getNotifications()).length;
-          await self.navigator.setAppBadge(n);
+          const badge =
+            typeof data.badge === 'number'
+              ? data.badge
+              : (await self.registration.getNotifications()).length;
+          if (badge > 0) await self.navigator.setAppBadge(badge);
+          else if (self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
+          const __cs = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+          __cs.forEach((c) => c.postMessage({ __pushBadgeDiag: 'set:' + badge }));
         }
       } catch (e) {
         /* no-op */

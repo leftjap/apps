@@ -13,10 +13,14 @@ export function shouldPush(record) {
   return !!record && PUSHABLE_KINDS.has(record.kind) && !!record.recipient_id;
 }
 
-/** 알림 row → showNotification 페이로드 (title/body/tag/data). */
-export function buildPushPayload(record) {
+/**
+ * 알림 row → showNotification 페이로드 (title/body/tag/data).
+ * badge = 수신자의 서버 미읽음 수(today_notifications.read_at IS NULL). 앱 아이콘 배지 정본.
+ * getNotifications().length(표시된 배너 수)는 취약·부정확해 안 씀 — SW 는 이 badge 값을 쓴다.
+ */
+export function buildPushPayload(record, badge) {
   const preview = (record.preview || '').trim();
-  return {
+  const payload = {
     title: '새 댓글',
     body: preview || '댓글이 달렸어요',
     tag: `comment-${record.comment_id || record.id}`,
@@ -27,4 +31,6 @@ export function buildPushPayload(record) {
       recipientId: record.recipient_id,
     },
   };
+  if (typeof badge === 'number') payload.badge = badge;
+  return payload;
 }

@@ -52,4 +52,11 @@ describe('buildPushPayload', () => {
     expect(p.body.length).toBeGreaterThan(0);
     expect(p.body).not.toBe('   ');
   });
+  it('badge = 서버 미읽음 수 (앱 아이콘 배지 정본)', () => {
+    expect(buildPushPayload(baseRow, 3).badge).toBe(3);
+    expect(buildPushPayload(baseRow, 0).badge).toBe(0);
+  });
+  it('badge 미지정 시 필드 없음(하위호환)', () => {
+    expect('badge' in buildPushPayload(baseRow)).toBe(false);
+  });
 });

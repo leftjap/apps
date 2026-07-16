@@ -81,8 +81,16 @@ Deno.serve(async (req: Request) => {
   if (error) return json(500, { error: 'subs_query', detail: error.message });
   if (!subs || subs.length === 0) return json(200, { status: 'no_subscribers' });
 
+  // 앱 아이콘 배지 정본 = 수신자 미읽음 알림 수(entry_unshared 는 background 신호라 제외 — 클라 countUnread 와 동일).
+  const { count: unread } = await supabase
+    .from('today_notifications')
+    .select('id', { count: 'exact', head: true })
+    .eq('recipient_id', record!.recipient_id)
+    .is('read_at', null)
+    .neq('kind', 'entry_unshared');
+
   const appServer = await getAppServer();
-  const payload = JSON.stringify(buildPushPayload(record));
+  const payload = JSON.stringify(buildPushPayload(record, typeof unread === 'number' ? unread : undefined));
   let sent = 0;
   let pruned = 0;
 
