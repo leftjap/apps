@@ -5,8 +5,9 @@
  * 순수 함수라 vitest 로 단위 테스트 (Deno 의존 없음).
  */
 
-// 푸시로 알릴 알림 종류. 현재는 새 댓글만 (리액션·공유해제 등은 인앱 배지로 충분).
-export const PUSHABLE_KINDS = new Set(['new_comment']);
+// 푸시로 알릴 알림 종류 — 새 댓글(INSERT 즉시, 0029 웹훅) + 새 글(클로드 자동댓글=완성 신호 시점, 0030 트리거).
+// 리액션·공유해제 등은 인앱 배지로 충분.
+export const PUSHABLE_KINDS = new Set(['new_comment', 'new_post']);
 
 /** 이 알림 row 를 Web Push 로 보낼지. */
 export function shouldPush(record) {
@@ -19,11 +20,14 @@ export function shouldPush(record) {
  * getNotifications().length(표시된 배너 수)는 취약·부정확해 안 씀 — SW 는 이 badge 값을 쓴다.
  */
 export function buildPushPayload(record, badge) {
-  const preview = (record.preview || '').trim();
+  const isPost = record.kind === 'new_post';
+  // 글 preview 는 contenteditable HTML 조각(0013 이 content 앞 50자 동기화) — 푸시 본문에 태그 노출 방지.
+  const raw = record.preview || '';
+  const preview = (isPost ? raw.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ') : raw).trim();
   const payload = {
-    title: '새 댓글',
-    body: preview || '댓글이 달렸어요',
-    tag: `comment-${record.comment_id || record.id}`,
+    title: isPost ? '새 글' : '새 댓글',
+    body: preview || (isPost ? '새 글이 올라왔어요' : '댓글이 달렸어요'),
+    tag: isPost ? `post-${record.entry_id || record.id}` : `comment-${record.comment_id || record.id}`,
     data: {
       notificationId: record.id,
       entryId: record.entry_id,

@@ -60,3 +60,32 @@ describe('buildPushPayload', () => {
     expect('badge' in buildPushPayload(baseRow)).toBe(false);
   });
 });
+
+describe('new_post — 클로드 자동댓글(글 완성 신호) 시점 발사', () => {
+  const postRow = {
+    id: 'n2',
+    recipient_id: 'u-gio',
+    kind: 'new_post',
+    entry_id: 'e1',
+    comment_id: null,
+    preview: '오늘은 미서부다',
+  };
+  it('new_post + recipient → true', () => {
+    expect(shouldPush(postRow)).toBe(true);
+  });
+  it('payload: 제목=새 글, tag=post-<entry>, body=preview', () => {
+    const p = buildPushPayload(postRow);
+    expect(p.title).toBe('새 글');
+    expect(p.tag).toBe('post-e1');
+    expect(p.body).toBe('오늘은 미서부다');
+    expect(p.data).toMatchObject({ notificationId: 'n2', entryId: 'e1', recipientId: 'u-gio' });
+  });
+  it('HTML preview → 태그 제거 (글 본문은 contenteditable HTML)', () => {
+    const p = buildPushPayload({ ...postRow, preview: '<br><div>오늘은</div>&nbsp;미서부다' });
+    expect(p.body).toBe('오늘은 미서부다');
+  });
+  it('빈/태그뿐 preview → fallback body', () => {
+    expect(buildPushPayload({ ...postRow, preview: '<br><div><br></div>' }).body).toBe('새 글이 올라왔어요');
+    expect(buildPushPayload({ ...postRow, preview: '' }).body).toBe('새 글이 올라왔어요');
+  });
+});

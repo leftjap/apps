@@ -25,6 +25,16 @@ describe('pushToggleLabel', () => {
     expect(r.on).toBe(false);
     expect(r.sub).toMatch(/꺼짐/);
   });
+  it('라벨 텍스트 = "알림" (새 글 푸시 추가로 댓글 한정 라벨 폐기)', () => {
+    for (const status of [
+      { supported: false, permission: 'default', subscribed: false },
+      { supported: true, permission: 'denied', subscribed: false },
+      { supported: true, permission: 'granted', subscribed: true },
+      { supported: true, permission: 'default', subscribed: false },
+    ]) {
+      expect(pushToggleLabel(status).text).toBe('알림');
+    }
+  });
 });
 
 describe('mountPushToggle', () => {

@@ -1,5 +1,5 @@
 /**
- * Web Push 구독 (댓글 알림).
+ * Web Push 구독 (새 글 + 댓글 알림).
  *
  * 흐름: enablePush → Notification 권한 요청(사용자 제스처) → pushManager.subscribe(VAPID 공개키)
  *       → today_push_subscriptions upsert(endpoint 기준). 서버(send-push Edge Function)가 이 구독으로 전송.

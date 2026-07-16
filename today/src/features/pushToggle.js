@@ -1,5 +1,5 @@
 /**
- * 설정 메뉴 "댓글 알림" 토글 — Web Push 구독 on/off + 상태 반영.
+ * 설정 메뉴 "알림" 토글 — Web Push 구독 on/off + 상태 반영.
  *
  * mocks #settingsMenu 의 #pushToggleItem(=data-action 없음 → openAccModal 우회) 에 배선.
  * 클릭 시 구독/해제, 라벨(.shortcut)에 켜짐/꺼짐/권한거부/미지원 반영.
@@ -9,10 +9,10 @@ import { enablePush as _enablePush, disablePush as _disablePush, getPushStatus a
 
 /** 구독 상태 → 메뉴 라벨/동작. 순수 함수. */
 export function pushToggleLabel(status) {
-  if (!status || !status.supported) return { text: '댓글 알림', sub: '알림 미지원', on: false, disabled: true };
-  if (status.permission === 'denied') return { text: '댓글 알림', sub: '권한 거부됨', on: false, disabled: true };
-  if (status.subscribed) return { text: '댓글 알림', sub: '켜짐', on: true, disabled: false };
-  return { text: '댓글 알림', sub: '꺼짐', on: false, disabled: false };
+  if (!status || !status.supported) return { text: '알림', sub: '알림 미지원', on: false, disabled: true };
+  if (status.permission === 'denied') return { text: '알림', sub: '권한 거부됨', on: false, disabled: true };
+  if (status.subscribed) return { text: '알림', sub: '켜짐', on: true, disabled: false };
+  return { text: '알림', sub: '꺼짐', on: false, disabled: false };
 }
 
 async function applyState(item, getPushStatus) {
