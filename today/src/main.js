@@ -48,18 +48,9 @@ if (typeof window !== 'undefined') {
       console.warn('[main] online flush expenses 실패', e),
     );
   });
-  // 새 빌드 자동 적용 — 새 SW 가 페이지 제어를 잡으면(controllerchange) 1회 reload.
-  // 기본 registerSW 는 SW skipWaiting/clientsClaim 만 하고 실행 중 페이지는 옛 JS 를 유지 →
-  // iOS PWA 에서 백그라운드 복귀만으론 새 배포가 안 닿던 문제(드로어·로더 수정 미반영). controller
-  // 존재(이미 SW 제어 중 = 첫 설치 아님) 시에만 arm → 첫 설치 reload·루프 방지.
-  if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-    let _swReloaded = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (_swReloaded) return;
-      _swReloaded = true;
-      window.location.reload();
-    });
-  }
+  // 새 빌드 적용은 SW 'prompt' 모드가 담당 — 새 SW 는 대기했다가 다음 콜드스타트에 활성화
+  // (vite.config.js registerType 주석 참조). 과거 controllerchange 강제 reload(ef872e0)는
+  // 배포 후 첫 실행마다 "2번 로딩"을 유발해 제거 (2026-07-16).
 }
 
 // 사용자별 부팅 가드 — handleSession 의 전체 인증 부팅(뷰 mount + startSync + realtime 구독)을
