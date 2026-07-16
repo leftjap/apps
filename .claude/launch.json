@@ -2,6 +2,21 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "catcrew-proto",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5333",
+        "--directory",
+        "/private/tmp/claude-501/-Users-gio-c-apps/987b08db-050a-4c1e-8327-a34899845e55/scratchpad/cat-crew-proto",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 5333,
+      "autoPort": false
+    },
+    {
       "name": "best-dev",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["dev"],
