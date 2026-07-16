@@ -10,8 +10,9 @@ pid 를 반환하며 런치 인자를 조용히 버린다 (`--terminate-running-
 - **해법**: `simctl privacy <UD> reset location <bundle>` + **시뮬 재부팅** → 재기동 루프 소멸.
 - **해법(대안, 2026-07-16 검증)**: 시나리오마다 `uninstall → install → 첫 launch` — 설치 직후
   첫 런치는 keep-alive 미등록이라 인자가 항상 전달된다. 앱 로그(rtdbg)로 스크립트 이벤트 실재 교차 확인.
-- **실기기 변형**: 기기가 **잠금 상태**면 `devicectl launch` 가 프로세스만 스폰하고 scenePhase 활성화가
-  안 돼 `--seq`/`--capture` 가 무효 (에러·로그 없음). 실기기 스크립트 E2E 는 잠금 해제 상태에서만.
+- **실기기 변형**: 기기가 **잠금 상태**면 `devicectl launch` 는 성공을 반환하지만 앱 로그(rtdbg)에
+  활성 복귀·스크립트 이벤트가 전혀 안 남고 `--capture` 파일도 안 생긴다 (2026-07-16 실측 — UI 미활성
+  추정, 메커니즘 미확인). 실기기 스크립트 E2E 는 잠금 해제 상태에서만.
 
 ## 2. 잠금 후 ~30초에 앱 서스펜드 — 시뮬은 keep-alive 검증 불가
 위치 권한을 허용해도 시뮬의 CLBackgroundActivitySession + CLLocationUpdate.liveUpdates 는

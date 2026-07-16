@@ -262,6 +262,22 @@ struct ReadingTimeApp: App {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { model.playPickup = false }
     }
 
+    /// 근접 센서 정책 — 화면 오프가 유효한 상태에서만: 대기(03)·홈(즉시 엎기 대상)·**기록 중**(엎힘).
+    /// 일시정지(들어올림 감지 직후)엔 즉시 해제 — 모니터링 해제는 덮인 센서의 화면 오프를 강제
+    /// 복귀시킨다. 라우트 기준만으로 관리하던 기존 배선은 paused 에도 켜져 있어, 집어드는 손이
+    /// 수화부 센서를 덮으면 수 초~수 분 암전 (검은 화면 버그 2026-07-16, rtdbg 20:49 실측:
+    /// 들어올림 감지 후 활성 복귀까지 6~11초+ — 모델은 정상 pause/resume, 화면만 미복귀).
+    @MainActor private static var proximityOn: Bool?
+    private static func updateProximity(route: RTRoute, session: RTSession?, active: Bool) {
+        let recording = session?.status == .recording
+        let want = active && (route == .flipWait || route == .home
+            || (route == .flipTimer && recording))
+        guard want != proximityOn else { return }
+        proximityOn = want
+        UIDevice.current.isProximityMonitoringEnabled = want
+        RTDbg.p("proximity: \(want ? "on" : "off") (route=\(route.rawValue), rec=\(recording), active=\(active))")
+    }
+
     /// 세션 자동 잠금 정책 — 서드파티는 잠긴 화면을 깨울 수 없으므로(알림·LA alert
     /// 실기기 실측 무효, 2026-07-04) "기록·대기 중 = 사용 중"으로 잠금 자체를 방지.
     /// 일시정지 상태는 일반 자동 잠금 복귀 (방치 시 영구 미잠금 방지 — 잠기면
@@ -327,13 +343,16 @@ struct ReadingTimeApp: App {
                     // 엎기 모드: 근접 센서로 엎힌 동안 화면 하드웨어 오프(통화와 동일 메커니즘)
                     // → 배터리 소모 없이, 들어올리면 즉시 04 타이머 화면 + 포그라운드 강햅틱.
                     // 포그라운드 전용 (잠금 중 진동 간섭 배제 — scenePhase 핸들러와 동일 규칙)
-                    UIDevice.current.isProximityMonitoringEnabled = sensorSession && scenePhase == .active
+                    Self.updateProximity(route: route, session: model.session, active: scenePhase == .active)
                     // 홈·엎기 대기·타이머 화면에서 센서 가동. keep-alive 는 녹화 대기/중에만.
                     if sensorSession { flip.startMonitoring() } else { flip.stopMonitoring() }
                     if awakeSession { keepAlive.start() } else { keepAlive.stop() }
                 }
                 .onReceive(model.$session) { session in
                     Self.updateAwake(route: model.route, session: session)
+                    // 들어올림(일시정지) 순간 근접 모니터링 해제 — 집어드는 손이 센서를 덮고
+                    // 있어도 화면 강제 재점등 (검은 화면 버그 2026-07-16, rtdbg 20:49 실측)
+                    Self.updateProximity(route: model.route, session: session, active: scenePhase == .active)
                 }
                 .onReceive(model.$sheet) { sheet in
                     // 시간 직접 추가도 읽은 위치 부착 — 시트 열림 시 캡처, 저장은 addTime 이 provider 로
@@ -348,8 +367,7 @@ struct ReadingTimeApp: App {
                     // 근접 센서는 포그라운드 전용 — 비잠금 엎힘의 화면 오프용이며 잠금 시엔
                     // 화면이 이미 꺼져 있어 무용. 잠금+센서 덮임이 AudioServices 진동을
                     // 간섭하는 정황(7차 실기기: 진동 미발생) 배제 목적.
-                    UIDevice.current.isProximityMonitoringEnabled =
-                        phase == .active && (model.route == .flipWait || model.route == .flipTimer || model.route == .home)
+                    Self.updateProximity(route: model.route, session: model.session, active: phase == .active)
                     // 백그라운드↔포그라운드 전환마다 모션 스트림 재시작 (iOS 11+ 버그 대응)
                     if phase == .background || phase == .active {
                         flip.handleScenePhaseChange()
