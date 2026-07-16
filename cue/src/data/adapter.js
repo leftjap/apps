@@ -118,15 +118,39 @@ async function countRows(client, table, filters = (q) => q) {
   }
 }
 
+/** 리딩타임 최신 종이책 — readingtime_userdata 의 RTUserData JSON 스냅샷에서
+    마지막 세션(endedAt 최신)의 isbn 을 books 제목으로 해석. 파손·부재 시 null. */
+function latestPaperBook(dataStr) {
+  try {
+    const d = JSON.parse(dataStr);
+    const last = (d.sessions || []).reduce((mx, s) => (!mx || s.endedAt > mx.endedAt ? s : mx), null);
+    const book = last && (d.books || []).find((b) => b.isbn === last.isbn);
+    return book ? { title: book.title, percent: null, at: Date.parse(last.endedAt) || 0 } : null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchRead(client, userId, today, len, sinceKey) {
+  // 전자책(밀리, 화면시간 프록시) + 종이책(리딩타임 iOS, flip/manual) 두 소스를 일별 초 합산.
   const data = await rows(client, 'book_reading_seconds', 'day, seconds',
     (q) => q.eq('owner_id', userId).gte('day', sinceKey));
-  const series = dailySeries(data, (r) => r.day, (r) => Math.round(r.seconds / 60), len, today);
+  const paper = await rows(client, 'readingtime_daily', 'day, seconds',
+    (q) => q.eq('owner_id', userId).gte('day', sinceKey));
+  const series = dailySeries([...data, ...paper], (r) => r.day, (r) => r.seconds, len, today)
+    .map((v) => Math.round(v / 60));
   const s = seriesStats(series, today);
   // 밀리 현재 책(제목·진도) — millie-book-sync 가 맥 밀리앱 로컬 DB 에서 적재. 테이블 없으면 rows()=[] (안전).
-  const cbRows = await rows(client, 'book_current_reading', 'title, read_percent',
+  const cbRows = await rows(client, 'book_current_reading', 'title, read_percent, last_read_at',
     (q) => q.eq('owner_id', userId).limit(1));
-  const currentBook = cbRows[0] ? { title: cbRows[0].title, percent: cbRows[0].read_percent } : null;
+  const millieBook = cbRows[0]
+    ? { title: cbRows[0].title, percent: cbRows[0].read_percent, at: Date.parse(cbRows[0].last_read_at) || 0 }
+    : null;
+  // hook 의 책 = 더 최근에 읽은 소스 (밀리 last_read_at vs 리딩타임 마지막 세션 endedAt)
+  const udRows = await rows(client, 'readingtime_userdata', 'data',
+    (q) => q.eq('owner_id', userId).limit(1));
+  const paperBook = udRows[0] ? latestPaperBook(udRows[0].data) : null;
+  const currentBook = [millieBook, paperBook].filter(Boolean).sort((a, b) => b.at - a.at)[0] || null;
   const built = buildRead({
     done: s.done, todayMin: s.todayVal, lastVal: s.lastVal, lastDaysAgo: s.lastDaysAgo,
     weekDays: s.weekDays, lastWeekDays: s.lastWeekDays,

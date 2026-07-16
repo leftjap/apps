@@ -68,14 +68,18 @@ const jpChars = (JSON.stringify(lang).match(/[぀-ヿ一-鿿]/g) || []);
 cmp('일본어 문자 0개', 0, jpChars.length);
 
 // ─────────── 독서 ───────────
-console.log('\n■ 독서 (read)');
-const { data: bk } = await c.from('book_reading_seconds').select('day,seconds').eq('owner_id', uid).gte('day', yStart);
-const bkToday = bk.find((r) => r.day === tk);
-cmp('오늘 분', bkToday ? Math.round(bkToday.seconds / 60) : 0, read.tlMeta ? parseInt(read.tlMeta) : 0);
-cmp('done', !!(bkToday && Math.round(bkToday.seconds / 60) > 0), read.done);
-const rdMonMin = Math.round(bk.filter((r) => r.day >= monStart && r.day <= tk).reduce((a, r) => a + r.seconds, 0) / 60);
+console.log('\n■ 독서 (read) — 밀리(book_reading_seconds) + 리딩타임(readingtime_daily) 병합');
+const { data: bkMillie } = await c.from('book_reading_seconds').select('day,seconds').eq('owner_id', uid).gte('day', yStart);
+const { data: bkPaper } = await c.from('readingtime_daily').select('day,seconds').eq('owner_id', uid).gte('day', yStart);
+// adapter 와 동일 사양: 일별 초 합산 → 분 반올림 (행별 반올림 아님)
+const bkDayMin = new Map();
+for (const r of [...bkMillie, ...bkPaper]) bkDayMin.set(r.day, (bkDayMin.get(r.day) || 0) + r.seconds);
+for (const [d, sec] of bkDayMin) bkDayMin.set(d, Math.round(sec / 60));
+cmp('오늘 분', bkDayMin.get(tk) || 0, read.tlMeta ? parseInt(read.tlMeta) : 0);
+cmp('done', (bkDayMin.get(tk) || 0) > 0, read.done);
+const rdMonMin = [...bkDayMin].filter(([d]) => d >= monStart && d <= tk).reduce((a, [, m]) => a + m, 0);
 cmp('이번달 시간라벨', rdMonMin >= 60 ? `${Math.round(rdMonMin / 60)}시간` : `${rdMonMin}분`, read.records.find((r) => r.lb === '이번 달').v);
-cmp('올해 읽은 날(분≥1)', distinctActive(bk, (r) => r.day, (r) => Math.round(r.seconds / 60) > 0, yStart, tk), parseInt(read.total.match(/· (\d+)일/)[1]));
+cmp('올해 읽은 날(분≥1)', [...bkDayMin].filter(([d, m]) => d >= yStart && d <= tk && m > 0).length, parseInt(read.total.match(/· (\d+)일/)[1]));
 
 // ─────────── 글쓰기 ───────────
 console.log('\n■ 글쓰기 (write)');

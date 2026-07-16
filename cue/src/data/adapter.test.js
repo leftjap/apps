@@ -86,6 +86,89 @@ describe('buildRealApps 어학 — 언어 분리 (일본어 시드 누출 차단
   });
 });
 
+describe('buildRealApps 독서 — 리딩타임(종이책) 병합 (2026-07-17)', () => {
+  const today = startOfToday();
+  const todayKey = localDayKey(today);
+  const threeAgo = new Date(today); threeAgo.setDate(threeAgo.getDate() - 3);
+  const threeAgoKey = localDayKey(threeAgo);
+  const U = 'u1';
+
+  const rtUserData = JSON.stringify({
+    sessions: [
+      { isbn: '9788954602594', mode: 'flip', endedAt: new Date(today.getTime() + 12 * 3600000).toISOString(), seconds: 524 },
+      { isbn: '9788954602594', mode: 'flip', endedAt: new Date(threeAgo.getTime() + 9 * 3600000).toISOString(), seconds: 300 },
+    ],
+    books: [{ isbn: '9788954602594', title: '캐비닛', author: '김언수' }],
+  });
+
+  it('오늘 종이책(리딩타임)만 읽음 — done·분·hook 제목이 리딩타임을 반영한다', async () => {
+    const canned = {
+      book_reading_seconds: [{ owner_id: U, day: threeAgoKey, seconds: 600 }],
+      readingtime_daily: [{ owner_id: U, day: todayKey, seconds: 524, source: 'flip' }],
+      book_current_reading: [{ owner_id: U, title: 'A가 X에게', read_percent: 11, last_read_at: new Date(threeAgo.getTime() + 3 * 3600000).toISOString() }],
+      readingtime_userdata: [{ owner_id: U, data: rtUserData }],
+    };
+    const apps = await buildRealApps(makeClient(canned), U);
+    const read = apps[0];
+    expect(read.id).toBe('read');
+    expect(read.done).toBe(true); // 종이책 524초 → 9분 — 오늘 읽음
+    expect(read.tlMeta).toBe('9분');
+    // 최신 독서 = 리딩타임 세션(오늘) > 밀리 last_read_at(3일 전) → hook 은 종이책 제목, 진도 없음
+    expect(read.hook).toEqual({ title: '「캐비닛」', strong: '', tail: '까지 읽었어요' });
+  });
+
+  it('같은 날 밀리+종이책 초 합산 후 분 반올림 (97s+524s → 10분)', async () => {
+    const canned = {
+      book_reading_seconds: [{ owner_id: U, day: todayKey, seconds: 97 }],
+      readingtime_daily: [{ owner_id: U, day: todayKey, seconds: 524, source: 'flip' }],
+      book_current_reading: [],
+      readingtime_userdata: [{ owner_id: U, data: rtUserData }],
+    };
+    const apps = await buildRealApps(makeClient(canned), U);
+    expect(apps[0].tlMeta).toBe('10분'); // round(621/60)=10 — 행별 반올림 합(2+9=11) 아님
+  });
+
+  it('밀리 독서가 더 최신이면 hook 은 밀리 제목·진도 유지', async () => {
+    const canned = {
+      book_reading_seconds: [{ owner_id: U, day: todayKey, seconds: 1200 }],
+      readingtime_daily: [{ owner_id: U, day: threeAgoKey, seconds: 300, source: 'flip' }],
+      book_current_reading: [{ owner_id: U, title: 'A가 X에게', read_percent: 11, last_read_at: new Date(today.getTime() + 10 * 3600000).toISOString() }],
+      readingtime_userdata: [{
+        owner_id: U,
+        data: JSON.stringify({
+          sessions: [{ isbn: '9788954602594', endedAt: new Date(threeAgo.getTime() + 9 * 3600000).toISOString(), seconds: 300 }],
+          books: [{ isbn: '9788954602594', title: '캐비닛' }],
+        }),
+      }],
+    };
+    const apps = await buildRealApps(makeClient(canned), U);
+    expect(apps[0].hook).toEqual({ title: '「A가 X에게」', strong: '11%', tail: '까지 읽었어요' });
+  });
+
+  it('리딩타임 테이블 부재(빈 응답) — 기존 밀리 단독 동작 회귀 없음', async () => {
+    const canned = {
+      book_reading_seconds: [{ owner_id: U, day: todayKey, seconds: 1200 }],
+      book_current_reading: [{ owner_id: U, title: 'A가 X에게', read_percent: 11, last_read_at: new Date(today.getTime() + 1 * 3600000).toISOString() }],
+    };
+    const apps = await buildRealApps(makeClient(canned), U);
+    expect(apps[0].done).toBe(true);
+    expect(apps[0].tlMeta).toBe('20분');
+    expect(apps[0].hook).toEqual({ title: '「A가 X에게」', strong: '11%', tail: '까지 읽었어요' });
+  });
+
+  it('userdata JSON 파손 — 밀리 폴백 (크래시 없음)', async () => {
+    const canned = {
+      book_reading_seconds: [{ owner_id: U, day: todayKey, seconds: 1200 }],
+      readingtime_daily: [{ owner_id: U, day: todayKey, seconds: 524, source: 'flip' }],
+      book_current_reading: [{ owner_id: U, title: 'A가 X에게', read_percent: 11, last_read_at: new Date(today.getTime() + 1 * 3600000).toISOString() }],
+      readingtime_userdata: [{ owner_id: U, data: '{broken' }],
+    };
+    const apps = await buildRealApps(makeClient(canned), U);
+    expect(apps[0].hook.title).toBe('「A가 X에게」');
+    expect(apps[0].tlMeta).toBe('29분'); // 1724/60 반올림
+  });
+});
+
 describe('buildRealApps 어학 — 실학습 신호 게이트 (발화 0 잔류 세션 오탐 차단, 2026-07-04)', () => {
   const today = startOfToday();
   const todayKey = localDayKey(today);
