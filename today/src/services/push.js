@@ -103,6 +103,22 @@ export async function disablePush(opts = {}) {
   return { ok: true };
 }
 
+/**
+ * 앱 진입·포그라운드 복귀 시 아이콘 배지 제거 (iOS 관례 — 앱을 열면 확인한 것으로 간주).
+ * 알림 탭으로 진입하는 경로는 push-sw.js notificationclick 이 별도 처리.
+ */
+export function mountBadgeClear(opts = {}) {
+  const nav = opts.nav || (typeof navigator !== 'undefined' ? navigator : null);
+  const doc = opts.doc || (typeof document !== 'undefined' ? document : null);
+  if (!nav?.clearAppBadge) return false;
+  const clear = () => nav.clearAppBadge().catch(() => {});
+  clear();
+  doc?.addEventListener?.('visibilitychange', () => {
+    if (doc.visibilityState === 'visible') clear();
+  });
+  return true;
+}
+
 /** 현재 구독 상태 — { supported, permission, subscribed }. */
 export async function getPushStatus(opts = {}) {
   const supported = opts.supported ?? isPushSupported();

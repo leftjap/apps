@@ -13,6 +13,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   enablePush,
+  mountBadgeClear,
   serializeSubscription,
   urlBase64ToUint8Array,
   VAPID_PUBLIC_KEY,
@@ -120,5 +121,45 @@ describe('enablePush', () => {
       Notification: { requestPermission: vi.fn(async () => 'granted') },
     });
     expect(res).toEqual({ ok: false, reason: 'no_user' });
+  });
+});
+
+describe('mountBadgeClear', () => {
+  function makeDoc(visibilityState = 'visible') {
+    const listeners = {};
+    return {
+      visibilityState,
+      addEventListener: (t, h) => {
+        listeners[t] = h;
+      },
+      _fire: (t) => listeners[t] && listeners[t](),
+    };
+  }
+
+  it('앱 진입 즉시 clearAppBadge 호출 + true', () => {
+    const nav = { clearAppBadge: vi.fn(async () => {}) };
+    expect(mountBadgeClear({ nav, doc: makeDoc() })).toBe(true);
+    expect(nav.clearAppBadge).toHaveBeenCalledTimes(1);
+  });
+
+  it('포그라운드 복귀(visibilitychange→visible) 시 재호출', () => {
+    const nav = { clearAppBadge: vi.fn(async () => {}) };
+    const doc = makeDoc('visible');
+    mountBadgeClear({ nav, doc });
+    doc._fire('visibilitychange');
+    expect(nav.clearAppBadge).toHaveBeenCalledTimes(2);
+  });
+
+  it('hidden 상태의 visibilitychange 는 미호출', () => {
+    const nav = { clearAppBadge: vi.fn(async () => {}) };
+    const doc = makeDoc('visible');
+    mountBadgeClear({ nav, doc });
+    doc.visibilityState = 'hidden';
+    doc._fire('visibilitychange');
+    expect(nav.clearAppBadge).toHaveBeenCalledTimes(1);
+  });
+
+  it('Badging API 미지원 → false, 에러 없음', () => {
+    expect(mountBadgeClear({ nav: {}, doc: makeDoc() })).toBe(false);
   });
 });

@@ -15,6 +15,8 @@ self.addEventListener('push', (event) => {
     data: data.data || {},
     icon: 'icons/icon-192.png',
     badge: 'icons/icon-192.png',
+    // 사운드·진동 억제 (사용자 결정 2026-07-16). 표준 NotificationOptions.silent — iOS 존중 여부는 실기기 미검증.
+    silent: true,
   };
   event.waitUntil(
     (async () => {

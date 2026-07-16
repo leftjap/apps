@@ -28,6 +28,7 @@ import { Account } from './features/account.js';
 import { Admin } from './features/admin.js';
 import { Comments } from './features/comments.js';
 import { mountPushToggle } from './features/pushToggle.js';
+import { mountBadgeClear } from './services/push.js';
 import { Sync } from './db/sync.js';
 import { DevSeed } from './db/devSeed.js';
 import { showAuthenticated, showLogin, setRouterUser } from './app.js';
@@ -137,6 +138,8 @@ async function handleSession(session) {
     mountPushToggle(user).catch((e) =>
       console.warn('[main] mountPushToggle 실패', e?.message || e),
     );
+    // 앱 진입·포그라운드 복귀 시 아이콘 배지 클리어 (Badging API 미지원이면 no-op).
+    mountBadgeClear();
     // Wave 11.8 — admin UI (사용자별 매핑 편집)
     Admin.mountAdminView(user).catch((e) =>
       console.warn('[main] mountAdminView 실패', e?.message || e),
