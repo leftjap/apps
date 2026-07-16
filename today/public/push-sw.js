@@ -30,8 +30,6 @@ self.addEventListener('push', (event) => {
               : (await self.registration.getNotifications()).length;
           if (badge > 0) await self.navigator.setAppBadge(badge);
           else if (self.navigator.clearAppBadge) await self.navigator.clearAppBadge();
-          const __cs = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
-          __cs.forEach((c) => c.postMessage({ __pushBadgeDiag: 'set:' + badge }));
         }
       } catch (e) {
         /* no-op */
