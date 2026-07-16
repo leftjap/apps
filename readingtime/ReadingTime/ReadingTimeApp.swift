@@ -263,10 +263,10 @@ struct ReadingTimeApp: App {
     }
 
     /// 근접 센서 정책 — 화면 오프가 유효한 상태에서만: 대기(03)·홈(즉시 엎기 대상)·**기록 중**(엎힘).
-    /// 일시정지(들어올림 감지 직후)엔 즉시 해제 — 모니터링 해제는 덮인 센서의 화면 오프를 강제
-    /// 복귀시킨다. 라우트 기준만으로 관리하던 기존 배선은 paused 에도 켜져 있어, 집어드는 손이
-    /// 수화부 센서를 덮으면 수 초~수 분 암전 (검은 화면 버그 2026-07-16, rtdbg 20:49 실측:
-    /// 들어올림 감지 후 활성 복귀까지 6~11초+ — 모델은 정상 pause/resume, 화면만 미복귀).
+    /// 일시정지(들어올림 감지 직후)엔 즉시 해제 — 모니터링이 꺼지면 근접에 의한 화면 오프
+    /// 조건 자체가 사라진다. 라우트 기준만으로 관리하던 기존 배선은 paused 에도 켜져 있어,
+    /// 집어드는 손이 수화부 센서를 덮으면 암전 유지 (검은 화면 버그 2026-07-16, rtdbg 20:49
+    /// 실측: 들어올림 감지 후 활성 복귀까지 6~11초 × 3회 — 모델은 정상 pause/resume, 화면만 미복귀).
     @MainActor private static var proximityOn: Bool?
     private static func updateProximity(route: RTRoute, session: RTSession?, active: Bool) {
         let recording = session?.status == .recording
