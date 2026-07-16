@@ -20,7 +20,8 @@ self.addEventListener('push', (event) => {
     (async () => {
       // userVisibleOnly 준수 — 반드시 알림 표시 (미표시 시 iOS 구독 취소됨).
       await self.registration.showNotification(title, options);
-      // 앱 아이콘 배지 best-effort (iOS PWA 닫힌앱 갱신은 알려진 불안정 — Firebase #8416).
+      // 앱 아이콘 배지 — WebKit 문서상 SW push 핸들러에서 setAppBadge 갱신 작동(iOS 16.4+, webkit.org/blog/14112).
+      // 가시 배지는 홈화면 설치 PWA + 알림 권한 전제. 실측(Chrome 실 푸시): setAppBadge(n) 실행 성공(ok).
       try {
         if (self.navigator && self.navigator.setAppBadge) {
           const n = (await self.registration.getNotifications()).length;
