@@ -2183,7 +2183,7 @@ export function renderFooterPillHtml({ blockIdx, state, name }) {
  * 푸터 칩 서킷 배열 — [완료(완료순) 좌측 · 현재 · 예정(원래순) 우측].
  *  - 서킷 트레이닝(종목 번갈아 기록·완료)에서 완료분은 좌측에 완료순으로 쌓이고, 지금 기록 중인
  *    종목(current)이 그 오른쪽 첫 자리, 나머지 예정은 원래 인덱스 순서 (사용자 결정 2026-06-22).
- *  - renderFooterPills 가 이 순서로 DOM 렌더 + centerActivePill 로 현재를 가시 영역 가운데로 스크롤.
+ *  - renderFooterPills 가 이 순서로 DOM 렌더 + centerActivePill 로 현재를 좌측 치우침 위치로 스크롤.
  *  - 원본 인덱스 i 보존 (blockIdx — click·hold·reorder 핸들러가 session.blocks[i] 참조).
  *  - single 블록만 (서킷 폐기 §16 — non-single 제외).
  */
@@ -2231,15 +2231,25 @@ function renderFooterPills(doc, session, currentBlock) {
     return renderFooterPillHtml({ blockIdx: i, state, name: blockDisplayName(block) });
   });
   pillsEl.innerHTML = chips.join('');
-  centerActivePill(pillsEl); // 현재 칩 가시 영역 가운데로
+  centerActivePill(pillsEl); // 현재 칩 좌측 치우침 (완료 칩은 우측 끝만 노출)
 }
 
 /**
- * 작업지시서 §3·수용기준6 — 현재 칩을 레일 가시 영역 가운데로 정렬.
+ * 완료 칩 우측 끝 노출폭(16px) + 레일 gap(10px) = 현재 칩 좌측 여백.
+ * 완료 칩을 다 보여주는 건 하단 공간 낭비 — '완료가 있다'는 신호만 남기고
+ * 남는 우측 공간을 예정 종목 노출에 쓴다. 16px 은 완료 칩 border-radius(14px) 의
+ * 둥근 우측 캡이 온전히 드러나는 최소치.
+ */
+const FP_LEFT_INSET = 26;
+
+/**
+ * 현재 칩을 레일 가시 영역에서 좌측으로 치우쳐 정렬 (완료 칩은 우측 끝만 노출).
  *  - 세트 도트 centerActiveSet 와 동일 패턴. 레일(pillsEl 자체)이 스크롤 컨테이너.
- *  - 넘칠 때: 좌측 정렬 + scrollLeft 로 현재 칩 중앙(완료칩 좌측 노출·우측 페이드 유지).
+ *  - 넘칠 때: 좌측 정렬 + scrollLeft 로 현재 칩을 좌측 FP_LEFT_INSET 위치에 고정
+ *    → 직전 완료 칩은 우측 16px 만 보이고, 남는 우측 공간만큼 예정 종목이 더 보인다.
+ *    scrollLeft 초기값만 정하므로 사용자 스크롤 자유도는 종전과 동일(완료 칩 전체 열람 가능).
  *  - 안 넘칠 때(단일/소수 종목): justify-content:center 로 현재 카드가 좌측에 붙지 않게 중앙 정렬.
- *  - 칩 탭 전환은 mountSessionView 재마운트 → 새 DOM → 매번 즉시(instant) 중앙 정렬(smooth 아님).
+ *  - 칩 탭 전환은 mountSessionView 재마운트 → 새 DOM → 매번 즉시(instant) 정렬(smooth 아님).
  *  - 현재 칩 없음(전 종목 완료): 선두로 되돌린다. 레일 엘리먼트는 재마운트 후에도 동일 노드라
  *    scrollLeft 가 유지되므로, 스크롤된 채 마지막 종목을 완료하면 완료 칩이 좌측으로 잘린다
  *    (레일 작업지시서 §7 — 완료 종목이 왼쪽에 잘리지 않고 전부 보인다).
@@ -2261,8 +2271,11 @@ export function centerActivePill(pillsEl) {
         pillsEl.scrollLeft = 0;
         return;
       }
-      pillsEl.style.justifyContent = 'flex-start'; // 넘치면 좌측 정렬 + 스크롤 중앙
-      const target = cur.offsetLeft - (pillsEl.clientWidth - cur.offsetWidth) / 2;
+      pillsEl.style.justifyContent = 'flex-start'; // 넘치면 좌측 정렬 + scrollLeft 로 위치 고정
+      // offsetParent 는 레일이 아니라 .phone-content (레일 position:static) — 레일 기준으로 환산.
+      // 안 빼면 rail.offsetLeft(푸터 padding-left, 실측 12px) 만큼 어긋나 완료 칩이 4px 만 보인다.
+      const chipX = cur.offsetLeft - pillsEl.offsetLeft;
+      const target = chipX - FP_LEFT_INSET;
       pillsEl.scrollLeft = Math.max(0, Math.min(target, pillsEl.scrollWidth - pillsEl.clientWidth));
     } catch (_) { /* fallback */ }
   };
@@ -3726,7 +3739,7 @@ function hookClicks(chipsEl, listEl) {
     try {
       const res = await addExerciseToActiveSession(exerciseId, part);
       // 추가 즉시 그 운동을 현재로 선택 (사용자 결정 2026-06-13). 추가분은 blocks 맨 끝 append →
-      // 마지막 인덱스를 명시 지정. 칩은 맨 끝에 렌더되고 centerActivePill 이 가운데로 스크롤.
+      // 마지막 인덱스를 명시 지정. 칩은 맨 끝에 렌더되고 centerActivePill 이 좌측 치우침으로 스크롤.
       if (res && res.added && Array.isArray(res.session?.blocks)) {
         _currentBlockIdx = res.session.blocks.length - 1;
       }

@@ -2736,13 +2736,14 @@ describe('renderFooterPillHtml — 레일 3단 깊이 마크업', () => {
 });
 
 // 레일 중앙 정렬 회귀 (실기기 1종목 케이스 — 카드가 좌측에 밀착하던 버그, 작업지시서 §3·수용기준6).
-describe('centerActivePill — 오버플로 여부별 현재 카드 중앙 정렬', () => {
+describe('centerActivePill — 오버플로 여부별 현재 카드 좌측 치우침 정렬', () => {
   const origRAF = globalThis.requestAnimationFrame;
   beforeEach(() => { globalThis.requestAnimationFrame = (fn) => { fn(); return 0; }; });
   afterEach(() => { globalThis.requestAnimationFrame = origRAF; });
 
-  const fakeRail = ({ scrollWidth, clientWidth, cur }) => ({
-    scrollWidth, clientWidth, scrollLeft: -1, style: {},
+  // offsetLeft: 칩·레일 모두 .phone-content 가 offsetParent (레일 position:static) — 실측 rail.offsetLeft=12(푸터 padding-left).
+  const fakeRail = ({ scrollWidth, clientWidth, cur, offsetLeft = 0 }) => ({
+    scrollWidth, clientWidth, offsetLeft, scrollLeft: -1, style: {},
     querySelector: (sel) => (sel.includes('is-current') ? cur : null),
   });
 
@@ -2753,12 +2754,32 @@ describe('centerActivePill — 오버플로 여부별 현재 카드 중앙 정�
     expect(rail.scrollLeft).toBe(0);
   });
 
-  it('넘치면 flex-start + scrollLeft 로 현재 카드 중앙 스크롤', () => {
-    const rail = fakeRail({ scrollWidth: 723, clientWidth: 299, cur: { offsetLeft: 300, offsetWidth: 138 } });
+  // 완료 칩을 다 보여주면 하단 공간 낭비 — 우측 끝 16px 만 남겨 '완료가 있다'는 신호만 주고,
+  // 남는 우측 공간은 예정 종목 노출에 쓴다. 현재 칩은 정중앙이 아니라 좌측 26px 에 놓인다.
+  it('넘치면 flex-start + 현재 카드 좌측 치우침 — 완료 칩 우측 16px 만 노출', () => {
+    const rail = fakeRail({ scrollWidth: 723, clientWidth: 299, offsetLeft: 12, cur: { offsetLeft: 312, offsetWidth: 138 } });
     centerActivePill(rail);
     expect(rail.style.justifyContent).toBe('flex-start');
-    // target = 300 - (299-138)/2 = 300 - 80.5 = 219.5, clamp [0, 723-299=424]
-    expect(rail.scrollLeft).toBeCloseTo(219.5, 1);
+    // chipX = 312-12 = 300 (레일 기준) → target = 300 - 26 = 274, clamp [0, 723-299=424]
+    expect(rail.scrollLeft).toBeCloseTo(274, 1);
+  });
+
+  // offsetParent 는 레일이 아니라 .phone-content — rail.offsetLeft 를 빼지 않으면 12px 어긋나
+  // 완료 칩이 16px 이 아니라 4px 만 보인다 (실측 rail.offsetLeft=12).
+  it('offsetLeft 를 레일 기준으로 환산 — rail.offsetLeft 를 뺀다', () => {
+    const a = fakeRail({ scrollWidth: 723, clientWidth: 299, offsetLeft: 0, cur: { offsetLeft: 300, offsetWidth: 138 } });
+    const b = fakeRail({ scrollWidth: 723, clientWidth: 299, offsetLeft: 40, cur: { offsetLeft: 340, offsetWidth: 138 } });
+    centerActivePill(a); centerActivePill(b);
+    // 레일 내 상대 위치가 같으면(300) offsetLeft 가 달라도 scrollLeft 동일해야 함
+    expect(a.scrollLeft).toBeCloseTo(274, 1);
+    expect(b.scrollLeft).toBeCloseTo(274, 1);
+  });
+
+  it('완료 칩 없이 현재가 선두면 clamp 0 (좌측 여백 없이 선두 고정)', () => {
+    const rail = fakeRail({ scrollWidth: 723, clientWidth: 299, offsetLeft: 12, cur: { offsetLeft: 16, offsetWidth: 138 } });
+    centerActivePill(rail);
+    // chipX = 16-12 = 4 → target = 4-26 = -22 → clamp 0
+    expect(rail.scrollLeft).toBe(0);
   });
 
   // 전 종목 완료 → current 없음. 레일 엘리먼트는 재마운트 후에도 동일 노드라 scrollLeft 가 남는다.
