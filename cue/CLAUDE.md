@@ -23,7 +23,7 @@ Vite 6 + React 18 + vite-plugin-pwa (형제 앱은 바닐라지만 cue 는 React
 
 ## 구조
 
-- 레이아웃: App 의 `.layout`(2단 grid `minmax(0,1fr) 296px`) = 메인(Hero+활동행) + 화면시간 레일(`ScreenTime`). 좁은 화면은 1단 폴백.
+- 레이아웃(2026-07-17 재배치): App 의 `<main class="layout">` = 3 아이템 grid(`minmax(0,1fr) 296px`, gap 40) — **히어로는 전폭 행**(`grid-column:1/-1`), 그 아래 행에 활동 행(`.rows`) + 화면시간 레일(`ScreenTime`) 나란히. 효과: 레일 상단 = 독서 카드 상단(실측 0px), 타임라인 폭 292→628px(+레일296+gap40). 히어로↔행 간격은 `.layout` row-gap 40px 담당(구 `.rows` margin-top 이관). 좁은 화면(≤920px) 1단 폴백 — 레일은 행 아래, `.rows{margin-top:12px}` 로 히어로 간격 40px 원복(row-gap 28 + 12). **레일 배치·296px 폭은 design-ref 정본에 규정 없음**(v9 시안=활동 카드, v8=히어로/팔레트 한정 — grep 확인) → 이 배치는 코드가 정본.
 - `src/components/` — App(조립·Gate·Tweaks·2단 레이아웃) / Hero(시계·하루 고리·타임라인) / AppRow(활동 행+월 캘린더+펼침) / StatsView(8주 통계) / ScreenTime(화면시간 레일+전체기록 모달) / icons / AccountMenu / Tweaks
 - `src/data/` — adapter(`buildRealApps`: Supabase→v9 shape(직전/이번 주/추세·pace·statRecords), YTD 윈도우) / copy(모든 사용자 문장·beat 3분할 배열 — §5·§9 단일 검사 지점) / transforms(순수 수치 함수, `countRowsInWeek/Month`·`countPRs` 등) / flow(`clusterPoints`·`sweepLefts` — 타임라인 클러스터 라벨) / mock(`MOCK_APPS` 데모=v9 시안 스냅샷) / screentime(화면시간 §5 `screenTimeRows`·§6 `stackedTrend` + **실데이터 어댑터** `buildScreenTimeData`(screentime_daily→일/주/월: total=앱합·내도구=밀리앱+leftjap사이트·랭킹·추세·증감) / `SCREENTIME_DATA`=데모 목업 폴백) / useScreenTime(screentime_daily fetch·hook) / useApps / launch
 - due 판정(§6): `transforms.dueOf` — 보통 시각(최근 4주 중앙값) 지난 미완료 중 가장 이른 1개
