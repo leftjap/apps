@@ -62,25 +62,23 @@ function Dashboard({ apps, t }) {
       {stats ? (
         <StatsView apps={apps} onClose={() => setStats(false)} />
       ) : (
-        <div className="layout">
-          <main className="dash-main">
-            <Hero clock={clock} showSec={t.showSec} apps={apps} dueId={dueId} />
-            <ul className="rows" data-screen-label="활동 목록">
-              {apps.map((app) => (
-                <AppRow
-                  key={app.id}
-                  app={app}
-                  due={app.id === dueId}
-                  open={openId === app.id}
-                  today={today}
-                  onToggle={() => setOpenId(openId === app.id ? null : app.id)}
-                  onStats={() => setStats(true)}
-                />
-              ))}
-            </ul>
-          </main>
+        <main className="layout">
+          <Hero clock={clock} showSec={t.showSec} apps={apps} dueId={dueId} />
+          <ul className="rows" data-screen-label="활동 목록">
+            {apps.map((app) => (
+              <AppRow
+                key={app.id}
+                app={app}
+                due={app.id === dueId}
+                open={openId === app.id}
+                today={today}
+                onToggle={() => setOpenId(openId === app.id ? null : app.id)}
+                onStats={() => setStats(true)}
+              />
+            ))}
+          </ul>
           <ScreenTime data={screenData} />
-        </div>
+        </main>
       )}
     </div>
   );

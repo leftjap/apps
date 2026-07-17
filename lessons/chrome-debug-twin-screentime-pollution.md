@@ -34,6 +34,16 @@
 
 ## 검증 (재사용 시 사인)
 
+- **회귀 테스트**: `/usr/bin/python3 ~/.local/bin/test-chrome-site-poll.py` (repo 밖 — 데몬과 동거).
+  순수 판별 함수 + `main()` 1틱 통합 경로(자동화 전면→앱·사이트 미계상 / 오귀속→site 만 폐기하고 앱은 계상 /
+  디버그 부재→정상 귀속 / SKIP_BUNDLES 회귀)를 커버. push·pull_today 스텁 + 임시 STATE 라 DB·실 state 무접촉.
+  더미 프로세스(`python3 -c sleep … --remote-debugging-port=9999`)로 자동화 pid 를 실제로 만들어 판별을 실증.
 - `ps -axo command= | grep remote-debugging-port` 로 트윈 존재 확인.
-- 폴 테스트: 디버그 Chrome 띄운 채 수동 1틱 → state `domains` 에 디버그 탭 도메인이 **안** 늘어야 정상.
-- 사이트 다양성 회복: 디버그 Chrome 종료 후 실 브라우징 도메인이 다시 누적되는지 state/DB 확인.
+- 사이트 다양성 회복: 디버그 Chrome 종료 후 실 브라우징 도메인이 다시 누적되는지 state/DB 확인
+  (2026-07-17 실측: 종료 직후 틱에서 `hongss.liveklass.com` 정상 귀속 → 이후 youtube·drive 등 다양성 회복).
+
+## 남은 구멍 (자동화 안 됨)
+
+디버그 Chrome 이 **상주하는 동안 실 Chrome 의 site 틱은 폐기(결측)** 된다 — 조작은 막지만 기록은 빈다.
+현재 방어는 "사용 후 사람이 종료"에 의존하므로, 세션이 또 안 끄면 **결측은 재발**한다(오염은 재발 안 함).
+데몬은 Chrome 이 전면인 틱에만 CDP 스캔을 하므로 "유휴 디버그 Chrome 자동 종료"는 별도 구현이 필요.
