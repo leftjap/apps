@@ -243,6 +243,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     listenPill.disabled = false;
     if (drillsBlock) drillsBlock.style.display = '';   // 응용·체이닝도 정답을 품으므로 함께 공개
     if (chainBlock) chainBlock.style.display = '';
+    openFold();  // 평가는 해설 안에 있다 — 정답을 공개했으면 평가에도 닿아야 한다
     refreshJudge();
   }
 
@@ -355,6 +356,14 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       },
     }, h('span', { class: 't' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 }))),
     foldBd);
+  // 자기평가(judge-row)는 해설 fold 안 하단에 있다 — 접힌 채로 두면 녹음해도 평가에 닿지 못한다
+  // (2026-07-17 사용자 보고: 녹음하면 응용연습만 펼쳐지고 해설·평가는 접힌 채).
+  // 이미 열려 있으면 그대로 둔다 — 헤더 클릭 경로(위 toggle)와 겹쳐도 안전.
+  function openFold() {
+    if (fold.classList.contains('open')) return;
+    fold.classList.add('open');
+    foldBd.style.display = '';
+  }
 
   const refreshDots = () => {
     sayLine.querySelector('.vr-say-n').textContent = `${recCount()}회`;

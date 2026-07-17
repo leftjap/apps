@@ -211,6 +211,41 @@ describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판�
     } finally { vi.useRealTimers(); }
   });
 
+  /* 2026-07-17 사용자 보고: 녹음하면 응용연습은 펼쳐지는데 해설은 접힌 채라 평가가 안 보인다.
+   * 평가(judge-row)는 해설 fold 안 하단에 있으므로(위 '판정 버튼은 해설 안 하단에' 참조),
+   * 정답이 공개되는 순간 해설도 함께 열려야 평가에 닿는다. */
+  it('녹음(데모) 후 해설 fold 도 함께 펼쳐져 평가가 보인다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 1, demo: true });
+      const fold = host.querySelector('.vr-fold');
+      const bd = host.querySelector('.vr-fold .bd');
+      expect(bd.style.display).toBe('none');       // 기본 접힘
+      recall(host);
+      vi.advanceTimersByTime(1100);
+      expect(bd.style.display).not.toBe('none');   // 해설 본문 노출
+      expect(fold.classList.contains('open')).toBe(true); // chev 회전 상태도 일치
+      const judge = host.querySelector('.vr-fold .judge-row');
+      expect(judge).not.toBeNull();
+      expect([...host.querySelectorAll('.judge-btn')].every((b) => !b.disabled)).toBe(true);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('해설을 이미 펼친 뒤 녹음해도 접히지 않는다 (멱등)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 1, demo: true });
+      host.querySelector('.vr-fold .hd').click();  // 사용자가 먼저 펼침
+      const fold = host.querySelector('.vr-fold');
+      const bd = host.querySelector('.vr-fold .bd');
+      expect(fold.classList.contains('open')).toBe(true);
+      recall(host);
+      vi.advanceTimersByTime(1100);
+      expect(bd.style.display).not.toBe('none');
+      expect(fold.classList.contains('open')).toBe(true); // 여전히 열림
+    } finally { vi.useRealTimers(); }
+  });
+
   it('판정 버튼 3개(다시/애매/완료)를 렌더하고, 공개 전에는 비활성', () => {
     const host = mountCard({ interval: 1 });
     const btns = [...host.querySelectorAll('.judge-btn')];

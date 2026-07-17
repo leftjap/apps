@@ -339,58 +339,87 @@ export function buildAzureSSML(text, lang, rate, voiceName, style) {
 }
 
 // Wave 11.36 — SpeechSynthesizer lang 별 캐시 + pre-connect.
-// 매번 new SpeechSynthesizer() = connection re-establish (~1s). 공식 권장: 인스턴스 재사용 + Connection.openConnection(true).
+// 매번 new SpeechSynthesizer() = connection re-establish (~1s, 당시 계측). 인스턴스 재사용 + openConnection(true) 로 흡수.
 // lang 별 분리 (config.speechSynthesisLanguage 가 인스턴스 시점 결정 — en/ja 별 1개씩).
-// 토큰 만료 시 캐시 invalidate 는 별 wave (Azure token 통상 10분, 학습 세션 5-15분 — 단순 캐시로 시작).
-const _synthCache = {}; // { 'en-US': { synth, connection }, 'ja-JP': { ... } }
-const _synthInFlight = {}; // { lang: Promise<{synth, connection}> } — 병렬 호출 race
+//
+// 2026-07-17 — **다 쓴 synth 는 재사용 대상이 아니다.** SpeakerAudioDestination 은 '재생 개시 1회용':
+//   privPlaybackStarted 는 첫 재생에 true 로 굳고 재설정 경로가 없어(SDK SpeakerAudioDestination.js —
+//   대입은 L30 false·L233 true 두 곳뿐, 읽기는 L232 가드) 두 번째 utterance 에선 privAudio.play() 를
+//   다시 부르지 않는다 = 무음. pause() 가 세운 privIsPaused 도 resume() 로만 풀린다(L186/L200, 가드 L242).
+//   구현은 lang 당 synth+player 를 캐시해 재사용했고, 캐시 제거는 _activeSpeak 이 살아있는 '선점'
+//   경로에서만 일어났다 → 재생이 끝나면 _activeSpeak 이 null 이 되어 다 쓴 player 가 캐시에 남고
+//   다음 클릭이 그걸 그대로 받았다 (실사용 보고: 체이닝 반복 듣기 무반응 / 2연속 재생).
+// player 는 생성 시 synth 에 묶이므로 '새 player = 새 synth'.
+// → 캐시(_synthSpare)는 **아직 발화에 안 쓴** synth 만 lang 당 1개 보관한다. speak 은 그걸 꺼내
+//   (동기 삭제로 독점) 쓰고 곧바로 백그라운드 재충전을 걸어 다음 클릭이 warm 을 받게 한다.
+//   다 쓴 synth 는 폐기 — 절대 재사용하지 않는다. pre-connect 지연 이득은 재충전이 대신 유지한다.
+// 토큰 만료 시 spare invalidate 는 별 wave (Azure token 통상 10분, 학습 세션 5-15분).
+const _synthSpare = {};    // { 'en-US': entry } — 아직 안 쓴(pristine) synth
+const _synthInFlight = {}; // { lang: Promise } — 재충전 중 (중복 생성 차단)
 
-async function getSynthesizer(lang) {
-  if (_synthCache[lang]) {
-    _dbg('getSynthesizer cache HIT', { lang });
-    return _synthCache[lang];
-  }
-  _dbg('getSynthesizer cache MISS — new instance', { lang });
-  if (_synthInFlight[lang]) return _synthInFlight[lang];
-  _synthInFlight[lang] = (async () => {
-    const t0 = Date.now();
-    const [{ token, region }, SDK] = await Promise.all([getAzureToken(), loadSpeechSDK()]);
-    const config = SDK.SpeechConfig.fromAuthorizationToken(token, region);
-    config.speechSynthesisLanguage = lang;
-    // 2026-07-13 — 명시 SpeakerAudioDestination(player). synth.close() 는 이미 버퍼된 재생
-    // 오디오를 멈추지 못한다 (실브라우저 실증: close 후에도 currentTime 진행 — A.15 의
-    // "close 로 중지 (검증됨)" 반증). 재생 중지는 player.pause() 만 즉시 유효 (동결 실증).
-    // 같은 player 로 연속 utterance 이어 재생도 정상 (실증: secondAdvanced true).
-    const player = new SDK.SpeakerAudioDestination();
-    const synth = new SDK.SpeechSynthesizer(config, SDK.AudioConfig.fromSpeakerOutput(player));
-    // pre-connect — 첫 호출 latency 감소.
-    let connection = null;
-    try {
-      connection = SDK.Connection.fromSynthesizer(synth);
-      connection.openConnection(true);
-    } catch (e) {
-      _dbg('getSynthesizer Connection.openConnection 실패', { lang, err: e?.message ?? e });
-    }
-    const entry = { synth, connection, player, SDK };
-    _synthCache[lang] = entry;
-    _dbg('synthesizer 생성 + pre-connect', { lang, elapsedMs: Date.now() - t0 });
-    return entry;
-  })();
+async function createSynthesizer(lang) {
+  const t0 = Date.now();
+  const [{ token, region }, SDK] = await Promise.all([getAzureToken(), loadSpeechSDK()]);
+  const config = SDK.SpeechConfig.fromAuthorizationToken(token, region);
+  config.speechSynthesisLanguage = lang;
+  // 2026-07-13 — 명시 SpeakerAudioDestination(player). synth.close() 는 이미 버퍼된 재생
+  // 오디오를 멈추지 못한다 (실브라우저 실증: close 후에도 currentTime 진행 — A.15 의
+  // "close 로 중지 (검증됨)" 반증). 재생 중지는 player.pause() 만 즉시 유효 (동결 실증).
+  const player = new SDK.SpeakerAudioDestination();
+  const synth = new SDK.SpeechSynthesizer(config, SDK.AudioConfig.fromSpeakerOutput(player));
+  // pre-connect — 첫 호출 latency 감소.
+  let connection = null;
   try {
-    return await _synthInFlight[lang];
-  } finally {
-    delete _synthInFlight[lang];
+    connection = SDK.Connection.fromSynthesizer(synth);
+    connection.openConnection(true);
+  } catch (e) {
+    _dbg('createSynthesizer Connection.openConnection 실패', { lang, err: e?.message ?? e });
   }
+  _dbg('synthesizer 생성 + pre-connect', { lang, elapsedMs: Date.now() - t0 });
+  return { synth, connection, player, SDK };
 }
 
-/** synthesizer 캐시 클리어 (테스트 / token 갱신 / cancel 시). */
+/** 다음 클릭용 pristine synth 를 백그라운드로 채운다 (await 금지 — 지연을 재생 뒤로 숨긴다).
+ * 실패는 삼킨다 — 다음 speak 이 takeSynthesizer 에서 직접 만든다. */
+function prewarmSynthesizer(lang) {
+  if (_synthSpare[lang] || _synthInFlight[lang]) return;
+  _synthInFlight[lang] = createSynthesizer(lang)
+    .then((entry) => { _synthSpare[lang] = entry; })
+    .catch((e) => { _dbg('prewarm 실패', { lang, err: e?.message ?? e }); })
+    .finally(() => { delete _synthInFlight[lang]; });
+}
+
+/** 발화 1건이 독점할 synth 를 꺼낸다.
+ * spare 삭제는 await 이전(동기) — 동시 호출이 같은 player 를 받으면 한 스트림에 2발화가 겹친다. */
+async function takeSynthesizer(lang) {
+  const spare = _synthSpare[lang];
+  if (spare) {
+    delete _synthSpare[lang];
+    _dbg('takeSynthesizer spare HIT', { lang });
+    prewarmSynthesizer(lang);
+    return spare;
+  }
+  _dbg('takeSynthesizer spare MISS — 신규 생성', { lang });
+  const entry = await createSynthesizer(lang);
+  prewarmSynthesizer(lang);
+  return entry;
+}
+
+/** 발화가 끝났거나 취소된 synth 폐기 — 재사용 금지 (player 1회용).
+ * 재생 정지는 player.pause() 가 유일하게 유효 (synth.close() 는 버퍼된 재생을 못 멈춤 — 실증). */
+function disposeSynth(entry) {
+  if (!entry) return;
+  try { entry.player?.pause?.(); } catch (_) { /* noop */ }
+  try { entry.synth?.close?.(); } catch (_) { /* noop */ }
+}
+
+/** pristine spare 폐기 (테스트 / token 갱신 / cancel 시). */
 export function clearSynthesizerCache() {
-  const langs = Object.keys(_synthCache);
+  const langs = Object.keys(_synthSpare);
   _dbg('clearSynthesizerCache', { langs });
   for (const lang of langs) {
-    try { _synthCache[lang].player?.pause?.(); } catch (_) {} // 재생 중 오디오 즉시 정지 (close 는 못 멈춤)
-    try { _synthCache[lang].synth?.close(); } catch (_) {}
-    delete _synthCache[lang];
+    disposeSynth(_synthSpare[lang]);
+    delete _synthSpare[lang];
   }
 }
 
@@ -401,7 +430,7 @@ export function clearSynthesizerCache() {
  * Wave 11.36 — synthesizer 인스턴스 재사용 + pre-connect (TTS 지연 감소).
  */
 // Wave A.15 — 진행 중 audio playback 추적. race 차단 (빠른 연타 / 카드 전환 시 두 audio 겹침 방지).
-let _activeSpeak = null; // { lang, synth, playbackTimer, onEnd, cancelled }
+let _activeSpeak = null; // { lang, entry, playbackTimer, onEnd, cancelled }
 
 // 2026-07-13 — 연타 선점 세대 카운터. _activeSpeak 은 synth 확보 *후* 등록되므로, 콜드 연결
 // 대기 중(~1s)의 첫 클릭을 두 번째 클릭이 취소하지 못해 같은 synth 큐에 2건 → 2연속 재생(실사용 보고).
@@ -413,25 +442,26 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
   const gen = ++_speakGen;
   _dbg('speak 시작', { text: text?.slice(0, 40), lang, speaker, gen });
 
-  // 이전 in-flight 호출 강제 중지 (race 차단).
+  // 이전 in-flight 호출 강제 중지 (race 차단). 그 synth 는 폐기한다 — player 는 1회용이라 반납 불가.
   // 2026-07-13 — 재생 정지는 player.pause() 가 유일하게 유효 (실브라우저 실증: synth.close()
   // 후에도 audio currentTime 진행 계속 — 옛 "close 로 중지 (검증됨)" 주석은 반증되어 폐기).
   if (_activeSpeak) {
     _dbg('speak 이전 호출 중지', { prevLang: _activeSpeak.lang });
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
-    try { _activeSpeak.player?.pause?.(); } catch (_) { /* noop */ }
-    try { _activeSpeak.synth?.close?.(); } catch (_) { /* noop */ }
-    try { clearSynthesizerCache(); } catch (_) { /* noop */ }
+    disposeSynth(_activeSpeak.entry);
     _activeSpeak = null;
   }
 
+  let entry = null;
   try {
-    const { synth, player } = await getSynthesizer(lang);
+    entry = await takeSynthesizer(lang);
     if (gen !== _speakGen) {
       _dbg('speak 선점 취소 — 대기 중 새 speak/cancel 발생', { gen, cur: _speakGen });
+      disposeSynth(entry); // 안 쓴 채 버린다 (1회용이라 spare 로 반납 불가)
       return;
     }
+    const { synth } = entry;
     _dbg('speak synthesizer 준비', { elapsedMs: Date.now() - t0 });
     const cfg = VOICE_DEFAULTS[lang] || {};
     const speakerCfg = (speaker && SPEAKER_VOICES[lang]) ? SPEAKER_VOICES[lang][speaker] : null;
@@ -442,7 +472,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);
 
     // 새 in-flight 세션 등록.
-    const session = { lang, synth, player, playbackTimer: null, onEnd, cancelled: false };
+    const session = { lang, entry, playbackTimer: null, onEnd, cancelled: false };
     _activeSpeak = session;
 
     synth.speakSsmlAsync(
@@ -458,19 +488,26 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
         session.playbackTimer = setTimeout(() => {
           _dbg('speak playback 완료', { totalMs: Date.now() - t0, audioMs, cancelled: session.cancelled });
           if (_activeSpeak === session) _activeSpeak = null;
+          disposeSynth(entry); // 다 쓴 synth 폐기 — 다음 클릭은 pristine spare 를 받는다
           if (!session.cancelled) onEnd?.();
         }, Math.max(0, audioMs));
       },
       (err) => {
         _dbg('speak 실패', { elapsedMs: Date.now() - t0, err });
+        if (_activeSpeak === session) _activeSpeak = null;
+        disposeSynth(entry);
+        // 취소·선점된 발화는 폴백도 내지 않는다 — speakWeb 은 _activeSpeak 에 등록되지 않아
+        // 이후 cancel()·선점으로 멈출 수 없다 → 새어나가면 그 자체가 '2연속 재생'이 된다.
+        if (session.cancelled || gen !== _speakGen) { _dbg('speak 실패 — 취소된 발화라 폴백 생략', { gen }); return; }
         console.warn('[speech][azure][speak] 실패, web 폴백:', err);
-        // Wave 11.36 — synth 자체는 캐시 유지 (다음 호출 재시도). 단발성 합성 실패는 web 폴백.
         // Wave 11.31 — speakWeb 이 async (voiceschanged 대기). 콜백 onEnd 패턴 + void 래핑.
         void speakWeb(text, { lang, rate, onEnd });
       },
     );
   } catch (e) {
     _dbg('speak init 실패', { elapsedMs: Date.now() - t0, error: e?.message ?? e });
+    disposeSynth(entry);
+    if (gen !== _speakGen) { _dbg('speak init 실패 — 취소된 발화라 폴백 생략', { gen }); return; }
     console.warn('[speech][azure][speak] init 실패, web 폴백:', e?.message ?? e);
     void speakWeb(text, { lang, rate, onEnd });
   }
@@ -520,8 +557,7 @@ function cancel() {
   if (_activeSpeak) {
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
-    try { _activeSpeak.player?.pause?.(); } catch (_) { /* noop */ }
-    try { _activeSpeak.synth?.close?.(); } catch (_) { /* noop */ }
+    disposeSynth(_activeSpeak.entry);
     _activeSpeak = null;
   }
   try { clearSynthesizerCache(); } catch (_) { /* noop */ }

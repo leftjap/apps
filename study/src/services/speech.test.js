@@ -1308,3 +1308,139 @@ describe('speak — 연타 시 대기 중 호출 선점 취소', () => {
     expect(m.players[0].pauseCalls).toBeGreaterThanOrEqual(1);
   });
 });
+
+// 2026-07-17 — 실사용 보고: 체이닝 반복 듣기에서 재생 무반응, 재클릭 시 2연속 재생.
+// 원인(SDK 소스 실증): SpeakerAudioDestination 은 **재생 개시 1회용**이다.
+//   - privPlaybackStarted 는 첫 재생에 true 로 굳고 재설정 경로가 없다
+//     (SpeakerAudioDestination.js — 대입은 L30 false·L233 true 두 곳뿐, 읽기는 L232 가드).
+//     → 두 번째 utterance 에선 privAudio.play() 를 다시 부르지 않는다 = 무음.
+//   - pause() 가 세운 privIsPaused 는 resume() 로만 풀리는데(L186/L200, 가드 L242) 여긴 안 부른다.
+// 그런데 speech.js 는 lang 당 synth+player 를 캐시해 재사용했고, 캐시 제거는 _activeSpeak 이
+// 살아있는 '선점' 경로에서만 일어난다. 재생이 끝나면 playbackTimer 가 _activeSpeak=null 로 만들어
+// 다 쓴 player 가 캐시에 남고, 다음 클릭이 그걸 그대로 받는다.
+// 체이닝은 무자막(인출 강제)이라 녹음 없이 같은 단계를 반복 재생 → 이 경로를 계속 밟는다.
+// 드릴도 같은 결함(테스트로 확인) — 공유 레이어 버그이지 체이닝 전용이 아니다.
+describe('speak — 발화마다 새 player (SpeakerAudioDestination 은 1회용)', () => {
+  function setupFaithfulSDK() {
+    const state = { players: [], speakCalls: [] };
+    // 실 SpeakerAudioDestination 모델 — playCalls = 실제로 privAudio.play() 가 불린 횟수(= 소리 남)
+    class FakePlayer {
+      constructor() {
+        this.privPlaybackStarted = false;
+        this.privIsPaused = false;
+        this.playCalls = 0;
+        this.pauseCalls = 0;
+        state.players.push(this);
+      }
+      notifyPlayback() { // 실 SDK L231-245
+        if (!this.privPlaybackStarted) {
+          this.privPlaybackStarted = true;
+          if (!this.privIsPaused) this.playCalls += 1;
+        }
+      }
+      pause() { if (!this.privIsPaused) { this.privIsPaused = true; this.pauseCalls += 1; } } // L183-188
+      close() {}
+    }
+    class FakeSynth {
+      constructor(_config, audioConfig) { this.player = audioConfig?.player; }
+      speakSsmlAsync(ssml, ok) {
+        state.speakCalls.push(ssml);
+        this.player?.notifyPlayback(); // 합성 오디오가 player 로 흘러 재생 시도
+        ok({ audioDuration: 1e7 });    // 100ns tick → 1초
+      }
+      close() {}
+    }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FakeSynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakePlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
+      },
+    });
+    return state;
+  }
+  const audible = (s) => s.players.reduce((n, p) => n + p.playCalls, 0);
+
+  it('재생 완료 후 재클릭 → 새 player 로 소리가 난다 (체이닝 반복 듣기)', async () => {
+    const m = setupFaithfulSDK();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('step one', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(audible(m)).toBe(1);
+    await new Promise((r) => setTimeout(r, 1200)); // 재생 완료 → _activeSpeak = null
+    Speech.speak('step one again', { lang: 'en-US' }); // 같은 단계 다시 듣기
+    await new Promise((r) => setTimeout(r, 30));
+    expect(m.speakCalls.length).toBe(2); // 합성 2회
+    expect(audible(m)).toBe(2);          // 소리도 2회 (구버전은 1 — 다 쓴 player 재사용)
+  });
+
+  it('드릴 행1 → 행2 연속 듣기도 매번 소리가 난다', async () => {
+    const m = setupFaithfulSDK();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('drill row one', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30));
+    await new Promise((r) => setTimeout(r, 1200));
+    Speech.speak('drill row two', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(audible(m)).toBe(2);
+  });
+
+  it('발화마다 서로 다른 player 인스턴스를 쓴다 (재사용 금지)', async () => {
+    const m = setupFaithfulSDK();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('first', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30));
+    const used1 = m.players.filter((p) => p.privPlaybackStarted);
+    await new Promise((r) => setTimeout(r, 1200));
+    Speech.speak('second', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30));
+    const used2 = m.players.filter((p) => p.privPlaybackStarted);
+    expect(used2.length).toBe(2);          // 재생한 player 가 2개 = 재사용 안 함
+    expect(used2[0]).toBe(used1[0]);       // 첫 발화의 player 는 그대로
+    expect(used2[1]).not.toBe(used1[0]);   // 두 번째는 새 인스턴스
+  });
+});
+
+// 취소된 발화가 web 폴백으로 새어나오면 또 다른 '2연속 재생' 경로가 된다.
+// 성공 콜백엔 session.cancelled 가드가 있는데(speech.js) error 콜백/ catch 에는 없었다.
+// speakWeb 은 _activeSpeak 에 등록되지 않아 이후 cancel()/선점으로 멈출 수도 없다.
+describe('speak — 취소된 발화는 web 폴백으로 새지 않는다', () => {
+  function setupFailingSDK() {
+    const state = { webSpoken: [] };
+    class FailingSynth {
+      speakSsmlAsync(_ssml, _ok, err) { setTimeout(() => err('synthesis aborted'), 5); }
+      close() {}
+    }
+    class FakePlayer { pause() {} close() {} }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FailingSynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakePlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
+      },
+      speechSynthesis: {
+        cancel() {},
+        getVoices: () => [{ name: 'Samantha', lang: 'en-US', default: true, localService: true }],
+        addEventListener() {},
+        speak(u) { state.webSpoken.push(u.text); },
+      },
+      SpeechSynthesisUtterance: class { constructor(t) { this.text = t; } },
+    });
+    globalThis.SpeechSynthesisUtterance = window.SpeechSynthesisUtterance;
+    return state;
+  }
+
+  it('cancel() 이후 도착한 Azure 실패 → speakWeb 미실행', async () => {
+    const m = setupFailingSDK();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('cancelled sentence', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 1));
+    Speech.cancel(); // 사용자가 곧바로 정지
+    await new Promise((r) => setTimeout(r, 40));
+    expect(m.webSpoken).not.toContain('cancelled sentence');
+  });
+});
