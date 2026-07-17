@@ -81,13 +81,22 @@ Deno.serve(async (req: Request) => {
   if (error) return json(500, { error: 'subs_query', detail: error.message });
   if (!subs || subs.length === 0) return json(200, { status: 'no_subscribers' });
 
-  // 앱 아이콘 배지 정본 = 수신자 미읽음 알림 수(entry_unshared 는 background 신호라 제외 — 클라 countUnread 와 동일).
-  const { count: unread } = await supabase
+  // 앱 아이콘 배지 정본 = "마지막 앱 확인(badge_seen_at) 이후" 생성된 수신자 미읽음 수.
+  // 전체 미읽음 누적치는 알림함을 안 비우면 계속 자람(2026-07-17 배지 26→27 실측) → 기준점 도입.
+  // badge_seen_at NULL(구버전 클라·미기록)이면 전체 미읽음 fallback. entry_unshared 는 background 신호라 제외.
+  const { data: prof } = await supabase
+    .from('today_profiles')
+    .select('badge_seen_at')
+    .eq('user_id', record!.recipient_id)
+    .maybeSingle();
+  let unreadQuery = supabase
     .from('today_notifications')
     .select('id', { count: 'exact', head: true })
     .eq('recipient_id', record!.recipient_id)
     .is('read_at', null)
     .neq('kind', 'entry_unshared');
+  if (prof?.badge_seen_at) unreadQuery = unreadQuery.gt('created_at', prof.badge_seen_at);
+  const { count: unread } = await unreadQuery;
 
   const appServer = await getAppServer();
   const payload = JSON.stringify(buildPushPayload(record, typeof unread === 'number' ? unread : undefined));
@@ -111,5 +120,6 @@ Deno.serve(async (req: Request) => {
       }
     }
   }
-  return json(200, { status: 'ok', sent, pruned, total: subs.length });
+  // badge 는 관측·디버깅용 (pg_net 응답 로그에서 배지 계산값 확인 가능).
+  return json(200, { status: 'ok', sent, pruned, total: subs.length, badge: typeof unread === 'number' ? unread : null });
 });

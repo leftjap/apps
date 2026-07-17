@@ -104,19 +104,38 @@ export async function disablePush(opts = {}) {
 }
 
 /**
- * 앱 진입·포그라운드 복귀 시 아이콘 배지 제거 (iOS 관례 — 앱을 열면 확인한 것으로 간주).
+ * 앱 진입·포그라운드 복귀 시: 아이콘 배지 제거 + badge_seen_at 기록.
+ * badge_seen_at 은 send-push 의 배지 카운트 기준점 — 이 시각 이후 생성된 미읽음만 센다
+ * (전체 미읽음 누적치는 알림함을 안 비우면 영원히 안 줄어 배지가 26·27… 로 자람, 2026-07-17 실측).
  * 알림 탭으로 진입하는 경로는 push-sw.js notificationclick 이 별도 처리.
+ * 반환: Badging API 지원 여부 (badge_seen_at 기록은 미지원이어도 수행 — "앱을 연 사실"은 유효).
  */
 export function mountBadgeClear(opts = {}) {
   const nav = opts.nav || (typeof navigator !== 'undefined' ? navigator : null);
   const doc = opts.doc || (typeof document !== 'undefined' ? document : null);
-  if (!nav?.clearAppBadge) return false;
-  const clear = () => nav.clearAppBadge().catch(() => {});
-  clear();
+  const sb = 'supabase' in opts ? opts.supabase : supabase;
+  const user = opts.user || null;
+  const supported = !!nav?.clearAppBadge;
+
+  const markSeen = () => {
+    if (!sb || !user?.id) return;
+    sb.from('today_profiles')
+      .update({ badge_seen_at: new Date().toISOString() })
+      .eq('user_id', user.id)
+      .then(({ error }) => {
+        if (error) console.warn('[push] badge_seen_at 기록 실패', error.message);
+      });
+  };
+  const onEnter = () => {
+    if (supported) nav.clearAppBadge().catch(() => {});
+    markSeen();
+  };
+
+  onEnter();
   doc?.addEventListener?.('visibilitychange', () => {
-    if (doc.visibilityState === 'visible') clear();
+    if (doc.visibilityState === 'visible') onEnter();
   });
-  return true;
+  return supported;
 }
 
 /** 현재 구독 상태 — { supported, permission, subscribed }. */

@@ -129,8 +129,8 @@ async function handleSession(session) {
     mountPushToggle(user).catch((e) =>
       console.warn('[main] mountPushToggle 실패', e?.message || e),
     );
-    // 앱 진입·포그라운드 복귀 시 아이콘 배지 클리어 (Badging API 미지원이면 no-op).
-    mountBadgeClear();
+    // 앱 진입·포그라운드 복귀 시 아이콘 배지 클리어 + badge_seen_at 기록(배지 카운트 기준점).
+    mountBadgeClear({ user });
     // Wave 11.8 — admin UI (사용자별 매핑 편집)
     Admin.mountAdminView(user).catch((e) =>
       console.warn('[main] mountAdminView 실패', e?.message || e),

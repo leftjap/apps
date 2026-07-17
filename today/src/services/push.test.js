@@ -135,6 +135,11 @@ describe('mountBadgeClear', () => {
       _fire: (t) => listeners[t] && listeners[t](),
     };
   }
+  function makeSeenSupabase() {
+    const eq = vi.fn(async () => ({ error: null }));
+    const update = vi.fn(() => ({ eq }));
+    return { from: vi.fn(() => ({ update })), _update: update, _eq: eq };
+  }
 
   it('앱 진입 즉시 clearAppBadge 호출 + true', () => {
     const nav = { clearAppBadge: vi.fn(async () => {}) };
@@ -161,5 +166,37 @@ describe('mountBadgeClear', () => {
 
   it('Badging API 미지원 → false, 에러 없음', () => {
     expect(mountBadgeClear({ nav: {}, doc: makeDoc() })).toBe(false);
+  });
+
+  it('user 있으면 진입 시 badge_seen_at 기록 (배지 = 이후 새 알림만)', () => {
+    const nav = { clearAppBadge: vi.fn(async () => {}) };
+    const sb = makeSeenSupabase();
+    mountBadgeClear({ nav, doc: makeDoc(), user: USER, supabase: sb });
+    expect(sb.from).toHaveBeenCalledWith('today_profiles');
+    const [payload] = sb._update.mock.calls[0];
+    expect(typeof payload.badge_seen_at).toBe('string');
+    expect(sb._eq).toHaveBeenCalledWith('user_id', USER.id);
+  });
+
+  it('포그라운드 복귀 시 badge_seen_at 재기록', () => {
+    const nav = { clearAppBadge: vi.fn(async () => {}) };
+    const sb = makeSeenSupabase();
+    const doc = makeDoc('visible');
+    mountBadgeClear({ nav, doc, user: USER, supabase: sb });
+    doc._fire('visibilitychange');
+    expect(sb._update).toHaveBeenCalledTimes(2);
+  });
+
+  it('Badging API 미지원이어도 badge_seen_at 은 기록 (앱을 연 사실은 유효)', () => {
+    const sb = makeSeenSupabase();
+    expect(mountBadgeClear({ nav: {}, doc: makeDoc(), user: USER, supabase: sb })).toBe(false);
+    expect(sb._update).toHaveBeenCalledTimes(1);
+  });
+
+  it('user 없으면 seen 기록 안 함 (기존 호환)', () => {
+    const nav = { clearAppBadge: vi.fn(async () => {}) };
+    const sb = makeSeenSupabase();
+    mountBadgeClear({ nav, doc: makeDoc(), supabase: sb });
+    expect(sb._update).not.toHaveBeenCalled();
   });
 });
