@@ -1,22 +1,41 @@
-# Gym — iPhone PWA
+# Gym — iOS 네이티브 앱 (+ 잔존 PWA)
 
-운동 트래커. 2026-04-18 Electron → iPhone PWA 전환 착수.
+운동 트래커. 2026-04-18 Electron → iPhone PWA, **2026-07-07 iOS 네이티브 전환 착수**(`ea98b97`).
+
+> ## ⚠️ 실기기에서 도는 것은 **네이티브 앱**이다
+>
+> 저장소에 **두 구현이 공존**한다. 어느 쪽을 고칠지 먼저 정할 것:
+>
+> | | 네이티브 (SwiftUI) | PWA (웹) |
+> |---|---|---|
+> | 위치 | `Gym.xcodeproj` + `GymKit/Sources/{GymCore,GymViews}` | `index.html` + `src/` + `mocks/*.html` |
+> | 위상 | **실기기 정본** — 폰에 설치된 앱 | 잔존. GitHub Pages 로 계속 배포되나 폰엔 없음 |
+> | 활동량 | 네이티브 착수 후 커밋 58건 | 같은 기간 8건 |
+>
+> **PWA 만 고치면 실기기엔 아무 변화가 없다.** 화면·디자인 변경은 네이티브가 대상이며,
+> 두 구현을 함께 맞추던 전례가 있다(`db72b61` — PWA·네이티브 동시 수정).
+> 세션 하단 레일 대응: `mocks/session.html` `.fp-*` ↔ `GymKit/Sources/GymViews/GymFooterRail.swift`.
 
 ## 참조 문서
 
 - **기능 명세**: `~/apps/gym/specs/gym-app-spec.md` (v2, 2026-04-17 재설계)
-- **디자인 토큰**: `src/styles/paper.css` `:root` (토큰 정본) + spec §14
+- **디자인 토큰**: `src/styles/paper.css` `:root` (토큰 정본) + spec §14 — 네이티브는 `GY.*`/`Color(oklch:)` 로 대응 이식
 - **진행 상태**: git log + Conventional Commits
-- **공통 PWA 가이드**: `~/apps/CLAUDE.md` → "PWA 앱 빌드 가이드"
 
 ## 기술 스택
 
-- 프론트엔드: 바닐라 HTML/CSS/JS
-- 빌드: Vite + `vite-plugin-pwa`
-- 로컬 저장: IndexedDB (`dexie`)
-- 클라우드: Supabase (Study 프로젝트 공유), Google OAuth
-- 배포: GitHub Pages (`leftjap.github.io`)
-- 대상: iPhone PWA (Safari 설치, standalone, 오프라인 동작)
+### 네이티브 (실기기 정본)
+
+- SwiftUI. `GymKit` SPM 패키지 — `GymCore`(로직·모델·Supabase) + `GymViews`(화면)
+- 앱 타깃: `Gym.xcodeproj` (타깃 `Gym`, `GymUITests`)
+- 검증: `GymKit/test.sh`(swift test) · `gymshot <id> out.png`(ImageRenderer 헤드리스 렌더) · `gymshot flow <dir>`(전 여정 단언)
+- Xcode 는 `xcode-select` 가 CommandLineTools 를 가리켜도 `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer` 로 `xcodebuild`·`simctl` 사용 가능
+
+### PWA (잔존)
+
+- 바닐라 HTML/CSS/JS, Vite + `vite-plugin-pwa`
+- 로컬 저장: IndexedDB (`dexie`) / 클라우드: Supabase (Study 프로젝트 공유), Google OAuth
+- 배포: GitHub Pages (`leftjap.github.io/apps/gym/`) — main push 시 `.github/workflows/deploy-pages.yml` 자동 배포
 
 ## 참조 소스
 
