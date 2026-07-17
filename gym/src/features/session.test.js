@@ -2709,15 +2709,16 @@ describe('renderFooterPillHtml — 레일 3단 깊이 마크업', () => {
     // 완료엔 라이브 점·하이라이트 없음
     expect(html).not.toContain('fp-chip__hl');
   });
-  it('current: 떠오른 흰 카드 = is-current + fp-chip__hl 오버레이 + 종목명, aria-current', () => {
+  it('current: 주황 테두리 흰 카드 = is-current + fp-chip__eq(이퀄라이저) + 종목명, aria-current', () => {
     const html = renderFooterPillHtml({ blockIdx: 1, state: 'current', name: '벤치프레스' });
     expect(html).toContain('class="fp-chip is-current"');
     expect(html).toContain('data-ex-state="active"');
     expect(html).toContain('aria-current="true"');
-    expect(html).toContain('<span class="fp-chip__hl" aria-hidden="true"></span>');
+    expect(html).toContain('<span class="fp-chip__eq" aria-hidden="true"><i></i><i></i><i></i></span>');
     expect(html).toContain('<span class="fp-chip__name">벤치프레스</span>');
-    // 부위 라벨·밑줄·점·마커 없음 (§7 수용기준)
+    // 라이브 점·완료 마커·구 하이라이트 없음
     expect(html).not.toContain('fp-chip__mk');
+    expect(html).not.toContain('fp-chip__hl');
     expect(html).not.toContain('fp-dot');
   });
   it('upcoming: 평면 아웃라인 = is-upcoming + 종목명만 (마커 없음)', () => {

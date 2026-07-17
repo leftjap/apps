@@ -2160,14 +2160,15 @@ export function renderFooterPillHtml({ blockIdx, state, name }) {
     : state === 'hold' ? 'is-hold' : 'is-upcoming';
   const ariaCurrent = state === 'current' ? ' aria-current="true"' : '';
 
-  // 작업지시서 §4 — 완료: 무채색 체크 / 현재: 상단 하이라이트 오버레이 / 예정·보류: 종목명만.
+  // 작업지시서 §4 — 완료: 무채색 체크 / 현재: 재생 이퀄라이저(fp-chip__eq) / 예정·보류: 종목명만.
   // fp-check stroke 색은 CSS(.fp-check path{stroke:oklch(...)})로 지정 — SVG 속성 var() 미작동.
   let inner;
   if (state === 'done') {
     inner = `<span class="fp-chip__mk"><svg class="fp-check" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.4 6.3l2.4 2.4L9.6 3.4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`
       + `<span class="fp-chip__name">${escapeHtml(name)}</span>`;
   } else if (state === 'current') {
-    inner = `<span class="fp-chip__hl" aria-hidden="true"></span>`
+    // 재생 중 이퀄라이저 (라이브 점·세트 표기 없음) — CSS .fp-chip__eq 가 막대 3개 애니메이션.
+    inner = `<span class="fp-chip__eq" aria-hidden="true"><i></i><i></i><i></i></span>`
       + `<span class="fp-chip__name">${escapeHtml(name)}</span>`;
   } else {
     inner = `<span class="fp-chip__name">${escapeHtml(name)}</span>`;
