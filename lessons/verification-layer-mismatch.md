@@ -1,4 +1,4 @@
-<!-- trigger: layer,검증,단정,통과,화면,사용자 입장,evidence,acceptance,vitest 통과,e2e 통과,사각 | match-paths: - -->
+<!-- trigger: layer,검증,단정,통과,화면,사용자 입장,evidence,acceptance,vitest 통과,e2e 통과,사각,실기기,네이티브,배포,반영,Xcode,무선설치,실기기 반영 | match-paths: - -->
 # verification-layer-mismatch
 
 발생: 2026-05-04 ground truth 보강 라운드 / Study Wave 11.70~11.71 / Today devSeed cleanup
@@ -16,6 +16,24 @@
 | #4 | "ja 4 ex-section spec 정합" | spec-compliance.test 통과 | spec §10 §6 직접 인용 점검 | 테스트 자체 결함 가능성 미배제 |
 | #A | "soyoun 5월 합계 190,586원" | Bash stdout count 3 + 첫 3건 amount | totalKrw 전체 (head 잘림) | 수동 합산 = stdout 직접 인용 X |
 | #B | "expenses.js:362-389" | Edit 전 line 361 기억 | Edit 후 정확한 라인 | 신규 함수 추가로 줄 밀림 → 재 Read 안 함 |
+| #C | "gym 실기기 반영됨" (2026-07-18) | PWA 웹 번들 grep + GH Pages 배포 성공 | 사용자 폰 **네이티브 앱** | 실기기는 네이티브인데 웹만 고침 — 층위 자체가 다름 (#2 재발) |
+
+**#C 상세 (2026-07-18, gym 네이티브 전환 후 실사고 — 표 #2 와 같은 뿌리):**
+gym 은 2026-07-07 iOS 네이티브 전환(`ea98b97`). 실기기 = 네이티브(`Gym.xcodeproj`+`GymKit`),
+`src/`+`mocks/` PWA 는 잔존. 작업지시서가 "PWA" 라 적혀 있어 웹만 고치고 "실기기 반영됨" 단정.
+이어 "서비스워커 캐시" 로 오진단(네이티브엔 SW 없음) → 틀린 전제 위에 추론을 쌓음.
+근본: **① 작업지시서 전제("PWA")를 층위 확인 없이 수용** — "실기기가 뭘 도는가" 를 안 물음.
+**② 틀린 전제 위 추론 지속** — "반영 안 됨" 재확인 요청에도 웹 프레임 안에서만 원인 탐색.
+교훈: 디자인/화면 작업 전 **"이 앱은 실기기에서 무엇이 도는가"** 를 먼저 확정. 저장소에 두
+구현이 공존할 수 있다(gym: 네이티브 실기 + PWA 잔존). 지시서·spec 이 한쪽만 말해도 다른 쪽 존재를 의심.
+
+**#D — 도구 "능력" 오단정 (통과/불가 양방향, 2026-07-18):**
+layer 착각의 쌍둥이 — 검증뿐 아니라 **도구 가능/불가능도 확인 없이 단정**함.
+- "Xcode 없음 → 실기기 빌드 불가" ← `xcode-select` 가 CLT 라 `xcodebuild` 1회 실패. 실제론 Xcode.app 설치돼
+  `DEVELOPER_DIR` 지정으로 동작. **한 명령 실패 = 도구 부재 단정 금지.**
+- "폰 설치는 사용자가 Xcode 로 직접" ← 확인 안 하고 위임. 실제론 폰이 WiFi 페어링돼 `devicectl` 로
+  Claude 가 직접 무선 설치 가능. **불가/위임 단정 전 `list devices`·`list_granted_applications` 등으로 실제 확인.**
+교훈: 능력을 부정(불가·없음·위임)하기 전에 **확인 명령 1회 시도 의무**. 부정이 위임보다 쉬워서 새는 지점.
 
 ## How to avoid
 
