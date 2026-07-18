@@ -13,6 +13,12 @@ import GymCore
         #expect(GymAppModel(snapshotSession: GymSession(id: "x", date: "2026-07-14")).route == .login)
     }
 
+    // 로그인 화면 깜빡임 방지 — 스냅샷/테스트 init 은 인증 확정 상태(authResolved=true)로 시작해
+    // 로그인 폼을 즉시 그린다(스냅샷 렌더·게이트 테스트 무영향). 실앱 부트만 스플래시(false)로 시작.
+    @Test func snapshotInitIsAuthResolved() {
+        #expect(GymAppModel(snapshotSession: GymSession(id: "x", date: "2026-07-14")).authResolved == true)
+    }
+
     @Test func loginRouteExists() {
         // GymRoute 에 .login 케이스가 있어야 GymRootView 가 게이트를 그린다
         let r: GymRoute = .login
