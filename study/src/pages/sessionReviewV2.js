@@ -155,7 +155,10 @@ const VRM_CSS = `
 .vr-srs{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--faint);flex-wrap:wrap}
 .vr-srs b{color:var(--mut);font-weight:700}
 .vr-ctrl{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
-.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
+/* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vr button' 리셋과 동률로 올린다 — 안 그러면
+   '.vr button' 의 padding:0 (0,0,1,1)이 '.vr-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
+   경계에 글자가 붙어 삐져나온다(2026-07-18 iPhone 보고, sessionExprV2 와 동일 뿌리). 파생(0,0,2,0)은 회귀 없음. */
+button.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
 .vr-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
 .vr-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}

@@ -371,7 +371,11 @@ export const VSM_CSS = `
 .vs-ko{font-size:16px;color:var(--mut);margin-top:10px}
 .vs-pron{font-size:12.5px;color:var(--faint);margin-top:4px}
 .vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
-.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
+/* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vs button' 리셋과 동률로 올린다 — 안 그러면
+   '.vs button' 의 padding:0 (0,0,1,1)이 '.vs-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
+   경계에 글자가 붙어 삐져나온다(2026-07-18 iPhone 보고). '.vs-pill.pri' 등 파생(0,0,2,0)은
+   여전히 background/border override 를 이겨 회귀 없음. 데스크톱 VS_CSS 엔 '.vs button' 리셋이 없어 무관. */
+button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
 .vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
 .vs-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
 .vs-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
