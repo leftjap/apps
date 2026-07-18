@@ -299,7 +299,10 @@ public struct GymFooterRail: View {
                         .frame(width: 22)
                 }
             )
-            AddExerciseButton(action: onAdd)
+            // 레일은 상12/하30 비대칭 패딩이라 칩이 92pt 프레임 중심보다 9pt 위에 놓인다.
+            // HStack .center 정렬 하에서 + 버튼에 하단 18 패딩을 주면 시각 중심이 9pt 올라가 칩과 정렬
+            // (PWA .fp-add margin-bottom:18px 정합). 패딩은 레일보다 낮아 푸터 총 높이 불변.
+            AddExerciseButton(action: onAdd).padding(.bottom, 18)
         }
         .padding(.top, 16).padding(.bottom, 6).padding(.horizontal, 12)   // 하단 22→6: 트랙 여백 늘린 만큼 축소(총 높이 유지)
         .overlay(alignment: .top) { Rectangle().fill(GY.lineSoft).frame(height: 1) } // inset 상단 구분선

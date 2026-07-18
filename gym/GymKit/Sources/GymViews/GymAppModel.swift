@@ -12,6 +12,11 @@ public final class GymAppModel: ObservableObject {
     // 로그인 게이트 — 형제 앱(readingtime·PWA) 정합. 미로그인은 .login 에서 막힌다.
     // restoreCloud(부트) 가 기존 세션 복원 성공 시 .home 으로 전환한다.
     @Published public var route: GymRoute = .login
+    // 인증 확정 전 = 로그인 폼 대신 중립 스플래시(런치 배경). 이미 로그인된 사용자에게
+    // 로그인 화면이 깜빡이는 것을 막는다. route 는 .login 유지(게이트 회귀 테스트 정합) —
+    // restoreCloud 가 복원 성공 시 .home 으로, 실패 시 authResolved=true 로 로그인 폼을 드러낸다.
+    // 기본 true(스냅샷/테스트 무영향); 실앱 부트에서만 false 로 시작.
+    @Published public var authResolved: Bool = true
 
     /// 인증 상태 → 진입 라우트 (로그인됨=홈, 아니면 게이트).
     public static func routeAfterAuth(signedIn: Bool) -> GymRoute { signedIn ? .home : .login }
@@ -53,6 +58,9 @@ public final class GymAppModel: ObservableObject {
         weights = LocalStore.loadWeights()
         settings = LocalStore.loadSettings()
         syncState = LocalStore.loadSyncState()
+        // 실앱 부트 — 인증 확정(restoreCloud) 전까지 스플래시. 로그인 폼 조기 노출(깜빡임) 차단.
+        // 스냅샷/테스트(snapshotSession 주입·gymshot)는 restoreCloud 를 안 도니 true 유지.
+        if snapshotSession == nil && !GymSnapshot.isActive { authResolved = false }
         // 지난 날짜 방치 세션 자동 마감 (§8). 데모/스냅샷 세션은 스캐폴딩 보존 위해 제외.
         if snapshotSession == nil, session.id != "demo" {
             sweepStaleSessionIfNeeded()
@@ -349,7 +357,7 @@ public final class GymAppModel: ObservableObject {
     public var debugForceSignedIn = false
 
     public func restoreCloud() async {
-        if debugForceSignedIn { if route == .login { route = .home }; return }
+        if debugForceSignedIn { if route == .login { route = .home }; authResolved = true; return }
         if let t = pendingAuthTokens {
             pendingAuthTokens = nil
             await cloud.setSession(accessToken: t.access, refreshToken: t.refresh)
@@ -363,6 +371,7 @@ public final class GymAppModel: ObservableObject {
             await syncNow()
         }
         // 미로그인은 '조용한 정상' 이 아니라 '백업 중단' 이다 — .login 게이트에서 막고 상태도 남긴다.
+        authResolved = true   // 로그인/미로그인 확정 — 스플래시 종료 (미로그인이면 이제 폼 노출)
     }
     public func login() async {
         try? await cloud.signInWithGoogle()

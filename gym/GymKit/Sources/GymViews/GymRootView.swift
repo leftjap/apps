@@ -9,7 +9,13 @@ public struct GymRootView: View {
         ZStack {
             switch model.route {
             case .login:
-                GymLoginView(onLogin: { Task { await model.login() } })
+                // 인증 확정 전엔 로그인 폼 대신 중립 스플래시(런치와 동일 배경) — 로그인 화면 깜빡임 차단.
+                // restoreCloud 확정 후: 복원 성공 → .home, 미로그인 → authResolved=true 로 폼 노출.
+                if model.authResolved {
+                    GymLoginView(onLogin: { Task { await model.login() } })
+                } else {
+                    Color.clear   // ZStack .background(GY.shell) 가 비쳐 런치 배경 유지
+                }
             case .home:
                 HomeScreenView(model: model, onStart: { model.startSession() },
                                onStats: { model.openStats() }, onAdmin: { model.openAdmin() })
