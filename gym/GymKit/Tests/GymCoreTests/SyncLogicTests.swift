@@ -64,4 +64,36 @@ import Testing
         let s = try JSONDecoder().decode(GymUserSettings.self, from: legacy)
         #expect(s.updatedAt == 0)
     }
+
+    // 서버에 쌓인 orphan active 세션 정리 — discard/sweep 로 로컬에선 이미 버려졌지만 서버엔 남은
+    // active(0 done) 세션을 sync 가 삭제 대상으로 골라낸다. 앱이 이미 로컬에서 버린 결정을 서버에
+    // 전파하는 것이라 신규 데이터 손실 없음(0 done = 커밋 작업 없음). done 있는 active·completed·
+    // current 세션은 보존한다.
+    func act(_ id: String, done: Bool) -> GymSession {
+        GymSession(id: id, date: "2026-07-18",
+                   blocks: [GymBlock(exerciseId: "bench_press", sets: [GymSet(weight: 60, reps: 10, done: done)])],
+                   status: .active)
+    }
+
+    @Test func abandonedActiveIds0DoneNonCurrent() {
+        let server = [
+            act("cur", done: false),                                      // 현재 세션 — 유지
+            act("orphan1", done: false),                                  // 0 done orphan → 삭제
+            act("orphan2", done: false),                                  // 0 done orphan → 삭제
+            act("hasWork", done: true),                                   // done 있음 → 보존(안전)
+            GymSession(id: "c1", date: "2026-07-15", status: .completed), // completed → 무관
+        ]
+        #expect(Set(GymSyncLogic.abandonedActiveSessionIds(server: server, keepId: "cur")) == ["orphan1", "orphan2"])
+    }
+
+    @Test func abandonedKeepIdAbsentDeletesAll0Done() {
+        // keepId 가 서버에 없음(로컬 신규 세션) → 서버의 0 done active 전부 삭제 대상, done 있는 것만 보존
+        let server = [act("a", done: false), act("b", done: true), act("c", done: false)]
+        #expect(Set(GymSyncLogic.abandonedActiveSessionIds(server: server, keepId: "local-new")) == ["a", "c"])
+    }
+
+    @Test func abandonedEmptyWhenNoOrphans() {
+        #expect(GymSyncLogic.abandonedActiveSessionIds(server: [act("cur", done: false)], keepId: "cur").isEmpty)
+        #expect(GymSyncLogic.abandonedActiveSessionIds(server: [], keepId: "cur").isEmpty)
+    }
 }

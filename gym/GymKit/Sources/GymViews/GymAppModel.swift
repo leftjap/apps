@@ -415,6 +415,11 @@ public final class GymAppModel: ObservableObject {
             let serverCompleted = serverSessions.filter { $0.status == .completed }
             history = GymSyncLogic.mergeSessions(local: history, server: serverCompleted)
             LocalStore.saveSessions(history)
+            // 2b. orphan active 세션 정리 — discard/sweep 로 로컬에선 버렸지만 서버에 남은 0-done active
+            // 세션 삭제(현재 세션·done 있는 세션 보존). pull 이 completed 만 병합해 서버 active 가
+            // 무한 누적되던 것을 정리 (2026-07-18 실측 3개). 로컬이 이미 버린 결정의 서버 전파.
+            let orphanIds = GymSyncLogic.abandonedActiveSessionIds(server: serverSessions, keepId: session.id)
+            if !orphanIds.isEmpty { try await cloud.deleteSessions(ids: orphanIds) }
             prs = GymSyncLogic.mergePRs(local: prs, server: serverPRs)
             LocalStore.savePRs(prs)
             weights = GymSyncLogic.mergeWeights(local: weights, server: serverWeights)

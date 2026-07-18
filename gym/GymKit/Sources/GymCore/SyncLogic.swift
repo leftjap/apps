@@ -53,6 +53,23 @@ public enum GymSyncLogic {
         return out.filter { seen.insert($0.id).inserted }
     }
 
+    /// 서버에 쌓인 orphan active 세션 id — 서버 정리(삭제) 대상.
+    ///
+    /// discard/sweep 로 로컬에선 이미 버려졌지만 서버 복사본(먼저 push된 active)이 남은 세션을 골라낸다.
+    /// pull 은 completed 만 병합(GymAppModel syncNow)하므로 서버 active 는 영영 정리되지 않아 무한 누적된다
+    /// (2026-07-18 실측: 서버에 active 3개 — discardSession/sweep 잔존). 앱이 이미 로컬에서 버린 결정을
+    /// 서버에 전파하는 것이라 신규 데이터 손실이 없다.
+    ///
+    /// 안전장치: **done 세트가 하나라도 있는 active 는 제외**(커밋된 작업 보존) + **현재 세션(keepId) 제외**.
+    /// 즉 삭제 대상 = active && id ≠ keepId && 세트 전부 미완료(0 done).
+    public static func abandonedActiveSessionIds(server: [GymSession], keepId: String) -> [String] {
+        server.filter { s in
+            s.status == .active
+                && s.id != keepId
+                && !s.blocks.contains { $0.sets.contains(where: \.done) }
+        }.map(\.id)
+    }
+
     // 세션 리스트 병합 — id union + 충돌 해결. 로컬 전용/서버 전용 모두 보존.
     public static func mergeSessions(local: [GymSession], server: [GymSession]) -> [GymSession] {
         var byId: [String: GymSession] = Dictionary(uniqueKeysWithValues: local.map { ($0.id, $0) })
