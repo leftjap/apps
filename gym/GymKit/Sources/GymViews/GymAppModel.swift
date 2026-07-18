@@ -498,6 +498,18 @@ public final class GymAppModel: ObservableObject {
         #endif
     }
 
+    // 검증 훅(시뮬 전용) — 데모 세션(완료1·현재1·예정2)을 세션 화면에 띄운다. 레일 정렬을
+    // 실 ScrollView 로 눈검증하기 위한 것. gymshot ImageRenderer 는 스크롤 오프셋을 못 잡는다.
+    public func loadDemoSessionForVerification() {
+        #if targetEnvironment(simulator)
+        var demo = GymAppModel.demoSession()
+        demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
+        session = demo
+        selectedBlockIdx = nil
+        route = .session
+        #endif
+    }
+
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }
     public static func adminTab(_ s: String) -> AdminScreenView.Tab? { AdminScreenView.Tab(rawValue: s) }
 

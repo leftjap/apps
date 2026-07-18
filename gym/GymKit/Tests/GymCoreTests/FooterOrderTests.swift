@@ -61,27 +61,53 @@ import Testing
 
     @Test func noCurrentScrollsToLeadingSoDoneChipsStayVisible() {
         let states: [GymSessionLogic.GymRailState] = [.done, .done, .done, .done]
-        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMaxX: 0, viewportWidth: 300) == .leading)
+        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 0,
+                                                 currentChipMaxX: 0, viewportWidth: 300) == .leading)
     }
 
-    @Test func currentFullyVisibleKeepsLeadingAlignment() {
-        let states: [GymSessionLogic.GymRailState] = [.done, .current, .upcoming]
-        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMaxX: 240, viewportWidth: 300) == .leading)
-    }
-
-    @Test func currentBeyondViewportCentersOnCurrent() {
+    // 완료 칩을 다 보여주는 건 하단 공간 낭비 — 우측 끝 16px 만 남겨 '완료가 있다' 신호만 주고
+    // 남는 우측 공간을 예정 종목 노출에 쓴다. 현재 칩은 중앙이 아니라 좌측 railLeftInset 에 놓인다.
+    @Test func doneChipsCollapseToRightSliverLeavingCurrentLeftBiased() {
         let states: [GymSessionLogic.GymRailState] = [.done, .done, .current, .upcoming]
-        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMaxX: 420, viewportWidth: 300) == .center(2))
+        // 현재 칩 minX 200 · maxX 342 (폭 142) · 뷰포트 300
+        let t = GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 200,
+                                                 currentChipMaxX: 342, viewportWidth: 300)
+        // anchorX = 26 / (300 - 142) = 0.16455…
+        #expect(t == .anchored(idx: 2, anchorX: 26.0 / 158.0))
     }
 
-    @Test func unmeasuredCurrentChipCentersRatherThanGuessing() {
-        // curMaxX == 0 = 아직 preference 미측정. 현재 칩이 있으면 중앙 정렬로 보장한다.
+    // anchorX 수학 검증 — scrollTo(anchor:) 는 '아이템의 anchor 지점'과 '뷰포트의 같은 비율 지점'을 맞춘다.
+    // scrollLeft = minX + a·w − a·vpW 이므로 minX − scrollLeft(= 좌측 여백)가 railLeftInset 이어야 한다.
+    @Test func anchorMathPlacesCurrentChipAtLeftInset() {
+        let minX = 200.0, w = 142.0, vpW = 300.0
+        let target = GymSessionLogic.railScrollTarget(
+            states: [.done, .current], currentChipMinX: minX,
+            currentChipMaxX: minX + w, viewportWidth: vpW)
+        guard case .anchored(_, let a) = target else {
+            Issue.record("anchored 아님: \(String(describing: target))"); return
+        }
+        let scrollLeft = minX + a * w - a * vpW
+        #expect(abs((minX - scrollLeft) - GymSessionLogic.railLeftInset) < 0.001)
+    }
+
+    // 완료 칩이 없으면 가릴 게 없다 — 선두 고정 (PWA clamp 0 정합).
+    @Test func currentWithNoDoneChipsStaysLeading() {
+        let states: [GymSessionLogic.GymRailState] = [.current, .upcoming, .upcoming]
+        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 4,
+                                                 currentChipMaxX: 146, viewportWidth: 300) == .leading)
+    }
+
+    // 폭 미측정(preference 전) — 중앙으로 튀었다가 되돌아오지 않게 좌측 밀착으로 두고,
+    // 측정이 오면 onChange 가 inset 위치로 재정렬한다.
+    @Test func unmeasuredChipFallsBackToFlushLeadingNotCenter() {
         let states: [GymSessionLogic.GymRailState] = [.done, .current]
-        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMaxX: 0, viewportWidth: 300) == .center(1))
+        #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 0,
+                                                 currentChipMaxX: 0, viewportWidth: 300) == .anchored(idx: 1, anchorX: 0))
     }
 
     @Test func emptyRailHasNoTarget() {
-        #expect(GymSessionLogic.railScrollTarget(states: [], currentChipMaxX: 0, viewportWidth: 300) == nil)
+        #expect(GymSessionLogic.railScrollTarget(states: [], currentChipMinX: 0,
+                                                 currentChipMaxX: 0, viewportWidth: 300) == nil)
     }
 }
 

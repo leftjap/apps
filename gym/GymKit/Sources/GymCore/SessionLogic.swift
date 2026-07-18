@@ -190,21 +190,35 @@ public enum GymSessionLogic {
 
     // 레일 스크롤 정렬 대상. `.id(items 위치)` 로 스크롤한다.
     public enum GymRailScroll: Equatable, Sendable {
-        case leading        // 선두(완료 칩)부터 보이게 — 스크롤 안 함과 동치
-        case center(Int)    // 현재 칩을 트랙 중앙으로
+        case leading                             // 선두(완료 칩)부터 보이게 — 스크롤 안 함과 동치
+        case anchored(idx: Int, anchorX: Double) // idx 칩을 좌측 railLeftInset 위치에 (scrollTo anchor UnitPoint.x)
     }
 
-    /// 현재 칩이 뷰포트에 온전히 들어오면 선두 정렬, 벗어나면 중앙 정렬.
-    /// **현재 칩이 없으면(전 종목 완료) 선두로 되돌린다** — 안 그러면 SwiftUI ScrollView 가
-    /// 직전 오프셋을 유지해 완료 칩이 좌측으로 잘린다 (레일 작업지시서 §7 · PWA scrollLeft 0).
-    /// currentChipMaxX == 0 은 preference 미측정 — 현재 칩이 있으면 중앙 정렬로 보장.
+    /// 완료 칩 우측 끝 노출폭(16) + 레일 gap(10). 16 은 완료 칩 corner radius(14) 의
+    /// 둥근 우측 캡이 온전히 드러나는 최소치. PWA `FP_LEFT_INSET` 정합.
+    public static let railLeftInset: Double = 26
+
+    /// 현재 칩을 좌측 `railLeftInset` 위치에 고정한다 — 직전 완료 칩은 우측 끝 16px 만 남고,
+    /// 남는 우측 공간만큼 예정 종목이 더 보인다. 스크롤 초기 위치만 정하므로 사용자 스크롤은 자유.
+    ///
+    /// - `.anchored` 의 anchorX 는 `scrollTo(_:anchor:)` 용 UnitPoint.x.
+    ///   scrollTo 는 '아이템의 anchor 지점'을 '뷰포트의 같은 비율 지점'에 맞추므로
+    ///   scrollLeft = minX + a·w − a·vpW. 좌측 여백(minX − scrollLeft) = railLeftInset 이 되려면
+    ///   a = railLeftInset / (vpW − w).
+    /// - **현재 칩이 없으면(전 종목 완료) 선두로 되돌린다** — 안 그러면 SwiftUI ScrollView 가
+    ///   직전 오프셋을 유지해 완료 칩이 좌측으로 잘린다 (레일 작업지시서 §7 · PWA scrollLeft 0).
+    /// - 완료 칩이 없으면 가릴 게 없으므로 선두 (PWA 의 clamp 0 과 동치).
+    /// - 폭 미측정(preference 전)은 좌측 밀착 — 중앙으로 튀었다 되돌아오는 흔들림 방지.
     public static func railScrollTarget(states: [GymRailState],
+                                        currentChipMinX: Double,
                                         currentChipMaxX: Double,
                                         viewportWidth: Double) -> GymRailScroll? {
         guard !states.isEmpty else { return nil }
         guard let idx = states.firstIndex(of: .current) else { return .leading }
-        let fits = currentChipMaxX > 0 && currentChipMaxX <= viewportWidth
-        return fits ? .leading : .center(idx)
+        guard states.contains(.done) else { return .leading }
+        let w = currentChipMaxX - currentChipMinX
+        guard w > 0, viewportWidth > w else { return .anchored(idx: idx, anchorX: 0) }
+        return .anchored(idx: idx, anchorX: railLeftInset / (viewportWidth - w))
     }
 
     /// 종목 볼륨 링 중앙 % 글꼴 (pt). 시안 #6b 676행 미돌파 15/10 · 693행 돌파 13.5/9.5.

@@ -44,6 +44,9 @@ struct GymApp: App {
                                            lastSuccessAt: Int64(Date().timeIntervalSince1970 * 1000))
             if routeArg == nil { model.route = .home }
         }
+        // 검증 훅(시뮬 전용) — 실 ScrollView 경로에서 레일 정렬을 눈검증하기 위한 데모 세션 주입.
+        // (gymshot ImageRenderer 는 ScrollView 오프셋을 못 잡아 정렬 검증 불가)
+        if args.contains("--demo-session") { model.loadDemoSessionForVerification() }
         #endif
         _model = StateObject(wrappedValue: model)
     }
