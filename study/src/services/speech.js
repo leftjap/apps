@@ -485,12 +485,30 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
         const synthMs = Date.now() - t0;
         _dbg('speak synthesis 완료, playback 대기', { synthMs, audioMs });
         if (session.cancelled) { _dbg('speak cancelled before playback', {}); return; }
-        session.playbackTimer = setTimeout(() => {
+        const finish = () => {
+          if (session.finished) return; session.finished = true;
           _dbg('speak playback 완료', { totalMs: Date.now() - t0, audioMs, cancelled: session.cancelled });
+          if (session.playbackTimer) clearTimeout(session.playbackTimer);
           if (_activeSpeak === session) _activeSpeak = null;
           disposeSynth(entry); // 다 쓴 synth 폐기 — 다음 클릭은 pristine spare 를 받는다
           if (!session.cancelled) onEnd?.();
-        }, Math.max(0, audioMs));
+        };
+        // 2026-07-18 — non-MSE 경로(iPhone Safari: audio/mpeg MSE 미지원) 재생 트리거.
+        //   이 경로의 SpeakerAudioDestination 은 write() 로 버퍼링만 하고 close() 안에서만 재생한다.
+        //   speech.js 의 정상 teardown(disposeSynth)은 player.pause() 를 먼저 호출해 privIsPaused=true →
+        //   close 의 notifyPlayback 이 play() 를 스킵 → 무음(실 브라우저 MediaSource 가림 실측).
+        //   여기서 player.close() 를 직접(pause 없이) 호출해 blob 재생을 트리거하고, 종료는 audio 'ended'
+        //   로 받는다(audioMs+여유는 안전망). 데스크톱 MSE 는 privAudioOutputStream 이 없어 이 분기를 타지
+        //   않고, 기존처럼 write() 중 스트리밍 재생 → audioMs 뒤 정리한다(회귀 없음).
+        const player = entry.player;
+        if (player && player.privAudioOutputStream !== undefined) {
+          _dbg('speak non-MSE 재생 트리거 (iPhone 경로)', {});
+          try { if (!player.privIsClosed) player.close(); } catch (_) { /* noop */ }
+          try { player.privAudio?.addEventListener?.('ended', finish, { once: true }); } catch (_) { /* noop */ }
+          session.playbackTimer = setTimeout(finish, Math.max(0, audioMs) + 3000); // ended 미발생 안전망
+          return;
+        }
+        session.playbackTimer = setTimeout(finish, Math.max(0, audioMs));
       },
       (err) => {
         _dbg('speak 실패', { elapsedMs: Date.now() - t0, err });

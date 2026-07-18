@@ -1444,3 +1444,55 @@ describe('speak — 취소된 발화는 web 폴백으로 새지 않는다', () =
     expect(m.webSpoken).not.toContain('cancelled sentence');
   });
 });
+
+// 2026-07-18 — iPhone Safari 는 audio/mpeg 를 MSE 로 재생 못 해(window.MediaSource 부재/미지원)
+// SpeakerAudioDestination 이 non-MSE 경로를 탄다. 그 경로는 write() 로 버퍼링만 하고 close() 안에서만
+// 재생하는데(SpeakerAudioDestination.js — 실 브라우저 MediaSource 가림 실측: wentNonMSE), speech.js 의
+// 정상완료 teardown(disposeSynth)이 player.pause() 를 먼저 호출해 privIsPaused=true → notifyPlayback 의
+// `if(!privIsPaused) play()` 가 스킵 → 무음(실측: notifyPlayback paused=true, hasSrc=true 인데 소리 없음).
+// 데스크톱은 MSE 경로라 write() 중 스트리밍 재생 → close 불필요 → 정상. '데스크톱 됨/iPhone 안 됨'의 뿌리.
+describe('speak — non-MSE 경로(iPhone) 재생 트리거', () => {
+  function setupNonMSE() {
+    const state = { players: [], speakCalls: [] };
+    // 실 SpeakerAudioDestination non-MSE 모델: close() 안에서만 재생(privIsPaused 아니면 privAudio.play).
+    class FakeNonMSEPlayer {
+      constructor() {
+        this.privAudioOutputStream = {}; // non-MSE 표시 (MSE 면 privSourceBuffer 가 채워짐)
+        this.privIsPaused = false;
+        this.privIsClosed = false;
+        this.playCalls = 0; this.pauseCalls = 0;
+        this.privAudio = { play: () => { this.playCalls += 1; return Promise.resolve(); }, pause: () => {}, addEventListener: () => {} };
+        state.players.push(this);
+      }
+      // 실 SDK close(): blob → notifyPlayback → `if(!privIsPaused) play()`
+      close() { if (this.privIsClosed) return; this.privIsClosed = true; if (!this.privIsPaused) this.privAudio.play(); }
+      pause() { if (!this.privIsPaused) { this.privIsPaused = true; this.pauseCalls += 1; } }
+    }
+    class FakeNonMSESynth {
+      constructor(_c, ac) { this.player = ac?.player; }
+      speakSsmlAsync(ssml, ok) { state.speakCalls.push(ssml); ok({ audioDuration: 1e6 }); } // 0.1s
+      close() { try { this.player?.close?.(); } catch (_) { /* noop */ } } // 실 SDK: synth.close → adapter.dispose → destination.close
+    }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FakeNonMSESynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakeNonMSEPlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
+      },
+    });
+    return state;
+  }
+
+  it('합성 성공 시 player.close() 로 재생 트리거 — pause 를 먼저 하지 않는다', async () => {
+    const m = setupNonMSE();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('iphone sentence', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30)); // 합성 성공 처리 후, audioMs(100ms) 전
+    const p = m.players.find((x) => x.privIsClosed);
+    expect(p).toBeTruthy();                          // 합성 성공 즉시 close 로 재생 트리거
+    expect(p.playCalls).toBeGreaterThanOrEqual(1);   // 실제 재생(play) 발생 = 소리 남
+    expect(p.pauseCalls).toBe(0);                    // 재생 트리거 시점엔 pause 안 함 (pause 먼저면 무음)
+  });
+});
