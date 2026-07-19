@@ -465,7 +465,7 @@ public final class RTAppModel: ObservableObject {
             return days.contains(day)
         }
     }
-    @Published public var searchQuery = "몰입"
+    @Published public var searchQuery = ""
     @Published public var searchResults: [RTBookHit]?
 
     private let tapScheduler: RTTapScheduler
@@ -477,8 +477,10 @@ public final class RTAppModel: ObservableObject {
 
     public func search(_ q: String) async {
         searchQuery = q
-        guard let searchProvider else { return }
-        if let hits = try? await searchProvider(q) {
+        // 공란/공백 쿼리는 provider 미호출 — 최신 검색 결과를 지우지 않고 그대로 노출(§ "공란=최신 검색")
+        let trimmed = q.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, let searchProvider else { return }
+        if let hits = try? await searchProvider(trimmed) {
             searchResults = hits
         }
     }
@@ -508,7 +510,7 @@ public final class RTAppModel: ObservableObject {
         switch id {
         case "07": nav(.home); sheet = .addtime
         case "09": nav(.detail); sheet = .finish
-        case "13": nav(.library); sheet = .addbook
+        case "13": nav(.library); openSheet(.addbook)
         default:
             if let r = RTRoute(rawValue: id) { nav(r) } else { nav(.home) }
         }
@@ -517,6 +519,8 @@ public final class RTAppModel: ObservableObject {
     public func openSheet(_ s: RTSheet) {
         // 재완독: 기존 별점을 프리셋 (직전 다른 책 평가 잔존값 방지 겸)
         if s == .finish, let r = selectedBook?.rating { rating = r }
+        // 책 추가: 검색창은 열 때마다 공란. 결과(searchResults)는 유지 = "공란이면 최신 검색 표시".
+        if s == .addbook { searchQuery = "" }
         sheet = s
     }
     public func closeSheet() { sheet = nil }
@@ -797,6 +801,9 @@ public final class RTAppModel: ObservableObject {
         case "login": login()
         case "nav": navScreenID(arg)
         case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
+        case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
+        case "searchReopen":   // 검색 완결 후 닫기→재열기 (재열기 공란+최신결과 유지 결정적 검증)
+            Task { await search(arg); closeSheet(); openSheet(.addbook) }
         case "closeSheet": closeSheet()
         case "mode": RTMode(rawValue: arg).map { setMode($0) }
         case "rename": rename(arg)

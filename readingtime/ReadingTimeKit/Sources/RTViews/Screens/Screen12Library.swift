@@ -310,11 +310,26 @@ public struct Sheet13AddBook: View {
     var model: RTAppModel?
     private let added: Set<String>
     private let results: [RTBookHit]?
+    /// 라이브(실 검색 배선) vs 데모(rtshot 오라클). 데모만 시안 정적 렌더(몰입/32건/5권).
+    let isLive: Bool
 
     public init(model: RTAppModel? = nil) {
         self.model = model
         self.added = model?.added ?? ["flow"]
         self.results = model?.searchResults
+        self.isLive = model?.searchProvider != nil
+    }
+
+    /// "검색 결과 · N건" 라벨 (nil = 숨김). 라이브+이력없음이면 숨김, 라이브+결과면 실제 개수, 데모는 시안 32.
+    var countLabel: String? {
+        if isLive { return results.map { "검색 결과 · \($0.count)건" } }
+        return "검색 결과 · 32건"
+    }
+
+    /// 렌더되는 행 제목 — 라이브는 실 결과(없으면 공란), 데모는 시안 5권.
+    var rowTitles: [String] {
+        if isLive { return results?.map(\.title) ?? [] }
+        return Self.searchRows.map(\.title)
     }
 
     // 데모 검색 결과 (prototype SEARCH_ROWS)
@@ -354,8 +369,8 @@ public struct Sheet13AddBook: View {
                         RTIcon(["M20 20l-3.6-3.6"], size: 18, stroke: RT.muted, lineWidth: 2)
                             .overlay(Circle().stroke(RT.muted, lineWidth: 2 * 18 / 24)
                                 .frame(width: 14 * 18 / 24, height: 14 * 18 / 24).offset(x: -18 / 24, y: -18 / 24))
-                        if let model, model.searchProvider != nil {
-                            // 라이브 검색 (rtapp — 알라딘 프록시)
+                        if isLive, let model {
+                            // 라이브 검색 (실기기·rtapp — 알라딘 프록시). 기본 공란(placeholder).
                             TextField("책 · 저자 검색", text: Binding(
                                 get: { model.searchQuery },
                                 set: { model.searchQuery = $0 }))
@@ -363,6 +378,7 @@ public struct Sheet13AddBook: View {
                                 .font(.sans(15, 500)).foregroundColor(RT.ink)
                                 .onSubmit { Task { await model.search(model.searchQuery) } }
                         } else {
+                            // 데모(rtshot 오라클) — 시안 "몰입" 프리필 + 커서
                             Text("몰입").font(.sans(15, 500)).foregroundColor(RT.ink)
                             Rectangle().fill(RT.green).frame(width: 2, height: 19)
                                 .rtBlink(duration: 1.1)
@@ -375,24 +391,31 @@ public struct Sheet13AddBook: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.green, lineWidth: 1.5))
                     .shadow(color: Color(hex: 0x16140F, alpha: 0.05), radius: 3, x: 0, y: 2)
-                    Text("검색 결과 · \(results.map { "\($0.count)" } ?? "32")건")
-                        .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
-                        .foregroundColor(RT.faint)
+                    // 카운트 — 라이브+이력없음이면 숨김(공란), 그 외 실제 개수/시안 32
+                    if let countLabel {
+                        Text(countLabel)
+                            .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
+                            .foregroundColor(RT.faint)
+                    }
                 }
                 .padding(EdgeInsets(top: 0, leading: 24, bottom: 12, trailing: 24))
                 Group {
-                    if let results {
-                        ScrollView(showsIndicators: false) {
-                            VStack(spacing: 0) {
-                                ForEach(results, id: \.isbn) { hit in
-                                    row(cover: AnyView(liveCover(hit)),
-                                        title: hit.title, meta: "\(hit.author) · \(hit.publisher)",
-                                        added: added.contains(hit.isbn),
-                                        toggle: { model?.toggleAdd(hit.isbn) })
+                    if isLive {
+                        // 라이브: 실 결과만. 이력 없으면(nil) 공란.
+                        if let results {
+                            ScrollView(showsIndicators: false) {
+                                VStack(spacing: 0) {
+                                    ForEach(results, id: \.isbn) { hit in
+                                        row(cover: AnyView(liveCover(hit)),
+                                            title: hit.title, meta: "\(hit.author) · \(hit.publisher)",
+                                            added: added.contains(hit.isbn),
+                                            toggle: { model?.toggleAdd(hit.isbn) })
+                                    }
                                 }
                             }
                         }
                     } else {
+                        // 데모(오라클) — 시안 5권 정적
                         VStack(spacing: 0) {
                             ForEach(Array(Self.searchRows.enumerated()), id: \.offset) { _, r in
                                 row(cover: Self.searchCovers[r.key] ?? AnyView(EmptyView()),
