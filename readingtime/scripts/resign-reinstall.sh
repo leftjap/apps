@@ -8,6 +8,9 @@
 # 주의: 빌드는 ~/apps/readingtime 워킹트리 현재 상태를 그대로 집는다 (미커밋 WIP 포함).
 set -u
 export LOG=$HOME/Library/Logs/readingtime-resign.log
+# 매일 새 7일 프로파일 강제 (기본 4 는 갱신 직전 출국 시 4일치만 들고 나감 —
+# 2026-07-17 시애틀에서 소연 폰 서명 만료로 기록 불가했던 사고의 구조적 원인)
+export REBUILD_THRESHOLD_DAYS=7
 source /Users/gio_c/apps/scripts/resign-verify.sh
 
 resign_verify \
