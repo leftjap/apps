@@ -290,7 +290,7 @@ public struct SessionScreenView: View {
             }
             .padding(.top, 32).padding(.horizontal, 32)
             Spacer()
-            AddExerciseSheet(model: model, inline: true)
+            AddExerciseSheet(model: model, initialPart: model.lastAddexPart, inline: true)
         }
     }
 
@@ -623,7 +623,7 @@ public struct SessionScreenView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { addexOpen = false }
                     .transition(.opacity)
-                AddExerciseSheet(model: model, initialPart: model.currentPartId.isEmpty ? "chest" : model.currentPartId)
+                AddExerciseSheet(model: model, initialPart: model.lastAddexPart)
                     .transition(.move(edge: .bottom))
             }
         }

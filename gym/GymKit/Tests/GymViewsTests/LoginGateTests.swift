@@ -19,6 +19,18 @@ import GymCore
         #expect(GymAppModel(snapshotSession: GymSession(id: "x", date: "2026-07-14")).authResolved == true)
     }
 
+    // 운동 추가 시트 기본 부위 — 처음엔 등, 이후엔 마지막으로 종목을 고른 부위 (사용자 2026-07-19).
+    @Test func addexDefaultPartIsBackThenRemembersLastPicked() {
+        LocalStore.clearLastAddexPart()
+        let m = GymAppModel(snapshotSession: GymSession(id: "t", date: "2026-07-19"))
+        #expect(m.lastAddexPart == "back")          // 기본 = 등
+        m.addExercise("squat")                       // 하체 종목 추가 → 부위 기억
+        #expect(m.lastAddexPart == "legs")
+        m.addExercise("bench_press")                 // 가슴 추가 → 갱신
+        #expect(m.lastAddexPart == "chest")
+        LocalStore.clearLastAddexPart()
+    }
+
     @Test func loginRouteExists() {
         // GymRoute 에 .login 케이스가 있어야 GymRootView 가 게이트를 그린다
         let r: GymRoute = .login

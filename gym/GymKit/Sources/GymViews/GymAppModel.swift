@@ -578,8 +578,16 @@ public final class GymAppModel: ObservableObject {
         selectedBlockIdx = bi
     }
     // 운동 추가 (§6-2) — 프리셋 ① 직전 세션 카피 → ③ 기본값. 첫 종목 = startTime.
+    /// 운동 추가 시트가 처음 열 부위 — 마지막으로 종목을 고른 부위를 기억한다. 없으면 등(back).
+    /// 로컬 전용 선호값(LocalStore)이라 클라우드 동기화 대상이 아니다. (사용자 2026-07-19)
+    public var lastAddexPart: String {
+        get { LocalStore.loadLastAddexPart() ?? "back" }
+        set { LocalStore.saveLastAddexPart(newValue) }
+    }
+
     public func addExercise(_ exId: String) {
         let part = GymExercises.resolvePart(exId, custom: custom)
+        if !part.isEmpty { lastAddexPart = part }   // 다음 열 때 이 부위로 시작
         let sets: [GymSet]
         if let prev = prevBlock(forExercise: exId)?.sets, !prev.isEmpty {
             sets = GymSessionLogic.presetSets(fromPrev: prev)

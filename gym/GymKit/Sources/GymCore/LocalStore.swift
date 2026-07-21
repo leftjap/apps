@@ -11,6 +11,7 @@ public enum LocalStore {
     static let customExKey = "gym.customExercises.v1"
     static let settingsKey = "gym.settings.v1"
     static let syncStateKey = "gym.syncState.v1"      // 동기화 시도/성공/실패 (조용한 실패 차단)
+    static let lastAddexPartKey = "gym.lastAddexPart.v1"   // 운동 추가 시트 기본 부위 (마지막 선택 기억)
 
     // MARK: - generic JSON persist
     static func save<T: Encodable>(_ v: T, _ key: String) {
@@ -79,4 +80,9 @@ public enum LocalStore {
     // MARK: - 동기화 상태 (백업이 멈춘 걸 화면·진단으로 알 수 있게)
     public static func loadSyncState() -> GymSyncState { load(GymSyncState.self, syncStateKey) ?? GymSyncState() }
     public static func saveSyncState(_ s: GymSyncState) { save(s, syncStateKey) }
+
+    // MARK: - 운동 추가 시트 기본 부위 (로컬 전용 UI 선호 — 클라우드 동기화 대상 아님)
+    public static func loadLastAddexPart() -> String? { load(String.self, lastAddexPartKey) }
+    public static func saveLastAddexPart(_ p: String) { save(p, lastAddexPartKey) }
+    public static func clearLastAddexPart() { UserDefaults.standard.removeObject(forKey: lastAddexPartKey) }
 }
