@@ -151,6 +151,34 @@ function ttsLangOf(l) { return l === 'ja' ? 'ja-JP' : 'en-US'; }
 function tier(v) { if (!v) return 0; if (v < 10) return 1; if (v < 18) return 2; return 3; }
 function scoreCls(score) { return score >= 75 ? 'good' : score >= 60 ? 'mid' : 'low'; }
 
+/* 자기평가(lastResult) → 점수 매핑. reviewQueue 의 정본 형식은 'O'/'△'/'X' (seed·sync·srs 공통). */
+const R2S = { O: 85, '△': 65, X: 45 };
+
+/* 발음 로그(pronunciationLog) → { sentenceId: 최근 overallScore }.
+ * 2026-07-18 — 종전엔 카드의 lastScore/lastResult 만 봤는데 둘 다 비어 있어(실 DB: 80장 전부 null)
+ * 모든 문장이 폴백 80 으로 굳었다. 발음 로그는 sentenceId 와 함께 이미 쌓여 있어 그대로 쓸 수 있다. */
+export function latestPronScoreByCard(logs) {
+  const out = {};
+  for (const l of logs ?? []) {
+    const sid = l?.sentenceId;
+    if (!sid || !Number.isFinite(l.overallScore)) continue;
+    const prev = out[sid];
+    if (prev === undefined || (l.date ?? '') > (out[`${sid}__date`] ?? '')) {
+      out[sid] = l.overallScore;
+      out[`${sid}__date`] = l.date ?? '';
+    }
+  }
+  for (const k of Object.keys(out)) if (k.endsWith('__date')) delete out[k];
+  return out;
+}
+
+/* 표시 점수 — 실제 발음 점수 > 카드 lastScore > 자기평가 매핑 > 폴백 80. */
+export function sentenceScore(card, pronScore) {
+  if (Number.isFinite(pronScore)) return Math.round(pronScore);
+  if (Number.isFinite(card?.lastScore)) return card.lastScore;
+  return R2S[card?.lastResult] ?? 80;
+}
+
 // 복습 큐 진입 (그날 학습 문장 전체를 클릭 문장부터 순차).
 function goReview(sent, pool, from) {
   const key = sent._iso || sent.date;
@@ -213,11 +241,15 @@ export function mountStats(host) {
       const lastBy = {};
       for (const l of logs) for (const id of (l.sentenceIds || l.newSentenceIds || [])) { if (!lastBy[id] || l.date > lastBy[id]) lastBy[id] = l.date; }
       const cards = await db.reviewQueue.where('lang').equals(st.lang).toArray();
-      const r2s = { O: 85, '△': 65, X: 45 };
+      // 발음 로그 조인 — 카드에 점수가 비어 있어도 실제 발음 점수를 표시한다 (2026-07-18).
+      let pronBy = {};
+      try {
+        pronBy = latestPronScoreByCard(await db.pronunciationLog.where('lang').equals(st.lang).toArray());
+      } catch (e) { console.error('[stats] pronLog', e); }
       st.sents = cards.map((c) => {
         const iso = lastBy[c.id] || (c.createdAt ? c.createdAt.slice(0, 10) : null);
         if (!iso) return null;
-        const score = Number.isFinite(c.lastScore) ? c.lastScore : (r2s[c.lastResult] || 80);
+        const score = sentenceScore(c, pronBy[c.id]);
         return { id: c.id, _iso: iso, date: `${+iso.slice(5, 7)}/${+iso.slice(8, 10)}`, en: c.sentence, ko: c.meaning || c.ko, score, cls: scoreCls(score), interval: c.interval, result: c.lastResult };
       }).filter(Boolean);
     } catch (e) { console.error('[stats] sents', e); st.sents = []; }
