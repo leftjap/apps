@@ -503,6 +503,7 @@ public final class GymAppModel: ObservableObject {
         LocalStore.saveWeights([]); weights = []
         LocalStore.saveCustomExercises([]); custom = []
         LocalStore.saveSettings(GymUserSettings()); settings = GymUserSettings()
+        LocalStore.clearLastAddexPart()   // 추가시트 기본 부위도 초기화 — 안 지우면 UI 테스트가 비히메틱
         Task { await cloud.signOut() }   // sync 간섭 차단 (키체인 세션은 앱 삭제에도 생존)
         var demo = GymAppModel.demoSession()
         demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000

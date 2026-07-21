@@ -97,6 +97,39 @@ final class GymBlockFinishUITests: XCTestCase {
                           "완료 칩은 현재 칩 왼쪽에 밀려 있어야 한다")
     }
 
+    // 운동 추가 흐름 (사용자 2026-07-19) — + → 시트가 기본 '등' 으로 열림 → 종목 선택 시 레일에
+    // 예정 칩이 붙고, 고른 부위가 기억되어 다음에 그 부위로 열린다.
+    func testAddExerciseFlowUpdatesRailAndRemembersPart() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        // + → 시트. 기본 부위가 등이면 등 종목(랫 풀다운)이 보인다.
+        // + → 시트 열림
+        app.buttons["rail-add"].tap()
+        let anyAddex = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'addex-'")).firstMatch
+        XCTAssertTrue(anyAddex.waitForExistence(timeout: 5), "+ 를 누르면 추가 시트가 열려야 한다")
+        shot(app, "50-addex-open")
+
+        // 하체 칩 → 스쿼트 추가 → 레일에 예정 칩이 생겨야 한다
+        app.buttons["하체"].tap()
+        XCTAssertTrue(app.buttons["addex-squat"].waitForExistence(timeout: 5))
+        app.buttons["addex-squat"].tap()
+        // 시트는 배경(백드롭) 탭으로 닫는다 (SessionScreen: onTapGesture { addexOpen = false })
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertTrue(chip(app, "upcoming", "스쿼트").waitForExistence(timeout: 5),
+                      "추가한 종목이 레일에 예정 칩으로 붙어야 한다")
+        shot(app, "51-rail-after-add")
+
+        // 다시 + → 마지막에 고른 부위(하체)로 열려야 한다 (부위 기억)
+        app.buttons["rail-add"].tap()
+        XCTAssertTrue(app.buttons["addex-squat"].waitForExistence(timeout: 5),
+                      "마지막에 고른 부위(하체)가 기억되어 그 부위로 열려야 한다")
+        XCTAssertFalse(app.buttons["addex-lat_pulldown"].exists, "등 부위로 되돌아가면 안 된다")
+        shot(app, "52-addex-remembered-legs")
+    }
+
     // 전부 완료 후 완료 칩을 탭하면 히어로만 그 종목으로 바뀌고, 레일은 계속 전부 완료여야 한다.
     // (PWA 실렌더 정본: 히어로 이름은 탭을 따라가고 current 칩은 0개)
     func testTappingDoneChipAfterAllFinishedKeepsRailAllDone() {
