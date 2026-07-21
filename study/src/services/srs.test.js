@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextSrsState, todayPlusDays, SRS_INTERVALS } from './srs.js';
+import { nextSrsState, todayPlusDays, SRS_INTERVALS, applySrsUpdate } from './srs.js';
 
 const TODAY = '2026-05-08';
 
@@ -43,5 +43,46 @@ describe('nextSrsState — 안전성', () => {
   });
   it('알 수 없는 kind → 현 간격 유지', () => {
     expect(nextSrsState(7, 'xyz', TODAY)).toMatchObject({ interval: 7, graduate: false });
+  });
+});
+
+/* 2026-07-18 사용자 보고: 기록 화면(캘린더 상세·문장 목록)에 복습 난이도가 전혀 반영 안 됨.
+ * 원인: applySrsUpdate 가 interval/nextReview 만 저장하고 판정 결과(lastResult)를 저장하지 않았다.
+ * → stats.js:220 의 `r2s[c.lastResult] || 80` 이 항상 폴백 80(통과색)으로 굳어 모든 문장이 같은 색.
+ * reviewQueue 의 lastResult 정본 형식은 'O'/'△'/'X' (seed.js 시드값, sync.js:404 의 'X'=실패 판정,
+ * stats.js:216 의 r2s 매핑이 모두 이 형식을 기대). SRS 판정 kind(got/hmm/no)를 이 형식으로 저장한다. */
+describe('applySrsUpdate — 판정 결과(lastResult) 저장', () => {
+  const mkDb = () => {
+    const updates = []; const deletes = [];
+    return { updates, deletes, reviewQueue: {
+      update: async (id, patch) => { updates.push({ id, patch }); },
+      delete: async (id) => { deletes.push(id); },
+    } };
+  };
+
+  it('got → lastResult "O" + interval/nextReview 함께 저장', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c1', interval: 1 }, 'got', TODAY);
+    expect(db.updates).toHaveLength(1);
+    expect(db.updates[0]).toMatchObject({ id: 'c1', patch: { lastResult: 'O', interval: 3, nextReview: '2026-05-11' } });
+  });
+
+  it('hmm → lastResult "△"', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c2', interval: 3 }, 'hmm', TODAY);
+    expect(db.updates[0].patch).toMatchObject({ lastResult: '△', interval: 5 });
+  });
+
+  it('no → lastResult "X" (sync 의 실패 판정 기준과 일치)', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c3', interval: 7 }, 'no', TODAY);
+    expect(db.updates[0].patch).toMatchObject({ lastResult: 'X', interval: 1 });
+  });
+
+  it('졸업(60→got)은 큐에서 삭제 — update 호출 없음', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c4', interval: 60 }, 'got', TODAY);
+    expect(db.deletes).toEqual(['c4']);
+    expect(db.updates).toHaveLength(0);
   });
 });

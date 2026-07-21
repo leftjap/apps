@@ -49,16 +49,22 @@ export function nextSrsState(currentInterval, kind, todayISO) {
  * applySrsUpdate — 카드 1장에 판정 적용 → reviewQueue 갱신 (또는 졸업 시 삭제).
  * 반환: nextSrsState() 결과. db/card 누락 시 null.
  */
+/* 판정 kind → reviewQueue 저장 형식. 정본은 'O'/'△'/'X' — seed.js 시드값, sync.js 의 실패 판정
+ * (lastResult === 'X'), stats.js 의 점수 매핑(r2s)이 모두 이 형식을 기대한다. 알 수 없는 kind 는
+ * 저장하지 않는다(기존 값 보존). */
+const KIND_TO_RESULT = { got: 'O', hmm: '△', no: 'X' };
+
 export async function applySrsUpdate(db, card, kind, todayISO) {
   if (!db || !card || !card.id) return null;
   const next = nextSrsState(card.interval, kind, todayISO);
   if (next.graduate) {
     await db.reviewQueue.delete(card.id);
   } else {
-    await db.reviewQueue.update(card.id, {
-      interval: next.interval,
-      nextReview: next.nextReview,
-    });
+    // 2026-07-18 — lastResult 를 함께 저장한다. 종전엔 interval/nextReview 만 써서 기록 화면
+    // (캘린더 상세·문장 목록)의 난이도·점수색이 폴백값으로 굳었다(사용자 보고).
+    const patch = { interval: next.interval, nextReview: next.nextReview };
+    if (KIND_TO_RESULT[kind]) patch.lastResult = KIND_TO_RESULT[kind];
+    await db.reviewQueue.update(card.id, patch);
   }
   return next;
 }
