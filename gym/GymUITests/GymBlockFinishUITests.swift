@@ -61,6 +61,42 @@ final class GymBlockFinishUITests: XCTestCase {
         shot(app, "20-all-done")
     }
 
+    // 완료 종목이 생길 때마다 현재 칩이 '좌측 치우침' 위치로 재정렬되는지 (사용자 2026-07-19 요청).
+    // 완료 칩은 우측 끝만 남기고 밀려나고, 현재 칩은 중앙이 아니라 좌측 railLeftInset 부근에 온다.
+    // → 우측으로 예정 종목이 더 보인다. 완료를 진행하며 매 전환마다 같은 규칙이 유지되어야 한다.
+    func testCurrentChipStaysLeftBiasedAsBlocksAreFinished() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        func assertLeftBiased(_ name: String, _ tag: String) {
+            let cur = chip(app, "current", name)
+            XCTAssertTrue(cur.waitForExistence(timeout: 5), "\(name) 가 현재 칩이어야 한다")
+            let centered = (app.frame.width - cur.frame.width) / 2   // 중앙 정렬이었다면 이 x
+            XCTAssertGreaterThan(cur.frame.minX, 0,
+                                 "\(name) 현재 칩이 좌측으로 잘리면 안 된다 (실측 \(cur.frame.minX))")
+            XCTAssertLessThan(cur.frame.minX, centered - 30,
+                              "\(name) 현재 칩이 중앙(≈\(centered))이 아니라 좌측 치우침이어야 한다 (실측 \(cur.frame.minX))")
+            shot(app, tag)
+        }
+
+        // 데모: 인클라인(완료) · 벤치프레스(현재) → 완료 칩이 있으므로 좌측 치우침 적용
+        assertLeftBiased("벤치프레스", "40-leftbias-initial")
+
+        // 완료 → 다음 종목이 현재가 되어도 같은 좌측 치우침이 유지되어야 한다
+        chip(app, "current", "벤치프레스").press(forDuration: 0.8)
+        XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+        app.buttons["action-finish"].tap()
+        assertLeftBiased("덤벨 플라이", "41-leftbias-after-finish")
+
+        // 직전 완료 칩(벤치프레스)은 좌측으로 밀려 일부만 보인다 — 전체 폭보다 훨씬 좁게 노출
+        let prevDone = chip(app, "done", "벤치프레스")
+        XCTAssertTrue(prevDone.exists, "직전 완료 칩이 레일에 있어야 한다")
+        XCTAssertLessThan(prevDone.frame.maxX, chip(app, "current", "덤벨 플라이").frame.minX,
+                          "완료 칩은 현재 칩 왼쪽에 밀려 있어야 한다")
+    }
+
     // 전부 완료 후 완료 칩을 탭하면 히어로만 그 종목으로 바뀌고, 레일은 계속 전부 완료여야 한다.
     // (PWA 실렌더 정본: 히어로 이름은 탭을 따라가고 current 칩은 0개)
     func testTappingDoneChipAfterAllFinishedKeepsRailAllDone() {
