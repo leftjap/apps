@@ -183,6 +183,14 @@ function tasksColumn(state, d) {
   ) : null;
 
   const slim = h('div', { class: 'vh-task slim' }, h('div', { class: 'tt3', html: d.slimHtml }));
+  /* 문장 모아보기 진입 (2026-07-18 사용자 요청) — 학습 CTA 아래 공통 꼬리. 수학은 문장이 없어 제외. */
+  const sentRow = isMath ? null : h('div', { class: 'vh-task' },
+    h('div', { class: 'bd' },
+      h('div', { class: 'tt solo' }, '문장 모아보기'),
+      h('div', { class: 'tm' }, h('span', {}, '지금까지 공부한 문장'), h('span', { class: 'dv' }, '·'), h('span', {}, '한글 보고 떠올리기'))),
+    h('span', { class: 'grow' }),
+    h('button', { class: 'vh-btn sec', type: 'button', onClick: () => { window.location.hash = '#/sentences'; } }, '열기'),
+  );
 
   if (d.phase === 'done') {
     return h('div', { class: 'vh-tasks' },
@@ -211,7 +219,7 @@ function tasksColumn(state, d) {
         h('span', { class: 'grow' }),
         h('button', { class: 'vh-btn rev', type: 'button', onClick: () => { window.location.hash = isMath ? '#/session-math?mode=review' : '#/session-review?mode=free'; } }, vIcon(VI.REPEAT, { size: 14, sw: 2 }), '자유 복습'),
       ) : null,
-      slim,
+      sentRow, slim,
     );
   }
 
@@ -235,7 +243,7 @@ function tasksColumn(state, d) {
         h('button', { class: 'vh-btn pri', type: 'button', onClick: goNew }, vIcon(VI.MIC, { size: 15, sw: 2 }), '이어서 하기'),
       ),
       reviewTask,
-      slim,
+      sentRow, slim,
     );
   }
 
@@ -252,7 +260,7 @@ function tasksColumn(state, d) {
       h('button', { class: 'vh-btn pri', type: 'button', onClick: goNew }, vIcon(VI.PLAY, { size: 14, fill: true }), '학습 시작'),
     ),
     reviewTask,
-    slim,
+    sentRow, slim,
   );
 }
 
@@ -476,6 +484,13 @@ function mTasks(state, d) {
     window.location.hash = d.reviewFree ? '#/session-review?mode=free' : '#/session-review';
   };
   const slim = h('div', { class: 'vh-task slim' }, h('div', { class: 'tt3', html: d.slimHtml }));
+  /* 문장 모아보기 진입 — 모바일(데스크톱과 동일 동선). 수학은 문장이 없어 제외. */
+  const sentRow = isMath ? null : h('div', { class: 'vh-task' },
+    h('div', { class: 'bd' },
+      h('div', { class: 'tt solo' }, '문장 모아보기'),
+      h('div', { class: 'tm' }, h('span', {}, '지금까지 공부한 문장'), h('span', { class: 'dv' }, '·'), h('span', {}, '한글 보고 떠올리기'))),
+  );
+  const sentBtn = isMath ? null : h('button', { class: 'vh-tbtn', type: 'button', onClick: () => { window.location.hash = '#/sentences'; } }, '한글 보고 떠올리기');
   const items = [];
 
   if (d.phase === 'done') {
@@ -502,7 +517,7 @@ function mTasks(state, d) {
       ));
       items.push(h('button', { class: 'vh-tbtn rev', type: 'button', onClick: () => { window.location.hash = isMath ? '#/session-math?mode=review' : '#/session-review?mode=free'; } }, vIcon(VI.REPEAT, { size: 14, sw: 2 }), '자유 복습'));
     }
-    items.push(slim);
+    items.push(sentRow, sentBtn, slim);
     return h('div', { class: 'vh-tasks' }, items);
   }
 
@@ -549,7 +564,7 @@ function mTasks(state, d) {
     ));
     items.push(h('button', { class: 'vh-tbtn rev', type: 'button', onClick: goReview }, vIcon(VI.REPEAT, { size: 14, sw: 2 }), d.reviewFree ? '자유 복습' : '복습 시작'));
   }
-  items.push(slim);
+  items.push(sentRow, sentBtn, slim);
   return h('div', { class: 'vh-tasks' }, items);
 }
 
