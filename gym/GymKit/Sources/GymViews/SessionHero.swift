@@ -73,11 +73,9 @@ struct SessionHero: View {
                         .accessibilityIdentifier("hero-prchip")
                     }
                 case .bodyweight:
-                    Text("맨몸").font(.sans(64, 700)).tracking(-1.9)
-                        .foregroundStyle(GY.ink3)
-                        .accessibilityIdentifier("hero-weight")
-                        .frame(maxWidth: .infinity)
-                    repsRow(bottomValue, unit: "회", repsDelay: 0).overlay { zones(onBottomTap) }
+                    // 맨몸은 중량이 없다 — "맨몸" 표기를 빼고 횟수를 히어로 크기로 (사용자 2026-07-19).
+                    // 탭 존은 그대로 onBottomTap(= 횟수 전용, heroTap 의 row == .bottom 가드 정합).
+                    big(bottomValue, unit: "회", id: "hero-reps").overlay { zones(onBottomTap) }
                 case .cardio:
                     big(topValue, unit: "분").overlay { zones(onTopTap) }
                     repsRow(bottomValue, unit: "km", showX: false).overlay { zones(onBottomTap) }
@@ -118,10 +116,11 @@ struct SessionHero: View {
     static func repsMonoWeight(preset: Bool) -> Int { 400 }     // .hero-reps 400 고정
 
     // 중량/시간 (mono). 스왑은 숫자만 — 단위는 정지.
-    func big(_ v: String, unit: String) -> some View {
+    // id: 맨몸은 이 자리에 횟수가 오므로 "hero-reps" 로 넘긴다.
+    func big(_ v: String, unit: String, id: String = "hero-weight") -> some View {
         VStack(spacing: 0) {
             heroNumber(v, font: .mono(122, Self.weightMonoWeight(preset: preset)), tracking: -6.7,   // -0.055em @122
-                       id: "hero-weight", spec: .weight,
+                       id: id, spec: .weight,
                        base: locked ? GY.ink4 : GY.ink1)
                 .lineSpacing(0)
             Text(unit)

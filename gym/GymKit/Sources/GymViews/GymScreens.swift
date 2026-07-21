@@ -54,6 +54,18 @@ public enum GymScreens {
     }
 
     // 빈 세션 데모 (§6-1 — NEW SESSION + 인라인 운동추가 시트).
+    // 맨몸(bodyweight) 히어로 검증용 — 중량이 없어 횟수를 히어로로 그린다 (2026-07-19).
+    @MainActor static func demoBodyweightModel() -> GymAppModel {
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let s = GymSession(id: "bw-demo", date: "2026-05-06", startTime: now - 18 * 60 * 1000, blocks: [
+            GymBlock(exerciseId: "bench_press", sets: [
+                GymSet(weight: 60, reps: 10, done: true)], finishedAt: 1),
+            GymBlock(exerciseId: "decline_situp", sets: [
+                GymSet(reps: 10, done: true), GymSet(reps: 10, preset: true), GymSet(reps: 9, preset: true)]),
+        ], tags: ["chest", "core"], status: .active)
+        return GymAppModel(snapshotSession: s)
+    }
+
     @MainActor static func demoEmptyModel() -> GymAppModel {
         GymAppModel(snapshotSession: GymSession(id: "empty-demo", date: "2026-05-06", status: .active))
     }
@@ -122,6 +134,7 @@ public enum GymScreens {
         case "session-record": return AnyView(SessionScreenView(model: demoRecordModel()).frame(width: 390, height: 844))
         case "session-empty": return AnyView(SessionScreenView(model: demoEmptyModel()).frame(width: 390, height: 844))
         case "session-cardio": return AnyView(SessionScreenView(model: demoCardioModel()).frame(width: 390, height: 844))
+        case "session-bodyweight": return AnyView(SessionScreenView(model: demoBodyweightModel()).frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))
         case "stats-day":    return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false, initialDetailISO: "2026-05-05").frame(width: 390, height: 844))
