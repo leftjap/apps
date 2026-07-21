@@ -246,10 +246,13 @@ describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판�
     } finally { vi.useRealTimers(); }
   });
 
-  it('판정 버튼 3개(다시/애매/완료)를 렌더하고, 공개 전에는 비활성', () => {
+  /* 2026-07-22 사용자 지시: 판정 라벨을 쉬움/보통/어려움으로 통일하고 그 순서로 배치
+   * (문장 모아보기 페이지의 난이도 칩과 같은 표기·순서). kind 값(got/hmm/no)은 SRS 계약이라 유지. */
+  it('판정 버튼 3개를 쉬움/보통/어려움 순서로 렌더하고, 공개 전에는 비활성', () => {
     const host = mountCard({ interval: 1 });
     const btns = [...host.querySelectorAll('.judge-btn')];
-    expect(btns.map((b) => b.dataset.kind)).toEqual(['no', 'hmm', 'got']);
+    expect(btns.map((b) => b.dataset.kind)).toEqual(['got', 'hmm', 'no']);
+    expect(btns.map((b) => b.textContent.trim())).toEqual(['쉬움', '보통', '어려움']);
     btns.forEach((b) => expect(b.disabled).toBe(true));
   });
 

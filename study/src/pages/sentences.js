@@ -13,12 +13,12 @@
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
 
-/* 난이도 칩 — 복습 세션 판정(no/hmm/got)과 같은 체계를 reviewQueue 정본 형식으로 표기.
- * 어려움(X)이 목록 위, 쉬움(O)이 아래로 간다. */
+/* 난이도 칩 — 복습 세션 판정(got/hmm/no)과 같은 체계·같은 순서(쉬움→보통→어려움) 표기.
+ * 저장은 reviewQueue 정본 형식(O/△/X). 목록 정렬은 어려움(X)이 위, 쉬움(O)이 아래. */
 const LEVELS = [
-  { level: 'X', label: '어려움' },
-  { level: '△', label: '보통' },
   { level: 'O', label: '쉬움' },
+  { level: '△', label: '보통' },
+  { level: 'X', label: '어려움' },
 ];
 
 function getLang() { try { const v = sessionStorage.getItem('studyLang'); return v === 'ja' ? 'ja' : 'en'; } catch { return 'en'; } }
@@ -69,6 +69,13 @@ const VL_CSS = `
 const LEVEL_RANK = { X: 0, '△': 1, O: 3 };
 const rankOf = (lv) => (LEVEL_RANK[lv] ?? 2);
 
+/* 정렬 비교자 — 난이도(어려움→보통→미평가→쉬움), 동급은 학습일 최신순.
+ * 최초 렌더와 평가 직후 재배치가 같은 규칙을 쓰도록 한 곳에 둔다. */
+export function compareSentenceRows(a, b) {
+  const d = rankOf(a.level) - rankOf(b.level);
+  return d !== 0 ? d : (b._iso || '').localeCompare(a._iso || '');
+}
+
 /* reviewQueue + sessionLogs → 표시용 행 목록.
  * 정렬: 난이도(어려움→보통→미평가→쉬움) → 같은 난이도 안에서는 학습일 최신순. */
 export function buildSentenceRows(cards, logs) {
@@ -84,10 +91,7 @@ export function buildSentenceRows(cards, logs) {
     ko: c.meaning || c.ko || '',
     level: c.lastResult ?? null,
     _iso: lastBy[c.id] || (c.createdAt ? String(c.createdAt).slice(0, 10) : ''),
-  })).sort((a, b) => {
-    const d = rankOf(a.level) - rankOf(b.level);
-    return d !== 0 ? d : (b._iso || '').localeCompare(a._iso || '');
-  });
+  })).sort(compareSentenceRows);
 }
 
 /* 복습 진입 — stats.goReview 와 동일 규약 (session-review.js 가 studyReviewQueue 를 우선 사용). */
@@ -135,6 +139,17 @@ export function mountSentences(host) {
       return;
     }
     cntEl.textContent = `${rows.length}문장`;
+    const rowEls = new Map(); // id → 행 엘리먼트 (평가 직후 제자리 이동용)
+
+    /* 평가 즉시 정렬 위치로 옮긴다 (사용자 지시: "쉬움 클릭하면 맨 밑으로").
+     * 전체 재렌더가 아니라 그 행만 insertBefore — 다른 행의 정답 공개 상태가 유지된다. */
+    const reposition = (r) => {
+      const sorted = [...rows].sort(compareSentenceRows);
+      const idx = sorted.indexOf(r);
+      const after = sorted[idx + 1];
+      listEl.insertBefore(rowEls.get(r.id), after ? rowEls.get(after.id) : null);
+    };
+
     for (const r of rows) {
       const enEl = h('div', { class: 'en masked' }, r.en);
       const revealBtn = h('button', { class: 'vl-reveal', type: 'button' }, '정답');
@@ -154,6 +169,7 @@ export function mountSentences(host) {
           levelBtns.forEach((x) => x.classList.remove('on'));
           b.classList.add('on');
           r.level = level;
+          reposition(r); // 평가 즉시 제 위치로 (쉬움→아래, 어려움→위)
           try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level }); }
           catch (e) { console.error('[sentences] level save', e); }
         });
@@ -161,7 +177,7 @@ export function mountSentences(host) {
         return b;
       });
 
-      listEl.appendChild(h('div', { class: 'vl-row' },
+      const rowEl = h('div', { class: 'vl-row' },
         h('div', { class: 'ko' }, r.ko),
         levels,
         h('div', { class: 'vl-acts' },
@@ -174,7 +190,9 @@ export function mountSentences(host) {
             vIcon(VI.MIC, { size: 12, sw: 2 }), '복습'),
         ),
         enEl,
-      ));
+      );
+      rowEls.set(r.id, rowEl);
+      listEl.appendChild(rowEl);
     }
   })();
 

@@ -143,19 +143,50 @@ describe('mountSentences — 렌더·상호작용', () => {
     expect(updates[0].patch.nextReview).toBeUndefined();
   });
 
-  it('평가한 버튼은 선택 표시되고, 목록 순서는 그 자리에서 바뀌지 않는다', async () => {
+  /* 2026-07-22 사용자 지시: "평가하는 순간 즉시 해당 위치로 보내 — 쉬움 클릭하면 맨 밑으로.
+   * 기존 평가 점수 고려해서 알아서 위치 조절." → 클릭 즉시 정렬 규칙대로 그 행만 이동한다. */
+  it('쉬움을 누르면 그 즉시 맨 아래로 이동한다', async () => {
     window.studyDB.reviewQueue.update = async () => {};
     const host = document.getElementById('root');
     mountSentences(host);
     await tick();
-    const before = [...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent);
-    const row = host.querySelector('.vl-row');
-    const hard = row.querySelector('.vl-lv[data-level="X"]');
-    hard.click();
+    const first = host.querySelector('.vl-row');
+    const ko = first.querySelector('.ko').textContent;
+    first.querySelector('.vl-lv[data-level="O"]').click();
     await tick();
-    expect(hard.classList.contains('on')).toBe(true);
-    // 평가 도중 행이 튀지 않게 — 재정렬은 다음 진입 때 (사용자 지시)
-    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent)).toEqual(before);
+    const order = [...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent);
+    expect(order[order.length - 1]).toBe(ko);          // 맨 아래로
+    expect(first.querySelector('.vl-lv[data-level="O"]').classList.contains('on')).toBe(true);
+  });
+
+  it('어려움을 누르면 그 즉시 맨 위로 이동한다', async () => {
+    window.studyDB.reviewQueue.update = async () => {};
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await tick();
+    const rows = [...host.querySelectorAll('.vl-row')];
+    const last = rows[rows.length - 1];
+    const ko = last.querySelector('.ko').textContent;
+    last.querySelector('.vl-lv[data-level="X"]').click();
+    await tick();
+    expect([...host.querySelectorAll('.vl-row .ko')][0].textContent).toBe(ko);
+  });
+
+  it('기존 평가를 고려해 중간 위치로 보낸다 — 보통은 어려움 아래·쉬움 위', async () => {
+    window.studyDB.reviewQueue.update = async () => {};
+    window.studyDB.reviewQueue.where = () => ({ equals: () => ({ toArray: async () => [
+      { id: 'h', lang: 'en', sentence: 'h', meaning: '어려운문장', lastResult: 'X' },
+      { id: 'e', lang: 'en', sentence: 'e', meaning: '쉬운문장', lastResult: 'O' },
+      { id: 't', lang: 'en', sentence: 't', meaning: '평가할문장' },
+    ] }) });
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await tick();
+    const target = [...host.querySelectorAll('.vl-row')].find((r) => r.querySelector('.ko').textContent === '평가할문장');
+    target.querySelector('.vl-lv[data-level="△"]').click();
+    await tick();
+    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent))
+      .toEqual(['어려운문장', '평가할문장', '쉬운문장']);
   });
 
   it('행 순서는 한글 → 난이도 → 액션 → 가려진 영문', async () => {

@@ -156,25 +156,25 @@ export function createJudgeRow({ size = 'phone', onJudge } = {}) {
   row.setAttribute('role', 'group');
   row.setAttribute('aria-label', '판정');
 
+  /* 2026-07-22 사용자 지시 — 라벨을 쉬움/보통/어려움으로 통일하고 그 순서로 배치
+   * (문장 모아보기의 난이도 칩과 같은 표기·순서). 옛 'No/Hmm/Got it + 다시/애매/완료' 폐기.
+   * kind 값(got/hmm/no)은 SRS 계약(nextSrsState·applySrsUpdate)이라 그대로 둔다. */
   const buttons = [
-    { kind: 'no',  en: 'No',     ko: '다시' },
-    { kind: 'hmm', en: 'Hmm',    ko: '애매' },
-    { kind: 'got', en: 'Got it', ko: '완료' },
+    { kind: 'got', label: '쉬움' },
+    { kind: 'hmm', label: '보통' },
+    { kind: 'no',  label: '어려움' },
   ];
 
-  buttons.forEach(({ kind, en, ko }) => {
+  buttons.forEach(({ kind, label }) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'judge-btn';
     b.dataset.kind = kind;
-    b.setAttribute('aria-label', `${en} (${ko})`);
+    b.setAttribute('aria-label', label);
     const enEl = document.createElement('span');
     enEl.className = 'en';
-    enEl.textContent = en;
-    const koEl = document.createElement('span');
-    koEl.className = 'ko';
-    koEl.textContent = ko;
-    b.append(enEl, koEl);
+    enEl.textContent = label;
+    b.append(enEl); // 부제(.ko)는 영문 표기 전용이었으므로 제거
     if (onJudge) b.addEventListener('click', () => onJudge(kind));
     row.appendChild(b);
   });
