@@ -758,19 +758,36 @@ public final class GymAppModel: ObservableObject {
     private func nowMillis() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }
 
     #if canImport(UIKit)
+    // 세트 완료 진동은 제너레이터를 재사용하고 스와이프 시작에 prepare() 로 예열한다.
+    // 매번 새로 만들어 바로 impactOccurred 하면 Taptic Engine 이 예열 전이라 첫 진동이
+    // 지연되거나 아예 누락될 수 있다 (Apple 권장: 발생 직전 prepare). 2026-07-19 점검.
+    private let commitGen = UIImpactFeedbackGenerator(style: .heavy)
+
+    /// 히어로 스와이프 engage 시점에 호출 — 커밋 진동 예열.
+    public func prepareCommitHaptic() { commitGen.prepare() }
+
     private func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
-        UIImpactFeedbackGenerator(style: style).impactOccurred(intensity: 1.0)
+        guard style == .heavy else {
+            UIImpactFeedbackGenerator(style: style).impactOccurred(intensity: 1.0)
+            return
+        }
+        commitGen.impactOccurred(intensity: 1.0)
+        commitGen.prepare()   // 연속 세트 대비 재예열
     }
     // PR 더블 펄스 — PWA navigator.vibrate([12,28,12]) 정합 (두 번 진동, 사용자 강화 요청).
     private func impactPRDouble() {
-        let g = UIImpactFeedbackGenerator(style: .heavy)
+        let g = commitGen
         g.impactOccurred(intensity: 1.0)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { g.impactOccurred(intensity: 1.0) }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            g.impactOccurred(intensity: 1.0)
+            g.prepare()
+        }
     }
     #else
     private enum Dummy { case light, medium, heavy }
     private func impact(_ style: Dummy) {}
     private func impactPRDouble() {}
+    public func prepareCommitHaptic() {}
     #endif
 
     // MARK: - 시드 (실 데이터 배선 전 데모 — 실 snake_case ID)

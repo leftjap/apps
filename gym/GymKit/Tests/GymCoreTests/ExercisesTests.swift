@@ -3,6 +3,12 @@ import Testing
 
 // 운동 카탈로그 — exercises.js 정합 (41종·7부위·증분·resolver).
 @Suite struct ExercisesTests {
+    // 부위 칩 순서 — 등·가슴·어깨·하체·팔·코어 + 유산소 (사용자 2026-07-19 요청).
+    // 운동 추가 바텀시트(SessionSheets)·관리 화면(AdminScreen)·빌트인 목록이 이 순서를 공유한다.
+    @Test func partOrderIsBackChestShoulderLegsArmsCore() {
+        #expect(GymExercises.partOrder == ["back", "chest", "shoulder", "legs", "arms", "core", "cardio"])
+    }
+
     @Test func catalogCounts() {
         #expect(GymExercises.builtins.count == 41)
         #expect(GymExercises.partOrder.count == 7)

@@ -418,6 +418,7 @@ public struct SessionScreenView: View {
                     if !heroDragging {
                         guard GymSwipeMath.engaged(dx: dx, dy: dy) else { return }   // 수직 스크롤 양보
                         heroDragging = true
+                        model.prepareCommitHaptic()   // Taptic 예열 — 커밋 진동 지연·누락 방지
                     }
                     heroDragX = CGFloat(GymSwipeMath.heroTranslate(dx))   // 우저항 ×0.25 · 좌 -150 클램프
                 }

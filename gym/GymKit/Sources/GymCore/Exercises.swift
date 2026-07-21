@@ -40,8 +40,9 @@ public struct GymExerciseDef: Codable, Sendable, Identifiable, Hashable {
 }
 
 public enum GymExercises {
-    // 부위 ID 순서 (칩 순서) + 표시명.
-    public static let partOrder = ["chest", "back", "legs", "shoulder", "arms", "core", "cardio"]
+    // 부위 ID 순서 (칩 순서) + 표시명. 등·가슴·어깨·하체·팔·코어 + 유산소 (사용자 2026-07-19).
+    // 운동 추가 바텀시트·관리 화면 칩·빌트인 목록이 공유한다.
+    public static let partOrder = ["back", "chest", "shoulder", "legs", "arms", "core", "cardio"]
     static let partNameTable: [String: String] = [
         "chest": "가슴", "back": "등", "legs": "하체", "shoulder": "어깨",
         "arms": "팔", "core": "코어", "cardio": "유산소",
