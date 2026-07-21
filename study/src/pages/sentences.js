@@ -13,6 +13,14 @@
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
 
+/* 난이도 칩 — 복습 세션 판정(no/hmm/got)과 같은 체계를 reviewQueue 정본 형식으로 표기.
+ * 어려움(X)이 목록 위, 쉬움(O)이 아래로 간다. */
+const LEVELS = [
+  { level: 'X', label: '어려움' },
+  { level: '△', label: '보통' },
+  { level: 'O', label: '쉬움' },
+];
+
 function getLang() { try { const v = sessionStorage.getItem('studyLang'); return v === 'ja' ? 'ja' : 'en'; } catch { return 'en'; } }
 function ttsLangOf(l) { return l === 'ja' ? 'ja-JP' : 'en-US'; }
 
@@ -29,8 +37,14 @@ const VL_CSS = `
 .vl-hint{margin-top:8px;font-size:12.5px;color:var(--mut)}
 .vl-list{margin-top:20px;border-top:1px solid var(--line)}
 .vl-row{display:flex;align-items:center;gap:16px;padding:15px 4px;border-bottom:1px solid var(--line)}
-.vl-row .ko{flex:1 1 38%;min-width:0;font-size:15px;color:var(--ink);line-height:1.5}
-.vl-row .en{flex:1 1 46%;min-width:0;font-size:15.5px;font-weight:700;letter-spacing:-0.01em;line-height:1.45;transition:filter .18s ease}
+.vl-row .ko{flex:1 1 26%;min-width:0;font-size:15px;color:var(--ink);line-height:1.5}
+.vl-row .en{flex:1 1 30%;min-width:0;font-size:15.5px;font-weight:700;letter-spacing:-0.01em;line-height:1.45;transition:filter .18s ease}
+/* 난이도 칩 — 어려움/보통/쉬움. 선택 시 각 색으로 채운다. */
+.vl-levels{display:flex;gap:5px;flex:0 0 auto}
+.vl-lv{font:inherit;font-size:11.5px;font-weight:700;color:var(--faint);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap;min-height:32px}
+.vl-lv[data-level="X"].on{background:var(--coral-soft);border-color:transparent;color:var(--coral-deep)}
+.vl-lv[data-level="△"].on{background:#f6efdc;border-color:transparent;color:#8a6d1f}
+.vl-lv[data-level="O"].on{background:var(--teal-soft);border-color:transparent;color:var(--teal-deep)}
 /* 가림 — 블러. 문장 길이는 남겨 회상 단서가 되게 하고, 선택/복사는 막는다. */
 .vl-row .en.masked{filter:blur(6px);user-select:none;-webkit-user-select:none;color:var(--mut)}
 .vl-acts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
@@ -41,14 +55,22 @@ const VL_CSS = `
 .vl-empty{margin-top:40px;text-align:center;color:var(--faint);font-size:14px}
 @media (max-width:720px){
   .vl-wrap{padding:20px 16px 40px}
-  .vl-row{flex-wrap:wrap;gap:8px 12px;padding:14px 2px}
-  .vl-row .ko{flex:1 1 100%;font-size:14px;color:var(--mut)}
-  .vl-row .en{flex:1 1 100%;font-size:15px}
+  .vl-row{flex-wrap:wrap;gap:8px 10px;padding:14px 2px}
+  .vl-row .ko{flex:1 1 100%;font-size:14.5px;color:var(--ink);font-weight:600}
+  .vl-row .en{order:9;flex:1 1 100%;font-size:15px}   /* 가려진 영문은 항상 마지막 줄 */
+  .vl-levels{flex:1 1 100%}
+  .vl-lv{flex:1 1 0;padding:6px 4px}
   .vl-acts{flex:1 1 100%;justify-content:flex-end}
 }
 `;
 
-/* reviewQueue + sessionLogs → 표시용 행 목록. 학습일(최신) 내림차순, 학습일 없는 카드는 뒤로. */
+/* 난이도(lastResult) 정렬 우선순위 — 사용자 지시: "어렵다고 한 게 맨 위, 쉽다고 한 건 맨 밑".
+ * 미평가는 중립이라 보통과 쉬움 사이에 둔다(명시적으로 '쉬움'인 것만 확실히 아래로 민다). */
+const LEVEL_RANK = { X: 0, '△': 1, O: 3 };
+const rankOf = (lv) => (LEVEL_RANK[lv] ?? 2);
+
+/* reviewQueue + sessionLogs → 표시용 행 목록.
+ * 정렬: 난이도(어려움→보통→미평가→쉬움) → 같은 난이도 안에서는 학습일 최신순. */
 export function buildSentenceRows(cards, logs) {
   const lastBy = {};
   for (const l of logs ?? []) {
@@ -60,8 +82,12 @@ export function buildSentenceRows(cards, logs) {
     id: c.id,
     en: c.sentence ?? '',
     ko: c.meaning || c.ko || '',
+    level: c.lastResult ?? null,
     _iso: lastBy[c.id] || (c.createdAt ? String(c.createdAt).slice(0, 10) : ''),
-  })).sort((a, b) => (b._iso || '').localeCompare(a._iso || ''));
+  })).sort((a, b) => {
+    const d = rankOf(a.level) - rankOf(b.level);
+    return d !== 0 ? d : (b._iso || '').localeCompare(a._iso || '');
+  });
 }
 
 /* 복습 진입 — stats.goReview 와 동일 규약 (session-review.js 가 studyReviewQueue 를 우선 사용). */
@@ -111,24 +137,43 @@ export function mountSentences(host) {
     cntEl.textContent = `${rows.length}문장`;
     for (const r of rows) {
       const enEl = h('div', { class: 'en masked' }, r.en);
-      const revealBtn = h('button', { class: 'vl-reveal', type: 'button' }, '정답 보기');
+      const revealBtn = h('button', { class: 'vl-reveal', type: 'button' }, '정답');
       revealBtn.addEventListener('click', () => {
         const masked = enEl.classList.toggle('masked');
-        revealBtn.textContent = masked ? '정답 보기' : '가리기';
+        revealBtn.textContent = masked ? '정답' : '가림';
         revealBtn.classList.toggle('on', !masked);
       });
+
+      // 난이도 평가 — 복습 세션과 같은 판정(어려움 X / 보통 △ / 쉬움 O).
+      // SRS 간격은 건드리지 않는다(발화 없이 눈으로만 훑는 화면이라 복습일을 밀면 학습 손상).
+      // 재정렬은 다음 진입 때 — 평가 도중 행이 튀지 않게 (사용자 지시).
+      const levels = h('div', { class: 'vl-levels' });
+      const levelBtns = LEVELS.map(({ level, label }) => {
+        const b = h('button', { class: 'vl-lv' + (r.level === level ? ' on' : ''), type: 'button', 'data-level': level }, label);
+        b.addEventListener('click', async () => {
+          levelBtns.forEach((x) => x.classList.remove('on'));
+          b.classList.add('on');
+          r.level = level;
+          try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level }); }
+          catch (e) { console.error('[sentences] level save', e); }
+        });
+        levels.appendChild(b);
+        return b;
+      });
+
       listEl.appendChild(h('div', { class: 'vl-row' },
         h('div', { class: 'ko' }, r.ko),
-        enEl,
+        levels,
         h('div', { class: 'vl-acts' },
           revealBtn,
           h('button', {
-            class: 'vl-cir', type: 'button', 'aria-label': '듣기',
+            class: 'vl-cir', type: 'button', 'aria-label': '재생',
             onClick: () => { if (r.en && window.studySpeech?.speak) window.studySpeech.speak(r.en, { lang: ttsLangOf(lang) }); },
           }, vIcon(VI.PLAY, { size: 11, fill: true })),
           h('button', { class: 'vl-go', type: 'button', onClick: () => goReviewOne(r, lang) },
             vIcon(VI.MIC, { size: 12, sw: 2 }), '복습'),
         ),
+        enEl,
       ));
     }
   })();
