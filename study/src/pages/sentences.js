@@ -12,6 +12,7 @@
  */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
+import { speakWithFeedback } from '../components/session/atoms.js';
 
 /* 난이도 칩 — 복습 세션 판정(got/hmm/no)과 같은 체계·같은 순서(쉬움→보통→어려움) 표기.
  * 저장은 reviewQueue 정본 형식(O/△/X). 목록 정렬은 어려움(X)이 위, 쉬움(O)이 아래. */
@@ -50,7 +51,9 @@ const VL_CSS = `
 .vl-acts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .vl-reveal{font:inherit;font-size:12.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:36px}
 .vl-reveal.on{background:#efebde;color:var(--mut)}
-.vl-cir{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0}
+.vl-cir{position:relative;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0}
+.vl-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
+.vl-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vl-go{width:auto;padding:0 14px;border-radius:999px;gap:6px;display:inline-flex;align-items:center;font:inherit;font-size:12.5px;font-weight:700;color:var(--coral-deep);background:var(--coral-soft);border:0;min-height:36px;cursor:pointer;white-space:nowrap}
 .vl-empty{margin-top:40px;text-align:center;color:var(--faint);font-size:14px}
 @media (max-width:720px){
@@ -162,6 +165,10 @@ export function mountSentences(host) {
       // 난이도 평가 — 복습 세션과 같은 판정(어려움 X / 보통 △ / 쉬움 O).
       // SRS 간격은 건드리지 않는다(발화 없이 눈으로만 훑는 화면이라 복습일을 밀면 학습 손상).
       // 재정렬은 다음 진입 때 — 평가 도중 행이 튀지 않게 (사용자 지시).
+      // 재생 버튼 — 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 사용자 보고: 피드백 없음)
+      const playBtn = h('button', { class: 'vl-cir', type: 'button', 'aria-label': '재생' }, vIcon(VI.PLAY, { size: 11, fill: true }));
+      playBtn.addEventListener('click', () => speakWithFeedback(playBtn, r.en, { lang: ttsLangOf(lang) }));
+
       const levels = h('div', { class: 'vl-levels' });
       const levelBtns = LEVELS.map(({ level, label }) => {
         const b = h('button', { class: 'vl-lv' + (r.level === level ? ' on' : ''), type: 'button', 'data-level': level }, label);
@@ -182,10 +189,7 @@ export function mountSentences(host) {
         levels,
         h('div', { class: 'vl-acts' },
           revealBtn,
-          h('button', {
-            class: 'vl-cir', type: 'button', 'aria-label': '재생',
-            onClick: () => { if (r.en && window.studySpeech?.speak) window.studySpeech.speak(r.en, { lang: ttsLangOf(lang) }); },
-          }, vIcon(VI.PLAY, { size: 11, fill: true })),
+          playBtn,
           h('button', { class: 'vl-go', type: 'button', onClick: () => goReviewOne(r, lang) },
             vIcon(VI.MIC, { size: 12, sw: 2 }), '복습'),
         ),

@@ -69,6 +69,7 @@ const VR_CSS = `
 .vr-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
 .vr-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
 .vr-ring{position:relative;width:52px;height:52px;flex:0 0 auto}
 .vr-ring svg{transform:rotate(-90deg)}
@@ -163,6 +164,7 @@ button.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
 .vr-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vr-ring{position:relative;width:50px;height:50px;flex:0 0 auto}
 .vr-ring svg{transform:rotate(-90deg)}
 .vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}

@@ -1,3 +1,5 @@
+import { vEq } from '../v2/atoms.js';
+
 /* Session atoms — RecordButton · ListenButton · Waveform · ScorePill · JudgeRow
  * 정본: ~/Downloads/_ _ _/variants/session-new-v2-tried-passed.jsx (L9-37)
  *      ~/Downloads/_ _ _/variants/session-review-v2-tried-passed.jsx (L36-54)
@@ -146,6 +148,47 @@ export function createScorePill({ score = 0, passed = false, large = false } = {
       if (scoreEl.textContent !== ns) scoreEl.textContent = ns;
     },
   };
+}
+
+/* ────── 재생 피드백 (2026-07-22 사용자 보고) ──────
+ * 종전: 응용연습·체이닝 재생 버튼은 speak() 만 호출해 아무 반응이 없었고, 메인 재생도 색만 바뀌었다.
+ * 재생 중에는 버튼 아이콘을 이퀄라이저(.v-eq — v-eq 키프레임으로 막대가 움직인다)로 바꾸고
+ * .playing/.eqq 를 붙여 각 화면 CSS 의 pulse 링이 돌게 한다. 종료·선점·타임아웃에 원상 복구.
+ * 활성 버튼은 하나만 유지한다 — speech.js 가 이전 발화를 선점 취소하므로 표시도 같이 꺼야 한다. */
+let _activePlay = null;
+
+function restoreActivePlay() {
+  const a = _activePlay;
+  if (!a) return;
+  _activePlay = null;
+  clearTimeout(a.timer);
+  a.btn.classList.remove('playing', 'eqq');
+  if (a.btn.firstChild) a.btn.replaceChild(a.icon, a.btn.firstChild);
+}
+
+/** 재생 + 시각 피드백. 재생 중 같은 버튼을 다시 누르면 정지(토글). */
+export function speakWithFeedback(btn, text, opts = {}) {
+  if (!btn) return;
+  // 같은 버튼을 다시 눌러도 정지가 아니라 '다시 재생'이다 — 짧은 문장 반복 청취가 목적이고,
+  // 체이닝은 재생마다 화자·속도를 바꿔 리듬 통째 암기를 막는 설계라 반복이 핵심이다.
+  restoreActivePlay();
+  if (!text || !window.studySpeech?.speak) return;
+
+  const icon = btn.firstChild;
+  btn.classList.add('playing', 'eqq');
+  if (icon) btn.replaceChild(vEq(3), icon);
+  const entry = { btn, icon, timer: null };
+  _activePlay = entry;
+  entry.timer = setTimeout(() => { if (_activePlay === entry) restoreActivePlay(); }, 30000); // 안전망
+
+  const { onEnd, ...rest } = opts;
+  window.studySpeech.speak(text, {
+    ...rest,
+    onEnd: () => {
+      if (_activePlay === entry) restoreActivePlay();
+      onEnd?.();
+    },
+  });
 }
 
 /* ────── JudgeRow (복습 전용) ────── */

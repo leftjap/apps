@@ -12,6 +12,7 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickChainVoice } from '../components/session/applied.js';
 import { judgeCoverage } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
@@ -59,6 +60,7 @@ export const VS_CSS = `
 .vs-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
 .vs-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
 .vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vs-ring{position:relative;width:52px;height:52px;flex:0 0 auto}
 .vs-ring svg{transform:rotate(-90deg)}
 .vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
@@ -86,6 +88,7 @@ export const VS_CSS = `
 .vs-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
 .vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
 .vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vs-gscore{font-family:Outfit;font-size:13px;font-weight:700;color:var(--teal-deep);white-space:nowrap}
 .vs-side{width:324px;flex:0 0 auto}
 .vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 20px;margin-bottom:13px}
@@ -191,7 +194,9 @@ export function drillRows(drills, hlTerm, lang, speaker, onScore, demo) {
   let recCtrl = null, recRow = null;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
     const scoreEl = h('span', { class: 'vs-gscore', style: 'display:none;' }, '');
-    const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기', onClick: () => { if (d.en && window.studySpeech?.speak) window.studySpeech.speak(d.en, { lang: ttsLang, speaker }); } }, vIcon(VI.PLAY, { size: 11, fill: true }));
+    const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
+    // 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 — 종전엔 눌러도 아무 반응이 없었다)
+    playBtn.addEventListener('click', () => speakWithFeedback(playBtn, d.en, { lang: ttsLang, speaker }));
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
     const row = h('div', { class: 'vs-drow' },
       h('span', { class: 'ix' }, String(i + 1)),
@@ -287,7 +292,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
       if (i !== cur || !window.studySpeech?.speak) return;
       plays += 1;
       const v = pickChainVoice(plays); // 매 재생마다 화자·속도 변주
-      window.studySpeech.speak(step.text, { lang: ttsLang, voice: v.voice, rate: v.rate });
+      speakWithFeedback(playBtn, step.text, { lang: ttsLang, voice: v.voice, rate: v.rate });
     });
 
     async function finish() {
@@ -380,6 +385,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
 .vs-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
 .vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vs-ring{position:relative;width:50px;height:50px;flex:0 0 auto;margin-left:auto}
 .vs-ring svg{transform:rotate(-90deg)}
 .vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
@@ -419,6 +425,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
 .vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
 .vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vs-gscore{font-family:Outfit;font-size:13px;font-weight:700;color:var(--teal-deep);white-space:nowrap}
 .vs-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
 .vs-fold .fhd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
