@@ -46,13 +46,14 @@ describe('sessionExprV2 — 체이닝(chain) 렌더', () => {
   }
   const chainRows = (host) => [...host.querySelectorAll('.vs-chain .vs-drow')];
 
-  it('chain → 단계 수만큼 행 렌더 + 영어 원문은 화면에 노출되지 않음(자막 없음)', () => {
+  it('chain → 최대 3단계로 압축 렌더 + 영어 원문은 화면에 노출되지 않음(자막 없음)', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, chainState(), {});
     expect(host.textContent).toContain('체이닝');
-    expect(chainRows(host)).toHaveLength(4);
+    expect(chainRows(host)).toHaveLength(3); // 4청크 → 3단계 (슬림화 2026-07-22)
     expect(host.textContent).toContain('1단계');
-    expect(host.textContent).toContain('4단계');
+    expect(host.textContent).toContain('3단계');
+    expect(host.textContent).not.toContain('4단계');
     // 자막 금지 — 어떤 단계의 영어도 텍스트로 노출되면 안 됨
     expect(host.textContent).not.toContain("It's been a while");
     expect(host.textContent).not.toContain('grab dinner');
@@ -185,6 +186,73 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
   });
 });
 
+/* 생산 연습(한→영) — 방금 연습한 드릴을 한글만 보고 재현 (2026-07-22 신설).
+ * 정답(en·kr 음차)은 통과·공개 전 DOM 에 없어야 한다 — 체이닝 자막 금지와 동일 계약. */
+describe('sessionExprV2 — 생산 연습(한→영) 블록', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const prodRows = (host) => [...host.querySelectorAll('.vs-prod')];
+
+  it('드릴의 ko 로 렌더, 정답 영어·음차는 공개 전 블록에 미노출', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const block = host.querySelector('.vs-prodblock');
+    expect(block).toBeTruthy();
+    expect(prodRows(host)).toHaveLength(2);
+    expect(block.textContent).toContain('생산 연습');
+    expect(block.textContent).toContain('그건 직업 그 이상이에요.');
+    expect(block.textContent).not.toContain('more than a job');
+    expect(block.textContent).not.toContain('잇츠 모어');
+  });
+
+  it('데모 녹음 → 통과 → 정답 공개·듣기 활성·스트릭 증가, 전부 완료 시 완주 뱃지', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const state = makeStateWithDrills(); state.demo = true;
+      renderSessionExprV2(host, state, {});
+      const block = host.querySelector('.vs-prodblock');
+      const rec = (i) => prodRows(host)[i].querySelector('button[aria-label="녹음"]');
+      const play = (i) => prodRows(host)[i].querySelector('button[aria-label="듣기"]');
+      expect(play(0).disabled).toBe(true);            // 정답 오디오 잠금 (공개 전)
+      rec(0).click(); vi.advanceTimersByTime(900);
+      expect(block.textContent).toContain("It's more than a job.");  // 정답 공개
+      expect(play(0).disabled).toBe(false);
+      expect(block.textContent).toContain('연속 ✓ 1');
+      rec(1).click(); vi.advanceTimersByTime(900);
+      expect(block.textContent).toContain('연속 ✓ 2');
+      expect(block.textContent).toContain('생산 완주');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('생산 발화도 오늘 발화·3회 게이트 집계 + 시작 시 응용 목록 자동 접힘(펼치기 제공)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const state = makeStateWithDrills(); state.demo = true;
+      renderSessionExprV2(host, state, {});
+      const drillList = host.querySelector('.vs-drills-list');
+      expect(drillList.style.display).not.toBe('none');
+      prodRows(host)[0].querySelector('button[aria-label="녹음"]').click();
+      vi.advanceTimersByTime(900);
+      expect(state.recLog.e1?.count).toBe(1);          // 생산 발화도 게이트 카운트
+      expect(state.tried).toBe(1);
+      expect(drillList.style.display).toBe('none');    // 답 훔쳐보기 방지 — 자동 접힘
+      const unfold = host.querySelector('.vs-drills-unfold');
+      expect(unfold.style.display).not.toBe('none');
+      unfold.click();
+      expect(drillList.style.display).not.toBe('none'); // 펼치기는 자유
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('ko 없는 드릴은 제외 — 하나도 없으면 블록 미렌더', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    state.sentence.explanation.drills.forEach((d) => delete d.ko);
+    renderSessionExprV2(host, state, {});
+    expect(host.querySelector('.vs-prodblock')).toBeNull();
+  });
+});
+
 // 응용 연습(drill) 녹음 = 세션 발화 1건 — '오늘 발화' 카운트 누락 버그 회귀 방지.
 function makeStateWithDrills() {
   const drills = [
@@ -232,6 +300,22 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     const drillScoreEl = drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore');
     expect(drillScoreEl.textContent).toContain('92');
     expect(drillScoreEl.classList.contains('score-pop')).toBe(true);
+  });
+
+  /* 드릴 듣기도 체이닝처럼 재생마다 화자 변주 + 길이별 속도 (2026-07-22 사용자 지시 —
+   * 종전엔 카드 화자 1명·고정 속도). 카드 speaker 는 더 이상 드릴에 안 쓴다. */
+  it('드릴 재생마다 화자가 바뀌고, 짧은 문장은 빠르게 재생한다 (카드 화자 고정 폐기)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const plays = [...host.querySelectorAll('.vs-drow')].map((r) => r.querySelector('button[aria-label="듣기"]'));
+    plays[0].click(); plays[1].click();
+    expect(speak).toHaveBeenCalledTimes(2);
+    const o1 = speak.mock.calls[0][1], o2 = speak.mock.calls[1][1];
+    expect(o1.voice).not.toBe(o2.voice);            // 화자 순환
+    expect(o1.speaker).toBeUndefined();             // 카드 화자 고정 폐기
+    expect(o1.rate).toBeGreaterThanOrEqual(1.10);   // 5단어(≤6) → 빠르게
   });
 
   it('drill 녹음도 다음-표현 게이트(recLog count)에 포함 — 콤보는 메인 전용(무관)', async () => {

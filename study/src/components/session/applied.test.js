@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickChainVoice, CHAIN_VOICES } from './applied.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES } from './applied.js';
 
 const CHAIN = {
   target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -7,13 +7,25 @@ const CHAIN = {
   ko: '오랜만이야. 언제 저녁이나 먹자.',
 };
 
-describe('buildChainSteps — 청크 누적으로 단계 생성 (단계 수 고정 X)', () => {
-  it('청크 수만큼 단계, 앞에서부터 누적, 마지막 단계는 target 원문', () => {
-    const steps = buildChainSteps(CHAIN);
-    expect(steps).toHaveLength(4);
+describe('buildChainSteps — 청크 누적으로 단계 생성, 최대 3단계 (슬림화 2026-07-22)', () => {
+  it('청크가 3개를 넘으면 ~40%·70%·100% 최근접 경계의 3단계로 압축', () => {
+    const steps = buildChainSteps(CHAIN); // 4청크 13단어
+    expect(steps).toHaveLength(3);
     expect(steps[0].text).toBe("It's been a while");
-    expect(steps[3].text).toBe(CHAIN.target);
-    expect(steps.map((s) => s.index)).toEqual([0, 1, 2, 3]);
+    expect(steps[2].text).toBe(CHAIN.target);
+    expect(steps.map((s) => s.index)).toEqual([0, 1, 2]);
+  });
+
+  it('7청크도 3단계 — 경계는 청크 위치만 허용(청크 중간에서 안 자름)', () => {
+    const steps = buildChainSteps({
+      target: 'One two three four five six seven eight nine ten.',
+      chunks: ['One two', 'three four', 'five six', 'seven', 'eight', 'nine', 'ten'],
+      ko: '뜻',
+    });
+    expect(steps).toHaveLength(3);
+    expect(steps[0].text).toBe('One two three four');
+    expect(steps[1].text).toBe('One two three four five six seven');
+    expect(steps[2].text).toBe('One two three four five six seven eight nine ten.');
   });
 
   /* 중간 단계도 target 의 원문 접두부여야 한다. 청크를 이어붙이면 구두점이 사라져
@@ -22,15 +34,15 @@ describe('buildChainSteps — 청크 누적으로 단계 생성 (단계 수 고�
   it('중간 단계가 문장 경계를 넘으면 원문 구두점을 보존한다 (런온 금지)', () => {
     const steps = buildChainSteps(CHAIN);
     expect(steps[1].text).toBe("It's been a while since we caught up.");
-    expect(steps[2].text).toBe("It's been a while since we caught up. We should grab dinner");
   });
 
-  it('의문문 접두부는 물음표를 유지한다 (평서문 억양으로 읽히면 안 됨)', () => {
+  it('청크 3개 이하는 현행 유지 — 청크 수만큼 단계 + 의문문 접두부 물음표 보존', () => {
     const steps = buildChainSteps({
       target: 'Is there a problem with that? Just tell me straight.',
       chunks: ['Is there a problem', 'with that', 'Just tell me straight'],
       ko: '그게 뭐 문제 있어? 그냥 솔직하게 말해.',
     });
+    expect(steps).toHaveLength(3);
     expect(steps[0].text).toBe('Is there a problem');
     expect(steps[1].text).toBe('Is there a problem with that?');
   });
@@ -200,12 +212,27 @@ describe('filterNearDupDrills — 호칭류·꼬리확장을 걷어내고 진짜
   });
 });
 
-describe('pickChainVoice — 재생마다 화자·속도를 바꿔 리듬 암기를 막는다', () => {
-  it('호출 인덱스로 순환하고, 연속 재생은 서로 다른 화자', () => {
-    const a = pickChainVoice(0);
-    const b = pickChainVoice(1);
+/* 속도는 문장 길이가 정한다 — 쉽고 짧은 문장은 빠르게, 어렵고 긴 문장은 보통 (사용자 결정 2026-07-22).
+ * 화자 순환은 유지 — 드릴·체이닝 공용. */
+describe('pickPracticeVoice — 재생마다 화자 순환 + 길이별 속도', () => {
+  it('호출 인덱스로 화자 순환, 연속 재생은 서로 다른 화자', () => {
+    const a = pickPracticeVoice(0, 4);
+    const b = pickPracticeVoice(1, 4);
     expect(a.voice).not.toBe(b.voice);
-    expect(pickChainVoice(CHAIN_VOICES.length)).toEqual(a); // 순환
-    expect(typeof a.rate).toBe('number');
+    expect(pickPracticeVoice(PRACTICE_VOICES.length, 4).voice).toBe(a.voice); // 순환
+  });
+
+  it('짧은 문장(≤6단어)=빠르게(≥1.10) · 중간(7~9)=1.00~1.10 · 긴 문장(10+)=보통(0.95~1.05)', () => {
+    for (let i = 0; i < PRACTICE_VOICES.length; i += 1) {
+      expect(pickPracticeVoice(i, 4).rate).toBeGreaterThanOrEqual(1.10);
+      expect(pickPracticeVoice(i, 8).rate).toBeGreaterThanOrEqual(1.00);
+      expect(pickPracticeVoice(i, 8).rate).toBeLessThanOrEqual(1.10);
+      expect(pickPracticeVoice(i, 12).rate).toBeGreaterThanOrEqual(0.95);
+      expect(pickPracticeVoice(i, 12).rate).toBeLessThanOrEqual(1.05);
+    }
+  });
+
+  it('같은 화자라도 짧은 문장이 긴 문장보다 빠르다', () => {
+    expect(pickPracticeVoice(0, 4).rate).toBeGreaterThan(pickPracticeVoice(0, 12).rate);
   });
 });

@@ -16,7 +16,9 @@ const wordCount = (s) => norm(s).split(' ').filter(Boolean).length;
 
 /** chain{target,chunks} → 앞에서부터 누적한 단계 배열. 각 단계는 target 의 **원문 접두부**(구두점 보존).
  * chunks 는 끊는 위치(단어 수)만 정한다 — 이어붙이면 구두점이 사라져 런온·물음표 소실이 생긴다.
- * chunks 단어수 합이 target 과 어긋나면(토큰화 불일치) 청크 이어붙이기로 폴백. */
+ * chunks 단어수 합이 target 과 어긋나면(토큰화 불일치) 청크 이어붙이기로 폴백.
+ * 슬림화(2026-07-22 사용자 결정): 청크가 3개를 넘으면 전체 단어수의 ~40%·70%·100% 에
+ * 가장 가까운 청크 경계 3곳만 단계로 쓴다 — 단계가 많아 늘어지는 문제 해소. */
 export function buildChainSteps(chain) {
   const chunks = Array.isArray(chain?.chunks) ? chain.chunks : [];
   if (chunks.length < 2) return [];
@@ -24,13 +26,24 @@ export function buildChainSteps(chain) {
   const target = String(chain?.target ?? '');
   const tWords = words(target);
   const counts = chunks.map((c) => words(c).length);
-  const aligned = tWords.length > 0 && counts.reduce((a, b) => a + b, 0) === tWords.length;
+  const total = counts.reduce((a, b) => a + b, 0);
+  const aligned = tWords.length > 0 && total === tWords.length;
+  const cums = []; let acc = 0;
+  for (const c of counts) { acc += c; cums.push(acc); }
   const last = chunks.length - 1;
-  let acc = 0;
-  return chunks.map((_, i) => {
-    acc += counts[i];
-    if (i === last) return { index: i, text: target || chunks.join(' ') };
-    return { index: i, text: aligned ? tWords.slice(0, acc).join(' ') : chunks.slice(0, i + 1).join(' ') };
+  let bounds = chunks.map((_, i) => i);
+  if (chunks.length > 3) {
+    bounds = [0.4, 0.7].map((t) => {
+      let best = 0, bd = Infinity;
+      cums.forEach((c, i) => { if (i === last) return; const d = Math.abs(c / total - t); if (d < bd) { bd = d; best = i; } });
+      return best;
+    });
+    bounds.push(last);
+    bounds = [...new Set(bounds)].sort((a, b) => a - b);
+  }
+  return bounds.map((ci, si) => {
+    if (ci === last) return { index: si, text: target || chunks.join(' ') };
+    return { index: si, text: aligned ? tWords.slice(0, cums[ci]).join(' ') : chunks.slice(0, ci + 1).join(' ') };
   });
 }
 
@@ -126,17 +139,17 @@ export function filterNearDupDrills(sentence, drills) {
   });
 }
 
-/* 재생 변주 풀 — 또렷한 en-US 뉴럴 보이스(style 무). Azure 폴백(web speechSynthesis) 시엔 rate 만 적용된다. */
-export const CHAIN_VOICES = [
-  { voice: 'en-US-AvaMultilingualNeural', rate: 1.0 },
-  { voice: 'en-US-AndrewMultilingualNeural', rate: 0.92 },
-  { voice: 'en-US-EmmaMultilingualNeural', rate: 1.08 },
-  { voice: 'en-US-GuyNeural', rate: 0.98 },
-  { voice: 'en-US-EricNeural', rate: 1.05 },
-];
+/* 재생 변주 풀 — 또렷한 en-US 뉴럴 보이스(style 무). Azure 폴백(web speechSynthesis) 시엔 rate 만 적용된다.
+ * 드릴·체이닝 공용. 속도는 문장 길이가 정한다 — 쉽고 짧으면 빠르게, 어렵고 길면 보통 (사용자 결정 2026-07-22).
+ * 다화자 순환은 HVPT 메타분석(다화자>단일화자)의 유비 적용 — 지각훈련 패러다임과 동일하진 않음. */
+export const PRACTICE_VOICES = ['en-US-AvaMultilingualNeural', 'en-US-AndrewMultilingualNeural', 'en-US-EmmaMultilingualNeural', 'en-US-GuyNeural', 'en-US-EricNeural'];
+const PRACTICE_JITTER = [0, -0.05, 0.03, -0.02, 0.05];
 
-/** 재생 횟수 i → 화자·속도 (순환). */
-export function pickChainVoice(i) {
-  const n = CHAIN_VOICES.length;
-  return CHAIN_VOICES[((Number(i) || 0) % n + n) % n];
+/** 재생 횟수 i + 문장 단어 수 → 화자(순환)·속도(≤6단어 1.15 / 7~9 1.05 / 10+ 1.0, 화자별 ±0.05 지터). */
+export function pickPracticeVoice(i, wordCount) {
+  const n = PRACTICE_VOICES.length;
+  const k = ((Number(i) || 0) % n + n) % n;
+  const wc = Number(wordCount) || 0;
+  const base = wc <= 6 ? 1.15 : wc <= 9 ? 1.05 : 1.0;
+  return { voice: PRACTICE_VOICES[k], rate: Math.round((base + PRACTICE_JITTER[k]) * 100) / 100 };
 }

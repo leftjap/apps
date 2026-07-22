@@ -332,7 +332,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const drillsBlock = drills.length ? h('div', { class: 'vr-drills' },
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'),
       h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
-    h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, s?.speaker, (i, result) => {
+    h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, (i, result) => {
       if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
       onAppliedScore(result);
     }, state.demo)),
