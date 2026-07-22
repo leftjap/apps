@@ -33,6 +33,7 @@ function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 export const VS_CSS = `
 .vs{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
 .vs *{box-sizing:border-box;margin:0}
+.vs button{font:inherit;background:none;border:0;cursor:pointer;padding:0;color:inherit}
 .vs-rail{width:88px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:8px;flex:0 0 auto}
 .vs-rail .hm{color:var(--faint);margin-bottom:16px;background:none;border:0;cursor:pointer;display:inline-flex}
 .vs-rstep{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;font-family:Outfit;font-size:13.5px;font-weight:700;color:var(--faint);cursor:pointer;background:none;border:0}
@@ -55,7 +56,7 @@ export const VS_CSS = `
 .vs-ko{font-size:17.5px;color:var(--mut);margin-top:13px}
 .vs-pron{font-size:13px;color:var(--faint);margin-top:5px}
 .vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:26px;min-height:56px;flex-wrap:wrap}
-.vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
+.vs button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
 .vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
 /* 녹음 CTA 는 코랄 — 색 규약 '코랄=녹음'(v2/atoms.js 머리주석)과 구 D1(terra) 관례. 2026-07-22 복원. */
 .vs-pill.pri{background:var(--coral);border-color:var(--coral);color:#fff;animation:v-breatheC 2.6s ease-in-out infinite}
@@ -119,7 +120,7 @@ export const VS_CSS = `
 .vs-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;max-width:100%}
 /* 2026-07-22 — nowrap 이면 긴 음소 설명이 해설 박스를 넘어갔다. 줄바꿈 허용 + 라운드 완화. */
 .vs-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:5px 11px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
-.vs-next{width:100%;margin-top:14px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
+.vs button.vs-next{width:100%;margin-top:14px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
 .vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
 .vs-gate.ok{color:var(--teal-deep);font-weight:600}
