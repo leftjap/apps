@@ -17,7 +17,24 @@ import {
   loadSourceEnLines,
   epFileStem,
   showOfEpisode,
+  quotedClipDrill,
 } from './validate-seed.mjs';
+
+/* 게이트 보강(2026-07-22: 첫단어 다양성·인용형 차단) 이후의 기준선 픽스처 —
+ * 첫 단어·문형이 다양해야 baseline payload 가 게이트를 통과한다. */
+const DRILL_POOL = [
+  { en: 'Can we begin now?', ko: '뜻', kr: '캔 위 비긴 나우' },
+  { en: 'She began without us.', ko: '뜻', kr: '쉬 비갠 위다웃 어스' },
+  { en: "Don't begin yet.", ko: '뜻', kr: '돈 비긴 옛' },
+  { en: 'When does it begin?', ko: '뜻', kr: '웬 더즈 잇 비긴' },
+  { en: 'We did not begin on time.', ko: '뜻', kr: '위 디드 낫 비긴 온 타임' },
+  { en: 'It begins at noon.', ko: '뜻', kr: '잇 비긴즈 앳 눈' },
+  { en: 'You can begin today.', ko: '뜻', kr: '유 캔 비긴 투데이' },
+  { en: 'They began last week.', ko: '뜻', kr: '데이 비갠 라스트 위크' },
+  { en: 'Should we begin again?', ko: '뜻', kr: '슈드 위 비긴 어겐' },
+  { en: 'I begin work at nine.', ko: '뜻', kr: '아이 비긴 워크 앳 나인' },
+];
+const poolDrills = (n) => Array.from({ length: n }, (_, i) => ({ ...DRILL_POOL[i % DRILL_POOL.length] }));
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const seedsDir = join(__dir, '..', 'seeds');
@@ -47,7 +64,7 @@ function makePayload(overrides = {}) {
     explanation: {
       key: `${sentence} = 뜻.`,
       situation: '장면 · 맥락',
-      drills: Array.from({ length: drillCount }, (_, i) => ({ en: `Drill ${i}.`, ko: '뜻', kr: '드릴' })),
+      drills: poolDrills(drillCount),
       grammar: [{ struct: '구조', body: '설명' }],
       chunks,
       phonemes: [['/ð/', 'that']],
@@ -168,7 +185,9 @@ describe('validateSeedContent — 기준선', () => {
     // 이 시드는 'fill in'(비기본동사 구동사) 타깃 + base 반복 드릴을 씀 — 각각 2026-07-01·2026-07-11
     // 하드 차단 신설로 이제 error. 이미 적재·학습된 grandfather 시드라 재INSERT 안 함(게이트는 신규 payload 용).
     // 그 두 정책 에러를 뺀 나머지 구조 에러는 0이어야 한다.
-    const nonPolicyErrors = r.errors.filter((e) => !e.includes('비기본동사 구동사') && !e.includes('영상 원문(base)'));
+    // 2026-07-22 게이트 보강(4~10개·인용형·첫단어 다양성)도 신규 payload 정책 — grandfather 필터에 포함.
+    const nonPolicyErrors = r.errors.filter((e) => !e.includes('비기본동사 구동사') && !e.includes('영상 원문(base)')
+      && !e.includes('4~10개') && !e.includes('인용형') && !e.includes('다양성'));
     expect(nonPolicyErrors).toEqual([]);
     expect(r.errors.some((e) => e.includes('비기본동사 구동사'))).toBe(true); // fill in 이 이제 차단됨(정책 확인)
     expect(r.errors.some((e) => e.includes('영상 원문(base)'))).toBe(true); // base 반복이 이제 차단됨(새 세션 정책 확인)
@@ -183,7 +202,7 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     explanation: {
       key: `${sentence} = 뜻.`,
       situation: '영상 클립 맥락',
-      drills: Array.from({ length: 5 }, (_, i) => ({ en: `Drill ${i}.`, ko: '뜻', kr: '드릴' })),
+      drills: poolDrills(5),
       grammar: [{ struct: '구조', body: '설명' }],
       chunks,
       phonemes: [['/ð/', 'that']],
@@ -495,18 +514,58 @@ describe('validateSeedContent — 다이얼로그 매칭 계약 (deriveDialogue 
 });
 
 describe('validateSeedContent — drills', () => {
-  it('2개 (<3) → 차단 / 9개 (>8) → 차단 / kr 누락 → 차단', () => {
+  /* 2026-07-22 — 정원(quota) 폐지: 4~10개. 갯수를 채우려 저품질 변주를 만들지 말고
+   * 품질 통과분만 넣는다(사용자 결정). 9개는 이제 합법. */
+  it('3개 (<4) → 차단 / 11개 (>10) → 차단 / 9개 → 통과 / kr 누락 → 차단', () => {
     const low = makePayload();
-    low.cards[1].explanation.drills = low.cards[1].explanation.drills.slice(0, 2);
+    low.cards[1].explanation.drills = low.cards[1].explanation.drills.slice(0, 3);
     expect(validateSeedContent(low, okOpts).ok).toBe(false);
 
     const high = makePayload();
-    high.cards[1].explanation.drills = Array.from({ length: 9 }, (_, i) => ({ en: `D${i}.`, ko: '뜻', kr: '드릴' }));
+    high.cards[1].explanation.drills = poolDrills(11);
     expect(validateSeedContent(high, okOpts).ok).toBe(false);
+
+    const nine = makePayload();
+    nine.cards[1].explanation.drills = poolDrills(9);
+    expect(validateSeedContent(nine, okOpts).ok).toBe(true);
 
     const noKr = makePayload();
     delete noKr.cards[1].explanation.drills[0].kr;
     expect(validateSeedContent(noKr, okOpts).ok).toBe(false);
+  });
+
+  /* 원문 인용형 — base 앞뒤에 대본 문장·스터터를 붙인 건 변주가 아니라 인용이다(2026-07-22).
+   * 오늘 시드 실측: 7카드 중 다수의 1번 드릴이 이 유형으로 게이트를 통과하고 있었다. */
+  it('원문 인용형 드릴(다른 문장 + base 그대로) → 차단', () => {
+    const p = makePayload();
+    const s = p.cards[1].sentence;
+    p.cards[1].explanation.drills = [...poolDrills(4), { en: `I know. ${s}`, ko: '뜻', kr: '음차' }];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('인용형');
+  });
+
+  it('첫 단어 다양성 <3종 (드릴 ≥4개) → 차단 (축 다양성 근사 게이트)', () => {
+    const p = makePayload();
+    p.cards[1].explanation.drills = [
+      { en: "I'll call you tonight.", ko: '뜻', kr: '음차' },
+      { en: "I'll call her tomorrow.", ko: '뜻', kr: '음차' },
+      { en: "I'll call them later.", ko: '뜻', kr: '음차' },
+      { en: 'She calls me every day.', ko: '뜻', kr: '음차' },
+    ];
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('다양성');
+  });
+
+  it('quotedClipDrill — 인용형 판정: 문장 결합·스터터는 잡고, 단일 문장 변주·확장 문장은 안 잡는다', () => {
+    expect(quotedClipDrill("I'll be there as soon as I can.", "I know. I'll be there as soon as I can.")).toBe(true);
+    expect(quotedClipDrill('What are you doing?', 'What are you doing? Come here.')).toBe(true);
+    // 스터터 — 연속 중복어를 접고 base 와 비교
+    expect(quotedClipDrill("I don't know what to do.", "I- I don't know what to do. Okay?")).toBe(true);
+    // 단일 문장 변주(부사 추가)·다문장이지만 base 그대로인 문장이 없는 경우는 인용형 아님
+    expect(quotedClipDrill('What are you doing?', 'What are you doing tonight?')).toBe(false);
+    expect(quotedClipDrill("I'll be waiting.", "Come home. I'll be waiting for you.")).toBe(false);
   });
 
   it('전 표현 카드 drills ≤4 → 경고 (하한 일괄 깔기)', () => {

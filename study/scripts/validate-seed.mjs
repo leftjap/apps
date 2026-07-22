@@ -26,6 +26,21 @@ import { nearDupDrills } from '../src/components/session/applied.js';
 //    근접중복은 applied.js 의 nearDupDrills 가 단일 출처 (2026-07-10).
 const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
 
+/* 원문 인용형 드릴 판정 (2026-07-22) — 여러 문장짜리 드릴에서 한 문장이 base 그대로면
+ * 변주가 아니라 대본 인용이다 ("I know. I'll be there as soon as I can."). 스터터("I- I don't…")는
+ * 연속 중복어를 접고 비교한다. 근사 게이트 — 정본 규칙은 explanation-schema.md §drills. */
+const collapseDup = (s) => {
+  const out = [];
+  for (const w of norm(s).split(' ').filter(Boolean)) if (out[out.length - 1] !== w) out.push(w);
+  return out.join(' ');
+};
+export function quotedClipDrill(baseSentence, en) {
+  const base = collapseDup(baseSentence);
+  if (!base) return false;
+  const parts = String(en ?? '').split(/(?<=[.!?])\s+/).map((p) => collapseDup(p)).filter(Boolean);
+  return parts.length >= 2 && parts.some((p) => p === base);
+}
+
 const isSceneCard = (c) => Array.isArray(c?.explanation?.dialogue);
 
 /** speech.js 소스에서 SPEAKER_VOICES 의 'en-US' 블록 화자 키 추출. */
@@ -204,16 +219,22 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
         errors.push(`${c.id}: chunks 가 본문 전단어 미커버 ("${norm(c.sentence)}" ≠ "${enJoin}")`);
       }
     }
-    // drills 3~8 + en/ko/kr 완비
+    // drills 4~10 + en/ko/kr 완비 (2026-07-22 정원 폐지 — 갯수 채우기용 저품질 금지, 품질 통과분만)
     const drills = Array.isArray(ex.drills) ? ex.drills : [];
-    if (drills.length < 3 || drills.length > 8) errors.push(`${c.id}: drills 는 3~8개 (현재 ${drills.length})`);
+    if (drills.length < 4 || drills.length > 10) errors.push(`${c.id}: drills 는 4~10개 (현재 ${drills.length}) — 정원 채우기 금지, 품질 통과분만`);
     drills.forEach((d, i) => {
       if (!d?.en || !d?.ko || !d?.kr) errors.push(`${c.id}: drills[${i}] en/ko/kr 누락 (kr 음차 의무)`);
+      if (quotedClipDrill(c.sentence, d?.en)) errors.push(`${c.id}: drills[${i}] 원문 인용형 — 다른 문장에 base 를 그대로 붙인 건 변주가 아니다 (체이닝 담당): "${d?.en}"`);
     });
+    // 축 다양성 근사 게이트 — 첫 단어가 3종 미만이면 주어·문형 변주가 없다는 신호 (정본 규칙은 schema §drills)
+    if (drills.length >= 4) {
+      const firsts = new Set(drills.map((d) => norm(d?.en).split(' ')[0]).filter(Boolean));
+      if (firsts.size < 3) errors.push(`${c.id}: drills 첫 단어 ${firsts.size}종 — 축 다양성 부족 (≥3종: 주어·문형을 바꿔라)`);
+    }
     if (drills.length > 4) allDrillsAtFloor = false;
   }
   if (allDrillsAtFloor) {
-    warnings.push('전 표현 카드 drills ≤4 — 하한 일괄 깔기 의심 (schema §drills: 핵심·헷갈림 6~8 / 쉬움 3)');
+    warnings.push('전 표현 카드 drills ≤4 — 하한 일괄 깔기 의심 (schema §drills: 표현 생산성만큼 4~10, 획일 금지)');
   }
 
   // ── 기본동사 중심 + 어려운 어휘 차단 (학습 anchor, 2026-06-29 복원) ──
