@@ -1,0 +1,641 @@
+{
+  "lang": "en",
+  "track": "moduyeongeo",
+  "ep": 9,
+  "source": {
+    "playlist": "원어민이 매일 쓰는 영어문장",
+    "channel": "모두영어",
+    "video_id": "mHOwSWetKn8",
+    "url": "https://www.youtube.com/watch?v=mHOwSWetKn8",
+    "title": "원어민이 매일 쓰는 영어문장 [#9] 우리 집에 올 수 있어?/ 무슨 일이야?/ 네가 좀 도와줄 일이 있어./ 어떻게 해야 할지 모르겠어./ 최대한 빨리 갈게./ 기다리고 있을게./ 도착하면 전화할게.",
+    "note": "기본표현·클립변주는 영상 화면(번인 자막) 원문 그대로. drills 뒷부분은 §6.3 개인화(아내·고양이·여행·일상) 보강."
+  },
+  "cards": [
+    {
+      "id": "en-moduyeongeo-ep9-01-come-over",
+      "sentence": "Can you come over?",
+      "meaning": "우리 집에 올 수 있어?",
+      "reading": null,
+      "phonetic_kr": "캔 유 컴 오v버r",
+      "order_index": 1,
+      "explanation": {
+        "key": "come over = (집·특정 장소로) 놀러 오다, 넘어오다. 친구·가족에게 집에 와 달라고 부를 때.",
+        "situation": "영상 클립: 전화로 상대에게 집에 와 달라고 부르는 장면들",
+        "drills": [
+          {
+            "en": "Why don't you come over tonight?",
+            "ko": "오늘 밤에 오지 그래?",
+            "kr": "와이 돈츄 컴 오v버r 투나잇"
+          },
+          {
+            "en": "Do you want to come over for dinner?",
+            "ko": "저녁 먹으러 올래?",
+            "kr": "두 유 원 투 컴 오v버r f포r 디너r"
+          },
+          {
+            "en": "She came over last weekend.",
+            "ko": "걔 지난 주말에 왔었어.",
+            "kr": "쉬 케임 오v버r 래스트 위켄드"
+          },
+          {
+            "en": "I'll come over after work.",
+            "ko": "퇴근하고 갈게.",
+            "kr": "아일 컴 오v버r 애프터r 워크"
+          },
+          {
+            "en": "Honey, can you come over here for a second?",
+            "ko": "여보, 잠깐 이리 좀 와줄래?",
+            "kr": "허니, 캔 유 컴 오v버r 히어r f포r 어 쎄컨"
+          },
+          {
+            "en": "The cat won't come over when I call.",
+            "ko": "고양이가 불러도 안 와.",
+            "kr": "더 캣 온ㅌ 컴 오v버r 웬 아이 콜"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Can you + 동사원형(come over)?",
+            "body": "come(오다) + over(이쪽으로/넘어)로 '이리 오다'. Can you ~?로 가볍게 부탁·초대. over가 '(우리 쪽으로) 건너오는' 방향을 더함."
+          }
+        ],
+        "chunks": [
+          [
+            "Can you",
+            "캔 유"
+          ],
+          [
+            "come over",
+            "컴 오v버r"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/v/ over",
+            "over의 v — 아랫입술 물고 '오v버r'"
+          ],
+          [
+            "come over",
+            "연음 '커모v버r'처럼 붙여서"
+          ]
+        ],
+        "mistake": "over를 '오버'(X) 끝을 '어'로 → 'v' 마찰음 '오v버r'. come over를 또박또박(X) → 붙여 '커모v버r'.",
+        "similar": "Can you drop by? / Can you swing by? / Come on over.",
+        "category": "제안/일상",
+        "frequency": 9,
+        "chain": {
+          "target": "Can you come over tomorrow, or would this weekend work better for you?",
+          "chunks": [
+            "Can you come over",
+            "tomorrow,",
+            "or",
+            "would",
+            "this weekend",
+            "work better",
+            "for you?"
+          ],
+          "ko": "내일 우리 집에 올 수 있어, 아니면 이번 주말이 더 나아?"
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep9-02-going-on",
+      "sentence": "What's going on?",
+      "meaning": "무슨 일이야?",
+      "reading": null,
+      "phonetic_kr": "왓츠 고잉 언",
+      "order_index": 2,
+      "explanation": {
+        "key": "go on = (일이) 일어나다/벌어지다. What's going on? = 무슨 일이 벌어지고 있어? → 무슨 일이야?",
+        "situation": "영상 클립: 심상찮은 분위기에 '무슨 일이냐'고 되묻는 장면들",
+        "drills": [
+          {
+            "en": "Hey, what's going on here?",
+            "ko": "야, 여기 무슨 일이야?",
+            "kr": "헤이, 왓츠 고잉 언 히어r"
+          },
+          {
+            "en": "What's going on? Something's going on.",
+            "ko": "무슨 일이야? 뭔가 있잖아.",
+            "kr": "왓츠 고잉 언? 썸띵z 고잉 언"
+          },
+          {
+            "en": "Do you know what's going on?",
+            "ko": "무슨 일인지 알아?",
+            "kr": "두 유 노우 왓츠 고잉 언"
+          },
+          {
+            "en": "What was going on at your wife's office yesterday?",
+            "ko": "어제 아내 회사에 무슨 일 있었어?",
+            "kr": "왓 워z 고잉 언 앳 유어r 와이f스 오f피스 예스터r데이"
+          },
+          {
+            "en": "Nothing's going on. I promise.",
+            "ko": "아무 일도 없어. 진짜야.",
+            "kr": "나띵z 고잉 언. 아이 프라미스"
+          },
+          {
+            "en": "Something's going on with the cat today.",
+            "ko": "오늘 고양이가 뭔가 이상해.",
+            "kr": "썸띵z 고잉 언 위th 더 캣 투데이"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What's(=What is) going on?",
+            "body": "go on = (사건이) 진행되다/벌어지다. 진행형 is going on으로 '지금 벌어지는 중'. 비격식 대화에서 -ing의 g를 흘려 '고인'처럼도 발음."
+          }
+        ],
+        "chunks": [
+          [
+            "What's",
+            "왓츠"
+          ],
+          [
+            "going on",
+            "고잉 언"
+          ]
+        ],
+        "phonemes": [
+          [
+            "going on",
+            "연음 '고잉언→고이넌'처럼 붙여서"
+          ],
+          [
+            "/ŋ/ going",
+            "-ing 콧소리, 구어에선 '고인'으로 약하게"
+          ]
+        ],
+        "mistake": "going on을 '고잉 온'(X) 또박또박 → 붙여 '고이넌/고이농'. on을 '온'(X) → '언'에 가깝게.",
+        "similar": "What's happening? / What's up? / What's the matter?",
+        "category": "의사표현/리액션",
+        "frequency": 9,
+        "chain": {
+          "target": "What's going on over there, and do you need me to come by?",
+          "chunks": [
+            "What's going on",
+            "over there,",
+            "and",
+            "do you",
+            "need me",
+            "to come by?"
+          ],
+          "ko": "거기 무슨 일이야, 내가 좀 가줄까?"
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep9-03-need-your-help",
+      "sentence": "I need your help with something.",
+      "meaning": "네가 좀 도와줄 일이 있어.",
+      "reading": null,
+      "phonetic_kr": "아이 니쥬어 헬프 위th 썸th띵",
+      "order_index": 3,
+      "explanation": {
+        "key": "need your help = 네 도움이 필요하다. with something = 뭔가에 대해. 도움을 부탁할 때 쓰는 기본 표현.",
+        "situation": "영상 클립: 진지하게 도움을 청하는 장면들 (여러 인물이 같은 대사)",
+        "drills": [
+          {
+            "en": "I need your help.",
+            "ko": "네 도움이 필요해.",
+            "kr": "아이 니쥬어 헬프"
+          },
+          {
+            "en": "I need your help with dinner.",
+            "ko": "저녁 준비 좀 도와줘.",
+            "kr": "아이 니쥬어 헬프 위th 디너r"
+          },
+          {
+            "en": "I need your help with this report.",
+            "ko": "이 보고서 좀 도와줘.",
+            "kr": "아이 니쥬어 헬프 위th 디스 리포r트"
+          },
+          {
+            "en": "Can you help me with something?",
+            "ko": "뭐 좀 도와줄 수 있어?",
+            "kr": "캔 유 헬프 미 위th 썸th띵"
+          },
+          {
+            "en": "She needs your help with the move.",
+            "ko": "걔가 이사하는 거 네 도움이 필요해.",
+            "kr": "쉬 니z 유어r 헬프 위th 더 무v브"
+          },
+          {
+            "en": "I don't need your help with this.",
+            "ko": "이건 도움 필요 없어.",
+            "kr": "아이 돈 니쥬어 헬프 위th 디스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I need your help with + 명사",
+            "body": "help with ~ = ~에 대해 돕다. 도움의 대상을 with로 붙임. 구어에서 with이 매우 약해져 거의 안 들리기도 함."
+          }
+        ],
+        "chunks": [
+          [
+            "I need your",
+            "아이 니쥬어"
+          ],
+          [
+            "help with",
+            "헬프 위th"
+          ],
+          [
+            "something",
+            "썸th띵"
+          ]
+        ],
+        "phonemes": [
+          [
+            "need your",
+            "d+y 연음 '니쥬어'"
+          ],
+          [
+            "/θ/ something",
+            "something의 th — 혀끝 이 사이 '썸th띵'"
+          ],
+          [
+            "with",
+            "약음 — 거의 '윋'처럼 흘림"
+          ]
+        ],
+        "mistake": "need your를 '니드 유어'(X) 또박또박 → 연음 '니쥬어'. something을 '섬씽'(X) → 혀끝 th '썸th띵'.",
+        "similar": "Can you give me a hand? / I could use your help. / Could you help me out?",
+        "category": "요청/일상",
+        "frequency": 8,
+        "chain": {
+          "target": "I need your help with something, but it can wait until tomorrow morning.",
+          "chunks": [
+            "I need your help with something,",
+            "but",
+            "it can wait",
+            "until",
+            "tomorrow morning."
+          ],
+          "ko": "네가 좀 도와줄 일이 있어, 근데 내일 아침까지 기다려도 돼."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep9-04-what-to-do",
+      "sentence": "I don't know what to do.",
+      "meaning": "어떻게 해야 할지 모르겠어.",
+      "reading": null,
+      "phonetic_kr": "아이 돈 노우 왓 투 두",
+      "order_index": 4,
+      "explanation": {
+        "key": "what to do = 무엇을 해야 할지. I don't know what to do = 어떻게(뭘) 해야 할지 모르겠어. 막막할 때.",
+        "situation": "영상 클립: 어쩔 줄 몰라 막막함을 토로하는 장면들",
+        "drills": [
+          {
+            "en": "I.. I don't know what to do. What do I do?",
+            "ko": "어.. 어떻게 해야 할지 모르겠어. 나 뭘 해야 돼?",
+            "kr": "아이.. 아이 돈 노우 왓 투 두. 왓 두 아이 두"
+          },
+          {
+            "en": "I don't know what to say.",
+            "ko": "뭐라고 해야 할지 모르겠어.",
+            "kr": "아이 돈 노우 왓 투 세이"
+          },
+          {
+            "en": "I don't know what to cook tonight.",
+            "ko": "오늘 저녁 뭐 해야 할지 모르겠어.",
+            "kr": "아이 돈 노우 왓 투 쿡 투나잇"
+          },
+          {
+            "en": "The cat is sick and I don't know what to do.",
+            "ko": "고양이가 아픈데 어떻게 해야 할지 모르겠어.",
+            "kr": "더 캣 이z 씩 앤 아이 돈 노우 왓 투 두"
+          },
+          {
+            "en": "I don't know what to pack for the trip.",
+            "ko": "여행에 뭘 챙겨야 할지 모르겠어.",
+            "kr": "아이 돈 노우 왓 투 팩 f포r 더 트립"
+          },
+          {
+            "en": "My wife didn't know what to do either.",
+            "ko": "아내도 어떻게 해야 할지 몰랐어.",
+            "kr": "마이 와이f 디든 노우 왓 투 두 이더r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "don't know + what to + 동사원형",
+            "body": "'의문사 + to부정사' = ~해야 할지. what to do(뭘 할지), what to say(뭘 말할지)처럼 what 뒤에 to+동사로 '~해야 할 것'을 통째로 목적어화."
+          }
+        ],
+        "chunks": [
+          [
+            "I don't know",
+            "아이 돈 노우"
+          ],
+          [
+            "what to do",
+            "왓 투 두"
+          ]
+        ],
+        "phonemes": [
+          [
+            "don't know",
+            "t 생략 — '돈 노우'"
+          ],
+          [
+            "what to",
+            "t 겹침 — '왓 투'를 한 박자로"
+          ]
+        ],
+        "mistake": "don't의 t를 살려 '돈트'(X) → '돈 노우'. what to do를 또박또박(X) → '왓투두' 붙여서.",
+        "similar": "I have no idea what to do. / I'm at a loss. / I'm not sure what to do.",
+        "category": "감정/상태",
+        "frequency": 8,
+        "chain": {
+          "target": "I don't know what to do, so tell me honestly what you would do.",
+          "chunks": [
+            "I don't know what to do,",
+            "so",
+            "tell me",
+            "honestly",
+            "what you",
+            "would do."
+          ],
+          "ko": "어떻게 해야 할지 모르겠어, 그러니 너라면 어떻게 할지 솔직히 말해줘."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep9-05-as-soon-as-i-can",
+      "sentence": "I'll be there as soon as I can.",
+      "meaning": "최대한 빨리 갈게.",
+      "reading": null,
+      "phonetic_kr": "아일 비 데어r즈 쑨 애z 아이 캔",
+      "order_index": 5,
+      "explanation": {
+        "key": "I'll be there = 갈게(거기 있을게). as soon as I can = 될 수 있는 한 빨리. 합쳐 '최대한 빨리 갈게'.",
+        "situation": "영상 클립: 전화로 최대한 빨리 가겠다고 안심시키는 장면들",
+        "drills": [
+          {
+            "en": "I know. I'll be there as soon as I can.",
+            "ko": "알아. 최대한 빨리 갈게.",
+            "kr": "아이 노우. 아일 비 데어r즈 쑨 애z 아이 캔"
+          },
+          {
+            "en": "I'll be there in five minutes.",
+            "ko": "5분 안에 갈게.",
+            "kr": "아일 비 데어r 인 f파이v 미닛츠"
+          },
+          {
+            "en": "I'll call you as soon as I can.",
+            "ko": "최대한 빨리 전화할게.",
+            "kr": "아일 콜 유 애z 쑨 애z 아이 캔"
+          },
+          {
+            "en": "Tell my wife I'll be there as soon as I can.",
+            "ko": "아내한테 최대한 빨리 간다고 전해줘.",
+            "kr": "텔 마이 와이f 아일 비 데어r즈 쑨 애z 아이 캔"
+          },
+          {
+            "en": "I'll be home as soon as I can.",
+            "ko": "최대한 빨리 집에 갈게.",
+            "kr": "아일 비 홈 애z 쑨 애z 아이 캔"
+          },
+          {
+            "en": "Can you get here as soon as you can?",
+            "ko": "최대한 빨리 와줄 수 있어?",
+            "kr": "캔 유 겟 히어r 애z 쑨 애z 유 캔"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'll be there + as soon as + 주어+동사",
+            "body": "as soon as ~ = ~하자마자/~할 수 있는 한 빨리. 여기선 as ~ as I can으로 '내가 할 수 있는 한 빨리'. 첫 as는 매우 약하게, there as가 '데어r즈'처럼 붙음."
+          }
+        ],
+        "chunks": [
+          [
+            "I'll be",
+            "아일 비"
+          ],
+          [
+            "there as soon as",
+            "데어r즈 쑨 애z"
+          ],
+          [
+            "I can",
+            "아이 캔"
+          ]
+        ],
+        "phonemes": [
+          [
+            "there as",
+            "연음 — '데어r즈'로 붙음"
+          ],
+          [
+            "/æ/ can",
+            "can의 a — 입 크게 '캐앤'"
+          ],
+          [
+            "as soon as",
+            "첫 as 약음 — '어z 쑨 애z'"
+          ]
+        ],
+        "mistake": "as soon as를 '애즈 순 애즈'(X) 또박또박 → 첫 as 약하게, there as 붙여 '데어r즈 쑨 애z'. can을 '캔'(X) 약하게 → 문장 끝이라 '캐앤' 또렷이.",
+        "similar": "I'll get there ASAP. / I'll come right away. / I'll be right there.",
+        "category": "약속/일상",
+        "frequency": 8,
+        "chain": {
+          "target": "I'll be there as soon as I can, but traffic is really bad right now.",
+          "chunks": [
+            "I'll be there as soon as I can,",
+            "but",
+            "traffic",
+            "is really bad",
+            "right now."
+          ],
+          "ko": "최대한 빨리 갈게, 근데 지금 차가 진짜 막혀."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep9-06-be-waiting",
+      "sentence": "I'll be waiting.",
+      "reading": null,
+      "meaning": "기다리고 있을게.",
+      "phonetic_kr": "아일 비 웨이링",
+      "order_index": 6,
+      "explanation": {
+        "key": "be waiting = 기다리고 있다. I'll be waiting = 기다리고 있을게. 상대가 올 때까지 기다린다고 다독일 때.",
+        "situation": "영상 클립: 전화로 '집에 와, 기다릴게'라고 말하는 장면들",
+        "drills": [
+          {
+            "en": "Come home. I'll be waiting for you.",
+            "ko": "집에 와. 기다리고 있을게.",
+            "kr": "컴 홈. 아일 비 웨이링 f포r 유"
+          },
+          {
+            "en": "Will you be waiting for me?",
+            "ko": "나 기다리고 있을 거야?",
+            "kr": "윌 유 비 웨이링 f포r 미"
+          },
+          {
+            "en": "I was waiting for you at the station.",
+            "ko": "역에서 너 기다리고 있었어.",
+            "kr": "아이 워z 웨이링 f포r 유 앳 더 스테이션"
+          },
+          {
+            "en": "I won't be waiting long.",
+            "ko": "오래는 안 기다릴 거야.",
+            "kr": "아이 온ㅌ 비 웨이링 롱"
+          },
+          {
+            "en": "Your wife will be waiting for you at home.",
+            "ko": "아내가 집에서 기다리고 있을 거야.",
+            "kr": "유어r 와이f 윌 비 웨이링 f포r 유 앳 홈"
+          },
+          {
+            "en": "The cat will be waiting by the door.",
+            "ko": "고양이가 문 앞에서 기다리고 있을 거야.",
+            "kr": "더 캣 윌 비 웨이링 바이 더 도어r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'll be + -ing (미래진행)",
+            "body": "will be waiting = (그때) 기다리고 있을 것이다. 단순 will wait보다 '이미 기다리는 상태로 있을게'라는 지속·배려의 뉘앙스. 대상은 for you로 붙임."
+          }
+        ],
+        "chunks": [
+          [
+            "I'll be",
+            "아일 비"
+          ],
+          [
+            "waiting",
+            "웨이링"
+          ]
+        ],
+        "phonemes": [
+          [
+            "flap-t waiting",
+            "t가 flap — '웨이딩'이 아니라 '웨이링'"
+          ],
+          [
+            "I'll be",
+            "붙여서 '아일비'"
+          ]
+        ],
+        "mistake": "waiting을 '웨이팅'(X) → 모음 사이 t는 flap '웨이링'. for you를 '포 유'(X) → 약하게 'f포r 유'.",
+        "similar": "I'll wait for you. / I'll be here. / Take your time, I'll wait.",
+        "category": "약속/위로",
+        "frequency": 8,
+        "chain": {
+          "target": "I'll be waiting outside the station, so just call me when you arrive.",
+          "chunks": [
+            "I'll be waiting",
+            "outside the station,",
+            "so",
+            "just call me",
+            "when you",
+            "arrive."
+          ],
+          "ko": "역 앞에서 기다리고 있을게, 도착하면 전화해."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep9-07-call-you-there",
+      "sentence": "I'll call you when I get there.",
+      "reading": null,
+      "meaning": "도착하면 전화할게.",
+      "phonetic_kr": "아일 콜 유 웬 아이 겟 데어r",
+      "order_index": 7,
+      "explanation": {
+        "key": "get there = 거기 도착하다. call = 전화하다. I'll call you when I get there = 도착하면 전화할게.",
+        "situation": "영상 클립: 전화로 '도착하면 전화할게'라며 통화를 마무리하는 장면들",
+        "drills": [
+          {
+            "en": "Call you when I get there. Okay?",
+            "ko": "도착하면 전화할게. 알았지?",
+            "kr": "콜 유 웬 아이 겟 데어r. 오케이"
+          },
+          {
+            "en": "I'll text you when I get there.",
+            "ko": "도착하면 문자할게.",
+            "kr": "아일 텍스트 유 웬 아이 겟 데어r"
+          },
+          {
+            "en": "I'll call you when I get home.",
+            "ko": "집에 도착하면 전화할게.",
+            "kr": "아일 콜 유 웬 아이 겟 홈"
+          },
+          {
+            "en": "I'll call my wife when I get there.",
+            "ko": "도착하면 아내한테 전화할게.",
+            "kr": "아일 콜 마이 와이f 웬 아이 겟 데어r"
+          },
+          {
+            "en": "I'll call you when I get to the hotel.",
+            "ko": "호텔에 도착하면 전화할게.",
+            "kr": "아일 콜 유 웬 아이 겟 투 더 호텔"
+          },
+          {
+            "en": "Did she call you when she got there?",
+            "ko": "걔 도착해서 너한테 전화했어?",
+            "kr": "디드 쉬 콜 유 웬 쉬 갓 데어r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'll call you + when + 주어+동사(현재)",
+            "body": "get there = (거기에) 도착하다. get이 '도달하다' 뜻. 시간 부사절 when I get there는 미래여도 현재형(get) — will 안 씀. 구어에선 앞 I'll을 생략해 'Call you ~'로도."
+          }
+        ],
+        "chunks": [
+          [
+            "I'll call you",
+            "아일 콜 유"
+          ],
+          [
+            "when I get",
+            "웬 아이 겟"
+          ],
+          [
+            "there",
+            "데어r"
+          ]
+        ],
+        "phonemes": [
+          [
+            "get there",
+            "get의 t + there — '겟 데어r'로 붙임"
+          ],
+          [
+            "/ɔ/ call",
+            "call의 o — 입 둥글게 '콜'"
+          ],
+          [
+            "when I",
+            "연음 '웨나이'처럼"
+          ]
+        ],
+        "mistake": "get there를 '겟 데얼'(X) → 'r' 살려 '겟 데어r'. when I를 '웬 아이'(X) 또박또박 → '웨나이' 연음. get을 '갓'(X) → '겟'.",
+        "similar": "I'll ring you when I arrive. / I'll let you know when I'm there. / Call you when I'm there.",
+        "category": "약속/일상",
+        "frequency": 8,
+        "chain": {
+          "target": "I'll call you when I get there, so keep your phone close, okay?",
+          "chunks": [
+            "I'll call you when I get there,",
+            "so",
+            "keep",
+            "your phone",
+            "close,",
+            "okay?"
+          ],
+          "ko": "도착하면 전화할게, 그러니까 폰 가까이 두고 있어, 알았지?"
+        }
+      }
+    }
+  ],
+  "date": "2026-07-22"
+}

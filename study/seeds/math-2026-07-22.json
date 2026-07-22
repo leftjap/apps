@@ -1,0 +1,113 @@
+{
+  "date": "2026-07-22",
+  "problems": [
+    {
+      "id": "gen-2026-07-22-odd-1",
+      "conceptId": "odd",
+      "kind": "apply",
+      "module": "모양으로 세기",
+      "tag": "응용 · 홀수합",
+      "prompt": "1 + 3 + 5 + 7 + 9 + 11 = ?",
+      "figure": {
+        "type": "dots",
+        "n": 6,
+        "legend": "홀수 6개 (1·3·5·7·9·11)"
+      },
+      "answer": "36",
+      "accept": [
+        "36",
+        "6x6",
+        "6²",
+        "6^2"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"151\" height=\"157\" viewBox=\"0 0 151 157\" role=\"img\" aria-label=\"한 변 6 정사각형 = 36칸\"><circle cx=\"23\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"128\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"128\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"128\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"128\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"128\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"128\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"128\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"128\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"128\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"128\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"128\" cy=\"128\" r=\"7\" fill=\"#dce7d0\"/><text x=\"75.5\" y=\"151\" font-size=\"13\" fill=\"#788c5d\" text-anchor=\"middle\">6 × 6 = 36</text></svg>"
+        },
+        "core": "홀수 n개의 합 = n².",
+        "idea": "다 더하지 말고 홀수가 몇 개인지만 세요. 1부터 11까지 홀수는 6개 — 그림처럼 한 변 6인 정사각형이 꽉 차니 답은 6 × 6 = 36.",
+        "steps": [
+          "홀수가 6개",
+          "6 × 6 = 36"
+        ],
+        "refresh": "제곱(6² = 36)",
+        "example": "정사각형으로 깔린 타일·좌석의 개수를 한눈에.",
+        "think": "\"전부 더하기\" 대신 \"몇 개인지 세서 제곱\" — 셈을 구조로 바꾼다."
+      },
+      "order_index": 0
+    },
+    {
+      "id": "gen-2026-07-22-odd-2",
+      "conceptId": "odd",
+      "kind": "apply",
+      "module": "모양으로 세기",
+      "tag": "응용 · 홀수합",
+      "prompt": "1 + 3 + 5 + 7 = ?",
+      "figure": {
+        "type": "dots",
+        "n": 4,
+        "legend": "홀수 4개 (1·3·5·7)"
+      },
+      "answer": "16",
+      "accept": [
+        "16",
+        "4x4",
+        "4²",
+        "4^2"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"109\" height=\"115\" viewBox=\"0 0 109 115\" role=\"img\" aria-label=\"한 변 4 정사각형 = 16칸\"><circle cx=\"23\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><text x=\"54.5\" y=\"109\" font-size=\"13\" fill=\"#788c5d\" text-anchor=\"middle\">4 × 4 = 16</text></svg>"
+        },
+        "core": "홀수 n개의 합 = n².",
+        "idea": "다 더하지 말고 홀수가 몇 개인지만 세요. 1부터 7까지 홀수는 4개 — 그림처럼 한 변 4인 정사각형이 꽉 차니 답은 4 × 4 = 16.",
+        "steps": [
+          "홀수가 4개",
+          "4 × 4 = 16"
+        ],
+        "refresh": "제곱(4² = 16)",
+        "example": "정사각형으로 깔린 타일·좌석의 개수를 한눈에.",
+        "think": "\"전부 더하기\" 대신 \"몇 개인지 세서 제곱\" — 셈을 구조로 바꾼다."
+      },
+      "order_index": 1
+    },
+    {
+      "id": "gen-2026-07-22-odd-3",
+      "conceptId": "odd",
+      "kind": "apply",
+      "module": "모양으로 세기",
+      "tag": "응용 · 홀수합",
+      "prompt": "1 + 3 + 5 + 7 + 9 = ?",
+      "figure": {
+        "type": "dots",
+        "n": 5,
+        "legend": "홀수 5개 (1·3·5·7·9)"
+      },
+      "answer": "25",
+      "accept": [
+        "25",
+        "5x5",
+        "5²",
+        "5^2"
+      ],
+      "solution": {
+        "figure": {
+          "type": "svg",
+          "svg": "<svg width=\"130\" height=\"136\" viewBox=\"0 0 130 136\" role=\"img\" aria-label=\"한 변 5 정사각형 = 25칸\"><circle cx=\"23\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"23\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"44\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"65\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"86\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"23\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"44\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"65\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"86\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><circle cx=\"107\" cy=\"107\" r=\"7\" fill=\"#dce7d0\"/><text x=\"65\" y=\"130\" font-size=\"13\" fill=\"#788c5d\" text-anchor=\"middle\">5 × 5 = 25</text></svg>"
+        },
+        "core": "홀수 n개의 합 = n².",
+        "idea": "다 더하지 말고 홀수가 몇 개인지만 세요. 1부터 9까지 홀수는 5개 — 그림처럼 한 변 5인 정사각형이 꽉 차니 답은 5 × 5 = 25.",
+        "steps": [
+          "홀수가 5개",
+          "5 × 5 = 25"
+        ],
+        "refresh": "제곱(5² = 25)",
+        "example": "정사각형으로 깔린 타일·좌석의 개수를 한눈에.",
+        "think": "\"전부 더하기\" 대신 \"몇 개인지 세서 제곱\" — 셈을 구조로 바꾼다."
+      },
+      "order_index": 2
+    }
+  ]
+}
