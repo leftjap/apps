@@ -520,19 +520,26 @@ describe('speech — Wave A.16 transient 재시도', () => {
     expect(result.mockFallback).toBeUndefined();
   });
 
-  it('STT 지속 429 → 재시도 소진(총 3회) 후 mock 폴백 azure_recognize_fail', async () => {
-    let stt = 0;
-    _fetchSpy.mockImplementation(async (url) => {
-      if (String(url).includes('/functions/v1/azure-token')) return token200();
-      if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return new Response('throttled', { status: 429 }); }
-      return new Response('nf', { status: 404 });
-    });
-    const { Speech } = await import('./speech.js');
-    Speech.clearAzureTokenCache();
-    const result = await Speech.analyzeWavRest(blob(), 'hi');
-    expect(stt).toBe(3); // 최초 1 + 재시도 2
-    expect(result.mockFallback).toBe(true);
-    expect(result.fallbackReason).toBe('azure_recognize_fail');
+  /* 2026-07-22 — 429 백오프 연장(2s/5s)으로 fake timers 필수 + 폴백 사유가 rate_limited 로 분기
+   * (구 계약 azure_recognize_fail 은 '네트워크 오류' 토스트라 사용자가 원인을 알 수 없었음). */
+  it('STT 지속 429 → 재시도 소진(총 3회) 후 mock 폴백 rate_limited', async () => {
+    vi.useFakeTimers();
+    try {
+      let stt = 0;
+      _fetchSpy.mockImplementation(async (url) => {
+        if (String(url).includes('/functions/v1/azure-token')) return token200();
+        if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return new Response('throttled', { status: 429 }); }
+        return new Response('nf', { status: 404 });
+      });
+      const { Speech } = await import('./speech.js');
+      Speech.clearAzureTokenCache();
+      const p = Speech.analyzeWavRest(blob(), 'hi');
+      await vi.advanceTimersByTimeAsync(20000); // 429 백오프 2s + 5s 소화
+      const result = await p;
+      expect(stt).toBe(3); // 최초 1 + 재시도 2
+      expect(result.mockFallback).toBe(true);
+      expect(result.fallbackReason).toBe('rate_limited');
+    } finally { vi.useRealTimers(); }
   });
 
   it('STT 지속 network throw → 재시도 소진 후 mock 폴백', async () => {
@@ -1494,5 +1501,69 @@ describe('speak — non-MSE 경로(iPhone) 재생 트리거', () => {
     expect(p).toBeTruthy();                          // 합성 성공 즉시 close 로 재생 트리거
     expect(p.playCalls).toBeGreaterThanOrEqual(1);   // 실제 재생(play) 발생 = 소리 남
     expect(p.pauseCalls).toBe(0);                    // 재생 트리거 시점엔 pause 안 함 (pause 먼저면 무음)
+  });
+});
+
+/* 429 백오프 (2026-07-22 실측: F0 429 는 1.4초 내 3연속 재시도로 안 풀리고 60초+ 지속) —
+ * 429 는 길게(2s/5s) + Retry-After 존중(캡 8s), 5xx/네트워크는 기존 짧은 딜레이 유지. */
+describe('retryDelayFor — 429 전용 백오프 + Retry-After 존중', () => {
+  it('429: 2000 → 5000 → 소진 null', async () => {
+    const { retryDelayFor } = await import('./speech.js');
+    expect(retryDelayFor(429, 0, null)).toBe(2000);
+    expect(retryDelayFor(429, 1, null)).toBe(5000);
+    expect(retryDelayFor(429, 2, null)).toBeNull();
+  });
+
+  it('429 + Retry-After 헤더: 초 단위 존중, 8초 캡', async () => {
+    const { retryDelayFor } = await import('./speech.js');
+    expect(retryDelayFor(429, 0, '3')).toBe(3000);
+    expect(retryDelayFor(429, 1, '60')).toBe(8000); // 캡
+    expect(retryDelayFor(429, 0, 'garbage')).toBe(2000); // 파싱 불가 → 기본
+  });
+
+  it('5xx·네트워크(status 0): 400 → 1000, Retry-After 무시', async () => {
+    const { retryDelayFor } = await import('./speech.js');
+    expect(retryDelayFor(503, 0, '30')).toBe(400);
+    expect(retryDelayFor(503, 1, null)).toBe(1000);
+    expect(retryDelayFor(0, 0, null)).toBe(400);
+    expect(retryDelayFor(503, 2, null)).toBeNull();
+  });
+});
+
+/* Azure 실패 → speakWeb 폴백 시에도 화자 변주 유지 (2026-07-22, 다양화 사각 보완).
+ * 요청된 Azure voice 이름을 seed 로 로컬 quality 후보 중 하나를 결정적으로 고른다 —
+ * 같은 seed 는 항상 같은 voice(일관), 다른 seed 는 후보가 여럿이면 다른 voice(변주). */
+describe('pickVoiceVaried — 폴백 화자 변주', () => {
+  const mk = (name, lang, extra = {}) => ({ name, lang, default: false, localService: true, ...extra });
+
+  it('seed 결정적: 같은 seed → 같은 voice, 후보 2개면 다른 seed → 다른 voice', async () => {
+    const { pickVoiceVaried } = await import('./speech.js');
+    const two = [mk('Samantha', 'en-US', { default: true }), mk('Aaron', 'en-US')];
+    const a1 = pickVoiceVaried(two, 'en-US', 'a'); // 'a'=97 → 97%2=1
+    const b1 = pickVoiceVaried(two, 'en-US', 'b'); // 'b'=98 → 98%2=0
+    expect(a1.name).not.toBe(b1.name);
+    expect(pickVoiceVaried(two, 'en-US', 'a').name).toBe(a1.name);
+  });
+
+  it('seed 없음 → 기존 pickVoice 와 동일 (하위 호환)', async () => {
+    const { pickVoiceVaried, pickVoice } = await import('./speech.js');
+    const voices = [mk('Samantha', 'en-US', { default: true }), mk('Aaron', 'en-US'), mk('Kyoko', 'ja-JP')];
+    expect(pickVoiceVaried(voices, 'en-US')).toBe(pickVoice(voices, 'en-US'));
+  });
+
+  it('후보 1개(ja) → seed 무관 항상 그 voice · 후보 0개 → null', async () => {
+    const { pickVoiceVaried } = await import('./speech.js');
+    const voices = [mk('Kyoko', 'ja-JP')];
+    expect(pickVoiceVaried(voices, 'ja-JP', 'x').name).toBe('Kyoko');
+    expect(pickVoiceVaried(voices, 'ja-JP', 'yyy').name).toBe('Kyoko');
+    expect(pickVoiceVaried([], 'en-US', 'x')).toBeNull();
+  });
+
+  it('novelty voice(비 quality)는 후보에서 제외 — 변주 풀은 quality·default 만', async () => {
+    const { pickVoiceVaried } = await import('./speech.js');
+    const voices = [mk('Samantha', 'en-US', { default: true }), mk('Bahh', 'en-US'), mk('Albert', 'en-US')];
+    for (const seed of ['a', 'b', 'c', 'dd', 'eee']) {
+      expect(pickVoiceVaried(voices, 'en-US', seed).name).toBe('Samantha');
+    }
   });
 });

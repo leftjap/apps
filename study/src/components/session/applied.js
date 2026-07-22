@@ -139,7 +139,8 @@ export function filterNearDupDrills(sentence, drills) {
   });
 }
 
-/* 재생 변주 풀 — 또렷한 en-US 뉴럴 보이스(style 무). Azure 폴백(web speechSynthesis) 시엔 rate 만 적용된다.
+/* 재생 변주 풀 — 또렷한 en-US 뉴럴 보이스(style 무). Azure 폴백(web speechSynthesis) 시엔
+ * voice 이름을 seed 로 로컬 quality 후보를 돌려 변주를 유지한다 (speech.js pickVoiceVaried, 2026-07-22).
  * 드릴·체이닝 공용. 속도는 문장 길이가 정한다 — 쉽고 짧으면 빠르게, 어렵고 길면 보통 (사용자 결정 2026-07-22).
  * 다화자 순환은 HVPT 메타분석(다화자>단일화자)의 유비 적용 — 지각훈련 패러다임과 동일하진 않음. */
 export const PRACTICE_VOICES = ['en-US-AvaMultilingualNeural', 'en-US-AndrewMultilingualNeural', 'en-US-EmmaMultilingualNeural', 'en-US-GuyNeural', 'en-US-EricNeural'];

@@ -57,10 +57,23 @@ export function clearAzureTokenCache() {
 // MS 공식 (speech-services-quotas-and-limits, 2026-06): F0 는 autoscaling 으로 한도 내에서도 429 발생 →
 // "every implementation should gracefully handle 429 errors with retry logic". 기존엔 단발 실패를 즉시
 // "네트워크 오류" 토스트로 종결 → 사용자가 수동 재시도. token edge fetch + STT fetch 공용.
-// 짧은 backoff (사용자 대기 중 — 문서의 1-2-4분 권장은 대량 워크로드용, 인터랙티브엔 부적합).
 // 4xx(429 제외)·정상 응답은 재시도 안 함 (재시도해도 무의미).
+// 2026-07-22 실측: F0 429 는 400/1000ms 백오프(총 1.4초)로는 안 풀리고 60초+ 지속 →
+// 429 만 길게(2s/5s) + Retry-After 헤더 존중(캡 8s). 5xx/네트워크는 기존 짧은 딜레이 유지
+// (문서의 1-2-4분 권장은 대량 워크로드용, 인터랙티브엔 부적합).
 // ============================================================
-const RETRY_DELAYS_MS = [400, 1000]; // 최대 2회 재시도 (총 3회 시도)
+const RETRY_MAX = 2; // 최대 2회 재시도 (총 3회 시도)
+
+/** 재시도 대기 ms. attempt 소진 시 null. status 0 = network throw. */
+export function retryDelayFor(status, attempt, retryAfterHeader) {
+  if (attempt >= RETRY_MAX) return null;
+  if (status === 429) {
+    const ra = Number(retryAfterHeader);
+    if (Number.isFinite(ra) && ra > 0) return Math.min(ra * 1000, 8000);
+    return [2000, 5000][attempt];
+  }
+  return [400, 1000][attempt];
+}
 
 function _sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -68,20 +81,24 @@ function _sleep(ms) {
 
 async function _fetchWithRetry(url, init, label = '') {
   let lastErr;
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+  for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
     try {
       const res = await fetch(url, init);
-      if ((res.status === 429 || res.status >= 500) && attempt < RETRY_DELAYS_MS.length) {
-        _dbg('fetch transient 재시도', { label, status: res.status, attempt });
-        await _sleep(RETRY_DELAYS_MS[attempt]);
-        continue;
+      if (res.status === 429 || res.status >= 500) {
+        const delay = retryDelayFor(res.status, attempt, res.headers?.get?.('retry-after'));
+        if (delay != null) {
+          _dbg('fetch transient 재시도', { label, status: res.status, attempt, delay });
+          await _sleep(delay);
+          continue;
+        }
       }
       return res;
     } catch (e) {
       lastErr = e;
-      if (attempt < RETRY_DELAYS_MS.length) {
+      const delay = retryDelayFor(0, attempt, null);
+      if (delay != null) {
         _dbg('fetch network 재시도', { label, attempt, err: e?.message ?? e });
-        await _sleep(RETRY_DELAYS_MS[attempt]);
+        await _sleep(delay);
         continue;
       }
       throw e;
@@ -253,8 +270,24 @@ export function pickVoice(voices, lang) {
   return v || null;
 }
 
+/* 폴백 화자 변주 (2026-07-22) — Azure 실패 시에도 다화자 순환이 조용히 사라지지 않게,
+ * 요청된 Azure voice 이름을 seed 로 로컬 quality·default 후보 중 하나를 결정적으로 고른다.
+ * 후보 풀은 pickVoice 의 QUALITY 철학 유지 (novelty voice 제외). seed 없으면 pickVoice 위임. */
+export function pickVoiceVaried(voices, lang, seed) {
+  if (!seed) return pickVoice(voices, lang);
+  if (!voices?.length) return null;
+  const lower = lang.toLowerCase();
+  const langPrefix = lower.split('-')[0];
+  const QUALITY = /Samantha|Daniel|Alex|Karen|Moira|Tessa|Aaron|Nicky|Allison|Ava|Susan|Tom|Fred|Google US English|Google UK English|Microsoft (Aria|Jenny|Guy|Davis)|Kyoko|Otoya|Hattori|Yuna|Sora/i;
+  const candidates = voices.filter((x) => x.lang.toLowerCase().startsWith(langPrefix) && (x.default || QUALITY.test(x.name)));
+  if (!candidates.length) return pickVoice(voices, lang);
+  let h = 0;
+  for (const ch of String(seed)) h = (h * 31 + ch.charCodeAt(0)) % 997;
+  return candidates[h % candidates.length];
+}
+
 /** Web Speech API 폴백 (Wave 11.31 — voiceschanged 대기 + 명시 voice 선택). */
-async function speakWeb(text, { lang = 'en-US', rate = 0.85, onEnd } = {}) {
+async function speakWeb(text, { lang = 'en-US', rate = 0.85, voice: requestedVoice, onEnd } = {}) {
   if (typeof window === 'undefined' || !text || !window.speechSynthesis) {
     onEnd?.();
     return;
@@ -265,7 +298,7 @@ async function speakWeb(text, { lang = 'en-US', rate = 0.85, onEnd } = {}) {
     const u = new SpeechSynthesisUtterance(text);
     u.lang = lang;
     u.rate = rate;
-    const voice = pickVoice(voices, lang);
+    const voice = pickVoiceVaried(voices, lang, requestedVoice);
     if (voice) {
       u.voice = voice;
       // u.lang 이 voice.lang 와 다르면 chrome 가 voice 무시 → 동기화
@@ -519,7 +552,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
         if (session.cancelled || gen !== _speakGen) { _dbg('speak 실패 — 취소된 발화라 폴백 생략', { gen }); return; }
         console.warn('[speech][azure][speak] 실패, web 폴백:', err);
         // Wave 11.31 — speakWeb 이 async (voiceschanged 대기). 콜백 onEnd 패턴 + void 래핑.
-        void speakWeb(text, { lang, rate, onEnd });
+        void speakWeb(text, { lang, rate, voice: voiceName, onEnd }); // voiceName seed 로 폴백 화자 변주 유지
       },
     );
   } catch (e) {
@@ -527,7 +560,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     disposeSynth(entry);
     if (gen !== _speakGen) { _dbg('speak init 실패 — 취소된 발화라 폴백 생략', { gen }); return; }
     console.warn('[speech][azure][speak] init 실패, web 폴백:', e?.message ?? e);
-    void speakWeb(text, { lang, rate, onEnd });
+    void speakWeb(text, { lang, rate, voice, onEnd }); // 요청 voice seed 로 폴백 화자 변주 유지
   }
 }
 
@@ -1055,7 +1088,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
     }, 'stt');
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);
-      return analyzeMock(expectedText, 'azure_recognize_fail');
+      // 429 지속 = F0 혼잡 — '네트워크 오류' 가 아니라 잠시 뒤 재시도 안내로 분기 (2026-07-22 실측)
+      return analyzeMock(expectedText, res.status === 429 ? 'rate_limited' : 'azure_recognize_fail');
     }
     const json = await res.json();
     if (json.RecognitionStatus !== 'Success') {

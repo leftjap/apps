@@ -60,3 +60,10 @@ describe('showRecordToast', () => {
     expect(all[0].textContent).toBe('두 번째');
   });
 });
+
+describe('recordErrorMessage — rate_limited (Azure 429, 2026-07-22 실측)', () => {
+  it('채점 서버 혼잡 안내 — 네트워크 오류와 구분', () => {
+    expect(recordErrorMessage('rate_limited')).toContain('붐벼');
+    expect(recordErrorMessage('rate_limited')).not.toContain('네트워크');
+  });
+});
