@@ -457,14 +457,26 @@ export async function pullTable(mapping, db, userId) {
     const transformed = typeof mapping.toDexie === 'function'
       ? data.map(mapping.toDexie).filter(Boolean)
       : data;
-    // reviewQueue 만 충돌 해결 (다른 테이블은 단순 bulkPut)
+    // soft-delete 1단계 (2026-07-22, 백로그 1순위 착수) — reviewQueue: 서버 행 explanation._deleted=true
+    // 는 '삭제'다. 저장하지 않고 로컬에서 지운다. pushTable 이 upsert-only 라 서버만 지우면 기기가
+    // 되살리던 결함(pos-test 유령)의 전파 관문. 컬럼(deleted_at) DDL 적용 수단이 없어 JSONB 플래그 —
+    // 구버전 앱이 판정을 push 해 덮는 창은 남는다(서버측 가드는 컬럼+트리거 도입 시 후속).
     let rowsToPut = transformed;
+    let tombstoned = [];
+    if (mapping.dexie === 'reviewQueue') {
+      tombstoned = rowsToPut.filter((r) => r?.explanation?._deleted).map((r) => r.id);
+      if (tombstoned.length) rowsToPut = rowsToPut.filter((r) => !r?.explanation?._deleted);
+    }
+    // reviewQueue 만 충돌 해결 (다른 테이블은 단순 bulkPut)
     if (mapping.dexie === 'reviewQueue' && typeof store.bulkGet === 'function') {
-      const ids = transformed.map((r) => r.id);
+      const ids = rowsToPut.map((r) => r.id);
       const localRows = await store.bulkGet(ids);
-      rowsToPut = transformed.map((serverRow, i) => resolveConflict(localRows[i], serverRow));
+      rowsToPut = rowsToPut.map((serverRow, i) => resolveConflict(localRows[i], serverRow));
     }
     await store.bulkPut(rowsToPut);
+    if (tombstoned.length && typeof store.bulkDelete === 'function') {
+      await store.bulkDelete(tombstoned);
+    }
     // 서버 삭제 전파 (serverOwned 만, 'ok' pull 에서만 — data≥1 확인됨). Dexie store 한정 가드.
     // 페이지네이션 가드: data 가 REST 상한(PULL_PAGE_LIMIT)에 닿으면 잘렸을 수 있어 stale 판정 불가 → 삭제 보류.
     if (mapping.serverOwned && data.length >= PULL_PAGE_LIMIT) {

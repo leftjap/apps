@@ -2002,3 +2002,63 @@ describe('sync — pullTable 서버 삭제 전파 통합 (serverOwned + 페이�
     expect(store.bulkDelete).not.toHaveBeenCalled();
   });
 });
+
+/* soft-delete 1단계 (2026-07-22, 백로그 1순위 착수) — 서버 행 explanation._deleted=true 를 '삭제'로
+ * 해석해 pull 시 로컬에서 지운다. pushTable 이 upsert-only 라 서버만 지우면 기기가 되살리던 결함
+ * (pos-test 유령, v5→v7 버전 범프 사슬의 원인)의 전파 관문. DDL(deleted_at 컬럼) 적용 수단이 없는
+ * 환경이라 JSONB 플래그 방식 — 서버측 클로버 가드(트리거)는 컬럼 도입 가능해질 때 후속. */
+describe('sync — reviewQueue 톰스톤(explanation._deleted) pull 전파', () => {
+  beforeEach(() => { vi.resetModules(); });
+
+  it('톰스톤 행은 bulkPut 대신 bulkDelete — 산 행만 충돌해결·저장', async () => {
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({
+          data: [
+            { id: 'pos-test', lang: 'ja', sentence: 'ありがとう', next_review: '2026-05-10', explanation: { _deleted: true } },
+            { id: 'live-1', lang: 'ja', sentence: 'こんにちは', next_review: '2026-07-30', explanation: {} },
+          ],
+          error: null,
+        }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const reviewMapping = TABLE_MAP.find((m) => m.dexie === 'reviewQueue');
+    const bulkPutSpy = vi.fn().mockResolvedValue();
+    const bulkDeleteSpy = vi.fn().mockResolvedValue();
+    const bulkGetSpy = vi.fn().mockResolvedValue([undefined]);
+    const db = { reviewQueue: { bulkPut: bulkPutSpy, bulkGet: bulkGetSpy, bulkDelete: bulkDeleteSpy } };
+    const result = await pullTable(reviewMapping, db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(bulkDeleteSpy).toHaveBeenCalledWith(['pos-test']);
+    expect(bulkGetSpy).toHaveBeenCalledWith(['live-1']);            // 충돌해결은 산 행만
+    expect(bulkPutSpy.mock.calls[0][0].map((r) => r.id)).toEqual(['live-1']); // 톰스톤 저장 금지
+  });
+
+  it('톰스톤이 없으면 기존 동작 그대로 (bulkDelete 미호출)', async () => {
+    const fromMock = vi.fn(() => {
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn().mockResolvedValue({
+          data: [{ id: 'live-1', lang: 'en', sentence: 'Hi.', next_review: '2026-07-30', explanation: {} }],
+          error: null,
+        }),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const reviewMapping = TABLE_MAP.find((m) => m.dexie === 'reviewQueue');
+    const bulkPutSpy = vi.fn().mockResolvedValue();
+    const bulkDeleteSpy = vi.fn().mockResolvedValue();
+    const bulkGetSpy = vi.fn().mockResolvedValue([undefined]);
+    const db = { reviewQueue: { bulkPut: bulkPutSpy, bulkGet: bulkGetSpy, bulkDelete: bulkDeleteSpy } };
+    const result = await pullTable(reviewMapping, db, 'user-1');
+    expect(result.status).toBe('ok');
+    expect(bulkDeleteSpy).not.toHaveBeenCalled();
+    expect(bulkPutSpy.mock.calls[0][0].map((r) => r.id)).toEqual(['live-1']);
+  });
+});
