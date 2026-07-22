@@ -66,8 +66,9 @@ const VR_CSS = `
 .vr-srs b{color:var(--mut);font-weight:700}
 .vr-ctrl{display:flex;align-items:center;gap:12px;margin-top:26px;flex-wrap:wrap;min-height:56px}
 .vr-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
-.vr-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
-.vr-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
+/* 녹음 CTA 는 코랄 — 색 규약 '코랄=녹음'(v2/atoms.js 머리주석)과 구 D1(terra) 관례. 2026-07-22 복원. */
+.vr-pill.pri{background:var(--coral);border-color:var(--coral);color:#fff;animation:v-breatheC 2.6s ease-in-out infinite}
+.vr-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
@@ -160,9 +161,10 @@ const VRM_CSS = `
    '.vr button' 의 padding:0 (0,0,1,1)이 '.vr-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
    경계에 글자가 붙어 삐져나온다(2026-07-18 iPhone 보고, sessionExprV2 와 동일 뿌리). 파생(0,0,2,0)은 회귀 없음. */
 button.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:12px 18px;font-size:13.5px;font-weight:700;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap;min-height:46px}
-.vr-pill.pri{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+/* 녹음 CTA 는 코랄 — 색 규약 '코랄=녹음'(v2/atoms.js 머리주석)과 구 D1(terra) 관례. 2026-07-22 복원. */
+.vr-pill.pri{background:var(--coral);border-color:var(--coral);color:#fff;animation:v-breatheC 2.6s ease-in-out infinite}
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
-.vr-pill.recing{background:var(--coral);border-color:var(--coral);color:#fff;animation:none}
+.vr-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vr-ring{position:relative;width:50px;height:50px;flex:0 0 auto}
