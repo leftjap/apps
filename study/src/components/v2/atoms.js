@@ -21,7 +21,9 @@ export const V_KEYS = `
 @keyframes v-fill{from{width:0}}
 @keyframes v-draw{to{stroke-dashoffset:0}}
 @keyframes v-sheen{0%{transform:translateX(-110%)}55%,100%{transform:translateX(160%)}}
-@keyframes v-breathe{0%,100%{box-shadow:0 8px 16px -11px oklch(44% .062 192/.7),0 0 0 0 oklch(44% .062 192/.5)}55%{box-shadow:0 10px 20px -11px oklch(44% .062 192/.8),0 0 0 12px oklch(44% .062 192/0)}}
+/* 2026-07-22 — 확산 링이 두껍고(12px) 시작 불투명도가 높아(.5) 버튼 둘레가 회청색 테두리처럼
+   보인다는 실사용 지적. 링만 은은하게 낮춘다(.5→.3, 12px→8px). 아래 그림자·주기는 유지. */
+@keyframes v-breathe{0%,100%{box-shadow:0 8px 16px -11px oklch(44% .062 192/.7),0 0 0 0 oklch(44% .062 192/.3)}55%{box-shadow:0 10px 20px -11px oklch(44% .062 192/.8),0 0 0 8px oklch(44% .062 192/0)}}
 @keyframes v-flicker{0%,100%{transform:scale(1) rotate(0)}30%{transform:scale(1.2) rotate(-4deg)}60%{transform:scale(.92) rotate(3deg)}}
 @keyframes v-haloT{0%,100%{box-shadow:inset 0 0 0 1.5px var(--teal-line),0 0 0 0 oklch(44% .062 192/.25)}55%{box-shadow:inset 0 0 0 1.5px var(--teal-line),0 0 0 7px oklch(44% .062 192/0)}}
 @keyframes v-floatup{0%{opacity:0;transform:translateY(8px)}25%{opacity:1}80%{opacity:1;transform:translateY(-4px)}100%{opacity:0;transform:translateY(-12px)}}

@@ -115,8 +115,9 @@ export const VS_CSS = `
 .vs-ex{border-left:2px solid var(--teal-line);padding:2px 0 2px 12px;margin-top:8px;font-size:12.5px;line-height:1.6;color:#4a5450}
 .vs-ex b{color:var(--ink)}
 .vs-ex .k{color:var(--faint);font-size:11.5px}
-.vs-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
-.vs-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:4px 11px;background:#fbf9f2;white-space:nowrap}
+.vs-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;max-width:100%}
+/* 2026-07-22 — nowrap 이면 긴 음소 설명이 해설 박스를 넘어갔다. 줄바꿈 허용 + 라운드 완화. */
+.vs-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:5px 11px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
 .vs-next{width:100%;margin-top:14px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
 .vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
@@ -442,8 +443,8 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-sec .b2 b{color:var(--ink)}
 .vs-ex{margin-top:8px;font-size:12.5px;line-height:1.6}
 .vs-ex .k{color:var(--mut)}
-.vs-chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap}
-.vs-chip{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:3px 10px;background:#fbf9f2;white-space:nowrap}
+.vs-chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;max-width:100%}
+.vs-chip{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:4px 10px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
 `;
 
 export function renderSessionExprV2(host, state, handlers = {}) {

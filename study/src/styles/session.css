@@ -147,49 +147,35 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  /* 2026-07-22 — 라벨이 한글(쉬움/보통/어려움)로 바뀌면서 kind 별로 크기를 달리하던 옛 영문
+     위계(Got it 30px / Hmm 22px / No 18px)가 불균형해 보였다. 셋을 같은 크기·폰트로 두고
+     색과 테두리로만 구분한다. 부제(.ko)는 영문 표기 전용이라 폐기됨. */
+  padding: 15px 0;
+  min-height: 56px;
 }
-.judge-btn .ko {
-  color: var(--text-faint);
-  font-size: 9px;
-  font-family: var(--font-display);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+.judge-btn .en {
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
 }
-.judge-row[data-size="tablet"] .judge-btn .ko,
-.judge-row[data-size="desktop"] .judge-btn .ko { font-size: 10px; }
-
-.judge-btn[data-kind="no"] {
-  border-color: rgba(180, 77, 59, 0.2);
-  padding: 14px 0;
-}
-.judge-btn[data-kind="no"] .en { color: var(--danger); font-weight: 400; font-size: 14px; }
-.judge-row[data-size="tablet"] .judge-btn[data-kind="no"],
-.judge-row[data-size="desktop"] .judge-btn[data-kind="no"] { padding: 20px 0; }
-.judge-row[data-size="tablet"] .judge-btn[data-kind="no"] .en,
-.judge-row[data-size="desktop"] .judge-btn[data-kind="no"] .en { font-size: 18px; }
-
-.judge-btn[data-kind="hmm"] {
-  border-color: rgba(196, 151, 59, 0.3);
-  padding: 16px 0;
-}
-.judge-btn[data-kind="hmm"] .en { color: var(--amber); font-weight: 500; font-size: 17px; }
-.judge-row[data-size="tablet"] .judge-btn[data-kind="hmm"],
-.judge-row[data-size="desktop"] .judge-btn[data-kind="hmm"] { padding: 24px 0; }
-.judge-row[data-size="tablet"] .judge-btn[data-kind="hmm"] .en,
-.judge-row[data-size="desktop"] .judge-btn[data-kind="hmm"] .en { font-size: 22px; }
+.judge-row[data-size="tablet"] .judge-btn,
+.judge-row[data-size="desktop"] .judge-btn { padding: 18px 0; min-height: 62px; }
+.judge-row[data-size="tablet"] .judge-btn .en,
+.judge-row[data-size="desktop"] .judge-btn .en { font-size: 17px; }
 
 .judge-btn[data-kind="got"] {
   background: rgba(120, 140, 93, 0.1);
   border-color: rgba(120, 140, 93, 0.5);
-  padding: 18px 0;
 }
-.judge-btn[data-kind="got"] .en { color: var(--sage); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
-.judge-btn[data-kind="got"] .ko { color: var(--sage); opacity: 0.7; }
-.judge-row[data-size="tablet"] .judge-btn[data-kind="got"],
-.judge-row[data-size="desktop"] .judge-btn[data-kind="got"] { padding: 28px 0; }
-.judge-row[data-size="tablet"] .judge-btn[data-kind="got"] .en,
-.judge-row[data-size="desktop"] .judge-btn[data-kind="got"] .en { font-size: 30px; }
+.judge-btn[data-kind="got"] .en { color: var(--sage); font-weight: 700; }
+
+.judge-btn[data-kind="hmm"] { border-color: rgba(196, 151, 59, 0.35); }
+.judge-btn[data-kind="hmm"] .en { color: var(--amber); }
+
+.judge-btn[data-kind="no"] { border-color: rgba(180, 77, 59, 0.25); }
+.judge-btn[data-kind="no"] .en { color: var(--danger); }
 
 /* ── Explanation panel (A.13) — 정본: deleted mocks/session.html L166-185 (git 13018d1^) ── */
 .explain-toggle{font-family:var(--font-display);font-size:14px;font-weight:500;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:var(--s-3) 0;display:flex;align-items:center;gap:var(--s-2);transition:color 150ms var(--ease)}
