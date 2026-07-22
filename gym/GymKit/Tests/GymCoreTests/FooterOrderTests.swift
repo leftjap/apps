@@ -111,6 +111,40 @@ import Testing
     }
 }
 
+// 트레일링 스페이서 — scrollTo 는 콘텐츠 끝을 넘어 스크롤하지 못한다(클램프). 세션 후반처럼
+// 현재 칩 뒤에 예정 종목이 얼마 없으면 요청한 좌측 inset 까지 못 가고 완료 칩이 도로 드러난다.
+// 시뮬 실측(iPhone 11 Pro, 375pt): 마지막 종목일 때 현재 칩 minX 161.7(기대 38) · 완료 칩 2개 노출.
+// → 현재 칩 우측에 (뷰포트폭 − railLeftInset) 만큼의 콘텐츠가 늘 있도록 부족분만 채운다.
+@Suite struct RailTrailingSpacerTests {
+
+    // 예정 종목이 충분하면 스크롤 여유가 있다 — 스페이서 0 (기존 동작 불변).
+    @Test func enoughUpcomingNeedsNoSpacer() {
+        // 현재 칩 minX 200, 칩영역 폭 700 → 우측 잔여 500 ≥ 307 − 26
+        #expect(GymSessionLogic.railTrailingSpacer(
+            hasCurrent: true, currentChipMinX: 200, chipsMaxX: 700, viewportWidth: 307) == 0)
+    }
+
+    // 마지막 종목 — 우측 잔여가 현재 칩 폭뿐이라 부족분을 채워야 좌측 inset 정렬이 가능하다.
+    @Test func lastBlockGetsSpacerSoCurrentCanReachLeftInset() {
+        // 현재 칩 minX 767.7 · 칩영역 폭 913 → 우측 잔여 145.3, 필요 281 → 부족 135.7
+        let s = GymSessionLogic.railTrailingSpacer(
+            hasCurrent: true, currentChipMinX: 767.7, chipsMaxX: 913, viewportWidth: 307)
+        #expect(abs(s - 135.7) < 0.01)
+    }
+
+    // 현재 칩이 없으면(전 종목 완료) 선두로 되돌리므로 여유가 필요 없다.
+    @Test func noCurrentNeedsNoSpacer() {
+        #expect(GymSessionLogic.railTrailingSpacer(
+            hasCurrent: false, currentChipMinX: 0, chipsMaxX: 913, viewportWidth: 307) == 0)
+    }
+
+    // 미측정(스냅샷·첫 패스) — 뷰포트/칩폭이 0이면 스페이서도 0이라 레이아웃이 흔들리지 않는다.
+    @Test func unmeasuredLayoutNeedsNoSpacer() {
+        #expect(GymSessionLogic.railTrailingSpacer(
+            hasCurrent: true, currentChipMinX: 0, chipsMaxX: 0, viewportWidth: 0) == 0)
+    }
+}
+
 // 종목 볼륨 링 중앙 % 글꼴 — 시안 #6b 는 상태별 두 값을 쓴다.
 //   676행 미돌파: 숫자 15px/700 · '%' 10px/600
 //   693행 돌파  : 숫자 13.5px/700 · '%' 9.5px/600  (3자리 대비 축소)

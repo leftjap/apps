@@ -221,6 +221,19 @@ public enum GymSessionLogic {
         return .anchored(idx: idx, anchorX: railLeftInset / (viewportWidth - w))
     }
 
+    /// 칩 줄 우측에 둘 투명 여백. `scrollTo` 는 콘텐츠 끝을 넘지 못하므로(클램프) 현재 칩 뒤에
+    /// 남은 콘텐츠가 `viewportWidth − railLeftInset` 보다 짧으면 좌측 inset 정렬이 실패하고
+    /// 완료 칩이 도로 드러난다 — 세션 후반(예정 종목 소진)에 재현. 부족분만 채운다.
+    /// - 여유가 충분하거나 현재 칩이 없으면(전 종목 완료 → 선두 복귀) 0 이라 레이아웃 불변.
+    /// - `chipsMaxX` 는 `currentChipMinX` 와 같은 콘텐츠 좌표계에서 잰 칩 줄의 우단.
+    public static func railTrailingSpacer(hasCurrent: Bool,
+                                          currentChipMinX: Double,
+                                          chipsMaxX: Double,
+                                          viewportWidth: Double) -> Double {
+        guard hasCurrent, chipsMaxX > 0, viewportWidth > 0 else { return 0 }
+        return max(0, (viewportWidth - railLeftInset) - (chipsMaxX - currentChipMinX))
+    }
+
     /// 종목 볼륨 링 중앙 % 글꼴 (pt). 시안 #6b 676행 미돌파 15/10 · 693행 돌파 13.5/9.5.
     /// 돌파 시 3자리(`107%`)가 되므로 시안이 한 단계 축소한다.
     public static func exRingPctFont(isOver: Bool) -> (num: Double, unit: Double) {

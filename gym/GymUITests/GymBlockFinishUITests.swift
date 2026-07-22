@@ -97,6 +97,41 @@ final class GymBlockFinishUITests: XCTestCase {
                           "완료 칩은 현재 칩 왼쪽에 밀려 있어야 한다")
     }
 
+    // 마지막 종목(뒤에 예정이 없음)에서도 좌측 치우침이 유지되어야 한다 (사용자 2026-07-22 보고).
+    // scrollTo 는 콘텐츠 끝을 넘지 못해 클램프되므로, 트레일링 스페이서가 없으면 현재 칩이 중앙보다
+    // 오른쪽으로 밀리고 완료 칩이 여러 개 드러난다 (수정 전 실측: minX 161.7 · 완료 칩 2개 노출).
+    func testLastBlockStillLeftBiasedWithDoneChipsCollapsed() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        // 데모 4종목 — 앞 둘을 완료하면 케이블 크로스오버가 '완료 3개 뒤의 마지막 종목' 이 된다
+        for name in ["벤치프레스", "덤벨 플라이"] {
+            let cur = chip(app, "current", name)
+            XCTAssertTrue(cur.waitForExistence(timeout: 5))
+            cur.press(forDuration: 0.8)
+            XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+            app.buttons["action-finish"].tap()
+        }
+
+        let cur = chip(app, "current", "케이블 크로스오버")
+        XCTAssertTrue(cur.waitForExistence(timeout: 5), "마지막 종목이 현재 칩이어야 한다")
+        let centered = (app.frame.width - cur.frame.width) / 2
+        XCTAssertLessThan(cur.frame.minX, centered - 30,
+                          "마지막 종목도 중앙(≈\(centered))이 아니라 좌측 치우침 (실측 \(cur.frame.minX))")
+
+        // 직전 완료 칩은 우측 끝 일부만 — 40pt 넘게 드러나면 '완료를 다 보여주는' 낭비로 회귀한 것
+        let prevDone = chip(app, "done", "덤벨 플라이")
+        XCTAssertTrue(prevDone.exists)
+        XCTAssertLessThan(prevDone.frame.maxX, 40,
+                          "직전 완료 칩은 우측 끝만 노출되어야 한다 (실측 maxX \(prevDone.frame.maxX))")
+        // 그 앞 완료 칩들은 화면 밖으로 밀려 있어야 한다
+        XCTAssertLessThanOrEqual(chip(app, "done", "벤치프레스").frame.maxX, 0,
+                                 "앞선 완료 칩까지 보이면 하단 공간 낭비")
+        shot(app, "60-last-block-leftbias")
+    }
+
     // 운동 추가 흐름 (사용자 2026-07-19) — + → 시트가 기본 '등' 으로 열림 → 종목 선택 시 레일에
     // 예정 칩이 붙고, 고른 부위가 기억되어 다음에 그 부위로 열린다.
     func testAddExerciseFlowUpdatesRailAndRemembersPart() {

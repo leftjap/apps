@@ -205,32 +205,55 @@ public struct GymFooterRail: View {
             let n = nextValue(); if n > 0 { value = n }
         }
     }
+    struct ChipsMaxXKey: PreferenceKey {
+        static let defaultValue: CGFloat = 0
+        static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+            let n = nextValue(); if n > 0 { value = n }
+        }
+    }
     @State private var curMaxX: CGFloat = 0
     @State private var curMinX: CGFloat = 0
+    @State private var chipsMaxX: CGFloat = 0
+    @State private var viewportW: CGFloat = 0
+
+    // 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollTo 가 클램프돼 좌측 inset 정렬이 실패한다 — 부족분만 채운다.
+    var trailingSpacer: CGFloat {
+        CGFloat(GymSessionLogic.railTrailingSpacer(
+            hasCurrent: items.contains { $0.state == .current },
+            currentChipMinX: Double(curMinX), chipsMaxX: Double(chipsMaxX),
+            viewportWidth: Double(viewportW)))
+    }
 
     var chipsRow: some View {
-        HStack(spacing: 10) {
-            ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
-                Group {
-                    switch item.state {
-                    case .done: DoneChip(name: item.name)
-                    case .current:
-                        CurrentChip(name: item.name)
-                            .background(GeometryReader { g in
-                                Color.clear
-                                    .preference(key: CurChipMaxXKey.self,
-                                                value: g.frame(in: .named("railContent")).maxX)
-                                    .preference(key: CurChipMinXKey.self,
-                                                value: g.frame(in: .named("railContent")).minX)
-                            })
-                    case .upcoming: UpcomingChip(name: item.name)
+        HStack(spacing: 0) {
+            HStack(spacing: 10) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
+                    Group {
+                        switch item.state {
+                        case .done: DoneChip(name: item.name)
+                        case .current:
+                            CurrentChip(name: item.name)
+                                .background(GeometryReader { g in
+                                    Color.clear
+                                        .preference(key: CurChipMaxXKey.self,
+                                                    value: g.frame(in: .named("railContent")).maxX)
+                                        .preference(key: CurChipMinXKey.self,
+                                                    value: g.frame(in: .named("railContent")).minX)
+                                })
+                        case .upcoming: UpcomingChip(name: item.name)
+                        }
                     }
+                    .id(i)
+                    .accessibilityIdentifier("rail-\(item.state.idName)-\(item.name)")
+                    .onTapGesture { onTapItem(item.blockIdx) }
+                    .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(item.blockIdx) }
                 }
-                .id(i)
-                .accessibilityIdentifier("rail-\(item.state.idName)-\(item.name)")
-                .onTapGesture { onTapItem(item.blockIdx) }
-                .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(item.blockIdx) }
             }
+            .background(GeometryReader { g in   // 칩 줄 우단 — 스페이서는 제외해야 되먹임이 없다
+                Color.clear.preference(key: ChipsMaxXKey.self,
+                                       value: g.frame(in: .named("railContent")).maxX)
+            })
+            Color.clear.frame(width: trailingSpacer, height: 1)
         }
         .fixedSize(horizontal: true, vertical: false) // white-space:nowrap — 칩 자연폭 유지
         // 하단 30: 현재 카드 드롭섀도를 스크롤 트랙 안에서 완결시켜 ScrollView·마스크 경계의
@@ -276,7 +299,12 @@ public struct GymFooterRail: View {
                             }
                             .onPreferenceChange(CurChipMaxXKey.self) { curMaxX = $0 }
                             .onPreferenceChange(CurChipMinXKey.self) { curMinX = $0 }
-                            .onAppear { align(proxy, viewportW: vp.size.width, animated: false) }
+                            .onPreferenceChange(ChipsMaxXKey.self) { chipsMaxX = $0 }
+                            .onAppear {
+                                viewportW = vp.size.width
+                                align(proxy, viewportW: vp.size.width, animated: false)
+                            }
+                            .onChange(of: vp.size.width) { _, w in viewportW = w }
                             .onChange(of: currentIdx) { _, _ in
                                 align(proxy, viewportW: vp.size.width, animated: true)
                             }
@@ -284,6 +312,10 @@ public struct GymFooterRail: View {
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                             .onChange(of: curMinX) { _, _ in
+                                align(proxy, viewportW: vp.size.width, animated: false)
+                            }
+                            // 스페이서가 늘어난 뒤 재정렬 — 늘기 전 align 은 클램프돼 있었다
+                            .onChange(of: trailingSpacer) { _, _ in
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                         }
