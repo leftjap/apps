@@ -19,7 +19,9 @@
     {
       "name": "best-dev",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev"],
+      "runtimeArgs": [
+        "dev"
+      ],
       "cwd": "/Users/gio_c/apps/best",
       "port": 5179
     },
@@ -286,6 +288,17 @@
       "port": 4176,
       "cwd": "/Users/gio_c/apps/book",
       "runtimeExecutable": "pnpm"
+    },
+    {
+      "name": "study-verify2",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "dev",
+        "--port",
+        "5195"
+      ],
+      "cwd": "/Users/gio_c/apps/study",
+      "port": 5195
     }
   ]
 }
