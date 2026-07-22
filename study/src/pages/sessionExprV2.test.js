@@ -378,3 +378,40 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(host.querySelector('.vs-ring .cn').textContent).toBe('—'); // 링 = 점수 없음
   });
 });
+
+/* 메인 카드 듣기도 재생마다 화자 순환 (2026-07-23 사용자 지시 — 응용·체이닝과 동일 원리).
+ * 단 속도는 메인 학습 기본(0.85)을 유지한다 — 길이별 속도 규칙은 응용·체이닝 전용.
+ * ja 는 PRACTICE_VOICES 가 en 전용이라 기존 speaker 경로 유지. */
+describe('sessionExprV2 — 메인 카드 듣기 화자 순환', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const listenBtn = (host) => [...host.querySelectorAll('button')].find((b) => b.textContent.includes('듣기') && b.classList.contains('vs-pill'));
+
+  it('en: 재생마다 화자가 바뀌고 speaker·rate 는 미전달 (학습 속도 유지)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    renderSessionExprV2(host, makeState(), {});
+    const listen = listenBtn(host);
+    listen.click();
+    speak.mock.calls[0][1].onEnd(); // 재생 종료 시뮬 — 토글이라 종료 전 재클릭은 정지가 된다
+    listen.click();
+    expect(speak).toHaveBeenCalledTimes(2);
+    const o1 = speak.mock.calls[0][1], o2 = speak.mock.calls[1][1];
+    expect(o1.voice).not.toBe(o2.voice);
+    expect(o1.speaker).toBeUndefined();
+    expect(o1.rate).toBeUndefined();
+  });
+
+  it('ja: 화자 순환 미적용 — 기존 speaker 경로 유지', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    const st = makeState();
+    st.sentence.lang = 'ja'; st.cards[1].lang = 'ja';
+    renderSessionExprV2(host, st, {});
+    listenBtn(host).click();
+    const o = speak.mock.calls[0][1];
+    expect(o.lang).toBe('ja-JP');
+    expect(o.voice).toBeUndefined();
+  });
+});

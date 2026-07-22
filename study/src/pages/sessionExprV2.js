@@ -13,7 +13,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
-import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, PRACTICE_VOICES } from '../components/session/applied.js';
 import { judgeCoverage } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
@@ -589,12 +589,22 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const ctrl = h('div', { class: 'vs-ctrl' }, listenPill, recPill, ringHost);
 
   const stopPlaying = () => { playing = false; listenPill.classList.remove('playing'); listenPill.lastChild.textContent = '듣기'; };
+  let mainPlays = 0;
   listenPill.addEventListener('click', () => {
     if (state.recording) return;
     if (playing) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopPlaying(); return; }
     if (!s?.sentence || !window.studySpeech?.speak) return;
     playing = true; listenPill.classList.add('playing'); listenPill.lastChild.textContent = '재생 중';
-    window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s?.speaker, onEnd: stopPlaying });
+    // 메인 카드도 재생마다 화자 순환 (2026-07-23 사용자 지시 — 응용·체이닝과 동일 원리).
+    // 속도는 메인 학습 기본(0.85)을 유지 — 길이별 속도 규칙은 응용·체이닝 전용.
+    // ja 는 PRACTICE_VOICES 가 en 전용이라 기존 speaker(AoiNeural) 경로 유지.
+    if (lang === 'ja') {
+      window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s?.speaker, onEnd: stopPlaying });
+    } else {
+      const voice = PRACTICE_VOICES[mainPlays % PRACTICE_VOICES.length];
+      mainPlays += 1;
+      window.studySpeech.speak(s.sentence, { lang: ttsLang, voice, onEnd: stopPlaying });
+    }
     setTimeout(stopPlaying, 30000);
   });
 
