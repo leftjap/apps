@@ -132,6 +132,39 @@ final class GymBlockFinishUITests: XCTestCase {
         shot(app, "60-last-block-leftbias")
     }
 
+    // 마지막 종목(트레일링 스페이서 추가) 상태에서도 수동 스크롤로 완료 칩을 열람할 수 있어야 한다
+    // (사용자 2026-07-22 "스크롤은 이때도 되는 게 당연"). 스페이서는 우측이라 좌측(완료 칩) 열람을 막지 않는다.
+    func testLastBlockManualScrollStillRevealsDoneChips() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        for name in ["벤치프레스", "덤벨 플라이"] {   // 케이블 크로스오버 = 마지막 종목 → 스페이서 상태
+            let cur = chip(app, "current", name)
+            XCTAssertTrue(cur.waitForExistence(timeout: 5))
+            cur.press(forDuration: 0.8)
+            XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+            app.buttons["action-finish"].tap()
+        }
+        // 기본은 완료 칩 우측 끝만 노출 — 스크롤 전엔 첫 완료 칩이 화면 밖
+        let firstDone = chip(app, "done", "인클라인 벤치")
+        XCTAssertLessThan(firstDone.frame.maxX, 0, "스크롤 전엔 첫 완료 칩이 화면 밖이어야 한다")
+
+        // 오른쪽으로 끌면 왼쪽 완료 칩들이 열린다 (콘텐츠가 길어 여러 번)
+        let y = 0.908
+        for _ in 1...4 {
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: y))
+                .press(forDuration: 0.05,
+                       thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: y)))
+            if firstDone.exists && firstDone.frame.minX >= 0 { break }
+        }
+        XCTAssertGreaterThanOrEqual(firstDone.frame.minX, 0,
+            "스크롤 끝까지 가면 첫 완료 칩이 화면 안에 완전히 들어와야 한다 (실측 \(firstDone.frame.minX))")
+        XCTAssertTrue(firstDone.isHittable, "완료 칩은 열람·탭 가능해야 한다")
+        shot(app, "61-last-block-scrolled-done")
+    }
+
     // 운동 추가 흐름 (사용자 2026-07-19) — + → 시트가 기본 '등' 으로 열림 → 종목 선택 시 레일에
     // 예정 칩이 붙고, 고른 부위가 기억되어 다음에 그 부위로 열린다.
     func testAddExerciseFlowUpdatesRailAndRemembersPart() {
