@@ -357,6 +357,10 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
  * 통과 판정은 체이닝과 동일(전사 비교 judgeCoverage). 실패 2회 → 첫 단어 힌트, 3회 → 정답 공개 후 완료.
  * 게임 요소(연속 ✓ 스트릭·완주 뱃지)는 이 블록에만 접붙임 — 반응 나쁘면 블록째 폐기.
  * 정답(en·kr)은 공개 전 DOM 미부착 — 체이닝 자막 금지와 동일 계약. onStart: 첫 녹음 시 1회(드릴 목록 접기). */
+// 생산 연습 발음 정확도 하한 — 커버리지만으로는 웅얼거림이 통과된다 (2026-07-23 사용자 지적).
+// 메인 PASS_THRESHOLD(80)보다 관대: 인출이 주목적, 발음은 최소선만.
+const PROD_MIN_ACCURACY = 65;
+
 export function productionBlockEl(drills, lang, card, demo, onScore, { onStart } = {}) {
   const pool = (Array.isArray(drills) ? drills : []).filter((d) => d?.en && d?.ko);
   if (!pool.length) return null;
@@ -392,11 +396,11 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       streakEl.textContent = String(streak);
       if (doneCount === picks.length) doneEl.style.display = '';
     };
-    const failOnce = () => {
+    const failOnce = (msg) => {
       fails += 1;
       if (fails >= 3) { reveal(false); showRecordToast('정답을 공개했어요 — 듣고 한 번 더 말해 보세요'); return; }
       if (fails >= 2) { hintEl.textContent = `힌트 · 시작: ${firstWordsHint(d.en)}`; hintEl.style.display = ''; }
-      showRecordToast('다시 한 번 — 한글 뜻을 영어로 말해 보세요');
+      showRecordToast(msg ?? '다시 한 번 — 한글 뜻을 영어로 말해 보세요');
     };
 
     async function finish() {
@@ -406,8 +410,14 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       const result = await stopAndAnalyze(ctrl, d.en, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       onScore?.(result); // 통과 여부와 무관 — 말했으면 발화 1건 (체이닝과 동일)
+      // 통과 = 커버리지 + 발음 정확도 하한 (2026-07-23 사용자 지적 "정확하게 발음 못했는데 패스").
+      // Azure 발음평가 모드는 인식을 참조 문장으로 끌어당겨 웅얼거림도 커버리지가 통과되므로
+      // AccuracyScore 하한으로 이중 방어. 하한 미달도 실패 1회 — 3회면 기존대로 정답 공개.
       const judge = judgeCoverage(result?.recognizedText, d.en);
-      if (judge.pass) reveal(true); else failOnce();
+      const accuracy = Math.round(Number(result?.score) || 0);
+      if (judge.pass && accuracy >= PROD_MIN_ACCURACY) reveal(true);
+      else if (judge.pass) failOnce(`단어는 다 맞았어요 — 발음을 더 또렷하게 (${accuracy}점)`);
+      else failOnce();
     }
 
     recBtn.addEventListener('click', async () => {

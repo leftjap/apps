@@ -415,3 +415,49 @@ describe('sessionExprV2 — 메인 카드 듣기 화자 순환', () => {
     expect(o.voice).toBeUndefined();
   });
 });
+
+/* 생산 연습 통과 기준 강화 (2026-07-23 사용자 지적: "정확하게 발음 못했는데 패스가 됨").
+ * Azure 발음평가 모드는 인식을 참조 문장으로 끌어당겨 웅얼거림도 커버리지가 통과된다 →
+ * 커버리지 + 발음 정확도 하한(65) 이중 기준. 하한 미달은 실패 1회로 세되 안내 문구를 구분. */
+describe('sessionExprV2 — 생산 연습 발음 하한', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const prodRow = (host, i) => [...host.querySelectorAll('.vs-prod')][i];
+
+  async function recOnce(host, score, recognizedText) {
+    stopAndAnalyze.mockResolvedValueOnce({ score, recognizedText, weakPhonemes: [] });
+    const rec = prodRow(host, 0).querySelector('button[aria-label="녹음"]');
+    rec.click(); await tick();          // 녹음 시작
+    rec.click(); await tick(); await tick(); // 멈춤 + 채점
+  }
+
+  it('단어는 다 말했지만 정확도 40 → 통과 아님 (정답 미공개·스트릭 0)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    await recOnce(host, 40, "It's more than a job.");
+    const row = prodRow(host, 0);
+    expect(row.textContent).not.toContain('more than a job');       // 정답 미공개
+    expect(row.querySelector('.vs-gscore').style.display).toBe('none'); // 통과 마크 없음
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('연속 ✓ 0');
+  });
+
+  it('정확도 80 + 커버리지 통과 → 통과·정답 공개', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    await recOnce(host, 80, "It's more than a job.");
+    const row = prodRow(host, 0);
+    expect(row.textContent).toContain('more than a job');
+    expect(row.querySelector('.vs-gscore').style.display).not.toBe('none');
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('연속 ✓ 1');
+  });
+
+  it('하한 미달도 실패 1회로 누적 — 3회면 정답 공개(기존 흐름 유지)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    await recOnce(host, 40, "It's more than a job.");
+    await recOnce(host, 40, "It's more than a job.");
+    await recOnce(host, 40, "It's more than a job.");
+    const row = prodRow(host, 0);
+    expect(row.textContent).toContain('more than a job');            // 3회 실패 → 공개
+    expect(row.querySelector('.vs-gscore').style.display).toBe('none'); // 통과는 아님
+  });
+});
