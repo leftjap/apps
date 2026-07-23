@@ -14,7 +14,7 @@ import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, PRACTICE_VOICES } from '../components/session/applied.js';
-import { judgeCoverage } from '../services/coverageJudge.js';
+import { judgeCoverage, judgeProduction } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
@@ -410,14 +410,13 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       const result = await stopAndAnalyze(ctrl, d.en, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       onScore?.(result); // 통과 여부와 무관 — 말했으면 발화 1건 (체이닝과 동일)
-      // 통과 = 커버리지 + 발음 정확도 하한 (2026-07-23 사용자 지적 "정확하게 발음 못했는데 패스").
-      // Azure 발음평가 모드는 인식을 참조 문장으로 끌어당겨 웅얼거림도 커버리지가 통과되므로
-      // AccuracyScore 하한으로 이중 방어. 하한 미달도 실패 1회 — 3회면 기존대로 정답 공개.
-      const judge = judgeCoverage(result?.recognizedText, d.en);
-      const accuracy = Math.round(Number(result?.score) || 0);
-      if (judge.pass && accuracy >= PROD_MIN_ACCURACY) reveal(true);
-      else if (judge.pass) failOnce(`단어는 다 맞았어요 — 발음을 더 또렷하게 (${accuracy}점)`);
-      else failOnce();
+      // 통과 = 커버리지 + 문장 정확도 하한 + 단어 하한 (judgeProduction, 2026-07-23 사용자 지적
+      // "정확하게 발음 못했는데 패스" · "엉뚱한 단어도 통과"). 실패도 1회로 누적 — 3회면 정답 공개.
+      const judge = judgeProduction(result, d.en, { minAccuracy: PROD_MIN_ACCURACY });
+      if (judge.pass) reveal(true);
+      else if (judge.missing.length) failOnce();
+      else if (judge.badWords.length) failOnce(`발음이 어긋난 단어가 있어요: ${judge.badWords.slice(0, 2).join(', ')} — 또렷하게 다시`);
+      else failOnce(`단어는 다 맞았어요 — 발음을 더 또렷하게 (${judge.accuracy}점)`);
     }
 
     recBtn.addEventListener('click', async () => {

@@ -67,3 +67,17 @@ export function judgeCoverage(recognized, expected) {
   const coverage = exp.length ? (exp.length - missing.length) / exp.length : 0;
   return { pass: exp.length > 0 && missing.length === 0, missing, extra, coverage };
 }
+
+/* 생산 연습 통과 판정 (2026-07-23) — 3중 기준: 커버리지 + 문장 정확도 + 단어 하한.
+ * 배경: Azure PA 는 인식을 참조로 끌어당겨 커버리지가 후하고, 문장 평균은 일부 단어만
+ * 엉뚱해도 하한을 넘을 수 있다. 실측(합성음성, 2026-07-23): 정확 발화 단어 최저 91 vs
+ * 엉뚱 단어 0~21 → 단어 하한 40 이 그 취약 창을 봉쇄한다 (L2 정상 발화에 여유 충분). */
+export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 40 } = {}) {
+  const coverage = judgeCoverage(result?.recognizedText, expected);
+  const accuracy = Math.round(Number(result?.score) || 0);
+  const badWords = (result?.wordScores || [])
+    .filter((w) => (Number(w?.score) || 0) < wordMin)
+    .map((w) => w.word);
+  const pass = coverage.pass && accuracy >= minAccuracy && badWords.length === 0;
+  return { pass, missing: coverage.missing, badWords, accuracy };
+}

@@ -461,3 +461,24 @@ describe('sessionExprV2 — 생산 연습 발음 하한', () => {
     expect(row.querySelector('.vs-gscore').style.display).toBe('none'); // 통과는 아님
   });
 });
+
+/* 단어 하한 (judgeProduction badWords) — 일부 단어만 엉뚱하고 문장 평균은 하한을 넘는
+ * 취약 창 차단 (2026-07-23 사용자 지적 "엉뚱한 단어도 통과"). */
+describe('sessionExprV2 — 생산 연습 단어 하한', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('문장 79점·커버리지 통과여도 한 단어 10점 → 통과 아님', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    stopAndAnalyze.mockResolvedValueOnce({
+      score: 79, recognizedText: "It's more than a job.", weakPhonemes: [],
+      wordScores: [{ word: "it's", score: 95 }, { word: 'more', score: 10 }, { word: 'than', score: 92 }, { word: 'a', score: 96 }, { word: 'job', score: 94 }],
+    });
+    const row = [...document.querySelectorAll('.vs-prod')][0];
+    const rec = row.querySelector('button[aria-label="녹음"]');
+    rec.click(); await tick();
+    rec.click(); await tick(); await tick();
+    expect(row.textContent).not.toContain('more than a job');           // 정답 미공개
+    expect(row.querySelector('.vs-gscore').style.display).toBe('none'); // 통과 마크 없음
+  });
+});
