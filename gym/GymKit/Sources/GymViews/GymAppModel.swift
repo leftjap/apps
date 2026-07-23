@@ -525,6 +525,15 @@ public final class GymAppModel: ObservableObject {
         #endif
     }
 
+    // 검증 훅(시뮬 전용) — 빈 활성 세션으로 세션 화면 시작 (§6-1 인라인 운동추가 시트 검증용).
+    public func loadEmptySessionForVerification() {
+        #if targetEnvironment(simulator)
+        session = GymSession(id: UUID().uuidString, date: Self.dayFmt.string(from: Date()), status: .active)
+        selectedBlockIdx = nil
+        route = .session
+        #endif
+    }
+
     public static func statsTab(_ s: String) -> StatsScreenView.Tab? { StatsScreenView.Tab(rawValue: s) }
     public static func adminTab(_ s: String) -> AdminScreenView.Tab? { AdminScreenView.Tab(rawValue: s) }
 
@@ -574,9 +583,12 @@ public final class GymAppModel: ObservableObject {
     public var currentBlockLocked: Bool { currentBlock.map { GymSessionLogic.isBlockLocked($0) } ?? false }
 
     // 푸터 pill 탭 = 해당 블록으로 이동 (완료 아님, §6-8).
+    // 표시 종목이 실제 바뀔 때만 선택 틱 — 로테이션 전환 확인 신호 (사용자 2026-07-23. 같은 칩 재탭 무음).
     public func selectBlock(_ bi: Int) {
         guard session.blocks.indices.contains(bi) else { return }
+        let changed = bi != currentBlockIdx
         selectedBlockIdx = bi
+        if changed { selectionTick() }
     }
     // 운동 추가 (§6-2) — 프리셋 ① 직전 세션 카피 → ③ 기본값. 첫 종목 = startTime.
     /// 운동 추가 시트가 처음 열 부위 — 마지막으로 종목을 고른 부위를 기억한다. 없으면 등(back).
@@ -792,10 +804,17 @@ public final class GymAppModel: ObservableObject {
             g.prepare()
         }
     }
+    // 종목 전환 선택 틱 — 세트완료(heavy impact)와 구별되는 가벼운 selection 진동.
+    private let selectionGen = UISelectionFeedbackGenerator()
+    private func selectionTick() {
+        selectionGen.selectionChanged()
+        selectionGen.prepare()   // 로테이션 연속 전환 대비 재예열
+    }
     #else
     private enum Dummy { case light, medium, heavy }
     private func impact(_ style: Dummy) {}
     private func impactPRDouble() {}
+    private func selectionTick() {}
     public func prepareCommitHaptic() {}
     #endif
 

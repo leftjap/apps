@@ -165,6 +165,56 @@ final class GymBlockFinishUITests: XCTestCase {
         shot(app, "61-last-block-scrolled-done")
     }
 
+    // 레일 탭 종목 전환 (§6-8 로테이션) — 히어로·헤더·레일 current 가 탭한 종목으로 바뀐다.
+    // 전환 피드백(햅틱·이름 스왑 애니, 사용자 2026-07-23)의 단언 가능한 계약을 잠근다.
+    // (햅틱은 시뮬 검증 불가, 애니는 프레임 단언 불가 — 전환 자체만 계약)
+    func testTappingUpcomingChipSwitchesHeroMidSession() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        // 데모: 벤치프레스(현재) 진행 중 → 예정 칩 '덤벨 플라이' 탭 = 로테이션 전환
+        chip(app, "upcoming", "덤벨 플라이").tap()
+        let exname = app.staticTexts["session-exname"]
+        XCTAssertTrue(exname.waitForExistence(timeout: 5))
+        XCTAssertEqual(exname.label, "덤벨 플라이", "히어로가 탭한 종목으로 바뀌어야 한다")
+        XCTAssertTrue(chip(app, "current", "덤벨 플라이").waitForExistence(timeout: 5),
+                      "레일 current 칩도 탭한 종목이어야 한다")
+
+        // 되돌아가기 — 벤치프레스 재탭 (로테이션 왕복)
+        chip(app, "upcoming", "벤치프레스").tap()
+        XCTAssertTrue(chip(app, "current", "벤치프레스").waitForExistence(timeout: 5))
+        XCTAssertEqual(exname.label, "벤치프레스", "재탭으로 원 종목 복귀")
+        shot(app, "80-rotation-switch")
+    }
+
+    // 빈 세션 첫 종목 선택 시 시트가 닫히지 않아야 한다 (사용자 2026-07-23 — 2개 이상 담을 수 있어야).
+    // PWA 정본(session.js:3757 "다중 선택 유지") 정합 — 네이티브만 empty→active 화면 스왑으로 시트가 소멸했다.
+    func testFirstExercisePickKeepsSheetOpenForMultiSelect() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--empty-session"]
+        app.launch()
+
+        // 빈 세션 — 인라인 시트가 보인다 (--reset 후 기본 부위 등: 랫 풀다운)
+        let first = app.buttons["addex-lat_pulldown"]
+        XCTAssertTrue(first.waitForExistence(timeout: 15), "빈 세션은 인라인 운동추가 시트로 시작해야 한다")
+        first.tap()
+
+        // 첫 종목을 골라도 시트가 열려 있어 두 번째 종목을 이어서 담을 수 있어야 한다
+        let second = app.buttons["addex-barbell_row"]
+        XCTAssertTrue(second.waitForExistence(timeout: 5), "첫 선택 후에도 시트가 열려 있어야 한다 (다중 선택)")
+        second.tap()
+        shot(app, "70-sheet-kept-after-first-pick")
+
+        // 시트 닫기(백드롭 탭) → 레일에 두 종목 모두 확인
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertTrue(chip(app, "current", "랫 풀다운").waitForExistence(timeout: 5),
+                      "첫 종목이 현재 칩이어야 한다")
+        XCTAssertTrue(chip(app, "upcoming", "바벨 로우").exists, "둘째 종목이 예정 칩으로 붙어야 한다")
+        shot(app, "71-rail-two-picked")
+    }
+
     // 운동 추가 흐름 (사용자 2026-07-19) — + → 시트가 기본 '등' 으로 열림 → 종목 선택 시 레일에
     // 예정 칩이 붙고, 고른 부위가 기억되어 다음에 그 부위로 열린다.
     func testAddExerciseFlowUpdatesRailAndRemembersPart() {

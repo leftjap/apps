@@ -71,6 +71,7 @@ struct SessionHeader: View {
     var record: Bool = false      // 정적 — 취소선·태그·링 펄스
     var recordAmt: Int = 0
     var pulseMoment: Int = 0      // 돌파 1회성 — 누적 숫자 펄스 (topRecordPulse)
+    var exSwapMoment: Int = 0     // 종목 전환 1회성 — 이름 스왑 IN (로테이션 확인 신호, 2026-07-23)
     @State private var pulsing = false
     @State private var ringPulseOn = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -80,10 +81,16 @@ struct SessionHeader: View {
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
+                // 종목 전환 시 이름이 우측 소폭에서 착지 + crail 플래시 — "종목이 갈렸다"는 정체성 신호.
+                // 세트완료 히어로 스왑(dx 88)과 같은 모션 언어의 축소판이라 학습 비용 없이 구별된다.
                 Text(exName).font(.sans(25, 700)).tracking(-0.5)
                     .foregroundStyle(GY.ink1).lineLimit(1).accessibilityIdentifier("session-exname")
+                    .modifier(HeroRowSwapIn(trigger: exSwapMoment, delay: 0, dxIn: 24,
+                                            landScale: 1.03, landOvershoot: -2, baseColor: GY.ink1))
                 Text(part).font(.sans(12.5, 500))
                     .foregroundStyle(GY.ink4).lineLimit(1)
+                    .modifier(HeroRowSwapIn(trigger: exSwapMoment, delay: 0.055, dxIn: 24,
+                                            landScale: 1.03, landOvershoot: -2, baseColor: GY.ink4))
             }
             Spacer(minLength: 0)
             HStack(spacing: 11) {
@@ -182,6 +189,7 @@ public struct SessionScreenView: View {
     @State private var headerPulseMoment = 0   // 세션 신기록 돌파 1회성 (topRecordPulse)
     // 히어로 수평 스왑 (§5.3) — 커밋 시 옛 값 고스트 OUT + 새 값 IN + 스와이프 큐
     @State private var heroSwapMoment = 0
+    @State private var exSwapMoment = 0        // 종목 전환 1회성 — 이름 스왑 + 컨텍스트 딥 (2026-07-23)
     @State private var heroGhost: (top: String, bottom: String, kind: GymCardKind, fromDrag: Bool)? = nil
     @State private var heroGhostDragX: CGFloat = 0   // 드래그 커밋 시 고스트 시작 위치
     @State private var cueVisible = false
@@ -268,6 +276,16 @@ public struct SessionScreenView: View {
                 prPopVisible = false; prPopRise = false
             }
         }
+        // 첫 종목 추가로 empty→active 화면이 스왑되면 인라인 시트가 소멸한다 — 오버레이 시트를
+        // 이어서 열어 다중 선택 유지 (PWA session.js:3757 "다중 선택 유지" 정합, 사용자 2026-07-23).
+        .onChange(of: model.session.blocks.isEmpty) { wasEmpty, isEmpty in
+            if wasEmpty && !isEmpty { addexOpen = true }
+        }
+        // 표시 종목 전환(레일 탭·종목완료 자동 전환 공통) — 이름 스왑 + 컨텍스트 딥 1회 재생.
+        .onChange(of: model.currentExerciseId) { _, _ in
+            guard !reduceMotion else { return }
+            exSwapMoment += 1
+        }
         // 오버레이 z 순서 — 운동추가(69) < 키패드(79) < 액션시트(90), mock z-index 정합.
         .overlay { addexOverlay }
         .overlay { keypadOverlay }
@@ -352,12 +370,13 @@ public struct SessionScreenView: View {
                           volTotal: Self.fmt(sessDenom), pct: model.sessionPct,
                           record: topRecord,
                           recordAmt: Int((model.sessionDoneVolume - prevTotal).rounded()),
-                          pulseMoment: headerPulseMoment)
+                          pulseMoment: headerPulseMoment, exSwapMoment: exSwapMoment)
             let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
             if !slots.isEmpty && kind != .cardio {
                 PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
                                dragP: CGFloat(revealP),
                                onLongPressSlot: { i in actionTarget = .setRow(i) })
+                    .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             Spacer()
             ZStack {
@@ -380,6 +399,7 @@ public struct SessionScreenView: View {
                         .id(heroSwapMoment)
                 }
             }
+            .modifier(ExSwitchDip(trigger: exSwapMoment))   // 종목 전환 — 기록 바와 함께 V자 딥
             .frame(maxWidth: .infinity)
             .contentShape(Rectangle())
             // "완료" 칩 비례 노출 (mock #completeReveal — 좌드래그 p 에 비례)

@@ -61,6 +61,21 @@ struct HeroGhostOut: ViewModifier {
     }
 }
 
+// 종목 전환 컨텍스트 딥 — 종목 스코프 콘텐츠(기록 바·히어로)가 잠깐 가라앉았다 올라와
+// "다른 종목의 카드로 넘어갔다"는 인상을 준다 (사용자 2026-07-23 로테이션 피드백).
+// 값 교체는 즉시고 불투명도만 V자(1→0.5→1, 260ms) — 상태 소실·레이아웃 이동 없음.
+struct ExSwitchDip: ViewModifier {
+    var trigger: Int
+    func body(content: Content) -> some View {
+        content.keyframeAnimator(initialValue: 1.0, trigger: trigger) { view, p in
+            view.opacity(0.5 + 0.5 * abs(p * 2 - 1))
+        } keyframes: { _ in
+            MoveKeyframe(0.0)   // 트리거마다 V자 진입점으로 리셋
+            LinearKeyframe(1.0, duration: 0.26)
+        }
+    }
+}
+
 // sRGB 선형 보간 — 히어로 착지 색 플래시 (SwiftUI Color 는 Animatable 이 아니라 직접 계산).
 extension Color {
     static func lerpSRGB(_ a: Color, _ b: Color, _ t: Double) -> Color {
