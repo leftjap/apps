@@ -27,14 +27,36 @@ final class GymNavigationUITests: XCTestCase {
         XCTAssertTrue(confirm.waitForExistence(timeout: 5), "삭제 확인 단계가 떠야 한다")
         confirm.tap()
 
-        // HomeA 확인 + CTA → 빈 세션 (NEW SESSION + 인라인 운동추가)
-        XCTAssertTrue(app.staticTexts["부위 밸런스"].waitForExistence(timeout: 5),
-                      "세션 삭제 후 홈은 idle(부위 밸런스)이어야 한다")
+        // HomeA 확인 + CTA → 빈 세션 (NEW SESSION + 인라인 운동추가).
+        // idle 판별자는 home-cta — 부위 밸런스는 이제 HomeC 에도 있어 판별력이 없다 (2026-07-23).
         let cta = app.buttons["home-cta"]
-        XCTAssertTrue(cta.waitForExistence(timeout: 5), "운동 시작 버튼이 있어야 한다")
+        XCTAssertTrue(cta.waitForExistence(timeout: 5), "세션 삭제 후 홈은 idle(운동 시작 CTA)이어야 한다")
         cta.tap()
         XCTAssertTrue(app.staticTexts["NEW SESSION"].waitForExistence(timeout: 5),
                       "빈 세션(NEW SESSION)이 떠야 한다")
+    }
+
+    // 운동 중 홈(HomeC) — 부위 밸런스가 실시간으로 보이고, 이어하기는 하단 콤팩트 카드 (사용자 2026-07-23).
+    // 데모 활성 세션 = 가슴 done 5세트 (인클라인 3 + 벤치 2) → 밸런스가 진행 중 세션을 즉시 반영해야 한다.
+    func testActiveHomeShowsBalanceWithResumeBelow() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset"]
+        app.launch()
+
+        let resume = app.buttons["home-resume"]
+        XCTAssertTrue(resume.waitForExistence(timeout: 10), "활성 세션 홈은 HomeC")
+        let balTitle = app.staticTexts["부위 밸런스"]
+        XCTAssertTrue(balTitle.exists, "운동 중에도 부위 밸런스가 보여야 한다")
+        XCTAssertTrue(app.staticTexts["가슴"].exists, "부위 라벨(차트)이 그려져야 한다")
+        // 실시간 반영 — 데모 활성 세션 done 세트(인클라인 3 + 벤치 2 = 가슴 5)가 이번 주 집계에 포함
+        XCTAssertTrue(app.staticTexts["5"].firstMatch.waitForExistence(timeout: 5),
+                      "진행 중 세션의 done 세트(가슴 5)가 밸런스에 반영되어야 한다")
+        XCTAssertGreaterThan(resume.frame.minY, balTitle.frame.maxY,
+                             "이어하기 카드는 밸런스 아래에 있어야 한다")
+        // 이어하기 탭 → 세션 복귀
+        resume.tap()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 5),
+                      "이어하기 탭 후 세션 화면이 떠야 한다")
     }
 
     // 홈(HomeC) → 통계 → 탭 전환(종목·부위) → 홈 복귀

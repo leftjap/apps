@@ -92,113 +92,71 @@ public struct HomeScreenView: View {
         }
     }
 
-    // HomeC — 이어하기 카드 (mocks #cardResume, spec §5-5). 박스 전체 = 이어가기 버튼.
+    // HomeC — 운동 중 홈. 부위 밸런스를 실시간(진행 중 세션 done 세트 포함 — allWorkedSessions)으로
+    // 보여주고, 이어하기는 하단 콤팩트 카드로 (사용자 2026-07-23. 구 대형 카드·"다음" 미리보기 대체 —
+    // 세트 세그먼트·다음 종목은 세션 화면 레일과 중복이라 제거).
     var homeC: some View {
+        let ref = model.referenceToday
+        let bal = GymHomeLogic.weeklyBalance(sessions: model.allWorkedSessions(),
+                                             custom: model.custom, now: ref)
+        return VStack(spacing: 0) {
+            header
+            if GymSyncHealth.isAtRisk(model.syncState, now: ref) { syncBanner }
+            weekCalendar(model.weekCells(around: ref)).padding(.horizontal, 18).padding(.top, 18)
+            balance(bal)
+            resumeCard
+                .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+        }
+    }
+
+    // 콤팩트 이어하기 카드 — idle CTA 자리. 카드 전체 = 이어가기, crail 테두리 + 숨쉬는 글로우 유지.
+    var resumeCard: some View {
         let session = model.session
         let singles = session.blocks.filter { $0.type == "single" }
-        let completed = singles.filter { !$0.sets.isEmpty && $0.sets.allSatisfy(\.done) }.count
-        // 현재 블록 = 첫 미완료 + 위치 (home.js summarizeActiveSession)
-        var curBlock: GymBlock? = nil
-        var curPos = 0
-        for (i, b) in singles.enumerated() where curBlock == nil {
-            if !(!b.sets.isEmpty && b.sets.allSatisfy(\.done)) { curBlock = b; curPos = i + 1 }
-        }
+        // 현재 블록 = 첫 미완료 (home.js summarizeActiveSession)
+        let curBlock = singles.first { !(!$0.sets.isEmpty && $0.sets.allSatisfy(\.done)) }
         let curSets = curBlock?.sets ?? []
         let curSetIdx = curSets.firstIndex { !$0.done } ?? max(0, curSets.count - 1)
         let exName = curBlock.map { model.exerciseName($0.exerciseId) } ?? ""
-        let partNames = session.tags.map { GymExercises.partName($0) }.joined(separator: " · ")
-        let subLine = "\(partNames.isEmpty ? "" : partNames + " · ")\(singles.count)종목 중 \(max(1, curPos))번째"
         let totalVol = model.sessionDoneVolume
 
-        return VStack(spacing: 0) {
-            header
-            weekCalendar(model.weekCells(around: model.referenceToday))
-                .padding(.horizontal, 18).padding(.top, 18)
-            Spacer()
-            Button(action: onStart) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        HStack(spacing: 7) {
-                            Circle().fill(GY.crailBase).frame(width: 7, height: 7)
-                            Text("운동 중").font(.sans(12, 600)).tracking(0.72).foregroundStyle(GY.crailDeep)
-                        }
-                        Spacer()
-                        HStack(alignment: .firstTextBaseline, spacing: 4) {
-                            TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                                Text(Self.fmtResume(session.startTime, now: ctx.date))
-                                    .font(.mono(18, 500)).tracking(-0.36).foregroundStyle(GY.ink1)
-                            }
-                            Text("경과").font(.sans(11, 500)).foregroundStyle(GY.ink4)
-                        }
+        return Button(action: onStart) {
+            VStack(alignment: .leading, spacing: 9) {
+                HStack {
+                    HStack(spacing: 7) {
+                        Circle().fill(GY.crailBase).frame(width: 7, height: 7)
+                        Text("운동 중").font(.sans(12, 600)).tracking(0.72).foregroundStyle(GY.crailDeep)
                     }
-                    Text(exName).font(.sans(30, 700)).tracking(-0.6).lineLimit(1)
-                        .foregroundStyle(GY.ink1).padding(.top, 18)
+                    Spacer()
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                            Text(Self.fmtResume(session.startTime, now: ctx.date))
+                                .font(.mono(16, 500)).tracking(-0.32).foregroundStyle(GY.ink1)
+                        }
+                        Text("경과").font(.sans(11, 500)).foregroundStyle(GY.ink4)
+                    }
+                }
+                HStack(alignment: .firstTextBaseline) {
+                    Text(exName).font(.sans(20, 700)).tracking(-0.4).lineLimit(1)
+                        .foregroundStyle(GY.ink1)
                         .accessibilityIdentifier("resume-exname")
-                    Text(subLine).font(.sans(13, 500)).foregroundStyle(GY.ink4)
-                        .lineLimit(1).padding(.top, 5)
-                    // 세트 세그먼트 (mock #cardResumeSeg — done ink bar / now crail 굵게 + segGlow)
-                    HStack(spacing: 6) {
-                        ForEach(Array(curSets.enumerated()), id: \.offset) { i, s in
-                            VStack(spacing: 7) {
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(i == curSetIdx ? GY.crailBase : (s.done ? GY.ink2 : .clear))
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: i == curSetIdx ? 10 : 8)
-                                    .overlay(!s.done && i != curSetIdx
-                                             ? RoundedRectangle(cornerRadius: 4).strokeBorder(GY.line, lineWidth: 1.5) : nil)
-                                    .segGlowIf(i == curSetIdx, cornerRadius: 4, alpha: 0.18)
-                                Text(i == curSetIdx ? "\(i + 1)세트"
-                                     : (s.done && (s.reps ?? 0) > 0 ? "\(Int((s.weight ?? 0).rounded()))·\(s.reps ?? 0)" : "·"))
-                                    .font(.mono(10, i == curSetIdx ? 700 : 500))
-                                    .foregroundStyle(i == curSetIdx ? GY.crailDeep : GY.ink4)
-                                    .lineLimit(1)
-                            }
-                        }
-                    }
-                    .padding(.top, 20)
-                    HStack {
-                        Text("SET \(curSetIdx + 1) / \(curSets.count)")
-                            .font(.mono(13, 600)).foregroundStyle(GY.ink2)
-                        Spacer()
-                        (Text("누적 ").font(.mono(13, 500)).foregroundStyle(GY.ink4)
-                         + Text(Self.volF.string(from: NSNumber(value: totalVol)) ?? "0")
-                            .font(.mono(13, 600)).foregroundStyle(GY.crailDeep)
-                         + Text("kg").font(.mono(13, 500)).foregroundStyle(GY.ink4))
-                    }
-                    .padding(.top, 16)
-                    .overlay(alignment: .top) { Rectangle().fill(GY.lineSoft).frame(height: 1) }
-                    .padding(.top, 22)
+                    Spacer(minLength: 12)
+                    (Text("SET \(curSetIdx + 1)/\(curSets.count)")
+                        .font(.mono(12.5, 600)).foregroundStyle(GY.ink2)
+                     + Text(" · 누적 ").font(.mono(12.5, 500)).foregroundStyle(GY.ink4)
+                     + Text(Self.volF.string(from: NSNumber(value: totalVol)) ?? "0")
+                        .font(.mono(12.5, 600)).foregroundStyle(GY.crailDeep)
+                     + Text("kg").font(.mono(12.5, 500)).foregroundStyle(GY.ink4))
                 }
-                .padding(.init(top: 24, leading: 24, bottom: 22, trailing: 24))
-                .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rXl))
-                .overlay(RoundedRectangle(cornerRadius: GY.rXl).strokeBorder(GY.crailBase, lineWidth: 1.5))
-                .breathGlow(cornerRadius: GY.rXl)   // mock #cardResume breath (2.8s crail 링)
-                // 시안 --shadow-pop 은 음수 spread(-10/-24)로 좁게 조인 깊은 그림자. 표준 .shadow 는
-                // spread 가 없어 radius 18 이 카드 전 폭으로 퍼져 "막힌 벽"처럼 보였다(실기기 보고).
-                // radius·opacity 를 낮춰 카드 아래로 좁게 떨어지게 한다.
-                .shadow(color: Color(hex: 0x14120E).opacity(0.08), radius: 11, y: 7)
             }
-            .buttonStyle(.plain).accessibilityIdentifier("home-resume")
-            .padding(.horizontal, 22)
-            // "다음" 미리보기 — home.js applyNextBlocksToDom (현재 이후 미완료 2개, 없으면 숨김)
-            let nexts = GymHomeLogic.nextBlockPreviews(session: session, custom: model.custom)
-            if !nexts.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("다음").font(.sans(12, 600)).tracking(0.24).foregroundStyle(GY.ink4)
-                    ForEach(Array(nexts.enumerated()), id: \.offset) { _, n in
-                        HStack(alignment: .firstTextBaseline) {
-                            Text(n.name).font(.sans(15, 500)).foregroundStyle(GY.ink1).lineLimit(1)
-                            Spacer(minLength: 12)
-                            Text(n.summary).font(.mono(14, 500)).foregroundStyle(GY.ink4)
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 46).padding(.top, 20)
-                .accessibilityIdentifier("home-next-blocks")
-            }
-            Spacer()
+            .padding(.init(top: 16, leading: 20, bottom: 16, trailing: 20))
+            .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rLg))
+            .overlay(RoundedRectangle(cornerRadius: GY.rLg).strokeBorder(GY.crailBase, lineWidth: 1.5))
+            .breathGlow(cornerRadius: GY.rLg)   // mock #cardResume breath (2.8s crail 링)
+            // 대형 카드 그림자 파라미터 승계 (음수 spread 부재 보정 — 좁고 옅게, 2026-07-18 실기기 보고)
+            .shadow(color: Color(hex: 0x14120E).opacity(0.08), radius: 11, y: 7)
         }
+        .buttonStyle(.plain).accessibilityIdentifier("home-resume")
     }
 
     static let volF: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()

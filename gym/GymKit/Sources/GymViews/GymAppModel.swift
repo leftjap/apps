@@ -507,6 +507,7 @@ public final class GymAppModel: ObservableObject {
         Task { await cloud.signOut() }   // sync 간섭 차단 (키체인 세션은 앱 삭제에도 생존)
         var demo = GymAppModel.demoSession()
         demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
+        demo.date = Self.dayFmt.string(from: Date())   // 홈 밸런스 이번 주 집계 포함 (고정 05-06 은 주 밖)
         session = demo
         selectedBlockIdx = nil
         route = .home   // 검증용 리셋은 로그인 게이트를 건너뛰고 홈부터 (UI 테스트 --reset 정합)
@@ -519,6 +520,7 @@ public final class GymAppModel: ObservableObject {
         #if targetEnvironment(simulator)
         var demo = GymAppModel.demoSession()
         demo.startTime = Int64(Date().timeIntervalSince1970 * 1000) - 18 * 60 * 1000
+        demo.date = Self.dayFmt.string(from: Date())   // resetSession 과 동일 — 이번 주 집계 정합
         session = demo
         selectedBlockIdx = nil
         route = .session
