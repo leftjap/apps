@@ -166,10 +166,10 @@ struct RailDemo: View {
             Spacer()
             GymFooterRail(items: single
                 ? [.init(name: "인클라인 벤치", state: .current)]
-                : [.init(name: "체스트 프레스", state: .done),
-                   .init(name: "벤치프레스", state: .current),
-                   .init(name: "인클라인 덤벨 프레스", state: .upcoming),
-                   .init(name: "케이블 플라이", state: .upcoming)])
+                : [.init(name: "체스트 프레스", state: .done, blockIdx: 0),
+                   .init(name: "벤치프레스", state: .current, blockIdx: 1),
+                   .init(name: "인클라인 덤벨 프레스", state: .upcoming, blockIdx: 2),
+                   .init(name: "케이블 플라이", state: .upcoming, blockIdx: 3)])
         }
         .frame(width: single ? 390 : 660, height: 300)
         .background(GY.shell)

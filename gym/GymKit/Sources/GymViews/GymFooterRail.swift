@@ -155,6 +155,28 @@ struct CurrentChip: View {
     }
 }
 
+// 승격 착지 팝 — 칩이 current 가 되는 순간 그 자리(레일, 사용자 시선·손가락 지점)에서
+// scale 0.9→1.06→1 로 터지는 전환 확인 신호 (사용자 2026-07-23 "하단엔 효과가 없다").
+// Item identity 가 blockIdx 로 안정돼 있어 onAppear = upcoming/done→current 전환 시점 1회.
+struct CurrentChipLandPop: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var fired = false
+    func body(content: Content) -> some View {
+        content
+            .keyframeAnimator(initialValue: 1.0, trigger: fired) { view, s in
+                view.scaleEffect(s)
+            } keyframes: { _ in
+                MoveKeyframe(0.9)
+                CubicKeyframe(1.06, duration: 0.18)
+                CubicKeyframe(1.0, duration: 0.16)
+            }
+            .onAppear {
+                guard !GymSnapshot.isActive, !reduceMotion else { return }
+                fired = true
+            }
+    }
+}
+
 // ＋ 종목 추가 버튼 (§4.4) — 탭 → 운동 선택 바텀시트 (§6-2)
 struct AddExerciseButton: View {
     var action: () -> Void = {}
@@ -175,7 +197,10 @@ struct AddExerciseButton: View {
 // 칩 탭 = 블록 이동(§6-8), 꾹누르기(500ms) = 액션시트(§6-9).
 public struct GymFooterRail: View {
     public struct Item: Identifiable {
-        public let id = UUID(); public let name: String; public let state: RailState
+        // 안정 identity = blockIdx — UUID 는 매 렌더 재생성이라 칩 뷰가 통째로 다시 만들어져
+        // 상태 전환 애니(착지 팝·재정렬 슬라이드)가 불가능했다 (사용자 2026-07-23 레일 무피드백 보고).
+        public var id: Int { blockIdx }
+        public let name: String; public let state: RailState
         public let blockIdx: Int   // 원본 blocks 인덱스 (재정렬돼도 탭 타깃 보존)
         public init(name: String, state: RailState, blockIdx: Int = 0) {
             self.name = name; self.state = state; self.blockIdx = blockIdx
@@ -215,6 +240,7 @@ public struct GymFooterRail: View {
     @State private var curMinX: CGFloat = 0
     @State private var chipsMaxX: CGFloat = 0
     @State private var viewportW: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollTo 가 클램프돼 좌측 inset 정렬이 실패한다 — 부족분만 채운다.
     var trailingSpacer: CGFloat {
@@ -227,7 +253,7 @@ public struct GymFooterRail: View {
     var chipsRow: some View {
         HStack(spacing: 0) {
             HStack(spacing: 10) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { i, item in
+                ForEach(items) { item in
                     Group {
                         switch item.state {
                         case .done: DoneChip(name: item.name)
@@ -240,15 +266,20 @@ public struct GymFooterRail: View {
                                         .preference(key: CurChipMinXKey.self,
                                                     value: g.frame(in: .named("railContent")).minX)
                                 })
+                                // 승격 순간 착지 팝 — identity 안정으로 onAppear = current 전환 시점
+                                .modifier(CurrentChipLandPop())
                         case .upcoming: UpcomingChip(name: item.name)
                         }
                     }
-                    .id(i)
+                    .id(item.id)   // 스크롤 타깃 = blockIdx (align 의 scrollTo 와 일치)
                     .accessibilityIdentifier("rail-\(item.state.idName)-\(item.name)")
                     .onTapGesture { onTapItem(item.blockIdx) }
                     .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(item.blockIdx) }
                 }
             }
+            // 재정렬 슬라이드 — 완료 칩이 왼쪽으로 미끄러지고 새 current 가 제자리를 찾는다.
+            .animation(GymSnapshot.isActive || reduceMotion ? nil : .easeOut(duration: 0.25),
+                       value: items.map(\.id))
             .background(GeometryReader { g in   // 칩 줄 우단 — 스페이서는 제외해야 되먹임이 없다
                 Color.clear.preference(key: ChipsMaxXKey.self,
                                        value: g.frame(in: .named("railContent")).maxX)
@@ -270,10 +301,12 @@ public struct GymFooterRail: View {
             currentChipMinX: Double(curMinX), currentChipMaxX: Double(curMaxX),
             viewportWidth: Double(viewportW)) else { return }
         let apply = {
+            // scrollTo 타깃 = 칩의 안정 id(blockIdx) — railScrollTarget 의 위치 idx 를 매핑
             switch target {
-            case .leading: proxy.scrollTo(0, anchor: .leading)
+            case .leading: if let first = items.first { proxy.scrollTo(first.id, anchor: .leading) }
             case .anchored(let idx, let anchorX):
-                proxy.scrollTo(idx, anchor: UnitPoint(x: anchorX, y: 0.5))
+                guard items.indices.contains(idx) else { return }
+                proxy.scrollTo(items[idx].id, anchor: UnitPoint(x: anchorX, y: 0.5))
             }
         }
         if animated { withAnimation(.easeOut(duration: 0.3)) { apply() } } else { apply() }
