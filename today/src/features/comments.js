@@ -100,7 +100,7 @@ export function authorNameOf(authorId, opts = {}) {
 
 /**
  * Dexie comment row → 타임라인 메시지 HTML.
- *  - 사람: 배경 없음, 아바타 24px + 이름/시각 + 본문 13.5px
+ *  - 사람: 배경 없음, 아바타 24px + 이름/시각 + 본문 15px
  *  - 클로드 (author_id === CLAUDE_AUTHOR_ID): sunken 카드 R12 + "자동" 태그 + 2줄 클램프 + 더 보기
  *  - mine 일 때만 삭제 버튼 (hover 노출)
  */
