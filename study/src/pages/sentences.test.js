@@ -282,12 +282,14 @@ describe('mountSentences — 평가 라운드 완료 리셋', () => {
     reveal.click();
     expect(en.classList.contains('masked')).toBe(false);
     const chip = row.querySelector('.vl-lv[data-level="X"]');
-    chip.click();
-    expect(chip.classList.contains('on')).toBe(true); // 직후엔 피드백으로 켜짐
-    vi.useFakeTimers();
-    try { vi.advanceTimersByTime(700); } finally { vi.useRealTimers(); }
-    expect(en.classList.contains('masked')).toBe(true);   // 다시 가림
-    expect(chip.classList.contains('on')).toBe(false);    // 칩 해제
-    expect(reveal.textContent).toBe('정답');
+    vi.useFakeTimers(); // 리셋 타이머를 제어하려면 클릭 전에 설치
+    try {
+      chip.click();
+      expect(chip.classList.contains('on')).toBe(true); // 직후엔 피드백으로 켜짐
+      vi.advanceTimersByTime(700);
+      expect(en.classList.contains('masked')).toBe(true);   // 다시 가림
+      expect(chip.classList.contains('on')).toBe(false);    // 칩 해제
+      expect(reveal.textContent).toBe('정답');
+    } finally { vi.useRealTimers(); }
   });
 });

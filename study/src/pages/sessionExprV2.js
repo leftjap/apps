@@ -379,9 +379,13 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
     const hintEl = h('div', { class: 'sub', style: 'display:none;' }, '');
     const ansEl = h('div', { class: 'sub' }); // 정답 줄 — 공개 시점에만 텍스트 주입
+    // 정답 보기 — 녹음 3회를 채우지 않고도 바로 공개 (2026-07-24 사용자 지시,
+    // 복습의 "발화는 전진 조건이 아니다" 원칙). 공개는 통과가 아니다(스트릭 0).
+    // 데스크톱 VS_CSS 엔 '.vs button' 리셋이 없으므로 크롬 제거는 인라인.
+    const giveBtn = h('button', { class: 'vs-prod-give', type: 'button', style: 'display:block;text-align:left;padding:2px 0;font:inherit;font-size:12px;font-weight:600;color:var(--faint);background:none;border:0;cursor:pointer;' }, '정답 보기');
     const row = h('div', { class: 'vs-drow vs-prod' },
       h('span', { class: 'ix' }, String(i + 1)),
-      h('div', {}, h('div', { class: 'en' }, String(d.ko)), h('div', { class: 'sub' }, `영어로 말해 보세요 · ${wcnt}단어`), hintEl, ansEl),
+      h('div', {}, h('div', { class: 'en' }, String(d.ko)), h('div', { class: 'sub' }, `영어로 말해 보세요 · ${wcnt}단어`), hintEl, ansEl, giveBtn),
       h('span', { class: 'grow' }), mark, playBtn, recBtn);
 
     const reveal = (pass) => {
@@ -390,6 +394,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       ansEl.textContent = [d.en, d.kr].filter(Boolean).join(' · ');
       playBtn.disabled = false;
       recBtn.disabled = true;
+      giveBtn.style.display = 'none';
       hintEl.style.display = 'none';
       if (pass) { mark.style.display = ''; popScore(mark); }
       streak = pass ? streak + 1 : 0;
@@ -444,6 +449,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       const v = pickPracticeVoice(plays, wcnt);
       speakWithFeedback(playBtn, d.en, { lang: ttsLang, voice: v.voice, rate: v.rate });
     });
+    giveBtn.addEventListener('click', () => { if (!done) reveal(false); });
     return row;
   });
 

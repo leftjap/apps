@@ -72,27 +72,40 @@ const VL_CSS = `
 const LEVEL_RANK = { X: 0, '△': 1, O: 3 };
 const rankOf = (lv) => (LEVEL_RANK[lv] ?? 2);
 
-/* 정렬 비교자 — 난이도(어려움→보통→미평가→쉬움), 동급은 학습일 최신순.
+/* 정렬 비교자 — 난이도(어려움→보통→미평가→쉬움) → 최근 발음 점수 낮은 순(학습 세션 실력 반영,
+ * 2026-07-24 사용자 지시 "기존 점수 및 현재 평가 기반 위치 조정") → 학습일 최신순.
+ * 점수 없는 문장은 같은 난이도의 점수 있는 문장 뒤(정보 없음 → 우선 연습 대상 아님).
  * 최초 렌더와 평가 직후 재배치가 같은 규칙을 쓰도록 한 곳에 둔다. */
 export function compareSentenceRows(a, b) {
   const d = rankOf(a.level) - rankOf(b.level);
-  return d !== 0 ? d : (b._iso || '').localeCompare(a._iso || '');
+  if (d !== 0) return d;
+  const sa = a.score ?? Infinity;
+  const sb = b.score ?? Infinity;
+  if (sa !== sb) return sa - sb;
+  return (b._iso || '').localeCompare(a._iso || '');
 }
 
-/* reviewQueue + sessionLogs → 표시용 행 목록.
- * 정렬: 난이도(어려움→보통→미평가→쉬움) → 같은 난이도 안에서는 학습일 최신순. */
-export function buildSentenceRows(cards, logs) {
+/* reviewQueue + sessionLogs + pronunciationLog → 표시용 행 목록. 정렬은 compareSentenceRows. */
+export function buildSentenceRows(cards, logs, pronLogs) {
   const lastBy = {};
   for (const l of logs ?? []) {
     for (const id of [...(l?.sentenceIds ?? []), ...(l?.newSentenceIds ?? [])]) {
       if (!lastBy[id] || (l.date ?? '') > lastBy[id]) lastBy[id] = l.date ?? '';
     }
   }
+  // 문장별 최근 발음 점수 — 최근 날짜 기록이 정본 (오늘 실력에 가장 가까움)
+  const scoreBy = {};
+  for (const p of pronLogs ?? []) {
+    if (!p?.sentenceId) continue;
+    const cur = scoreBy[p.sentenceId];
+    if (!cur || (p.date ?? '') > cur.date) scoreBy[p.sentenceId] = { date: p.date ?? '', score: Number(p.overallScore) || 0 };
+  }
   return (cards ?? []).map((c) => ({
     id: c.id,
     en: c.sentence ?? '',
     ko: c.meaning || c.ko || '',
     level: c.lastResult ?? null,
+    score: scoreBy[c.id]?.score ?? null,
     _iso: lastBy[c.id] || (c.createdAt ? String(c.createdAt).slice(0, 10) : ''),
   })).sort(compareSentenceRows);
 }
@@ -132,7 +145,9 @@ export function mountSentences(host) {
       const cards = await db.reviewQueue.where('lang').equals(lang).toArray();
       let logs = [];
       try { logs = await db.sessionLogs.where('lang').equals(lang).toArray(); } catch { /* 로그 없으면 정렬만 약해짐 */ }
-      rows = buildSentenceRows(cards, logs);
+      let pron = [];
+      try { pron = await db.pronunciationLog.where('lang').equals(lang).toArray(); } catch { /* 점수 없으면 정렬만 약해짐 */ }
+      rows = buildSentenceRows(cards, logs, pron);
     } catch (e) {
       console.error('[sentences] load', e);
     }
@@ -164,19 +179,31 @@ export function mountSentences(host) {
 
       // 난이도 평가 — 복습 세션과 같은 판정(어려움 X / 보통 △ / 쉬움 O).
       // SRS 간격은 건드리지 않는다(발화 없이 눈으로만 훑는 화면이라 복습일을 밀면 학습 손상).
-      // 재정렬은 다음 진입 때 — 평가 도중 행이 튀지 않게 (사용자 지시).
       // 재생 버튼 — 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 사용자 보고: 피드백 없음)
       const playBtn = h('button', { class: 'vl-cir', type: 'button', 'aria-label': '재생' }, vIcon(VI.PLAY, { size: 11, fill: true }));
       playBtn.addEventListener('click', () => speakWithFeedback(playBtn, r.en, { lang: ttsLangOf(lang) }));
 
+      /* 칩은 '이번 라운드 입력'이다 (2026-07-24 사용자 지시) — 저장된 평가는 위치로만 반영하고
+       * 켜둔 채 남기지 않는다. 평가 클릭 = 라운드 완료: 즉시 재배치 + 잠깐의 피드백 뒤
+       * 정답을 다시 가리고 칩을 끈다 → 목록이 다음 라운드 대기 상태로 돌아간다. */
       const levels = h('div', { class: 'vl-levels' });
+      let resetTimer = null;
       const levelBtns = LEVELS.map(({ level, label }) => {
-        const b = h('button', { class: 'vl-lv' + (r.level === level ? ' on' : ''), type: 'button', 'data-level': level }, label);
+        const b = h('button', { class: 'vl-lv', type: 'button', 'data-level': level }, label);
         b.addEventListener('click', async () => {
           levelBtns.forEach((x) => x.classList.remove('on'));
           b.classList.add('on');
           r.level = level;
-          reposition(r); // 평가 즉시 제 위치로 (쉬움→아래, 어려움→위)
+          reposition(r); // 평가 즉시 제 위치로 (쉬움→아래, 어려움→위 + 점수순)
+          clearTimeout(resetTimer);
+          resetTimer = setTimeout(() => { // 라운드 완료 리셋 — 피드백이 보일 만큼만 켰다 끈다
+            levelBtns.forEach((x) => x.classList.remove('on'));
+            if (!enEl.classList.contains('masked')) {
+              enEl.classList.add('masked');
+              revealBtn.textContent = '정답';
+              revealBtn.classList.remove('on');
+            }
+          }, 600);
           try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level }); }
           catch (e) { console.error('[sentences] level save', e); }
         });

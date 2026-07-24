@@ -482,3 +482,24 @@ describe('sessionExprV2 — 생산 연습 단어 하한', () => {
     expect(row.querySelector('.vs-gscore').style.display).toBe('none'); // 통과 마크 없음
   });
 });
+
+/* '정답 보기' — 녹음 없이 즉시 공개 (2026-07-24 사용자 지시, 복습의 "발화는 전진 조건이 아니다" 원칙).
+ * 공개는 통과가 아니다 — 스트릭 0·통과 마크 없음. */
+describe('sessionExprV2 — 생산 연습 정답 보기 버튼', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('클릭 → 정답 공개·듣기 해제·녹음 잠금, 통과 아님·스트릭 0', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const row = [...host.querySelectorAll('.vs-prod')][0];
+    const give = row.querySelector('.vs-prod-give');
+    expect(give).toBeTruthy();
+    give.click();
+    expect(row.textContent).toContain('more than a job');                 // 정답 공개
+    expect(row.querySelector('.vs-gscore').style.display).toBe('none');   // 통과 마크 없음
+    expect(row.querySelector('button[aria-label="듣기"]').disabled).toBe(false);
+    expect(row.querySelector('button[aria-label="녹음"]').disabled).toBe(true);
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('연속 ✓ 0');
+    expect(give.style.display).toBe('none');                              // 공개 후 버튼 숨김
+  });
+});
