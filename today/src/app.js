@@ -52,10 +52,12 @@ export function showLogin() {
 export function showAuthenticated() {
   document.body.dataset.authState = 'in';
   unmountDiag();
+  // standalone 은 뷰포트 재보정이 끝날 때까지 로딩화면이 덮어야 함 (kickViewportCover 반환값).
+  let loaderDelayMs = 0;
   if (!_mocksMounted) {
     injectMocks();
     stampBuildId();
-    kickViewportCover();
+    loaderDelayMs = kickViewportCover();
     _mocksMounted = true;
   }
   if (!_hashListenerBound) {
@@ -76,25 +78,33 @@ export function showAuthenticated() {
   } catch (e) {
     console.warn('[router] 초기 라우팅 실패 (로딩화면은 계속 제거)', e?.message || e);
   }
-  hideInitialLoadingScreen();
+  hideInitialLoadingScreen(loaderDelayMs);
 }
 
 // 초기 로딩 화면 (index.html 의 #loadingScreen) 숨김.
 // requestAnimationFrame 으로 mocks 마운트 paint 직후 → 깜빡임 최소화.
-function hideInitialLoadingScreen() {
+// delayMs: standalone 뷰포트 재보정(kickViewportCover 재시도)이 끝날 때까지 덮어둘 시간.
+export function hideInitialLoadingScreen(delayMs = 0) {
   const el = typeof document !== 'undefined' && document.getElementById('loadingScreen');
   if (!el || el.classList.contains('hidden')) return;
-  requestAnimationFrame(() => el.classList.add('hidden'));
+  const removeLoader = () => { el.remove(); };
+  // 느린 기기 콜드스타트 안전망 — 사용자가 boot 중 화면을 터치(드로어 스와이프 등)하면 즉시 제거.
+  // 이 시점이면 app 은 이미 마운트됨(showAuthenticated/showLogin 진입). { once } 로 자동 해제.
+  // 재보정 대기(delayMs)와 무관하게 즉시 등록 — 대기 중 터치도 바로 걷힌다.
+  document.addEventListener('touchstart', removeLoader, { once: true, capture: true, passive: true });
+  document.addEventListener('pointerdown', removeLoader, { once: true, capture: true, passive: true });
   // 페이드(0.3s) 후 DOM 에서 완전 제거(el.remove) — opacity:0 만으론 z9999 전체화면 오버레이가
   // 무한 애니메이션(bounce/fade)으로 상주해 iOS PWA resume/리페인트 시 잠깐 비칠 수 있음
   // (드로어 드래그 중 로딩화면 "3단" 비침). DOM 제거로 컴포지팅·애니메이션·잔존을 원천 차단.
-  const removeLoader = () => { el.remove(); };
-  el.addEventListener('transitionend', removeLoader, { once: true });
-  setTimeout(removeLoader, 360); // transitionend 누락 환경 fallback (rAF·transition 미발화 시)
-  // 느린 기기 콜드스타트 안전망 — 사용자가 boot 중 화면을 터치(드로어 스와이프 등)하면 즉시 제거.
-  // 이 시점이면 app 은 이미 마운트됨(showAuthenticated/showLogin 진입). { once } 로 자동 해제.
-  document.addEventListener('touchstart', removeLoader, { once: true, capture: true, passive: true });
-  document.addEventListener('pointerdown', removeLoader, { once: true, capture: true, passive: true });
+  const startFade = () => {
+    requestAnimationFrame(() => el.classList.add('hidden'));
+    el.addEventListener('transitionend', removeLoader, { once: true });
+    setTimeout(removeLoader, 360); // transitionend 누락 환경 fallback (rAF·transition 미발화 시)
+  };
+  // 재보정 토글은 기기 회전 등가 재계산이라 노출되면 홈화면이 확대→축소로 보임
+  // (2026-07-23 실기기 보고). standalone 에서만 그 시간만큼 로딩화면을 유지한다.
+  if (delayMs > 0) setTimeout(startFade, delayMs);
+  else startFade();
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -149,13 +159,19 @@ function stampBuildId() {
  * CSS 오프셋 보정(--vp-gap)은 불가함이 실기기에서 확인됨 — 뷰포트 자체를 고치는 게 유일 경로.
  * 비 standalone 은 no-op. 재계산 후에도 결손이 남으면 1회 재시도.
  */
-function kickViewportCover() {
+// 뷰포트 재보정 재시도 지연 — 로딩화면이 이 시점 이후까지 덮어야 토글 깜빡임이 안 보인다.
+export const VIEWPORT_RETRY_MS = 700;
+// 재시도 rAF/토글 완료 여유 — 로딩화면 유지 시간 = 재시도 + 이 여유.
+const VIEWPORT_SETTLE_MS = 120;
+
+// 반환: standalone 이면 로딩화면이 덮어야 할 시간(ms), 아니면 0.
+export function kickViewportCover() {
   const standalone = window.navigator.standalone === true
     || window.matchMedia('(display-mode: standalone)').matches;
-  if (!standalone) return;
+  if (!standalone) return 0;
   const meta = document.querySelector('meta[name="viewport"]');
   const cover = meta?.getAttribute('content') || '';
-  if (!cover.includes('viewport-fit=cover')) return;
+  if (!cover.includes('viewport-fit=cover')) return 0;
   const toggle = () => {
     meta.setAttribute('content', cover.replace('viewport-fit=cover', 'viewport-fit=auto'));
     requestAnimationFrame(() => meta.setAttribute('content', cover));
@@ -165,7 +181,8 @@ function kickViewportCover() {
   setTimeout(() => {
     const raw = (window.screen?.height || 0) - window.innerHeight;
     if (raw > 0 && raw <= 80) toggle();
-  }, 700);
+  }, VIEWPORT_RETRY_MS);
+  return VIEWPORT_RETRY_MS + VIEWPORT_SETTLE_MS;
 }
 
 function syncFromHash() {
