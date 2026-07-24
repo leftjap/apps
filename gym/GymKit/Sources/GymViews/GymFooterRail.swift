@@ -155,6 +155,27 @@ struct CurrentChip: View {
     }
 }
 
+// 터치다운 눌림 — 손가락이 닿는 순간 0.96 으로 눌렸다 떼면 복귀 (iOS 표준 버튼 감각).
+// 닿음(눌림)→접수(진동·승격)→이동→안착 사슬의 첫 고리 (사용자 2026-07-24 "이게 최선인가" 보강).
+// 탭·꾹누르기를 함께 품어 눌림 상태를 공유 — 스크롤 시작 시(이동 10pt 초과) 제스처가
+// 실패하며 자동 복귀한다.
+struct RailChipPressable: ViewModifier {
+    var onTap: () -> Void
+    var onLongPress: () -> Void
+    @State private var pressed = false
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(pressed ? 0.96 : 1)
+            .animation(.easeOut(duration: 0.12), value: pressed)
+            .onTapGesture { onTap() }
+            .onLongPressGesture(minimumDuration: 0.5) {
+                onLongPress()
+            } onPressingChanged: { p in
+                pressed = p
+            }
+    }
+}
+
 // 승격 착지 팝 — 칩이 current 가 되는 순간 그 자리(레일, 사용자 시선·손가락 지점)에서
 // scale 0.9→1.06→1 로 터지는 전환 확인 신호 (사용자 2026-07-23 "하단엔 효과가 없다").
 // Item identity 가 blockIdx 로 안정돼 있어 onAppear = upcoming/done→current 전환 시점 1회.
@@ -300,8 +321,8 @@ public struct GymFooterRail: View {
                     }
                     .id(item.id)   // 스크롤 타깃 = blockIdx (align 의 scrollTo 와 일치)
                     .accessibilityIdentifier("rail-\(item.state.idName)-\(item.name)")
-                    .onTapGesture { onTapItem(item.blockIdx) }
-                    .onLongPressGesture(minimumDuration: 0.5) { onLongPressItem(item.blockIdx) }
+                    .modifier(RailChipPressable(onTap: { onTapItem(item.blockIdx) },
+                                                onLongPress: { onLongPressItem(item.blockIdx) }))
                 }
             }
             // 재정렬 슬라이드 — 완료 칩이 왼쪽으로 미끄러지고 새 current 가 제자리를 찾는다.
