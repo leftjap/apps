@@ -158,21 +158,29 @@ struct CurrentChip: View {
 // 승격 착지 팝 — 칩이 current 가 되는 순간 그 자리(레일, 사용자 시선·손가락 지점)에서
 // scale 0.9→1.06→1 로 터지는 전환 확인 신호 (사용자 2026-07-23 "하단엔 효과가 없다").
 // Item identity 가 blockIdx 로 안정돼 있어 onAppear = upcoming/done→current 전환 시점 1회.
+// 착지 연출은 도착 시점에 — 탭 즉시 터뜨리면 스크롤 이동과 겹쳐 "이동→안착" 서사가 죽는다
+// (실기기 보고 2026-07-24 "안착했다는 느낌이 안 산다"). 스크롤(railTravel)이 끝나는 시점에
+// 스쿼시+링을 재생해 이동의 종점을 찍는다.
+enum RailLanding {
+    static let travel = 0.36    // 스크롤 이동 대기 (align 스프링 response 와 동조)
+}
+
 struct CurrentChipLandPop: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var fired = false
     func body(content: Content) -> some View {
         content
+            // 착지 스쿼시 — 이동 대기(1.0 유지) → 눌림(0.94) → 반동(1.07) → 정착
             .keyframeAnimator(initialValue: 1.0, trigger: fired) { view, s in
                 view.scaleEffect(s)
             } keyframes: { _ in
-                MoveKeyframe(0.88)
-                CubicKeyframe(1.09, duration: 0.2)
-                CubicKeyframe(1.0, duration: 0.18)
+                CubicKeyframe(1.0, duration: RailLanding.travel)
+                CubicKeyframe(0.94, duration: 0.09)
+                CubicKeyframe(1.07, duration: 0.16)
+                CubicKeyframe(1.0, duration: 0.16)
             }
-            // crail 확산 링 — 승격 순간 칩 테두리에서 바깥으로 퍼지며 소멸 (0.55s).
-            // 세트완료 햅틱 링과 같은 모션 언어. 팝(6%→9% 강화)만으론 눈에 안 띈다는
-            // 실기기 보고(2026-07-24) 보강.
+            // crail 확산 링 — 착지 순간 칩 테두리에서 바깥으로 퍼지며 소멸 (0.55s).
+            // 세트완료 햅틱 링과 같은 모션 언어.
             .overlay {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(GY.crailBase, lineWidth: 2.5)
@@ -184,7 +192,7 @@ struct CurrentChipLandPop: ViewModifier {
                             .scaleEffect(live ? 1 + 0.45 * p : 1)
                             .opacity(live ? (1 - p) * 0.85 : 0)
                     } keyframes: { _ in
-                        MoveKeyframe(0.0)
+                        CubicKeyframe(0.0, duration: RailLanding.travel)   // 이동 중 대기
                         CubicKeyframe(1.0, duration: 0.55)
                     }
                     .allowsHitTesting(false)
@@ -328,7 +336,10 @@ public struct GymFooterRail: View {
                 proxy.scrollTo(items[idx].id, anchor: UnitPoint(x: anchorX, y: 0.5))
             }
         }
-        if animated { withAnimation(.easeOut(duration: 0.3)) { apply() } } else { apply() }
+        if animated {
+            // 스프링 — 이동이 눌러앉듯 정착해 "옮겨갔다"가 읽힌다 (착지 연출과 동조, RailLanding.travel)
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) { apply() }
+        } else { apply() }
     }
 
     public var body: some View {

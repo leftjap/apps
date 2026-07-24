@@ -585,12 +585,18 @@ public final class GymAppModel: ObservableObject {
     public var currentBlockLocked: Bool { currentBlock.map { GymSessionLogic.isBlockLocked($0) } ?? false }
 
     // 푸터 pill 탭 = 해당 블록으로 이동 (완료 아님, §6-8).
-    // 표시 종목이 실제 바뀔 때만 선택 틱 — 로테이션 전환 확인 신호 (사용자 2026-07-23. 같은 칩 재탭 무음).
+    // 표시 종목이 실제 바뀔 때만 더블 햅틱 — 출발(medium)·안착(light, 레일 이동 완료 시점).
+    // 드래그&드롭의 집기/놓기 패턴 — "이동했고 안착했다"의 촉각 서사 (사용자 2026-07-24).
     public func selectBlock(_ bi: Int) {
         guard session.blocks.indices.contains(bi) else { return }
         let changed = bi != currentBlockIdx
         selectedBlockIdx = bi
-        if changed { selectionTick() }
+        if changed {
+            selectionTick()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { [weak self] in
+                self?.landingTick()   // 착지 스쿼시(RailLanding.travel 0.36s 후)와 동조
+            }
+        }
     }
     // 운동 추가 (§6-2) — 프리셋 ① 직전 세션 카피 → ③ 기본값. 첫 종목 = startTime.
     /// 운동 추가 시트가 처음 열 부위 — 마지막으로 종목을 고른 부위를 기억한다. 없으면 등(back).
@@ -818,11 +824,17 @@ public final class GymAppModel: ObservableObject {
         switchGen.impactOccurred(intensity: 1.0)
         switchGen.prepare()   // 로테이션 연속 전환 대비 재예열
     }
+    // 안착 틱 — 출발 틱보다 약하게 (같은 제너레이터, 강도만 낮춰 예열 상태 재활용).
+    private func landingTick() {
+        switchGen.impactOccurred(intensity: 0.55)
+        switchGen.prepare()
+    }
     #else
     private enum Dummy { case light, medium, heavy }
     private func impact(_ style: Dummy) {}
     private func impactPRDouble() {}
     private func selectionTick() {}
+    private func landingTick() {}
     public func prepareCommitHaptic() {}
     #endif
 
