@@ -1,0 +1,826 @@
+{
+  "lang": "en",
+  "track": "moduyeongeo",
+  "ep": 11,
+  "source": {
+    "playlist": "원어민이 매일 쓰는 영어문장",
+    "channel": "모두영어",
+    "video_id": "LXwCHa8z8ts",
+    "url": "https://www.youtube.com/watch?v=LXwCHa8z8ts",
+    "title": "원어민이 매일 쓰는 영어문장 [#11] 나 완전 멘붕이야/ 나 어떻게 해야 해?/ 나 감당 못 해/ 걱정할 거 없어/ 그냥 솔직하게 말해줘/ 아무한테도 말 안 할게/ 내가 있잖아",
+    "note": "기본표현·클립변주는 영상 화면(번인 자막) 원문 그대로. drills 뒷부분은 §6.3 개인화 보강. 한국어 기본표현 9개 전부 카드화."
+  },
+  "cards": [
+    {
+      "id": "en-moduyeongeo-ep11-01-freaking-out",
+      "sentence": "I'm freaking out.",
+      "meaning": "나 완전 멘붕이야. (나 미칠 것 같아.)",
+      "reading": null,
+      "phonetic_kr": "아임 f프리킹 아웃",
+      "order_index": 1,
+      "explanation": {
+        "key": "be freaking out = 완전 멘붕이다 / 미칠 것 같다. 극도로 불안·패닉 상태.",
+        "situation": "영상 클립: 감당 안 되는 상황에 극도로 불안해하며 털어놓는 장면들",
+        "drills": [
+          {
+            "en": "Don't freak out.",
+            "ko": "기겁하지 마.",
+            "kr": "돈 f프리크 아웃"
+          },
+          {
+            "en": "Why are you freaking out?",
+            "ko": "왜 그렇게 멘붕이야?",
+            "kr": "와이 아유 f프리킹 아웃"
+          },
+          {
+            "en": "My wife is freaking out.",
+            "ko": "아내가 완전 멘붕이야.",
+            "kr": "마이 와이f 이z f프리킹 아웃"
+          },
+          {
+            "en": "I freaked out a little.",
+            "ko": "나 좀 놀랐어.",
+            "kr": "아이 f프릭타웃 어 리를"
+          },
+          {
+            "en": "The cat freaked out at the vet.",
+            "ko": "고양이가 병원에서 기겁했어.",
+            "kr": "더 캣 f프릭타웃 앳 더 v벳"
+          },
+          {
+            "en": "Everyone was freaking out about the delay.",
+            "ko": "다들 지연 때문에 난리였어.",
+            "kr": "에v리원 워z f프리킹 아웃 어바웃 더 딜레이"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "be + ~ing (현재진행)",
+            "body": "freak out = 기겁하다/멘붕하다. 지금 그 상태라 진행형 'be freaking out'. I'm = I am 축약."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm",
+            "아임"
+          ],
+          [
+            "freaking",
+            "f프리킹"
+          ],
+          [
+            "out",
+            "아웃"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ freaking",
+            "freaking 첫 f — 윗니로 아랫입술 물고 'f프'"
+          ],
+          [
+            "out",
+            "'아웃' — 끝 t 약하게"
+          ]
+        ],
+        "mistake": "freak을 '프리크'(X) → 'f' 마찰음 짧게. freaking out 붙여 '프리킹아웃' 연음. I'm freaking을 또박또박(X).",
+        "similar": "I'm losing it. / I'm panicking. / I'm losing my mind.",
+        "category": "감정/상태",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm freaking out a little, but I'll be fine, so don't worry about me.",
+          "chunks": [
+            "I'm freaking out",
+            "a little,",
+            "but",
+            "I'll be fine,",
+            "so",
+            "don't worry",
+            "about me."
+          ],
+          "ko": "나 좀 멘붕이긴 한데, 괜찮을 거야, 그러니까 내 걱정은 하지 마."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-02-what-do-i-do",
+      "sentence": "What do I do?",
+      "meaning": "나 어떻게 해야 해?",
+      "reading": null,
+      "phonetic_kr": "왓 두 아이 두",
+      "order_index": 2,
+      "explanation": {
+        "key": "What do I do? = 나 어떻게 해야 해? / 나 어쩌지? 막막할 때 되묻는 말.",
+        "situation": "영상 클립: 어찌할 바를 몰라 어떻게 해야 하냐고 묻는 장면들",
+        "drills": [
+          {
+            "en": "What should I do?",
+            "ko": "나 어떻게 해야 하지?",
+            "kr": "왓 슈드 아이 두"
+          },
+          {
+            "en": "What do we do now?",
+            "ko": "우리 이제 어떻게 하지?",
+            "kr": "왓 두 위 두 나우"
+          },
+          {
+            "en": "I don't know what to do.",
+            "ko": "뭘 해야 할지 모르겠어.",
+            "kr": "아이 돈 노우 왓 투 두"
+          },
+          {
+            "en": "What do I tell my wife?",
+            "ko": "아내한테 뭐라고 하지?",
+            "kr": "왓 두 아이 텔 마이 와이f"
+          },
+          {
+            "en": "What am I supposed to do?",
+            "ko": "내가 뭘 어떻게 해야 하는데?",
+            "kr": "왓 앰 아이 서포즈드 투 두"
+          },
+          {
+            "en": "So what do I do about the cat?",
+            "ko": "그럼 고양이는 어떻게 하지?",
+            "kr": "쏘 왓 두 아이 두 어바웃 더 캣"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What do I do? (현재시제 의문)",
+            "body": "직역 '내가 무엇을 하지?'. 앞으로 어떻게 해야 할지 막막할 때. 미래처럼 들려도 현재시제로 씀."
+          }
+        ],
+        "chunks": [
+          [
+            "What",
+            "왓"
+          ],
+          [
+            "do I",
+            "두 아이"
+          ],
+          [
+            "do",
+            "두"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/d/ do",
+            "do 두 번 — 유성음 '두' 또박또박"
+          ],
+          [
+            "What",
+            "'왓' — 끝 t 약하게, do와 이어서"
+          ]
+        ],
+        "mistake": "What do를 '왓 두' 딱딱하게(X) → 이어서 '왓두'. do I do 세 번 d 놓치지 않기. '내가 뭘 하지' 직역보다 '어쩌지' 뉘앙스.",
+        "similar": "What should I do? / What am I supposed to do? / Now what?",
+        "category": "감정/상태",
+        "frequency": 9,
+        "chain": {
+          "target": "What do I do if she doesn't call me back tonight?",
+          "chunks": [
+            "What do I do",
+            "if",
+            "she doesn't",
+            "call me back",
+            "tonight?"
+          ],
+          "ko": "오늘 밤 그녀가 다시 전화 안 하면 나 어떻게 하지?"
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-03-cant-handle-it",
+      "sentence": "I can't handle it.",
+      "meaning": "나 감당 못 해.",
+      "reading": null,
+      "phonetic_kr": "아이 캔트 핸들 잇",
+      "order_index": 3,
+      "explanation": {
+        "key": "can't handle it = 감당 못 하다 / 견디지 못하다. handle = 감당·처리하다.",
+        "situation": "영상 클립: 힘들어서 도저히 감당 못 하겠다고 토로하는 장면들",
+        "drills": [
+          {
+            "en": "Can you handle it?",
+            "ko": "너 이거 감당할 수 있어?",
+            "kr": "캐뉴 핸들 잇"
+          },
+          {
+            "en": "I couldn't handle it.",
+            "ko": "난 감당 못 했어.",
+            "kr": "아이 쿠든트 핸들 잇"
+          },
+          {
+            "en": "She can't handle the pressure.",
+            "ko": "그녀는 그 압박을 못 견뎌.",
+            "kr": "쉬 캔트 핸들 더 프레셔"
+          },
+          {
+            "en": "My wife can't handle spicy food.",
+            "ko": "아내는 매운 걸 못 먹어.",
+            "kr": "마이 와이f 캔트 핸들 스파이씨 f푸드"
+          },
+          {
+            "en": "I can't handle this much work.",
+            "ko": "이만큼의 일은 감당 못 해.",
+            "kr": "아이 캔트 핸들 디스 머치 워크"
+          },
+          {
+            "en": "Do you think you can handle it?",
+            "ko": "네가 감당할 수 있을 것 같아?",
+            "kr": "두 유 띵크 유 캔 핸들 잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "can't + 동사원형 (handle)",
+            "body": "handle = 다루다/감당하다. can't handle it = 그것을 감당 못 하다. it 대신 that/this/anymore로 확장."
+          }
+        ],
+        "chunks": [
+          [
+            "I can't",
+            "아이 캔트"
+          ],
+          [
+            "handle it",
+            "핸들 잇"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/æ/ can't·handle",
+            "can·handle의 '애' — 입 옆으로 크게"
+          ],
+          [
+            "can't",
+            "끝 t 삼키듯 약하게 '캔(ㅌ)'"
+          ]
+        ],
+        "mistake": "handle을 '핸들레'(X) → '핸들'. can't의 t를 강하게(X) → 거의 안 들리게. 'handle it' 이어서 '핸들릿'.",
+        "similar": "I can't take it. / I can't deal with it. / It's too much for me.",
+        "category": "감정/상태",
+        "frequency": 8,
+        "chain": {
+          "target": "I can't handle it on my own, so I might need your help tonight.",
+          "chunks": [
+            "I can't handle it",
+            "on my own,",
+            "so",
+            "I might",
+            "need your help",
+            "tonight."
+          ],
+          "ko": "나 혼자서는 감당 못 하겠어, 그래서 오늘 밤 네 도움이 필요할 것 같아."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-04-nothing-to-worry-about",
+      "sentence": "There's nothing to worry about.",
+      "meaning": "걱정할 거 없어.",
+      "reading": null,
+      "phonetic_kr": "데어z 나띵 투 워리 어바웃",
+      "order_index": 4,
+      "explanation": {
+        "key": "nothing to worry about = 걱정할 거 (하나도) 없다. 안심시키는 말.",
+        "situation": "영상 클립: 대수롭지 않다고 다독이며 안심시키는 장면들",
+        "drills": [
+          {
+            "en": "There's nothing to be afraid of.",
+            "ko": "무서워할 거 없어.",
+            "kr": "데어z 나띵 투 비 어f레이드 어v"
+          },
+          {
+            "en": "There was nothing to worry about.",
+            "ko": "걱정할 게 없었어.",
+            "kr": "데어 워z 나띵 투 워리 어바웃"
+          },
+          {
+            "en": "You have nothing to worry about.",
+            "ko": "넌 걱정할 거 하나도 없어.",
+            "kr": "유 해v 나띵 투 워리 어바웃"
+          },
+          {
+            "en": "Is there anything to worry about?",
+            "ko": "걱정할 게 있어?",
+            "kr": "이z 데어 애니띵 투 워리 어바웃"
+          },
+          {
+            "en": "My wife has nothing to worry about.",
+            "ko": "아내는 걱정할 게 없어.",
+            "kr": "마이 와이f 해z 나띵 투 워리 어바웃"
+          },
+          {
+            "en": "Tell her there's nothing to worry about.",
+            "ko": "그녀한테 걱정할 거 없다고 말해.",
+            "kr": "텔 허 데어z 나띵 투 워리 어바웃"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "There's nothing to + 동사 (worry about)",
+            "body": "There is nothing to ~ = ~할 것이 아무것도 없다. worry about = ~에 대해 걱정하다. 'nothing to worry about' 통째로 '걱정거리 없음'."
+          }
+        ],
+        "chunks": [
+          [
+            "There's",
+            "데어z"
+          ],
+          [
+            "nothing to",
+            "나띵 투"
+          ],
+          [
+            "worry about",
+            "워리 어바웃"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ nothing",
+            "nothing의 th — 혀끝 이 사이 '나θ띵'"
+          ],
+          [
+            "/ð/ There's",
+            "There의 th — 유성 'ㄷ'에 가깝게 '데어z'"
+          ],
+          [
+            "worry",
+            "'워리' — r 굴려서"
+          ]
+        ],
+        "mistake": "worry를 '워리'는 맞되 r 살리기. There's의 th를 'ㅅ/ㅈ'(X) → 유성 'ㄷ'에 가깝게. 'nothing to worry about' 한 덩어리로.",
+        "similar": "Nothing to worry about. / Don't worry. / It's going to be okay.",
+        "category": "리액션/위로",
+        "frequency": 8,
+        "chain": {
+          "target": "There's nothing to worry about, honestly, so just get some sleep tonight.",
+          "chunks": [
+            "There's nothing to worry about,",
+            "honestly,",
+            "so",
+            "just get",
+            "some sleep",
+            "tonight."
+          ],
+          "ko": "정말 걱정할 거 없어, 그러니까 오늘 밤은 그냥 좀 자."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-05-be-honest-with-me",
+      "sentence": "Just be honest with me.",
+      "meaning": "그냥 솔직하게 말해줘.",
+      "reading": null,
+      "phonetic_kr": "저스트 비 아니스트 위드 미",
+      "order_index": 5,
+      "explanation": {
+        "key": "be honest with ~ = ~에게 솔직하게 (말)하다 / 솔직해지다. just = 그냥.",
+        "situation": "영상 클립: 돌리지 말고 그냥 솔직히 말해달라고 부탁하는 장면들",
+        "drills": [
+          {
+            "en": "Be honest with yourself.",
+            "ko": "너 자신에게 솔직해져.",
+            "kr": "비 아니스트 위드 유어셀f"
+          },
+          {
+            "en": "I'll be honest with you.",
+            "ko": "너한테 솔직하게 말할게.",
+            "kr": "아일 비 아니스트 위듀"
+          },
+          {
+            "en": "Was she honest with you?",
+            "ko": "그녀가 너한테 솔직했어?",
+            "kr": "워z 쉬 아니스트 위듀"
+          },
+          {
+            "en": "He wasn't honest with us.",
+            "ko": "그는 우리에게 솔직하지 않았어.",
+            "kr": "히 워즌트 아니스트 위드 어스"
+          },
+          {
+            "en": "Just be honest with your wife.",
+            "ko": "그냥 아내한테 솔직해져.",
+            "kr": "저스트 비 아니스트 위드 유어 와이f"
+          },
+          {
+            "en": "Why can't you be honest with me?",
+            "ko": "왜 나한테 솔직하지 못해?",
+            "kr": "와이 캔츄 비 아니스트 위드 미"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Just be honest with + 사람",
+            "body": "be honest with me/him/yourself = ~에게 솔직해지다. honest는 형용사, be동사와 함께. Just = 그냥/제발 (부탁 부드럽게)."
+          }
+        ],
+        "chunks": [
+          [
+            "Just be",
+            "저스트 비"
+          ],
+          [
+            "honest with",
+            "아니스트 위드"
+          ],
+          [
+            "me",
+            "미"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/h/ honest (묵음)",
+            "honest의 h 묵음 — '아니스트'"
+          ],
+          [
+            "/ð/ with",
+            "with 끝 th — 유성 'ㄷ' '위드'"
+          ],
+          [
+            "/ʌ/ just",
+            "just의 '어' 짧게 '저스(트)'"
+          ]
+        ],
+        "mistake": "honest를 '호네스트'(X) → h 묵음 '아니스트'. with를 '위th'(X) → '위드'. Just be 이어서 '저슷비'.",
+        "similar": "Just tell me the truth. / Be straight with me. / Level with me.",
+        "category": "의사표현",
+        "frequency": 8,
+        "chain": {
+          "target": "Just be honest with me, okay, because I'd rather hear it from you.",
+          "chunks": [
+            "Just be honest with me,",
+            "okay,",
+            "because",
+            "I'd rather",
+            "hear it",
+            "from you."
+          ],
+          "ko": "그냥 솔직하게 말해줘, 응? 다른 데서 듣느니 너한테 직접 듣고 싶으니까."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-06-wont-tell-anyone",
+      "sentence": "I won't tell anyone.",
+      "meaning": "아무한테도 말 안 할게.",
+      "reading": null,
+      "phonetic_kr": "아이 워운트 텔 애니원",
+      "order_index": 6,
+      "explanation": {
+        "key": "won't tell anyone = 아무한테도 말 안 하겠다. won't = will not 축약, 강한 의지.",
+        "situation": "영상 클립: 비밀을 지키겠다고, 아무한테도 안 하겠다고 약속하는 장면들",
+        "drills": [
+          {
+            "en": "Don't tell anyone.",
+            "ko": "아무한테도 말하지 마.",
+            "kr": "돈 텔 애니원"
+          },
+          {
+            "en": "Did you tell anyone?",
+            "ko": "누구한테 말했어?",
+            "kr": "디쥬 텔 애니원"
+          },
+          {
+            "en": "I won't tell your wife.",
+            "ko": "네 아내한테 말 안 할게.",
+            "kr": "아이 워운트 텔 유어 와이f"
+          },
+          {
+            "en": "She told everyone at work.",
+            "ko": "그녀가 회사에 다 말했어.",
+            "kr": "쉬 톨드 에v리원 앳 워크"
+          },
+          {
+            "en": "Promise me you won't tell anyone.",
+            "ko": "아무한테도 말 안 한다고 약속해.",
+            "kr": "프라미스 미 유 워운트 텔 애니원"
+          },
+          {
+            "en": "I'd never tell anyone about this.",
+            "ko": "이건 절대 아무한테도 말 안 해.",
+            "kr": "아이드 네v어 텔 애니원 어바웃 디스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "won't (=will not) + 동사원형",
+            "body": "won't = will not 축약. 미래 부정 + 강한 의지 '절대 안 ~하겠다'. tell + 사람 = ~에게 말하다."
+          }
+        ],
+        "chunks": [
+          [
+            "I won't",
+            "아이 워운트"
+          ],
+          [
+            "tell anyone",
+            "텔 애니원"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/oʊ/ won't",
+            "won't의 '오우' — '워운(트)' 끝 t 약하게"
+          ],
+          [
+            "tell",
+            "'텔' — l 혀끝 올려"
+          ],
+          [
+            "anyone",
+            "'애니원' 이어서"
+          ]
+        ],
+        "mistake": "won't를 '원트'(X) → '워운(트)' 이중모음. want[원트]와 혼동 주의. tell anyone 이어서 '텔애니원'.",
+        "similar": "I won't say a word. / Your secret's safe with me. / I'll keep it to myself.",
+        "category": "의사표현",
+        "frequency": 8,
+        "chain": {
+          "target": "I won't tell anyone, I promise, so you can relax about it now.",
+          "chunks": [
+            "I won't tell anyone,",
+            "I promise,",
+            "so",
+            "you can",
+            "relax",
+            "about it now."
+          ],
+          "ko": "아무한테도 말 안 할게, 약속해, 그러니까 이제 마음 놔."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-07-cant-tell-you",
+      "sentence": "I can't tell you.",
+      "meaning": "나 너한테 말 못 해.",
+      "reading": null,
+      "phonetic_kr": "아이 캔트 텔 유",
+      "order_index": 7,
+      "explanation": {
+        "key": "can't tell you = 너한테 (그건) 말 못 하다 / 말할 수 없다. tell = 말하다.",
+        "situation": "영상 클립: 비밀이라 혹은 몰라서 너한테는 말 못 한다고 하는 장면들",
+        "drills": [
+          {
+            "en": "Can you tell me?",
+            "ko": "나한테 말해줄 수 있어?",
+            "kr": "캐뉴 텔 미"
+          },
+          {
+            "en": "I told you already.",
+            "ko": "내가 이미 말했잖아.",
+            "kr": "아이 톨쥬 얼레디"
+          },
+          {
+            "en": "Why can't you tell me?",
+            "ko": "왜 나한테 말 못 해?",
+            "kr": "와이 캔츄 텔 미"
+          },
+          {
+            "en": "She can't tell us anything.",
+            "ko": "그녀는 우리에게 아무것도 말 못 해.",
+            "kr": "쉬 캔트 텔 어스 애니띵"
+          },
+          {
+            "en": "I can't tell my wife yet.",
+            "ko": "아직 아내한테는 말 못 해.",
+            "kr": "아이 캔트 텔 마이 와이f 옛"
+          },
+          {
+            "en": "They couldn't tell us the reason.",
+            "ko": "그들은 우리에게 이유를 말 못 했어.",
+            "kr": "데이 쿠든트 텔 어스 더 리즌"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "can't + tell + 사람 (+ 목적어)",
+            "body": "tell you = 너에게 말하다. can't tell you = 말 못 하다(비밀·능력). 뒤에 anything/that 붙여 확장."
+          }
+        ],
+        "chunks": [
+          [
+            "I can't",
+            "아이 캔트"
+          ],
+          [
+            "tell you",
+            "텔 유"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/æ/ can't",
+            "can't의 '애' — '캔(ㅌ)'"
+          ],
+          [
+            "tell you",
+            "'텔 유' 이어서 '텔유'"
+          ]
+        ],
+        "mistake": "can't의 t 약하게 → can과 구별은 문맥으로. tell you를 '텔 유' 딱딱하게(X) → '텔유' 이어서. '말하다=say' 아닌 'tell+사람'.",
+        "similar": "I can't say. / I'm not allowed to tell you. / My lips are sealed.",
+        "category": "의사표현",
+        "frequency": 8,
+        "chain": {
+          "target": "I can't tell you right now, but I promise you'll find out soon.",
+          "chunks": [
+            "I can't tell you",
+            "right now,",
+            "but",
+            "I promise",
+            "you'll find out",
+            "soon."
+          ],
+          "ko": "지금은 말 못 해, 하지만 곧 알게 될 거라고 약속할게."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-08-we-can-fix-this",
+      "sentence": "We can fix this.",
+      "meaning": "우리가 이거 해결할 수 있어.",
+      "reading": null,
+      "phonetic_kr": "위 캔 f픽스 디스",
+      "order_index": 8,
+      "explanation": {
+        "key": "can fix this = 이거 해결할(바로잡을) 수 있다. fix = 고치다/해결하다.",
+        "situation": "영상 클립: 함께 이 문제를 해결할 수 있다고 안심시키는 장면들",
+        "drills": [
+          {
+            "en": "Can you fix it?",
+            "ko": "너 이거 고칠 수 있어?",
+            "kr": "캐뉴 f픽스 잇"
+          },
+          {
+            "en": "They fixed it yesterday.",
+            "ko": "그들이 어제 고쳤어.",
+            "kr": "데이 f픽스트 잇 예스터데이"
+          },
+          {
+            "en": "I can't fix this alone.",
+            "ko": "나 혼자서는 이거 못 고쳐.",
+            "kr": "아이 캔트 f픽스 디스 얼로운"
+          },
+          {
+            "en": "My wife can fix anything.",
+            "ko": "아내는 뭐든 고칠 수 있어.",
+            "kr": "마이 와이f 캔 f픽스 애니띵"
+          },
+          {
+            "en": "We couldn't fix the problem.",
+            "ko": "우리는 그 문제를 해결 못 했어.",
+            "kr": "위 쿠든트 f픽스 더 프라블럼"
+          },
+          {
+            "en": "Let's fix this before dinner.",
+            "ko": "저녁 먹기 전에 이거 해결하자.",
+            "kr": "렛츠 f픽스 디스 비f포어 디너"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "can + fix + this (해결 가능성)",
+            "body": "fix = 고치다/해결하다. We can fix this = 우리가 이걸 해결할 수 있다. this 대신 it/that/this problem."
+          }
+        ],
+        "chunks": [
+          [
+            "We can",
+            "위 캔"
+          ],
+          [
+            "fix this",
+            "f픽스 디스"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ fix",
+            "fix 첫 f — 아랫입술 물고 'f픽스'"
+          ],
+          [
+            "/ð/ this",
+            "this 첫 th — 유성 'ㄷ' '디스'"
+          ]
+        ],
+        "mistake": "fix를 '픽스'(X) → 'f' 마찰음 'f픽스'. this를 '디스'는 맞되 th 유성으로. We can을 '위 캔' 약하게 '위큰'.",
+        "similar": "We can work this out. / We can handle this. / We'll figure it out.",
+        "category": "리액션/위로",
+        "frequency": 8,
+        "chain": {
+          "target": "We can fix this together, so please don't give up on me yet.",
+          "chunks": [
+            "We can fix this",
+            "together,",
+            "so",
+            "please",
+            "don't give up",
+            "on me yet."
+          ],
+          "ko": "우리 함께 이거 해결할 수 있어, 그러니 아직 나를 포기하지 마."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep11-09-got-your-back",
+      "sentence": "I've got your back.",
+      "meaning": "내가 있잖아.",
+      "reading": null,
+      "phonetic_kr": "아이v 갓츄 백",
+      "order_index": 9,
+      "explanation": {
+        "key": "got your back = 뒤를 봐주다 / 편이 되어주다 (I've got your back = 내가 있잖아).",
+        "situation": "영상 클립: 무슨 일이 있어도 네 편이라며 든든하게 지지하는 장면들",
+        "drills": [
+          {
+            "en": "Who's got my back?",
+            "ko": "누가 내 편이야?",
+            "kr": "후z 갓 마이 백"
+          },
+          {
+            "en": "You've got my back, right?",
+            "ko": "너 내 편이지?",
+            "kr": "유v 갓 마이 백 롸잇"
+          },
+          {
+            "en": "She's always had my back.",
+            "ko": "그녀는 늘 내 편이었어.",
+            "kr": "쉬z 올웨이z 해드 마이 백"
+          },
+          {
+            "en": "Thanks for having my back.",
+            "ko": "내 편 들어줘서 고마워.",
+            "kr": "땡스 f포 해v잉 마이 백"
+          },
+          {
+            "en": "My wife always has my back.",
+            "ko": "아내는 언제나 내 편이야.",
+            "kr": "마이 와이f 올웨이z 해z 마이 백"
+          },
+          {
+            "en": "I'll have your back no matter what.",
+            "ko": "무슨 일이 있어도 네 편이 되어줄게.",
+            "kr": "아일 해v 유어 백 노우 매터 왓"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "have got + 소유격 + back (관용구)",
+            "body": "I've got your back = 직역 '네 등을 잡고 있다' → 널 지켜준다/편이다. I've = I have 축약. I got your back(구어)도 같은 뜻."
+          }
+        ],
+        "chunks": [
+          [
+            "I've",
+            "아이v"
+          ],
+          [
+            "got your",
+            "갓츄"
+          ],
+          [
+            "back",
+            "백"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/v/ I've",
+            "I've의 v — '아이v' 아랫입술 물고"
+          ],
+          [
+            "got your → 갓츄",
+            "got+your 연음 — t+y '갓츄(가춰)'"
+          ],
+          [
+            "/æ/ back",
+            "back의 '애' — '백'"
+          ]
+        ],
+        "mistake": "got your를 '갓 유어'(X) 또박또박 → 연음 '갓츄/가춰'. back을 '빽'(X) 세게 → '백'. '등' 직역 말고 '편/지켜줌' 뜻.",
+        "similar": "I've got your back. / I'm on your side. / I'm here for you.",
+        "category": "리액션/위로",
+        "frequency": 8,
+        "chain": {
+          "target": "I've got your back, no matter what happens, so just tell me the truth.",
+          "chunks": [
+            "I've got your back,",
+            "no matter what",
+            "happens,",
+            "so",
+            "just tell me",
+            "the truth."
+          ],
+          "ko": "무슨 일이 있어도 내가 네 편이야, 그러니까 나한테 사실대로만 말해줘."
+        }
+      }
+    }
+  ],
+  "date": "2026-07-24"
+}
