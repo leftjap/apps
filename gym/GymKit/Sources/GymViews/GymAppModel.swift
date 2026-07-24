@@ -806,11 +806,17 @@ public final class GymAppModel: ObservableObject {
             g.prepare()
         }
     }
-    // 종목 전환 선택 틱 — 세트완료(heavy impact)와 구별되는 가벼운 selection 진동.
-    private let selectionGen = UISelectionFeedbackGenerator()
+    // 종목 전환 진동 — 세트완료(heavy)와 구별되는 medium 단발. selection 틱은 최약체라
+    // 체육관 환경에서 인지 불가 + 예열 전 첫 발화 누락(위 commitGen 교훈과 동일 함정)으로
+    // "피드백이 전혀 없다"는 실기기 보고(2026-07-24)의 원인이었다. 생성 시 예열해 첫 탭부터 보장.
+    private let switchGen: UIImpactFeedbackGenerator = {
+        let g = UIImpactFeedbackGenerator(style: .medium)
+        g.prepare()
+        return g
+    }()
     private func selectionTick() {
-        selectionGen.selectionChanged()
-        selectionGen.prepare()   // 로테이션 연속 전환 대비 재예열
+        switchGen.impactOccurred(intensity: 1.0)
+        switchGen.prepare()   // 로테이션 연속 전환 대비 재예열
     }
     #else
     private enum Dummy { case light, medium, heavy }
