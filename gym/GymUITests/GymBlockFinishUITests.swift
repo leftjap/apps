@@ -74,7 +74,7 @@ final class GymBlockFinishUITests: XCTestCase {
             let cur = chip(app, "current", name)
             XCTAssertTrue(cur.waitForExistence(timeout: 5), "\(name) 가 현재 칩이어야 한다")
             // 전환 애니(슬라이드 0.25·팝 0.38·링 0.55) 정착 대기 — 비행 중 프레임 측정 방지
-            Thread.sleep(forTimeInterval: 0.8)
+            Thread.sleep(forTimeInterval: 1.2)
             let centered = (app.frame.width - cur.frame.width) / 2   // 중앙 정렬이었다면 이 x
             XCTAssertGreaterThan(cur.frame.minX, 0,
                                  "\(name) 현재 칩이 좌측으로 잘리면 안 된다 (실측 \(cur.frame.minX))")
@@ -183,7 +183,7 @@ final class GymBlockFinishUITests: XCTestCase {
         XCTAssertEqual(exname.label, "덤벨 플라이", "히어로가 탭한 종목으로 바뀌어야 한다")
         let newCur = chip(app, "current", "덤벨 플라이")
         XCTAssertTrue(newCur.waitForExistence(timeout: 5), "레일 current 칩도 탭한 종목이어야 한다")
-        Thread.sleep(forTimeInterval: 0.8)   // 전환 애니 정착
+        Thread.sleep(forTimeInterval: 1.2)   // 전환 애니 정착 (두 박자: dwell 0.22 + 이동 + 스쿼시 ~0.99s)
 
         // 삽입 순서 고정(2026-07-24) — 벤치프레스는 자리를 지킨 채 현재 칩 왼쪽으로 접힌다
         let bench = chip(app, "upcoming", "벤치프레스")

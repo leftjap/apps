@@ -182,8 +182,12 @@ struct RailChipPressable: ViewModifier {
 // 착지 연출은 도착 시점에 — 탭 즉시 터뜨리면 스크롤 이동과 겹쳐 "이동→안착" 서사가 죽는다
 // (실기기 보고 2026-07-24 "안착했다는 느낌이 안 산다"). 스크롤(railTravel)이 끝나는 시점에
 // 스쿼시+링을 재생해 이동의 종점을 찍는다.
+// 두 박자 이동(사용자 2026-07-24 최종): 정렬이 끝 그림을 표준화해 위치 신호가 0 이므로,
+// 이동 신호는 여정에 넣는다 — 탭 자리에서 승격된 채 dwell 만큼 머문 뒤("네가 고른 게 이거")
+// 정렬 위치로 미끄러진다("작업 위치로 이동").
 enum RailLanding {
-    static let travel = 0.36    // 스크롤 이동 대기 (align 스프링 response 와 동조)
+    static let dwell = 0.22     // 탭 자리 머무름 — 승격을 손가락 위치에서 보여주는 박자
+    static let travel = 0.58    // dwell + 스크롤 이동 — 착지 스쿼시·링·안착 햅틱의 동조점
 }
 
 struct CurrentChipLandPop: ViewModifier {
@@ -288,6 +292,9 @@ public struct GymFooterRail: View {
     @State private var curMinX: CGFloat = 0
     @State private var chipsMaxX: CGFloat = 0
     @State private var viewportW: CGFloat = 0
+    // 두 박자 이동 — 지연 정렬 예약의 세대 토큰(연타 시 이전 예약 무효화) + 머무름 종료 시각
+    @State private var alignGen = 0
+    @State private var dwellUntil: Date = .distantPast
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollTo 가 클램프돼 좌측 inset 정렬이 실패한다 — 부족분만 채운다.
@@ -325,9 +332,10 @@ public struct GymFooterRail: View {
                                                 onLongPress: { onLongPressItem(item.blockIdx) }))
                 }
             }
-            // 재정렬 슬라이드 — 완료 칩이 왼쪽으로 미끄러지고 새 current 가 제자리를 찾는다.
+            // 슬라이드·모프 — 추가/삭제 시 자리 이동 + 승격/강등 시 칩 폭·스타일 전환(제자리 모프).
+            // 상태를 키에 포함해야 dwell 동안 승격 변형이 스냅이 아니라 부드러운 모프로 보인다.
             .animation(GymSnapshot.isActive || reduceMotion ? nil : .easeOut(duration: 0.25),
-                       value: items.map(\.id))
+                       value: items.map { "\($0.blockIdx):\($0.state.idName)" }.joined(separator: "|"))
             .background(GeometryReader { g in   // 칩 줄 우단 — 스페이서는 제외해야 되먹임이 없다
                 Color.clear.preference(key: ChipsMaxXKey.self,
                                        value: g.frame(in: .named("railContent")).maxX)
@@ -389,17 +397,29 @@ public struct GymFooterRail: View {
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                             .onChange(of: vp.size.width) { _, w in viewportW = w }
+                            // 두 박자 — 탭 자리에서 dwell 만큼 머문 뒤 정렬 위치로 미끄러진다
                             .onChange(of: currentIdx) { _, _ in
-                                align(proxy, viewportW: vp.size.width, animated: true)
+                                alignGen += 1
+                                let gen = alignGen
+                                dwellUntil = Date().addingTimeInterval(RailLanding.dwell)
+                                DispatchQueue.main.asyncAfter(deadline: .now() + RailLanding.dwell) {
+                                    guard gen == alignGen else { return }   // 이후 전환이 예약 대체
+                                    align(proxy, viewportW: vp.size.width, animated: true)
+                                }
                             }
+                            // 측정값 변화로 인한 즉시 정렬은 dwell 중 차단 — 안 그러면 승격 직후
+                            // 칩 폭 변화가 무애니 스냅으로 끝 그림을 선점해 머무름이 죽는다
                             .onChange(of: curMaxX) { _, _ in
+                                guard Date() >= dwellUntil else { return }
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                             .onChange(of: curMinX) { _, _ in
+                                guard Date() >= dwellUntil else { return }
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                             // 스페이서가 늘어난 뒤 재정렬 — 늘기 전 align 은 클램프돼 있었다
                             .onChange(of: trailingSpacer) { _, _ in
+                                guard Date() >= dwellUntil else { return }
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                         }

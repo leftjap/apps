@@ -593,8 +593,8 @@ public final class GymAppModel: ObservableObject {
         selectedBlockIdx = bi
         if changed {
             selectionTick()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.38) { [weak self] in
-                self?.landingTick()   // 착지 스쿼시(RailLanding.travel 0.36s 후)와 동조
+            DispatchQueue.main.asyncAfter(deadline: .now() + RailLanding.travel + 0.02) { [weak self] in
+                self?.landingTick()   // 착지 스쿼시(두 박자: dwell + 이동 후)와 동조
             }
         }
     }
