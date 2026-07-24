@@ -73,6 +73,8 @@ final class GymBlockFinishUITests: XCTestCase {
         func assertLeftBiased(_ name: String, _ tag: String) {
             let cur = chip(app, "current", name)
             XCTAssertTrue(cur.waitForExistence(timeout: 5), "\(name) 가 현재 칩이어야 한다")
+            // 전환 애니(슬라이드 0.25·팝 0.38·링 0.55) 정착 대기 — 비행 중 프레임 측정 방지
+            Thread.sleep(forTimeInterval: 0.8)
             let centered = (app.frame.width - cur.frame.width) / 2   // 중앙 정렬이었다면 이 x
             XCTAssertGreaterThan(cur.frame.minX, 0,
                                  "\(name) 현재 칩이 좌측으로 잘리면 안 된다 (실측 \(cur.frame.minX))")

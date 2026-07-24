@@ -166,9 +166,25 @@ struct CurrentChipLandPop: ViewModifier {
             .keyframeAnimator(initialValue: 1.0, trigger: fired) { view, s in
                 view.scaleEffect(s)
             } keyframes: { _ in
-                MoveKeyframe(0.9)
-                CubicKeyframe(1.06, duration: 0.18)
-                CubicKeyframe(1.0, duration: 0.16)
+                MoveKeyframe(0.88)
+                CubicKeyframe(1.09, duration: 0.2)
+                CubicKeyframe(1.0, duration: 0.18)
+            }
+            // crail 확산 링 — 승격 순간 칩 테두리에서 바깥으로 퍼지며 소멸 (0.55s).
+            // 세트완료 햅틱 링과 같은 모션 언어. 팝(6%→9% 강화)만으론 눈에 안 띈다는
+            // 실기기 보고(2026-07-24) 보강.
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(GY.crailBase, lineWidth: 2.5)
+                    .keyframeAnimator(initialValue: 0.0, trigger: fired) { ring, p in
+                        ring
+                            .scaleEffect(1 + 0.45 * p)
+                            .opacity(p <= 0 ? 0 : (1 - p) * 0.85)
+                    } keyframes: { _ in
+                        MoveKeyframe(0.0)
+                        CubicKeyframe(1.0, duration: 0.55)
+                    }
+                    .allowsHitTesting(false)
             }
             .onAppear {
                 guard !GymSnapshot.isActive, !reduceMotion else { return }
