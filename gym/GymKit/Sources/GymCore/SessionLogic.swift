@@ -175,17 +175,16 @@ public enum GymSessionLogic {
         }
     }
 
-    /// [완료(finishedAt 오름차순) · 현재 · 예정(원래순)]. single 블록만. 현재는 완료여도 current.
+    /// 삽입 순서 고정 — 칩은 자리를 바꾸지 않고 상태만 제자리 표기 (사용자 2026-07-24 결정).
+    /// 구 재정렬([완료·현재·예정], PWA computeFooterOrder 정합)은 전환 시 재정렬·스크롤·승격이
+    /// 동시에 일어나 "무슨 일이 났는지" 읽기 불가능한 혼란을 만들어 폐기 — PWA 와 의도적 비정합.
+    /// 현재 칩의 좌측 쏠림·앞 칩 접힘은 railScrollTarget(스크롤)이 담당. 현재는 완료여도 current.
     public static func footerOrder(blocks: [GymBlock], currentIdx: Int) -> [GymFooterItem] {
-        let entries = blocks.enumerated().filter { $0.element.type == "single" }
-        let isCur = { (i: Int) in i == currentIdx }
-        let done = entries.filter { !isCur($0.offset) && isBlockDone($0.element) }
-            .sorted { ($0.element.finishedAt ?? 0) < ($1.element.finishedAt ?? 0) }
-        let current = entries.filter { isCur($0.offset) }
-        let pending = entries.filter { !isCur($0.offset) && !isBlockDone($0.element) }
-        return done.map { GymFooterItem(index: $0.offset, state: .done) }
-            + current.map { GymFooterItem(index: $0.offset, state: .current) }
-            + pending.map { GymFooterItem(index: $0.offset, state: .upcoming) }
+        blocks.enumerated().filter { $0.element.type == "single" }.map {
+            GymFooterItem(index: $0.offset,
+                          state: $0.offset == currentIdx ? .current
+                              : (isBlockDone($0.element) ? .done : .upcoming))
+        }
     }
 
     // 레일 스크롤 정렬 대상. `.id(items 위치)` 로 스크롤한다.
@@ -207,7 +206,8 @@ public enum GymSessionLogic {
     ///   a = railLeftInset / (vpW − w).
     /// - **현재 칩이 없으면(전 종목 완료) 선두로 되돌린다** — 안 그러면 SwiftUI ScrollView 가
     ///   직전 오프셋을 유지해 완료 칩이 좌측으로 잘린다 (레일 작업지시서 §7 · PWA scrollLeft 0).
-    /// - 완료 칩이 없으면 가릴 게 없으므로 선두 (PWA 의 clamp 0 과 동치).
+    /// - 현재 칩이 선두면 가릴 게 없으므로 선두. 앞에 칩이 있으면(완료든 건너뛴 미완료든 —
+    ///   삽입 순서 고정, 2026-07-24) 좌측 inset 앵커로 접는다.
     /// - 폭 미측정(preference 전)은 좌측 밀착 — 중앙으로 튀었다 되돌아오는 흔들림 방지.
     public static func railScrollTarget(states: [GymRailState],
                                         currentChipMinX: Double,
@@ -215,7 +215,7 @@ public enum GymSessionLogic {
                                         viewportWidth: Double) -> GymRailScroll? {
         guard !states.isEmpty else { return nil }
         guard let idx = states.firstIndex(of: .current) else { return .leading }
-        guard states.contains(.done) else { return .leading }
+        guard idx > 0 else { return .leading }
         let w = currentChipMaxX - currentChipMinX
         guard w > 0, viewportWidth > w else { return .anchored(idx: idx, anchorX: 0) }
         return .anchored(idx: idx, anchorX: railLeftInset / (viewportWidth - w))

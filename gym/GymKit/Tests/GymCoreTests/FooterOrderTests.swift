@@ -2,8 +2,10 @@ import Foundation
 import Testing
 @testable import GymCore
 
-// 하단 운동종목 레일 순서 — PWA session.js computeFooterOrder 정합.
-// [완료(finishedAt 오름차순) · 현재 · 예정(원래순)] · single 블록만 · 원본 인덱스 보존.
+// 하단 운동종목 레일 순서 — 삽입 순서 고정 (사용자 2026-07-24 결정).
+// 종목 전환 시 재정렬(구 PWA computeFooterOrder 정합)이 "무슨 일이 났는지" 읽기 불가능한
+// 혼란을 만들어 폐기 — 칩은 절대 자리를 바꾸지 않고, 상태(done/current/upcoming)만 제자리 표기.
+// 현재 칩의 좌측 쏠림은 railScrollTarget(스크롤)이 담당. single 블록만 · 원본 인덱스 보존.
 @Suite struct FooterOrderTests {
 
     func blk(_ ex: String, done: Bool, finishedAt: Double? = nil, type: String = "single") -> GymBlock {
@@ -11,17 +13,17 @@ import Testing
                  sets: [GymSet(weight: 50, reps: 10, done: done)], finishedAt: finishedAt)
     }
 
-    @Test func doneChipsMoveLeftInFinishOrderAndPendingRight() {
+    @Test func insertionOrderIsKeptWithStatesMappedInPlace() {
         let blocks = [
             blk("a", done: false),                  // 0 pending
-            blk("b", done: true, finishedAt: 200),  // 1 done (나중)
+            blk("b", done: true, finishedAt: 200),  // 1 done
             blk("c", done: false),                  // 2 current
-            blk("d", done: true, finishedAt: 100),  // 3 done (먼저)
+            blk("d", done: true, finishedAt: 100),  // 3 done
             blk("e", done: false),                  // 4 pending
         ]
         let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 2)
-        #expect(out.map(\.index) == [3, 1, 2, 0, 4])
-        #expect(out.map(\.state) == [.done, .done, .current, .upcoming, .upcoming])
+        #expect(out.map(\.index) == [0, 1, 2, 3, 4])
+        #expect(out.map(\.state) == [.upcoming, .done, .current, .done, .upcoming])
     }
 
     @Test func currentBeatsDoneEvenIfAllSetsComplete() {
@@ -31,13 +33,13 @@ import Testing
         #expect(out.map(\.state) == [.done, .current])
     }
 
-    @Test func partiallyDoneBlockIsUpcomingNotDone() {
-        // PWA 'hold' — 시안·PWA 모두 예정(평면 아웃라인)과 같은 룩.
+    @Test func partiallyDoneBlockIsUpcomingNotDoneAndStaysPut() {
+        // PWA 'hold' — 예정(평면 아웃라인)과 같은 룩. 자리도 그대로.
         var b = blk("a", done: false)
         b.sets = [GymSet(weight: 50, reps: 10, done: true), GymSet(weight: 50, reps: 10, done: false)]
         let out = GymSessionLogic.footerOrder(blocks: [b, blk("cur", done: false)], currentIdx: 1)
-        #expect(out.map(\.index) == [1, 0])          // current 먼저, hold 는 pending 쪽
-        #expect(out.map(\.state) == [.current, .upcoming])
+        #expect(out.map(\.index) == [0, 1])
+        #expect(out.map(\.state) == [.upcoming, .current])
     }
 
     @Test func nonSingleBlocksExcluded() {
@@ -46,11 +48,11 @@ import Testing
         #expect(out.map(\.index) == [0])
     }
 
-    @Test func noCurrentStillOrdersDoneBeforePending() {
+    @Test func noCurrentKeepsInsertionOrderToo() {
         let blocks = [blk("a", done: false), blk("b", done: true, finishedAt: 5)]
         let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: -1)
-        #expect(out.map(\.index) == [1, 0])
-        #expect(out.map(\.state) == [.done, .upcoming])
+        #expect(out.map(\.index) == [0, 1])
+        #expect(out.map(\.state) == [.upcoming, .done])
     }
 }
 
@@ -90,11 +92,20 @@ import Testing
         #expect(abs((minX - scrollLeft) - GymSessionLogic.railLeftInset) < 0.001)
     }
 
-    // 완료 칩이 없으면 가릴 게 없다 — 선두 고정 (PWA clamp 0 정합).
-    @Test func currentWithNoDoneChipsStaysLeading() {
+    // 현재 칩이 선두면 가릴 게 없다 — 선두 고정.
+    @Test func currentAtFrontStaysLeading() {
         let states: [GymSessionLogic.GymRailState] = [.current, .upcoming, .upcoming]
         #expect(GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 4,
                                                  currentChipMaxX: 146, viewportWidth: 300) == .leading)
+    }
+
+    // 삽입 순서 고정(2026-07-24) — 미완료 칩을 건너뛰고 뒤 종목을 현재로 잡아도(로테이션)
+    // 현재 칩은 좌측 inset 에 앵커, 앞의 미완료 칩은 완료 칩과 똑같이 좌측으로 접힌다.
+    @Test func currentBehindUnfinishedChipsStillAnchorsLeft() {
+        let states: [GymSessionLogic.GymRailState] = [.upcoming, .current, .upcoming]
+        let t = GymSessionLogic.railScrollTarget(states: states, currentChipMinX: 140,
+                                                 currentChipMaxX: 282, viewportWidth: 300)
+        #expect(t == .anchored(idx: 1, anchorX: 26.0 / 158.0))
     }
 
     // 폭 미측정(preference 전) — 중앙으로 튀었다가 되돌아오지 않게 좌측 밀착으로 두고,

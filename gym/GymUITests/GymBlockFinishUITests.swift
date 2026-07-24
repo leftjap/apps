@@ -181,14 +181,30 @@ final class GymBlockFinishUITests: XCTestCase {
         let exname = app.staticTexts["session-exname"]
         XCTAssertTrue(exname.waitForExistence(timeout: 5))
         XCTAssertEqual(exname.label, "덤벨 플라이", "히어로가 탭한 종목으로 바뀌어야 한다")
-        XCTAssertTrue(chip(app, "current", "덤벨 플라이").waitForExistence(timeout: 5),
-                      "레일 current 칩도 탭한 종목이어야 한다")
+        let newCur = chip(app, "current", "덤벨 플라이")
+        XCTAssertTrue(newCur.waitForExistence(timeout: 5), "레일 current 칩도 탭한 종목이어야 한다")
+        Thread.sleep(forTimeInterval: 0.8)   // 전환 애니 정착
 
-        // 되돌아가기 — 벤치프레스 재탭 (로테이션 왕복)
-        chip(app, "upcoming", "벤치프레스").tap()
+        // 삽입 순서 고정(2026-07-24) — 벤치프레스는 자리를 지킨 채 현재 칩 왼쪽으로 접힌다
+        let bench = chip(app, "upcoming", "벤치프레스")
+        XCTAssertTrue(bench.exists, "이전 종목은 미완료(upcoming) 상태로 남는다")
+        XCTAssertLessThan(bench.frame.maxX, newCur.frame.minX + 1,
+                          "이전 종목 칩은 현재 칩 왼쪽에 접혀야 한다 (재정렬 아님)")
+        shot(app, "80-rotation-switch")
+
+        // 되돌아가기 — 접힌 칩은 레일을 오른쪽으로 끌어 연 뒤 탭 (로테이션 왕복)
+        let y = 0.908
+        for _ in 1...3 {
+            if bench.isHittable { break }
+            app.coordinate(withNormalizedOffset: CGVector(dx: 0.15, dy: y))
+                .press(forDuration: 0.05,
+                       thenDragTo: app.coordinate(withNormalizedOffset: CGVector(dx: 0.82, dy: y)))
+        }
+        XCTAssertTrue(bench.isHittable, "스크롤로 이전 종목 칩을 열람·탭할 수 있어야 한다")
+        bench.tap()
         XCTAssertTrue(chip(app, "current", "벤치프레스").waitForExistence(timeout: 5))
         XCTAssertEqual(exname.label, "벤치프레스", "재탭으로 원 종목 복귀")
-        shot(app, "80-rotation-switch")
+        shot(app, "81-rotation-back")
     }
 
     // 빈 세션 첫 종목 선택 시 시트가 닫히지 않아야 한다 (사용자 2026-07-23 — 2개 이상 담을 수 있어야).
