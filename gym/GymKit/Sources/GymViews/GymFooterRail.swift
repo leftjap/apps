@@ -177,9 +177,12 @@ struct CurrentChipLandPop: ViewModifier {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(GY.crailBase, lineWidth: 2.5)
                     .keyframeAnimator(initialValue: 0.0, trigger: fired) { ring, p in
+                        // 재생 중(0<p<1)에만 확산 — 종료 상태를 scale 1 로 되돌려야
+                        // 투명 링이 칩의 접근성 프레임을 부풀리지 않는다 (UI 테스트 실측 결함)
+                        let live = p > 0 && p < 1
                         ring
-                            .scaleEffect(1 + 0.45 * p)
-                            .opacity(p <= 0 ? 0 : (1 - p) * 0.85)
+                            .scaleEffect(live ? 1 + 0.45 * p : 1)
+                            .opacity(live ? (1 - p) * 0.85 : 0)
                     } keyframes: { _ in
                         MoveKeyframe(0.0)
                         CubicKeyframe(1.0, duration: 0.55)
