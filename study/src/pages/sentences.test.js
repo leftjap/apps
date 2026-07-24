@@ -206,3 +206,88 @@ describe('mountSentences — 렌더·상호작용', () => {
     expect(host.textContent).toContain('아직 공부한 문장이 없어요');
   });
 });
+
+/* 2026-07-24 사용자 지시 — ① 정렬에 학습 세션 점수(발음 로그) 반영 ② 평가+정답보기 후
+ * 그 문장은 라운드 완료로 리셋(다시 가림·칩 해제)되고 새 위치로 이동. 칩은 '이번 라운드 입력'이며
+ * 저장된 평가는 위치로만 반영한다(켜둔 채 남기지 않는다). */
+describe('buildSentenceRows — 세션 점수 반영 정렬', () => {
+  it('같은 난이도 안에서 최근 발음 점수가 낮은 문장이 위로 온다', () => {
+    const cards = [
+      { id: 'hi', sentence: 'a', meaning: '고득점', lastResult: 'X' },
+      { id: 'lo', sentence: 'b', meaning: '저득점', lastResult: 'X' },
+    ];
+    const pron = [
+      { sentenceId: 'hi', date: '2026-07-20', overallScore: 95 },
+      { sentenceId: 'lo', date: '2026-07-20', overallScore: 55 },
+    ];
+    expect(buildSentenceRows(cards, [], pron).map((r) => r.id)).toEqual(['lo', 'hi']);
+  });
+
+  it('점수 기록이 없는 문장은 같은 난이도의 점수 있는 문장 뒤로 (정보 없음 → 뒤)', () => {
+    const cards = [
+      { id: 'none', sentence: 'a', meaning: '무점수' },
+      { id: 'lo', sentence: 'b', meaning: '저득점' },
+    ];
+    const pron = [{ sentenceId: 'lo', date: '2026-07-20', overallScore: 55 }];
+    expect(buildSentenceRows(cards, [], pron).map((r) => r.id)).toEqual(['lo', 'none']);
+  });
+
+  it('점수는 최근 날짜 기록을 쓴다', () => {
+    const cards = [
+      { id: 'a', sentence: 'a', meaning: 'ㄱ' },
+      { id: 'b', sentence: 'b', meaning: 'ㄴ' },
+    ];
+    const pron = [
+      { sentenceId: 'a', date: '2026-07-01', overallScore: 40 },
+      { sentenceId: 'a', date: '2026-07-20', overallScore: 90 }, // 최근이 정본
+      { sentenceId: 'b', date: '2026-07-20', overallScore: 80 },
+    ];
+    expect(buildSentenceRows(cards, [], pron).map((r) => r.id)).toEqual(['b', 'a']);
+  });
+});
+
+describe('mountSentences — 평가 라운드 완료 리셋', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>';
+    window.location.hash = '';
+    window.studyDB = {
+      reviewQueue: {
+        where: () => ({ equals: () => ({ toArray: async () => [
+          { id: 'a', lang: 'en', sentence: 'I called you.', meaning: '너한테 전화했었어.', lastResult: 'O' },
+          { id: 'b', lang: 'en', sentence: 'Are you hungry?', meaning: '배고파?' },
+        ] }) }),
+        update: async () => {},
+      },
+      sessionLogs: { where: () => ({ equals: () => ({ toArray: async () => [] }) }) },
+    };
+  });
+
+  it('저장된 기존 평가는 칩을 켜두지 않는다 — 위치로만 반영', async () => {
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(host.querySelectorAll('.vl-lv.on').length).toBe(0); // a 의 lastResult=O 여도 칩은 꺼짐
+    // 위치 반영: 쉬움(O) 평가된 a 가 미평가 b 아래
+    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent))
+      .toEqual(['배고파?', '너한테 전화했었어.']);
+  });
+
+  it('정답 공개 + 평가 → 잠시 뒤 다시 가려지고 칩이 꺼진다 (라운드 완료)', async () => {
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await new Promise((r) => setTimeout(r, 0));
+    const row = [...host.querySelectorAll('.vl-row')][0]; // b
+    const en = row.querySelector('.en');
+    const reveal = row.querySelector('.vl-reveal');
+    reveal.click();
+    expect(en.classList.contains('masked')).toBe(false);
+    const chip = row.querySelector('.vl-lv[data-level="X"]');
+    chip.click();
+    expect(chip.classList.contains('on')).toBe(true); // 직후엔 피드백으로 켜짐
+    vi.useFakeTimers();
+    try { vi.advanceTimersByTime(700); } finally { vi.useRealTimers(); }
+    expect(en.classList.contains('masked')).toBe(true);   // 다시 가림
+    expect(chip.classList.contains('on')).toBe(false);    // 칩 해제
+    expect(reveal.textContent).toBe('정답');
+  });
+});
