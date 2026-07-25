@@ -461,7 +461,7 @@ public struct SessionScreenView: View {
                     exOver: prevExVol > 0 && blockDone >= prevExVol,
                     over: ov, burstMoment: burstMoment)
             }
-            // 레일 순서 = 삽입 순서 고정, 상태만 제자리 표기 (2026-07-24 — PWA 와 의도적 비정합).
+            // 레일 순서 = [완료(완료순) 좌측 · 현재·미완료는 삽입 순서 유지] (2026-07-24).
             // 탭·꾹누르기는 원본 블록 인덱스(it.index)로 전달.
             // 전부 완료면 current 없음 → 완료된 종목이 흰 카드로 남지 않고 체크 칩이 된다.
             let railItems = GymSessionLogic.footerOrder(blocks: model.session.blocks,

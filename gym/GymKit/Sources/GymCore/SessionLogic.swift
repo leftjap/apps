@@ -175,16 +175,21 @@ public enum GymSessionLogic {
         }
     }
 
-    /// 삽입 순서 고정 — 칩은 자리를 바꾸지 않고 상태만 제자리 표기 (사용자 2026-07-24 결정).
-    /// 구 재정렬([완료·현재·예정], PWA computeFooterOrder 정합)은 전환 시 재정렬·스크롤·승격이
-    /// 동시에 일어나 "무슨 일이 났는지" 읽기 불가능한 혼란을 만들어 폐기 — PWA 와 의도적 비정합.
+    /// [완료(finishedAt 오름차순) · 나머지(삽입 순서)] — 두 규칙의 분리 (사용자 2026-07-24).
+    /// - **완료는 좌측으로**: 완료 처리가 '정리됨'을 위치로 표현한다 (1,2,3 중 2 완료 → 2,1,3).
+    /// - **현재·미완료는 자리 유지**: 로테이션 전환에서 순서가 흔들리면 재정렬·스크롤·승격이 동시에
+    ///   일어나 "무슨 일이 났는지" 읽을 수 없다. current 를 pending 앞으로 당기지 않는 것이
+    ///   구 동작(PWA computeFooterOrder)과의 유일한 차이.
     /// 현재 칩의 좌측 쏠림·앞 칩 접힘은 railScrollTarget(스크롤)이 담당. 현재는 완료여도 current.
     public static func footerOrder(blocks: [GymBlock], currentIdx: Int) -> [GymFooterItem] {
-        blocks.enumerated().filter { $0.element.type == "single" }.map {
-            GymFooterItem(index: $0.offset,
-                          state: $0.offset == currentIdx ? .current
-                              : (isBlockDone($0.element) ? .done : .upcoming))
-        }
+        let entries = blocks.enumerated().filter { $0.element.type == "single" }
+        let isDoneChip = { (i: Int, b: GymBlock) in i != currentIdx && isBlockDone(b) }
+        let done = entries.filter { isDoneChip($0.offset, $0.element) }
+            .sorted { ($0.element.finishedAt ?? 0) < ($1.element.finishedAt ?? 0) }
+        let rest = entries.filter { !isDoneChip($0.offset, $0.element) }
+        return done.map { GymFooterItem(index: $0.offset, state: .done) }
+            + rest.map { GymFooterItem(index: $0.offset,
+                                       state: $0.offset == currentIdx ? .current : .upcoming) }
     }
 
     // 레일 스크롤 정렬 대상. `.id(items 위치)` 로 스크롤한다.

@@ -2,9 +2,11 @@ import Foundation
 import Testing
 @testable import GymCore
 
-// 하단 운동종목 레일 순서 — 삽입 순서 고정 (사용자 2026-07-24 결정).
-// 종목 전환 시 재정렬(구 PWA computeFooterOrder 정합)이 "무슨 일이 났는지" 읽기 불가능한
-// 혼란을 만들어 폐기 — 칩은 절대 자리를 바꾸지 않고, 상태(done/current/upcoming)만 제자리 표기.
+// 하단 운동종목 레일 순서 — **완료는 좌측(완료순), 미완료·현재는 삽입 순서 유지** (사용자 2026-07-24).
+// 두 규칙은 분리된다:
+//  - 완료 처리는 '정리됨'을 위치로 표현 → 좌측으로 보낸다 (1,2,3 중 2 완료 → 2,1,3).
+//  - 종목 전환(로테이션)은 자리를 바꾸지 않는다 → 재정렬·스크롤·승격 동시 발생의 혼란 방지.
+// 구 동작(PWA computeFooterOrder)은 current 까지 pending 앞으로 당겨 로테이션에서 순서가 흔들렸다.
 // 현재 칩의 좌측 쏠림은 railScrollTarget(스크롤)이 담당. single 블록만 · 원본 인덱스 보존.
 @Suite struct FooterOrderTests {
 
@@ -13,17 +15,32 @@ import Testing
                  sets: [GymSet(weight: 50, reps: 10, done: done)], finishedAt: finishedAt)
     }
 
-    @Test func insertionOrderIsKeptWithStatesMappedInPlace() {
+    // 사용자 정본 예시(2026-07-24): 1,2,3 중 2 를 완료하면 2,1,3 — 완료만 좌측으로 이동하고
+    // 남은 1,3 은 삽입 순서를 지킨다. a80de3f(삽입 순서 전면 고정)가 이 동작을 죽인 회귀 재현.
+    @Test func finishedBlockMovesLeftWhileUnfinishedKeepOrder() {
+        let blocks = [
+            blk("a", done: false),                  // 0 pending (완료 후 current)
+            blk("b", done: true, finishedAt: 100),  // 1 done → 좌측
+            blk("c", done: false),                  // 2 pending
+        ]
+        let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 0)
+        #expect(out.map(\.index) == [1, 0, 2])
+        #expect(out.map(\.state) == [.done, .current, .upcoming])
+    }
+
+    @Test func doneChipsGoLeftInFinishOrderAndTheRestKeepInsertionOrder() {
         let blocks = [
             blk("a", done: false),                  // 0 pending
-            blk("b", done: true, finishedAt: 200),  // 1 done
+            blk("b", done: true, finishedAt: 200),  // 1 done (나중)
             blk("c", done: false),                  // 2 current
-            blk("d", done: true, finishedAt: 100),  // 3 done
+            blk("d", done: true, finishedAt: 100),  // 3 done (먼저)
             blk("e", done: false),                  // 4 pending
         ]
         let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 2)
-        #expect(out.map(\.index) == [0, 1, 2, 3, 4])
-        #expect(out.map(\.state) == [.upcoming, .done, .current, .done, .upcoming])
+        // 완료 둘은 완료순으로 좌측(3→1), 나머지는 삽입 순서(0,2,4) — current 를 pending 앞으로
+        // 당기지 않는 게 구 동작([3,1,2,0,4])과의 차이 (로테이션 순서 보존).
+        #expect(out.map(\.index) == [3, 1, 0, 2, 4])
+        #expect(out.map(\.state) == [.done, .done, .upcoming, .current, .upcoming])
     }
 
     @Test func currentBeatsDoneEvenIfAllSetsComplete() {
@@ -48,11 +65,11 @@ import Testing
         #expect(out.map(\.index) == [0])
     }
 
-    @Test func noCurrentKeepsInsertionOrderToo() {
+    @Test func noCurrentStillSendsDoneLeft() {
         let blocks = [blk("a", done: false), blk("b", done: true, finishedAt: 5)]
         let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: -1)
-        #expect(out.map(\.index) == [0, 1])
-        #expect(out.map(\.state) == [.upcoming, .done])
+        #expect(out.map(\.index) == [1, 0])
+        #expect(out.map(\.state) == [.done, .upcoming])
     }
 }
 

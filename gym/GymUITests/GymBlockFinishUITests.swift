@@ -207,6 +207,35 @@ final class GymBlockFinishUITests: XCTestCase {
         shot(app, "81-rotation-back")
     }
 
+    // 순서 밖 완료 — 완료한 종목은 앞의 미완료 종목을 지나 좌측으로 간다 (사용자 2026-07-24).
+    // a80de3f(삽입 순서 전면 고정)가 죽인 회귀. 실사용 흐름: 뒤 종목으로 전환 → 그것만 완료.
+    func testFinishingOutOfOrderMovesDoneChipLeftPastPending() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        // 데모: 인클라인(완료) · 벤치프레스(현재) · 덤벨 플라이 · 케이블 크로스오버
+        // 3번째(덤벨)로 전환해 그것만 완료 → 벤치는 아직 미완료로 남는다
+        chip(app, "upcoming", "덤벨 플라이").tap()
+        let cur = chip(app, "current", "덤벨 플라이")
+        XCTAssertTrue(cur.waitForExistence(timeout: 5))
+        Thread.sleep(forTimeInterval: 1.2)   // 두 박자 전환 정착
+        cur.press(forDuration: 0.8)
+        XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+        app.buttons["action-finish"].tap()
+
+        let doneDumbbell = chip(app, "done", "덤벨 플라이")
+        XCTAssertTrue(doneDumbbell.waitForExistence(timeout: 5), "덤벨은 완료 칩이어야 한다")
+        let pendingBench = chip(app, "current", "벤치프레스")   // 완료 후 첫 미완료 = 벤치
+        XCTAssertTrue(pendingBench.waitForExistence(timeout: 5), "벤치가 다시 현재 종목")
+        Thread.sleep(forTimeInterval: 1.2)   // 재정렬·정렬 애니 정착
+
+        XCTAssertLessThan(doneDumbbell.frame.maxX, pendingBench.frame.minX + 1,
+                          "완료한 덤벨이 미완료 벤치보다 왼쪽에 있어야 한다 (완료=좌측)")
+        shot(app, "90-out-of-order-finish")
+    }
+
     // 빈 세션 첫 종목 선택 시 시트가 닫히지 않아야 한다 (사용자 2026-07-23 — 2개 이상 담을 수 있어야).
     // PWA 정본(session.js:3757 "다중 선택 유지") 정합 — 네이티브만 empty→active 화면 스왑으로 시트가 소멸했다.
     func testFirstExercisePickKeepsSheetOpenForMultiSelect() {
