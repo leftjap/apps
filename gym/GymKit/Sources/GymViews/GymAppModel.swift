@@ -591,12 +591,24 @@ public final class GymAppModel: ObservableObject {
         guard session.blocks.indices.contains(bi) else { return }
         let changed = bi != currentBlockIdx
         selectedBlockIdx = bi
-        if changed {
-            selectionTick()
-            DispatchQueue.main.asyncAfter(deadline: .now() + RailLanding.travel + 0.02) { [weak self] in
-                self?.landingTick()   // 착지 스쿼시(두 박자: dwell + 이동 후)와 동조
-            }
-        }
+        if changed { scheduleSwitchHaptics() }
+    }
+    // 예약된 안착 틱 (플랫폼 무관 — 햅틱 자체는 UIKit 분기가 담당)
+    private var landingWork: DispatchWorkItem?
+    /// 출발 틱 + 예약 안착 틱. 이전 예약은 취소한다 — 연타 시 실제로 안착하지 않은 전환의 진동이
+    /// 중첩 발화하고, 전환 직후 홈으로 나가면 유령 진동이 남았다 (감사 확정 #7·#10).
+    private func scheduleSwitchHaptics() {
+        selectionTick()
+        landingWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.landingTick() }
+        landingWork = work
+        // 착지 스쿼시(두 박자: dwell + 이동 후)와 동조
+        DispatchQueue.main.asyncAfter(deadline: .now() + RailLanding.travel + 0.02, execute: work)
+    }
+    /// 세션 화면을 벗어날 때 예약된 안착 진동을 버린다 (다른 화면에서 울리는 유령 진동 차단).
+    public func cancelPendingSwitchHaptics() {
+        landingWork?.cancel()
+        landingWork = nil
     }
     // 운동 추가 (§6-2) — 프리셋 ① 직전 세션 카피 → ③ 기본값. 첫 종목 = startTime.
     /// 운동 추가 시트가 처음 열 부위 — 마지막으로 종목을 고른 부위를 기억한다. 없으면 등(back).
@@ -623,11 +635,18 @@ public final class GymAppModel: ObservableObject {
     }
     // 운동 제거 (§6-2 토글 OFF·§6-9 삭제).
     public func removeExercise(_ exId: String) {
+        // 삭제 전 인덱스 — 커서가 정수라 앞의 블록이 빠지면 그대로 두면 옆 종목을 가리킨다
+        // (감사 확정 #6·#13: 벤치 지웠는데 운동 중이던 스쿼트가 데드리프트로 조용히 바뀜).
+        let removedIdx = session.blocks.firstIndex { $0.type == "single" && $0.exerciseId == exId }
         let r = GymSessionLogic.removeExercise(from: session, exerciseId: exId) {
             GymExercises.resolvePart($0, custom: custom)
         }
         guard r.removed else { return }
         session = r.session
+        if let sel = selectedBlockIdx, let gone = removedIdx {
+            if gone == sel { selectedBlockIdx = nil }            // 보던 블록이 사라짐 → 기본 규칙으로
+            else if gone < sel { selectedBlockIdx = sel - 1 }    // 앞이 빠짐 → 같은 종목을 계속 가리키게
+        }
         if let sel = selectedBlockIdx, !session.blocks.indices.contains(sel) { selectedBlockIdx = nil }
     }
     // 세션 내 종목 포함 여부 (운동추가 시트 토글 상태).

@@ -286,6 +286,8 @@ public struct SessionScreenView: View {
             guard !reduceMotion else { return }
             exSwapMoment += 1
         }
+        // 세션 화면을 벗어나면 예약된 안착 진동을 버린다 — 홈에서 울리는 유령 진동 차단 (감사 #10)
+        .onDisappear { model.cancelPendingSwitchHaptics() }
         // 오버레이 z 순서 — 운동추가(69) < 키패드(79) < 액션시트(90), mock z-index 정합.
         .overlay { addexOverlay }
         .overlay { keypadOverlay }

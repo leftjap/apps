@@ -183,13 +183,19 @@ public enum GymSessionLogic {
     /// 현재 칩의 좌측 쏠림·앞 칩 접힘은 railScrollTarget(스크롤)이 담당. 현재는 완료여도 current.
     public static func footerOrder(blocks: [GymBlock], currentIdx: Int) -> [GymFooterItem] {
         let entries = blocks.enumerated().filter { $0.element.type == "single" }
-        let isDoneChip = { (i: Int, b: GymBlock) in i != currentIdx && isBlockDone(b) }
-        let done = entries.filter { isDoneChip($0.offset, $0.element) }
-            .sorted { ($0.element.finishedAt ?? 0) < ($1.element.finishedAt ?? 0) }
-        let rest = entries.filter { !isDoneChip($0.offset, $0.element) }
-        return done.map { GymFooterItem(index: $0.offset, state: .done) }
-            + rest.map { GymFooterItem(index: $0.offset,
-                                       state: $0.offset == currentIdx ? .current : .upcoming) }
+        // 위치 그룹핑은 완료 여부만 본다 — current 를 완료군에서 빼면 완료 칩을 탭해 열람하는
+        // 것만으로 순서가 흔들린다 (감사 확정 #1). 선택은 상태(state)에만 반영한다.
+        // 정렬키: 명시 완료(finishedAt)가 암묵 완료(전 세트 done·스탬프 없음)보다 앞. `?? 0` 은
+        // 암묵 완료를 가장 오래된 것으로 만들어 완료군 맨 왼쪽으로 튀게 했다 (감사 확정 #15).
+        let done = entries.filter { isBlockDone($0.element) }
+            .sorted { ($0.element.finishedAt ?? .greatestFiniteMagnitude)
+                    < ($1.element.finishedAt ?? .greatestFiniteMagnitude) }
+        let rest = entries.filter { !isBlockDone($0.element) }
+        return (done + rest).map {
+            GymFooterItem(index: $0.offset,
+                          state: $0.offset == currentIdx ? .current
+                              : (isBlockDone($0.element) ? .done : .upcoming))
+        }
     }
 
     // 레일 스크롤 정렬 대상. `.id(items 위치)` 로 스크롤한다.

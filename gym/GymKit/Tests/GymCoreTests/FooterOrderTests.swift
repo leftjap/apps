@@ -65,6 +65,37 @@ import Testing
         #expect(out.map(\.index) == [0])
     }
 
+    // 완료 칩을 탭해 열람하는 것만으로 순서가 흔들리면 안 된다 (감사 확정 #1).
+    // 위치 그룹핑은 isBlockDone 만 보고, current 여부는 상태에만 반영한다.
+    @Test func tappingDoneChipDoesNotReorderRail() {
+        let blocks = [
+            blk("bench", done: false),                  // 0
+            blk("squat", done: true, finishedAt: 100),  // 1 완료
+            blk("dead", done: false),                   // 2
+        ]
+        let base = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 0)
+        #expect(base.map(\.index) == [1, 0, 2])   // 완료 좌측
+        // 완료 칩(1) 을 탭해 선택 → 자리는 그대로, 상태만 current
+        let tapped = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 1)
+        #expect(tapped.map(\.index) == [1, 0, 2])
+        #expect(tapped.map(\.state) == [.current, .upcoming, .upcoming])
+        // 다른 미완료(2) 를 탭해도 순서 동일
+        #expect(GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 2).map(\.index) == [1, 0, 2])
+    }
+
+    // finishedAt 없는 '암묵 완료'(전 세트 done)가 `?? 0` 때문에 완료군 맨 왼쪽으로 튀면 안 된다 (감사 확정 #15).
+    // 명시 완료(스탬프 있음)보다 나중으로 두고, 암묵 완료끼리는 삽입 순서를 지킨다.
+    @Test func implicitlyDoneBlockSortsAfterStampedOnes() {
+        let blocks = [
+            blk("implicit", done: true),                 // 0 완료(스탬프 없음)
+            blk("stamped", done: true, finishedAt: 500), // 1 명시 완료
+            blk("cur", done: false),                     // 2 current
+        ]
+        let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: 2)
+        #expect(out.map(\.index) == [1, 0, 2])
+        #expect(out.map(\.state) == [.done, .done, .current])
+    }
+
     @Test func noCurrentStillSendsDoneLeft() {
         let blocks = [blk("a", done: false), blk("b", done: true, finishedAt: 5)]
         let out = GymSessionLogic.footerOrder(blocks: blocks, currentIdx: -1)

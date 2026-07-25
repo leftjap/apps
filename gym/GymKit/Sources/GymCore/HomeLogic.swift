@@ -151,4 +151,27 @@ public enum GymHomeLogic {
         }
         return out
     }
+
+    /// 운동 중 홈(HomeC) 이어하기 카드 요약. 전 종목 완료면 카드가 종목 이름 공백 + "SET 1/0" 으로
+    /// 깨졌고(감사 확정 #11), 세트 0개로 건너뛴 완료 종목을 '현재 운동중' 으로 표시해 레일·히어로와
+    /// 어긋났다(#12). 세션 화면의 heroBlockIdx 규칙(선택 → 첫 미완료 → 마지막)과 같은 블록을 고른다.
+    public struct GymResumeSummary: Equatable, Sendable {
+        public let blockIdx: Int?      // 표시 블록 (블록 없으면 nil)
+        public let setLine: String?    // "SET 3/5" — 표시할 세트가 없으면 nil
+        public let allDone: Bool       // 전 종목 완료 → "마무리" 상태 표기
+        public init(blockIdx: Int?, setLine: String?, allDone: Bool) {
+            self.blockIdx = blockIdx; self.setLine = setLine; self.allDone = allDone
+        }
+    }
+    public static func resumeSummary(session: GymSession) -> GymResumeSummary {
+        let singles = session.blocks.enumerated().filter { $0.element.type == "single" }
+        guard !singles.isEmpty else { return GymResumeSummary(blockIdx: nil, setLine: nil, allDone: false) }
+        let pending = singles.first { GymSessionLogic.firstUnfinishedBlockIdx(session) == $0.offset }
+        let shown = pending ?? singles.last!
+        let sets = shown.element.sets
+        let cursor = sets.firstIndex { !$0.done }
+        let line: String? = sets.isEmpty ? nil
+            : "SET \((cursor ?? sets.count - 1) + 1)/\(sets.count)"
+        return GymResumeSummary(blockIdx: shown.offset, setLine: line, allDone: pending == nil)
+    }
 }

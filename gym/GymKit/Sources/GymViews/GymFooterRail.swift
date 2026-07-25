@@ -206,9 +206,12 @@ struct CurrentChipLandPop: ViewModifier {
             }
             // crail 확산 링 — 착지 순간 칩 테두리에서 바깥으로 퍼지며 소멸 (0.55s).
             // 세트완료 햅틱 링과 같은 모션 언어.
+            // offset(y:-2) — CurrentChip body 마지막 줄의 렌더 오프셋은 레이아웃 프레임을 안 옮기므로
+            // overlay 가 2pt 아래에 붙어 링이 칩 테두리와 어긋난다 (감사 확정 #9).
             .overlay {
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(GY.crailBase, lineWidth: 2.5)
+                    .offset(y: -2)
                     .keyframeAnimator(initialValue: 0.0, trigger: fired) { ring, p in
                         // 재생 중(0<p<1)에만 확산 — 종료 상태를 scale 1 로 되돌려야
                         // 투명 링이 칩의 접근성 프레임을 부풀리지 않는다 (UI 테스트 실측 결함)
@@ -372,7 +375,10 @@ public struct GymFooterRail: View {
     }
 
     public var body: some View {
-        let currentIdx = items.firstIndex { $0.state == .current }
+        // 전환 감지 키는 **현재 칩의 blockIdx** — items 내 위치 idx 로 잡으면 완료 재정렬이 위치를
+        // 보정해 버리는 전환(순서 밖 완료·완료 칩 탭)에서 값이 안 바뀌어 두 박자가 통째로 스킵되고
+        // 착지 연출·안착 햅틱만 정지한 레일에 뒤늦게 붙는다 (감사 확정 #2·#5·#16).
+        let currentKey = items.first { $0.state == .current }?.blockIdx
         HStack(spacing: 8) {
             Group {
                 if GymSnapshot.isActive {
@@ -397,11 +403,19 @@ public struct GymFooterRail: View {
                                 align(proxy, viewportW: vp.size.width, animated: false)
                             }
                             .onChange(of: vp.size.width) { _, w in viewportW = w }
-                            // 두 박자 — 탭 자리에서 dwell 만큼 머문 뒤 정렬 위치로 미끄러진다
-                            .onChange(of: currentIdx) { _, _ in
+                            // 두 박자 — 탭 자리에서 dwell 만큼 머문 뒤 정렬 위치로 미끄러진다.
+                            // reduce-motion 은 두 박자를 건너뛰고 즉시 정렬 (감사 확정 #3·#8 —
+                            // 다른 모션은 전부 게이트돼 있는데 이 경로만 스프링이 남아 있었다).
+                            .onChange(of: currentKey) { _, _ in
+                                guard !reduceMotion else {
+                                    align(proxy, viewportW: vp.size.width, animated: false)
+                                    return
+                                }
                                 alignGen += 1
                                 let gen = alignGen
-                                dwellUntil = Date().addingTimeInterval(RailLanding.dwell)
+                                // 차단 창은 재정렬 애니(0.25s)보다 길어야 한다 — 짧으면 잔여 구간의
+                                // 측정값 변화가 무애니 스냅으로 스프링을 덮는다 (감사 확정 #4).
+                                dwellUntil = Date().addingTimeInterval(RailLanding.dwell + 0.06)
                                 DispatchQueue.main.asyncAfter(deadline: .now() + RailLanding.dwell) {
                                     guard gen == alignGen else { return }   // 이후 전환이 예약 대체
                                     align(proxy, viewportW: vp.size.width, animated: true)

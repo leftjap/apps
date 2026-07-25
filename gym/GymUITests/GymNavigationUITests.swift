@@ -59,6 +59,35 @@ final class GymNavigationUITests: XCTestCase {
                       "이어하기 탭 후 세션 화면이 떠야 한다")
     }
 
+    // 전 종목 완료 후 홈 — 이어하기 카드가 종목 이름 공백 + "SET 1/0" 으로 깨지지 않아야 한다
+    // (2026-07-24 감사 확정 #11·#12). 마지막 종목으로 폴백하고 '마무리' 로 표기한다.
+    func testAllDoneHomeResumeCardIsNotBroken() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+
+        // 데모 3종목을 순서대로 완료 → 전 종목 완료(히어로 read-only)
+        for name in ["벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
+            let cur = app.descendants(matching: .any)
+                .matching(identifier: "rail-current-\(name)").firstMatch
+            XCTAssertTrue(cur.waitForExistence(timeout: 5))
+            cur.press(forDuration: 0.8)
+            XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+            app.buttons["action-finish"].tap()
+        }
+        XCTAssertTrue(app.staticTexts["hero-done"].waitForExistence(timeout: 5))
+
+        // 세션을 종료하지 않고 홈으로
+        app.buttons["session-home"].tap()
+        let resumeName = app.staticTexts["resume-exname"]
+        XCTAssertTrue(resumeName.waitForExistence(timeout: 5), "홈은 이어하기 카드(HomeC)")
+        XCTAssertFalse(resumeName.label.isEmpty, "종목 이름이 공백이면 안 된다 (실측 '\(resumeName.label)')")
+        XCTAssertTrue(app.staticTexts["마무리"].exists, "전 종목 완료면 '운동 중' 이 아니라 '마무리'")
+        XCTAssertFalse(app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'SET 1/0'"))
+            .firstMatch.exists, "SET 1/0 같은 깨진 세트 표기가 없어야 한다")
+    }
+
     // 홈(HomeC) → 통계 → 탭 전환(종목·부위) → 홈 복귀
     func testStatsNavigationAndTabs() {
         let app = XCUIApplication()

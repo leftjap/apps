@@ -91,3 +91,43 @@ import Testing
         #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: -5) == "▼5분")
     }
 }
+
+// 운동 중 홈 이어하기 카드 요약 — 전 종목 완료·세트 0개 종목에서 카드가 깨지던 것 (감사 #11·#12).
+@Suite struct ResumeSummaryTests {
+    func blk(_ ex: String, sets: [GymSet], finishedAt: Double? = nil) -> GymBlock {
+        GymBlock(exerciseId: ex, sets: sets, finishedAt: finishedAt)
+    }
+    func sess(_ blocks: [GymBlock]) -> GymSession {
+        GymSession(id: "s", date: "2026-07-24", blocks: blocks, status: .active)
+    }
+
+    @Test func inProgressShowsCursorSet() {
+        let s = sess([blk("bench_press", sets: [
+            GymSet(weight: 60, reps: 10, done: true),
+            GymSet(weight: 65, reps: 10),
+            GymSet(weight: 70, reps: 8)])])
+        let r = GymHomeLogic.resumeSummary(session: s)
+        #expect(r.blockIdx == 0)
+        #expect(r.setLine == "SET 2/3")
+        #expect(r.allDone == false)
+    }
+
+    // 전 종목 완료 — 마지막 블록을 보여주고 allDone 을 표시한다 (이름 공백·"SET 1/0" 금지).
+    @Test func allDoneFallsBackToLastBlockAndFlagsDone() {
+        let done = [GymSet(weight: 60, reps: 10, done: true)]
+        let s = sess([blk("bench_press", sets: done, finishedAt: 10),
+                      blk("squat", sets: done, finishedAt: 20)])
+        let r = GymHomeLogic.resumeSummary(session: s)
+        #expect(r.blockIdx == 1, "마지막 블록으로 폴백해야 한다")
+        #expect(r.setLine == "SET 1/1")
+        #expect(r.allDone == true)
+    }
+
+    // 세트 0개로 건너뛴(완료 처리된) 종목 — 세트 줄을 숨긴다 ("SET 1/0" 금지).
+    @Test func zeroSetBlockHasNoSetLine() {
+        let s = sess([blk("bench_press", sets: [], finishedAt: 5)])
+        let r = GymHomeLogic.resumeSummary(session: s)
+        #expect(r.setLine == nil)
+        #expect(r.allDone == true)
+    }
+}

@@ -112,12 +112,10 @@ public struct HomeScreenView: View {
     // 콤팩트 이어하기 카드 — idle CTA 자리. 카드 전체 = 이어가기, crail 테두리 + 숨쉬는 글로우 유지.
     var resumeCard: some View {
         let session = model.session
-        let singles = session.blocks.filter { $0.type == "single" }
-        // 현재 블록 = 첫 미완료 (home.js summarizeActiveSession)
-        let curBlock = singles.first { !(!$0.sets.isEmpty && $0.sets.allSatisfy(\.done)) }
-        let curSets = curBlock?.sets ?? []
-        let curSetIdx = curSets.firstIndex { !$0.done } ?? max(0, curSets.count - 1)
-        let exName = curBlock.map { model.exerciseName($0.exerciseId) } ?? ""
+        // 표시 블록·세트 줄은 순수 로직이 정한다 — 전 종목 완료 시 이름 공백·"SET 1/0" 으로 깨지던
+        // 것과 세트 0개 종목을 '현재 운동중' 으로 표기하던 불일치 수정 (감사 #11·#12).
+        let sum = GymHomeLogic.resumeSummary(session: session)
+        let exName = sum.blockIdx.map { model.exerciseName(session.blocks[$0].exerciseId) } ?? ""
         let totalVol = model.sessionDoneVolume
 
         return Button(action: onStart) {
@@ -125,7 +123,9 @@ public struct HomeScreenView: View {
                 HStack {
                     HStack(spacing: 7) {
                         Circle().fill(GY.crailBase).frame(width: 7, height: 7)
-                        Text("운동 중").font(.sans(12, 600)).tracking(0.72).foregroundStyle(GY.crailDeep)
+                        // 전 종목 완료면 '운동 중' 이 아니라 마무리 안내 — 레일·히어로와 일치시킨다
+                        Text(sum.allDone ? "마무리" : "운동 중")
+                            .font(.sans(12, 600)).tracking(0.72).foregroundStyle(GY.crailDeep)
                     }
                     Spacer()
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -141,9 +141,10 @@ public struct HomeScreenView: View {
                         .foregroundStyle(GY.ink1)
                         .accessibilityIdentifier("resume-exname")
                     Spacer(minLength: 12)
-                    (Text("SET \(curSetIdx + 1)/\(curSets.count)")
-                        .font(.mono(12.5, 600)).foregroundStyle(GY.ink2)
-                     + Text(" · 누적 ").font(.mono(12.5, 500)).foregroundStyle(GY.ink4)
+                    // 세트 줄은 표시할 세트가 있을 때만 (세트 0개 종목의 "SET 1/0" 방지)
+                    ((sum.setLine.map { Text("\($0) · ").font(.mono(12.5, 600)).foregroundStyle(GY.ink2) }
+                      ?? Text(""))
+                     + Text("누적 ").font(.mono(12.5, 500)).foregroundStyle(GY.ink4)
                      + Text(Self.volF.string(from: NSNumber(value: totalVol)) ?? "0")
                         .font(.mono(12.5, 600)).foregroundStyle(GY.crailDeep)
                      + Text("kg").font(.mono(12.5, 500)).foregroundStyle(GY.ink4))
