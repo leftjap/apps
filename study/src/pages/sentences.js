@@ -13,6 +13,7 @@
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
+import { firstWordsHint } from '../components/session/applied.js';
 
 /* 난이도 칩 — 복습 세션 판정(got/hmm/no)과 같은 체계·같은 순서(쉬움→보통→어려움) 표기.
  * 저장은 reviewQueue 정본 형식(O/△/X). 목록 정렬은 어려움(X)이 위, 쉬움(O)이 아래. */
@@ -51,6 +52,10 @@ const VL_CSS = `
 .vl-acts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .vl-reveal{font:inherit;font-size:12.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:36px}
 .vl-reveal.on{background:#efebde;color:var(--mut)}
+/* 힌트 — 정답 전 단계 (핵심 표현만). 누르면 ko 아래에 표현이 떠오르고 버튼은 소진 표시. */
+.vl-hintb{font:inherit;font-size:12.5px;font-weight:700;color:var(--mut);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:36px}
+.vl-hintb.on{border-color:transparent;background:#efebde;color:var(--faint)}
+.vl-hintline{margin-top:5px;font-size:12.5px;font-weight:700;color:var(--teal-deep)}
 .vl-cir{position:relative;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0}
 .vl-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
 .vl-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
@@ -85,6 +90,20 @@ export function compareSentenceRows(a, b) {
   return (b._iso || '').localeCompare(a._iso || '');
 }
 
+/* 힌트 사다리 (2026-07-24 사용자 승인) — 통문장 회상과 정답 공개 사이의 디딤돌.
+ * en: 해설 key 의 표현부('=' 앞)가 힌트. 단 실측(실계정 80장) 31%는 표현부 == 문장 전체라
+ * 그대로 보여주면 정답 공개가 됨 → 첫 1~2단어 폴백. key 없어도 폴백. ja 는 key 자체가
+ * 없어(0/26) 힌트 미제공(null → 버튼 미표시). */
+const normHint = (s) => String(s ?? '').toLowerCase().replace(/[^a-z0-9' ]/g, ' ').replace(/\s+/g, ' ').trim();
+export function sentenceHint(card) {
+  if (!card || card.lang === 'ja') return null;
+  const sentence = card.sentence ?? '';
+  if (!sentence) return null;
+  const chunk = String(card.explanation?.key ?? '').split('=')[0].trim();
+  if (chunk && normHint(chunk) !== normHint(sentence)) return chunk;
+  return firstWordsHint(sentence);
+}
+
 /* reviewQueue + sessionLogs + pronunciationLog → 표시용 행 목록. 정렬은 compareSentenceRows. */
 export function buildSentenceRows(cards, logs, pronLogs) {
   const lastBy = {};
@@ -106,6 +125,7 @@ export function buildSentenceRows(cards, logs, pronLogs) {
     ko: c.meaning || c.ko || '',
     level: c.lastResult ?? null,
     score: scoreBy[c.id]?.score ?? null,
+    hint: sentenceHint(c),
     _iso: lastBy[c.id] || (c.createdAt ? String(c.createdAt).slice(0, 10) : ''),
   })).sort(compareSentenceRows);
 }
@@ -177,6 +197,16 @@ export function mountSentences(host) {
         revealBtn.classList.toggle('on', !masked);
       });
 
+      // 힌트 사다리 — 정답 전에 핵심 표현만 (sentenceHint. ja 등 소스 없으면 버튼 미표시)
+      const hintLine = h('div', { class: 'vl-hintline', style: 'display:none;' }, '');
+      const hintBtn = r.hint ? h('button', { class: 'vl-hintb', type: 'button' }, '힌트') : null;
+      hintBtn?.addEventListener('click', () => {
+        hintLine.textContent = `힌트 · ${r.hint}`;
+        hintLine.style.display = '';
+        hintBtn.classList.add('on');
+      });
+      const hideHint = () => { hintLine.style.display = 'none'; hintBtn?.classList.remove('on'); };
+
       // 난이도 평가 — 복습 세션과 같은 판정(어려움 X / 보통 △ / 쉬움 O).
       // SRS 간격은 건드리지 않는다(발화 없이 눈으로만 훑는 화면이라 복습일을 밀면 학습 손상).
       // 재생 버튼 — 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 사용자 보고: 피드백 없음)
@@ -198,6 +228,7 @@ export function mountSentences(host) {
           clearTimeout(resetTimer);
           resetTimer = setTimeout(() => { // 라운드 완료 리셋 — 피드백이 보일 만큼만 켰다 끈다
             levelBtns.forEach((x) => x.classList.remove('on'));
+            hideHint();
             if (!enEl.classList.contains('masked')) {
               enEl.classList.add('masked');
               revealBtn.textContent = '정답';
@@ -212,9 +243,10 @@ export function mountSentences(host) {
       });
 
       const rowEl = h('div', { class: 'vl-row' },
-        h('div', { class: 'ko' }, r.ko),
+        h('div', { class: 'ko' }, r.ko, hintLine),
         levels,
         h('div', { class: 'vl-acts' },
+          hintBtn,
           revealBtn,
           playBtn,
           h('button', { class: 'vl-go', type: 'button', onClick: () => goReviewOne(r, lang) },

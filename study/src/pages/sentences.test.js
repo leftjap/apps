@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildSentenceRows, mountSentences } from './sentences.js';
+import { buildSentenceRows, mountSentences, sentenceHint } from './sentences.js';
 
 /* 문장 모아보기 — 좌 한글 / 우 영문(가림). '정답 보기'로 영문만 토글 공개, 옆 버튼으로 복습 세션 이동.
  * 데이터 소스는 reviewQueue(현재 과목) — 실측(2026-07-18): 현 트랙 en 54장으로 todayLessons 와 완전 일치.
@@ -290,6 +290,63 @@ describe('mountSentences — 평가 라운드 완료 리셋', () => {
       expect(en.classList.contains('masked')).toBe(true);   // 다시 가림
       expect(chip.classList.contains('on')).toBe(false);    // 칩 해제
       expect(reveal.textContent).toBe('정답');
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+/* 힌트 사다리 (2026-07-24 사용자 승인) — 정답 전 단계: 핵심 표현만 먼저 공개.
+ * 실측(실계정 en 80장): key 존재 100%, 단 31%는 key 표현부 == 문장 전체 → 첫 단어 폴백.
+ * ja 는 key 자체가 없어(0/26) 힌트 미표시. */
+describe('sentenceHint — 힌트 소스 도출', () => {
+  it('key 표현부가 문장과 다르면 그 표현이 힌트', () => {
+    expect(sentenceHint({ lang: 'en', sentence: 'Are you on your way?', explanation: { key: 'on your way = 오는/가는 중.' } }))
+      .toBe('on your way');
+  });
+
+  it('key 표현부 == 문장 전체(31% 실측)면 첫 단어 폴백 — 힌트가 정답 공개가 되면 안 된다', () => {
+    expect(sentenceHint({ lang: 'en', sentence: 'Is there a problem?', explanation: { key: 'Is there a problem? = 뭐 문제 있어?' } }))
+      .toBe('Is there …');
+  });
+
+  it('en 인데 key 가 없으면 첫 단어 폴백, ja 는 null(버튼 미표시)', () => {
+    expect(sentenceHint({ lang: 'en', sentence: 'Count on it.', explanation: {} })).toBe('Count on …');
+    expect(sentenceHint({ lang: 'ja', sentence: 'ありがとう', explanation: {} })).toBeNull();
+  });
+});
+
+describe('mountSentences — 힌트 버튼', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>';
+    window.location.hash = '';
+    window.studyDB = {
+      reviewQueue: {
+        where: () => ({ equals: () => ({ toArray: async () => [
+          { id: 'a', lang: 'en', sentence: 'Are you on your way?', meaning: '너 오는 중이야?', explanation: { key: 'on your way = 오는/가는 중.' } },
+        ] }) }),
+        update: async () => {},
+      },
+      sessionLogs: { where: () => ({ equals: () => ({ toArray: async () => [] }) }) },
+    };
+  });
+
+  it('힌트 클릭 → 핵심 표현만 노출, 영문은 여전히 가림. 평가 후 라운드 리셋에 힌트도 사라진다', async () => {
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await new Promise((r) => setTimeout(r, 0));
+    const row = host.querySelector('.vl-row');
+    const hintBtn = row.querySelector('.vl-hintb');
+    expect(hintBtn).toBeTruthy();
+    hintBtn.click();
+    const line = row.querySelector('.vl-hintline');
+    expect(line.style.display).not.toBe('none');
+    expect(line.textContent).toContain('on your way');
+    expect(row.querySelector('.en').classList.contains('masked')).toBe(true); // 정답은 그대로 가림
+    // 평가 → 600ms 리셋에 힌트도 접힘
+    vi.useFakeTimers();
+    try {
+      row.querySelector('.vl-lv[data-level="△"]').click();
+      vi.advanceTimersByTime(700);
+      expect(line.style.display).toBe('none');
     } finally { vi.useRealTimers(); }
   });
 });
