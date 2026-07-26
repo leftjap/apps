@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildSentenceRows, mountSentences, sentenceHint } from './sentences.js';
+import { buildSentenceRows, mountSentences, sentenceHint, pickTodayRound } from './sentences.js';
 
 /* 문장 모아보기 — 좌 한글 / 우 영문(가림). '정답 보기'로 영문만 토글 공개, 옆 버튼으로 복습 세션 이동.
  * 데이터 소스는 reviewQueue(현재 과목) — 실측(2026-07-18): 현 트랙 en 54장으로 todayLessons 와 완전 일치.
@@ -182,10 +182,11 @@ describe('mountSentences — 렌더·상호작용', () => {
     const host = document.getElementById('root');
     mountSentences(host);
     await tick();
-    const target = [...host.querySelectorAll('.vl-row')].find((r) => r.querySelector('.ko').textContent === '평가할문장');
+    const target = [...host.querySelectorAll('.vl-row')].find((r) => r.querySelector('.ko').childNodes[0].textContent === '평가할문장');
     target.querySelector('.vl-lv[data-level="△"]').click();
     await tick();
-    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent))
+    // .ko 에는 '오늘' 라운드 칩이 붙을 수 있어 원문 텍스트 노드만 비교
+    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.childNodes[0].textContent))
       .toEqual(['어려운문장', '평가할문장', '쉬운문장']);
   });
 
@@ -268,7 +269,7 @@ describe('mountSentences — 평가 라운드 완료 리셋', () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(host.querySelectorAll('.vl-lv.on').length).toBe(0); // a 의 lastResult=O 여도 칩은 꺼짐
     // 위치 반영: 쉬움(O) 평가된 a 가 미평가 b 아래
-    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.textContent))
+    expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.childNodes[0].textContent))
       .toEqual(['배고파?', '너한테 전화했었어.']);
   });
 
@@ -348,5 +349,84 @@ describe('mountSentences — 힌트 버튼', () => {
       vi.advanceTimersByTime(700);
       expect(line.style.display).toBe('none');
     } finally { vi.useRealTimers(); }
+  });
+});
+
+/* 오늘 10문장 미니 라운드 (2026-07-24 사용자 승인) — 정렬 상위 10개(어려움·저득점 우선)가
+ * 오늘의 목표. 평가(라운드 완료)가 곧 진행이며, 같은 날 재방문 시 목표·진행이 유지된다. */
+describe('pickTodayRound — 오늘의 목표 선정·복원', () => {
+  const rows10 = Array.from({ length: 12 }, (_, i) => ({ id: 'r' + i }));
+
+  it('저장 없음 → 정렬 상위 10개가 목표, 진행 0', () => {
+    const r = pickTodayRound(rows10, null, '2026-07-24');
+    expect(r.ids).toEqual(rows10.slice(0, 10).map((x) => x.id));
+    expect(r.done).toEqual([]);
+  });
+
+  it('같은 날 저장 → 목표·진행 유지 (재정렬로 순위가 바뀌어도 목표 고정)', () => {
+    const saved = { date: '2026-07-24', ids: ['r5', 'r0'], done: ['r5'] };
+    const r = pickTodayRound(rows10, saved, '2026-07-24');
+    expect(r.ids).toEqual(['r5', 'r0']);
+    expect(r.done).toEqual(['r5']);
+  });
+
+  it('날짜가 바뀌면 새 상위 10개로 초기화', () => {
+    const saved = { date: '2026-07-23', ids: ['r5'], done: ['r5'] };
+    const r = pickTodayRound(rows10, saved, '2026-07-24');
+    expect(r.ids).toHaveLength(10);
+    expect(r.done).toEqual([]);
+  });
+
+  it('문장이 10개 미만이면 전부가 목표', () => {
+    const r = pickTodayRound(rows10.slice(0, 3), null, '2026-07-24');
+    expect(r.ids).toHaveLength(3);
+  });
+});
+
+describe('mountSentences — 오늘 10문장 라운드', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="root"></div>';
+    window.location.hash = '';
+    localStorage.clear();
+    window.studyDB = {
+      reviewQueue: {
+        where: () => ({ equals: () => ({ toArray: async () => [
+          { id: 'a', lang: 'en', sentence: 'I called you.', meaning: '너한테 전화했었어.' },
+          { id: 'b', lang: 'en', sentence: 'Are you hungry?', meaning: '배고파?' },
+        ] }) }),
+        update: async () => {},
+      },
+      sessionLogs: { where: () => ({ equals: () => ({ toArray: async () => [] }) }) },
+    };
+  });
+
+  it('헤더에 목표·진행 표시, 평가하면 진행이 오르고 같은 문장 재평가는 안 오른다', async () => {
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await new Promise((r) => setTimeout(r, 0));
+    const round = host.querySelector('.vl-round');
+    expect(round).toBeTruthy();
+    expect(round.textContent).toContain('오늘 2문장');
+    expect(round.textContent).toContain('0');
+    const row = host.querySelector('.vl-row');
+    row.querySelector('.vl-lv[data-level="X"]').click();
+    expect(round.textContent).toContain('1');
+    row.querySelector('.vl-lv[data-level="O"]').click(); // 같은 문장 재평가
+    expect(round.querySelector('b').textContent).toBe('1');
+    // 진행이 localStorage 에 남는다 (같은 날 재방문 복원용)
+    const saved = JSON.parse(localStorage.getItem('studySentRound:en'));
+    expect(saved.done).toHaveLength(1);
+  });
+
+  it('전부 평가하면 완료 표시가 드러난다 (그 전엔 숨김 — textContent 는 숨김 노드도 포함하므로 display 로 검증)', async () => {
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await new Promise((r) => setTimeout(r, 0));
+    const fin = host.querySelector('.vl-round .fin');
+    expect(fin.style.display).toBe('none'); // 시작 시 숨김
+    for (const row of [...host.querySelectorAll('.vl-row')]) {
+      row.querySelector('.vl-lv[data-level="O"]').click();
+    }
+    expect(fin.style.display).not.toBe('none'); // 전부 평가 → 표시
   });
 });

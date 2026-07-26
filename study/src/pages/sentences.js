@@ -14,6 +14,7 @@ import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { firstWordsHint } from '../components/session/applied.js';
+import { localISODate } from '../utils/today.js';
 
 /* 난이도 칩 — 복습 세션 판정(got/hmm/no)과 같은 체계·같은 순서(쉬움→보통→어려움) 표기.
  * 저장은 reviewQueue 정본 형식(O/△/X). 목록 정렬은 어려움(X)이 위, 쉬움(O)이 아래. */
@@ -56,6 +57,14 @@ const VL_CSS = `
 .vl-hintb{font:inherit;font-size:12.5px;font-weight:700;color:var(--mut);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:36px}
 .vl-hintb.on{border-color:transparent;background:#efebde;color:var(--faint)}
 .vl-hintline{margin-top:5px;font-size:12.5px;font-weight:700;color:var(--teal-deep)}
+/* 오늘 N문장 라운드 — 상단 진행 스트립 + 목표 행 '오늘' 칩 */
+.vl-round{margin-top:18px;display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+.vl-round .t{font-family:Outfit;font-size:12px;font-weight:700;letter-spacing:.04em;color:var(--mut);white-space:nowrap}
+.vl-round .n{font-family:Outfit;font-size:13px;font-weight:700;color:var(--teal-deep);white-space:nowrap}
+.vl-round .bar{flex:1;height:5px;border-radius:3px;background:#e7e3d4;overflow:hidden}
+.vl-round .bar i{display:block;height:100%;background:var(--teal);border-radius:3px;transition:width .25s ease}
+.vl-round .fin{font-size:12.5px;font-weight:800;color:var(--teal-deep);white-space:nowrap}
+.vl-todaychip{display:inline-block;margin-left:8px;vertical-align:2px;font-family:Outfit;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:2px 7px}
 .vl-cir{position:relative;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0}
 .vl-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
 .vl-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
@@ -102,6 +111,18 @@ export function sentenceHint(card) {
   const chunk = String(card.explanation?.key ?? '').split('=')[0].trim();
   if (chunk && normHint(chunk) !== normHint(sentence)) return chunk;
   return firstWordsHint(sentence);
+}
+
+/* 오늘 N문장 미니 라운드 (2026-07-24 사용자 승인) — 정렬 상위 10개(어려움·저득점 우선)가
+ * 오늘의 목표. 평가(라운드 완료)가 곧 진행. 같은 날 재방문 시 목표를 고정 복원한다 —
+ * 평가로 순위가 바뀌어도 목표가 흔들리면 완료감이 사라지기 때문. 날짜가 바뀌면 새 상위 10개. */
+export function pickTodayRound(rows, saved, todayISO) {
+  const alive = new Set((rows ?? []).map((r) => r.id));
+  if (saved && saved.date === todayISO) {
+    const ids = (saved.ids ?? []).filter((id) => alive.has(id));
+    if (ids.length) return { date: todayISO, ids, done: (saved.done ?? []).filter((id) => ids.includes(id)) };
+  }
+  return { date: todayISO, ids: (rows ?? []).slice(0, 10).map((r) => r.id), done: [] };
 }
 
 /* reviewQueue + sessionLogs + pronunciationLog → 표시용 행 목록. 정렬은 compareSentenceRows. */
@@ -179,6 +200,32 @@ export function mountSentences(host) {
     cntEl.textContent = `${rows.length}문장`;
     const rowEls = new Map(); // id → 행 엘리먼트 (평가 직후 제자리 이동용)
 
+    // ── 오늘 N문장 라운드 — 정렬 상위 10개 고정 목표 + 평가 진행 카운트 (localStorage 하루 유지)
+    const roundKey = `studySentRound:${lang}`;
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(roundKey) || 'null'); } catch { /* 손상 시 새로 */ }
+    const round = pickTodayRound(rows, saved, localISODate());
+    const saveRound = () => { try { localStorage.setItem(roundKey, JSON.stringify(round)); } catch { /* noop */ } };
+    saveRound();
+    const roundSet = new Set(round.ids);
+    const doneEl = h('b', {}, String(round.done.length));
+    const barFill = h('i', { style: `width:${round.ids.length ? (round.done.length / round.ids.length) * 100 : 0}%;` });
+    const finEl = h('span', { class: 'fin', style: round.done.length >= round.ids.length ? '' : 'display:none;' }, '완료 ✓');
+    const roundEl = h('div', { class: 'vl-round' },
+      h('span', { class: 't' }, `오늘 ${round.ids.length}문장`),
+      h('div', { class: 'bar' }, barFill),
+      h('span', { class: 'n' }, doneEl, ` / ${round.ids.length}`),
+      finEl);
+    listEl.before(roundEl);
+    const bumpRound = (id) => {
+      if (!roundSet.has(id) || round.done.includes(id)) return;
+      round.done.push(id);
+      saveRound();
+      doneEl.textContent = String(round.done.length);
+      barFill.style.width = `${(round.done.length / round.ids.length) * 100}%`;
+      if (round.done.length >= round.ids.length) finEl.style.display = '';
+    };
+
     /* 평가 즉시 정렬 위치로 옮긴다 (사용자 지시: "쉬움 클릭하면 맨 밑으로").
      * 전체 재렌더가 아니라 그 행만 insertBefore — 다른 행의 정답 공개 상태가 유지된다. */
     const reposition = (r) => {
@@ -225,6 +272,7 @@ export function mountSentences(host) {
           b.classList.add('on');
           r.level = level;
           reposition(r); // 평가 즉시 제 위치로 (쉬움→아래, 어려움→위 + 점수순)
+          bumpRound(r.id); // 오늘 라운드 진행 (목표 문장 + 첫 평가만)
           clearTimeout(resetTimer);
           resetTimer = setTimeout(() => { // 라운드 완료 리셋 — 피드백이 보일 만큼만 켰다 끈다
             levelBtns.forEach((x) => x.classList.remove('on'));
@@ -243,7 +291,9 @@ export function mountSentences(host) {
       });
 
       const rowEl = h('div', { class: 'vl-row' },
-        h('div', { class: 'ko' }, r.ko, hintLine),
+        h('div', { class: 'ko' }, r.ko,
+          roundSet.has(r.id) ? h('span', { class: 'vl-todaychip' }, '오늘') : null,
+          hintLine),
         levels,
         h('div', { class: 'vl-acts' },
           hintBtn,
