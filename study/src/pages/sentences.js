@@ -42,16 +42,18 @@ const VL_CSS = `
 .vl-row{display:flex;align-items:center;gap:16px;padding:15px 4px;border-bottom:1px solid var(--line)}
 .vl-row .ko{flex:1 1 26%;min-width:0;font-size:15px;color:var(--ink);line-height:1.5}
 .vl-row .en{flex:1 1 30%;min-width:0;font-size:15.5px;font-weight:700;letter-spacing:-0.01em;line-height:1.45;transition:filter .18s ease}
-/* 난이도 칩 — 어려움/보통/쉬움. 선택 시 각 색으로 채운다. */
-.vl-levels{display:flex;gap:5px;flex:0 0 auto}
-.vl-lv{font:inherit;font-size:11.5px;font-weight:700;color:var(--faint);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:6px 11px;cursor:pointer;white-space:nowrap;min-height:32px}
-.vl-lv[data-level="X"].on{background:var(--coral-soft);border-color:transparent;color:var(--coral-deep)}
-.vl-lv[data-level="△"].on{background:#f6efdc;border-color:transparent;color:#8a6d1f}
-.vl-lv[data-level="O"].on{background:var(--teal-soft);border-color:transparent;color:var(--teal-deep)}
+/* 난이도 평가 — 세그먼트 컨트롤 하나로 묶는다 (버튼 3개가 아니라 컨트롤 1개로 읽히게, 2026-07-24 위계 재설계) */
+.vl-levels{display:inline-flex;flex:0 0 auto;border:1.5px solid var(--line);border-radius:999px;overflow:hidden}
+.vl-lv{font:inherit;font-size:11.5px;font-weight:700;color:var(--faint);background:transparent;border:0;border-left:1px solid var(--line);padding:6px 12px;cursor:pointer;white-space:nowrap;min-height:32px}
+.vl-lv:first-child{border-left:0}
+.vl-lv[data-level="X"].on{background:var(--coral-soft);color:var(--coral-deep)}
+.vl-lv[data-level="△"].on{background:#f6efdc;color:#8a6d1f}
+.vl-lv[data-level="O"].on{background:var(--teal-soft);color:var(--teal-deep)}
 /* 가림 — 블러. 문장 길이는 남겨 회상 단서가 되게 하고, 선택/복사는 막는다. */
 .vl-row .en.masked{filter:blur(6px);user-select:none;-webkit-user-select:none;color:var(--mut)}
 .vl-acts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
-.vl-reveal{font:inherit;font-size:12.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:36px}
+/* 정답 = 1차 액션(솔리드) — 이 페이지의 핵심 행동. 공개 중(.on)엔 소진 표시. */
+.vl-reveal{font:inherit;font-size:12.5px;font-weight:700;color:#fff;background:var(--teal);border:0;border-radius:999px;padding:8px 16px;cursor:pointer;white-space:nowrap;min-height:36px}
 .vl-reveal.on{background:#efebde;color:var(--mut)}
 /* 힌트 — 정답 전 단계 (핵심 표현만). 누르면 ko 아래에 표현이 떠오르고 버튼은 소진 표시. */
 .vl-hintb{font:inherit;font-size:12.5px;font-weight:700;color:var(--mut);background:transparent;border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer;white-space:nowrap;min-height:36px}
@@ -68,16 +70,19 @@ const VL_CSS = `
 .vl-cir{position:relative;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;padding:0}
 .vl-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
 .vl-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vl-go{width:auto;padding:0 14px;border-radius:999px;gap:6px;display:inline-flex;align-items:center;font:inherit;font-size:12.5px;font-weight:700;color:var(--coral-deep);background:var(--coral-soft);border:0;min-height:36px;cursor:pointer;white-space:nowrap}
+/* 복습 = 부가(고스트) — 화면 이동 액션이라 코랄·마이크를 쓰지 않는다(코랄=녹음 규약) */
+.vl-go{width:auto;padding:0 10px;display:inline-flex;align-items:center;font:inherit;font-size:12.5px;font-weight:600;color:var(--faint);background:none;border:0;min-height:36px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+.vl-go:hover{color:var(--teal-deep);text-decoration:underline}
 .vl-empty{margin-top:40px;text-align:center;color:var(--faint);font-size:14px}
 @media (max-width:720px){
   .vl-wrap{padding:20px 16px 40px}
   .vl-row{flex-wrap:wrap;gap:8px 10px;padding:14px 2px}
   .vl-row .ko{flex:1 1 100%;font-size:14.5px;color:var(--ink);font-weight:600}
   .vl-row .en{order:9;flex:1 1 100%;font-size:15px}   /* 가려진 영문은 항상 마지막 줄 */
-  .vl-levels{flex:1 1 100%}
-  .vl-lv{flex:1 1 0;padding:6px 4px}
-  .vl-acts{flex:1 1 100%;justify-content:flex-end}
+  .vl-levels{order:6;flex:1 1 100%;display:flex}
+  .vl-lv{flex:1 1 0;padding:6px 4px;text-align:center}
+  .vl-acts{flex:1 1 auto}
+  .vl-go{margin-left:auto}
 }
 `;
 
@@ -290,18 +295,16 @@ export function mountSentences(host) {
         return b;
       });
 
+      /* 위계 재배치 (2026-07-24 사용자 지적 "버튼에 시각적 위계·구분이 없음") —
+       * 배치가 흐름을 따른다: 떠올리기(ko) → 힌트/정답/듣기(액션) → 평가(세그먼트) → 복습(부가).
+       * 복습은 화면 이동이라 마이크 아이콘 금지 — 코랄=녹음 규약은 실제 녹음 CTA 전용. */
       const rowEl = h('div', { class: 'vl-row' },
         h('div', { class: 'ko' }, r.ko,
           roundSet.has(r.id) ? h('span', { class: 'vl-todaychip' }, '오늘') : null,
           hintLine),
+        h('div', { class: 'vl-acts' }, hintBtn, revealBtn, playBtn),
         levels,
-        h('div', { class: 'vl-acts' },
-          hintBtn,
-          revealBtn,
-          playBtn,
-          h('button', { class: 'vl-go', type: 'button', onClick: () => goReviewOne(r, lang) },
-            vIcon(VI.MIC, { size: 12, sw: 2 }), '복습'),
-        ),
+        h('button', { class: 'vl-go', type: 'button', onClick: () => goReviewOne(r, lang) }, '복습'),
         enEl,
       );
       rowEls.set(r.id, rowEl);

@@ -190,13 +190,23 @@ describe('mountSentences — 렌더·상호작용', () => {
       .toEqual(['어려운문장', '평가할문장', '쉬운문장']);
   });
 
-  it('행 순서는 한글 → 난이도 → 액션 → 가려진 영문', async () => {
+  /* 2026-07-24 위계 재설계 — 배치가 실제 흐름(떠올리기→힌트/정답/듣기→평가→복습)을 따른다.
+   * 복습은 이동 액션이라 마이크 아이콘 금지(코랄=녹음 규약은 실제 녹음 CTA 전용). */
+  it('행 순서는 한글 → 액션(힌트·정답·듣기) → 평가 → 복습 → 가려진 영문', async () => {
     const host = document.getElementById('root');
     mountSentences(host);
     await tick();
     const kids = [...host.querySelector('.vl-row').children];
     const cls = kids.map((k) => k.className.split(' ')[0]);
-    expect(cls).toEqual(['ko', 'vl-levels', 'vl-acts', 'en']);
+    expect(cls).toEqual(['ko', 'vl-acts', 'vl-levels', 'vl-go', 'en']);
+  });
+
+  it('복습 버튼에는 마이크 아이콘이 없다 (녹음 아님 — 화면 이동)', async () => {
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await tick();
+    expect(host.querySelector('.vl-go svg')).toBeNull();
+    expect(host.querySelector('.vl-go').textContent).toContain('복습');
   });
 
   it('문장이 없으면 빈 상태를 안내한다', async () => {
