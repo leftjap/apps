@@ -1,0 +1,870 @@
+{
+  "lang": "en",
+  "track": "moduyeongeo",
+  "ep": 12,
+  "source": {
+    "playlist": "원어민이 매일 쓰는 영어문장",
+    "channel": "모두영어",
+    "video_id": "JzA0E_GDFc4",
+    "url": "https://www.youtube.com/watch?v=JzA0E_GDFc4",
+    "title": "원어민이 매일 쓰는 영어문장 [#12] 어떻게 됐어?/ 잘 됐어/ 네가 해낼 줄 알았어/ 다 네 덕분이야/ 너 없이는 못 했을 거야/ 네 덕분에 살았어/ 너한테 정말 크게 신세졌어",
+    "note": "기본표현·클립변주는 영상 화면(번인 자막) 원문 그대로. drills 뒷부분은 §6.3 개인화 보강(아내·고양이·여행·일상)."
+  },
+  "cards": [
+    {
+      "id": "en-moduyeongeo-ep12-01-how-did-it-go",
+      "sentence": "How did it go?",
+      "meaning": "어떻게 됐어?",
+      "reading": null,
+      "phonetic_kr": "하우 디릿 고우",
+      "order_index": 1,
+      "explanation": {
+        "key": "How did it go = 어떻게 됐어? 면접·데이트·일 등 결과가 어땠는지 물을 때. go = (일이) 진행되다/결과가 나오다.",
+        "situation": "영상 클립: 상대가 무언가를 마치고 온 뒤 결과를 물어보는 장면들",
+        "drills": [
+          {
+            "en": "Did it go okay?",
+            "ko": "잘 됐어?",
+            "kr": "디릿 고우 오케이"
+          },
+          {
+            "en": "How did your day go?",
+            "ko": "오늘 하루 어땠어?",
+            "kr": "하우 디쥬어 데이 고우"
+          },
+          {
+            "en": "Tell me how it went.",
+            "ko": "어떻게 됐는지 말해 줘.",
+            "kr": "텔 미 하우 잇 웬"
+          },
+          {
+            "en": "How did the interview go?",
+            "ko": "면접 어떻게 됐어?",
+            "kr": "하우 디더 인터v뷰 고우"
+          },
+          {
+            "en": "How did your trip go?",
+            "ko": "여행 어땠어?",
+            "kr": "하우 디쥬어 트립 고우"
+          },
+          {
+            "en": "How did the vet visit go?",
+            "ko": "동물병원 갔던 거 어떻게 됐어?",
+            "kr": "하우 디더 v벳 v비짓 고우"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "How did + 주어 + 동사원형?",
+            "body": "과거 결과를 묻는 의문문. did 뒤 동사는 원형(go). it 자리에 the interview/your trip 등 구체 대상 대입."
+          }
+        ],
+        "chunks": [
+          [
+            "How did it",
+            "하우 디릿"
+          ],
+          [
+            "go?",
+            "고우"
+          ]
+        ],
+        "phonemes": [
+          [
+            "did it",
+            "'디딧'이 아니라 flap 연음 '디릿' — d가 ㄹ처럼"
+          ],
+          [
+            "go",
+            "'고우' 이중모음, 끝 살짝 오우"
+          ]
+        ],
+        "mistake": "또박또박 '하우 디드 잇 고'(X) → 연음·flap '하우 디릿 고우'. go를 짧은 '고'(X) → '고우'.",
+        "similar": "How'd it go? / How did it turn out? / How was it?",
+        "category": "질문/일상",
+        "frequency": 9,
+        "chain": {
+          "target": "How did it go, did you hear back from them yet?",
+          "chunks": [
+            "How did it go,",
+            "did you",
+            "hear back",
+            "from them",
+            "yet?"
+          ],
+          "ko": "어떻게 됐어, 그쪽에서 연락 왔어?"
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-02-went-well",
+      "sentence": "It went well.",
+      "meaning": "잘 됐어. (잘 진행됐어)",
+      "reading": null,
+      "phonetic_kr": "잇 웬 웰",
+      "order_index": 2,
+      "explanation": {
+        "key": "It went well = 잘 됐어. go well(잘 되다)의 과거. 일·면접·데이트가 순조롭게 끝났다고 답할 때.",
+        "situation": "영상 클립: '어떻게 됐어?'에 잘 진행됐다고 답하는 장면들",
+        "drills": [
+          {
+            "en": "Everything went well.",
+            "ko": "다 잘 됐어.",
+            "kr": "에v뤼th띵 웬 웰"
+          },
+          {
+            "en": "It didn't go well.",
+            "ko": "잘 안 됐어.",
+            "kr": "잇 디든 고우 웰"
+          },
+          {
+            "en": "The flight went well.",
+            "ko": "비행은 편하게 잘 갔어.",
+            "kr": "더 f플라잇 웬 웰"
+          },
+          {
+            "en": "Her presentation went well.",
+            "ko": "아내 발표 잘 됐어.",
+            "kr": "허 프뤠z언테이션 웬 웰"
+          },
+          {
+            "en": "My interview went pretty well.",
+            "ko": "내 면접 꽤 잘 됐어.",
+            "kr": "마이 인터v뷰 웬 프뤼리 웰"
+          },
+          {
+            "en": "The trip went really well.",
+            "ko": "여행 정말 잘 다녀왔어.",
+            "kr": "더 트립 웬 뤼을리 웰"
+          },
+          {
+            "en": "I hope everything goes well tomorrow.",
+            "ko": "내일 다 잘 됐으면 좋겠다.",
+            "kr": "아이 호웁 에v뤼th띵 고우z 웰 터마로우"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + went + 부사(well)",
+            "body": "went = go의 과거. go well = 잘 진행되다. very/pretty 등 정도 부사를 앞에 붙여 강조."
+          }
+        ],
+        "chunks": [
+          [
+            "It went",
+            "잇 웬"
+          ],
+          [
+            "well.",
+            "웰"
+          ]
+        ],
+        "phonemes": [
+          [
+            "went",
+            "'웬(트)' — 끝 t 약하게"
+          ],
+          [
+            "well",
+            "'웰' — w 입술 둥글게 시작"
+          ]
+        ],
+        "mistake": "went를 '웬트' 끝 강하게(X) → 약하게 '웬'. well을 '웨을/월'(X) → '웰'.",
+        "similar": "It went great. / It went smoothly. / That went well.",
+        "category": "리액션/일상",
+        "frequency": 8,
+        "chain": {
+          "target": "It went well, better than I expected, honestly.",
+          "chunks": [
+            "It went well,",
+            "better",
+            "than I expected,",
+            "honestly."
+          ],
+          "ko": "잘 됐어, 솔직히 생각보다 더 잘 됐어."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-03-great-to-hear",
+      "sentence": "That's great to hear!",
+      "meaning": "잘 됐다! (반가운 소식이야)",
+      "reading": null,
+      "phonetic_kr": "댓츠 그뤠잇 투 히어",
+      "order_index": 3,
+      "explanation": {
+        "key": "That's great to hear = 잘 됐다!/반가운 소식이네. 직역은 '그거 듣기 정말 좋다'. 좋은 소식에 반가움을 표할 때.",
+        "situation": "영상 클립: 상대의 좋은 소식을 듣고 반가워하며 화답하는 장면들",
+        "drills": [
+          {
+            "en": "Great to hear you're okay.",
+            "ko": "괜찮다니 다행이야.",
+            "kr": "그뤠잇 투 히어 유어 오케이"
+          },
+          {
+            "en": "I'm so glad to hear that.",
+            "ko": "그 말 들으니 정말 기쁘다.",
+            "kr": "아임 쏘 글랫 투 히어 댓"
+          },
+          {
+            "en": "Great to hear you're feeling better.",
+            "ko": "몸이 나아졌다니 다행이야.",
+            "kr": "그뤠잇 투 히어 유어 f필링 베러"
+          },
+          {
+            "en": "It's great to hear from you.",
+            "ko": "연락 줘서 정말 반가워.",
+            "kr": "잇츠 그뤠잇 투 히어 f프럼 유"
+          },
+          {
+            "en": "Great to hear she got the job.",
+            "ko": "아내가 취직했다니 잘 됐다.",
+            "kr": "그뤠잇 투 히어 쉬 갓 더 좝"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "That's + 형용사 + to hear",
+            "body": "'~하다니 (그 소식을 듣기) ...하다'. good/sad/nice to hear 로도. That's는 That is의 축약."
+          }
+        ],
+        "chunks": [
+          [
+            "That's",
+            "댓츠"
+          ],
+          [
+            "great to",
+            "그뤠잇 투"
+          ],
+          [
+            "hear!",
+            "히어"
+          ]
+        ],
+        "phonemes": [
+          [
+            "great",
+            "'그뤠잇' — r 굴리고 끝 t 약하게"
+          ],
+          [
+            "hear",
+            "'히어' — 끝 r 살짝만"
+          ]
+        ],
+        "mistake": "hear를 '히얼/히아'(X) → '히어' 끝 r 약하게. great를 '그레이트' 끝 강하게(X) → '그뤠잇'.",
+        "similar": "Good to hear. / Glad to hear it. / That's wonderful.",
+        "category": "리액션/공감",
+        "frequency": 8,
+        "chain": {
+          "target": "That's great to hear, I was really worried about you.",
+          "chunks": [
+            "That's great to hear,",
+            "I was",
+            "really worried",
+            "about you."
+          ],
+          "ko": "잘 됐다, 정말 걱정 많이 했어."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-04-knew-you-could-do-it",
+      "sentence": "I knew you could do it.",
+      "meaning": "네가 해낼 줄 알았어.",
+      "reading": null,
+      "phonetic_kr": "아이 뉴 유 쿠드 두 잇",
+      "order_index": 4,
+      "explanation": {
+        "key": "knew you could do it = 네가 해낼 줄 알았다. knew(know의 과거) + could(can의 과거). 상대의 성공을 미리 믿었다고 격려·칭찬.",
+        "situation": "영상 클립: 상대가 해낸 것을 축하하며 '해낼 줄 알았다'고 격려하는 장면들",
+        "drills": [
+          {
+            "en": "I know you can do it.",
+            "ko": "넌 할 수 있어.",
+            "kr": "아이 노우 유 캔 두 잇"
+          },
+          {
+            "en": "We knew you could do it.",
+            "ko": "우린 네가 해낼 줄 알았어.",
+            "kr": "위 뉴 유 쿠 두 잇"
+          },
+          {
+            "en": "I knew you could do that!",
+            "ko": "네가 그걸 해낼 줄 알았어!",
+            "kr": "아이 뉴 유 쿠 두 댓"
+          },
+          {
+            "en": "I knew she could handle it.",
+            "ko": "난 그 사람이 감당할 줄 알았어.",
+            "kr": "아이 뉴 쉬 쿠 핸들 잇"
+          },
+          {
+            "en": "I knew you could pass the exam.",
+            "ko": "네가 시험 붙을 줄 알았어.",
+            "kr": "아이 뉴 유 쿠 패스 디 이그z앰"
+          },
+          {
+            "en": "Didn't I say you could do it?",
+            "ko": "내가 넌 해낼 거라고 했잖아?",
+            "kr": "디든 아이 쎄이 유 쿠 두 잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I knew (that) 주어 could + 동사원형",
+            "body": "시제 일치: 주절 knew(과거)에 맞춰 종속절도 could(can의 과거). '~할 수 있을 줄 알았다'."
+          }
+        ],
+        "chunks": [
+          [
+            "I knew you",
+            "아이 뉴 유"
+          ],
+          [
+            "could",
+            "쿠드"
+          ],
+          [
+            "do it.",
+            "두 잇"
+          ]
+        ],
+        "phonemes": [
+          [
+            "knew",
+            "k 묵음 — '크뉴'(X) → '뉴'"
+          ],
+          [
+            "could",
+            "l 묵음 — '쿠드' 짧게, 끝 d 약하게"
+          ]
+        ],
+        "mistake": "knew를 '크뉴'(X) → k 묵음 '뉴'. could의 l을 발음(X) → 묵음, 빠르게 '쿠(드)'.",
+        "similar": "I knew you had it in you. / I never doubted you. / You did it!",
+        "category": "격려/칭찬",
+        "frequency": 8,
+        "chain": {
+          "target": "I knew you could do it, and honestly, I'm so proud of you.",
+          "chunks": [
+            "I knew you could do it,",
+            "and",
+            "honestly,",
+            "I'm so proud",
+            "of you."
+          ],
+          "ko": "네가 해낼 줄 알았어, 그리고 솔직히 네가 정말 자랑스러워."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-05-all-thanks-to-you",
+      "sentence": "It's all thanks to you.",
+      "meaning": "모두 네 덕분이야.",
+      "reading": null,
+      "phonetic_kr": "잇츠 얼 th땡스 투 유",
+      "order_index": 5,
+      "explanation": {
+        "key": "all thanks to you = 모두 네 덕분이다. thanks to ~ = ~덕분에. 좋은 결과의 공을 상대에게 돌릴 때. 구어에선 It's 생략도.",
+        "situation": "영상 클립: 성과의 공을 상대에게 돌리며 고마움을 표하는 장면들",
+        "drills": [
+          {
+            "en": "It was all thanks to her.",
+            "ko": "다 그 사람 덕분이었어.",
+            "kr": "잇 워z 얼 th땡스 투 허"
+          },
+          {
+            "en": "It's all thanks to your help.",
+            "ko": "다 네 도움 덕분이야.",
+            "kr": "잇츠 얼 th땡스 투 유어 헬프"
+          },
+          {
+            "en": "It's all thanks to my wife.",
+            "ko": "다 아내 덕분이야.",
+            "kr": "잇츠 얼 th땡스 투 마이 와이f"
+          },
+          {
+            "en": "We made it, all thanks to you.",
+            "ko": "우리가 해냈어, 다 네 덕분이야.",
+            "kr": "위 메이릿, 얼 th땡스 투 유"
+          },
+          {
+            "en": "Thanks to you, we got there on time.",
+            "ko": "네 덕분에 제시간에 도착했어.",
+            "kr": "th땡스 투 유, 위 갓 데어 온 타임"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "It's all thanks to + 명사",
+            "body": "thanks to ~ = ~덕분에(원인·공로). all로 '전부/오로지' 강조. it's 생략해 'All thanks to you'로도 자주."
+          }
+        ],
+        "chunks": [
+          [
+            "It's all",
+            "잇츠 얼"
+          ],
+          [
+            "thanks to",
+            "th땡스 투"
+          ],
+          [
+            "you.",
+            "유"
+          ]
+        ],
+        "phonemes": [
+          [
+            "thanks",
+            "th 혀 물고 'th땡스' — '땡스/쌩스'(X)"
+          ],
+          [
+            "all",
+            "'얼' — 입 크게 벌려"
+          ]
+        ],
+        "mistake": "thanks를 '땡스/쌩스'(X) → 혀끝 물고 'th땡스'. thanks to 붙여 'th땡스투' 연음.",
+        "similar": "It's all because of you. / I owe it all to you. / I couldn't have without you.",
+        "category": "감사",
+        "frequency": 8,
+        "chain": {
+          "target": "It's all thanks to you, so let me buy you dinner sometime.",
+          "chunks": [
+            "It's all thanks to you,",
+            "so",
+            "let me",
+            "buy you dinner",
+            "sometime."
+          ],
+          "ko": "다 네 덕분이야, 그러니까 언제 내가 저녁 살게."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-06-couldnt-have-done-it-without-you",
+      "sentence": "I couldn't have done it without you.",
+      "meaning": "너 없이는 못 했을 거야.",
+      "reading": null,
+      "phonetic_kr": "아이 쿠든 해v 던 잇 위다웃 츄",
+      "order_index": 6,
+      "explanation": {
+        "key": "couldn't have done it without you = 너 없이는 못 했을 거야. couldn't have + p.p.(과거분사) = ~할 수 없었을 것이다. without ~ = ~없이.",
+        "situation": "영상 클립: 도와준 상대에게 '너 없이는 못 했다'며 공을 돌리는 장면들",
+        "drills": [
+          {
+            "en": "I couldn't have finished it without you.",
+            "ko": "너 없이는 못 끝냈을 거야.",
+            "kr": "아이 쿠든 해v f피니쉬트 잇 위다웃 츄"
+          },
+          {
+            "en": "She couldn't have done it without us.",
+            "ko": "우리 없었으면 그 사람 못 해냈을 거야.",
+            "kr": "쉬 쿠든 해v 던 잇 위다웃 어스"
+          },
+          {
+            "en": "Could you have done it without me?",
+            "ko": "나 없이도 해낼 수 있었을까?",
+            "kr": "쿠쥬 해v 던 잇 위다웃 미"
+          },
+          {
+            "en": "I couldn't have done it without my wife.",
+            "ko": "아내 없이는 못 했을 거야.",
+            "kr": "아이 쿠든 해v 던 잇 위다웃 마이 와이f"
+          },
+          {
+            "en": "We couldn't have made it without your help.",
+            "ko": "네 도움 없이는 못 해냈을 거야.",
+            "kr": "위 쿠든 해v 메이릿 위다웃 유어 헬프"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "couldn't have + 과거분사 + without ~",
+            "body": "가정법 과거완료. '(네가 없었다면) ~할 수 없었을 것이다'. done = do의 과거분사. without you = 너 없이."
+          }
+        ],
+        "chunks": [
+          [
+            "I couldn't have",
+            "아이 쿠든 해v"
+          ],
+          [
+            "done it",
+            "던 잇"
+          ],
+          [
+            "without you.",
+            "위다웃 츄"
+          ]
+        ],
+        "phonemes": [
+          [
+            "couldn't have",
+            "'쿠든 해v' — 빠르면 '쿠드나v'로 뭉침"
+          ],
+          [
+            "without you",
+            "t + you 연음 '위다웃 츄'"
+          ]
+        ],
+        "mistake": "have를 '해브'(X) → 'v' 마찰음 '해v'. without you 또박또박(X) → 연음 '위다웃 츄'.",
+        "similar": "I owe it all to you. / It's all thanks to you. / I couldn't have made it without you.",
+        "category": "감사",
+        "frequency": 8,
+        "chain": {
+          "target": "I couldn't have done it without you, so thank you, really.",
+          "chunks": [
+            "I couldn't have done it without you,",
+            "so",
+            "thank you,",
+            "really."
+          ],
+          "ko": "너 없이는 못 했을 거야, 그러니까 정말 고마워."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-07-you-saved-me",
+      "sentence": "You saved me.",
+      "meaning": "네가 날 구했어. (네 덕분에 살았어)",
+      "reading": null,
+      "phonetic_kr": "유 쎄이vd 미",
+      "order_index": 7,
+      "explanation": {
+        "key": "You saved me = 네가 날 구했어/네 덕분에 살았어. saved(save의 과거) = 구하다·곤경을 면하게 하다. 위기를 넘기게 해준 상대에게.",
+        "situation": "영상 클립: 곤경을 면하게 해준 상대에게 '네가 날 살렸다'고 고마워하는 장면들",
+        "drills": [
+          {
+            "en": "You saved my life.",
+            "ko": "네가 내 목숨을 구했어.",
+            "kr": "유 쎄이vd 마이 라이f"
+          },
+          {
+            "en": "You saved us all.",
+            "ko": "네가 우리 모두를 구했어.",
+            "kr": "유 쎄이vd 어스 얼"
+          },
+          {
+            "en": "You really saved the day.",
+            "ko": "네가 완전히 상황을 살렸어.",
+            "kr": "유 뤼을리 쎄이vd 더 데이"
+          },
+          {
+            "en": "Thanks for saving me back there.",
+            "ko": "아까 구해줘서 고마워.",
+            "kr": "th땡스 f포 쎄이v빙 미 백 데어"
+          },
+          {
+            "en": "He saved me from a big mistake.",
+            "ko": "그 사람 덕분에 큰 실수를 면했어.",
+            "kr": "히 쎄이vd 미 f프럼 어 빅 미스테익"
+          },
+          {
+            "en": "That saved me a lot of trouble.",
+            "ko": "그 덕분에 고생 많이 덜었어.",
+            "kr": "댓 쎄이vd 미 어 랏 어v 트뤄블"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + saved + 목적어",
+            "body": "save의 과거 saved. save one's life = ~의 목숨을 구하다. really/totally 로 강조."
+          }
+        ],
+        "chunks": [
+          [
+            "You",
+            "유"
+          ],
+          [
+            "saved",
+            "쎄이vd"
+          ],
+          [
+            "me.",
+            "미"
+          ]
+        ],
+        "phonemes": [
+          [
+            "saved",
+            "'쎄이vd' — v 마찰음 + 끝 d 살짝"
+          ],
+          [
+            "life",
+            "'라이f' — 끝 f 마찰음"
+          ]
+        ],
+        "mistake": "saved를 '세이브드'(X) → 'v'+d 뭉쳐 '쎄이vd'. life를 '라이프'(X) → 'f' '라이f'.",
+        "similar": "You're a lifesaver. / You really came through. / I owe you one.",
+        "category": "감사",
+        "frequency": 7,
+        "chain": {
+          "target": "You saved me back there, I honestly had no idea what to do.",
+          "chunks": [
+            "You saved me",
+            "back there,",
+            "I honestly",
+            "had no idea",
+            "what to do."
+          ],
+          "ko": "아까 네가 날 살렸어, 솔직히 뭘 해야 할지 하나도 몰랐거든."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-08-owe-you-big-time",
+      "sentence": "I owe you big time.",
+      "meaning": "너한테 정말 크게 신세(빚) 졌어.",
+      "reading": null,
+      "phonetic_kr": "아이 오우 유 빅 타임",
+      "order_index": 8,
+      "explanation": {
+        "key": "I owe you big time = 너한테 크게 신세(빚) 졌어. owe = 빚지다. big time = 엄청나게/크게. 큰 도움을 받아 꼭 갚겠다는 뉘앙스.",
+        "situation": "영상 클립: 큰 도움을 받고 '크게 신세 졌다'며 고마워하는 장면들",
+        "drills": [
+          {
+            "en": "I owe you one.",
+            "ko": "나 너한테 신세 하나 졌어.",
+            "kr": "아이 오우 유 원"
+          },
+          {
+            "en": "You owe me big time.",
+            "ko": "너 나한테 크게 신세 졌어.",
+            "kr": "유 오우 미 빅 타임"
+          },
+          {
+            "en": "We owe you big time.",
+            "ko": "우리가 너한테 크게 신세 졌어.",
+            "kr": "위 오우 유 빅 타임"
+          },
+          {
+            "en": "I owe you both big time.",
+            "ko": "두 사람한테 크게 신세 졌어.",
+            "kr": "아이 오우 유 보우th 빅 타임"
+          },
+          {
+            "en": "How much do I owe you?",
+            "ko": "내가 얼마 내면 돼?",
+            "kr": "하우 머치 두 아이 오우 유"
+          },
+          {
+            "en": "I owe my wife big time.",
+            "ko": "아내한테 크게 신세 졌어.",
+            "kr": "아이 오우 마이 와이f 빅 타임"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "owe + 사람 + big time",
+            "body": "owe 목적어 = ~에게 빚지다. big time은 부사구로 '크게/엄청나게'. owe you one(하나 신세)과 짝."
+          }
+        ],
+        "chunks": [
+          [
+            "I owe you",
+            "아이 오우 유"
+          ],
+          [
+            "big time.",
+            "빅 타임"
+          ]
+        ],
+        "phonemes": [
+          [
+            "owe",
+            "'오우' 이중모음 — '오'(X)"
+          ],
+          [
+            "big time",
+            "붙여 '빅타임', big 끝 g 약하게"
+          ]
+        ],
+        "mistake": "owe를 '오/어'(X) → '오우'. big time을 또박또박(X) → 붙여 '빅타임'.",
+        "similar": "I owe you one. / I'm in your debt. / How can I repay you?",
+        "category": "감사",
+        "frequency": 7,
+        "chain": {
+          "target": "I owe you big time, let me know how I can repay you.",
+          "chunks": [
+            "I owe you big time,",
+            "let me know",
+            "how I can",
+            "repay you."
+          ],
+          "ko": "너한테 크게 신세 졌어, 어떻게 갚으면 될지 알려줘."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-09-how-to-thank-you",
+      "sentence": "I don't know how to thank you.",
+      "meaning": "어떻게 감사를 드려야 할지 모르겠어요.",
+      "reading": null,
+      "phonetic_kr": "아이 돈 노우 하우 투 th땡큐",
+      "order_index": 9,
+      "explanation": {
+        "key": "how to thank you = 어떻게 감사를 드려야 할지. I don't know how to ~ = 어떻게 ~해야 할지 모르겠다. 격식 있고 진심 어린 감사.",
+        "situation": "영상 클립: 큰 은혜에 격식 있게 진심으로 감사를 전하는 장면들",
+        "drills": [
+          {
+            "en": "I don't know what to say.",
+            "ko": "무슨 말을 해야 할지 모르겠어요.",
+            "kr": "아이 돈 노우 왓 투 쎄이"
+          },
+          {
+            "en": "How can I ever thank you?",
+            "ko": "제가 어떻게 감사를 드리죠?",
+            "kr": "하우 캔 아이 에v버 th땡큐"
+          },
+          {
+            "en": "I don't know how to thank her.",
+            "ko": "그분께 어떻게 감사드려야 할지 모르겠어요.",
+            "kr": "아이 돈 노우 하우 투 th땡커"
+          },
+          {
+            "en": "We don't know how to thank you.",
+            "ko": "저희가 어떻게 감사드려야 할지 모르겠어요.",
+            "kr": "위 돈 노우 하우 투 th땡큐"
+          },
+          {
+            "en": "I didn't know how to thank him.",
+            "ko": "그분께 어떻게 감사해야 할지 몰랐어요.",
+            "kr": "아이 디든 노우 하우 투 th땡킴"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "don't know how to + 동사원형",
+            "body": "how to ~ = 어떻게 ~할지(명사구). '~하는 방법을 모르겠다' → 감사가 벅차 표현이 안 될 만큼 고맙다는 관용."
+          }
+        ],
+        "chunks": [
+          [
+            "I don't know",
+            "아이 돈 노우"
+          ],
+          [
+            "how to",
+            "하우 투"
+          ],
+          [
+            "thank you.",
+            "th땡큐"
+          ]
+        ],
+        "phonemes": [
+          [
+            "don't know",
+            "'돈 노우' — t 거의 안 들림"
+          ],
+          [
+            "thank you",
+            "th 물고 '땡큐'(X) → 'th땡큐'"
+          ]
+        ],
+        "mistake": "don't를 '돈트' 끝 강하게(X) → t 삼켜 '돈'. thank you를 '쌩큐'(X) → 혀 물고 'th땡큐'.",
+        "similar": "I can't thank you enough. / How can I ever thank you? / Words can't express it.",
+        "category": "감사/격식",
+        "frequency": 7,
+        "chain": {
+          "target": "I don't know how to thank you, you've done so much for us.",
+          "chunks": [
+            "I don't know how to thank you,",
+            "you've done",
+            "so much",
+            "for us."
+          ],
+          "ko": "어떻게 감사드려야 할지 모르겠어요, 저희한테 정말 많이 해주셨어요."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep12-10-glad-i-could-help",
+      "sentence": "I'm glad I could help.",
+      "meaning": "내가 도울 수 있어서 기뻐. (다행이야)",
+      "reading": null,
+      "phonetic_kr": "아임 글랫 아이 쿠드 헬프",
+      "order_index": 10,
+      "explanation": {
+        "key": "I'm glad I could help = 도울 수 있어서 기뻐/다행이야. glad (that) ~ = ~해서 기쁘다. 감사 인사를 받고 부담 없이 화답할 때.",
+        "situation": "영상 클립: 고맙다는 말에 '도움이 됐다니 다행'이라고 화답하는 장면들",
+        "drills": [
+          {
+            "en": "I'm glad you're okay.",
+            "ko": "네가 괜찮아서 다행이야.",
+            "kr": "아임 글랫 유어 오케이"
+          },
+          {
+            "en": "I'm glad we could help.",
+            "ko": "우리가 도울 수 있어서 다행이야.",
+            "kr": "아임 글랫 위 쿠드 헬프"
+          },
+          {
+            "en": "Just glad it worked out.",
+            "ko": "그냥 잘 풀려서 다행이야.",
+            "kr": "저슷 글랫 잇 웍트 아웃"
+          },
+          {
+            "en": "She was glad she could help.",
+            "ko": "그 사람은 도울 수 있어서 기뻐했어.",
+            "kr": "쉬 워z 글랫 쉬 쿠드 헬프"
+          },
+          {
+            "en": "I'm glad I could be there for you.",
+            "ko": "네 곁에 있어줄 수 있어서 다행이야.",
+            "kr": "아임 글랫 아이 쿠드 비 데어 f포 유"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm glad (that) 주어 could + 동사원형",
+            "body": "glad + 절 = ~해서 기쁘다. could = (그때) ~할 수 있었다. 앞의 I'm 생략해 'Glad I could help'로도."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm glad",
+            "아임 글랫"
+          ],
+          [
+            "I could",
+            "아이 쿠드"
+          ],
+          [
+            "help.",
+            "헬프"
+          ]
+        ],
+        "phonemes": [
+          [
+            "glad",
+            "'글랫' — 끝 d 약하게, '글래드'(X)"
+          ],
+          [
+            "help",
+            "'헬프' — l 혀끝, 끝 p 살짝"
+          ]
+        ],
+        "mistake": "glad를 '글래드'(X) → 짧게 '글랫'. help의 l 생략(X) → 혀끝 대고 '헬프'.",
+        "similar": "Happy to help. / My pleasure. / Anytime.",
+        "category": "리액션/화답",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm glad I could help, just call me anytime you need a hand.",
+          "chunks": [
+            "I'm glad I could help,",
+            "just",
+            "call me",
+            "anytime",
+            "you need",
+            "a hand."
+          ],
+          "ko": "도움이 됐다니 기뻐, 도움 필요하면 언제든 전화해."
+        }
+      }
+    }
+  ],
+  "date": "2026-07-26"
+}
