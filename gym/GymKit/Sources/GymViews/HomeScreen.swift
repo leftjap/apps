@@ -251,6 +251,11 @@ public struct HomeScreenView: View {
                 .frame(height: dia)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
+                // 셀을 단일 요소로 — 날짜·점이 하나로 읽히고(VoiceOver) 탭 타깃도 셀 전체가 된다
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier(
+                    monday.flatMap { cal.date(byAdding: .day, value: i, to: $0) }
+                        .map { "home-day-\(GymAppModel.dayFmt.string(from: $0))" } ?? "home-day")
                 .onTapGesture {
                     guard tappable, let monday,
                           let date = cal.date(byAdding: .day, value: i, to: monday) else { return }
@@ -259,7 +264,6 @@ public struct HomeScreenView: View {
             }
         }
         .opacity(dim ? 0.72 : 1)
-        .accessibilityIdentifier(dim ? "home-week-prev" : "home-week-current")
     }
 
     static let weekdayKor = ["", "일", "월", "화", "수", "목", "금", "토"]   // Calendar.weekday 1=일

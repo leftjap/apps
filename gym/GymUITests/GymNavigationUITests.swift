@@ -67,16 +67,32 @@ final class GymNavigationUITests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["home-resume"].waitForExistence(timeout: 10), "활성 세션 홈은 HomeC")
 
-        let prev = app.otherElements["home-week-prev"]
-        let cur = app.otherElements["home-week-current"]
-        XCTAssertTrue(prev.waitForExistence(timeout: 5), "지난주 행이 있어야 한다")
-        XCTAssertTrue(cur.exists, "이번 주 행이 있어야 한다")
-        XCTAssertLessThan(prev.frame.maxY, cur.frame.minY + 1, "지난주 행이 이번 주 행 위에 있어야 한다")
-        // 요일 헤더는 한 줄만 — 두 행이 공유 (월요일 라벨이 하나뿐)
+        // 오늘이 속한 주의 월요일과 그 전주 월요일 (KST) — 두 행 모두 렌더돼야 한다
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = TimeZone(identifier: "Asia/Seoul")!
+        cal.firstWeekday = 2   // 월요일 시작 — GymAppModel.kst 정합 (기본 일요일이면 주 경계가 어긋난다)
+        let fmt = DateFormatter()
+        fmt.calendar = cal; fmt.timeZone = cal.timeZone
+        fmt.locale = Locale(identifier: "en_US_POSIX"); fmt.dateFormat = "yyyy-MM-dd"
+        let today = Date()
+        let thisMon = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: today))!
+        let prevMon = cal.date(byAdding: .day, value: -7, to: thisMon)!
+
+        let curCell = app.descendants(matching: .any)
+            .matching(identifier: "home-day-\(fmt.string(from: thisMon))").firstMatch
+        let prevCell = app.descendants(matching: .any)
+            .matching(identifier: "home-day-\(fmt.string(from: prevMon))").firstMatch
+        XCTAssertTrue(prevCell.waitForExistence(timeout: 5), "지난주 행(월요일 셀)이 있어야 한다")
+        XCTAssertTrue(curCell.exists, "이번 주 행(월요일 셀)이 있어야 한다")
+        XCTAssertLessThan(prevCell.frame.maxY, curCell.frame.minY + 1,
+                          "지난주 행이 이번 주 행 위에 있어야 한다")
+        XCTAssertEqual(prevCell.frame.minX, curCell.frame.minX, accuracy: 1,
+                       "같은 요일이 같은 열에 정렬돼야 한다 (달력 주 정렬)")
+        // 요일 헤더는 한 줄만 — 두 행이 공유
         XCTAssertEqual(app.staticTexts.matching(identifier: "월").count, 1, "요일 헤더는 1줄 공유")
 
         // 지난주 날짜 탭 → 날짜 상세 시트
-        prev.children(matching: .any).element(boundBy: 2).tap()
+        prevCell.tap()
         XCTAssertTrue(app.staticTexts["daydetail-date"].waitForExistence(timeout: 5),
                       "지난주 날짜도 탭하면 상세가 열려야 한다")
     }
