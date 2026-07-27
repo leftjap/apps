@@ -203,30 +203,52 @@ public struct HomeScreenView: View {
         .padding(.horizontal, 24).padding(.top, 8)
     }
 
-    // 주간 캘린더 — 날짜 탭 → 해당 날짜 상세 바텀시트 (spec §5-2).
+    // 2주 캘린더 — 요일 헤더 1줄 공유 + [지난주(흐리게) · 이번 주] 2행 (사용자 2026-07-25).
+    // 새 주가 시작되면 1주만으로는 운동 흐름·직전 이력이 안 보인다. 밸런스가 달력 주(지난주 vs
+    // 이번 주)를 비교하므로 롤링 14일이 아니라 달력 주 2개를 쌓아 두 요소의 '주' 정의를 일치시킨다.
     func weekCalendar(_ week: [GymAppModel.HomeWeekCell], tappable: Bool = true) -> some View {
         let ref = model.referenceToday
-        let cal = GymAppModel.kst
-        let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref))
-        return HStack(spacing: 0) {
-            ForEach(Array(week.enumerated()), id: \.element.id) { i, d in
-                VStack(spacing: 6) {
+        let prev = model.weekCells(around: ref, weekOffset: -1)
+        return VStack(spacing: 7) {
+            HStack(spacing: 0) {   // 요일 헤더 — 두 행이 공유 (반복 제거 + 세로 공간 절약)
+                ForEach(Array(week.enumerated()), id: \.element.id) { _, d in
                     Text(d.label).font(.sans(11, 600)).tracking(0.44)
                         .foregroundStyle(d.isToday ? GY.crailDeep : GY.ink4)
-                    ZStack {
-                        Circle().fill(d.isToday ? GY.crailBase : .clear).frame(width: 28, height: 28)
-                        if d.isLast && !d.isToday { Circle().strokeBorder(GY.crailSoft, lineWidth: 1.5).frame(width: 28, height: 28) }
-                        Text("\(d.num)").font(.mono(14, 500))
-                            .foregroundStyle(d.isToday ? .white : (d.worked ? GY.ink2 : GY.ink4))
-                        if d.worked {
-                            // 시안 #6a 실측 — 도트 중심이 28px 원 중심에서 19px 아래 (원 밖).
-                            // 원 밖 = 셸 배경 위이므로 대비 상대는 배경이다. 오늘 셀만 흰색으로 칠하면
-                            // 크림 배경에 묻혀 "오늘 운동함" 신호가 사라진다 (실측 255,255,255 vs 배경 253,253,253).
-                            Circle().fill(GY.crailBase)
-                                .frame(width: 4, height: 4).offset(y: 19)
-                        }
-                    }.frame(height: 28)
+                        .frame(maxWidth: .infinity)
                 }
+            }
+            weekRow(prev, weekOffset: -1, tappable: tappable, dim: true)
+            weekRow(week, weekOffset: 0, tappable: tappable, dim: false)
+        }
+    }
+
+    // 캘린더 한 행 — dim 은 지난주(부차적 정보라 톤·크기를 낮춰 이번 주가 주인공으로 남는다).
+    func weekRow(_ week: [GymAppModel.HomeWeekCell], weekOffset: Int,
+                 tappable: Bool, dim: Bool) -> some View {
+        let cal = GymAppModel.kst
+        let ref = model.referenceToday
+        let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref))
+            .flatMap { cal.date(byAdding: .day, value: 7 * weekOffset, to: $0) }
+        let dia: CGFloat = dim ? 24 : 28
+        return HStack(spacing: 0) {
+            ForEach(Array(week.enumerated()), id: \.element.id) { i, d in
+                ZStack {
+                    Circle().fill(d.isToday ? GY.crailBase : .clear).frame(width: dia, height: dia)
+                    if d.isLast && !d.isToday {
+                        Circle().strokeBorder(GY.crailSoft, lineWidth: 1.5).frame(width: dia, height: dia)
+                    }
+                    Text("\(d.num)").font(.mono(dim ? 12.5 : 14, 500))
+                        .foregroundStyle(d.isToday ? .white
+                                         : (d.worked ? (dim ? GY.ink3 : GY.ink2) : GY.ink4))
+                    if d.worked {
+                        // 시안 #6a 실측 — 도트 중심이 28px 원 중심에서 19px 아래 (원 밖).
+                        // 원 밖 = 셸 배경 위이므로 대비 상대는 배경이다. 오늘 셀만 흰색으로 칠하면
+                        // 크림 배경에 묻혀 "오늘 운동함" 신호가 사라진다 (실측 255,255,255 vs 배경 253,253,253).
+                        Circle().fill(dim ? GY.crailSoft : GY.crailBase)
+                            .frame(width: 4, height: 4).offset(y: dia * 0.68)
+                    }
+                }
+                .frame(height: dia)
                 .frame(maxWidth: .infinity)
                 .contentShape(Rectangle())
                 .onTapGesture {
@@ -236,6 +258,8 @@ public struct HomeScreenView: View {
                 }
             }
         }
+        .opacity(dim ? 0.72 : 1)
+        .accessibilityIdentifier(dim ? "home-week-prev" : "home-week-current")
     }
 
     static let weekdayKor = ["", "일", "월", "화", "수", "목", "금", "토"]   // Calendar.weekday 1=일

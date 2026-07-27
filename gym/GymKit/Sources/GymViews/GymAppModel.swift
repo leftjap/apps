@@ -156,10 +156,13 @@ public final class GymAppModel: ObservableObject {
         public let worked: Bool; public let partName: String?
         public let isToday: Bool; public let isLast: Bool
     }
-    // 주간(월~일) 캘린더 셀 — ref 가 속한 주.
-    public func weekCells(around ref: Date) -> [HomeWeekCell] {
+    /// 주간(월~일) 캘린더 셀. `weekOffset` 은 주 앵커만 옮긴다(-1 = 지난주) — 오늘·마지막 운동
+    /// 판정은 `ref` 기준 그대로라, 2주 표시에서도 '마지막 운동' 링이 한 곳에만 찍힌다
+    /// (사용자 2026-07-25 — 새 주 시작 시 1주만 보면 흐름·이력 확인이 불편).
+    public func weekCells(around ref: Date, weekOffset: Int = 0) -> [HomeWeekCell] {
         let cal = Self.kst
-        guard let monday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref)) else { return [] }
+        guard let thisMonday = cal.date(from: cal.dateComponents([.yearForWeekOfYear, .weekOfYear], from: ref)),
+              let monday = cal.date(byAdding: .day, value: 7 * weekOffset, to: thisMonday) else { return [] }
         let refDay = Self.dayFmt.string(from: ref)
         let labels = ["월", "화", "수", "목", "금", "토", "일"]
         let worked = Set(allWorkedSessions().map(\.date))
