@@ -86,6 +86,7 @@ public struct HomeScreenView: View {
             weekCalendar(week).padding(.horizontal, 18).padding(.top, 18)
             if last != nil { lastWorkoutRow(last, ref: ref) }   // empty 시 행 숨김 (home.js)
             balance(bal)
+            Spacer(minLength: 0)   // 남는 공간은 여기 한 곳 — 차트 위아래로 갈라지지 않게
             weightRow(model.weights.first, prev: model.weights.count >= 2 ? model.weights[1] : nil)
                 .padding(.horizontal, 24).padding(.top, 18)   // 시안 #6a — 밸런스와 체중 카드 사이 18px
             cta(empty: last == nil)
@@ -104,6 +105,7 @@ public struct HomeScreenView: View {
             if GymSyncHealth.isAtRisk(model.syncState, now: ref) { syncBanner }
             weekCalendar(model.weekCells(around: ref)).padding(.horizontal, 18).padding(.top, 18)
             balance(bal)
+            Spacer(minLength: 0)   // homeA 와 동일 — 여백은 밸런스 아래 한 곳
             resumeCard
                 .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
         }
@@ -209,7 +211,7 @@ public struct HomeScreenView: View {
     func weekCalendar(_ week: [GymAppModel.HomeWeekCell], tappable: Bool = true) -> some View {
         let ref = model.referenceToday
         let prev = model.weekCells(around: ref, weekOffset: -1)
-        return VStack(spacing: 7) {
+        return VStack(spacing: 11) {   // 행 간격 11 — 7이면 두 행이 한 덩어리로 붙어 "숫자 14개"로 읽힌다
             HStack(spacing: 0) {   // 요일 헤더 — 두 행이 공유 (반복 제거 + 세로 공간 절약)
                 ForEach(Array(week.enumerated()), id: \.element.id) { _, d in
                     Text(d.label).font(.sans(11, 600)).tracking(0.44)
@@ -307,7 +309,7 @@ public struct HomeScreenView: View {
         let focusPid = bal.focusKey
         // 7px/세트, 최고 막대 100px 캡 (사용자 2026-07-07 겹침 버그 수정 정합)
         let maxVal = max(1, parts.map { max($0.sets, $0.prevSets) }.max() ?? 1)
-        let pxPerSet = min(7.0, 100.0 / Double(maxVal))
+        let pxPerSet = min(11.0, 104.0 / Double(maxVal))   // 7→11pt/세트 — 실측 막대 35pt vs 공백 230pt (2026-07-27)
         let focus = parts.first { $0.key == focusPid }
 
         return VStack(alignment: .leading, spacing: 0) {
@@ -339,9 +341,10 @@ public struct HomeScreenView: View {
                 }
             }
             .padding(.top, 14)
-            // .bal-chart — flex:1 + justify-content:center: 차트만 남는 공간 중앙에 (시안 #6a 실측).
+            // 시안 #6a 는 차트를 flex 중앙 배치했지만 의도적으로 이탈 (사용자 2026-07-27):
+            // 2주 캘린더가 들어온 뒤 실측 230pt 공백이 차트 위아래 '구멍 2개'로 갈라져 보였다.
+            // 콘텐츠는 위로 붙이고 남는 공간은 밸런스 블록 아래(호출부 Spacer) 한 곳에 모은다.
             VStack(alignment: .leading, spacing: 0) {
-                Spacer(minLength: 0)
                 // 페어 컬럼 — [지난주 고스트 12px(prev>0만)] + [이번주 잉크 15px], 웨이브 진입 (§4.1·§4.2)
                 HStack(alignment: .bottom, spacing: 0) {
                     ForEach(Array(parts.enumerated()), id: \.element.key) { i, p in
@@ -370,13 +373,11 @@ public struct HomeScreenView: View {
                 }
                 .padding(.top, 8)
                 .overlay(alignment: .top) { Rectangle().fill(Color(oklch: 0.88, 0.008, 60)).frame(height: 1.5) }
-                Spacer(minLength: 0)
             }
-            .frame(maxHeight: .infinity)
+            .padding(.top, 26)   // 헤드라인 → 차트 — flex 제거 후 고정 간격
             cardioRow(bal)
         }
-        .frame(maxHeight: .infinity)
-        .padding(.horizontal, 26).padding(.top, 22)
+        .padding(.horizontal, 26).padding(.top, 28)   // 섹션 간 간격 — 섹션 내(≈25)보다 크게 (위계)
     }
 
     // 유산소 행 — mocks/home.html .cardio-row + 시안 #6a 실측 (행은 항상 표시, 0회 시 "기록 없음").
