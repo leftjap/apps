@@ -154,10 +154,10 @@ public final class GymAppModel: ObservableObject {
         public let id = UUID()
         public let label: String; public let num: Int
         public let worked: Bool; public let partName: String?
-        public let isToday: Bool; public let isLast: Bool
+        public let isToday: Bool
     }
-    /// 주간(월~일) 캘린더 셀. `weekOffset` 은 주 앵커만 옮긴다(-1 = 지난주) — 오늘·마지막 운동
-    /// 판정은 `ref` 기준 그대로라, 2주 표시에서도 '마지막 운동' 링이 한 곳에만 찍힌다
+    /// 주간(월~일) 캘린더 셀. `weekOffset` 은 주 앵커만 옮긴다(-1 = 지난주) — '오늘' 판정은
+    /// `ref` 기준 그대로라 2주를 그려도 오늘 표시가 한 곳에만 찍힌다
     /// (사용자 2026-07-25 — 새 주 시작 시 1주만 보면 흐름·이력 확인이 불편).
     public func weekCells(around ref: Date, weekOffset: Int = 0) -> [HomeWeekCell] {
         let cal = Self.kst
@@ -166,14 +166,13 @@ public final class GymAppModel: ObservableObject {
         let refDay = Self.dayFmt.string(from: ref)
         let labels = ["월", "화", "수", "목", "금", "토", "일"]
         let worked = Set(allWorkedSessions().map(\.date))
-        let lastWorked = worked.filter { $0 <= refDay }.max()
         return (0..<7).compactMap { i in
             guard let d = cal.date(byAdding: .day, value: i, to: monday) else { return nil }
             let ds = Self.dayFmt.string(from: d)
             let part = sessionsOn(ds).first?.tags.first.map { GymExercises.partName($0) }
             return HomeWeekCell(label: labels[i], num: cal.component(.day, from: d),
                                 worked: worked.contains(ds), partName: part,
-                                isToday: ds == refDay, isLast: ds == lastWorked)
+                                isToday: ds == refDay)
         }
     }
     // 이번 주/지난 주 부위별 완료 세트 수 (부위 밸런스). offset 0=이번주, -1=지난주.

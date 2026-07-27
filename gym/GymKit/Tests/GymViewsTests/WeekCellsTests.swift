@@ -5,7 +5,7 @@ import GymCore
 
 // 홈 주간 캘린더 셀 — 2주 표시(지난주·이번주)를 위해 '주 앵커'와 '기준일(오늘)'을 분리한다
 // (사용자 2026-07-25: 새 주가 시작되면 1주만 보여선 흐름·이력 확인이 불편).
-// 지난주 행도 오늘 기준의 isToday/isLast 판정을 써야 마지막 운동 링이 한 곳에만 찍힌다.
+// 지난주 행도 오늘 기준의 isToday 판정을 써야 오늘 표시가 한 곳에만 찍힌다.
 @MainActor @Suite struct WeekCellsTests {
 
     // 2026-07-25 = 토요일. 그 주 월요일 = 07-20, 지난주 월요일 = 07-13.
@@ -40,17 +40,16 @@ import GymCore
         #expect(cells.allSatisfy { !$0.isToday })
     }
 
-    // '마지막 운동' 링은 오늘 기준으로 딱 한 번만 — 지난주 행이 자기 주의 마지막 날을 링으로
-    // 표시하면 안 된다 (주 앵커만 옮기고 기준일은 오늘 고정).
-    @Test func lastWorkedRingAppearsOnlyOnTheGlobalLatestDay() {
+    // 운동한 날 표시는 각 주가 자기 주의 기록만 채운다 — 2주 표시에서 주 경계가 새면
+    // 지난주 행에 이번 주 기록이 나타나거나 그 반대가 된다.
+    @Test func workedDaysBelongToTheirOwnWeekRow() {
         let m = model(worked: ["2026-07-15", "2026-07-22"])   // 지난주 수 · 이번주 수
         let this = m.weekCells(around: ref)
         let prev = m.weekCells(around: ref, weekOffset: -1)
-        #expect(this.filter(\.isLast).map(\.num) == [22], "이번주 22일이 마지막 운동")
-        #expect(prev.allSatisfy { !$0.isLast }, "지난주 행엔 마지막 운동 링이 없어야 한다")
-        // 운동한 날 표시(점)는 각 주에서 정상 동작
-        #expect(prev.filter(\.worked).map(\.num) == [15])
-        #expect(this.filter(\.worked).map(\.num) == [22])
+        #expect(prev.filter(\.worked).map(\.num) == [15], "지난주 행은 15일만")
+        #expect(this.filter(\.worked).map(\.num) == [22], "이번주 행은 22일만")
+        // '오늘' 은 2주를 통틀어 한 곳 (25일, 이번주 토)
+        #expect((prev + this).filter(\.isToday).map(\.num) == [25])
     }
 
     // 기본값 유지 — weekOffset 생략 시 기존 동작(이번 주)과 동일해야 한다.

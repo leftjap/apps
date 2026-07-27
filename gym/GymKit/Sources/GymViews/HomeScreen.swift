@@ -233,20 +233,20 @@ public struct HomeScreenView: View {
         return HStack(spacing: 0) {
             ForEach(Array(week.enumerated()), id: \.element.id) { i, d in
                 ZStack {
-                    Circle().fill(d.isToday ? GY.crailBase : .clear).frame(width: dia, height: dia)
-                    if d.isLast && !d.isToday {
-                        Circle().strokeBorder(GY.crailSoft, lineWidth: 1.5).frame(width: dia, height: dia)
-                    }
-                    Text("\(d.num)").font(.mono(dim ? 12.5 : 14, 500))
-                        .foregroundStyle(d.isToday ? .white
-                                         : (d.worked ? (dim ? GY.ink3 : GY.ink2) : GY.ink4))
+                    // 채움 = 운동한 날, 링 = 오늘 (사용자 2026-07-27 — 종전엔 '오늘'이 채움을
+                    // 가져가고 '운동함'은 4pt 점이라 2주를 훑을 때 운동일이 안 읽혔다).
+                    // 오늘이면서 운동한 날은 crailBase 채움(가장 강함)으로 두 신호를 합친다.
                     if d.worked {
-                        // 시안 #6a 실측 — 도트 중심이 28px 원 중심에서 19px 아래 (원 밖).
-                        // 원 밖 = 셸 배경 위이므로 대비 상대는 배경이다. 오늘 셀만 흰색으로 칠하면
-                        // 크림 배경에 묻혀 "오늘 운동함" 신호가 사라진다 (실측 255,255,255 vs 배경 253,253,253).
-                        Circle().fill(dim ? GY.crailSoft : GY.crailBase)
-                            .frame(width: 4, height: 4).offset(y: dia * 0.68)
+                        Circle().fill(d.isToday ? GY.crailBase : GY.crailTint)
+                            .frame(width: dia, height: dia)
+                    } else if d.isToday {
+                        // 오늘인데 아직 안 한 날 — 위치만 표시. 무채색이라 운동일 채움(주황)과
+                        // 경쟁하지 않되, line(L .92)은 배경에 묻혀 안 보여 ink4(L .72)로 올린다.
+                        Circle().strokeBorder(GY.ink4, lineWidth: 1.5).frame(width: dia, height: dia)
                     }
+                    Text("\(d.num)").font(.mono(dim ? 12.5 : 14, d.worked ? 600 : 500))
+                        .foregroundStyle(d.isToday && d.worked ? .white
+                                         : (d.worked ? GY.crailDeep : (d.isToday ? GY.ink1 : GY.ink4)))
                 }
                 .frame(height: dia)
                 .frame(maxWidth: .infinity)
@@ -263,7 +263,7 @@ public struct HomeScreenView: View {
                 }
             }
         }
-        .opacity(dim ? 0.72 : 1)
+        // 위계는 원 크기(24 vs 28)로만 — 흐리게 깔면 2주를 보여주는 목적(지난주 패턴 비교)을 깎는다.
     }
 
     static let weekdayKor = ["", "일", "월", "화", "수", "목", "금", "토"]   // Calendar.weekday 1=일
