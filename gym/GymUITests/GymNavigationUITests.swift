@@ -59,6 +59,28 @@ final class GymNavigationUITests: XCTestCase {
                       "이어하기 탭 후 세션 화면이 떠야 한다")
     }
 
+    // 홈 캘린더 2주 표시 (사용자 2026-07-25) — 새 주 시작 시 1주만으론 흐름·이력이 안 보인다.
+    // 요일 헤더 1줄 공유 + [지난주 · 이번 주] 2행, 지난주 날짜도 탭하면 날짜 상세가 열린다.
+    func testHomeCalendarShowsTwoWeeksAndPastDayIsTappable() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset"]
+        app.launch()
+        XCTAssertTrue(app.buttons["home-resume"].waitForExistence(timeout: 10), "활성 세션 홈은 HomeC")
+
+        let prev = app.otherElements["home-week-prev"]
+        let cur = app.otherElements["home-week-current"]
+        XCTAssertTrue(prev.waitForExistence(timeout: 5), "지난주 행이 있어야 한다")
+        XCTAssertTrue(cur.exists, "이번 주 행이 있어야 한다")
+        XCTAssertLessThan(prev.frame.maxY, cur.frame.minY + 1, "지난주 행이 이번 주 행 위에 있어야 한다")
+        // 요일 헤더는 한 줄만 — 두 행이 공유 (월요일 라벨이 하나뿐)
+        XCTAssertEqual(app.staticTexts.matching(identifier: "월").count, 1, "요일 헤더는 1줄 공유")
+
+        // 지난주 날짜 탭 → 날짜 상세 시트
+        prev.children(matching: .any).element(boundBy: 2).tap()
+        XCTAssertTrue(app.staticTexts["daydetail-date"].waitForExistence(timeout: 5),
+                      "지난주 날짜도 탭하면 상세가 열려야 한다")
+    }
+
     // 전 종목 완료 후 홈 — 이어하기 카드가 종목 이름 공백 + "SET 1/0" 으로 깨지지 않아야 한다
     // (2026-07-24 감사 확정 #11·#12). 마지막 종목으로 폴백하고 '마무리' 로 표기한다.
     func testAllDoneHomeResumeCardIsNotBroken() {
