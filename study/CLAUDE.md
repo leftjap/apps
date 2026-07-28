@@ -24,3 +24,4 @@
 - `study-seed-supabase.yml` — 단계 7 INSERT (repo root `.github/workflows/`, working-directory: study)
 - `seeds/.user-defaults.json` — default user_id
 - `data-sentinel.yml` — 매일 07:30 KST study_daily_stats 위생 감사(팬텀·폭주 행 — 스크립트는 `cue/scripts/audit-study-hygiene.mjs`). deploy-pages.yml 은 study vitest 실패 시 배포 차단 (둘 다 2026-07-04 데이터 정확성 사고 후속)
+- `scripts/advance-check.mjs` + launchd `com.gio.study-advance-check` — 모두영어 전진 주 실행기 (5분 폴링 dry-run → 편 완료 시 headless claude 저작·시드. 스케줄드 태스크 `study-moduyeongeo-advance` 는 15시 1회 백업). 로그 `~/.local/state/study-advance-check/`
