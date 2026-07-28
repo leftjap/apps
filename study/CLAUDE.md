@@ -24,4 +24,4 @@
 - `study-seed-supabase.yml` — 단계 7 INSERT (repo root `.github/workflows/`, working-directory: study)
 - `seeds/.user-defaults.json` — default user_id
 - `data-sentinel.yml` — 매일 07:30 KST study_daily_stats 위생 감사(팬텀·폭주 행 — 스크립트는 `cue/scripts/audit-study-hygiene.mjs`). deploy-pages.yml 은 study vitest 실패 시 배포 차단 (둘 다 2026-07-04 데이터 정확성 사고 후속)
-- `scripts/advance-check.mjs` + launchd `com.gio.study-advance-check` — 모두영어 전진 주 실행기 (5분 폴링 dry-run → 편 완료 시 headless claude 저작·시드. 스케줄드 태스크 `study-moduyeongeo-advance` 는 15시 1회 백업). 로그 `~/.local/state/study-advance-check/`
+- `scripts/advance-check.mjs` + launchd `com.gio.study-advance-check` — 모두영어 전진 **유일 실행기** (5분 폴링 dry-run → 편 완료 시 headless claude 저작·시드. 저작 지침 정본 = `~/.claude/scheduled-tasks/study-moduyeongeo-advance/SKILL.md` — 태스크는 삭제됐지만 파일이 데몬 지침으로 상주). 로그 `~/.local/state/study-advance-check/`. **스터디 스케줄드 태스크는 2026-07-28 전부 삭제** (9am 매일생성 포함 — 사용자 지시 "일어·수학도 본격 시작하면 데몬화"). 결과: 매일 math 자동 생성 중단, ep105 소진 후 Parks/Office 폴백 담당 부재 (재개 시 데몬 신설이 정본 방향)
