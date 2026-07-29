@@ -1,0 +1,660 @@
+{
+  "lang": "en",
+  "track": "moduyeongeo",
+  "ep": 13,
+  "source": {
+    "playlist": "원어민이 매일 쓰는 영어문장",
+    "channel": "모두영어",
+    "video_id": "0PecWsunR-g",
+    "url": "https://www.youtube.com/watch?v=0PecWsunR-g",
+    "title": "원어민이 매일 쓰는 영어문장 [#13] 왜 전화 안 했어?/ 나한테 화났구나/ 그런 거 아니야/ 너무 바빴어/ 내 생각이 짧았어/ 너한테 말했어야 했는데/ 무슨 말인지 알겠어/ 이해해 줘서 고마워",
+    "note": "기본표현·클립변주는 영상 화면(번인 자막) 원문 그대로. drills 뒷부분은 §6.3 개인화 보강."
+  },
+  "cards": [
+    {
+      "id": "en-moduyeongeo-ep13-01-why-didnt-you-call",
+      "sentence": "Why didn't you call me?",
+      "meaning": "왜 전화 안 했어?",
+      "reading": null,
+      "phonetic_kr": "와린 쥬 커으 미",
+      "order_index": 1,
+      "explanation": {
+        "key": "Why didn't you call me? = 왜 전화 안 했어? 연락 뜸했던 상대에게 서운함·따지는 뉘앙스.",
+        "situation": "영상 클립: 연락이 없던 상대에게 서운한 마음으로 '왜 전화 안 했어?'라고 따지는 장면들",
+        "drills": [
+          {
+            "en": "Did you call me?",
+            "ko": "나한테 전화했어?",
+            "kr": "디 쥬 커으 미"
+          },
+          {
+            "en": "Why didn't you text me?",
+            "ko": "왜 문자 안 했어?",
+            "kr": "와린 쥬 텍스 미"
+          },
+          {
+            "en": "You never called me back.",
+            "ko": "넌 나한테 다시 전화 한 번을 안 했어.",
+            "kr": "유 네v버r 커을드 미 백"
+          },
+          {
+            "en": "She didn't even call you back.",
+            "ko": "걔는 너한테 다시 전화도 안 했어.",
+            "kr": "쉬 디든 이v은 커으 유 백"
+          },
+          {
+            "en": "You could've called me from the trip.",
+            "ko": "여행 가서 전화할 수도 있었잖아.",
+            "kr": "유 쿠러v 커을드 미 f럼 더 트립"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Why didn't you + 동사원형?",
+            "body": "과거에 안 한 일을 따질 때. did의 과거부정 didn't 뒤에 동사원형(call). 한국어 '왜 안 ~했어'와 달리 부정이 동사 앞(didn't)에 옴."
+          }
+        ],
+        "chunks": [
+          [
+            "Why didn't you",
+            "와린 쥬"
+          ],
+          [
+            "call me",
+            "커으 미"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/l/ call",
+            "call 끝 어두운 L — '커을/커으', '콜' 아님"
+          ],
+          [
+            "didn't you→didn'tya",
+            "'디든 유'(X) 연음 → '디든쥬/와린 쥬'"
+          ]
+        ],
+        "mistake": "call을 '콜'(X) → 어두운 L '커으'. Why didn't you를 또박또박(X) → 연음 '와린 쥬'.",
+        "similar": "How come you didn't call? / You never called me.",
+        "category": "감정/관계",
+        "frequency": 8,
+        "chain": {
+          "target": "Why didn't you call me, honey? I was really worried.",
+          "chunks": [
+            "Why didn't you call me,",
+            "honey?",
+            "I was",
+            "really",
+            "worried."
+          ],
+          "ko": "왜 전화 안 했어, 자기야? 정말 걱정했잖아."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-02-mad-at-me",
+      "sentence": "You're mad at me.",
+      "meaning": "나한테 화났구나.",
+      "reading": null,
+      "phonetic_kr": "유어 매랟 미",
+      "order_index": 2,
+      "explanation": {
+        "key": "You're mad at me. = 나한테 화났구나. mad at ~ = ~에게 화난. 상대 표정·태도 보고 알아챌 때.",
+        "situation": "영상 클립: 상대의 굳은 표정을 보고 '나한테 화났구나' 하고 알아채는 장면들",
+        "drills": [
+          {
+            "en": "Are you mad at me?",
+            "ko": "나한테 화났어?",
+            "kr": "아 유 매랟 미"
+          },
+          {
+            "en": "I'm not mad at you.",
+            "ko": "너한테 화 안 났어.",
+            "kr": "암 낫 매랟 유"
+          },
+          {
+            "en": "Is she mad at me?",
+            "ko": "걔 나한테 화났어?",
+            "kr": "이z 쉬 매랟 미"
+          },
+          {
+            "en": "Don't be mad at me.",
+            "ko": "나한테 화내지 마.",
+            "kr": "돈 비 매랟 미"
+          },
+          {
+            "en": "He was mad at me all day.",
+            "ko": "걔 하루 종일 나한테 화나 있었어.",
+            "kr": "히 워z 매랟 미 올 데이"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "be동사 + mad at + 사람",
+            "body": "mad = 화난(형용사). '누구에게' 화났는지는 전치사 at. be mad at ~. 한국어 '~한테 화나다'의 '한테'가 at."
+          }
+        ],
+        "chunks": [
+          [
+            "You're",
+            "유어"
+          ],
+          [
+            "mad at",
+            "매랟"
+          ],
+          [
+            "me",
+            "미"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/æ/ mad",
+            "mad — 입 크게 '매', '메드' 아님"
+          ],
+          [
+            "mad at→madat",
+            "'매드 앳'(X) 연음·flap '매랟'"
+          ]
+        ],
+        "mistake": "mad를 '메드'(X) → '매(드)'. mad at을 끊어서(X) → 연음 '매랟'. angry보다 회화에선 mad가 훨씬 흔함.",
+        "similar": "Are you upset with me? / You seem annoyed.",
+        "category": "감정/관계",
+        "frequency": 8,
+        "chain": {
+          "target": "You're mad at me, aren't you? I can tell.",
+          "chunks": [
+            "You're mad at me,",
+            "aren't you?",
+            "I can",
+            "tell."
+          ],
+          "ko": "나한테 화났구나, 그치? 다 알아."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-03-not-like-that",
+      "sentence": "It's not like that.",
+      "meaning": "그런 거 아니야.",
+      "reading": null,
+      "phonetic_kr": "잇츠 낫 라이 댙",
+      "order_index": 3,
+      "explanation": {
+        "key": "It's not like that. = 그런 거 아니야. 오해를 바로잡을 때. like that = 그런 식으로.",
+        "situation": "영상 클립: 상대가 오해하자 '그런 거 아니야'라며 해명하는 장면들",
+        "drills": [
+          {
+            "en": "Is it like that?",
+            "ko": "그런 식이야?",
+            "kr": "이z 잇 라이 댙"
+          },
+          {
+            "en": "It wasn't like that.",
+            "ko": "그런 거 아니었어.",
+            "kr": "잇 워즌 라이 댙"
+          },
+          {
+            "en": "That's not how it is.",
+            "ko": "그런 게 아니야.",
+            "kr": "댙츠 낫 하우 잇 이z"
+          },
+          {
+            "en": "Don't take it like that.",
+            "ko": "그런 식으로 받아들이지 마.",
+            "kr": "돈 테잌 잇 라이 댙"
+          },
+          {
+            "en": "It's not always like that.",
+            "ko": "항상 그런 건 아니야.",
+            "kr": "잇츠 낫 올웨이z 라이 댙"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "It's not like + that/명사",
+            "body": "like = ~같이/~처럼(전치사). 'It's not like that' = '그런 식이 아니다'. 오해 해명 관용구."
+          }
+        ],
+        "chunks": [
+          [
+            "It's not",
+            "잇츠 낫"
+          ],
+          [
+            "like that",
+            "라이 댙"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ð/ that",
+            "that의 th — 혀끝 살짝 물고 유성 '댙'"
+          ],
+          [
+            "not like",
+            "'낫 라이크'(X) → 끝 k 약하게 '라이'"
+          ]
+        ],
+        "mistake": "like를 '좋아하다'로 오해(X) → 여기선 '~처럼'. that의 th를 'ㅅ'(X) → 유성 'ㄷ'에 가까운 마찰음.",
+        "similar": "That's not it. / It's not what you think.",
+        "category": "의사표현/해명",
+        "frequency": 8,
+        "chain": {
+          "target": "It's not like that at all, I promise you.",
+          "chunks": [
+            "It's not like that",
+            "at all,",
+            "I promise",
+            "you."
+          ],
+          "ko": "진짜 그런 거 아니야, 맹세해."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-04-too-busy",
+      "sentence": "I was too busy.",
+      "meaning": "너무 바빴어.",
+      "reading": null,
+      "phonetic_kr": "아이 워s 투 비z지",
+      "order_index": 4,
+      "explanation": {
+        "key": "I was too busy. = 너무 바빴어. too = 너무(지나치게). 못 한 이유를 댈 때.",
+        "situation": "영상 클립: 연락·약속을 못 지킨 이유로 '너무 바빴어'라고 변명하는 장면들",
+        "drills": [
+          {
+            "en": "I'm too busy today.",
+            "ko": "오늘은 너무 바빠.",
+            "kr": "암 투 비z지 투데이"
+          },
+          {
+            "en": "Were you too busy?",
+            "ko": "너 너무 바빴어?",
+            "kr": "워 유 투 비z지"
+          },
+          {
+            "en": "I wasn't busy at all.",
+            "ko": "하나도 안 바빴어.",
+            "kr": "아이 워즌 비z지 애롤"
+          },
+          {
+            "en": "She was too busy to call.",
+            "ko": "걔는 너무 바빠서 전화를 못 했어.",
+            "kr": "쉬 워z 투 비z지 투 커으"
+          },
+          {
+            "en": "We were too busy on the trip.",
+            "ko": "여행 중엔 너무 바빴어.",
+            "kr": "위 워 투 비z지 온 더 트립"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "was + too + 형용사",
+            "body": "too = 필요·기대 이상으로 '너무'. very(단순 강조)와 달리 too는 부정적 결과를 함축('너무 ~해서 못 했다')."
+          }
+        ],
+        "chunks": [
+          [
+            "I was",
+            "아이 워s"
+          ],
+          [
+            "too busy",
+            "투 비z지"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/z/ was",
+            "was 끝 z — '워z', 빠르면 s처럼"
+          ],
+          [
+            "/z/ busy",
+            "busy의 s는 z 소리 '비z지'"
+          ]
+        ],
+        "mistake": "busy를 '부시'(X) → '비z지'. too를 '뚜/투우'(X) → 짧은 '투'. very(그냥 강조)와 too(부정 함축) 혼동 주의.",
+        "similar": "I had my hands full. / I was swamped.",
+        "category": "일상/변명",
+        "frequency": 8,
+        "chain": {
+          "target": "I was too busy this week, so I couldn't call.",
+          "chunks": [
+            "I was too busy",
+            "this week,",
+            "so",
+            "I couldn't",
+            "call."
+          ],
+          "ko": "이번 주에 너무 바빠서, 전화를 못 했어."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-05-wasnt-thinking",
+      "sentence": "I wasn't thinking.",
+      "meaning": "내 생각이 짧았어.",
+      "reading": null,
+      "phonetic_kr": "아이 워즌 th띵킹",
+      "order_index": 5,
+      "explanation": {
+        "key": "I wasn't thinking. = 내 생각이 짧았어. (직역: 생각을 안 하고 있었다) 무심코 실수했을 때 사과.",
+        "situation": "영상 클립: 무심코 실수한 뒤 '내가 생각이 짧았어'라고 인정·사과하는 장면들",
+        "drills": [
+          {
+            "en": "What was I thinking?",
+            "ko": "내가 무슨 생각이었지?",
+            "kr": "왓 워z 아이 th띵킹"
+          },
+          {
+            "en": "I didn't think it through.",
+            "ko": "깊이 생각을 못 했어.",
+            "kr": "아이 디든 th띵 잇 th루"
+          },
+          {
+            "en": "You weren't thinking either.",
+            "ko": "너도 생각이 짧았잖아.",
+            "kr": "유 워언 th띵킹 이더r"
+          },
+          {
+            "en": "I wasn't paying attention.",
+            "ko": "정신을 딴 데 팔고 있었어.",
+            "kr": "아이 워즌 페잉 어텐션"
+          },
+          {
+            "en": "He wasn't thinking clearly.",
+            "ko": "걔는 제정신이 아니었어.",
+            "kr": "히 워즌 th띵킹 클리얼리"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "wasn't(=was not) + 동사-ing",
+            "body": "과거진행 부정. '(그때) 생각을 하고 있지 않았다' → 무심코 그랬다는 뉘앙스. was not의 축약이 wasn't."
+          }
+        ],
+        "chunks": [
+          [
+            "I wasn't",
+            "아이 워즌"
+          ],
+          [
+            "thinking",
+            "th띵킹"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ thinking",
+            "think의 th — 혀끝 이 사이 무성 'th띵'"
+          ],
+          [
+            "wasn't",
+            "'워즌트'(X) → 끝 t 약하게 '워즌'"
+          ]
+        ],
+        "mistake": "thinking을 '씽킹'(X) → 혀 내미는 'th띵킹'. wasn't 끝 t 강하게(X) → 약음 '워즌'.",
+        "similar": "It slipped my mind. / I didn't think it through.",
+        "category": "감정/사과",
+        "frequency": 7,
+        "chain": {
+          "target": "I wasn't thinking, honestly, and I'm really sorry.",
+          "chunks": [
+            "I wasn't thinking,",
+            "honestly,",
+            "and",
+            "I'm really",
+            "sorry."
+          ],
+          "ko": "솔직히 내가 생각이 짧았어, 정말 미안해."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-06-shouldve-told-you",
+      "sentence": "I should've told you.",
+      "meaning": "너한테 말했어야 했는데.",
+      "reading": null,
+      "phonetic_kr": "아이 슈러v 톨 쥬",
+      "order_index": 6,
+      "explanation": {
+        "key": "I should've told you. = 너한테 말했어야 했는데. should've = ~했어야 했다(후회). told = 말했다(tell 과거).",
+        "situation": "영상 클립: 진작 알리지 못한 걸 후회하며 '너한테 말했어야 했는데'라고 사과하는 장면들",
+        "drills": [
+          {
+            "en": "Should I have told you?",
+            "ko": "너한테 말했어야 했나?",
+            "kr": "슈드 아이 해v 톨 쥬"
+          },
+          {
+            "en": "I meant to tell you.",
+            "ko": "너한테 말하려고 했어.",
+            "kr": "아이 멘 투 텔 유"
+          },
+          {
+            "en": "You should've told me first.",
+            "ko": "네가 나한테 먼저 말했어야지.",
+            "kr": "유 슈러v 톨 미 f퍼rst"
+          },
+          {
+            "en": "I never told you the truth.",
+            "ko": "너한테 사실을 말 안 했었어.",
+            "kr": "아이 네v버r 톨 쥬 더 트루th"
+          },
+          {
+            "en": "Why didn't I just tell you?",
+            "ko": "왜 그냥 말 안 했을까?",
+            "kr": "와이 디든 아이 저s 텔 유"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "should have + 과거분사(p.p.)",
+            "body": "should've = 과거에 안 한 일을 후회 '~했어야 했다'. told = tell의 p.p. 실제 발화는 should've가 '슈러v/슈르'로 확 줄어듦."
+          }
+        ],
+        "chunks": [
+          [
+            "I should've",
+            "아이 슈러v"
+          ],
+          [
+            "told you",
+            "톨 쥬"
+          ]
+        ],
+        "phonemes": [
+          [
+            "should've",
+            "'슈드 해브'(X) → 축약 '슈러v'"
+          ],
+          [
+            "told you→toldya",
+            "'톨드 유'(X) 연음 '톨 쥬'"
+          ]
+        ],
+        "mistake": "should've를 should of(X)로 쓰기 쉬움 → have의 축약 '슈러v'. told you 끊어 읽기(X) → 연음 '톨 쥬'.",
+        "similar": "I ought to have told you. / I owe you an explanation.",
+        "category": "감정/사과",
+        "frequency": 8,
+        "chain": {
+          "target": "I should've told you the truth from the start, I'm sorry.",
+          "chunks": [
+            "I should've told you",
+            "the truth",
+            "from the start,",
+            "I'm sorry."
+          ],
+          "ko": "처음부터 사실대로 말했어야 했는데, 미안해."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-07-know-what-you-mean",
+      "sentence": "I know what you mean.",
+      "meaning": "무슨 말인지 알겠어.",
+      "reading": null,
+      "phonetic_kr": "아이 노 와 츄 미인",
+      "order_index": 7,
+      "explanation": {
+        "key": "I know what you mean. = 무슨 말인지 알겠어. 공감·동의 맞장구. what you mean = 네가 말하려는 것.",
+        "situation": "영상 클립: 상대 말에 공감하며 '무슨 말인지 알겠어' 하고 맞장구치는 장면들",
+        "drills": [
+          {
+            "en": "Do you know what I mean?",
+            "ko": "무슨 말인지 알겠어?",
+            "kr": "두 유 노 와라이 미인"
+          },
+          {
+            "en": "I don't know what you mean.",
+            "ko": "무슨 말인지 모르겠어.",
+            "kr": "아이 돈 노 와 츄 미인"
+          },
+          {
+            "en": "I see what you're saying.",
+            "ko": "무슨 말인지 알겠어.",
+            "kr": "아이 씨 와 츄어 쎄잉"
+          },
+          {
+            "en": "You know what I mean.",
+            "ko": "무슨 말인지 알지.",
+            "kr": "유 노 와라이 미인"
+          },
+          {
+            "en": "Now I know what she meant.",
+            "ko": "이제 걔가 무슨 말이었는지 알겠어.",
+            "kr": "나우 아이 노 왓 쉬 멘트"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "know + what + 주어 + 동사",
+            "body": "what you mean = 간접의문문(명사절) '네가 의미하는 것'으로 know의 목적어. 한국어 '무슨 말인지'가 what you mean."
+          }
+        ],
+        "chunks": [
+          [
+            "I know",
+            "아이 노"
+          ],
+          [
+            "what you",
+            "와 츄"
+          ],
+          [
+            "mean",
+            "미인"
+          ]
+        ],
+        "phonemes": [
+          [
+            "what you→whatcha",
+            "'왓 유'(X) 연음 '와 츄'"
+          ],
+          [
+            "/iː/ mean",
+            "mean 길게 '미인', '민' 아님"
+          ]
+        ],
+        "mistake": "mean을 '민'(X) → 길게 '미인'. what you 또박또박(X) → 연음 '와 츄'. know는 k 묵음 '노'.",
+        "similar": "I get it. / I hear you. / I see what you mean.",
+        "category": "리액션/공감",
+        "frequency": 9,
+        "chain": {
+          "target": "I know what you mean, and honestly, so do I.",
+          "chunks": [
+            "I know what you mean,",
+            "and",
+            "honestly,",
+            "so do I."
+          ],
+          "ko": "무슨 말인지 알아, 솔직히 나도 그래."
+        }
+      }
+    },
+    {
+      "id": "en-moduyeongeo-ep13-08-thanks-for-understanding",
+      "sentence": "Thanks for understanding.",
+      "meaning": "이해해 줘서 고마워.",
+      "reading": null,
+      "phonetic_kr": "th땡스 f퍼r 언더r스탠딩",
+      "order_index": 8,
+      "explanation": {
+        "key": "Thanks for understanding. = 이해해 줘서 고마워. Thanks for + ~ing = ~해줘서 고마워.",
+        "situation": "영상 클립: 상대가 사정을 헤아려 주자 '이해해 줘서 고마워'라고 고마움을 전하는 장면들",
+        "drills": [
+          {
+            "en": "Thanks for waiting.",
+            "ko": "기다려 줘서 고마워.",
+            "kr": "th땡스 f퍼r 웨이링"
+          },
+          {
+            "en": "Thank you so much.",
+            "ko": "정말 고마워.",
+            "kr": "th땡큐 쏘 머치"
+          },
+          {
+            "en": "I really appreciate it.",
+            "ko": "정말 고마워.",
+            "kr": "아이 뤼얼리 어프리쉬에잇 잇"
+          },
+          {
+            "en": "Thanks for hearing me out.",
+            "ko": "내 말 들어줘서 고마워.",
+            "kr": "th땡스 f퍼r 히어링 미 아웃"
+          },
+          {
+            "en": "Thanks for being patient with me.",
+            "ko": "참고 기다려 줘서 고마워.",
+            "kr": "th땡스 f퍼r 비잉 페이션트 위th 미"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Thanks for + 명사/동명사(-ing)",
+            "body": "for 뒤에 고마운 '이유'. 동사면 -ing(동명사). Thank you for~보다 캐주얼. 한국어 '~해줘서'가 for + -ing."
+          }
+        ],
+        "chunks": [
+          [
+            "Thanks for",
+            "th땡스 f퍼r"
+          ],
+          [
+            "understanding",
+            "언더r스탠딩"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ Thanks",
+            "Thanks 첫소리 th — 혀 내밀고 'th땡스'"
+          ],
+          [
+            "for→fer",
+            "'포/훠'(X) 약음 'f퍼r'"
+          ]
+        ],
+        "mistake": "Thanks를 '땡스/쌩스'(X) → 혀 내미는 'th땡스'. for를 '포'(X) → 약하게 'f퍼r'. understanding은 r 살려.",
+        "similar": "I appreciate your understanding. / Thanks for being cool about it.",
+        "category": "리액션/감사",
+        "frequency": 8,
+        "chain": {
+          "target": "Thanks for understanding, it really means a lot to me.",
+          "chunks": [
+            "Thanks for understanding,",
+            "it really",
+            "means",
+            "a lot",
+            "to me."
+          ],
+          "ko": "이해해 줘서 고마워, 나한텐 정말 큰 힘이 돼."
+        }
+      }
+    }
+  ],
+  "date": "2026-07-29"
+}
