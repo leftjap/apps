@@ -91,11 +91,17 @@ const VL_CSS = `
 const LEVEL_RANK = { X: 0, '△': 1, O: 3 };
 const rankOf = (lv) => (LEVEL_RANK[lv] ?? 2);
 
-/* 정렬 비교자 — 난이도(어려움→보통→미평가→쉬움) → 최근 발음 점수 낮은 순(학습 세션 실력 반영,
- * 2026-07-24 사용자 지시 "기존 점수 및 현재 평가 기반 위치 조정") → 학습일 최신순.
+/* 정렬 비교자 — **오늘 평가 완료가 최우선으로 가라앉는다** → 난이도(어려움→보통→미평가→쉬움)
+ * → 최근 발음 점수 낮은 순 → 학습일 최신순.
+ * 오늘-완료 가라앉힘(2026-07-28 사용자 보고): 구 규칙은 맨 위 문장을 어려움으로 평가하면
+ * 어려움-우선 정렬이 그 문장을 1위에 재고정해 "계속 뜸" — 보통 이하로 눌러야만 다음 문장이
+ * 나오는 강요가 됐다. 평가한 문장은 그날은 아래로 빠지고(라운드 '완료'와 같은 의미), 날이
+ * 바뀌면 어려움 우선이 복원된다. 오늘-완료 그룹 안에서도 난이도순은 유지.
  * 점수 없는 문장은 같은 난이도의 점수 있는 문장 뒤(정보 없음 → 우선 연습 대상 아님).
  * 최초 렌더와 평가 직후 재배치가 같은 규칙을 쓰도록 한 곳에 둔다. */
 export function compareSentenceRows(a, b) {
+  const dt = (a._doneToday ? 1 : 0) - (b._doneToday ? 1 : 0);
+  if (dt !== 0) return dt;
   const d = rankOf(a.level) - rankOf(b.level);
   if (d !== 0) return d;
   const sa = a.score ?? Infinity;
@@ -130,8 +136,9 @@ export function pickTodayRound(rows, saved, todayISO) {
   return { date: todayISO, ids: (rows ?? []).slice(0, 10).map((r) => r.id), done: [] };
 }
 
-/* reviewQueue + sessionLogs + pronunciationLog → 표시용 행 목록. 정렬은 compareSentenceRows. */
-export function buildSentenceRows(cards, logs, pronLogs) {
+/* reviewQueue + sessionLogs + pronunciationLog → 표시용 행 목록. 정렬은 compareSentenceRows.
+ * todayISO — lastResultAt(평가 시각, 로컬 전용 필드)이 오늘이면 _doneToday 로 가라앉힌다. */
+export function buildSentenceRows(cards, logs, pronLogs, todayISO) {
   const lastBy = {};
   for (const l of logs ?? []) {
     for (const id of [...(l?.sentenceIds ?? []), ...(l?.newSentenceIds ?? [])]) {
@@ -153,6 +160,7 @@ export function buildSentenceRows(cards, logs, pronLogs) {
     score: scoreBy[c.id]?.score ?? null,
     hint: sentenceHint(c),
     _iso: lastBy[c.id] || (c.createdAt ? String(c.createdAt).slice(0, 10) : ''),
+    _doneToday: !!todayISO && String(c.lastResultAt ?? '').slice(0, 10) === todayISO,
   })).sort(compareSentenceRows);
 }
 
@@ -193,7 +201,7 @@ export function mountSentences(host) {
       try { logs = await db.sessionLogs.where('lang').equals(lang).toArray(); } catch { /* 로그 없으면 정렬만 약해짐 */ }
       let pron = [];
       try { pron = await db.pronunciationLog.where('lang').equals(lang).toArray(); } catch { /* 점수 없으면 정렬만 약해짐 */ }
-      rows = buildSentenceRows(cards, logs, pron);
+      rows = buildSentenceRows(cards, logs, pron, localISODate());
     } catch (e) {
       console.error('[sentences] load', e);
     }
@@ -276,7 +284,8 @@ export function mountSentences(host) {
           levelBtns.forEach((x) => x.classList.remove('on'));
           b.classList.add('on');
           r.level = level;
-          reposition(r); // 평가 즉시 제 위치로 (쉬움→아래, 어려움→위 + 점수순)
+          r._doneToday = true; // 오늘 평가 완료 — 난이도 불문 미평가 아래로 (2026-07-28)
+          reposition(r); // 평가 즉시 제 위치로 — 오늘-완료 그룹으로 가라앉음
           bumpRound(r.id); // 오늘 라운드 진행 (목표 문장 + 첫 평가만)
           clearTimeout(resetTimer);
           resetTimer = setTimeout(() => { // 라운드 완료 리셋 — 피드백이 보일 만큼만 켰다 끈다
@@ -288,7 +297,7 @@ export function mountSentences(host) {
               revealBtn.classList.remove('on');
             }
           }, 600);
-          try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level }); }
+          try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level, lastResultAt: new Date().toISOString() }); }
           catch (e) { console.error('[sentences] level save', e); }
         });
         levels.appendChild(b);

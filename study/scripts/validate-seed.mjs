@@ -219,9 +219,12 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
         errors.push(`${c.id}: chunks 가 본문 전단어 미커버 ("${norm(c.sentence)}" ≠ "${enJoin}")`);
       }
     }
-    // drills 4~10 + en/ko/kr 완비 (2026-07-22 정원 폐지 — 갯수 채우기용 저품질 금지, 품질 통과분만)
+    // drills 하한 4 차단 + en/ko/kr 완비. 상한 차단은 폐지 (2026-07-28 사용자 지시 "필요한 만큼" —
+    // 활용도 높은 프레임이면 10개 넘어도 좋다. 개수는 결과이지 목표가 아니다). 다만 과다는
+    // 정원 채우기 신호일 수 있어 14개 초과만 경고로 재확인시킨다 (품질 규칙은 schema §drills).
     const drills = Array.isArray(ex.drills) ? ex.drills : [];
-    if (drills.length < 4 || drills.length > 10) errors.push(`${c.id}: drills 는 4~10개 (현재 ${drills.length}) — 정원 채우기 금지, 품질 통과분만`);
+    if (drills.length < 4) errors.push(`${c.id}: drills 는 4개 이상 (현재 ${drills.length}) — 빈 응용 방지 하한`);
+    if (drills.length > 14) warnings.push(`${c.id}: drills ${drills.length}개 — 상한은 없지만 정원 채우기 의심. 살아있는 문장·축 다양성 기준 재확인`);
     drills.forEach((d, i) => {
       if (!d?.en || !d?.ko || !d?.kr) errors.push(`${c.id}: drills[${i}] en/ko/kr 누락 (kr 음차 의무)`);
       if (quotedClipDrill(c.sentence, d?.en)) errors.push(`${c.id}: drills[${i}] 원문 인용형 — 다른 문장에 base 를 그대로 붙인 건 변주가 아니다 (체이닝 담당): "${d?.en}"`);
@@ -234,7 +237,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     if (drills.length > 4) allDrillsAtFloor = false;
   }
   if (allDrillsAtFloor) {
-    warnings.push('전 표현 카드 drills ≤4 — 하한 일괄 깔기 의심 (schema §drills: 표현 생산성만큼 4~10, 획일 금지)');
+    warnings.push('전 표현 카드 drills ≤4 — 하한 일괄 깔기 의심 (schema §drills: 표현 생산성만큼, 상한 없음, 획일 금지)');
   }
 
   // ── 기본동사 중심 + 어려운 어휘 차단 (학습 anchor, 2026-06-29 복원) ──

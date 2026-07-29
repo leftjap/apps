@@ -514,20 +514,22 @@ describe('validateSeedContent — 다이얼로그 매칭 계약 (deriveDialogue 
 });
 
 describe('validateSeedContent — drills', () => {
-  /* 2026-07-22 — 정원(quota) 폐지: 4~10개. 갯수를 채우려 저품질 변주를 만들지 말고
-   * 품질 통과분만 넣는다(사용자 결정). 9개는 이제 합법. */
-  it('3개 (<4) → 차단 / 11개 (>10) → 차단 / 9개 → 통과 / kr 누락 → 차단', () => {
+  /* 2026-07-28 — 상한 차단 폐지(사용자 지시 "필요한 만큼"): 활용도 높은 프레임이면 10개를
+   * 넘어도 좋다. 하한 4 차단은 유지(빈 응용 방지), 14개 초과는 정원 채우기 의심 경고만. */
+  it('3개 (<4) → 차단 / 11개 → 통과(상한 폐지) / 15개 → 통과+경고 / kr 누락 → 차단', () => {
     const low = makePayload();
     low.cards[1].explanation.drills = low.cards[1].explanation.drills.slice(0, 3);
     expect(validateSeedContent(low, okOpts).ok).toBe(false);
 
-    const high = makePayload();
-    high.cards[1].explanation.drills = poolDrills(11);
-    expect(validateSeedContent(high, okOpts).ok).toBe(false);
+    const eleven = makePayload();
+    eleven.cards[1].explanation.drills = poolDrills(11);
+    expect(validateSeedContent(eleven, okOpts).ok).toBe(true);
 
-    const nine = makePayload();
-    nine.cards[1].explanation.drills = poolDrills(9);
-    expect(validateSeedContent(nine, okOpts).ok).toBe(true);
+    const fifteen = makePayload();
+    fifteen.cards[1].explanation.drills = poolDrills(15);
+    const rf = validateSeedContent(fifteen, okOpts);
+    expect(rf.ok).toBe(true); // 차단 아님
+    expect(rf.warnings.join(' ')).toContain('정원 채우기 의심');
 
     const noKr = makePayload();
     delete noKr.cards[1].explanation.drills[0].kr;

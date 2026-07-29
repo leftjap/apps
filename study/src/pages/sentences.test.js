@@ -42,6 +42,19 @@ describe('buildSentenceRows — 목록 구성', () => {
     expect(buildSentenceRows(rated, ls).map((r) => r.id)).toEqual(['h-new', 'h-old']);
   });
 
+  /* 2026-07-28 — 오늘 평가한 문장(lastResultAt=오늘)은 재방문에도 하단 유지.
+   * 어제 이전 평가는 기존 규칙(어려움 맨 위) 그대로 — 날이 바뀌면 어려움 우선이 복원된다. */
+  it('오늘 평가한 문장은 난이도 불문 하단으로, 어제 평가한 어려움은 맨 위 유지', () => {
+    const TODAY = '2026-07-28';
+    const rows = buildSentenceRows([
+      { id: 'hy', sentence: 'a', meaning: '어제어려움', lastResult: 'X', lastResultAt: '2026-07-27T20:00:00Z' },
+      { id: 'ht', sentence: 'b', meaning: '오늘어려움', lastResult: 'X', lastResultAt: '2026-07-28T09:00:00Z' },
+      { id: 'et', sentence: 'c', meaning: '오늘쉬움', lastResult: 'O', lastResultAt: '2026-07-28T09:05:00Z' },
+      { id: 'un', sentence: 'd', meaning: '미평가' },
+    ], [], [], TODAY);
+    expect(rows.map((r) => r.ko)).toEqual(['어제어려움', '미평가', '오늘어려움', '오늘쉬움']);
+  });
+
   it('평가 결과(level)를 행에 실어 준다 — 버튼 선택 표시용', () => {
     const rows = buildSentenceRows([{ id: 'x', sentence: 's', meaning: 'k', lastResult: '△' }], []);
     expect(rows[0].level).toBe('△');
@@ -159,20 +172,26 @@ describe('mountSentences — 렌더·상호작용', () => {
     expect(first.querySelector('.vl-lv[data-level="O"]').classList.contains('on')).toBe(true);
   });
 
-  it('어려움을 누르면 그 즉시 맨 위로 이동한다', async () => {
+  /* 2026-07-28 사용자 보고: "맨 위 문장을 어려움으로 체크하면 그게 계속 뜸 — 보통 이하로
+   * 체크해야 다음 문장이 최상단에 뜨네." 구 스펙(어려움 → 즉시 맨 위 재고정)이 라운드 흐름과
+   * 충돌 → 교체: **오늘 평가한 문장은 평가와 무관하게 미평가 문장들 아래로 가라앉고**, 다음
+   * 문장이 최상단에 온다. 어려움 우선 정렬은 날이 바뀌면(내일) 복원된다. */
+  it('맨 위 문장을 어려움으로 체크하면 가라앉고 다음 문장이 최상단에 온다', async () => {
     window.studyDB.reviewQueue.update = async () => {};
     const host = document.getElementById('root');
     mountSentences(host);
     await tick();
     const rows = [...host.querySelectorAll('.vl-row')];
-    const last = rows[rows.length - 1];
-    const ko = last.querySelector('.ko').textContent;
-    last.querySelector('.vl-lv[data-level="X"]').click();
+    const firstKo = rows[0].querySelector('.ko').childNodes[0].textContent;
+    const secondKo = rows[1].querySelector('.ko').childNodes[0].textContent;
+    rows[0].querySelector('.vl-lv[data-level="X"]').click();
     await tick();
-    expect([...host.querySelectorAll('.vl-row .ko')][0].textContent).toBe(ko);
+    const order = [...host.querySelectorAll('.vl-row .ko')].map((e) => e.childNodes[0].textContent);
+    expect(order[0]).toBe(secondKo);              // 다음 문장이 최상단으로
+    expect(order[order.length - 1]).toBe(firstKo); // 방금 평가한 문장은 아래로
   });
 
-  it('기존 평가를 고려해 중간 위치로 보낸다 — 보통은 어려움 아래·쉬움 위', async () => {
+  it('평가 직후엔 난이도와 무관하게 미평가 문장들 아래로 (오늘-완료 그룹)', async () => {
     window.studyDB.reviewQueue.update = async () => {};
     window.studyDB.reviewQueue.where = () => ({ equals: () => ({ toArray: async () => [
       { id: 'h', lang: 'en', sentence: 'h', meaning: '어려운문장', lastResult: 'X' },
@@ -185,9 +204,21 @@ describe('mountSentences — 렌더·상호작용', () => {
     const target = [...host.querySelectorAll('.vl-row')].find((r) => r.querySelector('.ko').childNodes[0].textContent === '평가할문장');
     target.querySelector('.vl-lv[data-level="△"]').click();
     await tick();
-    // .ko 에는 '오늘' 라운드 칩이 붙을 수 있어 원문 텍스트 노드만 비교
+    // 보통으로 평가해도 '오늘 완료'라 미평가(어제 평가 포함) 문장들 아래로 — .ko 원문 노드만 비교
     expect([...host.querySelectorAll('.vl-row .ko')].map((e) => e.childNodes[0].textContent))
-      .toEqual(['어려운문장', '평가할문장', '쉬운문장']);
+      .toEqual(['어려운문장', '쉬운문장', '평가할문장']);
+  });
+
+  it('평가 저장에 lastResultAt(오늘 가라앉힘 유지용)이 포함된다', async () => {
+    const updates = [];
+    window.studyDB.reviewQueue.update = async (id, patch) => { updates.push({ id, patch }); };
+    const host = document.getElementById('root');
+    mountSentences(host);
+    await tick();
+    host.querySelector('.vl-row .vl-lv[data-level="O"]').click();
+    await tick();
+    expect(typeof updates[0].patch.lastResultAt).toBe('string');
+    expect(updates[0].patch.lastResultAt.length).toBeGreaterThanOrEqual(10);
   });
 
   /* 2026-07-24 위계 재설계 — 배치가 실제 흐름(떠올리기→힌트/정답/듣기→평가→복습)을 따른다.
