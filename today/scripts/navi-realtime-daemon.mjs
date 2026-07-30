@@ -24,6 +24,9 @@ const TODAY_DIR = path.join(HOME, 'apps/today');
 const STATE_DIR = path.join(HOME, '.local/state/navi-daemon');
 const TOKEN_FILE = path.join(HOME, '.config/navi-daemon/oauth-token');
 const CLAUDE = '/opt/homebrew/bin/claude';
+// 자동댓글 모델 고정(사용자 결정 2026-07-30). alias 미사용 이유: CLI 업데이트 시 최신 Opus 로 조용히
+// 바뀌는 드리프트 차단. 이 모델 은퇴(빨라야 2027-05-28, 최소 60일 사전 공지) 등 실패 시 opus(최신)로 1회 폴백.
+const CLAUDE_MODEL = 'claude-opus-4-8';
 const SETTLE_MS = Number(process.env.NAVI_SETTLE_MS) || 60 * 60 * 1000;
 const NAVI_KINDS = ['navi', 'soyoun_navi'];
 // 클로드 자동 댓글 author (supabase/migrations 의 CLAUDE id 와 동일).
@@ -95,10 +98,11 @@ async function checkReplyForEntry(entryId) {
 function readMaybe(p) { try { return fs.readFileSync(p, 'utf8').trim(); } catch { return ''; } }
 
 // claude -p 1패스 실행 → stdout 반환. 에이전트엔 토큰 미주입(파일 Read + WebSearch 만).
+// CLAUDE_MODEL 고정 실행, 실패 시 opus(최신 alias)로 1회 폴백 — 발동 시 MODEL-FALLBACK 로그.
 async function claudePass(prompt, allowedTools, cwd) {
-  const { stdout } = await execFileP(
+  const run = (model) => execFileP(
     CLAUDE,
-    ['-p', prompt, '--allowedTools', allowedTools, '--permission-mode', 'bypassPermissions'],
+    ['-p', prompt, '--model', model, '--allowedTools', allowedTools, '--permission-mode', 'bypassPermissions'],
     {
       cwd,
       env: { ...process.env, CLAUDE_CODE_OAUTH_TOKEN: OAUTH_TOKEN, HOME, PATH: '/opt/homebrew/bin:/usr/bin:/bin' },
@@ -106,7 +110,14 @@ async function claudePass(prompt, allowedTools, cwd) {
       maxBuffer: 10 * 1024 * 1024,
     },
   );
-  return stdout;
+  try {
+    const { stdout } = await run(CLAUDE_MODEL);
+    return stdout;
+  } catch (e) {
+    log(`MODEL-FALLBACK: ${CLAUDE_MODEL} 실패 → opus 재시도 (원인: ${String(e.message).split('\n').slice(0, 3).join(' | ').slice(0, 300)})`);
+    const { stdout } = await run('opus');
+    return stdout;
+  }
 }
 
 // 검증 통과한 댓글을 클로드 author 로 직접 insert(service role). DB 트리거(realtime·알림)는 insert 에 발화.
