@@ -209,7 +209,9 @@ describe('mountSentences — 렌더·상호작용', () => {
       .toEqual(['어려운문장', '쉬운문장', '평가할문장']);
   });
 
-  it('평가 저장에 lastResultAt(오늘 가라앉힘 유지용)이 포함된다', async () => {
+  /* lastResultAt 은 **KST(localISODate) 기준**으로 저장한다 — toISOString(UTC)이면 KST 새벽
+   * (0~9시) 평가가 전날로 귀속돼 재방문 가라앉힘이 풀린다 (2026-06-22 today.js 사고와 동일 유형). */
+  it('평가 저장에 lastResultAt 이 KST 오늘 날짜로 포함된다', async () => {
     const updates = [];
     window.studyDB.reviewQueue.update = async (id, patch) => { updates.push({ id, patch }); };
     const host = document.getElementById('root');
@@ -217,8 +219,8 @@ describe('mountSentences — 렌더·상호작용', () => {
     await tick();
     host.querySelector('.vl-row .vl-lv[data-level="O"]').click();
     await tick();
-    expect(typeof updates[0].patch.lastResultAt).toBe('string');
-    expect(updates[0].patch.lastResultAt.length).toBeGreaterThanOrEqual(10);
+    const { localISODate } = await import('../utils/today.js');
+    expect(updates[0].patch.lastResultAt.slice(0, 10)).toBe(localISODate()); // 기기 로컬(KST) 오늘
   });
 
   /* 2026-07-24 위계 재설계 — 배치가 실제 흐름(떠올리기→힌트/정답/듣기→평가→복습)을 따른다.

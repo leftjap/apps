@@ -398,6 +398,15 @@ const _serverCounts = new Map();
  * 다른 3 테이블 (session_logs / today_lessons / pronunciation_log) 은 append-only
  * 또는 1회 update (completedAt 등) — 단순 last-write-wins OK (호출 안 함).
  */
+/* 로컬 전용 필드 이월 (2026-07-28) — lastResultAt(문장 모아보기 '오늘 평가' 가라앉힘)은 서버
+ * 컬럼이 없어 resolveConflict 가 서버 행을 택하면 소실된다(행 통째 택일 — 필드 병합 아님).
+ * push 후엔 lastResult·nextReview 가 동률이라 대부분 서버가 이김 → pull 에서 이월해 같은 날
+ * 재방문 가라앉힘을 보존한다. 선택된 행이 이미 갖고 있으면(로컬 승) 그대로. */
+export function preserveLocalOnlyFields(local, chosen) {
+  if (local?.lastResultAt && !chosen?.lastResultAt) return { ...chosen, lastResultAt: local.lastResultAt };
+  return chosen;
+}
+
 export function resolveConflict(local, server) {
   if (!local) return server;
   if (!server) return local;
@@ -471,7 +480,7 @@ export async function pullTable(mapping, db, userId) {
     if (mapping.dexie === 'reviewQueue' && typeof store.bulkGet === 'function') {
       const ids = rowsToPut.map((r) => r.id);
       const localRows = await store.bulkGet(ids);
-      rowsToPut = rowsToPut.map((serverRow, i) => resolveConflict(localRows[i], serverRow));
+      rowsToPut = rowsToPut.map((serverRow, i) => preserveLocalOnlyFields(localRows[i], resolveConflict(localRows[i], serverRow)));
     }
     await store.bulkPut(rowsToPut);
     if (tombstoned.length && typeof store.bulkDelete === 'function') {

@@ -2062,3 +2062,22 @@ describe('sync — reviewQueue 톰스톤(explanation._deleted) pull 전파', () 
     expect(bulkPutSpy.mock.calls[0][0].map((r) => r.id)).toEqual(['live-1']);
   });
 });
+
+/* 2026-07-28 — 문장 모아보기의 lastResultAt(오늘 평가 가라앉힘)은 로컬 전용 필드다.
+ * resolveConflict 가 행을 통째 택일하므로 서버 행이 이기면 소실됨 (push 후엔 lastResult·
+ * nextReview 가 동률이라 대부분 server 승) → pull 에서 로컬 값을 이월해야 같은 날 유지가 산다. */
+describe('preserveLocalOnlyFields — pull 시 로컬 전용 필드 이월', () => {
+  it('서버 행이 이겨도 로컬 lastResultAt 을 이월한다', async () => {
+    const { preserveLocalOnlyFields } = await import('./sync.js');
+    const local = { id: 'a', lastResult: 'X', lastResultAt: '2026-07-28' };
+    const chosenServer = { id: 'a', lastResult: 'X' }; // 서버 매핑엔 lastResultAt 없음
+    expect(preserveLocalOnlyFields(local, chosenServer)).toMatchObject({ lastResult: 'X', lastResultAt: '2026-07-28' });
+  });
+  it('로컬이 이긴 행(이미 필드 보유)·로컬 부재는 그대로', async () => {
+    const { preserveLocalOnlyFields } = await import('./sync.js');
+    const chosenLocal = { id: 'a', lastResultAt: '2026-07-28' };
+    expect(preserveLocalOnlyFields(chosenLocal, chosenLocal)).toBe(chosenLocal);
+    const server = { id: 'b' };
+    expect(preserveLocalOnlyFields(undefined, server)).toBe(server);
+  });
+});

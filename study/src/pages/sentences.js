@@ -297,7 +297,9 @@ export function mountSentences(host) {
               revealBtn.classList.remove('on');
             }
           }, 600);
-          try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level, lastResultAt: new Date().toISOString() }); }
+          // lastResultAt 은 KST 날짜(localISODate) — toISOString(UTC)이면 KST 새벽 평가가 전날로 귀속돼
+          // 재방문 가라앉힘이 풀린다 (2026-06-22 today.js 와 동일 유형 사고 예방).
+          try { await window.studyDB?.reviewQueue?.update(r.id, { lastResult: level, lastResultAt: localISODate() }); }
           catch (e) { console.error('[sentences] level save', e); }
         });
         levels.appendChild(b);
