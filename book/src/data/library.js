@@ -762,14 +762,15 @@ export const LIBRARY = [
 },
 {
 "id": "book_066",
-"t": "역전하는 법",
-"a": "빌 퍼킨스",
+"t": "가진 돈은 몽땅 써라",
+"a": "호리에 다카후미",
 "w": 130,
 "h": 195,
-"c": "투자경제",
-"y": 2023,
-"p": "마인드빌딩",
-"coverUrl": "https://image.aladin.co.kr/product/32934/66/cover200/k032936945_2.jpg"
+"c": "자기계발 · 성공학",
+"y": 2021,
+"p": "쌤앤파커스",
+"sub": "먹고 놀고 마시는 데 목숨 걸어라, 다시 살 수 없는 것들에 투자하라",
+"coverUrl": "https://image.aladin.co.kr/product/27312/63/cover200/k342732124_1.jpg"
 },
 {
 "id": "book_067",
@@ -1240,5 +1241,17 @@ export const LIBRARY = [
 "y": 2012,
 "p": "끌레마",
 "coverUrl": "https://image.aladin.co.kr/product/1517/29/cover200/8994081178_1.jpg"
+},
+{
+"id": "book_107",
+"t": "부자들의 지식 창고에는 뭔가 특별한 것이 있다",
+"a": "최성락",
+"w": 130,
+"h": 195,
+"c": "투자경제 · 재테크/투자 일반",
+"y": 2023,
+"p": "페이퍼로드",
+"sub": "돈걱정만 하는 사람은 모르고 부자들만 아는 지식과 정보 43",
+"coverUrl": "https://image.aladin.co.kr/product/31918/35/cover200/k112833946_1.jpg"
 }
 ];
