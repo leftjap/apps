@@ -56,6 +56,8 @@ import {
   isReadOnlyRow,
   renderDocFromRow,
   parseEntryDeepLink,
+  clearRecentUnreadDots,
+  markEntryNotificationsRead,
 } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
 
@@ -1686,5 +1688,93 @@ describe('syncShareToggleFromRow — 파트너 글 share 토글 숨김 클래스
     const el = { classList: { toggle: (c, on) => { if (on) cls.add(c); else cls.delete(c); } } };
     syncShareToggleFromRow({ owner_id: 'partner', is_shared: 1 }, { querySelector: () => el });
     expect(cls.has('share--readonly')).toBe(true);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// 2026-08-02 — 글 열람 시 알림 읽음 처리 (읽어도 붉은 점이 안 사라지던 문제)
+// ───────────────────────────────────────────────────────────────────────────
+
+/** 사이드바 recents 스텁 — node env (jsdom 미도입) 라 selector 파싱만 최소 구현. */
+function makeRecentsDocStub(ids) {
+  const items = ids.map((id) => {
+    const state = { dotRemoved: false, unread: true };
+    const dot = { remove: () => { state.dotRemoved = true; } };
+    const cm = { classList: { remove: (c) => { if (c === 'unread') state.unread = false; } } };
+    return {
+      _id: id,
+      state,
+      querySelector: (sel) => {
+        if (sel === '.rc-dot') return state.dotRemoved ? null : dot;
+        if (sel === '.cm.unread') return state.unread ? cm : null;
+        return null;
+      },
+    };
+  });
+  const doc = {
+    querySelectorAll: (sel) => {
+      const m = sel.match(/data-doc-id="([^"]+)"/);
+      return m ? items.filter((it) => it._id === m[1]) : items;
+    },
+  };
+  return { doc, byId: (id) => items.find((it) => it._id === id).state };
+}
+
+describe('clearRecentUnreadDots — 사이드바 미읽음 표식 제거', () => {
+  it('entryId 지정 → 그 항목만 .rc-dot 제거 + .cm.unread 해제', () => {
+    const { doc, byId } = makeRecentsDocStub(['e1', 'e2']);
+    expect(clearRecentUnreadDots('e1', doc)).toBe(1);
+    expect(byId('e1').dotRemoved).toBe(true);
+    expect(byId('e1').unread).toBe(false);
+    expect(byId('e2').dotRemoved).toBe(false);
+    expect(byId('e2').unread).toBe(true);
+  });
+
+  it('entryId 없음 → 전체 제거 ("모두 읽음" 경로)', () => {
+    const { doc, byId } = makeRecentsDocStub(['e1', 'e2']);
+    expect(clearRecentUnreadDots(null, doc)).toBe(2);
+    expect(byId('e1').dotRemoved).toBe(true);
+    expect(byId('e2').dotRemoved).toBe(true);
+  });
+});
+
+describe('markEntryNotificationsRead — 글 열람 시 알림 읽음 + 점 제거', () => {
+  const ME = 'me-user';
+
+  beforeEach(async () => {
+    const dbName = 'today_test_' + Math.random().toString(36).slice(2, 10);
+    globalThis.todayDB = createTodayDB(dbName);
+    await globalThis.todayDB.notifications.bulkPut([
+      { id: 'n1', recipient_id: ME, kind: 'new_post', entry_id: 'e1', preview: 'p1', read_at: null, created_at: '2026-08-01T10:00:00Z' },
+      { id: 'n2', recipient_id: ME, kind: 'new_comment', entry_id: 'e1', comment_id: 'c1', preview: 'p2', read_at: null, created_at: '2026-08-01T11:00:00Z' },
+      { id: 'n3', recipient_id: ME, kind: 'new_comment', entry_id: 'e2', comment_id: 'c2', preview: 'p3', read_at: null, created_at: '2026-08-01T12:00:00Z' },
+    ]);
+    __setCurrentUserForTest({ id: ME });
+  });
+
+  afterEach(async () => {
+    __setCurrentUserForTest(null);
+    if (globalThis.todayDB) {
+      await globalThis.todayDB.delete();
+      globalThis.todayDB = null;
+    }
+  });
+
+  it('그 글의 미읽음 알림 전부 읽음 + 해당 항목 점만 제거', async () => {
+    const { doc, byId } = makeRecentsDocStub(['e1', 'e2']);
+    expect(await markEntryNotificationsRead('e1', doc)).toBe(2);
+    const left = await globalThis.todayDB.notifications.toArray();
+    expect(left.filter((n) => !n.read_at).map((n) => n.id)).toEqual(['n3']);
+    expect(byId('e1').dotRemoved).toBe(true);
+    expect(byId('e2').dotRemoved).toBe(false);
+  });
+
+  it('미로그인 / entryId 누락 → 0, 알림 무변경', async () => {
+    const { doc } = makeRecentsDocStub(['e1']);
+    expect(await markEntryNotificationsRead('', doc)).toBe(0);
+    __setCurrentUserForTest(null);
+    expect(await markEntryNotificationsRead('e1', doc)).toBe(0);
+    const left = await globalThis.todayDB.notifications.toArray();
+    expect(left.filter((n) => !n.read_at)).toHaveLength(3);
   });
 });

@@ -58,6 +58,7 @@ import {
   countUnreadNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  markNotificationsReadByEntry,
 } from './queries.js';
 
 const OWNER = '11111111-2222-3333-4444-555555555555';
@@ -885,5 +886,19 @@ describe('notifications', () => {
 
   it('없는 id markRead → null', async () => {
     expect(await markNotificationRead('nonexistent')).toBeNull();
+  });
+
+  // 글 열람 시 그 글의 알림 일괄 읽음 (2026-08-02 — 읽어도 점이 안 사라지던 문제)
+  it('markNotificationsReadByEntry — 해당 글 미읽음 전부 (본인 것만)', async () => {
+    expect(await markNotificationsReadByEntry(ME, 'e1')).toBe(2); // n1 + n2
+    expect(await countUnreadNotifications(ME)).toBe(0);
+    expect(await countUnreadNotifications(OTHER)).toBe(1); // 남의 알림 무영향
+  });
+
+  it('markNotificationsReadByEntry — 미읽음 없는 글 / 인자 누락 → 0', async () => {
+    expect(await markNotificationsReadByEntry(ME, 'e2')).toBe(0); // n3 이미 읽음
+    expect(await markNotificationsReadByEntry(ME, null)).toBe(0);
+    expect(await markNotificationsReadByEntry(null, 'e1')).toBe(0);
+    expect(await countUnreadNotifications(ME)).toBe(2); // 아무것도 안 건드림
   });
 });

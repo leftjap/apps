@@ -732,6 +732,17 @@ export async function markNotificationRead(id) {
   return next;
 }
 
+/** 특정 글의 미읽음 알림 일괄 읽음 처리 — 글 열람 시 호출. 반환: 처리 건수. */
+export async function markNotificationsReadByEntry(recipientId, entryId) {
+  if (!recipientId || !entryId) return 0;
+  const unread = await listNotifications(recipientId, { unreadOnly: true });
+  const targets = unread.filter((n) => n.entry_id === entryId);
+  for (const n of targets) {
+    await markNotificationRead(n.id);
+  }
+  return targets.length;
+}
+
 /** 모든 알림 읽음 처리. */
 export async function markAllNotificationsRead(recipientId) {
   const unread = await listNotifications(recipientId, { unreadOnly: true });
@@ -796,6 +807,7 @@ export const Queries = {
   countUnreadNotifications,
   markNotificationRead,
   markAllNotificationsRead,
+  markNotificationsReadByEntry,
   // reactions (이모지 리액션)
   createReaction,
   removeReaction,

@@ -229,6 +229,54 @@ export async function renderRecentsFromRows(kind, rows, doc = document) {
   return true;
 }
 
+/**
+ * 사이드바 recents 의 미읽음 표식(.rc-dot / .cm.unread) 제거. entryId 없으면 전체.
+ * 리스트 전체 재렌더 없이 즉시 반영하기 위한 최소 DOM 조작. 반환: 점 제거한 항목 수.
+ */
+export function clearRecentUnreadDots(entryId, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!doc) return 0;
+  const sel = entryId
+    ? `.sb__item--recent[data-doc-id="${entryId}"]`
+    : '.sb__item--recent';
+  let cleared = 0;
+  for (const item of doc.querySelectorAll(sel)) {
+    const dot = item.querySelector('.rc-dot');
+    if (dot) {
+      dot.remove();
+      cleared += 1;
+    }
+    item.querySelector('.cm.unread')?.classList.remove('unread');
+  }
+  return cleared;
+}
+
+/**
+ * 글 열람 시 그 글의 미읽음 알림 일괄 읽음 처리 + 사이드바 점·벨 배지 즉시 반영.
+ * 사용자가 직접 클릭해 연 경로에서만 호출 — 카테고리 진입 시 자동 표시(list[0])는 제외.
+ * 반환: 읽음 처리한 알림 수.
+ */
+export async function markEntryNotificationsRead(entryId, doc = (typeof document !== 'undefined' ? document : null)) {
+  const userId = _currentUser?.id;
+  if (!userId || !entryId) return 0;
+  let count = 0;
+  try {
+    count = await Queries.markNotificationsReadByEntry(userId, entryId);
+  } catch (e) {
+    console.warn('[entries] 알림 읽음 처리 실패', e?.message || e);
+    return 0;
+  }
+  if (count === 0) return 0;
+  clearRecentUnreadDots(entryId, doc);
+  try {
+    // 동적 import — notifications.js 가 entries.js 를 정적 import 하므로 순환 회피.
+    const notif = await import('./notifications.js');
+    await notif.refreshAlertBadge(doc);
+  } catch (e) {
+    console.warn('[entries] 알림 배지 갱신 실패', e?.message || e);
+  }
+  return count;
+}
+
 // spec §3.3.1 — 리센츠 30건 직하단 "전체 보기 →" 진입점 (글쓰기 4종 한정).
 // 클릭 동작은 §5.0 전체 목록 뷰 wiring 단계에서 추가.
 const WRITING_KINDS_FOR_LIST = Object.freeze(['navi', 'fiction', 'blog', 'memo']);
@@ -2231,7 +2279,10 @@ function installRecentsClickHandler() {
     if (!id) return;
     try {
       const row = await Queries.getEntry(id);
-      if (row) renderDocFromRow(row);
+      if (row) {
+        renderDocFromRow(row);
+        await markEntryNotificationsRead(id);
+      }
     } catch (err) {
       // FIXTURE id 거나 미인증 — mocks 측 위임이 fallback 처리
     }
@@ -2483,6 +2534,7 @@ function installListViewClickHandler() {
         if (entry) {
           exitListView();
           renderDocFromRow(entry);
+          await markEntryNotificationsRead(id);
         }
       } catch (err) {
         console.warn('[entries] list row click 실패:', err?.message || err);
@@ -2620,6 +2672,9 @@ export const Entries = {
   ensureRecentsMore,
   removeRecentsMore,
   renderDocFromRow,
+  // 2026-08-02 — 글 열람 시 알림 읽음 처리
+  clearRecentUnreadDots,
+  markEntryNotificationsRead,
   parseEntryDeepLink,
   // Wave 11.5.2b — 자동저장
   getCurrentKind,

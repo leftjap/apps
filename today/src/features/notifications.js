@@ -558,10 +558,10 @@ export async function handleNotifClick(notif, doc) {
     if (typeof document === 'undefined') return { ok: false, reason: 'no_document' };
     doc = document;
   }
-  // 1. markRead — 실패해도 진행 (UX 우선)
-  if (notif.id && !notif.read_at) {
+  // 1. markRead — 그 글의 미읽음 전부 (그룹 클릭 시 첫 건만 처리돼 점이 남던 문제). 실패해도 진행.
+  if (_currentUser?.id) {
     try {
-      await Queries.markNotificationRead(notif.id);
+      await Queries.markNotificationsReadByEntry(_currentUser.id, notif.entry_id);
     } catch (e) {
       console.warn('[notifications] markRead 실패', e?.message || e);
     }
@@ -675,6 +675,8 @@ export async function markAllReadAndRefresh(doc = document) {
   try {
     const cleared = await Queries.markAllNotificationsRead(_currentUser.id);
     await refreshAlertBadge();
+    // 사이드바 점도 즉시 제거 — 배지만 갱신하면 리스트 재렌더 전까지 점이 남음.
+    Entries.clearRecentUnreadDots(null, doc);
     // 드롭다운 다시 fetch (현재 열려 있으면)
     const dropdown = doc.getElementById(NOTIF_DROPDOWN_ID);
     if (dropdown && !dropdown.hasAttribute('hidden')) {
