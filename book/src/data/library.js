@@ -377,8 +377,8 @@ export const LIBRARY = [
 "c": "인문 · 성공학",
 "y": 2019,
 "p": "갤리온",
-"sub": "전2권",
-"coverUrl": "https://image.aladin.co.kr/product/20712/22/cover200/k342636469_1.jpg"
+"sub": "엉망진창인 세상에서 흔들리지 않고 나아가는 힘",
+"coverUrl": "https://image.aladin.co.kr/product/20672/9/cover200/8901235153_1.jpg"
 },
 {
 "id": "book_034",
