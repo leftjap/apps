@@ -596,8 +596,9 @@ function injectReactionStyles(doc = (typeof document !== 'undefined' ? document 
     .rx-pick { width: 30px; height: 30px; border: none; background: transparent; border-radius: 8px;
       font-size: 17px; cursor: pointer; line-height: 1; }
     .rx-pick:hover { background: var(--hover, #f5f2ec); }
-    /* 글 반응 바 — 본문 하단, .doc 칼럼(600px 중앙, 좌우 4px)과 정렬 (2026-07-13 위치 이동) */
-    .entry-reactions { max-width: 600px; margin: 0 auto; width: 100%; padding: 0 4px; }
+    /* 글 반응 바 — 본문 하단, .doc 칼럼(--doc-col 중앙, 좌우 4px)과 정렬 (2026-07-13 위치 이동).
+       폭은 mocks 의 --doc-col 단일 출처 — 하드코딩 시 .doc 변경에 안 따라와 구분선이 어긋남 (2026-08-02). */
+    .entry-reactions { max-width: var(--doc-col, 700px); margin: 0 auto; width: 100%; padding: 0 4px; }
     @media (max-width: 768px) { .entry-reactions { padding: 0 6px; } }
     .rx-postbar { padding: 14px 0 36px; margin-top: 12px; border-top: 1px solid var(--line, #f0ece3); }
     .rx-postbar .rx-bar { margin-top: 0; }

@@ -19,6 +19,10 @@
     --font-sans: "Pretendard", "Inter", system-ui, -apple-system, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
+    /* 본문 칼럼 폭 — .doc 과 하단 반응 바(comments.js .entry-reactions)가 공유.
+       2026-08-02: 600 → 700 변경 시 반응 바만 600 으로 남아 구분선 폭이 어긋난 사고 → 단일 출처화. */
+    --doc-col: 700px;
+
     --tone-255: rgb(255, 255, 255);
     --tone-253: rgb(253, 253, 253);
     --tone-243: rgb(243, 243, 243);
@@ -734,7 +738,7 @@
     /* 2026-08-02 — 600 → 700. 넓은 화면에서 좌우 여백만 210px 씩 버려지고 본문이 좁아 보이던 문제.
        폰트도 함께 키워 줄당 한글 44자(현행과 동일) 유지. 1408px 미만에선 댓글 패널(348) 제약으로
        칼럼이 이미 100% 라 무변화. */
-    max-width: 700px;   /* 본문 칼럼 중앙 (작업지시서 §4.1 의 600 갱신) */
+    max-width: var(--doc-col);   /* 본문 칼럼 중앙 (작업지시서 §4.1 의 600 갱신) */
     margin: 0 auto;
     width: 100%;
   }
