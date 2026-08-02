@@ -45,13 +45,18 @@ T2R={'신경 끄기의 기술':'book_001','일류의 조건':'book_004','제3의
 '생각하라 그리고 부자가 되어라':'book_111','예술가는 절대로 굶어죽지 않는다':'book_112','이기는 창업':'book_113',
 '피로 세포':'book_114','우리의 몸이 말을 할 수 있다면':'book_115','과식의 심리학':'book_116'}
 
-DROP=[re.compile(p) for p in [
-    r'^[\d\s.,]+$',                      # 쪽번호
-    r'aside\\?>',                        # \<aside\> 💡 / \</aside\>
-    r'^\\?<br\\?>$', r'^<!--\s*-->$',
-    r'^_{3,}$', r'^-{3,}$',
+HARD_DROP=[re.compile(p) for p in [
+    r'^[\d\s,]+$',                       # 쪽번호 (점 없는 숫자만 — '5.' 같은 목록 카운터 잔재와 구분)
+    r'aside\\?>',                        # \<aside\> 태그 (블록 경계)
+    r'^_{3,}$', r'^-{3,}$',               # 수평선
     r'^탭\s*\d+$',
-    r'^!\\?\[',                          # 이미지 전용
+]]
+SOFT_DROP=[re.compile(p) for p in [
+    r'^\\?<br\\?>$', r'^<!--\s*-->$',   # 인라인 잔재 — 경계 아님
+    r'^\d+\.\s*$',                       # 노션 목록 카운터 잔재 '5.  '
+    r'^-?\s*•?\s*\\+$',                  # '- •\' / '\'
+    r'^\\?\*+$',                          # '\**'
+    r'^!\\?\[',                           # 이미지 전용
 ]]
 HEAD1=re.compile(r'^\s*#{1,6}\s*(.*)$')
 BOLDONLY=re.compile(r'^\s*\\?\*\\?\*(.+?)\\?\*\\?\*\s*$')
@@ -70,8 +75,9 @@ def clean(line):
     s=re.sub(r'\[|\]','',s)
     return s.strip()
 
-def is_drop(s):
-    return any(p.search(s) for p in DROP)
+def hard_drop(s): return any(p.search(s) for p in HARD_DROP)
+def soft_drop(s): return any(p.search(s) for p in SOFT_DROP)
+def is_drop(s): return hard_drop(s) or soft_drop(s)
 
 def generate():
     B=json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'bounds.json'),encoding='utf-8'))
@@ -92,7 +98,8 @@ def generate():
                 flush(); ref=T2R[bounds[i]]; continue
             s=raw.strip()
             if not s: continue
-            if is_drop(s): flush(); continue
+            if hard_drop(s): flush(); continue
+            if soft_drop(s): continue
             m=HEAD1.match(s)
             if m:
                 flush(); c=clean(m.group(1))
@@ -111,6 +118,9 @@ def generate():
                     cur.append(c); continue
                 flush(); cur=[c]; cur_start=i+1
                 continue
+            is_item=bool(re.match(r'^(\d+\.|-|•)\s',c))
+            if is_item and cur and not re.match(r'^(\d+\.|-|•)\s',cur[-1]):
+                flush(); cur=[c]; cur_start=i+1; continue
             if not cur: cur_start=i+1
             cur.append(c)
         flush()
@@ -121,7 +131,7 @@ if __name__=='__main__':
     from collections import Counter
     c=Counter(r for r,_,_,_ in out)
     print(f'총 {len(out)}건 / 책 {len(c)}권')
-    json.dump([[r,f,ln,t] for r,f,ln,t in out],open('generated.json','w',encoding='utf-8'),ensure_ascii=False)  # 실행 위치에 출력
+    json.dump([[r,f,ln,t] for r,f,ln,t in out],open('generated.json','w',encoding='utf-8'),ensure_ascii=False)
     for ref in ['book_109','book_001','book_101']:
         print(f'\n=== {ref} ({c[ref]}건) 처음 5건 ===')
         k=0
