@@ -739,7 +739,7 @@
     width: 100%;
   }
   .doc__h1 {
-    font-size: 36px;   /* 2026-08-02 — 본문 18px 승격에 맞춘 비율 유지 (32 → 36) */
+    font-size: 32px;
     font-weight: 700;
     letter-spacing: -0.015em;
     margin: 0 0 10px;
@@ -774,8 +774,8 @@
     font-size: 10px;
   }
   .doc__p {
-    font-size: 18px;   /* 2026-08-02 — .doc__body 와 동일 승격 */
-    line-height: 1.8;
+    font-size: 16px;   /* 2026-08-02 — .doc__body 와 동일 */
+    line-height: 1.85;
     margin: 0 0 14px;
     color: var(--ink-1);
     text-wrap: pretty;
@@ -785,8 +785,8 @@
     border-left: 2px solid var(--crail-base);
     padding: 4px 0 4px 16px;
     margin: 18px 0;
-    font-size: 18px;   /* 2026-08-02 — 본문과 동일 승격 */
-    line-height: 1.8;
+    font-size: 16px;   /* 2026-08-02 — 본문과 동일 */
+    line-height: 1.85;
     color: var(--ink-2);
     position: relative;
   }
@@ -2211,9 +2211,10 @@
   /* 본문 단일 폰트·사이즈 강제 — 외부 paste 또는 historical h1/h2/h3 가 들어와도
      본문 디폴트로 시각화. plaintext paste handler (entries.js) 와 이중 안전망. */
   .doc__body {
-    /* 2026-08-02 — 15.5 → 18. 모바일(≤768px)이 이미 18px 이라 데스크탑이 폰보다 작던 역전 해소. */
-    font-size: 18px;
-    line-height: 1.8;
+    /* 2026-08-02 — 15.5 → 16. 사이드바 글 제목 14px · 카테고리 13.5px 와 한 단계 차이 유지.
+       (18px 은 사이드바 대비 낙차가 커 반려. 칼럼 700px 기준 줄당 한글 50자) */
+    font-size: 16px;
+    line-height: 1.85;
     color: var(--ink-1);
     text-wrap: pretty;
     -webkit-text-size-adjust: 100%;
@@ -2238,8 +2239,8 @@
   .doc__body li,
   .doc__body blockquote,
   .doc__body span {
-    font-size: 18px !important;
-    line-height: 1.8 !important;
+    font-size: 16px !important;
+    line-height: 1.85 !important;
     font-weight: inherit !important;
     color: var(--ink-1);
   }
