@@ -454,7 +454,8 @@ public final class GymAppModel: ObservableObject {
 
     // 세션 종료 (§7-1) — done 세트만 보존·빈 블록 제거(finalize) + 칼로리(MET) + 이력 저장 + 요약.
     public func endSession() {
-        session.totalCalories = estimatedCalories()   // finalize 전 — 블록 수 기반 균등 배분
+        confirmEnteredCardio()   // 종목 완료를 안 눌렀어도 입력한 유산소 기록은 확정 (요약·홈 누락 방지)
+        session.totalCalories = estimatedCalories()   // finalize 전 (유산소 실시간·done 세트 비례 배분)
         session.tags = sessionParts()
         session = GymSessionLogic.finalize(session, endTime: nowMillis())
         LocalStore.upsertSessionHistory(session)
@@ -464,6 +465,20 @@ public final class GymAppModel: ObservableObject {
         Task { await syncNow() }
     }
 
+    /// 입력값(시간·거리)이 있는 유산소 세트를 done 으로 확정 — 세션 종료·자동 마감 공통.
+    /// 유산소는 스와이프 done 흐름이 없어, 종목 완료를 안 누르고 종료하면 기록이 요약·홈에서
+    /// 누락된다 (finishBlock 의 isCardio 보존과 같은 규칙, 2026-08-02).
+    private func confirmEnteredCardio() {
+        for bi in session.blocks.indices {
+            guard GymExercises.def(session.blocks[bi].exerciseId, custom: custom)?.isCardio == true else { continue }
+            for si in session.blocks[bi].sets.indices
+            where (session.blocks[bi].sets[si].duration ?? 0) > 0
+                || (session.blocks[bi].sets[si].distance ?? 0) > 0 {
+                session.blocks[bi].sets[si].done = true
+            }
+        }
+    }
+
     // 지난 날짜 방치 active 세션 자동 마감 (§8 — sweepStaleSessions 정합, 앱 부트 시 호출).
     // done 세트 있으면 마지막 활동 시각으로 finalize 해 이력 보존, 없으면 폐기 → 오늘 날짜 빈 세션으로 교체.
     // 빈(blocks 없는) 세션도 교체 대상이다 — 어제 앱만 열어 생긴 빈 활성 세션을 startSession 이
@@ -471,6 +486,7 @@ public final class GymAppModel: ObservableObject {
     func sweepStaleSessionIfNeeded(now: Date = Date()) {
         let today = Self.dayFmt.string(from: now)
         guard session.status == .active, session.date < today else { return }
+        confirmEnteredCardio()   // 방치 마감도 입력된 유산소는 보존
         let hasDone = session.blocks.contains { $0.sets.contains(where: \.done) }
         if hasDone {
             let last = GymSessionLogic.lastActivityMillis(session)
@@ -676,7 +692,9 @@ public final class GymAppModel: ObservableObject {
     // 블록 명시적 완료 (§6-9 꾹누르기 "완료") — 빈 세트 폐기 + finishedAt + 첫 미완료로 이동.
     public func finishBlock(at bi: Int) {
         guard session.blocks.indices.contains(bi) else { return }
-        session.blocks[bi] = GymSessionLogic.finishBlock(session.blocks[bi], now: Double(nowMillis()))
+        let isCardio = GymExercises.def(session.blocks[bi].exerciseId, custom: custom)?.isCardio ?? false
+        session.blocks[bi] = GymSessionLogic.finishBlock(session.blocks[bi], now: Double(nowMillis()),
+                                                         isCardio: isCardio)
         selectedBlockIdx = GymSessionLogic.firstUnfinishedBlockIdx(session)
         impact(.heavy)
     }
@@ -792,17 +810,20 @@ public final class GymAppModel: ObservableObject {
         return max(0, Int((end - st) / 60000))
     }
     // 칼로리 = Σ(MET × 체중 × 시간(시) × 1.05), 종목별 시간 균등 배분 (spec §7-3).
+    // 배분 로직은 GymSessionLogic.estimateCalories (유산소 실시간·done 세트 비례 — 2026-08-02 정확화).
     public func estimatedCalories() -> Int {
-        let mins = elapsedMinutes()
-        guard mins > 0, !session.blocks.isEmpty else { return 0 }
         let bodyKg = weights.first?.kg ?? 70
-        let perBlockHr = (Double(mins) / 60.0) / Double(session.blocks.count)
-        var kcal = 0.0
-        for b in session.blocks {
-            let met = GymExercises.def(b.exerciseId, custom: custom)?.met ?? 4.0
-            kcal += met * bodyKg * perBlockHr * 1.05
+        let entries = session.blocks.map { b -> GymSessionLogic.GymCalorieEntry in
+            let def = GymExercises.def(b.exerciseId, custom: custom)
+            let isCardio = def?.isCardio ?? false
+            // 유산소 시간은 입력 자체가 명시 행위라 done 여부와 무관하게 집계 (완료 전 종료해도 반영)
+            let cardioSec = isCardio ? b.sets.reduce(0.0) { $0 + ($1.duration ?? 0) } : 0
+            return .init(met: def?.met ?? 4.0,
+                         doneSets: isCardio ? 0 : b.sets.filter(\.done).count,
+                         cardioSeconds: cardioSec)
         }
-        return Int(kcal.rounded())
+        return GymSessionLogic.estimateCalories(entries: entries, bodyKg: bodyKg,
+                                                elapsedMin: elapsedMinutes())
     }
 
     private func nowMillis() -> Int64 { Int64(Date().timeIntervalSince1970 * 1000) }

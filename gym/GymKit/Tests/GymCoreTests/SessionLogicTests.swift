@@ -183,6 +183,38 @@ import Testing
         #expect(GymSessionLogic.isBlockLocked(b) == false)
     }
 
+    // 유산소 — 세트를 done 으로 만드는 경로(스와이프)가 없는 흐름에서 입력값(시간·거리)이
+    // 완료 순간 폐기되던 결함 (실기기 보고 2026-08-02: 25분·3km 입력 → 완료 → 0분·0km,
+    // 요약 누락, 홈 유산소 '기록 없음'). 입력이 있는 세트는 done 스탬프 후 보존한다.
+    @Test func finishCardioBlockKeepsEnteredDataAsDone() {
+        var s = GymSet(weight: nil, reps: nil, preset: true)
+        s.duration = 25 * 60; s.distance = 3.0; s.preset = false   // applyKeypad 후 상태
+        let b = GymBlock(exerciseId: "treadmill", sets: [s])
+        let f = GymSessionLogic.finishBlock(b, now: 1_000, isCardio: true)
+        #expect(f.sets.count == 1, "입력한 유산소 기록이 폐기되면 안 된다")
+        #expect(f.sets[0].done == true, "완료 시 기록이 done 으로 확정돼야 한다")
+        #expect(f.sets[0].duration == 25 * 60.0)
+        #expect(f.sets[0].distance == 3.0)
+    }
+
+    // 유산소라도 아무 입력이 없는 프리셋 세트는 종전대로 폐기.
+    @Test func finishCardioBlockDropsEmptyPresetSets() {
+        let empty = GymSet(weight: nil, reps: nil, preset: true)
+        let b = GymBlock(exerciseId: "treadmill", sets: [empty])
+        let f = GymSessionLogic.finishBlock(b, now: 1_000, isCardio: true)
+        #expect(f.sets.isEmpty)
+        #expect(f.finishedAt == 1_000)
+    }
+
+    // 근력 종목은 기존 규칙 불변 — isCardio 기본값 경로.
+    @Test func finishWeightBlockStillDropsEditedButNotDoneSets() {
+        var edited = GymSet(weight: 80, reps: 8, preset: true)
+        edited.preset = false   // 키패드로 수정만 하고 스와이프 안 함
+        let b = GymBlock(exerciseId: "bench_press", sets: [GymSet(weight: 60, reps: 10, done: true), edited])
+        let f = GymSessionLogic.finishBlock(b, now: 1_000)
+        #expect(f.sets.count == 1, "근력은 done 만 보존 (수정만 한 세트는 폐기)")
+    }
+
     @Test func blockDoneByFinishedAtOrAllSetsDone() {
         let all = GymBlock(exerciseId: "a", sets: [GymSet(weight: 1, reps: 1, done: true)])
         let partial = GymBlock(exerciseId: "b", sets: [GymSet(weight: 1, reps: 1, done: false)])
@@ -310,5 +342,55 @@ import Testing
         #expect(GymSessionLogic.paceText(durationSec: nil, distanceKm: 3.2) == nil)
         #expect(GymSessionLogic.paceText(durationSec: 1800, distanceKm: nil) == nil)
         #expect(GymSessionLogic.paceText(durationSec: 1800, distanceKm: 0) == nil)
+    }
+}
+
+// 칼로리 추정 (spec §7-3: MET × 체중 × 시간(시) × 1.05) — 배분 정확화 (실기기 검토 2026-08-02).
+// 구현이 '전 블록 균등 시간 배분'이라 ① 유산소의 실제 입력 시간이 무시되고 ② 손도 안 댄
+// 블록(0 done)에도 시간이 배정되며 ③ 세트 수 차이가 반영되지 않았다.
+@Suite struct EstimateCaloriesTests {
+    // 근력 단일 블록 — 경과 전체가 그 블록의 시간. 5 MET × 70kg × 1h × 1.05 = 367.5 → 368.
+    @Test func singleStrengthBlockUsesWholeElapsed() {
+        let kcal = GymSessionLogic.estimateCalories(
+            entries: [.init(met: 5, doneSets: 10, cardioSeconds: 0)], bodyKg: 70, elapsedMin: 60)
+        #expect(kcal == 368)
+    }
+
+    // 근력 여러 블록 — done 세트 수 비례 배분. 0 done 블록은 0.
+    @Test func strengthTimeSplitsByDoneSetsAndSkipsUntouchedBlocks() {
+        let kcal = GymSessionLogic.estimateCalories(
+            entries: [.init(met: 6, doneSets: 3, cardioSeconds: 0),
+                      .init(met: 4, doneSets: 1, cardioSeconds: 0),
+                      .init(met: 9, doneSets: 0, cardioSeconds: 0)],   // 추가만 하고 안 함
+            bodyKg: 70, elapsedMin: 40)
+        // strengthHr 2/3 → 6×70×(2/3×3/4)×1.05 + 4×70×(2/3×1/4)×1.05 = 220.5 + 49.0 = 269.5 → 270
+        #expect(kcal == 270)
+    }
+
+    // 유산소 — 균등 배분이 아니라 실제 입력 시간. 근력은 남은 경과 시간을 쓴다.
+    @Test func cardioUsesEnteredDurationNotEqualSplit() {
+        let kcal = GymSessionLogic.estimateCalories(
+            entries: [.init(met: 5, doneSets: 30, cardioSeconds: 0),
+                      .init(met: 7, doneSets: 0, cardioSeconds: 25 * 60)],
+            bodyKg: 70, elapsedMin: 68)
+        // cardio 7×70×(25/60)×1.05 = 214.4 · strength 5×70×((68−25)/60)×1.05 = 263.4 → 478
+        #expect(kcal == 478)
+    }
+
+    // 경과 0·기록 0 이면 0.
+    @Test func zeroWhenNothingHappened() {
+        #expect(GymSessionLogic.estimateCalories(entries: [], bodyKg: 70, elapsedMin: 0) == 0)
+        #expect(GymSessionLogic.estimateCalories(
+            entries: [.init(met: 5, doneSets: 0, cardioSeconds: 0)], bodyKg: 70, elapsedMin: 30) == 0)
+    }
+
+    // 유산소 시간이 경과를 넘어도 근력 시간은 음수가 되지 않는다.
+    @Test func strengthTimeClampsAtZeroWhenCardioExceedsElapsed() {
+        let kcal = GymSessionLogic.estimateCalories(
+            entries: [.init(met: 5, doneSets: 10, cardioSeconds: 0),
+                      .init(met: 7, doneSets: 0, cardioSeconds: 90 * 60)],
+            bodyKg: 70, elapsedMin: 60)
+        // strength 0 + cardio 7×70×1.5×1.05 = 771.75 → 772
+        #expect(kcal == 772)
     }
 }

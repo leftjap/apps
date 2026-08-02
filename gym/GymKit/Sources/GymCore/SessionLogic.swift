@@ -118,9 +118,20 @@ public enum GymSessionLogic {
     // MARK: - 블록 완료·잠금 (spec §6-8·§6-9)
 
     // 명시적 "완료" 액션 — done 세트만 보존(빈 세트 폐기) + finishedAt 스탬프.
-    public static func finishBlock(_ block: GymBlock, now: Double) -> GymBlock {
+    // 유산소(isCardio)는 스와이프로 done 을 만드는 흐름이 없어 입력값(시간·거리)이 완료 순간
+    // 통째로 폐기됐다 (실기기 보고 2026-08-02: 25분·3km → 완료 → 0/0, 요약 누락, 홈 '기록 없음').
+    // 입력이 있는 세트는 done 으로 확정해 보존하고, 빈 프리셋만 종전대로 버린다.
+    public static func finishBlock(_ block: GymBlock, now: Double, isCardio: Bool = false) -> GymBlock {
         var b = block
-        b.sets = b.sets.filter(\.done)
+        if isCardio {
+            b.sets = b.sets.compactMap { s in
+                var s = s
+                if (s.duration ?? 0) > 0 || (s.distance ?? 0) > 0 { s.done = true }
+                return s.done ? s : nil
+            }
+        } else {
+            b.sets = b.sets.filter(\.done)
+        }
         b.finishedAt = now
         return b
     }
@@ -243,6 +254,36 @@ public enum GymSessionLogic {
                                           viewportWidth: Double) -> Double {
         guard hasCurrent, chipsMaxX > 0, viewportWidth > 0 else { return 0 }
         return max(0, (viewportWidth - railLeftInset) - (chipsMaxX - currentChipMinX))
+    }
+
+    // MARK: - 칼로리 추정 (spec §7-3: MET × 체중 × 시간(시) × 1.05)
+
+    /// 블록별 집계 입력 — met · done 세트 수(근력 시간 배분 가중치) · 유산소 입력 시간(초).
+    public struct GymCalorieEntry: Sendable {
+        public let met: Double
+        public let doneSets: Int
+        public let cardioSeconds: Double
+        public init(met: Double, doneSets: Int, cardioSeconds: Double) {
+            self.met = met; self.doneSets = doneSets; self.cardioSeconds = cardioSeconds
+        }
+    }
+
+    /// 구 구현('전 블록 균등 시간 배분')의 세 가지 부정확을 바로잡는다 (실기기 검토 2026-08-02):
+    /// ① 유산소는 입력된 실제 시간을 쓴다 (균등 배분이 유산소 시간을 뭉갬)
+    /// ② 근력은 (경과 − 유산소) 시간을 done 세트 수 비례로 배분
+    /// ③ done 0 인 블록(추가만 하고 안 함)은 시간 배정 없음
+    public static func estimateCalories(entries: [GymCalorieEntry], bodyKg: Double,
+                                        elapsedMin: Int) -> Int {
+        let cardioHr = entries.reduce(0.0) { $0 + $1.cardioSeconds } / 3600
+        var kcal = entries.reduce(0.0) { $0 + $1.met * bodyKg * ($1.cardioSeconds / 3600) * 1.05 }
+        let strengthHr = max(0, Double(elapsedMin) / 60 - cardioHr)
+        let totalSets = entries.reduce(0) { $0 + $1.doneSets }
+        if strengthHr > 0, totalSets > 0 {
+            for e in entries where e.doneSets > 0 {
+                kcal += e.met * bodyKg * strengthHr * (Double(e.doneSets) / Double(totalSets)) * 1.05
+            }
+        }
+        return Int(kcal.rounded())
     }
 
     /// 종목 볼륨 링 중앙 % 글꼴 (pt). 시안 #6b 676행 미돌파 15/10 · 693행 돌파 13.5/9.5.
