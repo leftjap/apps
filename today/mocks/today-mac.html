@@ -731,12 +731,15 @@
     padding: 32px 4px 0;
     /* Wave 11.7.2 — overflow: hidden 제거. 자식 (이미지·긴 본문) 이 article 영역 초과 시 잘리던 회귀 fix.
        #mainView (overflow-y: auto) 가 스크롤 처리 — article 자체는 자연 height. */
-    max-width: 600px;   /* 본문 칼럼 600px 중앙 (작업지시서 §4.1) */
+    /* 2026-08-02 — 600 → 700. 넓은 화면에서 좌우 여백만 210px 씩 버려지고 본문이 좁아 보이던 문제.
+       폰트도 함께 키워 줄당 한글 44자(현행과 동일) 유지. 1408px 미만에선 댓글 패널(348) 제약으로
+       칼럼이 이미 100% 라 무변화. */
+    max-width: 700px;   /* 본문 칼럼 중앙 (작업지시서 §4.1 의 600 갱신) */
     margin: 0 auto;
     width: 100%;
   }
   .doc__h1 {
-    font-size: 32px;
+    font-size: 36px;   /* 2026-08-02 — 본문 18px 승격에 맞춘 비율 유지 (32 → 36) */
     font-weight: 700;
     letter-spacing: -0.015em;
     margin: 0 0 10px;
@@ -771,8 +774,8 @@
     font-size: 10px;
   }
   .doc__p {
-    font-size: 15.5px;
-    line-height: 1.85;
+    font-size: 18px;   /* 2026-08-02 — .doc__body 와 동일 승격 */
+    line-height: 1.8;
     margin: 0 0 14px;
     color: var(--ink-1);
     text-wrap: pretty;
@@ -782,8 +785,8 @@
     border-left: 2px solid var(--crail-base);
     padding: 4px 0 4px 16px;
     margin: 18px 0;
-    font-size: 15.5px;
-    line-height: 1.85;
+    font-size: 18px;   /* 2026-08-02 — 본문과 동일 승격 */
+    line-height: 1.8;
     color: var(--ink-2);
     position: relative;
   }
@@ -2208,8 +2211,9 @@
   /* 본문 단일 폰트·사이즈 강제 — 외부 paste 또는 historical h1/h2/h3 가 들어와도
      본문 디폴트로 시각화. plaintext paste handler (entries.js) 와 이중 안전망. */
   .doc__body {
-    font-size: 15.5px;   /* 본문 15.5px / 1.85 (작업지시서 §4.1) */
-    line-height: 1.85;
+    /* 2026-08-02 — 15.5 → 18. 모바일(≤768px)이 이미 18px 이라 데스크탑이 폰보다 작던 역전 해소. */
+    font-size: 18px;
+    line-height: 1.8;
     color: var(--ink-1);
     text-wrap: pretty;
     -webkit-text-size-adjust: 100%;
@@ -2234,8 +2238,8 @@
   .doc__body li,
   .doc__body blockquote,
   .doc__body span {
-    font-size: 15.5px !important;
-    line-height: 1.85 !important;
+    font-size: 18px !important;
+    line-height: 1.8 !important;
     font-weight: inherit !important;
     color: var(--ink-1);
   }
