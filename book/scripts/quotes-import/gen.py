@@ -57,22 +57,30 @@ SOFT_DROP=[re.compile(p) for p in [
     r'^-?\s*•?\s*\\+$',                  # '- •\' / '\'
     r'^\\?\*+$',                          # '\**'
     r'^!\\?\[',                           # 이미지 전용
+    r'^-\s.*\\?\]\((https?://|media/)',    # 각주 링크 목록 항목 ('- …[3](url)')
+    r'^참고\s*링크$',                        # 각주 블록 라벨
+    r'^\\?\[?\*?출처\s*[::]',               # 출처 각주 줄
 ]]
 HEAD1=re.compile(r'^\s*#{1,6}\s*(.*)$')
 BOLDONLY=re.compile(r'^\s*\\?\*\\?\*(.+?)\\?\*\\?\*\s*$')
-FINAL=re.compile(r'[.!?…다요"\'”’)»%]\s*$')
+FINAL=re.compile(r'[.!?…다요,"\'”’)»%』」》〉]\s*$')
 
 def clean(line):
     s=line.strip()
-    s=re.sub(r'\{\.[a-zA-Z-]+\}','',s)
+    s=re.sub(r'\{[^{}]*\}','',s)
     s=re.sub(r'!\\?\[[^\]]*\\?\]\([^)]*\)','',s)          # 이미지
     for _ in range(3):
         s=re.sub(r'\[([^\[\]]*)\]\(([^)]*)\)',r'\1',s)     # 링크
         s=re.sub(r'\[([^\[\]]*)\]\[[^\]]*\]',r'\1',s)
     s=re.sub(r'\\(.)',r'\1',s)                             # escape 해제
     s=re.sub(r'^\s*>\s?','',s)                             # blockquote 마커
-    s=s.replace('**','')
+    s=re.sub(r'\\+\s*$','',s)
+    s=s.replace('*','')                        # 별표 잔재 전부 (마크다운 강조 마커)
     s=re.sub(r'\[|\]','',s)
+    s=re.sub(r'\(https?://[^\s)]*\)','',s)     # (URL) 제거
+    s=re.sub(r'https?://[^\s)]+','',s)          # 맨 URL 제거 (괄호·공백 경계)
+    s=re.sub(r'출처\s*[::]\s*$','',s)           # 꼬리 '출처:' 라벨
+    s=re.sub(r'^\.\s+','',s)                  # 행머리 '. ' 내보내기 잔재
     return s.strip()
 
 def hard_drop(s): return any(p.search(s) for p in HARD_DROP)
@@ -86,13 +94,16 @@ def generate():
         lines=open(BASE+f,encoding='utf-8').read().split('\n')
         bounds={ln-1:t for ln,t in B[f]}
         ref=HEAD_REF[f]
-        cur=[]; cur_start=None
+        cur=[]; cur_start=[None]; cur_type=[None]; qcont=[False]
         def flush():
-            nonlocal cur,cur_start
+            nonlocal cur
             if cur:
                 text='\n\n'.join(cur)
-                if len(norm(text))>0: out.append((ref,f,cur_start,text))
-            cur=[]; cur_start=None
+                if len(norm(text))>0: out.append((ref,f,cur_start[0],text))
+            cur=[]; cur_start[0]=None; cur_type[0]=None; qcont[0]=False
+        def start(c,i,lt):
+            nonlocal cur
+            flush(); cur=[c]; cur_start[0]=i+1; cur_type[0]=lt
         for i,raw in enumerate(lines):
             if i in bounds:
                 flush(); ref=T2R[bounds[i]]; continue
@@ -100,29 +111,49 @@ def generate():
             if not s: continue
             if hard_drop(s): flush(); continue
             if soft_drop(s): continue
+            is_q = s.startswith('>')
+            c=clean(s)
+            if not c:
+                if is_q: qcont[0]=True          # '>' 빈 줄 = 인용 연속 신호
+                continue
+            if is_q:
+                # 인용 블록: 헤딩 판정 없음
+                if cur and cur_type[0]=='q':
+                    if qcont[0] or (len(norm(c))<=40 and not FINAL.search(c)):
+                        cur.append(c)            # 연속 시 또는 출전 표기 → 이어붙임
+                    else:
+                        start(c,i,'q')
+                elif cur and cur_type[0] and cur_type[0]!='q':
+                    start(c,i,'q')
+                else:
+                    if not cur: cur_start[0]=i+1
+                    cur.append(c); cur_type[0]='q'
+                qcont[0]=False
+                continue
+            qcont[0]=False
             m=HEAD1.match(s)
             if m:
-                flush(); c=clean(m.group(1))
-                if c: cur=[c]; cur_start=i+1
+                cc=clean(m.group(1))
+                flush()
+                if cc: cur=[cc]; cur_start[0]=i+1; cur_type[0]=None   # 헤딩: 다음 내용 부착 대기
                 continue
             m=BOLDONLY.match(s)
             if m:
-                flush(); c=clean(m.group(1))
-                if c: cur=[c]; cur_start=i+1
+                cc=clean(m.group(1))
+                flush()
+                if cc: cur=[cc]; cur_start[0]=i+1; cur_type[0]=None
                 continue
-            c=clean(s)
-            if not c: continue
-            # 짧은 평문 고아줄 (list 아님, 문장꼴 아님) → 새 어구록 시작
-            if len(norm(c))<=40 and not FINAL.search(c) and not re.match(r'^(-|\d+\.|•)\s',s):
+            lt='li' if re.match(r'^(\d+\.|-|•)\s',s) else 'p'
+            # 짧은 평문 고아줄 → 헤딩 취급 (문장꼴 제외)
+            if lt=='p' and len(norm(c))<=40 and not FINAL.search(c) and not re.match(r'^(-|\d+\.|•)\s',s):
                 if cur and re.search(r'[고며도만나서와과에은는을를]$',c):
                     cur.append(c); continue
-                flush(); cur=[c]; cur_start=i+1
+                flush(); cur=[c]; cur_start[0]=i+1; cur_type[0]=None
                 continue
-            is_item=bool(re.match(r'^(\d+\.|-|•)\s',c))
-            if is_item and cur and not re.match(r'^(\d+\.|-|•)\s',cur[-1]):
-                flush(); cur=[c]; cur_start=i+1; continue
-            if not cur: cur_start=i+1
-            cur.append(c)
+            if cur and cur_type[0] and lt!=cur_type[0]:
+                flush()
+            if not cur: cur_start[0]=i+1
+            cur.append(c); cur_type[0]=lt
         flush()
     return out
 

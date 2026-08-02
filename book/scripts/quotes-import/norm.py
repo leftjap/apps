@@ -2,7 +2,7 @@ import re, unicodedata
 _LINK   = re.compile(r'\[([^\[\]]*)\]\([^)]*\)')      # [text](url) → text
 _REFLNK = re.compile(r'\[([^\[\]]*)\]\[[^\]]*\]')     # [text][1]   → text
 _ATTR   = re.compile(r'\{\.[a-zA-Z-]+\}')             # {.mark}{.underline}
-_URL    = re.compile(r'https?://\S+')
+_URL    = re.compile(r'https?://[^\s)]+')
 def norm(s):
     s = unicodedata.normalize('NFKC', s)
     s = _ATTR.sub('', s)
@@ -11,6 +11,7 @@ def norm(s):
         s = _LINK.sub(r'\1', s)
         s = _REFLNK.sub(r'\1', s)
     s = _URL.sub('', s)
+    s = s.replace('()','')
     s = s.replace('**','').replace('*','').replace('#','').replace('>','')
     s = s.replace('[','').replace(']','')
     s = re.sub(r'(?m)^[\s]*[-•·]+[\s]*', '', s)   # 줄머리 불릿
