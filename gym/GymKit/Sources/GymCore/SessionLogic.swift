@@ -41,12 +41,11 @@ public enum GymSessionLogic {
         }
     }
 
-    // ① 직전 세션 세트 카피 — weight/reps + cardio duration/distance 보존.
+    // ① 직전 세션 세트 카피 — weight/reps 만. 유산소 값(시간·거리 등)은 복사하지 않는다:
+    // 프리셋에 값이 남으면 한 필드만 입력해도 나머지 상속값이 기록에 딸려 들어간다 (필드 단위
+    // 유령 값, 설계 2026-08-10 §1). 직전 값 고스트는 세트가 아니라 이력(recentCardioRuns)으로 표시.
     public static func presetSets(fromPrev prevSets: [GymSet]) -> [GymSet] {
-        prevSets.map {
-            GymSet(weight: $0.weight, reps: $0.reps, preset: true,
-                   duration: $0.duration, distance: $0.distance)
-        }
+        prevSets.map { GymSet(weight: $0.weight, reps: $0.reps, preset: true) }
     }
 
     // MARK: - 운동 추가/제거 (spec §6-1·§6-2)
@@ -120,20 +119,77 @@ public enum GymSessionLogic {
     // 명시적 "완료" 액션 — done 세트만 보존(빈 세트 폐기) + finishedAt 스탬프.
     // 유산소(isCardio)는 스와이프로 done 을 만드는 흐름이 없어 입력값(시간·거리)이 완료 순간
     // 통째로 폐기됐다 (실기기 보고 2026-08-02: 25분·3km → 완료 → 0/0, 요약 누락, 홈 '기록 없음').
-    // 입력이 있는 세트는 done 으로 확정해 보존하고, 빈 프리셋만 종전대로 버린다.
+    // 확정 술어는 "손 댐(preset false) + 값 있음" — "값>0"만 보면 직전 값을 상속한 프리셋까지
+    // 확정해 유령 기록이 된다 (2026-08-06 실데이터: 동일값 세트 2개 이중 집계, 설계 §1).
     public static func finishBlock(_ block: GymBlock, now: Double, isCardio: Bool = false) -> GymBlock {
         var b = block
         if isCardio {
             b.sets = b.sets.compactMap { s in
                 var s = s
-                if (s.duration ?? 0) > 0 || (s.distance ?? 0) > 0 { s.done = true }
-                return s.done ? s : nil
+                if cardioEntered(s) { s.done = true }
+                return s.done && !s.preset ? s : nil
             }
         } else {
             b.sets = b.sets.filter(\.done)
         }
         b.finishedAt = now
         return b
+    }
+
+    /// 유산소 입력됨 술어 — 손 댄 세트(preset false)에 어느 필드든 값이 있으면 기록이다 (설계 §1).
+    public static func cardioEntered(_ s: GymSet) -> Bool {
+        !s.preset && ((s.duration ?? 0) > 0 || (s.distance ?? 0) > 0
+                      || s.speed != nil || s.incline != nil || s.calories != nil)
+    }
+
+    // MARK: - 유산소 5필드 입력 (설계 §1 — 입력 즉시 확정)
+
+    public enum GymCardioField: String, CaseIterable, Sendable {
+        case duration, distance, speed, incline, calories
+    }
+
+    /// 키패드 값 적용 — 단위 변환 + 터치 표시(preset false). duration 은 분 입력 → 초 저장(§6-4).
+    /// done 은 여기서 세우지 않는다: 즉시 done 이면 블록이 완료 판정돼 히어로가 다른 종목으로
+    /// 이동, 5필드 입력 흐름이 끊긴다. 보존은 cardioEntered 술어 + 종료/마감 확정이 보장.
+    public static func applyCardio(_ set: GymSet, field: GymCardioField, value: Double) -> GymSet {
+        var s = set
+        switch field {
+        case .duration: s.duration = max(0, (value * 60).rounded())
+        case .distance: s.distance = max(0, (value * 10).rounded() / 10)
+        case .speed:    s.speed = max(0, (value * 10).rounded() / 10)
+        case .incline:  s.incline = max(0, (value * 10).rounded() / 10)
+        case .calories: s.calories = max(0, value.rounded())
+        }
+        s.preset = false
+        return s
+    }
+
+    // MARK: - 최근 러닝 추출 (설계 §2 — 회 단위 축, 과거→최신)
+
+    public struct GymCardioRun: Sendable, Equatable {
+        public let date: String
+        public let durationSec: Double
+        public let distanceKm: Double?
+        public let incline: Double?
+        public let speed: Double?
+        public let kcal: Double?
+    }
+
+    /// completed 세션에서 해당 종목의 done 세트를 날짜순으로 모아 마지막 limit 개 반환.
+    public static func recentCardioRuns(history: [GymSession], exerciseId: String,
+                                        limit: Int = 8) -> [GymCardioRun] {
+        let runs = history
+            .filter { $0.status == .completed }
+            .sorted { ($0.date, $0.startTime ?? 0) < ($1.date, $1.startTime ?? 0) }
+            .flatMap { s in
+                s.blocks.filter { $0.exerciseId == exerciseId }.flatMap { b in
+                    b.sets.filter { $0.done && (($0.duration ?? 0) > 0 || ($0.distance ?? 0) > 0) }
+                        .map { GymCardioRun(date: s.date, durationSec: $0.duration ?? 0,
+                                            distanceKm: $0.distance, incline: $0.incline,
+                                            speed: $0.speed, kcal: $0.calories) }
+                }
+            }
+        return Array(runs.suffix(limit))
     }
 
     // 잠금(read-only) = 명시적 완료만. 세트 전부 done 은 잠금 아님 (push/revert 보존).
@@ -258,13 +314,16 @@ public enum GymSessionLogic {
 
     // MARK: - 칼로리 추정 (spec §7-3: MET × 체중 × 시간(시) × 1.05)
 
-    /// 블록별 집계 입력 — met · done 세트 수(근력 시간 배분 가중치) · 유산소 입력 시간(초).
+    /// 블록별 집계 입력 — met · done 세트 수(근력 시간 배분 가중치) · 유산소 입력 시간(초)
+    /// · 유산소 입력 칼로리(콘솔 값 — 있으면 MET 추정 대신 그대로 쓴다, 설계 2026-08-10 §3).
     public struct GymCalorieEntry: Sendable {
         public let met: Double
         public let doneSets: Int
         public let cardioSeconds: Double
-        public init(met: Double, doneSets: Int, cardioSeconds: Double) {
+        public let enteredKcal: Double?
+        public init(met: Double, doneSets: Int, cardioSeconds: Double, enteredKcal: Double? = nil) {
             self.met = met; self.doneSets = doneSets; self.cardioSeconds = cardioSeconds
+            self.enteredKcal = enteredKcal
         }
     }
 
@@ -275,7 +334,10 @@ public enum GymSessionLogic {
     public static func estimateCalories(entries: [GymCalorieEntry], bodyKg: Double,
                                         elapsedMin: Int) -> Int {
         let cardioHr = entries.reduce(0.0) { $0 + $1.cardioSeconds } / 3600
-        var kcal = entries.reduce(0.0) { $0 + $1.met * bodyKg * ($1.cardioSeconds / 3600) * 1.05 }
+        // 유산소 — 입력 kcal 우선(콘솔 실측), 없으면 MET 추정 fallback (설계 §3)
+        var kcal = entries.reduce(0.0) {
+            $0 + ($1.enteredKcal ?? $1.met * bodyKg * ($1.cardioSeconds / 3600) * 1.05)
+        }
         let strengthHr = max(0, Double(elapsedMin) / 60 - cardioHr)
         let totalSets = entries.reduce(0) { $0 + $1.doneSets }
         if strengthHr > 0, totalSets > 0 {

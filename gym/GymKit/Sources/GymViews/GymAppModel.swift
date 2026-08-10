@@ -465,15 +465,14 @@ public final class GymAppModel: ObservableObject {
         Task { await syncNow() }
     }
 
-    /// 입력값(시간·거리)이 있는 유산소 세트를 done 으로 확정 — 세션 종료·자동 마감 공통.
-    /// 유산소는 스와이프 done 흐름이 없어, 종목 완료를 안 누르고 종료하면 기록이 요약·홈에서
-    /// 누락된다 (finishBlock 의 isCardio 보존과 같은 규칙, 2026-08-02).
+    /// 손 댄(preset false) 유산소 세트를 done 으로 확정 — 세션 종료·자동 마감 공통.
+    /// 술어는 GymSessionLogic.cardioEntered — "값>0"만 보면 직전 값을 상속한 프리셋까지
+    /// 확정해 유령 기록이 된다 (2026-08-06 이중 집계, 설계 2026-08-10 §1).
     private func confirmEnteredCardio() {
         for bi in session.blocks.indices {
             guard GymExercises.def(session.blocks[bi].exerciseId, custom: custom)?.isCardio == true else { continue }
             for si in session.blocks[bi].sets.indices
-            where (session.blocks[bi].sets[si].duration ?? 0) > 0
-                || (session.blocks[bi].sets[si].distance ?? 0) > 0 {
+            where GymSessionLogic.cardioEntered(session.blocks[bi].sets[si]) {
                 session.blocks[bi].sets[si].done = true
             }
         }
@@ -777,7 +776,8 @@ public final class GymAppModel: ObservableObject {
     }
 
     // 키패드 값 적용 (§6-3-2) — duration 은 분 입력 → 초 저장 (§6-4).
-    public enum KeypadField: String { case weight, reps, duration, distance }
+    // 유산소 5필드는 applyCardio 경유 — 입력 즉시 확정(done), 설계 2026-08-10 §1.
+    public enum KeypadField: String { case weight, reps, duration, distance, speed, incline, calories }
     public func applyKeypad(_ field: KeypadField, value: Double, setIdx: Int? = nil) {
         let bi = currentBlockIdx
         guard session.blocks.indices.contains(bi),
@@ -787,8 +787,12 @@ public final class GymAppModel: ObservableObject {
         switch field {
         case .weight:   session.blocks[bi].sets[si].weight = max(0, (value * 10).rounded() / 10)
         case .reps:     session.blocks[bi].sets[si].reps = max(0, Int(value))
-        case .duration: session.blocks[bi].sets[si].duration = max(0, (value * 60).rounded())
-        case .distance: session.blocks[bi].sets[si].distance = max(0, (value * 10).rounded() / 10)
+        case .duration, .distance, .speed, .incline, .calories:
+            let cf = GymSessionLogic.GymCardioField(rawValue: field.rawValue)!
+            session.blocks[bi].sets[si] = GymSessionLogic.applyCardio(session.blocks[bi].sets[si],
+                                                                      field: cf, value: value)
+            impact(.light)
+            return
         }
         session.blocks[bi].sets[si].preset = false
         impact(.light)
@@ -816,11 +820,14 @@ public final class GymAppModel: ObservableObject {
         let entries = session.blocks.map { b -> GymSessionLogic.GymCalorieEntry in
             let def = GymExercises.def(b.exerciseId, custom: custom)
             let isCardio = def?.isCardio ?? false
-            // 유산소 시간은 입력 자체가 명시 행위라 done 여부와 무관하게 집계 (완료 전 종료해도 반영)
-            let cardioSec = isCardio ? b.sets.reduce(0.0) { $0 + ($1.duration ?? 0) } : 0
+            // 손 댄 세트만 집계 — 전 세트 합산은 상속 프리셋의 시간까지 이중 계상 (설계 §1·§3)
+            let touched = isCardio ? b.sets.filter { GymSessionLogic.cardioEntered($0) } : []
+            let cardioSec = touched.reduce(0.0) { $0 + ($1.duration ?? 0) }
+            let kcals = touched.compactMap(\.calories)
             return .init(met: def?.met ?? 4.0,
                          doneSets: isCardio ? 0 : b.sets.filter(\.done).count,
-                         cardioSeconds: cardioSec)
+                         cardioSeconds: cardioSec,
+                         enteredKcal: kcals.isEmpty ? nil : kcals.reduce(0, +))
         }
         return GymSessionLogic.estimateCalories(entries: entries, bodyKg: bodyKg,
                                                 elapsedMin: elapsedMinutes())

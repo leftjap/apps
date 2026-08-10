@@ -40,7 +40,8 @@ public enum GymScreens {
                                    lastSuccessAt: Int64(m.referenceToday.timeIntervalSince1970 * 1000))
     }
 
-    // 유산소 데모 — 트레드밀 진행 중 (시간 30분·거리 3.2km → 페이스 9:23/km).
+    // 유산소 데모 — 5필드 패널 (설계 2026-08-10): 시간만 입력(잉크 20분), 나머지는 직전 러닝
+    // 고스트. 이력 6회(10→15분 스텝업)로 차트·직전 줄까지 한 렌더에서 검증.
     @MainActor static func demoCardioModel() -> GymAppModel {
         let now = Int64(Date().timeIntervalSince1970 * 1000)
         let s = GymSession(id: "cardio-demo", date: "2026-05-06", startTime: now - 18 * 60 * 1000, blocks: [
@@ -48,9 +49,24 @@ public enum GymScreens {
                 GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 65, reps: 10, done: true)],
                      finishedAt: 1),
             GymBlock(exerciseId: "treadmill", sets: [
-                GymSet(preset: true, duration: 1800, distance: 3.2)]),
+                GymSet(preset: false, duration: 1200)]),
         ], tags: ["chest", "cardio"], status: .active)
-        return GymAppModel(snapshotSession: s)
+        let m = GymAppModel(snapshotSession: s)
+        func run(_ id: String, _ date: String, _ min: Double, _ km: Double,
+                 incline: Double?, kcal: Double?) -> GymSession {
+            GymSession(id: id, date: date,
+                       blocks: [GymBlock(exerciseId: "treadmill", sets: [
+                           GymSet(done: true, duration: min * 60, distance: km, speed: 6.0,
+                                  incline: incline, calories: kcal)])],
+                       tags: ["cardio"], status: .completed)
+        }
+        m.history = [run("cr1", "2026-04-24", 10, 1.0, incline: nil, kcal: nil),
+                     run("cr2", "2026-04-26", 10, 1.0, incline: nil, kcal: nil),
+                     run("cr3", "2026-04-28", 12, 1.2, incline: 2.0, kcal: 60),
+                     run("cr4", "2026-04-30", 15, 1.5, incline: 3.0, kcal: 75),
+                     run("cr5", "2026-05-02", 15, 1.5, incline: 3.0, kcal: 76),
+                     run("cr6", "2026-05-04", 15, 1.5, incline: 3.4, kcal: 81)]
+        return m
     }
 
     // 빈 세션 데모 (§6-1 — NEW SESSION + 인라인 운동추가 시트).

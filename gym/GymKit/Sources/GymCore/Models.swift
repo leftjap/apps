@@ -14,9 +14,13 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
     public var preset: Bool      // 프리셋(미수정 placeholder) 여부 — 사용자 입력/완료 시 false (spec §6-3-3)
     public var duration: Double? // 유산소 — 초 단위 (표시·입력은 분, spec §6-4)
     public var distance: Double? // 유산소 — km
+    public var speed: Double?    // 유산소 — 콘솔 평균 속도 km/h (설계 2026-08-10 §1)
+    public var incline: Double?  // 유산소 — 콘솔 평균 경사 %
+    public var calories: Double? // 유산소 — 콘솔 칼로리 kcal (세션 총계에 입력값 우선 병합, 설계 §3)
 
     public init(id: UUID = UUID(), weight: Double? = nil, reps: Int? = nil, done: Bool = false,
-                pr: Bool = false, preset: Bool = false, duration: Double? = nil, distance: Double? = nil) {
+                pr: Bool = false, preset: Bool = false, duration: Double? = nil, distance: Double? = nil,
+                speed: Double? = nil, incline: Double? = nil, calories: Double? = nil) {
         self.id = id
         self.weight = weight
         self.reps = reps
@@ -25,6 +29,9 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
         self.preset = preset
         self.duration = duration
         self.distance = distance
+        self.speed = speed
+        self.incline = incline
+        self.calories = calories
     }
 
     // 구 데이터(pr·preset·duration·distance 키 없음) 관용 디코딩 — 온디바이스 진행 세션 파손 방지.
@@ -38,6 +45,9 @@ public struct GymSet: Codable, Sendable, Identifiable, Hashable {
         preset = try c.decodeIfPresent(Bool.self, forKey: .preset) ?? false
         duration = try c.decodeIfPresent(Double.self, forKey: .duration)
         distance = try c.decodeIfPresent(Double.self, forKey: .distance)
+        speed = try c.decodeIfPresent(Double.self, forKey: .speed)
+        incline = try c.decodeIfPresent(Double.self, forKey: .incline)
+        calories = try c.decodeIfPresent(Double.self, forKey: .calories)
     }
 
     // 세트 볼륨 = 중량 × 횟수 (nil 방어).

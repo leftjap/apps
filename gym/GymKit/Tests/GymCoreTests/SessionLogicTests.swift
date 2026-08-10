@@ -53,14 +53,17 @@ import Testing
         #expect(sets.allSatisfy { $0.weight == nil && $0.reps == 10 })
     }
 
-    @Test func presetSetsFromPrevCopiesValuesIncludingCardio() {
+    // 유산소 값은 카피 제외 — 프리셋에 남으면 필드 단위 유령 값 (설계 2026-08-10 §1).
+    @Test func presetSetsFromPrevCopiesStrengthOnly() {
         let prev = [GymSet(weight: 60, reps: 10, done: true, pr: true),
-                    GymSet(done: true, duration: 1800, distance: 3.2)]
+                    GymSet(done: true, duration: 1800, distance: 3.2, speed: 6.0,
+                           incline: 3.4, calories: 81)]
         let sets = GymSessionLogic.presetSets(fromPrev: prev)
         #expect(sets.count == 2)
         #expect(sets[0].weight == 60 && sets[0].reps == 10)
         #expect(sets[0].done == false && sets[0].preset == true && sets[0].pr == false)
-        #expect(sets[1].duration == 1800 && sets[1].distance == 3.2)
+        #expect(sets[1].duration == nil && sets[1].distance == nil)
+        #expect(sets[1].speed == nil && sets[1].incline == nil && sets[1].calories == nil)
     }
 
     // MARK: - 운동 추가/제거 (§6-1·§6-2)

@@ -219,6 +219,9 @@ public struct SessionScreenView: View {
                 case .reps:     return set?.reps.map(Double.init)
                 case .duration: return set?.duration.map { ($0 / 60).rounded() }
                 case .distance: return set?.distance
+                case .speed:    return set?.speed
+                case .incline:  return set?.incline
+                case .calories: return set?.calories
                 }
             }()
             _keypad = State(initialValue: KeypadContext(
@@ -381,6 +384,12 @@ public struct SessionScreenView: View {
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             Spacer()
+            if kind == .cardio {
+                // 유산소 — 히어로·스와이프 대신 5필드 패널 (설계 2026-08-10 §1·§2)
+                CardioPanel(set: dispSet, runs: cardioRuns, locked: locked,
+                            onField: { f in openKeypad(f) })
+                    .modifier(ExSwitchDip(trigger: exSwapMoment))
+            } else {
             ZStack {
                 SessionHero(kind: kind, topValue: heroTop, bottomValue: heroBottom,
                             preset: dispSet?.preset ?? false, locked: locked,
@@ -455,6 +464,7 @@ public struct SessionScreenView: View {
                     case .tap, .springBack: springBackHero()
                     }
                 })
+            }
             Spacer()
             if kind != .cardio {   // 유산소는 볼륨 링 없음 (§6-4)
                 ExerciseVolumeRing(
@@ -578,12 +588,24 @@ public struct SessionScreenView: View {
             if let si = setIdx, let b = model.currentBlock, b.sets.indices.contains(si) { return b.sets[si] }
             return model.currentSet ?? model.currentBlock?.sets.last
         }()
+        // 유산소 — 미입력 필드는 직전 러닝 값으로 프리필 (탭→완료 = 지난 값 수용, 설계 §1)
+        let prevRun = model.currentCardKind == .cardio ? cardioRuns.last : nil
         switch field {
         case .weight:   return set?.weight
         case .reps:     return set?.reps.map(Double.init)
         case .duration: return set?.duration.map { ($0 / 60).rounded() }
-        case .distance: return set?.distance
+                            ?? prevRun.map { ($0.durationSec / 60).rounded() }
+        case .distance: return set?.distance ?? prevRun?.distanceKm
+        case .speed:    return set?.speed ?? prevRun?.speed
+        case .incline:  return set?.incline ?? prevRun?.incline
+        case .calories: return set?.calories ?? prevRun?.kcal
         }
+    }
+
+    // 최근 러닝 이력 (과거→최신, 최대 8) — 차트·직전 줄·프리필 공용.
+    var cardioRuns: [GymSessionLogic.GymCardioRun] {
+        guard let exId = model.currentBlock?.exerciseId else { return [] }
+        return GymSessionLogic.recentCardioRuns(history: model.history, exerciseId: exId, limit: 8)
     }
     func openKeypad(_ field: GymAppModel.KeypadField, setIdx: Int? = nil) {
         guard !model.currentBlockLocked else { return }
@@ -624,8 +646,15 @@ public struct SessionScreenView: View {
                     .contentShape(Rectangle())
                     .onTapGesture { keypadDone() }   // 배경 탭 = 적용 (PWA backdrop apply)
                     .transition(.opacity)
+                // 유산소 단독 필드(속도·경사·칼로리) — 세그 대신 타이틀 (bare, 체중 키패드 패턴)
+                let bareTitle: String? = switch keypad!.field {
+                case .speed: "평균 속도"; case .incline: "평균 경사"; case .calories: "칼로리"
+                default: nil
+                }
                 KeypadSheet(ctx: keypad!,
                             refValue: prefillValue(keypad!.field, setIdx: keypad!.setIdx).map { Self.fmtW($0) },
+                            bare: bareTitle != nil,
+                            title: bareTitle,
                             onKey: { k in if keypad != nil { KeypadBuffer.apply(k, to: &keypad!) } },
                             onQuick: { d in quickDelta(d) },
                             onMode: { m in switchKeypadMode(m) },
