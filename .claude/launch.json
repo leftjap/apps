@@ -2,6 +2,21 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "mlaw-proto",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5335",
+        "--directory",
+        "/Users/gio_c/games/martial-law/prototype",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 5335,
+      "autoPort": false
+    },
+    {
       "name": "catcrew-proto",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
