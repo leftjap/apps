@@ -9,7 +9,7 @@
         "http.server",
         "5335",
         "--directory",
-        "/Users/gio_c/games/martial-law/prototype",
+        "/Users/gio_c/games/martial",
         "--bind",
         "127.0.0.1"
       ],
