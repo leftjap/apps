@@ -54,41 +54,18 @@ import Testing
         #expect(empty.max == 1)
     }
 
-    @Test func cardioSeparateRowAndCoreMapping() {
+    // 유산소는 부위 막대에서 완전히 빠진다 — 집계는 독립 카드(cardioWeek)가 따로 한다
+    // (홈 재설계 2026-08-17 §0·§13: 7번째 열/행으로 되돌리지 말 것).
+    @Test func cardioExcludedAndCoreMapping() {
         let sessions = [
-            mk("2026-05-05", "treadmill", doneSets: 1, duration: 1800),   // 30분 → 유산소 행
+            mk("2026-05-05", "treadmill", doneSets: 1, duration: 1800),   // 유산소 → 막대 미포함
             mk("2026-05-04", "hanging_leg_raise", doneSets: 5),           // core 부위
-            mk("2026-04-28", "treadmill", doneSets: 1, duration: 600),    // prev 10분
         ]
         let b = GymHomeLogic.weeklyBalance(sessions: sessions, custom: [], now: now)
-        #expect(b.cardioMin == 30 && b.cardioCount == 1)
-        #expect(b.cardioDeltaMin == 20)
         let core = b.parts.first { $0.key == "core" }!
         #expect(core.sets == 5)
-        // cardio 는 부위 막대에 미포함
         #expect(b.parts.allSatisfy { $0.key != "cardio" })
-    }
-}
-
-// 유산소 행 문구 — home.js applyBalanceToDom 정합 (행은 항상 표시, 0회 시 "기록 없음"·델타 숨김).
-@Suite struct CardioRowTextTests {
-    @Test func subTextShowsMinutesAndCount() {
-        #expect(GymHomeLogic.cardioSubText(min: 84, count: 3) == "84분 · 3회")
-    }
-    @Test func subTextOmitsMinutesWhenZero() {
-        #expect(GymHomeLogic.cardioSubText(min: 0, count: 2) == "2회")
-    }
-    @Test func subTextIsEmptyLabelWhenNoCardio() {
-        #expect(GymHomeLogic.cardioSubText(min: 0, count: 0) == "기록 없음")
-        #expect(GymHomeLogic.cardioSubText(min: 30, count: 0) == "기록 없음")
-    }
-    @Test func deltaTextHiddenWhenNoCardioOrNoChange() {
-        #expect(GymHomeLogic.cardioDeltaText(count: 0, deltaMin: 12) == nil)
-        #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: 0) == nil)
-    }
-    @Test func deltaTextArrowsMatchSign() {
-        #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: 12) == "▲12분")
-        #expect(GymHomeLogic.cardioDeltaText(count: 3, deltaMin: -5) == "▼5분")
+        #expect(b.parts.map(\.sets).reduce(0, +) == 5, "유산소 1세트가 합계에 새면 안 된다")
     }
 }
 

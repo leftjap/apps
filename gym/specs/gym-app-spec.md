@@ -237,6 +237,11 @@ CREATE POLICY "Users can only access own data"
 
 ## 5. 홈 대시보드
 
+> **네이티브 홈 화면의 현행 정본은 `specs/2026-08-17-home-redesign-20a.md`(시안 20a)**
+> — 픽셀 오라클은 같은 이름의 `.html`. 아래 5-2·5-3 서술은 웹 시절 것이라 현행과 다르다
+> (2주 캘린더 + 유산소 링 / 부위 밸런스 페어 컬럼 / 독립 유산소 카드 / 체중 스파크라인).
+> 구현: `GymKit/Sources/GymViews/HomeScreen.swift`, 스냅샷 `gymshot home-20a`.
+
 5가지 상태: Active(최근 운동 1~2일) / Gap(3~4일) / Rest(5일+) / Session(진행 중) / Empty(첫 사용).
 
 ### 5-1. 헤더

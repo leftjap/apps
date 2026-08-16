@@ -13,6 +13,9 @@ public enum GY {
     public static let line = Color(oklch: 0.920, 0.006, 60)
     public static let lineSoft = Color(oklch: 0.945, 0.006, 60)
     public static let neutralBar = Color(oklch: 0.85, 0.006, 60)
+    public static let ring = Color(oklch: 0.88, 0.006, 60)      // 유산소 빈 원 테두리
+    public static let axis = Color(oklch: 0.88, 0.008, 60)      // 차트 기준선
+    public static let sparkFill = Color(oklch: 0.965, 0.006, 60) // 체중 스파크라인 면
 
     // Ink — 4단 + 순검정
     public static let ink1 = Color(oklch: 0.22, 0.008, 60)
@@ -36,6 +39,15 @@ public enum GY {
     public static let recordBase = Color(oklch: 0.62, 0.18, 152)
     public static let recordDeep = Color(oklch: 0.44, 0.16, 152)
     public static let recordTint = Color(oklch: 0.93, 0.06, 152)
+
+    // 홈 재설계 2026-08-17 §1 — 색의 의미: crail = 날짜·기록 행위, teal/pine = 훈련량,
+    // ghost = 지난주, warn = 미달. crail 을 미달에 쓰지 말 것.
+    public static let teal = Color(hex: 0x2F807A)        // 이번 주 실적 — 밸런스 잉크 막대·유산소 채운 원
+    public static let pine = Color(hex: 0x215D5B)        // 오늘 링·오늘 요일·+칩 텍스트·CTA 배경
+    public static let ghost = Color(hex: 0xCDDEDC)       // 지난주 실적 — 밸런스 고스트 막대
+    public static let ghostTint = Color(hex: 0xE7EFEE)   // + 칩 배경
+    public static let warnTint = Color(oklch: 0.95, 0.035, 80)   // 갱신 칩 배경(미달)
+    public static let warnDeep = Color(hex: 0xA06D2C)            // 갱신 칩 텍스트(미달)
 
     public static let warning = Color(hex: 0xC98A3F)
     public static let danger = Color(hex: 0xC5544A)

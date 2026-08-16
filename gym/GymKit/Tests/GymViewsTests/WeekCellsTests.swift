@@ -57,4 +57,28 @@ import GymCore
         let m = model(worked: ["2026-07-22"])
         #expect(m.weekCells(around: ref).map(\.num) == m.weekCells(around: ref, weekOffset: 0).map(\.num))
     }
+
+    // 유산소 링 (홈 재설계 2026-08-17 §5) — worked 는 근력일, cardio 는 유산소일. 유산소만 한 날은
+    // worked=false·cardio=true 여야 "배경 없이 teal 링" 상태가 그려진다.
+    @Test func cardioOnlyDayIsRingedButNotFilled() {
+        let m = model(worked: ["2026-07-21"])                     // 화 = 근력
+        m.history.append(GymSession(id: "c", date: "2026-07-23",  // 목 = 유산소만
+                                    blocks: [GymBlock(exerciseId: "treadmill",
+                                                      sets: [GymSet(done: true, duration: 1800)])],
+                                    status: .completed))
+        let cells = m.weekCells(around: ref)
+        #expect(cells.filter(\.worked).map(\.num) == [21], "유산소만 한 날은 근력 채움이 아니다")
+        #expect(cells.filter(\.cardio).map(\.num) == [23])
+    }
+
+    // 같은 날 근력 + 유산소 → 채움 + 링 둘 다.
+    @Test func mixedDayIsFilledAndRinged() {
+        let m = model(worked: ["2026-07-22"])
+        m.history.append(GymSession(id: "c", date: "2026-07-22",
+                                    blocks: [GymBlock(exerciseId: "cycle",
+                                                      sets: [GymSet(done: true, duration: 1200)])],
+                                    status: .completed))
+        let cell = m.weekCells(around: ref).first { $0.num == 22 }!
+        #expect(cell.worked && cell.cardio)
+    }
 }

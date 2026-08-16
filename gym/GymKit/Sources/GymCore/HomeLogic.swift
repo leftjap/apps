@@ -20,9 +20,6 @@ public enum GymHomeLogic {
     }
     public struct WeeklyBalance: Equatable, Sendable {
         public let parts: [BalancePart]     // 하체·어깨·등·가슴·팔·코어 고정 순서
-        public let cardioMin: Int
-        public let cardioCount: Int
-        public let cardioDeltaMin: Int
         public let focusKey: String?        // 이번 주 최소 부위 (전부 0 이면 nil)
         public let max: Int                 // 막대 스케일 (최소 1)
     }
@@ -53,23 +50,14 @@ public enum GymHomeLogic {
         let prevFrom = shift(-7), prevTo = shift(-1)    // 지난 주 월~일
 
         var thisSets: [String: Int] = [:], prevSets: [String: Int] = [:]
-        var cardioMin = 0.0, prevCardioMin = 0.0
-        var cardioCount = 0
 
         func accumulate(_ s: GymSession, isThisWeek: Bool) {
             for b in s.blocks where b.type == "single" {
                 guard let cat = categorize(b.exerciseId, custom: custom) else { continue }
                 let done = b.sets.filter(\.done)
                 guard !done.isEmpty else { continue }
-                if cat == "cardio" {
-                    if isThisWeek {
-                        cardioCount += done.count
-                        for st in done { cardioMin += (st.duration ?? 0) / 60 }
-                    } else {
-                        for st in done { prevCardioMin += (st.duration ?? 0) / 60 }
-                    }
-                    continue
-                }
+                // 유산소는 부위 막대에 안 들어간다 — 독립 카드가 따로 집계 (cardioWeek).
+                guard cat != "cardio" else { continue }
                 if isThisWeek { thisSets[cat, default: 0] += done.count }
                 else { prevSets[cat, default: 0] += done.count }
             }
@@ -89,25 +77,92 @@ public enum GymHomeLogic {
             for p in parts where p.sets < minSets { minSets = p.sets; focusKey = p.key }
         }
         let maxBar = Swift.max(1, parts.map { Swift.max($0.sets, $0.prevSets) }.max() ?? 1)
-        return WeeklyBalance(parts: parts,
-                             cardioMin: Int(cardioMin.rounded()),
-                             cardioCount: cardioCount,
-                             cardioDeltaMin: Int(cardioMin.rounded()) - Int(prevCardioMin.rounded()),
-                             focusKey: focusKey, max: maxBar)
+        return WeeklyBalance(parts: parts, focusKey: focusKey, max: maxBar)
     }
 
-    // MARK: - 유산소 행 문구 (home.js applyBalanceToDom — 행은 항상 표시)
+    // MARK: - 유산소 카드 (홈 재설계 2026-08-17 §8·§11 — 밸런스 차트의 유산소 행을 대체)
 
-    /// "84분 · 3회" / "2회"(분 0) / "기록 없음"(회 0).
-    public static func cardioSubText(min: Int, count: Int) -> String {
-        guard count > 0 else { return "기록 없음" }
-        return min > 0 ? "\(min)분 · \(count)회" : "\(count)회"
+    /// 날짜(ISO) → 그날 완료 유산소 총 분(날짜별 반올림). **"뛴 날" 의 단일 정의.**
+    /// 캘린더의 유산소 링과 카드의 채운 원이 반드시 같은 날짜 집합이어야 해서(§14) 둘 다 여기서 나온다.
+    /// duration 미입력(구버그 데이터)도 done 세트면 날짜 키가 남고 값 0 — 크기는 술어 하나로 통일한다.
+    public static func cardioDayMinutes(sessions: [GymSession],
+                                        custom: [GymCustomExercise]) -> [String: Int] {
+        var sec: [String: Double] = [:]
+        for s in sessions {
+            for b in s.blocks where b.type == "single" {
+                guard categorize(b.exerciseId, custom: custom) == "cardio" else { continue }
+                let done = b.sets.filter(\.done)
+                guard !done.isEmpty else { continue }
+                sec[s.date, default: 0] += done.reduce(0) { $0 + ($1.duration ?? 0) }
+            }
+        }
+        return sec.mapValues { Int(($0 / 60).rounded()) }
     }
 
-    /// "▲12분" / "▼5분". 유산소가 없거나 증감이 없으면 nil (표시 안 함).
-    public static func cardioDeltaText(count: Int, deltaMin: Int) -> String? {
-        guard count > 0, deltaMin != 0 else { return nil }
-        return "\(deltaMin > 0 ? "▲" : "▼")\(abs(deltaMin))분"
+    /// 근력(비유산소) 완료 세트가 있는 날 (§11 liftDays). 유산소만 한 날은 들어가지 않는다 —
+    /// 캘린더의 crail 채움은 근력 신호이고 유산소는 teal 링이 따로 표현하므로(§5) 둘을 분리해야
+    /// "유산소만" 상태(배경 없음 + 링)가 성립한다.
+    public static func liftDays(sessions: [GymSession],
+                                custom: [GymCustomExercise]) -> Set<String> {
+        var out: Set<String> = []
+        for s in sessions {
+            for b in s.blocks {
+                guard categorize(b.exerciseId, custom: custom) != "cardio",
+                      b.sets.contains(where: \.done) else { continue }
+                out.insert(s.date); break
+            }
+        }
+        return out
+    }
+
+    /// 월~일 7칸 × (이번 주 / 지난주). nil = 그날 유산소 없음(빈 원).
+    public struct CardioWeek: Equatable, Sendable {
+        public let thisMin: [Int?]      // 7칸, 월→일
+        public let prevMin: [Int?]      // 지난주 같은 요일
+        public let thisTotal: Int
+        public let thisDays: Int
+        public let prevTotal: Int
+        public let prevDays: Int
+        public let todayIndex: Int      // 0=월 … 6=일
+    }
+
+    /// 주 시작 = 월요일 고정 (§11). GymWeightLogic.kst 는 firstWeekday 미설정(일요일 시작)이라
+    /// weekOfYear 가 아니라 weekday 성분으로 직접 계산한다 — weeklyBalance 와 같은 규칙.
+    static func mondayIndex(_ weekday: Int) -> Int { (weekday + 5) % 7 }
+
+    public static func cardioWeek(sessions: [GymSession], custom: [GymCustomExercise],
+                                  now: Date) -> CardioWeek {
+        let cal = GymWeightLogic.kst
+        let fmt = GymWeightLogic.isoFmt
+        let byDay = cardioDayMinutes(sessions: sessions, custom: custom)
+        let todayIdx = mondayIndex(cal.component(.weekday, from: now))
+        let monday = cal.date(byAdding: .day, value: -todayIdx, to: now) ?? now
+        func slot(_ offset: Int) -> Int? {
+            cal.date(byAdding: .day, value: offset, to: monday).flatMap { byDay[fmt.string(from: $0)] }
+        }
+        let this = (0..<7).map { slot($0) }
+        let prev = (0..<7).map { slot($0 - 7) }
+        return CardioWeek(thisMin: this, prevMin: prev,
+                          thisTotal: this.compactMap { $0 }.reduce(0, +),
+                          thisDays: this.compactMap { $0 }.count,
+                          prevTotal: prev.compactMap { $0 }.reduce(0, +),
+                          prevDays: prev.compactMap { $0 }.count,
+                          todayIndex: todayIdx)
+    }
+
+    /// 하단 갱신 칩 3갈래 (사용자 2026-08-17 — 동률은 갱신이 아니다).
+    /// 부족 = warn(주황), 동률·초과 = pine. 유산소를 한 번도 안 했으면 nil(칩 숨김, §14).
+    public struct CardioRenewChip: Equatable, Sendable {
+        public let value: String?    // "18분" / "+12분". 동률이면 없음
+        public let label: String
+        public let isWarn: Bool
+    }
+    public static func cardioRenewChip(thisTotal: Int, prevTotal: Int) -> CardioRenewChip? {
+        guard thisTotal > 0 || prevTotal > 0 else { return nil }
+        let short = prevTotal - thisTotal
+        if short > 0 { return CardioRenewChip(value: "\(short)분", label: "더 하면 갱신", isWarn: true) }
+        if short == 0 { return CardioRenewChip(value: nil, label: "지난주와 동률", isWarn: false) }
+        return CardioRenewChip(value: "+\(-short)분", label: "갱신", isWarn: false)
     }
 
     // MARK: - HomeC "다음" 미리보기 (home.js summarizeNextBlocks + formatBlockPreview 정합)

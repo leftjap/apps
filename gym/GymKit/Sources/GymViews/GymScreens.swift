@@ -127,6 +127,62 @@ public enum GymScreens {
         healthySync(m); return m
     }
 
+    // 시안 20a 픽셀 대조용 홈 — `specs/2026-08-17-home-redesign-20a.md` 의 예시 데이터를 그대로 재현한다.
+    // 오늘 = 2026-08-11(화). 그 주 월요일이 10일이라 캘린더가 시안(1주차 3~9 / 2주차 10~16)과 일치.
+    //   근력 3·5·7·8·10·11, 유산소 5·7·8·10·11 (§5 샘플)
+    //   밸런스 이번주 하체8 어깨5 등6 가슴7 팔4 코어2 = 32, 지난주 6·4·5·5·3·4 = 27 → +5 (§7 표)
+    //   유산소 이번주 월30 화27 = 57분 2일, 지난주 수25 금28 토22 = 75분 3일 → "18분 더 하면 갱신" (§8)
+    //   체중 72.4 (직전 72.6 → −0.2), 목표 69 → 3.4kg 남음 (§9)
+    @MainActor static func demo20aModel() -> GymAppModel {
+        func done(_ w: Double, _ r: Int) -> GymSet { GymSet(weight: w, reps: r, done: true) }
+        // 부위별 세트 수 → 블록. 부위당 대표 종목 1개면 밸런스 집계엔 충분하다.
+        func lift(_ id: String, _ date: String, _ tags: [String], _ spec: [(String, Int)]) -> GymSession {
+            GymSession(id: id, date: date, startTime: 1_754_870_000_000,
+                       blocks: spec.map { ex, n in
+                           GymBlock(exerciseId: ex, sets: (0..<n).map { _ in done(50, 10) })
+                       }, tags: tags, status: .completed)
+        }
+        func run(_ id: String, _ date: String, _ min: Double) -> GymSession {
+            GymSession(id: id, date: date,
+                       blocks: [GymBlock(exerciseId: "treadmill",
+                                         sets: [GymSet(done: true, duration: min * 60)])],
+                       status: .completed)
+        }
+        let m = demoEmptyModel()
+        if let d = GymAppModel.dayFmt.date(from: "2026-08-11") { m.referenceToday = d }
+        m.history = [
+            // 이번 주 — history.first 가 직전 운동 행의 소스라 오늘(8/11) 세션이 맨 앞.
+            lift("t-0811", "2026-08-11", ["chest", "arms"],
+                 [("bench_press", 7), ("bicep_curl", 4), ("hanging_leg_raise", 2)]),
+            lift("t-0810", "2026-08-10", ["legs", "shoulder", "back"],
+                 [("squat", 8), ("shoulder_press", 5), ("barbell_row", 6)]),
+            // 지난 주
+            lift("p-0808", "2026-08-08", ["legs", "core"], [("squat", 6), ("hanging_leg_raise", 4)]),
+            lift("p-0807", "2026-08-07", ["back", "arms"], [("barbell_row", 5), ("bicep_curl", 3)]),
+            lift("p-0805", "2026-08-05", ["chest"], [("bench_press", 5)]),
+            lift("p-0803", "2026-08-03", ["shoulder"], [("shoulder_press", 4)]),
+            run("r-0811", "2026-08-11", 27), run("r-0810", "2026-08-10", 30),
+            run("r-0808", "2026-08-08", 22), run("r-0807", "2026-08-07", 28),
+            run("r-0805", "2026-08-05", 25),
+        ]
+        // 30일 스파크라인 — 완만한 감소 + 실제 체중계처럼 흔들림. 오늘 72.4 / 직전 72.6 (§9 예시 −0.2).
+        m.weights = (0..<30).map { i in
+            GymWeight(date: GymAppModel.dayFmt.string(
+                from: GymAppModel.kst.date(byAdding: .day, value: -i, to: m.referenceToday)!),
+                      kg: ((72.4 + Double(i) * 0.055 + 0.15 * sin(Double(i))) * 10).rounded() / 10,
+                      height: 173)
+        }
+        m.settings = GymUserSettings(weeklyGoal: 4, height: 173, birthYear: 1976, goalWeight: 69)
+        healthySync(m); return m
+    }
+
+    // 유산소를 한 번도 안 한 사용자 (§14 마지막 항목) — 원 7개 전부 빈 원, 하단 칩 숨김.
+    @MainActor static func demoNoCardioModel() -> GymAppModel {
+        let m = demo20aModel()
+        m.history = m.history.filter { !$0.id.hasPrefix("r-") }
+        return m
+    }
+
     // 백업 위험 홈 — 미로그인 상태에서 상단 경고 배너 노출 (2026-07-14 사고 안전장치 검증용).
     @MainActor static func demoAtRiskModel() -> GymAppModel {
         let m = demoIdleModel()
@@ -159,6 +215,9 @@ public enum GymScreens {
         case "stats-body":   return AnyView(StatsScreenView(model: demoModel(), initialTab: .body, embedScroll: false).frame(width: 390, height: 844))
         case "login":        return AnyView(GymLoginView().frame(width: 390, height: 844))
         case "home":         return AnyView(HomeScreenView(model: demoIdleModel()).frame(width: 390, height: 844))
+        // 시안 20a 정본 대조 — 기준 기기 375×812 (11 Pro). 세로 여유 0 이라 폭·높이를 시안에 맞춘다.
+        case "home-20a":     return AnyView(HomeScreenView(model: demo20aModel()).frame(width: 375, height: 812))
+        case "home-nocardio": return AnyView(HomeScreenView(model: demoNoCardioModel()).frame(width: 375, height: 812))
         case "home-stale":   return AnyView(HomeScreenView(model: demoStaleDayModel()).frame(width: 390, height: 844))
         case "home-atrisk":  return AnyView(HomeScreenView(model: demoAtRiskModel()).frame(width: 390, height: 844))
         case "home-active":  return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))

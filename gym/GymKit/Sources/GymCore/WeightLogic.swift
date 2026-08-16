@@ -24,6 +24,36 @@ public enum GymWeightLogic {
         return diff > 0 ? (diff * 10).rounded() / 10 : 0
     }
 
+    // MARK: - 홈 체중 카드 스파크라인 (홈 재설계 2026-08-17 §9 — 선 1개, 7일 이동평균만)
+
+    /// 최근 `days` 일 이동평균 시리즈. **전체 이력에 sma7 을 먼저 적용한 뒤 창을 절단한다** —
+    /// 창 안에서만 평균 내면 첫 점이 이동평균이 아니라 그날 실측값이 되어 선 앞머리가 튄다.
+    /// `rows` 는 날짜 오름차순.
+    public static func recentSma(rows: [(date: String, kg: Double)], days: Int = 30,
+                                 now: Date) -> [Double] {
+        guard !rows.isEmpty else { return [] }
+        let smas = sma7(rows)
+        guard let from = kst.date(byAdding: .day, value: -(days - 1), to: kst.startOfDay(for: now))
+        else { return smas.map(\.sma) }
+        let fromStr = isoFmt.string(from: from)
+        return smas.filter { $0.date >= fromStr }.map(\.sma)
+    }
+
+    /// 스파크라인 좌표 — x 균등 분할, y 는 시리즈 min~max 를 상하 `pad` 안쪽에 매핑(위 = 무거움).
+    /// 격자·축 없음. 점이 2개 미만이면 선을 못 그리므로 빈 배열(뷰가 숨김).
+    public static func sparklinePoints(values: [Double], width: CGFloat, height: CGFloat,
+                                       pad: CGFloat = 3) -> [CGPoint] {
+        guard values.count >= 2 else { return [] }
+        let mn = values.min()!, mx = values.max()!
+        let top = pad, bottom = height - pad
+        let span = mx - mn
+        return values.indices.map { i in
+            let x = CGFloat(i) / CGFloat(values.count - 1) * width
+            let y = span == 0 ? height / 2 : bottom - CGFloat((values[i] - mn) / span) * (bottom - top)
+            return CGPoint(x: x, y: y)
+        }
+    }
+
     static let kst: Calendar = {
         var c = Calendar(identifier: .gregorian)
         c.timeZone = TimeZone(identifier: "Asia/Seoul")!
