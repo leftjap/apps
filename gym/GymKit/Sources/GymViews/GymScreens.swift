@@ -218,6 +218,11 @@ public enum GymScreens {
         // 시안 20a 정본 대조 — 기준 기기 375×812 (11 Pro). 세로 여유 0 이라 폭·높이를 시안에 맞춘다.
         case "home-20a":     return AnyView(HomeScreenView(model: demo20aModel()).frame(width: 375, height: 812))
         case "home-nocardio": return AnyView(HomeScreenView(model: demoNoCardioModel()).frame(width: 375, height: 812))
+        // §12 작은 화면(SE 375×667) 컴팩트 레이아웃 — 스크롤 콘텐츠의 자연 높이를 그대로 렌더한다
+        // (ImageRenderer 가 ScrollView 내부를 못 잡으므로 스택을 직접 렌더). 뷰포트 647 과 비교용.
+        case "home-se":      return AnyView(HomeScreenView(model: demo20aModel())
+                                                .homeAStack(compact: true)
+                                                .frame(width: 375).background(GY.shell))
         case "home-stale":   return AnyView(HomeScreenView(model: demoStaleDayModel()).frame(width: 390, height: 844))
         case "home-atrisk":  return AnyView(HomeScreenView(model: demoAtRiskModel()).frame(width: 390, height: 844))
         case "home-active":  return AnyView(HomeScreenView(model: demoModel()).frame(width: 390, height: 844))

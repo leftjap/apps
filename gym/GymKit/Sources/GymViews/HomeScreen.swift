@@ -1,5 +1,8 @@
 import SwiftUI
 import GymCore
+#if canImport(UIKit)
+import UIKit
+#endif
 
 // 홈 화면 — 시안 20a 정본: `specs/2026-08-17-home-redesign-20a.md` (+ 같은 이름 .html 픽셀 오라클).
 // 대조: `gymshot home-20a` 가 시안 예시 데이터를 375×812 로 그대로 재현한다 (GymScreens.demo20aModel).
@@ -31,9 +34,31 @@ public struct HomeScreenView: View {
     @State private var detailISO: String? = nil   // 날짜 탭 → 상세 바텀시트 (§5-2)
     @State private var weightKeypad: KeypadContext? = nil   // 오늘 체중 입력 (§10-2 home 공유)
 
+    /// §12 작은 화면 대응 임계 — 기기 화면 높이 기준 (SE 667·568 < 750 < 11 Pro/13 mini 812).
+    ///
+    /// 뷰포트를 GeometryReader 로 재려던 두 시도가 모두 실패했다 (2026-08-17 시뮬 실측):
+    ///  · 본문을 감싸면 높이 계산이 바뀌어 CTA 가 11pt 내려가 홈 인디케이터를 침범 (788.7 → 799.7pt)
+    ///  · 배경에서 재면 순환한다 — 콘텐츠가 화면보다 크면 frame 이 콘텐츠 크기(SE 720pt)로 커져
+    ///    임계를 항상 넘어 compact 가 영영 안 켜진다
+    /// 그래서 레이아웃과 무관한 기기 화면 높이를 직접 읽는다.
+    static let compactScreenHeight: CGFloat = 750
+    static var screenHeight: CGFloat {
+        #if canImport(UIKit)
+        if let scene = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene }).first {
+            return scene.screen.bounds.height
+        }
+        return 812
+        #else
+        return 812   // gymshot(macOS) — 시안 기준 기기 375×812
+        #endif
+    }
+    var isCompactScreen: Bool { Self.screenHeight < Self.compactScreenHeight }
+
     public var body: some View {
         Group {
-            if isActiveSession { homeC } else { homeA }
+            if isActiveSession { homeC(compact: isCompactScreen) }
+            else { homeA(compact: isCompactScreen) }
         }
         // 화면 폭에 맞춘다 — 390 고정 시 375pt 기기(iPhone SE·11 Pro)에서 좌우 7.5pt 씩 잘린다
         // (2026-07-10 실기기 실측: CTA 여백 24 → 16.67pt).
@@ -80,7 +105,21 @@ public struct HomeScreenView: View {
 
     // 화면 구조 §3 — 블록별 외곽 여백은 각 블록이 스스로 갖는다(루트 VStack spacing 0).
     // 375×812 에서 Spacer 는 0 에 수렴한다. 초과 시 회수 순서: 캘린더 gap 8→7 → 밸런스 축 11→10.
-    var homeA: some View {
+    //
+    // §12 작은 화면(SE 375×667): 145px 이 부족한데 지시서의 축소 1~4 를 전부 적용해도 119px 회수라
+    // 스크롤 없이는 들어가지 않는다. 그래서 지시서가 제시한 대안대로 **1·2(캘린더 1주 + 축 8px/세트)만
+    // 적용하고 나머지는 스크롤에 맡긴다.** (compact 는 812 기기에선 절대 켜지지 않으므로
+    // gymshot ImageRenderer 의 ScrollView 미렌더 제약과 충돌하지 않는다.)
+    @ViewBuilder
+    func homeA(compact: Bool) -> some View {
+        if compact {
+            ScrollView(.vertical, showsIndicators: false) { homeAStack(compact: true) }
+        } else {
+            homeAStack(compact: false)
+        }
+    }
+
+    func homeAStack(compact: Bool) -> some View {
         let ref = model.referenceToday
         let last = model.lastCompletedSession()
         let sessions = model.allWorkedSessions()
@@ -90,9 +129,9 @@ public struct HomeScreenView: View {
         return VStack(spacing: 0) {
             header
             if GymSyncHealth.isAtRisk(model.syncState, now: ref) { syncBanner }
-            weekCalendar(model.weekCells(around: ref))
+            weekCalendar(model.weekCells(around: ref), compact: compact)
             if last != nil { lastWorkoutRow(last, ref: ref) }   // empty 시 행 숨김 (home.js)
-            balance(bal)
+            balance(bal, compact: compact)
             Spacer(minLength: 0)   // 남는 공간은 여기 한 곳 — 차트 위아래로 갈라지지 않게
             cardioCard(cw)
             weightCard(ref: ref)
@@ -103,15 +142,16 @@ public struct HomeScreenView: View {
     // HomeC — 운동 중 홈. 부위 밸런스를 실시간(진행 중 세션 done 세트 포함 — allWorkedSessions)으로
     // 보여주고, 이어하기는 하단 콤팩트 카드로 (사용자 2026-07-23). 재설계 §3 은 idle(HomeA) 대상이라
     // 여기선 공유 컴포넌트(캘린더·밸런스)만 새 규격을 따르고 구조는 그대로 둔다.
-    var homeC: some View {
+    // 작은 화면 규칙은 homeA 와 같게 — 세션 유무에 따라 캘린더 주 수가 바뀌면 더 혼란스럽다.
+    func homeC(compact: Bool) -> some View {
         let ref = model.referenceToday
         let bal = GymHomeLogic.weeklyBalance(sessions: model.allWorkedSessions(),
                                              custom: model.custom, now: ref)
         return VStack(spacing: 0) {
             header
             if GymSyncHealth.isAtRisk(model.syncState, now: ref) { syncBanner }
-            weekCalendar(model.weekCells(around: ref))
-            balance(bal)
+            weekCalendar(model.weekCells(around: ref), compact: compact)
+            balance(bal, compact: compact)
             Spacer(minLength: 0)   // homeA 와 동일 — 여백은 밸런스 아래 한 곳
             resumeCard
                 .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
@@ -217,7 +257,8 @@ public struct HomeScreenView: View {
 
     // 요일 헤더 1줄 공유 + [지난주(작게) · 이번 주] 2행 (사용자 2026-07-25). 밸런스가 달력 주를
     // 비교하므로 롤링 14일이 아니라 달력 주 2개를 쌓아 두 요소의 '주' 정의를 일치시킨다.
-    func weekCalendar(_ week: [GymAppModel.HomeWeekCell], tappable: Bool = true) -> some View {
+    func weekCalendar(_ week: [GymAppModel.HomeWeekCell], tappable: Bool = true,
+                      compact: Bool = false) -> some View {
         let ref = model.referenceToday
         let prev = model.weekCells(around: ref, weekOffset: -1)
         return VStack(spacing: 8) {
@@ -228,7 +269,9 @@ public struct HomeScreenView: View {
                         .frame(maxWidth: .infinity)
                 }
             }
-            weekRow(prev, weekOffset: -1, tappable: tappable, dim: true)
+            if !compact {   // §12-1 작은 화면은 이번 주 1행만 (−45px)
+                weekRow(prev, weekOffset: -1, tappable: tappable, dim: true)
+            }
             weekRow(week, weekOffset: 0, tappable: tappable, dim: false)
             calendarLegend
         }
@@ -325,14 +368,17 @@ public struct HomeScreenView: View {
 
     // 축 11px/세트, 트랙 88px 고정. 유산소 행 없음 — 독립 카드로 내려갔다 (§0·§13).
     // 미달 부위를 점선·crail 로 강조하지 않는다 — 고스트가 잉크보다 높은 것 자체가 미달 신호다 (§7).
-    func balance(_ bal: GymHomeLogic.WeeklyBalance) -> some View {
+    func balance(_ bal: GymHomeLogic.WeeklyBalance, compact: Bool = false) -> some View {
         let parts = bal.parts
         let totalThis = parts.map(\.sets).reduce(0, +)
         let totalLast = parts.map(\.prevSets).reduce(0, +)
         let delta = totalThis - totalLast
-        // 8세트 초과 시 전체 비례 축소, 트랙 높이는 88 고정 (§7).
+        // 8세트 초과 시 전체 비례 축소, 트랙 높이는 축×8 고정 (§7).
+        // 작은 화면은 축 11 → 8px/세트 = 트랙 88 → 64 (§12-2, −24px).
+        let unit: CGFloat = compact ? 8 : 11
+        let track = unit * 8
         let maxVal = max(1, parts.map { max($0.sets, $0.prevSets) }.max() ?? 1)
-        let pxPerSet = min(11.0, 88.0 / Double(maxVal))
+        let pxPerSet = min(unit, track / CGFloat(maxVal))
 
         return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .firstTextBaseline, spacing: 7) {
@@ -364,11 +410,11 @@ public struct HomeScreenView: View {
                                 if p.prevSets > 0 {
                                     UnevenRoundedRectangle(cornerRadii: .init(topLeading: 4, topTrailing: 4))
                                         .fill(GY.ghost)
-                                        .frame(width: 13, height: CGFloat(Double(p.prevSets) * pxPerSet))
+                                        .frame(width: 13, height: CGFloat(p.prevSets) * pxPerSet)
                                 }
-                                BalanceInkBar(height: CGFloat(Double(p.sets) * pxPerSet), index: i)
+                                BalanceInkBar(height: CGFloat(p.sets) * pxPerSet, index: i)
                             }
-                            .frame(height: 88, alignment: .bottom)
+                            .frame(height: track, alignment: .bottom)
                         }
                         .frame(maxWidth: .infinity)
                     }
