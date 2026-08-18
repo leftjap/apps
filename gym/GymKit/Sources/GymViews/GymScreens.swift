@@ -127,6 +127,35 @@ public enum GymScreens {
         healthySync(m); return m
     }
 
+    // 확정 시안 7a 픽셀 대조용 세션 유산소 카드 (작업지시서 2026-08-18).
+    // 오늘 = 2026-08-21(금). 이번 주 월15·수20·목15분, 지난주 토20분, 오늘 32분·3.4km·칼로리 미입력.
+    //   시간   → 원 15/·/20/15/32/20(회색)/· · 합계 82분 4일
+    //   칼로리 → 96/·/128/85/85(참조)/122(회색)/· · 합계 309kcal 3일
+    // 세션 볼륨 4,800 / 8,940kg (54%) 는 전 페이지 공통 요소라 반드시 유지된다 (§2).
+    @MainActor static func demoCardio7aModel() -> GymAppModel {
+        func run(_ d: String, _ min: Double, _ km: Double, _ kcal: Double) -> GymSession {
+            GymSession(id: "c\(d)", date: d,
+                       blocks: [GymBlock(exerciseId: "treadmill", sets: [
+                           GymSet(done: true, duration: min * 60, distance: km, calories: kcal)])],
+                       tags: ["cardio"], status: .completed)
+        }
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let bench = (0..<8).map { _ in GymSet(weight: 60, reps: 10, done: true) }   // 4,800kg
+        let s = GymSession(id: "cardio-7a", date: "2026-08-21", startTime: now - 18 * 60 * 1000,
+                           blocks: [GymBlock(exerciseId: "bench_press", sets: bench, finishedAt: 1),
+                                    GymBlock(exerciseId: "treadmill",
+                                             sets: [GymSet(preset: false, duration: 1920, distance: 3.4)])],
+                           tags: ["chest", "cardio"], status: .active)
+        let m = GymAppModel(snapshotSession: s)
+        if let d = GymAppModel.dayFmt.date(from: "2026-08-21") { m.referenceToday = d }
+        var prev = GymSession(id: "prev", date: "2026-08-14", blocks: [], tags: ["chest"], status: .completed)
+        prev.totalVolume = 8940                                   // 세션 볼륨 분모
+        // prevSession = history.first(completed) → 세션 볼륨 분모(8,940kg)가 되려면 맨 앞
+        m.history = [prev, run("2026-08-20", 15, 1.4, 85), run("2026-08-19", 20, 2.0, 128),
+                     run("2026-08-17", 15, 1.5, 96), run("2026-08-15", 20, 2.2, 122)]
+        healthySync(m); return m
+    }
+
     // 시안 20a 픽셀 대조용 홈 — `specs/2026-08-17-home-redesign-20a.md` 의 예시 데이터를 그대로 재현한다.
     // 오늘 = 2026-08-11(화). 그 주 월요일이 10일이라 캘린더가 시안(1주차 3~9 / 2주차 10~16)과 일치.
     //   근력 3·5·7·8·10·11, 유산소 5·7·8·10·11 (§5 샘플)
@@ -206,6 +235,9 @@ public enum GymScreens {
         case "session-record": return AnyView(SessionScreenView(model: demoRecordModel()).frame(width: 390, height: 844))
         case "session-empty": return AnyView(SessionScreenView(model: demoEmptyModel()).frame(width: 390, height: 844))
         case "session-cardio": return AnyView(SessionScreenView(model: demoCardioModel()).frame(width: 390, height: 844))
+        case "cardio-7a":    return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 375, height: 812))
+        case "cardio-7a-max": return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 430, height: 932))
+        case "cardio-7a-kcal": return AnyView(SessionScreenView(model: demoCardio7aModel(), initialCardioMetric: .calories).frame(width: 375, height: 812))
         case "session-bodyweight": return AnyView(SessionScreenView(model: demoBodyweightModel()).frame(width: 390, height: 844))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))

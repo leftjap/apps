@@ -34,4 +34,12 @@ public enum GymMonoFont {
     public static func font(size: CGFloat, weight: Int) -> Font {
         Font(ctFont(size: size, weight: weight))
     }
+
+    /// 렌더 폭(pt) — 히어로 숫자 단계 축소 판정용 (유산소 카드 §6-1). tracking 은 미포함.
+    public static func width(_ s: String, size: CGFloat, weight: Int) -> CGFloat {
+        let f = ctFont(size: size, weight: weight)
+        let line = CTLineCreateWithAttributedString(
+            NSAttributedString(string: s, attributes: [kCTFontAttributeName as NSAttributedString.Key: f]))
+        return CGFloat(CTLineGetTypographicBounds(line, nil, nil, nil))
+    }
 }

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+doc-page:not(:defined){visibility:hidden}
+a{color:#30807A}a:hover{color:#22625E}
+</style>
+<script src="./doc-page.js"></script>
+</helmet>
+
+<doc-page margin="0.85in">
+  <h1 style="margin:0 0 6px;font-family:Pretendard,system-ui,sans-serif;font-size:25px;font-weight:700;letter-spacing:-0.02em;line-height:1.25;color:#1C1A17">유산소(트레드밀) 입력 UI 개선 작업지시서</h1>
+  <p style="margin:0 0 26px;padding-bottom:9px;border-bottom:1px solid #E4E1DA;font-family:Pretendard,system-ui,sans-serif;font-size:12px;font-weight:500;color:#8C8880">확정 시안 7a · 2026-08-18 · <span style="font-family:'Space Grotesk',ui-monospace,monospace">leftjap/apps</span> · gym</p>
+
+  <div style="margin:0 0 24px;padding:12px 14px;background:#F4F2EE;border-radius:8px;break-inside:avoid">
+    <p style="margin:0 0 7px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;font-weight:700;color:#1C1A17">구현 대상 — 두 코드베이스 모두</p>
+    <p style="margin:0 0 6px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;line-height:1.6;color:#3A3733"><b>1) PWA(기준 구현)</b> <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">src/features/session.js</span> · <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">src/styles/paper.css</span> · <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">mocks/session.html</span></p>
+    <p style="margin:0 0 6px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;line-height:1.6;color:#3A3733"><b>2) Swift 포팅</b> <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">GymKit/Sources/GymViews/CardioPanel.swift</span> · 로직은 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">GymCore/SessionLogic.swift</span></p>
+    <p style="margin:0;font-family:Pretendard,system-ui,sans-serif;font-size:12px;line-height:1.6;color:#6B6864"><span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">SessionLogic.swift</span> 헤더가 "PWA src/features/session.js 1:1 포팅"을 명시한다. <b>PWA를 먼저 고치고 Swift를 맞춘다.</b> 순수 로직(지표 전환 상태, 주간 집계)은 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:11.5px">GymCore</span>에 두고 뷰는 표시만 한다.</p>
+  </div>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">1. 개요</h2>
+  <p style="margin:0 0 10px;font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;text-wrap:pretty">유산소 카드가 입력 필드만 나열된 형태여서 동기부여 요소가 없고, 다른 종목과 같은 스와이프 완료 제스처가 유산소의 다중 값 입력과 맞지 않는 문제를 해결한다. 입력 항목은 헬스장 트레드밀 콘솔이 제공하는 세 값(시간·거리·칼로리)으로 한정하고, 카드 상단에 주간 기록을 상시 노출한다.</p>
+  <p style="margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;text-wrap:pretty">스와이프는 완료가 아니라 <b>지표 로테이션</b>으로 재정의한다. 좌우로 밀면 시간 → 거리 → 칼로리 순으로 넘어가고, 히어로 값·주간 캘린더 숫자·주간 합계·단위가 모두 해당 지표로 함께 전환된다.</p>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">2. 화면 구성</h2>
+  <p style="margin:0 0 14px;font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733">상단부터 순서대로 다섯 블록이며, 주간 캘린더 아래 세 블록(히어로 · 도트 · 요약)은 남는 높이를 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">space-evenly</span>로 균등 분배한다(간격 약 52px).</p>
+
+  <table style="width:100%;border-collapse:collapse;margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:12px">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17;width:23%">블록</th>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17">내용</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">헤더</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">기존 유지. 우상단 세션 볼륨 비교(<span style="font-family:'Space Grotesk',ui-monospace,monospace">4,800 / 8,940kg</span> + 링 54%)는 전 페이지 공통 요소이므로 삭제·생략 금지.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">주간 캘린더</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">월~일 7개 원(37px) + 요일 라벨. 원 안 숫자는 활성 지표의 값. 하단 우측에 주간 합계 + 단위.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">히어로</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">활성 지표 라벨 + mono 100px 값 + 단위. 316px 폭 셀 3개가 가로 트랙에 배치되고 활성 셀만 불투명도 1.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">진행 도트</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">3개. 활성 18×6px crail, 비활성 6×6px 회색. 기존 세트 dots-pill과 같은 언어.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">비활성 요약</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">나머지 두 지표의 라벨 + mono 28px 값. 탭하면 해당 지표로 즉시 전환.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">종목 레일</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">기존 유지. 다음 종목 이동은 레일이 담당한다.</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin:0 0 12px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">3. 시안</h2>
+  <div style="display:flex;gap:22px;align-items:flex-start;margin:0 0 8px;break-inside:avoid">
+    <figure style="margin:0;flex:1">
+      <img src="assets/7a-time.png" alt="시간 지표 화면" style="display:block;width:100%;border:1px solid #E4E1DA;border-radius:10px">
+      <figcaption style="margin-top:7px;font-family:Pretendard,system-ui,sans-serif;font-size:11px;line-height:1.5;color:#8C8880">그림 1. 시간 지표. 오늘(금) 32분 입력됨 → 원이 채워지고 합계 82분·4일.</figcaption>
+    </figure>
+    <figure style="margin:0;flex:1">
+      <img src="assets/7a-kcal.png" alt="칼로리 지표 화면" style="display:block;width:100%;border:1px solid #E4E1DA;border-radius:10px">
+      <figcaption style="margin-top:7px;font-family:Pretendard,system-ui,sans-serif;font-size:11px;line-height:1.5;color:#8C8880">그림 2. 두 번 스와이프한 칼로리 지표. 오늘 미입력 → 원은 참조 스타일(85), 합계 309kcal·3일에서 제외.</figcaption>
+    </figure>
+  </div>
+  <p style="margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:11.5px;line-height:1.6;color:#8C8880">동작하는 시안: 프로젝트 내 <span style="font-family:'Space Grotesk',ui-monospace,monospace">유산소 카드 시안.dc.html</span> 최상단 턴 7 (7a).</p>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">4. 인터랙션 명세</h2>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 12px;font-family:Pretendard,system-ui,sans-serif;font-size:12px">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17;width:26%">제스처</th>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17">동작</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">좌우 스와이프</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">지표 로테이션. 이동량 56px 이상에서 다음/이전 지표로 확정, 미달 시 원위치. 드래그 중 트랙은 손가락을 그대로 따라간다.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">끝단 스와이프</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">시간에서 오른쪽, 칼로리에서 왼쪽으로 밀면 이동량에 0.28배 저항. 순환(wrap) 없음.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">좌/우 빈 공간 탭</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">활성 지표 값 감소/증가. 각 105px 폭, 히어로·도트·요약 세 블록 전체 높이. 증분 시간 1분 / 거리 0.1km / 칼로리 10kcal.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">숫자 탭</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">숫자패드 시트 오픈(기존 <span style="font-family:'Space Grotesk',ui-monospace,monospace">KeypadSheet</span> 재사용). 프리필은 현재값, 없으면 직전 러닝 값.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">요약 값 탭</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">해당 지표로 전환(스와이프와 동일 결과).</td></tr>
+    </tbody>
+  </table>
+  <p style="margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;line-height:1.65;color:#3A3733;padding:11px 13px;background:#F4F2EE;border-radius:8px;break-inside:avoid"><b>탭·드래그 분기:</b> 포인터 이동량이 8px를 넘으면 드래그로 판정하고 증감 탭을 발생시키지 않는다. 8px 이하 이동은 탭으로 처리한다.</p>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">5. 데이터 명세</h2>
+  <ul style="margin:0 0 12px;padding-left:19px">
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>집계 범위 — 해당 종목만.</b> 카드가 종목 단위이므로 트레드밀 카드의 캘린더·합계는 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">exerciseId == 'treadmill'</span> 기록만 센다. 사이클·엘립티컬(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">equipment:'cardio'</span>)은 제외하며, 그 종목의 카드는 자신의 기록을 보여준다. <b>그 결과 홈 화면의 유산소 행(유산소 전 종목 합산)과 이 카드의 수치는 달라질 수 있다</b> — 의도된 것이고 버그가 아니다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>주 기준</b> — 홈과 동일한 월~일(KST) 캘린더 주. <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">GymHomeLogic.weeklyBalance</span>와 같은 <u>주 경계</u>를 쓴다(집계 범위는 위 항목처럼 다름). 롤링 7일 금지.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>원 안 숫자의 출처</b> — 지난 요일은 그 날의 실제 기록값. 해당 지표 기록이 없는 날은 <span style="font-family:'Space Grotesk',ui-monospace,monospace">—</span>. 분에서 거리·칼로리를 역산하지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>미래 요일</b> — 지난주 같은 요일의 같은 지표 기록을 회색으로 표시한다(참조용). 이 값이 요청의 출발점인 "지난주 기록이 숫자로 남아 참조가 편하다"에 해당한다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>오늘 · 미입력</b> — 히어로 고스트와 <u>같은 원천</u>(직전 러닝 값)을 표시하고, 원은 기록 스타일이 아닌 참조 스타일(투명 배경 + 연한 테두리·숫자)을 쓴다. 주간 합계·일수에서 제외한다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>오늘 · 입력됨</b> — 원을 teal로 채우고 흰 숫자. 합계·일수에 포함.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>원의 형태는 지표와 무관</b> — 크기·색·채움 여부는 항상 시간 기준으로 결정하고, 스와이프 시 숫자만 바뀐다. 주간 리듬이라는 고정 좌표를 유지하기 위한 규칙이다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty"><b>합계 단위</b> — 활성 지표에 따라 분 / km / kcal로 함께 바뀐다. 단위가 없으면 숫자만 바뀌어 무엇을 보는지 알 수 없다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;text-wrap:pretty"><b>값 보존</b> — 별도 확정 액션 없이 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">cardioEntered</span>(preset 아님 + 값 있음)가 종료·마감 어느 경로로도 기록을 지킨다.</li>
+  </ul>
+
+  <h3 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;font-weight:700;letter-spacing:0.2px;color:#1C1A17">5-1. 저장 계약 (기존 코드 그대로 사용)</h3>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 12px;font-family:Pretendard,system-ui,sans-serif;font-size:12px">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17;width:22%">지표</th>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17;width:26%">필드 · 저장 단위</th>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17">입력 → 저장 변환</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">시간</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">duration</span> · <b>초</b></td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">화면·키패드는 <b>분</b>. <span style="font-family:'Space Grotesk',ui-monospace,monospace">max(0, round(분×60))</span></td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">거리</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">distance</span> · km</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">소수 1자리로 반올림. 키패드 소수점 허용</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">칼로리</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">calories</span> · kcal</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">정수 반올림. 키패드 <b>소수점 비활성</b></td></tr>
+    </tbody>
+  </table>
+  <ul style="margin:0 0 12px;padding-left:19px">
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty">쓰기는 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">applyCardio(set:field:value:)</span>만 통한다(단위 변환·<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">preset=false</span> 처리 포함). <b>여기서 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">done</span>을 세우지 않는다</b> — 즉시 done이면 블록이 완료 판정돼 히어로가 다음 종목으로 넘어간다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty">빈 공간 탭 증감도 같은 경로를 쓴다. 하한 0에서 더 감소시키지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty">유산소 카드는 <b>단일 세트</b>다(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">buildPresetSets</span>에서 cardio는 count 1). 세트가 2개 이상인 구데이터에서는 오늘 원의 값을 그 날 해당 종목 done 세트의 <b>합</b>으로 계산한다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px;text-wrap:pretty">과거 요일 값은 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">recentCardioRuns(history:exerciseId:limit:)</span>의 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">GymCardioRun{date, durationSec, distanceKm, kcal}</span>에서 읽고 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">date</span>로 요일에 매핑한다. <b>기본 limit 8은 이번 주+지난주를 담지 못한다</b> — 주 경계로 조회하는 함수를 신설하거나 limit을 확대할 것(둘 중 하나를 반드시 처리).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;text-wrap:pretty">입력한 칼로리는 세션 칼로리 추정에 그대로 쓰인다(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">GymCalorieEntry.enteredKcal</span> 우선, 없으면 MET 추정). 이 동작은 바꾸지 않는다.</li>
+  </ul>
+  <p style="margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;line-height:1.65;color:#3A3733;padding:11px 13px;background:#F4F2EE;border-radius:8px;break-inside:avoid"><b>페이스</b>는 입력 항목이 아니다. 시간÷거리로 자동 계산되며(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">paceText</span>), 이 카드에는 표시하지 않는다.</p>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">6. 시각 스펙</h2>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:12px">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17;width:30%">항목</th>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17">값</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">화면 배경</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">#fdfdfd</span> 유지 — 앱 전역 값(<span style="font-family:'Space Grotesk',ui-monospace,monospace">session.js:3168</span> theme-color). 변경하지 않는다.</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">기록 teal</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">#30807A</span> 채움 + 흰 숫자</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">참조 teal</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">#9CC0BC</span> 테두리 2.4px + 같은 색 숫자, 배경 투명</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">숫자 서체</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">mono, <span style="font-family:'Space Grotesk',ui-monospace,monospace">tabular-nums</span>. 히어로 100px/300, 요약 28px/300, 원 안 13.5px/600(3자리 대응), 합계 16px/600</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">라벨</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">히어로 12px/600 letter-spacing 1.2px, 요약 11px/600 1px</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">전환 애니메이션</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">시안에서는 즉시 반영. 네이티브에서는 트랙 이동 240ms ease-out 권장 — 애니메이션 도중에도 최종 위치가 활성 셀과 정확히 일치할 것.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;font-weight:700;letter-spacing:0.2px;color:#1C1A17">6-1. 치수는 기기 폭에서 유도한다</h3>
+  <p style="margin:0 0 10px;font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;text-wrap:pretty">시안의 px 값은 모두 <b>360px 폭 목업 기준의 결과값</b>이다. 리터럴로 박지 말고 아래 식으로 산정할 것 — 스냅 오프셋을 316으로 고정하면 320~430pt 기기에서 하나씩 어긋난다.</p>
+  <table style="width:100%;border-collapse:collapse;margin:0 0 22px;font-family:Pretendard,system-ui,sans-serif;font-size:12px">
+    <thead>
+      <tr>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17;width:30%">치수</th>
+        <th style="text-align:left;padding:7px 8px;border-bottom:1.5px solid #1C1A17;font-weight:700;color:#1C1A17">산정식 (360px 기준 결과)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">콘텐츠 폭 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-weight:500">W</span></td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">카드 폭 − 좌우 패딩 22px×2 <span style="color:#8C8880">(= 316)</span></td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">트랙 셀 폭 · 스냅</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">셀 폭 = <span style="font-family:'Space Grotesk',ui-monospace,monospace">W</span>, 오프셋 = <span style="font-family:'Space Grotesk',ui-monospace,monospace">−index×W</span> <span style="color:#8C8880">(0 / −316 / −632)</span></td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">증감 탭 영역</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">양변 각 <span style="font-family:'Space Grotesk',ui-monospace,monospace">W×0.33</span>, 하한 44px <span style="color:#8C8880">(= 105)</span></td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">스와이프 임계</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733"><span style="font-family:'Space Grotesk',ui-monospace,monospace">W×0.18</span> <span style="color:#8C8880">(= 56)</span>. 탭·드래그 분기 8px는 기기 무관 고정</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">요일 원</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">지름 37px <b>고정</b>(탭 하한 44px 미달 — 탭 타겟이 아니다). 7개를 <span style="font-family:'Space Grotesk',ui-monospace,monospace">space-between</span>으로 배치해 넓은 기기에선 간격만 넓어진다. 간격이 4px 미달이 되는 <b>좁은 폭</b>에서만 지름을 32px까지 축소</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">히어로 숫자</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">100px 기준. 값+단위 폭이 <span style="font-family:'Space Grotesk',ui-monospace,monospace">W−(탭 영역×2)</span>를 넘으면 단계 축소(100 → 88 → 76). 줄바꿈·생략 금지</td></tr>
+      <tr><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;font-weight:600;color:#1C1A17">수직 리듬</td><td style="padding:7px 8px;border-bottom:1px solid #E4E1DA;color:#3A3733">히어로·도트·요약 세 바가 <span style="font-family:'Space Grotesk',ui-monospace,monospace">space-evenly</span>로 남는 높이를 나눠 갖는다 — 고정 마진 금지</td></tr>
+    </tbody>
+  </table>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">7. 제외 항목</h2>
+  <ul style="margin:0 0 22px;padding-left:19px">
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">완료/저장 버튼, 스와이프 완료, 롱프레스 확정 — 두지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">속도·경사 <b>입력 UI</b> — 콘솔 3값으로 한정하므로 카드에서 제거. 단 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">speed</span>·<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">incline</span> <b>모델 필드와 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">cardioEntered</span>의 해당 조건은 유지</b>한다(기존 기록 호환).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">최근 8회 막대 그래프 — 주간 캘린더가 대체하므로 제거(설계 2026-08-10 §2 폐기).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">−/+ 버튼 — 증감은 빈 공간 탭으로만.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">카드 내 안내 문구, 박스, 구분선 — 라벨과 값만 남긴다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733">지난주 비교 문구·pill — 세션 중에는 오늘 값과 주간 숫자만 필요.</li>
+  </ul>
+
+  <h2 style="margin:0 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">8. 확인 체크리스트</h2>
+  <ul style="margin:0;padding-left:19px">
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">스와이프 3회에 히어로·캘린더 숫자·합계·단위가 모두 같은 지표를 말한다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">오늘 미입력 지표에서 히어로 값과 오늘 원의 숫자가 일치하고, 그 값이 합계에 포함되지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">참조값(회색)과 기록값(teal 채움)이 시각적으로 구분된다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">좌우 105px 탭이 세 블록 전체 높이에서 동작하고, 드래그와 충돌하지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">칼로리 3자리(예: 128), 주 합계 3자리 이상이 원·합계 영역에서 잘리지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">우상단 세션 볼륨 비교가 유지된다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">종료·마감 어느 경로로도 입력값이 보존된다(값 입력 후 즉시 종료, 값 입력 후 명시적 마감 두 경로 모두).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">사이클·엘립티컬 기록이 트레드밀 카드의 캘린더·합계에 섞이지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">375pt·430pt 폭 기기에서 스와이프 시 활성 셀이 정확히 맞고(오프셋이 기기 폭에서 유도됨), 원 7개가 찌그러지지 않는다.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">시간 입력이 <b>분</b>으로 표시되고 <b>초</b>로 저장된다(32분 → <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">duration 1920</span>).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733">해당 지표 기록이 없는 과거 요일이 <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">—</span>로 표시된다(0이나 추정값이 아니다).</li>
+  </ul>
+
+  <h2 style="margin:26px 0 8px;font-family:Pretendard,system-ui,sans-serif;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;color:#1C1A17">9. 구현 순서 · 함께 갱신할 것</h2>
+  <ol style="margin:0 0 12px;padding-left:19px">
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">주간 집계 함수 신설(주 경계 조회 + 지표별 요일 값 + 오늘 제외 규칙) — 순수 로직, 테스트 우선.</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">PWA 카드 마크업·제스처 교체(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">session.js</span>) → 목업 반영(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">mocks/session.html</span>).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733;margin-bottom:5px">Swift 포팅(<span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">SessionLogic</span> → <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">CardioPanel</span>).</li>
+    <li style="font-family:Pretendard,system-ui,sans-serif;font-size:13px;line-height:1.65;color:#3A3733">설계 문서 개정 — <span style="font-family:'Space Grotesk',ui-monospace,monospace;font-size:12px">specs/2026-08-10-treadmill-record-design.md</span>가 5필드 + 최근 8회 막대를 규정하고 있어 3필드 + 주간 캘린더 + 지표 로테이션으로 대체 기술이 필요하다. 스와이프 관련 조항(§6-3·§6-4)도 유산소 예외를 명시할 것.</li>
+  </ol>
+  <p style="margin:0;font-family:Pretendard,system-ui,sans-serif;font-size:12.5px;line-height:1.65;color:#3A3733;padding:11px 13px;background:#F4F2EE;border-radius:8px;break-inside:avoid"><b>초기 상태:</b> 카드 진입 시 활성 지표는 항상 <b>시간</b>. 지표 선택은 카드 로컬 상태로만 두고 저장하지 않는다(세션 데이터·localStorage 모두).</p>
+</doc-page>
+</x-dc>
+</body>
+</html>

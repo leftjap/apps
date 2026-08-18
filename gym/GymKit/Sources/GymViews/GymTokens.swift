@@ -49,6 +49,11 @@ public enum GY {
     public static let warnTint = Color(oklch: 0.95, 0.035, 80)   // 갱신 칩 배경(미달)
     public static let warnDeep = Color(hex: 0xA06D2C)            // 갱신 칩 텍스트(미달)
 
+    // 세션 유산소 카드 (작업지시서 2026-08-18 §6). 홈의 teal(#2F807A)과 1/255 차이지만
+    // 지시서 값을 그대로 쓴다 — 두 문서가 각자 명시한 값이다.
+    public static let cardioTeal = Color(hex: 0x30807A)       // 기록 — 채움 + 흰 숫자
+    public static let cardioTealSoft = Color(hex: 0x9CC0BC)   // 참조 — 2.4px 테두리 + 같은 색 숫자
+
     public static let warning = Color(hex: 0xC98A3F)
     public static let danger = Color(hex: 0xC5544A)
 

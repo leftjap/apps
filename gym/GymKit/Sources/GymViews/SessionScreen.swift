@@ -202,11 +202,13 @@ public struct SessionScreenView: View {
         case end             // 종료 버튼
     }
 
+    let initialCardioMetric: GymCardioMetric   // 스냅샷 검증 훅 (실앱은 항상 .duration)
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0) {
+                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration) {
         self.model = model; self.onHome = onHome
+        self.initialCardioMetric = initialCardioMetric
         _prPopVisible = State(initialValue: initialPRPop)
         _addexOpen = State(initialValue: initialAddex)
         _heroDragX = State(initialValue: initialDragX)
@@ -233,11 +235,11 @@ public struct SessionScreenView: View {
     public init(onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0) {
+                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration) {
         self.init(model: GymAppModel(), onHome: onHome,
                   initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
                   initialAddex: initialAddex, initialAction: initialAction,
-                  initialDragX: initialDragX)
+                  initialDragX: initialDragX, initialCardioMetric: initialCardioMetric)
     }
 
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
@@ -383,11 +385,16 @@ public struct SessionScreenView: View {
                                onLongPressSlot: { i in actionTarget = .setRow(i) })
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
-            Spacer()
+            if kind != .cardio { Spacer() }
             if kind == .cardio {
-                // 유산소 — 히어로·스와이프 대신 5필드 패널 (설계 2026-08-10 §1·§2)
-                CardioPanel(set: dispSet, runs: cardioRuns, locked: locked,
-                            onField: { f in openKeypad(f) })
+                // 유산소 — 히어로·스와이프 대신 지표 로테이션 카드 (작업지시서 2026-08-18 §2).
+                // 주간 캘린더가 헤더 바로 아래에 붙고 나머지 높이를 카드가 전부 쓴다.
+                CardioPanel(history: model.history, set: dispSet,
+                            todaySets: model.currentBlock?.sets ?? [],
+                            exerciseId: exId, now: model.referenceToday, locked: locked,
+                            initialMetric: initialCardioMetric,
+                            onKeypad: { m in openKeypad(Self.keypadField(m)) },
+                            onSetValue: { m, v in model.applyKeypad(Self.keypadField(m), value: v) })
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             } else {
             ZStack {
@@ -465,7 +472,7 @@ public struct SessionScreenView: View {
                     }
                 })
             }
-            Spacer()
+            if kind != .cardio { Spacer() }
             if kind != .cardio {   // 유산소는 볼륨 링 없음 (§6-4)
                 ExerciseVolumeRing(
                     sets: sets, cur: model.currentSetIdx, pct: exPct,
@@ -485,6 +492,11 @@ public struct SessionScreenView: View {
                onLongPressItem: { actionTarget = .block($0) },
                onAdd: { addexOpen = true })
         }
+    }
+
+    // 유산소 지표 → 키패드/저장 필드 (§5-1 — 쓰기는 전부 applyCardio 경유).
+    static func keypadField(_ m: GymCardioMetric) -> GymAppModel.KeypadField {
+        GymAppModel.KeypadField(rawValue: m.field.rawValue) ?? .duration
     }
 
     // MARK: - 드래그 커밋 (§6-3-1 — 카운트업·햅틱 링·스프링백)
@@ -602,10 +614,11 @@ public struct SessionScreenView: View {
         }
     }
 
-    // 최근 러닝 이력 (과거→최신, 최대 8) — 차트·직전 줄·프리필 공용.
+    // 직전 러닝 — 키패드 프리필 전용 (최근 8회 차트는 주간 캘린더로 대체돼 폐기, 지시서 §7).
+    // 카드의 주간 집계는 limit 없이 주 경계로 조회한다 (GymSessionLogic.cardioDayTotals).
     var cardioRuns: [GymSessionLogic.GymCardioRun] {
         guard let exId = model.currentBlock?.exerciseId else { return [] }
-        return GymSessionLogic.recentCardioRuns(history: model.history, exerciseId: exId, limit: 8)
+        return GymSessionLogic.recentCardioRuns(history: model.history, exerciseId: exId, limit: 1)
     }
     func openKeypad(_ field: GymAppModel.KeypadField, setIdx: Int? = nil) {
         guard !model.currentBlockLocked else { return }
