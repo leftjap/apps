@@ -35,76 +35,102 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
 .hdr .nav { display:flex; gap:2px; }
 .hdr .nav span { padding:8px 12px; border-radius:var(--r-sm); font-size:14px; font-weight:500; color:var(--ink-3); white-space:nowrap; cursor:pointer; }
 
-/* ===== 주간 캘린더 (.js-week-cal 유지) ===== */
-.wk { flex-shrink:0; display:grid; grid-template-columns:repeat(7,1fr); margin:18px 18px 0; }
-.cal-day { display:flex; flex-direction:column; align-items:center; gap:6px; padding:4px 0; background:transparent; border:0; font-family:inherit; }
-.cal-day.worked { cursor:pointer; }
-.cal-label { font-size:11px; font-weight:600; color:var(--ink-4); letter-spacing:0.04em; }
-.cal-num { font-family:var(--font-mono); font-size:14px; font-weight:500; color:var(--ink-4); width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; position:relative; }
-.cal-day.worked .cal-num { color:var(--ink-2); }
-.cal-day.worked .cal-num::after { content:""; position:absolute; margin-top:21px; width:4px; height:4px; border-radius:50%; background:var(--crail-base); }
-.cal-day.today .cal-label { color:var(--crail-deep); }
-.cal-day.today .cal-num { background:var(--crail-base); color:#fff; }
-.cal-day.today.worked .cal-num::after { background:#fff; }
-.cal-day.last .cal-num { box-shadow: inset 0 0 0 1.5px var(--crail-soft); }
+/* ===== 2주 캘린더 (.js-week-cal 유지) — 시안 20a §5: 근력 crail 채움 + 유산소 teal 링 ===== */
+.wk { flex-shrink:0; display:flex; flex-direction:column; gap:8px; padding:8px 18px 0; }
+.wk-row { display:grid; grid-template-columns:repeat(7,1fr); }
+.cal-hd { text-align:center; font-size:11px; font-weight:600; color:var(--ink-4); letter-spacing:0.04em; }
+.cal-hd.today { color:var(--crail-deep); }
+.cal-day { display:flex; align-items:center; justify-content:center; background:transparent; border:0; font-family:inherit; cursor:pointer; }
+.cal-num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:500; color:var(--ink-4);
+  width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:50%; }
+.wk-row.dim .cal-num { width:24px; height:24px; font-size:12.5px; }
+/* 상태 조합 — 근력 채움 / 유산소 링은 서로 독립 (유산소만 = 배경 없이 링) */
+.cal-num.lift { background:var(--crail-tint); color:var(--crail-deep); font-weight:600; }
+.cal-num.cardio { box-shadow:inset 0 0 0 1.5px #2f807a; font-weight:600; }
+.cal-num.cardio:not(.lift) { color:var(--ink-2); }
+.cal-num.today.lift { background:var(--crail-base); color:#fff; }
+.cal-num.today:not(.lift):not(.cardio) { box-shadow:inset 0 0 0 1.5px var(--ink-4); color:var(--ink-1); }
+.cal-legend { display:flex; align-items:center; gap:6px; padding:0 12px; margin-top:2px; }
+.cal-legend i { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.cal-legend .lg-lift { background:var(--crail-tint); box-shadow:inset 0 0 0 1.5px var(--crail-deep); }
+.cal-legend .lg-cardio { box-shadow:inset 0 0 0 1.5px #2f807a; margin-left:5px; }
+.cal-legend span { font-size:10.5px; font-weight:500; color:var(--ink-4); }
 
 /* ===== 직전 운동 ===== */
-.last-row { flex-shrink:0; margin:18px 24px 0; display:flex; align-items:center; gap:10px; }
+.last-row { flex-shrink:0; margin:11px 24px 0; display:flex; align-items:center; gap:10px; }
 .last-row .ic { width:30px; height:30px; border-radius:9px; background:var(--sunken); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .last-row .lb { font-size:12px; font-weight:600; color:var(--ink-4); letter-spacing:0.02em; white-space:nowrap; }
 .last-row .pt { font-size:15px; font-weight:700; color:var(--ink-1); white-space:nowrap; }
 .last-row .tm { font-size:12.5px; font-weight:500; color:var(--ink-4); margin-left:auto; white-space:nowrap; }
 
-/* ===== 부위 밸런스 (주역 · 주간 페어 컬럼, 작업지시서 §4) ===== */
-.bal { flex:1; min-height:0; display:flex; flex-direction:column; padding:22px 26px 0; }
-.bal-head { flex-shrink:0; display:flex; align-items:baseline; justify-content:space-between; }
-.bal-title { font-size:14px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; white-space:nowrap; }
-/* 범례 — 9px 스와치: 지난주=고스트(웜그레이) / 이번주=잉크 (§4.1 · §3.3) */
-.bal-legend { font-family:var(--font-mono); font-size:11px; font-weight:500; color:var(--ink-4); display:inline-flex; align-items:center; gap:5px; white-space:nowrap; }
+/* ===== 부위 밸런스 — 시안 20a §7: 축 11px/세트·트랙 88 고정, 유산소 행 없음 ===== */
+.bal { flex-shrink:0; display:flex; flex-direction:column; padding:9px 24px 0; }
+.bal-head { display:flex; align-items:baseline; gap:7px; }
+.bal-title { font-size:13.5px; font-weight:700; color:var(--ink-1); letter-spacing:-0.01em; white-space:nowrap; }
+.bal-hl-num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:31px; font-weight:700; color:var(--ink-1); letter-spacing:-0.035em; line-height:1; margin-left:auto; }
+.bal-hl-unit { font-size:11.5px; font-weight:500; color:var(--ink-4); }
+.bal-chip { display:inline-flex; padding:4px 10px; border-radius:999px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12px; font-weight:700; white-space:nowrap; }
+.bal-chip.up { background:#e7efee; color:#215d5b; }
+.bal-chip.down { background:oklch(95% 0.035 80); color:#a06d2c; }
+.bal-legend { display:flex; align-items:center; gap:6px; margin-top:7px; font-size:11px; font-weight:500; color:var(--ink-4); }
 .bal-legend i { width:9px; height:9px; border-radius:2.5px; display:inline-block; }
-.bal-legend .lg-ghost { background:oklch(91% 0.012 65); }               /* §3.3 지난주 고스트 */
-.bal-legend .lg-ink { background:oklch(26% 0.01 60); margin-left:4px; } /* §3.3 이번주 잉크 */
-
-/* 요약 행 — 헤드라인(총 세트) + ▲개선(sage) + 최소부위(crail) 칩 (§4.1) */
-.bal-summary { flex-shrink:0; display:flex; align-items:flex-end; gap:9px; margin-top:14px; }
-.bal-hl { display:inline-flex; align-items:baseline; gap:6px; }
-.bal-hl-num { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:33px; font-weight:700; color:var(--ink-1); letter-spacing:-0.035em; line-height:1; display:inline-block; transform-origin:left bottom; }
-.bal-hl-unit { font-size:12.5px; font-weight:600; color:var(--ink-4); }
-.bal-chip { display:inline-flex; align-items:center; gap:5px; margin-bottom:2px; padding:4px 9px; border-radius:999px; font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:700; white-space:nowrap; }
-.bal-chip.up { background:oklch(94% 0.03 150); box-shadow:inset 0 0 0 1px oklch(84% 0.05 150); color:oklch(42% 0.08 150); animation:gPopIn 380ms cubic-bezier(.2,.8,.3,1.2) 180ms both; }        /* sage 주간 개선 */
-.bal-chip.focus { margin-left:auto; background:var(--crail-tint); box-shadow:inset 0 0 0 1px var(--crail-soft); color:var(--crail-deep); animation:gPopIn 380ms cubic-bezier(.2,.8,.3,1.2) 280ms both, gChipGlow 1.8s ease-in-out 660ms infinite; }  /* crail 최소 부위 */
-.bal-chip.focus .dot { width:5px; height:5px; border-radius:50%; background:var(--crail-base); animation:pulse 1.8s ease-in-out infinite; }
-
-/* 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px], 7px/세트 (§4.1) */
-.bal-chart { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
+.bal-legend .lg-ghost { background:#cddedc; }
+.bal-legend .lg-ink { background:#2f807a; margin-left:6px; }
+.bal-chart { margin-top:8px; }
 .bal-groups { display:flex; align-items:flex-end; }
-.bal-grp { flex:1; display:flex; flex-direction:column; align-items:center; gap:7px; }
-.bal-grp-val { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14px; font-weight:700; color:var(--ink-1); line-height:1; }
-.bal-grp.focus .bal-grp-val { color:var(--crail-deep); }
-.bal-bars { display:flex; align-items:flex-end; gap:3px; }
-.bal-bar-ghost { width:12px; border-radius:4px 4px 0 0; background:oklch(91% 0.012 65); }          /* §3.3 지난주 고스트 */
-.bal-bar-ink { width:15px; border-radius:4.5px 4.5px 0 0; background:oklch(26% 0.01 60); box-shadow:inset 0 1px 0 rgba(255,255,255,0.18); transform-origin:bottom center; }  /* §3.3 이번주 잉크 + 재질감 */
-.bal-grp.focus .bal-bar-ink { background:var(--crail-base); box-shadow:inset 0 1px 0 rgba(255,255,255,0.25); animation:gCoreAlert 1.7s ease-in-out infinite; }  /* 최소부위 경고 펄스 (§4.1·§6) */
-/* 라벨 행 — 부위명, 코어(최소)만 crail 볼드 (§4.1) */
-.bal-labels { display:flex; border-top:1.5px solid oklch(88% 0.008 60); padding-top:8px; }
-.bal-labels span { flex:1; text-align:center; font-size:12.5px; font-weight:600; color:var(--ink-2); letter-spacing:-0.01em; }
-.bal-labels span.focus { color:var(--crail-deep); font-weight:700; }
-.cardio-row { flex-shrink:0; margin-top:10px; padding-top:14px; box-shadow:inset 0 1px 0 var(--line-soft); display:flex; align-items:center; gap:11px; }
-.cardio-row .ic { width:26px; height:26px; border-radius:8px; background:var(--sunken); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink-4); }
-.cardio-row .nm { font-size:13.5px; font-weight:600; color:var(--ink-2); white-space:nowrap; }
-.cardio-row .sub { font-size:12px; font-weight:500; color:var(--ink-4); margin-left:auto; font-family:var(--font-mono); white-space:nowrap; }
-.cardio-row .dl { font-family:var(--font-mono); font-size:12px; font-weight:600; color:var(--ink-3); margin-left:10px; white-space:nowrap; }
+.bal-grp { flex:1; display:flex; flex-direction:column; align-items:center; }
+/* 값은 잉크 막대 중심으로 — 페어 폭 33 중 잉크가 오른쪽 17 이라 +8 이동 (§7) */
+.bal-grp-val { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:14.5px; font-weight:700; color:var(--ink-1); line-height:1; margin-left:16px; margin-bottom:6px; }
+.bal-bars { height:88px; display:flex; align-items:flex-end; gap:3px; }
+.bal-bar-ghost { width:13px; border-radius:4px 4px 0 0; background:#cddedc; }
+.bal-bar-ink { width:17px; border-radius:4.5px 4.5px 0 0; background:#2f807a; box-shadow:inset 0 1px 0 rgba(255,255,255,0.20); }
+/* 기준선 = 부위 이름의 상단 보더. 별도 전폭 룰 금지 (§13) */
+.bal-labels { display:flex; border-top:1.5px solid oklch(88% 0.008 60); padding-top:7px; }
+.bal-labels span { flex:1; text-align:center; font-size:12.5px; font-weight:600; color:var(--ink-2); line-height:1; }
 
-/* ===== 체중 ([data-bind="weight-input-trigger"] 유지) ===== */
-.wt { flex-shrink:0; margin:0 24px; display:flex; align-items:center; justify-content:space-between; padding:14px 18px; border-radius:var(--r-lg); background:var(--card); box-shadow:var(--shadow-float); cursor:pointer; }
-.wt .a { font-size:14px; font-weight:600; color:var(--ink-1); }
-.wt .b { font-size:12px; font-weight:500; color:var(--ink-4); margin-top:2px; white-space:nowrap; }
-.wt .b .dn { color:var(--ink-3); }
-.wt .chip { display:inline-flex; align-items:center; padding:10px 17px; border-radius:999px; background:var(--crail-tint); box-shadow:inset 0 0 0 1px var(--crail-soft); font-size:13px; font-weight:600; color:var(--crail-deep); white-space:nowrap; }
+/* ===== 유산소 카드 — 시안 20a §8 (밸런스에서 분리된 독립 카드) ===== */
+.cardio-card { flex-shrink:0; margin:12px 24px 0; padding:11px 18px 10px; border-radius:var(--r-lg); background:var(--card); box-shadow:var(--shadow-float); }
+.cc-head { display:flex; align-items:baseline; }
+.cc-head .t { font-size:13.5px; font-weight:600; color:var(--ink-1); }
+.cc-head .w { font-size:11.5px; font-weight:500; color:var(--ink-4); margin-left:7px; }
+.cc-head .r { margin-left:auto; display:flex; align-items:baseline; gap:3px; }
+.cc-min { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:26px; font-weight:700; color:var(--ink-1); letter-spacing:-0.03em; line-height:1; }
+.cc-days { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:16px; font-weight:700; color:var(--ink-2); line-height:1; }
+.cc-u { font-size:12px; font-weight:500; color:var(--ink-4); }
+.cc-sep { width:1px; height:12px; background:var(--line); margin:0 7px; }
+.cc-days-row { display:flex; justify-content:space-between; margin-top:9px; }
+.cc-cell { display:flex; flex-direction:column; align-items:center; gap:5px; }
+.cc-dot { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:13px; font-weight:600; }
+.cc-dot.ran { background:#2f807a; color:#fff; }
+.cc-dot.empty { box-shadow:inset 0 0 0 1.5px oklch(88% 0.006 60); color:var(--ink-3); }
+.cc-dot.today { box-shadow:0 0 0 1.5px #fff, 0 0 0 2.5px #215d5b; font-weight:700; }
+.cc-lb { font-size:10.5px; font-weight:500; color:var(--ink-4); line-height:1; }
+.cc-cell.today .cc-lb { font-weight:700; color:#215d5b; }
+.cc-foot { display:flex; align-items:baseline; margin-top:9px; padding-top:7px; border-top:1px solid var(--line-soft); }
+.cc-foot .p { font-size:11.5px; font-weight:500; color:var(--ink-3); }
+.cc-chip { margin-left:auto; display:inline-flex; align-items:baseline; gap:3px; padding:3px 9px; border-radius:999px; }
+.cc-chip.warn { background:oklch(95% 0.035 80); color:#a06d2c; }
+.cc-chip.pine { background:#e7efee; color:#215d5b; }
+.cc-chip .v { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:11.5px; font-weight:700; }
+.cc-chip .l { font-size:10.5px; font-weight:600; }
+
+/* ===== 체중 — 시안 20a §9 (30일 sma7 스파크라인) ===== */
+.wt { flex-shrink:0; margin:12px 24px 0; padding:13px 18px; border-radius:var(--r-lg); background:var(--card); box-shadow:var(--shadow-float); cursor:pointer; }
+.wt-head { display:flex; align-items:center; justify-content:space-between; }
+.wt-head .a { font-size:13.5px; font-weight:600; color:var(--ink-1); }
+.wt-head .w { font-size:11.5px; font-weight:500; color:var(--ink-4); margin-left:7px; }
+.wt .chip { display:inline-flex; align-items:center; padding:8px 15px; border-radius:999px; background:var(--crail-tint); box-shadow:inset 0 0 0 1px var(--crail-soft); font-size:12.5px; font-weight:600; color:var(--crail-deep); white-space:nowrap; }
+.wt-body { display:flex; align-items:flex-end; justify-content:space-between; margin-top:9px; }
+.wt-kg { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:28px; font-weight:700; color:var(--ink-1); letter-spacing:-0.03em; line-height:1; }
+.wt-u { font-size:12px; font-weight:500; color:var(--ink-4); }
+/* 증감은 ▲▼ 대신 −/+, 색 없이 ink-3 고정 (감소가 목표라 색을 입히지 않는다) */
+.wt-dl { font-family:var(--font-mono); font-variant-numeric:tabular-nums; font-size:12px; font-weight:500; color:var(--ink-3); margin-left:5px; }
+.wt-goal { font-size:11px; font-weight:500; color:var(--ink-4); }
 
 /* ===== CTA (#ctaBtn 유지) ===== */
-.cta { flex-shrink:0; padding:14px 24px 24px; }
-.cta button { width:100%; height:56px; border-radius:var(--r-lg); border:0; background:var(--ink-1); color:#fbf8f2; font-size:16px; font-weight:600; cursor:pointer; box-shadow:0 12px 24px -14px rgba(20,18,14,0.6); font-family:inherit; }
+.cta { flex-shrink:0; padding:12px 24px 22px; }
+.cta button { width:100%; height:56px; border-radius:var(--r-lg); border:0; background:#215d5b; color:#fbfdfc; font-size:16px; font-weight:600; letter-spacing:-0.01em; cursor:pointer; box-shadow:0 10px 22px -12px rgba(33,93,91,0.7); font-family:inherit; }
 
 /* P6 이어하기 박스 (home-c · applyToDom) — 박스 전체 버튼, 브리딩. */
 #cardResume { width: 100%; background: var(--card); border: 1.5px solid var(--crail-base); border-radius: var(--r-xl); box-shadow: var(--shadow-pop); padding: 24px 24px 22px; cursor: pointer; animation: breath 2.8s ease-in-out infinite; }
@@ -154,22 +180,54 @@ body { margin: 0; min-height: 100vh; background: var(--bg-deep); display: flex; 
       <div id="homeBalance" class="bal">
         <div class="bal-head">
           <span class="bal-title kr">부위 밸런스</span>
-          <span class="bal-legend mono"><i class="lg-ghost"></i>지난주<i class="lg-ink"></i>이번 주</span>
+          <span id="homeBalTotal" class="bal-hl-num mono">0</span>
+          <span class="bal-hl-unit kr">세트</span>
+          <span id="homeBalDelta" class="bal-chip up mono">+0</span>
         </div>
-        <div id="homeBalSummary" class="bal-summary"></div>
+        <div class="bal-legend kr"><i class="lg-ghost"></i>지난주<i class="lg-ink"></i>이번 주</div>
         <div class="bal-chart">
           <div id="homeBalRows" class="bal-groups"></div>
           <div id="homeBalLabels" class="bal-labels"></div>
         </div>
-        <div id="homeCardioRow" class="cardio-row" style="display:none;"></div>
       </div>
-      <div style="flex-shrink:0;height:18px;"></div>
-      <!-- 체중 ([data-bind="weight-input-trigger"] 유지) -->
-      <div class="wt" data-bind="weight-input-trigger" style="margin-bottom:0;">
-        <div><div class="a kr">오늘 체중</div><div id="homeWeightRef" class="b kr">직전 —kg</div></div>
-        <span class="chip kr">기록하기</span>
+
+      <div style="flex:1;min-height:0;"></div>
+
+      <!-- 유산소 독립 카드 (§8) -->
+      <div id="homeCardioCard" class="cardio-card">
+        <div class="cc-head">
+          <span class="t kr">유산소</span><span class="w kr">이번 주</span>
+          <span class="r">
+            <span id="homeCardioMin" class="cc-min mono">0</span><span class="cc-u kr">분</span>
+            <span class="cc-sep"></span>
+            <span id="homeCardioDays" class="cc-days mono">0</span><span class="cc-u kr">일</span>
+          </span>
+        </div>
+        <div id="homeCardioDots" class="cc-days-row"></div>
+        <div class="cc-foot">
+          <span id="homeCardioPrev" class="p kr">지난주 0분 · 0일</span>
+          <span id="homeCardioChip" class="cc-chip warn" style="display:none;"><span class="v mono"></span><span class="l kr"></span></span>
+        </div>
       </div>
-      <!-- CTA (#ctaBtn 유지) -->
+
+      <!-- 체중 카드 (§9) -->
+      <div class="wt" data-bind="weight-input-trigger">
+        <div class="wt-head">
+          <span style="display:flex;align-items:baseline;"><span class="a kr">오늘 체중</span><span class="w kr">최근 30일</span></span>
+          <span class="chip kr">기록하기</span>
+        </div>
+        <div class="wt-body">
+          <div style="display:flex;flex-direction:column;gap:4px;">
+            <span style="display:flex;align-items:baseline;gap:3px;">
+              <span id="homeWeightKg" class="wt-kg mono">—</span><span class="wt-u kr">kg</span>
+              <span id="homeWeightDelta" class="wt-dl mono"></span>
+            </span>
+            <span id="homeWeightGoal" class="wt-goal kr">목표 —</span>
+          </div>
+          <svg id="homeWeightSpark" width="132" height="38" viewBox="0 0 132 38" fill="none" style="display:block;overflow:visible;"></svg>
+        </div>
+      </div>
+
       <div class="cta"><button id="ctaBtn" class="kr">운동 시작</button></div>
     </div>
     <!-- §9-1 — 날짜 탭 → 운동 요약 바텀시트 (src/features/day-detail-sheet.js) -->

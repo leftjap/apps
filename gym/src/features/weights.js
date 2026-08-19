@@ -265,7 +265,7 @@ export async function saveWeightInput(input, dateISO, root) {
   const isPR = isWeightPR(num, prevExcludingToday);
   await Q.upsertWeight(date, num);
   await renderWeightTab(root);
-  // 홈 체중 카드 즉시 갱신 — renderWeightTab 은 관리 weight 탭용이라 홈 #homeWeightRef 미반영.
+  // 홈 체중 카드 즉시 갱신 — renderWeightTab 은 관리 weight 탭용이라 홈 카드에 미반영.
   try { await window.gymHome?.refreshWeightCard?.(root); } catch (e) { /* 홈 미마운트 시 no-op */ }
   if (isPR) showPRPop(root);
   return { ok: true, weight: num, date, isPR };

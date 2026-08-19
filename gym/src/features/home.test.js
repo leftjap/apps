@@ -527,10 +527,15 @@ describe('buildWeekCalendar', () => {
   });
 
   it('빈 DB → 7개 cell, 부위 빈, today 1건', async () => {
-    const cells = await buildWeekCalendar(NOW_THU);
-    expect(cells.length).toBe(7);
-    expect(cells.map((c) => c.wdLabel)).toEqual(['월','화','수','목','금','토','일']);
-    expect(cells.filter((c) => c.isToday).length).toBe(1);
+    const cells0 = await buildWeekCalendar(NOW_THU);
+    // 시안 20a — [0..6]=지난주, [7..13]=이번 주. 기존 단언은 이번 주 기준이었다.
+    const cells = cells0.slice(7);
+    const allCells = cells0;
+    // 2026-08-17 시안 20a — 2주(지난주 7 + 이번 주 7) 표시.
+    expect(allCells.length).toBe(14);
+    expect(allCells.slice(7).map((c) => c.wdLabel)).toEqual(['월','화','수','목','금','토','일']);
+    expect(allCells.slice(0, 7).map((c) => c.wdLabel)).toEqual(['월','화','수','목','금','토','일']);
+    expect(allCells.filter((c) => c.isToday).length).toBe(1);
     expect(cells.find((c) => c.isToday).num).toBe(30); // 4/30
     expect(cells.every((c) => c.part === '')).toBe(true);
   });
@@ -547,7 +552,10 @@ describe('buildWeekCalendar', () => {
       blocks: [], tags: ['back'], totalVolume: 0, totalCalories: 0, durationMin: 0,
       status: 'completed',
     });
-    const cells = await buildWeekCalendar(NOW_THU);
+    const cells0 = await buildWeekCalendar(NOW_THU);
+    // 시안 20a — [0..6]=지난주, [7..13]=이번 주. 기존 단언은 이번 주 기준이었다.
+    const cells = cells0.slice(7);
+    const allCells = cells0;
     expect(cells[0]).toMatchObject({ wdLabel: '월', num: 27, part: '가', isToday: false });
     expect(cells[2]).toMatchObject({ wdLabel: '수', num: 29, part: '등', isToday: false });
     expect(cells[3]).toMatchObject({ wdLabel: '목', num: 30, part: '', isToday: true });
@@ -559,7 +567,10 @@ describe('buildWeekCalendar', () => {
       blocks: [], tags: ['chest', 'shoulder'], totalVolume: 0, totalCalories: 0, durationMin: 0,
       status: 'completed',
     });
-    const cells = await buildWeekCalendar(NOW_THU);
+    const cells0 = await buildWeekCalendar(NOW_THU);
+    // 시안 20a — [0..6]=지난주, [7..13]=이번 주. 기존 단언은 이번 주 기준이었다.
+    const cells = cells0.slice(7);
+    const allCells = cells0;
     expect(cells[3].part).toBe('가·어');
   });
 
@@ -573,10 +584,13 @@ describe('buildWeekCalendar', () => {
       id: 's_p2', date: '2026-04-29', startTime: 0, endTime: 0,
       blocks: [], tags: ['back'], totalVolume: 0, totalCalories: 0, durationMin: 0, status: 'completed',
     });
-    const cells = await buildWeekCalendar(NOW_THU);
-    expect(cells[2].isPrevWorkout).toBe(true);  // 수 29 (가장 최근)
-    expect(cells[0].isPrevWorkout).toBeFalsy(); // 월 27
-    expect(cells.filter((c) => c.isPrevWorkout).length).toBe(1);
+    const cells0 = await buildWeekCalendar(NOW_THU);
+    // 시안 20a — [0..6]=지난주, [7..13]=이번 주. 기존 단언은 이번 주 기준이었다.
+    const cells = cells0.slice(7);
+    const allCells = cells0;
+    // 시안 20a — '직전 운동일 옅은 링' 폐기. 근력 채움(crail)·유산소 링(teal)이 대체한다.
+    expect(allCells.every((c) => !c.isPrevWorkout)).toBe(true);
+    expect(allCells.filter((c) => c.lift).length).toBeGreaterThan(0);
   });
 
   it('Wave D — 같은 날 다중 세션 → tag 합집합 (중복 dedupe + 모든 부위 표시)', async () => {
@@ -590,7 +604,10 @@ describe('buildWeekCalendar', () => {
       blocks: [], tags: ['back', 'chest'], totalVolume: 0, totalCalories: 0, durationMin: 0,
       status: 'active',
     });
-    const cells = await buildWeekCalendar(NOW_THU);
+    const cells0 = await buildWeekCalendar(NOW_THU);
+    // 시안 20a — [0..6]=지난주, [7..13]=이번 주. 기존 단언은 이번 주 기준이었다.
+    const cells = cells0.slice(7);
+    const allCells = cells0;
     // 합집합: chest + back (chest 중복 제거). insertion order = chest 가 먼저.
     expect(cells[3].part).toBe('가·등');
     // sessionId 는 startTime 가장 최근 (s_b)
@@ -603,7 +620,10 @@ describe('buildWeekCalendar', () => {
       blocks: [], tags: ['chest'], totalVolume: 0, totalCalories: 0, durationMin: 0,
       status: 'completed',
     });
-    const cells = await buildWeekCalendar(NOW_THU);
+    const cells0 = await buildWeekCalendar(NOW_THU);
+    // 시안 20a — [0..6]=지난주, [7..13]=이번 주. 기존 단언은 이번 주 기준이었다.
+    const cells = cells0.slice(7);
+    const allCells = cells0;
     expect(cells.every((c) => c.part === '')).toBe(true);
   });
 });

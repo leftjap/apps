@@ -26,6 +26,9 @@ import {
   listAllWeights,
 } from '../db/queries.js';
 import { PARTS, getBuiltinExercise, resolveExerciseName, getCachedCustomExercise, primeCustomExerciseCache } from '../db/exercises.js';
+import {
+  cardioDayMinutes, liftDays, cardioWeek, cardioRenewChip, recentSma, sparklinePoints,
+} from './home-cardio.js';
 
 const DEFAULT_WEEKLY_GOAL = 4;
 
@@ -386,10 +389,14 @@ export async function buildWeekCalendar(now = Date.now()) {
   const today = new Date(now);
   const todayISO = toISODate(today);
   const { from, to } = weekRangeISO(today);
+  // 시안 20a §5 — 2주(지난주·이번 주) 표시. 지난주 월요일부터 조회한다.
+  const lastMon = new Date(`${from}T00:00:00`);
+  lastMon.setDate(lastMon.getDate() - 7);
+  const from2 = toISODate(lastMon);
 
   let sessions = [];
   try {
-    sessions = await getSessionsByRange(from, to);
+    sessions = await getSessionsByRange(from2, to);
   } catch (e) {
     if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
       console.error('[gymHome] getSessionsByRange', e);
@@ -415,7 +422,7 @@ export async function buildWeekCalendar(now = Date.now()) {
   for (const s of sessions) accumulate(s);
   try {
     const active = await getActiveSession();
-    if (active?.date && active.date >= from && active.date <= to) accumulate(active);
+    if (active?.date && active.date >= from2 && active.date <= to) accumulate(active);
   } catch (e) {
     if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
       console.error('[gymHome] buildWeekCalendar active', e);
@@ -424,7 +431,10 @@ export async function buildWeekCalendar(now = Date.now()) {
 
   const cells = [];
   const fromDate = new Date(`${from}T00:00:00`);
-  for (let i = 0; i < 7; i += 1) {
+  const liftSet = liftDays(sessions);
+  const cardioMap = cardioDayMinutes(sessions);
+  // 시안 20a §5 — 지난주(-7…-1) · 이번 주(0…6) 2주.
+  for (let i = -7; i < 7; i += 1) {
     const d = new Date(fromDate);
     d.setDate(fromDate.getDate() + i);
     const iso = toISODate(d);
@@ -434,20 +444,19 @@ export async function buildWeekCalendar(now = Date.now()) {
       ? tags.map(partAbbreviation).filter(Boolean).join('·')
       : '';
     cells.push({
-      wdLabel: WEEK_LABELS_KOR[i],
+      wdLabel: WEEK_LABELS_KOR[(i + 7) % 7],
       num: d.getDate(),
       iso,
       isToday: iso === todayISO,
       part: partAbbr,
       sessionId: matched?.sessionId || null,
+      // 근력 채움과 유산소 링은 독립 신호 — 유산소만 한 날은 배경 없이 링만 (§5 상태표).
+      // blocks 가 비고 tags 만 있는 데이터도 잡히도록 태그로 폴백한다.
+      lift: liftSet.has(iso) || tags.some((t) => t !== 'cardio'),
+      cardio: cardioMap[iso] !== undefined || tags.includes('cardio'),
     });
   }
-  // 직전 운동일(작업지시서 홈) — 이번 주 worked 셀 중 오늘 이전 가장 최근 1개에 옅은 링.
-  let prevIdx = -1;
-  for (let i = 0; i < cells.length; i += 1) {
-    if (cells[i].part && cells[i].iso < todayISO) prevIdx = i;
-  }
-  if (prevIdx >= 0) cells[prevIdx].isPrevWorkout = true;
+  // 시안 20a — '직전 운동일 옅은 링' 폐기. 근력 채움(crail)·유산소 링(teal)이 대체한다.
   return cells;
 }
 
@@ -455,23 +464,17 @@ export async function buildWeekCalendar(now = Date.now()) {
 function renderWeekCalendarToDom(cells, doc) {
   const cals = doc.querySelectorAll('.js-week-cal');
   if (!cals.length) return;
-  // 구현 레퍼런스 - 홈.html 정합: .cal-day(div) + .cal-label + .cal-num.
-  // 운동일=worked(.cal-num::after crail 점), 오늘=today(crail 원), 직전 운동일=last(옅은 링).
-  const html = cells.map((c) => {
-    const classes = [
-      'cal-day',
-      c.part ? 'worked' : '',
-      c.isToday ? 'today' : '',
-      c.isPrevWorkout ? 'last' : '',
-      'spa-managed',
-    ].filter(Boolean).join(' ');
-    return `
-      <div class="${classes}" data-day="${isoToWeekdayIdx(c.iso)}" data-iso="${c.iso}">
-        <span class="cal-label">${c.wdLabel}</span>
-        <span class="cal-num">${c.num}</span>
-      </div>
-    `;
-  }).join('');
+  // 시안 20a §5 — 요일 헤더 1줄 공유 + [지난주(작게) · 이번 주] 2행 + 범례.
+  // 근력 = crail 채움, 유산소 = teal 링. 두 신호가 독립이라 "유산소만" 은 배경 없이 링만 남는다.
+  const week = cells.slice(7);
+  const prev = cells.slice(0, 7);
+  const head = week.map((c) => `<span class="cal-hd kr${c.isToday ? ' today' : ''}">${c.wdLabel}</span>`).join('');
+  const row = (list, dim) => `<div class="wk-row${dim ? ' dim' : ''}">${list.map((c) => {
+    const cls = ['cal-num', 'mono', c.lift ? 'lift' : '', c.cardio ? 'cardio' : '', c.isToday ? 'today' : ''].filter(Boolean).join(' ');
+    return `<div class="cal-day spa-managed" data-day="${isoToWeekdayIdx(c.iso)}" data-iso="${c.iso}"><span class="${cls}">${c.num}</span></div>`;
+  }).join('')}</div>`;
+  const legend = '<div class="cal-legend"><i class="lg-lift"></i><span class="kr">근력</span><i class="lg-cardio"></i><span class="kr">유산소</span></div>';
+  const html = `<div class="wk-row">${head}</div>${row(prev, true)}${row(week, false)}${legend}`;
   cals.forEach((cal) => { cal.innerHTML = html; });
 }
 
@@ -488,7 +491,7 @@ export function wireWeekCalendarTaps(doc) {
   const tap = typeof window !== 'undefined' ? window.gymDayDetail?.attachCalendarTapHandlers : null;
   if (!cal || typeof tap !== 'function') return { wired: 0 };
   tap(cal, {
-    cellSelector: '.cal-day.worked',
+    cellSelector: '.cal-day',   // 시안 20a — .worked 폐기, 모든 날짜 셀이 탭 타깃
     isoExtractor: (el) => el?.dataset?.iso || null,
     onTap: async (iso) => {
       const entry = await fetchDayDetail(iso);
@@ -596,9 +599,10 @@ export async function mountHomeView(now = Date.now()) {
       applyStreakToDom(streak, doc);
       applyLastWorkoutToDom(streak, doc);
       applyBalanceToDom(summarizeWeeklyBalance(sessions, now), doc);
+      renderCardioCardToDom(sessions, doc, now);   // 시안 20a §8 — 밸런스에서 분리된 독립 카드
       streakApplied = true;
       // P5 — 오늘 체중 카드: 직전 체중 표시 + 입력 모달(weightKeypadSheet) wire
-      await applyWeightCardToDom(doc);
+      await applyWeightCardToDom(doc, now);
       try { window.gymWeightKeypad?.wireWeightKeypad?.(doc); } catch (wkErr) { console.error('[gymHome] wireWeightKeypad', wkErr); }
     } catch (e) {
       if (!(e && /window\.gymDB 미초기화/.test(String(e.message)))) {
@@ -683,8 +687,8 @@ function applyLastWorkoutToDom(streak, doc) {
   const metaEl = doc.getElementById('homeLastMeta');
   if (partsEl) partsEl.textContent = streak.lastWorkoutParts || '운동';
   if (metaEl) {
-    const meta = [streak.weekdayLabel, streak.sinceLabel].filter(Boolean).join(' · ');
-    metaEl.textContent = meta;
+    // 시안 20a §6 — 요일과 "오늘" 을 함께 쓰지 않는다(중복). 경과만 표기.
+    metaEl.textContent = streak.sinceLabel || '';
   }
 }
 
@@ -692,7 +696,7 @@ function applyLastWorkoutToDom(streak, doc) {
  * 오늘 체중 카드 갱신 (시안: "직전 73.4kg · ▼0.3"). mountHomeView 와 체중 저장 콜백(weights.saveWeightInput)이 공유.
  * 저장 직후에도 홈 카드가 즉시 최신 체중을 반영하도록 별도 함수로 분리.
  */
-async function applyWeightCardToDom(doc) {
+async function applyWeightCardToDom(doc, now = Date.now()) {
   if (!doc) return;
   try {
     const weightsRaw = await listAllWeights();
@@ -700,19 +704,46 @@ async function applyWeightCardToDom(doc) {
     const n = weights.length;
     const latest = n ? weights[n - 1] : null;
     const prevW = n >= 2 ? weights[n - 2] : null;
-    const ref = doc.getElementById('homeWeightRef');
-    if (!ref) return;
+    // 시안 20a §9 — 큰 숫자 + −/+ 증감(색 없이 ink-3) + 목표 + 30일 sma7 스파크라인.
+    const kgEl = doc.getElementById('homeWeightKg');
+    const dlEl = doc.getElementById('homeWeightDelta');
+    const goalEl = doc.getElementById('homeWeightGoal');
+    const sparkEl = doc.getElementById('homeWeightSpark');
+    if (!kgEl) return;
+    let goalKg = 69;
+    try { goalKg = (await getUserSettings())?.goalWeight ?? 69; } catch (_) { /* 기본값 */ }
     if (!latest) {
-      ref.textContent = '오늘 첫 기록';
+      kgEl.textContent = '—';
+      if (dlEl) dlEl.textContent = '';
+      if (goalEl) goalEl.textContent = `목표 ${goalKg}`;
+      if (sparkEl) sparkEl.innerHTML = '';
       return;
     }
-    // 구현 레퍼런스 - 홈.html: "직전 73.4kg <span class="dn">· ▼0.3</span>" (증감은 ink-3)
-    let delta = '';
-    if (prevW) {
-      const d = Math.round((latest.weight - prevW.weight) * 10) / 10;
-      if (d !== 0) delta = ` <span class="dn">· ${d < 0 ? '▼' : '▲'}${Math.abs(d)}</span>`;
+    kgEl.textContent = String(latest.weight);
+    if (dlEl) {
+      const d = prevW ? Math.round((latest.weight - prevW.weight) * 10) / 10 : 0;
+      // 증감 기호는 ▲▼ 대신 −/+. 체중은 감소가 목표라 색을 입히지 않는다 (§9).
+      dlEl.textContent = d === 0 ? '' : `${d < 0 ? '−' : '+'}${Math.abs(d)}`;
     }
-    ref.innerHTML = `직전 ${escapeHtml(String(latest.weight))}kg${delta}`;
+    if (goalEl) {
+      const left = Math.max(0, Math.round((latest.weight - goalKg) * 10) / 10);
+      goalEl.textContent = left > 0 ? `목표 ${goalKg} · ${left}kg 남음` : `목표 ${goalKg}`;
+    }
+    if (sparkEl) {
+      // 전체 이력에 sma7 → 최근 30일 절단 (창 안에서만 평균 내면 첫 점이 실측값이 된다)
+      const rows = weights.map((w) => ({ date: w.date, kg: w.weight }));
+      const pts = sparklinePoints(recentSma(rows, 30, now), 132, 38, 3);
+      if (pts.length < 2) { sparkEl.innerHTML = ''; }
+      else {
+        const line = pts.map((pt) => `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(' ');
+        const area = `${line} ${pts[pts.length - 1].x.toFixed(1)},38 ${pts[0].x.toFixed(1)},38`;
+        const last = pts[pts.length - 1];
+        sparkEl.innerHTML =
+          `<polygon points="${area}" fill="oklch(96.5% 0.006 60)"></polygon>`
+          + `<polyline points="${line}" fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></polyline>`
+          + `<circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="2.6" fill="var(--ink-1)" stroke="#fff" stroke-width="1.4"></circle>`;
+      }
+    }
   } catch (wErr) {
     if (!(wErr && /window\.gymDB 미초기화/.test(String(wErr.message)))) console.error('[gymHome] weight card', wErr);
   }
@@ -720,7 +751,8 @@ async function applyWeightCardToDom(doc) {
 
 /**
  * 부위 밸런스 위젯(작업지시서 홈 주역) — 구현 레퍼런스 - 홈.html 정합.
- * #homeBalSummary(헤드라인+칩) · #homeBalRows(6부위 페어 컬럼) · #homeBalLabels(부위명) · #homeCardioRow(유산소).
+ * #homeBalTotal·#homeBalDelta(헤드라인) · #homeBalRows(6부위 페어 컬럼) · #homeBalLabels(부위명).
+ * 유산소는 renderCardioCardToDom 이 그리는 독립 카드로 분리됐다 (시안 20a §8).
  */
 function applyBalanceToDom(balance, doc) {
   const rowsEl = doc.getElementById('homeBalRows');
@@ -732,60 +764,43 @@ function applyBalanceToDom(balance, doc) {
   const delta = thisTotal - prevTotal;
   const rmr = prefersReducedMotionHome();
 
-  // 요약 행 — 헤드라인(총 세트) + ▲개선(sage, delta>0) + 최소부위 델타(crail) 칩 (작업지시서 §4.1)
-  const summaryEl = doc.getElementById('homeBalSummary');
-  if (summaryEl) {
-    const focus = parts.find((p) => p.key === focusKey) || null;
-    const upChip = delta > 0 ? `<span class="bal-chip up">▲ ${delta}</span>` : '';
-    let focusChip = '';
-    if (focus) {
-      const fd = (Number(focus.sets) || 0) - (Number(focus.prevSets) || 0);
-      const fdStr = fd > 0 ? `+${fd}` : String(fd); // 시안 "코어 -3" = 이번주−지난주 (§4.1)
-      focusChip = `<span class="bal-chip focus"><i class="dot"></i>${escapeHtml(focus.name)} ${fdStr}</span>`;
-    }
-    // 카운트업 시작값(prevTotal)으로 선-paint (RM 은 최종값) — animNum 첫 tick 역방향 점프 방지.
-    summaryEl.innerHTML =
-      `<span class="bal-hl"><span id="homeBalHlNum" class="bal-hl-num">${rmr ? thisTotal : prevTotal}</span>`
-      + `<span class="bal-hl-unit kr">세트</span></span>${upChip}${focusChip}`;
+  // 헤드라인 + 델타 칩 (시안 20a §7). 최소부위 crail 칩은 폐기 —
+  // 고스트가 잉크보다 높은 것 자체가 미달 신호이고, crail 은 날짜·기록 행위 전용이다 (§13).
+  const totalEl = doc.getElementById('homeBalTotal');
+  if (totalEl) totalEl.textContent = String(rmr ? thisTotal : prevTotal);
+  const deltaEl = doc.getElementById('homeBalDelta');
+  if (deltaEl) {
+    deltaEl.textContent = delta < 0 ? `−${-delta}` : `+${delta}`;
+    deltaEl.className = `bal-chip mono ${delta < 0 ? 'down' : 'up'}`;
   }
 
-  // 차트 — 6부위 페어 컬럼: [지난주 고스트 12px] + [이번주 잉크 15px] (작업지시서 §4.1).
-  //   기본 7px/세트(§4.1: 6세트=42px, 14세트=98px). 단 최고 세트수 막대는 MAX_BAR_PX 로 캡 —
-  //   실기기 짧은 화면에서 고세트(예: 31세트=217px) 막대가 헤드라인과 겹치던 버그 수정 (사용자 2026-07-07).
-  //   시안 최대(14세트=98px) 밀도를 유지하도록 100px 캡: maxVal≤14 는 7px/세트 정확 유지, 초과분만 비례 축소.
-  const MAX_BAR_PX = 100;
+  // 차트 — 축 11px/세트, 트랙 88 고정. 8세트 초과 시 전체 비례 축소 (§7).
+  const TRACK = 88;
   const maxVal = Math.max(1, ...parts.map((p) => Math.max(Number(p.sets) || 0, Number(p.prevSets) || 0)));
-  const pxPerSet = Math.min(7, MAX_BAR_PX / maxVal);
+  const pxPerSet = Math.min(11, TRACK / maxVal);
   rowsEl.innerHTML = parts.map((p, i) => {
-    const isFocus = p.key === focusKey;
     const sets = Number(p.sets) || 0;
     const prev = Number(p.prevSets) || 0;
-    const inkH = Math.round(sets * pxPerSet);
-    const ghostH = Math.round(prev * pxPerSet);
-    // 이번주 막대 진입 웨이브 — 60ms 스태거 grow. 최소부위는 상시 경고펄스라 grow 제외 (시안 #7a 정합).
-    const inkAnim = (!isFocus && !rmr) ? `animation:gGrow 520ms cubic-bezier(.2,.7,.2,1) ${i * 60}ms both;` : '';
-    const ghost = prev > 0 ? `<i class="bal-bar-ghost" style="height:${ghostH}px;"></i>` : '';
-    return `<div class="bal-grp${isFocus ? ' focus' : ''}">`
+    const inkAnim = !rmr ? `animation:gGrow 520ms cubic-bezier(.2,.7,.2,1) ${i * 60}ms both;` : '';
+    const ghost = prev > 0 ? `<i class="bal-bar-ghost" style="height:${Math.round(prev * pxPerSet)}px;"></i>` : '';
+    return `<div class="bal-grp">`
       + `<span class="bal-grp-val mono">${sets}</span>`
-      + `<span class="bal-bars">${ghost}<i class="bal-bar-ink" style="height:${inkH}px;${inkAnim}"></i></span>`
+      + `<span class="bal-bars">${ghost}<i class="bal-bar-ink" style="height:${Math.round(sets * pxPerSet)}px;${inkAnim}"></i></span>`
       + `</div>`;
   }).join('');
 
   const labelsEl = doc.getElementById('homeBalLabels');
   if (labelsEl) {
-    labelsEl.innerHTML = parts.map((p) =>
-      `<span class="kr${p.key === focusKey ? ' focus' : ''}">${escapeHtml(p.name)}</span>`,
-    ).join('');
+    labelsEl.innerHTML = parts.map((p) => `<span class="kr">${escapeHtml(p.name)}</span>`).join('');
   }
 
-  // 헤드라인 카운트업 45→48 + 랜딩 팝 (홈 진입 1회, 작업지시서 §4.2). RM 은 즉시 최종값(위에서 선-paint).
-  const numEl = doc.getElementById('homeBalHlNum');
-  if (numEl && !rmr) {
+  // 헤드라인 카운트업 + 랜딩 팝 (§4.2 계승). RM 은 위에서 최종값 선-paint.
+  if (totalEl && !rmr) {
     animNumHome(prevTotal, thisTotal, 620, (v, isFinal) => {
-      numEl.textContent = String(isFinal ? thisTotal : Math.round(v));
-      if (isFinal && typeof numEl.animate === 'function') {
+      totalEl.textContent = String(isFinal ? thisTotal : Math.round(v));
+      if (isFinal && typeof totalEl.animate === 'function') {
         try {
-          numEl.animate(
+          totalEl.animate(
             [{ transform: 'scale(1)' }, { transform: 'scale(1.16)', offset: 0.45 }, { transform: 'scale(1)' }],
             { duration: 420, easing: 'cubic-bezier(.2,.8,.3,1.2)' },
           );
@@ -793,18 +808,45 @@ function applyBalanceToDom(balance, doc) {
       }
     });
   }
+}
 
-  const cardioEl = doc.getElementById('homeCardioRow');
-  if (!cardioEl) return;
-  const c = balance.cardio || { min: 0, count: 0, deltaMin: 0 };
-  const cardioIcon = '<svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M2 10h3l1.5-4.5 2.8 9 1.7-4.5H18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-  const sub = c.count > 0 ? `${c.min > 0 ? `${c.min}분 · ` : ''}${c.count}회` : '기록 없음';
-  const dm = Number(c.deltaMin) || 0;
-  const deltaHtml = (c.count > 0 && dm !== 0)
-    ? `<span class="dl kr">${dm > 0 ? '▲' : '▼'}${Math.abs(dm)}분</span>`
-    : '';
-  cardioEl.innerHTML = `<span class="ic">${cardioIcon}</span><span class="nm kr">유산소</span><span class="sub mono">${escapeHtml(sub)}</span>${deltaHtml}`;
-  cardioEl.style.display = 'flex';
+/**
+ * 유산소 독립 카드 (시안 20a §8) — 월~일 7칸 원.
+ * 채움 = 이번 주, 테두리 + 회색 숫자 = 지난주 같은 요일. 별도 설명 텍스트 없음 (§13).
+ */
+function setTextById(doc, id, text) {
+  const el = doc.getElementById(id);
+  if (el) el.textContent = text;
+}
+
+function renderCardioCardToDom(sessions, doc, now = Date.now()) {
+  const dotsEl = doc.getElementById('homeCardioDots');
+  if (!dotsEl) return;
+  const w = cardioWeek(sessions, now);
+  const labels = ['월', '화', '수', '목', '금', '토', '일'];
+  dotsEl.innerHTML = w.thisMin.map((v, i) => {
+    const isToday = i === w.todayIndex;
+    const ran = v != null;
+    const num = ran ? v : (w.prevMin[i] != null ? w.prevMin[i] : '');
+    const cls = ['cc-dot', ran ? 'ran' : 'empty', isToday && ran ? 'today' : ''].filter(Boolean).join(' ');
+    return `<span class="cc-cell${isToday && ran ? ' today' : ''}">`
+      + `<span class="${cls} mono">${num}</span>`
+      + `<span class="cc-lb kr">${labels[i]}</span></span>`;
+  }).join('');
+  setTextById(doc, 'homeCardioMin', String(w.thisTotal));
+  setTextById(doc, 'homeCardioDays', String(w.thisDays));
+  setTextById(doc, 'homeCardioPrev', `지난주 ${w.prevTotal}분 · ${w.prevDays}일`);
+  const chipEl = doc.getElementById('homeCardioChip');
+  if (chipEl) {
+    const chip = cardioRenewChip(w.thisTotal, w.prevTotal);
+    if (!chip) { chipEl.style.display = 'none'; }
+    else {
+      chipEl.style.display = 'inline-flex';
+      chipEl.className = `cc-chip ${chip.isWarn ? 'warn' : 'pine'}`;
+      chipEl.querySelector('.v').textContent = chip.value || '';
+      chipEl.querySelector('.l').textContent = chip.label;
+    }
+  }
 }
 
 /** Wave 11.10.3 — streak DOM 갱신. Wave 11.10.4 — CTA click → #/session. */
