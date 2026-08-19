@@ -2853,3 +2853,25 @@ describe('persistKeypadEdit — calories 필드', () => {
     expect(r.reason).toBe('invalid_field');
   });
 });
+
+/* ── 레일 트레일링 스페이서 (네이티브 GymSessionLogic.railTrailingSpacer 이식) ────────
+ * 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollTo 가 클램프돼 좌측 정렬이 실패한다 — 부족분만 채운다.
+ */
+describe('railTrailingSpacer', () => {
+  it('현재 칩 뒤가 짧으면 부족분만큼 채운다', async () => {
+    const { railTrailingSpacer } = await import('./session.js');
+    // 뷰포트 390, 좌 inset 26 → 필요한 뒤 공간 364. 현재 칩~끝이 100 이면 264 부족.
+    expect(railTrailingSpacer(true, 500, 600, 390)).toBe(264);
+  });
+  it('뒤가 충분하면 0', () => {
+    return import('./session.js').then(({ railTrailingSpacer }) => {
+      expect(railTrailingSpacer(true, 0, 600, 390)).toBe(0);
+    });
+  });
+  it('현재 칩 없거나 측정 전이면 0', async () => {
+    const { railTrailingSpacer } = await import('./session.js');
+    expect(railTrailingSpacer(false, 500, 600, 390)).toBe(0);
+    expect(railTrailingSpacer(true, 500, 0, 390)).toBe(0);
+    expect(railTrailingSpacer(true, 500, 600, 0)).toBe(0);
+  });
+});

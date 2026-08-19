@@ -342,6 +342,18 @@ export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
  * 네이티브 GymSessionLogic.cardioEntered 와 동일 (설계 2026-08-10 §1).
  * "값>0" 만 보면 직전 값을 상속한 프리셋까지 확정돼 유령 기록이 된다.
  */
+/** 레일 현재 칩을 좌측 정렬할 때의 기준 inset (네이티브 GymSessionLogic.railLeftInset 정합). */
+export const RAIL_LEFT_INSET = 26;
+
+/**
+ * 레일 트레일링 스페이서 — 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollTo 가 클램프돼
+ * 좌측 정렬이 실패한다. 부족분만 채운다 (네이티브 GymSessionLogic.railTrailingSpacer 1:1).
+ */
+export function railTrailingSpacer(hasCurrent, currentChipMinX, chipsMaxX, viewportWidth) {
+  if (!hasCurrent || !(chipsMaxX > 0) || !(viewportWidth > 0)) return 0;
+  return Math.max(0, (viewportWidth - RAIL_LEFT_INSET) - (chipsMaxX - currentChipMinX));
+}
+
 export function cardioEntered(s) {
   if (!s || s.preset) return false;
   return (s.duration || 0) > 0 || (s.distance || 0) > 0
@@ -2348,6 +2360,9 @@ export function centerActivePill(pillsEl) {
         return;
       }
       pillsEl.style.justifyContent = 'flex-start'; // 넘치면 좌측 정렬 + scrollLeft 로 위치 고정
+      // 마지막 종목처럼 현재 칩 뒤가 짧으면 scrollLeft 가 클램프돼 좌측 정렬이 실패한다 —
+      // 부족분만 트레일링 스페이서로 채운다 (네이티브 railTrailingSpacer 정합).
+      ensureRailSpacer(pillsEl, cur);
       // offsetParent 는 레일이 아니라 .phone-content (레일 position:static) — 레일 기준으로 환산.
       // 안 빼면 rail.offsetLeft(푸터 padding-left, 실측 12px) 만큼 어긋나 완료 칩이 4px 만 보인다.
       const chipX = cur.offsetLeft - pillsEl.offsetLeft;
@@ -2357,6 +2372,27 @@ export function centerActivePill(pillsEl) {
   };
   if (typeof requestAnimationFrame === 'function') requestAnimationFrame(align);
   else align();
+}
+
+/** 레일 끝 스페이서 — 현재 칩 뒤 공간이 모자란 만큼만 채운다 (네이티브 정합). */
+function ensureRailSpacer(pillsEl, cur) {
+  // DOM 전용 보강 — 순수 로직 테스트의 fake 레일(plain object)에서는 조용히 건너뛴다.
+  if (!pillsEl?.ownerDocument || typeof pillsEl.querySelectorAll !== 'function') return;
+  let sp = pillsEl.querySelector('.fp-spacer');
+  if (!sp) {
+    sp = pillsEl.ownerDocument.createElement('i');
+    sp.className = 'fp-spacer';
+    sp.setAttribute('aria-hidden', 'true');
+    sp.style.cssText = 'flex-shrink:0;height:1px;';
+    pillsEl.appendChild(sp);
+  }
+  sp.style.width = '0px';
+  const chips = [...pillsEl.querySelectorAll('.fp-chip')];
+  const last = chips[chips.length - 1];
+  if (!last) return;
+  const chipsMaxX = last.offsetLeft + last.offsetWidth - pillsEl.offsetLeft;
+  const curMinX = cur.offsetLeft - pillsEl.offsetLeft;
+  sp.style.width = `${railTrailingSpacer(true, curMinX, chipsMaxX, pillsEl.clientWidth)}px`;
 }
 
 /**
@@ -2369,6 +2405,18 @@ export function centerActivePill(pillsEl) {
 function wireFooterPillClick(doc) {
   const pillsEl = doc.getElementById('sessionFooterPills');
   if (!pillsEl || pillsEl.dataset.spaHooked === '1') return;
+  // 터치다운 눌림 — 닿는 순간 0.96 (네이티브 2026-07-24). 웹은 햅틱이 없어 시각 피드백만.
+  const press = (e, on) => {
+    const chip = e.target.closest?.('.fp-chip');
+    if (chip) chip.classList.toggle('is-pressed', on);
+  };
+  pillsEl.addEventListener('pointerdown', (e) => press(e, true));
+  pillsEl.addEventListener('pointerup', (e) => press(e, false));
+  pillsEl.addEventListener('pointercancel', (e) => press(e, false));
+  pillsEl.addEventListener('pointerleave', () => {
+    pillsEl.querySelectorAll('.fp-chip.is-pressed').forEach((c) => c.classList.remove('is-pressed'));
+  });
+
   pillsEl.addEventListener('click', (e) => {
     if (pillsEl.dataset.reorder === '1') return; // (f-5-2) reorder 모드 — pill click 무시
     const pill = e.target.closest('[data-block-idx]');
@@ -2376,9 +2424,27 @@ function wireFooterPillClick(doc) {
     const idx = parseInt(pill.dataset.blockIdx, 10);
     if (!Number.isFinite(idx)) return;
     _currentBlockIdx = idx;
-    mountSessionView().catch((err) => console.error('[gymSession] pill click mount', err));
+    mountSessionView()
+      .then(() => markRailLanding(pillsEl))
+      .catch((err) => console.error('[gymSession] pill click mount', err));
   });
   pillsEl.dataset.spaHooked = '1';
+}
+
+/**
+ * 두 박자 이동의 착지 연출 — 탭 자리에서 dwell 만큼 머문 뒤 정렬로 미끄러지고,
+ * travel 시점에 스쿼시 + crail 확산 링이 터진다 (네이티브 RailLanding 정합, 햅틱 제외).
+ * 클래스는 애니메이션 종료 시 제거해 다음 탭에서 다시 발화하게 한다.
+ */
+function markRailLanding(pillsEl) {
+  const cur = pillsEl?.querySelector?.('.fp-chip.is-current');
+  if (!cur) return;
+  cur.classList.remove('is-landing');
+  void cur.offsetWidth;            // 리플로우 — 연타 시 애니메이션 재시작
+  cur.classList.add('is-landing');
+  const off = () => cur.classList.remove('is-landing');
+  cur.addEventListener('animationend', off, { once: true });
+  setTimeout(off, 1200);           // animationend 미발화(RM·비가시) 대비
 }
 
 /**

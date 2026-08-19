@@ -165,6 +165,36 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
 .fp-chip.is-current .fp-chip__name {
   font-size:18px; font-weight:800; color:var(--ink-1); letter-spacing:-0.02em;
 }
+/* 터치다운 눌림 — 손가락이 닿는 순간 0.96 (iOS 표준 버튼 감각, 네이티브 2026-07-24).
+   translate 와 별개 속성인 scale 을 쓴다 — 현재 칩의 translate:0 -2px 리프트를 덮지 않게. */
+.fp-chip { transition:scale 120ms ease-out; }
+.fp-chip.is-pressed { scale:0.96; }
+
+/* 두 박자 이동의 착지 연출 — 탭 자리에서 dwell(0.22s) 머문 뒤 정렬로 미끄러지고,
+   travel(0.58s) 시점에 스쿼시 + crail 확산 링이 동시에 터진다 (네이티브 RailLanding 정합).
+   햅틱은 웹에 없어 제외. */
+.fp-chip.is-current.is-landing { animation:railLandPop 0.99s cubic-bezier(.2,.8,.3,1) both; }
+@keyframes railLandPop {
+  0%, 58.6% { scale:1; }
+  67.7%     { scale:0.94; }
+  83.8%     { scale:1.07; }
+  100%      { scale:1; }
+}
+.fp-chip.is-current.is-landing::after {
+  content:""; position:absolute; inset:0; border-radius:16px;
+  border:2.5px solid var(--crail-base); pointer-events:none;
+  animation:railLandRing 0.55s ease-out 0.58s both;
+}
+@keyframes railLandRing {
+  0%   { opacity:0.9; transform:scale(1); }
+  100% { opacity:0;   transform:scale(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fp-chip { transition:none; }
+  .fp-chip.is-current.is-landing { animation:none; }
+  .fp-chip.is-current.is-landing::after { animation:none; content:none; }
+}
+
 /* 재생 중 이퀄라이저 — 라이브 점/세트 표기 대체. 막대 3개(짧·긴·중) 스태거 스케일 */
 .fp-chip.is-current .fp-chip__eq {
   display:inline-flex; align-items:flex-end; gap:2.5px; height:15px;
