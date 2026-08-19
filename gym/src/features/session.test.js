@@ -485,7 +485,7 @@ describe('persistSetCommit', () => {
     expect(sess.blocks[0].sets[1].preset).toBe(true);
   });
 
-  it('cardio — 입력된 duration·distance 가 스와이프 완료(done commit)에도 보존 (라이브 2026-06-10 사용자 보고)', async () => {
+  it('cardio — persistSetCommit 은 여전히 duration·distance 를 보존 (다른 경로 회귀 방지)', async () => {
     await addExerciseToActiveSession('treadmill', 'cardio');
     // 키패드로 시간·거리 입력된 상태 재현
     const sess0 = (await db.sessions.toArray())[0];
@@ -1279,7 +1279,10 @@ async function getActiveBenchSets() {
 }
 
 describe('handleLeftSwipe (spec §6-3-1)', () => {
-  it('cardio — 입력된 duration·distance 보존 + 새 preset 세트에도 카피 (라이브 2026-06-10 사용자 보고)', async () => {
+  // 2026-08-18 계약 변경 — 유산소 스와이프는 완료가 아니라 **지표 로테이션**이다 (확정 시안 7a §4).
+  // 구 계약("스와이프로 done + 새 preset 세트에 값 카피")은 폐기. 값 보존은 종목 완료(finish)가 맡고,
+  // 프리셋에 값을 실으면 한 필드만 입력해도 상속값이 기록에 딸려 들어간다(유령 기록, 설계 §1).
+  it('cardio — 좌스와이프로 세트가 완료되지 않는다 (지표 로테이션 계약)', async () => {
     await db.sessions.put({
       id: 'active-swipe-cardio', date: '2026-06-10', startTime: Date.now() - 10 * 60_000, endTime: null,
       blocks: [{ type: 'single', exerciseId: 'treadmill', sets: [
@@ -1290,14 +1293,10 @@ describe('handleLeftSwipe (spec §6-3-1)', () => {
     await handleLeftSwipe();
     const rows = await db.sessions.where('status').equals('active').toArray();
     const sets = rows[0].blocks[0].sets;
-    expect(sets[0].done).toBe(true);
-    expect(sets[0].duration).toBe(1200);
+    expect(sets[0].done).toBe(false);          // 완료 아님 — 스와이프는 지표 전환용
+    expect(sets[0].duration).toBe(1200);       // 입력값은 그대로
     expect(sets[0].distance).toBe(3);
-    // 마지막 set 완료 → 새 preset set 도 cardio 값 카피
-    expect(sets).toHaveLength(2);
-    expect(sets[1].duration).toBe(1200);
-    expect(sets[1].distance).toBe(3);
-    expect(sets[1].done).toBe(false);
+    expect(sets).toHaveLength(1);              // 유산소는 단일 세트 — preset 증식 없음
   });
 
   it('cur 유효 → sets[cur].done=true, preset:false', async () => {
@@ -2797,5 +2796,60 @@ describe('centerActivePill — 오버플로 여부별 현재 카드 좌측 치�
     centerActivePill(rail);
     expect(rail.style.justifyContent).toBe('center');
     expect(rail.scrollLeft).toBe(0);
+  });
+});
+
+/* ── 유산소 보존 계약 (2026-08-18) ────────────────────────────────────────
+ * 스와이프 완료를 뗀 대가로, 값 보존은 **종목 완료(finish)** 가 책임진다.
+ * 네이티브 GymSessionLogic.finishBlock(isCardio:) / cardioEntered 와 같은 규칙.
+ */
+describe('유산소 값 보존 — 종목 완료 경로 (네이티브 cardioEntered 정합)', () => {
+  it('cardioEntered — preset 아님 + 값 있음', async () => {
+    const { cardioEntered } = await import('./session.js');
+    expect(cardioEntered({ preset: false, duration: 1200 })).toBe(true);
+    expect(cardioEntered({ preset: false, calories: 85 })).toBe(true);
+    expect(cardioEntered({ preset: true, duration: 1200 })).toBe(false);   // 상속 프리셋 = 유령
+    expect(cardioEntered({ preset: false })).toBe(false);
+  });
+
+  it('finishCardioBlock — 입력된 세트를 done 으로 승격해 보존, 손 안 댄 세트는 폐기', async () => {
+    const { finishCardioBlock } = await import('./session.js');
+    const b = finishCardioBlock({
+      type: 'single', exerciseId: 'treadmill',
+      sets: [
+        { preset: false, duration: 1920, distance: 3.4, done: false },
+        { preset: true, duration: 1200, done: false },
+      ],
+    }, 1234);
+    expect(b.sets).toHaveLength(1);
+    expect(b.sets[0].done).toBe(true);
+    expect(b.sets[0].duration).toBe(1920);
+    expect(b.finishedAt).toBe(1234);
+  });
+
+  it('finishCardioBlock — 아무것도 입력 안 했으면 세트 0개 (유령 기록 방지)', async () => {
+    const { finishCardioBlock } = await import('./session.js');
+    const b = finishCardioBlock({ type: 'single', exerciseId: 'treadmill',
+      sets: [{ preset: true, duration: 1200, done: false }] }, 1);
+    expect(b.sets).toHaveLength(0);
+  });
+});
+
+// 2026-08-18 — 유산소 카드가 칼로리도 쓴다 (확정 시안 7a 3지표). 기존은 duration/distance 만 허용.
+describe('persistKeypadEdit — calories 필드', () => {
+  it('calories 저장 + preset 해제', async () => {
+    const { addExerciseToActiveSession, persistKeypadEdit } = await import('./session.js');
+    await addExerciseToActiveSession('treadmill', 'cardio');
+    const r = await persistKeypadEdit({ exerciseName: '트레드밀', setIdx: 0, field: 'calories', value: 85 });
+    expect(r.ok).toBe(true);
+    const sess = (await db.sessions.toArray())[0];
+    expect(sess.blocks[0].sets[0].calories).toBe(85);
+    expect(sess.blocks[0].sets[0].preset).toBe(false);
+  });
+  it('알 수 없는 필드는 여전히 거부', async () => {
+    const { persistKeypadEdit } = await import('./session.js');
+    const r = await persistKeypadEdit({ exerciseName: '트레드밀', setIdx: 0, field: 'bogus', value: 1 });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('invalid_field');
   });
 });

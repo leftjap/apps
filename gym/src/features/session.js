@@ -19,9 +19,12 @@ import {
   listCustomExercises,
   getBestE1RM,
   toISODate,
+  weekRangeISO,
+  getSessionsByRange,
 } from '../db/queries.js';
 import { PART_IDS, PARTS, getBuiltinExercise, resolveExerciseName, primeCustomExerciseCache } from '../db/exercises.js';
 import { mapNameToExerciseId, persistSetPR } from './session-pr.js';
+import { renderCardioCard, wireCardioCard, resetCardioMetric, currentCardioMetric } from './session-cardio-card.js';
 
 const VIEW_ATTR = 'data-spa-managed';
 let _activePart = 'chest';
@@ -203,10 +206,9 @@ export async function addExerciseToActiveSession(exerciseId, part) {
         preset: true,
         pr: false,
       };
-      if (s && (s.duration != null || s.distance != null)) {
-        next.duration = s.duration ?? null;
-        next.distance = s.distance ?? null;
-      }
+      // 유산소 값은 프리셋에 싣지 않는다 — 한 필드만 입력해도 나머지 상속값이 기록에 딸려
+      // 들어가 유령 기록이 된다 (네이티브 설계 2026-08-10 §1). 직전 값은 카드가 이력에서 읽어
+      // 고스트로 보여주고, 키패드 프리필도 이력에서 온다.
       return next;
     });
   } else {
@@ -335,6 +337,37 @@ export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
  *  - block.type !== 'single' 은 통과 (sets 의미 single 전용)
  *  - kept.length === sets.length 면 같은 참조 반환 (no-op fast path)
  */
+/**
+ * 유산소 입력됨 술어 — 손 댄 세트(preset false)에 어느 필드든 값이 있으면 기록이다.
+ * 네이티브 GymSessionLogic.cardioEntered 와 동일 (설계 2026-08-10 §1).
+ * "값>0" 만 보면 직전 값을 상속한 프리셋까지 확정돼 유령 기록이 된다.
+ */
+export function cardioEntered(s) {
+  if (!s || s.preset) return false;
+  return (s.duration || 0) > 0 || (s.distance || 0) > 0
+    || s.speed != null || s.incline != null || s.calories != null;
+}
+
+/**
+ * 유산소 종목 완료 — 스와이프 완료가 없으므로(2026-08-18 지표 로테이션) 입력값을 여기서 보존한다.
+ * 입력된 세트를 done 으로 승격하고 손 안 댄 세트는 버린다.
+ * 네이티브 GymSessionLogic.finishBlock(isCardio: true) 와 동일.
+ */
+export function finishCardioBlock(block, now) {
+  const sets = (Array.isArray(block?.sets) ? block.sets : [])
+    .map((s) => (cardioEntered(s) ? { ...s, done: true } : s))
+    .filter((s) => s && s.done === true && !s.preset);
+  return { ...block, sets, finishedAt: now };
+}
+
+async function isCardioBlock(block) {
+  if (!block || !block.exerciseId) return false;
+  try {
+    const def = await getExerciseDefaults(block.exerciseId);
+    return def?.equipment === 'cardio';
+  } catch (_) { return false; }
+}
+
 function pruneEmptySets(block) {
   if (!block || block.type !== 'single' || !Array.isArray(block.sets)) return block;
   const kept = block.sets.filter((s) => s && s.done === true);
@@ -472,7 +505,9 @@ export async function persistKeypadEdit({ exerciseName, setIdx, field, value } =
   if (!exerciseName || !Number.isFinite(setIdx) || setIdx < 0 || !field || !Number.isFinite(value)) {
     return { ok: false, reason: 'invalid_input' };
   }
-  if (field !== 'weight' && field !== 'reps' && field !== 'duration' && field !== 'distance') {
+  // calories — 유산소 카드 3지표 (2026-08-18 확정 시안 7a).
+  const ALLOWED = ['weight', 'reps', 'duration', 'distance', 'calories'];
+  if (!ALLOWED.includes(field)) {
     return { ok: false, reason: 'invalid_field' };
   }
   const exerciseId = mapNameToExerciseId(exerciseName);
@@ -800,11 +835,7 @@ async function mountSessionActive(doc, block, session) {
   }
 
   if (exerciseEq === 'cardio') {
-    const durSec = Number(currentSet.duration) || 0;
-    const distKm = Number(currentSet.distance) || 0;
-    setTextById(doc, 'cardWeight', String(Math.round(durSec / 60)));
-    setTextById(doc, 'cardReps', distKm ? String(distKm) : '0');
-    renderCardioPace(doc, durSec, distKm);
+    await renderCardioCardFor(doc, block, currentSet);
   } else if (exerciseEq === 'bodyweight') {
     const reps = Number.isFinite(currentSet.reps) ? currentSet.reps : 0;
     setTextById(doc, 'cardWeight', '맨몸');
@@ -1162,6 +1193,44 @@ function setTextById(doc, id, text) {
  * spec §6-4 + §6 — equipment 별 카드 분기. data-card-kind 어트리뷰트 + 단위 라벨/
  * setDots/progressbar visibility 동시 토글. CSS 의존 없이 inline 으로 처리.
  */
+/**
+ * 유산소 카드 렌더 + 제스처 배선 (확정 시안 7a).
+ * 순수 로직은 session-cardio.js, DOM 은 session-cardio-card.js. 여기는 데이터만 물어다 준다.
+ */
+async function renderCardioCardFor(doc, block, currentSet) {
+  // 이번 주 + 지난주 2주치만 조회하면 충분하다 (카드가 그 범위만 보여준다).
+  let sessions = [];
+  try {
+    const today = new Date();
+    const { to } = weekRangeISO(today);
+    const lastMon = new Date(today);
+    lastMon.setDate(today.getDate() - ((today.getDay() + 6) % 7) - 7);
+    sessions = await getSessionsByRange(toISODate(lastMon), to);
+  } catch (_) { sessions = []; }
+  const args = {
+    sessions,
+    set: currentSet,
+    todaySets: Array.isArray(block?.sets) ? block.sets : [],
+    exerciseId: block?.exerciseId,
+  };
+  renderCardioCard(doc, args);
+  wireCardioCard(doc, {
+    onKeypad: (metric) => {
+      const set = args.set || {};
+      const raw = metric === 'duration'
+        ? (set.duration != null ? Math.round(set.duration / 60) : null)
+        : set[metric];
+      openKeypad(doc, metric, raw != null ? { prefill: raw } : {});
+    },
+    onSetValue: async (metric, value) => {
+      const exerciseName = resolveExerciseName(block.exerciseId);
+      const stored = metric === 'duration' ? Math.round(value * 60) : value;
+      const r = await persistKeypadEdit({ exerciseName, setIdx: 0, field: metric, value: stored });
+      if (r && r.ok) await mountSessionView();
+    },
+  });
+}
+
 function applyCardKind(doc, kind) {
   const area = doc.getElementById('cardSwipeArea');
   if (area) area.setAttribute('data-card-kind', kind);
@@ -1177,12 +1246,19 @@ function applyCardKind(doc, kind) {
     if (exvolEl) exvolEl.style.display = show ? 'flex' : 'none';
   };
   // P1 라이트 — weight 종목은 KG 라벨 없음(단위 숨김), 큰 숫자 중앙. cardio 만 '분' 단위 노출.
+  // 2026-08-18 — 유산소는 공용 히어로 대신 전용 카드 (확정 시안 7a). 히어로/완료칩/페이스 모두 숨긴다.
+  const heroVals = doc.getElementById('cardHeroVals');
+  const cardioCard = doc.getElementById('cardioCard');
+  const completeReveal = doc.getElementById('completeReveal');
+  if (heroVals) heroVals.style.display = kind === 'cardio' ? 'none' : 'flex';
+  if (cardioCard) cardioCard.style.display = kind === 'cardio' ? 'flex' : 'none';
+  if (completeReveal) completeReveal.style.display = kind === 'cardio' ? 'none' : 'flex';
+  // 세트바 블록 전체(라벨 포함)를 숨긴다 — dots 만 숨기면 "직전 세션 기록" 라벨이 남는다.
+  const setBarBlock = doc.getElementById('cardSetBarBlock');
+  if (setBarBlock) setBarBlock.style.display = kind === 'cardio' ? 'none' : 'block';
   if (kind === 'cardio') {
-    if (weightUnit) { weightUnit.textContent = '분'; weightUnit.style.display = 'block'; }
-    if (repsUnit) repsUnit.textContent = 'km';
-    if (weightEl) weightEl.style.fontSize = '120px';
     if (setDotsEl) setDotsEl.style.display = 'none';
-    if (paceEl) paceEl.style.display = 'block';
+    if (paceEl) paceEl.style.display = 'none';   // 페이스는 카드에 표시하지 않는다 (§7)
     setProgressVis(false);
   } else if (kind === 'bodyweight') {
     if (weightUnit) { weightUnit.textContent = ''; weightUnit.style.display = 'none'; }
@@ -2695,8 +2771,10 @@ async function handleActionSelect(doc, kind, actionId, target) {
         const session = await getActiveSession();
         if (session) {
           const blocks = session.blocks.slice();
-          const pruned = pruneEmptySets(blocks[blockIdx]);
-          blocks[blockIdx] = { ...pruned, finishedAt: Date.now() };
+          // 유산소는 스와이프 완료가 없어 done 이 안 서 있다 — 입력값을 여기서 승격·보존한다.
+          blocks[blockIdx] = (await isCardioBlock(blocks[blockIdx]))
+            ? finishCardioBlock(blocks[blockIdx], Date.now())
+            : { ...pruneEmptySets(blocks[blockIdx]), finishedAt: Date.now() };
           await upsertSession({ ...session, blocks });
           const nextIdx = findFirstUnfinishedBlock({ ...session, blocks });
           if (nextIdx != null) _currentBlockIdx = nextIdx;
@@ -3211,6 +3289,9 @@ export async function handleLeftSwipe(options = {}) {
   if (!ctx) return;
   // 완료된 운동 (마지막 운동 회색 read-only) 은 스와이프 차단
   if (isBlockLocked(ctx.block)) return;
+  // 2026-08-18 — 유산소 스와이프는 세트 완료가 아니라 지표 로테이션이다 (확정 시안 7a §4).
+  // 값 보존은 finishCardioBlock(종목 완료) 이 맡는다.
+  if (await isCardioBlock(ctx.block)) return;
   const { session, block, cur } = ctx;
   const blocks = session.blocks.slice();
   const blockIdx = blocks.indexOf(block);

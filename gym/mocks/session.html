@@ -303,7 +303,7 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
       </div>
     </div>
     <!-- 직전 세션 세트바 -->
-    <div style="flex-shrink:0;padding:16px 24px 0;">
+    <div id="cardSetBarBlock" style="flex-shrink:0;padding:16px 24px 0;">
       <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px;">
         <span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);letter-spacing:0.04em;">직전 세션 기록</span>
         <span id="cardSetBarHint" class="kr" style="font-size:10px;font-weight:500;color:var(--ink-4);letter-spacing:0.02em;">높이 = 볼륨</span>
@@ -329,6 +329,24 @@ body { margin: 0; min-height: 100vh; background: oklch(93.5% 0.007 60); display:
         <div id="cardDoneLabel" class="kr" style="display:none;margin-top:18px;text-align:center;font-size:13px;font-weight:600;letter-spacing:0.14em;color:var(--sage);">5세트 완료</div>
         <div id="cardPaceZone" class="mono" style="display:none;margin-top:10px;text-align:center;font-size:15px;color:var(--crail-deep);letter-spacing:0.04em;"></div>
         <div id="cardPrChip" style="position:absolute;top:100%;left:50%;transform:translateX(-50%);margin-top:18px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--crail-soft);border:1px solid var(--crail-base);opacity:0;pointer-events:none;transition:opacity .2s;white-space:nowrap;"><span style="color:var(--crail-deep);font-size:9px;line-height:1;">▲</span><span id="cardPrChipVal" class="mono" style="font-size:13px;font-weight:600;color:var(--ink-1);">+5kg</span></div>
+      </div>
+      <!-- 유산소 카드 (확정 시안 7a / specs/2026-08-18-cardio-input-design.md).
+           공용 히어로를 건드리지 않으려고 절대배치 별도 블록으로 둔다 — applyCardKind 가 토글. -->
+      <div id="cardioCard" style="display:none;position:absolute;inset:0;flex-direction:column;padding:20px 22px 0;">
+        <div id="cardioWeek" style="display:flex;align-items:flex-start;justify-content:space-between;"></div>
+        <div style="margin-top:10px;display:flex;justify-content:flex-end;gap:8px;align-items:baseline;">
+          <span style="display:flex;align-items:baseline;gap:2px;"><span id="cardioSum" class="mono" style="font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;letter-spacing:-0.03em;color:var(--ink-2);">0</span><span id="cardioSumUnit" class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);">분</span></span>
+          <span style="display:flex;align-items:baseline;gap:2px;"><span id="cardioDays" class="mono" style="font-variant-numeric:tabular-nums;font-size:16px;font-weight:600;letter-spacing:-0.03em;color:var(--ink-2);">0</span><span class="kr" style="font-size:11px;font-weight:600;color:var(--ink-4);">일</span></span>
+        </div>
+        <div id="cardioGesture" style="position:relative;flex:1;min-height:0;touch-action:pan-y;display:flex;flex-direction:column;justify-content:space-evenly;align-items:stretch;">
+          <div id="cardioDec" style="position:absolute;left:0;top:0;bottom:0;cursor:pointer;"></div>
+          <div id="cardioInc" style="position:absolute;right:0;top:0;bottom:0;cursor:pointer;"></div>
+          <div style="position:relative;height:128px;overflow:hidden;pointer-events:none;">
+            <div id="cardioTrack" style="position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;"></div>
+          </div>
+          <div id="cardioDots" style="display:flex;justify-content:center;gap:7px;pointer-events:none;"></div>
+          <div id="cardioOthers" style="position:relative;display:flex;align-items:flex-end;justify-content:center;gap:46px;"></div>
+        </div>
       </div>
     </div>
     <!-- 이 종목 볼륨 — 세그먼트 도넛 링 (숫자만, 작업지시서 §5.1) -->
