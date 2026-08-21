@@ -37,6 +37,9 @@ const coverAt = (b, width, opts = {}) => cover(b, { scale: width / (b?.w || 130)
 // 선택 팝오버는 전역 1개 — 재마운트 시 이전 mount 의 document 리스너를 정리한다.
 let _selpopEl = null;
 let _selpopCleanup = null;
+// 언마운트 직전의 보던 위치 — { ref, top }. 수정/삭제 후 ctx.refresh() 가 화면을 통째
+// 재마운트해도(app.js mountCurrent) 같은 책이면 스크롤을 되돌리기 위한 기억.
+let _lastView = null;
 
 async function render(host, params, ctx) {
   const user = ctx.user;
@@ -44,7 +47,8 @@ async function render(host, params, ctx) {
   const meId = user?.id;
 
   const root = el('div', { class: 'bookv4' });
-  const shell = el('div', { class: 'bk' }, topBar({ tab: 'library', ctx }), el('main', {}, root));
+  const mainEl = el('main', {}, root); // 스크롤 컨테이너 (.app-root > .bk > main)
+  const shell = el('div', { class: 'bk' }, topBar({ tab: 'library', ctx }), mainEl);
   host.appendChild(shell);
 
   if (!owners.length) {
@@ -84,6 +88,15 @@ async function render(host, params, ctx) {
   const asideEl = el('aside', { class: 'lx-aside' });
   const mainCol = el('div', { class: 'lx-main' });
   root.appendChild(el('div', { class: 'lx-shell' }, asideEl, mainCol));
+  // 떠나기 직전(다음 mount 직전) 보던 책·스크롤 기억 — 수정/삭제 후 refresh 복원용.
+  ctx.onCleanup && ctx.onCleanup(() => { _lastView = { ref: selectedId, top: mainEl.scrollTop }; });
+
+  // 선택 책을 해시에 반영 — replaceState(히스토리 미증가, hashchange 미발화 → 재마운트 없음).
+  // 수정/삭제 후 ctx.refresh() 재마운트에서 params.ref 로 선택이 복원된다.
+  function syncHash(ref) {
+    const target = ref ? `#/library/${encodeURIComponent(ref)}` : '#/library';
+    if (location.hash !== target) history.replaceState(null, '', target);
+  }
 
   function filteredBooks() {
     let bs = genre === '전체' ? booksWithQuotes : booksWithQuotes.filter((b) => genreOf(b) === genre);
@@ -219,6 +232,7 @@ async function render(host, params, ctx) {
     if (!selectedId || !fb.some((b) => String(b.id) === selectedId)) {
       selectedId = fb.length ? String(fb[0].id) : null;
     }
+    syncHash(selectedId);
     const totalInView = fb.reduce((s, b) => s + quotesOf(b.id).length, 0);
 
     asideEl.appendChild(el('div', { class: 'lx-aside-head' },
@@ -374,6 +388,11 @@ async function render(host, params, ctx) {
 
   renderAside();
   renderMain();
+  // 재마운트 복원 — 해시에 ref 가 실려 온 같은 책일 때만. (탭 클릭 진입은 ref 없음 → 최상단 유지.
+  // 책 삭제로 선택이 다른 책으로 넘어간 경우도 selectedId 불일치 → 복원 안 함)
+  if (params.ref && _lastView && _lastView.ref === selectedId && _lastView.top > 0) {
+    mainEl.scrollTop = _lastView.top;
+  }
 }
 
 registerScreen('library', render);
