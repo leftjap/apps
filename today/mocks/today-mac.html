@@ -3635,7 +3635,7 @@
        시안 정합: article padding 26px 22px (main 16 + doc 6 = 22, top 25+1px border = 26) */
     .doc { max-width: 100%; padding: 25px 6px 0; }
 
-    /* 댓글 패널 → 바텀 시트: 기본 얇은 탭(핸들+"댓글 N"+∧), 탭·스와이프로 64dvh 펼침 (작업지시서 §1.1).
+    /* 댓글 패널 → 바텀 시트: 기본 얇은 탭(핸들+"댓글 N"+∧), 탭·스와이프로 80dvh 펼침 (작업지시서 §1.1).
        peek 196 → ~52 얇은 탭. 스크롤 다운 시 숨김 · 업/문서끝에서 복귀. 그래버·그림자는 코드 그대로. */
     .main__body { flex-direction: column; gap: 0; }
     body[data-convo="1"] .convo {
@@ -3650,7 +3650,10 @@
       border-radius: 20px 20px 0 0;
       box-shadow: 0 -12px 32px rgba(20, 18, 14, 0.18), 0 -2px 10px rgba(20, 18, 14, 0.10);
       padding: 0 16px 10px;
-      height: 64dvh;
+      /* 64 → 80dvh (2026-08-21). 64dvh 는 시안 02(033711d)에서 온 값이고 현존 문서에 근거 없음.
+         아래 .is-open 의 min() 과 같은 값 유지 필수 — 한쪽만 바꾸면 탭 시 시트가 줄어듦.
+         천장은 어차피 100dvh-160px(=652px @812) 이라 80dvh 초과 지정은 무의미. */
+      height: 80dvh;
       transform: translateY(calc(100% - var(--convo-peek)));
       transition: transform .32s cubic-bezier(.32, .72, 0, 1);
     }
@@ -3658,7 +3661,7 @@
        부착하고 높이를 줄여 상단바+본문 일부(160px)가 계속 보이게 (아이폰 피드백 2026-07-03) */
     body[data-convo="1"] .convo.is-open {
       transform: translateY(calc(-1 * var(--kb, 0px)));
-      height: min(64dvh, calc(100dvh - var(--kb, 0px) - 160px));
+      height: min(80dvh, calc(100dvh - var(--kb, 0px) - 160px));
     }
     /* 스크롤 다운 시 얇은 탭 숨김 (펼침 상태에는 미적용) */
     body[data-convo="1"] .convo.is-tab-hidden:not(.is-open) { transform: translateY(112%); }
