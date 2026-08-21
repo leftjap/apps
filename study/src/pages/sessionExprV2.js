@@ -370,8 +370,10 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
   const pool = (Array.isArray(drills) ? drills : []).filter((d) => d?.en && d?.ko);
   if (!pool.length) return null;
   // 출제 문항은 pool 인덱스로 고정해 저장한다 — 종전엔 재렌더마다 재추첨돼 복원 시 문항이 바뀌었다.
+  // 하나라도 어긋나면(드릴 구성 변경) 저장분을 통째로 버리고 재추첨 — 부분 렌더 방지.
   const savedPicks = Array.isArray(saved?.picks)
-    ? saved.picks.filter((n) => Number.isInteger(n) && n >= 0 && n < pool.length) : [];
+    && saved.picks.every((n) => Number.isInteger(n) && n >= 0 && n < pool.length)
+    ? saved.picks : [];
   const allIdx = pool.map((_, i) => i);
   const pickIdx = savedPicks.length
     ? savedPicks

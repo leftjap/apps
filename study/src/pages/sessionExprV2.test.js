@@ -599,6 +599,15 @@ describe('sessionExprV2 — 연습 진행 영속화 (state.exLog)', () => {
     expect([...host2.querySelectorAll('.vs-prod .en')].map((e) => e.textContent)).toEqual(first);
   });
 
+  it('저장된 출제 인덱스가 현재 드릴 구성과 안 맞으면 통째로 재추첨한다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    // picks 에 범위 밖 인덱스(99) — 드릴 구성이 바뀐 카드. 부분 렌더(2문항)로 새면 안 된다.
+    const state = stateWith(6, { exLog: { e1: { prod: { picks: [0, 1, 99], rows: {} } } } });
+    renderSessionExprV2(host, state, { saveSnapshot: () => {} });
+    expect(host.querySelectorAll('.vs-prod')).toHaveLength(3);
+    expect(state.exLog.e1.prod.picks.every((n) => n >= 0 && n < 6)).toBe(true);
+  });
+
   it('생산 연습 통과·공개 상태와 스트릭이 복원된다', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = stateWith(6, { exLog: { e1: { prod: { picks: [0, 1, 2], rows: { 0: true, 1: true } } } } });
