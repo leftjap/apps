@@ -41,6 +41,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { h } from '../components/d1/dom.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, buildD1ExplainRight, buildD1Judges, exprOf } from '../components/d1/sessionShell.js';
+import { fetchPrevSession } from '../services/sessionStats.js';
 import { renderSessionReviewV2 } from './sessionReviewV2.js';
 import { demoReviewCards } from './sessionReviewDemo.js';
 
@@ -230,8 +231,11 @@ export function mountSessionReview(host) {
         : loadReviewCards(window.studyDB, getStoredLang(), getTodayISO());
     })(),
     loadActiveSession(window.studyDB),
+    fetchPrevSession(window.studyDB, getStoredLang(), sessionMode),
   ])
-    .then(async ([cards, snapshot]) => {
+    .then(async ([cards, snapshot, prevSession]) => {
+      // '오늘 발화' 비교 기준 = 직전 동일 모드 세션의 발화 수. 없으면 0 → 비교 UI 미표시.
+      state.prevRecord = Number(prevSession?.utteranceCount) || 0;
       state.cards = cards;
       state.total = cards.length;
       const restore = restoreFromSnapshot(snapshot, cards, sessionMode);

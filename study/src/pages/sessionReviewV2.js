@@ -208,7 +208,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const total = state.total || state.cards.length;
   const idx = state.step;
   const expr = exprOf(s || {});
-  const prevRecord = state.prevRecord || 27;
+  const prevRecord = Number(state.prevRecord) || 0; // 0 = 직전 세션 없음 → 비교 UI 미표시
+  const barPct = () => (prevRecord > 0 ? Math.min(Math.round(((state.tried || 0) / prevRecord) * 100), 100) : 0);
 
   if (total === 0 || !s?.sentence) {
     let root;
@@ -291,10 +292,10 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
   // 우측 — 오늘 발화 위젯
   const recN = h('span', { class: 'n' }, String(state.tried || 0));
-  const recBar = h('div', { class: 'v-bar' }, h('i', { style: `width:${Math.min(Math.round(((state.tried || 0) / Math.max(prevRecord, 1)) * 100), 100)}%` }));
+  const recBar = h('div', { class: 'v-bar' }, h('i', { style: `width:${barPct()}%` }));
   const recMsg = h('div', { class: 'msg' }, '');
   const recWidget = h('div', { class: 'vr-rec' }, h('span', { class: 'lb' }, '오늘 발화'),
-    h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, `회 / 직전 세션 기록 ${prevRecord}회`)), recBar, recMsg);
+    h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, prevRecord > 0 ? `회 / 직전 세션 기록 ${prevRecord}회` : '회')), recBar, recMsg);
 
   // 자기평가가 SRS 의 유일한 입력 — 발음 점수는 약점 음소 수집용일 뿐 간격을 정하지 않는다.
   const judgeRow = createJudgeRow({
@@ -378,7 +379,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   };
   const refreshRec = () => {
     recN.textContent = String(state.tried || 0);
-    recBar.firstChild.style.width = Math.min(Math.round(((state.tried || 0) / Math.max(prevRecord, 1)) * 100), 100) + '%';
+    recBar.firstChild.style.width = barPct() + '%';
+    if (prevRecord <= 0) { recMsg.textContent = ''; return; } // 직전 세션 없음 — 비교 문구 없음
     if ((state.tried || 0) > prevRecord) { recBar.firstChild.style.background = 'var(--coral)'; recMsg.innerHTML = '직전 세션 기록을 <b>넘었어요!</b>'; }
     else recMsg.innerHTML = `<b>${Math.max(prevRecord - (state.tried || 0), 0)}회</b>만 더 말하면 직전 세션 기록을 깨요!`;
   };

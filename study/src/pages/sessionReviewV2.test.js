@@ -331,3 +331,33 @@ describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판�
     expect(host.querySelector('.judge-btn[data-kind="got"]').disabled).toBe(false);
   });
 });
+
+/* '오늘 발화' 비교 위젯 — 직전 세션 기록 (2026-08-21).
+ * state.prevRecord 를 대입하는 곳이 없어 `|| 27` 로 떨어져 있던 가짜 비교 숫자 제거. */
+describe('sessionReviewV2 — 오늘 발화 비교 (직전 세션 기록)', () => {
+  const build = (extra) => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: `${EN} = ${KO}`, chunks: CHUNKS } };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation: s.explanation };
+    renderSessionReviewV2(host, {
+      cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00',
+      recLog: {}, tried: 4, ...extra,
+    }, {});
+    return host.querySelector('.vr-rec');
+  };
+
+  it('직전 세션 기록이 없으면 비교 숫자를 지어내지 않는다', () => {
+    const rec = build({});
+    expect(rec.textContent).not.toMatch(/직전 세션 기록/);
+    expect(rec.textContent).not.toMatch(/27/);
+    expect(rec.querySelector('.msg').textContent).toBe('');
+    expect(rec.querySelector('.v-bar > i').style.width).toBe('0%');
+  });
+
+  it('state.prevRecord 가 있으면 그 값으로 비교한다', () => {
+    const rec = build({ prevRecord: 12 });
+    expect(rec.textContent).toMatch(/직전 세션 기록 12회/);
+    expect(rec.querySelector('.msg').textContent).toMatch(/8회/);
+  });
+});

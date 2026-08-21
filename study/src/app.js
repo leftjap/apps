@@ -166,6 +166,8 @@ function isAuthorized(routeName) {
 }
 
 let currentCleanup = null;
+// 마지막 mount 시점의 활성 DB 인스턴스 — SIGNED_IN 재발화 시 재마운트 필요 여부 판정용.
+let lastMountedDB = null;
 
 export function mount(route) {
   if (!isAuthorized(route.name)) {
@@ -214,6 +216,7 @@ export function mount(route) {
   // mocks 단독 진입 (iframe 허브) 에서는 그대로 노출 (시안 도구). SPA = 실 앱 = 디버그 chip 노출 X.
   // session.html 의 인라인 분기 (Wave 11.22 후속 b) 는 그대로 유지 — idempotent (두 번 hide 무해).
   hidePvChips();
+  lastMountedDB = (typeof window !== 'undefined' ? window.studyDB : null) ?? null;
   window.scrollTo(0, 0);
   if (route.name === 'login') mountDiag(storageKey).catch(() => {}); else unmountDiag();
 }
@@ -280,8 +283,11 @@ function bindAuthEvents() {
       const current = parseRoute();
       if (current.name === 'login') {
         window.location.hash = '#/home';
-      } else {
-        // 이미 다른 라우트 (예: 새로고침 후 라우트 가드 통과) — 재마운트로 db 활성 반영
+      } else if (window.studyDB !== lastMountedDB) {
+        // db 인스턴스가 바뀐 경우만 재마운트 (계정 전환·뒤늦은 ensureUserDB) — 활성 db 반영.
+        // 무조건 재마운트하면 안 된다: GoTrue 는 탭 hidden→visible 마다 SIGNED_IN 을 재발화하므로
+        // (auth-js _onVisibilityChanged → _recoverAndRefresh) 진행 중 세션 화면이 탭 복귀마다
+        // 리셋돼 응용 연습 점수·녹음 카운터가 소실됐다 (2026-08-21).
         mount(current);
       }
     } else if (event === 'INITIAL_SESSION') {

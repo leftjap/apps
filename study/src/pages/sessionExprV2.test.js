@@ -503,3 +503,35 @@ describe('sessionExprV2 — 생산 연습 정답 보기 버튼', () => {
     expect(give.style.display).toBe('none');                              // 공개 후 버튼 숨김
   });
 });
+
+/* '오늘 발화' 비교 위젯 — 직전 세션 기록 (2026-08-21).
+ * 종전엔 state.prevRecord 를 아무도 대입하지 않아 `|| 27` 로 떨어져
+ * 화면이 항상 "직전 세션 기록 27회" 라는 없는 숫자를 보여줬다. */
+describe('sessionExprV2 — 오늘 발화 비교 (직전 세션 기록)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('직전 세션 기록이 없으면 비교 숫자를 지어내지 않는다', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const st = makeState(); // prevRecord 미설정
+    st.tried = 4;
+    renderSessionExprV2(host, st, {});
+    const rec = host.querySelector('.vs-rec');
+    expect(rec.textContent).not.toMatch(/직전 세션 기록/);
+    expect(rec.textContent).not.toMatch(/27/);
+    expect(rec.querySelector('.msg').textContent).toBe('');
+    expect(rec.querySelector('.v-bar > i').style.width).toBe('0%');
+  });
+
+  it('state.prevRecord 가 있으면 그 값으로 비교한다', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const st = makeState();
+    st.prevRecord = 12;
+    st.tried = 4;
+    renderSessionExprV2(host, st, {});
+    const rec = host.querySelector('.vs-rec');
+    expect(rec.textContent).toMatch(/직전 세션 기록 12회/);
+    expect(rec.querySelector('.msg').textContent).toMatch(/8회/); // 12 - 4
+  });
+});

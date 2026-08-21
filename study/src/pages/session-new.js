@@ -22,6 +22,7 @@ import { localISODate } from '../utils/today.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { fetchPrevSession } from '../services/sessionStats.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
@@ -237,8 +238,11 @@ export function mountSessionNew(host) {
   Promise.all([
     loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
     loadActiveSession(window.studyDB),
+    fetchPrevSession(window.studyDB, getStoredLang(), 'new'),
   ])
-    .then(async ([cards, snapshot]) => {
+    .then(async ([cards, snapshot, prevSession]) => {
+      // '오늘 발화' 비교 기준 = 직전 동일 모드 세션의 발화 수. 없으면 0 → 비교 UI 미표시.
+      state.prevRecord = Number(prevSession?.utteranceCount) || 0;
       // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
       // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
       if (cards.length === 0) {

@@ -578,7 +578,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const idx = Math.max(1, state.step - offset);
   const sceneTitle = hasScene ? (state.cards[0].explanation.sceneTitle || '') : '';
   const expr = exprOf(s || {});
-  const prevRecord = state.prevRecord || 27;
+  const prevRecord = Number(state.prevRecord) || 0; // 0 = 직전 세션 없음 → 비교 UI 미표시
+  const barPct = () => (prevRecord > 0 ? Math.min(Math.round(((state.tried || 0) / prevRecord) * 100), 100) : 0);
 
   // 좌측 레일 — 표현 스텝
   const rail = h('div', { class: 'vs-rail' },
@@ -632,11 +633,11 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   // 우측 — 오늘 발화 기록 비교 위젯
   const recN = h('span', { class: 'n' }, String(state.tried || 0));
-  const recBar = h('div', { class: 'v-bar' }, h('i', { style: `width:${Math.min(Math.round(((state.tried || 0) / Math.max(prevRecord, 1)) * 100), 100)}%` }));
+  const recBar = h('div', { class: 'v-bar' }, h('i', { style: `width:${barPct()}%` }));
   const recMsg = h('div', { class: 'msg' }, '');
   const recHd = h('div', { class: 'hd' }, h('span', { class: 'lb' }, '오늘 발화'), h('span', { class: 'vs-newrec', style: 'display:none;' }, vIcon(VI.ZAP, { size: 10, fill: true }), '기록 갱신!'));
   const recWidget = h('div', { class: 'vs-rec' }, recHd,
-    h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, `회 / 직전 세션 기록 ${prevRecord}회`)), recBar, recMsg);
+    h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, prevRecord > 0 ? `회 / 직전 세션 기록 ${prevRecord}회` : '회')), recBar, recMsg);
 
   const refreshDots = () => {
     dotsEl.innerHTML = '';
@@ -651,7 +652,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   };
   const refreshRecWidget = () => {
     recN.textContent = String(state.tried || 0);
-    recBar.firstChild.style.width = Math.min(Math.round(((state.tried || 0) / Math.max(prevRecord, 1)) * 100), 100) + '%';
+    recBar.firstChild.style.width = barPct() + '%';
+    if (prevRecord <= 0) { recMsg.textContent = ''; return; } // 직전 세션 없음 — 비교 문구 없음
     if ((state.tried || 0) > prevRecord) {
       recHd.querySelector('.vs-newrec').style.display = '';
       recBar.firstChild.style.background = 'var(--coral)';
