@@ -3712,8 +3712,10 @@
       min-width: 0; height: auto; padding: 0; border-radius: 0; background: transparent;
       color: var(--ink-4); font-size: 11.5px; font-weight: 500;
     }
-    /* peek(닫힘): 리스트는 폴드 아래(숨김). 펼침 시 최신 정렬 여지 확보 (아이폰 피드백 3) */
-    body[data-convo="1"] .convo:not(.is-open) .convo__list { padding-bottom: 60dvh; }
+    /* peek(닫힘): 리스트는 폴드 아래(숨김). 펼침 시 최신 정렬 여지 확보 (아이폰 피드백 3).
+       필요량 = 리스트 가시높이 - 댓글 1개. 시트가 80dvh 가 되며 60dvh 로는 큰 화면(≥915px)에서
+       scrollTop 이 클램프돼 정렬이 몇 px 어긋남 (932px 실측 4px) → 70dvh 로 여유 복원. */
+    body[data-convo="1"] .convo:not(.is-open) .convo__list { padding-bottom: 70dvh; }
     /* 시트 펼침 backdrop — 시안 rgba(20,18,14,.28) 딤. 탭 시 outside-click 핸들러가 닫음 */
     body[data-convo="1"] #convoBackdrop {
       display: block;
