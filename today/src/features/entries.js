@@ -340,6 +340,10 @@ export function renderDocFromRow(row, doc = document) {
   // 회귀 5 진짜 원인 fix — 동일 entry rerender 시 article 통째 교체 대신 in-place patch.
   // 통째 innerHTML 교체 시 .doc__comments 같은 자식 노드 모두 제거 → 댓글 영역 사라짐.
   // dirty 상태 (사용자 입력 중) 시 h1/body 갱신 skip — 사용자 입력 보존.
+  // 공유 URL 은 렌더 시점에 미리 계산해 dataset 에 보관.
+  // 클릭 핸들러가 DB 조회(await) 없이 navigator.share 를 동기 호출해야 하기 때문 —
+  // iOS Safari 는 await 뒤 share() 호출 시 user activation 만료로 NotAllowedError.
+  const shareUrl = buildEntryShareUrl(row) || '';
   const existing = view.querySelector?.('article.doc');
   if (existing && existing.dataset?.entryId === row.id) {
     // Wave 11.X — IME composition 중에도 외부 reload 시 body 재패치 차단 (caret 보존).
@@ -369,10 +373,11 @@ export function renderDocFromRow(row, doc = document) {
     if (existing.dataset.readOnly !== (readOnly ? '1' : '')) {
       existing.dataset.readOnly = readOnly ? '1' : '';
     }
+    if (existing.dataset.shareUrl !== shareUrl) existing.dataset.shareUrl = shareUrl;
   } else {
     const editableAttr = readOnly ? '' : 'contenteditable';
     view.innerHTML = `
-      <article class="doc" data-entry-id="${escapeHtml(row.id)}" data-read-only="${readOnly ? '1' : ''}">
+      <article class="doc" data-entry-id="${escapeHtml(row.id)}" data-read-only="${readOnly ? '1' : ''}" data-share-url="${escapeHtml(shareUrl)}">
         <h1 class="doc__h1" ${editableAttr} spellcheck="false" data-empty-title="제목 없음">${escapeHtml(titleText)}</h1>
         <div class="doc__meta">${meta}</div>
         <div class="doc__body" ${editableAttr} spellcheck="false">${bodyInner}</div>
@@ -395,12 +400,14 @@ export function renderDocFromRow(row, doc = document) {
  *  - kind_number 없는 row (sync 전 등): skip.
  *  - kind 외 (admin/expense 등): skip.
  */
+const DEEP_LINK_KINDS = Object.freeze(['navi', 'fiction', 'blog', 'memo']);
+
 function updateDeepLinkUrl(row) {
   if (typeof window === 'undefined' || !row) return;
   const userId = _currentUser?.id;
   if (!userId) return;
   const kind = row.kind === 'soyoun_navi' ? 'navi' : row.kind;
-  if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return;
+  if (!DEEP_LINK_KINDS.includes(kind)) return;
   const num = row.kind_number;
   if (num == null) return;
   let target;
@@ -413,6 +420,31 @@ function updateDeepLinkUrl(row) {
     target = `#/${kind}/${slug}/${num}`;
   }
   if (location.hash !== target) history.replaceState(null, '', target);
+}
+
+/** 현재 문서 URL 에서 hash 를 뗀 base (`https://…/apps/today/`). */
+function defaultShareBase() {
+  if (typeof location === 'undefined' || !location.href) return null;
+  return String(location.href).split('#')[0];
+}
+
+/**
+ * 공유용 절대 URL — **항상 owner slug 형식** (`<base>#/kind/slug/num`).
+ *
+ * updateDeepLinkUrl 은 본인 글을 `#/navi/1336` 으로 쓰지만 그 형식은 상대적이다:
+ * 받는 사람이 열면 parseEntryDeepLink 가 ownerId 를 "여는 사람" 으로 fallback 해서
+ * 그 사람의 1336번 글(= 다른 글)이 열린다. slug 형식만 절대 식별 (USER_ID_TO_SLUG 주석).
+ * slug 미등록 owner / kind_number 미부여(sync 전) / 딥링크 대상 아닌 kind → null.
+ */
+export function buildEntryShareUrl(row, baseUrl = defaultShareBase()) {
+  if (!row || !baseUrl) return null;
+  const kind = row.kind === 'soyoun_navi' ? 'navi' : row.kind;
+  if (!DEEP_LINK_KINDS.includes(kind)) return null;
+  const slug = USER_ID_TO_SLUG[row.owner_id];
+  if (!slug) return null;
+  const num = row.kind_number;
+  if (num == null) return null;
+  return `${baseUrl}#/${kind}/${slug}/${num}`;
 }
 
 /** crumb 의 `#NNNN` 을 본인 카테고리 누적 번호로 동적 갱신 (fire-and-forget).
@@ -764,6 +796,9 @@ export async function saveArticle(article, user, kind) {
     if (!id || id.startsWith('new-')) {
       row = await Queries.createEntry({ owner_id: user.id, kind, title, content });
       article.dataset.entryId = row.id;
+      // 새 글 article 은 wrapNewArticle 이 만들어 renderDocFromRow 를 안 거친다 →
+      // 여기서 공유 URL 을 채워야 저장 직후 공유 버튼이 동작 (createEntry 가 kind_number 부여).
+      article.dataset.shareUrl = buildEntryShareUrl(row) || '';
       if (row?.id) {
         _selfSaveInflight.set(row.id, (_selfSaveInflight.get(row.id) || 0) + 1);
       }
@@ -1367,7 +1402,7 @@ function installShareToggleHandler() {
 // `alert('구현 예정')` 만 호출. SPA 가 capture phase listener 로 가로채서 실 Dexie 처리.
 // ───────────────────────────────────────────────────────────────────────────
 
-const DOC_MORE_ACTIONS = Object.freeze(['delete', 'duplicate', 'export']);
+const DOC_MORE_ACTIONS = Object.freeze(['delete', 'duplicate', 'export', 'share']);
 
 function closeDocMoreMenu(doc = (typeof document !== 'undefined' ? document : null)) {
   if (!doc) return;
@@ -1471,6 +1506,40 @@ export async function handleExportAction(article, doc = (typeof document !== 'un
     console.warn('[entries] export 실패:', err?.message || err);
     return { ok: false, reason: 'error', error: err };
   }
+}
+
+/**
+ * 공유 — 네이티브 공유 시트(navigator.share). 미지원 브라우저는 링크 복사로 폴백.
+ *
+ * **동기 호출 유지 필수**: 첫 await 전에 navigator.share 를 호출한다.
+ * article.dataset.shareUrl 을 renderDocFromRow 가 미리 채워두는 이유가 이것.
+ */
+export function handleShareAction(article, opts = {}) {
+  const nav = opts.navigator ?? (typeof navigator !== 'undefined' ? navigator : null);
+  const win = opts.window ?? (typeof window !== 'undefined' ? window : null);
+  if (!article) return Promise.resolve({ ok: false, reason: 'no_article' });
+  const url = article.dataset?.shareUrl;
+  if (!url) return Promise.resolve({ ok: false, reason: 'no_url' });
+  const title = article.querySelector?.('.doc__h1')?.textContent?.trim() || '제목 없음';
+  if (typeof nav?.share === 'function') {
+    return nav.share({ title, url }).then(
+      () => ({ ok: true, via: 'share' }),
+      (err) => (err?.name === 'AbortError'
+        // 사용자가 공유 시트를 닫은 것 — 실패가 아니므로 알림 없음.
+        ? { ok: false, reason: 'aborted' }
+        : { ok: false, reason: 'error', error: err }),
+    );
+  }
+  if (typeof nav?.clipboard?.writeText === 'function') {
+    return nav.clipboard.writeText(url).then(
+      () => {
+        win?.alert?.('링크를 복사했습니다.');
+        return { ok: true, via: 'clipboard' };
+      },
+      (err) => ({ ok: false, reason: 'error', error: err }),
+    );
+  }
+  return Promise.resolve({ ok: false, reason: 'unsupported' });
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -2263,6 +2332,21 @@ function installDocMoreActionHandler() {
       if (!r.ok && typeof window !== 'undefined' && typeof window.alert === 'function') {
         window.alert('내보내기에 실패했습니다.');
       }
+    } else if (action === 'share') {
+      // 공유 OFF 인 본인 글은 RLS(today_entries_select)가 파트너 조회를 막아 링크가 죽는다.
+      // → 공유 토글을 먼저 켜도록 안내하고 중단. (파트너 글은 이미 공유된 상태라 통과)
+      const pill = document.querySelector('.share');
+      if (article.dataset?.readOnly !== '1' && pill?.classList?.contains('share--off')) {
+        const partner = PARTNER_NAME_BY_USER_ID[_currentUser?.id] || '소연';
+        if (typeof window !== 'undefined' && typeof window.alert === 'function') {
+          window.alert(`아직 ${partner}에게 공유되지 않은 글입니다. 공유를 켠 뒤 다시 시도해주세요.`);
+        }
+        return;
+      }
+      const r = await handleShareAction(article);
+      if (!r.ok && r.reason !== 'aborted' && typeof window !== 'undefined' && typeof window.alert === 'function') {
+        window.alert(r.reason === 'no_url' ? '아직 공유 링크를 만들 수 없는 글입니다.' : '공유에 실패했습니다.');
+      }
     }
   }, true); // capture=true — mocks IIFE bubble listener 보다 먼저 발동
 }
@@ -2630,7 +2714,7 @@ export function parseEntryDeepLink(hash, currentUserId) {
   const raw = String(hash || '').replace(/^#\//, '');
   const parts = raw.split('/');
   const kind = parts[0];
-  if (!['navi', 'fiction', 'blog', 'memo'].includes(kind)) return null;
+  if (!DEEP_LINK_KINDS.includes(kind)) return null;
   if (parts.length === 2 && /^\d+$/.test(parts[1])) {
     // 본인 글
     return { kind, ownerId: currentUserId, num: parseInt(parts[1], 10) };

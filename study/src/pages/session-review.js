@@ -80,6 +80,7 @@ export function mountSessionReview(host) {
     recCtrl: null,
     pronScores: [],
     weakInSession: {},
+    exLog: {}, // 카드별 연습 진행 (응용 행 점수/체이닝) — 재마운트·새로고침 복원 (2026-08-21)
     judged: { got: 0, hmm: 0, no: 0 },
     ended: false,
     base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
@@ -95,6 +96,7 @@ export function mountSessionReview(host) {
       mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
+      exLog: { ...state.exLog },
       judged: { ...state.judged }, cardIds: state.cards.map((c) => c.id),
     };
     saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-review] saveActiveSession', e));

@@ -45,6 +45,17 @@ describe('restoreFromSnapshot', () => {
     });
   });
 
+  /* 카드별 연습 진행(응용 행 점수·생산 연습·체이닝) — 스냅샷에 없어 재마운트/새로고침이면
+   * 소실됐다 (2026-08-21 사용자 보고: "응용 5번까지 발화 후 복귀했더니 점수가 전부 사라짐"). */
+  it('exLog(카드별 연습 진행) 복원', () => {
+    const exLog = { b: { drills: { 0: 92, 2: 75 }, prod: { picks: [1, 3], rows: { 0: true } }, chain: { cur: 2 } } };
+    expect(restoreFromSnapshot({ ...snap, exLog }, cards, 'new').exLog).toEqual(exLog);
+  });
+
+  it('exLog 없는 구 스냅샷 → 빈 객체 (하위호환)', () => {
+    expect(restoreFromSnapshot(snap, cards, 'new').exLog).toEqual({});
+  });
+
   it('mode 불일치 → null', () => {
     expect(restoreFromSnapshot(snap, cards, 'review')).toBeNull();
   });

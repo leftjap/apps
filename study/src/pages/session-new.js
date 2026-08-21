@@ -82,6 +82,7 @@ export function mountSessionNew(host) {
     pronScores: [],
     weakInSession: {},
     recLog: {}, // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착·진행 게이트 (2026-06-10)
+    exLog: {}, // 카드별 연습 진행 (응용 행 점수/생산 연습/체이닝) — 재마운트·새로고침 복원 (2026-08-21)
     ended: false,
     base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
     replay: false, // 다시 듣기 — 완료 그룹 재청취(읽기전용). finishSession·스냅샷·라이브통계 건너뜀(SRS 리셋·이중집계 방지)
@@ -99,6 +100,7 @@ export function mountSessionNew(host) {
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       recLog: { ...state.recLog },
+      exLog: { ...state.exLog },
       cardIds: state.cards.map((c) => c.id),
     };
     saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-new] saveActiveSession', e));

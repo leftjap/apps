@@ -204,6 +204,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const subjLabel = lang === 'ja' ? '일본어' : '영어';
   const s = state.sentence;
   const ex = s?.explanation || {};
+  // 카드별 연습 진행 (응용 행 점수 / 체이닝) — 신규 세션과 동일 계약 (2026-08-21)
+  if (!state.exLog || typeof state.exLog !== 'object') state.exLog = {};
+  const cardEx = s?.id ? (state.exLog[s.id] ??= {}) : {};
   const card = state.cards[state.step - 1] || {};
   const total = state.total || state.cards.length;
   const idx = state.step;
@@ -328,19 +331,24 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
   // 응용 연습 — 신규 세션과 동일 (근접중복은 렌더에서 제외).
   const drills = filterNearDupDrills(s?.sentence, ex.drills);
-  const drillCountEl = h('b', {}, '0');
-  const recordedDrills = new Set();
+  const savedDrills = cardEx.drills || {};
+  const recordedDrills = new Set(Object.keys(savedDrills).map(Number));
+  const drillCountEl = h('b', {}, String(Math.min(recordedDrills.size, drills.length)));
   const drillsBlock = drills.length ? h('div', { class: 'vr-drills' },
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'),
       h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, (i, result) => {
       if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
+      (cardEx.drills ??= {})[i] = Math.round(Number(result?.score) || 0); // 행 점수 영속화
       onAppliedScore(result);
-    }, state.demo)),
+    }, state.demo, { saved: savedDrills })),
   ) : null;
 
   // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적).
-  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore);
+  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore, {
+    saved: cardEx.chain,
+    onSave: (v) => { cardEx.chain = v; handlers.saveSnapshot?.(); },
+  });
 
   // 응용·체이닝은 신규와 같은 자리(메인 칼럼)에 두되, 정답을 품으므로 공개 전에는 감춘다.
   if (!revealed) {

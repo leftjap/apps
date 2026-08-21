@@ -58,6 +58,8 @@ import {
   parseEntryDeepLink,
   clearRecentUnreadDots,
   markEntryNotificationsRead,
+  buildEntryShareUrl,
+  handleShareAction,
 } from './entries.js';
 import { createTodayDB } from '../db/schema.js';
 
@@ -1776,5 +1778,201 @@ describe('markEntryNotificationsRead — 글 열람 시 알림 읽음 + 점 제�
     expect(await markEntryNotificationsRead('e1', doc)).toBe(0);
     const left = await globalThis.todayDB.notifications.toArray();
     expect(left.filter((n) => !n.read_at)).toHaveLength(3);
+  });
+});
+
+// ───────────────────────────────────────────────────────────────────────────
+// 공유 버튼 — 네이티브 공유 시트 (navigator.share) + 링크 생성
+// ───────────────────────────────────────────────────────────────────────────
+
+const SHARE_BASE = 'https://leftjap.github.io/apps/today/';
+const GIO = '7bae5645-61c6-4476-9ff2-4c30a72812ff';
+const SOYOUN = 'aeafd9a7-4094-4e7c-a621-188d6b2e336d';
+
+describe('buildEntryShareUrl — 공유 링크는 항상 owner slug 형식', () => {
+  it('본인 글도 slug 포함 — 받는 사람 쪽에서 같은 글이 열려야 함', () => {
+    const url = buildEntryShareUrl({ owner_id: GIO, kind: 'navi', kind_number: 1336 }, SHARE_BASE);
+    expect(url).toBe(`${SHARE_BASE}#/navi/gio/1336`);
+  });
+
+  it('파트너 글 → soyoun slug', () => {
+    const url = buildEntryShareUrl({ owner_id: SOYOUN, kind: 'navi', kind_number: 7 }, SHARE_BASE);
+    expect(url).toBe(`${SHARE_BASE}#/navi/soyoun/7`);
+  });
+
+  it('soyoun_navi kind → navi 로 정규화 (updateDeepLinkUrl 과 동일 규칙)', () => {
+    const url = buildEntryShareUrl({ owner_id: SOYOUN, kind: 'soyoun_navi', kind_number: 12 }, SHARE_BASE);
+    expect(url).toBe(`${SHARE_BASE}#/navi/soyoun/12`);
+  });
+
+  it('생성한 URL 은 parseEntryDeepLink 로 원래 owner/kind/num 복원 (round-trip)', () => {
+    const url = buildEntryShareUrl({ owner_id: GIO, kind: 'navi', kind_number: 1336 }, SHARE_BASE);
+    const parsed = parseEntryDeepLink(url.slice(SHARE_BASE.length), SOYOUN);
+    // 받는 쪽(소연)이 열어도 owner 는 지오로 해석돼야 함 — currentUserId fallback 에 오염되지 않음.
+    expect(parsed).toEqual({ kind: 'navi', ownerId: GIO, num: 1336 });
+  });
+
+  it('slug 없는 owner → null', () => {
+    expect(buildEntryShareUrl({ owner_id: 'unknown-uuid', kind: 'navi', kind_number: 3 }, SHARE_BASE)).toBe(null);
+  });
+
+  it('kind_number 없음 (sync 전 row) → null', () => {
+    expect(buildEntryShareUrl({ owner_id: GIO, kind: 'navi' }, SHARE_BASE)).toBe(null);
+  });
+
+  it('딥링크 대상 아닌 kind → null', () => {
+    expect(buildEntryShareUrl({ owner_id: GIO, kind: 'flight_diary', kind_number: 3 }, SHARE_BASE)).toBe(null);
+  });
+
+  it('row/baseUrl 누락 → null', () => {
+    expect(buildEntryShareUrl(null, SHARE_BASE)).toBe(null);
+    expect(buildEntryShareUrl({ owner_id: GIO, kind: 'navi', kind_number: 1 }, '')).toBe(null);
+  });
+});
+
+describe('renderDocFromRow — data-share-url 프리컴퓨트 (Safari user activation 보존)', () => {
+  let savedLocation;
+  beforeEach(() => {
+    savedLocation = globalThis.location;
+    globalThis.location = { href: `${SHARE_BASE}#/navi/1336` };
+    __setCurrentUserForTest({ id: GIO });
+  });
+  afterEach(() => {
+    globalThis.location = savedLocation;
+    __setCurrentUserForTest(null);
+  });
+
+  it('신규 렌더 → article 에 data-share-url (hash 제거된 base 사용)', () => {
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: () => view, querySelector: () => null };
+    renderDocFromRow({ id: 'r1', owner_id: GIO, kind: 'navi', kind_number: 1336, title: '내 글', content: '' }, fakeDoc);
+    expect(view.innerHTML).toContain(`data-share-url="${SHARE_BASE}#/navi/gio/1336"`);
+  });
+
+  it('in-place patch → 기존 article 의 dataset.shareUrl 갱신', () => {
+    const existing = {
+      dataset: { entryId: 'r2', readOnly: '', shareUrl: '' },
+      querySelector: () => null,
+    };
+    const view = { innerHTML: '', querySelector: (s) => (s === 'article.doc' ? existing : null) };
+    const fakeDoc = { getElementById: () => view, querySelector: () => null };
+    renderDocFromRow({ id: 'r2', owner_id: SOYOUN, kind: 'soyoun_navi', kind_number: 9, title: 'x', content: '' }, fakeDoc);
+    expect(existing.dataset.shareUrl).toBe(`${SHARE_BASE}#/navi/soyoun/9`);
+  });
+
+  it('공유 링크 만들 수 없는 row → 빈 문자열 (버튼이 no_url 로 거부)', () => {
+    const view = { innerHTML: '' };
+    const fakeDoc = { getElementById: () => view, querySelector: () => null };
+    renderDocFromRow({ id: 'r3', owner_id: GIO, kind: 'navi', title: '번호 없음', content: '' }, fakeDoc);
+    expect(view.innerHTML).toContain('data-share-url=""');
+  });
+});
+
+describe('handleShareAction — navigator.share + clipboard 폴백', () => {
+  const makeArticle = (shareUrl, title = '오늘의 네비') => ({
+    dataset: { shareUrl, entryId: 'e1' },
+    querySelector: (s) => (s === '.doc__h1' ? { textContent: title } : null),
+  });
+
+  it('navigator.share 에 title + url 전달', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    const r = await handleShareAction(makeArticle(`${SHARE_BASE}#/navi/gio/1336`), { navigator: { share } });
+    expect(share).toHaveBeenCalledWith({ title: '오늘의 네비', url: `${SHARE_BASE}#/navi/gio/1336` });
+    expect(r).toEqual({ ok: true, via: 'share' });
+  });
+
+  it('share() 는 await 없이 동기 호출 — iOS Safari user activation 만료 방지', () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    handleShareAction(makeArticle(`${SHARE_BASE}#/navi/gio/1`), { navigator: { share } });
+    // await 하지 않은 시점에 이미 호출돼 있어야 함 (중간에 await 가 끼면 실패).
+    expect(share).toHaveBeenCalledTimes(1);
+  });
+
+  it('share 미지원 → clipboard 폴백 + 안내 alert', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const alert = vi.fn();
+    const url = `${SHARE_BASE}#/navi/gio/1336`;
+    const r = await handleShareAction(makeArticle(url), { navigator: { clipboard: { writeText } }, window: { alert } });
+    expect(writeText).toHaveBeenCalledWith(url);
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(r).toEqual({ ok: true, via: 'clipboard' });
+  });
+
+  it('사용자가 공유 시트 취소 (AbortError) → aborted, alert 없음', async () => {
+    const err = Object.assign(new Error('cancelled'), { name: 'AbortError' });
+    const share = vi.fn().mockRejectedValue(err);
+    const alert = vi.fn();
+    const r = await handleShareAction(makeArticle(`${SHARE_BASE}#/navi/gio/1`), { navigator: { share }, window: { alert } });
+    expect(r.ok).toBe(false);
+    expect(r.reason).toBe('aborted');
+    expect(alert).not.toHaveBeenCalled();
+  });
+
+  it('제목 없는 글 → "제목 없음" 으로 공유', async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    await handleShareAction(makeArticle(`${SHARE_BASE}#/navi/gio/1`, '   '), { navigator: { share } });
+    expect(share).toHaveBeenCalledWith(expect.objectContaining({ title: '제목 없음' }));
+  });
+
+  it('data-share-url 없음 → no_url (share 미호출)', async () => {
+    const share = vi.fn();
+    const r = await handleShareAction(makeArticle(''), { navigator: { share } });
+    expect(r).toEqual({ ok: false, reason: 'no_url' });
+    expect(share).not.toHaveBeenCalled();
+  });
+
+  it('share·clipboard 둘 다 없음 → unsupported', async () => {
+    const r = await handleShareAction(makeArticle(`${SHARE_BASE}#/navi/gio/1`), { navigator: {} });
+    expect(r).toEqual({ ok: false, reason: 'unsupported' });
+  });
+});
+
+describe('saveArticle — 새 글 첫 저장 시 data-share-url 배선 (공유 버튼 회귀)', () => {
+  beforeEach(async () => {
+    globalThis.todayDB = createTodayDB(`share-save-${Math.random()}`);
+    await globalThis.todayDB.open();
+    globalThis.location = { href: `${SHARE_BASE}#/navi` };
+  });
+  afterEach(async () => {
+    if (globalThis.todayDB) {
+      await globalThis.todayDB.delete();
+      globalThis.todayDB = null;
+    }
+  });
+
+  it('새 글 저장 → entryId 뿐 아니라 shareUrl 도 채워짐 (저장 직후 공유 가능)', async () => {
+    // wrapNewArticle 이 만드는 미저장 article — renderDocFromRow 를 거치지 않아 shareUrl 이 없다.
+    const article = {
+      dataset: { entryId: 'new-1' },
+      querySelector: (s) => {
+        if (s === '.doc__h1') return { textContent: '새 글 제목' };
+        if (s === '.doc__body') return { innerHTML: '<p>본문</p>' };
+        return null;
+      },
+    };
+    const row = await saveArticle(article, { id: GIO }, 'navi');
+    expect(row?.id).toBeTruthy();
+    expect(article.dataset.entryId).toBe(row.id);
+    expect(article.dataset.shareUrl).toBe(`${SHARE_BASE}#/navi/gio/${row.kind_number}`);
+  });
+
+  it('기존 글 update 는 이미 렌더된 shareUrl 을 덮어쓰지 않음', async () => {
+    const created = await globalThis.todayDB.entries.add({
+      id: 'e-keep', owner_id: GIO, kind: 'navi', kind_number: 5,
+      title: 't', content: 'c', meta: {}, is_shared: 1, pinned: 0,
+      created_at: new Date().toISOString(), updated_at: new Date().toISOString(), deleted_at: null,
+    });
+    expect(created).toBe('e-keep');
+    const kept = `${SHARE_BASE}#/navi/gio/5`;
+    const article = {
+      dataset: { entryId: 'e-keep', shareUrl: kept },
+      querySelector: (s) => {
+        if (s === '.doc__h1') return { textContent: '수정된 제목' };
+        if (s === '.doc__body') return { innerHTML: '<p>수정</p>' };
+        return null;
+      },
+    };
+    await saveArticle(article, { id: GIO }, 'navi');
+    expect(article.dataset.shareUrl).toBe(kept);
   });
 });

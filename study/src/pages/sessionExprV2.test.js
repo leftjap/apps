@@ -535,3 +535,90 @@ describe('sessionExprV2 — 오늘 발화 비교 (직전 세션 기록)', () => 
     expect(rec.querySelector('.msg').textContent).toMatch(/8회/); // 12 - 4
   });
 });
+
+/* 카드별 연습 진행 영속화 (2026-08-21).
+ * 응용 행 점수·녹음 카운터·생산 연습·체이닝 진행은 전부 DOM 로컬이라 재렌더(재마운트·카드 이동·
+ * 새로고침)마다 사라졌다. state.exLog[cardId] 로 옮겨 스냅샷과 함께 복원한다. */
+describe('sessionExprV2 — 연습 진행 영속화 (state.exLog)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  const drillRecBtns = (host) => [...host.querySelectorAll('.vs-drills-list .vs-drow')]
+    .map((r) => r.querySelector('button[aria-label="녹음"]'));
+
+  function stateWith(n, extra = {}) {
+    const drills = Array.from({ length: n }, (_, i) => ({
+      en: `Sentence number ${i}.`, kr: `센텐스 ${i}`, ko: `${i}번 문장.`,
+    }));
+    const explanation = {
+      key: 'Is that a promise? = 약속하는 거예요?',
+      drills,
+      chain: { target: 'It has been a while since we met.', chunks: ['It has been a while', 'since we met'], ko: '오랜만이야.' },
+    };
+    const s = { id: 'e1', lang: 'en', sentence: 'Is that a promise?', ko: '약속하는 거예요?', explanation };
+    return {
+      size: 'desktop', recording: false, lastScore: null, tried: 0, passed: 0, combo: 0,
+      pronScores: [], weakInSession: {}, recLog: {}, step: 1, total: 1,
+      cards: [{ id: 'e1', lang: 'en', sentence: s.sentence, meaning: s.ko, explanation }],
+      sentence: s, ...extra,
+    };
+  }
+
+  it('드릴 녹음 → state.exLog 에 카드별 점수가 남는다', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = stateWith(5);
+    const saveSnapshot = vi.fn();
+    renderSessionExprV2(host, state, { saveSnapshot });
+    const rec = drillRecBtns(host)[1];
+    rec.click(); await tick();
+    rec.click(); await tick(); await tick();
+    expect(state.exLog.e1.drills).toEqual({ 1: 92 });
+    expect(saveSnapshot).toHaveBeenCalled();
+  });
+
+  it('exLog 가 있으면 재렌더 시 행 점수 배지와 녹음 N/M 이 복원된다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = stateWith(5, { exLog: { e1: { drills: { 0: 88, 3: 61 } } } });
+    renderSessionExprV2(host, state, {});
+    const scores = [...host.querySelectorAll('.vs-drills-list .vs-drow')]
+      .map((r) => r.querySelector('.vs-gscore'));
+    expect(scores[0].textContent).toContain('88');
+    expect(scores[0].style.display).not.toBe('none');
+    expect(scores[3].textContent).toContain('61');
+    expect(scores[1].style.display).toBe('none');   // 미녹음 행은 그대로 숨김
+    expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('2');
+  });
+
+  it('생산 연습 출제 문항이 exLog 에 고정된다 — 재렌더해도 같은 문항', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = stateWith(6);
+    renderSessionExprV2(host, state, { saveSnapshot: () => {} });
+    const first = [...host.querySelectorAll('.vs-prod .en')].map((e) => e.textContent);
+    expect(state.exLog.e1.prod.picks).toHaveLength(3);
+    const host2 = document.createElement('div'); document.body.appendChild(host2);
+    renderSessionExprV2(host2, state, { saveSnapshot: () => {} });
+    expect([...host2.querySelectorAll('.vs-prod .en')].map((e) => e.textContent)).toEqual(first);
+  });
+
+  it('생산 연습 통과·공개 상태와 스트릭이 복원된다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = stateWith(6, { exLog: { e1: { prod: { picks: [0, 1, 2], rows: { 0: true, 1: true } } } } });
+    renderSessionExprV2(host, state, {});
+    const rows = [...host.querySelectorAll('.vs-prod')];
+    expect(rows[0].querySelector('.vs-gscore').style.display).toBe('');   // 통과 ✓
+    expect(rows[1].querySelector('.vs-gscore').style.display).toBe('');
+    expect(rows[2].querySelector('.vs-gscore').style.display).toBe('none');
+    expect(rows[0].textContent).toContain('Sentence number 0.');          // 정답 공개 유지
+    expect(rows[1].querySelector('button[aria-label="녹음"]').disabled).toBe(true);
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('2'); // 연속 ✓ 2
+  });
+
+  it('체이닝 진행 단계가 복원된다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = stateWith(5, { exLog: { e1: { chain: { cur: 1 } } } });
+    renderSessionExprV2(host, state, {});
+    const rows = [...host.querySelectorAll('.vs-chain .vs-drow')];
+    expect(rows[0].querySelector('.vs-gscore').style.display).toBe('');   // 1단계 통과 표시
+    expect(rows[0].querySelector('button[aria-label="녹음"]').disabled).toBe(true);
+    expect(rows[1].querySelector('button[aria-label="녹음"]').disabled).toBe(false); // 2단계가 현재
+  });
+});

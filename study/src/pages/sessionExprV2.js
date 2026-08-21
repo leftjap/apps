@@ -192,11 +192,14 @@ export function explainPanel(ex, showHeader = true) {
 /* 응용 연습 행 — 듣기/녹음 (services 재사용). onScore(i, result): 채점 성공 시 세션 집계 위임.
  * demo=true 면 마이크 없이 시뮬 채점 (?demo=1 화면 검증용 — 메인 recPill 데모 분기와 동일).
  * 재생은 체이닝과 동일하게 매번 화자 변주 + 길이별 속도 — 카드 화자 고정 폐기 (2026-07-22 사용자 지시). */
-export function drillRows(drills, hlTerm, lang, onScore, demo) {
+export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null, plays = 0;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
-    const scoreEl = h('span', { class: 'vs-gscore', style: 'display:none;' }, '');
+    // saved[i] = 이 세션에서 이미 받은 점수 (state.exLog 복원) — 재렌더에도 배지 유지
+    const done = saved?.[i];
+    const scoreEl = h('span', { class: 'vs-gscore', style: done == null ? 'display:none;' : '' },
+      done == null ? '' : `${done} ✓`);
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     // 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 — 종전엔 눌러도 아무 반응이 없었다)
     playBtn.addEventListener('click', () => {
@@ -253,11 +256,13 @@ export function drillRows(drills, hlTerm, lang, onScore, demo) {
  * 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
  * 체이닝 발화도 '오늘 발화' 1건 — onUtterance(result) 로 세션 집계·3회 게이트에 반영(응용 드릴과 동일).
  * demo(?demo=1) 는 마이크 없이 통과 시뮬. */
-export function chainBlockEl(chain, lang, card, demo, onUtterance) {
+export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSave } = {}) {
   const steps = buildChainSteps(chain);
   if (!steps.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
-  let cur = 0, plays = 0, fails = 0, recCtrl = null, recRow = null;
+  // saved.cur = 이미 통과한 단계 수 (state.exLog 복원)
+  let cur = Math.min(Math.max(Number(saved?.cur) || 0, 0), steps.length);
+  let plays = 0, fails = 0, recCtrl = null, recRow = null;
 
   const hintEl = h('div', { class: 'vs-gate', style: 'text-align:left;margin-top:10px;min-height:18px;white-space:normal;' }, '');
   const doneEl = h('div', { style: 'display:none;margin-top:10px;' }, h('span', { class: 'vs-pass' }, vIcon(VI.ZAP, { size: 11, fill: true }), '체이닝 완료'));
@@ -283,7 +288,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
     if (cur >= steps.length) { doneEl.style.display = ''; hintEl.textContent = ''; }
     else { doneEl.style.display = 'none'; renderHint(); }
   };
-  const advance = () => { cur += 1; fails = 0; refresh(); };
+  const advance = () => { cur += 1; fails = 0; onSave?.({ cur }); refresh(); };
 
   steps.forEach((step, i) => {
     const wc = step.text.trim().split(/\s+/).filter(Boolean).length;
@@ -361,12 +366,22 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance) {
 // 메인 PASS_THRESHOLD(80)보다 관대: 인출이 주목적, 발음은 최소선만.
 const PROD_MIN_ACCURACY = 65;
 
-export function productionBlockEl(drills, lang, card, demo, onScore, { onStart } = {}) {
+export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, saved, onSave } = {}) {
   const pool = (Array.isArray(drills) ? drills : []).filter((d) => d?.en && d?.ko);
   if (!pool.length) return null;
-  const picks = pool.length <= 3 ? pool.slice() : [...pool].sort(() => Math.random() - 0.5).slice(0, 3);
+  // 출제 문항은 pool 인덱스로 고정해 저장한다 — 종전엔 재렌더마다 재추첨돼 복원 시 문항이 바뀌었다.
+  const savedPicks = Array.isArray(saved?.picks)
+    ? saved.picks.filter((n) => Number.isInteger(n) && n >= 0 && n < pool.length) : [];
+  const allIdx = pool.map((_, i) => i);
+  const pickIdx = savedPicks.length
+    ? savedPicks
+    : (pool.length <= 3 ? allIdx : allIdx.sort(() => Math.random() - 0.5).slice(0, 3));
+  const picks = pickIdx.map((n) => pool[n]);
+  const rowsDone = { ...(saved?.rows || {}) }; // 행 인덱스 → 통과 여부 (공개했으면 false)
+  let restoring = false;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null, started = false, streak = 0, doneCount = 0, plays = 0;
+  const persist = () => { if (!restoring) onSave?.({ picks: pickIdx, rows: { ...rowsDone } }); };
   const streakEl = h('b', {}, '0');
   const doneEl = h('div', { style: 'display:none;margin-top:10px;' }, h('span', { class: 'vs-pass' }, vIcon(VI.ZAP, { size: 11, fill: true }), '생산 완주'));
 
@@ -400,6 +415,8 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       streak = pass ? streak + 1 : 0;
       streakEl.textContent = String(streak);
       if (doneCount === picks.length) doneEl.style.display = '';
+      rowsDone[i] = pass;
+      persist();
     };
     const failOnce = (msg) => {
       fails += 1;
@@ -450,13 +467,19 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart }
       speakWithFeedback(playBtn, d.en, { lang: ttsLang, voice: v.voice, rate: v.rate });
     });
     giveBtn.addEventListener('click', () => { if (!done) reveal(false); });
-    return row;
+    return { row, reveal, i };
   });
+
+  // 저장된 진행 복원 — reveal 을 행 순서대로 재생해 스트릭·완주 뱃지까지 같은 상태로 되돌린다.
+  restoring = true;
+  for (const r of rows) { if (rowsDone[r.i] !== undefined) r.reveal(rowsDone[r.i]); }
+  restoring = false;
+  if (!savedPicks.length) persist(); // 새로 추첨한 문항을 고정 저장
 
   return h('div', { class: 'vs-prodblock', style: 'margin-top:28px;' },
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '생산 연습 — 한글만 보고 영어로 말하기'),
       h('span', { class: 'ct' }, '연속 ✓ ', streakEl)),
-    h('div', { style: 'margin-top:4px;' }, rows),
+    h('div', { style: 'margin-top:4px;' }, rows.map((r) => r.row)),
     doneEl);
 }
 
@@ -570,6 +593,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const subjLabel = lang === 'ja' ? '일본어' : '영어';
   const s = state.sentence;
   const ex = s?.explanation || {};
+  // 카드별 연습 진행 (응용 행 점수 / 생산 연습 / 체이닝) — 재렌더·재마운트·새로고침 복원 (2026-08-21).
+  // 스냅샷(activeSession)에 exLog 로 실려 나간다.
+  if (!state.exLog || typeof state.exLog !== 'object') state.exLog = {};
+  const cardEx = s?.id ? (state.exLog[s.id] ??= {}) : {};
 
   const hasScene = Array.isArray(state.cards[0]?.explanation?.dialogue);
   const offset = hasScene ? 1 : 0;
@@ -738,8 +765,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   // 단 콤보·PASS 칩(연속 PASS 게이미피케이션)은 메인 표현 전용 — drill 미반영 유지.
   // 근접중복(호칭·감탄사만 덧붙인 드릴)은 렌더에서 제외 — 원본 데이터는 손대지 않음(사용자 결정 2026-07-09).
   const drills = filterNearDupDrills(s?.sentence, ex.drills);
-  const drillCountEl = h('b', {}, '0');
-  const recordedDrills = new Set();
+  const savedDrills = cardEx.drills || {};
+  const recordedDrills = new Set(Object.keys(savedDrills).map(Number));
+  const drillCountEl = h('b', {}, String(Math.min(recordedDrills.size, drills.length)));
   const onDrillScore = (i, result) => {
     const score = Math.round(Number(result?.score) || 0);
     state.tried = (state.tried || 0) + 1;
@@ -749,13 +777,14 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(Math.min(recordedDrills.size, drills.length)); }
     bumpRecLog(state, s?.id, score);  // 응용 발화도 '다음 표현' 3회 게이트에 카운트
+    (cardEx.drills ??= {})[i] = score; // 행 점수 영속화 (재렌더 복원)
     refreshDots();                    // 게이트·발화 dots 갱신 (recCount 반영)
     ringHost.lastChild.textContent = capText();
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
   // 생산 연습 시작 시 자동 접힘(답 훔쳐보기 방지) — 펼치기는 자유 (2026-07-22).
-  const drillList = h('div', { class: 'vs-drills-list', style: 'margin-top:4px;' }, drillRows(drills, expr, lang, onDrillScore, state.demo));
+  const drillList = h('div', { class: 'vs-drills-list', style: 'margin-top:4px;' }, drillRows(drills, expr, lang, onDrillScore, state.demo, { saved: savedDrills }));
   // 데스크톱 VS_CSS 엔 '.vs button' 리셋이 없으므로 (L483 주석) 네이티브 버튼 크롬을 인라인으로 제거.
   const unfoldBtn = h('button', { class: 'vs-drills-unfold', type: 'button', style: 'display:none;text-align:left;padding:6px 0;font:inherit;font-size:12.5px;font-weight:600;color:var(--faint);background:none;border:0;cursor:pointer;' }, '응용 목록 펼치기 ▾');
   unfoldBtn.addEventListener('click', () => { drillList.style.display = ''; unfoldBtn.style.display = 'none'; });
@@ -784,10 +813,17 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
-  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onChainScore);
+  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onChainScore, {
+    saved: cardEx.chain,
+    onSave: (v) => { cardEx.chain = v; handlers.saveSnapshot?.(); },
+  });
 
   // 생산 연습(한→영) — 응용 아래·체이닝 위. 발화 집계는 체이닝과 동일 경로(onChainScore) 재사용.
-  const prodBlock = productionBlockEl(drills, lang, s, state.demo, onChainScore, { onStart: collapseDrills });
+  const prodBlock = productionBlockEl(drills, lang, s, state.demo, onChainScore, {
+    onStart: collapseDrills,
+    saved: cardEx.prod,
+    onSave: (v) => { cardEx.prod = v; handlers.saveSnapshot?.(); },
+  });
 
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
 
