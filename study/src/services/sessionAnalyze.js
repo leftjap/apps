@@ -16,6 +16,21 @@ export function pickAnalyzeLang(card) {
   return card?.lang === 'ja' ? 'ja-JP' : 'en-US';
 }
 
+// 마이크 시작·채점 상한 (2026-08-22). speech.js 의 getUserMedia / audioWorklet.addModule /
+// Azure fetch 어디에도 시간 제한이 없어, 조용히 멈춘 요청 하나가 세션 화면을 '녹음 중' 상태로
+// 영구히 가둔다 (다시 눌러도 호출부 finishRecording 이 recCtrl=null 로 즉시 return).
+// 반환 모양은 기존 계약 그대로라 호출부 6곳은 손대지 않아도 복구·안내된다.
+const START_TIMEOUT_MS = 15_000;   // 권한 프롬프트를 사람이 눌러 답할 시간까지 포함
+const ANALYZE_TIMEOUT_MS = 25_000; // 429 백오프 최악(2s+5s) + 3회 시도 ≈16s 위 여유
+const TIMED_OUT = Symbol('timeout');
+
+/** ms 안에 안 끝나면 TIMED_OUT 으로 resolve. 거부는 그대로 전파 (기존 에러 매핑 보존). */
+function withTimeout(promise, ms) {
+  let t;
+  const timer = new Promise((resolve) => { t = setTimeout(() => resolve(TIMED_OUT), ms); });
+  return Promise.race([promise.finally(() => clearTimeout(t)), timer]);
+}
+
 function mockResult(reason) {
   return {
     score: 60 + Math.floor(Math.random() * 40),
@@ -36,7 +51,11 @@ export async function startMicRecording(opts = {}) {
     return { error: 'unavailable' };
   }
   try {
-    const controller = await window.studySpeech.recordWav({ maxSeconds: 15, ...opts });
+    const controller = await withTimeout(window.studySpeech.recordWav({ maxSeconds: 15, ...opts }), START_TIMEOUT_MS);
+    if (controller === TIMED_OUT) {
+      console.warn('[sessionAnalyze] recordWav 응답 없음 — 타임아웃');
+      return { error: 'timeout' };
+    }
     return { controller };
   } catch (e) {
     console.warn('[sessionAnalyze] recordWav 실패', e?.message ?? e);
@@ -44,7 +63,16 @@ export async function startMicRecording(opts = {}) {
   }
 }
 
-export async function stopAndAnalyze(controller, expectedText, card, { enableMiscue = false } = {}) {
+export async function stopAndAnalyze(controller, expectedText, card, opts = {}) {
+  const r = await withTimeout(_stopAndAnalyze(controller, expectedText, card, opts), ANALYZE_TIMEOUT_MS);
+  if (r === TIMED_OUT) {
+    console.warn('[sessionAnalyze] 채점 응답 없음 — 타임아웃');
+    return mockResult('timeout');
+  }
+  return r;
+}
+
+async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = false } = {}) {
   if (!controller) return mockResult('no_recorder');
   try { controller.stop(); } catch { /* noop */ }
   let blob;

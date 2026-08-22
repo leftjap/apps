@@ -12,6 +12,8 @@ export function recordErrorMessage(reason) {
       return '마이크 입력이 잡히지 않았어요. 입력 장치·음소거를 확인해 주세요';
     case 'no_match':
       return '음성이 인식되지 않았어요. 다시 말해주세요';
+    case 'timeout':
+      return '응답이 없어 중단했어요. 연결을 확인하고 다시 시도해주세요';
     case 'rate_limited':
       return '채점 서버가 붐벼요. 10초쯤 뒤에 다시 녹음해 보세요';
     case 'azure_init_fail':

@@ -99,3 +99,36 @@ describe('stopAndAnalyze', () => {
     expect(out.fallbackReason).toBe('record_fail');
   });
 });
+
+/* 응답 없는 promise 타임아웃 (2026-08-22).
+ * speech.js 의 getUserMedia / audioWorklet.addModule / Azure fetch 어디에도 시간 제한이 없어,
+ * 조용히 멈춘 요청 하나가 세션 화면을 영구히 '녹음 중'에 가둔다 (다시 눌러도 무반응 — 호출부의
+ * finishRecording 은 recCtrl 이 null 이라 즉시 return). 두 통로에서 시간 제한을 건다. */
+describe('타임아웃 — 응답 없는 녹음/채점', () => {
+  let warn;
+  beforeEach(() => { vi.useFakeTimers(); warn = vi.spyOn(console, 'warn').mockImplementation(() => {}); });
+  afterEach(() => { vi.useRealTimers(); warn.mockRestore(); delete globalThis.window; });
+
+  it('recordWav 가 끝나지 않으면 { error: timeout } (마이크 시작 15초)', async () => {
+    globalThis.window = { studySpeech: { recordWav: () => new Promise(() => {}) } };
+    const p = startMicRecording();
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(await p).toEqual({ error: 'timeout' });
+  });
+
+  it('analyzeWavRest 가 끝나지 않으면 mockFallback + reason=timeout (채점 25초)', async () => {
+    globalThis.window = { studySpeech: { analyzeWavRest: () => new Promise(() => {}) } };
+    const ctrl = { stop: () => {}, blobPromise: Promise.resolve(new Blob()) };
+    const p = stopAndAnalyze(ctrl, 'hello', { lang: 'en' });
+    await vi.advanceTimersByTimeAsync(25_000);
+    const r = await p;
+    expect(r.mockFallback).toBe(true);
+    expect(r.fallbackReason).toBe('timeout');
+  });
+
+  it('제한 시간 안에 끝나면 타임아웃이 개입하지 않는다', async () => {
+    const ctrl = { stop: () => {}, blobPromise: Promise.resolve(new Blob()) };
+    globalThis.window = { studySpeech: { analyzeWavRest: async () => ({ score: 91 }) } };
+    await expect(stopAndAnalyze(ctrl, 'hello', { lang: 'en' })).resolves.toEqual({ score: 91 });
+  });
+});

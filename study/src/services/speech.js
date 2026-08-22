@@ -946,8 +946,9 @@ export async function recordWav({
   for (let attempt = 0; attempt < 2; attempt++) {
     const wasWarm = !!_warmMic;
     const wm = await ensureWarmMic(workletUrl);
-    // 이전 녹음이 아직 active 면 강제 확정 (재클릭 race — 이전 blob 은 그 시점까지로 resolve)
-    if (wm.active) { try { wm.active.stop(); } catch { /* noop */ } }
+    // 이전 녹음이 아직 active 면 강제 확정 (재클릭 race — 이전 blob 은 그 시점까지로 resolve).
+    // abort = stop + onAutoStop — 통보 없이 끊으면 앞 행 UI 가 '녹음 중'에 영구 고착된다 (2026-08-22).
+    if (wm.active) { try { wm.active.abort(); } catch { /* noop */ } }
 
     // 무음 자동종료 VAD (말 끝나면 자동 멈춤). autoStopSilenceMs>0 일 때만.
     const vad = autoStopSilenceMs > 0
@@ -980,19 +981,28 @@ export async function recordWav({
           const level = peak / 0x7FFF;
           if (onLevel) onLevel(level);
           if (vad && vad.feed(level, Date.now())) {
-            stop();                      // 무음 자동종료 → blob resolve
-            try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
+            endInvoluntary();            // 무음 자동종료 → blob resolve + 호출자 통보
           }
         }
       },
       stop,
+      abort: endInvoluntary,
     };
     wm.active = session;
 
-    const timer = setTimeout(() => stop(), maxSeconds * 1000);
+    const timer = setTimeout(() => endInvoluntary(), maxSeconds * 1000);
 
+    /* 호출자 의사와 무관한 종료(무음 자동종료·maxSeconds 상한·새 녹음의 강제 확정)는 반드시
+     * 통보한다. 통보를 빼면 화면이 '녹음 중' 상태로 갇힌다 (2026-08-22 무한 로딩 실사용 보고).
+     * 사용자가 직접 controller.stop() 한 경우엔 통보하지 않는다 — 그쪽은 이미 채점 흐름을 탄다. */
+    function endInvoluntary() {
+      if (!stop()) return;
+      try { onAutoStop?.(); } catch (err) { console.warn('[recordWav] onAutoStop', err); }
+    }
+
+    /** @returns {boolean} 이번 호출이 실제로 종료를 수행했으면 true (이미 끝났으면 false) */
     function stop() {
-      if (stopped) return;
+      if (stopped) return false;
       stopped = true;
       clearTimeout(timer);
       if (wm.active === session) {
@@ -1010,6 +1020,7 @@ export async function recordWav({
       } catch (e) {
         rejectDone(e);
       }
+      return true;
     }
 
     // 2026-07-12 — 캡처 라이브 게이트: 첫 청크가 실제로 흐른 뒤 resolve. 호출자의 "await 후
