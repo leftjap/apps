@@ -74,6 +74,15 @@ describe('recordWav — 비자발적 종료 통보 (무한 로딩 회귀)', () =
     expect(onAutoStop).toHaveBeenCalledTimes(1);
   });
 
+  it('무음 자동종료로 끝나도 통보한다 (기존 경로 회귀 방지)', async () => {
+    const onAutoStop = vi.fn();
+    const { node } = await startRecording({ maxSeconds: 30, autoStopSilenceMs: 100, onAutoStop });
+    node.port.onmessage({ data: chunk(0.2) });        // 발화 레벨 → VAD 무장
+    await new Promise((r) => setTimeout(r, 160));     // hangover(100ms) 경과
+    node.port.onmessage({ data: chunk(0) });          // 무음 → 자동종료
+    expect(onAutoStop).toHaveBeenCalledTimes(1);
+  });
+
   it('사용자가 직접 멈춘 경우엔 통보하지 않는다 (중복 채점 방지)', async () => {
     const onAutoStop = vi.fn();
     const { controller } = await startRecording({ maxSeconds: 30, autoStopSilenceMs: 2000, onAutoStop });

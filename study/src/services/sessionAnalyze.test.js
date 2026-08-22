@@ -109,18 +109,24 @@ describe('타임아웃 — 응답 없는 녹음/채점', () => {
   beforeEach(() => { vi.useFakeTimers(); warn = vi.spyOn(console, 'warn').mockImplementation(() => {}); });
   afterEach(() => { vi.useRealTimers(); warn.mockRestore(); delete globalThis.window; });
 
-  it('recordWav 가 끝나지 않으면 { error: timeout } (마이크 시작 15초)', async () => {
+  it('recordWav 가 끝나지 않으면 { error: timeout } — 15초 전에는 끊지 않는다', async () => {
     globalThis.window = { studySpeech: { recordWav: () => new Promise(() => {}) } };
     const p = startMicRecording();
-    await vi.advanceTimersByTimeAsync(15_000);
+    let settled = false; p.then(() => { settled = true; });
+    await vi.advanceTimersByTimeAsync(14_000);
+    expect(settled).toBe(false);            // 조기 차단 금지 (권한 프롬프트 응답 시간 보호)
+    await vi.advanceTimersByTimeAsync(1_500);
     expect(await p).toEqual({ error: 'timeout' });
   });
 
-  it('analyzeWavRest 가 끝나지 않으면 mockFallback + reason=timeout (채점 25초)', async () => {
+  it('analyzeWavRest 가 끝나지 않으면 mockFallback + reason=timeout — 25초 전에는 끊지 않는다', async () => {
     globalThis.window = { studySpeech: { analyzeWavRest: () => new Promise(() => {}) } };
     const ctrl = { stop: () => {}, blobPromise: Promise.resolve(new Blob()) };
     const p = stopAndAnalyze(ctrl, 'hello', { lang: 'en' });
-    await vi.advanceTimersByTimeAsync(25_000);
+    let settled = false; p.then(() => { settled = true; });
+    await vi.advanceTimersByTimeAsync(24_000);
+    expect(settled).toBe(false);            // 429 백오프 재시도(최악 ~16s)를 잘못 끊지 않도록
+    await vi.advanceTimersByTimeAsync(1_500);
     const r = await p;
     expect(r.mockFallback).toBe(true);
     expect(r.fallbackReason).toBe('timeout');
