@@ -1718,6 +1718,11 @@ describe('sync — Wave 11.20 pronunciationLog 변환', () => {
       sentence_id: 's1',
       date: '2026-04-15',
       overall_score: 85,
+      pron_score: null,
+      fluency_score: null,
+      completeness_score: null,
+      prosody_score: null,
+      capture_rms: null,
       phoneme_scores: [{ symbol: 'a', score: 90 }],
       weak_phonemes: ['r'],
       recognized_text: 'hello',
@@ -1745,6 +1750,11 @@ describe('sync — Wave 11.20 pronunciationLog 변환', () => {
       sentenceId: 's1',
       date: '2026-04-15',
       overallScore: 85,
+      pronScore: null,
+      fluencyScore: null,
+      completenessScore: null,
+      prosodyScore: null,
+      captureRms: null,
       phonemeScores: [{ symbol: 'a', score: 90 }],
       weakPhonemes: ['r'],
       recognizedText: 'hello',
@@ -2079,5 +2089,43 @@ describe('preserveLocalOnlyFields — pull 시 로컬 전용 필드 이월', () 
     expect(preserveLocalOnlyFields(chosenLocal, chosenLocal)).toBe(chosenLocal);
     const server = { id: 'b' };
     expect(preserveLocalOnlyFields(undefined, server)).toBe(server);
+  });
+});
+
+/* 2026-08-23 실 DB 감사: study_pronunciation_log 385행 중 세부 점수 0건.
+ * speech.js:1143 이 Azure 로부터 받고 pronunciationLog.js:27 이 Dexie 에 저장하는데
+ * 매핑에 없어 업로드에서 통째로 버려졌다 → 기기 로컬에만 존재(교체 시 영구 소실).
+ * 0007_pronunciation_log_subscores.sql 로 컬럼 추가 후 양방향 매핑한다. */
+describe('sync — 발음 세부 점수(fluency/prosody 등) 동기화', () => {
+  const DEXIE_SUB = {
+    pronScore: 88, fluencyScore: 72, completenessScore: 100, prosodyScore: 65, captureRms: 0.031,
+  };
+  const SB_SUB = {
+    pron_score: 88, fluency_score: 72, completeness_score: 100, prosody_score: 65, capture_rms: 0.031,
+  };
+
+  it('Dexie → Supabase — 세부 5필드를 버리지 않는다', async () => {
+    const { pronunciationLogDexieToSupabase } = await import('./sync.js');
+    const out = pronunciationLogDexieToSupabase(
+      { id: 'p1', lang: 'en', sentenceId: 's1', date: '2026-08-21', overallScore: 74, ...DEXIE_SUB },
+      'u1',
+    );
+    expect(out).toMatchObject(SB_SUB);
+  });
+
+  it('Supabase → Dexie — 세부 5필드 복원', async () => {
+    const { pronunciationLogSupabaseToDexie } = await import('./sync.js');
+    const out = pronunciationLogSupabaseToDexie(
+      { id: 'p1', lang: 'en', sentence_id: 's1', date: '2026-08-21', overall_score: 74, ...SB_SUB },
+    );
+    expect(out).toMatchObject(DEXIE_SUB);
+  });
+
+  it('세부 점수 없는 레거시 행 → null (undefined 로 새지 않음)', async () => {
+    const { pronunciationLogDexieToSupabase, pronunciationLogSupabaseToDexie } = await import('./sync.js');
+    const up = pronunciationLogDexieToSupabase({ id: 'p2', lang: 'en', date: '2026-05-08' }, 'u1');
+    expect(up).toMatchObject({ fluency_score: null, prosody_score: null, capture_rms: null });
+    const down = pronunciationLogSupabaseToDexie({ id: 'p2', lang: 'en', date: '2026-05-08' });
+    expect(down).toMatchObject({ fluencyScore: null, prosodyScore: null, captureRms: null });
   });
 });

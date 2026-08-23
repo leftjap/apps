@@ -88,6 +88,11 @@ extension GymSessionLogic {
         for s in history where s.status == .completed && s.date >= from && s.date <= to {
             for b in s.blocks where b.exerciseId == exerciseId {
                 for set in b.sets where set.done {
+                    // done 세트가 있으면 지표 값이 하나도 없어도 **날짜 키는 남긴다** — 그날이
+                    // "뛴 날"이라는 사실 자체가 원의 채움을 정하고, 값 없는 지표만 "—" 가 된다.
+                    // 홈(cardioDayMinutes)이 duration nil 을 0 으로 세는 것과 일수를 맞추기 위함
+                    // (실기기 2026-08-19: 홈 6일 vs 카드 4일).
+                    if out[s.date] == nil { out[s.date] = [:] }
                     for m in GymCardioMetric.allCases {
                         guard let v = m.value(in: set) else { continue }
                         out[s.date, default: [:]][m, default: 0] += v
@@ -129,37 +134,47 @@ extension GymSessionLogic {
             case .calories: return p.kcal
             }
         }
-        let todayOwn = cardioTodayValue(todaySets, metric)
+        // 오늘 값 = **오늘 이미 완료된 기록 + 진행 중 세트**. 진행 중 세트만 보면 오늘 한 번 마치고
+        // 새 세션을 켰을 때 오늘이 "미입력" 으로 떨어진다 (실기기 2026-08-19).
+        // 진행 중 세션은 status active 라 cardioDayTotals 에 안 들어와 이중 계상되지 않는다.
+        let todayISO = iso(todayIdx)
+        let todayDone = thisWeek[todayISO]?[metric]
+        let todayLive = cardioTodayValue(todaySets, metric)
+        let todayHasRecord = thisWeek[todayISO] != nil || todayLive != nil
+        let todayOwn: Double? = (todayDone == nil && todayLive == nil)
+            ? nil : (todayDone ?? 0) + (todayLive ?? 0)
 
         var days: [CardioDay] = []
         for i in 0..<7 {
             let label = cardioWeekdays[i]
             // ① 원 형태는 시간 기준으로 먼저 정한다 (지표와 무관).
-            let durThis = thisWeek[iso(i)]?[.duration]
-            let durLast = lastWeek[iso(i - 7)]?[.duration]
+            // 기록 유무는 '그날 done 세트가 있었는가' — 0분·값없음도 뛴 날이다 (홈과 같은 술어).
+            let ranThis = thisWeek[iso(i)] != nil
+            let ranLast = lastWeek[iso(i - 7)] != nil
             let style: CardioDay.Style
             var hasSlot: Bool          // 숫자를 쓸 자리가 있는가 (빈 원이면 지표와 무관하게 계속 빈 원)
             if i == todayIdx {
                 // 오늘만 예외 — **활성 지표** 기준이다. 시간을 넣었어도 칼로리가 비었으면 칼로리
                 // 화면에서 오늘 원은 참조 스타일이 된다 (시안 7a 두 스크린샷이 이 차이를 보여준다).
-                style = (todayOwn ?? 0) > 0 ? .filled : .todayRef
+                style = todayHasRecord ? .filled : .todayRef
                 hasSlot = true
             } else if i < todayIdx {
-                let has = (durThis ?? 0) > 0
-                style = has ? .filled : .ring
-                hasSlot = has
+                style = ranThis ? .filled : .ring
+                hasSlot = ranThis
             } else {
-                let has = (durLast ?? 0) > 0
-                style = has ? .ring : .ringFaint
-                hasSlot = has
+                style = ranLast ? .ring : .ringFaint
+                hasSlot = ranLast
             }
             // ② 숫자만 활성 지표로 갈아 끼운다.
             var text: String? = nil
             if hasSlot {
                 if i == todayIdx {
-                    // 입력됐으면 그 값, 아니면 직전 러닝(히어로 고스트와 동일 원천)
-                    let v = todayOwn ?? prevValue(metric)
-                    text = v.map { metric.format($0) }
+                    // 기록이 있으면 그 값(그 지표만 비었으면 "—"), 없으면 직전 러닝(히어로 고스트와 동일 원천)
+                    if todayHasRecord {
+                        text = todayOwn.map { metric.format($0) } ?? "—"
+                    } else {
+                        text = prevValue(metric).map { metric.format($0) }
+                    }
                 } else {
                     let v = (i < todayIdx ? thisWeek[iso(i)] : lastWeek[iso(i - 7)])?[metric]
                     text = v.map { metric.format($0) } ?? "—"
@@ -171,8 +186,10 @@ extension GymSessionLogic {
         // ③ 합계·일수 — 오늘은 입력값만(참조 제외), 과거는 이번 주 기록, 미래는 제외. 값 > 0 만 (§5).
         var sum = 0.0, count = 0
         for i in 0...todayIdx {
-            let v = i == todayIdx ? todayOwn : thisWeek[iso(i)]?[metric]
-            if let v, v > 0 { sum += v; count += 1 }
+            let ran = i == todayIdx ? todayHasRecord : (thisWeek[iso(i)] != nil)
+            guard ran else { continue }
+            sum += (i == todayIdx ? todayOwn : thisWeek[iso(i)]?[metric]) ?? 0
+            count += 1
         }
         return CardioMetricWeek(days: days, total: metric.format(sum),
                                 unit: metric.unit, dayCount: count)

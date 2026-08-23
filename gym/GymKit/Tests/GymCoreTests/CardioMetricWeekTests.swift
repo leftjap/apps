@@ -69,7 +69,9 @@ import Testing
         let w = week(.calories, hist: h)
         #expect(w.days[0].text == "—")
         #expect(w.days[0].style == .filled, "시간 기록이 있으니 원은 채움 유지")
-        #expect(w.total == "0" && w.dayCount == 0)
+        // 일수는 **뛴 날 수** — 그 지표를 적은 날 수가 아니다 (실기기 2026-08-19 불일치의 한 축).
+        // 오늘 칸만 지표 기준으로 남는다 — 확정 시안 7a 가 "시간 4일 / 칼로리 3일" 로 못 박았다.
+        #expect(w.total == "0" && w.dayCount == 1)
     }
 
     // 다른 유산소 종목은 섞이지 않는다 (§5 집계 범위 · §8 체크리스트).
@@ -173,5 +175,74 @@ import Testing
         #expect(GymCardioLayout(cardWidth: 375).circleDiameter == 37)   // W=331, 간격 12
         #expect(GymCardioLayout(cardWidth: 430).circleDiameter == 37)   // W=386, 간격 21
         #expect(GymCardioLayout(cardWidth: 320).circleDiameter == 32)   // W=276, 간격 2.8 → 축소
+    }
+}
+
+// 실기기 보고 2026-08-19 — 홈 "32분 6일" vs 세션 "24분 4일". 같은 기록인데 두 화면이 다르다.
+// 원인 둘: ① 세션이 **오늘 이미 완료된 기록**을 무시(진행 중 세트만 봄) ② 0분/무기록 날 판정 불일치.
+@Suite struct CardioWeekHomeParityTests {
+    let today = GymWeightLogic.isoFmt.date(from: "2026-08-19")!   // 수요일
+
+    func run(_ date: String, min: Double?, ex: String = "treadmill") -> GymSession {
+        GymSession(id: "r-\(date)-\(ex)", date: date,
+                   blocks: [GymBlock(exerciseId: ex, sets: [
+                       GymSet(done: true, duration: min.map { $0 * 60 })])],
+                   status: .completed)
+    }
+
+    // ① 오늘 8분을 이미 마치고 새 세션을 시작 → 세션 카드도 오늘을 기록으로 봐야 한다.
+    @Test func todayAlreadyCompletedCountsInSessionCard() {
+        let w = GymSessionLogic.cardioMetricWeek(
+            history: [run("2026-08-19", min: 8)],
+            todaySets: [GymSet(duration: nil)],          // 방금 시작한 빈 세트
+            exerciseId: "treadmill", metric: .duration, now: today)
+        #expect(w.days[2].style == .filled, "오늘 완료분이 있으면 참조가 아니라 기록")
+        #expect(w.days[2].text == "8")
+        #expect(w.total == "8" && w.dayCount == 1)
+    }
+
+    // 오늘 완료분 + 진행 중 입력은 그날 합계로 (홈 cardioDayMinutes 와 같은 셈).
+    @Test func todayCompletedPlusLiveSetSums() {
+        let w = GymSessionLogic.cardioMetricWeek(
+            history: [run("2026-08-19", min: 8)],
+            todaySets: [GymSet(duration: 300)],          // 진행 중 5분
+            exerciseId: "treadmill", metric: .duration, now: today)
+        #expect(w.days[2].text == "13")
+        #expect(w.total == "13" && w.dayCount == 1)
+    }
+
+    // ② 0분 유산소도 '뛴 날' — 홈과 같게 일수에 든다 (사용자 확정 2026-08-17).
+    @Test func zeroMinuteDayIsARecordedDay() {
+        let w = GymSessionLogic.cardioMetricWeek(
+            history: [run("2026-08-17", min: 0)], todaySets: [],
+            exerciseId: "treadmill", metric: .duration, now: today)
+        #expect(w.days[0].style == .filled)
+        #expect(w.dayCount == 1)
+    }
+
+    // duration 자체가 없는 done 세트(구버그 데이터)도 날은 잡히고 숫자만 "—".
+    @Test func doneSetWithoutDurationIsStillARecordedDay() {
+        let w = GymSessionLogic.cardioMetricWeek(
+            history: [run("2026-08-17", min: nil)], todaySets: [],
+            exerciseId: "treadmill", metric: .duration, now: today)
+        #expect(w.days[0].style == .filled)
+        #expect(w.days[0].text == "—")
+        #expect(w.dayCount == 1)
+    }
+
+    // 실기기 보고 재현 — 유산소가 전부 트레드밀이면 홈 일수와 세션 일수가 같아야 한다.
+    @Test func homeAndSessionAgreeWhenAllCardioIsOneExercise() {
+        let sessions = [
+            run("2026-08-17", min: 8), run("2026-08-18", min: 3), run("2026-08-19", min: 6),
+            run("2026-08-21", min: 0),                              // 0분 (금)
+            run("2026-08-22", min: 7), run("2026-08-23", min: 8),
+        ]
+        let sunday = GymWeightLogic.isoFmt.date(from: "2026-08-23")!
+        let home = GymHomeLogic.cardioWeek(sessions: sessions, custom: [], now: sunday)
+        let card = GymSessionLogic.cardioMetricWeek(history: sessions, todaySets: [],
+                                                    exerciseId: "treadmill",
+                                                    metric: .duration, now: sunday)
+        #expect(home.thisDays == card.dayCount, "홈 \(home.thisDays)일 vs 카드 \(card.dayCount)일")
+        #expect(String(home.thisTotal) == card.total, "홈 \(home.thisTotal)분 vs 카드 \(card.total)분")
     }
 }
