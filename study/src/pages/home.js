@@ -25,6 +25,26 @@ import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+/**
+ * 최장 연속 학습일. dates = 학습 기록이 있는 날짜 배열(정렬·중복 무관).
+ *
+ * 2026-08-23 — 종전엔 bestStreak 에 PR meta(일 발화 최대치·학습시간 '초')를 넣고 연속 '일'수와
+ * 뺐다. 단위가 다른 값이라 "최고 기록까지 35일"(35 = 발화 횟수) 같은 헛값이 된다. PR 이 한 번도
+ * 저장되지 않아 null 로 가려져 있었을 뿐이고, 같은 날 PR 저장을 붙이면서 드러나게 됐다.
+ */
+export function longestStreak(dates) {
+  const uniq = [...new Set(Array.isArray(dates) ? dates.filter(Boolean) : [])].sort();
+  if (uniq.length === 0) return 0;
+  let best = 1, run = 1;
+  for (let i = 1; i < uniq.length; i++) {
+    const prev = new Date(uniq[i - 1] + 'T00:00:00Z');
+    prev.setUTCDate(prev.getUTCDate() + 1);
+    run = prev.toISOString().slice(0, 10) === uniq[i] ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+  return best;
+}
+
 // scene(전체 대화 듣기) 카드 = explanation.dialogue 배열 보유 (cardLoader isScene · sessionFinish isSceneCard 동일 판정).
 export const isSceneCard = (l) => Array.isArray(l?.explanation?.dialogue);
 // 신규 '표현' 카운트 — 미완료 카드 중 scene 제외 (표현만). hero '표현 N개' 라벨 + todayNewDone(=newSentenceIds,
@@ -260,7 +280,7 @@ async function loadMathStats(state) {
     newCount, reviewCount, totalReview, streak,
     tried: todayLog.tried, passed: todayLog.passed,
     todayNewDone: todayLog.newDone, todayReviewDone: todayLog.reviewDone,
-    bestStreak: null, weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
+    bestStreak: longestStreak(dates), weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
     pronBars: mPronBars, grass: mGrass, cumUtter: mCumUtter, cumExpr: mCumExpr, cumMaster: totalReview,
     weekDoneText: todayLog.tried > 0 ? `${mWeekDays}일 학습 · 오늘 진행 중` : `${mWeekDays}일 학습`,
     pronAvg: mWeekTried, pronDelta: 0,
@@ -328,16 +348,7 @@ async function loadStats(state) {
     const weekUtter = weekLogs.reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
     const weekPass = weekLogs.reduce((s, l) => s + (Number(l.passCount) || 0), 0);
 
-    let bestStreak = null;
-    try {
-      const got = await db.meta.bulkGet(['prDailyStudyTime', 'prWeeklyUtterance', 'prDailyUtterance', 'prWeeklyPass']);
-      const cands = [];
-      got.forEach((v) => {
-        if (v?.value) cands.push({ value: v.value, date: v.value.achieved_at || v.value.week_start });
-      });
-      cands.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-      if (cands[0]?.value?.value != null) bestStreak = cands[0].value.value;
-    } catch { /* meta 미존재 ok */ }
+    const bestStreak = longestStreak(dates);
 
     // ── C 파이널 v2 데스크톱 하단 스트립 (실데이터) ──
     // 발음 점수 일별 시계열은 미저장(sessionLogs=발화/통과만) → 앱이 실제 추적하는 '일일 발화' 추이로 정직 표기.

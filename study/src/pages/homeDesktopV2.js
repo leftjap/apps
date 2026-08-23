@@ -330,8 +330,12 @@ function derive(state) {
   const newMin = state.newMin || Math.max(state.newCount * 3, 4);
   const reviewMin = state.reviewMin || Math.max((state.reviewCount || state.totalReview) * 2, 2);
 
+  // bestStreak = 최장 연속 학습일 (home.js longestStreak). 현재가 최고면 '경신 중' —
+  // '최고 기록까지 0일' 은 말이 안 되고, 경신 중이라는 사실 자체가 기록 장치다.
+  const beatsBest = state.bestStreak != null && state.streak >= state.bestStreak;
+  const toBest = state.bestStreak ? Math.max(state.bestStreak - state.streak, 0) : 0;
   const streakText = phase === 'done'
-    ? `${state.streak}일 연속 달성${state.bestStreak ? ` — 최고 기록까지 ${Math.max(state.bestStreak - state.streak, 0)}일` : ''}`
+    ? `${state.streak}일 연속 달성${beatsBest ? ' — 최고 기록 경신 중' : (toBest > 0 ? ` — 최고 기록까지 ${toBest}일` : '')}`
     : `${state.streak}일 연속 — 오늘 하면 ${state.streak + 1}일째`;
 
   let msg;
@@ -341,7 +345,12 @@ function derive(state) {
       : (state.lang === 'math' ? '오늘 풀 새 문제가 준비됐어요.' : '오늘 익힐 새 표현이 준비됐어요.');
     msg = `<span>${lead}<br/>다 해도 약 ${newMin + reviewMin}분이면 충분해요.</span>`;
   } else if (phase === 'done') {
-    msg = `<span>오늘 분량 끝!${state.pronAvg ? ` 새 표현 평균 <b class="c">${state.pronAvg}점</b> —<br/>이번 주 최고 기록이에요.` : ' 수고했어요.'}</span>`;
+    // 2026-08-23 — 종전엔 pronAvg 를 '점'으로 붙이고 아무 비교 없이 '이번 주 최고 기록이에요' 를
+    // 무조건 달았다. pronAvg 는 실제로 이번 주 발화(수학은 문제) 수다 (home.js loadStats).
+    const weekTail = state.lang === 'math'
+      ? `이번 주 <b class="c">${state.pronAvg}문제</b> 풀었어요.`
+      : `이번 주 발화 <b class="c">${state.pronAvg}회</b>예요.`;
+    msg = `<span>오늘 분량 끝!${state.pronAvg ? ` ${weekTail}` : ' 수고했어요.'}</span>`;
   } else {
     msg = `<span>전체 대화 듣기까지 끝냈어요.<br/><b>새 ${state.lang === 'math' ? '문제' : '표현'} ${state.newCount}개</b>만 더 하면 오늘 목표 달성!</span>`;
   }

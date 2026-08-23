@@ -39,3 +39,44 @@ describe('홈 진행중 세션 표시 — activeSession resume 반영 (stale sta
     expect(el.textContent).not.toContain('학습 시작'); // fresh CTA 아니어야
   });
 });
+
+/* 2026-08-23 — done 단계 문구가 (1) pronAvg 를 '점'으로 표기하고 (2) 비교 없이 '이번 주 최고
+ * 기록이에요' 를 무조건 붙였다. pronAvg 는 실제로 이번 주 발화(수학은 문제) 수다(home.js loadStats).
+ * 기록으로 동기를 만드는 앱에서 가짜 기록 문구는 나머지 숫자의 신뢰까지 깎는다. */
+describe('홈 done 단계 문구 — 가짜 기록 주장 제거', () => {
+  const doneState = (over = {}) => baseState({
+    newCount: 0, reviewCount: 0, totalReview: 89, todayNewDone: 4, todayReviewDone: 6,
+    weekUtter: 214, pronAvg: 214, streak: 12, bestStreak: null, ...over,
+  });
+
+  it('비교하지 않은 "최고 기록" 주장을 하지 않는다', () => {
+    const el = renderHomeMobileV2(doneState());
+    expect(el.querySelector('.vh-msg').textContent).not.toMatch(/최고 기록/);
+  });
+
+  it('발화 수를 "점"이 아니라 "회"로 표기한다', () => {
+    const el = renderHomeMobileV2(doneState());
+    const t = el.querySelector('.vh-msg').textContent;
+    expect(t).toMatch(/214회/);
+    expect(t).not.toMatch(/214점/);
+  });
+
+  it('수학은 "문제"로 표기한다', () => {
+    const el = renderHomeMobileV2(doneState({ lang: 'math' }));
+    const t = el.querySelector('.vh-msg').textContent;
+    expect(t).toMatch(/214문제/);
+    expect(t).not.toMatch(/214회/);
+  });
+
+  it('bestStreak > streak → "최고 기록까지 N일"', () => {
+    const el = renderHomeMobileV2(doneState({ streak: 12, bestStreak: 18 }));
+    expect(el.querySelector('.vh-streak').textContent).toMatch(/최고 기록까지 6일/);
+  });
+
+  it('현재 연속이 최고 기록과 같으면 경신 중으로 표기 (— 최고 기록까지 0일 금지)', () => {
+    const el = renderHomeMobileV2(doneState({ streak: 12, bestStreak: 12 }));
+    const t = el.querySelector('.vh-streak').textContent;
+    expect(t).not.toMatch(/까지 0일/);
+    expect(t).toMatch(/최고 기록/);
+  });
+});
