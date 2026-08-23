@@ -12,6 +12,7 @@ import { h } from '../components/d1/dom.js';
 import { buildD1Side } from '../components/d1/sessionShell.js';
 import { renderMathV2 } from './sessionMathV2.js';
 import { localISODate } from '../utils/today.js';
+import { loadMathSrs, saveMathSrs, removeMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 
 const LS_KEY = 'mathProgress';
 const todayISO = () => (window.studyDay?.TODAY_ISO || localISODate());
@@ -38,7 +39,13 @@ function load() {
   try { return JSON.parse(localStorage.getItem(LS_KEY)) || { done: {}, srs: {}, logs: {} }; }
   catch { return { done: {}, srs: {}, logs: {} }; }
 }
-function save(p) { try { localStorage.setItem(LS_KEY, JSON.stringify(p)); } catch { /* noop */ } }
+// srs 정본 = Dexie mathQueue (동기화 대상). localStorage 엔 done/logs 만 남긴다.
+// db 가 없는 예외 상황(미로그인)에서만 종전대로 통째 저장 — 진도가 증발하지 않게.
+function save(p) {
+  const db = (typeof window !== 'undefined') ? window.studyDB : null;
+  const payload = db?.mathQueue ? { done: p.done, logs: p.logs } : p;
+  try { localStorage.setItem(LS_KEY, JSON.stringify(payload)); } catch { /* noop */ }
+}
 
 // 하이브리드 콘텐츠: 번들(개념 정본 + 핵심 응용) + Dexie(루틴 생성 일일 응용 연습) 병합.
 // 번들 id 중복 제거. DB 행은 응용으로 취급(prompt/answer/solution — 개념·도형 없음). 정적 개념은
@@ -327,15 +334,27 @@ export function mountSessionMath(host) {
   let queue = [];
   let i = 0, tries = 0, tried = 0, passed = 0, layout = null;
 
+  // SRS 영속 — 인메모리 progress.srs(읽는 쪽 형상 유지) + Dexie mathQueue(정본·동기화).
+  // 종전엔 이 3줄이 세 군데 복제돼 있었고 전부 localStorage 로만 흘렀다 (2026-08-23 감사).
+  function persistSrs(c, st, kindR) {
+    progress.done[c.id] = true;
+    const db = (!isDemoMode() && typeof window !== 'undefined') ? window.studyDB : null;
+    if (st.graduate) {
+      delete progress.srs[c.id];
+      removeMathSrs(db, c.id);
+    } else {
+      progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+      saveMathSrs(db, c, st, kindR);
+    }
+  }
+
   // 자기 채점(v2) — SRS·진행·로그 갱신. 데모(?demo=1)는 localStorage 미저장(격리).
   function gradeMath(c, correct) {
     const kindR = correct ? 'got' : 'no';
     tried += 1; if (correct) passed += 1;
     const t = todayISO();
     const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
-    progress.done[c.id] = true;
-    if (st.graduate) delete progress.srs[c.id];
-    else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+    persistSrs(c, st, kindR);
     progress.logs = progress.logs || {};
     const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
     lg.tried += 1; if (correct) lg.passed += 1;
@@ -373,9 +392,7 @@ export function mountSessionMath(host) {
     layout?.update({ tried, passed });
     const t = todayISO();
     const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
-    progress.done[c.id] = true;
-    if (st.graduate) delete progress.srs[c.id];
-    else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+    persistSrs(c, st, kindR);
     progress.logs = progress.logs || {};
     const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
     lg.tried += 1; if (correct) lg.passed += 1;
@@ -458,9 +475,7 @@ export function mountSessionMath(host) {
       tried += 1; if (correct) passed += 1;
       const t = todayISO();
       const st = nextMathSrs(progress.srs[c.id]?.interval ?? 0, kindR, t);
-      progress.done[c.id] = true;
-      if (st.graduate) delete progress.srs[c.id];
-      else progress.srs[c.id] = { interval: st.interval, nextReview: st.nextReview, lastResult: kindR };
+      persistSrs(c, st, kindR);
       progress.logs = progress.logs || {};
       const lg = progress.logs[t] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
       lg.tried += 1; if (correct) lg.passed += 1;
@@ -577,7 +592,16 @@ export function mountSessionMath(host) {
     input.focus();
   }
 
-  loadProblems().then((items) => { queue = buildQueue(items, progress, mode); render(); });
+  loadProblems().then(async (items) => {
+    // 레거시 localStorage srs 1회 이관(멱등 — 이미 mathQueue 에 있는 id 는 보존) 후 Dexie 가 정본.
+    const db = (typeof window !== 'undefined') ? window.studyDB : null;
+    if (db?.mathQueue) {
+      await migrateLegacySrs(db, progress.srs, items);
+      progress.srs = await loadMathSrs(db);
+    }
+    queue = buildQueue(items, progress, mode);
+    render();
+  });
   const stop = watchSize((s) => { if (s !== size) { size = s; render(); } });
   return () => { host.innerHTML = ''; stop(); };
 }

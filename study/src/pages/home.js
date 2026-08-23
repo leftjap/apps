@@ -21,6 +21,7 @@ import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 import { localISODate } from '../utils/today.js';
+import { loadMathSrs } from '../services/mathQueue.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -206,6 +207,8 @@ async function loadMathStats(state) {
   }
   let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
+  // srs 정본 = Dexie mathQueue (session-math 와 동일 출처). localStorage 는 done/logs 만.
+  if (db?.mathQueue) prog.srs = await loadMathSrs(db);
   const freshRemaining = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
   // 실제 NEW 세션 = nextNewGroup(개념 1 + 그 응용들). 카운트도 그것과 일치(시드 응용 포함).
   const newCount = nextGroup ? nextGroup(items, prog).length : Math.min(freshRemaining, 3);
