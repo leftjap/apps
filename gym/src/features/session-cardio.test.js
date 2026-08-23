@@ -66,7 +66,9 @@ describe('cardioMetricWeek — 확정 시안 7a 재현', () => {
     const w = week('calories', TODAY_SETS, [run('2026-08-17', 'treadmill', 15, null, null)]);
     expect(w.days[0].text).toBe('—');
     expect(w.days[0].style).toBe('filled');
-    expect([w.total, w.dayCount]).toEqual(['0', 0]);
+    // 일수는 **뛴 날 수** — 그 지표를 적은 날 수가 아니다 (실기기 2026-08-19 불일치의 한 축).
+    // 오늘 칸만 지표 기준으로 남는다 — 확정 시안 7a 가 "시간 4일 / 칼로리 3일" 로 못 박았다.
+    expect([w.total, w.dayCount]).toEqual(['0', 1]);
   });
 
   it('다른 유산소 종목은 섞이지 않는다 (종목 단위 집계)', () => {
@@ -156,5 +158,42 @@ describe('치수 — 기기 폭에서 유도 (§6-1)', () => {
     expect(cardioLayout(375).circleDiameter).toBe(37);
     expect(cardioLayout(430).circleDiameter).toBe(37);
     expect(cardioLayout(320).circleDiameter).toBe(32);
+  });
+});
+
+// 실기기 보고 2026-08-19 — 홈 "32분 6일" vs 세션 "24분 4일". 네이티브와 같은 결함이라 같이 고친다.
+//  ① 세션이 오늘 이미 완료된 기록을 무시(진행 중 세트만 봄)  ② 0분·무기록 날 판정 불일치
+describe('홈/세션 일수 불일치 회귀 (실기기 2026-08-19)', () => {
+  const WED = new Date(2026, 7, 19).getTime();
+  const r = (date, min) => ({ id: `r-${date}`, date, status: 'completed',
+    blocks: [{ type: 'single', exerciseId: 'treadmill',
+      sets: [{ done: true, duration: min == null ? null : min * 60 }] }] });
+  const wk = (sessions, todaySets, now = WED) => cardioMetricWeek({
+    sessions, todaySets, exerciseId: 'treadmill', metric: 'duration', now });
+
+  it('오늘 이미 완료한 기록이 있으면 새 세션에서도 기록으로 본다', () => {
+    const w = wk([r('2026-08-19', 8)], [{ duration: null }]);
+    expect(w.days[2].style).toBe('filled');
+    expect(w.days[2].text).toBe('8');
+    expect([w.total, w.dayCount]).toEqual(['8', 1]);
+  });
+
+  it('오늘 완료분 + 진행 중 입력은 그날 합계', () => {
+    const w = wk([r('2026-08-19', 8)], [{ duration: 300 }]);
+    expect(w.days[2].text).toBe('13');
+    expect([w.total, w.dayCount]).toEqual(['13', 1]);
+  });
+
+  it('0분 유산소도 뛴 날 (홈과 같은 술어)', () => {
+    const w = wk([r('2026-08-17', 0)], []);
+    expect(w.days[0].style).toBe('filled');
+    expect(w.dayCount).toBe(1);
+  });
+
+  it('duration 없는 done 세트도 뛴 날 — 숫자만 "—"', () => {
+    const w = wk([r('2026-08-17', null)], []);
+    expect(w.days[0].style).toBe('filled');
+    expect(w.days[0].text).toBe('—');
+    expect(w.dayCount).toBe(1);
   });
 });

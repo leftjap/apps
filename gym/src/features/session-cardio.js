@@ -62,10 +62,13 @@ export function cardioDayTotals(sessions, exerciseId, from, to) {
       if (!b || b.exerciseId !== exerciseId) continue;
       for (const set of b.sets || []) {
         if (!set || set.done !== true) continue;
+        // done 세트가 있으면 지표 값이 하나도 없어도 **날짜 키는 남긴다** — 그날이 "뛴 날"이라는
+        // 사실 자체가 원의 채움을 정하고, 값 없는 지표만 "—" 가 된다. 홈(cardioDayMinutes)이
+        // duration nil 을 0 으로 세는 것과 일수를 맞추기 위함 (실기기 2026-08-19: 홈 6일 vs 카드 4일).
+        out[s.date] = out[s.date] || {};
         for (const m of CARDIO_METRICS) {
           const v = metricValue(m, set);
           if (v == null) continue;
-          out[s.date] = out[s.date] || {};
           out[s.date][m] = (out[s.date][m] || 0) + v;
         }
       }
@@ -121,34 +124,45 @@ export function cardioMetricWeek({ sessions, todaySets, exerciseId, metric, now 
   const lastWeek = cardioDayTotals(sessions, exerciseId, iso(-7), iso(-1));
   const prev = lastCardioRun(sessions, exerciseId);
   const prevVal = (m) => (prev ? metricValue(m, prev) : null);
-  const own = todayValue(todaySets, metric);
+  // 오늘 값 = **오늘 이미 완료된 기록 + 진행 중 세트**. 진행 중 세트만 보면 오늘 한 번 마치고
+  // 새 세션을 켰을 때 오늘이 "미입력" 으로 떨어진다 (실기기 2026-08-19).
+  // 진행 중 세션은 status active 라 cardioDayTotals 에 안 들어와 이중 계상되지 않는다.
+  const todayISO = iso(todayIdx);
+  const todayDone = thisWeek[todayISO] ? thisWeek[todayISO][metric] : undefined;
+  const todayLive = todayValue(todaySets, metric);
+  const todayHasRecord = thisWeek[todayISO] !== undefined || todayLive != null;
+  const own = (todayDone == null && todayLive == null)
+    ? null : (todayDone || 0) + (todayLive || 0);
 
   const days = [];
   for (let i = 0; i < 7; i += 1) {
     // ① 원 형태는 시간 기준으로 먼저 정한다 (지표와 무관).
-    const durThis = thisWeek[iso(i)] ? thisWeek[iso(i)].duration : undefined;
-    const durLast = lastWeek[iso(i - 7)] ? lastWeek[iso(i - 7)].duration : undefined;
+    // 기록 유무는 '그날 done 세트가 있었는가' — 0분·값없음도 뛴 날이다 (홈과 같은 술어).
+    const ranThis = thisWeek[iso(i)] !== undefined;
+    const ranLast = lastWeek[iso(i - 7)] !== undefined;
     let style;
     let hasSlot;
     if (i === todayIdx) {
       // 오늘만 예외 — **활성 지표** 기준. 시간을 넣었어도 칼로리가 비면 칼로리 화면에서는 참조 스타일.
-      style = (own || 0) > 0 ? 'filled' : 'todayRef';
+      style = todayHasRecord ? 'filled' : 'todayRef';
       hasSlot = true;
     } else if (i < todayIdx) {
-      const has = (durThis || 0) > 0;
-      style = has ? 'filled' : 'ring';
-      hasSlot = has;
+      style = ranThis ? 'filled' : 'ring';
+      hasSlot = ranThis;
     } else {
-      const has = (durLast || 0) > 0;
-      style = has ? 'ring' : 'ringFaint';
-      hasSlot = has;
+      style = ranLast ? 'ring' : 'ringFaint';
+      hasSlot = ranLast;
     }
     // ② 숫자만 활성 지표로 갈아 끼운다.
     let text = null;
     if (hasSlot) {
       if (i === todayIdx) {
-        const v = own != null ? own : prevVal(metric);
-        text = v == null ? null : formatMetric(metric, v);
+        if (todayHasRecord) {
+          text = own == null ? '—' : formatMetric(metric, own);
+        } else {
+          const v = prevVal(metric);
+          text = v == null ? null : formatMetric(metric, v);
+        }
       } else {
         const src = i < todayIdx ? thisWeek[iso(i)] : lastWeek[iso(i - 7)];
         const v = src ? src[metric] : undefined;
@@ -162,8 +176,11 @@ export function cardioMetricWeek({ sessions, todaySets, exerciseId, metric, now 
   let sum = 0;
   let dayCount = 0;
   for (let i = 0; i <= todayIdx; i += 1) {
-    const v = i === todayIdx ? own : (thisWeek[iso(i)] ? thisWeek[iso(i)][metric] : undefined);
-    if (v != null && v > 0) { sum += v; dayCount += 1; }
+    const ran = i === todayIdx ? todayHasRecord : (thisWeek[iso(i)] !== undefined);
+    if (!ran) continue;
+    const v = i === todayIdx ? own : thisWeek[iso(i)][metric];
+    sum += v || 0;
+    dayCount += 1;
   }
   return { days, total: formatMetric(metric, sum), unit: META[metric].unit, dayCount };
 }

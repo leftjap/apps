@@ -63,8 +63,12 @@ export function renderCardioCard(doc, { sessions, set, todaySets, exerciseId, no
   const card = doc.getElementById('cardioCard');
   if (!card) return null;
   latest = { sessions, set, todaySets, exerciseId, now };
-  const L = cardioLayout(card.clientWidth || 375);
-  const W = L.contentWidth;
+  // 측정이 미덥지 않으면(레이아웃 확정 전) 창 폭으로 떨어진다 — 탭영역·임계·원 지름용.
+  // 히어로 트랙은 아래에서 % 로 두어 측정에 아예 안 기댄다.
+  const measured = card.getBoundingClientRect ? card.getBoundingClientRect().width : 0;
+  const cardW = measured >= 200 ? measured
+    : (typeof window !== 'undefined' && window.innerWidth >= 200 ? window.innerWidth : 375);
+  const L = cardioLayout(cardW);
   const prev = lastCardioRun(sessions, exerciseId);
   const wk = cardioMetricWeek({ sessions, todaySets, exerciseId, metric: activeMetric, now });
 
@@ -83,12 +87,14 @@ export function renderCardioCard(doc, { sessions, set, todaySets, exerciseId, no
   const incoming = dragDX === 0 ? -1 : idx + (dragDX < 0 ? 1 : -1);
   const track = doc.getElementById('cardioTrack');
   if (track) {
-    track.style.left = px(L.trackOffset(idx) + dragDX);
+    // 셀 폭·스냅 오프셋은 **%** 로 둔다 — 담는 뷰포트 div 기준으로 브라우저가 풀어주므로
+    // 레이아웃 확정 전 JS 측정에 안 흔들린다 (실기기 재현 중 카드 폭 52px → 셀 8px 로 뭉갬).
+    track.style.left = `calc(${-idx * 100}% + ${dragDX}px)`;
     track.innerHTML = CARDIO_METRICS.map((m, i) => {
       const d = displayValue(m, set, prev);
       const op = i === idx ? 1 - 0.45 * near : (i === incoming ? 0.2 + 0.8 * near : 0.2);
       const meta = metricMeta(m);
-      return `<div style="width:${px(W)};flex-shrink:0;display:flex;flex-direction:column;align-items:center;opacity:${op};">
+      return `<div style="width:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;opacity:${op};">
         <span class="kr" style="font-size:12px;font-weight:600;letter-spacing:1.2px;color:oklch(70% 0.006 60);">${meta.label}</span>
         <span data-cardio-hero="${m}" style="margin-top:12px;display:flex;align-items:baseline;gap:6px;pointer-events:${i === idx ? 'auto' : 'none'};cursor:pointer;opacity:${flashMetric === m ? 0.45 : 1};">
           <span class="mono" style="font-variant-numeric:tabular-nums;font-size:100px;font-weight:300;letter-spacing:-0.05em;line-height:1;color:${d.color};">${d.text}</span>
