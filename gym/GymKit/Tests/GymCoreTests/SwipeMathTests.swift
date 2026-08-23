@@ -39,3 +39,26 @@ import Testing
         #expect(GymSwipeMath.endAction(dx: -30, dy: 5) == .springBack)  // 애매 → 스프링백
     }
 }
+
+// 히어로 탭 존 — 중앙(키패드)을 숫자 폭에 맞춘다 (실기기 2026-08-23 "숫자패드 구간이 넓다").
+// 고정 40% 는 행 폭 323 에서 중앙 129pt — 횟수(숫자 ~61pt)에선 두 배로 넓어 여백 탭이 먹히고,
+// 중량(숫자 ~145pt)에선 오히려 좁아 숫자 끝을 눌러도 증감이 된다.
+@Suite struct HeroZoneTests {
+    @Test func centerMatchesNumberWidthWithPadding() {
+        // 횟수 "10" ≈ 61pt → 좌우 8pt 여유 = 77pt (구 129pt 에서 축소)
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 61, rowWidth: 323) == 77)
+    }
+    @Test func centerNeverEatsTheSideTapTargets() {
+        // 중량 "888" 처럼 숫자가 넓어도 좌우 증감 영역 44pt 는 지킨다
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 300, rowWidth: 323) == 323 - 88)
+    }
+    @Test func centerHasMinimumTapTarget() {
+        // 한 자리 수라도 중앙은 44pt 이상
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 10, rowWidth: 323) == 44)
+    }
+    // 좌/우는 남는 폭을 반씩 — 중앙이 가운데에 놓인다.
+    @Test func sidesSplitTheRemainder() {
+        let c = GymSwipeMath.heroCenterZone(numberWidth: 61, rowWidth: 323)
+        #expect(GymSwipeMath.heroSideZone(center: c, rowWidth: 323) == (323 - 77) / 2)
+    }
+}

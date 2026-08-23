@@ -59,8 +59,8 @@ struct SessionHero: View {
             } else {
                 switch kind {
                 case .weight:
-                    big(topValue, unit: "kg").overlay { zones(onTopTap) }
-                    repsRow(bottomValue, unit: "회").overlay { zones(onBottomTap) }
+                    big(topValue, unit: "kg").overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
+                    repsRow(bottomValue, unit: "회").overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
                     if let prChip {   // mocks #cardPrChip — ▲ +Nkg (crail-soft pill)
                         HStack(spacing: 6) {
                             Text("▲").font(.system(size: 9)).foregroundStyle(GY.crailDeep)
@@ -75,10 +75,10 @@ struct SessionHero: View {
                 case .bodyweight:
                     // 맨몸은 중량이 없다 — "맨몸" 표기를 빼고 횟수를 히어로 크기로 (사용자 2026-07-19).
                     // 탭 존은 그대로 onBottomTap(= 횟수 전용, heroTap 의 row == .bottom 가드 정합).
-                    big(bottomValue, unit: "회", id: "hero-reps").overlay { zones(onBottomTap) }
+                    big(bottomValue, unit: "회", id: "hero-reps").overlay { zones(onBottomTap, numberWidth: Self.bigWidth(bottomValue)) }
                 case .cardio:
-                    big(topValue, unit: "분").overlay { zones(onTopTap) }
-                    repsRow(bottomValue, unit: "km", showX: false).overlay { zones(onBottomTap) }
+                    big(topValue, unit: "분").overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
+                    repsRow(bottomValue, unit: "km", showX: false).overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
                     if let pace {
                         Text(pace).font(.mono(15, 500)).tracking(0.6)
                             .foregroundStyle(GY.crailDeep).padding(.top, 10)
@@ -89,18 +89,23 @@ struct SessionHero: View {
         }
     }
 
-    // 탭 존 오버레이 — 행 전폭 기준 좌 30% / 중앙 40% / 우 30% (session.js ratio 0.3/0.7).
+    // 탭 존 오버레이 — 중앙(키패드)은 **그려진 숫자 폭**에 맞추고 좌우가 나머지를 반씩 갖는다.
+    // 40% 고정이던 종전엔 횟수 행에서 존이 숫자의 두 배라 여백 탭이 안 먹었다 (실기기 2026-08-23).
     @ViewBuilder
-    func zones(_ handler: ((HeroZone) -> Void)?) -> some View {
+    func zones(_ handler: ((HeroZone) -> Void)?, numberWidth: CGFloat) -> some View {
         if let handler {
             GeometryReader { g in
+                let center = CGFloat(GymSwipeMath.heroCenterZone(
+                    numberWidth: Double(numberWidth), rowWidth: Double(g.size.width)))
+                let side = CGFloat(GymSwipeMath.heroSideZone(
+                    center: Double(center), rowWidth: Double(g.size.width)))
                 HStack(spacing: 0) {
                     Color.clear.contentShape(Rectangle())
-                        .frame(width: g.size.width * 0.3)
+                        .frame(width: side)
                         .onTapGesture { handler(.minus) }
                         .accessibilityIdentifier("zone-minus")
                     Color.clear.contentShape(Rectangle())
-                        .frame(width: g.size.width * 0.4)
+                        .frame(width: center)
                         .onTapGesture { handler(.center) }
                         .accessibilityIdentifier("zone-center")
                     Color.clear.contentShape(Rectangle())
@@ -109,6 +114,14 @@ struct SessionHero: View {
                 }
             }
         }
+    }
+
+    // 그려진 숫자의 실제 폭 (tracking 은 글자 사이에만 붙으므로 n-1 개만 뺀다).
+    static func bigWidth(_ v: String) -> CGFloat {
+        GymMonoFont.width(v, size: 122, weight: 600) - 6.7 * CGFloat(max(0, v.count - 1))
+    }
+    static func repsWidth(_ v: String) -> CGFloat {
+        GymMonoFont.width(v, size: 50, weight: 500) - 1.0 * CGFloat(max(0, v.count - 1))
     }
 
     // 히어로 큰 숫자 굵기 — 시안·PWA 고정. 프리셋이라고 얇게 그리지 않는다(증량 시 굵기 튐 방지).

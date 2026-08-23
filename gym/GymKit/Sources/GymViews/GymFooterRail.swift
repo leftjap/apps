@@ -155,24 +155,42 @@ struct CurrentChip: View {
     }
 }
 
-// 터치다운 눌림 — 손가락이 닿는 순간 0.96 으로 눌렸다 떼면 복귀 (iOS 표준 버튼 감각).
-// 닿음(눌림)→접수(진동·승격)→이동→안착 사슬의 첫 고리 (사용자 2026-07-24 "이게 최선인가" 보강).
-// 탭·꾹누르기를 함께 품어 눌림 상태를 공유 — 스크롤 시작 시(이동 10pt 초과) 제스처가
-// 실패하며 자동 복귀한다.
+// 칩 제스처 — 탭(전환) + 꾹누르기(메뉴). **스크롤을 막지 않는 게 최우선.**
+//
+// 종전엔 칩마다 단독 `.onLongPressGesture(0.5)` 를 달았다. 이게 ScrollView 의 팬 인식과
+// 경쟁해 레일을 밀 때 첫 움직임이 씹혔고, `onPressingChanged` 가 손이 닿는 즉시 0.96 눌림을
+// 그려 스크롤을 시작할 때마다 칩이 한 번 움찔했다 (실기기 2026-08-23 "바로 안 되고 버벅").
+//
+// 고친 방식:
+//  · 꾹누르기를 simultaneousGesture 로 — 팬과 동시 인식이라 스크롤을 지연시키지 않는다.
+//  · 눌림 표시는 손가락이 **머무를 때만**. 6pt 넘게 움직이면 그 즉시 해제해 스크롤 시작이
+//    깔끔하게 넘어간다.
 struct RailChipPressable: ViewModifier {
     var onTap: () -> Void
     var onLongPress: () -> Void
     @State private var pressed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     func body(content: Content) -> some View {
         content
-            .scaleEffect(pressed ? 0.96 : 1)
+            .scaleEffect(pressed && !reduceMotion ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: pressed)
             .onTapGesture { onTap() }
-            .onLongPressGesture(minimumDuration: 0.5) {
-                onLongPress()
-            } onPressingChanged: { p in
-                pressed = p
-            }
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.5, maximumDistance: 10)
+                    .onEnded { _ in
+                        pressed = false
+                        onLongPress()
+                    }
+            )
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { v in
+                        // 스크롤로 넘어가는 순간 눌림을 뗀다 — 안 그러면 미는 동안 칩이 눌린 채 끌린다.
+                        let moved = abs(v.translation.width) > 6 || abs(v.translation.height) > 6
+                        if pressed == moved { pressed = !moved }
+                    }
+                    .onEnded { _ in pressed = false }
+            )
     }
 }
 

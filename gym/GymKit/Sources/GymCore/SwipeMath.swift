@@ -31,3 +31,26 @@ public enum GymSwipeMath {
         return .springBack
     }
 }
+
+// MARK: - 히어로 탭 존 (§6-3 — 여백 탭 = 증감, 숫자 탭 = 키패드)
+
+public extension GymSwipeMath {
+    /// 중앙(키패드) 존 폭 — **숫자 폭에 맞춘다.**
+    ///
+    /// 종전엔 행 폭의 40% 고정이었다. 행 323pt 에서 129pt 인데, 횟수 숫자는 ~61pt 라 두 배로
+    /// 넓어 여백을 눌러도 키패드가 열렸고(실기기 2026-08-23), 중량 숫자는 ~145pt 라 오히려
+    /// 좁아 숫자 끝을 눌러도 증감이 됐다. 숫자에 맞추면 양쪽 다 해결된다.
+    ///
+    /// - 하한 44pt (한 자리 수에서도 누를 수 있게)
+    /// - 상한 rowWidth − 좌우 증감 영역(각 44pt) — 여백 탭이 사라지지 않게
+    static func heroCenterZone(numberWidth: Double, rowWidth: Double,
+                               pad: Double = 8, minSide: Double = 44) -> Double {
+        let wanted = numberWidth + pad * 2
+        return Swift.min(Swift.max(wanted, 44), Swift.max(44, rowWidth - minSide * 2))
+    }
+
+    /// 좌/우 증감 존 폭 — 남는 폭을 반씩 나눠 중앙이 가운데에 놓인다.
+    static func heroSideZone(center: Double, rowWidth: Double) -> Double {
+        Swift.max(0, (rowWidth - center) / 2)
+    }
+}
