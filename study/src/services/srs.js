@@ -63,7 +63,13 @@ export async function applySrsUpdate(db, card, kind, todayISO) {
     // 2026-07-18 — lastResult 를 함께 저장한다. 종전엔 interval/nextReview 만 써서 기록 화면
     // (캘린더 상세·문장 목록)의 난이도·점수색이 폴백값으로 굳었다(사용자 보고).
     const patch = { interval: next.interval, nextReview: next.nextReview };
-    if (KIND_TO_RESULT[kind]) patch.lastResult = KIND_TO_RESULT[kind];
+    if (KIND_TO_RESULT[kind]) {
+      patch.lastResult = KIND_TO_RESULT[kind];
+      // 2026-08-23 — 연속 통과 카운터. 실 DB 124장 전부 0 이었다(감사): 스키마·sync 매핑은 있는데
+      // 갱신하는 코드가 없어 userMeta 익힘 판정(PASS_THRESHOLD=2)이 죽은 값 위에서 돌았다.
+      // '연속' 이므로 got 만 +1, hmm/no 는 0 으로 리셋.
+      patch.consecutivePass = kind === 'got' ? (Number(card.consecutivePass) || 0) + 1 : 0;
+    }
     await db.reviewQueue.update(card.id, patch);
   }
   return next;

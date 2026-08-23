@@ -86,3 +86,48 @@ describe('applySrsUpdate — 판정 결과(lastResult) 저장', () => {
     expect(db.updates).toHaveLength(0);
   });
 });
+
+/* 2026-08-23 실 DB 감사: study_review_queue 124장 전부 consecutive_pass=0.
+ * 원인: applySrsUpdate 가 consecutivePass 를 갱신하지 않아 스키마·sync 매핑(sync.js:47/65)·
+ * userMeta 의 익힘 판정(userMeta.js:35 PASS_THRESHOLD=2) 이 전부 죽은 값 위에서 돈다.
+ * 정의: '연속 통과' — got 만 +1, hmm/no 는 연속이 끊겼으므로 0.
+ * (seed.js 시드값 정합: interval 1/3/7/21 ↔ consecutivePass 0/1/2/3) */
+describe('applySrsUpdate — 연속 통과 카운터(consecutivePass)', () => {
+  const mkDb = () => {
+    const updates = []; const deletes = [];
+    return { updates, deletes, reviewQueue: {
+      update: async (id, patch) => { updates.push({ id, patch }); },
+      delete: async (id) => { deletes.push(id); },
+    } };
+  };
+
+  it('got → 기존값 +1', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c1', interval: 3, consecutivePass: 1 }, 'got', TODAY);
+    expect(db.updates[0].patch).toMatchObject({ consecutivePass: 2 });
+  });
+
+  it('got — consecutivePass 미존재(레거시 행) → 1', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c2', interval: 1 }, 'got', TODAY);
+    expect(db.updates[0].patch).toMatchObject({ consecutivePass: 1 });
+  });
+
+  it('hmm → 0 (연속 끊김)', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c3', interval: 7, consecutivePass: 2 }, 'hmm', TODAY);
+    expect(db.updates[0].patch).toMatchObject({ consecutivePass: 0 });
+  });
+
+  it('no → 0', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c4', interval: 21, consecutivePass: 3 }, 'no', TODAY);
+    expect(db.updates[0].patch).toMatchObject({ consecutivePass: 0 });
+  });
+
+  it('알 수 없는 kind → consecutivePass 미변경 (기존 값 보존)', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c5', interval: 7, consecutivePass: 2 }, 'xyz', TODAY);
+    expect(db.updates[0].patch).not.toHaveProperty('consecutivePass');
+  });
+});

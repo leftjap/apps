@@ -181,3 +181,44 @@ describe('flushLiveStats + finishSession(baseToday) — 진행 중 라이브 반
     expect(s.studyTimeSec).toBeLessThan(130);
   });
 });
+
+/* 2026-08-23 실 DB 감사: study_pr_records 0행 — PR 이 한 번도 저장된 적 없다.
+ * 원인: pr.js 는 4종 PR 검사·history FIFO·단위테스트까지 갖췄는데 finishSession 이 호출하지 않았다.
+ * 결과 연쇄: meta 5키가 영구히 비어 → 홈 '최고 기록까지 N일'(homeDesktopV2.js:334) ·
+ * 요약 '기록 갱신!' 배너(summaryV2.js:136) · 세션 'PR 까지 N회' 가 전부 죽은 채로 있었다.
+ * 날짜는 params.date 를 쓴다 — applyPRUpdate 가 자체 '오늘'을 다시 구하면 자정을 넘긴 세션에서
+ * 방금 쓴 로그의 date 와 어긋나 조용히 0 이 된다. */
+describe('finishSession — PR(개인 기록) 갱신', () => {
+  let prDb;
+  beforeEach(() => { prDb = createStudyDB(`pr_test_${Date.now()}_${Math.random()}`); });
+  afterEach(async () => { await prDb.delete(); });
+
+  const run = (over = {}) => finishSession(prDb, {
+    mode: 'new', lang: 'en', date: '2026-05-08',
+    durationSec: 180, tried: 8, passed: 6, completedNewCards: [], ...over,
+  });
+  const meta = (k) => prDb.meta.get(k).then((r) => r?.value);
+
+  it('첫 세션 → 일/주 PR 4종 최초 기록', async () => {
+    await run();
+    expect(await meta('prDailyUtterance')).toMatchObject({ value: 8, achieved_at: '2026-05-08', lang: 'en' });
+    expect(await meta('prDailyStudyTime')).toMatchObject({ value: 180 });
+    expect(await meta('prWeeklyUtterance')).toMatchObject({ value: 8, week_start: '2026-05-04' });
+    expect(await meta('prWeeklyPass')).toMatchObject({ value: 6 });
+  });
+
+  it('같은 날 2세션 → 일 누적이 갱신되고 직전 값이 history 로 밀린다', async () => {
+    await run();
+    await run({ durationSec: 60, tried: 5, passed: 4 });
+    expect(await meta('prDailyUtterance')).toMatchObject({ value: 13 });
+    expect(await meta('prDailyStudyTime')).toMatchObject({ value: 240 });
+    expect(await meta('prHistory')).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'daily_utterance', value: 8 }),
+    ]));
+  });
+
+  it('applyPRUpdate 는 params.date 기준 — 세션 날짜가 어제여도 그 날짜로 기록된다', async () => {
+    await run({ date: '2026-05-07', tried: 20, passed: 15 });
+    expect(await meta('prDailyUtterance')).toMatchObject({ value: 20, achieved_at: '2026-05-07' });
+  });
+});

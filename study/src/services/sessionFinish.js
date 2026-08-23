@@ -12,6 +12,7 @@
 import { todayPlusDays } from './srs.js';
 import { applyLangMeta } from './langMeta.js';
 import { flushPendingUploads } from '../db/sync.js';
+import { applyPRUpdate } from './pr.js';
 
 function newId(prefix = 's') {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
@@ -121,6 +122,10 @@ export async function finishSession(db, params) {
       });
     }
   }
+
+  // spec §11-5 PR 4종 검사 — meta 갱신 시 sync 훅이 'prRecords' 큐로 라우팅한다.
+  // 카드 이관 뒤에 둔다: PR 은 비핵심이라 실패해도 세션 산출물(로그·이관)을 막으면 안 된다.
+  await applyPRUpdate(db, params.lang, log.date);
 
   // spec §4 (line 223) "세션 완료 시 즉시 동기화" — 3초 debounce 를 기다리지 않는다.
   // 세션의 산출물(sessionLog + dailyStats + 카드 이관)이 가장 크고, 완료 직후 앱을 닫는 게 정상 흐름이라

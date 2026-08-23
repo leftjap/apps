@@ -22,7 +22,7 @@
  *  - pushHistory(history, newPR) — FIFO push (max 5)
  *
  * DB 통합:
- *  - applyPRUpdate(db, lang, sessionLog) — finish() 직후 호출
+ *  - applyPRUpdate(db, lang, dateISO) — finish() 직후 호출
  */
 
 import { localISODate } from '../utils/today.js';
@@ -141,12 +141,14 @@ export function checkPRUpdate(prRecords, todayLog, weeklyAggregates, lang) {
  *
  * @returns {Promise<{updated: boolean, newPRs: Array, prevPRs: Array}>}
  */
-export async function applyPRUpdate(db, lang) {
+export async function applyPRUpdate(db, lang, dateISO) {
   if (!db || !lang) return { updated: false, newPRs: [], prevPRs: [] };
   if (!db.meta || !db.sessionLogs) return { updated: false, newPRs: [], prevPRs: [] };
 
   // 오늘 sessionLogs 합산
-  const today = (typeof window !== 'undefined' && window.studyDay?.TODAY_ISO) || localISODate();
+  // dateISO = 방금 쓴 sessionLog 의 date. 자정을 넘긴 세션에서 자체 '오늘'을 다시 구하면
+  // 로그 date 와 어긋나 집계가 조용히 0 이 된다. 미전달 시에만 기존 폴백.
+  const today = dateISO || (typeof window !== 'undefined' && window.studyDay?.TODAY_ISO) || localISODate();
   const allLogs = await db.sessionLogs.toArray();
   const todayLogs = allLogs.filter((l) => l?.date === today && (lang === 'both' || l.lang === lang));
   const todayLog = {
