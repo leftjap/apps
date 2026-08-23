@@ -21,7 +21,7 @@ import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 import { localISODate } from '../utils/today.js';
-import { loadMathSrs } from '../services/mathQueue.js';
+import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -208,7 +208,12 @@ async function loadMathStats(state) {
   let prog = { done: {}, srs: {}, logs: {} };
   try { prog = JSON.parse(localStorage.getItem('mathProgress')) || prog; } catch { /* noop */ }
   // srs 정본 = Dexie mathQueue (session-math 와 동일 출처). localStorage 는 done/logs 만.
-  if (db?.mathQueue) prog.srs = await loadMathSrs(db);
+  // 이관을 여기서도 돌린다 — 홈을 세션보다 먼저 여는 게 정상 흐름이라, session-math 에서만
+  // 이관하면 첫 진입에서 빈 Dexie 가 레거시 진도를 덮어써 복습 0 으로 보인다 (멱등).
+  if (db?.mathQueue) {
+    await migrateLegacySrs(db, prog.srs, items);
+    prog.srs = await loadMathSrs(db);
+  }
   const freshRemaining = items.filter((c) => !prog.done?.[c.id] && !prog.srs?.[c.id]).length;
   // 실제 NEW 세션 = nextNewGroup(개념 1 + 그 응용들). 카운트도 그것과 일치(시드 응용 포함).
   const newCount = nextGroup ? nextGroup(items, prog).length : Math.min(freshRemaining, 3);
