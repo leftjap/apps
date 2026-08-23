@@ -42,11 +42,12 @@ public extension GymSwipeMath {
     /// 좁아 숫자 끝을 눌러도 증감이 됐다. 숫자에 맞추면 양쪽 다 해결된다.
     ///
     /// - 하한 44pt (한 자리 수에서도 누를 수 있게)
-    /// - 상한 rowWidth − 좌우 증감 영역(각 44pt) — 여백 탭이 사라지지 않게
+    /// - **상한은 종전과 같은 40%** — 요청이 "축소" 이므로 어떤 행에서도 전보다 넓어지지 않는다.
+    ///   (숫자에 그대로 맞추면 세 자리 중량에서 중앙이 229pt 까지 벌어져 여백이 46pt 로 줄었다)
     static func heroCenterZone(numberWidth: Double, rowWidth: Double,
                                pad: Double = 8, minSide: Double = 44) -> Double {
-        let wanted = numberWidth + pad * 2
-        return Swift.min(Swift.max(wanted, 44), Swift.max(44, rowWidth - minSide * 2))
+        let cap = Swift.min(rowWidth * 0.4, Swift.max(44, rowWidth - minSide * 2))
+        return Swift.min(Swift.max(numberWidth + pad * 2, 44), cap)
     }
 
     /// 좌/우 증감 존 폭 — 남는 폭을 반씩 나눠 중앙이 가운데에 놓인다.

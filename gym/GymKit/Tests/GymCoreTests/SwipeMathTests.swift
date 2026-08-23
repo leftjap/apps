@@ -48,9 +48,11 @@ import Testing
         // 횟수 "10" ≈ 61pt → 좌우 8pt 여유 = 77pt (구 129pt 에서 축소)
         #expect(GymSwipeMath.heroCenterZone(numberWidth: 61, rowWidth: 323) == 77)
     }
-    @Test func centerNeverEatsTheSideTapTargets() {
-        // 중량 "888" 처럼 숫자가 넓어도 좌우 증감 영역 44pt 는 지킨다
-        #expect(GymSwipeMath.heroCenterZone(numberWidth: 300, rowWidth: 323) == 323 - 88)
+    // 요청이 "축소" 이므로 어떤 행에서도 종전 40% 보다 넓어지지 않는다.
+    // 숫자에 그대로 맞추면 세 자리 중량(숫자 213pt)에서 중앙이 229pt 로 벌어져 여백이 46pt 가 된다.
+    @Test func centerNeverGrowsBeyondTheOldFortyPercent() {
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 213, rowWidth: 323) == 323 * 0.4)
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 300, rowWidth: 323) == 323 * 0.4)
     }
     @Test func centerHasMinimumTapTarget() {
         // 한 자리 수라도 중앙은 44pt 이상
