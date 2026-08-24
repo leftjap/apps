@@ -2430,16 +2430,27 @@ function wireFooterPillClick(doc) {
   const pillsEl = doc.getElementById('sessionFooterPills');
   if (!pillsEl || pillsEl.dataset.spaHooked === '1') return;
   // 터치다운 눌림 — 닿는 순간 0.96 (네이티브 2026-07-24). 웹은 햅틱이 없어 시각 피드백만.
-  const press = (e, on) => {
-    const chip = e.target.closest?.('.fp-chip');
-    if (chip) chip.classList.toggle('is-pressed', on);
-  };
-  pillsEl.addEventListener('pointerdown', (e) => press(e, true));
-  pillsEl.addEventListener('pointerup', (e) => press(e, false));
-  pillsEl.addEventListener('pointercancel', (e) => press(e, false));
-  pillsEl.addEventListener('pointerleave', () => {
+  // 눌림 표시는 손가락이 **머무를 때만**. 6pt 넘게 움직이면 즉시 해제해 레일을 미는 동안
+  // 칩이 눌린 채 끌려가지 않는다 (네이티브 RailChipPressable 정합, 실기기 2026-08-23).
+  let pressX = null;
+  let pressY = null;
+  const clearPress = () => {
+    pressX = null;
     pillsEl.querySelectorAll('.fp-chip.is-pressed').forEach((c) => c.classList.remove('is-pressed'));
+  };
+  pillsEl.addEventListener('pointerdown', (e) => {
+    const chip = e.target.closest?.('.fp-chip');
+    if (!chip) return;
+    pressX = e.clientX; pressY = e.clientY;
+    chip.classList.add('is-pressed');
   });
+  pillsEl.addEventListener('pointermove', (e) => {
+    if (pressX == null) return;
+    if (Math.abs(e.clientX - pressX) > 6 || Math.abs(e.clientY - pressY) > 6) clearPress();
+  });
+  pillsEl.addEventListener('pointerup', clearPress);
+  pillsEl.addEventListener('pointercancel', clearPress);
+  pillsEl.addEventListener('pointerleave', clearPress);
 
   pillsEl.addEventListener('click', (e) => {
     if (pillsEl.dataset.reorder === '1') return; // (f-5-2) reorder 모드 — pill click 무시
