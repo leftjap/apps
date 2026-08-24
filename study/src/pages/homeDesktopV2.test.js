@@ -80,3 +80,32 @@ describe('홈 done 단계 문구 — 가짜 기록 주장 제거', () => {
     expect(t).toMatch(/최고 기록/);
   });
 });
+
+/* bestStreak = 현재 연속을 제외한 '이전 최고'. 0 이면 주장할 기록이 없다. */
+describe('홈 연속 문구 — 이전 최고 기준', () => {
+  const st = (over) => baseState({
+    newCount: 0, reviewCount: 0, totalReview: 89, todayNewDone: 4, todayReviewDone: 6,
+    weekUtter: 10, pronAvg: 10, ...over,
+  });
+
+  it('이전 기록 없음(0) → 기록 문구를 붙이지 않는다', () => {
+    const t = renderHomeMobileV2(st({ streak: 1, bestStreak: 0 })).querySelector('.vh-streak').textContent;
+    expect(t).toBe('1일 연속 달성');
+  });
+
+  it('이전 최고를 넘어섬 → 경신 중', () => {
+    expect(renderHomeMobileV2(st({ streak: 4, bestStreak: 3 })).querySelector('.vh-streak').textContent)
+      .toMatch(/최고 기록 경신 중/);
+  });
+
+  it('이전 최고와 동률 → 타이 (경신 아님)', () => {
+    const t = renderHomeMobileV2(st({ streak: 3, bestStreak: 3 })).querySelector('.vh-streak').textContent;
+    expect(t).toMatch(/최고 기록 타이/);
+    expect(t).not.toMatch(/경신 중/);
+  });
+
+  it('이전 최고에 못 미침 → 남은 일수', () => {
+    expect(renderHomeMobileV2(st({ streak: 3, bestStreak: 5 })).querySelector('.vh-streak').textContent)
+      .toMatch(/최고 기록까지 2일/);
+  });
+});

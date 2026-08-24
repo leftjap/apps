@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countNewExpressions, isSceneCard, longestStreak } from './home.js';
+import { countNewExpressions, isSceneCard, longestStreak, streakStats } from './home.js';
 
 // 홈 hero '오늘의 새 표현 N개' 는 표현(expression) 수여야 한다. scene(전체 대화 듣기) 카드는
 // 표현이 아니므로 제외 — todayNewDone(=newSentenceIds, scene 미포함) 단위와 정합해 진행 dots·done 게이트도 일치.
@@ -58,5 +58,43 @@ describe('home — 최장 연속 학습일(longestStreak)', () => {
     expect(longestStreak([])).toBe(0);
     expect(longestStreak(['2026-08-01'])).toBe(1);
     expect(longestStreak(null)).toBe(0);
+  });
+});
+
+/* 2026-08-24 — 브라우저 실행 검증에서 "학습 첫날 → 최고 기록 경신 중" 이 뜨는 걸 발견.
+ * 1 >= 1 이라 기술적으론 참이지만 넘어설 이전 기록이 없다. bestStreak 을 '현재 연속을 제외한
+ * 이전 최고'로 정의해 첫 기록에서는 아무 주장도 하지 않게 한다.
+ * 겸사겸사 loadStats/loadMathStats 에 복제돼 있던 streak 루프를 여기로 뺀다(테스트 가능해짐). */
+describe('home — streakStats (현재 연속 + 이전 최고)', () => {
+  it('과거 5일 연속 + 현재 3일 연속 → streak 3, previousBest 5', () => {
+    expect(streakStats(
+      ['2026-08-10', '2026-08-11', '2026-08-12', '2026-08-13', '2026-08-14',
+        '2026-08-22', '2026-08-23', '2026-08-24'], '2026-08-24',
+    )).toEqual({ streak: 3, previousBest: 5 });
+  });
+
+  it('학습 첫날 → previousBest 0 (주장할 이전 기록 없음)', () => {
+    expect(streakStats(['2026-08-24'], '2026-08-24')).toEqual({ streak: 1, previousBest: 0 });
+  });
+
+  it('현재가 과거를 넘어섰을 때 → streak 4, previousBest 3', () => {
+    expect(streakStats(
+      ['2026-08-01', '2026-08-02', '2026-08-03',
+        '2026-08-21', '2026-08-22', '2026-08-23', '2026-08-24'], '2026-08-24',
+    )).toEqual({ streak: 4, previousBest: 3 });
+  });
+
+  it('오늘 아직 안 했으면 어제까지의 연속을 센다', () => {
+    expect(streakStats(['2026-08-22', '2026-08-23'], '2026-08-24'))
+      .toEqual({ streak: 2, previousBest: 0 });
+  });
+
+  it('이틀 이상 쉬었으면 현재 연속 0, 과거는 이전 최고로', () => {
+    expect(streakStats(['2026-08-10', '2026-08-11'], '2026-08-24'))
+      .toEqual({ streak: 0, previousBest: 2 });
+  });
+
+  it('기록 없음 → 0/0', () => {
+    expect(streakStats([], '2026-08-24')).toEqual({ streak: 0, previousBest: 0 });
   });
 });

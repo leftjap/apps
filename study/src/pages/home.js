@@ -25,6 +25,34 @@ import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
+/** ISO date 를 n 일 이동. */
+function shiftISO(iso, n) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * 현재 연속 학습일 + '이전 최고' 연속 학습일.
+ *
+ * previousBest 는 현재 진행 중인 연속 구간을 제외하고 센다. 2026-08-24 브라우저 실행 검증에서
+ * 학습 첫날에 "최고 기록 경신 중"(1 >= 1) 이 뜨는 걸 발견 — 넘어설 이전 기록이 없는데 기록을
+ * 주장하는 건 같은 날 제거한 가짜 문구의 축소판이다. 0 이면 화면이 아무 주장도 하지 않는다.
+ *
+ * loadStats / loadMathStats 에 복제돼 있던 streak 루프를 여기로 합쳤다.
+ */
+export function streakStats(dates, todayISO) {
+  const desc = [...new Set(Array.isArray(dates) ? dates.filter(Boolean) : [])].sort().reverse();
+  let streak = 0;
+  let cursor = todayISO;
+  if (!desc.includes(cursor)) cursor = shiftISO(cursor, -1);
+  for (const d of desc) {
+    if (d === cursor) { streak += 1; cursor = shiftISO(cursor, -1); }
+    else if (d < cursor) break;
+  }
+  return { streak, previousBest: longestStreak(desc.filter((d) => d <= cursor)) };
+}
+
 /**
  * 최장 연속 학습일. dates = 학습 기록이 있는 날짜 배열(정렬·중복 무관).
  *
@@ -243,19 +271,7 @@ async function loadMathStats(state) {
   const logs = prog.logs || {};
   const todayLog = logs[today] || { tried: 0, passed: 0, newDone: 0, reviewDone: 0 };
   const dates = Object.keys(logs).filter((d) => (logs[d]?.tried || 0) > 0).sort().reverse();
-  let streak = 0;
-  let cursor = today;
-  if (!dates.includes(cursor)) {
-    const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
-    cursor = c.toISOString().slice(0, 10);
-  }
-  for (const d of dates) {
-    if (d === cursor) {
-      streak += 1;
-      const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
-      cursor = c.toISOString().slice(0, 10);
-    } else if (d < cursor) break;
-  }
+  const { streak, previousBest } = streakStats(dates, today);
   // ── 데스크톱 v2 하단 스트립 (수학) — 발화 대신 '문제' 추이 ──
   const mByDate = {};
   for (const dk in logs) mByDate[dk] = logs[dk]?.tried || 0;
@@ -280,7 +296,7 @@ async function loadMathStats(state) {
     newCount, reviewCount, totalReview, streak,
     tried: todayLog.tried, passed: todayLog.passed,
     todayNewDone: todayLog.newDone, todayReviewDone: todayLog.reviewDone,
-    bestStreak: longestStreak(dates), weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
+    bestStreak: previousBest, weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
     pronBars: mPronBars, grass: mGrass, cumUtter: mCumUtter, cumExpr: mCumExpr, cumMaster: totalReview,
     weekDoneText: todayLog.tried > 0 ? `${mWeekDays}일 학습 · 오늘 진행 중` : `${mWeekDays}일 학습`,
     pronAvg: mWeekTried, pronDelta: 0,
@@ -315,18 +331,7 @@ async function loadStats(state) {
 
     const logs = await db.sessionLogs.where('lang').equals(lang).toArray();
     const dates = [...new Set(logs.map((l) => l.date))].sort().reverse();
-    let streak = 0, cursor = todayISO;
-    if (!dates.includes(cursor)) {
-      const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
-      cursor = c.toISOString().slice(0, 10);
-    }
-    for (const d of dates) {
-      if (d === cursor) {
-        streak++;
-        const c = new Date(cursor + 'T00:00:00Z'); c.setUTCDate(c.getUTCDate() - 1);
-        cursor = c.toISOString().slice(0, 10);
-      } else if (d < cursor) break;
-    }
+    const { streak, previousBest } = streakStats(dates, todayISO);
 
     const todayLogs = logs.filter((l) => l.date === todayISO);
     const tried = todayLogs.reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
@@ -348,7 +353,7 @@ async function loadStats(state) {
     const weekUtter = weekLogs.reduce((s, l) => s + (Number(l.utteranceCount) || 0), 0);
     const weekPass = weekLogs.reduce((s, l) => s + (Number(l.passCount) || 0), 0);
 
-    const bestStreak = longestStreak(dates);
+    const bestStreak = previousBest; // 현재 연속 제외한 이전 최고
 
     // ── C 파이널 v2 데스크톱 하단 스트립 (실데이터) ──
     // 발음 점수 일별 시계열은 미저장(sessionLogs=발화/통과만) → 앱이 실제 추적하는 '일일 발화' 추이로 정직 표기.

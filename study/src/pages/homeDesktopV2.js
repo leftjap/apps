@@ -330,12 +330,17 @@ function derive(state) {
   const newMin = state.newMin || Math.max(state.newCount * 3, 4);
   const reviewMin = state.reviewMin || Math.max((state.reviewCount || state.totalReview) * 2, 2);
 
-  // bestStreak = 최장 연속 학습일 (home.js longestStreak). 현재가 최고면 '경신 중' —
-  // '최고 기록까지 0일' 은 말이 안 되고, 경신 중이라는 사실 자체가 기록 장치다.
-  const beatsBest = state.bestStreak != null && state.streak >= state.bestStreak;
-  const toBest = state.bestStreak ? Math.max(state.bestStreak - state.streak, 0) : 0;
+  // bestStreak = 현재 연속을 제외한 '이전 최고' 연속일 (home.js streakStats).
+  // 0 = 주장할 이전 기록이 없다 → 아무 문구도 붙이지 않는다 (첫날 "경신 중" 방지).
+  const prevBest = Number(state.bestStreak) || 0;
+  let recordTail = '';
+  if (prevBest > 0) {
+    if (state.streak > prevBest) recordTail = ' — 최고 기록 경신 중';
+    else if (state.streak === prevBest) recordTail = ' — 최고 기록 타이';
+    else recordTail = ` — 최고 기록까지 ${prevBest - state.streak}일`;
+  }
   const streakText = phase === 'done'
-    ? `${state.streak}일 연속 달성${beatsBest ? ' — 최고 기록 경신 중' : (toBest > 0 ? ` — 최고 기록까지 ${toBest}일` : '')}`
+    ? `${state.streak}일 연속 달성${recordTail}`
     : `${state.streak}일 연속 — 오늘 하면 ${state.streak + 1}일째`;
 
   let msg;
