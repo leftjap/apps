@@ -63,4 +63,19 @@ import Testing
         let c = GymSwipeMath.heroCenterZone(numberWidth: 61, rowWidth: 323)
         #expect(GymSwipeMath.heroSideZone(center: c, rowWidth: 323) == (323 - 77) / 2)
     }
+
+    // 실기기(11 Pro) 실제 폭 — 히어로 행은 가로 패딩 없이 전폭 375pt (SessionScreen 은
+    // .frame(maxWidth:.infinity) 만 건다). 종전 40% = 150pt 였다.
+    @Test func realDeviceWidths() {
+        let row = 375.0
+        // 횟수 "8"  (mono 50, advance 31.0) → 47pt. 종전 150pt
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 31, rowWidth: row) == 47)
+        // 횟수 "10" (advance 61.0) → 77pt
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 61, rowWidth: row) == 77)
+        // 중량 "70" (mono 122, advance 144.6) → 상한 40% 에 걸려 150pt 유지 (회귀 없음)
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 144.6, rowWidth: row) == 150)
+        #expect(GymSwipeMath.heroCenterZone(numberWidth: 213.5, rowWidth: row) == 150)
+        // 좌우 증감 여백: 횟수 8 → 164pt (종전 112.5)
+        #expect(GymSwipeMath.heroSideZone(center: 47, rowWidth: row) == 164)
+    }
 }

@@ -2875,3 +2875,33 @@ describe('railTrailingSpacer', () => {
     expect(railTrailingSpacer(true, 500, 600, 0)).toBe(0);
   });
 });
+
+/* ── 히어로 탭 존 (실기기 2026-08-23 "키패드 구간이 넓다") ──────────────────
+ * 네이티브 GymSwipeMath.heroCenterZone 1:1 포팅. 좌30/중앙40/우30 고정이면 횟수 행처럼
+ * 숫자가 작은 곳에서 중앙이 숫자의 몇 배가 돼 여백 탭(증감)이 먹지 않는다.
+ */
+describe('heroCenterZone — 중앙(키패드)을 숫자 폭에 맞춘다', () => {
+  it('숫자에 좌우 8pt 여유', async () => {
+    const { heroCenterZone } = await import('./session.js');
+    expect(heroCenterZone(61, 375)).toBe(77);
+  });
+  it('한 자리라도 하한 44pt', async () => {
+    const { heroCenterZone } = await import('./session.js');
+    expect(heroCenterZone(10, 375)).toBe(44);
+  });
+  // 요청이 "축소" — 어떤 행에서도 종전 40% 보다 넓어지지 않는다.
+  it('상한은 종전 40%', async () => {
+    const { heroCenterZone } = await import('./session.js');
+    expect(heroCenterZone(213, 375)).toBe(150);
+    expect(heroCenterZone(999, 375)).toBe(150);
+  });
+  it('좌우는 남는 폭 반씩', async () => {
+    const { heroCenterZone, heroSideZone } = await import('./session.js');
+    expect(heroSideZone(heroCenterZone(31, 375), 375)).toBe(164);
+  });
+  // 숫자를 못 재면(0) 종전 40% 로 떨어져 동작이 바뀌지 않는다.
+  it('측정 실패 시 종전 40% 폴백', async () => {
+    const { heroCenterZone } = await import('./session.js');
+    expect(heroCenterZone(0, 375)).toBe(150);
+  });
+});
