@@ -143,18 +143,33 @@ public struct HomeScreenView: View {
     // 보여주고, 이어하기는 하단 콤팩트 카드로 (사용자 2026-07-23). 재설계 §3 은 idle(HomeA) 대상이라
     // 여기선 공유 컴포넌트(캘린더·밸런스)만 새 규격을 따르고 구조는 그대로 둔다.
     // 작은 화면 규칙은 homeA 와 같게 — 세션 유무에 따라 캘린더 주 수가 바뀌면 더 혼란스럽다.
+    @ViewBuilder
     func homeC(compact: Bool) -> some View {
+        if compact {
+            ScrollView(.vertical, showsIndicators: false) { homeCStack(compact: true) }
+        } else {
+            homeCStack(compact: false)
+        }
+    }
+
+    // 하단은 idle 과 같은 유산소·체중 카드로 채운다 — 없으면 밸런스와 이어하기 사이가 통째로
+    // 빈 공간이 됐다 (2026-08-24 사용자 보고). 직전 운동 행만 뺀다: 운동 중엔 의미가 겹치고
+    // 812 화면 세로가 모자란다. CTA 자리는 이어하기 카드가 대신한다.
+    func homeCStack(compact: Bool) -> some View {
         let ref = model.referenceToday
-        let bal = GymHomeLogic.weeklyBalance(sessions: model.allWorkedSessions(),
-                                             custom: model.custom, now: ref)
+        let sessions = model.allWorkedSessions()
+        let bal = GymHomeLogic.weeklyBalance(sessions: sessions, custom: model.custom, now: ref)
+        let cw = GymHomeLogic.cardioWeek(sessions: sessions, custom: model.custom, now: ref)
         return VStack(spacing: 0) {
             header
             if GymSyncHealth.isAtRisk(model.syncState, now: ref) { syncBanner }
             weekCalendar(model.weekCells(around: ref), compact: compact)
             balance(bal, compact: compact)
             Spacer(minLength: 0)   // homeA 와 동일 — 여백은 밸런스 아래 한 곳
+            cardioCard(cw)
+            weightCard(ref: ref)
             resumeCard
-                .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 24)
+                .padding(.horizontal, 24).padding(.top, 12).padding(.bottom, 22)
         }
     }
 

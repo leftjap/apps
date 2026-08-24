@@ -162,7 +162,7 @@ public enum GymScreens {
     //   밸런스 이번주 하체8 어깨5 등6 가슴7 팔4 코어2 = 32, 지난주 6·4·5·5·3·4 = 27 → +5 (§7 표)
     //   유산소 이번주 월30 화27 = 57분 2일, 지난주 수25 금28 토22 = 75분 3일 → "18분 더 하면 갱신" (§8)
     //   체중 72.4 (직전 72.6 → −0.2), 목표 69 → 3.4kg 남음 (§9)
-    @MainActor static func demo20aModel() -> GymAppModel {
+    @MainActor static func demo20aModel(session: GymSession? = nil) -> GymAppModel {
         func done(_ w: Double, _ r: Int) -> GymSet { GymSet(weight: w, reps: r, done: true) }
         // 부위별 세트 수 → 블록. 부위당 대표 종목 1개면 밸런스 집계엔 충분하다.
         func lift(_ id: String, _ date: String, _ tags: [String], _ spec: [(String, Int)]) -> GymSession {
@@ -177,7 +177,7 @@ public enum GymScreens {
                                          sets: [GymSet(done: true, duration: min * 60)])],
                        status: .completed)
         }
-        let m = demoEmptyModel()
+        let m = session.map { GymAppModel(snapshotSession: $0) } ?? demoEmptyModel()
         if let d = GymAppModel.dayFmt.date(from: "2026-08-11") { m.referenceToday = d }
         m.history = [
             // 이번 주 — history.first 가 직전 운동 행의 소스라 오늘(8/11) 세션이 맨 앞.
@@ -203,6 +203,18 @@ public enum GymScreens {
         }
         m.settings = GymUserSettings(weeklyGoal: 4, height: 173, birthYear: 1976, goalWeight: 69)
         healthySync(m); return m
+    }
+
+    // 운동 중 홈(HomeC) — 20a 데이터 위에 진행 중 세션. 밸런스 아래 유산소·체중 카드가
+    // 채워지고 이어하기 카드가 CTA 자리에 앉는지(넘침 없이) 한 렌더로 본다.
+    @MainActor static func demoResumeModel() -> GymAppModel {
+        let start = Int64(Date().timeIntervalSince1970 * 1000) - (11 * 60 + 19) * 1000
+        let s = GymSession(id: "resume-demo", date: "2026-08-11", startTime: start, blocks: [
+            GymBlock(exerciseId: "barbell_row", sets: [
+                GymSet(weight: 60, reps: 10, done: true), GymSet(weight: 60, reps: 10, done: true),
+                GymSet(weight: 60, reps: 10, preset: true), GymSet(weight: 60, reps: 10, preset: true)]),
+        ], tags: ["back"], status: .active)
+        return demo20aModel(session: s)
     }
 
     // 유산소를 한 번도 안 한 사용자 (§14 마지막 항목) — 원 7개 전부 빈 원, 하단 칩 숨김.
@@ -250,6 +262,7 @@ public enum GymScreens {
         // 시안 20a 정본 대조 — 기준 기기 375×812 (11 Pro). 세로 여유 0 이라 폭·높이를 시안에 맞춘다.
         case "home-20a":     return AnyView(HomeScreenView(model: demo20aModel()).frame(width: 375, height: 812))
         case "home-nocardio": return AnyView(HomeScreenView(model: demoNoCardioModel()).frame(width: 375, height: 812))
+        case "home-resume":  return AnyView(HomeScreenView(model: demoResumeModel()).frame(width: 375, height: 812))
         // §12 작은 화면(SE 375×667) 컴팩트 레이아웃 — 스크롤 콘텐츠의 자연 높이를 그대로 렌더한다
         // (ImageRenderer 가 ScrollView 내부를 못 잡으므로 스택을 직접 렌더). 뷰포트 647 과 비교용.
         case "home-se":      return AnyView(HomeScreenView(model: demo20aModel())
