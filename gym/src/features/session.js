@@ -342,6 +342,26 @@ export async function persistSetCommit({ exerciseName, setIdx, set } = {}) {
  * 네이티브 GymSessionLogic.cardioEntered 와 동일 (설계 2026-08-10 §1).
  * "값>0" 만 보면 직전 값을 상속한 프리셋까지 확정돼 유령 기록이 된다.
  */
+/**
+ * 히어로 탭 존 — 중앙(키패드)을 **그려진 숫자 폭**에 맞춘다.
+ * 네이티브 GymSwipeMath.heroCenterZone 1:1 포팅 (실기기 2026-08-23 "키패드 구간이 넓다").
+ *
+ * 좌30/중앙40/우30 고정이면 행 375pt 에서 중앙이 늘 150pt 인데, 횟수 숫자는 31~61pt 뿐이라
+ * 숫자 옆 빈 곳을 눌러도 키패드가 열렸다.
+ *  - 하한 44pt (한 자리 수도 누를 수 있게)
+ *  - **상한은 종전과 같은 40%** — 요청이 "축소" 이므로 어떤 행에서도 넓어지지 않는다.
+ *    숫자를 못 재면(0) 이 상한으로 떨어져 종전 동작을 유지한다.
+ */
+export function heroCenterZone(numberWidth, rowWidth, pad = 8, minSide = 44) {
+  const cap = Math.min(rowWidth * 0.4, Math.max(44, rowWidth - minSide * 2));
+  if (!(numberWidth > 0)) return cap;                 // 측정 실패 → 종전 40%
+  return Math.min(Math.max(numberWidth + pad * 2, 44), cap);
+}
+/** 좌/우 증감 존 — 남는 폭을 반씩 나눠 중앙이 가운데에 놓인다. */
+export function heroSideZone(center, rowWidth) {
+  return Math.max(0, (rowWidth - center) / 2);
+}
+
 /** 레일 현재 칩을 좌측 정렬할 때의 기준 inset (네이티브 GymSessionLogic.railLeftInset 정합). */
 export const RAIL_LEFT_INSET = 26;
 
@@ -1751,11 +1771,15 @@ async function handleTap(doc, x, y) {
     const r = z.getBoundingClientRect();
     if (y < r.top || y > r.bottom) continue;
     if (x < r.left || x > r.right) continue;
-    const ratio = (x - r.left) / r.width;
-    if (!isCardio && ratio < 0.3) await applyTapDelta(field, -1);
-    else if (!isCardio && ratio > 0.7) await applyTapDelta(field, +1);
+    // 중앙(키패드) 폭은 실제로 그려진 숫자에 맞춘다 — 브라우저라 폰트 지표 대신 실측이 가능하다.
+    const numEl = doc.getElementById(zoneId === 'cardWeightZone' ? 'cardWeight' : 'cardReps');
+    const numW = numEl ? numEl.getBoundingClientRect().width : 0;
+    const side = heroSideZone(heroCenterZone(numW, r.width), r.width);
+    const dx = x - r.left;
+    if (!isCardio && dx < side) await applyTapDelta(field, -1);
+    else if (!isCardio && dx > r.width - side) await applyTapDelta(field, +1);
     else {
-      // spec §6-3-2 — 중앙 40% → 키패드 (cardio 는 전 영역 키패드). prefill 박아 시작점 제공.
+      // spec §6-3-2 — 중앙(숫자 폭) → 키패드 (cardio 는 전 영역 키패드). prefill 박아 시작점 제공.
       let prefill;
       try {
         const ctx = await getCurrentBlockAndCursor();
@@ -3948,6 +3972,8 @@ export function setActivePart(part) {
 
 if (typeof window !== 'undefined') {
   window.gymSession = {
+    heroCenterZone,
+    heroSideZone,
     createEmptySession,
     getOrCreateActiveSession,
     addExerciseToActiveSession,
