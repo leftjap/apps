@@ -62,6 +62,18 @@ struct ReadingTimeApp: App {
         // 저장 시점에 세션에 부착할 위치 스냅샷 (미확보면 nil → 위치 없이 저장)
         model.locationProvider = { location.fix }
 
+        // 밀리 완독 처리 영속 — 제목 → 완독 시각. 이후 더 최신 밀리 기록이 오면 카드가 되살아난다.
+        if let raw = UserDefaults.standard.data(forKey: "rt.finishedEbooks"),
+           let saved = try? dec.decode([String: Date].self, from: raw) {
+            model.finishedEbooks = saved
+        }
+        model.onFinishedEbooksChange = { map in
+            let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
+            if let raw = try? enc.encode(map) {
+                UserDefaults.standard.set(raw, forKey: "rt.finishedEbooks")
+            }
+        }
+
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
         model.onAuthChange = { [weak model] loggedIn in
             UserDefaults.standard.set(loggedIn, forKey: "rt.loggedIn")
@@ -196,6 +208,9 @@ struct ReadingTimeApp: App {
             model?.ebookBooks = Dictionary(grouping: books, by: \.day).mapValues { $0.map(\.title) }
             model?.ebookCovers = Dictionary(books.compactMap { r in r.cover_url.map { (r.title, $0) } },
                                             uniquingKeysWith: { a, _ in a })
+            // 홈 카드 최근순 정렬용 — 제목별 최신 read_at (구 동기화분 nil 은 제외)
+            model?.ebookReadAt = Dictionary(books.compactMap { r in r.read_at.map { (r.title, $0) } },
+                                            uniquingKeysWith: { a, b in max(a, b) })
         }
         guard let rows = try? await cloud.fetchEbookDaily(), !rows.isEmpty else { return }
         model?.ebookDaily = Dictionary(rows.map { ($0.day, $0.seconds) }, uniquingKeysWith: +)

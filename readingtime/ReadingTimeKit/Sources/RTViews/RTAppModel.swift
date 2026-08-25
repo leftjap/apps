@@ -59,6 +59,31 @@ public struct RTBookHit: Equatable, Sendable {
     }
 }
 
+/// 홈 표지 카드 — 읽는 중 종이책 1권 또는 최근 밀리 책 1권.
+/// 종이책은 엎기로 기록 시작(recordable), 밀리는 자동 집계라 기록 대상이 아니다.
+public struct RTHomeCard: Identifiable, Equatable, Sendable {
+    public let title: String
+    public let author: String?
+    public let coverUrl: String
+    public let isbn: String?          // 서재 책만 보유 (밀리는 nil)
+    public let isEbook: Bool
+    public let lastReadAt: Date
+
+    public var id: String { isEbook ? "millie:\(title)" : "book:\(isbn ?? title)" }
+    /// 엎기 기록 대상 여부 — 밀리는 밀리 앱이 이미 시간을 재므로 false (이중 계상 방지)
+    public var recordable: Bool { !isEbook && isbn != nil }
+
+    public init(title: String, author: String?, coverUrl: String,
+                isbn: String?, isEbook: Bool, lastReadAt: Date) {
+        self.title = title
+        self.author = author
+        self.coverUrl = coverUrl
+        self.isbn = isbn
+        self.isEbook = isEbook
+        self.lastReadAt = lastReadAt
+    }
+}
+
 // 탭존 디바운스용 스케줄러 — 테스트에서 수동 발화 가능하게 주입
 public protocol RTTapScheduler {
     /// work 를 delay 후 실행 예약. 반환값 = 취소 클로저.
@@ -282,6 +307,62 @@ public final class RTAppModel: ObservableObject {
     @Published public var ebookBooks: [String: [String]] = [:]
     /// 밀리 책 표지 (제목 → cover_url, 밀리 CDN) — 랭킹·월간 캘린더 표기
     @Published public var ebookCovers: [String: String] = [:]
+
+    /// 밀리 책별 '마지막으로 읽은 시각' (제목 → read_at). 홈 카드 최근순 정렬 정본.
+    /// 원천(밀리 로컬 DB)은 초 단위인데 구 동기화가 날짜로 잘라 올렸다 — 0005 마이그로 복원.
+    @Published public var ebookReadAt: [String: Date] = [:]
+    /// 앱에서 완독 처리한 밀리 책 (제목 → 완독 처리 시각). 그 시각보다 최신 기록이 들어오면
+    /// 다시 읽는 것으로 보고 카드가 되살아난다 (종이책 rereadBook 과 대칭).
+    @Published public var finishedEbooks: [String: Date] = [:]
+    /// 홈 캐러셀에서 현재 보고 있는 카드 인덱스
+    @Published public var homeCardIndex = 0
+
+    /// 홈 표지 카드 — 읽는 중 종이책 + 최근 밀리 책을 '최근 읽은 순'으로.
+    /// 데모(userData nil)는 빈 배열 → 홈은 기존 시안 히어로를 그린다 (rtshot 오라클 불변).
+    public var homeCards: [RTHomeCard] {
+        guard let d = userData else { return [] }
+
+        var lastRead: [String: Date] = [:]
+        for s in d.sessions {
+            if let i = s.isbn, s.endedAt > (lastRead[i] ?? .distantPast) { lastRead[i] = s.endedAt }
+        }
+        let paper = d.books.filter { !$0.finished }.map { b in
+            RTHomeCard(title: b.title, author: b.author, coverUrl: b.coverUrl,
+                       isbn: b.isbn, isEbook: false,
+                       lastReadAt: max(b.addedAt, lastRead[b.isbn] ?? .distantPast))
+        }
+        // 밀리: 완독 처리 이후 더 최신 기록이 없으면 제외
+        let ebook = ebookReadAt.compactMap { (title, readAt) -> RTHomeCard? in
+            if let finishedAt = finishedEbooks[title], readAt <= finishedAt { return nil }
+            return RTHomeCard(title: title, author: nil, coverUrl: ebookCovers[title] ?? "",
+                              isbn: nil, isEbook: true, lastReadAt: readAt)
+        }
+        return (paper + ebook).sorted { $0.lastReadAt > $1.lastReadAt }
+    }
+
+    /// 엎기 기록 대상 — 선택된 카드가 종이책이면 그 ISBN, 밀리 카드면 nil(기록 시작 안 함).
+    public var flipTargetISBN: String? {
+        let cards = homeCards
+        guard homeCardIndex >= 0, homeCardIndex < cards.count else { return currentBook?.isbn }
+        return cards[homeCardIndex].recordable ? cards[homeCardIndex].isbn : nil
+    }
+
+    /// 선택된 홈 카드가 엎기·탭 기록 대상인가. 밀리 카드면 false → 홈 CTA 비활성.
+    /// 카드가 없으면(데모) true — 기존 시안 동작 유지.
+    public var selectedCardRecordable: Bool {
+        let cards = homeCards
+        guard !cards.isEmpty else { return true }
+        let i = min(max(0, homeCardIndex), cards.count - 1)
+        return cards[i].recordable
+    }
+
+    /// 밀리 책 완독 처리 (홈 카드에서 제외). 이후 더 최신 밀리 기록이 오면 자동 복귀.
+    public func finishEbook(_ title: String) {
+        finishedEbooks[title] = now()
+        onFinishedEbooksChange?(finishedEbooks)
+    }
+    /// 완독 처리 영속 훅 (앱: UserDefaults JSON)
+    public var onFinishedEbooksChange: (([String: Date]) -> Void)?
 
     /// 그날 밀리 시간의 책별 귀속 — 그날 책 균등 분할. 히스토리 없는 날(진도 기록은
     /// 변경 시에만 남음)은 직전 책, 그것도 없으면 현재 책/서비스명 폴백.
@@ -779,9 +860,11 @@ public final class RTAppModel: ObservableObject {
 
     // ── 세션 시작 (app.js startSession — 시드는 sessionSeed) ──
     public func startSession(_ mode: RTMode) {
+        // 세션 대상: start(isbn:) 이 보류한 책 > 홈 카드에서 고른 책 (캐러셀 도입 2026-08-25).
+        // flipTargetISBN 은 카드 범위 밖이면 currentBook 으로 폴백한다.
         session = RTSession(mode: mode, status: .recording,
                             elapsed: sessionSeed, pauseCount: 0, startedAt: now(),
-                            isbn: nextSessionISBN ?? currentBook?.isbn)
+                            isbn: nextSessionISBN ?? flipTargetISBN)
         nextSessionISBN = nil
         emitPresence()
     }
@@ -802,6 +885,32 @@ public final class RTAppModel: ObservableObject {
         case "nav": navScreenID(arg)
         case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
         case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
+        case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
+        case "finishEbook": finishEbook(arg)                     // 밀리 완독 처리(검증)
+        case "demoCards":   // 홈 캐러셀 시드 — 종이책 2 + 밀리 2 (실표지·최근순 검증)
+            let t = now()
+            func ago(_ h: Double) -> Date { t.addingTimeInterval(-h * 3600) }
+            userData = RTUserData(
+                books: [
+                    RTBook(isbn: "P1", title: "작별하지 않는다", author: "한강", publisher: "문학동네",
+                           coverUrl: "https://image.aladin.co.kr/product/27877/5/cover200/8954682154_3.jpg",
+                           addedAt: ago(72)),
+                    RTBook(isbn: "P2", title: "파친코", author: "이민진", publisher: "인플루엔셜",
+                           coverUrl: "https://image.aladin.co.kr/product/29496/39/cover200/s382931339_2.jpg",
+                           addedAt: ago(96)),
+                ],
+                sessions: [
+                    RTSessionRecord(isbn: "P1", mode: "flip", seconds: 52 * 60, endedAt: ago(30), pauseCount: 0),
+                    RTSessionRecord(isbn: "P2", mode: "flip", seconds: 74 * 60, endedAt: ago(50), pauseCount: 0),
+                ])
+            ebookReadAt = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]": ago(2),   // 최신 → 첫 카드
+                           "독학이라는 세계": ago(40)]
+            ebookCovers = [
+                "삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]":
+                    "https://img.millie.co.kr/200x/service/cover/179627237/6c18271ace30484f83644c87958de70b.jpg",
+                "독학이라는 세계":
+                    "https://image.millie.co.kr/service/cover/180153534/77b09fba84f14ed8967dcc48251988ff.jpg",
+            ]
         case "searchReopen":   // 검색 완결 후 닫기→재열기 (재열기 공란+최신결과 유지 결정적 검증)
             Task { await search(arg); closeSheet(); openSheet(.addbook) }
         case "closeSheet": closeSheet()

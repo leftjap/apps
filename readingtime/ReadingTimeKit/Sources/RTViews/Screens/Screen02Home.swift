@@ -164,7 +164,18 @@ public struct Screen02Home: View {
     }
 
     // ── 히어로 스테이지 (칩 + 책 + 제목) ──
-    var stage: some View {
+    @ViewBuilder var stage: some View {
+        // 라이브(실데이터)면 표지 캐러셀 — 읽는 중 종이책 + 최근 밀리 책 (2026-08-25 결정).
+        // 데모(userData nil)는 카드가 비어 기존 단일 히어로를 그린다 → rtshot 오라클 불변.
+        if let m = model, !m.homeCards.isEmpty {
+            RTHomeCarousel(model: m, cards: m.homeCards)
+                .padding(.horizontal, 26)
+        } else {
+            demoStage
+        }
+    }
+
+    var demoStage: some View {
         VStack(spacing: 0) {
             // 라이브 칩
             HStack(spacing: 7) {
@@ -392,8 +403,14 @@ public struct Screen02Home: View {
         }
         .frame(maxWidth: .infinity).frame(height: 60)
         .contentShape(RoundedRectangle(cornerRadius: 16))
-        .onTapGesture { model?.start() }
+        // 밀리 카드 선택 중엔 기록 시작 불가 (밀리가 자동 집계 — 이중 계상 방지, 2026-08-25)
+        .opacity(recordable ? 1 : 0.34)
+        .allowsHitTesting(recordable)
+        .onTapGesture { if recordable { model?.start() } }
     }
+
+    /// 선택된 홈 카드가 기록 대상인가 (밀리면 false). 데모는 항상 true.
+    private var recordable: Bool { model?.selectedCardRecordable ?? true }
 
     // rtBtnFlip 주기 4.6s: 0~60% 0°, 60~72% 0→180, 72~84% hold 180(뒷면), 84~96% 180→360.
     private func ctaFlipAngle(_ t: Double) -> Double {
@@ -474,7 +491,9 @@ public struct Screen02Home: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: 0xE5DFCD), lineWidth: 1))
         .shadow(color: Color(hex: 0x16140F, alpha: 0.24), radius: 7, x: 0, y: 6)
         .contentShape(RoundedRectangle(cornerRadius: 16))
-        .onTapGesture { model?.switchTap() }
+        .opacity(recordable ? 1 : 0.34)          // 밀리 카드 선택 중엔 탭 기록도 불가
+        .allowsHitTesting(recordable)
+        .onTapGesture { if recordable { model?.switchTap() } }
     }
 
     // 연속 기록 체인 (13 도트)

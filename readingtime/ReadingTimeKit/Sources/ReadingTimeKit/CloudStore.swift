@@ -169,9 +169,11 @@ public final class CloudStore: ObservableObject {
         public let day: String
         public let title: String
         public let cover_url: String?
+        /// 그날 그 책을 마지막으로 읽은 시각 (0005 마이그). 구 동기화분은 nil.
+        public let read_at: Date?
     }
     public func fetchEbookBooks() async throws -> [EbookBookRow] {
-        try await client.from("book_reading_books").select("day,title,cover_url").execute().value
+        try await client.from("book_reading_books").select("day,title,cover_url,read_at").execute().value
     }
 
     // 밀리 현재 읽는 책 제목 (book_current_reading, 읽기 전용) — 통계 밀리 행 표기
