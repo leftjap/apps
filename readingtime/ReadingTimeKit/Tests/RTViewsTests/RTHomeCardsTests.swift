@@ -142,6 +142,33 @@ private func at(_ s: String) -> Date {
         #expect(m.session?.isbn == "B")
     }
 
+    // ③ 밀리 완독은 홈 카드에서 직접 실행 가능해야 한다 (UI 진입점 — 뷰가 이 API 를 쓴다)
+    @Test func ebookCardExposesFinishAction() {
+        let m = model()
+        m.ebookReadAt = ["삼미 슈퍼스타즈": at("2026-08-25 18:20")]
+        m.userData = RTUserData(books: [paper("A", "몰입", added: "2026-08-01")], sessions: [])
+
+        // 밀리 카드는 완독 처리 대상, 종이 카드는 아님(종이는 기존 08 상세의 '완독' CTA 사용)
+        #expect(m.homeCards[0].finishable)
+        #expect(!m.homeCards[1].finishable)
+
+        // 홈에서 현재 카드를 완독 처리 → 카드에서 빠지고 인덱스가 범위 안으로 보정된다
+        m.homeCardIndex = 0
+        m.finishSelectedCard()
+        #expect(m.homeCards.map(\.title) == ["몰입"])
+        #expect(m.homeCardIndex == 0)
+    }
+
+    // 마지막 카드를 완독 처리해도 인덱스가 범위를 벗어나지 않는다 (크래시 방지)
+    @Test func finishingLastCardClampsIndex() {
+        let m = model()
+        m.ebookReadAt = ["삼미": at("2026-08-25 18:20"), "독학": at("2026-08-21 15:55")]
+        m.homeCardIndex = 1                 // 마지막 카드(독학)
+        m.finishSelectedCard()
+        #expect(m.homeCards.count == 1)
+        #expect(m.homeCardIndex == 0)
+    }
+
     // 데모(userData nil)는 카드 없음 — rtshot 오라클 경로 불변
     @Test func demoHasNoCards() {
         let m = RTAppModel()

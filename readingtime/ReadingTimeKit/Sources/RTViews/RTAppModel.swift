@@ -72,6 +72,8 @@ public struct RTHomeCard: Identifiable, Equatable, Sendable {
     public var id: String { isEbook ? "millie:\(title)" : "book:\(isbn ?? title)" }
     /// 엎기 기록 대상 여부 — 밀리는 밀리 앱이 이미 시간을 재므로 false (이중 계상 방지)
     public var recordable: Bool { !isEbook && isbn != nil }
+    /// 홈에서 바로 완독 처리할 수 있는가 — 밀리 전용. 종이책은 08 상세의 '완독' CTA 를 쓴다.
+    public var finishable: Bool { isEbook }
 
     public init(title: String, author: String?, coverUrl: String,
                 isbn: String?, isEbook: Bool, lastReadAt: Date) {
@@ -354,6 +356,17 @@ public final class RTAppModel: ObservableObject {
         guard !cards.isEmpty else { return true }
         let i = min(max(0, homeCardIndex), cards.count - 1)
         return cards[i].recordable
+    }
+
+    /// 홈에서 현재 카드를 완독 처리 (밀리 전용 — UI 진입점).
+    /// 카드가 빠지면서 인덱스가 배열 밖으로 나가지 않게 보정한다.
+    public func finishSelectedCard() {
+        let cards = homeCards
+        guard homeCardIndex >= 0, homeCardIndex < cards.count else { return }
+        let card = cards[homeCardIndex]
+        guard card.finishable else { return }
+        finishEbook(card.title)
+        homeCardIndex = min(homeCardIndex, max(0, homeCards.count - 1))
     }
 
     /// 밀리 책 완독 처리 (홈 카드에서 제외). 이후 더 최신 밀리 기록이 오면 자동 복귀.

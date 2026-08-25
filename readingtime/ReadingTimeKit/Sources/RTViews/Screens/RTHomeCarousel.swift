@@ -11,6 +11,7 @@ struct RTHomeCarousel: View {
     // 시안 스테이지 폭 = 390 - 26*2
     private static let pageW: CGFloat = 390 - 26 * 2
     @State private var drag: CGFloat = 0
+    @State private var confirming = false   // 완독 확인 단계 (카드 넘기면 리셋)
 
     private var index: Int { min(max(0, model.homeCardIndex), cards.count - 1) }
 
@@ -45,6 +46,7 @@ struct RTHomeCarousel: View {
                 if dx > 40, index > 0 { next = index - 1 }
                 withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
                     drag = 0
+                    if next != index { confirming = false }   // 카드 전환 시 확인 단계 해제
                     model.homeCardIndex = next
                 }
             }
@@ -82,9 +84,12 @@ struct RTHomeCarousel: View {
                     .foregroundColor(RT.muted).padding(.top, 3).lineLimit(1).minimumScaleFactor(0.8)
                 Group {
                     if card.isEbook {
-                        // 엎어도 기록되지 않는다는 사실을 카드에서 직접 알린다
-                        Text("밀리에서 읽은 시간은 자동으로 합산돼요")
-                            .font(.sans(11.5, 500)).foregroundColor(RT.faint)
+                        // 엎어도 기록되지 않는다는 사실 + 완독 처리 진입점 (밀리는 08 상세가 없다)
+                        VStack(spacing: 9) {
+                            Text("밀리에서 읽은 시간은 자동으로 합산돼요")
+                                .font(.sans(11.5, 500)).foregroundColor(RT.faint)
+                            finishButton
+                        }
                     } else if let isbn = card.isbn {
                         HStack(spacing: 8) {
                             Text(RTAppModel.hmString(model.totalSeconds(isbn: isbn)))
@@ -101,6 +106,43 @@ struct RTHomeCarousel: View {
             .rtRiseIn(delay: 0.18)
         }
         .frame(width: Self.pageW)
+    }
+
+    // 밀리 완독 — 종이책의 08 상세 '완독' CTA 에 대응하는 홈 진입점.
+    // 오탭 방지로 한 번 더 확인받는다(밀리는 되돌리기가 '다시 읽기'뿐이라 즉시 실행이 위험).
+    @ViewBuilder private var finishButton: some View {
+        if confirming {
+            HStack(spacing: 8) {
+                Button {
+                    withAnimation(.easeOut(duration: 0.2)) {
+                        model.finishSelectedCard()
+                        confirming = false
+                    }
+                } label: {
+                    Text("완독 처리")
+                        .font(.sans(11.5, 700)).foregroundColor(RT.ctaText)
+                        .padding(EdgeInsets(top: 6, leading: 13, bottom: 6, trailing: 13))
+                        .background(Capsule().fill(RT.green))
+                }
+                Button { withAnimation(.easeOut(duration: 0.2)) { confirming = false } } label: {
+                    Text("취소")
+                        .font(.sans(11.5, 600)).foregroundColor(RT.muted)
+                        .padding(EdgeInsets(top: 6, leading: 11, bottom: 6, trailing: 11))
+                        .background(Capsule().fill(RT.segBg))
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button { withAnimation(.easeOut(duration: 0.2)) { confirming = true } } label: {
+                HStack(spacing: 5) {
+                    RTIcon(RTIconPath.check, size: 13, stroke: RT.green, lineWidth: 2.4)
+                    Text("다 읽었어요").font(.sans(11.5, 600)).foregroundColor(RT.green)
+                }
+                .padding(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                .background(Capsule().fill(RT.greenTint))
+            }
+            .buttonStyle(.plain)
+        }
     }
 
     private var dots: some View {
