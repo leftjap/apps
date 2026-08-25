@@ -31,6 +31,9 @@ export function createStudyDB(name = 'study') {
     mathProblems: 'id, date, module',
     mathQueue: 'id, nextReview, module',
   });
+  // ⚠ mathQueue 는 v3/v4 당시엔 서버 시드의 로컬 캐시라 clear 가 안전했으나, D1(2026-08-23)
+  // 이후 session-math 가 쓰는 '기기-작성 학습 진도'다. 새 버전에서 clear 하면 사용자의 수학 SRS
+  // 진도가 소실된다(서버에도 없을 수 있어 복구 불가). schema.test.js 가 clear 개수를 고정한다.
   // v3: 복리(구 콘텐츠) 잔존 정리. sync 는 pull(bulkPut)만 하고 서버 삭제를 Dexie 에 반영하지
   // 않으므로(deleting hook 부재), 한 번 clear 후 다음 pull 로 서버 정본(기하)만 재구축.
   db.version(3).stores({

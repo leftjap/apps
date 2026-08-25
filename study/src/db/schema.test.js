@@ -108,3 +108,25 @@ describe('schema v4 → v5 → v6 누적 upgrade', () => {
     await db.delete();
   });
 });
+
+/* 2026-08-25 감사 — 파괴적 선례 차단.
+ *
+ * v3/v4 는 mathQueue 를 clear 한다. 당시 주석("Dexie 가 Supabase 를 미러")대로 mathQueue 는
+ * 서버 시드 콘텐츠의 로컬 캐시였고, 버전 bump + clear 가 서버 삭제를 기기에 반영하는 정규 수단이었다.
+ *
+ * D1(2026-08-23) 이후 mathQueue 는 성격이 반대로 바뀌었다 — session-math 가 쓰는 '기기-작성
+ * 학습 진도'이고, 서버에 없는 행이 정상이다. 이 선례를 그대로 따라 v8 에서 clear 하면
+ * 사용자의 수학 SRS 진도가 통째로 소실된다(복구 불가 — 서버에도 없을 수 있음).
+ *
+ * 주석만으로는 부족하다는 게 이번 세션에서 증명됐다(sync.js 의 "mathQueue 는 앱이 쓰지 않는
+ * 테이블" 주석이 D1 이후 거짓이 되면서 동기화가 영구 차단됐다). 그래서 테스트로 고정한다.
+ * 정말 필요하면 이 숫자를 의도적으로 올리면 된다 — 그 순간 위 내용을 읽게 된다.
+ */
+describe('schema — mathQueue 파괴 선례 차단', () => {
+  it('mathQueue clear 는 과거 v3/v4 2건뿐이다 (신규 추가 시 진도 소실)', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('./schema.js', import.meta.url), 'utf8');
+    const hits = src.match(/table\(['"]mathQueue['"]\)\.clear\(\)/g) || [];
+    expect(hits).toHaveLength(2);
+  });
+});
