@@ -297,6 +297,18 @@ export const TABLE_MAP = Object.freeze([
   }),
 ]);
 
+/**
+ * 급감 가드(pushTable:577 — 서버 0행 + 로컬 있음 → 영구 blocked) 를 우회해야 하는
+ * '기기가 쓰는' 테이블. startSync 끝에서 누락 행만 직접 upsert 한다.
+ *
+ * serverOwned(todayLessons / mathProblems) 는 서버 시드라 기기가 되밀면 안 되므로 제외.
+ * 2026-08-25 — mathQueue 누락으로 수학 SRS 가 Dexie 에만 갇혀 있었다. 앱이 쓰는 테이블을
+ * 추가할 때 여기 빠뜨리면 같은 일이 반복되므로, sync.test.js 가 TABLE_MAP 과 대조해 고정한다.
+ */
+export const DEVICE_WRITTEN_TABLES = Object.freeze(
+  TABLE_MAP.filter((m) => !m.serverOwned).map((m) => m.dexie),
+);
+
 let _syncActive = false;
 
 /** 업로드 디바운스 (spec §4 line 188 — 3초 배치 저장). */
@@ -1309,9 +1321,8 @@ export async function startSync(user) {
   catch (e) { console.warn('[sync] reconcileDailyStats', e); }
   // 급감 가드에 막혀 서버-빈 채로 남는 기기-작성 테이블을 멀티기기 동기화 (누락 행만 직접 upsert).
   // 기존 유저(일부 테이블만 서버-빈)에서 다른 브라우저·iOS PWA 가 0 으로 보이던 버그 보강. 실패해도 무영향.
-  // mathQueue 는 앱 코드가 쓰지 않는 테이블(로컬 생성 행 0) → 대상 아님. mathProblems/todayLessons 는 serverOwned.
   try {
-    for (const dexie of ['sessionLogs', 'reviewQueue', 'pronunciationLog']) {
+    for (const dexie of DEVICE_WRITTEN_TABLES) {
       const m = TABLE_MAP.find((x) => x.dexie === dexie);
       if (m) await reconcileTable(_currentDB, _currentUserId, m);
     }

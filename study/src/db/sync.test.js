@@ -2129,3 +2129,29 @@ describe('sync — 발음 세부 점수(fluency/prosody 등) 동기화', () => {
     expect(down).toMatchObject({ fluencyScore: null, prosodyScore: null, captureRms: null });
   });
 });
+
+/* 2026-08-25 — D1(수학 SRS → Dexie mathQueue) 이후 발견.
+ * pushTable 의 급감 가드(sync.js:577)는 '서버 0행 + 로컬 있음' 이면 push 를 영구 차단한다.
+ * study_math_queue 는 실 DB 0행이라, 앱이 mathQueue 에 쓰기 시작한 순간부터 모든 push 가 막힌다.
+ * 가드를 우회하는 경로는 startSync 끝의 reconcileTable 루프인데, 그 목록이
+ * "mathQueue 는 앱 코드가 쓰지 않는 테이블" 이라는 (이제 거짓이 된) 주석과 함께 mathQueue 를
+ * 제외하고 있었다 → 수학 진도가 Dexie 에만 남고 클라우드로 못 나간다(D1 목적 무력화).
+ * 목록을 상수로 빼고, '기기가 쓰는 테이블은 전부 포함' 을 구조 불변식으로 고정한다. */
+describe('sync — 급감 가드 우회 대상(DEVICE_WRITTEN_TABLES)', () => {
+  it('serverOwned 가 아닌 TABLE_MAP 테이블은 전부 포함된다', async () => {
+    const { TABLE_MAP, DEVICE_WRITTEN_TABLES } = await import('./sync.js');
+    const deviceWritten = TABLE_MAP.filter((m) => !m.serverOwned).map((m) => m.dexie);
+    expect([...DEVICE_WRITTEN_TABLES].sort()).toEqual(deviceWritten.sort());
+  });
+
+  it('mathQueue 가 포함된다 (D1 이후 앱이 쓰는 테이블)', async () => {
+    const { DEVICE_WRITTEN_TABLES } = await import('./sync.js');
+    expect(DEVICE_WRITTEN_TABLES).toContain('mathQueue');
+  });
+
+  it('serverOwned 테이블은 포함하지 않는다 (서버 시드 → 기기가 되밀면 안 됨)', async () => {
+    const { DEVICE_WRITTEN_TABLES } = await import('./sync.js');
+    expect(DEVICE_WRITTEN_TABLES).not.toContain('todayLessons');
+    expect(DEVICE_WRITTEN_TABLES).not.toContain('mathProblems');
+  });
+});
