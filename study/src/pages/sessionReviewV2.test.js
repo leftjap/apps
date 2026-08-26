@@ -463,3 +463,18 @@ describe('sessionReviewV2 — 듣기/녹음 버튼 순서', () => {
     expect(btns[1].textContent).toContain('떠올려 말하기');
   });
 });
+
+/* §11 — 녹음 버튼의 이퀄라이저는 재생 어휘다. 복습 알약도 마이크를 유지해야 한다. */
+describe('sessionReviewV2 — 녹음 중 아이콘', () => {
+  it('녹음 중에도 마이크를 유지한다 (이퀄라이저 금지)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 3, demo: true });
+      host.querySelector('.vr-pill.pri').click();
+      const pill = host.querySelector('.vr-pill.recing');
+      expect(pill.textContent).toContain('녹음 멈추기');
+      expect(pill.querySelector('.v-eq')).toBeNull();
+      vi.advanceTimersByTime(1100);
+    } finally { vi.useRealTimers(); }
+  });
+});

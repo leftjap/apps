@@ -143,6 +143,34 @@ export async function fetchDayUtterMap(db, lang) {
 }
 
 /**
+ * 개인기록(일 발화) 달성일 ISO 목록 — 캘린더의 코랄 칸.
+ *
+ * meta.prDailyUtterance = 현재 기록, meta.prHistory = 갈아치워진 옛 기록들(당시엔 기록일).
+ * 값 형식이 둘이다: pr.js applyPRUpdate 는 { value, achieved_at, lang },
+ * saveDailyPRIfRecord(아래)는 { value, date } — 둘 다 읽는다.
+ */
+export async function fetchPRDays(db, lang) {
+  if (!db?.meta) return [];
+  try {
+    const [cur, hist] = await db.meta.bulkGet(['prDailyUtterance', 'prHistory']);
+    const out = new Set();
+    const take = (v, type) => {
+      if (!v) return;
+      if (type && v.type !== type) return;
+      if (v.lang && lang && v.lang !== 'both' && v.lang !== lang) return;
+      const iso = v.achieved_at || v.date;
+      if (typeof iso === 'string' && iso.length >= 10) out.add(iso.slice(0, 10));
+    };
+    take(cur?.value);
+    for (const row of (Array.isArray(hist?.value) ? hist.value : [])) take(row, 'daily_utterance');
+    return [...out];
+  } catch (e) {
+    console.error('[sessionStats.fetchPRDays]', e);
+    return [];
+  }
+}
+
+/**
  * 직전 '학습일'(오늘보다 앞선, 발화가 있었던 가장 최근 날) 의 발화 수.
  * 오늘의 기준선은 직전 세션이 아니라 직전 학습일이다 (기록/갱신 설계 §1-1).
  * 0 = 직전 학습일 없음 → 화면은 비교를 주장하지 않는다.
@@ -183,6 +211,7 @@ export async function saveDailyPRIfRecord(db, candidateValue, todayISO) {
 
 export const SessionStats = Object.freeze({
   fetchDayUtterMap,
+  fetchPRDays,
   prevStudyDayUtterance,
   computeDeltaVsPrevSession,
   computePRRemaining,

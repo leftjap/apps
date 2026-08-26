@@ -41,7 +41,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { h } from '../components/d1/dom.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, buildD1ExplainRight, buildD1Judges, exprOf } from '../components/d1/sessionShell.js';
-import { fetchDayUtterMap, prevStudyDayUtterance } from '../services/sessionStats.js';
+import { fetchDayUtterMap, prevStudyDayUtterance, fetchPRDays } from '../services/sessionStats.js';
 import { renderSessionReviewV2 } from './sessionReviewV2.js';
 import { demoReviewCards } from './sessionReviewDemo.js';
 
@@ -264,6 +264,7 @@ export function mountSessionReview(host) {
       state.dayMap = dayMap;
       state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
       state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
+      state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸
       state.cards = cards;
       state.total = cards.length;
       const restore = restoreFromSnapshot(snapshot, cards, sessionMode);

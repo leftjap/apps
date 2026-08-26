@@ -22,7 +22,7 @@ import { localISODate } from '../utils/today.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
-import { fetchDayUtterMap, prevStudyDayUtterance } from '../services/sessionStats.js';
+import { fetchDayUtterMap, prevStudyDayUtterance, fetchPRDays } from '../services/sessionStats.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
@@ -249,6 +249,7 @@ export function mountSessionNew(host) {
       state.dayMap = dayMap;
       state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
       state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
+      state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸
       // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
       // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
       if (cards.length === 0) {

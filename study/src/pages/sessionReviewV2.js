@@ -9,7 +9,7 @@
  * 라이브 녹음/채점은 기존 services 재사용. 데모(?demo=1)는 마이크 없이 시뮬.
  */
 import { h } from '../components/d1/dom.js';
-import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts,
+import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   scoreDot, emptyDot, miniCalGrid, isoShift, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
@@ -504,9 +504,10 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     if (!revealed) reveal(); // 시도 직후 정답 공개 (피드백) — 실패해도 학습된다
     refreshDots(); refreshRec();
   }
+  /* 녹음 중 표시는 코랄 채움 + v-pulse 확산 링 + 라벨뿐 — 아이콘은 마이크로 둔다.
+   * 이퀄라이저는 '재생 중' 어휘라 녹음에 쓰면 두 상태가 같아 보인다 (작업지시서 §11). */
   const setRecVisual = (on) => {
     recPill.classList.toggle('recing', on); recPill.classList.toggle('pri', !on);
-    recPill.replaceChild(on ? vEq(4) : vIcon(VI.MIC, { size: 14, sw: 2 }), recPill.firstChild);
     recPill.lastChild.textContent = on ? '녹음 멈추기' : (recCount() > 0 ? '다시 떠올리기' : '떠올려 말하기');
   };
   const stopPlaying = () => { playing = false; listenPill.classList.remove('playing'); listenPill.lastChild.textContent = '듣기'; };

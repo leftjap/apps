@@ -6,7 +6,7 @@
  * 시각만 v2 로 교체. 데모(?demo=1&view=session)는 마이크 없이 정적 렌더로 검증.
  */
 import { h } from '../components/d1/dom.js';
-import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts,
+import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
@@ -56,7 +56,7 @@ export const VS_CSS = `
 .vs-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 5px no-repeat;padding-bottom:6px}
 .vs-ko{font-size:17px;color:var(--mut);margin-top:12px}
 .vs-pron{font-size:13px;color:var(--faint);margin-top:5px}
-.vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:26px;min-height:56px;flex-wrap:wrap}
+.vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:24px;min-height:56px;flex-wrap:wrap}
 .vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
 .vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
 /* 녹음 CTA 는 코랄 — 색 규약 '코랄=녹음'(v2/atoms.js 머리주석)과 구 D1(terra) 관례. 2026-07-22 복원. */
@@ -73,7 +73,7 @@ export const VS_CSS = `
 .vs-meta .tot b{color:var(--ink)}
 .vs-labrow{display:flex;align-items:baseline;justify-content:space-between;margin-top:26px}
 .vs-lab{font-family:Outfit;font-size:10.5px;letter-spacing:.15em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
-.vs-labrow .ct{font-family:Outfit;font-size:11.5px;color:var(--mut);font-weight:600;white-space:nowrap}
+.vs-labrow .ct{font-family:Outfit;font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
 .vs-labrow .ct b{color:var(--teal-deep)}
 .vs-drow{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid var(--line)}
 .vs-drow:last-of-type{border-bottom:0}
@@ -83,11 +83,15 @@ export const VS_CSS = `
 .vs-drow .sub{font-size:12px;color:var(--faint);margin-top:3px}
 .vs-drow .grow{flex:1}
 .vs-drow.recing{background:var(--coral-soft);margin:0 -14px;padding-left:16px;padding-right:14px;border-radius:12px;border-bottom-color:transparent}
+.vs-drow.vs-prod .en{font-size:15px}
 .vs-cir{width:33px;height:33px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;flex:0 0 auto;position:relative;padding:0}
 .vs-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
+/* 다음 차례(체이닝 현재 단계) — 어느 원을 눌러야 하는지 색으로 (§6.5). */
+.vs-cir.next{border-color:var(--coral);color:var(--coral-deep)}
 .vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
 .vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
+.vs-prod-give{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:0 0 1px;font:inherit;font-family:Pretendard,sans-serif;font-size:12px;font-weight:700;color:var(--teal-deep);background:none;border:0;border-bottom:1px solid oklch(44% .062 192/.3);cursor:pointer}
 .vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-side{width:324px;flex:0 0 auto}
 .vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
@@ -207,14 +211,15 @@ export function utterRingCard({ size = 140, caption = true } = {}) {
 }
 
 /* ── 공부 이력 · 최근 4주 (§6.6②) — 셀 안 숫자 없이 농도만. 오늘 칸은 발화가 쌓이면 실시간으로 진해진다. */
-export function historyCalCard(todayISO, dayMap, todayCount) {
+export function historyCalCard(todayISO, dayMap, todayCount, prDays) {
   const start = isoShift(mondayOf(todayISO), -21);
   const dates = Array.from({ length: 28 }, (_, i) => isoShift(start, i));
   const el = h('div', { class: 'vs-hist' }, h('span', { class: 'lb vs-histlab' }, '공부 이력'));
   const countOf = (iso) => (iso === todayISO ? todayCount() : Number(dayMap?.[iso]) || 0);
+  const pr = new Set(prDays || []); // 개인기록 달성일 = 코랄 칸
   // 하루 발화 수는 사람마다 스케일이 다르다 — 이 4주 창의 분포로 3단을 잡는다.
   const build = () => miniCalGrid(dates, {
-    countOf, todayISO,
+    countOf, todayISO, prDays: pr,
     tierOf: makeMiniTier(dates.filter((iso) => iso <= todayISO).map(countOf)),
   });
   let grid = build();
@@ -379,6 +384,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
       r.row.style.opacity = i < cur ? '0.5' : active ? '1' : '0.35';
       r.playBtn.disabled = !active;
       r.recBtn.disabled = !active;
+      r.recBtn.classList.toggle('next', active);
       r.mark.style.display = i < cur ? '' : 'none';
     });
     countEl.textContent = String(cur);
@@ -495,7 +501,8 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
     // 정답 보기 — 녹음 3회를 채우지 않고도 바로 공개 (2026-07-24 사용자 지시,
     // 복습의 "발화는 전진 조건이 아니다" 원칙). 공개는 통과가 아니다(스트릭 0).
     // 데스크톱 VS_CSS 엔 '.vs button' 리셋이 없으므로 크롬 제거는 인라인.
-    const giveBtn = h('button', { class: 'vs-prod-give', type: 'button', style: 'display:block;text-align:left;padding:2px 0;font:inherit;font-size:12px;font-weight:600;color:var(--faint);background:none;border:0;cursor:pointer;' }, '정답 보기');
+    const giveBtn = h('button', { class: 'vs-prod-give', type: 'button' }, '정답 보기', vIcon(VI.CHEV_DOWN, { size: 10, sw: 2.2 }));
+    giveBtn.lastChild.style.transform = 'rotate(-90deg)';
     const row = h('div', { class: 'vs-drow vs-prod' },
       h('span', { class: 'ix' }, String(i + 1)),
       h('div', {}, h('div', { class: 'en' }, String(d.ko)), h('div', { class: 'sub' }, `${wcnt}단어`), hintEl, ansEl, giveBtn),
@@ -660,9 +667,12 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-drow .grow{flex:0 0 auto}
 .vs-cir{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;flex:0 0 auto;position:relative;padding:0}
 .vs-cir.eqq{border-color:var(--blue-line);color:var(--blue)}
+/* 다음 차례(체이닝 현재 단계) — 어느 원을 눌러야 하는지 색으로 (§6.5). */
+.vs-cir.next{border-color:var(--coral);color:var(--coral-deep)}
 .vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
 .vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
+.vs-prod-give{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:0 0 1px;font:inherit;font-family:Pretendard,sans-serif;font-size:12px;font-weight:700;color:var(--teal-deep);background:none;border:0;border-bottom:1px solid oklch(44% .062 192/.3);cursor:pointer}
 .vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
 .vs-fold .fhd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
@@ -762,7 +772,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const ring140 = utterRingCard({ size: 140 });
   const recWidget = ring140.el;
   const todayUtter = () => (Number(state.todayUtterBase) || 0) + (Number(state.tried) || 0);
-  const histCard = historyCalCard(todayISO, state.dayMap, todayUtter);
+  const histCard = historyCalCard(todayISO, state.dayMap, todayUtter, state.prDays);
 
   const refreshDots = () => {
     const all = utterScores();
@@ -792,9 +802,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     ringHost.lastChild.textContent = capText();
     refreshDots(); refreshRecWidget();
   }
+  /* 녹음 중 표시는 코랄 채움 + v-pulse 확산 링 + 라벨뿐 — 아이콘은 마이크로 둔다.
+   * 이퀄라이저는 '재생 중' 어휘라 녹음에 쓰면 두 상태가 같아 보인다 (작업지시서 §11). */
   const setRecVisual = (on) => {
     recPill.classList.toggle('recing', on); recPill.classList.toggle('pri', !on);
-    recPill.replaceChild(on ? vEq(4) : vIcon(VI.MIC, { size: 14, sw: 2 }), recPill.firstChild);
     recPill.lastChild.textContent = on ? '녹음 멈추기' : (recCount() > 0 ? '다시 말하기' : '따라 말하기');
   };
 

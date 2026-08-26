@@ -770,3 +770,58 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     expect(css).not.toContain('text-decoration:underline');
   });
 });
+
+/* 작업지시서 §11 회귀 목록 + §6.5 세부 — 2026-08-27 전수 대조에서 빠져 있던 항목들. */
+describe('sessionExprV2 — §11/§6.5 누락분', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('녹음 중 알약은 마이크를 유지한다 (이퀄라이저는 재생 어휘 — §11)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    renderSessionExprV2(host, state, {});
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    const pill = host.querySelector('.vs-pill.recing');
+    expect(pill.textContent).toContain('녹음 멈추기');
+    expect(pill.querySelector('.v-eq')).toBeNull();      // 이퀄라이저 금지
+    expect(pill.querySelector('svg path').getAttribute('d')).toBe(
+      'M12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3'); // VI.MIC
+  });
+
+  it('공부 이력 캘린더가 개인기록 달성일을 코랄 칸으로 칠한다 (§6.6②)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState();
+    st.dayMap = { '2026-08-20': 31, '2026-08-22': 47 };
+    st.prDays = ['2026-08-22'];
+    renderSessionExprV2(host, st, {});
+    const pr = host.querySelectorAll('.vs-hist .v-cal .cd.pr');
+    expect(pr).toHaveLength(1);
+    expect(pr[0].textContent).toBe('22');
+  });
+
+  it('체이닝의 현재 단계 녹음 원에만 다음-차례 표시가 붙는다 (§6.5)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const st = makeState();
+      st.demo = true;
+      st.sentence.explanation.chain = { target: 'a b c d e f', chunks: ['a b', 'c d', 'e f'], ko: '가나다' };
+      renderSessionExprV2(host, st, {});
+      const recs = [...host.querySelectorAll('.vs-chain .vs-drow')].map((r) => r.querySelector('button[aria-label="녹음"]'));
+      expect(recs.map((b) => b.classList.contains('next'))).toEqual([true, false, false]);
+      recs[0].click();
+      vi.advanceTimersByTime(900);
+      expect(recs.map((b) => b.classList.contains('next'))).toEqual([false, true, false]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('생산 연습 "정답 보기" 는 틸 강조 + 밑줄 + 셰브론이다 (§6.5)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const give = host.querySelector('.vs-prod-give');
+    expect(give.textContent).toBe('정답 보기');
+    expect(give.querySelector('svg')).not.toBeNull();       // 우측 셰브론
+    const css = host.querySelector('style').textContent;
+    expect(css).toMatch(/\.vs-prod-give\{[^}]*color:var\(--teal-deep\)/);
+    expect(css).toMatch(/\.vs-prod-give\{[^}]*border-bottom:1px solid oklch\(44% \.062 192\/\.3\)/);
+  });
+});

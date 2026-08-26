@@ -22,6 +22,7 @@ import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 import { localISODate } from '../utils/today.js';
 import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
+import { fetchPRDays } from '../services/sessionStats.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -307,34 +308,6 @@ async function loadMathStats(state) {
   };
 }
 
-/**
- * 개인기록(일 발화) 달성일 ISO 목록 — 홈 4주 캘린더의 코랄 칸.
- *
- * meta.prDailyUtterance = 현재 기록, meta.prHistory = 갈아치워진 옛 기록들(당시엔 기록일).
- * 값 형식이 둘이다: pr.js applyPRUpdate 는 { value, achieved_at, lang },
- * sessionStats.saveDailyPRIfRecord 는 { value, date } — 둘 다 읽는다.
- */
-async function loadPRDays(db, lang) {
-  if (!db?.meta) return [];
-  try {
-    const [cur, hist] = await db.meta.bulkGet(['prDailyUtterance', 'prHistory']);
-    const out = new Set();
-    const take = (v, type) => {
-      if (!v) return;
-      if (type && v.type !== type) return;
-      if (v.lang && lang && v.lang !== 'both' && v.lang !== lang) return;
-      const iso = v.achieved_at || v.date;
-      if (typeof iso === 'string' && iso.length >= 10) out.add(iso.slice(0, 10));
-    };
-    take(cur?.value);
-    for (const row of (Array.isArray(hist?.value) ? hist.value : [])) take(row, 'daily_utterance');
-    return [...out];
-  } catch (e) {
-    console.error('[home loadPRDays]', e);
-    return [];
-  }
-}
-
 async function loadStats(state) {
   if (state.lang === 'math') return loadMathStats(state);
   const db = window.studyDB;
@@ -419,7 +392,7 @@ async function loadStats(state) {
       pronAvg: weekUtter, pronDelta: 0,
       stripLeftLabel: '일일 발화 · 14일', stripLeftHead: '이번 주 발화', stripLeftUnit: '회',
       // 4주 캘린더 히어로 (홈 v3) — 날짜별 발화 합 + 누적 학습시간 + 개인기록 달성일.
-      dayMap: byDate, cumStudySec, prDays: await loadPRDays(db, lang),
+      dayMap: byDate, cumStudySec, prDays: await fetchPRDays(db, lang),
     };
   } catch (e) {
     console.error('[home loadStats]', e);
