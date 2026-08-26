@@ -40,73 +40,87 @@ describe('홈 진행중 세션 표시 — activeSession resume 반영 (stale sta
   });
 });
 
-/* 2026-08-23 — done 단계 문구가 (1) pronAvg 를 '점'으로 표기하고 (2) 비교 없이 '이번 주 최고
- * 기록이에요' 를 무조건 붙였다. pronAvg 는 실제로 이번 주 발화(수학은 문제) 수다(home.js loadStats).
- * 기록으로 동기를 만드는 앱에서 가짜 기록 문구는 나머지 숫자의 신뢰까지 깎는다. */
-describe('홈 done 단계 문구 — 가짜 기록 주장 제거', () => {
+/* 2026-08-23 에 세운 원칙 — "비교하지 않은 기록을 주장하지 않는다" — 은 4카드 개편 뒤에도 살아 있다.
+ * 종전엔 히어로 문구(.vh-msg)와 연속 칩(.vh-streak)이 그 주장을 했고, 지금은 링의 '직전 N회'가 한다.
+ * 문구가 아니라 '없는 숫자를 만들지 않는다'는 계약을 검증한다. */
+describe('홈 — 가짜 기록 주장 금지 (데스크톱·모바일 공통)', () => {
   const doneState = (over = {}) => baseState({
+    todayISO: '2026-08-25',
     newCount: 0, reviewCount: 0, totalReview: 89, todayNewDone: 4, todayReviewDone: 6,
-    weekUtter: 214, pronAvg: 214, streak: 12, bestStreak: null, ...over,
+    weekUtter: 214, tried: 214, streak: 12, bestStreak: 18, ...over,
   });
 
-  it('비교하지 않은 "최고 기록" 주장을 하지 않는다', () => {
-    const el = renderHomeMobileV2(doneState());
-    expect(el.querySelector('.vh-msg').textContent).not.toMatch(/최고 기록/);
-  });
+  for (const [name, render] of [['데스크톱', renderHomeDesktopV2], ['모바일', renderHomeMobileV2]]) {
+    it(`${name}: 히어로 문구·연속 칩이 없다 (§5.2 4카드 구성 · §11 불꽃 아이콘 금지)`, () => {
+      const el = render(doneState({ size: name === '모바일' ? 'phone' : 'desktop' }));
+      expect(el.querySelector('.vh-msg')).toBeNull();
+      expect(el.querySelector('.vh-streak')).toBeNull();
+      expect(el.textContent).not.toMatch(/최고 기록/);
+      expect(el.textContent).not.toMatch(/연속/);
+    });
 
-  it('발화 수를 "점"이 아니라 "회"로 표기한다', () => {
-    const el = renderHomeMobileV2(doneState());
-    const t = el.querySelector('.vh-msg').textContent;
-    expect(t).toMatch(/214회/);
-    expect(t).not.toMatch(/214점/);
-  });
+    it(`${name}: 직전 학습일이 없으면 어떤 비교 숫자도 만들지 않는다`, () => {
+      const el = render(doneState({ size: name === '모바일' ? 'phone' : 'desktop', dayMap: {} }));
+      expect(el.querySelector('.vh-ring2 .pv')).toBeNull();
+      expect(el.querySelector('.vh-ring2 .n').textContent).toBe('214');
+    });
 
-  it('수학은 "문제"로 표기한다', () => {
-    const el = renderHomeMobileV2(doneState({ lang: 'math' }));
-    const t = el.querySelector('.vh-msg').textContent;
-    expect(t).toMatch(/214문제/);
-    expect(t).not.toMatch(/214회/);
-  });
+    it(`${name}: 고정 목표 분모(speechTarget)를 쓰지 않는다`, () => {
+      const el = render(doneState({ size: name === '모바일' ? 'phone' : 'desktop', speechTarget: 30, dayMap: { '2026-08-24': 40 } }));
+      expect(el.textContent).not.toMatch(/\/ ?30회/);
+      expect(el.querySelector('.vh-ring2 .pv').textContent).toBe('직전 40회');
+    });
 
-  it('bestStreak > streak → "최고 기록까지 N일"', () => {
-    const el = renderHomeMobileV2(doneState({ streak: 12, bestStreak: 18 }));
-    expect(el.querySelector('.vh-streak').textContent).toMatch(/최고 기록까지 6일/);
-  });
-
-  it('현재 연속이 최고 기록과 같으면 경신 중으로 표기 (— 최고 기록까지 0일 금지)', () => {
-    const el = renderHomeMobileV2(doneState({ streak: 12, bestStreak: 12 }));
-    const t = el.querySelector('.vh-streak').textContent;
-    expect(t).not.toMatch(/까지 0일/);
-    expect(t).toMatch(/최고 기록/);
-  });
+    it(`${name}: 날짜는 한국어 표기 (§11 영문 날짜 금지)`, () => {
+      const el = render(doneState({ size: name === '모바일' ? 'phone' : 'desktop' }));
+      expect(el.querySelector('.vh-todayhd .d').textContent).toBe('8월 25일 화요일');
+      expect(el.textContent).not.toMatch(/AUGUST|August|Tuesday|WEDNESDAY/);
+    });
+  }
 });
 
-/* bestStreak = 현재 연속을 제외한 '이전 최고'. 0 이면 주장할 기록이 없다. */
-describe('홈 연속 문구 — 이전 최고 기준', () => {
-  const st = (over) => baseState({
-    newCount: 0, reviewCount: 0, totalReview: 89, todayNewDone: 4, todayReviewDone: 6,
-    weekUtter: 10, pronAvg: 10, ...over,
+/* 모바일 홈도 데스크톱과 같은 4카드 구성 (2026-08-26 사용자 결정).
+ * 종전엔 데스크톱 렌더러만 고쳐서 폰에서는 잔디 7칸·3분할 스트립이 그대로 남아 있었다. */
+describe('모바일 홈 — 데스크톱과 같은 구성', () => {
+  const mob = (over = {}) => baseState({
+    size: 'phone', todayISO: '2026-08-25',
+    dayMap: { '2026-08-20': 31, '2026-08-22': 34, '2026-08-24': 12 },
+    cumStudySec: 151800, cumUtter: 1120, cumExpr: 201, cumMaster: 98, prDays: ['2026-08-22'],
+    tried: 30, ...over,
   });
 
-  it('이전 기록 없음(0) → 기록 문구를 붙이지 않는다', () => {
-    const t = renderHomeMobileV2(st({ streak: 1, bestStreak: 0 })).querySelector('.vh-streak').textContent;
-    expect(t).toBe('1일 연속 달성');
+  it('링 → CTA → 캘린더 → 누적 순의 단일 칼럼', () => {
+    const el = renderHomeMobileV2(mob());
+    expect([...el.querySelector('.m-pad').children].map((n) => n.className.split(' ')[1]))
+      .toEqual(['vh-todaycard', 'vh-ctacard', 'vh-calcard', 'vh-cum']);
   });
 
-  it('이전 최고를 넘어섬 → 경신 중', () => {
-    expect(renderHomeMobileV2(st({ streak: 4, bestStreak: 3 })).querySelector('.vh-streak').textContent)
-      .toMatch(/최고 기록 경신 중/);
+  it('옛 구성(잔디 7칸 · 3분할 스트립)이 남아 있지 않다', () => {
+    const el = renderHomeMobileV2(mob());
+    expect(el.querySelectorAll('.vh-grass i')).toHaveLength(0);
+    expect(el.querySelectorAll('.vh-pane')).toHaveLength(0);
+    expect(el.querySelectorAll('.vh-task')).toHaveLength(0);
   });
 
-  it('이전 최고와 동률 → 타이 (경신 아님)', () => {
-    const t = renderHomeMobileV2(st({ streak: 3, bestStreak: 3 })).querySelector('.vh-streak').textContent;
-    expect(t).toMatch(/최고 기록 타이/);
-    expect(t).not.toMatch(/경신 중/);
+  it('데스크톱과 같은 캘린더·링·누적 값을 낸다', () => {
+    const el = renderHomeMobileV2(mob());
+    expect(el.querySelectorAll('.vh-cell')).toHaveLength(28);
+    expect(el.querySelectorAll('.vh-cell.pr')).toHaveLength(1);
+    expect(el.querySelector('.vh-cell.today .vv').textContent).toBe('오늘');
+    expect(el.querySelector('.vh-ring2 .pv').textContent).toBe('직전 12회');
+    expect(el.querySelector('.vh-cum').children).toHaveLength(4);
   });
 
-  it('이전 최고에 못 미침 → 남은 일수', () => {
-    expect(renderHomeMobileV2(st({ streak: 3, bestStreak: 5 })).querySelector('.vh-streak').textContent)
-      .toMatch(/최고 기록까지 2일/);
+  it('주 발화 4바가 캘린더 아래로 접히고 라벨이 붙는다 (375px 에 150px 컬럼이 못 들어간다)', () => {
+    const el = renderHomeMobileV2(mob());
+    expect(el.querySelector('.vh-wklab').textContent).toBe('주 발화');
+    expect(el.querySelectorAll('.vh-wk')).toHaveLength(4);
+  });
+
+  it('CTA 3개 — 학습 시작은 하나뿐', () => {
+    const el = renderHomeMobileV2(mob());
+    const ctas = [...el.querySelectorAll('.vh-cta .t1')].map((n) => n.textContent);
+    expect(ctas).toEqual(['학습 시작', '복습 시작', '문장 모아보기']);
   });
 });
 
@@ -192,5 +206,17 @@ describe('홈 v3 — 최근 4주 캘린더 · 오늘 발화 링 · CTA', () => {
     expect(wks[3].classList.contains('now')).toBe(true);
     expect(wks[3].querySelector('.tr > b')).not.toBeNull(); // 직전 주 고스트 점
     expect(el.querySelector('.vh-wk.best .v').textContent).toContain('최고');
+  });
+});
+
+/* 2026-08-26 — 모바일에서 주 발화 줄이 날짜 칸 '위'에 얹혔다. .vh-wkcol 은 DOM 상 첫 자식이라
+ * grid-row 를 명시하지 않으면 1행에 자동 배치된다. 데스크톱은 grid-row:1/5 로 이미 고정돼 있었다. */
+describe('홈 캘린더 — 주 발화 줄 배치', () => {
+  it('주 발화 블록은 DOM 상 첫 자식이지만 그리드에서 날짜 칸 다음 줄에 놓인다', () => {
+    const el = renderHomeMobileV2(baseState({ size: 'phone', todayISO: '2026-08-25', dayMap: { '2026-08-20': 31 } }));
+    const grid = el.querySelector('.vh-calcells');
+    expect(grid.firstElementChild.className).toBe('vh-wkcol');
+    const css = el.querySelector('style').textContent;
+    expect(css).toMatch(/\.vh-wkcol\{grid-column:1\/-1;grid-row:5;/);
   });
 });
