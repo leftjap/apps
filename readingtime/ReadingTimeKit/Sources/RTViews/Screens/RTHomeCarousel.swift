@@ -37,7 +37,11 @@ struct RTHomeCarousel: View {
             .frame(width: Self.pageW)
             .contentShape(Rectangle())
             .gesture(swipe)
-            if cards.count > 1 { dots.padding(.top, 18) }   // 12 → 18 (실기기 '너무 바투 붙음' 2026-08-26)
+            // 인디케이터: 카드와 18, 하단 도킹 카드와 최소 16 확보.
+            // (홈 VStack 의 Spacer(minLength:0) 가 0 까지 눌려 점이 카드에 2pt 로 붙었다 — 실측 2026-08-26)
+            if cards.count > 1 {
+                dots.padding(.top, 18).padding(.bottom, 16)
+            }
         }
     }
 
@@ -94,12 +98,10 @@ struct RTHomeCarousel: View {
                     .foregroundColor(RT.muted).padding(.top, 3).lineLimit(1).minimumScaleFactor(0.8)
                 Group {
                     if card.isEbook {
-                        // 엎어도 기록되지 않는다는 사실 + 완독 처리 진입점 (밀리는 08 상세가 없다)
-                        VStack(spacing: 9) {
-                            Text("밀리에서 읽은 시간은 자동으로 합산돼요")
-                                .font(.sans(11.5, 500)).foregroundColor(RT.faint)
-                            finishButton
-                        }
+                        // 완독 처리 진입점만 (밀리는 08 상세가 없다).
+                        // '자동 합산' 안내는 칩·CTA 와 3중 중복이라 제거 — 세로 공간이 부족해
+                        // 인디케이터가 하단 카드에 붙었다 (실측 2pt, 실기기 피드백 2026-08-26).
+                        finishButton
                     } else if let isbn = card.isbn {
                         HStack(spacing: 8) {
                             Text(RTAppModel.hmString(model.totalSeconds(isbn: isbn)))

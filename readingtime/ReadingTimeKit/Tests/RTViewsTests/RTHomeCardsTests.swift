@@ -186,6 +186,37 @@ private func at(_ s: String) -> Date {
         #expect(m.homeCardIndex == 0)
     }
 
+    // 카드 순서는 호출마다 동일해야 한다 (Dictionary 순회 + 비안정 sorted 로 흔들리면
+    // 캐러셀이 그리는 카드와 CTA 가 판단하는 카드가 어긋난다 — 실기기 2026-08-26:
+    // 종이책 카드인데 '밀리에서 자동 기록 중' CTA 가 떴다)
+    @Test func homeCardsOrderIsDeterministic() {
+        let m = model()
+        let same = at("2026-08-20 10:00")           // 전부 동률 — 최악 조건
+        m.userData = RTUserData(
+            books: [paper("A", "가", added: "2026-08-20"), paper("B", "나", added: "2026-08-20"),
+                    paper("C", "다", added: "2026-08-20")],
+            sessions: [])
+        m.ebookReadAt = ["밀리1": same, "밀리2": same, "밀리3": same, "밀리4": same]
+
+        let first = m.homeCards.map(\.id)
+        for _ in 0..<50 { #expect(m.homeCards.map(\.id) == first) }
+    }
+
+    // 선택 카드의 종류와 CTA 판정(recordable)이 항상 일치해야 한다
+    @Test func selectedCardRecordableMatchesCardKind() {
+        let m = model()
+        let same = at("2026-08-20 10:00")
+        m.userData = RTUserData(
+            books: [paper("A", "종이", added: "2026-08-20")], sessions: [])
+        m.ebookReadAt = ["밀리": same]              // 종이책과 동률
+
+        for i in 0..<m.homeCards.count {
+            m.homeCardIndex = i
+            #expect(m.selectedCardRecordable == m.homeCards[i].recordable)
+            #expect(m.selectedCardRecordable == !m.homeCards[i].isEbook)
+        }
+    }
+
     // 데모(userData nil)는 카드 없음 — rtshot 오라클 경로 불변
     @Test func demoHasNoCards() {
         let m = RTAppModel()

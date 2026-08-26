@@ -267,27 +267,34 @@ public struct Screen02Home: View {
     var card: some View {
         VStack(spacing: 0) {
             // 읽기 CTA + 탭 시작
-            HStack(spacing: 10) {
-                if recordable {
-                    readCTA
-                    tapStartButton
-                } else {
-                    readCTADisabled       // 밀리 카드: 기록 진입점 자체를 노출하지 않는다
+            // model 은 일반 var 라 @Published(homeCardIndex) 변경이 이 화면에 전파되지 않는다.
+            // 캐러셀만 @ObservedObject 라 카드는 넘어가는데 CTA 는 이전 카드로 남았다
+            // (실기기 2026-08-26: 종이책 카드인데 '밀리에서 자동 기록 중'). → 관찰 래퍼로 감싼다.
+            RTObserveModel(model: model) { recordable in
+                VStack(spacing: 0) {
+                    HStack(spacing: 10) {
+                        if recordable {
+                            readCTA
+                            tapStartButton
+                        } else {
+                            readCTADisabled   // 밀리 카드: 기록 진입점 자체를 노출하지 않는다
+                        }
+                    }
+                    // 보조 안내 — 밀리 카드는 엎기/탭 안내가 무의미하므로 문맥에 맞게 교체
+                    Group {
+                        if recordable {
+                            (Text("엎기 어려운 곳이면 ").font(.sans(11, 500)).foregroundColor(RT.faint)
+                             + Text("탭 시작").font(.sans(11, 600)).foregroundColor(RT.muted)
+                             + Text("으로 기록하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
+                        } else {
+                            (Text("종이책은 ").font(.sans(11, 500)).foregroundColor(RT.faint)
+                             + Text("옆으로 넘겨").font(.sans(11, 600)).foregroundColor(RT.muted)
+                             + Text(" 선택하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
+                        }
+                    }
+                    .padding(.top, 12)
                 }
             }
-            // 보조 안내 — 밀리 카드는 엎기/탭 안내가 무의미하므로 문맥에 맞게 교체
-            Group {
-                if recordable {
-                    (Text("엎기 어려운 곳이면 ").font(.sans(11, 500)).foregroundColor(RT.faint)
-                     + Text("탭 시작").font(.sans(11, 600)).foregroundColor(RT.muted)
-                     + Text("으로 기록하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
-                } else {
-                    (Text("종이책은 ").font(.sans(11, 500)).foregroundColor(RT.faint)
-                     + Text("옆으로 넘겨").font(.sans(11, 600)).foregroundColor(RT.muted)
-                     + Text(" 선택하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
-                }
-            }
-            .padding(.top, 12)
             // 스탯 + 연속 체인
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 1) {
