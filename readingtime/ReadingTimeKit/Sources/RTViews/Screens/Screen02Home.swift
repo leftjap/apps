@@ -45,24 +45,36 @@ public struct Screen02Home: View {
         self.model = model
         self.avatar = model?.avatarImage
         _menuOpen = State(initialValue: menuOpen)
-        if let m = model, m.userData != nil, let book = m.currentBook {
-            let last = m.recentRecords(1).first
+        if let m = model, m.userData != nil, let card = m.homeCards.first {
+            let book = card.isbn.flatMap { isbn in m.userData?.books.first { $0.isbn == isbn } }
+            let paperLast = m.recentRecords(1).first
+            let ebookLast = m.ebookReadAt.max { $0.value < $1.value }
+            let ebookIsLatest = ebookLast.map { ebook in
+                paperLast.map { ebook.value > $0.endedAt } ?? true
+            } ?? false
+            let paperLastTitle = paperLast.flatMap { record in
+                m.userData?.books.first { $0.isbn == record.isbn }?.title
+            }
+            let ebookLastMinutes = ebookLast.flatMap { ebook in
+                m.ebookBreakdown(on: ebook.value).first { $0.title == ebook.key }.map { $0.seconds / 60 }
+            }
             self.live = Live(
-                title: book.title,
-                author: book.author,
-                coverUrl: book.coverUrl,
-                totalHM: RTAppModel.hmString(m.totalSeconds(isbn: book.isbn)),
-                count: m.sessionCount(isbn: book.isbn),
-                days: m.daysSinceAdded(book),
+                title: book?.title ?? card.title,
+                author: book?.author ?? card.author ?? "밀리의서재",
+                coverUrl: book?.coverUrl ?? card.coverUrl,
+                totalHM: book.map { RTAppModel.hmString(m.totalSeconds(isbn: $0.isbn)) }
+                    ?? RTAppModel.hmString(m.ebookDaily.values.reduce(0, +)),
+                count: book.map { m.sessionCount(isbn: $0.isbn) } ?? m.ebookDaily.values.filter { $0 > 0 }.count,
+                days: book.map(m.daysSinceAdded) ?? 1,
                 todayMin: m.todaySeconds / 60,
                 weekHM: RTAppModel.hmString(m.weekSeconds),
                 streak: m.streakDays,
                 chain: m.streakChain(Self.chainDays),
-                // isbn 이 nil(수동/미연결 세션)이거나 매칭 책이 없으면 현재 책 제목으로 폴백
-                // (라이브에서 데모 기본값 "몰입" 이 새는 것 방지, 리뷰 #4)
-                lastBook: last.flatMap { r in m.userData?.books.first { $0.isbn == r.isbn }?.title } ?? book.title,
-                lastMin: last.map { $0.seconds / 60 },
-                lastWhen: last.map { RTAppModel.recentWhen($0.endedAt, now: m.now()) })
+                lastBook: ebookIsLatest ? ebookLast?.key : (paperLastTitle ?? card.title),
+                lastMin: ebookIsLatest ? (ebookLastMinutes ?? 0) : paperLast.map { $0.seconds / 60 },
+                lastWhen: ebookIsLatest
+                    ? ebookLast.map { RTAppModel.recentWhen($0.value, now: m.now()) }
+                    : paperLast.map { RTAppModel.recentWhen($0.endedAt, now: m.now()) })
         } else {
             self.live = nil
         }
@@ -168,7 +180,7 @@ public struct Screen02Home: View {
         // 라이브(실데이터)면 표지 캐러셀 — 읽는 중 종이책 + 최근 밀리 책 (2026-08-25 결정).
         // 데모(userData nil)는 카드가 비어 기존 단일 히어로를 그린다 → rtshot 오라클 불변.
         if let m = model, !m.homeCards.isEmpty {
-            RTHomeCarousel(model: m, cards: m.homeCards)
+            RTHomeCarousel(model: m)
                 .padding(.horizontal, 26)
         } else {
             demoStage
@@ -256,14 +268,26 @@ public struct Screen02Home: View {
         VStack(spacing: 0) {
             // 읽기 CTA + 탭 시작
             HStack(spacing: 10) {
-                readCTA
-                tapStartButton
+                if recordable {
+                    readCTA
+                    tapStartButton
+                } else {
+                    readCTADisabled       // 밀리 카드: 기록 진입점 자체를 노출하지 않는다
+                }
             }
-            // 보조 안내
-            (Text("엎기 어려운 곳이면 ").font(.sans(11, 500)).foregroundColor(RT.faint)
-             + Text("탭 시작").font(.sans(11, 600)).foregroundColor(RT.muted)
-             + Text("으로 기록하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
-                .padding(.top, 12)
+            // 보조 안내 — 밀리 카드는 엎기/탭 안내가 무의미하므로 문맥에 맞게 교체
+            Group {
+                if recordable {
+                    (Text("엎기 어려운 곳이면 ").font(.sans(11, 500)).foregroundColor(RT.faint)
+                     + Text("탭 시작").font(.sans(11, 600)).foregroundColor(RT.muted)
+                     + Text("으로 기록하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
+                } else {
+                    (Text("종이책은 ").font(.sans(11, 500)).foregroundColor(RT.faint)
+                     + Text("옆으로 넘겨").font(.sans(11, 600)).foregroundColor(RT.muted)
+                     + Text(" 선택하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
+                }
+            }
+            .padding(.top, 12)
             // 스탯 + 연속 체인
             HStack(alignment: .center, spacing: 14) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -403,10 +427,19 @@ public struct Screen02Home: View {
         }
         .frame(maxWidth: .infinity).frame(height: 60)
         .contentShape(RoundedRectangle(cornerRadius: 16))
-        // 밀리 카드 선택 중엔 기록 시작 불가 (밀리가 자동 집계 — 이중 계상 방지, 2026-08-25)
-        .opacity(recordable ? 1 : 0.34)
-        .allowsHitTesting(recordable)
-        .onTapGesture { if recordable { model?.start() } }
+        .onTapGesture { model?.start() }
+    }
+
+    /// 밀리 카드 선택 중 CTA — 기록 대상이 아님을 불투명 카드로 알린다.
+    /// (반투명 opacity 는 홈 vignette 가 비쳐 '색 깨짐'으로 읽혔다 — 실기기 피드백 2026-08-26)
+    var readCTADisabled: some View {
+        HStack(spacing: 8) {
+            RTIcon(RTIconPath.check, size: 15, stroke: RT.faint, lineWidth: 2.2)
+            Text("밀리에서 자동 기록 중").font(.sans(14, 700)).foregroundColor(RT.faint)
+        }
+        .frame(maxWidth: .infinity).frame(height: 60)
+        .background(RoundedRectangle(cornerRadius: 16).fill(RT.segBg))
+        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(Color(hex: 0xE5DFCD), lineWidth: 1))
     }
 
     /// 선택된 홈 카드가 기록 대상인가 (밀리면 false). 데모는 항상 true.
@@ -491,9 +524,7 @@ public struct Screen02Home: View {
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color(hex: 0xE5DFCD), lineWidth: 1))
         .shadow(color: Color(hex: 0x16140F, alpha: 0.24), radius: 7, x: 0, y: 6)
         .contentShape(RoundedRectangle(cornerRadius: 16))
-        .opacity(recordable ? 1 : 0.34)          // 밀리 카드 선택 중엔 탭 기록도 불가
-        .allowsHitTesting(recordable)
-        .onTapGesture { if recordable { model?.switchTap() } }
+        .onTapGesture { model?.switchTap() }
     }
 
     // 연속 기록 체인 (13 도트)

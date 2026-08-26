@@ -130,6 +130,23 @@ private func at(_ s: String) -> Date {
         #expect(m.session?.isbn == "B")
     }
 
+    // 홈 CTA(start)도 선택 카드를 보류해야 한다. simFlip 직행만 맞고 CTA 경로가
+    // currentBook으로 되돌아가면 실제 엎기 세션이 다른 책에 귀속된다.
+    @Test func homeStartBelongsToSelectedCard() {
+        let m = model()
+        m.userData = RTUserData(
+            books: [paper("A", "몰입", added: "2026-08-01"), paper("B", "파친코", added: "2026-08-02")],
+            sessions: [
+                .init(isbn: "A", mode: "flip", seconds: 600, endedAt: at("2026-08-24 10:00"), pauseCount: 0),
+                .init(isbn: "B", mode: "flip", seconds: 600, endedAt: at("2026-08-20 10:00"), pauseCount: 0),
+            ])
+
+        m.homeCardIndex = 1
+        m.start()
+        m.simFlip()
+        #expect(m.session?.isbn == "B")
+    }
+
     // 책상세 '이어서 읽기'(start(isbn:)) 는 홈 카드 선택과 무관하게 그 책 유지
     @Test func continueReadingOverridesCardSelection() {
         let m = model()

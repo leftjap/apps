@@ -22,6 +22,8 @@ struct ReadingTimeApp: App {
     private let location: LocationCapture
 
     init() {
+        let launchArgs = ProcessInfo.processInfo.arguments
+        let sequenceLaunch = launchArgs.contains("--seq")
         let regErrors = RTFonts.register()
         if !regErrors.isEmpty {
             assertionFailure("폰트 등록 실패: \(regErrors.joined(separator: "; "))")
@@ -35,117 +37,127 @@ struct ReadingTimeApp: App {
         // 실데이터 정본 (§6-④) — UserDefaults JSON 영속 (개인 앱: 로컬이 정본)
         let dec = JSONDecoder()
         dec.dateDecodingStrategy = .iso8601
-        if let raw = UserDefaults.standard.data(forKey: "rt.userData"),
+        if sequenceLaunch {
+            model.userData = RTUserData()
+        } else if let raw = UserDefaults.standard.data(forKey: "rt.userData"),
            let saved = try? dec.decode(RTUserData.self, from: raw) {
             model.userData = saved
         } else {
             model.userData = RTUserData()
         }
-        model.onUserDataChange = { data in
-            let enc = JSONEncoder()
-            enc.dateEncodingStrategy = .iso8601
-            if let raw = try? enc.encode(data) {
-                UserDefaults.standard.set(raw, forKey: "rt.userData")
-                // 함께 읽기 — 파트너가 읽도록 스냅샷 업로드 (로그인 시에만 실동작)
-                if let json = String(data: raw, encoding: .utf8) {
-                    Task { try? await cloud.uploadUserData(json) }
+        if !sequenceLaunch {
+            model.onUserDataChange = { data in
+                let enc = JSONEncoder()
+                enc.dateEncodingStrategy = .iso8601
+                if let raw = try? enc.encode(data) {
+                    UserDefaults.standard.set(raw, forKey: "rt.userData")
+                    // 함께 읽기 — 파트너가 읽도록 스냅샷 업로드 (로그인 시에만 실동작)
+                    if let json = String(data: raw, encoding: .utf8) {
+                        Task { try? await cloud.uploadUserData(json) }
+                    }
                 }
             }
         }
         // 읽는 중 프레즌스 — 세션 시작/정지 시 reading_since 갱신 + 시작 시 읽은 위치 캡처(§13)
         let location = LocationCapture()
         self.location = location
-        model.onReadingPresence = { reading in
-            if reading { Task { @MainActor in location.capture() } }
-            Task { try? await cloud.setReadingSince(reading ? Date() : nil) }
+        if !sequenceLaunch {
+            model.onReadingPresence = { reading in
+                if reading { Task { @MainActor in location.capture() } }
+                Task { try? await cloud.setReadingSince(reading ? Date() : nil) }
+            }
+            // 저장 시점에 세션에 부착할 위치 스냅샷 (미확보면 nil → 위치 없이 저장)
+            model.locationProvider = { location.fix }
         }
-        // 저장 시점에 세션에 부착할 위치 스냅샷 (미확보면 nil → 위치 없이 저장)
-        model.locationProvider = { location.fix }
 
         // 밀리 완독 처리 영속 — 제목 → 완독 시각. 이후 더 최신 밀리 기록이 오면 카드가 되살아난다.
-        if let raw = UserDefaults.standard.data(forKey: "rt.finishedEbooks"),
+        if !sequenceLaunch,
+           let raw = UserDefaults.standard.data(forKey: "rt.finishedEbooks"),
            let saved = try? dec.decode([String: Date].self, from: raw) {
             model.finishedEbooks = saved
         }
-        model.onFinishedEbooksChange = { map in
-            let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
-            if let raw = try? enc.encode(map) {
-                UserDefaults.standard.set(raw, forKey: "rt.finishedEbooks")
+        if !sequenceLaunch {
+            model.onFinishedEbooksChange = { map in
+                let enc = JSONEncoder(); enc.dateEncodingStrategy = .iso8601
+                if let raw = try? enc.encode(map) {
+                    UserDefaults.standard.set(raw, forKey: "rt.finishedEbooks")
+                }
             }
         }
 
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
-        model.onAuthChange = { [weak model] loggedIn in
-            UserDefaults.standard.set(loggedIn, forKey: "rt.loggedIn")
-            UserDefaults.standard.synchronize()   // 즉시 플러시 — 강제 종료에도 로그인 상태 유지
-            if !loggedIn {
-                UserDefaults.standard.removeObject(forKey: "rt.displayName")
-                model?.displayName = nil
-                try? FileManager.default.removeItem(at: Self.avatarURL)
-                model?.avatarImage = nil
-                // 파트너 캐시도 제거 (로그아웃 후 스테일 파트너 표시 방지)
-                ["rt.partnerData", "rt.partnerName", "rt.partnerReadingSince"].forEach {
-                    UserDefaults.standard.removeObject(forKey: $0)
-                }
-                model?.partnerData = nil
-                Task { await cloud.signOut() }    // 로그아웃 시 Supabase 세션도 제거
-            }
-        }
-
-        // 아바타 사진 — 기기 로컬이 정본 (Documents 는 백업 대상이라 기기 교체 시 따라옴).
-        // 저장 데이터는 이미 256px PNG (setAvatar 가 규격화) → 로드 시 재규격화는 사실상 무비용.
-        if let raw = try? Data(contentsOf: Self.avatarURL) {
-            model.avatarImage = RTAppModel.prepareAvatar(raw)?.image
-        }
-        model.onAvatarChange = { data in
-            do { try data.write(to: Self.avatarURL) } catch {
-                Logger(subsystem: "com.leftjap.readingtime", category: "avatar")
-                    .error("아바타 저장 실패: \(String(describing: error), privacy: .public)")
-            }
-        }
-
-        if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
-            // 표시 이름: 마지막 로그인 값으로 즉시 표시 (오프라인 콜드스타트) — restore() 가 갱신
-            model.displayName = UserDefaults.standard.string(forKey: "rt.displayName")
-            model.nav(.home)
-            Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
-            Self.applyCachedPartner(to: model)   // 함께 읽기 — 캐시된 파트너 즉시 표시(팝인 제거)
-        }
-
-        // 이름 수정 저장 → 즉시 영속 + 서버 갱신 (실패해도 로컬 유지 — 다음 restore() 가 서버 정본으로 수렴)
-        model.onRename = { name in
-            UserDefaults.standard.set(name, forKey: "rt.displayName")
-            Task {
-                do { try await cloud.updateDisplayName(name) } catch {
-                    Logger(subsystem: "com.leftjap.readingtime", category: "auth")
-                        .error("이름 서버 갱신 실패: \(String(describing: error), privacy: .public)")
-                }
-            }
-        }
-
-        // 로그인 버튼 → Google OAuth (ASWebAuthenticationSession) → 성공 시 홈 진입
-        model.loginHandler = { [weak model] in
-            Task { @MainActor in
-                do {
-                    try await cloud.signInWithGoogle()
-                    Self.applyDisplayName(from: cloud, to: model)
-                    model?.login()
-                    // 로그인 직후 동기화 (앱 시작 .task 는 이미 지나감) — 스냅샷 올림 + 파트너 로드
-                    if let model {
-                        Self.uploadSnapshot(from: model, to: cloud)
-                        await Self.loadPartner(from: cloud, to: model)
-                        await Self.loadEbook(from: cloud, to: model)
+        if !sequenceLaunch {
+            model.onAuthChange = { [weak model] loggedIn in
+                UserDefaults.standard.set(loggedIn, forKey: "rt.loggedIn")
+                UserDefaults.standard.synchronize()   // 즉시 플러시 — 강제 종료에도 로그인 상태 유지
+                if !loggedIn {
+                    UserDefaults.standard.removeObject(forKey: "rt.displayName")
+                    model?.displayName = nil
+                    try? FileManager.default.removeItem(at: Self.avatarURL)
+                    model?.avatarImage = nil
+                    // 파트너 캐시도 제거 (로그아웃 후 스테일 파트너 표시 방지)
+                    ["rt.partnerData", "rt.partnerName", "rt.partnerReadingSince"].forEach {
+                        UserDefaults.standard.removeObject(forKey: $0)
                     }
-                } catch {
-                    Logger(subsystem: "com.leftjap.readingtime", category: "auth")
-                        .error("google 로그인 실패/취소: \(String(describing: error), privacy: .public)")
+                    model?.partnerData = nil
+                    Task { await cloud.signOut() }    // 로그아웃 시 Supabase 세션도 제거
+                }
+            }
+
+            // 아바타 사진 — 기기 로컬이 정본 (Documents 는 백업 대상이라 기기 교체 시 따라옴).
+            // 저장 데이터는 이미 256px PNG (setAvatar 가 규격화) → 로드 시 재규격화는 사실상 무비용.
+            if let raw = try? Data(contentsOf: Self.avatarURL) {
+                model.avatarImage = RTAppModel.prepareAvatar(raw)?.image
+            }
+            model.onAvatarChange = { data in
+                do { try data.write(to: Self.avatarURL) } catch {
+                    Logger(subsystem: "com.leftjap.readingtime", category: "avatar")
+                        .error("아바타 저장 실패: \(String(describing: error), privacy: .public)")
+                }
+            }
+
+            if UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+                // 표시 이름: 마지막 로그인 값으로 즉시 표시 (오프라인 콜드스타트) — restore() 가 갱신
+                model.displayName = UserDefaults.standard.string(forKey: "rt.displayName")
+                model.nav(.home)
+                Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
+                Self.applyCachedPartner(to: model)   // 함께 읽기 — 캐시된 파트너 즉시 표시(팝인 제거)
+            }
+
+            // 이름 수정 저장 → 즉시 영속 + 서버 갱신 (실패해도 로컬 유지 — 다음 restore() 가 서버 정본으로 수렴)
+            model.onRename = { name in
+                UserDefaults.standard.set(name, forKey: "rt.displayName")
+                Task {
+                    do { try await cloud.updateDisplayName(name) } catch {
+                        Logger(subsystem: "com.leftjap.readingtime", category: "auth")
+                            .error("이름 서버 갱신 실패: \(String(describing: error), privacy: .public)")
+                    }
+                }
+            }
+
+            // 로그인 버튼 → Google OAuth (ASWebAuthenticationSession) → 성공 시 홈 진입
+            model.loginHandler = { [weak model] in
+                Task { @MainActor in
+                    do {
+                        try await cloud.signInWithGoogle()
+                        Self.applyDisplayName(from: cloud, to: model)
+                        model?.login()
+                        // 로그인 직후 동기화 (앱 시작 .task 는 이미 지나감) — 스냅샷 올림 + 파트너 로드
+                        if let model {
+                            Self.uploadSnapshot(from: model, to: cloud)
+                            await Self.loadPartner(from: cloud, to: model)
+                            await Self.loadEbook(from: cloud, to: model)
+                        }
+                    } catch {
+                        Logger(subsystem: "com.leftjap.readingtime", category: "auth")
+                            .error("google 로그인 실패/취소: \(String(describing: error), privacy: .public)")
+                    }
                 }
             }
         }
 
         // 시뮬레이터 검증용: simctl launch ... --seq "login,start" --sim-motion "1:0.95,8:0.2"
         // (--seq = 상태 진입, --sim-motion = 합성 gravity.z 주입 — CoreMotion 없는 시뮬에서 flip 재현)
-        let launchArgs = ProcessInfo.processInfo.arguments
         if let i = launchArgs.firstIndex(of: "--seq"), launchArgs.count > i + 1 {
             launchArgs[i + 1].split(separator: ",").forEach { model.apply(String($0)) }
         }
@@ -170,9 +182,11 @@ struct ReadingTimeApp: App {
                           publisher: $0.publisher, isbn: $0.isbn, coverUrl: $0.coverUrl)
             }
         }
-        model.onSessionSaved = { mode, seconds in
-            Task {
-                try? await cloud.addPaperSeconds(seconds, source: mode == .flip ? .flip : .tap, on: Date())
+        if !sequenceLaunch {
+            model.onSessionSaved = { mode, seconds in
+                Task {
+                    try? await cloud.addPaperSeconds(seconds, source: mode == .flip ? .flip : .tap, on: Date())
+                }
             }
         }
         _model = StateObject(wrappedValue: model)
@@ -333,10 +347,11 @@ struct ReadingTimeApp: App {
             .animation(.easeOut(duration: 0.25), value: faceDownDark)
             .statusBarHidden(faceDownDark)
                 .task {
-                    await cloud.restore()
-                    // --seq 데모/테스트 실행은 로컬 상태를 명시 주입 → 죽은 세션 리다이렉트 건너뜀
                     let demoLaunch = ProcessInfo.processInfo.arguments.contains("--seq")
-                    if !demoLaunch && !cloud.signedIn && UserDefaults.standard.bool(forKey: "rt.loggedIn") {
+                    // --seq 데모/테스트는 로컬 상태를 명시 주입하므로 클라우드가 덮어쓰지 않게 격리한다.
+                    guard !demoLaunch else { return }
+                    await cloud.restore()
+                    if !cloud.signedIn && UserDefaults.standard.bool(forKey: "rt.loggedIn") {
                         // 세션 소실(만료/미인증) — 로컬 플래그만 로그인 상태라 홈은 뜨나 클라우드 동기화 불가.
                         // 재로그인 유도(로컬 데이터·아바타 보존 — onAuthChange 미발화). 재로그인 시 동기화 재개.
                         UserDefaults.standard.set(false, forKey: "rt.loggedIn")

@@ -117,8 +117,9 @@ public struct RTRootView: View {
         switch route {
         case .login: Screen01Login(model: model)
         case .home:
-            // 실앱(userData 주입)에서 읽는 중 책이 없으면 빈 홈(14) — 데모 경로는 항상 02
-            if model.userData != nil, model.currentBook == nil {
+            // 종이책이 없어도 최근 밀리 카드가 있으면 홈 캐러셀을 보여준다.
+            // 실앱에서 종이+밀리 카드가 모두 없을 때만 빈 홈(14), 데모 경로는 항상 02.
+            if model.userData != nil, model.homeCards.isEmpty {
                 Screen14EmptyHome(model: model)
             } else {
                 Screen02Home(model: model)

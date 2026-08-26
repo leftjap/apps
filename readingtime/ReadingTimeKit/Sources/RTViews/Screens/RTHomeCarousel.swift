@@ -6,7 +6,7 @@ import SwiftUI
 // 데모(rtshot 오라클)는 homeCards 가 비어 이 뷰를 타지 않는다 — Screen02Home.stage 분기.
 struct RTHomeCarousel: View {
     @ObservedObject var model: RTAppModel
-    let cards: [RTHomeCard]
+    private var cards: [RTHomeCard] { model.homeCards }
 
     // 시안 스테이지 폭 = 390 - 26*2
     private static let pageW: CGFloat = 390 - 26 * 2
@@ -15,7 +15,15 @@ struct RTHomeCarousel: View {
 
     private var index: Int { min(max(0, model.homeCardIndex), cards.count - 1) }
 
-    var body: some View {
+    @ViewBuilder var body: some View {
+        if cards.isEmpty {
+            EmptyView()
+        } else {
+            carousel
+        }
+    }
+
+    private var carousel: some View {
         VStack(spacing: 0) {
             chip
             ZStack {
@@ -23,12 +31,13 @@ struct RTHomeCarousel: View {
                     cardView(card)
                         .opacity(i == index ? 1 : 0)          // 한 장만 보이되 전환은 오프셋으로
                         .offset(x: CGFloat(i - index) * Self.pageW + drag)
+                        .accessibilityHidden(i != index)
                 }
             }
             .frame(width: Self.pageW)
             .contentShape(Rectangle())
             .gesture(swipe)
-            if cards.count > 1 { dots.padding(.top, 12) }
+            if cards.count > 1 { dots.padding(.top, 18) }   // 12 → 18 (실기기 '너무 바투 붙음' 2026-08-26)
         }
     }
 
@@ -80,6 +89,7 @@ struct RTHomeCarousel: View {
             VStack(spacing: 0) {
                 Text(card.title).font(.sans(23, 900)).tracking(23 * -0.03)
                     .foregroundColor(RT.ink).lineLimit(1).minimumScaleFactor(0.6)
+                    .accessibilityIdentifier("home.carousel.title.\(card.id)")
                 Text(card.author ?? "밀리의서재").font(.sans(12.5, 500))
                     .foregroundColor(RT.muted).padding(.top, 3).lineLimit(1).minimumScaleFactor(0.8)
                 Group {

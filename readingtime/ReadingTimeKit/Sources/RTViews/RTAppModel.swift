@@ -632,10 +632,10 @@ public final class RTAppModel: ObservableObject {
 
     public func setMode(_ m: RTMode) { mode = m }
 
-    /// 세션 시작 의도 — isbn 미지정이면 홈 히어로(currentBook) 대상.
+    /// 세션 시작 의도 — isbn 미지정이면 홈 캐러셀에서 선택한 종이책 대상.
     /// flip 은 대기(03)를 거쳐 startSession 에서 세션이 생기므로 대상을 보류해 둔다.
     public func start(isbn: String? = nil) {
-        nextSessionISBN = isbn ?? currentBook?.isbn
+        nextSessionISBN = isbn ?? flipTargetISBN
         if mode == .flip { nav(.flipWait) }
         else { startSession(.tap); nav(.tapTimer) }
     }
@@ -901,6 +901,8 @@ public final class RTAppModel: ObservableObject {
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
         case "finishEbook": finishEbook(arg)                     // 밀리 완독 처리(검증)
         case "demoCards":   // 홈 캐러셀 시드 — 종이책 2 + 밀리 2 (실표지·최근순 검증)
+            finishedEbooks = [:]
+            homeCardIndex = 0
             let t = now()
             func ago(_ h: Double) -> Date { t.addingTimeInterval(-h * 3600) }
             userData = RTUserData(
@@ -924,6 +926,40 @@ public final class RTAppModel: ObservableObject {
                 "독학이라는 세계":
                     "https://image.millie.co.kr/service/cover/180153534/77b09fba84f14ed8967dcc48251988ff.jpg",
             ]
+        case "demoMillieOnly":   // 완독 종이책 + 최근 밀리 1권(마지막 카드→빈 홈 전환 검증)
+            let t = now()
+            userData = RTUserData(books: [
+                RTBook(isbn: "P0", title: "완독한 종이책", author: "저자", publisher: "출판",
+                       coverUrl: "", addedAt: t.addingTimeInterval(-172_800),
+                       finished: true, rating: 4, finishedAt: t.addingTimeInterval(-86_400)),
+            ])
+            finishedEbooks = [:]
+            ebookReadAt = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]": t.addingTimeInterval(-7_200)]
+            ebookCovers = [:]
+            homeCardIndex = 0
+        case "demoReread":   // 다시 읽기 UI 테스트 상태: initial | inProgress | allFinished
+            let t = now()
+            func ago(_ h: Double) -> Date { t.addingTimeInterval(-h * 3600) }
+            let moneyReading = arg == "inProgress"
+            let allFinished = arg == "allFinished"
+            userData = RTUserData(
+                books: [
+                    RTBook(isbn: "9788931009552", title: "몰입", author: "미하이 칙센트미하이",
+                           publisher: "한울림", coverUrl: "", addedAt: ago(24 * 18),
+                           finished: allFinished, rating: allFinished ? 4 : nil,
+                           finishedAt: allFinished ? ago(1) : nil),
+                    RTBook(isbn: "9788936434120", title: "돈의 심리학", author: "모건 하우절",
+                           publisher: "인플루엔셜", coverUrl: "", addedAt: ago(24 * 50),
+                           finished: !moneyReading, rating: 4, finishedAt: ago(24 * 10)),
+                ],
+                sessions: [
+                    RTSessionRecord(isbn: "9788931009552", mode: "flip", seconds: 26 * 60,
+                                    endedAt: ago(24), pauseCount: 0),
+                    RTSessionRecord(isbn: "9788936434120", mode: "tap", seconds: 2,
+                                    endedAt: moneyReading ? ago(1) : ago(24 * 12), pauseCount: 0),
+                ])
+            selectedISBN = nil
+            homeCardIndex = 0
         case "searchReopen":   // 검색 완결 후 닫기→재열기 (재열기 공란+최신결과 유지 결정적 검증)
             Task { await search(arg); closeSheet(); openSheet(.addbook) }
         case "closeSheet": closeSheet()
@@ -932,6 +968,7 @@ public final class RTAppModel: ObservableObject {
         case "partnerStats": openPartnerStats()   // 파트너 통계 진입(검증·데모)
         case "demoPartner": loadDemoPartner()      // 데모 파트너 주입(검증·기기 데모)
         case "demoPartnerIdle": loadDemoPartner(reading: false)   // idle 상태 검증
+        case "clearAvatar": avatarImage = nil       // UI 테스트 시작 상태 격리(저장 파일 잔존 무시)
         case "demoEbook":   // 밀리 일별 시드(오늘 29분·어제 10분·그제 20분) — 통계 합산 검증
             let t = now()
             let f = dayFormatter

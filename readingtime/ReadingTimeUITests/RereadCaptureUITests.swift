@@ -1,9 +1,7 @@
 import XCTest
 
 // 완독 후 홈·다시 읽기 화면 검증 (483f9e9) — 유닛이 못 덮는 뷰 배선·실렌더 구간.
-// 사전 조건: rt.userData 시드 — 몰입(읽는 중, 어제 세션) + 돈의 심리학(완독 4★, 07-05).
-//   xcrun simctl spawn <UD> defaults write com.leftjap.readingtime rt.userData -data <hex(JSON)>
-// 테스트 순서 의존 (A→B→C, UserDefaults 영속 상태를 이어받음) — XCTest 알파벳 순 실행.
+// demoReread 액션으로 각 테스트의 상태를 직접 주입해 시뮬레이터 잔존 데이터·실행 순서에 의존하지 않는다.
 // 오라클은 결과 기반(§lessons 9): 화면의 책 제목·카피 텍스트 존재로 판정, 스크린샷 첨부.
 final class RereadCaptureUITests: XCTestCase {
 
@@ -41,7 +39,7 @@ final class RereadCaptureUITests: XCTestCase {
 
     // 완독 책 "다시 읽기" — 상세 CTA → 세션 화면 책 표기 → 기록 귀속 → 홈 히어로 복귀
     func testA_rereadFlow() {
-        let app = launch()
+        let app = launch("login,demoReread:initial")
         XCTAssertTrue(app.staticTexts["몰입"].waitForExistence(timeout: 10), "홈 히어로가 몰입이 아님")
         shot("A1-home-hero-molib")
 
@@ -85,7 +83,7 @@ final class RereadCaptureUITests: XCTestCase {
 
     // 재완독 별점 프리셋(4★ 보존) + 전권 완독 처리
     func testB_refinishPresetsRating() {
-        let app = launch()
+        let app = launch("login,demoReread:inProgress")
         openLibrary(app)
 
         // 재독 중인 돈의 심리학 = 읽는 중 행 (완독 그리드에서 빠짐)
@@ -119,7 +117,7 @@ final class RereadCaptureUITests: XCTestCase {
 
     // 전권 완독 시 홈 = '다음 책' 카피 (온보딩 '첫 책' 아님) + 다시 읽기로 복원
     func testC_nextBookHomeAndRestore() {
-        let app = launch()
+        let app = launch("login,demoReread:allFinished")
         XCTAssertTrue(app.staticTexts["다음 책 추가하기"].waitForExistence(timeout: 10),
                       "다음 책 CTA 없음")
         XCTAssertFalse(app.staticTexts["첫 책 추가하기"].exists, "온보딩 카피가 그대로임")
@@ -130,7 +128,7 @@ final class RereadCaptureUITests: XCTestCase {
 
         // 복원: 서재 직행 → 몰입 다시 읽기 → 취소 (몰입 = 읽는 중 복귀)
         app.terminate()
-        let app2 = launch("login,nav:12")
+        let app2 = launch("login,demoReread:allFinished,nav:12")
         let molib = gridItem(app2, "9788931009552")
         XCTAssertTrue(molib.waitForExistence(timeout: 10), "완독 그리드에 몰입 없음")
         molib.tap()

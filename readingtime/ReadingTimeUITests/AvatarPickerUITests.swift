@@ -16,7 +16,7 @@ final class AvatarPickerUITests: XCTestCase {
 
     func testPickingPhotoFromLibraryUpdatesAvatar() {
         let app = XCUIApplication()
-        app.launchArguments = ["--seq", "login,sheet:settings"]
+        app.launchArguments = ["--seq", "login,clearAvatar,sheet:settings"]
         app.launch()
 
         let photoRow = app.descendants(matching: .any)["settings.photoRow"]

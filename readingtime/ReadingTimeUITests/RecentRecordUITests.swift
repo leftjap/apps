@@ -2,9 +2,7 @@ import XCTest
 
 // 홈 '마지막 기록' 행 탭 → 책 상세(08) 진입 + 뒤로가기가 홈으로 복귀하는지 — 뷰 배선 구간.
 // (openRecentDetail·detailOrigin 로직은 유닛이 덮음 — 여기는 제스처→라우팅→렌더 연결만)
-//
-// 사전 조건: 시뮬 앱에 등록된 책이 있어야 한다 (빈 홈(14)에는 마지막 기록 행이 없음).
-// AvatarPickerUITests 의 사진 시딩과 같은 계열의 기기 상태 의존 — 없으면 명시 실패.
+// demoCards 로 등록 책·세션을 주입해 시뮬레이터의 잔존 데이터에 의존하지 않는다.
 final class RecentRecordUITests: XCTestCase {
 
     override func setUp() {
@@ -13,14 +11,11 @@ final class RecentRecordUITests: XCTestCase {
 
     func testTappingRecentRecordOpensDetailAndBackReturnsHome() {
         let app = XCUIApplication()
-        app.launchArguments = ["--seq", "login"]
+        app.launchArguments = ["--seq", "login,demoCards"]
         app.launch()
 
         let row = app.descendants(matching: .any)["home.recentRow"]
-        guard row.waitForExistence(timeout: 10) else {
-            XCTFail("홈에 마지막 기록 행이 없다 — 등록된 책이 있는 시뮬에서 실행 필요 (빈 홈이면 미충족)")
-            return
-        }
+        XCTAssertTrue(row.waitForExistence(timeout: 10), "demoCards 홈에 마지막 기록 행이 없음")
         row.tap()
 
         let detail = app.descendants(matching: .any)["detail.screen"]

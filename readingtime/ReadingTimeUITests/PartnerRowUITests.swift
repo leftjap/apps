@@ -9,7 +9,7 @@ final class PartnerRowUITests: XCTestCase {
 
     func testTappingPartnerRowOpensPartnerStatsAndBackReturnsHome() {
         let app = XCUIApplication()
-        app.launchArguments = ["--seq", "login,demoPartner"]
+        app.launchArguments = ["--seq", "login,demoCards,demoPartner"]
         app.launch()
 
         let row = app.descendants(matching: .any)["home.partnerRow"]
