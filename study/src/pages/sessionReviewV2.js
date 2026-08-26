@@ -50,7 +50,7 @@ const VR_CSS = `
 @keyframes v-haloC{0%,100%{box-shadow:inset 0 0 0 1.5px oklch(58% .115 32/.4),0 0 0 0 oklch(58% .115 32/.25)}55%{box-shadow:inset 0 0 0 1.5px oklch(58% .115 32/.4),0 0 0 7px oklch(58% .115 32/0)}}
 .vr-rail .sp{flex:1}
 .vr-rail .tm{font-family:Outfit;font-size:11px;color:var(--faint);letter-spacing:.08em;white-space:nowrap}
-.vr-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:38px 46px 40px}
+.vr-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}
 .vr-main{width:760px;max-width:100%}
 .vr-crumb{display:flex;align-items:center;gap:14px}
 .vr-scene{font-size:12px;font-weight:700;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:6px 13px;white-space:nowrap}

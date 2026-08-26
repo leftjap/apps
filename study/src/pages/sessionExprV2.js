@@ -41,7 +41,7 @@ export const VS_CSS = `
 .vs-rstep.done{color:var(--teal-deep)}
 .vs-rail .sp{flex:1}
 .vs-rail .tm{font-family:Outfit;font-size:11px;color:var(--faint);letter-spacing:.08em;white-space:nowrap}
-.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:38px 46px 40px}
+.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}
 .vs-main{width:760px;max-width:100%}
 .vs-crumb{display:flex;align-items:center;gap:14px}
 .vs-scene{font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:6px 13px;white-space:nowrap}
@@ -112,11 +112,11 @@ export const VS_CSS = `
 .vs-hist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 20px;margin-top:13px}
 .vs-hist .lb{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
 .vs-panel{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:13px}
-.vs-panel .ph2d{display:flex;justify-content:space-between;align-items:center;padding:18px 24px 0;cursor:pointer}
+.vs-panel .ph2d{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 0;cursor:pointer}
 .vs-panel .chev{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);transition:transform .2s;flex:0 0 auto}
 .vs-panel.open .chev{transform:rotate(180deg)}
 .vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
-.vs-panel .inner{padding:14px 24px 30px;max-height:584px;overflow-y:auto}
+.vs-panel .inner{padding:14px 20px 20px;max-height:584px;overflow-y:auto}
 .vs-kbox{background:var(--teal-soft);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.6}
 .vs-kbox b{font-weight:700}
 .vs-sec{margin-top:14px}
@@ -955,7 +955,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
         h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        cardEl, recWidget, histCard.el, drillsBlock, prodBlock, chainBlock, fold),
+        cardEl, recWidget, histCard.el, drillsBlock, chainBlock, prodBlock, fold),
       h('div', { class: 'm-cta' }, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -977,7 +977,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
         h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-      cardEl, drillsBlock, prodBlock, chainBlock);
+      cardEl, drillsBlock, chainBlock, prodBlock);
     const side = h('aside', { class: 'vs-side' }, recWidget, histCard.el, foldPanel, nextBtn);
     root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };

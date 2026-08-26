@@ -723,8 +723,9 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     const st = makeStateWithDrills();
     st.sentence.explanation.chain = { target: 'a b c d e f', chunks: ['a b', 'c d', 'e f'], ko: '가나다' };
     renderSessionExprV2(host, st, {});
+    // 시안 4a 순서 — 응용 → 체이닝 → 생산 (2026-08-27 시안 대조에서 순서가 뒤바뀐 걸 발견)
     expect([...host.querySelectorAll('.vs-main .vs-lab')].map((n) => n.textContent))
-      .toEqual(['응용 연습', '생산 연습', '체이닝']);
+      .toEqual(['응용 연습', '체이닝', '생산 연습']);
     expect(host.textContent).not.toContain('듣고, 따라 말하고');
     expect(host.textContent).not.toContain('자막 없이');
     expect(host.textContent).not.toContain('한글만 보고');
@@ -823,5 +824,23 @@ describe('sessionExprV2 — §11/§6.5 누락분', () => {
     const css = host.querySelector('style').textContent;
     expect(css).toMatch(/\.vs-prod-give\{[^}]*color:var\(--teal-deep\)/);
     expect(css).toMatch(/\.vs-prod-give\{[^}]*border-bottom:1px solid oklch\(44% \.062 192\/\.3\)/);
+  });
+});
+
+/* 시안(4a) 프레임 수치 — 2026-08-27 시안 대조. 본문 패딩이 기존값(38/46)으로 남아 있었다. */
+describe('sessionExprV2 — 시안 프레임 수치', () => {
+  it('본문 패딩이 34px 34px 40px 다 (§6.2)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    const css = host.querySelector('style').textContent;
+    expect(css).toContain('.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}');
+  });
+
+  it('표현 해설 카드 실효 패딩이 좌우 20px 다 (§6.6③)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    const css = host.querySelector('style').textContent;
+    expect(css).toContain('.vs-panel .ph2d{display:flex;justify-content:space-between;align-items:center;padding:18px 20px 0');
+    expect(css).toContain('.vs-panel .inner{padding:14px 20px 20px');
   });
 });
