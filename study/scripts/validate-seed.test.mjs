@@ -232,6 +232,21 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('phonetic_kr');
   });
 
+  // core100 (2026-08-26) — 코어 100문장 커리큘럼도 scene 없는 표현 전용 세션.
+  it('core100 트랙도 scene·_source 예외', () => {
+    const r = validateSeedContent(makeModu({ track: 'core100' }), okOpts);
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('core100 도 표현카드 품질검사는 유지', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards[0].phonetic_kr = '틀린 발음';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
   // ── chain (무자막 청각 확장, 2026-07-09) — ladder 대체. 앱이 chunks 누적으로 단계를 만든다. ──
   const CHAIN_OK = {
     target: "It's been a while since we caught up. We should grab dinner sometime.",
