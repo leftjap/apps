@@ -9,7 +9,8 @@
  * 라이브 녹음/채점은 기존 services 재사용. 데모(?demo=1)는 마이크 없이 시뮬.
  */
 import { h } from '../components/d1/dom.js';
-import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
+import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts,
+  scoreDot, emptyDot, miniCalGrid, isoShift, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
@@ -18,9 +19,10 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { createJudgeRow } from '../components/session/atoms.js';
 import { filterNearDupDrills } from '../components/session/applied.js';
 import { localISODate } from '../utils/today.js';
+import { nextSrsState } from '../services/srs.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, VS_CSS, VSM_CSS } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS } from './sessionExprV2.js';
 
 const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -56,14 +58,17 @@ const VR_CSS = `
 .vr-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
 .vr-prog i.f{background:var(--teal)}
 .vr-prog-t{font-family:Outfit;font-size:12px;color:var(--faint);font-weight:600;white-space:nowrap}
-.vr-hint{margin-top:20px;font-size:13px;color:var(--mut);display:inline-flex;align-items:center;gap:8px}
-.vr-hint i{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:v-blink 1.6s infinite;flex:0 0 auto}
-.vr-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:36px 44px;margin-top:12px;
+.vr-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px 40px 30px;margin-top:18px;
   box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
-.vr-h1{font-family:Outfit;font-size:46px;font-weight:700;letter-spacing:-0.03em;line-height:1.12}
-.vr-ko{font-size:17px;color:var(--mut);margin-top:13px}
+.vr-h1{font-family:Outfit;font-size:42px;font-weight:700;letter-spacing:-0.03em;line-height:1.12}
+/* 밑줄은 그라디언트 언더레이 — 구절이 끊기지 않는다 (§4.4). */
+.vr-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 5px no-repeat;padding-bottom:6px}
+.vr-ko{font-size:17px;color:var(--mut);margin-top:12px}
+.vr-pron{font-size:13px;color:var(--faint);margin-top:5px}
 .vr-srs{display:flex;gap:18px;margin-top:14px;font-size:12.5px;color:var(--faint);flex-wrap:wrap}
 .vr-srs b{color:var(--mut);font-weight:700}
+/* 지난 점수는 링의 새 점수가 대체했다 — 취소선으로 그 교대를 표시 (§7.3). */
+.vr-srs b.old{color:#b8b1a0;text-decoration:line-through}
 .vr-ctrl{display:flex;align-items:center;gap:12px;margin-top:26px;flex-wrap:wrap;min-height:56px}
 .vr-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
 /* 녹음 CTA 는 코랄 — 색 규약 '코랄=녹음'(v2/atoms.js 머리주석)과 구 D1(terra) 관례. 2026-07-22 복원. */
@@ -72,26 +77,40 @@ const VR_CSS = `
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
-.vr-ring{position:relative;width:52px;height:52px;flex:0 0 auto}
+.vr-ring{position:relative;width:54px;height:54px;flex:0 0 auto}
 .vr-ring svg{transform:rotate(-90deg)}
-.vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
+.vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vr-cap{font-size:11.5px;color:var(--faint);white-space:nowrap}
-.vr-meta{display:flex;align-items:center;gap:20px;margin-top:16px;flex-wrap:wrap}
-.vr-say{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--mut);font-weight:600;white-space:nowrap}
-.vr-hist{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--faint);white-space:nowrap;flex-wrap:wrap}
-.vr-hist .hh{font-family:Outfit;font-weight:700;color:var(--mut);background:#f1eee2;border-radius:999px;padding:3px 10px;font-size:11.5px}
-.vr-hist .hh.q{color:var(--coral-deep);background:var(--coral-soft)}
+.vr-meta{display:flex;align-items:center;gap:12px;margin-top:22px;flex-wrap:wrap;color:var(--faint)}
+.vr-say{font-family:Outfit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap}
 .vr-side{width:324px;flex:0 0 auto}
-.vr-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 20px;margin-bottom:13px}
-.vr-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase}
-.vr-rec .nr{display:flex;align-items:baseline;gap:7px;margin-top:7px}
-.vr-rec .n{font-family:Outfit;font-size:27px;font-weight:700;line-height:1}
-.vr-rec .u{font-size:12px;color:var(--faint);font-weight:600}
-.vr-rec .v-bar{height:5px;margin-top:10px}
-.vr-rec .v-bar > i{background:var(--teal)}
-.vr-rec .msg{font-size:11.5px;color:var(--mut);margin-top:9px;line-height:1.5}
-.vr-rec .msg b{color:var(--coral-deep)}
-.vr-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px}
+.vr-scal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 20px;margin-top:13px}
+.vr-scal .lb{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
+.vr-scal .mh{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.vr-scal .mh .ml{font-family:Outfit;font-size:13px;font-weight:700}
+.vr-scal .mh .nav{display:flex;gap:4px}
+.vr-scal .mh button{width:24px;height:24px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;cursor:pointer;padding:0}
+.vr-scal .mh button:hover{background:#f8f6ee}
+.vr-scal .mh button:disabled{border-color:#f1ede0;color:#ddd8c8;cursor:default;background:#fff}
+.vr-scal .v-cal{margin-top:10px}
+.vr-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px 22px;margin-top:13px}
+/* 자기평가 (§7.4 ③) — 라벨은 앱 정본(쉬움/보통/어려움, atoms.js:202) 유지, 색·크기만 시안대로.
+   전역 styles/session.css 의 .judge-row[data-size=…] 규칙(그리드 1fr/1.2fr/1.6fr · padding 18px)을
+   이겨야 하므로 [data-size] 를 끼워 명시도를 한 단계 올린다. */
+.vr-fold .judge-row[data-size]{display:flex;gap:8px;margin-top:0}
+.vr-fold .judge-row[data-size] .judge-btn{flex:1;border-radius:12px;padding:13px 0;border:0;min-height:0;cursor:pointer}
+.vr-fold .judge-row[data-size] .judge-btn .en{font-size:13.5px;font-weight:700}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="got"]{background:var(--teal)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="got"] .en{color:#fff}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="got"]:hover{background:oklch(39% .06 192)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="hmm"]{background:#f1eee2}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="hmm"] .en{color:var(--mut)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="hmm"]:hover{background:#e9e5d5}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="no"]{background:var(--coral-soft)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="no"] .en{color:var(--coral-deep)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="no"]:hover{background:oklch(58% .115 32/.2)}
+.vr-nextdays{display:flex;justify-content:space-between;font-family:Outfit;font-size:10px;font-weight:600;color:#b8b1a0;margin-top:7px;padding:0 6px}
+.vr-nextdays span{flex:1;text-align:center}
 .vr-fold .hd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .vr-fold .t{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase}
 .vr-fold .chev{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);transition:transform .2s}
@@ -101,7 +120,6 @@ const VR_CSS = `
 .vr-fold .bd .kx{background:var(--teal-soft);border-radius:10px;padding:10px 12px;color:#3f4845}
 .vr-fold .vs-panel{padding:0;border:0;background:none;margin:0}
 .vr-fold .vs-panel .inner{padding:0;max-height:none;overflow:visible}
-.vr-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px}
 .vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
 @media (max-width:1100px){.vr-mainwrap{flex-direction:column;align-items:center}.vr-side{width:760px;max-width:100%}}
 `;
@@ -109,21 +127,77 @@ const VR_CSS = `
 function ringEl(score) {
   const wrap = h('div', { class: 'vr-ring' });
   const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('width', '52'); svg.setAttribute('height', '52'); svg.setAttribute('viewBox', '0 0 52 52');
+  svg.setAttribute('width', '54'); svg.setAttribute('height', '54'); svg.setAttribute('viewBox', '0 0 54 54');
   const track = document.createElementNS(SVG_NS, 'circle');
-  track.setAttribute('cx', '26'); track.setAttribute('cy', '26'); track.setAttribute('r', '23');
+  track.setAttribute('cx', '27'); track.setAttribute('cy', '27'); track.setAttribute('r', '23');
   track.setAttribute('fill', 'none'); track.setAttribute('stroke', '#eae6d8'); track.setAttribute('stroke-width', '5');
   svg.appendChild(track);
   if (score != null) {
     const arc = document.createElementNS(SVG_NS, 'circle');
-    const off = 144 - Math.round((Math.min(Math.max(score, 0), 100) / 100) * 124);
-    arc.setAttribute('cx', '26'); arc.setAttribute('cy', '26'); arc.setAttribute('r', '23');
+    const off = 144.5 - Math.round((Math.min(Math.max(score, 0), 100) / 100) * 1245) / 10;
+    arc.setAttribute('cx', '27'); arc.setAttribute('cy', '27'); arc.setAttribute('r', '23');
     arc.setAttribute('fill', 'none'); arc.setAttribute('stroke', 'oklch(44% .062 192)'); arc.setAttribute('stroke-width', '5');
-    arc.setAttribute('stroke-linecap', 'round'); arc.setAttribute('stroke-dasharray', '144'); arc.setAttribute('stroke-dashoffset', String(off));
+    arc.setAttribute('stroke-linecap', 'round'); arc.setAttribute('stroke-dasharray', '144.5'); arc.setAttribute('stroke-dashoffset', String(off));
     svg.appendChild(arc);
   }
   wrap.append(svg, h('span', { class: 'cn' }, score != null ? String(score) : '—'));
   return wrap;
+}
+
+/* ── 이 문장 연습 이력 · 월간 캘린더 (§7.4②) ──
+ * 셀 안에 숫자를 넣지 않고 회차 요약 줄도 두지 않는다 — 월 라벨 + 셰브론 + 그리드만.
+ * 데이터는 pronunciationLog(session-review.js loadSentenceLog) — 그날 이 문장을 몇 번 말했나.
+ */
+function sentenceCalCard(dayScores, todayISO) {
+  const ty = +todayISO.slice(0, 4), tm = +todayISO.slice(5, 7);
+  let year = ty, month = tm;
+  const label = h('span', { class: 'ml' }, '');
+  const prevBtn = h('button', { type: 'button', 'aria-label': '이전 달' }, vIcon(VI.CHEV_DOWN, { size: 12, sw: 2.2 }));
+  const nextBtn = h('button', { type: 'button', 'aria-label': '다음 달' }, vIcon(VI.CHEV_DOWN, { size: 12, sw: 2.2 }));
+  prevBtn.firstChild.style.transform = 'rotate(90deg)';
+  nextBtn.firstChild.style.transform = 'rotate(-90deg)';
+  const body = h('div');
+  const el = h('div', { class: 'vr-scal' },
+    h('span', { class: 'lb' }, '이 문장 연습 이력'),
+    h('div', { class: 'mh' }, label, h('span', { class: 'nav' }, prevBtn, nextBtn)),
+    body);
+
+  function draw() {
+    label.textContent = `${year}년 ${month}월`;
+    // 미래 월 이동 금지 — stats.js moveMonth 와 같은 정책.
+    nextBtn.disabled = (year === ty && month === tm);
+    const first = `${year}-${String(month).padStart(2, '0')}-01`;
+    const din = new Date(year, month, 0).getDate();
+    const dates = Array.from({ length: din }, (_, i) => isoShift(first, i));
+    const lead = (new Date(first + 'T00:00:00Z').getUTCDay() + 6) % 7; // 월요일 시작
+    body.replaceChildren(miniCalGrid(dates, {
+      countOf: (iso) => (dayScores[iso]?.length || 0),
+      todayISO, lead,
+    }));
+  }
+  const move = (delta) => {
+    let m = month + delta, y = year;
+    if (m < 1) { m = 12; y -= 1; }
+    if (m > 12) { m = 1; y += 1; }
+    if (y > ty || (y === ty && m > tm)) return;
+    year = y; month = m; draw();
+  };
+  prevBtn.addEventListener('click', () => move(-1));
+  nextBtn.addEventListener('click', () => move(1));
+  draw();
+  return { el, refresh: draw };
+}
+
+/* 자기평가 3버튼이 만들 다음 복습일 — srs.js nextSrsState 로 계산. 졸업(마지막 통과)이면 '졸업'. */
+function nextReviewLabels(interval, todayISO) {
+  return ['got', 'hmm', 'no'].map((kind) => {
+    const next = nextSrsState(interval, kind, todayISO);
+    if (next.graduate) return '졸업';
+    const days = Math.round((new Date(next.nextReview + 'T00:00:00Z') - new Date(todayISO + 'T00:00:00Z')) / 86400000);
+    if (days <= 1) return '내일';
+    if (days <= 7) return `${days}일 뒤`;
+    return `${+next.nextReview.slice(5, 7)}월 ${+next.nextReview.slice(8, 10)}일`;
+  });
 }
 
 // 점수 → SRS 판정 (수동 판정 없는 시안 대응). 점수 미측정 시 중립('hmm').
@@ -149,13 +223,14 @@ const VRM_CSS = `
 .m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
 .m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
 .vr-pill:disabled,.vr .judge-btn:disabled{opacity:.35;cursor:not-allowed;animation:none}
-.vr-hint{margin-top:13px;font-size:12.5px;color:var(--mut);display:inline-flex;align-items:center;gap:7px}
-.vr-hint i{width:6px;height:6px;border-radius:50%;background:var(--coral);animation:v-blink 1.6s infinite;flex:0 0 auto}
-.vr-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:10px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
-.vr-h1{font-family:Outfit;font-size:28px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
-.vr-ko{font-size:16px;color:var(--mut);margin-top:10px}
+.vr-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
+.vr-h1{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
+.vr-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 4px no-repeat;padding-bottom:4px}
+.vr-ko{font-size:16px;color:var(--mut);margin-top:11px}
+.vr-pron{font-size:12.5px;color:var(--faint);margin-top:5px}
 .vr-srs{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--faint);flex-wrap:wrap}
 .vr-srs b{color:var(--mut);font-weight:700}
+.vr-srs b.old{color:#b8b1a0;text-decoration:line-through}
 .vr-ctrl{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
 /* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vr button' 리셋과 동률로 올린다 — 안 그러면
    '.vr button' 의 padding:0 (0,0,1,1)이 '.vr-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
@@ -167,25 +242,32 @@ button.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vr-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vr-ring{position:relative;width:50px;height:50px;flex:0 0 auto}
+.vr-ring{position:relative;width:54px;height:54px;flex:0 0 auto}
 .vr-ring svg{transform:rotate(-90deg)}
-.vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
+.vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vr-cap{font-size:11px;color:var(--faint);white-space:nowrap}
-.vr-meta{display:flex;align-items:center;gap:14px;margin-top:15px;flex-wrap:wrap}
-.vr-say{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
-.vr-hist{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--faint);flex-wrap:wrap}
-.vr-hist .hh{font-family:Outfit;font-weight:700;color:var(--mut);background:#f1eee2;border-radius:999px;padding:3px 9px;font-size:11px}
-.vr-hist .hh.q{color:var(--coral-deep);background:var(--coral-soft)}
-.vr-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:12px}
-.vr-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
-.vr-rec .nr{display:flex;align-items:baseline;gap:6px;margin-top:7px}
-.vr-rec .n{font-family:Outfit;font-size:26px;font-weight:700;line-height:1}
-.vr-rec .u{font-size:11.5px;color:var(--faint);font-weight:600}
-.vr-rec .v-bar{height:5px;margin-top:9px}
-.vr-rec .v-bar > i{background:var(--teal)}
-.vr-rec .msg{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.5}
-.vr-rec .msg b{color:var(--coral-deep)}
-.vr-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
+.vr-meta{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap;color:var(--faint)}
+.vr-say{font-family:Outfit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap}
+.vr-scal{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;margin-top:12px}
+.vr-scal .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
+.vr-scal .mh{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
+.vr-scal .mh .ml{font-family:Outfit;font-size:13px;font-weight:700}
+.vr-scal .mh .nav{display:flex;gap:4px}
+.vr-scal .mh button{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;padding:0}
+.vr-scal .mh button:disabled{border-color:#f1ede0;color:#ddd8c8}
+.vr-scal .v-cal{margin-top:10px}
+.vr-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 20px;margin-top:12px}
+.vr-fold .judge-row[data-size]{display:flex;gap:8px;margin-top:0}
+.vr-fold .judge-row[data-size] .judge-btn{flex:1;border-radius:12px;padding:14px 0;border:0;min-height:48px}
+.vr-fold .judge-row[data-size] .judge-btn .en{font-size:13.5px;font-weight:700}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="got"]{background:var(--teal)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="got"] .en{color:#fff}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="hmm"]{background:#f1eee2}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="hmm"] .en{color:var(--mut)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="no"]{background:var(--coral-soft)}
+.vr-fold .judge-row[data-size] .judge-btn[data-kind="no"] .en{color:var(--coral-deep)}
+.vr-nextdays{display:flex;justify-content:space-between;font-family:Outfit;font-size:10px;font-weight:600;color:#b8b1a0;margin-top:7px;padding:0 6px}
+.vr-nextdays span{flex:1;text-align:center}
 .vr-fold .hd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .vr-fold .t{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
 .vr-fold .chev{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);transition:transform .2s}
@@ -211,8 +293,17 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const total = state.total || state.cards.length;
   const idx = state.step;
   const expr = exprOf(s || {});
-  const prevRecord = Number(state.prevRecord) || 0; // 0 = 직전 세션 없음 → 비교 UI 미표시
-  const barPct = () => (prevRecord > 0 ? Math.min(Math.round(((state.tried || 0) / prevRecord) * 100), 100) : 0);
+  // 오늘 발화의 분모 = 직전 학습일 발화 수 (§1-1). 0 = 직전 학습일 없음 → 비교 UI 미표시.
+  const prevDay = Number(state.prevDayUtter) || 0;
+  const todayISO = getTodayISO();
+  // 이 문장의 날짜별 시도 점수 (session-review.js loadSentenceLog). 세션 시작 시점 스냅샷이라
+  // 이번 세션 시도는 아래 sessionScores 로 따로 더한다.
+  const dayScores = (state.sentLog?.[s?.id]) || {};
+  const savedToday = dayScores[todayISO] || [];
+  const sessionScores = [];
+  // 직전 복습 회차의 발화 횟수 = 오늘보다 앞선 가장 최근 연습일의 시도 수 (빈 슬롯 개수의 근거).
+  const prevSentDay = Object.keys(dayScores).filter((d) => d < todayISO).sort().pop();
+  const prevTries = prevSentDay ? dayScores[prevSentDay].length : 0;
 
   if (total === 0 || !s?.sentence) {
     let root;
@@ -243,14 +334,18 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 마이크 없는 기기에서 정답이 그냥 노출된다. 해설 펼침이 공개 경로라 막다른 길이 아니다.
   const recallMode = isRecallMode(lang);
   let revealed = !recallMode;
-  const h1El = h('h1', { class: 'vr-h1' }, revealed ? s.sentence : (s.ko || ''));
+  // 핵심 표현 밑줄은 영어가 드러난 뒤에만 (§4.4). 한글 발음(pron)도 정답을 품으므로 공개 후에만 붙인다.
+  const h1El = h('h1', { class: 'vr-h1' });
+  const paintH1 = () => h1El.replaceChildren(revealed ? hlNode(s.sentence || '', expr) : document.createTextNode(s.ko || ''));
   const koEl = h('div', { class: 'vr-ko' },
     revealed ? (s.ko || '') : `영어로 떠올려 말해 보세요 · ${wordCountOf(s.sentence)}단어`);
+  const pronEl = h('div', { class: 'vr-pron', style: revealed ? '' : 'display:none;' }, s?.pron || '');
   function reveal() {
     if (revealed) return;
     revealed = true;
-    h1El.textContent = s.sentence;
+    paintH1();
     koEl.textContent = s.ko || '';
+    if (s?.pron) pronEl.style.display = '';
     listenPill.disabled = false;
     if (drillsBlock) drillsBlock.style.display = '';   // 응용·체이닝도 정답을 품으므로 함께 공개
     if (chainBlock) chainBlock.style.display = '';
@@ -281,24 +376,23 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const listenPill = h('button', { class: 'vr-pill vr-listen', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
   listenPill.disabled = !revealed;
   let curRing = ringEl(state.lastScore);
-  const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, curRing, h('span', { class: 'vr-cap' }, lastScore != null ? `지난 점수` : '첫 복습'));
-  const ctrl = h('div', { class: 'vr-ctrl' }, recPill, listenPill, ringHost);
+  const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, curRing, h('span', { class: 'vr-cap' }, lastScore != null ? '방금 점수' : '첫 복습'));
+  // 듣기(좌) / 녹음(우) — 신규 세션과 같은 순서. 바꾸지 않는다 (§6.4-4 · §7.2).
+  const ctrl = h('div', { class: 'vr-ctrl' }, listenPill, recPill, ringHost);
 
   // 복습에서 발화는 전진 조건이 아니다 (사용자 지시) — 목표 없이 횟수만 센다.
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
-  const sayLine = h('span', { class: 'vr-say' }, h('span', {}, '발화'), h('span', { class: 'vr-say-n' }, ''));
-  const todayHist = h('span', { class: 'hh q' }, '오늘 ?');
-  const histRow = h('span', { class: 'vr-hist' }, h('span', {}, '이 문장 기록'),
-    ...(Array.isArray(card.history) ? card.history.map((hv, i) => h('span', { class: 'hh' }, `${i + 1}차 ${hv}`)) : (lastScore != null ? [h('span', { class: 'hh' }, `지난 ${lastScore}`)] : [])),
-    todayHist);
-  const meta = h('div', { class: 'vr-meta' }, sayLine, histRow);
+  /* 점수 열 — 오늘 시도 점수 원 + 직전 복습 시도 수까지의 빈 슬롯. 빈 슬롯이 목표를 시각적으로 말하므로
+   * 숫자 뒤에 '직전' 같은 라벨을 붙이지 않는다 (§7.3). 듣기 횟수는 앱이 저장하지 않아 넣지 않는다. */
+  const dotsEl = h('span', { class: 'v-dots' });
+  const sayLine = h('span', { class: 'vr-say' }, '');
+  const meta = h('div', { class: 'vr-meta' }, vIcon(VI.MIC, { size: 14, sw: 2 }), dotsEl, sayLine);
 
-  // 우측 — 오늘 발화 위젯
-  const recN = h('span', { class: 'n' }, String(state.tried || 0));
-  const recBar = h('div', { class: 'v-bar' }, h('i', { style: `width:${barPct()}%` }));
-  const recMsg = h('div', { class: 'msg' }, '');
-  const recWidget = h('div', { class: 'vr-rec' }, h('span', { class: 'lb' }, '오늘 발화'),
-    h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, prevRecord > 0 ? `회 / 직전 세션 기록 ${prevRecord}회` : '회')), recBar, recMsg);
+  // 우측 ① 오늘 발화 링 (분모 = 직전 학습일 발화) · ② 이 문장 연습 이력
+  const ring140 = utterRingCard({ size: 140, caption: false });
+  const recWidget = ring140.el;
+  const todayUtter = () => (Number(state.todayUtterBase) || 0) + (Number(state.tried) || 0);
+  const sentCal = sentenceCalCard(dayScores, todayISO);
 
   // 자기평가가 SRS 의 유일한 입력 — 발음 점수는 약점 음소 수집용일 뿐 간격을 정하지 않는다.
   const judgeRow = createJudgeRow({
@@ -311,7 +405,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const judgeBtns = [...judgeRow.el.querySelectorAll('.judge-btn')];
   const refreshJudge = () => { judgeBtns.forEach((b) => { b.disabled = !revealed; }); };
   refreshJudge();
-  const gateEl = h('div', { class: 'vr-gate' }, '어땠나요? 아래에서 골라주세요');
+  // 자기평가 3버튼이 만들 다음 복습일 — srs.js 로 계산. 버튼 순서(쉬움/보통/어려움)와 1:1.
+  const nextDays = h('div', { class: 'vr-nextdays' },
+    nextReviewLabels(card.interval, todayISO).map((t) => h('span', {}, t)));
 
   // 응용/체이닝 발화 집계 — '오늘 발화'·약점 음소에만 반영. SRS 는 자기평가가 정한다.
   const onAppliedScore = (result) => {
@@ -335,7 +431,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const recordedDrills = new Set(Object.keys(savedDrills).map(Number));
   const drillCountEl = h('b', {}, String(Math.min(recordedDrills.size, drills.length)));
   const drillsBlock = drills.length ? h('div', { class: 'vr-drills' },
-    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'),
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습'),
       h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, (i, result) => {
       if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
@@ -359,7 +455,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 해설 접힘 — 펼치면 정답이 드러나므로 그때 공개 처리한다. 안쪽은 해설 패널 + 하단 평가.
   const foldBd = h('div', { class: 'bd' },
     explainPanel(ex, false),
-    h('div', { style: 'margin-top:18px;border-top:1px solid var(--line);padding-top:14px;' }, gateEl, judgeRow.el),
+    h('div', { style: 'margin-top:16px;border-top:1px solid var(--line);padding-top:14px;' }, judgeRow.el, nextDays),
   );
   foldBd.style.display = 'none';
   const fold = h('div', { class: 'vr-fold' },
@@ -382,15 +478,17 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   }
 
   const refreshDots = () => {
-    sayLine.querySelector('.vr-say-n').textContent = `${recCount()}회`;
-    if (state.lastScore != null) todayHist.textContent = `오늘 ${state.lastScore}`;
+    const todayScores = [...savedToday, ...sessionScores];
+    const slots = Math.max(prevTries - todayScores.length, 0);
+    dotsEl.replaceChildren(
+      ...todayScores.map((v, i) => scoreDot(v, { size: 30, fresh: i === todayScores.length - 1 })),
+      ...Array.from({ length: slots }, () => emptyDot({ size: 30 })),
+    );
+    sayLine.textContent = prevTries > 0 ? `${todayScores.length} / ${prevTries}` : `${todayScores.length}회`;
   };
   const refreshRec = () => {
-    recN.textContent = String(state.tried || 0);
-    recBar.firstChild.style.width = barPct() + '%';
-    if (prevRecord <= 0) { recMsg.textContent = ''; return; } // 직전 세션 없음 — 비교 문구 없음
-    if ((state.tried || 0) > prevRecord) { recBar.firstChild.style.background = 'var(--coral)'; recMsg.innerHTML = '직전 세션 기록을 <b>넘었어요!</b>'; }
-    else recMsg.innerHTML = `<b>${Math.max(prevRecord - (state.tried || 0), 0)}회</b>만 더 말하면 직전 세션 기록을 깨요!`;
+    ring140.update(todayUtter(), prevDay);
+    sentCal.refresh();
   };
 
   function applyScore(score) {
@@ -399,8 +497,10 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     if (!Array.isArray(state.pronScores)) state.pronScores = [];
     state.pronScores.push(score);
     bumpRecLog(state, s?.id, score);
+    sessionScores.push(Math.round(Number(score) || 0));
+    (dayScores[todayISO] ??= []).push(Math.round(Number(score) || 0)); // 오늘 칸 농도 실시간 상승
     const nr = ringEl(score); curRing.replaceWith(nr); curRing = nr;
-    ringHost.lastChild.textContent = `${recCount()}회 떠올림`;
+    ringHost.lastChild.textContent = '방금 점수';
     if (!revealed) reveal(); // 시도 직후 정답 공개 (피드백) — 실패해도 학습된다
     refreshDots(); refreshRec();
   }
@@ -456,12 +556,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   });
 
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
-    lastScore != null ? h('span', {}, '지난 점수 ', h('b', {}, String(lastScore))) : null,
-    nextDate ? h('span', {}, '통과 시 다음 복습 ', h('b', {}, String(nextDate))) : null);
-  const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, srsRow, ctrl, meta);
-  const hintEl = h('div', { class: 'vr-hint' }, h('i'),
-    recallMode ? '한글을 보고 영어로 떠올려 말해 보세요 — 안 떠오르면 그대로 두고 해설을 펼치면 정답과 평가가 나와요'
-      : '듣기 전에 먼저 떠올려 말해 보세요 — 기억이 더 단단해져요');
+    lastScore != null ? h('span', {}, '지난 점수 ', h('b', { class: 'old' }, String(lastScore))) : null);
+  const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, pronEl, srsRow, ctrl, meta);
 
 
   let root, timeUpdate;
@@ -480,7 +576,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
     root = h('div', { class: 'vr' }, v2Style(VRM_CSS), v2Style(VSM_CSS),
       mTopb, mSteps,
-      h('div', { class: 'm-pad' }, hintEl, cardEl, recWidget, drillsBlock, chainBlock, fold));
+      h('div', { class: 'm-pad' }, cardEl, recWidget, sentCal.el, drillsBlock, chainBlock, fold));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
@@ -490,11 +586,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     const main = h('div', { class: 'vr-main' },
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
-      hintEl, cardEl, drillsBlock, chainBlock);
-    const side = h('aside', { class: 'vr-side' }, recWidget, fold);
+      cardEl, drillsBlock, chainBlock);
+    const side = h('aside', { class: 'vr-side' }, recWidget, sentCal.el, fold);
     root = h('div', { class: 'vr' }, v2Style(VR_CSS), v2Style(VS_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
   }
+  paintH1();
   host.appendChild(root);
   refreshDots(); refreshRec();
   const layout = { update(st) { if (st && 'time' in st) timeUpdate(st.time); } };

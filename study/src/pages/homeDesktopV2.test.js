@@ -109,3 +109,88 @@ describe('홈 연속 문구 — 이전 최고 기준', () => {
       .toMatch(/최고 기록까지 2일/);
   });
 });
+
+/* 홈 v3 — 기록/갱신 (작업지시서 §5 · QA §13 '홈'). 기록이 보여야 갱신 욕구가 생긴다는 게 설계 의도라
+ * 화면이 무엇을 주장하는지(분모·기록일·오늘)를 테스트로 못박는다. */
+describe('홈 v3 — 최근 4주 캘린더 · 오늘 발화 링 · CTA', () => {
+  const v3 = (over = {}) => baseState({
+    todayISO: '2026-08-25', // 화요일
+    dayMap: { '2026-08-20': 31, '2026-08-22': 34, '2026-08-24': 12 },
+    cumStudySec: 151800, // 42시간 10분
+    cumUtter: 1120, cumExpr: 201, cumMaster: 98, prDays: [],
+    tried: 30, ...over,
+  });
+
+  it('캘린더가 4주(28칸)이고 미학습 날은 채색이 없다', () => {
+    const el = renderHomeDesktopV2(v3());
+    expect(el.querySelectorAll('.vh-cell')).toHaveLength(28);
+    // 8/21(금)은 학습 기록 없음 → t0 (흰 배경 + 테두리)
+    expect(el.querySelectorAll('.vh-cell.t0').length).toBeGreaterThan(0);
+  });
+
+  it('오늘 칸에 today 클래스(vh-today 펄스) + 텍스트 "오늘", 미래 칸은 fut 이다', () => {
+    const el = renderHomeDesktopV2(v3());
+    const t = el.querySelectorAll('.vh-cell.today');
+    expect(t).toHaveLength(1);
+    expect(t[0].querySelector('.vv').textContent).toBe('오늘'); // 오늘 숫자는 링이 말한다 (§5.3)
+    expect(el.querySelectorAll('.vh-cell.fut')).toHaveLength(5); // 8/26~8/30
+  });
+
+  it('개인기록 달성일은 코랄 칸(pr)이다', () => {
+    const el = renderHomeDesktopV2(v3({ prDays: ['2026-08-22'] }));
+    const pr = el.querySelectorAll('.vh-cell.pr');
+    expect(pr).toHaveLength(1);
+    expect(pr[0].textContent).toContain('34');
+  });
+
+  it('링 분모는 직전 학습일 발화 수 — 고정 목표가 아니다', () => {
+    const el = renderHomeDesktopV2(v3({ tried: 8 }));
+    expect(el.querySelector('.vh-ring2 .pv').textContent).toBe('직전 12회'); // 8/24
+    expect(el.querySelector('.vh-ring2 .n').textContent).toBe('8');
+    expect(el.textContent).not.toMatch(/30회/);   // 옛 고정 목표(speechTarget) 분모 금지
+    expect(el.textContent).not.toMatch(/일 최고/); // 링은 갱신 축만 (§5.4)
+  });
+
+  it('직전 학습일이 없으면 분모를 지어내지 않는다', () => {
+    const el = renderHomeDesktopV2(v3({ dayMap: {} }));
+    expect(el.querySelector('.vh-ring2 .pv')).toBeNull();
+  });
+
+  it('직전 학습일을 넘기면 코랄 링 + 직전 N회 취소선 + 확산 펄스', () => {
+    const el = renderHomeDesktopV2(v3({ tried: 41 }));
+    expect(el.querySelector('.vh-ring2 .pv').classList.contains('over')).toBe(true);
+    expect(el.querySelector('.vh-ring2 .pl')).not.toBeNull();
+    expect(el.querySelector('.vh-ring2 .arc').getAttribute('stroke')).toContain('58%'); // coral
+    expect(el.querySelector('.vh-ring2 .arc').getAttribute('stroke-dashoffset')).toBe('0');
+  });
+
+  it('날짜는 한국어 표기 (영문 날짜 금지)', () => {
+    const el = renderHomeDesktopV2(v3());
+    expect(el.querySelector('.vh-todayhd .d').textContent).toBe('8월 25일 화요일');
+    expect(el.textContent).not.toMatch(/August|Tuesday/);
+  });
+
+  it('"학습 시작" 버튼은 화면에 하나뿐이고, 문장 모아보기 진입이 있다', () => {
+    const el = renderHomeDesktopV2(v3());
+    const starts = [...el.querySelectorAll('.vh-cta')].filter((b) => b.textContent.includes('학습 시작'));
+    expect(starts).toHaveLength(1);
+    expect(el.textContent).toContain('문장 모아보기');
+  });
+
+  it('누적 4열 — 공부 시간은 시/분으로 쪼개 표기', () => {
+    const el = renderHomeDesktopV2(v3());
+    const cum = el.querySelector('.vh-cum');
+    expect(cum.children).toHaveLength(4);
+    expect(cum.children[0].textContent).toBe('누적 공부 시간42시간 10분');
+    expect(cum.children[1].textContent).toContain('1,120');
+  });
+
+  it('주 발화 4블록 — 최고 주는 코랄, 진행 중인 주는 직전 주 위치에 고스트 점', () => {
+    const el = renderHomeDesktopV2(v3());
+    const wks = el.querySelectorAll('.vh-wk');
+    expect(wks).toHaveLength(4);
+    expect(wks[3].classList.contains('now')).toBe(true);
+    expect(wks[3].querySelector('.tr > b')).not.toBeNull(); // 직전 주 고스트 점
+    expect(el.querySelector('.vh-wk.best .v').textContent).toContain('최고');
+  });
+});

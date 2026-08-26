@@ -39,13 +39,13 @@ const EN = 'Thank you so much for coming.';
 const KO = '와 주셔서 정말 감사합니다.';
 const CHUNKS = [['Thank you', '땡큐'], ['so much', '쏘 머치'], ['for coming', '포 커밍']];
 
-function mountCard({ interval, lang = 'en', sentence = EN, ko = KO, chunks = CHUNKS, size = 'desktop', demo = false, handlers = {} }) {
+function mountCard({ interval, lang = 'en', sentence = EN, ko = KO, chunks = CHUNKS, size = 'desktop', demo = false, handlers = {}, state: over = {} }) {
   document.body.innerHTML = '<div id="root"></div>';
   const host = document.getElementById('root');
   const explanation = { key: `${sentence} = ${ko}`, chunks };
   const s = { id: 'c1', lang, sentence, ko, explanation };
   const card = { id: 'c1', lang, sentence, meaning: ko, interval, explanation };
-  const state = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0, demo, micBlocked: false };
+  const state = { cards: [card], total: 1, step: 1, size, sentence: s, time: '00:00', recLog: {}, tried: 0, demo, micBlocked: false, ...over };
   renderSessionReviewV2(host, state, handlers);
   return host;
 }
@@ -87,10 +87,12 @@ describe('renderSessionReviewV2 — 회상 프롬프트 (한글만, 영어 숨�
     expect(mountCard({ interval: 1 }).querySelector('.vr-listen').disabled).toBe(true);
   });
 
-  it('힌트 사다리를 두지 않는다 — 안내문만', () => {
+  it('회상 안내 문장을 두지 않는다 — 지시는 카드 부제 한 줄뿐 (§7.1)', () => {
     const host = mountCard({ interval: 1 });
-    expect(host.querySelector('.vr-hint').textContent).toContain('떠올려');
+    expect(host.querySelector('.vr-hint')).toBeNull();
     expect(host.textContent).not.toContain('힌트');
+    expect(host.textContent).not.toContain('기억이 더 단단해져요');
+    expect(host.querySelector('.vr-ko').textContent).toContain('떠올려'); // 부제는 유지
   });
 });
 
@@ -332,32 +334,132 @@ describe('renderSessionReviewV2 — 시도 후 정답 공개 + 자기평가 판�
   });
 });
 
-/* '오늘 발화' 비교 위젯 — 직전 세션 기록 (2026-08-21).
- * state.prevRecord 를 대입하는 곳이 없어 `|| 27` 로 떨어져 있던 가짜 비교 숫자 제거. */
-describe('sessionReviewV2 — 오늘 발화 비교 (직전 세션 기록)', () => {
-  const build = (extra) => {
-    document.body.innerHTML = '<div id="root"></div>';
-    const host = document.getElementById('root');
-    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: `${EN} = ${KO}`, chunks: CHUNKS } };
-    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation: s.explanation };
-    renderSessionReviewV2(host, {
-      cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00',
-      recLog: {}, tried: 4, ...extra,
-    }, {});
-    return host.querySelector('.vr-rec');
-  };
-
-  it('직전 세션 기록이 없으면 비교 숫자를 지어내지 않는다', () => {
-    const rec = build({});
-    expect(rec.textContent).not.toMatch(/직전 세션 기록/);
-    expect(rec.textContent).not.toMatch(/27/);
-    expect(rec.querySelector('.msg').textContent).toBe('');
-    expect(rec.querySelector('.v-bar > i').style.width).toBe('0%');
+/* '오늘 발화' 링 — 분모는 직전 학습일 발화 수 (작업지시서 §1-1 · §7.4①).
+ * 복습 링은 캡션 문장 없이 갱신 상태(칩·+N·넘김)만 말한다. */
+describe('sessionReviewV2 — 오늘 발화 링 (직전 학습일 분모)', () => {
+  it('직전 학습일이 없으면 비교 숫자를 지어내지 않는다', () => {
+    const host = mountCard({ interval: 3, state: { tried: 4 } });
+    const rec = host.querySelector('.vs-rec');
+    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('');
+    expect(rec.querySelector('.vs-uring .n').textContent).toBe('4');
+    expect(rec.querySelector('.msg')).toBeNull(); // 복습 링엔 캡션 문장이 없다
   });
 
-  it('state.prevRecord 가 있으면 그 값으로 비교한다', () => {
-    const rec = build({ prevRecord: 12 });
-    expect(rec.textContent).toMatch(/직전 세션 기록 12회/);
-    expect(rec.querySelector('.msg').textContent).toMatch(/8회/);
+  it('state.prevDayUtter 가 있으면 그 값이 분모, 넘기면 갱신 칩 + 초과분', () => {
+    const host = mountCard({ interval: 3, state: { tried: 41, prevDayUtter: 34 } });
+    const rec = host.querySelector('.vs-rec');
+    expect(rec.querySelector('.vs-newrec').style.display).toBe('');
+    expect(rec.querySelector('.vs-uring .n').textContent).toBe('41+7');
+    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('직전 34 넘김');
+  });
+});
+
+/* 복습 세션 v3 — 기록/갱신 (작업지시서 §7 · QA §13 '복습 세션').
+ * 이 문장의 회차별 기록과 직전 복습 시도 수가 오늘의 분모가 된다. */
+describe('sessionReviewV2 v3 — 점수 원 · 문장별 캘린더 · 자기평가 날짜 줄', () => {
+  const SENT_LOG = { c1: { '2026-08-10': [72, 78], '2026-08-18': [81, 84, 88, 90, 91] } };
+
+  it('점수 열 — 오늘 시도 원 + 직전 복습 시도 수까지의 빈 슬롯, 라벨은 숫자뿐', () => {
+    const host = mountCard({ interval: 3, state: { sentLog: SENT_LOG } });
+    // 오늘 기록이 없으면 점수 원 0개 + 직전 연습일(8/18) 5회만큼 빈 슬롯
+    const dots = host.querySelectorAll('.vr-meta .v-dot');
+    expect(dots.length).toBeGreaterThan(0);
+    expect([...dots].every((d) => d.classList.contains('empty'))).toBe(true);
+    expect(host.querySelector('.vr-say').textContent).toBe('0 / 5'); // 직전 = 8/18 의 5회
+    expect(host.textContent).not.toContain('직전 5');                 // '직전' 라벨을 붙이지 않는다
+  });
+
+  it('직전 복습 기록이 없으면 빈 슬롯을 그리지 않는다 (횟수를 추정하지 않음)', () => {
+    const host = mountCard({ interval: 3 });
+    expect(host.querySelectorAll('.vr-meta .v-dot')).toHaveLength(0);
+    expect(host.querySelector('.vr-say').textContent).toBe('0회');
+  });
+
+  it('녹음하면 점수 원이 붙고 빈 슬롯이 하나 줄어든다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 3, demo: true, state: { sentLog: SENT_LOG } });
+      expect(host.querySelectorAll('.vr-meta .v-dot.empty')).toHaveLength(5);
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelectorAll('.vr-meta .v-dot')).toHaveLength(5);
+      expect(host.querySelectorAll('.vr-meta .v-dot.empty')).toHaveLength(4);
+      expect(host.querySelector('.vr-say').textContent).toBe('1 / 5');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('지난 점수엔 취소선 — 링의 새 점수가 대체했음을 색으로 말한다', () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, lastScore: 81, reviewCount: 2, explanation };
+    renderSessionReviewV2(host, {
+      cards: [card], total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0,
+      sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation },
+    }, {});
+    const old = host.querySelector('.vr-srs b.old');
+    expect(old.textContent).toBe('81');
+    expect(host.querySelector('.vr-srs').textContent).toContain('3번째');
+    expect(host.textContent).not.toContain('통과 시 다음 복습'); // 날짜 줄로 이동 (§4.3)
+    expect(host.querySelector('.vr-cap').textContent).toBe('방금 점수');
+  });
+
+  it('문장별 캘린더 — 셰브론 월 이동, 다음 달 비활성, 셀 안 숫자·회차 요약 없음', () => {
+    const host = mountCard({ interval: 3, state: { sentLog: SENT_LOG } });
+    const cal = host.querySelector('.vr-scal');
+    expect(cal.querySelector('.lb').textContent).toBe('이 문장 연습 이력');
+    const [prev, next] = cal.querySelectorAll('.mh button');
+    expect(next.disabled).toBe(true);   // 미래 월 금지
+    expect(prev.disabled).toBe(false);
+    const label = cal.querySelector('.ml').textContent;
+    prev.click();
+    expect(cal.querySelector('.ml').textContent).not.toBe(label);
+    expect(next.disabled).toBe(false);
+    for (const c of cal.querySelectorAll('.v-cal .cd')) expect(c.textContent).toMatch(/^\d{1,2}$/);
+    expect(host.textContent).not.toContain('←'); // 텍스트 화살표 금지
+  });
+
+  it('한글 발음은 공개 후에만 붙는다 (정답 유출 방지)', () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS };
+    renderSessionReviewV2(host, {
+      cards: [{ id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation }],
+      total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0, demo: true,
+      sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, pron: '땡큐 쏘 머치', explanation },
+    }, {});
+    expect(host.querySelector('.vr-pron').style.display).toBe('none');
+    host.querySelector('.vr-fold .hd').click(); // 해설 펼침 = 정답 공개
+    expect(host.querySelector('.vr-pron').style.display).not.toBe('none');
+    expect(host.querySelector('.vr-pron').textContent).toBe('땡큐 쏘 머치');
+  });
+
+  it('자기평가 아래 다음 복습일 3개 — 버튼 순서와 1:1', () => {
+    const host = mountCard({ interval: 3 });
+    const days = [...host.querySelectorAll('.vr-nextdays span')].map((n) => n.textContent);
+    expect(days).toHaveLength(3);
+    const kinds = [...host.querySelectorAll('.judge-btn')].map((b) => b.dataset.kind);
+    expect(kinds).toEqual(['got', 'hmm', 'no']);
+    expect(days[2]).toBe('내일');    // 어려움 → interval 1
+    expect(days[1]).toBe('5일 뒤');  // 보통 → ceil((3+7)/2)
+    expect(days[0]).toBe('7일 뒤');  // 쉬움 → 다음 간격 7
+  });
+
+  it('사이드바는 링 / 문장 이력 / 해설(평가) 3카드', () => {
+    const host = mountCard({ interval: 3 });
+    expect([...host.querySelector('.vr-side').children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['vs-rec', 'vr-scal', 'vr-fold']);
+  });
+});
+
+/* 듣기(좌)/녹음(우) 순서는 신규 세션과 같아야 한다 (§6.4-4 · §7.2 · QA §13).
+ * 2026-08-26 — 복습만 녹음이 먼저였다. 같은 손동작이 화면마다 달라지면 근육기억이 깨진다. */
+describe('sessionReviewV2 — 듣기/녹음 버튼 순서', () => {
+  it('컨트롤 줄의 첫 버튼이 듣기, 다음이 녹음이다', () => {
+    const host = mountCard({ interval: 3 });
+    const btns = [...host.querySelectorAll('.vr-ctrl button')];
+    expect(btns[0].classList.contains('vr-listen')).toBe(true);
+    expect(btns[1].classList.contains('pri')).toBe(true);
+    expect(btns[1].textContent).toContain('떠올려 말하기');
   });
 });

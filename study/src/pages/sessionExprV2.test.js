@@ -151,12 +151,16 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     expect(params.result).toEqual({ score: 92, weakPhonemes: ['ð'] });
     expect(typeof params.date).toBe('string');
 
-    // 리빌 DOM — 점수 링 92 · PASS 칩 · 발화 dot 1 · 게이트 진행
+    // 리빌 DOM — 점수 링 92 · 발화 점수 원 1개 · 총 1회 (점·콤보·PASS 칩은 폐기 §6.1)
     expect(host.querySelector('.vs-ring .cn').textContent).toBe('92');
     expect(host.querySelector('.vs-ring').classList.contains('score-pop')).toBe(true); // 점수 등장 애니
-    expect(host.querySelector('.vs-pass').style.display).not.toBe('none');
-    expect(host.querySelectorAll('.vs-say .d i.f').length).toBe(1);
-    expect(host.querySelector('.vs-combo').textContent).toContain('×1');
+    const dots = host.querySelectorAll('.vs-meta .v-dot');
+    expect(dots).toHaveLength(1);
+    expect(dots[0].textContent).toBe('92');
+    expect(dots[0].classList.contains('fresh')).toBe(true);   // 최신 시도 강조
+    expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 1회');
+    expect(host.querySelector('.vs-pass')).toBeNull();
+    expect(host.querySelector('.vs-combo')).toBeNull();
   });
 
   it('녹음 3회 → 게이트 해제(다음 표현 unlock) · 콤보×3', async () => {
@@ -170,7 +174,9 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     expect(state.recLog.e1.count).toBe(3);
     expect(state.combo).toBe(3);
     expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(true);
-    expect(host.querySelector('.vs-gate').classList.contains('ok')).toBe(true);
+    // 게이트는 캡션이 아니라 버튼 활성/비활성으로만 표현한다 (§4.3)
+    expect(host.textContent).not.toContain('발화 3회 완료');
+    expect(host.textContent).not.toMatch(/회를 채우면 열려요/);
   });
 
   it('녹음 실패(mockFallback) → state 미변경 · DB write 없음 · 토스트', async () => {
@@ -217,10 +223,9 @@ describe('sessionExprV2 — 생산 연습(한→영) 블록', () => {
       rec(0).click(); vi.advanceTimersByTime(900);
       expect(block.textContent).toContain("It's more than a job.");  // 정답 공개
       expect(play(0).disabled).toBe(false);
-      expect(block.textContent).toContain('연속 ✓ 1');
+      expect(block.textContent).toContain('통과 1 / 2');
       rec(1).click(); vi.advanceTimersByTime(900);
-      expect(block.textContent).toContain('연속 ✓ 2');
-      expect(block.textContent).toContain('생산 완주');
+      expect(block.textContent).toContain('통과 2 / 2');
     } finally { vi.useRealTimers(); }
   });
 
@@ -338,7 +343,6 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     for (let k = 0; k < 3; k++) { recBtn.click(); await tick(); recBtn.click(); await tick(); await tick(); }
     expect(state.recLog.e1.count).toBe(3);
     expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(true);
-    expect(host.querySelector('.vs-gate').classList.contains('ok')).toBe(true);
   });
 
   it('같은 drill 재녹음 → tried 누적(+1)하되 녹음 N/M 카운터는 중복 안 셈', async () => {
@@ -437,7 +441,7 @@ describe('sessionExprV2 — 생산 연습 발음 하한', () => {
     const row = prodRow(host, 0);
     expect(row.textContent).not.toContain('more than a job');       // 정답 미공개
     expect(row.querySelector('.vs-gscore').style.display).toBe('none'); // 통과 마크 없음
-    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('연속 ✓ 0');
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('통과 0 / 2');
   });
 
   it('정확도 80 + 커버리지 통과 → 통과·정답 공개', async () => {
@@ -447,7 +451,7 @@ describe('sessionExprV2 — 생산 연습 발음 하한', () => {
     const row = prodRow(host, 0);
     expect(row.textContent).toContain('more than a job');
     expect(row.querySelector('.vs-gscore').style.display).not.toBe('none');
-    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('연속 ✓ 1');
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('통과 1 / 2');
   });
 
   it('하한 미달도 실패 1회로 누적 — 3회면 정답 공개(기존 흐름 유지)', async () => {
@@ -499,40 +503,62 @@ describe('sessionExprV2 — 생산 연습 정답 보기 버튼', () => {
     expect(row.querySelector('.vs-gscore').style.display).toBe('none');   // 통과 마크 없음
     expect(row.querySelector('button[aria-label="듣기"]').disabled).toBe(false);
     expect(row.querySelector('button[aria-label="녹음"]').disabled).toBe(true);
-    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('연속 ✓ 0');
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('통과 0 / 2');
     expect(give.style.display).toBe('none');                              // 공개 후 버튼 숨김
   });
 });
 
-/* '오늘 발화' 비교 위젯 — 직전 세션 기록 (2026-08-21).
- * 종전엔 state.prevRecord 를 아무도 대입하지 않아 `|| 27` 로 떨어져
- * 화면이 항상 "직전 세션 기록 27회" 라는 없는 숫자를 보여줬다. */
-describe('sessionExprV2 — 오늘 발화 비교 (직전 세션 기록)', () => {
+/* '오늘 발화' 링 — 분모는 고정 목표도 직전 '세션'도 아닌 **직전 학습일 발화 수** (작업지시서 §1-1 · §6.6①).
+ * 직전 학습일이 없으면 아무 숫자도 주장하지 않는다. */
+describe('sessionExprV2 — 오늘 발화 링 (직전 학습일 분모)', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
 
-  it('직전 세션 기록이 없으면 비교 숫자를 지어내지 않는다', () => {
+  it('직전 학습일이 없으면 비교 숫자를 지어내지 않는다', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
-    const st = makeState(); // prevRecord 미설정
+    const st = makeState(); // prevDayUtter 미설정
     st.tried = 4;
     renderSessionExprV2(host, st, {});
     const rec = host.querySelector('.vs-rec');
-    expect(rec.textContent).not.toMatch(/직전 세션 기록/);
-    expect(rec.textContent).not.toMatch(/27/);
+    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('');
     expect(rec.querySelector('.msg').textContent).toBe('');
-    expect(rec.querySelector('.v-bar > i').style.width).toBe('0%');
+    expect(rec.querySelector('.vs-uring .n').textContent).toBe('4');
   });
 
-  it('state.prevRecord 가 있으면 그 값으로 비교한다', () => {
+  it('state.prevDayUtter 가 있으면 그 값이 분모 — 남은 회수를 캡션에 쓴다', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     const st = makeState();
-    st.prevRecord = 12;
+    st.prevDayUtter = 12;
     st.tried = 4;
     renderSessionExprV2(host, st, {});
     const rec = host.querySelector('.vs-rec');
-    expect(rec.textContent).toMatch(/직전 세션 기록 12회/);
+    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('직전 12회');
     expect(rec.querySelector('.msg').textContent).toMatch(/8회/); // 12 - 4
+    expect(rec.querySelector('.vs-newrec').style.display).toBe('none');
+  });
+
+  it('직전 학습일을 넘기면 코랄 링 + 기록 갱신 칩 + 초과분(+N) (§6.8)', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const st = makeState();
+    st.prevDayUtter = 34; st.tried = 41;
+    renderSessionExprV2(host, st, {});
+    const rec = host.querySelector('.vs-rec');
+    expect(rec.querySelector('.vs-newrec').style.display).toBe('');
+    expect(rec.querySelector('.vs-uring .n').textContent).toBe('41+7');
+    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('직전 34 넘김');
+    expect(rec.querySelector('.vs-uring .pl').style.display).toBe(''); // 확산 펄스
+    expect(rec.querySelector('.msg').textContent).toBe('');            // 이미 넘겼으면 재촉 안 함
+  });
+
+  it('오늘 발화 = 이번 세션 이전 누적 + 이번 세션 (하루 두 번째 세션)', () => {
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const st = makeState();
+    st.todayUtterBase = 20; st.prevDayUtter = 34; st.tried = 5;
+    renderSessionExprV2(host, st, {});
+    expect(host.querySelector('.vs-uring .n').textContent).toBe('25');
   });
 });
 
@@ -571,7 +597,7 @@ describe('sessionExprV2 — 연습 진행 영속화 (state.exLog)', () => {
     const rec = drillRecBtns(host)[1];
     rec.click(); await tick();
     rec.click(); await tick(); await tick();
-    expect(state.exLog.e1.drills).toEqual({ 1: 92 });
+    expect(state.exLog.e1.drills).toEqual({ 1: [92] }); // 시도마다 누적 → 점수 원이 늘어난다
     expect(saveSnapshot).toHaveBeenCalled();
   });
 
@@ -629,5 +655,118 @@ describe('sessionExprV2 — 연습 진행 영속화 (state.exLog)', () => {
     expect(rows[0].querySelector('.vs-gscore').style.display).toBe('');   // 1단계 통과 표시
     expect(rows[0].querySelector('button[aria-label="녹음"]').disabled).toBe(true);
     expect(rows[1].querySelector('button[aria-label="녹음"]').disabled).toBe(false); // 2단계가 현재
+  });
+});
+
+/* 신규 세션 v3 — 기록/갱신 (작업지시서 §6 · QA §13 '신규 세션').
+ * 갱신 축 셋: 문장 안 점수 상승(점수 원) · 오늘 발화가 직전 학습일을 넘김(링) · 오늘 칸이 진해짐(캘린더). */
+describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  const withEx = () => {
+    const st = makeState();
+    st.sentence.explanation = {
+      key: 'Is that a promise? = 약속하는 거예요?',
+      situation: '약속을 확인할 때',
+      mistake: 'promise 의 o 는 짧게',
+      drills: [],
+    };
+    return st;
+  };
+
+  it('사이드바가 링 / 공부 이력 / 해설 / 다음 표현 4카드로 분리된다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, withEx(), {});
+    const side = host.querySelector('.vs-side');
+    expect([...side.children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['vs-rec', 'vs-hist', 'vs-panel', 'vs-next']);
+  });
+
+  it('해설은 접힌 채 시작하고(정의 박스만), 펼치면 상황 → 실수 순서로 나온다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, withEx(), {});
+    const panel = host.querySelector('.vs-side .vs-panel');
+    const secs = panel.querySelector('.vs-secs');
+    expect(panel.querySelector('.vs-kbox')).not.toBeNull(); // 접힘 상태에도 정의는 보인다
+    expect(secs.style.display).toBe('none');
+    panel.querySelector('.ph2d').click();
+    expect(secs.style.display).not.toBe('none');
+    expect([...secs.querySelectorAll('.vs-klab')].map((n) => n.textContent))
+      .toEqual(['이런 상황에서 써요', '한국인 실수']); // 데이터 없는 섹션은 렌더 안 함
+  });
+
+  it('공부 이력 캘린더는 4주 28칸이고 셀 안에 발화 수 숫자가 없다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState();
+    st.dayMap = { '2026-08-20': 31 };
+    renderSessionExprV2(host, st, {});
+    const cells = host.querySelectorAll('.vs-hist .v-cal .cd');
+    expect(cells).toHaveLength(28);
+    for (const c of cells) expect(c.textContent).toMatch(/^\d{1,2}$/); // 날짜만
+  });
+
+  it('점수 원은 최근 5개만 보이고 총 N회는 전체 발화 수다', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    renderSessionExprV2(host, state, {});
+    for (let i = 0; i < 6; i++) {
+      host.querySelector('.vs-pill.pri').click(); await tick();
+      host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    }
+    expect(host.querySelectorAll('.vs-meta .v-dot')).toHaveLength(5);
+    expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 6회');
+    expect(host.textContent).not.toContain('최근 5'); // 설명 텍스트 금지
+  });
+
+  it('섹션 라벨은 꼬리 없이 응용 연습 / 체이닝 / 생산 연습 뿐이다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeStateWithDrills();
+    st.sentence.explanation.chain = { target: 'a b c d e f', chunks: ['a b', 'c d', 'e f'], ko: '가나다' };
+    renderSessionExprV2(host, st, {});
+    expect([...host.querySelectorAll('.vs-main .vs-lab')].map((n) => n.textContent))
+      .toEqual(['응용 연습', '생산 연습', '체이닝']);
+    expect(host.textContent).not.toContain('듣고, 따라 말하고');
+    expect(host.textContent).not.toContain('자막 없이');
+    expect(host.textContent).not.toContain('한글만 보고');
+  });
+
+  it('체이닝 행에 설명 줄이 없고, 통과하면 체크 원이 뜬다 (통과 ✓ 텍스트 아님)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const st = makeState();
+      st.demo = true;
+      st.sentence.explanation.chain = { target: 'a b c d e f', chunks: ['a b', 'c d', 'e f'], ko: '가나다' };
+      renderSessionExprV2(host, st, {});
+      expect(host.querySelector('.vs-chain').textContent).not.toContain('앞 단계에 이어');
+      expect(host.querySelector('.vs-chain .ct').textContent).toBe('통과 0 / 3');
+      host.querySelectorAll('.vs-chain .vs-drow')[0].querySelector('button[aria-label="녹음"]').click();
+      vi.advanceTimersByTime(900);
+      const mark = host.querySelectorAll('.vs-chain .vs-drow')[0].querySelector('.vs-gscore');
+      expect(mark.style.display).not.toBe('none');
+      expect(mark.querySelector('.v-dot.pass')).not.toBeNull();
+      expect(mark.textContent).toBe('');                                // '통과 ✓' 텍스트 금지
+      expect(host.querySelector('.vs-chain .ct').textContent).toBe('통과 1 / 3');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('드릴 행 점수는 시도마다 원이 하나씩 늘어난다', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const row = host.querySelector('.vs-drills-list .vs-drow');
+    const rec = row.querySelector('button[aria-label="녹음"]');
+    rec.click(); await tick(); rec.click(); await tick(); await tick();
+    expect(row.querySelectorAll('.vs-gscore .v-dot')).toHaveLength(1);
+    rec.click(); await tick(); rec.click(); await tick(); await tick();
+    expect(row.querySelectorAll('.vs-gscore .v-dot')).toHaveLength(2);
+  });
+
+  it('밑줄은 그라디언트 언더레이 — text-decoration 을 쓰지 않는다 (구절이 끊긴다)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    const css = host.querySelector('style').textContent;
+    expect(css).toContain('.vs-h1 b{font-weight:700;background:linear-gradient(');
+    expect(css).not.toContain('text-decoration:underline');
   });
 });

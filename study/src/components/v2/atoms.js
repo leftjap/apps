@@ -40,8 +40,10 @@ export const V_KEYS = `
   .v-eq i,.v-draw,.v-bar > i,.v-bar > i::after{animation:none!important}
   .v-bar > i{width:var(--w,100%)}
   /* 루프(infinite) 데코 애니는 1회만 — breathe/flicker/pulse/halo/sheen/blink/lineprog 등 무한 반복 차단.
-     v-settle/v-grow/v-draw 등 1회 안착(both)은 count 1 유지로 무영향. */
-  .vh *,.vd *,.vs *{animation-iteration-count:1!important}
+     v-settle/v-grow/v-draw 등 1회 안착(both)은 count 1 유지로 무영향.
+     2026-08-26 — .vr(복습) 이 목록에서 빠져 있었다. 복습 화면에 오늘 칸 펄스·링 확산이 붙으면서
+     같은 정책을 받아야 하므로 추가. */
+  .vh *,.vd *,.vs *,.vr *{animation-iteration-count:1!important}
 }
 `;
 
@@ -140,4 +142,130 @@ export function v2Style(css) {
   const style = document.createElement('style');
   style.textContent = V_KEYS + css;
   return style;
+}
+
+/* ────────── 기록/갱신 v3 공용 (작업지시서 §4.1 점수 원 · §4.2 캘린더) ──────────
+ * 세 화면(홈·신규·복습)이 같은 어휘를 쓰도록 여기 모은다.
+ * keyframe·색 토큰은 새로 만들지 않는다 — 아래 CSS 는 V_VARS·V_KEYS 와 stats.js 의 기존 규칙만 조합.
+ */
+
+/* 점수 3단 색 — 정본은 stats.js scoreCls (75/60 경계). 세션 화면이 stats 를 import 하지 않으므로 동일 규칙을 여기 둔다. */
+export function scoreClass(score) { return score >= 75 ? 'good' : score >= 60 ? 'mid' : 'low'; }
+
+/* 점수 원 / 통과 체크 원 / 빈 슬롯 원 — 작업지시서 §4.1 표. */
+export const V_DOT_CSS = `
+.v-dots{display:inline-flex;align-items:center;gap:5px;flex-wrap:wrap}
+.v-dot{display:inline-grid;place-items:center;border-radius:50%;font-family:Outfit;font-weight:700;flex:0 0 auto;box-sizing:border-box;line-height:1}
+.v-dot.good{background:oklch(44% .062 192/.14);color:oklch(30% .055 192);box-shadow:inset 0 0 0 1.5px var(--teal-line)}
+.v-dot.mid{background:var(--gold-soft);color:var(--gold-deep);box-shadow:inset 0 0 0 1.5px oklch(70% .105 82/.35)}
+.v-dot.low{background:var(--coral-soft);color:var(--coral-deep);box-shadow:inset 0 0 0 1.5px oklch(58% .115 32/.35)}
+.v-dot.fresh{background:var(--teal);color:#fff;box-shadow:none;animation:v-settle .5s both}
+.v-dot.pass{background:var(--teal);color:#fff;box-shadow:none}
+.v-dot.empty{background:transparent;box-shadow:inset 0 0 0 1.5px #d8d2c2}
+`;
+
+const dotFont = (size) => (size >= 30 ? '11.5px' : '10.5px');
+
+function dotEl(cls, size) {
+  const el = document.createElement('span');
+  el.className = 'v-dot ' + cls;
+  el.style.cssText = `width:${size}px;height:${size}px;font-size:${dotFont(size)}`;
+  return el;
+}
+
+/* 점수 원. fresh=방금 시도(틸 채움 + v-settle). */
+export function scoreDot(score, { size = 30, fresh = false } = {}) {
+  const el = dotEl(fresh ? 'fresh' : scoreClass(score), size);
+  el.textContent = String(Math.round(score));
+  return el;
+}
+
+/* 통과 표시(점수 없는 항목) — 틸 채움 + 흰 체크. '통과 ✓' 텍스트를 쓰지 않는다. */
+export function passDot({ size = 26 } = {}) {
+  const el = dotEl('pass', size);
+  el.appendChild(vCheck({ size: Math.round(size * 0.5) }));
+  return el;
+}
+
+/* 빈 슬롯 — 목표까지 남은 자리. */
+export function emptyDot({ size = 30 } = {}) {
+  return dotEl('empty', size);
+}
+
+/* 사이드바 미니 캘린더 (신규 §6.6② 4주 · 복습 §7.4② 월간) — 숫자 없이 농도 3단.
+ * vt2-today 는 stats.js:51 이 정본 — 페이지별 <style> 주입 구조라 여기서도 같은 값으로 선언한다. */
+export const V_MINICAL_CSS = `
+.v-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:12px}
+.v-cal .dw{font-family:Outfit;font-size:9px;font-weight:600;color:#b8b1a0;text-align:center;padding-bottom:3px}
+.v-cal .cd{aspect-ratio:1.1;border-radius:8px;display:grid;place-items:center;font-family:Outfit;font-size:9.5px;color:#b8b1a0}
+.v-cal .cd.t1{background:oklch(44% .062 192/.09);color:var(--mut);font-weight:600}
+.v-cal .cd.t2{background:oklch(44% .062 192/.17);color:oklch(30% .055 192);font-weight:600}
+.v-cal .cd.t3{background:oklch(44% .062 192/.26);color:oklch(30% .055 192);font-weight:700}
+.v-cal .cd.pr{background:var(--coral);color:#fff;font-weight:700;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4)}
+.v-cal .cd.today{animation:vt2-today 2.4s 1s ease-in-out infinite;color:var(--coral-deep);font-weight:700}
+.v-cal .cd.fut{color:#d8d2c2}
+@keyframes vt2-today{0%,100%{outline:2.2px solid var(--coral);outline-offset:2px}50%{outline:2.2px solid oklch(58% .115 32/.3);outline-offset:5px}}
+`;
+
+export const DOW_KO = ['월', '화', '수', '목', '금', '토', '일'];
+
+/* 사이드바 캘린더 농도 3단.
+ * 기본은 문장 단위 시도 수(1~5회 규모)에 맞춘 절대 구간 — 복습 화면의 '이 문장 연습 이력'용.
+ * 하루 발화 수(20~50회 규모)처럼 스케일이 다른 데이터는 makeMiniTier 로 분포에서 구간을 잡는다.
+ */
+export function miniTier(v) { if (!v) return 0; if (v < 2) return 1; if (v < 4) return 2; return 3; }
+
+/* 값 분포(삼분위)로 3단 구간을 잡는 tier 함수 생성 — 사람마다 하루 발화량이 달라 절대 구간은 계조가 죽는다. */
+export function makeMiniTier(values) {
+  const vals = (values || []).filter((v) => v > 0).sort((a, b) => a - b);
+  if (!vals.length) return miniTier;
+  const q = (pct) => vals[Math.min(vals.length - 1, Math.floor(vals.length * pct))];
+  const q1 = q(1 / 3), q2 = q(2 / 3);
+  return (v) => (!v ? 0 : v <= q1 ? 1 : v <= q2 ? 2 : 3);
+}
+
+/* ISO 날짜 유틸 — 세 화면 공통 (UTC 고정: 기존 home.js·pr.js 관례). */
+export function isoShift(iso, days) {
+  const d = new Date(iso + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+/* 월요일 시작 요일 인덱스 (stats.js firstDow 와 동일 식). */
+export function mondayIndex(iso) { return (new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7; }
+/* 그 주 월요일. */
+export function mondayOf(iso) { return isoShift(iso, -mondayIndex(iso)); }
+
+/* 사이드바 미니 캘린더 그리드 — 요일 헤더 + 앞 공백 + 날짜 칸.
+ *   dates    : 표시할 ISO 날짜 배열 (연속, 월요일 시작 정렬)
+ *   countOf  : (iso) => 그날 값 (0 = 미학습)
+ *   todayISO : 오늘
+ *   lead     : 1일 앞 빈 칸 수 (월간 캘린더용)
+ *   prDays   : 코랄로 칠할 날짜 Set (없으면 생략)
+ *   tierOf   : 값 → 농도 1~3 (기본 miniTier · 스케일이 다르면 makeMiniTier)
+ */
+export function miniCalGrid(dates, { countOf, todayISO, lead = 0, prDays, tierOf = miniTier } = {}) {
+  const grid = document.createElement('div');
+  grid.className = 'v-cal';
+  for (const w of DOW_KO) {
+    const el = document.createElement('span');
+    el.className = 'dw'; el.textContent = w;
+    grid.appendChild(el);
+  }
+  for (let i = 0; i < lead; i++) grid.appendChild(document.createElement('span'));
+  for (const iso of dates) {
+    const cell = document.createElement('span');
+    const future = iso > todayISO;
+    const v = future ? 0 : Number(countOf?.(iso)) || 0;
+    const cls = ['cd'];
+    if (future) cls.push('fut');
+    else if (prDays?.has(iso) && v > 0) cls.push('pr');
+    else if (v > 0) cls.push('t' + tierOf(v));
+    if (iso === todayISO) cls.push('today');
+    cell.className = cls.join(' ');
+    const num = document.createElement('span');
+    num.textContent = String(+iso.slice(8, 10));
+    cell.appendChild(num);
+    grid.appendChild(cell);
+  }
+  return grid;
 }

@@ -22,7 +22,7 @@ import { localISODate } from '../utils/today.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
-import { fetchPrevSession } from '../services/sessionStats.js';
+import { fetchDayUtterMap, prevStudyDayUtterance } from '../services/sessionStats.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
@@ -240,11 +240,15 @@ export function mountSessionNew(host) {
   Promise.all([
     loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
     loadActiveSession(window.studyDB),
-    fetchPrevSession(window.studyDB, getStoredLang(), 'new'),
+    fetchDayUtterMap(window.studyDB, getStoredLang()),
   ])
-    .then(async ([cards, snapshot, prevSession]) => {
-      // '오늘 발화' 비교 기준 = 직전 동일 모드 세션의 발화 수. 없으면 0 → 비교 UI 미표시.
-      state.prevRecord = Number(prevSession?.utteranceCount) || 0;
+    .then(async ([cards, snapshot, dayMap]) => {
+      // '오늘 발화' 링의 분모 = 직전 학습일 발화 수 (고정 목표도, 직전 '세션'도 아니다 — 기록/갱신 §1-1).
+      // dayMap 은 공부 이력 4주 캘린더도 함께 쓴다. 이번 세션 로그는 finish() 후에 쌓이므로
+      // todayUtterBase 는 '이번 세션 이전' 오늘 누적이다.
+      state.dayMap = dayMap;
+      state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
+      state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
       // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
       // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
       if (cards.length === 0) {

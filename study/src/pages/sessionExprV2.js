@@ -6,7 +6,8 @@
  * 시각만 v2 로 교체. 데모(?demo=1&view=session)는 마이크 없이 정적 렌더로 검증.
  */
 import { h } from '../components/d1/dom.js';
-import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
+import { V_VARS, VI, vIcon, vEq, vCheck, v2Style, ensureV2Fonts,
+  V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
@@ -48,11 +49,12 @@ export const VS_CSS = `
 .vs-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
 .vs-prog i.f{background:var(--teal)}
 .vs-prog-t{font-family:Outfit;font-size:12px;color:var(--faint);font-weight:600;white-space:nowrap}
-.vs-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:36px 44px;margin-top:20px;
+.vs-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px 40px 30px;margin-top:18px;
   box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
-.vs-h1{font-family:Outfit;font-size:48px;font-weight:700;letter-spacing:-0.03em;line-height:1.12}
-.vs-h1 b{font-weight:700;text-decoration:underline;text-decoration-color:oklch(44% .062 192/.35);text-decoration-thickness:5px;text-underline-offset:7px}
-.vs-ko{font-size:17.5px;color:var(--mut);margin-top:13px}
+.vs-h1{font-family:Outfit;font-size:42px;font-weight:700;letter-spacing:-0.03em;line-height:1.12}
+/* 밑줄은 그라디언트 언더레이 — text-decoration 은 단어 사이가 끊긴다 (§4.4). */
+.vs-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 5px no-repeat;padding-bottom:6px}
+.vs-ko{font-size:17px;color:var(--mut);margin-top:12px}
 .vs-pron{font-size:13px;color:var(--faint);margin-top:5px}
 .vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:26px;min-height:56px;flex-wrap:wrap}
 .vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
@@ -62,26 +64,22 @@ export const VS_CSS = `
 .vs-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vs-ring{position:relative;width:52px;height:52px;flex:0 0 auto}
+.vs-ring{position:relative;width:54px;height:54px;flex:0 0 auto}
 .vs-ring svg{transform:rotate(-90deg)}
-.vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
+.vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vs-cap{font-size:11.5px;color:var(--faint);white-space:nowrap}
-.vs-pass{display:inline-flex;align-items:center;gap:6px;background:var(--coral-soft);color:var(--coral-deep);border-radius:999px;padding:6px 14px;font-size:12.5px;font-weight:800;letter-spacing:.04em;white-space:nowrap;animation:v-settle .5s both}
-.vs-meta{display:flex;align-items:center;gap:20px;margin-top:16px;min-height:24px;flex-wrap:wrap}
-.vs-say{display:inline-flex;align-items:center;gap:9px;font-size:12.5px;color:var(--mut);font-weight:600;white-space:nowrap}
-.vs-say .d{display:inline-flex;gap:5px}
-.vs-say .d i{width:8px;height:8px;border-radius:50%;background:#ddd9c9}
-.vs-say .d i.f{background:var(--teal)}
-.vs-combo{display:inline-flex;align-items:center;gap:6px;font-family:Outfit;font-size:12px;font-weight:700;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:5px 12px;white-space:nowrap}
+.vs-meta{display:flex;align-items:center;gap:12px;margin-top:22px;min-height:30px;flex-wrap:wrap;color:var(--faint)}
+.vs-meta .tot{font-family:Outfit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;margin-left:auto}
+.vs-meta .tot b{color:var(--ink)}
 .vs-labrow{display:flex;align-items:baseline;justify-content:space-between;margin-top:26px}
 .vs-lab{font-family:Outfit;font-size:10.5px;letter-spacing:.15em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
 .vs-labrow .ct{font-family:Outfit;font-size:11.5px;color:var(--mut);font-weight:600;white-space:nowrap}
 .vs-labrow .ct b{color:var(--teal-deep)}
-.vs-drow{display:flex;align-items:center;gap:14px;padding:14px 2px;border-bottom:1px solid var(--line)}
+.vs-drow{display:flex;align-items:center;gap:14px;padding:13px 2px;border-bottom:1px solid var(--line)}
 .vs-drow:last-of-type{border-bottom:0}
 .vs-drow .ix{font-family:Outfit;font-size:11px;color:var(--faint);width:16px;flex:0 0 auto;text-align:right}
 .vs-drow .en{font-size:15.5px;font-weight:700;letter-spacing:-0.01em}
-.vs-drow .en b{font-weight:800;text-decoration:underline;text-decoration-color:oklch(44% .062 192/.3);text-decoration-thickness:2.5px;text-underline-offset:3px}
+.vs-drow .en b{font-weight:800;background:linear-gradient(oklch(44% .062 192/.3),oklch(44% .062 192/.3)) 0 100%/100% 2.5px no-repeat;padding-bottom:2px}
 .vs-drow .sub{font-size:12px;color:var(--faint);margin-top:3px}
 .vs-drow .grow{flex:1}
 .vs-drow.recing{background:var(--coral-soft);margin:0 -14px;padding-left:16px;padding-right:14px;border-radius:12px;border-bottom-color:transparent}
@@ -90,60 +88,144 @@ export const VS_CSS = `
 .vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
 .vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vs-gscore{font-family:Outfit;font-size:13px;font-weight:700;color:var(--teal-deep);white-space:nowrap}
+.vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-side{width:324px;flex:0 0 auto}
-.vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px 20px;margin-bottom:13px}
+.vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
 .vs-rec .hd{display:flex;justify-content:space-between;align-items:center;min-height:21px}
 .vs-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
-.vs-rec .nr{display:flex;align-items:baseline;gap:7px;margin-top:7px}
-.vs-rec .n{font-family:Outfit;font-size:27px;font-weight:700;line-height:1;color:var(--ink)}
-.vs-rec .u{font-size:12px;color:var(--faint);font-weight:600;white-space:nowrap}
-.vs-rec .v-bar{height:5px;margin-top:10px}
-.vs-rec .v-bar > i{background:var(--teal)}
-.vs-rec .msg{font-size:11.5px;color:var(--mut);margin-top:9px;line-height:1.5}
+.vs-rec .msg{font-size:11.5px;color:var(--mut);margin-top:9px;line-height:1.5;text-align:center}
 .vs-rec .msg b{color:var(--coral-deep)}
-.vs-newrec{display:inline-flex;align-items:center;gap:5px;font-family:Outfit;font-size:11px;font-weight:800;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:4px 11px;white-space:nowrap;animation:v-settle .5s both}
-.vs-panel{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px}
-.vs-panel .ph2d{display:flex;justify-content:space-between;align-items:center;padding:18px 24px 0}
+.vs-newrec{display:inline-flex;align-items:center;gap:5px;font-family:Outfit;font-size:10.5px;font-weight:800;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:4px 10px;white-space:nowrap;animation:v-settle .5s both}
+.vs-uring{position:relative;margin:12px auto 0}
+.vs-uring svg{transform:rotate(-90deg)}
+.vs-uring .arc{transition:stroke-dashoffset .6s cubic-bezier(.3,.7,.3,1),stroke .3s}
+.vs-uring .pl{position:absolute;inset:8px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-uring .cn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.vs-uring .n{font-family:Outfit;font-size:36px;font-weight:700;line-height:1;color:var(--ink)}
+.vs-uring .n em{font-style:normal;font-family:Outfit;font-size:14px;font-weight:700;color:var(--coral-deep);margin-left:5px}
+.vs-uring .pv{font-family:Outfit;font-size:11.5px;font-weight:700;color:var(--teal-deep);margin-top:7px;white-space:nowrap}
+.vs-uring .pv.over{color:var(--coral-deep)}
+.vs-hist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 20px;margin-top:13px}
+.vs-hist .lb{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
+.vs-panel{position:relative;background:var(--card);border:1px solid var(--line);border-radius:16px;margin-top:13px}
+.vs-panel .ph2d{display:flex;justify-content:space-between;align-items:center;padding:18px 24px 0;cursor:pointer}
+.vs-panel .chev{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--mut);transition:transform .2s;flex:0 0 auto}
+.vs-panel.open .chev{transform:rotate(180deg)}
 .vs-klab{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
 .vs-panel .inner{padding:14px 24px 30px;max-height:584px;overflow-y:auto}
-.vs-kbox{background:var(--teal-soft);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.65}
+.vs-kbox{background:var(--teal-soft);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.6}
 .vs-kbox b{font-weight:700}
-.vs-sec{margin-top:18px}
+.vs-sec{margin-top:14px}
 .vs-sec .b2{font-size:12.5px;line-height:1.7;color:#4a5450;margin-top:6px;text-wrap:pretty}
 .vs-sec .b2 b{color:var(--ink)}
 .vs-sec .b2 + .b2{margin-top:8px}
 .vs-ex{border-left:2px solid var(--teal-line);padding:2px 0 2px 12px;margin-top:8px;font-size:12.5px;line-height:1.6;color:#4a5450}
 .vs-ex b{color:var(--ink)}
 .vs-ex .k{color:var(--faint);font-size:11.5px}
-.vs-chips{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap;max-width:100%}
+.vs-chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;max-width:100%}
 /* 2026-07-22 — nowrap 이면 긴 음소 설명이 해설 박스를 넘어갔다. 줄바꿈 허용 + 라운드 완화. */
 .vs-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:5px 11px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
-.vs-next{width:100%;margin-top:14px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
+.vs-next{width:100%;margin-top:13px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
 .vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
-.vs-gate.ok{color:var(--teal-deep);font-weight:600}
 @media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-side{width:760px;max-width:100%}}
+${V_DOT_CSS}${V_MINICAL_CSS}
 `;
 
 function ringEl(score) {
   const wrap = h('div', { class: 'vs-ring' });
   const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('width', '52'); svg.setAttribute('height', '52'); svg.setAttribute('viewBox', '0 0 52 52');
+  svg.setAttribute('width', '54'); svg.setAttribute('height', '54'); svg.setAttribute('viewBox', '0 0 54 54');
   const track = document.createElementNS(SVG_NS, 'circle');
-  track.setAttribute('cx', '26'); track.setAttribute('cy', '26'); track.setAttribute('r', '23');
+  track.setAttribute('cx', '27'); track.setAttribute('cy', '27'); track.setAttribute('r', '23');
   track.setAttribute('fill', 'none'); track.setAttribute('stroke', '#eae6d8'); track.setAttribute('stroke-width', '5');
   const arc = document.createElementNS(SVG_NS, 'circle');
-  const off = 144 - Math.round((Math.min(Math.max(score, 0), 100) / 100) * 124);
-  arc.setAttribute('cx', '26'); arc.setAttribute('cy', '26'); arc.setAttribute('r', '23');
+  const off = 144.5 - Math.round((Math.min(Math.max(score, 0), 100) / 100) * 1245) / 10;
+  arc.setAttribute('cx', '27'); arc.setAttribute('cy', '27'); arc.setAttribute('r', '23');
   arc.setAttribute('fill', 'none'); arc.setAttribute('stroke', 'oklch(44% .062 192)'); arc.setAttribute('stroke-width', '5');
-  arc.setAttribute('stroke-linecap', 'round'); arc.setAttribute('stroke-dasharray', '144'); arc.setAttribute('stroke-dashoffset', String(off));
+  arc.setAttribute('stroke-linecap', 'round'); arc.setAttribute('stroke-dasharray', '144.5'); arc.setAttribute('stroke-dashoffset', String(off));
   svg.append(track, arc);
   wrap.append(svg, h('span', { class: 'cn' }, score != null ? String(score) : '—'));
   return wrap;
 }
 
-function hlNode(text, term) {
+/* ── 오늘 발화 링 카드 (§6.6① · §6.8) — 신규·복습 공통 ──
+ * 분모는 '직전 학습일 발화 수'. 넘어서면 링이 코랄로 바뀌고 안쪽 확산 펄스(§3.3 (A) — 기존 v-pulse 재사용)가 돈다.
+ * 잔여 계산 헬퍼는 pr.js 에 없다 — 여기서 (직전 − 오늘) 로 구한다.
+ */
+export function utterRingCard({ size = 140, caption = true } = {}) {
+  const r = size === 140 ? 59 : Math.round((size - 22) / 2);
+  const circ = Math.round(2 * Math.PI * r * 10) / 10;
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('width', String(size)); svg.setAttribute('height', String(size));
+  svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+  const mk = (cls) => {
+    const c = document.createElementNS(SVG_NS, 'circle');
+    c.setAttribute('class', cls);
+    c.setAttribute('cx', String(size / 2)); c.setAttribute('cy', String(size / 2)); c.setAttribute('r', String(r));
+    c.setAttribute('fill', 'none'); c.setAttribute('stroke-width', '9');
+    svg.appendChild(c);
+    return c;
+  };
+  const track = mk('tk');
+  const arc = mk('arc');
+  arc.setAttribute('stroke-linecap', 'round');
+  arc.setAttribute('stroke-dasharray', String(circ));
+  arc.setAttribute('stroke-dashoffset', String(circ));
+
+  const nEl = h('span', { class: 'n' }, '0');
+  const pvEl = h('span', { class: 'pv' }, '');
+  const pulse = h('i', { class: 'pl', style: 'display:none;' });
+  const ring = h('div', { class: 'vs-uring', style: `width:${size}px;height:${size}px` },
+    svg, pulse, h('span', { class: 'cn' }, nEl, pvEl));
+  const chip = h('span', { class: 'vs-newrec', style: 'display:none;' }, vIcon(VI.ZAP, { size: 10, fill: true }), '기록 갱신!');
+  const msg = h('div', { class: 'msg' }, '');
+  const el = h('div', { class: 'vs-rec' },
+    h('div', { class: 'hd' }, h('span', { class: 'lb' }, '오늘 발화'), chip),
+    ring, caption ? msg : null);
+
+  function update(today, prev) {
+    const t = Math.max(0, Number(today) || 0);
+    const p = Math.max(0, Number(prev) || 0);
+    const over = p > 0 && t > p;
+    nEl.textContent = String(t); // 자식(+N)도 함께 초기화된다
+    if (over) nEl.appendChild(h('em', {}, `+${t - p}`));
+    track.setAttribute('stroke', over ? 'oklch(58% .115 32/.15)' : '#ece8da');
+    arc.setAttribute('stroke', over ? 'oklch(58% .115 32)' : 'oklch(44% .062 192)');
+    const ratio = p > 0 ? Math.min(t / p, 1) : 0;
+    arc.setAttribute('stroke-dashoffset', String(Math.round(circ * (1 - ratio) * 10) / 10));
+    pulse.style.display = over ? '' : 'none';
+    chip.style.display = over ? '' : 'none';
+    pvEl.className = 'pv' + (over ? ' over' : '');
+    pvEl.textContent = p > 0 ? (over ? `직전 ${p} 넘김` : `직전 ${p}회`) : '';
+    if (!caption) return;
+    // 직전 기록이 없거나 이미 넘었으면 캡션을 붙이지 않는다 (없는 숫자를 지어내지 않음).
+    msg.innerHTML = (p > 0 && !over) ? `<b>${p - t}회</b>만 더 말하면 직전 세션 기록을 깨요!` : '';
+  }
+  update(0, 0);
+  return { el, update };
+}
+
+/* ── 공부 이력 · 최근 4주 (§6.6②) — 셀 안 숫자 없이 농도만. 오늘 칸은 발화가 쌓이면 실시간으로 진해진다. */
+export function historyCalCard(todayISO, dayMap, todayCount) {
+  const start = isoShift(mondayOf(todayISO), -21);
+  const dates = Array.from({ length: 28 }, (_, i) => isoShift(start, i));
+  const el = h('div', { class: 'vs-hist' }, h('span', { class: 'lb vs-histlab' }, '공부 이력'));
+  const countOf = (iso) => (iso === todayISO ? todayCount() : Number(dayMap?.[iso]) || 0);
+  // 하루 발화 수는 사람마다 스케일이 다르다 — 이 4주 창의 분포로 3단을 잡는다.
+  const build = () => miniCalGrid(dates, {
+    countOf, todayISO,
+    tierOf: makeMiniTier(dates.filter((iso) => iso <= todayISO).map(countOf)),
+  });
+  let grid = build();
+  el.appendChild(grid);
+  return {
+    el,
+    update() { const next = build(); grid.replaceWith(next); grid = next; },
+  };
+}
+
+export function hlNode(text, term) {
   if (!term) return document.createTextNode(text);
   const i = text.toLowerCase().indexOf(String(term).toLowerCase());
   if (i < 0) return document.createTextNode(text);
@@ -189,6 +271,12 @@ export function explainPanel(ex, showHeader = true) {
   );
 }
 
+/* 행 점수 저장 형식 정규화 — 숫자(구 스냅샷) | 숫자 배열 | 빈 값. */
+export function normScores(v) {
+  if (Array.isArray(v)) return v.map((x) => Math.round(Number(x) || 0));
+  return Number.isFinite(v) ? [Math.round(v)] : [];
+}
+
 /* 응용 연습 행 — 듣기/녹음 (services 재사용). onScore(i, result): 채점 성공 시 세션 집계 위임.
  * demo=true 면 마이크 없이 시뮬 채점 (?demo=1 화면 검증용 — 메인 recPill 데모 분기와 동일).
  * 재생은 체이닝과 동일하게 매번 화자 변주 + 길이별 속도 — 카드 화자 고정 폐기 (2026-07-22 사용자 지시). */
@@ -196,10 +284,11 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null, plays = 0;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
-    // saved[i] = 이 세션에서 이미 받은 점수 (state.exLog 복원) — 재렌더에도 배지 유지
-    const done = saved?.[i];
-    const scoreEl = h('span', { class: 'vs-gscore', style: done == null ? 'display:none;' : '' },
-      done == null ? '' : `${done} ✓`);
+    // saved[i] = 이 세션에서 이미 받은 점수들 (state.exLog 복원) — 재렌더에도 배지 유지.
+    // 구 스냅샷은 숫자 1개로 저장돼 있다 (2026-08-21 형식) — 배열로 정규화해 읽는다.
+    const hist = normScores(saved?.[i]);
+    const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
+      hist.map((v, k) => scoreDot(v, { size: 26, fresh: false })));
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     // 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 — 종전엔 눌러도 아무 반응이 없었다)
     playBtn.addEventListener('click', () => {
@@ -222,7 +311,7 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
         setTimeout(() => {
           row.classList.remove('recing'); recBtn.classList.remove('recing');
           const result = { score: Math.min(82 + i * 4, 99), weakPhonemes: ['ð'] };
-          scoreEl.textContent = Math.round(result.score) + ' ✓'; scoreEl.style.display = ''; popScore(scoreEl);
+          pushScore(result.score);
           onScore?.(i, result);
         }, 800);
         return;
@@ -241,9 +330,15 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
       row.classList.remove('recing'); recBtn.classList.remove('recing');
       const result = await stopAndAnalyze(ctrl, d.en || '', { lang });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-      const score = Math.round(result?.score ?? 0);
-      scoreEl.textContent = score + ' ✓'; scoreEl.style.display = ''; popScore(scoreEl);
+      pushScore(result?.score ?? 0);
       onScore?.(i, result);
+    }
+    /* 시도할 때마다 점수 원이 하나씩 붙는다 — 같은 문장을 여러 번 말한 흔적이 곧 기록이다. */
+    function pushScore(raw) {
+      hist.push(Math.round(Number(raw) || 0));
+      scoreEl.replaceChildren(...hist.map((v, k) => scoreDot(v, { size: 26, fresh: k === hist.length - 1 })));
+      scoreEl.style.display = '';
+      popScore(scoreEl);
     }
     return row;
   });
@@ -265,14 +360,15 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
   let plays = 0, fails = 0, recCtrl = null, recRow = null;
 
   const hintEl = h('div', { class: 'vs-gate', style: 'text-align:left;margin-top:10px;min-height:18px;white-space:normal;' }, '');
-  const doneEl = h('div', { style: 'display:none;margin-top:10px;' }, h('span', { class: 'vs-pass' }, vIcon(VI.ZAP, { size: 11, fill: true }), '체이닝 완료'));
+  const countEl = h('b', {}, String(cur));
   const rowEls = [];
 
+  // 안내문은 두지 않는다 (§4.3) — 실패했을 때 나오는 실제 힌트만 남긴다.
   const renderHint = () => {
     const step = steps[cur];
     if (!step) { hintEl.textContent = ''; return; }
     const { kind, text } = chainHint(fails, { stepText: step.text, ko: chain.ko, isLast: cur === steps.length - 1 });
-    if (kind === 'none') { hintEl.textContent = fails ? `${fails}회 시도 — 3회부터 힌트가 나와요` : '자막 없이, 들은 그대로 말해 보세요'; return; }
+    if (kind === 'none') { hintEl.textContent = ''; return; }
     if (kind === 'ko') hintEl.textContent = `힌트 · 뜻: ${text}`;
     else if (kind === 'first') hintEl.textContent = `힌트 · 시작: ${text}`;
     else hintEl.textContent = `힌트 · 전체: ${text}`;
@@ -280,25 +376,25 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
   const refresh = () => {
     rowEls.forEach((r, i) => {
       const active = i === cur;
-      r.row.style.opacity = i < cur ? '0.5' : active ? '1' : '0.3';
+      r.row.style.opacity = i < cur ? '0.5' : active ? '1' : '0.35';
       r.playBtn.disabled = !active;
       r.recBtn.disabled = !active;
       r.mark.style.display = i < cur ? '' : 'none';
     });
-    if (cur >= steps.length) { doneEl.style.display = ''; hintEl.textContent = ''; }
-    else { doneEl.style.display = 'none'; renderHint(); }
+    countEl.textContent = String(cur);
+    if (cur >= steps.length) hintEl.textContent = '';
+    else renderHint();
   };
   const advance = () => { cur += 1; fails = 0; onSave?.({ cur }); refresh(); };
 
   steps.forEach((step, i) => {
     const wc = step.text.trim().split(/\s+/).filter(Boolean).length;
-    const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, '통과 ✓');
+    const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, passDot({ size: 26 }));
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
     const row = h('div', { class: 'vs-drow' },
       h('span', { class: 'ix' }, String(i + 1)),
-      h('div', {}, h('div', { class: 'en' }, `${i + 1}단계 · ${wc}단어`),
-        h('div', { class: 'sub' }, i === 0 ? '듣고 그대로 따라 말하기' : '앞 단계에 이어 붙습니다')),
+      h('div', {}, h('div', { class: 'en' }, `${i + 1}단계 · ${wc}단어`)),
       h('span', { class: 'grow' }), mark, playBtn, recBtn);
 
     playBtn.addEventListener('click', () => {
@@ -348,11 +444,11 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
     rowEls.push({ row, playBtn, recBtn, mark });
   });
 
-  const block = h('div', { class: 'vs-chain', style: 'margin-top:28px;' },
-    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '체이닝 — 자막 없이 듣고 따라 말하기'),
-      h('span', { class: 'ct' }, '통과 = 단어를 다 말하기')),
+  const block = h('div', { class: 'vs-chain', style: 'margin-top:26px;' },
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '체이닝'),
+      h('span', { class: 'ct' }, '통과 ', countEl, ' / ' + steps.length)),
     h('div', { style: 'margin-top:4px;' }, rowEls.map((r) => r.row)),
-    hintEl, doneEl);
+    hintEl);
   refresh();
   return block;
 }
@@ -382,15 +478,15 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
   const rowsDone = { ...(saved?.rows || {}) }; // 행 인덱스 → 통과 여부 (공개했으면 false)
   let restoring = false;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
-  let recCtrl = null, recRow = null, started = false, streak = 0, doneCount = 0, plays = 0;
+  let recCtrl = null, recRow = null, started = false, plays = 0;
   const persist = () => { if (!restoring) onSave?.({ picks: pickIdx, rows: { ...rowsDone } }); };
-  const streakEl = h('b', {}, '0');
-  const doneEl = h('div', { style: 'display:none;margin-top:10px;' }, h('span', { class: 'vs-pass' }, vIcon(VI.ZAP, { size: 11, fill: true }), '생산 완주'));
+  const passEl = h('b', {}, '0');
+  let passCount = 0;
 
   const rows = picks.map((d, i) => {
     const wcnt = String(d.en).trim().split(/\s+/).filter(Boolean).length;
     let fails = 0, done = false;
-    const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, '통과 ✓');
+    const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, passDot({ size: 26 }));
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     playBtn.disabled = true; // 정답 오디오 잠금 — 공개 전 듣기가 곧 정답 유출
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
@@ -402,21 +498,19 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
     const giveBtn = h('button', { class: 'vs-prod-give', type: 'button', style: 'display:block;text-align:left;padding:2px 0;font:inherit;font-size:12px;font-weight:600;color:var(--faint);background:none;border:0;cursor:pointer;' }, '정답 보기');
     const row = h('div', { class: 'vs-drow vs-prod' },
       h('span', { class: 'ix' }, String(i + 1)),
-      h('div', {}, h('div', { class: 'en' }, String(d.ko)), h('div', { class: 'sub' }, `영어로 말해 보세요 · ${wcnt}단어`), hintEl, ansEl, giveBtn),
+      h('div', {}, h('div', { class: 'en' }, String(d.ko)), h('div', { class: 'sub' }, `${wcnt}단어`), hintEl, ansEl, giveBtn),
       h('span', { class: 'grow' }), mark, playBtn, recBtn);
 
     const reveal = (pass) => {
       if (done) return;
-      done = true; doneCount += 1;
+      done = true;
       ansEl.textContent = [d.en, d.kr].filter(Boolean).join(' · ');
       playBtn.disabled = false;
       recBtn.disabled = true;
       giveBtn.style.display = 'none';
       hintEl.style.display = 'none';
-      if (pass) { mark.style.display = ''; popScore(mark); }
-      streak = pass ? streak + 1 : 0;
-      streakEl.textContent = String(streak);
-      if (doneCount === picks.length) doneEl.style.display = '';
+      if (pass) { mark.style.display = ''; popScore(mark); passCount += 1; }
+      passEl.textContent = String(passCount);
       rowsDone[i] = pass;
       persist();
     };
@@ -478,11 +572,10 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
   restoring = false;
   if (!savedPicks.length) persist(); // 새로 추첨한 문항을 고정 저장
 
-  return h('div', { class: 'vs-prodblock', style: 'margin-top:28px;' },
-    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '생산 연습 — 한글만 보고 영어로 말하기'),
-      h('span', { class: 'ct' }, '연속 ✓ ', streakEl)),
-    h('div', { style: 'margin-top:4px;' }, rows.map((r) => r.row)),
-    doneEl);
+  return h('div', { class: 'vs-prodblock', style: 'margin-top:26px;' },
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '생산 연습'),
+      h('span', { class: 'ct' }, '통과 ', passEl, ' / ' + picks.length)),
+    h('div', { style: 'margin-top:4px;' }, rows.map((r) => r.row)));
 }
 
 /* 모바일(phone/tablet) — 동일 로직, 단일 칼럼 셸(m-topb/m-steps/m-cta) + 해설 fold (작업지시서 모바일 §3-3) */
@@ -513,9 +606,9 @@ export const VSM_CSS = `
 .scene-chip{display:inline-flex;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap}
 .vs-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
 .vs-h1{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
-.vs-h1 b{font-weight:700;text-decoration:underline 4px oklch(44% .062 192/.35);text-underline-offset:5px}
-.vs-ko{font-size:16px;color:var(--mut);margin-top:10px}
-.vs-pron{font-size:12.5px;color:var(--faint);margin-top:4px}
+.vs-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 4px no-repeat;padding-bottom:4px}
+.vs-ko{font-size:16px;color:var(--mut);margin-top:11px}
+.vs-pron{font-size:12.5px;color:var(--faint);margin-top:5px}
 .vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
 /* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vs button' 리셋과 동률로 올린다 — 안 그러면
    '.vs button' 의 padding:0 (0,0,1,1)이 '.vs-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
@@ -528,28 +621,30 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vs-ring{position:relative;width:50px;height:50px;flex:0 0 auto;margin-left:auto}
+.vs-ring{position:relative;width:54px;height:54px;flex:0 0 auto;margin-left:auto}
 .vs-ring svg{transform:rotate(-90deg)}
-.vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15px;font-weight:700;color:var(--teal-deep)}
+.vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vs-cap{display:none}
-.vs-meta{display:flex;align-items:center;gap:14px;margin-top:15px;flex-wrap:wrap}
-.vs-say{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);font-weight:600;white-space:nowrap}
-.vs-say .d{display:inline-flex;gap:5px}
-.vs-say .d i{width:8px;height:8px;border-radius:50%;background:#ddd9c9}
-.vs-say .d i.f{background:var(--teal)}
-.vs-combo{display:inline-flex;align-items:center;gap:5px;font-family:Outfit;font-size:11.5px;font-weight:700;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:5px 11px;white-space:nowrap}
-.vs-pass{display:inline-flex;align-items:center;gap:5px;background:var(--coral-soft);color:var(--coral-deep);border-radius:999px;padding:5px 12px;font-size:12px;font-weight:800;letter-spacing:.03em;white-space:nowrap;animation:v-settle .5s both}
-.vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-top:12px}
+.vs-meta{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap;color:var(--faint)}
+.vs-meta .tot{font-family:Outfit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;margin-left:auto}
+.vs-meta .tot b{color:var(--ink)}
+.vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 14px;margin-top:12px}
 .vs-rec .hd{display:flex;justify-content:space-between;align-items:center;min-height:21px}
 .vs-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
 .vs-newrec{display:inline-flex;align-items:center;gap:4px;font-family:Outfit;font-size:10.5px;font-weight:800;color:var(--coral-deep);background:var(--coral-soft);border-radius:999px;padding:4px 10px;white-space:nowrap;animation:v-settle .5s both}
-.vs-rec .nr{display:flex;align-items:baseline;gap:6px;margin-top:7px}
-.vs-rec .n{font-family:Outfit;font-size:26px;font-weight:700;line-height:1}
-.vs-rec .u{font-size:11.5px;color:var(--faint);font-weight:600}
-.vs-rec .v-bar{height:5px;margin-top:9px}
-.vs-rec .v-bar > i{background:var(--teal)}
-.vs-rec .msg{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.5}
+.vs-rec .msg{font-size:11.5px;color:var(--mut);margin-top:8px;line-height:1.5;text-align:center}
 .vs-rec .msg b{color:var(--coral-deep)}
+.vs-uring{position:relative;margin:12px auto 0}
+.vs-uring svg{transform:rotate(-90deg)}
+.vs-uring .arc{transition:stroke-dashoffset .6s cubic-bezier(.3,.7,.3,1),stroke .3s}
+.vs-uring .pl{position:absolute;inset:8px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
+.vs-uring .cn{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.vs-uring .n{font-family:Outfit;font-size:34px;font-weight:700;line-height:1;color:var(--ink)}
+.vs-uring .n em{font-style:normal;font-family:Outfit;font-size:13px;font-weight:700;color:var(--coral-deep);margin-left:5px}
+.vs-uring .pv{font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);margin-top:6px;white-space:nowrap}
+.vs-uring .pv.over{color:var(--coral-deep)}
+.vs-hist{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 18px;margin-top:12px}
+.vs-hist .lb{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
 .vs-labrow{display:flex;align-items:baseline;justify-content:space-between;margin-top:18px}
 .vs-lab{font-family:Outfit;font-size:10px;letter-spacing:.13em;font-weight:600;color:var(--faint);text-transform:uppercase}
 .vs-labrow .ct{font-family:Outfit;font-size:11px;color:var(--mut);font-weight:600}
@@ -560,7 +655,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-drow .ix{font-family:Outfit;font-size:11px;color:var(--faint);width:14px;flex:0 0 auto}
 .vs-drow > div{min-width:0;flex:1}
 .vs-drow .en{font-size:14.5px;font-weight:700;letter-spacing:-.01em}
-.vs-drow .en b{font-weight:800;text-decoration:underline 2px oklch(44% .062 192/.3);text-underline-offset:3px}
+.vs-drow .en b{font-weight:800;background:linear-gradient(oklch(44% .062 192/.3),oklch(44% .062 192/.3)) 0 100%/100% 2px no-repeat;padding-bottom:2px}
 .vs-drow .sub{font-size:11.5px;color:var(--faint);margin-top:2px}
 .vs-drow .grow{flex:0 0 auto}
 .vs-cir{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#fff;color:var(--mut);display:grid;place-items:center;flex:0 0 auto;position:relative;padding:0}
@@ -568,7 +663,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-cir.recing{background:var(--coral);border-color:var(--coral);color:#fff}
 .vs-cir.recing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vs-gscore{font-family:Outfit;font-size:13px;font-weight:700;color:var(--teal-deep);white-space:nowrap}
+.vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
 .vs-fold .fhd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .vs-fold .ft{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
@@ -586,6 +681,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-ex .k{color:var(--mut)}
 .vs-chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;max-width:100%}
 .vs-chip{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:4px 10px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
+${V_DOT_CSS}${V_MINICAL_CSS}
 `;
 
 export function renderSessionExprV2(host, state, handlers = {}) {
@@ -607,8 +703,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const idx = Math.max(1, state.step - offset);
   const sceneTitle = hasScene ? (state.cards[0].explanation.sceneTitle || '') : '';
   const expr = exprOf(s || {});
-  const prevRecord = Number(state.prevRecord) || 0; // 0 = 직전 세션 없음 → 비교 UI 미표시
-  const barPct = () => (prevRecord > 0 ? Math.min(Math.round(((state.tried || 0) / prevRecord) * 100), 100) : 0);
+  // 오늘 발화의 분모 = 직전 학습일 발화 수 (§1-1). 0 = 직전 학습일 없음 → 비교 UI 미표시.
+  const prevDay = Number(state.prevDayUtter) || 0;
+  const todayISO = getTodayISO();
 
   // 좌측 레일 — 표현 스텝
   const rail = h('div', { class: 'vs-rail' },
@@ -626,8 +723,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const listenPill = h('button', { class: 'vs-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
   const recPill = h('button', { class: 'vs-pill pri', type: 'button' }, vIcon(VI.MIC, { size: 14, sw: 2 }), '따라 말하기');
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
-  // 점수링 캡션 — 메인 점수 있으면 '직전 점수 · N회 시도', 점수 없이 시도만(응용 발화 등) 있으면 'N회 시도', 없으면 '아직 시도 전'.
-  const capText = () => (state.lastScore != null ? `직전 점수 · ${recCount()}회 시도` : (recCount() > 0 ? `${recCount()}회 시도` : '아직 시도 전'));
+  // 점수링 캡션 — 링에 뜬 값은 방금 받은 점수다. 점수 없이 시도만(응용 발화 등) 있으면 'N회 시도', 없으면 '아직 시도 전'.
+  const capText = () => (state.lastScore != null ? '방금 점수' : (recCount() > 0 ? `${recCount()}회 시도` : '아직 시도 전'));
   const ring = ringEl(state.lastScore);
   const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, ring,
     h('span', { class: 'vs-cap', id: 'vs-cap' }, capText()));
@@ -653,43 +750,31 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     setTimeout(stopPlaying, 30000);
   });
 
-  // 발화 dots + 콤보 + 게이트
-  const dotsEl = h('span', { class: 'd' });
-  const sayLine = h('span', { class: 'vs-say' }, h('span', {}, '발화'), dotsEl, h('span', { class: 'vs-say-n' }, ''));
-  const comboEl = h('span', { class: 'vs-combo' }, vIcon(VI.ZAP, { size: 11, fill: true }), `콤보 ×${state.combo || 0}`);
-  const passChip = h('span', { class: 'vs-pass', style: 'display:none;' }, vIcon(VI.ZAP, { size: 11, fill: true }), '');
-  const meta = h('div', { class: 'vs-meta' }, sayLine, comboEl, passChip);
+  /* 발화 점수 열 — 이 카드에서 말한 점수를 오래된 것 → 최신 순으로. 6회 이상이면 최근 5개만.
+   * 점(dot)·콤보 칩·PASS 칩은 폐기 (§6.1) — 갱신의 근거는 '몇 번 눌렀나'가 아니라 '점수가 오르나'다. */
+  const utterScores = () => (Array.isArray(cardEx.utter) ? cardEx.utter : []);
+  const pushUtter = (score) => { (cardEx.utter ??= []).push(Math.round(Number(score) || 0)); };
+  const dotsEl = h('span', { class: 'v-dots' });
+  const totEl = h('span', { class: 'tot' }, '총 ', h('b', {}, '0'), '회');
+  const meta = h('div', { class: 'vs-meta' }, vIcon(VI.MIC, { size: 14, sw: 2 }), dotsEl, totEl);
 
-  // 우측 — 오늘 발화 기록 비교 위젯
-  const recN = h('span', { class: 'n' }, String(state.tried || 0));
-  const recBar = h('div', { class: 'v-bar' }, h('i', { style: `width:${barPct()}%` }));
-  const recMsg = h('div', { class: 'msg' }, '');
-  const recHd = h('div', { class: 'hd' }, h('span', { class: 'lb' }, '오늘 발화'), h('span', { class: 'vs-newrec', style: 'display:none;' }, vIcon(VI.ZAP, { size: 10, fill: true }), '기록 갱신!'));
-  const recWidget = h('div', { class: 'vs-rec' }, recHd,
-    h('div', { class: 'nr' }, recN, h('span', { class: 'u' }, prevRecord > 0 ? `회 / 직전 세션 기록 ${prevRecord}회` : '회')), recBar, recMsg);
+  // 우측 ① 오늘 발화 링 (분모 = 직전 학습일 발화) · ② 공부 이력 4주 캘린더
+  const ring140 = utterRingCard({ size: 140 });
+  const recWidget = ring140.el;
+  const todayUtter = () => (Number(state.todayUtterBase) || 0) + (Number(state.tried) || 0);
+  const histCard = historyCalCard(todayISO, state.dayMap, todayUtter);
 
   const refreshDots = () => {
-    dotsEl.innerHTML = '';
-    const c = Math.min(recCount(), REC_TARGET);
-    for (let i = 0; i < REC_TARGET; i++) dotsEl.appendChild(h('i', { class: i < c ? 'f' : '' }));
-    sayLine.querySelector('.vs-say-n').textContent = recCount() >= REC_TARGET ? `${REC_TARGET} / ${REC_TARGET} 완료` : `${recCount()} / ${REC_TARGET}`;
-    comboEl.lastChild.textContent = `콤보 ×${state.combo || 0}`;
-    const gateOk = canAdvance(state, s?.id) && recCount() >= REC_TARGET;
-    nextBtn.classList.toggle('unlock', gateOk);
-    gateEl.className = 'vs-gate' + (gateOk ? ' ok' : '');
-    gateEl.textContent = gateOk ? '발화 3회 완료 — 다음 표현이 열렸어요' : `발화 ${REC_TARGET}회를 채우면 열려요 (${recCount()}/${REC_TARGET})`;
+    const all = utterScores();
+    const shown = all.slice(-5);
+    dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
+    totEl.querySelector('b').textContent = String(recCount());
+    // 게이트는 캡션이 아니라 버튼 활성/비활성으로만 표현한다 (§4.3 삭제).
+    nextBtn.classList.toggle('unlock', canAdvance(state, s?.id) && recCount() >= REC_TARGET);
   };
   const refreshRecWidget = () => {
-    recN.textContent = String(state.tried || 0);
-    recBar.firstChild.style.width = barPct() + '%';
-    if (prevRecord <= 0) { recMsg.textContent = ''; return; } // 직전 세션 없음 — 비교 문구 없음
-    if ((state.tried || 0) > prevRecord) {
-      recHd.querySelector('.vs-newrec').style.display = '';
-      recBar.firstChild.style.background = 'var(--coral)';
-      recMsg.innerHTML = '직전 세션 기록을 <b>넘었어요!</b> 어디까지 가나 볼까요?';
-    } else {
-      recMsg.innerHTML = `<b>${Math.max(prevRecord - (state.tried || 0), 0)}회</b>만 더 말하면 직전 세션 기록을 깨요!`;
-    }
+    ring140.update(todayUtter(), prevDay);
+    histCard.update();
   };
 
   // 점수 → 리빌 적용 (state·DOM·애니). DB 쓰기는 실경로에서만 별도 호출. 데모 시뮬과 단일 출처 공유.
@@ -702,10 +787,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
+    pushUtter(score);
     const newRing = ringEl(score); curRing.replaceWith(newRing); curRing = newRing; popScore(newRing);
     ringHost.lastChild.textContent = capText();
-    if (passed) { passChip.style.display = ''; passChip.lastChild.textContent = `PASS · 콤보 ×${state.combo}`; }
-    else passChip.style.display = 'none';
     refreshDots(); refreshRecWidget();
   }
   const setRecVisual = (on) => {
@@ -760,7 +844,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   // 다음 표현 버튼 + 게이트
   const nextBtn = h('button', { class: 'vs-next', type: 'button', onClick: handlers.onNext }, idx >= total ? '학습 완료 →' : '다음 표현 →');
-  const gateEl = h('div', { class: 'vs-gate' }, '');
 
   // 응용 연습 — 드릴 녹음도 세션 발화 1건으로 집계 ('오늘 발화' + 요약 통과율/평균/약점음소)
   // + 다음-표현 게이트(recLog count)에도 포함 (2026-07-01 사용자 지시 — 응용 발화도 3회 게이트에 셈).
@@ -779,8 +862,11 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(Math.min(recordedDrills.size, drills.length)); }
     bumpRecLog(state, s?.id, score);  // 응용 발화도 '다음 표현' 3회 게이트에 카운트
-    (cardEx.drills ??= {})[i] = score; // 행 점수 영속화 (재렌더 복원)
-    refreshDots();                    // 게이트·발화 dots 갱신 (recCount 반영)
+    // 행 점수 영속화 (재렌더 복원) — 시도마다 누적해 점수 원이 늘어난다.
+    const rows = ((cardEx.drills ??= {}));
+    rows[i] = [...normScores(rows[i]), score];
+    pushUtter(score);
+    refreshDots();
     ringHost.lastChild.textContent = capText();
     refreshRecWidget();
     handlers.saveSnapshot?.();
@@ -795,7 +881,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     drillList.style.display = 'none'; unfoldBtn.style.display = '';
   };
   const drillsBlock = drills.length ? h('div', {},
-    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습 — 듣고, 따라 말하고, 녹음하기'), h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습'), h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
     drillList, unfoldBtn,
   ) : null;
 
@@ -810,6 +896,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
+    pushUtter(score);
     refreshDots();
     ringHost.lastChild.textContent = capText();
     refreshRecWidget();
@@ -857,18 +944,30 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
         h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        cardEl, recWidget, drillsBlock, prodBlock, chainBlock, fold),
-      h('div', { class: 'm-cta' }, gateEl, nextBtn));
+        cardEl, recWidget, histCard.el, drillsBlock, prodBlock, chainBlock, fold),
+      h('div', { class: 'm-cta' }, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
+    // 해설은 기본 접힘 — 접힌 상태엔 정의 박스만 (§6.6 ③). 펼치면 기존 5섹션이 순서 그대로.
+    const foldPanel = explainPanel(ex);
+    const fhd2 = foldPanel.querySelector('.ph2d');
+    fhd2.replaceChild(h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 })), fhd2.lastChild);
+    const inner2 = foldPanel.querySelector('.inner');
+    const secs = [...inner2.children].filter((n) => !n.classList.contains('vs-kbox'));
+    const secBody = h('div', { class: 'vs-secs', style: 'display:none;' }, secs);
+    inner2.appendChild(secBody);
+    fhd2.addEventListener('click', () => {
+      const open = foldPanel.classList.toggle('open');
+      secBody.style.display = open ? '' : 'none';
+    });
     const main = h('div', { class: 'vs-main' },
       h('div', { class: 'vs-crumb' },
         h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
       cardEl, drillsBlock, prodBlock, chainBlock);
-    const side = h('aside', { class: 'vs-side' }, recWidget, explainPanel(ex), nextBtn, gateEl);
+    const side = h('aside', { class: 'vs-side' }, recWidget, histCard.el, foldPanel, nextBtn);
     root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
   }

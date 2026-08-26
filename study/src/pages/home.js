@@ -208,6 +208,7 @@ export function mountHome(host) {
     // 데스크톱 v2 하단 스트립 확장 필드 — 언어별 loadStats 가 다시 채우기 전 stale 표시 방지.
     state.pronBars = []; state.grass = null; state.cumExpr = 0; state.cumUtter = 0;
     state.cumMaster = 0; state.weekDoneText = ''; state.pronAvg = 0; state.pronDelta = 0;
+    state.dayMap = null; state.cumStudySec = null; state.prDays = [];
     state.stripLeftLabel = undefined; state.stripLeftHead = undefined; state.stripLeftUnit = undefined;
     rerender();
     refreshStats();
@@ -298,10 +299,40 @@ async function loadMathStats(state) {
     todayNewDone: todayLog.newDone, todayReviewDone: todayLog.reviewDone,
     bestStreak: previousBest, weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
     pronBars: mPronBars, grass: mGrass, cumUtter: mCumUtter, cumExpr: mCumExpr, cumMaster: totalReview,
+    // 수학 진도 로그(localStorage)엔 durationSec 이 없다 — 누적 공부 시간은 null(표시 생략).
+    dayMap: mByDate, cumStudySec: null, prDays: [],
     weekDoneText: todayLog.tried > 0 ? `${mWeekDays}일 학습 · 오늘 진행 중` : `${mWeekDays}일 학습`,
     pronAvg: mWeekTried, pronDelta: 0,
     stripLeftLabel: '일일 문제 · 14일', stripLeftHead: '이번 주 문제', stripLeftUnit: '문제',
   };
+}
+
+/**
+ * 개인기록(일 발화) 달성일 ISO 목록 — 홈 4주 캘린더의 코랄 칸.
+ *
+ * meta.prDailyUtterance = 현재 기록, meta.prHistory = 갈아치워진 옛 기록들(당시엔 기록일).
+ * 값 형식이 둘이다: pr.js applyPRUpdate 는 { value, achieved_at, lang },
+ * sessionStats.saveDailyPRIfRecord 는 { value, date } — 둘 다 읽는다.
+ */
+async function loadPRDays(db, lang) {
+  if (!db?.meta) return [];
+  try {
+    const [cur, hist] = await db.meta.bulkGet(['prDailyUtterance', 'prHistory']);
+    const out = new Set();
+    const take = (v, type) => {
+      if (!v) return;
+      if (type && v.type !== type) return;
+      if (v.lang && lang && v.lang !== 'both' && v.lang !== lang) return;
+      const iso = v.achieved_at || v.date;
+      if (typeof iso === 'string' && iso.length >= 10) out.add(iso.slice(0, 10));
+    };
+    take(cur?.value);
+    for (const row of (Array.isArray(hist?.value) ? hist.value : [])) take(row, 'daily_utterance');
+    return [...out];
+  } catch (e) {
+    console.error('[home loadPRDays]', e);
+    return [];
+  }
 }
 
 async function loadStats(state) {
@@ -377,6 +408,8 @@ async function loadStats(state) {
     // newSentenceIds 는 sync 내구(0003) — mode(로컬 전용, sync 소실)에 의존하지 않게 합산.
     // (newSentenceIds 는 신규 세션에서만 채워지므로 mode 필터 없이도 동일 결과 + 타기기 정합)
     const cumExpr = logs.reduce((s, l) => s + (l.newSentenceIds?.length || 0), 0);
+    // 누적 공부 시간 — pr.js 가 studyTimeSec 으로 읽는 그 필드(durationSec) 합.
+    const cumStudySec = logs.reduce((s, l) => s + (Number(l.durationSec) || 0), 0);
     const weekDoneText = todayLogs.length > 0 ? `${weekDays}일 학습 · 오늘 진행 중` : `${weekDays}일 학습`;
 
     return {
@@ -385,6 +418,8 @@ async function loadStats(state) {
       pronBars, grass, cumUtter, cumExpr, cumMaster: totalReview, weekDoneText,
       pronAvg: weekUtter, pronDelta: 0,
       stripLeftLabel: '일일 발화 · 14일', stripLeftHead: '이번 주 발화', stripLeftUnit: '회',
+      // 4주 캘린더 히어로 (홈 v3) — 날짜별 발화 합 + 누적 학습시간 + 개인기록 달성일.
+      dayMap: byDate, cumStudySec, prDays: await loadPRDays(db, lang),
     };
   } catch (e) {
     console.error('[home loadStats]', e);

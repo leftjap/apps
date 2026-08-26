@@ -41,7 +41,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { h } from '../components/d1/dom.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, buildD1ExplainRight, buildD1Judges, exprOf } from '../components/d1/sessionShell.js';
-import { fetchPrevSession } from '../services/sessionStats.js';
+import { fetchDayUtterMap, prevStudyDayUtterance } from '../services/sessionStats.js';
 import { renderSessionReviewV2 } from './sessionReviewV2.js';
 import { demoReviewCards } from './sessionReviewDemo.js';
 
@@ -60,6 +60,30 @@ function getStoredLang() {
 
 function getTodayISO() {
   return window.studyDay?.TODAY_ISO || localISODate();
+}
+
+/**
+ * 문장별 연습 이력 — { sentenceId: { 'YYYY-MM-DD': [점수, …] } }.
+ *
+ * 출처는 pronunciationLog (sentenceId · date · overallScore). 이 로그는 메인 카드 녹음에서만 쌓이므로
+ * 곧 '이 문장을 떠올려 말한 시도'다 — 응용·체이닝 발화는 문장 이력이 아니라 오늘 발화로만 센다.
+ * 별도 스키마를 만들지 않는다.
+ */
+export async function loadSentenceLog(db, lang, cards) {
+  if (!db?.pronunciationLog || !Array.isArray(cards) || !cards.length) return {};
+  const want = new Set(cards.map((c) => c?.id).filter(Boolean));
+  try {
+    const rows = await db.pronunciationLog.where('lang').equals(lang).toArray();
+    const out = {};
+    for (const r of rows) {
+      if (!want.has(r?.sentenceId) || !r?.date) continue;
+      ((out[r.sentenceId] ??= {})[r.date] ??= []).push(Math.round(Number(r.overallScore) || 0));
+    }
+    return out;
+  } catch (e) {
+    console.error('[session-review] loadSentenceLog', e);
+    return {};
+  }
 }
 
 export function mountSessionReview(host) {
@@ -233,11 +257,13 @@ export function mountSessionReview(host) {
         : loadReviewCards(window.studyDB, getStoredLang(), getTodayISO());
     })(),
     loadActiveSession(window.studyDB),
-    fetchPrevSession(window.studyDB, getStoredLang(), sessionMode),
+    fetchDayUtterMap(window.studyDB, getStoredLang()),
   ])
-    .then(async ([cards, snapshot, prevSession]) => {
-      // '오늘 발화' 비교 기준 = 직전 동일 모드 세션의 발화 수. 없으면 0 → 비교 UI 미표시.
-      state.prevRecord = Number(prevSession?.utteranceCount) || 0;
+    .then(async ([cards, snapshot, dayMap]) => {
+      // '오늘 발화' 링의 분모 = 직전 학습일 발화 수 (기록/갱신 §1-1). 이번 세션 로그는 finish() 후에 쌓인다.
+      state.dayMap = dayMap;
+      state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
+      state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
       state.cards = cards;
       state.total = cards.length;
       const restore = restoreFromSnapshot(snapshot, cards, sessionMode);
@@ -255,6 +281,8 @@ export function mountSessionReview(host) {
         try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
         catch { state.base = null; }
       }
+      // 문장별 연습 이력 (§7.4② 월 캘린더 · §7.3 빈 슬롯) — pronunciationLog 를 sentenceId×날짜로 묶는다.
+      state.sentLog = await loadSentenceLog(window.studyDB, getStoredLang(), cards);
       state.loaded = true;
       rerender();
     })

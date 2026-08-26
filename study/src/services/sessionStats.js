@@ -123,6 +123,40 @@ export async function fetchTodayCount(db, lang, todayISO) {
 }
 
 /**
+ * 날짜별 발화 합 { 'YYYY-MM-DD': utteranceCount } — 세션 화면의 '오늘 발화' 링 분모와 공부 이력 캘린더용.
+ * stats.js loadDayMap 과 같은 집계(월 필터만 없음).
+ */
+export async function fetchDayUtterMap(db, lang) {
+  if (!db?.sessionLogs || !lang) return {};
+  try {
+    const all = await db.sessionLogs.where('lang').equals(lang).toArray();
+    const map = {};
+    for (const l of all) {
+      if (!l?.date) continue;
+      map[l.date] = (map[l.date] || 0) + (Number(l.utteranceCount) || 0);
+    }
+    return map;
+  } catch (e) {
+    console.error('[sessionStats.fetchDayUtterMap]', e);
+    return {};
+  }
+}
+
+/**
+ * 직전 '학습일'(오늘보다 앞선, 발화가 있었던 가장 최근 날) 의 발화 수.
+ * 오늘의 기준선은 직전 세션이 아니라 직전 학습일이다 (기록/갱신 설계 §1-1).
+ * 0 = 직전 학습일 없음 → 화면은 비교를 주장하지 않는다.
+ */
+export function prevStudyDayUtterance(dayMap, todayISO) {
+  let best = null;
+  for (const iso in (dayMap || {})) {
+    if (iso >= todayISO || !(Number(dayMap[iso]) > 0)) continue;
+    if (best === null || iso > best) best = iso;
+  }
+  return best ? Number(dayMap[best]) || 0 : 0;
+}
+
+/**
  * 일 발화 PR 갱신 — 오늘 누적이 기존 PR 초과 시 meta `prDailyUtterance` put.
  * spec §9-7 정본: PR = 일 발화 최고 기록 (역대). finish() 의 dailyStats upsert 직후 호출.
  *
@@ -148,6 +182,8 @@ export async function saveDailyPRIfRecord(db, candidateValue, todayISO) {
 }
 
 export const SessionStats = Object.freeze({
+  fetchDayUtterMap,
+  prevStudyDayUtterance,
   computeDeltaVsPrevSession,
   computePRRemaining,
   formatSign,
