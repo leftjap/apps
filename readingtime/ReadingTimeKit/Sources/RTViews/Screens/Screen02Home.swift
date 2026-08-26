@@ -106,6 +106,9 @@ public struct Screen02Home: View {
         ZStack(alignment: .top) {
             RT.paper
             lightPool
+            // vignette 는 배경 레이어 — 도킹 카드 위에 덮이면 카드 하단·모서리가 탁해진다
+            // (실기기 2026-08-26: '하단 색상 깨짐'). 표지 무대에만 적용되도록 카드 아래로 내림.
+            vignette
             VStack(spacing: 0) {
                 header
                 Spacer(minLength: 0)
@@ -113,7 +116,6 @@ public struct Screen02Home: View {
                 Spacer(minLength: 0)
                 card
             }
-            vignette
             if menuOpen { RTHomeMenu(model: model, avatar: avatar) { menuOpen = false } }
         }
         .frame(width: 390, height: 844)
