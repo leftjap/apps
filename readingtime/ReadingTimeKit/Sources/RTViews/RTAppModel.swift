@@ -377,20 +377,16 @@ public final class RTAppModel: ObservableObject {
     /// 완독 처리 영속 훅 (앱: UserDefaults JSON)
     public var onFinishedEbooksChange: (([String: Date]) -> Void)?
 
-    /// 그날 밀리 시간의 책별 귀속 — 그날 책 균등 분할. 히스토리 없는 날(진도 기록은
-    /// 변경 시에만 남음)은 직전 책, 그것도 없으면 현재 책/서비스명 폴백.
+    /// 그날 밀리 시간의 책별 귀속 — 그날 책이 **정확히 1권**일 때만 그 책에 붙인다.
+    /// 2권 이상이면 비율을 알 수 없고, 기록이 없으면 무슨 책인지 알 수 없으므로 서비스명으로 둔다.
+    /// 직전 책·현재 책 추측은 금지 — 5월 독서에 8월에 읽는 책 이름이 붙던 원인(실측 56%).
     public func ebookBreakdown(on date: Date) -> [(title: String, seconds: Int)] {
         let total = ebookSeconds(on: date)
         guard total > 0 else { return [] }
-        let key = dayFormatter.string(from: date)
-        if let titles = ebookBooks[key], !titles.isEmpty {
-            return titles.map { ($0, total / titles.count) }
+        if let titles = ebookBooks[dayFormatter.string(from: date)], titles.count == 1 {
+            return [(titles[0], total)]
         }
-        if let prev = ebookBooks.keys.filter({ $0 < key }).max(),
-           let t = ebookBooks[prev]?.first {
-            return [(t, total)]
-        }
-        return [(ebookTitle ?? "밀리의서재", total)]
+        return [("밀리의서재", total)]
     }
 
     private var dayFormatter: DateFormatter {
@@ -401,15 +397,30 @@ public final class RTAppModel: ObservableObject {
         f.dateFormat = "yyyy-MM-dd"
         return f
     }
+    /// 밀리 하루 최소 인정 시간(초). 이 미만은 앱을 잠깐 띄운 것으로 보고 기록에서 뺀다.
+    /// 실측(2026-08-28): 62일 중 25일이 1~56초라 연속·읽은 날 수가 그만큼 부풀어 있었다.
+    /// 원본은 book_reading_seconds 에 그대로 두고 표시 계층에서만 거른다(비가역 손실 방지).
+    public static let ebookMinSeconds = 60
+
     public func ebookSeconds(on date: Date) -> Int {
-        userData == nil ? 0 : ebookDaily[dayFormatter.string(from: date)] ?? 0
+        guard userData != nil else { return 0 }
+        let sec = ebookDaily[dayFormatter.string(from: date)] ?? 0
+        return sec >= Self.ebookMinSeconds ? sec : 0
+    }
+    /// 기록으로 인정된 밀리 총 시간(초) — 1분 미만 날 제외
+    public var countedEbookTotalSeconds: Int {
+        userData == nil ? 0 : ebookDaily.values.filter { $0 >= Self.ebookMinSeconds }.reduce(0, +)
+    }
+    /// 기록으로 인정된 밀리 날수 — 1분 미만 날 제외 (홈 밀리 카드 '횟수')
+    public var countedEbookDayCount: Int {
+        userData == nil ? 0 : ebookDaily.values.filter { $0 >= Self.ebookMinSeconds }.count
     }
     /// 기록 있는 날(startOfDay) — 종이 세션 ∪ 밀리(>0초). 연속·체인 판정 정본.
     private var readDays: Set<Date> {
         guard let d = userData else { return [] }
         var days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
         let f = dayFormatter
-        for (k, sec) in ebookDaily where sec > 0 {
+        for (k, sec) in ebookDaily where sec >= Self.ebookMinSeconds {
             if let dt = f.date(from: k) { days.insert(cal.startOfDay(for: dt)) }
         }
         return days

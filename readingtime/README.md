@@ -42,6 +42,15 @@
 - **통합은 표시 계층에서만** — 리딩타임 대시보드가 두 테이블을 읽어 `종이 + 전자` 구분 표시. 두 데이터를 DB에서 섞지 않음(종이책이 '밀리'로 오라벨되는 것 방지).
 - 인증: Supabase Swift SDK + anon + Google OAuth(지오 계정) → RLS owner-only 충족. service_role 앱 번들 금지. 날짜=KST 실발생일.
 
+### 밀리 수집 정확도 (2026-08-28 감사·수정)
+수집 데몬 = `~/.local/bin/millie-sync.sh`(시간) + `millie-book-sync.sh`(책), launchd 15분. **repo 밖**.
+- **시간 출처** = 맥 스크린타임 `knowledgeC.db` `/app/usage` — 엄밀히는 "밀리 앱이 화면 맨 앞에 있던 시간"(서재 탐색 포함). 폰 독서는 **구조적 미수집**: 같은 DB의 `/app/intents`는 다른 기기분이 들어오는데 `/app/usage`는 2544/2544 전부 로컬 = 애플이 앱 사용시간을 기기 간 동기화하지 않음.
+- **knowledgeC 는 28~29일째에 그날 '앞부분부터' 지운다.** 조건 없는 `merge-duplicates` upsert 가 그 잘린 합계로 정본을 덮어써 61일 중 5일 2571초(42.9분)가 소실됐다(5/28 1254→18 등). → 데몬을 **신규만 삽입(`ignore-duplicates`) + 기존보다 클 때만 갱신(`seconds=lt.N` PATCH)** 으로 변경, 로그에서 5일 복구. knowledgeC 는 `mode=ro` 로 연다(`immutable=1` 은 WAL 을 무시해 최신 세션을 놓침).
+- **밀리 `book` 테이블은 최근 3권만 남기는 롤링 캐시**(3행 vs `history_drift` 25행) — INNER JOIN 이라 22권이 조용히 탈락했다. → 데몬이 `~/.local/share/millie-tracker/book-catalog.db` 에 책 정보를 누적 보관하고 그걸로 조인.
+- **맥미니 한정 보장** — 밀리 계정이 아이폰들과 공유되므로 `history_drift` 에 폰 독서가 섞일 수 있다. 위치 갱신 시각이 맥 밀리 앱 사용 구간 안(±60초)일 때만 인정. 스크린타임 보관 밖이면 판정 불가 → 쓰지 않음(기존분 유지).
+- **표시 계층 규칙**(`RTAppModel`): ① 1분 미만인 날은 시간·연속·읽은 날수에서 제외(`ebookMinSeconds`) — 원본 DB 는 보존해 되돌릴 수 있게 둔다. ② 책 귀속은 **그날 책이 정확히 1권일 때만**, 아니면 "밀리의서재". 직전 책·현재 책 추측 금지 — 5월 독서에 8월 책 이름이 붙던 원인(수정 전 72.6%가 추측 라벨).
+- **못 고치는 것**: `history_drift` 는 책당 1행(PK `book_id`)이라 과거 이력 소급 불가 — 데몬이 15분마다 스냅샷을 쌓아 앞으로만 누적된다. 밀리를 열었지만 페이지를 안 넘긴 날은 원천에 기록이 없어 "밀리의서재"로 남는다.
+
 ## 로드맵
 1. 타이머 코어 = **✅ FlipEngine 재작성**(v8 UX: 들면 일시정지·CTA 종료, wall-clock 누적 — iOS 컴파일 통과, 실기기 검증 대기)
 2. 앱 Supabase 배선 = **ReadingTimeKit 이관·컴파일 검증**(OAuth·upsert 실동작은 실기기) · `readingtime_daily` 마이그 = **✅ 적용 완료**(2026-07-01, CLI)

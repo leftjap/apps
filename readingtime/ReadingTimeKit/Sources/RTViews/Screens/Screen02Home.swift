@@ -63,8 +63,8 @@ public struct Screen02Home: View {
                 author: book?.author ?? card.author ?? "밀리의서재",
                 coverUrl: book?.coverUrl ?? card.coverUrl,
                 totalHM: book.map { RTAppModel.hmString(m.totalSeconds(isbn: $0.isbn)) }
-                    ?? RTAppModel.hmString(m.ebookDaily.values.reduce(0, +)),
-                count: book.map { m.sessionCount(isbn: $0.isbn) } ?? m.ebookDaily.values.filter { $0 > 0 }.count,
+                    ?? RTAppModel.hmString(m.countedEbookTotalSeconds),
+                count: book.map { m.sessionCount(isbn: $0.isbn) } ?? m.countedEbookDayCount,
                 days: book.map(m.daysSinceAdded) ?? 1,
                 todayMin: m.todaySeconds / 60,
                 weekHM: RTAppModel.hmString(m.weekSeconds),

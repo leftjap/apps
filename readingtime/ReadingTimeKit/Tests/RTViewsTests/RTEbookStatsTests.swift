@@ -3,7 +3,7 @@ import Foundation
 @testable import RTViews
 
 // 밀리(전자책) 일별 데이터의 통계 합산 — 표시 계층 통합 (README: DB에선 안 섞음).
-// ebookDaily: "yyyy-MM-dd"(실발생일) → seconds. 밀리만 읽은 날도 연속·읽은 날로 인정
+// ebookDaily: "yyyy-MM-dd"(실발생일) → seconds. 60초 이상인 밀리 날만 연속·읽은 날로 인정
 // (11 월간 "17/21일 읽음 · 밀리 포함" 스펙 정합).
 
 private func day(_ s: String, hour: Int = 12) -> Date {
@@ -60,6 +60,31 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(m.todaySeconds == 0)
     }
 
+    @Test func ebookDayUnderOneMinuteIsIgnoredEverywhere() {
+        let m = RTAppModel()
+        m.userData = RTUserData()
+        m.now = { day("2026-07-13") }
+        m.ebookDaily = ["2026-07-13": 59]
+        #expect(m.ebookSeconds(on: day("2026-07-13")) == 0)
+        #expect(m.todaySeconds == 0)
+        #expect(m.weekSeconds == 0)
+        #expect(m.streakDays == 0)
+        #expect(m.streakChain(1) == [false])
+        #expect(m.countedEbookTotalSeconds == 0)
+        #expect(m.countedEbookDayCount == 0)
+    }
+
+    @Test func oneMinuteEbookDayCounts() {
+        let m = RTAppModel()
+        m.userData = RTUserData()
+        m.now = { day("2026-07-13") }
+        m.ebookDaily = ["2026-07-13": 60]
+        #expect(m.ebookSeconds(on: day("2026-07-13")) == 60)
+        #expect(m.streakDays == 1)
+        #expect(m.countedEbookTotalSeconds == 60)
+        #expect(m.countedEbookDayCount == 1)
+    }
+
     @Test func ebookBreakdownUsesDayBook() {
         let m = model()
         m.ebookDaily = ["2026-07-13": 600]
@@ -69,18 +94,20 @@ private func day(_ s: String, hour: Int = 12) -> Date {
         #expect(r.first?.seconds == 600)
     }
 
-    @Test func ebookBreakdownSplitsMultiBookEvenly() {
+    @Test func ebookBreakdownDoesNotInventMultiBookSplit() {
         let m = model()
         m.ebookDaily = ["2026-07-13": 600]
         m.ebookBooks = ["2026-07-13": ["A", "B"]]
-        #expect(m.ebookBreakdown(on: day("2026-07-13")).map(\.seconds) == [300, 300])
+        let r = m.ebookBreakdown(on: day("2026-07-13"))
+        #expect(r.map(\.title) == ["밀리의서재"])
+        #expect(r.map(\.seconds) == [600])
     }
 
-    @Test func ebookBreakdownFallsBackToPreviousBook() {
-        let m = model()   // 진도 기록은 변경 시에만 남음 — 빈 날은 직전 책 귀속
+    @Test func ebookBreakdownDoesNotGuessPreviousBook() {
+        let m = model()
         m.ebookDaily = ["2026-07-13": 100]
         m.ebookBooks = ["2026-07-10": ["그래서 브랜딩이 필요합니다"]]
-        #expect(m.ebookBreakdown(on: day("2026-07-13")).first?.title == "그래서 브랜딩이 필요합니다")
+        #expect(m.ebookBreakdown(on: day("2026-07-13")).first?.title == "밀리의서재")
     }
 
     @Test func ebookBreakdownFallsBackToServiceName() {
