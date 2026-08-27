@@ -259,7 +259,7 @@ describe('sessionExprV2 — 생산 연습(한→영) 블록', () => {
 });
 
 // 응용 연습(drill) 녹음 = 세션 발화 1건 — '오늘 발화' 카운트 누락 버그 회귀 방지.
-function makeStateWithDrills() {
+function makeStateWithDrills(over = {}) {
   const drills = [
     { en: "It's more than a job.", kr: '잇츠 모어 대너 잡', ko: '그건 직업 그 이상이에요.' },
     { en: "He's more than a friend.", kr: '히즈 모어 대너 프렌드', ko: '걔는 친구 그 이상이야.' },
@@ -273,8 +273,52 @@ function makeStateWithDrills() {
       { id: 'e1', lang: 'en', sentence: 'Is that a promise?', ko: '약속하는 거예요?', pron: '이즈 대러 프라미스', explanation },
     ],
     sentence: { id: 'e1', lang: 'en', sentence: 'Is that a promise?', ko: '약속하는 거예요?', pron: '이즈 대러 프라미스', explanation },
+    ...over,
   };
 }
+
+/* 장면 칩 = <맥락> · <과목> 고정 (클로드디자인 2026-08-27).
+ * 맥락은 sceneTitle 이 있으면 그 값, 없으면 '신규' — '신규 학습' 은 화면 종류를 말할 뿐이고
+ * 진행바·레일이 이미 그걸 말한다. 과목은 홈에 과목 전환이 있어 세션 안에서도 남긴다. */
+describe('sessionExprV2 — 장면 칩', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  const chipText = (host) => (host.querySelector('.vs-scene') || host.querySelector('.scene-chip')).textContent;
+
+  it('장면이 없으면 `신규 · 영어`', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeStateWithDrills();
+    st.cards = [st.cards[1]]; // scene 카드 제거 → sceneTitle 없음
+    renderSessionExprV2(host, st, {});
+    expect(chipText(host)).toBe('신규 · 영어');
+    expect(host.textContent).not.toContain('신규 학습');
+  });
+
+  it('장면이 있으면 `<장면명> · 영어`', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    expect(chipText(host)).toBe('데모 · 영어');
+  });
+
+  it('모바일도 같은 규칙을 쓴다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills({ size: 'phone' }), {});
+    expect(chipText(host)).toBe('데모 · 영어');
+  });
+
+  /* 긴 장면명이 진행바를 밀어내지 않게 — 클래스가 데스크톱/모바일로 갈려 한 곳만 고치면 남는다. */
+  it('데스크톱·모바일 칩 모두 말줄임 처리가 있다', () => {
+    for (const size of ['desktop', 'phone']) {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      renderSessionExprV2(host, makeStateWithDrills({ size }), {});
+      const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+      const sel = size === 'desktop' ? /\.vs-scene\{[^}]*\}/ : /\.scene-chip\{[^}]*\}/;
+      const block = css.match(sel)[0];
+      expect(block).toContain('text-overflow:ellipsis');
+      expect(block).toContain('max-width');
+    }
+  });
+});
 
 describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
@@ -369,17 +413,47 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('0');
   });
 
-  it('메인 미녹음 + drill 만 녹음 → 점수링 캡션은 "직전 점수" 안 씀 (점수 없음, 링 —)', async () => {
+  /* 링은 '방금 받은 점수' 하나를 담는 슬롯이다 — 보여줄 점수가 없으면 슬롯 자체를 그리지 않는다.
+   * 종전엔 링을 '—' 로 띄우고 캡션에 '아직 시도 전' / 'N회 시도' 를 채웠다. 결과가 없는데 결과
+   * 자리를 그린 것이 문제였다 (클로드디자인 2026-08-27). 드릴 발화는 메인 점수가 아니므로
+   * 드릴만 녹음해도 링은 계속 없다. */
+  it('메인 미녹음 + drill 만 녹음 → 링·캡션 모두 없다 (결과 슬롯 자체를 안 그린다)', async () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = makeStateWithDrills();
     renderSessionExprV2(host, state, {});
+    expect(host.querySelector('.vs-ring')).toBeNull();
+    expect(host.querySelector('.vs-cap')).toBeNull();
     const recBtn = drillRecBtns(host)[0];
     recBtn.click(); await tick();
     recBtn.click(); await tick(); await tick();
-    const cap = host.querySelector('.vs-cap').textContent;
-    expect(cap).not.toContain('직전 점수');   // 메인 점수 없으면 '직전 점수' 문구 금지
-    expect(cap).toContain('1회 시도');         // 시도 횟수는 표기 (게이트 dots 와 정합)
-    expect(host.querySelector('.vs-ring .cn').textContent).toBe('—'); // 링 = 점수 없음
+    expect(host.querySelector('.vs-ring')).toBeNull();
+    expect(host.querySelector('.vs-cap')).toBeNull();
+    expect(host.textContent).not.toContain('아직 시도 전');
+    expect(host.textContent).not.toContain('회 시도');
+  });
+
+  it('메인 녹음으로 점수가 오면 그때 링 + `방금 점수` 가 등장한다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      renderSessionExprV2(host, makeStateWithDrills({ demo: true }), {});
+      expect(host.querySelector('.vs-ring')).toBeNull();
+      host.querySelector('.vs-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelector('.vs-ring .cn').textContent).not.toBe('—');
+      expect(host.querySelector('.vs-cap').textContent).toBe('방금 점수');
+    } finally { vi.useRealTimers(); }
+  });
+
+  /* 링이 없다가 생기면 버튼 줄이 밀린다 — 첫 녹음 직후 손가락이 다른 곳을 누른다.
+   * 데스크톱은 min-height 로 자리를 예약해 두었고 모바일에도 같은 예약이 필요하다. */
+  it('모바일 컨트롤 줄도 링 자리를 미리 예약한다 (min-height)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills({ size: 'phone' }), {});
+    const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+    const blocks = [...css.matchAll(/\.vs-ctrl\{[^}]*\}/g)].map((m) => m[0]);
+    expect(blocks.length).toBeGreaterThan(0);
+    expect(blocks.every((b) => b.includes('min-height'))).toBe(true);
   });
 });
 

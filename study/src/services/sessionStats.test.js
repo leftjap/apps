@@ -19,6 +19,7 @@ import {
   fetchPrevSession,
   fetchDailyPR,
   fetchTodayCount,
+  fetchWeeklyPR,
 } from './sessionStats.js';
 
 describe('computeDeltaVsPrevSession', () => {
@@ -182,5 +183,39 @@ describe('fetchTodayCount', () => {
   });
   it('매칭 없음 → 0', async () => {
     expect(await fetchTodayCount(createMockDB(), 'en', '2026-05-04')).toBe(0);
+  });
+});
+
+/* 홈 주 발화 바의 분모 — 4주 최댓값이 아니라 주 발화 개인기록이다 (클로드디자인 2026-08-27).
+ * pr.js 가 쓰는 형식: weekly_* = { value, week_start: 'YYYY-MM-DD'(월요일), lang } (pr.js:14). */
+describe('fetchWeeklyPR', () => {
+  it('meta prWeeklyUtterance 를 { value, week_start } 로 돌려준다', async () => {
+    const db = createMockDB();
+    db._meta.set('prWeeklyUtterance', {
+      key: 'prWeeklyUtterance', value: { value: 214, week_start: '2026-08-10', lang: 'en' },
+    });
+    expect(await fetchWeeklyPR(db, 'en')).toEqual({ value: 214, week_start: '2026-08-10' });
+  });
+
+  it('다른 언어 기록이면 무시한다 (분모를 남의 기록으로 잡지 않는다)', async () => {
+    const db = createMockDB();
+    db._meta.set('prWeeklyUtterance', {
+      key: 'prWeeklyUtterance', value: { value: 214, week_start: '2026-08-10', lang: 'ja' },
+    });
+    expect(await fetchWeeklyPR(db, 'en')).toBeNull();
+  });
+
+  it('기록이 없으면 null — 화면이 배지를 붙이지 않는다', async () => {
+    expect(await fetchWeeklyPR(createMockDB(), 'en')).toBeNull();
+  });
+
+  it('week_start 가 없는 손상 레코드도 null (없는 주를 지어내지 않는다)', async () => {
+    const db = createMockDB();
+    db._meta.set('prWeeklyUtterance', { key: 'prWeeklyUtterance', value: { value: 214, lang: 'en' } });
+    expect(await fetchWeeklyPR(db, 'en')).toBeNull();
+  });
+
+  it('db.meta 가 없으면 null', async () => {
+    expect(await fetchWeeklyPR({}, 'en')).toBeNull();
   });
 });

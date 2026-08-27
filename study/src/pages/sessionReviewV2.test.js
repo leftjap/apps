@@ -411,7 +411,45 @@ describe('sessionReviewV2 v3 — 점수 원 · 문장별 캘린더 · 자기평�
     expect(b.classList.contains('old')).toBe(false);
     expect(host.querySelector('.vr-srs').textContent).toContain('3번째');
     expect(host.textContent).not.toContain('통과 시 다음 복습'); // 날짜 줄로 이동 (§4.3)
+  });
+
+  /* 링·캡션도 취소선과 같은 지표(오늘 점수 유무)를 쓴다. 종전엔 card.lastScore(지난 점수)로 갈라
+   * 오늘 아무것도 안 했는데 링은 '—', 캡션은 '방금 점수' 였다 — 방금 받은 점수가 없는데.
+   * §7.3 의 「'첫 복습' 분기 유지」 지시는 폐기 (클로드디자인 2026-08-27): N번째 복습이 메타에 있어
+   * 중복이고, 캡션이 '방금 점수' 로 바뀐 뒤엔 축이 어긋난다. */
+  it('오늘 점수가 없으면 링·캡션을 그리지 않는다 (지난 점수가 있어도)', () => {
+    const host = mountWithLastScore();
+    expect(host.querySelector('.vr-ring')).toBeNull();
+    expect(host.querySelector('.vr-cap')).toBeNull();
+    expect(host.textContent).not.toContain('첫 복습');
+  });
+
+  it('녹음하면 링이 그 점수로 등장하고 캡션은 `방금 점수` 다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountWithLastScore({ demo: true });
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelector('.vr-cap').textContent).toBe('방금 점수');
+      expect(host.querySelector('.vr-ring .cn').textContent).not.toBe('—');
+    } finally { vi.useRealTimers(); }
+  });
+
+  /* Q8 — 재방문·공개 전이어도 오늘 점수가 있으면 링은 보인다. state.lastScore 는 카드 이동에서
+   * null 로 리셋되므로(session-review.js:181) 링 값은 sentLog 의 오늘 마지막 점수에서 온다. */
+  it('오늘 연습한 카드로 돌아오면 첫 렌더부터 링이 오늘 마지막 점수를 보인다', () => {
+    const today = localISODate();
+    const host = mountWithLastScore({ sentLog: { c1: { [today]: [72, 88] } } });
+    expect(host.querySelector('.vr-ring .cn').textContent).toBe('88');
     expect(host.querySelector('.vr-cap').textContent).toBe('방금 점수');
+  });
+
+  it('모바일 컨트롤 줄도 링 자리를 미리 예약한다 (min-height)', () => {
+    const host = mountCard({ interval: 3, size: 'phone' });
+    const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+    const blocks = [...css.matchAll(/\.vr-ctrl\{[^}]*\}/g)].map((m) => m[0]);
+    expect(blocks.length).toBeGreaterThan(0);
+    expect(blocks.every((b) => b.includes('min-height'))).toBe(true);
   });
 
   it('녹음해 오늘 점수가 생기면 그때 취소선이 붙는다', () => {

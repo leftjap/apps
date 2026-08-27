@@ -75,7 +75,7 @@ ${V_TODAY_KEY}
 .vh-wk .v{font-family:Outfit;font-size:16px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink);white-space:nowrap}
 .vh-wk .v em{font-style:normal;font-size:10.5px;font-weight:700;margin-left:5px;letter-spacing:.02em}
 .vh-wk.best .v{color:var(--coral-deep)}
-.vh-wk.now .v{color:#b8b1a0}
+.vh-wk.now:not(.best) .v{color:#b8b1a0}
 .vh-wk .tr{height:7px;border-radius:999px;background:#ece8da;position:relative}
 .vh-wk .tr > i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--teal);animation:v-fill .9s cubic-bezier(.3,.7,.3,1) both}
 .vh-wk.best .tr > i{background:var(--coral)}
@@ -198,17 +198,27 @@ function calendarCard(state, d) {
       v > 0 ? h('span', { class: 'vv' }, String(v)) : null);
   });
 
-  // 주 발화 4블록 — 마지막이 진행 중인 주.
+  /* 주 발화 4블록 — 마지막이 진행 중인 주.
+   * 분모는 주 발화 개인기록(prWeeklyUtterance)이다. 4주 최댓값을 쓰면 기준이 스스로 움직여
+   * '기록'이 아니게 된다 (클로드디자인 2026-08-27). 기록 보유 주는 정의상 100% + '최고' 배지고,
+   * 진행 중인 주가 그걸 넘으면 그것이 곧 갱신이라 배지가 그 주로 옮겨간다 — 홈 링과 같은 문법.
+   * 기록 주가 4주 밖이면 배지 없이 전부 100% 미만: '천장이 화면 밖'이라는 정보 자체가 값어치다.
+   * 기록이 아직 없으면(첫 세션 전) 배지 없이 창 최댓값으로만 눈금을 잡는다. */
   const sums = [0, 1, 2, 3].map((w) => days.slice(w * 7, w * 7 + 7)
     .filter((iso) => iso <= today).reduce((acc, iso) => acc + valOf(iso), 0));
-  const mx = Math.max(...sums, 1);
-  const bestVal = Math.max(...sums.slice(0, 3));
+  const prVal = Number(state.weeklyPR?.value) || 0;
+  const prWeek = state.weeklyPR?.week_start || null;
+  const overPR = prVal > 0 && sums[3] > prVal;
+  const denom = overPR ? sums[3] : (prVal || Math.max(...sums, 1));
+  // 배지는 한 주에만 — 개인기록은 단일 값이라 동률 중복이 생기지 않는다.
+  const bestIdx = overPR ? 3 : (prWeek ? [0, 1, 2, 3].findIndex((w) => days[w * 7] === prWeek) : -1);
+  const pct = (v) => Math.min(Math.round((v / denom) * 100), 100);
   const weeks = sums.map((v, w) => {
     const isNow = w === 3;
-    const isBest = !isNow && v > 0 && v === bestVal;
+    const isBest = w === bestIdx;
     const track = h('div', { class: 'tr' },
-      v > 0 ? h('i', { style: `width:${Math.round((v / mx) * 100)}%;animation-delay:${[0.1, 0.25, 0.4, 0.4][w]}s` }) : null,
-      isNow && sums[2] > 0 ? h('b', { style: `left:${Math.round((sums[2] / mx) * 100)}%` }) : null);
+      v > 0 ? h('i', { style: `width:${pct(v)}%;animation-delay:${[0.1, 0.25, 0.4, 0.4][w]}s` }) : null,
+      isNow && sums[2] > 0 ? h('b', { style: `left:${pct(sums[2])}%` }) : null);
     return h('div', { class: 'vh-wk' + (isBest ? ' best' : '') + (isNow ? ' now' : '') },
       h('span', { class: 'v' }, String(v), isBest ? h('em', {}, '최고') : null), track);
   });
@@ -310,7 +320,7 @@ function ctaCard(state, d) {
     ? d.doneNewMeta
     : d.phase === 'mid'
       ? `남은 ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분 남음`
-      : `${d.sceneLine} · ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분`;
+      : [d.sceneLine, `${newUnit} ${state.newCount}개`, `약 ${d.newMin}분`].filter(Boolean).join(' · ');
 
   /* CTA 는 항상 3개다 (§5.5 '3버튼 모두') — 종전엔 복습 큐가 비면 '복습 시작' 을 통째로 숨겼다.
    * 보조줄만 상태에 따라 다르게: 큐가 비었으면 '오늘이 적기' 같은 없는 사실을 주장하지 않는다. */
@@ -343,17 +353,15 @@ function derive(state) {
       : (state.newCount === 0 && (state.todayNewDone > 0 || state.totalReview > 0)) ? 'done'
         : 'fresh');
 
-  const scenePrefix = state.lang === 'math' ? '오늘의 문제' : '오늘의 장면';
-  // 실데이터 sessionTitle 이 프리픽스와 같으면('오늘의 장면') 중복 표기 방지.
-  const hasTitle = !!state.sessionTitle && state.sessionTitle !== scenePrefix;
-  const sceneChip = hasTitle ? `${scenePrefix} — ${state.sessionTitle}` : scenePrefix;
-  // CTA 보조줄은 시안 표기(구분자 없이 '오늘의 장면 At the Park')를 따른다.
-  const sceneLine = hasTitle ? `${scenePrefix} ${state.sessionTitle}` : scenePrefix;
+  /* CTA 보조줄에서 '오늘의 장면' 접두사를 뺀다 — 그 말은 장면명을 실어 나르는 자리였을 뿐이라
+   * 장면이 없는 트랙(모두영어 core100)에서는 거짓이 된다 (클로드디자인 2026-08-27).
+   * 장면이 있으면 이름만 앞에 싣고, 없으면 분량만 말한다. */
+  const sceneLine = state.sessionTitle || '';
   const newMin = state.newMin || Math.max(state.newCount * 3, 4);
   const reviewMin = state.reviewMin || Math.max((state.reviewCount || state.totalReview) * 2, 2);
 
   return {
-    phase, sceneChip, sceneLine, newMin, reviewMin,
+    phase, sceneLine, newMin, reviewMin,
     reviewFree: state.lang !== 'math' && state.reviewCount === 0 && state.totalReview > 0,
     doneNewMeta: state.doneNewMeta || `${state.lang === 'math' ? '문제' : '표현'} ${state.todayNewDone}개 완료 · 발화 ${state.tried}회`,
     cumExpr: state.cumExpr ?? 0,
@@ -450,7 +458,7 @@ ${V_TODAY_KEY}
 .vh-wk .v{font-family:Outfit;font-size:13.5px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--ink);white-space:nowrap}
 .vh-wk .v em{font-style:normal;font-size:9px;font-weight:700;margin-left:3px;letter-spacing:.02em}
 .vh-wk.best .v{color:var(--coral-deep)}
-.vh-wk.now .v{color:#b8b1a0}
+.vh-wk.now:not(.best) .v{color:#b8b1a0}
 .vh-wk .tr{height:6px;border-radius:999px;background:#ece8da;position:relative}
 .vh-wk .tr > i{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:var(--teal);animation:v-fill .9s cubic-bezier(.3,.7,.3,1) both}
 .vh-wk.best .tr > i{background:var(--coral)}

@@ -79,7 +79,8 @@ const VR_CSS = `
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
-.vr-ring{position:relative;width:54px;height:54px;flex:0 0 auto}
+.vr-ringhost{margin-left:auto;display:flex;align-items:center;gap:10px}
+.vr-ring{position:relative;width:54px;height:54px;flex:0 0 auto;animation:v-settle .5s both}
 .vr-ring svg{transform:rotate(-90deg)}
 .vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vr-cap{font-size:11.5px;color:var(--faint);white-space:nowrap}
@@ -233,7 +234,7 @@ const VRM_CSS = `
 .vr-srs{display:flex;gap:14px;margin-top:12px;font-size:12px;color:var(--faint);flex-wrap:wrap}
 .vr-srs b{color:var(--mut);font-weight:700}
 .vr-srs b.old{color:#b8b1a0;text-decoration:line-through}
-.vr-ctrl{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.vr-ctrl{display:flex;align-items:center;gap:10px;margin-top:18px;min-height:54px;flex-wrap:wrap}
 /* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vr button' 리셋과 동률로 올린다 — 안 그러면
    '.vr button' 의 padding:0 (0,0,1,1)이 '.vr-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
    경계에 글자가 붙어 삐져나온다(2026-07-18 iPhone 보고, sessionExprV2 와 동일 뿌리). 파생(0,0,2,0)은 회귀 없음. */
@@ -244,7 +245,8 @@ button.vr-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vr-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vr-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vr-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vr-ring{position:relative;width:54px;height:54px;flex:0 0 auto}
+.vr-ringhost{margin-left:auto;display:flex;align-items:center;gap:10px}
+.vr-ring{position:relative;width:54px;height:54px;flex:0 0 auto;animation:v-settle .5s both}
 .vr-ring svg{transform:rotate(-90deg)}
 .vr-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vr-cap{font-size:11px;color:var(--faint);white-space:nowrap}
@@ -383,8 +385,17 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 듣기는 정답 오디오다 — 회상 시도 전에는 잠근다 (공개 후 해제).
   const listenPill = h('button', { class: 'vr-pill vr-listen', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
   listenPill.disabled = !revealed;
-  let curRing = ringEl(state.lastScore);
-  const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, curRing, h('span', { class: 'vr-cap' }, lastScore != null ? '방금 점수' : '첫 복습'));
+  /* 링은 '방금 받은 점수' 하나를 담는 슬롯이다 — 없으면 슬롯 자체를 그리지 않는다. 게이트도 값도
+   * 취소선과 같은 지표(오늘 점수)를 쓴다. state.lastScore 는 카드 이동에서 null 로 리셋되므로
+   * (session-review.js:181) 오늘 연습한 카드로 돌아왔을 때 값이 비고, sentLog 만 남는다.
+   * '첫 복습' 분기는 폐기 — 회차는 메타의 'N번째 복습' 이 이미 말한다 (클로드디자인 2026-08-27). */
+  const ringHost = h('div', { class: 'vr-ringhost' });
+  const paintRing = () => {
+    const today = dayScores[todayISO] || [];
+    if (!today.length) { ringHost.replaceChildren(); return; }
+    ringHost.replaceChildren(ringEl(today[today.length - 1]), h('span', { class: 'vr-cap' }, '방금 점수'));
+  };
+  paintRing();
   // 듣기(좌) / 녹음(우) — 신규 세션과 같은 순서. 바꾸지 않는다 (§6.4-4 · §7.2).
   const ctrl = h('div', { class: 'vr-ctrl' }, listenPill, recPill, ringHost);
 
@@ -511,8 +522,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     bumpRecLog(state, s?.id, score);
     (dayScores[todayISO] ??= []).push(Math.round(Number(score) || 0)); // 점수 원 + 오늘 칸 농도
     lastScoreEl?.classList.add('old'); // 오늘 점수가 지난 점수를 대체했다
-    const nr = ringEl(score); curRing.replaceWith(nr); curRing = nr;
-    ringHost.lastChild.textContent = '방금 점수';
+    paintRing(); // 첫 점수면 링이 v-settle 로 등장, 이후엔 값만 갱신
     if (!revealed) reveal(); // 시도 직후 정답 공개 (피드백) — 실패해도 학습된다
     refreshDots(); refreshRec();
   }

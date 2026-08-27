@@ -44,7 +44,7 @@ export const VS_CSS = `
 .vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}
 .vs-main{width:760px;max-width:100%}
 .vs-crumb{display:flex;align-items:center;gap:14px}
-.vs-scene{font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:6px 13px;white-space:nowrap}
+.vs-scene{display:inline-block;max-width:300px;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:6px 13px;white-space:nowrap}
 .vs-prog{flex:1;display:flex;gap:5px}
 .vs-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
 .vs-prog i.f{background:var(--teal)}
@@ -64,7 +64,8 @@ export const VS_CSS = `
 .vs-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vs-ring{position:relative;width:54px;height:54px;flex:0 0 auto}
+.vs-ringhost{margin-left:auto;display:flex;align-items:center;gap:10px}
+.vs-ring{position:relative;width:54px;height:54px;flex:0 0 auto;animation:v-settle .5s both}
 .vs-ring svg{transform:rotate(-90deg)}
 .vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vs-cap{font-size:11.5px;color:var(--faint);white-space:nowrap}
@@ -610,13 +611,13 @@ export const VSM_CSS = `
 .m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
 .m-cta .vs-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:transparent;border:1.5px solid var(--line);color:var(--faint)}
 .m-cta .vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
-.scene-chip{display:inline-flex;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap}
+.scene-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap}
 .vs-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
 .vs-h1{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
 .vs-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 4px no-repeat;padding-bottom:4px}
 .vs-ko{font-size:16px;color:var(--mut);margin-top:11px}
 .vs-pron{font-size:12.5px;color:var(--faint);margin-top:5px}
-.vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:wrap}
+.vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;min-height:54px;flex-wrap:wrap}
 /* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vs button' 리셋과 동률로 올린다 — 안 그러면
    '.vs button' 의 padding:0 (0,0,1,1)이 '.vs-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
    경계에 글자가 붙어 삐져나온다(2026-07-18 iPhone 보고). '.vs-pill.pri' 등 파생(0,0,2,0)은
@@ -628,7 +629,8 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-pill.recing{background:var(--coral-deep);border-color:var(--coral-deep);color:#fff;animation:none}
 .vs-pill.recing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--coral);animation:v-pulse 1.5s ease-out infinite}
 .vs-pill.playing::after{content:"";position:absolute;inset:-3px;border-radius:999px;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
-.vs-ring{position:relative;width:54px;height:54px;flex:0 0 auto;margin-left:auto}
+.vs-ringhost{margin-left:auto;display:flex;align-items:center;gap:10px}
+.vs-ring{position:relative;width:54px;height:54px;flex:0 0 auto;animation:v-settle .5s both}
 .vs-ring svg{transform:rotate(-90deg)}
 .vs-ring .cn{position:absolute;inset:0;display:grid;place-items:center;font-family:Outfit;font-size:15.5px;font-weight:700;color:var(--teal-deep)}
 .vs-cap{display:none}
@@ -735,11 +737,18 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
   // 재렌더·복원 시에도 3상태가 맞도록 초기 라벨을 이력에서 정한다 (종전엔 '따라 말하기' 로 굳었다).
   if (recCount() > 0) recPill.lastChild.textContent = '다시 말하기';
-  // 점수링 캡션 — 링에 뜬 값은 방금 받은 점수다. 점수 없이 시도만(응용 발화 등) 있으면 'N회 시도', 없으면 '아직 시도 전'.
-  const capText = () => (state.lastScore != null ? '방금 점수' : (recCount() > 0 ? `${recCount()}회 시도` : '아직 시도 전'));
-  const ring = ringEl(state.lastScore);
-  const ringHost = h('div', { style: 'margin-left:auto;display:flex;align-items:center;gap:10px;' }, ring,
-    h('span', { class: 'vs-cap', id: 'vs-cap' }, capText()));
+  /* 링은 '방금 받은 점수' 하나를 담는 슬롯이다 — 보여줄 점수가 없으면 슬롯 자체를 그리지 않는다.
+   * 종전엔 링을 '—' 로 띄우고 캡션에 '아직 시도 전' / 'N회 시도' 를 채웠다. 결과가 없는데 결과
+   * 자리를 그린 것이 문제였다 (클로드디자인 2026-08-27). 드릴·체이닝 발화는 메인 점수가 아니라
+   * state.lastScore 를 건드리지 않으므로 링도 나타나지 않는다. */
+  const ringHost = h('div', { class: 'vs-ringhost' });
+  const paintRing = () => {
+    if (state.lastScore == null) { ringHost.replaceChildren(); return null; }
+    const r = ringEl(state.lastScore);
+    ringHost.replaceChildren(r, h('span', { class: 'vs-cap' }, '방금 점수'));
+    return r;
+  };
+  paintRing();
   const ctrl = h('div', { class: 'vs-ctrl' }, listenPill, recPill, ringHost);
 
   const stopPlaying = () => { playing = false; listenPill.classList.remove('playing'); listenPill.lastChild.textContent = '듣기'; };
@@ -790,7 +799,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   };
 
   // 점수 → 리빌 적용 (state·DOM·애니). DB 쓰기는 실경로에서만 별도 호출. 데모 시뮬과 단일 출처 공유.
-  let curRing = ring;
   function applyScore(score, weakPhonemes) {
     state.lastScore = score; state.tried = (state.tried || 0) + 1;
     const passed = score >= PASS_THRESHOLD;
@@ -800,8 +808,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
     pushUtter(score);
-    const newRing = ringEl(score); curRing.replaceWith(newRing); curRing = newRing; popScore(newRing);
-    ringHost.lastChild.textContent = capText();
+    popScore(paintRing()); // 첫 점수면 링이 v-settle 로 등장, 이후엔 값만 갱신
     refreshDots(); refreshRecWidget();
   }
   /* 녹음 중 표시는 코랄 채움 + v-pulse 확산 링 + 라벨뿐 — 아이콘은 마이크로 둔다.
@@ -880,7 +887,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     rows[i] = [...normScores(rows[i]), score];
     pushUtter(score);
     refreshDots();
-    ringHost.lastChild.textContent = capText();
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
@@ -911,7 +917,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     bumpRecLog(state, s?.id, score);
     pushUtter(score);
     refreshDots();
-    ringHost.lastChild.textContent = capText();
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
@@ -952,7 +957,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const fhd = h('div', { class: 'fhd' }, h('span', { class: 'ft' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 })));
     const fold = h('div', { class: 'vs-fold' }, fhd, foldBd);
     fhd.addEventListener('click', () => { const open = fold.classList.toggle('open'); foldBd.style.display = open ? '' : 'none'; });
-    const sceneChip = sceneTitle ? `${sceneTitle} · ${subjLabel}` : `신규 학습 · ${subjLabel}`;
+    const sceneChip = `${sceneTitle || '신규'} · ${subjLabel}`; // <맥락> · <과목> 고정
     root = h('div', { class: 'vs' }, v2Style(VSM_CSS),
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
@@ -976,7 +981,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     });
     const main = h('div', { class: 'vs-main' },
       h('div', { class: 'vs-crumb' },
-        h('span', { class: 'vs-scene' }, (sceneTitle || '신규 학습') + ' · ' + subjLabel),
+        h('span', { class: 'vs-scene' }, `${sceneTitle || '신규'} · ${subjLabel}`),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
       cardEl, drillsBlock, chainBlock, prodBlock);

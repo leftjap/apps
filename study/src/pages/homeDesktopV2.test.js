@@ -215,13 +215,47 @@ describe('홈 v3 — 최근 4주 캘린더 · 오늘 발화 링 · CTA', () => {
     expect(cum.children[1].textContent).toContain('1,120');
   });
 
-  it('주 발화 4블록 — 최고 주는 코랄, 진행 중인 주는 직전 주 위치에 고스트 점', () => {
-    const el = renderHomeDesktopV2(v3());
+  /* 주 발화 바의 분모는 주 발화 개인기록(prWeeklyUtterance)이다. 4주 최댓값을 쓰면 기준이 스스로
+   * 움직여 '기록'이 아니게 된다 (클로드디자인 2026-08-27). 창(8/3~8/30)의 주 합: 0 / 0 / 65 / 42.
+   * 주 시작(월): 8/3 · 8/10 · 8/17 · 8/24. */
+  const barPct = (wk) => wk.querySelector('.tr > i')?.style.width;
+
+  it('주 발화 4블록 — 진행 중인 주는 직전 주 위치에 고스트 점', () => {
+    const el = renderHomeDesktopV2(v3({ weeklyPR: { value: 65, week_start: '2026-08-17' } }));
     const wks = el.querySelectorAll('.vh-wk');
     expect(wks).toHaveLength(4);
     expect(wks[3].classList.contains('now')).toBe(true);
     expect(wks[3].querySelector('.tr > b')).not.toBeNull(); // 직전 주 고스트 점
-    expect(el.querySelector('.vh-wk.best .v').textContent).toContain('최고');
+  });
+
+  it('기록 보유 주는 정의상 100% + 최고 배지', () => {
+    const el = renderHomeDesktopV2(v3({ weeklyPR: { value: 65, week_start: '2026-08-17' } }));
+    const wks = el.querySelectorAll('.vh-wk');
+    expect(wks[2].classList.contains('best')).toBe(true);
+    expect(wks[2].querySelector('.v').textContent).toContain('최고');
+    expect(barPct(wks[2])).toBe('100%');
+    expect(barPct(wks[3])).toBe('65%'); // 42 / 65
+  });
+
+  it('진행 중인 주가 기록을 넘으면 배지가 그 주로 옮겨간다 (그게 곧 갱신)', () => {
+    const el = renderHomeDesktopV2(v3({ weeklyPR: { value: 30, week_start: '2026-08-17' } }));
+    const wks = el.querySelectorAll('.vh-wk');
+    expect(wks[3].classList.contains('best')).toBe(true);  // 42 > 30
+    expect(barPct(wks[3])).toBe('100%');
+    expect(wks[2].classList.contains('best')).toBe(false); // 이전 기록 주는 배지 없이 상대 비율
+    expect(el.querySelectorAll('.vh-wk.best')).toHaveLength(1);
+  });
+
+  it('기록 주가 4주 밖이면 배지 없음 · 네 바 모두 100% 미만 (천장이 화면 밖)', () => {
+    const el = renderHomeDesktopV2(v3({ weeklyPR: { value: 200, week_start: '2026-07-06' } }));
+    expect(el.querySelectorAll('.vh-wk.best')).toHaveLength(0);
+    const wks = [...el.querySelectorAll('.vh-wk')];
+    expect(wks.map(barPct).filter(Boolean).every((w) => parseInt(w, 10) < 100)).toBe(true);
+  });
+
+  it('개인기록이 아직 없으면 배지를 붙이지 않는다', () => {
+    const el = renderHomeDesktopV2(v3());
+    expect(el.querySelectorAll('.vh-wk.best')).toHaveLength(0);
   });
 });
 
@@ -240,15 +274,22 @@ describe('홈 캘린더 — 주 발화 줄 배치', () => {
 /* 시안 §5.5 CTA 보조줄 문구 — 2026-08-27 시안 줄 대조. 구분자 '—' 가 끼어 있었고,
  * 복습 보조의 앞 숫자가 '오늘 due' 였다(시안은 복습 큐 전체 + '오늘 N문장 ≈ M분'). */
 describe('홈 CTA 보조줄 — 시안 문구', () => {
-  const st = () => baseState({
+  const st = (over = {}) => baseState({
     todayISO: '2026-08-25', sessionTitle: 'At the Park',
     newCount: 9, newMin: 27, reviewCount: 10, totalReview: 98, reviewMin: 20,
-    dayMap: { '2026-08-24': 34 }, cumStudySec: 0,
+    dayMap: { '2026-08-24': 34 }, cumStudySec: 0, ...over,
   });
 
-  it('학습 시작 보조는 "오늘의 장면 At the Park · 표현 9개 · 약 27분"', () => {
+  /* '오늘의 장면' 접두사는 장면명을 실어 나르는 자리였을 뿐이다 — 현행 커리큘럼(모두영어 core100)엔
+   * 장면 데이터가 없어 접두사만 남으면 거짓이 된다 (클로드디자인 2026-08-27). 장면이 있으면 이름만 싣는다. */
+  it('학습 시작 보조 — 장면이 있으면 장면명만 앞에 싣는다', () => {
     const el = renderHomeDesktopV2(st());
-    expect(el.querySelector('.vh-cta.pri .t2').textContent).toBe('오늘의 장면 At the Park · 표현 9개 · 약 27분');
+    expect(el.querySelector('.vh-cta.pri .t2').textContent).toBe('At the Park · 표현 9개 · 약 27분');
+  });
+
+  it('학습 시작 보조 — 장면이 없으면 접두사 없이 분량만 말한다', () => {
+    const el = renderHomeDesktopV2(st({ sessionTitle: '' }));
+    expect(el.querySelector('.vh-cta.pri .t2').textContent).toBe('표현 9개 · 약 27분');
   });
 
   it('복습 시작 보조는 "복습 문장 98 · 오늘이 적기 · 10문장 ≈ 20분"', () => {

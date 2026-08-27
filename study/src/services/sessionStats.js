@@ -171,6 +171,30 @@ export async function fetchPRDays(db, lang) {
 }
 
 /**
+ * 주 발화 개인기록 — 홈 8열 '주 발화' 바의 분모.
+ *
+ * 4주 최댓값을 분모로 쓰면 기준이 스스로 움직여 '기록'이 아니게 된다 (클로드디자인 2026-08-27).
+ * pr.js 형식: prWeeklyUtterance = { value, week_start: 'YYYY-MM-DD'(월요일), lang } (pr.js:14).
+ * week_start 가 없으면 어느 주가 기록 주인지 못 정하므로 null — 없는 주를 지어내지 않는다.
+ *
+ * @returns {Promise<{value:number, week_start:string}|null>}
+ */
+export async function fetchWeeklyPR(db, lang) {
+  if (!db?.meta) return null;
+  try {
+    const row = await db.meta.get('prWeeklyUtterance');
+    const v = row?.value;
+    if (!v || typeof v.week_start !== 'string') return null;
+    if (v.lang && lang && v.lang !== 'both' && v.lang !== lang) return null;
+    const value = Number(v.value) || 0;
+    return value > 0 ? { value, week_start: v.week_start } : null;
+  } catch (e) {
+    console.error('[sessionStats.fetchWeeklyPR]', e);
+    return null;
+  }
+}
+
+/**
  * 직전 '학습일'(오늘보다 앞선, 발화가 있었던 가장 최근 날) 의 발화 수.
  * 오늘의 기준선은 직전 세션이 아니라 직전 학습일이다 (기록/갱신 설계 §1-1).
  * 0 = 직전 학습일 없음 → 화면은 비교를 주장하지 않는다.
@@ -212,6 +236,7 @@ export async function saveDailyPRIfRecord(db, candidateValue, todayISO) {
 export const SessionStats = Object.freeze({
   fetchDayUtterMap,
   fetchPRDays,
+  fetchWeeklyPR,
   prevStudyDayUtterance,
   computeDeltaVsPrevSession,
   computePRRemaining,

@@ -22,7 +22,7 @@ import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 import { localISODate } from '../utils/today.js';
 import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
-import { fetchPRDays } from '../services/sessionStats.js';
+import { fetchPRDays, fetchWeeklyPR } from '../services/sessionStats.js';
 import { PASS_THRESHOLD } from '../services/userMeta.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -130,6 +130,7 @@ const DEMO_COMMON = {
     '2026-06-01': 26, '2026-06-03': 24, '2026-06-04': 31, '2026-06-06': 34,
   },
   prDays: ['2026-05-27'], // 일 발화 47 = 이 창의 개인기록 → 코랄 칸
+  weeklyPR: { value: 214, week_start: '2026-05-25' }, // 주 발화 기록 = 둘째 주 → 100% + '최고' 배지
   cumStudySec: 151800,    // 42시간 10분
 };
 const DEMO_BY_PHASE = {
@@ -235,7 +236,7 @@ export function mountHome(host) {
     // 데스크톱 v2 하단 스트립 확장 필드 — 언어별 loadStats 가 다시 채우기 전 stale 표시 방지.
     state.pronBars = []; state.grass = null; state.cumExpr = 0; state.cumUtter = 0;
     state.cumMaster = 0; state.weekDoneText = ''; state.pronAvg = 0; state.pronDelta = 0;
-    state.dayMap = null; state.cumStudySec = null; state.prDays = [];
+    state.dayMap = null; state.cumStudySec = null; state.prDays = []; state.weeklyPR = null;
     state.stripLeftLabel = undefined; state.stripLeftHead = undefined; state.stripLeftUnit = undefined;
     rerender();
     refreshStats();
@@ -327,7 +328,7 @@ async function loadMathStats(state) {
     bestStreak: previousBest, weekUtter: mWeekTried, weekPass: mWeekPassed, sessionTitle: '',
     pronBars: mPronBars, grass: mGrass, cumUtter: mCumUtter, cumExpr: mCumExpr, cumMaster: totalReview,
     // 수학 진도 로그(localStorage)엔 durationSec 이 없다 — 누적 공부 시간은 null(표시 생략).
-    dayMap: mByDate, cumStudySec: null, prDays: [],
+    dayMap: mByDate, cumStudySec: null, prDays: [], weeklyPR: null,
     weekDoneText: todayLog.tried > 0 ? `${mWeekDays}일 학습 · 오늘 진행 중` : `${mWeekDays}일 학습`,
     pronAvg: mWeekTried, pronDelta: 0,
     stripLeftLabel: '일일 문제 · 14일', stripLeftHead: '이번 주 문제', stripLeftUnit: '문제',
@@ -419,6 +420,8 @@ async function loadStats(state) {
       stripLeftLabel: '일일 발화 · 14일', stripLeftHead: '이번 주 발화', stripLeftUnit: '회',
       // 4주 캘린더 히어로 (홈 v3) — 날짜별 발화 합 + 누적 학습시간 + 개인기록 달성일.
       dayMap: byDate, cumStudySec, prDays: await fetchPRDays(db, lang),
+      // 주 발화 바의 분모 = 주 발화 개인기록 (4주 최댓값은 스스로 움직이는 기준이라 '기록'이 아니다)
+      weeklyPR: await fetchWeeklyPR(db, lang),
     };
   } catch (e) {
     console.error('[home loadStats]', e);
