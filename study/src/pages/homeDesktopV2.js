@@ -310,19 +310,22 @@ function ctaCard(state, d) {
       ? `남은 ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분 남음`
       : `${d.sceneLine} · ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분`;
 
-  const showReview = state.reviewCount >= 1 || (!isMath && state.totalReview >= 1);
-  // 시안 §5.5 — 앞 숫자는 복습 큐 전체, 뒤는 '오늘 몇 문장 ≈ 몇 분'.
-  const reviewSub = d.reviewFree
-    ? `복습 큐 ${state.totalReview}${reviewUnit} · 원하는 만큼`
-    : `복습 ${reviewUnit} ${state.totalReview} · 오늘이 적기 · ${state.reviewCount}${reviewUnit} ≈ ${d.reviewMin}분`;
+  /* CTA 는 항상 3개다 (§5.5 '3버튼 모두') — 종전엔 복습 큐가 비면 '복습 시작' 을 통째로 숨겼다.
+   * 보조줄만 상태에 따라 다르게: 큐가 비었으면 '오늘이 적기' 같은 없는 사실을 주장하지 않는다. */
+  const reviewSub = state.totalReview <= 0
+    ? '복습할 문장이 없어요'
+    : d.reviewFree
+      ? `복습 큐 ${state.totalReview}${reviewUnit} · 원하는 만큼`
+      : `복습 ${reviewUnit} ${state.totalReview} · 오늘이 적기 · ${state.reviewCount}${reviewUnit} ≈ ${d.reviewMin}분`;
+  const reviewLabel = d.reviewFree ? '자유 복습' : '복습 시작';
 
   return h('div', { class: 'vh-card vh-ctacard' },
     h('button', { class: 'vh-cta pri', type: 'button', onClick: goNew },
       h('span', {}, h('span', { class: 't1' }, newLabel), h('span', { class: 't2' }, newSub)),
       vIcon(VI.PLAY, { size: 14, fill: true })),
-    showReview ? h('button', { class: 'vh-cta rev', type: 'button', onClick: goReview },
-      h('span', {}, h('span', { class: 't1' }, d.reviewFree ? '자유 복습' : '복습 시작'), h('span', { class: 't2' }, reviewSub)),
-      vIcon(VI.REPEAT, { size: 14, sw: 2 })) : null,
+    h('button', { class: 'vh-cta rev', type: 'button', onClick: goReview },
+      h('span', {}, h('span', { class: 't1' }, reviewLabel), h('span', { class: 't2' }, reviewSub)),
+      vIcon(VI.REPEAT, { size: 14, sw: 2 })),
     isMath ? null : h('button', { class: 'vh-cta sec', type: 'button', onClick: () => { window.location.hash = '#/sentences'; } },
       h('span', {}, h('span', { class: 't1' }, '문장 모아보기'), h('span', { class: 't2' }, '지금까지 공부한 문장 · 한글 보고 떠올리기')),
       h('span', { class: 'go' }, '열기')),

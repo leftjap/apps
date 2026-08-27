@@ -245,3 +245,36 @@ describe('홈 CTA 보조줄 — 시안 문구', () => {
     expect(el.querySelector('style').textContent).toContain('.vh-wklab{display:none}');
   });
 });
+
+/* 2026-08-27 실배포 스샷 — 복습 큐가 비면 '복습 시작' 버튼이 통째로 사라졌다.
+ * 옛 tasksColumn 의 조건부 렌더를 그대로 들고 온 탓. §5.5 는 "3버튼 모두" 로 조건이 없다. */
+describe('홈 CTA — 항상 3버튼 (§5.5)', () => {
+  const st = (over) => baseState({
+    todayISO: '2026-08-27', newCount: 6, newMin: 18,
+    dayMap: { '2026-08-21': 60 }, cumStudySec: 109560, cumUtter: 1120, cumExpr: 201,
+    reviewCount: 0, totalReview: 0, cumMaster: 0, ...over,
+  });
+  const ctas = (el) => [...el.querySelectorAll('.vh-cta .t1')].map((n) => n.textContent);
+
+  for (const [name, render] of [['데스크톱', renderHomeDesktopV2], ['모바일', renderHomeMobileV2]]) {
+    it(`${name}: 복습 큐가 0 이어도 복습 버튼이 남는다`, () => {
+      const el = render(st({ size: name === '모바일' ? 'phone' : 'desktop' }));
+      expect(ctas(el)).toEqual(['학습 시작', '복습 시작', '문장 모아보기']);
+      // 없는 사실을 주장하지 않는다 — 큐가 비었으면 '오늘이 적기' 를 쓰지 않는다
+      const sub = el.querySelector('.vh-cta.rev .t2').textContent;
+      expect(sub).toBe('복습할 문장이 없어요');
+      expect(sub).not.toMatch(/오늘이 적기/);
+    });
+  }
+
+  it('오늘 복습할 게 있으면 시안 문구를 쓴다', () => {
+    const el = renderHomeDesktopV2(st({ reviewCount: 10, totalReview: 98, reviewMin: 20 }));
+    expect(el.querySelector('.vh-cta.rev .t2').textContent).toBe('복습 문장 98 · 오늘이 적기 · 10문장 ≈ 20분');
+  });
+
+  it('큐는 있는데 오늘 due 가 없으면 자유 복습', () => {
+    const el = renderHomeDesktopV2(st({ reviewCount: 0, totalReview: 98 }));
+    expect(ctas(el)[1]).toBe('자유 복습');
+    expect(el.querySelector('.vh-cta.rev .t2').textContent).toBe('복습 큐 98문장 · 원하는 만큼');
+  });
+});
