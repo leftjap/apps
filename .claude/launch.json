@@ -314,21 +314,6 @@
       ],
       "cwd": "/Users/gio_c/apps/study",
       "port": 5195
-    },
-    {
-      "name": "study-record-sian",
-      "runtimeExecutable": "python3",
-      "runtimeArgs": [
-        "-m",
-        "http.server",
-        "5197",
-        "--directory",
-        "/private/tmp/claude-501/-Users-gio-c-apps/b7500844-c8cc-43fd-a7ff-8c3e28a7d6dd/scratchpad/handoff/design_handoff_study_record_renewal/mocks",
-        "--bind",
-        "127.0.0.1"
-      ],
-      "port": 5197,
-      "autoPort": false
     }
   ]
 }
