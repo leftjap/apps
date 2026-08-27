@@ -303,8 +303,6 @@ public final class RTAppModel: ObservableObject {
     /// 전자책(밀리) 일별 초 — "yyyy-MM-dd"(실발생일) → seconds. book_reading_seconds 읽기 전용,
     /// 통계는 표시 계층에서 종이+전자 합산 (README 결정: DB에선 안 섞음). 데모(userData nil) 미적용.
     @Published public var ebookDaily: [String: Int] = [:]
-    /// 밀리 현재 읽는 책 제목 (통계 밀리 행 표기 — 없으면 "밀리의서재" 폴백)
-    @Published public var ebookTitle: String?
     /// 밀리 일별×책별 — day "yyyy-MM-dd" → 그날 읽은 책 제목들 (book_reading_books)
     @Published public var ebookBooks: [String: [String]] = [:]
     /// 밀리 책 표지 (제목 → cover_url, 밀리 CDN) — 랭킹·월간 캘린더 표기
@@ -986,7 +984,6 @@ public final class RTAppModel: ObservableObject {
             ebookDaily = [f.string(from: t): 1740,
                           f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): 600,
                           f.string(from: cal.date(byAdding: .day, value: -2, to: t)!): 1200]
-            ebookTitle = "도둑맞은 집중력"   // 시안 밀리 데모 책
             ebookBooks = [f.string(from: t): ["도둑맞은 집중력"],
                           f.string(from: cal.date(byAdding: .day, value: -1, to: t)!): ["디 마이너스"]]
             ebookCovers = ["디 마이너스": "https://img.millie.co.kr/200x/service/cover/7233614/7007cfd575de4dfab086f7ee0af373a4.jpg"]
@@ -1008,7 +1005,6 @@ public final class RTAppModel: ObservableObject {
                     RTSessionRecord(isbn: "P2", mode: "flip", seconds: 74 * 60, endedAt: dd(1), pauseCount: 0),  // 화
                     RTSessionRecord(isbn: "P1", mode: "flip", seconds: 60 * 60, endedAt: dd(3), pauseCount: 0),  // 목(선택일)
                 ])
-            ebookTitle = "도둑맞은 집중력"
             ebookDaily = [f.string(from: dd(3)): 36 * 60]                       // 목: 밀리 36분
             ebookBooks = [f.string(from: dd(3)): ["도둑맞은 집중력"]]
         case "openBook": openBookDetail(isbn: arg)   // 통계 책 → 상세 진입(검증)

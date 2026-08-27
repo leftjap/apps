@@ -26,7 +26,6 @@ private func day(_ s: String, hour: Int = 12) -> Date {
             books: [RTBook(isbn: "P1", title: "작별하지 않는다", author: "한강",
                            publisher: "", coverUrl: "", addedAt: day("2026-07-13"))],
             sessions: [.init(isbn: "P1", mode: "flip", seconds: 60 * 60, endedAt: day("2026-07-16"), pauseCount: 0)])
-        m.ebookTitle = "도둑맞은 집중력"
         m.ebookDaily = ["2026-07-16": 36 * 60]                 // 목: 밀리 36분
         m.ebookBooks = ["2026-07-16": ["도둑맞은 집중력"]]
         return m
