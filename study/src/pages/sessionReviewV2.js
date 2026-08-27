@@ -296,11 +296,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 오늘 발화의 분모 = 직전 학습일 발화 수 (§1-1). 0 = 직전 학습일 없음 → 비교 UI 미표시.
   const prevDay = Number(state.prevDayUtter) || 0;
   const todayISO = getTodayISO();
-  // 이 문장의 날짜별 시도 점수 (session-review.js loadSentenceLog). 세션 시작 시점 스냅샷이라
-  // 이번 세션 시도는 아래 sessionScores 로 따로 더한다.
-  const dayScores = (state.sentLog?.[s?.id]) || {};
-  const savedToday = dayScores[todayISO] || [];
-  const sessionScores = [];
+  /* 이 문장의 날짜별 시도 점수 (session-review.js loadSentenceLog).
+   * state.sentLog 에 물려 둔다 — 이번 세션 시도를 여기에 밀어 넣으면 카드 이동·재렌더에도 남고,
+   * 새로고침 때는 loadSentenceLog 가 pronunciationLog 에서 다시 읽으므로 중복 계산도 없다.
+   * (종전엔 렌더 지역 배열이라 재렌더하면 오늘 시도 원이 사라졌다 — 2026-08-27 시안 대조) */
+  state.sentLog ??= {};
+  const dayScores = (state.sentLog[s?.id] ??= {});
   // 직전 복습 회차의 발화 횟수 = 오늘보다 앞선 가장 최근 연습일의 시도 수 (빈 슬롯 개수의 근거).
   const prevSentDay = Object.keys(dayScores).filter((d) => d < todayISO).sort().pop();
   const prevTries = prevSentDay ? dayScores[prevSentDay].length : 0;
@@ -382,6 +383,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
   // 복습에서 발화는 전진 조건이 아니다 (사용자 지시) — 목표 없이 횟수만 센다.
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
+  // 재렌더·복원 시에도 3상태가 맞도록 초기 라벨을 이력에서 정한다.
+  if (recCount() > 0) recPill.lastChild.textContent = '다시 떠올리기';
   /* 점수 열 — 오늘 시도 점수 원 + 직전 복습 시도 수까지의 빈 슬롯. 빈 슬롯이 목표를 시각적으로 말하므로
    * 숫자 뒤에 '직전' 같은 라벨을 붙이지 않는다 (§7.3). 듣기 횟수는 앱이 저장하지 않아 넣지 않는다. */
   const dotsEl = h('span', { class: 'v-dots' });
@@ -478,7 +481,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   }
 
   const refreshDots = () => {
-    const todayScores = [...savedToday, ...sessionScores];
+    const todayScores = dayScores[todayISO] || [];
     const slots = Math.max(prevTries - todayScores.length, 0);
     dotsEl.replaceChildren(
       ...todayScores.map((v, i) => scoreDot(v, { size: 30, fresh: i === todayScores.length - 1 })),
@@ -497,8 +500,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     if (!Array.isArray(state.pronScores)) state.pronScores = [];
     state.pronScores.push(score);
     bumpRecLog(state, s?.id, score);
-    sessionScores.push(Math.round(Number(score) || 0));
-    (dayScores[todayISO] ??= []).push(Math.round(Number(score) || 0)); // 오늘 칸 농도 실시간 상승
+    (dayScores[todayISO] ??= []).push(Math.round(Number(score) || 0)); // 점수 원 + 오늘 칸 농도
     const nr = ringEl(score); curRing.replaceWith(nr); curRing = nr;
     ringHost.lastChild.textContent = '방금 점수';
     if (!revealed) reveal(); // 시도 직후 정답 공개 (피드백) — 실패해도 학습된다

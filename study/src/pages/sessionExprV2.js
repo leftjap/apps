@@ -496,6 +496,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     playBtn.disabled = true; // 정답 오디오 잠금 — 공개 전 듣기가 곧 정답 유출
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
+    const wcEl = h('div', { class: 'sub' }, `${wcnt}단어`); // 공개되면 정답 줄이 이 자리를 대신한다
     const hintEl = h('div', { class: 'sub', style: 'display:none;' }, '');
     const ansEl = h('div', { class: 'sub' }); // 정답 줄 — 공개 시점에만 텍스트 주입
     // 정답 보기 — 녹음 3회를 채우지 않고도 바로 공개 (2026-07-24 사용자 지시,
@@ -505,7 +506,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
     giveBtn.lastChild.style.transform = 'rotate(-90deg)';
     const row = h('div', { class: 'vs-drow vs-prod' },
       h('span', { class: 'ix' }, String(i + 1)),
-      h('div', {}, h('div', { class: 'en' }, String(d.ko)), h('div', { class: 'sub' }, `${wcnt}단어`), hintEl, ansEl, giveBtn),
+      h('div', {}, h('div', { class: 'en' }, String(d.ko)), wcEl, hintEl, ansEl, giveBtn),
       h('span', { class: 'grow' }), mark, playBtn, recBtn);
 
     const reveal = (pass) => {
@@ -516,6 +517,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
       recBtn.disabled = true;
       giveBtn.style.display = 'none';
       hintEl.style.display = 'none';
+      wcEl.style.display = 'none';
       if (pass) { mark.style.display = ''; popScore(mark); passCount += 1; }
       passEl.textContent = String(passCount);
       rowsDone[i] = pass;
@@ -733,6 +735,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const listenPill = h('button', { class: 'vs-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
   const recPill = h('button', { class: 'vs-pill pri', type: 'button' }, vIcon(VI.MIC, { size: 14, sw: 2 }), '따라 말하기');
   const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
+  // 재렌더·복원 시에도 3상태가 맞도록 초기 라벨을 이력에서 정한다 (종전엔 '따라 말하기' 로 굳었다).
+  if (recCount() > 0) recPill.lastChild.textContent = '다시 말하기';
   // 점수링 캡션 — 링에 뜬 값은 방금 받은 점수다. 점수 없이 시도만(응용 발화 등) 있으면 'N회 시도', 없으면 '아직 시도 전'.
   const capText = () => (state.lastScore != null ? '방금 점수' : (recCount() > 0 ? `${recCount()}회 시도` : '아직 시도 전'));
   const ring = ringEl(state.lastScore);

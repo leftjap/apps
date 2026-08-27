@@ -220,3 +220,28 @@ describe('홈 캘린더 — 주 발화 줄 배치', () => {
     expect(css).toMatch(/\.vh-wkcol\{grid-column:1\/-1;grid-row:5;/);
   });
 });
+
+/* 시안 §5.5 CTA 보조줄 문구 — 2026-08-27 시안 줄 대조. 구분자 '—' 가 끼어 있었고,
+ * 복습 보조의 앞 숫자가 '오늘 due' 였다(시안은 복습 큐 전체 + '오늘 N문장 ≈ M분'). */
+describe('홈 CTA 보조줄 — 시안 문구', () => {
+  const st = () => baseState({
+    todayISO: '2026-08-25', sessionTitle: 'At the Park',
+    newCount: 9, newMin: 27, reviewCount: 10, totalReview: 98, reviewMin: 20,
+    dayMap: { '2026-08-24': 34 }, cumStudySec: 0,
+  });
+
+  it('학습 시작 보조는 "오늘의 장면 At the Park · 표현 9개 · 약 27분"', () => {
+    const el = renderHomeDesktopV2(st());
+    expect(el.querySelector('.vh-cta.pri .t2').textContent).toBe('오늘의 장면 At the Park · 표현 9개 · 약 27분');
+  });
+
+  it('복습 시작 보조는 "복습 문장 98 · 오늘이 적기 · 10문장 ≈ 20분"', () => {
+    const el = renderHomeDesktopV2(st());
+    expect(el.querySelector('.vh-cta.rev .t2').textContent).toBe('복습 문장 98 · 오늘이 적기 · 10문장 ≈ 20분');
+  });
+
+  it('주 발화 라벨은 데스크톱에서 숨는다 (요일 헤더가 이미 갖고 있다)', () => {
+    const el = renderHomeDesktopV2(st());
+    expect(el.querySelector('style').textContent).toContain('.vh-wklab{display:none}');
+  });
+});

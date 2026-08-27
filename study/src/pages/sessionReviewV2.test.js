@@ -478,3 +478,37 @@ describe('sessionReviewV2 — 녹음 중 아이콘', () => {
     } finally { vi.useRealTimers(); }
   });
 });
+
+/* 시안 4b 줄 대조(2026-08-27) — 오늘 시도 점수 원이 재렌더 후 사라졌다.
+ * 렌더 지역 배열에만 쌓아서, 카드 이동·재마운트하면 빈 슬롯만 남았다. */
+describe('sessionReviewV2 — 오늘 시도 점수 원 지속', () => {
+  it('녹음한 점수가 state.sentLog 에 남아 재렌더 후에도 원이 유지된다', () => {
+    vi.useFakeTimers();
+    try {
+      document.body.innerHTML = '<div id="root"></div>';
+      const host = document.getElementById('root');
+      const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS };
+      const state = {
+        cards: [{ id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, explanation }],
+        total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0, demo: true,
+        sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation },
+        sentLog: { c1: { '2020-01-02': [70, 72] } }, // 직전 연습일 2회 → 빈 슬롯 2개
+      };
+      renderSessionReviewV2(host, state, {});
+      expect(host.querySelectorAll('.vr-meta .v-dot.empty')).toHaveLength(2);
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelectorAll('.vr-meta .v-dot').length).toBeGreaterThan(0);
+      const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+      expect(shown).toHaveLength(1);
+
+      // 재렌더 — 같은 state 로 다시 그려도 점수 원이 남아야 한다
+      document.body.innerHTML = '<div id="root2"></div>';
+      const host2 = document.getElementById('root2');
+      renderSessionReviewV2(host2, state, {});
+      const again = [...host2.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+      expect(again).toHaveLength(1);
+      expect(again[0].textContent).toBe(shown[0].textContent);
+    } finally { vi.useRealTimers(); }
+  });
+});

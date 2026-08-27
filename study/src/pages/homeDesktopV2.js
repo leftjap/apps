@@ -308,13 +308,13 @@ function ctaCard(state, d) {
     ? d.doneNewMeta
     : d.phase === 'mid'
       ? `남은 ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분 남음`
-      : `${d.sceneChip} · ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분`;
+      : `${d.sceneLine} · ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분`;
 
   const showReview = state.reviewCount >= 1 || (!isMath && state.totalReview >= 1);
-  const reviewN = d.reviewFree ? state.totalReview : state.reviewCount;
+  // 시안 §5.5 — 앞 숫자는 복습 큐 전체, 뒤는 '오늘 몇 문장 ≈ 몇 분'.
   const reviewSub = d.reviewFree
     ? `복습 큐 ${state.totalReview}${reviewUnit} · 원하는 만큼`
-    : `복습 ${reviewUnit} ${reviewN} · 오늘이 적기 · 약 ${d.reviewMin}분`;
+    : `복습 ${reviewUnit} ${state.totalReview} · 오늘이 적기 · ${state.reviewCount}${reviewUnit} ≈ ${d.reviewMin}분`;
 
   return h('div', { class: 'vh-card vh-ctacard' },
     h('button', { class: 'vh-cta pri', type: 'button', onClick: goNew },
@@ -342,11 +342,13 @@ function derive(state) {
   // 실데이터 sessionTitle 이 프리픽스와 같으면('오늘의 장면') 중복 표기 방지.
   const hasTitle = !!state.sessionTitle && state.sessionTitle !== scenePrefix;
   const sceneChip = hasTitle ? `${scenePrefix} — ${state.sessionTitle}` : scenePrefix;
+  // CTA 보조줄은 시안 표기(구분자 없이 '오늘의 장면 At the Park')를 따른다.
+  const sceneLine = hasTitle ? `${scenePrefix} ${state.sessionTitle}` : scenePrefix;
   const newMin = state.newMin || Math.max(state.newCount * 3, 4);
   const reviewMin = state.reviewMin || Math.max((state.reviewCount || state.totalReview) * 2, 2);
 
   return {
-    phase, sceneChip, newMin, reviewMin,
+    phase, sceneChip, sceneLine, newMin, reviewMin,
     reviewFree: state.lang !== 'math' && state.reviewCount === 0 && state.totalReview > 0,
     doneNewMeta: state.doneNewMeta || `${state.lang === 'math' ? '문제' : '표현'} ${state.todayNewDone}개 완료 · 발화 ${state.tried}회`,
     cumExpr: state.cumExpr ?? 0,

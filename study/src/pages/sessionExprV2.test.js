@@ -844,3 +844,33 @@ describe('sessionExprV2 — 시안 프레임 수치', () => {
     expect(css).toContain('.vs-panel .inner{padding:14px 20px 20px');
   });
 });
+
+/* 시안 줄 단위 대조(2026-08-27)에서 나온 2건. */
+describe('sessionExprV2 — 시안 줄 대조 누락분', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('녹음 알약 초기 라벨이 이력을 반영한다 (재렌더·복원 시 "다시 말하기")', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState();
+    st.recLog = { e1: { count: 7, best: 90 } };
+    renderSessionExprV2(host, st, {});
+    expect(host.querySelector('.vs-pill.pri').textContent).toContain('다시 말하기');
+  });
+
+  it('첫 녹음 전에는 "따라 말하기" 다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    expect(host.querySelector('.vs-pill.pri').textContent).toContain('따라 말하기');
+  });
+
+  it('생산 연습 정답이 공개되면 "N단어" 줄이 사라지고 정답이 그 자리를 대신한다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const row = host.querySelector('.vs-prod');
+    const subs = () => [...row.querySelectorAll('.sub')].filter((n) => n.style.display !== 'none').map((n) => n.textContent);
+    expect(subs().some((t) => /단어$/.test(t))).toBe(true);
+    row.querySelector('.vs-prod-give').click();
+    expect(subs().some((t) => /단어$/.test(t))).toBe(false);
+    expect(subs().some((t) => t.includes('more than a job'))).toBe(true);
+  });
+});
