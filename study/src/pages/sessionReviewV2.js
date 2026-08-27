@@ -3,7 +3,9 @@
  * SRS 메타(회차·지난 점수·다음 복습일) + 문장별 점수 기록 노출.
  * 정본 시안: 작업지시서 v-review.jsx (SessReview)
  *
- * SRS 판정(2026-07-10 사용자 결정): **자기평가(다시/애매/완료)가 유일한 입력**.
+ * SRS 판정(2026-07-10 사용자 결정): **자기평가가 유일한 입력**.
+ *   버튼 라벨은 쉬움/보통/어려움 (2026-07-22 사용자 지시 — components/session/atoms.js createJudgeRow).
+ *   kind 값(got/hmm/no)이 SRS 계약이고, 옛 '다시/애매/완료' 표기는 그때 폐기됐다.
  *   발음 점수는 SRS 를 정하지 않는다 — 약점 음소 수집·표시용. 구 자동채점(deriveKind)은 폐기.
  *   이유: 영어는 정답을 숨기므로 첫 시도 점수가 '기억'이 아니라 '발음'을 재고, 공개 후 재녹음은 낭독이다.
  * 라이브 녹음/채점은 기존 services 재사용. 데모(?demo=1)는 마이크 없이 시뮬.
@@ -357,7 +359,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // SRS 메타
   const reviewNo = (Number.isInteger(card.reviewCount) ? card.reviewCount + 1 : 1);
   const lastScore = Number.isFinite(card.lastScore) ? card.lastScore : null;
-  const nextDate = card.nextReviewLabel || (state.cards[idx - 1]?.nextReview) || '';
+  /* 지난 점수의 취소선(.old)은 "오늘 점수가 이를 대체했다"는 뜻이다 — 오늘 첫 점수가 나오기 전에는
+   * 붙이지 않는다. 기준은 revealed 가 아니라 오늘 점수 유무다: 카드 복귀·재렌더에서 revealed 는
+   * false 로 초기화되지만 오늘 시도는 sentLog 에 남아 있다. */
+  const hasTodayScore = () => (dayScores[todayISO] || []).length > 0;
+  const lastScoreEl = lastScore != null ? h('b', {}, String(lastScore)) : null;
+  if (lastScoreEl && hasTodayScore()) lastScoreEl.classList.add('old');
 
   // 좌측 레일
   const rail = h('div', { class: 'vr-rail' },
@@ -386,7 +393,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 재렌더·복원 시에도 3상태가 맞도록 초기 라벨을 이력에서 정한다.
   if (recCount() > 0) recPill.lastChild.textContent = '다시 떠올리기';
   /* 점수 열 — 오늘 시도 점수 원 + 직전 복습 시도 수까지의 빈 슬롯. 빈 슬롯이 목표를 시각적으로 말하므로
-   * 숫자 뒤에 '직전' 같은 라벨을 붙이지 않는다 (§7.3). 듣기 횟수는 앱이 저장하지 않아 넣지 않는다. */
+   * 숫자 뒤에 '직전' 같은 라벨을 붙이지 않는다 (§7.3).
+   시안의 듣기 카운터(1 / 2)는 폐기 — 재생 횟수는 앱이 저장하지 않고, 그것만을 위해
+   스키마를 만들지 않는다 (클로드디자인 2026-08-27 확정). */
   const dotsEl = h('span', { class: 'v-dots' });
   const sayLine = h('span', { class: 'vr-say' }, '');
   const meta = h('div', { class: 'vr-meta' }, vIcon(VI.MIC, { size: 14, sw: 2 }), dotsEl, sayLine);
@@ -501,6 +510,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     bumpRecLog(state, s?.id, score);
     (dayScores[todayISO] ??= []).push(Math.round(Number(score) || 0)); // 점수 원 + 오늘 칸 농도
+    lastScoreEl?.classList.add('old'); // 오늘 점수가 지난 점수를 대체했다
     const nr = ringEl(score); curRing.replaceWith(nr); curRing = nr;
     ringHost.lastChild.textContent = '방금 점수';
     if (!revealed) reveal(); // 시도 직후 정답 공개 (피드백) — 실패해도 학습된다
@@ -559,7 +569,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   });
 
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
-    lastScore != null ? h('span', {}, '지난 점수 ', h('b', { class: 'old' }, String(lastScore))) : null);
+    lastScoreEl ? h('span', {}, '지난 점수 ', lastScoreEl) : null);
   const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, pronEl, srsRow, ctrl, meta);
 
 

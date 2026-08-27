@@ -23,6 +23,7 @@ import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
 import { localISODate } from '../utils/today.js';
 import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 import { fetchPRDays } from '../services/sessionStats.js';
+import { PASS_THRESHOLD } from '../services/userMeta.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -52,6 +53,20 @@ export function streakStats(dates, todayISO) {
     else if (d < cursor) break;
   }
   return { streak, previousBest: longestStreak(desc.filter((d) => d <= cursor)) };
+}
+
+/**
+ * '마스터한 문장' — reviewQueue 중 연속 통과가 익힘 기준에 닿은 행 수.
+ *
+ * 종전엔 reviewQueue 전체 행 수를 썼다. 그건 재고라서 옆칸 '배운 표현'(newSentenceIds 합)과 같은
+ * 층위의 숫자가 되고, 갱신 축이 돼야 할 칸이 그냥 쌓이기만 했다.
+ * 기준은 앱이 이미 쓰는 consecutivePass ≥ PASS_THRESHOLD (services/userMeta.js — spec §4 익힘 처리).
+ * interval>=30 은 폐기: SRS_INTERVALS 가 [1,3,7,21,60] 뿐이라 60 하나만 걸리는 임의값이고,
+ * 졸업 카드는 applySrsUpdate 가 reviewQueue.delete 로 지워(srs.js:61) 졸업 수 자체를 셀 수 없다.
+ */
+export function masteredCount(cards) {
+  if (!Array.isArray(cards)) return 0;
+  return cards.filter((c) => (Number(c?.consecutivePass) || 0) >= PASS_THRESHOLD).length;
 }
 
 /**
@@ -105,6 +120,17 @@ const DEMO_COMMON = {
   sessionTitle: '레슬리의 다짐',
   pronBars: [62, 66, 64, 68, 70, 72, 74, 76, 80, 82, 84, 86, 88, 90],
   cumMaster: 89,
+  /* 홈 v3(기록/갱신)가 읽는 필드 — 없으면 4주 캘린더가 전부 빈 칸, 누적이 3열로 뜬다.
+   * 작업지시서 §5.3 의 예시 분포를 이 데모 날짜(2026-06-12 금)의 4주 창에 그대로 옮겼다
+   * → 주 발화 116 / 214(최고) / 115 / 0 으로 시안과 같은 화면이 나온다. */
+  dayMap: {
+    '2026-05-18': 31, '2026-05-20': 28, '2026-05-21': 35, '2026-05-23': 22,
+    '2026-05-25': 33, '2026-05-26': 29, '2026-05-27': 47, '2026-05-28': 38,
+    '2026-05-29': 30, '2026-05-30': 37,
+    '2026-06-01': 26, '2026-06-03': 24, '2026-06-04': 31, '2026-06-06': 34,
+  },
+  prDays: ['2026-05-27'], // 일 발화 47 = 이 창의 개인기록 → 코랄 칸
+  cumStudySec: 151800,    // 42시간 10분
 };
 const DEMO_BY_PHASE = {
   fresh: {
@@ -388,7 +414,7 @@ async function loadStats(state) {
     return {
       newCount, reviewCount, totalReview, streak, tried, passed, bestStreak,
       weekUtter, weekPass, todayNewDone, todayReviewDone, sessionTitle,
-      pronBars, grass, cumUtter, cumExpr, cumMaster: totalReview, weekDoneText,
+      pronBars, grass, cumUtter, cumExpr, cumMaster: masteredCount(allLang), weekDoneText,
       pronAvg: weekUtter, pronDelta: 0,
       stripLeftLabel: '일일 발화 · 14일', stripLeftHead: '이번 주 발화', stripLeftUnit: '회',
       // 4주 캘린더 히어로 (홈 v3) — 날짜별 발화 합 + 누적 학습시간 + 개인기록 달성일.

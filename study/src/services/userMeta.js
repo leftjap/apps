@@ -32,7 +32,7 @@ const STAGE_THRESHOLDS = Object.freeze({
   STAGE_4_VARIATIONS_ACCURACY_MIN: 0.75,
 });
 
-const PASS_THRESHOLD = 2; // consecutivePass ≥ 2 → 익힘 처리 (spec §4 userKnown 갱신 정책)
+export const PASS_THRESHOLD = 2; // consecutivePass ≥ 2 → 익힘 처리 (spec §4 userKnown 갱신 정책)
 
 /**
  * userKnown 배열에 entry push (dedupe).

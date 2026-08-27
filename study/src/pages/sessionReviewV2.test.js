@@ -8,6 +8,7 @@ vi.mock('../services/sessionAnalyze.js', () => ({
 }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
+import { localISODate } from '../utils/today.js';
 import { renderSessionReviewV2, isRecallMode } from './sessionReviewV2.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
@@ -388,20 +389,46 @@ describe('sessionReviewV2 v3 — 점수 원 · 문장별 캘린더 · 자기평�
     } finally { vi.useRealTimers(); }
   });
 
-  it('지난 점수엔 취소선 — 링의 새 점수가 대체했음을 색으로 말한다', () => {
+  /* 취소선은 "오늘 점수가 이를 대체했다"는 뜻이다 — 오늘 첫 점수 전에 붙이면 아직 일어나지 않은
+   * 교대를 주장하는 셈이다 (클로드디자인 2026-08-27 지적). 기준은 revealed 가 아니라 오늘 점수 유무:
+   * 카드 복귀·재렌더에서 revealed 는 false 로 초기화되지만 오늘 시도는 sentLog 에 남아 있다. */
+  const mountWithLastScore = (over = {}) => {
     document.body.innerHTML = '<div id="root"></div>';
     const host = document.getElementById('root');
     const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS };
     const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, lastScore: 81, reviewCount: 2, explanation };
     renderSessionReviewV2(host, {
       cards: [card], total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0,
-      sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation },
+      sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation }, ...over,
     }, {});
-    const old = host.querySelector('.vr-srs b.old');
-    expect(old.textContent).toBe('81');
+    return host;
+  };
+
+  it('오늘 점수가 아직 없으면 지난 점수는 평범하게 둔다 (취소선 없음)', () => {
+    const host = mountWithLastScore();
+    const b = [...host.querySelectorAll('.vr-srs b')].pop(); // 마지막 b = 지난 점수 (앞은 회차)
+    expect(b.textContent).toBe('81');
+    expect(b.classList.contains('old')).toBe(false);
     expect(host.querySelector('.vr-srs').textContent).toContain('3번째');
     expect(host.textContent).not.toContain('통과 시 다음 복습'); // 날짜 줄로 이동 (§4.3)
     expect(host.querySelector('.vr-cap').textContent).toBe('방금 점수');
+  });
+
+  it('녹음해 오늘 점수가 생기면 그때 취소선이 붙는다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountWithLastScore({ demo: true });
+      expect(host.querySelector('.vr-srs b.old')).toBeNull();
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelector('.vr-srs b.old').textContent).toBe('81');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('오늘 이미 연습한 카드로 돌아오면 첫 렌더부터 취소선이다', () => {
+    const today = localISODate();
+    const host = mountWithLastScore({ sentLog: { c1: { [today]: [88] } } });
+    expect(host.querySelector('.vr-srs b.old').textContent).toBe('81');
   });
 
   it('문장별 캘린더 — 셰브론 월 이동, 다음 달 비활성, 셀 안 숫자·회차 요약 없음', () => {

@@ -194,6 +194,10 @@ export function emptyDot({ size = 30 } = {}) {
 
 /* 사이드바 미니 캘린더 (신규 §6.6② 4주 · 복습 §7.4② 월간) — 숫자 없이 농도 3단.
  * vt2-today 는 stats.js:51 이 정본 — 페이지별 <style> 주입 구조라 여기서도 같은 값으로 선언한다. */
+/* '오늘' 칸 펄스 — 정본은 stats.js 의 vt2-today. 홈·세션이 각자 페이지 CSS 를 주입하는 구조라
+ * 이름이 갈리지 않도록 여기 한 벌만 두고 양쪽이 가져다 쓴다 (§13 '새 keyframe 을 만들지 않았다'). */
+export const V_TODAY_KEY = `@keyframes vt2-today{0%,100%{outline:2.2px solid var(--coral);outline-offset:2px}50%{outline:2.2px solid oklch(58% .115 32/.3);outline-offset:5px}}`;
+
 export const V_MINICAL_CSS = `
 .v-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-top:12px}
 .v-cal .dw{font-family:Outfit;font-size:9px;font-weight:600;color:#b8b1a0;text-align:center;padding-bottom:3px}
@@ -204,7 +208,7 @@ export const V_MINICAL_CSS = `
 .v-cal .cd.pr{background:var(--coral);color:#fff;font-weight:700;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4)}
 .v-cal .cd.today{animation:vt2-today 2.4s 1s ease-in-out infinite;color:var(--coral-deep);font-weight:700}
 .v-cal .cd.fut{color:#d8d2c2}
-@keyframes vt2-today{0%,100%{outline:2.2px solid var(--coral);outline-offset:2px}50%{outline:2.2px solid oklch(58% .115 32/.3);outline-offset:5px}}
+${V_TODAY_KEY}
 `;
 
 export const DOW_KO = ['월', '화', '수', '목', '금', '토', '일'];

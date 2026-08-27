@@ -9,11 +9,11 @@
  *   newCount===0 && 오늘 신규 진행 흔적 → done
  *   그 외(newCount>=1)        → fresh
  *
- * 데이터: home.js state. demo 모드는 DEMO_FIXTURES 로 시안 재현(검증용).
+ * 데이터: home.js state (demo 모드는 home.js 의 DEMO_BY_PHASE 픽스처로 시안 재현 — 검증용).
  */
 import { h } from '../components/d1/dom.js';
 import { localISODate } from '../utils/today.js';
-import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts, DOW_KO, isoShift, mondayOf } from '../components/v2/atoms.js';
+import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts, DOW_KO, isoShift, mondayOf, V_TODAY_KEY } from '../components/v2/atoms.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -63,12 +63,12 @@ const VH_CSS = `
 .vh-cell.pr{background:var(--coral);border:0;padding:8px 10px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4),0 6px 14px -8px oklch(58% .115 32/.8)}
 .vh-cell.pr .dt{color:rgba(255,255,255,.75)}
 .vh-cell.pr .vv{color:#fff;font-size:18px}
-.vh-cell.today{background:var(--card);border:0;padding:8px 10px;animation:v-settle .4s both,vh-today 2.4s 1s ease-in-out infinite}
+.vh-cell.today{background:var(--card);border:0;padding:8px 10px;animation:v-settle .4s both,vt2-today 2.4s 1s ease-in-out infinite}
 .vh-cell.today .dt{color:var(--coral-deep);font-weight:700}
 .vh-cell.today .vv{font-family:Pretendard,sans-serif;font-size:10px;font-weight:700;color:var(--coral-deep);letter-spacing:.04em}
 .vh-cell.fut{background:transparent;border:0;padding:7px 9px}
 .vh-cell.fut .dt{color:#d8d2c2;font-weight:400}
-@keyframes vh-today{0%,100%{outline:2.2px solid var(--coral);outline-offset:2px}50%{outline:2.2px solid oklch(58% .115 32/.3);outline-offset:5px}}
+${V_TODAY_KEY}
 .vh-wklab{display:none}
 .vh-wkcol{grid-column:8;grid-row:1/5;border-left:1px solid #f1ede0;padding-left:16px;display:flex;flex-direction:column;gap:8px}
 .vh-wk{height:72px;display:flex;flex-direction:column;justify-content:center;gap:8px}
@@ -239,7 +239,9 @@ function cumCard(state, d) {
   }
   cells.push([isMath ? '총 시도' : '총 발화', [(d.cumUtter || 0).toLocaleString(), h('em', {}, isMath ? '문제' : '회')]]);
   cells.push([isMath ? '배운 문제' : '배운 표현', [String(d.cumExpr), h('em', {}, '개')]]);
-  cells.push([isMath ? '마스터한 문제' : '마스터한 문장', [String(d.cumMaster), h('em', {}, '개')]]);
+  // 수학 SRS 는 consecutivePass 를 저장하지 않는다(mathQueue.js:45) — 마스터 기준을 세울 수 없으므로
+  // 값(= srs 큐 전체 수)에 맞는 라벨을 쓴다. 영어/일본어만 masteredCount(연속 통과 2회) 로 센다.
+  cells.push([isMath ? '복습 중인 문제' : '마스터한 문장', [String(d.cumMaster), h('em', {}, '개')]]);
   return h('div', { class: 'vh-card vh-cum', style: `--cols:${cells.length}` },
     cells.map(([k, v]) => h('div', {}, h('div', { class: 'k' }, k), h('div', { class: 'v' }, v))));
 }
@@ -433,12 +435,12 @@ const VHM_CSS = `
 .vh-cell.pr{background:var(--coral);border:0;padding:6px 7px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4),0 6px 14px -8px oklch(58% .115 32/.8)}
 .vh-cell.pr .dt{color:rgba(255,255,255,.75)}
 .vh-cell.pr .vv{color:#fff;font-size:15px}
-.vh-cell.today{background:var(--card);border:0;padding:6px 7px;animation:v-settle .4s both,vh-today 2.4s 1s ease-in-out infinite}
+.vh-cell.today{background:var(--card);border:0;padding:6px 7px;animation:v-settle .4s both,vt2-today 2.4s 1s ease-in-out infinite}
 .vh-cell.today .dt{color:var(--coral-deep);font-weight:700}
 .vh-cell.today .vv{font-family:Pretendard,sans-serif;font-size:9px;font-weight:700;color:var(--coral-deep);letter-spacing:.03em}
 .vh-cell.fut{background:transparent;border:0;padding:5px 6px}
 .vh-cell.fut .dt{color:#d8d2c2;font-weight:400}
-@keyframes vh-today{0%,100%{outline:2.2px solid var(--coral);outline-offset:2px}50%{outline:2.2px solid oklch(58% .115 32/.3);outline-offset:5px}}
+${V_TODAY_KEY}
 /* 8번째 컬럼을 셀 아래 전체 폭 가로 줄로 — 375px 에 150px 사이드 컬럼이 들어가지 않는다.
    grid-row 를 5(날짜 4주 다음 줄)로 명시하지 않으면 DOM 순서대로 1행에 얹혀 셀 위로 올라간다. */
 .vh-wkcol{grid-column:1/-1;grid-row:5;border-left:0;padding-left:0;margin-top:12px;border-top:1px solid #f1ede0;padding-top:12px;

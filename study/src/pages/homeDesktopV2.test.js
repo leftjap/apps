@@ -135,6 +135,22 @@ describe('홈 v3 — 최근 4주 캘린더 · 오늘 발화 링 · CTA', () => {
     tried: 30, ...over,
   });
 
+  /* 2026-08-27 — 영어/일본어의 '마스터한 문장' 은 consecutivePass ≥ 2 로 바뀌었지만(home.js masteredCount),
+   * 수학 SRS 레코드에는 consecutivePass 가 없다(mathQueue.js:45 = interval/nextReview/lastResult).
+   * 없는 필드를 만들지 않고, 수학만 값(재고)에 맞게 라벨을 바꾼다 — 숫자와 라벨이 어긋난 채 두지 않는다. */
+  it('수학은 마스터 기준이 없어 라벨이 "복습 중인 문제" 다', () => {
+    const el = renderHomeDesktopV2(v3({ lang: 'math' }));
+    const keys = [...el.querySelectorAll('.vh-cum .k')].map((n) => n.textContent);
+    expect(keys).toContain('복습 중인 문제');
+    expect(keys).not.toContain('마스터한 문제');
+  });
+
+  it('영어는 "마스터한 문장" 라벨을 유지한다', () => {
+    const el = renderHomeDesktopV2(v3());
+    const keys = [...el.querySelectorAll('.vh-cum .k')].map((n) => n.textContent);
+    expect(keys).toContain('마스터한 문장');
+  });
+
   it('캘린더가 4주(28칸)이고 미학습 날은 채색이 없다', () => {
     const el = renderHomeDesktopV2(v3());
     expect(el.querySelectorAll('.vh-cell')).toHaveLength(28);
@@ -142,7 +158,7 @@ describe('홈 v3 — 최근 4주 캘린더 · 오늘 발화 링 · CTA', () => {
     expect(el.querySelectorAll('.vh-cell.t0').length).toBeGreaterThan(0);
   });
 
-  it('오늘 칸에 today 클래스(vh-today 펄스) + 텍스트 "오늘", 미래 칸은 fut 이다', () => {
+  it('오늘 칸에 today 클래스(vt2-today 펄스) + 텍스트 "오늘", 미래 칸은 fut 이다', () => {
     const el = renderHomeDesktopV2(v3());
     const t = el.querySelectorAll('.vh-cell.today');
     expect(t).toHaveLength(1);
