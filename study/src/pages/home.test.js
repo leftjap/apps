@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countNewExpressions, isSceneCard, longestStreak, streakStats } from './home.js';
+import { countNewExpressions, isSceneCard, longestStreak, streakStats, masteredCount } from './home.js';
 
 // 홈 hero '오늘의 새 표현 N개' 는 표현(expression) 수여야 한다. scene(전체 대화 듣기) 카드는
 // 표현이 아니므로 제외 — todayNewDone(=newSentenceIds, scene 미포함) 단위와 정합해 진행 dots·done 게이트도 일치.
@@ -96,5 +96,32 @@ describe('home — streakStats (현재 연속 + 이전 최고)', () => {
 
   it('기록 없음 → 0/0', () => {
     expect(streakStats([], '2026-08-24')).toEqual({ streak: 0, previousBest: 0 });
+  });
+});
+
+/* 2026-08-27 — 홈 누적 '마스터한 문장' 이 reviewQueue 전체 행 수였다. 그건 재고지 성취가 아니라
+ * 옆칸 '배운 표현'(newSentenceIds 합)과 같은 층위의 숫자가 됐다.
+ * 기준은 앱이 이미 가진 consecutivePass ≥ 2 (userMeta.js PASS_THRESHOLD, spec §4 익힘 처리).
+ * interval>=30 은 폐기 — SRS_INTERVALS 가 [1,3,7,21,60] 뿐이라 사실상 60 하나만 걸리는 임의값이고,
+ * 졸업 카드는 applySrsUpdate 가 reviewQueue.delete 로 지워 애초에 셀 수 없다. */
+describe('home — masteredCount (연속 통과 2회 이상)', () => {
+  it('consecutivePass 2 이상만 센다', () => {
+    expect(masteredCount([
+      { consecutivePass: 0 }, { consecutivePass: 1 },
+      { consecutivePass: 2 }, { consecutivePass: 3 },
+    ])).toBe(2);
+  });
+
+  it('필드 없는 레거시 행은 0으로 본다 (감사 기록대로 도입 직후 값이 낮게 나온다 — 정직한 값)', () => {
+    expect(masteredCount([{}, { consecutivePass: 2 }])).toBe(1);
+  });
+
+  it('숫자가 아닌 값도 0으로 (동기화 왕복 잔재 방어)', () => {
+    expect(masteredCount([{ consecutivePass: null }, { consecutivePass: '2' }])).toBe(1);
+  });
+
+  it('빈 배열·비배열 → 0', () => {
+    expect(masteredCount([])).toBe(0);
+    expect(masteredCount(null)).toBe(0);
   });
 });
