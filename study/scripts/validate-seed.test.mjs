@@ -270,6 +270,32 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('en-moduyeongeo-ep1-b');
   });
 
+  /* 음차 연음 재분절 (guide-en §7, 2026-07-22 사용자 지시 — "캔 유 → 캐뉴", "왓 이즈 → 워리즈").
+   * 의무인데 게이트가 검사하지 않아 코퍼스 40%(드릴 866개 중 343개)가 단어별 표기로 남아 있었다.
+   * 판정: 받침 있는 음절 + 공백 + ㅇ으로 시작하는 음절 = 이어 적어야 할 경계. 차단이 아니라 경고 —
+   * 기존 시드 다수가 걸리고, 실제 발화가 끊기는 자리(강세·휴지)도 있어 저작자 판단이 필요하다. */
+  it('음차가 연음 경계를 안 이으면 경고한다 (캔 유 → 캐뉴)', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards[0].explanation.drills[0].kr = '캔 유 두 잇';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.join(' ')).toContain('연음');
+    expect(r.ok).toBe(true); // 경고일 뿐 차단 아님
+  });
+
+  it('이어 적었으면 경고하지 않는다', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = '캐뉴 두 잇'; }));
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
+  });
+
+  it('받침이 없거나 다음이 자음이면 대상이 아니다', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = '쏘리 아이 디든 캐치'; }));
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
+  });
+
   /* 응용 연습의 목적은 핵심 표현을 여러 맥락에서 다시 만나는 것이고, 시안(§4.4·§6.5)은 그 재사용을
    * 드릴 행 밑줄로 표시한다. 표현이 한 번도 안 들어간 드릴 묶음은 응용이 아니라 유의어 나열이라
    * 밑줄이 하나도 안 그려진다 — 실측: 사용자 대기 카드 6장에서 드릴 30개 중 4개(13%)만 매치.

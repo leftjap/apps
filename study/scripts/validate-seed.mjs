@@ -397,6 +397,32 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     });
   }
 
+  /* ── 음차 연음 재분절 (guide-en §7 의무, 2026-07-22 사용자 지시) ──
+   * "단어별로 끊어 적지 말고 자음+모음 경계는 다음 음절로 이어 적는다" — 캔 유→캐뉴, 왓 이즈→워리즈.
+   * 규칙만 있고 게이트가 없어 코퍼스 40%(드릴 866개 중 343개)가 단어별 표기로 남아 있었다.
+   * 판정: 받침 있는 음절 + 공백 + ㅇ 초성 음절 = 이어 적을 자리. 차단이 아니라 경고 — 실제 발화가
+   * 끊기는 자리(강세·휴지)도 있어 마지막 판단은 저작자 몫이다. */
+  const hasJong = (ch) => { const c = ch.charCodeAt(0) - 0xAC00; return c >= 0 && c < 11172 && c % 28 !== 0; };
+  const choIsIeung = (ch) => { const c = ch.charCodeAt(0) - 0xAC00; return c >= 0 && c < 11172 && Math.floor(c / 588) === 11; };
+  const unlinkedBoundaries = (kr) => {
+    const toks = String(kr || '').split(/\s+/).filter(Boolean);
+    const out = [];
+    for (let i = 0; i + 1 < toks.length; i += 1) {
+      const a = toks[i], b = toks[i + 1];
+      if (hasJong(a[a.length - 1]) && choIsIeung(b[0])) out.push(`${a} ${b}`);
+    }
+    return out;
+  };
+  for (const c of exprs) {
+    const spots = [];
+    if (c.phonetic_kr) spots.push(...unlinkedBoundaries(c.phonetic_kr));
+    for (const d of (c.explanation?.drills || [])) spots.push(...unlinkedBoundaries(d?.kr));
+    if (spots.length) {
+      const uniq = [...new Set(spots)];
+      warnings.push(`${c.id}: 음차 연음 미적용 ${spots.length}곳 (${uniq.slice(0, 3).join(' / ')}${uniq.length > 3 ? ' …' : ''}) — guide-en §7: 자음+모음 경계는 이어 적을 것 (캔 유→캐뉴)`);
+    }
+  }
+
   /* ── 응용 드릴이 핵심 표현을 한 번도 안 담으면 경고 ──
    * 응용 연습의 목적은 핵심 표현을 여러 맥락에서 다시 만나는 것이고, 시안(§4.4·§6.5)은 그 재사용을
    * 드릴 행 밑줄로 표시한다. 표현이 안 들어간 묶음은 응용이 아니라 유의어 나열이라 밑줄이 0개가 된다
