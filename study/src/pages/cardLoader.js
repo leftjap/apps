@@ -31,8 +31,12 @@ export function pickCardFields(card) {
 }
 
 export async function loadNewCards(db, lang, todayISO) {
-  // todayISO 인자는 호환성 유지 (호출자 시그니처 변경 회피). 날짜 필터링은 안 함.
-  // carry-forward 정책: 미완료 신규는 추가된 날짜와 무관하게 다음 세션에 계속 노출.
+  /* 날짜 게이트 (2026-08-28): **오늘까지** 예정된 카드만 연다.
+   * carry-forward 는 유지 — 지난 날짜의 미완료는 계속 나온다(그래서 date < today 도 통과).
+   * 막는 건 '아직 오지 않은 날'뿐이다. 배경: ja 코어100 17세션(100장)을 미래 날짜로 미리
+   * 시딩했더니 필터가 없어 신규 세션 하나에 100장이 통째로 들어갔다("1/100"). 장면 그룹 컷은
+   * scene 카드가 있어야 동작하는데 코어100 은 scene 이 없어 무력했다.
+   * date 없는 구 행과 todayISO 미지정 호출은 막지 않는다(회귀 방지). */
   if (!db || !lang) return [];
   const isScene = (r) => Array.isArray(r?.explanation?.dialogue);
   const byDateOrder = (a, b) => {
@@ -42,13 +46,21 @@ export async function loadNewCards(db, lang, todayISO) {
     return (a.order_index ?? 0) - (b.order_index ?? 0);
   };
   const rows = await db.todayLessons.where('lang').equals(lang).toArray();
-  const filtered = rows.filter((r) => r.completed !== true);
+  const filtered = rows.filter((r) => r.completed !== true
+    && !(todayISO && r.date && r.date > todayISO));
   filtered.sort(byDateOrder);
   // 장면 그룹 스코프 (1세션 = 1장면): scene 카드(explanation.dialogue 배열)가 그룹 시작.
   // 선두 이후 첫 scene 직전에서 컷 — 이전 그룹 부분완료 꼬리(scene 완료 후 잔여 표현 포함)가
   // 다음 장면과 한 세션에 섞이지 않는다. scene 없는 리스트(ja 콩트·구 en)는 전체 반환 (기존 동작).
   // → deriveDialogue (session-new.js) 의 타 장면 표현 혼입·순차 커서 stuck 자동 해소.
-  const cut = filtered.findIndex((r, i) => i > 0 && isScene(r));
+  const sceneCut = filtered.findIndex((r, i) => i > 0 && isScene(r));
+  /* 날짜 묶음 컷 (2026-08-28): 시드 한 파일 = 하루치다. 밀린 날이 쌓여도 한 세션에는
+   * **가장 오래된 미완료 날짜** 하나만 연다 — 없으면 밀릴수록 세션이 무한정 커진다
+   * (코어100 17세션 방치 시 100장). scene 컷과 함께 더 이른 쪽을 택한다. */
+  const firstDate = filtered[0]?.date || '';
+  const dateCut = firstDate ? filtered.findIndex((r) => (r.date || '') !== firstDate) : -1;
+  const cuts = [sceneCut, dateCut].filter((n) => n > 0);
+  const cut = cuts.length ? Math.min(...cuts) : -1;
   const group = cut === -1 ? filtered : filtered.slice(0, cut);
   // scene 완료 + 표현 잔존 꼬리: 중도 종료 시 finishSession 이 prefix(scene 포함)만 완료 마킹하므로
   // 꼬리만 남으면 다이얼로그 없는 세션이 됨 → 그룹의 scene 카드를 완료 여부 무관 선두에 복원.

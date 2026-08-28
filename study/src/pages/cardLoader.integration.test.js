@@ -30,7 +30,7 @@ describe('cardLoader 통합 (real Dexie + fake-indexeddb)', () => {
     const out = await loadNewCards(db, 'en', '2026-05-08');
     // 미완료: a(2026-05-08, oi 2), b(2026-05-08, oi 1), d(2026-05-07, oi 0).
     // FIFO: d (2026-05-07) 먼저 → b (2026-05-08, oi 1) → a (2026-05-08, oi 2).
-    expect(out.map((r) => r.id)).toEqual(['d', 'b', 'a']);
+    expect(out.map((r) => r.id)).toEqual(['d']); // 2026-08-28: 한 세션 = 한 날짜 묶음
     expect(out[0].sentence).toBe('D');
   });
 

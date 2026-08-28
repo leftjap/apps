@@ -68,8 +68,9 @@ describe('loadNewCards', () => {
       ],
     });
     const out = await loadNewCards(db, 'en', '2026-05-08');
-    // d (2026-05-07) → b (2026-05-08, oi 1) → a (2026-05-08, oi 2). c 는 completed, e 는 lang 다름.
-    expect(out.map((r) => r.id)).toEqual(['d', 'b', 'a']);
+    /* 2026-08-28: 한 세션 = 한 날짜 묶음. 가장 오래된 미완료 날짜(2026-05-07)의 d 만 열리고,
+     * b·a(2026-05-08)는 d 를 끝낸 다음 세션에서 나온다. c 는 completed, e 는 lang 다름. */
+    expect(out.map((r) => r.id)).toEqual(['d']);
   });
 
   it('인자 누락 시 빈 배열', async () => {
@@ -133,17 +134,19 @@ describe('loadNewCards — 장면 그룹 스코프 (1세션 = 1장면)', () => {
     expect(out.map((r) => r.id)).toEqual(['s1-scene', 's1-e1', 's1-e2', 's1-e3', 's1-e4', 's1-e5', 's1-bottom']);
   });
 
-  it('④ ja(scene 카드 없음) → 전체 반환 (기존 동작 유지)', async () => {
+  /* 2026-08-28: '전체 반환' 폐기 — scene 이 없는 트랙(ja 콩트·코어100)은 날짜 묶음으로 자른다.
+   * 안 그러면 밀린 날이 쌓여 한 세션이 무한정 커진다. */
+  it('④ ja(scene 카드 없음) → 가장 오래된 날짜 묶음만', async () => {
     const ja = (id, date, oi) => ({ id, lang: 'ja', date, completed: false, order_index: oi, explanation: { key: 'k' } });
     const db = createMockDB({ todayLessons: [ja('j1', '2026-06-09', 0), ja('j2', '2026-06-09', 1), ja('j3', '2026-06-10', 0)] });
     const out = await loadNewCards(db, 'ja', '2026-06-10');
-    expect(out.map((r) => r.id)).toEqual(['j1', 'j2', 'j3']);
+    expect(out.map((r) => r.id)).toEqual(['j1', 'j2']);
   });
 
-  it('⑤ scene 없는 en(구 콘텐츠) → 전체 반환', async () => {
+  it('⑤ scene 없는 en(구 콘텐츠) → 가장 오래된 날짜 묶음만', async () => {
     const db = createMockDB({ todayLessons: [expr('e1', '2026-05-20', 0), expr('e2', '2026-05-20', 1), expr('e3', '2026-05-21', 0)] });
     const out = await loadNewCards(db, 'en', '2026-06-10');
-    expect(out.map((r) => r.id)).toEqual(['e1', 'e2', 'e3']);
+    expect(out.map((r) => r.id)).toEqual(['e1', 'e2']);
   });
 
   it('⑥ 단일 그룹(scene 1장)만 있으면 전체 반환', async () => {
@@ -363,5 +366,88 @@ describe('pickCardFields — pron 파생 (review_queue 동기화 갭 보완)', (
 
   it('phonetic_kr·chunks 둘 다 없으면 빈 문자열', () => {
     expect(pickCardFields({ id: 'c', sentence: 'X' }).pron).toBe('');
+  });
+});
+
+
+/* 미래 날짜 시딩 사고 (2026-08-28) — ja 코어100 17세션(100장)을 미리 넣었더니 날짜 필터가 없어
+ * 신규 세션 하나에 100장이 통째로 들어갔다("1/100"). scene 그룹 컷은 scene 카드가 있을 때만
+ * 동작하는데 코어100 은 scene 이 없다 → 날짜 게이트로 오늘까지만 연다. */
+describe('loadNewCards — 미래 날짜 카드는 그날이 와야 열린다', () => {
+  const rows = [
+    { id: 'past', lang: 'ja', date: '2026-08-27', completed: false, order_index: 1 },
+    { id: 'today1', lang: 'ja', date: '2026-08-28', completed: false, order_index: 1 },
+    { id: 'today2', lang: 'ja', date: '2026-08-28', completed: false, order_index: 2 },
+    { id: 'tomorrow', lang: 'ja', date: '2026-08-29', completed: false, order_index: 1 },
+    { id: 'later', lang: 'ja', date: '2026-09-13', completed: false, order_index: 1 },
+  ];
+
+  it('오늘까지의 카드만 연다 (내일·다음달 카드 제외)', async () => {
+    const db = createMockDB({ todayLessons: rows });
+    const out = await loadNewCards(db, 'ja', '2026-08-28');
+    // 날짜 컷까지 걸려 가장 오래된 날짜(08-27)만. 미래 카드가 안 섞이는 게 이 테스트의 요지.
+    expect(out.map((r) => r.id)).toEqual(['past']);
+  });
+
+  it('앞 날짜를 끝내면 그다음 날짜가 열린다', async () => {
+    const db = createMockDB({ todayLessons: rows });
+    const out = await loadNewCards(db, 'ja', '2026-08-29');
+    expect(out.map((r) => r.id)).toEqual(['past']);
+  });
+
+  it('carry-forward 유지 — 지난 날짜 미완료는 계속 나온다', async () => {
+    const db = createMockDB({ todayLessons: rows });
+    const out = await loadNewCards(db, 'ja', '2026-09-13');
+    expect(out.map((r) => r.id)).toEqual(['past']);
+  });
+
+  it('date 없는 행은 막지 않는다 (구 데이터 보호)', async () => {
+    const db = createMockDB({ todayLessons: [{ id: 'nodate', lang: 'ja', completed: false, order_index: 1 }] });
+    const out = await loadNewCards(db, 'ja', '2026-08-28');
+    expect(out.map((r) => r.id)).toEqual(['nodate']);
+  });
+
+  it('todayISO 미지정이면 날짜로 막지 않는다 (호출부 회귀 방지)', async () => {
+    const db = createMockDB({ todayLessons: rows });
+    const out = await loadNewCards(db, 'ja');
+    expect(out.map((r) => r.id)).toEqual(['past']); // 날짜 컷은 여전히 적용
+  });
+});
+
+
+/* 세션 크기 상한 (2026-08-28) — 날짜 게이트만으로는 밀린 날이 쌓이면 다시 한 세션에 수십 장이
+ * 들어간다(미리 시딩한 17세션 기준 방치 시 100장). 시드 한 묶음 = 하루치이므로
+ * '가장 오래된 미완료 날짜' 하나만 연다. 나머지는 다음 세션에서 이어서 나온다. */
+describe('loadNewCards — 1세션 = 1날짜 묶음', () => {
+  const rows = [
+    { id: 'd1a', lang: 'ja', date: '2026-08-28', completed: false, order_index: 1 },
+    { id: 'd1b', lang: 'ja', date: '2026-08-28', completed: false, order_index: 2 },
+    { id: 'd2a', lang: 'ja', date: '2026-08-29', completed: false, order_index: 1 },
+    { id: 'd3a', lang: 'ja', date: '2026-08-30', completed: false, order_index: 1 },
+  ];
+
+  it('여러 날짜가 밀려 있어도 가장 오래된 날짜 하나만 연다', async () => {
+    const db = createMockDB({ todayLessons: rows });
+    const out = await loadNewCards(db, 'ja', '2026-08-30');
+    expect(out.map((r) => r.id)).toEqual(['d1a', 'd1b']);
+  });
+
+  it('그 날짜를 끝내면 다음 날짜가 열린다', async () => {
+    const db = createMockDB({
+      todayLessons: rows.map((r) => (r.date === '2026-08-28' ? { ...r, completed: true } : r)),
+    });
+    const out = await loadNewCards(db, 'ja', '2026-08-30');
+    expect(out.map((r) => r.id)).toEqual(['d2a']);
+  });
+
+  it('date 없는 행끼리는 한 묶음으로 (구 데이터 보호)', async () => {
+    const db = createMockDB({
+      todayLessons: [
+        { id: 'n1', lang: 'ja', completed: false, order_index: 1 },
+        { id: 'n2', lang: 'ja', completed: false, order_index: 2 },
+      ],
+    });
+    const out = await loadNewCards(db, 'ja', '2026-08-30');
+    expect(out.map((r) => r.id)).toEqual(['n1', 'n2']);
   });
 });
