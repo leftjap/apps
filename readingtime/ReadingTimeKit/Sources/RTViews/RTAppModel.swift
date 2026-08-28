@@ -30,6 +30,36 @@ public enum RTSheet: String, Sendable {
 public enum RTMode: String, Sendable { case flip, tap }
 public enum RTSessionStatus: Sendable { case recording, paused }
 
+/// 홈 2주 캘린더 한 칸 (작업지시서 v3 §5.2)
+public struct HomeCalCell: Sendable, Equatable {
+    public let date: Date
+    public let day: Int
+    public let minutes: Int      // 종이 + 밀리 합산, 분 (내림)
+    public let isToday: Bool
+    public let isFuture: Bool
+    public let isSunday: Bool
+
+    public init(date: Date, day: Int, minutes: Int, isToday: Bool, isFuture: Bool, isSunday: Bool) {
+        self.date = date
+        self.day = day
+        self.minutes = minutes
+        self.isToday = isToday
+        self.isFuture = isFuture
+        self.isSunday = isSunday
+    }
+}
+
+/// 홈 캘린더 농도 — **절대 기준**. 지난 2주 최고치 기준(상대값)으로 하지 말 것:
+/// 주마다 기준이 바뀌면 오늘 칸의 진하기를 다른 주와 비교할 수 없다(작업지시서 v3 §4-⑤).
+public enum RTHomeCal {
+    /// 이 분량에서 농도가 상한 근처가 된다. 사용자 분포 확인 후 45/90 조정 가능(§10-1).
+    public static let fullMinutes = 60
+    /// 상한 0.72 — 오늘 칸(1.0 + 헤일로)이 항상 화면에서 가장 진한 칸으로 남아야 한다.
+    public static func alpha(_ minutes: Int) -> Double {
+        min(0.72, 0.14 + 0.58 * Double(minutes) / Double(fullMinutes))
+    }
+}
+
 public struct RTSession: Sendable {
     public var mode: RTMode
     public var status: RTSessionStatus
@@ -559,6 +589,9 @@ public final class RTAppModel: ObservableObject {
 
     /// 최근 count 일의 기록 달성 여부 (index 0 = count-1일 전 … 마지막 = 오늘). 홈 연속 체인.
     /// userData 없으면(데모) 전부 false — 화면이 시안 고정 패턴을 그린다.
+    ///
+    /// 홈(02) 리디자인으로 화면 호출처는 사라졌으나 테스트 4건이 dayset 계약을 검증하고
+    /// 그것이 bestStreak 회귀 방어로 쓰인다 — 삭제 금지(작업지시서 v3 AC #22).
     public func streakChain(_ count: Int) -> [Bool] {
         guard userData != nil else { return [Bool](repeating: false, count: count) }
         let days = readDays
@@ -566,6 +599,68 @@ public final class RTAppModel: ObservableObject {
         return (0..<count).map { i in
             guard let day = cal.date(byAdding: .day, value: -(count - 1 - i), to: today) else { return false }
             return days.contains(day)
+        }
+    }
+
+    /// 역대 최고 연속일 — **현재 진행 중인 구간은 제외**한다 (작업지시서 v3 §5.1).
+    /// 제외하지 않으면 기록 1일째에 best == streak 가 되어 "최고까지 0일"이 뜬다(AC #13).
+    /// 동률이면 최근 구간. 과거 완료 구간이 없으면 (0, "") → 게이지 하단 행을 숨긴다.
+    public var bestStreak: (days: Int, monthLabel: String) {
+        let sorted = readDays.sorted()
+        guard !sorted.isEmpty else { return (0, "") }
+
+        // 진행 중 구간의 기준일 — 오늘, 오늘 미기록이면 어제 (streakDays 와 동일 판정)
+        let today = cal.startOfDay(for: now())
+        var anchor: Date? = readDays.contains(today) ? today : nil
+        if anchor == nil, let y = cal.date(byAdding: .day, value: -1, to: today), readDays.contains(y) {
+            anchor = y
+        }
+
+        // 연속 구간으로 분할
+        var runs: [[Date]] = []
+        var run: [Date] = [sorted[0]]
+        for d in sorted.dropFirst() {
+            if let next = cal.date(byAdding: .day, value: 1, to: run[run.count - 1]), next == d {
+                run.append(d)
+            } else {
+                runs.append(run); run = [d]
+            }
+        }
+        runs.append(run)
+
+        // 진행 구간 제외 후 최장 — 동률이면 마지막 날이 더 최근인 쪽
+        let done = runs.filter { r in anchor.map { !r.contains($0) } ?? true }
+        guard let best = done.max(by: { a, b in
+            a.count != b.count ? a.count < b.count : a[a.count - 1] < b[b.count - 1]
+        }) else { return (0, "") }
+
+        let last = best[best.count - 1]
+        let y = cal.component(.year, from: last), mo = cal.component(.month, from: last)
+        let label = y == cal.component(.year, from: now()) ? "\(mo)월" : "\(y).\(mo)"
+        return (best.count, label)
+    }
+
+    /// 홈 2주 캘린더 창 — 월요일 시작 · 일요일 끝, 마지막 줄이 오늘이 포함된 주. 정확히 14칸.
+    /// 롤링하지 않는다(작업지시서 v3 §4-⑤). 데모(userData nil)는 화면이 고정 배열을 쓰므로 빈 값.
+    public var calendarWindow14: [HomeCalCell] {
+        guard let d = userData,
+              let week = cal.dateInterval(of: .weekOfYear, for: now()),
+              let start = cal.date(byAdding: .day, value: -7, to: week.start) else { return [] }
+        let today = cal.startOfDay(for: now())
+        return (0..<14).compactMap { i in
+            guard let date = cal.date(byAdding: .day, value: i, to: start) else { return nil }
+            let day = cal.startOfDay(for: date)
+            let future = day > today
+            // 분 = (종이 세션 초 합 + 밀리 초) / 60, 내림 — todaySeconds 와 동일 규칙
+            let paper = future ? 0 : d.sessions
+                .filter { cal.isDate($0.endedAt, inSameDayAs: date) }
+                .reduce(0) { $0 + $1.seconds }
+            return HomeCalCell(date: day,
+                               day: cal.component(.day, from: date),
+                               minutes: future ? 0 : (paper + ebookSeconds(on: date)) / 60,
+                               isToday: day == today,
+                               isFuture: future,
+                               isSunday: i % 7 == 6)
         }
     }
     @Published public var searchQuery = ""

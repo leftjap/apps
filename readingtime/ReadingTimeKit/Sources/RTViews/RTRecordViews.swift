@@ -16,6 +16,8 @@ enum RTLB {
     static let n13: CGFloat = 18.5
     static let n14: CGFloat = 20
     static let n20: CGFloat = 29
+    /// 홈 히어로 제목 — 시안이 `21px/26.25px` 로 line-height 를 명시한다(normal 이면 30.5).
+    static let n21: CGFloat = 26.25
     static let n26: CGFloat = 32.7      // 주간 타이틀 (line-height:1.2 + mono 스팬 영향)
     static let n26n: CGFloat = 37.5     // 월간 h1 (line-height:normal)
     // IBM Plex Mono (normal)
@@ -27,12 +29,18 @@ enum RTLB {
     static let calNum: CGFloat = 12.5
     static let m10_5: CGFloat = 14
     static let m11: CGFloat = 15
+    /// 홈 2주 캘린더 날짜 숫자. `calNum`(12.5)은 **mono 10** 기준이라 재사용하면 토큰이 거짓말을 한다.
+    static let m11_5: CGFloat = 15
     static let m12: CGFloat = 16
     static let m12_5: CGFloat = 16.5
     static let m13: CGFloat = 17
+    /// 홈 히어로 누적 시간
+    static let m14: CGFloat = 18.5
     static let m16: CGFloat = 21
     static let m17: CGFloat = 22
     static let m21: CGFloat = 27.5
+    /// 홈 '오늘 읽음' 숫자 — 시안이 `27px/27px`(line-height 1)로 명시한다(normal 이면 35).
+    static let m27: CGFloat = 27
 }
 
 public extension View {
