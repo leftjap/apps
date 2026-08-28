@@ -130,12 +130,25 @@ resign_verify() {
       _rv_log "$udid 최신($uuid) 스킵"; continue
     fi
     ok=0
-    for i in 1 2 3; do
-      if /usr/bin/xcrun devicectl device install app --device "$udid" "$app" >> "$LOG" 2>&1; then
-        echo "$uuid" > "$sf"; _rv_log "$udid 설치 성공 ($uuid)"; ok=1; break
-      fi
-      _rv_log "$udid 설치 시도 $i/3 실패 — 5s 후 재시도"; sleep 5
-    done
+    # 잠금 게이트 — iOS 는 **잠긴 기기에 개발자 디스크 이미지를 마운트하지 않는다**. 잠겨 있으면
+    # 설치는 100% 실패하므로 3회×5s 헛시도를 하지 않는다(로그만 오염되고 기기를 계속 깨운다).
+    # 규명 2026-08-28: 소연 XR 이 8/15 이후 1900+회 실패 — lockState 로 재보니 passcodeRequired=true.
+    # 같은 파이프라인의 지오 11 Pro 는 passcodeRequired=false 라 매일 성공하고 있었다.
+    # lockState 는 잠긴 기기에도 ~4s 안에 응답한다. 조회가 실패하면 판정하지 않고 기존 동작을
+    # 그대로 태운다(fail-open) — 게이트가 설치를 막는 일은 없어야 한다.
+    local lock
+    lock=$(/usr/bin/xcrun devicectl device info lockState --device "$udid" 2>/dev/null \
+            | /usr/bin/sed -n 's/.*passcodeRequired: *\([a-z]*\).*/\1/p' | /usr/bin/head -1)
+    if [[ "$lock" == "true" ]]; then
+      _rv_log "$udid 잠김(passcodeRequired=true) — 설치 시도 생략, 다음 주기 재시도"
+    else
+      for i in 1 2 3; do
+        if /usr/bin/xcrun devicectl device install app --device "$udid" "$app" >> "$LOG" 2>&1; then
+          echo "$uuid" > "$sf"; _rv_log "$udid 설치 성공 ($uuid)"; ok=1; break
+        fi
+        _rv_log "$udid 설치 시도 $i/3 실패 — 5s 후 재시도"; sleep 5
+      done
+    fi
     (( ok )) || {
       _rv_log "$udid 설치 실패(미접속/잠금 추정) — 다음 주기 재시도"; fail=1
       # 스테일 경보 — 마지막 설치 성공(state mtime) 5일 초과 시 하루 1회 알림.
