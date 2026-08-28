@@ -10,7 +10,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
@@ -298,7 +298,14 @@ export function kanaSub(kana, target) {
   return strip(kana) === strip(target) ? null : kana;
 }
 
-export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
+/* 드릴 행 부제의 이력 조각 — 기록이 없으면 빈 문자열이라 부제가 종전과 같다. */
+function histSub(h0) {
+  const count = Number(h0?.count) || 0;
+  if (!count) return '';
+  return Number.isFinite(h0?.avg) ? `이전 ${count}회 평균 ${h0.avg}` : `이전 ${count}회`;
+}
+
+export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history } = {}) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null, plays = 0;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
@@ -328,7 +335,9 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
         h('div', { class: 'en' }, hlNode(target, hlTerm)),
         /* ja 는 가나 읽기를 함께 — 학습자가 한자를 거의 못 읽는다. 한자 0개라 가나가
          * 본문과 같으면 같은 줄이 두 번 나오므로 생략한다 (구두점 차이는 무시). */
-        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko].filter(Boolean).join(' · '))),
+        /* 이전 발화 이력 (2026-08-29 사용자 요구 "몇 번 발화했고 보통 몇 점인지") — 오늘 시도는
+         * 행의 점수 원이 이미 보여주므로 오늘 이전만 센다 (pronunciationLog.summarizeDrillLog). */
+        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko, histSub(history?.[i])].filter(Boolean).join(' · '))),
       h('span', { class: 'grow' }), scoreEl, playBtn, recBtn,
     );
     recBtn.addEventListener('click', async () => {
@@ -921,6 +930,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     // 행 점수 영속화 (재렌더 복원) — 시도마다 누적해 점수 원이 늘어난다.
     const rows = ((cardEx.drills ??= {}));
     rows[i] = [...normScores(rows[i]), score];
+    /* 세션 밖까지 남기기 (2026-08-29) — 스냅샷은 세션이 끝나면 사라진다. 복습에서 이 응용 문장을
+     * "몇 번 말했고 보통 몇 점인지" 보여주는 유일한 원천이다 (pronunciationLog.summarizeDrillLog). */
+    savePronunciationLog(window.studyDB, { result, sentenceId: drillLogId(s?.id, i), lang, date: getTodayISO() })
+      .catch((e) => console.error('[sessionExprV2] drill pron persist', e));
     refreshDots();
     refreshRecWidget();
     handlers.saveSnapshot?.();

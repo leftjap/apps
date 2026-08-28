@@ -27,7 +27,7 @@ import { localISODate } from '../utils/today.js';
 import { applySrsUpdate } from '../services/srs.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { savePronunciationLog, loadDrillLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession } from '../services/activeSession.js';
@@ -296,6 +296,8 @@ export function mountSessionReview(host) {
       }
       // 문장별 연습 이력 (§7.4② 월 캘린더 · §7.3 빈 슬롯) — pronunciationLog 를 sentenceId×날짜로 묶는다.
       state.sentLog = await loadSentenceLog(window.studyDB, getStoredLang(), cards);
+      // 응용연습 행의 '이전 N회 평균 M' (2026-08-29 사용자 요구) — 오늘 시도는 행의 점수 원이 보여주므로 오늘은 뺀다.
+      state.drillLog = await loadDrillLog(window.studyDB, getStoredLang(), cards, getTodayISO());
       state.loaded = true;
       rerender();
     })

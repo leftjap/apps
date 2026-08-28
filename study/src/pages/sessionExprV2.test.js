@@ -7,7 +7,7 @@ vi.mock('../services/sessionAnalyze.js', () => ({
   startMicRecording: vi.fn(async () => ({ controller: { stop() {} } })),
   stopAndAnalyze: vi.fn(async () => ({ score: 92, weakPhonemes: ['ð'] })),
 }));
-vi.mock('../services/pronunciationLog.js', () => ({ savePronunciationLog: vi.fn(async () => null) }));
+vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), savePronunciationLog: vi.fn(async () => null) }));
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
@@ -1203,5 +1203,61 @@ describe('sessionExprV2 — 녹음 중 듣기', () => {
     listenBtn(host).click();
     expect(speak).toHaveBeenCalledTimes(1);
     expect(speak.mock.calls[0][0]).toBe('Is that a promise?');
+  });
+});
+
+/* 응용 드릴 발화 이력의 원천 (2026-08-29) — 종전엔 드릴 점수가 세션 스냅샷에만 살아 세션이 끝나면
+ * 사라졌다. 복습에서 "몇 번 말했고 보통 몇 점인지"를 보여주려면 먼저 남아야 한다. */
+describe('sessionExprV2 — 응용 드릴 점수 영속화', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const drillRecBtn = (host, i = 0) => [...host.querySelectorAll('.vs-drills-list .vs-drow')][i].querySelector('button[aria-label="녹음"]');
+
+  it('드릴 녹음이 pronunciationLog 에 <카드id>#drill<행> 으로 쌓인다', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const b = drillRecBtn(host, 1);
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(savePronunciationLog).toHaveBeenCalledTimes(1);
+    const params = savePronunciationLog.mock.calls[0][1];
+    expect(params.sentenceId).toBe('e1#drill1');
+    expect(params.lang).toBe('en');
+    expect(params.result.score).toBe(92);
+  });
+
+  it('오발화로 버린 드릴은 쌓이지 않는다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 14, recognizedText: 'But I but I.', weakPhonemes: [] });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const b = drillRecBtn(host, 0);
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(savePronunciationLog).not.toHaveBeenCalled();
+  });
+});
+
+/* 복습 응용연습 발화 이력 (2026-08-29 사용자 요구) — "몇 번 발화했고 보통 몇 점인지 필요하다.
+ * 점수 신뢰도가 낮아도 횟수 정보는 의미가 있다(어려우면 많이 말했을 테니)."
+ * 오늘 시도는 행의 점수 원이 이미 보여주므로 이력은 **오늘 이전**만 센다. */
+describe('drillRows — 이전 발화 이력 표시', () => {
+  const drills = [
+    { en: "It's more than a job.", kr: '잇츠 모어 대너 잡', ko: '그건 직업 그 이상이에요.' },
+    { en: "He's more than a friend.", kr: '히즈 모어 대너 프렌드', ko: '걔는 친구 그 이상이야.' },
+  ];
+
+  it('이력이 있으면 횟수와 평균을 부제에 붙인다', () => {
+    const rows = drillRows(drills, '', 'en', () => {}, false, { history: { 0: { count: 3, avg: 84 } } });
+    expect(rows[0].querySelector('.sub').textContent).toContain('이전 3회');
+    expect(rows[0].querySelector('.sub').textContent).toContain('84');
+  });
+
+  it('이력이 없는 행은 부제가 그대로다 (회귀 방지)', () => {
+    const rows = drillRows(drills, '', 'en', () => {}, false, { history: { 0: { count: 3, avg: 84 } } });
+    const sub = rows[1].querySelector('.sub').textContent;
+    expect(sub).toContain('걔는 친구 그 이상이야.');
+    expect(sub).not.toContain('이전');
+  });
+
+  it('history 를 안 주면 종전과 같다', () => {
+    const rows = drillRows(drills, '', 'en', () => {}, false, {});
+    expect(rows[0].querySelector('.sub').textContent).not.toContain('이전');
   });
 });

@@ -15,7 +15,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   scoreDot, emptyDot, miniCalGrid, isoShift, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { createJudgeRow } from '../components/session/atoms.js';
@@ -479,8 +479,11 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, (i, result) => {
       if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
       (cardEx.drills ??= {})[i] = Math.round(Number(result?.score) || 0); // 행 점수 영속화
+      // 세션 밖까지 남긴다 — 다음 복습의 '이전 N회 평균 M' 이 이 행에서 나온다 (2026-08-29).
+      savePronunciationLog(window.studyDB, { result, sentenceId: drillLogId(s?.id, i), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionReviewV2] drill pron persist', e));
       onAppliedScore(result);
-    }, state.demo, { saved: savedDrills })),
+    }, state.demo, { saved: savedDrills, history: state.drillLog?.[s?.id] })),
   ) : null;
 
   // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적).

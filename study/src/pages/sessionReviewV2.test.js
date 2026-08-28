@@ -7,11 +7,13 @@ vi.mock('../services/sessionAnalyze.js', () => ({
   stopAndAnalyze: vi.fn(async () => ({ score: 88, omissions: [] })),
 }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
+vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), savePronunciationLog: vi.fn(async () => null) }));
 
 import { localISODate } from '../utils/today.js';
 import { renderSessionReviewV2, isRecallMode, recallHint } from './sessionReviewV2.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
+import { savePronunciationLog } from '../services/pronunciationLog.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -710,5 +712,45 @@ describe('sessionReviewV2 — 녹음 중 듣기', () => {
     listen.click();
     expect(speak).toHaveBeenCalledTimes(1);
     expect(speak.mock.calls[0][0]).toBe(EN);
+  });
+});
+
+/* 복습 응용연습 발화 이력 (2026-08-29 사용자 요구) — 복습이 이 이력의 소비처다.
+ * 원천은 신규·복습 양쪽 드릴 녹음이 pronunciationLog 에 남기는 `<카드id>#drill<행>` 행. */
+describe('sessionReviewV2 — 응용 드릴 발화 이력', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  const revealed = () => ({
+    cards: [{ id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, explanation: EXPL }],
+    total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0, revealed: true,
+    sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: EXPL },
+  });
+  const EXPL = { key: `${EN} = ${KO}`, chunks: CHUNKS, drills: [
+    { en: 'Thanks for coming.', kr: '땡스 포 커밍', ko: '와 줘서 고마워.' },
+    { en: 'Thanks for waiting.', kr: '땡스 포 웨이팅', ko: '기다려 줘서 고마워.' },
+  ] };
+
+  function mount(state) {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    renderSessionReviewV2(host, state, {});
+    return host;
+  }
+
+  it('복습의 드릴 녹음도 <카드id>#drill<행> 으로 쌓인다', async () => {
+    const host = mount(revealed());
+    const b = [...host.querySelectorAll('.vr-drills .vs-drow')][1].querySelector('button[aria-label="녹음"]');
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(savePronunciationLog).toHaveBeenCalledTimes(1);
+    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('c1#drill1');
+  });
+
+  it('state.drillLog 의 이력이 응용 행 부제에 뜬다', () => {
+    const st = revealed();
+    st.drillLog = { c1: { 0: { count: 4, avg: 79 } } };
+    const host = mount(st);
+    const subs = [...host.querySelectorAll('.vr-drills .vs-drow .sub')].map((e) => e.textContent);
+    expect(subs[0]).toContain('이전 4회');
+    expect(subs[0]).toContain('79');
+    expect(subs[1]).not.toContain('이전');
   });
 });
