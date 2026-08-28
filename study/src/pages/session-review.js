@@ -30,7 +30,7 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
-import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot } from '../services/activeSession.js';
+import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession } from '../services/activeSession.js';
 import { createActiveTimer } from '../services/activeTimer.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
@@ -128,7 +128,19 @@ export function mountSessionReview(host) {
     flushLiveStats(window.studyDB, snap).catch((e) => console.error('[session-review] flushLiveStats', e));
   };
   const onVis = () => { activeTimer.setHidden(document.hidden); if (document.hidden) saveSnapshot(); };
-  const onActivity = () => activeTimer.activity();
+  /* 실제 조작이 있으면 스냅샷 만료 시계를 되짚는다 — 듣기·생각·해설 읽기처럼 저장을 부르지 않는
+   * 학습 시간이 '이탈'로 오판돼 진행이 통째로 사라지던 문제 (2026-08-28 사용자 보고).
+   * TTL 60분보다 충분히 짧은 간격으로만 — meta 1행 put 이라 부담이 적다. */
+  const TOUCH_MS = 5 * 60 * 1000;
+  let lastTouch = 0;
+  const onActivity = () => {
+    activeTimer.activity();
+    const now = Date.now();
+    if (!state.loaded || state.ended || isDemoMode() || !window.studyDB) return;
+    if (now - lastTouch < TOUCH_MS) return;
+    lastTouch = now;
+    touchActiveSession(window.studyDB).catch(() => {});
+  };
 
   const endSession = async (finishedAll) => {
     state.ended = true;

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isExpired, restoreFromSnapshot } from './activeSession.js';
+import { isExpired, restoreFromSnapshot, touchActiveSession } from './activeSession.js';
 
 describe('isExpired (TTL=1시간)', () => {
   it('savedAt = now → 미만료', () => {
@@ -103,5 +103,37 @@ describe('restoreFromSnapshot — activeSec (방치 폭주 차단)', () => {
     expect(restoreFromSnapshot({ ...base, activeSec: 77 }, cards, 'new').activeSec).toBe(77);
     expect(restoreFromSnapshot(base, cards, 'new').activeSec).toBe(0);
     expect(restoreFromSnapshot({ ...base, activeSec: NaN }, cards, 'new').activeSec).toBe(0);
+  });
+});
+
+/* 2026-08-28 사용자 보고 — 한 카드를 오래 공부하면 진행이 통째로 사라졌다. 재현: savedAt 을 61분
+ * 전으로 두고 새로고침 → 점수 원 0 · 응용 0/8 · 세션 로그 0건.
+ * 만료 시계가 '마지막 저장'(= 마지막 녹음) 기준이라, 듣고·생각하고·해설 읽는 시간은 활동으로
+ * 안 쳐졌다. 실제 조작이 있으면 시계를 되짚어 이탈로 오판하지 않게 한다. */
+describe('touchActiveSession — 활동으로 만료 시계 갱신', () => {
+  const mkDb = (value) => {
+    const store = value ? { key: 'activeSession', value, at: 1 } : null;
+    return {
+      _get: () => store,
+      meta: {
+        async get() { return store; },
+        async put(rec) { Object.assign(store, rec); return rec.key; },
+      },
+    };
+  };
+
+  it('savedAt 을 현재로 올리고 나머지 값은 보존한다', async () => {
+    const old = Date.now() - 50 * 60 * 1000;
+    const db = mkDb({ mode: 'new', step: 1, tried: 6, exLog: { c1: { utter: [57] } }, savedAt: old });
+    expect(await touchActiveSession(db)).toBe(true);
+    const v = db._get().value;
+    expect(v.savedAt).toBeGreaterThan(old);
+    expect(v.tried).toBe(6);
+    expect(v.exLog).toEqual({ c1: { utter: [57] } });
+  });
+
+  it('스냅샷이 없으면 아무것도 만들지 않는다', async () => {
+    expect(await touchActiveSession(mkDb(null))).toBe(false);
+    expect(await touchActiveSession({})).toBe(false);
   });
 });

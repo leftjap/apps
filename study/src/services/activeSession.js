@@ -21,6 +21,25 @@ export async function saveActiveSession(db, snapshot) {
   return value;
 }
 
+/**
+ * 만료 시계만 되짚는다 (상태는 그대로) — 사용자가 실제로 조작 중이면 이탈이 아니다.
+ *
+ * 2026-08-28 사용자 보고: 한 카드를 오래 공부하면 진행이 통째로 사라졌다. TTL 판정이
+ * `savedAt`(= 마지막 saveSnapshot = 마지막 녹음/다음카드) 기준이라, 듣고·생각하고·해설 읽는
+ * 시간은 활동으로 안 쳐져 1시간이 지나면 이탈로 오판했다. 게다가 만료 정리(finalizeStaleSnapshot)는
+ * 첫 카드 진행 중(step=1)이면 아무것도 남기지 않아 기록조차 없이 사라졌다.
+ * 포인터·키 입력에서 throttled 로 호출한다 — meta 1행 put 이라 가볍다.
+ */
+export async function touchActiveSession(db) {
+  if (!db?.meta?.get || !db?.meta?.put) return false;
+  try {
+    const row = await db.meta.get(KEY);
+    if (!row?.value || typeof row.value !== 'object') return false;
+    await db.meta.put({ ...row, value: { ...row.value, savedAt: Date.now() }, at: Date.now() });
+    return true;
+  } catch { return false; }
+}
+
 export async function loadActiveSession(db) {
   if (!db?.meta) return null;
   const row = await db.meta.get(KEY);
@@ -49,7 +68,10 @@ export async function finalizeStaleSnapshot(db, snapshot) {
   if (!db || !snapshot || typeof snapshot !== 'object') return null;
   const step = Number(snapshot.step) || 0;
   const completed = Math.max(0, step - 1);
-  if (completed === 0) return null; // 학습한 카드 없음
+  const tried = Number(snapshot.tried) || 0;
+  // 카드를 한 장도 못 넘겼어도 발화가 있었으면 기록한다 — 종전엔 '학습한 카드 없음'으로 버려
+  // 첫 카드에서 오래 연습한 세션이 발화·학습시간까지 통째로 사라졌다 (2026-08-28).
+  if (completed === 0 && tried === 0) return null;
 
   const lang = snapshot.lang;
   const date = snapshot.todayISO;
@@ -68,8 +90,8 @@ export async function finalizeStaleSnapshot(db, snapshot) {
 
   if (snapshot.mode === 'new') {
     const cardIds = Array.isArray(snapshot.cardIds) ? snapshot.cardIds.slice(0, completed) : [];
-    if (cardIds.length === 0) return null;
-    const cards = await db.todayLessons.bulkGet(cardIds);
+    // 완료 카드가 0장이어도 발화가 있으면 로그를 남긴다 (finishSession 은 빈 배열을 허용).
+    const cards = cardIds.length ? await db.todayLessons.bulkGet(cardIds) : [];
     const completedNewCards = cards.filter(Boolean);
     return finishSession(db, {
       mode: 'new', lang, date, durationSec,
