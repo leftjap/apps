@@ -476,10 +476,17 @@ public struct Screen02Home: View {
                     RoundedRectangle(cornerRadius: 10)
                         .strokeBorder(Color(hex: 0x7A3C28, alpha: 0.05), lineWidth: 1)
                 }
+                // 오늘인데 아직 안 읽은 칸 — 색면은 '읽음'의 표식이라 줄 수 없다(주면 읽은 것으로 오독).
+                // 대신 월간(11)이 오늘을 terra 링으로 잡는 문법(Screen11Month:209)을 테두리로 가져온다.
+                // 굵기 700 만으로는 실기기에서 주변 미기록 칸과 구별되지 않았다(2026-08-28 실기기 피드백).
+                if c.isToday && c.minutes == 0 {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(RT.terra, lineWidth: 1.5)
+                }
             }
         let shaped = Group {
-            if filledToday {
-                base.rtRing(10, RT.terra.opacity(0.13), width: 3)
+            if c.isToday {
+                todayHalo(base)
             } else {
                 base
             }
@@ -499,12 +506,24 @@ public struct Screen02Home: View {
         }
     }
 
+    /// 오늘 칸 헤일로 — 삭제된 13도트 체인의 '오늘 도트' 맥박 문법을 그대로 이식한다(2.6s·terra).
+    /// **정적 렌더(모션 off)는 기존 3pt @13% 그대로** — 데모 픽셀 오라클이 흔들리지 않는다.
+    private func todayHalo<V: View>(_ v: V) -> some View {
+        RTMotionFrame {
+            v.rtRing(10, RT.terra.opacity(0.13), width: 3)
+        } anim: { t in
+            let ph = (sin(t * 2 * .pi / 2.6 - .pi / 2) + 1) / 2
+            return v.rtRing(10, RT.terra.opacity(0.22 - 0.14 * ph), width: 3 + 2 * ph)
+        }
+    }
+
     /// 색면이 깔린 칸(읽은 과거)에는 월간(11)의 "일요일은 항상 terra" 규칙을 적용하지 않는다 —
     /// 색면 위 terra 숫자는 대비가 2.1:1 까지 떨어진다(월간엔 셀 배경이 없어 안 생기는 문제).
     private func calFG(_ c: HomeCalCell, filledToday: Bool) -> Color {
         if filledToday { return .white }
         if c.isFuture { return Color(hex: 0xD3CBB6) }
-        if c.minutes == 0 { return c.isSunday ? RT.terra : RT.faint }
+        // 오늘 미기록은 테두리와 같은 terra 로 — 굵기 700 만으로는 안 잡힌다(실기기 피드백)
+        if c.minutes == 0 { return (c.isToday || c.isSunday) ? RT.terra : RT.faint }
         return Color(hex: 0x2E1C15)
     }
     private func calBG(_ c: HomeCalCell, filledToday: Bool) -> Color {
