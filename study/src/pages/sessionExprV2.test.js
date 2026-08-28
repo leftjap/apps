@@ -1261,3 +1261,46 @@ describe('drillRows — 이전 발화 이력 표시', () => {
     expect(rows[0].querySelector('.sub').textContent).not.toContain('이전');
   });
 });
+
+/* 녹음 품질 게이트 (2026-08-29) — 사용자 지적 "엉뚱한 문장인데 50점이 말이 되냐".
+ * Azure AccuracyScore 가 저점에서 부풀려지는 구간(음소평균 42.7 인데 acc 82)은
+ * enableMiscue:true 로도 안 걸린다. 음소 원시 점수로 따로 막는다. 근거는 coverageJudge.judgeRecording 주석. */
+describe('sessionExprV2 — 녹음 품질 게이트', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+  async function recOnce(host) {
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+  }
+
+  it('표시 점수 82 여도 음소평균 43 이면 기록하지 않는다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 82, recognizedText: 'Is that a promise?', weakPhonemes: [], phonemeScores: ph(43) });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    renderSessionExprV2(host, state, {});
+    await recOnce(host);
+    expect(state.tried).toBe(0);
+    expect(state.lastScore).toBe(null);
+    expect(savePronunciationLog).not.toHaveBeenCalled();
+    expect(showRecordToast).toHaveBeenCalledTimes(1);
+    expect(String(showRecordToast.mock.calls[0][0])).toContain('마이크');
+  });
+
+  it('오발화와 녹음 불량은 안내가 다르다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 12, recognizedText: 'It mean I it I I put.', weakPhonemes: [], phonemeScores: ph(88) });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    await recOnce(host);
+    expect(String(showRecordToast.mock.calls[0][0])).toContain('다른 문장');
+  });
+
+  it('음소평균 66 인 저점 발화는 그대로 기록한다 (실기록 하한 보호)', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 21, recognizedText: 'Is that a promise?', weakPhonemes: [], phonemeScores: ph(66) });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    renderSessionExprV2(host, state, {});
+    await recOnce(host);
+    expect(state.tried).toBe(1);
+    expect(state.lastScore).toBe(21);
+  });
+});

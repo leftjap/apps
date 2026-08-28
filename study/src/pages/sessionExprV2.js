@@ -15,13 +15,19 @@ import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
-import { judgeCoverage, judgeProduction, judgeMisread } from '../services/coverageJudge.js';
+import { judgeCoverage, judgeProduction, judgeRecording } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
-/* 오발화 안내 (2026-08-29) — 점수를 기록하지 않고 되돌릴 때만 쓴다. '다른 문장을 말했다'로 단정하지
- * 않는다: 웅얼거려 전사가 무너진 경우도 같은 자리에 들어오기 때문 (coverageJudge 주석 참조). */
-export const MISREAD_MSG = '잘 안 들렸어요 — 다시 말해 보세요';
+/* 채점을 되돌릴 때의 안내 (2026-08-29) — 원인이 둘이라 문구를 나눈다.
+ * inaudible = 녹음이 음향적으로 무너짐(음소 원시 점수가 바닥) → 사용자가 할 일은 '가까이서 다시'
+ * misread   = 소리는 멀쩡한데 다른 문장                     → 사용자가 할 일은 '문장을 다시 확인'
+ * 한 문구로 뭉치면 마이크 문제를 발음 문제로 오인하게 만든다. */
+export function recordGateMessage(reason) {
+  return reason === 'misread'
+    ? '다른 문장을 말한 것 같아요 — 다시 말해 보세요'
+    : '잘 안 들렸어요 — 마이크에 가까이서 다시 말해 보세요';
+}
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // 점수·통과 배지 등장 애니 재트리거 (전역 .score-pop = scorePop 키프레임, src/styles/session.css).
@@ -368,7 +374,8 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       const result = await stopAndAnalyze(ctrl, target, { lang }, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       // 오발화(다른 문장·아무 발음)는 점수로도 발화로도 세지 않는다 — 메인 카드와 같은 계약.
-      if (judgeMisread(result, target).misread) { showRecordToast(MISREAD_MSG); return; }
+      const judged = judgeRecording(result, target);
+      if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
       pushScore(result?.score ?? 0);
       onScore?.(i, result);
     }
@@ -897,7 +904,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const result = await stopAndAnalyze(ctrlR, s.sentence, s, { enableMiscue: true });
     state.recording = false;
     if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-    if (judgeMisread(result, s.sentence).misread) { setRecVisual(false); showRecordToast(MISREAD_MSG); return; }
+    const judged = judgeRecording(result, s.sentence);
+    if (!judged.record) { setRecVisual(false); showRecordToast(recordGateMessage(judged.reason)); return; }
     applyScore(Number(result?.score) || 0, result?.weakPhonemes);
     setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
     try {

@@ -754,3 +754,32 @@ describe('sessionReviewV2 — 응용 드릴 발화 이력', () => {
     expect(subs[1]).not.toContain('이전');
   });
 });
+
+/* 녹음 품질 게이트 — 복습도 신규와 같은 계약 (2026-08-29).
+ * 근거·임계는 services/coverageJudge.js judgeRecording 주석 (지오 실기록 26건 + 라이브 재현). */
+describe('sessionReviewV2 — 녹음 품질 게이트', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+  async function recOnce(host) {
+    host.querySelector('.vr-pill.pri').click(); await tick();
+    host.querySelector('.vr-pill.recing').click(); await tick(); await tick();
+  }
+
+  it('표시 점수 82 여도 음소평균 43 이면 점수 원이 붙지 않는다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 82, recognizedText: EN, phonemeScores: ph(43) });
+    const host = mountCard({ interval: 3 });
+    await recOnce(host);
+    const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+    expect(shown).toHaveLength(0);
+    expect(String(showRecordToast.mock.calls[0][0])).toContain('마이크');
+  });
+
+  it('음소평균 66 인 저점 발화는 기록한다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 21, recognizedText: EN, phonemeScores: ph(66) });
+    const host = mountCard({ interval: 3 });
+    await recOnce(host);
+    const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+    expect(shown).toHaveLength(1);
+    expect(shown[0].textContent).toBe('21');
+  });
+});

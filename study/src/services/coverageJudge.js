@@ -99,3 +99,35 @@ export function judgeMisread(result, expected, { minAccuracy = 40, minCoverage =
   const { coverage } = judgeCoverage(result?.recognizedText, expected);
   return { misread: accuracy < minAccuracy && coverage < minCoverage, coverage, accuracy };
 }
+
+/* 음소 점수 평균 — Azure 가 준 원시 음향 일치도. 표시 점수(AccuracyScore)와 달리 보정이 없다. */
+function phonemeMean(result) {
+  const ps = result?.phonemeScores;
+  if (!Array.isArray(ps) || !ps.length) return null;   // 근거 없음 — 판정하지 않는다
+  let sum = 0;
+  for (const p of ps) sum += Number(p?.score) || 0;
+  return sum / ps.length;
+}
+
+/* 채점 가능 여부 (2026-08-29) — "엉뚱한 문장인데 50점이 말이 되냐"(사용자)에 대한 답.
+ *
+ * 뿌리: Azure AccuracyScore 는 저점 구간에서 실제 음향 일치도보다 크게 부풀려진다. 공식 문서가
+ * "word and full text accuracy scores are aggregated from the phoneme-level accuracy score,
+ * **and refined with assessment objectives**" 라고 적은 그 refine 이 바닥을 다진다.
+ * 실측(지오 기록 26건 + 라이브 재현):
+ *   정상  — 음소 0점 0개 · 음소평균 65~98 · 표시 acc 75~98   (일치)
+ *   문제  — 음소 0점 15~100% · 음소평균 0~29 · 표시 acc 23~63 (괴리)
+ *   저SNR — 음소평균 42.7 인데 표시 acc 82. enableMiscue:true 로도 안 걸린다.
+ * 임계 50 의 여유: 원어민 90~96 · 강한 한국어 액센트 67~85 · 극단 끊어읽기(1.5초 휴지) 82.
+ *
+ * 판정 순서가 중요하다 — 음질이 무너진 녹음은 전사도 같이 무너지므로 오발화로 오인된다.
+ * 원인을 먼저 묻고(inaudible) 그다음 내용을 묻는다(misread). */
+export function judgeRecording(result, expected, { minPhonemeMean = 50, ...misreadOpts } = {}) {
+  const pm = phonemeMean(result);
+  const misread = judgeMisread(result, expected, misreadOpts);
+  if (pm != null && pm < minPhonemeMean) {
+    return { record: false, reason: 'inaudible', phonemeMean: pm, ...misread };
+  }
+  if (misread.misread) return { record: false, reason: 'misread', phonemeMean: pm, ...misread };
+  return { record: true, reason: null, phonemeMean: pm, ...misread };
+}

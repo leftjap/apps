@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { judgeCoverage, judgeProduction, judgeMisread } from './coverageJudge.js';
+import { judgeCoverage, judgeProduction, judgeMisread, judgeRecording } from './coverageJudge.js';
 
 describe('judgeCoverage — 전사 vs 기대문 커버리지 (체이닝 통과 판정, 엔진 무관)', () => {
   it('완전 일치 → pass, missing 없음, coverage 1', () => {
@@ -182,5 +182,64 @@ describe('judgeMisread — 두 신호가 모두 바닥일 때만 오발화', () 
 
   it('mock 폴백은 판정 대상이 아니다 — 호출부가 먼저 거르므로 오발화 아님으로 통과', () => {
     expect(judgeMisread({ mockFallback: true, score: 60 }, EXP12).misread).toBe(false);
+  });
+});
+
+/* 녹음 품질 판정 (2026-08-29) — 사용자 지적: "엉뚱한 문장인데 50점이 말이 되냐".
+ * 뿌리는 Azure AccuracyScore 가 저점 구간에서 실제 음향 일치도보다 크게 부풀려지는 것이다.
+ * 공식 문서: "word and full text accuracy scores are aggregated from the phoneme-level accuracy
+ * score, **and refined with assessment objectives**" — 그 refine 이 바닥을 다진다.
+ *
+ * 지오 실기록(rms 기록 있는 26건) 실측:
+ *   정상 19건 — 음소 0점 0개 · 음소평균 65.2~97.7 · 표시 acc 75~98   (acc 가 실체와 일치)
+ *   문제  7건 — 음소 0점 15~100% · 음소평균 0~28.8 · 표시 acc 23~63  (acc 가 실체와 괴리)
+ * 라이브 재현(신호를 잡음에 묻음): 음소평균 42.7 인데 표시 acc 82 — enableMiscue:true 로도 안 걸린다.
+ * 상한 확인: 원어민 90~96 · 강한 한국어 액센트 67~85 · 극단 끊어읽기 82 → 임계 50 은 정상 발화에 여유. */
+describe('judgeRecording — 오발화 + 녹음 품질 통합 판정', () => {
+  const EXP = 'Sorry could you say that again more slowly';
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+
+  it('정상 발화는 기록한다 (음소평균 95)', () => {
+    const r = judgeRecording({ score: 96, recognizedText: EXP, phonemeScores: ph(95) }, EXP);
+    expect(r.record).toBe(true);
+    expect(r.reason).toBe(null);
+  });
+
+  it('강한 한국어 액센트 하한(음소평균 67)도 기록한다', () => {
+    expect(judgeRecording({ score: 77, recognizedText: EXP, phonemeScores: ph(67) }, EXP).record).toBe(true);
+  });
+
+  it('지오 정상 발화 최저(음소평균 65.2·acc 83)도 기록한다', () => {
+    expect(judgeRecording({ score: 83, recognizedText: EXP, phonemeScores: ph(65.2) }, EXP).record).toBe(true);
+  });
+
+  it('저SNR 취약 구간 — 표시 acc 82 여도 음소평균 42.7 이면 버린다', () => {
+    const r = judgeRecording({ score: 82, recognizedText: EXP, phonemeScores: ph(42.7) }, EXP);
+    expect(r.record).toBe(false);
+    expect(r.reason).toBe('inaudible');
+  });
+
+  it('지오 실기록 문제 케이스(acc 58·음소평균 10.4)를 버린다', () => {
+    expect(judgeRecording({ score: 58, recognizedText: EXP, phonemeScores: ph(10.4) }, EXP).reason).toBe('inaudible');
+  });
+
+  it('다른 문장은 오발화로 구분한다 (음질은 멀쩡)', () => {
+    const r = judgeRecording({ score: 6, recognizedText: 'How long will it take', phonemeScores: ph(90) }, EXP);
+    expect(r.record).toBe(false);
+    expect(r.reason).toBe('misread');
+  });
+
+  it('음질 판정이 오발화보다 먼저다 — 둘 다 나쁘면 원인은 녹음이다', () => {
+    const r = judgeRecording({ score: 6, recognizedText: 'How long', phonemeScores: ph(12) }, EXP);
+    expect(r.reason).toBe('inaudible');
+  });
+
+  it('음소 데이터가 없으면 음질을 묻지 않는다 (판정 근거 부족 — 기존 계약 보존)', () => {
+    expect(judgeRecording({ score: 92, recognizedText: EXP }, EXP).record).toBe(true);
+    expect(judgeRecording({ score: 92, recognizedText: EXP, phonemeScores: [] }, EXP).record).toBe(true);
+  });
+
+  it('단어를 다 말한 저점(발음만 나쁨)은 음질만 받쳐주면 기록한다', () => {
+    expect(judgeRecording({ score: 21, recognizedText: EXP, phonemeScores: ph(66) }, EXP).record).toBe(true);
   });
 });
