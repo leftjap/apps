@@ -1071,6 +1071,28 @@ public final class RTAppModel: ObservableObject {
             ebookReadAt = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]": t.addingTimeInterval(-7_200)]
             ebookCovers = [:]
             homeCardIndex = 0
+        case "demoNewRecord":
+            // 홈 게이지 신기록 상태(streak > best > 0) — 상태 매트릭스 C. 시안 #14a 에 없는 상태라
+            // 이 시드가 유일한 렌더 경로다(골드 그라데이션 + rtSweep + "+N일" 눈으로 확인용).
+            // 과거 완료 구간 4일(12~15일 전) + 현재 진행 구간 6일(오늘~5일 전) → best 4 / streak 6.
+            var ncal = Calendar(identifier: .gregorian)
+            ncal.firstWeekday = 2
+            let nToday = ncal.startOfDay(for: now())
+            func nDay(_ i: Int) -> Date {
+                ncal.date(byAdding: .day, value: -i, to: nToday)!.addingTimeInterval(10 * 3600)
+            }
+            let nDays = Array(0...5) + Array(12...15)
+            userData = RTUserData(
+                books: [RTBook(isbn: "P1", title: "몰입", author: "미하이 칙센트미하이",
+                               publisher: "한울림", coverUrl: "", addedAt: nDay(20))],
+                sessions: nDays.map {
+                    RTSessionRecord(isbn: "P1", mode: "flip", seconds: 30 * 60,
+                                    endedAt: nDay($0), pauseCount: 0)
+                })
+            finishedEbooks = [:]
+            ebookReadAt = [:]
+            ebookCovers = [:]
+            homeCardIndex = 0
         case "demoReread":   // 다시 읽기 UI 테스트 상태: initial | inProgress | allFinished
             let t = now()
             func ago(_ h: Double) -> Date { t.addingTimeInterval(-h * 3600) }
