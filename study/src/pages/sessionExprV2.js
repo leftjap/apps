@@ -14,7 +14,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
-import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, PRACTICE_VOICES } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES } from '../components/session/applied.js';
 import { judgeCoverage, judgeProduction } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
@@ -231,14 +231,16 @@ export function historyCalCard(todayISO, dayMap, todayCount, prDays) {
   };
 }
 
+/* 핵심 표현 밑줄 — 매칭 규칙(자리표시자 와일드카드)은 applied.js exprMatch 가 정본.
+ * 게이트(validate-seed)가 같은 함수를 써야 "밑줄 없음" 판정이 화면과 갈리지 않는다. */
 export function hlNode(text, term) {
   if (!term) return document.createTextNode(text);
-  const i = text.toLowerCase().indexOf(String(term).toLowerCase());
-  if (i < 0) return document.createTextNode(text);
+  const hit = exprMatch(text, term);
+  if (!hit) return document.createTextNode(text);
   const frag = document.createDocumentFragment();
-  frag.append(document.createTextNode(text.slice(0, i)));
-  const b = document.createElement('b'); b.textContent = text.slice(i, i + term.length); frag.appendChild(b);
-  frag.append(document.createTextNode(text.slice(i + term.length)));
+  frag.append(document.createTextNode(text.slice(0, hit.index)));
+  const b = document.createElement('b'); b.textContent = text.slice(hit.index, hit.index + hit.length); frag.appendChild(b);
+  frag.append(document.createTextNode(text.slice(hit.index + hit.length)));
   return frag;
 }
 

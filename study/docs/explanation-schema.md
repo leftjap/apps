@@ -142,6 +142,8 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
 
 자막 없이 **듣고 따라 말하며** base 를 2문장 수준까지 확장 (elicited imitation). 표현 카드 `explanation.chain`.
 
+> **필수 여부 (2026-08-28 승격)**: scene 없는 트랙(`track: moduyeongeo` · `core100`)에서는 **의무**. 그 트랙엔 장면 카드가 없어 체이닝이 유일한 청각 확장 축이고, 빠지면 세션에서 블록이 통째로 사라진다(`buildChainSteps` 가 빈 배열 → `chainBlockEl` null → 연습 문장 11→8). 2026-08-26 core100 전환 시드가 chain 없이 게이트 경고 0 으로 통과해 실제 회귀가 났다. scene 이 있는 일반 en 시드는 종전대로 선택.
+
 ```json
 "chain": {
   "target": "What did I do wrong this time? Tell me honestly, please.",

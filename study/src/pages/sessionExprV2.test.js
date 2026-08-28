@@ -11,7 +11,7 @@ vi.mock('../services/pronunciationLog.js', () => ({ savePronunciationLog: vi.fn(
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2 } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 
@@ -975,5 +975,45 @@ describe('sessionExprV2 — 시안 줄 대조 누락분', () => {
     row.querySelector('.vs-prod-give').click();
     expect(subs().some((t) => /단어$/.test(t))).toBe(false);
     expect(subs().some((t) => t.includes('more than a job'))).toBe(true);
+  });
+});
+
+/* 핵심 표현 밑줄 — key 좌변이 자리표시자를 쓰면 그대로는 절대 매치되지 않았다.
+ * 실측(시드 코퍼스 208장): 자리표시자 23% (~ 13장 · X 등 35장). 이것들은 구조적으로 0% 매치라
+ * 응용 행에 밑줄이 하나도 안 그려졌다. 자리표시자는 데이터가 이미 "여기는 아무 단어"라고 말한 것이므로
+ * 와일드카드로 해석한다 — 드릴 매치율 sitcom 39→53% · core100 29→32% (실측). */
+describe('hlNode — 핵심 표현 자리표시자', () => {
+  const mark = (text, term) => {
+    const d = document.createElement('div');
+    d.appendChild(hlNode(text, term));
+    return [...d.querySelectorAll('b')].map((n) => n.textContent);
+  };
+
+  it('물결표(~)는 단어 하나 와일드카드', () => {
+    expect(mark("It's more than a job.", 'more than a ~')).toEqual(['more than a job']);
+  });
+
+  it('단독 대문자(X)도 자리표시자', () => {
+    expect(mark("I'll take care of him.", 'take care of X')).toEqual(['take care of him']);
+  });
+
+  it('평문은 종전대로 그대로 매치', () => {
+    expect(mark('Would you keep an eye on my bag?', 'keep an eye on')).toEqual(['keep an eye on']);
+  });
+
+  it('대소문자 무관', () => {
+    expect(mark('Take care of the kids.', 'take care of X')).toEqual(['Take care of the']);
+  });
+
+  it('매치가 없으면 밑줄을 만들지 않는다 (없는 강조를 지어내지 않음)', () => {
+    expect(mark("Sorry, I didn't catch that.", 'could you say that again')).toEqual([]);
+  });
+
+  it('자리표시자가 문장 끝을 넘어가면 매치 안 함', () => {
+    expect(mark('It is more than a', 'more than a ~')).toEqual([]);
+  });
+
+  it('term 이 없으면 통짜 텍스트', () => {
+    expect(mark('anything', null)).toEqual([]);
   });
 });

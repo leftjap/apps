@@ -19,7 +19,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { argv, exit } from 'node:process';
-import { nearDupDrills } from '../src/components/session/applied.js';
+import { nearDupDrills, exprMatch } from '../src/components/session/applied.js';
 
 // session-new.js deriveDialogue 와 동일 정규화 (매칭 계약 시뮬레이션용 — 로직 변경 시 양쪽 동기화)
 // ⚠️ 근접중복 판정엔 쓰지 말 것 — 아포스트로피를 지워 `it's` 를 2단어로 세므로 렌더(applied.js)와 결과가 갈린다.
@@ -341,7 +341,15 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   // ko 는 3회 실패 시 첫 힌트(한국어 뜻)에 쓰이므로 의무. 선택 필드 → 미존재 시 skip(하위호환).
   for (const c of exprs) {
     const chain = c.explanation?.chain;
-    if (chain === undefined) continue;
+    if (chain === undefined) {
+      /* scene 이 없는 트랙에서는 체이닝이 유일한 청각 확장 축이다 — 빠지면 세션 화면에서 블록이
+       * 통째로 사라진다(buildChainSteps 가 빈 배열 → chainBlockEl null). 2026-08-26 core100 전환이
+       * chain 없는 시드를 경고 0 으로 통과시켜 연습 문장이 11→8 로 줄었다. 선택 → 의무로 승격. */
+      if (isScenelessTrack) {
+        errors.push(`${c.id}: chain 누락 — sceneless 트랙(${payload.track})은 chain{target,chunks,ko} 의무 (없으면 세션에서 체이닝 블록이 사라짐)`);
+      }
+      continue;
+    }
     if (typeof chain !== 'object' || chain === null || Array.isArray(chain)) {
       errors.push(`${c.id}: chain 은 { target, chunks, ko } 객체여야 함`);
       continue;
@@ -387,6 +395,20 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
         warnings.push(`${c.id}: chain ${i + 1}번째 chunk 가 "${last}"로 끝남 — 관사·소유격·단음절 전치사는 말끝이 될 수 없는 지점. 끊는 위치를 옮길 것`);
       }
     });
+  }
+
+  /* ── 응용 드릴이 핵심 표현을 한 번도 안 담으면 경고 ──
+   * 응용 연습의 목적은 핵심 표현을 여러 맥락에서 다시 만나는 것이고, 시안(§4.4·§6.5)은 그 재사용을
+   * 드릴 행 밑줄로 표시한다. 표현이 안 들어간 묶음은 응용이 아니라 유의어 나열이라 밑줄이 0개가 된다
+   * (2026-08-26 core100 시드 실측: 드릴 30개 중 4개만 매치). 판정은 렌더(hlNode)와 같은 exprMatch.
+   * 차단하지 않는다 — 기존 시드 상당수가 걸리고, 패러프레이즈가 의도인 카드도 있다. */
+  for (const c of exprs) {
+    const expr = String(c.explanation?.key || '').split('=')[0].replace(/\([^)]*\)/g, '').trim();
+    const ds = Array.isArray(c.explanation?.drills) ? c.explanation.drills : [];
+    if (!expr || !ds.length) continue;
+    if (!ds.some((d) => exprMatch(String(d?.en || ''), expr))) {
+      warnings.push(`${c.id}: 드릴 ${ds.length}개 중 핵심 표현("${expr}")을 담은 것이 없음 — 응용 행에 밑줄이 하나도 안 그려진다. 표현을 재사용한 변주를 섞을 것`);
+    }
   }
 
   // ── drills 근접중복: 호칭('honey')·감탄사('okay')만 덧붙인 건 변주가 아니다.

@@ -38,7 +38,16 @@
         "mistake": "one more time 을 '원 모어 타임'으로 또박또박(X) → 실제는 '원 모어r 타임'. again 을 '어게인'(X) → '어겐'.",
         "similar": "Could you repeat that? / Sorry, what was that?",
         "category": "말문/되묻기",
-        "frequency": 10
+        "frequency": 10,
+        "chain": {
+          "target": "Sorry, could you say that again more slowly, I didn't catch the last part.",
+          "chunks": [
+            "Sorry, could you say that again more slowly,",
+            "I didn't catch",
+            "the last part."
+          ],
+          "ko": "죄송한데 좀 더 천천히 다시 말해 줄래요, 마지막 부분을 못 들었어요."
+        }
       }
     },
     {
@@ -73,7 +82,17 @@
         "mistake": "What means that?(X) — mean 의 주어는 사람(you)이다. What do you mean 이 정답 형태.",
         "similar": "What are you getting at? / How do you mean?",
         "category": "말문/되묻기",
-        "frequency": 10
+        "frequency": 10,
+        "chain": {
+          "target": "What do you mean by that exactly, I want to be sure I follow you.",
+          "chunks": [
+            "What do you mean by that exactly,",
+            "I want",
+            "to be sure",
+            "I follow you."
+          ],
+          "ko": "그게 정확히 무슨 뜻이에요, 제가 제대로 따라가고 있는지 확인하고 싶어서요."
+        }
       }
     },
     {
@@ -108,7 +127,17 @@
         "mistake": "I don't know how to explain 도 맞지만 딱딱하다. I'm not sure ~ 가 대화에서 더 부드럽다.",
         "similar": "I don't know how to put this. / How do I say this?",
         "category": "말문/막힘",
-        "frequency": 8
+        "frequency": 8,
+        "chain": {
+          "target": "I'm not sure how to explain it in English, but I can try it in Korean first.",
+          "chunks": [
+            "I'm not sure how to explain it in English,",
+            "but I can",
+            "try it",
+            "in Korean first."
+          ],
+          "ko": "영어로 어떻게 설명할지 모르겠는데, 한국어로 먼저 해볼 수는 있어요."
+        }
       }
     },
     {
@@ -143,7 +172,17 @@
         "mistake": "second 를 '세컨드'로 끝까지(X) → 실제는 끝 d 를 거의 흘려 '쎄컨'. think 의 th 를 'ㅅ'(X) → 혀끝을 이 사이에.",
         "similar": "Just a second. / Let me think for a moment.",
         "category": "말문/시간벌기",
-        "frequency": 9
+        "frequency": 9,
+        "chain": {
+          "target": "Give me a second to think about it, and then I'll answer your question properly.",
+          "chunks": [
+            "Give me a second to think about it,",
+            "and then",
+            "I'll answer",
+            "your question properly."
+          ],
+          "ko": "생각할 시간을 좀 주세요, 그다음에 질문에 제대로 답할게요."
+        }
       }
     },
     {
@@ -178,7 +217,16 @@
         "mistake": "express 를 떠올려 어렵게 말하려다 막힌다. 원어민은 put it into words 처럼 기본동사로 푼다.",
         "similar": "I can't explain it well. / I don't know how to word it.",
         "category": "말문/막힘",
-        "frequency": 7
+        "frequency": 7,
+        "chain": {
+          "target": "I know what I mean, but I can't put it into words, so give me a moment.",
+          "chunks": [
+            "I know what I mean, but I can't put it into words,",
+            "so give me",
+            "a moment."
+          ],
+          "ko": "무슨 말인지는 아는데 말로 표현이 안 돼요, 그러니 잠깐만 시간을 주세요."
+        }
       }
     },
     {
@@ -213,7 +261,17 @@
         "mistake": "if 를 '만약'으로만 알면 뜻이 안 잡힌다. 여기 if 는 '~인지'(whether).",
         "similar": "Just to make sure — you mean …? / Let me get this straight.",
         "category": "말문/확인",
-        "frequency": 8
+        "frequency": 8,
+        "chain": {
+          "target": "Let me see if I understood you correctly, because I don't want to repeat the same mistake.",
+          "chunks": [
+            "Let me see if I understood you correctly,",
+            "because I don't",
+            "want to repeat",
+            "the same mistake."
+          ],
+          "ko": "제가 제대로 이해했는지 볼게요, 같은 실수를 반복하고 싶지 않아서요."
+        }
       }
     }
   ]

@@ -207,6 +207,8 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
       chunks,
       phonemes: [['/ð/', 'that']],
       mistake: '함정', similar: '대체', category: 'chunk/test', frequency: 7,
+      // sceneless 트랙(moduyeongeo·core100)은 chain 이 의무 — 없으면 세션에서 체이닝 블록이 통째로 사라진다.
+      chain: { target: `${sentence.replace(/[.?!]$/, '')} for now, I think`, chunks: [sentence.replace(/[.?!]$/, ''), 'for now,', 'I think'], ko: '지금은 그런 것 같아' },
     },
   });
   const makeModu = (overrides = {}) => ({
@@ -245,6 +247,56 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     const r = validateSeedContent(p, okOpts);
     expect(r.ok).toBe(false);
     expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
+  /* 2026-08-28 — core100 전환(8447946)이 chain 없는 시드를 게이트 경고 0 으로 통과시켰다.
+   * 결과: 세션에서 체이닝 블록이 통째로 사라지고(buildChainSteps 가 빈 배열) 연습 문장이 11→8 로 줄었다.
+   * chain 은 선택 필드였다 — scene 이 없는 트랙에서는 체이닝이 유일한 청각 확장 축이므로 의무로 승격한다. */
+  it('sceneless 트랙에서 chain 이 없으면 차단한다 (core100 전환 회귀 재발 방지)', () => {
+    for (const track of ['moduyeongeo', 'core100']) {
+      const p = makeModu({ track });
+      p.cards.forEach((c) => { delete c.explanation.chain; });
+      const r = validateSeedContent(p, okOpts);
+      expect(r.ok).toBe(false);
+      expect(r.errors.join(' ')).toContain('chain');
+    }
+  });
+
+  it('한 장만 빠져도 그 카드가 지목된다', () => {
+    const p = makeModu({ track: 'core100' });
+    delete p.cards[1].explanation.chain;
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('en-moduyeongeo-ep1-b');
+  });
+
+  /* 응용 연습의 목적은 핵심 표현을 여러 맥락에서 다시 만나는 것이고, 시안(§4.4·§6.5)은 그 재사용을
+   * 드릴 행 밑줄로 표시한다. 표현이 한 번도 안 들어간 드릴 묶음은 응용이 아니라 유의어 나열이라
+   * 밑줄이 하나도 안 그려진다 — 실측: 사용자 대기 카드 6장에서 드릴 30개 중 4개(13%)만 매치.
+   * 차단하지 않고 경고만 — 기존 시드 상당수가 걸리고, 패러프레이즈가 의도인 카드도 있다. */
+  it('드릴이 핵심 표현을 하나도 안 담으면 경고한다', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards[0].explanation.key = 'keep an eye on = 지켜보다.';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.join(' ')).toContain('핵심 표현');
+  });
+
+  it('드릴 하나라도 표현을 담으면 경고하지 않는다', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards.forEach((c) => { c.explanation.key = 'keep an eye on = 지켜보다.'; });
+    p.cards[0].explanation.drills[0].en = 'Could you keep an eye on my bag?';
+    p.cards[1].explanation.drills[0].en = 'She will keep an eye on it.';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('핵심 표현'))).toEqual([]);
+  });
+
+  it('자리표시자 key 도 와일드카드로 인정한다 (렌더와 같은 판정)', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards.forEach((c) => { c.explanation.key = 'take care of X = 돌보다.'; });
+    p.cards[0].explanation.drills[0].en = "I'll take care of him.";
+    p.cards[1].explanation.drills[0].en = 'She will take care of the kids.'; // 굴절형(takes)은 대상 아님 — 자리표시자는 X 자리만
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('핵심 표현'))).toEqual([]);
   });
 
   // ── chain (무자막 청각 확장, 2026-07-09) — ladder 대체. 앱이 chunks 누적으로 단계를 만든다. ──

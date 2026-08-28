@@ -104,6 +104,25 @@ function classifyDrill(sentence, base, bw, en) {
   return 'variation';
 }
 
+/* 핵심 표현 매칭 — key 좌변의 `~` 와 단독 대문자(X/Y)는 데이터가 이미 "여기는 아무 단어"라고
+ * 말한 자리표시자다. 문자열 그대로 찾으면 절대 매치되지 않아 응용 행 밑줄이 0개가 된다
+ * (시드 코퍼스 208장 중 자리표시자 23%). 단어 하나 와일드카드로 해석한다.
+ * 게이트(validate-seed)와 렌더(hlNode)가 이 함수를 공유해야 판정이 갈리지 않는다. */
+const EXPR_PLACEHOLDER = /^(?:~+|[A-Z])$/;
+export function exprMatch(text, term) {
+  const src = String(text ?? '');
+  const toks = String(term ?? '').trim().split(/\s+/).filter(Boolean);
+  if (!src || !toks.length) return null;
+  if (!toks.some((t) => EXPR_PLACEHOLDER.test(t))) {
+    const i = src.toLowerCase().indexOf(toks.join(' ').toLowerCase());
+    return i < 0 ? null : { index: i, length: toks.join(' ').length };
+  }
+  // 와일드카드는 단어만 — \S+ 는 뒤 마침표까지 삼켜 밑줄이 넘친다.
+  const pat = toks.map((t) => (EXPR_PLACEHOLDER.test(t) ? "[\\w'\u2019-]+" : t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).join('\\s+');
+  const m = new RegExp(pat, 'i').exec(src);
+  return m ? { index: m.index, length: m[0].length } : null;
+}
+
 /** 근접중복을 둘로 나눠 센다 — exact(1개 허용) · added(호칭류 + 꼬리확장, 0개).
  * 게이트(scripts/validate-seed.mjs)와 렌더가 이 함수를 공유해야 판정이 갈리지 않는다. */
 export function nearDupDrills(sentence, drills) {
