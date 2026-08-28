@@ -200,4 +200,20 @@ import Foundation
         let g = RTStreakGauge(streak: 1, best: 0)
         #expect(!g.showsBest)
     }
+
+    // ── AC #23 — 데모 캘린더 창은 날짜에 의존하지 않는다 (오늘이 바뀌어도 스크린샷 불변) ──
+
+    @Test func demoCalendarWindowIsDateIndependent() {
+        let w = Screen02Home.demoCal14
+        #expect(w.count == 14)
+        #expect(w.map(\.day) == Array(17...30))
+        #expect(w.map(\.minutes) == [0, 0, 34, 52, 41, 63, 28, 12, 47, 39, 46, 0, 0, 0])
+        #expect(w.firstIndex(where: { $0.isToday }) == 10)          // 8/27(목) 고정
+        #expect(w.map(\.isFuture) == (0..<14).map { $0 > 10 })
+        #expect(w.map(\.isSunday) == (0..<14).map { $0 % 7 == 6 })
+        // 날짜가 2026-08 로 못 박혀 있어야 라벨("8월 27일")도 흔들리지 않는다
+        let cal = Calendar(identifier: .gregorian)
+        #expect(w.allSatisfy { cal.component(.year, from: $0.date) == 2026 })
+        #expect(w.allSatisfy { cal.component(.month, from: $0.date) == 8 })
+    }
 }

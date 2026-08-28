@@ -477,19 +477,26 @@ public struct Screen02Home: View {
                         .strokeBorder(Color(hex: 0x7A3C28, alpha: 0.05), lineWidth: 1)
                 }
             }
-        Group {
+        let shaped = Group {
             if filledToday {
                 base.rtRing(10, RT.terra.opacity(0.13), width: 3)
             } else {
                 base
             }
         }
-        // 색만으로 분량을 전달하므로 VoiceOver 대체 텍스트가 필수
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(calMonth(c))월 \(c.day)일")
-        .accessibilityValue(c.minutes > 0 ? "\(c.minutes)분" : "기록 없음")
-        .accessibilityAddTraits(c.isToday ? .isSelected : [])
-        .accessibilityHidden(c.isFuture)
+        // 미래 칸은 읽을 정보가 없다 — 요소를 만들지 않고 통째로 숨긴다.
+        // 요소를 만든 뒤(.accessibilityElement + label/value) .accessibilityHidden 을 덧붙이면
+        // 실기기에서 트리에 그대로 남는다 (시뮬레이터 실측 2026-08-28: 8/29·8/30 이 "기록 없음"으로 낭독됨).
+        if c.isFuture {
+            shaped.accessibilityHidden(true)
+        } else {
+            // 색만으로 분량을 전달하므로 VoiceOver 대체 텍스트가 필수 (§8-3, AC #15c)
+            shaped
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(calMonth(c))월 \(c.day)일")
+                .accessibilityValue(c.minutes > 0 ? "\(c.minutes)분" : "기록 없음")
+                .accessibilityAddTraits(c.isToday ? .isSelected : [])
+        }
     }
 
     /// 색면이 깔린 칸(읽은 과거)에는 월간(11)의 "일요일은 항상 terra" 규칙을 적용하지 않는다 —
