@@ -380,10 +380,13 @@ public struct Screen02Home: View {
                     .padding(.top, 6)
                 }
             }
+            // combine 이 이 VStack 전체를 한 요소로 묶고 label 이 병합 라벨을 덮으므로,
+            // 같은 묶음 안에 있는 '이번 주 N:NN' 을 라벨에 넣지 않으면 VoiceOver 에서 사라진다
+            // (주간 누적은 홈에서 이 한 곳뿐이라 대체 경로가 없다). §8-3 예시 문구에 이번 주를 더한다.
             .accessibilityElement(children: .combine)
             .accessibilityLabel(bestVal > 0
-                ? "\(streakVal)일 연속, 역대 최고 \(bestVal)일, \(remainLabel)"
-                : "\(streakVal)일 연속")
+                ? "\(streakVal)일 연속, 이번 주 \(weekHMVal), 역대 최고 \(bestVal)일, \(remainLabel)"
+                : "\(streakVal)일 연속, 이번 주 \(weekHMVal)")
         }
         .padding(EdgeInsets(top: 10, leading: 4, bottom: 0, trailing: 4))
     }
