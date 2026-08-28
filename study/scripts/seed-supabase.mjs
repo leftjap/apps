@@ -205,7 +205,13 @@ async function main() {
   // seed 파이프라인 '코드'로 삭제. 라우틴의 "미완료 5건 초과 보류"(에이전트 판단)를 제거하고 이 코드가
   // 강제하므로, 완료 불가·방치 카드가 쌓여 미완료>5 로 en 생성이 막히던 데드락이 구조적으로 재발 불가.
   const incompletes = await selectIncompleteByLang(supabaseUrl, serviceKey, args.userId, payload.lang);
-  const stale = staleIncompleteIds(incompletes, payload.date, STALE_DAYS);
+  /* stale 기준일은 payload.date 가 아니라 '실제 오늘' 이다 (2026-08-28 사고 수정).
+   * 미래 날짜로 여러 세션을 앞당겨 시딩하면 payload.date 가 오늘보다 한참 뒤라, 컷오프(payload.date-14)가
+   * 미래로 밀려 **방금 넣은 최근 카드까지 소급 삭제**된다. 실제로 ja-core100 을 09-13 까지 배치 시딩하다
+   * 08-28·08-29 카드 12장이 지워졌다. 둘 중 이른 날짜를 쓰면 미래 시딩에서도 안전하다. */
+  const realToday = new Date().toISOString().slice(0, 10);
+  const staleBase = payload.date < realToday ? payload.date : realToday;
+  const stale = staleIncompleteIds(incompletes, staleBase, STALE_DAYS);
   if (stale.length) {
     // 삭제 전 백업 덤프 (2026-07-01): 무인(라우틴) 경로의 불가역 DELETE — 오탐 시 복구용으로 행 JSON 을 로그에 보존.
     console.log(`[seed] stale 백업(JSON): ${JSON.stringify(incompletes.filter((r) => stale.includes(r.id)))}`);

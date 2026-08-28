@@ -28,3 +28,22 @@ describe('staleIncompleteIds — 방치된 미완료 카드 정리 (hold 데드�
     expect(staleIncompleteIds([], '2026-07-01')).toEqual([]);
   });
 });
+
+
+/* 미래 날짜 배치 시딩 사고 (2026-08-28) — seed-supabase 가 payload.date 를 '오늘'로 넘기면
+ * 앞당겨 시딩할수록 컷오프가 미래로 밀려 방금 넣은 카드까지 지운다. 기준일 선택 규칙을 못박는다. */
+describe('stale 기준일 — 미래 날짜 시딩에서 소급 삭제 방지', () => {
+  const rows = [
+    { id: 'seeded-today', date: '2026-08-28', completed: false },
+    { id: 'seeded-tomorrow', date: '2026-08-29', completed: false },
+  ];
+
+  it('payload.date 를 그대로 기준일로 쓰면 최근 카드가 stale 로 잡힌다 (사고 재현)', () => {
+    // 09-13 로 시딩 → 컷오프 08-30 → 08-28·29 가 삭제 대상이 된다
+    expect(staleIncompleteIds(rows, '2026-09-13', 14)).toEqual(['seeded-today', 'seeded-tomorrow']);
+  });
+
+  it('기준일을 실제 오늘로 두면 아무것도 지우지 않는다 (수정 후 동작)', () => {
+    expect(staleIncompleteIds(rows, '2026-08-28', 14)).toEqual([]);
+  });
+});
