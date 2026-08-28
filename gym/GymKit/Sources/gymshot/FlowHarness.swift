@@ -101,8 +101,9 @@ enum FlowHarness {
         m.completeCurrentSet()    // 재완료 — 95 동률 → PR 재발화 없음 (엄격 초과)
         check(m.prMoment == 2, "재완료 동률 e1rm → PR 미발화")
         // 드래그 추종 수식 (GymSwipeMath — 제스처 핸들러가 그대로 사용)
-        check(GymSwipeMath.heroTranslate(-200) == -150 && GymSwipeMath.heroTranslate(40) == 10,
-              "드래그 추종 좌클램프 -150·우저항 ×0.25")
+        check(GymSwipeMath.heroTranslate(-200) == -150 && GymSwipeMath.heroTranslate(200) == 150
+              && GymSwipeMath.heroTranslate(60) == 60,
+              "드래그 추종 ±150 클램프·양방향 1:1 (보이는 만큼 = 판정)")
         check(GymSwipeMath.endAction(dx: -60, dy: 0) == .commit
               && GymSwipeMath.endAction(dx: 60, dy: 10) == .revert
               && GymSwipeMath.endAction(dx: -30, dy: 5) == .springBack,

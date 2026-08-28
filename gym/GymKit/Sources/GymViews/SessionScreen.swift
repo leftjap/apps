@@ -193,6 +193,7 @@ public struct SessionScreenView: View {
     @State private var heroGhost: (top: String, bottom: String, kind: GymCardKind, fromDrag: Bool)? = nil
     @State private var heroGhostDragX: CGFloat = 0   // 드래그 커밋 시 고스트 시작 위치
     @State private var cueVisible = false
+    @State private var flashRow: HeroRow? = nil   // ± 증감 직후 미세 플래시 (PWA flashElement 정합)
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // 꾹누르기 액션시트 대상 (§6-9)
@@ -405,6 +406,7 @@ public struct SessionScreenView: View {
                                 ? GymSessionLogic.paceText(durationSec: dispSet?.duration, distanceKm: dispSet?.distance)
                                 : nil,
                             prChip: prChip, swapMoment: heroSwapMoment,
+                            flashTop: flashRow == .top, flashBottom: flashRow == .bottom,
                             onTopTap: locked ? nil : { zone in heroTap(row: .top, zone: zone, kind: kind) },
                             onBottomTap: locked ? nil : { zone in heroTap(row: .bottom, zone: zone, kind: kind) })
                 .offset(x: heroDragX)   // 드래그 추종 — 히어로 값만 이동 (칩·링은 고정)
@@ -577,19 +579,29 @@ public struct SessionScreenView: View {
         case .bodyweight:
             guard row == .bottom else { return }              // 맨몸 — 횟수 전용
             switch zone {
-            case .minus: model.adjustReps(-1)
-            case .plus:  model.adjustReps(1)
+            case .minus: model.adjustReps(-1); flashValue(.bottom)
+            case .plus:  model.adjustReps(1);  flashValue(.bottom)
             case .center: openKeypad(.reps)
             }
         case .weight:
             switch (row, zone) {
-            case (.top, .minus):    model.adjustWeight(-1)
-            case (.top, .plus):     model.adjustWeight(1)
+            case (.top, .minus):    model.adjustWeight(-1); flashValue(.top)
+            case (.top, .plus):     model.adjustWeight(1);  flashValue(.top)
             case (.top, .center):   openKeypad(.weight)
-            case (.bottom, .minus): model.adjustReps(-1)
-            case (.bottom, .plus):  model.adjustReps(1)
+            case (.bottom, .minus): model.adjustReps(-1); flashValue(.bottom)
+            case (.bottom, .plus):  model.adjustReps(1);  flashValue(.bottom)
             case (.bottom, .center): openKeypad(.reps)
             }
+        }
+    }
+
+    /// 증감 직후 그 숫자만 150ms 미세 플래시 (spec §6-3, PWA `flashElement` 정합).
+    /// 이식에서 유산소 패널(CardioPanel.step)에만 들어가고 중량/횟수엔 빠져 있어, 값이
+    /// 아무 신호 없이 바뀌었다 — 의도치 않은 접촉을 알아챌 방법이 없었다 (실기기 2026-08-28).
+    func flashValue(_ row: HeroRow) {
+        flashRow = row
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+            if flashRow == row { flashRow = nil }
         }
     }
 

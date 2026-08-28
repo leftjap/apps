@@ -521,3 +521,64 @@ sentence_elements (sentence_id, kanji_ids[], grammar_ids[], vocab_ids[])
 - 본 가이드의 출처 spec: [../specs/study-app-spec.md](../specs/study-app-spec.md) §5, §8-3
 - 형식 메타 (en/ja 공통): [./explanation-schema.md](./explanation-schema.md)
 - 영어 가이드 (짝): [./lesson-explanation-guide-en.md](./lesson-explanation-guide-en.md)
+
+## 14. ja-core100 트랙 — 카드 형식 정본 (⭐ 활성, 2026-08-28)
+
+> 코어 100문장 커리큘럼([./ja-core100-curriculum.md](./ja-core100-curriculum.md))의 카드 형식.
+> 기존 콩트(§5.2) 트랙은 중단. **신규 ja 시드는 본 § 를 따른다.**
+>
+> **왜 별도 형식인가**: 기존 ja 시드 47장을 실측하니 `drills` **0장**, `kanji_breakdown`·`korean_parallel`·`chunks`
+> 필드는 **전 시드에 부재**였다(2026-08-28 확인). 렌더러([../src/components/session/explanationPanel.js](../src/components/session/explanationPanel.js))는
+> 이미 지원하는데 시드가 안 채워서, 결과적으로 일본어 해설이 영어보다 빈약했다. 학습자는 **히라가나만 읽고
+> 가타카나를 자꾸 잊으며 아주 쉬운 한자만 아는** 수준이라 영어보다 **더 친절해야** 한다.
+
+### 14-1. 카드 필수 필드
+
+| 필드 | 의무 | 내용 |
+|---|---|---|
+| `sentence` | ✅ | 일본어 원문 (실제 표기) |
+| `reading` | ✅ **한자 든 문장 전부** | 문장 전체의 가나 읽기. 이게 없으면 한자를 못 읽어 학습이 끊긴다 |
+| `phonetic_kr` | ✅ | 한글 음차 (§6 7패턴 반영). `chunks` 의 kr 이어붙임과 일치 |
+| `meaning` | ✅ | 한글 뜻 |
+
+### 14-2. `explanation` 필수 8필드
+
+| 필드 | 형식 | 규칙 |
+|---|---|---|
+| `key` | string | "표현 = 뜻. 성격." 한 줄 |
+| `whenToUse` | string | 언제 쓰는지 한 줄 |
+| `grammar` | `{structure, explanation, korean_parallel}` | **`korean_parallel` 의무** — 일본어는 어순이 한국어와 같아 초보에게 가장 강력한 설명이다. 문자열 형식(구형) 금지 |
+| `chunks` | `[[표기, kr]]` | 호흡 단위로 분리. **문장 전체를 빠짐없이 덮는다**. kr 이어붙임 = `phonetic_kr` |
+| `drills` | `[{ja, kana, ko, kr}]` **4~8개** | **4필드 의무.** en 은 3필드(en/ko/kr)지만 ja 는 `kana`(가나 읽기)가 추가다 — 가나 없으면 초보가 못 읽는다. 근접중복·정원 채우기 금지 |
+| `kanji_breakdown` | `[{kanji, reading, meaning, korean_meaning}]` | **학습 한자 26자(커리큘럼 §7-1)** 포함 시 의무. 인식 한자 63자는 생략 가능. `korean_meaning` = 한국 한자 훈음(예: "먹을 식") |
+| `katakana_gloss` | `[{word, origin, hiragana, kr}]` | **가타카나 단어 포함 시 의무.** 원어(영어 등) + 히라가나 + 한글 음차 3종 병기 |
+| `mistake` | string | 한국인 관점 함정 (발음·직역 오해) |
+| `similar` | `[{expression, politeness, nuance}]` | 객체 배열 (§3.8) |
+| `politeness` | `'casual' \| 'polite' \| 'formal'` | 라벨 의무 |
+| `category` / `frequency` | string / 1~10 | 분류 / 빈도 |
+
+### 14-3. 금지·생략
+
+- ⛔ **`chain` 미사용** (사용자 지시 2026-08-28). 응용 연습은 `drills` 로만 한다.
+- ⛔ 콩트 메타(`skitId`/`scene_*`/`is_stretch`) 미사용 — 코어100 은 장면 기반이 아니다.
+- 구형 `pronPoints`(산문 한 줄) 폐기 → `chunks` + `mistake` 로 대체.
+
+### 14-4. 시드 payload
+
+```json
+{ "lang": "ja", "track": "ja-core100", "block": "A 반응·맞장구", "date": "YYYY-MM-DD", "cards": [ … ] }
+```
+
+카드 5~6장/세션, 커리큘럼 번호 순서대로. `validate-seed.mjs` 는 `lang==='en'` 에서만 상세 게이트를 돌리므로
+ja 는 구조 검증(ID 고유·sentence·meaning)만 통과하면 된다 — **본 § 체크리스트는 사람이 확인한다.**
+
+### 14-5. 자체 체크리스트 (ja-core100)
+
+- [ ] 한자 있는데 `reading` 누락 아닌가
+- [ ] `phonetic_kr` == `chunks` 의 kr 이어붙임인가
+- [ ] `chunks` 가 문장 전 글자를 덮는가
+- [ ] `drills` 4~8개이고 **전부 ja/kana/ko/kr 4필드**인가
+- [ ] 학습 한자 26자가 있는데 `kanji_breakdown` 누락 아닌가
+- [ ] 가타카나 단어가 있는데 `katakana_gloss` 누락 아닌가
+- [ ] `grammar.korean_parallel` 이 있는가
+- [ ] `chain`·콩트 메타가 섞이지 않았는가

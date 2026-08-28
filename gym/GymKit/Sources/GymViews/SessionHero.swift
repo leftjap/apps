@@ -15,16 +15,20 @@ struct SessionHero: View {
     let prChip: String?      // "+5kg" — 직전 세션 최대 무게 초과 넛지 (§6-11 progressive overload)
     var swapMoment: Int = 0  // 세트완료 커밋 — 히어로 수평 스왑 IN 재생 (§5.3 gHeroSwapW/R)
     var ghostOut: Bool? = nil   // 옛 값 고스트 — 값 = fromDrag (행별 OUT: 중량 -96 / 횟수 -88·55ms)
+    var flashTop: Bool = false     // ± 증감 직후 미세 플래시 (spec §6-3, PWA flashElement)
+    var flashBottom: Bool = false
     var onTopTap: ((HeroZone) -> Void)? = nil     // 좌30 감소 / 중40 키패드 / 우30 증가
     var onBottomTap: ((HeroZone) -> Void)? = nil
 
     init(kind: GymCardKind = .weight, topValue: String, bottomValue: String,
          preset: Bool = false, locked: Bool = false, doneSetCount: Int = 0, pace: String? = nil,
          prChip: String? = nil, swapMoment: Int = 0, ghostOut: Bool? = nil,
+         flashTop: Bool = false, flashBottom: Bool = false,
          onTopTap: ((HeroZone) -> Void)? = nil, onBottomTap: ((HeroZone) -> Void)? = nil) {
         self.kind = kind; self.topValue = topValue; self.bottomValue = bottomValue
         self.preset = preset; self.locked = locked; self.doneSetCount = doneSetCount; self.pace = pace
         self.prChip = prChip; self.swapMoment = swapMoment; self.ghostOut = ghostOut
+        self.flashTop = flashTop; self.flashBottom = flashBottom
         self.onTopTap = onTopTap; self.onBottomTap = onBottomTap
     }
 
@@ -59,8 +63,8 @@ struct SessionHero: View {
             } else {
                 switch kind {
                 case .weight:
-                    big(topValue, unit: "kg").overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
-                    repsRow(bottomValue, unit: "회").overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
+                    big(topValue, unit: "kg", flash: flashTop).overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
+                    repsRow(bottomValue, unit: "회", flash: flashBottom).overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
                     if let prChip {   // mocks #cardPrChip — ▲ +Nkg (crail-soft pill)
                         HStack(spacing: 6) {
                             Text("▲").font(.system(size: 9)).foregroundStyle(GY.crailDeep)
@@ -75,10 +79,10 @@ struct SessionHero: View {
                 case .bodyweight:
                     // 맨몸은 중량이 없다 — "맨몸" 표기를 빼고 횟수를 히어로 크기로 (사용자 2026-07-19).
                     // 탭 존은 그대로 onBottomTap(= 횟수 전용, heroTap 의 row == .bottom 가드 정합).
-                    big(bottomValue, unit: "회", id: "hero-reps").overlay { zones(onBottomTap, numberWidth: Self.bigWidth(bottomValue)) }
+                    big(bottomValue, unit: "회", id: "hero-reps", flash: flashBottom).overlay { zones(onBottomTap, numberWidth: Self.bigWidth(bottomValue)) }
                 case .cardio:
-                    big(topValue, unit: "분").overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
-                    repsRow(bottomValue, unit: "km", showX: false).overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
+                    big(topValue, unit: "분", flash: flashTop).overlay { zones(onTopTap, numberWidth: Self.bigWidth(topValue)) }
+                    repsRow(bottomValue, unit: "km", showX: false, flash: flashBottom).overlay { zones(onBottomTap, numberWidth: Self.repsWidth(bottomValue)) }
                     if let pace {
                         Text(pace).font(.mono(15, 500)).tracking(0.6)
                             .foregroundStyle(GY.crailDeep).padding(.top, 10)
@@ -91,6 +95,10 @@ struct SessionHero: View {
 
     // 탭 존 오버레이 — 중앙(키패드)은 **그려진 숫자 폭**에 맞추고 좌우가 나머지를 반씩 갖는다.
     // 40% 고정이던 종전엔 횟수 행에서 존이 숫자의 두 배라 여백 탭이 안 먹었다 (실기기 2026-08-23).
+    //
+    // 좌우 끝 `heroEdgeGutter`(26pt)는 불감대다 — 시안 `#cardSwipeArea { padding: 0 26px }`
+    // (mocks/session.html:346) 의 여백이 이식에서 빠져 증감 존이 화면 끝(x=0)까지 닿았고,
+    // 벤치에 둔 폰을 집을 때 베젤 근처 접촉이 그대로 ±증분으로 먹혔다 (실기기 2026-08-28).
     @ViewBuilder
     func zones(_ handler: ((HeroZone) -> Void)?, numberWidth: CGFloat) -> some View {
         if let handler {
@@ -99,9 +107,12 @@ struct SessionHero: View {
                     numberWidth: Double(numberWidth), rowWidth: Double(g.size.width)))
                 let side = CGFloat(GymSwipeMath.heroSideZone(
                     center: Double(center), rowWidth: Double(g.size.width)))
+                let tap = CGFloat(GymSwipeMath.heroTapZone(side: Double(side)))
+                let gutter = side - tap
                 HStack(spacing: 0) {
+                    Color.clear.frame(width: gutter).allowsHitTesting(false)
                     Color.clear.contentShape(Rectangle())
-                        .frame(width: side)
+                        .frame(width: tap)
                         .onTapGesture { handler(.minus) }
                         .accessibilityIdentifier("zone-minus")
                     Color.clear.contentShape(Rectangle())
@@ -109,8 +120,10 @@ struct SessionHero: View {
                         .onTapGesture { handler(.center) }
                         .accessibilityIdentifier("zone-center")
                     Color.clear.contentShape(Rectangle())
+                        .frame(width: tap)
                         .onTapGesture { handler(.plus) }
                         .accessibilityIdentifier("zone-plus")
+                    Color.clear.frame(width: gutter).allowsHitTesting(false)
                 }
             }
         }
@@ -130,12 +143,14 @@ struct SessionHero: View {
 
     // 중량/시간 (mono). 스왑은 숫자만 — 단위는 정지.
     // id: 맨몸은 이 자리에 횟수가 오므로 "hero-reps" 로 넘긴다.
-    func big(_ v: String, unit: String, id: String = "hero-weight") -> some View {
+    func big(_ v: String, unit: String, id: String = "hero-weight", flash: Bool = false) -> some View {
         VStack(spacing: 0) {
             heroNumber(v, font: .mono(122, Self.weightMonoWeight(preset: preset)), tracking: -6.7,   // -0.055em @122
                        id: id, spec: .weight,
                        base: locked ? GY.ink4 : GY.ink1)
                 .lineSpacing(0)
+                .opacity(flash ? 0.45 : 1)
+                .animation(.easeOut(duration: 0.075), value: flash)
             Text(unit)
                 .font(.sans(15, 600))
                 .tracking(0.3).foregroundStyle(GY.ink4)
@@ -146,7 +161,8 @@ struct SessionHero: View {
     }
 
     // 횟수/거리 (cardio 는 × 기호 없음). 스왑은 숫자만 — × · 회 는 정지.
-    func repsRow(_ v: String, unit: String, showX: Bool = true, repsDelay: Double = 0.055) -> some View {
+    func repsRow(_ v: String, unit: String, showX: Bool = true, repsDelay: Double = 0.055,
+                 flash: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 9) {
             if showX {
                 Text("×").font(.mono(24, 300)).foregroundStyle(GY.ink4)
@@ -159,6 +175,8 @@ struct SessionHero: View {
             heroNumber(v, font: .mono(50, Self.repsMonoWeight(preset: preset)), tracking: -1,   // -0.02em @50
                        id: "hero-reps", spec: repsSpec,
                        base: locked ? GY.ink4 : GY.ink2)
+                .opacity(flash ? 0.45 : 1)
+                .animation(.easeOut(duration: 0.075), value: flash)
             Text(unit).font(.sans(16, 500)).foregroundStyle(GY.ink3)
                 .opacity(ghostOut == nil ? 1 : 0)
         }

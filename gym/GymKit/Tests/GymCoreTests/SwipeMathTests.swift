@@ -13,11 +13,23 @@ import Testing
         #expect(!GymSwipeMath.engaged(dx: -20, dy: 25))   // 수직 우세
     }
 
-    // 드래그 추종 — 우드래그 0.25 저항, 좌 -150 클램프
-    @Test func heroTranslateResistanceAndClamp() {
+    // 드래그 추종 — 양방향 1:1, ±150 클램프.
+    // 종전엔 우드래그만 ×0.25 로 감쇠했다. 판정(endAction)은 감쇠 전 원본을 쓰므로
+    // 60pt 를 끌면 화면은 15pt 만 움직이는데 세트가 되돌려졌다 (실기기 2026-08-28).
+    @Test func heroTranslateTracksHonestlyBothWays() {
         #expect(GymSwipeMath.heroTranslate(-40) == -40)
         #expect(GymSwipeMath.heroTranslate(-200) == -150)   // 좌 클램프
-        #expect(GymSwipeMath.heroTranslate(40) == 10)       // 우 저항 ×0.25
+        #expect(GymSwipeMath.heroTranslate(40) == 40)       // 우 저항 제거 — 끈 만큼 움직인다
+        #expect(GymSwipeMath.heroTranslate(200) == 150)     // 우 클램프 (좌와 대칭)
+    }
+
+    /// 판정 임계에서 화면이 **실제로 그만큼** 움직여야 한다 — 보이는 것과 판정의 정합.
+    /// 이게 깨져 있으면 "안 걸렸네" 싶은 손짓이 조용히 세트를 되돌린다 (실기기 2026-08-28).
+    @Test func visibleTravelMatchesJudgementAtThreshold() {
+        #expect(GymSwipeMath.endAction(dx: 60, dy: 0) == .revert)
+        #expect(GymSwipeMath.heroTranslate(60) == 60)
+        #expect(GymSwipeMath.endAction(dx: -60, dy: 0) == .commit)
+        #expect(GymSwipeMath.heroTranslate(-60) == -60)
     }
 
     // "완료" 칩 비례 노출 — p = min(1, max(0, -dx/90))
@@ -77,5 +89,20 @@ import Testing
         #expect(GymSwipeMath.heroCenterZone(numberWidth: 213.5, rowWidth: row) == 150)
         // 좌우 증감 여백: 횟수 8 → 164pt (종전 112.5)
         #expect(GymSwipeMath.heroSideZone(center: 47, rowWidth: row) == 164)
+    }
+
+    /// 가장자리 불감대 — 시안 `#cardSwipeArea { padding: 0 26px }` (mocks/session.html:346).
+    /// 이식에서 이 여백이 빠져 증감 존이 화면 끝(x=0)까지 닿았고, 폰을 집을 때 베젤 근처에
+    /// 스치는 접촉이 그대로 ±증분으로 먹혔다 (실기기 2026-08-28 "값이 임의로 줄어듦").
+    @Test func edgeGutterKeepsZonesOffTheBezel() {
+        #expect(GymSwipeMath.heroEdgeGutter == 26)
+        // 횟수 "8" side 164 → 실제 히트 138pt (x 26..164)
+        #expect(GymSwipeMath.heroTapZone(side: 164) == 138)
+        // 중량 2자리 side 112.5 → 86.5pt
+        #expect(GymSwipeMath.heroTapZone(side: 112.5) == 86.5)
+        // 여백이 불감대보다 좁아도 음수로 안 내려간다
+        #expect(GymSwipeMath.heroTapZone(side: 20) == 0)
+        // 애플 최소 히트 44pt 는 실사용 폭(≥86.5)에서 여유 있게 확보된다
+        #expect(GymSwipeMath.heroTapZone(side: 112.5) > 44)
     }
 }

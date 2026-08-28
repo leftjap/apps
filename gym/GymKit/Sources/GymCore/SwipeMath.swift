@@ -9,11 +9,15 @@ public enum GymSwipeMath {
         abs(dx) > 8 && abs(dx) > abs(dy)
     }
 
-    // 히어로 추종 이동 — 우드래그 저항 ×0.25, 좌 -150 클램프.
+    // 히어로 추종 이동 — 양방향 1:1, ±150 클램프.
+    //
+    // 종전엔 우드래그만 ×0.25 로 감쇠했다(PWA session.js 정합). 그런데 판정(endAction)은
+    // **감쇠 전 원본 dx** 를 쓴다 — 60pt 를 끌면 화면은 15pt 만 움직이는데 세트가 되돌려졌다.
+    // 사용자에겐 "안 걸렸네" 로 보이는 손짓이 조용히 기록을 한 세트 뒤로 돌린다
+    // (실기기 2026-08-28 "중량 40이었는데 35로 변해있음"). 저항은 시각 장식일 뿐이고
+    // 그 장식이 판정을 감추고 있었으므로 제거하고, 좌우 클램프만 대칭으로 남긴다.
     public static func heroTranslate(_ dx: Double) -> Double {
-        var tx = dx
-        if tx > 0 { tx *= 0.25 }
-        return max(tx, -150)
+        min(max(dx, -150), 150)
     }
 
     // "완료" 칩 비례 노출 진행도 — p = min(1, max(0, -dx/90)).
@@ -53,5 +57,16 @@ public extension GymSwipeMath {
     /// 좌/우 증감 존 폭 — 남는 폭을 반씩 나눠 중앙이 가운데에 놓인다.
     static func heroSideZone(center: Double, rowWidth: Double) -> Double {
         Swift.max(0, (rowWidth - center) / 2)
+    }
+
+    /// 좌우 가장자리 불감대 — 시안 `#cardSwipeArea { padding: 0 26px }` (mocks/session.html:346).
+    /// 시안의 탭 존은 이 여백 **안쪽**(375 → 323pt)인데 이식에서 여백이 빠져 화면 끝(x=0)까지
+    /// 닿았다. 벤치에 둔 폰을 집을 때 베젤 근처에 스치는 접촉이 그대로 ±증분으로 먹혔다
+    /// (실기기 2026-08-28). 드래그(스와이프) 영역은 시안대로 전폭 유지 — 이 여백은 탭 존만.
+    static let heroEdgeGutter: Double = 26
+
+    /// 실제 증감 히트 폭 — 여백(side)에서 가장자리 불감대를 뺀다 (하한 0).
+    static func heroTapZone(side: Double, gutter: Double = heroEdgeGutter) -> Double {
+        Swift.max(0, side - gutter)
     }
 }
