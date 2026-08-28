@@ -20,7 +20,10 @@
           { "en": "Sorry, I didn't catch that.", "ko": "미안한데, 못 알아들었어요.", "kr": "쏘리 아이 디든 캐치 댓" },
           { "en": "Could you say that again? I missed it.", "ko": "다시 말해 줄래요? 놓쳤어요.", "kr": "쿠쥬 쎄이 댓 어겐 아이 미스트 잇" },
           { "en": "Would you mind repeating that?", "ko": "다시 한번 말해 주실 수 있을까요?", "kr": "우쥬 마인 리피링 댓" },
-          { "en": "My wife didn't hear the last part.", "ko": "제 아내가 마지막 부분을 못 들었어요.", "kr": "마이 와이f 디든 히어r 더 라스 파r트" }
+          { "en": "My wife didn't hear the last part.", "ko": "제 아내가 마지막 부분을 못 들었어요.", "kr": "마이 와이f 디든 히어r 더 라스 파r트" },
+          { "en": "Can you say that again? The line is breaking up.", "ko": "다시 말해 줄래요? 전화가 자꾸 끊겨요.", "kr": "캐뉴 쎄이 댓 어겐 더 라이니z 브레이킹 업" },
+          { "en": "I had to ask him to say it again.", "ko": "그 사람한테 다시 말해 달라고 해야 했어요.", "kr": "아이 해투 애스킴 투 쎄이 이러겐" },
+          { "en": "Would you say that again for my wife?", "ko": "제 아내에게 다시 말해 주실래요?", "kr": "우쥬 쎄이 댓 어겐 f어r 마이 와이f" }
         ],
         "grammar": [
           { "struct": "Could you + 동사원형 + again?", "body": "could 는 과거가 아니라 공손함. 뒤에는 동사원형(say)이 온다. 한국어 '~해 줄래요'의 공손 단계에 해당하고, Can you 보다 부드럽다." }
@@ -65,7 +68,10 @@
           { "en": "I'm not sure what you mean.", "ko": "무슨 말인지 잘 모르겠어.", "kr": "암 낫 슈어r 왓 유 미인" },
           { "en": "Do you mean the one from yesterday?", "ko": "어제 그거 말하는 거야?", "kr": "두 유 미인 더 원 f럼 예스러r데이" },
           { "en": "She didn't say what she meant.", "ko": "걔는 무슨 뜻인지 말 안 했어.", "kr": "쉬 디든 쎄이 왓 쉬 멘트" },
-          { "en": "Could you explain what you mean?", "ko": "무슨 뜻인지 설명해 줄래?", "kr": "쿠쥬 익스플레인 왓 유 미인" }
+          { "en": "Could you explain what you mean?", "ko": "무슨 뜻인지 설명해 줄래?", "kr": "쿠쥬 익스플레인 왓 유 미인" },
+          { "en": "What do you mean, you're not coming?", "ko": "무슨 소리예요, 안 온다고요?", "kr": "왓 두 유 미인 유어r 낫 커밍" },
+          { "en": "You know what I mean, right?", "ko": "무슨 말인지 알죠?", "kr": "유 노우 왓 아이 미인 라잇" },
+          { "en": "That's not what I meant at all.", "ko": "제 말은 전혀 그게 아니었어요.", "kr": "댓츠 낫 왓 아이 멘 애롤" }
         ],
         "grammar": [
           { "struct": "What do you mean by [X]?", "body": "by 뒤에 확인하고 싶은 말을 그대로 넣는다. 한국어는 '그 말이 무슨 뜻이야'처럼 뜻을 뒤에 두지만 영어는 by 로 대상을 집는다." }
@@ -110,7 +116,9 @@
           { "en": "Can you explain it in English?", "ko": "그걸 영어로 설명해 줄래?", "kr": "캔 유 익스플레인 잇 인 잉글리쉬" },
           { "en": "It's hard to explain in English.", "ko": "영어로 설명하기 어려워.", "kr": "잇츠 하r드 투 익스플레인 인 잉글리쉬" },
           { "en": "He wasn't sure how to answer.", "ko": "걔는 어떻게 답해야 할지 몰랐어.", "kr": "히 워즌 슈어r 하우 투 앤써r" },
-          { "en": "I know how to say it in Korean.", "ko": "한국어로는 어떻게 말하는지 알아.", "kr": "아이 노우 하우 투 쎄이 잇 인 코리언" }
+          { "en": "I know how to say it in Korean.", "ko": "한국어로는 어떻게 말하는지 알아.", "kr": "아이 노우 하우 투 쎄이 잇 인 코리언" },
+          { "en": "She's not sure how to get there.", "ko": "그 사람은 거기 어떻게 가는지 잘 몰라요.", "kr": "쉬z 낫 슈어r 하우 투 겟 데어r" },
+          { "en": "Are you sure how to use this?", "ko": "이거 어떻게 쓰는지 확실해요?", "kr": "아r 유 슈어r 하우 투 유즈 디스" }
         ],
         "grammar": [
           { "struct": "be not sure + how to + 동사원형", "body": "how to 뒤는 항상 동사원형. 한국어 '어떻게 설명할지'의 '~할지'가 how to 한 덩어리로 붙는다." }
@@ -155,7 +163,9 @@
           { "en": "Let me think about it for a second.", "ko": "잠깐 생각 좀 해볼게.", "kr": "렛 미 씽크 어바우릿 f어r 어 쎄컨" },
           { "en": "I need a moment to decide.", "ko": "결정할 시간이 좀 필요해.", "kr": "아이 니러 모먼트 투 디싸이드" },
           { "en": "Can you give me a second?", "ko": "잠깐만 시간 줄래?", "kr": "캔 유 기v 미 어 쎄컨" },
-          { "en": "She gave me a second to answer.", "ko": "걔가 답할 시간을 잠깐 줬어.", "kr": "쉬 게이v 미 어 쎄컨 투 앤써r" }
+          { "en": "She gave me a second to answer.", "ko": "걔가 답할 시간을 잠깐 줬어.", "kr": "쉬 게이v 미 어 쎄컨 투 앤써r" },
+          { "en": "Give me a second, I'm on the phone.", "ko": "잠깐만요, 통화 중이에요.", "kr": "기v 미 어 쎄컨 암 온 더 f오운" },
+          { "en": "Just give me a second to breathe.", "ko": "숨 좀 돌리게 잠깐만요.", "kr": "저스 기v 미 어 쎄컨 투 브리드" }
         ],
         "grammar": [
           { "struct": "Give me + 시간 + to + 동사원형", "body": "'~할 시간을 달라'는 to 부정사로 붙인다. a second 는 실제 1초가 아니라 '잠깐'." }
@@ -244,7 +254,9 @@
           { "en": "Did I understand you correctly?", "ko": "내가 제대로 이해한 거 맞아?", "kr": "디라이 언더r스탠 쥬 커r렉틀리" },
           { "en": "I want to make sure I got it.", "ko": "내가 이해한 게 맞는지 확실히 하고 싶어.", "kr": "아이 원 투 메익 슈어r 아이 가릿" },
           { "en": "She didn't understand me correctly.", "ko": "걔는 내 말을 제대로 이해 못 했어.", "kr": "쉬 디든 언더r스탠 미 커r렉틀리" },
-          { "en": "So you mean we should wait, right?", "ko": "그러니까 기다리자는 말이지?", "kr": "쏘 유 미인 위 슈드 웨잇 라잇" }
+          { "en": "So you mean we should wait, right?", "ko": "그러니까 기다리자는 말이지?", "kr": "쏘 유 미인 위 슈드 웨잇 라잇" },
+          { "en": "Let me see if she's home.", "ko": "그 사람 집에 있는지 볼게요.", "kr": "렛 미 씨 이f 쉬z 호움" },
+          { "en": "Let me see if this thing works.", "ko": "이게 되는지 한번 볼게요.", "kr": "렛 미 씨 이f 디스 씽 워r크스" }
         ],
         "grammar": [
           { "struct": "Let me see if + 주어 + 동사", "body": "여기서 see 는 '보다'가 아니라 '확인하다'. if 는 '만약'이 아니라 '~인지'라는 뜻으로, 한국어 '~했는지'에 대응한다." }
