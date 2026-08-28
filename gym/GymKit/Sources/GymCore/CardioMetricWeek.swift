@@ -18,8 +18,10 @@ public enum GymCardioMetric: String, CaseIterable, Sendable {
         switch self { case .duration: "분"; case .distance: "km"; case .calories: "kcal" }
     }
     /// 빈 공간 탭 증분 (§4).
+    /// 칼로리는 10 → **1** (사용자 2026-08-28): 트레드밀 콘솔이 46·88 처럼 1 단위로 표시해
+    /// 10 단위로는 실제 값에 맞출 수가 없었다. 큰 폭 조정은 키패드가 담당한다.
     public var step: Double {
-        switch self { case .duration: 1; case .distance: 0.1; case .calories: 10 }
+        switch self { case .duration: 1; case .distance: 0.1; case .calories: 1 }
     }
     /// 키패드·저장 경로는 기존 필드를 그대로 쓴다 (§5-1 applyCardio 경유).
     public var field: GymSessionLogic.GymCardioField {

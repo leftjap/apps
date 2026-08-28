@@ -137,10 +137,16 @@ public struct SummaryScreenView: View {
                 (Text("\(totalVolume)").font(.mono(38, 500)).tracking(-1.14).foregroundStyle(GY.ink1)
                  + Text(" kg").font(.mono(15, 500)).foregroundStyle(GY.ink4))
             }.padding(.vertical, 14)
-            // 칼로리 (부각 안 함, spec §7-3)
+            // 칼로리 — TOTAL 다음가는 위계로 (사용자 2026-08-28 "더 키우고").
+            // 10.5pt 한 줄은 영수증에서 사실상 안 읽혔다. 숫자만 키우고 접사는 작게 남겨
+            // TOTAL(38pt)과 섞이지 않게 한다. (spec §7-3 "부각 안 함" → "읽히게" 로 갱신)
             if session.totalCalories > 0 {
-                Text("약 \(session.totalCalories) kcal 소모").font(.mono(10.5, 400)).tracking(0.3)
-                    .foregroundStyle(GY.ink4).frame(maxWidth: .infinity, alignment: .trailing).padding(.bottom, 8)
+                (Text("약 ").font(.sans(11, 500)).foregroundStyle(GY.ink4)
+                 + Text("\(session.totalCalories)").font(.mono(22, 500)).tracking(-0.44).foregroundStyle(GY.ink2)
+                 + Text(" kcal 소모").font(.sans(11, 500)).foregroundStyle(GY.ink4))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.bottom, 10)
+                    .accessibilityIdentifier("summary-kcal")
             }
             DashedDivider()
             // 메타 3열

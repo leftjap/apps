@@ -104,12 +104,13 @@ import Testing
     }
 }
 
-// 지표 메타 — 라벨·단위·증분 (§4 증분 시간 1분 / 거리 0.1km / 칼로리 10kcal).
+// 지표 메타 — 라벨·단위·증분 (§4 증분 시간 1분 / 거리 0.1km / 칼로리 1kcal).
+// 칼로리는 10 → 1 (사용자 2026-08-28 — 콘솔 값이 46·88 처럼 1 단위라 10 단위로는 맞출 수 없다).
 @Suite struct CardioMetricTests {
     @Test func labelsUnitsSteps() {
         #expect(GymCardioMetric.allCases.map(\.label) == ["시간", "거리", "칼로리"])
         #expect(GymCardioMetric.allCases.map(\.unit) == ["분", "km", "kcal"])
-        #expect(GymCardioMetric.allCases.map(\.step) == [1, 0.1, 10])
+        #expect(GymCardioMetric.allCases.map(\.step) == [1, 0.1, 1])
     }
     // 로테이션 — 순환 없음 (§4 끝단에서 더 못 간다).
     @Test func rotationDoesNotWrap() {
@@ -122,7 +123,8 @@ import Testing
     @Test func stepValueClampsAtZero() {
         #expect(GymCardioMetric.duration.stepped(from: 32, dir: 1) == 33)
         #expect(GymCardioMetric.distance.stepped(from: 3.4, dir: -1) == 3.3)
-        #expect(GymCardioMetric.calories.stepped(from: 5, dir: -1) == 0)
+        #expect(GymCardioMetric.calories.stepped(from: 46, dir: -1) == 45)
+        #expect(GymCardioMetric.calories.stepped(from: 0, dir: -1) == 0)   // 하한 0
         #expect(GymCardioMetric.distance.stepped(from: 0, dir: -1) == 0)
     }
 }
