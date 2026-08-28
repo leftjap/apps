@@ -444,6 +444,36 @@ describe('sessionReviewV2 v3 — 점수 원 · 문장별 캘린더 · 자기평�
     expect(host.querySelector('.vr-cap').textContent).toBe('방금 점수');
   });
 
+  /* 신규 세션에서 응용·체이닝 점수가 문장 카드 점수 열에 섞이던 버그(436e447)의 복습판 회귀 방지.
+   * 복습은 dayScores(sentLog)를 applyScore 에서만 밀어 넣어 원래 올바르지만, onAppliedScore 가
+   * refreshDots 를 부르므로 실수로 push 가 끼어들기 쉬운 자리다 — 테스트로 못박는다. */
+  it('응용 녹음은 문장 점수 열에 섞이지 않는다', () => {
+    vi.useFakeTimers();
+    try {
+      document.body.innerHTML = '<div id="root"></div>';
+      const host = document.getElementById('root');
+      const explanation = {
+        key: `${EN} = ${KO}`, chunks: CHUNKS,
+        drills: [{ en: 'Can you keep an eye on my bag?', ko: '제 가방 좀 봐줄래요?', kr: '캐뉴 키핀 아이 온 마이 백' }],
+      };
+      const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, explanation };
+      const state = {
+        cards: [card], total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0, demo: true,
+        sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation }, sentLog: {},
+      };
+      renderSessionReviewV2(host, state, {});
+      host.querySelector('.vr-fold .hd').click();            // 공개 → 응용 노출
+      host.querySelector('.vr-pill.pri').click();            // 메인 1회
+      vi.advanceTimersByTime(1100);
+      const afterMain = [...host.querySelectorAll('.vr-meta .v-dot')].map((n) => n.textContent);
+      expect(afterMain).toHaveLength(1);
+      host.querySelector('.vr-drills .vs-drow button[aria-label="녹음"]').click(); // 응용 1회
+      vi.advanceTimersByTime(900);
+      expect([...host.querySelectorAll('.vr-meta .v-dot')].map((n) => n.textContent)).toEqual(afterMain);
+      expect(Object.values(state.sentLog.c1 || {}).flat()).toHaveLength(1); // 메인 것만 기록
+    } finally { vi.useRealTimers(); }
+  });
+
   it('모바일 컨트롤 줄도 링 자리를 미리 예약한다 (min-height)', () => {
     const host = mountCard({ interval: 3, size: 'phone' });
     const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
