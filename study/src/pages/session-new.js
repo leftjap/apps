@@ -70,10 +70,12 @@ function getTodayISO() {
  *
  * 종전엔 recLog[id].best 를 썼다. 캡션이 '방금 점수' 인데 값은 최고라 어긋났고, best 는
  * 드릴·체이닝 발화까지 섞인 최댓값이라 메인 카드의 '방금'을 대신할 수 없다.
+ * 출처는 exLog[cardId].utter — 문장 카드 점수 열과 **같은 배열**이다(메인 발화 전용).
  * 없으면 null — 링 자체를 그리지 않는다 (결과가 없으면 결과 슬롯도 없다).
  */
 export function restoreCardScore(exLog, cardId) {
-  const v = exLog?.[cardId]?.lastMain;
+  const arr = exLog?.[cardId]?.utter;
+  const v = Array.isArray(arr) ? arr[arr.length - 1] : undefined;
   return Number.isFinite(v) ? v : null;
 }
 

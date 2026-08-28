@@ -447,10 +447,58 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
 
   /* 링이 없다가 생기면 버튼 줄이 밀린다 — 첫 녹음 직후 손가락이 다른 곳을 누른다.
    * 데스크톱은 min-height 로 자리를 예약해 두었고 모바일에도 같은 예약이 필요하다. */
+  /* 문장 카드의 '발화 점수 열'은 그 문장을 말한 점수여야 한다. 종전엔 응용·체이닝 점수까지
+   * 같은 배열(cardEx.utter)에 밀어 넣어, 메인을 1회만 말하고 응용 5개를 녹음하면 점수 원이
+   * 응용 점수 5개로 채워지고 **메인 점수가 최근 5개 창 밖으로 밀려났다**
+   * (2026-08-28 사용자 보고 — 화면: 원 90·96·97·88·94 = 응용 1~5행 점수, 메인 57 은 사라짐).
+   * 드릴은 각 행에 자기 점수 원을 이미 갖고 있어 이중 표시이기도 했다. */
+  it('응용 녹음은 문장 카드 점수 열에 섞이지 않는다', async () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const state = makeStateWithDrills({ demo: true });
+      renderSessionExprV2(host, state, {});
+      host.querySelector('.vs-pill.pri').click();          // 메인 1회
+      vi.advanceTimersByTime(1100);
+      const mainScore = state.exLog.e1.utter[0];
+      drillRecBtns(host)[0].click();                        // 응용 1회
+      vi.advanceTimersByTime(900);
+      drillRecBtns(host)[1].click();                        // 응용 2회
+      vi.advanceTimersByTime(900);
+      expect(state.exLog.e1.utter).toEqual([mainScore]);    // 메인 것만
+      const dots = [...host.querySelectorAll('.vs-meta .v-dot')].map((n) => n.textContent);
+      expect(dots).toEqual([String(mainScore)]);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('총 N회 는 점수 원과 같은 계열이다 (게이트 카운트가 아니다)', async () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      renderSessionExprV2(host, makeStateWithDrills({ demo: true }), {});
+      host.querySelector('.vs-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      drillRecBtns(host)[0].click();                        // 응용은 총계에 안 들어간다
+      vi.advanceTimersByTime(900);
+      expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 1회');
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('드릴만 녹음하면 점수 열이 비어 있다', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    recBtn.click(); await tick();
+    recBtn.click(); await tick(); await tick();
+    expect(host.querySelectorAll('.vs-meta .v-dot')).toHaveLength(0);
+    expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 0회');
+  });
+
   /* 카드 이동 후 돌아왔을 때 링이 그 카드의 '최고' 점수를 보이던 문제 — 캡션은 '방금 점수' 인데
-   * 값이 최고라 어긋났다(session-new.js 가 recLog.best 로 복원). recLog.best 는 드릴·체이닝 발화까지
-   * 섞인 최댓값이라 메인 카드의 '방금'을 대신할 수 없다. 메인 녹음 점수만 exLog 에 따로 남긴다. */
-  it('메인 녹음 점수는 exLog[cardId].lastMain 에 남는다 (드릴은 건드리지 않는다)', async () => {
+   * 값이 최고라 어긋났다(session-new.js 가 recLog.best 로 복원). 복원 출처는 점수 열과 같은 배열
+   * (exLog[id].utter) 이고, 그 배열은 메인 발화만 담으므로 '마지막'이 곧 '방금'이다. */
+  it('메인을 여러 번 녹음하면 배열 끝이 최고가 아니라 마지막 값이다', async () => {
     vi.useFakeTimers();
     try {
       const host = document.createElement('div'); document.body.appendChild(host);
@@ -458,22 +506,12 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
       renderSessionExprV2(host, state, {});
       host.querySelector('.vs-pill.pri').click();
       vi.advanceTimersByTime(1100);
-      const first = state.exLog.e1.lastMain;
-      expect(first).toBeGreaterThan(0);
       host.querySelector('.vs-pill.pri').click();
       vi.advanceTimersByTime(1100);
-      expect(state.exLog.e1.lastMain).not.toBe(first); // 최고가 아니라 '마지막'
+      const utter = state.exLog.e1.utter;
+      expect(utter).toHaveLength(2);
+      expect(utter[utter.length - 1]).not.toBe(Math.max(...utter.slice(0, -1)));
     } finally { vi.useRealTimers(); }
-  });
-
-  it('드릴 녹음은 lastMain 을 만들지 않는다 (메인 점수가 아니다)', async () => {
-    const host = document.createElement('div'); document.body.appendChild(host);
-    const state = makeStateWithDrills();
-    renderSessionExprV2(host, state, {});
-    const recBtn = drillRecBtns(host)[0];
-    recBtn.click(); await tick();
-    recBtn.click(); await tick(); await tick();
-    expect(state.exLog.e1?.lastMain).toBeUndefined();
   });
 
   it('모바일 컨트롤 줄도 링 자리를 미리 예약한다 (min-height)', () => {

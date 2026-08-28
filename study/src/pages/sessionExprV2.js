@@ -775,6 +775,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   /* 발화 점수 열 — 이 카드에서 말한 점수를 오래된 것 → 최신 순으로. 6회 이상이면 최근 5개만.
    * 점(dot)·콤보 칩·PASS 칩은 폐기 (§6.1) — 갱신의 근거는 '몇 번 눌렀나'가 아니라 '점수가 오르나'다. */
+  /* 문장 카드의 발화 점수 열 — **이 문장을 말한 점수만** 담는다 (단일 출처).
+   * 응용·체이닝 점수를 여기 섞으면 각 행이 이미 자기 점수 원을 갖고 있어 이중 표시가 되고,
+   * 최근 5개 창이 드릴 점수로 채워져 정작 메인 점수가 밀려난다 (2026-08-28 사용자 보고). */
   const utterScores = () => (Array.isArray(cardEx.utter) ? cardEx.utter : []);
   const pushUtter = (score) => { (cardEx.utter ??= []).push(Math.round(Number(score) || 0)); };
   const dotsEl = h('span', { class: 'v-dots' });
@@ -791,7 +794,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const all = utterScores();
     const shown = all.slice(-5);
     dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
-    totEl.querySelector('b').textContent = String(recCount());
+    totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 게이트 카운트(recCount)와 별개
     // 게이트는 캡션이 아니라 버튼 활성/비활성으로만 표현한다 (§4.3 삭제).
     nextBtn.classList.toggle('unlock', canAdvance(state, s?.id) && recCount() >= REC_TARGET);
   };
@@ -809,10 +812,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
-    pushUtter(score);
-    /* 메인 녹음 점수만 따로 남긴다 — 카드 이동 후 돌아왔을 때 링에 되살릴 '방금 점수'다.
-     * recLog.best 는 최댓값인 데다 드릴·체이닝 발화까지 섞여 있어 이 자리를 대신할 수 없다. */
-    cardEx.lastMain = score;
+    pushUtter(score); // 카드 이동 후 링 복원도 이 배열의 마지막 값을 쓴다 (session-new restoreCardScore)
     popScore(paintRing()); // 첫 점수면 링이 v-settle 로 등장, 이후엔 값만 갱신
     refreshDots(); refreshRecWidget();
   }
@@ -890,7 +890,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     // 행 점수 영속화 (재렌더 복원) — 시도마다 누적해 점수 원이 늘어난다.
     const rows = ((cardEx.drills ??= {}));
     rows[i] = [...normScores(rows[i]), score];
-    pushUtter(score);
     refreshDots();
     refreshRecWidget();
     handlers.saveSnapshot?.();
@@ -920,7 +919,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
-    pushUtter(score);
     refreshDots();
     refreshRecWidget();
     handlers.saveSnapshot?.();
