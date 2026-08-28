@@ -163,13 +163,24 @@ export function filterNearDupDrills(sentence, drills) {
  * 드릴·체이닝 공용. 속도는 문장 길이가 정한다 — 쉽고 짧으면 빠르게, 어렵고 길면 보통 (사용자 결정 2026-07-22).
  * 다화자 순환은 HVPT 메타분석(다화자>단일화자)의 유비 적용 — 지각훈련 패러다임과 동일하진 않음. */
 export const PRACTICE_VOICES = ['en-US-AvaMultilingualNeural', 'en-US-AndrewMultilingualNeural', 'en-US-EmmaMultilingualNeural', 'en-US-GuyNeural', 'en-US-EricNeural'];
+/* ja 화자 풀 (2026-08-28) — 종전엔 ja 가 VOICE_DEFAULTS 의 AoiNeural 하나뿐이라 몇 번을 들어도
+ * 같은 목소리였다. 실제 사람 말에 대비하려면 남녀·톤이 바뀌어야 한다. 남녀 교차 배치. */
+export const JA_PRACTICE_VOICES = ['ja-JP-NanamiNeural', 'ja-JP-KeitaNeural', 'ja-JP-AoiNeural', 'ja-JP-DaichiNeural', 'ja-JP-MayuNeural'];
 const PRACTICE_JITTER = [0, -0.05, 0.03, -0.02, 0.05];
 
-/** 재생 횟수 i + 문장 단어 수 → 화자(순환)·속도(≤6단어 1.15 / 7~9 1.05 / 10+ 1.0, 화자별 ±0.05 지터). */
-export function pickPracticeVoice(i, wordCount) {
-  const n = PRACTICE_VOICES.length;
+/**
+ * 재생 횟수 i + 길이 → 화자(순환)·속도.
+ * en: 단어 수 기준 (≤6 1.15 / 7~9 1.05 / 10+ 1.0). ja: 글자 수 기준이고 초보라 한 단계 느리게
+ * (≤8 1.0 / 9~14 0.95 / 15+ 0.9). 화자별 ±0.05 지터는 공통.
+ */
+export function pickPracticeVoice(i, lengthUnit, lang) {
+  const isJa = lang === 'ja';
+  const pool = isJa ? JA_PRACTICE_VOICES : PRACTICE_VOICES;
+  const n = pool.length;
   const k = ((Number(i) || 0) % n + n) % n;
-  const wc = Number(wordCount) || 0;
-  const base = wc <= 6 ? 1.15 : wc <= 9 ? 1.05 : 1.0;
-  return { voice: PRACTICE_VOICES[k], rate: Math.round((base + PRACTICE_JITTER[k]) * 100) / 100 };
+  const len = Number(lengthUnit) || 0;
+  const base = isJa
+    ? (len <= 8 ? 1.0 : len <= 14 ? 0.95 : 0.9)
+    : (len <= 6 ? 1.15 : len <= 9 ? 1.05 : 1.0);
+  return { voice: pool[k], rate: Math.round((base + PRACTICE_JITTER[k]) * 100) / 100 };
 }

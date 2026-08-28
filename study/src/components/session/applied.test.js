@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES } from './applied.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES } from './applied.js';
 
 const CHAIN = {
   target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -234,5 +234,30 @@ describe('pickPracticeVoice — 재생마다 화자 순환 + 길이별 속도', 
 
   it('같은 화자라도 짧은 문장이 긴 문장보다 빠르다', () => {
     expect(pickPracticeVoice(0, 4).rate).toBeGreaterThan(pickPracticeVoice(0, 12).rate);
+  });
+});
+
+
+/* 일본어 듣기 음성 (2026-08-28) — ja 는 단일 음성(AoiNeural)뿐이라 영어처럼 화자가 바뀌지 않았다.
+ * 같은 문장을 여러 목소리로 들어야 실제 사람 말에 대비가 된다. */
+describe('pickPracticeVoice — 일본어 화자 순환', () => {
+  it('ja 는 일본어 화자를 돌린다 (영어 화자가 섞이지 않는다)', () => {
+    const seen = new Set();
+    for (let i = 0; i < JA_PRACTICE_VOICES.length; i += 1) seen.add(pickPracticeVoice(i, 6, 'ja').voice);
+    expect(seen.size).toBe(JA_PRACTICE_VOICES.length);
+    for (const v of seen) expect(v.startsWith('ja-JP-')).toBe(true);
+  });
+
+  it('ja 화자도 순환한다', () => {
+    const a = pickPracticeVoice(0, 6, 'ja');
+    expect(pickPracticeVoice(JA_PRACTICE_VOICES.length, 6, 'ja').voice).toBe(a.voice);
+  });
+
+  it('ja 는 초보 기준이라 영어보다 느리게 읽는다', () => {
+    expect(pickPracticeVoice(0, 6, 'ja').rate).toBeLessThan(pickPracticeVoice(0, 6, 'en').rate);
+  });
+
+  it('lang 미지정은 기존 영어 동작 (회귀 방지)', () => {
+    expect(pickPracticeVoice(0, 4).voice).toBe(PRACTICE_VOICES[0]);
   });
 });

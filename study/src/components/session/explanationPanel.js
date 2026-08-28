@@ -167,6 +167,31 @@ function kanjiBreakdownSection(items) {
   return s;
 }
 
+/* 가타카나 풀이 (guide-ja §14, 2026-08-28) — 학습자가 가타카나를 자꾸 잊는다.
+ * 원어(영어 등)를 같이 보여주면 'コーヒー = coffee' 처럼 의미가 즉시 붙어 외우기 쉬워진다. */
+function katakanaGlossSection(items) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  const s = document.createElement('div');
+  s.className = 'ex-section';
+  const lab = document.createElement('div');
+  lab.className = 'ex-label';
+  lab.textContent = '가타카나';
+  s.appendChild(lab);
+  items.forEach((g) => {
+    if (!g || typeof g !== 'object') return;
+    const row = document.createElement('div');
+    row.className = 'ex-text';
+    const parts = [];
+    if (g.word) parts.push(`<strong style="font-size:17px;">${g.word}</strong>`);
+    if (g.origin) parts.push(`<span style="color:var(--text-muted);">← ${g.origin}</span>`);
+    if (g.hiragana) parts.push(`<span style="color:var(--text-faint); margin-left:6px;">${g.hiragana}</span>`);
+    if (g.kr) parts.push(`<span style="color:var(--text-faint);">· ${g.kr}</span>`);
+    row.innerHTML = parts.join(' ');
+    s.appendChild(row);
+  });
+  return s;
+}
+
 const POLITENESS_LABEL = { casual: '보통체', polite: '정중체', formal: '격식체' };
 
 // ja 가이드 §3.4 정본 pronunciation 객체 분기 — chunks/tips/weak_focus 통합 표시
@@ -396,6 +421,8 @@ export function createExplanationPanel({ explanation, lang, onListen, onRecord }
     if (ex.pronPoints) panelEl.appendChild(section('발음 포인트', String(ex.pronPoints)));
     const kb = kanjiBreakdownSection(ex.kanji_breakdown);
     if (kb) panelEl.appendChild(kb);
+    const kg = katakanaGlossSection(ex.katakana_gloss);
+    if (kg) panelEl.appendChild(kg);
     if (ex.mistake) panelEl.appendChild(section('한국인 실수', String(ex.mistake)));
     if (ex.commonMistakes) panelEl.appendChild(section('한국인 실수', String(ex.commonMistakes)));
     // ja 가이드 §3.8 정본 similar 객체 배열

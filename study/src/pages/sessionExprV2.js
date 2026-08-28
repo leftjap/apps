@@ -14,7 +14,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
-import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 import { judgeCoverage, judgeProduction } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
@@ -288,6 +288,13 @@ export function normScores(v) {
 /* 응용 연습 행 — 듣기/녹음 (services 재사용). onScore(i, result): 채점 성공 시 세션 집계 위임.
  * demo=true 면 마이크 없이 시뮬 채점 (?demo=1 화면 검증용 — 메인 recPill 데모 분기와 동일).
  * 재생은 체이닝과 동일하게 매번 화자 변주 + 길이별 속도 — 카드 화자 고정 폐기 (2026-07-22 사용자 지시). */
+/** ja 드릴의 가나 보조 표기 — 본문과 같으면(구두점 차이 포함) 중복이라 표시하지 않는다. */
+export function kanaSub(kana, target) {
+  if (!kana) return null;
+  const strip = (x) => String(x).replace(/[、。！？\s]/g, '');
+  return strip(kana) === strip(target) ? null : kana;
+}
+
 export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null, plays = 0;
@@ -297,18 +304,28 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
     const hist = normScores(saved?.[i]);
     const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
       hist.map((v, k) => scoreDot(v, { size: 26, fresh: false })));
+    /* ja 드릴은 본문이 d.ja 다 (en 은 d.en). d.en 만 읽던 탓에 일본어 드릴이 본문 없이
+     * 음차·뜻만 뜨고 TTS·채점 대상도 빈 문자열이었다 (2026-08-28 수정). */
+    const target = d.ja || d.en || '';
+    // 길이 지표: en 은 단어 수, ja 는 띄어쓰기가 없어 글자 수로 센다.
+    const lenUnit = lang === 'ja'
+      ? target.replace(/[、。！？\s]/g, '').length
+      : String(target).trim().split(/\s+/).filter(Boolean).length;
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     // 재생 중 이퀄라이저 + 블루 펄스 (2026-07-22 — 종전엔 눌러도 아무 반응이 없었다)
     playBtn.addEventListener('click', () => {
       plays += 1;
-      const wcnt = String(d.en ?? '').trim().split(/\s+/).filter(Boolean).length;
-      const v = pickPracticeVoice(plays, wcnt);
-      speakWithFeedback(playBtn, d.en, { lang: ttsLang, voice: v.voice, rate: v.rate });
+      const v = pickPracticeVoice(plays, lenUnit, lang);
+      speakWithFeedback(playBtn, target, { lang: ttsLang, voice: v.voice, rate: v.rate });
     });
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
     const row = h('div', { class: 'vs-drow' },
       h('span', { class: 'ix' }, String(i + 1)),
-      h('div', {}, h('div', { class: 'en' }, hlNode(d.en || '', hlTerm)), h('div', { class: 'sub' }, [d.kr, d.ko].filter(Boolean).join(' · '))),
+      h('div', {},
+        h('div', { class: 'en' }, hlNode(target, hlTerm)),
+        /* ja 는 가나 읽기를 함께 — 학습자가 한자를 거의 못 읽는다. 한자 0개라 가나가
+         * 본문과 같으면 같은 줄이 두 번 나오므로 생략한다 (구두점 차이는 무시). */
+        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko].filter(Boolean).join(' · '))),
       h('span', { class: 'grow' }), scoreEl, playBtn, recBtn,
     );
     recBtn.addEventListener('click', async () => {
@@ -336,7 +353,7 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
       if (!(recCtrl && recRow === row)) return;
       const ctrl = recCtrl; recCtrl = null; recRow = null;
       row.classList.remove('recing'); recBtn.classList.remove('recing');
-      const result = await stopAndAnalyze(ctrl, d.en || '', { lang });
+      const result = await stopAndAnalyze(ctrl, target, { lang });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
       pushScore(result?.score ?? 0);
       onScore?.(i, result);
@@ -760,13 +777,15 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (playing) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopPlaying(); return; }
     if (!s?.sentence || !window.studySpeech?.speak) return;
     playing = true; listenPill.classList.add('playing'); listenPill.lastChild.textContent = '재생 중';
-    // 메인 카드도 재생마다 화자 순환 (2026-07-23 사용자 지시 — 응용·체이닝과 동일 원리).
-    // 속도는 메인 학습 기본(0.85)을 유지 — 길이별 속도 규칙은 응용·체이닝 전용.
-    // ja 는 PRACTICE_VOICES 가 en 전용이라 기존 speaker(AoiNeural) 경로 유지.
-    if (lang === 'ja') {
-      window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s?.speaker, onEnd: stopPlaying });
+    /* 메인 카드도 재생마다 화자 순환 (2026-07-23 사용자 지시 — 응용·체이닝과 동일 원리).
+     * 속도는 메인 학습 기본(0.85)을 유지 — 길이별 속도 규칙은 응용·체이닝 전용.
+     * ja 도 2026-08-28 부터 순환한다 (JA_PRACTICE_VOICES 신설 전에는 AoiNeural 한 목소리뿐이었다).
+     * 시드에 speaker 가 지정된 카드(구 콩트 트랙)는 그 화자를 존중해 순환에서 제외한다. */
+    const pool = lang === 'ja' ? JA_PRACTICE_VOICES : PRACTICE_VOICES;
+    if (lang === 'ja' && s?.speaker) {
+      window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s.speaker, onEnd: stopPlaying });
     } else {
-      const voice = PRACTICE_VOICES[mainPlays % PRACTICE_VOICES.length];
+      const voice = pool[mainPlays % pool.length];
       mainPlays += 1;
       window.studySpeech.speak(s.sentence, { lang: ttsLang, voice, onEnd: stopPlaying });
     }

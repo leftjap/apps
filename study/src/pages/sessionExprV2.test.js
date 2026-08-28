@@ -11,7 +11,7 @@ vi.mock('../services/pronunciationLog.js', () => ({ savePronunciationLog: vi.fn(
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2, hlNode } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode, drillRows } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 
@@ -547,16 +547,33 @@ describe('sessionExprV2 — 메인 카드 듣기 화자 순환', () => {
     expect(o1.rate).toBeUndefined();
   });
 
-  it('ja: 화자 순환 미적용 — 기존 speaker 경로 유지', () => {
+  /* ja 도 순환한다 (2026-08-28 사용자 지시 — 종전엔 AoiNeural 한 목소리뿐이라 몇 번을 들어도
+   * 같은 사람이었다). 시드에 speaker 가 지정된 카드만 그 화자를 존중해 순환에서 뺀다. */
+  it('ja: 일본어 화자로 순환한다', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const speak = vi.fn();
     window.studySpeech = { speak };
     const st = makeState();
     st.sentence.lang = 'ja'; st.cards[1].lang = 'ja';
+    st.sentence.speaker = null;
     renderSessionExprV2(host, st, {});
     listenBtn(host).click();
     const o = speak.mock.calls[0][1];
     expect(o.lang).toBe('ja-JP');
+    expect(String(o.voice).startsWith('ja-JP-')).toBe(true);
+  });
+
+  it('ja: 시드에 speaker 가 있으면 그 화자를 쓴다 (콩트 트랙 회귀 방지)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    const st = makeState();
+    st.sentence.lang = 'ja'; st.cards[1].lang = 'ja';
+    st.sentence.speaker = '해결사';
+    renderSessionExprV2(host, st, {});
+    listenBtn(host).click();
+    const o = speak.mock.calls[0][1];
+    expect(o.speaker).toBe('해결사');
     expect(o.voice).toBeUndefined();
   });
 });
@@ -1053,5 +1070,40 @@ describe('hlNode — 핵심 표현 자리표시자', () => {
 
   it('term 이 없으면 통짜 텍스트', () => {
     expect(mark('anything', null)).toEqual([]);
+  });
+});
+
+
+/* 일본어 응용 연습 (2026-08-28 사고) — drillRows 가 d.en 만 읽어서 ja 드릴(ja/kana 필드)이
+ * 본문 없이 음차·뜻만 렌더됐고, TTS·녹음 채점 대상도 빈 문자열이었다. */
+describe('drillRows — 일본어 드릴', () => {
+  const jaDrills = [
+    { ja: '明日は休みなんだ。', kana: 'あしたはやすみなんだ', ko: '내일은 쉬는 날이거든', kr: '아시타와 야스미난다' },
+    { ja: 'そうなんですか。', kana: 'そうなんですか', ko: '그렇군요', kr: '소- 난데스카' },
+  ];
+
+  it('일본어 본문을 렌더한다 (예전엔 비어 있었다)', () => {
+    const rows = drillRows(jaDrills, '', 'ja', () => {}, false, {});
+    expect(rows[0].querySelector('.en').textContent).toContain('明日は休みなんだ。');
+  });
+
+  it('한자가 있으면 가나 읽기를 함께 보여준다', () => {
+    const rows = drillRows(jaDrills, '', 'ja', () => {}, false, {});
+    const sub = rows[0].querySelector('.sub').textContent;
+    expect(sub).toContain('あしたはやすみなんだ');
+    expect(sub).toContain('아시타와 야스미난다');
+    expect(sub).toContain('내일은 쉬는 날이거든');
+  });
+
+  it('한자가 없어 가나가 본문과 같으면 가나를 중복 표시하지 않는다', () => {
+    const rows = drillRows(jaDrills, '', 'ja', () => {}, false, {});
+    const sub = rows[1].querySelector('.sub').textContent;
+    expect(sub.split('·').filter((t) => t.includes('そうなんですか')).length).toBe(0);
+  });
+
+  it('영어 드릴은 기존 그대로 (회귀 방지)', () => {
+    const rows = drillRows([{ en: 'Take it easy.', ko: '무리하지 마', kr: '테이킷 이지' }], '', 'en', () => {}, false, {});
+    expect(rows[0].querySelector('.en').textContent).toContain('Take it easy.');
+    expect(rows[0].querySelector('.sub').textContent).toContain('무리하지 마');
   });
 });

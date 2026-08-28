@@ -189,3 +189,31 @@ describe('drillsSection — 녹음 후 행 상태·점수 배지 (phone, 2026-06
     expect(badge.style.display).toBe('none'); // 시작 단계 — 배지 비노출
   });
 });
+
+
+/* 가타카나 해설 (2026-08-28) — 학습자가 가타카나를 자꾸 잊는다고 해서 시드에 katakana_gloss 를
+ * 넣었는데 패널에 렌더 섹션이 없어 화면에 안 나왔다. */
+describe('explanationPanel — 가타카나 풀이', () => {
+  const withGloss = {
+    key: 'k', whenToUse: 'w',
+    katakana_gloss: [
+      { word: 'コーヒー', origin: 'coffee', hiragana: 'こーひー', kr: '코-히-' },
+      { word: 'カード', origin: 'card', hiragana: 'かーど', kr: '카-도' },
+    ],
+  };
+
+  it('가타카나 단어·어원·히라가나·음차를 모두 보여준다', () => {
+    const { panelEl } = createExplanationPanel({ explanation: withGloss, lang: 'ja' });
+    const t = panelEl.textContent;
+    expect(t).toContain('コーヒー');
+    expect(t).toContain('coffee');
+    expect(t).toContain('こーひー');
+    expect(t).toContain('코-히-');
+    expect(t).toContain('カード');
+  });
+
+  it('가타카나가 없으면 섹션이 생기지 않는다', () => {
+    const { panelEl } = createExplanationPanel({ explanation: { key: 'k', katakana_gloss: [] }, lang: 'ja' });
+    expect(panelEl.textContent).not.toContain('가타카나');
+  });
+});

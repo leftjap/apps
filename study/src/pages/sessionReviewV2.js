@@ -25,6 +25,7 @@ import { nextSrsState } from '../services/srs.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
 import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS } from './sessionExprV2.js';
+import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -398,7 +399,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   );
 
   // 컨트롤 — 떠올려 말하기(1순위 mic) + 듣기 + 점수 링
-  let playing = false, recCtrl = null;
+  let playing = false, recCtrl = null, listenPlays = 0;
   const recPill = h('button', { class: 'vr-pill pri', type: 'button' }, vIcon(VI.MIC, { size: 14, sw: 2 }), '떠올려 말하기');
   // 듣기는 정답 오디오다 — 회상 시도 전에는 잠근다 (공개 후 해제).
   const listenPill = h('button', { class: 'vr-pill vr-listen', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
@@ -557,7 +558,16 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     if (playing) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopPlaying(); return; }
     if (!s?.sentence || !window.studySpeech?.speak) return;
     playing = true; listenPill.classList.add('playing'); listenPill.lastChild.textContent = '재생 중';
-    window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s?.speaker, onEnd: stopPlaying });
+    /* 복습 듣기도 재생마다 화자를 바꾼다 (2026-08-28) — 한 목소리만 반복해 들으면 그 목소리에만
+     * 익숙해진다. 시드에 speaker 가 지정된 카드는 그 화자를 존중해 순환에서 제외. */
+    if (s?.speaker) {
+      window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s.speaker, onEnd: stopPlaying });
+    } else {
+      const pool = lang === 'ja' ? JA_PRACTICE_VOICES : PRACTICE_VOICES;
+      const voice = pool[listenPlays % pool.length];
+      listenPlays += 1;
+      window.studySpeech.speak(s.sentence, { lang: ttsLang, voice, onEnd: stopPlaying });
+    }
     setTimeout(stopPlaying, 30000);
   });
 
