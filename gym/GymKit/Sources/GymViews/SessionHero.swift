@@ -110,7 +110,7 @@ struct SessionHero: View {
                 let tap = CGFloat(GymSwipeMath.heroTapZone(side: Double(side)))
                 let gutter = side - tap
                 HStack(spacing: 0) {
-                    Color.clear.frame(width: gutter).allowsHitTesting(false)
+                    gutterZone(gutter)
                     Color.clear.contentShape(Rectangle())
                         .frame(width: tap)
                         .onTapGesture { handler(.minus) }
@@ -123,10 +123,20 @@ struct SessionHero: View {
                         .frame(width: tap)
                         .onTapGesture { handler(.plus) }
                         .accessibilityIdentifier("zone-plus")
-                    Color.clear.frame(width: gutter).allowsHitTesting(false)
+                    gutterZone(gutter)
                 }
             }
         }
+    }
+
+    /// 가장자리 불감대 — **탭을 흡수한다.** 빈 구멍(allowsHitTesting false)으로 두면 화면 끝
+    /// 접촉이 이웃 증감 존으로 새어 들어간다 (시뮬 실측: 존이 x=26 부터인데 x=8 탭이 감소로 먹힘.
+    /// 내부 경계 112.67pt 는 정확 — 새는 건 가장자리뿐).
+    func gutterZone(_ w: CGFloat) -> some View {
+        Color.clear.contentShape(Rectangle())
+            .frame(width: w)
+            .onTapGesture { }
+            .accessibilityIdentifier("zone-gutter")
     }
 
     // 그려진 숫자의 실제 폭 (tracking 은 글자 사이에만 붙으므로 n-1 개만 뺀다).
