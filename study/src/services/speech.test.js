@@ -1683,3 +1683,27 @@ describe('speech — recordWav 가 TTS 재생 구간 청크를 버린다', () =>
     expect(blob.size).toBe(44 + 2 * 160 * 2);
   });
 });
+
+/* cancel() 은 재생 종료를 호출부에 알려야 한다 (2026-08-29). 녹음 시작이 재생을 끊게 되면서
+ * (sessionAnalyze.startMicRecording) 화면의 '재생 중' 라벨·이퀄라이저가 되돌아올 길이 필요해졌다.
+ * 호출부는 전부 speak 의 onEnd 로 상태를 되돌린다 — cancel 이 그걸 안 부르면 라벨이 갇힌다. */
+describe('speech — cancel() 이 재생 종료를 통보한다', () => {
+  it('진행 중 재생을 cancel 하면 onEnd 가 한 번 불린다', async () => {
+    vi.stubGlobal('window', {
+      speechSynthesis: { cancel() {}, getVoices: () => [{ name: 'Samantha', lang: 'en-US', default: true, localService: true }], addEventListener() {}, speak() {} },
+      SpeechSynthesisUtterance: class { constructor(t) { this.text = t; } },
+    });
+    globalThis.SpeechSynthesisUtterance = window.SpeechSynthesisUtterance;
+    const { Speech, isTtsPlaying } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    const onEnd = vi.fn();
+    Speech.speak('hello', { lang: 'en-US', onEnd });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(isTtsPlaying()).toBe(true);
+    Speech.cancel();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    expect(isTtsPlaying()).toBe(false);
+    Speech.cancel(); // 두 번째 cancel 은 다시 부르지 않는다
+    expect(onEnd).toHaveBeenCalledTimes(1);
+  });
+});

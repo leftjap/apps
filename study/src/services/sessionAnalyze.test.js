@@ -138,3 +138,37 @@ describe('타임아웃 — 응답 없는 녹음/채점', () => {
     await expect(stopAndAnalyze(ctrl, 'hello', { lang: 'en' })).resolves.toEqual({ score: 91 });
   });
 });
+
+/* 녹음 시작이 재생을 끊는다 (2026-08-29) — TTS 재생 구간의 마이크 입력은 채점에서 빠지므로
+ * (speech.js, 재생음이 그대로 점수가 되던 구멍), 재생 중에 녹음을 시작하면 사용자 발화가
+ * 통째로 버려진다. 녹음 시작을 재생 종료 신호로 삼아 그 창을 없앤다. 메인·복습·드릴·체이닝·
+ * 생산이 전부 이 함수를 지나므로 한 곳으로 충분하다. */
+describe('startMicRecording — 재생 중이면 먼저 끊는다', () => {
+  beforeEach(() => { delete globalThis.window; });
+  afterEach(() => { delete globalThis.window; });
+
+  it('재생 중이면 cancel 후 녹음을 시작한다', async () => {
+    const cancel = vi.fn();
+    const recordWav = vi.fn(async () => ({ stop() {}, blobPromise: Promise.resolve(new Blob()) }));
+    globalThis.window = { studySpeech: { recordWav, cancel, isTtsPlaying: () => true } };
+    const r = await startMicRecording();
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(recordWav).toHaveBeenCalledTimes(1);
+    expect(r.controller).toBeTruthy();
+  });
+
+  it('재생 중이 아니면 cancel 을 부르지 않는다 (synthesizer 캐시 보존)', async () => {
+    const cancel = vi.fn();
+    const recordWav = vi.fn(async () => ({ stop() {}, blobPromise: Promise.resolve(new Blob()) }));
+    globalThis.window = { studySpeech: { recordWav, cancel, isTtsPlaying: () => false } };
+    await startMicRecording();
+    expect(cancel).not.toHaveBeenCalled();
+  });
+
+  it('isTtsPlaying 이 없는 구버전에서도 그대로 동작한다', async () => {
+    const recordWav = vi.fn(async () => ({ stop() {}, blobPromise: Promise.resolve(new Blob()) }));
+    globalThis.window = { studySpeech: { recordWav } };
+    const r = await startMicRecording();
+    expect(r.controller).toBeTruthy();
+  });
+});

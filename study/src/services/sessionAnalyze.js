@@ -50,6 +50,10 @@ export async function startMicRecording(opts = {}) {
   if (typeof window === 'undefined' || !window.studySpeech?.recordWav) {
     return { error: 'unavailable' };
   }
+  /* 재생 중이면 먼저 끊는다 (2026-08-29) — TTS 재생 구간의 마이크 입력은 채점에서 빠지므로
+   * (speech.js: 재생음이 그대로 점수가 되던 구멍), 재생 중 녹음을 시작하면 발화가 통째로 버려진다.
+   * 재생 중일 때만 부른다 — cancel 은 synthesizer 캐시를 비워 다음 듣기 지연을 만든다. */
+  try { if (window.studySpeech.isTtsPlaying?.()) window.studySpeech.cancel?.(); } catch { /* noop */ }
   try {
     const controller = await withTimeout(window.studySpeech.recordWav({ maxSeconds: 15, ...opts }), START_TIMEOUT_MS);
     if (controller === TIMED_OUT) {

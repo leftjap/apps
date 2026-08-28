@@ -568,6 +568,9 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
  * cancel() 은 0 으로 리셋한다 (어느 재생인지 모르므로, 그리고 남으면 녹음이 영구히 막힌다). */
 let _ttsPlaying = 0;
 const TTS_HOLD_MAX_MS = 30_000; // speak 의 자체 안전망(setTimeout(stopPlaying, 30000))과 같은 상한
+/* 진행 중 재생의 종료 통보자들. cancel() 이 이걸 호출해 호출부의 onEnd(=화면 '재생 중' 해제)를
+ * 되돌린다 — 녹음 시작이 재생을 끊게 되면서(sessionAnalyze) 없으면 라벨이 갇힌다. */
+const _ttsEnders = new Set();
 export function isTtsPlaying() { return _ttsPlaying > 0; }
 
 function escapeXml(s) {
@@ -589,10 +592,13 @@ function speak(text, opts = {}) {
    * 커버리지·정확도가 오히려 올라간다). recordWav 가 이 표시를 보고 해당 구간을 버린다. */
   _ttsPlaying += 1;
   let released = false;
-  const release = () => { if (released) return; released = true; _ttsPlaying = Math.max(0, _ttsPlaying - 1); };
+  const release = () => { if (released) return; released = true; _ttsPlaying = Math.max(0, _ttsPlaying - 1); _ttsEnders.delete(ender); };
+  const finish = (...a) => { const first = !released; release(); if (first) { try { opts.onEnd?.(...a); } catch (e) { console.warn('[speech] onEnd', e); } } };
+  const ender = finish;
+  _ttsEnders.add(ender);
   // 안전망 — 어떤 백엔드에서도 onEnd 가 끝내 안 오면 녹음이 영구히 막힌다.
   setTimeout(release, TTS_HOLD_MAX_MS);
-  const wrapped = { ...opts, onEnd: (...a) => { release(); try { opts.onEnd?.(...a); } catch (e) { console.warn('[speech] onEnd', e); } } };
+  const wrapped = { ...opts, onEnd: finish };
   if (_backend === 'web') {
     // Wave 11.31 — async 반환값 무시 (콜백 onEnd 패턴)
     void speakWeb(text, wrapped);
@@ -612,7 +618,11 @@ function speak(text, opts = {}) {
  */
 function cancel() {
   _speakGen += 1; // 2026-07-13 — synth 연결 대기 중인 speak 도 선점 취소
-  _ttsPlaying = 0; // 재생 표시 해제 — 남으면 그 뒤 녹음이 통째로 버려진다
+  // 재생 표시 해제 + 호출부에 종료 통보 (없으면 화면이 '재생 중' 라벨에 갇힌다)
+  const enders = [..._ttsEnders];
+  _ttsEnders.clear();
+  _ttsPlaying = 0;
+  for (const end of enders) { try { end(); } catch (e) { console.warn('[speech] cancel onEnd', e); } }
   // Web
   try {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -1198,6 +1208,7 @@ export const Speech = {
   recordWav, // Wave 11.61 — mic → WAV blob
   releaseWarmMic, // 2026-07-12 — 워밍 마이크 즉시 해제 (pre-roll 유지 중 마이크 표시등 소등용)
   analyzeWavRest, // Wave 11.61 — REST API Pronunciation Assessment
+  isTtsPlaying, // 2026-08-29 — TTS 재생 중 여부 (녹음 시작이 재생을 끊는 판단에 쓰임)
   pcmToWavBlob, // Wave 11.61 — utility
   buildPronunciationAssessmentHeader, // Wave 11.61 — utility
   extractMiscues, // 2026-07-09 — coverage(누락) 추출
