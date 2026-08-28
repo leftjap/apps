@@ -1567,3 +1567,119 @@ describe('pickVoiceVaried — 폴백 화자 변주', () => {
     }
   });
 });
+
+/* 녹음 중 듣기 (2026-08-29) — 재생음이 그대로 녹음에 실리면 점수가 부풀려진다.
+ * 라이브 Azure 실측(같은 열화 발화에 TTS 를 섞어 채점):
+ *   에코 없음 36 · 10% 35 · 30% 35 · **100% 72** · 말 안 하고 TTS 만 녹음 **96**
+ * 오발화 게이트로는 못 막는다 — 섞이는 게 '같은 문장'이라 커버리지도 정확도도 올라간다.
+ * 그래서 재생 구간의 마이크 입력은 아예 채점에서 뺀다. 메인·복습·드릴·체이닝·생산 전 경로 공통. */
+describe('speech — TTS 재생 구간 배제', () => {
+  it('재생 중(hold)에는 무음 자동종료 시계가 진행되지 않는다', async () => {
+    const { createSilenceAutoStop: mk } = await import('./speech.js');
+    const vad = mk({ speechPeak: 0.08, silencePeak: 0.05, hangoverMs: 1000 });
+    expect(vad.feed(0.2, 1000)).toBe(false);   // 발화로 무장
+    expect(vad.feed(0.01, 1500)).toBe(false);  // 무음 0.5초 — 아직 미달
+    vad.hold(2600);                            // 이 구간은 TTS 재생 중이었다
+    expect(vad.feed(0.01, 2700)).toBe(false);  // hold 가 시계를 되짚었으므로 종료 아님
+    expect(vad.feed(0.01, 3700)).toBe(true);   // hold 이후 1초 무음 → 종료
+  });
+
+  it('무장 전 hold 는 앞 침묵 보호를 깨지 않는다 (재생이 발화로 오인되지 않음)', async () => {
+    const { createSilenceAutoStop: mk } = await import('./speech.js');
+    const vad = mk({ hangoverMs: 1000 });
+    vad.hold(1000);
+    expect(vad.speechStarted).toBe(false);
+    expect(vad.feed(0.01, 5000)).toBe(false);  // 무장 전이므로 여전히 종료 안 함
+  });
+
+  it('speak 재생 중에는 isTtsPlaying() 이 참, onEnd 뒤 거짓', async () => {
+    const ended = [];
+    vi.stubGlobal('window', {
+      speechSynthesis: {
+        cancel() {},
+        getVoices: () => [{ name: 'Samantha', lang: 'en-US', default: true, localService: true }],
+        addEventListener() {},
+        speak(u) { ended.push(() => u.onend()); },
+      },
+      SpeechSynthesisUtterance: class { constructor(t) { this.text = t; } },
+    });
+    globalThis.SpeechSynthesisUtterance = window.SpeechSynthesisUtterance;
+    const { Speech, isTtsPlaying } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    expect(isTtsPlaying()).toBe(false);
+    Speech.speak('hello there', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 5));
+    expect(isTtsPlaying()).toBe(true);
+    ended[0]();
+    expect(isTtsPlaying()).toBe(false);
+  });
+
+  it('cancel() 은 재생 표시를 반드시 푼다 (끝내 onEnd 가 안 와도 녹음이 막히지 않게)', async () => {
+    vi.stubGlobal('window', {
+      speechSynthesis: { cancel() {}, getVoices: () => [], addEventListener() {}, speak() {} },
+      SpeechSynthesisUtterance: class { constructor(t) { this.text = t; } },
+    });
+    globalThis.SpeechSynthesisUtterance = window.SpeechSynthesisUtterance;
+    const { Speech, isTtsPlaying } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    Speech.speak('x', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 5));
+    expect(isTtsPlaying()).toBe(true);
+    Speech.cancel();
+    expect(isTtsPlaying()).toBe(false);
+  });
+});
+
+/* 배선 검증 — recordWav 가 실제로 재생 구간 청크를 버리는지. 마이크·AudioWorklet 을 mock 해
+ * port.onmessage 로 청크를 직접 흘려보낸다 (실기기 마이크 없이 수집 경로를 그대로 태움). */
+describe('speech — recordWav 가 TTS 재생 구간 청크를 버린다', () => {
+  function setupMic() {
+    const held = {};
+    class FakeNode {
+      constructor() { this.port = { onmessage: null, postMessage() {} }; held.node = this; }
+      connect() {} disconnect() {}
+    }
+    const ac = {
+      state: 'running',
+      audioWorklet: { addModule: async () => {} },
+      createMediaStreamSource: () => ({ connect() {}, disconnect() {} }),
+      createGain: () => ({ gain: { value: 0 }, connect() {}, disconnect() {} }),
+      destination: {},
+      resume: async () => {}, close: async () => {},
+    };
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [{ readyState: 'live', stop() {} }] }) } });
+    vi.stubGlobal('AudioWorkletNode', FakeNode);
+    vi.stubGlobal('window', {
+      AudioContext: function () { return ac; },
+      AudioWorkletNode: FakeNode,
+      speechSynthesis: { cancel() {}, getVoices: () => [{ name: 'Samantha', lang: 'en-US', default: true, localService: true }], addEventListener() {}, speak(u) { held.utter = u; } },
+      SpeechSynthesisUtterance: class { constructor(t) { this.text = t; } },
+      addEventListener() {}, removeEventListener() {},
+    });
+    globalThis.SpeechSynthesisUtterance = window.SpeechSynthesisUtterance;
+    return held;
+  }
+  const chunk = (v) => { const a = new Int16Array(160); a.fill(v); return a.buffer; };
+
+  it('재생 중 청크는 blob 에 안 담기고, 재생 전후 청크만 담긴다', async () => {
+    const held = setupMic();
+    const { Speech } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    const p = Speech.recordWav({ maxSeconds: 5 });
+    await new Promise((r) => setTimeout(r, 5));
+    held.node.port.onmessage({ data: chunk(8000) });     // ① 실제 발화
+    const ctrl = await p;
+
+    Speech.speak('reference sentence', { lang: 'en-US' }); // 듣기 — 여기서부터 재생 구간
+    await new Promise((r) => setTimeout(r, 30));
+    held.node.port.onmessage({ data: chunk(9000) });     // ② 재생음 — 버려져야 한다
+    held.node.port.onmessage({ data: chunk(9000) });     // ③ 재생음 — 버려져야 한다
+    held.utter.onend();                                  // 재생 종료
+    held.node.port.onmessage({ data: chunk(8000) });     // ④ 이어서 말한 발화
+
+    ctrl.stop();
+    const blob = await ctrl.blobPromise;
+    // WAV 헤더 44 + 청크 2개(①④) × 160샘플 × 2byte = 684. ②③ 가 담겼다면 1004.
+    expect(blob.size).toBe(44 + 2 * 160 * 2);
+  });
+});

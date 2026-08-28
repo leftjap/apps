@@ -564,6 +564,12 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
   }
 }
 
+/* TTS 재생 중 표시 — 0보다 크면 재생 중. 중첩 재생 대비 카운터.
+ * cancel() 은 0 으로 리셋한다 (어느 재생인지 모르므로, 그리고 남으면 녹음이 영구히 막힌다). */
+let _ttsPlaying = 0;
+const TTS_HOLD_MAX_MS = 30_000; // speak 의 자체 안전망(setTimeout(stopPlaying, 30000))과 같은 상한
+export function isTtsPlaying() { return _ttsPlaying > 0; }
+
 function escapeXml(s) {
   return String(s)
     .replace(/&/g, '&amp;')
@@ -578,13 +584,22 @@ function escapeXml(s) {
  * backend='web' 시 즉시 Web. backend='azure' 시 Azure 만 (실패 시에도 Web 폴백 — 사용자 UX 우선).
  */
 function speak(text, opts = {}) {
+  /* 재생 구간 표시 (2026-08-29) — 녹음 중 듣기를 허용하면서 재생음이 점수가 되는 걸 막는다.
+   * 실측: 말 안 하고 재생음만 담긴 녹음이 96점. 오발화 게이트로는 못 걸러진다(같은 문장이라
+   * 커버리지·정확도가 오히려 올라간다). recordWav 가 이 표시를 보고 해당 구간을 버린다. */
+  _ttsPlaying += 1;
+  let released = false;
+  const release = () => { if (released) return; released = true; _ttsPlaying = Math.max(0, _ttsPlaying - 1); };
+  // 안전망 — 어떤 백엔드에서도 onEnd 가 끝내 안 오면 녹음이 영구히 막힌다.
+  setTimeout(release, TTS_HOLD_MAX_MS);
+  const wrapped = { ...opts, onEnd: (...a) => { release(); try { opts.onEnd?.(...a); } catch (e) { console.warn('[speech] onEnd', e); } } };
   if (_backend === 'web') {
     // Wave 11.31 — async 반환값 무시 (콜백 onEnd 패턴)
-    void speakWeb(text, opts);
+    void speakWeb(text, wrapped);
     return;
   }
   // 'auto' 또는 'azure' → Azure 시도 (실패 시 내부 폴백)
-  void speakAzure(text, opts);
+  void speakAzure(text, wrapped);
 }
 
 /**
@@ -597,6 +612,7 @@ function speak(text, opts = {}) {
  */
 function cancel() {
   _speakGen += 1; // 2026-07-13 — synth 연결 대기 중인 speak 도 선점 취소
+  _ttsPlaying = 0; // 재생 표시 해제 — 남으면 그 뒤 녹음이 통째로 버려진다
   // Web
   try {
     if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -857,6 +873,10 @@ async function ensureWarmMic(workletUrl) {
     const buf = e.data;
     if (!buf || !buf.byteLength) return;
     const int16 = new Int16Array(buf);
+    /* TTS 재생 구간은 녹음에도 pre-roll 에도 담지 않는다 (2026-08-29). 녹음 중 듣기를 허용하면서
+     * 재생음이 점수가 되는 걸 막는 유일한 지점 — 실측: 말 안 하고 재생음만 담긴 녹음이 96점.
+     * VAD 만 시계를 되짚어(ttsHold) 재생이 길어도 '말이 끝났다'고 오인해 끊지 않게 한다. */
+    if (_ttsPlaying > 0) { wm.active?.ttsHold?.(); return; }
     if (wm.active) { wm.active.onChunk(int16); return; }
     // 대기 중(녹음 밖) — pre-roll 링버퍼. 최근 PREROLL_MAX_SAMPLES 만 유지.
     wm.ring.push(int16);
@@ -901,6 +921,10 @@ export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, h
       if (peak >= silencePeak) { lastVoiceAt = now; return false; }
       return (now - lastVoiceAt) >= hangoverMs;
     },
+    /* TTS 재생 구간 — 그 사이 마이크 입력은 채점에서 빠지므로(재생음이 곧 점수가 된다) VAD 에도
+     * 안 먹인다. 대신 무음 시계를 되짚어, 재생이 길어도 '말이 끝난 것'으로 오인해 끊지 않는다.
+     * 무장 전에는 아무것도 하지 않는다 — 재생음이 발화로 오인되면 앞 침묵 보호가 깨진다. */
+    hold(now) { if (speechStarted) lastVoiceAt = now; },
     get speechStarted() { return speechStarted; },
   };
 }
@@ -985,6 +1009,7 @@ export async function recordWav({
           }
         }
       },
+      ttsHold() { if (vad) vad.hold(Date.now()); },
       stop,
       abort: endInvoluntary,
     };
