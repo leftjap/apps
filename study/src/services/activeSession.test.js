@@ -1,5 +1,11 @@
-import { describe, it, expect } from 'vitest';
-import { isExpired, restoreFromSnapshot, touchActiveSession } from './activeSession.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { isExpired, restoreFromSnapshot, touchActiveSession, finalizeStaleSnapshot } from './activeSession.js';
+import { finishSession } from './sessionFinish.js';
+
+vi.mock('./sessionFinish.js', async (orig) => ({
+  ...(await orig()),
+  finishSession: vi.fn(async () => ({ ok: true })),
+}));
 
 describe('isExpired (TTL=1시간)', () => {
   it('savedAt = now → 미만료', () => {
@@ -135,5 +141,37 @@ describe('touchActiveSession — 활동으로 만료 시계 갱신', () => {
   it('스냅샷이 없으면 아무것도 만들지 않는다', async () => {
     expect(await touchActiveSession(mkDb(null))).toBe(false);
     expect(await touchActiveSession({})).toBe(false);
+  });
+});
+
+/* 만료 정리가 step=1(첫 카드 진행 중)이면 '학습한 카드 없음'으로 아무것도 남기지 않았다.
+ * 그래서 발화 6회·학습시간까지 기록 없이 사라졌다 (2026-08-28 실측: 오늘 세션 로그 0건).
+ * 카드를 못 넘겼어도 말한 건 말한 것이다 — 로그는 남긴다. */
+describe('finalizeStaleSnapshot — 첫 카드에서 만료돼도 발화는 기록한다', () => {
+  const base = {
+    mode: 'new', lang: 'en', todayISO: '2026-08-28', step: 1,
+    cardIds: ['c1', 'c2'], activeSec: 3600, startTime: 1, savedAt: 2,
+  };
+  const db = { todayLessons: { bulkGet: vi.fn(async () => []) } };
+  beforeEach(() => { finishSession.mockClear(); db.todayLessons.bulkGet.mockClear(); });
+
+  it('완료 0장 + 발화 6회 → 로그를 남긴다 (승급 카드는 없음)', async () => {
+    await finalizeStaleSnapshot(db, { ...base, tried: 6, passed: 5 });
+    expect(finishSession).toHaveBeenCalledTimes(1);
+    const arg = finishSession.mock.calls[0][1];
+    expect(arg).toMatchObject({ mode: 'new', tried: 6, passed: 5, completedNewCards: [] });
+    expect(arg.durationSec).toBe(3600);          // 활성 시간 보존 (12시간 이하는 미클램프)
+    expect(db.todayLessons.bulkGet).not.toHaveBeenCalled(); // 완료 0장 → 조회 자체를 안 한다
+  });
+
+  it('완료 0장 + 발화 0회 → 남길 게 없다', async () => {
+    expect(await finalizeStaleSnapshot(db, { ...base, tried: 0, passed: 0 })).toBeNull();
+    expect(finishSession).not.toHaveBeenCalled();
+  });
+
+  it('복습도 같다 — 판정 0건이어도 발화가 있으면 기록', async () => {
+    await finalizeStaleSnapshot(db, { ...base, mode: 'review', tried: 4, passed: 2 });
+    expect(finishSession).toHaveBeenCalledTimes(1);
+    expect(finishSession.mock.calls[0][1]).toMatchObject({ mode: 'review', tried: 4, completedReviewCount: 0 });
   });
 });
