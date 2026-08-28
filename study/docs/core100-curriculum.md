@@ -179,6 +179,30 @@
   위 X 4장이 정확히 그 충돌 지점이다. **해법은 문장이 아니라 프롬프트다**: 7~100 저작 시 한글
   프롬프트를 **수렴형**으로 쓴다 — 자연스러운 의역("지금 갈게")이 아니라 그 표현을 유도하는 표현
   ("지금 가는 중이야" → on my way). 프롬프트가 발산하면 아무리 좋은 문장도 인출 훈련이 안 된다.
+- **외울 가치 = 핵심 표현의 코퍼스 빈도** (2026-08-29 실측). 1~30 의 핵심 표현 23개를 YouGlish
+  (YouTube 자막, 미국 영어)로 재서 길이대별로 비교했다. 대부분은 값을 한다 —
+  that makes sense 16,369 · it depends on 16,357 · what do you mean 10,593 · I wish I could 7,195 ·
+  if I were you 6,824 · say that again 4,227 · didn't mean to 2,972 · what I'm trying to say 1,355 ·
+  see what I can do 957 · push it back 908 · something came up 808 · I can't make it 705 ·
+  works best for you 573 · give me a second 567 · I'll think about it 485 · didn't catch that 339 ·
+  what would you do if you were 336 · put it into words 250.
+  **그러나 네 개는 조합이 드물다**(같은 단어수 대비 14~40배 낮음):
+  | # | 표현 | 빈도 | 같은 뜻의 더 흔한 조합 | 빈도 |
+  |---|---|--:|---|--:|
+  | 3 | not sure how to explain | **19** | I don't know how to explain | 320 |
+  | 6 | understood you correctly | **48** | did I get that right | 247 |
+  | 30 | figure out what went wrong | **68** | (figure out 자체는 초고빈도 — 조합만 드묾) | — |
+  | 12 | I see your point | **153** | I know what you mean | **11,949** |
+  외운 대로 실제 발화·청취에 나타나지 않으면 암기 비용이 회수되지 않는다. 7~100 저작 시 핵심 표현은
+  **같은 기능의 더 흔한 조합이 있는지 확인하고 그쪽을 택한다.**
+- **§1 「직역 조립 가능한 초급 단골 문장 배제」는 빈도를 깎는다** — 흔한 표현은 대개 초급 단골이다.
+  #12 가 그 결과다: `I see your point`(153)를 골라 `I know what you mean`(11,949)을 피했는데,
+  1차 목표가 **넷플릭스 자막 의존 낮추기**라면 실제로 들리는 쪽을 버린 셈이다. 배제 기준은
+  '초급 단골'이 아니라 **'학습자가 이미 아는 것'**이어야 한다.
+- **중복 대조는 문장이 아니라 핵심 표현 단위로** (2026-08-29 발견). §1 의 「기학습 215문장과 기계
+  대조 — 완전 중복 0」은 문장 문자열만 봤다. 실제로 지오의 기학습 목록에는 `I see your point.` 와
+  `I know what you mean.` 이 **둘 다 이미 있고**, 코어100 #12 는 전자의 확장, #5 는 후자와 겹친다.
+  완전 중복은 0 이지만 핵심 표현은 재탕이다. 대조는 `explanation.key` 좌변 기준으로 해야 한다.
 - **난이도 재측정 레시피**: 복습 세션이 돈 뒤 `study_review_queue.last_result`·`interval` 을 문장별로
   묶어 (a) 역산 가능/관용 (b) 단어 수 두 축과 대조한다. 조회법은 `handoff/` 인수인계 문서 §4.2.
   첫 세션의 발음 점수는 낭독이므로 난이도 근거로 쓰지 않는다.
