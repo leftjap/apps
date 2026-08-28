@@ -47,6 +47,7 @@ import {
   loadSourceEnLines,
 } from './validate-seed.mjs';
 import { staleIncompleteIds } from './expire-stale-lessons.mjs';
+import { validateJaPayload } from './validate-ja-core100.mjs';
 
 const STALE_DAYS = 14; // 이 일수 이상 방치된 미완료는 INSERT 전 강제 삭제 (hold 데드락 근본 수정)
 
@@ -166,6 +167,18 @@ async function main() {
   if (!content.ok) {
     for (const e of content.errors) console.error(`[seed] BLOCKED: ${e}`);
     throw new Error(`content validation failed (${content.errors.length} errors)`);
+  }
+
+  /* ja-core100 전용 게이트 (2026-08-28) — validate-seed 는 lang==='en' 에서만 상세 검사를 돌아
+   * ja 는 구조 검증만으로 통과한다. 초보 학습자용이라 reading·음차·drills 4필드가 빠지면
+   * 카드가 통째로 못 읽히는 물건이 되므로 guide-ja §14-5 를 여기서 강제한다. */
+  if (payload.track === 'ja-core100') {
+    const jaErrors = validateJaPayload(payload);
+    if (jaErrors.length) {
+      for (const e of jaErrors) console.error(`[seed] BLOCKED(ja-core100): ${e}`);
+      throw new Error(`ja-core100 validation failed (${jaErrors.length} errors)`);
+    }
+    console.log('[seed] ja-core100 게이트 통과');
   }
 
   console.log(`[seed] lang=${payload.lang} date=${payload.date} count=${payload.cards.length} user=${args.userId} dryRun=${args.dryRun}`);
