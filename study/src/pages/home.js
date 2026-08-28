@@ -463,6 +463,9 @@ function renderPhone(state) {
   const sec2 = el('section', { style: 'padding:32px 24px 0;display:flex;flex-direction:column;gap:12px;' });
   const ctx = { totalReview: state.totalReview, lang: state.lang };
   sec2.append(sessionCard('new', state.newCount, false, true, state.resume === 'new', ctx), sessionCard('review', state.reviewCount, false, true, state.resume === 'review', ctx));
+  /* 문장 모아보기 — 데스크톱(homeDesktopV2)에만 있고 모바일엔 진입이 없었다 (2026-08-28 보강).
+   * 수학은 문장 개념이 없어 제외 — 데스크톱과 같은 isMath 게이팅. */
+  if (state.lang !== 'math') sec2.appendChild(sentencesLink());
   root.appendChild(sec2);
 
   // session/review 페이지 톤 매핑: NEW 라벨 accent, PASSED 숫자 sage, 나머지 strong.
@@ -795,6 +798,26 @@ function statBlock(label, value, fontSize, valueColor, ls, labelColor = 'faint')
   num.textContent = String(value);
   wrap.append(lab, num);
   return wrap;
+}
+
+/* 문장 모아보기 진입 (모바일). 데스크톱 vh-cta sec 와 같은 목적지·같은 문구. */
+function sentencesLink() {
+  const btn = el('button', {
+    type: 'button',
+    'aria-label': '문장 모아보기',
+    style: 'background:transparent;border:1px solid var(--border);border-radius:var(--r-md);padding:14px 18px;text-align:left;cursor:pointer;font-family:var(--font-body);display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;',
+  });
+  btn.addEventListener('click', () => { window.location.hash = '#/sentences'; });
+  const txt = el('span', { style: 'display:flex;flex-direction:column;gap:3px;' });
+  const t1 = el('span', { style: 'font-size:14px;font-weight:700;color:var(--text-strong);' });
+  t1.textContent = '문장 모아보기';
+  const t2 = el('span', { style: 'font-size:12px;color:var(--text-muted);' });
+  t2.textContent = '지금까지 공부한 문장 · 한글 보고 떠올리기';
+  txt.append(t1, t2);
+  const go = el('span', { style: 'font-size:12px;color:var(--text-muted);' });
+  go.textContent = '열기';
+  btn.append(txt, go);
+  return btn;
 }
 
 function sessionCard(kind, count, large, full, isResume = false, ctx = {}) {

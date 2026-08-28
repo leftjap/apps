@@ -50,6 +50,7 @@ const VL_CSS = `
 .vl-lv[data-level="△"].on{background:#f6efdc;color:#8a6d1f}
 .vl-lv[data-level="O"].on{background:var(--teal-soft);color:var(--teal-deep)}
 /* 가림 — 블러. 문장 길이는 남겨 회상 단서가 되게 하고, 선택/복사는 막는다. */
+.vl-row .en .vl-sub{margin-top:3px;font-size:13px;font-weight:500;color:var(--mut);letter-spacing:0}
 .vl-row .en.masked{filter:blur(6px);user-select:none;-webkit-user-select:none;color:var(--mut)}
 .vl-acts{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 /* 정답 = 1차 액션(솔리드) — 이 페이지의 핵심 행동. 공개 중(.on)엔 소진 표시. */
@@ -156,6 +157,10 @@ export function buildSentenceRows(cards, logs, pronLogs, todayISO) {
     id: c.id,
     en: c.sentence ?? '',
     ko: c.meaning || c.ko || '',
+    /* ja 보조 표기 (2026-08-28) — 학습자가 한자·가타카나를 거의 못 읽어 원문만으로는 읽히지 않는다.
+     * reading 이 원문과 같으면(한자 0개 카드) 같은 줄이 두 번 나오므로 비운다. */
+    reading: (c.reading && c.reading !== (c.sentence ?? '')) ? c.reading : '',
+    pron: c.phonetic_kr || '',
     level: c.lastResult ?? null,
     score: scoreBy[c.id]?.score ?? null,
     hint: sentenceHint(c),
@@ -249,7 +254,12 @@ export function mountSentences(host) {
     };
 
     for (const r of rows) {
-      const enEl = h('div', { class: 'en masked' }, r.en);
+      /* ja 는 원문 아래에 가나 읽기·한글 음차를 함께 싣는다 (2026-08-28).
+       * 정답의 일부이므로 masked 컨테이너 안에 넣어 함께 가려지고 함께 공개된다. */
+      const subParts = [r.reading, r.pron].filter(Boolean);
+      const enEl = h('div', { class: 'en masked' },
+        h('div', {}, r.en),
+        subParts.length ? h('div', { class: 'vl-sub' }, subParts.join(' · ')) : null);
       const revealBtn = h('button', { class: 'vl-reveal', type: 'button' }, '정답');
       revealBtn.addEventListener('click', () => {
         const masked = enEl.classList.toggle('masked');

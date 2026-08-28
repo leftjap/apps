@@ -473,3 +473,31 @@ describe('mountSentences — 오늘 10문장 라운드', () => {
     expect(fin.style.display).not.toBe('none'); // 전부 평가 → 표시
   });
 });
+
+
+/* 일본어 표시 (2026-08-28) — 학습자는 히라가나만 읽고 한자·가타카나를 거의 못 읽는다.
+ * 일본어 원문만 띄우면 읽을 수가 없으므로 가나 읽기와 한글 음차를 함께 싣는다. */
+describe('buildSentenceRows — 일본어 읽기·음차', () => {
+  it('reading·phonetic_kr 을 행에 싣는다', () => {
+    const rows = buildSentenceRows([
+      { id: 'j1', sentence: '確かに。', meaning: '그러네', reading: 'たしかに', phonetic_kr: '타시카니' },
+    ], [], [], '2026-08-28');
+    expect(rows[0].reading).toBe('たしかに');
+    expect(rows[0].pron).toBe('타시카니');
+  });
+
+  it('한자가 없어 reading 이 원문과 같으면 reading 을 비운다 (중복 표시 방지)', () => {
+    const rows = buildSentenceRows([
+      { id: 'j2', sentence: 'そっか。', meaning: '그렇구나', reading: 'そっか。', phonetic_kr: '솟카' },
+    ], [], [], '2026-08-28');
+    expect(rows[0].reading).toBe('');
+    expect(rows[0].pron).toBe('솟카');
+  });
+
+  it('영어 카드는 reading 이 비어 있다 (영향 없음)', () => {
+    const rows = buildSentenceRows([
+      { id: 'e1', sentence: 'Take it easy.', meaning: '무리하지 마' },
+    ], [], [], '2026-08-28');
+    expect(rows[0].reading).toBe('');
+  });
+});
