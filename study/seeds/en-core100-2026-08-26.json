@@ -18,7 +18,7 @@
         "drills": [
           { "en": "Could you speak a little more slowly?", "ko": "조금만 더 천천히 말해 주시겠어요?", "kr": "쿠쥬 스픽 어 리를 모어r 슬로울리" },
           { "en": "Sorry, I didn't catch that.", "ko": "미안한데, 못 알아들었어요.", "kr": "쏘리 아이 디든 캐치 댓" },
-          { "en": "Can you say it one more time?", "ko": "한 번만 더 말해 줄래요?", "kr": "캔 유 쎄이 잇 원 모어r 타임" },
+          { "en": "Could you say that again? I missed it.", "ko": "다시 말해 줄래요? 놓쳤어요.", "kr": "쿠쥬 쎄이 댓 어겐 아이 미스트 잇" },
           { "en": "Would you mind repeating that?", "ko": "다시 한번 말해 주실 수 있을까요?", "kr": "우쥬 마인 리피링 댓" },
           { "en": "My wife didn't hear the last part.", "ko": "제 아내가 마지막 부분을 못 들었어요.", "kr": "마이 와이f 디든 히어r 더 라스 파r트" }
         ],
@@ -240,7 +240,7 @@
         "key": "Let me see if ~ = ~인지 확인해 볼게. 오해를 막고 대화를 되짚는 문장.",
         "situation": "상대 말을 절반쯤 알아들었을 때 — 내가 이해한 내용을 확인받고 넘어간다.",
         "drills": [
-          { "en": "Let me check if I got that right.", "ko": "내가 제대로 알아들었는지 확인할게.", "kr": "렛 미 첵 이f 아이 갓 댓 라잇" },
+          { "en": "Let me see if I got that right.", "ko": "내가 맞게 들었는지 볼게.", "kr": "렛 미 씨 이f 아이 갓 댓 라잇" },
           { "en": "Did I understand you correctly?", "ko": "내가 제대로 이해한 거 맞아?", "kr": "디라이 언더r스탠 쥬 커r렉틀리" },
           { "en": "I want to make sure I got it.", "ko": "내가 이해한 게 맞는지 확실히 하고 싶어.", "kr": "아이 원 투 메익 슈어r 아이 가릿" },
           { "en": "She didn't understand me correctly.", "ko": "걔는 내 말을 제대로 이해 못 했어.", "kr": "쉬 디든 언더r스탠 미 커r렉틀리" },
