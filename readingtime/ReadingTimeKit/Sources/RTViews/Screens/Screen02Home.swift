@@ -369,7 +369,7 @@ public struct Screen02Home: View {
                 }
                 gauge.padding(.top, 7)
                 // 과거 완료 구간이 없으면(best == 0) 하단 행 전체를 숨긴다 — 빈 트랙만 남는다.
-                if bestVal > 0 {
+                if gaugeState.showsBest {
                     HStack(spacing: 5) {
                         Text("역대 최고").font(.sans(10, 600)).foregroundColor(RT.faint).rtLB(RTLB.n10)
                         Text("\(bestVal)일").font(.mono(10.5, 600)).foregroundColor(RT.muted).rtLB(RTLB.m10_5)
@@ -384,7 +384,7 @@ public struct Screen02Home: View {
             // 같은 묶음 안에 있는 '이번 주 N:NN' 을 라벨에 넣지 않으면 VoiceOver 에서 사라진다
             // (주간 누적은 홈에서 이 한 곳뿐이라 대체 경로가 없다). §8-3 예시 문구에 이번 주를 더한다.
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(bestVal > 0
+            .accessibilityLabel(gaugeState.showsBest
                 ? "\(streakVal)일 연속, 이번 주 \(weekHMVal), 역대 최고 \(bestVal)일, \(remainLabel)"
                 : "\(streakVal)일 연속, 이번 주 \(weekHMVal)")
         }
@@ -399,7 +399,7 @@ public struct Screen02Home: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(Color(hex: 0xECE5D2))
                 gaugeFill(w: w)
-                if bestVal > 0 {
+                if gaugeState.showsBest {
                     Rectangle().fill(Color(hex: 0x17150F, alpha: 0.34))
                         .frame(width: 1.5)
                         .offset(x: w * tickFrac - 1.5)
@@ -519,19 +519,13 @@ public struct Screen02Home: View {
         let w = live?.cal14 ?? []
         return w.count == 14 ? w : Self.demoCal14
     }
-    private var isNewRecord: Bool { bestVal > 0 && streakVal > bestVal }
-    private var gaugeFrac: CGFloat {
-        bestVal <= 0 ? 0 : min(1, CGFloat(streakVal) / CGFloat(bestVal))
-    }
-    private var tickFrac: CGFloat {
-        isNewRecord ? CGFloat(bestVal) / CGFloat(streakVal) : 1.0
-    }
+    /// §4-③ 상태표는 RTStreakGauge 로 분리해 테스트로 고정한다(신기록 상태는 렌더 도달 불가 — AC #14).
+    private var gaugeState: RTStreakGauge { RTStreakGauge(streak: streakVal, best: bestVal) }
+    private var isNewRecord: Bool { gaugeState.isNewRecord }
+    private var gaugeFrac: CGFloat { gaugeState.frac }
+    private var tickFrac: CGFloat { gaugeState.tickFrac }
+    private var remainLabel: String { gaugeState.remainLabel }
     private var streakColor: Color { isNewRecord ? RT.amberDeep : RT.terra }
-    private var remainLabel: String {
-        if isNewRecord { return "+\(streakVal - bestVal)일" }
-        if streakVal == bestVal { return "최고 타이" }
-        return "\(bestVal - streakVal)일 남음"
-    }
 
     /// 데모 캘린더 창 — 2026-08-27(목) 고정. 오늘 날짜가 바뀌어도 스크린샷이 흔들리면 안 된다(AC #23).
     static let demoCal14: [HomeCalCell] = {

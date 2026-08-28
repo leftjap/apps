@@ -49,6 +49,36 @@ public struct HomeCalCell: Sendable, Equatable {
     }
 }
 
+/// 홈 '역대 최고 대비' 게이지 상태 — 작업지시서 v3 §4-③ 상태표.
+/// 뷰에서 분리한 이유: 신기록 상태(streak > best > 0)는 데모 시드로 렌더 도달이 안 돼
+/// 로직 검증이 유일한 수단이다(AC #14). 4개 상태를 테스트로 고정한다.
+public struct RTStreakGauge: Equatable, Sendable {
+    /// 채움 비율 (0…1)
+    public let frac: CGFloat
+    /// 역대 최고 지점 눈금 위치. 평상시·타이는 1.0(트랙 오른쪽 끝)
+    public let tickFrac: CGFloat
+    /// 골드 그라데이션 + rtSweep 여부
+    public let isNewRecord: Bool
+    /// 하단 행(역대 최고 / 남음) 노출. 과거 완료 구간이 없으면 숨긴다
+    public let showsBest: Bool
+    public let remainLabel: String
+
+    public init(streak: Int, best: Int) {
+        let new = best > 0 && streak > best
+        isNewRecord = new
+        showsBest = best > 0
+        frac = best <= 0 ? 0 : min(1, CGFloat(streak) / CGFloat(best))
+        tickFrac = new ? CGFloat(best) / CGFloat(streak) : 1.0
+        if new {
+            remainLabel = "+\(streak - best)일"
+        } else if best > 0 && streak == best {
+            remainLabel = "최고 타이"
+        } else {
+            remainLabel = "\(best - streak)일 남음"
+        }
+    }
+}
+
 /// 홈 캘린더 농도 — **절대 기준**. 지난 2주 최고치 기준(상대값)으로 하지 말 것:
 /// 주마다 기준이 바뀌면 오늘 칸의 진하기를 다른 주와 비교할 수 없다(작업지시서 v3 §4-⑤).
 public enum RTHomeCal {

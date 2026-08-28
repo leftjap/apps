@@ -155,4 +155,49 @@ import Foundation
         #expect(RTHomeCal.alpha(120) == 0.72)
         #expect(RTHomeCal.fullMinutes == 60)
     }
+
+    // ── §4-③ 게이지 상태표 (4개 상태) ──
+    // 신기록 상태는 데모 시드로 렌더 도달이 안 돼 이 테스트가 AC #14 의 유일한 검증 수단이다.
+
+    @Test func gaugeNormalBelowBest() {
+        // 시안 #14a: streak 9 / best 24 → frac 0.375, 눈금 오른쪽 끝, "15일 남음"
+        let g = RTStreakGauge(streak: 9, best: 24)
+        #expect(abs(g.frac - 0.375) < 0.0001)
+        #expect(g.tickFrac == 1.0)
+        #expect(!g.isNewRecord)
+        #expect(g.showsBest)
+        #expect(g.remainLabel == "15일 남음")
+    }
+
+    @Test func gaugeTieWithBest() {
+        let g = RTStreakGauge(streak: 24, best: 24)
+        #expect(g.frac == 1.0)
+        #expect(g.tickFrac == 1.0)
+        #expect(!g.isNewRecord)
+        #expect(g.remainLabel == "최고 타이")
+    }
+
+    @Test func gaugeNewRecordGoesGoldAndShowsPlusDays() {
+        // AC #14 — 골드 그라데이션(isNewRecord) + "+N일". 눈금은 역대 최고 지점으로 당겨진다.
+        let g = RTStreakGauge(streak: 30, best: 24)
+        #expect(g.isNewRecord)
+        #expect(g.frac == 1.0)                       // 넘쳐도 1 로 clamp
+        #expect(abs(g.tickFrac - 24.0 / 30.0) < 0.0001)
+        #expect(g.remainLabel == "+6일")
+        #expect(g.showsBest)
+    }
+
+    @Test func gaugeNoPastRunHidesBottomRow() {
+        // best == 0 → 빈 트랙만, 하단 행(역대 최고 / 남음) 숨김. 눈금도 숨긴다.
+        let g = RTStreakGauge(streak: 9, best: 0)
+        #expect(g.frac == 0)
+        #expect(!g.showsBest)
+        #expect(!g.isNewRecord)
+    }
+
+    @Test func gaugeDayOneNeverShowsZeroRemaining() {
+        // AC #13 — 기록 1일째(best 0)에서 하단 행이 숨겨지므로 "0일 남음" 이 뜰 수 없다.
+        let g = RTStreakGauge(streak: 1, best: 0)
+        #expect(!g.showsBest)
+    }
 }
