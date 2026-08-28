@@ -3,9 +3,14 @@
  *
  * 벽시계(Date.now() - startTime)는 탭 방치·스냅샷 복원 시 폭주한다
  * (예: 발화 0회인데 study_time_sec 7시간 — 2026-07-04 진단). 그래서
- * ① 페이지 가시(visible) ② 마지막 활동(입력·녹음·듣기) 후 IDLE_MS 이내
+ * ① 페이지 가시(visible) ② 마지막 활동 후 IDLE_MS 이내
  * 두 게이트를 모두 통과하는 경과만 센다. 스냅샷엔 activeSec 로 저장/복원 —
  * 복원 세션이 옛 startTime 을 승계해도 방치 구간은 0.
+ *
+ * '활동'은 document 의 pointerdown·keydown 뿐이다 (session-new.js·session-review.js 의 onActivity).
+ * 듣기·녹음은 **시작 클릭**이 pointerdown 으로 잡히는 것이지, 재생·녹음이 도는 동안 갱신되지 않는다 —
+ * 손 안 대고 듣기만 하는 구간은 IDLE_MS(5분)까지만 인정된다. (종전 주석이 '입력·녹음·듣기'라 적어
+ * 재생 중에도 갱신되는 것처럼 읽혔다 — 2026-08-29 정정.)
  */
 
 export const IDLE_MS = 5 * 60 * 1000; // 무활동 5분까지 유예(듣기 등 무입력 학습 보호), 초과분 미계상
