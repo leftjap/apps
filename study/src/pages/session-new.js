@@ -65,6 +65,18 @@ function getTodayISO() {
   return window.studyDay?.TODAY_ISO || localISODate();
 }
 
+/**
+ * 카드 이동 시 점수링에 되살릴 점수 — 그 카드의 마지막 '메인' 녹음 점수.
+ *
+ * 종전엔 recLog[id].best 를 썼다. 캡션이 '방금 점수' 인데 값은 최고라 어긋났고, best 는
+ * 드릴·체이닝 발화까지 섞인 최댓값이라 메인 카드의 '방금'을 대신할 수 없다.
+ * 없으면 null — 링 자체를 그리지 않는다 (결과가 없으면 결과 슬롯도 없다).
+ */
+export function restoreCardScore(exLog, cardId) {
+  const v = exLog?.[cardId]?.lastMain;
+  return Number.isFinite(v) ? v : null;
+}
+
 export function mountSessionNew(host) {
   const state = {
     size: pickSize(),
@@ -166,7 +178,7 @@ export function mountSessionNew(host) {
       state.step = r.step;
       state.sentence = r.sentence || EMPTY_SENTENCE;
       state.recording = false;
-      state.lastScore = state.recLog?.[state.sentence?.id]?.best ?? null; // 점수 안착 복원
+      state.lastScore = restoreCardScore(state.exLog, state.sentence?.id); // 점수 안착 복원
       rerender();
       saveSnapshot();
     },
@@ -178,7 +190,7 @@ export function mountSessionNew(host) {
       state.step = step;
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
       state.recording = false;
-      state.lastScore = state.recLog?.[state.sentence?.id]?.best ?? null; // 점수 안착 복원
+      state.lastScore = restoreCardScore(state.exLog, state.sentence?.id); // 점수 안착 복원
       rerender();
       saveSnapshot();
     },

@@ -447,6 +447,35 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
 
   /* 링이 없다가 생기면 버튼 줄이 밀린다 — 첫 녹음 직후 손가락이 다른 곳을 누른다.
    * 데스크톱은 min-height 로 자리를 예약해 두었고 모바일에도 같은 예약이 필요하다. */
+  /* 카드 이동 후 돌아왔을 때 링이 그 카드의 '최고' 점수를 보이던 문제 — 캡션은 '방금 점수' 인데
+   * 값이 최고라 어긋났다(session-new.js 가 recLog.best 로 복원). recLog.best 는 드릴·체이닝 발화까지
+   * 섞인 최댓값이라 메인 카드의 '방금'을 대신할 수 없다. 메인 녹음 점수만 exLog 에 따로 남긴다. */
+  it('메인 녹음 점수는 exLog[cardId].lastMain 에 남는다 (드릴은 건드리지 않는다)', async () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const state = makeStateWithDrills({ demo: true });
+      renderSessionExprV2(host, state, {});
+      host.querySelector('.vs-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      const first = state.exLog.e1.lastMain;
+      expect(first).toBeGreaterThan(0);
+      host.querySelector('.vs-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(state.exLog.e1.lastMain).not.toBe(first); // 최고가 아니라 '마지막'
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('드릴 녹음은 lastMain 을 만들지 않는다 (메인 점수가 아니다)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const recBtn = drillRecBtns(host)[0];
+    recBtn.click(); await tick();
+    recBtn.click(); await tick(); await tick();
+    expect(state.exLog.e1?.lastMain).toBeUndefined();
+  });
+
   it('모바일 컨트롤 줄도 링 자리를 미리 예약한다 (min-height)', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, makeStateWithDrills({ size: 'phone' }), {});

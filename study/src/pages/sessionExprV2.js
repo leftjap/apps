@@ -808,6 +808,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
     pushUtter(score);
+    /* 메인 녹음 점수만 따로 남긴다 — 카드 이동 후 돌아왔을 때 링에 되살릴 '방금 점수'다.
+     * recLog.best 는 최댓값인 데다 드릴·체이닝 발화까지 섞여 있어 이 자리를 대신할 수 없다. */
+    cardEx.lastMain = score;
     popScore(paintRing()); // 첫 점수면 링이 v-settle 로 등장, 이후엔 값만 갱신
     refreshDots(); refreshRecWidget();
   }
