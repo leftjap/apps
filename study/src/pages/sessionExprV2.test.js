@@ -1184,3 +1184,24 @@ describe('sessionExprV2 — 오발화 게이트 (응용 드릴)', () => {
     expect(showRecordToast).toHaveBeenCalledTimes(1);
   });
 });
+
+/* 녹음 중 듣기 (2026-08-29 사용자 요구) — 응용 드릴은 녹음 중에도 재생이 되는데 메인 카드만
+ * 막혀 있었다. 먼저 멈추기를 눌러야 하는 한 박자가 사라진다. 드릴과 같은 계약으로 맞춘다.
+ * ⚠ 재생음이 녹음에 섞이는 것은 브라우저 AEC(에코 제거)가 막는다 — 드릴이 2026-07-22 부터
+ *   같은 조건으로 돌아가고 있다. 이 세션에서 마이크로 실측하지는 못했다. */
+describe('sessionExprV2 — 녹음 중 듣기', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const listenBtn = (host) => [...host.querySelectorAll('.vs-pill')].find((b) => b.textContent.includes('듣기'));
+
+  it('녹음 중에도 듣기가 재생된다 (응용 드릴과 동일)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    const state = makeState();
+    state.recording = true;
+    renderSessionExprV2(host, state, {});
+    listenBtn(host).click();
+    expect(speak).toHaveBeenCalledTimes(1);
+    expect(speak.mock.calls[0][0]).toBe('Is that a promise?');
+  });
+});

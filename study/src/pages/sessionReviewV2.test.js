@@ -684,3 +684,31 @@ describe('sessionReviewV2 — 오발화 게이트', () => {
     expect(shown[0].textContent).toBe('22');
   });
 });
+
+/* 녹음 중 듣기 (2026-08-29) — 신규 카드와 같은 계약. 복습도 먼저 멈추기를 눌러야 했다. */
+describe('sessionReviewV2 — 녹음 중 듣기', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  /* 복습의 듣기는 정답 공개 전엔 잠겨 있다 (듣기가 곧 정답 유출) — 공개 뒤부터가 이 조항의 무대다. */
+  it('정답 공개 후에는 녹음 중에도 듣기가 재생된다', async () => {
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS };
+    const state = {
+      cards: [{ id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, explanation }],
+      total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0,
+      sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation },
+    };
+    renderSessionReviewV2(host, state, {});
+    host.querySelector('.vr-pill.pri').click(); await tick();          // 1회 녹음 → 시도 직후 정답 공개
+    host.querySelector('.vr-pill.recing').click(); await tick(); await tick();
+    const listen = host.querySelector('.vr-listen');
+    expect(listen.disabled).toBe(false);
+    state.recording = true;                                            // 두 번째 녹음이 도는 중
+    listen.click();
+    expect(speak).toHaveBeenCalledTimes(1);
+    expect(speak.mock.calls[0][0]).toBe(EN);
+  });
+});

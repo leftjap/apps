@@ -778,7 +778,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const stopPlaying = () => { playing = false; listenPill.classList.remove('playing'); listenPill.lastChild.textContent = '듣기'; };
   let mainPlays = 0;
   listenPill.addEventListener('click', () => {
-    if (state.recording) return;
+    /* 녹음 중에도 재생한다 (2026-08-29 사용자 요구) — 응용 드릴은 원래 안 막았고, 메인만
+     * 먼저 '멈추기'를 눌러야 했다. 재생음이 녹음에 섞이는 것은 브라우저 AEC 가 막는다
+     * (드릴이 2026-07-22 부터 같은 조건). 오발화 게이트로는 못 막는다 — 같은 문장의 TTS 가
+     * 섞이면 점수는 내려가는 게 아니라 올라가기 때문. */
     if (playing) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopPlaying(); return; }
     if (!s?.sentence || !window.studySpeech?.speak) return;
     playing = true; listenPill.classList.add('playing'); listenPill.lastChild.textContent = '재생 중';
