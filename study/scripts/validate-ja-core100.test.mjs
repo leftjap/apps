@@ -137,6 +137,15 @@ describe('katakana_gloss — 가타카나를 자꾸 잊는 학습자', () => {
     expect(validateJaCard(c).join(' ')).toContain('katakana_gloss 누락');
   });
 
+  it('히라가나 표기의 장음 ー 는 허용한다 (こーひー 는 정상)', () => {
+    const c = okCard();
+    c.sentence = 'コーヒー。'; c.reading = null;
+    c.explanation.chunks = [['コーヒー。', '코-히-']];
+    c.phonetic_kr = '코-히-';
+    c.explanation.katakana_gloss = [{ word: 'コーヒー', origin: 'coffee', hiragana: 'こーひー', kr: '코-히-' }];
+    expect(validateJaCard(c).filter((x) => x.includes('hiragana'))).toEqual([]);
+  });
+
   it('gloss 의 hiragana 칸에 가타카나가 있으면 차단', () => {
     const c = okCard();
     c.sentence = 'コーヒー。'; c.reading = null;

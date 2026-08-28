@@ -12,7 +12,9 @@ import { readFileSync } from 'node:fs';
 import { argv, exit } from 'node:process';
 
 const KANJI = /[一-鿿]/;
-const KATAKANA = /[ァ-ヺー]/;
+/* 장음 부호 ー(U+30FC)는 가타카나 블록에 있지만 히라가나 표기에도 정상적으로 쓴다(コーヒー→こーひー).
+ * '가타카나가 남았는지' 판정에서는 제외해야 오탐이 안 난다. */
+const KATAKANA_LETTER = /[ァ-ヺ]/;
 /** 커리큘럼 §7-1 학습 한자 26자 — 2회 이상 등장분. 이 글자가 있으면 kanji_breakdown 의무. */
 export const STUDY_KANJI = new Set('願行何少食一日言帰大丈夫好本語電写真撮予約名上持待来'.split(''));
 const REQUIRED_EXPL = ['key', 'whenToUse', 'grammar', 'chunks', 'drills', 'kanji_breakdown', 'katakana_gloss', 'mistake', 'similar', 'politeness', 'category', 'frequency'];
@@ -94,7 +96,7 @@ export function validateJaCard(c) {
     for (const f of ['word', 'origin', 'hiragana', 'kr']) {
       if (!g?.[f]) e.push(`${id}: katakana_gloss[${i}].${f} 누락`);
     }
-    if (g?.hiragana && KATAKANA.test(String(g.hiragana))) e.push(`${id}: katakana_gloss[${i}].hiragana 가 가타카나다`);
+    if (g?.hiragana && KATAKANA_LETTER.test(String(g.hiragana))) e.push(`${id}: katakana_gloss[${i}].hiragana 가 가타카나다 (장음 ー 는 허용)`);
   });
 
   // grammar — korean_parallel 의무 (일본어는 어순이 한국어와 같아 초보에게 가장 강한 설명)
