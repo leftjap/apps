@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { judgeCoverage, judgeProduction } from './coverageJudge.js';
+import { judgeCoverage, judgeProduction, judgeMisread } from './coverageJudge.js';
 
 describe('judgeCoverage — 전사 vs 기대문 커버리지 (체이닝 통과 판정, 엔진 무관)', () => {
   it('완전 일치 → pass, missing 없음, coverage 1', () => {
@@ -117,5 +117,70 @@ describe('judgeProduction — 커버리지 + 문장 정확도 + 단어 하한', 
     const r = judgeProduction({ score: 40, recognizedText: EXP }, EXP);
     expect(r.pass).toBe(false);
     expect(r.accuracy).toBe(40);
+  });
+});
+
+/* judgeMisread (2026-08-29) — '이 문장을 말한 게 아니다' 판정. 사용자 보고: "다른 문장을 말했는데도
+ * 50점대". 아래 수치는 전부 라이브 Azure 실측(2026-08-29, enableMiscue:true, 합성음성 22케이스)
+ * + 지오 실기록 391건에서 뽑은 실제 값이다 — 임의 임계값이 아니다.
+ *   · 커버리지 단독은 못 쓴다: 정상 발화 0.800(Azure 가 Im→In 오인) vs 다른 문장 0.625 로 겹친다.
+ *   · 일본어는 공백 분절이 없어 정답 발화도 커버리지 0 이다.
+ *   · 정확도 단독도 못 쓴다: 지오 실기록 391건 중 44건이 50점 미만인데 전사는 정상이었다.
+ * → 두 신호가 **모두** 바닥일 때만 버린다. */
+describe('judgeMisread — 두 신호가 모두 바닥일 때만 오발화', () => {
+  const EXP12 = 'I know what I mean but I cant put it into words';
+
+  it('정답 발화(전사 일치·96점) → 오발화 아님', () => {
+    const r = judgeMisread({ score: 96, recognizedText: 'I know what I mean but I cant put it into words.' }, EXP12);
+    expect(r.misread).toBe(false);
+  });
+
+  it('단어는 다 말했고 발음만 나쁨(21점) → 오발화 아님 (실기록 <50점 44건을 지키는 조항)', () => {
+    const r = judgeMisread({ score: 21, recognizedText: 'I know what I mean but I cant put it into words.' }, EXP12);
+    expect(r.misread).toBe(false);
+    expect(r.coverage).toBe(1);
+  });
+
+  it("Azure 가 Im 을 In 으로 오인한 정답 발화(커버리지 0.80·86점) → 오발화 아님", () => {
+    const r = judgeMisread(
+      { score: 86, recognizedText: 'In not sure how to explain it in English.' },
+      'Im not sure how to explain it in English',
+    );
+    expect(r.misread).toBe(false);
+  });
+
+  it('앞부분만 말하고 끊김(커버리지 0.67·65점) → 오발화 아님 (정확도가 살아 있다)', () => {
+    const r = judgeMisread({ score: 65, recognizedText: 'I know what I mean but I cant.' }, EXP12);
+    expect(r.misread).toBe(false);
+  });
+
+  it('다음 문장을 말함(커버리지 0.50·22점) → 오발화', () => {
+    const r = judgeMisread({ score: 22, recognizedText: 'It mean I it I I put.' }, EXP12);
+    expect(r.misread).toBe(true);
+  });
+
+  it('아무 발음(커버리지 0.14·2점) → 오발화', () => {
+    const r = judgeMisread({ score: 2, recognizedText: 'What?' }, 'What do you mean by that exactly');
+    expect(r.misread).toBe(true);
+  });
+
+  it('일본어 정답 발화 — 공백 분절이 없어 커버리지 0 이어도 정확도 98 이면 오발화 아님', () => {
+    const r = judgeMisread({ score: 98, recognizedText: 'そうなんだ。' }, 'そうなんだ');
+    expect(r.coverage).toBe(0);
+    expect(r.misread).toBe(false);
+  });
+
+  it('일본어 다른 문장(커버리지 0·11점) → 오발화', () => {
+    const r = judgeMisread({ score: 11, recognizedText: 'だ。そう。' }, 'そうなんだ');
+    expect(r.misread).toBe(true);
+  });
+
+  it('전사가 비어 있어도 점수가 살아 있으면 버리지 않는다 (판정 근거 부족)', () => {
+    const r = judgeMisread({ score: 92 }, EXP12);
+    expect(r.misread).toBe(false);
+  });
+
+  it('mock 폴백은 판정 대상이 아니다 — 호출부가 먼저 거르므로 오발화 아님으로 통과', () => {
+    expect(judgeMisread({ mockFallback: true, score: 60 }, EXP12).misread).toBe(false);
   });
 });

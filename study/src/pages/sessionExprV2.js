@@ -15,10 +15,13 @@ import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
-import { judgeCoverage, judgeProduction } from '../services/coverageJudge.js';
+import { judgeCoverage, judgeProduction, judgeMisread } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
+/* 오발화 안내 (2026-08-29) — 점수를 기록하지 않고 되돌릴 때만 쓴다. '다른 문장을 말했다'로 단정하지
+ * 않는다: 웅얼거려 전사가 무너진 경우도 같은 자리에 들어오기 때문 (coverageJudge 주석 참조). */
+export const MISREAD_MSG = '잘 안 들렸어요 — 다시 말해 보세요';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // 점수·통과 배지 등장 애니 재트리거 (전역 .score-pop = scorePop 키프레임, src/styles/session.css).
@@ -353,8 +356,10 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved } = {}) {
       if (!(recCtrl && recRow === row)) return;
       const ctrl = recCtrl; recCtrl = null; recRow = null;
       row.classList.remove('recing'); recBtn.classList.remove('recing');
-      const result = await stopAndAnalyze(ctrl, target, { lang });
+      const result = await stopAndAnalyze(ctrl, target, { lang }, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      // 오발화(다른 문장·아무 발음)는 점수로도 발화로도 세지 않는다 — 메인 카드와 같은 계약.
+      if (judgeMisread(result, target).misread) { showRecordToast(MISREAD_MSG); return; }
       pushScore(result?.score ?? 0);
       onScore?.(i, result);
     }
@@ -874,9 +879,13 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   async function finishRecording() {
     if (!state.recording || !recCtrl) return;
     const ctrlR = recCtrl; recCtrl = null;
-    const result = await stopAndAnalyze(ctrlR, s.sentence, s);
+    /* enableMiscue:true 필수 — false 면 Azure 가 전사에 레퍼런스를 그대로 에코해(라이브 실측
+     * 2026-08-29: 다른 문장을 말해도 전사=레퍼런스·49점) 오발화를 가려낼 근거가 사라진다.
+     * 같은 오디오가 true 에서는 전사 "What?"·2점으로 정직해진다. 정답 발화 점수는 불변(96↔95). */
+    const result = await stopAndAnalyze(ctrlR, s.sentence, s, { enableMiscue: true });
     state.recording = false;
     if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+    if (judgeMisread(result, s.sentence).misread) { setRecVisual(false); showRecordToast(MISREAD_MSG); return; }
     applyScore(Number(result?.score) || 0, result?.weakPhonemes);
     setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
     try {

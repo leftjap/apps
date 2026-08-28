@@ -14,6 +14,7 @@ vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(
 import { renderSessionExprV2, hlNode, drillRows } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
+import { showRecordToast } from '../components/session/recordToast.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -1105,5 +1106,81 @@ describe('drillRows — 일본어 드릴', () => {
     const rows = drillRows([{ en: 'Take it easy.', ko: '무리하지 마', kr: '테이킷 이지' }], '', 'en', () => {}, false, {});
     expect(rows[0].querySelector('.en').textContent).toContain('Take it easy.');
     expect(rows[0].querySelector('.sub').textContent).toContain('무리하지 마');
+  });
+});
+
+/* 오발화 게이트 (2026-08-29 사용자 보고: "그 문장을 말하지 않고 아무 발음이나 하거나 다음 문장을
+ * 말했는데도 50점대"). 뿌리는 enableMiscue:false 일 때 Azure 가 전사를 레퍼런스로 그대로 에코하는 것 —
+ * 전사 비교 자체가 불가능했다. 라이브 Azure 실측(2026-08-29, 같은 오디오·같은 레퍼런스):
+ *   miscue:false → 전사 "What do you mean by that exactly?"(레퍼런스 에코) · 49점
+ *   miscue:true  → 전사 "What?"(정직) · 2점
+ * 메인 카드(신규)·복습·응용 드릴 세 경로가 miscue:false 였다 (체이닝·생산 연습은 이미 true). */
+describe('sessionExprV2 — 오발화 게이트 (메인 카드)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  async function recOnce(host) {
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+  }
+
+  it('메인 녹음은 enableMiscue:true 로 채점을 요청한다 (레퍼런스 에코 차단)', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    await recOnce(host);
+    expect(stopAndAnalyze.mock.calls[0][3]).toEqual({ enableMiscue: true });
+  });
+
+  it('다른 문장을 말하면 점수·발화가 기록되지 않고 안내가 뜬다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 22, recognizedText: 'It mean I it I I put.', weakPhonemes: [] });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    renderSessionExprV2(host, state, {});
+    await recOnce(host);
+    expect(state.tried).toBe(0);
+    expect(state.lastScore).toBe(null);
+    expect(state.pronScores).toEqual([]);
+    expect(state.recLog.e1).toBeUndefined();
+    expect(savePronunciationLog).not.toHaveBeenCalled();
+    expect(host.querySelector('.vs-ring')).toBeNull();          // 점수 링 없음
+    expect(host.querySelector('.vs-pill.recing')).toBeNull();   // 녹음 표시 해제
+    expect(showRecordToast).toHaveBeenCalledTimes(1);
+  });
+
+  it('단어는 다 말했고 발음만 나쁜 21점은 그대로 기록된다 (실기록 <50점 44건 보호)', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 21, recognizedText: 'Is that a promise?', weakPhonemes: [] });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    renderSessionExprV2(host, state, {});
+    await recOnce(host);
+    expect(state.tried).toBe(1);
+    expect(state.lastScore).toBe(21);
+    expect(savePronunciationLog).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('sessionExprV2 — 오발화 게이트 (응용 드릴)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const drillRecBtn = (host, i = 0) => [...host.querySelectorAll('.vs-drills-list .vs-drow')][i].querySelector('button[aria-label="녹음"]');
+
+  it('드릴 녹음도 enableMiscue:true 로 채점을 요청한다', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    const b = drillRecBtn(host);
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(stopAndAnalyze.mock.calls[0][3]).toEqual({ enableMiscue: true });
+  });
+
+  it('드릴에서 다른 문장을 말하면 행 점수 원도 세션 집계도 붙지 않는다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 14, recognizedText: 'But I but I.', weakPhonemes: [] });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const b = drillRecBtn(host);
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(state.tried).toBe(0);
+    expect(state.pronScores).toEqual([]);
+    expect(b.closest('.vs-drow').querySelector('.vs-gscore').style.display).toBe('none');
+    expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('0');
+    expect(showRecordToast).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // 체이닝 실경로(비-demo) 검증용 — 데모 경로 테스트들은 services 를 타지 않으므로 영향 없음.
 vi.mock('../services/sessionAnalyze.js', () => ({
@@ -10,6 +10,8 @@ vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(
 
 import { localISODate } from '../utils/today.js';
 import { renderSessionReviewV2, isRecallMode, recallHint } from './sessionReviewV2.js';
+import { stopAndAnalyze } from '../services/sessionAnalyze.js';
+import { showRecordToast } from '../components/session/recordToast.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -642,5 +644,43 @@ describe('recallHint — 언어별 안내문', () => {
   it('일본어는 글자 수로 알리고, 구두점은 세지 않는다', () => {
     expect(recallHint('ja', 'そうなんだ。')).toBe('일본어로 떠올려 말해 보세요 · 5글자');
     expect(recallHint('ja', 'そうなの？')).toBe('일본어로 떠올려 말해 보세요 · 4글자');
+  });
+});
+
+/* 오발화 게이트 (2026-08-29) — 복습 카드도 신규 카드와 같은 계약.
+ * 복습은 문장을 숨기므로(회상) 다른 문장을 말하기가 오히려 더 쉽다. 근거·임계값은
+ * services/coverageJudge.js judgeMisread 주석 (라이브 Azure 실측 2026-08-29). */
+describe('sessionReviewV2 — 오발화 게이트', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  async function recOnce(host) {
+    host.querySelector('.vr-pill.pri').click(); await tick();
+    host.querySelector('.vr-pill.recing').click(); await tick(); await tick();
+  }
+
+  it('복습 녹음도 enableMiscue:true 로 채점을 요청한다 (레퍼런스 에코 차단)', async () => {
+    const host = mountCard({ interval: 3 });
+    await recOnce(host);
+    expect(stopAndAnalyze.mock.calls[0][3]).toEqual({ enableMiscue: true });
+  });
+
+  it('다른 문장을 말하면 점수 원도 시도 수도 붙지 않고 안내가 뜬다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 18, recognizedText: 'It to it it.' });
+    const state = {};
+    const host = mountCard({ interval: 3, state });
+    await recOnce(host);
+    const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+    expect(shown).toHaveLength(0);
+    expect(host.querySelector('.vr-ring')).toBeNull();
+    expect(showRecordToast).toHaveBeenCalledTimes(1);
+  });
+
+  it('단어는 다 말했고 발음만 나쁜 22점은 그대로 기록된다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 22, recognizedText: EN });
+    const host = mountCard({ interval: 3 });
+    await recOnce(host);
+    const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+    expect(shown).toHaveLength(1);
+    expect(shown[0].textContent).toBe('22');
   });
 });

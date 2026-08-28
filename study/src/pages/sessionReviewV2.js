@@ -22,9 +22,10 @@ import { createJudgeRow } from '../components/session/atoms.js';
 import { filterNearDupDrills } from '../components/session/applied.js';
 import { localISODate } from '../utils/today.js';
 import { nextSrsState } from '../services/srs.js';
+import { judgeMisread } from '../services/coverageJudge.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, MISREAD_MSG } from './sessionExprV2.js';
 import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
@@ -575,9 +576,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   async function finishRecording() {
     if (!state.recording || !recCtrl) return;
     const ctrlR = recCtrl; recCtrl = null;
-    const result = await stopAndAnalyze(ctrlR, s.sentence, s);
+    /* enableMiscue:true + 오발화 게이트 — 신규 카드와 같은 계약 (2026-08-29).
+     * 복습은 문장을 숨기므로 다른 문장을 말하기가 오히려 쉽다. 근거는 coverageJudge.judgeMisread 주석. */
+    const result = await stopAndAnalyze(ctrlR, s.sentence, s, { enableMiscue: true });
     state.recording = false;
     if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+    if (judgeMisread(result, s.sentence).misread) { setRecVisual(false); showRecordToast(MISREAD_MSG); return; }
     applyScore(Number(result?.score) || 0);
     setRecVisual(false);
     try {

@@ -81,3 +81,21 @@ export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 
   const pass = coverage.pass && accuracy >= minAccuracy && badWords.length === 0;
   return { pass, missing: coverage.missing, badWords, accuracy };
 }
+
+/* 오발화 판정 (2026-08-29) — "이 문장을 말한 게 아니다" 가 명백할 때만 참.
+ * 사용자 보고: 다른 문장을 말하거나 아무 발음이나 해도 50점대가 기록된다.
+ * 뿌리는 Azure 가 enableMiscue:false 에서 전사를 레퍼런스로 에코하는 것(호출부에서 true 로 교정)이고,
+ * 이 함수는 그 위에 얹는 마지막 안전망이다.
+ *
+ * 왜 두 신호를 AND 로 묶나 — 라이브 Azure 실측(2026-08-29, enableMiscue:true) + 지오 실기록 391건:
+ *   · 커버리지 단독 불가 — 정상 발화 0.800(Azure 가 Im→In 오인) vs 다른 문장 0.625 로 겹친다.
+ *     일본어는 공백 분절이 없어 정답 발화도 0 이다.
+ *   · 정확도 단독 불가 — 실기록 391건 중 44건(11%)이 50점 미만인데 전사는 멀쩡했다. 버리면 안 된다.
+ *   · 두 신호 동시 바닥은 실측에서 '다른 문장·아무 발음'에만 나타났다
+ *     (정상·부분 발화 정확도 최저 65 / 다른 문장 최고 27).
+ * 임계값은 그 간극의 가운데다 — 커버리지가 살아 있으면 발음이 아무리 나빠도 점수는 기록된다. */
+export function judgeMisread(result, expected, { minAccuracy = 40, minCoverage = 0.7 } = {}) {
+  const accuracy = Math.round(Number(result?.score) || 0);
+  const { coverage } = judgeCoverage(result?.recognizedText, expected);
+  return { misread: accuracy < minAccuracy && coverage < minCoverage, coverage, accuracy };
+}
