@@ -34,12 +34,30 @@ function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
  * 구 rung 1/2/3(수용→클로즈→생산)은 폐기: interval≥21 이라야 닿는 3단계가 사실상 안 쓰였고,
  * 1단계는 영어를 띄운 채 "떠올려 보세요"라 낭독이었으며, 그 낭독 발음 점수가 SRS 를 정했다.
  * 힌트는 두지 않는다 — 미리 주는 단서는 인출을 쉽게 만들어 이득의 근거가 없다.
- * 실패는 그대로 두고 시도 직후 정답을 공개한다(피드백). ja 는 현행 유지(문장 노출). */
-export function isRecallMode(lang) {
-  return lang === 'en';
+ * 실패는 그대로 두고 시도 직후 정답을 공개한다(피드백).
+ *
+ * ja 2단계 (2026-08-28): 학습자가 히라가나만 읽고 한자를 거의 못 읽는다(코어100 커리큘럼 §1·§7-1).
+ * 처음부터 일본어를 숨기면 회상이 아니라 문자 장벽에 막힌 좌절이 된다 → interval < JA_RECALL_MIN 은
+ * 문장·가나·음차를 띄워 따라 읽게 하고, 익은 뒤에만 숨겨 한글→일본어 회상으로 올린다.
+ * interval 미정(신규 직후)도 노출 쪽으로 보수적으로 둔다. */
+export const JA_RECALL_MIN = 3;
+export function isRecallMode(lang, interval) {
+  if (lang === 'en') return true;
+  if (lang === 'ja') return Number(interval) >= JA_RECALL_MIN;
+  return false;
 }
 
 const wordCountOf = (s) => String(s ?? '').trim().split(/\s+/).filter(Boolean).length;
+
+/* 회상 안내문 — 언어별. ja 는 띄어쓰기가 없어 '단어 수'가 무의미하므로 글자 수로 알린다. */
+export function recallHint(lang, sentence) {
+  const txt = String(sentence ?? '');
+  if (lang === 'ja') {
+    const n = txt.replace(/[、。！？\s]/g, '').length;
+    return `일본어로 떠올려 말해 보세요 · ${n}글자`;
+  }
+  return `영어로 떠올려 말해 보세요 · ${wordCountOf(txt)}단어`;
+}
 
 const VR_CSS = `
 .vr{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
@@ -337,13 +355,13 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 회상 모드(en) — 답을 숨겼다가 시도 후(또는 해설 펼침 시) 공개.
   // micBlocked 로 자동 공개하지 말 것: 데모 모드가 그 플래그를 세우고(session-review.js:206),
   // 마이크 없는 기기에서 정답이 그냥 노출된다. 해설 펼침이 공개 경로라 막다른 길이 아니다.
-  const recallMode = isRecallMode(lang);
+  const recallMode = isRecallMode(lang, card?.interval);
   let revealed = !recallMode;
   // 핵심 표현 밑줄은 영어가 드러난 뒤에만 (§4.4). 한글 발음(pron)도 정답을 품으므로 공개 후에만 붙인다.
   const h1El = h('h1', { class: 'vr-h1' });
   const paintH1 = () => h1El.replaceChildren(revealed ? hlNode(s.sentence || '', expr) : document.createTextNode(s.ko || ''));
   const koEl = h('div', { class: 'vr-ko' },
-    revealed ? (s.ko || '') : `영어로 떠올려 말해 보세요 · ${wordCountOf(s.sentence)}단어`);
+    revealed ? (s.ko || '') : recallHint(lang, s.sentence));
   const pronEl = h('div', { class: 'vr-pron', style: revealed ? '' : 'display:none;' }, s?.pron || '');
   function reveal() {
     if (revealed) return;

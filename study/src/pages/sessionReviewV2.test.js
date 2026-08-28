@@ -9,7 +9,7 @@ vi.mock('../services/sessionAnalyze.js', () => ({
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
 import { localISODate } from '../utils/today.js';
-import { renderSessionReviewV2, isRecallMode } from './sessionReviewV2.js';
+import { renderSessionReviewV2, isRecallMode, recallHint } from './sessionReviewV2.js';
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -57,12 +57,28 @@ function mountCard({ interval, lang = 'en', sentence = EN, ko = KO, chunks = CHU
  *       (c) 그 낭독 발음 점수가 SRS 간격을 정하고 있었다.
  * 힌트는 두지 않는다 — 미리 주는 단서는 인출을 쉽게 만들어 이득의 근거가 없다
  * (Pyc & Rawson 2009 / Smith et al. 2016). 실패는 그대로 두고 정답을 공개한다 (Kornell et al. 2009). */
-describe('isRecallMode — 영어는 항상 한글→영어 회상, 일본어는 현행 유지', () => {
+describe('isRecallMode — 영어는 항상 회상, 일본어는 익은 뒤부터 회상', () => {
   it('영어는 회상 모드 (interval 무관)', () => {
     expect(isRecallMode('en')).toBe(true);
+    expect(isRecallMode('en', 1)).toBe(true);
   });
-  it('일본어·미정은 회상 모드 아님 (문장을 그대로 보여줌)', () => {
+  /* ja 2단계 (2026-08-28): 학습자가 히라가나만 읽고 한자를 거의 못 읽어, 처음부터 문장을 숨기면
+   * 문자 장벽 때문에 회상이 아니라 좌절이 된다. interval < 3 (첫 두 번)은 일본어·가나·음차를
+   * 띄워 따라 읽게 하고, 익은 뒤에만 숨겨 한글→일본어 회상으로 올린다. */
+  it('일본어는 interval < 3 이면 문장 노출 (따라 읽기)', () => {
+    expect(isRecallMode('ja', 0)).toBe(false);
+    expect(isRecallMode('ja', 1)).toBe(false);
+    expect(isRecallMode('ja', 2)).toBe(false);
+  });
+  it('일본어도 interval >= 3 이면 회상 모드', () => {
+    expect(isRecallMode('ja', 3)).toBe(true);
+    expect(isRecallMode('ja', 21)).toBe(true);
+  });
+  it('일본어 interval 미정은 노출 (신규 직후 보호)', () => {
     expect(isRecallMode('ja')).toBe(false);
+    expect(isRecallMode('ja', null)).toBe(false);
+  });
+  it('언어 미정은 회상 모드 아님', () => {
     expect(isRecallMode(undefined)).toBe(false);
     expect(isRecallMode(null)).toBe(false);
   });
@@ -78,10 +94,19 @@ describe('renderSessionReviewV2 — 회상 프롬프트 (한글만, 영어 숨�
     }
   });
 
-  it('일본어는 문장을 그대로 표시 (일본어 경로 불변 — 회귀 방지)', () => {
-    const host = mountCard({ interval: 60, lang: 'ja', sentence: 'ありがとうございます。', ko: '감사합니다.', chunks: [['ありがとう', '아리가또'], ['ございます', '고자이마스']] });
+  /* ja 2단계 (2026-08-28 사용자 지시로 '항상 노출' 폐기) — 문자 장벽 때문에 초반은 노출,
+   * 익은 뒤(interval >= JA_RECALL_MIN)에만 숨겨 한글→일본어 회상으로 올린다. */
+  it('일본어도 익기 전(interval < 3)에는 문장을 그대로 표시', () => {
+    const host = mountCard({ interval: 1, lang: 'ja', sentence: 'ありがとうございます。', ko: '감사합니다.', chunks: [['ありがとう', '아리가또'], ['ございます', '고자이마스']] });
     expect(host.querySelector('.vr-h1').textContent).toBe('ありがとうございます。');
     expect(host.querySelector('.vr-listen').disabled).toBe(false); // 숨김이 없으니 듣기도 즉시 가능
+  });
+
+  it('일본어는 익은 뒤(interval >= 3)에는 한글만 보여주고 일본어를 숨긴다', () => {
+    const host = mountCard({ interval: 60, lang: 'ja', sentence: 'ありがとうございます。', ko: '감사합니다.', chunks: [['ありがとう', '아리가또'], ['ございます', '고자이마스']] });
+    expect(host.querySelector('.vr-h1').textContent).toBe('감사합니다.');
+    expect(host.querySelector('.vr-ko').textContent).toContain('일본어로 떠올려 말해 보세요');
+    expect(host.querySelector('.vr-listen').disabled).toBe(true); // 정답 오디오는 공개 후에만
   });
 
   it('공개 전에는 듣기 버튼이 잠긴다 (정답 오디오 유출 방지)', () => {
@@ -605,5 +630,17 @@ describe('sessionReviewV2 — 오늘 시도 점수 원 지속', () => {
       expect(again).toHaveLength(1);
       expect(again[0].textContent).toBe(shown[0].textContent);
     } finally { vi.useRealTimers(); }
+  });
+});
+
+
+/* 회상 안내문 — ja 는 띄어쓰기가 없어 단어 수가 무의미하다 (2026-08-28). */
+describe('recallHint — 언어별 안내문', () => {
+  it('영어는 단어 수로 알린다', () => {
+    expect(recallHint('en', 'What do you mean?')).toBe('영어로 떠올려 말해 보세요 · 4단어');
+  });
+  it('일본어는 글자 수로 알리고, 구두점은 세지 않는다', () => {
+    expect(recallHint('ja', 'そうなんだ。')).toBe('일본어로 떠올려 말해 보세요 · 5글자');
+    expect(recallHint('ja', 'そうなの？')).toBe('일본어로 떠올려 말해 보세요 · 4글자');
   });
 });
