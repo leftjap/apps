@@ -8,18 +8,19 @@ import SwiftUI
 public struct Screen02Home: View {
     struct Live {
         let title: String
-        let author: String
+        let author: String         // 유지 — RTRemoteCover 폴백 렌더용. 화면엔 그리지 않는다.
         let coverUrl: String
         let totalHM: String        // "4:12"
-        let count: Int             // 8 (함께 읽은 세션 수)
         let days: Int              // 18 (함께한 일수)
-        let todayMin: Int          // 32
-        let weekHM: String         // "7:26"
-        let streak: Int            // 12
-        let chain: [Bool]          // 최근 13일 달성
+        let todayMin: Int          // 46
+        let weekHM: String         // "2:24"
+        let streak: Int            // 9
+        let bestStreak: Int        // 24 — 0 이면 과거 완료 구간 없음 → 게이지 하단 행 숨김
+        let bestStreakMonth: String// "3월" / 해가 다르면 "2025.11"
+        let cal14: [HomeCalCell]   // 정확히 14개 (월→일 × 2주)
         let lastBook: String?      // "몰입"
-        let lastMin: Int?          // 26
-        let lastWhen: String?      // "오늘 22:14"
+        let lastMin: Int?          // 22
+        let lastWhen: String?      // "오늘 21:47"
     }
 
     // 파트너 행 (함께 읽기) — 도킹 카드 최하단. nil 이면 행 숨김(README AC #6).
@@ -38,8 +39,6 @@ public struct Screen02Home: View {
     private let avatar: CGImage?   // init 스냅샷 (사진 선택 즉시 반영용 — live 와 같은 이유)
     private let partner: Partner?
     @State private var menuOpen: Bool
-
-    static let chainDays = 13
 
     public init(model: RTAppModel? = nil, menuOpen: Bool = false) {
         self.model = model
@@ -64,12 +63,13 @@ public struct Screen02Home: View {
                 coverUrl: book?.coverUrl ?? card.coverUrl,
                 totalHM: book.map { RTAppModel.hmString(m.totalSeconds(isbn: $0.isbn)) }
                     ?? RTAppModel.hmString(m.countedEbookTotalSeconds),
-                count: book.map { m.sessionCount(isbn: $0.isbn) } ?? m.countedEbookDayCount,
                 days: book.map(m.daysSinceAdded) ?? 1,
                 todayMin: m.todaySeconds / 60,
                 weekHM: RTAppModel.hmString(m.weekSeconds),
                 streak: m.streakDays,
-                chain: m.streakChain(Self.chainDays),
+                bestStreak: m.bestStreak.days,
+                bestStreakMonth: m.bestStreak.monthLabel,
+                cal14: m.calendarWindow14,
                 lastBook: ebookIsLatest ? ebookLast?.key : (paperLastTitle ?? card.title),
                 lastMin: ebookIsLatest ? (ebookLastMinutes ?? 0) : paperLast.map { $0.seconds / 60 },
                 lastWhen: ebookIsLatest
@@ -122,25 +122,32 @@ public struct Screen02Home: View {
     }
 
     // ── 2. 따뜻한 독서등 빛 웅덩이 (책 뒤 중앙) ──
+    // 표지가 29% 작아지고 카드가 커지며 책이 위로 올라갔다 → 조명도 따라 올린다.
+    // 시안 #14a 실측: 420×420, 중심 (195, 244) — 종전 520×520 @ (195,300).
     var lightPool: some View {
         RadialGradient(gradient: Gradient(stops: [
-            .init(color: Color(hex: 0xFFE4B4, alpha: 0.85), location: 0),
+            .init(color: Color(hex: 0xFFE4B4, alpha: 0.88), location: 0),
             .init(color: Color(hex: 0xFFE4B4, alpha: 0.30), location: 0.34),
             .init(color: Color(hex: 0xFFE4B4, alpha: 0), location: 0.62)]),
-            center: .center, startRadius: 0, endRadius: 260)
-            .frame(width: 520, height: 520)
-            .position(x: 195, y: 300)
+            center: .center, startRadius: 0, endRadius: 210)
+            .frame(width: 420, height: 420)
+            .position(x: 195, y: 244)
     }
 
     // ── 5. 가장자리 비네트 (저녁 딤) ──
+    // 시안 #14a: radial-gradient(115% 78% at 50% 32%, …) → 타원 반지름 rx 448.5 · ry 658.32,
+    // 중심 (195, 270.08). CSS 는 축별 비율이 다르므로 EllipticalGradient 를 2rx×2ry 프레임에 그려
+    // (endRadiusFraction .5 = 프레임 반지름) 중심을 배치한다. 화면 네 모서리는 전부 타원 안쪽(≤0.974).
     var vignette: some View {
-        RadialGradient(gradient: Gradient(stops: [
+        EllipticalGradient(gradient: Gradient(stops: [
             .init(color: .clear, location: 0.40),
             .init(color: Color(hex: 0x3A2A16, alpha: 0.09), location: 0.74),
             .init(color: Color(hex: 0x2E2010, alpha: 0.20), location: 1)]),
-            center: UnitPoint(x: 0.5, y: 0.38), startRadius: 0, endRadius: 470)
-            .scaleEffect(x: 1.15, y: 1, anchor: UnitPoint(x: 0.5, y: 0.38))
+            center: .center, startRadiusFraction: 0, endRadiusFraction: 0.5)
+            .frame(width: 897, height: 1316.64)
+            .position(x: 195, y: 270.08)
             .frame(width: 390, height: 844)
+            .clipped()
             .allowsHitTesting(false)
     }
 
@@ -191,64 +198,25 @@ public struct Screen02Home: View {
 
     var demoStage: some View {
         VStack(spacing: 0) {
-            // 라이브 칩
-            HStack(spacing: 7) {
-                Circle().fill(RT.green).frame(width: 6, height: 6).rtBlink(duration: 2.2)
-                Text(chipText).font(.sans(11, 700)).tracking(11 * 0.02).foregroundColor(RT.green)
+            RTHomeHeroBody(title: live?.title ?? "몰입",
+                           badgeText: badgeText,
+                           amber: false) {
+                bookView
+            } trailing: {
+                RTHomeAccum(text: live?.totalHM ?? "4:12")
             }
-            .padding(EdgeInsets(top: 5, leading: 12, bottom: 5, trailing: 12))
-            .background(Capsule().fill(RT.greenTint))
-            .rtRiseIn(dy: 10, duration: 0.5, delay: 0.04)
-            // 3D 책 + 접지 그림자 (부유·sway 는 RTBook3D 내부, 진입 드롭인은 여기)
-            VStack(spacing: 0) {
-                bookView.rtBookDropIn().padding(.top, 24)
-                floorShadow.padding(.top, 2)
-            }
-            // 제목 / 저자 / 누적
-            VStack(spacing: 0) {
-                Text(live?.title ?? "몰입").font(.sans(23, 900)).tracking(23 * -0.03)
-                    .foregroundColor(RT.ink).lineLimit(1).minimumScaleFactor(0.6)
-                Text(live?.author ?? "미하이 칙센트미하이").font(.sans(12.5, 500))
-                    .foregroundColor(RT.muted).padding(.top, 3).lineLimit(1).minimumScaleFactor(0.8)
-                HStack(spacing: 8) {
-                    Text(live?.totalHM ?? "4:12").font(.mono(14, 700)).foregroundColor(RT.ink)
-                    Circle().fill(RT.ghost).frame(width: 3, height: 3)
-                    Text("\(live?.count ?? 8)회 함께 읽음").font(.sans(11.5, 500)).foregroundColor(RT.faint)
-                }
-                .padding(.top, 9)
-            }
-            .padding(.top, 16)
-            .rtRiseIn(delay: 0.18)
+            // 데모/스크린샷은 "여러 권을 병행해 읽는 사용자의 홈"이 정본 — 점이 없으면 히어로가
+            // 캐러셀이라는 사실을 알 수 없다(작업지시서 v3 §3.4). 시안 #14a = 3개, 활성 index 0.
+            RTHomeDots(count: 3, active: 0)
+                .padding(.top, 18).padding(.bottom, 16)
         }
         .padding(.horizontal, 26)   // 시안 스테이지 padding: 0 26px (누락돼 긴 제목이 화면 끝까지 닿았음)
     }
 
-    // 접지 그림자 — RTBook3D 와 동일 부유 위상(sin(.7t)·3.5)으로 동기. support.js 실측 수치 그대로:
-    // 책이 가라앉을수록(floatY>0) 옅고 좁게 / 뜰수록(floatY<0) 진하고 넓게 — README 프로즈 요약
-    // ("위로 뜰수록 옅고 좁게")과 방향이 반대이나, §Fidelity 원칙(HTML 인라인 수치가 원본)에 따라
-    // 실제 참조 코드(support.js sc=1-floatY·.01, opacity=.5-floatY·.008)를 정본으로 채택.
-    var floorShadow: some View {
-        RTMotionFrame {
-            floorShadowShape(scaleX: 1, alpha: 0.5)
-        } anim: { t in
-            let floatY = Double(rtBookFloatY(t))   // RTBook3D 부유와 동일 단일 소스
-            return floorShadowShape(scaleX: 1 - floatY * 0.01, alpha: 0.5 - floatY * 0.008)
-        }
-    }
-    // alpha 는 그라디언트에 직접 bake — .opacity() 배수(>1 clamp) 로는 "위로 뜰수록 진해짐"
-    // 방향을 표현 불가(REST alpha=.5 가 이미 상한 부근이라 배수 상향이 무효화됨). 절대값으로 계산.
-    private func floorShadowShape(scaleX: CGFloat, alpha: Double) -> some View {
-        Ellipse().fill(RadialGradient(gradient: Gradient(stops: [
-            .init(color: Color(hex: 0x3A2C1C, alpha: alpha), location: 0),
-            .init(color: Color(hex: 0x3A2C1C, alpha: 0), location: 0.7)]),
-            center: .center, startRadius: 0, endRadius: 88))
-            .frame(width: 176, height: 26).blur(radius: 8)
-            .scaleEffect(x: scaleX, y: 1)
-    }
-
-    private var chipText: String {
-        if let live { return live.days > 0 ? "읽는 중 · \(live.days)일째" : "읽는 중" }
-        return "읽는 중 · 18일째"
+    // 히어로 상태 배지 문구 — 종이책 "N일째". 밀리 분기는 캐러셀에만 있다(데모는 종이책 고정).
+    private var badgeText: String {
+        if let live { return "\(live.days)일째" }
+        return "18일째"
     }
 
     @ViewBuilder var bookView: some View {
@@ -273,52 +241,21 @@ public struct Screen02Home: View {
             // 캐러셀만 @ObservedObject 라 카드는 넘어가는데 CTA 는 이전 카드로 남았다
             // (실기기 2026-08-26: 종이책 카드인데 '밀리에서 자동 기록 중'). → 관찰 래퍼로 감싼다.
             RTObserveModel(model: model) { recordable in
-                VStack(spacing: 0) {
-                    HStack(spacing: 10) {
-                        if recordable {
-                            readCTA
-                            tapStartButton
-                        } else {
-                            readCTADisabled   // 밀리 카드: 기록 진입점 자체를 노출하지 않는다
-                        }
+                // 보조 안내 문구는 삭제 — 엎기/탭 안내는 CTA 라벨이 이미 말하고,
+                // 밀리 문구는 배지·CTA·안내 3중 중복이었다(작업지시서 v3 §4-①).
+                HStack(spacing: 10) {
+                    if recordable {
+                        readCTA
+                        tapStartButton
+                    } else {
+                        readCTADisabled   // 밀리 카드: 기록 진입점 자체를 노출하지 않는다
                     }
-                    // 보조 안내 — 밀리 카드는 엎기/탭 안내가 무의미하므로 문맥에 맞게 교체
-                    Group {
-                        if recordable {
-                            (Text("엎기 어려운 곳이면 ").font(.sans(11, 500)).foregroundColor(RT.faint)
-                             + Text("탭 시작").font(.sans(11, 600)).foregroundColor(RT.muted)
-                             + Text("으로 기록하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
-                        } else {
-                            (Text("종이책은 ").font(.sans(11, 500)).foregroundColor(RT.faint)
-                             + Text("옆으로 넘겨").font(.sans(11, 600)).foregroundColor(RT.muted)
-                             + Text(" 선택하세요").font(.sans(11, 500)).foregroundColor(RT.faint))
-                        }
-                    }
-                    .padding(.top, 12)
                 }
             }
-            // 스탯 + 연속 체인
-            HStack(alignment: .center, spacing: 14) {
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
-                        countUp(live?.todayMin ?? 32)
-                        Text("분").font(.sans(13, 700)).foregroundColor(RT.body)
-                    }
-                    Text("오늘 읽음").font(.sans(10.5, 600)).foregroundColor(RT.muted)
-                }
-                .fixedSize()
-                Rectangle().fill(RT.hair2).frame(width: 1, height: 34)
-                VStack(spacing: 0) {
-                    HStack {
-                        Text("\(live?.streak ?? 12)일 연속").font(.mono(11.5, 700)).foregroundColor(RT.terra)
-                        Spacer(minLength: 0)
-                        Text("이번 주 \(live?.weekHM ?? "7:26")").font(.mono(11, 500)).foregroundColor(RT.faint)
-                    }
-                    .padding(.bottom, 8)
-                    streakChain
-                }
-            }
-            .padding(EdgeInsets(top: 14, leading: 4, bottom: 12, trailing: 4))
+            myRecordHeader
+            streakBlock
+            dowHeader
+            calendarGrid
             // 마지막 기록
             HStack(spacing: 11) {
                 RoundedRectangle(cornerRadius: 9).fill(RT.greenTint)
@@ -328,15 +265,15 @@ public struct Screen02Home: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("마지막 기록").font(.sans(11, 600)).foregroundColor(RT.muted)
                     (Text("\(live?.lastBook ?? "몰입") · ").font(.sans(13, 700))
-                     + Text("\(live?.lastMin ?? 26)").font(.mono(13, 700))
+                     + Text("\(live?.lastMin ?? 22)").font(.mono(13, 700))
                      + Text("분 읽음").font(.sans(13, 700)))
                         .foregroundColor(RT.ink)
                         .lineLimit(1).minimumScaleFactor(0.65)   // 긴 책 제목이 2줄로 카드 깨뜨리던 것
                 }
                 Spacer(minLength: 0)
-                Text(live?.lastWhen ?? "어제 22:14").font(.mono(11, 600)).foregroundColor(RT.faint)
+                Text(live?.lastWhen ?? "오늘 21:47").font(.mono(11, 600)).foregroundColor(RT.faint)
             }
-            .padding(EdgeInsets(top: 11, leading: 4, bottom: 11, trailing: 4))
+            .padding(EdgeInsets(top: 9, leading: 4, bottom: 9, trailing: 4))
             .overlay(alignment: .top) { Rectangle().fill(RT.hair2).frame(height: 1) }
             .contentShape(Rectangle())
             .onTapGesture { model?.openRecentDetail() }   // 마지막 기록 → 그 책 상세(08)
@@ -347,7 +284,7 @@ public struct Screen02Home: View {
             // 홈 인디케이터 여백 (막대는 RTChrome/시스템이 그림)
             Color.clear.frame(height: 26)
         }
-        .padding(EdgeInsets(top: 16, leading: 20, bottom: 0, trailing: 20))
+        .padding(EdgeInsets(top: 14, leading: 20, bottom: 0, trailing: 20))
         .background(
             UnevenRoundedRectangle(topLeadingRadius: 26, topTrailingRadius: 26)
                 .fill(RT.surface)
@@ -356,6 +293,254 @@ public struct Screen02Home: View {
         )
         .rtRiseIn(delay: 0.26)
     }
+
+    // ── ② 내 기록 헤더 행 ──────────────────────────────────────────────────
+    var myRecordHeader: some View {
+        HStack(spacing: 7) {
+            Text("내 기록").font(.sans(13, 800)).foregroundColor(RT.ink).rtLB(RTLB.n13)
+            if isNewRecord { newRecordBadge }
+            Spacer(minLength: 0)
+            statsButton
+        }
+        .padding(EdgeInsets(top: 13, leading: 4, bottom: 0, trailing: 4))
+    }
+
+    /// 통계 진입점 — 아바타 메뉴를 거치지 않고 주간 기록(10)으로 직행한다.
+    /// 아이콘은 RTHomeMenu 통계 행과 동일 기호(같은 목적지). 꺽쇠는 이 디자인에서 금지 패턴.
+    var statsButton: some View {
+        HStack(spacing: 6) {
+            RTIcon(["M5 20V11M12 20V4M19 20v-6"], size: 13, stroke: RT.green, lineWidth: 1.9)
+            Text("전체 통계").font(.sans(11.5, 700)).foregroundColor(RT.green).rtLB(RTLB.n11_5)
+        }
+        .padding(EdgeInsets(top: 5, leading: 9, bottom: 5, trailing: 11))
+        .background(Capsule().fill(RT.greenTint))
+        // 히트 영역은 **아래로만** 9pt 확장 (캡슐 27 + 9 = 36pt ≥ AC #16).
+        // 위로도 늘리면 CTA 행(60pt, 탭 대상)의 히트 영역을 뺏는다. 아래는 연속 블록이고 탭 대상이 아니다.
+        // .padding(.vertical, N) 을 그대로 쓰면 SwiftUI 는 레이아웃 높이에 더해(CSS 와 다름)
+        // 이하 모든 블록이 밀리므로 음수 패딩으로 원복한다 — 행 높이 27 유지.
+        .padding(.bottom, 9)
+        .contentShape(Capsule())
+        .padding(.bottom, -9)
+        .onTapGesture { model?.nav(.statsWeek) }
+        .accessibilityElement(children: .ignore)
+        .accessibilityIdentifier("home.statsButton")
+        .accessibilityLabel("전체 통계")
+        .accessibilityAddTraits(.isButton)
+    }
+
+    /// 신기록 배지 — 짐·큐 앱의 신기록 문법. ▲ 는 폰트 글리프 의존을 없애려 3.5×3 Path 로 그린다.
+    var newRecordBadge: some View {
+        HStack(spacing: 4) {
+            Path { p in
+                p.move(to: CGPoint(x: 1.75, y: 0))
+                p.addLine(to: CGPoint(x: 3.5, y: 3))
+                p.addLine(to: CGPoint(x: 0, y: 3))
+                p.closeSubpath()
+            }
+            .fill(RT.amberDeep)
+            .frame(width: 3.5, height: 3)
+            Text("신기록").font(.sans(10.5, 700)).foregroundColor(RT.amberDeep).rtLB(RTLB.n10_5)
+        }
+        .padding(EdgeInsets(top: 3, leading: 8, bottom: 3, trailing: 8))
+        .background(Capsule().fill(RT.amberTint))
+        .rtBreath(duration: 2.6)
+    }
+
+    // ── ③ 연속 / 오늘 블록 ────────────────────────────────────────────────
+    var streakBlock: some View {
+        HStack(alignment: .top, spacing: 14) {
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    countUp(todayMinVal)
+                    Text("분").font(.sans(13, 700)).foregroundColor(RT.body).rtLB(RTLB.n13)
+                }
+                Text("오늘 읽음").font(.sans(10.5, 600)).foregroundColor(RT.muted).rtLB(RTLB.n10_5)
+                    .padding(.top, 4)
+            }
+            .fixedSize()
+            Rectangle().fill(RT.hair2).frame(width: 1, height: 42)
+            VStack(spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(streakVal)일 연속").font(.mono(13, 700))
+                        .foregroundColor(streakColor).rtLB(RTLB.m13)
+                    Spacer(minLength: 0)
+                    Text("이번 주 \(weekHMVal)").font(.mono(11, 500))
+                        .foregroundColor(RT.faint).rtLB(RTLB.m11)
+                }
+                gauge.padding(.top, 7)
+                // 과거 완료 구간이 없으면(best == 0) 하단 행 전체를 숨긴다 — 빈 트랙만 남는다.
+                if bestVal > 0 {
+                    HStack(spacing: 5) {
+                        Text("역대 최고").font(.sans(10, 600)).foregroundColor(RT.faint).rtLB(RTLB.n10)
+                        Text("\(bestVal)일").font(.mono(10.5, 600)).foregroundColor(RT.muted).rtLB(RTLB.m10_5)
+                        Text("· \(bestMonthVal)").font(.sans(10, 500)).foregroundColor(RT.faint).rtLB(RTLB.n10)
+                        Spacer(minLength: 0)
+                        Text(remainLabel).font(.mono(10.5, 700)).foregroundColor(streakColor).rtLB(RTLB.m10_5)
+                    }
+                    .padding(.top, 6)
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(bestVal > 0
+                ? "\(streakVal)일 연속, 역대 최고 \(bestVal)일, \(remainLabel)"
+                : "\(streakVal)일 연속")
+        }
+        .padding(EdgeInsets(top: 10, leading: 4, bottom: 0, trailing: 4))
+    }
+
+    /// 역대 최고 대비 게이지. 눈금(역대 최고 지점)은 tickFrac == 1 일 때 트랙 오른쪽 끝에 딱 붙어야
+    /// 하므로 offset 에서 폭 1.5 를 빼 안쪽으로 넣는다. 트랙 폭은 GeometryReader 로 받는다.
+    var gauge: some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            ZStack(alignment: .leading) {
+                Capsule().fill(Color(hex: 0xECE5D2))
+                gaugeFill(w: w)
+                if bestVal > 0 {
+                    Rectangle().fill(Color(hex: 0x17150F, alpha: 0.34))
+                        .frame(width: 1.5)
+                        .offset(x: w * tickFrac - 1.5)
+                }
+            }
+        }
+        .frame(height: 5)
+        .clipShape(Capsule())
+    }
+
+    @ViewBuilder private func gaugeFill(w: CGFloat) -> some View {
+        // LinearGradient.css 는 size: 를 반드시 넘겨야 한다 — 픽셀 공간에서 각도를 계산하므로
+        // 생략하면 1×1 로 왜곡된다.
+        let fw = max(w * gaugeFrac, 0.001)
+        let fill = Capsule()
+            .fill(LinearGradient.css(90, size: CGSize(width: fw, height: 5), gaugeStops))
+            .frame(width: w * gaugeFrac)
+        // 신기록 하이라이트는 RTRankRow 진행 바와 동일한 모디파이어를 쓴다(정적 렌더에선 미표시).
+        if isNewRecord { fill.rtSweep() } else { fill }
+    }
+
+    private var gaugeStops: [(color: Color, location: Double)] {
+        isNewRecord ? [(RT.gold, 0), (RT.amber, 1)]
+                    : [(Color(hex: 0xDC9078), 0), (Color(hex: 0xC2553A), 1)]
+    }
+
+    // ── ④ 요일 헤더 ──────────────────────────────────────────────────────
+    // Screen11Month.dowHeader 와 동일 규칙: mono 10 / 500, 일요일만 terra. 오늘 열은 강조하지 않는다
+    // (그건 Screen10Stats.barRow 의 막대 차트 규칙이며 캘린더에는 적용하지 않는다).
+    var dowHeader: some View {
+        HStack(spacing: 6) {
+            ForEach(Array(["월", "화", "수", "목", "금", "토", "일"].enumerated()), id: \.offset) { i, d in
+                Text(d).font(.mono(10, 500))
+                    .foregroundColor(i == 6 ? RT.terra : RT.faint)
+                    .rtLB(RTLB.m10)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(EdgeInsets(top: 14, leading: 4, bottom: 0, trailing: 4))
+        .accessibilityHidden(true)
+    }
+
+    // ── ⑤ 2주 캘린더 ─────────────────────────────────────────────────────
+    var calendarGrid: some View {
+        VStack(spacing: 6) {
+            ForEach(0..<2, id: \.self) { row in
+                HStack(spacing: 6) {
+                    ForEach(0..<7, id: \.self) { col in
+                        calCell(cal14[row * 7 + col]).frame(maxWidth: .infinity)
+                    }
+                }
+            }
+        }
+        .padding(EdgeInsets(top: 6, leading: 4, bottom: 13, trailing: 4))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("최근 2주 독서 기록")
+    }
+
+    /// 칸 하나 — 분기 순서를 반드시 지킬 것: ① 오늘 그리고 분>0 → ② 미래 → ③ 미기록 과거 → ④ 읽은 과거.
+    /// weight 700 은 "오늘"의 표식이지 읽었는지의 표식이 아니다 → 오늘 미기록도 700 유지.
+    @ViewBuilder func calCell(_ c: HomeCalCell) -> some View {
+        let filledToday = c.isToday && c.minutes > 0
+        let base = Text("\(c.day)")
+            .font(.mono(11.5, c.isToday ? 700 : 500))
+            .tracking(11.5 * 0.01)
+            .foregroundColor(calFG(c, filledToday: filledToday))
+            .rtLB(RTLB.m11_5)
+            .frame(maxWidth: .infinity)
+            .frame(height: 33)
+            .background(RoundedRectangle(cornerRadius: 10).fill(calBG(c, filledToday: filledToday)))
+            .overlay {
+                // 읽은 과거만 안쪽 1pt — 색면 경계를 살짝 잡아준다
+                if !filledToday && !c.isFuture && c.minutes > 0 {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Color(hex: 0x7A3C28, alpha: 0.05), lineWidth: 1)
+                }
+            }
+        Group {
+            if filledToday {
+                base.rtRing(10, RT.terra.opacity(0.13), width: 3)
+            } else {
+                base
+            }
+        }
+        // 색만으로 분량을 전달하므로 VoiceOver 대체 텍스트가 필수
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(calMonth(c))월 \(c.day)일")
+        .accessibilityValue(c.minutes > 0 ? "\(c.minutes)분" : "기록 없음")
+        .accessibilityAddTraits(c.isToday ? .isSelected : [])
+        .accessibilityHidden(c.isFuture)
+    }
+
+    /// 색면이 깔린 칸(읽은 과거)에는 월간(11)의 "일요일은 항상 terra" 규칙을 적용하지 않는다 —
+    /// 색면 위 terra 숫자는 대비가 2.1:1 까지 떨어진다(월간엔 셀 배경이 없어 안 생기는 문제).
+    private func calFG(_ c: HomeCalCell, filledToday: Bool) -> Color {
+        if filledToday { return .white }
+        if c.isFuture { return Color(hex: 0xD3CBB6) }
+        if c.minutes == 0 { return c.isSunday ? RT.terra : RT.faint }
+        return Color(hex: 0x2E1C15)
+    }
+    private func calBG(_ c: HomeCalCell, filledToday: Bool) -> Color {
+        if filledToday { return RT.terra }
+        if c.isFuture || c.minutes == 0 { return .clear }
+        return RT.terra.opacity(RTHomeCal.alpha(c.minutes))
+    }
+    private func calMonth(_ c: HomeCalCell) -> Int {
+        Calendar(identifier: .gregorian).component(.month, from: c.date)
+    }
+
+    // ── 기록 블록 파생값 (데모는 시안 #14a 고정값) ────────────────────────
+    private var todayMinVal: Int { live?.todayMin ?? 46 }
+    private var weekHMVal: String { live?.weekHM ?? "2:24" }
+    private var streakVal: Int { live?.streak ?? 9 }
+    private var bestVal: Int { live?.bestStreak ?? 24 }
+    private var bestMonthVal: String { live?.bestStreakMonth ?? "3월" }
+    private var cal14: [HomeCalCell] {
+        let w = live?.cal14 ?? []
+        return w.count == 14 ? w : Self.demoCal14
+    }
+    private var isNewRecord: Bool { bestVal > 0 && streakVal > bestVal }
+    private var gaugeFrac: CGFloat {
+        bestVal <= 0 ? 0 : min(1, CGFloat(streakVal) / CGFloat(bestVal))
+    }
+    private var tickFrac: CGFloat {
+        isNewRecord ? CGFloat(bestVal) / CGFloat(streakVal) : 1.0
+    }
+    private var streakColor: Color { isNewRecord ? RT.amberDeep : RT.terra }
+    private var remainLabel: String {
+        if isNewRecord { return "+\(streakVal - bestVal)일" }
+        if streakVal == bestVal { return "최고 타이" }
+        return "\(bestVal - streakVal)일 남음"
+    }
+
+    /// 데모 캘린더 창 — 2026-08-27(목) 고정. 오늘 날짜가 바뀌어도 스크린샷이 흔들리면 안 된다(AC #23).
+    static let demoCal14: [HomeCalCell] = {
+        var c = Calendar(identifier: .gregorian)
+        c.firstWeekday = 2
+        let mins = [0, 0, 34, 52, 41, 63, 28, 12, 47, 39, 46, 0, 0, 0]
+        return (0..<14).map { i in
+            let d = c.date(from: DateComponents(year: 2026, month: 8, day: 17 + i)) ?? Date()
+            return HomeCalCell(date: d, day: 17 + i, minutes: mins[i],
+                               isToday: i == 10, isFuture: i > 10, isSunday: i % 7 == 6)
+        }
+    }()
 
     // ── 파트너 행 (함께 읽기) — 마지막 기록 행과 같은 행 문법. 탭 → 파트너 통계 ──
     func partnerRow(_ p: Partner) -> some View {
@@ -410,9 +595,8 @@ public struct Screen02Home: View {
                 }
                 Text("오늘").font(.sans(9.5, 500)).foregroundColor(RT.faint)
             }
-            RTIcon(["M9 6l6 6-6 6"], size: 9, stroke: RT.ghost, lineWidth: 2.4)
         }
-        .padding(EdgeInsets(top: 11, leading: 4, bottom: 11, trailing: 4))
+        .padding(EdgeInsets(top: 9, leading: 4, bottom: 9, trailing: 4))
         .overlay(alignment: .top) { Rectangle().fill(RT.hair2).frame(height: 1) }
         .contentShape(Rectangle())
         .onTapGesture { model?.openPartnerStats() }
@@ -517,8 +701,12 @@ public struct Screen02Home: View {
             countUpText(rtCountUpValue(target, elapsed: t))
         }
     }
+    // 카운트업 중 숫자 폭·높이가 바뀌면 블록이 흔들리므로 라인박스를 고정한다.
+    // 오늘 미기록(0)은 terra 로 눈에 걸리게 한다(상태 매트릭스 B).
     private func countUpText(_ v: Int) -> some View {
-        Text("\(v)").font(.mono(27, 700)).tracking(27 * -0.02).foregroundColor(RT.ink)
+        Text("\(v)").font(.mono(27, 700)).tracking(27 * -0.02)
+            .foregroundColor(todayMinVal == 0 ? RT.terra : RT.ink)
+            .rtLB(RTLB.m27)
     }
 
     // 탭 시작 버튼
@@ -534,49 +722,6 @@ public struct Screen02Home: View {
         .shadow(color: Color(hex: 0x16140F, alpha: 0.24), radius: 7, x: 0, y: 6)
         .contentShape(RoundedRectangle(cornerRadius: 16))
         .onTapGesture { model?.switchTap() }
-    }
-
-    // 연속 기록 체인 (13 도트)
-    var streakChain: some View {
-        HStack(spacing: 4.5) {
-            ForEach(Array(chainDots.enumerated()), id: \.offset) { i, dot in
-                let isToday = i == chainDots.count - 1
-                Group {
-                    if dot.ring {
-                        Circle().strokeBorder(Color(hex: 0xE0D8C4), lineWidth: 1.4)
-                    } else {
-                        Circle().fill(dot.color)
-                    }
-                }
-                .frame(width: isToday ? 8 : 7, height: isToday ? 8 : 7)
-                .background {
-                    if isToday && !dot.ring {
-                        RTMotionFrame {
-                            Circle().fill(RT.terra.opacity(0.18)).frame(width: 14, height: 14)
-                        } anim: { t in
-                            let ph = (sin(t * 2 * .pi / 2.6 - .pi / 2) + 1) / 2
-                            Circle().fill(RT.terra.opacity(0.24 - 0.19 * ph))
-                                .frame(width: 14 + 8 * ph, height: 14 + 8 * ph)
-                        }
-                    }
-                }
-                .rtPop(delay: 0.5 + Double(i) * 0.05)
-            }
-            Spacer(minLength: 0)
-        }
-    }
-
-    struct Dot { let color: Color; let ring: Bool }
-    private var chainDots: [Dot] {
-        if let live {
-            // 라이브: 미달=링, 달성=terra, 오늘 달성은 위에서 크게+글로우
-            return live.chain.map { $0 ? Dot(color: RT.terra, ring: false) : Dot(color: .clear, ring: true) }
-        }
-        // 데모 = 시안 고정 램프 (픽셀 오라클)
-        let ramp: [UInt32] = [0xE3A58F, 0xDC9078, 0xD4805F, 0xCF7355, 0xCA664A, 0xC85F43,
-                              0xC2553A, 0xC2553A, 0xC2553A, 0xC2553A, 0xC2553A]
-        return [Dot(color: .clear, ring: true), Dot(color: .clear, ring: true)]
-            + ramp.map { Dot(color: Color(hex: $0), ring: false) }
     }
 
 }

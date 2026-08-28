@@ -39,6 +39,10 @@ struct RTHomeHeroBody<Cover: View, Trailing: View>: View {
                 .font(.sans(21, 900)).tracking(21 * -0.03)
                 .foregroundColor(RT.ink)
                 .lineLimit(1).minimumScaleFactor(0.6)
+                // 세로 고정 필수 — rtLB(26.25 = 시안 line-height)가 SwiftUI 자연 행높이(30.5)보다
+                // 낮아, 없으면 minimumScaleFactor 가 **높이**에 반응해 제목이 14% 작게 렌더된다
+                // (실측: 글리프 16.5 vs 시안 19.0). 가로는 열어 둬야 긴 제목이 축소된다.
+                .fixedSize(horizontal: false, vertical: true)
                 .rtLB(RTLB.n21)
                 .padding(.top, 15)
                 .accessibilityIdentifier(titleID ?? "")
