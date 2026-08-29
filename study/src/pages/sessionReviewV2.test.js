@@ -741,12 +741,12 @@ describe('sessionReviewV2 — 응용 드릴 발화 이력', () => {
     const b = [...host.querySelectorAll('.vr-drills .vs-drow')][1].querySelector('button[aria-label="녹음"]');
     b.click(); await tick(); b.click(); await tick(); await tick();
     expect(savePronunciationLog).toHaveBeenCalledTimes(1);
-    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('c1#drill1');
+    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('c1#drill#Thanks for waiting.');
   });
 
   it('state.drillLog 의 이력이 응용 행 부제에 뜬다', () => {
     const st = revealed();
-    st.drillLog = { c1: { 0: { count: 4, avg: 79 } } };
+    st.drillLog = { c1: { 'Thanks for coming.': { count: 4, avg: 79 } } };
     const host = mount(st);
     const subs = [...host.querySelectorAll('.vr-drills .vs-drow .sub')].map((e) => e.textContent);
     expect(subs[0]).toContain('이전 4회');
@@ -781,5 +781,28 @@ describe('sessionReviewV2 — 녹음 품질 게이트', () => {
     const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
     expect(shown).toHaveLength(1);
     expect(shown[0].textContent).toBe('21');
+  });
+});
+
+/* 데모 격리 (2026-08-29 전면 재감사 확증) — 신규 세션과 동일한 유출이 복습 드릴에도 있었다. */
+describe('sessionReviewV2 — 데모 드릴은 DB 에 쓰지 않는다', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('demo 드릴 녹음 → savePronunciationLog 0회', async () => {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const EXPL = { key: `${EN} = ${KO}`, chunks: CHUNKS, drills: [
+      { en: 'Thanks for coming.', kr: '땡스 포 커밍', ko: '와 줘서 고마워.' },
+    ] };
+    const state = {
+      cards: [{ id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, explanation: EXPL }],
+      total: 1, step: 1, size: 'desktop', recLog: {}, tried: 0, revealed: true, demo: true,
+      sentence: { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: EXPL },
+    };
+    renderSessionReviewV2(host, state, {});
+    const b = [...host.querySelectorAll('.vr-drills .vs-drow')][0].querySelector('button[aria-label="녹음"]');
+    b.click();
+    await new Promise((r) => setTimeout(r, 900));
+    expect(savePronunciationLog).not.toHaveBeenCalled();
   });
 });

@@ -345,7 +345,7 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
          * 본문과 같으면 같은 줄이 두 번 나오므로 생략한다 (구두점 차이는 무시). */
         /* 이전 발화 이력 (2026-08-29 사용자 요구 "몇 번 발화했고 보통 몇 점인지") — 오늘 시도는
          * 행의 점수 원이 이미 보여주므로 오늘 이전만 센다 (pronunciationLog.summarizeDrillLog). */
-        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko, histSub(history?.[i])].filter(Boolean).join(' · '))),
+        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko, histSub(history?.[String(target).trim()])].filter(Boolean).join(' · '))),
       h('span', { class: 'grow' }), scoreEl, playBtn, recBtn,
     );
     recBtn.addEventListener('click', async () => {
@@ -947,9 +947,14 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const rows = ((cardEx.drills ??= {}));
     rows[i] = [...normScores(rows[i]), score];
     /* 세션 밖까지 남기기 (2026-08-29) — 스냅샷은 세션이 끝나면 사라진다. 복습에서 이 응용 문장을
-     * "몇 번 말했고 보통 몇 점인지" 보여주는 유일한 원천이다 (pronunciationLog.summarizeDrillLog). */
-    savePronunciationLog(window.studyDB, { result, sentenceId: drillLogId(s?.id, i), lang, date: getTodayISO() })
-      .catch((e) => console.error('[sessionExprV2] drill pron persist', e));
+     * "몇 번 말했고 보통 몇 점인지" 보여주는 유일한 원천이다 (pronunciationLog.summarizeDrillLog).
+     * 데모(?demo=1)는 격리 계약대로 실 DB 에 쓰지 않는다 — 로그인 상태에서 데모에 들어오면
+     * window.studyDB 가 실 Dexie 라 가짜 점수가 sync 로 Supabase 까지 올라간다 (2026-08-29 감사). */
+    if (!state.demo) {
+      const dTarget = drills[i]?.ja || drills[i]?.en || '';
+      savePronunciationLog(window.studyDB, { result, sentenceId: drillLogId(s?.id, dTarget), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionExprV2] drill pron persist', e));
+    }
     refreshDots();
     refreshRecWidget();
     handlers.saveSnapshot?.();

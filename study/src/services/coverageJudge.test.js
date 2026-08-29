@@ -164,15 +164,20 @@ describe('judgeMisread — 두 신호가 모두 바닥일 때만 오발화', () 
     expect(r.misread).toBe(true);
   });
 
-  it('일본어 정답 발화 — 공백 분절이 없어 커버리지 0 이어도 정확도 98 이면 오발화 아님', () => {
+  it('일본어 정답 발화 — 오발화 아님 (전각 구두점 제거 후 커버리지 1 · 1토큰 퇴화 가드도 겹으로)', () => {
     const r = judgeMisread({ score: 98, recognizedText: 'そうなんだ。' }, 'そうなんだ');
-    expect(r.coverage).toBe(0);
+    expect(r.coverage).toBe(1);   // 2026-08-29 전각 구두점 제거로 0 → 1
     expect(r.misread).toBe(false);
   });
 
-  it('일본어 다른 문장(커버리지 0·11점) → 오발화', () => {
-    const r = judgeMisread({ score: 11, recognizedText: 'だ。そう。' }, 'そうなんだ');
-    expect(r.misread).toBe(true);
+  it('일본어 다른 문장(커버리지 0·11점) — misread 는 판정하지 않고(1토큰 퇴화 가드) 음질 게이트가 잡는다', () => {
+    // 2026-08-29 계약 변경: ja 는 coverage 가 항상 0 이라 misread 가 acc 단독 판정으로 퇴화했었다.
+    // 실측상 ja 오발화는 음소 원시 점수도 바닥이므로 judgeRecording 의 unclear 로 걸러진다.
+    expect(judgeMisread({ score: 11, recognizedText: 'だ。そう。' }, 'そうなんだ').misread).toBe(false);
+    const ph = Array.from({ length: 8 }, () => ({ symbol: 'x', word: 'w', score: 11 }));
+    const r = judgeRecording({ score: 11, recognizedText: 'だ。そう。', phonemeScores: ph }, 'そうなんだ');
+    expect(r.record).toBe(false);
+    expect(r.reason).toBe('unclear');
   });
 
   it('전사가 비어 있어도 점수가 살아 있으면 버리지 않는다 (판정 근거 부족)', () => {
@@ -262,5 +267,55 @@ describe('isTooUnclear — 음질 단독 판정', () => {
     const r = { score: 82, recognizedText: 'x', phonemeScores: ph(40.8) };
     expect(judgeRecording(r, 'x').reason).toBe('unclear');
     expect(isTooUnclear(r)).toBe(true);
+  });
+});
+
+/* 판정 견고화 (2026-08-29 전면 재감사 발견 반영) */
+describe('judgeRecording 견고화 — 결측 음소·초소형 표본·ja 퇴화', () => {
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+
+  it('score 가 결측·비수치인 음소 항목은 0(최악값)이 아니라 제외하고 평균한다', () => {
+    // 종전엔 결측 → 0 으로 계산돼 '근거 없으면 판정 안 한다' 계약이 항목 단위에서 뒤집혔다.
+    const scores = [...ph(80, 10), { symbol: 'y', word: 'w' }, { symbol: 'z', word: 'w', score: 'bad' }];
+    const r = judgeRecording({ score: 85, recognizedText: 'x y', phonemeScores: scores }, 'x y');
+    expect(r.phonemeMean).toBe(80);   // 결측 2개 제외 — 0 포함이면 66.7
+    expect(r.record).toBe(true);
+  });
+
+  it('유효 음소가 하나도 없으면 음질을 판정하지 않는다', () => {
+    const r = judgeRecording({ score: 85, recognizedText: 'x', phonemeScores: [{ symbol: 'a' }] }, 'x');
+    expect(r.phonemeMean).toBe(null);
+    expect(r.record).toBe(true);
+  });
+
+  it('음소 4개 미만이면 통계 불안정 — 음질로 버리지 않는다', () => {
+    const r = judgeRecording({ score: 80, recognizedText: 'hi', phonemeScores: ph(20, 3) }, 'hi');
+    expect(r.record).toBe(true);      // 3개 표본의 낮은 평균으로는 안 버린다
+  });
+
+  it('ja 처럼 기대문이 1토큰이면 오발화(misread)를 판정하지 않는다 — coverage 가 항상 0이라 무의미', () => {
+    // 종전엔 acc<40 단독으로 misread 가 떠서, 정답을 발음만 나쁘게 말한 ja 발화에
+    // "다른 문장을 말한 것 같아요" 가 나갈 수 있었다. ja 는 음질 게이트(unclear)만 묻는다.
+    const r = judgeMisread({ score: 30, recognizedText: 'そうなんだ。' }, 'そうなんだ');
+    expect(r.misread).toBe(false);
+  });
+
+  it('기대문 2토큰 이상이면 misread 판정은 종전대로다 (en 회귀 방지)', () => {
+    expect(judgeMisread({ score: 22, recognizedText: 'It mean I it I I put.' },
+      'I know what I mean but I cant put it into words').misread).toBe(true);
+  });
+});
+
+/* 전각 구두점 (2026-08-29 재감사 확증) — toTokens 의 구두점 클래스에 、。！？ 가 없어
+ * ja 전사('そうなんだ。')와 기대문('そうなんだ')이 토큰 불일치했다. ja 는 어차피 1토큰이라
+ * misread 퇴화 가드가 덮지만, 혼용 문장·향후 소비자를 위해 normalizeReferenceText 와 맞춘다. */
+describe('judgeCoverage — 전각 구두점 제거', () => {
+  it('ja 구두점만 다른 전사는 같은 토큰이 된다', () => {
+    const r = judgeCoverage('そうなんだ。', 'そうなんだ');
+    expect(r.missing).toEqual([]);
+    expect(r.coverage).toBe(1);
+  });
+  it('전각 물음표·느낌표도 제거된다', () => {
+    expect(judgeCoverage('お昼、食べる？', 'お昼、食べる').pass).toBe(true);
   });
 });

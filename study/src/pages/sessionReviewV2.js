@@ -480,8 +480,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
       (cardEx.drills ??= {})[i] = Math.round(Number(result?.score) || 0); // 행 점수 영속화
       // 세션 밖까지 남긴다 — 다음 복습의 '이전 N회 평균 M' 이 이 행에서 나온다 (2026-08-29).
-      savePronunciationLog(window.studyDB, { result, sentenceId: drillLogId(s?.id, i), lang, date: getTodayISO() })
-        .catch((e) => console.error('[sessionReviewV2] drill pron persist', e));
+      // 데모는 실 DB 에 쓰지 않는다 (신규 세션과 동일 격리 계약 — 2026-08-29 감사).
+      if (!state.demo) {
+        const dTarget = drills[i]?.ja || drills[i]?.en || '';
+        savePronunciationLog(window.studyDB, { result, sentenceId: drillLogId(s?.id, dTarget), lang, date: getTodayISO() })
+          .catch((e) => console.error('[sessionReviewV2] drill pron persist', e));
+      }
       onAppliedScore(result);
     }, state.demo, { saved: savedDrills, history: state.drillLog?.[s?.id] })),
   ) : null;

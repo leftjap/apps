@@ -1219,7 +1219,7 @@ describe('sessionExprV2 — 응용 드릴 점수 영속화', () => {
     b.click(); await tick(); b.click(); await tick(); await tick();
     expect(savePronunciationLog).toHaveBeenCalledTimes(1);
     const params = savePronunciationLog.mock.calls[0][1];
-    expect(params.sentenceId).toBe('e1#drill1');
+    expect(params.sentenceId).toBe("e1#drill#He's more than a friend.");
     expect(params.lang).toBe('en');
     expect(params.result.score).toBe(92);
   });
@@ -1244,13 +1244,13 @@ describe('drillRows — 이전 발화 이력 표시', () => {
   ];
 
   it('이력이 있으면 횟수와 평균을 부제에 붙인다', () => {
-    const rows = drillRows(drills, '', 'en', () => {}, false, { history: { 0: { count: 3, avg: 84 } } });
+    const rows = drillRows(drills, '', 'en', () => {}, false, { history: { "It's more than a job.": { count: 3, avg: 84 } } });
     expect(rows[0].querySelector('.sub').textContent).toContain('이전 3회');
     expect(rows[0].querySelector('.sub').textContent).toContain('84');
   });
 
   it('이력이 없는 행은 부제가 그대로다 (회귀 방지)', () => {
-    const rows = drillRows(drills, '', 'en', () => {}, false, { history: { 0: { count: 3, avg: 84 } } });
+    const rows = drillRows(drills, '', 'en', () => {}, false, { history: { "It's more than a job.": { count: 3, avg: 84 } } });
     const sub = rows[1].querySelector('.sub').textContent;
     expect(sub).toContain('걔는 친구 그 이상이야.');
     expect(sub).not.toContain('이전');
@@ -1361,5 +1361,23 @@ describe('sessionExprV2 — 체이닝·생산 음질 게이트', () => {
     b.click(); await tick(); b.click(); await tick(); await tick();
     expect(host.querySelector('.vs-chain .ct').textContent).toContain('통과 1');
     expect(state.tried).toBe(1);
+  });
+});
+
+/* 데모 격리 (2026-08-29 전면 재감사 확증) — 데모 드릴 녹음이 pronunciationLog 에 실 행을 쓰고
+ * 있었다 (session-new.js 의 격리 계약 "실 DB write 를 일절 하지 않는다" 위반). 로그인 상태에서
+ * ?demo=1 진입 시 window.studyDB 는 실 Dexie 이고 sync 가 Supabase 까지 올린다. */
+describe('sessionExprV2 — 데모 드릴은 DB 에 쓰지 않는다', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('demo 드릴 녹음 → 행 점수는 뜨지만 savePronunciationLog 는 0회', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills({ demo: true });
+    renderSessionExprV2(host, state, {});
+    const b = [...host.querySelectorAll('.vs-drills-list .vs-drow')][0].querySelector('button[aria-label="녹음"]');
+    b.click();
+    await new Promise((r) => setTimeout(r, 900));   // 데모 시뮬 800ms
+    expect(state.tried).toBe(1);                    // 화면 동작은 그대로
+    expect(savePronunciationLog).not.toHaveBeenCalled();
   });
 });

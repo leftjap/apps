@@ -1747,3 +1747,80 @@ describe('speak — 선점 시 이전 재생의 종료 통보 (카운터 누수 
     expect(isTtsPlaying()).toBe(false);                // 카운터 0 — 녹음 청크 폐기 없음
   });
 });
+
+/* 재감사 발견 2건 고정 (2026-08-29):
+ * ① pre-roll 오염 — TTS 구간 게이트가 링 갱신 전에 return 해, 재생 직후 시작한 녹음의 pre-roll 에
+ *   '재생 전 0.5초'(오래된 오디오·직전 발화 꼬리)가 붙었다. 재생 중엔 링을 비운다.
+ * ② ttsHold 배선이 어떤 테스트로도 고정돼 있지 않았다 — 지우면 전 테스트 통과인데 실동작은
+ *   '재생 끝나자마자 즉시 자동종료'로 무너진다. */
+describe('speech — TTS 구간의 pre-roll 격리와 자동종료 억제', () => {
+  function setupMic() {
+    const held = {};
+    class FakeNode {
+      constructor() { this.port = { onmessage: null, postMessage() {} }; held.node = this; }
+      connect() {} disconnect() {}
+    }
+    const ac = {
+      state: 'running',
+      audioWorklet: { addModule: async () => {} },
+      createMediaStreamSource: () => ({ connect() {}, disconnect() {} }),
+      createGain: () => ({ gain: { value: 0 }, connect() {}, disconnect() {} }),
+      destination: {}, resume: async () => {}, close: async () => {},
+    };
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [{ readyState: 'live', stop() {} }] }) } });
+    vi.stubGlobal('AudioWorkletNode', FakeNode);
+    vi.stubGlobal('window', {
+      AudioContext: function () { return ac; },
+      AudioWorkletNode: FakeNode,
+      speechSynthesis: { cancel() {}, getVoices: () => [{ name: 'S', lang: 'en-US', default: true, localService: true }], addEventListener() {}, speak(u) { held.utter = u; } },
+      SpeechSynthesisUtterance: class { constructor(t) { this.text = t; } },
+      addEventListener() {}, removeEventListener() {},
+    });
+    globalThis.SpeechSynthesisUtterance = window.SpeechSynthesisUtterance;
+    return held;
+  }
+  const chunk = (v) => { const a = new Int16Array(160); a.fill(v); return a.buffer; };
+
+  it('재생 중 링을 비운다 — 재생 직후 녹음의 pre-roll 에 옛 오디오가 붙지 않는다', async () => {
+    const held = setupMic();
+    const { Speech } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    // 워밍 마이크를 세운 뒤 즉시 종료 — 이후 대기 상태에서 링이 쌓인다
+    const warm = await Speech.recordWav({ maxSeconds: 5 });
+    warm.stop(); await warm.blobPromise;
+    held.node.port.onmessage({ data: chunk(7000) });     // 재생 전 발화 꼬리 → 링에 쌓임
+    Speech.speak('reference', { lang: 'en-US' });         // 재생 시작
+    await new Promise((r) => setTimeout(r, 30));
+    held.node.port.onmessage({ data: chunk(9000) });     // 재생 중 — 폐기 + 링 비움
+    held.utter.onend();                                   // 재생 종료
+    // 워밍 재사용 경로의 캡처 라이브 게이트(첫 청크 대기 2초)를 피해, 대기 중에 청크를 흘린다
+    const recP = Speech.recordWav({ maxSeconds: 5 });
+    await new Promise((r) => setTimeout(r, 10));
+    held.node.port.onmessage({ data: chunk(8000) });     // 실제 발화 (게이트 해제 겸)
+    const rec = await recP;
+    rec.stop();
+    const blob = await rec.blobPromise;
+    expect(blob.size).toBe(44 + 1 * 160 * 2);            // 발화 1청크만 — 링 이월분(7000) 없음
+  });
+
+  it('재생이 길어도 자동종료가 발화 종점으로 오인하지 않는다 (ttsHold 배선 고정)', async () => {
+    const held = setupMic();
+    const { Speech } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    const stopped = vi.fn();
+    const rec = await Speech.recordWav({ maxSeconds: 10, autoStopSilenceMs: 300, onAutoStop: stopped });
+    held.node.port.onmessage({ data: chunk(20000) });    // 무장 (큰 발화)
+    Speech.speak('reference', { lang: 'en-US' });         // 듣기 시작
+    for (let i = 0; i < 5; i++) {                         // 재생 400ms — 폐기 구간, hold 가 시계를 되짚어야
+      await new Promise((r) => setTimeout(r, 80));
+      held.node.port.onmessage({ data: chunk(0) });
+    }
+    held.utter.onend();                                   // 재생 종료
+    held.node.port.onmessage({ data: chunk(0) });        // 직후 무음 1청크
+    expect(stopped).not.toHaveBeenCalled();               // hold 없으면 여기서 즉시 자동종료된다
+    await new Promise((r) => setTimeout(r, 350));
+    held.node.port.onmessage({ data: chunk(0) });        // hangover 경과 후 무음 → 정상 자동종료
+    expect(stopped).toHaveBeenCalledTimes(1);
+    rec.stop(); await rec.blobPromise;
+  });
+});

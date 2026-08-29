@@ -32,7 +32,8 @@ function toTokens(s) {
   for (const [k, v] of Object.entries(CONTRACTIONS)) {
     t = t.replace(new RegExp(`\\b${escapeRe(k)}\\b`, 'g'), v);
   }
-  t = t.replace(/[.,!?;:"`“”]/g, ' ').replace(/\s+/g, ' ').trim();
+  // 전각 일본어 구두점 포함 (2026-08-29 재감사 — normalizeReferenceText 의 클래스와 정합)
+  t = t.replace(/[.,!?;:"`“”、。！？：；，．・]/g, ' ').replace(/\s+/g, ' ').trim();
   return t ? t.split(' ') : [];
 }
 
@@ -65,7 +66,7 @@ export function judgeCoverage(recognized, expected) {
   }
 
   const coverage = exp.length ? (exp.length - missing.length) / exp.length : 0;
-  return { pass: exp.length > 0 && missing.length === 0, missing, extra, coverage };
+  return { pass: exp.length > 0 && missing.length === 0, missing, extra, coverage, expTokens: exp.length };
 }
 
 /* 생산 연습 통과 판정 (2026-07-23) — 3중 기준: 커버리지 + 문장 정확도 + 단어 하한.
@@ -93,26 +94,35 @@ export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 
  *   · 정확도 단독 불가 — 실기록 391건 중 44건(11%)이 50점 미만인데 전사는 멀쩡했다. 버리면 안 된다.
  *   · 두 신호 동시 바닥은 실측에서 '다른 문장·아무 발음'에만 나타났다
  *     (정상·부분 발화 정확도 최저 65 / 다른 문장 최고 27).
- * 임계값은 그 간극의 가운데다 — 커버리지가 살아 있으면 발음이 아무리 나빠도 점수는 기록된다. */
+ * 임계값은 그 간극의 가운데다. 커버리지가 살아 있으면 **오발화로는** 버리지 않는다 — 단 실경로
+ * 진입점(judgeRecording)은 음질(unclear)을 먼저 물으므로, 음소 원시 평균이 바닥이면 커버리지와
+ * 무관하게 채점이 보류된다 (2026-08-29 재감사 정정 — 종전 문구는 그 겹을 빠뜨렸다). */
 export function judgeMisread(result, expected, { minAccuracy = 40, minCoverage = 0.7 } = {}) {
   const accuracy = Math.round(Number(result?.score) || 0);
-  const { coverage } = judgeCoverage(result?.recognizedText, expected);
-  return { misread: accuracy < minAccuracy && coverage < minCoverage, coverage, accuracy };
+  const judged = judgeCoverage(result?.recognizedText, expected);
+  /* ja 퇴화 가드 (2026-08-29 감사) — 공백 무분절 언어는 기대문이 1토큰이라 coverage 가 항상 0,
+   * misread 가 'accuracy 단독' 판정으로 퇴화한다. 그러면 정답을 발음만 나쁘게 말한 발화에
+   * "다른 문장" 안내가 나갈 수 있다. 내용 비교가 무의미하면 판정하지 않는다 — 음질(unclear)이 잡는다. */
+  const comparable = judged.expTokens >= 2;
+  return { misread: comparable && accuracy < minAccuracy && judged.coverage < minCoverage, coverage: judged.coverage, accuracy };
 }
 
-/* 음소 점수 평균 — Azure 가 준 원시 음향 일치도. 표시 점수(AccuracyScore)와 달리 보정이 없다. */
+/* 음소 점수 평균 — Azure 가 준 원시 음향 일치도. 표시 점수(AccuracyScore)와 달리 보정이 없다.
+ * 결측·비수치 score 는 0(최악값)이 아니라 **제외**한다 — '근거 없으면 판정하지 않는다' 계약을
+ * 항목 단위에도 지킨다. 유효 표본이 MIN_PHONEME_N(4) 미만이면 통계적으로 불안정해 null (2026-08-29 감사). */
+const MIN_PHONEME_N = 4;
 function phonemeMean(result) {
   const ps = result?.phonemeScores;
   if (!Array.isArray(ps) || !ps.length) return null;   // 근거 없음 — 판정하지 않는다
-  let sum = 0;
-  for (const p of ps) sum += Number(p?.score) || 0;
-  return sum / ps.length;
+  const valid = ps.map((p) => Number(p?.score)).filter(Number.isFinite);
+  if (valid.length < MIN_PHONEME_N) return null;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
 }
 
 /* 채점 가능 여부 (2026-08-29) — "엉뚱한 문장인데 50점이 말이 되냐"(사용자)에 대한 답.
  *
  * 관찰: 표시 점수(AccuracyScore)가 저점 구간에서 음소 원시 점수와 크게 어긋난다.
- * 실기록 중 capture_rms 가 남은 26건이 음소 원시 평균으로 완전히 갈린다 —
+ * 실기록(en 391 + ja 20 = 411건) 중 capture_rms 가 남은 26건(en 24 + ja 2)이 음소 원시 평균으로 갈린다 —
  *   정상 19건 — 음소 0점 0개 · 음소평균 65.2~97.7 · 표시 acc 75~98   (둘이 일치)
  *   문제  7건 — 음소 0점 15~100% · 음소평균 0~28.8 · 표시 acc 23~63  (둘이 괴리)
  * 52점짜리 발화의 음소 평균이 17.4, 58점짜리가 10.4 다. 사용자가 본 "50점 안팎"이 이 구간이다.

@@ -891,7 +891,13 @@ async function ensureWarmMic(workletUrl) {
     /* TTS 재생 구간은 녹음에도 pre-roll 에도 담지 않는다 (2026-08-29). 녹음 중 듣기를 허용하면서
      * 재생음이 점수가 되는 걸 막는 유일한 지점 — 실측: 말 안 하고 재생음만 담긴 녹음이 96점.
      * VAD 만 시계를 되짚어(ttsHold) 재생이 길어도 '말이 끝났다'고 오인해 끊지 않게 한다. */
-    if (_ttsPlaying > 0) { wm.active?.ttsHold?.(); return; }
+    if (_ttsPlaying > 0) {
+      wm.active?.ttsHold?.();
+      // 재생 전 오디오가 pre-roll 로 이월되지 않게 링도 비운다 (2026-08-29 감사) — 안 비우면
+      // 재생 직후 시작한 녹음 머리에 '재생 전 0.5초'(직전 발화 꼬리 등)가 붙어 채점을 오염시킨다.
+      wm.ring = []; wm.ringLen = 0;
+      return;
+    }
     if (wm.active) { wm.active.onChunk(int16); return; }
     // 대기 중(녹음 밖) — pre-roll 링버퍼. 최근 PREROLL_MAX_SAMPLES 만 유지.
     wm.ring.push(int16);
