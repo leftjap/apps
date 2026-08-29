@@ -483,6 +483,10 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     _activeSpeak.cancelled = true;
     if (_activeSpeak.playbackTimer) clearTimeout(_activeSpeak.playbackTimer);
     disposeSynth(_activeSpeak.entry);
+    /* 선점된 재생의 종료를 즉시 통보 (2026-08-29) — onEnd 는 speak() 의 wrapped finish 라 멱등
+     * (cancel 경유와 겹쳐도 사용자 onEnd 는 1회). 통보를 빼면 _ttsPlaying 이 TTS_HOLD_MAX_MS(30초)
+     * 까지 새고, 그동안 활성 녹음의 청크가 전부 버려진다 (recordWav 의 재생 구간 폐기). */
+    try { _activeSpeak.onEnd?.(); } catch (err) { console.warn('[speech] preempt onEnd', err); }
     _activeSpeak = null;
   }
 
@@ -492,6 +496,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     if (gen !== _speakGen) {
       _dbg('speak 선점 취소 — 대기 중 새 speak/cancel 발생', { gen, cur: _speakGen });
       disposeSynth(entry); // 안 쓴 채 버린다 (1회용이라 spare 로 반납 불가)
+      onEnd?.(); // 재생 표시 해제 (wrapped finish — cancel 경유로 이미 해제됐으면 no-op)
       return;
     }
     const { synth } = entry;
@@ -517,7 +522,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
         const audioMs = result?.audioDuration ? result.audioDuration / 10000 : 0;
         const synthMs = Date.now() - t0;
         _dbg('speak synthesis 완료, playback 대기', { synthMs, audioMs });
-        if (session.cancelled) { _dbg('speak cancelled before playback', {}); return; }
+        if (session.cancelled) { _dbg('speak cancelled before playback', {}); onEnd?.(); return; }
         const finish = () => {
           if (session.finished) return; session.finished = true;
           _dbg('speak playback 완료', { totalMs: Date.now() - t0, audioMs, cancelled: session.cancelled });
@@ -549,7 +554,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
         disposeSynth(entry);
         // 취소·선점된 발화는 폴백도 내지 않는다 — speakWeb 은 _activeSpeak 에 등록되지 않아
         // 이후 cancel()·선점으로 멈출 수 없다 → 새어나가면 그 자체가 '2연속 재생'이 된다.
-        if (session.cancelled || gen !== _speakGen) { _dbg('speak 실패 — 취소된 발화라 폴백 생략', { gen }); return; }
+        if (session.cancelled || gen !== _speakGen) { _dbg('speak 실패 — 취소된 발화라 폴백 생략', { gen }); onEnd?.(); return; }
         console.warn('[speech][azure][speak] 실패, web 폴백:', err);
         // Wave 11.31 — speakWeb 이 async (voiceschanged 대기). 콜백 onEnd 패턴 + void 래핑.
         void speakWeb(text, { lang, rate, voice: voiceName, onEnd }); // voiceName seed 로 폴백 화자 변주 유지
@@ -558,7 +563,7 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
   } catch (e) {
     _dbg('speak init 실패', { elapsedMs: Date.now() - t0, error: e?.message ?? e });
     disposeSynth(entry);
-    if (gen !== _speakGen) { _dbg('speak init 실패 — 취소된 발화라 폴백 생략', { gen }); return; }
+    if (gen !== _speakGen) { _dbg('speak init 실패 — 취소된 발화라 폴백 생략', { gen }); onEnd?.(); return; }
     console.warn('[speech][azure][speak] init 실패, web 폴백:', e?.message ?? e);
     void speakWeb(text, { lang, rate, voice, onEnd }); // 요청 voice seed 로 폴백 화자 변주 유지
   }

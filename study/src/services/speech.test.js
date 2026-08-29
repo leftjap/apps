@@ -1707,3 +1707,43 @@ describe('speech — cancel() 이 재생 종료를 통보한다', () => {
     expect(onEnd).toHaveBeenCalledTimes(1);
   });
 });
+
+/* speak 가 speak 를 선점할 때의 재생 표시 누수 (2026-08-29 자체 감사 발견).
+ * 선점 경로(진입부 _activeSpeak 강제 중지)는 playbackTimer 만 clear 하고 wrapped onEnd 를 안 불렀다.
+ * → _ttsPlaying 이 TTS_HOLD_MAX_MS(30초)까지 새고, 그동안 **활성 녹음의 청크가 전부 버려진다**
+ * (recordWav worklet 이 _ttsPlaying>0 이면 폐기). 녹음 중 드릴 행1 재생 → 행2 재생(선점) 순서로 재현. */
+describe('speak — 선점 시 이전 재생의 종료 통보 (카운터 누수 방지)', () => {
+  function setupSDK() {
+    class FakePlayer { constructor() { this.privIsPaused = false; } notifyPlayback() {} pause() {} close() {} }
+    class FakeSynth {
+      constructor(_c, audioConfig) { this.player = audioConfig?.player; }
+      speakSsmlAsync(_ssml, ok) { ok({ audioDuration: 1e7 }); } // 1초 재생
+      close() {}
+    }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FakeSynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakePlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
+      },
+    });
+  }
+
+  it('재생 중 새 speak 가 선점하면 이전 onEnd 가 즉시 1회 불리고, 둘 다 끝나면 isTtsPlaying=false', async () => {
+    setupSDK();
+    const { Speech, isTtsPlaying } = await import('./speech.js');
+    const endA = vi.fn(), endB = vi.fn();
+    Speech.speak('first sentence', { lang: 'en-US', onEnd: endA });
+    await new Promise((r) => setTimeout(r, 30));       // A 합성 완료, 1초 재생 대기 중
+    expect(isTtsPlaying()).toBe(true);
+    Speech.speak('second sentence', { lang: 'en-US', onEnd: endB }); // B 가 A 를 선점
+    await new Promise((r) => setTimeout(r, 30));
+    expect(endA).toHaveBeenCalledTimes(1);             // 선점 즉시 통보 — 30초 누수 없음
+    await new Promise((r) => setTimeout(r, 1100));     // B 재생 종료
+    expect(endB).toHaveBeenCalledTimes(1);
+    expect(endA).toHaveBeenCalledTimes(1);             // 중복 통보 없음
+    expect(isTtsPlaying()).toBe(false);                // 카운터 0 — 녹음 청크 폐기 없음
+  });
+});
