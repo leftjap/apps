@@ -1294,6 +1294,19 @@ describe('sessionExprV2 — 녹음 품질 게이트', () => {
     expect(String(showRecordToast.mock.calls[0][0])).toContain('다른 문장');
   });
 
+  it('또렷한 오발화(소리·내용 둘 다 바닥)는 원인을 지목하지 않는다 — garbled 배선 (라이브 캡처 형태)', async () => {
+    // 순수 함수 검증만으론 UI 배선 무력화(garbled→unclear 접기)가 1338건 전부 초록으로 통과한다 —
+    // 적대 감사 뮤테이션 확증. 토스트까지 도달하는 통합 핀이 이 테스트다.
+    stopAndAnalyze.mockResolvedValueOnce({ score: 2, recognizedText: 'That say.', weakPhonemes: [], phonemeScores: ph(31.2) });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    await recOnce(host);
+    expect(showRecordToast).toHaveBeenCalledTimes(1);
+    const msg = String(showRecordToast.mock.calls[0][0]);
+    expect(msg).not.toMatch(/다른 문장/);
+    expect(msg).not.toMatch(/안 들렸/);
+  });
+
   it('음소평균 66 인 저점 발화는 그대로 기록한다 (실기록 하한 보호)', async () => {
     stopAndAnalyze.mockResolvedValueOnce({ score: 21, recognizedText: 'Is that a promise?', weakPhonemes: [], phonemeScores: ph(66) });
     const host = document.createElement('div'); document.body.appendChild(host);

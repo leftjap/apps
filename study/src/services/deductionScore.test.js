@@ -227,3 +227,68 @@ describe('computeDeductionScore — 반복·덧붙임(Insertion)', () => {
     expect(r.deductions.find((d) => d.axis === 'fluency')).toBeUndefined();
   });
 });
+
+/* 2026-08-29 오후 적대 감사 확증분 — 축 입력의 결측·오염 회귀 방지.
+ * ① null 저장 형태(pronunciationLog 가 미측정을 ?? null 로 영속화)가 0점으로 강제 변환돼 만점 감점
+ * ② ja 문중 구두점(、) 문장이 절 2토큰이 되어 missing 축이 절 단위 50~100점을 깎음
+ * ③ 이름 전체 Omission 제외가 같은 철자의 실발화 항목까지 지움 (라이브 G1: that 21점 증발)
+ * ④ 삽입 단어가 words 예산 분모를 희석해 깨끗한 반복이 점수를 올림 (방향 역전 실측 재현) */
+describe('computeDeductionScore — 적대 감사 확증 회귀 방지', () => {
+  const EXP4 = 'sorry could you say';
+  const words4 = EXP4.split(' ');
+
+  it('fluencyScore·prosodyScore 가 null(저장 형태)이면 미측정 — 깎지 않는다', () => {
+    const r = computeDeductionScore({
+      recognizedText: EXP4,
+      wordScores: words4.map((w) => W(w, 100)),
+      fluencyScore: null, prosodyScore: null,
+    }, EXP4);
+    expect(r.score).toBe(100);
+    expect(r.deductions).toHaveLength(0);
+  });
+
+  it('fluency null + 삽입 증거 → 삽입분만 깎인다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say say',
+      wordScores: [...words4.map((w) => W(w, 100)), W('say', 100)],
+      fluencyScore: null, insertions: ['say'],
+    }, EXP4);
+    expect(r.deductions.find((d) => d.axis === 'fluency').points).toBe(2);
+  });
+
+  it('ja 문중 구두점 정발화(Display 변형)가 절 단위 missing 으로 붕괴하지 않는다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'はい持ち帰りです',                       // Azure Display 가 쉼표를 안 붙인 경우
+      wordScores: [W('はい', 96), W('持ち帰りです', 98)],
+      fluencyScore: 98,
+    }, 'はい、持ち帰りです。');
+    expect(r.floor).toBe(50);
+    expect(r.deductions.find((d) => d.axis === 'missing')).toBeUndefined();
+    expect(r.score).toBeGreaterThanOrEqual(90);
+  });
+
+  it('버벅임(깨끗한 반복 삽입)이 점수를 올리지 못한다 — 삽입 단어는 words 예산 분모에서 빠진다', () => {
+    const a = computeDeductionScore({
+      recognizedText: EXP4,
+      wordScores: words4.map((w) => W(w, 50)),
+    }, EXP4);
+    const b = computeDeductionScore({
+      recognizedText: 'sorry could you say say',
+      wordScores: [...words4.map((w) => W(w, 50)), W('say', 100)],
+      insertions: ['say'],
+    }, EXP4);
+    expect(b.score).toBeLessThan(a.score);   // 종전엔 분모 희석(30/5)이 삽입 감점 2 를 넘겨 역전했다
+  });
+
+  it('같은 철자의 실발화는 Omission 제외에 휩쓸리지 않는다 — 개수 단위·낮은 점수부터 (라이브 G1)', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'That say.',
+      wordScores: [W('that', 21), W('Sorry', 0), W('could', 0), W('you', 0), W('say', 12),
+        W('that', 0), W('again', 0), W('more', 0), W('slowly', 0)],
+      omissions: ['Sorry', 'could', 'you', 'that', 'again', 'more', 'slowly'],
+    }, 'Sorry could you say that again more slowly');
+    // omission 'that' 1건은 0점 항목만 걷어낸다 — 실발화 that(21)은 words 축에 남는다
+    const wordsDed = r.deductions.find((d) => d.axis === 'words');
+    expect(wordsDed.detail.some((w) => w.word === 'that' && w.score === 21)).toBe(true);
+  });
+});

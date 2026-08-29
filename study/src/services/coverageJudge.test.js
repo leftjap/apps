@@ -256,6 +256,14 @@ describe('judgeRecording — 오발화 + 녹음 품질 통합 판정', () => {
   it('단어를 다 말한 저점(발음만 나쁨)은 음질만 받쳐주면 기록한다', () => {
     expect(judgeRecording({ score: 21, recognizedText: EXP, phonemeScores: ph(66) }, EXP).record).toBe(true);
   });
+
+  it('ja 문중 구두점 문장의 오발화도 misread 를 세우지 않는다 — 가드는 토큰 수가 아니라 원문 공백 기준', () => {
+    // 전각 구두점(、)이 공백으로 치환돼 expTokens 2 가 되면서 1토큰 가드가 무력화되던 결함
+    // (2026-08-29 오후 적대 감사 확증 — 예: 'はい、持ち帰りです。' 가 절 2개로 쪼개져 비교됨).
+    expect(judgeMisread({ score: 11, recognizedText: 'いいえ。' }, 'はい、持ち帰りです。').misread).toBe(false);
+    const r = judgeRecording({ score: 11, recognizedText: 'いいえ。', phonemeScores: ph(11) }, 'はい、持ち帰りです。');
+    expect(r.reason).toBe('unclear');   // garbled 아님 — 내용 비교 불가 언어는 음질만 지목한다
+  });
 });
 
 /* 음질 판정을 단독으로도 쓸 수 있어야 한다 (2026-08-29) — 체이닝·생산 연습은 통과 판정이 따로

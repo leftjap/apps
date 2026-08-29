@@ -53,16 +53,37 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
   const cov = judgeCoverage(result?.recognizedText, expected);
   const nExp = Math.max(cov.expTokens || 0, 1);
   /* 바닥은 축 상한 합에서 유도한다 (100 − Σmax) — rates 를 바꿔도 '전 축 바닥 = 바닥점' 항등이 유지.
-   * ja 퇴화 가드: 기대문이 1토큰(공백 무분절)이면 토큰 커버리지가 무의미 — missing 축을 끄고
-   * 바닥을 만점 커버리지로 둔다 (judgeMisread 의 expTokens>=2 가드와 같은 근거, 검증 발견). */
+   * ja 퇴화 가드: 공백 무분절 문장(원문에 공백 없음)은 토큰 커버리지가 무의미 — missing 축을 끄고
+   * 바닥을 만점 커버리지로 둔다 (judgeMisread 의 comparable 가드와 같은 근거). 판별자는 토큰 수가
+   * 아니라 원문 공백(spaceSeparated) — 전각 구두점 치환이 ja 문장을 절 2토큰으로 쪼개 missing 축이
+   * 절 단위 50~100점을 깎던 결함의 정정 (2026-08-29 오후 적대 감사 확증). */
   const floorMax = 100 - (rates.words.max + rates.fluency.max + rates.intonation.max);
-  const tokensComparable = (cov.expTokens || 0) >= 2;
+  const tokensComparable = (cov.expTokens || 0) >= 2 && cov.spaceSeparated === true;
   const floor = Math.round(floorMax * (tokensComparable ? cov.coverage : 1));
   const weakSet = new Set([...KO_WEAK_PHONEMES, ...personalWeak]);
-  // 누락 단어(Omission)는 wordScores 에 0점으로도 실려 온다(실경로 enableMiscue:true 실측) —
-  // words 축에서 빼서 missing 축과의 이중 감점을 막는다 (검증 발견).
-  const omitted = new Set((result?.omissions ?? []).map(norm));
-  const saidWords = (result?.wordScores ?? []).filter((w) => !omitted.has(norm(w?.word)));
+  /* 누락(Omission)·삽입(Insertion)은 words 축에서 **개수 단위**로 뺀다 (2026-08-29 오후 감사).
+   * - 누락은 wordScores 에 0점으로도 실려 와(실측) missing 축과 이중 감점되고, 삽입은 예산 분모를
+   *   희석해 깨끗한 반복이 점수를 올리는 역전을 만든다(실측 재현 — 85→86).
+   * - 이름 전체 제외는 같은 철자의 실발화 항목까지 지운다(라이브 G1: that 21점 증발) — 개수만큼만.
+   * - 같은 이름이 여럿이면: 누락은 점수 낮은 항목부터(누락 항목은 0점 — 실측), 삽입은 점수 높은
+   *   항목부터(반복을 깨끗하게 말해도 점수가 오르지 않는 보수 방향). 삽입 제외는 insCount 와 같이
+   *   내용 비교 가능 언어에서만. */
+  const ws = result?.wordScores ?? [];
+  const excludedIdx = new Set();
+  const excludeByCount = (names, ascending) => {
+    const budget = {};
+    for (const w of names) { const k = norm(w); budget[k] = (budget[k] || 0) + 1; }
+    for (const [k, cnt] of Object.entries(budget)) {
+      ws.map((w, i) => ({ i, s: Number(w?.score) || 0, k: norm(w?.word) }))
+        .filter((e) => e.k === k && !excludedIdx.has(e.i))
+        .sort((a, b) => (ascending ? a.s - b.s : b.s - a.s))
+        .slice(0, cnt)
+        .forEach((e) => excludedIdx.add(e.i));
+    }
+  };
+  excludeByCount(result?.omissions ?? [], true);
+  if (tokensComparable) excludeByCount(result?.insertions ?? [], false);
+  const saidWords = ws.filter((_, i) => !excludedIdx.has(i));
 
   // 단어 → 취약 음소 포함 여부 (phonemeScores 의 word 연결 사용. 없으면 가중 없음)
   const weakWords = new Set();
@@ -98,9 +119,12 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
 
   // ── fluency: 연속 점수 결손 + 반복·덧붙임(Insertion — miscue 응답의 실측값이라 flu 미측정이어도
   // 근거가 된다). ja(1토큰 기대문)는 삽입 판정 미실측이라 적용하지 않는다 — tokensComparable 가드 재사용.
-  const flu = Number(result?.fluencyScore);
+  // null 은 미측정의 저장 형태(pronunciationLog 가 ?? null 로 영속화) — Number(null)===0 이라
+  // 수치 강제 변환을 거치면 '미측정'이 '0점'이 되어 축 상한 만점 감점이 난다. 타입까지 좁힌다.
+  const flu = result?.fluencyScore;
+  const fluMeasured = typeof flu === 'number' && Number.isFinite(flu);
   const insCount = tokensComparable ? (result?.insertions ?? []).length : 0;
-  let fluDed = Number.isFinite(flu) ? Math.max(0, 100 - flu) * rates.fluency.perPoint : 0;
+  let fluDed = fluMeasured ? Math.max(0, 100 - flu) * rates.fluency.perPoint : 0;
   // perInsertion 결측 rates(구형 커스텀 표)는 0 — NaN 이 축 전체를 지우는 것을 막는다.
   fluDed = Math.min(rates.fluency.max, fluDed + insCount * (rates.fluency.perInsertion || 0));
   if (fluDed > 0) {
@@ -113,9 +137,9 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
 
   // ── intonation: 단조 태그 + 프로소디 결손 (둘 다 없으면 감점 없음)
   const mono = result?.prosodyIssues?.monotoneWords ?? [];
-  const pros = Number(result?.prosodyScore);
+  const pros = result?.prosodyScore;   // null = 미측정 (fluency 와 같은 근거로 타입까지 좁힌다)
   let intonDed = mono.length * rates.intonation.perMonotoneWord;
-  if (Number.isFinite(pros)) intonDed += Math.max(0, 100 - pros) * rates.intonation.perProsodyPoint;
+  if (typeof pros === 'number' && Number.isFinite(pros)) intonDed += Math.max(0, 100 - pros) * rates.intonation.perProsodyPoint;
   intonDed = Math.min(rates.intonation.max, intonDed);
   if (intonDed > 0) {
     deductions.push({

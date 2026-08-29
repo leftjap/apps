@@ -20,7 +20,9 @@ import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
 /* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 셋이라 문구를 나눈다.
- * unclear = 음소 원시 점수만 바닥 (내용은 맞음 — 소리가 레퍼런스 음소에 안 맞았다)
+ * unclear = 음소 원시 점수만 바닥 (judgeRecording 경로 — 메인·응용 드릴 — 에선 내용 판정이 misread
+ *           를 세우지 않은 경우. 체이닝·생산은 isTooUnclear 단독이라 내용은 묻지 않는다 — 통과 판정이
+ *           따로 있기 때문. coverageJudge.isTooUnclear 주석 참조)
  * misread = 소리는 멀쩡한데 다른 문장
  * garbled = 둘 다 바닥 — 약한 신호인지 오발화인지 가를 근거가 없다 (실사용 보고: 또렷한 오발화가
  *           "또렷하게 안 들렸어요"로 오안내되던 비대칭의 뿌리. coverageJudge 주석 참조)

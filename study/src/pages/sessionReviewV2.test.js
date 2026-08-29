@@ -782,6 +782,15 @@ describe('sessionReviewV2 — 녹음 품질 게이트', () => {
     expect(shown).toHaveLength(1);
     expect(shown[0].textContent).toBe('21');
   });
+
+  it('또렷한 오발화(소리·내용 둘 다 바닥)는 원인을 지목하지 않는다 — garbled 배선 (신규와 같은 계약)', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 2, recognizedText: 'Banana orange.', phonemeScores: ph(31.2) });
+    const host = mountCard({ interval: 3 });
+    await recOnce(host);
+    const msg = String(showRecordToast.mock.calls[0][0]);
+    expect(msg).not.toMatch(/다른 문장/);
+    expect(msg).not.toMatch(/안 들렸/);
+  });
 });
 
 /* 데모 격리 (2026-08-29 전면 재감사 확증) — 신규 세션과 동일한 유출이 복습 드릴에도 있었다. */

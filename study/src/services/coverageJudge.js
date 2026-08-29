@@ -66,7 +66,12 @@ export function judgeCoverage(recognized, expected) {
   }
 
   const coverage = exp.length ? (exp.length - missing.length) / exp.length : 0;
-  return { pass: exp.length > 0 && missing.length === 0, missing, extra, coverage, expTokens: exp.length };
+  /* spaceSeparated: 기대문 **원문**에 공백이 있는가 — 토큰 비교가 유의미한지의 판별자.
+   * expTokens 만으론 못 가른다: 전각 구두점(、。 등)이 공백으로 치환돼 ja 문장도 절 단위로
+   * 2토큰이 될 수 있다('はい、持ち帰りです。' → 2). 절 문자열 완전일치 비교는 무의미하다
+   * (2026-08-29 오후 적대 감사 확증 — 정발화 Display 변형이 절 불일치로 0점 붕괴). */
+  const spaceSeparated = /\s/.test(String(expected ?? '').trim());
+  return { pass: exp.length > 0 && missing.length === 0, missing, extra, coverage, expTokens: exp.length, spaceSeparated };
 }
 
 /* 생산 연습 통과 판정 (2026-07-23) — 3중 기준: 커버리지 + 문장 정확도 + 단어 하한.
@@ -100,10 +105,12 @@ export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 
 export function judgeMisread(result, expected, { minAccuracy = 40, minCoverage = 0.7 } = {}) {
   const accuracy = Math.round(Number(result?.score) || 0);
   const judged = judgeCoverage(result?.recognizedText, expected);
-  /* ja 퇴화 가드 (2026-08-29 감사) — 공백 무분절 언어는 기대문이 1토큰이라 coverage 가 항상 0,
+  /* ja 퇴화 가드 (2026-08-29 감사, 오후 정정) — 공백 무분절 언어는 토큰 커버리지가 무의미해
    * misread 가 'accuracy 단독' 판정으로 퇴화한다. 그러면 정답을 발음만 나쁘게 말한 발화에
-   * "다른 문장" 안내가 나갈 수 있다. 내용 비교가 무의미하면 판정하지 않는다 — 음질(unclear)이 잡는다. */
-  const comparable = judged.expTokens >= 2;
+   * "다른 문장" 안내가 나갈 수 있다. 내용 비교가 무의미하면 판정하지 않는다 — 음질(unclear)이 잡는다.
+   * 판별자는 토큰 수가 아니라 **원문 공백**(spaceSeparated) — 전각 구두점 치환이 ja 문장을
+   * 절 2토큰으로 쪼개 가드를 비켜가던 결함의 정정. */
+  const comparable = judged.expTokens >= 2 && judged.spaceSeparated;
   return { misread: comparable && accuracy < minAccuracy && judged.coverage < minCoverage, coverage: judged.coverage, accuracy };
 }
 
@@ -149,7 +156,8 @@ function phonemeMean(result) {
  * 나중에 물었는데, 라이브 실측에서 **또렷한 오발화도 음소 정렬이 함께 무너져**(원어민 TTS 오발화가
  * acc 2·음소평균 31) unclear 로 오인됐다. 역도 참이다(소리가 무너지면 전사도 무너진다). 즉 두 신호가
  * 동시에 바닥이면 어느 쪽이 원인인지 가를 근거가 없다 → 'garbled' 로 원인을 단정하지 않는다.
- * unclear 단독(내용은 맞음)·misread 단독(소리는 멀쩡)일 때만 각각의 원인을 지목한다. */
+ * unclear 단독(내용 판정이 misread 를 세우지 않음 — 정상 커버리지·acc≥40·내용 비교 불가 언어)·
+ * misread 단독(음소평균이 임계 이상이거나 음소 데이터 결측)일 때만 각각의 원인을 지목한다. */
 /** 음질만 단독으로 묻는다 — 체이닝·생산 연습은 통과 판정이 따로 있어 오발화 판정이 필요 없다.
  * 음소 데이터가 없으면 판정하지 않는다(false) — 근거 없이 되돌리지 않는다는 계약. */
 export function isTooUnclear(result, { minPhonemeMean = 50 } = {}) {
