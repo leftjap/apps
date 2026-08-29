@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { restoreCardScore } from './session-new.js';
 
 /* 카드 이동 시 점수링 복원 — 종전엔 recLog[id].best(최고)를 썼다. 캡션이 '방금 점수' 인데 값이
@@ -22,5 +23,97 @@ describe('session-new — restoreCardScore (카드 이동 시 점수링 복원)'
   it('숫자가 아닌 값은 null (구 스냅샷 방어)', () => {
     expect(restoreCardScore({ c1: { utter: [] } }, 'c1')).toBeNull();
     expect(restoreCardScore({ c1: { utter: ['72'] } }, 'c1')).toBeNull();
+  });
+});
+
+/* mount 계층 — 스냅샷 복원 계약 (2026-08-29 오후 2차 감사 확증 #4). 복습 하네스(session-review.test.js)와
+ * 동형 — 신규 페이지 고유 분기(replay 폴백 vs 복원 우선)와 로드 실패 봉인을 고정한다. */
+vi.mock('./cardLoader.js', async (orig) => ({
+  ...await orig(),
+  loadNewCards: vi.fn(async () => []),
+  loadReplayCards: vi.fn(async () => []),
+}));
+vi.mock('../services/sessionFinish.js', async (orig) => ({
+  ...await orig(),
+  finishSession: vi.fn(async () => ({})),
+  flushLiveStats: vi.fn(async () => null),
+}));
+vi.mock('../services/sessionAnalyze.js', () => ({
+  startMicRecording: vi.fn(async () => ({ controller: { stop() {} } })),
+  stopAndAnalyze: vi.fn(async () => ({ score: 90 })),
+}));
+vi.mock('../services/pronunciationLog.js', async (orig) => ({
+  ...await orig(),
+  savePronunciationLog: vi.fn(async () => null),
+}));
+vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
+vi.mock('../services/sessionStats.js', () => ({
+  fetchDayUtterMap: vi.fn(async () => ({})),
+  prevStudyDayUtterance: vi.fn(() => 0),
+  fetchPRDays: vi.fn(async () => []),
+}));
+vi.mock('../services/summaryData.js', () => ({ buildSummaryData: vi.fn(() => ({})), persistSummary: vi.fn() }));
+vi.mock('../services/sceneProgress.js', () => ({
+  getSceneShadow: vi.fn(async () => ({})), setSceneShadow: vi.fn(async () => null), clearSceneShadow: vi.fn(async () => null),
+}));
+
+import { mountSessionNew } from './session-new.js';
+import { loadNewCards, loadReplayCards } from './cardLoader.js';
+import { flushLiveStats } from '../services/sessionFinish.js';
+import { localISODate } from '../utils/today.js';
+
+const tick2 = () => new Promise((r) => setTimeout(r, 0));
+const settle2 = async (n = 8) => { for (let i = 0; i < n; i += 1) await tick2(); };
+
+function fakeDB2(metaInit = {}) {
+  const meta = new Map(Object.entries(metaInit));
+  return {
+    _meta: meta,
+    meta: {
+      get: vi.fn(async (k) => meta.get(k)),
+      put: vi.fn(async (row) => { meta.set(row.key, row); }),
+      delete: vi.fn(async (k) => { meta.delete(k); }),
+    },
+    dailyStats: { get: vi.fn(async () => undefined) },
+    todayLessons: { bulkGet: vi.fn(async (ids) => ids.map(() => undefined)) },
+  };
+}
+
+const NCARD = (id, sentence, ko) => ({ id, lang: 'en', sentence, ko, pron: '', explanation: { key: `${sentence} = ${ko}` } });
+const NCARDS = [NCARD('n1', 'One two.', '뜻하나'), NCARD('n2', 'Three four.', '뜻둘'), NCARD('n3', 'Five six.', '뜻셋')];
+const NSNAP = (over = {}) => ({ key: 'activeSession', value: {
+  mode: 'new', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 60, base: null,
+  step: 2, tried: 3, passed: 2, lastScore: 88, pronScores: [88], weakInSession: {},
+  recLog: {}, exLog: { n2: { utter: [77] } }, cardIds: ['n1', 'n2', 'n3'], cards: NCARDS,
+  savedAt: Date.now(), ...over,
+} });
+
+describe('session-new — mount 복원 계약', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+
+  it('세션 중 목록이 비어도(sync pull 등) 스냅샷이 있으면 replay 로 빠지지 않고 복원한다', async () => {
+    window.studyDB = fakeDB2({ activeSession: NSNAP() });
+    loadNewCards.mockResolvedValueOnce([]);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(loadReplayCards).not.toHaveBeenCalled();               // 다시 듣기 폴백 미진입
+    expect(document.body.textContent).toContain('Three four.');   // 스냅샷 step 2 카드
+    expect(window.studyDB._meta.has('activeSession')).toBe(true); // 파기 금지
+    cleanup();
+  });
+
+  it('로드 실패 시 기존 스냅샷을 빈 스냅샷으로 덮어쓰지 않는다 — 라이브 통계도 미기록', async () => {
+    window.studyDB = fakeDB2({ activeSession: NSNAP() });
+    loadNewCards.mockRejectedValueOnce(new Error('DatabaseClosedError'));
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    cleanup();
+    await settle2(2);
+    const saved = window.studyDB._meta.get('activeSession').value;
+    expect(saved.step).toBe(2);
+    expect(saved.cardIds).toEqual(['n1', 'n2', 'n3']);
+    expect(flushLiveStats).not.toHaveBeenCalled();
   });
 });

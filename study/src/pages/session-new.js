@@ -25,7 +25,7 @@ import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { fetchDayUtterMap, prevStudyDayUtterance, fetchPRDays } from '../services/sessionStats.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
-import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession } from '../services/activeSession.js';
+import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession, finalizeStaleSnapshot } from '../services/activeSession.js';
 import { createActiveTimer } from '../services/activeTimer.js';
 import { getSceneShadow, setSceneShadow, clearSceneShadow } from '../services/sceneProgress.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
@@ -108,7 +108,8 @@ export function mountSessionNew(host) {
 
   const saveSnapshot = () => {
     // 데모(?demo=1)는 실 meta('activeSession')에 절대 쓰지 않는다 (격리). 인증 SPA 에서도 안전.
-    if (isDemoMode() || state.replay || state.ended || !window.studyDB || !state.loaded) return;
+    // loadFailed — 로드가 죽은 채의 빈 state 로 스냅샷·통계를 덮어쓰지 않는다 (로드 .catch 주석).
+    if (isDemoMode() || state.replay || state.ended || state.loadFailed || !window.studyDB || !state.loaded) return;
     const snap = {
       mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
@@ -278,11 +279,18 @@ export function mountSessionNew(host) {
       state.dayMap = dayMap;
       state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
       state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
-      // 복원보다 앞선 await 가 던지면 .catch 로 빠져 복원 전체가 죽고, cleanup 의 saveSnapshot 이
-      // 빈 state 로 스냅샷을 덮어써 영구 파괴한다 (2026-08-29 오후 조사 §2-I) — 부가 정보라 실패 무시.
-      try { state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); } // 공부 이력 캘린더의 코랄 칸
-      catch (e) { console.warn('[session-new] fetchPRDays 실패 — 캘린더 없이 진행', e); }
-      const restore = restoreFromSnapshot(snapshot, cards, 'new', getStoredLang());
+      state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸 (내부 전량 try/catch — reject 없음)
+      /* 자정 경계 (2026-08-29 오후 2차 감사) — 어제 시작한 스냅샷은 복원하지 않고 **어제 날짜로**
+       * 정식 마감한다. 복원하면 base 가 어제 dailyStats 행이라 오늘 학습이 어제 행에 계상된다(재현).
+       * 진행(step·점수)은 재시작되지만 기록은 어제 몫·오늘 몫이 각자의 행에 남아 정합하다. */
+      let snap = snapshot;
+      if (snap && snap.todayISO && snap.todayISO !== getTodayISO()) {
+        try { await finalizeStaleSnapshot(window.studyDB, snap); }
+        catch (e) { console.error('[session-new] 자정 경계 finalize', e); }
+        clearActiveSession(window.studyDB).catch(() => {});
+        snap = null;
+      }
+      const restore = restoreFromSnapshot(snap, cards, 'new', getStoredLang());
       // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
       // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
       // 단 복원 가능한 스냅샷이 있으면 세션 계속이 우선 — sync pull 이 세션 중 목록을 비워도 파기 금지.
@@ -331,6 +339,10 @@ export function mountSessionNew(host) {
     })
     .catch((e) => {
       console.error('[session-new] load + restore', e);
+      /* 복원 전 로드 실패 — loaded 만 세우면 언마운트 saveSnapshot 이 빈 state 로 기존 스냅샷을
+       * 덮어쓰고(진행 영구 파기), flushLiveStats 가 base 미확보 상태로 오늘 dailyStats 행을 0에
+       * 가깝게 덮어쓴다 (2026-08-29 오후 2차 감사 — 실행 재현). 저장 계열만 봉인한다. */
+      state.loadFailed = true;
       state.loaded = true;
       rerender();
     });

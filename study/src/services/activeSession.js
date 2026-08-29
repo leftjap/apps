@@ -143,6 +143,9 @@ export function restoreFromSnapshot(snapshot, cards, mode, lang) {
    * 보호가 사라지므로 명시 비교한다. 양쪽이 있을 때만 — 구형 스냅샷·미전달 호출 하위호환. */
   if (lang && snapshot.lang && snapshot.lang !== lang) return null;
   if (!Array.isArray(snapshot.cardIds)) return null;
+  // 빈 세션은 복원할 진행이 없다 — 빈 스냅샷을 '복원 가능'으로 판정하면 replay 폴백이 봉쇄되고
+  // 빈 화면에 고착된다 (2026-08-29 오후 2차 감사 — 종전엔 replay 분기의 정리가 자가 치유였다).
+  if (!snapshot.cardIds.length) return null;
   const snapCards = (Array.isArray(snapshot.cards) && snapshot.cards.length) ? snapshot.cards : null;
   if (snapCards) {
     if (snapCards.length !== snapshot.cardIds.length) return null;

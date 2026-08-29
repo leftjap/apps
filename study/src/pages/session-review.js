@@ -30,7 +30,7 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog, loadDrillLog } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
-import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession } from '../services/activeSession.js';
+import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession, finalizeStaleSnapshot } from '../services/activeSession.js';
 import { createActiveTimer } from '../services/activeTimer.js';
 import { showEndConfirm } from '../components/session/endConfirm.js';
 import { createExplanationPanel } from '../components/session/explanationPanel.js';
@@ -115,7 +115,8 @@ export function mountSessionReview(host) {
   activeTimer.setHidden(document.hidden); // 백그라운드 탭에서 로드(새로고침)돼도 숨김 구간 미계상
 
   const saveSnapshot = () => {
-    if (isDemoMode() || state.ended || !window.studyDB || !state.loaded) return; // 데모 격리
+    // loadFailed — 로드가 죽은 채의 빈 state 로 스냅샷·통계를 덮어쓰지 않는다 (아래 .catch 주석).
+    if (isDemoMode() || state.ended || state.loadFailed || !window.studyDB || !state.loaded) return; // 데모 격리
     const snap = {
       mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
@@ -281,12 +282,20 @@ export function mountSessionReview(host) {
       state.dayMap = dayMap;
       state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
       state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
-      // 복원보다 앞선 await 가 던지면 복원 전체가 죽고 cleanup 이 빈 스냅샷을 덮어쓴다 — 실패 무시.
-      try { state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); } // 공부 이력 캘린더의 코랄 칸
-      catch (e) { console.warn('[session-review] fetchPRDays 실패 — 캘린더 없이 진행', e); }
+      state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸 (내부 전량 try/catch — reject 없음)
       state.cards = cards;
       state.total = cards.length;
-      const restore = restoreFromSnapshot(snapshot, cards, sessionMode, getStoredLang());
+      /* 자정 경계 (2026-08-29 오후 2차 감사) — 어제 시작한 스냅샷은 복원하지 않고 **어제 날짜로**
+       * 정식 마감한다. 복원하면 base 가 어제 dailyStats 행이라 오늘 학습이 어제 행에 계상된다(재현).
+       * 진행(step·점수)은 재시작되지만 기록은 어제 몫·오늘 몫이 각자의 행에 남아 정합하다. */
+      let snap = snapshot;
+      if (snap && snap.todayISO && snap.todayISO !== getTodayISO()) {
+        try { await finalizeStaleSnapshot(window.studyDB, snap); }
+        catch (e) { console.error('[session-review] 자정 경계 finalize', e); }
+        clearActiveSession(window.studyDB).catch(() => {});
+        snap = null;
+      }
+      const restore = restoreFromSnapshot(snap, cards, sessionMode, getStoredLang());
       if (restore) {
         Object.assign(state, restore); // base 포함. 스냅샷에 cards 실물이 있으면 그것이 목록 정본
         startTime = restore.startTime;
@@ -312,6 +321,10 @@ export function mountSessionReview(host) {
     })
     .catch((e) => {
       console.error('[session-review] load + restore', e);
+      /* 복원 전 로드 실패 — loaded 만 세우면 언마운트 saveSnapshot 이 빈 state 로 기존 스냅샷을
+       * 덮어쓰고(진행 영구 파기), flushLiveStats 가 base 미확보 상태로 오늘 dailyStats 행을 0에
+       * 가깝게 덮어쓴다 (2026-08-29 오후 2차 감사 — 실행 재현). 저장 계열만 봉인한다. */
+      state.loadFailed = true;
       state.loaded = true;
       rerender();
     });

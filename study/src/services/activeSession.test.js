@@ -240,3 +240,13 @@ describe('restoreFromSnapshot — 언어 가드', () => {
     expect(restoreFromSnapshot(base, [], 'review')).not.toBe(null);
   });
 });
+
+/* 빈 스냅샷 가드 (2026-08-29 오후 2차 감사 확증) — cardIds 0장은 복원할 진행이 없다.
+ * 종전엔 replay 분기가 무조건 돌며 스테일 스냅샷을 정리(자가 치유)했는데, `&& !restore` 게이트가
+ * 빈 스냅샷을 '복원 가능'으로 판정하면 다시 듣기 폴백이 봉쇄되고 1/0 빈 화면에 고착된다. */
+describe('restoreFromSnapshot — 빈 스냅샷', () => {
+  it('cardIds 가 비었으면 복원하지 않는다 (cards 유무 무관)', () => {
+    expect(restoreFromSnapshot({ mode: 'new', cardIds: [], cards: [], step: 0 }, [], 'new')).toBe(null);
+    expect(restoreFromSnapshot({ mode: 'new', cardIds: [], step: 0 }, [], 'new')).toBe(null);
+  });
+});
