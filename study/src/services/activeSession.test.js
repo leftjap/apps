@@ -175,3 +175,68 @@ describe('finalizeStaleSnapshot — 첫 카드에서 만료돼도 발화는 기�
     expect(finishSession.mock.calls[0][1]).toMatchObject({ mode: 'review', tried: 4, completedReviewCount: 0 });
   });
 });
+
+/* 스냅샷 cards 정본 (2026-08-29 오후 — 실사용 보고 "새로고침하면 점수가 전부 날아간다").
+ * 복습은 카드 판정이 즉시 reviewQueue 에 반영되므로, 새로고침 후 로더가 due 필터로 '방금 판정한
+ * 카드'를 뺀 목록을 준다. 종전 게이트(현재 목록 완전 일치)는 그 순간 항상 실패해 스냅샷을 파기했다
+ * — 복습 중 새로고침 = 진행 전량 소실이 결정론적으로 재현되던 구조 결함 (회귀 아님, 조사 보고 §5①). */
+describe('restoreFromSnapshot — 스냅샷 cards 정본', () => {
+  const snapCards = [{ id: 'a', sentence: 'A' }, { id: 'b', sentence: 'B' }];
+  const base = {
+    mode: 'review', cardIds: ['a', 'b'], cards: snapCards,
+    step: 2, tried: 3, passed: 2, pronScores: [80, 90], exLog: { a: { utter: [80, 90] } },
+  };
+
+  it('복습 판정으로 현재 목록이 줄어도(길이 불일치) 복원된다 — 카드 실물은 스냅샷이 정본', () => {
+    const r = restoreFromSnapshot(base, [{ id: 'b' }], 'review');
+    expect(r).not.toBe(null);
+    expect(r.cards).toEqual(snapCards);
+    expect(r.total).toBe(2);
+    expect(r.step).toBe(2);
+    expect(r.exLog).toEqual({ a: { utter: [80, 90] } });
+  });
+
+  it('free 정렬 변동(순서 불일치)에도 복원된다', () => {
+    const r = restoreFromSnapshot({ ...base, mode: 'free' }, [{ id: 'b' }, { id: 'a' }], 'free');
+    expect(r).not.toBe(null);
+    expect(r.cards).toEqual(snapCards);
+  });
+
+  it('cards 없는 구형 스냅샷은 종전 규칙 유지 — 목록 불일치면 null, 일치하면 복원(cards 미반환)', () => {
+    const legacy = { mode: 'review', cardIds: ['a', 'b'], step: 2 };
+    expect(restoreFromSnapshot(legacy, [{ id: 'b' }], 'review')).toBe(null);
+    const ok = restoreFromSnapshot(legacy, [{ id: 'a' }, { id: 'b' }], 'review');
+    expect(ok).not.toBe(null);
+    expect(ok.cards).toBeUndefined();
+  });
+
+  it('스냅샷 내부 정합(cards ↔ cardIds)이 깨졌으면 복원하지 않는다', () => {
+    expect(restoreFromSnapshot({ ...base, cardIds: ['a', 'x'] }, [], 'review')).toBe(null);
+    expect(restoreFromSnapshot({ ...base, cardIds: ['a'] }, [], 'review')).toBe(null);
+  });
+});
+
+/* 언어 가드 (2026-08-29 오후 2차 감사 확증 — 이번 세션이 만든 회귀).
+ * 종전 '현재 목록 완전 일치' 게이트는 로더가 lang 필터를 거치므로 언어 가드를 겸했다 — en 스냅샷은
+ * ja 목록과 절대 일치하지 않아 폐기됐다. cards 정본화로 그 암묵 보호가 사라져, 언어 토글 후 진입하면
+ * 이전 언어 세션이 되살아나고 sessionLogs·lang_meta 가 새 언어로 오귀속된다. 명시 가드로 복원. */
+describe('restoreFromSnapshot — 언어 가드', () => {
+  const snapCards = [{ id: 'a', sentence: 'A' }, { id: 'b', sentence: 'B' }];
+  const base = { mode: 'review', lang: 'en', cardIds: ['a', 'b'], cards: snapCards, step: 2 };
+
+  it('언어가 다르면 복원하지 않는다', () => {
+    expect(restoreFromSnapshot(base, [], 'review', 'ja')).toBe(null);
+  });
+
+  it('언어가 같으면 목록 불일치여도 복원 — 언어 가드가 원 수정(cards 정본)을 되돌리지 않는다', () => {
+    const r = restoreFromSnapshot(base, [{ id: 'b' }], 'review', 'en');
+    expect(r).not.toBe(null);
+    expect(r.cards).toEqual(snapCards);
+  });
+
+  it('lang 없는 구형 스냅샷·lang 미전달 호출은 언어 비교 없이 종전 규칙', () => {
+    const legacy = { mode: 'review', cardIds: ['a', 'b'], cards: snapCards, step: 2 };
+    expect(restoreFromSnapshot(legacy, [], 'review', 'en')).not.toBe(null);
+    expect(restoreFromSnapshot(base, [], 'review')).not.toBe(null);
+  });
+});

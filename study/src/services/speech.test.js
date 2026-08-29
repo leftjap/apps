@@ -365,6 +365,33 @@ describe('speech — Wave 11.61 analyzeWavRest', () => {
     expect(result.mockFallback).toBeUndefined();
   });
 
+  it('업로드 전에 꼬리 무음을 트림한다 — 자동종료 hangover 2초가 채점 지연이 되지 않게 (실측 Δ≈0.5s)', async () => {
+    const sttBodies = [];
+    _fetchSpy.mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(
+          JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        sttBodies.push(init.body);
+        return new Response(JSON.stringify(REST_FIXTURE), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech, pcmToWavBlob } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const SR = 16000;
+    const pcm = new Int16Array(SR * 3);                          // 1초 톤 + 2초 무음
+    for (let i = 0; i < SR; i++) pcm[i] = i % 2 ? 8000 : -8000;
+    const blob = pcmToWavBlob(pcm, SR);
+    await Speech.analyzeWavRest(blob, 'You got it', { lang: 'en-US' });
+    expect(sttBodies[0].size).toBe(44 + (SR + SR * 0.3) * 2);    // 발화 1초 + 꼬리 0.3초만 업로드
+    expect(blob.size).toBe(44 + SR * 3 * 2);                     // 원본 블롭은 손대지 않는다
+  });
+
   it('발음 점수 = AccuracyScore (유창성 끌림 분리) — 또박또박/끊어 말해도 정확하면 고득점', async () => {
     // 실측 재현(score_diag): 중간에 끊어 읽으면 Accuracy 92인데 PronScore 65로 추락 (Fluency 45).
     // 발음 연습 앱은 정확도가 점수여야 함 → PronScore(유창성·억양 가중) 대신 AccuracyScore.
@@ -1887,5 +1914,45 @@ describe('speech — analyzeWavRest 프로소디 미측정 응답', () => {
     Speech.clearAzureTokenCache();
     const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(50)]), 'hi', { lang: 'en-US', enableProsody: true });
     expect(r.prosodyIssues).toEqual({ monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] });
+  });
+});
+
+/* 꼬리 무음 트림 (2026-08-29 오후) — 자동종료 녹음은 hangover(2초) 무음이 꼬리에 그대로 실린다.
+ * 라이브 실측: 같은 발화 꼬리 2.0초 → 0.3초에 채점 1.43~2.05s → 0.90~0.97s (Δ≈0.5s, 점수 96↔96).
+ * 머리(pre-roll)는 머리 잘림 보호를 위해 손대지 않는다. */
+describe('speech — trimTrailingSilencePcm (꼬리 무음 트림)', () => {
+  const SR = 16000;
+  const tone = (ms, amp = 8000) => Int16Array.from({ length: SR * ms / 1000 }, (_, i) => (i % 2 ? amp : -amp));
+  const silence = (ms) => new Int16Array(SR * ms / 1000);
+  const concat = (...parts) => {
+    const out = new Int16Array(parts.reduce((a, p) => a + p.length, 0));
+    let off = 0;
+    for (const p of parts) { out.set(p, off); off += p.length; }
+    return out;
+  };
+
+  it('발화 1초 + 무음 2초 → 무음이 keepMs(300ms)만 남는다', async () => {
+    const { trimTrailingSilencePcm } = await import('./speech.js');
+    const pcm = concat(tone(1000), silence(2000));
+    const trimmed = trimTrailingSilencePcm(pcm);
+    expect(trimmed.length).toBe(SR + SR * 0.3);          // 16000 + 4800
+  });
+
+  it('전체 무음이면 원본 그대로 — mic_silent 판정 근거 보존', async () => {
+    const { trimTrailingSilencePcm } = await import('./speech.js');
+    const pcm = silence(3000);
+    expect(trimTrailingSilencePcm(pcm)).toBe(pcm);
+  });
+
+  it('끝까지 소리가 있으면(수동 멈추기) 원본 그대로', async () => {
+    const { trimTrailingSilencePcm } = await import('./speech.js');
+    const pcm = tone(1500);
+    expect(trimTrailingSilencePcm(pcm)).toBe(pcm);
+  });
+
+  it('절감이 minSaveMs(400ms) 미만이면 건드리지 않는다 — 재조립 비용만 든다', async () => {
+    const { trimTrailingSilencePcm } = await import('./speech.js');
+    const pcm = concat(tone(1000), silence(500));        // 절감 가능분 200ms < 400ms
+    expect(trimTrailingSilencePcm(pcm)).toBe(pcm);
   });
 });

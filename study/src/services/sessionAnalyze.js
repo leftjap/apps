@@ -54,6 +54,10 @@ export async function startMicRecording(opts = {}) {
    * (speech.js: 재생음이 그대로 점수가 되던 구멍), 재생 중 녹음을 시작하면 발화가 통째로 버려진다.
    * 재생 중일 때만 부른다 — cancel 은 synthesizer 캐시를 비워 다음 듣기 지연을 만든다. */
   try { if (window.studySpeech.isTtsPlaying?.()) window.studySpeech.cancel?.(); } catch { /* noop */ }
+  /* 토큰 선발급 (2026-08-29) — Azure 토큰 캐시(10분) 만료 상태로 채점하면 발급(실측 535ms)이
+   * 채점 경로에 얹힌다. 말하는 동안 fire-and-forget 으로 받아 캐시를 채운다. 실패는 무시 —
+   * 채점 시 정식 경로가 다시 시도하고, 캐시가 살아 있으면 즉시 반환이라 비용 0. */
+  try { window.studySpeech.getAzureToken?.().catch(() => {}); } catch { /* noop */ }
   try {
     const controller = await withTimeout(window.studySpeech.recordWav({ maxSeconds: 15, ...opts }), START_TIMEOUT_MS);
     if (controller === TIMED_OUT) {

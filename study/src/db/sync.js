@@ -524,12 +524,17 @@ export async function pullTable(mapping, db, userId) {
      * pull 의 bulkPut 이 지워버렸다(매 기동 리셋 — 감점 단가 보정 축적 소실). 서버 값이 정본인
      * 필드는 서버 행 그대로, 로컬 전용 필드만 이월한다. bulkGet 없는 가짜 store(테스트)면 통과. */
     if (mapping.dexie === 'pronunciationLog' && typeof store.bulkGet === 'function') {
+      // 로컬 전용 필드 목록 — 감점 단가 보정 원천 (2026-08-29 오후 wordScores·omissions·insertions 추가)
+      const LOCAL_ONLY = ['prosodyIssues', 'wordScores', 'omissions', 'insertions'];
       const localRows = await store.bulkGet(rowsToPut.map((r) => r.id));
       rowsToPut = rowsToPut.map((serverRow, i) => {
         const local = localRows[i];
-        return (local && local.prosodyIssues != null && serverRow.prosodyIssues == null)
-          ? { ...serverRow, prosodyIssues: local.prosodyIssues }
-          : serverRow;
+        if (!local) return serverRow;
+        const carry = LOCAL_ONLY.filter((f) => local[f] != null && serverRow[f] == null);
+        if (!carry.length) return serverRow;
+        const out = { ...serverRow };
+        for (const f of carry) out[f] = local[f];
+        return out;
       });
     }
     // reviewQueue 만 충돌 해결 (다른 테이블은 단순 bulkPut)

@@ -2289,6 +2289,25 @@ describe('sync — pullTable 이 pronunciationLog 의 로컬 전용 필드를 �
     expect(bulkPut.mock.calls[0][0][0].overallScore).toBe(90);   // 서버 값은 서버가 정본
   });
 
+  it('wordScores·omissions·insertions(감점 보정 원천, 2026-08-29 오후)도 이월된다', async () => {
+    const server = [{ id: 'p1', user_id: 'u1', lang: 'en', date: '2026-08-29', overall_score: 90, sentence_id: 'c1' }];
+    const fromMock = vi.fn(() => {
+      const b = { select: vi.fn(() => b), eq: vi.fn().mockResolvedValue({ data: server, error: null }) };
+      return b;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const local = { id: 'p1', wordScores: [{ word: 'sorry', score: 88 }], omissions: [], insertions: ['again'] };
+    const bulkPut = vi.fn().mockResolvedValue();
+    const bulkGet = vi.fn().mockResolvedValue([local]);
+    await pullTable(mapping, { pronunciationLog: { bulkPut, bulkGet } }, 'u1');
+    const put = bulkPut.mock.calls[0][0][0];
+    expect(put.wordScores).toEqual(local.wordScores);
+    expect(put.omissions).toEqual([]);
+    expect(put.insertions).toEqual(['again']);
+  });
+
   it('로컬에 없던 행(bulkGet undefined)은 그대로 저장된다', async () => {
     const server = [{ id: 'p2', user_id: 'u1', lang: 'en', date: '2026-08-29', overall_score: 80, sentence_id: 'c1' }];
     const fromMock = vi.fn(() => {

@@ -152,3 +152,22 @@ describe('buildPronunciationLog — 프로소디 필드', () => {
     expect(bare.prosodyIssues).toBe(null);
   });
 });
+
+/* 감점제 3단계 보정 원천 (2026-08-29 오후) — 단가 보정·실발화 검증에는 단어별 점수(wordScores)와
+ * miscue 판정(omissions/insertions)이 필요한데 저장이 안 돼, 시뮬이 음소→단어 근사에 머물렀다
+ * (전 세션 §5.5 한계 명시). prosodyIssues 와 같은 로컬 전용 패턴 — 스키마 변화 0. */
+describe('buildPronunciationLog — 감점 보정 원천 필드 (로컬 전용)', () => {
+  it('wordScores·omissions·insertions 를 행에 담고, 없으면 null', () => {
+    const log = buildPronunciationLog({
+      result: { score: 90, wordScores: [{ word: 'sorry', score: 88 }], omissions: [], insertions: ['again'] },
+      sentenceId: 'x', lang: 'en', date: '2026-08-29',
+    });
+    expect(log.wordScores).toEqual([{ word: 'sorry', score: 88 }]);
+    expect(log.omissions).toEqual([]);
+    expect(log.insertions).toEqual(['again']);
+    const bare = buildPronunciationLog({ result: { score: 90 }, sentenceId: 'x', lang: 'en', date: '2026-08-29' });
+    expect(bare.wordScores).toBe(null);
+    expect(bare.omissions).toBe(null);
+    expect(bare.insertions).toBe(null);
+  });
+});

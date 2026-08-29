@@ -909,6 +909,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   async function finishRecording() {
     if (!state.recording || !recCtrl) return;
     const ctrlR = recCtrl; recCtrl = null;
+    // 분석 대기(실측 0.9~2.1초) 동안 '녹음 멈추기'로 남으면 아직 녹음 중처럼 보인다 (2026-08-29).
+    recPill.lastChild.textContent = '채점 중…';
     /* enableMiscue:true 필수 — false 면 Azure 가 전사에 레퍼런스를 그대로 에코해(라이브 실측
      * 2026-08-29: 다른 문장을 말해도 전사=레퍼런스·49점) 오발화를 가려낼 근거가 사라진다.
      * 같은 오디오가 true 에서는 전사 "What?"·2점으로 정직해진다. 정답 발화 점수는 불변(96↔95). */

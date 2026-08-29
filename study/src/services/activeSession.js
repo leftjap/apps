@@ -125,17 +125,39 @@ export function isExpired(savedAt, now = Date.now()) {
 
 /**
  * snapshot + 현재 cards + mode 검증 → 복원 patch (또는 null).
- * 검증: mode 일치, cardIds 길이 + 순서 일치.
- * 복원 patch: step / tried / passed / lastScore / pronScores / weakInSession / judged / startTime.
+ * 복원 patch: step / tried / passed / lastScore / pronScores / weakInSession / judged / startTime
+ *            (+ 스냅샷에 cards 실물이 있으면 cards / total 도 — 아래 참조).
+ *
+ * 스냅샷 cards 가 정본 (2026-08-29 오후 — 실사용 보고 "새로고침하면 점수가 전부 날아간다"):
+ * 복습은 카드 판정이 즉시 reviewQueue 에 반영되므로, 새로고침 후 로더가 due 필터로 '방금 판정한
+ * 카드'를 뺀 목록을 준다. 종전 게이트(현재 목록과 완전 일치)는 그 순간 항상 실패해 호출부가
+ * 스냅샷을 파기했다 — 복습 중 새로고침 = 진행 전량 소실이 결정론적이었다 (free 는 정렬 변동으로
+ * 동일). 카드 실물을 스냅샷에 담아 두고, 있으면 그것으로 세션을 되살린다 — 현재 목록과의
+ * 불일치는 폐기 사유가 아니다. mode·TTL(loadActiveSession)·내부 정합(cards↔cardIds) 검증은 유지.
+ * cards 없는 구형 스냅샷은 종전 규칙(현재 목록 완전 일치)으로 폴백한다.
  */
-export function restoreFromSnapshot(snapshot, cards, mode) {
+export function restoreFromSnapshot(snapshot, cards, mode, lang) {
   if (!snapshot || snapshot.mode !== mode) return null;
-  if (!Array.isArray(snapshot.cardIds) || !Array.isArray(cards)) return null;
-  if (snapshot.cardIds.length !== cards.length) return null;
-  for (let i = 0; i < cards.length; i += 1) {
-    if (cards[i]?.id !== snapshot.cardIds[i]) return null;
+  /* 언어 가드 (2026-08-29 오후 2차 감사) — 종전 '현재 목록 완전 일치' 게이트는 로더의 lang 필터
+   * 덕에 언어 가드를 겸했다(en 스냅샷 × ja 목록 = 항상 불일치 → 폐기). cards 정본화로 그 암묵
+   * 보호가 사라지므로 명시 비교한다. 양쪽이 있을 때만 — 구형 스냅샷·미전달 호출 하위호환. */
+  if (lang && snapshot.lang && snapshot.lang !== lang) return null;
+  if (!Array.isArray(snapshot.cardIds)) return null;
+  const snapCards = (Array.isArray(snapshot.cards) && snapshot.cards.length) ? snapshot.cards : null;
+  if (snapCards) {
+    if (snapCards.length !== snapshot.cardIds.length) return null;
+    for (let i = 0; i < snapCards.length; i += 1) {
+      if (snapCards[i]?.id !== snapshot.cardIds[i]) return null;
+    }
+  } else {
+    if (!Array.isArray(cards)) return null;
+    if (snapshot.cardIds.length !== cards.length) return null;
+    for (let i = 0; i < cards.length; i += 1) {
+      if (cards[i]?.id !== snapshot.cardIds[i]) return null;
+    }
   }
   return {
+    ...(snapCards ? { cards: snapCards, total: snapCards.length } : {}),
     step: Number(snapshot.step) || 1,
     tried: Number(snapshot.tried) || 0,
     passed: Number(snapshot.passed) || 0,

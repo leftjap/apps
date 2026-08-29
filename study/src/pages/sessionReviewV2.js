@@ -586,6 +586,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   async function finishRecording() {
     if (!state.recording || !recCtrl) return;
     const ctrlR = recCtrl; recCtrl = null;
+    // 분석 대기 동안 '녹음 멈추기'로 남으면 아직 녹음 중처럼 보인다 — 신규 카드와 같은 계약 (2026-08-29).
+    recPill.lastChild.textContent = '채점 중…';
     /* enableMiscue:true + 오발화 게이트 — 신규 카드와 같은 계약 (2026-08-29).
      * 복습은 문장을 숨기므로 다른 문장을 말하기가 오히려 쉽다. 근거는 coverageJudge.judgeRecording 주석. */
     const result = await stopAndAnalyze(ctrlR, s.sentence, s, { enableMiscue: true });

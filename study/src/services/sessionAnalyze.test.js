@@ -172,3 +172,20 @@ describe('startMicRecording — 재생 중이면 먼저 끊는다', () => {
     expect(r.controller).toBeTruthy();
   });
 });
+
+/* 토큰 선발급 (2026-08-29 오후) — Azure 토큰 캐시(10분)가 만료된 채 채점하면 발급(실측 535ms)이
+ * 채점 경로에 얹힌다. 녹음 시작 시 fire-and-forget 으로 미리 받아 두면 말하는 동안 캐시가 찬다. */
+describe('startMicRecording — Azure 토큰 선발급', () => {
+  beforeEach(() => { delete globalThis.window; });
+  afterEach(() => { delete globalThis.window; });
+
+  it('녹음 시작 시 getAzureToken 을 병렬로 호출한다 (실패해도 녹음은 무영향)', async () => {
+    const ctrl = { stop: () => {}, blobPromise: Promise.resolve(new Blob()) };
+    globalThis.window = { studySpeech: {
+      recordWav: vi.fn().mockResolvedValue(ctrl),
+      getAzureToken: vi.fn().mockRejectedValue(new Error('offline')),
+    } };
+    expect(await startMicRecording()).toEqual({ controller: ctrl });
+    expect(window.studySpeech.getAzureToken).toHaveBeenCalledTimes(1);
+  });
+});

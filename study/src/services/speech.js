@@ -752,6 +752,29 @@ export function pcmToWavBlob(int16, sampleRate = 16000) {
   return new Blob([buf], { type: 'audio/wav' });
 }
 
+/** 꼬리 무음 트림 (2026-08-29) — 무음 자동종료 녹음은 hangover(2초) 무음이 꼬리에 그대로 실려
+ * Azure 처리 시간을 늘린다. 라이브 실측: 같은 발화 꼬리 2.0초 → 0.3초에 채점 1.43~2.05s →
+ * 0.90~0.97s (Δ≈0.5s), 점수 불변(96↔96). 끝에서부터 20ms 창 peak 로 마지막 발화 지점을 찾아
+ * keepMs 만 남긴다. 머리(pre-roll)는 머리 잘림 보호를 위해 손대지 않는다.
+ * 전체 무음(마이크 무입력)은 원본 그대로 — mic_silent 판정 근거를 보존한다.
+ * silencePeak 0.05 는 VAD(createSilenceAutoStop)와 같은 임계·같은 peak 의미론. */
+export function trimTrailingSilencePcm(int16, { sampleRate = 16000, silencePeak = 0.05, keepMs = 300, minSaveMs = 400 } = {}) {
+  if (!int16 || !int16.length) return int16;
+  const thr = Math.round(silencePeak * 0x7FFF);
+  const win = Math.round(sampleRate * 0.02);
+  let lastVoiced = -1;
+  for (let end = int16.length; end > 0; end -= win) {
+    const start = Math.max(0, end - win);
+    let peak = 0;
+    for (let i = start; i < end; i++) { const a = Math.abs(int16[i]); if (a > peak) peak = a; }
+    if (peak >= thr) { lastVoiced = end; break; }
+  }
+  if (lastVoiced < 0) return int16;
+  const keep = Math.min(int16.length, lastVoiced + Math.round(sampleRate * keepMs / 1000));
+  if (int16.length - keep < Math.round(sampleRate * minSaveMs / 1000)) return int16;
+  return int16.subarray(0, keep);
+}
+
 /** Pronunciation-Assessment 헤더 — UTF-8 JSON → base64 (no line wrap).
  * enableMiscue: 발화 단어를 참조 텍스트와 비교해 ErrorType=Omission/Insertion 을 받는다(MS 문서).
  *   false(기본) = 누락/삽입을 무시하고 발음 품질만 → 기본 카드 '따라 말하기' 현행 유지.
@@ -1128,6 +1151,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
   // 낮은 점수/완성도는 "마이크 캡처 실패"가 아니라 "발음이 레퍼런스와 어긋남"인 경우가 많아(실측 검증),
   // 가드가 정상 발화를 'too_quiet/incomplete_capture' 로 오차단 → 점수 차단엔 미사용, 값만 기록.
   let captureRms = null;
+  let uploadBlob = wavBlob;
   try {
     const ab = await wavBlob.arrayBuffer();
     const pcm = new Int16Array(ab, 44);
@@ -1135,8 +1159,11 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       let sum = 0;
       for (let i = 0; i < pcm.length; i++) sum += pcm[i] * pcm[i];
       captureRms = Math.sqrt(sum / pcm.length) / 32768;
+      // 꼬리 무음 트림 — captureRms 는 원본 기준으로 먼저 계산 (mic_silent 판정 왜곡 방지).
+      const trimmed = trimTrailingSilencePcm(pcm);
+      if (trimmed !== pcm) uploadBlob = pcmToWavBlob(trimmed, 16000);
     }
-  } catch (_) { /* blob 읽기 실패 시 진행 */ }
+  } catch (_) { /* blob 읽기 실패 시 원본 업로드로 진행 */ }
   // captureRms 이 거의 0 = 마이크가 무음을 캡처(입력 없음·음소거·입력장치 오선택). 이때 no_match 를
   // 더 정확한 안내(mic_silent)로 분기. A.18 가드(점수 차단) 철회 교훈 유지 — 점수는 절대 차단하지 않고
   // '이미 실패한 no_match' 의 메시지만 정정. 임계값은 실측 발화 RMS(0.04~0.18) 보다 훨씬 낮게.
@@ -1162,7 +1189,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
         'Pronunciation-Assessment': paHeader,
         Accept: 'application/json',
       },
-      body: wavBlob,
+      body: uploadBlob,
     }, 'stt');
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);

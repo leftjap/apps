@@ -815,3 +815,21 @@ describe('sessionReviewV2 — 데모 드릴은 DB 에 쓰지 않는다', () => {
     expect(savePronunciationLog).not.toHaveBeenCalled();
   });
 });
+
+/* 채점 중 표시 — 신규 카드와 같은 계약 (2026-08-29 오후). */
+describe('sessionReviewV2 — 채점 중 표시', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('분석 대기 동안 "채점 중…", 끝나면 "다시 떠올리기"', async () => {
+    let resolveA;
+    stopAndAnalyze.mockReturnValueOnce(new Promise((r) => { resolveA = r; }));
+    const host = mountCard({ interval: 3 });
+    host.querySelector('.vr-pill.pri').click(); await tick();
+    const pill = host.querySelector('.vr-pill.recing');
+    pill.click(); await tick();
+    expect(pill.textContent).toContain('채점 중');
+    resolveA({ score: 92, recognizedText: EN, weakPhonemes: [] });
+    await tick(); await tick();
+    expect(pill.textContent).toContain('다시 떠올리기');
+  });
+});

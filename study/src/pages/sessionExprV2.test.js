@@ -1410,3 +1410,23 @@ describe('recordGateMessage — 채점 보류 안내 문구', () => {
     expect(new Set([unclear, misread, garbled]).size).toBe(3);
   });
 });
+
+/* 채점 중 표시 (2026-08-29 오후 — "점수 반환이 느리다" 후속) — 분석 대기(실측 0.9~2.1초) 동안
+ * 라벨이 '녹음 멈추기'로 남아 아직 녹음 중인 것처럼 보였다. 상태를 정직하게 보여준다. */
+describe('sessionExprV2 — 채점 중 표시', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('분석 대기 동안 "채점 중…", 끝나면 "다시 말하기"', async () => {
+    let resolveA;
+    stopAndAnalyze.mockReturnValueOnce(new Promise((r) => { resolveA = r; }));
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    const pill = host.querySelector('.vs-pill.recing');
+    pill.click(); await tick();
+    expect(pill.textContent).toContain('채점 중');
+    resolveA({ score: 92, recognizedText: 'Is that a promise?', weakPhonemes: [] });
+    await tick(); await tick();
+    expect(pill.textContent).toContain('다시 말하기');
+  });
+});

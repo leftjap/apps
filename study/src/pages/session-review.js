@@ -120,8 +120,13 @@ export function mountSessionReview(host) {
       mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
+      // recLog — 녹음 버튼 라벨·카운트의 원천인데 복습 스냅샷에만 빠져 있었다 (2026-08-29 오후 조사).
+      recLog: { ...state.recLog },
       exLog: { ...state.exLog },
       judged: { ...state.judged }, cardIds: state.cards.map((c) => c.id),
+      // 카드 실물 — 복원의 정본 (2026-08-29 오후). 복습은 판정이 즉시 reviewQueue 에 반영돼
+      // 새로고침 후 로더 목록에서 판정된 카드가 빠진다 — 종전 게이트는 그때 스냅샷을 파기했다.
+      cards: state.cards,
     };
     saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-review] saveActiveSession', e));
     // 진행 중 진척을 오늘 dailyStats 에 라이브 반영 → cue 가 종료 전에도 '오늘 학습' 표시 (멱등)
@@ -276,16 +281,19 @@ export function mountSessionReview(host) {
       state.dayMap = dayMap;
       state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
       state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
-      state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸
+      // 복원보다 앞선 await 가 던지면 복원 전체가 죽고 cleanup 이 빈 스냅샷을 덮어쓴다 — 실패 무시.
+      try { state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); } // 공부 이력 캘린더의 코랄 칸
+      catch (e) { console.warn('[session-review] fetchPRDays 실패 — 캘린더 없이 진행', e); }
       state.cards = cards;
       state.total = cards.length;
-      const restore = restoreFromSnapshot(snapshot, cards, sessionMode);
+      const restore = restoreFromSnapshot(snapshot, cards, sessionMode, getStoredLang());
       if (restore) {
-        Object.assign(state, restore); // base 포함 (원래 시작 시 캡처분 보존)
+        Object.assign(state, restore); // base 포함. 스냅샷에 cards 실물이 있으면 그것이 목록 정본
         startTime = restore.startTime;
         activeTimer.restore(restore.activeSec); // 활성 시간만 승계 — 방치 벽시계는 승계 안 함
-        const idx = Math.max(0, restore.step - 1);
-        state.sentence = pickCardFields(cards[idx]) || EMPTY_SENTENCE;
+        const list = restore.cards ?? cards;
+        const idx = Math.max(0, Math.min(restore.step - 1, list.length - 1));
+        state.sentence = pickCardFields(list[idx]) || EMPTY_SENTENCE;
       } else {
         state.step = cards.length === 0 ? 0 : 1;
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
@@ -295,9 +303,10 @@ export function mountSessionReview(host) {
         catch { state.base = null; }
       }
       // 문장별 연습 이력 (§7.4② 월 캘린더 · §7.3 빈 슬롯) — pronunciationLog 를 sentenceId×날짜로 묶는다.
-      state.sentLog = await loadSentenceLog(window.studyDB, getStoredLang(), cards);
+      // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.
+      state.sentLog = await loadSentenceLog(window.studyDB, getStoredLang(), state.cards);
       // 응용연습 행의 '이전 N회 평균 M' (2026-08-29 사용자 요구) — 오늘 시도는 행의 점수 원이 보여주므로 오늘은 뺀다.
-      state.drillLog = await loadDrillLog(window.studyDB, getStoredLang(), cards, getTodayISO());
+      state.drillLog = await loadDrillLog(window.studyDB, getStoredLang(), state.cards, getTodayISO());
       state.loaded = true;
       rerender();
     })

@@ -116,6 +116,9 @@ export function mountSessionNew(host) {
       recLog: { ...state.recLog },
       exLog: { ...state.exLog },
       cardIds: state.cards.map((c) => c.id),
+      // 카드 실물 — 복원의 정본 (2026-08-29 오후). 로더 결과가 새로고침 사이에 달라져도
+      // (복습 판정·sync pull·완료 처리) 진행 중 세션이 파기되지 않는다. restoreFromSnapshot 주석 참조.
+      cards: state.cards,
     };
     saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-new] saveActiveSession', e));
     // 진행 중 진척을 오늘 dailyStats 에 라이브 반영 → cue 가 종료 전에도 '오늘 학습' 표시 (멱등)
@@ -275,10 +278,15 @@ export function mountSessionNew(host) {
       state.dayMap = dayMap;
       state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
       state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
-      state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸
+      // 복원보다 앞선 await 가 던지면 .catch 로 빠져 복원 전체가 죽고, cleanup 의 saveSnapshot 이
+      // 빈 state 로 스냅샷을 덮어써 영구 파괴한다 (2026-08-29 오후 조사 §2-I) — 부가 정보라 실패 무시.
+      try { state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); } // 공부 이력 캘린더의 코랄 칸
+      catch (e) { console.warn('[session-new] fetchPRDays 실패 — 캘린더 없이 진행', e); }
+      const restore = restoreFromSnapshot(snapshot, cards, 'new', getStoredLang());
       // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
       // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
-      if (cards.length === 0) {
+      // 단 복원 가능한 스냅샷이 있으면 세션 계속이 우선 — sync pull 이 세션 중 목록을 비워도 파기 금지.
+      if (cards.length === 0 && !restore) {
         const replay = await loadReplayCards(window.studyDB, getStoredLang());
         if (replay.length > 0) {
           if (snapshot && snapshot.mode === 'new') clearActiveSession(window.studyDB).catch(() => {});
@@ -296,13 +304,15 @@ export function mountSessionNew(host) {
       }
       state.cards = cards;
       state.total = cards.length;
-      const restore = restoreFromSnapshot(snapshot, cards, 'new');
       if (restore) {
-        Object.assign(state, restore); // base 포함 (원래 시작 시 캡처분 보존)
+        Object.assign(state, restore); // base 포함. 스냅샷에 cards 실물이 있으면 그것이 목록 정본
         startTime = restore.startTime;
         activeTimer.restore(restore.activeSec); // 활성 시간만 승계 — 방치 벽시계는 승계 안 함
-        const idx = Math.max(0, restore.step - 1);
-        state.sentence = pickCardFields(cards[idx]) || EMPTY_SENTENCE;
+        const list = restore.cards ?? cards;
+        const idx = Math.max(0, Math.min(restore.step - 1, list.length - 1));
+        state.sentence = pickCardFields(list[idx]) || EMPTY_SENTENCE;
+        // 링은 '이 카드의 방금 점수' — 세션 전역 lastScore 는 다른 카드 점수일 수 있다 (조사 §1).
+        state.lastScore = restoreCardScore(state.exLog, list[idx]?.id);
       } else {
         state.step = cards.length === 0 ? 0 : 1;
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
@@ -313,7 +323,8 @@ export function mountSessionNew(host) {
         catch { state.base = null; }
       }
       // 씬 쉐도잉 진행 복원 (스냅샷 1시간 TTL 과 분리 — 다음날 재진입에도 유지)
-      const scene = cards.find((c) => Array.isArray(c.explanation?.dialogue));
+      // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.
+      const scene = state.cards.find((c) => Array.isArray(c.explanation?.dialogue));
       if (scene) { try { state.shadowed = await getSceneShadow(window.studyDB, scene.id); } catch { /* noop */ } }
       state.loaded = true;
       rerender();
