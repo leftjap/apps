@@ -111,22 +111,29 @@ function phonemeMean(result) {
 
 /* 채점 가능 여부 (2026-08-29) — "엉뚱한 문장인데 50점이 말이 되냐"(사용자)에 대한 답.
  *
- * 뿌리: Azure AccuracyScore 는 저점 구간에서 실제 음향 일치도보다 크게 부풀려진다. 공식 문서가
- * "word and full text accuracy scores are aggregated from the phoneme-level accuracy score,
- * **and refined with assessment objectives**" 라고 적은 그 refine 이 바닥을 다진다.
- * 실측(지오 기록 26건 + 라이브 재현):
- *   정상  — 음소 0점 0개 · 음소평균 65~98 · 표시 acc 75~98   (일치)
- *   문제  — 음소 0점 15~100% · 음소평균 0~29 · 표시 acc 23~63 (괴리)
- *   저SNR — 음소평균 42.7 인데 표시 acc 82. enableMiscue:true 로도 안 걸린다.
- * 임계 50 의 여유: 원어민 90~96 · 강한 한국어 액센트 67~85 · 극단 끊어읽기(1.5초 휴지) 82.
+ * 관찰: 표시 점수(AccuracyScore)가 저점 구간에서 음소 원시 점수와 크게 어긋난다.
+ * 실기록 중 capture_rms 가 남은 26건이 음소 원시 평균으로 완전히 갈린다 —
+ *   정상 19건 — 음소 0점 0개 · 음소평균 65.2~97.7 · 표시 acc 75~98   (둘이 일치)
+ *   문제  7건 — 음소 0점 15~100% · 음소평균 0~28.8 · 표시 acc 23~63  (둘이 괴리)
+ * 52점짜리 발화의 음소 평균이 17.4, 58점짜리가 10.4 다. 사용자가 본 "50점 안팎"이 이 구간이다.
  *
- * 판정 순서가 중요하다 — 음질이 무너진 녹음은 전사도 같이 무너지므로 오발화로 오인된다.
- * 원인을 먼저 묻고(inaudible) 그다음 내용을 묻는다(misread). */
+ * ⚠ 그 괴리의 **원인은 확정하지 못했다**. 공식 문서가 "aggregated from the phoneme-level accuracy
+ * score, and refined with assessment objectives" 라 적은 그 refine 이 후보이지만 문서는 방향을
+ * 말하지 않는다. 그 7건이 약한 신호였는지·문장을 끊었는지·발음이 어긋났는지도 오디오가 없어 모른다
+ * (단어별 점수는 0 과 40~53 이 섞여 어느 쪽으로도 단정할 수 없다). 합성으로 잡음에 묻어 만든 재현은
+ * rms 는 겹쳤지만 음소평균이 42.7 vs 20.8 로 달라 같은 현상이라는 증거가 못 된다.
+ * 확실한 것 하나: **그런 녹음에 화면이 52~63점을 붙였고 그건 실체와 어긋난다.** 원인과 무관하게 막는다.
+ *
+ * 임계 50 의 여유(전부 실측): 원어민 3화자 90~96 · 강한 한국어 액센트 67~85 ·
+ * 극단 끊어읽기(1.5초 휴지) 82 · 정상 발화 최저 65.2  ↔  차단 대상 최고 28.8.
+ *
+ * 판정 순서가 중요하다 — 소리가 무너지면 전사도 같이 무너져 오발화로 오인된다.
+ * 그래서 소리를 먼저 묻고(unclear) 그다음 내용을 묻는다(misread). */
 export function judgeRecording(result, expected, { minPhonemeMean = 50, ...misreadOpts } = {}) {
   const pm = phonemeMean(result);
   const misread = judgeMisread(result, expected, misreadOpts);
   if (pm != null && pm < minPhonemeMean) {
-    return { record: false, reason: 'inaudible', phonemeMean: pm, ...misread };
+    return { record: false, reason: 'unclear', phonemeMean: pm, ...misread };
   }
   if (misread.misread) return { record: false, reason: 'misread', phonemeMean: pm, ...misread };
   return { record: true, reason: null, phonemeMean: pm, ...misread };

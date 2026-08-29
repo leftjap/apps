@@ -19,14 +19,16 @@ import { judgeCoverage, judgeProduction, judgeRecording } from '../services/cove
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
-/* 채점을 되돌릴 때의 안내 (2026-08-29) — 원인이 둘이라 문구를 나눈다.
- * inaudible = 녹음이 음향적으로 무너짐(음소 원시 점수가 바닥) → 사용자가 할 일은 '가까이서 다시'
- * misread   = 소리는 멀쩡한데 다른 문장                     → 사용자가 할 일은 '문장을 다시 확인'
- * 한 문구로 뭉치면 마이크 문제를 발음 문제로 오인하게 만든다. */
+/* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 둘이라 문구를 나눈다.
+ * unclear = 음소 원시 점수가 바닥 (소리가 레퍼런스 음소에 안 맞았다)
+ * misread = 소리는 멀쩡한데 다른 문장
+ * unclear 의 원인은 확정되지 않았다(약한 신호·중간에 끊음·발음 어긋남이 모두 가능 — coverageJudge
+ * 주석 참조). 그래서 '마이크' 같은 특정 원인을 지목하지 않는다 — 틀린 원인을 지목하면 사용자가
+ * 엉뚱한 것을 고치게 된다. 대신 어느 원인에서든 유효한 행동만 말한다: 끝까지, 또박또박. */
 export function recordGateMessage(reason) {
   return reason === 'misread'
     ? '다른 문장을 말한 것 같아요 — 다시 말해 보세요'
-    : '잘 안 들렸어요 — 마이크에 가까이서 다시 말해 보세요';
+    : '또렷하게 안 들렸어요 — 끝까지 또박또박 다시';
 }
 const SVG_NS = 'http://www.w3.org/2000/svg';
 

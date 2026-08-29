@@ -213,14 +213,14 @@ describe('judgeRecording — 오발화 + 녹음 품질 통합 판정', () => {
     expect(judgeRecording({ score: 83, recognizedText: EXP, phonemeScores: ph(65.2) }, EXP).record).toBe(true);
   });
 
-  it('저SNR 취약 구간 — 표시 acc 82 여도 음소평균 42.7 이면 버린다', () => {
+  it('표시 acc 82 여도 음소 원시 평균이 42.7 이면 버린다', () => {
     const r = judgeRecording({ score: 82, recognizedText: EXP, phonemeScores: ph(42.7) }, EXP);
     expect(r.record).toBe(false);
-    expect(r.reason).toBe('inaudible');
+    expect(r.reason).toBe('unclear');
   });
 
-  it('지오 실기록 문제 케이스(acc 58·음소평균 10.4)를 버린다', () => {
-    expect(judgeRecording({ score: 58, recognizedText: EXP, phonemeScores: ph(10.4) }, EXP).reason).toBe('inaudible');
+  it('실기록 문제 케이스(acc 58·음소평균 10.4)를 버린다', () => {
+    expect(judgeRecording({ score: 58, recognizedText: EXP, phonemeScores: ph(10.4) }, EXP).reason).toBe('unclear');
   });
 
   it('다른 문장은 오발화로 구분한다 (음질은 멀쩡)', () => {
@@ -229,9 +229,9 @@ describe('judgeRecording — 오발화 + 녹음 품질 통합 판정', () => {
     expect(r.reason).toBe('misread');
   });
 
-  it('음질 판정이 오발화보다 먼저다 — 둘 다 나쁘면 원인은 녹음이다', () => {
+  it('음질 판정이 오발화보다 먼저다 — 소리가 무너지면 전사도 무너져 오발화로 오인된다', () => {
     const r = judgeRecording({ score: 6, recognizedText: 'How long', phonemeScores: ph(12) }, EXP);
-    expect(r.reason).toBe('inaudible');
+    expect(r.reason).toBe('unclear');
   });
 
   it('음소 데이터가 없으면 음질을 묻지 않는다 (판정 근거 부족 — 기존 계약 보존)', () => {

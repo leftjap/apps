@@ -1283,7 +1283,7 @@ describe('sessionExprV2 — 녹음 품질 게이트', () => {
     expect(state.lastScore).toBe(null);
     expect(savePronunciationLog).not.toHaveBeenCalled();
     expect(showRecordToast).toHaveBeenCalledTimes(1);
-    expect(String(showRecordToast.mock.calls[0][0])).toContain('마이크');
+    expect(String(showRecordToast.mock.calls[0][0])).toContain('또렷하게');
   });
 
   it('오발화와 녹음 불량은 안내가 다르다', async () => {

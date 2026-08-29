@@ -771,7 +771,7 @@ describe('sessionReviewV2 — 녹음 품질 게이트', () => {
     await recOnce(host);
     const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
     expect(shown).toHaveLength(0);
-    expect(String(showRecordToast.mock.calls[0][0])).toContain('마이크');
+    expect(String(showRecordToast.mock.calls[0][0])).toContain('또렷하게');
   });
 
   it('음소평균 66 인 저점 발화는 기록한다', async () => {
