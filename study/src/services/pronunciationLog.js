@@ -45,34 +45,35 @@ export async function savePronunciationLog(db, params) {
 
 /* 응용 드릴 발화 이력 (2026-08-29 사용자 요구) — 복습에서 "이 응용 문장을 몇 번 말했고 보통 몇 점인지"를
  * 보여주려면 원천이 필요하다. 종전에 드릴 점수는 세션 스냅샷(exLog.drills)에만 살아 세션이 끝나면 사라졌다.
- * 새 테이블을 만들지 않고 같은 pronunciationLog 에 `<카드id>#drill<행번호>` 로 구분해 적재한다 —
+ * 새 테이블을 만들지 않고 같은 pronunciationLog 에 `<카드id>#drill#<드릴 문장>` 으로 구분해 적재한다 —
  * 기존 집계는 전부 **카드 id 로 조회**하므로(session-review loadSentenceLog · stats latestPronScoreByCard ·
- * sentences buildSentenceRows) 이 행들을 그냥 지나친다. 스키마·마이그레이션 변화 0.
- * 행 번호 기준이므로 시드의 drills 순서가 바뀌면 이력이 어긋난다 — 학습 시작 후 재INSERT 금지
- * 규약(lesson-explanation-guide-en §6.3)이 그 경우를 이미 막는다. */
-export function drillLogId(cardId, index) {
-  return `${cardId}#drill${index}`;
+ * sentences buildSentenceRows) 이 행들을 그냥 지나친다. 스키마·마이그레이션 변화 0 (sentence_id 는 text).
+ * 키가 행 번호가 아니라 **문장 자체**인 이유 (2026-08-29 재감사): 렌더 인덱스는 근접중복 필터
+ * (filterNearDupDrills)의 결과 순서라, 필터 로직·카드 문장이 바뀌면 이력이 엉뚱한 행에 붙는다.
+ * 문장 텍스트는 재INSERT 금지 규약(guide-en §6.3)으로 동결돼 있어 안정적이다. */
+export function drillLogId(cardId, target) {
+  return `${cardId}#drill#${String(target ?? '').trim()}`;
 }
 
-/** pronunciationLog 행들 → { 카드id: { 행번호: { count, avg } } }. beforeISO 이후(당일 포함) 기록은 뺀다. */
+/** pronunciationLog 행들 → { 카드id: { 드릴문장: { count, avg } } }. beforeISO 이후(당일 포함) 기록은 뺀다. */
 export function summarizeDrillLog(rows, cardIds, beforeISO) {
   const want = new Set(cardIds ?? []);
   const acc = {};
   for (const r of rows ?? []) {
     const sid = r?.sentenceId;
-    const cut = typeof sid === 'string' ? sid.lastIndexOf('#drill') : -1;
+    const cut = typeof sid === 'string' ? sid.indexOf('#drill#') : -1;
     if (cut < 0) continue;
     const cardId = sid.slice(0, cut);
-    const index = Number(sid.slice(cut + 6));
-    if (!want.has(cardId) || !Number.isInteger(index)) continue;
+    const target = sid.slice(cut + 7);
+    if (!want.has(cardId) || !target) continue;
     if (beforeISO && String(r.date ?? '') >= beforeISO) continue;
-    ((acc[cardId] ??= {})[index] ??= []).push(Math.round(Number(r.overallScore) || 0));
+    ((acc[cardId] ??= {})[target] ??= []).push(Math.round(Number(r.overallScore) || 0));
   }
   const out = {};
-  for (const [cardId, byIndex] of Object.entries(acc)) {
+  for (const [cardId, byTarget] of Object.entries(acc)) {
     out[cardId] = {};
-    for (const [index, scores] of Object.entries(byIndex)) {
-      out[cardId][index] = { count: scores.length, avg: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) };
+    for (const [target, scores] of Object.entries(byTarget)) {
+      out[cardId][target] = { count: scores.length, avg: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) };
     }
   }
   return out;

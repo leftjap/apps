@@ -466,15 +466,35 @@ export function staleIdsToDelete(serverIds, localIds) {
 // 삭제 전파 시 1000행 밖 정상 카드를 stale 로 오삭제할 위험 → 상한 도달 시 삭제 보류(2026-06-29).
 export const PULL_PAGE_LIMIT = 1000;
 
+/* 상한 도달 시 전체 재조회 (2026-08-29) — 단발 .eq() 조회는 REST 상한(PULL_PAGE_LIMIT)에서 잘린다.
+ * 잘림이 감지된 경우에만 정렬(.order('id'))+range 로 전량을 다시 읽는다. 정렬 없는 첫 페이지와
+ * 정렬 페이지를 섞으면 누락·중복이 생기므로 재조회는 처음부터 다시 한다.
+ * 반환: { data, error, complete } — complete=false 면 잘렸을 수 있는 부분 데이터(폴백). */
+async function fetchAllRows(table, userId, columns) {
+  const first = await supabase.from(table).select(columns).eq('user_id', userId);
+  if (first.error) return { data: null, error: first.error, complete: false };
+  const firstData = first.data || [];
+  if (firstData.length < PULL_PAGE_LIMIT) return { data: firstData, error: null, complete: true };
+  const all = [];
+  for (let from = 0; ; from += PULL_PAGE_LIMIT) {
+    const page = await supabase.from(table).select(columns).eq('user_id', userId)
+      .order('id', { ascending: true }).range(from, from + PULL_PAGE_LIMIT - 1);
+    if (page.error) {
+      console.warn(`[sync] fetchAllRows ${table} 페이지 ${from} 실패 — 첫 페이지 부분 데이터로 폴백`, page.error);
+      return { data: firstData, error: null, complete: false };
+    }
+    all.push(...(page.data || []));
+    if (!page.data || page.data.length < PULL_PAGE_LIMIT) break;
+  }
+  return { data: all, error: null, complete: true };
+}
+
 export async function pullTable(mapping, db, userId) {
   if (!supabase) return { table: mapping.dexie, status: 'skipped', reason: 'no_supabase' };
   if (!db) return { table: mapping.dexie, status: 'skipped', reason: 'no_db' };
   if (!userId) return { table: mapping.dexie, status: 'skipped', reason: 'no_user' };
   try {
-    const { data, error } = await supabase
-      .from(mapping.supabase)
-      .select('*')
-      .eq('user_id', userId);
+    const { data, error, complete } = await fetchAllRows(mapping.supabase, userId, '*');
     if (error) {
       console.error(`[sync] pullTable ${mapping.supabase} 실패`, error);
       return { table: mapping.dexie, status: 'error', error };
@@ -511,9 +531,9 @@ export async function pullTable(mapping, db, userId) {
       await store.bulkDelete(tombstoned);
     }
     // 서버 삭제 전파 (serverOwned 만, 'ok' pull 에서만 — data≥1 확인됨). Dexie store 한정 가드.
-    // 페이지네이션 가드: data 가 REST 상한(PULL_PAGE_LIMIT)에 닿으면 잘렸을 수 있어 stale 판정 불가 → 삭제 보류.
-    if (mapping.serverOwned && data.length >= PULL_PAGE_LIMIT) {
-      console.warn(`[sync] pullTable ${mapping.supabase} ${data.length}행(상한 도달) — 삭제 전파 보류(페이지 잘림 가능)`);
+    // 페이지네이션 가드: fetchAllRows 가 complete=false 면(페이지 조회 실패 폴백) stale 판정 불가 → 삭제 보류.
+    if (mapping.serverOwned && !complete) {
+      console.warn(`[sync] pullTable ${mapping.supabase} ${data.length}행(불완전 페이지) — 삭제 전파 보류`);
     } else if (mapping.serverOwned && typeof store.toCollection === 'function' && typeof store.bulkDelete === 'function') {
       try {
         const serverIds = new Set(rowsToPut.map((r) => r.id));
@@ -820,10 +840,16 @@ export async function reconcileTable(db, userId, mapping) {
     if (!store?.toArray) return { table: mapping.dexie, status: 'error', reason: 'no_store' };
     const local = await store.toArray();
     if (!local || local.length === 0) return { table: mapping.dexie, status: 'empty', pushed: 0 };
-    const { data, error } = await supabase.from(mapping.supabase).select('id').eq('user_id', userId);
+    const { data, error, complete } = await fetchAllRows(mapping.supabase, userId, 'id');
     if (error) {
       console.error(`[sync] reconcileTable ${mapping.supabase} 서버 조회 실패`, error);
       return { table: mapping.dexie, status: 'error', error };
+    }
+    if (!complete) {
+      // 서버 id 집합이 불완전하면 '누락' 판정이 오판이 된다 — 이미 있는 행을 기동마다 재upsert
+      // 하는 영구 루프(실측 재현)를 만드느니 이번 보강을 건너뛴다 (2026-08-29 감사).
+      console.warn(`[sync] reconcileTable ${mapping.supabase} 서버 id 불완전(${(data || []).length}) — 보강 보류`);
+      return { table: mapping.dexie, status: 'deferred', reason: 'incomplete_server_ids' };
     }
     const serverIds = new Set((data || []).map((r) => r.id));
     const missing = local.filter((r) => r && r.id != null && !serverIds.has(r.id));

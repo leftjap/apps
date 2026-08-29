@@ -73,36 +73,39 @@ describe('buildPronunciationLog', () => {
  * 종전엔 드릴 점수가 세션 스냅샷(exLog.drills)에만 살아 세션이 끝나면 사라졌다 — 원천 자체가 없었다.
  * 같은 pronunciationLog 에 `<카드id>#drill<i>` 로 구분해 적재한다. 기존 집계는 전부 카드 id 로
  * 조회하므로(loadSentenceLog·latestPronScoreByCard·buildSentenceRows) 이 행들은 그냥 지나친다. */
-describe('drillLogId / summarizeDrillLog — 드릴 발화 이력', () => {
-  it('드릴 로그 id 는 카드 id 와 행 번호로 만든다', () => {
-    expect(drillLogId('en-core100-001', 0)).toBe('en-core100-001#drill0');
-    expect(drillLogId('en-core100-001', 3)).toBe('en-core100-001#drill3');
+describe('drillLogId / summarizeDrillLog — 드릴 발화 이력 (내용 주소 키)', () => {
+  /* 키를 행 번호가 아니라 드릴 문장 자체로 (2026-08-29 재감사) — 인덱스 키는 근접중복 필터
+   * (filterNearDupDrills)의 결과 순서에 묶여, 필터 로직·카드 문장이 바뀌면 이력이 엉뚱한 행에
+   * 붙는다. 문장 텍스트는 재INSERT 금지 규약으로 동결돼 있어 안정적이다. 실 DB 에 구형 키 행 0건. */
+  it('드릴 로그 id 는 카드 id 와 드릴 문장으로 만든다', () => {
+    expect(drillLogId('en-core100-001', "It's more than a job.")).toBe("en-core100-001#drill#It's more than a job.");
+    expect(drillLogId('en-core100-001', '  spaced  ')).toBe('en-core100-001#drill#spaced');
   });
 
   const rows = [
-    { sentenceId: 'c1#drill0', date: '2026-08-20', overallScore: 80 },
-    { sentenceId: 'c1#drill0', date: '2026-08-27', overallScore: 90 },
-    { sentenceId: 'c1#drill2', date: '2026-08-27', overallScore: 61 },
-    { sentenceId: 'c1', date: '2026-08-27', overallScore: 95 },        // 메인 카드 — 드릴 아님
-    { sentenceId: 'c2#drill0', date: '2026-08-27', overallScore: 70 }, // 다른 카드
-    { sentenceId: 'c1#drill0', date: '2026-08-29', overallScore: 10 }, // 오늘 — 제외
+    { sentenceId: 'c1#drill#Thanks for coming.', date: '2026-08-20', overallScore: 80 },
+    { sentenceId: 'c1#drill#Thanks for coming.', date: '2026-08-27', overallScore: 90 },
+    { sentenceId: 'c1#drill#Thanks for waiting.', date: '2026-08-27', overallScore: 61 },
+    { sentenceId: 'c1', date: '2026-08-27', overallScore: 95 },                    // 메인 카드
+    { sentenceId: 'c2#drill#Thanks for coming.', date: '2026-08-27', overallScore: 70 }, // 다른 카드
+    { sentenceId: 'c1#drill#Thanks for coming.', date: '2026-08-29', overallScore: 10 }, // 오늘 — 제외
   ];
 
-  it('카드×행 별로 횟수와 평균을 낸다', () => {
+  it('카드×문장 별로 횟수와 평균을 낸다', () => {
     const out = summarizeDrillLog(rows, ['c1'], '2026-08-29');
-    expect(out.c1[0]).toEqual({ count: 2, avg: 85 });
-    expect(out.c1[2]).toEqual({ count: 1, avg: 61 });
+    expect(out.c1['Thanks for coming.']).toEqual({ count: 2, avg: 85 });
+    expect(out.c1['Thanks for waiting.']).toEqual({ count: 1, avg: 61 });
   });
 
   it('오늘 기록은 빼고 센다 — 오늘 시도는 행의 점수 원이 이미 보여준다', () => {
-    expect(summarizeDrillLog(rows, ['c1'], '2026-08-29').c1[0].count).toBe(2);
-    expect(summarizeDrillLog(rows, ['c1'], '2026-08-27').c1[0].count).toBe(1); // 8-20 만
+    expect(summarizeDrillLog(rows, ['c1'], '2026-08-29').c1['Thanks for coming.'].count).toBe(2);
+    expect(summarizeDrillLog(rows, ['c1'], '2026-08-27').c1['Thanks for coming.'].count).toBe(1);
   });
 
   it('메인 카드 행과 다른 카드 행은 섞이지 않는다', () => {
     const out = summarizeDrillLog(rows, ['c1'], '2026-08-29');
     expect(Object.keys(out)).toEqual(['c1']);
-    expect(Object.keys(out.c1).sort()).toEqual(['0', '2']);
+    expect(Object.keys(out.c1).sort()).toEqual(['Thanks for coming.', 'Thanks for waiting.']);
   });
 
   it('기록이 없으면 빈 객체', () => {
@@ -115,15 +118,15 @@ describe('drillLogId / summarizeDrillLog — 드릴 발화 이력', () => {
 describe('loadDrillLog', () => {
   const cards = [{ id: 'c1' }, { id: 'c2' }];
   const rows = [
-    { sentenceId: 'c1#drill0', date: '2026-08-20', overallScore: 80, lang: 'en' },
-    { sentenceId: 'c1#drill0', date: '2026-08-27', overallScore: 90, lang: 'en' },
+    { sentenceId: 'c1#drill#Give me a minute.', date: '2026-08-20', overallScore: 80, lang: 'en' },
+    { sentenceId: 'c1#drill#Give me a minute.', date: '2026-08-27', overallScore: 90, lang: 'en' },
     { sentenceId: 'c1', date: '2026-08-27', overallScore: 95, lang: 'en' },       // 메인 카드
-    { sentenceId: 'c3#drill0', date: '2026-08-27', overallScore: 50, lang: 'en' }, // 이번 세션에 없는 카드
+    { sentenceId: 'c3#drill#x', date: '2026-08-27', overallScore: 50, lang: 'en' }, // 이번 세션에 없는 카드
   ];
   const fakeDb = (r) => ({ pronunciationLog: { where: () => ({ equals: () => ({ toArray: async () => r }) }) } });
 
   it('카드별 드릴 이력을 { 카드id: { 행: {count,avg} } } 로 준다', async () => {
-    expect(await loadDrillLog(fakeDb(rows), 'en', cards, '2026-08-29')).toEqual({ c1: { 0: { count: 2, avg: 85 } } });
+    expect(await loadDrillLog(fakeDb(rows), 'en', cards, '2026-08-29')).toEqual({ c1: { 'Give me a minute.': { count: 2, avg: 85 } } });
   });
 
   it('db·카드가 없으면 빈 객체 — 화면은 이력 없이 그대로 그려진다', async () => {

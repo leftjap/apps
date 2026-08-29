@@ -1990,15 +1990,53 @@ describe('sync — pullTable 서버 삭제 전파 통합 (serverOwned + 페이�
     expect(store.bulkDelete).not.toHaveBeenCalled();
   });
 
-  it('페이지 상한(1000행) 도달 → 잘림 가능 → 삭제 전파 보류 (1000행 밖 오삭제 방지)', async () => {
+  it('상한 도달 + 페이지 재조회 실패 → 부분 데이터 폴백 + 삭제 전파 보류 (1000행 밖 오삭제 방지)', async () => {
+    /* 2026-08-29 계약 변경 — 상한 도달은 이제 페이지네이션으로 전량 재조회한다. 삭제 보류는
+     * '상한 도달'이 아니라 '재조회 실패(complete=false)' 에서만 발동한다. 옛 시나리오(잘린
+     * 채로 삭제 전파 보류)는 페이지 조회가 실패하는 경우로 남는다. */
     const full = Array.from({ length: 1000 }, (_, i) => ({ id: `s${i}` }));
-    vi.doMock('../services/supabase.js', () => ({ supabase: { from: pullFromMock(full) }, isSupabaseConfigured: true }));
+    let call = 0;
+    const fromMock = vi.fn(() => {
+      call += 1; const mine = call;
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => (mine === 1 ? Promise.resolve({ data: full, error: null }) : builder)),
+        order: vi.fn(() => builder),
+        range: vi.fn(() => Promise.resolve({ data: null, error: { message: 'boom' } })), // 재조회 실패
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
     const { pullTable, TABLE_MAP } = await import('./sync.js');
     const mapping = TABLE_MAP.find((m) => m.dexie === 'todayLessons');
     const store = ownedStore(['s0', 'beyond-page-row']); // beyond-page-row = 1001번째라 페이지 밖(정상 행)
     const res = await pullTable(mapping, { todayLessons: store }, 'u1');
     expect(res.status).toBe('ok');
     expect(store.bulkDelete).not.toHaveBeenCalled();
+  });
+
+  it('상한 도달 + 페이지 재조회 성공 → 전량 확보로 삭제 전파가 정상 동작한다', async () => {
+    const total = 1200;
+    const rows = Array.from({ length: total }, (_, i) => ({ id: `s${String(i).padStart(5, '0')}` }));
+    let call = 0;
+    const fromMock = vi.fn(() => {
+      call += 1; const mine = call;
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => (mine === 1 ? Promise.resolve({ data: rows.slice(0, 1000), error: null }) : builder)),
+        order: vi.fn(() => builder),
+        range: vi.fn((from, to) => Promise.resolve({ data: rows.slice(from, to + 1), error: null })),
+      };
+      return builder;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'todayLessons');
+    const store = ownedStore(['s00000', 'ghost-row']); // ghost = 서버에 없는 로컬 행 → 삭제돼야
+    const res = await pullTable(mapping, { todayLessons: store }, 'u1');
+    expect(res.status).toBe('ok');
+    expect(res.count).toBe(1200);
+    expect(store.bulkDelete).toHaveBeenCalledWith(['ghost-row']);
   });
 
   it('non-serverOwned(reviewQueue): 삭제 전파 안 함 (미푸시 보호)', async () => {
@@ -2153,5 +2191,76 @@ describe('sync — 급감 가드 우회 대상(DEVICE_WRITTEN_TABLES)', () => {
     const { DEVICE_WRITTEN_TABLES } = await import('./sync.js');
     expect(DEVICE_WRITTEN_TABLES).not.toContain('todayLessons');
     expect(DEVICE_WRITTEN_TABLES).not.toContain('mathProblems');
+  });
+});
+
+/* REST 1000행 상한 페이지네이션 (2026-08-29 전면 재감사 확증).
+ * pullTable/reconcileTable 이 무제한 .eq() 단발 조회라, 행이 PULL_PAGE_LIMIT 을 넘으면
+ * (a) pull 이 잘린 부분만 적재하고 경고도 없다 (pronunciationLog 는 serverOwned 가 아니라 가드 밖)
+ * (b) reconcile 이 '서버에 이미 있는' 1000행 밖 로컬 행을 기동마다 영구 재upsert 한다 (실측 재현됨).
+ * 드릴 이력 적재로 pronunciationLog 증가율이 커져 도달 시점이 당겨진다 — 상한 도달 시에만
+ * 정렬(.order('id'))+range 페이지네이션으로 전체를 재조회한다. */
+describe('sync — pull/reconcile 페이지네이션 (PULL_PAGE_LIMIT 초과)', () => {
+  beforeEach(() => { vi.resetModules(); });
+
+  const mkRow = (i) => ({ id: `p${String(i).padStart(5, '0')}`, user_id: 'u1', lang: 'en', date: '2026-08-01', overall_score: 80, sentence_id: 'c1' });
+
+  function pagedFromMock(total, limit) {
+    // 1번째 호출: .select().eq() 가 첫 limit 행으로 resolve (상한 도달 신호)
+    // 2번째~ 호출: .select().eq().order().range(from,to) 가 해당 구간으로 resolve
+    let call = 0;
+    const calls = { order: 0, ranges: [] };
+    const rows = Array.from({ length: total }, (_, i) => mkRow(i));
+    const fromMock = vi.fn(() => {
+      call += 1;
+      const mine = call;
+      const builder = {
+        select: vi.fn(() => builder),
+        eq: vi.fn(() => (mine === 1
+          ? Promise.resolve({ data: rows.slice(0, limit), error: null })
+          : builder)),
+        order: vi.fn(() => { calls.order += 1; return builder; }),
+        range: vi.fn((from, to) => { calls.ranges.push([from, to]); return Promise.resolve({ data: rows.slice(from, to + 1), error: null }); }),
+      };
+      return builder;
+    });
+    return { fromMock, calls, rows };
+  }
+
+  it('pullTable — 상한 도달 시 정렬 페이지네이션으로 전체(1500행)를 적재한다', async () => {
+    const { fromMock, calls } = pagedFromMock(1500, 1000);
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const bulkPut = vi.fn().mockResolvedValue();
+    const result = await pullTable(mapping, { pronunciationLog: { bulkPut } }, 'u1');
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(1500);
+    expect(bulkPut.mock.calls[0][0]).toHaveLength(1500);
+    expect(calls.ranges).toEqual([[0, 999], [1000, 1999]]);   // 2페이지로 전체 확보
+  });
+
+  it('pullTable — 상한 미달이면 페이지네이션 재조회를 하지 않는다 (기존 경로 불변)', async () => {
+    const { fromMock, calls } = pagedFromMock(999, 1000);
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const bulkPut = vi.fn().mockResolvedValue();
+    const result = await pullTable(mapping, { pronunciationLog: { bulkPut } }, 'u1');
+    expect(result.count).toBe(999);
+    expect(calls.order).toBe(0);
+    expect(fromMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('reconcileTable — 서버 id 1500개를 전부 확보해 재upsert 0건 (종전엔 기동마다 500행 중복 upsert)', async () => {
+    const { fromMock, rows } = pagedFromMock(1500, 1000);
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { reconcileTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const local = rows.map((r) => ({ id: r.id, lang: 'en', date: r.date, overallScore: 80 }));
+    const r = await reconcileTable({ pronunciationLog: { toArray: async () => local } }, 'u1', mapping);
+    expect(r.status).toBe('ok');
+    expect(r.pushed).toBe(0);
+    expect(r.missing).toBe(0);
   });
 });
