@@ -26,9 +26,10 @@ export const DEDUCTION_RATES = {
   // 버벅임이 acc 는 98·99 로 안 깎이고 flu 만 62·61. 단 지오 실발화 꼬리 반복("again. Again.")엔
   // Azure 가 flu 92 를 줄 만큼 관대한 경우가 있어 연속값만으론 못 잡는다. 정상 발화 실측 ins 0.
   fluency: { max: 10, perPoint: 0.25, perInsertion: 2 },      // (100−flu) × 0.25 + ins × 2
-  // ⚠ perMonotoneWord 는 3단계 재평가 대상 — Monotone 태그가 같은 원어민 TTS 에서도 문장에 따라
-  // 0 ↔ 전단어(9/9)로 출렁인다(2026-08-29 라이브 실측). 전단어 태그 문장은 단어수만큼 쌓여
-  // 사실상 상한 10 고정 감점이 된다 (원어민 앵커 98점과 모순되는 케이스 관측).
+  // ⚠ perMonotoneWord 는 3단계 재평가 대상 — Monotone 태그가 원어민 TTS 실측 간에도 문장·조건에
+  // 따라 0 ↔ 전단어(9/9)로 출렁인다(0 쪽은 전 세션 앵커 실측, 9/9 는 2026-08-29 Aria 라이브 —
+  // 보이스 동일 여부는 미확인). 전단어 태그 문장은 단어수만큼 쌓여 사실상 상한 10 고정 감점이
+  // 된다 (원어민 앵커 98점과 모순되는 케이스 관측).
   intonation: { max: 10, perMonotoneWord: 1, perProsodyPoint: 0.15 },
   missing: { share: 100 },                                    // 문장 지분 100 × (누락/전체)
 };
