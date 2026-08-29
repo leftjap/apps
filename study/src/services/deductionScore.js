@@ -38,6 +38,10 @@ const norm = (w) => String(w ?? '').toLowerCase().replace(/[^\p{L}\p{N}']/gu, ''
  * @param {object} [opts]   { personalWeak?: string[], rates?: DEDUCTION_RATES 형 }
  * @returns {{ score:number, floor:number, deductions:Array<{axis,label,points,detail?}> }}
  */
+/* 알려진 보류 (2026-08-29 검증 발견 중 미수정 1건): judgeCoverage 는 축약형을 펼쳐 비교하므로
+ * (it's→it is) 기대 토큰 수가 원문보다 1 커질 수 있다. 누락 개수와 분모가 **같은 펼친 단위**라
+ * 비율(floor·missing 지분)은 일관되지만, 누락 라벨에 'cannot' 같은 펼친 형태가 보일 수 있고
+ * 왜곡 폭은 문장당 최대 축약형 개수만큼이다. 3단계 단가 보정 때 실데이터로 재평가한다. */
 export function computeDeductionScore(result, expected, { personalWeak = [], rates = DEDUCTION_RATES } = {}) {
   const cov = judgeCoverage(result?.recognizedText, expected);
   const nExp = Math.max(cov.expTokens || 0, 1);
