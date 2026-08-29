@@ -137,10 +137,17 @@ function phonemeMean(result) {
  *
  * 판정 순서가 중요하다 — 소리가 무너지면 전사도 같이 무너져 오발화로 오인된다.
  * 그래서 소리를 먼저 묻고(unclear) 그다음 내용을 묻는다(misread). */
+/** 음질만 단독으로 묻는다 — 체이닝·생산 연습은 통과 판정이 따로 있어 오발화 판정이 필요 없다.
+ * 음소 데이터가 없으면 판정하지 않는다(false) — 근거 없이 되돌리지 않는다는 계약. */
+export function isTooUnclear(result, { minPhonemeMean = 50 } = {}) {
+  const pm = phonemeMean(result);
+  return pm != null && pm < minPhonemeMean;
+}
+
 export function judgeRecording(result, expected, { minPhonemeMean = 50, ...misreadOpts } = {}) {
   const pm = phonemeMean(result);
   const misread = judgeMisread(result, expected, misreadOpts);
-  if (pm != null && pm < minPhonemeMean) {
+  if (isTooUnclear(result, { minPhonemeMean })) {
     return { record: false, reason: 'unclear', phonemeMean: pm, ...misread };
   }
   if (misread.misread) return { record: false, reason: 'misread', phonemeMean: pm, ...misread };

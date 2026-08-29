@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { judgeCoverage, judgeProduction, judgeMisread, judgeRecording } from './coverageJudge.js';
+import { judgeCoverage, judgeProduction, judgeMisread, judgeRecording, isTooUnclear } from './coverageJudge.js';
 
 describe('judgeCoverage — 전사 vs 기대문 커버리지 (체이닝 통과 판정, 엔진 무관)', () => {
   it('완전 일치 → pass, missing 없음, coverage 1', () => {
@@ -241,5 +241,26 @@ describe('judgeRecording — 오발화 + 녹음 품질 통합 판정', () => {
 
   it('단어를 다 말한 저점(발음만 나쁨)은 음질만 받쳐주면 기록한다', () => {
     expect(judgeRecording({ score: 21, recognizedText: EXP, phonemeScores: ph(66) }, EXP).record).toBe(true);
+  });
+});
+
+/* 음질 판정을 단독으로도 쓸 수 있어야 한다 (2026-08-29) — 체이닝·생산 연습은 통과 판정이 따로
+ * 있으므로(judgeCoverage / judgeProduction) 오발화 판정은 필요 없고 음질만 물어야 한다. */
+describe('isTooUnclear — 음질 단독 판정', () => {
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+  it('음소평균 40.8(합성 취약 구간)이면 참', () => {
+    expect(isTooUnclear({ score: 82, phonemeScores: ph(40.8) })).toBe(true);
+  });
+  it('음소평균 65.2(실기록 정상 최저)이면 거짓', () => {
+    expect(isTooUnclear({ score: 83, phonemeScores: ph(65.2) })).toBe(false);
+  });
+  it('음소 데이터가 없으면 묻지 않는다 (기존 계약 보존)', () => {
+    expect(isTooUnclear({ score: 90 })).toBe(false);
+    expect(isTooUnclear({ score: 90, phonemeScores: [] })).toBe(false);
+  });
+  it('judgeRecording 의 unclear 판정과 같은 기준을 쓴다', () => {
+    const r = { score: 82, recognizedText: 'x', phonemeScores: ph(40.8) };
+    expect(judgeRecording(r, 'x').reason).toBe('unclear');
+    expect(isTooUnclear(r)).toBe(true);
   });
 });

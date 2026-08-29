@@ -15,7 +15,7 @@ import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
-import { judgeCoverage, judgeProduction, judgeRecording } from '../services/coverageJudge.js';
+import { judgeCoverage, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
@@ -459,6 +459,9 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
       row.classList.remove('recing'); recBtn.classList.remove('recing');
       const result = await stopAndAnalyze(ctrl, step.text, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      /* 음질 게이트 (2026-08-29) — 소리가 무너진 녹음은 발화로도 세지 않는다. 통과 판정(judgeCoverage)은
+       * 전사가 무너져 어차피 실패하지만, onUtterance 가 '오늘 발화'·pronScores·3회 게이트를 올린다. */
+      if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
       onUtterance?.(result); // 통과 여부와 무관 — 말했으면 발화 1건
       // 2026-07-12 — 통과 판정을 Azure omission(passesCoverage) → 전사 비교(judgeCoverage)로 교체.
       // Azure 가 긴 L2 문장에서 false omission 을 내던 실측(coverageJudge.js 박제) 후속 배선.
@@ -579,6 +582,9 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
       row.classList.remove('recing'); recBtn.classList.remove('recing');
       const result = await stopAndAnalyze(ctrl, d.en, card, { enableMiscue: true });
       if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      /* 음질 게이트 (2026-08-29) — 여기가 특히 위험하다: 통과 기준이 accuracy>=65 인데 합성 취약
+       * 구간의 표시 acc 가 82 라 **무너진 녹음이 통과로 처리된다**. 실패로도 세지 않는다(학습자 잘못이 아님). */
+      if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
       onScore?.(result); // 통과 여부와 무관 — 말했으면 발화 1건 (체이닝과 동일)
       // 통과 = 커버리지 + 문장 정확도 하한 + 단어 하한 (judgeProduction, 2026-07-23 사용자 지적
       // "정확하게 발음 못했는데 패스" · "엉뚱한 단어도 통과"). 실패도 1회로 누적 — 3회면 정답 공개.

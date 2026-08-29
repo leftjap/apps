@@ -1304,3 +1304,62 @@ describe('sessionExprV2 — 녹음 품질 게이트', () => {
     expect(state.lastScore).toBe(21);
   });
 });
+
+/* 체이닝·생산 연습에도 음질 게이트 (2026-08-29) — 두 경로는 통과 판정이 따로 있어서
+ * (judgeCoverage / judgeProduction) 음질을 안 물었다. 특히 생산은 accuracy>=65 로 통과를 정하는데
+ * 합성 취약 구간의 표시 acc 가 82 라 **무너진 녹음이 통과로 처리된다**. 그리고 두 경로 모두
+ * 통과 여부와 무관하게 onUtterance/onScore 로 '오늘 발화'와 pronScores 에 집계된다. */
+describe('sessionExprV2 — 체이닝·생산 음질 게이트', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+  const CHAIN = { target: 'It is a promise', chunks: ['It is', 'a promise'], ko: '약속이야' };
+
+  function chainState() {
+    const s = makeState();
+    s.sentence.explanation.chain = CHAIN;
+    s.cards[1].explanation.chain = CHAIN;
+    return s;
+  }
+
+  it('체이닝 — 음소평균 41 이면 단계가 진행되지 않고 발화로도 안 센다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 82, recognizedText: 'It is', phonemeScores: ph(41) });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = chainState();
+    renderSessionExprV2(host, state, {});
+    const row = host.querySelector('.vs-chain .vs-drow');
+    const b = row.querySelector('button[aria-label="녹음"]');
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(host.querySelector('.vs-chain .ct').textContent).toContain('통과 0');
+    expect(state.tried).toBe(0);
+    expect(state.pronScores).toEqual([]);
+    expect(String(showRecordToast.mock.calls[0][0])).toContain('또렷하게');
+  });
+
+  it('생산 연습 — 표시 acc 82 여도 음소평균 41 이면 통과가 아니다', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({
+      score: 82, recognizedText: "It's more than a job.", phonemeScores: ph(41),
+      wordScores: [{ word: 'its', score: 90 }, { word: 'more', score: 90 }],
+    });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeStateWithDrills();
+    renderSessionExprV2(host, state, {});
+    const row = [...host.querySelectorAll('.vs-prod')][0];
+    const b = row.querySelector('button[aria-label="녹음"]');
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(row.textContent).not.toContain('more than a job');   // 정답 미공개 = 통과 아님
+    expect(host.querySelector('.vs-prodblock .ct').textContent).toContain('통과 0 / 2');
+    expect(state.tried).toBe(0);
+  });
+
+  it('음소평균 66 이면 체이닝은 종전대로 판정한다 (회귀 방지)', async () => {
+    stopAndAnalyze.mockResolvedValueOnce({ score: 90, recognizedText: 'It is', phonemeScores: ph(66) });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = chainState();
+    renderSessionExprV2(host, state, {});
+    const row = host.querySelector('.vs-chain .vs-drow');
+    const b = row.querySelector('button[aria-label="녹음"]');
+    b.click(); await tick(); b.click(); await tick(); await tick();
+    expect(host.querySelector('.vs-chain .ct').textContent).toContain('통과 1');
+    expect(state.tried).toBe(1);
+  });
+});
