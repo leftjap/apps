@@ -1210,7 +1210,9 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       fluencyScore: nbest.FluencyScore,
       completenessScore: nbest.CompletenessScore,
       prosodyScore: nbest.ProsodyScore,
-      prosodyIssues: enableProsody ? extractProsodyIssues(nbest.Words) : undefined,
+      // ProsodyScore 가 없으면(서버가 프로소디를 실제로 안 잰 응답) 빈 셋 대신 미기록 —
+      // '측정됐고 이슈 0' 과 '미측정' 을 저장 행에서 구별한다 (2026-08-29 검증 발견).
+      prosodyIssues: enableProsody && Number.isFinite(nbest.ProsodyScore) ? extractProsodyIssues(nbest.Words) : undefined,
       omissions,
       insertions,
     };

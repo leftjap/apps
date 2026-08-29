@@ -1853,3 +1853,39 @@ describe('speech — 프로소디 측정', () => {
     expect(extractProsodyIssues(undefined)).toEqual({ monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] });
   });
 });
+
+/* 미측정 구별 (2026-08-29 검증 발견) — enableProsody 를 실었어도 응답에 ProsodyScore 가 없으면
+ * prosodyIssues 를 빈 셋이 아니라 미기록으로 둔다. 빈 셋으로 저장되면 3단계 보정에서
+ * '측정됐고 단조 0건' 표본으로 오인돼 단가가 과소 보정된다. */
+describe('speech — analyzeWavRest 프로소디 미측정 응답', () => {
+  const fixtureWithout = { RecognitionStatus: 'Success', DisplayText: 'Hi.', NBest: [{
+    Lexical: 'hi', Display: 'Hi.', AccuracyScore: 90, FluencyScore: 95, CompletenessScore: 100, PronScore: 92,
+    Words: [{ Word: 'Hi', AccuracyScore: 90, ErrorType: 'None', Phonemes: [{ Phoneme: 'h', AccuracyScore: 90 }] }],
+  }] };
+  const stub = (fixture) => {
+    _fetchSpy.mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      if (u.includes('.stt.speech.microsoft.com/')) return new Response(JSON.stringify(fixture), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      return new Response('nf', { status: 404 });
+    });
+  };
+
+  it('ProsodyScore 없는 응답 → prosodyIssues 미기록 (빈 셋 아님)', async () => {
+    stub(fixtureWithout);
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(50)]), 'hi', { lang: 'en-US', enableProsody: true });
+    expect(r.prosodyIssues).toBeUndefined();
+  });
+
+  it('ProsodyScore 있는 응답 → 이슈 0건이어도 빈 셋으로 기록 (측정됨 표시)', async () => {
+    const withPros = JSON.parse(JSON.stringify(fixtureWithout));
+    withPros.NBest[0].ProsodyScore = 88.5;
+    stub(withPros);
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(50)]), 'hi', { lang: 'en-US', enableProsody: true });
+    expect(r.prosodyIssues).toEqual({ monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] });
+  });
+});

@@ -29,7 +29,8 @@ export const DEDUCTION_RATES = {
 /* 한국인 공통 취약 음소 (Azure 심볼 기준) — 개인 실측 약점(personalWeak)과 합집합으로 쓴다. */
 export const KO_WEAK_PHONEMES = ['f', 'v', 'r', 'l', 'th', 'dh', 'z', 'w'];
 
-const norm = (w) => String(w ?? '').toLowerCase().replace(/[^a-z0-9']/g, '');
+// 유니코드 유지 — ASCII 만 남기면 ja 단어가 전부 '' 로 접혀 취약 판정이 문장 전체로 오염된다(검증 발견).
+const norm = (w) => String(w ?? '').toLowerCase().replace(/[^\p{L}\p{N}']/gu, '');
 
 /**
  * @param {object} result   analyzeWavRest 결과 (관문 통과 후를 가정 — mockFallback 은 호출부가 거름)
@@ -40,8 +41,17 @@ const norm = (w) => String(w ?? '').toLowerCase().replace(/[^a-z0-9']/g, '');
 export function computeDeductionScore(result, expected, { personalWeak = [], rates = DEDUCTION_RATES } = {}) {
   const cov = judgeCoverage(result?.recognizedText, expected);
   const nExp = Math.max(cov.expTokens || 0, 1);
-  const floor = Math.round(50 * cov.coverage);
+  /* 바닥은 축 상한 합에서 유도한다 (100 − Σmax) — rates 를 바꿔도 '전 축 바닥 = 바닥점' 항등이 유지.
+   * ja 퇴화 가드: 기대문이 1토큰(공백 무분절)이면 토큰 커버리지가 무의미 — missing 축을 끄고
+   * 바닥을 만점 커버리지로 둔다 (judgeMisread 의 expTokens>=2 가드와 같은 근거, 검증 발견). */
+  const floorMax = 100 - (rates.words.max + rates.fluency.max + rates.intonation.max);
+  const tokensComparable = (cov.expTokens || 0) >= 2;
+  const floor = Math.round(floorMax * (tokensComparable ? cov.coverage : 1));
   const weakSet = new Set([...KO_WEAK_PHONEMES, ...personalWeak]);
+  // 누락 단어(Omission)는 wordScores 에 0점으로도 실려 온다(실경로 enableMiscue:true 실측) —
+  // words 축에서 빼서 missing 축과의 이중 감점을 막는다 (검증 발견).
+  const omitted = new Set((result?.omissions ?? []).map(norm));
+  const saidWords = (result?.wordScores ?? []).filter((w) => !omitted.has(norm(w?.word)));
 
   // 단어 → 취약 음소 포함 여부 (phonemeScores 의 word 연결 사용. 없으면 가중 없음)
   const weakWords = new Set();
@@ -51,11 +61,12 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
 
   const deductions = [];
 
-  // ── words: 단어별 결손 비례 (예산 = max/기대 단어 수 — 누락돼도 예산은 안 줄어든다)
-  const budget = rates.words.max / nExp;
+  // ── words: 단어별 결손 비례. 예산 분모 = 실제로 말한 단어 수 — 전 단어 0점이면 정확히 max 에
+  // 닿아 '축 상한 합 = 바닥 보장' 산수가 성립한다 (기대 단어 수 분모는 상한 미달로 계약을 깼다 — 검증 발견).
+  const budget = rates.words.max / Math.max(saidWords.length, 1);
   let wordsDed = 0;
   const worst = [];
-  for (const w of result?.wordScores ?? []) {
+  for (const w of saidWords) {
     const shortfall = Math.max(0, 100 - (Number(w?.score) || 0)) / 100;
     if (shortfall <= 0) continue;
     const mult = weakWords.has(norm(w.word)) ? rates.words.weakMultiplier : 1;
@@ -95,8 +106,8 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
     });
   }
 
-  // ── missing: 말하지 않은 지분 직접 감점
-  const missingCount = cov.missing.length;
+  // ── missing: 말하지 않은 지분 직접 감점 (토큰 비교가 유의미할 때만 — ja 1토큰은 제외)
+  const missingCount = tokensComparable ? cov.missing.length : 0;
   if (missingCount > 0) {
     deductions.push({
       axis: 'missing',

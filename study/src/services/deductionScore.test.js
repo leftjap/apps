@@ -118,3 +118,54 @@ describe('상수 계약', () => {
     for (const p of ['f', 'v', 'r', 'l', 'th', 'dh']) expect(KO_WEAK_PHONEMES).toContain(p);
   });
 });
+
+/* 적대 검증(prosody-engine-review)이 확증한 결함 4건 고정 (2026-08-29) */
+describe('computeDeductionScore — 검증 발견 반영', () => {
+  const W = (word, score) => ({ word, score });
+
+  it('ja(1토큰 기대문) — 전사가 달라도 0점으로 붕괴하지 않는다 (missing 축 미적용·바닥 50)', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'ちょっと待って',                     // 기대문과 다름 → 종전엔 missing 100 + floor 0
+      wordScores: [W('ちょっと', 90), W('待って', 80)],
+      fluencyScore: 100, prosodyScore: 100,
+    }, 'ちょっと待ってください');
+    expect(r.floor).toBe(50);
+    expect(r.deductions.find((d) => d.axis === 'missing')).toBeUndefined();
+    expect(r.score).toBeGreaterThanOrEqual(50);
+  });
+
+  it('누락 단어는 missing 축에서만 깎인다 — wordScores 의 Omission 0점 항목과 이중 감점 금지', () => {
+    // 실경로(enableMiscue:true)에서 Azure 는 누락 단어를 wordScores 에 0점으로 싣는다.
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you',
+      wordScores: [W('sorry', 100), W('could', 100), W('you', 100), W('say', 0)],  // say = Omission 0점
+      omissions: ['say'],
+      fluencyScore: 100, prosodyScore: 100,
+    }, 'sorry could you say');
+    expect(r.deductions.find((d) => d.axis === 'words')).toBeUndefined();          // 말한 단어들은 만점
+    expect(r.deductions.find((d) => d.axis === 'missing').points).toBe(25);        // 1/4 지분만
+    expect(r.score).toBe(75);
+  });
+
+  it('ja 취약 판정 — 비ASCII 단어가 전부 취약으로 오염되지 않는다 (유니코드 norm)', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'ちょっと 待って',
+      wordScores: [W('ちょっと', 60), W('待って', 60)],
+      phonemeScores: [{ symbol: 'r', word: 'ちょっと', score: 40 }],   // ちょっと 만 취약
+      fluencyScore: 100, prosodyScore: 100,
+    }, 'ちょっと 待って');
+    // 예산 15씩 · 결손 0.4 → ちょっと 15×0.4×1.5=9, 待って 15×0.4×1=6 → 15 (오염 시 18)
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(15);
+  });
+
+  it('rates 를 바꿔도 바닥이 축 상한 합에서 유도된다 (하드코딩 50 아님)', () => {
+    const rates = { words: { max: 20, weakMultiplier: 1.5 }, fluency: { max: 10, perPoint: 0.25 },
+      intonation: { max: 10, perMonotoneWord: 1, perProsodyPoint: 0.15 }, missing: { share: 100 } };
+    const r = computeDeductionScore({
+      recognizedText: 'a b', wordScores: [W('a', 0), W('b', 0)], fluencyScore: 0, prosodyScore: 0,
+      prosodyIssues: { monotoneWords: ['a', 'b'], unexpectedBreaks: [], missingBreaks: [] },
+    }, 'a b', { rates });
+    expect(r.floor).toBe(60);       // 100 − (20+10+10)
+    expect(r.score).toBe(60);
+  });
+});

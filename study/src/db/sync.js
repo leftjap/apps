@@ -520,6 +520,18 @@ export async function pullTable(mapping, db, userId) {
       tombstoned = rowsToPut.filter((r) => r?.explanation?._deleted).map((r) => r.id);
       if (tombstoned.length) rowsToPut = rowsToPut.filter((r) => !r?.explanation?._deleted);
     }
+    /* pronunciationLog 로컬 전용 필드 보존 (2026-08-29) — prosodyIssues 는 동기화 매핑 밖이라
+     * pull 의 bulkPut 이 지워버렸다(매 기동 리셋 — 감점 단가 보정 축적 소실). 서버 값이 정본인
+     * 필드는 서버 행 그대로, 로컬 전용 필드만 이월한다. bulkGet 없는 가짜 store(테스트)면 통과. */
+    if (mapping.dexie === 'pronunciationLog' && typeof store.bulkGet === 'function') {
+      const localRows = await store.bulkGet(rowsToPut.map((r) => r.id));
+      rowsToPut = rowsToPut.map((serverRow, i) => {
+        const local = localRows[i];
+        return (local && local.prosodyIssues != null && serverRow.prosodyIssues == null)
+          ? { ...serverRow, prosodyIssues: local.prosodyIssues }
+          : serverRow;
+      });
+    }
     // reviewQueue 만 충돌 해결 (다른 테이블은 단순 bulkPut)
     if (mapping.dexie === 'reviewQueue' && typeof store.bulkGet === 'function') {
       const ids = rowsToPut.map((r) => r.id);

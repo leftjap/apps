@@ -2264,3 +2264,44 @@ describe('sync — pull/reconcile 페이지네이션 (PULL_PAGE_LIMIT 초과)', 
     expect(r.missing).toBe(0);
   });
 });
+
+/* prosodyIssues 로컬 보존 (2026-08-29 검증 발견 — high).
+ * prosodyIssues 는 동기화 매핑 밖(로컬 전용)인데, pull 의 bulkPut 이 행을 통째로 덮어써서
+ * 매 기동(startSync→pullAll)마다 지워졌다 — 감점 단가 보정용 축적이 리셋되는 결함. */
+describe('sync — pullTable 이 pronunciationLog 의 로컬 전용 필드를 보존한다', () => {
+  beforeEach(() => { vi.resetModules(); });
+
+  it('서버 행으로 덮어써도 로컬 prosodyIssues 가 남는다', async () => {
+    const server = [{ id: 'p1', user_id: 'u1', lang: 'en', date: '2026-08-29', overall_score: 90, sentence_id: 'c1' }];
+    const fromMock = vi.fn(() => {
+      const b = { select: vi.fn(() => b), eq: vi.fn().mockResolvedValue({ data: server, error: null }) };
+      return b;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const issues = { monotoneWords: ['sorry'], unexpectedBreaks: [], missingBreaks: [] };
+    const bulkPut = vi.fn().mockResolvedValue();
+    const bulkGet = vi.fn().mockResolvedValue([{ id: 'p1', prosodyIssues: issues }]);
+    const r = await pullTable(mapping, { pronunciationLog: { bulkPut, bulkGet } }, 'u1');
+    expect(r.status).toBe('ok');
+    expect(bulkPut.mock.calls[0][0][0].prosodyIssues).toEqual(issues);
+    expect(bulkPut.mock.calls[0][0][0].overallScore).toBe(90);   // 서버 값은 서버가 정본
+  });
+
+  it('로컬에 없던 행(bulkGet undefined)은 그대로 저장된다', async () => {
+    const server = [{ id: 'p2', user_id: 'u1', lang: 'en', date: '2026-08-29', overall_score: 80, sentence_id: 'c1' }];
+    const fromMock = vi.fn(() => {
+      const b = { select: vi.fn(() => b), eq: vi.fn().mockResolvedValue({ data: server, error: null }) };
+      return b;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const bulkPut = vi.fn().mockResolvedValue();
+    const bulkGet = vi.fn().mockResolvedValue([undefined]);
+    const r = await pullTable(mapping, { pronunciationLog: { bulkPut, bulkGet } }, 'u1');
+    expect(r.status).toBe('ok');
+    expect(bulkPut.mock.calls[0][0][0].id).toBe('p2');
+  });
+});
