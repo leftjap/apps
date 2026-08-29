@@ -169,3 +169,61 @@ describe('computeDeductionScore — 검증 발견 반영', () => {
     expect(r.score).toBe(60);
   });
 });
+
+/* 반복·덧붙임 감점 (2026-08-29 실사용 보고 "버벅댔는데 90점대") — 라이브 실측:
+ * 버벅임(단어 반복·문장 재시작)은 AccuracyScore 를 거의 안 깎고(98·99) FluencyScore 만 내려간다
+ * (62·61). 그런데 Azure 유창성은 지오 실발화("again. Again." 꼬리 반복)에 92 를 줄 만큼 관대한
+ * 경우가 있어, 반복의 직접 증거인 Insertion 을 유창 축에서 함께 깎는다. 정상 발화 실측 ins 0. */
+describe('computeDeductionScore — 반복·덧붙임(Insertion)', () => {
+  const EXP = 'I had to ask him to say it again';
+  const words = EXP.toLowerCase().split(' ');
+
+  it('삽입 단어는 유창 축에서 깎는다 — 지오 실발화형(flu 92·꼬리 "Again." 반복)', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'I had to ask him to say it again. Again.',
+      wordScores: [...words.map((w) => W(w, 100)), W('again', 100)],
+      fluencyScore: 92,
+      insertions: ['again'],
+    }, EXP);
+    const flu = r.deductions.find((d) => d.axis === 'fluency');
+    expect(flu.points).toBe(4);                       // (100−92)×0.25 = 2 + 1단어×2
+    expect(flu.label).toMatch(/반복|덧붙임/);
+  });
+
+  it('삽입 없으면 유창 감점은 연속 점수 결손만 — 기존 계약 불변', () => {
+    const r = computeDeductionScore({
+      recognizedText: EXP,
+      wordScores: words.map((w) => W(w, 100)),
+      fluencyScore: 92,
+    }, EXP);
+    expect(r.deductions.find((d) => d.axis === 'fluency').points).toBe(2);
+  });
+
+  it('유창 미측정이어도 삽입 증거가 있으면 깎는다 — 삽입은 miscue 응답의 실측값', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'I had to I had to ask him to say it again',
+      wordScores: words.map((w) => W(w, 100)),
+      insertions: ['i', 'had', 'to'],
+    }, EXP);
+    expect(r.deductions.find((d) => d.axis === 'fluency').points).toBe(6);   // 3단어×2
+  });
+
+  it('유창 축 상한(10)은 삽입을 더해도 넘지 않는다 — 버벅임 실측 앵커(flu 62·ins 1)', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'I had to ask him to say it again. Again.',
+      wordScores: [...words.map((w) => W(w, 100)), W('again', 100)],
+      fluencyScore: 62,
+      insertions: ['again'],
+    }, EXP);
+    expect(r.deductions.find((d) => d.axis === 'fluency').points).toBe(10);  // min(10, 9.5+2)
+  });
+
+  it('ja(1토큰 기대문)에는 삽입 감점을 적용하지 않는다 — 실측 없는 언어로 확대 금지', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'そうなんだよ',
+      wordScores: [W('そうなんだ', 100)],
+      insertions: ['よ'],
+    }, 'そうなんだ');
+    expect(r.deductions.find((d) => d.axis === 'fluency')).toBeUndefined();
+  });
+});

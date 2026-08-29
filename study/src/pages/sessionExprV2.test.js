@@ -11,7 +11,7 @@ vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), s
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2, hlNode, drillRows } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode, drillRows, recordGateMessage } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
@@ -1379,5 +1379,21 @@ describe('sessionExprV2 — 데모 드릴은 DB 에 쓰지 않는다', () => {
     await new Promise((r) => setTimeout(r, 900));   // 데모 시뮬 800ms
     expect(state.tried).toBe(1);                    // 화면 동작은 그대로
     expect(savePronunciationLog).not.toHaveBeenCalled();
+  });
+});
+
+/* 채점 보류 안내 (2026-08-29 실사용 보고) — 오발화 시 "또렷하게 안 들렸어요"가 뜨는 비대칭.
+ * 라이브 실측: 또렷한 오발화도 음소 정렬이 함께 무너져(acc 2·음소평균 31) unclear 로 오인됐다.
+ * garbled(둘 다 바닥)는 원인을 지목하지 않는다 — 틀린 원인 지목은 사용자가 엉뚱한 걸 고치게 한다. */
+describe('recordGateMessage — 채점 보류 안내 문구', () => {
+  it('unclear·misread·garbled 는 서로 다른 문구이고, garbled 는 원인을 지목하지 않는다', () => {
+    const unclear = recordGateMessage('unclear');
+    const misread = recordGateMessage('misread');
+    const garbled = recordGateMessage('garbled');
+    expect(misread).toMatch(/다른 문장/);
+    expect(unclear).toMatch(/또렷/);
+    expect(garbled).not.toMatch(/다른 문장/);          // 오발화 단정 금지
+    expect(garbled).not.toMatch(/안 들렸/);            // 음질 단정 금지
+    expect(new Set([unclear, misread, garbled]).size).toBe(3);
   });
 });

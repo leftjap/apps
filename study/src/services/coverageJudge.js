@@ -95,8 +95,8 @@ export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 
  *   · 두 신호 동시 바닥은 실측에서 '다른 문장·아무 발음'에만 나타났다
  *     (정상·부분 발화 정확도 최저 65 / 다른 문장 최고 27).
  * 임계값은 그 간극의 가운데다. 커버리지가 살아 있으면 **오발화로는** 버리지 않는다 — 단 실경로
- * 진입점(judgeRecording)은 음질(unclear)을 먼저 물으므로, 음소 원시 평균이 바닥이면 커버리지와
- * 무관하게 채점이 보류된다 (2026-08-29 재감사 정정 — 종전 문구는 그 겹을 빠뜨렸다). */
+ * 진입점(judgeRecording)은 음질도 함께 보므로, 음소 원시 평균이 바닥이면 커버리지와 무관하게
+ * 채점이 보류된다(사유는 unclear 또는 garbled — judgeRecording 주석 참조). */
 export function judgeMisread(result, expected, { minAccuracy = 40, minCoverage = 0.7 } = {}) {
   const accuracy = Math.round(Number(result?.score) || 0);
   const judged = judgeCoverage(result?.recognizedText, expected);
@@ -145,8 +145,11 @@ function phonemeMean(result) {
  * 자연스러운 절단점처럼 보였지만, 합성 취약 구간(음소평균 40.8·표시 acc 82)이 **0점 0/26** 이라
  * 0점 조건을 붙이면 그 구간을 통째로 놓친다. 음소평균 단독이 맞다.
  *
- * 판정 순서가 중요하다 — 소리가 무너지면 전사도 같이 무너져 오발화로 오인된다.
- * 그래서 소리를 먼저 묻고(unclear) 그다음 내용을 묻는다(misread). */
+ * 판정은 세 갈래다 (2026-08-29 실사용 보고로 정정) — 종전엔 소리(unclear)를 먼저 묻고 내용(misread)을
+ * 나중에 물었는데, 라이브 실측에서 **또렷한 오발화도 음소 정렬이 함께 무너져**(원어민 TTS 오발화가
+ * acc 2·음소평균 31) unclear 로 오인됐다. 역도 참이다(소리가 무너지면 전사도 무너진다). 즉 두 신호가
+ * 동시에 바닥이면 어느 쪽이 원인인지 가를 근거가 없다 → 'garbled' 로 원인을 단정하지 않는다.
+ * unclear 단독(내용은 맞음)·misread 단독(소리는 멀쩡)일 때만 각각의 원인을 지목한다. */
 /** 음질만 단독으로 묻는다 — 체이닝·생산 연습은 통과 판정이 따로 있어 오발화 판정이 필요 없다.
  * 음소 데이터가 없으면 판정하지 않는다(false) — 근거 없이 되돌리지 않는다는 계약. */
 export function isTooUnclear(result, { minPhonemeMean = 50 } = {}) {
@@ -157,9 +160,9 @@ export function isTooUnclear(result, { minPhonemeMean = 50 } = {}) {
 export function judgeRecording(result, expected, { minPhonemeMean = 50, ...misreadOpts } = {}) {
   const pm = phonemeMean(result);
   const misread = judgeMisread(result, expected, misreadOpts);
-  if (isTooUnclear(result, { minPhonemeMean })) {
-    return { record: false, reason: 'unclear', phonemeMean: pm, ...misread };
-  }
-  if (misread.misread) return { record: false, reason: 'misread', phonemeMean: pm, ...misread };
-  return { record: true, reason: null, phonemeMean: pm, ...misread };
+  const unclear = isTooUnclear(result, { minPhonemeMean });
+  const reason = unclear && misread.misread ? 'garbled'
+    : unclear ? 'unclear'
+      : misread.misread ? 'misread' : null;
+  return { record: reason === null, reason, phonemeMean: pm, ...misread };
 }

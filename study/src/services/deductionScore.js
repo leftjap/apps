@@ -10,8 +10,9 @@
  *
  * 축과 소스 (2026-08-29 라이브 실측으로 확정):
  *   words      단어별 정확도 결손 비례 (Azure wordScores). 취약 음소 포함 단어는 ×1.5.
- *   fluency    FluencyScore 연속값. ※ UnexpectedBreak 태그는 700ms 끊김에도 0건일 만큼
- *              보수적이라(실측) 끊김·연음 평가의 주 소스로 못 쓴다 — 연속 점수가 주다.
+ *   fluency    FluencyScore 연속값 + Insertion(반복·덧붙임) 건수. ※ UnexpectedBreak 태그는 700ms
+ *              끊김에도 0건일 만큼 보수적이라(실측) 끊김·연음 평가의 주 소스로 못 쓴다 — 연속 점수가
+ *              주고, 연속값이 못 잡는 반복(버벅임)은 Insertion 이 보완한다.
  *   intonation Monotone 단어 태그(민감, 실측 확인) + ProsodyScore 연속값 결손.
  *   missing    말하지 않은 단어의 지분만큼 직접 감점 + 바닥(floor)도 비례 하강.
  * '근거 없으면 감점 없음' — 측정값이 없는 축(예: 프로소디 미측정 응답)은 깎지 않는다.
@@ -21,7 +22,13 @@ import { judgeCoverage } from './coverageJudge.js';
 /* 감점 단가 — 전부 초안. 3단계에서 지오 실측 분포로 보정한다 (이 표만 고치면 됨). */
 export const DEDUCTION_RATES = {
   words: { max: 30, weakMultiplier: 1.5 },
-  fluency: { max: 10, perPoint: 0.25 },                       // (100−flu) × 0.25
+  // perInsertion: 반복·덧붙임 단어당 감점 [초안]. 버벅임의 직접 증거 — 라이브 실측(2026-08-29):
+  // 버벅임이 acc 는 98·99 로 안 깎이고 flu 만 62·61. 단 지오 실발화 꼬리 반복("again. Again.")엔
+  // Azure 가 flu 92 를 줄 만큼 관대한 경우가 있어 연속값만으론 못 잡는다. 정상 발화 실측 ins 0.
+  fluency: { max: 10, perPoint: 0.25, perInsertion: 2 },      // (100−flu) × 0.25 + ins × 2
+  // ⚠ perMonotoneWord 는 3단계 재평가 대상 — Monotone 태그가 같은 원어민 TTS 에서도 문장에 따라
+  // 0 ↔ 전단어(9/9)로 출렁인다(2026-08-29 라이브 실측). 전단어 태그 문장은 단어수만큼 쌓여
+  // 사실상 상한 10 고정 감점이 된다 (원어민 앵커 98점과 모순되는 케이스 관측).
   intonation: { max: 10, perMonotoneWord: 1, perProsodyPoint: 0.15 },
   missing: { share: 100 },                                    // 문장 지분 100 × (누락/전체)
 };
@@ -89,11 +96,19 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
     });
   }
 
-  // ── fluency: 연속 점수 결손 (측정 없으면 감점 없음)
+  // ── fluency: 연속 점수 결손 + 반복·덧붙임(Insertion — miscue 응답의 실측값이라 flu 미측정이어도
+  // 근거가 된다). ja(1토큰 기대문)는 삽입 판정 미실측이라 적용하지 않는다 — tokensComparable 가드 재사용.
   const flu = Number(result?.fluencyScore);
-  if (Number.isFinite(flu)) {
-    const d = Math.min(rates.fluency.max, Math.max(0, 100 - flu) * rates.fluency.perPoint);
-    if (d > 0) deductions.push({ axis: 'fluency', label: '끊기지 않고 이어 말하기', points: round1(d) });
+  const insCount = tokensComparable ? (result?.insertions ?? []).length : 0;
+  let fluDed = Number.isFinite(flu) ? Math.max(0, 100 - flu) * rates.fluency.perPoint : 0;
+  // perInsertion 결측 rates(구형 커스텀 표)는 0 — NaN 이 축 전체를 지우는 것을 막는다.
+  fluDed = Math.min(rates.fluency.max, fluDed + insCount * (rates.fluency.perInsertion || 0));
+  if (fluDed > 0) {
+    deductions.push({
+      axis: 'fluency',
+      label: insCount ? `한 번에 이어 말하기 (반복·덧붙임 ${insCount}단어)` : '끊기지 않고 이어 말하기',
+      points: round1(fluDed),
+    });
   }
 
   // ── intonation: 단조 태그 + 프로소디 결손 (둘 다 없으면 감점 없음)

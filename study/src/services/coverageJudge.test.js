@@ -234,9 +234,18 @@ describe('judgeRecording — 오발화 + 녹음 품질 통합 판정', () => {
     expect(r.reason).toBe('misread');
   });
 
-  it('음질 판정이 오발화보다 먼저다 — 소리가 무너지면 전사도 무너져 오발화로 오인된다', () => {
+  it('소리와 내용이 함께 바닥이면 원인을 단정하지 않는다 — garbled (약한 신호인지 다른 문장인지 가를 근거가 없다)', () => {
     const r = judgeRecording({ score: 6, recognizedText: 'How long', phonemeScores: ph(12) }, EXP);
-    expect(r.reason).toBe('unclear');
+    expect(r.record).toBe(false);
+    expect(r.reason).toBe('garbled');
+  });
+
+  it('또렷한 오발화도 garbled — 라이브 실측(2026-08-29): 원어민 TTS 가 다른 문장을 말해도 acc 2·음소평균 31 로 unclear 에 오인되던 사례', () => {
+    // "The weather is really nice today." 를 EXP 레퍼런스에 넣은 라이브 캡처 축약 픽스처.
+    // 오발화는 음소 정렬도 함께 무너지므로 unclear 단독 판정이 "또렷하게 안 들렸어요"로 오안내했다.
+    const r = judgeRecording({ score: 2, recognizedText: 'That say.', phonemeScores: ph(31.2, 5) }, EXP);
+    expect(r.record).toBe(false);
+    expect(r.reason).toBe('garbled');
   });
 
   it('음소 데이터가 없으면 음질을 묻지 않는다 (판정 근거 부족 — 기존 계약 보존)', () => {

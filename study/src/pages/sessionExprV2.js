@@ -19,16 +19,17 @@ import { judgeCoverage, judgeProduction, judgeRecording, isTooUnclear } from '..
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
-/* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 둘이라 문구를 나눈다.
- * unclear = 음소 원시 점수가 바닥 (소리가 레퍼런스 음소에 안 맞았다)
+/* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 셋이라 문구를 나눈다.
+ * unclear = 음소 원시 점수만 바닥 (내용은 맞음 — 소리가 레퍼런스 음소에 안 맞았다)
  * misread = 소리는 멀쩡한데 다른 문장
- * unclear 의 원인은 확정되지 않았다(약한 신호·중간에 끊음·발음 어긋남이 모두 가능 — coverageJudge
- * 주석 참조). 그래서 '마이크' 같은 특정 원인을 지목하지 않는다 — 틀린 원인을 지목하면 사용자가
- * 엉뚱한 것을 고치게 된다. 대신 어느 원인에서든 유효한 행동만 말한다: 끝까지, 또박또박. */
+ * garbled = 둘 다 바닥 — 약한 신호인지 오발화인지 가를 근거가 없다 (실사용 보고: 또렷한 오발화가
+ *           "또렷하게 안 들렸어요"로 오안내되던 비대칭의 뿌리. coverageJudge 주석 참조)
+ * 원인을 확정 못 한 갈래에서는 특정 원인을 지목하지 않는다 — 틀린 원인을 지목하면 사용자가
+ * 엉뚱한 것을 고치게 된다. 대신 어느 원인에서든 유효한 행동만 말한다: 문장 확인, 끝까지, 또박또박. */
 export function recordGateMessage(reason) {
-  return reason === 'misread'
-    ? '다른 문장을 말한 것 같아요 — 다시 말해 보세요'
-    : '또렷하게 안 들렸어요 — 끝까지 또박또박 다시';
+  if (reason === 'misread') return '다른 문장을 말한 것 같아요 — 다시 말해 보세요';
+  if (reason === 'garbled') return '알아듣지 못했어요 — 문장을 확인하고 끝까지 또박또박 다시 말해 보세요';
+  return '또렷하게 안 들렸어요 — 끝까지 또박또박 다시';
 }
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
