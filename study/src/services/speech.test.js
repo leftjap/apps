@@ -1824,3 +1824,32 @@ describe('speech — TTS 구간의 pre-roll 격리와 자동종료 억제', () =
     rec.stop(); await rec.blobPromise;
   });
 });
+
+/* 억양 측정 (2026-08-29 감점제 1단계) — EnableProsodyAssessment 헤더 + 단어 태그 추출.
+ * 라이브 실측 확정: 플래그를 켜면 문장 ProsodyScore + 단어별 Feedback.Prosody 가 오고,
+ * AccuracyScore·FluencyScore·omissions 는 켜기 전과 동일(96↔96 실측). ja-JP 도 동작(80.7). */
+describe('speech — 프로소디 측정', () => {
+  it('enableProsody:true 면 헤더에 EnableProsodyAssessment 가 실린다 (미지정이면 없음 — 기존 계약)', async () => {
+    const { buildPronunciationAssessmentHeader } = await import('./speech.js');
+    const decode = (b64) => JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))));
+    expect(decode(buildPronunciationAssessmentHeader('hi', { enableProsody: true })).EnableProsodyAssessment).toBe(true);
+    expect('EnableProsodyAssessment' in decode(buildPronunciationAssessmentHeader('hi'))).toBe(false);
+    expect(decode(buildPronunciationAssessmentHeader('hi', { enableMiscue: true, enableProsody: true })).EnableMiscue).toBe(true);
+  });
+
+  it('extractProsodyIssues — 단어 태그를 요약한다 (실응답 구조 그대로)', async () => {
+    const { extractProsodyIssues } = await import('./speech.js');
+    const words = [
+      { Word: 'sorry', Feedback: { Prosody: { Break: { ErrorTypes: ['None'], BreakLength: 0 }, Intonation: { ErrorTypes: ['Monotone'], Monotone: {} } } } },
+      { Word: 'could', Feedback: { Prosody: { Break: { ErrorTypes: ['UnexpectedBreak'], BreakLength: 700 }, Intonation: { ErrorTypes: [] } } } },
+      { Word: 'you', Feedback: { Prosody: { Break: { ErrorTypes: ['MissingBreak'] }, Intonation: { ErrorTypes: ['Monotone'] } } } },
+      { Word: 'say' },   // Feedback 없음 (프로소디 미측정 응답) — 무시
+    ];
+    expect(extractProsodyIssues(words)).toEqual({
+      monotoneWords: ['sorry', 'you'],
+      unexpectedBreaks: ['could'],
+      missingBreaks: ['you'],
+    });
+    expect(extractProsodyIssues(undefined)).toEqual({ monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] });
+  });
+});

@@ -70,7 +70,7 @@ describe('stopAndAnalyze', () => {
     expect(analyzeWavRest).toHaveBeenCalledTimes(1);
     expect(analyzeWavRest.mock.calls[0][0]).toBe(blob);
     expect(analyzeWavRest.mock.calls[0][1]).toBe('I could use a coffee'); // 마침표 제거
-    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'en-US' });
+    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'en-US', enableProsody: true });
     expect(out.score).toBe(88);
   });
 
@@ -79,7 +79,7 @@ describe('stopAndAnalyze', () => {
     const analyzeWavRest = vi.fn().mockResolvedValue({ score: 70 });
     globalThis.window = { studySpeech: { analyzeWavRest } };
     await stopAndAnalyze(ctrl, '行ってきます', { lang: 'ja' });
-    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'ja-JP' });
+    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'ja-JP', enableProsody: true });
   });
 
   // 체이닝(coverage) — enableMiscue 를 켜야 Azure 가 Omission 을 돌려준다. 기본 경로는 인자 불변.
@@ -88,7 +88,7 @@ describe('stopAndAnalyze', () => {
     const analyzeWavRest = vi.fn().mockResolvedValue({ score: 70, omissions: [] });
     globalThis.window = { studySpeech: { analyzeWavRest } };
     await stopAndAnalyze(ctrl, "It's been a while.", { lang: 'en' }, { enableMiscue: true });
-    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'en-US', enableMiscue: true });
+    expect(analyzeWavRest.mock.calls[0][2]).toEqual({ lang: 'en-US', enableMiscue: true, enableProsody: true });
   });
 
   it('blobPromise reject → reason=record_fail', async () => {

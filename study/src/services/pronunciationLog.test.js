@@ -139,3 +139,16 @@ describe('loadDrillLog', () => {
     expect(await loadDrillLog(broken, 'en', cards, '2026-08-29')).toEqual({});
   });
 });
+
+/* 감점제 1단계 (2026-08-29) — 억양 보정용 원천을 행에 남긴다. prosody_score 는 이미 sync 되고,
+ * 단어 태그 요약(prosodyIssues)은 로컬 전용(동기화 매핑 밖)으로 보관 — 스키마 변화 0. */
+describe('buildPronunciationLog — 프로소디 필드', () => {
+  it('prosodyIssues 가 있으면 행에 담고, 없으면 null', () => {
+    const issues = { monotoneWords: ['sorry'], unexpectedBreaks: [], missingBreaks: [] };
+    const log = buildPronunciationLog({ result: { score: 90, prosodyScore: 84.2, prosodyIssues: issues }, sentenceId: 'x', lang: 'en', date: '2026-08-29' });
+    expect(log.prosodyScore).toBe(84.2);
+    expect(log.prosodyIssues).toEqual(issues);
+    const bare = buildPronunciationLog({ result: { score: 90 }, sentenceId: 'x', lang: 'en', date: '2026-08-29' });
+    expect(bare.prosodyIssues).toBe(null);
+  });
+});

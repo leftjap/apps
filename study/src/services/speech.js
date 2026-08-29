@@ -757,7 +757,7 @@ export function pcmToWavBlob(int16, sampleRate = 16000) {
  *   false(기본) = 누락/삽입을 무시하고 발음 품질만 → 기본 카드 '따라 말하기' 현행 유지.
  *   true        = 체이닝 coverage 판정용 ('단어를 다 말했는가').
  */
-export function buildPronunciationAssessmentHeader(referenceText, { enableMiscue = false } = {}) {
+export function buildPronunciationAssessmentHeader(referenceText, { enableMiscue = false, enableProsody = false } = {}) {
   const config = {
     ReferenceText: referenceText || '',
     GradingSystem: 'HundredMark',
@@ -765,12 +765,33 @@ export function buildPronunciationAssessmentHeader(referenceText, { enableMiscue
     Dimension: 'Comprehensive',
     EnableMiscue: enableMiscue === true,
   };
+  /* 억양·강세·리듬 측정 (2026-08-29 감점제 1단계) — 켜면 문장 ProsodyScore + 단어별
+   * Feedback.Prosody(Break/Intonation 태그)가 온다. 라이브 실측: 켜도 AccuracyScore·FluencyScore·
+   * omissions 는 동일(96↔96), en-US·ja-JP 모두 동작. 미지정이면 헤더에 안 실어 기존 요청과 동일. */
+  if (enableProsody === true) config.EnableProsodyAssessment = true;
   const json = JSON.stringify(config);
   // UTF-8 안전 base64. 영문/일본어 모두 처리.
   const utf8 = new TextEncoder().encode(json);
   let bin = '';
   for (let i = 0; i < utf8.length; i++) bin += String.fromCharCode(utf8[i]);
   return btoa(bin);
+}
+
+/** Azure Words[] → 프로소디 태그 요약 (2026-08-29). EnableProsodyAssessment:true 응답의
+ * Feedback.Prosody 를 단어 목록 셋으로 접는다. 실측 특성: Monotone 은 민감하게 발화되고
+ * UnexpectedBreak 는 보수적(700ms 끊김에도 0건일 수 있음) — 끊김 평가는 FluencyScore 가 주다. */
+export function extractProsodyIssues(words) {
+  const monotoneWords = [];
+  const unexpectedBreaks = [];
+  const missingBreaks = [];
+  for (const w of words ?? []) {
+    const pros = w?.Feedback?.Prosody;
+    if (!pros) continue;
+    if (pros.Intonation?.ErrorTypes?.includes('Monotone')) monotoneWords.push(w.Word);
+    if (pros.Break?.ErrorTypes?.includes('UnexpectedBreak')) unexpectedBreaks.push(w.Word);
+    if (pros.Break?.ErrorTypes?.includes('MissingBreak')) missingBreaks.push(w.Word);
+  }
+  return { monotoneWords, unexpectedBreaks, missingBreaks };
 }
 
 /** Azure Words[] → 누락/삽입 단어. EnableMiscue:true 일 때만 ErrorType 에 Omission/Insertion 이 실린다.
@@ -1102,7 +1123,7 @@ export async function recordWav({
  * @returns {Promise<object>} - { score, recognizedText, phonemeScores, weakPhonemes, wordScores, fluencyScore, completenessScore, prosodyScore }
  *                              실패 시 analyzeMock 폴백 (mockFallback=true).
  */
-export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false } = {}) {
+export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false, enableProsody = false } = {}) {
   // Wave A.18.1 — captureRms 계산 (진단용 저장 source). A.18/A.19 캡처 가드는 철회:
   // 낮은 점수/완성도는 "마이크 캡처 실패"가 아니라 "발음이 레퍼런스와 어긋남"인 경우가 많아(실측 검증),
   // 가드가 정상 발화를 'too_quiet/incomplete_capture' 로 오차단 → 점수 차단엔 미사용, 값만 기록.
@@ -1131,7 +1152,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
   }
   try {
     const url = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(lang)}&format=detailed`;
-    const paHeader = buildPronunciationAssessmentHeader(expectedText, { enableMiscue });
+    const paHeader = buildPronunciationAssessmentHeader(expectedText, { enableMiscue, enableProsody });
     // Wave A.16 — 429/5xx/network blip 은 재시도로 흡수 (F0 autoscaling 429 빈발 — MS 공식 권장).
     const res = await _fetchWithRetry(url, {
       method: 'POST',
@@ -1189,6 +1210,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       fluencyScore: nbest.FluencyScore,
       completenessScore: nbest.CompletenessScore,
       prosodyScore: nbest.ProsodyScore,
+      prosodyIssues: enableProsody ? extractProsodyIssues(nbest.Words) : undefined,
       omissions,
       insertions,
     };
@@ -1223,6 +1245,7 @@ export const Speech = {
   pcmToWavBlob, // Wave 11.61 — utility
   buildPronunciationAssessmentHeader, // Wave 11.61 — utility
   extractMiscues, // 2026-07-09 — coverage(누락) 추출
+  extractProsodyIssues, // 2026-08-29 — 프로소디 태그 요약
   passesCoverage, // 2026-07-09 — 체이닝 pass/fail
   preload, // Wave 11.35 — token+SDK warmup, Wave 11.36 — synthesizer warmup 옵션
   setSpeechBackend,

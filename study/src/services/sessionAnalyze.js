@@ -87,9 +87,10 @@ async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = 
   }
   const ref = normalizeReferenceText(expectedText);
   const lang = pickAnalyzeLang(card);
-  // enableMiscue=true (체이닝) → 결과에 omissions/insertions 가 실린다 (passesCoverage 판정용).
-  // 기본 경로는 인자를 건드리지 않는다 (기존 '따라 말하기' 계약 보존).
-  const opts = enableMiscue ? { lang, enableMiscue: true } : { lang };
+  // enableMiscue=true → 결과에 omissions/insertions (오발화 게이트 재료).
+  // enableProsody 는 항상 켠다 (2026-08-29 감점제 1단계) — 라이브 실측: 켜도 기존 점수·게이트
+  // 불변(acc 96↔96), en/ja 모두 동작. 억양·유창성 분포를 먼저 쌓아 감점 단가를 실측으로 보정한다.
+  const opts = enableMiscue ? { lang, enableMiscue: true, enableProsody: true } : { lang, enableProsody: true };
   const result = await window.studySpeech.analyzeWavRest(blob, ref, opts);
   // 무료 진단 로깅(게이트). window.__SPEECH_DIAG 또는 studySpeechDiag.enable() 시에만 로컬 수집.
   // OFF 면 recordDiagnostic 이 즉시 false 반환 → 판정 흐름·성능 무영향.

@@ -28,6 +28,8 @@ export function buildPronunciationLog({ result, sentenceId, lang, date } = {}) {
     completenessScore: result.completenessScore ?? null,
     prosodyScore: result.prosodyScore ?? null,
     captureRms: result.captureRms ?? null,
+    // 2026-08-29 감점제 1단계 — 억양 단어 태그 요약. 로컬 전용(동기화 매핑 밖) — 감점 단가 보정 원천.
+    prosodyIssues: result.prosodyIssues ?? null,
     phonemeScores: Array.isArray(result.phonemeScores) ? result.phonemeScores : [],
     weakPhonemes: Array.isArray(result.weakPhonemes) ? result.weakPhonemes : [],
     recognizedText: result.recognizedText ?? null,

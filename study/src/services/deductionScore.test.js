@@ -1,0 +1,120 @@
+import { describe, it, expect } from 'vitest';
+import { computeDeductionScore, DEDUCTION_RATES, KO_WEAK_PHONEMES } from './deductionScore.js';
+
+/* 감점제 점수 엔진 (2026-08-29 사용자 설계 확정) — 100에서 항목별 차감, 인위적 문턱 없음.
+ * 축별 상한 합 = 50 → 단어를 다 말했으면 50점 바닥이 산수로 보장된다.
+ * 단가(DEDUCTION_RATES)는 초안 — 1~2주 실측 분포로 보정 후 화면 전환(3단계).
+ * 실측 근거: 원어민 TTS(acc96·flu99·pros91.1) 는 ~98, 끊어읽기(flu63·단조8단어) 는 ~76 이 나와야
+ * "원어민만 90점대" 가 자연 성립한다 — 아래 테스트가 그 두 앵커를 고정한다. */
+
+const W = (word, score) => ({ word, score });
+const PH = (word, ...symbols) => symbols.map((s) => ({ symbol: s, word, score: 80 }));
+
+describe('computeDeductionScore — 축별 감점', () => {
+  const EXP = 'sorry could you say';   // 4단어 → 단어당 예산 30/4 = 7.5
+
+  it('완벽 발화(원어민 앵커) → 98점대, 감점 내역이 근거와 함께 나온다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 100), W('could', 100), W('you', 100), W('say', 100)],
+      fluencyScore: 99, prosodyScore: 91.1,
+      prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
+    }, EXP);
+    expect(r.score).toBe(98);          // 100 − 유창 0.25 − 억양 1.34
+    expect(r.floor).toBe(50);
+    expect(r.deductions.every((d) => d.points >= 0)).toBe(true);
+  });
+
+  it('한 단어 60점(비취약) → 단어 예산 비례 감점 7.5×0.4=3', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 60), W('could', 100), W('you', 100), W('say', 100)],
+      fluencyScore: 100, prosodyScore: 100,
+    }, EXP);
+    expect(r.score).toBe(97);
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(3);
+  });
+
+  it('취약 음소(f) 단어는 같은 결손도 1.5배 깎인다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 60), W('could', 100), W('you', 100), W('say', 100)],
+      phonemeScores: [{ symbol: 'f', word: 'sorry', score: 40 }],   // sorry 에 f 포함(합성 예)
+      fluencyScore: 100, prosodyScore: 100,
+    }, EXP);
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(4.5);  // 3 × 1.5
+    expect(r.score).toBe(96);  // round(100 − 4.5)
+  });
+
+  it('개인 실측 약점(personalWeak)도 취약 세트에 합쳐진다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 60), W('could', 100), W('you', 100), W('say', 100)],
+      phonemeScores: [{ symbol: 'eh', word: 'sorry', score: 40 }],  // eh 는 기본 세트엔 없음
+      fluencyScore: 100, prosodyScore: 100,
+    }, EXP, { personalWeak: ['eh'] });
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(4.5);
+  });
+
+  it('끊어읽기 앵커(실측 flu 63·단조 8/8·pros 86.5) → 70점대 중반', () => {
+    const words = 'sorry could you say that again more slowly'.split(' ');
+    const r = computeDeductionScore({
+      recognizedText: words.join(' '),
+      wordScores: words.map((w) => W(w, 85)),
+      fluencyScore: 63, prosodyScore: 86.5,
+      prosodyIssues: { monotoneWords: words, unexpectedBreaks: [], missingBreaks: [] },
+    }, words.join(' '));
+    // 단어 30×0.15=4.5 + 유창 min(10, 37×0.25)=9.25 + 억양 min(10, 8×1+13.5×0.15)=10
+    expect(r.score).toBe(76);
+  });
+
+  it('전 축 바닥이어도 단어를 다 말했으면 50점 (축 상한 합 = 50)', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 0), W('could', 0), W('you', 0), W('say', 0)],
+      fluencyScore: 0, prosodyScore: 0,
+      prosodyIssues: { monotoneWords: ['sorry', 'could', 'you', 'say'], unexpectedBreaks: [], missingBreaks: [] },
+    }, EXP);
+    expect(r.score).toBe(50);
+    expect(r.floor).toBe(50);
+  });
+
+  it('단어 누락 — 지분만큼 감점 + 바닥이 비례로 내려간다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could',                       // 4단어 중 2개만
+      wordScores: [W('sorry', 100), W('could', 100)],
+      fluencyScore: 100, prosodyScore: 100,
+    }, EXP);
+    expect(r.floor).toBe(25);                              // 50 × 0.5
+    expect(r.deductions.find((d) => d.axis === 'missing').points).toBe(50);  // 100×(2/4)
+    expect(r.score).toBe(50);
+  });
+
+  it('프로소디 미측정(값 없음)이면 그 축은 깎지 않는다 — 근거 없으면 감점 없음', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 100), W('could', 100), W('you', 100), W('say', 100)],
+    }, EXP);
+    expect(r.score).toBe(100);
+  });
+
+  it('감점 내역은 큰 순서로 정렬되고 라벨이 있다', () => {
+    const r = computeDeductionScore({
+      recognizedText: 'sorry could you say',
+      wordScores: [W('sorry', 40), W('could', 100), W('you', 100), W('say', 100)],
+      fluencyScore: 80, prosodyScore: 100,
+    }, EXP);
+    const pts = r.deductions.map((d) => d.points);
+    expect([...pts].sort((a, b) => b - a)).toEqual(pts);
+    expect(r.deductions.every((d) => typeof d.label === 'string' && d.label.length > 0)).toBe(true);
+  });
+});
+
+describe('상수 계약', () => {
+  it('축 상한 합 = 50 (바닥 보장의 근거)', () => {
+    expect(DEDUCTION_RATES.words.max + DEDUCTION_RATES.fluency.max + DEDUCTION_RATES.intonation.max).toBe(50);
+  });
+  it('한국인 공통 취약 세트에 f·v·r·l·th·dh 포함', () => {
+    for (const p of ['f', 'v', 'r', 'l', 'th', 'dh']) expect(KO_WEAK_PHONEMES).toContain(p);
+  });
+});
