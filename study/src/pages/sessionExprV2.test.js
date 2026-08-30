@@ -1430,3 +1430,18 @@ describe('sessionExprV2 — 채점 중 표시', () => {
     expect(pill.textContent).toContain('다시 말하기');
   });
 });
+
+describe('sessionExprV2 — 투기적 선채점 배선', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('메인 녹음 시작에 speculate(기대 문장·카드)가 실린다', async () => {
+    const { startMicRecording } = await import('../services/sessionAnalyze.js');
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
+      autoStopSilenceMs: 2000,
+      speculate: expect.objectContaining({ expected: 'Is that a promise?' }),
+    }));
+  });
+});

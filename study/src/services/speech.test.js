@@ -1956,3 +1956,93 @@ describe('speech — trimTrailingSilencePcm (꼬리 무음 트림)', () => {
     expect(trimTrailingSilencePcm(pcm)).toBe(pcm);
   });
 });
+
+/* 투기적 선채점 신호 (2026-08-29 오후, 사용자 결정) — 무음 hangover(2초)를 기다리는 동안 채점을
+ * 미리 시작해 겹치기 위한 VAD 신호. 잘림 위험 0 — 종료 시점(hangoverMs)은 그대로다. */
+describe('createSilenceAutoStop — 투기적 선채점 신호', () => {
+  const mk = (over = {}) => {
+    const calls = { spec: 0, invalid: 0 };
+    const vad = createSilenceAutoStop({
+      hangoverMs: 2000, speculateMs: 900,
+      onSpeculate: () => { calls.spec += 1; },
+      onSpeculateInvalid: () => { calls.invalid += 1; },
+      ...over,
+    });
+    return { vad, calls };
+  };
+  const VOICE = 0.2;
+  const QUIET = 0.001;
+
+  it('무음이 speculateMs 를 넘기면 신호 1회 — hangover 전이라 종료는 아직', () => {
+    const { vad, calls } = mk();
+    vad.feed(VOICE, 0);
+    expect(vad.feed(QUIET, 1000)).toBe(false);   // 1.0s 무음 — 종료 아님
+    expect(calls.spec).toBe(1);
+    expect(vad.feed(QUIET, 1500)).toBe(false);   // 같은 무음 구간 — 재신호 없음
+    expect(calls.spec).toBe(1);
+    expect(vad.feed(QUIET, 2100)).toBe(true);    // hangover 종료는 그대로
+  });
+
+  it('말이 재개되면 무효 신호 — 다음 무음 구간에서 다시 발화한다', () => {
+    const { vad, calls } = mk();
+    vad.feed(VOICE, 0);
+    vad.feed(QUIET, 1000);                        // spec 1회
+    vad.feed(VOICE, 1200);                        // 말 재개 — 무효
+    expect(calls.invalid).toBe(1);
+    expect(vad.feed(QUIET, 2200)).toBe(false);    // 새 무음 구간 1.0s — 재신호
+    expect(calls.spec).toBe(2);
+  });
+
+  it('speculateMs 미설정(0)이면 신호 없음', () => {
+    const { vad, calls } = mk({ speculateMs: 0 });
+    vad.feed(VOICE, 0);
+    vad.feed(QUIET, 1500);
+    expect(calls.spec).toBe(0);
+  });
+
+  it('무장 전(발화 시작 전) 앞 침묵에는 신호 없음', () => {
+    const { vad, calls } = mk();
+    vad.feed(QUIET, 0);
+    vad.feed(QUIET, 1500);
+    expect(calls.spec).toBe(0);
+  });
+});
+
+describe('recordWav — 투기적 선채점 배선', () => {
+  const flush2 = () => new Promise((r) => setTimeout(r, 0));
+
+  it('무음이 speculateSilenceMs 를 넘기면 지금까지의 청크로 WAV 스냅샷을 만들어 onSpeculate 로 준다 — 녹음은 계속', async () => {
+    // setupAudioMocks 는 위 describe 의 헬퍼와 동일 구성 — 여기선 최소 재구성
+    const state = { nodes: [] };
+    class FakeAC {
+      constructor() { this.state = 'running'; this.destination = {}; this.audioWorklet = { addModule: async () => {} }; }
+      async resume() {}
+      createMediaStreamSource() { return { connect: () => {}, disconnect: () => {} }; }
+      createGain() { return { gain: { value: 1 }, connect: () => {}, disconnect: () => {} }; }
+    }
+    class FakeNode { constructor() { this.port = { onmessage: null, postMessage: () => {} }; state.nodes.push(this); } connect() {} disconnect() {} }
+    vi.stubGlobal('window', { AudioContext: FakeAC });
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: async () => ({ getTracks: () => [{ readyState: 'live', stop: () => {} }] }) } });
+    vi.stubGlobal('AudioWorkletNode', FakeNode);
+    const { Speech } = await import('./speech.js');
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(1_000_000);
+    const feed = (n, value) => { state.nodes[0].port.onmessage?.({ data: new Int16Array(160).fill(value).buffer }); };
+    const spec = [];
+    const stops = [];
+    const p = Speech.recordWav({ autoStopSilenceMs: 2000, speculateSilenceMs: 900, onSpeculate: (b) => spec.push(b), onAutoStop: () => stops.push(1) });
+    await flush2();
+    feed(0, 8000);                                  // 발화 — VAD 무장
+    const ctrl = await p;
+    nowSpy.mockReturnValue(1_001_000);
+    feed(1, 10);                                    // +1.0s 무음 → 선채점 신호
+    expect(spec).toHaveLength(1);
+    expect(spec[0].size).toBe(44 + 320 * 2);        // 청크 2개 분량 스냅샷 (발화+무음)
+    expect(stops).toHaveLength(0);                  // 아직 종료 아님
+    nowSpy.mockReturnValue(1_002_100);
+    feed(2, 10);                                    // hangover 2s 초과 → 자동 종료
+    expect(stops).toHaveLength(1);
+    const blob = await ctrl.blobPromise;
+    expect(blob.size).toBe(44 + 480 * 2);           // 최종 녹음은 청크 3개 전부
+    nowSpy.mockRestore();
+  });
+});

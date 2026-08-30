@@ -968,10 +968,11 @@ async function ensureWarmMic(workletUrl) {
  *  - 발화 후 hangoverMs 동안 무음(peak<silencePeak) 지속 시 종료. peak>=silencePeak 은 voice 로 리셋.
  * 2026-07-11 — 옛 절대임계(speechPeak 0.08 고정)는 조용한 발화·낮은 마이크 게인에서 무장 실패 → 자동종료 안 됨(실측).
  */
-export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, hangoverMs = 1200 } = {}) {
+export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, hangoverMs = 1200, speculateMs = 0, onSpeculate, onSpeculateInvalid } = {}) {
   let speechStarted = false;
   let lastVoiceAt = 0;
   let maxPeak = 0;
+  let speculated = false; // 이번 무음 구간에서 선채점 신호를 이미 보냈는가
   return {
     feed(peak, now) {
       if (peak > maxPeak) maxPeak = peak;
@@ -983,7 +984,18 @@ export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, h
         if (peak >= armAt) { speechStarted = true; lastVoiceAt = now; }
         return false; // 앞 침묵 보호 — 무장 전에는 종료 안 함
       }
-      if (peak >= silencePeak) { lastVoiceAt = now; return false; }
+      if (peak >= silencePeak) {
+        lastVoiceAt = now;
+        // 말 재개 — 이번 무음 구간의 선채점은 무효. 다음 무음 구간에서 다시 신호한다.
+        if (speculated) { speculated = false; onSpeculateInvalid?.(); }
+        return false;
+      }
+      /* 투기적 선채점 신호 (2026-08-29 오후, 사용자 결정) — hangover 를 기다리는 동안 채점을 미리
+       * 시작해 겹친다. 종료 시점(hangoverMs)은 그대로라 문장 잘림 위험은 만들지 않는다. */
+      if (speculateMs > 0 && !speculated && (now - lastVoiceAt) >= speculateMs) {
+        speculated = true;
+        onSpeculate?.();
+      }
       return (now - lastVoiceAt) >= hangoverMs;
     },
     /* TTS 재생 구간 — 그 사이 마이크 입력은 채점에서 빠지므로(재생음이 곧 점수가 된다) VAD 에도
@@ -1019,6 +1031,9 @@ export async function recordWav({
   onLevel,
   autoStopSilenceMs = 0,
   onAutoStop,
+  speculateSilenceMs = 0,
+  onSpeculate,
+  onSpeculateInvalid,
   speechPeak = 0.08,
   silencePeak = 0.05,
   workletUrl = `${import.meta.env.BASE_URL}audio-worklet/recorder-worklet.js`,
@@ -1040,8 +1055,17 @@ export async function recordWav({
     if (wm.active) { try { wm.active.abort(); } catch { /* noop */ } }
 
     // 무음 자동종료 VAD (말 끝나면 자동 멈춤). autoStopSilenceMs>0 일 때만.
+    // 선채점 콜백은 아래에서 선언되는 mergeToWav·stopped 를 참조한다 — 호출은 청크가 흐른 뒤라 안전.
     const vad = autoStopSilenceMs > 0
-      ? createSilenceAutoStop({ speechPeak, silencePeak, hangoverMs: autoStopSilenceMs })
+      ? createSilenceAutoStop({
+        speechPeak, silencePeak, hangoverMs: autoStopSilenceMs,
+        speculateMs: speculateSilenceMs,
+        onSpeculate: () => {
+          if (stopped) return;
+          try { onSpeculate?.(mergeToWav()); } catch (err) { console.warn('[recordWav] onSpeculate', err); }
+        },
+        onSpeculateInvalid: () => { try { onSpeculateInvalid?.(); } catch { /* noop */ } },
+      })
       : null;
     const needPeak = !!onLevel || !!vad;
 
@@ -1101,16 +1125,21 @@ export async function recordWav({
         wm.idleTimer = setTimeout(() => { if (_warmMic === wm && !wm.active) releaseWarmMic(); }, MIC_IDLE_RELEASE_MS);
       }
       try {
-        let total = 0;
-        for (const c of chunks) total += c.length;
-        const merged = new Int16Array(total);
-        let off = 0;
-        for (const c of chunks) { merged.set(c, off); off += c.length; }
-        resolveDone(pcmToWavBlob(merged, 16000));
+        resolveDone(mergeToWav());
       } catch (e) {
         rejectDone(e);
       }
       return true;
+    }
+
+    /** 현재까지의 청크 → WAV. stop() 확정과 선채점 스냅샷이 같은 조립을 공유한다. */
+    function mergeToWav() {
+      let total = 0;
+      for (const c of chunks) total += c.length;
+      const merged = new Int16Array(total);
+      let off = 0;
+      for (const c of chunks) { merged.set(c, off); off += c.length; }
+      return pcmToWavBlob(merged, 16000);
     }
 
     // 2026-07-12 — 캡처 라이브 게이트: 첫 청크가 실제로 흐른 뒤 resolve. 호출자의 "await 후

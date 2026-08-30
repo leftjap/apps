@@ -366,7 +366,8 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       }
       if (recCtrl && recRow === row) { finishDrill(); return; }
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 메인 카드와 동일. 수동 멈추기도 유지.
-      const r = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => finishDrill() });
+      // speculate — 무음 0.9초에 선채점 시작, hangover 2초와 겹쳐 점수 반환 단축 (sessionAnalyze 주석)
+      const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: target, card: { lang } }, onAutoStop: () => finishDrill() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -490,7 +491,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
         return;
       }
       if (recCtrl && recRow === row) { finish(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => finish() });
+      const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: step.text, card }, onAutoStop: () => finish() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -612,7 +613,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
         return;
       }
       if (recCtrl && recRow === row) { finish(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => finish() });
+      const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: d.en, card }, onAutoStop: () => finish() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -892,7 +893,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
-      const rec = await startMicRecording({ autoStopSilenceMs: 2000, onAutoStop: () => { finishRecording(); } });
+      const rec = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: s.sentence, card: s }, onAutoStop: () => { finishRecording(); } });
       if (rec.error) {
         state.recording = false; recCtrl = null; state.micBlocked = true;
         setRecVisual(false);

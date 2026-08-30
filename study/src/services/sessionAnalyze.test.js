@@ -189,3 +189,61 @@ describe('startMicRecording — Azure 토큰 선발급', () => {
     expect(window.studySpeech.getAzureToken).toHaveBeenCalledTimes(1);
   });
 });
+
+/* 투기적 선채점 (2026-08-29 오후, 사용자 결정) — 무음 0.9초 시점에 채점을 미리 시작해 hangover
+ * 2초와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와 확정 오디오는 트림 후 동일 → 결과 동등. */
+describe('startMicRecording/stopAndAnalyze — 투기적 선채점', () => {
+  beforeEach(() => { delete globalThis.window; });
+  afterEach(() => { delete globalThis.window; });
+
+  const specResult = { score: 91, recognizedText: 'Hello there.', phonemeScores: [] };
+  function setupSpeech() {
+    const ctrl = { stop: vi.fn(), blobPromise: Promise.resolve(new Blob([new ArrayBuffer(64)])) };
+    const recordWav = vi.fn(async (opts) => { recordWav.lastOpts = opts; return ctrl; });
+    const analyzeWavRest = vi.fn(async () => specResult);
+    globalThis.window = { studySpeech: { recordWav, analyzeWavRest, getAzureToken: vi.fn(async () => ({})) } };
+    return { ctrl, recordWav, analyzeWavRest };
+  }
+
+  it('speculate 옵션이 recordWav 배선(speculateSilenceMs·onSpeculate)으로 변환된다 — speculate 키 자체는 전달 안 함', async () => {
+    const { recordWav } = setupSpeech();
+    const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
+    expect(r.controller).toBeTruthy();
+    expect(recordWav.lastOpts.speculateSilenceMs).toBeGreaterThan(0);
+    expect(typeof recordWav.lastOpts.onSpeculate).toBe('function');
+    expect(typeof recordWav.lastOpts.onSpeculateInvalid).toBe('function');
+    expect(recordWav.lastOpts.speculate).toBeUndefined();
+  });
+
+  it('무효화 없이 끝나면 선채점 결과를 그대로 쓴다 — 재채점 없음', async () => {
+    const { recordWav, analyzeWavRest } = setupSpeech();
+    const { controller } = await startMicRecording({ speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));      // 무음 0.9s — 선채점 시작
+    await new Promise((res) => setTimeout(res, 0));
+    expect(analyzeWavRest).toHaveBeenCalledTimes(1);
+    expect(analyzeWavRest.mock.calls[0][1]).toBe('Hello there');          // normalize 적용
+    expect(analyzeWavRest.mock.calls[0][2]).toMatchObject({ lang: 'en-US', enableMiscue: true, enableProsody: true });
+    const result = await stopAndAnalyze(controller, 'Hello there.', { lang: 'en' }, { enableMiscue: true });
+    expect(analyzeWavRest).toHaveBeenCalledTimes(1);                      // 재채점 없음
+    expect(result).toBe(specResult);
+  });
+
+  it('말이 재개되면(onSpeculateInvalid) 정상 경로로 재채점한다', async () => {
+    const { recordWav, analyzeWavRest } = setupSpeech();
+    const { controller } = await startMicRecording({ speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    recordWav.lastOpts.onSpeculateInvalid();
+    await stopAndAnalyze(controller, 'Hello there.', { lang: 'en' }, { enableMiscue: true });
+    expect(analyzeWavRest).toHaveBeenCalledTimes(2);                      // 선채점 1 + 정상 재채점 1
+  });
+
+  it('선채점이 실패(mock 폴백)면 정상 경로로 재채점한다', async () => {
+    const { recordWav, analyzeWavRest } = setupSpeech();
+    analyzeWavRest.mockResolvedValueOnce({ mockFallback: true, fallbackReason: 'rate_limited', score: 70 });
+    const { controller } = await startMicRecording({ speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    const result = await stopAndAnalyze(controller, 'Hello there.', { lang: 'en' }, { enableMiscue: true });
+    expect(analyzeWavRest).toHaveBeenCalledTimes(2);
+    expect(result).toBe(specResult);
+  });
+});

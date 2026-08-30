@@ -58,12 +58,32 @@ export async function startMicRecording(opts = {}) {
    * 채점 경로에 얹힌다. 말하는 동안 fire-and-forget 으로 받아 캐시를 채운다. 실패는 무시 —
    * 채점 시 정식 경로가 다시 시도하고, 캐시가 살아 있으면 즉시 반환이라 비용 0. */
   try { window.studySpeech.getAzureToken?.().catch(() => {}); } catch { /* noop */ }
+  /* 투기적 선채점 (2026-08-29 오후, 사용자 결정) — 무음이 SPECULATE_SILENCE_MS 이어지면 그 시점의
+   * 오디오로 채점을 미리 시작해 hangover(2초) 대기와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와
+   * 확정 오디오는 트림 후 동일 → 결과 동등. 말이 재개되면 무효화하고 stopAndAnalyze 가 재채점한다.
+   * 종료 시점은 그대로라 문장 잘림 위험 0. F0 보호로 녹음당 최대 SPECULATE_MAX_FIRES 회. */
+  const { speculate, ...rest } = opts;
+  const recOpts = { maxSeconds: 15, ...rest };
+  let specState = null;
+  if (speculate?.expected && window.studySpeech?.analyzeWavRest) {
+    specState = { promise: null, valid: false, fires: 0 };
+    recOpts.speculateSilenceMs = SPECULATE_SILENCE_MS;
+    recOpts.onSpeculate = (blob) => {
+      if (specState.fires >= SPECULATE_MAX_FIRES) return;
+      specState.fires += 1;
+      specState.valid = true;
+      specState.promise = analyzeBlob(blob, speculate.expected, speculate.card, { enableMiscue: true })
+        .catch(() => { specState.valid = false; return null; });
+    };
+    recOpts.onSpeculateInvalid = () => { specState.valid = false; };
+  }
   try {
-    const controller = await withTimeout(window.studySpeech.recordWav({ maxSeconds: 15, ...opts }), START_TIMEOUT_MS);
+    const controller = await withTimeout(window.studySpeech.recordWav(recOpts), START_TIMEOUT_MS);
     if (controller === TIMED_OUT) {
       console.warn('[sessionAnalyze] recordWav 응답 없음 — 타임아웃');
       return { error: 'timeout' };
     }
+    if (controller && specState) controller._speculative = specState;
     return { controller };
   } catch (e) {
     console.warn('[sessionAnalyze] recordWav 실패', e?.message ?? e);
@@ -80,6 +100,19 @@ export async function stopAndAnalyze(controller, expectedText, card, opts = {}) 
   return r;
 }
 
+/* 채점 호출의 단일 조립점 — 정상 경로(_stopAndAnalyze)와 투기적 선채점이 같은 정규화·옵션을 쓴다. */
+const SPECULATE_SILENCE_MS = 900;
+const SPECULATE_MAX_FIRES = 3;
+async function analyzeBlob(blob, expectedText, card, { enableMiscue = false } = {}) {
+  const ref = normalizeReferenceText(expectedText);
+  const lang = pickAnalyzeLang(card);
+  // enableMiscue=true → 결과에 omissions/insertions (오발화 게이트 재료).
+  // enableProsody 는 항상 켠다 (2026-08-29 감점제 1단계) — 라이브 실측: 켜도 기존 점수·게이트
+  // 불변(acc 96↔96), en/ja 모두 동작. 억양·유창성 분포를 먼저 쌓아 감점 단가를 실측으로 보정한다.
+  const opts = enableMiscue ? { lang, enableMiscue: true, enableProsody: true } : { lang, enableProsody: true };
+  return window.studySpeech.analyzeWavRest(blob, ref, opts);
+}
+
 async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = false } = {}) {
   if (!controller) return mockResult('no_recorder');
   try { controller.stop(); } catch { /* noop */ }
@@ -89,13 +122,17 @@ async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = 
   if (typeof window === 'undefined' || !window.studySpeech?.analyzeWavRest) {
     return mockResult('no_speech');
   }
+  // 선채점 결과 — 말 재개로 무효화되지 않았고 옵션이 같으면(전 경로 enableMiscue:true) 그대로 쓴다.
+  // 실패·mock 폴백이면 버리고 정상 경로로 재채점 — 안전망은 그대로다.
+  const spec = controller._speculative;
+  let result = null;
+  if (spec?.valid && spec.promise && enableMiscue === true) {
+    const r = await spec.promise;
+    if (r && !r.mockFallback) result = r;
+  }
+  if (!result) result = await analyzeBlob(blob, expectedText, card, { enableMiscue });
   const ref = normalizeReferenceText(expectedText);
   const lang = pickAnalyzeLang(card);
-  // enableMiscue=true → 결과에 omissions/insertions (오발화 게이트 재료).
-  // enableProsody 는 항상 켠다 (2026-08-29 감점제 1단계) — 라이브 실측: 켜도 기존 점수·게이트
-  // 불변(acc 96↔96), en/ja 모두 동작. 억양·유창성 분포를 먼저 쌓아 감점 단가를 실측으로 보정한다.
-  const opts = enableMiscue ? { lang, enableMiscue: true, enableProsody: true } : { lang, enableProsody: true };
-  const result = await window.studySpeech.analyzeWavRest(blob, ref, opts);
   // 무료 진단 로깅(게이트). window.__SPEECH_DIAG 또는 studySpeechDiag.enable() 시에만 로컬 수집.
   // OFF 면 recordDiagnostic 이 즉시 false 반환 → 판정 흐름·성능 무영향.
   try {

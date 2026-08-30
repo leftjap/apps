@@ -833,3 +833,17 @@ describe('sessionReviewV2 — 채점 중 표시', () => {
     expect(pill.textContent).toContain('다시 떠올리기');
   });
 });
+
+describe('sessionReviewV2 — 투기적 선채점 배선', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('복습 녹음 시작에 speculate(기대 문장·카드)가 실린다 — 신규와 같은 계약', async () => {
+    const { startMicRecording } = await import('../services/sessionAnalyze.js');
+    const host = mountCard({ interval: 3 });
+    host.querySelector('.vr-pill.pri').click(); await tick();
+    expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
+      autoStopSilenceMs: 2000,
+      speculate: expect.objectContaining({ expected: EN }),
+    }));
+  });
+});
