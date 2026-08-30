@@ -117,3 +117,51 @@ describe('session-new — mount 복원 계약', () => {
     expect(flushLiveStats).not.toHaveBeenCalled();
   });
 });
+
+/* 재청취(다시 듣기)도 화면 상태를 저장·복원한다 (2026-08-30 사용자 결정 — "다시 듣기에서도
+ * 점수가 날아가면 안 된다"). mode 'replay' 스냅샷: finalizeStaleSnapshot 은 미지 모드라 기록을
+ * 남기지 않고(이중집계 0), home '이어서 하기'(new|review 한정)에도 안 뜬다. 실세션 보호
+ * (finishSession·flushLiveStats 스킵)는 그대로 유지가 계약이다. */
+describe('session-new — 재청취(replay) 화면 상태 저장·복원', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+  const RCARDS = [
+    NCARD('r1', 'Replay one.', '재청취 하나'),
+    NCARD('r2', 'Replay two.', '재청취 둘'),
+  ];
+
+  it('재청취 녹음 → 언마운트 스냅샷이 mode replay 로 저장되고, 라이브 통계는 안 쓴다', async () => {
+    window.studyDB = fakeDB2({});
+    loadNewCards.mockResolvedValueOnce([]);
+    loadReplayCards.mockResolvedValueOnce(RCARDS);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    document.querySelector('.vs-pill.pri').click(); await settle2(2);
+    document.querySelector('.vs-pill.recing').click(); await settle2(3);
+    cleanup();
+    await settle2(2);
+    const saved = window.studyDB._meta.get('activeSession')?.value;
+    expect(saved?.mode).toBe('replay');
+    expect(saved?.tried).toBe(1);
+    expect(saved?.cards).toHaveLength(2);
+    expect(flushLiveStats).not.toHaveBeenCalled();   // 완료 세션 이중집계 방지 계약 유지
+  });
+
+  it('재청취 재진입 시 스냅샷으로 화면이 복원된다 — 새로고침에도 점수·진행 유지', async () => {
+    const snap = { key: 'activeSession', value: {
+      mode: 'replay', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 30,
+      base: null, step: 2, tried: 3, passed: 2, lastScore: 88, pronScores: [88], weakInSession: {},
+      recLog: { r2: { count: 1, best: 88 } }, exLog: { r2: { utter: [88] } },
+      cardIds: ['r1', 'r2'], cards: RCARDS, savedAt: Date.now(),
+    } };
+    window.studyDB = fakeDB2({ activeSession: snap });
+    loadNewCards.mockResolvedValueOnce([]);
+    loadReplayCards.mockResolvedValueOnce(RCARDS);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('Replay two.');            // step 2 카드 복원
+    expect(window.studyDB._meta.has('activeSession')).toBe(true);          // 파기 금지
+    cleanup();
+  });
+});

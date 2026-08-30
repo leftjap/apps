@@ -109,9 +109,12 @@ export function mountSessionNew(host) {
   const saveSnapshot = () => {
     // 데모(?demo=1)는 실 meta('activeSession')에 절대 쓰지 않는다 (격리). 인증 SPA 에서도 안전.
     // loadFailed — 로드가 죽은 채의 빈 state 로 스냅샷·통계를 덮어쓰지 않는다 (로드 .catch 주석).
-    if (isDemoMode() || state.replay || state.ended || state.loadFailed || !window.studyDB || !state.loaded) return;
+    // 재청취(replay)도 화면 상태는 저장한다 (2026-08-30 사용자 결정 — "다시 듣기에서도 점수가
+    // 날아가면 안 된다"). mode 'replay': finalizeStaleSnapshot 은 미지 모드라 기록을 안 남기고,
+    // home '이어서 하기'(new|review 한정)에도 안 뜬다. 아래 flushLiveStats 스킵으로 통계도 불변.
+    if (isDemoMode() || state.ended || state.loadFailed || !window.studyDB || !state.loaded) return;
     const snap = {
-      mode: 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
+      mode: state.replay ? 'replay' : 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       recLog: { ...state.recLog },
@@ -123,7 +126,8 @@ export function mountSessionNew(host) {
     };
     saveActiveSession(window.studyDB, snap).catch((e) => console.error('[session-new] saveActiveSession', e));
     // 진행 중 진척을 오늘 dailyStats 에 라이브 반영 → cue 가 종료 전에도 '오늘 학습' 표시 (멱등)
-    flushLiveStats(window.studyDB, snap).catch((e) => console.error('[session-new] flushLiveStats', e));
+    // 재청취는 제외 — 완료 세션 재청취가 통계에 이중 계상되면 안 된다 (기존 계약 유지).
+    if (!state.replay) flushLiveStats(window.studyDB, snap).catch((e) => console.error('[session-new] flushLiveStats', e));
   };
   const onVis = () => { activeTimer.setHidden(document.hidden); if (document.hidden) saveSnapshot(); };
   /* 실제 조작이 있으면 스냅샷 만료 시계를 되짚는다 — 듣기·생각·해설 읽기처럼 저장을 부르지 않는
@@ -134,7 +138,7 @@ export function mountSessionNew(host) {
   const onActivity = () => {
     activeTimer.activity();
     const now = Date.now();
-    if (!state.loaded || state.ended || state.replay || isDemoMode() || !window.studyDB) return;
+    if (!state.loaded || state.ended || isDemoMode() || !window.studyDB) return; // replay 도 touch — 스냅샷 TTL 연장
     if (now - lastTouch < TOUCH_MS) return;
     lastTouch = now;
     touchActiveSession(window.studyDB).catch(() => {});
@@ -302,8 +306,21 @@ export function mountSessionNew(host) {
           state.cards = replay;
           state.total = replay.length;
           state.step = 1;
-          state.sentence = pickCardFields(replay[0]) || EMPTY_SENTENCE;
-          const sc = replay.find((c) => Array.isArray(c.explanation?.dialogue));
+          /* 재청취 화면 상태 복원 (2026-08-30 사용자 결정) — mode 'replay' 스냅샷이 있으면 점수·진행을
+           * 되살린다. 새로고침이 재청취라고 화면을 비우면 안 된다 — 실사용 보고 "72점이 사라짐". */
+          const restoreReplay = restoreFromSnapshot(snap, replay, 'replay', getStoredLang());
+          if (restoreReplay) {
+            Object.assign(state, restoreReplay);
+            startTime = restoreReplay.startTime;
+            activeTimer.restore(restoreReplay.activeSec);
+          }
+          const list = restoreReplay?.cards ?? replay;
+          const idx = Math.max(0, Math.min((restoreReplay?.step ?? 1) - 1, list.length - 1));
+          state.cards = list;
+          state.total = list.length;
+          state.sentence = pickCardFields(list[idx]) || EMPTY_SENTENCE;
+          state.lastScore = restoreCardScore(state.exLog, list[idx]?.id);
+          const sc = list.find((c) => Array.isArray(c.explanation?.dialogue));
           if (sc) { try { state.shadowed = await getSceneShadow(window.studyDB, sc.id); } catch { /* noop */ } }
           state.loaded = true;
           rerender();
