@@ -22,6 +22,8 @@
 
 ## 자격증명·Secret
 
+**`leftjap/apps` 는 PUBLIC repo.** 2026-06-10 에 가계부 스크린샷이 공개된 사고가 있었다. 스크린샷·스크랩 데이터·개인 기록은 커밋하지 않는다 (`**/handoff/`, `best/fixtures/`, `best/data/` 는 .gitignore 로 봉인됨).
+
 하드코딩 금지 (환경변수 또는 config 사용). 단 Supabase anon key 는 `VITE_` prefix 환경변수로 클라이언트 번들 포함 허용. RLS 로 격리, anon key 자체는 공개 가능. service role key 는 절대 번들 금지.
 
 **로컬 저장 위치 (자동 로드, 매 세션 키 재요구 금지)**:
@@ -34,4 +36,4 @@
 ## 환경 함정
 
 - **테스트 실행**: 2026-08-30 부로 6개 PWA 의 `test` 스크립트를 `vitest run` 으로 바꾸고 watch 는 `test:watch` 로 분리했으므로 `pnpm test` 는 안전합니다. 다만 `run` 없이 `pnpm vitest` 로 직접 부르면 여전히 watch 에 걸려 Bash 가 멈추므로, PreToolUse hook 이 그 경우만 차단합니다.
-- **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 앱(study/gym/today/book/pick/cue) `["esbuild"]`. Board 는 `~/apps/board/CLAUDE.md` 참조.
+- **pnpm 10 onlyBuiltDependencies**: 누락 시 esbuild postinstall 차단. PWA 앱(study/gym/today/book/pick/cue/best) `["esbuild"]`. Board 는 `~/apps/board/CLAUDE.md` 참조.
