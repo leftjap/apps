@@ -250,3 +250,17 @@ describe('restoreFromSnapshot — 빈 스냅샷', () => {
     expect(restoreFromSnapshot({ mode: 'new', cardIds: [], step: 0 }, [], 'new')).toBe(null);
   });
 });
+
+/* 재청취(replay) 스냅샷 안전 계약 (2026-08-30) — 화면 상태 저장을 위해 mode 'replay' 로 저장하지만,
+ * TTL 만료 finalize 가 이를 실세션으로 기록하면 완료 세션이 통계·복습 이관에 이중 계상된다. */
+describe('finalizeStaleSnapshot — replay 스냅샷은 기록하지 않는다', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+  it('mode replay → null, finishSession 미호출', async () => {
+    const db = { todayLessons: { bulkGet: vi.fn() } };
+    const r = await finalizeStaleSnapshot(db, {
+      mode: 'replay', lang: 'en', todayISO: '2026-08-30', step: 2, tried: 3, savedAt: Date.now(),
+    });
+    expect(r).toBe(null);
+    expect(finishSession).not.toHaveBeenCalled();
+  });
+});
