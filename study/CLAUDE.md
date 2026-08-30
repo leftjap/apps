@@ -12,9 +12,12 @@
 - 1차 정본 (payload 형식·en drift 결정): `~/apps/study/seeds/README.md`
 - 2차 정본 (lesson explanation): `~/apps/study/docs/lesson-explanation-guide-{ja,en}.md` + `explanation-schema.md`
 
-## 관련 스킬 (자동 활성화)
+## 카드 작성 게이트
 
-`study-content`: 카드 생성·수정·자동화 진입점. 트리거·비트리거 조건은 스킬 본문. **본 스킬 없이 카드 작성 시 체크리스트 (ja=가이드 §10 / en=가이드 §6.3 유일 정본 + `scripts/validate-seed.mjs` 게이트) 통과 거짓 단정 위험.**
+체크리스트 정본은 ja = 가이드 §10, en = 가이드 §6.3 이며, `scripts/validate-seed.mjs` 게이트를 통과해야 한다. 가이드를 읽지 않은 채 "체크리스트 통과" 라고 쓰지 않는다.
+(구 `study-content` 스킬은 2026-08-30 삭제. 277개 세션에서 한 번도 발동하지 않아 실효가 없었다.)
+
+## 관련 스킬 (자동 활성화)
 
 `supabase-pattern`: `src/db/sync.js`·`schema.js`·`src/services/auth.js` 수정·RLS·OAuth·Auth 작업 시.
 
