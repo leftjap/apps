@@ -30,6 +30,10 @@ export function buildPronunciationLog({ result, sentenceId, lang, date } = {}) {
     captureRms: result.captureRms ?? null,
     // 2026-08-29 감점제 1단계 — 억양 단어 태그 요약. 로컬 전용(동기화 매핑 밖) — 감점 단가 보정 원천.
     prosodyIssues: result.prosodyIssues ?? null,
+    // 2026-08-31 감점제 화면 전환 — overallScore 는 이제 감점 점수. 원 정확도와 체계 표식을 남겨
+    // 전환 전 행(acc 척도)과 구별한다 (§5.5 "전환 시점을 기록에 표시"). 로컬 전용.
+    accuracyScore: result.accuracyScore ?? null,
+    scoreModel: result.scoreModel ?? null,
     // 2026-08-29 오후 — 감점 3단계 보정·실발화 재현 원천 (단어별 점수·miscue 판정). 종전엔 저장이
     // 안 돼 시뮬이 음소→단어 근사에 머물렀다(전 세션 §5.5 한계). prosodyIssues 와 같은 로컬 전용 패턴.
     wordScores: Array.isArray(result.wordScores) ? result.wordScores : null,

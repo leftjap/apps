@@ -170,4 +170,17 @@ describe('buildPronunciationLog — 감점 보정 원천 필드 (로컬 전용)'
     expect(bare.omissions).toBe(null);
     expect(bare.insertions).toBe(null);
   });
+
+  it('감점제 전환 표식 — accuracyScore·scoreModel 을 행에 담고, 없으면 null (구행과 척도 구별)', () => {
+    const log = buildPronunciationLog({
+      result: { score: 83, accuracyScore: 97, scoreModel: 'ded1' },
+      sentenceId: 'x', lang: 'en', date: '2026-08-31',
+    });
+    expect(log.overallScore).toBe(83);
+    expect(log.accuracyScore).toBe(97);
+    expect(log.scoreModel).toBe('ded1');
+    const bare = buildPronunciationLog({ result: { score: 90 }, sentenceId: 'x', lang: 'en', date: '2026-08-31' });
+    expect(bare.accuracyScore).toBe(null);
+    expect(bare.scoreModel).toBe(null);
+  });
 });

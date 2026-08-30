@@ -5,7 +5,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 vi.mock('../services/sessionAnalyze.js', () => ({
   startMicRecording: vi.fn(async () => ({ controller: { stop() {} } })),
-  stopAndAnalyze: vi.fn(async () => ({ score: 92, weakPhonemes: ['ð'] })),
+  // 감점제 전환(2026-08-31) 후 화면 점수는 엔진 산출 — 기대 문장을 에코하는 완전 발화 형태의
+  // mock 은 어떤 타깃(메인·드릴·체이닝·생산)에서도 엔진 100 이 된다. acc 92 는 accuracyScore 로만 남는다.
+  stopAndAnalyze: vi.fn(async (_ctrl, expected) => ({
+    score: 92, accuracyScore: 92, recognizedText: String(expected ?? ''),
+    fluencyScore: 100, prosodyScore: 100, weakPhonemes: ['ð'],
+  })),
 }));
 vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), savePronunciationLog: vi.fn(async () => null) }));
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
@@ -119,7 +124,7 @@ describe('sessionExprV2 — 체이닝(chain) 렌더', () => {
 describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
 
-  it('녹음 1회 완료 → tried++ · lastScore=92 · 콤보×1 · savePronunciationLog(올바른 인자) · 점수 링 92', async () => {
+  it('녹음 1회 완료 → tried++ · lastScore=100(감점제: 완전 발화 mock) · 콤보×1 · savePronunciationLog(올바른 인자)', async () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = makeState();
     renderSessionExprV2(host, state, {});
@@ -136,10 +141,10 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     expect(state.recording).toBe(false);
     expect(state.tried).toBe(1);
     expect(state.passed).toBe(1);       // 92 >= PASS_THRESHOLD(80)
-    expect(state.lastScore).toBe(92);
+    expect(state.lastScore).toBe(100);
     expect(state.combo).toBe(1);
-    expect(state.pronScores).toEqual([92]);
-    expect(state.recLog.e1).toEqual({ count: 1, best: 92 });
+    expect(state.pronScores).toEqual([100]);
+    expect(state.recLog.e1).toEqual({ count: 1, best: 100 });
     expect(state.weakInSession).toEqual({ 'ð': 1 });
 
     // stopAndAnalyze 가 현재 문장으로 호출
@@ -149,15 +154,16 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     const [dbArg, params] = savePronunciationLog.mock.calls[0];
     expect(params.sentenceId).toBe('e1');
     expect(params.lang).toBe('en');
-    expect(params.result).toEqual({ score: 92, weakPhonemes: ['ð'] });
+    // 감점제 전환 — 저장 행의 score 는 엔진 점수, 원 acc 와 체계 표식이 함께 실린다.
+    expect(params.result).toMatchObject({ score: 100, accuracyScore: 92, scoreModel: 'ded1', weakPhonemes: ['ð'] });
     expect(typeof params.date).toBe('string');
 
     // 리빌 DOM — 점수 링 92 · 발화 점수 원 1개 · 총 1회 (점·콤보·PASS 칩은 폐기 §6.1)
-    expect(host.querySelector('.vs-ring .cn').textContent).toBe('92');
+    expect(host.querySelector('.vs-ring .cn').textContent).toBe('100');
     expect(host.querySelector('.vs-ring').classList.contains('score-pop')).toBe(true); // 점수 등장 애니
     const dots = host.querySelectorAll('.vs-meta .v-dot');
     expect(dots).toHaveLength(1);
-    expect(dots[0].textContent).toBe('92');
+    expect(dots[0].textContent).toBe('100');
     expect(dots[0].classList.contains('fresh')).toBe(true);   // 최신 시도 강조
     expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 1회');
     expect(host.querySelector('.vs-pass')).toBeNull();
@@ -339,7 +345,7 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     // 세션 집계 — drill 도 발화 1건
     expect(state.tried).toBe(1);
     expect(state.passed).toBe(1);                          // 92 >= 80
-    expect(state.pronScores).toEqual([92]);
+    expect(state.pronScores).toEqual([100]);
     expect(state.weakInSession).toEqual({ 'ð': 1 });
 
     // '오늘 발화' 위젯 + ' 녹음 N/M' 카운터 라이브 갱신
@@ -348,7 +354,7 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
 
     // 행 점수 배지 + 등장 애니
     const drillScoreEl = drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore');
-    expect(drillScoreEl.textContent).toContain('92');
+    expect(drillScoreEl.textContent).toContain('100');
     expect(drillScoreEl.classList.contains('score-pop')).toBe(true);
   });
 
@@ -756,7 +762,7 @@ describe('sessionExprV2 — 연습 진행 영속화 (state.exLog)', () => {
     const rec = drillRecBtns(host)[1];
     rec.click(); await tick();
     rec.click(); await tick(); await tick();
-    expect(state.exLog.e1.drills).toEqual({ 1: [92] }); // 시도마다 누적 → 점수 원이 늘어난다
+    expect(state.exLog.e1.drills).toEqual({ 1: [100] }); // 시도마다 누적 → 점수 원이 늘어난다 (감점제 엔진 점수)
     expect(saveSnapshot).toHaveBeenCalled();
   });
 
@@ -1153,7 +1159,7 @@ describe('sessionExprV2 — 오발화 게이트 (메인 카드)', () => {
     renderSessionExprV2(host, state, {});
     await recOnce(host);
     expect(state.tried).toBe(1);
-    expect(state.lastScore).toBe(21);
+    expect(state.lastScore).toBe(100); // 감점제: acc 21 은 accuracyScore 로만 — 의도(기록 자체)는 유지
     expect(savePronunciationLog).toHaveBeenCalledTimes(1);
   });
 });
@@ -1221,7 +1227,9 @@ describe('sessionExprV2 — 응용 드릴 점수 영속화', () => {
     const params = savePronunciationLog.mock.calls[0][1];
     expect(params.sentenceId).toBe("e1#drill#He's more than a friend.");
     expect(params.lang).toBe('en');
-    expect(params.result.score).toBe(92);
+    expect(params.result.score).toBe(100); // 감점제 점수가 정본 — 원 acc 는 accuracyScore
+    expect(params.result.accuracyScore).toBe(92);
+    expect(params.result.scoreModel).toBe('ded1');
   });
 
   it('오발화로 버린 드릴은 쌓이지 않는다', async () => {
@@ -1314,7 +1322,7 @@ describe('sessionExprV2 — 녹음 품질 게이트', () => {
     renderSessionExprV2(host, state, {});
     await recOnce(host);
     expect(state.tried).toBe(1);
-    expect(state.lastScore).toBe(21);
+    expect(state.lastScore).toBe(100); // 감점제: acc 21 은 accuracyScore 로만 — 의도(기록 자체)는 유지
   });
 });
 

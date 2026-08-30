@@ -4,7 +4,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // 체이닝 실경로(비-demo) 검증용 — 데모 경로 테스트들은 services 를 타지 않으므로 영향 없음.
 vi.mock('../services/sessionAnalyze.js', () => ({
   startMicRecording: vi.fn(async () => ({ controller: { stop() {} } })),
-  stopAndAnalyze: vi.fn(async () => ({ score: 88, omissions: [] })),
+  // 감점제 전환(2026-08-31) — 기대 문장 에코 형태 mock 은 어떤 타깃에서도 엔진 100. 원 acc 는 accuracyScore.
+  stopAndAnalyze: vi.fn(async (_ctrl, expected) => ({
+    score: 88, accuracyScore: 88, recognizedText: String(expected ?? ''),
+    fluencyScore: 100, prosodyScore: 100, omissions: [],
+  })),
 }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), savePronunciationLog: vi.fn(async () => null) }));
@@ -222,7 +226,7 @@ describe('renderSessionReviewV2 — 해설 = 신규 세션과 동일(해설·응
     rec.click(); await tick();
     rec.click(); await tick(); await tick();             // mock: score 88, omissions []
     expect(lastState.tried).toBe(1);
-    expect(lastState.pronScores).toEqual([88]);
+    expect(lastState.pronScores).toEqual([100]); // 감점제: 체이닝 집계도 엔진 점수
     expect(lastState.passed).toBe(1);                    // 88 >= PASS_THRESHOLD(80)
   });
 });
@@ -683,7 +687,7 @@ describe('sessionReviewV2 — 오발화 게이트', () => {
     await recOnce(host);
     const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
     expect(shown).toHaveLength(1);
-    expect(shown[0].textContent).toBe('22');
+    expect(shown[0].textContent).toBe('100'); // 감점제: 픽스처에 감점 근거 축 없음 — 의도는 '기록된다' 자체
   });
 });
 
@@ -780,7 +784,7 @@ describe('sessionReviewV2 — 녹음 품질 게이트', () => {
     await recOnce(host);
     const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
     expect(shown).toHaveLength(1);
-    expect(shown[0].textContent).toBe('21');
+    expect(shown[0].textContent).toBe('100'); // 감점제: 의도(저점도 기록)는 유지
   });
 
   it('또렷한 오발화(소리·내용 둘 다 바닥)는 원인을 지목하지 않는다 — garbled 배선 (신규와 같은 계약)', async () => {

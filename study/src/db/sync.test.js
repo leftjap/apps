@@ -2308,6 +2308,23 @@ describe('sync — pullTable 이 pronunciationLog 의 로컬 전용 필드를 �
     expect(put.insertions).toEqual(['again']);
   });
 
+  it('accuracyScore·scoreModel(감점제 전환 표식, 2026-08-31)도 이월된다', async () => {
+    const server = [{ id: 'p1', user_id: 'u1', lang: 'en', date: '2026-08-31', overall_score: 83, sentence_id: 'c1' }];
+    const fromMock = vi.fn(() => {
+      const b = { select: vi.fn(() => b), eq: vi.fn().mockResolvedValue({ data: server, error: null }) };
+      return b;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const bulkPut = vi.fn().mockResolvedValue();
+    const bulkGet = vi.fn().mockResolvedValue([{ id: 'p1', accuracyScore: 97, scoreModel: 'ded1' }]);
+    await pullTable(mapping, { pronunciationLog: { bulkPut, bulkGet } }, 'u1');
+    const put = bulkPut.mock.calls[0][0][0];
+    expect(put.accuracyScore).toBe(97);
+    expect(put.scoreModel).toBe('ded1');
+  });
+
   it('로컬에 없던 행(bulkGet undefined)은 그대로 저장된다', async () => {
     const server = [{ id: 'p2', user_id: 'u1', lang: 'en', date: '2026-08-29', overall_score: 80, sentence_id: 'c1' }];
     const fromMock = vi.fn(() => {

@@ -16,6 +16,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 import { judgeCoverage, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
+import { computeDeductionScore } from '../services/deductionScore.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
@@ -382,8 +383,11 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       // 오발화(다른 문장·아무 발음)는 점수로도 발화로도 세지 않는다 — 메인 카드와 같은 계약.
       const judged = judgeRecording(result, target);
       if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
-      pushScore(result?.score ?? 0);
-      onScore?.(i, result);
+      /* 화면·기록 점수 = 감점제 (2026-08-31 3단계 전환, 사용자 지시) — 정확도 단독은 유치·단조
+       * 발화를 못 깎는다(실측: 유치 발화 acc 97·pros 82). 원 acc 는 result.accuracyScore 로 행에 남는다. */
+      const scored = { ...result, score: computeDeductionScore(result, target).score, scoreModel: 'ded1' };
+      pushScore(scored.score);
+      onScore?.(i, scored);
     }
     /* 시도할 때마다 점수 원이 하나씩 붙는다 — 같은 문장을 여러 번 말한 흔적이 곧 기록이다. */
     function pushScore(raw) {
@@ -466,7 +470,8 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
       /* 음질 게이트 (2026-08-29) — 소리가 무너진 녹음은 발화로도 세지 않는다. 통과 판정(judgeCoverage)은
        * 전사가 무너져 어차피 실패하지만, onUtterance 가 '오늘 발화'·pronScores·3회 게이트를 올린다. */
       if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
-      onUtterance?.(result); // 통과 여부와 무관 — 말했으면 발화 1건
+      // 발화 집계 점수도 감점제 통일 (2026-08-31) — 통과 판정(judgeCoverage)은 아래에서 원본 사용.
+      onUtterance?.({ ...result, score: computeDeductionScore(result, step.text).score, scoreModel: 'ded1' });
       // 2026-07-12 — 통과 판정을 Azure omission(passesCoverage) → 전사 비교(judgeCoverage)로 교체.
       // Azure 가 긴 L2 문장에서 false omission 을 내던 실측(coverageJudge.js 박제) 후속 배선.
       // ※ enableMiscue:true 유지 필수 — false 면 recognizedText 가 레퍼런스를 에코해 항상 통과(실측 2026-07-12).
@@ -589,7 +594,8 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
       /* 음질 게이트 (2026-08-29) — 여기가 특히 위험하다: 통과 기준이 accuracy>=65 인데 합성 취약
        * 구간의 표시 acc 가 82 라 **무너진 녹음이 통과로 처리된다**. 실패로도 세지 않는다(학습자 잘못이 아님). */
       if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
-      onScore?.(result); // 통과 여부와 무관 — 말했으면 발화 1건 (체이닝과 동일)
+      // 발화 집계 점수도 감점제 통일 (2026-08-31) — 통과 판정(judgeProduction)은 아래에서 원본 사용.
+      onScore?.({ ...result, score: computeDeductionScore(result, d.en).score, scoreModel: 'ded1' }); // 말했으면 발화 1건 (체이닝과 동일)
       // 통과 = 커버리지 + 문장 정확도 하한 + 단어 하한 (judgeProduction, 2026-07-23 사용자 지적
       // "정확하게 발음 못했는데 패스" · "엉뚱한 단어도 통과"). 실패도 1회로 누적 — 3회면 정답 공개.
       const judge = judgeProduction(result, d.en, { minAccuracy: PROD_MIN_ACCURACY });
@@ -920,10 +926,13 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
     const judged = judgeRecording(result, s.sentence);
     if (!judged.record) { setRecVisual(false); showRecordToast(recordGateMessage(judged.reason)); return; }
-    applyScore(Number(result?.score) || 0, result?.weakPhonemes);
+    /* 화면·기록 점수 = 감점제 (2026-08-31 3단계 전환, 사용자 지시) — 정확도 단독은 유치·단조
+     * 발화를 못 깎는다. 원 acc 는 result.accuracyScore 로, 체계 표식은 scoreModel 로 행에 남는다. */
+    const scored = { ...result, score: computeDeductionScore(result, s.sentence).score, scoreModel: 'ded1' };
+    applyScore(scored.score, result?.weakPhonemes);
     setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
     try {
-      await savePronunciationLog(window.studyDB, { result, sentenceId: s.id, lang, date: getTodayISO() });
+      await savePronunciationLog(window.studyDB, { result: scored, sentenceId: s.id, lang, date: getTodayISO() });
       await applyWeakPhonemesUpdate(window.studyDB, lang, result?.weakPhonemes);
     } catch (e) { console.error('[sessionExprV2] pron persist', e); }
     handlers.saveSnapshot?.();

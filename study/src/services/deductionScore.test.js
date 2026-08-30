@@ -11,28 +11,28 @@ const W = (word, score) => ({ word, score });
 const PH = (word, ...symbols) => symbols.map((s) => ({ symbol: s, word, score: 80 }));
 
 describe('computeDeductionScore — 축별 감점', () => {
-  const EXP = 'sorry could you say';   // 4단어 → 단어당 예산 30/4 = 7.5
+  const EXP = 'sorry could you say';   // 4단어 → 단어당 예산 20/4 = 5 (2026-08-31 보정 단가)
 
-  it('완벽 발화(원어민 앵커) → 98점대, 감점 내역이 근거와 함께 나온다', () => {
+  it('완벽 발화(원어민 앵커) → 92점대, 감점 내역이 근거와 함께 나온다', () => {
     const r = computeDeductionScore({
       recognizedText: 'sorry could you say',
       wordScores: [W('sorry', 100), W('could', 100), W('you', 100), W('say', 100)],
       fluencyScore: 99, prosodyScore: 91.1,
       prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
     }, EXP);
-    expect(r.score).toBe(98);          // 100 − 유창 0.25 − 억양 1.34
+    expect(r.score).toBe(92);          // 100 − 유창 0.25 − 억양 (100−91.1)×0.9=8.01
     expect(r.floor).toBe(50);
     expect(r.deductions.every((d) => d.points >= 0)).toBe(true);
   });
 
-  it('한 단어 60점(비취약) → 단어 예산 비례 감점 7.5×0.4=3', () => {
+  it('한 단어 60점(비취약) → 단어 예산 비례 감점 5×0.4=2', () => {
     const r = computeDeductionScore({
       recognizedText: 'sorry could you say',
       wordScores: [W('sorry', 60), W('could', 100), W('you', 100), W('say', 100)],
       fluencyScore: 100, prosodyScore: 100,
     }, EXP);
-    expect(r.score).toBe(97);
-    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(3);
+    expect(r.score).toBe(98);
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(2);
   });
 
   it('취약 음소(f) 단어는 같은 결손도 1.5배 깎인다', () => {
@@ -42,8 +42,8 @@ describe('computeDeductionScore — 축별 감점', () => {
       phonemeScores: [{ symbol: 'f', word: 'sorry', score: 40 }],   // sorry 에 f 포함(합성 예)
       fluencyScore: 100, prosodyScore: 100,
     }, EXP);
-    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(4.5);  // 3 × 1.5
-    expect(r.score).toBe(96);  // round(100 − 4.5)
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(3);  // 2 × 1.5
+    expect(r.score).toBe(97);  // round(100 − 3)
   });
 
   it('개인 실측 약점(personalWeak)도 취약 세트에 합쳐진다', () => {
@@ -53,7 +53,7 @@ describe('computeDeductionScore — 축별 감점', () => {
       phonemeScores: [{ symbol: 'eh', word: 'sorry', score: 40 }],  // eh 는 기본 세트엔 없음
       fluencyScore: 100, prosodyScore: 100,
     }, EXP, { personalWeak: ['eh'] });
-    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(4.5);
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(3);
   });
 
   it('끊어읽기 앵커(실측 flu 63·단조 8/8·pros 86.5) → 70점대 중반', () => {
@@ -154,8 +154,8 @@ describe('computeDeductionScore — 검증 발견 반영', () => {
       phonemeScores: [{ symbol: 'r', word: 'ちょっと', score: 40 }],   // ちょっと 만 취약
       fluencyScore: 100, prosodyScore: 100,
     }, 'ちょっと 待って');
-    // 예산 15씩 · 결손 0.4 → ちょっと 15×0.4×1.5=9, 待って 15×0.4×1=6 → 15 (오염 시 18)
-    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(15);
+    // 예산 10씩 · 결손 0.4 → ちょっと 10×0.4×1.5=6, 待って 10×0.4×1=4 → 10 (오염 시 12)
+    expect(r.deductions.find((d) => d.axis === 'words').points).toBe(10);
   });
 
   it('rates 를 바꿔도 바닥이 축 상한 합에서 유도된다 (하드코딩 50 아님)', () => {
@@ -290,5 +290,69 @@ describe('computeDeductionScore — 적대 감사 확증 회귀 방지', () => {
     // omission 'that' 1건은 0점 항목만 걷어낸다 — 실발화 that(21)은 words 축에 남는다
     const wordsDed = r.deductions.find((d) => d.axis === 'words');
     expect(wordsDed.detail.some((w) => w.word === 'that' && w.score === 21)).toBe(true);
+  });
+});
+
+/* 단가 보정 1차 (2026-08-31 사용자 지시 "합성으로 지금 보정") — 실측 코퍼스 22종으로 격자 탐색
+ * (원어민 TTS 2보이스×2문장 · 한국액센트 · 끊어읽기 · 지오 정상 7회 · 지오 유치 4회 실기록).
+ * 실측 사실: 유창성은 전 계층 91~100이라 분리력이 없고, '유치·미숙 vs 원어민'을 가르는 유일한
+ * 연속 신호는 ProsodyScore (원어민 90.3~91.1 / 지오 최고 88.8 / 유치 69.8~82.4). TTS 합성으론
+ * 유치 계층을 못 만든다(느려도 억양 곡선이 자연스러워 pros 88~90) — 유치 기준점은 실기록.
+ * 채택 단가: words 20 · fluency 10×0.25 · intonation 20×(pros 결손 0.9 + mono 0).
+ * mono 단가 0 의 근거: 원어민 정상 발화에도 전단어 태그가 붙는 출렁임 실측(2026-08-29 S3 9/9)
+ * — 태그에 단가를 주면 원어민 90 보장이 깨진다. 억양 연속값이 단조를 이미 흡수한다. */
+describe('computeDeductionScore — 계층 보정 (실측 픽스처)', () => {
+  const S1 = "Sorry, I didn't catch that.";
+  const W5 = (s1, s2, s3, s4, s5) => [
+    { word: 'sorry', score: s1 }, { word: 'i', score: s2 }, { word: 'didnt', score: s3 },
+    { word: 'catch', score: s4 }, { word: 'that', score: s5 }];
+  const PH_WEAK = [{ symbol: 'r', word: 'sorry', score: 90 }, { symbol: 'dh', word: 'that', score: 90 }];
+  const REC = "Sorry I didnt catch that.";
+
+  it('원어민(Aria 실측: 전단어 97·flu 99·pros 90.4)은 90점대', () => {
+    const r = computeDeductionScore({
+      recognizedText: REC, wordScores: W5(97, 97, 88, 97, 97), phonemeScores: PH_WEAK,
+      fluencyScore: 99, prosodyScore: 90.4,
+      prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
+    }, S1);
+    expect(r.score).toBeGreaterThanOrEqual(90);
+  });
+
+  it('유치원생식 실기록 1(acc 97·flu 98·pros 82.4 — 화면 97점이던 발화)은 90 미만', () => {
+    const r = computeDeductionScore({
+      recognizedText: REC, wordScores: W5(97, 97, 97, 100, 94), phonemeScores: PH_WEAK,
+      fluencyScore: 98, prosodyScore: 82.4,
+      prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
+    }, S1);
+    expect(r.score).toBeLessThan(90);
+    expect(r.score).toBeLessThanOrEqual(85);
+  });
+
+  it('유치원생식 실기록 3(acc 86·pros 69.8·단조 5/5)은 70대까지 내려간다', () => {
+    const r = computeDeductionScore({
+      recognizedText: REC, wordScores: W5(94, 82, 94, 94, 67), phonemeScores: PH_WEAK,
+      fluencyScore: 92, prosodyScore: 69.8,
+      prosodyIssues: { monotoneWords: ['sorry', 'i', 'didnt', 'catch', 'that'], unexpectedBreaks: [], missingBreaks: [] },
+    }, S1);
+    expect(r.score).toBeLessThanOrEqual(78);
+  });
+
+  it('지오 최고 시도(acc 98·flu 100·pros 88.8)는 80대 후반 — 억양이 90을 넘으면 90점대에 닿는다', () => {
+    const r = computeDeductionScore({
+      recognizedText: REC, wordScores: W5(97, 97, 97, 100, 97), phonemeScores: PH_WEAK,
+      fluencyScore: 100, prosodyScore: 88.8,
+      prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
+    }, S1);
+    expect(r.score).toBeGreaterThanOrEqual(87);
+    expect(r.score).toBeLessThan(90);
+  });
+
+  it('원어민이 전단어 단조 태그를 받아도(출렁임 실측) 90점대가 유지된다 — mono 단가 0 의 계약', () => {
+    const r = computeDeductionScore({
+      recognizedText: REC, wordScores: W5(97, 97, 97, 100, 97), phonemeScores: PH_WEAK,
+      fluencyScore: 99, prosodyScore: 91.1,
+      prosodyIssues: { monotoneWords: ['sorry', 'i', 'didnt', 'catch', 'that'], unexpectedBreaks: [], missingBreaks: [] },
+    }, S1);
+    expect(r.score).toBeGreaterThanOrEqual(90);
   });
 });
