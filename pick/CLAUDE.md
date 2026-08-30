@@ -1,6 +1,6 @@
-# Pick — 별점 기반 영화·책 추천 PWA
+# Pick: 별점 기반 영화·책 추천 PWA
 
-> 공통 룰은 `~/apps/CLAUDE.md` 참조. 본 파일은 Pick 앱 전용. (구 `taste` — `0006` 마이그레이션에서 리네임)
+> 공통 룰은 `~/apps/CLAUDE.md` 참조. 본 파일은 Pick 앱 전용. (구 `taste`: `0006` 마이그레이션에서 리네임)
 
 ## 도메인
 
@@ -22,4 +22,4 @@
 
 ## 관련 스킬
 
-`supabase-pattern` 은 study/gym/today 만 자동발동 — pick 의 `src/db/`·`src/services/auth.js` 작업은 같은 패턴이나 스킬 미발동.
+`supabase-pattern` 은 study/gym/today 만 자동발동. pick 의 `src/db/`·`src/services/auth.js` 작업은 같은 패턴이나 스킬 미발동.
