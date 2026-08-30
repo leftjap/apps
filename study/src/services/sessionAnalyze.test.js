@@ -247,3 +247,41 @@ describe('startMicRecording/stopAndAnalyze — 투기적 선채점', () => {
     expect(result).toBe(specResult);
   });
 });
+
+/* 2026-08-30 감사 확증 — 선채점의 시간 예산·수명. (a) 선채점 await 가 25초 예산을 직렬로 잠식해
+ * 복구 가능한 실패(rate_limited·스톨)가 timeout 으로 악화되고 확정 채점이 시도조차 안 됐다.
+ * (b) 시작 타임아웃으로 버려진 녹음의 VAD 가 유령 선채점 Azure 호출을 계속 발사했다. */
+describe('투기적 선채점 — 시간 예산·무장 해제', () => {
+  beforeEach(() => { vi.useFakeTimers(); delete globalThis.window; });
+  afterEach(() => { vi.useRealTimers(); delete globalThis.window; });
+
+  it('선채점이 스톨해도 독립 예산으로 끊고 확정 채점을 호출한다', async () => {
+    const finalResult = { score: 91 };
+    const analyzeWavRest = vi.fn()
+      .mockImplementationOnce(() => new Promise(() => {}))   // 선채점 — 응답 없이 스톨
+      .mockResolvedValue(finalResult);
+    const ctrl = { stop: vi.fn(), blobPromise: Promise.resolve(new Blob([new ArrayBuffer(64)])) };
+    const recordWav = vi.fn(async (o) => { recordWav.lastOpts = o; return ctrl; });
+    globalThis.window = { studySpeech: { recordWav, analyzeWavRest, getAzureToken: vi.fn(async () => ({})) } };
+    const { controller } = await startMicRecording({ speculate: { expected: 'Hello.', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    const p = stopAndAnalyze(controller, 'Hello.', { lang: 'en' }, { enableMiscue: true });
+    await vi.advanceTimersByTimeAsync(4_000);                // 선채점 예산(3초) 초과
+    const r = await p;
+    expect(analyzeWavRest).toHaveBeenCalledTimes(2);         // 확정 채점이 실제로 호출됨
+    expect(r).toBe(finalResult);
+  });
+
+  it('시작 타임아웃으로 버려진 녹음의 선채점 신호는 무장 해제된다 — 유령 Azure 호출 0', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const analyzeWavRest = vi.fn(async () => ({ score: 90 }));
+    const recordWav = vi.fn((o) => { recordWav.lastOpts = o; return new Promise(() => {}); });
+    globalThis.window = { studySpeech: { recordWav, analyzeWavRest, getAzureToken: vi.fn(async () => ({})) } };
+    const p = startMicRecording({ speculate: { expected: 'Hello.', card: { lang: 'en' } } });
+    await vi.advanceTimersByTimeAsync(15_100);
+    expect(await p).toEqual({ error: 'timeout' });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));  // 버려진 세션의 VAD 신호
+    expect(analyzeWavRest).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+});

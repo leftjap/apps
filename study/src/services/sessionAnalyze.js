@@ -69,7 +69,8 @@ export async function startMicRecording(opts = {}) {
     specState = { promise: null, valid: false, fires: 0 };
     recOpts.speculateSilenceMs = SPECULATE_SILENCE_MS;
     recOpts.onSpeculate = (blob) => {
-      if (specState.fires >= SPECULATE_MAX_FIRES) return;
+      // disarmed — 시작 타임아웃으로 버려진 녹음의 VAD 가 유령 Azure 호출을 발사하지 못하게 (2026-08-30 감사)
+      if (specState.disarmed || specState.fires >= SPECULATE_MAX_FIRES) return;
       specState.fires += 1;
       specState.valid = true;
       specState.promise = analyzeBlob(blob, speculate.expected, speculate.card, { enableMiscue: true })
@@ -81,6 +82,8 @@ export async function startMicRecording(opts = {}) {
     const controller = await withTimeout(window.studySpeech.recordWav(recOpts), START_TIMEOUT_MS);
     if (controller === TIMED_OUT) {
       console.warn('[sessionAnalyze] recordWav 응답 없음 — 타임아웃');
+      // 버려진 recordWav 세션이 살아 있어도 선채점은 무장 해제 — 결과를 받을 곳이 없다 (2026-08-30 감사)
+      if (specState) { specState.disarmed = true; specState.valid = false; }
       return { error: 'timeout' };
     }
     if (controller && specState) controller._speculative = specState;
@@ -103,6 +106,7 @@ export async function stopAndAnalyze(controller, expectedText, card, opts = {}) 
 /* 채점 호출의 단일 조립점 — 정상 경로(_stopAndAnalyze)와 투기적 선채점이 같은 정규화·옵션을 쓴다. */
 const SPECULATE_SILENCE_MS = 900;
 const SPECULATE_MAX_FIRES = 3;
+const SPECULATE_WAIT_MS = 3000; // 선채점 결과 대기 상한 — 초과 시 버리고 확정 채점 (예산 잠식 방지)
 async function analyzeBlob(blob, expectedText, card, { enableMiscue = false } = {}) {
   const ref = normalizeReferenceText(expectedText);
   const lang = pickAnalyzeLang(card);
@@ -124,11 +128,14 @@ async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = 
   }
   // 선채점 결과 — 말 재개로 무효화되지 않았고 옵션이 같으면(전 경로 enableMiscue:true) 그대로 쓴다.
   // 실패·mock 폴백이면 버리고 정상 경로로 재채점 — 안전망은 그대로다.
+  // ⚠ 대기엔 독립 예산(SPECULATE_WAIT_MS)만 준다 (2026-08-30 감사) — 선채점이 스톨·지연 실패하면
+  // 전체 25초 예산을 직렬로 잠식해, 복구 가능한 실패가 timeout 으로 악화되고 확정 채점이
+  // 시도조차 안 됐다. 선채점은 stop 보다 ~1.1초 먼저 출발했으니 정상이면 이 안에 끝난다.
   const spec = controller._speculative;
   let result = null;
   if (spec?.valid && spec.promise && enableMiscue === true) {
-    const r = await spec.promise;
-    if (r && !r.mockFallback) result = r;
+    const r = await withTimeout(spec.promise, SPECULATE_WAIT_MS);
+    if (r !== TIMED_OUT && r && !r.mockFallback) result = r;
   }
   if (!result) result = await analyzeBlob(blob, expectedText, card, { enableMiscue });
   const ref = normalizeReferenceText(expectedText);

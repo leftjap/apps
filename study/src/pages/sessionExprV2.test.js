@@ -1445,3 +1445,49 @@ describe('sessionExprV2 — 투기적 선채점 배선', () => {
     }));
   });
 });
+
+/* 2026-08-30 감사 확증 — 선채점 배선이 메인·복습 2경로만 핀되고 드릴·체이닝·생산 3경로는
+ * 뮤테이션(speculate 인자 제거)에도 전 스위트가 초록이었다. 세 경로를 각각 고정한다. */
+describe('sessionExprV2 — 드릴·체이닝·생산 선채점 배선', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('응용 드릴 녹음 시작에 speculate(드릴 문장)가 실린다', async () => {
+    const { startMicRecording } = await import('../services/sessionAnalyze.js');
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    [...host.querySelectorAll('.vs-drills-list .vs-drow')][0].querySelector('button[aria-label="녹음"]').click();
+    await tick();
+    expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
+      autoStopSilenceMs: 2000,
+      speculate: expect.objectContaining({ expected: expect.stringContaining('more than a') }),
+    }));
+  });
+
+  it('체이닝 녹음 시작에 speculate(현재 단계 문장)가 실린다', async () => {
+    const { startMicRecording } = await import('../services/sessionAnalyze.js');
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const s = makeState();
+    s.sentence.explanation.chain = {
+      target: "It's been a while since we caught up. We should grab dinner sometime.",
+      chunks: ["It's been a while", 'since we caught up', 'We should grab dinner', 'sometime'],
+      ko: '오랜만이야. 언제 저녁이나 먹자.',
+    };
+    renderSessionExprV2(host, s, {});
+    [...host.querySelectorAll('.vs-chain .vs-drow')][0].querySelector('button[aria-label="녹음"]').click();
+    await tick();
+    expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
+      speculate: expect.objectContaining({ expected: expect.stringContaining("It's been a while") }),
+    }));
+  });
+
+  it('생산 연습 녹음 시작에 speculate(출제 문장)가 실린다', async () => {
+    const { startMicRecording } = await import('../services/sessionAnalyze.js');
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeStateWithDrills(), {});
+    [...host.querySelectorAll('.vs-prod')][0].querySelector('button[aria-label="녹음"]').click();
+    await tick();
+    expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
+      speculate: expect.objectContaining({ expected: expect.stringContaining('more than a') }),
+    }));
+  });
+});

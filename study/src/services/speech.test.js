@@ -2046,3 +2046,35 @@ describe('recordWav — 투기적 선채점 배선', () => {
     nowSpy.mockRestore();
   });
 });
+
+/* 2026-08-30 감사 확증 — captureRms 가 트림 전 원본 길이 기준이라, 꼬리 무음이 다른 선채점
+ * 스냅샷(0.9s)과 확정 blob(2.0s)이 같은 발화인데 다른 값으로 영속화됐다(+17% 실측).
+ * 업로드와 같은(트림된) 오디오 기준으로 통일한다. 전체무음은 트림이 원본을 돌려줘 mic_silent 불변. */
+describe('speech — captureRms 는 트림된 오디오 기준 (선채점/확정 등가)', () => {
+  it('꼬리 무음 0.9초와 2.0초가 같은 captureRms 를 낸다', async () => {
+    _fetchSpy.mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(
+          JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        return new Response(JSON.stringify({
+          RecognitionStatus: 'Success', DisplayText: 'You got it.',
+          NBest: [{ Display: 'You got it.', AccuracyScore: 95, Words: [] }],
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech, pcmToWavBlob } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const SR = 16000;
+    const tone = Int16Array.from({ length: SR }, (_, i) => (i % 2 ? 8000 : -8000));
+    const pad = (ms) => { const p = new Int16Array(SR + SR * ms / 1000); p.set(tone); return p; };
+    const r09 = await Speech.analyzeWavRest(pcmToWavBlob(pad(900), SR), 'You got it', { lang: 'en-US' });
+    const r20 = await Speech.analyzeWavRest(pcmToWavBlob(pad(2000), SR), 'You got it', { lang: 'en-US' });
+    expect(r09.captureRms).toBe(r20.captureRms);
+  });
+});

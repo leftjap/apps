@@ -1185,12 +1185,15 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
     const ab = await wavBlob.arrayBuffer();
     const pcm = new Int16Array(ab, 44);
     if (pcm.length) {
-      let sum = 0;
-      for (let i = 0; i < pcm.length; i++) sum += pcm[i] * pcm[i];
-      captureRms = Math.sqrt(sum / pcm.length) / 32768;
-      // 꼬리 무음 트림 — captureRms 는 원본 기준으로 먼저 계산 (mic_silent 판정 왜곡 방지).
       const trimmed = trimTrailingSilencePcm(pcm);
       if (trimmed !== pcm) uploadBlob = pcmToWavBlob(trimmed, 16000);
+      /* captureRms — 업로드와 같은(트림된) 오디오 기준 (2026-08-30 감사). 원본 기준이면 꼬리 무음
+       * 길이가 다른 선채점 스냅샷(0.9s)과 확정 blob(2.0s)이 같은 발화에 다른 값(+17% 실측)으로
+       * 영속화돼 두 척도가 섞인다. 전체무음은 트림이 원본을 돌려주므로 mic_silent 근거 불변.
+       * ⚠ 2026-08-30 이전 저장 행은 꼬리 무음 포함 척도 — 이 컬럼 분석 시 경계일 주의. */
+      let sum = 0;
+      for (let i = 0; i < trimmed.length; i++) sum += trimmed[i] * trimmed[i];
+      captureRms = Math.sqrt(sum / trimmed.length) / 32768;
     }
   } catch (_) { /* blob 읽기 실패 시 원본 업로드로 진행 */ }
   // captureRms 이 거의 0 = 마이크가 무음을 캡처(입력 없음·음소거·입력장치 오선택). 이때 no_match 를
