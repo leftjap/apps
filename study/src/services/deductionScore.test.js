@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeDeductionScore, DEDUCTION_RATES, KO_WEAK_PHONEMES } from './deductionScore.js';
+import { computeDeductionScore, scoreForDisplay, DEDUCTION_RATES, KO_WEAK_PHONEMES } from './deductionScore.js';
 
 /* 감점제 점수 엔진 (2026-08-29 사용자 설계 확정) — 100에서 항목별 차감, 인위적 문턱 없음.
  * 축별 상한 합 = 50 → 단어를 다 말했으면 50점 바닥이 산수로 보장된다.
@@ -64,7 +64,8 @@ describe('computeDeductionScore — 축별 감점', () => {
       fluencyScore: 63, prosodyScore: 86.5,
       prosodyIssues: { monotoneWords: words, unexpectedBreaks: [], missingBreaks: [] },
     }, words.join(' '));
-    // 단어 30×0.15=4.5 + 유창 min(10, 37×0.25)=9.25 + 억양 min(10, 8×1+13.5×0.15)=10
+    // 단어 (20/8)×0.15×8=3.0 + 유창 min(10, 37×0.25)=9.25 + 억양 min(20, 13.5×0.9)=12.15 → 75.6
+    // (구단가에서도 우연히 76 — 보정 전후 이 앵커는 동치)
     expect(r.score).toBe(76);
   });
 
@@ -354,5 +355,26 @@ describe('computeDeductionScore — 계층 보정 (실측 픽스처)', () => {
       prosodyIssues: { monotoneWords: ['sorry', 'i', 'didnt', 'catch', 'that'], unexpectedBreaks: [], missingBreaks: [] },
     }, S1);
     expect(r.score).toBeGreaterThanOrEqual(90);
+  });
+});
+
+/* 화면·기록 점수 결정 (2026-08-31 정확성 검토 후속) — 감점제 보정은 en 코퍼스 실측 기준.
+ * ja 는 프로소디 분포 미실측(원어민 ja 확인 시도는 F0 한도로 보류)이라 보정 전까지 acc 유지 —
+ * 미실측 척도를 다른 언어에 적용하는 것 자체가 추측이다. */
+describe('scoreForDisplay — 언어별 점수 체계', () => {
+  const RES = { score: 95, accuracyScore: 95, recognizedText: 'Sorry I didnt catch that.',
+    wordScores: [{ word: 'sorry', score: 95 }], fluencyScore: 98, prosodyScore: 82.4 };
+
+  it('en 은 감점제 점수 + ded1 표식', () => {
+    const s = scoreForDisplay(RES, "Sorry, I didn't catch that.", 'en');
+    expect(s.scoreModel).toBe('ded1');
+    expect(s.score).toBeLessThan(95);            // pros 82.4 → 억양 감점 반영
+    expect(s.accuracyScore).toBe(95);
+  });
+
+  it('ja 는 acc 유지 + acc1 표식 (미보정 척도 적용 금지)', () => {
+    const s = scoreForDisplay({ ...RES, recognizedText: 'そうなんだ' }, 'そうなんだ', 'ja');
+    expect(s.score).toBe(95);
+    expect(s.scoreModel).toBe('acc1');
   });
 });

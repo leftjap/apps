@@ -24,9 +24,11 @@ import { judgeCoverage } from './coverageJudge.js';
  * 4회 실기록)으로 격자 탐색(216 구성 중 제약 통과 32, gap 최대 채택). 제약: 원어민 ≥90 ·
  * 지오 유치 실기록 ≤87 · 끊어읽기 ≤82 · 지오 최고 시도 ≥85. 결과: 원어민 90 · 지오 최고 89 ·
  * 유치 75~83 · 한국액센트 76~78 · 끊어읽기 76~79.
- * 핵심 실측: 유창성은 전 계층 91~100이라 분리력이 없고, 유치·미숙 vs 원어민을 가르는 유일한
- * 연속 신호는 ProsodyScore(원어민 90.3~91.1 / 지오 최고 88.8 / 유치 69.8~82.4) → 억양 축을
- * 10→20, 결손 단가 0.15→0.9 로. 단어 축은 계층 분리력이 없어(전 계층 acc 86~98) 30→20. */
+ * 핵심 실측: 유창성은 끊어읽기(63~66)만 잡고 나머지 계층(원어민·정상·유치·액센트)은 91~100이라
+ * '유치·미숙 vs 원어민' 분리력이 없다. 그 분리를 하는 유일한 연속 신호는 ProsodyScore
+ * (원어민 90.3~91.1 / 지오 최고 88.8 / 유치 69.8~82.4) → 억양 축을 10→20, 결손 단가 0.15→0.9 로.
+ * 단어 축은 계층 분리력이 없어(전 계층 acc 86~98) 30→20.
+ * ⚠ 보정은 en 코퍼스 기준 — ja 는 미보정 적용 상태다(원어민 ja 실측은 아래 주석·핸드오프 참조). */
 export const DEDUCTION_RATES = {
   words: { max: 20, weakMultiplier: 1.5 },
   // perInsertion: 반복·덧붙임 단어당 감점. 버벅임의 직접 증거 — 라이브 실측(2026-08-29):
@@ -173,3 +175,12 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
 }
 
 function round1(n) { return Math.round(n * 10) / 10; }
+
+/** 화면·기록용 점수 결정 (2026-08-31) — 감점제 단가는 en 코퍼스 실측으로 보정했다.
+ * ja 는 프로소디 분포 미실측(원어민 ja 확인 시도는 F0 한도로 보류 — 핸드오프 부록 D)이라
+ * 실측 보정 전까지 acc 를 유지한다. 미실측 척도를 다른 언어에 적용하는 것 자체가 추측이다.
+ * scoreModel: 'ded1' = 감점제 1차 단가 / 'acc1' = 정확도 단독 (행 구별용). */
+export function scoreForDisplay(result, expected, lang) {
+  if (lang === 'ja') return { ...result, scoreModel: 'acc1' };
+  return { ...result, score: computeDeductionScore(result, expected).score, scoreModel: 'ded1' };
+}

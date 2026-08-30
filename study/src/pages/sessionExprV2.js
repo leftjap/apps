@@ -16,7 +16,7 @@ import { recordErrorMessage, showRecordToast } from '../components/session/recor
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 import { judgeCoverage, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
-import { computeDeductionScore } from '../services/deductionScore.js';
+import { scoreForDisplay } from '../services/deductionScore.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
@@ -384,8 +384,9 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       const judged = judgeRecording(result, target);
       if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
       /* 화면·기록 점수 = 감점제 (2026-08-31 3단계 전환, 사용자 지시) — 정확도 단독은 유치·단조
-       * 발화를 못 깎는다(실측: 유치 발화 acc 97·pros 82). 원 acc 는 result.accuracyScore 로 행에 남는다. */
-      const scored = { ...result, score: computeDeductionScore(result, target).score, scoreModel: 'ded1' };
+       * 발화를 못 깎는다(실측: 유치 발화 acc 97·pros 82). 원 acc 는 result.accuracyScore 로 행에 남는다.
+       * ja 는 en 코퍼스 보정 전이라 acc 유지 (scoreForDisplay 주석). */
+      const scored = scoreForDisplay(result, target, lang);
       pushScore(scored.score);
       onScore?.(i, scored);
     }
@@ -471,7 +472,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
        * 전사가 무너져 어차피 실패하지만, onUtterance 가 '오늘 발화'·pronScores·3회 게이트를 올린다. */
       if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
       // 발화 집계 점수도 감점제 통일 (2026-08-31) — 통과 판정(judgeCoverage)은 아래에서 원본 사용.
-      onUtterance?.({ ...result, score: computeDeductionScore(result, step.text).score, scoreModel: 'ded1' });
+      onUtterance?.(scoreForDisplay(result, step.text, lang));
       // 2026-07-12 — 통과 판정을 Azure omission(passesCoverage) → 전사 비교(judgeCoverage)로 교체.
       // Azure 가 긴 L2 문장에서 false omission 을 내던 실측(coverageJudge.js 박제) 후속 배선.
       // ※ enableMiscue:true 유지 필수 — false 면 recognizedText 가 레퍼런스를 에코해 항상 통과(실측 2026-07-12).
@@ -595,7 +596,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
        * 구간의 표시 acc 가 82 라 **무너진 녹음이 통과로 처리된다**. 실패로도 세지 않는다(학습자 잘못이 아님). */
       if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
       // 발화 집계 점수도 감점제 통일 (2026-08-31) — 통과 판정(judgeProduction)은 아래에서 원본 사용.
-      onScore?.({ ...result, score: computeDeductionScore(result, d.en).score, scoreModel: 'ded1' }); // 말했으면 발화 1건 (체이닝과 동일)
+      onScore?.(scoreForDisplay(result, d.en, lang)); // 말했으면 발화 1건 (체이닝과 동일)
       // 통과 = 커버리지 + 문장 정확도 하한 + 단어 하한 (judgeProduction, 2026-07-23 사용자 지적
       // "정확하게 발음 못했는데 패스" · "엉뚱한 단어도 통과"). 실패도 1회로 누적 — 3회면 정답 공개.
       const judge = judgeProduction(result, d.en, { minAccuracy: PROD_MIN_ACCURACY });
@@ -927,8 +928,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const judged = judgeRecording(result, s.sentence);
     if (!judged.record) { setRecVisual(false); showRecordToast(recordGateMessage(judged.reason)); return; }
     /* 화면·기록 점수 = 감점제 (2026-08-31 3단계 전환, 사용자 지시) — 정확도 단독은 유치·단조
-     * 발화를 못 깎는다. 원 acc 는 result.accuracyScore 로, 체계 표식은 scoreModel 로 행에 남는다. */
-    const scored = { ...result, score: computeDeductionScore(result, s.sentence).score, scoreModel: 'ded1' };
+     * 발화를 못 깎는다. 원 acc 는 result.accuracyScore 로, 체계 표식은 scoreModel 로 행에 남는다.
+     * ja 는 en 코퍼스 보정 전이라 acc 유지 (scoreForDisplay 주석). */
+    const scored = scoreForDisplay(result, s.sentence, lang);
     applyScore(scored.score, result?.weakPhonemes);
     setRecVisual(false); // applyScore(bumpRecLog) 후 → 라벨 '다시 말하기' 반영
     try {

@@ -23,7 +23,7 @@ import { filterNearDupDrills } from '../components/session/applied.js';
 import { localISODate } from '../utils/today.js';
 import { nextSrsState } from '../services/srs.js';
 import { judgeRecording } from '../services/coverageJudge.js';
-import { computeDeductionScore } from '../services/deductionScore.js';
+import { scoreForDisplay } from '../services/deductionScore.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
 import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage } from './sessionExprV2.js';
@@ -596,8 +596,8 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     if (result?.mockFallback) { setRecVisual(false); showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
     const judged = judgeRecording(result, s.sentence);
     if (!judged.record) { setRecVisual(false); showRecordToast(recordGateMessage(judged.reason)); return; }
-    /* 화면·기록 점수 = 감점제 (2026-08-31 3단계 전환) — 신규 카드와 같은 계약. */
-    const scored = { ...result, score: computeDeductionScore(result, s.sentence).score, scoreModel: 'ded1' };
+    /* 화면·기록 점수 = 감점제 (2026-08-31 3단계 전환) — 신규 카드와 같은 계약. ja 는 acc 유지. */
+    const scored = scoreForDisplay(result, s.sentence, lang);
     applyScore(scored.score);
     setRecVisual(false);
     try {
