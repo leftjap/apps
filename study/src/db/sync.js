@@ -20,6 +20,7 @@
  *  - user_id 자동 주입 (Dexie 스키마엔 없지만 Supabase RLS 매칭용).
  */
 import { supabase } from '../services/supabase.js';
+import { purgeModuyeongeoEp1415 } from './purgeModuyeongeo.js';
 import { recordSyncResult, readSyncHealth } from '../services/syncHealth.js';
 
 // ============================================================
@@ -1340,6 +1341,9 @@ export async function startSync(user) {
   _currentDB = window.studyDB;
   _currentUserId = user.id;
   _outboxKey = OUTBOX_PREFIX + user.id;
+  // 일회성 정리 (2026-08-31) — 데몬이 적재한 모두영어 ep14·15 잔재를 pull·reconcile 전에 제거.
+  // 안 하면 이 기기의 로컬 사본을 reconcile 이 서버에 되살린다. 전 기기 적용 확인 후 제거 예정.
+  try { await purgeModuyeongeoEp1415(_currentDB, supabase); } catch { /* 정리 실패는 sync 를 막지 않는다 */ }
   // 1) 이전 세션의 미푸시 tail 을 pull '이전에' 올린다.
   //    dailyStats/meta/prRecords 는 로컬 read-modify-write 누적(sessionFinish.js 의 mergeDailyStats)이라
   //    pull(bulkPut)이 먼저 오면 로컬 증분이 서버의 옛 값으로 덮여 사라지고, 그 뒤 push 는 서버 값을
