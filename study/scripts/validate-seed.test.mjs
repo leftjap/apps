@@ -296,6 +296,30 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
   });
 
+  /* 오탐 제거 (2026-08-31) — 한글 초성 ㅇ 은 음가가 없어 '받침+ㅇ초성'만 보면 영어에서 이어지지
+   * 않는 자리까지 잡힌다. 뒤 음절이 이중모음으로 시작하면 원음이 활음 /j/·/w/ 라 앞 받침이 넘어갈
+   * 자리가 아니다. 대가로 can you→캐뉴 같은 자리는 놓치지만, 경고의 신뢰도가 먼저다. */
+  it('뒤 음절이 활음(이중모음)으로 시작하면 연음 대상이 아니다', () => {
+    for (const kr of ['미인 위', '씽 워r크스', 'f럼 예스터r데이', '낫 유어r 잘못']) {
+      const p = makeModu({ track: 'core100' });
+      p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = kr; }));
+      const r = validateSeedContent(p, okOpts);
+      expect(r.warnings.filter((w) => w.includes('연음')), kr).toEqual([]);
+    }
+  });
+
+  /* chunks 경계 = 저작자가 지정한 호흡 자리 — 그 자리를 넘어 이어 읽지 않는다. phonetic_kr 을
+   * 통째로 검사하면 청크와 청크 사이가 전부 미적용으로 잡힌다(오탐). 청크 안에서만 본다. */
+  it('청크 경계는 연음 대상이 아니다', () => {
+    const p = makeModu({ track: 'core100' });
+    p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = '쏘리 아이 디든 캐치'; }));
+    p.cards[0].explanation.chunks = [['How to explain it', '하우 투 익스플레이닛'], ['in English.', '이닝글리쉬']];
+    p.cards[0].phonetic_kr = '하우 투 익스플레이닛 이닝글리쉬';
+    p.cards[0].sentence = 'How to explain it in English.';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
+  });
+
   /* 응용 연습의 목적은 핵심 표현을 여러 맥락에서 다시 만나는 것이고, 시안(§4.4·§6.5)은 그 재사용을
    * 드릴 행 밑줄로 표시한다. 표현이 한 번도 안 들어간 드릴 묶음은 응용이 아니라 유의어 나열이라
    * 밑줄이 하나도 안 그려진다 — 실측: 사용자 대기 카드 6장에서 드릴 30개 중 4개(13%)만 매치.

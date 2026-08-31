@@ -401,25 +401,44 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
    * "단어별로 끊어 적지 말고 자음+모음 경계는 다음 음절로 이어 적는다" — 캔 유→캐뉴, 왓 이즈→워리즈.
    * 규칙만 있고 게이트가 없어 코퍼스 40%(드릴 866개 중 343개)가 단어별 표기로 남아 있었다.
    * 판정: 받침 있는 음절 + 공백 + ㅇ 초성 음절 = 이어 적을 자리. 차단이 아니라 경고 — 실제 발화가
-   * 끊기는 자리(강세·휴지)도 있어 마지막 판단은 저작자 몫이다. */
+   * 끊기는 자리(강세·휴지)도 있어 마지막 판단은 저작자 몫이다.
+   * ⚠ 차단 승격 보류 (2026-08-31) — 승격을 검토하며 §7 재분절 규칙 자체를 그 문서의 실측 절차
+   * (ko-KR TTS 음차 → 영어 STT)로 재현했더니, §7 표의 정본 예시 6쌍이 개선 0·후퇴 4·동률 2 였다
+   * (ko-KR 9화자). 채택 근거였던 '캐뉴 푸리론 5/5 vs 캔 유 풋 잇 온 4/5'(n=5)도 9화자에선 8/9 대
+   * 8/9 동률이다. 근거가 서기 전에는 경고로만 둔다. */
   const hasJong = (ch) => { const c = ch.charCodeAt(0) - 0xAC00; return c >= 0 && c < 11172 && c % 28 !== 0; };
   const choIsIeung = (ch) => { const c = ch.charCodeAt(0) - 0xAC00; return c >= 0 && c < 11172 && Math.floor(c / 588) === 11; };
+  /* 활음 중성 (ㅑㅒㅕㅖㅘㅙㅛㅝㅞㅟㅠㅢ) 은 대상에서 뺀다 — 한글 초성 ㅇ 은 음가가 없어 '받침+ㅇ초성'만
+   * 보면 영어에서 이어지지 않는 자리까지 잡힌다 (mean we·thing works·from yesterday·not your 는
+   * 뒤 원음이 활음 /j/·/w/ 라 앞 받침이 넘어갈 자리가 아니다).
+   * 대가로 can you→캐뉴 처럼 활음인데 이어야 하는 자리는 게이트가 놓친다. 차단으로 승격하는 이상
+   * 오탐 0 이 우선이다 — 정당한 표기를 막는 쪽이 몇 건 놓치는 쪽보다 나쁘다. 활음 자리의 판단은
+   * guide-en §7 문서 규칙에 맡기고, 게이트는 단모음 경계(댓 어겐·왓 이즈·겟 어)만 확실히 잡는다. */
+  const GLIDE_JUNG = new Set([2, 3, 6, 7, 9, 10, 12, 14, 15, 16, 17, 19]);
+  const startsWithGlide = (ch) => {
+    const c = ch.charCodeAt(0) - 0xAC00;
+    return c >= 0 && c < 11172 && GLIDE_JUNG.has(Math.floor(c / 28) % 21);
+  };
   const unlinkedBoundaries = (kr) => {
     const toks = String(kr || '').split(/\s+/).filter(Boolean);
     const out = [];
     for (let i = 0; i + 1 < toks.length; i += 1) {
       const a = toks[i], b = toks[i + 1];
-      if (hasJong(a[a.length - 1]) && choIsIeung(b[0])) out.push(`${a} ${b}`);
+      if (hasJong(a[a.length - 1]) && choIsIeung(b[0]) && !startsWithGlide(b[0])) out.push(`${a} ${b}`);
     }
     return out;
   };
   for (const c of exprs) {
     const spots = [];
-    if (c.phonetic_kr) spots.push(...unlinkedBoundaries(c.phonetic_kr));
+    /* 본문은 phonetic_kr 통째가 아니라 chunks 안에서만 본다 — 청크 경계는 저작자가 지정한 호흡
+     * 자리라 그 자리를 넘어 이어 읽지 않는다. 통째로 보면 청크 사이가 전부 미적용으로 잡힌다. */
+    const chunkKrs = (c.explanation?.chunks || []).map((x) => (Array.isArray(x) ? x[1] : null)).filter(Boolean);
+    if (chunkKrs.length) for (const kr of chunkKrs) spots.push(...unlinkedBoundaries(kr));
+    else if (c.phonetic_kr) spots.push(...unlinkedBoundaries(c.phonetic_kr));
     for (const d of (c.explanation?.drills || [])) spots.push(...unlinkedBoundaries(d?.kr));
     if (spots.length) {
       const uniq = [...new Set(spots)];
-      warnings.push(`${c.id}: 음차 연음 미적용 ${spots.length}곳 (${uniq.slice(0, 3).join(' / ')}${uniq.length > 3 ? ' …' : ''}) — guide-en §7: 자음+모음 경계는 이어 적을 것 (캔 유→캐뉴)`);
+      warnings.push(`${c.id}: 음차 연음 미적용 ${spots.length}곳 (${uniq.slice(0, 3).join(' / ')}${uniq.length > 3 ? ' …' : ''}) — guide-en §7: 자음+모음 경계는 이어 적을 것 (댓 어겐→대러겐)`);
     }
   }
 

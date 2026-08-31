@@ -66,7 +66,7 @@
         "drills": [
           { "en": "What do you mean by \"later\"?", "ko": "'나중에'라는 게 무슨 뜻이야?", "kr": "왓 두 유 미인 바이 레이러r" },
           { "en": "I'm not sure what you mean.", "ko": "무슨 말인지 잘 모르겠어.", "kr": "암 낫 슈어r 왓 유 미인" },
-          { "en": "Do you mean the one from yesterday?", "ko": "어제 그거 말하는 거야?", "kr": "두 유 미인 더 원 f럼 예스러r데이" },
+          { "en": "Do you mean the one from yesterday?", "ko": "어제 그거 말하는 거야?", "kr": "두 유 미인 더 원 f럼 예스터r데이" },
           { "en": "She didn't say what she meant.", "ko": "걔는 무슨 뜻인지 말 안 했어.", "kr": "쉬 디든 쎄이 왓 쉬 멘트" },
           { "en": "Could you explain what you mean?", "ko": "무슨 뜻인지 설명해 줄래?", "kr": "쿠쥬 익스플레인 왓 유 미인" },
           { "en": "What do you mean, you're not coming?", "ko": "무슨 소리예요, 안 온다고요?", "kr": "왓 두 유 미인 유어r 낫 커밍" },
@@ -244,14 +244,14 @@
       "sentence": "Let me see if I understood you correctly.",
       "meaning": "내가 제대로 이해했는지 확인해 볼게.",
       "reading": null,
-      "phonetic_kr": "렛 미 씨 이f 아이 언더r스투 쥬 커r렉틀리",
+      "phonetic_kr": "렛 미 씨 이f 아이 언더r스투쥬 커r렉틀리",
       "order_index": 6,
       "explanation": {
         "key": "Let me see if ~ = ~인지 확인해 볼게. 오해를 막고 대화를 되짚는 문장.",
         "situation": "상대 말을 절반쯤 알아들었을 때 — 내가 이해한 내용을 확인받고 넘어간다.",
         "drills": [
           { "en": "Let me see if I got that right.", "ko": "내가 맞게 들었는지 볼게.", "kr": "렛 미 씨 이f 아이 갓 댓 라잇" },
-          { "en": "Did I understand you correctly?", "ko": "내가 제대로 이해한 거 맞아?", "kr": "디라이 언더r스탠 쥬 커r렉틀리" },
+          { "en": "Did I understand you correctly?", "ko": "내가 제대로 이해한 거 맞아?", "kr": "디라이 언더r스탠쥬 커r렉틀리" },
           { "en": "I want to make sure I got it.", "ko": "내가 이해한 게 맞는지 확실히 하고 싶어.", "kr": "아이 원 투 메익 슈어r 아이 가릿" },
           { "en": "She didn't understand me correctly.", "ko": "걔는 내 말을 제대로 이해 못 했어.", "kr": "쉬 디든 언더r스탠 미 커r렉틀리" },
           { "en": "So you mean we should wait, right?", "ko": "그러니까 기다리자는 말이지?", "kr": "쏘 유 미인 위 슈드 웨잇 라잇" },
@@ -263,11 +263,11 @@
         ],
         "chunks": [
           ["Let me see", "렛 미 씨"],
-          ["if I understood you", "이f 아이 언더r스투 쥬"],
+          ["if I understood you", "이f 아이 언더r스투쥬"],
           ["correctly.", "커r렉틀리"]
         ],
         "phonemes": [
-          ["understood you → 연음", "'언더스투드 유'(X) → '언더r스투 쥬'"],
+          ["understood you → 연음", "'언더스투드 유'(X) → 붙여서 '언더r스투쥬'"],
           ["/r/ correctly", "혀를 굴려 '커r렉틀리' — '코렉틀리' 아님"]
         ],
         "mistake": "if 를 '만약'으로만 알면 뜻이 안 잡힌다. 여기 if 는 '~인지'(whether).",
