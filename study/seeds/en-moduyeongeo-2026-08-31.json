@@ -16,10 +16,10 @@
       "sentence": "How long will it take?",
       "meaning": "얼마나 걸릴까요?",
       "reading": null,
-      "phonetic_kr": "하우 롱 윌 잇 테익",
+      "phonetic_kr": "하우 롱 위릿 테익",
       "order_index": 1,
       "explanation": {
-        "key": "How long will it take? = 얼마나 걸릴까요? 무언가에 드는 소요 시간을 물을 때.",
+        "key": "How long will ~ take? = ~는 얼마나 걸릴까요? 무언가에 드는 소요 시간을 물을 때.",
         "situation": "영상 클립: 무언가에 걸리는 시간을 물어보는 장면들 (문제 풀이·이동·수리 등)",
         "drills": [
           {
@@ -40,7 +40,7 @@
           {
             "en": "How much longer will it take?",
             "ko": "얼마나 더 걸려요?",
-            "kr": "하우 머치 롱거r 윌 잇 테익"
+            "kr": "하우 머치 롱거r 위릿 테익"
           },
           {
             "en": "Does it take long to get there?",
@@ -66,7 +66,7 @@
           ],
           [
             "will it",
-            "윌 잇"
+            "위릿"
           ],
           [
             "take",
@@ -211,12 +211,17 @@
           {
             "en": "It's not that late yet.",
             "ko": "아직 그렇게 안 늦었어.",
-            "kr": "잇츠 낫 댓 레잇 옛"
+            "kr": "잇츠 낫 댓 레이쳇"
           },
           {
             "en": "We stayed out until it got late.",
             "ko": "우린 늦을 때까지 밖에 있었어.",
-            "kr": "위 스테이다웃 언틸 잇 갓 레잇"
+            "kr": "위 스테이다우 던티릿 갓 레잇"
+          },
+          {
+            "en": "I know it's getting late, but let's finish this.",
+            "ko": "늦은 건 아는데, 이것만 끝내고 가자.",
+            "kr": "아이 노우 잇츠 게링 레잇, 벗 레츠 f피니쉬 디스"
           },
           {
             "en": "It's getting pretty late. Maybe we should go inside.",
@@ -483,7 +488,7 @@
           {
             "en": "I had to get back to work right after lunch.",
             "ko": "점심 먹고 바로 다시 일하러 가야 했어.",
-            "kr": "아이 햇 투 겟 백 투 워크 롸잇 애f터r 런치"
+            "kr": "아이 햇 투 겟 백 투 워크 롸이래f터r 런치"
           }
         ],
         "grammar": [
@@ -537,7 +542,7 @@
       "sentence": "Something's come up.",
       "meaning": "일이 생겼어.",
       "reading": null,
-      "phonetic_kr": "썸띵즈 컴 업",
+      "phonetic_kr": "썸띵즈 커멉",
       "order_index": 7,
       "explanation": {
         "key": "come up = (일이) 생기다/발생하다. 갑자기 일이 터졌다고 알릴 때.",
@@ -561,7 +566,7 @@
           {
             "en": "Something came up at work.",
             "ko": "회사에 일이 좀 생겼어.",
-            "kr": "썸띵 케이멉 앳 워크"
+            "kr": "썸띵 케이머뱃 워크"
           },
           {
             "en": "If something comes up, just call me.",
@@ -587,7 +592,7 @@
           ],
           [
             "come up",
-            "컴 업"
+            "커멉"
           ]
         ],
         "phonemes": [
@@ -622,7 +627,7 @@
       "sentence": "I hope everything's okay.",
       "meaning": "다 괜찮길 바랄게.",
       "reading": null,
-      "phonetic_kr": "아이 홉 에v뤼띵즈 오케이",
+      "phonetic_kr": "아이 호 베v뤼띵즈 오케이",
       "order_index": 8,
       "explanation": {
         "key": "hope everything's okay = 다 괜찮기를 바라다. 걱정하며 안부를 빌 때.",
@@ -636,17 +641,17 @@
           {
             "en": "I hope you're okay.",
             "ko": "네가 괜찮았으면 좋겠어.",
-            "kr": "아이 홉 유어 오케이"
+            "kr": "아이 호퓨어 오케이"
           },
           {
             "en": "I hope everything went okay.",
             "ko": "다 잘됐길 바라.",
-            "kr": "아이 홉 에v뤼띵 웬 오케이"
+            "kr": "아이 호베v뤼띵 웨노케이"
           },
           {
             "en": "Hope everything's okay at home.",
             "ko": "집에 별일 없길 바라.",
-            "kr": "홉 에v뤼띵z 오케이 앳 홈"
+            "kr": "호베v뤼띵z 오케이 앳 홈"
           },
           {
             "en": "She hopes everything's okay with the trip.",
@@ -656,7 +661,7 @@
           {
             "en": "I just wanted to say I hope everything's okay.",
             "ko": "그냥 다 괜찮길 바란다고 말하고 싶었어.",
-            "kr": "아이 저스트 워니투 쎄이 아이 홉 에v뤼띵z 오케이"
+            "kr": "아이 저스트 워니투 쎄이 아이 호베v뤼띵z 오케이"
           }
         ],
         "grammar": [
@@ -668,11 +673,11 @@
         "chunks": [
           [
             "I hope",
-            "아이 홉"
+            "아이 호"
           ],
           [
             "everything's",
-            "에v뤼띵즈"
+            "베v뤼띵즈"
           ],
           [
             "okay",
@@ -733,7 +738,7 @@
           {
             "en": "Can I call you later?",
             "ko": "나중에 전화해도 될까?",
-            "kr": "캔 아이 커유 레이러"
+            "kr": "캐나이 커유 레이러"
           },
           {
             "en": "I'll text you later instead.",
@@ -743,7 +748,7 @@
           {
             "en": "I'll call you when I get home.",
             "ko": "집에 도착하면 전화할게.",
-            "kr": "아일 커유 웬 아이 겟 홈"
+            "kr": "아일 커유 웨나이 겟 홈"
           },
           {
             "en": "I couldn't call you back last night.",
@@ -799,5 +804,5 @@
       }
     }
   ],
-  "date": "2026-08-27"
+  "date": "2026-08-31"
 }
