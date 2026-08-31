@@ -775,6 +775,41 @@ export function trimTrailingSilencePcm(int16, { sampleRate = 16000, silencePeak 
   return int16.subarray(0, keep);
 }
 
+/* 축약 발화 보정 (2026-08-31) — Azure PA 는 ReferenceText 의 사전 발음에 음소를 정렬해 채점하므로,
+ * 원어민이 실제로 하는 축약(모음이 schwa 로 무너져 음소가 사라지는 것)일수록 깎인다.
+ * en-US 3보이스 실측: "What do you mean" 또박또박 93.0 vs 축약 86.7 (what·mean 은 97 유지, do 80·you 66).
+ * 앱이 §7 에서 실제 발음을 가르쳐 놓고 그대로 하면 벌을 주는 구조라, 축약형 레퍼런스로도 재고
+ * 높은 쪽을 쓴다 — 6문장 실측에서 또박또박·축약 격차가 +2.7 → +0.9 로 좁혀지고, 또박또박 점수는
+ * 96.8 그대로다. 레퍼런스를 축약형으로 '교체'하면 안 된다: 또박또박 발화가 50.0 으로 무너진다.
+ * 목록은 Azure 사전이 아는 철자만 둔다 (없는 철자를 넣으면 그 요청이 통째로 저점이 되어 무의미). */
+const CONTRACTIONS = [
+  ['what do you', 'whaddaya'],
+  ['what are you', 'whatcha'],
+  ['could you', 'couldja'],
+  ['would you', 'wouldja'],
+  ['did you', 'didja'],
+  ["don't you", 'doncha'],
+  ['want to', 'wanna'],
+  ['going to', 'gonna'],
+  ['got to', 'gotta'],
+  ['kind of', 'kinda'],
+  ['out of', 'outta'],
+  ['let me', 'lemme'],
+  ['give me', 'gimme'],
+];
+
+/** 문장의 알려진 축약형 레퍼런스. 바꿀 것이 없으면 null (추가 요청을 만들지 않는다). */
+export function contractedReference(text) {
+  const src = String(text || '');
+  let out = src;
+  for (const [from, to] of CONTRACTIONS) {
+    out = out.replace(new RegExp(`\\b${from.replace(/'/g, "['\u2019]")}\\b`, 'gi'), (m) => (
+      m[0] === m[0].toUpperCase() ? to[0].toUpperCase() + to.slice(1) : to
+    ));
+  }
+  return out === src ? null : out;
+}
+
 /** Pronunciation-Assessment 헤더 — UTF-8 JSON → base64 (no line wrap).
  * enableMiscue: 발화 단어를 참조 텍스트와 비교해 ErrorType=Omission/Insertion 을 받는다(MS 문서).
  *   false(기본) = 누락/삽입을 무시하고 발음 품질만 → 기본 카드 '따라 말하기' 현행 유지.
@@ -1211,18 +1246,24 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
   }
   try {
     const url = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(lang)}&format=detailed`;
-    const paHeader = buildPronunciationAssessmentHeader(expectedText, { enableMiscue, enableProsody });
-    // Wave A.16 — 429/5xx/network blip 은 재시도로 흡수 (F0 autoscaling 429 빈발 — MS 공식 권장).
-    const res = await _fetchWithRetry(url, {
+    const post = (ref) => _fetchWithRetry(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'audio/wav; codecs=audio/pcm; samplerate=16000',
-        'Pronunciation-Assessment': paHeader,
+        // Wave A.16 — 429/5xx/network blip 은 재시도로 흡수 (F0 autoscaling 429 빈발 — MS 공식 권장).
+        'Pronunciation-Assessment': buildPronunciationAssessmentHeader(ref, { enableMiscue, enableProsody }),
         Accept: 'application/json',
       },
       body: uploadBlob,
     }, 'stt');
+    /* 축약형이 있으면 사전 레퍼런스와 나란히 재고 높은 쪽을 쓴다 (위 CONTRACTIONS 주석의 실측 근거).
+     * 축약 쪽 요청이 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다. */
+    const contracted = contractedReference(expectedText);
+    const [res, altRes] = await Promise.all([
+      post(expectedText),
+      contracted ? post(contracted).catch(() => null) : Promise.resolve(null),
+    ]);
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);
       // 429 지속 = F0 혼잡 — '네트워크 오류' 가 아니라 잠시 뒤 재시도 안내로 분기 (2026-07-22 실측)
@@ -1233,8 +1274,18 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       console.warn('[speech][rest] 인식 실패', { status: json.RecognitionStatus, captureRms });
       return analyzeMock(expectedText, noSpeechReason());
     }
-    const nbest = json.NBest?.[0];
+    let nbest = json.NBest?.[0];
     if (!nbest) return analyzeMock(expectedText, 'parse_fail');
+    let usedContracted;
+    if (altRes?.ok) {
+      const altJson = await altRes.json().catch(() => null);
+      const alt = altJson?.RecognitionStatus === 'Success' ? altJson.NBest?.[0] : null;
+      if (alt && (alt.AccuracyScore ?? -1) > (nbest.AccuracyScore ?? -1)) {
+        // 채택한 쪽의 단어·음소가 그대로 실려야 취약 음소와 감점 산정이 같은 근거를 본다.
+        nbest = alt;
+        usedContracted = contracted;
+      }
+    }
     // Wave A.17 — 표시 점수 = AccuracyScore(발음 정확도).
     // 기존 PronScore(Comprehensive)는 정확도+유창성+완성도+억양 가중합이라, 또박또박·끊어 말하는
     // 학습자가 정확히 발음해도 유창성/억양에서 깎여 저점이 나옴(실측: Acc 92 → Pron 65, Fluency 45).
@@ -1261,6 +1312,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       score,
       accuracyScore: nbest.AccuracyScore,
       pronScore: nbest.PronScore,
+      // 축약형 레퍼런스 쪽이 채택됐을 때만 실린다 (진단용 — 어느 기준으로 채점됐는지).
+      ...(usedContracted ? { contractedRef: usedContracted } : {}),
       captureRms: captureRms == null ? null : +captureRms.toFixed(4),
       recognizedText: nbest.Display || json.DisplayText || '',
       phonemeScores,
@@ -1305,6 +1358,7 @@ export const Speech = {
   isTtsPlaying, // 2026-08-29 — TTS 재생 중 여부 (녹음 시작이 재생을 끊는 판단에 쓰임)
   pcmToWavBlob, // Wave 11.61 — utility
   buildPronunciationAssessmentHeader, // Wave 11.61 — utility
+  contractedReference, // 2026-08-31 — 축약 발화 보정용 레퍼런스
   extractMiscues, // 2026-07-09 — coverage(누락) 추출
   extractProsodyIssues, // 2026-08-29 — 프로소디 태그 요약
   passesCoverage, // 2026-07-09 — 체이닝 pass/fail

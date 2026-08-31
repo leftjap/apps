@@ -2078,3 +2078,147 @@ describe('speech — captureRms 는 트림된 오디오 기준 (선채점/확정
     expect(r09.captureRms).toBe(r20.captureRms);
   });
 });
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * 축약 발화 채점 (2026-08-31 사용자 지적 — "왓두유민보다 와루유민이 점수가 낮다")
+ *
+ * Azure PA 는 ReferenceText 의 사전 발음에 음소를 정렬해 채점한다. 그래서 원어민이 실제로 하는
+ * 축약(음소가 schwa 로 무너져 사라지는 것)일수록 깎인다. en-US 3보이스 실측:
+ *   What do you mean — 또박또박 93.0 / 축약(whaddaya) 86.7   (what·mean 은 97 유지, do·you 만 하락)
+ * 앱이 실제 발음을 가르쳐 놓고 그대로 하면 벌을 주는 구조라 고친다.
+ *
+ * 보정안 두 개를 실측 비교했다(6문장 × 3보이스, 또박또박 vs 축약):
+ *   기능어 점수 하한 — 격차 +2.7 → +2.6 (효과 없음. 감점이 하한 아래로 안 떨어진다)
+ *   축약 레퍼런스 병행 — 격차 +2.7 → +0.9, 또박또박 점수는 96.8 그대로 (부작용 없음)
+ * 후자를 채택한다. 레퍼런스를 축약형으로 '교체'하면 안 된다 — 실측에서 또박또박 발화가 50.0 으로
+ * 무너진다(whaddaya 단어 점수 3). 두 레퍼런스로 각각 재고 높은 쪽을 취해야 양방향이 산다.
+ * ───────────────────────────────────────────────────────────────────────────── */
+describe('speech — 축약 발화 채점 (contractedReference + 이중 채점)', () => {
+  it('알려진 축약이 있으면 축약형 레퍼런스를 만든다', async () => {
+    const { contractedReference } = await import('./speech.js');
+    expect(contractedReference('What do you mean by that?')).toBe('Whaddaya mean by that?');
+    expect(contractedReference('Could you say that again')).toBe('Couldja say that again');
+    expect(contractedReference('I want to go')).toBe('I wanna go');
+    expect(contractedReference('Did you eat yet')).toBe('Didja eat yet');
+  });
+
+  it('축약할 것이 없으면 null 을 돌려 추가 요청을 만들지 않는다', async () => {
+    const { contractedReference } = await import('./speech.js');
+    expect(contractedReference('You got it')).toBe(null);
+    expect(contractedReference('The line is breaking up')).toBe(null);
+    expect(contractedReference('')).toBe(null);
+  });
+
+  /** PA 헤더(base64 JSON)에서 ReferenceText 를 꺼낸다 — 어느 레퍼런스로 요청했는지 가린다. */
+  const refOf = (headers) => {
+    const b64 = headers?.['Pronunciation-Assessment'];
+    return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)))).ReferenceText;
+  };
+  const fixture = (acc, words) => ({
+    RecognitionStatus: 'Success', DisplayText: 'x',
+    NBest: [{ Lexical: 'x', Display: 'x', AccuracyScore: acc, FluencyScore: 100, PronScore: acc,
+      Words: words.map(([w, s]) => ({ Word: w, AccuracyScore: s, ErrorType: 'None', Phonemes: [] })) }],
+  });
+
+  it('축약 문장은 두 레퍼런스로 재고 높은 쪽을 쓴다', async () => {
+    const refs = [];
+    _fetchSpy.mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        const ref = refOf(init?.headers);
+        refs.push(ref);
+        // 축약해서 말한 학습자 — 사전 레퍼런스로는 깎이고(86.7), 축약 레퍼런스로는 제 점수(94.7)
+        const body = ref.includes('Whaddaya')
+          ? fixture(94.7, [['whaddaya', 91], ['mean', 97]])
+          : fixture(86.7, [['what', 97], ['do', 80], ['you', 66], ['mean', 97]]);
+        return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(100)], { type: 'audio/wav' }),
+      'What do you mean', { lang: 'en-US' });
+
+    expect(refs.sort()).toEqual(['Whaddaya mean', 'What do you mean']);
+    expect(r.score).toBe(94.7);
+    expect(r.accuracyScore).toBe(94.7);
+    // 채택한 쪽의 단어 점수가 실려야 취약 음소·감점 산정이 같은 근거를 본다
+    expect(r.wordScores.map((w) => w.word)).toEqual(['whaddaya', 'mean']);
+    expect(r.contractedRef).toBe('Whaddaya mean');
+  });
+
+  it('사전 발음이 더 높으면 그쪽을 쓴다 (또박또박 발화를 깎지 않는다)', async () => {
+    _fetchSpy.mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        const ref = refOf(init?.headers);
+        // 또박또박 말한 학습자 — 축약 레퍼런스로 재면 50 으로 무너진다(실측 whaddaya 단어 3점)
+        const body = ref.includes('Whaddaya')
+          ? fixture(50.0, [['whaddaya', 3], ['mean', 97]])
+          : fixture(95.0, [['what', 97], ['do', 97], ['you', 94], ['mean', 97]]);
+        return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(100)], { type: 'audio/wav' }),
+      'What do you mean', { lang: 'en-US' });
+    expect(r.score).toBe(95.0);
+    expect(r.wordScores.map((w) => w.word)).toEqual(['what', 'do', 'you', 'mean']);
+  });
+
+  it('축약할 것이 없는 문장은 STT 를 한 번만 부른다', async () => {
+    let sttCalls = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        sttCalls += 1;
+        return new Response(JSON.stringify(fixture(92, [['you', 97], ['got', 97], ['it', 88]])),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(100)], { type: 'audio/wav' }), 'You got it', { lang: 'en-US' });
+    expect(sttCalls).toBe(1);
+    expect(r.score).toBe(92);
+    expect(r.contractedRef).toBeUndefined();
+  });
+
+  it('축약 요청이 실패해도 사전 레퍼런스 결과로 채점한다', async () => {
+    _fetchSpy.mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        if (refOf(init?.headers).includes('Whaddaya')) return new Response('boom', { status: 500 });
+        return new Response(JSON.stringify(fixture(86.7, [['what', 97], ['do', 80], ['you', 66], ['mean', 97]])),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(100)], { type: 'audio/wav' }),
+      'What do you mean', { lang: 'en-US' });
+    expect(r.score).toBe(86.7);
+    expect(r.fallbackReason).toBeUndefined();
+  });
+});
