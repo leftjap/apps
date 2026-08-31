@@ -147,6 +147,31 @@ describe('session-new — 재청취(replay) 화면 상태 저장·복원', () =>
     expect(flushLiveStats).not.toHaveBeenCalled();   // 완료 세션 이중집계 방지 계약 유지
   });
 
+  it('완료한 세션의 점수가 다시 듣기 첫 진입에 보인다 — 그날 pronunciationLog 로 화면 수화', async () => {
+    // 실사용 보고(2026-08-31): 신규 세션 완료 → 다시 듣기 진입 시 총 0회·점수 원 없음.
+    const today = localISODate();
+    const RD = [
+      { ...NCARD('r1', 'Replay one.', '재청취 하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴 하나' }] } },
+      NCARD('r2', 'Replay two.', '재청취 둘'),
+    ];
+    window.studyDB = fakeDB2({});
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'r1', lang: 'en', date: today, overallScore: 88, createdAt: '2026-08-31T01:00:00Z' },
+      { sentenceId: 'r1', lang: 'en', date: today, overallScore: 92, createdAt: '2026-08-31T01:01:00Z' },
+      { sentenceId: 'r1#drill#Drill one.', lang: 'en', date: today, overallScore: 77, createdAt: '2026-08-31T01:02:00Z' },
+      { sentenceId: 'r1', lang: 'en', date: '2026-01-01', overallScore: 55, createdAt: '2026-01-01T01:00:00Z' },
+    ] }) }) };
+    loadNewCards.mockResolvedValueOnce([]);
+    loadReplayCards.mockResolvedValueOnce(RD);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('총 2회');                 // 메인 발화 2건 (다른 날 55 는 제외)
+    expect(document.querySelector('.vs-ring .cn')?.textContent).toBe('92'); // 링 = 마지막 점수
+    expect(document.body.textContent).toContain('77');                     // 드릴 행 점수 원
+    cleanup();
+  });
+
   it('재청취 재진입 시 스냅샷으로 화면이 복원된다 — 새로고침에도 점수·진행 유지', async () => {
     const snap = { key: 'activeSession', value: {
       mode: 'replay', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 30,

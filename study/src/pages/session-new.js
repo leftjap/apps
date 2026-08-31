@@ -21,7 +21,7 @@ import { formatElapsed } from '../utils/elapsed.js';
 import { localISODate } from '../utils/today.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { savePronunciationLog, loadReplayScoreState } from '../services/pronunciationLog.js';
 import { fetchDayUtterMap, prevStudyDayUtterance, fetchPRDays } from '../services/sessionStats.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
@@ -35,6 +35,7 @@ import { buildScenePage } from '../components/session/scenePage.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { filterNearDupDrills } from '../components/session/applied.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
@@ -313,6 +314,14 @@ export function mountSessionNew(host) {
             Object.assign(state, restoreReplay);
             startTime = restoreReplay.startTime;
             activeTimer.restore(restoreReplay.activeSec);
+          } else {
+            /* 완료 세션 점수 수화 (2026-08-31 사용자 보고) — 재청취 첫 진입은 그날 pronunciationLog 로
+             * 화면(점수 원·드릴 점수·총 N회)을 재구성한다. 스냅샷이 있으면 그쪽이 우선(재청취 중 진행 포함). */
+            try {
+              const hyd = await loadReplayScoreState(window.studyDB, replay, getStoredLang(), getTodayISO(),
+                (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+              if (hyd) { state.exLog = hyd.exLog; state.recLog = hyd.recLog; }
+            } catch { /* 수화 실패는 빈 화면으로 진행 */ }
           }
           const list = restoreReplay?.cards ?? replay;
           const idx = Math.max(0, Math.min((restoreReplay?.step ?? 1) - 1, list.length - 1));

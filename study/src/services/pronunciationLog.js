@@ -66,6 +66,40 @@ export function drillLogId(cardId, target) {
   return `${cardId}#drill#${String(target ?? '').trim()}`;
 }
 
+/* 재청취 화면 수화 (2026-08-31 사용자 보고 "완료한 세션 점수가 다시 듣기에 안 보인다") —
+ * 완료 세션의 발화는 이 로그에 전부 있으므로, 재청취 첫 진입 시 그날 기록으로 화면 상태
+ * (메인 점수 원 utter · 드릴 행 점수 drills · 총 N회 recLog)를 재구성한다.
+ * 드릴 행 인덱스는 렌더러와 같은 필터 결과(filterDrills 콜백) 기준 — 행 키가 문장 텍스트라
+ * (drillLogId, a138b9f 내용 주소화) 필터·순서가 바뀌어도 점수가 엉뚱한 행에 붙지 않는다. */
+export async function loadReplayScoreState(db, cards, lang, dateISO, filterDrills) {
+  if (!db?.pronunciationLog || !Array.isArray(cards) || !cards.length) return null;
+  try {
+    const rows = (await db.pronunciationLog.where('lang').equals(lang).toArray())
+      .filter((r) => r?.date === dateISO)
+      .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+    if (!rows.length) return null;
+    const exLog = {};
+    const recLog = {};
+    for (const c of cards) {
+      const main = rows.filter((r) => r.sentenceId === c.id).map((r) => Math.round(Number(r.overallScore) || 0));
+      const dScores = {};
+      (filterDrills?.(c) ?? []).forEach((d, i) => {
+        const t = String(d?.ja || d?.en || '').trim();
+        const ds = rows.filter((r) => r.sentenceId === drillLogId(c.id, t)).map((r) => Math.round(Number(r.overallScore) || 0));
+        if (ds.length) dScores[i] = ds;
+      });
+      const all = [...main, ...Object.values(dScores).flat()];
+      if (!all.length) continue;
+      exLog[c.id] = { ...(main.length ? { utter: main } : {}), ...(Object.keys(dScores).length ? { drills: dScores } : {}) };
+      recLog[c.id] = { count: all.length, best: Math.max(...all) };
+    }
+    return Object.keys(exLog).length ? { exLog, recLog } : null;
+  } catch (e) {
+    console.error('[pronunciationLog] loadReplayScoreState', e);
+    return null;
+  }
+}
+
 /** pronunciationLog 행들 → { 카드id: { 드릴문장: { count, avg } } }. beforeISO 이후(당일 포함) 기록은 뺀다. */
 export function summarizeDrillLog(rows, cardIds, beforeISO) {
   const want = new Set(cardIds ?? []);
