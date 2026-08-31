@@ -27,7 +27,7 @@ import { localISODate } from '../utils/today.js';
 import { applySrsUpdate } from '../services/srs.js';
 import { finishSession, flushLiveStats, clampSessionDuration } from '../services/sessionFinish.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog, loadDrillLog } from '../services/pronunciationLog.js';
+import { savePronunciationLog, loadDrillLog, loadScoreHistoryState } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { buildSummaryData, persistSummary } from '../services/summaryData.js';
 import { saveActiveSession, clearActiveSession, loadActiveSession, restoreFromSnapshot, touchActiveSession, finalizeStaleSnapshot } from '../services/activeSession.js';
@@ -38,6 +38,7 @@ import { createSceneHeader } from '../components/session/sceneHeader.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
+import { filterNearDupDrills } from '../components/session/applied.js';
 import { h } from '../components/d1/dom.js';
 import { hiFragment } from '../components/d1/shared.js';
 import { buildD1Side, buildD1Practice, buildD1ExplainRight, buildD1Judges, exprOf } from '../components/d1/sessionShell.js';
@@ -310,6 +311,16 @@ export function mountSessionReview(host) {
         // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
         try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
         catch { state.base = null; }
+      }
+      if (!restore) {
+        /* 과거 발화 점수 수화 (2026-08-31 사용자 결정) — 드릴 행 점수 원을 이력으로 채운다.
+         * recLog 는 수화하지 않는다 — 녹음 카운트·라벨·게이트가 과거 발화로 오염되면 안 된다.
+         * 복원(restore) 시엔 스냅샷 exLog 가 이미 수화분을 포함하므로 건너뛴다. */
+        try {
+          const hyd = await loadScoreHistoryState(window.studyDB, state.cards, getStoredLang(),
+            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+          if (hyd) state.exLog = hyd.exLog;
+        } catch { /* 수화 실패는 빈 이력으로 진행 */ }
       }
       // 문장별 연습 이력 (§7.4② 월 캘린더 · §7.3 빈 슬롯) — pronunciationLog 를 sentenceId×날짜로 묶는다.
       // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.

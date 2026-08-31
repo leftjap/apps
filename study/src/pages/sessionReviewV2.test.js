@@ -395,11 +395,12 @@ describe('sessionReviewV2 v3 — 점수 원 · 문장별 캘린더 · 자기평�
 
   it('점수 열 — 오늘 시도 원 + 직전 복습 시도 수까지의 빈 슬롯, 라벨은 숫자뿐', () => {
     const host = mountCard({ interval: 3, state: { sentLog: SENT_LOG } });
-    // 오늘 기록이 없으면 점수 원 0개 + 직전 연습일(8/18) 5회만큼 빈 슬롯
-    const dots = host.querySelectorAll('.vr-meta .v-dot');
-    expect(dots.length).toBeGreaterThan(0);
-    expect([...dots].every((d) => d.classList.contains('empty'))).toBe(true);
-    expect(host.querySelector('.vr-say').textContent).toBe('0 / 5'); // 직전 = 8/18 의 5회
+    // 과거 점수 표시 (2026-08-31 사용자 결정) — 이전 날들의 최근 5개 + 오늘 목표 빈 슬롯 5개
+    const dots = [...host.querySelectorAll('.vr-meta .v-dot')];
+    const filled = dots.filter((d) => !d.classList.contains('empty'));
+    expect(filled.map((d) => d.textContent)).toEqual(['81', '84', '88', '90', '91']); // 7건 중 최신 5
+    expect(dots.filter((d) => d.classList.contains('empty'))).toHaveLength(5);
+    expect(host.querySelector('.vr-say').textContent).toBe('0 / 5'); // 오늘 진행 카운트는 오늘 기준 유지
     expect(host.textContent).not.toContain('직전 5');                 // '직전' 라벨을 붙이지 않는다
   });
 
@@ -416,7 +417,8 @@ describe('sessionReviewV2 v3 — 점수 원 · 문장별 캘린더 · 자기평�
       expect(host.querySelectorAll('.vr-meta .v-dot.empty')).toHaveLength(5);
       host.querySelector('.vr-pill.pri').click();
       vi.advanceTimersByTime(1100);
-      expect(host.querySelectorAll('.vr-meta .v-dot')).toHaveLength(5);
+      // 과거 4개 + 오늘 1개(최근 5) + 빈 슬롯 4개 (2026-08-31 과거 표시)
+      expect([...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'))).toHaveLength(5);
       expect(host.querySelectorAll('.vr-meta .v-dot.empty')).toHaveLength(4);
       expect(host.querySelector('.vr-say').textContent).toBe('1 / 5');
     } finally { vi.useRealTimers(); }
@@ -628,15 +630,15 @@ describe('sessionReviewV2 — 오늘 시도 점수 원 지속', () => {
       vi.advanceTimersByTime(1100);
       expect(host.querySelectorAll('.vr-meta .v-dot').length).toBeGreaterThan(0);
       const shown = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
-      expect(shown).toHaveLength(1);
+      expect(shown).toHaveLength(3);   // 과거 2(70·72) + 오늘 1 (2026-08-31 과거 표시)
 
       // 재렌더 — 같은 state 로 다시 그려도 점수 원이 남아야 한다
       document.body.innerHTML = '<div id="root2"></div>';
       const host2 = document.getElementById('root2');
       renderSessionReviewV2(host2, state, {});
       const again = [...host2.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
-      expect(again).toHaveLength(1);
-      expect(again[0].textContent).toBe(shown[0].textContent);
+      expect(again).toHaveLength(3);
+      expect(again[2].textContent).toBe(shown[2].textContent);   // 오늘 점수는 마지막 원
     } finally { vi.useRealTimers(); }
   });
 });
@@ -849,5 +851,28 @@ describe('sessionReviewV2 — 투기적 선채점 배선', () => {
       autoStopSilenceMs: 1500,
       speculate: expect.objectContaining({ expected: EN }),
     }));
+  });
+});
+
+
+describe('sessionReviewV2 — 드릴 점수는 배열로 누적된다 (이력 보존)', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('수화된 과거 점수 위에 새 점수가 덧붙는다 — 스칼라 덮어쓰기 금지', async () => {
+    const exLog = { c1: { drills: { 0: [70] } } };   // 과거 이력 수화 형태
+    const DRILLS = [{ en: 'Drill one.', kr: '', ko: '드릴' }];
+    const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS, drills: DRILLS };
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 3, explanation };
+    const state = { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00',
+      recLog: {}, tried: 0, demo: false, micBlocked: false, exLog };
+    renderSessionReviewV2(host, state, {});
+    const row = [...host.querySelectorAll('.vs-drow')][0];
+    expect(row.querySelector('.vs-gscore').textContent).toContain('70');   // 수화 이력 표시
+    row.querySelector('button[aria-label="녹음"]').click(); await tick();
+    row.querySelector('button[aria-label="녹음"]').click(); await tick(); await tick();
+    expect(exLog.c1.drills[0]).toEqual([70, 100]);   // 배열 누적 (엔진 100 = 에코 mock)
   });
 });

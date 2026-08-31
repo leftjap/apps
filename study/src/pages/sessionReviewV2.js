@@ -26,7 +26,7 @@ import { judgeRecording } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores } from './sessionExprV2.js';
 import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
@@ -479,7 +479,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
     h('div', { style: 'margin-top:4px;' }, drillRows(drills, expr, lang, (i, result) => {
       if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(recordedDrills.size); }
-      (cardEx.drills ??= {})[i] = Math.round(Number(result?.score) || 0); // 행 점수 영속화
+      // 배열 누적 (2026-08-31) — 스칼라 덮어쓰기는 수화된 과거 이력을 지웠다. normScores 가 구형 스칼라도 흡수.
+      const dstore = (cardEx.drills ??= {});
+      dstore[i] = [...normScores(dstore[i]), Math.round(Number(result?.score) || 0)];
       // 세션 밖까지 남긴다 — 다음 복습의 '이전 N회 평균 M' 이 이 행에서 나온다 (2026-08-29).
       // 데모는 실 DB 에 쓰지 않는다 (신규 세션과 동일 격리 계약 — 2026-08-29 감사).
       if (!state.demo) {
@@ -530,9 +532,14 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
   const refreshDots = () => {
     const todayScores = dayScores[todayISO] || [];
+    /* 과거 발화 점수도 표시 (2026-08-31 사용자 결정 — "과거 기록이 학습에 도움") — 이전 날들의
+     * 점수를 앞에 두고 최신 5개만 그린다. '오늘 N / 직전 M'과 빈 슬롯(오늘 목표)은 오늘 기준 유지. */
+    const pastScores = Object.keys(dayScores).filter((d) => d < todayISO).sort()
+      .flatMap((d) => (Array.isArray(dayScores[d]) ? dayScores[d] : []));
+    const shown = [...pastScores, ...todayScores].slice(-5);
     const slots = Math.max(prevTries - todayScores.length, 0);
     dotsEl.replaceChildren(
-      ...todayScores.map((v, i) => scoreDot(v, { size: 30, fresh: i === todayScores.length - 1 })),
+      ...shown.map((v, i) => scoreDot(v, { size: 30, fresh: todayScores.length > 0 && i === shown.length - 1 })),
       ...Array.from({ length: slots }, () => emptyDot({ size: 30 })),
     );
     sayLine.textContent = prevTries > 0 ? `${todayScores.length} / ${prevTries}` : `${todayScores.length}회`;

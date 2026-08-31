@@ -20,6 +20,7 @@ import { scoreForDisplay } from '../services/deductionScore.js';
 import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
+const DRILL_DOTS_MAX = 8; // 드릴 행 점수 원 렌더 상한 (2026-08-31) — 26px 원 8개가 행 폭 한계. 데이터는 전체 보존
 /* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 셋이라 문구를 나눈다.
  * unclear = 음소 원시 점수만 바닥 (judgeRecording 경로 — 메인·응용 드릴 — 에선 내용 판정이 misread
  *           를 세우지 않은 경우. 체이닝·생산은 isTooUnclear 단독이라 내용은 묻지 않는다 — 통과 판정이
@@ -323,9 +324,10 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
     // saved[i] = 이 세션에서 이미 받은 점수들 (state.exLog 복원) — 재렌더에도 배지 유지.
     // 구 스냅샷은 숫자 1개로 저장돼 있다 (2026-08-21 형식) — 배열로 정규화해 읽는다.
+    // 렌더는 최근 DRILL_DOTS_MAX 개만 — 이력이 길어져도 행 폭을 지킨다 (2026-08-31, 데이터는 전체 보존)
     const hist = normScores(saved?.[i]);
     const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
-      hist.map((v, k) => scoreDot(v, { size: 26, fresh: false })));
+      hist.slice(-DRILL_DOTS_MAX).map((v, k) => scoreDot(v, { size: 26, fresh: false })));
     /* ja 드릴은 본문이 d.ja 다 (en 은 d.en). d.en 만 읽던 탓에 일본어 드릴이 본문 없이
      * 음차·뜻만 뜨고 TTS·채점 대상도 빈 문자열이었다 (2026-08-28 수정). */
     const target = d.ja || d.en || '';
@@ -396,7 +398,8 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
     /* 시도할 때마다 점수 원이 하나씩 붙는다 — 같은 문장을 여러 번 말한 흔적이 곧 기록이다. */
     function pushScore(raw) {
       hist.push(Math.round(Number(raw) || 0));
-      scoreEl.replaceChildren(...hist.map((v, k) => scoreDot(v, { size: 26, fresh: k === hist.length - 1 })));
+      const shown = hist.slice(-DRILL_DOTS_MAX);
+      scoreEl.replaceChildren(...shown.map((v, k) => scoreDot(v, { size: 26, fresh: k === shown.length - 1 })));
       scoreEl.style.display = '';
       popScore(scoreEl);
     }

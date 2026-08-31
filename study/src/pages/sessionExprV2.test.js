@@ -1499,3 +1499,22 @@ describe('sessionExprV2 — 드릴·체이닝·생산 선채점 배선', () => {
     }));
   });
 });
+
+
+/* 점수 원 이력 상한 (2026-08-31 사용자 결정 — "일정 숫자가 넘어가면 최신순") — 메인은 기존
+ * 최근 5개 규약 유지, 드릴 행은 최근 8개(26px 원 8개가 데스크톱 행 폭 실측 한계). '총 N회'류
+ * 카운트는 전체 이력을 유지한다. */
+describe('sessionExprV2 — 드릴 점수 원은 최근 8개만 렌더', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('저장 이력 10개 → 원 8개(최신 8), 이력 3개 → 3개', () => {
+    const rows = drillRows([{ en: 'Take it easy.', ko: '무리하지 마.' }], '', 'en', () => {}, false,
+      { saved: { 0: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20] } });
+    const host = document.createElement('div'); document.body.appendChild(host);
+    rows.forEach((r) => host.appendChild(r));
+    const dots = host.querySelectorAll('.vs-gscore .v-dot');
+    expect(dots).toHaveLength(8);
+    expect(dots[0].textContent).toBe('13');   // 오래된 11·12 는 탈락
+    expect(dots[7].textContent).toBe('20');
+  });
+});

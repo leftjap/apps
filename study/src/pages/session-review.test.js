@@ -124,6 +124,24 @@ describe('session-review — 새로고침 복원 (스냅샷 cards 정본)', () =
     expect(window.studyDB._meta.get('activeSession').value.todayISO).toBe(TODAY);
   });
 
+  it('과거 발화 점수 이력이 복습 진입에 보인다 — pronunciationLog 수화 (표시용 exLog 만, recLog 미수화)', async () => {
+    // 2026-08-31 사용자 결정 — "복습에서도 과거 점수 기록이 학습에 도움". 게이트(recLog)는 오염 금지.
+    const CARD_D = { ...CARD('c1', 'One two.', '뜻하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴' }] } };
+    window.studyDB = fakeDB({});
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'c1', lang: 'en', date: '2026-08-29', overallScore: 81, createdAt: '2026-08-29T01:00:00Z' },
+      { sentenceId: 'c1', lang: 'en', date: '2026-08-30', overallScore: 87, createdAt: '2026-08-30T01:00:00Z' },
+      { sentenceId: 'c1#drill#Drill one.', lang: 'en', date: '2026-08-30', overallScore: 77, createdAt: '2026-08-30T01:01:00Z' },
+    ] }) }) };
+    loadReviewCards.mockResolvedValueOnce([CARD_D]);
+    const { host, cleanup } = mount();
+    await settle();
+    const dots = [...host.querySelectorAll('.vr-meta .v-dot')].filter((d) => !d.classList.contains('empty'));
+    expect(dots.map((d) => d.textContent)).toEqual(['81', '87']);   // 메인 과거 점수 원
+    expect(host.querySelector('.vs-gscore')?.textContent).toContain('77'); // 드릴 행 과거 점수 원
+    cleanup();
+  });
+
   it('로드 실패 시 기존 스냅샷을 빈 스냅샷으로 덮어쓰지 않는다 (§2-I) — 라이브 통계도 미기록', async () => {
     window.studyDB = fakeDB({ activeSession: SNAP() });
     loadReviewCards.mockRejectedValueOnce(new Error('DatabaseClosedError'));
