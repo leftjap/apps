@@ -59,7 +59,7 @@ export async function startMicRecording(opts = {}) {
    * 채점 시 정식 경로가 다시 시도하고, 캐시가 살아 있으면 즉시 반환이라 비용 0. */
   try { window.studySpeech.getAzureToken?.().catch(() => {}); } catch { /* noop */ }
   /* 투기적 선채점 (2026-08-29 오후, 사용자 결정) — 무음이 SPECULATE_SILENCE_MS 이어지면 그 시점의
-   * 오디오로 채점을 미리 시작해 hangover(2초) 대기와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와
+   * 오디오로 채점을 미리 시작해 hangover(1.5초 — 2026-08-31 인하) 대기와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와
    * 확정 오디오는 트림 후 동일 → 결과 동등. 말이 재개되면 무효화하고 stopAndAnalyze 가 재채점한다.
    * 종료 시점은 그대로라 문장 잘림 위험 0. F0 보호로 녹음당 최대 SPECULATE_MAX_FIRES 회. */
   const { speculate, ...rest } = opts;
@@ -104,7 +104,7 @@ export async function stopAndAnalyze(controller, expectedText, card, opts = {}) 
 }
 
 /* 채점 호출의 단일 조립점 — 정상 경로(_stopAndAnalyze)와 투기적 선채점이 같은 정규화·옵션을 쓴다. */
-const SPECULATE_SILENCE_MS = 900;
+const SPECULATE_SILENCE_MS = 700; // 2026-08-31 대기 1.5초 인하에 맞춰 0.9→0.7 — 종료(1.5s) 시점에 채점(~0.9s)이 끝나 있도록
 const SPECULATE_MAX_FIRES = 3;
 const SPECULATE_WAIT_MS = 3000; // 선채점 결과 대기 상한 — 초과 시 버리고 확정 채점 (예산 잠식 방지)
 async function analyzeBlob(blob, expectedText, card, { enableMiscue = false } = {}) {

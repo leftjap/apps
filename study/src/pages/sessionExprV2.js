@@ -367,8 +367,11 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       }
       if (recCtrl && recRow === row) { finishDrill(); return; }
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 메인 카드와 동일. 수동 멈추기도 유지.
-      // speculate — 무음 0.9초에 선채점 시작, hangover 2초와 겹쳐 점수 반환 단축 (sessionAnalyze 주석)
-      const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: target, card: { lang } }, onAutoStop: () => finishDrill() });
+      /* 무음 대기 1.5초 (2026-08-31 사용자 결정 — "대기를 멍하니 기다린다, 최대한 짧게").
+       * 7월 실사고(중간 쉼>1.2초 잘림→8점 오기록, 0120130)로 2.0초였으나, 지금은 판정 게이트가
+       * 잘린 녹음(단어 누락+저점)을 기록 전에 차단해 최악이 '오점수'가 아니라 '재시도 안내'다.
+       * 하한 1.2초 위는 유지. 선채점(무음 0.7초 시작)이 종료 시점에 점수를 준비해 둔다. */
+      const r = await startMicRecording({ autoStopSilenceMs: 1500, speculate: { expected: target, card: { lang } }, onAutoStop: () => finishDrill() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -497,7 +500,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
         return;
       }
       if (recCtrl && recRow === row) { finish(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: step.text, card }, onAutoStop: () => finish() });
+      const r = await startMicRecording({ autoStopSilenceMs: 1500, speculate: { expected: step.text, card }, onAutoStop: () => finish() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -620,7 +623,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
         return;
       }
       if (recCtrl && recRow === row) { finish(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: d.en, card }, onAutoStop: () => finish() });
+      const r = await startMicRecording({ autoStopSilenceMs: 1500, speculate: { expected: d.en, card }, onAutoStop: () => finish() });
       if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
       recCtrl = r.controller; recRow = row;
       row.classList.add('recing'); recBtn.classList.add('recing');
@@ -900,7 +903,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
       // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
-      const rec = await startMicRecording({ autoStopSilenceMs: 2000, speculate: { expected: s.sentence, card: s }, onAutoStop: () => { finishRecording(); } });
+      const rec = await startMicRecording({ autoStopSilenceMs: 1500, speculate: { expected: s.sentence, card: s }, onAutoStop: () => { finishRecording(); } });
       if (rec.error) {
         state.recording = false; recCtrl = null; state.micBlocked = true;
         setRecVisual(false);

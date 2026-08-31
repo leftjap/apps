@@ -1448,7 +1448,7 @@ describe('sessionExprV2 — 투기적 선채점 배선', () => {
     renderSessionExprV2(host, makeState(), {});
     host.querySelector('.vs-pill.pri').click(); await tick();
     expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
-      autoStopSilenceMs: 2000,
+      autoStopSilenceMs: 1500,
       speculate: expect.objectContaining({ expected: 'Is that a promise?' }),
     }));
   });
@@ -1466,7 +1466,7 @@ describe('sessionExprV2 — 드릴·체이닝·생산 선채점 배선', () => {
     [...host.querySelectorAll('.vs-drills-list .vs-drow')][0].querySelector('button[aria-label="녹음"]').click();
     await tick();
     expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
-      autoStopSilenceMs: 2000,
+      autoStopSilenceMs: 1500,
       speculate: expect.objectContaining({ expected: expect.stringContaining('more than a') }),
     }));
   });
