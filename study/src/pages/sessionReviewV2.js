@@ -623,9 +623,9 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     }
     if (!state.recording) {
       state.recording = true; setRecVisual(true);
-      // 말 끝나면(발화 후 1.2초 무음) 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
-      // 무음 대기 1.5초 + 선채점 0.7초 — 신규 카드와 동일 계약 (sessionExprV2 주석 참조, 2026-08-31)
-      const rec = await startMicRecording({ autoStopSilenceMs: 1500, speculate: { expected: s.sentence, card: s }, onAutoStop: () => { finishRecording(); } });
+      // 말 끝나면 자동 종료 — 듣기처럼 손 안 대도 마무리. 수동 멈추기도 유지.
+      // 무음 대기 1.4초 + 선채점 0.5초 + 전 단어 확인 시 조기 종결 — 신규 카드와 동일 계약 (sessionExprV2 주석 참조, 2026-09-01)
+      const rec = await startMicRecording({ autoStopSilenceMs: 1400, speculate: { expected: s.sentence, card: s }, onAutoStop: () => { finishRecording(); } });
       // 마이크 불가 — 정답을 열지 않는다. 해설을 펼치면 공개되므로 막다른 길이 아니다.
       if (rec.error) { state.recording = false; recCtrl = null; state.micBlocked = true; setRecVisual(false); showRecordToast(recordErrorMessage(rec.error)); return; }
       recCtrl = rec.controller;

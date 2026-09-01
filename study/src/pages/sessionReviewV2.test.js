@@ -848,7 +848,7 @@ describe('sessionReviewV2 — 투기적 선채점 배선', () => {
     const host = mountCard({ interval: 3 });
     host.querySelector('.vr-pill.pri').click(); await tick();
     expect(startMicRecording).toHaveBeenCalledWith(expect.objectContaining({
-      autoStopSilenceMs: 1500,
+      autoStopSilenceMs: 1400,
       speculate: expect.objectContaining({ expected: EN }),
     }));
   });

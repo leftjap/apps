@@ -190,8 +190,8 @@ describe('startMicRecording — Azure 토큰 선발급', () => {
   });
 });
 
-/* 투기적 선채점 (2026-08-29 오후, 사용자 결정) — 무음 0.9초 시점에 채점을 미리 시작해 hangover
- * 2초와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와 확정 오디오는 트림 후 동일 → 결과 동등. */
+/* 투기적 선채점 (2026-08-29 오후, 사용자 결정) — 무음 0.5초 시점에 채점을 미리 시작해 hangover
+ * 1.4초와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와 확정 오디오는 트림 후 동일 → 결과 동등. */
 describe('startMicRecording/stopAndAnalyze — 투기적 선채점', () => {
   beforeEach(() => { delete globalThis.window; });
   afterEach(() => { delete globalThis.window; });
@@ -218,7 +218,7 @@ describe('startMicRecording/stopAndAnalyze — 투기적 선채점', () => {
   it('무효화 없이 끝나면 선채점 결과를 그대로 쓴다 — 재채점 없음', async () => {
     const { recordWav, analyzeWavRest } = setupSpeech();
     const { controller } = await startMicRecording({ speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
-    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));      // 무음 0.9s — 선채점 시작
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));      // 무음 0.5s — 선채점 시작
     await new Promise((res) => setTimeout(res, 0));
     expect(analyzeWavRest).toHaveBeenCalledTimes(1);
     expect(analyzeWavRest.mock.calls[0][1]).toBe('Hello there');          // normalize 적용
@@ -283,5 +283,105 @@ describe('투기적 선채점 — 시간 예산·무장 해제', () => {
     recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));  // 버려진 세션의 VAD 신호
     expect(analyzeWavRest).not.toHaveBeenCalled();
     warn.mockRestore();
+  });
+});
+
+/* 선채점 조기 종결 (2026-09-01, 사용자 결정 "채점 시간은 최대한 짧게") — 선채점 결과가
+ * '전 단어 발화'(omissions 0)로 확인되면 남은 hangover(1.4초)를 기다리지 않고 controller.abort
+ * (비자발 종료, onAutoStop 통보 포함)로 즉시 종결한다. 호출부 finishRecording 이 그대로 돌고,
+ * stopAndAnalyze 는 이미 도착한 선채점 결과를 재사용한다. 단어를 빠뜨린 결과(문장 중간 쉼)는
+ * 걸리지 않아 대기 전액이 유지된다 — 잘림 위험 불변. */
+describe('startMicRecording — 선채점 조기 종결', () => {
+  beforeEach(() => { delete globalThis.window; });
+  afterEach(() => { delete globalThis.window; });
+
+  const flush = () => new Promise((res) => setTimeout(res, 0));
+  function deferred() {
+    let resolve;
+    const promise = new Promise((res) => { resolve = res; });
+    return { promise, resolve };
+  }
+  function setupSpeech(analyzeImpl) {
+    const ctrl = { stop: vi.fn(), abort: vi.fn(), blobPromise: Promise.resolve(new Blob([new ArrayBuffer(64)])) };
+    const recordWav = vi.fn(async (opts) => { recordWav.lastOpts = opts; return ctrl; });
+    const analyzeWavRest = vi.fn(analyzeImpl ?? (async () => ({ score: 92, omissions: [], insertions: [] })));
+    globalThis.window = { studySpeech: { recordWav, analyzeWavRest, getAzureToken: vi.fn(async () => ({})) } };
+    return { ctrl, recordWav };
+  }
+
+  it('선채점 결과가 전 단어 발화면 abort 로 즉시 종결한다 (en)', async () => {
+    const { ctrl, recordWav } = setupSpeech();
+    const r = await startMicRecording({ autoStopSilenceMs: 1400, speculate: { expected: 'What do you mean', card: { lang: 'en' } } });
+    expect(r.controller).toBe(ctrl);
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    await flush();
+    expect(ctrl.abort).toHaveBeenCalledTimes(1);
+  });
+
+  it('단어를 빠뜨린 선채점 결과로는 종결하지 않는다 (문장 중간 쉼 보호)', async () => {
+    const { ctrl, recordWav } = setupSpeech(async () => ({ score: 70, omissions: ['mean'], insertions: [] }));
+    await startMicRecording({ speculate: { expected: 'What do you mean', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    await flush();
+    expect(ctrl.abort).not.toHaveBeenCalled();
+  });
+
+  it('ja 카드는 조기 종결하지 않는다 (omission 판정 미실측 언어)', async () => {
+    const { ctrl, recordWav } = setupSpeech();
+    await startMicRecording({ speculate: { expected: 'ありがとうございます', card: { lang: 'ja' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    await flush();
+    expect(ctrl.abort).not.toHaveBeenCalled();
+  });
+
+  it('말 재개로 무효화되면 늦게 도착한 결과로 종결하지 않는다', async () => {
+    const d = deferred();
+    const { ctrl, recordWav } = setupSpeech(() => d.promise);
+    await startMicRecording({ speculate: { expected: 'What do you mean', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    recordWav.lastOpts.onSpeculateInvalid();
+    d.resolve({ score: 92, omissions: [], insertions: [] });
+    await flush();
+    expect(ctrl.abort).not.toHaveBeenCalled();
+  });
+
+  it('무효화 후 재발사되면 이전 발사의 늦은 결과로는 종결하지 않는다', async () => {
+    const d1 = deferred();
+    const d2 = deferred();
+    let calls = 0;
+    const { ctrl, recordWav } = setupSpeech(() => (++calls === 1 ? d1.promise : d2.promise));
+    await startMicRecording({ speculate: { expected: 'What do you mean', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    recordWav.lastOpts.onSpeculateInvalid();                          // 말 재개 — 1차 발사 무효
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(48)]));  // 2차 발사 (valid 재점등)
+    d1.resolve({ score: 92, omissions: [], insertions: [] });         // 1차의 늦은 결과 — 낡은 스냅샷
+    await flush();
+    expect(ctrl.abort).not.toHaveBeenCalled();
+    d2.resolve({ score: 95, omissions: [], insertions: [] });
+    await flush();
+    expect(ctrl.abort).toHaveBeenCalledTimes(1);
+  });
+
+  it('무효화 후 재발사되면 이전 발사의 늦은 실패가 새 발사를 무장 해제하지 않는다', async () => {
+    let rejectD1;
+    const d1 = new Promise((_res, rej) => { rejectD1 = rej; });
+    const d2 = deferred();
+    let calls = 0;
+    const { ctrl, recordWav } = setupSpeech(() => (++calls === 1 ? d1 : d2.promise));
+    await startMicRecording({ speculate: { expected: 'What do you mean', card: { lang: 'en' } } });
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
+    recordWav.lastOpts.onSpeculateInvalid();                          // 말 재개 — 1차 발사 무효
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(48)]));  // 2차 발사 (valid 재점등)
+    rejectD1(new Error('stall'));                                     // 1차의 늦은 실패 — 낡은 요청
+    await flush();
+    d2.resolve({ score: 95, omissions: [], insertions: [] });
+    await flush();
+    expect(ctrl.abort).toHaveBeenCalledTimes(1);                      // 2차의 조기 종결은 살아 있다
+  });
+
+  it('선채점 무음 임계를 0.5초로 배선한다', async () => {
+    const { recordWav } = setupSpeech();
+    await startMicRecording({ speculate: { expected: 'x', card: { lang: 'en' } } });
+    expect(recordWav.lastOpts.speculateSilenceMs).toBe(500);
   });
 });

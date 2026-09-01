@@ -9,7 +9,7 @@
  * referenceText 는 normalizeReferenceText 로 punctuation 제거 (Azure mismatch 회피).
  */
 
-import { normalizeReferenceText } from './speech.js';
+import { normalizeReferenceText, passesCoverage } from './speech.js';
 import { buildDiagnosticSample, recordDiagnostic } from './speechDiag.js';
 
 export function pickAnalyzeLang(card) {
@@ -59,22 +59,38 @@ export async function startMicRecording(opts = {}) {
    * 채점 시 정식 경로가 다시 시도하고, 캐시가 살아 있으면 즉시 반환이라 비용 0. */
   try { window.studySpeech.getAzureToken?.().catch(() => {}); } catch { /* noop */ }
   /* 투기적 선채점 (2026-08-29 오후, 사용자 결정) — 무음이 SPECULATE_SILENCE_MS 이어지면 그 시점의
-   * 오디오로 채점을 미리 시작해 hangover(1.5초 — 2026-08-31 인하) 대기와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와
+   * 오디오로 채점을 미리 시작해 hangover(1.4초 — 2026-09-01 인하) 대기와 겹친다. 꼬리 무음 트림 덕에 선채점 오디오와
    * 확정 오디오는 트림 후 동일 → 결과 동등. 말이 재개되면 무효화하고 stopAndAnalyze 가 재채점한다.
-   * 종료 시점은 그대로라 문장 잘림 위험 0. F0 보호로 녹음당 최대 SPECULATE_MAX_FIRES 회. */
+   * F0 보호로 녹음당 최대 SPECULATE_MAX_FIRES 회. */
   const { speculate, ...rest } = opts;
   const recOpts = { maxSeconds: 15, ...rest };
   let specState = null;
   if (speculate?.expected && window.studySpeech?.analyzeWavRest) {
-    specState = { promise: null, valid: false, fires: 0 };
+    specState = { promise: null, valid: false, fires: 0, ctrl: null };
+    /* 조기 종결 대상 언어 — ja 는 omission 판정이 미실측이라(공백 무분절, coverageJudge 의 ja 가드 참조)
+     * '전 단어 발화' 확인을 신뢰할 수 없다. en 만 조기 종결하고 ja 는 hangover 만으로 종결한다. */
+    const earlyStop = pickAnalyzeLang(speculate.card) !== 'ja-JP';
     recOpts.speculateSilenceMs = SPECULATE_SILENCE_MS;
     recOpts.onSpeculate = (blob) => {
       // disarmed — 시작 타임아웃으로 버려진 녹음의 VAD 가 유령 Azure 호출을 발사하지 못하게 (2026-08-30 감사)
       if (specState.disarmed || specState.fires >= SPECULATE_MAX_FIRES) return;
       specState.fires += 1;
       specState.valid = true;
-      specState.promise = analyzeBlob(blob, speculate.expected, speculate.card, { enableMiscue: true })
-        .catch(() => { specState.valid = false; return null; });
+      // 실패 무효화에도 promise 동일성 검사 — 낡은 발사의 늦은 실패가 새 발사를 무장 해제하면
+      // 멀쩡한 선채점 결과가 버려져 재채점된다 (2026-09-01 리뷰 지적).
+      const p = analyzeBlob(blob, speculate.expected, speculate.card, { enableMiscue: true })
+        .catch(() => { if (specState.promise === p) specState.valid = false; return null; });
+      specState.promise = p;
+      /* 조기 종결 (2026-09-01, 사용자 결정 "채점 시간은 최대한 짧게") — 결과가 '전 단어 발화'
+       * (omissions 0)로 확인되면 남은 hangover 를 기다리지 않고 abort(비자발 종료 통보)로 즉시
+       * 종결한다. 실측 RTT 0.5~0.8초(2026-09-01 koreacentral·Wi-Fi) 기준 발화 끝 → 점수 ~1.0~1.3초.
+       * 문장 중간 쉼엔 걸리지 않는다 — 부분 발화 실측 3종(2026-09-01, 2/4·3/4·4/7 단어)에서 Azure 가
+       * 미발화 단어를 전부 omission 으로 표시했고 전사도 말한 부분까지만 나왔다(레퍼런스 견인 없음).
+       * promise 동일성 검사 — 무효화 후 재발사 시, 이전 발사의 늦은 결과(낡은 스냅샷)로 종결하지 않는다. */
+      p.then((r) => {
+        if (specState.promise !== p || !specState.valid || specState.disarmed) return;
+        if (earlyStop && passesCoverage(r)) { try { specState.ctrl?.abort?.(); } catch { /* noop */ } }
+      });
     };
     recOpts.onSpeculateInvalid = () => { specState.valid = false; };
   }
@@ -86,7 +102,7 @@ export async function startMicRecording(opts = {}) {
       if (specState) { specState.disarmed = true; specState.valid = false; }
       return { error: 'timeout' };
     }
-    if (controller && specState) controller._speculative = specState;
+    if (controller && specState) { controller._speculative = specState; specState.ctrl = controller; }
     return { controller };
   } catch (e) {
     console.warn('[sessionAnalyze] recordWav 실패', e?.message ?? e);
@@ -104,7 +120,7 @@ export async function stopAndAnalyze(controller, expectedText, card, opts = {}) 
 }
 
 /* 채점 호출의 단일 조립점 — 정상 경로(_stopAndAnalyze)와 투기적 선채점이 같은 정규화·옵션을 쓴다. */
-const SPECULATE_SILENCE_MS = 700; // 2026-08-31 대기 1.5초 인하에 맞춰 0.9→0.7 — 종료(1.5s) 시점에 채점(~0.9s)이 끝나 있도록
+const SPECULATE_SILENCE_MS = 500; // 2026-09-01 조기 종결 도입에 맞춰 0.7→0.5 — 발화 끝 → 점수가 0.5s + RTT(실측 0.5~0.8s)
 const SPECULATE_MAX_FIRES = 3;
 const SPECULATE_WAIT_MS = 3000; // 선채점 결과 대기 상한 — 초과 시 버리고 확정 채점 (예산 잠식 방지)
 async function analyzeBlob(blob, expectedText, card, { enableMiscue = false } = {}) {
@@ -130,7 +146,7 @@ async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = 
   // 실패·mock 폴백이면 버리고 정상 경로로 재채점 — 안전망은 그대로다.
   // ⚠ 대기엔 독립 예산(SPECULATE_WAIT_MS)만 준다 (2026-08-30 감사) — 선채점이 스톨·지연 실패하면
   // 전체 25초 예산을 직렬로 잠식해, 복구 가능한 실패가 timeout 으로 악화되고 확정 채점이
-  // 시도조차 안 됐다. 선채점은 stop 보다 ~1.1초 먼저 출발했으니 정상이면 이 안에 끝난다.
+  // 시도조차 안 됐다. 선채점은 stop 보다 ~0.9초 먼저 출발했으니 정상이면 이 안에 끝난다.
   const spec = controller._speculative;
   let result = null;
   if (spec?.valid && spec.promise && enableMiscue === true) {
