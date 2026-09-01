@@ -161,6 +161,7 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     // 리빌 DOM — 점수 링 92 · 발화 점수 원 1개 · 총 1회 (점·콤보·PASS 칩은 폐기 §6.1)
     expect(host.querySelector('.vs-ring .cn').textContent).toBe('100');
     expect(host.querySelector('.vs-ring').classList.contains('score-pop')).toBe(true); // 점수 등장 애니
+    expect(host.querySelector('.vs-cap').textContent).toBe('방금 점수'); // 라이브 채점 직후에만 '방금'
     const dots = host.querySelectorAll('.vs-meta .v-dot');
     expect(dots).toHaveLength(1);
     expect(dots[0].textContent).toBe('100');

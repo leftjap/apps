@@ -202,6 +202,7 @@ export function mountSessionNew(host) {
       state.sentence = r.sentence || EMPTY_SENTENCE;
       state.recording = false;
       state.lastScore = restoreCardScore(state.exLog, state.sentence?.id); // 점수 안착 복원
+      state.lastScoreLive = false; // 안착 값은 '지난 점수' — 이 카드에서 새로 채점해야 '방금'
       rerender();
       saveSnapshot();
     },
@@ -214,6 +215,7 @@ export function mountSessionNew(host) {
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;
       state.recording = false;
       state.lastScore = restoreCardScore(state.exLog, state.sentence?.id); // 점수 안착 복원
+      state.lastScoreLive = false; // 안착 값은 '지난 점수' — 이 카드에서 새로 채점해야 '방금'
       rerender();
       saveSnapshot();
     },

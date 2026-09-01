@@ -149,6 +149,7 @@ describe('session-new — 미완료 세션 fresh 진입 수화', () => {
     expect(document.body.textContent).toContain('총 2회');
     expect(document.body.textContent).toContain('녹음 1 / 1');
     expect(document.querySelector('.vs-ring .cn')?.textContent).toBe('75');
+    expect(document.querySelector('.vs-cap')?.textContent).toBe('지난 점수'); // 수화된 값 — '방금'이 아니다
     cleanup();
   });
 
@@ -171,6 +172,7 @@ describe('session-new — 미완료 세션 fresh 진입 수화', () => {
     expect(document.body.textContent).toContain('녹음 1 / 1');              // 어제 드릴 녹음 이력
     expect(document.body.textContent).toContain('77');                     // 드릴 행 점수 원
     expect(document.querySelector('.vs-ring .cn')?.textContent).toBe('75'); // 링 = 이 카드 최신 메인 점수
+    expect(document.querySelector('.vs-cap')?.textContent).toBe('지난 점수'); // 수화된 값 — '방금'이 아니다
     // recLog 미수화 — 버튼 라벨·진행 게이트는 오늘 발화 전용 (복습 페이지와 같은 계약)
     expect(document.body.textContent).toContain('따라 말하기');
     expect(document.body.textContent).not.toContain('다시 말하기');

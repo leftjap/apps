@@ -812,7 +812,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const paintRing = () => {
     if (state.lastScore == null) { ringHost.replaceChildren(); return null; }
     const r = ringEl(state.lastScore);
-    ringHost.replaceChildren(r, h('span', { class: 'vs-cap' }, '방금 점수'));
+    /* 캡션 정확성 (2026-09-01 검토 지적) — 수화·복원으로 안착한 값은 '방금' 받은 점수가 아니다.
+     * lastScoreLive 는 이번 마운트에서 applyScore 가 실제로 채점했을 때만 참 (스냅샷 미저장 —
+     * 복원·카드 이동·수화 진입은 전부 '지난 점수'로 시작한다). */
+    ringHost.replaceChildren(r, h('span', { class: 'vs-cap' }, state.lastScoreLive ? '방금 점수' : '지난 점수'));
     return r;
   };
   paintRing();
@@ -875,7 +878,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   // 점수 → 리빌 적용 (state·DOM·애니). DB 쓰기는 실경로에서만 별도 호출. 데모 시뮬과 단일 출처 공유.
   function applyScore(score, weakPhonemes) {
-    state.lastScore = score; state.tried = (state.tried || 0) + 1;
+    state.lastScore = score; state.lastScoreLive = true; state.tried = (state.tried || 0) + 1;
     const passed = score >= PASS_THRESHOLD;
     if (passed) { state.passed = (state.passed || 0) + 1; state.combo = (state.combo || 0) + 1; } else { state.combo = 0; }
     if (!Array.isArray(state.pronScores)) state.pronScores = [];
