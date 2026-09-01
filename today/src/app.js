@@ -44,7 +44,9 @@ export function setRouterUser(userId) {
 export function showLogin() {
   document.body.dataset.authState = 'out';
   ensureLoginCard();
-  if (location.hash !== '#/login') location.hash = '#/login';
+  // replaceState — 히스토리 푸시 금지. 뒤로 항목이 생기면 iOS standalone 엣지 스와이프가
+  // 이전 항목 스냅샷(부팅 중 로딩 화면 비트맵)을 그림 (2026-09-01 실기기 3단 비침 재발 원인).
+  if (location.hash !== '#/login') history.replaceState(null, '', '#/login');
   hideInitialLoadingScreen();
   mountDiag(storageKey).catch(() => {});
 }
@@ -71,7 +73,10 @@ export function showAuthenticated() {
   const kindRaw = raw.split('/')[0];
   try {
     if (!ROUTES.includes(kindRaw)) {
-      location.hash = `#/${DEFAULT_ROUTE}`;
+      // replaceState + 직접 sync — location.hash 대입(푸시)은 뒤로 항목을 만들어 iOS standalone
+      // 엣지 스와이프에 로딩 화면 스냅샷이 비침. replaceState 는 hashchange 미발화라 직접 호출.
+      history.replaceState(null, '', `#/${DEFAULT_ROUTE}`);
+      syncFromHash();
     } else {
       syncFromHash();
     }
@@ -197,13 +202,12 @@ function syncFromHash() {
   const hasDeepLink = parts.length >= 2 && WRITING_KINDS.includes(kind);
 
   // 카테고리 hash 정규화 (kindRaw 미정의 ↔ 빈값) — deep link suffix 보존.
+  // replaceState (푸시 금지 — 위 showLogin 주석) + 재진입 없이 아래에서 계속 처리
+  // (기존 location.hash 대입은 hashchange 재진입에 의존했음).
   if (!kindRaw || kindRaw !== kind) {
     const suffix = parts.slice(1).join('/');
     const target = suffix ? `#/${kind}/${suffix}` : `#/${kind}`;
-    if (location.hash !== target) {
-      location.hash = target;
-      return;
-    }
+    if (location.hash !== target) history.replaceState(null, '', target);
   }
 
   // 1) 카테고리 사이드바 active 동기화 (mocks IIFE 가 list/feed 화면 렌더)

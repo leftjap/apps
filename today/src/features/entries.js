@@ -2406,7 +2406,10 @@ function installCategoryClickHandler() {
     // isTrusted=false → hash 변경 skip — deep link URL 보존.
     if (e.isTrusted) {
       const target = `#/${kind}`;
-      if (location.hash !== target) location.hash = target;
+      // replaceState — 클릭마다 히스토리가 쌓이면 iOS standalone 엣지 스와이프가 뒤로 전환을
+      // 시작해 이전 스냅샷이 비침 (app.js showLogin 주석). 기존 hashchange 경로는 이미 active
+      // 라 no-op 이었므로 미발화로 인한 동작 변화 없음.
+      if (location.hash !== target) history.replaceState(null, '', target);
     }
     // mocks IIFE setCategory 가 동기로 FIXTURE 그림 → 다음 task 에서 SPA 가 진짜 데이터로 덮어씀.
     setTimeout(() => {

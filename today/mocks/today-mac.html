@@ -5691,7 +5691,8 @@
         setOpen(false);
         if (action === 'admin') {
           // setCategory 가 다른 IIFE 의 private — admin sb__item (display:none) click 으로 트리거.
-          if (location.hash !== '#/admin') location.hash = '#/admin';
+          // replaceState — 히스토리 푸시 금지 (app.js showLogin 주석). 라우팅은 아래 click 이 수행.
+          if (location.hash !== '#/admin') history.replaceState(null, '', '#/admin');
           document.querySelector('.sb__item[data-category="admin"]')?.click();
         }
       });
