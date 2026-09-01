@@ -17,6 +17,11 @@ enum RTAppWiring {
             }
         }
 
+        // 밀리 편입 직후 알라딘 ISBN 매칭 (iOS 앱과 동일 배선 — 실패 시 밀리 키로 운영)
+        model.onMillieAdopted = { [weak model] key in
+            Task { @MainActor in await model?.matchAdoptedMillieBook(key) }
+        }
+
         // 저장하기 → readingtime_daily 오늘치 upsert (로그인돼 있을 때만 실쓰기)
         model.onSessionSaved = { mode, seconds in
             Task {

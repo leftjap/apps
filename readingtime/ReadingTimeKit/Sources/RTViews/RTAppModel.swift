@@ -542,14 +542,19 @@ public final class RTAppModel: ObservableObject {
     }
 
     /// 알라딘 후보 중 밀리 책과 같은 책 고르기 — 정규화 제목 일치 + 저자 토큰 포함.
-    /// 저자를 모르면 제목 완전 일치만 인정한다(동명 책 오매칭 방지).
+    /// 알라딘은 부제를 "제목 - 부제" 로 붙이므로(실측 2026-09-01) 그 경계까지는 같은 책으로
+    /// 본다. 저자를 모르면 제목 일치만으로 인정한다(동명 책 오매칭 방지 — 부제 경계는 유지).
     static func bestMillieMatch(hits: [RTBookHit], title: String, author: String?) -> RTBookHit? {
         let t = normalizedMillieTitle(title)
+        func titleMatches(_ candidate: String) -> Bool {
+            let c = normalizedMillieTitle(candidate)
+            return c == t || c.hasPrefix(t + " - ")
+        }
         if let author {
             let a = normalizedMillieAuthor(author)
-            return hits.first { normalizedMillieTitle($0.title) == t && $0.author.contains(a) }
+            return hits.first { titleMatches($0.title) && $0.author.contains(a) }
         }
-        return hits.first { normalizedMillieTitle($0.title) == t }
+        return hits.first { titleMatches($0.title) }
     }
 
     /// 그날 밀리 시간의 책별 귀속 — 그날 책이 **정확히 1권**일 때만 그 책에 붙인다.
@@ -1161,6 +1166,8 @@ public final class RTAppModel: ObservableObject {
         case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
         case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
+        case "sel": selectedISBN = arg                           // 상세 대상 지정(검증 — nav:08 과 조합)
+        case "reread": rereadBook()                              // 다시 읽기(검증 — 밀리 미완독 상태 재현)
         case "finishEbook": finishEbook(arg)                     // 밀리 완독 처리(검증)
         case "demoCards":   // 홈 캐러셀 시드 — 종이책 2 + 밀리 2 (실표지·최근순 검증)
             finishedEbooks = [:]
@@ -1188,6 +1195,22 @@ public final class RTAppModel: ObservableObject {
                 "독학이라는 세계":
                     "https://image.millie.co.kr/service/cover/180153534/77b09fba84f14ed8967dcc48251988ff.jpg",
             ]
+            // 일별 히스토리 — 밀리 상세(편입 책)의 기록 행 재료. 오늘은 비워 둔다
+            // ('오늘 미기록' 캘린더 기대를 깨지 않게 — HomeRecordUITests).
+            let edf = DateFormatter()
+            edf.locale = Locale(identifier: "en_US_POSIX")
+            edf.dateFormat = "yyyy-MM-dd"
+            ebookDaily = [edf.string(from: ago(26)): 26 * 60,    // 어제
+                          edf.string(from: ago(50)): 40 * 60]    // 그제
+            ebookBooks = [edf.string(from: ago(26)): ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"],
+                          edf.string(from: ago(50)): ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"]]
+            // 서재 편입용 메타 (실데몬 book_millie_books 미러와 같은 형태)
+            millieMeta = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]":
+                RTMillieMeta(bookId: "4c17703240404997", author: "박민규", publisher: "한겨레출판",
+                             coverUrl: "https://img.millie.co.kr/200x/service/cover/179627237/6c18271ace30484f83644c87958de70b.jpg"),
+                          "독학이라는 세계":
+                RTMillieMeta(bookId: "dc5904c061df4a65", author: "시라토리 하루히코 지음 / 양필성 옮김",
+                             publisher: "클랩북스", coverUrl: nil)]
         case "demoMillieOnly":   // 완독 종이책 + 최근 밀리 1권(마지막 카드→빈 홈 전환 검증)
             let t = now()
             userData = RTUserData(books: [
