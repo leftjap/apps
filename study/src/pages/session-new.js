@@ -356,6 +356,21 @@ export function mountSessionNew(host) {
         // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
         try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
         catch { state.base = null; }
+        /* 과거 발화 점수 수화 (2026-09-01 실사용 보고: 어제 하다 만 세션을 '이어서 하기'로 열면
+         * 총 0회·녹음 0/N) — 자정 경계(위, 2026-08-29)가 스냅샷을 마감·폐기한 뒤의 fresh 진입은
+         * 수화가 재청취 분기에만 있어 화면이 0에서 시작했다. 기록은 pronunciationLog 에 전부
+         * 있으므로 화면(점수 원·드릴 점수·총 N회·녹음 N/M·링)만 재구성한다. 복습 페이지와 같은
+         * 계약: 표시용 exLog 만 수화하고, recLog(진행 게이트·버튼 라벨)는 오늘 발화 전용으로
+         * 남긴다 — 어제 녹음이 오늘 '다음 표현' 게이트를 미리 열면 안 된다. 통계(tried·passed·
+         * base)는 건드리지 않으므로 이중 계상 없음 (flushLiveStats 는 exLog 를 읽지 않는다). */
+        try {
+          const hyd = await loadScoreHistoryState(window.studyDB, cards, getStoredLang(),
+            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+          if (hyd) {
+            state.exLog = hyd.exLog;
+            state.lastScore = restoreCardScore(state.exLog, cards[0]?.id);
+          }
+        } catch { /* 수화 실패는 빈 화면으로 진행 */ }
       }
       // 씬 쉐도잉 진행 복원 (스냅샷 1시간 TTL 과 분리 — 다음날 재진입에도 유지)
       // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.

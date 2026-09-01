@@ -118,6 +118,38 @@ describe('session-new — mount 복원 계약', () => {
   });
 });
 
+/* 실사용 보고 (2026-09-01): 어제 하다 만 신규 세션을 오늘 '이어서 하기'로 열면 총 0회·녹음 0/N —
+ * 자정 경계(2026-08-29)가 스냅샷을 마감·폐기한 뒤의 fresh 진입에 수화가 없었다(재청취 분기 한정).
+ * 복습 페이지와 같은 계약: 표시용 exLog 만 수화, recLog(진행 게이트·버튼 라벨)는 오늘 발화 전용. */
+describe('session-new — 미완료 세션 fresh 진입 수화', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+
+  it('스냅샷 없이 진입해도 pronunciationLog 이력이 보인다 — exLog 만, recLog 미수화', async () => {
+    const CARDS = [
+      { ...NCARD('n1', 'One two.', '뜻하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴 하나' }] } },
+      NCARD('n2', 'Three four.', '뜻둘'),
+    ];
+    window.studyDB = fakeDB2({});
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'n1', lang: 'en', date: '2026-08-31', overallScore: 73, createdAt: '2026-08-31T01:00:00Z' },
+      { sentenceId: 'n1', lang: 'en', date: '2026-08-31', overallScore: 75, createdAt: '2026-08-31T01:01:00Z' },
+      { sentenceId: 'n1#drill#Drill one.', lang: 'en', date: '2026-08-31', overallScore: 77, createdAt: '2026-08-31T01:02:00Z' },
+    ] }) }) };
+    loadNewCards.mockResolvedValueOnce(CARDS);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('총 2회');                  // 어제 메인 발화 2회
+    expect(document.body.textContent).toContain('녹음 1 / 1');              // 어제 드릴 녹음 이력
+    expect(document.body.textContent).toContain('77');                     // 드릴 행 점수 원
+    expect(document.querySelector('.vs-ring .cn')?.textContent).toBe('75'); // 링 = 이 카드 최신 메인 점수
+    // recLog 미수화 — 버튼 라벨·진행 게이트는 오늘 발화 전용 (복습 페이지와 같은 계약)
+    expect(document.body.textContent).toContain('따라 말하기');
+    expect(document.body.textContent).not.toContain('다시 말하기');
+    cleanup();
+  });
+});
+
 /* 재청취(다시 듣기)도 화면 상태를 저장·복원한다 (2026-08-30 사용자 결정 — "다시 듣기에서도
  * 점수가 날아가면 안 된다"). mode 'replay' 스냅샷: finalizeStaleSnapshot 은 미지 모드라 기록을
  * 남기지 않고(이중집계 0), home '이어서 하기'(new|review 한정)에도 안 뜬다. 실세션 보호
