@@ -124,6 +124,34 @@ describe('session-new — mount 복원 계약', () => {
 describe('session-new — 미완료 세션 fresh 진입 수화', () => {
   beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
 
+  it('빈 exLog 스냅샷을 복원해도 이력이 보인다 — 수화 병합 (실보고 2차: 배포 전 스냅샷이 0 을 고정)', async () => {
+    /* 2026-09-01 2차 보고: fresh 분기 수화 배포 후에도 0 — 배포 전 진입이 만든 '빈 exLog' 오늘자
+     * 스냅샷이 TTL(1시간) 안의 재진입마다 복원 분기로 살아나, fresh 분기의 수화가 영영 안 돌았다.
+     * 복원 시에도 전체 이력을 카드 단위로 병합한다 (스냅샷 exLog 는 영속분의 부분집합). */
+    const CARDS = [
+      { ...NCARD('n1', 'One two.', '뜻하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴 하나' }] } },
+      NCARD('n2', 'Three four.', '뜻둘'),
+    ];
+    window.studyDB = fakeDB2({ activeSession: { key: 'activeSession', value: {
+      mode: 'new', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 30, base: null,
+      step: 1, tried: 0, passed: 0, lastScore: null, pronScores: [], weakInSession: {},
+      recLog: {}, exLog: {}, cardIds: ['n1', 'n2'], cards: CARDS, savedAt: Date.now(),
+    } } });
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'n1', lang: 'en', date: '2026-08-31', overallScore: 73, createdAt: '2026-08-31T01:00:00Z' },
+      { sentenceId: 'n1', lang: 'en', date: '2026-08-31', overallScore: 75, createdAt: '2026-08-31T01:01:00Z' },
+      { sentenceId: 'n1#drill#Drill one.', lang: 'en', date: '2026-08-31', overallScore: 77, createdAt: '2026-08-31T01:02:00Z' },
+    ] }) }) };
+    loadNewCards.mockResolvedValueOnce(CARDS);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('총 2회');
+    expect(document.body.textContent).toContain('녹음 1 / 1');
+    expect(document.querySelector('.vs-ring .cn')?.textContent).toBe('75');
+    cleanup();
+  });
+
   it('스냅샷 없이 진입해도 pronunciationLog 이력이 보인다 — exLog 만, recLog 미수화', async () => {
     const CARDS = [
       { ...NCARD('n1', 'One two.', '뜻하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴 하나' }] } },

@@ -346,6 +346,16 @@ export function mountSessionNew(host) {
         const list = restore.cards ?? cards;
         const idx = Math.max(0, Math.min(restore.step - 1, list.length - 1));
         state.sentence = pickCardFields(list[idx]) || EMPTY_SENTENCE;
+        /* 복원 시에도 수화 병합 (2026-09-01 실보고 2차: fresh 분기 수화 배포 후에도 0) —
+         * 배포 전 진입이 만든 '빈 exLog' 오늘자 스냅샷이 TTL(1시간) 안의 재진입마다 복원 분기로
+         * 되살아나, fresh 분기의 수화가 영영 돌지 않았다. 발화는 저장 시점에 pronunciationLog 로
+         * 즉시 영속되므로 스냅샷 exLog 는 전체 이력의 부분집합이다 — 카드 단위로 이력이 덮고,
+         * 이력에 없는 카드만 스냅샷 값이 남는다. recLog(게이트)·tried·passed 는 세션 전용 그대로. */
+        try {
+          const hyd = await loadScoreHistoryState(window.studyDB, list, getStoredLang(),
+            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+          if (hyd) state.exLog = { ...state.exLog, ...hyd.exLog };
+        } catch { /* 수화 실패는 스냅샷 상태로 진행 */ }
         // 링은 '이 카드의 방금 점수' — 세션 전역 lastScore 는 다른 카드 점수일 수 있다 (조사 §1).
         state.lastScore = restoreCardScore(state.exLog, list[idx]?.id);
       } else {
