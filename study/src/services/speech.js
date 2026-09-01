@@ -803,7 +803,8 @@ export function contractedReference(text) {
   const src = String(text || '');
   let out = src;
   for (const [from, to] of CONTRACTIONS) {
-    out = out.replace(new RegExp(`\\b${from.replace(/'/g, "['\u2019]")}\\b`, 'gi'), (m) => (
+    // \uc544\ud3ec\uc2a4\ud2b8\ub85c\ud53c\ub294 \uc120\ud0dd(?) \u2014 \ub77c\uc774\ube0c \uacbd\ub85c\ub294 normalizeReferenceText \uac00 \uc81c\uac70\ud55c \ub4a4\ub77c "dont you" \ub85c \uc628\ub2e4.
+    out = out.replace(new RegExp(`\\b${from.replace(/'/g, "['\u2019]?")}\\b`, 'gi'), (m) => (
       m[0] === m[0].toUpperCase() ? to[0].toUpperCase() + to.slice(1) : to
     ));
   }
@@ -1187,7 +1188,8 @@ export async function recordWav({
     });
 
     if (gotChunk || !wasWarm || attempt === 1) {
-      return { stop, blobPromise };
+      // abort = 비자발 종료(무음 자동종료와 같은 경로, onAutoStop 통보 포함) — 선채점 조기 종결이 사용.
+      return { stop, abort: endInvoluntary, blobPromise };
     }
     // 워밍 재사용인데 무신호 — 이 attempt 는 조용히 폐기 (controller 미반환 상태) 후 재생성.
     _dbg('워밍 파이프라인 무신호 → 재생성 재시도', { attempt });
@@ -1276,6 +1278,11 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
     }
     let nbest = json.NBest?.[0];
     if (!nbest) return analyzeMock(expectedText, 'parse_fail');
+    /* 인식 텍스트는 사전 레퍼런스 응답에서 확정한다 (2026-09-01 실측) — PA 는 인식 Display 를
+     * 레퍼런스 철자로 끌어당긴다(같은 오디오가 축약 ref 에선 'Whaddaya mean?'). 채택 쪽 Display 를
+     * 실으면 원문 대조 커버리지(judgeCoverage)가 what·do·you 를 누락으로 오인해 감점제 점수가
+     * 13점으로 무너진다. 단어·음소는 채택 쪽, 전사는 사전 쪽 — 소비자가 원하는 근거가 서로 다르다. */
+    const recognizedText = nbest.Display || json.DisplayText || '';
     let usedContracted;
     if (altRes?.ok) {
       const altJson = await altRes.json().catch(() => null);
@@ -1315,7 +1322,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       // 축약형 레퍼런스 쪽이 채택됐을 때만 실린다 (진단용 — 어느 기준으로 채점됐는지).
       ...(usedContracted ? { contractedRef: usedContracted } : {}),
       captureRms: captureRms == null ? null : +captureRms.toFixed(4),
-      recognizedText: nbest.Display || json.DisplayText || '',
+      recognizedText,
       phonemeScores,
       weakPhonemes: [...weakSet],
       wordScores,

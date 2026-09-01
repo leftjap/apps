@@ -23,6 +23,15 @@ describe('buildPronunciationLog', () => {
     expect(typeof log.createdAt).toBe('string');
   });
 
+  it('contractedRef 영속 — 축약 레퍼런스 채택 여부의 명시 기록 (없으면 null)', () => {
+    const adopted = buildPronunciationLog({
+      result: { ...baseResult, contractedRef: 'Whaddaya mean' }, sentenceId: 'card_1', lang: 'en', date: '2026-09-01',
+    });
+    expect(adopted.contractedRef).toBe('Whaddaya mean');
+    const plain = buildPronunciationLog({ result: baseResult, sentenceId: 'card_1', lang: 'en', date: '2026-09-01' });
+    expect(plain.contractedRef).toBe(null);
+  });
+
   it('하위점수 + 캡처레벨 저장 (진단용 — Wave A.18.1)', () => {
     const result = {
       score: 92, accuracyScore: 92, pronScore: 65.4, fluencyScore: 45,

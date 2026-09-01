@@ -2289,6 +2289,21 @@ describe('sync — pullTable 이 pronunciationLog 의 로컬 전용 필드를 �
     expect(bulkPut.mock.calls[0][0][0].overallScore).toBe(90);   // 서버 값은 서버가 정본
   });
 
+  it('contractedRef(축약 채택 표식, 2026-09-01)도 이월된다', async () => {
+    const server = [{ id: 'p1', user_id: 'u1', lang: 'en', date: '2026-09-01', overall_score: 94, sentence_id: 'c1' }];
+    const fromMock = vi.fn(() => {
+      const b = { select: vi.fn(() => b), eq: vi.fn().mockResolvedValue({ data: server, error: null }) };
+      return b;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, TABLE_MAP } = await import('./sync.js');
+    const mapping = TABLE_MAP.find((m) => m.dexie === 'pronunciationLog');
+    const bulkPut = vi.fn().mockResolvedValue();
+    const bulkGet = vi.fn().mockResolvedValue([{ id: 'p1', contractedRef: 'Whaddaya mean' }]);
+    await pullTable(mapping, { pronunciationLog: { bulkPut, bulkGet } }, 'u1');
+    expect(bulkPut.mock.calls[0][0][0].contractedRef).toBe('Whaddaya mean');
+  });
+
   it('wordScores·omissions·insertions(감점 보정 원천, 2026-08-29 오후)도 이월된다', async () => {
     const server = [{ id: 'p1', user_id: 'u1', lang: 'en', date: '2026-08-29', overall_score: 90, sentence_id: 'c1' }];
     const fromMock = vi.fn(() => {

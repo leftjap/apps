@@ -42,6 +42,9 @@ export function buildPronunciationLog({ result, sentenceId, lang, date } = {}) {
     phonemeScores: Array.isArray(result.phonemeScores) ? result.phonemeScores : [],
     weakPhonemes: Array.isArray(result.weakPhonemes) ? result.weakPhonemes : [],
     recognizedText: result.recognizedText ?? null,
+    // 2026-09-01 — 축약 레퍼런스 채택 여부(analyzeWavRest 의 contractedRef). 로컬 전용 진단 —
+    // 어느 기준으로 채점됐는지를 행에서 직접 구별한다 (종전엔 wordScores 철자로만 간접 추적 가능했다).
+    contractedRef: result.contractedRef ?? null,
     createdAt: new Date().toISOString(),
   };
 }

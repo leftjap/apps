@@ -1034,6 +1034,23 @@ describe('recordWav — 캡처 라이브 게이트 + 워밍 마이크 pre-roll',
     await ctrl.blobPromise;
   });
 
+  it('컨트롤러 abort 는 blob 을 확정하고 onAutoStop 을 통보한다 (선채점 조기 종결 배선)', async () => {
+    const m = setupAudioMocks();
+    const { Speech } = await import('./speech.js');
+    let autoStops = 0;
+    const p = Speech.recordWav({ onAutoStop: () => { autoStops += 1; } });
+    await flush();
+    feedChunk(m.nodes[0]);
+    const ctrl = await p;
+    expect(typeof ctrl.abort).toBe('function');
+    ctrl.abort();
+    const blob = await ctrl.blobPromise;
+    expect(blob.size).toBeGreaterThan(44); // WAV 헤더 + 청크
+    expect(autoStops).toBe(1);
+    ctrl.abort(); // 이미 끝난 녹음 — 통보를 반복하지 않는다
+    expect(autoStops).toBe(1);
+  });
+
   it('첫 청크가 안 와도 2초 안전망으로 resolve (마이크 무신호 행 방지)', async () => {
     vi.useFakeTimers();
     try {
@@ -2102,6 +2119,13 @@ describe('speech — 축약 발화 채점 (contractedReference + 이중 채점)'
     expect(contractedReference('Did you eat yet')).toBe('Didja eat yet');
   });
 
+  it("아포스트로피가 정규화로 제거된 don't you 도 찾는다 (라이브 경로는 normalizeReferenceText 뒤)", async () => {
+    const { contractedReference } = await import('./speech.js');
+    expect(contractedReference('Dont you like it')).toBe('Doncha like it');        // 실경로 — 아포스트로피 제거 후
+    expect(contractedReference("Don't you like it")).toBe('Doncha like it');       // 원문 그대로
+    expect(contractedReference('Don’t you like it')).toBe('Doncha like it');  // 둥근 아포스트로피
+  });
+
   it('축약할 것이 없으면 null 을 돌려 추가 요청을 만들지 않는다', async () => {
     const { contractedReference } = await import('./speech.js');
     expect(contractedReference('You got it')).toBe(null);
@@ -2114,9 +2138,9 @@ describe('speech — 축약 발화 채점 (contractedReference + 이중 채점)'
     const b64 = headers?.['Pronunciation-Assessment'];
     return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)))).ReferenceText;
   };
-  const fixture = (acc, words) => ({
-    RecognitionStatus: 'Success', DisplayText: 'x',
-    NBest: [{ Lexical: 'x', Display: 'x', AccuracyScore: acc, FluencyScore: 100, PronScore: acc,
+  const fixture = (acc, words, display = 'x') => ({
+    RecognitionStatus: 'Success', DisplayText: display,
+    NBest: [{ Lexical: 'x', Display: display, AccuracyScore: acc, FluencyScore: 100, PronScore: acc,
       Words: words.map(([w, s]) => ({ Word: w, AccuracyScore: s, ErrorType: 'None', Phonemes: [] })) }],
   });
 
@@ -2150,6 +2174,34 @@ describe('speech — 축약 발화 채점 (contractedReference + 이중 채점)'
     // 채택한 쪽의 단어 점수가 실려야 취약 음소·감점 산정이 같은 근거를 본다
     expect(r.wordScores.map((w) => w.word)).toEqual(['whaddaya', 'mean']);
     expect(r.contractedRef).toBe('Whaddaya mean');
+  });
+
+  it('축약 레퍼런스를 채택해도 인식 텍스트는 사전 레퍼런스 응답을 유지한다', async () => {
+    /* 2026-09-01 실측: PA 는 인식 Display 를 레퍼런스 철자 쪽으로 끌어당긴다 (같은 오디오가
+     * 사전 ref 에선 'What do you mean?', 축약 ref 에선 'Whaddaya mean?'). 채택 쪽 Display 를
+     * recognizedText 로 실으면 원문 대조 커버리지가 what·do·you 를 누락으로 오인해
+     * 감점제 점수가 13점으로 무너진다 (computeDeductionScore 재현). 인식 텍스트는 사전 쪽을 쓴다. */
+    _fetchSpy.mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.includes('/functions/v1/azure-token')) {
+        return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (u.includes('.stt.speech.microsoft.com/')) {
+        const body = refOf(init?.headers).includes('Whaddaya')
+          ? fixture(94.0, [['whaddaya', 94], ['mean', 97]], 'Whaddaya mean?')
+          : fixture(82.0, [['what', 97], ['do', 80], ['you', 66], ['mean', 97]], 'What do you mean?');
+        return new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response('not found', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(new Blob([new ArrayBuffer(100)], { type: 'audio/wav' }),
+      'What do you mean', { lang: 'en-US' });
+    expect(r.score).toBe(94.0);
+    expect(r.contractedRef).toBe('Whaddaya mean');
+    expect(r.recognizedText).toBe('What do you mean?');
   });
 
   it('사전 발음이 더 높으면 그쪽을 쓴다 (또박또박 발화를 깎지 않는다)', async () => {
