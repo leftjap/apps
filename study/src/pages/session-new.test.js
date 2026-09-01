@@ -235,6 +235,33 @@ describe('session-new — 재청취(replay) 화면 상태 저장·복원', () =>
     cleanup();
   });
 
+  it('빈 exLog 재청취 스냅샷을 복원해도 이력이 보인다 — 분기 공통 수화 (고착 루프 차단)', async () => {
+    /* 신규 세션의 3연속 재발(재청취 fresh → 신규 fresh → 신규 restore)과 같은 계열의 잔여 구멍:
+     * 재청취 restore 분기도 수화 없이 스냅샷만 살렸다. 수화가 한 번 실패해 빈 스냅샷이 남으면
+     * TTL 안의 재진입마다 0 이 고착된다 — 분기 공통 수화가 매 진입 재시도로 자기 치유한다. */
+    const RD = [
+      { ...NCARD('r1', 'Replay one.', '재청취 하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴 하나' }] } },
+      NCARD('r2', 'Replay two.', '재청취 둘'),
+    ];
+    window.studyDB = fakeDB2({ activeSession: { key: 'activeSession', value: {
+      mode: 'replay', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 30,
+      base: null, step: 1, tried: 0, passed: 0, lastScore: null, pronScores: [], weakInSession: {},
+      recLog: {}, exLog: {}, cardIds: ['r1', 'r2'], cards: RD, savedAt: Date.now(),
+    } } });
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'r1', lang: 'en', date: '2026-08-31', overallScore: 88, createdAt: '2026-08-31T01:00:00Z' },
+      { sentenceId: 'r1', lang: 'en', date: '2026-08-31', overallScore: 92, createdAt: '2026-08-31T01:01:00Z' },
+    ] }) }) };
+    loadNewCards.mockResolvedValueOnce([]);
+    loadReplayCards.mockResolvedValueOnce(RD);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('총 2회');
+    expect(document.querySelector('.vs-ring .cn')?.textContent).toBe('92');
+    cleanup();
+  });
+
   it('재청취 재진입 시 스냅샷으로 화면이 복원된다 — 새로고침에도 점수·진행 유지', async () => {
     const snap = { key: 'activeSession', value: {
       mode: 'replay', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 30,

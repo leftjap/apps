@@ -298,6 +298,25 @@ export function mountSessionNew(host) {
         snap = null;
       }
       const restore = restoreFromSnapshot(snap, cards, 'new', getStoredLang());
+      /* 분기 공통 수화 (2026-09-01 3연속 재발 봉합) — 재청취 fresh → 신규 fresh → 신규 restore 가
+       * 수화를 하나씩 빠뜨려 "과거 점수가 0 으로 보이는" 같은 증상이 경로를 바꿔 반복됐다.
+       * 화면 점수(exLog)는 어느 분기로 들어와도 영속 이력(pronunciationLog)이 정본이므로,
+       * 분기별 개별 배선을 폐기하고 모든 진입 경로의 말미에서 무조건 병합한다. 스냅샷 exLog 는
+       * 영속분의 부분집합(발화마다 즉시 저장)이라 카드 단위로 이력이 덮고, 이력에 없는 카드만
+       * 스냅샷 값이 남는다. 수화가 한 번 실패해도 다음 진입이 다시 시도한다 — 빈 스냅샷이
+       * TTL(1시간) 안에서 0 을 고착하던 루프가 구조적으로 끊긴다.
+       * recLog(진행 게이트·버튼 라벨)는 세션 전용 — 재청취 첫 진입만 이력 카운트를 쓴다
+       * (2026-08-31 계약: 어제 녹음이 오늘 게이트를 미리 열면 안 된다). 통계(tried·passed·base)는
+       * 건드리지 않는다 (flushLiveStats 는 exLog 를 읽지 않는다 — 이중 계상 0). */
+      async function hydrateScores(list, { withRecLog = false } = {}) {
+        try {
+          const hyd = await loadScoreHistoryState(window.studyDB, list, getStoredLang(),
+            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+          if (!hyd) return;
+          state.exLog = { ...state.exLog, ...hyd.exLog };
+          if (withRecLog) state.recLog = hyd.recLog;
+        } catch { /* 수화 실패 — 다음 진입에서 재시도 */ }
+      }
       // 전부 완료(미완료 신규 0) → '다시 듣기': 최신 완료 그룹을 읽기전용 replay 로 로드.
       // (loadNewCards 가 빈 배열일 때만 — home done 상태 '다시 듣기' 진입 = 빈 세션·버튼 먹통 버그 수정)
       // 단 복원 가능한 스냅샷이 있으면 세션 계속이 우선 — sync pull 이 세션 중 목록을 비워도 파기 금지.
@@ -316,21 +335,14 @@ export function mountSessionNew(host) {
             Object.assign(state, restoreReplay);
             startTime = restoreReplay.startTime;
             activeTimer.restore(restoreReplay.activeSec);
-          } else {
-            /* 과거 발화 점수 수화 (2026-08-31 사용자 결정) — 재청취 첫 진입은 pronunciationLog 전체
-             * 이력으로 화면(점수 원·드릴 점수·총 N회)을 재구성한다. 렌더가 최신 N개만 그린다.
-             * 스냅샷이 있으면 그쪽이 우선(수화분 + 재청취 중 진행 포함). */
-            try {
-              const hyd = await loadScoreHistoryState(window.studyDB, replay, getStoredLang(),
-                (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
-              if (hyd) { state.exLog = hyd.exLog; state.recLog = hyd.recLog; }
-            } catch { /* 수화 실패는 빈 화면으로 진행 */ }
           }
           const list = restoreReplay?.cards ?? replay;
           const idx = Math.max(0, Math.min((restoreReplay?.step ?? 1) - 1, list.length - 1));
           state.cards = list;
           state.total = list.length;
           state.sentence = pickCardFields(list[idx]) || EMPTY_SENTENCE;
+          // 분기 공통 수화 (위 hydrateScores 주석) — 재청취 첫 진입만 recLog 도 이력 카운트를 쓴다.
+          await hydrateScores(list, { withRecLog: !restoreReplay });
           state.lastScore = restoreCardScore(state.exLog, list[idx]?.id);
           const sc = list.find((c) => Array.isArray(c.explanation?.dialogue));
           if (sc) { try { state.shadowed = await getSceneShadow(window.studyDB, sc.id); } catch { /* noop */ } }
@@ -348,18 +360,6 @@ export function mountSessionNew(host) {
         const list = restore.cards ?? cards;
         const idx = Math.max(0, Math.min(restore.step - 1, list.length - 1));
         state.sentence = pickCardFields(list[idx]) || EMPTY_SENTENCE;
-        /* 복원 시에도 수화 병합 (2026-09-01 실보고 2차: fresh 분기 수화 배포 후에도 0) —
-         * 배포 전 진입이 만든 '빈 exLog' 오늘자 스냅샷이 TTL(1시간) 안의 재진입마다 복원 분기로
-         * 되살아나, fresh 분기의 수화가 영영 돌지 않았다. 발화는 저장 시점에 pronunciationLog 로
-         * 즉시 영속되므로 스냅샷 exLog 는 전체 이력의 부분집합이다 — 카드 단위로 이력이 덮고,
-         * 이력에 없는 카드만 스냅샷 값이 남는다. recLog(게이트)·tried·passed 는 세션 전용 그대로. */
-        try {
-          const hyd = await loadScoreHistoryState(window.studyDB, list, getStoredLang(),
-            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
-          if (hyd) state.exLog = { ...state.exLog, ...hyd.exLog };
-        } catch { /* 수화 실패는 스냅샷 상태로 진행 */ }
-        // 링은 '이 카드의 방금 점수' — 세션 전역 lastScore 는 다른 카드 점수일 수 있다 (조사 §1).
-        state.lastScore = restoreCardScore(state.exLog, list[idx]?.id);
       } else {
         state.step = cards.length === 0 ? 0 : 1;
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
@@ -368,22 +368,11 @@ export function mountSessionNew(host) {
         // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
         try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
         catch { state.base = null; }
-        /* 과거 발화 점수 수화 (2026-09-01 실사용 보고: 어제 하다 만 세션을 '이어서 하기'로 열면
-         * 총 0회·녹음 0/N) — 자정 경계(위, 2026-08-29)가 스냅샷을 마감·폐기한 뒤의 fresh 진입은
-         * 수화가 재청취 분기에만 있어 화면이 0에서 시작했다. 기록은 pronunciationLog 에 전부
-         * 있으므로 화면(점수 원·드릴 점수·총 N회·녹음 N/M·링)만 재구성한다. 복습 페이지와 같은
-         * 계약: 표시용 exLog 만 수화하고, recLog(진행 게이트·버튼 라벨)는 오늘 발화 전용으로
-         * 남긴다 — 어제 녹음이 오늘 '다음 표현' 게이트를 미리 열면 안 된다. 통계(tried·passed·
-         * base)는 건드리지 않으므로 이중 계상 없음 (flushLiveStats 는 exLog 를 읽지 않는다). */
-        try {
-          const hyd = await loadScoreHistoryState(window.studyDB, cards, getStoredLang(),
-            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
-          if (hyd) {
-            state.exLog = hyd.exLog;
-            state.lastScore = restoreCardScore(state.exLog, cards[0]?.id);
-          }
-        } catch { /* 수화 실패는 빈 화면으로 진행 */ }
       }
+      // 분기 공통 수화 (위 hydrateScores 주석 — 복원·신규 어느 쪽이든 이력이 화면 점수의 정본)
+      await hydrateScores(state.cards);
+      // 링 안착 — '이 카드'의 마지막 점수. 세션 전역 lastScore 는 다른 카드 것일 수 있다 (조사 §1).
+      state.lastScore = restoreCardScore(state.exLog, state.sentence?.id);
       // 씬 쉐도잉 진행 복원 (스냅샷 1시간 TTL 과 분리 — 다음날 재진입에도 유지)
       // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.
       const scene = state.cards.find((c) => Array.isArray(c.explanation?.dialogue));

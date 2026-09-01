@@ -312,16 +312,17 @@ export function mountSessionReview(host) {
         try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
         catch { state.base = null; }
       }
-      if (!restore) {
-        /* 과거 발화 점수 수화 (2026-08-31 사용자 결정) — 드릴 행 점수 원을 이력으로 채운다.
-         * recLog 는 수화하지 않는다 — 녹음 카운트·라벨·게이트가 과거 발화로 오염되면 안 된다.
-         * 복원(restore) 시엔 스냅샷 exLog 가 이미 수화분을 포함하므로 건너뛴다. */
-        try {
-          const hyd = await loadScoreHistoryState(window.studyDB, state.cards, getStoredLang(),
-            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
-          if (hyd) state.exLog = hyd.exLog;
-        } catch { /* 수화 실패는 빈 이력으로 진행 */ }
-      }
+      /* 분기 공통 수화 (2026-08-31 사용자 결정, 2026-09-01 복원 분기까지 확장) — 드릴 행 점수 원을
+       * 이력으로 채운다. 종전엔 "복원 스냅샷은 수화분을 이미 포함한다"는 전제로 !restore 에서만
+       * 수화했는데, 수화가 한 번 실패한 빈 스냅샷이 남으면 TTL(1시간) 안의 재진입마다 0 이
+       * 고착된다(신규 페이지 3연속 재발과 같은 계열 — session-new 의 hydrateScores 주석 참조).
+       * 스냅샷 exLog 는 영속분의 부분집합이라 카드 단위로 이력이 덮는다. recLog 는 수화하지
+       * 않는다 — 녹음 카운트·라벨·게이트가 과거 발화로 오염되면 안 된다. */
+      try {
+        const hyd = await loadScoreHistoryState(window.studyDB, state.cards, getStoredLang(),
+          (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+        if (hyd) state.exLog = { ...state.exLog, ...hyd.exLog };
+      } catch { /* 수화 실패 — 다음 진입에서 재시도 */ }
       // 문장별 연습 이력 (§7.4② 월 캘린더 · §7.3 빈 슬롯) — pronunciationLog 를 sentenceId×날짜로 묶는다.
       // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.
       state.sentLog = await loadSentenceLog(window.studyDB, getStoredLang(), state.cards);

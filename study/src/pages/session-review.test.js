@@ -142,6 +142,23 @@ describe('session-review — 새로고침 복원 (스냅샷 cards 정본)', () =
     cleanup();
   });
 
+  it('빈 exLog 스냅샷을 복원해도 이력이 보인다 — 분기 공통 수화 (고착 루프 차단)', async () => {
+    /* 신규 페이지 3연속 재발과 같은 계열: 복원 분기가 '스냅샷에 수화분이 이미 있다'는 전제로
+     * 수화를 건너뛰었는데, 수화가 한 번 실패한 스냅샷이 남으면 TTL 안에서 0 이 고착된다. */
+    const CARD_D = { ...CARD('c1', 'One two.', '뜻하나'), explanation: { key: 'k', drills: [{ en: 'Drill one.', kr: '', ko: '드릴' }] } };
+    window.studyDB = fakeDB({ activeSession: SNAP({ step: 1, exLog: {}, recLog: {}, lastScore: null, cardIds: ['c1'], cards: [CARD_D] }) });
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'c1', lang: 'en', date: '2026-08-30', overallScore: 87, createdAt: '2026-08-30T01:00:00Z' },
+      { sentenceId: 'c1#drill#Drill one.', lang: 'en', date: '2026-08-30', overallScore: 77, createdAt: '2026-08-30T01:01:00Z' },
+    ] }) }) };
+    loadReviewCards.mockResolvedValueOnce([CARD_D]);
+    const { host, cleanup } = mount();
+    await settle();
+    // 드릴 행 점수 원은 exLog 에서만 나온다 (메인 점수 원은 sentLog 라 분기 무관 — 관찰 지점 아님)
+    expect(host.querySelector('.vs-gscore')?.textContent).toContain('77');
+    cleanup();
+  });
+
   it('로드 실패 시 기존 스냅샷을 빈 스냅샷으로 덮어쓰지 않는다 (§2-I) — 라이브 통계도 미기록', async () => {
     window.studyDB = fakeDB({ activeSession: SNAP() });
     loadReviewCards.mockRejectedValueOnce(new Error('DatabaseClosedError'));
