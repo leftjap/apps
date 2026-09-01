@@ -176,6 +176,20 @@ public final class CloudStore: ObservableObject {
         try await client.from("book_reading_books").select("day,title,cover_url,read_at").execute().value
     }
 
+    // 밀리 책 단위 메타 (book_millie_books, 읽기 전용) — 서재 편입·알라딘 ISBN 매칭 재료.
+    // 밀리 원천엔 ISBN 이 없어(2026-09-01 실측) 데몬이 제목·저자·출판사·표지를 미러한다.
+    public struct MillieBookRow: Decodable, Sendable {
+        public let book_id: String
+        public let title: String
+        public let author: String?
+        public let publisher: String?
+        public let cover_url: String?
+    }
+    public func fetchMillieBooks() async throws -> [MillieBookRow] {
+        try await client.from("book_millie_books")
+            .select("book_id,title,author,publisher,cover_url").execute().value
+    }
+
 }
 
 private struct PaperDailyRow: Encodable {

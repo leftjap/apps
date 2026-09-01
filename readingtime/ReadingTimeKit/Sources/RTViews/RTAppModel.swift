@@ -103,6 +103,21 @@ public enum RTLibraryFilter: String, Sendable { case all, reading, finished }
 public enum RTLibrarySort: String, Sendable { case recent, name, rating }
 
 // 검색 결과 (알라딘 BookMeta 의 UI 표시 서브셋 — RTViews 는 ReadingTimeKit 비의존)
+/// 밀리 책 단위 메타 — 데몬이 book_millie_books 로 미러한 로컬 카탈로그 행 (제목 키로 조인)
+public struct RTMillieMeta: Equatable, Sendable {
+    public let bookId: String
+    public let author: String?
+    public let publisher: String?
+    public let coverUrl: String?
+
+    public init(bookId: String, author: String?, publisher: String?, coverUrl: String?) {
+        self.bookId = bookId
+        self.author = author
+        self.publisher = publisher
+        self.coverUrl = coverUrl
+    }
+}
+
 public struct RTBookHit: Equatable, Sendable {
     public let title: String
     public let author: String
@@ -368,6 +383,10 @@ public final class RTAppModel: ObservableObject {
     /// 밀리 책 표지 (제목 → cover_url, 밀리 CDN) — 랭킹·월간 캘린더 표기
     @Published public var ebookCovers: [String: String] = [:]
 
+    /// 밀리 책 단위 메타 (제목 → 저자·출판사·표지, book_millie_books) — 서재 편입·ISBN 매칭 재료.
+    /// 밀리 book 캐시(최근 3권 롤링)에서 밀려난 과거 책은 저자까지만 있다(출판사 NULL — 원천 유실).
+    @Published public var millieMeta: [String: RTMillieMeta] = [:]
+
     /// 밀리 책별 '마지막으로 읽은 시각' (제목 → read_at). 홈 카드 최근순 정렬 정본.
     /// 원천(밀리 로컬 DB)은 초 단위인데 구 동기화가 날짜로 잘라 올렸다 — 0005 마이그로 복원.
     @Published public var ebookReadAt: [String: Date] = [:]
@@ -427,13 +446,111 @@ public final class RTAppModel: ObservableObject {
         homeCardIndex = min(homeCardIndex, max(0, homeCards.count - 1))
     }
 
-    /// 밀리 책 완독 처리 (홈 카드에서 제외). 이후 더 최신 밀리 기록이 오면 자동 복귀.
+    /// 밀리 책 완독 처리 — 홈 카드에서 제외하고 **서재에 편입**한다(사용자 결정 2026-09-01:
+    /// 완독한 밀리 책이 어디에도 안 남던 공백 해소). 이후 더 최신 밀리 기록이 오면 카드는 자동 복귀.
     public func finishEbook(_ title: String) {
         finishedEbooks[title] = now()
         onFinishedEbooksChange?(finishedEbooks)
+        adoptFinishedEbook(title)
     }
     /// 완독 처리 영속 훅 (앱: UserDefaults JSON)
     public var onFinishedEbooksChange: (([String: Date]) -> Void)?
+
+    // ── 밀리 서재 편입 (사용자 결정 2026-09-01) ────────────────────────────
+
+    /// 편입 직후 호출 — 앱이 알라딘 ISBN 매칭(matchAdoptedMillieBook)을 비동기로 배선한다.
+    public var onMillieAdopted: ((String) -> Void)?
+
+    /// 완독 밀리 책을 RTBook 으로 서재에 남긴다. 데모(userData nil)는 기존 마커 동작만.
+    /// 밀리 원천엔 ISBN 이 없어(2026-09-01 실측) 키는 "millie:<book_id>", 메타가 아직
+    /// 동기화되지 않은 책은 "millie:t:<제목>" — 이후 알라딘 매칭이 실 ISBN 으로 올린다.
+    private func adoptFinishedEbook(_ title: String) {
+        guard userData != nil else { return }
+        // 재완독 — 이미 편입된 항목이면 완독 상태만 갱신 (중복 생성 금지)
+        if let i = userData?.books.firstIndex(where: { $0.millieBookId != nil && $0.title == title }) {
+            mutateUserData { d in
+                d.books[i].finished = true
+                d.books[i].finishedAt = now()
+            }
+            return
+        }
+        let meta = millieMeta[title]
+        let key = "millie:" + (meta?.bookId ?? "t:" + title)
+        // addedAt = 그 책을 처음 읽은 날 (일별 히스토리 최소 day, 없으면 지금)
+        let firstDay = ebookBooks
+            .filter { $0.value.contains(title) }.keys
+            .compactMap { dayFormatter.date(from: $0) }.min()
+        let book = RTBook(isbn: key, title: title,
+                          author: meta?.author ?? "",
+                          publisher: meta?.publisher ?? "",
+                          coverUrl: meta?.coverUrl ?? ebookCovers[title] ?? "",
+                          addedAt: firstDay ?? now(),
+                          finished: true, rating: nil, finishedAt: now(),
+                          millieBookId: meta?.bookId ?? title)
+        mutateUserData { d in d.books.append(book) }
+        onMillieAdopted?(key)
+    }
+
+    /// 편입된 밀리 책의 알라딘 ISBN 매칭 — 제목(대괄호 꼬리 제거)으로 검색해 저자가 맞는
+    /// 첫 후보로 업그레이드한다. provider 부재·검색 실패·미스매치는 조용히 유지(밀리 키 운영).
+    public func matchAdoptedMillieBook(_ key: String) async {
+        guard let searchProvider,
+              let book = userData?.books.first(where: { $0.isbn == key }) else { return }
+        let query = Self.normalizedMillieTitle(book.title)
+        guard let hits = try? await searchProvider(query), !hits.isEmpty else { return }
+        guard let hit = Self.bestMillieMatch(hits: hits, title: book.title,
+                                             author: book.author.isEmpty ? nil : book.author)
+        else { return }
+        upgradeMillieBook(key: key, to: hit)
+    }
+
+    /// 매칭 성공 → 밀리 키를 실 ISBN 으로 교체. 표지는 화면에 쓰던 밀리 것을 유지하고
+    /// 빈 저자·출판사만 알라딘으로 보강한다. 같은 ISBN 이 서재에 이미 있으면(종이로도 보유)
+    /// 중복을 만들지 않도록 포기한다 — 병합은 별건.
+    public func upgradeMillieBook(key: String, to hit: RTBookHit) {
+        mutateUserData { d in
+            guard let i = d.books.firstIndex(where: { $0.isbn == key }),
+                  !d.books.contains(where: { $0.isbn == hit.isbn }) else { return }
+            let old = d.books[i]
+            d.books[i] = RTBook(isbn: hit.isbn, title: old.title,
+                                author: old.author.isEmpty ? hit.author : old.author,
+                                publisher: old.publisher.isEmpty ? hit.publisher : old.publisher,
+                                coverUrl: old.coverUrl.isEmpty ? hit.coverUrl : old.coverUrl,
+                                addedAt: old.addedAt, finished: old.finished,
+                                rating: old.rating, finishedAt: old.finishedAt,
+                                millieBookId: old.millieBookId)
+        }
+    }
+
+    /// 밀리 제목 정규화 — 말미 대괄호 블록([개정2판] 등) 제거 + 공백 정리. 검색어·매칭 공용.
+    static func normalizedMillieTitle(_ t: String) -> String {
+        var s = t.trimmingCharacters(in: .whitespaces)
+        while s.hasSuffix("]"), let open = s.lastIndex(of: "[") {
+            s = String(s[..<open]).trimmingCharacters(in: .whitespaces)
+        }
+        return s
+    }
+
+    /// 밀리 저자 정규화 — "이기호 지음 / 박선경 그림" → "이기호". 첫 인명 토큰만 취한다.
+    static func normalizedMillieAuthor(_ a: String) -> String {
+        let first = a.split(whereSeparator: { "/,·".contains($0) }).first.map(String.init) ?? a
+        var s = first.trimmingCharacters(in: .whitespaces)
+        for role in ["지음", "옮김", "그림", "글", "저"] where s.hasSuffix(role) {
+            s = String(s.dropLast(role.count)).trimmingCharacters(in: .whitespaces)
+        }
+        return s
+    }
+
+    /// 알라딘 후보 중 밀리 책과 같은 책 고르기 — 정규화 제목 일치 + 저자 토큰 포함.
+    /// 저자를 모르면 제목 완전 일치만 인정한다(동명 책 오매칭 방지).
+    static func bestMillieMatch(hits: [RTBookHit], title: String, author: String?) -> RTBookHit? {
+        let t = normalizedMillieTitle(title)
+        if let author {
+            let a = normalizedMillieAuthor(author)
+            return hits.first { normalizedMillieTitle($0.title) == t && $0.author.contains(a) }
+        }
+        return hits.first { normalizedMillieTitle($0.title) == t }
+    }
 
     /// 그날 밀리 시간의 책별 귀속 — 그날 책이 **정확히 1권**일 때만 그 책에 붙인다.
     /// 2권 이상이면 비율을 알 수 없고, 기록이 없으면 무슨 책인지 알 수 없으므로 서비스명으로 둔다.
@@ -817,13 +934,19 @@ public final class RTAppModel: ObservableObject {
 
     public func continueReading() { start(isbn: selectedBook?.isbn) }
 
-    /// 완독 책 다시 읽기 — 완독만 해제(별점·완독일 보존)하고 그 책으로 세션 시작
+    /// 완독 책 다시 읽기 — 완독만 해제(별점·완독일 보존)하고 그 책으로 세션 시작.
+    /// 밀리 편입 책은 세션이 무의미(자동 수집) — 완독 마커까지 해제해 홈 카드를 부활시킨다.
     public func rereadBook() {
         guard let b = selectedBook, b.finished else { return }
         mutateUserData { d in
             if let i = d.books.firstIndex(where: { $0.isbn == b.isbn }) {
                 d.books[i].finished = false
             }
+        }
+        if b.millieBookId != nil {
+            finishedEbooks.removeValue(forKey: b.title)
+            onFinishedEbooksChange?(finishedEbooks)
+            return
         }
         start(isbn: b.isbn)
     }
@@ -879,6 +1002,11 @@ public final class RTAppModel: ObservableObject {
                     d.books[i].rating = rating
                     d.books[i].finishedAt = now()
                 }
+            }
+            // 밀리 편입 책은 홈 카드 제외 마커도 같이 — 없으면 완독했는데 카드가 계속 뜬다
+            if cur.millieBookId != nil {
+                finishedEbooks[cur.title] = now()
+                onFinishedEbooksChange?(finishedEbooks)
             }
         }
         closeSheet()

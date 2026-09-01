@@ -175,6 +175,10 @@ struct ReadingTimeApp: App {
             DispatchQueue.main.asyncAfter(deadline: .now() + 4) { Self.captureWindow() }
         }
 
+        // 밀리 편입 직후 알라딘 ISBN 매칭 (실패해도 밀리 키로 그대로 운영 — 조용히 무시)
+        model.onMillieAdopted = { [weak model] key in
+            Task { @MainActor in await model?.matchAdoptedMillieBook(key) }
+        }
         let aladin = AladinClient()
         model.searchProvider = { query in
             try await aladin.search(query: query, maxResults: 10).map {
@@ -224,6 +228,13 @@ struct ReadingTimeApp: App {
             // 홈 카드 최근순 정렬용 — 제목별 최신 read_at (구 동기화분 nil 은 제외)
             model?.ebookReadAt = Dictionary(books.compactMap { r in r.read_at.map { (r.title, $0) } },
                                             uniquingKeysWith: { a, b in max(a, b) })
+        }
+        // 책 단위 메타 (서재 편입·ISBN 매칭 재료) — 제목 키, 같은 제목 재등록 시 최신 우선
+        if let meta = try? await cloud.fetchMillieBooks(), !meta.isEmpty {
+            model?.millieMeta = Dictionary(meta.map { r in
+                (r.title, RTMillieMeta(bookId: r.book_id, author: r.author,
+                                       publisher: r.publisher, coverUrl: r.cover_url))
+            }, uniquingKeysWith: { _, b in b })
         }
         guard let rows = try? await cloud.fetchEbookDaily(), !rows.isEmpty else { return }
         model?.ebookDaily = Dictionary(rows.map { ($0.day, $0.seconds) }, uniquingKeysWith: +)

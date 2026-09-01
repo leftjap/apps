@@ -1,7 +1,7 @@
 import XCTest
 
 // 홈 밀리 캐러셀 실제 제스처·버튼 배선 검증.
-// 모델 단위테스트가 아니라 XCUITest로 "다 읽었어요 → 완독 처리 → 카드 제외"를 직접 누른다.
+// 모델 단위테스트가 아니라 XCUITest로 "다 읽었어요 → 카드 제외"를 직접 누른다 (확인 단계는 2026-09-01 제거).
 final class HomeCarouselUITests: XCTestCase {
 
     private let millieTitleID = "home.carousel.title.millie:삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"
@@ -33,9 +33,7 @@ final class HomeCarouselUITests: XCTestCase {
         XCTAssertFalse(paperTitle.isHittable, "완독 전 다음 종이책 카드가 화면에 노출됨")
         let finish = hittableButton("다 읽었어요", in: app)
 
-        finish.tap()
-        let confirm = hittableButton("완독 처리", in: app)
-        confirm.tap()
+        finish.tap()   // 확인 단계 없음 — 즉시 완독 (서재에서 되돌리기 가능, 2026-09-01)
 
         let state = XCTAttachment(screenshot: app.screenshot())
         state.name = "after-millie-finish"
@@ -79,8 +77,7 @@ final class HomeCarouselUITests: XCTestCase {
         millieOnly.lifetime = .keepAlways
         add(millieOnly)
 
-        hittableButton("다 읽었어요", in: app).tap()
-        hittableButton("완독 처리", in: app).tap()
+        hittableButton("다 읽었어요", in: app).tap()   // 즉시 완독 (확인 단계 제거)
 
         XCTAssertTrue(app.staticTexts["다음 책 추가하기"].waitForExistence(timeout: 5),
                       "마지막 밀리 카드 완독 후 다음 책 빈 홈으로 전환되지 않음")

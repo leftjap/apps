@@ -13,10 +13,15 @@ public struct RTBook: Codable, Equatable, Sendable {
     public var finished: Bool
     public var rating: Int?
     public var finishedAt: Date?
+    /// 밀리 편입 책 판별 (사용자 결정 2026-09-01 — 완독 시 서재 편입). 밀리 원천 book_id,
+    /// 메타가 없던 책은 제목. 알라딘 매칭으로 isbn 이 실 ISBN 이 된 뒤에도 유지된다
+    /// (상세의 '밀리의 서재' CTA·자동 기록 문법 분기 기준). 옵셔널 → 기존 JSON 하위호환.
+    public var millieBookId: String?
 
     public init(isbn: String, title: String, author: String, publisher: String,
                 coverUrl: String, addedAt: Date,
-                finished: Bool = false, rating: Int? = nil, finishedAt: Date? = nil) {
+                finished: Bool = false, rating: Int? = nil, finishedAt: Date? = nil,
+                millieBookId: String? = nil) {
         self.isbn = isbn
         self.title = title
         self.author = author
@@ -26,6 +31,7 @@ public struct RTBook: Codable, Equatable, Sendable {
         self.finished = finished
         self.rating = rating
         self.finishedAt = finishedAt
+        self.millieBookId = millieBookId
     }
 }
 

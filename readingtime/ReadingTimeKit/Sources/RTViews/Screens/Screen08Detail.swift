@@ -5,8 +5,9 @@ public struct Screen08Detail: View {
     struct Live {
         let book: RTBook
         let total: String            // "0:01"
-        let count: Int
+        let count: Int               // 종이책 세션 수 / 밀리 편입 책은 읽은 날 수
         let days: Int
+        let isMillie: Bool           // 밀리 편입 책 — 기록은 일별, CTA 는 '밀리의 서재' 비활성
         let rows: [(tile: Tile, min: String, label: String, right: Right)]
     }
 
@@ -26,27 +27,61 @@ public struct Screen08Detail: View {
             let f = DateFormatter()
             f.locale = Locale(identifier: "en_US_POSIX")
             f.dateFormat = "HH:mm"
-            let modeLabel = ["flip": "엎기", "tap": "탭"]
-            let rows = data.sessions
-                .filter { $0.isbn == book.isbn }
-                .sorted { $0.endedAt > $1.endedAt }
-                .prefix(5)
-                .map { r -> (Tile, String, String, Right) in
-                    let tile: Tile = r.mode == "flip" ? .flip : (r.mode == "tap" ? .tap : .manual)
-                    let label = r.mode == "manual" ? "직접 추가" : "\(modeLabel[r.mode] ?? r.mode) · \(f.string(from: r.endedAt))"
-                    let right: Right = cal.isDate(r.endedAt, inSameDayAs: m.now())
-                        ? .today
-                        : .date("\(cal.component(.month, from: r.endedAt)).\(cal.component(.day, from: r.endedAt))")
-                    return (tile, "\(max(1, r.seconds / 60))분", label, right)
-                }
             let days = (cal.dateComponents([.day], from: cal.startOfDay(for: book.addedAt),
                                            to: cal.startOfDay(for: m.now())).day ?? 0) + 1
-            let forBook = data.sessions.filter { $0.isbn == book.isbn }
-            self.live = Live(book: book,
-                             total: RTAppModel.hmString(forBook.reduce(0) { $0 + $1.seconds }),
-                             count: forBook.count,
-                             days: days,
-                             rows: rows)
+            if book.millieBookId != nil {
+                // 밀리 편입 책 — 세션이 없다. 기록은 일별(밀리 히스토리), 시간은 그 책이 그날
+                // 유일할 때만 귀속(ebookBreakdown 규칙 — 다권 날 추측 금지). 누적도 그 합.
+                let df = DateFormatter()
+                df.locale = Locale(identifier: "en_US_POSIX")
+                df.dateFormat = "yyyy-MM-dd"
+                let myDays = m.ebookBooks.filter { $0.value.contains(book.title) }.keys.sorted(by: >)
+                var totalSec = 0
+                let rows = myDays.prefix(5).compactMap { ds -> (Tile, String, String, Right)? in
+                    guard let d = df.date(from: ds) else { return nil }
+                    let mine = m.ebookBreakdown(on: d).first { $0.title == book.title }
+                    let right: Right = cal.isDate(d, inSameDayAs: m.now())
+                        ? .today
+                        : .date("\(cal.component(.month, from: d)).\(cal.component(.day, from: d))")
+                    if let mine {
+                        return (.millie, "\(max(1, mine.seconds / 60))분", "밀리 · 자동 기록", right)
+                    }
+                    return (.millie, "—", "밀리 · 다른 책과 함께", right)
+                }
+                for ds in myDays {
+                    if let d = df.date(from: ds),
+                       let mine = m.ebookBreakdown(on: d).first(where: { $0.title == book.title }) {
+                        totalSec += mine.seconds
+                    }
+                }
+                self.live = Live(book: book,
+                                 total: RTAppModel.hmString(totalSec),
+                                 count: myDays.count,
+                                 days: days,
+                                 isMillie: true,
+                                 rows: rows)
+            } else {
+                let modeLabel = ["flip": "엎기", "tap": "탭"]
+                let rows = data.sessions
+                    .filter { $0.isbn == book.isbn }
+                    .sorted { $0.endedAt > $1.endedAt }
+                    .prefix(5)
+                    .map { r -> (Tile, String, String, Right) in
+                        let tile: Tile = r.mode == "flip" ? .flip : (r.mode == "tap" ? .tap : .manual)
+                        let label = r.mode == "manual" ? "직접 추가" : "\(modeLabel[r.mode] ?? r.mode) · \(f.string(from: r.endedAt))"
+                        let right: Right = cal.isDate(r.endedAt, inSameDayAs: m.now())
+                            ? .today
+                            : .date("\(cal.component(.month, from: r.endedAt)).\(cal.component(.day, from: r.endedAt))")
+                        return (tile, "\(max(1, r.seconds / 60))분", label, right)
+                    }
+                let forBook = data.sessions.filter { $0.isbn == book.isbn }
+                self.live = Live(book: book,
+                                 total: RTAppModel.hmString(forBook.reduce(0) { $0 + $1.seconds }),
+                                 count: forBook.count,
+                                 days: days,
+                                 isMillie: false,
+                                 rows: rows)
+            }
         } else {
             self.live = nil
         }
@@ -129,13 +164,15 @@ public struct Screen08Detail: View {
                 Text(live?.book.title ?? "몰입").font(.sans(23, 900)).tracking(23 * -0.03)
                     .foregroundColor(RT.ink).padding(.top, 11)
                     .lineLimit(2)
-                Text(live.map { "\($0.book.author) · \($0.book.publisher)" } ?? "미하이 칙센트미하이 · 한울림")
+                Text(live.map { l in [l.book.author, l.book.publisher].filter { !$0.isEmpty }
+                        .joined(separator: " · ") } ?? "미하이 칙센트미하이 · 한울림")
                     .font(.sans(12.5, 500))
                     .foregroundColor(RT.muted).padding(.top, 5)
                     .lineLimit(1)
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
                     Text(live?.total ?? "4:12").font(.mono(28, 700)).tracking(28 * -0.03).foregroundColor(RT.ink)
-                    Text(live.map { "누적 · \($0.count)회 · \($0.days)일째" } ?? "누적 · 8회 · 18일째")
+                    Text(live.map { "누적 · \($0.count)\($0.isMillie ? "일 읽음" : "회") · \($0.days)일째" }
+                         ?? "누적 · 8회 · 18일째")
                         .font(.mono(11, 500)).foregroundColor(RT.faint)
                 }
                 .padding(.top, 14)
@@ -161,6 +198,17 @@ public struct Screen08Detail: View {
             } else {
             let mainW = (row.size.width - 9) * 1.6 / 2.6 // flex 1.6 : 1
             HStack(spacing: 9) {
+                if live?.book.millieBookId != nil {
+                    // 밀리 편입 책 — 세션 시작이 무의미(자동 수집). 사용자 확정(2026-09-01):
+                    // 이어서 읽기 자리를 비활성으로 두고 '밀리의 서재' 표기. 홈 readCTADisabled 문법.
+                    HStack(spacing: 8) {
+                        RTIcon(RTIconPath.check, size: 15, stroke: RT.faint, lineWidth: 2.2)
+                        Text("밀리의 서재").font(.sans(15, 800)).foregroundColor(RT.faint)
+                    }
+                    .frame(width: mainW, height: 52)
+                    .background(RoundedRectangle(cornerRadius: 15).fill(RT.segBg))
+                    .overlay(RoundedRectangle(cornerRadius: 15).strokeBorder(Color(hex: 0xE5DFCD), lineWidth: 1))
+                } else {
                 HStack(spacing: 9) {
                     RTIcon(RTIconPath.play, size: 16, fill: RT.ctaText)
                     Text("이어서 읽기").font(.sans(15, 800)).foregroundColor(RT.ctaText)
@@ -171,6 +219,7 @@ public struct Screen08Detail: View {
                 .shadow(color: Color(hex: 0x26413A, alpha: 0.35), radius: 8, x: 0, y: 10) // 0 14 24 -10 근사
                 .contentShape(Rectangle())
                 .onTapGesture { model?.continueReading() }
+                }
                 HStack(spacing: 6) {
                     RTIcon(RTIconPath.check, size: 15, stroke: RT.green, lineWidth: 2.4)
                     Text("완독").font(.sans(13.5, 700)).foregroundColor(Color(hex: 0x4A5A44))
@@ -205,14 +254,14 @@ public struct Screen08Detail: View {
         }
     }
 
-    enum Tile { case flip, tap, manual }
+    enum Tile { case flip, tap, manual, millie }
     enum Right { case today, date(String) }
 
     func logRow(tile: Tile, min: String, label: String, right: Right, divider: Bool) -> some View {
         VStack(spacing: 0) {
             HStack(spacing: 13) {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(tile == .flip ? RT.greenTint : RT.segBg)
+                    .fill(tile == .flip ? RT.greenTint : (tile == .millie ? RT.amberTint : RT.segBg))
                     .frame(width: 32, height: 32)
                     .overlay(tileIcon(tile))
                 HStack(spacing: 8) {
@@ -242,6 +291,7 @@ public struct Screen08Detail: View {
                 Circle().stroke(RT.muted, lineWidth: 2 * 15 / 24).frame(width: 10, height: 10)
                 RTIcon(RTIconPath.clock, size: 15, stroke: RT.muted, lineWidth: 2)
             }
+        case .millie: RTIcon(RTIconPath.check, size: 15, stroke: RT.amber, lineWidth: 2.2)
         }
     }
 }

@@ -25,7 +25,10 @@ public struct Screen12Library: View {
             for b in reading {
                 let days = (cal.dateComponents([.day], from: cal.startOfDay(for: b.addedAt),
                                                to: cal.startOfDay(for: m.now())).day ?? 0) + 1
-                meta[b.isbn] = "\(RTAppModel.hmString(m.totalSeconds(isbn: b.isbn))) · \(m.sessionCount(isbn: b.isbn))회 · \(days)일째"
+                // 밀리 편입 책은 세션이 없다 — "0:00 · 0회" 대신 자동 기록임을 표기
+                meta[b.isbn] = b.millieBookId != nil
+                    ? "밀리 · 자동 기록 · \(days)일째"
+                    : "\(RTAppModel.hmString(m.totalSeconds(isbn: b.isbn))) · \(m.sessionCount(isbn: b.isbn))회 · \(days)일째"
             }
             self.live = Live(total: d.books.count, reading: reading, readingMeta: meta,
                              finished: d.books.filter { $0.finished })
