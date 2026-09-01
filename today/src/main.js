@@ -18,6 +18,7 @@ import { backupSession, restoreSessionIfMissing } from './services/auth-session-
 import { markLogin } from './services/auth-diag.js';
 import { Profile } from './services/profile.js';
 import { Entries } from './features/entries.js';
+import { SidebarCal } from './features/sidebarCal.js';
 import { Editor } from './features/editor.js';
 // 가계부 분류 자산 (Keep GAS 포팅) — window.todayClassifier 노출 (mocks IIFE 접근용)
 import Classifier from './services/expense-classifier.js';
@@ -110,6 +111,8 @@ async function handleSession(session) {
   // mocks DOM 마운트 후 entries / expenses / notifications 부착 (setTimeout 0 — 동일 task 안 mocks IIFE 실행 보장)
   setTimeout(async () => {
     Entries.mountEntriesView(user);
+    // 사이드바 "최근 4주" 캘린더 (작업지시서 §7 — 앱 시작 렌더)
+    SidebarCal.mountSidebarCal(user);
     Editor.mountEditorTools();
     // 가계부 카테고리 사용자별 분리 — Keep USER_CONFIG 그대로 (leftjap 11 / soyoun 12)
     Classifier.setCurrentEmail(user.email);
@@ -159,6 +162,10 @@ async function handleSession(session) {
         );
         // 회귀 3 fix — pullAll 완료 후 알림 배지 재계산 (Dexie 빈 상태 → 채워진 후 갱신)
         Notifications.refreshAlertBadge?.();
+        // 사이드바 캘린더 — pullAll 완료 후 재집계 (mount 시점엔 Dexie 가 비어 있을 수 있음)
+        SidebarCal.refresh?.()?.catch?.((e) =>
+          console.warn('[main] SidebarCal.refresh 실패', e?.message || e),
+        );
         // 회귀 5 fix — pullAll 완료 후 현재 article 댓글 영역 재마운트.
         // 진짜 원인 fix (renderDocFromRow in-place patch) 후 setTimeout 우회 불필요. 즉시 호출.
         Comments.refreshArticleComments?.()?.catch?.((e) =>

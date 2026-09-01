@@ -281,6 +281,9 @@ export async function markEntryNotificationsRead(entryId, doc = (typeof document
 // 클릭 동작은 §5.0 전체 목록 뷰 wiring 단계에서 추가.
 const WRITING_KINDS_FOR_LIST = Object.freeze(['navi', 'fiction', 'blog', 'memo']);
 
+// 사이드바 캘린더 집계 카테고리 (작업지시서 §10-1 임시 기본: 글쓰기 4종 합산) — sidebarCal.js 사용.
+export const CAL_KINDS = WRITING_KINDS_FOR_LIST;
+
 export function ensureRecentsMore(kind, totalCount, doc = (typeof document !== 'undefined' ? document : null)) {
   if (!doc) return false;
   const list = doc.getElementById('recentsList');
@@ -820,6 +823,8 @@ export async function saveArticle(article, user, kind) {
       }
     }
     setSaveStatus(article, formatSavedTime(row.updated_at));
+    // 저장 후 사이드바 캘린더 갱신 (작업지시서 §7) — 동적 lookup, 순환 참조 회피
+    globalThis.todaySidebarCal?.refresh?.();
     // Wave 11.5.3.3 — 저장 성공 = dirty 해제 + 서버 배지 숨김 (자기 push 의 메아리 reload 방지)
     _dirtyArticles.delete(article);
     hideServerUpdateBadge(article);
@@ -1432,6 +1437,8 @@ export async function handleDeleteAction(article, doc = (typeof document !== 'un
       const kind = getCurrentKind(doc);
       if (kind) await handleCategoryActive(kind);
     }
+    // 삭제 후 사이드바 캘린더 갱신 (작업지시서 §7)
+    globalThis.todaySidebarCal?.refresh?.();
     return { ok: true, id };
   } catch (err) {
     console.warn('[entries] softDeleteEntry 실패:', err?.message || err);
@@ -1459,6 +1466,8 @@ export async function handleDuplicateAction(article, user, doc = (typeof documen
       const kind = getCurrentKind(doc);
       if (kind) await handleCategoryActive(kind);
     }
+    // 사본 생성(저장) 후 사이드바 캘린더 갱신 (작업지시서 §7)
+    globalThis.todaySidebarCal?.refresh?.();
     return { ok: true, id: copy.id, copy };
   } catch (err) {
     console.warn('[entries] duplicate 실패:', err?.message || err);
@@ -2046,6 +2055,8 @@ function _ensureRecentsCtxMenu() {
       if (article) article.remove();
       const kind = getCurrentKind(document);
       if (kind) await handleCategoryActive(kind);
+      // 삭제 후 사이드바 캘린더 갱신 (작업지시서 §7)
+      globalThis.todaySidebarCal?.refresh?.();
     } catch (err) {
       console.warn('[entries] recents 삭제 실패:', err?.message || err);
       if (typeof window !== 'undefined' && typeof window.alert === 'function') {
@@ -2424,11 +2435,12 @@ function htmlToText(html) {
   return String(html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function charCount(html) {
+// 사이드바 캘린더(sidebarCal.js)가 재사용 — 작업지시서 §7 "새 계산기 작성 금지"
+export function charCount(html) {
   return htmlToText(html).replace(/\s/g, '').length;
 }
 
-function sheetCount(html) {
+export function sheetCount(html) {
   return Math.round((charCount(html) / 200) * 10) / 10;
 }
 
@@ -2706,6 +2718,21 @@ async function loadEntryFromDeepLink(user) {
   } finally {
     setTimeout(() => { _deepLinkInProgress = false; }, 500);
   }
+}
+
+/** row 로 글 열기 (사이드바 캘린더 §5 — sidebarCal.js 사용).
+ *  loadEntryFromDeepLink 와 동일한 _deepLinkInProgress 관용구: 카테고리 활성화가 유발하는
+ *  handleCategoryActive 의 list[0] 렌더를 500ms 억제해 대상 글이 덮이지 않게 한다.
+ *  (spotlight 의 고정 지연(200ms) 패턴은 콜드 IndexedDB 에서 역전됨 — 실측 2026-09-01.)
+ *  블로그/메모는 사이드바 항목이 없어 활성화 생략 (캘린더 작업지시서 §1) — 문서만 렌더. */
+export function openEntryByRow(row, doc = (typeof document !== 'undefined' ? document : null)) {
+  if (!row?.id || !doc) return false;
+  _deepLinkInProgress = true;
+  const kind = row.kind === 'soyoun_navi' ? 'navi' : row.kind;
+  doc.querySelector(`.sb__item[data-category="${kind}"]`)?.click(); // 동기 — mocks fixture 렌더 후 아래서 덮어씀
+  renderDocFromRow(row, doc);
+  setTimeout(() => { _deepLinkInProgress = false; }, 500);
+  return true;
 }
 
 /** deep link hash 파싱 → { kind, ownerId, num } 또는 null.
