@@ -96,7 +96,7 @@ public struct RTMapFullscreen: View {
                 }
             }
         }
-        .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+        .mapStyle(.standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll))   // muted: 종이 톤과 맞춤 (탐침 2026-09-02)
         .onMapCameraChange(frequency: .continuous) { ctx in
             visibleRect = ctx.rect
             region = ctx.region

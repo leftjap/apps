@@ -375,7 +375,7 @@ struct RTMapCardLive: View {
                 }
             }
         }
-        .mapStyle(.standard(elevation: .flat, pointsOfInterest: .excludingAll))
+        .mapStyle(.standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll))   // muted: 종이 톤과 맞춤 (탐침 2026-09-02)
         .onMapCameraChange(frequency: .continuous) { visibleRect = $0.rect }
         .onAppear { camera = .region(defaultRegion()) }
         .frame(width: Self.size.width, height: Self.size.height)

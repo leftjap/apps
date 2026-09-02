@@ -213,10 +213,10 @@ public final class RTAppModel: ObservableObject {
     // ── 함께 읽기(파트너 프레즌스) — README design_handoff_reading_together ──
     /// 통계 화면 주체: 내 통계(.me) vs 파트너 통계(.partner). 홈 파트너 행 탭 시 .partner.
     public enum StatsSubject: Sendable { case me, partner }
-    @Published public var statsSubject: StatsSubject = .me
+    @Published public var statsSubject: StatsSubject = .me { didSet { statsStamp += 1 } }
 
     /// 파트너 데이터 (공유 Supabase 로드 — 백엔드 RLS/프레즌스는 별도 작업). nil = 데모(시안 값)로 렌더.
-    @Published public var partnerData: RTUserData?
+    @Published public var partnerData: RTUserData? { didSet { statsStamp += 1 } }
     /// 파트너 사진 (미커밋 → nil, 이니셜 "소" 폴백)
     @Published public var partnerAvatar: CGImage?
     /// 파트너 이름 — 보는 사람 기준(지오 폰=소연, 소연 폰=지오). 앱이 uid→이름 주입.
@@ -318,7 +318,9 @@ public final class RTAppModel: ObservableObject {
 
     // ── 실데이터 정본 (§6-④) — nil 이면 데모 모드 (rtshot/rtapp 픽셀 오라클 불변) ──
     @Published public var userData: RTUserData? {
-        didSet { if let d = userData { added = Set(d.books.map(\.isbn)) } }
+        didSet {
+            statsStamp += 1
+            if let d = userData { added = Set(d.books.map(\.isbn)) } }
     }
     /// 변경 영속 훅 (앱: UserDefaults JSON 저장)
     public var onUserDataChange: ((RTUserData) -> Void)?
@@ -377,11 +379,11 @@ public final class RTAppModel: ObservableObject {
 
     /// 전자책(밀리) 일별 초 — "yyyy-MM-dd"(실발생일) → seconds. book_reading_seconds 읽기 전용,
     /// 통계는 표시 계층에서 종이+전자 합산 (README 결정: DB에선 안 섞음). 데모(userData nil) 미적용.
-    @Published public var ebookDaily: [String: Int] = [:]
+    @Published public var ebookDaily: [String: Int] = [:] { didSet { statsStamp += 1 } }
     /// 밀리 일별×책별 — day "yyyy-MM-dd" → 그날 읽은 책 제목들 (book_reading_books)
-    @Published public var ebookBooks: [String: [String]] = [:]
+    @Published public var ebookBooks: [String: [String]] = [:] { didSet { statsStamp += 1 } }
     /// 밀리 책 표지 (제목 → cover_url, 밀리 CDN) — 랭킹·월간 캘린더 표기
-    @Published public var ebookCovers: [String: String] = [:]
+    @Published public var ebookCovers: [String: String] = [:] { didSet { statsStamp += 1 } }
 
     /// 밀리 책 단위 메타 (제목 → 저자·출판사·표지, book_millie_books) — 서재 편입·ISBN 매칭 재료.
     /// 밀리 book 캐시(최근 3권 롤링)에서 밀려난 과거 책은 저자까지만 있다(출판사 NULL — 원천 유실).
@@ -1071,7 +1073,22 @@ public final class RTAppModel: ObservableObject {
     @Published public var mapFullscreen = false
 
     /// 화면이 먹는 데이터셋 — 파트너는 partnerData(종이만), 나는 userData + 내 밀리, 데모(userData nil)는 시안.
+    /// 입력(세션·밀리·파트너·주체·오늘)이 바뀔 때만 재집계 — 지도 카메라 연속 콜백·시트·행 렌더가 매번
+    /// 전체 세션을 다시 훑지 않게 한다. 스탬프는 입력 프로퍼티의 didSet 이 올린다.
     public var statsDataset: RTStatsDataset {
+        let key = "\(statsSubject)|\(statsStamp)|\(userData == nil)|\(dayFormatter.string(from: now()))"
+        if let c = statsCache, c.key == key { return c.ds }
+        let ds = buildStatsDataset()
+        statsCache = (key, ds)
+        onStatsDatasetBuilt?()
+        return ds
+    }
+    private var statsStamp = 0
+    private var statsCache: (key: String, ds: RTStatsDataset)?
+    /// 재집계 관측 훅 (검증용)
+    public var onStatsDatasetBuilt: (() -> Void)?
+
+    private func buildStatsDataset() -> RTStatsDataset {
         if statsSubject == .partner { return RTStats.live(data: partnerData ?? RTUserData(), now: now()) }
         guard let d = userData else { return RTStatsDemo.dataset }
         let days = ebookDaily.keys.compactMap { dayFormatter.date(from: $0) }
