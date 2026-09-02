@@ -257,20 +257,20 @@
   /* 시안 06 — 메모↔가계부 사이 구분선 없음. 구분선은 가계부↔최근 섹션 사이 (.sb__group--recents) */
   .sb__group--util { margin-top: 8px; }
 
-  /* ── 사이드바 "최근 4주" 기록 캘린더 (작업지시서 §2~§6, 시안 v4) ──
+  /* ── 사이드바 "최근 4주" 기록 캘린더 (작업지시서 §2~§6, 시안 v4a — 타이포를 nav 13.5 / 리센츠 14·11 층위로) ──
      구분선 없음 — 웰(--sunken)이 구획을 전담. 값 렌더는 src/features/sidebarCal.js */
   .sb__cal { margin-top: 14px; flex-shrink: 0; }
   .sb__cal-well { margin: 0 4px; padding: 9px 8px 12px; background: var(--sunken); border-radius: 12px; }
   .sb__cal-head {
     display: flex; align-items: center; gap: 6px;
-    font-family: var(--font-mono); font-size: 10.5px; font-weight: 500;
+    font-family: var(--font-mono); font-size: 11.5px; font-weight: 500;
     letter-spacing: 0.05em; color: var(--ink-4);
     padding: 0 2px 8px 2px;
   }
-  .sb__cal-range { margin-left: auto; font-size: 9.5px; letter-spacing: 0.02em; color: oklch(74% 0.006 60); }
+  .sb__cal-range { margin-left: auto; font-size: 10.5px; letter-spacing: 0.02em; color: oklch(74% 0.006 60); }
   .sb__cal-nav { display: inline-flex; align-items: center; gap: 3px; }
   .sb__cal-btn {
-    width: 22px; height: 20px; border-radius: 7px;
+    width: 24px; height: 22px; border-radius: 7px;
     display: grid; place-items: center;
     background: #fff;
     box-shadow: 0 1px 2px rgba(20,18,14,0.10), inset 0 0 0 0.5px rgba(20,18,14,0.05);
@@ -283,15 +283,15 @@
     padding: 0 0 5px; margin-bottom: 6px;
     border-bottom: 1px solid var(--cal-hair);   /* 요일/날짜 구분 헤어라인 — 웰 안에서만 (§4) */
   }
-  .sb__cal-dow div { font-family: var(--font-mono); font-size: 9px; font-weight: 500; color: var(--ink-4); text-align: center; }
+  .sb__cal-dow div { font-family: var(--font-mono); font-size: 10.5px; font-weight: 500; color: var(--ink-4); text-align: center; }
   /* 주말색은 요일 글자에만 — 날짜 숫자에는 절대 적용하지 않음 (§4) */
   .sb__cal-dow .sat { font-weight: 600; color: var(--cal-sat); }
   .sb__cal-dow .sun { font-weight: 600; color: var(--cal-sun); }
   .sb__cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .sb__cal-cell {
-    height: 22px; border-radius: 6px;
+    height: 26px; border-radius: 6px;
     display: grid; place-items: center;
-    font-family: var(--font-mono); font-size: 9.5px; font-weight: 500;
+    font-family: var(--font-mono); font-size: 11px; font-weight: 500;
     color: var(--ink-4);
   }
   /* 셀 상태 ①~⑤ (작업지시서 §5) — ③ 배경 rgba(crail, α) 는 JS 인라인 */
@@ -306,15 +306,39 @@
   .sb__cal-cell.is-today-off { box-shadow: inset 0 0 0 1.5px var(--crail-base); color: var(--crail-deep); font-weight: 700; }
   .sb__cal-cell.is-future { color: oklch(88% 0.006 60); cursor: default; }
   /* 매월 1일 `M/1` 표기 — 상태 뒤 선언으로 타이포만 오버라이드 (§5) */
-  .sb__cal-cell.is-m1 { font-size: 9px; font-weight: 700; letter-spacing: -0.03em; }
+  .sb__cal-cell.is-m1 { font-size: 10.5px; font-weight: 700; letter-spacing: -0.03em; }
   .sb__cal-sum {
     display: flex; align-items: baseline;
     margin-top: 10px; padding: 0 2px;
-    font-size: 10.5px; color: var(--ink-3);
+    font-size: 11.5px; color: var(--ink-3);
   }
   .sb__cal-sum span { white-space: nowrap; }
   .sb__cal-sum b { font-family: var(--font-mono); font-weight: 600; color: var(--ink-2); }
   .sb__cal-sum .r { margin-left: auto; }
+  /* 모바일 드로어 — 캘린더 스케일업 (작업지시서 §9 표). 사이드바가 이미 nav 16/44·리센츠 16 으로
+     키워지므로 PC 값을 그대로 쓰지 않는다. 리센츠·nav 는 기존 모바일 룰이 처리 — 여기서 건드리지 않음.
+     2편 이상 탭 → 바텀 시트(§9-1)는 시안 미비로 미구현 — 현재는 PC 팝오버가 그대로 뜬다. */
+  @media (max-width: 768px) {
+    .sb__cal-well { padding: 12px 10px 14px; }
+    .sb__cal-head { font-size: 13px; }
+    .sb__cal-range { font-size: 12px; }
+    .sb__cal-btn { width: 32px; height: 28px; border-radius: 8px; position: relative; }
+    .sb__cal-btn::before { content: ''; position: absolute; inset: -8px -6px; }   /* 히트 영역 44×44 (시각 유지) */
+    .sb__cal-btn svg { width: 12px; height: 12px; }
+    /* 요일 행 gap 도 5 — 날짜 그리드(gap 5)와 열 정렬을 맞추기 위한 종속값 */
+    .sb__cal-dow { gap: 5px; }
+    .sb__cal-dow div { font-size: 11px; }
+    .sb__cal-grid { gap: 5px; }
+    .sb__cal-cell { height: 32px; border-radius: 8px; font-size: 12px; position: relative; }
+    /* gap 을 히트 영역에 포함 — 셀 사이 데드존 제거. 셀 피치(38×37)가 44 미만이라 그 이상 확장은
+       이웃과 겹쳐 실효 없음 (§9-2 "gap 포함 유효 탭 영역 ≈42×37"이 물리적 상한) */
+    .sb__cal-cell::before { content: ''; position: absolute; inset: -2.5px; }
+    .sb__cal-cell.is-m1 { font-size: 11.5px; }   /* §9 표 미명시 — PC 의 −0.5 관계 유지 (임시값) */
+    /* hover 툴팁·인셋 링 없음 — 탭으로 대체 (§9-1). iOS sticky hover 잔상 차단 */
+    .sb__cal-cell.is-on:hover { box-shadow: none; }
+    .sb__cal-cell.is-off:hover { background: none; }
+    .sb__cal-sum { font-size: 13px; }
+  }
   /* 일자 팝오버 — #expDayPopover 문법 재사용 (§5). 모바일 드로어(z70)·바텀시트(z60) 위 노출.
      원본 룰(.exp-day-detail.is-popover z50)보다 특이성을 높여야 오버라이드됨 */
   .exp-day-popover-overlay.sb__cal-day-popover-overlay { z-index: 79; }
@@ -4949,10 +4973,10 @@
           <span class="sb__cal-range" id="sbCalRange"></span>
           <span class="sb__cal-nav">
             <button class="sb__cal-btn" id="sbCalPrev" type="button" title="지난 4주" aria-label="지난 4주">
-              <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.7 3.8L5.5 8l4.2 4.2"/></svg>
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.7 3.8L5.5 8l4.2 4.2"/></svg>
             </button>
             <button class="sb__cal-btn" id="sbCalNext" type="button" title="다음 4주" aria-label="다음 4주" disabled>
-              <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 3.8L10.5 8l-4.2 4.2"/></svg>
+              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6.3 3.8L10.5 8l-4.2 4.2"/></svg>
             </button>
           </span>
         </div>
