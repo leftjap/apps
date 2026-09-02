@@ -376,6 +376,8 @@ struct RTMapCardLive: View {
             }
         }
         .mapStyle(.standard(elevation: .flat, emphasis: .muted, pointsOfInterest: .excludingAll))   // muted: 종이 톤과 맞춤 (탐침 2026-09-02)
+        // 애플 지도 로고·'법적 정보'는 좌하단에 붙는데 칩(12,12 · h30)이 그 자리다 → 하단 안전 영역을 칩만큼 띄워 고지를 위로
+        .safeAreaPadding(.bottom, 42)
         .onMapCameraChange(frequency: .continuous) { visibleRect = $0.rect }
         .onAppear { camera = .region(defaultRegion()) }
         .frame(width: Self.size.width, height: Self.size.height)
