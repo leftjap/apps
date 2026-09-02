@@ -5,7 +5,7 @@ import Foundation
 // 지도 실데이터 정본화 (사용자 결정 2026-07-15):
 //  ① 실기기(userData 있음)는 위치 세션이 없어도 시안 데모로 폴백하지 않는다
 //     — 위치 없는 책은 지도에 아예 안 뜨는 게 정상. 데모는 rtshot/rtapp(userData nil) 전용.
-//  ② 기본 카메라(카드) = 가장 최근 위치 세션의 좌표(동네 프레이밍) — latestReadCoord 가 그 좌표 정본.
+//  ② 기본 카메라(카드) = 가장 많이 읽은 장소의 좌표(동네 프레이밍) — cardAnchorCoord 가 그 좌표 정본.
 //  ③ 기존 세션 백필 — seedLoc 액션이 위치 없는 세션에만 위치를 일괄 부여 (실기기 1회 실행용).
 //  ④ 위치 캡처 — 앱 셸이 locationProvider 훅을 배선하면 저장 시 세션에 위치가 부착된다.
 //  ⑤ 책 탭 — 서재 ISBN 이 있는 책만 08 로 push, 귀속 불가 밀리는 무시, 데모는 08 데모.
@@ -48,25 +48,28 @@ private let p1 = (lat: 37.54, lng: 127.05)
         #expect(RTStats.chipText(m.statsDataset) == "10개 도시 · 4개 대륙")
     }
 
-    // ② 가장 최근 위치 세션의 좌표 — 위치 없는 더 최신 세션은 건너뛴다
-    @Test func latestReadCoordPicksMostRecentLocatedSession() {
+    // ② 지도 카드 '동네' = **가장 많이 읽은 장소** (사용자 실측 2026-09-02: 최근 위치 세션 기준이면
+    //    한 달 전 방콕 출장지가 동네로 떠 태국어 지도가 보였다). 동률이면 더 최근에 읽은 곳.
+    @Test func cardAnchorPicksMostReadPlace() {
         let m = RTAppModel()
+        var s1 = located("A", "2026-07-10"); s1.seconds = 3000            // 성수동 50분
+        var s2 = located("A", "2026-07-11"); s2.seconds = 2400            // 성수동 40분 (합 90분)
+        var trip = located("A", "2026-08-06", lat: 13.75, lng: 100.5, pid: "TH:방콕", name: "방콕"); trip.seconds = 1394   // 최근이지만 23분
         m.userData = RTUserData(books: [book("A", "몰입")], sessions: [
-            located("A", "2026-07-08", lat: 35.7, lng: 139.7, pid: "JP:도쿄", name: "도쿄"),
-            located("A", "2026-07-10"),                                       // 최신 위치 세션 = 성수동
-            .init(isbn: "A", mode: "manual", seconds: 300, endedAt: day("2026-07-12"), pauseCount: 0),
+            s1, s2, trip,
+            .init(isbn: "A", mode: "manual", seconds: 300, endedAt: day("2026-08-12"), pauseCount: 0),   // 위치 없음
         ])
-        let c = m.latestReadCoord
+        let c = m.cardAnchorCoord
         #expect(c?.lat == p1.lat && c?.lng == p1.lng)
     }
 
-    @Test func latestReadCoordNilWithoutLocatedSessions() {
+    @Test func cardAnchorNilWithoutLocatedSessions() {
         let m = RTAppModel()
         m.userData = RTUserData(books: [book("A", "몰입")],
                                 sessions: [.init(isbn: "A", mode: "flip", seconds: 600,
                                                  endedAt: day("2026-07-10"), pauseCount: 0)])
-        #expect(m.latestReadCoord == nil)
-        #expect(RTAppModel().latestReadCoord == nil)   // 데모 모드도 nil (카드는 전체 핀 프레이밍)
+        #expect(m.cardAnchorCoord == nil)
+        #expect(RTAppModel().cardAnchorCoord == nil)   // 데모 모드도 nil (카드는 전체 핀 프레이밍)
     }
 
     // ③ seedLoc 백필 — 위치 없는 세션에만 부여, 있는 세션은 유지, 영속 훅 발화

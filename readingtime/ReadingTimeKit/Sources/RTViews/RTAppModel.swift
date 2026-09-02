@@ -28,8 +28,8 @@ public enum RTSheet: String, Sendable {
     case addtime, finish, addbook, settings, sort, bookmenu
 }
 
-public enum RTMode: String, Sendable { case flip, tap }
-public enum RTSessionStatus: Sendable { case recording, paused }
+public enum RTMode: String, Sendable, Codable { case flip, tap }
+public enum RTSessionStatus: String, Sendable, Codable { case recording, paused }
 
 /// 홈 2주 캘린더 한 칸 (작업지시서 v3 §5.2)
 public struct HomeCalCell: Sendable, Equatable {
@@ -91,13 +91,18 @@ public enum RTHomeCal {
     }
 }
 
-public struct RTSession: Sendable {
+public struct RTSession: Sendable, Codable {   // Codable: 진행 중 세션 영속 (앱 종료 시 유실 방지)
     public var mode: RTMode
     public var status: RTSessionStatus
     public var elapsed: Int          // 초 (데모 셸: app.js 와 동일하게 초 틱 누적)
     public var pauseCount: Int
     public var startedAt: Date       // 세션 시작 시각 (06 원장 표시용 — 데모 렌더는 미사용)
     public var isbn: String? = nil   // 세션 대상 책 (시작 시점 캡처 — 기록 귀속·다크/완료/LA 표기)
+
+    public init(mode: RTMode, status: RTSessionStatus, elapsed: Int, pauseCount: Int, startedAt: Date, isbn: String? = nil) {
+        self.mode = mode; self.status = status; self.elapsed = elapsed; self.pauseCount = pauseCount
+        self.startedAt = startedAt; self.isbn = isbn
+    }
 }
 
 public enum RTLibraryFilter: String, Sendable { case all, reading, finished }
@@ -182,7 +187,11 @@ public final class RTAppModel: ObservableObject {
     // app.js state 대응
     @Published public var route: RTRoute = .login
     @Published public var mode: RTMode = .flip
-    @Published public var session: RTSession?
+    /// 진행 중 세션 — 변화마다 영속 훅(onSessionPersist)이 돈다. 실기기 실측(2026-09-02): 메모리에만 있던
+    /// 세션이 앱 종료로 사라져 09-01 독서가 통째로 유실됐다(프레즌스 reading_since 만 남음).
+    @Published public var session: RTSession? { didSet { onSessionPersist?(session) } }
+    /// 세션 영속 훅 (앱: UserDefaults JSON 저장/삭제). 틱마다 호출되므로 값이 작다.
+    public var onSessionPersist: ((RTSession?) -> Void)?
     @Published public var justResumed = false
     @Published public var sheet: RTSheet?
     @Published public var addtimeValue = 35          // 시안 데모 상태
@@ -907,6 +916,17 @@ public final class RTAppModel: ObservableObject {
 
     public func cancelSession() { session = nil; nextSessionISBN = nil; emitPresence(); nav(.home) }
 
+    /// 앱 기동 시 영속된 세션 복원 — 종료 시점을 알 수 없으므로 **일시정지**로 되살려 타이머 화면에 둔다.
+    /// 프레즌스는 즉시 해제(매달린 reading_since 정리). 사용자가 재개하거나 저장하면 정상 경로를 탄다.
+    public func restoreSession(_ saved: RTSession) {
+        var s = saved
+        s.status = .paused
+        mode = s.mode
+        session = s
+        emitPresence()
+        nav(s.mode == .flip ? .flipTimer : .tapTimer)
+    }
+
     public func simFlip() { startSession(.flip); nav(.flipTimer) }
 
     public func switchTap() { mode = .tap; startSession(.tap); nav(.tapTimer) }
@@ -1158,13 +1178,18 @@ public final class RTAppModel: ObservableObject {
         openBookDetail(isbn: isbn)
     }
 
-    /// 가장 최근 위치 세션의 좌표 — 지도 카드 기본 카메라(동네 프레이밍) 중심.
-    /// 위치 없는 세션은 건너뛴다. 없으면 nil (카드는 전체 핀 프레이밍 폴백).
-    public var latestReadCoord: (lat: Double, lng: Double)? {
+    /// 지도 카드 '동네' 중심 = **가장 많이 읽은 장소**의 좌표 (동률이면 더 최근에 읽은 곳).
+    /// 최근 위치 세션 기준이었을 때 한 달 전 방콕 출장지가 동네로 떠 태국어 지도가 보였다(실기기 실측 2026-09-02).
+    /// 위치 없는 세션은 제외. 없으면 nil (카드는 전체 핀 프레이밍 폴백).
+    public var cardAnchorCoord: (lat: Double, lng: Double)? {
         guard let d = userData else { return nil }
-        return d.sessions.filter { $0.latitude != nil && $0.longitude != nil && $0.placeId != nil }
-            .max { $0.endedAt < $1.endedAt }
-            .map { ($0.latitude!, $0.longitude!) }
+        var agg: [String: (sec: Int, last: Date, lat: Double, lng: Double)] = [:]
+        for s in d.sessions {
+            guard let pid = s.placeId, let lat = s.latitude, let lng = s.longitude else { continue }
+            let cur = agg[pid] ?? (0, .distantPast, lat, lng)
+            agg[pid] = (cur.sec + s.seconds, max(cur.last, s.endedAt), cur.lat, cur.lng)
+        }
+        return agg.values.max { a, b in a.sec != b.sec ? a.sec < b.sec : a.last < b.last }.map { ($0.lat, $0.lng) }
     }
 
     /// 위치 픽스 공급 훅 — 앱 셸이 CoreLocation 배선 (§16: 세션 시작·시간추가 시트 열림 시 캡처).

@@ -111,7 +111,7 @@
       </sc-if>
 
       <div style="margin:18px 2px 8px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-weight:800;font-size:14px;color:#17150F">독서 지도</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#C6BEA8">전체 기간</span></div>
-      <div onClick="{{ openMap }}" style="position:relative;height:150px;border-radius:20px;border:1px solid #E9E2CF;overflow:hidden;cursor:pointer;background:radial-gradient(120% 90% at 30% 20%,#eef1ee,#e5eae8 52%,#dce2df)">
+      <div onClick="{{ openMap }}" style="position:relative;height:200px;border-radius:20px;border:1px solid #E9E2CF;overflow:hidden;cursor:pointer;background:radial-gradient(120% 90% at 30% 20%,#eef1ee,#e5eae8 52%,#dce2df)">
         <div style="position:absolute;top:0;left:0;width:1000px;height:500px;transform-origin:0 0;transform:translate(-2308px,-357px) scale(3)">
           <svg width="1000" height="500" viewBox="0 0 1000 500" style="display:block">
             <defs><pattern id="rtGridA" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="rgba(120,105,72,.09)" stroke-width=".5"></path></pattern></defs>
@@ -329,6 +329,9 @@ class Component extends DCLogic {
   mapPanMove=e=>{if(!this._pan)return;const dx=e.clientX-this._pan.x,dy=e.clientY-this._pan.y;if(Math.abs(dx)+Math.abs(dy)>4)this._moved=true;this.setState({mtx:this._pan.tx+dx,mty:this._pan.ty+dy})}
   mapPanEnd=()=>{this._pan=null}
   openBook(b){this.setState({sheet:null,book:b})}
+  // 오늘 포함 N일 창의 일별 세션 배열 — 현재 달 1..today + 지난달 말미 (N-today)일
+  windowRows(mi,today,n){const out=[];const mo=this.months[mi];for(let d=1;d<=today;d++)if(mo.sess[d])out.push(mo.sess[d]);
+    const rest=n-today;if(rest>0&&mi>0){const pm=this.months[mi-1];for(let d=pm.days-rest+1;d<=pm.days;d++)if(pm.sess[d])out.push(pm.sess[d]);}return out;}
   renderVals(){
     const topCount=Math.min(Math.max(this.props.topCount??3,3),5);
     const fixedRows=this.props.fixedSixRows??false;
@@ -351,8 +354,11 @@ class Component extends DCLogic {
         onTap:min&&!future?()=>this.setState({sheet:{kind:'day',d}}):undefined});
     }
     if(fixedRows)while(cells.length<42)cells.push(blank);
+    // 사용자 결정 2026-09-02: 현재 달의 '많이 읽은 책'은 이달이 아니라 최근 4주(오늘 포함 28일, 달 경계를 넘음).
+    const winRows=isCur?this.windowRows(mi,mo.today,28):Object.values(mo.sess);
+    const winTotal=winRows.flat().reduce((s,r)=>s+r[1],0);
     const per={},dpb={};
-    for(const rows of Object.values(mo.sess)){const seen=new Set();for(const[b,min]of rows){per[b]=(per[b]||0)+min;if(!seen.has(b)){seen.add(b);dpb[b]=(dpb[b]||0)+1;}}}
+    for(const rows of winRows){const seen=new Set();for(const[b,min]of rows){per[b]=(per[b]||0)+min;if(!seen.has(b)){seen.add(b);dpb[b]=(dpb[b]||0)+1;}}}
     const sorted=Object.entries(per).map(([b,v])=>[+b,v]).sort((u,v)=>v[1]-u[1]);
     const rowOf=([b,v],i)=>{const bk=this.books[b];return{rank:i+1,rankColor:i===0?'#17150F':'#C6BEA8',title:bk.title,short:bk.short,bg:bk.bg,tc:bk.tc,millie:bk.millie,done:showDone&&mo.done.includes(b),days:dpb[b]+'일 읽음',total:this.hm(v),onTap:()=>this.openBook(b)}};
     const top=sorted.slice(0,topCount).map(rowOf);
@@ -370,7 +376,7 @@ class Component extends DCLogic {
           sub:bk.millie?'밀리에서 자동 기록':this.places[pl].name,subColor:bk.millie?'#B8862E':'#8C8570',val:min+'분',onTap:()=>this.openBook(b)}})};
     }else if(S&&S.kind==='list'){
       sheet={open:true,isDay:false,isList:true,isPlace:false,ranked:true,
-        title:isCur?'이달 읽은 책':mo.m+'월에 읽은 책',sub:sorted.length+'권 · '+this.hm(total),
+        title:isCur?'최근 4주 읽은 책':mo.m+'월에 읽은 책',sub:sorted.length+'권 · '+this.hm(winTotal),
         rows:sorted.map(([b,v],i)=>{const bk=this.books[b];return{rank:i+1,rankColor:i===0?'#17150F':'#C6BEA8',title:bk.title,short:bk.short,bg:bk.bg,tc:bk.tc,millie:bk.millie,done:showDone&&mo.done.includes(b),pin:false,sub:dpb[b]+'일 읽음',subColor:'#8C8570',val:this.hm(v),onTap:()=>this.openBook(b)}})};
     }else if(S&&S.kind==='place'){
       const a=this.placeAgg[S.pl],bs=Object.entries(a.books).sort((u,v)=>v[1].min-u[1].min);
@@ -383,7 +389,7 @@ class Component extends DCLogic {
     const T={s:this.state.ms,tx:this.state.mtx,ty:this.state.mty};
     const usedPl=this.placeAgg.filter(a=>a.min>0);
     const chipText=usedPl.length+'개 도시 · '+new Set(usedPl.map(a=>a.cont)).size+'개 대륙';
-    const cardPins=this.clusters({s:3,tx:-2308,ty:-357},false).filter(p=>p.x>-10&&p.x<346&&p.y>30&&p.y<160);
+    const cardPins=this.clusters({s:3,tx:-2308,ty:-357},false).filter(p=>p.x>-10&&p.x<346&&p.y>30&&p.y<210);
     const mapPins=this.clusters(T,true).filter(p=>p.x>-60&&p.x<450&&p.y>-60&&p.y<900);
     const H=this.HOME;
     return{
@@ -393,9 +399,9 @@ class Component extends DCLogic {
       nextTap:()=>{if(mi<this.cur)this.setState({mi:mi+1,sheet:null})},nextOp:mi<this.cur?1:.35,
       totalHM:this.hm(total),readDays:Object.keys(mo.sess).length,denomDays:isCur?mo.today:mo.days,
       cells,
-      rankTitle:isCur?'이달 많이 읽은 책':mo.m+'월에 많이 읽은 책',
+      rankTitle:isCur?'최근 4주 많이 읽은 책':mo.m+'월에 많이 읽은 책',
       top,hasRest:rest.length>0,restCount:rest.length,strip,hasMore:more>0,moreCount:more,
-      noBooks:sorted.length===0,emptyText:isCur?'이달엔 아직 기록이 없어요':mo.m+'월에는 기록이 없어요',
+      noBooks:sorted.length===0,emptyText:isCur?'최근 4주 기록이 없어요':mo.m+'월에는 기록이 없어요',
       openList:()=>this.setState({sheet:{kind:'list'}}),
       chipText,cardPins,mapPins,
       mapOpen:this.state.mapOpen,mapTransform:'translate('+T.tx+'px,'+T.ty+'px) scale('+T.s+')',

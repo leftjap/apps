@@ -142,6 +142,36 @@ public enum RTStats {
                      ranked: ranked)
     }
 
+    /// 최근 N일(오늘 포함) 랭킹 — 현재 달의 '많이 읽은 책'(사용자 결정 2026-09-02: 월초에 목록이 비는 문제).
+    /// 창은 달 경계를 넘는다. 완독 필 = 창 안에서 완독한 책. 정렬 규칙은 month() 와 동일.
+    public struct Recent: Sendable {
+        public let start: (year: Int, month: Int, day: Int)
+        public let end: (year: Int, month: Int, day: Int)
+        public let ranked: [Rank]
+        public let totalSec: Int
+    }
+    public static func recentRanked(_ ds: RTStatsDataset, days: Int = 28) -> Recent {
+        let endDate = cal.date(from: DateComponents(year: ds.today.year, month: ds.today.month, day: ds.today.day))!
+        let startDate = cal.date(byAdding: .day, value: -(days - 1), to: endDate)!
+        func key(_ y: Int, _ m: Int, _ d: Int) -> Int { y * 10000 + m * 100 + d }
+        let lo = key(cal.component(.year, from: startDate), cal.component(.month, from: startDate), cal.component(.day, from: startDate))
+        let hi = key(ds.today.year, ds.today.month, ds.today.day)
+        let ss = ds.sessions.filter { let k = key($0.year, $0.month, $0.day); return k >= lo && k <= hi }
+        var perBook: [Int: Int] = [:]
+        var daysPerBook: [Int: Set<Int>] = [:]
+        for s in ss {
+            perBook[s.book, default: 0] += s.sec
+            daysPerBook[s.book, default: []].insert(key(s.year, s.month, s.day))
+        }
+        // 완독 필은 README §4-1 그대로 "표시 중인 달(=현재 달)에 완독한 책만" — 창이 지난달에 걸쳐도 지난달 완독은 제외
+        let doneHere = Set(ds.finished.filter { $0.ym == RTStatsYM(year: ds.today.year, month: ds.today.month) }.map(\.book))
+        let ranked = perBook.keys.sorted()
+            .sorted { perBook[$0]! != perBook[$1]! ? perBook[$0]! > perBook[$1]! : $0 < $1 }
+            .map { Rank(book: $0, sec: perBook[$0]!, days: daysPerBook[$0]!.count, done: doneHere.contains($0)) }
+        return Recent(start: (cal.component(.year, from: startDate), cal.component(.month, from: startDate), cal.component(.day, from: startDate)),
+                      end: ds.today, ranked: ranked, totalSec: ss.reduce(0) { $0 + $1.sec })
+    }
+
     /// 달 범위 — 첫 기록이 있는 달(종이·밀리 중 가장 이른) … 현재 달. 기록이 없으면 현재 달만.
     public static func monthRange(_ ds: RTStatsDataset) -> (first: RTStatsYM, last: RTStatsYM) {
         let last = RTStatsYM(year: ds.today.year, month: ds.today.month)
@@ -192,10 +222,13 @@ public enum RTStats {
 
     public static func listSheet(_ ds: RTStatsDataset, year: Int, month: Int) -> Sheet {
         let mo = Self.month(ds, year: year, month: month)
+        // 현재 달 = 최근 4주 창 (화면의 '많이 읽은 책' 과 같은 기준)
+        let ranked = mo.isCurrent ? recentRanked(ds).ranked : mo.ranked
+        let total = mo.isCurrent ? recentRanked(ds).totalSec : mo.totalSec
         return Sheet(kind: .list,
-                     title: mo.isCurrent ? "이달 읽은 책" : "\(month)월에 읽은 책",
-                     sub: "\(mo.ranked.count)권 · \(hm(mo.totalSec))",
-                     rows: mo.ranked.enumerated().map { i, r in
+                     title: mo.isCurrent ? "최근 4주 읽은 책" : "\(month)월에 읽은 책",
+                     sub: "\(ranked.count)권 · \(hm(total))",
+                     rows: ranked.enumerated().map { i, r in
                          Row(book: r.book, rank: i + 1, sub: "\(r.days)일 읽음", subMillie: false, pin: false,
                              value: hm(r.sec), done: r.done, sec: r.sec)
                      })

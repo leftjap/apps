@@ -175,3 +175,16 @@
 - `mockups/RTRecordOnePage.dc.html` — 인터랙티브 목업(정본 시안). 같은 폴더의 `support.js`와 함께 브라우저에서 열기. 하단 `<script data-dc-script>` 로직 클래스에 데모 데이터(`books`·`places`·`aug`·`gen`)·집계·`clusters`·상태 분기가 그대로 있다.
 - `mockups/support.js` — 목업 런타임(프로덕션과 무관).
 - 참조(레포 내): `ReadingTimeKit/Sources/RTViews/RTTokens.swift`, `RTFont.swift`, `RTRecordViews.swift`(StatsHeader·RTScrollArea·RTRankRow·RTFillCover·RTLB·rtBoxShadow·rtRing), `Screens/Screen02Home.swift`(calCell·calFG·calBG·todayHalo·demoCal14·statsButton), `Screens/Screen11Month.swift`(buildLive), `Screens/Screen15Map.swift`(클러스터·RTMapPin·mapChipText·카메라), `Screens/RecordSheets.swift`(시트 문법), `RTAppModel.swift`(RTHomeCal.alpha·hmString·now·openBookDetail), `.oracle/ora-home.png`.
+
+
+---
+
+## 구현 변경 이력 (사용자 결정 — 목업·구현 동시 반영)
+
+- **2026-09-02 최근 4주**: 현재 달의 "많이 읽은 책"·list 시트는 이달이 아니라 **오늘 포함 28일 창**(달 경계를 넘음) 기준.
+  제목 `최근 4주 많이 읽은 책` / `최근 4주 읽은 책`, 빈 문구 `최근 4주 기록이 없어요`. 완독 필은 §4-1 그대로 현재 달 완독만.
+  과거 달은 그 달 기준 유지. (월초에 목록이 비는 문제.)
+- **2026-09-02 지도 카드 346×200**: 150 은 동네 맥락이 안 보여 200 으로. 첫 화면 y 는 734 그대로(카드 하단만 아래로).
+- **2026-09-02 카드 카메라 앵커**: 최근 위치 세션이 아니라 **가장 많이 읽은 장소**(동률 = 더 최근). 한 달 전 출장지가
+  동네로 뜨는 문제(실기기 실측).
+- MapKit 표준 스타일 `emphasis: .muted`, 카드 하단 안전 영역 42(애플 지도 고지가 칩에 가리지 않게).

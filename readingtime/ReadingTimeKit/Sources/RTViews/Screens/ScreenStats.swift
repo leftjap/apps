@@ -11,6 +11,7 @@ public struct ScreenStats: View {
     private let ds: RTStatsDataset
     private let ym: RTStatsYM
     private let mo: RTStats.Month
+    private let ranked: [RTStats.Rank]        // 현재 달 = 최근 4주(사용자 결정 2026-09-02), 과거 달 = 그 달
     private let range: (first: RTStatsYM, last: RTStatsYM)
     private let skin = RTMapSkin.paper
 
@@ -20,7 +21,9 @@ public struct ScreenStats: View {
         self.ds = ds
         let ym = model?.statsDisplayedMonth ?? RTStatsYM(year: ds.today.year, month: ds.today.month)
         self.ym = ym
-        self.mo = RTStats.month(ds, year: ym.year, month: ym.month)
+        let mo = RTStats.month(ds, year: ym.year, month: ym.month)
+        self.mo = mo
+        self.ranked = mo.isCurrent ? RTStats.recentRanked(ds).ranked : mo.ranked
         self.range = RTStats.monthRange(ds)
     }
 
@@ -40,18 +43,18 @@ public struct ScreenStats: View {
             summary.padding(.top, 6)
             dowHeader.padding(EdgeInsets(top: 11, leading: 0, bottom: 5, trailing: 0))
             grid
-            sectionTitle(mo.isCurrent ? "이달 많이 읽은 책" : "\(ym.month)월에 많이 읽은 책")
+            sectionTitle(mo.isCurrent ? "최근 4주 많이 읽은 책" : "\(ym.month)월에 많이 읽은 책")
                 .padding(EdgeInsets(top: 16, leading: 2, bottom: 4, trailing: 2))
-            if mo.ranked.isEmpty {
-                Text(mo.isCurrent ? "이달엔 아직 기록이 없어요" : "\(ym.month)월에는 기록이 없어요")
+            if ranked.isEmpty {
+                Text(mo.isCurrent ? "최근 4주 기록이 없어요" : "\(ym.month)월에는 기록이 없어요")
                     .font(.sans(12, 500)).foregroundColor(RT.faint).rtLB(RTLB.n12)
                     .frame(maxWidth: .infinity)
                     .padding(EdgeInsets(top: 20, leading: 0, bottom: 12, trailing: 0))
             } else {
-                ForEach(Array(mo.ranked.prefix(3).enumerated()), id: \.offset) { i, r in
+                ForEach(Array(ranked.prefix(3).enumerated()), id: \.offset) { i, r in
                     bookRow(r).accessibilityIdentifier("stats.rankRow.\(i + 1)")
                 }
-                if mo.ranked.count > 3 { strip }
+                if ranked.count > 3 { strip }
             }
             HStack(alignment: .firstTextBaseline) {
                 Text("독서 지도").font(.sans(14, 800)).foregroundColor(RT.ink).rtLB(RTLB.n14)
@@ -199,7 +202,7 @@ public struct ScreenStats: View {
 
     // "그 외" 스트립 — 4위 이하: 라벨 + 표지 최대 6 + `+N` 칩. 블록 51 (상단 hair2 1 + 6 + 44)
     var strip: some View {
-        let rest = Array(mo.ranked.dropFirst(3))
+        let rest = Array(ranked.dropFirst(3))
         let shown = Array(rest.prefix(6))
         let more = rest.count - shown.count
         return VStack(spacing: 0) {
@@ -256,7 +259,7 @@ public struct ScreenStats: View {
         Group {
             if headless { headlessCard } else { RTMapCardLive(model: model, ds: ds) }
         }
-        .frame(width: 346, height: 150)
+        .frame(width: 346, height: 200)   // 시안 150 → 200 (사용자 결정 2026-09-02: 150 은 동네 맥락이 안 보임)
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).strokeBorder(RT.hair, lineWidth: 1))
         .overlay(alignment: .bottomLeading) { chip.padding(EdgeInsets(top: 0, leading: 13, bottom: 13, trailing: 0)) }
@@ -274,9 +277,9 @@ public struct ScreenStats: View {
         let pins = RTStats.clusters(ds) { p in
             let q = RTStats.proj(lat: p.lat, lng: p.lng)
             return CGPoint(x: q.x * v.s + v.tx, y: q.y * v.s + v.ty)
-        }.filter { $0.x > -10 && $0.x < 346 && $0.y > 30 && $0.y < 160 }
+        }.filter { $0.x > -10 && $0.x < 346 && $0.y > 30 && $0.y < 210 }
         return RTMapOcean()
-            .frame(width: 344, height: 148)
+            .frame(width: 344, height: 198)
             .overlay(alignment: .topLeading) {
                 RTMapWorld(skin: skin)
                     .frame(width: 1000, height: 500)
@@ -289,7 +292,7 @@ public struct ScreenStats: View {
                     RTMapPin(ds: ds, m: m, mini: true)
                         .position(x: m.x, y: m.y - RTMapPin.miniHeight / 2)
                 }
-                .frame(width: 344, height: 148, alignment: .topLeading)
+                .frame(width: 344, height: 198, alignment: .topLeading)
             }
             .clipped()
             .padding(1)
@@ -356,14 +359,14 @@ struct RTStatsPills: View {
     }
 }
 
-// ── 실기기 지도 카드 — MapKit 프리뷰(제스처 비활성). 카메라 = 동네(latestReadCoord ~1.3km),
+// ── 실기기 지도 카드 — MapKit 프리뷰(제스처 비활성). 카메라 = 동네(cardAnchorCoord: 가장 많이 읽은 장소 ~1.3km),
 //    위치 세션이 없으면(최근 기록이 밀리만) 전체 핀 프레이밍(README 확인 2). 핀 = 축소판 RTMapPin.
 struct RTMapCardLive: View {
     var model: RTAppModel?
     let ds: RTStatsDataset
     @State private var camera: MapCameraPosition = .automatic
     @State private var visibleRect: MKMapRect?
-    static let size = CGSize(width: 344, height: 148)
+    static let size = CGSize(width: 344, height: 198)
 
     var body: some View {
         Map(position: $camera, interactionModes: []) {
@@ -395,7 +398,7 @@ struct RTMapCardLive: View {
     }
 
     private func defaultRegion() -> MKCoordinateRegion {
-        if let c = model?.latestReadCoord {
+        if let c = model?.cardAnchorCoord {
             return MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: c.lat, longitude: c.lng),
                                       latitudinalMeters: 1300, longitudinalMeters: 1300)
         }

@@ -79,6 +79,37 @@ private func ymd(_ y: Int, _ m: Int, _ d: Int, hour: Int = 12) -> Date {
         #expect(may.ranked.count == 5, "그 외 2권")
     }
 
+    // 사용자 결정 2026-09-02: 현재 달의 '많이 읽은 책'은 이달이 아니라 **최근 4주(오늘 포함 28일)** 기준.
+    // 월초에 목록이 비는 문제. 과거 달은 그 달 기준 유지. 기대값은 세션을 직접 합산해(엔진 경로와 별개) 만든다.
+    @Test func recentFourWeeksRankingForCurrentMonth() {
+        let r = RTStats.recentRanked(demo, days: 28)
+        var expect: [Int: (sec: Int, days: Set<Int>)] = [:]
+        for s in demo.sessions where (s.month == 8) || (s.month == 7 && s.day == 31) {
+            expect[s.book, default: (0, [])].sec += s.sec
+            expect[s.book]!.days.insert(s.month * 100 + s.day)
+        }
+        let want = expect.keys.sorted().sorted { expect[$0]!.sec != expect[$1]!.sec ? expect[$0]!.sec > expect[$1]!.sec : $0 < $1 }
+        #expect(r.ranked.map(\.book) == want)
+        #expect(r.ranked.map(\.sec) == want.map { expect[$0]!.sec })
+        #expect(r.ranked.map(\.days) == want.map { expect[$0]!.days.count })
+        // 8월 1일보다 앞선 7/31 세션이 실제로 포함되는지 (창이 달 경계를 넘는다는 증거)
+        #expect(demo.sessions.contains { $0.month == 7 && $0.day == 31 }, "데모 7/31 세션 존재 전제")
+        #expect(r.totalSec == demo.sessions.filter { $0.month == 8 || ($0.month == 7 && $0.day == 31) }.reduce(0) { $0 + $1.sec })
+        // 완독 필 = 표시 중인 달(현재 달)에 완독한 책만 (README §4-1) — 8월 완독 돈의 심리학 O, 7월 완독 파친코 X
+        #expect(r.ranked.first { $0.book == 1 }?.done == true)
+        #expect(r.ranked.first { $0.book == 4 }?.done != true)
+    }
+
+    @Test func recentWindowStartsWhenTodayIsEarlyInMonth() {
+        // 9/2 가 오늘이면 창 = 8/6 ~ 9/2 (28일)
+        var ds = RTStatsDemo.dataset
+        ds.today = (2026, 9, 2)
+        let r = RTStats.recentRanked(ds, days: 28)
+        #expect(r.start.month == 8 && r.start.day == 6 && r.end.month == 9 && r.end.day == 2)
+        #expect(r.ranked.allSatisfy { _ in true })
+        #expect(r.totalSec == ds.sessions.filter { $0.month == 8 && $0.day >= 6 }.reduce(0) { $0 + $1.sec })
+    }
+
     @Test func demoDaySheet() {
         let s = RTStats.daySheet(demo, year: 2026, month: 8, day: 22)
         #expect(s.title == "8월 22일 토요일")
@@ -89,9 +120,13 @@ private func ymd(_ y: Int, _ m: Int, _ d: Int, hour: Int = 12) -> Date {
     }
 
     @Test func demoListAndPlaceSheets() {
+        // 현재 달의 list 시트 = 최근 4주 창(07-31~08-27) — 기대값은 세션 직접 합산
         let l = RTStats.listSheet(demo, year: 2026, month: 8)
-        #expect(l.title == "이달 읽은 책" && l.sub == "12권 · 14:52")
-        #expect(l.rows.first?.rank == 1 && l.rows.first?.sub == "7일 읽음" && l.rows.first?.value == "4:58")
+        let win = demo.sessions.filter { $0.month == 8 || ($0.month == 7 && $0.day == 31) }
+        var per: [Int: Int] = [:]; for s in win { per[s.book, default: 0] += s.sec }
+        let top = per.keys.sorted().sorted { per[$0]! != per[$1]! ? per[$0]! > per[$1]! : $0 < $1 }.first!
+        #expect(l.title == "최근 4주 읽은 책" && l.sub == "\(per.count)권 · \(RTStats.hm(win.reduce(0) { $0 + $1.sec }))")
+        #expect(l.rows.first?.rank == 1 && l.rows.first?.book == top && l.rows.first?.value == RTStats.hm(per[top]!))
         #expect(RTStats.listSheet(demo, year: 2026, month: 7).title == "7월에 읽은 책")
 
         // 뉴욕 — 목업 DOM 실측(2026-09-02): "2권 · 1시간 11분 읽음", 1984 1회 0:51 / 노르웨이의 숲 1회 0:20
