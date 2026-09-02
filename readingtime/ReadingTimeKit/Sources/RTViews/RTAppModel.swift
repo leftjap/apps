@@ -1219,6 +1219,15 @@ public final class RTAppModel: ObservableObject {
         case "statsList": statsOpenList()
         case "statsMap": openMapFullscreen()
         case "statsPlace": statsTapPlace(arg)
+        case "loadUserData":   // 검증: 실데이터 JSON(RTUserData, ISO8601) 로드 — 절대경로 또는 Documents 파일명
+            if let d: RTUserData = Self.loadVerifyJSON(arg) { userData = d }
+        case "loadEbook":      // 검증: {"daily":{day:sec},"books":{day:[title]},"covers":{title:url},"readAt":{title:iso}}
+            if let e: RTVerifyEbook = Self.loadVerifyJSON(arg) {
+                ebookDaily = e.daily
+                ebookBooks = e.books
+                ebookCovers = e.covers ?? [:]
+                ebookReadAt = (e.readAt ?? [:]).compactMapValues { ISO8601DateFormatter().date(from: $0) }
+            }
         case "finishEbook": finishEbook(arg)                     // 밀리 완독 처리(검증)
         case "demoCards":   // 홈 캐러셀 시드 — 종이책 2 + 밀리 2 (실표지·최근순 검증)
             finishedEbooks = [:]
@@ -1401,6 +1410,23 @@ public final class RTAppModel: ObservableObject {
             }
         default: break
         }
+    }
+
+    /// 검증용 JSON 로더 — 실기기와 같은 데이터로 헤드리스·시뮬레이터 렌더를 재현한다 (rtshot 은 절대경로,
+    /// 시뮬레이터는 앱 Documents 의 파일명). 실앱 경로에서는 --seq 가 없으므로 호출되지 않는다.
+    static func loadVerifyJSON<T: Decodable>(_ arg: String) -> T? {
+        let url = arg.hasPrefix("/") ? URL(fileURLWithPath: arg)
+            : FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0].appendingPathComponent(arg)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .iso8601
+        return try? dec.decode(T.self, from: data)
+    }
+    struct RTVerifyEbook: Decodable {
+        let daily: [String: Int]
+        let books: [String: [String]]
+        let covers: [String: String]?
+        let readAt: [String: String]?
     }
 
     // ── 파생값 (app.js hmsParts·sessionMin) ──
