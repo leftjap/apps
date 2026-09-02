@@ -1,7 +1,7 @@
 # ~/apps
 
 ## 프로젝트 구조
-- 앱: Study/Today/Book/Pick/Cue/Best (PWA, GitHub Pages `/apps/<app>/` 배포) + Board (Electron, git 미업로드. `~/apps/board/CLAUDE.md` 별도). `launcher/` 는 디자인 브리프 스텁(앱 아님). `readingtime/` 는 iOS 네이티브 준비 중이며, 웹 프로토타입(`prototype/`)이 픽셀 정본, 시안은 `design-ref/v3`(v8 최종). 기록 화면(주·월·지도)만 별도 정본 `design-ref/design_handoff_record_stats/` + 픽셀 오라클 `.oracle/`(`scripts/record-verify.sh` 로 대조).
+- 앱: Study/Today/Book/Pick/Cue/Best (PWA, GitHub Pages `/apps/<app>/` 배포) + Board (Electron, git 미업로드. `~/apps/board/CLAUDE.md` 별도). `launcher/` 는 디자인 브리프 스텁(앱 아님). `readingtime/` 는 iOS 네이티브 준비 중이며, 웹 프로토타입(`prototype/`)이 픽셀 정본, 시안은 `design-ref/v3`(v8 최종). 기록 화면(원페이지: 월 히트맵·책·지도)만 별도 정본 `design-ref/design_handoff_record_onepage/` + 픽셀 오라클 `.oracle/`(`scripts/record-verify.sh` 로 대조).
 - **`gym/` 은 iOS 네이티브 앱** (2026-07-07 전환, `ea98b97`). **실기기에 설치된 건 네이티브**(`Gym.xcodeproj` + `GymKit/Sources/{GymCore,GymViews}`, SwiftUI). 같은 폴더의 PWA(`src/`+`mocks/`)는 잔존이며 Pages 배포는 계속되지만 폰엔 없다. **화면·디자인 작업을 PWA 에만 하면 실기기엔 변화가 0** (2026-07-17 실사고: 웹만 고치고 "실기기 반영됨" 오단정). 상세·검증도구는 `~/apps/gym/CLAUDE.md`.
 - 앱별 스펙: `~/apps/<app>/specs/<app>-app-spec.md` (현재 best/gym/pick/study)
 - `~/apps/lessons/`: 환경 함정 (lazy load, 인용 시 직접 Read)

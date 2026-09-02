@@ -321,7 +321,7 @@ public struct Screen02Home: View {
         .padding(.bottom, 9)
         .contentShape(Capsule())
         .padding(.bottom, -9)
-        .onTapGesture { model?.nav(.statsWeek) }
+        .onTapGesture { model?.nav(.stats) }
         .accessibilityElement(children: .ignore)
         .accessibilityIdentifier("home.statsButton")
         .accessibilityLabel("전체 통계")
@@ -417,7 +417,7 @@ public struct Screen02Home: View {
         let fill = Capsule()
             .fill(LinearGradient.css(90, size: CGSize(width: fw, height: 5), gaugeStops))
             .frame(width: w * gaugeFrac)
-        // 신기록 하이라이트는 RTRankRow 진행 바와 동일한 모디파이어를 쓴다(정적 렌더에선 미표시).
+        // 신기록 하이라이트는 rtSweep 모디파이어(구 랭킹 진행 바 문법)를 쓴다(정적 렌더에선 미표시).
         if isNewRecord { fill.rtSweep() } else { fill }
     }
 
@@ -427,8 +427,8 @@ public struct Screen02Home: View {
     }
 
     // ── ④ 요일 헤더 ──────────────────────────────────────────────────────
-    // Screen11Month.dowHeader 와 동일 규칙: mono 10 / 500, 일요일만 terra. 오늘 열은 강조하지 않는다
-    // (그건 Screen10Stats.barRow 의 막대 차트 규칙이며 캘린더에는 적용하지 않는다).
+    // 기록 원페이지(ScreenStats.dowHeader)와 동일 규칙: mono 10 / 500, 일요일만 terra. 오늘 열은 강조하지 않는다
+    // (그건 삭제된 주간 막대 차트의 규칙이며 캘린더에는 적용하지 않는다).
     var dowHeader: some View {
         HStack(spacing: 6) {
             ForEach(Array(["월", "화", "수", "목", "금", "토", "일"].enumerated()), id: \.offset) { i, d in
@@ -458,82 +458,8 @@ public struct Screen02Home: View {
         .accessibilityLabel("최근 2주 독서 기록")
     }
 
-    /// 칸 하나 — 분기 순서를 반드시 지킬 것: ① 오늘 그리고 분>0 → ② 미래 → ③ 미기록 과거 → ④ 읽은 과거.
-    /// weight 700 은 "오늘"의 표식이지 읽었는지의 표식이 아니다 → 오늘 미기록도 700 유지.
-    @ViewBuilder func calCell(_ c: HomeCalCell) -> some View {
-        let filledToday = c.isToday && c.minutes > 0
-        let base = Text("\(c.day)")
-            .font(.mono(11.5, c.isToday ? 700 : 500))
-            .tracking(11.5 * 0.01)
-            .foregroundColor(calFG(c, filledToday: filledToday))
-            .rtLB(RTLB.m11_5)
-            .frame(maxWidth: .infinity)
-            .frame(height: 33)
-            .background(RoundedRectangle(cornerRadius: 10).fill(calBG(c, filledToday: filledToday)))
-            .overlay {
-                // 읽은 과거만 안쪽 1pt — 색면 경계를 살짝 잡아준다
-                if !filledToday && !c.isFuture && c.minutes > 0 {
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(Color(hex: 0x7A3C28, alpha: 0.05), lineWidth: 1)
-                }
-                // 오늘인데 아직 안 읽은 칸 — 색면은 '읽음'의 표식이라 줄 수 없다(주면 읽은 것으로 오독).
-                // 대신 월간(11)이 오늘을 terra 링으로 잡는 문법(Screen11Month:209)을 테두리로 가져온다.
-                // 굵기 700 만으로는 실기기에서 주변 미기록 칸과 구별되지 않았다(2026-08-28 실기기 피드백).
-                if c.isToday && c.minutes == 0 {
-                    RoundedRectangle(cornerRadius: 10)
-                        .strokeBorder(RT.terra, lineWidth: 1.5)
-                }
-            }
-        let shaped = Group {
-            if c.isToday {
-                todayHalo(base)
-            } else {
-                base
-            }
-        }
-        // 미래 칸은 읽을 정보가 없다 — 요소를 만들지 않고 통째로 숨긴다.
-        // 요소를 만든 뒤(.accessibilityElement + label/value) .accessibilityHidden 을 덧붙이면
-        // 실기기에서 트리에 그대로 남는다 (시뮬레이터 실측 2026-08-28: 8/29·8/30 이 "기록 없음"으로 낭독됨).
-        if c.isFuture {
-            shaped.accessibilityHidden(true)
-        } else {
-            // 색만으로 분량을 전달하므로 VoiceOver 대체 텍스트가 필수 (§8-3, AC #15c)
-            shaped
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(calMonth(c))월 \(c.day)일")
-                .accessibilityValue(c.minutes > 0 ? "\(c.minutes)분" : "기록 없음")
-                .accessibilityAddTraits(c.isToday ? .isSelected : [])
-        }
-    }
-
-    /// 오늘 칸 헤일로 — 삭제된 13도트 체인의 '오늘 도트' 맥박 문법을 그대로 이식한다(2.6s·terra).
-    /// **정적 렌더(모션 off)는 기존 3pt @13% 그대로** — 데모 픽셀 오라클이 흔들리지 않는다.
-    private func todayHalo<V: View>(_ v: V) -> some View {
-        RTMotionFrame {
-            v.rtRing(10, RT.terra.opacity(0.13), width: 3)
-        } anim: { t in
-            let ph = (sin(t * 2 * .pi / 2.6 - .pi / 2) + 1) / 2
-            return v.rtRing(10, RT.terra.opacity(0.22 - 0.14 * ph), width: 3 + 2 * ph)
-        }
-    }
-
-    /// 색면이 깔린 칸(읽은 과거)에는 월간(11)의 "일요일은 항상 terra" 규칙을 적용하지 않는다 —
-    /// 색면 위 terra 숫자는 대비가 2.1:1 까지 떨어진다(월간엔 셀 배경이 없어 안 생기는 문제).
-    private func calFG(_ c: HomeCalCell, filledToday: Bool) -> Color {
-        if filledToday { return .white }
-        if c.isFuture { return Color(hex: 0xD3CBB6) }
-        // 오늘 미기록은 테두리와 같은 terra 로 — 굵기 700 만으로는 안 잡힌다(실기기 피드백)
-        if c.minutes == 0 { return (c.isToday || c.isSunday) ? RT.terra : RT.faint }
-        return Color(hex: 0x2E1C15)
-    }
-    private func calBG(_ c: HomeCalCell, filledToday: Bool) -> Color {
-        if filledToday { return RT.terra }
-        if c.isFuture || c.minutes == 0 { return .clear }
-        return RT.terra.opacity(RTHomeCal.alpha(c.minutes))
-    }
-    private func calMonth(_ c: HomeCalCell) -> Int {
-        Calendar(identifier: .gregorian).component(.month, from: c.date)
-    }
+    /// 칸 하나 — 문법은 RTHeatCell (기록 월 캘린더와 공유). 홈은 탭 없음.
+    func calCell(_ c: HomeCalCell) -> some View { RTHeatCell(c: c) }
 
     // ── 기록 블록 파생값 (데모는 시안 #14a 고정값) ────────────────────────
     private var todayMinVal: Int { live?.todayMin ?? 46 }
@@ -796,7 +722,7 @@ struct RTHomeMenu: View {
                     Text("통계").font(.sans(13.5, 700)).foregroundColor(RT.ink)
                     Spacer(minLength: 0)
                     chev(RT.ghost)
-                } action: { close(); model?.nav(.statsWeek) }
+                } action: { close(); model?.nav(.stats) }
                 menuDivider
                 menuRow(padding: EdgeInsets(top: 12, leading: 15, bottom: 13, trailing: 15)) {
                     menuTile(RT.amberTint) {

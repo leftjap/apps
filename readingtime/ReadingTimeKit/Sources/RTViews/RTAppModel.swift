@@ -16,12 +16,13 @@ public enum RTRoute: String, Sendable {
     case tapTimer = "05"
     case done = "06"
     case detail = "08"
-    case statsWeek = "10"
-    case statsMonth = "11"
+    case stats = "10"       // 기록 원페이지 (주·월·지도 통합, design_handoff_record_onepage)
     case library = "12"
     case emptyHome = "14"
-    case statsMap = "15"
 }
+
+/// 기록 원페이지 바텀시트 — day(일) / list / place(장소 id)
+public enum RTStatsSheet: Equatable, Sendable { case day(Int), list, place(String) }
 
 public enum RTSheet: String, Sendable {
     case addtime, finish, addbook, settings, sort, bookmenu
@@ -190,7 +191,6 @@ public final class RTAppModel: ObservableObject {
     @Published public var added: Set<String> = ["flow"]  // 13 데모: 첫 행 추가됨
     @Published public var libraryFilter: RTLibraryFilter = .all
     @Published public var librarySort: RTLibrarySort = .recent
-    @Published public var weekSel = 3                // 10 데모: 목요일 선택
     // 하루 첫 실행 안무(#7a) 재생 플래그 — 앱 셸이 UserDefaults 날짜 판정 후 홈 진입 시 1회 set.
     // 데모(rtshot/rtapp)·기본은 false → 홈은 정지 #7b (픽셀 오라클 불변)
     @Published public var playPickup = false
@@ -229,12 +229,12 @@ public final class RTAppModel: ObservableObject {
     /// 홈 파트너 행 탭 → 파트너 통계(주간)
     public func openPartnerStats() {
         statsSubject = .partner
-        nav(.statsWeek)
+        nav(.stats)
     }
     /// 내 통계 진입 (홈 메뉴) — 주체 .me 리셋
     public func openMyStats() {
         statsSubject = .me
-        nav(.statsWeek)
+        nav(.stats)
     }
 
     /// 데모 파트너 주입 (검증·기기 데모용 — 백엔드 배선 전) — 시안값(소연·작별하지 않는다·오늘 24분)
@@ -850,13 +850,14 @@ public final class RTAppModel: ObservableObject {
         if sheet != nil { sheet = nil }
         // 상세 뒤로가기 목적지 = 진입 출처. 홈·서재·통계(주/월)에서 진입 가능 → 그 route 유지.
         if to == .detail && route != .detail {
-            detailOrigin = [.home, .library, .statsWeek, .statsMonth, .statsMap].contains(route) ? route : .library
+            detailOrigin = [.home, .library, .stats].contains(route) ? route : .library
         }
         if to == .home { statsSubject = .me }   // 홈 복귀 시 파트너 통계 주체 리셋
-        // 목업 setTab: 탭 전환 시 열린 장소 시트·책 상세를 닫는다
-        if [.statsWeek, .statsMonth, .statsMap].contains(to) && to != route {
-            placeSheet = nil
-            recordBook = nil
+        // 기록 원페이지 진입 — 현재 달·시트·전체 화면 지도 초기화 (08 에서 뒤로 복귀는 유지: 지도로 돌아온다)
+        if to == .stats && route != .stats && route != .detail {
+            statsMonth = nil
+            statsSheet = nil
+            mapFullscreen = false
         }
         route = to
     }
@@ -1061,27 +1062,87 @@ public final class RTAppModel: ObservableObject {
     public func setLibraryFilter(_ f: RTLibraryFilter) { libraryFilter = f }
     public func setLibrarySort(_ s: RTLibrarySort) { librarySort = s; closeSheet() }
 
-    // ── 10 주간 차트 ──
-    public func selectWeek(_ i: Int) { weekSel = i }
+    // ── 기록 원페이지 (design_handoff_record_onepage §State Management) ──
+    /// 표시 중인 달 (nil = 현재 달). 범위 = 첫 기록 달 … 현재 달.
+    @Published public var statsMonth: RTStatsYM?
+    /// 바텀시트 — nil = 닫힘
+    @Published public var statsSheet: RTStatsSheet?
+    /// 전체 화면 지도 (원페이지 위 오버레이). 08 로 push 했다 뒤로 오면 그대로 지도로 복귀.
+    @Published public var mapFullscreen = false
 
-    // ── 15 지도 (작업지시서 §5·§9 State) ──
-    // 카메라(팬·줌)는 MapKit(Screen15Map)이 소유 — §5.1 "투영·팬·줌·클러스터 로직은 SDK가 대체".
-    // 모델은 시트/책 상세 상태만 관리한다.
-    /// 장소 시트 — 열린 place id 들 (nil = 닫힘)
-    @Published public var placeSheet: [String]?
-    /// 책 상세 시트 — 책 인덱스 (nil = 닫힘). 장소 시트 위에 겹쳐 열림.
-    @Published public var recordBook: Int?
-
-    /// 지도·시트가 쓰는 데이터 — 실데이터 모드(userData 있음)는 항상 실집계.
-    /// 위치 세션이 없으면 빈 지도가 정상 (위치 없는 책은 안 뜸 — 사용자 결정 2026-07-15).
-    /// 시안 데모(§12)는 rtshot/rtapp(userData nil) 픽셀 오라클 전용.
-    public var recordData: (places: [RTRecPlace], books: [RTRecBook]) {
-        if let d = userData { return RTRecord.live(from: d) }
-        return (RTRecordDemo.places, RTRecordDemo.books)
+    /// 화면이 먹는 데이터셋 — 파트너는 partnerData(종이만), 나는 userData + 내 밀리, 데모(userData nil)는 시안.
+    public var statsDataset: RTStatsDataset {
+        if statsSubject == .partner { return RTStats.live(data: partnerData ?? RTUserData(), now: now()) }
+        guard let d = userData else { return RTStatsDemo.dataset }
+        let days = ebookDaily.keys.compactMap { dayFormatter.date(from: $0) }
+        return RTStats.live(data: d, now: now(), ebookDays: days,
+                            ebookBreakdown: { self.ebookBreakdown(on: $0) },
+                            ebookCover: { self.ebookCovers[$0] })
+    }
+    public var statsDisplayedMonth: RTStatsYM {
+        if let m = statsMonth { return m }
+        let t = statsDataset.today
+        return RTStatsYM(year: t.year, month: t.month)
+    }
+    /// ‹ — 첫 기록 달까지. 월 전환 시 열린 시트는 닫는다.
+    public func statsPrev() {
+        let cur = statsDisplayedMonth
+        guard cur > RTStats.monthRange(statsDataset).first else { return }
+        statsMonth = cur.month == 1 ? RTStatsYM(year: cur.year - 1, month: 12)
+                                    : RTStatsYM(year: cur.year, month: cur.month - 1)
+        statsSheet = nil
+    }
+    /// › — 현재 달까지 (현재 달에 닿으면 nil = 현재)
+    public func statsNext() {
+        let cur = statsDisplayedMonth
+        let last = RTStats.monthRange(statsDataset).last
+        guard cur < last else { return }
+        let next = cur.month == 12 ? RTStatsYM(year: cur.year + 1, month: 1)
+                                   : RTStatsYM(year: cur.year, month: cur.month + 1)
+        statsMonth = next == last ? nil : next
+        statsSheet = nil
+    }
+    public func statsThisMonth() { statsMonth = nil; statsSheet = nil }
+    /// 날짜 탭 — 읽은 과거·오늘만 day 시트 (미래·미기록·빈 칸 무시)
+    public func statsTapDay(_ day: Int) {
+        let ym = statsDisplayedMonth
+        let mo = RTStats.month(statsDataset, year: ym.year, month: ym.month)
+        guard let c = mo.cells.compactMap({ $0 }).first(where: { $0.day == day }),
+              c.minutes > 0, !c.isFuture else { return }
+        statsSheet = .day(day)
+    }
+    public func statsOpenList() { statsSheet = .list }
+    public func statsTapPlace(_ id: String) { statsSheet = .place(id) }
+    public func statsCloseSheet() { statsSheet = nil }
+    public func openMapFullscreen() { mapFullscreen = true }
+    /// 닫기 → 원페이지 복귀 (열린 시트 닫힘. 카메라 리셋은 뷰가 재생성되며 기본 프레이밍으로 돌아온다)
+    public func closeMapFullscreen() { mapFullscreen = false; statsSheet = nil }
+    /// 시트 데이터 (뷰용) — 표시 중인 달 기준
+    public var statsSheetData: RTStats.Sheet? {
+        guard let s = statsSheet else { return nil }
+        let ds = statsDataset, ym = statsDisplayedMonth
+        switch s {
+        case .day(let d): return RTStats.daySheet(ds, year: ym.year, month: ym.month, day: d)
+        case .list: return RTStats.listSheet(ds, year: ym.year, month: ym.month)
+        case .place(let id):
+            guard let i = ds.places.firstIndex(where: { $0.id == id }) else { return nil }
+            return RTStats.placeSheet(ds, place: i)
+        }
+    }
+    /// 책 행·표지 탭 → 시트 닫고 책 상세(08) push. isbn 없는 밀리 책(미편입·귀속 불가)은 탭 무시.
+    /// 데모(userData nil)는 08 데모 화면으로 (목업의 "책 상세 · 08 기존 화면" 스텁에 대응).
+    public func statsTapBook(_ index: Int) {
+        let ds = statsDataset
+        guard index >= 0, index < ds.books.count else { return }
+        statsSheet = nil
+        if userData == nil { nav(.detail); return }
+        let isbn = ds.books[index].isbn
+        guard !isbn.isEmpty else { return }
+        openBookDetail(isbn: isbn)
     }
 
-    /// 가장 최근 위치 세션의 좌표 — 지도 기본 카메라(동네 프레이밍) 중심.
-    /// 위치 없는 세션은 건너뛴다. 없으면 nil (뷰가 전체 뷰 폴백).
+    /// 가장 최근 위치 세션의 좌표 — 지도 카드 기본 카메라(동네 프레이밍) 중심.
+    /// 위치 없는 세션은 건너뛴다. 없으면 nil (카드는 전체 핀 프레이밍 폴백).
     public var latestReadCoord: (lat: Double, lng: Double)? {
         guard let d = userData else { return nil }
         return d.sessions.filter { $0.latitude != nil && $0.longitude != nil && $0.placeId != nil }
@@ -1089,49 +1150,9 @@ public final class RTAppModel: ObservableObject {
             .map { ($0.latitude!, $0.longitude!) }
     }
 
-    /// §5.5 통계 칩 — 실데이터는 "N곳" 집계(0곳 = nil → 칩 숨김), 데모는 시안 상수.
-    public var mapChipText: String? {
-        guard userData != nil else { return RTRecordDemo.mapChip }
-        let n = recordData.places.count
-        return n > 0 ? "\(n)곳" : nil
-    }
-
     /// 위치 픽스 공급 훅 — 앱 셸이 CoreLocation 배선 (§16: 세션 시작·시간추가 시트 열림 시 캡처).
     /// nil 반환 = 위치 미확보 → 세션은 위치 없이 저장 (지도 미표시).
     public var locationProvider: (() -> RTPlaceFix?)?
-
-    /// §5.6 단일 마커 탭 — openTarget(1권 책상세 / N권 시트). 클러스터 탭의 줌 투 핏은 MapKit 뷰가 처리.
-    public func tapMarker(_ m: RTRecord.Marker) {
-        guard !m.isCluster else { return }
-        applyTarget(RTRecord.openTarget([m.placeId], places: recordData.places))
-    }
-    func applyTarget(_ t: RTRecord.Target) {
-        switch t {
-        case .book(let b): openMapBook(b)
-        case .sheet(let ids): openPlaceSheet(ids)
-        }
-    }
-
-    /// 지도에서 책 선택(단일 핀·장소 시트 커버) → 책상세 페이지(08) 이동 (사용자 요구 2026-07-15).
-    /// index = recordData.books 인덱스. 실데이터(서재에 있는 ISBN)면 페이지로, 데모/oracle 은 §7 기록 시트 폴백.
-    public func openMapBook(_ index: Int) {
-        let books = recordData.books
-        guard index >= 0, index < books.count else { return }
-        let isbn = books[index].isbn
-        if userData?.books.contains(where: { $0.isbn == isbn }) == true {
-            placeSheet = nil                 // 지도 오버레이 닫고 페이지로 (전역 오버레이라 겹침 방지)
-            recordBook = nil
-            statsSubject = .me               // 지도는 항상 내 데이터 → 파트너 잔존 subject 리셋
-            openBookDetail(isbn: isbn)       // selectedISBN + nav(.detail), detailOrigin = .statsMap
-        } else {
-            openRecordBook(index)            // 데모/oracle 폴백 (§7 기록 시트)
-        }
-    }
-    public func openPlaceSheet(_ ids: [String]) { placeSheet = ids }
-    public func closePlaceSheet() { placeSheet = nil }
-    public func openRecordBook(_ id: Int) { recordBook = id }
-    /// 책 상세 닫기 — 장소 시트에서 진입했으면 시트로 복귀(시트 상태 유지), 지도 직행이면 지도로.
-    public func closeRecordBook() { recordBook = nil }
 
     // ── 타이머 틱 (app.js startTick — recording 일 때만 1초 증가) ──
     public func tick() {
@@ -1174,6 +1195,13 @@ public final class RTAppModel: ObservableObject {
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
         case "sel": selectedISBN = arg                           // 상세 대상 지정(검증 — nav:08 과 조합)
         case "reread": rereadBook()                              // 다시 읽기(검증 — 밀리 미완독 상태 재현)
+        case "statsPrev": statsPrev()                            // 기록 원페이지 (검증)
+        case "statsNext": statsNext()
+        case "statsThisMonth": statsThisMonth()
+        case "statsDay": Int(arg).map { statsTapDay($0) }
+        case "statsList": statsOpenList()
+        case "statsMap": openMapFullscreen()
+        case "statsPlace": statsTapPlace(arg)
         case "finishEbook": finishEbook(arg)                     // 밀리 완독 처리(검증)
         case "demoCards":   // 홈 캐러셀 시드 — 종이책 2 + 밀리 2 (실표지·최근순 검증)
             finishedEbooks = [:]
@@ -1339,14 +1367,7 @@ public final class RTAppModel: ObservableObject {
         case "deleteBook": deleteBook()
         case "filter": RTLibraryFilter(rawValue: arg).map { setLibraryFilter($0) }
         case "sort": RTLibrarySort(rawValue: arg).map { setLibrarySort($0) }
-        case "week": Int(arg).map { selectWeek($0) }
         case "tick": tick()
-        // ── 15 지도 (검증·데모) ──
-        case "mapTapPin":   // 단일 마커 라벨로 탭 (예: mapTapPin:뉴욕) — 헤드리스 기본 뷰 기준
-            let rd = recordData
-            let v = RTRecord.defaultView
-            RTRecord.markers(scale: v.scale, tx: v.tx, ty: v.ty, places: rd.places, books: rd.books)
-                .first { $0.label == arg }.map { tapMarker($0) }
         case "seedLoc":   // 기존 세션 위치 백필 (실기기 1회 실행) — "lat|lng|placeId|placeName|country"
             // ("|" 구분: --seq 가 ","로 액션을 쪼개므로 콤마 사용 불가)
             let p = arg.split(separator: "|").map(String.init)
@@ -1361,12 +1382,6 @@ public final class RTAppModel: ObservableObject {
                     }
                 }
             }
-        case "openPlace": openPlaceSheet(arg.split(separator: "+").map(String.init))
-        case "openRecBook": Int(arg).map { openRecordBook($0) }
-        case "mapBook": Int(arg).map { openMapBook($0) }   // 지도 책 선택 → 책상세 페이지(실데이터)/§7(데모)
-
-        case "closePlace": closePlaceSheet()
-        case "closeRecBook": closeRecordBook()
         default: break
         }
     }

@@ -19,10 +19,10 @@ public struct RTRootView: View {
 
     /// 좌→우 스와이프의 뒤로가기 목적지 (헤더 back 버튼과 동일 매핑). nil = 스와이프 없음.
     private var backRoute: RTRoute? {
-        guard model.sheet == nil, model.placeSheet == nil, model.recordBook == nil else { return nil }
+        guard model.sheet == nil, model.statsSheet == nil, !model.mapFullscreen else { return nil }
         switch model.route {
         case .detail: return model.detailOrigin
-        case .library, .statsWeek, .statsMonth, .statsMap: return .home
+        case .library, .stats: return .home
         default: return nil
         }
     }
@@ -46,23 +46,15 @@ public struct RTRootView: View {
                 sheetView(sheet)
                     .rtSheetUp()
             }
-            // 기록 시트 (§6·§7) — 장소 시트 위에 책 상세가 겹쳐 열림
-            if let ids = model.placeSheet {
-                let rd = model.recordData
+            // 기록 원페이지 — 전체 화면 지도(원페이지 위) + 바텀시트(지도 위에도 겹침)
+            if model.route == .stats && model.mapFullscreen {
+                RTMapFullscreen(model: model)
+            }
+            if model.route == .stats, let data = model.statsSheetData {
                 Color(hex: 0x17120C, alpha: 0.42)
                     .contentShape(Rectangle())
-                    .onTapGesture { model.closePlaceSheet() }
-                RTPlaceSheetView(sheet: RTRecord.buildSheet(ids, places: rd.places, books: rd.books),
-                                 model: model)
-                    .frame(maxHeight: .infinity, alignment: .bottom)
-            }
-            if let b = model.recordBook {
-                let rd = model.recordData
-                Color(hex: 0x17120C, alpha: 0.46)
-                    .contentShape(Rectangle())
-                    .onTapGesture { model.closeRecordBook() }
-                RTBookSheetView(book: RTRecord.buildBook(b, places: rd.places, books: rd.books),
-                                model: model)
+                    .onTapGesture { model.statsCloseSheet() }
+                RTStatsSheetView(sheet: data, ds: model.statsDataset, model: model)
                     .frame(maxHeight: .infinity, alignment: .bottom)
             }
         }
@@ -129,9 +121,7 @@ public struct RTRootView: View {
         case .tapTimer: Screen05TapRecording(model: model)
         case .done: Screen06Done(model: model)
         case .detail: Screen08Detail(model: model)
-        case .statsWeek: Screen10Stats(model: model)
-        case .statsMonth: Screen11Month(model: model)
-        case .statsMap: Screen15Map(model: model)
+        case .stats: ScreenStats(model: model)
         case .library: Screen12Library(model: model)
         case .emptyHome: Screen14EmptyHome(model: model)
         }
@@ -170,11 +160,9 @@ public extension RTAppModel {
         case "06": m.login(); m.simFlip(); m.endSession()
         case "07", "09", "13": m.login(); m.navScreenID(id)
         case "08": m.login(); m.nav(.detail)
-        case "10": m.login(); m.nav(.statsWeek)
-        case "11": m.login(); m.nav(.statsMonth)
+        case "10": m.login(); m.nav(.stats)
         case "12": m.login(); m.nav(.library)
         case "14": m.login(); m.nav(.emptyHome)
-        case "15": m.login(); m.nav(.statsMap)
         default: return nil
         }
         return m

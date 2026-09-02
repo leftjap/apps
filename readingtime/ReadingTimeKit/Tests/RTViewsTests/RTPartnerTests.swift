@@ -15,7 +15,7 @@ import Foundation
         let m = RTAppModel()
         m.openPartnerStats()
         #expect(m.statsSubject == .partner)
-        #expect(m.route == .statsWeek)
+        #expect(m.route == .stats)
     }
 
     @Test func navHomeResetsSubjectToMe() {
@@ -30,7 +30,7 @@ import Foundation
         m.openPartnerStats()          // .partner
         m.openMyStats()               // 내 통계 재진입 → .me
         #expect(m.statsSubject == .me)
-        #expect(m.route == .statsWeek)
+        #expect(m.route == .stats)
     }
 
     @Test func partnerDemoProfileMatchesMockup() {

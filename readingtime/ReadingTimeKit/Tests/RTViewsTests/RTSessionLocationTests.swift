@@ -52,33 +52,29 @@ private func day(_ s: String, hour: Int = 12) -> Date {
             RTSessionRecord(isbn: "A", mode: "manual", seconds: 10 * 60, endedAt: day("2026-06-01"), pauseCount: 0),
         ]
         let data = RTUserData(books: books, sessions: sessions)
-        let (places, recBooks) = RTRecord.live(from: data)
+        let ds = RTStats.live(data: data, now: day("2026-06-30"))
 
-        #expect(places.count == 2)
-        let ny = places.first { $0.id == "ny" }!
-        #expect(ny.name == "뉴욕" && ny.sub == "미국")
-        #expect(ny.lat == 40.7 && ny.lng == -74.0)
-        #expect(ny.s.count == 2)
+        #expect(ds.places.count == 2)
+        let ny = ds.places.first { $0.id == "ny" }!
+        #expect(ny.name == "뉴욕" && ny.lat == 40.7 && ny.lng == -74.0)
+        #expect(ds.sessions.filter { $0.place != nil }.count == 3, "위치 없는 수동 10분은 지도 제외")
 
-        // 엔진이 데모와 동일하게 소비되는지 (시안 뉴욕 값과 같은 구조)
-        let sheet = RTRecord.buildSheet(["ny"], places: places, books: recBooks)
-        #expect(sheet.statBooks == 2)
-        #expect(sheet.statTime == "2:24")           // 96 + 48
-        #expect(sheet.covers[0].title == "파친코" && sheet.covers[0].time == "1시간 36분")
+        // 엔진이 데모와 동일하게 소비되는지 (시안 뉴욕 장소 시트와 같은 구조)
+        let sheet = RTStats.placeSheet(ds, place: ds.places.firstIndex { $0.id == "ny" }!)
+        #expect(sheet.sub == "2권 · 2시간 24분 읽음")           // 96 + 48
+        #expect(ds.books[sheet.rows[0].book].title == "파친코" && sheet.rows[0].value == "1:36"
+                && sheet.rows[0].sub == "1회 읽음")
 
-        let pachinko = recBooks.firstIndex { $0.title == "파친코" }!
-        let detail = RTRecord.buildBook(pachinko, places: places, books: recBooks)
-        #expect(detail.statSessions == 2)           // 위치 있는 것만 (수동 10분 제외)
-        #expect(detail.statPlaces == 2)             // 뉴욕 + 도쿄
-        #expect(detail.statTime == "2:12")          // 96 + 36
-        #expect(detail.places == ["뉴욕", "도쿄"])
+        // 6월 집계 — 파친코 = 뉴욕 96 + 도쿄 36 + 수동 10 (달력·랭킹은 위치 무관 전체)
+        let mo = RTStats.month(ds, year: 2026, month: 6)
+        let pachinko = mo.ranked.first { ds.books[$0.book].title == "파친코" }!
+        #expect(RTStats.hm(pachinko.sec) == "2:22" && pachinko.days == 3)
     }
 
     @Test func placesEmptyWhenNoLocationRecorded() {
         let data = RTUserData(sessions: [
             RTSessionRecord(isbn: nil, mode: "flip", seconds: 600, endedAt: day("2026-06-01"), pauseCount: 0),
         ])
-        let (places, _) = RTRecord.live(from: data)
-        #expect(places.isEmpty)
+        #expect(RTStats.live(data: data, now: day("2026-06-30")).places.isEmpty)
     }
 }

@@ -14,17 +14,17 @@ final class HomeRecordUITests: XCTestCase {
         return app
     }
 
-    /// 주간 기록(10)에만 있는 문구 — 화면 식별자가 없어 이걸로 도착을 판정한다.
-    private let weeklyMarker = "vs 지난주"
+    /// 기록 원페이지(10) 서머리 문구 — 도착 판정용 (구 주간 탭 "vs 지난주" 는 원페이지 통합으로 삭제)
+    private let weeklyMarker = "총 시간"
 
-    // ── AC #11 — 전체 통계 탭 → 주간 기록(10). 아바타 메뉴를 거치지 않는다 ──
+    // ── AC #11 — 전체 통계 탭 → 기록 원페이지(10). 아바타 메뉴를 거치지 않는다 ──
     func testStatsButtonGoesToWeeklyStatsDirectly() {
         let app = launchHome()
         let btn = app.descendants(matching: .any)["home.statsButton"]
         XCTAssertTrue(btn.waitForExistence(timeout: 15), "전체 통계 버튼이 없음")
         btn.tap()
         XCTAssertTrue(app.staticTexts[weeklyMarker].waitForExistence(timeout: 15),
-                      "주간 기록(10)으로 진입하지 않음")
+                      "기록 원페이지(10)로 진입하지 않음")
     }
 
     // ── AC #16 — 히트 영역 세로 ≥ 36pt (캡슐 27 + 하향 확장 9) ──

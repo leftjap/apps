@@ -70,28 +70,28 @@ import Foundation
     }
 }
 
-// 통계 랭킹 책 탭 → 그 책 상세(08). 뒤로가기는 통계로 복귀(detailOrigin=statsWeek).
+// 통계 랭킹 책 탭 → 그 책 상세(08). 뒤로가기는 통계로 복귀(detailOrigin=stats).
 @MainActor
 @Suite struct RTStatsBookDetailTests {
     @Test func openBookDetailFromStatsSetsIsbnAndNavigates() {
         let m = RTAppModel()
-        m.nav(.statsWeek)
+        m.nav(.stats)
         m.openBookDetail(isbn: "9788937473135")
         #expect(m.selectedISBN == "9788937473135")
         #expect(m.route == .detail)
     }
     @Test func backFromStatsBookReturnsToStats() {
         let m = RTAppModel()
-        m.nav(.statsWeek)
+        m.nav(.stats)
         m.openBookDetail(isbn: "X")
-        #expect(m.detailOrigin == .statsWeek)   // 서재가 아니라 통계로 복귀
+        #expect(m.detailOrigin == .stats)   // 서재가 아니라 통계로 복귀
     }
     @Test func partnerStatsBookKeepsPartnerAndReturnsToStats() {
         let m = RTAppModel()
-        m.openPartnerStats()            // statsSubject=.partner, route=statsWeek
+        m.openPartnerStats()            // statsSubject=.partner, route=stats
         m.openBookDetail(isbn: "X")
         #expect(m.route == .detail)
-        #expect(m.detailOrigin == .statsWeek)
+        #expect(m.detailOrigin == .stats)
         #expect(m.statsSubject == .partner)   // nav(.detail)는 파트너 리셋 안 함
     }
     @Test func partnerSelectedBookResolvesFromPartnerData() {

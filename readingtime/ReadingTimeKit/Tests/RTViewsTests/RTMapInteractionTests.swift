@@ -2,89 +2,117 @@ import Testing
 import Foundation
 @testable import RTViews
 
-// 지도 상호작용 — 모델 레벨(§5.6 단일 마커 탭 → 시트/책, 시트 겹침, 탭 전환 시 닫힘).
-// 카메라(팬·줌·클러스터 확대)는 MapKit(Screen15Map)이 소유 — §5.1 "투영·팬·줌은 SDK가 대체".
-// 따라서 여기선 모델이 담당하는 시트/책/라우팅만 검증하고, 카메라 이동은 실기기 화면 검증으로 확인.
+// 기록 원페이지 상호작용 — 모델 레벨 (README §Interactions / §State Management).
+// 카메라(팬·줌·클러스터 확대)는 MapKit(RTMapFullscreen)이 소유 — 실기기 화면 검증으로 확인.
 
 @MainActor
 @Suite struct RTMapInteractionTests {
 
-    private func mapModel() -> RTAppModel {
-        let m = RTAppModel()
+    private func statsModel() -> RTAppModel {
+        let m = RTAppModel()       // userData nil = 데모 (오늘 2026-08-27, 달 범위 5~8월)
         m.login()
-        m.nav(.statsMap)
+        m.nav(.stats)
         return m
-    }
-    // 기본 뷰(헤드리스) 마커에서 라벨로 조회 — 단일 마커 탭 검증용
-    private func marker(_ m: RTAppModel, label: String) -> RTRecord.Marker {
-        let v = RTRecord.defaultView
-        return RTRecord.markers(scale: v.scale, tx: v.tx, ty: v.ty).first { $0.label == label }!
     }
 
     @Test func initialState() {
-        let m = mapModel()
-        #expect(m.route == .statsMap)
-        #expect(m.placeSheet == nil && m.recordBook == nil)
+        let m = statsModel()
+        #expect(m.route == .stats)
+        #expect(m.statsSheet == nil && !m.mapFullscreen)
+        #expect(m.statsDisplayedMonth == RTStatsYM(year: 2026, month: 8))
     }
 
-    // §5.6-2/4: 단일 마커 + distinct 1권 → 책 상세 (데모 모드 = §7 기록 시트 폴백).
-    // 실데이터는 책상세 페이지(08)로 이동 — RTMapLiveDataTests.openMapBookNavigatesToDetailPageForLiveData.
-    @Test func tapSinglePlaceOneBookOpensRecordSheetInDemo() {
-        let m = mapModel()
-        m.tapMarker(marker(m, label: "시드니"))
-        #expect(m.recordBook == 8)          // 노르웨이의 숲 (데모 폴백)
-        #expect(m.placeSheet == nil)
+    // ‹ › 는 첫 기록 달(5월) … 현재 달(8월) 안에서만. 현재 달에 닿으면 nil(=현재)
+    @Test func monthNavigationBounds() {
+        let m = statsModel()
+        m.statsNext()
+        #expect(m.statsMonth == nil, "현재 달에서 › 무시")
+        m.statsPrev(); m.statsPrev(); m.statsPrev()
+        #expect(m.statsDisplayedMonth == RTStatsYM(year: 2026, month: 5))
+        m.statsPrev()
+        #expect(m.statsDisplayedMonth == RTStatsYM(year: 2026, month: 5), "첫 기록 달에서 ‹ 무시")
+        m.statsNext(); m.statsNext(); m.statsNext()
+        #expect(m.statsMonth == nil, "현재 달 복귀 = nil")
+        m.statsPrev()
+        m.statsThisMonth()
+        #expect(m.statsMonth == nil)
     }
 
-    // §5.6-2/4: 단일 마커 + distinct 2권 → 장소 시트
-    @Test func tapSinglePlaceMultiBookOpensSheet() {
-        let m = mapModel()
-        m.tapMarker(marker(m, label: "뉴욕"))
-        #expect(m.placeSheet == ["ny"])
-        #expect(m.recordBook == nil)
+    // 월 전환 시 열린 시트는 닫힌다
+    @Test func monthChangeClosesSheet() {
+        let m = statsModel()
+        m.statsOpenList()
+        #expect(m.statsSheet == .list)
+        m.statsPrev()
+        #expect(m.statsSheet == nil)
+        m.statsOpenList()
+        m.statsThisMonth()
+        #expect(m.statsSheet == nil)
     }
 
-    // 클러스터 마커 탭은 모델에서 no-op (MapKit 뷰가 카메라 확대) — 시트/책 안 열림
-    @Test func tapClusterIsModelNoop() {
-        let m = mapModel()
-        m.tapMarker(marker(m, label: "서울 외 5"))
-        #expect(m.placeSheet == nil && m.recordBook == nil)
+    // 날짜 탭 — 읽은 날만 day 시트, 미래·미기록 무시
+    @Test func dayTapOnlyForReadDays() {
+        let m = statsModel()
+        m.statsTapDay(22)
+        #expect(m.statsSheet == .day(22))
+        m.statsCloseSheet()
+        m.statsTapDay(28)                       // 미래
+        #expect(m.statsSheet == nil)
+        m.statsTapDay(2)                        // 8/2 미기록
+        #expect(m.statsSheet == nil)
     }
 
-    // 장소 시트 → 표지 탭 → 책 상세 (시트 위에 겹쳐 열림, 닫으면 시트로 복귀)
-    @Test func sheetCoverOpensBookOverSheet() {
-        let m = mapModel()
-        m.tapMarker(marker(m, label: "뉴욕"))
-        m.openRecordBook(4)                     // 파친코 표지 탭
-        #expect(m.placeSheet == ["ny"])         // 시트는 살아 있음
-        #expect(m.recordBook == 4)
-        m.closeRecordBook()
-        #expect(m.recordBook == nil)
-        #expect(m.placeSheet == ["ny"])         // 시트로 복귀
+    @Test func placeTapOpensPlaceSheetAndDataResolves() {
+        let m = statsModel()
+        m.openMapFullscreen()
+        m.statsTapPlace("뉴욕")
+        #expect(m.statsSheet == .place("뉴욕"))
+        #expect(m.statsSheetData?.title == "뉴욕")
+        m.statsTapPlace("없는 곳")
+        #expect(m.statsSheetData == nil, "모르는 장소 id 는 시트 데이터 없음")
     }
 
-    // 목업 setTab: 탭 전환 시 열린 시트를 닫는다
-    @Test func switchingTabClosesSheets() {
-        let m = mapModel()
-        m.tapMarker(marker(m, label: "뉴욕"))
-        m.openRecordBook(4)
-        m.nav(.statsWeek)
-        #expect(m.placeSheet == nil && m.recordBook == nil)
-        #expect(m.route == .statsWeek)
+    // 전체 화면 지도 닫기 → 시트도 닫힘. 08 로 갔다 뒤로 오면 지도는 그대로(README: 지도로 복귀)
+    @Test func mapFullscreenLifecycle() {
+        let m = statsModel()
+        m.openMapFullscreen()
+        m.statsTapPlace("뉴욕")
+        m.closeMapFullscreen()
+        #expect(!m.mapFullscreen && m.statsSheet == nil)
+
+        m.openMapFullscreen()
+        m.statsTapPlace("뉴욕")
+        m.statsTapBook(6)                        // 1984 (데모 → 08 데모 화면)
+        #expect(m.route == .detail && m.statsSheet == nil)
+        #expect(m.mapFullscreen, "상세로 push 해도 지도 상태 유지")
+        m.nav(m.detailOrigin)                    // 뒤로
+        #expect(m.route == .stats && m.mapFullscreen, "뒤로 = 지도로 복귀")
     }
 
-    // 3탭 왕복 라우팅
-    @Test func threeTabRouting() {
-        let m = mapModel()
-        m.nav(.statsWeek);  #expect(m.route == .statsWeek)
-        m.nav(.statsMonth); #expect(m.route == .statsMonth)
-        m.nav(.statsMap);   #expect(m.route == .statsMap)
-        m.nav(.home);       #expect(m.route == .home)
+    // 홈에서 다시 진입하면 현재 달·시트·지도 초기화
+    @Test func reenteringStatsResetsState() {
+        let m = statsModel()
+        m.statsPrev()
+        m.openMapFullscreen()
+        m.nav(.home)
+        m.nav(.stats)
+        #expect(m.statsMonth == nil && m.statsSheet == nil && !m.mapFullscreen)
     }
 
-    // 클러스터링 자체(52px 체인)는 기본 뷰에서 6개 마커 — 엔진 정합(RTRecordEngineTests 와 별개로 여기서도)
-    @Test func defaultViewHasSixMarkers() {
-        let v = RTRecord.defaultView
-        #expect(RTRecord.markers(scale: v.scale, tx: v.tx, ty: v.ty).count == 6)
+    // 뒤로가기 목적지 — 기록 원페이지에서 열린 상세는 기록으로 복귀
+    @Test func detailFromStatsReturnsToStats() {
+        let m = statsModel()
+        m.statsTapBook(0)
+        #expect(m.route == .detail && m.detailOrigin == .stats)
+    }
+
+    // rtshot --seq 액션 배선
+    @Test func seqActionsDriveStats() {
+        let m = RTAppModel()
+        for a in ["login", "nav:10", "statsPrev", "statsDay:5"] { m.apply(a) }
+        #expect(m.route == .stats && m.statsDisplayedMonth == RTStatsYM(year: 2026, month: 7))
+        #expect(m.statsSheet == .day(5) || m.statsSheet == nil)   // 7/5 기록 여부는 시드 생성값에 따름
+        m.apply("statsThisMonth"); m.apply("statsMap"); m.apply("statsPlace:뉴욕")
+        #expect(m.mapFullscreen && m.statsSheet == .place("뉴욕"))
     }
 }

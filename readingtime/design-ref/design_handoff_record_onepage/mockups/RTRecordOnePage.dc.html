@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600;700&family=Poppins:wght@600&display=swap">
+<style>
+  @keyframes v5Fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes v8Up{from{transform:translateY(46px);opacity:0}to{transform:translateY(0);opacity:1}}
+  @keyframes rtPush{from{transform:translateX(100%)}to{transform:translateX(0)}}
+  @keyframes rtPinDrop{0%{transform:translate(-50%,-118%) scale(.4);opacity:0}60%{transform:translate(-50%,-96%) scale(1.06);opacity:1}100%{transform:translate(-50%,-100%) scale(1);opacity:1}}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  .rt-scroll{scrollbar-width:none}
+  .rt-scroll::-webkit-scrollbar{display:none}
+  a{color:#2C4A3C}a:hover{color:#26413A}
+</style>
+</helmet>
+<div data-screen-label="기록 원페이지 v2" style="width:390px;height:844px;position:relative;overflow:hidden;flex:none;border-radius:45px;background:#F6F3EA;box-shadow:0 40px 70px -28px rgba(60,45,30,.5),0 0 0 1px rgba(0,0,0,.08);font-family:'Noto Sans KR',system-ui,sans-serif;letter-spacing:-.005em;word-break:keep-all;-webkit-font-smoothing:antialiased">
+
+  <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);width:162px;height:29px;background:#000;border-radius:0 0 20px 20px;z-index:60;display:flex;align-items:center;justify-content:center"><div style="width:36px;height:5px;border-radius:4px;background:#17191b"></div></div>
+  <div style="position:absolute;top:0;left:0;right:0;height:47px;z-index:55;display:flex;align-items:center;justify-content:space-between;padding:0 32px;color:#141413;pointer-events:none">
+    <span style="font-family:'Poppins',system-ui,sans-serif;font-size:15px;font-weight:600;letter-spacing:.2px;padding-top:7px">9:41</span>
+    <span style="display:flex;align-items:center;gap:6.5px;padding-top:7px">
+      <svg width="17" height="11" viewBox="0 0 17 11" style="fill:currentColor"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.6" y="5" width="3" height="6" rx="1"></rect><rect x="9.2" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.8" y="0" width="3" height="11" rx="1"></rect></svg>
+      <svg width="16" height="11" viewBox="0 0 16 11" style="fill:currentColor"><path d="M8 2.15c2.4 0 4.6.92 6.25 2.5l1.35-1.42C13.6 1.22 10.94 0 8 0 5.06 0 2.4 1.22.4 3.23L1.75 4.65C3.4 3.07 5.6 2.15 8 2.15z"></path><path d="M8 5.5c1.4 0 2.68.55 3.66 1.46l1.35-1.44C11.66 4.28 9.9 3.6 8 3.6s-3.66.68-5.01 1.92l1.35 1.44A5.32 5.32 0 0 1 8 5.5z"></path><circle cx="8" cy="9.1" r="1.65"></circle></svg>
+      <svg width="26" height="12" viewBox="0 0 26 12" style="fill:currentColor"><rect x="0.5" y="0.5" width="21" height="11" rx="3" fill="none" stroke="currentColor" stroke-opacity="0.4"></rect><rect x="2" y="2" width="14.76" height="8" rx="1.6"></rect><path d="M23.5 4v4c.9-.35 1.5-1.1 1.5-2s-.6-1.65-1.5-2z" fill-opacity="0.5"></path></svg>
+    </span>
+  </div>
+
+  <div style="position:absolute;inset:0;overflow:hidden;background:#F6F3EA">
+    <div style="padding:52px 18px 0;display:flex;align-items:center;gap:4px;position:relative;z-index:20">
+      <div style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#3F3A2D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 6 10l6 6"></path></svg></div>
+      <span style="font-weight:800;font-size:17px;color:#17150F">기록</span>
+    </div>
+
+    <div class="rt-scroll" style="position:absolute;top:102px;left:0;right:0;bottom:0;overflow-y:auto;overflow-x:hidden;padding:0 22px 28px">
+
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <h1 style="margin:0;font-weight:900;font-size:26px;line-height:1.2;letter-spacing:-.04em;color:#17150F">{{ monthLabel }}</h1>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.02em;color:#C6BEA8">{{ yearLabel }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <sc-if value="{{ notCur }}" hint-placeholder-val="{{ false }}"><button onClick="{{ goCur }}" style="height:30px;padding:0 11px;border-radius:99px;background:#E9EFE6;border:0;cursor:pointer;font-family:inherit;font-weight:700;font-size:11px;color:#2C4A3C">이번 달</button></sc-if>
+          <button onClick="{{ prevTap }}" style="width:30px;height:30px;border-radius:9px;background:#ECE7D8;display:flex;align-items:center;justify-content:center;border:0;padding:0;cursor:pointer;opacity:{{ prevOp }}"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#8C8570" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 6 10l6 6"></path></svg></button>
+          <button onClick="{{ nextTap }}" style="width:30px;height:30px;border-radius:9px;background:#ECE7D8;display:flex;align-items:center;justify-content:center;border:0;padding:0;cursor:pointer;opacity:{{ nextOp }}"><svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#8C8570" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4l6 6-6 6"></path></svg></button>
+        </div>
+      </div>
+
+      <div style="margin-top:6px;display:flex;align-items:center;gap:10px;padding-bottom:9px;border-bottom:1px solid #E8E1CD;white-space:nowrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;font-size:17px;letter-spacing:-.02em;color:#17150F">{{ totalHM }}</span>
+        <span style="font-weight:500;font-size:12px;color:#8C8570">총 시간</span>
+        <span style="width:3px;height:3px;border-radius:50%;background:#d5cdb8;flex:none"></span>
+        <span style="font-weight:500;font-size:12px;color:#8C8570"><span style="font-family:'IBM Plex Mono',monospace;font-weight:700;color:#2C4A3C">{{ readDays }}</span> / {{ denomDays }}일 읽음</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:11px 0 5px">
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#B5AD97">월</span>
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#B5AD97">화</span>
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#B5AD97">수</span>
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#B5AD97">목</span>
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#B5AD97">금</span>
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#B5AD97">토</span>
+        <span style="font-family:'IBM Plex Mono',monospace;text-align:center;font-size:10px;font-weight:500;color:#C2553A">일</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;animation:v5Fade .5s ease .05s both">
+        <sc-for list="{{ cells }}" as="c" hint-placeholder-count="36">
+          <div onClick="{{ c.onTap }}" style="height:33px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:{{ c.bg }};box-shadow:{{ c.ring }};cursor:{{ c.cursor }};font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:11.5px;letter-spacing:.01em;font-weight:{{ c.fw }};color:{{ c.fg }}">{{ c.d }}</div>
+        </sc-for>
+      </div>
+
+      <div style="margin:16px 2px 4px;font-weight:800;font-size:14px;color:#17150F">{{ rankTitle }}</div>
+      <sc-for list="{{ top }}" as="b" hint-placeholder-count="3">
+        <button onClick="{{ b.onTap }}" style="display:flex;align-items:center;gap:12px;padding:6px 2px;width:100%;background:none;border:0;cursor:pointer;font-family:inherit;text-align:left">
+          <div style="width:30px;height:43px;border-radius:3px;position:relative;overflow:hidden;flex:none;box-shadow:0 3px 7px -2px rgba(58,44,28,.3);background:{{ b.bg }}"><div style="position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(0,0,0,.18)"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:7.5px;line-height:1.08;padding:0 2px;color:{{ b.tc }};white-space:pre-line">{{ b.short }}</div></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="font-weight:700;font-size:13px;color:#17150F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.title }}</span>
+              <sc-if value="{{ b.millie }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:700;font-size:9px;line-height:1.5;color:#B8862E;background:#F6ECD6;padding:1.5px 6px;border-radius:99px">밀리</span></sc-if>
+              <sc-if value="{{ b.done }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:700;font-size:9px;line-height:1.5;color:#2C4A3C;background:#E9EFE6;padding:1.5px 6px;border-radius:99px">완독</span></sc-if>
+            </div>
+            <div style="margin-top:3px;font-weight:500;font-size:11px;color:#8C8570">{{ b.days }}</div>
+          </div>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;font-size:12.5px;color:#17150F">{{ b.total }}</span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ hasRest }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;align-items:center;gap:4px;margin:4px 2px 0;padding-top:6px;border-top:1px solid #EAE3D0">
+          <button onClick="{{ openList }}" style="flex:none;height:44px;margin-right:5px;background:none;border:0;padding:0;cursor:pointer;font-family:inherit;font-weight:600;font-size:11px;color:#8C8570">그 외 {{ restCount }}권</button>
+          <sc-for list="{{ strip }}" as="s" hint-placeholder-count="6">
+            <button onClick="{{ s.onTap }}" style="width:34px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;border:0;padding:0;cursor:pointer;background:none">
+              <div style="position:relative;width:28px;height:40px">
+                <div style="position:absolute;inset:0;border-radius:2.5px;overflow:hidden;box-shadow:0 2px 5px -1px rgba(58,44,28,.32);background:{{ s.bg }}"><div style="position:absolute;left:0;top:0;bottom:0;width:1.5px;background:rgba(0,0,0,.18)"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:6px;line-height:1.1;padding:0 1px;color:{{ s.tc }};white-space:pre-line">{{ s.short }}</div></div>
+                <sc-if value="{{ s.millie }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:-3px;top:-3px;width:9px;height:9px;border-radius:50%;background:#C9973B;border:1.5px solid #F6F3EA"></span></sc-if>
+              </div>
+            </button>
+          </sc-for>
+          <sc-if value="{{ hasMore }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openList }}" style="width:34px;height:44px;display:flex;align-items:center;justify-content:center;flex:none;border:0;padding:0;cursor:pointer;background:none"><span style="width:28px;height:40px;border-radius:5px;background:#ECE7D8;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:10px;color:#8C8570">+{{ moreCount }}</span></button></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ noBooks }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:20px 0 12px;text-align:center;font-weight:500;font-size:12px;color:#B5AD97">{{ emptyText }}</div>
+      </sc-if>
+
+      <div style="margin:18px 2px 8px;display:flex;align-items:baseline;justify-content:space-between"><span style="font-weight:800;font-size:14px;color:#17150F">독서 지도</span><span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;color:#C6BEA8">전체 기간</span></div>
+      <div onClick="{{ openMap }}" style="position:relative;height:150px;border-radius:20px;border:1px solid #E9E2CF;overflow:hidden;cursor:pointer;background:radial-gradient(120% 90% at 30% 20%,#eef1ee,#e5eae8 52%,#dce2df)">
+        <div style="position:absolute;top:0;left:0;width:1000px;height:500px;transform-origin:0 0;transform:translate(-2308px,-357px) scale(3)">
+          <svg width="1000" height="500" viewBox="0 0 1000 500" style="display:block">
+            <defs><pattern id="rtGridA" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="rgba(120,105,72,.09)" stroke-width=".5"></path></pattern></defs>
+            <rect width="1000" height="500" fill="url(#rtGridA)"></rect>
+            <g fill="#dccfb4" stroke="rgba(120,105,72,.22)" stroke-width="1.5">
+              <ellipse cx="250" cy="112" rx="112" ry="46"></ellipse><ellipse cx="232" cy="152" rx="92" ry="66"></ellipse><ellipse cx="300" cy="180" rx="40" ry="30"></ellipse>
+              <ellipse cx="430" cy="66" rx="34" ry="26"></ellipse>
+              <ellipse cx="332" cy="300" rx="54" ry="96"></ellipse><ellipse cx="352" cy="250" rx="40" ry="40"></ellipse>
+              <ellipse cx="516" cy="118" rx="54" ry="40"></ellipse>
+              <ellipse cx="548" cy="252" rx="70" ry="102"></ellipse><ellipse cx="560" cy="205" rx="52" ry="46"></ellipse>
+              <ellipse cx="732" cy="132" rx="162" ry="72"></ellipse><ellipse cx="700" cy="200" rx="70" ry="52"></ellipse><ellipse cx="792" cy="228" rx="34" ry="30"></ellipse>
+              <ellipse cx="876" cy="320" rx="58" ry="40"></ellipse>
+            </g>
+          </svg>
+        </div>
+        <sc-for list="{{ cardPins }}" as="m" hint-placeholder-count="2">
+          <div style="position:absolute;left:{{ m.x }}px;top:{{ m.y }}px;transform:translate(-50%,-100%);z-index:2;pointer-events:none">
+            <div style="position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);width:24px;height:5px;border-radius:50%;background:rgba(30,22,12,.22);filter:blur(1.5px)"></div>
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative">
+                <sc-if value="{{ m.stack }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;top:0;padding:3px;border-radius:6px;background:#FDFBF4;box-shadow:0 8px 14px -7px rgba(40,30,15,.5);transform:rotate(7deg) translate(4px,3px)"><div style="width:22px;height:31px;border-radius:3px;background:{{ m.s1bg }}"></div></div><div style="position:absolute;left:0;top:0;padding:3px;border-radius:6px;background:#FDFBF4;box-shadow:0 8px 14px -7px rgba(40,30,15,.5);transform:rotate(-7deg) translate(-4px,4px)"><div style="width:22px;height:31px;border-radius:3px;background:{{ m.s2bg }}"></div></div></sc-if>
+                <div style="position:relative;z-index:1;padding:3px;border-radius:6px;background:#FDFBF4;outline:1px solid rgba(120,105,72,.16);box-shadow:0 8px 14px -7px rgba(40,30,15,.5)">
+                  <div style="position:relative;width:22px;height:31px;border-radius:3px;overflow:hidden;background:{{ m.bg }}"><div style="position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(0,0,0,.18)"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:6.5px;line-height:1.08;padding:1px;color:{{ m.tc }};white-space:pre-line">{{ m.short }}</div></div>
+                </div>
+                <sc-if value="{{ m.badge }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;right:-7px;top:-7px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;background:#C2553A;border:2px solid #FDFBF4;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 7px -1px rgba(0,0,0,.42);z-index:5"><span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:9.5px;line-height:1;color:#fff">{{ m.badge }}</span></div></sc-if>
+              </div>
+              <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid #FDFBF4;margin-top:-1px;filter:drop-shadow(0 2px 1.5px rgba(30,22,12,.22))"></div>
+            </div>
+            <span style="position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:600;letter-spacing:-.01em;color:#6f6752;background:rgba(255,255,255,.72);padding:1px 5px;border-radius:5px;white-space:nowrap">{{ m.label }}</span>
+          </div>
+        </sc-for>
+        <div style="position:absolute;bottom:12px;left:12px;display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border-radius:99px;background:rgba(255,255,255,.86);border:1px solid #E5DFCD;box-shadow:0 4px 12px -6px rgba(0,0,0,.3)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3a5c4b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600;font-size:10.5px;color:#6f6752">{{ chipText }}</span>
+        </div>
+        <div style="position:absolute;right:12px;bottom:12px;width:34px;height:34px;border-radius:11px;background:rgba(255,255,255,.92);border:1px solid #E5DFCD;box-shadow:0 6px 14px -6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6f6752" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4H20v5.5M9.5 20H4v-5.5M20 4l-6.8 6.8M4 20l6.8-6.8"></path></svg></div>
+      </div>
+
+    </div>
+  </div>
+
+  <sc-if value="{{ mapOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:52;overflow:hidden;background:radial-gradient(120% 90% at 30% 20%,#eef1ee,#e5eae8 52%,#dce2df)">
+      <div onPointerDown="{{ mapPanStart }}" onPointerMove="{{ mapPanMove }}" onPointerUp="{{ mapPanEnd }}" onPointerLeave="{{ mapPanEnd }}" style="position:absolute;inset:0;cursor:grab;touch-action:none">
+        <div style="position:absolute;top:0;left:0;width:1000px;height:500px;transform-origin:0 0;transform:{{ mapTransform }}">
+          <svg width="1000" height="500" viewBox="0 0 1000 500" style="display:block">
+            <defs><pattern id="rtGridB" width="25" height="25" patternUnits="userSpaceOnUse"><path d="M25 0H0V25" fill="none" stroke="rgba(120,105,72,.09)" stroke-width=".5"></path></pattern></defs>
+            <rect width="1000" height="500" fill="url(#rtGridB)"></rect>
+            <g fill="#dccfb4" stroke="rgba(120,105,72,.22)" stroke-width="1.5">
+              <ellipse cx="250" cy="112" rx="112" ry="46"></ellipse><ellipse cx="232" cy="152" rx="92" ry="66"></ellipse><ellipse cx="300" cy="180" rx="40" ry="30"></ellipse>
+              <ellipse cx="430" cy="66" rx="34" ry="26"></ellipse>
+              <ellipse cx="332" cy="300" rx="54" ry="96"></ellipse><ellipse cx="352" cy="250" rx="40" ry="40"></ellipse>
+              <ellipse cx="516" cy="118" rx="54" ry="40"></ellipse>
+              <ellipse cx="548" cy="252" rx="70" ry="102"></ellipse><ellipse cx="560" cy="205" rx="52" ry="46"></ellipse>
+              <ellipse cx="732" cy="132" rx="162" ry="72"></ellipse><ellipse cx="700" cy="200" rx="70" ry="52"></ellipse><ellipse cx="792" cy="228" rx="34" ry="30"></ellipse>
+              <ellipse cx="876" cy="320" rx="58" ry="40"></ellipse>
+            </g>
+          </svg>
+        </div>
+        <sc-for list="{{ mapPins }}" as="m" hint-placeholder-count="5">
+          <div onClick="{{ m.onTap }}" style="position:absolute;left:{{ m.x }}px;top:{{ m.y }}px;transform:translate(-50%,-100%);z-index:2;cursor:pointer;animation:rtPinDrop .4s cubic-bezier(.2,1.2,.4,1) both">
+            <div style="position:absolute;left:50%;bottom:-3px;transform:translateX(-50%);width:30px;height:6px;border-radius:50%;background:rgba(30,22,12,.22);filter:blur(1.5px)"></div>
+            <div style="display:flex;flex-direction:column;align-items:center">
+              <div style="position:relative">
+                <sc-if value="{{ m.stack }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:0;top:0;padding:3px;border-radius:7px;background:#FDFBF4;box-shadow:0 9px 16px -7px rgba(40,30,15,.5);transform:rotate(7deg) translate(5px,3px)"><div style="width:30px;height:42px;border-radius:4px;background:{{ m.s1bg }}"></div></div><div style="position:absolute;left:0;top:0;padding:3px;border-radius:7px;background:#FDFBF4;box-shadow:0 9px 16px -7px rgba(40,30,15,.5);transform:rotate(-7deg) translate(-5px,4px)"><div style="width:30px;height:42px;border-radius:4px;background:{{ m.s2bg }}"></div></div></sc-if>
+                <div style="position:relative;z-index:1;padding:3px;border-radius:7px;background:#FDFBF4;outline:1px solid rgba(120,105,72,.16);box-shadow:0 9px 16px -7px rgba(40,30,15,.5)">
+                  <div style="position:relative;width:30px;height:42px;border-radius:4px;overflow:hidden;background:{{ m.bg }}"><div style="position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(0,0,0,.18)"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:8px;line-height:1.08;padding:2px;color:{{ m.tc }};white-space:pre-line">{{ m.short }}</div></div>
+                </div>
+                <sc-if value="{{ m.badge }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;right:-8px;top:-8px;min-width:19px;height:19px;padding:0 5px;border-radius:99px;background:#C2553A;border:2px solid #FDFBF4;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 7px -1px rgba(0,0,0,.42);z-index:5"><span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:10px;line-height:1;color:#fff">{{ m.badge }}</span></div></sc-if>
+              </div>
+              <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:8px solid #FDFBF4;margin-top:-1px;filter:drop-shadow(0 2px 1.5px rgba(30,22,12,.22))"></div>
+            </div>
+            <span style="position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;letter-spacing:-.01em;color:#6f6752;background:rgba(255,255,255,.72);padding:1px 5px;border-radius:5px;white-space:nowrap">{{ m.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="position:absolute;top:58px;left:14px;display:inline-flex;align-items:center;gap:8px;padding:7px 12px;border-radius:99px;background:rgba(255,255,255,.86);border:1px solid #E5DFCD;box-shadow:0 4px 12px -6px rgba(0,0,0,.3);pointer-events:none">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3a5c4b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+        <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:600;font-size:11px;color:#6f6752">{{ chipText }}</span>
+      </div>
+      <button onClick="{{ closeMap }}" style="position:absolute;top:54px;right:14px;width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.92);border:1px solid #E5DFCD;box-shadow:0 6px 14px -6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6f6752" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      <div style="position:absolute;right:14px;bottom:28px;display:flex;flex-direction:column;gap:8px">
+        <button onClick="{{ zoomIn }}" style="width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.92);border:1px solid #E5DFCD;box-shadow:0 6px 14px -6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6f6752" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg></button>
+        <button onClick="{{ zoomOut }}" style="width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.92);border:1px solid #E5DFCD;box-shadow:0 6px 14px -6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6f6752" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14"></path></svg></button>
+        <button onClick="{{ resetMap }}" style="width:38px;height:38px;border-radius:12px;background:rgba(255,255,255,.92);border:1px solid #E5DFCD;box-shadow:0 6px 14px -6px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6f6752" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 3v3M12 18v3M3 12h3M18 12h3"></path></svg></button>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ sheet.open }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeSheet }}" style="position:absolute;inset:0;z-index:70;background:rgba(23,18,12,.42)"></div>
+    <div class="rt-scroll" style="position:absolute;left:0;right:0;bottom:0;z-index:71;background:#FAF7EE;border-radius:26px 26px 0 0;padding:12px 24px 34px;box-shadow:0 -20px 48px -14px rgba(20,16,10,.4);animation:v8Up .45s cubic-bezier(.2,.9,.3,1) both;max-height:74%;overflow-y:auto">
+      <div style="width:40px;height:4px;border-radius:99px;background:#e2dccb;margin:0 auto 14px"></div>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <div style="width:40px;height:40px;border-radius:12px;background:#E9EFE6;display:flex;align-items:center;justify-content:center;flex:none">
+          <sc-if value="{{ sheet.isDay }}" hint-placeholder-val="{{ true }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2C4A3C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="16" rx="3"></rect><path d="M8 3v4M16 3v4M3.5 10h17"></path></svg></sc-if>
+          <sc-if value="{{ sheet.isList }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2C4A3C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H9a1 1 0 0 1 1 1v13a1 1 0 0 0-1-1H5.5A1.5 1.5 0 0 1 4 15.5z"></path><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H15a1 1 0 0 0-1 1v13a1 1 0 0 1 1-1h3.5a1.5 1.5 0 0 0 1.5-1.5z"></path></svg></sc-if>
+          <sc-if value="{{ sheet.isPlace }}" hint-placeholder-val="{{ false }}"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2C4A3C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></sc-if>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:900;font-size:20px;letter-spacing:-.02em;color:#17150F">{{ sheet.title }}</div>
+          <div style="margin-top:3px;font-weight:500;font-size:12px;color:#8C8570">{{ sheet.sub }}</div>
+        </div>
+        <button onClick="{{ closeSheet }}" style="width:32px;height:32px;border-radius:9px;background:#ECE7D8;display:flex;align-items:center;justify-content:center;border:0;cursor:pointer;flex:none"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C8570" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div style="margin-top:12px">
+        <sc-for list="{{ sheet.rows }}" as="r" hint-placeholder-count="2">
+          <button onClick="{{ r.onTap }}" style="display:flex;align-items:center;gap:13px;width:100%;padding:10px 2px;background:none;border:0;border-bottom:1px solid #EAE3D0;cursor:pointer;font-family:inherit;text-align:left" style-active="transform:scale(.985)">
+            <sc-if value="{{ sheet.ranked }}" hint-placeholder-val="{{ false }}"><span style="flex:none;width:14px;text-align:center;font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-size:12px;font-weight:700;color:{{ r.rankColor }}">{{ r.rank }}</span></sc-if>
+            <div style="width:36px;height:52px;border-radius:4px;position:relative;overflow:hidden;flex:none;box-shadow:0 5px 10px -4px rgba(58,44,28,.38);background:{{ r.bg }}"><div style="position:absolute;left:0;top:0;bottom:0;width:2px;background:rgba(0,0,0,.18)"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;font-weight:900;font-size:8.5px;line-height:1.1;padding:0 2px;color:{{ r.tc }};white-space:pre-line">{{ r.short }}</div></div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font-weight:700;font-size:13.5px;color:#17150F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.title }}</span>
+                <sc-if value="{{ r.millie }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:700;font-size:9px;line-height:1.5;color:#B8862E;background:#F6ECD6;padding:1.5px 6px;border-radius:99px">밀리</span></sc-if>
+                <sc-if value="{{ r.done }}" hint-placeholder-val="{{ false }}"><span style="flex:none;font-weight:700;font-size:9px;line-height:1.5;color:#2C4A3C;background:#E9EFE6;padding:1.5px 6px;border-radius:99px">완독</span></sc-if>
+              </div>
+              <div style="margin-top:3px;display:flex;align-items:center;gap:4px;font-weight:500;font-size:11px;color:{{ r.subColor }}">
+                <sc-if value="{{ r.pin }}" hint-placeholder-val="{{ false }}"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#B5AD97" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg></sc-if>
+                <span>{{ r.sub }}</span>
+              </div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;font-weight:700;font-size:12.5px;color:#17150F;flex:none">{{ r.val }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ book.open }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:90;background:#F6F3EA;animation:rtPush .38s cubic-bezier(.2,.8,.2,1) both">
+      <div style="padding:52px 18px 0;display:flex;align-items:center;gap:4px">
+        <button onClick="{{ closeBook }}" style="width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:none;border:0;padding:0;cursor:pointer"><svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="#3F3A2D" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 6 10l6 6"></path></svg></button>
+        <span style="font-weight:800;font-size:17px;color:#17150F">책 상세</span>
+        <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;color:#C6BEA8">08 · 기존 화면</span>
+      </div>
+      <div style="padding:44px 22px 0;display:flex;flex-direction:column;align-items:center;text-align:center">
+        <div style="width:96px;height:138px;border-radius:6px;position:relative;overflow:hidden;background:{{ book.bg }};box-shadow:0 14px 26px -10px rgba(58,44,28,.5)"><div style="position:absolute;left:0;top:0;bottom:0;width:3px;background:rgba(0,0,0,.18)"></div><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;line-height:1.12;padding:6px;color:{{ book.tc }};white-space:pre-line">{{ book.short }}</div></div>
+        <span style="margin-top:18px;display:inline-block;font-weight:700;font-size:10px;line-height:1.5;color:{{ book.tagColor }};background:{{ book.tagBg }};padding:3px 9px;border-radius:99px">{{ book.tag }}</span>
+        <div style="margin-top:8px;font-weight:900;font-size:21px;letter-spacing:-.02em;color:#17150F;line-height:1.2">{{ book.title }}</div>
+        <div style="margin-top:4px;font-weight:500;font-size:13px;color:#8C8570">{{ book.author }}</div>
+        <div style="margin-top:34px;padding:14px 16px;border:1px dashed #E9E2CF;border-radius:14px;font-weight:500;font-size:11.5px;line-height:1.55;color:#B5AD97;max-width:300px">기존 책 상세(Screen08Detail)로 push됩니다.<br>이 화면은 이번 작업 범위 밖 — 변경 없음.</div>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;z-index:95;pointer-events:none;background:rgba(20,20,19,.28)"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:390,&quot;height&quot;:844},&quot;topCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:3,&quot;max&quot;:5,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;책 목록&quot;},&quot;finishedMark&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;책 목록&quot;},&quot;fixedSixRows&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;캘린더&quot;}}">
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const B=(title,author,short,bg,tc,millie)=>({title,author,short,bg,tc,millie:!!millie});
+    this.books=[
+      B('몰입','황농문','몰입','linear-gradient(168deg,#eee1bc,#e3d09e)','#241c0d'),
+      B('돈의 심리학','모건 하우절','돈의\n심리학','#1f2d45','#e9edf5'),
+      B('도둑맞은 집중력','요한 하리','도둑맞은\n집중력','#e4572e','#fff',true),
+      B('작별하지 않는다','한강','작별','#e9eae2','#2b3a34'),
+      B('파친코','이민진','파친코','linear-gradient(180deg,#7d2f2a,#3f1414)','#f3ddc8'),
+      B('미드나잇 라이브러리','매트 헤이그','미드\n나잇','linear-gradient(200deg,#243a72,#0d1533)','#dfe4ff',true),
+      B('1984','조지 오웰','1984','linear-gradient(160deg,#232323,#0c0c0c)','#e9c6bd'),
+      B('페스트','알베르 카뮈','페스트','#d9cbb0','#4a3d24'),
+      B('노르웨이의 숲','무라카미 하루키','노르\n웨이','linear-gradient(180deg,#2f6b50,#173f31)','#dceee2'),
+      B('사피엔스','유발 하라리','사피\n엔스','linear-gradient(170deg,#efb43e,#d68f1e)','#3a2606',true),
+      B('아몬드','손원평','아몬드','#f2e9d8','#3b3a36'),
+      B('불편한 편의점','김호연','불편한\n편의점','linear-gradient(170deg,#5fa8a0,#2f6f6a)','#f2fbf9',true),
+    ];
+    const P=(name,lat,lon,cont)=>({name,lat,lon,cont});
+    this.places=[P('서울',37.57,126.98,'아시아'),P('제주',33.5,126.53,'아시아'),P('도쿄',35.68,139.69,'아시아'),P('부산',35.18,129.08,'아시아'),P('파리',48.86,2.35,'유럽'),P('런던',51.51,-0.13,'유럽'),P('두바이',25.2,55.27,'아시아'),P('뉴욕',40.71,-74.01,'북미'),P('시드니',-33.87,151.21,'오세아니아'),P('방콕',13.75,100.5,'아시아')];
+    const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+    // 세션 = [책, 분, 장소(밀리=null)]
+    const gen=(seed,days,feat,pl,prob)=>{const r=rng(seed),sess={};for(let d=1;d<=days;d++){if(r()<prob){const n=r()<0.3?2:1,rows=[],used=[];for(let i=0;i<n;i++){const b=feat[Math.floor(r()*feat.length)];if(used.includes(b))continue;used.push(b);rows.push([b,10+Math.floor(r()*58),this.books[b].millie?null:pl[Math.floor(r()*pl.length)]]);}sess[d]=rows;}}return sess};
+    // 8월 17–27 은 홈 데모(demoCal14: 0,0,34,52,41,63,28,12,47,39,46)와 일치 — 픽셀 오라클 공유
+    const aug={1:[[0,52,0]],3:[[3,38,0],[10,20,0]],4:[[2,21,null]],6:[[0,64,0]],8:[[9,45,null],[11,17,null]],9:[[2,30,null]],11:[[1,58,0],[6,14,0]],13:[[7,26,0],[4,19,0]],15:[[0,44,1],[9,28,null]],16:[[2,18,null],[8,15,1],[5,21,null]],19:[[0,22,0],[2,12,null]],20:[[0,52,0]],21:[[1,41,0]],22:[[0,40,0],[9,23,null]],23:[[3,28,0]],24:[[2,12,null]],25:[[1,47,0]],26:[[9,39,null]],27:[[0,24,0],[2,22,null]]};
+    this.months=[
+      {y:2026,m:5,days:31,off:4,sess:gen(11,31,[0,1,1,9,2,7,7],[0,0,0,4,4,5,8],.58),done:[7]},
+      {y:2026,m:6,days:30,off:0,sess:gen(22,30,[8,8,6,6,2],[0,0,7,7,9],.2),done:[]},
+      {y:2026,m:7,days:31,off:2,sess:gen(33,31,[4,4,5,5,6,3,0],[0,0,0,2,2,3,6],.6),done:[4]},
+      {y:2026,m:8,days:31,off:5,sess:aug,done:[1],today:27},
+    ];
+    this.cur=3;
+    this.months[0].sess[20]=[[7,35,8]];   // 5월 시드니 출장 — 오세아니아 핀
+    this.placeAgg=this.places.map((p,i)=>Object.assign({id:i,min:0,books:{}},p));
+    for(const mo of this.months)for(const rows of Object.values(mo.sess))for(const[b,min,pl]of rows)if(pl!=null){const a=this.placeAgg[pl];a.min+=min;const e=a.books[b]||(a.books[b]={min:0,n:0});e.min+=min;e.n++;}
+    this.HOME=this.fitAll();
+    this.state={mi:3,sheet:null,book:null,mapOpen:false,ms:this.HOME.s,mtx:this.HOME.tx,mty:this.HOME.ty};
+    this._pan=null;this._moved=false;
+  }
+  hm(min){return Math.floor(min/60)+':'+String(min%60).padStart(2,'0')}
+  korMin(min){const h=Math.floor(min/60),m=min%60;return h>0?(m>0?h+'시간 '+m+'분':h+'시간'):m+'분'}
+  alpha(min){return Math.min(.72,.14+.58*min/60)}   // = RTHomeCal.alpha (fullMinutes 60)
+  proj(p,T){return{x:T.tx+(p.lon+180)/360*1000*T.s,y:T.ty+(90-p.lat)/180*500*T.s}}
+  // 전체 화면 기본 카메라 = 모든 핀이 들어오는 프레이밍 (카드는 동네 프레이밍)
+  fitAll(){const u=this.placeAgg.filter(a=>a.min>0);if(!u.length)return{s:.5,tx:-55,ty:300};const xs=u.map(a=>(a.lon+180)/360*1000),ys=u.map(a=>(90-a.lat)/180*500);const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);const s=Math.max(.3,Math.min(2,Math.min(300/Math.max(x1-x0,1),520/Math.max(y1-y0,1))));return{s,tx:195-(x0+x1)/2*s,ty:422-(y0+y1)/2*s}}
+  // 52px 체인 클러스터 (Screen15Map 규칙)
+  clusters(T,inter){
+    const pts=this.placeAgg.filter(a=>a.min>0).map(a=>Object.assign({a},this.proj(a,T)));
+    const used=new Set(),out=[];
+    for(let i=0;i<pts.length;i++){
+      if(used.has(i))continue;
+      const grp=[i],q=[i];used.add(i);
+      while(q.length){const j=q.pop();for(let k=0;k<pts.length;k++){if(used.has(k))continue;if(Math.hypot(pts[j].x-pts[k].x,pts[j].y-pts[k].y)<52){used.add(k);grp.push(k);q.push(k);}}}
+      const mem=grp.map(i=>pts[i]).sort((u,v)=>v.a.min-u.a.min),an=mem[0];
+      const bm={};for(const m of mem)for(const[b,e]of Object.entries(m.a.books))bm[b]=(bm[b]||0)+e.min;
+      const bs=Object.entries(bm).sort((u,v)=>v[1]-u[1]).map(e=>this.books[+e[0]]);
+      out.push({x:Math.round(an.x),y:Math.round(an.y),short:bs[0].short,bg:bs[0].bg,tc:bs[0].tc,
+        badge:bs.length>1?bs.length:null,stack:bs.length>1,s1bg:(bs[1]||bs[0]).bg,s2bg:(bs[2]||bs[1]||bs[0]).bg,
+        label:an.a.name+(mem.length>1?' 외 '+(mem.length-1):''),
+        onTap:inter?(e=>{e.stopPropagation();if(this._moved)return;if(mem.length>1)this.zoomAround(an.x,an.y,2.4);else this.setState({sheet:{kind:'place',pl:an.a.id}});}):undefined});
+    }
+    return out;
+  }
+  zoomAround(cx,cy,f){const s=this.state.ms,ns=Math.max(.3,Math.min(8,s*f)),k=ns/s;this.setState({ms:ns,mtx:cx-(cx-this.state.mtx)*k,mty:cy-(cy-this.state.mty)*k})}
+  mapPanStart=e=>{this._pan={x:e.clientX,y:e.clientY,tx:this.state.mtx,ty:this.state.mty};this._moved=false}
+  mapPanMove=e=>{if(!this._pan)return;const dx=e.clientX-this._pan.x,dy=e.clientY-this._pan.y;if(Math.abs(dx)+Math.abs(dy)>4)this._moved=true;this.setState({mtx:this._pan.tx+dx,mty:this._pan.ty+dy})}
+  mapPanEnd=()=>{this._pan=null}
+  openBook(b){this.setState({sheet:null,book:b})}
+  renderVals(){
+    const topCount=Math.min(Math.max(this.props.topCount??3,3),5);
+    const fixedRows=this.props.fixedSixRows??false;
+    const showDone=this.props.finishedMark??true;
+    const mi=this.state.mi,mo=this.months[mi],isCur=mi===this.cur;
+    const WD=['월','화','수','목','금','토','일'];
+    const dayMin=d=>(mo.sess[d]||[]).reduce((s,r)=>s+r[1],0);
+    const total=Object.values(mo.sess).flat().reduce((s,r)=>s+r[1],0);
+    const blank={d:'',bg:'transparent',ring:'none',fg:'#B5AD97',fw:500,cursor:'default'};
+    const cells=[];
+    for(let i=0;i<mo.off;i++)cells.push(blank);
+    for(let d=1;d<=mo.days;d++){
+      const min=dayMin(d),today=isCur&&mo.today===d,future=isCur&&d>mo.today,sun=(mo.off+d-1)%7===6,filled=today&&min>0;
+      cells.push({d,
+        bg:filled?'#C2553A':(future||!min)?'transparent':'rgba(194,85,58,'+this.alpha(min).toFixed(3)+')',
+        ring:filled?'0 0 0 3px rgba(194,85,58,.13)':today?'inset 0 0 0 1.5px #C2553A, 0 0 0 3px rgba(194,85,58,.13)':(!future&&min?'inset 0 0 0 1px rgba(122,60,40,.05)':'none'),
+        fg:filled?'#fff':future?'#D3CBB6':!min?((today||sun)?'#C2553A':'#B5AD97'):'#2E1C15',
+        fw:today?700:500,
+        cursor:min&&!future?'pointer':'default',
+        onTap:min&&!future?()=>this.setState({sheet:{kind:'day',d}}):undefined});
+    }
+    if(fixedRows)while(cells.length<42)cells.push(blank);
+    const per={},dpb={};
+    for(const rows of Object.values(mo.sess)){const seen=new Set();for(const[b,min]of rows){per[b]=(per[b]||0)+min;if(!seen.has(b)){seen.add(b);dpb[b]=(dpb[b]||0)+1;}}}
+    const sorted=Object.entries(per).map(([b,v])=>[+b,v]).sort((u,v)=>v[1]-u[1]);
+    const rowOf=([b,v],i)=>{const bk=this.books[b];return{rank:i+1,rankColor:i===0?'#17150F':'#C6BEA8',title:bk.title,short:bk.short,bg:bk.bg,tc:bk.tc,millie:bk.millie,done:showDone&&mo.done.includes(b),days:dpb[b]+'일 읽음',total:this.hm(v),onTap:()=>this.openBook(b)}};
+    const top=sorted.slice(0,topCount).map(rowOf);
+    const rest=sorted.slice(topCount);
+    const strip=rest.slice(0,6).map(([b])=>{const bk=this.books[b];return{short:bk.short,bg:bk.bg,tc:bk.tc,millie:bk.millie,onTap:()=>this.openBook(b)}});
+    const more=rest.length-strip.length;
+    let sheet={open:false,rows:[],isDay:false,isList:false,isPlace:false,ranked:false};
+    const S=this.state.sheet;
+    if(S&&S.kind==='day'){
+      const rows=(mo.sess[S.d]||[]).slice().sort((u,v)=>v[1]-u[1]),sum=rows.reduce((s,r)=>s+r[1],0);
+      sheet={open:true,isDay:true,isList:false,isPlace:false,ranked:false,
+        title:mo.m+'월 '+S.d+'일 '+WD[(mo.off+S.d-1)%7]+'요일'+(isCur&&mo.today===S.d?' · 오늘':''),
+        sub:rows.length+'권 · '+this.korMin(sum)+' 읽음',
+        rows:rows.map(([b,min,pl])=>{const bk=this.books[b];return{title:bk.title,short:bk.short,bg:bk.bg,tc:bk.tc,millie:bk.millie,done:false,pin:!bk.millie,
+          sub:bk.millie?'밀리에서 자동 기록':this.places[pl].name,subColor:bk.millie?'#B8862E':'#8C8570',val:min+'분',onTap:()=>this.openBook(b)}})};
+    }else if(S&&S.kind==='list'){
+      sheet={open:true,isDay:false,isList:true,isPlace:false,ranked:true,
+        title:isCur?'이달 읽은 책':mo.m+'월에 읽은 책',sub:sorted.length+'권 · '+this.hm(total),
+        rows:sorted.map(([b,v],i)=>{const bk=this.books[b];return{rank:i+1,rankColor:i===0?'#17150F':'#C6BEA8',title:bk.title,short:bk.short,bg:bk.bg,tc:bk.tc,millie:bk.millie,done:showDone&&mo.done.includes(b),pin:false,sub:dpb[b]+'일 읽음',subColor:'#8C8570',val:this.hm(v),onTap:()=>this.openBook(b)}})};
+    }else if(S&&S.kind==='place'){
+      const a=this.placeAgg[S.pl],bs=Object.entries(a.books).sort((u,v)=>v[1].min-u[1].min);
+      sheet={open:true,isDay:false,isList:false,isPlace:true,ranked:false,
+        title:a.name,sub:bs.length+'권 · '+this.korMin(a.min)+' 읽음',
+        rows:bs.map(([b,e])=>{const bk=this.books[+b];return{title:bk.title,short:bk.short,bg:bk.bg,tc:bk.tc,millie:false,done:false,pin:false,sub:e.n+'회 읽음',subColor:'#8C8570',val:this.hm(e.min),onTap:()=>this.openBook(+b)}})};
+    }
+    let book={open:false};
+    if(this.state.book!=null){const bk=this.books[this.state.book];book={open:true,title:bk.title,author:bk.author,short:bk.short,bg:bk.bg,tc:bk.tc,tag:bk.millie?'밀리':'리딩타임',tagBg:bk.millie?'#F6ECD6':'#E9EFE6',tagColor:bk.millie?'#B8862E':'#2C4A3C'}}
+    const T={s:this.state.ms,tx:this.state.mtx,ty:this.state.mty};
+    const usedPl=this.placeAgg.filter(a=>a.min>0);
+    const chipText=usedPl.length+'개 도시 · '+new Set(usedPl.map(a=>a.cont)).size+'개 대륙';
+    const cardPins=this.clusters({s:3,tx:-2308,ty:-357},false).filter(p=>p.x>-10&&p.x<346&&p.y>30&&p.y<160);
+    const mapPins=this.clusters(T,true).filter(p=>p.x>-60&&p.x<450&&p.y>-60&&p.y<900);
+    const H=this.HOME;
+    return{
+      monthLabel:mo.m+'월',yearLabel:String(mo.y),
+      notCur:!isCur,goCur:()=>this.setState({mi:this.cur,sheet:null}),
+      prevTap:()=>{if(mi>0)this.setState({mi:mi-1,sheet:null})},prevOp:mi>0?1:.35,
+      nextTap:()=>{if(mi<this.cur)this.setState({mi:mi+1,sheet:null})},nextOp:mi<this.cur?1:.35,
+      totalHM:this.hm(total),readDays:Object.keys(mo.sess).length,denomDays:isCur?mo.today:mo.days,
+      cells,
+      rankTitle:isCur?'이달 많이 읽은 책':mo.m+'월에 많이 읽은 책',
+      top,hasRest:rest.length>0,restCount:rest.length,strip,hasMore:more>0,moreCount:more,
+      noBooks:sorted.length===0,emptyText:isCur?'이달엔 아직 기록이 없어요':mo.m+'월에는 기록이 없어요',
+      openList:()=>this.setState({sheet:{kind:'list'}}),
+      chipText,cardPins,mapPins,
+      mapOpen:this.state.mapOpen,mapTransform:'translate('+T.tx+'px,'+T.ty+'px) scale('+T.s+')',
+      openMap:()=>this.setState({mapOpen:true}),
+      closeMap:()=>this.setState({mapOpen:false,sheet:null,ms:H.s,mtx:H.tx,mty:H.ty}),
+      mapPanStart:this.mapPanStart,mapPanMove:this.mapPanMove,mapPanEnd:this.mapPanEnd,
+      zoomIn:()=>this.zoomAround(195,422,1.45),zoomOut:()=>this.zoomAround(195,422,1/1.45),
+      resetMap:()=>this.setState({ms:H.s,mtx:H.tx,mty:H.ty}),
+      sheet,closeSheet:()=>this.setState({sheet:null}),
+      book,closeBook:()=>this.setState({book:null}),
+    };
+  }
+}
+</script>
+</body>
+</html>

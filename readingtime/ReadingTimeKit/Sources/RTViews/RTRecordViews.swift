@@ -1,9 +1,9 @@
 import SwiftUI
 
-// 기록 화면(주·월·지도) 공용 컴포넌트 — 정본: 작업지시서 §2·§3·§4·§11 + 목업 CSS 실측.
+// 기록 화면 공용 컴포넌트 — 정본: design_handoff_record_onepage (구 주·월·지도 지시서 §2·§11 실측 계승).
 
 // ── CSS line-box 실측표 ──
-// Chrome 에서 mockups/RTRecord.dc.html 을 렌더해 getBoundingClientRect() 로 뽑은 값.
+// Chrome 에서 기록 목업(구 RTRecord.dc.html · 현 RTRecordOnePage.dc.html)을 렌더해 getBoundingClientRect() 로 뽑은 값.
 // SwiftUI Text 의 기본 행높이는 CSS `line-height:normal` 과 달라(Noto ≈1.45em vs SwiftUI 더 큼)
 // 그대로 쌓으면 블록이 2~4px 씩 밀린다 → 텍스트를 이 높이의 박스에 넣어 레이아웃 흐름을 일치시킨다.
 enum RTLB {
@@ -19,6 +19,9 @@ enum RTLB {
     /// 홈 히어로 제목 — 시안이 `21px/26.25px` 로 line-height 를 명시한다(normal 이면 30.5).
     static let n21: CGFloat = 26.25
     static let n26: CGFloat = 32.7      // 주간 타이틀 (line-height:1.2 + mono 스팬 영향)
+    /// 기록 원페이지 월 헤더 "8월" — line-height 1.2 = 31.2 (목업 실측 h31). n26(32.7)은 구 주간 타이틀 값이라
+    /// 그대로 쓰면 서머리 이하 전체가 1.5px 내려간다 (렌더 대조 2026-09-02).
+    static let n26h: CGFloat = 31.2
     static let n26n: CGFloat = 37.5     // 월간 h1 (line-height:normal)
     // IBM Plex Mono (normal)
     static let m6_5: CGFloat = 8.5
@@ -75,6 +78,99 @@ public extension View {
     }
     func rtRingCircle(_ color: Color, width: CGFloat) -> some View {
         overlay(Circle().stroke(color, lineWidth: width).padding(-width / 2))
+    }
+}
+
+// ── 히트맵 캘린더 칸 — 홈 2주 캘린더(02)와 기록 월 캘린더(원페이지)가 같은 문법을 쓴다 ──
+// (기록 작업지시서 §3 "Screen02Home.calCell / calFG / calBG / todayHalo 문법 그대로")
+/// 분기 순서를 반드시 지킬 것: ① 오늘 그리고 분>0 → ② 미래 → ③ 미기록 과거 → ④ 읽은 과거.
+/// weight 700 은 "오늘"의 표식이지 읽었는지의 표식이 아니다 → 오늘 미기록도 700 유지.
+struct RTHeatCell: View {
+    let c: HomeCalCell
+    /// 기록 화면만: 읽은 과거·오늘 탭 → day 시트. 히트 영역 39 = 셀 33 + 상하 gap 절반(3+3).
+    /// 홈은 nil — 수식어가 하나도 붙지 않아 렌더가 홈 오라클과 바이트 동일하다.
+    var onTap: (() -> Void)? = nil
+
+    var body: some View {
+        let filledToday = c.isToday && c.minutes > 0
+        let base = Text("\(c.day)")
+            .font(.mono(11.5, c.isToday ? 700 : 500))
+            .tracking(11.5 * 0.01)
+            .foregroundColor(fg(filledToday: filledToday))
+            .rtLB(RTLB.m11_5)
+            .frame(maxWidth: .infinity)
+            .frame(height: 33)
+            .background(RoundedRectangle(cornerRadius: 10).fill(bg(filledToday: filledToday)))
+            .overlay {
+                // 읽은 과거만 안쪽 1pt — 색면 경계를 살짝 잡아준다
+                if !filledToday && !c.isFuture && c.minutes > 0 {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(Color(hex: 0x7A3C28, alpha: 0.05), lineWidth: 1)
+                }
+                // 오늘인데 아직 안 읽은 칸 — 색면은 '읽음'의 표식이라 줄 수 없다(주면 읽은 것으로 오독).
+                // 굵기 700 만으로는 실기기에서 주변 미기록 칸과 구별되지 않았다(2026-08-28 실기기 피드백).
+                if c.isToday && c.minutes == 0 {
+                    RoundedRectangle(cornerRadius: 10)
+                        .strokeBorder(RT.terra, lineWidth: 1.5)
+                }
+            }
+        let shaped = Group {
+            if c.isToday {
+                todayHalo(base)
+            } else {
+                base
+            }
+        }
+        let tappable = Group {
+            if let onTap {
+                shaped
+                    .padding(.vertical, 3)
+                    .contentShape(Rectangle())
+                    .padding(.vertical, -3)
+                    .onTapGesture { onTap() }
+            } else {
+                shaped
+            }
+        }
+        // 미래 칸은 읽을 정보가 없다 — 요소를 만들지 않고 통째로 숨긴다.
+        // 요소를 만든 뒤(.accessibilityElement + label/value) .accessibilityHidden 을 덧붙이면
+        // 실기기에서 트리에 그대로 남는다 (시뮬레이터 실측 2026-08-28: 8/29·8/30 이 "기록 없음"으로 낭독됨).
+        if c.isFuture {
+            tappable.accessibilityHidden(true)
+        } else {
+            // 색만으로 분량을 전달하므로 VoiceOver 대체 텍스트가 필수 (§8-3, AC #15c)
+            tappable
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(Calendar(identifier: .gregorian).component(.month, from: c.date))월 \(c.day)일")
+                .accessibilityValue(c.minutes > 0 ? "\(c.minutes)분" : "기록 없음")
+                .accessibilityAddTraits(c.isToday ? .isSelected : [])
+        }
+    }
+
+    /// 오늘 칸 헤일로 — 삭제된 13도트 체인의 '오늘 도트' 맥박 문법을 그대로 이식한다(2.6s·terra).
+    /// **정적 렌더(모션 off)는 기존 3pt @13% 그대로** — 데모 픽셀 오라클이 흔들리지 않는다.
+    private func todayHalo<V: View>(_ v: V) -> some View {
+        RTMotionFrame {
+            v.rtRing(10, RT.terra.opacity(0.13), width: 3)
+        } anim: { t in
+            let ph = (sin(t * 2 * .pi / 2.6 - .pi / 2) + 1) / 2
+            return v.rtRing(10, RT.terra.opacity(0.22 - 0.14 * ph), width: 3 + 2 * ph)
+        }
+    }
+
+    /// 색면이 깔린 칸(읽은 과거)에는 "일요일은 항상 terra" 규칙을 적용하지 않는다 —
+    /// 색면 위 terra 숫자는 대비가 2.1:1 까지 떨어진다.
+    private func fg(filledToday: Bool) -> Color {
+        if filledToday { return .white }
+        if c.isFuture { return Color(hex: 0xD3CBB6) }
+        // 오늘 미기록은 테두리와 같은 terra 로 — 굵기 700 만으로는 안 잡힌다(실기기 피드백)
+        if c.minutes == 0 { return (c.isToday || c.isSunday) ? RT.terra : RT.faint }
+        return Color(hex: 0x2E1C15)
+    }
+    private func bg(filledToday: Bool) -> Color {
+        if filledToday { return RT.terra }
+        if c.isFuture || c.minutes == 0 { return .clear }
+        return RT.terra.opacity(RTHomeCal.alpha(c.minutes))
     }
 }
 
@@ -312,10 +408,8 @@ struct RTWrapLines: View {
     }
 }
 
-// ── 기록 헤더 (10·11·15 공용): back + "기록" | [주 | 월 | 지도] ──
+// ── 기록 헤더 (원페이지): back + "기록" — 세그먼트([주|월|지도])는 원페이지 통합으로 삭제 ──
 struct StatsHeader: View {
-    enum Active { case week, month, map }
-    let active: Active
     var model: RTAppModel? = nil
 
     var body: some View {
@@ -336,173 +430,8 @@ struct StatsHeader: View {
                 }
             }
             Spacer()
-            HStack(spacing: 0) {
-                seg("주", on: active == .week) { model?.nav(.statsWeek) }
-                seg("월", on: active == .month) { model?.nav(.statsMonth) }
-                seg("지도", on: active == .map) { model?.nav(.statsMap) }
-            }
-            .padding(3)
-            .background(Capsule().fill(RT.segBg))
-            .padding(.trailing, 4)
         }
         .padding(EdgeInsets(top: 52, leading: 18, bottom: 0, trailing: 18))
-    }
-
-    func seg(_ t: String, on: Bool, action: @escaping () -> Void) -> some View {
-        Text(t).font(.sans(11.5, on ? 700 : 600))
-            .foregroundColor(on ? Color(hex: 0xF6F3EA) : RT.muted)
-            .rtLB(RTLB.n11_5)
-            .padding(EdgeInsets(top: 5, leading: 13, bottom: 5, trailing: 13))
-            .background(Capsule().fill(on ? RT.ink : Color.clear))
-            .contentShape(Capsule())
-            .onTapGesture { action() }
-    }
-}
-
-// ── 연속 카드 (§3-5) — 폭 180 (도트 14×7 + 13×4 = 150 + 좌우 15) ──
-struct RTStreakCard: View {
-    let streak: Int
-    let dots: [(color: Color, last: Bool)]
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .firstTextBaseline, spacing: 5) {
-                Text("\(streak)").font(.mono(21, 700)).tracking(21 * -0.03).foregroundColor(RT.terra)
-                Text("일 연속").font(.sans(11.5, 600)).foregroundColor(RT.muted)
-            }
-            .frame(height: RTLB.m21)
-            HStack(spacing: 4) {
-                ForEach(Array(dots.enumerated()), id: \.offset) { _, d in
-                    if d.last {
-                        Circle().fill(d.color).frame(width: 7, height: 7)
-                            .rtRingCircle(Color(hex: 0xC2553A, alpha: 0.25), width: 2.5)
-                            .rtBlink(duration: 2)
-                    } else {
-                        Circle().fill(d.color).frame(width: 7, height: 7)
-                    }
-                }
-            }
-            .padding(.top, 10)
-            Spacer(minLength: 0)
-        }
-        .rtRecCard(18, EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-    }
-}
-
-// ── 시간대 카드 (§3-5) ──
-struct RTPeakCard: View {
-    let label: String
-    let dim: (left: Double, width: Double)?
-    let peak: (left: Double, width: Double)?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(label).font(.sans(13, 800)).foregroundColor(RT.ink).rtLB(RTLB.n13)
-            GeometryReader { geo in
-                ZStack(alignment: .topLeading) {
-                    Capsule().fill(Color(hex: 0xECE5D2))
-                    if let d = dim {
-                        Capsule().fill(Color(hex: 0xC8B98F).opacity(0.55))
-                            .frame(width: geo.size.width * d.width)
-                            .offset(x: geo.size.width * d.left)
-                    }
-                    if let p = peak {
-                        Capsule().fill(LinearGradient.css(90, size: CGSize(width: geo.size.width * p.width, height: 8),
-                                                          [(Color(hex: 0x3A5C4B), 0), (Color(hex: 0x26413A), 1)]))
-                            .frame(width: geo.size.width * p.width)
-                            .offset(x: geo.size.width * p.left)
-                            .rtBreath(duration: 3)
-                    }
-                }
-            }
-            .frame(height: 8)
-            .clipShape(Capsule())
-            .padding(.top, 11)
-            HStack(spacing: 0) {
-                Text("06").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                Spacer(minLength: 0)
-                Text("12").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                Spacer(minLength: 0)
-                Text("18").font(.mono(9, 400)).foregroundColor(RT.ghost)
-                Spacer(minLength: 0)
-                Text("24").font(.mono(9, 400)).foregroundColor(RT.ghost)
-            }
-            .frame(height: RTLB.m9)
-            .padding(.top, 7)
-        }
-        .rtRecCard(18, EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-    }
-}
-
-// 연속 + 시간대 행 — CSS flex: 연속은 도트 min-content(180) 고정, 시간대가 나머지.
-// 주간(§3-5)은 align-items 기본(stretch) → 연속 카드도 84 로 늘어남.
-// 월간(§4-8)은 align-items:center → 연속 카드는 제 높이(72.5) 유지 + 세로 중앙.
-struct RTDuoRow: View {
-    let streak: Int
-    let dots: [(color: Color, last: Bool)]
-    let peakLabel: String
-    let dim: (left: Double, width: Double)?
-    let peak: (left: Double, width: Double)?
-    var centered = false        // 월간 = true
-
-    var body: some View {
-        HStack(spacing: 11) {
-            if centered {
-                RTStreakCard(streak: streak, dots: dots)
-                    .fixedSize(horizontal: true, vertical: true)
-            } else {
-                RTStreakCard(streak: streak, dots: dots)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .frame(maxHeight: .infinity)
-            }
-            RTPeakCard(label: peakLabel, dim: dim, peak: peak)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-// ── 랭킹 행 (§3-6 / §4-7 동일) ──
-struct RTRankRow: View {
-    let cover: AnyView
-    let title: String
-    let tag: String?
-    let pct: CGFloat        // 0…1
-    let barColor: Color
-    let total: String
-    var onTap: (() -> Void)?
-
-    var body: some View {
-        HStack(spacing: 12) {
-            cover
-                .frame(width: 30, height: 43)
-                .rtBoxShadow(RoundedRectangle(cornerRadius: 3), color: Color(hex: 0x3A2C1C, alpha: 0.3),
-                             blur: 7, y: 3, spread: -2)
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: 4) {
-                    Text(title).font(.sans(13, 700)).foregroundColor(RT.ink).lineLimit(1)
-                    if let tag, !tag.isEmpty {
-                        Text(tag).font(.mono(9, 400)).foregroundColor(RT.faint)
-                    }
-                }
-                .frame(height: RTLB.n13)
-                GeometryReader { geo in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Color(hex: 0xECE5D2))
-                        Capsule().fill(barColor)
-                            .frame(width: geo.size.width * pct)
-                            .rtSweep()
-                    }
-                }
-                .frame(height: 5)
-                .padding(.top, 5)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Text(total).font(.mono(12.5, 700)).foregroundColor(RT.ink).rtLB(RTLB.m12_5)
-        }
-        .padding(EdgeInsets(top: 6, leading: 2, bottom: 6, trailing: 2))
-        .contentShape(Rectangle())
-        .onTapGesture { onTap?() }
     }
 }
 

@@ -15,12 +15,10 @@ public enum RTScreens {
         case "07": return AnyView(SheetSnapshot(base: Screen02Home(), dim: Color(hex: 0x17120C), dimOpacity: 0.4, sheet: Sheet07AddTime()))
         case "08": return AnyView(Screen08Detail())
         case "09": return AnyView(SheetSnapshot(base: Screen08Detail(), dim: Color(hex: 0x191510), dimOpacity: 0.42, sheet: Sheet09Finish()))
-        case "10": return AnyView(Screen10Stats())
-        case "11": return AnyView(Screen11Month())
+        case "10": return AnyView(ScreenStats())
         case "12": return AnyView(Screen12Library())
         case "13": return AnyView(SheetSnapshot(base: Screen12Library(), dim: Color(hex: 0x17120C), dimOpacity: 0.4, sheet: Sheet13AddBook()))
         case "14": return AnyView(Screen14EmptyHome())
-        case "15": return AnyView(Screen15Map())
         default: return nil
         }
     }

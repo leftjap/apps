@@ -306,12 +306,6 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(m.sheet == nil)
     }
 
-    @Test func weekSelection() {
-        let m = RTAppModel()
-        #expect(m.weekSel == 3)                    // 데모: 목요일
-        m.selectWeek(6)
-        #expect(m.weekSel == 6)
-    }
 }
 
 @MainActor
@@ -365,11 +359,10 @@ final class SyncTapScheduler: RTTapScheduler, @unchecked Sendable {
         #expect(m2.session?.status == .paused)
 
         let m3 = RTAppModel()
-        for a in ["login", "nav:12", "filter:finished", "sort:rating", "sheet:sort", "week:0", "rate:2", "step:-5", "preset:30", "toggleAdd:money", "tick"] { m3.apply(a) }
+        for a in ["login", "nav:12", "filter:finished", "sort:rating", "sheet:sort", "rate:2", "step:-5", "preset:30", "toggleAdd:money", "tick"] { m3.apply(a) }
         #expect(m3.libraryFilter == .finished)
         #expect(m3.librarySort == .rating)
         #expect(m3.sheet == .sort)
-        #expect(m3.weekSel == 0)
         #expect(m3.rating == 2)
         #expect(m3.addtimeValue == 60)   // 35 -5 +30
         #expect(m3.added.contains("money"))
