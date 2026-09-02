@@ -35,7 +35,11 @@ public struct Screen08Detail: View {
                 let df = DateFormatter()
                 df.locale = Locale(identifier: "en_US_POSIX")
                 df.dateFormat = "yyyy-MM-dd"
-                let myDays = m.ebookBooks.filter { $0.value.contains(book.title) }.keys.sorted(by: >)
+                // 1분 미만 날(ebookMinSeconds 미달)은 홈 캘린더처럼 미기록 취급해 행을 만들지
+                // 않는다 — 남기면 혼자 읽은 날이 '다른 책과 함께'로 오표기된다(1권인데 시간만 미달).
+                // 파트너의 밀리 책은 히스토리를 받지 않는다(스냅샷은 책 목록뿐) — 내 기록을 붙이면 안 됨
+                let myDays = partner ? [] : m.ebookBooks.filter { $0.value.contains(book.title) }.keys.sorted(by: >)
+                    .filter { ds in df.date(from: ds).map { m.ebookSeconds(on: $0) > 0 } ?? false }
                 var totalSec = 0
                 let rows = myDays.prefix(5).compactMap { ds -> (Tile, String, String, Right)? in
                     guard let d = df.date(from: ds) else { return nil }
@@ -240,7 +244,9 @@ public struct Screen08Detail: View {
         HStack {
             Text("기록").font(.sans(14.5, 800)).foregroundColor(RT.ink)
             Spacer()
-            if !readOnly {   // 파트너 책엔 '직접 추가' 없음
+            // 파트너 책 + 밀리 편입 책엔 '직접 추가' 없음 — 밀리 상세의 기록은 일별 뷰라
+            // 수동 세션을 넣어도 화면에 나타나지 않는다(자동 수집 문법과도 모순)
+            if !readOnly && live?.isMillie != true {
                 HStack(spacing: 5) {
                     ZStack {
                         Circle().stroke(RT.muted, lineWidth: 2 * 12 / 24).frame(width: 8, height: 8)

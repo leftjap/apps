@@ -192,12 +192,15 @@ public struct Screen12Library: View {
                     .padding(.top, 9)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Circle().fill(RT.ctaGrad(CGSize(width: 40, height: 40)))
-                .frame(width: 40, height: 40)
-                .overlay(RTIcon(RTIconPath.play, size: 15, fill: RT.ctaText))
-                .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
-                .contentShape(Circle())
-                .onTapGesture { model?.start() }
+            if b.millieBookId == nil {   // 밀리 편입 책엔 ▶ 없음 — 종이 세션 시작이 무의미(자동 수집)
+                Circle().fill(RT.ctaGrad(CGSize(width: 40, height: 40)))
+                    .frame(width: 40, height: 40)
+                    .overlay(RTIcon(RTIconPath.play, size: 15, fill: RT.ctaText))
+                    .shadow(color: Color(hex: 0x26413A, alpha: 0.42), radius: 5, x: 0, y: 6)
+                    .contentShape(Circle())
+                    .onTapGesture { model?.start() }
+                    .accessibilityIdentifier("library.play.\(b.isbn)")
+            }
         }
         .padding(12)
         .background(RT.surface)

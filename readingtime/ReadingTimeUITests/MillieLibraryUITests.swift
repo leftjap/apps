@@ -58,5 +58,27 @@ final class MillieLibraryUITests: XCTestCase {
             .matching(identifier: "home.carousel.title.millie:\(millieTitle)").firstMatch
         XCTAssertTrue(revived.waitForExistence(timeout: 10),
                       "다시 읽기 후 홈 밀리 카드가 부활하지 않음")
+        XCTAssertFalse(app.staticTexts.matching(identifier: "home.carousel.title.millie:4c17703240404997")
+                          .firstMatch.exists,
+                       "다시 읽기 상태의 밀리 책이 종이 카드로 중복 노출됨")
+    }
+
+    func testRereadMillieBookHasNoPlayButtonAndShowsMillieCTA() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,demoCards,finishEbook:\(millieTitle),sel:millie:4c17703240404997,reread,nav:12"]
+        app.launch()
+
+        // 서재 '읽는 중' 카드 — 밀리 책엔 ▶(종이 세션 시작) 이 없어야 한다
+        let paperPlay = app.descendants(matching: .any)["library.play.P1"]
+        XCTAssertTrue(paperPlay.waitForExistence(timeout: 10), "종이책 카드의 ▶ 가 없음 (식별자 배선 확인)")
+        XCTAssertFalse(app.descendants(matching: .any)["library.play.millie:4c17703240404997"].exists,
+                       "밀리 책 카드에 ▶ 가 노출됨 — 탭하면 종이 세션이 시작된다")
+
+        // 카드 탭 → 상세: '밀리의 서재' 비활성 + '완독' 버튼
+        app.staticTexts.matching(NSPredicate(format: "label CONTAINS %@", "삼미 슈퍼스타즈")).firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["밀리의 서재"].waitForExistence(timeout: 10),
+                      "미완독 밀리 상세에 '밀리의 서재' 비활성 CTA 가 없음")
+        XCTAssertTrue(app.staticTexts["완독"].firstMatch.exists, "완독 버튼이 없음")
+        XCTAssertFalse(app.staticTexts["직접 추가"].exists, "밀리 상세에 '직접 추가' 가 노출됨")
     }
 }

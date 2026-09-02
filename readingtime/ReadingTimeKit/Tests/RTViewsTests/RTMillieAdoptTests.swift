@@ -241,6 +241,61 @@ import Foundation
         #expect(saves == 2, "ISBN 업그레이드가 영속 훅을 타지 않음")
     }
 
+    @Test func refinishRetriesMatchWhenStillOnMillieKey() {
+        // 첫 매칭이 실패(네트워크 등)해 밀리 키로 남은 책은 재완독이 복구 기회다 — 훅 재발화.
+        let m = model(now: date(2026, 9, 1))
+        var adopted: [String] = []
+        m.onMillieAdopted = { adopted.append($0) }
+        m.finishEbook("삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]")
+        m.selectedISBN = "millie:4c17703240404997"
+        m.rereadBook()
+        m.finishEbook("삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]")
+        #expect(adopted == ["millie:4c17703240404997", "millie:4c17703240404997"],
+                "밀리 키로 남은 책의 재완독은 매칭을 재시도해야 한다")
+    }
+
+    @Test func refinishDoesNotRetryMatchOnRealISBN() {
+        // 이미 실 ISBN 으로 올라간 책은 재완독해도 재매칭 불필요
+        let m = model(now: date(2026, 9, 1))
+        var adopted: [String] = []
+        m.onMillieAdopted = { adopted.append($0) }
+        m.finishEbook("삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]")
+        m.upgradeMillieBook(key: "millie:4c17703240404997",
+                            to: hit("삼미 슈퍼스타즈의 마지막 팬클럽", "박민규", isbn: "9791160404517"))
+        m.selectedISBN = "9791160404517"
+        m.rereadBook()
+        m.finishEbook("삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]")
+        #expect(adopted.count == 1, "실 ISBN 책 재완독에 재매칭이 발화하면 안 된다")
+    }
+
+    // ── 다시 읽기 상태(finished=false)의 밀리 책이 종이책 경로로 새지 않는다 ──
+
+    @Test func unfinishedMillieBookIsNotAPaperHomeCard() {
+        let m = model(now: date(2026, 9, 1))
+        m.ebookReadAt = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]": date(2026, 8, 28)]
+        m.finishEbook("삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]")
+        m.selectedISBN = "millie:4c17703240404997"
+        m.rereadBook()
+
+        let cards = m.homeCards
+        #expect(cards.count == 1, "밀리 카드 1장이어야 하는데 종이 카드가 중복 생성됨: \(cards.map(\.id))")
+        #expect(cards.first?.isEbook == true)
+        #expect(cards.first?.recordable == false, "밀리 카드는 엎기 기록 대상이 아니다")
+    }
+
+    @Test func currentBookSkipsMillieBook() {
+        // 홈 CTA 의 기본 대상(currentBook)이 밀리 책을 고르면 엎기 세션이 밀리 책에 붙는다
+        let m = model(now: date(2026, 9, 1))
+        m.finishEbook("삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]")
+        m.selectedISBN = "millie:4c17703240404997"
+        m.rereadBook()
+        #expect(m.currentBook == nil, "읽는 중 종이책이 없으면 대상도 없어야 한다")
+
+        m.userData?.books.append(RTBook(isbn: "P1", title: "몰입", author: "칙센트미하이", publisher: "한울림",
+                                        coverUrl: "", addedAt: date(2026, 1, 1)))   // 밀리보다 오래된 종이책
+        #expect(m.currentBook?.isbn == "P1", "더 최근인 밀리 책 대신 종이책을 골라야 한다")
+    }
+
     // ── Codable 하위호환 ──
 
     @Test func bookDecodesWithoutMillieField() throws {

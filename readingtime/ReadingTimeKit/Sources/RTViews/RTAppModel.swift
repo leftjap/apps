@@ -341,7 +341,7 @@ public final class RTAppModel: ObservableObject {
             if let i = s.isbn, s.endedAt > (lastRead[i] ?? .distantPast) { lastRead[i] = s.endedAt }
         }
         func key(_ b: RTBook) -> Date { max(b.addedAt, lastRead[b.isbn] ?? .distantPast) }
-        return d.books.filter { !$0.finished }.max { key($0) < key($1) }
+        return d.books.filter { !$0.finished && $0.millieBookId == nil }.max { key($0) < key($1) }   // 밀리 편입 책 제외
     }
 
     /// 진행 중(또는 flip 대기로 보류 중) 세션의 대상 책 — 다크 03~05·완료 06·라이브 액티비티 표기용
@@ -405,7 +405,9 @@ public final class RTAppModel: ObservableObject {
         for s in d.sessions {
             if let i = s.isbn, s.endedAt > (lastRead[i] ?? .distantPast) { lastRead[i] = s.endedAt }
         }
-        let paper = d.books.filter { !$0.finished }.map { b in
+        // 밀리 편입 책(다시 읽기 상태)은 종이 카드가 아니다 — 밀리 카드가 ebookReadAt 로 따로 서고,
+        // 종이 카드로 새면 중복 노출 + 엎기 기록 대상이 된다 (실측 2026-09-02)
+        let paper = d.books.filter { !$0.finished && $0.millieBookId == nil }.map { b in
             RTHomeCard(title: b.title, author: b.author, coverUrl: b.coverUrl,
                        isbn: b.isbn, isEbook: false,
                        lastReadAt: max(b.addedAt, lastRead[b.isbn] ?? .distantPast))
@@ -466,12 +468,16 @@ public final class RTAppModel: ObservableObject {
     /// 동기화되지 않은 책은 "millie:t:<제목>" — 이후 알라딘 매칭이 실 ISBN 으로 올린다.
     private func adoptFinishedEbook(_ title: String) {
         guard userData != nil else { return }
-        // 재완독 — 이미 편입된 항목이면 완독 상태만 갱신 (중복 생성 금지)
-        if let i = userData?.books.firstIndex(where: { $0.millieBookId != nil && $0.title == title }) {
+        // 재완독 — 이미 편입된 항목이면 완독 상태만 갱신 (중복 생성 금지).
+        // 아직 밀리 키면(첫 매칭이 네트워크 등으로 실패) 재완독을 복구 기회로 삼아 재매칭한다.
+        if let existing = userData?.books.first(where: { $0.millieBookId != nil && $0.title == title }) {
             mutateUserData { d in
-                d.books[i].finished = true
-                d.books[i].finishedAt = now()
+                if let i = d.books.firstIndex(where: { $0.isbn == existing.isbn }) {
+                    d.books[i].finished = true
+                    d.books[i].finishedAt = now()
+                }
             }
+            if existing.isbn.hasPrefix("millie:") { onMillieAdopted?(existing.isbn) }
             return
         }
         let meta = millieMeta[title]
@@ -1174,6 +1180,13 @@ public final class RTAppModel: ObservableObject {
             homeCardIndex = 0
             let t = now()
             func ago(_ h: Double) -> Date { t.addingTimeInterval(-h * 3600) }
+            // '어제·그제' 는 날짜 기준 — 시간 기준(ago 30h)은 새벽 실행에서 하루 더 밀려
+            // '어제 기록' 을 기대하는 검증이 flaky 해진다 (실측 2026-09-02 01:14 실패).
+            let dcal = Calendar(identifier: .gregorian)
+            func dayNoon(_ back: Int) -> Date {
+                dcal.date(byAdding: .day, value: -back, to: dcal.startOfDay(for: t))!
+                    .addingTimeInterval(12 * 3600)
+            }
             userData = RTUserData(
                 books: [
                     RTBook(isbn: "P1", title: "작별하지 않는다", author: "한강", publisher: "문학동네",
@@ -1184,8 +1197,8 @@ public final class RTAppModel: ObservableObject {
                            addedAt: ago(96)),
                 ],
                 sessions: [
-                    RTSessionRecord(isbn: "P1", mode: "flip", seconds: 52 * 60, endedAt: ago(30), pauseCount: 0),
-                    RTSessionRecord(isbn: "P2", mode: "flip", seconds: 74 * 60, endedAt: ago(50), pauseCount: 0),
+                    RTSessionRecord(isbn: "P1", mode: "flip", seconds: 52 * 60, endedAt: dayNoon(1), pauseCount: 0),
+                    RTSessionRecord(isbn: "P2", mode: "flip", seconds: 74 * 60, endedAt: dayNoon(2), pauseCount: 0),
                 ])
             ebookReadAt = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]": ago(2),   // 최신 → 첫 카드
                            "독학이라는 세계": ago(40)]
@@ -1200,10 +1213,10 @@ public final class RTAppModel: ObservableObject {
             let edf = DateFormatter()
             edf.locale = Locale(identifier: "en_US_POSIX")
             edf.dateFormat = "yyyy-MM-dd"
-            ebookDaily = [edf.string(from: ago(26)): 26 * 60,    // 어제
-                          edf.string(from: ago(50)): 40 * 60]    // 그제
-            ebookBooks = [edf.string(from: ago(26)): ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"],
-                          edf.string(from: ago(50)): ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"]]
+            ebookDaily = [edf.string(from: dayNoon(1)): 26 * 60,    // 어제
+                          edf.string(from: dayNoon(2)): 40 * 60]    // 그제
+            ebookBooks = [edf.string(from: dayNoon(1)): ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"],
+                          edf.string(from: dayNoon(2)): ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]"]]
             // 서재 편입용 메타 (실데몬 book_millie_books 미러와 같은 형태)
             millieMeta = ["삼미 슈퍼스타즈의 마지막 팬클럽[개정2판]":
                 RTMillieMeta(bookId: "4c17703240404997", author: "박민규", publisher: "한겨레출판",
