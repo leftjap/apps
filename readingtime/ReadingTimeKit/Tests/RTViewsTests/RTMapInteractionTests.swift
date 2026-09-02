@@ -72,6 +72,20 @@ import Foundation
         #expect(m.statsSheetData == nil, "모르는 장소 id 는 시트 데이터 없음")
     }
 
+    // 갈라지지 않는 클러스터(실기기 실측 2026-09-02) — 구성원 전체를 합친 place 시트
+    @Test func clusterTapOpensAggregatedSheet() {
+        let m = statsModel()
+        m.openMapFullscreen()
+        m.statsTapPlaces(["서울", "제주"])
+        #expect(m.statsSheet == .cluster(["서울", "제주"]))
+        let data = m.statsSheetData
+        #expect(data?.kind == .place && data?.title == "서울 외 1")
+        m.statsTapPlaces(["서울"])
+        #expect(m.statsSheet == .place("서울"), "1곳이면 단일 시트")
+        m.statsTapPlaces(["없는 곳"])
+        #expect(m.statsSheetData == nil)
+    }
+
     // 전체 화면 지도 닫기 → 시트도 닫힘. 08 로 갔다 뒤로 오면 지도는 그대로(README: 지도로 복귀)
     @Test func mapFullscreenLifecycle() {
         let m = statsModel()

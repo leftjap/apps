@@ -114,9 +114,18 @@ public struct RTMapFullscreen: View {
         }
     }
 
-    // 핀 탭 — 클러스터 = 줌투핏, 단일 = place 시트
+    // 핀 탭 — 클러스터 = 줌투핏, 단일 = place 시트.
+    // 예외(실기기 실측 2026-09-02): 구성원이 250m 안에 모여 있거나 이미 줌투핏 하한(0.03°)까지 들어와 있으면
+    // 어떤 배율에서도 갈라지지 않으므로 합친 place 시트를 연다 — 아니면 "서교동 외 1"을 아무리 눌러도 아무 일도 없다.
+    static let unsplittableMeters = 250.0
     private func tap(_ m: RTStats.Pin) {
         if m.isCluster {
+            let tight = RTStats.spanMeters(ds, places: m.members) < Self.unsplittableMeters
+                || (region.map { $0.span.latitudeDelta <= 0.035 } ?? false)
+            if tight {
+                model?.statsTapPlaces(m.members.map { ds.places[$0].id })
+                return
+            }
             let coords = m.members.map { CLLocationCoordinate2D(latitude: ds.places[$0].lat, longitude: ds.places[$0].lng) }
             withAnimation(.easeInOut(duration: 0.5)) { camera = .region(Self.fitRegion(coords, pad: 2.4, min: 0.03)) }
         } else {

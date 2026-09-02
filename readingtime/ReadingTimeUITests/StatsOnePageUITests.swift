@@ -149,4 +149,23 @@ final class StatsOnePageUITests: XCTestCase {
         XCTAssertFalse(close.waitForExistence(timeout: 2), "닫기 후 지도가 남아 있음")
         XCTAssertTrue(app.descendants(matching: .any)["stats.summary"].exists, "원페이지로 복귀하지 않음")
     }
+
+    // 실기기 결함(2026-09-02): 갈라지지 않는 클러스터("서교동 외 1")를 탭하면 줌만 되고 시트가 안 열렸다.
+    // 200m 떨어진 두 장소(병합 120m 밖·풀리지 않음 250m 안) → 핀 "… 외 1" 탭 → 합친 place 시트.
+    func testUnsplittableClusterTapOpensAggregatedSheet() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--seq", "login,demoCards,seedLoc:37.544|127.056|KR:서울특별시:성수동|성수동|대한민국|1,seedLoc:37.5458|127.056|KR:서울특별시:성수동:카페|성수동 카페|대한민국|1,nav:10,statsMap"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any)["stats.mapClose"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["2개 도시 · 1개 대륙"].waitForExistence(timeout: 10), "장소 2곳이어야 한다")
+        // 앵커 = 총 분 최대 (P2 파친코 74분 = 두 번째 seedLoc → 성수동 카페)
+        let pin = app.descendants(matching: .any)["stats.pin.KR:서울특별시:성수동:카페"]
+        XCTAssertTrue(pin.waitForExistence(timeout: 15), "클러스터 핀이 없음")
+        XCTAssertTrue(pin.label.hasSuffix("외 1"), "클러스터 라벨이 아님: \(pin.label)")
+        pin.tap()
+        let sheet = app.descendants(matching: .any)["stats.sheet"]
+        XCTAssertTrue(sheet.waitForExistence(timeout: 5), "갈라지지 않는 클러스터 탭에 시트가 안 열림")
+        XCTAssertTrue(sheet.label.hasSuffix("외 1"), "합친 시트 제목이 아님: \(sheet.label)")
+        XCTAssertTrue(app.descendants(matching: .any)["stats.sheet.row.2"].exists, "두 장소의 책이 합쳐져야 한다(2행)")
+    }
 }

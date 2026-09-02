@@ -240,6 +240,42 @@ private func ymd(_ y: Int, _ m: Int, _ d: Int, hour: Int = 12) -> Date {
         #expect(RTStats.chipText(RTStats.live(data: RTUserData(), now: ymd(2026, 8, 27))) == nil)
     }
 
+    // 실기기 실측 2026-09-02: 역지오코딩 실패로 좌표 키("37.556,126.929")가 된 세션이 30m 옆 서교동과
+    // 별개 장소가 돼 "서교동 외 1" 클러스터를 만들었고, 어느 배율에서도 안 갈라져 시트가 영영 안 열렸다.
+    @Test func livePlacesMergeWithin120m() {
+        let named = (id: "KR:서울특별시:서교동", name: "서교동", lat: 37.5558, lng: 126.9290)
+        let grid = (id: "37.556,126.929", name: "37.556,126.929", lat: 37.556, lng: 126.929)   // 약 30m
+        let far = (id: "KR:인천광역시:귤현동", name: "귤현동", lat: 37.5717, lng: 126.7378)      // 17km
+        let data = RTUserData(books: [book("A", "몰입")], sessions: [
+            sess("A", 2026, 7, 29, min: 62, place: grid),        // 좌표 키가 먼저 와도
+            sess("A", 2026, 7, 28, min: 71, place: named),
+            sess("A", 2026, 8, 6, min: 41, place: far),
+        ])
+        let ds = RTStats.live(data: data, now: ymd(2026, 9, 2))
+        #expect(ds.places.map(\.name) == ["서교동", "귤현동"], "30m 옆 좌표 키 장소는 이름 있는 장소로 병합")
+        let seo = ds.places.firstIndex { $0.name == "서교동" }!
+        #expect(ds.sessions.filter { $0.place == seo }.count == 2)
+        #expect(RTStats.chipText(ds) == "2개 도시 · 1개 대륙")
+    }
+
+    @Test func placeSheetAggregatesClusterMembers() {
+        // 서로 200m 떨어진 두 장소(병합 대상 아님)가 한 핀으로 묶였을 때 — 시트는 두 장소를 합쳐 보여준다
+        let a = (id: "KR:서울특별시:성수동", name: "성수동", lat: 37.5440, lng: 127.0560)
+        let b = (id: "KR:서울특별시:성수동:카페", name: "성수동 카페", lat: 37.5458, lng: 127.0560)
+        let data = RTUserData(books: [book("A", "몰입"), book("B", "파친코")], sessions: [
+            sess("A", 2026, 8, 1, min: 30, place: a), sess("A", 2026, 8, 2, min: 20, place: b),
+            sess("B", 2026, 8, 3, min: 10, place: b),
+        ])
+        let ds = RTStats.live(data: data, now: ymd(2026, 9, 2))
+        #expect(ds.places.count == 2)
+        let sheet = RTStats.placeSheet(ds, places: [0, 1])
+        #expect(sheet.title == "성수동 외 1" && sheet.sub == "2권 · 1시간 읽음")
+        #expect(sheet.rows.map { "\(ds.books[$0.book].title)|\($0.sub)|\($0.value)" } == ["몰입|2회 읽음|0:50", "파친코|1회 읽음|0:10"])
+        #expect(RTStats.placeSheet(ds, places: [0]).title == "성수동", "단일은 기존 그대로")
+        // 갈라질 수 없는 클러스터 판정 — 구성원 최대 거리 250m 미만
+        #expect(RTStats.spanMeters(ds, places: [0, 1]) < 250)
+    }
+
     @Test func emptyMonthAndNoRecordsRange() {
         let empty = RTStats.live(data: RTUserData(), now: ymd(2026, 8, 27))
         let r = RTStats.monthRange(empty)

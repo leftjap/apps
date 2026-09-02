@@ -22,7 +22,7 @@ public enum RTRoute: String, Sendable {
 }
 
 /// 기록 원페이지 바텀시트 — day(일) / list / place(장소 id)
-public enum RTStatsSheet: Equatable, Sendable { case day(Int), list, place(String) }
+public enum RTStatsSheet: Equatable, Sendable { case day(Int), list, place(String), cluster([String]) }   // cluster = 갈라지지 않는 핀의 장소 id 들
 
 public enum RTSheet: String, Sendable {
     case addtime, finish, addbook, settings, sort, bookmenu
@@ -1150,6 +1150,8 @@ public final class RTAppModel: ObservableObject {
     }
     public func statsOpenList() { statsSheet = .list }
     public func statsTapPlace(_ id: String) { statsSheet = .place(id) }
+    /// 갈라지지 않는 클러스터 핀 탭 — 구성원 전체를 합친 place 시트 (1곳이면 단일)
+    public func statsTapPlaces(_ ids: [String]) { statsSheet = ids.count == 1 ? .place(ids[0]) : .cluster(ids) }
     public func statsCloseSheet() { statsSheet = nil }
     public func openMapFullscreen() { mapFullscreen = true }
     /// 닫기 → 원페이지 복귀 (열린 시트 닫힘. 카메라 리셋은 뷰가 재생성되며 기본 프레이밍으로 돌아온다)
@@ -1164,6 +1166,10 @@ public final class RTAppModel: ObservableObject {
         case .place(let id):
             guard let i = ds.places.firstIndex(where: { $0.id == id }) else { return nil }
             return RTStats.placeSheet(ds, place: i)
+        case .cluster(let ids):
+            let idx = ids.compactMap { id in ds.places.firstIndex { $0.id == id } }
+            guard !idx.isEmpty else { return nil }
+            return RTStats.placeSheet(ds, places: idx)
         }
     }
     /// 책 행·표지 탭 → 시트 닫고 책 상세(08) push. isbn 없는 밀리 책(미편입·귀속 불가)은 탭 무시.
@@ -1422,14 +1428,16 @@ public final class RTAppModel: ObservableObject {
         case "seedLoc":   // 기존 세션 위치 백필 (실기기 1회 실행) — "lat|lng|placeId|placeName|country"
             // ("|" 구분: --seq 가 ","로 액션을 쪼개므로 콤마 사용 불가)
             let p = arg.split(separator: "|").map(String.init)
-            if p.count == 5, let lat = Double(p[0]), let lng = Double(p[1]) {
+            if p.count >= 5, let lat = Double(p[0]), let lng = Double(p[1]) {
+                var left = p.count >= 6 ? (Int(p[5]) ?? Int.max) : Int.max   // 6번째 = 앞에서부터 N개만 (검증: 장소 2곳 만들기)
                 mutateUserData { d in
-                    for i in d.sessions.indices where d.sessions[i].latitude == nil {
+                    for i in d.sessions.indices where d.sessions[i].latitude == nil && left > 0 {
                         d.sessions[i].latitude = lat
                         d.sessions[i].longitude = lng
                         d.sessions[i].placeId = p[2]
                         d.sessions[i].placeName = p[3]
                         d.sessions[i].country = p[4]
+                        left -= 1
                     }
                 }
             }

@@ -257,13 +257,21 @@ public enum RTStats {
         }
     }
 
-    public static func placeSheet(_ ds: RTStatsDataset, place: Int) -> Sheet {
-        let agg = placeAggs(ds).first { $0.place == place }
-        let bs = agg?.books ?? []
-        return Sheet(kind: .place, title: ds.places[place].name,
-                     sub: "\(bs.count)권 · \(korMin((agg?.sec ?? 0) / 60)) 읽음",
-                     rows: bs.map { Row(book: $0.book, rank: nil, sub: "\($0.n)회 읽음", subMillie: false,
-                                        pin: false, value: hm($0.sec), done: false, sec: $0.sec) })
+    public static func placeSheet(_ ds: RTStatsDataset, place: Int) -> Sheet { placeSheet(ds, places: [place]) }
+
+    /// 여러 장소(갈라지지 않는 클러스터)를 합친 시트 — 제목은 앵커(총 분 최대) 이름 + " 외 N", 행은 책별 합산
+    public static func placeSheet(_ ds: RTStatsDataset, places: [Int]) -> Sheet {
+        let aggs = placeAggs(ds).filter { places.contains($0.place) }
+        let anchor = aggs.max { a, b in a.sec < b.sec }?.place ?? places.first ?? 0
+        var byBook: [Int: (sec: Int, n: Int)] = [:]
+        for a in aggs { for b in a.books { byBook[b.book, default: (0, 0)].sec += b.sec; byBook[b.book]!.n += b.n } }
+        let bs = byBook.keys.sorted().sorted { byBook[$0]!.sec != byBook[$1]!.sec ? byBook[$0]!.sec > byBook[$1]!.sec : $0 < $1 }
+        let total = aggs.reduce(0) { $0 + $1.sec }
+        return Sheet(kind: .place,
+                     title: ds.places[anchor].name + (places.count > 1 ? " 외 \(places.count - 1)" : ""),
+                     sub: "\(bs.count)권 · \(korMin(total / 60)) 읽음",
+                     rows: bs.map { Row(book: $0, rank: nil, sub: "\(byBook[$0]!.n)회 읽음", subMillie: false,
+                                        pin: false, value: hm(byBook[$0]!.sec), done: false, sec: byBook[$0]!.sec) })
     }
 
     // ── 지도 ──
@@ -387,7 +395,18 @@ public enum RTStats {
             guard let isbn = s.isbn, let bi = paperIndex(isbn), s.seconds > 0 else { continue }
             var pi: Int?
             if let pid = s.placeId, let lat = s.latitude, let lng = s.longitude {
-                if let i = placeIdx[pid] { pi = i } else {
+                if let i = placeIdx[pid] { pi = i }
+                else if let i = places.indices.first(where: { meters(places[$0].lat, places[$0].lng, lat, lng) < mergeMeters }) {
+                    // 같은 자리(120m 안)의 다른 키 — 역지오코딩 실패로 좌표 키가 된 세션이 30m 옆 동네와 갈라져
+                    // 영영 안 풀리는 클러스터를 만들던 결함(실기기 실측 2026-09-02). 이름 있는 쪽을 대표로.
+                    pi = i
+                    placeIdx[pid] = i
+                    let isGrid = places[i].name == places[i].id
+                    if isGrid, let name = s.placeName, name != pid {
+                        places[i] = RTStatsPlace(id: pid, name: name, lat: places[i].lat, lng: places[i].lng,
+                                                 continent: continent(placeId: pid))
+                    }
+                } else {
                     pi = places.count
                     placeIdx[pid] = places.count
                     places.append(RTStatsPlace(id: pid, name: s.placeName ?? pid, lat: lat, lng: lng,
@@ -414,6 +433,24 @@ public enum RTStats {
         return RTStatsDataset(books: books, places: places, sessions: sessions, finished: finished,
                               today: (cal.component(.year, from: now), cal.component(.month, from: now),
                                       cal.component(.day, from: now)))
+    }
+
+    /// 두 좌표 사이 거리(m) — 등장방형 근사 (수 km 이내 판정용)
+    static func meters(_ lat1: Double, _ lng1: Double, _ lat2: Double, _ lng2: Double) -> Double {
+        let r = 6_371_000.0
+        let dLat = (lat2 - lat1) * .pi / 180
+        let dLng = (lng2 - lng1) * .pi / 180 * cos((lat1 + lat2) / 2 * .pi / 180)
+        return r * sqrt(dLat * dLat + dLng * dLng)
+    }
+    /// 이 거리 안의 다른 장소 키는 같은 장소로 본다 (동 단위 클러스터 키 vs 좌표 키 폴백)
+    static let mergeMeters = 120.0
+    /// 장소 집합의 최대 상호 거리(m) — 이 값이 작으면 어느 배율에서도 핀이 갈라지지 않는다
+    public static func spanMeters(_ ds: RTStatsDataset, places: [Int]) -> Double {
+        var mx = 0.0
+        for i in places { for j in places where j > i {
+            mx = max(mx, meters(ds.places[i].lat, ds.places[i].lng, ds.places[j].lat, ds.places[j].lng))
+        } }
+        return mx
     }
 
     /// placeId "KR:서울특별시:성수동" 의 ISO 3166-1 alpha-2 접두 → 대륙. 접두가 국가코드가 아니면 nil.
