@@ -235,7 +235,15 @@ final class FlipEngine: ObservableObject {
     /// wall-clock 기준 경과를 모델 UI 에 반영 (백그라운드 복귀 시 호출)
     func syncModel() {
         guard let s = model.session, s.mode == .flip else { return }
+        guard session.hasStarted else { return }   // 복원된 세션(엔진 시계 미시작)의 경과를 0 으로 덮지 않는다
         model.syncElapsed(session.elapsed(at: Date()))
+    }
+
+    /// 복원된(앱 종료 후 되살린) 세션을 재개할 때 — 엔진 시계를 저장된 경과로 시드하고 일시정지 상태로 맞춘다
+    private func seedIfRestored(at now: Date) {
+        guard !session.hasStarted, let s = model.session, s.elapsed > 0 else { return }
+        session.start(at: now, base: TimeInterval(s.elapsed))
+        session.pause(at: now)
     }
 
 
@@ -308,6 +316,7 @@ final class FlipEngine: ObservableObject {
             if signal { signals.signalStart() }   // 화면이 안 보이는 상태의 "기록 시작" 신호
         } else if model.route == .flipTimer, model.session?.mode == .flip,
                   model.session?.status == .paused {
+            seedIfRestored(at: now)
             session.resume(at: now)
             model.togglePause()   // 다시 엎으면 이어서
             model.syncElapsed(session.elapsed(at: now))

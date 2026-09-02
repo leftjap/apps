@@ -89,6 +89,10 @@ private func ymd(_ y: Int, _ m: Int, _ d: Int, hour: Int = 12) -> Date {
             expect[s.book]!.days.insert(s.month * 100 + s.day)
         }
         let want = expect.keys.sorted().sorted { expect[$0]!.sec != expect[$1]!.sec ? expect[$0]!.sec > expect[$1]!.sec : $0 < $1 }
+        // 목업 DOM 실측(2026-09-02, 4주 규칙 반영 후): 몰입 8일 5:22 / 돈의 심리학 완독 3일 2:26 / 사피엔스 밀리 4일 2:15 · 그 외 9권
+        #expect(r.ranked.prefix(3).map { "\(demo.books[$0.book].title)|\($0.days)|\(RTStats.hm($0.sec))|\($0.done)" }
+                == ["몰입|8|5:22|false", "돈의 심리학|3|2:26|true", "사피엔스|4|2:15|false"])
+        #expect(r.ranked.count == 12)
         #expect(r.ranked.map(\.book) == want)
         #expect(r.ranked.map(\.sec) == want.map { expect[$0]!.sec })
         #expect(r.ranked.map(\.days) == want.map { expect[$0]!.days.count })

@@ -122,6 +122,23 @@ struct ReadingTimeApp: App {
                 model.nav(.home)
                 Self.armPickupIfFirstToday(model)   // 하루 첫 실행 안무(#7a) — 읽던 책 있을 때 1회
                 Self.applyCachedPartner(to: model)   // 함께 읽기 — 캐시된 파트너 즉시 표시(팝인 제거)
+                // 진행 중이던 세션 복원 — 실기기 실측(2026-09-02): 메모리에만 있던 세션이 앱 종료로 유실
+                // (09-01 16:16 시작분이 프레즌스만 남기고 사라짐). 일시정지 상태로 타이머 화면에 되살린다.
+                if let raw = UserDefaults.standard.data(forKey: "rt.session"),
+                   let saved = try? JSONDecoder().decode(RTSession.self, from: raw) {
+                    model.restoreSession(saved)
+                }
+            }
+            // 세션 영속 — 변화(시작·틱·일시정지·저장)마다 저장, 세션이 없어지면 삭제.
+            // --seq(검증 실행)는 userData 와 같은 이유로 미배선 — 시뮬레이터 잔존값이 실행 간에 새지 않게.
+            if !sequenceLaunch {
+                model.onSessionPersist = { s in
+                    if let s, let raw = try? JSONEncoder().encode(s) {
+                        UserDefaults.standard.set(raw, forKey: "rt.session")
+                    } else {
+                        UserDefaults.standard.removeObject(forKey: "rt.session")
+                    }
+                }
             }
 
             // 이름 수정 저장 → 즉시 영속 + 서버 갱신 (실패해도 로컬 유지 — 다음 restore() 가 서버 정본으로 수렴)

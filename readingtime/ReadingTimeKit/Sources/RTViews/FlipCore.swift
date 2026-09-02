@@ -67,7 +67,7 @@ public struct RTTapSessionClock {
         }
         if !isTracking {
             isTracking = true
-            clock.start(at: now)
+            clock.start(at: now, base: TimeInterval(s.elapsed))   // 복원 세션: 저장된 경과부터 잇는다
             if s.status == .paused { clock.pause(at: now) }
             lastStatus = s.status
             return
@@ -90,10 +90,13 @@ public struct WallClockSession {
 
     public init() {}
 
-    public mutating func start(at now: Date) {
-        accumulated = 0
+    /// base: 복원된 세션의 누적 경과(초) — 앱 종료 후 되살린 세션은 0 이 아니라 여기서부터 잇는다
+    public mutating func start(at now: Date, base: TimeInterval = 0) {
+        accumulated = base
         segmentStart = now
     }
+    /// 한 번이라도 start 됐는지 — 복원된 세션은 엔진 시계가 아직 안 돌았을 수 있어 재개 전에 시드가 필요하다
+    public var hasStarted: Bool { segmentStart != nil || accumulated > 0 }
 
     public mutating func pause(at now: Date) {
         guard let s = segmentStart else { return }
