@@ -89,6 +89,10 @@ public struct RTMapFullscreen: View {
                            anchor: .bottom) {
                     RTMapPin(ds: ds, m: m)
                         .onTapGesture { tap(m) }
+                        // MapKit 이 지명 라벨("성수동")도 접근성 요소로 내놓아 텍스트 조회가 겹친다 → 핀은 장소 id 로
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(m.label)
+                        .accessibilityIdentifier("stats.pin.\(p.id)")
                 }
             }
         }

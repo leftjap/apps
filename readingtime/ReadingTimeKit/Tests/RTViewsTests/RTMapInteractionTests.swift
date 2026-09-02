@@ -111,7 +111,9 @@ import Foundation
         let m = RTAppModel()
         for a in ["login", "nav:10", "statsPrev", "statsDay:5"] { m.apply(a) }
         #expect(m.route == .stats && m.statsDisplayedMonth == RTStatsYM(year: 2026, month: 7))
-        #expect(m.statsSheet == .day(5) || m.statsSheet == nil)   // 7/5 기록 여부는 시드 생성값에 따름
+        // 7/5 기록 여부는 데이터셋에서 직접 판정 (항상 참인 단언 금지)
+        let read5 = RTStatsDemo.dataset.sessions.contains { $0.year == 2026 && $0.month == 7 && $0.day == 5 }
+        #expect(m.statsSheet == (read5 ? .day(5) : nil))
         m.apply("statsThisMonth"); m.apply("statsMap"); m.apply("statsPlace:뉴욕")
         #expect(m.mapFullscreen && m.statsSheet == .place("뉴욕"))
     }

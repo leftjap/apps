@@ -58,6 +58,27 @@ private func ymd(_ y: Int, _ m: Int, _ d: Int, hour: Int = 12) -> Date {
         #expect(demo.sessions.contains { $0.month == 5 && $0.day == 20 && demo.places[$0.place!].name == "시드니" })
     }
 
+    // 5~7월은 목업 gen(seed) 시드 생성 — 이식한 mulberry32/gen 이 비트 동일한지 목업 DOM 실측값(2026-09-02)으로 고정
+    @Test func demoGeneratedMonthsMatchMockupDOM() {
+        func top3(_ mo: RTStats.Month) -> [String] {
+            mo.ranked.prefix(3).map { "\(demo.books[$0.book].title)|\($0.done ? "완독" : "")|\($0.days)일|\(RTStats.hm($0.sec))" }
+        }
+        let jul = RTStats.month(demo, year: 2026, month: 7)
+        #expect(RTStats.hm(jul.totalSec) == "13:18" && jul.readDays == 14 && jul.denomDays == 31)
+        #expect(top3(jul) == ["작별하지 않는다||5일|4:40", "파친코|완독|6일|4:39", "1984||4일|2:35"])
+        #expect(jul.ranked.count == 4, "그 외 1권")
+
+        let jun = RTStats.month(demo, year: 2026, month: 6)
+        #expect(RTStats.hm(jun.totalSec) == "2:54" && jun.readDays == 7 && jun.denomDays == 30)
+        #expect(top3(jun) == ["1984||4일|1:49", "노르웨이의 숲||3일|0:49", "도둑맞은 집중력||1일|0:16"])
+        #expect(jun.ranked.count == 3, "스트립 없음")
+
+        let may = RTStats.month(demo, year: 2026, month: 5)
+        #expect(RTStats.hm(may.totalSec) == "17:49" && may.readDays == 21 && may.denomDays == 31)
+        #expect(top3(may) == ["도둑맞은 집중력||7일|5:34", "페스트|완독|6일|3:53", "돈의 심리학||6일|3:30"])
+        #expect(may.ranked.count == 5, "그 외 2권")
+    }
+
     @Test func demoDaySheet() {
         let s = RTStats.daySheet(demo, year: 2026, month: 8, day: 22)
         #expect(s.title == "8월 22일 토요일")
