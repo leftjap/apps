@@ -437,6 +437,22 @@ export function preserveLocalOnlyFields(local, chosen) {
   return out;
 }
 
+/* 콘텐츠 필드는 서버(시드) 정본 (2026-09-04 실사고) — 택일에서 로컬이 이긴 행은 서버의 explanation 갱신
+ * (문장 모아보기 v12 의 조각 뜻·anchor)을 영원히 못 받았다. 기기는 이 필드들을 편집하지 않는다
+ * (생성은 sessionFinish 의 수업 카드 복사뿐). SRS·판정 필드는 resolveConflict, 로컬 전용 필드는 preserveLocalOnlyFields. */
+const CONTENT_FIELDS = ['sentence', 'meaning', 'reading', 'explanation', 'category', 'speaker'];
+export function mergeReviewQueueRow(local, server) {
+  if (!local) return server;
+  if (!server) return local;
+  const chosen = resolveConflict(local, server);
+  let out = chosen;
+  if (chosen === local) {
+    out = { ...local };
+    for (const f of CONTENT_FIELDS) if (f in server) out[f] = server[f];
+  }
+  return preserveLocalOnlyFields(local, out);
+}
+
 export function resolveConflict(local, server) {
   if (!local) return server;
   if (!server) return local;
@@ -548,7 +564,7 @@ export async function pullTable(mapping, db, userId) {
     if (mapping.dexie === 'reviewQueue' && typeof store.bulkGet === 'function') {
       const ids = rowsToPut.map((r) => r.id);
       const localRows = await store.bulkGet(ids);
-      rowsToPut = rowsToPut.map((serverRow, i) => preserveLocalOnlyFields(localRows[i], resolveConflict(localRows[i], serverRow)));
+      rowsToPut = rowsToPut.map((serverRow, i) => mergeReviewQueueRow(localRows[i], serverRow));
     }
     await store.bulkPut(rowsToPut);
     if (tombstoned.length && typeof store.bulkDelete === 'function') {

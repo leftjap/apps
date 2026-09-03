@@ -2116,6 +2116,40 @@ describe('sync — reviewQueue 톰스톤(explanation._deleted) pull 전파', () 
 /* 2026-07-28 — 문장 모아보기의 lastResultAt(오늘 평가 가라앉힘)은 로컬 전용 필드다.
  * resolveConflict 가 행을 통째 택일하므로 서버 행이 이기면 소실됨 (push 후엔 lastResult·
  * nextReview 가 동률이라 대부분 server 승) → pull 에서 로컬 값을 이월해야 같은 날 유지가 산다. */
+/* 2026-09-04 실사고: 문장 모아보기 v12 를 위해 서버 복습 큐 행의 explanation 에 조각 뜻·anchor 를 넣었는데
+ * 사용자 기기에는 끝내 도착하지 않았다(어순 힌트가 폴백 윤곽으로 표시됨). pull 이 resolveConflict 로 행을 통째로
+ * 택일하므로 로컬이 이기는 행(로컬 판정 X, 또는 다음 복습일이 더 멂)은 서버 콘텐츠 갱신을 영원히 못 받는다.
+ * 콘텐츠 필드(sentence·meaning·reading·explanation·category·speaker)는 서버(시드)가 정본이고 기기는 편집하지
+ * 않으므로, 어느 행이 이기든 서버 값을 쓴다. SRS·판정 필드는 종전 택일 규칙 그대로. */
+describe('mergeReviewQueueRow — 콘텐츠 필드는 서버 정본, SRS·판정은 택일', () => {
+  const server = { id: 'a', sentence: 'S2', meaning: 'M2', reading: null, explanation: { key: 'k', chunks: [['a', '에', '뜻']], anchor: 'M' }, category: 'c2', speaker: 'sp', interval: 3, nextReview: '2026-09-05', lastResult: null, consecutivePass: 1 };
+
+  it('로컬이 이겨도(판정 X) 서버 explanation·sentence·meaning 을 쓴다 — SRS 필드는 로컬 유지', async () => {
+    const { mergeReviewQueueRow } = await import('./sync.js');
+    const local = { id: 'a', sentence: 'S1', meaning: 'M1', explanation: { key: 'k', chunks: [['a', '에']] }, interval: 1, nextReview: '2026-09-04', lastResult: 'X', consecutivePass: 0, lastResultAt: '2026-09-04', resultHistory: [{ date: '2026-09-04', result: 'X', source: 'sentences' }] };
+    const out = mergeReviewQueueRow(local, server);
+    expect(out).toMatchObject({ interval: 1, nextReview: '2026-09-04', lastResult: 'X', consecutivePass: 0, lastResultAt: '2026-09-04' });
+    expect(out.explanation).toEqual(server.explanation);
+    expect(out.sentence).toBe('S2');
+    expect(out.meaning).toBe('M2');
+    expect(out.category).toBe('c2');
+    expect(out.resultHistory).toHaveLength(1);
+  });
+
+  it('서버가 이기면 서버 행 + 로컬 전용 필드 이월 (종전 동작)', async () => {
+    const { mergeReviewQueueRow } = await import('./sync.js');
+    const local = { id: 'a', sentence: 'S1', explanation: { key: 'old' }, interval: 3, nextReview: '2026-09-05', lastResult: 'O', lastResultAt: '2026-09-03', resultHistory: [{ date: '2026-09-03', result: 'O', source: 'review' }] };
+    const out = mergeReviewQueueRow(local, server);
+    expect(out).toMatchObject({ interval: 3, nextReview: '2026-09-05', lastResult: null, explanation: server.explanation, lastResultAt: '2026-09-03' });
+    expect(out.resultHistory).toHaveLength(1);
+  });
+
+  it('로컬이 없으면 서버 행 그대로', async () => {
+    const { mergeReviewQueueRow } = await import('./sync.js');
+    expect(mergeReviewQueueRow(undefined, server)).toBe(server);
+  });
+});
+
 describe('preserveLocalOnlyFields — pull 시 로컬 전용 필드 이월', () => {
   it('서버 행이 이겨도 로컬 lastResultAt 을 이월한다', async () => {
     const { preserveLocalOnlyFields } = await import('./sync.js');
