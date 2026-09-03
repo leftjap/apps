@@ -78,7 +78,7 @@ export async function startMicRecording(opts = {}) {
       specState.valid = true;
       // 실패 무효화에도 promise 동일성 검사 — 낡은 발사의 늦은 실패가 새 발사를 무장 해제하면
       // 멀쩡한 선채점 결과가 버려져 재채점된다 (2026-09-01 리뷰 지적).
-      const p = analyzeBlob(blob, speculate.expected, speculate.card, { enableMiscue: true })
+      const p = analyzeBlob(blob, speculate.expected, speculate.card, { enableMiscue: true, altParallel: true })
         .catch(() => { if (specState.promise === p) specState.valid = false; return null; });
       specState.promise = p;
       /* 조기 종결 (2026-09-01, 사용자 결정 "채점 시간은 최대한 짧게") — 결과가 '전 단어 발화'
@@ -123,13 +123,14 @@ export async function stopAndAnalyze(controller, expectedText, card, opts = {}) 
 const SPECULATE_SILENCE_MS = 500; // 2026-09-01 조기 종결 도입에 맞춰 0.7→0.5 — 발화 끝 → 점수가 0.5s + RTT(실측 0.5~0.8s)
 const SPECULATE_MAX_FIRES = 3;
 const SPECULATE_WAIT_MS = 3000; // 선채점 결과 대기 상한 — 초과 시 버리고 확정 채점 (예산 잠식 방지)
-async function analyzeBlob(blob, expectedText, card, { enableMiscue = false } = {}) {
+async function analyzeBlob(blob, expectedText, card, { enableMiscue = false, altParallel = false } = {}) {
   const ref = normalizeReferenceText(expectedText);
   const lang = pickAnalyzeLang(card);
   // enableMiscue=true → 결과에 omissions/insertions (오발화 게이트 재료).
   // enableProsody 는 항상 켠다 (2026-08-29 감점제 1단계) — 라이브 실측: 켜도 기존 점수·게이트
   // 불변(acc 96↔96), en/ja 모두 동작. 억양·유창성 분포를 먼저 쌓아 감점 단가를 실측으로 보정한다.
   const opts = enableMiscue ? { lang, enableMiscue: true, enableProsody: true } : { lang, enableProsody: true };
+  if (altParallel) opts.altParallel = true; // 선채점 전용 — 확정 채점은 순차·조건부 유지 (speech.js analyzeWavRest 주석)
   return window.studySpeech.analyzeWavRest(blob, ref, opts);
 }
 

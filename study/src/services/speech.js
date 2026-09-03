@@ -1003,9 +1003,9 @@ async function ensureWarmMic(workletUrl) {
     const int16 = new Int16Array(buf);
     /* TTS 재생 구간은 녹음에도 pre-roll 에도 담지 않는다 (2026-08-29). 녹음 중 듣기를 허용하면서
      * 재생음이 점수가 되는 걸 막는 유일한 지점 — 실측: 말 안 하고 재생음만 담긴 녹음이 96점.
-     * VAD 만 시계를 되짚어(ttsHold) 재생이 길어도 '말이 끝났다'고 오인해 끊지 않게 한다. */
+     * 말한 뒤의 듣기는 '말 끝' 신호로 보고 그 자리에서 녹음을 끝낸다(onTtsChunk, 2026-09-03). */
     if (_ttsPlaying > 0) {
-      wm.active?.ttsHold?.();
+      wm.active?.onTtsChunk?.();
       // 재생 전 오디오가 pre-roll 로 이월되지 않게 링도 비운다 (2026-08-29 감사) — 안 비우면
       // 재생 직후 시작한 녹음 머리에 '재생 전 0.5초'(직전 발화 꼬리 등)가 붙어 채점을 오염시킨다.
       wm.ring = []; wm.ringLen = 0;
@@ -1067,10 +1067,6 @@ export function createSilenceAutoStop({ speechPeak = 0.08, silencePeak = 0.05, h
       }
       return (now - lastVoiceAt) >= hangoverMs;
     },
-    /* TTS 재생 구간 — 그 사이 마이크 입력은 채점에서 빠지므로(재생음이 곧 점수가 된다) VAD 에도
-     * 안 먹인다. 대신 무음 시계를 되짚어, 재생이 길어도 '말이 끝난 것'으로 오인해 끊지 않는다.
-     * 무장 전에는 아무것도 하지 않는다 — 재생음이 발화로 오인되면 앞 침묵 보호가 깨진다. */
-    hold(now) { if (speechStarted) lastVoiceAt = now; },
     get speechStarted() { return speechStarted; },
   };
 }
@@ -1167,7 +1163,10 @@ export async function recordWav({
           }
         }
       },
-      ttsHold() { if (vad) vad.hold(Date.now()); },
+      /* 말한 뒤 누른 듣기 = 말 끝 신호 (2026-09-03 사용자 결정). 종전엔 hold 로 무음 시계를 되짚어 재생이
+       * 끝난 뒤 다시 hangover 를 셌고, '누르기까지 시간 + 재생 길이'만큼 점수가 늦었다(폰 실사용 보고).
+       * 무장 후면 비자발 종료로 채점에 넘기고, 무장 전 재생은 종전대로 영향 없음(앞 침묵 보호). */
+      onTtsChunk() { if (vad?.speechStarted) endInvoluntary(); },
       stop,
       abort: endInvoluntary,
     };
@@ -1245,7 +1244,7 @@ export async function recordWav({
  * @returns {Promise<object>} - { score, recognizedText, phonemeScores, weakPhonemes, wordScores, fluencyScore, completenessScore, prosodyScore }
  *                              실패 시 analyzeMock 폴백 (mockFallback=true).
  */
-export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false, enableProsody = false } = {}) {
+export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false, enableProsody = false, altParallel = false } = {}) {
   // Wave A.18.1 — captureRms 계산 (진단용 저장 source). A.18/A.19 캡처 가드는 철회:
   // 낮은 점수/완성도는 "마이크 캡처 실패"가 아니라 "발음이 레퍼런스와 어긋남"인 경우가 많아(실측 검증),
   // 가드가 정상 발화를 'too_quiet/incomplete_capture' 로 오차단 → 점수 차단엔 미사용, 값만 기록.
@@ -1304,14 +1303,20 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
      * 사전 쪽과 나란히 보내던 병행 요청이 선채점·확정과 겹쳐 Azure 429(2s/5s 백오프)를 불렀다(가짜 마이크
      * 시뮬 실측). 사전 쪽 정확도가 ALT_ACC_THRESHOLD 이상이면 축약 쪽은 보정할 것이 없으므로 보내지
      * 않고, 그 아래일 때만 사전 응답 뒤에 순차로 한 번 더 잰다. 분석당 동시 요청 2 → 1. 축약 쪽이
-     * 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다. */
+     * 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다.
+     * 예외: 선채점 경로(altParallel)는 병행한다 (2026-09-03 폰 실사용 계측) — 순차는 두 왕복을 합산해 축약형
+     * 발화의 stop→저장을 0.2초 → 1.4~1.6초로 늘렸다. 선채점은 그 자체가 요청 1개라 같이 보내도 동시 2개. */
     const contracted = contractedReference(expectedText);
+    let altPromise = null;
+    let tAlt = 0;
+    if (contracted && altParallel) { tAlt = Date.now(); altPromise = post(contracted, meterAlt).catch(() => null); }
     const tStt = Date.now();
     const res = await post(expectedText, meterRef);
     const sttMs = Date.now() - tStt;
     const timing = {
       tokenMs, tokenRefetched, sttMs,
       sttAttempts: meterRef.attempts, ...(meterRef.timeouts ? { sttTimeouts: meterRef.timeouts } : {}),
+      ...(altPromise ? { altParallel: true } : {}),
     };
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);
@@ -1332,8 +1337,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
     const recognizedText = nbest.Display || json.DisplayText || '';
     let usedContracted;
     if (contracted && (nbest.AccuracyScore ?? 0) < ALT_ACC_THRESHOLD) {
-      const tAlt = Date.now();
-      const altRes = await post(contracted, meterAlt).catch(() => null);
+      if (!altPromise) { tAlt = Date.now(); altPromise = post(contracted, meterAlt).catch(() => null); }
+      const altRes = await altPromise;
       timing.altMs = Date.now() - tAlt;
       timing.altAttempts = meterAlt.attempts;
       if (meterAlt.timeouts) timing.altTimeouts = meterAlt.timeouts;

@@ -1618,24 +1618,6 @@ describe('pickVoiceVaried — 폴백 화자 변주', () => {
  * 오발화 게이트로는 못 막는다 — 섞이는 게 '같은 문장'이라 커버리지도 정확도도 올라간다.
  * 그래서 재생 구간의 마이크 입력은 아예 채점에서 뺀다. 메인·복습·드릴·체이닝·생산 전 경로 공통. */
 describe('speech — TTS 재생 구간 배제', () => {
-  it('재생 중(hold)에는 무음 자동종료 시계가 진행되지 않는다', async () => {
-    const { createSilenceAutoStop: mk } = await import('./speech.js');
-    const vad = mk({ speechPeak: 0.08, silencePeak: 0.05, hangoverMs: 1000 });
-    expect(vad.feed(0.2, 1000)).toBe(false);   // 발화로 무장
-    expect(vad.feed(0.01, 1500)).toBe(false);  // 무음 0.5초 — 아직 미달
-    vad.hold(2600);                            // 이 구간은 TTS 재생 중이었다
-    expect(vad.feed(0.01, 2700)).toBe(false);  // hold 가 시계를 되짚었으므로 종료 아님
-    expect(vad.feed(0.01, 3700)).toBe(true);   // hold 이후 1초 무음 → 종료
-  });
-
-  it('무장 전 hold 는 앞 침묵 보호를 깨지 않는다 (재생이 발화로 오인되지 않음)', async () => {
-    const { createSilenceAutoStop: mk } = await import('./speech.js');
-    const vad = mk({ hangoverMs: 1000 });
-    vad.hold(1000);
-    expect(vad.speechStarted).toBe(false);
-    expect(vad.feed(0.01, 5000)).toBe(false);  // 무장 전이므로 여전히 종료 안 함
-  });
-
   it('speak 재생 중에는 isTtsPlaying() 이 참, onEnd 뒤 거짓', async () => {
     const ended = [];
     vi.stubGlobal('window', {
@@ -1795,9 +1777,10 @@ describe('speak — 선점 시 이전 재생의 종료 통보 (카운터 누수 
 /* 재감사 발견 2건 고정 (2026-08-29):
  * ① pre-roll 오염 — TTS 구간 게이트가 링 갱신 전에 return 해, 재생 직후 시작한 녹음의 pre-roll 에
  *   '재생 전 0.5초'(오래된 오디오·직전 발화 꼬리)가 붙었다. 재생 중엔 링을 비운다.
- * ② ttsHold 배선이 어떤 테스트로도 고정돼 있지 않았다 — 지우면 전 테스트 통과인데 실동작은
- *   '재생 끝나자마자 즉시 자동종료'로 무너진다. */
-describe('speech — TTS 구간의 pre-roll 격리와 자동종료 억제', () => {
+ * ② (2026-09-03 개정) 말한 뒤 누른 듣기는 '말 끝' 신호 — 그 자리에서 녹음을 끝내 채점으로 넘긴다.
+ *   종전 hold(재생 뒤 hangover 재계산)는 '누르기까지 시간 + 재생 길이'만큼 점수를 늦췄다(폰 실사용 보고).
+ *   말하기 전 듣기는 종전대로 녹음에 영향 없음(앞 침묵 보호). */
+describe('speech — TTS 구간의 pre-roll 격리와 말 뒤 듣기의 즉시 종료', () => {
   function setupMic() {
     const held = {};
     class FakeNode {
@@ -1847,25 +1830,44 @@ describe('speech — TTS 구간의 pre-roll 격리와 자동종료 억제', () =
     expect(blob.size).toBe(44 + 1 * 160 * 2);            // 발화 1청크만 — 링 이월분(7000) 없음
   });
 
-  it('재생이 길어도 자동종료가 발화 종점으로 오인하지 않는다 (ttsHold 배선 고정)', async () => {
+  it('말한 뒤 듣기를 누르면 그 자리에서 녹음을 끝내고 통보한다 (재생 길이만큼 점수가 늦지 않는다)', async () => {
     const held = setupMic();
     const { Speech } = await import('./speech.js');
     Speech.setSpeechBackend('web');
     const stopped = vi.fn();
-    const rec = await Speech.recordWav({ maxSeconds: 10, autoStopSilenceMs: 300, onAutoStop: stopped });
-    held.node.port.onmessage({ data: chunk(20000) });    // 무장 (큰 발화)
-    Speech.speak('reference', { lang: 'en-US' });         // 듣기 시작
-    for (let i = 0; i < 5; i++) {                         // 재생 400ms — 폐기 구간, hold 가 시계를 되짚어야
-      await new Promise((r) => setTimeout(r, 80));
-      held.node.port.onmessage({ data: chunk(0) });
-    }
-    held.utter.onend();                                   // 재생 종료
-    held.node.port.onmessage({ data: chunk(0) });        // 직후 무음 1청크
-    expect(stopped).not.toHaveBeenCalled();               // hold 없으면 여기서 즉시 자동종료된다
-    await new Promise((r) => setTimeout(r, 350));
-    held.node.port.onmessage({ data: chunk(0) });        // hangover 경과 후 무음 → 정상 자동종료
+    const p = Speech.recordWav({ maxSeconds: 10, autoStopSilenceMs: 300, onAutoStop: stopped });
+    await new Promise((r) => setTimeout(r, 5));
+    held.node.port.onmessage({ data: chunk(20000) });    // 발화 → 무장 (게이트 해제 겸)
+    const rec = await p;
+    Speech.speak('reference', { lang: 'en-US' });         // 말 끝나고 곧바로 듣기
+    await new Promise((r) => setTimeout(r, 30));
+    held.node.port.onmessage({ data: chunk(0) });        // 재생 중 첫 청크 → 여기서 끝나야 한다
     expect(stopped).toHaveBeenCalledTimes(1);
-    rec.stop(); await rec.blobPromise;
+    held.node.port.onmessage({ data: chunk(9000) });     // 재생음 — 이미 끝난 녹음엔 안 담긴다
+    held.utter.onend();
+    held.node.port.onmessage({ data: chunk(8000) });     // 재생 뒤 소리 — 마찬가지
+    const blob = await rec.blobPromise;
+    expect(blob.size).toBe(44 + 1 * 160 * 2);            // 발화 1청크만
+    expect(stopped).toHaveBeenCalledTimes(1);            // 통보는 한 번
+  });
+
+  it('말하기 전의 듣기는 녹음을 끝내지 않는다 (앞 침묵 보호 유지)', async () => {
+    const held = setupMic();
+    const { Speech } = await import('./speech.js');
+    Speech.setSpeechBackend('web');
+    const stopped = vi.fn();
+    const p = Speech.recordWav({ maxSeconds: 10, autoStopSilenceMs: 300, onAutoStop: stopped });
+    await new Promise((r) => setTimeout(r, 5));
+    Speech.speak('reference', { lang: 'en-US' });         // 말하기 전에 듣기
+    await new Promise((r) => setTimeout(r, 30));
+    held.node.port.onmessage({ data: chunk(9000) });     // 재생음 — 버려지고, 끝내지도 않는다
+    held.utter.onend();
+    held.node.port.onmessage({ data: chunk(20000) });    // 재생 뒤 실제 발화 → 무장·녹음 (게이트 해제 겸)
+    const rec = await p;
+    expect(stopped).not.toHaveBeenCalled();
+    rec.stop();
+    const blob = await rec.blobPromise;
+    expect(blob.size).toBe(44 + 1 * 160 * 2);            // 발화 1청크만 (재생음 없음)
   });
 });
 
@@ -2417,5 +2419,54 @@ describe('speech — 축약 레퍼런스는 순차·조건부', () => {
     expect(result.score).toBe(92);
     expect(result.contractedRef).toBe('whaddaya mean');
     expect(result.timing.altAttempts).toBe(1);
+  });
+});
+
+/* 선채점 경로의 병행 예외 (2026-09-03 폰 실사용 계측): 순차 개정 뒤 축약형 발화의 stop→저장이 0.2초 → 1.4~1.6초로
+ * 늘었다 — 사전 응답을 받은 뒤에 축약 요청을 시작하므로 두 왕복이 합산된다. 선채점은 stop 보다 앞서 출발하고
+ * 그 자체가 요청 1개뿐이라, 축약 쪽을 같이 보내도 동시 요청은 2개(개정 전 몇 주간 쓰던 수준)다.
+ * 확정 채점 경로는 순차·조건부를 유지한다 (선채점과 겹칠 수 있는 쪽). */
+describe('speech — 선채점 경로(altParallel)는 축약 레퍼런스를 병행으로 보낸다', () => {
+  const tokenRes = () => new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const rest = (acc) => new Response(JSON.stringify({ RecognitionStatus: 'Success', DisplayText: 'what do you mean', NBest: [{ Display: 'what do you mean', AccuracyScore: acc, PronScore: acc, Words: [] }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const blob = () => new Blob([new ArrayBuffer(50)], { type: 'audio/wav' });
+  const refOf = (init) => JSON.parse(Buffer.from(init.headers['Pronunciation-Assessment'], 'base64').toString('utf8')).ReferenceText;
+
+  it('altParallel 이면 사전·축약을 동시에 보내고 높은 쪽을 쓴다 (동시 요청 2)', async () => {
+    const refs = [];
+    let inflight = 0, maxInflight = 0;
+    _fetchSpy.mockImplementation(async (url, init) => {
+      if (String(url).includes('/functions/v1/azure-token')) return tokenRes();
+      if (String(url).includes('.stt.speech.microsoft.com/')) {
+        inflight += 1; maxInflight = Math.max(maxInflight, inflight);
+        await new Promise((r) => setTimeout(r, 5));
+        inflight -= 1;
+        const ref = refOf(init); refs.push(ref);
+        return rest(ref === 'whaddaya mean' ? 92 : 86);
+      }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'what do you mean', { altParallel: true });
+    expect(refs.sort()).toEqual(['whaddaya mean', 'what do you mean']);
+    expect(maxInflight).toBe(2);                 // 병행
+    expect(result.score).toBe(92);
+    expect(result.contractedRef).toBe('whaddaya mean');
+    expect(result.timing.altParallel).toBe(true);
+    expect(result.timing.altAttempts).toBe(1);
+  });
+
+  it('altParallel 이라도 사전 쪽이 95 이상이면 사전 결과를 쓴다 (축약 응답은 버림)', async () => {
+    _fetchSpy.mockImplementation(async (url, init) => {
+      if (String(url).includes('/functions/v1/azure-token')) return tokenRes();
+      if (String(url).includes('.stt.speech.microsoft.com/')) return rest(refOf(init) === 'whaddaya mean' ? 99 : 96);
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'what do you mean', { altParallel: true });
+    expect(result.score).toBe(96);
+    expect(result.contractedRef).toBeUndefined();
   });
 });
