@@ -313,7 +313,12 @@ export function mountSessionNew(host) {
           const hyd = await loadScoreHistoryState(window.studyDB, list, getStoredLang(),
             (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
           if (!hyd) return;
-          state.exLog = { ...state.exLog, ...hyd.exLog };
+          /* 카드 안 필드 단위 병합 (2026-09-03) — 항목을 통째로 갈아끼우면 스냅샷에만 사는 진행
+           * (체이닝 chain.cur · 생산 prod.picks/rows)이 이력 있는 카드마다 재진입 때 사라졌다.
+           * 점수 계열(utter·drills·chainScores·prodScores)은 이력이 정본, 진행 계열은 스냅샷이 정본. */
+          const merged = { ...state.exLog };
+          for (const [id, hist] of Object.entries(hyd.exLog)) merged[id] = { ...(merged[id] || {}), ...hist };
+          state.exLog = merged;
           if (withRecLog) state.recLog = hyd.recLog;
         } catch { /* 수화 실패 — 다음 진입에서 재시도 */ }
       }

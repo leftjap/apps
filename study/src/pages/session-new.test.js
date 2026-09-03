@@ -280,3 +280,37 @@ describe('session-new — 재청취(replay) 화면 상태 저장·복원', () =>
     cleanup();
   });
 });
+
+/* 수화 병합이 세션 진행을 지우던 결함 (2026-09-03 발견) — hydrateScores 가 카드 항목을 통째로 갈아끼워,
+ * 이력이 있는 카드의 체이닝 진행(chain.cur)·생산 출제(prod.picks/rows)가 재진입마다 사라졌다.
+ * 병합은 카드 안에서 필드 단위로: 점수 계열은 이력이 정본, 진행 계열은 스냅샷이 정본. */
+describe('session-new — 복원 시 수화 병합이 체이닝·생산 진행을 지우지 않는다', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+
+  it('스냅샷의 chain.cur 과 prod 출제·통과가 이력 병합 뒤에도 남는다', async () => {
+    const CHAIN = { target: 'It is a promise', chunks: ['It is', 'a promise'], ko: '약속이야' };
+    const CARDS = [
+      { ...NCARD('n1', 'One two.', '뜻하나'), explanation: { key: 'k', chain: CHAIN, drills: [{ en: 'Drill one.', kr: '', ko: '드릴 하나' }] } },
+      NCARD('n2', 'Three four.', '뜻둘'),
+    ];
+    window.studyDB = fakeDB2({ activeSession: { key: 'activeSession', value: {
+      mode: 'new', lang: 'en', todayISO: localISODate(), startTime: Date.now() - 60_000, activeSec: 30, base: null,
+      step: 1, tried: 3, passed: 2, lastScore: 75, pronScores: [73, 75, 90], weakInSession: {},
+      recLog: {}, exLog: { n1: { utter: [73, 75], chain: { cur: 1 }, prod: { picks: [0], rows: { 0: true } } } },
+      cardIds: ['n1', 'n2'], cards: CARDS, savedAt: Date.now(),
+    } } });
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'n1', lang: 'en', date: '2026-09-03', overallScore: 73, createdAt: '2026-09-03T01:00:00Z' },
+      { sentenceId: 'n1', lang: 'en', date: '2026-09-03', overallScore: 75, createdAt: '2026-09-03T01:01:00Z' },
+    ] }) }) };
+    loadNewCards.mockResolvedValueOnce(CARDS);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('총 2회');                            // 점수 계열은 이력
+    expect(document.querySelector('.vs-chain .ct')?.textContent).toContain('통과 1 / 2'); // 체이닝 진행 보존
+    expect(document.querySelector('.vs-prodblock')?.textContent).toContain('Drill one.'); // 통과한 생산 문항 공개 상태 보존
+    expect(document.querySelector('.vs-prodblock .ct')?.textContent).toContain('통과 1 / 1');
+    cleanup();
+  });
+});
