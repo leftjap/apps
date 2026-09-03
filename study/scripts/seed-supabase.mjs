@@ -31,6 +31,7 @@
  *   - cards.length > 50 차단 (대량 실수 방지)
  *   - lang ∉ {en, ja} 차단
  *   - 동일 id 중복 → upsert (id PK)
+ *   - 완료(completed=true)된 id 는 날짜와 무관하게 재INSERT 차단 (2026-09-03)
  *   - INSERT 후 SELECT count 일치 검증
  *
  * 의존성: 0개 (Node 22 fetch 내장 사용 — 추가 패키지 install 안 함).
@@ -113,6 +114,16 @@ async function selectRows(supabaseUrl, serviceKey, userId, lang, date) {
   return JSON.parse(text);
 }
 
+/* payload 의 id 로도 서버 행을 찾는다 (2026-09-03): completed 게이트가 같은 날짜 행만 보면, 날짜가 바뀐
+ * 재적재(08-26 파일 vs 서버 08-31 행)는 검사를 건너뛰고 upsert 가 completed=false 로 학습 기록을 되돌린다.
+ * id 기준 행을 합쳐 넘겨, 완료된 카드는 날짜와 무관하게 차단한다. */
+async function selectRowsByIds(supabaseUrl, serviceKey, userId, ids) {
+  const inList = `(${ids.map((s) => `"${s}"`).join(',')})`;
+  const path = `/study_today_lessons?select=id,completed&user_id=eq.${userId}&id=in.${inList}`;
+  const { text } = await rest(supabaseUrl, serviceKey, path, { method: 'GET' });
+  return JSON.parse(text);
+}
+
 async function upsertRows(supabaseUrl, serviceKey, rows) {
   const path = '/study_today_lessons?on_conflict=id';
   const { text } = await rest(supabaseUrl, serviceKey, path, {
@@ -169,10 +180,14 @@ async function main() {
 
   const preRows = await selectRows(supabaseUrl, serviceKey, args.userId, payload.lang, payload.date);
   console.log(`[seed] existing rows for (user, lang, date): ${preRows.length}`);
+  const idRows = await selectRowsByIds(supabaseUrl, serviceKey, args.userId, payload.cards.map((c) => c.id));
+  console.log(`[seed] existing rows by id (any date): ${idRows.length}`);
+  const seen = new Set(preRows.map((r) => r.id));
+  const guardRows = [...preRows, ...idRows.filter((r) => !seen.has(r.id))];
 
-  // 서버 게이트: 1일 1장면 (같은 날 다른 그룹 차단) + completed 게이트 (학습 시작 후 재INSERT 차단)
+  // 서버 게이트: 1일 1장면 (같은 날 다른 그룹 차단) + completed 게이트 (학습 시작 후 재INSERT 차단, 날짜 무관)
   const guards = evaluateServerGuards({
-    serverRows: preRows,
+    serverRows: guardRows,
     payloadIds: new Set(payload.cards.map((c) => c.id)),
   });
   if (!guards.ok) {
