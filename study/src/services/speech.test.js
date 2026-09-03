@@ -2274,3 +2274,148 @@ describe('speech — 축약 발화 채점 (contractedReference + 이중 채점)'
     expect(r.fallbackReason).toBeUndefined();
   });
 });
+
+/* 채점 지연 구조 수정 (2026-09-03 사용자 보고) — 토큰은 9분 만료라 연습 중 반드시 재발급이 끼는데,
+ * 재발급을 채점이 기다렸다. 아직 유효한 토큰이 있으면 즉시 쓰고 갱신은 뒤에서 한다. 토큰·STT 요청엔
+ * 개별 시간 제한을 둬 죽은 연결을 OS 타임아웃까지 기다리지 않는다. 결과에 구간 시간을 싣는다. */
+describe('speech — 토큰 만료 전 백그라운드 갱신 + 요청 시간 제한 + 계측', () => {
+  const tokenRes = (token, expiresAt) => new Response(JSON.stringify({ token, region: FAKE_REGION, expiresAt }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const REST_OK = { RecognitionStatus: 'Success', DisplayText: 'hi', NBest: [{ Display: 'hi', AccuracyScore: 80, PronScore: 80, Words: [] }] };
+  const okResponse = () => new Response(JSON.stringify(REST_OK), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const blob = () => new Blob([new ArrayBuffer(50)], { type: 'audio/wav' });
+  const settle = async () => { for (let i = 0; i < 3; i++) await new Promise((r) => setTimeout(r, 5)); };
+
+  it('남은 시간이 3분 미만이면 캐시를 즉시 돌려주고 갱신은 뒤에서 한다', async () => {
+    let n = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) { n += 1; return tokenRes(n === 1 ? 'first' : 'second', Date.now() + (n === 1 ? 2 * 60 * 1000 : 9 * 60 * 1000)); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    await Speech.getAzureToken();                       // first — 2분 남은 토큰
+    const r = await Speech.getAzureToken();             // 즉시 캐시 반환 + 백그라운드 갱신 시작
+    expect(r.token).toBe('first');
+    await settle();
+    expect(n).toBe(2);                                  // 뒤에서 한 번 더 받았다
+    const r2 = await Speech.getAzureToken();
+    expect(r2.token).toBe('second');                    // 갱신분이 캐시에 들어왔다
+  });
+
+  it('만료된 캐시는 기다려서 새로 받는다', async () => {
+    let n = 0;
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) { n += 1; return tokenRes(n === 1 ? 'first' : 'second', n === 1 ? Date.now() - 1000 : Date.now() + 9 * 60 * 1000); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    await Speech.getAzureToken();
+    const r = await Speech.getAzureToken();
+    expect(r.token).toBe('second');
+    expect(n).toBe(2);
+  });
+
+  it('토큰 요청이 응답하지 않으면 6초에 끊고 재시도한다', async () => {
+    vi.useFakeTimers();
+    try {
+      let n = 0;
+      _fetchSpy.mockImplementation((url) => {
+        if (String(url).includes('/functions/v1/azure-token')) { n += 1; return n === 1 ? new Promise(() => {}) : Promise.resolve(tokenRes('late', Date.now() + 9 * 60 * 1000)); }
+        return Promise.resolve(new Response('nf', { status: 404 }));
+      });
+      const { Speech } = await import('./speech.js');
+      Speech.clearAzureTokenCache();
+      const p = Speech.getAzureToken();
+      await vi.advanceTimersByTimeAsync(6000 + 400 + 50);
+      const r = await p;
+      expect(r.token).toBe('late');
+      expect(n).toBe(2);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('STT 요청이 응답하지 않으면 8초에 끊고 재시도하며, 시도 횟수가 계측에 남는다', async () => {
+    vi.useFakeTimers();
+    try {
+      let stt = 0;
+      _fetchSpy.mockImplementation((url) => {
+        if (String(url).includes('/functions/v1/azure-token')) return Promise.resolve(tokenRes('t', Date.now() + 9 * 60 * 1000));
+        if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return stt === 1 ? new Promise(() => {}) : Promise.resolve(okResponse()); }
+        return Promise.resolve(new Response('nf', { status: 404 }));
+      });
+      const { Speech } = await import('./speech.js');
+      Speech.clearAzureTokenCache();
+      const p = Speech.analyzeWavRest(blob(), 'hi');
+      await vi.advanceTimersByTimeAsync(8000 + 400 + 50);
+      const result = await p;
+      expect(result.score).toBe(80);
+      expect(result.mockFallback).toBeUndefined();
+      expect(stt).toBe(2);
+      expect(result.timing.sttAttempts).toBe(2);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('정상 채점 결과에 구간 시간을 싣는다', async () => {
+    _fetchSpy.mockImplementation(async (url) => {
+      if (String(url).includes('/functions/v1/azure-token')) return tokenRes('t', Date.now() + 9 * 60 * 1000);
+      if (String(url).includes('.stt.speech.microsoft.com/')) return okResponse();
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'hi');
+    expect(typeof result.timing.tokenMs).toBe('number');
+    expect(typeof result.timing.sttMs).toBe('number');
+    expect(result.timing.sttAttempts).toBe(1);
+    expect(result.timing.tokenRefetched).toBe(true);   // 캐시를 비웠으니 이번 호출이 받아 왔다
+  });
+});
+
+/* 축약 레퍼런스 병행 → 순차·조건부 (2026-09-03 시뮬 실측): 요청이 겹치면(선채점+확정, 사전+축약) Azure 가
+ * 429 를 내고 2s/5s 백오프가 지연을 키웠다. 사전 레퍼런스 결과가 충분히 높으면(≥95) 축약 쪽은 보정할 것이
+ * 없으므로 보내지 않고, 낮을 때만 순차로 한 번 더 잰다. 동시 요청 수가 분석당 2 → 1 로 준다. */
+describe('speech — 축약 레퍼런스는 순차·조건부', () => {
+  const tokenRes = () => new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const rest = (acc) => new Response(JSON.stringify({ RecognitionStatus: 'Success', DisplayText: 'what do you mean', NBest: [{ Display: 'what do you mean', AccuracyScore: acc, PronScore: acc, Words: [] }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  const blob = () => new Blob([new ArrayBuffer(50)], { type: 'audio/wav' });
+  const refOf = (init) => JSON.parse(Buffer.from(init.headers['Pronunciation-Assessment'], 'base64').toString('utf8')).ReferenceText;
+
+  it('사전 레퍼런스가 95 이상이면 축약 요청을 보내지 않는다 (동시 요청 1)', async () => {
+    const refs = [];
+    _fetchSpy.mockImplementation(async (url, init) => {
+      if (String(url).includes('/functions/v1/azure-token')) return tokenRes();
+      if (String(url).includes('.stt.speech.microsoft.com/')) { refs.push(refOf(init)); return rest(96); }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'what do you mean');
+    expect(refs).toEqual(['what do you mean']);
+    expect(result.score).toBe(96);
+    expect(result.contractedRef).toBeUndefined();
+  });
+
+  it('사전 레퍼런스가 95 미만이면 축약 레퍼런스를 순차로 재고 높은 쪽을 쓴다', async () => {
+    const refs = [];
+    let inflight = 0, maxInflight = 0;
+    _fetchSpy.mockImplementation(async (url, init) => {
+      if (String(url).includes('/functions/v1/azure-token')) return tokenRes();
+      if (String(url).includes('.stt.speech.microsoft.com/')) {
+        inflight += 1; maxInflight = Math.max(maxInflight, inflight);
+        await new Promise((r) => setTimeout(r, 5));
+        inflight -= 1;
+        const ref = refOf(init); refs.push(ref);
+        return rest(ref === 'whaddaya mean' ? 92 : 86);
+      }
+      return new Response('nf', { status: 404 });
+    });
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const result = await Speech.analyzeWavRest(blob(), 'what do you mean');
+    expect(refs).toEqual(['what do you mean', 'whaddaya mean']);
+    expect(maxInflight).toBe(1);                 // 병행이 아니라 순차
+    expect(result.score).toBe(92);
+    expect(result.contractedRef).toBe('whaddaya mean');
+    expect(result.timing.altAttempts).toBe(1);
+  });
+});

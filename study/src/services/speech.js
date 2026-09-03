@@ -63,6 +63,8 @@ export function clearAzureTokenCache() {
 // (문서의 1-2-4분 권장은 대량 워크로드용, 인터랙티브엔 부적합).
 // ============================================================
 const RETRY_MAX = 2; // 최대 2회 재시도 (총 3회 시도)
+const STT_FETCH_TIMEOUT_MS = 8000; // STT 요청 개별 상한 (실측 0.6~1.5초; 3회 시도가 상위 25초 예산 안에 들어간다)
+const ALT_ACC_THRESHOLD = 95;     // 사전 레퍼런스 정확도가 이 이상이면 축약 레퍼런스 재측정 생략 (8/31 실측: 또박또박 96.8 은 보정 불변)
 
 /** 재시도 대기 ms. attempt 소진 시 null. status 0 = network throw. */
 export function retryDelayFor(status, attempt, retryAfterHeader) {
@@ -79,11 +81,31 @@ function _sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-async function _fetchWithRetry(url, init, label = '') {
+/** ms 안에 안 끝나면 거부 (timeout 코드). 타이머는 settle 시 정리. */
+function _withTimeout(promise, ms, label = '') {
+  let t;
+  const timer = new Promise((_, reject) => { t = setTimeout(() => reject(Object.assign(new Error(`timeout ${label} ${ms}ms`), { code: 'timeout' })), ms); });
+  return Promise.race([Promise.resolve(promise).finally(() => clearTimeout(t)), timer]);
+}
+
+/* 개별 요청 시간 제한 (2026-09-03 사용자 보고 "점수가 한참 있다 뜨거나 두 개가 한꺼번에") — fetch 에
+ * 제한이 없어 폰의 죽은 연결 하나가 OS 타임아웃(수십 초)까지 채점을 붙들었고, 토큰 발급은 진행 중
+ * 약속을 모든 발화가 공유해 전부 함께 멈췄다가 함께 풀렸다. 시간 제한을 넘기면 네트워크 오류와 같은
+ * 재시도 사다리(0.4s/1s)로 다시 보낸다 — 새 요청이 죽은 연결을 되살리는 효과도 있다.
+ * meter: { attempts, timeouts } 를 채워 결과 계측(timing)에 싣는다. */
+async function _fetchWithRetry(url, init, label = '', { timeoutMs = 0, meter = null } = {}) {
   let lastErr;
   for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
+    if (meter) meter.attempts = (meter.attempts || 0) + 1;
     try {
-      const res = await fetch(url, init);
+      let res;
+      if (timeoutMs > 0) {
+        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const req = ctrl ? { ...init, signal: ctrl.signal } : init;
+        res = await _withTimeout(fetch(url, req), timeoutMs, label).catch((e) => { if (e?.code === 'timeout') { try { ctrl?.abort(); } catch { /* noop */ } } throw e; });
+      } else {
+        res = await fetch(url, init);
+      }
       if (res.status === 429 || res.status >= 500) {
         const delay = retryDelayFor(res.status, attempt, res.headers?.get?.('retry-after'));
         if (delay != null) {
@@ -95,6 +117,7 @@ async function _fetchWithRetry(url, init, label = '') {
       return res;
     } catch (e) {
       lastErr = e;
+      if (meter && e?.code === 'timeout') meter.timeouts = (meter.timeouts || 0) + 1;
       const delay = retryDelayFor(0, attempt, null);
       if (delay != null) {
         _dbg('fetch network 재시도', { label, attempt, err: e?.message ?? e });
@@ -113,87 +136,97 @@ async function _fetchWithRetry(url, init, label = '') {
  * 캐시 만료 또는 미존재 → 신규 fetch.
  * 병렬 호출 시 in-flight Promise 공유.
  */
+const TOKEN_REFRESH_AHEAD_MS = 3 * 60 * 1000; // 만료 3분 전부터 뒤에서 갱신 (토큰 실제 수명 10분, expiresAt = 발급+9분)
+const TOKEN_FETCH_TIMEOUT_MS = 6000;             // Edge Function 호출 개별 상한 (실측 0.2~1.8초)
+const REFRESH_SESSION_TIMEOUT_MS = 6000;         // Supabase 세션 갱신 상한 — 넘기면 기존 토큰으로 진행 (401 이면 아래 경로가 다시 갱신)
+let _tokenFetchSeq = 0;                          // 실제 네트워크 발급 횟수 — 계측(tokenRefetched)용
+
+async function _fetchTokenFresh() {
+  if (!supabase || !isSupabaseConfigured) {
+    throw new Error('supabase 미설정');
+  }
+  // Wave 11.38 — access_token 추출 + 만료 임박 시 명시 refresh.
+  // getSession() 은 만료된 토큰도 그대로 반환 (autoRefresh 가 적시 trigger 안 될 수 있음).
+  let { data: sessionData } = await supabase.auth.getSession();
+  let session = sessionData?.session ?? sessionData;
+  const now = Math.floor(Date.now() / 1000);
+  if (session?.expires_at && now > session.expires_at - 60) {
+    _dbg('access_token 만료 임박 → refreshSession', { expires_at: session.expires_at, now });
+    try {
+      const { data: refreshed } = await _withTimeout(supabase.auth.refreshSession(), REFRESH_SESSION_TIMEOUT_MS, 'refreshSession');
+      if (refreshed?.session) session = refreshed.session;
+    } catch (refreshErr) {
+      _dbg('refreshSession 실패/시간 초과', { err: refreshErr?.message ?? refreshErr });
+    }
+  }
+  let accessToken = session?.access_token;
+  if (!accessToken) {
+    throw new Error('Supabase session 없음');
+  }
+
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  // Wave A.16 — edge 콜드스타트/일시 5xx·network blip 은 재시도로 흡수. 401 은 retry 안 함(아래 refresh 경로).
+  const callEdge = async (tok) => _fetchWithRetry(
+    `${SUPABASE_URL}/functions/v1/azure-token`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tok}`,
+        'Content-Type': 'application/json',
+      },
+    },
+    'azure-token',
+    { timeoutMs: TOKEN_FETCH_TIMEOUT_MS },
+  );
+
+  let res = await callEdge(accessToken);
+  // Wave 11.38 — 401 시 refresh 후 1회 재시도 (사용자 token 만료된 채 첫 호출 케이스).
+  if (res.status === 401) {
+    _dbg('azure-token 401 → refreshSession 후 재시도');
+    try {
+      const { data: refreshed } = await _withTimeout(supabase.auth.refreshSession(), REFRESH_SESSION_TIMEOUT_MS, 'refreshSession');
+      const newTok = refreshed?.session?.access_token;
+      if (newTok && newTok !== accessToken) {
+        accessToken = newTok;
+        res = await callEdge(accessToken);
+      }
+    } catch (refreshErr) {
+      _dbg('401 후 refreshSession 실패', { err: refreshErr?.message ?? refreshErr });
+    }
+  }
+  if (!res.ok) {
+    const errText = await res.text().catch(() => '');
+    throw new Error(`azure-token ${res.status}: ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json();
+  if (!data?.token || !data?.region) {
+    throw new Error('azure-token 응답 형식 부정확');
+  }
+  _tokenCache = data;
+  _tokenFetchSeq += 1;
+  return data;
+}
+
+function _startTokenFetch() {
+  _tokenInFlight = _fetchTokenFresh().finally(() => { _tokenInFlight = null; });
+  return _tokenInFlight;
+}
+
+/* 토큰 캐시 (2026-09-03 개정 — 만료 전 백그라운드 갱신): 종전엔 '만료 1분 전'부터 캐시를 버리고
+ * 새 발급을 채점이 기다렸다. 토큰은 9분마다 만료라 10분 연습에 반드시 한 번 끼는데, 그 발급이
+ * 세션 갱신·Edge Function 두 홉을 지나며 진행 중 약속을 모든 발화가 공유했다 — 한 번 느리면 전부
+ * 멈췄다가 함께 풀린다(실측: 같은 밀리초 저장 4건). 이제 아직 유효한 토큰은 즉시 쓰고, 3분 미만
+ * 남았으면 갱신을 뒤에서 시작한다. 진짜 만료된 경우에만 기다린다. */
 export async function getAzureToken() {
-  // 1) 캐시 유효 검사 (만료 1분 전까지 유효)
-  if (_tokenCache && _tokenCache.expiresAt > Date.now() + 60_000) {
+  const now = Date.now();
+  if (_tokenCache && _tokenCache.expiresAt > now) {
+    if (_tokenCache.expiresAt - now < TOKEN_REFRESH_AHEAD_MS && !_tokenInFlight) {
+      _startTokenFetch().catch((e) => _dbg('백그라운드 토큰 갱신 실패', { err: e?.message ?? e }));
+    }
     return _tokenCache;
   }
-
-  // 2) in-flight 있으면 그 Promise 공유 (race 차단)
-  if (_tokenInFlight) {
-    return _tokenInFlight;
-  }
-
-  // 3) 신규 fetch
-  _tokenInFlight = (async () => {
-    if (!supabase || !isSupabaseConfigured) {
-      throw new Error('supabase 미설정');
-    }
-    // Wave 11.38 — access_token 추출 + 만료 임박 시 명시 refresh.
-    // getSession() 은 만료된 토큰도 그대로 반환 (autoRefresh 가 적시 trigger 안 될 수 있음).
-    let { data: sessionData } = await supabase.auth.getSession();
-    let session = sessionData?.session ?? sessionData;
-    const now = Math.floor(Date.now() / 1000);
-    if (session?.expires_at && now > session.expires_at - 60) {
-      _dbg('access_token 만료 임박 → refreshSession', { expires_at: session.expires_at, now });
-      try {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        if (refreshed?.session) session = refreshed.session;
-      } catch (refreshErr) {
-        _dbg('refreshSession 실패', { err: refreshErr?.message ?? refreshErr });
-      }
-    }
-    let accessToken = session?.access_token;
-    if (!accessToken) {
-      throw new Error('Supabase session 없음');
-    }
-
-    const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-    // Wave A.16 — edge 콜드스타트/일시 5xx·network blip 은 재시도로 흡수. 401 은 retry 안 함(아래 refresh 경로).
-    const callEdge = async (tok) => _fetchWithRetry(
-      `${SUPABASE_URL}/functions/v1/azure-token`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${tok}`,
-          'Content-Type': 'application/json',
-        },
-      },
-      'azure-token',
-    );
-
-    let res = await callEdge(accessToken);
-    // Wave 11.38 — 401 시 refresh 후 1회 재시도 (사용자 token 만료된 채 첫 호출 케이스).
-    if (res.status === 401) {
-      _dbg('azure-token 401 → refreshSession 후 재시도');
-      try {
-        const { data: refreshed } = await supabase.auth.refreshSession();
-        const newTok = refreshed?.session?.access_token;
-        if (newTok && newTok !== accessToken) {
-          accessToken = newTok;
-          res = await callEdge(accessToken);
-        }
-      } catch (refreshErr) {
-        _dbg('401 후 refreshSession 실패', { err: refreshErr?.message ?? refreshErr });
-      }
-    }
-    if (!res.ok) {
-      const errText = await res.text().catch(() => '');
-      throw new Error(`azure-token ${res.status}: ${errText.slice(0, 200)}`);
-    }
-    const data = await res.json();
-    if (!data?.token || !data?.region) {
-      throw new Error('azure-token 응답 형식 부정확');
-    }
-    _tokenCache = data;
-    return data;
-  })();
-
-  try {
-    return await _tokenInFlight;
-  } finally {
-    _tokenInFlight = null;
-  }
+  if (_tokenInFlight) return _tokenInFlight;
+  return _startTokenFetch();
 }
 
 // ============================================================
@@ -1238,6 +1271,10 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
   // '이미 실패한 no_match' 의 메시지만 정정. 임계값은 실측 발화 RMS(0.04~0.18) 보다 훨씬 낮게.
   const SILENCE_RMS = 0.005;
   const noSpeechReason = () => (captureRms != null && captureRms < SILENCE_RMS ? 'mic_silent' : 'no_match');
+  // 계측 (2026-09-03): 토큰 대기·재발급 여부·STT 왕복·시도 횟수 — 결과 timing 으로 행에 남긴다.
+  const tToken = Date.now();
+  const seqBefore = _tokenFetchSeq;
+  const inflightBefore = !!_tokenInFlight;
   let token, region;
   try {
     const t = await getAzureToken();
@@ -1246,9 +1283,13 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
     console.warn('[speech][rest] token 발급 실패, mock 폴백:', e?.message ?? e);
     return analyzeMock(expectedText, 'azure_init_fail');
   }
+  const tokenMs = Date.now() - tToken;
+  const tokenRefetched = _tokenFetchSeq !== seqBefore || inflightBefore;
   try {
     const url = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(lang)}&format=detailed`;
-    const post = (ref) => _fetchWithRetry(url, {
+    const meterRef = { attempts: 0 };
+    const meterAlt = { attempts: 0 };
+    const post = (ref, meter) => _fetchWithRetry(url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -1258,14 +1299,20 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
         Accept: 'application/json',
       },
       body: uploadBlob,
-    }, 'stt');
-    /* 축약형이 있으면 사전 레퍼런스와 나란히 재고 높은 쪽을 쓴다 (위 CONTRACTIONS 주석의 실측 근거).
-     * 축약 쪽 요청이 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다. */
+    }, 'stt', { timeoutMs: STT_FETCH_TIMEOUT_MS, meter });
+    /* 축약형 레퍼런스 보정 (2026-08-31, CONTRACTIONS 주석의 실측 근거) — 2026-09-03 순차·조건부로 개정:
+     * 사전 쪽과 나란히 보내던 병행 요청이 선채점·확정과 겹쳐 Azure 429(2s/5s 백오프)를 불렀다(가짜 마이크
+     * 시뮬 실측). 사전 쪽 정확도가 ALT_ACC_THRESHOLD 이상이면 축약 쪽은 보정할 것이 없으므로 보내지
+     * 않고, 그 아래일 때만 사전 응답 뒤에 순차로 한 번 더 잰다. 분석당 동시 요청 2 → 1. 축약 쪽이
+     * 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다. */
     const contracted = contractedReference(expectedText);
-    const [res, altRes] = await Promise.all([
-      post(expectedText),
-      contracted ? post(contracted).catch(() => null) : Promise.resolve(null),
-    ]);
+    const tStt = Date.now();
+    const res = await post(expectedText, meterRef);
+    const sttMs = Date.now() - tStt;
+    const timing = {
+      tokenMs, tokenRefetched, sttMs,
+      sttAttempts: meterRef.attempts, ...(meterRef.timeouts ? { sttTimeouts: meterRef.timeouts } : {}),
+    };
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);
       // 429 지속 = F0 혼잡 — '네트워크 오류' 가 아니라 잠시 뒤 재시도 안내로 분기 (2026-07-22 실측)
@@ -1284,13 +1331,20 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
      * 13점으로 무너진다. 단어·음소는 채택 쪽, 전사는 사전 쪽 — 소비자가 원하는 근거가 서로 다르다. */
     const recognizedText = nbest.Display || json.DisplayText || '';
     let usedContracted;
-    if (altRes?.ok) {
-      const altJson = await altRes.json().catch(() => null);
-      const alt = altJson?.RecognitionStatus === 'Success' ? altJson.NBest?.[0] : null;
-      if (alt && (alt.AccuracyScore ?? -1) > (nbest.AccuracyScore ?? -1)) {
-        // 채택한 쪽의 단어·음소가 그대로 실려야 취약 음소와 감점 산정이 같은 근거를 본다.
-        nbest = alt;
-        usedContracted = contracted;
+    if (contracted && (nbest.AccuracyScore ?? 0) < ALT_ACC_THRESHOLD) {
+      const tAlt = Date.now();
+      const altRes = await post(contracted, meterAlt).catch(() => null);
+      timing.altMs = Date.now() - tAlt;
+      timing.altAttempts = meterAlt.attempts;
+      if (meterAlt.timeouts) timing.altTimeouts = meterAlt.timeouts;
+      if (altRes?.ok) {
+        const altJson = await altRes.json().catch(() => null);
+        const alt = altJson?.RecognitionStatus === 'Success' ? altJson.NBest?.[0] : null;
+        if (alt && (alt.AccuracyScore ?? -1) > (nbest.AccuracyScore ?? -1)) {
+          // 채택한 쪽의 단어·음소가 그대로 실려야 취약 음소와 감점 산정이 같은 근거를 본다.
+          nbest = alt;
+          usedContracted = contracted;
+        }
       }
     }
     // Wave A.17 — 표시 점수 = AccuracyScore(발음 정확도).
@@ -1334,6 +1388,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       prosodyIssues: enableProsody && Number.isFinite(nbest.ProsodyScore) ? extractProsodyIssues(nbest.Words) : undefined,
       omissions,
       insertions,
+      timing,
     };
   } catch (e) {
     console.warn('[speech][rest] error:', e?.message ?? e);
