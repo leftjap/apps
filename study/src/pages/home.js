@@ -24,6 +24,7 @@ import { localISODate } from '../utils/today.js';
 import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 import { fetchPRDays, fetchWeeklyPR } from '../services/sessionStats.js';
 import { PASS_THRESHOLD } from '../services/userMeta.js';
+import { loadNewCards } from './cardLoader.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -94,6 +95,11 @@ export const isSceneCard = (l) => Array.isArray(l?.explanation?.dialogue);
 // 신규 '표현' 카운트 — 미완료 카드 중 scene 제외 (표현만). hero '표현 N개' 라벨 + todayNewDone(=newSentenceIds,
 // scene 미포함) 단위와 정합해 진행 dots·done 게이트도 일치. (2026-07-01 과대카운트 수정 — scene 이 표현으로 세지던 버그)
 export const countNewExpressions = (cards) => (Array.isArray(cards) ? cards : []).filter((l) => l && l.completed !== true && !isSceneCard(l)).length;
+/** 홈 신규 카운트 = 세션이 실제로 여는 묶음(loadNewCards)의 표현 수 (2026-09-03). 미완료 전체를 세면
+ *  미리 적재한 코어100 이 홈에 100 으로 떴다(세션은 6장). 홈 숫자와 세션 장수가 같은 출처에서 나온다. */
+export async function countNextSessionExpressions(db, lang, todayISO) {
+  return countNewExpressions(await loadNewCards(db, lang, todayISO));
+}
 
 function isDemoMode() {
   if (typeof window === 'undefined') return false;
@@ -346,10 +352,9 @@ async function loadStats(state) {
     const reviewCount = allLang.filter((c) => !c.nextReview || c.nextReview <= todayISO).length;
     const totalReview = allLang.length;
     const langLessons = await db.todayLessons.where('lang').equals(lang).toArray();
-    // carry-forward: 미완료 신규는 date 무관 전부 카운트 (cardLoader.loadNewCards 와 동일 정책).
     const incomplete = langLessons.filter((l) => l.completed !== true);
-    // newCount = 신규 '표현' 수 (scene 제외). scene 은 '전체 대화 듣기'로 별도 표기 — 표현 라벨/진행 dots 정합.
-    const newCount = countNewExpressions(langLessons);
+    // newCount = 세션이 실제로 여는 묶음의 '표현' 수 (scene 제외) — loadNewCards 와 같은 출처 (2026-09-03).
+    const newCount = await countNextSessionExpressions(db, lang, todayISO);
     // #5 — AI 생성 세션 타이틀: 곧 시작할 첫 카드(loadNewCards 정렬 동일: date ASC → order_index ASC)의
     // scene/skit 타이틀. 콩트/장면 제목을 home hero 에 노출 (없으면 '' → 기본 카피 fallback).
     const firstNew = incomplete.slice().sort((a, b) => {

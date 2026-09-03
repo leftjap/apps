@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countNewExpressions, isSceneCard, longestStreak, streakStats, masteredCount } from './home.js';
+import { countNewExpressions, countNextSessionExpressions, isSceneCard, longestStreak, streakStats, masteredCount } from './home.js';
 
 // 홈 hero '오늘의 새 표현 N개' 는 표현(expression) 수여야 한다. scene(전체 대화 듣기) 카드는
 // 표현이 아니므로 제외 — todayNewDone(=newSentenceIds, scene 미포함) 단위와 정합해 진행 dots·done 게이트도 일치.
@@ -123,5 +123,35 @@ describe('home — masteredCount (연속 통과 2회 이상)', () => {
   it('빈 배열·비배열 → 0', () => {
     expect(masteredCount([])).toBe(0);
     expect(masteredCount(null)).toBe(0);
+  });
+});
+
+/* 홈 신규 카운트 = 세션이 실제로 여는 묶음의 표현 수 (2026-09-03). 미완료 전체를 세면 미리 적재한
+ * ja 코어100 17세션이 홈에 100 으로 떴다(세션은 6장). 세션 로더(loadNewCards)와 같은 출처에서 센다. */
+describe('home — 신규 카운트는 세션이 여는 묶음과 같다', () => {
+  const mockDB = (todayLessons) => ({
+    todayLessons: { where: (k) => ({ equals: (v) => ({ async toArray() { return todayLessons.filter((r) => r[k] === v); } }) }) },
+  });
+  const addDays = (iso, n) => { const d = new Date(iso + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+  const batch = (date, n, completed = false) => Array.from({ length: n }, (_, i) => ({
+    id: `ja-${date}-${i + 1}`, lang: 'ja', date, completed, order_index: i + 1, explanation: { key: 'k = v' },
+  }));
+  // 실사고 미러: 08-28 부터 17일치, 마지막만 4장 = 100장
+  const seventeen = (done = 0) => Array.from({ length: 17 }, (_, d) => batch(addDays('2026-08-28', d), d === 16 ? 4 : 6, d < done)).flat();
+
+  it('미래 날짜 묶음까지 100장이 있어도 오늘 여는 6장만 센다', async () => {
+    const rows = seventeen();
+    expect(rows.length).toBe(100);
+    expect(countNewExpressions(rows)).toBe(100); // 옛 셈법 — 이 값이 홈에 떴다
+    expect(await countNextSessionExpressions(mockDB(rows), 'ja', '2026-09-03')).toBe(6);
+  });
+
+  it('오늘까지의 묶음을 다 끝냈으면 당겨 열 다음 묶음 크기를 센다', async () => {
+    const rows = seventeen(7); // 08-28 ~ 09-03 완료 → 09-04 묶음이 당겨 열린다
+    expect(await countNextSessionExpressions(mockDB(rows), 'ja', '2026-09-03')).toBe(6);
+  });
+
+  it('미완료가 없으면 0', async () => {
+    expect(await countNextSessionExpressions(mockDB(seventeen(17)), 'ja', '2026-09-03')).toBe(0);
   });
 });
