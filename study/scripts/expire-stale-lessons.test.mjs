@@ -31,7 +31,8 @@ describe('staleIncompleteIds — 방치된 미완료 카드 정리 (hold 데드�
 
 
 /* 미래 날짜 배치 시딩 사고 (2026-08-28) — seed-supabase 가 payload.date 를 '오늘'로 넘기면
- * 앞당겨 시딩할수록 컷오프가 미래로 밀려 방금 넣은 카드까지 지운다. 기준일 선택 규칙을 못박는다. */
+ * 앞당겨 시딩할수록 컷오프가 미래로 밀려 방금 넣은 카드까지 지운다. 기준일 선택 규칙을 못박는다.
+ * (2026-09-03: seed-supabase 의 자동 방치 삭제는 폐지. 이 규칙은 수동 CLI 실행 시 기준일 선택에만 남는다.) */
 describe('stale 기준일 — 미래 날짜 시딩에서 소급 삭제 방지', () => {
   const rows = [
     { id: 'seeded-today', date: '2026-08-28', completed: false },
