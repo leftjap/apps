@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { isExpired, restoreFromSnapshot, touchActiveSession, finalizeStaleSnapshot } from './activeSession.js';
+import { isExpired, restoreFromSnapshot, touchActiveSession, finalizeStaleSnapshot, saveActiveSession } from './activeSession.js';
 import { finishSession } from './sessionFinish.js';
 
 vi.mock('./sessionFinish.js', async (orig) => ({
@@ -262,5 +262,42 @@ describe('finalizeStaleSnapshot — replay 스냅샷은 기록하지 않는다',
     });
     expect(r).toBe(null);
     expect(finishSession).not.toHaveBeenCalled();
+  });
+});
+
+/* 만료 시계 되짚기(touch)가 새 진행을 옛 값으로 덮어쓰던 레이스 (2026-09-03 실측 — 첫 조작의 pointerdown
+ * touch 가 get 을 먼저 시작하고, click 의 saveSnapshot put 뒤에 옛 값을 put 해 정답 공개 상태가 유실됐다.
+ * 브라우저 로그: put(rows 0·1·2) → get(rows 0·1, 지연) → put(rows 0·1)). 저장소가 원자적 갱신(update)을
+ * 제공하면 그것만 쓰고, 없는 가짜/구형 저장소만 종전 get→put 경로를 탄다. */
+describe('touchActiveSession — 새 스냅샷을 옛 값으로 덮어쓰지 않는다 (원자적 갱신)', () => {
+  const raceDb = () => {
+    const store = { key: 'activeSession', value: { mode: 'new', step: 1, exLog: { c1: { prod: { rows: {} } } }, savedAt: 1 }, at: 1 };
+    return {
+      _get: () => store,
+      meta: {
+        // get 은 호출 시점의 값을 복사해 늦게 돌려준다 — 그 사이의 put 을 못 본다 (IndexedDB 트랜잭션 순서 재현)
+        get: vi.fn(async () => { const snap = JSON.parse(JSON.stringify(store)); await new Promise((r) => setTimeout(r, 10)); return snap; }),
+        put: vi.fn(async (rec) => { store.value = rec.value; store.at = rec.at; }),
+        // Dexie Table.update(key, changes) — 한 트랜잭션 안에서 현재 값에 keyPath 변경을 적용
+        update: vi.fn(async (key, changes) => { if (key !== 'activeSession') return 0; for (const [kp, v] of Object.entries(changes)) { const path = kp.split('.'); let o = store; for (let i = 0; i < path.length - 1; i += 1) o = o[path[i]]; o[path[path.length - 1]] = v; } return 1; }),
+      },
+    };
+  };
+
+  it('update 가 있으면 get→put 을 쓰지 않고 savedAt 만 원자적으로 올린다', async () => {
+    const db = raceDb();
+    expect(await touchActiveSession(db)).toBe(true);
+    expect(db.meta.update).toHaveBeenCalledWith('activeSession', expect.objectContaining({ 'value.savedAt': expect.any(Number) }));
+    expect(db.meta.put).not.toHaveBeenCalled();
+    expect(db._get().value.savedAt).toBeGreaterThan(1);
+  });
+
+  it('touch 와 saveActiveSession 이 겹쳐도 새 진행(정답 공개)이 남는다 — 사고 재현', async () => {
+    const db = raceDb();
+    const touching = touchActiveSession(db); // pointerdown — get 을 먼저 시작
+    const fresh = { mode: 'new', step: 1, exLog: { c1: { prod: { rows: { 0: false } } } } };
+    await saveActiveSession(db, fresh); // click — 정답 공개 저장
+    await touching;
+    expect(db._get().value.exLog.c1.prod.rows).toEqual({ 0: false });
   });
 });

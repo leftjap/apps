@@ -33,9 +33,18 @@ export async function saveActiveSession(db, snapshot) {
 export async function touchActiveSession(db) {
   if (!db?.meta?.get || !db?.meta?.put) return false;
   try {
+    const now = Date.now();
+    /* 원자적 갱신 (2026-09-03 실측 수정): get→put 두 단계는 그 사이에 저장된 새 스냅샷을 옛 값으로
+     * 덮어썼다 — 첫 조작의 pointerdown touch 가 click 의 saveSnapshot 을 되감아 정답 공개·진행이
+     * 유실됐다(브라우저 로그: put(새) → get(옛, 지연) → put(옛)). Dexie update 는 한 트랜잭션 안의
+     * 읽기·수정·쓰기라 겹치지 않는다. update 가 없는 저장소(테스트 가짜·구형)만 종전 경로. */
+    if (typeof db.meta.update === 'function') {
+      const n = await db.meta.update(KEY, { 'value.savedAt': now, at: now });
+      return n > 0;
+    }
     const row = await db.meta.get(KEY);
     if (!row?.value || typeof row.value !== 'object') return false;
-    await db.meta.put({ ...row, value: { ...row.value, savedAt: Date.now() }, at: Date.now() });
+    await db.meta.put({ ...row, value: { ...row.value, savedAt: now }, at: now });
     return true;
   } catch { return false; }
 }
