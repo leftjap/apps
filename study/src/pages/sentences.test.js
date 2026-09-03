@@ -156,6 +156,11 @@ describe('buildSentenceRows — 목록 구성·정렬 (현행 계약 유지)', (
     expect(r2).toMatchObject({ num: 2, anchor: '', hasKoc: false, lastScore: null });
     expect(r2.history).toEqual([]);
   });
+  it('phonetic_kr 이 없는 복습 큐 행(서버 컬럼 부재로 pull 에서 유실)은 chunks 음차를 이어붙여 쓴다 — 게이트가 둘의 동일성을 보장', () => {
+    const c = { ...CARD2, phonetic_kr: undefined };
+    expect(buildSentenceRows([c], [], [], TODAY)[0].pron).toBe('왓 두 유 미인 바이 댓 이그잭틀리');
+    expect(buildSentenceRows([{ ...CARD2 }], [], [], TODAY)[0].pron).toBe(CARD2.phonetic_kr); // 있으면 원문 그대로
+  });
   it('빈 입력 안전', () => { expect(buildSentenceRows()).toEqual([]); });
 });
 
@@ -177,7 +182,7 @@ describe('행 렌더 (§10-1)', () => {
     // 조각 뜻·anchor 가 없는 카드 — 밑줄 없음, 어순 버튼 비활성
     const r2 = row(CARD2.id);
     expect(r2.querySelector('.vl-anchor')).toBeNull();
-    expect(r2.querySelector('.vl-seg button').classList.contains('off')).toBe(true);
+    expect(r2.querySelector('.vl-seg button').classList.contains('off')).toBe(false); // 조각 뜻이 없어도 어순은 단어 윤곽 폴백으로 살아 있다
   });
   it('헤더 — 제목·문장 수·집계 4열(쉬움·보통·어려움·발화)', async () => {
     const { host } = await mountWith();
@@ -240,15 +245,21 @@ describe('힌트 3단 (§10-2)', () => {
     expect(frame.querySelector('.vl-mask').textContent).toBe('c____ y__ s__ t___ a____');
     expect(r1.querySelector('.vl-first')).toBeNull();
   });
-  it('조각 뜻이 없는 카드는 어순 클릭이 무시되고, 첫 글자는 된다', async () => {
+  it('조각 뜻이 없는 카드의 어순은 조각별 단어 윤곽(글자 수만) 칩 — 영어 글자 노출 없음 (실계정 113장 중 0장 보유, 2026-09-03 사용자 보고)', async () => {
     const { row } = await mountWith();
     const r2 = row(CARD2.id);
-    const b = r2.querySelectorAll('.vl-seg button');
-    b[0].click();
-    expect(r2.querySelector('.vl-hbox')).toBeNull();
-    b[1].click();
+    const b = (i) => r2.querySelectorAll('.vl-seg button')[i]; // 세그먼트는 탭마다 다시 그려지므로 재조회
+    b(0).click();
+    expect(b(0).classList.contains('cur')).toBe(true);
+    const box = r2.querySelector('.vl-hbox');
+    expect(texts(box, '.vl-chip')).toEqual(['1____ __ ___ ____', '2__ ____', '3_______?']);
+    expect(box.textContent).not.toMatch(/[A-Za-z]/);
+    b(1).click();
     expect(r2.querySelector('.vl-first .vl-mask').textContent).toBe('W___ d_ y__ m___');
-    expect(r2.querySelector('.vl-chip')).toBeNull();
+    expect(texts(r2, '.vl-chip')).toEqual(['1____ __ ___ ____', '2__ ____', '3_______?']); // 누적 유지
+    // 정답 패널의 조각 아래 뜻 줄은 없음 (뜻이 없으므로)
+    r2.querySelector('.vl-reveal').click();
+    expect(r2.querySelectorAll('.vl-pair .ko')).toHaveLength(0);
   });
   it('정답이 열리거나 판정되면 잠긴다 — 클릭 무시, "힌트 N단계" 표시', async () => {
     const { row } = await mountWith();

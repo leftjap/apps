@@ -83,6 +83,7 @@ ${V_DOT_CSS}
 .vl-chips{display:flex;flex-wrap:wrap;gap:6px}
 .vl-chip{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;color:#3f4845;background:var(--card);border-radius:8px;padding:6px 11px}
 .vl-chip i{font-style:normal;font-family:Outfit,sans-serif;font-size:10px;color:#b6b0a3}
+.vl-chip.shape{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:500;letter-spacing:.02em;color:var(--teal-deep)}
 .vl-first{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;animation:vl-settle .2s both}
 .vl-mask{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;letter-spacing:.02em;color:var(--teal-deep);background:var(--card);border-radius:6px;padding:3px 9px}
 .vl-first .ko{font-size:13px;color:var(--mut)}
@@ -184,6 +185,13 @@ export function wordMask(w) {
   return m[1][0] + '_'.repeat(Math.max(m[1].length - 1, 0)) + m[2];
 }
 
+/** 단어 윤곽 — 글자 수만큼 밑줄, 뒤 구두점 유지 (어순 폴백용: 첫 글자보다 한 단계 약한 힌트). */
+export function wordShape(w) {
+  const m = String(w).match(/^([A-Za-z'’]+)([.,?!;:]*)$/);
+  if (!m) return String(w);
+  return '_'.repeat(m[1].length) + m[2];
+}
+
 /* key 좌변의 자리표시자(`~`, 단독 대문자 X/Y)는 표시·마스크에서 뺀다 — "Let me see if ~" → "Let me see if".
  * 문장 안 위치 찾기는 applied.exprMatch(와일드카드 처리 포함)가 맡는다. */
 const PLACEHOLDER = /^(?:~+|[A-Z])$/;
@@ -244,7 +252,9 @@ export function buildSentenceRows(cards, logs, pronLogs, todayISO) {
       ko: c.meaning || c.ko || '',
       /* ja 보조 표기 (2026-08-28) — reading 이 원문과 같으면(한자 0개 카드) 비운다. */
       reading: (c.reading && c.reading !== (c.sentence ?? '')) ? c.reading : '',
-      pron: c.phonetic_kr || '',
+      /* 복습 큐 서버 테이블엔 phonetic_kr 컬럼이 없어 pull 로 덮인 행은 비어 있다 (2026-09-03 실계정 확인).
+       * 게이트(validate-seed)가 phonetic_kr === chunks 음차 이어붙임을 강제하므로 같은 문자열을 복원한다 — 가공이 아니다. */
+      pron: c.phonetic_kr || chunks.map((x) => String(x?.[1] ?? '')).join(' ').trim(),
       chunks,
       hasKoc: chunks.length > 0 && chunks.every((x) => String(x?.[2] ?? '').trim().length > 0),
       anchor: String(c.explanation?.anchor ?? ''),
@@ -309,13 +319,15 @@ function makeRow(r, key, ctx) {
   // ── 힌트 3단 ──
   function tapRung(i) {
     if (locked() || !r.hintable) return;
-    if (i === 0 && !r.hasKoc) return;
     st.rung = st.rung === i + 1 ? i : i + 1;
     renderHint();
   }
   function hintBox() {
     const box = h('div', { class: 'vl-hbox' });
-    if (r.hasKoc) box.appendChild(h('div', { class: 'vl-chips' }, ...r.chunks.map((c, i) => h('span', { class: 'vl-chip' }, h('i', {}, String(i + 1)), String(c[2])))));
+    /* 어순 — 조각 뜻(chunks[i][2])이 있으면 그 뜻, 없으면 조각별 단어 윤곽(글자 수만, 영어 글자 0).
+     * 실계정 113장 중 조각 뜻 보유 0장(2026-09-03) — 비활성으로 두면 사용자에겐 '죽은 버튼'이라(사용자 보고) 폴백을 둔다. */
+    const chipText = (c) => (r.hasKoc ? String(c[2]) : String(c[0] ?? '').split(' ').map(wordShape).join(' '));
+    if (r.chunks.length) box.appendChild(h('div', { class: 'vl-chips' }, ...r.chunks.map((c, i) => h('span', { class: 'vl-chip' + (r.hasKoc ? '' : ' shape') }, h('i', {}, String(i + 1)), chipText(c)))));
     // 핵심 표현을 못 찾은 카드는 문장 전체를 마스크 — 힌트가 정답 공개가 되면 안 된다.
     const km = r.keyMask || { pre: '', post: '', mask: r.en.split(' ').map(wordMask).join(' ') };
     if (st.rung === 2) box.appendChild(h('div', { class: 'vl-first' }, h('span', { class: 'vl-mask' }, km.mask), r.key.ko ? h('span', { class: 'ko' }, r.key.ko) : null));
@@ -328,7 +340,7 @@ function makeRow(r, key, ctx) {
     RUNGS.forEach((label, i) => {
       const lit = i < st.rung;
       const cur = i === st.rung - 1;
-      const off = !r.hintable || (i === 0 && !r.hasKoc);
+      const off = !r.hintable;
       seg.appendChild(h('button', { type: 'button', class: [cur ? 'cur' : lit ? 'lit' : '', off ? 'off' : ''].filter(Boolean).join(' '), onClick: () => tapRung(i) }, label));
     });
     const nodes = [h('div', { class: 'vl-hintline' }, h('span', { class: 'vl-hlabel' }, '힌트'), seg,
