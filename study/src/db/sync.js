@@ -181,6 +181,7 @@ export function pronunciationLogDexieToSupabase(row, userId) {
     phoneme_scores: row.phonemeScores ?? null,
     weak_phonemes: row.weakPhonemes ?? null,
     recognized_text: row.recognizedText ?? null,
+    timing: row.timing ?? null, // 0008 (2026-09-03) 채점 지연 계측
   };
 }
 export function pronunciationLogSupabaseToDexie(row) {
@@ -199,6 +200,7 @@ export function pronunciationLogSupabaseToDexie(row) {
     phonemeScores: row.phoneme_scores ?? null,
     weakPhonemes: row.weak_phonemes ?? null,
     recognizedText: row.recognized_text ?? null,
+    timing: row.timing ?? null, // 0008 (2026-09-03) 채점 지연 계측
     createdAt: row.created_at ?? null,
   };
 }

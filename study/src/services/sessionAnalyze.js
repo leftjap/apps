@@ -135,10 +135,12 @@ async function analyzeBlob(blob, expectedText, card, { enableMiscue = false } = 
 
 async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = false } = {}) {
   if (!controller) return mockResult('no_recorder');
+  const stopAt = Date.now(); // 계측 (2026-09-03): 녹음 종료 시각 — 저장 시 sinceStopMs 의 기준
   try { controller.stop(); } catch { /* noop */ }
   let blob;
   try { blob = await controller.blobPromise; }
   catch { return mockResult('record_fail'); }
+  const blobMs = Date.now() - stopAt;
   if (typeof window === 'undefined' || !window.studySpeech?.analyzeWavRest) {
     return mockResult('no_speech');
   }
@@ -149,11 +151,25 @@ async function _stopAndAnalyze(controller, expectedText, card, { enableMiscue = 
   // 시도조차 안 됐다. 선채점은 stop 보다 ~0.9초 먼저 출발했으니 정상이면 이 안에 끝난다.
   const spec = controller._speculative;
   let result = null;
+  let specUsed = false;
+  let specWaitMs = 0;
   if (spec?.valid && spec.promise && enableMiscue === true) {
+    const tSpec = Date.now();
     const r = await withTimeout(spec.promise, SPECULATE_WAIT_MS);
-    if (r !== TIMED_OUT && r && !r.mockFallback) result = r;
+    specWaitMs = Date.now() - tSpec;
+    if (r !== TIMED_OUT && r && !r.mockFallback) { result = r; specUsed = true; }
   }
   if (!result) result = await analyzeBlob(blob, expectedText, card, { enableMiscue });
+  /* 계측 (2026-09-03) — 구간별 소요를 결과에 싣는다. 아래층(analyzeWavRest)의 토큰·STT 계측은 보존하고
+   * 녹음 종료 기준 시각·blob 대기·선채점 사용 여부·전체 소요·화면 숨김·온라인 여부를 더한다. */
+  if (result && typeof result === 'object') {
+    result.timing = {
+      ...(result.timing || {}),
+      stopAt, blobMs, specUsed, specWaitMs, totalMs: Date.now() - stopAt,
+      hidden: (typeof document !== 'undefined' && typeof document.visibilityState === 'string') ? document.visibilityState === 'hidden' : null,
+      online: (typeof navigator !== 'undefined' && typeof navigator.onLine === 'boolean') ? navigator.onLine : null,
+    };
+  }
   const ref = normalizeReferenceText(expectedText);
   const lang = pickAnalyzeLang(card);
   // 무료 진단 로깅(게이트). window.__SPEECH_DIAG 또는 studySpeechDiag.enable() 시에만 로컬 수집.

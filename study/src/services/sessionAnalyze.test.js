@@ -135,7 +135,7 @@ describe('타임아웃 — 응답 없는 녹음/채점', () => {
   it('제한 시간 안에 끝나면 타임아웃이 개입하지 않는다', async () => {
     const ctrl = { stop: () => {}, blobPromise: Promise.resolve(new Blob()) };
     globalThis.window = { studySpeech: { analyzeWavRest: async () => ({ score: 91 }) } };
-    await expect(stopAndAnalyze(ctrl, 'hello', { lang: 'en' })).resolves.toEqual({ score: 91 });
+    await expect(stopAndAnalyze(ctrl, 'hello', { lang: 'en' })).resolves.toMatchObject({ score: 91 }); // timing 동봉(2026-09-03)
   });
 });
 
@@ -383,5 +383,33 @@ describe('startMicRecording — 선채점 조기 종결', () => {
     const { recordWav } = setupSpeech();
     await startMicRecording({ speculate: { expected: 'x', card: { lang: 'en' } } });
     expect(recordWav.lastOpts.speculateSilenceMs).toBe(500);
+  });
+});
+
+/* 채점 지연 계측 (2026-09-03) — 녹음 종료 시각과 구간별 소요를 결과에 실어 저장까지 흘려보낸다. */
+describe('stopAndAnalyze — timing 계측', () => {
+  beforeEach(() => { delete globalThis.window; });
+  afterEach(() => { delete globalThis.window; });
+
+  it('정상 경로: stopAt·blobMs·totalMs·specUsed=false 를 싣는다', async () => {
+    const ctrl = { stop: vi.fn(), blobPromise: Promise.resolve(new Blob()) };
+    const analyzeWavRest = vi.fn().mockResolvedValue({ score: 88, phonemeScores: [], timing: { sttMs: 700, sttAttempts: 1 } });
+    globalThis.window = { studySpeech: { analyzeWavRest } };
+    const out = await stopAndAnalyze(ctrl, 'hello', { lang: 'en' });
+    expect(typeof out.timing.stopAt).toBe('number');
+    expect(typeof out.timing.blobMs).toBe('number');
+    expect(typeof out.timing.totalMs).toBe('number');
+    expect(out.timing.specUsed).toBe(false);
+    expect(out.timing.sttMs).toBe(700); // 아래층(analyzeWavRest) 계측 보존
+  });
+
+  it('선채점 결과를 썼으면 specUsed=true', async () => {
+    const ctrl = { stop: vi.fn(), blobPromise: Promise.resolve(new Blob()), _speculative: { valid: true, promise: Promise.resolve({ score: 91, phonemeScores: [] }) } };
+    const analyzeWavRest = vi.fn();
+    globalThis.window = { studySpeech: { analyzeWavRest } };
+    const out = await stopAndAnalyze(ctrl, 'hello', { lang: 'en' }, { enableMiscue: true });
+    expect(out.score).toBe(91);
+    expect(analyzeWavRest).not.toHaveBeenCalled();
+    expect(out.timing.specUsed).toBe(true);
   });
 });

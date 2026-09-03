@@ -46,6 +46,11 @@ export function buildPronunciationLog({ result, sentenceId, lang, date } = {}) {
     // 2026-09-01 — 축약 레퍼런스 채택 여부(analyzeWavRest 의 contractedRef). 로컬 전용 진단 —
     // 어느 기준으로 채점됐는지를 행에서 직접 구별한다 (종전엔 wordScores 철자로만 간접 추적 가능했다).
     contractedRef: result.contractedRef ?? null,
+    // 2026-09-03 채점 지연 계측 — 구간별 ms (speech.js·sessionAnalyze.js 가 채움). 동기화 매핑 포함(0008).
+    // sinceStopMs = 녹음 종료→저장, 즉 사용자가 체감한 지연.
+    timing: (result.timing && typeof result.timing === 'object')
+      ? { ...result.timing, ...(Number.isFinite(result.timing.stopAt) ? { sinceStopMs: Date.now() - result.timing.stopAt } : {}) }
+      : null,
     createdAt: new Date().toISOString(),
   };
 }

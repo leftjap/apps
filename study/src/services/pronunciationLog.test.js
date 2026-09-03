@@ -222,3 +222,18 @@ describe('chainLogId / prodLogId + loadScoreHistoryState — 체이닝·생산 �
     expect(out.recLog.c1).toEqual({ count: 3, best: 91 });
   });
 });
+
+/* 채점 지연 계측 (2026-09-03 사용자 보고 "점수가 한참 있다 뜨거나 두 개가 한꺼번에") — 어느 구간이 느렸는지
+ * 행에 남긴다. sinceStopMs 는 저장 시점 기준(녹음 종료→저장 = 사용자가 체감한 지연). */
+describe('buildPronunciationLog — timing 계측 영속', () => {
+  it('result.timing 을 행에 싣고 sinceStopMs 를 더한다', () => {
+    const row = buildPronunciationLog({ result: { score: 80, timing: { stopAt: Date.now() - 1200, sttMs: 700, sttAttempts: 1 } }, sentenceId: 's1', lang: 'en', date: '2026-09-03' });
+    expect(row.timing.sttMs).toBe(700);
+    expect(row.timing.sttAttempts).toBe(1);
+    expect(row.timing.sinceStopMs).toBeGreaterThanOrEqual(1200);
+  });
+  it('timing 이 없으면 null', () => {
+    const row = buildPronunciationLog({ result: { score: 80 }, sentenceId: 's1', lang: 'en', date: '2026-09-03' });
+    expect(row.timing).toBeNull();
+  });
+});

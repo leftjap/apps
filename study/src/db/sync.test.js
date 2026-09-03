@@ -1726,6 +1726,7 @@ describe('sync — Wave 11.20 pronunciationLog 변환', () => {
       phoneme_scores: [{ symbol: 'a', score: 90 }],
       weak_phonemes: ['r'],
       recognized_text: 'hello',
+      timing: null, // 0008 (2026-09-03) 채점 지연 계측
     });
   });
 
@@ -1758,6 +1759,7 @@ describe('sync — Wave 11.20 pronunciationLog 변환', () => {
       phonemeScores: [{ symbol: 'a', score: 90 }],
       weakPhonemes: ['r'],
       recognizedText: 'hello',
+      timing: null, // 0008 (2026-09-03) 채점 지연 계측
       createdAt: '2026-04-15T00:00:00Z',
     });
   });
@@ -2354,5 +2356,19 @@ describe('sync — pullTable 이 pronunciationLog 의 로컬 전용 필드를 �
     const r = await pullTable(mapping, { pronunciationLog: { bulkPut, bulkGet } }, 'u1');
     expect(r.status).toBe('ok');
     expect(bulkPut.mock.calls[0][0][0].id).toBe('p2');
+  });
+});
+
+/* 채점 지연 계측 컬럼 (0008, 2026-09-03) — 로컬 전용이면 폰에서 난 지연을 서버에서 볼 수 없다. 양방향 매핑. */
+describe('sync — pronunciationLog timing 매핑 (0008)', () => {
+  it('Dexie → Supabase 로 timing 을 올린다', async () => {
+    const { pronunciationLogDexieToSupabase } = await import('./sync.js');
+    const out = pronunciationLogDexieToSupabase({ id: 'p1', lang: 'en', sentenceId: 's', date: '2026-09-03', overallScore: 80, timing: { stopAt: 1, sttMs: 700 } }, 'u1');
+    expect(out.timing).toEqual({ stopAt: 1, sttMs: 700 });
+  });
+  it('Supabase → Dexie 로 timing 을 내린다 (없으면 null)', async () => {
+    const { pronunciationLogSupabaseToDexie } = await import('./sync.js');
+    expect(pronunciationLogSupabaseToDexie({ id: 'p1', lang: 'en', sentence_id: 's', date: '2026-09-03', overall_score: 80, timing: { sttMs: 700 } }).timing).toEqual({ sttMs: 700 });
+    expect(pronunciationLogSupabaseToDexie({ id: 'p2', lang: 'en', sentence_id: 's', date: '2026-09-03', overall_score: 80 }).timing).toBeNull();
   });
 });
