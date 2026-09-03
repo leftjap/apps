@@ -46,8 +46,11 @@ export async function loadNewCards(db, lang, todayISO) {
     return (a.order_index ?? 0) - (b.order_index ?? 0);
   };
   const rows = await db.todayLessons.where('lang').equals(lang).toArray();
-  const filtered = rows.filter((r) => r.completed !== true
-    && !(todayISO && r.date && r.date > todayISO));
+  const incomplete = rows.filter((r) => r.completed !== true);
+  const open = incomplete.filter((r) => !(todayISO && r.date && r.date > todayISO));
+  /* 완료 시 다음 묶음 당김 (2026-09-03): 오늘까지의 미완료가 하나도 없으면 다음 날짜 묶음을 연다.
+   * 폐기한 전진 데몬이 하던 "끝내면 다음"을 로더가 맡는다 — 아래 날짜 컷이 한 묶음만 남긴다. */
+  const filtered = open.length ? open : incomplete;
   filtered.sort(byDateOrder);
   // 장면 그룹 스코프 (1세션 = 1장면): scene 카드(explanation.dialogue 배열)가 그룹 시작.
   // 선두 이후 첫 scene 직전에서 컷 — 이전 그룹 부분완료 꼬리(scene 완료 후 잔여 표현 포함)가

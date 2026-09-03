@@ -451,3 +451,36 @@ describe('loadNewCards — 1세션 = 1날짜 묶음', () => {
     expect(out.map((r) => r.id)).toEqual(['n1', 'n2']);
   });
 });
+
+
+/* 완료 시 다음 묶음 당김 (2026-09-03) — 코어100 을 날짜를 붙여 일괄 적재하면 오늘 묶음을 끝낸 뒤
+ * 다음 묶음은 내일에야 열렸다. 폐기한 전진 데몬이 하던 "끝내면 다음"을 로더가 맡는다:
+ * 오늘까지의 미완료가 하나도 없을 때만 다음 날짜 묶음 하나를 당겨 연다. 날짜 컷은 그대로다. */
+describe('loadNewCards — 오늘까지의 묶음을 다 끝내면 다음 날짜 묶음 하나를 당겨 연다', () => {
+  const rows = [
+    { id: 'today1', lang: 'en', date: '2026-09-04', completed: true, order_index: 1 },
+    { id: 'today2', lang: 'en', date: '2026-09-04', completed: true, order_index: 2 },
+    { id: 'next1', lang: 'en', date: '2026-09-05', completed: false, order_index: 1 },
+    { id: 'next2', lang: 'en', date: '2026-09-05', completed: false, order_index: 2 },
+    { id: 'later', lang: 'en', date: '2026-09-06', completed: false, order_index: 1 },
+  ];
+
+  it('오늘 묶음을 전부 끝냈으면 다음 날짜 묶음만 연다 (그다음 날짜는 안 섞임)', async () => {
+    const db = createMockDB({ todayLessons: rows });
+    const out = await loadNewCards(db, 'en', '2026-09-04');
+    expect(out.map((r) => r.id)).toEqual(['next1', 'next2']);
+  });
+
+  it('오늘까지의 미완료가 남아 있으면 당기지 않는다', async () => {
+    const left = { id: 'left', lang: 'en', date: '2026-09-03', completed: false, order_index: 1 };
+    const db = createMockDB({ todayLessons: [...rows, left] });
+    const out = await loadNewCards(db, 'en', '2026-09-04');
+    expect(out.map((r) => r.id)).toEqual(['left']);
+  });
+
+  it('미완료가 전혀 없으면 빈 배열', async () => {
+    const db = createMockDB({ todayLessons: rows.map((r) => ({ ...r, completed: true })) });
+    const out = await loadNewCards(db, 'en', '2026-09-04');
+    expect(out).toEqual([]);
+  });
+});
