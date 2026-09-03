@@ -124,6 +124,15 @@ async function selectRowsByIds(supabaseUrl, serviceKey, userId, ids) {
   return JSON.parse(text);
 }
 
+/** 서버 게이트 입력 행 (2026-09-03): 같은 (lang, date) 행 + payload id 로 찾은 행(날짜 무관)을 id 로 합친다.
+ *  회귀 테스트 = seed-supabase.test.mjs (fetch 스텁). */
+export async function fetchGuardRows(supabaseUrl, serviceKey, userId, payload) {
+  const preRows = await selectRows(supabaseUrl, serviceKey, userId, payload.lang, payload.date);
+  const idRows = await selectRowsByIds(supabaseUrl, serviceKey, userId, payload.cards.map((c) => c.id));
+  const seen = new Set(preRows.map((r) => r.id));
+  return { preRows, idRows, guardRows: [...preRows, ...idRows.filter((r) => !seen.has(r.id))] };
+}
+
 async function upsertRows(supabaseUrl, serviceKey, rows) {
   const path = '/study_today_lessons?on_conflict=id';
   const { text } = await rest(supabaseUrl, serviceKey, path, {
@@ -178,12 +187,9 @@ async function main() {
 
   console.log(`[seed] lang=${payload.lang} date=${payload.date} count=${payload.cards.length} user=${args.userId} dryRun=${args.dryRun}`);
 
-  const preRows = await selectRows(supabaseUrl, serviceKey, args.userId, payload.lang, payload.date);
+  const { preRows, idRows, guardRows } = await fetchGuardRows(supabaseUrl, serviceKey, args.userId, payload);
   console.log(`[seed] existing rows for (user, lang, date): ${preRows.length}`);
-  const idRows = await selectRowsByIds(supabaseUrl, serviceKey, args.userId, payload.cards.map((c) => c.id));
   console.log(`[seed] existing rows by id (any date): ${idRows.length}`);
-  const seen = new Set(preRows.map((r) => r.id));
-  const guardRows = [...preRows, ...idRows.filter((r) => !seen.has(r.id))];
 
   // 서버 게이트: 1일 1장면 (같은 날 다른 그룹 차단) + completed 게이트 (학습 시작 후 재INSERT 차단, 날짜 무관)
   const guards = evaluateServerGuards({
@@ -232,7 +238,11 @@ async function main() {
   console.log('[seed] OK');
 }
 
-main().catch((e) => {
-  console.error(`[seed] FAILED: ${e.message}`);
-  exit(1);
-});
+// import 안전 (2026-09-03): 테스트가 fetchGuardRows 를 가져올 수 있게 CLI 직접 실행일 때만 main 을 돈다.
+const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
+if (isMain) {
+  main().catch((e) => {
+    console.error(`[seed] FAILED: ${e.message}`);
+    exit(1);
+  });
+}
