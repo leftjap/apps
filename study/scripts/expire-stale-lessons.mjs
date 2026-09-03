@@ -6,6 +6,7 @@
  * carry-forward 로 미완료 카드가 영구 잔존하므로, 완료 불가/방치된 stale 미완료(예: 2026-06-08 결함 배치가
  * 3주 방치)가 쌓이면 미완료>5 가 고정돼 라우틴이 매일 en 을 HOLD → 새 세션이 영영 안 생기는 데드락.
  * → 추출 전 이 스크립트로 **N일(기본 14) 이상 방치된 미완료를 삭제**해 카운트를 풀어준다. (완료분·최근분 보존)
+ * 2026-09-03: seed-supabase.mjs 의 자동 호출은 폐지(일괄 적재한 코어100 묶음을 지우던 사고). 사람이 직접 돌릴 때만 쓴다.
  *
  * 사용: node scripts/expire-stale-lessons.mjs --user-id <uuid> [--lang en] [--days 14] [--today YYYY-MM-DD] [--dry-run]
  * env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY

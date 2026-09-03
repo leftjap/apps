@@ -58,4 +58,6 @@ Supabase Dashboard → Auth → Users → 해당 이메일 → ID 컬럼 (UUID).
 - `lang ∉ {en, ja}` → script 차단
 - `id` 중복 → script 차단
 - INSERT 후 SELECT count 일치 검증
+- 완료(`completed=true`)된 id 는 날짜와 무관하게 재INSERT 차단 (2026-09-03, `seed-supabase.mjs` id 기준 게이트 — 옛 날짜 파일 재적재로 완료가 풀리던 사고 수정)
+- 14일 방치 미완료 자동 삭제는 2026-09-03 폐지 (일괄 적재한 코어100 묶음을 지우던 사고) — 정리는 `expire-stale-lessons.mjs` 수동 실행만
 - `--dry-run` 시 SELECT 만 수행
