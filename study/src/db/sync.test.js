@@ -712,10 +712,12 @@ describe('sync — Wave 11.13.3 pullTable reviewQueue 충돌 해결 통합', () 
     const result = await pullTable(reviewMapping, db, 'user-1');
     expect(result.status).toBe('ok');
     expect(bulkGetSpy).toHaveBeenCalledWith(['card-1']);
-    // bulkPut 가 local row (lastResult='X') 로 호출됐는지 검증
-    expect(bulkPutSpy).toHaveBeenCalledWith([
-      { id: 'card-1', lastResult: 'X', nextReview: '2026-04-30' },
-    ]);
+    // bulkPut 가 local row (lastResult='X') 로 호출됐는지 검증 — 2026-09-04 부터 콘텐츠 필드는 서버 값(mergeReviewQueueRow)
+    expect(bulkPutSpy).toHaveBeenCalledTimes(1);
+    const put = bulkPutSpy.mock.calls[0][0];
+    expect(put).toHaveLength(1);
+    expect(put[0]).toMatchObject({ id: 'card-1', lastResult: 'X', nextReview: '2026-04-30' });
+    expect(put[0].explanation).toBeNull(); // 서버 행(explanation 없음 → null)의 콘텐츠를 따른다
   });
 
   it('todayLessons pull — bulkGet 호출 안 함 (toDexie 변환 후 단순 bulkPut)', async () => {
@@ -2147,6 +2149,63 @@ describe('mergeReviewQueueRow — 콘텐츠 필드는 서버 정본, SRS·판정
   it('로컬이 없으면 서버 행 그대로', async () => {
     const { mergeReviewQueueRow } = await import('./sync.js');
     expect(mergeReviewQueueRow(undefined, server)).toBe(server);
+  });
+});
+
+/* 2026-09-04 실사고 후반: pull 을 고쳐도 기기가 판정을 올릴 때 행 전체(옛 explanation 포함)를 upsert 해
+ * 서버 콘텐츠를 도로 되돌렸다(봇 실측 16:32). 서버에 이미 있는 행(pull 로 받은 id)은 진행 필드만 올리고,
+ * 새 행(수업 완료로 기기에서 생성)만 전체를 올린다. PostgREST 일괄 upsert 는 열 집합이 같아야 하므로 두 묶음으로 나눈다. */
+describe('pushTable — 서버에 이미 있는 복습 큐 행은 진행 필드만 update 로 올린다', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    if (typeof globalThis.window === 'undefined') globalThis.window = {};
+    globalThis.window.studyDB = null;
+  });
+
+  it('pull 로 받은 id 는 진행 필드만 행별 update, 새 id 는 전체 upsert', async () => {
+    const upsertCalls = [];
+    const updateCalls = [];
+    const fromMock = vi.fn(() => {
+      const b = {
+        select: vi.fn(() => b),
+        eq: vi.fn().mockResolvedValue({ data: [{ id: 'a', last_result: 'O', next_review: '2026-05-01', explanation: { key: 'server' } }], error: null }),
+        upsert: vi.fn((rows, opts) => { upsertCalls.push({ rows, opts }); return Promise.resolve({ error: null }); }),
+        // 기존 행은 부분 upsert 가 불가(NOT NULL 열 sentence — 실측 23502) → update().eq('id').eq('user_id')
+        update: vi.fn((payload) => ({ eq: (k1, v1) => ({ eq: (k2, v2) => { updateCalls.push({ payload, [k1]: v1, [k2]: v2 }); return Promise.resolve({ error: null }); } }) })),
+      };
+      return b;
+    });
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pullTable, pushTable, TABLE_MAP } = await import('./sync.js');
+    const reviewMapping = TABLE_MAP.find((m) => m.dexie === 'reviewQueue');
+    const store = { bulkPut: vi.fn().mockResolvedValue(), bulkGet: vi.fn() };
+    store.bulkGet.mockResolvedValueOnce([undefined]); // pull 시 로컬 없음
+    const pulled = await pullTable(reviewMapping, { reviewQueue: store }, 'user-1');
+    expect(pulled.status).toBe('ok');
+    const rowA = { id: 'a', lang: 'en', sentence: 'Hi', meaning: '안녕', reading: null, explanation: { key: 'stale' }, interval: 2, nextReview: '2026-05-02', consecutivePass: 1, lastResult: 'O', category: 'session' };
+    const rowN = { id: 'n', lang: 'en', sentence: 'New', meaning: '새', reading: null, explanation: { key: 'new' }, interval: 1, nextReview: '2026-05-01', consecutivePass: 0, lastResult: null, category: null };
+    store.bulkGet.mockResolvedValueOnce([rowA, rowN]);
+    const result = await pushTable(reviewMapping, { reviewQueue: store }, 'user-1', ['a', 'n']);
+    expect(result.status).toBe('ok');
+    expect(result.count).toBe(2);
+    expect(updateCalls).toEqual([{ payload: { lang: 'en', interval: 2, next_review: '2026-05-02', consecutive_pass: 1, last_result: 'O' }, id: 'a', user_id: 'user-1' }]);
+    expect(upsertCalls).toHaveLength(1); // 새 행만 전체 upsert
+    expect(upsertCalls[0].opts).toEqual({ onConflict: 'id' });
+    expect(upsertCalls[0].rows).toHaveLength(1);
+    expect(upsertCalls[0].rows[0]).toMatchObject({ id: 'n', user_id: 'user-1', sentence: 'New', meaning: '새', explanation: { key: 'new' }, interval: 1 });
+  });
+
+  it('pull 이력이 없으면(첫 startSync 전) 종전대로 전체를 올린다', async () => {
+    const upsertCalls = [];
+    const fromMock = vi.fn(() => ({ upsert: vi.fn((rows, opts) => { upsertCalls.push({ rows, opts }); return Promise.resolve({ error: null }); }) }));
+    vi.doMock('../services/supabase.js', () => ({ supabase: { from: fromMock }, isSupabaseConfigured: true }));
+    const { pushTable, TABLE_MAP } = await import('./sync.js');
+    const reviewMapping = TABLE_MAP.find((m) => m.dexie === 'reviewQueue');
+    const store = { bulkGet: vi.fn().mockResolvedValue([{ id: 'a', lang: 'en', sentence: 'Hi', meaning: '안녕', explanation: { key: 'k' }, interval: 1, nextReview: '2026-05-01', lastResult: null }]) };
+    const result = await pushTable(reviewMapping, { reviewQueue: store }, 'user-1', ['a']);
+    expect(result.status).toBe('ok');
+    expect(upsertCalls).toHaveLength(1);
+    expect(upsertCalls[0].rows[0]).toMatchObject({ id: 'a', sentence: 'Hi', explanation: { key: 'k' } });
   });
 });
 

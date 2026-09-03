@@ -18,7 +18,6 @@ import { backfill20260504 } from '../db/backfill20260504.js';
 
 /** spec §3 — 허용 이메일 (대소문자 무관, 공백 trim) */
 export const ALLOWED_EMAILS = Object.freeze([
-  'claude-bot@today.local', // TEMP-LOCAL-VERIFY (커밋 금지)
   'leftjap@gmail.com',
   'soyoun312@gmail.com',
 ]);

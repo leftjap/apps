@@ -412,6 +412,15 @@ let _hookHandlers = null;
  * dexieName → server count (0 일 때 push 차단).
  */
 const _serverCounts = new Map();
+/* 서버에 있는 것으로 확인된 복습 큐 id (2026-09-04) — pull 로 받았거나 이번 세션에서 전체를 올린 행.
+ * 이 id 의 push 는 진행 필드만 보낸다(콘텐츠는 서버 정본 — mergeReviewQueueRow 참조). 사용자 전환 시 비운다. */
+const _reviewQueueServerIds = new Set();
+const REVIEW_CONTENT_COLUMNS = ['sentence', 'meaning', 'reading', 'explanation', 'category', 'speaker'];
+function stripReviewContent(row) {
+  const out = { ...row };
+  for (const c of REVIEW_CONTENT_COLUMNS) delete out[c];
+  return out;
+}
 
 /**
  * 충돌 해결 (Wave 11.13.3 · spec §4 line 186 · reviewQueue 한정).
@@ -566,6 +575,7 @@ export async function pullTable(mapping, db, userId) {
       const localRows = await store.bulkGet(ids);
       rowsToPut = rowsToPut.map((serverRow, i) => mergeReviewQueueRow(localRows[i], serverRow));
     }
+    if (mapping.dexie === 'reviewQueue') for (const r of rowsToPut) _reviewQueueServerIds.add(r.id);
     await store.bulkPut(rowsToPut);
     if (tombstoned.length && typeof store.bulkDelete === 'function') {
       await store.bulkDelete(tombstoned);
@@ -659,9 +669,27 @@ export async function pushTable(mapping, db, userId, ids = null) {
     const transformed = typeof mapping.toSupabase === 'function'
       ? rows.map((r) => mapping.toSupabase(r, userId)).filter(Boolean)
       : rows.map((r) => ({ ...r, user_id: userId }));
-    const { error } = await supabase
-      .from(mapping.supabase)
-      .upsert(transformed, { onConflict: 'id' });
+    /* 복습 큐 (2026-09-04): 서버에 이미 있는 행은 진행 필드만 update 한다 — 기기의 옛 explanation 이 행 전체
+     * upsert 로 서버의 갱신(문장 모아보기 조각 뜻 등)을 되돌리던 결함. 콘텐츠 열을 뺀 upsert 는 NOT NULL 열
+     * (sentence)에 걸려 불가(실측 23502)라 행별 update. 새 행(수업 완료 생성)만 전체 upsert. */
+    let error = null;
+    if (mapping.dexie === 'reviewQueue' && _reviewQueueServerIds.size) {
+      const existing = transformed.filter((r) => _reviewQueueServerIds.has(r.id));
+      const fresh = transformed.filter((r) => !_reviewQueueServerIds.has(r.id));
+      for (const r of existing) {
+        const { id, user_id, ...progress } = stripReviewContent(r);
+        const res = await supabase.from(mapping.supabase).update(progress).eq('id', id).eq('user_id', user_id);
+        if (res?.error) { error = res.error; break; }
+      }
+      if (!error && fresh.length) {
+        const res = await supabase.from(mapping.supabase).upsert(fresh, { onConflict: 'id' });
+        if (res?.error) error = res.error;
+      }
+    } else {
+      const res = await supabase.from(mapping.supabase).upsert(transformed, { onConflict: 'id' });
+      if (res?.error) error = res.error;
+    }
+    if (!error && mapping.dexie === 'reviewQueue') for (const r of transformed) _reviewQueueServerIds.add(r.id);
     if (error) {
       console.error(`[sync] pushTable ${mapping.supabase} 실패`, error);
       return { table: mapping.dexie, status: 'error', error };
@@ -1360,6 +1388,7 @@ export async function startSync(user) {
   }
   _syncActive = true;
   _currentDB = window.studyDB;
+  if (_currentUserId !== user.id) _reviewQueueServerIds.clear();
   _currentUserId = user.id;
   _outboxKey = OUTBOX_PREFIX + user.id;
   // 일회성 정리 (2026-08-31) — 데몬이 적재한 모두영어 ep14·15 잔재를 pull·reconcile 전에 제거.
