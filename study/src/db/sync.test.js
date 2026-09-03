@@ -850,11 +850,13 @@ describe('sync — Wave 11.13.3 급감 차단 + unlock', () => {
 
   it('pullAll 마킹 N>0 + pushTable → 차단 안 함', async () => {
     const upsertSpy = vi.fn().mockResolvedValue({ error: null });
+    const updateSpy = vi.fn(); // 2026-09-04 — pull 로 받은 행의 push 는 행별 update (콘텐츠 열 제외)
     const fromMock = vi.fn(() => {
       const builder = {
         select: vi.fn(() => builder),
         eq: vi.fn(() => builder),
         upsert: upsertSpy,
+        update: (payload) => { updateSpy(payload); return builder; },
         maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
         then: (resolve, reject) =>
           Promise.resolve({
@@ -884,7 +886,9 @@ describe('sync — Wave 11.13.3 급감 차단 + unlock', () => {
     await pullAll(db, 'user-1'); // reviewQueue=1, 나머지=0 마킹
     const result = await pushTable(TABLE_MAP[0], db, 'user-1', ['card-1']);
     expect(result.status).toBe('ok');
-    expect(upsertSpy).toHaveBeenCalled();
+    // pull 로 받은 card-1 은 진행 필드만 update — upsert 는 새 행이 없으므로 호출되지 않는다
+    expect(updateSpy).toHaveBeenCalledWith(expect.objectContaining({ last_result: 'O' }));
+    expect(upsertSpy).not.toHaveBeenCalled();
   });
 
   it('allowEmptyServerPush — 차단 해제 후 push 정상 ok', async () => {
