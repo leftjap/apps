@@ -38,6 +38,12 @@ const EXPR = [
       phonemes: [['/ð/', "that — 혀끝 이 사이 '대'"], ['/t̬/', "that a → '대러'"], ['/ɑ/', 'promise 첫음절 강세']],
       mistake: "that a 를 끊어 '댓 어'(X) — 연음 '대러' 한 호흡으로. 프로미스(X) 프라미스(O), 첫음절에 강세를 둬요.",
       similar: 'Do you promise? / You promise?',
+      // 체이닝 데모 (2026-09-03) — 단계 행 점수 원까지 인증 없이 화면 검증하려고 추가. 실데이터 무영향.
+      chain: {
+        target: 'Is that a promise, or are you just saying that to make me feel better?',
+        chunks: ['Is that a promise,', 'or are you', 'just saying that', 'to make me', 'feel better?'],
+        ko: '약속하는 거예요, 아니면 그냥 나 기분 좋으라고 하는 말이에요?',
+      },
       drills: [
         { en: 'Is that a promise?', ko: '약속하는 거죠?', kr: '이즈 대러 프라미스?' },
         { en: 'Is that a yes?', ko: '그거 승낙인 거죠?', kr: '이즈 대러 예스?' },

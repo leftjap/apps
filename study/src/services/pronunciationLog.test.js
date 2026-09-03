@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPronunciationLog, drillLogId, summarizeDrillLog, loadDrillLog } from './pronunciationLog.js';
+import { buildPronunciationLog, drillLogId, summarizeDrillLog, loadDrillLog, chainLogId, prodLogId, loadScoreHistoryState } from './pronunciationLog.js';
 
 describe('buildPronunciationLog', () => {
   const baseResult = {
@@ -191,5 +191,34 @@ describe('buildPronunciationLog — 감점 보정 원천 필드 (로컬 전용)'
     const bare = buildPronunciationLog({ result: { score: 90 }, sentenceId: 'x', lang: 'en', date: '2026-08-31' });
     expect(bare.accuracyScore).toBe(null);
     expect(bare.scoreModel).toBe(null);
+  });
+});
+
+/* 체이닝·생산 연습 발화 이력 (2026-09-03 사용자 지시 "발화한 점수를 빠뜨리지 말 것") — 두 블록의 발화는
+ * '오늘 발화'에는 세면서 점수 기록은 남기지 않아 어디에도 보이지 않았다. 드릴과 같은 내용 주소 키로
+ * 같은 pronunciationLog 에 적재하고, 수화가 단계(체이닝)·문장(생산) 별로 되돌린다. */
+describe('chainLogId / prodLogId + loadScoreHistoryState — 체이닝·생산 이력', () => {
+  it('키는 카드 id + 구분자 + 문장 (앞뒤 공백 제거)', () => {
+    expect(chainLogId('c1', ' It is ')).toBe('c1#chain#It is');
+    expect(prodLogId('c1', 'Drill one.')).toBe('c1#prod#Drill one.');
+  });
+
+  it('체이닝은 단계 순서로, 생산은 문장으로 묶어 exLog 에 담고 recLog 카운트에도 넣는다', async () => {
+    const card = {
+      id: 'c1', sentence: 'It is a promise',
+      explanation: { chain: { target: 'It is a promise', chunks: ['It is', 'a promise'], ko: '약속이야' }, drills: [{ en: 'Drill one.', ko: '드릴 하나' }] },
+    };
+    // buildChainSteps: 2청크 → 단계 ['It is', 'It is a promise']
+    const rows = [
+      { sentenceId: 'c1#chain#It is', lang: 'en', overallScore: 88, createdAt: '2026-09-01T00:00:00Z' },
+      { sentenceId: 'c1#chain#It is', lang: 'en', overallScore: 91, createdAt: '2026-09-01T00:01:00Z' },
+      { sentenceId: 'c1#prod#Drill one.', lang: 'en', overallScore: 70, createdAt: '2026-09-01T00:02:00Z' },
+    ];
+    const db = { pronunciationLog: { where: () => ({ equals: () => ({ toArray: async () => rows }) }) } };
+    const out = await loadScoreHistoryState(db, [card], 'en', (c) => c.explanation.drills);
+    expect(out.exLog.c1.chainScores).toEqual({ 0: [88, 91] });
+    expect(out.exLog.c1.prodScores).toEqual({ 'Drill one.': [70] });
+    expect(out.exLog.c1.utter).toBeUndefined();
+    expect(out.recLog.c1).toEqual({ count: 3, best: 91 });
   });
 });

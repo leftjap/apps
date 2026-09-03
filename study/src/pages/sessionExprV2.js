@@ -10,7 +10,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog, drillLogId } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId, chainLogId, prodLogId } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
@@ -21,6 +21,7 @@ import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
 const DRILL_DOTS_MAX = 8; // 드릴 행 점수 원 렌더 상한 (2026-08-31) — 26px 원 8개가 행 폭 한계. 데이터는 전체 보존
+const MAIN_DOTS_MAX = 10; // 메인 문장 점수 원 상한 (2026-09-03, 5→10) — 7회째부터 2개가 숨어 '누락'으로 보였다. 지시는 "일정 숫자가 넘어가면 최신순"
 /* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 셋이라 문구를 나눈다.
  * unclear = 음소 원시 점수만 바닥 (judgeRecording 경로 — 메인·응용 드릴 — 에선 내용 판정이 misread
  *           를 세우지 않은 경우. 체이닝·생산은 isTooUnclear 단독이라 내용은 묻지 않는다 — 통과 판정이
@@ -110,6 +111,7 @@ export const VS_CSS = `
 .vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vs-prod-give{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:0 0 1px;font:inherit;font-family:Pretendard,sans-serif;font-size:12px;font-weight:700;color:var(--teal-deep);background:none;border:0;border-bottom:1px solid oklch(44% .062 192/.3);cursor:pointer}
 .vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.vs-gdots{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-side{width:324px;flex:0 0 auto}
 .vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
 .vs-rec .hd{display:flex;justify-content:space-between;align-items:center;min-height:21px}
@@ -416,7 +418,7 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
  * 3회 실패부터 힌트(뜻 → 첫 단어 → 전체 공개).
  * 체이닝 발화도 '오늘 발화' 1건 — onUtterance(result) 로 세션 집계·3회 게이트에 반영(응용 드릴과 동일).
  * demo(?demo=1) 는 마이크 없이 통과 시뮬. */
-export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSave } = {}) {
+export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSave, scores } = {}) {
   const steps = buildChainSteps(chain);
   if (!steps.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
@@ -456,12 +458,23 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
   steps.forEach((step, i) => {
     const wc = step.text.trim().split(/\s+/).filter(Boolean).length;
     const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, passDot({ size: 26 }));
+    /* 단계 행 점수 원 (2026-09-03) — 드릴 행과 같은 규약: 과거 이력(scores[i]) + 이번 시도 누적, 최근 8개 렌더.
+     * 통과 ✓(mark)는 커버리지 판정이라 별도 유지 — 점수 원은 '말한 흔적', ✓는 '단계 통과'. */
+    const hist = normScores(scores?.[i]);
+    const scoreEl = h('span', { class: 'vs-gdots', style: hist.length ? '' : 'display:none;' },
+      hist.slice(-DRILL_DOTS_MAX).map((v) => scoreDot(v, { size: 26, fresh: false })));
+    const pushScore = (raw) => {
+      hist.push(Math.round(Number(raw) || 0));
+      const shown = hist.slice(-DRILL_DOTS_MAX);
+      scoreEl.replaceChildren(...shown.map((v, k) => scoreDot(v, { size: 26, fresh: k === shown.length - 1 })));
+      scoreEl.style.display = '';
+    };
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
     const row = h('div', { class: 'vs-drow' },
       h('span', { class: 'ix' }, String(i + 1)),
       h('div', {}, h('div', { class: 'en' }, `${i + 1}단계 · ${wc}단어`)),
-      h('span', { class: 'grow' }), mark, playBtn, recBtn);
+      h('span', { class: 'grow' }), scoreEl, mark, playBtn, recBtn);
 
     playBtn.addEventListener('click', () => {
       if (i !== cur || !window.studySpeech?.speak) return;
@@ -480,7 +493,9 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
        * 전사가 무너져 어차피 실패하지만, onUtterance 가 '오늘 발화'·pronScores·3회 게이트를 올린다. */
       if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
       // 발화 집계 점수도 감점제 통일 (2026-08-31) — 통과 판정(judgeCoverage)은 아래에서 원본 사용.
-      onUtterance?.(scoreForDisplay(result, step.text, lang));
+      const scored = scoreForDisplay(result, step.text, lang);
+      pushScore(scored.score);
+      onUtterance?.(scored, { kind: 'chain', i, target: step.text }); // 메타로 저장·스냅샷 (2026-09-03)
       // 2026-07-12 — 통과 판정을 Azure omission(passesCoverage) → 전사 비교(judgeCoverage)로 교체.
       // Azure 가 긴 L2 문장에서 false omission 을 내던 실측(coverageJudge.js 박제) 후속 배선.
       // ※ enableMiscue:true 유지 필수 — false 면 recognizedText 가 레퍼런스를 에코해 항상 통과(실측 2026-07-12).
@@ -499,7 +514,8 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
         row.classList.add('recing'); recBtn.classList.add('recing');
         setTimeout(() => {
           row.classList.remove('recing'); recBtn.classList.remove('recing');
-          onUtterance?.({ score: 90, omissions: [], weakPhonemes: [] });
+          pushScore(90);
+          onUtterance?.({ score: 90, omissions: [], weakPhonemes: [] }, { kind: 'chain', i, target: step.text });
           advance(); popScore(mark); // 방금 통과한 단계 mark 팝 (실경로와 동일)
         }, 800);
         return;
@@ -532,7 +548,7 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
 // 메인 PASS_THRESHOLD(80)보다 관대: 인출이 주목적, 발음은 최소선만.
 const PROD_MIN_ACCURACY = 65;
 
-export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, saved, onSave } = {}) {
+export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, saved, onSave, scores } = {}) {
   const pool = (Array.isArray(drills) ? drills : []).filter((d) => d?.en && d?.ko);
   if (!pool.length) return null;
   // 출제 문항은 pool 인덱스로 고정해 저장한다 — 종전엔 재렌더마다 재추첨돼 복원 시 문항이 바뀌었다.
@@ -557,6 +573,16 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
     const wcnt = String(d.en).trim().split(/\s+/).filter(Boolean).length;
     let fails = 0, done = false;
     const mark = h('span', { class: 'vs-gscore', style: 'display:none;' }, passDot({ size: 26 }));
+    // 문장 행 점수 원 (2026-09-03) — 과거 이력(scores[문장]) + 이번 시도 누적, 최근 8개. ✓는 통과 판정으로 별도.
+    const hist = normScores(scores?.[d.en]);
+    const scoreEl = h('span', { class: 'vs-gdots', style: hist.length ? '' : 'display:none;' },
+      hist.slice(-DRILL_DOTS_MAX).map((v) => scoreDot(v, { size: 26, fresh: false })));
+    const pushScore = (raw) => {
+      hist.push(Math.round(Number(raw) || 0));
+      const shown = hist.slice(-DRILL_DOTS_MAX);
+      scoreEl.replaceChildren(...shown.map((v, k) => scoreDot(v, { size: 26, fresh: k === shown.length - 1 })));
+      scoreEl.style.display = '';
+    };
     const playBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     playBtn.disabled = true; // 정답 오디오 잠금 — 공개 전 듣기가 곧 정답 유출
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
@@ -571,7 +597,7 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
     const row = h('div', { class: 'vs-drow vs-prod' },
       h('span', { class: 'ix' }, String(i + 1)),
       h('div', {}, h('div', { class: 'en' }, String(d.ko)), wcEl, hintEl, ansEl, giveBtn),
-      h('span', { class: 'grow' }), mark, playBtn, recBtn);
+      h('span', { class: 'grow' }), scoreEl, mark, playBtn, recBtn);
 
     const reveal = (pass) => {
       if (done) return;
@@ -604,7 +630,9 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
        * 구간의 표시 acc 가 82 라 **무너진 녹음이 통과로 처리된다**. 실패로도 세지 않는다(학습자 잘못이 아님). */
       if (isTooUnclear(result)) { showRecordToast(recordGateMessage('unclear')); return; }
       // 발화 집계 점수도 감점제 통일 (2026-08-31) — 통과 판정(judgeProduction)은 아래에서 원본 사용.
-      onScore?.(scoreForDisplay(result, d.en, lang)); // 말했으면 발화 1건 (체이닝과 동일)
+      const scored = scoreForDisplay(result, d.en, lang);
+      pushScore(scored.score);
+      onScore?.(scored, { kind: 'prod', target: d.en }); // 말했으면 발화 1건 (체이닝과 동일) + 메타로 저장 (2026-09-03)
       // 통과 = 커버리지 + 문장 정확도 하한 + 단어 하한 (judgeProduction, 2026-07-23 사용자 지적
       // "정확하게 발음 못했는데 패스" · "엉뚱한 단어도 통과"). 실패도 1회로 누적 — 3회면 정답 공개.
       const judge = judgeProduction(result, d.en, { minAccuracy: PROD_MIN_ACCURACY });
@@ -622,7 +650,8 @@ export function productionBlockEl(drills, lang, card, demo, onScore, { onStart, 
         row.classList.add('recing'); recBtn.classList.add('recing');
         setTimeout(() => {
           row.classList.remove('recing'); recBtn.classList.remove('recing');
-          onScore?.({ score: 90, weakPhonemes: [] });
+          pushScore(90);
+          onScore?.({ score: 90, weakPhonemes: [] }, { kind: 'prod', target: d.en });
           reveal(true);
         }, 800);
         return;
@@ -743,6 +772,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-cir.playing::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--blue);animation:v-pulse 1.5s ease-out infinite}
 .vs-prod-give{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:0 0 1px;font:inherit;font-family:Pretendard,sans-serif;font-size:12px;font-weight:700;color:var(--teal-deep);background:none;border:0;border-bottom:1px solid oklch(44% .062 192/.3);cursor:pointer}
 .vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.vs-gdots{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-fold{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:12px}
 .vs-fold .fhd{display:flex;justify-content:space-between;align-items:center;cursor:pointer}
 .vs-fold .ft{font-family:Outfit;font-size:10px;letter-spacing:.14em;font-weight:600;color:var(--faint);text-transform:uppercase}
@@ -865,7 +895,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   const refreshDots = () => {
     const all = utterScores();
-    const shown = all.slice(-5);
+    const shown = all.slice(-MAIN_DOTS_MAX);
     dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
     totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 게이트 카운트(recCount)와 별개
     // 게이트는 캡션이 아니라 버튼 활성/비활성으로만 표현한다 (§4.3 삭제).
@@ -1004,9 +1034,22 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   // 체이닝(chain) — 확장 사다리(ladder) 폐기 후속. 자막 없이 듣고 따라 말하기 + 단어 누락 0 통과.
   // 체이닝 발화도 세션 발화 1건 (드릴과 동일하게 '오늘 발화'·3회 게이트에 집계).
   // 단 '통과'(passed) 는 발음 점수 기준을 유지 — 체이닝의 통과/실패는 단계 진행에만 쓰인다.
-  const onChainScore = (result) => {
+  const onChainScore = (result, meta) => {
     const score = Math.round(Number(result?.score) || 0);
     state.tried = (state.tried || 0) + 1;
+    /* 점수 기록 (2026-09-03) — 드릴과 같은 계약: 스냅샷(cardEx)에 누적해 재렌더에 남기고, 데모가 아니면
+     * pronunciationLog 에 적재해 세션 밖·기기 밖까지 남긴다 (수화 loadScoreHistoryState 가 되돌린다). */
+    if (meta?.kind === 'chain') {
+      const store = (cardEx.chainScores ??= {});
+      store[meta.i] = [...normScores(store[meta.i]), score];
+      if (!state.demo) savePronunciationLog(window.studyDB, { result, sentenceId: chainLogId(s?.id, meta.target), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionExprV2] chain pron persist', e));
+    } else if (meta?.kind === 'prod') {
+      const store = (cardEx.prodScores ??= {});
+      store[meta.target] = [...normScores(store[meta.target]), score];
+      if (!state.demo) savePronunciationLog(window.studyDB, { result, sentenceId: prodLogId(s?.id, meta.target), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionExprV2] prod pron persist', e));
+    }
     if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
     if (!Array.isArray(state.pronScores)) state.pronScores = [];
     state.pronScores.push(score);
@@ -1018,6 +1061,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   };
   const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onChainScore, {
     saved: cardEx.chain,
+    scores: cardEx.chainScores,
     onSave: (v) => { cardEx.chain = v; handlers.saveSnapshot?.(); },
   });
 
@@ -1025,6 +1069,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const prodBlock = productionBlockEl(drills, lang, s, state.demo, onChainScore, {
     onStart: collapseDrills,
     saved: cardEx.prod,
+    scores: cardEx.prodScores,
     onSave: (v) => { cardEx.prod = v; handlers.saveSnapshot?.(); },
   });
 

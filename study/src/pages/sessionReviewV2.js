@@ -15,7 +15,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   scoreDot, emptyDot, miniCalGrid, isoShift, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog, drillLogId } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId, chainLogId } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { createJudgeRow } from '../components/session/atoms.js';
@@ -454,9 +454,16 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     nextReviewLabels(card.interval, todayISO).map((t) => h('span', {}, t)));
 
   // 응용/체이닝 발화 집계 — '오늘 발화'·약점 음소에만 반영. SRS 는 자기평가가 정한다.
-  const onAppliedScore = (result) => {
+  const onAppliedScore = (result, meta) => {
     const score = Math.round(Number(result?.score) || 0);
     state.tried = (state.tried || 0) + 1;
+    // 체이닝 점수 기록 (2026-09-03) — 신규 세션(sessionExprV2 onChainScore)과 같은 계약.
+    if (meta?.kind === 'chain') {
+      const store = (cardEx.chainScores ??= {});
+      store[meta.i] = [...normScores(store[meta.i]), score];
+      if (!state.demo) savePronunciationLog(window.studyDB, { result, sentenceId: chainLogId(s?.id, meta.target), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionReviewV2] chain pron persist', e));
+    }
     if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
     if (!Array.isArray(state.pronScores)) state.pronScores = [];
     state.pronScores.push(score);
@@ -496,6 +503,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적).
   const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore, {
     saved: cardEx.chain,
+    scores: cardEx.chainScores,
     onSave: (v) => { cardEx.chain = v; handlers.saveSnapshot?.(); },
   });
 

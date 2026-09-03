@@ -871,16 +871,18 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     for (const c of cells) expect(c.textContent).toMatch(/^\d{1,2}$/); // 날짜만
   });
 
-  it('점수 원은 최근 5개만 보이고 총 N회는 전체 발화 수다', async () => {
+  /* 상한 5 → 10 (2026-09-03 사용자 보고): 7회째부터 바로 2개가 숨어 "누락"으로 보였다. 지시는
+   * "일정 숫자가 넘어가면 최신순" — 상한은 두되 신규 서너 번·복습 몇 번까지는 전부 보이게 10. */
+  it('점수 원은 최근 10개만 보이고 총 N회는 전체 발화 수다', async () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = makeState();
     renderSessionExprV2(host, state, {});
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 12; i++) {
       host.querySelector('.vs-pill.pri').click(); await tick();
       host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
     }
-    expect(host.querySelectorAll('.vs-meta .v-dot')).toHaveLength(5);
-    expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 6회');
+    expect(host.querySelectorAll('.vs-meta .v-dot')).toHaveLength(10);
+    expect(host.querySelector('.vs-meta .tot').textContent).toBe('총 12회');
     expect(host.textContent).not.toContain('최근 5'); // 설명 텍스트 금지
   });
 
@@ -1517,5 +1519,70 @@ describe('sessionExprV2 — 드릴 점수 원은 최근 8개만 렌더', () => {
     expect(dots).toHaveLength(8);
     expect(dots[0].textContent).toBe('13');   // 오래된 11·12 는 탈락
     expect(dots[7].textContent).toBe('20');
+  });
+});
+
+/* 체이닝·생산 연습 점수 원 (2026-09-03 사용자 지시 "발화한 점수를 빠뜨리지 말 것") — 두 블록의 발화는
+ * '오늘 발화'에는 세면서 점수는 세션 안에서도 그리지 않았고 기록도 남기지 않았다. 드릴 행과 같은
+ * 점수 원을 단계(체이닝)·문장(생산) 행에 붙이고, 실경로는 #chain#/#prod# 키로 저장한다. */
+describe('sessionExprV2 — 체이닝·생산 점수 원 + 저장', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const CHAIN = { target: 'It is a promise', chunks: ['It is', 'a promise'], ko: '약속이야' };
+  const ph = (mean, n = 26) => Array.from({ length: n }, () => ({ symbol: 'x', word: 'w', score: mean }));
+  const numDots = (row) => [...row.querySelectorAll('.v-dot')].filter((d) => /^\d+$/.test(d.textContent)).map((d) => d.textContent);
+  const chainRows = (host) => [...host.querySelectorAll('.vs-chain .vs-drow')];
+  const prodRow = (host, ko) => [...host.querySelectorAll('.vs-prod')].find((r) => r.textContent.includes(ko));
+  function stateWithChain(over = {}) {
+    const st = makeStateWithDrills(over);
+    st.sentence.explanation.chain = CHAIN; st.cards[1].explanation.chain = CHAIN;
+    return st;
+  }
+
+  it('과거 체이닝 점수는 단계 행에, 생산 점수는 그 문장 행에 원으로 뜬다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = stateWithChain();
+    st.exLog = { e1: { chainScores: { 0: [88, 91] }, prodScores: { "It's more than a job.": [70] } } };
+    renderSessionExprV2(host, st, {});
+    expect(numDots(chainRows(host)[0])).toEqual(['88', '91']);
+    expect(numDots(chainRows(host)[1])).toEqual([]);
+    expect(numDots(prodRow(host, '그건 직업 그 이상이에요.'))).toEqual(['70']);
+    expect(numDots(prodRow(host, '걔는 친구 그 이상이야.'))).toEqual([]);
+  });
+
+  it('데모 체이닝·생산 녹음 → 원이 하나 붙고 DB 저장은 0회 (격리 계약)', () => {
+    vi.useFakeTimers();
+    try {
+      const host = document.createElement('div'); document.body.appendChild(host);
+      const st = stateWithChain({ demo: true });
+      renderSessionExprV2(host, st, {});
+      chainRows(host)[0].querySelector('button[aria-label="녹음"]').click(); vi.advanceTimersByTime(900);
+      expect(numDots(chainRows(host)[0])).toHaveLength(1);
+      prodRow(host, '그건 직업 그 이상이에요.').querySelector('button[aria-label="녹음"]').click(); vi.advanceTimersByTime(900);
+      expect(numDots(prodRow(host, '그건 직업 그 이상이에요.'))).toHaveLength(1);
+      expect(savePronunciationLog).not.toHaveBeenCalled();
+      expect(st.exLog.e1.chainScores[0]).toHaveLength(1);   // 스냅샷 복원용 누적
+      expect(st.exLog.e1.prodScores["It's more than a job."]).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('실경로 체이닝 녹음 → #chain# 키로 저장, 생산 녹음 → #prod# 키로 저장', async () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = stateWithChain();
+    renderSessionExprV2(host, st, {});
+    stopAndAnalyze.mockResolvedValueOnce({ score: 90, recognizedText: 'It is', phonemeScores: ph(66) });
+    const cb = chainRows(host)[0].querySelector('button[aria-label="녹음"]');
+    cb.click(); await tick(); cb.click(); await tick(); await tick();
+    expect(savePronunciationLog.mock.calls.map((c) => c[1]?.sentenceId)).toContain('e1#chain#It is');
+    expect(savePronunciationLog.mock.calls.at(-1)[1].lang).toBe('en');
+    expect(numDots(chainRows(host)[0])).toHaveLength(1);
+    stopAndAnalyze.mockResolvedValueOnce({
+      score: 82, recognizedText: "It's more than a job.", phonemeScores: ph(66),
+      wordScores: [{ word: 'its', score: 90 }, { word: 'more', score: 90 }],
+    });
+    const pr = prodRow(host, '그건 직업 그 이상이에요.');
+    const pb = pr.querySelector('button[aria-label="녹음"]');
+    pb.click(); await tick(); pb.click(); await tick(); await tick();
+    expect(savePronunciationLog.mock.calls.map((x) => x[1]?.sentenceId)).toContain("e1#prod#It's more than a job.");
+    expect(numDots(pr)).toHaveLength(1);
   });
 });

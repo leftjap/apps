@@ -1,3 +1,4 @@
+import { buildChainSteps } from '../components/session/applied.js';
 /**
  * pronunciationLog.js — 발음 분석 결과 영속화 (spec §9-5 약점 음소 누적의 데이터 source).
  *
@@ -69,6 +70,17 @@ export function drillLogId(cardId, target) {
   return `${cardId}#drill#${String(target ?? '').trim()}`;
 }
 
+/* 체이닝·생산 연습 발화 이력 (2026-09-03 사용자 지시 "발화한 점수를 빠뜨리지 말 것") — 두 블록의 발화는
+ * '오늘 발화'에는 세면서 점수 기록은 남기지 않아 어디에도 보이지 않았다. 드릴과 같은 내용 주소 키:
+ * 체이닝은 단계 문장(target 접두부, buildChainSteps 산출), 생산은 출제 드릴 문장. 기존 집계(카드 id
+ * 정확 일치·#drill# 접두)는 이 행들을 그냥 지나친다. */
+export function chainLogId(cardId, stepText) {
+  return `${cardId}#chain#${String(stepText ?? '').trim()}`;
+}
+export function prodLogId(cardId, target) {
+  return `${cardId}#prod#${String(target ?? '').trim()}`;
+}
+
 /* 과거 발화 점수 수화 (2026-08-31 사용자 결정 — "다시 듣기·복습에서 과거 점수 기록이 학습에
  * 도움") — 발화는 이 로그에 전부 있으므로, 진입 시 전체 이력으로 화면 상태(메인 점수 원 utter ·
  * 드릴 행 점수 drills · 총 N회 recLog)를 재구성한다. 배열은 전체를 담고(카운트 정확성), 렌더가
@@ -91,9 +103,27 @@ export async function loadScoreHistoryState(db, cards, lang, filterDrills) {
         const ds = rows.filter((r) => r.sentenceId === drillLogId(c.id, t)).map((r) => Math.round(Number(r.overallScore) || 0));
         if (ds.length) dScores[i] = ds;
       });
-      const all = [...main, ...Object.values(dScores).flat()];
+      // 체이닝(단계 순서)·생산(문장) 이력 (2026-09-03) — 블록이 같은 키로 행에 원을 그린다.
+      const chainScores = {};
+      buildChainSteps(c.explanation?.chain).forEach((step, i) => {
+        const cs = rows.filter((r) => r.sentenceId === chainLogId(c.id, step.text)).map((r) => Math.round(Number(r.overallScore) || 0));
+        if (cs.length) chainScores[i] = cs;
+      });
+      const prodScores = {};
+      (filterDrills?.(c) ?? []).forEach((d) => {
+        const t = String(d?.en || '').trim();
+        if (!t) return;
+        const ps = rows.filter((r) => r.sentenceId === prodLogId(c.id, t)).map((r) => Math.round(Number(r.overallScore) || 0));
+        if (ps.length) prodScores[t] = ps;
+      });
+      const all = [...main, ...Object.values(dScores).flat(), ...Object.values(chainScores).flat(), ...Object.values(prodScores).flat()];
       if (!all.length) continue;
-      exLog[c.id] = { ...(main.length ? { utter: main } : {}), ...(Object.keys(dScores).length ? { drills: dScores } : {}) };
+      exLog[c.id] = {
+        ...(main.length ? { utter: main } : {}),
+        ...(Object.keys(dScores).length ? { drills: dScores } : {}),
+        ...(Object.keys(chainScores).length ? { chainScores } : {}),
+        ...(Object.keys(prodScores).length ? { prodScores } : {}),
+      };
       recLog[c.id] = { count: all.length, best: Math.max(...all) };
     }
     return Object.keys(exLog).length ? { exLog, recLog } : null;
