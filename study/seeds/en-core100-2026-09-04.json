@@ -1,0 +1,571 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "1-30 말문 트기와 대화 운영",
+  "date": "2026-09-04",
+  "_note": "코어 100문장 커리큘럼 7~12번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 1~6번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식). 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영.",
+  "cards": [
+    {
+      "id": "en-core100-007-give-me-an-example",
+      "sentence": "Could you give me an example of what you mean?",
+      "meaning": "무슨 뜻인지 예를 하나 들어줄래?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 기v 미 어니그잼플 어v 왓 유 미인",
+      "order_index": 1,
+      "explanation": {
+        "key": "give me an example = 예를 하나 들어 줘. 뜬구름 같은 말을 구체적으로 바꿔 달라고 할 때 쓰는 문장.",
+        "situation": "상대 설명이 추상적일 때 — 여행지에서 \"이런 식으로 하면 된다\" 같은 말을 들었을 때 예를 청한다.",
+        "drills": [
+          {
+            "en": "Give me an example.",
+            "ko": "예를 하나 들어 봐.",
+            "kr": "기v 미 어니그잼플"
+          },
+          {
+            "en": "Can you give me an example?",
+            "ko": "예를 하나 들어 줄 수 있어?",
+            "kr": "캔 유 기v 미 어니그잼플"
+          },
+          {
+            "en": "Here's an example from my trip.",
+            "ko": "제 여행에서 겪은 예를 하나 들게요.",
+            "kr": "히어r즈 어니그잼플 f럼 마이 트립"
+          },
+          {
+            "en": "My wife gave me a good example.",
+            "ko": "아내가 좋은 예를 하나 들어 줬어.",
+            "kr": "마이 와이f 게이v 미 어 구디그잼플"
+          },
+          {
+            "en": "Could you show me an example on the menu?",
+            "ko": "메뉴에서 예를 하나 보여 주시겠어요?",
+            "kr": "쿠쥬 쇼우 미 어니그잼플론 더 메뉴"
+          },
+          {
+            "en": "That's a good example of what I mean.",
+            "ko": "그게 내 말이 무슨 뜻인지 보여 주는 좋은 예야.",
+            "kr": "댓츠 어 구디그잼플러v 와라이 미인"
+          },
+          {
+            "en": "Let me give you an example of what I mean.",
+            "ko": "무슨 말인지 예를 하나 들어 줄게.",
+            "kr": "렛 미 기v 유 어니그잼플러v 와라이 미인"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could you give me + 명사 + of + 대상?",
+            "body": "give me 뒤에 '무엇을'(an example)이 오고, 그것이 '무엇에 대한' 것인지는 of 로 붙인다. 한국어는 '무슨 뜻인지 예를'처럼 대상이 앞에 오지만 영어는 예가 먼저, 대상은 뒤다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could you give me",
+            "쿠쥬 기v 미"
+          ],
+          [
+            "an example",
+            "어니그잼플"
+          ],
+          [
+            "of what you mean?",
+            "어v 왓 유 미인"
+          ]
+        ],
+        "phonemes": [
+          [
+            "give me → 연음",
+            "'기브 미'(X). v 는 아랫입술을 물고 '기v 미'"
+          ],
+          [
+            "/gz/ example",
+            "example 의 x 는 /gz/ — '익쌤플'(X) '이그잼플'(O)"
+          ]
+        ],
+        "mistake": "'예를 들어 주세요'를 example please 처럼 명사만 던지기 쉽다. give me an example 처럼 동사 give 가 있어야 요청 문장이 된다.",
+        "similar": "Like what? / Can you be more specific?",
+        "category": "말문/확인",
+        "frequency": 9,
+        "chain": {
+          "target": "Could you give me an example of what you mean, because I'm still a little confused.",
+          "chunks": [
+            "Could you give me an example of what you mean,",
+            "because I'm still",
+            "a little",
+            "confused."
+          ],
+          "ko": "무슨 뜻인지 예를 하나 들어 줄래요, 아직 좀 헷갈려서요."
+        }
+      }
+    },
+    {
+      "id": "en-core100-008-didnt-catch-last-part",
+      "sentence": "I didn't catch the last part of what you said.",
+      "meaning": "네가 말한 마지막 부분을 못 알아들었어.",
+      "reading": null,
+      "phonetic_kr": "아이 디든 캐치 더 라스 파r트 어v 왓 유 쎄드",
+      "order_index": 2,
+      "explanation": {
+        "key": "didn't catch = 못 알아들었다. 여기서 catch 는 '잡다'가 아니라 '듣고 잡아내다'. 말이 빨라 놓쳤을 때 쓴다.",
+        "situation": "상대가 말을 끝냈는데 뒷부분이 안 들렸을 때 — 전화나 공항 안내 방송 뒤에 그대로 쓴다.",
+        "drills": [
+          {
+            "en": "I didn't catch your name.",
+            "ko": "이름을 못 들었어요.",
+            "kr": "아이 디든 캐치 유어r 네임"
+          },
+          {
+            "en": "Did you catch what she said?",
+            "ko": "걔가 뭐라고 했는지 들었어?",
+            "kr": "디쥬 캐치 왓 쉬 쎄드"
+          },
+          {
+            "en": "I missed the last part.",
+            "ko": "마지막 부분을 놓쳤어.",
+            "kr": "아이 미스트 더 라스 파r트"
+          },
+          {
+            "en": "Sorry, I didn't catch the last word.",
+            "ko": "미안한데 마지막 단어를 못 알아들었어.",
+            "kr": "쏘리 아이 디든 캐치 더 라스 워r드"
+          },
+          {
+            "en": "My wife didn't catch the flight number.",
+            "ko": "아내가 항공편 번호를 못 알아들었어.",
+            "kr": "마이 와이f 디든 캐치 더 f라잇 넘버r"
+          },
+          {
+            "en": "We didn't catch the name of the station.",
+            "ko": "우리는 역 이름을 못 알아들었어.",
+            "kr": "위 디든 캐치 더 네이머v 더 스테이션"
+          },
+          {
+            "en": "I caught most of it, but not the ending.",
+            "ko": "대부분은 알아들었는데 끝부분은 못 들었어.",
+            "kr": "아이 커트 모스터빗 벗 낫 디 엔딩"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "didn't catch + 명사 (the last part / your name)",
+            "body": "catch 뒤에 못 들은 것을 바로 붙인다. '~의 마지막 부분'은 the last part of ~ 로 뒤에서 꾸민다. 한국어 '네가 말한 마지막 부분'과 순서가 거꾸로다."
+          }
+        ],
+        "chunks": [
+          [
+            "I didn't catch",
+            "아이 디든 캐치"
+          ],
+          [
+            "the last part",
+            "더 라스 파r트"
+          ],
+          [
+            "of what you said.",
+            "어v 왓 유 쎄드"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/tʃ/ catch",
+            "'캐취'가 아니라 짧게 '캐치' — 끝을 길게 끌지 않는다"
+          ],
+          [
+            "didn't → t 탈락",
+            "'디든트'(X) → 끝 t 를 흘려 '디든'"
+          ],
+          [
+            "/ɑːr/ part",
+            "part 는 혀를 말아 '파r트' — '파트' 아님"
+          ]
+        ],
+        "mistake": "'못 알아들었다'를 I couldn't understand 로만 말하기 쉽다. 그건 내용을 이해 못 했다는 뜻이고, 소리를 놓친 건 didn't catch 가 맞다.",
+        "similar": "I missed the last part. / What was the last thing you said?",
+        "category": "말문/되묻기",
+        "frequency": 9,
+        "chain": {
+          "target": "I didn't catch the last part of what you said, so could you say it one more time?",
+          "chunks": [
+            "I didn't catch the last part of what you said,",
+            "so could you",
+            "say it",
+            "one more time?"
+          ],
+          "ko": "네가 말한 마지막 부분을 못 알아들었어, 그러니까 한 번만 더 말해 줄래?"
+        }
+      }
+    },
+    {
+      "id": "en-core100-009-how-do-you-say",
+      "sentence": "How do you say this in English?",
+      "meaning": "이걸 영어로 어떻게 말해요?",
+      "reading": null,
+      "phonetic_kr": "하우 두 유 쎄이 디스 인 잉글리쉬",
+      "order_index": 3,
+      "explanation": {
+        "key": "How do you say ~ = ~를 어떻게 말해요. 단어가 안 떠오를 때 물건이나 한국어를 가리키며 묻는 문장.",
+        "situation": "메뉴판이나 물건을 가리키며 이름을 물을 때 — 상대가 알려 준 말을 바로 따라 하면 대화가 이어진다.",
+        "drills": [
+          {
+            "en": "How do you say it?",
+            "ko": "그걸 어떻게 말해요?",
+            "kr": "하우 두 유 쎄이 잇"
+          },
+          {
+            "en": "What do you call this in English?",
+            "ko": "이걸 영어로 뭐라고 불러요?",
+            "kr": "왓 두 유 콜 디스 인 잉글리쉬"
+          },
+          {
+            "en": "How do you say this word in Korean?",
+            "ko": "이 단어를 한국어로 어떻게 말해요?",
+            "kr": "하우 두 유 쎄이 디스 워r드 인 코리언"
+          },
+          {
+            "en": "How do you say 'thank you' in Japanese?",
+            "ko": "'고마워요'를 일본어로 어떻게 말해요?",
+            "kr": "하우 두 유 쎄이 땡큐 인 재패니이z"
+          },
+          {
+            "en": "My wife asked how to say it in English.",
+            "ko": "아내가 그걸 영어로 어떻게 말하는지 물어봤어.",
+            "kr": "마이 와이f 애스크트 하우 투 쎄이 이린 잉글리쉬"
+          },
+          {
+            "en": "I don't know how to say this in English.",
+            "ko": "이걸 영어로 어떻게 말하는지 모르겠어.",
+            "kr": "아이 돈 노우 하우 투 쎄이 디스 인 잉글리쉬"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "How do you say + 대상 + in + 언어?",
+            "body": "'어떻게 말해요'의 주어는 you 다. 특정한 상대가 아니라 '사람들은'이라는 일반 주어라 How do I say 보다 자연스럽다. 언어는 in English 처럼 in 으로 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "How do you say",
+            "하우 두 유 쎄이"
+          ],
+          [
+            "this",
+            "디스"
+          ],
+          [
+            "in English?",
+            "인 잉글리쉬"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ð/ this",
+            "this 는 혀끝을 이 사이에 넣어 '디스' — 'ㄷ'로만 내면 dis 로 들린다"
+          ],
+          [
+            "/s/ say",
+            "'세이'가 아니라 s 를 세게 '쎄이'"
+          ]
+        ],
+        "mistake": "How to say this? 처럼 to 부정사만 던지면 문장이 아니다. do you 를 넣어야 질문이 된다. '영어로'는 by English 가 아니라 in English 다.",
+        "similar": "What's the word for this? / What do you call this?",
+        "category": "말문/어휘",
+        "frequency": 10,
+        "chain": {
+          "target": "How do you say this in English, I keep forgetting the word for it.",
+          "chunks": [
+            "How do you say this in English,",
+            "I keep forgetting",
+            "the word",
+            "for it."
+          ],
+          "ko": "이걸 영어로 어떻게 말해요, 자꾸 그 단어를 잊어버려서요."
+        }
+      }
+    },
+    {
+      "id": "en-core100-010-what-im-trying-to-say",
+      "sentence": "What I'm trying to say is that I disagree.",
+      "meaning": "내가 하려는 말은, 나는 동의하지 않는다는 거야.",
+      "reading": null,
+      "phonetic_kr": "와라임 트라잉 투 쎄이 이z 댓 아이 디써그리이",
+      "order_index": 4,
+      "explanation": {
+        "key": "What I'm trying to say = 내가 하려는 말은. 말이 꼬였을 때 요점을 다시 잡는 문장. 뒤에 is that 을 붙여 요점을 잇는다.",
+        "situation": "설명이 길어져 상대가 헷갈려할 때 — 반대 의견을 부드럽게 꺼낼 때도 이 문장으로 시작한다.",
+        "drills": [
+          {
+            "en": "I disagree with that.",
+            "ko": "그건 동의 안 해.",
+            "kr": "아이 디써그리이 위드 댓"
+          },
+          {
+            "en": "What are you trying to say?",
+            "ko": "무슨 말을 하려는 거야?",
+            "kr": "와러r 유 트라잉 투 쎄이"
+          },
+          {
+            "en": "My wife is trying to say something.",
+            "ko": "아내가 뭔가 말하려고 해.",
+            "kr": "마이 와이f 이z 트라잉 투 쎄이 썸씽"
+          },
+          {
+            "en": "What I'm trying to say is, let's wait.",
+            "ko": "내가 하려는 말은, 기다리자는 거야.",
+            "kr": "와라임 트라잉 투 쎄이 이z 렛츠 웨잇"
+          },
+          {
+            "en": "The point is that the cat needs a vet.",
+            "ko": "요점은 고양이가 병원에 가야 한다는 거야.",
+            "kr": "더 포인트 이z 댓 더 캣 니이저 v엣"
+          },
+          {
+            "en": "All I'm saying is that we should leave early.",
+            "ko": "내 말은 그저 일찍 나가자는 거야.",
+            "kr": "올라임 쎄잉이z 댓 위 슈드 리이v 어r리"
+          },
+          {
+            "en": "What I'm trying to say is that I'm sorry.",
+            "ko": "내가 하려는 말은, 미안하다는 거야.",
+            "kr": "와라임 트라잉 투 쎄이 이z 대라임 쏘리"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What I'm trying to say is (that) + 문장",
+            "body": "What I'm trying to say 가 통째로 주어다. 그 뒤 is 가 오고, 요점 문장을 that 으로 잇는다. 한국어 '내가 하려는 말은 ~라는 거야'와 순서가 같아 그대로 옮기면 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "What I'm trying to say",
+            "와라임 트라잉 투 쎄이"
+          ],
+          [
+            "is that",
+            "이z 댓"
+          ],
+          [
+            "I disagree.",
+            "아이 디써그리이"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/tr/ trying",
+            "tr 는 '츄라잉'에 가깝게 — '트라잉'을 또박또박 끊지 않는다"
+          ],
+          [
+            "/z/ is that",
+            "is 의 s 는 /z/ — '이스'(X) '이z'(O)"
+          ]
+        ],
+        "mistake": "I want to say 로 시작하면 '말하고 싶다'는 소망이 된다. 요점을 잡는 말은 What I'm trying to say is 다. that 뒤에 문장을 통째로 넣어야 한다.",
+        "similar": "My point is … / All I'm saying is …",
+        "category": "말문/요점",
+        "frequency": 8,
+        "chain": {
+          "target": "What I'm trying to say is that I disagree, but I understand why you feel that way.",
+          "chunks": [
+            "What I'm trying to say is that I disagree,",
+            "but I understand",
+            "why you feel",
+            "that way."
+          ],
+          "ko": "내가 하려는 말은 동의하지 않는다는 거야, 그래도 네가 왜 그렇게 느끼는지는 이해해."
+        }
+      }
+    },
+    {
+      "id": "en-core100-011-that-makes-sense",
+      "sentence": "That makes sense, but I still have a question.",
+      "meaning": "말은 되는데, 아직 질문이 하나 있어.",
+      "reading": null,
+      "phonetic_kr": "댓 메익스 쎈스 버라이 스틸 해v 어 퀘스천",
+      "order_index": 5,
+      "explanation": {
+        "key": "That makes sense = 말이 되네, 이해돼. 상대 설명을 받아들이면서 다음 말을 이어 가는 문장.",
+        "situation": "설명을 듣고 납득했을 때 — 그 뒤에 but 을 붙이면 질문이나 반대를 부드럽게 꺼낼 수 있다.",
+        "drills": [
+          {
+            "en": "Makes sense.",
+            "ko": "말 되네.",
+            "kr": "메익스 쎈스"
+          },
+          {
+            "en": "Does that make sense?",
+            "ko": "무슨 말인지 알겠어?",
+            "kr": "더z 댓 메익 쎈스"
+          },
+          {
+            "en": "That makes sense to me.",
+            "ko": "내가 보기엔 말이 돼.",
+            "kr": "댓 메익스 쎈스 투 미"
+          },
+          {
+            "en": "I still have one question.",
+            "ko": "아직 질문이 하나 남았어.",
+            "kr": "아이 스틸 해v 원 퀘스천"
+          },
+          {
+            "en": "It doesn't make sense to me.",
+            "ko": "난 이해가 안 돼.",
+            "kr": "잇 더즌 메익 쎈스 투 미"
+          },
+          {
+            "en": "My wife said the plan makes sense.",
+            "ko": "아내가 그 계획은 말이 된다고 했어.",
+            "kr": "마이 와이f 쎄드 더 플랜 메익스 쎈스"
+          },
+          {
+            "en": "That makes sense, but what if it rains?",
+            "ko": "말은 되는데, 비가 오면 어떡해?",
+            "kr": "댓 메익스 쎈스 벗 와리f 잇 레인z"
+          },
+          {
+            "en": "It makes sense to leave the cat at home.",
+            "ko": "고양이는 집에 두고 가는 게 맞아.",
+            "kr": "잇 메익스 쎈스 투 리이v 더 캐랫 호움"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "That makes sense, but + 문장",
+            "body": "make sense 는 '말이 되다'라는 한 덩어리 동사구다. 주어 that 이 3인칭 단수라 makes 가 된다. 뒤에 but 을 붙여 '인정은 하지만'이라는 흐름을 만든다."
+          }
+        ],
+        "chunks": [
+          [
+            "That makes sense,",
+            "댓 메익스 쎈스"
+          ],
+          [
+            "but I still have",
+            "버라이 스틸 해v"
+          ],
+          [
+            "a question.",
+            "어 퀘스천"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/s/ makes sense",
+            "makes 의 s 와 sense 의 s 가 이어져 '메익스 쎈스' — 사이를 띄지 않는다"
+          ],
+          [
+            "/tʃ/ question",
+            "question 은 '퀘스천' — '퀘스티온'(X)"
+          ]
+        ],
+        "mistake": "'말이 된다'를 It has meaning 처럼 직역하기 쉽다. 영어는 make sense 한 덩어리로 말한다. sense 앞에 a 를 붙이지 않는다.",
+        "similar": "I get it. / Fair enough, but …",
+        "category": "말문/납득",
+        "frequency": 10,
+        "chain": {
+          "target": "That makes sense, but I still have a question about the schedule for tomorrow.",
+          "chunks": [
+            "That makes sense, but I still have a question",
+            "about",
+            "the schedule",
+            "for tomorrow."
+          ],
+          "ko": "말은 되는데, 내일 일정에 대해 아직 질문이 하나 있어."
+        }
+      }
+    },
+    {
+      "id": "en-core100-012-i-see-your-point",
+      "sentence": "I see your point, but I don't completely agree.",
+      "meaning": "무슨 말인지는 알겠지만 완전히 동의하진 않아.",
+      "reading": null,
+      "phonetic_kr": "아이 씨이 유어r 포인트 버라이 돈 컴플리이틀리 어그리이",
+      "order_index": 6,
+      "explanation": {
+        "key": "I see your point = 무슨 말인지 알겠다. 상대 의견을 인정한 뒤 but 으로 내 의견을 붙이는 문장.",
+        "situation": "상대 주장이 일리는 있는데 다 받아들이긴 어려울 때 — 여행 계획을 두고 아내와 의견이 갈릴 때 쓴다.",
+        "drills": [
+          {
+            "en": "I see your point.",
+            "ko": "무슨 말인지 알겠어.",
+            "kr": "아이 씨이 유어r 포인트"
+          },
+          {
+            "en": "I don't completely agree.",
+            "ko": "완전히 동의하진 않아.",
+            "kr": "아이 돈 컴플리이틀리 어그리이"
+          },
+          {
+            "en": "Do you see my point?",
+            "ko": "내 말 무슨 뜻인지 알겠어?",
+            "kr": "두 유 씨이 마이 포인트"
+          },
+          {
+            "en": "My wife saw my point right away.",
+            "ko": "아내는 내 말뜻을 바로 알아들었어.",
+            "kr": "마이 와이f 쏘 마이 포인트 라이러웨이"
+          },
+          {
+            "en": "I see your point, but it's too expensive.",
+            "ko": "무슨 말인지 알겠는데, 너무 비싸.",
+            "kr": "아이 씨이 유어r 포인트 버릿츠 투우 익스펜씨v"
+          },
+          {
+            "en": "We agree on the hotel, but not the flight.",
+            "ko": "호텔은 의견이 같은데 비행기는 아니야.",
+            "kr": "위 어그리이 온 더 호텔 벗 낫 더 f라잇"
+          },
+          {
+            "en": "I see what you mean, but the cat hates the car.",
+            "ko": "무슨 말인지 알겠는데, 고양이가 차를 싫어해.",
+            "kr": "아이 씨이 왓 유 미인 벗 더 캣 헤이츠 더 카r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I see your point, but + 문장",
+            "body": "see 는 '보다'가 아니라 '이해하다'. your point 는 '네 요지'. 한국어 '알겠지만'의 '~지만'이 영어에선 but 으로 문장 사이에 온다. 앞 절로 인정, 뒤 절로 반대를 말하는 짝 구조다."
+          }
+        ],
+        "chunks": [
+          [
+            "I see your point,",
+            "아이 씨이 유어r 포인트"
+          ],
+          [
+            "but I don't",
+            "버라이 돈"
+          ],
+          [
+            "completely agree.",
+            "컴플리이틀리 어그리이"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/iː/ see·agree",
+            "see 와 agree 의 모음은 길게 '씨이'·'어그리이' — 짧게 '시'·'어그리'로 끝내지 않는다"
+          ],
+          [
+            "/ɔɪ/ point",
+            "point 는 두 모음을 다 내되 하나로 미끄러지듯 '포인'"
+          ]
+        ],
+        "mistake": "I know your point 는 어색하다. '알겠다'는 see 를 쓴다. agree 뒤의 '완전히'는 fully 만 떠올리기 쉬운데 completely 도 같은 자리에 온다.",
+        "similar": "I get what you're saying, but … / Fair point, but …",
+        "category": "말문/반론",
+        "frequency": 8,
+        "chain": {
+          "target": "I see your point, but I don't completely agree, so let's talk about it over dinner.",
+          "chunks": [
+            "I see your point, but I don't completely agree,",
+            "so let's talk",
+            "about it",
+            "over dinner."
+          ],
+          "ko": "무슨 말인지는 알겠지만 완전히 동의하진 않아, 그러니까 저녁 먹으면서 얘기하자."
+        }
+      }
+    }
+  ]
+}
