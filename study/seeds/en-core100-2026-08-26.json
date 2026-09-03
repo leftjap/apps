@@ -14,6 +14,7 @@
       "order_index": 1,
       "explanation": {
         "key": "could you say that again = 다시 말해 줄래요. 못 알아들었을 때 대화를 살리는 1순위 문장.",
+        "anchor": "다시 해줄래요",
         "situation": "상대 말이 빨라 못 알아들었을 때 — 여행 중 직원·현지인에게 그대로 쓴다.",
         "drills": [
           { "en": "Could you speak a little more slowly?", "ko": "조금만 더 천천히 말해 주시겠어요?", "kr": "쿠쥬 스픽 어 리를 모어r 슬로울리" },
@@ -29,10 +30,10 @@
           { "struct": "Could you + 동사원형 + again?", "body": "could 는 과거가 아니라 공손함. 뒤에는 동사원형(say)이 온다. 한국어 '~해 줄래요'의 공손 단계에 해당하고, Can you 보다 부드럽다." }
         ],
         "chunks": [
-          ["Sorry,", "쏘리"],
-          ["could you say", "쿠쥬 쎄이"],
-          ["that again", "댓 어겐"],
-          ["more slowly?", "모어r 슬로울리"]
+          ["Sorry,", "쏘리", "미안한데,"],
+          ["could you say", "쿠쥬 쎄이", "말해 줄래요"],
+          ["that again", "댓 어겐", "그 말을 다시"],
+          ["more slowly?", "모어r 슬로울리", "좀 더 천천히?"]
         ],
         "phonemes": [
           ["could you→couldja", "'쿠드 유'(X) 연음 → '쿠쥬'"],
@@ -62,6 +63,7 @@
       "order_index": 2,
       "explanation": {
         "key": "What do you mean = 무슨 뜻이야. 못 알아들은 게 아니라 의도를 확인할 때. by that 을 붙이면 '그 말이'.",
+        "anchor": "무슨 뜻이야",
         "situation": "상대 말의 단어는 들렸는데 의도가 애매할 때 — 되묻기(#1)와 역할이 다르다.",
         "drills": [
           { "en": "What do you mean by \"later\"?", "ko": "'나중에'라는 게 무슨 뜻이야?", "kr": "왓 두 유 미인 바이 레이러r" },
@@ -77,9 +79,9 @@
           { "struct": "What do you mean by [X]?", "body": "by 뒤에 확인하고 싶은 말을 그대로 넣는다. 한국어는 '그 말이 무슨 뜻이야'처럼 뜻을 뒤에 두지만 영어는 by 로 대상을 집는다." }
         ],
         "chunks": [
-          ["What do you mean", "왓 두 유 미인"],
-          ["by that", "바이 댓"],
-          ["exactly?", "이그잭틀리"]
+          ["What do you mean", "왓 두 유 미인", "무슨 뜻이야"],
+          ["by that", "바이 댓", "그 말이"],
+          ["exactly?", "이그잭틀리", "정확히?"]
         ],
         "phonemes": [
           ["/iː/ mean", "mean 은 길게 '미인' — '민' 으로 짧게 끊지 않는다"],
@@ -110,6 +112,7 @@
       "order_index": 3,
       "explanation": {
         "key": "not sure how to = 어떻게 ~해야 할지 모르겠다. 말문이 막힌 상태 자체를 말로 넘기는 표현.",
+        "anchor": "어떻게 설명해야 할지 잘 모르겠어요",
         "situation": "하고 싶은 말은 있는데 영어가 안 나올 때 — 침묵 대신 이 문장을 던지면 상대가 도와준다.",
         "drills": [
           { "en": "I'm not sure how to say this.", "ko": "이걸 어떻게 말해야 할지 모르겠어.", "kr": "암 낫 슈어r 하우 투 쎄이 디스" },
@@ -124,9 +127,9 @@
           { "struct": "be not sure + how to + 동사원형", "body": "how to 뒤는 항상 동사원형. 한국어 '어떻게 설명할지'의 '~할지'가 how to 한 덩어리로 붙는다." }
         ],
         "chunks": [
-          ["I'm not sure", "암 낫 슈어r"],
-          ["how to explain it", "하우 투 익스플레인 잇"],
-          ["in English.", "인 잉글리쉬"]
+          ["I'm not sure", "암 낫 슈어r", "잘 모르겠어요"],
+          ["how to explain it", "하우 투 익스플레인 잇", "그걸 어떻게 설명해야 할지"],
+          ["in English.", "인 잉글리쉬", "영어로."]
         ],
         "phonemes": [
           ["/ʃ/ sure", "sure 는 '슈어r' — '수어' 아님"],
@@ -157,6 +160,7 @@
       "order_index": 4,
       "explanation": {
         "key": "Give me a second = 잠깐 시간을 줘. 침묵을 메우고 생각할 시간을 버는 표현.",
+        "anchor": "잠깐",
         "situation": "질문을 받고 바로 답이 안 나올 때 — 말없이 멈추는 대신 시간을 요청한다.",
         "drills": [
           { "en": "Give me a minute.", "ko": "잠깐만 기다려 줘.", "kr": "기v 미 어 미닛" },
@@ -171,9 +175,9 @@
           { "struct": "Give me + 시간 + to + 동사원형", "body": "'~할 시간을 달라'는 to 부정사로 붙인다. a second 는 실제 1초가 아니라 '잠깐'." }
         ],
         "chunks": [
-          ["Give me a second", "기v 미 어 쎄컨"],
-          ["to think", "투 씽크"],
-          ["about it.", "어바우릿"]
+          ["Give me a second", "기v 미 어 쎄컨", "잠깐 시간을 줘"],
+          ["to think", "투 씽크", "생각할"],
+          ["about it.", "어바우릿", "그것에 대해."]
         ],
         "phonemes": [
           ["/v/ give", "give 의 v 는 윗니로 아랫입술 — '기브'가 아니라 '기v'"],
@@ -204,6 +208,7 @@
       "order_index": 5,
       "explanation": {
         "key": "put it into words = 말로 표현하다. 머릿속엔 있는데 입으로 안 나오는 상태를 정확히 설명하는 문장.",
+        "anchor": "말로 표현이 안 돼",
         "situation": "생각은 분명한데 영어 문장이 안 만들어질 때 — 상대에게 상황을 알리고 도움을 받는다.",
         "drills": [
           { "en": "It's hard to put it into words.", "ko": "말로 표현하기가 어려워.", "kr": "잇츠 하r드 투 푸릿 인투 워r즈" },
@@ -216,9 +221,9 @@
           { "struct": "know what I mean + but + can't ~", "body": "what I mean 은 '내가 뜻하는 것'이라는 덩어리 목적어. but 로 아는 것과 못 하는 것을 대비시킨다." }
         ],
         "chunks": [
-          ["I know what I mean,", "아이 노우 왓 아이 미인"],
-          ["but I can't", "벗 아이 캔트"],
-          ["put it into words.", "푸릿 인투 워r즈"]
+          ["I know what I mean,", "아이 노우 왓 아이 미인", "무슨 뜻인지는 아는데,"],
+          ["but I can't", "벗 아이 캔트", "하지만 못 해"],
+          ["put it into words.", "푸릿 인투 워r즈", "말로 표현하는 걸."]
         ],
         "phonemes": [
           ["put it → flap", "'풋 잇'(X) → t 가 굴러 '푸릿'"],
@@ -248,6 +253,7 @@
       "order_index": 6,
       "explanation": {
         "key": "Let me see if ~ = ~인지 확인해 볼게. 오해를 막고 대화를 되짚는 문장.",
+        "anchor": "확인해 볼게",
         "situation": "상대 말을 절반쯤 알아들었을 때 — 내가 이해한 내용을 확인받고 넘어간다.",
         "drills": [
           { "en": "Let me see if I got that right.", "ko": "내가 맞게 들었는지 볼게.", "kr": "렛 미 씨 이f 아이 갓 댓 라잇" },
@@ -262,9 +268,9 @@
           { "struct": "Let me see if + 주어 + 동사", "body": "여기서 see 는 '보다'가 아니라 '확인하다'. if 는 '만약'이 아니라 '~인지'라는 뜻으로, 한국어 '~했는지'에 대응한다." }
         ],
         "chunks": [
-          ["Let me see", "렛 미 씨"],
-          ["if I understood you", "이f 아이 언더r스투쥬"],
-          ["correctly.", "커r렉틀리"]
+          ["Let me see", "렛 미 씨", "확인해 볼게"],
+          ["if I understood you", "이f 아이 언더r스투쥬", "내가 너를 이해했는지"],
+          ["correctly.", "커r렉틀리", "제대로."]
         ],
         "phonemes": [
           ["understood you → 연음", "'언더스투드 유'(X) → 붙여서 '언더r스투쥬'"],

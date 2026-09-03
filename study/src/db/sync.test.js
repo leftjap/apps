@@ -2123,6 +2123,15 @@ describe('preserveLocalOnlyFields — pull 시 로컬 전용 필드 이월', () 
     const chosenServer = { id: 'a', lastResult: 'X' }; // 서버 매핑엔 lastResultAt 없음
     expect(preserveLocalOnlyFields(local, chosenServer)).toMatchObject({ lastResult: 'X', lastResultAt: '2026-07-28' });
   });
+  it('로컬 resultHistory(판정 이력, 로컬 전용 — 2026-09-03 문장 모아보기 v12)도 이월한다', async () => {
+    const { preserveLocalOnlyFields } = await import('./sync.js');
+    const hist = [{ date: '2026-09-03', result: 'O', source: 'sentences' }];
+    const local = { id: 'a', lastResult: 'O', lastResultAt: '2026-09-03', resultHistory: hist };
+    const chosenServer = { id: 'a', lastResult: 'O' };
+    expect(preserveLocalOnlyFields(local, chosenServer)).toMatchObject({ lastResultAt: '2026-09-03', resultHistory: hist });
+    // 서버가 이긴 행에 lastResultAt 은 있고 이력만 없는 경우도 이력을 이월한다
+    expect(preserveLocalOnlyFields(local, { id: 'a', lastResultAt: '2026-09-03' }).resultHistory).toEqual(hist);
+  });
   it('로컬이 이긴 행(이미 필드 보유)·로컬 부재는 그대로', async () => {
     const { preserveLocalOnlyFields } = await import('./sync.js');
     const chosenLocal = { id: 'a', lastResultAt: '2026-07-28' };

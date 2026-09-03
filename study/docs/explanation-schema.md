@@ -176,7 +176,8 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
 | key | string | 문장의 의미·문법 핵심 한 줄. **이 표현은 …** 패턴 권장 |
 | situation | string | "이런 상황에서 써요" 라벨로 표시. 직장·친구 등 맥락 |
 | grammar | `[{struct, body}]` 객체 배열 | 단순 string 배열도 호환되나 객체 형식 정본 |
-| chunks | `[[text, phonetic]]` 튜플 배열 | en: 영문+한국어 음차 / ja: 히라가나(또는 한자)+한국어 음차 |
+| chunks | `[[text, phonetic, ko?]]` 튜플 배열 | en: 영문+한국어 음차 / ja: 히라가나(또는 한자)+한국어 음차. 세 번째 원소 `ko` = 조각 뜻(한글, 영어 어순) — 문장 모아보기(v12, 2026-09-03)의 어순 힌트·정답 조각 정렬에 쓴다. 선택 필드, 없으면 게이트 경고만 |
+| anchor | string (선택) | `meaning` 안에서 핵심 표현에 해당하는 부분 문자열 — 문장 모아보기 프롬프트 밑줄. `meaning` 에 없으면 게이트 경고, 밑줄 생략 |
 | phonemes | `[[ipa, word]]` 튜플 배열 | en: IPA + 단어 / ja: 음절(つ/だい 등) + 한국어 묘사 가능 |
 | mistake | string | "한국인 실수" 라벨로 표시 |
 | similar | string | "비슷한 표현" 라벨로 표시. `<span class="hl">텍스트</span>` 강조 가능 |

@@ -1067,3 +1067,33 @@ describe('validateSeedContent — 소스 순서 가드 (finish-parks-first, 2026
     expect(hasWarn(r, 'finish-parks-first')).toBe(true);
   });
 });
+
+/* 문장 모아보기 v12 (2026-09-03, 작업지시서 §7) — 선택 필드 두 개. 게이트는 경고만 낸다(차단 아님):
+ * chunks[i][2] = 조각 뜻(한글, 영어 어순) — 힌트 1단(어순)·정답 조각 정렬에 쓴다.
+ * explanation.anchor = meaning 안의 핵심 표현 부분 문자열 — 프롬프트 밑줄. meaning 에 없으면 밑줄이 안 그려진다. */
+describe('validateSeedContent — 문장 모아보기 선택 필드 (chunks[i][2]·anchor) 는 경고만', () => {
+  it('chunks 에 조각 뜻(세 번째 원소)이 없으면 경고, 차단은 아니다', () => {
+    const p = makePayload();
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.filter((w) => w.includes('조각 뜻')).length).toBeGreaterThan(0);
+  });
+
+  it('조각 뜻이 전부 있으면 그 경고가 없다', () => {
+    const p = makePayload();
+    for (const c of p.cards.slice(1)) c.explanation.chunks = c.explanation.chunks.map((x) => [x[0], x[1], '뜻']);
+    const r = validateSeedContent(p, okOpts);
+    expect(r.warnings.filter((w) => w.includes('조각 뜻'))).toEqual([]);
+  });
+
+  it('anchor 가 meaning 의 부분 문자열이 아니면 경고, 있으면 없음', () => {
+    const p = makePayload();
+    p.cards[1].explanation.anchor = '없는 구절';
+    p.cards[2].explanation.anchor = '뜻'; // meaning === '뜻'
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(true);
+    const w = r.warnings.filter((x) => x.includes('meaning 에 없음')); // '(학습 anchor)' 문구의 다른 경고와 구분
+    expect(w.length).toBe(1);
+    expect(w[0]).toContain('en-parks-s1e1-test-a');
+  });
+});

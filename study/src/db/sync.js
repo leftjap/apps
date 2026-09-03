@@ -430,8 +430,11 @@ const _serverCounts = new Map();
  * push 후엔 lastResult·nextReview 가 동률이라 대부분 서버가 이김 → pull 에서 이월해 같은 날
  * 재방문 가라앉힘을 보존한다. 선택된 행이 이미 갖고 있으면(로컬 승) 그대로. */
 export function preserveLocalOnlyFields(local, chosen) {
-  if (local?.lastResultAt && !chosen?.lastResultAt) return { ...chosen, lastResultAt: local.lastResultAt };
-  return chosen;
+  let out = chosen;
+  if (local?.lastResultAt && !chosen?.lastResultAt) out = { ...out, lastResultAt: local.lastResultAt };
+  // resultHistory (2026-09-03) — 문장 모아보기 v12 의 회차별 판정 이력. 같은 로컬 전용 관례.
+  if (Array.isArray(local?.resultHistory) && local.resultHistory.length && !chosen?.resultHistory) out = { ...out, resultHistory: local.resultHistory };
+  return out;
 }
 
 export function resolveConflict(local, server) {

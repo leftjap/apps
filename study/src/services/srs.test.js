@@ -131,3 +131,33 @@ describe('applySrsUpdate — 연속 통과 카운터(consecutivePass)', () => {
     expect(db.updates[0].patch).not.toHaveProperty('consecutivePass');
   });
 });
+
+/* 판정 이력 누적 (2026-09-03, 문장 모아보기 v12 — 작업지시서 §5). reviewQueue 엔 lastResult 단일값뿐이라
+ * 회차별 '떠올림/복습' 분수와 결과 막대를 만들 수 없었다. 로컬 전용 필드 resultHistory 에
+ * { date, result:'O'|'△'|'X', source:'review'|'sentences' } 를 덧붙인다. 복습 세션의 자기평가는 전부 이 함수를 지난다. */
+describe('applySrsUpdate — 판정 이력(resultHistory) 누적', () => {
+  const mkDb = () => {
+    const updates = [];
+    return { updates, reviewQueue: { update: async (id, patch) => { updates.push({ id, patch }); }, delete: async () => {} } };
+  };
+
+  it('판정마다 {date, result, source:"review"} 를 기존 이력 뒤에 덧붙인다', async () => {
+    const db = mkDb();
+    const prev = [{ date: '2026-05-01', result: 'X', source: 'sentences' }];
+    await applySrsUpdate(db, { id: 'c1', interval: 1, resultHistory: prev }, 'got', TODAY);
+    expect(db.updates[0].patch.resultHistory).toEqual([...prev, { date: TODAY, result: 'O', source: 'review' }]);
+    expect(prev).toHaveLength(1); // 원본 배열은 건드리지 않는다
+  });
+
+  it('이력 필드가 없던 카드는 새 배열로 시작한다 (마이그레이션 없음)', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c2', interval: 3 }, 'hmm', TODAY);
+    expect(db.updates[0].patch.resultHistory).toEqual([{ date: TODAY, result: '△', source: 'review' }]);
+  });
+
+  it('알 수 없는 kind 는 lastResult 와 마찬가지로 이력에도 남기지 않는다', async () => {
+    const db = mkDb();
+    await applySrsUpdate(db, { id: 'c3', interval: 3 }, 'xyz', TODAY);
+    expect(db.updates[0].patch.resultHistory).toBeUndefined();
+  });
+});

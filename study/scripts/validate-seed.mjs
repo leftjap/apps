@@ -218,6 +218,13 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       if (enJoin !== norm(c.sentence)) {
         errors.push(`${c.id}: chunks 가 본문 전단어 미커버 ("${norm(c.sentence)}" ≠ "${enJoin}")`);
       }
+      // 문장 모아보기 v12 (2026-09-03) — 조각 뜻 chunks[i][2] 는 선택 필드. 없으면 어순 힌트가 꺼진다 (경고만).
+      const noKo = ex.chunks.filter((x) => !String(x?.[2] ?? '').trim()).length;
+      if (noKo) warnings.push(`${c.id}: chunks ${noKo}개에 조각 뜻(chunks[i][2])이 없음 — 문장 모아보기 어순 힌트·조각 정렬 뜻이 생략됨`);
+    }
+    // 문장 모아보기 v12 — anchor(meaning 안의 핵심 표현 부분 문자열, 프롬프트 밑줄). 선택 필드, 경고만.
+    if (ex.anchor != null && !String(c.meaning ?? '').includes(String(ex.anchor))) {
+      warnings.push(`${c.id}: anchor("${ex.anchor}")가 meaning 에 없음 — 프롬프트 밑줄이 생략됨`);
     }
     // drills 하한 4 차단 + en/ko/kr 완비. 상한 차단은 폐지 (2026-07-28 사용자 지시 "필요한 만큼" —
     // 활용도 높은 프레임이면 10개 넘어도 좋다. 개수는 결과이지 목표가 아니다). 다만 과다는

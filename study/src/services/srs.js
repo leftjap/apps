@@ -69,6 +69,9 @@ export async function applySrsUpdate(db, card, kind, todayISO) {
       // 갱신하는 코드가 없어 userMeta 익힘 판정(PASS_THRESHOLD=2)이 죽은 값 위에서 돌았다.
       // '연속' 이므로 got 만 +1, hmm/no 는 0 으로 리셋.
       patch.consecutivePass = kind === 'got' ? (Number(card.consecutivePass) || 0) + 1 : 0;
+      // 2026-09-03 — 회차별 판정 이력 (문장 모아보기 v12 의 '떠올림/복습' 분수·결과 막대 원천).
+      // 로컬 전용 필드 — sync 매핑 밖, pull 이월은 preserveLocalOnlyFields. 필드 부재 = 빈 이력.
+      patch.resultHistory = [...(Array.isArray(card.resultHistory) ? card.resultHistory : []), { date: todayISO, result: KIND_TO_RESULT[kind], source: 'review' }];
     }
     await db.reviewQueue.update(card.id, patch);
   }

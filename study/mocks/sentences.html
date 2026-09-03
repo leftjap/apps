@@ -15,6 +15,28 @@
 <div id="root"></div>
 <script type="module">
   import { mountSentences } from '/src/pages/sentences.js';
+  /* ?demo=1 — 시안(문장 모아보기 v12) 의 예시 데이터로 화면 검증. 시드 1~6번 + 시안 SENTS 의 판정 이력(past)·
+   * 발화 점수(hist)를 가짜 DB 로 주입하고, 녹음·채점은 1.2초 뒤 자동 종료되는 가짜 파이프라인으로 대체한다. */
+  const demo = new URLSearchParams(location.search).get('demo') === '1';
+  if (demo) {
+    const seed = (await import('/seeds/en-core100-2026-08-26.json')).default;
+    const PAST = { 1: ['△', 'O', '△', 'X', 'O', '△', 'O'], 2: [], 3: ['X', 'X', '△'], 4: ['O', 'O', 'O', 'O'], 5: ['X', 'X'], 6: ['△'] };
+    const HIST = { 1: [72, 81], 2: [], 3: [66], 4: [88, 90], 5: [58], 6: [] };
+    const cards = seed.cards.map((c) => ({ ...c, lang: 'en',
+      resultHistory: PAST[c.order_index].map((result, i) => ({ date: `2026-08-${String(20 + i).padStart(2, '0')}`, result, source: i % 2 ? 'sentences' : 'review' })),
+      lastResult: PAST[c.order_index].at(-1) ?? null }));
+    const pron = seed.cards.flatMap((c) => HIST[c.order_index].map((s, i) => ({ sentenceId: c.id, lang: 'en', overallScore: s, date: `2026-08-${String(20 + i).padStart(2, '0')}`, createdAt: `2026-08-${String(20 + i).padStart(2, '0')}T10:00:00.000Z` })));
+    const table = (rows) => ({ where: () => ({ equals: () => ({ toArray: async () => rows }) }), update: async (id, patch) => { console.log('[demo] reviewQueue.update', id, patch); }, put: async () => {}, add: async () => {} });
+    window.studyDB = { reviewQueue: table(cards), sessionLogs: table([]), pronunciationLog: table([]), userMeta: table([]) };
+    window.studyDB.pronunciationLog = table(pron);
+    window.studySpeech = {
+      recordWav: async (opts) => { setTimeout(() => opts.onAutoStop?.(), 1200); return { stop() {}, abort() {}, blobPromise: Promise.resolve(new Blob([new ArrayBuffer(44)])) }; },
+      analyzeWavRest: async (blob, ref) => ({ score: 91, accuracy: 91, fluency: 86, completeness: 100, prosody: 80, recognizedText: ref, omissions: [], insertions: [], phonemeScores: [], weakPhonemes: [], wordScores: [] }),
+      getAzureToken: async () => ({}),
+      speak: (text, o) => { setTimeout(() => o?.onEnd?.(), 1500); },
+      cancel: () => {},
+    };
+  }
   mountSentences(document.getElementById('root'));
 </script>
 </body>
