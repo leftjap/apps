@@ -140,9 +140,9 @@
             "kr": "위 디든 캐치 더 네이머v 더 스테이션"
           },
           {
-            "en": "I caught most of it, but not the ending.",
-            "ko": "대부분은 알아들었는데 끝부분은 못 들었어.",
-            "kr": "아이 커트 모스터빗 벗 낫 디 엔딩"
+            "en": "I caught most of it, but not the last part.",
+            "ko": "대부분은 알아들었는데 마지막 부분은 못 들었어.",
+            "kr": "아이 캇 모스터빗 벗 낫 더 라스 파r트"
           }
         ],
         "grammar": [
@@ -302,7 +302,7 @@
           {
             "en": "What are you trying to say?",
             "ko": "무슨 말을 하려는 거야?",
-            "kr": "와러r 유 트라잉 투 쎄이"
+            "kr": "왓 아r 유 트라잉 투 쎄이"
           },
           {
             "en": "My wife is trying to say something.",
@@ -501,9 +501,9 @@
             "kr": "두 유 씨이 마이 포인트"
           },
           {
-            "en": "My wife saw my point right away.",
+            "en": "My wife got my point right away.",
             "ko": "아내는 내 말뜻을 바로 알아들었어.",
-            "kr": "마이 와이f 쏘 마이 포인트 라이러웨이"
+            "kr": "마이 와이f 갓 마이 포인트 라이러웨이"
           },
           {
             "en": "I see your point, but it's too expensive.",
@@ -548,7 +548,7 @@
           ],
           [
             "/ɔɪ/ point",
-            "point 는 두 모음을 다 내되 하나로 미끄러지듯 '포인'"
+            "point 의 oi 는 '오'에서 '이'로 미끄러지는 한 덩어리 — '포-인-트' 세 음절로 끊지 않는다"
           ]
         ],
         "mistake": "I know your point 는 어색하다. '알겠다'는 see 를 쓴다. agree 뒤의 '완전히'는 fully 만 떠올리기 쉬운데 completely 도 같은 자리에 온다.",
