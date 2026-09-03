@@ -172,3 +172,24 @@ describe('session-review — 새로고침 복원 (스냅샷 cards 정본)', () =
     expect(flushLiveStats).not.toHaveBeenCalled(); // base 미확보 상태의 dailyStats 덮어쓰기 금지
   });
 });
+
+/* 복습도 같은 결함 (2026-09-03) — 이력 수화가 카드 항목을 통째로 갈아끼워 스냅샷의 체이닝 진행(chain.cur)이
+ * 재진입 때 사라졌다. 신규 페이지(session-new)와 같은 필드 단위 병합. 체이닝 단계 행 점수 원(#chain# 이력)도
+ * 복습 진입에 보여야 한다. */
+describe('session-review — 수화 병합이 체이닝 진행을 지우지 않고, 체이닝 점수 원이 보인다', () => {
+  it('스냅샷 chain.cur 보존 + #chain# 이력이 단계 행에 원으로', async () => {
+    const CHAIN = { target: 'It is a promise', chunks: ['It is', 'a promise'], ko: '약속이야' };
+    const CARD_C = { ...CARD('c1', 'One two.', '뜻하나'), explanation: { key: 'k', chain: CHAIN, drills: [{ en: 'Drill one.', kr: '', ko: '드릴' }] } };
+    window.studyDB = fakeDB({ activeSession: SNAP({ step: 1, exLog: { c1: { chain: { cur: 1 } } }, recLog: {}, lastScore: null, cardIds: ['c1'], cards: [CARD_C] }) });
+    window.studyDB.pronunciationLog = { where: () => ({ equals: () => ({ toArray: async () => [
+      { sentenceId: 'c1', lang: 'en', date: '2026-08-30', overallScore: 87, createdAt: '2026-08-30T01:00:00Z' },
+      { sentenceId: 'c1#chain#It is', lang: 'en', date: '2026-08-30', overallScore: 88, createdAt: '2026-08-30T01:02:00Z' },
+    ] }) }) };
+    loadReviewCards.mockResolvedValueOnce([CARD_C]);
+    const { host, cleanup } = mount();
+    await settle();
+    expect(host.querySelector('.vs-chain .ct')?.textContent).toContain('통과 1 / 2');                 // 진행 보존
+    expect([...host.querySelectorAll('.vs-chain .vs-drow')][0].querySelector('.vs-gdots')?.textContent).toContain('88'); // 이력 원
+    cleanup();
+  });
+});

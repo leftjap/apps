@@ -321,7 +321,13 @@ export function mountSessionReview(host) {
       try {
         const hyd = await loadScoreHistoryState(window.studyDB, state.cards, getStoredLang(),
           (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
-        if (hyd) state.exLog = { ...state.exLog, ...hyd.exLog };
+        /* 카드 안 필드 단위 병합 (2026-09-03, session-new 와 동일) — 항목을 통째로 갈아끼우면 스냅샷에만
+         * 사는 체이닝 진행(chain.cur)이 이력 있는 카드마다 재진입 때 사라졌다. */
+        if (hyd) {
+          const merged = { ...state.exLog };
+          for (const [id, hist] of Object.entries(hyd.exLog)) merged[id] = { ...(merged[id] || {}), ...hist };
+          state.exLog = merged;
+        }
       } catch { /* 수화 실패 — 다음 진입에서 재시도 */ }
       // 문장별 연습 이력 (§7.4② 월 캘린더 · §7.3 빈 슬롯) — pronunciationLog 를 sentenceId×날짜로 묶는다.
       // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.
