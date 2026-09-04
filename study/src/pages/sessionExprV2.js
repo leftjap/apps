@@ -8,7 +8,7 @@
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
-import { exprOf, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
+import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { savePronunciationLog, drillLogId, chainLogId, prodLogId } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
@@ -148,8 +148,7 @@ export const VS_CSS = `
 .vs-chips{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;max-width:100%}
 /* 2026-07-22 — nowrap 이면 긴 음소 설명이 해설 박스를 넘어갔다. 줄바꿈 허용 + 라운드 완화. */
 .vs-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:5px 11px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
-.vs-next{width:100%;margin-top:13px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--line);background:transparent;color:var(--faint)}
-.vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
+.vs-next{width:100%;margin-top:13px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--teal);background:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
 @media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-side{width:760px;max-width:100%}}
 ${V_DOT_CSS}${V_MINICAL_CSS}
@@ -705,8 +704,7 @@ export const VSM_CSS = `
 .m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
 .m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
 .m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
-.m-cta .vs-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:transparent;border:1.5px solid var(--line);color:var(--faint)}
-.m-cta .vs-next.unlock{background:var(--teal);border-color:var(--teal);color:#fff;animation:v-breathe 2.6s ease-in-out infinite}
+.m-cta .vs-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:var(--teal);border:1.5px solid var(--teal);color:#fff}
 .scene-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap}
 .vs-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
 .vs-h1{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
@@ -897,9 +895,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const all = utterScores();
     const shown = all.slice(-MAIN_DOTS_MAX);
     dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
-    totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 게이트 카운트(recCount)와 별개
-    // 게이트는 캡션이 아니라 버튼 활성/비활성으로만 표현한다 (§4.3 삭제).
-    nextBtn.classList.toggle('unlock', canAdvance(state, s?.id) && recCount() >= REC_TARGET);
+    totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 버튼 라벨용 recCount 와 별개
   };
   const refreshRecWidget = () => {
     ring140.update(todayUtter(), prevDay);
@@ -981,7 +977,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     handlers.saveSnapshot?.();
   }
 
-  // 다음 표현 버튼 + 게이트
+  // 다음 표현 버튼 — 녹음 횟수와 무관하게 처음부터 활성 (3회 게이트 폐지, 2026-09-04 사용자 지시)
   const nextBtn = h('button', { class: 'vs-next', type: 'button', onClick: handlers.onNext }, idx >= total ? '학습 완료 →' : '다음 표현 →');
 
   // 응용 연습 — 드릴 녹음도 세션 발화 1건으로 집계 ('오늘 발화' + 요약 통과율/평균/약점음소)

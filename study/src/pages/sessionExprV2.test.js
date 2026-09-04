@@ -171,7 +171,7 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     expect(host.querySelector('.vs-combo')).toBeNull();
   });
 
-  it('녹음 3회 → 게이트 해제(다음 표현 unlock) · 콤보×3', async () => {
+  it('녹음 3회 → 콤보×3 (다음-표현 게이트는 2026-09-04 폐지 — 잠금 표시 없음)', async () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = makeState();
     renderSessionExprV2(host, state, {});
@@ -181,10 +181,23 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     }
     expect(state.recLog.e1.count).toBe(3);
     expect(state.combo).toBe(3);
-    expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(true);
-    // 게이트는 캡션이 아니라 버튼 활성/비활성으로만 표현한다 (§4.3)
+    expect(host.querySelector('.vs-next.unlock')).toBeNull(); // 잠금/해제 개념 자체가 없다
     expect(host.textContent).not.toContain('발화 3회 완료');
     expect(host.textContent).not.toMatch(/회를 채우면 열려요/);
+  });
+
+  /* 3회 발화 게이트 폐지 (2026-09-04 사용자 지시 "3회 발화 기준 자체를 없애") — 종전엔 녹음 3회 전까지 버튼이
+   * 잠긴 색이었고 컨트롤러(session-new)는 1회 전 전진을 막았다. 이제 다음 표현은 처음부터 활성이고 그대로 넘어간다. */
+  it('다음 표현은 녹음 0회에도 활성이고 onNext 를 부른다 (3회 게이트 폐지)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const state = makeState();
+    const onNext = vi.fn();
+    renderSessionExprV2(host, state, { onNext });
+    const next = host.querySelector('.vs-next');
+    expect(next.disabled).toBe(false);
+    expect(next.classList.contains('unlock')).toBe(false);
+    next.click();
+    expect(onNext).toHaveBeenCalledTimes(1);
   });
 
   it('녹음 실패(mockFallback) → state 미변경 · DB write 없음 · 토스트', async () => {
@@ -387,14 +400,14 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(false); // 아직 1/3
   });
 
-  it('drill 녹음 3회 → 게이트 해제 (응용 발화만으로도 다음 표현 열림)', async () => {
+  it('drill 녹음 3회 → recLog 3 누적 (게이트 폐지 후에도 집계는 유지)', async () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const state = makeStateWithDrills();
     renderSessionExprV2(host, state, {});
     const recBtn = drillRecBtns(host)[0];
     for (let k = 0; k < 3; k++) { recBtn.click(); await tick(); recBtn.click(); await tick(); await tick(); }
     expect(state.recLog.e1.count).toBe(3);
-    expect(host.querySelector('.vs-next').classList.contains('unlock')).toBe(true);
+    expect(host.querySelector('.vs-next.unlock')).toBeNull();
   });
 
   it('같은 drill 재녹음 → tried 누적(+1)하되 녹음 N/M 카운터는 중복 안 셈', async () => {

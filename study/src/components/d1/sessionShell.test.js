@@ -73,7 +73,7 @@ describe('buildD1ExplainRight — 우측 해설 (D1, phone 패널과 섹션 pari
 
 // ── 2026-06-10 녹음 상태·점수 안착·반복 진행 (사용자 지시) ──
 import { vi } from 'vitest';
-import { bumpRecLog, canAdvance, REC_TARGET, buildD1Practice } from './sessionShell.js';
+import { bumpRecLog, REC_TARGET, buildD1Practice } from './sessionShell.js';
 
 vi.mock('../../services/sessionAnalyze.js', () => ({
   startMicRecording: vi.fn(async () => ({ controller: {} })),
@@ -98,12 +98,8 @@ describe('recLog — 반복 진행·게이트 (순수)', () => {
     expect(state.recLog.c1).toEqual({ count: 3, best: 92 });
   });
 
-  it('canAdvance: 0회 false / 1회 true / micBlocked 시 escape', () => {
-    const state = {};
-    expect(canAdvance(state, 'c1')).toBe(false);
-    bumpRecLog(state, 'c1', 60);
-    expect(canAdvance(state, 'c1')).toBe(true);
-    expect(canAdvance({ micBlocked: true }, 'cX')).toBe(true);
+  // canAdvance 는 2026-09-04 게이트 폐지로 삭제 — REC_TARGET 은 D1 진행 점(buildRecDots)만 쓴다.
+  it('REC_TARGET 은 D1 진행 점 개수', () => {
     expect(REC_TARGET).toBe(3);
   });
 });

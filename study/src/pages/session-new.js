@@ -39,7 +39,7 @@ import { filterNearDupDrills } from '../components/session/applied.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
-import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows, bumpRecLog, canAdvance, REC_TARGET } from '../components/d1/sessionShell.js';
+import { buildD1Side, buildD1Practice, exprOf, buildD1ExplainRight, buildD1DrillRows, bumpRecLog } from '../components/d1/sessionShell.js';
 import { renderDialogueV2 } from './dialogueV2.js';
 import { renderSessionExprV2 } from './sessionExprV2.js';
 import { demoNewCards, DEMO_EXCLUDE_IDS } from './sessionNewDemo.js';
@@ -181,20 +181,11 @@ export function mountSessionNew(host) {
     window.location.hash = '#/summary';
   };
 
-  // 진행 게이트 (2026-06-10): 표현 카드는 따라 말하기 1회 이상 후 전진 (목표 REC_TARGET회).
-  // scene 카드·뒤로 가기는 자유. 마이크 불가 환경은 state.micBlocked 로 자동 escape.
-  const gateBlocked = (targetStep) => {
-    const cur = state.cards[state.step - 1];
-    if (!cur?.explanation?.key) return false; // 표현 카드만 게이트
-    if (targetStep <= state.step) return false;
-    if (canAdvance(state, cur.id)) return false;
-    showRecordToast(`따라 말하기 1회 후 넘어갈 수 있어요 (목표 ${REC_TARGET}회)`);
-    return true;
-  };
+  // 진행 게이트 폐지 (2026-09-04 사용자 지시 "3회 발화 기준 자체를 없애") — 종전(2026-06-10)엔 표현 카드에서
+  // 따라 말하기 1회 전 전진을 막고 목표 3회를 토스트로 안내했다. 이제 다음 표현·카드 이동은 녹음과 무관하게 자유다.
 
   const handlers = {
     onNext: () => {
-      if (gateBlocked(state.step + 1)) return;
       try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       const r = advanceCard(state.cards, state.step);
       if (r.done) { endSession(true); return; }
@@ -209,7 +200,6 @@ export function mountSessionNew(host) {
     onJump: (step) => {
       if (!Number.isInteger(step) || step < 1 || step > state.cards.length) return;
       if (step === state.step) return;
-      if (gateBlocked(step)) return;
       try { window.studySpeech?.cancel?.(); } catch { /* noop */ }
       state.step = step;
       state.sentence = pickCardFields(state.cards[step - 1]) || EMPTY_SENTENCE;

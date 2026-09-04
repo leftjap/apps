@@ -115,8 +115,8 @@ export function exprOf(card) {
 
 /* ── 녹음 반복 진행 (2026-06-10 사용자 지시 — 버튼 상태 변화·점수 안착·반복 목표) ──
  * 목표 3회: shadowing 연구 (Hamada — 동일 지문 5~6회 후 이동 / 반복 3~6회 구간 유창성 향상,
- * 과반복은 지루함·affective filter 역효과) 의 절충. 게이트 의무는 1회 (canAdvance),
- * 마이크 불가 환경 (권한 거부 등) 은 state.micBlocked 로 자동 escape.
+ * 과반복은 지루함·affective filter 역효과) 의 절충. REC_TARGET 은 D1 진행 점(buildRecDots) 개수일 뿐이다 —
+ * 전진 게이트(canAdvance, 1회 의무)는 2026-09-04 사용자 지시("3회 발화 기준 자체를 없애")로 폐지됐다.
  */
 export const REC_TARGET = 3;
 
@@ -127,11 +127,6 @@ export function bumpRecLog(state, id, score) {
   const entry = { count: cur.count + 1, best: cur.best == null ? score : Math.max(cur.best, score) };
   state.recLog[id] = entry;
   return entry;
-}
-
-export function canAdvance(state, id) {
-  if (state?.micBlocked === true) return true;
-  return (state?.recLog?.[id]?.count ?? 0) >= 1;
 }
 
 function buildRecDots(count) {

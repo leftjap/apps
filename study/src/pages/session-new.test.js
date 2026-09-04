@@ -118,6 +118,27 @@ describe('session-new — mount 복원 계약', () => {
   });
 });
 
+/* 3회 발화 게이트 폐지 (2026-09-04 사용자 지시): 표현 카드에서 녹음 없이도 '다음 표현' 으로 넘어간다.
+ * 종전 gateBlocked 는 녹음 1회 전 전진을 막고 "따라 말하기 1회 후 넘어갈 수 있어요 (목표 3회)" 토스트를 띄웠다. */
+describe('mountSessionNew — 다음 표현 게이트 폐지', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+
+  it('녹음 0회인 표현 카드에서 다음 표현을 누르면 토스트 없이 다음 카드로 넘어간다', async () => {
+    window.studyDB = fakeDB2({ activeSession: NSNAP({ step: 1, recLog: {}, exLog: {}, tried: 0, passed: 0, lastScore: null, pronScores: [] }) });
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.body.textContent).toContain('One two.');      // step 1 카드
+    document.querySelector('.vs-next').click();
+    await settle2();
+    expect(document.body.textContent).toContain('Three four.');   // step 2 카드
+    expect(document.body.textContent).not.toMatch(/넘어갈 수 있어요/);
+    cleanup();
+    await settle2(2);
+    expect(window.studyDB._meta.get('activeSession').value.step).toBe(2);
+  });
+});
+
 /* 실사용 보고 (2026-09-01): 어제 하다 만 신규 세션을 오늘 '이어서 하기'로 열면 총 0회·녹음 0/N —
  * 자정 경계(2026-08-29)가 스냅샷을 마감·폐기한 뒤의 fresh 진입에 수화가 없었다(재청취 분기 한정).
  * 복습 페이지와 같은 계약: 표시용 exLog 만 수화, recLog(진행 게이트·버튼 라벨)는 오늘 발화 전용. */
