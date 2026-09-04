@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { countNewExpressions, countNextSessionExpressions, isSceneCard, longestStreak, streakStats, masteredCount } from './home.js';
+import { countNewExpressions, countNextSessionExpressions, nextSessionPractice, isSceneCard, longestStreak, streakStats, masteredCount } from './home.js';
 
 // 홈 hero '오늘의 새 표현 N개' 는 표현(expression) 수여야 한다. scene(전체 대화 듣기) 카드는
 // 표현이 아니므로 제외 — todayNewDone(=newSentenceIds, scene 미포함) 단위와 정합해 진행 dots·done 게이트도 일치.
@@ -153,5 +153,35 @@ describe('home — 신규 카운트는 세션이 여는 묶음과 같다', () =>
 
   it('미완료가 없으면 0', async () => {
     expect(await countNextSessionExpressions(mockDB(seventeen(17)), 'ja', '2026-09-03')).toBe(0);
+  });
+});
+
+/* 열릴 묶음의 연습 기록 → '이어서 하기' 안내 (2026-09-04 실사고): 7번 카드 드릴 12회 뒤 1시간 방치 → 스냅샷 만료
+ * 자동 마감(완료 0장) → 이튿날 홈이 같은 묶음을 '신규 학습 시작' 으로 보여 줬다. 완료 규칙은 그대로 두고,
+ * 묶음 카드의 발음 기록(본문·#드릴·#체인)이 있으면 홈이 이어서 하기로 안내한다. */
+describe('home — 열릴 묶음에 연습 기록이 있으면 이어서 하기 (nextSessionPractice)', () => {
+  const mockDB = (todayLessons, pron = []) => ({
+    todayLessons: { where: (k) => ({ equals: (v) => ({ async toArray() { return todayLessons.filter((r) => r[k] === v); } }) }) },
+    pronunciationLog: { where: (k) => ({ equals: (v) => ({ async toArray() { return pron.filter((r) => r[k] === v); } }) }) },
+  });
+  const card = (n, date, completed = false) => ({ id: `en-core100-${String(n).padStart(3, '0')}-x`, lang: 'en', date, completed, order_index: n, meaning: `뜻 ${n}`, explanation: { key: 'k = v' } });
+  const done = [1, 2, 3, 4, 5, 6].map((n) => card(n, '2026-08-31', true));
+  const open = [7, 8, 9, 10, 11, 12].map((n) => card(n, '2026-09-04'));
+  const pron = (id, n) => Array.from({ length: n }, (_, i) => ({ sentenceId: id, lang: 'en', overallScore: 80 + i, date: '2026-09-03' }));
+
+  it('묶음 카드의 본문·드릴 발화가 있으면 발화 수와 첫 카드 뜻을 돌려준다', async () => {
+    const logs = [...pron('en-core100-007-x', 2), ...pron('en-core100-007-x#drill#Give me an example.', 10)];
+    expect(await nextSessionPractice(mockDB([...done, ...open], logs), 'en', '2026-09-04')).toEqual({ utterances: 12, firstMeaning: '뜻 7' });
+  });
+  it('연습 기록이 없으면 null (신규 학습 시작)', async () => {
+    expect(await nextSessionPractice(mockDB([...done, ...open], []), 'en', '2026-09-04')).toBeNull();
+  });
+  it('완료된 카드나 아직 열리지 않은 다음 묶음의 기록은 세지 않는다', async () => {
+    const future = [13, 14].map((n) => card(n, '2026-09-10'));
+    const logs = [...pron('en-core100-001-x', 5), ...pron('en-core100-013-x', 3)];
+    expect(await nextSessionPractice(mockDB([...done, ...open, ...future], logs), 'en', '2026-09-04')).toBeNull();
+  });
+  it('열릴 묶음이 없으면 null', async () => {
+    expect(await nextSessionPractice(mockDB(done, pron('en-core100-001-x', 5)), 'en', '2026-09-04')).toBeNull();
   });
 });

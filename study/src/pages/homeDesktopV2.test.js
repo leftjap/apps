@@ -335,3 +335,28 @@ describe('홈 CTA — 항상 3버튼 (§5.5)', () => {
     expect(el.querySelector('.vh-cta.rev .t2').textContent).toBe('복습 큐 98문장 · 원하는 만큼');
   });
 });
+
+/* 연습 기록이 남은 묶음 → mid(이어서 하기) (2026-09-04 실사고): 7번 드릴 12회 뒤 1시간 방치 → 스냅샷 만료 자동 마감
+ * (완료 0장) → 이튿날 홈이 같은 묶음을 '학습 시작' 으로 보여 줬다. home.nextSessionPractice 가 state.newPractice 를
+ * 채우면 진행 중 스냅샷이 없어도 이어서 하기로 안내하고, 보조줄에 지난 발화 수와 첫 카드 뜻을 싣는다. */
+describe('홈 CTA — 연습 기록이 남은 묶음은 이어서 하기 (state.newPractice)', () => {
+  const practiced = { utterances: 12, firstMeaning: '무슨 뜻인지 예를 하나 들어줄래?' };
+  it('데스크톱: 스냅샷 없이도 newPractice 가 있으면 "이어서 하기" + 지난 발화·첫 카드 뜻', () => {
+    const el = renderHomeDesktopV2(baseState({ newCount: 6, newPractice: practiced }));
+    expect(el.textContent).toContain('이어서 하기');
+    expect(el.textContent).toContain('지난 연습 발화 12회');
+    expect(el.textContent).toContain('「무슨 뜻인지 예를 하나 들어줄래?」부터');
+    expect(el.textContent).not.toContain('학습 시작');
+  });
+  it('모바일: 같은 규칙', () => {
+    const el = renderHomeMobileV2(baseState({ size: 'phone', newCount: 6, newPractice: practiced, todayISO: '2026-09-04', dayMap: {} }));
+    expect(el.textContent).toContain('이어서 하기');
+    expect(el.textContent).toContain('지난 연습 발화 12회');
+  });
+  it('newPractice 가 없으면 종전대로 "학습 시작"; 진행 중 스냅샷(resume)이 있으면 남은 표현 보조줄이 우선', () => {
+    expect(renderHomeDesktopV2(baseState({ newCount: 6, newPractice: null })).textContent).toContain('학습 시작');
+    const el = renderHomeDesktopV2(baseState({ newCount: 6, resume: 'new', newPractice: practiced }));
+    expect(el.textContent).toContain('이어서 하기');
+    expect(el.textContent).toContain('남은 표현 6개');
+  });
+});

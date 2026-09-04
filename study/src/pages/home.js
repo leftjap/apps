@@ -101,6 +101,21 @@ export async function countNextSessionExpressions(db, lang, todayISO) {
   return countNewExpressions(await loadNewCards(db, lang, todayISO));
 }
 
+/** 열릴 묶음에 남은 연습 기록 (2026-09-04 실사고) — 만료로 자동 마감된 세션은 완료 0장이라 홈이 같은 묶음을
+ * '신규 학습 시작' 으로 되돌렸다(7번 드릴 12회 뒤 1시간 방치 → 이튿날 '신규'). 완료 규칙(다음 표현으로 넘어감)은
+ * 그대로 두고, 묶음 카드의 발음 기록(본문·#드릴·#체인·#생산 포함)이 있으면 이어서 하기로 안내한다. */
+export async function nextSessionPractice(db, lang, todayISO) {
+  const cards = await loadNewCards(db, lang, todayISO);
+  if (!cards.length) return null;
+  let logs = [];
+  try { logs = await db.pronunciationLog.where('lang').equals(lang).toArray(); } catch { return null; }
+  const ids = new Set(cards.map((c) => c.id));
+  const baseId = (sid) => String(sid ?? '').replace(/#.*$/, '');
+  const utterances = logs.filter((l) => ids.has(baseId(l.sentenceId))).length;
+  if (!utterances) return null;
+  return { utterances, firstMeaning: cards[0].meaning || cards[0].ko || '' };
+}
+
 function isDemoMode() {
   if (typeof window === 'undefined') return false;
   if (window.studyDemo === true) return true;
@@ -212,6 +227,7 @@ export function mountHome(host) {
     todayISO: window.studyDay?.TODAY_ISO || localISODate(),
     resume: null, // 'new' | 'review' | null — activeSession 매치 시
     sessionTitle: '', // #5 — AI 생성 세션 타이틀(scene/skit). 첫 미완료 카드 explanation 에서 산출.
+    newPractice: null, // { utterances, firstMeaning } — 열릴 묶음에 연습 기록이 있으면 '이어서 하기' (2026-09-04)
   };
   if (fx) Object.assign(state, fx);
 
@@ -234,7 +250,7 @@ export function mountHome(host) {
     if (newLang === state.lang) return;
     try { sessionStorage.setItem('studyLang', newLang); } catch { /* noop */ }
     state.lang = newLang;
-    state.newCount = 0; state.reviewCount = 0; state.totalReview = 0;
+    state.newCount = 0; state.reviewCount = 0; state.totalReview = 0; state.newPractice = null;
     state.tried = 0; state.passed = 0;
     state.weekUtter = 0; state.weekPass = 0;
     state.todayNewDone = 0; state.todayReviewDone = 0;
@@ -355,6 +371,7 @@ async function loadStats(state) {
     const incomplete = langLessons.filter((l) => l.completed !== true);
     // newCount = 세션이 실제로 여는 묶음의 '표현' 수 (scene 제외) — loadNewCards 와 같은 출처 (2026-09-03).
     const newCount = await countNextSessionExpressions(db, lang, todayISO);
+    state.newPractice = newCount >= 1 ? await nextSessionPractice(db, lang, todayISO) : null;
     // #5 — AI 생성 세션 타이틀: 곧 시작할 첫 카드(loadNewCards 정렬 동일: date ASC → order_index ASC)의
     // scene/skit 타이틀. 콩트/장면 제목을 home hero 에 노출 (없으면 '' → 기본 카피 fallback).
     const firstNew = incomplete.slice().sort((a, b) => {
@@ -595,8 +612,11 @@ function d1HomeMain(state) {
   let heroTitle, heroSub;
   if (state.newCount >= 1) {
     // #5 — AI 가 생성한 세션 타이틀(scene/skit) 우선 노출. 없으면 기본 카피.
-    heroTitle = state.sessionTitle || (isMath ? '오늘의 새 문제를 풀어요' : '오늘의 새 표현을 시작해요');
-    heroSub = isMath ? '개념을 이해하고 차근차근 풀어요' : '전체 대화를 먼저 듣고 · 하나씩 따라 말하기';
+    // 연습 기록이 남은 묶음(만료 마감 뒤)은 '이어서' 로 안내 (2026-09-04, nextSessionPractice)
+    heroTitle = state.sessionTitle || (state.newPractice ? '하던 표현을 이어서 해요' : (isMath ? '오늘의 새 문제를 풀어요' : '오늘의 새 표현을 시작해요'));
+    heroSub = state.newPractice
+      ? `지난 연습 발화 ${state.newPractice.utterances}회 · 「${state.newPractice.firstMeaning}」부터`
+      : (isMath ? '개념을 이해하고 차근차근 풀어요' : '전체 대화를 먼저 듣고 · 하나씩 따라 말하기');
   } else if (state.totalReview >= 1) {
     heroTitle = '오늘 신규 완료';
     heroSub = '복습으로 오늘 분량을 마무리하세요';
@@ -605,7 +625,7 @@ function d1HomeMain(state) {
     heroSub = '잠시 후 다시 확인해 주세요';
   }
   const heroBtn = h('button', { class: 'd1-btn d1-btn--primary lg', style: 'margin-top:28px;', onClick: () => { window.location.hash = isMath ? '#/session-math?mode=new' : '#/session-new'; } },
-    d1Icon('sound', 17), state.resume === 'new' ? '이어서 하기' : '신규 학습 시작'); // #1 — 진행 중 세션 시 이어서 하기(spec §7-7)
+    d1Icon('sound', 17), (state.resume === 'new' || state.newPractice) ? '이어서 하기' : '신규 학습 시작'); // #1 — 진행 중 세션(spec §7-7) 또는 연습 기록이 남은 묶음(2026-09-04)
   if (state.newCount < 1) { heroBtn.disabled = true; heroBtn.style.opacity = '0.5'; heroBtn.style.cursor = 'default'; }
 
   const hero = d1SessionBox({

@@ -6,6 +6,7 @@
  *
  * 신규 학습 진입 3상태: fresh(학습 시작) / mid(이어서 하기) / done(다시 듣기)
  *   resume==='new'            → mid  (activeSession 스냅샷 존재)
+ *   newPractice (2026-09-04)  → mid  (만료 마감된 묶음에 연습 기록이 남음 — home.nextSessionPractice)
  *   newCount===0 && 오늘 신규 진행 흔적 → done
  *   그 외(newCount>=1)        → fresh
  *
@@ -319,7 +320,9 @@ function ctaCard(state, d) {
   const newSub = d.phase === 'done'
     ? d.doneNewMeta
     : d.phase === 'mid'
-      ? `남은 ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분 남음`
+      ? (state.resume !== 'new' && state.newPractice
+        ? `지난 연습 발화 ${state.newPractice.utterances}회 · 「${state.newPractice.firstMeaning}」부터`
+        : `남은 ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분 남음`)
       : [d.sceneLine, `${newUnit} ${state.newCount}개`, `약 ${d.newMin}분`].filter(Boolean).join(' · ');
 
   /* CTA 는 항상 3개다 (§5.5 '3버튼 모두') — 종전엔 복습 큐가 비면 '복습 시작' 을 통째로 숨겼다.
@@ -348,8 +351,9 @@ function ctaCard(state, d) {
  * 홈이 4카드(캘린더·링·CTA·누적) 구성이 되면서 히어로 메시지·연속 칩·하단 스트립이 사라졌다 —
  * 그 값들을 만들던 계산(링 오프셋·발화 바·메시지·연속 문구·발음 바·잔디)도 함께 정리했다. */
 function derive(state) {
+  // newPractice (2026-09-04): 만료로 마감된 묶음에 연습 기록이 남아 있으면 스냅샷 없이도 mid — home.nextSessionPractice
   const phase = state.phase
-    || (state.resume === 'new' ? 'mid'
+    || ((state.resume === 'new' || (state.newPractice && state.newCount >= 1)) ? 'mid'
       : (state.newCount === 0 && (state.todayNewDone > 0 || state.totalReview > 0)) ? 'done'
         : 'fresh');
 
