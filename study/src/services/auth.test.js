@@ -11,7 +11,7 @@
  *   - signInWithGoogle / signOut — supabase 모킹 필요
  *   - ensureUserDB / closeUserDB — fake-indexeddb 필요
  */
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { Auth, ALLOWED_EMAILS } from './auth.js';
 
 describe('ALLOWED_EMAILS (spec §3)', () => {
@@ -24,6 +24,31 @@ describe('ALLOWED_EMAILS (spec §3)', () => {
 
   it('frozen 이다 (런타임 변조 방지)', () => {
     expect(Object.isFrozen(ALLOWED_EMAILS)).toBe(true);
+  });
+});
+
+/* 로컬 검증 전용 허용 (2026-09-04): 봇 계정을 소스 수정 없이 허용한다. .env.local(gitignored) 의
+ * VITE_DEV_ALLOWED_EMAILS 를 **development 모드에서만** 읽고, 배포 번들(production)·테스트(test)에서는 무시한다.
+ * 배경: auth.js 를 임시로 고쳐 검증하다가 Stop 훅 WIP 스냅샷이 그 줄을 담은 채 푸시된 사고(46d46dd). */
+describe('isAllowedEmail — 개발 전용 허용 목록 (VITE_DEV_ALLOWED_EMAILS)', () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.resetModules(); });
+
+  it('development 모드 + 환경변수가 있으면 그 이메일도 허용한다 (ALLOWED_EMAILS 상수는 불변)', async () => {
+    vi.stubEnv('MODE', 'development');
+    vi.stubEnv('VITE_DEV_ALLOWED_EMAILS', 'claude-bot@today.local, Other@Example.com');
+    vi.resetModules();
+    const mod = await import('./auth.js');
+    expect(mod.Auth.isAllowedEmail('claude-bot@today.local')).toBe(true);
+    expect(mod.Auth.isAllowedEmail('other@example.com')).toBe(true);
+    expect(mod.ALLOWED_EMAILS).toEqual(['leftjap@gmail.com', 'soyoun312@gmail.com']);
+  });
+
+  it('development 모드가 아니면 환경변수가 있어도 무시한다', async () => {
+    vi.stubEnv('MODE', 'production');
+    vi.stubEnv('VITE_DEV_ALLOWED_EMAILS', 'claude-bot@today.local');
+    vi.resetModules();
+    const mod = await import('./auth.js');
+    expect(mod.Auth.isAllowedEmail('claude-bot@today.local')).toBe(false);
   });
 });
 

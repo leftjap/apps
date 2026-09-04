@@ -1,0 +1,267 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "1-30 말문 트기와 대화 운영",
+  "date": "2026-09-05",
+  "_note": "코어 100문장 커리큘럼 13~18번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~12번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 7~12(09-04) 다음 묶음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-013-it-depends-on",
+      "sentence": "It depends on what you want to do.",
+      "meaning": "네가 뭘 하고 싶은지에 따라 달라.",
+      "reading": null,
+      "phonetic_kr": "잇 디펜존 왓 유 원트 투 두",
+      "order_index": 1,
+      "explanation": {
+        "key": "it depends on = ~에 따라 달라. 딱 잘라 답하지 않고 조건을 다는 말.",
+        "situation": "일정이나 계획을 묻는데 상황에 따라 답이 갈릴 때 — 여행 중 \"내일 뭐 할까?\" 에 조건을 달아 답한다.",
+        "drills": [
+          { "en": "It depends.", "ko": "상황에 따라 달라.", "kr": "잇 디펜즈" },
+          { "en": "It depends on the weather.", "ko": "날씨에 따라 달라.", "kr": "잇 디펜존 더 웨더r" },
+          { "en": "That depends on my wife.", "ko": "그건 아내한테 달렸어.", "kr": "댓 디펜존 마이 와이f" },
+          { "en": "It depends on what time we leave.", "ko": "몇 시에 떠나느냐에 따라 달라.", "kr": "잇 디펜존 왓 타임 위 리이v" },
+          { "en": "Well, it depends on the price.", "ko": "글쎄, 가격에 따라 달라.", "kr": "웰 잇 디펜존 더 프라이스" },
+          { "en": "It all depends on how the cat feels.", "ko": "다 고양이 기분에 달렸지.", "kr": "이롤 디펜존 하우 더 캣 f필즈" },
+          { "en": "Does it depend on the day?", "ko": "요일에 따라 다른가요?", "kr": "더짓 디펜돈 더 데이" }
+        ],
+        "grammar": [
+          { "struct": "It depends on + 의문사절 (what you want to do)", "body": "depends on 뒤에 명사 대신 '무엇을 하고 싶은지' 같은 의문사절을 통째로 붙인다. 한국어는 '~하고 싶은지에 따라' 처럼 조건이 앞에 오지만, 영어는 It depends 를 먼저 말하고 조건을 뒤에 단다." }
+        ],
+        "chunks": [
+          ["It depends on", "잇 디펜존", "~에 따라 달라"],
+          ["what you want", "왓 유 원트", "네가 뭘 원하는지"],
+          ["to do.", "투 두", "하는 것을."]
+        ],
+        "phonemes": [
+          ["/dz/ depends", "depends 끝은 /dz/ — '디펜스'(X) '디펜즈'(O), 혀 진동을 끝까지 유지"],
+          ["depends on → 연음", "'디펜즈 온'처럼 끊지 않고 '디펜존' — z 가 on 에 붙는다"]
+        ],
+        "mistake": "'~에 따라 다르다'를 different 로 옮기기 쉽다. It depends 가 그 자체로 '경우에 따라 달라'이고, 무엇에 달렸는지는 on 뒤에 붙인다.",
+        "similar": "That depends. / It's up to you.",
+        "category": "말문/조건",
+        "frequency": 9,
+        "chain": {
+          "target": "It depends on what you want to do, so tell me what you have in mind.",
+          "chunks": ["It depends on what you want to do,", "so tell me", "what you have", "in mind."],
+          "ko": "네가 뭘 하고 싶은지에 따라 다르니까, 생각하는 걸 말해 봐."
+        },
+        "anchor": "따라 달라"
+      }
+    },
+    {
+      "id": "en-core100-014-think-about-it",
+      "sentence": "I'll think about it before I decide.",
+      "meaning": "결정하기 전에 생각해 볼게.",
+      "reading": null,
+      "phonetic_kr": "아일 씽크 어바우릿 비f포어r 아이 디싸이드",
+      "order_index": 2,
+      "explanation": {
+        "key": "think about it = 생각해 보다. 바로 답하지 않고 시간을 버는 말.",
+        "situation": "제안을 받았는데 당장 답하고 싶지 않을 때 — 가게에서 권유를 받거나 아내가 여행 계획을 물었을 때.",
+        "drills": [
+          { "en": "Let me think about it.", "ko": "생각 좀 해 볼게.", "kr": "렛 미 씽크 어바우릿" },
+          { "en": "I'll think about it and let you know.", "ko": "생각해 보고 알려 줄게.", "kr": "아일 씽크 어바우릿 앤 렛 유 노우" },
+          { "en": "My wife wants to think about it first.", "ko": "아내가 먼저 생각해 보고 싶대.", "kr": "마이 와이f 원츠 투 씽크 어바우릿 f퍼r스트" },
+          { "en": "Can I think about it until tomorrow?", "ko": "내일까지 생각해 봐도 돼요?", "kr": "캔 아이 씽크 어바우릿 언틸 터마로우" },
+          { "en": "Think about it before you book the hotel.", "ko": "호텔 예약하기 전에 생각해 봐.", "kr": "씽크 어바우릿 비f포어r 유 북 더 호텔" },
+          { "en": "I need time to think about it.", "ko": "생각할 시간이 필요해.", "kr": "아이 니이드 타임 투 씽크 어바우릿" },
+          { "en": "Don't think about it too much.", "ko": "너무 깊게 생각하지 마.", "kr": "돈트 씽크 어바우릿 투 머치" }
+        ],
+        "grammar": [
+          { "struct": "I'll + 동사 + before I + 동사", "body": "'결정하기 전에 생각해 볼게'는 영어에서 순서가 뒤집힌다 — 하려는 일(I'll think about it)을 먼저 말하고 시점(before I decide)을 뒤에 붙인다. before 뒤에도 주어와 동사가 온다." }
+        ],
+        "chunks": [
+          ["I'll think about it", "아일 씽크 어바우릿", "생각해 볼게"],
+          ["before I decide.", "비f포어r 아이 디싸이드", "결정하기 전에."]
+        ],
+        "phonemes": [
+          ["/θ/ think", "think 는 혀끝을 이 사이에 — '싱크'(X) '씽크'(O, 혀를 물듯이)"],
+          ["about it → 연음", "'어바웃 잇'처럼 끊지 않고 '어바우릿' — t 가 모음 사이에서 부드러운 flap"]
+        ],
+        "mistake": "'생각해 볼게'를 I'll think 로 끝내면 무엇을 생각하는지가 빠진다. think about it 까지가 한 덩어리다.",
+        "similar": "Let me sleep on it. / I'll get back to you.",
+        "category": "말문/보류",
+        "frequency": 9,
+        "chain": {
+          "target": "I'll think about it before I decide, and I'll let you know by tomorrow.",
+          "chunks": ["I'll think about it before I decide,", "and I'll", "let you know", "by tomorrow."],
+          "ko": "결정하기 전에 생각해 보고, 내일까지 알려 줄게."
+        },
+        "anchor": "생각해 볼게"
+      }
+    },
+    {
+      "id": "en-core100-015-sounds-like-a-good-idea",
+      "sentence": "That sounds like a good idea to me.",
+      "meaning": "내 생각에도 좋은 생각 같아.",
+      "reading": null,
+      "phonetic_kr": "댓 사운즈 라이크 어 구다이디어 투 미",
+      "order_index": 3,
+      "explanation": {
+        "key": "sounds like a good idea = 좋은 생각 같다. 제안에 찬성할 때 쓰는 말.",
+        "situation": "상대 제안이 마음에 들 때 — 아내가 \"주말에 바다 갈까?\" 하면 이 문장으로 받는다.",
+        "drills": [
+          { "en": "Sounds like a good idea.", "ko": "좋은 생각인 것 같아.", "kr": "사운즈 라이크 어 구다이디어" },
+          { "en": "That sounds good to me.", "ko": "나는 좋아.", "kr": "댓 사운즈 굿 투 미" },
+          { "en": "Sounds like a plan.", "ko": "그렇게 하자.", "kr": "사운즈 라이크 어 플랜" },
+          { "en": "Dinner at seven sounds like a good idea.", "ko": "7시 저녁 좋은 생각이네.", "kr": "디너r 앳 세v븐 사운즈 라이크 어 구다이디어" },
+          { "en": "That sounds like fun.", "ko": "재밌겠다.", "kr": "댓 사운즈 라이크 f펀" },
+          { "en": "Taking the cat to the vet sounds like a good idea.", "ko": "고양이를 병원에 데려가는 거 좋은 생각 같아.", "kr": "테이킹 더 캣 투 더 v벳 사운즈 라이크 어 구다이디어" },
+          { "en": "Does that sound like a good idea to you?", "ko": "너도 좋은 생각 같아?", "kr": "더즈 댓 사운드 라이크 어 구다이디어 투 유" }
+        ],
+        "grammar": [
+          { "struct": "That sounds like + 명사 (+ to me)", "body": "'~같다'는 sounds like 로 말하고 뒤에 명사(a good idea)가 온다. to me 는 '내 생각엔'을 덧붙이는 자리 — 한국어 '내 생각에도'는 앞에 오지만 영어는 문장 끝에 붙는다." }
+        ],
+        "chunks": [
+          ["That sounds like", "댓 사운즈 라이크", "~같아"],
+          ["a good idea", "어 구다이디어", "좋은 생각"],
+          ["to me.", "투 미", "내 생각에는."]
+        ],
+        "phonemes": [
+          ["/aʊ/ sounds", "sounds 는 '사운즈' — 세게 '싸운즈'로 시작하지 않고, 끝 /dz/ 는 진동"],
+          ["good idea → 연음", "'굿 아이디어'(X) '구다이디어'(O) — d 가 다음 모음에 붙는다"]
+        ],
+        "mistake": "'좋은 생각 같아'를 I think good idea 로 옮기기 쉽다. 영어는 That sounds like 로 시작해 '들리기에 ~같다'고 말한다.",
+        "similar": "Sounds good. / I like that idea.",
+        "category": "말문/동의",
+        "frequency": 10,
+        "chain": {
+          "target": "That sounds like a good idea to me, so let's do it this weekend.",
+          "chunks": ["That sounds like a good idea to me,", "so let's", "do it", "this weekend."],
+          "ko": "내 생각에도 좋은 생각 같아, 그러니 이번 주말에 하자."
+        },
+        "anchor": "좋은 생각 같아"
+      }
+    },
+    {
+      "id": "en-core100-016-id-love-to-but",
+      "sentence": "I'd love to, but I already have plans.",
+      "meaning": "정말 그러고 싶은데 이미 약속이 있어.",
+      "reading": null,
+      "phonetic_kr": "아이드 러v 투 벗 아이 올레디 해v 플랜즈",
+      "order_index": 4,
+      "explanation": {
+        "key": "I'd love to, but = 정말 그러고 싶지만. 거절을 부드럽게 시작하는 말.",
+        "situation": "초대를 받았는데 갈 수 없을 때 — 직장 동료의 저녁 제안이나 여행지에서 만난 사람의 권유를 정중히 거절한다.",
+        "drills": [
+          { "en": "I'd love to.", "ko": "정말 그러고 싶어.", "kr": "아이드 러v 투" },
+          { "en": "I'd love to, but I can't tonight.", "ko": "정말 그러고 싶은데 오늘 밤은 안 돼.", "kr": "아이드 러v 투 벗 아이 캔트 터나잇" },
+          { "en": "We'd love to come, but we already have plans.", "ko": "정말 가고 싶은데 이미 약속이 있어.", "kr": "위드 러v 투 컴 벗 위 올레디 해v 플랜즈" },
+          { "en": "I'd love to join you for lunch.", "ko": "점심 같이 먹고 싶어.", "kr": "아이드 러v 투 조인 유 f포어r 런치" },
+          { "en": "My wife would love to, but she's working late.", "ko": "아내도 정말 그러고 싶어 하는데 야근이야.", "kr": "마이 와이f 우드 러v 투 벗 쉬즈 워r킹 레잇" },
+          { "en": "Sorry, I already have plans this weekend.", "ko": "미안, 이번 주말엔 이미 약속이 있어.", "kr": "쏘리 아이 올레디 해v 플랜즈 디스 위켄드" },
+          { "en": "I'd love to see the temple, but it's too far.", "ko": "그 절을 정말 보고 싶은데 너무 멀어.", "kr": "아이드 러v 투 씨 더 템플 벗 잇츠 투 f파r" }
+        ],
+        "grammar": [
+          { "struct": "I'd love to, but + 이유", "body": "I'd love to 로 하고 싶은 마음을 먼저 보이고 but 뒤에 못 하는 이유를 붙인다. to 뒤의 동사는 앞에서 말한 일이라 생략한다. 한국어 '~인데'가 but 자리다." }
+        ],
+        "chunks": [
+          ["I'd love to,", "아이드 러v 투", "정말 그러고 싶은데,"],
+          ["but I already", "벗 아이 올레디", "하지만 이미"],
+          ["have plans.", "해v 플랜즈", "약속이 있어."]
+        ],
+        "phonemes": [
+          ["/v/ love", "love 의 v — '러브'(X) '러v'(O), 아랫입술을 물고 진동"],
+          ["/æ/ have plans", "have 와 plans 의 a 는 입을 옆으로 벌린 '애' — '하브 플랜즈'(X)"]
+        ],
+        "mistake": "'약속이 있다'를 I have a promise 로 옮기면 틀린다. 일정이 있다는 뜻은 have plans 이고, promise 는 '지키겠다는 다짐'이다.",
+        "similar": "I wish I could, but… / Maybe next time.",
+        "category": "말문/거절",
+        "frequency": 9,
+        "chain": {
+          "target": "I'd love to, but I already have plans, so maybe we can do it next week.",
+          "chunks": ["I'd love to, but I already have plans,", "so maybe", "we can", "do it", "next week."],
+          "ko": "정말 그러고 싶은데 이미 약속이 있어, 그러니까 다음 주에 하면 어떨까."
+        },
+        "anchor": "정말 그러고 싶은데"
+      }
+    },
+    {
+      "id": "en-core100-017-cant-make-it",
+      "sentence": "I can't make it tonight, but how about tomorrow?",
+      "meaning": "오늘 밤은 못 가는데 내일은 어때?",
+      "reading": null,
+      "phonetic_kr": "아이 캔트 메이킷 터나잇 벗 하우 어바웃 터마로우",
+      "order_index": 5,
+      "explanation": {
+        "key": "can't make it = 못 가다, 참석 못 하다. 시간에 맞춰 갈 수 없다고 말할 때.",
+        "situation": "약속 시간에 못 맞출 때 — 아내 직장 회식이나 친구와의 저녁을 미루며 대안을 바로 잇는다.",
+        "drills": [
+          { "en": "I can't make it.", "ko": "못 가겠어.", "kr": "아이 캔트 메이킷" },
+          { "en": "Can you make it by seven?", "ko": "7시까지 올 수 있어?", "kr": "캔 유 메이킷 바이 세v븐" },
+          { "en": "My wife can't make it to dinner tonight.", "ko": "아내가 오늘 저녁 식사에 못 와.", "kr": "마이 와이f 캔트 메이킷 투 디너r 터나잇" },
+          { "en": "How about tomorrow instead?", "ko": "대신 내일은 어때?", "kr": "하우 어바웃 터마로우 인스테드" },
+          { "en": "Sorry, we can't make it to the meeting.", "ko": "미안한데 우리 회의에 못 가.", "kr": "쏘리 위 캔트 메이킷 투 더 미이팅" },
+          { "en": "I made it to the airport just in time.", "ko": "공항에 딱 맞춰 도착했어.", "kr": "아이 메이딧 투 디 에어r포어r트 저스트 인 타임" },
+          { "en": "How about lunch instead of dinner?", "ko": "저녁 대신 점심은 어때?", "kr": "하우 어바웃 런치 인스테드 어v 디너r" }
+        ],
+        "grammar": [
+          { "struct": "I can't make it + 시간, but how about + 대안?", "body": "make it 은 '(약속·시간에) 맞춰 가다'. 못 간다고만 끝내지 않고 but how about 으로 대안을 바로 잇는다. 한국어 '~은 어때?'가 how about 이고 뒤에는 명사(tomorrow)만 온다." }
+        ],
+        "chunks": [
+          ["I can't make it", "아이 캔트 메이킷", "못 가"],
+          ["tonight,", "터나잇", "오늘 밤은,"],
+          ["but how about", "벗 하우 어바웃", "하지만 어때"],
+          ["tomorrow?", "터마로우", "내일은?"]
+        ],
+        "phonemes": [
+          ["can't → /kænt/", "can't 는 '캔트'로 짧고 세게 — can(캔)과 헷갈리지 않게 끝 t 를 살린다"],
+          ["make it → 연음", "'메이크 잇'(X) '메이킷'(O) — k 가 it 에 붙는다"]
+        ],
+        "mistake": "'못 가'를 I can't go 로만 말하면 '가지 못한다'는 뜻만 남는다. 약속·시간에 못 맞춘다는 뉘앙스는 can't make it 이다.",
+        "similar": "I won't be able to come. / Can we do tomorrow instead?",
+        "category": "말문/약속",
+        "frequency": 9,
+        "chain": {
+          "target": "I can't make it tonight, but how about tomorrow after work, around six?",
+          "chunks": ["I can't make it tonight, but how about tomorrow", "after work,", "around six?"],
+          "ko": "오늘 밤은 못 가는데, 내일 퇴근 후 6시쯤은 어때?"
+        },
+        "anchor": "못 가는데"
+      }
+    },
+    {
+      "id": "en-core100-018-works-best-for-you",
+      "sentence": "Let me know what time works best for you.",
+      "meaning": "몇 시가 제일 좋은지 알려줘.",
+      "reading": null,
+      "phonetic_kr": "렛 미 노우 왓 타임 워r크스 베스트 f포어r 유",
+      "order_index": 6,
+      "explanation": {
+        "key": "works best for you = 너한테 제일 잘 맞다. 상대 사정에 맞추겠다고 물을 때.",
+        "situation": "약속 시간을 잡을 때 — 내 시간을 먼저 말하는 대신 상대에게 맞추겠다고 묻는다. 예약 전화나 친구와의 일정 조율.",
+        "drills": [
+          { "en": "What time works best for you?", "ko": "몇 시가 제일 좋아?", "kr": "왓 타임 워r크스 베스트 f포어r 유" },
+          { "en": "Let me know what works for you.", "ko": "너한테 뭐가 맞는지 알려 줘.", "kr": "렛 미 노우 왓 워r크스 f포어r 유" },
+          { "en": "Which day works best for your wife?", "ko": "아내는 무슨 요일이 제일 좋대?", "kr": "위치 데이 워r크스 베스트 f포어r 유어r 와이f" },
+          { "en": "Morning works best for me.", "ko": "나는 아침이 제일 좋아.", "kr": "모어r닝 워r크스 베스트 f포어r 미" },
+          { "en": "Does Friday work for you?", "ko": "금요일 괜찮아?", "kr": "더즈 f프라이데이 워r크 f포어r 유" },
+          { "en": "Let me know when you get to the hotel.", "ko": "호텔에 도착하면 알려 줘.", "kr": "렛 미 노우 웬 유 겟 투 더 호텔" },
+          { "en": "Any time after lunch works for me.", "ko": "점심 이후엔 아무 때나 괜찮아.", "kr": "애니 타임 애f터r 런치 워r크스 f포어r 미" }
+        ],
+        "grammar": [
+          { "struct": "Let me know + 의문사절 (what time works best for you)", "body": "'알려 줘'는 Let me know 로 시작하고 알고 싶은 내용을 의문사절로 뒤에 붙인다. 절 안에서는 what time 이 주어라서 동사가 works 처럼 3인칭 단수형이다." }
+        ],
+        "chunks": [
+          ["Let me know", "렛 미 노우", "알려 줘"],
+          ["what time", "왓 타임", "몇 시가"],
+          ["works best for you.", "워r크스 베스트 f포어r 유", "너한테 제일 잘 맞는지."]
+        ],
+        "phonemes": [
+          ["/ɜːr/ works", "works 의 or 은 입을 작게 오므린 '워r' — '월크스'(X)"],
+          ["/f/ for", "for 의 f 는 윗니로 아랫입술 — '포'(X) 'f포어r'(O)"]
+        ],
+        "mistake": "'알려 줘'를 Tell me 로만 쓰면 명령조가 된다. 부탁하는 결에서는 Let me know 가 자연스럽다.",
+        "similar": "When are you free? / What time suits you?",
+        "category": "말문/약속",
+        "frequency": 9,
+        "chain": {
+          "target": "Let me know what time works best for you, and I'll book a table for us.",
+          "chunks": ["Let me know what time works best for you,", "and I'll", "book a table", "for us."],
+          "ko": "몇 시가 제일 좋은지 알려 줘, 그러면 내가 우리 자리를 예약할게."
+        },
+        "anchor": "제일 좋은지"
+      }
+    }
+  ]
+}

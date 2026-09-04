@@ -22,6 +22,13 @@ export const ALLOWED_EMAILS = Object.freeze([
   'soyoun312@gmail.com',
 ]);
 
+/* 로컬 검증 전용 허용 (2026-09-04) — 검증용 봇 계정을 소스 수정 없이 허용한다. .env.local(gitignored)
+ * 의 VITE_DEV_ALLOWED_EMAILS 를 **development 모드에서만** 읽는다. 배포 번들(production)·테스트(test)에서는 빈 배열.
+ * 배경: auth.js 를 임시로 고쳐 검증하다가 Stop 훅 WIP 스냅샷이 그 줄을 담은 채 푸시된 사고(46d46dd, CI 게이트가 배포 차단). */
+const DEV_ALLOWED_EMAILS = (import.meta.env?.MODE === 'development' && import.meta.env?.VITE_DEV_ALLOWED_EMAILS)
+  ? String(import.meta.env.VITE_DEV_ALLOWED_EMAILS).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+  : [];
+
 /** localStorage key — login 화면이 비허용 이메일 차단 결과 표시용. */
 export const AUTH_ERROR_KEY = 'studyAuthError';
 
@@ -192,7 +199,7 @@ function registerOnSignOut(cb) {
 function isAllowedEmail(email) {
   if (!email) return false;
   const normalized = String(email).trim().toLowerCase();
-  return ALLOWED_EMAILS.includes(normalized);
+  return ALLOWED_EMAILS.includes(normalized) || DEV_ALLOWED_EMAILS.includes(normalized);
 }
 
 /**
