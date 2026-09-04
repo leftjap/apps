@@ -113,6 +113,8 @@ describe('마스크·핵심 표현 도출 (작업지시서 §3.2·§12)', () => 
     expect(km.mask).toBe('c____ y__ s__ t___ a____');
     expect(km.pre).toBe('Sorry, ');
     expect(km.post).toBe(' more slowly?');
+    expect(km.preMask).toBe('S____, ');          // 2026-09-04 — 첫 글자 힌트는 문장 전체 (핵심 표현 강조)
+    expect(km.postMask).toBe(' m___ s_____?');
     expect(keyMaskOf('Let me see if I understood you correctly.', 'Let me see if').mask).toBe('L__ m_ s__ i_');
     expect(keyMaskOf('Nothing here.', 'absent phrase')).toBeNull();
   });
@@ -226,11 +228,12 @@ describe('힌트 3단 (§10-2)', () => {
     expect(texts(box, '.vl-chip')).toEqual(['1미안한데,', '2말해 줄래요', '3그 말을 다시', '4좀 더 천천히?']);
     expect(box.textContent).not.toMatch(/[A-Za-z]{2,}/);
   });
-  it('2단 첫 글자 — 핵심 표현 마스크 "c____ y__ s__ t___ a____" + 뜻', async () => {
+  it('2단 첫 글자 — 문장 전체 첫 글자, 핵심 표현 부분 강조 + 뜻 (2026-09-04 사용자 결정)', async () => {
     const { row } = await mountWith();
     const r1 = row(CARD1.id);
     r1.querySelectorAll('.vl-seg button')[1].click();
-    expect(r1.querySelector('.vl-first .vl-mask').textContent).toBe('c____ y__ s__ t___ a____');
+    expect(r1.querySelector('.vl-first .vl-mask').textContent).toBe('S____, c____ y__ s__ t___ a____ m___ s_____?');
+    expect(r1.querySelector('.vl-first .vl-mask .key').textContent).toBe('c____ y__ s__ t___ a____');
     expect(r1.querySelector('.vl-first .ko').textContent).toBe('다시 말해 줄래요');
     expect(r1.querySelector('.vl-hbox .vl-chip')).toBeTruthy(); // 누적: 어순 칩은 그대로
     expect(r1.querySelector('.vl-frame')).toBeNull();
@@ -255,7 +258,8 @@ describe('힌트 3단 (§10-2)', () => {
     expect(texts(box, '.vl-chip')).toEqual(['1____ __ ___ ____', '2__ ____', '3_______?']);
     expect(box.textContent).not.toMatch(/[A-Za-z]/);
     b(1).click();
-    expect(r2.querySelector('.vl-first .vl-mask').textContent).toBe('W___ d_ y__ m___');
+    expect(r2.querySelector('.vl-first .vl-mask').textContent).toBe('W___ d_ y__ m___ b_ t___ e______?');
+    expect(r2.querySelector('.vl-first .vl-mask .key').textContent).toBe('W___ d_ y__ m___');
     expect(texts(r2, '.vl-chip')).toEqual(['1____ __ ___ ____', '2__ ____', '3_______?']); // 누적 유지
     // 정답 패널의 조각 아래 뜻 줄은 없음 (뜻이 없으므로)
     r2.querySelector('.vl-reveal').click();

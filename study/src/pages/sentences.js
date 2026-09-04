@@ -1,7 +1,9 @@
 /* 문장 모아보기 — 지금까지 공부한 기본 문장을 한 화면에 (2026-07-18 사용자 요청).
  * v12 데스크톱 개편 (2026-09-03 작업지시서, 정본 = 시안 '문장 모아보기 v12.dc.html' 의 인라인 스타일·상태 머신):
  *   한글 프롬프트(핵심 구문 밑줄)를 보고 떠올려 **말한다**(정답 공개 전 녹음이 본 시도 → 채점 → 정답 자동 공개).
- *   힌트 3단(어순 · 첫 글자 · 빈칸)은 정답 전 디딤돌이고, 정답 패널(조각 정렬·음차·핵심 표현·문형·재생·녹음)
+ *   힌트 3단(어순 · 첫 글자 · 빈칸)은 정답 전 디딤돌이고 — 첫 글자는 2026-09-04 사용자 결정으로 시안(핵심 표현만)과
+ *   달리 **문장 전체**의 첫 글자를 주고 핵심 표현 부분만 강조한다(빈칸이 나머지 단어를 전부 공개하므로 2단이 비어 있었다) —
+ *   정답 패널(조각 정렬·음차·핵심 표현·문형·재생·녹음)
  *   에서 쉬움/보통/어려움 판정 → 우측 이력(떠올림/복습 분수 + 결과 막대)이 그 자리에서 갱신된다.
  *   어려움은 목록 하단 '다시 떠올리기' 묶음에 재시도 행으로 복제된다. 판정 후 행 이동·자동 가리기 없음.
  *
@@ -86,6 +88,8 @@ ${V_DOT_CSS}
 .vl-chip.shape{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;font-weight:500;letter-spacing:.02em;color:var(--teal-deep)}
 .vl-first{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;animation:vl-settle .2s both}
 .vl-mask{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:16px;letter-spacing:.02em;color:var(--teal-deep);background:var(--card);border-radius:6px;padding:3px 9px}
+.vl-first .vl-mask{color:var(--ink)}
+.vl-first .vl-mask .key{color:var(--teal-deep);font-weight:500}
 .vl-first .ko{font-size:13px;color:var(--mut)}
 .vl-frame{font-family:Outfit,Pretendard,sans-serif;font-size:18px;font-weight:700;letter-spacing:-0.01em;color:var(--ink);line-height:1.5;animation:vl-settle .2s both}
 .vl-frame .vl-mask{font-weight:500;padding:2px 7px}
@@ -206,13 +210,21 @@ export function keyPartsOf(card) {
   return { rawLeft, left, ko };
 }
 
-/** 문장에서 핵심 표현이 실제로 매치된 구간(원문 대소문자 유지)과 그 마스크. 못 찾으면 null. */
+/** 공백을 보존하며 단어마다 wordMask. */
+export function maskWords(s) {
+  return String(s ?? '').split(/(\s+)/).map((t) => (/^\s+$/.test(t) ? t : wordMask(t))).join('');
+}
+
+/** 문장에서 핵심 표현이 실제로 매치된 구간(원문 대소문자 유지)과 그 마스크. 못 찾으면 null.
+ *  preMask·postMask = 핵심 표현 앞뒤의 첫 글자 마스크 (첫 글자 힌트가 문장 전체를 주므로, 2026-09-04). */
 export function keyMaskOf(sentence, keyLeft, rawLeft = keyLeft) {
   const src = String(sentence ?? '');
   const m = exprMatch(src, keyLeft) || (rawLeft && rawLeft !== keyLeft ? exprMatch(src, rawLeft) : null);
   if (!m) return null;
+  const pre = src.slice(0, m.index);
   const span = src.slice(m.index, m.index + m.length);
-  return { pre: src.slice(0, m.index), span, post: src.slice(m.index + m.length), mask: span.split(' ').map(wordMask).join(' '), index: m.index, end: m.index + m.length };
+  const post = src.slice(m.index + m.length);
+  return { pre, span, post, mask: maskWords(span), preMask: maskWords(pre), postMask: maskWords(post), index: m.index, end: m.index + m.length };
 }
 
 /** 이력 분수 — 분자 = 떠올림(O·△), 분모 = 판정 전체. */
@@ -329,9 +341,18 @@ function makeRow(r, key, ctx) {
     const chipText = (c) => (r.hasKoc ? String(c[2]) : String(c[0] ?? '').split(' ').map(wordShape).join(' '));
     if (r.chunks.length) box.appendChild(h('div', { class: 'vl-chips' }, ...r.chunks.map((c, i) => h('span', { class: 'vl-chip' + (r.hasKoc ? '' : ' shape') }, h('i', {}, String(i + 1)), chipText(c)))));
     // 핵심 표현을 못 찾은 카드는 문장 전체를 마스크 — 힌트가 정답 공개가 되면 안 된다.
-    const km = r.keyMask || { pre: '', post: '', mask: r.en.split(' ').map(wordMask).join(' ') };
-    if (st.rung === 2) box.appendChild(h('div', { class: 'vl-first' }, h('span', { class: 'vl-mask' }, km.mask), r.key.ko ? h('span', { class: 'ko' }, r.key.ko) : null));
-    if (st.rung === 3) box.appendChild(h('div', { class: 'vl-frame' }, km.pre, h('span', { class: 'vl-mask' }, km.mask), km.post));
+    const km = r.keyMask;
+    if (st.rung === 2) {
+      // 첫 글자 = 문장 전체의 첫 글자, 핵심 표현 부분만 강조 (2026-09-04 사용자 결정 — 시안은 핵심 표현만이었다)
+      const mask = km
+        ? h('span', { class: 'vl-mask' }, km.preMask, h('b', { class: 'key' }, km.mask), km.postMask)
+        : h('span', { class: 'vl-mask' }, maskWords(r.en));
+      box.appendChild(h('div', { class: 'vl-first' }, mask, r.key.ko ? h('span', { class: 'ko' }, r.key.ko) : null));
+    }
+    if (st.rung === 3) {
+      const fm = km || { pre: '', post: '', mask: maskWords(r.en) };
+      box.appendChild(h('div', { class: 'vl-frame' }, fm.pre, h('span', { class: 'vl-mask' }, fm.mask), fm.post));
+    }
     return box;
   }
   function renderHint() {
