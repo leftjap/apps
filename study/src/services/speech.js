@@ -93,18 +93,24 @@ function _withTimeout(promise, ms, label = '') {
  * 약속을 모든 발화가 공유해 전부 함께 멈췄다가 함께 풀렸다. 시간 제한을 넘기면 네트워크 오류와 같은
  * 재시도 사다리(0.4s/1s)로 다시 보낸다 — 새 요청이 죽은 연결을 되살리는 효과도 있다.
  * meter: { attempts, timeouts } 를 채워 결과 계측(timing)에 싣는다. */
-async function _fetchWithRetry(url, init, label = '', { timeoutMs = 0, meter = null } = {}) {
+const _abortedErr = () => Object.assign(new Error('aborted'), { code: 'aborted' });
+/* signal (2026-09-04): 호출자가 끊으면 진행 중 fetch 를 abort 하고 재시도 없이 즉시 던진다(code 'aborted').
+ * 이 키는 STT 요청이 하나라도 겹치면 429 를 내므로(폰 실측), 선채점이 늦어 확정 요청을 보낼 때 먼저 끊는다. */
+async function _fetchWithRetry(url, init, label = '', { timeoutMs = 0, meter = null, signal = null } = {}) {
   let lastErr;
   for (let attempt = 0; attempt <= RETRY_MAX; attempt++) {
+    if (signal?.aborted) throw _abortedErr();
     if (meter) meter.attempts = (meter.attempts || 0) + 1;
+    const ctrl = (typeof AbortController !== 'undefined' && (timeoutMs > 0 || signal)) ? new AbortController() : null;
+    const onAbort = () => { try { ctrl?.abort(); } catch { /* noop */ } };
+    if (ctrl && signal) signal.addEventListener('abort', onAbort, { once: true });
     try {
+      const req = ctrl ? { ...init, signal: ctrl.signal } : init;
       let res;
       if (timeoutMs > 0) {
-        const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
-        const req = ctrl ? { ...init, signal: ctrl.signal } : init;
         res = await _withTimeout(fetch(url, req), timeoutMs, label).catch((e) => { if (e?.code === 'timeout') { try { ctrl?.abort(); } catch { /* noop */ } } throw e; });
       } else {
-        res = await fetch(url, init);
+        res = await fetch(url, req);
       }
       if (res.status === 429 || res.status >= 500) {
         const delay = retryDelayFor(res.status, attempt, res.headers?.get?.('retry-after'));
@@ -116,6 +122,7 @@ async function _fetchWithRetry(url, init, label = '', { timeoutMs = 0, meter = n
       }
       return res;
     } catch (e) {
+      if (signal?.aborted) throw _abortedErr(); // 호출자가 끊음 — 재시도 없이 즉시
       lastErr = e;
       if (meter && e?.code === 'timeout') meter.timeouts = (meter.timeouts || 0) + 1;
       const delay = retryDelayFor(0, attempt, null);
@@ -125,6 +132,8 @@ async function _fetchWithRetry(url, init, label = '', { timeoutMs = 0, meter = n
         continue;
       }
       throw e;
+    } finally {
+      if (ctrl && signal) signal.removeEventListener('abort', onAbort);
     }
   }
   throw lastErr; // 도달 불가 (안전망)
@@ -1244,7 +1253,8 @@ export async function recordWav({
  * @returns {Promise<object>} - { score, recognizedText, phonemeScores, weakPhonemes, wordScores, fluencyScore, completenessScore, prosodyScore }
  *                              실패 시 analyzeMock 폴백 (mockFallback=true).
  */
-export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false, enableProsody = false, altParallel = false } = {}) {
+export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', enableMiscue = false, enableProsody = false, signal = null } = {}) {
+  if (signal?.aborted) return analyzeMock(expectedText, 'aborted'); // 호출자가 이미 끊음 (선채점 무효화 등) — 요청 0
   // Wave A.18.1 — captureRms 계산 (진단용 저장 source). A.18/A.19 캡처 가드는 철회:
   // 낮은 점수/완성도는 "마이크 캡처 실패"가 아니라 "발음이 레퍼런스와 어긋남"인 경우가 많아(실측 검증),
   // 가드가 정상 발화를 'too_quiet/incomplete_capture' 로 오차단 → 점수 차단엔 미사용, 값만 기록.
@@ -1298,25 +1308,21 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
         Accept: 'application/json',
       },
       body: uploadBlob,
-    }, 'stt', { timeoutMs: STT_FETCH_TIMEOUT_MS, meter });
+    }, 'stt', { timeoutMs: STT_FETCH_TIMEOUT_MS, meter, signal });
     /* 축약형 레퍼런스 보정 (2026-08-31, CONTRACTIONS 주석의 실측 근거) — 2026-09-03 순차·조건부로 개정:
      * 사전 쪽과 나란히 보내던 병행 요청이 선채점·확정과 겹쳐 Azure 429(2s/5s 백오프)를 불렀다(가짜 마이크
      * 시뮬 실측). 사전 쪽 정확도가 ALT_ACC_THRESHOLD 이상이면 축약 쪽은 보정할 것이 없으므로 보내지
      * 않고, 그 아래일 때만 사전 응답 뒤에 순차로 한 번 더 잰다. 분석당 동시 요청 2 → 1. 축약 쪽이
      * 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다.
-     * 예외: 선채점 경로(altParallel)는 병행한다 (2026-09-03 폰 실사용 계측) — 순차는 두 왕복을 합산해 축약형
-     * 발화의 stop→저장을 0.2초 → 1.4~1.6초로 늘렸다. 선채점은 그 자체가 요청 1개라 같이 보내도 동시 2개. */
+     * 2026-09-04 확정: 선채점 경로에 잠시 두었던 병행(altParallel)은 폐지 — 폰 실측에서 동시 전송 3건이 3건 모두 429
+     * 2초 백오프를 겪었고 순차 5건·단독 30건 중 겹친 1건만 재시도였다. 이 키는 요청이 하나라도 겹치면 거절한다. */
     const contracted = contractedReference(expectedText);
-    let altPromise = null;
-    let tAlt = 0;
-    if (contracted && altParallel) { tAlt = Date.now(); altPromise = post(contracted, meterAlt).catch(() => null); }
     const tStt = Date.now();
     const res = await post(expectedText, meterRef);
     const sttMs = Date.now() - tStt;
     const timing = {
       tokenMs, tokenRefetched, sttMs,
       sttAttempts: meterRef.attempts, ...(meterRef.timeouts ? { sttTimeouts: meterRef.timeouts } : {}),
-      ...(altPromise ? { altParallel: true } : {}),
     };
     if (!res.ok) {
       console.warn('[speech][rest] HTTP', res.status);
@@ -1337,8 +1343,8 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
     const recognizedText = nbest.Display || json.DisplayText || '';
     let usedContracted;
     if (contracted && (nbest.AccuracyScore ?? 0) < ALT_ACC_THRESHOLD) {
-      if (!altPromise) { tAlt = Date.now(); altPromise = post(contracted, meterAlt).catch(() => null); }
-      const altRes = await altPromise;
+      const tAlt = Date.now();
+      const altRes = await post(contracted, meterAlt).catch(() => null);
       timing.altMs = Date.now() - tAlt;
       timing.altAttempts = meterAlt.attempts;
       if (meterAlt.timeouts) timing.altTimeouts = meterAlt.timeouts;
@@ -1396,6 +1402,7 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       timing,
     };
   } catch (e) {
+    if (e?.code === 'aborted' || signal?.aborted) return analyzeMock(expectedText, 'aborted'); // 호출자가 끊음 — 경고 없음
     console.warn('[speech][rest] error:', e?.message ?? e);
     return analyzeMock(expectedText, 'azure_recognize_fail');
   }

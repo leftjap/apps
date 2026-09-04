@@ -21,7 +21,7 @@ describe('computeDeductionScore — 축별 감점', () => {
       prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
     }, EXP);
     expect(r.score).toBe(92);          // 100 − 유창 0.25 − 억양 (100−91.1)×0.9=8.01
-    expect(r.floor).toBe(50);
+    expect(r.floor).toBe(40);          // 100 − (20+10+30), 2026-09-04 억양 상한 30
     expect(r.deductions.every((d) => d.points >= 0)).toBe(true);
   });
 
@@ -69,15 +69,15 @@ describe('computeDeductionScore — 축별 감점', () => {
     expect(r.score).toBe(76);
   });
 
-  it('전 축 바닥이어도 단어를 다 말했으면 50점 (축 상한 합 = 50)', () => {
+  it('전 축 바닥이어도 단어를 다 말했으면 40점 (축 상한 합 = 60, 2026-09-04)', () => {
     const r = computeDeductionScore({
       recognizedText: 'sorry could you say',
       wordScores: [W('sorry', 0), W('could', 0), W('you', 0), W('say', 0)],
       fluencyScore: 0, prosodyScore: 0,
       prosodyIssues: { monotoneWords: ['sorry', 'could', 'you', 'say'], unexpectedBreaks: [], missingBreaks: [] },
     }, EXP);
-    expect(r.score).toBe(50);
-    expect(r.floor).toBe(50);
+    expect(r.score).toBe(40);
+    expect(r.floor).toBe(40);
   });
 
   it('단어 누락 — 지분만큼 감점 + 바닥이 비례로 내려간다', () => {
@@ -86,7 +86,7 @@ describe('computeDeductionScore — 축별 감점', () => {
       wordScores: [W('sorry', 100), W('could', 100)],
       fluencyScore: 100, prosodyScore: 100,
     }, EXP);
-    expect(r.floor).toBe(25);                              // 50 × 0.5
+    expect(r.floor).toBe(20);                              // 40 × 0.5
     expect(r.deductions.find((d) => d.axis === 'missing').points).toBe(50);  // 100×(2/4)
     expect(r.score).toBe(50);
   });
@@ -112,8 +112,9 @@ describe('computeDeductionScore — 축별 감점', () => {
 });
 
 describe('상수 계약', () => {
-  it('축 상한 합 = 50 (바닥 보장의 근거)', () => {
-    expect(DEDUCTION_RATES.words.max + DEDUCTION_RATES.fluency.max + DEDUCTION_RATES.intonation.max).toBe(50);
+  it('축 상한 합 = 60 (바닥 보장의 근거 — 2026-09-04 억양 상한 30)', () => {
+    // 2026-09-04 억양 상한 20→30 (사용자 보고 "억양이 나쁜데 점수가 좋다" — 38회 중 22회가 상한에 걸려 억양 55 와 77 이 같았다)
+    expect(DEDUCTION_RATES.words.max + DEDUCTION_RATES.fluency.max + DEDUCTION_RATES.intonation.max).toBe(60);
   });
   it('한국인 공통 취약 세트에 f·v·r·l·th·dh 포함', () => {
     for (const p of ['f', 'v', 'r', 'l', 'th', 'dh']) expect(KO_WEAK_PHONEMES).toContain(p);
@@ -124,15 +125,15 @@ describe('상수 계약', () => {
 describe('computeDeductionScore — 검증 발견 반영', () => {
   const W = (word, score) => ({ word, score });
 
-  it('ja(1토큰 기대문) — 전사가 달라도 0점으로 붕괴하지 않는다 (missing 축 미적용·바닥 50)', () => {
+  it('ja(1토큰 기대문) — 전사가 달라도 0점으로 붕괴하지 않는다 (missing 축 미적용·바닥 40)', () => {
     const r = computeDeductionScore({
       recognizedText: 'ちょっと待って',                     // 기대문과 다름 → 종전엔 missing 100 + floor 0
       wordScores: [W('ちょっと', 90), W('待って', 80)],
       fluencyScore: 100, prosodyScore: 100,
     }, 'ちょっと待ってください');
-    expect(r.floor).toBe(50);
+    expect(r.floor).toBe(40);
     expect(r.deductions.find((d) => d.axis === 'missing')).toBeUndefined();
-    expect(r.score).toBeGreaterThanOrEqual(50);
+    expect(r.score).toBeGreaterThanOrEqual(40);
   });
 
   it('누락 단어는 missing 축에서만 깎인다 — wordScores 의 Omission 0점 항목과 이중 감점 금지', () => {
@@ -263,7 +264,7 @@ describe('computeDeductionScore — 적대 감사 확증 회귀 방지', () => {
       wordScores: [W('はい', 96), W('持ち帰りです', 98)],
       fluencyScore: 98,
     }, 'はい、持ち帰りです。');
-    expect(r.floor).toBe(50);
+    expect(r.floor).toBe(40);
     expect(r.deductions.find((d) => d.axis === 'missing')).toBeUndefined();
     expect(r.score).toBeGreaterThanOrEqual(90);
   });
@@ -376,5 +377,20 @@ describe('scoreForDisplay — 언어별 점수 체계', () => {
     const s = scoreForDisplay({ ...RES, recognizedText: 'そうなんだ' }, 'そうなんだ', 'ja');
     expect(s.score).toBe(95);
     expect(s.scoreModel).toBe('acc1');
+  });
+});
+
+/* 억양 상한 30 (2026-09-04): 종전 상한 20 에서는 억양 77.8 미만이 전부 −20 이라 아주 평탄한 억양(55)과 조금 평탄한
+ * 억양(77)이 같은 점수였다(폰 실사용 38회 중 22회 상한). 산식 보정 조건(원어민 ≥90 · 본인 최고 ≥85)은 그대로다 —
+ * 원어민 억양 90.3~91.1 은 −8~9, 본인 최고 88.8 은 −10 으로 상한과 무관. */
+describe('억양 상한 30 — 아주 평탄한 억양이 더 깎인다', () => {
+  const clean = (pros) => ({ score: 98, recognizedText: 'hello there my friend', fluencyScore: 100, prosodyScore: pros, omissions: [], insertions: [],
+    wordScores: ['hello', 'there', 'my', 'friend'].map((w) => ({ word: w, score: 98 })) });
+  it('억양 55 → −30, 억양 77 → −20.7, 억양 90 → −9 (원어민 조건 유지)', () => {
+    const d = (pros) => computeDeductionScore(clean(pros), 'hello there my friend').deductions.find((x) => x.axis === 'intonation')?.points ?? 0;
+    expect(d(55)).toBe(30);
+    expect(d(77)).toBe(20.7);
+    expect(d(90)).toBe(9);
+    expect(computeDeductionScore(clean(55), 'hello there my friend').score).toBeLessThan(computeDeductionScore(clean(77), 'hello there my friend').score);
   });
 });

@@ -2422,51 +2422,47 @@ describe('speech — 축약 레퍼런스는 순차·조건부', () => {
   });
 });
 
-/* 선채점 경로의 병행 예외 (2026-09-03 폰 실사용 계측): 순차 개정 뒤 축약형 발화의 stop→저장이 0.2초 → 1.4~1.6초로
- * 늘었다 — 사전 응답을 받은 뒤에 축약 요청을 시작하므로 두 왕복이 합산된다. 선채점은 stop 보다 앞서 출발하고
- * 그 자체가 요청 1개뿐이라, 축약 쪽을 같이 보내도 동시 요청은 2개(개정 전 몇 주간 쓰던 수준)다.
- * 확정 채점 경로는 순차·조건부를 유지한다 (선채점과 겹칠 수 있는 쪽). */
-describe('speech — 선채점 경로(altParallel)는 축약 레퍼런스를 병행으로 보낸다', () => {
+/* 요청 겹침 금지 (2026-09-04 폰 실사용 계측): 이 키는 STT 요청이 하나라도 겹치면 429 를 낸다 — 동시 전송된 축약
+ * 재측정 3건이 3건 모두 2초 백오프를 겪었고(순차 5건·단독 30건 중 겹친 1건만 재시도), 그래서 병행(altParallel)은 폐지.
+ * 대신 호출자가 AbortSignal 로 진행 중 요청을 끊을 수 있어야 한다 — 선채점이 늦어 확정 요청을 보낼 때 겹치지 않게. */
+describe('speech — analyzeWavRest 는 signal 로 중단되면 재시도 없이 즉시 끝난다', () => {
   const tokenRes = () => new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  const rest = (acc) => new Response(JSON.stringify({ RecognitionStatus: 'Success', DisplayText: 'what do you mean', NBest: [{ Display: 'what do you mean', AccuracyScore: acc, PronScore: acc, Words: [] }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   const blob = () => new Blob([new ArrayBuffer(50)], { type: 'audio/wav' });
-  const refOf = (init) => JSON.parse(Buffer.from(init.headers['Pronunciation-Assessment'], 'base64').toString('utf8')).ReferenceText;
 
-  it('altParallel 이면 사전·축약을 동시에 보내고 높은 쪽을 쓴다 (동시 요청 2)', async () => {
-    const refs = [];
-    let inflight = 0, maxInflight = 0;
-    _fetchSpy.mockImplementation(async (url, init) => {
-      if (String(url).includes('/functions/v1/azure-token')) return tokenRes();
+  it('abort → 진행 중 fetch 가 끊기고 mock(aborted) 반환, STT 호출 1회(재시도 0)', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation((url, init) => {
+      if (String(url).includes('/functions/v1/azure-token')) return Promise.resolve(tokenRes());
       if (String(url).includes('.stt.speech.microsoft.com/')) {
-        inflight += 1; maxInflight = Math.max(maxInflight, inflight);
-        await new Promise((r) => setTimeout(r, 5));
-        inflight -= 1;
-        const ref = refOf(init); refs.push(ref);
-        return rest(ref === 'whaddaya mean' ? 92 : 86);
+        stt += 1;
+        return new Promise((_, rej) => init?.signal?.addEventListener('abort', () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' }))));
       }
-      return new Response('nf', { status: 404 });
+      return Promise.resolve(new Response('nf', { status: 404 }));
     });
     const { Speech } = await import('./speech.js');
     Speech.clearAzureTokenCache();
-    const result = await Speech.analyzeWavRest(blob(), 'what do you mean', { altParallel: true });
-    expect(refs.sort()).toEqual(['whaddaya mean', 'what do you mean']);
-    expect(maxInflight).toBe(2);                 // 병행
-    expect(result.score).toBe(92);
-    expect(result.contractedRef).toBe('whaddaya mean');
-    expect(result.timing.altParallel).toBe(true);
-    expect(result.timing.altAttempts).toBe(1);
+    const ac = new AbortController();
+    const p = Speech.analyzeWavRest(blob(), 'hello there', { signal: ac.signal });
+    await new Promise((r) => setTimeout(r, 30));
+    ac.abort();
+    const result = await p;
+    expect(result.mockFallback).toBe(true);
+    expect(result.fallbackReason).toBe('aborted');
+    expect(stt).toBe(1);
   });
 
-  it('altParallel 이라도 사전 쪽이 95 이상이면 사전 결과를 쓴다 (축약 응답은 버림)', async () => {
-    _fetchSpy.mockImplementation(async (url, init) => {
+  it('이미 abort 된 signal 이면 STT 를 부르지 않는다', async () => {
+    let stt = 0;
+    _fetchSpy.mockImplementation(async (url) => {
       if (String(url).includes('/functions/v1/azure-token')) return tokenRes();
-      if (String(url).includes('.stt.speech.microsoft.com/')) return rest(refOf(init) === 'whaddaya mean' ? 99 : 96);
+      if (String(url).includes('.stt.speech.microsoft.com/')) { stt += 1; return new Response('{}', { status: 200 }); }
       return new Response('nf', { status: 404 });
     });
     const { Speech } = await import('./speech.js');
     Speech.clearAzureTokenCache();
-    const result = await Speech.analyzeWavRest(blob(), 'what do you mean', { altParallel: true });
-    expect(result.score).toBe(96);
-    expect(result.contractedRef).toBeUndefined();
+    const ac = new AbortController(); ac.abort();
+    const result = await Speech.analyzeWavRest(blob(), 'hello there', { signal: ac.signal });
+    expect(result.fallbackReason).toBe('aborted');
+    expect(stt).toBe(0);
   });
 });

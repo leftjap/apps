@@ -38,7 +38,9 @@ export const DEDUCTION_RATES = {
   // perMonotoneWord 0 확정 (2026-08-31) — Monotone 태그는 원어민 정상 발화에도 전단어(9/9)로
   // 붙는 출렁임이 실측돼(2026-08-29 Aria), 단가를 주면 '원어민 ≥90' 보장이 깨진다. 단조로움은
   // ProsodyScore 연속값이 이미 흡수한다(지오 유치·단조 시도 전부 pros 82 이하 실측).
-  intonation: { max: 20, perMonotoneWord: 0, perProsodyPoint: 0.9 },
+  /* 상한 20 → 30 (2026-09-04 사용자 보고 "억양이 나쁜데 점수가 좋다"): 폰 실사용 38회 중 22회가 상한에 걸려 억양 55 와
+   * 77 이 같은 −20 이었다. 보정 조건은 그대로 — 원어민 90.3~91.1 은 −8~9, 본인 최고 88.8 은 −10 으로 상한과 무관. */
+  intonation: { max: 30, perMonotoneWord: 0, perProsodyPoint: 0.9 },
   missing: { share: 100 },                                    // 문장 지분 100 × (누락/전체)
 };
 

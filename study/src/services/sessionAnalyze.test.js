@@ -237,15 +237,22 @@ describe('startMicRecording/stopAndAnalyze — 투기적 선채점', () => {
     expect(analyzeWavRest).toHaveBeenCalledTimes(2);                      // 선채점 1 + 정상 재채점 1
   });
 
-  it('선채점 요청만 축약 병행(altParallel)을 켠다 — 확정 채점은 순차·조건부 유지', async () => {
+  /* 요청 겹침 금지 (2026-09-04): 선채점 요청에 AbortSignal 을 넘기고, (a) 대기 초과로 확정 채점을 보내기 직전
+   * (b) 말 재개로 무효화될 때 (c) 다음 선채점 발사 때 이전 요청을 끊는다 — 이 키는 요청이 겹치면 429(2초 백오프). */
+  it('선채점 요청에는 signal 이 실리고, 말 재개(onSpeculateInvalid)·재발사 시 이전 요청이 abort 된다', async () => {
     const { recordWav, analyzeWavRest } = setupSpeech();
-    const { controller } = await startMicRecording({ speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
+    await startMicRecording({ speculate: { expected: 'Hello there.', card: { lang: 'en' } } });
     recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));
-    expect(analyzeWavRest.mock.calls[0][2]).toMatchObject({ enableMiscue: true, altParallel: true });
-    recordWav.lastOpts.onSpeculateInvalid();                              // 말 재개 → 확정 채점
-    await stopAndAnalyze(controller, 'Hello there.', { lang: 'en' }, { enableMiscue: true });
-    expect(analyzeWavRest).toHaveBeenCalledTimes(2);
-    expect('altParallel' in analyzeWavRest.mock.calls[1][2]).toBe(false);
+    const sig1 = analyzeWavRest.mock.calls[0][2].signal;
+    expect(sig1).toBeInstanceOf(AbortSignal);
+    expect(sig1.aborted).toBe(false);
+    recordWav.lastOpts.onSpeculateInvalid();                              // 말 재개
+    expect(sig1.aborted).toBe(true);
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));      // 재발사
+    const sig2 = analyzeWavRest.mock.calls[1][2].signal;
+    expect(sig2.aborted).toBe(false);
+    recordWav.lastOpts.onSpeculate(new Blob([new ArrayBuffer(32)]));      // 또 재발사 → 직전 요청 abort
+    expect(sig2.aborted).toBe(true);
   });
 
   it('선채점이 실패(mock 폴백)면 정상 경로로 재채점한다', async () => {
@@ -280,6 +287,8 @@ describe('투기적 선채점 — 시간 예산·무장 해제', () => {
     await vi.advanceTimersByTimeAsync(4_000);                // 선채점 예산(3초) 초과
     const r = await p;
     expect(analyzeWavRest).toHaveBeenCalledTimes(2);         // 확정 채점이 실제로 호출됨
+    expect(analyzeWavRest.mock.calls[0][2].signal.aborted).toBe(true);   // 스톨한 선채점 요청은 끊는다 (겹침 0)
+    expect('signal' in analyzeWavRest.mock.calls[1][2]).toBe(false);     // 확정 요청은 신호 없음
     expect(r).toBe(finalResult);
   });
 
