@@ -64,7 +64,6 @@ export function clearAzureTokenCache() {
 // ============================================================
 const RETRY_MAX = 2; // 최대 2회 재시도 (총 3회 시도)
 const STT_FETCH_TIMEOUT_MS = 8000; // STT 요청 개별 상한 (실측 0.6~1.5초; 3회 시도가 상위 25초 예산 안에 들어간다)
-const ALT_ACC_THRESHOLD = 95;     // 사전 레퍼런스 정확도가 이 이상이면 축약 레퍼런스 재측정 생략 (8/31 실측: 또박또박 96.8 은 보정 불변)
 
 /** 재시도 대기 ms. attempt 소진 시 null. status 0 = network throw. */
 export function retryDelayFor(status, attempt, retryAfterHeader) {
@@ -817,41 +816,10 @@ export function trimTrailingSilencePcm(int16, { sampleRate = 16000, silencePeak 
   return int16.subarray(0, keep);
 }
 
-/* 축약 발화 보정 (2026-08-31) — Azure PA 는 ReferenceText 의 사전 발음에 음소를 정렬해 채점하므로,
- * 원어민이 실제로 하는 축약(모음이 schwa 로 무너져 음소가 사라지는 것)일수록 깎인다.
- * en-US 3보이스 실측: "What do you mean" 또박또박 93.0 vs 축약 86.7 (what·mean 은 97 유지, do 80·you 66).
- * 앱이 §7 에서 실제 발음을 가르쳐 놓고 그대로 하면 벌을 주는 구조라, 축약형 레퍼런스로도 재고
- * 높은 쪽을 쓴다 — 6문장 실측에서 또박또박·축약 격차가 +2.7 → +0.9 로 좁혀지고, 또박또박 점수는
- * 96.8 그대로다. 레퍼런스를 축약형으로 '교체'하면 안 된다: 또박또박 발화가 50.0 으로 무너진다.
- * 목록은 Azure 사전이 아는 철자만 둔다 (없는 철자를 넣으면 그 요청이 통째로 저점이 되어 무의미). */
-const CONTRACTIONS = [
-  ['what do you', 'whaddaya'],
-  ['what are you', 'whatcha'],
-  ['could you', 'couldja'],
-  ['would you', 'wouldja'],
-  ['did you', 'didja'],
-  ["don't you", 'doncha'],
-  ['want to', 'wanna'],
-  ['going to', 'gonna'],
-  ['got to', 'gotta'],
-  ['kind of', 'kinda'],
-  ['out of', 'outta'],
-  ['let me', 'lemme'],
-  ['give me', 'gimme'],
-];
-
-/** 문장의 알려진 축약형 레퍼런스. 바꿀 것이 없으면 null (추가 요청을 만들지 않는다). */
-export function contractedReference(text) {
-  const src = String(text || '');
-  let out = src;
-  for (const [from, to] of CONTRACTIONS) {
-    // \uc544\ud3ec\uc2a4\ud2b8\ub85c\ud53c\ub294 \uc120\ud0dd(?) \u2014 \ub77c\uc774\ube0c \uacbd\ub85c\ub294 normalizeReferenceText \uac00 \uc81c\uac70\ud55c \ub4a4\ub77c "dont you" \ub85c \uc628\ub2e4.
-    out = out.replace(new RegExp(`\\b${from.replace(/'/g, "['\u2019]?")}\\b`, 'gi'), (m) => (
-      m[0] === m[0].toUpperCase() ? to[0].toUpperCase() + to.slice(1) : to
-    ));
-  }
-  return out === src ? null : out;
-}
+/* 축약 발화 보정(2026-08-31, 축약 철자 레퍼런스로 한 번 더 재서 높은 쪽)은 2026-09-04 폐지. 사용자 실제 문장 13개 ×
+ * 음성 2명 × 또박또박/축약 = 52회 실측에서 화면(감점제) 점수가 바뀐 경우 4회·최대 +2점·평균 +0.2점이었고 요청당 0.8초가
+ * 들었다. 발화→점수 리듬이 우선이라 STT 는 어떤 문장이든 한 번만 부른다. 축약 발음의 사전 철자 기준 감점(작고 방향이
+ * 일정)은 그대로 둔다 — 상세 docs/lesson-explanation-guide-en.md §7 PA 절. */
 
 /** Pronunciation-Assessment 헤더 — UTF-8 JSON → base64 (no line wrap).
  * enableMiscue: 발화 단어를 참조 텍스트와 비교해 ErrorType=Omission/Insertion 을 받는다(MS 문서).
@@ -1297,7 +1265,6 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
   try {
     const url = `https://${region}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1?language=${encodeURIComponent(lang)}&format=detailed`;
     const meterRef = { attempts: 0 };
-    const meterAlt = { attempts: 0 };
     const post = (ref, meter) => _fetchWithRetry(url, {
       method: 'POST',
       headers: {
@@ -1309,14 +1276,6 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       },
       body: uploadBlob,
     }, 'stt', { timeoutMs: STT_FETCH_TIMEOUT_MS, meter, signal });
-    /* 축약형 레퍼런스 보정 (2026-08-31, CONTRACTIONS 주석의 실측 근거) — 2026-09-03 순차·조건부로 개정:
-     * 사전 쪽과 나란히 보내던 병행 요청이 선채점·확정과 겹쳐 Azure 429(2s/5s 백오프)를 불렀다(가짜 마이크
-     * 시뮬 실측). 사전 쪽 정확도가 ALT_ACC_THRESHOLD 이상이면 축약 쪽은 보정할 것이 없으므로 보내지
-     * 않고, 그 아래일 때만 사전 응답 뒤에 순차로 한 번 더 잰다. 분석당 동시 요청 2 → 1. 축약 쪽이
-     * 깨져도 사전 쪽만으로 채점한다 — 보정은 덤이지 필수 경로가 아니다.
-     * 2026-09-04 확정: 선채점 경로에 잠시 두었던 병행(altParallel)은 폐지 — 폰 실측에서 동시 전송 3건이 3건 모두 429
-     * 2초 백오프를 겪었고 순차 5건·단독 30건 중 겹친 1건만 재시도였다. 이 키는 요청이 하나라도 겹치면 거절한다. */
-    const contracted = contractedReference(expectedText);
     const tStt = Date.now();
     const res = await post(expectedText, meterRef);
     const sttMs = Date.now() - tStt;
@@ -1334,30 +1293,9 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       console.warn('[speech][rest] 인식 실패', { status: json.RecognitionStatus, captureRms });
       return analyzeMock(expectedText, noSpeechReason());
     }
-    let nbest = json.NBest?.[0];
+    const nbest = json.NBest?.[0];
     if (!nbest) return analyzeMock(expectedText, 'parse_fail');
-    /* 인식 텍스트는 사전 레퍼런스 응답에서 확정한다 (2026-09-01 실측) — PA 는 인식 Display 를
-     * 레퍼런스 철자로 끌어당긴다(같은 오디오가 축약 ref 에선 'Whaddaya mean?'). 채택 쪽 Display 를
-     * 실으면 원문 대조 커버리지(judgeCoverage)가 what·do·you 를 누락으로 오인해 감점제 점수가
-     * 13점으로 무너진다. 단어·음소는 채택 쪽, 전사는 사전 쪽 — 소비자가 원하는 근거가 서로 다르다. */
     const recognizedText = nbest.Display || json.DisplayText || '';
-    let usedContracted;
-    if (contracted && (nbest.AccuracyScore ?? 0) < ALT_ACC_THRESHOLD) {
-      const tAlt = Date.now();
-      const altRes = await post(contracted, meterAlt).catch(() => null);
-      timing.altMs = Date.now() - tAlt;
-      timing.altAttempts = meterAlt.attempts;
-      if (meterAlt.timeouts) timing.altTimeouts = meterAlt.timeouts;
-      if (altRes?.ok) {
-        const altJson = await altRes.json().catch(() => null);
-        const alt = altJson?.RecognitionStatus === 'Success' ? altJson.NBest?.[0] : null;
-        if (alt && (alt.AccuracyScore ?? -1) > (nbest.AccuracyScore ?? -1)) {
-          // 채택한 쪽의 단어·음소가 그대로 실려야 취약 음소와 감점 산정이 같은 근거를 본다.
-          nbest = alt;
-          usedContracted = contracted;
-        }
-      }
-    }
     // Wave A.17 — 표시 점수 = AccuracyScore(발음 정확도).
     // 기존 PronScore(Comprehensive)는 정확도+유창성+완성도+억양 가중합이라, 또박또박·끊어 말하는
     // 학습자가 정확히 발음해도 유창성/억양에서 깎여 저점이 나옴(실측: Acc 92 → Pron 65, Fluency 45).
@@ -1384,8 +1322,6 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       score,
       accuracyScore: nbest.AccuracyScore,
       pronScore: nbest.PronScore,
-      // 축약형 레퍼런스 쪽이 채택됐을 때만 실린다 (진단용 — 어느 기준으로 채점됐는지).
-      ...(usedContracted ? { contractedRef: usedContracted } : {}),
       captureRms: captureRms == null ? null : +captureRms.toFixed(4),
       recognizedText,
       phonemeScores,
@@ -1432,7 +1368,6 @@ export const Speech = {
   isTtsPlaying, // 2026-08-29 — TTS 재생 중 여부 (녹음 시작이 재생을 끊는 판단에 쓰임)
   pcmToWavBlob, // Wave 11.61 — utility
   buildPronunciationAssessmentHeader, // Wave 11.61 — utility
-  contractedReference, // 2026-08-31 — 축약 발화 보정용 레퍼런스
   extractMiscues, // 2026-07-09 — coverage(누락) 추출
   extractProsodyIssues, // 2026-08-29 — 프로소디 태그 요약
   passesCoverage, // 2026-07-09 — 체이닝 pass/fail

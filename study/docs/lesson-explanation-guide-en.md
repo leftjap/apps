@@ -705,7 +705,14 @@ PA 는 `ReferenceText` 의 사전 발음에 음소를 정렬해 채점하므로,
 > 재현: `scripts/` 에는 넣지 않았다(Azure 키가 Edge Function 전용). 절차는 아래 장모음 절의
 > 재현 블록과 같고, PA 는 `Pronunciation-Assessment` 헤더를 붙여 `NBest[0].AccuracyScore` 를 읽는다.
 
-#### 보정 — 축약형 레퍼런스 병행 채점 (2026-08-31 구현)
+#### 보정 — 축약형 레퍼런스 병행 채점 (2026-08-31 구현 → **2026-09-04 폐지**)
+
+> **2026-09-04 폐지.** 사용자의 실제 문장(코어100 7~18 본문·응용 중 축약형 13개) × en-US 음성 2명 × 또박또박/축약 =
+> 52회로 재측정한 결과, 화면(감점제) 점수가 바뀐 경우는 4회(최대 +2·평균 +0.2)뿐이고 재측정 요청은 평균 0.8초였다.
+> 4~5단어 짧은 문장에서도 차이 0 — 아래 표의 8점 차이는 정확도 원점수 기준이었고, 감점제 화면 점수에서는 단어 축
+> 상한(20)에 희석된다. 발화→점수 리듬이 우선이라(사용자 지시) 재측정을 없앴다: STT 는 어떤 문장이든 한 번.
+> `contractedReference()`·`ALT_ACC_THRESHOLD` 제거, `pronunciationLog.contractedRef` 는 과거 행 호환용으로만 남음.
+> 아래는 이력 참고용.
 `speech.js` 의 `contractedReference()` 가 문장에 알려진 축약(`what do you`→`whaddaya`,
 `could you`→`couldja`, `want to`→`wanna` 등 13종)이 있으면 축약형 레퍼런스를 만들고,
 `analyzeWavRest` 가 사전 레퍼런스와 **나란히 채점해 높은 쪽을 쓴다**. 축약이 없는 문장은
