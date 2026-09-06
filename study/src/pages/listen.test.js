@@ -18,8 +18,8 @@ const CARDS = [
 describe('buildListenPairs / listenTitle', () => {
   it('order_index 오름차순으로, 괄호 힌트를 지우고, 빈 문장은 뺀다', () => {
     expect(buildListenPairs(CARDS)).toEqual([
-      { ko: '식욕이 없어요.', fo: 'I have no appetite.' },
-      { ko: '문제가 있나요?', fo: 'Is there a problem?' },
+      { ko: '식욕이 없어요.', koText: '식욕(입맛)이 없어요.', fo: 'I have no appetite.' },
+      { ko: '문제가 있나요?', koText: '(무슨) 문제가 있나요?', fo: 'Is there a problem?' },
     ]);
   });
   it('order_index 가 없는 카드는 뒤로, 그 안에서는 생성일 순', () => {
@@ -114,5 +114,53 @@ describe('mountListen — 요소 이벤트로 상태 동기화 (OS 가 멈추거
     expect(host.querySelector('[data-role="play"]').getAttribute('aria-label')).toBe('재생');
     expect(host.textContent).toContain('일시정지');
     host.remove();
+  });
+});
+
+describe('mountListen — 스크립트 목록 · 현재 문장 강조 · 탭 탐색', () => {
+  let host, play;
+  beforeEach(() => {
+    host = document.createElement('div'); document.body.appendChild(host);
+    sessionStorage.setItem('studyLang', 'en');
+    window.studyDB = { reviewQueue: { where: () => ({ equals: () => ({ toArray: async () => CARDS }) }) } };
+    play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function () { Object.defineProperty(this, 'paused', { value: false, configurable: true }); return Promise.resolve(); });
+    global.URL.createObjectURL = vi.fn(() => 'blob:fake'); global.URL.revokeObjectURL = vi.fn();
+    Element.prototype.scrollIntoView = vi.fn();
+    M.buildListenAudio.mockReset();
+    M.buildListenAudio.mockResolvedValue({ blob: new Blob(['x']), seconds: 6, count: 2, starts: [0, 3] });
+  });
+  afterEach(() => { host.remove(); vi.restoreAllMocks(); });
+
+  it('만든 뒤 재생 버튼 아래에 문장 목록(번호·한글 원문·영어)이 나온다', async () => {
+    mountListen(host); await flush();
+    const rows = host.querySelectorAll('.li-row');
+    expect(rows).toHaveLength(2);
+    expect(rows[0].textContent).toContain('식욕(입맛)이 없어요.'); // 화면은 괄호 힌트를 남긴다
+    expect(rows[0].textContent).toContain('I have no appetite.');
+    expect(rows[1].textContent).toContain('Is there a problem?');
+    const play = host.querySelector('[data-role="play"]');
+    expect(play.compareDocumentPosition(rows[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+  it('재생 위치가 바뀌면 그 문장만 강조하고 가운데로 스크롤한다', async () => {
+    mountListen(host); await flush();
+    const audio = host.querySelector('audio');
+    Object.defineProperty(audio, 'currentTime', { value: 3.5, writable: true, configurable: true });
+    audio.dispatchEvent(new Event('timeupdate'));
+    const rows = host.querySelectorAll('.li-row');
+    expect(rows[1].classList.contains('cur')).toBe(true);
+    expect(rows[0].classList.contains('cur')).toBe(false);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledWith({ block: 'center', behavior: 'smooth' });
+    audio.currentTime = 0.2; audio.dispatchEvent(new Event('timeupdate'));
+    expect(rows[0].classList.contains('cur')).toBe(true);
+    expect(rows[1].classList.contains('cur')).toBe(false);
+  });
+  it('문장 줄을 누르면 그 문장 시작으로 옮기고 재생한다', async () => {
+    mountListen(host); await flush();
+    const audio = host.querySelector('audio');
+    Object.defineProperty(audio, 'currentTime', { value: 0, writable: true, configurable: true });
+    host.querySelectorAll('.li-row')[1].click(); await flush();
+    expect(audio.currentTime).toBe(3);
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(host.querySelectorAll('.li-row')[1].classList.contains('cur')).toBe(true);
   });
 });

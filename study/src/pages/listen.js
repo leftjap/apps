@@ -4,21 +4,21 @@
  * 데모 주입: window.studyListen?.synthesize 가 있으면 합성기로 쓴다 (mocks/listen.html?demo=1, studySpeech 데모 규약과 동일). */
 import { h } from '../components/d1/dom.js';
 import { V_VARS, VI, vIcon, v2Style, ensureV2Fonts } from '../components/v2/atoms.js';
-import { buildListenAudio, stripParenHints } from '../services/listenAudio.js';
+import { buildListenAudio, stripParenHints, currentIndex } from '../services/listenAudio.js';
 import { VOICE_DEFAULTS } from '../services/speech.js';
 
 function getLang() { try { const v = sessionStorage.getItem('studyLang'); return v === 'ja' ? 'ja' : 'en'; } catch { return 'en'; } }
 const ttsLangOf = (l) => (l === 'ja' ? 'ja-JP' : 'en-US');
 const langLabel = (l) => (l === 'ja' ? '일본어' : '영어');
 
-/** 커리큘럼 순서(order_index 오름차순, 없으면 생성일·id)로, 괄호 힌트를 지운 한글과 외국어 문장 쌍. 한쪽이 비면 뺀다.
+/** 커리큘럼 순서(order_index 오름차순, 없으면 생성일·id)로, 괄호 힌트를 지운 한글(ko, 읽기용)·원문(koText, 표시용)·외국어 문장 쌍. 한쪽이 비면 뺀다.
  * 문장 모아보기의 정렬(compareSentenceRows)은 학습 우선순위라 듣기 순서로는 쓰지 않는다. */
 export function buildListenPairs(cards) {
   const num = (c) => { const n = Number(c?.order_index); return Number.isFinite(n) ? n : Infinity; };
   const str = (v) => String(v ?? '');
   return [...(cards ?? [])]
     .sort((a, b) => (num(a) - num(b)) || str(a.createdAt).localeCompare(str(b.createdAt)) || str(a.id).localeCompare(str(b.id)))
-    .map((c) => ({ ko: stripParenHints(c.meaning || c.ko || ''), fo: str(c.sentence).trim() }))
+    .map((c) => ({ ko: stripParenHints(c.meaning || c.ko || ''), koText: str(c.meaning || c.ko).trim(), fo: str(c.sentence).trim() }))
     .filter((p) => p.ko && p.fo);
 }
 
@@ -43,7 +43,14 @@ const CSS = `
 .li-state{font-size:13px;color:var(--faint);min-height:18px}
 .li-err{font-size:14px;color:var(--coral-deep)}
 .li-retry,.li-rebuild{font-size:13px;font-weight:700;padding:10px 16px;border-radius:999px;border:1.5px solid var(--line);background:transparent;color:var(--ink)}
-.li-empty{font-size:15px;color:var(--mut);padding:40px 0}`;
+.li-empty{font-size:15px;color:var(--mut);padding:40px 0}
+.li-list{width:100%;margin-top:10px;display:flex;flex-direction:column;gap:2px;text-align:left}
+.li-row{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:10px 12px;border-radius:12px;border:0;background:transparent;font:inherit;text-align:left;color:inherit;transition:background .15s}
+.li-row .n{font-family:Outfit,Pretendard,sans-serif;font-size:12px;font-weight:700;color:var(--faint);text-align:right;padding-top:4px;font-variant-numeric:tabular-nums}
+.li-row .ko{display:block;font-size:12.5px;color:var(--mut)}
+.li-row .fo{display:block;font-size:16px;font-weight:700;margin-top:2px;line-height:1.35}
+.li-row.cur{background:var(--teal-soft)}
+.li-row.cur .fo{color:var(--teal-deep)}`;
 
 export function mountListen(host) {
   ensureV2Fonts();
@@ -56,7 +63,8 @@ export function mountListen(host) {
   const state = h('div', { class: 'li-state' }, '');
   const icon = h('span', {}, vIcon(VI.PLAY, { size: 44, fill: true }));
   const playBtn = h('button', { class: 'li-play', type: 'button', 'data-role': 'play', 'aria-label': '재생', disabled: true }, icon);
-  const body = h('div', { class: 'li-wrap' }, h('h1', { class: 'li-h1' }, '연속 듣기'), sub, playBtn, state);
+  const listEl = h('div', { class: 'li-list', 'data-role': 'script' });
+  const body = h('div', { class: 'li-wrap' }, h('h1', { class: 'li-h1' }, '연속 듣기'), sub, playBtn, state, listEl);
   const root = h('div', { class: 'li' },
     v2Style(CSS),
     h('div', { class: 'li-top' }, h('div', { class: 'li-top-in' },
@@ -65,7 +73,23 @@ export function mountListen(host) {
     body, audio);
   host.appendChild(root);
 
-  let url = null; let count = 0;
+  let url = null; let count = 0; let starts = []; let curIdx = -1;
+  /* 스크립트 — 현재 문장 한 줄만 강조하고 가운데로 스크롤. 시작 초는 합성 때 받은 bookmark(없으면 균등 분할). */
+  const setCur = (i) => {
+    if (i === curIdx) return;
+    listEl.children[curIdx]?.classList.remove('cur');
+    curIdx = i;
+    const row = listEl.children[i];
+    if (row) { row.classList.add('cur'); row.scrollIntoView?.({ block: 'center', behavior: 'smooth' }); }
+  };
+  const seek = (i) => { audio.currentTime = starts[i] ?? 0; setCur(i); if (audio.paused) doPlay(); };
+  const renderScript = (pairs) => {
+    curIdx = -1;
+    listEl.replaceChildren(...pairs.map((p, i) => h('button', { class: 'li-row', type: 'button', 'data-i': i, onClick: () => seek(i) },
+      h('span', { class: 'n' }, String(i + 1)),
+      h('span', {}, h('span', { class: 'ko' }, p.koText), h('span', { class: 'fo' }, p.fo)))));
+  };
+  audio.addEventListener('timeupdate', () => { if (starts.length) setCur(currentIndex(starts, audio.currentTime)); });
   const setIcon = (playing) => { icon.replaceChildren(vIcon(playing ? VI.PAUSE : VI.PLAY, { size: 44, fill: true })); playBtn.classList.toggle('on', playing); playBtn.setAttribute('aria-label', playing ? '일시정지' : '재생'); };
   const setMS = (st) => { try { if (navigator.mediaSession) navigator.mediaSession.playbackState = st; } catch (_) { /* noop */ } };
   const doPlay = () => audio.play().then(() => { setIcon(true); setMS('playing'); state.textContent = '재생 중 · 화면을 잠가도 계속 나와요'; }).catch((e) => { state.textContent = `재생 실패: ${e?.message ?? e}`; });
@@ -88,6 +112,7 @@ export function mountListen(host) {
   async function build() {
     playBtn.disabled = true; setIcon(false);
     body.querySelectorAll('.li-err, .li-retry, .li-rebuild, .li-empty').forEach((n) => n.remove());
+    starts = []; listEl.replaceChildren(); curIdx = -1;
     let cards = [];
     try { cards = await window.studyDB.reviewQueue.where('lang').equals(lang).toArray(); } catch (e) { console.error('[listen] load', e); }
     const pairs = buildListenPairs(cards);
@@ -103,10 +128,12 @@ export function mountListen(host) {
       });
       release();
       url = URL.createObjectURL(out.blob); audio.src = url; count = out.count;
+      starts = Array.isArray(out.starts) ? out.starts : [];
+      renderScript(pairs);
       sub.textContent = listenTitle(lang, out.count, out.seconds);
       state.textContent = '준비 완료 · 재생을 누르면 잠금 중에도 이어서 나와요';
       playBtn.disabled = false; armMediaSession();
-      body.appendChild(h('button', { class: 'li-rebuild', type: 'button', 'data-role': 'rebuild', onClick: () => { doPause(); build(); } }, '다시 만들기'));
+      body.insertBefore(h('button', { class: 'li-rebuild', type: 'button', 'data-role': 'rebuild', onClick: () => { doPause(); build(); } }, '다시 만들기'), listEl);
     } catch (e) {
       console.warn('[listen] build 실패', e);
       state.textContent = '';

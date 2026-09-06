@@ -35,7 +35,8 @@ describe('buildListenSSML — 한글 voice → 외국어 voice 번갈아, 쉼은
   });
   it('쉼 2000ms/1000ms · 외국어에만 prosody rate 0.85', () => {
     const ssml = buildListenSSML(pairs, { ttsLang: 'en-US', foVoice: 'en-US-AriaNeural' });
-    expect(ssml).toContain('<voice name="ko-KR-SunHiNeural"><mstts:silence type="Tailing-exact" value="2000ms"/>문제가 있나요?</voice>');
+    expect(ssml).toContain('<voice name="ko-KR-SunHiNeural"><bookmark mark="0"/><mstts:silence type="Tailing-exact" value="2000ms"/>문제가 있나요?</voice>');
+    expect(ssml).toContain('<bookmark mark="1"/>'); // 두 번째 쌍
     expect(ssml).toContain('<voice name="en-US-AriaNeural"><mstts:silence type="Tailing-exact" value="1000ms"/><prosody rate="0.85">Is there a problem?</prosody></voice>');
   });
   it('XML 특수문자를 이스케이프한다', () => {
@@ -81,6 +82,8 @@ describe('buildListenAudio — 묶음별 합성을 병렬로 돌리고 진행률
     const out = await buildListenAudio(pairs, { ttsLang: 'en-US', foVoice: 'en-US-AriaNeural', synthesize, onProgress: (p) => progress.push({ ...p }) });
     expect(calls).toHaveLength(2);
     expect(out.count).toBe(26);
+    expect(out.starts).toHaveLength(26); // 표식 없는 합성기(ArrayBuffer 반환)는 균등 분할
+    expect(out.starts[0]).toBe(0); expect(out.starts[25]).toBeCloseTo(200 / SAMPLE_RATE, 6);
     expect(out.blob.type).toBe('audio/wav');
     expect(out.seconds).toBeCloseTo(300 / SAMPLE_RATE, 6);
     expect(progress).toEqual([{ done: 1, total: 2 }, { done: 2, total: 2 }]);
@@ -109,7 +112,13 @@ describe('synthesizeChunk — 스피커 없이, riff-24khz 로, audioData 를 �
     const state = { ctor: [], closed: 0, ssml: null, format: null };
     class FakeSynth {
       constructor(config, audioConfig) { state.ctor.push({ config, audioConfig }); state.format = config.speechSynthesisOutputFormat; }
-      speakSsmlAsync(ssml, ok, err) { state.ssml = ssml; if (throwErr) err(throwErr); else ok(result); }
+      speakSsmlAsync(ssml, ok, err) {
+        state.ssml = ssml;
+        if (throwErr) { err(throwErr); return; }
+        this.bookmarkReached?.(this, { text: '0', audioOffset: 0 });
+        this.bookmarkReached?.(this, { text: '1', audioOffset: 53723750 }); // 100ns tick = 5.372375s (2026-09-06 실측값)
+        ok(result);
+      }
       close() { state.closed += 1; }
     }
     vi.stubGlobal('window', { SpeechSDK: {
@@ -122,7 +131,8 @@ describe('synthesizeChunk — 스피커 없이, riff-24khz 로, audioData 를 �
   it('audioConfig=null · 출력 포맷 12 · 결과 audioData resolve · synth close', async () => {
     const st = fakeSDK({ audioData: makeWav(5), reason: 8 });
     const out = await synthesizeChunk('<speak/>');
-    expect(out.byteLength).toBe(44 + 10);
+    expect(out.buffer.byteLength).toBe(44 + 10);
+    expect(out.marks).toEqual([{ index: 0, sec: 0 }, { index: 1, sec: 5.372375 }]);
     expect(st.ctor[0].audioConfig).toBeNull();
     expect(st.format).toBe(12);
     expect(st.ssml).toBe('<speak/>');
@@ -135,5 +145,33 @@ describe('synthesizeChunk — 스피커 없이, riff-24khz 로, audioData 를 �
   it('err 콜백도 reject', async () => {
     fakeSDK(null, { throwErr: 'boom' });
     await expect(synthesizeChunk('<speak/>')).rejects.toThrow('boom');
+  });
+});
+
+import { currentIndex } from './listenAudio.js';
+
+describe('buildListenAudio — 표식(bookmark)으로 문장별 시작 초를 만든다', () => {
+  const pairs = [{ ko: 'a', fo: 'A' }, { ko: 'b', fo: 'B' }, { ko: 'c', fo: 'C' }];
+  it('묶음마다 marks 가 있으면 그 초를 쓰고, 다음 묶음은 앞 묶음 길이만큼 밀린다', async () => {
+    const synthesize = async (ssml) => (ssml.includes('>c<')
+      ? { buffer: makeWav(24000), marks: [{ index: 0, sec: 0 }] }
+      : { buffer: makeWav(24000 * 4), marks: [{ index: 0, sec: 0 }, { index: 1, sec: 1.5 }] });
+    const out = await buildListenAudio(pairs, { foVoice: 'v', synthesize, chunkSize: 2 });
+    expect(out.starts).toEqual([0, 1.5, 4]);
+    expect(out.seconds).toBeCloseTo(5, 6);
+  });
+  it('marks 가 모자라면 그 묶음만 균등 분할', async () => {
+    const synthesize = async (ssml) => (ssml.includes('>c<')
+      ? { buffer: makeWav(24000), marks: [{ index: 0, sec: 0 }] }
+      : { buffer: makeWav(24000 * 4), marks: [{ index: 0, sec: 0 }] });
+    const out = await buildListenAudio(pairs, { foVoice: 'v', synthesize, chunkSize: 2 });
+    expect(out.starts).toEqual([0, 2, 4]);
+  });
+  it('currentIndex — 재생 위치가 속한 문장 (시작 초 이상인 마지막 문장)', () => {
+    expect(currentIndex([0, 1.5, 4], 0)).toBe(0);
+    expect(currentIndex([0, 1.5, 4], 3.9)).toBe(1);
+    expect(currentIndex([0, 1.5, 4], 4)).toBe(2);
+    expect(currentIndex([0, 1.5, 4], 99)).toBe(2);
+    expect(currentIndex([], 1)).toBe(-1);
   });
 });

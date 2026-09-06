@@ -770,3 +770,4 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" && git push origin mai
 - Task 4: 듣기 순서는 `buildSentenceRows`(학습 우선순위 정렬)가 아니라 **`order_index` 오름차순(없으면 생성일·id)** 으로 바꿨다. `buildListenPairs(cards)` 시그니처에서 `todayISO` 를 뺐고 스펙 §9-8 도 같이 고쳤다.
 - Task 5: 홈 테스트의 스트릭 칩 금지 정규식 `/연속/` 이 "연속 듣기" 에 걸려 `/\d+일 연속|연속 \d|연속 학습/` 으로 좁혔다(검사 의도 유지).
 - Task 6: 데모 셸에 `amp` 매개변수를 추가했다(`amp=0` 이면 무음). Mac 출력 장치가 소프트웨어 음소거를 지원하지 않는 상황에서 시뮬레이터 검증에 썼다.
+- 2차(같은 날, 사용자 제안): 재생 버튼 아래 스크립트 목록 + 현재 문장 강조·자동 스크롤 + 줄 탭으로 탐색. 시작 초는 SSML bookmark 로 수집(`synthesizeChunk` 가 `{ buffer, marks }` 반환, `buildListenAudio` 가 `starts` 반환, 표식 없으면 균등 분할). 테스트: listenAudio 19개 · listen 12개.

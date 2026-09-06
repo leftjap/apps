@@ -29,10 +29,11 @@ function escapeXml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 }
 
-/** 한 묶음의 SSML — 쌍마다 한글 voice, 외국어 voice 순. 루트 xml:lang 은 voice 별 언어가 정해지므로 한글로 고정. */
+/** 한 묶음의 SSML — 쌍마다 한글 voice, 외국어 voice 순. 한글 voice 첫머리의 bookmark(쌍 번호)로 문장 시작 초를 받는다.
+ * 루트 xml:lang 은 voice 별 언어가 정해지므로 한글로 고정. */
 export function buildListenSSML(pairs, { koVoice = KO_VOICE, foVoice, rate = 0.85, koGapMs = KO_GAP_MS, foGapMs = FO_GAP_MS }) {
-  const body = pairs.map(({ ko, fo }) =>
-    `<voice name="${koVoice}"><mstts:silence type="Tailing-exact" value="${koGapMs}ms"/>${escapeXml(ko)}</voice>`
+  const body = pairs.map(({ ko, fo }, i) =>
+    `<voice name="${koVoice}"><bookmark mark="${i}"/><mstts:silence type="Tailing-exact" value="${koGapMs}ms"/>${escapeXml(ko)}</voice>`
     + `<voice name="${foVoice}"><mstts:silence type="Tailing-exact" value="${foGapMs}ms"/><prosody rate="${rate}">${escapeXml(fo)}</prosody></voice>`).join('');
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="ko-KR">${body}</speak>`;
 }
@@ -64,34 +65,62 @@ export function concatWav(buffers) {
   return { int16, seconds: total / SAMPLE_RATE };
 }
 
-/** Azure 합성 1요청 — 스피커 없이(audioConfig=null) audioData(헤더 포함 WAV)만 받는다.
- * SDK 는 실패도 success 콜백에 reason=Canceled 로 넘기므로(SynthesisAdapterBase.cancelSynthesis) audioData 유무로 판정한다. */
+/** Azure 합성 1요청 — 스피커 없이(audioConfig=null) audioData(헤더 포함 WAV)와 bookmark 오프셋을 받는다.
+ * bookmarkReached 는 audioOffset 을 100ns 틱으로 준다(2026-09-06 실측: 두 번째 쌍 53723750 = 5.372초).
+ * SDK 는 실패도 success 콜백에 reason=Canceled 로 넘기므로(SynthesisAdapterBase.cancelSynthesis) audioData 유무로 판정한다.
+ * @returns {Promise<{ buffer: ArrayBuffer, marks: { index: number, sec: number }[] }>} */
 export async function synthesizeChunk(ssml) {
   const [{ token, region }, SDK] = await Promise.all([getAzureToken(), loadSpeechSDK()]);
   const config = SDK.SpeechConfig.fromAuthorizationToken(token, region);
   config.speechSynthesisOutputFormat = SDK.SpeechSynthesisOutputFormat.Riff24Khz16BitMonoPcm;
   const synth = new SDK.SpeechSynthesizer(config, null);
+  const marks = [];
+  synth.bookmarkReached = (_s, e) => { marks.push({ index: Number(e.text), sec: e.audioOffset / 1e7 }); };
   const close = () => { try { synth.close(); } catch (_) { /* noop */ } };
   return new Promise((resolve, reject) => {
     synth.speakSsmlAsync(ssml, (result) => {
       close();
       const data = result?.audioData;
-      if (data && data.byteLength > 44) resolve(data);
+      if (data && data.byteLength > 44) resolve({ buffer: data, marks });
       else reject(new Error(result?.errorDetails || '합성 실패'));
     }, (err) => { close(); reject(err instanceof Error ? err : new Error(String(err))); });
   });
 }
 
+/** 묶음 하나의 문장별 시작 초 — marks 가 쌍 수만큼 다 오면 그 값을, 아니면 묶음 길이를 균등 분할한다(데모 합성기·표식 누락 대비). */
+export function chunkStarts(marks, count, chunkSec) {
+  const byIndex = new Map((marks ?? []).map((m) => [m.index, m.sec]));
+  const complete = count > 0 && Array.from({ length: count }, (_, i) => byIndex.has(i)).every(Boolean);
+  return Array.from({ length: count }, (_, i) => (complete ? byIndex.get(i) : (chunkSec * i) / count));
+}
+
+/** 재생 위치 t 가 속한 문장 = 시작 초가 t 이하인 마지막 문장. starts 가 비면 -1. */
+export function currentIndex(starts, t) {
+  let idx = -1;
+  for (let i = 0; i < starts.length; i++) { if (starts[i] <= t) idx = i; else break; }
+  return idx;
+}
+
 /** 문장 쌍 전체 → WAV Blob 하나. 묶음 요청은 병렬, 실패는 그대로 던진다(Web Speech 폴백 없음 — spec §9-8). */
-export async function buildListenAudio(pairs, { foVoice, onProgress, synthesize = synthesizeChunk }) {
+/** 문장 쌍 전체 → WAV Blob 하나 + 문장별 시작 초(starts). 묶음 요청은 병렬, 실패는 그대로 던진다(Web Speech 폴백 없음 — spec §9-8).
+ * synthesize 는 { buffer, marks } 또는 ArrayBuffer(표식 없음 → 균등 분할)를 돌려줄 수 있다. */
+export async function buildListenAudio(pairs, { foVoice, onProgress, synthesize = synthesizeChunk, chunkSize = LISTEN_CHUNK }) {
   if (!pairs?.length) throw new Error('들을 문장이 없습니다');
-  const chunks = chunkPairs(pairs);
+  const chunks = chunkPairs(pairs, chunkSize);
   let done = 0;
-  const buffers = await Promise.all(chunks.map(async (chunk) => {
-    const buf = await synthesize(buildListenSSML(chunk, { foVoice }));
+  const results = await Promise.all(chunks.map(async (chunk) => {
+    const res = await synthesize(buildListenSSML(chunk, { foVoice }));
     done += 1; onProgress?.({ done, total: chunks.length });
-    return buf;
+    return res instanceof ArrayBuffer ? { buffer: res, marks: [] } : res;
   }));
+  const buffers = results.map((r) => r.buffer);
   const { int16, seconds } = concatWav(buffers);
-  return { blob: pcmToWavBlob(int16, SAMPLE_RATE), seconds, count: pairs.length };
+  const starts = [];
+  let offset = 0;
+  results.forEach((r, i) => {
+    const chunkSec = wavPcm(r.buffer).length / SAMPLE_RATE;
+    for (const sec of chunkStarts(r.marks, chunks[i].length, chunkSec)) starts.push(offset + sec);
+    offset += chunkSec;
+  });
+  return { blob: pcmToWavBlob(int16, SAMPLE_RATE), seconds, count: pairs.length, starts };
 }
