@@ -74,12 +74,25 @@ export function judgeCoverage(recognized, expected) {
   return { pass: exp.length > 0 && missing.length === 0, missing, extra, coverage, expTokens: exp.length, spaceSeparated };
 }
 
+/* 전사 원천 선택 (2026-09-06 실측) — Azure Display 는 숫자 단어를 숫자로 바꿔 쓴다("at seven"→"at 7:00",
+ * "two"→"2", "six"→"6"; "one" 은 유지). Display 로만 대조하면 그 단어가 누락이 되어 감점제에서 단어당
+ * 100/단어수 점이 깎였다(원어민 TTS 3종이 8단어 문장에서 77~78점). 같은 응답의 Lexical 은 말한 그대로라
+ * 이를 우선하되, Lexical 이 더 나쁘게 나오는 형태(ja 형태소 띄어쓰기 등)에 대비해 둘 중 누락이 적은 쪽을
+ * 쓴다 — 어떤 문장에서도 종전(Display 단독)보다 나빠지지 않는다. Lexical 이 없는 구형 행·mock 은 종전대로. */
+export function judgeCoverageOf(result, expected) {
+  const byDisplay = judgeCoverage(result?.recognizedText, expected);
+  const lex = result?.recognizedLexical;
+  if (!lex) return byDisplay;
+  const byLexical = judgeCoverage(lex, expected);
+  return byLexical.missing.length <= byDisplay.missing.length ? byLexical : byDisplay;
+}
+
 /* 생산 연습 통과 판정 (2026-07-23) — 3중 기준: 커버리지 + 문장 정확도 + 단어 하한.
  * 배경: Azure PA 는 인식을 참조로 끌어당겨 커버리지가 후하고, 문장 평균은 일부 단어만
  * 엉뚱해도 하한을 넘을 수 있다. 실측(합성음성, 2026-07-23): 정확 발화 단어 최저 91 vs
  * 엉뚱 단어 0~21 → 단어 하한 40 이 그 취약 창을 봉쇄한다 (L2 정상 발화에 여유 충분). */
 export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 40 } = {}) {
-  const coverage = judgeCoverage(result?.recognizedText, expected);
+  const coverage = judgeCoverageOf(result, expected);
   const accuracy = Math.round(Number(result?.score) || 0);
   const badWords = (result?.wordScores || [])
     .filter((w) => (Number(w?.score) || 0) < wordMin)
@@ -104,7 +117,7 @@ export function judgeProduction(result, expected, { minAccuracy = 65, wordMin = 
  * 채점이 보류된다(사유는 unclear 또는 garbled — judgeRecording 주석 참조). */
 export function judgeMisread(result, expected, { minAccuracy = 40, minCoverage = 0.7 } = {}) {
   const accuracy = Math.round(Number(result?.score) || 0);
-  const judged = judgeCoverage(result?.recognizedText, expected);
+  const judged = judgeCoverageOf(result, expected);
   /* ja 퇴화 가드 (2026-08-29 감사, 오후 정정) — 공백 무분절 언어는 토큰 커버리지가 무의미해
    * misread 가 'accuracy 단독' 판정으로 퇴화한다. 그러면 정답을 발음만 나쁘게 말한 발화에
    * "다른 문장" 안내가 나갈 수 있다. 내용 비교가 무의미하면 판정하지 않는다 — 음질(unclear)이 잡는다.

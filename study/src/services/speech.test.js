@@ -2266,3 +2266,33 @@ describe('speech — analyzeWavRest 는 signal 로 중단되면 재시도 없이
     expect(stt).toBe(0);
   });
 });
+
+/* Lexical 노출 (2026-09-06) — Display 는 숫자 단어를 숫자로 바꿔 쓰므로("at seven"→"at 7:00", 실측 9/9)
+ * 원문 대조(coverageJudge)는 말한 그대로인 NBest[0].Lexical 을 우선 써야 한다. 화면 전사는 Display 유지. */
+describe('speech — analyzeWavRest 가 NBest[0].Lexical 을 recognizedLexical 로 싣는다', () => {
+  const rest = (nbest) => ({ RecognitionStatus: 'Success', DisplayText: nbest.Display, NBest: [{ AccuracyScore: 93, PronScore: 94, FluencyScore: 100, CompletenessScore: 100, Words: [], ...nbest }] });
+  const mockStt = (fixture) => _fetchSpy.mockImplementation(async (url) => {
+    const u = String(url);
+    if (u.includes('/functions/v1/azure-token')) return new Response(JSON.stringify({ token: FAKE_TOKEN, region: FAKE_REGION, expiresAt: Date.now() + 9 * 60 * 1000 }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (u.includes('.stt.speech.microsoft.com/')) return new Response(JSON.stringify(fixture), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    return new Response('not found', { status: 404 });
+  });
+  const blob = () => new Blob([new ArrayBuffer(100)], { type: 'audio/wav' });
+
+  it('Display "Dinner at 7:00 …" 와 함께 Lexical "dinner at seven …" 을 돌려준다 (Aria 실측 형태)', async () => {
+    mockStt(rest({ Display: 'Dinner at 7:00 sounds like a good idea.', Lexical: 'dinner at seven sounds like a good idea', ITN: 'dinner at 7:00 sounds like a good idea' }));
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(blob(), 'Dinner at seven sounds like a good idea', { lang: 'en-US' });
+    expect(r.recognizedText).toBe('Dinner at 7:00 sounds like a good idea.');
+    expect(r.recognizedLexical).toBe('dinner at seven sounds like a good idea');
+  });
+
+  it('Lexical 이 없는 응답은 recognizedLexical null (구형 픽스처 호환)', async () => {
+    mockStt(rest({ Display: 'hi' }));
+    const { Speech } = await import('./speech.js');
+    Speech.clearAzureTokenCache();
+    const r = await Speech.analyzeWavRest(blob(), 'hi', { lang: 'en-US' });
+    expect(r.recognizedLexical).toBeNull();
+  });
+});

@@ -15,7 +15,7 @@ import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
 import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
-import { judgeCoverage, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
+import { judgeCoverageOf, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 import { localISODate } from '../utils/today.js';
 
@@ -498,7 +498,8 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
       // 2026-07-12 — 통과 판정을 Azure omission(passesCoverage) → 전사 비교(judgeCoverage)로 교체.
       // Azure 가 긴 L2 문장에서 false omission 을 내던 실측(coverageJudge.js 박제) 후속 배선.
       // ※ enableMiscue:true 유지 필수 — false 면 recognizedText 가 레퍼런스를 에코해 항상 통과(실측 2026-07-12).
-      const judge = judgeCoverage(result?.recognizedText, step.text);
+      // 원천은 Lexical 우선(judgeCoverageOf, 2026-09-06) — Display 의 숫자 표기("two"→"2")가 누락으로 잡히던 것.
+      const judge = judgeCoverageOf(result, step.text);
       if (judge.pass) { advance(); popScore(mark); return; } // 방금 통과한 단계 mark 팝
       fails += 1;
       const miss = judge.missing.length;

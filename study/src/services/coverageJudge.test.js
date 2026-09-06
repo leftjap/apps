@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { judgeCoverage, judgeProduction, judgeMisread, judgeRecording, isTooUnclear } from './coverageJudge.js';
+import { judgeCoverage, judgeCoverageOf, judgeProduction, judgeMisread, judgeRecording, isTooUnclear } from './coverageJudge.js';
 
 describe('judgeCoverage — 전사 vs 기대문 커버리지 (체이닝 통과 판정, 엔진 무관)', () => {
   it('완전 일치 → pass, missing 없음, coverage 1', () => {
@@ -334,5 +334,41 @@ describe('judgeCoverage — 전각 구두점 제거', () => {
   });
   it('전각 물음표·느낌표도 제거된다', () => {
     expect(judgeCoverage('お昼、食べる？', 'お昼、食べる').pass).toBe(true);
+  });
+});
+
+/* 전사 원천 선택 (2026-09-06 실측) — Azure 는 Display 에서 숫자 단어를 숫자로 바꿔 쓴다
+ * ("at seven"→"at 7:00", "two"→"2", "six"→"6"; "one" 은 유지). 원문 대조를 Display 로만 하면
+ * 그 단어가 누락으로 잡혀 감점제에서 단어당 100/단어수 점이 깎였다(원어민 TTS 3종이 8단어 문장에서
+ * 77~78점). 같은 응답의 Lexical 은 말한 그대로("dinner at seven …")라 이를 우선하되, Lexical 이
+ * 더 나쁘게 나오는 형태(ja 형태소 띄어쓰기 등)에 대비해 둘 중 누락이 적은 쪽을 쓴다. */
+describe('judgeCoverageOf — 전사 원천 선택 (Display 숫자 표기 오누락 수정)', () => {
+  const EXP = 'Dinner at seven sounds like a good idea.';
+
+  it('Display 가 seven 을 7:00 으로 적어도 Lexical 에 seven 이 있으면 누락이 아니다 (실측 9/9)', () => {
+    const r = judgeCoverageOf({ recognizedText: 'Dinner at 7:00 sounds like a good idea.', recognizedLexical: 'dinner at seven sounds like a good idea' }, EXP);
+    expect(r.pass).toBe(true);
+    expect(r.missing).toEqual([]);
+    expect(r.coverage).toBe(1);
+  });
+
+  it('Lexical 이 없는 결과(구형 행·mock)는 종전대로 Display 로 판정한다', () => {
+    const r = judgeCoverageOf({ recognizedText: 'Dinner at 7:00 sounds like a good idea.' }, EXP);
+    expect(r.missing).toEqual(['seven']);
+  });
+
+  it('Lexical 이 Display 보다 나쁘면 Display 를 쓴다 — 둘 중 누락이 적은 쪽', () => {
+    const r = judgeCoverageOf({ recognizedText: 'はい、持ち帰りです。', recognizedLexical: 'はい 持ち帰り です' }, 'はい、持ち帰りです。');
+    expect(r.missing).toEqual([]);
+    expect(r.pass).toBe(true);
+  });
+
+  it('judgeProduction 도 Lexical 을 본다 — "two" 가 Display "2" 로 실패하지 않는다 (Jenny 실측 acc 95)', () => {
+    const r = judgeProduction({
+      score: 95, recognizedText: 'How did you 2 meet?', recognizedLexical: 'how did you two meet',
+      wordScores: [{ word: 'how', score: 97 }, { word: 'did', score: 94 }, { word: 'you', score: 97 }, { word: 'two', score: 100 }, { word: 'meet', score: 91 }],
+    }, 'How did you two meet?');
+    expect(r.pass).toBe(true);
+    expect(r.missing).toEqual([]);
   });
 });

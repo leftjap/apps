@@ -1324,6 +1324,9 @@ export async function analyzeWavRest(wavBlob, expectedText, { lang = 'en-US', en
       pronScore: nbest.PronScore,
       captureRms: captureRms == null ? null : +captureRms.toFixed(4),
       recognizedText,
+      // Lexical = 말한 그대로의 전사 (2026-09-06). Display 는 숫자 단어를 숫자로 바꿔 써("at seven"→"at 7:00", 실측 9/9)
+      // 원문 대조(coverageJudge)가 그 단어를 누락으로 오인했다. 화면 전사는 Display 유지, 대조는 Lexical 우선.
+      recognizedLexical: nbest.Lexical ?? null,
       phonemeScores,
       weakPhonemes: [...weakSet],
       wordScores,

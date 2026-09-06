@@ -1,9 +1,10 @@
 /**
  * deductionScore.js — 감점제 점수 엔진 (2026-08-29 사용자 설계 확정, 순수 함수).
  *
- * 100 에서 항목별로 차감한다. 인위적 문턱(89 캡) 없이, 축별 상한의 합이 정확히 50 이라
- * "단어를 다 말했으면 50점 바닥"이 산수로 보장되고, 90점대는 전 축이 거의 결손 없어야만
- * 자연 도달한다 (원어민 TTS 앵커 ≈98 · 끊어읽기 앵커 ≈76 — 테스트에 박제).
+ * 100 에서 항목별로 차감한다. 인위적 문턱(89 캡) 없이, 축별 상한의 합이 60 이라
+ * "단어를 다 말했으면 40점 바닥"이 산수로 보장되고, 90점대는 전 축이 거의 결손 없어야만
+ * 자연 도달한다 (원어민 TTS 앵커 98~99 · 본인 최고 시도 98 · 끊어읽기 앵커 ≈85 — 테스트에 박제,
+ * 2026-09-06 억양 기준점 90 도입 후 값).
  *
  * ⚠ 아직 화면 점수가 아니다 — 3단계 계획의 2단계다 (1단계: 프로소디 측정·기록,
  * 2단계: 이 엔진 + 테스트, 3단계: 1~2주 실측 분포로 DEDUCTION_RATES 보정 후 화면 전환).
@@ -17,7 +18,7 @@
  *   missing    말하지 않은 단어의 지분만큼 직접 감점 + 바닥(floor)도 비례 하강.
  * '근거 없으면 감점 없음' — 측정값이 없는 축(예: 프로소디 미측정 응답)은 깎지 않는다.
  */
-import { judgeCoverage } from './coverageJudge.js';
+import { judgeCoverageOf } from './coverageJudge.js';
 
 /* 감점 단가 — 1차 실측 보정 (2026-08-31, 사용자 지시 "합성으로 지금 보정").
  * 실측 코퍼스 22종(원어민 TTS 2보이스×2문장 · 한국액센트 · 끊어읽기 · 지오 정상 7회 · 지오 유치
@@ -40,7 +41,14 @@ export const DEDUCTION_RATES = {
   // ProsodyScore 연속값이 이미 흡수한다(지오 유치·단조 시도 전부 pros 82 이하 실측).
   /* 상한 20 → 30 (2026-09-04 사용자 보고 "억양이 나쁜데 점수가 좋다"): 폰 실사용 38회 중 22회가 상한에 걸려 억양 55 와
    * 77 이 같은 −20 이었다. 보정 조건은 그대로 — 원어민 90.3~91.1 은 −8~9, 본인 최고 88.8 은 −10 으로 상한과 무관. */
-  intonation: { max: 30, perMonotoneWord: 0, perProsodyPoint: 0.9 },
+  /* 기준점 anchor 90 (2026-09-06 사용자 결정 "수정은 권장대로"): Azure 억양 점수는 원어민 TTS 도 90~91 이 천장
+   * (5문장 7회 + "Thank you so much" 3회 실측)인데 100 기준으로 깎아 아무도 못 갖는 9점을 모두에게 부과했고,
+   * 감점제 227회 중 90점 이상이 0회였다(90 은 억양 88.9 이상을 요구, 본인 최대 88.7). 기준점 90 에서 재면
+   * 원어민 TTS 98~99 · 본인 최고 98 · 억양 55 는 여전히 상한 30. 227회 재계산: 평균 71→80, 90 이상 0→39회,
+   * 억양 나쁨(<70)·좋음(≥85) 평균 차 22.8→24.9 로 9/4 요구(억양 나쁘면 깎기)도 유지.
+   * ⚠ 8/31 제약 '유치1(억양 82.4) ≤87'·'끊어읽기 ≤82' 는 92·85 로 깨진다 — 사용자 재확인 대기
+   * (perProsodyPoint 1.5 면 87·82 로 복귀하나 본인 중앙값이 71 에 머문다). anchor 결측(구형 커스텀 표)은 100. */
+  intonation: { max: 30, perMonotoneWord: 0, perProsodyPoint: 0.9, anchor: 90 },
   missing: { share: 100 },                                    // 문장 지분 100 × (누락/전체)
 };
 
@@ -61,7 +69,7 @@ const norm = (w) => String(w ?? '').toLowerCase().replace(/[^\p{L}\p{N}']/gu, ''
  * 비율(floor·missing 지분)은 일관되지만, 누락 라벨에 'cannot' 같은 펼친 형태가 보일 수 있고
  * 왜곡 폭은 문장당 최대 축약형 개수만큼이다. 3단계 단가 보정 때 실데이터로 재평가한다. */
 export function computeDeductionScore(result, expected, { personalWeak = [], rates = DEDUCTION_RATES } = {}) {
-  const cov = judgeCoverage(result?.recognizedText, expected);
+  const cov = judgeCoverageOf(result, expected);
   const nExp = Math.max(cov.expTokens || 0, 1);
   /* 바닥은 축 상한 합에서 유도한다 (100 − Σmax) — rates 를 바꿔도 '전 축 바닥 = 바닥점' 항등이 유지.
    * ja 퇴화 가드: 공백 무분절 문장(원문에 공백 없음)은 토큰 커버리지가 무의미 — missing 축을 끄고
@@ -150,7 +158,7 @@ export function computeDeductionScore(result, expected, { personalWeak = [], rat
   const mono = result?.prosodyIssues?.monotoneWords ?? [];
   const pros = result?.prosodyScore;   // null = 미측정 (fluency 와 같은 근거로 타입까지 좁힌다)
   let intonDed = mono.length * rates.intonation.perMonotoneWord;
-  if (typeof pros === 'number' && Number.isFinite(pros)) intonDed += Math.max(0, 100 - pros) * rates.intonation.perProsodyPoint;
+  if (typeof pros === 'number' && Number.isFinite(pros)) intonDed += Math.max(0, (rates.intonation.anchor ?? 100) - pros) * rates.intonation.perProsodyPoint;
   intonDed = Math.min(rates.intonation.max, intonDed);
   if (intonDed > 0) {
     deductions.push({
@@ -181,8 +189,8 @@ function round1(n) { return Math.round(n * 10) / 10; }
 /** 화면·기록용 점수 결정 (2026-08-31) — 감점제 단가는 en 코퍼스 실측으로 보정했다.
  * ja 는 프로소디 분포 미실측(원어민 ja 확인 시도는 F0 한도로 보류 — 핸드오프 부록 D)이라
  * 실측 보정 전까지 acc 를 유지한다. 미실측 척도를 다른 언어에 적용하는 것 자체가 추측이다.
- * scoreModel: 'ded1' = 감점제 1차 단가 / 'acc1' = 정확도 단독 (행 구별용). */
+ * scoreModel: 'ded2' = 감점제 + 억양 기준점 90 (2026-09-06) / 'ded1' = 감점제 1차 단가(100 기준) / 'acc1' = 정확도 단독 (행 구별용). */
 export function scoreForDisplay(result, expected, lang) {
   if (lang === 'ja') return { ...result, scoreModel: 'acc1' };
-  return { ...result, score: computeDeductionScore(result, expected).score, scoreModel: 'ded1' };
+  return { ...result, score: computeDeductionScore(result, expected).score, scoreModel: 'ded2' };
 }

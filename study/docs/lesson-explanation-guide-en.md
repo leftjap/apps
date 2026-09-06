@@ -765,6 +765,13 @@ PA 는 `ReferenceText` 의 사전 발음에 음소를 정렬해 채점하므로,
 > 같은 날 `don't you`→`doncha` 항목이 라이브 경로에서 발동하지 않던 결함도 수정했다
 > (`normalizeReferenceText` 가 아포스트로피를 제거한 뒤라 매칭 불가 — 정규식에서 선택 문자로 변경).
 
+> ⚠ **추가 (2026-09-06 실측)**: 같은 Display 층에 두 번째 함정이 있다. Azure 는 Display 에서 숫자 단어를
+> 숫자로 바꿔 쓴다("at seven"→"at 7:00", "two"→"2", "six"→"6"; "one" 은 유지 — 9/9 재현). 원문 대조를
+> Display 로 하면 그 단어가 누락이 되어 원어민 TTS 3종도 8단어 문장에서 77~78점이었다. 수정: 커버리지는
+> 같은 응답의 `Lexical`(말한 그대로)을 우선하고 Display·Lexical 중 누락이 적은 쪽을 쓴다
+> (`coverageJudge.judgeCoverageOf`). 화면 전사는 Display 유지. 같은 날 억양 감점 기준점을 100→90 으로
+> 옮겼다(원어민 TTS 억양 천장 90~91 실측, `scoreModel` ded2) — 상세는 `pronunciation-session-handoff.md`.
+
 남은 한계: `understood you`→[ˌʌndərˈstʊdʒə] 처럼 Azure 사전에 축약 철자가 없는 자리는 여전히
 깎인다. 목록에 없는 철자를 넣으면 그 요청이 통째로 저점이 되어 오히려 해로우므로, 새 항목은
 반드시 실측으로 확인한 뒤 추가한다.

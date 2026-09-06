@@ -155,7 +155,7 @@ describe('sessionExprV2 — 녹음 성공 경로 (record→채점→DB→state)'
     expect(params.sentenceId).toBe('e1');
     expect(params.lang).toBe('en');
     // 감점제 전환 — 저장 행의 score 는 엔진 점수, 원 acc 와 체계 표식이 함께 실린다.
-    expect(params.result).toMatchObject({ score: 100, accuracyScore: 92, scoreModel: 'ded1', weakPhonemes: ['ð'] });
+    expect(params.result).toMatchObject({ score: 100, accuracyScore: 92, scoreModel: 'ded2', weakPhonemes: ['ð'] });
     expect(typeof params.date).toBe('string');
 
     // 리빌 DOM — 점수 링 92 · 발화 점수 원 1개 · 총 1회 (점·콤보·PASS 칩은 폐기 §6.1)
@@ -1245,7 +1245,7 @@ describe('sessionExprV2 — 응용 드릴 점수 영속화', () => {
     expect(params.lang).toBe('en');
     expect(params.result.score).toBe(100); // 감점제 점수가 정본 — 원 acc 는 accuracyScore
     expect(params.result.accuracyScore).toBe(92);
-    expect(params.result.scoreModel).toBe('ded1');
+    expect(params.result.scoreModel).toBe('ded2');
   });
 
   it('오발화로 버린 드릴은 쌓이지 않는다', async () => {

@@ -5,7 +5,9 @@ import { computeDeductionScore, scoreForDisplay, DEDUCTION_RATES, KO_WEAK_PHONEM
  * 축별 상한 합 = 50 → 단어를 다 말했으면 50점 바닥이 산수로 보장된다.
  * 단가(DEDUCTION_RATES)는 초안 — 1~2주 실측 분포로 보정 후 화면 전환(3단계).
  * 실측 근거: 원어민 TTS(acc96·flu99·pros91.1) 는 ~98, 끊어읽기(flu63·단조8단어) 는 ~76 이 나와야
- * "원어민만 90점대" 가 자연 성립한다 — 아래 테스트가 그 두 앵커를 고정한다. */
+ * "원어민만 90점대" 가 자연 성립한다 — 아래 테스트가 그 두 앵커를 고정한다.
+ * 2026-09-06 억양 기준점 90 도입(파일 끝 describe 참조) 후 앵커는 원어민 100(합성 완벽 발화)·99(Aria 실측)·
+ * 끊어읽기 85 로 바뀌었다 — 각 테스트의 주석에 새 산식을 적었다. */
 
 const W = (word, score) => ({ word, score });
 const PH = (word, ...symbols) => symbols.map((s) => ({ symbol: s, word, score: 80 }));
@@ -13,14 +15,14 @@ const PH = (word, ...symbols) => symbols.map((s) => ({ symbol: s, word, score: 8
 describe('computeDeductionScore — 축별 감점', () => {
   const EXP = 'sorry could you say';   // 4단어 → 단어당 예산 20/4 = 5 (2026-08-31 보정 단가)
 
-  it('완벽 발화(원어민 앵커) → 92점대, 감점 내역이 근거와 함께 나온다', () => {
+  it('완벽 발화(원어민 앵커) → 100, 감점 내역이 근거와 함께 나온다 (억양 91.1 ≥ 기준점 90 → 억양 감점 0)', () => {
     const r = computeDeductionScore({
       recognizedText: 'sorry could you say',
       wordScores: [W('sorry', 100), W('could', 100), W('you', 100), W('say', 100)],
       fluencyScore: 99, prosodyScore: 91.1,
       prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
     }, EXP);
-    expect(r.score).toBe(92);          // 100 − 유창 0.25 − 억양 (100−91.1)×0.9=8.01
+    expect(r.score).toBe(100);         // 100 − 유창 0.3 − 억양 0 (2026-09-06 기준점 90; 종전 100 기준에선 92)
     expect(r.floor).toBe(40);          // 100 − (20+10+30), 2026-09-04 억양 상한 30
     expect(r.deductions.every((d) => d.points >= 0)).toBe(true);
   });
@@ -56,7 +58,7 @@ describe('computeDeductionScore — 축별 감점', () => {
     expect(r.deductions.find((d) => d.axis === 'words').points).toBe(3);
   });
 
-  it('끊어읽기 앵커(실측 flu 63·단조 8/8·pros 86.5) → 70점대 중반', () => {
+  it('끊어읽기 앵커(실측 flu 63·단조 8/8·pros 86.5) → 85 (기준점 90 이후; 유창 축 상한 10 이 하한을 정한다)', () => {
     const words = 'sorry could you say that again more slowly'.split(' ');
     const r = computeDeductionScore({
       recognizedText: words.join(' '),
@@ -64,9 +66,10 @@ describe('computeDeductionScore — 축별 감점', () => {
       fluencyScore: 63, prosodyScore: 86.5,
       prosodyIssues: { monotoneWords: words, unexpectedBreaks: [], missingBreaks: [] },
     }, words.join(' '));
-    // 단어 (20/8)×0.15×8=3.0 + 유창 min(10, 37×0.25)=9.25 + 억양 min(20, 13.5×0.9)=12.15 → 75.6
-    // (구단가에서도 우연히 76 — 보정 전후 이 앵커는 동치)
-    expect(r.score).toBe(76);
+    // 단어 (20/8)×0.15×8=3.0 + 유창 min(10, 37×0.25)=9.25 + 억양 min(30, (90−86.5)×0.9)=3.15 → 84.6
+    // ⚠ 8/31 제약 '끊어읽기 ≤82' 는 기준점 90 에서 깨진다(종전 76) — 억양이 원어민급(86.5)이라 남는 건 유창 축뿐이고
+    // 그 상한이 10 이다. 끊김을 더 깎으려면 유창 축 설계 변경이 필요(이번 범위 밖, 사용자 재확인 대기).
+    expect(r.score).toBe(85);
   });
 
   it('전 축 바닥이어도 단어를 다 말했으면 40점 (축 상한 합 = 60, 2026-09-04)', () => {
@@ -320,14 +323,17 @@ describe('computeDeductionScore — 계층 보정 (실측 픽스처)', () => {
     expect(r.score).toBeGreaterThanOrEqual(90);
   });
 
-  it('유치원생식 실기록 1(acc 97·flu 98·pros 82.4 — 화면 97점이던 발화)은 90 미만', () => {
+  it('유치원생식 실기록 1(acc 97·flu 98·pros 82.4 — 화면 97점이던 발화)은 92 — ⚠ 기준점 90 이 8/31 제약(≤87)을 깬다', () => {
     const r = computeDeductionScore({
       recognizedText: REC, wordScores: W5(97, 97, 97, 100, 94), phonemeScores: PH_WEAK,
       fluencyScore: 98, prosodyScore: 82.4,
       prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
     }, S1);
-    expect(r.score).toBeLessThan(90);
-    expect(r.score).toBeLessThanOrEqual(85);
+    // 억양 82.4 는 본인 227회 분포의 상위 10%(p90 83.1)라 기준점 90·단가 0.9 에선 −6.8 에 그친다. 8/31 에 이 발화를
+    // '유치'로 분류한 판단과 오늘 "잘하면 90점대" 요구는 이 지점에서 충돌한다 — 단가 1.5 면 87 로 복귀하나 본인
+    // 중앙값이 71 에 머문다(rates.mjs 실측 시뮬). 사용자 재확인 대기. 원어민(99)·본인 최고(98)보다는 여전히 낮다.
+    expect(r.score).toBe(92);
+    expect(r.score).toBeLessThan(98);
   });
 
   it('유치원생식 실기록 3(acc 86·pros 69.8·단조 5/5)은 70대까지 내려간다', () => {
@@ -339,14 +345,13 @@ describe('computeDeductionScore — 계층 보정 (실측 픽스처)', () => {
     expect(r.score).toBeLessThanOrEqual(78);
   });
 
-  it('지오 최고 시도(acc 98·flu 100·pros 88.8)는 80대 후반 — 억양이 90을 넘으면 90점대에 닿는다', () => {
+  it('지오 최고 시도(acc 98·flu 100·pros 88.8)는 98 — 기준점 90 에서 억양 감점 1.1 (종전 89, 90 불가)', () => {
     const r = computeDeductionScore({
       recognizedText: REC, wordScores: W5(97, 97, 97, 100, 97), phonemeScores: PH_WEAK,
       fluencyScore: 100, prosodyScore: 88.8,
       prosodyIssues: { monotoneWords: [], unexpectedBreaks: [], missingBreaks: [] },
     }, S1);
-    expect(r.score).toBeGreaterThanOrEqual(87);
-    expect(r.score).toBeLessThan(90);
+    expect(r.score).toBe(98);
   });
 
   it('원어민이 전단어 단조 태그를 받아도(출렁임 실측) 90점대가 유지된다 — mono 단가 0 의 계약', () => {
@@ -366,9 +371,9 @@ describe('scoreForDisplay — 언어별 점수 체계', () => {
   const RES = { score: 95, accuracyScore: 95, recognizedText: 'Sorry I didnt catch that.',
     wordScores: [{ word: 'sorry', score: 95 }], fluencyScore: 98, prosodyScore: 82.4 };
 
-  it('en 은 감점제 점수 + ded1 표식', () => {
+  it('en 은 감점제 점수 + ded2 표식 (2026-09-06 기준점 90; ded1 은 100 기준 행)', () => {
     const s = scoreForDisplay(RES, "Sorry, I didn't catch that.", 'en');
-    expect(s.scoreModel).toBe('ded1');
+    expect(s.scoreModel).toBe('ded2');
     expect(s.score).toBeLessThan(95);            // pros 82.4 → 억양 감점 반영
     expect(s.accuracyScore).toBe(95);
   });
@@ -381,16 +386,68 @@ describe('scoreForDisplay — 언어별 점수 체계', () => {
 });
 
 /* 억양 상한 30 (2026-09-04): 종전 상한 20 에서는 억양 77.8 미만이 전부 −20 이라 아주 평탄한 억양(55)과 조금 평탄한
- * 억양(77)이 같은 점수였다(폰 실사용 38회 중 22회 상한). 산식 보정 조건(원어민 ≥90 · 본인 최고 ≥85)은 그대로다 —
- * 원어민 억양 90.3~91.1 은 −8~9, 본인 최고 88.8 은 −10 으로 상한과 무관. */
+ * 억양(77)이 같은 점수였다(폰 실사용 38회 중 22회 상한). 2026-09-06 기준점 90 이후: 원어민 억양 90.3~91.1 은 0,
+ * 본인 최고 88.8 은 −1.1, 77 은 −11.7, 55 는 여전히 상한 30 — 나쁜 억양의 감점은 유지된다. */
 describe('억양 상한 30 — 아주 평탄한 억양이 더 깎인다', () => {
   const clean = (pros) => ({ score: 98, recognizedText: 'hello there my friend', fluencyScore: 100, prosodyScore: pros, omissions: [], insertions: [],
     wordScores: ['hello', 'there', 'my', 'friend'].map((w) => ({ word: w, score: 98 })) });
-  it('억양 55 → −30, 억양 77 → −20.7, 억양 90 → −9 (원어민 조건 유지)', () => {
+  it('억양 55 → −30, 억양 77 → −11.7, 억양 90 → 0 (기준점 90)', () => {
     const d = (pros) => computeDeductionScore(clean(pros), 'hello there my friend').deductions.find((x) => x.axis === 'intonation')?.points ?? 0;
     expect(d(55)).toBe(30);
-    expect(d(77)).toBe(20.7);
-    expect(d(90)).toBe(9);
+    expect(d(77)).toBe(11.7);
+    expect(d(90)).toBe(0);
     expect(computeDeductionScore(clean(55), 'hello there my friend').score).toBeLessThan(computeDeductionScore(clean(77), 'hello there my friend').score);
+  });
+});
+
+/* 숫자 단어 오누락 수정 (2026-09-06 실측) — Display "Dinner at 7:00 …" 로 원문 대조를 하면 seven 이
+ * 누락으로 잡혀 원어민 TTS 도 77~78점이었다(감점 12.5 + floor 하락). 커버리지는 Lexical 우선. */
+describe('감점제 — 커버리지 원천은 Lexical 우선 (숫자 표기 오누락 수정)', () => {
+  const EXP = 'Dinner at seven sounds like a good idea.';
+  // en-US-JennyNeural 실측 (2026-09-06): acc 97 · flu 100 · comp 100 · pros 90.7, seven 97, dinner 88
+  const JENNY = {
+    score: 97, recognizedText: 'Dinner at 7:00 sounds like a good idea.', recognizedLexical: 'dinner at seven sounds like a good idea',
+    wordScores: [['dinner', 88], ['at', 97], ['seven', 97], ['sounds', 100], ['like', 97], ['a', 97], ['good', 100], ['idea', 100]].map(([word, score]) => ({ word, score })),
+    phonemeScores: [{ symbol: 'd', word: 'dinner', score: 70 }], omissions: [], insertions: [],
+    fluencyScore: 100, completenessScore: 100, prosodyScore: 90.7, prosodyIssues: { monotoneWords: [] },
+  };
+  it('Jenny TTS: missing 축이 없고 97점 이상', () => {
+    const r = computeDeductionScore(JENNY, EXP);
+    expect(r.deductions.find((d) => d.axis === 'missing')).toBeUndefined();
+    expect(r.floor).toBe(40);
+    expect(r.score).toBeGreaterThanOrEqual(97);
+  });
+  it('Lexical 이 없으면 종전대로 Display 로 대조한다 (구형 행 호환)', () => {
+    const r = computeDeductionScore({ ...JENNY, recognizedLexical: undefined }, EXP);
+    expect(r.deductions.find((d) => d.axis === 'missing')?.points).toBe(12.5);
+  });
+});
+
+/* 억양 기준점 90 (2026-09-06 사용자 결정 "수정은 권장대로") — Azure 억양 점수는 원어민 TTS 도
+ * 90~91 이 천장(5문장 7회 + Thank you so much 3회 실측)인데 100 기준으로 깎아 아무도 못 갖는 9점을
+ * 모두에게 부과했고, 감점제 227회 중 90점 이상이 0회였다(90 은 억양 88.9 이상을 요구, 본인 최대 88.7).
+ * 원어민 기준점 90 에서 재면: 원어민 TTS 98~99 · 본인 최고 시도 98 · 억양 55 는 여전히 상한 30.
+ * ⚠ 8/31 보정 제약 중 '유치1(억양 82.4) ≤87' 과 '끊어읽기 ≤82' 는 이 기준점에서 각각 92·85 로
+ * 깨진다 — 사용자 재확인 대기(단가 1.5 면 87·82 로 복귀하나 본인 중앙값이 71 에 머문다). */
+describe('억양 기준점 90 — 원어민 억양(90~91)에서는 감점 0', () => {
+  const clean = (pros) => ({ score: 98, recognizedText: 'hello there my friend', fluencyScore: 100, prosodyScore: pros, omissions: [], insertions: [],
+    wordScores: ['hello', 'there', 'my', 'friend'].map((w) => ({ word: w, score: 100 })) });
+  const inton = (pros) => computeDeductionScore(clean(pros), 'hello there my friend').deductions.find((x) => x.axis === 'intonation')?.points ?? 0;
+  it('억양 90.7(원어민) → 0, 88.8(본인 최고) → 1.1, 82.4 → 6.8, 55 → 30(상한)', () => {
+    expect(inton(90.7)).toBe(0);
+    expect(inton(88.8)).toBe(1.1);
+    expect(inton(82.4)).toBe(6.8);
+    expect(inton(55)).toBe(30);
+  });
+  it('본인 최고 시도(억양 88.8, 전단어 100)는 90점대에 닿는다', () => {
+    expect(computeDeductionScore(clean(88.8), 'hello there my friend').score).toBeGreaterThanOrEqual(90);
+  });
+  it('DEDUCTION_RATES.intonation.anchor 는 90 이고 축 상한 합은 60 그대로', () => {
+    expect(DEDUCTION_RATES.intonation.anchor).toBe(90);
+    expect(DEDUCTION_RATES.words.max + DEDUCTION_RATES.fluency.max + DEDUCTION_RATES.intonation.max).toBe(60);
+  });
+  it('scoreForDisplay 는 체계 표식 ded2 를 찍는다 (ded1 행과 척도 구별)', () => {
+    const s = scoreForDisplay(clean(88.8), 'hello there my friend', 'en');
+    expect(s.scoreModel).toBe('ded2');
   });
 });
