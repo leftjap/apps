@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#faf9f5">
+<title>Study · 연속 듣기</title>
+<link rel="stylesheet" href="/src/styles/tokens.css">
+<style>
+  body { margin: 0; }
+  #root { min-height: 100vh; min-height: 100dvh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+  import { mountListen } from '/src/pages/listen.js';
+  /* ?demo=1 — 시드 카드로 가짜 DB 를 채우고, Azure 대신 묶음마다 짧은 440Hz 톤 WAV 를 돌려준다 (브라우저·시뮬레이터 화면 검증용). */
+  const demo = new URLSearchParams(location.search).get('demo') === '1';
+  if (demo) {
+    const seed = (await import('/seeds/en-core100-2026-08-26.json')).default;
+    const cards = seed.cards.map((c) => ({ ...c, lang: 'en' }));
+    const table = (rows) => ({ where: () => ({ equals: () => ({ toArray: async () => rows }) }) });
+    window.studyDB = { reviewQueue: table(cards) };
+    const amp = Number(new URLSearchParams(location.search).get('amp') ?? 6000); // amp=0 이면 무음 (소리 없이 재생 경로만 검증)
+    const toneWav = (sec) => {
+      const sr = 24000, n = Math.floor(sr * sec), buf = new ArrayBuffer(44 + n * 2), v = new DataView(buf);
+      const str = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+      str(0, 'RIFF'); v.setUint32(4, 36 + n * 2, true); str(8, 'WAVE'); str(12, 'fmt '); v.setUint32(16, 16, true);
+      v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, sr, true); v.setUint32(28, sr * 2, true);
+      v.setUint16(32, 2, true); v.setUint16(34, 16, true); str(36, 'data'); v.setUint32(40, n * 2, true);
+      for (let i = 0; i < n; i++) v.setInt16(44 + i * 2, Math.sin((i / sr) * 2 * Math.PI * 440) * amp, true);
+      return buf;
+    };
+    window.studyListen = { synthesize: async (ssml) => { await new Promise((r) => setTimeout(r, 300)); return toneWav(0.5 * (ssml.match(/<voice /g)?.length ?? 2)); } };
+  }
+  mountListen(document.getElementById('root'));
+</script>
+</body>
+</html>

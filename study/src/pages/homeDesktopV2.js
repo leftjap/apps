@@ -305,7 +305,7 @@ function todayRingCard(state) {
   );
 }
 
-/* CTA 3개 — 1번 라벨은 기존 phase 분기를 그대로 따른다(fresh/mid/done). */
+/* CTA 4개(연속 듣기 포함, 2026-09-06) — 1번 라벨은 기존 phase 분기를 그대로 따른다(fresh/mid/done). */
 function ctaCard(state, d) {
   const isMath = state.lang === 'math';
   const newUnit = isMath ? '문제' : '표현';
@@ -325,7 +325,7 @@ function ctaCard(state, d) {
         : `남은 ${newUnit} ${state.newCount}개 · 약 ${d.newMin}분 남음`)
       : [d.sceneLine, `${newUnit} ${state.newCount}개`, `약 ${d.newMin}분`].filter(Boolean).join(' · ');
 
-  /* CTA 는 항상 3개다 (§5.5 '3버튼 모두') — 종전엔 복습 큐가 비면 '복습 시작' 을 통째로 숨겼다.
+  /* 학습 CTA 3개는 항상 있다 (§5.5 '3버튼 모두', 2026-09-06 부터 연속 듣기 추가로 4개) — 종전엔 복습 큐가 비면 '복습 시작' 을 통째로 숨겼다.
    * 보조줄만 상태에 따라 다르게: 큐가 비었으면 '오늘이 적기' 같은 없는 사실을 주장하지 않는다. */
   const reviewSub = state.totalReview <= 0
     ? '복습할 문장이 없어요'
@@ -344,6 +344,10 @@ function ctaCard(state, d) {
     isMath ? null : h('button', { class: 'vh-cta sec', type: 'button', onClick: () => { window.location.hash = '#/sentences'; } },
       h('span', {}, h('span', { class: 't1' }, '문장 모아보기'), h('span', { class: 't2' }, '지금까지 공부한 문장 · 한글 보고 떠올리기')),
       h('span', { class: 'go' }, '열기')),
+    /* 연속 듣기 (spec §9-8, 2026-09-06) — 배운 문장 전체를 한글→외국어로 무한 반복. 잠금 중 재생이 목적이라 홈에서 한 번에 진입. */
+    isMath ? null : h('button', { class: 'vh-cta sec', type: 'button', onClick: () => { window.location.hash = '#/listen'; } },
+      h('span', {}, h('span', { class: 't1' }, '연속 듣기'), h('span', { class: 't2' }, `한글 뒤 ${state.lang === 'ja' ? '일본어' : '영어'} · 무한 반복 · 잠금 중에도 재생`)),
+      h('span', { class: 'go' }, '듣기')),
   );
 }
 

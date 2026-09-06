@@ -41,6 +41,7 @@
 [홈]           — 학습 요약, 주간 캘린더, 최근 학습 카드, 세션 시작 버튼
 [학습 세션]    — 복습 카드 → 신규 레슨 → 세션 완료 요약
 [통계/기록]    — 월간 캘린더, 문장 목록, 발화 차트
+[연속 듣기]    — 배운 기본 문장 전체를 한글→외국어 순으로 소리 파일 하나로 만들어 무한 반복 재생 (§9-8)
 [설정]         — 프로필, 학습 설정, 동기화 상태
 ```
 
@@ -684,6 +685,26 @@ ja explanation 스키마 요약 (상세는 위 ja 가이드):
 3. session 진입 시 `prev = await fetchPrevSession({ lang, mode })` → state 채움 → `renderInSessionStats(state)` 첫 표시
 4. "따라 말하기" `analyzeWavRest` 결과 처리 끝에서 `renderInSessionStats(state)` 호출 (utterance/pass 증가 후)
 5. 단위 테스트 — `computeDeltaVsPrevSession(prev, currentSec, currentCount)` 순수 함수 검증 + `computePRRemaining(dailyPR, todayCount, sessionCount)` 검증
+
+### 9-8. 연속 듣기 (2026-09-06 사용자 결정 — 기획 정본)
+
+**목적**: 지금까지 배운 기본 문장 전체를 "한글 뜻 → 외국어 문장" 순서로 쉬지 않고 무한 반복해 들려준다. 폰을 잠그고(백그라운드) 듣는 것이 1순위 사용 상황.
+
+**진입**: 홈 화면. 모바일 홈은 문장 모아보기 카드 바로 아래 같은 형태의 카드("연속 듣기" · "한글 뒤 영어 · 무한 반복 · 잠금 중에도 재생" · 우측 "듣기"), 데스크톱 홈은 CTA 카드의 4번째 보조 버튼. 수학 탭에서는 문장 모아보기와 같이 숨긴다. 목적지 `#/listen` (현재 과목 = `sessionStorage.studyLang`, 문장 모아보기와 동일 규약).
+
+**범위(데이터)**: 문장 모아보기와 같은 목록 — `reviewQueue.where('lang')` 전체(SRS 졸업분 제외). 순서는 커리큘럼 순(`order_index` 오름차순, 없으면 생성일·id) — 문장 모아보기의 정렬(`compareSentenceRows`)은 학습 우선순위(오늘 판정 뒤로·난이도·점수)라 듣기에는 쓰지 않는다. 응용·체이닝 문장은 넣지 않는다. 텍스트는 `sentence`(외국어)와 `meaning || ko`(한글). 한글의 괄호 안 힌트(예: "(무슨) 문제가 있나요?")는 TTS 가 실제로 읽으므로(2026-09-06 Azure 실측: 괄호 단어 1개당 약 0.8초 길어짐) **괄호와 그 안 내용을 제거하고 읽는다**. 화면 표시는 원문 그대로.
+
+**합성(왜 파일 하나인가)**: 문장마다 재생을 이어 붙이는 방식은 문장이 바뀔 때마다 JS 가 깨어나야 하므로 잠금 상태에서 끊기기 쉽다(iOS 26 홈 화면 PWA "잠기면 다음 곡으로 안 넘어감" 보고). 그래서 문장 전체를 **오디오 한 개**로 만들고 반복은 `<audio loop>` 에 맡긴다.
+- SSML: `<speak>` 하나에 `<voice>` 를 문장마다 두 개씩(한글 voice · 외국어 voice) 번갈아 넣는다. 한글 voice 는 `ko-KR-SunHiNeural`, 외국어는 `VOICE_DEFAULTS[lang]`(en Aria / ja Aoi, rate 0.85). 쉼은 `<mstts:silence type="Tailing-exact">` 로 한글 뒤 2000ms, 외국어 뒤 1000ms(떠올릴 틈. 한글 뒤 쉼은 사용자 취향값이라 상수로 둔다).
+- Azure 한도(요청당 voice 태그 50개·오디오 10분·SSML 64KB — quotas 문서 2026-06 기준)에 맞춰 **25문장(=50 voice 태그)씩 묶어** 요청한다. 요청은 병렬로 보내고 진행률을 표시한다.
+- 출력 포맷 `riff-24khz-16bit-mono-pcm`. SDK 는 `new SpeechSynthesizer(config, null)`(스피커 없음)로 호출하면 결과 `audioData` 에 헤더 포함 WAV 전체가 온다. 각 묶음의 44바이트 헤더를 벗기고 PCM 을 이어 붙인 뒤 `pcmToWavBlob(int16, 24000)` 로 WAV Blob 하나를 만든다(메모리 보관, 저장 안 함. 영어 119문장 실측 추정 약 12분·35MB: 5문장 쌍 = 30.8초 실측).
+- 토큰·SDK 는 `getAzureToken`/`loadSpeechSDK` 재사용. **Web Speech 폴백 없음** — iOS 에서 백그라운드 진입 시 `speechSynthesis` 가 멈추는 실측 보고가 있어, Azure 실패 시 "지금은 만들 수 없어요 · 다시 시도" 안내만 한다.
+
+**재생**: 화면이 소유하는 `<audio>` 요소 하나. `src = URL.createObjectURL(blob)`, `loop = true`, 재생 시작은 사용자 탭 안에서 `play()`. `navigator.mediaSession.metadata` 에 제목("연속 듣기 · 영어 N문장")과 `setActionHandler('play'|'pause')` 를 건다. 화면을 떠나면 `pause()` 후 `revokeObjectURL`.
+
+**화면(`src/pages/listen.js`)**: 상단 "홈으로", 제목 "연속 듣기", 부제 "영어 N문장 · 한 바퀴 약 M분", 큰 재생/일시정지 버튼, 만드는 중 진행률("소리 만드는 중 2/5"), "다시 만들기". 문장 텍스트 목록·현재 문장 강조·속도/쉼 설정·캐시는 v1 범위 밖.
+
+**검증 근거(2026-09-06, iOS 26.5 시뮬레이터 실측 — `~/apps/lessons/ios-simulator-web-audio-lock-verification.md`)**: 같은 구조(WAV Blob + `<audio loop>` + Media Session)의 시험 페이지가 Safari 탭(294초 잠금, 놓친 시간 3초)과 홈 화면 앱(iPhone 11 Pro, 219초 잠금, 놓친 시간 2초) 모두에서 잠금 중 반복 재생을 유지했고 잠금화면 재생 패널이 표시됐다. **미검증**: 잠금화면 일시정지 후 30초 이상 지나 재개(시뮬레이터에서 조작 불가), 실기기 전원 관리 차이.
 
 ---
 

@@ -10,6 +10,7 @@ import sessionMathHtml from '../mocks/session-math.html?raw';
 import summaryHtml from '../mocks/summary.html?raw';
 import statsHtml from '../mocks/stats.html?raw';
 import sentencesHtml from '../mocks/sentences.html?raw';
+import listenHtml from '../mocks/listen.html?raw';
 import settingsHtml from '../mocks/settings.html?raw';
 import bsSheetCss from './styles/bs-sheet.css?raw';
 import { mountHome } from './pages/home.js';
@@ -21,6 +22,7 @@ import { mountLogin } from './pages/login.js';
 import { mountSettings } from './pages/settings.js';
 import { mountStats } from './pages/stats.js';
 import { mountSentences } from './pages/sentences.js';
+import { mountListen } from './pages/listen.js';
 
 const ROUTES = {
   login: loginHtml,
@@ -31,6 +33,7 @@ const ROUTES = {
   summary: summaryHtml,
   stats: statsHtml,
   sentences: sentencesHtml,
+  listen: listenHtml,
   settings: settingsHtml,
 };
 
@@ -47,6 +50,7 @@ const PAGE_MOUNTS = {
   settings: mountSettings,
   stats: mountStats,
   sentences: mountSentences,
+  listen: mountListen,
 };
 
 const DEFAULT_ROUTE = 'login';

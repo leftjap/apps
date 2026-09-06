@@ -56,7 +56,8 @@ describe('홈 — 가짜 기록 주장 금지 (데스크톱·모바일 공통)',
       expect(el.querySelector('.vh-msg')).toBeNull();
       expect(el.querySelector('.vh-streak')).toBeNull();
       expect(el.textContent).not.toMatch(/최고 기록/);
-      expect(el.textContent).not.toMatch(/연속/);
+      // 스트릭 칩 문구만 금지 — '연속 듣기' CTA(spec §9-8, 2026-09-06)는 기능 이름이라 허용
+      expect(el.textContent).not.toMatch(/\d+일 연속|연속 \d|연속 학습/);
     });
 
     it(`${name}: 직전 학습일이 없으면 어떤 비교 숫자도 만들지 않는다`, () => {
@@ -120,7 +121,7 @@ describe('모바일 홈 — 데스크톱과 같은 구성', () => {
   it('CTA 3개 — 학습 시작은 하나뿐', () => {
     const el = renderHomeMobileV2(mob());
     const ctas = [...el.querySelectorAll('.vh-cta .t1')].map((n) => n.textContent);
-    expect(ctas).toEqual(['학습 시작', '복습 시작', '문장 모아보기']);
+    expect(ctas).toEqual(['학습 시작', '복습 시작', '문장 모아보기', '연속 듣기']);
   });
 });
 
@@ -205,6 +206,18 @@ describe('홈 v3 — 최근 4주 캘린더 · 오늘 발화 링 · CTA', () => {
     const starts = [...el.querySelectorAll('.vh-cta')].filter((b) => b.textContent.includes('학습 시작'));
     expect(starts).toHaveLength(1);
     expect(el.textContent).toContain('문장 모아보기');
+  });
+
+  it('연속 듣기 CTA — #/listen 으로, 수학에서는 없음 (spec §9-8)', () => {
+    const el = renderHomeDesktopV2(v3());
+    const btn = [...el.querySelectorAll('.vh-cta')].find((b) => b.textContent.includes('연속 듣기'));
+    expect(btn).toBeTruthy();
+    expect(btn.textContent).toContain('한글 뒤 영어 · 무한 반복 · 잠금 중에도 재생');
+    window.location.hash = '';
+    btn.click();
+    expect(window.location.hash).toBe('#/listen');
+    expect(renderHomeDesktopV2(v3({ lang: 'ja' })).textContent).toContain('한글 뒤 일본어');
+    expect(renderHomeDesktopV2(v3({ lang: 'math' })).textContent).not.toContain('연속 듣기');
   });
 
   it('누적 4열 — 공부 시간은 시/분으로 쪼개 표기', () => {
@@ -316,7 +329,7 @@ describe('홈 CTA — 항상 3버튼 (§5.5)', () => {
   for (const [name, render] of [['데스크톱', renderHomeDesktopV2], ['모바일', renderHomeMobileV2]]) {
     it(`${name}: 복습 큐가 0 이어도 복습 버튼이 남는다`, () => {
       const el = render(st({ size: name === '모바일' ? 'phone' : 'desktop' }));
-      expect(ctas(el)).toEqual(['학습 시작', '복습 시작', '문장 모아보기']);
+      expect(ctas(el)).toEqual(['학습 시작', '복습 시작', '문장 모아보기', '연속 듣기']);
       // 없는 사실을 주장하지 않는다 — 큐가 비었으면 '오늘이 적기' 를 쓰지 않는다
       const sub = el.querySelector('.vh-cta.rev .t2').textContent;
       expect(sub).toBe('복습할 문장이 없어요');
