@@ -314,6 +314,21 @@
       ],
       "cwd": "/Users/gio_c/apps/study",
       "port": 5195
+    },
+    {
+      "name": "debate-tts",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "5340",
+        "--directory",
+        "/private/tmp/claude-501/-Users-gio-c-apps/6596ffe9-a4ef-4463-8e8a-0d2dfde8f674/scratchpad/tts",
+        "--bind",
+        "127.0.0.1"
+      ],
+      "port": 5340,
+      "autoPort": false
     }
   ]
 }
