@@ -11,6 +11,7 @@ import summaryHtml from '../mocks/summary.html?raw';
 import statsHtml from '../mocks/stats.html?raw';
 import sentencesHtml from '../mocks/sentences.html?raw';
 import listenHtml from '../mocks/listen.html?raw';
+import speakHtml from '../mocks/speak.html?raw';
 import settingsHtml from '../mocks/settings.html?raw';
 import bsSheetCss from './styles/bs-sheet.css?raw';
 import { mountHome } from './pages/home.js';
@@ -23,6 +24,7 @@ import { mountSettings } from './pages/settings.js';
 import { mountStats } from './pages/stats.js';
 import { mountSentences } from './pages/sentences.js';
 import { mountListen } from './pages/listen.js';
+import { mountSpeak } from './pages/speak.js';
 
 const ROUTES = {
   login: loginHtml,
@@ -34,6 +36,7 @@ const ROUTES = {
   stats: statsHtml,
   sentences: sentencesHtml,
   listen: listenHtml,
+  speak: speakHtml,
   settings: settingsHtml,
 };
 
@@ -51,6 +54,7 @@ const PAGE_MOUNTS = {
   stats: mountStats,
   sentences: mountSentences,
   listen: mountListen,
+  speak: mountSpeak,
 };
 
 const DEFAULT_ROUTE = 'login';

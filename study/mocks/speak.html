@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#faf9f5">
+<title>Study · 말하기 연습</title>
+<link rel="stylesheet" href="/src/styles/tokens.css">
+<style>
+  body { margin: 0; }
+  #root { min-height: 100vh; min-height: 100dvh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+  import { mountSpeak } from '/src/pages/speak.js';
+  /* ?demo=1 — 시드 카드로 가짜 DB 를 채운다 (브라우저 화면 검증용, 로그인 불필요). 첫 카드는 X 판정으로 두어 '어려웠던' 범위도 보이게. */
+  const demo = new URLSearchParams(location.search).get('demo') === '1';
+  if (demo) {
+    const seed = (await import('/seeds/en-core100-2026-08-26.json')).default;
+    const d = new Date(); const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const cards = seed.cards.map((c, i) => ({ ...c, lang: 'en', promotedAt: `${iso}T0${i}:00:00Z`, ...(i === 0 ? { lastResult: 'X' } : {}) }));
+    const logs = [{ date: iso, lang: 'en', mode: 'new', newSentenceIds: cards.map((c) => c.id), sentenceIds: cards.map((c) => c.id) }];
+    const table = (rows) => ({ where: () => ({ equals: () => ({ toArray: async () => rows }) }) });
+    window.studyDB = { reviewQueue: table(cards), sessionLogs: table(logs) };
+    sessionStorage.setItem('studyLang', 'en');
+  }
+  mountSpeak(document.getElementById('root'));
+</script>
+</body>
+</html>
