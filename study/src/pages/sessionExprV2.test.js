@@ -16,7 +16,7 @@ vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), s
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2, hlNode, drillRows, recordGateMessage } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
@@ -1597,5 +1597,80 @@ describe('sessionExprV2 — 체이닝·생산 점수 원 + 저장', () => {
     pb.click(); await tick(); pb.click(); await tick(); await tick();
     expect(savePronunciationLog.mock.calls.map((x) => x[1]?.sentenceId)).toContain("e1#prod#It's more than a job.");
     expect(numDots(pr)).toHaveLength(1);
+  });
+});
+
+
+/* 미니대화 (2026-09-08 작업지시서 §1~§4) — 타깃 표현의 사용 맥락을 주는 contextual input. 평가·암기 대상이 아니므로
+ * 블록에는 녹음·통과 판정·다음 잠금이 없고, 전체 듣기·한 줄 듣기·타깃 줄 강조만 있다. */
+describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const MD = [
+    { speaker: 'A', en: "I'll finish it by Friday.", ko: '금요일까지 끝낼게.' },
+    { speaker: 'B', en: 'Is that a promise?', ko: '약속하는 거예요?' },
+    { speaker: 'A', en: 'It is. You can count on it.', ko: '그럼. 믿어도 돼.' },
+  ];
+  function mdState(size = 'desktop') {
+    const s = makeState();
+    s.size = size;
+    s.sentence.explanation.miniDialogue = MD;
+    return s;
+  }
+  const mount = (state) => { const host = document.createElement('div'); document.body.appendChild(host); renderSessionExprV2(host, state, {}); return host; };
+
+  it('필드가 있으면 카드 위에 블록 — 줄 3개, 화자 표시, 타깃 줄만 강조, 한글 병기', () => {
+    const host = mount(mdState());
+    const mini = host.querySelector('.vs-mini');
+    expect(mini).not.toBeNull();
+    const lines = [...mini.querySelectorAll('.vs-mini-line')];
+    expect(lines).toHaveLength(3);
+    expect(lines.map((l) => l.getAttribute('data-speaker'))).toEqual(['A', 'B', 'A']);
+    expect(lines.map((l) => l.classList.contains('tgt'))).toEqual([false, true, false]);
+    expect(lines[1].querySelector('.en').textContent).toBe('Is that a promise?');
+    expect(lines[1].querySelector('.ko').textContent).toBe('약속하는 거예요?');
+    const card = host.querySelector('.vs-card');
+    expect(mini.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('모바일 레이아웃에서도 카드 위에 블록', () => {
+    const host = mount(mdState('phone'));
+    const mini = host.querySelector('.vs-mini');
+    expect(mini).not.toBeNull();
+    expect(mini.compareDocumentPosition(host.querySelector('.vs-card')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('필드가 없으면 블록 없음 (기존 카드 호환)', () => {
+    const host = mount(makeState());
+    expect(host.querySelector('.vs-mini')).toBeNull();
+    expect(miniDialogueEl(undefined, { sentence: 'x' }, 'en', 'x')).toBeNull();
+  });
+
+  it('한 줄 듣기 → 그 줄만, 화자별 목소리(A 여성·B 남성)', () => {
+    const speak = vi.fn();
+    window.studySpeech = { speak };
+    const host = mount(mdState());
+    const plays = [...host.querySelectorAll('.vs-mini button[aria-label="듣기"]')];
+    expect(plays).toHaveLength(3);
+    plays[1].click();
+    expect(speak).toHaveBeenCalledTimes(1);
+    expect(speak.mock.calls[0][0]).toBe('Is that a promise?');
+    expect(speak.mock.calls[0][1].voice).toBe('en-US-AndrewMultilingualNeural');
+    plays[0].click();
+    expect(speak.mock.calls[1][1].voice).toBe('en-US-AvaMultilingualNeural');
+  });
+
+  it('전체 듣기 → 끝나면 다음 줄, 순서대로 3줄', () => {
+    const speak = vi.fn((_text, opts) => { opts?.onEnd?.(); });
+    window.studySpeech = { speak };
+    const host = mount(mdState());
+    host.querySelector('[data-role="mini-all"]').click();
+    expect(speak.mock.calls.map((c) => c[0])).toEqual(["I'll finish it by Friday.", 'Is that a promise?', 'It is. You can count on it.']);
+  });
+
+  it('블록에는 녹음·판정·잠금이 없다 (맥락 입력 전용)', () => {
+    const host = mount(mdState());
+    const mini = host.querySelector('.vs-mini');
+    expect(mini.querySelector('button[aria-label="녹음"]')).toBeNull();
+    expect(mini.querySelector('.judge-btn')).toBeNull();
   });
 });

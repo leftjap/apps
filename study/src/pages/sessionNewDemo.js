@@ -28,6 +28,12 @@ const EXPR = [
   {
     id: 'demo-e1', lang: 'en', sentence: 'Is that a promise?', ko: '약속하는 거예요?', pron: '이즈 대러 프라미스?', speaker: 'A',
     explanation: {
+      // 미니대화 데모 (2026-09-08) — /mocks/session-new.html?demo=1&view=session 시각 검증용
+      miniDialogue: [
+        { speaker: 'A', en: "I'll finish it by Friday.", ko: '금요일까지 끝낼게.' },
+        { speaker: 'B', en: 'Is that a promise?', ko: '약속하는 거예요?' },
+        { speaker: 'A', en: 'It is. You can count on it.', ko: '그럼. 믿어도 돼.' },
+      ],
       key: 'Is that a promise? = 약속하는 거예요? 상대의 말을 못박아 확인하는 되묻기.',
       situation: '레슬리의 다짐에 앤이 진짜냐고 확인하는 장면. 상대가 한 말을 그대로 믿기 어려울 때, 가볍게 다짐을 받아내는 뉘앙스로 써요. 진지한 추궁보다는 살짝 장난스러운 톤까지 폭넓게 쓰입니다.',
       grammar: [

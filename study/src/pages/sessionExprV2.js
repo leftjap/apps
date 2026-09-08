@@ -539,6 +539,50 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
   return block;
 }
 
+/* 미니대화 (2026-09-08 작업지시서 §1~§4) — 타깃 표현이 어떤 상대 발화·상황 뒤에 나오는지 듣게 하는 contextual input.
+ * 학습 게이트가 아니다: 녹음·암기·통과 판정·다음 잠금·SRS 없음. 화면은 전체 듣기·한 줄 듣기·타깃 줄 강조뿐이고 상태를 갖지 않는다.
+ * 복습 렌더러·공유 해설 패널에는 넣지 않는다(정답 유출). 필드가 없으면 null(과거 카드 호환). 두 화자 음성 고정(A 여성·B 남성). */
+const MINI_VOICES = { A: 'en-US-AvaMultilingualNeural', B: 'en-US-AndrewMultilingualNeural' };
+const MINI_CSS = `
+.vs-mini{margin:0 0 14px;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.vs-mini .vs-labrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.vs-mini-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
+.vs-mini-line{display:grid;grid-template-columns:22px 1fr 34px;gap:10px;align-items:center;padding:8px 6px;border-radius:12px}
+.vs-mini-line .sp{font-family:Outfit,sans-serif;font-size:11px;font-weight:700;color:var(--faint);text-align:center}
+.vs-mini-line .en{font-size:15.5px;font-weight:600;line-height:1.35}
+.vs-mini-line .ko{font-size:12px;color:var(--mut);margin-top:2px}
+.vs-mini-line.tgt{background:var(--teal-soft)}
+.vs-mini-line.tgt .en{font-weight:800;color:var(--teal-deep)}`;
+export function miniDialogueEl(md, s, lang, expr) {
+  const lines = (Array.isArray(md) ? md : []).filter((l) => l && typeof l.en === 'string' && l.en.trim());
+  if (!lines.length) return null;
+  const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
+  const target = String(s?.sentence ?? '').trim();
+  const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
+  const rows = lines.map((l) => {
+    const isT = l.en.trim() === target;
+    const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
+    play.addEventListener('click', () => speakWithFeedback(play, l.en, { lang: ttsLang, voice: voiceOf(l.speaker), rate: 1.0 }));
+    const el = h('div', { class: 'vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
+      h('span', { class: 'sp' }, String(l.speaker ?? '')),
+      h('div', {}, h('div', { class: 'en' }, isT ? hlNode(l.en, expr) : l.en), l.ko ? h('div', { class: 'ko' }, l.ko) : null),
+      play);
+    return { l, play, el };
+  });
+  const allBtn = h('button', { class: 'vs-mini-all', type: 'button', 'data-role': 'mini-all' }, vIcon(VI.PLAY, { size: 11, fill: true }), '전체 듣기');
+  allBtn.addEventListener('click', () => {
+    const playAt = (i) => {
+      if (i >= rows.length) return;
+      const r = rows[i];
+      speakWithFeedback(r.play, r.l.en, { lang: ttsLang, voice: voiceOf(r.l.speaker), rate: 1.0, onEnd: () => playAt(i + 1) });
+    };
+    playAt(0);
+  });
+  return h('div', { class: 'vs-mini' }, v2Style(MINI_CSS),
+    h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '이런 대화에서'), allBtn),
+    rows.map((r) => r.el));
+}
+
 /* 생산 연습(한→영) — 방금 연습한 드릴 중 3개를 한글만 보고 영어로 재현 (2026-07-22 사용자 결정).
  * 자유 작문이 아니라 직전 연습 문장의 인출 재현 — 대안 표현은 오답 처리된다(의도).
  * 통과 판정은 체이닝과 동일(전사 비교 judgeCoverage). 실패 2회 → 첫 단어 힌트, 3회 → 정답 공개 후 완료.
@@ -1077,6 +1121,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     h('div', { class: 'vs-ko' }, s?.ko || ''),
     s?.pron ? h('div', { class: 'vs-pron' }, s.pron) : null,
     ctrl, meta);
+  const miniEl = miniDialogueEl(ex?.miniDialogue, s, lang, expr); // 카드 위 — 맥락 → 형태 순서 (2026-09-08)
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {
@@ -1100,7 +1145,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
         h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        cardEl, recWidget, histCard.el, drillsBlock, chainBlock, prodBlock, fold),
+        miniEl, cardEl, recWidget, histCard.el, drillsBlock, chainBlock, prodBlock, fold),
       h('div', { class: 'm-cta' }, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -1122,7 +1167,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
         h('span', { class: 'vs-scene' }, `${sceneTitle || '신규'} · ${subjLabel}`),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-      cardEl, drillsBlock, chainBlock, prodBlock);
+      miniEl, cardEl, drillsBlock, chainBlock, prodBlock);
     const side = h('aside', { class: 'vs-side' }, recWidget, histCard.el, foldPanel, nextBtn);
     root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
