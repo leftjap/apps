@@ -8,7 +8,8 @@
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-vi.mock('../services/pronunciationLog.js', () => ({ savePronunciationLog: vi.fn(async () => null) }));
+// 원본 위에 저장만 가짜로 — 렌더가 miniLinesOf 등 순수 헬퍼를 쓴다 (2026-09-08 미니대화 녹음).
+vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), savePronunciationLog: vi.fn(async () => null) }));
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 const toasts = [];
 vi.mock('../components/session/recordToast.js', () => ({
