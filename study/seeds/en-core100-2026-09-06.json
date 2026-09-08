@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "1-30 말문 트기와 대화 운영",
   "date": "2026-09-06",
-  "_note": "코어 100문장 커리큘럼 19~24번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 13~18(09-05) 다음 묶음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 19~24번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 13~18(09-05) 다음 묶음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(19~24 프로토타입, 작업지시서 §1~§4): 2~4턴 contextual input, 평가·암기 대상 아님.",
   "cards": [
     {
       "id": "en-core100-019-trying-to-reach",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "trying to reach = 연락이 닿으려고 애쓰다. 전화·문자를 여러 번 했는데 안 닿았다고 말할 때.",
         "situation": "아내나 친구한테 급한 일로 계속 전화했는데 안 받았을 때 — 만나자마자 이 말로 시작한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Oh, hi! Did you need something?",
+            "ko": "어, 안녕! 무슨 일 있었어?"
+          },
+          {
+            "speaker": "B",
+            "en": "I've been trying to reach you all morning.",
+            "ko": "아침 내내 너한테 연락하려고 했어."
+          },
+          {
+            "speaker": "A",
+            "en": "Sorry, my phone was on silent. What's up?",
+            "ko": "미안, 폰이 무음이었어. 무슨 일이야?"
+          }
+        ],
         "drills": [
           {
             "en": "I couldn't reach you.",
@@ -107,6 +124,23 @@
       "explanation": {
         "key": "something came up = 갑자기 일이 생겼다. 예정에 없던 일 때문에 계획이 틀어졌다고 알릴 때.",
         "situation": "퇴근길에 갑자기 일이 생겨 약속에 늦을 것 같을 때 — 아내나 친구에게 미리 문자로 보낸다.",
+        "miniDialogue": [
+          {
+            "speaker": "B",
+            "en": "Something came up, so I may be a little late.",
+            "ko": "일이 생겨서 조금 늦을 수도 있어."
+          },
+          {
+            "speaker": "A",
+            "en": "No problem. How late do you think?",
+            "ko": "괜찮아. 얼마나 늦을 것 같아?"
+          },
+          {
+            "speaker": "B",
+            "en": "Maybe twenty minutes. I'll text you when I leave.",
+            "ko": "한 20분쯤. 출발할 때 문자할게."
+          }
+        ],
         "drills": [
           {
             "en": "Something came up.",
@@ -203,6 +237,23 @@
       "explanation": {
         "key": "push it back = (일정을) 뒤로 미루다. 정해 둔 시간을 좀 늦추자고 제안할 때.",
         "situation": "약속 시간에 맞추기 빠듯할 때 — 아내와의 저녁이나 친구와의 만남을 한 시간만 늦추자고 물어본다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Dinner is still at six, right?",
+            "ko": "저녁 여섯 시 맞지?"
+          },
+          {
+            "speaker": "B",
+            "en": "Can we push it back an hour or so?",
+            "ko": "한 시간쯤 미룰 수 있을까?"
+          },
+          {
+            "speaker": "A",
+            "en": "Sure. Seven works for me.",
+            "ko": "그래. 일곱 시도 괜찮아."
+          }
+        ],
         "drills": [
           {
             "en": "Can we push it back?",
@@ -303,6 +354,28 @@
       "explanation": {
         "key": "didn't mean to = 그러려던 건 아니었어. 결과는 인정하면서 의도는 아니었다고 해명할 때.",
         "situation": "말이 심하게 나가 아내나 친구의 표정이 굳었을 때 — 사과보다 먼저 이 말로 의도를 풀어 준다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Wow. That was a bit harsh.",
+            "ko": "와. 그건 좀 심했어."
+          },
+          {
+            "speaker": "B",
+            "en": "I didn't mean to make you feel bad.",
+            "ko": "네 기분 상하게 하려던 건 아니었어."
+          },
+          {
+            "speaker": "A",
+            "en": "It's okay. Rough day?",
+            "ko": "괜찮아. 힘든 하루였어?"
+          },
+          {
+            "speaker": "B",
+            "en": "Yeah. Let me say that again, nicely.",
+            "ko": "응. 다시 좋게 말할게."
+          }
+        ],
         "drills": [
           {
             "en": "I didn't mean it.",
@@ -399,6 +472,23 @@
       "explanation": {
         "key": "I thought you said = 네가 ~라고 한 줄 알았어. 들은 말과 지금 상황이 어긋날 때 부드럽게 짚는 말.",
         "situation": "바쁘다던 사람이 눈앞에 나타났을 때 — 따지지 않고 '내가 그렇게 들었는데' 하고 확인하는 자리.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Hey, what a surprise!",
+            "ko": "어, 이게 웬일이야!"
+          },
+          {
+            "speaker": "B",
+            "en": "I thought you said you were busy today.",
+            "ko": "네가 오늘 바쁘다고 한 줄 알았어."
+          },
+          {
+            "speaker": "A",
+            "en": "My meeting got cancelled at the last minute.",
+            "ko": "회의가 막판에 취소됐어."
+          }
+        ],
         "drills": [
           {
             "en": "I thought you said tomorrow.",
@@ -495,6 +585,18 @@
       "explanation": {
         "key": "have no idea = 전혀 모르겠다. don't know 보다 강한, 짐작조차 안 된다는 말.",
         "situation": "상대가 앞뒤 없이 말을 꺼내 무슨 얘긴지 하나도 안 잡힐 때 — 여행 중 낯선 안내를 들었을 때도 그대로 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "So, did you bring the thing for Sarah?",
+            "ko": "그래서, 사라 줄 그거 가져왔어?"
+          },
+          {
+            "speaker": "B",
+            "en": "I have no idea what you're talking about.",
+            "ko": "네가 무슨 말 하는지 전혀 모르겠어."
+          }
+        ],
         "drills": [
           {
             "en": "I have no idea.",
