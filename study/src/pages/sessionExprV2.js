@@ -10,7 +10,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog, drillLogId, chainLogId, prodLogId } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId, chainLogId, prodLogId, miniLogId, miniLinesOf } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
@@ -540,41 +540,86 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
 }
 
 /* 미니대화 (2026-09-08 작업지시서 §1~§4) — 타깃 표현이 어떤 상대 발화·상황 뒤에 나오는지 듣게 하는 contextual input.
- * 학습 게이트가 아니다: 녹음·암기·통과 판정·다음 잠금·SRS 없음. 화면은 전체 듣기·한 줄 듣기·타깃 줄 강조뿐이고 상태를 갖지 않는다.
- * 복습 렌더러·공유 해설 패널에는 넣지 않는다(정답 유출). 필드가 없으면 null(과거 카드 호환). 두 화자 음성 고정(A 여성·B 남성). */
+ * 위치는 문장 카드 **아래** (2026-09-08 사용자 결정 "기존처럼 기본 문장 먼저, 그다음 미니대화").
+ * 학습 게이트가 아니다: 암기·통과 판정·다음 잠금·SRS 없음. 줄마다 듣기와 **선택 녹음**(2026-09-08 "녹음버튼도 추가") —
+ * 녹음은 응용 행과 같은 채점·점수 배지·세션 집계(onScore)이고 진행 조건이 아니다. 복습 렌더러·공유 해설 패널에는
+ * 넣지 않는다(정답 유출). 필드가 없으면 null(과거 카드 호환). 두 화자 음성 고정(A 여성·B 남성). demo 는 마이크 없이 시뮬. */
 const MINI_VOICES = { A: 'en-US-AvaMultilingualNeural', B: 'en-US-AndrewMultilingualNeural' };
 const MINI_CSS = `
-.vs-mini{margin:0 0 14px;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
+.vs-mini{margin:14px 0 0;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
 .vs-mini .vs-labrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .vs-mini-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
-.vs-mini-line{display:grid;grid-template-columns:22px 1fr 34px;gap:10px;align-items:center;padding:8px 6px;border-radius:12px}
+.vs-mini-line{display:grid;grid-template-columns:22px 1fr auto 34px 34px;gap:8px;align-items:center;padding:8px 6px;border-radius:12px}
 .vs-mini-line .sp{font-family:Outfit,sans-serif;font-size:11px;font-weight:700;color:var(--faint);text-align:center}
 .vs-mini-line .en{font-size:15.5px;font-weight:600;line-height:1.35}
 .vs-mini-line .ko{font-size:12px;color:var(--mut);margin-top:2px}
 .vs-mini-line.tgt{background:var(--teal-soft)}
 .vs-mini-line.tgt .en{font-weight:800;color:var(--teal-deep)}`;
-export function miniDialogueEl(md, s, lang, expr) {
-  const lines = (Array.isArray(md) ? md : []).filter((l) => l && typeof l.en === 'string' && l.en.trim());
+export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved } = {}) {
+  const lines = miniLinesOf(md);
   if (!lines.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const target = String(s?.sentence ?? '').trim();
   const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
-  const rows = lines.map((l) => {
+  let recCtrl = null, recRow = null;
+  const rows = lines.map((l, i) => {
     const isT = l.en.trim() === target;
+    const hist = normScores(saved?.[i]);
+    const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
+      hist.slice(-DRILL_DOTS_MAX).map((v) => scoreDot(v, { size: 26, fresh: false })));
     const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     play.addEventListener('click', () => speakWithFeedback(play, l.en, { lang: ttsLang, voice: voiceOf(l.speaker), rate: 1.0 }));
-    const el = h('div', { class: 'vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
+    const rec = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
+    const row = h('div', { class: 'vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
       h('span', { class: 'sp' }, String(l.speaker ?? '')),
       h('div', {}, h('div', { class: 'en' }, isT ? hlNode(l.en, expr) : l.en), l.ko ? h('div', { class: 'ko' }, l.ko) : null),
-      play);
-    return { l, play, el };
+      scoreEl, play, rec);
+    const pushScore = (raw) => {
+      hist.push(Math.round(Number(raw) || 0));
+      const shown = hist.slice(-DRILL_DOTS_MAX);
+      scoreEl.replaceChildren(...shown.map((v, k) => scoreDot(v, { size: 26, fresh: k === shown.length - 1 })));
+      scoreEl.style.display = '';
+      popScore(scoreEl);
+    };
+    // 녹음 종료·채점 — 수동 멈추기와 무음 자동종료 공유 (응용 행과 같은 계약). recRow 가드로 오행 방지.
+    async function finishRec() {
+      if (!(recCtrl && recRow === row)) return;
+      const ctrl = recCtrl; recCtrl = null; recRow = null;
+      row.classList.remove('recing'); rec.classList.remove('recing');
+      const result = await stopAndAnalyze(ctrl, l.en, { lang }, { enableMiscue: true });
+      if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+      const judged = judgeRecording(result, l.en);
+      if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
+      const scored = scoreForDisplay(result, l.en, lang);
+      pushScore(scored.score);
+      onScore?.(i, scored);
+    }
+    rec.addEventListener('click', async () => {
+      if (demo) {
+        if (row.classList.contains('recing')) return;
+        row.classList.add('recing'); rec.classList.add('recing');
+        setTimeout(() => {
+          row.classList.remove('recing'); rec.classList.remove('recing');
+          const result = { score: Math.min(84 + i * 4, 99), weakPhonemes: ['ð'] };
+          pushScore(result.score);
+          onScore?.(i, result);
+        }, 800);
+        return;
+      }
+      if (recCtrl && recRow === row) { finishRec(); return; }
+      const r = await startMicRecording({ autoStopSilenceMs: 1400, speculate: { expected: l.en, card: { lang } }, onAutoStop: () => finishRec() });
+      if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
+      recCtrl = r.controller; recRow = row;
+      row.classList.add('recing'); rec.classList.add('recing');
+    });
+    return { l, play, el: row };
   });
   const allBtn = h('button', { class: 'vs-mini-all', type: 'button', 'data-role': 'mini-all' }, vIcon(VI.PLAY, { size: 11, fill: true }), '전체 듣기');
   allBtn.addEventListener('click', () => {
-    const playAt = (i) => {
-      if (i >= rows.length) return;
-      const r = rows[i];
-      speakWithFeedback(r.play, r.l.en, { lang: ttsLang, voice: voiceOf(r.l.speaker), rate: 1.0, onEnd: () => playAt(i + 1) });
+    const playAt = (k) => {
+      if (k >= rows.length) return;
+      const r = rows[k];
+      speakWithFeedback(r.play, r.l.en, { lang: ttsLang, voice: voiceOf(r.l.speaker), rate: 1.0, onEnd: () => playAt(k + 1) });
     };
     playAt(0);
   });
@@ -1121,7 +1166,27 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     h('div', { class: 'vs-ko' }, s?.ko || ''),
     s?.pron ? h('div', { class: 'vs-pron' }, s.pron) : null,
     ctrl, meta);
-  const miniEl = miniDialogueEl(ex?.miniDialogue, s, lang, expr); // 카드 위 — 맥락 → 형태 순서 (2026-09-08)
+  // 미니대화 줄 녹음 점수 (2026-09-08) — 응용 행(onDrillScore)과 같은 집계·스냅샷·영속. 진행 조건은 아니다.
+  const miniLines = miniLinesOf(ex?.miniDialogue);
+  const onMiniScore = (i, result) => {
+    const score = Math.round(Number(result?.score) || 0);
+    state.tried = (state.tried || 0) + 1;
+    if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
+    if (!Array.isArray(state.pronScores)) state.pronScores = [];
+    state.pronScores.push(score);
+    if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
+    bumpRecLog(state, s?.id, score);
+    const rows = ((cardEx.mini ??= {}));
+    rows[i] = [...normScores(rows[i]), score];
+    if (!state.demo) {
+      savePronunciationLog(window.studyDB, { result, sentenceId: miniLogId(s?.id, miniLines[i]?.en || ''), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionExprV2] mini pron persist', e));
+    }
+    refreshDots();
+    refreshRecWidget();
+    handlers.saveSnapshot?.();
+  };
+  const miniEl = miniDialogueEl(ex?.miniDialogue, s, lang, expr, { demo: state.demo, onScore: onMiniScore, saved: cardEx.mini }); // 카드 아래 (2026-09-08 사용자 결정)
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {
@@ -1145,7 +1210,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       mTopb, mSteps,
       h('div', { class: 'm-pad' },
         h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        miniEl, cardEl, recWidget, histCard.el, drillsBlock, chainBlock, prodBlock, fold),
+        cardEl, miniEl, recWidget, histCard.el, drillsBlock, chainBlock, prodBlock, fold),
       h('div', { class: 'm-cta' }, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -1167,7 +1232,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
         h('span', { class: 'vs-scene' }, `${sceneTitle || '신규'} · ${subjLabel}`),
         h('div', { class: 'vs-prog' }, progBars),
         h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-      miniEl, cardEl, drillsBlock, chainBlock, prodBlock);
+      cardEl, miniEl, drillsBlock, chainBlock, prodBlock);
     const side = h('aside', { class: 'vs-side' }, recWidget, histCard.el, foldPanel, nextBtn);
     root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };

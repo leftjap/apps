@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildPronunciationLog, drillLogId, summarizeDrillLog, loadDrillLog, chainLogId, prodLogId, loadScoreHistoryState } from './pronunciationLog.js';
+import { buildPronunciationLog, drillLogId, summarizeDrillLog, loadDrillLog, chainLogId, prodLogId, miniLogId, loadScoreHistoryState } from './pronunciationLog.js';
 
 describe('buildPronunciationLog', () => {
   const baseResult = {
@@ -235,5 +235,29 @@ describe('buildPronunciationLog — timing 계측 영속', () => {
   it('timing 이 없으면 null', () => {
     const row = buildPronunciationLog({ result: { score: 80 }, sentenceId: 's1', lang: 'en', date: '2026-09-03' });
     expect(row.timing).toBeNull();
+  });
+});
+
+
+/* 미니대화 줄 녹음 (2026-09-08 사용자 지시 "녹음버튼도 추가") — 진행 조건은 아니지만 발화 점수는 빠뜨리지 않는다
+ * (2026-09-03 계약). 키는 카드 id#mini#줄 영어, 수화는 줄 순서(index)로 exLog.mini 에 담는다. */
+describe('miniLogId + loadScoreHistoryState — 미니대화 줄 이력', () => {
+  it('키는 카드 id + #mini# + 줄 영어 (앞뒤 공백 제거)', () => {
+    expect(miniLogId('c1', ' Hi there. ')).toBe('c1#mini#Hi there.');
+  });
+
+  it('줄 점수를 줄 순서로 exLog.mini 에 담고 recLog 카운트에도 넣는다', async () => {
+    const card = {
+      id: 'c1', sentence: 'Is that a promise?',
+      explanation: { miniDialogue: [{ speaker: 'A', en: 'Sure?' }, { speaker: 'B', en: 'Is that a promise?' }], drills: [] },
+    };
+    const rows = [
+      { sentenceId: 'c1#mini#Is that a promise?', lang: 'en', overallScore: 85, createdAt: '2026-09-08T00:00:00Z' },
+      { sentenceId: 'c1#mini#Is that a promise?', lang: 'en', overallScore: 90, createdAt: '2026-09-08T00:01:00Z' },
+    ];
+    const db = { pronunciationLog: { where: () => ({ equals: () => ({ toArray: async () => rows }) }) } };
+    const out = await loadScoreHistoryState(db, [card], 'en', (c) => c.explanation.drills);
+    expect(out.exLog.c1.mini).toEqual({ 1: [85, 90] });
+    expect(out.recLog.c1).toEqual({ count: 2, best: 90 });
   });
 });
