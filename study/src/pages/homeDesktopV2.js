@@ -348,6 +348,10 @@ function ctaCard(state, d) {
     isMath ? null : h('button', { class: 'vh-cta sec', type: 'button', onClick: () => { window.location.hash = '#/listen'; } },
       h('span', {}, h('span', { class: 't1' }, '연속 듣기'), h('span', { class: 't2' }, `한글 뒤 ${state.lang === 'ja' ? '일본어' : '영어'} · 무한 반복 · 잠금 중에도 재생`)),
       h('span', { class: 'go' }, '듣기')),
+    /* 말하기 연습 (2026-09-08 작업지시서 §5) — 배운 표현으로 ChatGPT 음성 대화 프롬프트. 프롬프트가 영어 코칭 전용이라 영어에만. */
+    state.lang === 'en' ? h('button', { class: 'vh-cta sec', type: 'button', onClick: () => { window.location.hash = '#/speak'; } },
+      h('span', {}, h('span', { class: 't1' }, '말하기 연습'), h('span', { class: 't2' }, 'ChatGPT 음성 모드 · 오늘 표현 · 약 10분')),
+      h('span', { class: 'go' }, '열기')) : null,
   );
 }
 

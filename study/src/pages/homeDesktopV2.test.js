@@ -118,10 +118,17 @@ describe('모바일 홈 — 데스크톱과 같은 구성', () => {
     expect(el.querySelectorAll('.vh-wk')).toHaveLength(4);
   });
 
-  it('CTA 3개 — 학습 시작은 하나뿐', () => {
+  it('CTA — 학습 시작은 하나뿐, 영어는 말하기 연습까지 5개', () => {
     const el = renderHomeMobileV2(mob());
     const ctas = [...el.querySelectorAll('.vh-cta .t1')].map((n) => n.textContent);
-    expect(ctas).toEqual(['학습 시작', '복습 시작', '문장 모아보기', '연속 듣기']);
+    expect(ctas).toEqual(['학습 시작', '복습 시작', '문장 모아보기', '연속 듣기', '말하기 연습']);
+  });
+
+  it('말하기 연습 CTA 는 영어에만 있다 (프롬프트가 영어 코칭 전용)', () => {
+    const en = renderHomeDesktopV2(baseState({ lang: 'en' }));
+    const ja = renderHomeDesktopV2(baseState({ lang: 'ja' }));
+    expect([...en.querySelectorAll('.vh-cta .t1')].map((n) => n.textContent)).toContain('말하기 연습');
+    expect([...ja.querySelectorAll('.vh-cta .t1')].map((n) => n.textContent)).not.toContain('말하기 연습');
   });
 });
 
@@ -329,7 +336,7 @@ describe('홈 CTA — 항상 3버튼 (§5.5)', () => {
   for (const [name, render] of [['데스크톱', renderHomeDesktopV2], ['모바일', renderHomeMobileV2]]) {
     it(`${name}: 복습 큐가 0 이어도 복습 버튼이 남는다`, () => {
       const el = render(st({ size: name === '모바일' ? 'phone' : 'desktop' }));
-      expect(ctas(el)).toEqual(['학습 시작', '복습 시작', '문장 모아보기', '연속 듣기']);
+      expect(ctas(el)).toEqual(['학습 시작', '복습 시작', '문장 모아보기', '연속 듣기', '말하기 연습']);
       // 없는 사실을 주장하지 않는다 — 큐가 비었으면 '오늘이 적기' 를 쓰지 않는다
       const sub = el.querySelector('.vh-cta.rev .t2').textContent;
       expect(sub).toBe('복습할 문장이 없어요');

@@ -10,7 +10,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts } from '../components
 import { pickSize } from '../components/session/index.js';
 import { buildVoicePrompt } from '../services/voicePrompt.js';
 
-// 음성모드(클로드 아이폰 Haiku) 말하기 연습 프롬프트 블록 — 세션 끝에서 복사 → 붙여넣기.
+// ChatGPT 음성 모드 말하기 연습 프롬프트 블록 — 세션 끝에서 복사 → 붙여넣기. 나중에는 #/speak 에서 다시 만든다 (2026-09-08).
 function buildVoiceEl(exprs) {
   const prompt = buildVoicePrompt(exprs);
   const ta = h('textarea', { readonly: 'readonly', rows: '8',
@@ -25,10 +25,12 @@ function buildVoiceEl(exprs) {
     copyBtn.textContent = '복사됨 ✓';
     setTimeout(() => { copyBtn.textContent = LABEL; }, 1500);
   });
+  const laterBtn = h('button', { type: 'button', onClick: () => { window.location.hash = '#/speak'; },
+    style: 'margin:10px 0 0 8px;padding:10px 18px;border:1px solid var(--line,#cfc8b8);border-radius:10px;background:transparent;color:var(--mut,#8a8170);font-size:14px;font-weight:700;cursor:pointer;' }, '말하기 연습 열기');
   return h('div', { style: 'width:100%;max-width:520px;margin:30px auto 0;text-align:left;' },
-    h('div', { style: 'font-size:13.5px;font-weight:800;color:var(--text,#2c2a26);' }, '🎙 음성모드로 말하기 연습'),
-    h('div', { style: 'font-size:12.5px;color:var(--mut,#8a8170);margin-top:3px;line-height:1.45;' }, '클로드 아이폰 앱 음성모드에 붙여넣고 오늘 표현으로 대화하세요 (연구 기반 코칭 규칙 포함).'),
-    ta, copyBtn);
+    h('div', { style: 'font-size:13.5px;font-weight:800;color:var(--text,#2c2a26);' }, '🎙 ChatGPT 음성 모드로 말하기 연습'),
+    h('div', { style: 'font-size:12.5px;color:var(--mut,#8a8170);margin-top:3px;line-height:1.45;' }, 'ChatGPT 새 대화에 붙여 넣어 보낸 뒤 같은 대화에서 음성 모드를 시작하세요. 나중에 다시 만들려면 홈의 말하기 연습.'),
+    ta, copyBtn, laterBtn);
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -157,7 +159,7 @@ export function renderSummaryV2(host, data, handlers = {}) {
   const chips = weak.length ? h('div', { class: 'vy-chips' }, h('span', { class: 'lb' }, '다음에 신경 쓸 발음'),
     weak.map((w) => h('span', { class: 'vy-chip' }, w))) : null;
 
-  // 음성모드 말하기 연습 프롬프트 (en 전용 — 오늘 표현으로 빌드, 복사 가능)
+  // ChatGPT 음성 모드 말하기 연습 프롬프트 (en 전용 — 오늘 표현으로 빌드, 복사 가능)
   const vpLang = (() => { try { return sessionStorage.getItem('studyLang') === 'ja' ? 'ja' : 'en'; } catch { return 'en'; } })();
   const voiceEl = vpLang === 'en' ? buildVoiceEl(Array.isArray(data.exprs) ? data.exprs : []) : null;
 
