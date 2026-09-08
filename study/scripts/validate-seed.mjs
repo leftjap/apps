@@ -55,6 +55,24 @@ export function parseSpeakerVoiceNames(src) {
 }
 
 /** seeds 디렉토리에서 en-*.json 사용 이력 로드 (자기 자신 제외). */
+/* 코어100 핵심 표현 목록 (2026-09-08, miniDialogue 검사용) — seeds/en-core100-*.json 전부에서
+ * { num(커리큘럼 번호), id, expr(explanation.key 의 '=' 앞, 괄호 주석 제거) }. 번호는 id 'en-core100-NNN-…' 의 NNN. */
+export function loadCore100Keys(dir) {
+  const out = [];
+  for (const f of readdirSync(dir)) {
+    if (!f.startsWith('en-core100-') || !f.endsWith('.json')) continue;
+    try {
+      const p = JSON.parse(readFileSync(join(dir, f), 'utf8'));
+      for (const c of p.cards || []) {
+        const num = Number(String(c.id).split('-')[2]);
+        const expr = String(c.explanation?.key ?? '').split('=')[0].replace(/\([^)]*\)/g, '').trim();
+        if (Number.isFinite(num) && expr) out.push({ num, id: c.id, expr });
+      }
+    } catch { /* 손상 파일은 제외 */ }
+  }
+  return out;
+}
+
 export function loadExistingSeeds(dir, excludeFile) {
   const out = [];
   for (const f of readdirSync(dir)) {
@@ -127,7 +145,7 @@ export function loadSourceEnLines(seedsDir, source) {
  * 콘텐츠 검증 본체. 반환 { ok, errors[], warnings[] }.
  * RealClass 분기: lang==='en' && 첫 정렬 카드에 dialogue 존재. 그 외(ja 등)는 generic 만.
  */
-export function validateSeedContent(payload, { existingSeeds = [], speakerNames = new Set(), sourceEnLines = null } = {}) {
+export function validateSeedContent(payload, { existingSeeds = [], speakerNames = new Set(), sourceEnLines = null, core100Keys = [] } = {}) {
   const errors = [];
   const warnings = [];
   const cards = Array.isArray(payload?.cards) ? payload.cards : [];
@@ -524,6 +542,48 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
     }
   }
 
+  // ── (선택) 미니대화 miniDialogue (2026-09-08 작업지시서 §1~§4) — 타깃 표현의 사용 맥락을 주는 contextual input.
+  // 학습 게이트가 아니라 **시드 형식 검사**다(학습자 화면에 진행 조건 없음). 등급(사용자 확정 2026-09-08):
+  //   차단 = 턴 2~4 밖 · 타깃 줄(en === sentence) 정확히 1개 아님 · 타깃 표현이 다른 줄에도 나옴 · 타깃 외 줄 13단어+ ·
+  //          아직 안 배운 뒤쪽 묶음의 코어100 핵심 표현 삽입(새 학습 부담)
+  //   경고 = 타깃 외 줄 11~12단어 (10단어 이하 권장이지만 자연스러움을 위해 하드 조건은 아님) · 이미 배운 앞쪽 표현 등장(복습 효과)
+  //   사람 검수 = 대화 난도가 타깃보다 높은지, 상대 발화가 타깃을 유발하는지.
+  const wc = (str) => norm(str).split(' ').filter(Boolean).length;
+  for (const c of exprs) {
+    const md = c.explanation?.miniDialogue;
+    if (md === undefined) continue;
+    if (!Array.isArray(md) || md.length < 2 || md.length > 4) {
+      errors.push(`${c.id}: miniDialogue 는 2~4턴 배열 (현재 ${Array.isArray(md) ? `${md.length}턴` : typeof md})`);
+      continue;
+    }
+    let broken = false;
+    md.forEach((l, i) => {
+      if (!l || typeof l.speaker !== 'string' || !l.speaker.trim() || typeof l.en !== 'string' || !l.en.trim()) {
+        errors.push(`${c.id}: miniDialogue ${i + 1}줄 speaker/en 누락`); broken = true;
+      }
+    });
+    if (broken) continue;
+    const target = String(c.sentence ?? '').trim();
+    const hits = md.filter((l) => l.en.trim() === target).length;
+    if (hits !== 1) errors.push(`${c.id}: miniDialogue 타깃 줄(en 이 sentence 와 완전 일치)은 정확히 1개여야 함 (현재 ${hits})`);
+    const cardNum = Number(String(c.id).split('-')[2]);
+    const ownExpr = norm(String(c.explanation?.key ?? '').split('=')[0].replace(/\([^)]*\)/g, ''));
+    for (const l of md.filter((x) => x.en.trim() !== target)) {
+      const n = wc(l.en);
+      if (n > 12) errors.push(`${c.id}: miniDialogue 타깃 외 줄 ${n}단어 — 12단어 초과 차단: "${l.en}"`);
+      else if (n > 10) warnings.push(`${c.id}: miniDialogue 타깃 외 줄 ${n}단어 — 10단어 이하 권장: "${l.en}"`);
+      const nl = ` ${norm(l.en)} `;
+      if (ownExpr && nl.includes(` ${ownExpr} `)) errors.push(`${c.id}: miniDialogue 타깃 표현이 다른 줄에도 나옴 — 타깃은 1회만: "${l.en}"`);
+      for (const k of core100Keys) {
+        if (!k?.expr || k.num === cardNum) continue;
+        const ke = norm(k.expr);
+        if (!ke || !nl.includes(` ${ke} `)) continue;
+        if (k.num > cardNum) errors.push(`${c.id}: miniDialogue 에 아직 안 배운 코어100 #${k.num} 표현 "${k.expr}" 삽입 — 새 학습 부담(차단): "${l.en}"`);
+        else warnings.push(`${c.id}: miniDialogue 에 이미 배운 코어100 #${k.num} 표현 "${k.expr}" 등장 — 허용(복습 효과): "${l.en}"`);
+      }
+    }
+  }
+
   return { ok: errors.length === 0, errors, warnings };
 }
 
@@ -565,7 +625,8 @@ if (isMain) {
   const existingSeeds = loadExistingSeeds(seedsDir, basename(args.payload));
   const speechSrc = readFileSync(join(seedsDir, '..', 'src', 'services', 'speech.js'), 'utf8');
   const sourceEnLines = loadSourceEnLines(seedsDir, payload._source);
-  const r = validateSeedContent(payload, { existingSeeds, speakerNames: parseSpeakerVoiceNames(speechSrc), sourceEnLines });
+  const core100Keys = loadCore100Keys(seedsDir);
+  const r = validateSeedContent(payload, { existingSeeds, speakerNames: parseSpeakerVoiceNames(speechSrc), sourceEnLines, core100Keys });
   for (const w of r.warnings) console.warn(`[validate] WARN: ${w}`);
   if (!r.ok) {
     for (const e of r.errors) console.error(`[validate] FAIL: ${e}`);
