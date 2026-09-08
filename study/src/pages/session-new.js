@@ -47,6 +47,20 @@ import { demoNewCards, DEMO_EXCLUDE_IDS } from './sessionNewDemo.js';
 const PASS_THRESHOLD = 80;
 const EMPTY_SENTENCE = { sentence: '', pron: '', ko: '' };
 
+/* 초기 동기화 대기 (2026-09-08 실보고 "강제 새로고침해도 안 보인다") — 새로고침으로 바로 세션에 들어오면 앱 부팅의
+ * pull(app.js/main.js 가 window.__syncReady 에 둔 약속)이 끝나기 전에 Dexie 를 읽어 서버 재적재분(miniDialogue 등)이
+ * 옛 행으로 보였다. 홈(home.js)은 이 약속을 기다리지만 세션은 안 기다렸다. 상한을 두어 오프라인·지연·실패에도
+ * 세션이 막히지 않는다. 이미 끝난 약속이면 즉시 통과. */
+const SYNC_WAIT_MS = 4000;
+function awaitInitialSync() {
+  const p = (typeof window !== 'undefined') ? window.__syncReady : null;
+  if (!p || typeof p.then !== 'function') return Promise.resolve();
+  return Promise.race([
+    p.then(() => undefined, () => undefined),
+    new Promise((resolve) => setTimeout(resolve, SYNC_WAIT_MS)),
+  ]);
+}
+
 // 데모 모드 (?demo=1) — 인증/DB 없이 시안 검증. view=dialog(기본)|session.
 function isDemoMode() {
   try { return new URLSearchParams(window.location.search).get('demo') === '1'; }
@@ -264,11 +278,11 @@ export function mountSessionNew(host) {
     };
   }
 
-  Promise.all([
+  awaitInitialSync().then(() => Promise.all([
     loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
     loadActiveSession(window.studyDB),
     fetchDayUtterMap(window.studyDB, getStoredLang()),
-  ])
+  ]))
     .then(async ([cards, snapshot, dayMap]) => {
       // '오늘 발화' 링의 분모 = 직전 학습일 발화 수 (고정 목표도, 직전 '세션'도 아니다 — 기록/갱신 §1-1).
       // dayMap 은 공부 이력 4주 캘린더도 함께 쓴다. 이번 세션 로그는 finish() 후에 쌓이므로

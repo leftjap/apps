@@ -168,8 +168,21 @@ export function restoreFromSnapshot(snapshot, cards, mode, lang) {
       if (cards[i]?.id !== snapshot.cardIds[i]) return null;
     }
   }
+  /* 내용 갱신 (2026-09-08 실보고 "세션 들어가보면 안 보이는데") — 카드 사본은 **진행** 복원용이고, 내용 필드는
+   * 현재 목록(Dexie 최신)이 정본이다. 서버 재적재(예: miniDialogue 추가)가 진행 중 세션에도 보이게 한다 —
+   * sync.js CONTENT_FIELDS("콘텐츠는 서버 시드 정본")와 같은 원칙. 현재 목록에 없는 카드는 사본 그대로,
+   * 원본 객체는 변형하지 않는다. */
+  const CONTENT_FIELDS = ['sentence', 'meaning', 'reading', 'explanation', 'category', 'speaker', 'phonetic_kr'];
+  const freshById = new Map((Array.isArray(cards) ? cards : []).filter((c) => c?.id).map((c) => [c.id, c]));
+  const refreshed = snapCards ? snapCards.map((c) => {
+    const f = freshById.get(c?.id);
+    if (!f) return c;
+    const out = { ...c };
+    for (const k of CONTENT_FIELDS) if (f[k] !== undefined) out[k] = f[k];
+    return out;
+  }) : null;
   return {
-    ...(snapCards ? { cards: snapCards, total: snapCards.length } : {}),
+    ...(refreshed ? { cards: refreshed, total: refreshed.length } : {}),
     step: Number(snapshot.step) || 1,
     tried: Number(snapshot.tried) || 0,
     passed: Number(snapshot.passed) || 0,

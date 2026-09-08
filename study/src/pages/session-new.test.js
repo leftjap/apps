@@ -335,3 +335,54 @@ describe('session-new — 복원 시 수화 병합이 체이닝·생산 진행�
     cleanup();
   });
 });
+
+
+/* 초기 동기화 대기 (2026-09-08 실보고 "강제 새로고침해도 안 보인다") — 새로고침으로 바로 세션에 들어오면
+ * pull(__syncReady)이 끝나기 전에 Dexie 를 읽어 재적재된 콘텐츠(miniDialogue)가 안 보였다. home.js 처럼 기다리되
+ * 상한을 두어 오프라인·지연·실패에도 세션이 막히지 않는다. */
+describe('session-new — 초기 동기화 대기', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); delete window.__syncReady; });
+
+  it('__syncReady 가 진행 중이면 끝난 뒤에 카드를 읽는다', async () => {
+    window.studyDB = fakeDB2();
+    let resolveSync;
+    window.__syncReady = new Promise((r) => { resolveSync = r; });
+    loadNewCards.mockResolvedValueOnce([NCARD('n1', 'Fresh one.', '새')]);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(loadNewCards).not.toHaveBeenCalled();
+    resolveSync({ ok: true });
+    await settle2();
+    expect(loadNewCards).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).toContain('Fresh one.');
+    cleanup(); delete window.__syncReady;
+  });
+
+  it('동기화가 실패해도 바로 읽는다', async () => {
+    window.studyDB = fakeDB2();
+    window.__syncReady = Promise.reject(new Error('offline'));
+    loadNewCards.mockResolvedValueOnce([NCARD('n1', 'Offline one.', '오프')]);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(loadNewCards).toHaveBeenCalledTimes(1);
+    expect(document.body.textContent).toContain('Offline one.');
+    cleanup(); delete window.__syncReady;
+  });
+
+  it('동기화가 4초 넘게 걸리면 기다리지 않고 읽는다', async () => {
+    vi.useFakeTimers();
+    window.studyDB = fakeDB2();
+    window.__syncReady = new Promise(() => {}); // 영원히 미결
+    loadNewCards.mockResolvedValueOnce([NCARD('n1', 'Late one.', '늦')]);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(loadNewCards).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(loadNewCards).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+    cleanup(); delete window.__syncReady;
+  });
+});

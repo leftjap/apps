@@ -301,3 +301,42 @@ describe('touchActiveSession — 새 스냅샷을 옛 값으로 덮어쓰지 않
     expect(db._get().value.exLog.c1.prod.rows).toEqual({ 0: false });
   });
 });
+
+
+/* 콘텐츠 갱신 (2026-09-08 실보고 "세션 들어가보면 안 보이는데") — 스냅샷 카드 사본이 정본이라, 서버 재적재로
+ * Dexie 의 카드 내용(예: explanation.miniDialogue)이 바뀌어도 1시간 안에 다시 들어가면 옛 사본이 나왔다.
+ * 진행(step·점수·exLog)은 스냅샷이, **내용 필드는 현재 카드가** 정본이다 — sync 의 CONTENT_FIELDS 원칙과 같다. */
+describe('restoreFromSnapshot — 내용 필드는 현재 카드로 갱신', () => {
+  const snapCards = [
+    { id: 'a', sentence: 'A old', meaning: '옛 뜻', explanation: { key: 'k' } },
+    { id: 'b', sentence: 'B', meaning: '비', explanation: { key: 'kb' } },
+  ];
+  const snap = { mode: 'new', cardIds: ['a', 'b'], cards: snapCards, step: 2, exLog: { a: { utter: [80] } } };
+  const fresh = [{ id: 'a', sentence: 'A old', meaning: '새 뜻', explanation: { key: 'k', miniDialogue: [{ speaker: 'A', en: 'Hi.' }, { speaker: 'B', en: 'A old' }] }, phonetic_kr: '에이' }];
+
+  it('같은 id 의 현재 카드가 있으면 sentence·meaning·explanation 등 내용 필드를 그것으로 바꾼다', () => {
+    const r = restoreFromSnapshot(snap, fresh, 'new');
+    expect(r.cards[0].explanation.miniDialogue).toHaveLength(2);
+    expect(r.cards[0].meaning).toBe('새 뜻');
+    expect(r.cards[0].phonetic_kr).toBe('에이');
+    expect(r.step).toBe(2); // 진행은 스냅샷 유지
+    expect(r.exLog).toEqual({ a: { utter: [80] } });
+  });
+
+  it('현재 목록에 없는 카드는 스냅샷 사본을 그대로 쓴다 (복습 판정으로 due 에서 빠진 카드)', () => {
+    const r = restoreFromSnapshot(snap, fresh, 'new');
+    expect(r.cards[1]).toEqual(snapCards[1]);
+    expect(r.total).toBe(2);
+  });
+
+  it('현재 목록이 없거나 비어도 복원은 유지된다', () => {
+    expect(restoreFromSnapshot(snap, [], 'new').cards).toEqual(snapCards);
+    expect(restoreFromSnapshot(snap, undefined, 'new').cards).toEqual(snapCards);
+  });
+
+  it('스냅샷 원본 객체를 변형하지 않는다', () => {
+    restoreFromSnapshot(snap, fresh, 'new');
+    expect(snapCards[0].meaning).toBe('옛 뜻');
+    expect(snapCards[0].explanation.miniDialogue).toBeUndefined();
+  });
+});
