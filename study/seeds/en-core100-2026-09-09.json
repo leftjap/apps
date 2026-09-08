@@ -1,0 +1,710 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "31-50 일상 설명과 이야기하기",
+  "date": "2026-09-09",
+  "_note": "코어 100문장 커리큘럼 38~44번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-038-feel-like",
+      "sentence": "I feel like staying home and doing nothing.",
+      "meaning": "집에서 아무것도 안 하고 있고 싶어.",
+      "reading": null,
+      "phonetic_kr": "아이 f필 라이크 스테잉 호움 앤 두잉 낫씽",
+      "order_index": 1,
+      "explanation": {
+        "key": "feel like ~ = ~하고 싶다. 지금 기분에 끌리는 일을 말할 때 쓴다. 뒤에는 동사에 -ing 를 붙인다.",
+        "situation": "주말에 뭘 할지 묻는데 아무 데도 나가고 싶지 않을 때 — 아내가 \"오늘 뭐 할까?\" 하고 물으면 이 문장으로 답한다.",
+        "drills": [
+          {
+            "en": "I feel like some coffee.",
+            "ko": "커피 좀 마시고 싶어.",
+            "kr": "아이 f필 라이크 썸 커f피"
+          },
+          {
+            "en": "Do you feel like walking there?",
+            "ko": "거기까지 걸어갈 마음 있어?",
+            "kr": "두 유 f필 라이크 워r킹 데어r"
+          },
+          {
+            "en": "I don't feel like cooking tonight.",
+            "ko": "오늘 밤엔 요리하기 싫어.",
+            "kr": "아이 돈 f필 라이크 쿠킹 터나잇"
+          },
+          {
+            "en": "The cat did nothing but sleep.",
+            "ko": "고양이는 자기만 하고 아무것도 안 했어.",
+            "kr": "더 캣 디드 낫씽 벗 슬리입"
+          },
+          {
+            "en": "My wife feels like staying home tonight.",
+            "ko": "아내는 오늘 밤 집에 있고 싶어 해.",
+            "kr": "마이 와이f f필즈 라이크 스테잉 호움 터나잇"
+          },
+          {
+            "en": "I felt like staying home all day yesterday.",
+            "ko": "어제는 하루 종일 집에 있고 싶었어.",
+            "kr": "아이 f펠트 라이크 스테잉 호우몰 데이 예스터r데이"
+          },
+          {
+            "en": "We didn't feel like doing much after the flight.",
+            "ko": "비행기에서 내린 뒤엔 뭘 할 마음이 안 났어.",
+            "kr": "위 디든 f필 라이크 두잉 머치 애f터r 더 f라잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "feel like + 동사ing",
+            "body": "'~하고 싶다'를 want to 로만 옮기면 계획이나 의지가 된다. 지금 기분에 끌리는 일은 feel like 뒤에 -ing 형을 붙인다. like 는 전치사라 to 부정사가 아니라 -ing 가 온다."
+          },
+          {
+            "struct": "A and B (-ing 형 나열)",
+            "body": "하고 싶은 일이 둘이면 staying … and doing … 처럼 -ing 형끼리 and 로 잇는다. 한국어 '있고 싶어'는 동사가 맨 뒤에 오지만 영어는 feel like 를 먼저 말하고 내용을 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I feel like",
+            "아이 f필 라이크",
+            "~하고 싶어"
+          ],
+          [
+            "staying home",
+            "스테잉 호움",
+            "집에 있고"
+          ],
+          [
+            "and doing nothing.",
+            "앤 두잉 낫씽",
+            "아무것도 안 하고."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ feel",
+            "feel 의 f 는 윗니로 아랫입술을 스치며 — '필'(X) 'f필'(O)"
+          ],
+          [
+            "/θ/ nothing",
+            "nothing 의 th 는 혀끝을 이 사이에 물듯이 — '낫싱'(X) '낫씽'(O)"
+          ]
+        ],
+        "mistake": "'~하고 싶어'를 늘 want to 로 옮기면 그 순간의 기분이 아니라 계획처럼 들린다. feel like 뒤에는 to 부정사가 아니라 -ing 형이 온다 — feel like to stay 는 틀린 형태다.",
+        "similar": "I'm in the mood to stay home. / I just want to stay in today.",
+        "category": "일상/기분",
+        "frequency": 9,
+        "chain": {
+          "target": "I feel like staying home and doing nothing, but we promised to visit my parents.",
+          "chunks": [
+            "I feel like staying home and doing nothing,",
+            "but we promised",
+            "to visit",
+            "my parents."
+          ],
+          "ko": "집에서 아무것도 안 하고 있고 싶은데, 부모님 댁에 가기로 했잖아."
+        },
+        "anchor": "있고 싶어"
+      }
+    },
+    {
+      "id": "en-core100-039-supposed-to",
+      "sentence": "I'm supposed to meet her after work.",
+      "meaning": "퇴근 후에 그녀를 만나기로 되어 있어.",
+      "reading": null,
+      "phonetic_kr": "아임 써포우즈드 투 미잇 허r 애f터r 워r크",
+      "order_index": 2,
+      "explanation": {
+        "key": "supposed to = ~하기로 되어 있다. 약속·예정·규칙으로 이미 정해져 있는 일을 말할 때 쓴다.",
+        "situation": "저녁에 시간 되냐고 물어볼 때 — 이미 정해진 약속이 있다고 알린다. 아내와의 약속이나 회사 일정도 이 말로 설명한다.",
+        "drills": [
+          {
+            "en": "You're not supposed to park here.",
+            "ko": "여기 주차하면 안 돼요.",
+            "kr": "유어r 낫 써포우즈드 투 파r크 히어r"
+          },
+          {
+            "en": "What time are we supposed to be there?",
+            "ko": "우리 몇 시에 거기 가기로 되어 있어?",
+            "kr": "왓 타임 아r 위 써포우즈드 투 비 데어r"
+          },
+          {
+            "en": "We're supposed to leave at seven.",
+            "ko": "우리 7시에 출발하기로 되어 있어.",
+            "kr": "위어r 써포우즈드 투 리이v 앳 세v븐"
+          },
+          {
+            "en": "I was supposed to call her yesterday.",
+            "ko": "어제 그녀한테 전화했어야 했는데.",
+            "kr": "아이 워z 써포우즈드 투 콜 허r 예스터r데이"
+          },
+          {
+            "en": "Are we supposed to check out before noon?",
+            "ko": "정오 전에 체크아웃해야 하나요?",
+            "kr": "아r 위 써포우즈드 투 체카웃 비f포어r 누운"
+          },
+          {
+            "en": "My wife is supposed to work late tonight.",
+            "ko": "아내는 오늘 밤 야근하기로 되어 있어.",
+            "kr": "마이 와이f 이z 써포우즈드 투 워r크 레잇 터나잇"
+          },
+          {
+            "en": "The cat isn't supposed to be on the table.",
+            "ko": "고양이는 식탁에 올라가면 안 되는데.",
+            "kr": "더 캐리즌트 써포우즈드 투 비 온 더 테이블"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "be동사 + supposed to + 동사원형",
+            "body": "'~하기로 되어 있다'는 be동사에 supposed to 를 붙여 말한다. 주어와 시제에 따라 am/is/are/was 만 바뀌고 supposed to 자리는 그대로다. 뒤에는 동사원형이 온다."
+          },
+          {
+            "struct": "not 의 자리",
+            "body": "부정은 be동사 뒤에 not 을 넣어 isn't supposed to 처럼 만든다. '~하면 안 된다'는 금지의 뜻이 되는데, 한국어처럼 문장 끝이 아니라 앞쪽에서 부정이 결정된다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm supposed to",
+            "아임 써포우즈드 투",
+            "~하기로 되어 있어"
+          ],
+          [
+            "meet her",
+            "미잇 허r",
+            "그녀를 만나기로"
+          ],
+          [
+            "after work.",
+            "애f터r 워r크",
+            "퇴근 후에."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/z/ supposed",
+            "supposed 의 s 는 /z/ 소리 — '써포스드'(X) '써포우즈드'(O)"
+          ],
+          [
+            "/ɜːr/ work",
+            "work 의 or 은 입을 작게 오므리고 혀를 말아 '워r크' — '워크'로 평평하게 내지 않는다"
+          ],
+          [
+            "/iː/ meet",
+            "meet 은 장모음이라 '미잇'처럼 길게 — 짧게 '밋'으로 내면 mitt 로 들린다"
+          ]
+        ],
+        "mistake": "'만나기로 했어'를 I promised to meet 로 옮기면 내가 한 약속만 뜻한다. 일정·규칙으로 정해진 일은 be supposed to 다. supposed 뒤의 to 를 빼먹지 않는다.",
+        "similar": "I'm meeting her after work. / I have plans with her after work.",
+        "category": "일상/예정",
+        "frequency": 9,
+        "chain": {
+          "target": "I'm supposed to meet her after work, but I might have to cancel.",
+          "chunks": [
+            "I'm supposed to meet her after work,",
+            "but I might",
+            "have to cancel."
+          ],
+          "ko": "퇴근 후에 그녀를 만나기로 되어 있는데, 취소해야 할지도 몰라."
+        },
+        "anchor": "만나기로 되어 있어"
+      }
+    },
+    {
+      "id": "en-core100-040-made-it-worse",
+      "sentence": "I was trying to help, but I made it worse.",
+      "meaning": "도우려 했는데 오히려 일을 망쳤어.",
+      "reading": null,
+      "phonetic_kr": "아이 워z 트라잉 투 헬프 버라이 메이딧 워r스",
+      "order_index": 3,
+      "explanation": {
+        "key": "made it worse = 오히려 더 나쁘게 만들었다. 좋게 하려다 상황을 악화시켰을 때 쓴다.",
+        "situation": "고치려다 더 망가뜨렸을 때 — 집 물건을 손보다가, 또는 여행 중 길을 안내하려다 더 헤맸을 때 이 문장으로 상황을 설명한다.",
+        "drills": [
+          {
+            "en": "That made it worse.",
+            "ko": "그게 상황을 더 나쁘게 만들었어.",
+            "kr": "댓 메이딧 워r스"
+          },
+          {
+            "en": "I only made it worse.",
+            "ko": "나는 더 나쁘게 만들기만 했어.",
+            "kr": "아이 오운리 메이딧 워r스"
+          },
+          {
+            "en": "My wife said I made it worse.",
+            "ko": "아내는 내가 더 망쳐 놨다고 했어.",
+            "kr": "마이 와이f 쎄드 아이 메이딧 워r스"
+          },
+          {
+            "en": "I was trying to fix the sink.",
+            "ko": "싱크대를 고치려던 참이었어.",
+            "kr": "아이 워z 트라잉 투 f픽스 더 씽크"
+          },
+          {
+            "en": "Washing the cat made things worse.",
+            "ko": "고양이를 씻겼더니 상황이 더 나빠졌어.",
+            "kr": "워싱 더 캣 메이드 씽z 워r스"
+          },
+          {
+            "en": "Don't touch it, you'll make it worse.",
+            "ko": "건드리지 마, 더 나빠질 거야.",
+            "kr": "돈트 터치 잇 유울 메이킷 워r스"
+          },
+          {
+            "en": "We tried to help, but we made it worse.",
+            "ko": "우리는 도우려 했는데 오히려 망쳐 놨어.",
+            "kr": "위 트라이드 투 헬프 벗 위 메이딧 워r스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "make + 목적어 + 형용사",
+            "body": "make 뒤에 목적어를 두고, 그 목적어가 어떤 상태가 됐는지 형용사를 바로 붙인다. '더 나쁘게 만들다'가 make it worse 다. worse 앞에 more 를 붙이지 않는다 — worse 자체가 bad 의 비교급이다."
+          },
+          {
+            "struct": "was trying to + 동사원형",
+            "body": "'~하려던 참이었다'는 미완의 시도를 뜻한다. try to 만 쓰면 시도했다는 사실만 남지만, was trying to 는 '하는 중이었는데 결과는 달랐다'는 흐름을 만들어 뒤의 but 과 짝을 이룬다."
+          }
+        ],
+        "chunks": [
+          [
+            "I was trying to help,",
+            "아이 워z 트라잉 투 헬프",
+            "도우려던 참이었어,"
+          ],
+          [
+            "but I made it worse.",
+            "버라이 메이딧 워r스",
+            "그런데 더 나쁘게 만들었어."
+          ]
+        ],
+        "phonemes": [
+          [
+            "made it → 연음",
+            "'메이드 잇'처럼 끊지 않고 '메이딧' — d 가 it 에 붙어 한 덩어리가 된다"
+          ],
+          [
+            "/ɜːr/ worse",
+            "worse 는 혀끝을 말아 '워r스' — r 을 빼고 '워스'로 내면 다른 단어로 들린다"
+          ]
+        ],
+        "mistake": "'망쳤어'를 I broke it 으로 옮기면 물건을 부쉈다는 뜻이 된다. 상황이 더 나빠진 것은 made it worse 다. 그리고 worse 는 이미 비교급이라 more worse 로 쓰지 않는다.",
+        "similar": "I only made things worse. / That just backfired.",
+        "category": "일상/서사",
+        "frequency": 8,
+        "chain": {
+          "target": "I was trying to help, but I made it worse, so I just stopped.",
+          "chunks": [
+            "I was trying to help, but I made it worse,",
+            "so I just",
+            "stopped."
+          ],
+          "ko": "도우려 했는데 오히려 일을 망쳐서, 그냥 손을 뗐어."
+        },
+        "anchor": "일을 망쳤어"
+      }
+    },
+    {
+      "id": "en-core100-041-shouldve-told-you",
+      "sentence": "I should've told you about it sooner.",
+      "meaning": "그 얘기를 더 일찍 했어야 했는데.",
+      "reading": null,
+      "phonetic_kr": "아이 슈더v 톨드 유 어바우릿 쑤우너r",
+      "order_index": 4,
+      "explanation": {
+        "key": "should've told you = 너한테 말했어야 했는데. 하지 않은 일을 뒤늦게 후회하며 사과할 때 쓴다.",
+        "situation": "숨기려던 건 아닌데 말이 늦어졌을 때 — 아내에게 미리 말하지 못한 일을 뒤늦게 꺼내며 이 문장으로 시작한다.",
+        "drills": [
+          {
+            "en": "You should've told me.",
+            "ko": "나한테 말했어야지.",
+            "kr": "유 슈더v 톨드 미"
+          },
+          {
+            "en": "I should've called you first.",
+            "ko": "너한테 먼저 전화했어야 했는데.",
+            "kr": "아이 슈더v 콜드 유 f퍼r스트"
+          },
+          {
+            "en": "We should've left the house earlier.",
+            "ko": "집에서 더 일찍 나왔어야 했어.",
+            "kr": "위 슈더v 레f트 더 하우스 어r리어r"
+          },
+          {
+            "en": "I should've told you about the cat.",
+            "ko": "고양이 얘기를 너한테 했어야 했는데.",
+            "kr": "아이 슈더v 톨드 유 어바웃 더 캣"
+          },
+          {
+            "en": "I shouldn't have said anything.",
+            "ko": "아무 말도 하지 말걸.",
+            "kr": "아이 슈든트 해v 쎄드 애니씽"
+          },
+          {
+            "en": "My wife should've told me about the change.",
+            "ko": "아내가 그 변경 사항을 나한테 말해 줬어야 했는데.",
+            "kr": "마이 와이f 슈더v 톨드 미 어바웃 더 체인지"
+          },
+          {
+            "en": "I should've told you this a long time ago.",
+            "ko": "이 얘기를 아주 오래전에 너한테 했어야 했는데.",
+            "kr": "아이 슈더v 톨드 유 디스 어 롱 타이머고우"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "should've + 과거분사",
+            "body": "'~했어야 했는데'는 should have 뒤에 과거분사를 붙인다. 말할 때는 거의 언제나 should've 로 줄인다. 실제로는 하지 않았다는 뜻이 이 형태에 담겨 있어, 후회와 사과가 함께 전달된다."
+          },
+          {
+            "struct": "sooner (soon 의 비교급)",
+            "body": "'더 일찍'을 early 계열로만 떠올리기 쉽지만, 시점이 앞당겨졌다는 뜻은 soon 의 비교급 sooner 로 말한다. 문장 끝에 붙여 '지금보다 앞서'라는 뜻을 얹는다."
+          }
+        ],
+        "chunks": [
+          [
+            "I should've told you",
+            "아이 슈더v 톨드 유",
+            "너한테 말했어야 했는데"
+          ],
+          [
+            "about it",
+            "어바우릿",
+            "그 얘기를"
+          ],
+          [
+            "sooner.",
+            "쑤우너r",
+            "더 일찍."
+          ]
+        ],
+        "phonemes": [
+          [
+            "should've → /ʃʊdəv/",
+            "'슈드 해브'라고 또박또박 읽지 않는다 — have 가 '어v'로 줄어 '슈더v' 한 덩어리가 된다"
+          ],
+          [
+            "about it → 연음",
+            "'어바웃 잇'(X) '어바우릿'(O) — t 가 모음 사이에서 부드럽게 굴러간다"
+          ]
+        ],
+        "mistake": "'말했어야 했는데'를 I had to tell you 로 옮기면 '말해야만 했다(그래서 말했다)'가 된다. 하지 않은 일에 대한 후회는 should've 다. have 를 빼고 should told 라고 하지 않는다.",
+        "similar": "I'm sorry I didn't tell you earlier. / I wish I'd told you sooner.",
+        "category": "일상/후회",
+        "frequency": 9,
+        "chain": {
+          "target": "I should've told you about it sooner, but I was afraid you'd be upset.",
+          "chunks": [
+            "I should've told you about it sooner,",
+            "but I was afraid",
+            "you'd be upset."
+          ],
+          "ko": "그 얘기를 더 일찍 했어야 했는데, 네가 속상해할까 봐 겁이 났어."
+        },
+        "anchor": "했어야 했는데"
+      }
+    },
+    {
+      "id": "en-core100-042-wouldve-called-you",
+      "sentence": "I would've called you if I'd known.",
+      "meaning": "알았더라면 전화했을 텐데.",
+      "reading": null,
+      "phonetic_kr": "아이 우더v 콜드 유 이f 아이드 노운",
+      "order_index": 5,
+      "explanation": {
+        "key": "would've called you = 전화했을 텐데. 실제로는 하지 않은 일을 되짚어 가정할 때 쓴다.",
+        "situation": "몰라서 연락을 못 했다고 해명할 때 — 아내가 늦게까지 일한 걸 나중에 알았거나, 친구 소식을 뒤늦게 들었을 때 쓴다.",
+        "drills": [
+          {
+            "en": "I would've called you back.",
+            "ko": "내가 다시 전화했을 텐데.",
+            "kr": "아이 우더v 콜드 유 백"
+          },
+          {
+            "en": "She would've stayed if she'd known.",
+            "ko": "그녀가 알았더라면 남았을 거야.",
+            "kr": "쉬 우더v 스테이드 이f 쉬드 노운"
+          },
+          {
+            "en": "If I'd known, we would've waited.",
+            "ko": "알았더라면 우리가 기다렸을 텐데.",
+            "kr": "이f 아이드 노운 위 우더v 웨이티드"
+          },
+          {
+            "en": "We would've taken the earlier train.",
+            "ko": "우리는 더 이른 기차를 탔을 텐데.",
+            "kr": "위 우더v 테이컨 디 어r리어r 트레인"
+          },
+          {
+            "en": "My wife would've called you herself.",
+            "ko": "아내가 직접 너한테 전화했을 텐데.",
+            "kr": "마이 와이f 우더v 콜드 유 허r쎌f"
+          },
+          {
+            "en": "I would've called you if it wasn't so late.",
+            "ko": "이렇게 늦지만 않았으면 전화했을 텐데.",
+            "kr": "아이 우더v 콜드 유 이f 잇 워즌트 쏘 레잇"
+          },
+          {
+            "en": "If I'd known about the cat, we would've come home early.",
+            "ko": "고양이 일을 알았더라면 우리가 일찍 집에 왔을 텐데.",
+            "kr": "이f 아이드 노우너바웃 더 캣 위 우더v 컴 호우머r리"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "would've + 과거분사 / if + 주어 + had(-'d) + 과거분사",
+            "body": "실제로 일어나지 않은 일을 되짚는 짝 구조다. 결과 쪽은 would have(would've), 조건 쪽은 if I had(I'd) 로 둘 다 한 칸씩 과거로 민다. 한국어 '알았더라면 ~했을 텐데'와 짝은 같고 순서만 반대다 — 영어는 결과를 먼저 말해도 된다."
+          },
+          {
+            "struct": "I'd 의 두 가지",
+            "body": "I'd 는 I had 와 I would 둘 다의 줄임이다. if 절 안의 I'd known 은 I had known 이고, 결과 절의 would've 가 I would 쪽이다. if 절에는 would 를 넣지 않는다."
+          }
+        ],
+        "chunks": [
+          [
+            "I would've called you",
+            "아이 우더v 콜드 유",
+            "전화했을 텐데"
+          ],
+          [
+            "if I'd known.",
+            "이f 아이드 노운",
+            "알았더라면."
+          ]
+        ],
+        "phonemes": [
+          [
+            "would've → /wʊdəv/",
+            "'우드 해브'로 끊지 않는다 — have 가 '어v'로 줄어 '우더v' 한 덩어리다"
+          ],
+          [
+            "/d/ I'd known",
+            "I'd 의 d 를 흘리면 I known 이 되어 가정법이 사라진다 — '아이드 노운'으로 d 를 남긴다"
+          ]
+        ],
+        "mistake": "'전화했을 텐데'를 I called you 로 말하면 실제로 전화했다는 뜻이 된다. 하지 않은 일은 would've 로 표시한다. 그리고 if 절에 would 를 또 넣지 않는다 — 조건 쪽은 I'd known 이다.",
+        "similar": "I'd have called you if I'd known. / If only I'd known.",
+        "category": "일상/가정",
+        "frequency": 8,
+        "chain": {
+          "target": "I would've called you if I'd known, but nobody told me until this morning.",
+          "chunks": [
+            "I would've called you if I'd known,",
+            "but nobody",
+            "told me",
+            "until this morning."
+          ],
+          "ko": "알았더라면 전화했을 텐데, 오늘 아침까지 아무도 말해 주지 않았어."
+        },
+        "anchor": "전화했을 텐데"
+      }
+    },
+    {
+      "id": "en-core100-043-dont-have-to",
+      "sentence": "You don't have to explain everything right now.",
+      "meaning": "지금 당장 다 설명할 필요는 없어.",
+      "reading": null,
+      "phonetic_kr": "유 돈 해v 투 익스플레인 에v리씽 라잇 나우",
+      "order_index": 6,
+      "explanation": {
+        "key": "don't have to = ~할 필요 없다. 안 해도 된다고 상대의 부담을 덜어 줄 때 쓴다.",
+        "situation": "상대가 허둥지둥 변명할 때 — 아내가 늦은 이유를 급하게 설명하려 하면 이 말로 숨을 돌리게 해 준다.",
+        "drills": [
+          {
+            "en": "You don't have to explain.",
+            "ko": "설명 안 해도 돼.",
+            "kr": "유 돈 해v 투 익스플레인"
+          },
+          {
+            "en": "We don't have to leave yet.",
+            "ko": "우리 아직 안 나가도 돼.",
+            "kr": "위 돈 해v 투 리이v 옛"
+          },
+          {
+            "en": "I don't have to work tomorrow.",
+            "ko": "나 내일 일 안 해도 돼.",
+            "kr": "아이 돈 해v 투 워r크 터마로우"
+          },
+          {
+            "en": "You don't have to answer right now.",
+            "ko": "지금 당장 대답 안 해도 돼.",
+            "kr": "유 돈 해v 투 앤써r 라잇 나우"
+          },
+          {
+            "en": "My wife doesn't have to go in today.",
+            "ko": "아내는 오늘 출근 안 해도 돼.",
+            "kr": "마이 와이f 더즌 해v 투 고우 인 터데이"
+          },
+          {
+            "en": "Do we have to check out before noon?",
+            "ko": "정오 전에 체크아웃해야 하나요?",
+            "kr": "두 위 해v 투 체카웃 비f포어r 누운"
+          },
+          {
+            "en": "The cat doesn't have to come with us.",
+            "ko": "고양이는 우리랑 같이 안 가도 돼.",
+            "kr": "더 캣 더즌 해v 투 컴 위드 어스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "don't have to + 동사원형",
+            "body": "'~할 필요 없다'는 don't have to 로 말하고 뒤에 동사원형을 붙인다. 주어가 3인칭 단수면 doesn't have to 가 된다. 의문으로 바꿀 때는 Do we have to ~? 처럼 do 가 앞으로 나온다."
+          },
+          {
+            "struct": "must not 과의 차이",
+            "body": "don't have to 는 '안 해도 된다'는 허락이고, must not 은 '하면 안 된다'는 금지다. 한국어로는 둘 다 '~하지 않아도/않으면'처럼 비슷하게 옮겨져 헷갈리기 쉬우니 뜻이 정반대라는 점을 기억한다."
+          }
+        ],
+        "chunks": [
+          [
+            "You don't have to explain",
+            "유 돈 해v 투 익스플레인",
+            "설명할 필요는 없어"
+          ],
+          [
+            "everything",
+            "에v리씽",
+            "전부를"
+          ],
+          [
+            "right now.",
+            "라잇 나우",
+            "지금 당장."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/v/ have to",
+            "have 의 v — '하브 투'가 아니라 아랫입술을 물고 '해v 투'"
+          ],
+          [
+            "/θ/ everything",
+            "everything 끝의 th 는 혀끝을 이 사이에 — '에v리씽'"
+          ]
+        ],
+        "mistake": "'설명할 필요 없어'를 You must not explain 으로 말하면 '설명하면 안 된다'는 금지가 된다. 안 해도 된다는 뜻은 don't have to 다. have to 뒤에는 to 부정사가 아니라 동사원형이 온다.",
+        "similar": "You don't need to explain. / No rush, take your time.",
+        "category": "일상/배려",
+        "frequency": 10,
+        "chain": {
+          "target": "You don't have to explain everything right now, so take your time.",
+          "chunks": [
+            "You don't have to explain everything right now,",
+            "so take",
+            "your time."
+          ],
+          "ko": "지금 당장 다 설명할 필요 없어, 천천히 해."
+        },
+        "anchor": "설명할 필요는 없어"
+      }
+    },
+    {
+      "id": "en-core100-044-went-through-with-it",
+      "sentence": "I can't believe you actually went through with it.",
+      "meaning": "네가 정말 그 일을 끝까지 해냈다니 믿기지 않아.",
+      "reading": null,
+      "phonetic_kr": "아이 캔트 빌리이v 유 액츄얼리 웬트 쓰루우 위딧",
+      "order_index": 7,
+      "explanation": {
+        "key": "went through with it = 그 일을 끝까지 해냈다. 망설이거나 미루던 일을 결국 실행에 옮겼을 때 쓴다.",
+        "situation": "말만 하던 일을 상대가 진짜 해냈을 때 — 아내가 미루던 이사나 이직을 끝내 밀어붙였을 때 놀라움을 담아 말한다.",
+        "drills": [
+          {
+            "en": "I can't believe he did it.",
+            "ko": "걔가 해냈다니 믿기지 않아.",
+            "kr": "아이 캔트 빌리이v 히 디딧"
+          },
+          {
+            "en": "She actually went through with it.",
+            "ko": "그녀가 정말 끝까지 해냈어.",
+            "kr": "쉬 액츄얼리 웬트 쓰루우 위딧"
+          },
+          {
+            "en": "Are you going through with it?",
+            "ko": "그거 정말 끝까지 할 거야?",
+            "kr": "아r 유 고잉 쓰루우 위딧"
+          },
+          {
+            "en": "My wife went through with the plan.",
+            "ko": "아내는 그 계획을 끝까지 밀어붙였어.",
+            "kr": "마이 와이f 웬트 쓰루우 위드 더 플랜"
+          },
+          {
+            "en": "We went through with the trip anyway.",
+            "ko": "우리는 어쨌든 그 여행을 강행했어.",
+            "kr": "위 웬트 쓰루우 위드 더 트리패니웨이"
+          },
+          {
+            "en": "I can't believe you actually did that.",
+            "ko": "네가 정말 그걸 했다니 믿기지 않아.",
+            "kr": "아이 캔트 빌리이v 유 액츄얼리 디드 댓"
+          },
+          {
+            "en": "I almost backed out, but I went through with it.",
+            "ko": "거의 포기할 뻔했는데 결국 끝까지 해냈어.",
+            "kr": "아이 올모우스트 백타웃 버라이 웬트 쓰루우 위딧"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "go through with + 목적어",
+            "body": "go through with 는 '망설이던 일을 결국 실행하다'라는 한 덩어리 구동사다. with 없이 go through 만 쓰면 '통과하다·겪다'가 되므로 뜻이 달라진다. 목적어는 with 뒤에 온다."
+          },
+          {
+            "struct": "I can't believe + 문장",
+            "body": "놀라움은 I can't believe 로 시작하고 뒤에 문장을 통째로 붙인다. that 은 생략하는 편이 자연스럽다. actually 는 '진짜로'라며 놀라움을 얹는 자리로 동사 앞에 온다."
+          }
+        ],
+        "chunks": [
+          [
+            "I can't believe",
+            "아이 캔트 빌리이v",
+            "믿기지 않아"
+          ],
+          [
+            "you actually",
+            "유 액츄얼리",
+            "네가 정말"
+          ],
+          [
+            "went through with it.",
+            "웬트 쓰루우 위딧",
+            "그 일을 끝까지 해냈다니."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ through",
+            "through 의 th 는 혀끝을 이 사이에 — '스루'(X) '쓰루우'(O), 뒤 모음은 입술을 둥글게 길게"
+          ],
+          [
+            "with it → 연음",
+            "'위드 잇'처럼 끊지 않고 '위딧' — 유성 th 가 it 에 붙는다"
+          ],
+          [
+            "/iː/ believe",
+            "believe 는 길게 '빌리이v' — 짧게 '빌리브'로 끝내지 않는다"
+          ]
+        ],
+        "mistake": "'끝까지 해냈다'를 finished 로 옮기면 그냥 일을 마쳤다는 뜻이 된다. 망설이던 일을 결국 실행했다는 뉘앙스는 go through with it 이다. with 를 빼면 '통과했다'가 되어 뜻이 달라진다.",
+        "similar": "I can't believe you actually did it. / You really pulled it off.",
+        "category": "일상/놀람",
+        "frequency": 8,
+        "chain": {
+          "target": "I can't believe you actually went through with it, because I thought you'd change your mind.",
+          "chunks": [
+            "I can't believe you actually went through with it,",
+            "because I thought",
+            "you'd change",
+            "your mind."
+          ],
+          "ko": "네가 정말 그 일을 끝까지 해냈다니 믿기지 않아, 난 네가 마음을 바꿀 줄 알았거든."
+        },
+        "anchor": "끝까지 해냈다니"
+      }
+    }
+  ]
+}

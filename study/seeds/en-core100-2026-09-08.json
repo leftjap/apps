@@ -1,0 +1,670 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "31-50 일상 설명과 이야기하기",
+  "date": "2026-09-08",
+  "_note": "코어 100문장 커리큘럼 31~37번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-031-ive-been-meaning-to-ask",
+      "sentence": "I've been meaning to ask you something.",
+      "meaning": "전부터 너한테 물어보고 싶던 게 있어.",
+      "reading": null,
+      "phonetic_kr": "아이v 빈 미이닝 투 애스크 유 썸씽",
+      "order_index": 1,
+      "explanation": {
+        "key": "I've been meaning to ask = 전부터 물어보려고 했다. 마음에 담아 두고 미뤄 온 질문을 꺼낼 때 쓰는 말.",
+        "situation": "미뤄 두었던 질문을 꺼낼 때 — 아내와 저녁을 먹다가 계속 못 물어본 걸 이 문장으로 시작한다.",
+        "drills": [
+          {
+            "en": "I've been meaning to call you.",
+            "ko": "전부터 너한테 전화하려고 했어.",
+            "kr": "아이v 빈 미이닝 투 콜 유"
+          },
+          {
+            "en": "I've been meaning to ask about that.",
+            "ko": "그거 전부터 물어보려고 했어.",
+            "kr": "아이v 빈 미이닝 투 애스커바웃 댓"
+          },
+          {
+            "en": "You've been meaning to do that for weeks.",
+            "ko": "너 그거 몇 주째 하려고만 했잖아.",
+            "kr": "유v 빈 미이닝 투 두 댓 f포어r 위익스"
+          },
+          {
+            "en": "My wife has been meaning to book the hotel.",
+            "ko": "아내가 전부터 호텔을 예약하려고 했어.",
+            "kr": "마이 와이f 해z 빈 미이닝 투 북 더 호텔"
+          },
+          {
+            "en": "I've been meaning to ask you about the cat.",
+            "ko": "고양이 얘기를 전부터 물어보려고 했어.",
+            "kr": "아이v 빈 미이닝 투 애스크 유 어바웃 더 캣"
+          },
+          {
+            "en": "I've been meaning to tell you, but I forgot.",
+            "ko": "전부터 말하려고 했는데 잊어버렸어.",
+            "kr": "아이v 빈 미이닝 투 텔 유 버라이 f퍼r갓"
+          },
+          {
+            "en": "We've been meaning to take the cat to the vet.",
+            "ko": "전부터 고양이를 병원에 데려가려고 했어.",
+            "kr": "위v 빈 미이닝 투 테익 더 캣 투 더 v벳"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I've been meaning to + 동사원형",
+            "body": "have been -ing 는 '전부터 계속 그래 왔다'는 시간을 담고, mean to 는 '~하려고 마음먹다'다. 둘이 합쳐져 '전부터 하려고 했는데 아직 못 했다'가 된다. 한국어 '전부터'에 해당하는 단어가 따로 나오지 않고 시제 안에 들어 있다."
+          }
+        ],
+        "chunks": [
+          [
+            "I've been meaning",
+            "아이v 빈 미이닝",
+            "전부터 ~하려고 했어"
+          ],
+          [
+            "to ask you",
+            "투 애스크 유",
+            "너한테 물어보려고"
+          ],
+          [
+            "something.",
+            "썸씽",
+            "뭔가를."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/iː/ meaning",
+            "mean 계열 모음은 길게 '미이닝' — '미닝'으로 짧게 끊으면 다른 단어로 샌다"
+          ],
+          [
+            "/v/ I've",
+            "I've 의 v 는 아랫입술을 물고 '아이v' — '아이브'처럼 '브'를 따로 내지 않는다"
+          ]
+        ],
+        "mistake": "'물어보고 싶던 게 있어'를 I want to ask 로만 말하면 지금 막 떠오른 질문이 된다. 전부터 미뤄 왔다는 결은 I've been meaning to 가 만든다.",
+        "similar": "There's something I've been wanting to ask you. / I keep meaning to ask you.",
+        "category": "일상/서두",
+        "frequency": 8,
+        "chain": {
+          "target": "I've been meaning to ask you something, but I keep forgetting to bring it up.",
+          "chunks": [
+            "I've been meaning to ask you something,",
+            "but I keep",
+            "forgetting to bring",
+            "it up."
+          ],
+          "ko": "전부터 너한테 물어보고 싶던 게 있는데, 자꾸 꺼내는 걸 잊어버려."
+        },
+        "anchor": "물어보고 싶던 게 있어"
+      }
+    },
+    {
+      "id": "en-core100-032-thought-about-it-that-way",
+      "sentence": "I've never thought about it that way before.",
+      "meaning": "그런 식으로는 전혀 생각해 본 적 없어.",
+      "reading": null,
+      "phonetic_kr": "아이v 네버r 쏫 어바우릿 댓 웨이 비f포어r",
+      "order_index": 2,
+      "explanation": {
+        "key": "thought about it that way = 그런 식으로 생각해 봤다. 앞에 never 를 붙여 상대 말에 새 관점을 얻었다고 인정할 때 쓰는 말.",
+        "situation": "상대가 전혀 다른 각도로 설명해 줬을 때 — 반박 대신 이 문장으로 받으면 대화가 이어진다.",
+        "drills": [
+          {
+            "en": "I never thought of that.",
+            "ko": "그건 생각 못 했네.",
+            "kr": "아이 네버r 쏘러v 댓"
+          },
+          {
+            "en": "I thought about it last night.",
+            "ko": "어젯밤에 그걸 생각해 봤어.",
+            "kr": "아이 쏘러바우릿 라스 나잇"
+          },
+          {
+            "en": "My wife never thought about it that way.",
+            "ko": "아내는 그런 식으로는 생각해 본 적이 없대.",
+            "kr": "마이 와이f 네버r 쏘러바우릿 댓 웨이"
+          },
+          {
+            "en": "You should think about it that way too.",
+            "ko": "너도 그런 식으로 생각해 보면 좋겠어.",
+            "kr": "유 슈드 씽크 어바우릿 댓 웨이 투우"
+          },
+          {
+            "en": "Have you ever thought about it that way?",
+            "ko": "그런 식으로 생각해 본 적 있어?",
+            "kr": "해v 유 에v버r 쏘러바우릿 댓 웨이"
+          },
+          {
+            "en": "I never thought I'd say this, but you're right.",
+            "ko": "내가 이런 말 할 줄 몰랐는데, 네 말이 맞아.",
+            "kr": "아이 네버r 쏘라이드 쎄이 디스 벗 유어r 라잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "have never + 과거분사 (+ before)",
+            "body": "have never + 과거분사는 '지금까지 한 번도 ~한 적 없다'는 경험을 말한다. 한국어 '생각해 본 적 없어'의 '본 적'이 이 자리다. 끝의 before 는 빼도 뜻이 같지만, 붙이면 '지금 이전까지는'이 분명해진다."
+          }
+        ],
+        "chunks": [
+          [
+            "I've never thought",
+            "아이v 네버r 쏫",
+            "한 번도 생각해 본 적 없어"
+          ],
+          [
+            "about it that way",
+            "어바우릿 댓 웨이",
+            "그걸 그런 식으로는"
+          ],
+          [
+            "before.",
+            "비f포어r",
+            "지금까지."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ thought",
+            "혀끝을 이 사이에 물고 '쏫' — 't' 로 내면 taught 로 들린다"
+          ],
+          [
+            "thought about it → 연음",
+            "'쏫 어바웃 잇'처럼 끊지 않고 '쏘러바우릿' — t 가 모음 사이에서 부드러운 flap 이 된다"
+          ]
+        ],
+        "mistake": "'그런 식으로'에 like 를 덧붙여 like that way 라고 하기 쉬운데 that way 만으로 충분하다. I didn't think 로 말하면 그때 한 번 생각 안 했다는 뜻이 되고, 경험이 없다는 뜻은 have never thought 다.",
+        "similar": "I never looked at it that way. / That's a new way to think about it.",
+        "category": "일상/관점",
+        "frequency": 8,
+        "chain": {
+          "target": "I've never thought about it that way before, but now that you say it, it makes sense.",
+          "chunks": [
+            "I've never thought about it that way before,",
+            "but now that",
+            "you say it,",
+            "it makes sense."
+          ],
+          "ko": "그런 식으로는 전혀 생각해 본 적 없는데, 듣고 보니 말이 되네."
+        },
+        "anchor": "생각해 본 적 없어"
+      }
+    },
+    {
+      "id": "en-core100-033-it-turns-out",
+      "sentence": "It turns out we were both wrong.",
+      "meaning": "알고 보니 우리 둘 다 틀렸어.",
+      "reading": null,
+      "phonetic_kr": "잇 터r언자웃 위 워r 보우쓰 롱",
+      "order_index": 3,
+      "explanation": {
+        "key": "It turns out = 알고 보니 ~더라. 나중에 밝혀진 사실을 꺼낼 때 문장 앞에 붙이는 말.",
+        "situation": "나중에 사실이 드러났을 때 — 여행 중 시간이나 길을 서로 잘못 알고 있었다고 알려 준다.",
+        "drills": [
+          {
+            "en": "Both of us were wrong.",
+            "ko": "우리 둘 다 틀렸어.",
+            "kr": "보우써v 어스 워r 롱"
+          },
+          {
+            "en": "How did it turn out?",
+            "ko": "그거 어떻게 됐어?",
+            "kr": "하우 디딧 터r어나웃"
+          },
+          {
+            "en": "It turns out she was right.",
+            "ko": "알고 보니 그 사람 말이 맞았어.",
+            "kr": "잇 터r언자웃 쉬 워z 라잇"
+          },
+          {
+            "en": "It turned out to be a good idea.",
+            "ko": "알고 보니 그게 좋은 생각이었어.",
+            "kr": "잇 터r언다웃 투 비 어 구다이디어"
+          },
+          {
+            "en": "It turns out we took the wrong train.",
+            "ko": "알고 보니 우리가 기차를 잘못 탔더라.",
+            "kr": "잇 터r언자웃 위 툭 더 롱 트레인"
+          },
+          {
+            "en": "We were both wrong, so we tried again.",
+            "ko": "우리 둘 다 틀려서 다시 해 봤어.",
+            "kr": "위 워r 보우쓰 롱 쏘 위 트라이더겐"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "It turns out (that) + 문장",
+            "body": "It 은 뜻이 없는 자리 채우기 주어이고 실제 내용은 뒤 문장이다. 한국어 '알고 보니'가 문장 앞에 오는 것과 자리가 같다. that 은 붙여도 되고 빼도 되며, 구어에서는 It 까지 떼고 Turns out 으로 시작하기도 한다."
+          }
+        ],
+        "chunks": [
+          [
+            "It turns out",
+            "잇 터r언자웃",
+            "알고 보니"
+          ],
+          [
+            "we were both",
+            "위 워r 보우쓰",
+            "우리 둘 다"
+          ],
+          [
+            "wrong.",
+            "롱",
+            "틀렸어."
+          ]
+        ],
+        "phonemes": [
+          [
+            "turns out → 연음",
+            "'터r언즈 아웃'처럼 끊지 않고 '터r언자웃' — z 가 out 에 붙는다"
+          ],
+          [
+            "/ɜːr/ turns·were",
+            "turn 과 were 의 모음은 혀를 말아 '터r'·'워r' — '턴'·'워'로 끝내면 다른 단어로 들린다"
+          ],
+          [
+            "/θ/ both",
+            "both 끝은 혀끝을 이 사이에 넣은 '쓰' — 't' 로 닫으면 boat 로 들린다"
+          ]
+        ],
+        "mistake": "'알고 보니'를 After I knew 처럼 옮기기 쉽다. 밝혀진 사실은 It turns out 으로 시작하고 뒤에 문장을 통째로 붙인다. 이미 지난 일이라도 turns 처럼 현재형을 쓰는 것이 보통이다.",
+        "similar": "As it turns out, … / It looks like we were both wrong.",
+        "category": "일상/전개",
+        "frequency": 9,
+        "chain": {
+          "target": "It turns out we were both wrong, so we had to check the map again.",
+          "chunks": [
+            "It turns out we were both wrong,",
+            "so we had",
+            "to check",
+            "the map again."
+          ],
+          "ko": "알고 보니 우리 둘 다 틀려서, 지도를 다시 봐야 했어."
+        },
+        "anchor": "알고 보니"
+      }
+    },
+    {
+      "id": "en-core100-034-ended-up",
+      "sentence": "I ended up staying home all weekend.",
+      "meaning": "결국 주말 내내 집에 있었어.",
+      "reading": null,
+      "phonetic_kr": "아이 엔디덥 스테잉 호움 올 위켄드",
+      "order_index": 4,
+      "explanation": {
+        "key": "ended up = 결국 ~하게 됐다. 계획과 다르게 흘러간 결과를 말할 때 쓰고 뒤에 동사-ing 가 온다.",
+        "situation": "계획과 다르게 흘러간 결과를 말할 때 — 주말에 뭐 했냐는 물음에 나가려다 못 나간 얘기를 한다.",
+        "drills": [
+          {
+            "en": "I ended up walking home.",
+            "ko": "결국 집까지 걸어갔어.",
+            "kr": "아이 엔디덥 워킹 호움"
+          },
+          {
+            "en": "We ended up taking the bus.",
+            "ko": "결국 버스를 탔어.",
+            "kr": "위 엔디덥 테이킹 더 버스"
+          },
+          {
+            "en": "How did you end up here?",
+            "ko": "어쩌다 여기까지 오게 됐어?",
+            "kr": "하우 디쥬 엔덥 히어r"
+          },
+          {
+            "en": "My wife ended up working late again.",
+            "ko": "아내는 결국 또 야근했어.",
+            "kr": "마이 와이f 엔디덥 워r킹 레이러겐"
+          },
+          {
+            "en": "The cat ended up sleeping next to me.",
+            "ko": "고양이는 결국 내 옆에서 잤어.",
+            "kr": "더 캐렌디덥 슬리이핑 넥스 투 미"
+          },
+          {
+            "en": "I was going to go out, but I ended up staying home.",
+            "ko": "나가려고 했는데 결국 집에 있었어.",
+            "kr": "아이 워z 고잉 투 고우 아웃 버라이 엔디덥 스테잉 호움"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + ended up + 동사-ing",
+            "body": "end up 뒤에는 동사원형이 아니라 -ing 가 온다. 하려던 일이 아니라 실제로 하게 된 일을 -ing 자리에 넣는다. 한국어 '결국'은 문장 앞에 오지만 영어는 동사 자리에서 그 뜻을 낸다."
+          }
+        ],
+        "chunks": [
+          [
+            "I ended up",
+            "아이 엔디덥",
+            "결국 ~하게 됐어"
+          ],
+          [
+            "staying home",
+            "스테잉 호움",
+            "집에 있는 걸로"
+          ],
+          [
+            "all weekend.",
+            "올 위켄드",
+            "주말 내내."
+          ]
+        ],
+        "phonemes": [
+          [
+            "ended up → 연음",
+            "'엔디드 업'처럼 끊지 않고 '엔디덥' — d 가 up 에 붙는다"
+          ],
+          [
+            "/eɪ/ staying",
+            "stay 의 모음은 '에'가 아니라 '에이' — '스테잉'의 '에이'를 뭉개지 않는다"
+          ]
+        ],
+        "mistake": "'결국'을 finally 로 옮기기 쉽다. finally 는 기다리던 일이 마침내 된 것이고, 계획과 어긋난 결과는 end up 이다. 뒤에 원형을 넣어 end up stay 라고 하지 않는다.",
+        "similar": "I wound up staying home. / In the end I just stayed home.",
+        "category": "일상/결과",
+        "frequency": 9,
+        "chain": {
+          "target": "I ended up staying home all weekend, and honestly it was exactly what I needed.",
+          "chunks": [
+            "I ended up staying home all weekend,",
+            "and honestly",
+            "it was exactly",
+            "what I needed."
+          ],
+          "ko": "결국 주말 내내 집에 있었는데, 솔직히 딱 필요했던 거였어."
+        },
+        "anchor": "결국"
+      }
+    },
+    {
+      "id": "en-core100-035-used-to",
+      "sentence": "I used to do that all the time.",
+      "meaning": "예전에는 늘 그렇게 했어.",
+      "reading": null,
+      "phonetic_kr": "아이 유우스 투 두 댓 올 더 타임",
+      "order_index": 5,
+      "explanation": {
+        "key": "used to = 예전에는 ~했다. 지금은 안 하는 과거의 습관을 말하는 말.",
+        "situation": "옛날 얘기가 나왔을 때 — 지금은 안 하지만 예전엔 자주 했던 일을 말한다.",
+        "drills": [
+          {
+            "en": "I used to live here.",
+            "ko": "예전에 여기 살았어.",
+            "kr": "아이 유우스 투 리v 히어r"
+          },
+          {
+            "en": "I don't do that anymore.",
+            "ko": "이젠 그렇게 안 해.",
+            "kr": "아이 돈 두 대래니모어r"
+          },
+          {
+            "en": "We used to travel more.",
+            "ko": "우리 예전엔 여행을 더 다녔어.",
+            "kr": "위 유우스 투 트래v블 모어r"
+          },
+          {
+            "en": "My wife used to work there.",
+            "ko": "아내가 예전에 거기서 일했어.",
+            "kr": "마이 와이f 유우스 투 워r크 데어r"
+          },
+          {
+            "en": "Did you use to do that too?",
+            "ko": "너도 예전엔 그렇게 했어?",
+            "kr": "디쥬 유우스 투 두 댓 투우"
+          },
+          {
+            "en": "The cat used to sleep on the sofa.",
+            "ko": "고양이는 예전에 소파에서 잤어.",
+            "kr": "더 캣 유우스 투 슬리이폰 더 쏘우f퍼"
+          },
+          {
+            "en": "I used to get up early for work.",
+            "ko": "예전엔 출근하려고 일찍 일어났어.",
+            "kr": "아이 유우스 투 게러버r리 f포어r 워r크"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "used to + 동사원형",
+            "body": "used to 뒤에는 동사원형이 온다. '예전에는 그랬고 지금은 아니다'가 한 덩어리로 들어 있어 now 나 before 를 따로 붙이지 않아도 된다. 부정·의문에서는 did 가 시제를 가져가 didn't use to · Did you use to 처럼 d 가 빠진다."
+          }
+        ],
+        "chunks": [
+          [
+            "I used to",
+            "아이 유우스 투",
+            "예전에는 ~했어"
+          ],
+          [
+            "do that",
+            "두 댓",
+            "그렇게"
+          ],
+          [
+            "all the time.",
+            "올 더 타임",
+            "늘."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/juːst/ used to",
+            "여기서 used 의 s 는 /z/ 가 아니라 /s/ — '유우즈드 투'(X) '유우스 투'(O)"
+          ],
+          [
+            "/uː/ do·to",
+            "do 와 to 의 모음은 입술을 둥글게 모아 길게 — '드'·'트'로 흘리지 않는다"
+          ]
+        ],
+        "mistake": "'예전에는'을 before 로 붙여 I did that before 라고 하면 전에 한 번 했다는 뜻이 된다. 반복되던 습관은 used to 로 말한다. 형태가 비슷한 be used to(익숙하다)와는 앞에 be 동사가 있는지로 갈린다.",
+        "similar": "I would do that all the time. / That's what I always did back then.",
+        "category": "일상/습관",
+        "frequency": 10,
+        "chain": {
+          "target": "I used to do that all the time, but I haven't done it in years.",
+          "chunks": [
+            "I used to do that all the time,",
+            "but I haven't",
+            "done it",
+            "in years."
+          ],
+          "ko": "예전에는 늘 그렇게 했는데, 몇 년째 안 했어."
+        },
+        "anchor": "예전에는"
+      }
+    },
+    {
+      "id": "en-core100-036-not-used-to",
+      "sentence": "I'm not used to getting up this early.",
+      "meaning": "이렇게 일찍 일어나는 게 익숙하지 않아.",
+      "reading": null,
+      "phonetic_kr": "아임 낫 유우스 투 게링 업 디스 어r리",
+      "order_index": 6,
+      "explanation": {
+        "key": "not used to = ~이 익숙하지 않다. 아직 몸에 배지 않은 일을 말할 때 쓰고 뒤에 명사나 동사-ing 가 온다.",
+        "situation": "평소와 다른 일정에 몸이 안 따라 줄 때 — 여행 첫날 이른 비행기나 시차 때문에 힘들 때.",
+        "drills": [
+          {
+            "en": "I'm not used to this.",
+            "ko": "이건 아직 익숙하지 않아.",
+            "kr": "아임 낫 유우스 투 디스"
+          },
+          {
+            "en": "You'll get used to it.",
+            "ko": "곧 익숙해질 거야.",
+            "kr": "유울 겟 유우스 투 잇"
+          },
+          {
+            "en": "My wife isn't used to it yet.",
+            "ko": "아내는 아직 익숙하지 않아.",
+            "kr": "마이 와이f 이즌 유우스 투 잇 옛"
+          },
+          {
+            "en": "Are you used to the time difference?",
+            "ko": "시차에 적응됐어?",
+            "kr": "아r 유 유우스 투 더 타임 디f퍼런스"
+          },
+          {
+            "en": "I'm not used to working this late.",
+            "ko": "이렇게 늦게까지 일하는 게 익숙하지 않아.",
+            "kr": "아임 낫 유우스 투 워r킹 디스 레잇"
+          },
+          {
+            "en": "The cat isn't used to the new house.",
+            "ko": "고양이가 새 집에 아직 적응을 못 했어.",
+            "kr": "더 캐리즌 유우스 투 더 뉴 하우스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "be not used to + 명사 / 동사-ing",
+            "body": "여기서 to 는 부정사가 아니라 전치사다. 그래서 뒤에 동사원형이 아니라 -ing 나 명사가 온다. 앞의 be 동사가 지금의 상태를 나타내고, 35번의 used to(예전에 ~했다)와는 be 동사가 있는지로 갈린다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm not used to",
+            "아임 낫 유우스 투",
+            "~이 익숙하지 않아"
+          ],
+          [
+            "getting up",
+            "게링 업",
+            "일어나는 게"
+          ],
+          [
+            "this early.",
+            "디스 어r리",
+            "이렇게 일찍."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/juːst/ used to",
+            "used 의 s 는 여기서도 /s/ 로 굳어 '유우스 투' — '유우즈드'로 읽지 않는다"
+          ],
+          [
+            "getting → flap t",
+            "모음 사이 t 는 부드러운 ㄹ 소리 — '게팅'(X) '게링'(O)"
+          ],
+          [
+            "/ɜːr/ early",
+            "early 의 ear 는 혀를 말아 '어r리' — '얼리'처럼 ㄹ 받침으로 끊지 않는다"
+          ]
+        ],
+        "mistake": "be used to 뒤에 동사원형을 넣어 I'm not used to get up 이라고 하기 쉽다. 이 to 는 전치사라서 getting 이 와야 한다. 35번의 used to + 동사원형과는 앞에 be 동사가 있는지로 구별한다.",
+        "similar": "I'm still getting used to it. / It's still new to me.",
+        "category": "일상/적응",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm not used to getting up this early, so I need a big cup of coffee.",
+          "chunks": [
+            "I'm not used to getting up this early,",
+            "so I need",
+            "a big cup",
+            "of coffee."
+          ],
+          "ko": "이렇게 일찍 일어나는 게 익숙하지 않아서, 커피를 크게 한 잔 마셔야 해."
+        },
+        "anchor": "익숙하지 않아"
+      }
+    },
+    {
+      "id": "en-core100-037-im-thinking-about",
+      "sentence": "I'm thinking about taking a few days off.",
+      "meaning": "며칠 쉴까 생각 중이야.",
+      "reading": null,
+      "phonetic_kr": "아임 씽킹 어바웃 테이킹 어 f퓨 데이z 어f",
+      "order_index": 7,
+      "explanation": {
+        "key": "I'm thinking about = ~할까 생각 중이다. 아직 정하지 않은 계획을 꺼낼 때 쓰고 뒤에 동사-ing 가 온다.",
+        "situation": "휴가 얘기를 슬쩍 꺼낼 때 — 아직 정하지 않았지만 마음이 기운 계획을 아내에게 말한다.",
+        "drills": [
+          {
+            "en": "I'm thinking about it.",
+            "ko": "생각 중이야.",
+            "kr": "아임 씽킹 어바우릿"
+          },
+          {
+            "en": "What are you thinking about?",
+            "ko": "무슨 생각 해?",
+            "kr": "왓 아r 유 씽킹 어바웃"
+          },
+          {
+            "en": "I'm thinking about taking the train.",
+            "ko": "기차를 탈까 생각 중이야.",
+            "kr": "아임 씽킹 어바웃 테이킹 더 트레인"
+          },
+          {
+            "en": "My wife is thinking about changing jobs.",
+            "ko": "아내가 이직을 생각 중이야.",
+            "kr": "마이 와이f 이z 씽킹 어바웃 체인징 잡z"
+          },
+          {
+            "en": "We're thinking about staying home this weekend.",
+            "ko": "우리 이번 주말엔 집에 있을까 생각 중이야.",
+            "kr": "위어r 씽킹 어바웃 스테잉 호움 디스 위켄드"
+          },
+          {
+            "en": "Have you thought about taking some time off?",
+            "ko": "좀 쉬는 거 생각해 봤어?",
+            "kr": "해v 유 쏘러바웃 테이킹 썸 타이머f"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm thinking about + 동사-ing",
+            "body": "about 이 전치사라 뒤에 동사원형이 아니라 -ing 가 온다. 현재진행형이라 '지금 마음속에서 굴리는 중'이라는 결이 생겨, 이미 정한 일을 말하는 I'm going to 보다 부드럽다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm thinking about",
+            "아임 씽킹 어바웃",
+            "~할까 생각 중이야"
+          ],
+          [
+            "taking a few days off.",
+            "테이킹 어 f퓨 데이z 어f",
+            "며칠 쉬는 걸."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ thinking",
+            "혀끝을 이 사이에 넣어 '씽킹' — '싱킹'으로 내면 sinking 으로 들린다"
+          ],
+          [
+            "/f/ few·off",
+            "few 와 off 의 f 는 윗니로 아랫입술 — 'f퓨'·'어f', '퓨'·'오프'가 아니다"
+          ],
+          [
+            "/z/ days",
+            "days 끝은 /z/ — '데이스'(X) '데이z'(O), 혀 진동을 끝까지 유지"
+          ]
+        ],
+        "mistake": "'생각 중이야'를 I'm thinking to take 처럼 to 부정사로 잇기 쉽다. about 뒤에는 -ing 만 온다. '며칠 쉬다'도 rest a few days 가 아니라 take a few days off 다.",
+        "similar": "I might take a few days off. / I've been thinking about taking some time off.",
+        "category": "일상/계획",
+        "frequency": 9,
+        "chain": {
+          "target": "I'm thinking about taking a few days off, so maybe we can go somewhere quiet.",
+          "chunks": [
+            "I'm thinking about taking a few days off,",
+            "so maybe",
+            "we can go",
+            "somewhere quiet."
+          ],
+          "ko": "며칠 쉴까 생각 중인데, 조용한 데라도 갈 수 있으면 좋겠어."
+        },
+        "anchor": "생각 중이야"
+      }
+    }
+  ]
+}

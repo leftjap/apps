@@ -1,0 +1,688 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "81-100 미드 듣기와 구어 문형",
+  "date": "2026-09-16",
+  "_note": "코어 100문장 커리큘럼 81~87번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. 이 구간의 gonna·wanna·gotta·lemme·kinda 는 정식 표기가 아니라 커리큘럼이 지정한 실제 발음 표기라 sentence·chunks 에 그대로 두고 음차도 실제 소리(거나·워나·가라·레미·카인다)로 적었다 — 정식 표기(going to·want to·have got to·let me·kind of)는 grammar·mistake 에서 한 번씩 알린다.",
+  "cards": [
+    {
+      "id": "en-core100-081-what-are-you-gonna-do",
+      "sentence": "What are you gonna do about it?",
+      "meaning": "이걸 어떻게 할 건데?",
+      "reading": null,
+      "phonetic_kr": "왓 아r 유 거나 두 어바우릿",
+      "order_index": 1,
+      "explanation": {
+        "key": "What are you gonna do = 어떻게 할 거야. going to 를 소리 나는 대로 적은 gonna 로 상대의 대응을 묻는 말.",
+        "situation": "상대가 문제를 만들어 놓고 가만히 있을 때 — 미드에서 다투는 장면에 자주 나오고, 여행 계획이 틀어졌을 때도 그대로 쓴다.",
+        "drills": [
+          {
+            "en": "What are you gonna do?",
+            "ko": "어떻게 할 거야?",
+            "kr": "왓 아r 유 거나 두"
+          },
+          {
+            "en": "She's not gonna like that.",
+            "ko": "걔는 그거 안 좋아할 거야.",
+            "kr": "쉬즈 낫 거나 라이크 댓"
+          },
+          {
+            "en": "I'm gonna call the vet tomorrow.",
+            "ko": "내일 동물병원에 전화할 거야.",
+            "kr": "아임 거나 콜 더 v벳 터마로우"
+          },
+          {
+            "en": "We're gonna miss the last train.",
+            "ko": "우리 막차 놓치겠다.",
+            "kr": "위어r 거나 미스 더 라스 트레인"
+          },
+          {
+            "en": "My wife is gonna work late tonight.",
+            "ko": "아내는 오늘 밤 야근할 거야.",
+            "kr": "마이 와이f 이z 거나 워r크 레잇 터나잇"
+          },
+          {
+            "en": "What are you gonna do this weekend?",
+            "ko": "이번 주말에 뭐 할 거야?",
+            "kr": "왓 아r 유 거나 두 디스 위켄드"
+          },
+          {
+            "en": "What are we gonna do about the cat?",
+            "ko": "고양이는 어떡하지?",
+            "kr": "왓 아r 위 거나 두 어바웃 더 캣"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What are you gonna do + about + 목적어?",
+            "body": "gonna 는 going to 를 소리대로 적은 구어 표기이고, 정식으로는 What are you going to do 다. 한국어 '이걸 어떻게 할 건데'는 '이걸'이 앞에 오지만 영어는 do 까지 먼저 말하고 무엇에 대한 것인지를 about it 으로 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "What are you",
+            "왓 아r 유",
+            "너는 뭘"
+          ],
+          [
+            "gonna do",
+            "거나 두",
+            "할 거야"
+          ],
+          [
+            "about it?",
+            "어바우릿",
+            "그것에 대해서?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "gonna → going to",
+            "빠른 말에서 going to 가 한 덩어리로 붙어 '거나' 가 된다 — '고잉 투'로 또박또박 끊지 않는다"
+          ],
+          [
+            "about it → 연음",
+            "'어바웃 잇'(X) '어바우릿'(O) — t 가 모음 사이에서 부드러운 ㄹ 소리로 바뀐다"
+          ]
+        ],
+        "mistake": "'어떻게 할 건데'를 How will you do 로 옮기기 쉽다. 영어는 What 으로 묻는다. 그리고 gonna 는 말할 때만 쓰는 표기라 메일이나 시험 답안에는 going to 로 적는다.",
+        "similar": "What do you plan to do? / How are you going to handle it?",
+        "category": "구어/축약",
+        "frequency": 9,
+        "chain": {
+          "target": "What are you gonna do about it, or are you just gonna wait and see?",
+          "chunks": [
+            "What are you gonna do about it,",
+            "or are you",
+            "just gonna wait",
+            "and see?"
+          ],
+          "ko": "이걸 어떻게 할 건데, 아니면 그냥 두고 볼 거야?"
+        },
+        "anchor": "어떻게 할 건데"
+      }
+    },
+    {
+      "id": "en-core100-082-not-gonna-let-that-happen",
+      "sentence": "I'm not gonna let that happen again.",
+      "meaning": "그런 일이 다시 생기게 두진 않을 거야.",
+      "reading": null,
+      "phonetic_kr": "아임 낫 거나 렛 댓 해프너겐",
+      "order_index": 2,
+      "explanation": {
+        "key": "not gonna let that happen = 그런 일이 생기게 두지 않겠다. 같은 일을 되풀이하지 않겠다고 다짐하는 말.",
+        "situation": "같은 실수가 반복됐을 때 다짐하듯 말한다 — 여행에서 기차를 놓친 뒤 아내에게, 또는 고양이가 또 밖으로 나갔을 때.",
+        "drills": [
+          {
+            "en": "That's not gonna happen.",
+            "ko": "그런 일은 없을 거야.",
+            "kr": "댓츠 낫 거나 해픈"
+          },
+          {
+            "en": "Don't let that happen.",
+            "ko": "그런 일은 생기게 두지 마.",
+            "kr": "돈트 렛 댓 해픈"
+          },
+          {
+            "en": "I'm not gonna let you down.",
+            "ko": "널 실망시키지 않을게.",
+            "kr": "아임 낫 거나 렛 유 다운"
+          },
+          {
+            "en": "My wife won't let it happen again.",
+            "ko": "아내는 그런 일이 다시 생기게 두지 않아.",
+            "kr": "마이 와이f 워운트 레릿 해프너겐"
+          },
+          {
+            "en": "We're not gonna let that stop us.",
+            "ko": "그것 때문에 그만두진 않을 거야.",
+            "kr": "위어r 낫 거나 렛 댓 스타퍼스"
+          },
+          {
+            "en": "I'm not gonna let that happen to us.",
+            "ko": "우리한테 그런 일이 생기게 두진 않을 거야.",
+            "kr": "아임 낫 거나 렛 댓 해픈 투 어스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm not gonna let + 목적어 + 동사원형",
+            "body": "let 뒤에는 to 없이 동사원형이 바로 온다 — let that happen(O) / let that to happen(X). 한국어 '생기게 두다'의 '두다'가 let 이고 '생기다'가 happen 이다. gonna 는 going to 의 구어 표기다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm not gonna let",
+            "아임 낫 거나 렛",
+            "난 두지 않을 거야"
+          ],
+          [
+            "that happen again.",
+            "댓 해프너겐",
+            "그런 일이 다시 생기게."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ð/ that",
+            "that 의 th 는 혀끝을 이 사이에 대고 울려 '댓' — ㄷ 로만 내면 dat 이 된다"
+          ],
+          [
+            "/æ/ happen",
+            "happen 의 a 는 입을 옆으로 벌린 '애' — '헤픈'·'하픈'이 아니다"
+          ],
+          [
+            "happen again → 연음",
+            "'해픈 어겐'처럼 끊지 않고 '해프너겐' — n 이 again 에 붙는다"
+          ]
+        ],
+        "mistake": "'~하게 두지 않겠다'를 I don't let 으로 옮기면 평소 습관이라는 뜻이 된다. 앞으로 그러지 않겠다는 다짐은 I'm not gonna let 이다. let 뒤에 to 를 넣지 않는다.",
+        "similar": "I won't let that happen again. / That's not happening again.",
+        "category": "구어/축약",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm not gonna let that happen again, so you don't have to worry about it.",
+          "chunks": [
+            "I'm not gonna let that happen again,",
+            "so you don't",
+            "have to worry",
+            "about it."
+          ],
+          "ko": "그런 일이 다시 생기게 두진 않을 거야, 그러니까 그건 걱정 안 해도 돼."
+        },
+        "anchor": "다시 생기게 두진 않을 거야"
+      }
+    },
+    {
+      "id": "en-core100-083-do-you-wanna-come-over",
+      "sentence": "Do you wanna come over for dinner tonight?",
+      "meaning": "오늘 저녁 먹으러 우리 집에 올래?",
+      "reading": null,
+      "phonetic_kr": "두 유 워나 커모우버r f포어r 디너r 터나잇",
+      "order_index": 3,
+      "explanation": {
+        "key": "Do you wanna come over = 우리 집에 올래. want to 를 소리대로 적은 wanna 로 가볍게 초대하는 말.",
+        "situation": "집으로 초대할 때 — 아내와 저녁 약속을 잡거나 친구를 부를 때 이 한 문장이면 된다.",
+        "drills": [
+          {
+            "en": "Do you wanna come over?",
+            "ko": "우리 집에 올래?",
+            "kr": "두 유 워나 커모우버r"
+          },
+          {
+            "en": "Come over whenever you want.",
+            "ko": "언제든 오고 싶을 때 와.",
+            "kr": "커모우버r 웨네버r 유 원트"
+          },
+          {
+            "en": "I don't wanna go out tonight.",
+            "ko": "오늘 밤은 나가기 싫어.",
+            "kr": "아이 돈트 워나 고우 아웃 터나잇"
+          },
+          {
+            "en": "Why don't you come over for dinner?",
+            "ko": "저녁 먹으러 오는 게 어때?",
+            "kr": "와이 돈츄 커모우버r f포어r 디너r"
+          },
+          {
+            "en": "My wife wants to come over after work.",
+            "ko": "아내가 퇴근하고 오고 싶대.",
+            "kr": "마이 와이f 원츠 투 커모우버r 애f터r 워r크"
+          },
+          {
+            "en": "Do you wanna come over for lunch instead?",
+            "ko": "대신 점심 먹으러 올래?",
+            "kr": "두 유 워나 커모우버r f포어r 런치 인스테드"
+          },
+          {
+            "en": "You wanna come over and meet the cat?",
+            "ko": "와서 고양이 볼래?",
+            "kr": "유 워나 커모우버r 앤 미잇 더 캣"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Do you wanna + 동사원형 + for + 명사?",
+            "body": "wanna 는 want to 를 소리대로 적은 구어 표기이고, 정식으로는 Do you want to come over 다. come over 는 '(말하는 사람이 있는 쪽으로) 들르다'라서 '우리 집에'를 따로 넣지 않아도 뜻이 산다. 무엇 때문에 오는지는 for dinner 처럼 for 로 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "Do you wanna",
+            "두 유 워나",
+            "~할래"
+          ],
+          [
+            "come over",
+            "커모우버r",
+            "우리 집에 오는 거"
+          ],
+          [
+            "for dinner tonight?",
+            "f포어r 디너r 터나잇",
+            "오늘 저녁 먹으러?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "wanna → want to",
+            "want to 의 t 가 사라지고 '워나' 두 음절로 붙는다 — 정식 표기는 want to"
+          ],
+          [
+            "come over → 연음",
+            "'컴 오우버r'(X) '커모우버r'(O) — m 이 over 에 붙는다"
+          ],
+          [
+            "/ɪ/ dinner",
+            "dinner 의 i 는 짧은 '이' — '디이너r' 로 늘이지 않는다"
+          ]
+        ],
+        "mistake": "wanna 는 want to 자리에만 쓴다. 뒤에 명사가 오는 자리(I want a coffee)에는 못 쓴다. 그리고 '우리 집에 올래'를 come to my house 로 길게 말하지 않아도 come over 하나면 통한다.",
+        "similar": "Do you want to come by for dinner? / Wanna have dinner at our place?",
+        "category": "구어/축약",
+        "frequency": 9,
+        "chain": {
+          "target": "Do you wanna come over for dinner tonight, or would you rather do it tomorrow?",
+          "chunks": [
+            "Do you wanna come over for dinner tonight,",
+            "or would you rather",
+            "do it",
+            "tomorrow?"
+          ],
+          "ko": "오늘 저녁 먹으러 우리 집에 올래, 아니면 내일이 더 편해?"
+        },
+        "anchor": "우리 집에 올래"
+      }
+    },
+    {
+      "id": "en-core100-084-gotta-get-back-to-work",
+      "sentence": "I gotta get back to work before it gets late.",
+      "meaning": "늦기 전에 다시 일하러 가야 해.",
+      "reading": null,
+      "phonetic_kr": "아이 가라 겟 백 투 워r크 비f포어r 잇 겟츠 레잇",
+      "order_index": 4,
+      "explanation": {
+        "key": "gotta get back to work = 다시 일하러 가야 한다. have got to 를 줄인 gotta 로 급한 볼일을 말하는 표현.",
+        "situation": "쉬는 시간이나 통화가 길어져 하던 일로 돌아가야 할 때 — 자리를 뜨는 이유를 짧게 말하고 나온다.",
+        "drills": [
+          {
+            "en": "I gotta go.",
+            "ko": "나 가야 해.",
+            "kr": "아이 가라 고우"
+          },
+          {
+            "en": "Let's get back to work.",
+            "ko": "다시 일하러 가자.",
+            "kr": "렛츠 겟 백 투 워r크"
+          },
+          {
+            "en": "I gotta finish this first.",
+            "ko": "이것부터 끝내야 해.",
+            "kr": "아이 가라 f피니쉬 디스 f퍼r스트"
+          },
+          {
+            "en": "We gotta leave before it gets dark.",
+            "ko": "어두워지기 전에 나가야 해.",
+            "kr": "위 가라 리이v 비f포어r 잇 겟츠 다r크"
+          },
+          {
+            "en": "I gotta get back to the hotel.",
+            "ko": "호텔로 돌아가야 해.",
+            "kr": "아이 가라 겟 백 투 더 호텔"
+          },
+          {
+            "en": "My wife's gotta get back to work.",
+            "ko": "아내는 다시 일하러 가야 해.",
+            "kr": "마이 와이f스 가라 겟 백 투 워r크"
+          },
+          {
+            "en": "You gotta try this before it gets cold.",
+            "ko": "식기 전에 이거 먹어 봐.",
+            "kr": "유 가라 트라이 디스 비f포어r 잇 겟츠 코울드"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I gotta + 동사원형 + before + 문장",
+            "body": "gotta 는 have got to 를 줄인 구어 표기이고 뜻은 have to 와 같다 — 정식으로는 I have to get back to work 다. get back to ~ 는 '~로 돌아가다'. 한국어는 '늦기 전에'가 앞에 오지만 영어는 할 일을 먼저 말하고 before 절을 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I gotta get back",
+            "아이 가라 겟 백",
+            "난 돌아가야 해"
+          ],
+          [
+            "to work",
+            "투 워r크",
+            "일하러"
+          ],
+          [
+            "before it gets late.",
+            "비f포어r 잇 겟츠 레잇",
+            "늦기 전에."
+          ]
+        ],
+        "phonemes": [
+          [
+            "gotta → flap t",
+            "got to 의 t 가 모음 사이에서 부드러운 ㄹ 소리가 되어 '가라' 로 들린다"
+          ],
+          [
+            "/ɜːr/ work",
+            "work 의 or 은 입을 작게 오므리고 혀를 말아 '워r크' — '월크'(X)"
+          ]
+        ],
+        "mistake": "gotta 안에 이미 to 가 들어 있어 뒤에 to 를 또 붙이지 않는다 — I gotta to go(X). 글로 쓸 때는 I have to 로 적는다. 하던 일로 돌아가는 것은 go to work 가 아니라 get back to work 다.",
+        "similar": "I have to get back to work. / I need to head back to work.",
+        "category": "구어/축약",
+        "frequency": 8,
+        "chain": {
+          "target": "I gotta get back to work before it gets late, but let's talk about it tonight.",
+          "chunks": [
+            "I gotta get back to work before it gets late,",
+            "but let's talk",
+            "about it",
+            "tonight."
+          ],
+          "ko": "늦기 전에 다시 일하러 가야 하는데, 그건 오늘 밤에 얘기하자."
+        },
+        "anchor": "다시 일하러 가야 해"
+      }
+    },
+    {
+      "id": "en-core100-085-lemme-see-if",
+      "sentence": "Lemme see if I can find another way.",
+      "meaning": "다른 방법을 찾을 수 있는지 볼게.",
+      "reading": null,
+      "phonetic_kr": "레미 씨이 이f 아이 캔 f아인드 어나더r 웨이",
+      "order_index": 5,
+      "explanation": {
+        "key": "Lemme see if = ~인지 볼게. let me 를 소리대로 적은 lemme 로 바로 답하지 않고 확인해 보겠다는 말.",
+        "situation": "바로 답할 수 없어 확인해 보겠다고 할 때 — 길이 막혔거나 예약이 안 될 때 대안을 찾아보겠다는 말.",
+        "drills": [
+          {
+            "en": "Lemme see.",
+            "ko": "어디 보자.",
+            "kr": "레미 씨이"
+          },
+          {
+            "en": "Lemme check first.",
+            "ko": "먼저 확인해 볼게.",
+            "kr": "레미 첵 f퍼r스트"
+          },
+          {
+            "en": "Lemme see if I can help.",
+            "ko": "내가 도울 수 있는지 볼게.",
+            "kr": "레미 씨이 이f 아이 캔 헬프"
+          },
+          {
+            "en": "Can you see if there's another way?",
+            "ko": "다른 방법이 있는지 봐 줄래?",
+            "kr": "캔 유 씨이 이f 데어r즈 어나더r 웨이"
+          },
+          {
+            "en": "Lemme see if there's a later train.",
+            "ko": "더 늦은 기차가 있는지 볼게.",
+            "kr": "레미 씨이 이f 데어r즈 어 레이러r 트레인"
+          },
+          {
+            "en": "Let me see if my wife is free.",
+            "ko": "아내가 시간이 되는지 볼게.",
+            "kr": "렛 미 씨이 이f 마이 와이f 이z f프리이"
+          },
+          {
+            "en": "I'll see if I can find a cheaper flight.",
+            "ko": "더 싼 항공편을 찾을 수 있는지 알아볼게.",
+            "kr": "아일 씨이 이f 아이 캔 f아인드 어 치이퍼r f라잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Lemme see if + 문장",
+            "body": "lemme 는 let me 를 소리대로 적은 구어 표기다 — 정식으로는 Let me see if 다. 여기서 see 는 '보다'가 아니라 '확인해 보다'이고, if 는 '만약'이 아니라 '~인지'라는 뜻이다. 확인할 내용은 if 뒤에 문장을 통째로 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "Lemme see if",
+            "레미 씨이 이f",
+            "~인지 볼게"
+          ],
+          [
+            "I can find",
+            "아이 캔 f아인드",
+            "내가 찾을 수 있는지"
+          ],
+          [
+            "another way.",
+            "어나더r 웨이",
+            "다른 방법을."
+          ]
+        ],
+        "phonemes": [
+          [
+            "lemme → let me",
+            "let 의 t 가 사라지고 m 이 붙어 '레미' 두 음절이 된다 — 정식 표기는 let me"
+          ],
+          [
+            "/iː/ see",
+            "see 의 모음은 길게 '씨이' — 짧게 '시'로 끝내지 않는다"
+          ]
+        ],
+        "mistake": "lemme 는 말할 때만 쓰는 표기라 메일이나 시험에는 Let me 로 적는다. 그리고 if 를 '만약'으로만 알면 Lemme see if 를 '만약 ~라면 보자'로 오해하기 쉬운데, 여기서는 '~인지 아닌지'라는 뜻이다.",
+        "similar": "Let me check if I can find another way. / I'll see what I can do.",
+        "category": "구어/축약",
+        "frequency": 8,
+        "chain": {
+          "target": "Lemme see if I can find another way, and I'll let you know in a minute.",
+          "chunks": [
+            "Lemme see if I can find another way,",
+            "and I'll",
+            "let you know",
+            "in a minute."
+          ],
+          "ko": "다른 방법을 찾을 수 있는지 볼게, 그리고 1분 안에 알려 줄게."
+        },
+        "anchor": "찾을 수 있는지 볼게"
+      }
+    },
+    {
+      "id": "en-core100-086-i-was-kinda-hoping",
+      "sentence": "I was kinda hoping you'd say yes.",
+      "meaning": "네가 좋다고 해주길 좀 기대했어.",
+      "reading": null,
+      "phonetic_kr": "아이 워z 카인다 호우핑 유드 쎄이 예스",
+      "order_index": 6,
+      "explanation": {
+        "key": "I was kinda hoping = 좀 기대했어. kind of 를 줄인 kinda 로 바람을 세지 않게 드러내는 말.",
+        "situation": "부탁이나 제안을 했는데 상대가 망설일 때 — 실망을 세게 드러내지 않고 아쉬움만 비친다.",
+        "drills": [
+          {
+            "en": "It's kinda late.",
+            "ko": "좀 늦었네.",
+            "kr": "잇츠 카인다 레잇"
+          },
+          {
+            "en": "I'm kinda tired today.",
+            "ko": "오늘 좀 피곤해.",
+            "kr": "아임 카인다 타이어r드 터데이"
+          },
+          {
+            "en": "I was kinda hoping for that.",
+            "ko": "좀 그러길 기대했어.",
+            "kr": "아이 워z 카인다 호우핑 f포어r 댓"
+          },
+          {
+            "en": "We were kinda hoping to leave early.",
+            "ko": "우리는 좀 일찍 나가길 바랐어.",
+            "kr": "위 워r 카인다 호우핑 투 리이v 어r리"
+          },
+          {
+            "en": "She was kinda hoping we'd stay longer.",
+            "ko": "걔는 우리가 좀 더 있길 바랐어.",
+            "kr": "쉬 워z 카인다 호우핑 위드 스테이 롱거r"
+          },
+          {
+            "en": "I was kinda hoping you'd come with us.",
+            "ko": "네가 우리랑 같이 가주길 좀 기대했어.",
+            "kr": "아이 워z 카인다 호우핑 유드 컴 위더스"
+          },
+          {
+            "en": "My wife was kinda hoping for a quiet weekend.",
+            "ko": "아내는 조용한 주말을 좀 기대했어.",
+            "kr": "마이 와이f 워z 카인다 호우핑 f포어r 어 콰이엇 위켄드"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I was kinda hoping + 주어 + would + 동사원형",
+            "body": "kinda 는 kind of 를 소리대로 적은 구어 표기이고, 여기서는 '종류'가 아니라 '좀·약간'이라는 뜻으로 말을 부드럽게 만든다. was hoping 처럼 과거진행으로 말하면 '기대했는데'라는 조심스러운 결이 된다. you'd 는 you would 이고, 아직 일어나지 않은 일이라 would 를 쓴다."
+          }
+        ],
+        "chunks": [
+          [
+            "I was kinda hoping",
+            "아이 워z 카인다 호우핑",
+            "난 좀 기대했어"
+          ],
+          [
+            "you'd say yes.",
+            "유드 쎄이 예스",
+            "네가 좋다고 해주길."
+          ]
+        ],
+        "phonemes": [
+          [
+            "kinda → kind of",
+            "kind of 의 d 와 o 가 붙어 '카인다' 가 된다 — 정식 표기는 kind of"
+          ],
+          [
+            "/oʊ/ hoping",
+            "hoping 의 o 는 '오'가 아니라 '오우'로 미끄러진다 — '호핑'(X) '호우핑'(O)"
+          ],
+          [
+            "/z/ was",
+            "was 의 s 는 /z/ — '워스'(X) '워z'(O), 목을 울린다"
+          ]
+        ],
+        "mistake": "kinda 를 '종류'로 옮기면 뜻이 안 통한다. 여기서는 말을 눅이는 '좀'이다. 그리고 '기대했어'를 I expected 로 옮기면 당연히 그럴 줄 알았다는 뜻이 되니, 조심스러운 바람은 I was hoping 이 맞다.",
+        "similar": "I was sort of hoping you'd say yes. / I was hoping for a yes.",
+        "category": "구어/완곡",
+        "frequency": 8,
+        "chain": {
+          "target": "I was kinda hoping you'd say yes, but I understand if you can't.",
+          "chunks": [
+            "I was kinda hoping you'd say yes,",
+            "but I understand",
+            "if you can't."
+          ],
+          "ko": "네가 좋다고 해주길 좀 기대했어, 그래도 안 되면 이해해."
+        },
+        "anchor": "좀 기대했어"
+      }
+    },
+    {
+      "id": "en-core100-087-you-might-be-right",
+      "sentence": "I think you might be right about that.",
+      "meaning": "그건 네 말이 맞는 것 같아.",
+      "reading": null,
+      "phonetic_kr": "아이 씽크 유 마잇 비 라이러바웃 댓",
+      "order_index": 7,
+      "explanation": {
+        "key": "you might be right = 네 말이 맞을지도 모른다. might 를 넣어 동의를 단정하지 않고 부드럽게 하는 말.",
+        "situation": "상대 말이 맞는 것 같지만 단정하기는 조심스러울 때 — 아내와 의견이 갈렸다가 인정할 때 쓴다.",
+        "drills": [
+          {
+            "en": "You might be right.",
+            "ko": "네 말이 맞을지도 몰라.",
+            "kr": "유 마잇 비 라잇"
+          },
+          {
+            "en": "I might be wrong.",
+            "ko": "내가 틀렸을 수도 있어.",
+            "kr": "아이 마잇 비 렁"
+          },
+          {
+            "en": "I think we might be late.",
+            "ko": "우리 늦을 것 같아.",
+            "kr": "아이 씽크 위 마잇 비 레잇"
+          },
+          {
+            "en": "I think you're right about that.",
+            "ko": "그건 네 말이 맞아.",
+            "kr": "아이 씽크 유어r 라이러바웃 댓"
+          },
+          {
+            "en": "He might be right about the price.",
+            "ko": "가격은 걔 말이 맞을지도 몰라.",
+            "kr": "히 마잇 비 라이러바웃 더 프라이스"
+          },
+          {
+            "en": "My wife might be right about the cat.",
+            "ko": "고양이 일은 아내 말이 맞을지도 몰라.",
+            "kr": "마이 와이f 마잇 비 라이러바웃 더 캣"
+          },
+          {
+            "en": "You might be right, but let's check first.",
+            "ko": "네 말이 맞을 수도 있는데, 먼저 확인해 보자.",
+            "kr": "유 마잇 비 라잇 벗 렛츠 첵 f퍼r스트"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I think + 주어 + might be + 형용사 + about + 대상",
+            "body": "여기서 might 는 '할지도 모른다'는 추측이라기보다 단정을 눅이는 자리다. I think 와 might 를 겹쳐 쓰면 '내 생각엔 아마'처럼 두 번 부드러워진다. 한국어 '그건'은 문장 앞에 오지만 영어는 about that 으로 문장 끝에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I think",
+            "아이 씽크",
+            "내 생각엔"
+          ],
+          [
+            "you might be",
+            "유 마잇 비",
+            "네가 ~인 것 같아"
+          ],
+          [
+            "right about that.",
+            "라이러바웃 댓",
+            "그건 맞다고."
+          ]
+        ],
+        "phonemes": [
+          [
+            "right about → 연음",
+            "'라잇 어바웃'(X) '라이러바웃'(O) — t 가 모음 사이에서 부드러운 ㄹ 소리가 된다"
+          ],
+          [
+            "/θ/ think",
+            "think 의 th 는 혀끝을 이 사이에 물듯이 — '싱크'(X) '씽크'(O)"
+          ],
+          [
+            "/ð/ that",
+            "that 의 th 는 같은 자리에서 목을 울리는 소리 — '댓'"
+          ]
+        ],
+        "mistake": "'맞는 것 같아'를 I think you are right 로만 말하면 단정에 가깝다. might 를 넣어야 상대 체면을 살리는 완곡한 동의가 된다. 그리고 '그건'을 앞으로 빼서 About that, I think… 처럼 말하지 않는다.",
+        "similar": "You may have a point there. / I think you're probably right.",
+        "category": "구어/완곡",
+        "frequency": 9,
+        "chain": {
+          "target": "I think you might be right about that, so let's do it your way.",
+          "chunks": [
+            "I think you might be right about that,",
+            "so let's",
+            "do it",
+            "your way."
+          ],
+          "ko": "그건 네 말이 맞는 것 같아, 그러니까 네 방식대로 하자."
+        },
+        "anchor": "네 말이 맞는 것 같아"
+      }
+    }
+  ]
+}

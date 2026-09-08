@@ -1,0 +1,580 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "1-30 말문 트기와 대화 운영",
+  "date": "2026-09-06",
+  "_note": "코어 100문장 커리큘럼 19~24번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 13~18(09-05) 다음 묶음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-019-trying-to-reach",
+      "sentence": "I've been trying to reach you all morning.",
+      "meaning": "아침 내내 너한테 연락하려고 했어.",
+      "reading": null,
+      "phonetic_kr": "아이v 빈 트라잉 투 리이치 유 올 모어r닝",
+      "order_index": 1,
+      "explanation": {
+        "key": "trying to reach = 연락이 닿으려고 애쓰다. 전화·문자를 여러 번 했는데 안 닿았다고 말할 때.",
+        "situation": "아내나 친구한테 급한 일로 계속 전화했는데 안 받았을 때 — 만나자마자 이 말로 시작한다.",
+        "drills": [
+          {
+            "en": "I couldn't reach you.",
+            "ko": "너한테 연락이 안 됐어.",
+            "kr": "아이 쿠든 리이치 유"
+          },
+          {
+            "en": "Who are you trying to reach?",
+            "ko": "누구한테 연락하려는 거야?",
+            "kr": "후 아r 유 트라잉 투 리이치"
+          },
+          {
+            "en": "Did you get my message this morning?",
+            "ko": "아침에 내 메시지 받았어?",
+            "kr": "디쥬 겟 마이 메씨지 디스 모어r닝"
+          },
+          {
+            "en": "My wife has been trying to reach you.",
+            "ko": "아내가 너한테 연락하려고 했어.",
+            "kr": "마이 와이f 해z 빈 트라잉 투 리이치 유"
+          },
+          {
+            "en": "I've been trying to reach the hotel since yesterday.",
+            "ko": "어제부터 호텔에 연락하려고 했어.",
+            "kr": "아이v 빈 트라잉 투 리이치 더 호텔 씬스 예스터r데이"
+          },
+          {
+            "en": "I've been trying to reach you, but your phone was off.",
+            "ko": "너한테 연락하려고 했는데 전화가 꺼져 있었어.",
+            "kr": "아이v 빈 트라잉 투 리이치 유 벗 유어r f오운 워z 오f"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I've been + -ing + 목적어 + 기간",
+            "body": "'아침 내내 연락하려고 했어'는 지금까지 계속 이어진 일이라 현재완료진행(have been -ing)으로 말한다. 한국어는 '했어'라는 과거 하나로 끝나지만 영어는 '방금 전까지도 그랬다'는 뜻을 담는다. 기간(all morning)은 문장 끝에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I've been trying",
+            "아이v 빈 트라잉",
+            "계속 애쓰고 있었어"
+          ],
+          [
+            "to reach you",
+            "투 리이치 유",
+            "너한테 연락하려고"
+          ],
+          [
+            "all morning.",
+            "올 모어r닝",
+            "아침 내내."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/iː/ reach",
+            "reach 의 ea 는 길게 '리이치' — 짧게 '리치'로 끊으면 rich 로 들린다"
+          ],
+          [
+            "/v/ I've",
+            "I've 의 v 는 아랫입술을 물고 진동 — '아이브'(X) '아이v'(O)"
+          ]
+        ],
+        "mistake": "'연락하다'를 contact 로만 떠올리기 쉽다. 전화·문자로 닿으려 애썼다는 말은 reach you 가 자연스럽다. reach 를 '도착하다'로만 알면 이 문장이 안 나온다.",
+        "similar": "I couldn't get a hold of you. / I've been calling you all morning.",
+        "category": "말문/연락",
+        "frequency": 8,
+        "chain": {
+          "target": "I've been trying to reach you all morning, but your phone kept going to voicemail.",
+          "chunks": [
+            "I've been trying to reach you all morning,",
+            "but your phone",
+            "kept going",
+            "to voicemail."
+          ],
+          "ko": "아침 내내 너한테 연락하려고 했는데, 전화가 계속 음성 사서함으로 넘어가더라."
+        },
+        "anchor": "연락하려고 했어"
+      }
+    },
+    {
+      "id": "en-core100-020-something-came-up",
+      "sentence": "Something came up, so I may be a little late.",
+      "meaning": "일이 생겨서 조금 늦을 수도 있어.",
+      "reading": null,
+      "phonetic_kr": "썸씽 케이멉 쏘 아이 메이 비 어 리를 레잇",
+      "order_index": 2,
+      "explanation": {
+        "key": "something came up = 갑자기 일이 생겼다. 예정에 없던 일 때문에 계획이 틀어졌다고 알릴 때.",
+        "situation": "퇴근길에 갑자기 일이 생겨 약속에 늦을 것 같을 때 — 아내나 친구에게 미리 문자로 보낸다.",
+        "drills": [
+          {
+            "en": "Something came up.",
+            "ko": "일이 좀 생겼어.",
+            "kr": "썸씽 케이멉"
+          },
+          {
+            "en": "What came up?",
+            "ko": "무슨 일이 생겼는데?",
+            "kr": "왓 케이멉"
+          },
+          {
+            "en": "I might be a little late.",
+            "ko": "조금 늦을지도 몰라.",
+            "kr": "아이 마잇 비 어 리를 레잇"
+          },
+          {
+            "en": "My wife said something came up.",
+            "ko": "아내가 일이 생겼다고 했어.",
+            "kr": "마이 와이f 쎄드 썸씽 케이멉"
+          },
+          {
+            "en": "Something came up, so I can't make it tonight.",
+            "ko": "일이 생겨서 오늘 밤은 못 가.",
+            "kr": "썸씽 케이멉 쏘 아이 캔트 메이킷 터나잇"
+          },
+          {
+            "en": "If something comes up, just give me a call.",
+            "ko": "일이 생기면 그냥 전화 줘.",
+            "kr": "이f 썸씽 컴z 업 저스트 기v 미 어 콜"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Something came up, so + 결과",
+            "body": "'일이 생겼다'의 주어는 something 이다. 무슨 일인지 밝히지 않고 '뭔가가 올라왔다'고 말하는 게 영어의 관용이다. 그래서 어떻게 되는지는 so 뒤에 잇는다."
+          },
+          {
+            "struct": "may be + 형용사 (한 단어 maybe 와 구별)",
+            "body": "may be 는 '~일 수도 있다'는 동사 자리이고, 붙여 쓴 maybe 는 '아마'라는 부사다. a little 을 넣어 '조금'이라고 정도를 줄이면 통보가 부드러워진다."
+          }
+        ],
+        "chunks": [
+          [
+            "Something came up,",
+            "썸씽 케이멉",
+            "일이 생겨서,"
+          ],
+          [
+            "so I may be",
+            "쏘 아이 메이 비",
+            "그래서 나는 ~일 수도 있어"
+          ],
+          [
+            "a little late.",
+            "어 리를 레잇",
+            "조금 늦게."
+          ]
+        ],
+        "phonemes": [
+          [
+            "came up → 연음",
+            "'케임 업'처럼 끊지 않고 '케이멉' — m 이 up 에 붙는다"
+          ],
+          [
+            "flap t little",
+            "little 의 tt 는 부드러운 flap — '리틀'(X) '리를'(O)"
+          ]
+        ],
+        "mistake": "'일이 생겼다'를 A thing happened 로 옮기면 어색하다. 영어는 something came up 한 덩어리로 말한다. may be 를 붙여 쓰면 '아마'라는 다른 뜻이 되니 띄어 쓴다.",
+        "similar": "Something's come up. / I got held up.",
+        "category": "말문/사정",
+        "frequency": 9,
+        "chain": {
+          "target": "Something came up, so I may be a little late, but I'll text you when I leave.",
+          "chunks": [
+            "Something came up, so I may be a little late,",
+            "but I'll",
+            "text you",
+            "when I leave."
+          ],
+          "ko": "일이 생겨서 조금 늦을 수도 있는데, 출발할 때 문자할게."
+        },
+        "anchor": "일이 생겨서"
+      }
+    },
+    {
+      "id": "en-core100-021-push-it-back",
+      "sentence": "Can we push it back an hour or so?",
+      "meaning": "한 시간쯤 미룰 수 있을까?",
+      "reading": null,
+      "phonetic_kr": "캔 위 푸쉬 잇 백 어나워r 오어r 쏘우",
+      "order_index": 3,
+      "explanation": {
+        "key": "push it back = (일정을) 뒤로 미루다. 정해 둔 시간을 좀 늦추자고 제안할 때.",
+        "situation": "약속 시간에 맞추기 빠듯할 때 — 아내와의 저녁이나 친구와의 만남을 한 시간만 늦추자고 물어본다.",
+        "drills": [
+          {
+            "en": "Can we push it back?",
+            "ko": "좀 미룰 수 있을까?",
+            "kr": "캔 위 푸쉬 잇 백"
+          },
+          {
+            "en": "Let's push it back to Friday.",
+            "ko": "금요일로 미루자.",
+            "kr": "렛츠 푸쉬 잇 백 투 f프라이데이"
+          },
+          {
+            "en": "They pushed the meeting back an hour.",
+            "ko": "그쪽에서 회의를 한 시간 미뤘어.",
+            "kr": "데이 푸쉬트 더 미이팅 배커나워r"
+          },
+          {
+            "en": "Could we push it back to next week?",
+            "ko": "다음 주로 미룰 수 있을까요?",
+            "kr": "쿠드 위 푸쉬 잇 백 투 넥스트 위크"
+          },
+          {
+            "en": "My wife wants to push dinner back a bit.",
+            "ko": "아내가 저녁을 조금 미루고 싶대.",
+            "kr": "마이 와이f 원츠 투 푸쉬 디너r 배커 빗"
+          },
+          {
+            "en": "Is there any chance we can push it back an hour?",
+            "ko": "한 시간만 미룰 수 있을까요?",
+            "kr": "이z 데어r 애니 챈스 위 캔 푸쉬 잇 배커나워r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Can we push + 목적어 + back + 기간?",
+            "body": "push back 은 '뒤로 밀다'에서 온 '일정을 늦추다'. 목적어가 대명사면 push it back 처럼 반드시 back 앞에 넣는다. 얼마나 미룰지는 an hour 처럼 back 뒤에 붙인다."
+          },
+          {
+            "struct": "숫자 + or so = ~쯤",
+            "body": "an hour or so 는 '한 시간쯤'. 정확한 수 뒤에 or so 를 붙여 어림수로 만든다. about an hour 와 뜻이 같은데 about 은 앞에, or so 는 뒤에 온다."
+          }
+        ],
+        "chunks": [
+          [
+            "Can we push it back",
+            "캔 위 푸쉬 잇 백",
+            "우리 뒤로 미룰 수 있을까"
+          ],
+          [
+            "an hour",
+            "어나워r",
+            "한 시간"
+          ],
+          [
+            "or so?",
+            "오어r 쏘우",
+            "정도?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "an hour → 연음",
+            "hour 의 h 는 묵음이라 an 의 n 이 넘어가 '어나워r' — '언 아워'(X)"
+          ],
+          [
+            "/ʊ/ push",
+            "push 의 u 는 짧게 밀어내는 '우' — '푸시'처럼 늘이지 않는다"
+          ],
+          [
+            "/æ/ back",
+            "back 의 a 는 입을 옆으로 벌린 '애' — '벡'(X) '백'(O)"
+          ]
+        ],
+        "mistake": "'미루다'를 delay 로만 떠올리기 쉽다. 약속 시간을 늦추자는 일상 표현은 push it back 이다. 반대로 앞당기는 건 move it up 이다.",
+        "similar": "Can we move it back an hour? / Could we do it an hour later?",
+        "category": "말문/약속",
+        "frequency": 8,
+        "chain": {
+          "target": "Can we push it back an hour or so? I'm still stuck at work.",
+          "chunks": [
+            "Can we push it back an hour or so?",
+            "I'm still",
+            "stuck",
+            "at work."
+          ],
+          "ko": "한 시간쯤 미룰 수 있을까? 아직 회사에서 못 빠져나왔어."
+        },
+        "anchor": "미룰 수 있을까"
+      }
+    },
+    {
+      "id": "en-core100-022-didnt-mean-to",
+      "sentence": "I didn't mean to make you feel bad.",
+      "meaning": "네 기분 상하게 하려던 건 아니었어.",
+      "reading": null,
+      "phonetic_kr": "아이 디든 미인 투 메익 유 f피일 배드",
+      "order_index": 4,
+      "explanation": {
+        "key": "didn't mean to = 그러려던 건 아니었어. 결과는 인정하면서 의도는 아니었다고 해명할 때.",
+        "situation": "말이 심하게 나가 아내나 친구의 표정이 굳었을 때 — 사과보다 먼저 이 말로 의도를 풀어 준다.",
+        "drills": [
+          {
+            "en": "I didn't mean it.",
+            "ko": "그런 뜻이 아니었어.",
+            "kr": "아이 디든 미이닛"
+          },
+          {
+            "en": "Did I say something wrong?",
+            "ko": "내가 뭔가 잘못 말했어?",
+            "kr": "디라이 쎄이 썸씽 롱"
+          },
+          {
+            "en": "I didn't mean to be rude.",
+            "ko": "무례하게 굴려던 건 아니었어.",
+            "kr": "아이 디든 미인 투 비 루드"
+          },
+          {
+            "en": "She didn't mean to wake the cat.",
+            "ko": "걔가 고양이를 깨우려던 건 아니었어.",
+            "kr": "쉬 디든 미인 투 웨익 더 캣"
+          },
+          {
+            "en": "I'm sorry if I made you feel bad.",
+            "ko": "네 기분을 상하게 했다면 미안해.",
+            "kr": "아임 쏘리 이f 아이 메이드 유 f피일 배드"
+          },
+          {
+            "en": "My wife didn't mean to keep you waiting.",
+            "ko": "아내가 너를 기다리게 하려던 건 아니었어.",
+            "kr": "마이 와이f 디든 미인 투 키입 유 웨이팅"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "didn't mean to + 동사원형",
+            "body": "'~하려던 건 아니었다'는 didn't mean to 뒤에 동사원형만 붙인다. 여기서 mean 은 '의미하다'가 아니라 '의도하다'다. 한국어는 '하려던 건'이 앞에 오지만 영어는 부정을 먼저 말하고 무엇을 하려던 게 아닌지 뒤에 붙인다."
+          },
+          {
+            "struct": "make + 사람 + 동사원형",
+            "body": "make 뒤에 사람이 오고 그 사람이 어떻게 되는지는 to 없이 동사원형으로 잇는다. to feel 이 아니라 feel 이다. '기분이 상하다'는 feel bad 한 덩어리."
+          }
+        ],
+        "chunks": [
+          [
+            "I didn't mean to",
+            "아이 디든 미인 투",
+            "~하려던 건 아니었어"
+          ],
+          [
+            "make you",
+            "메익 유",
+            "너를 ~하게"
+          ],
+          [
+            "feel bad.",
+            "f피일 배드",
+            "기분 나쁘게."
+          ]
+        ],
+        "phonemes": [
+          [
+            "didn't → t 탈락",
+            "'디든트'(X) → 끝 t 를 흘려 '디든'"
+          ],
+          [
+            "/f/ /iː/ feel",
+            "f 는 윗니로 아랫입술을 스치고 모음은 길게 — '필'(X) 'f피일'(O)"
+          ]
+        ],
+        "mistake": "'~하려던 건 아니었어'를 I didn't want to 로 옮기면 '하기 싫었다'는 뜻이 된다. 의도가 아니었다는 해명은 didn't mean to 다. '기분 상하게 하다'도 make you angry 보다 make you feel bad 가 부드럽다.",
+        "similar": "I didn't mean it that way. / That came out wrong.",
+        "category": "말문/사과",
+        "frequency": 9,
+        "chain": {
+          "target": "I didn't mean to make you feel bad, I was just trying to help.",
+          "chunks": [
+            "I didn't mean to make you feel bad,",
+            "I was just",
+            "trying",
+            "to help."
+          ],
+          "ko": "네 기분 상하게 하려던 건 아니었어, 그냥 도와주려던 거였어."
+        },
+        "anchor": "하려던 건 아니었어"
+      }
+    },
+    {
+      "id": "en-core100-023-i-thought-you-said",
+      "sentence": "I thought you said you were busy today.",
+      "meaning": "네가 오늘 바쁘다고 한 줄 알았어.",
+      "reading": null,
+      "phonetic_kr": "아이 쏘츄 쎄드 유 워r 비지 투데이",
+      "order_index": 5,
+      "explanation": {
+        "key": "I thought you said = 네가 ~라고 한 줄 알았어. 들은 말과 지금 상황이 어긋날 때 부드럽게 짚는 말.",
+        "situation": "바쁘다던 사람이 눈앞에 나타났을 때 — 따지지 않고 '내가 그렇게 들었는데' 하고 확인하는 자리.",
+        "drills": [
+          {
+            "en": "I thought you said tomorrow.",
+            "ko": "네가 내일이라고 한 줄 알았어.",
+            "kr": "아이 쏘츄 쎄드 터마로우"
+          },
+          {
+            "en": "I thought you were coming.",
+            "ko": "네가 오는 줄 알았어.",
+            "kr": "아이 쏘츄 워r 커밍"
+          },
+          {
+            "en": "Didn't you say you were busy?",
+            "ko": "너 바쁘다고 하지 않았어?",
+            "kr": "디든츄 쎄이 유 워r 비지"
+          },
+          {
+            "en": "My wife thought you said Friday.",
+            "ko": "아내는 네가 금요일이라고 한 줄 알았대.",
+            "kr": "마이 와이f 쏘츄 쎄드 f프라이데이"
+          },
+          {
+            "en": "I thought you said you couldn't make it.",
+            "ko": "네가 못 온다고 한 줄 알았어.",
+            "kr": "아이 쏘츄 쎄드 유 쿠든 메이킷"
+          },
+          {
+            "en": "But I thought you said the cat was at the vet.",
+            "ko": "근데 고양이가 병원에 있다고 한 줄 알았는데.",
+            "kr": "버라이 쏘츄 쎄드 더 캣 워z 앳 더 v벳"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I thought + 주어 + 과거동사",
+            "body": "'~인 줄 알았어'는 I thought 로 시작한다. 뒤 절은 시제를 한 칸 뒤로 옮겨 you are 가 you were 가 된다. 한국어는 '바쁘다고'처럼 현재로 말해도 되지만 영어는 과거로 맞춘다."
+          },
+          {
+            "struct": "thought you said + 절 (that 생략)",
+            "body": "said 뒤에 that 을 생략하고 절을 바로 붙인다. 들은 말을 옮기는 자리라 그 안도 과거형이다. thought 와 said 가 나란히 오는 이 짝이 '내가 들은 것과 다르다'는 신호가 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "I thought you said",
+            "아이 쏘츄 쎄드",
+            "네가 말한 줄 알았어"
+          ],
+          [
+            "you were busy",
+            "유 워r 비지",
+            "네가 바쁘다고"
+          ],
+          [
+            "today.",
+            "투데이",
+            "오늘."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ thought",
+            "thought 의 th 는 혀끝을 이 사이에 — '토트'(X), 혀를 물듯이 '쏘'"
+          ],
+          [
+            "thought you → 연음",
+            "'쏘트 유'처럼 끊지 않고 '쏘츄' — 끝 t 와 you 가 붙어 '츄'가 된다"
+          ]
+        ],
+        "mistake": "'~인 줄 알았어'를 I knew 로 옮기면 '알고 있었다'가 되어 뜻이 반대다. 사실과 달랐다는 말은 I thought 다. 뒤 절을 you are 로 두면 어색하니 you were 로 맞춘다.",
+        "similar": "I thought you were busy today. / Didn't you say you were busy?",
+        "category": "말문/확인",
+        "frequency": 8,
+        "chain": {
+          "target": "I thought you said you were busy today, so I made other plans for tonight.",
+          "chunks": [
+            "I thought you said you were busy today,",
+            "so I made",
+            "other plans",
+            "for tonight."
+          ],
+          "ko": "네가 오늘 바쁘다고 한 줄 알고, 오늘 밤에 다른 약속을 잡았어."
+        },
+        "anchor": "한 줄 알았어"
+      }
+    },
+    {
+      "id": "en-core100-024-have-no-idea",
+      "sentence": "I have no idea what you're talking about.",
+      "meaning": "네가 무슨 말 하는지 전혀 모르겠어.",
+      "reading": null,
+      "phonetic_kr": "아이 해v 노우 아이디어 왓 유어r 토킹 어바웃",
+      "order_index": 6,
+      "explanation": {
+        "key": "have no idea = 전혀 모르겠다. don't know 보다 강한, 짐작조차 안 된다는 말.",
+        "situation": "상대가 앞뒤 없이 말을 꺼내 무슨 얘긴지 하나도 안 잡힐 때 — 여행 중 낯선 안내를 들었을 때도 그대로 쓴다.",
+        "drills": [
+          {
+            "en": "I have no idea.",
+            "ko": "전혀 모르겠어.",
+            "kr": "아이 해v 노우 아이디어"
+          },
+          {
+            "en": "What are you talking about?",
+            "ko": "무슨 말 하는 거야?",
+            "kr": "왓 아r 유 토킹 어바웃"
+          },
+          {
+            "en": "Do you have any idea what happened?",
+            "ko": "무슨 일이 있었는지 알아?",
+            "kr": "두 유 해v 애니 아이디어 왓 해펀드"
+          },
+          {
+            "en": "I have no idea what she meant.",
+            "ko": "걔가 무슨 뜻으로 말했는지 전혀 모르겠어.",
+            "kr": "아이 해v 노우 아이디어 왓 쉬 멘트"
+          },
+          {
+            "en": "She has no idea where the cat is.",
+            "ko": "걔는 고양이가 어디 있는지 전혀 몰라.",
+            "kr": "쉬 해z 노우 아이디어 웨어r 더 캐리z"
+          },
+          {
+            "en": "My wife had no idea we were going to Japan.",
+            "ko": "아내는 우리가 일본에 가는 줄 전혀 몰랐어.",
+            "kr": "마이 와이f 해드 노우 아이디어 위 워r 고잉 투 저팬"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "have no idea + 의문사절",
+            "body": "no idea 는 '짐작조차 없다'로 don't know 보다 세다. 무엇을 모르는지는 what you're talking about 처럼 의문사절을 통째로 뒤에 붙인다. 한국어 '무슨 말 하는지'가 그 자리다."
+          },
+          {
+            "struct": "what … talking about (about 이 문장 끝에 남는다)",
+            "body": "talk about ~ 의 목적어가 앞의 what 으로 나가서 about 이 끝에 홀로 남는다. 한국어에는 없는 모양이라 about 을 빠뜨리기 쉬운데, 빼면 문장이 성립하지 않는다."
+          }
+        ],
+        "chunks": [
+          [
+            "I have no idea",
+            "아이 해v 노우 아이디어",
+            "전혀 모르겠어"
+          ],
+          [
+            "what you're talking about.",
+            "왓 유어r 토킹 어바웃",
+            "네가 무슨 말 하는지."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/aɪ/ idea",
+            "idea 는 '아이디어' — 가운데 '디'에 힘을 준다"
+          ],
+          [
+            "/v/ have",
+            "have 의 v 는 아랫입술을 물고 진동 — '해브'(X) '해v'(O)"
+          ]
+        ],
+        "mistake": "'전혀 모르겠어'를 I don't know at all 로 옮기기 쉽다. 원어민은 I have no idea 한 덩어리로 말한다. 끝의 about 을 빠뜨리면 문장이 되지 않는다.",
+        "similar": "I don't have a clue. / You've lost me.",
+        "category": "말문/모름",
+        "frequency": 9,
+        "chain": {
+          "target": "I have no idea what you're talking about, so can you explain it again?",
+          "chunks": [
+            "I have no idea what you're talking about,",
+            "so can you",
+            "explain it",
+            "again?"
+          ],
+          "ko": "네가 무슨 말 하는지 전혀 모르겠어, 다시 설명해 줄래?"
+        },
+        "anchor": "전혀 모르겠어"
+      }
+    }
+  ]
+}

@@ -1,0 +1,581 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "51-80 여행영어",
+  "date": "2026-09-14",
+  "_note": "코어 100문장 커리큘럼 69~74번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-069-theres-been-a-mistake",
+      "sentence": "I think there's been a mistake with my reservation.",
+      "meaning": "제 예약에 문제가 생긴 것 같아요.",
+      "reading": null,
+      "phonetic_kr": "아이 씽크 데어r즈 비너 미스테익 위드 마이 레저r베이션",
+      "order_index": 1,
+      "explanation": {
+        "key": "there's been a mistake = 착오가 있었다. 누가 잘못했는지 말하지 않고 문제만 짚는 말.",
+        "situation": "호텔 프런트에서 예약이 안 잡혀 있을 때 — 따지지 않고 확인부터 부탁하며 꺼내는 첫 문장.",
+        "drills": [
+          {
+            "en": "There's been a mistake.",
+            "ko": "착오가 있었네요.",
+            "kr": "데어r즈 비너 미스테익"
+          },
+          {
+            "en": "I think there's been a mistake.",
+            "ko": "착오가 있었던 것 같아요.",
+            "kr": "아이 씽크 데어r즈 비너 미스테익"
+          },
+          {
+            "en": "There's been a mistake with my order.",
+            "ko": "제 주문에 착오가 있었어요.",
+            "kr": "데어r즈 비너 미스테익 위드 마이 오어r더r"
+          },
+          {
+            "en": "Is there a mistake with our room number?",
+            "ko": "저희 방 번호가 잘못된 건가요?",
+            "kr": "이z 데어r 어 미스테익 위드 아워r 루움 넘버r"
+          },
+          {
+            "en": "I think there's been a mistake with the bill.",
+            "ko": "계산서에 착오가 있는 것 같아요.",
+            "kr": "아이 씽크 데어r즈 비너 미스테익 위드 더 빌"
+          },
+          {
+            "en": "My wife says there's been a mistake with the booking.",
+            "ko": "아내 말로는 예약에 착오가 있었대요.",
+            "kr": "마이 와이f 쎄z 데어r즈 비너 미스테익 위드 더 부킹"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I think + there's been + 명사 + with + 대상",
+            "body": "'~인 것 같아요'는 문장 앞에 I think 를 붙여 만든다. 한국어는 '~것 같아요'가 문장 끝에 오지만 영어는 맨 앞이다. there's been 은 '(지금까지) 뭔가 있었다'는 현재완료라 방금 드러난 착오에 쓰고, 무엇에 관한 착오인지는 with 로 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I think",
+            "아이 씽크",
+            "~인 것 같아요"
+          ],
+          [
+            "there's been a mistake",
+            "데어r즈 비너 미스테익",
+            "착오가 있었던"
+          ],
+          [
+            "with my reservation.",
+            "위드 마이 레저r베이션",
+            "제 예약에."
+          ]
+        ],
+        "phonemes": [
+          [
+            "been a → 연음",
+            "'빈 어'처럼 끊지 않고 '비너' — n 이 a 에 붙는다"
+          ],
+          [
+            "/ɪ/ been",
+            "been 은 짧은 '빈' — 길게 '비인'으로 늘이면 bean 으로 들린다"
+          ],
+          [
+            "/z/ reservation",
+            "reser 의 s 는 /z/ — '레서r베이션'(X), 목을 울려 '레저r베이션'"
+          ]
+        ],
+        "mistake": "'문제가 생겼어요'를 There is a problem 으로만 말하면 상대를 탓하는 결이 된다. there's been a mistake 는 누가 틀렸는지 말하지 않아 항의가 부드러워진다. mistake 앞의 a 를 빠뜨리지 않는다.",
+        "similar": "I think there's been a mix-up. / Something's wrong with my booking.",
+        "category": "여행/숙소",
+        "frequency": 8,
+        "chain": {
+          "target": "I think there's been a mistake with my reservation, because I booked a double room.",
+          "chunks": [
+            "I think there's been a mistake with my reservation,",
+            "because I booked",
+            "a double room."
+          ],
+          "ko": "제 예약에 문제가 생긴 것 같아요, 저는 더블룸으로 예약했거든요."
+        },
+        "anchor": "문제가 생긴 것 같아요"
+      }
+    },
+    {
+      "id": "en-core100-070-is-breakfast-included",
+      "sentence": "Is breakfast included, or do I need to pay extra?",
+      "meaning": "조식이 포함인가요, 아니면 추가 요금을 내야 하나요?",
+      "reading": null,
+      "phonetic_kr": "이z 브렉f퍼스트 인클루우디드 오어r 두 아이 니이드 투 페이 엑스트라",
+      "order_index": 2,
+      "explanation": {
+        "key": "Is ~ included = ~가 포함인가요. 값에 무엇이 들어 있는지 확인할 때 쓰는 질문.",
+        "situation": "체크인할 때 조식·와이파이·세금이 방값에 들어 있는지 물을 때 — 나중에 계산에서 놀라지 않으려고 미리 확인한다.",
+        "drills": [
+          {
+            "en": "Is breakfast included?",
+            "ko": "조식이 포함인가요?",
+            "kr": "이z 브렉f퍼스트 인클루우디드"
+          },
+          {
+            "en": "Are drinks included?",
+            "ko": "음료도 포함인가요?",
+            "kr": "아r 드링크스 인클루우디드"
+          },
+          {
+            "en": "Is tax included in the price?",
+            "ko": "가격에 세금이 포함인가요?",
+            "kr": "이z 택스 인클루우디드 인 더 프라이스"
+          },
+          {
+            "en": "My wife asked if breakfast was included.",
+            "ko": "아내가 조식이 포함인지 물어봤어요.",
+            "kr": "마이 와이f 애스크트 이f 브렉f퍼스트 워z 인클루우디드"
+          },
+          {
+            "en": "Is dinner included, or is it extra?",
+            "ko": "저녁이 포함인가요, 아니면 별도인가요?",
+            "kr": "이z 디너r 인클루우디드 오어r 이z 이렉스트라"
+          },
+          {
+            "en": "Do I need to pay extra for that?",
+            "ko": "그건 추가 요금을 내야 하나요?",
+            "kr": "두 아이 니이드 투 페이 엑스트라 f포어r 댓"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Is + 명사 + included, or + 두 번째 질문?",
+            "body": "'포함인가요'는 be동사 + included 로 말한다. 포함하는 쪽(호텔)이 아니라 포함되는 것(breakfast)이 주어라 수동태다. 두 가지를 놓고 물을 때는 or 뒤에 두 번째 질문을 통째로 붙인다 — 한국어 '아니면 ~하나요'와 같은 자리다."
+          }
+        ],
+        "chunks": [
+          [
+            "Is breakfast included,",
+            "이z 브렉f퍼스트 인클루우디드",
+            "조식이 포함인가요,"
+          ],
+          [
+            "or do I need",
+            "오어r 두 아이 니이드",
+            "아니면 제가 해야 하나요"
+          ],
+          [
+            "to pay extra?",
+            "투 페이 엑스트라",
+            "추가 요금을 내는 걸?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ breakfast",
+            "breakfast 의 f 는 윗니로 아랫입술 — '브렉퍼스트'(X) '브렉f퍼스트'(O)"
+          ],
+          [
+            "/uː/ included",
+            "included 의 u 는 길게 '인클루우디드' — 짧게 끊으면 다른 단어로 샌다"
+          ],
+          [
+            "/z/ Is",
+            "문장 첫 Is 의 s 는 /z/ — '이스'(X) '이z'(O)"
+          ]
+        ],
+        "mistake": "'포함이에요?'를 Is it include? 처럼 말하기 쉽다. 조식이 '포함되는' 쪽이므로 included 를 써야 한다. '추가 요금을 내다'는 pay additional money 가 아니라 pay extra 다.",
+        "similar": "Does that include breakfast? / Is breakfast extra?",
+        "category": "여행/숙소",
+        "frequency": 9,
+        "chain": {
+          "target": "Is breakfast included, or do I need to pay extra, and what time does it start?",
+          "chunks": [
+            "Is breakfast included, or do I need to pay extra,",
+            "and what time",
+            "does it start?"
+          ],
+          "ko": "조식이 포함인가요, 아니면 추가 요금을 내야 하나요, 그리고 몇 시부터 하나요?"
+        },
+        "anchor": "포함인가요"
+      }
+    },
+    {
+      "id": "en-core100-071-isnt-working",
+      "sentence": "The air conditioner isn't working in my room.",
+      "meaning": "방 에어컨이 작동하지 않아요.",
+      "reading": null,
+      "phonetic_kr": "디 에어r 컨디셔너r 이즌 워r킹 인 마이 루움",
+      "order_index": 3,
+      "explanation": {
+        "key": "isn't working = 작동하지 않는다. 부서진 게 아니라 켜도 안 되는 상태를 알릴 때.",
+        "situation": "호텔 방에서 에어컨·온수·카드키가 안 될 때 — 프런트에 전화해 무엇이 안 되는지 먼저 말한다.",
+        "drills": [
+          {
+            "en": "The shower isn't working.",
+            "ko": "샤워기가 안 나와요.",
+            "kr": "더 샤워r 이즌 워r킹"
+          },
+          {
+            "en": "My key card isn't working.",
+            "ko": "카드키가 안 먹혀요.",
+            "kr": "마이 키이 카r드 이즌 워r킹"
+          },
+          {
+            "en": "Is the air conditioner working now?",
+            "ko": "이제 에어컨이 되나요?",
+            "kr": "이z 디 에어r 컨디셔너r 워r킹 나우"
+          },
+          {
+            "en": "The heater in our room isn't working.",
+            "ko": "저희 방 난방이 안 돼요.",
+            "kr": "더 히이러r 이나워r 루우미즌 워r킹"
+          },
+          {
+            "en": "My wife says the fan isn't working.",
+            "ko": "아내 말로는 선풍기가 안 돌아간대요.",
+            "kr": "마이 와이f 쎄z 더 f패니즌 워r킹"
+          },
+          {
+            "en": "Our air conditioner stopped working last night.",
+            "ko": "저희 에어컨이 어젯밤에 멈췄어요.",
+            "kr": "아워r 에어r 컨디셔너r 스탑트 워r킹 라스트 나잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + isn't working (+ in 장소)",
+            "body": "'작동하지 않는다'는 be동사 + not + working 이다. 영어는 기계가 스스로 '일한다'고 보아 work 를 쓴다. 장소는 in my room 처럼 문장 끝에 붙는다 — 한국어 '방 에어컨'처럼 앞에 끼워 넣지 않는다."
+          }
+        ],
+        "chunks": [
+          [
+            "The air conditioner",
+            "디 에어r 컨디셔너r",
+            "에어컨이"
+          ],
+          [
+            "isn't working",
+            "이즌 워r킹",
+            "작동하지 않아요"
+          ],
+          [
+            "in my room.",
+            "인 마이 루움",
+            "제 방에서."
+          ]
+        ],
+        "phonemes": [
+          [
+            "isn't → t 탈락",
+            "'이즌트'라고 또박또박 끊지 않고 끝 t 를 흘려 '이즌'"
+          ],
+          [
+            "/ɜːr/ working",
+            "working 의 or 은 입을 작게 오므린 '워r' — '월킹'(X)"
+          ],
+          [
+            "/ð/ the air",
+            "모음 앞의 the 는 '더'가 아니라 '디' — '디 에어r'"
+          ]
+        ],
+        "mistake": "'고장 났어요'를 It's broken 으로만 말하면 부서졌다는 뜻이 강하다. 켜지긴 하는데 안 되는 상태는 isn't working 이다. work 를 '일하다'로만 외우면 이 표현이 안 나온다.",
+        "similar": "The air conditioner is broken. / The AC won't turn on.",
+        "category": "여행/숙소",
+        "frequency": 8,
+        "chain": {
+          "target": "The air conditioner isn't working in my room, so could you send someone up?",
+          "chunks": [
+            "The air conditioner isn't working in my room,",
+            "so could you",
+            "send someone up?"
+          ],
+          "ko": "방 에어컨이 작동하지 않아요, 그러니 사람 좀 올려보내 주시겠어요?"
+        },
+        "anchor": "작동하지 않아요"
+      }
+    },
+    {
+      "id": "en-core100-072-could-you-recommend-something",
+      "sentence": "Could you recommend something that isn't too spicy?",
+      "meaning": "너무 맵지 않은 메뉴를 추천해 주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 레커멘드 썸씽 대리즌 투우 스파이씨",
+      "order_index": 4,
+      "explanation": {
+        "key": "Could you recommend something = 뭐 하나 추천해 주시겠어요. 골라 달라고 부탁하는 말.",
+        "situation": "메뉴를 못 읽겠는 식당에서 — 조건을 하나 달아 직원에게 고르게 맡긴다.",
+        "drills": [
+          {
+            "en": "Could you recommend something?",
+            "ko": "뭐 하나 추천해 주시겠어요?",
+            "kr": "쿠쥬 레커멘드 썸씽"
+          },
+          {
+            "en": "What do you recommend?",
+            "ko": "뭘 추천하세요?",
+            "kr": "왓 두 유 레커멘드"
+          },
+          {
+            "en": "Could you recommend something local?",
+            "ko": "이 지역 음식으로 하나 추천해 주시겠어요?",
+            "kr": "쿠쥬 레커멘드 썸씽 로우클"
+          },
+          {
+            "en": "My wife recommended the fish here.",
+            "ko": "아내가 여기 생선요리를 추천했어요.",
+            "kr": "마이 와이f 레커멘디드 더 f피쉬 히어r"
+          },
+          {
+            "en": "Is there anything that isn't too spicy?",
+            "ko": "너무 맵지 않은 게 있나요?",
+            "kr": "이z 데어r 애니씽 대리즌 투우 스파이씨"
+          },
+          {
+            "en": "Could you recommend something that isn't too sweet?",
+            "ko": "너무 달지 않은 걸로 추천해 주시겠어요?",
+            "kr": "쿠쥬 레커멘드 썸씽 대리즌 투우 스위이트"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could you recommend + something + that절?",
+            "body": "부탁은 Could you 로 열고 recommend 를 바로 붙인다. 무엇을 추천할지는 something 으로 비워 두고, 조건은 that 절로 뒤에서 꾸민다. 한국어 '너무 맵지 않은 메뉴'는 조건이 앞에 오지만 영어는 something 이 먼저다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could you recommend",
+            "쿠쥬 레커멘드",
+            "추천해 주시겠어요"
+          ],
+          [
+            "something",
+            "썸씽",
+            "뭔가를"
+          ],
+          [
+            "that isn't too spicy?",
+            "대리즌 투우 스파이씨",
+            "너무 맵지 않은?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "could you → 쿠쥬",
+            "'쿠드 유'(X) '쿠쥬'(O) — d 와 y 가 만나 한 소리로 붙는다"
+          ],
+          [
+            "that isn't → 연음",
+            "'댓 이즌'처럼 끊지 않고 '대리즌' — t 가 모음 사이에서 부드럽게 굴러간다"
+          ],
+          [
+            "/s/ spicy",
+            "spicy 의 s 는 세게 '스파이씨' — 끝을 '시'로 흘리지 않는다"
+          ]
+        ],
+        "mistake": "'추천해 주세요'를 Please recommend 로만 말하면 명령조에 가깝다. Could you 를 앞에 붙여야 부탁이 된다. '맵지 않은'은 not spicy 만 떠올리기 쉬운데, something 을 꾸미려면 that isn't 로 절을 붙여야 한다.",
+        "similar": "What do you recommend? / Do you have anything mild?",
+        "category": "여행/식당",
+        "frequency": 9,
+        "chain": {
+          "target": "Could you recommend something that isn't too spicy, since it's my first time here?",
+          "chunks": [
+            "Could you recommend something that isn't too spicy,",
+            "since it's",
+            "my first time",
+            "here?"
+          ],
+          "ko": "너무 맵지 않은 메뉴를 추천해 주시겠어요, 여기 처음 와 봐서요."
+        },
+        "anchor": "추천해 주시겠어요"
+      }
+    },
+    {
+      "id": "en-core100-073-im-allergic-to",
+      "sentence": "I'm allergic to nuts, so does this have any?",
+      "meaning": "견과류 알레르기가 있는데, 이거 들어갔나요?",
+      "reading": null,
+      "phonetic_kr": "아이멀러r직 투 넛츠 쏘 더즈 디스 해v 애니",
+      "order_index": 5,
+      "explanation": {
+        "key": "I'm allergic to ~ = ~ 알레르기가 있어요. 못 먹는 것을 주문 전에 미리 알리는 말.",
+        "situation": "주문하면서 재료를 확인할 때 — 이유를 먼저 말하고 바로 질문까지 붙여야 직원이 주방에 물어봐 준다.",
+        "drills": [
+          {
+            "en": "I'm allergic to nuts.",
+            "ko": "견과류 알레르기가 있어요.",
+            "kr": "아이멀러r직 투 넛츠"
+          },
+          {
+            "en": "I'm allergic to shellfish.",
+            "ko": "조개류 알레르기가 있어요.",
+            "kr": "아이멀러r직 투 쉘f피쉬"
+          },
+          {
+            "en": "Is there any milk in this?",
+            "ko": "이거 우유 들어갔나요?",
+            "kr": "이z 데어r 애니 밀킨 디스"
+          },
+          {
+            "en": "My wife is allergic to cats.",
+            "ko": "아내는 고양이 알레르기가 있어요.",
+            "kr": "마이 와이f 이z 얼러r직 투 캐츠"
+          },
+          {
+            "en": "Does this have any peanuts in it?",
+            "ko": "여기에 땅콩이 들어 있나요?",
+            "kr": "더즈 디스 해v 애니 피이넛츠 이닛"
+          },
+          {
+            "en": "I can't eat anything with nuts in it.",
+            "ko": "견과류 들어간 건 아무것도 못 먹어요.",
+            "kr": "아이 캔트 이이래니씽 위드 넛츠 이닛"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm allergic to + 명사, so + 질문",
+            "body": "'알레르기가 있다'는 have 가 아니라 be동사 + allergic to 로 말한다. 무엇에 알레르기인지는 to 뒤에 붙인다. so 로 이유와 질문을 한 문장에 이어 '그래서 들어갔나요'까지 한 번에 묻는다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm allergic to nuts,",
+            "아이멀러r직 투 넛츠",
+            "견과류 알레르기가 있어요,"
+          ],
+          [
+            "so does this",
+            "쏘 더즈 디스",
+            "그래서 이거"
+          ],
+          [
+            "have any?",
+            "해v 애니",
+            "들어 있나요?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "I'm allergic → 연음",
+            "'아임 얼러r직'처럼 끊지 않고 '아이멀러r직' — m 이 뒤 모음에 붙는다"
+          ],
+          [
+            "/dʒ/ allergic",
+            "allergic 의 g 는 /dʒ/ — '얼러r긱'(X) '얼러r직'(O)"
+          ],
+          [
+            "/z/ does",
+            "does 의 s 는 /z/ — '더스'(X) '더즈'(O)"
+          ]
+        ],
+        "mistake": "'알레르기가 있어요'를 I have allergy 로 말하기 쉽다. 영어는 I'm allergic to ~ 로 형용사를 쓴다. 뒤의 any 는 앞에서 말한 nuts 를 가리키는 대명사라 뒤에 명사를 다시 붙이지 않는다.",
+        "similar": "I can't eat nuts. / Does this contain nuts?",
+        "category": "여행/식당",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm allergic to nuts, so does this have any, or should I ask the chef?",
+          "chunks": [
+            "I'm allergic to nuts, so does this have any,",
+            "or should I",
+            "ask the chef?"
+          ],
+          "ko": "견과류 알레르기가 있는데, 이거 들어갔나요, 아니면 주방에 물어보는 게 나을까요?"
+        },
+        "anchor": "알레르기가 있는데"
+      }
+    },
+    {
+      "id": "en-core100-074-isnt-what-i-ordered",
+      "sentence": "I'm sorry, but this isn't what I ordered.",
+      "meaning": "죄송한데, 제가 주문한 게 아니에요.",
+      "reading": null,
+      "phonetic_kr": "아임 쏘리 벗 디스 이즌 와라이 오어r더r드",
+      "order_index": 6,
+      "explanation": {
+        "key": "this isn't what I ordered = 이건 제가 주문한 게 아니에요. 잘못 나온 것을 부드럽게 짚는 말.",
+        "situation": "식당에서 다른 음식이 나왔을 때 — 화내지 않고 I'm sorry 로 열어 바로잡아 달라고 한다.",
+        "drills": [
+          {
+            "en": "That's not what I ordered.",
+            "ko": "그건 제가 주문한 게 아니에요.",
+            "kr": "댓츠 낫 와라이 오어r더r드"
+          },
+          {
+            "en": "This isn't what I ordered.",
+            "ko": "이건 제가 주문한 게 아니에요.",
+            "kr": "디스 이즌 와라이 오어r더r드"
+          },
+          {
+            "en": "Is this what I ordered?",
+            "ko": "이게 제가 주문한 건가요?",
+            "kr": "이z 디스 와라이 오어r더r드"
+          },
+          {
+            "en": "This isn't what my wife ordered.",
+            "ko": "이건 아내가 주문한 게 아니에요.",
+            "kr": "디스 이즌 왓 마이 와이f 오어r더r드"
+          },
+          {
+            "en": "We ordered two coffees, not three.",
+            "ko": "저희는 커피 두 잔 주문했어요, 세 잔이 아니고요.",
+            "kr": "위 오어r더r드 투우 커f피z 낫 쓰리이"
+          },
+          {
+            "en": "I'm sorry, but I ordered the soup.",
+            "ko": "죄송한데, 저는 수프를 주문했어요.",
+            "kr": "아임 쏘리 버라이 오어r더r드 더 수웁"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm sorry, but + this isn't + what절",
+            "body": "'제가 주문한 것'은 what I ordered 라는 한 덩어리 명사절이다. what 이 '~한 것'을 통째로 만들어 준다. 불평을 꺼낼 때는 I'm sorry, but 을 앞에 붙여 상대를 탓하지 않는 결로 시작한다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm sorry,",
+            "아임 쏘리",
+            "죄송한데,"
+          ],
+          [
+            "but this isn't",
+            "벗 디스 이즌",
+            "이건 아니에요"
+          ],
+          [
+            "what I ordered.",
+            "와라이 오어r더r드",
+            "제가 주문한 게."
+          ]
+        ],
+        "phonemes": [
+          [
+            "what I → 연음",
+            "'왓 아이'처럼 끊지 않고 '와라이' — t 가 모음 사이에서 부드럽게 굴러간다"
+          ],
+          [
+            "/ɔːr/ ordered",
+            "ordered 는 혀를 말아 '오어r더r드' — '오더드'(X)"
+          ],
+          [
+            "/s/ sorry",
+            "'소리'가 아니라 s 를 세게 '쏘리'"
+          ]
+        ],
+        "mistake": "'제가 주문한 게 아니에요'를 This is not my order 로 말하면 '제 주문서가 아니다'처럼 들린다. what I ordered 를 써야 '주문한 그 음식'이 된다. 과거형 ordered 를 order 로 흘리지 않는다.",
+        "similar": "I think you brought the wrong dish. / This isn't mine.",
+        "category": "여행/식당",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm sorry, but this isn't what I ordered, and I'm still waiting for my soup.",
+          "chunks": [
+            "I'm sorry, but this isn't what I ordered,",
+            "and I'm",
+            "still waiting",
+            "for my soup."
+          ],
+          "ko": "죄송한데, 제가 주문한 게 아니에요, 그리고 수프도 아직 기다리고 있어요."
+        },
+        "anchor": "제가 주문한 게 아니에요"
+      }
+    }
+  ]
+}

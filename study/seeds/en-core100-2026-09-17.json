@@ -1,0 +1,668 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "81-100 미드 듣기와 구어 문형",
+  "date": "2026-09-17",
+  "_note": "코어 100문장 커리큘럼 88~94번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-088-supposed-to",
+      "sentence": "What else was I supposed to do?",
+      "meaning": "그럼 내가 뭘 어떻게 했어야 하는데?",
+      "reading": null,
+      "phonetic_kr": "와렐스 워자이 써포우즈드 투 두",
+      "order_index": 1,
+      "explanation": {
+        "key": "supposed to = ~하기로 되어 있다. 원래 그래야 하는 일을 가리키고, 과거형이면 '그랬어야 했는데 못 했다'는 뉘앙스가 된다.",
+        "situation": "이미 벌어진 일을 두고 상대가 나무랄 때 — 아내가 \"왜 그렇게 했어?\" 하고 물으면 달리 방법이 없었다는 뜻으로 되받는다.",
+        "drills": [
+          {
+            "en": "You were supposed to call me.",
+            "ko": "나한테 전화하기로 했잖아.",
+            "kr": "유 워r 써포우즈드 투 콜 미"
+          },
+          {
+            "en": "Was I supposed to bring something?",
+            "ko": "내가 뭘 가져왔어야 했어?",
+            "kr": "워자이 써포우즈드 투 브링 썸씽"
+          },
+          {
+            "en": "What was I supposed to say?",
+            "ko": "내가 뭐라고 했어야 하는데?",
+            "kr": "왓 워자이 써포우즈드 투 쎄이"
+          },
+          {
+            "en": "I'm not supposed to be here.",
+            "ko": "나 여기 있으면 안 되는데.",
+            "kr": "아임 낫 써포우즈드 투 비 히어r"
+          },
+          {
+            "en": "We were supposed to leave at six.",
+            "ko": "우리 6시에 나가기로 했었잖아.",
+            "kr": "위 워r 써포우즈드 투 리이v 앳 씩스"
+          },
+          {
+            "en": "My wife was supposed to work late tonight.",
+            "ko": "아내가 오늘 밤 야근하기로 돼 있었어.",
+            "kr": "마이 와이f 워z 써포우즈드 투 워r크 레잇 터나잇"
+          },
+          {
+            "en": "The cat's not supposed to be on the counter.",
+            "ko": "고양이는 조리대에 올라가면 안 되는데.",
+            "kr": "더 캣츠 낫 써포우즈드 투 비 온 더 카운터r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What else + be동사 + 주어 + supposed to + 동사원형?",
+            "body": "supposed to 는 '원래 그러기로 되어 있다'를 나타낸다. be동사를 과거(was/were)로 두면 '그랬어야 했는데'가 되고, 앞에 What else 를 붙이면 '그럼 달리 뭘'이라는 항변이 된다. 한국어는 '했어야 하는데'가 끝에 오지만 영어는 was I 처럼 의문문 어순이 먼저다."
+          }
+        ],
+        "chunks": [
+          [
+            "What else",
+            "와렐스",
+            "그럼 달리 뭘"
+          ],
+          [
+            "was I supposed to do?",
+            "워자이 써포우즈드 투 두",
+            "내가 했어야 했지?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "What else → 연음",
+            "'왓 엘스'로 끊지 않고 t 를 굴려 '와렐스' — 미드에서는 거의 한 단어로 들린다"
+          ],
+          [
+            "/z/ was I",
+            "was 의 s 는 /z/ 라서 뒤 모음에 붙는다 — '워스 아이'(X) '워자이'(O)"
+          ],
+          [
+            "supposed to → /d/ 뭉침",
+            "빠르게는 d 와 t 가 하나로 뭉쳐 '써포우스투'처럼 들린다. 따라 말할 때는 '써포우즈드 투'로 또박또박 해도 통한다"
+          ]
+        ],
+        "mistake": "'뭘 어떻게 했어야 하는데?'를 What should I do 로 바꾸면 지금 뭘 할지 조언을 구하는 말이 된다. 이미 끝난 일에 대한 항변은 was I supposed to 다.",
+        "similar": "What was I supposed to do? / So what should I have done?",
+        "category": "구어/항변",
+        "frequency": 8,
+        "chain": {
+          "target": "What else was I supposed to do? I didn't have any other choice.",
+          "chunks": [
+            "What else was I supposed to do?",
+            "I didn't have",
+            "any other",
+            "choice."
+          ],
+          "ko": "그럼 내가 뭘 어떻게 했어야 하는데? 다른 방법이 없었어."
+        },
+        "anchor": "했어야 하는데"
+      }
+    },
+    {
+      "id": "en-core100-089-i-knew-would-happen",
+      "sentence": "I knew something like this would happen.",
+      "meaning": "이런 일이 생길 줄 알았어.",
+      "reading": null,
+      "phonetic_kr": "아이 뉴 썸씽 라이크 디스 우드 해픈",
+      "order_index": 2,
+      "explanation": {
+        "key": "I knew ~ would happen = ~할 줄 알았어. 안 좋은 예감이 그대로 맞았을 때 쓰는 말.",
+        "situation": "나쁜 예감이 맞아떨어졌을 때 — 고양이가 화분을 엎었거나 예약이 꼬였을 때 한숨과 함께 꺼낸다.",
+        "drills": [
+          {
+            "en": "I knew it.",
+            "ko": "그럴 줄 알았어.",
+            "kr": "아이 뉴잇"
+          },
+          {
+            "en": "My wife knew right away.",
+            "ko": "아내는 바로 알아챘어.",
+            "kr": "마이 와이f 뉴 라이러웨이"
+          },
+          {
+            "en": "I knew this would happen.",
+            "ko": "이럴 줄 알았어.",
+            "kr": "아이 뉴 디스 우드 해픈"
+          },
+          {
+            "en": "Did you know she would say that?",
+            "ko": "걔가 그렇게 말할 줄 알았어?",
+            "kr": "디쥬 노우 쉬 우드 쎄이 댓"
+          },
+          {
+            "en": "Something like this happens all the time.",
+            "ko": "이런 일은 늘 있는 일이야.",
+            "kr": "썸씽 라이크 디스 해픈z 올 더 타임"
+          },
+          {
+            "en": "I had a feeling something like this would happen.",
+            "ko": "이런 일이 생길 것 같은 느낌이 들었어.",
+            "kr": "아이 해러 f필링 썸씽 라이크 디스 우드 해픈"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I knew (that) + 주어 + would + 동사원형",
+            "body": "'~할 줄 알았어'는 knew 뒤에 문장을 통째로 넣는다. 앞의 knew 가 과거라서 뒤도 will 이 아니라 would 로 맞춘다. 한국어는 '생길 줄'이 앞에 오지만 영어는 알고 있었다는 말(I knew)이 먼저다."
+          },
+          {
+            "struct": "something like this = 이런 일",
+            "body": "이 자리에 this kind of thing 을 넣어도 뜻은 통하지만, 구어에서는 something like this 가 훨씬 흔하다. like 는 여기서 「~같은」이라는 뜻이다."
+          }
+        ],
+        "chunks": [
+          [
+            "I knew",
+            "아이 뉴",
+            "~인 줄 알았어"
+          ],
+          [
+            "something like this",
+            "썸씽 라이크 디스",
+            "이런 일이"
+          ],
+          [
+            "would happen.",
+            "우드 해픈",
+            "생길 거라고."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/nj/ knew",
+            "knew 의 k 는 소리가 없다 — '크뉴'(X) '뉴'(O)"
+          ],
+          [
+            "/θ/ something",
+            "something 의 th 는 혀끝을 이 사이에 물듯이 — 앞의 s 는 세게 '썸씽'"
+          ],
+          [
+            "knew it → 연음",
+            "'뉴 잇'으로 끊지 않고 '뉴잇' 한 덩어리로"
+          ]
+        ],
+        "mistake": "'~할 줄 알았어'를 I knew it will happen 처럼 will 로 두기 쉽다. 앞이 knew(과거)면 뒤도 would 다. I knew 만 말하고 끝내면 '그건 알고 있었어'라는 다른 뜻이 된다.",
+        "similar": "I knew it. / I had a feeling this would happen.",
+        "category": "구어/예감",
+        "frequency": 8,
+        "chain": {
+          "target": "I knew something like this would happen, but nobody wanted to listen to me.",
+          "chunks": [
+            "I knew something like this would happen,",
+            "but nobody",
+            "wanted to listen",
+            "to me."
+          ],
+          "ko": "이런 일이 생길 줄 알았어, 그런데 아무도 내 말을 들으려 하지 않았지."
+        },
+        "anchor": "생길 줄 알았어"
+      }
+    },
+    {
+      "id": "en-core100-090-really-appreciate",
+      "sentence": "I really appreciate everything you've done for me.",
+      "meaning": "네가 해준 거 정말 고맙게 생각해.",
+      "reading": null,
+      "phonetic_kr": "아이 리얼리 어프리이시에잇 에v리씽 유v 던 f포어r 미",
+      "order_index": 3,
+      "explanation": {
+        "key": "really appreciate = 정말 고맙게 생각하다. thank you 한마디보다 무겁게, 받은 도움 전체를 두고 하는 인사.",
+        "situation": "오래 신세 진 사람과 헤어질 때 — 여행에서 며칠 도와준 사람이나 아내에게 고마움을 제대로 전할 때.",
+        "drills": [
+          {
+            "en": "I really appreciate it.",
+            "ko": "정말 고마워.",
+            "kr": "아이 리얼리 어프리이시에이릿"
+          },
+          {
+            "en": "We really appreciate your help.",
+            "ko": "도와주셔서 정말 고맙습니다.",
+            "kr": "위 리얼리 어프리이시에잇 유어r 헬프"
+          },
+          {
+            "en": "Thanks for everything you've done.",
+            "ko": "해주신 모든 것에 감사해요.",
+            "kr": "땡스 f포어r 에v리씽 유v 던"
+          },
+          {
+            "en": "My wife really appreciated the ride home.",
+            "ko": "아내가 집까지 태워다 줘서 정말 고마워했어.",
+            "kr": "마이 와이f 리얼리 어프리이시에이리드 더 라이드 호움"
+          },
+          {
+            "en": "I appreciate you taking care of the cat.",
+            "ko": "고양이를 돌봐 줘서 고마워.",
+            "kr": "아이 어프리이시에잇 유 테이킹 케어r 어v 더 캣"
+          },
+          {
+            "en": "I really appreciate what you did for us.",
+            "ko": "네가 우리를 위해 해준 일 정말 고맙게 생각해.",
+            "kr": "아이 리얼리 어프리이시에잇 왓 유 디드 f포어r 어스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I really appreciate + 명사구 (everything you've done for me)",
+            "body": "appreciate 는 고마운 '일'을 목적어로 받는다 — thank 는 사람을 받고(I thank you), appreciate 는 내용을 받는다(I appreciate it). everything 뒤에는 관계사 없이 you've done 을 바로 붙여 '네가 해준 모든 것'이 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "I really appreciate",
+            "아이 리얼리 어프리이시에잇",
+            "정말 고맙게 생각해"
+          ],
+          [
+            "everything you've done",
+            "에v리씽 유v 던",
+            "네가 해준 모든 것을"
+          ],
+          [
+            "for me.",
+            "f포어r 미",
+            "나를 위해."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ʃ/ appreciate",
+            "ci 는 '시' 소리 — '어프리케이트'(X) '어프리이시에잇'(O)"
+          ],
+          [
+            "/v/ everything·you've",
+            "v 는 아랫입술을 물고 진동 — '에브리씽'(X) '에v리씽'(O)"
+          ],
+          [
+            "appreciate it → 연음",
+            "'어프리이시에잇 잇'으로 끊지 않고 t 를 굴려 '어프리이시에이릿'"
+          ]
+        ],
+        "mistake": "고마운 대상을 사람으로 두어 I appreciate you 라고 하면 상대를 평가하는 말처럼 들린다. 고마운 건 '해준 일'이라 appreciate 뒤에는 it·everything you've done 같은 내용이 온다.",
+        "similar": "Thanks for everything. / I can't thank you enough.",
+        "category": "구어/감사",
+        "frequency": 9,
+        "chain": {
+          "target": "I really appreciate everything you've done for me, and I won't forget it.",
+          "chunks": [
+            "I really appreciate everything you've done for me,",
+            "and I won't",
+            "forget it."
+          ],
+          "ko": "네가 해준 거 정말 고맙게 생각해, 절대 잊지 않을게."
+        },
+        "anchor": "정말 고맙게 생각해"
+      }
+    },
+    {
+      "id": "en-core100-091-couldve-told-me",
+      "sentence": "You could've told me you were coming.",
+      "meaning": "네가 온다고 말해줄 수도 있었잖아.",
+      "reading": null,
+      "phonetic_kr": "유 쿠드v 톨드 미 유 워r 커밍",
+      "order_index": 4,
+      "explanation": {
+        "key": "could've told me = 말해줄 수도 있었잖아. 미리 안 알려준 상대에게 서운함을 가볍게 내비치는 말.",
+        "situation": "미리 알았으면 좋았을 일을 뒤늦게 알았을 때 — 아내가 말 없이 손님을 데려왔거나 친구가 갑자기 집 앞에 왔을 때.",
+        "drills": [
+          {
+            "en": "You could've told me.",
+            "ko": "나한테 말해줄 수도 있었잖아.",
+            "kr": "유 쿠드v 톨드 미"
+          },
+          {
+            "en": "You could've called me.",
+            "ko": "전화해 줄 수도 있었잖아.",
+            "kr": "유 쿠드v 콜드 미"
+          },
+          {
+            "en": "She could've told us earlier.",
+            "ko": "걔가 우리한테 더 일찍 말해줄 수도 있었잖아.",
+            "kr": "쉬 쿠드v 톨더스 어r리어r"
+          },
+          {
+            "en": "I could've helped you with that.",
+            "ko": "내가 그거 도와줄 수도 있었는데.",
+            "kr": "아이 쿠드v 헬프트 유 위드 댓"
+          },
+          {
+            "en": "We could've taken the earlier train.",
+            "ko": "우리 더 이른 기차를 탈 수도 있었는데.",
+            "kr": "위 쿠드v 테이큰 디 어r리어r 트레인"
+          },
+          {
+            "en": "My wife could've told me she was working late.",
+            "ko": "아내가 야근한다고 말해줄 수도 있었잖아.",
+            "kr": "마이 와이f 쿠드v 톨드 미 쉬 워z 워r킹 레잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "could've + 과거분사 (실제로는 안 한 일)",
+            "body": "could have 는 '할 수 있었는데 안 했다'는 뜻이라 아쉬움·가벼운 원망이 담긴다. 구어에서는 could've 로 줄여 한 덩어리처럼 말한다. 뒤의 you were coming 은 told me 의 내용이라 that 없이 바로 붙였다."
+          }
+        ],
+        "chunks": [
+          [
+            "You could've",
+            "유 쿠드v",
+            "너는 ~할 수도 있었잖아"
+          ],
+          [
+            "told me",
+            "톨드 미",
+            "나한테 말해 줄"
+          ],
+          [
+            "you were coming.",
+            "유 워r 커밍",
+            "네가 온다고."
+          ]
+        ],
+        "phonemes": [
+          [
+            "could've → /kʊdəv/",
+            "'쿨드 해브'(X) — could have 를 한 덩어리로 '쿠드v', 빠르게는 d 가 굴러 '쿠러v'처럼 들린다"
+          ],
+          [
+            "/oʊ/ told",
+            "told 의 o 는 '오우' — 혀끝을 잇몸에 붙여 l 을 살린다"
+          ]
+        ],
+        "mistake": "'말해줄 수도 있었잖아'를 You can tell me 로 하면 지금 말하라는 뜻이 된다. 지난 일에 대한 아쉬움은 could've + 과거분사다. 소리가 같다고 could of 로 적는 건 철자 실수다.",
+        "similar": "You should've told me. / Why didn't you tell me?",
+        "category": "구어/원망",
+        "frequency": 8,
+        "chain": {
+          "target": "You could've told me you were coming, and I would've cleaned up a little.",
+          "chunks": [
+            "You could've told me you were coming,",
+            "and I would've",
+            "cleaned up",
+            "a little."
+          ],
+          "ko": "네가 온다고 말해줄 수도 있었잖아, 그럼 내가 좀 치워 놨을 텐데."
+        },
+        "anchor": "말해줄 수도 있었잖아"
+      }
+    },
+    {
+      "id": "en-core100-092-figure-out",
+      "sentence": "I can't figure out why she left so early.",
+      "meaning": "걔가 왜 그렇게 일찍 갔는지 모르겠어.",
+      "reading": null,
+      "phonetic_kr": "아이 캔트 f피겨r 아웃 와이 쉬 레f트 쏘 어r리",
+      "order_index": 5,
+      "explanation": {
+        "key": "figure out = (따져 보고) 알아내다, 이해가 되다. 생각해 봐도 답이 안 나올 때 can't figure out 으로 자주 쓴다.",
+        "situation": "아무리 생각해도 이유를 모르겠을 때 — 모임에서 먼저 자리를 뜬 사람을 두고 아내와 이야기한다.",
+        "drills": [
+          {
+            "en": "I can't figure it out.",
+            "ko": "도무지 모르겠어.",
+            "kr": "아이 캔트 f피겨r 이라웃"
+          },
+          {
+            "en": "Did you figure out the problem?",
+            "ko": "문제가 뭔지 알아냈어?",
+            "kr": "디쥬 f피겨r 아웃 더 프라블럼"
+          },
+          {
+            "en": "My wife figured out how to fix it.",
+            "ko": "아내가 고치는 방법을 알아냈어.",
+            "kr": "마이 와이f f피겨r다웃 하우 투 f픽씻"
+          },
+          {
+            "en": "I'm trying to figure out what to say.",
+            "ko": "뭐라고 말할지 궁리하는 중이야.",
+            "kr": "아임 트라잉 투 f피겨r 아웃 왓 투 쎄이"
+          },
+          {
+            "en": "I can't figure out how this thing works.",
+            "ko": "이게 어떻게 작동하는지 모르겠어.",
+            "kr": "아이 캔트 f피겨r 아웃 하우 디스 씽 워r크스"
+          },
+          {
+            "en": "We couldn't figure out why the cat was hiding.",
+            "ko": "고양이가 왜 숨어 있었는지 알 수가 없었어.",
+            "kr": "위 쿠든 f피겨r 아웃 와이 더 캣 워z 하이딩"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "can't figure out + 의문사절 (why she left so early)",
+            "body": "figure out 뒤에는 명사도 오고 why·how·what 으로 시작하는 절도 통째로 온다. 목적어가 대명사면 figure it out 처럼 out 앞에 끼워 넣는다. 한국어는 「왜 갔는지」가 앞이지만 영어는 못 알아내겠다는 말이 먼저다."
+          }
+        ],
+        "chunks": [
+          [
+            "I can't figure out",
+            "아이 캔트 f피겨r 아웃",
+            "모르겠어"
+          ],
+          [
+            "why she left",
+            "와이 쉬 레f트",
+            "걔가 왜 갔는지"
+          ],
+          [
+            "so early.",
+            "쏘 어r리",
+            "그렇게 일찍."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ figure",
+            "f 는 윗니로 아랫입술을 눌러 — '피겨'(X) 'f피겨r'(O)"
+          ],
+          [
+            "/ɜːr/ early",
+            "ear 은 입을 작게 오므린 '어r' — '얼리'(X) '어r리'(O)"
+          ]
+        ],
+        "mistake": "'모르겠어'를 I don't know 로만 하면 아예 정보가 없다는 뜻이다. 따져 봐도 답이 안 나오는 건 can't figure out 이다. 대명사 목적어는 figure out it 이 아니라 figure it out 이다.",
+        "similar": "I have no idea why she left. / I still don't get why she left.",
+        "category": "구어/추리",
+        "frequency": 9,
+        "chain": {
+          "target": "I can't figure out why she left so early, but I'll ask her tomorrow.",
+          "chunks": [
+            "I can't figure out why she left so early,",
+            "but I'll ask",
+            "her tomorrow."
+          ],
+          "ko": "걔가 왜 그렇게 일찍 갔는지 모르겠어, 내일 물어봐야겠다."
+        },
+        "anchor": "모르겠어"
+      }
+    },
+    {
+      "id": "en-core100-093-find-out",
+      "sentence": "We need to find out what really happened.",
+      "meaning": "실제로 무슨 일이 있었는지 알아내야 해.",
+      "reading": null,
+      "phonetic_kr": "위 니이드 투 f파인다웃 왓 리얼리 해픈드",
+      "order_index": 6,
+      "explanation": {
+        "key": "find out = (알아보고) 알아내다, 알게 되다. 몰랐던 사실을 확인해 손에 넣는 것.",
+        "situation": "무슨 일인지 확인하고 넘어가야 할 때 — 여행 중 예약이 꼬였거나 요금이 이상하게 나왔을 때.",
+        "drills": [
+          {
+            "en": "Let's find out.",
+            "ko": "한번 알아보자.",
+            "kr": "렛츠 f파인다웃"
+          },
+          {
+            "en": "How did you find out?",
+            "ko": "어떻게 알았어?",
+            "kr": "하우 디쥬 f파인다웃"
+          },
+          {
+            "en": "I found out this morning.",
+            "ko": "오늘 아침에 알게 됐어.",
+            "kr": "아이 f파운다웃 디스 모어r닝"
+          },
+          {
+            "en": "My wife found out before I did.",
+            "ko": "아내가 나보다 먼저 알아 버렸어.",
+            "kr": "마이 와이f f파운다웃 비f포어r 아이 디드"
+          },
+          {
+            "en": "Can you find out what time it starts?",
+            "ko": "몇 시에 시작하는지 알아봐 줄래?",
+            "kr": "캔 유 f파인다웃 왓 타이밋 스타r츠"
+          },
+          {
+            "en": "I want to find out what really happened that night.",
+            "ko": "그날 밤에 실제로 무슨 일이 있었는지 알아내고 싶어.",
+            "kr": "아이 원트 투 f파인다웃 왓 리얼리 해픈드 댓 나잇"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "need to find out + 의문사절 (what really happened)",
+            "body": "find out 뒤에 what·where·who 절이 통째로 온다. what really happened 는 '실제로 무슨 일이 있었는지'라는 하나의 명사 덩어리다. 한국어는 '알아내야 해'가 끝에 오지만 영어는 need to find out 을 먼저 말하고 내용을 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "We need to",
+            "위 니이드 투",
+            "우리는 ~해야 해"
+          ],
+          [
+            "find out",
+            "f파인다웃",
+            "알아내야"
+          ],
+          [
+            "what really happened.",
+            "왓 리얼리 해픈드",
+            "실제로 무슨 일이 있었는지."
+          ]
+        ],
+        "phonemes": [
+          [
+            "find out → 연음",
+            "'f파인드 아웃'으로 끊지 않고 d 를 다음 모음에 붙여 'f파인다웃'"
+          ],
+          [
+            "/iː/ need",
+            "need 의 모음은 길게 '니이드' — 짧게 '니드'라고 하면 다른 단어로 새기 쉽다"
+          ],
+          [
+            "/ɹ/ really",
+            "really 의 r 은 혀를 뒤로 말아서 — 첫소리를 ㄹ 로 튕기지 않는다"
+          ]
+        ],
+        "mistake": "find out 은 물건을 '찾아내다'가 아니라 사실을 '알아내다'다. 물건은 find, 사실은 find out. We need to know 로만 하면 알아보는 과정이 사라진다.",
+        "similar": "We need to know what happened. / Let's get to the bottom of this.",
+        "category": "구어/확인",
+        "frequency": 9,
+        "chain": {
+          "target": "We need to find out what really happened before we talk to anyone.",
+          "chunks": [
+            "We need to find out what really happened",
+            "before we talk",
+            "to anyone."
+          ],
+          "ko": "누구한테 말하기 전에 실제로 무슨 일이 있었는지 알아내야 해."
+        },
+        "anchor": "알아내야 해"
+      }
+    },
+    {
+      "id": "en-core100-094-pick-you-up",
+      "sentence": "I'll pick you up when I get off work.",
+      "meaning": "내가 퇴근하면 데리러 갈게.",
+      "reading": null,
+      "phonetic_kr": "아일 픽 유 업 웨나이 게로f 워r크",
+      "order_index": 7,
+      "explanation": {
+        "key": "pick ~ up = 차로 데리러 가다. 사람을 태우러 간다는 뜻으로 매일 쓰는 표현.",
+        "situation": "마중 약속을 잡을 때 — 아내가 늦게까지 일하는 날 회사나 역 앞으로 데리러 간다.",
+        "drills": [
+          {
+            "en": "Can you pick me up?",
+            "ko": "나 좀 데리러 와 줄래?",
+            "kr": "캔 유 픽 미 업"
+          },
+          {
+            "en": "I'll pick you up later.",
+            "ko": "이따가 데리러 갈게.",
+            "kr": "아일 픽 유 업 레이러r"
+          },
+          {
+            "en": "What time do you get off work?",
+            "ko": "몇 시에 퇴근해?",
+            "kr": "왓 타임 두 유 게로f 워r크"
+          },
+          {
+            "en": "I'll call you when I get off work.",
+            "ko": "퇴근하면 전화할게.",
+            "kr": "아일 콜 유 웨나이 게로f 워r크"
+          },
+          {
+            "en": "Could you pick me up from the station?",
+            "ko": "역에서 좀 태워 줄래?",
+            "kr": "쿠쥬 픽 미 업 f럼 더 스테이션"
+          },
+          {
+            "en": "My wife will pick up the cat from the vet.",
+            "ko": "아내가 병원에서 고양이를 데려올 거야.",
+            "kr": "마이 와이f 윌 피컵 더 캣 f럼 더 v벳"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "pick + 사람 + up (+ 시점·장소)",
+            "body": "목적어가 you·me 같은 대명사면 반드시 pick 과 up 사이에 넣는다(pick you up). 명사면 pick up the cat 처럼 뒤에 놔도 된다. when I get off work 는 앞으로 있을 일이지만 when 절 안에서는 will 을 쓰지 않고 현재형 get 을 쓴다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'll pick you up",
+            "아일 픽 유 업",
+            "데리러 갈게"
+          ],
+          [
+            "when I get off work.",
+            "웨나이 게로f 워r크",
+            "내가 퇴근하면."
+          ]
+        ],
+        "phonemes": [
+          [
+            "get off → 연음",
+            "'겟 오f'로 끊지 않고 t 를 굴려 '게로f'"
+          ],
+          [
+            "when I → 연음",
+            "'웬 아이'로 끊지 않고 n 을 뒤 모음에 붙여 '웨나이'"
+          ],
+          [
+            "/ɪ/ pick",
+            "pick 의 i 는 짧게 '이'와 '에' 사이 — 길게 '피익'이 되면 peek 으로 들린다"
+          ]
+        ],
+        "mistake": "'데리러 갈게'를 I'll go take you 처럼 옮기기 쉽다. 차로 태우러 가는 건 pick you up 한 덩어리다. 대명사를 뒤로 빼서 pick up you 라고 하면 틀린다.",
+        "similar": "I'll come get you. / I'll swing by and get you.",
+        "category": "구어/약속",
+        "frequency": 10,
+        "chain": {
+          "target": "I'll pick you up when I get off work, so just wait inside the station.",
+          "chunks": [
+            "I'll pick you up when I get off work,",
+            "so just wait",
+            "inside the station."
+          ],
+          "ko": "내가 퇴근하면 데리러 갈게, 그러니까 역 안에서 기다려."
+        },
+        "anchor": "데리러 갈게"
+      }
+    }
+  ]
+}

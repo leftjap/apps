@@ -1,0 +1,573 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "51-80 여행영어",
+  "date": "2026-09-12",
+  "_note": "코어 100문장 커리큘럼 57~62번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-057-flight-was-delayed",
+      "sentence": "My flight was delayed, so I missed my connection.",
+      "meaning": "비행기가 지연돼서 연결편을 놓쳤어요.",
+      "reading": null,
+      "phonetic_kr": "마이 f라잇 워z 딜레이드 쏘 아이 미스트 마이 커넥션",
+      "order_index": 1,
+      "explanation": {
+        "key": "my flight was delayed = 내 비행기가 지연됐다. 늦은 이유를 한마디로 대는 여행 문장.",
+        "situation": "환승 공항에서 다음 비행기를 놓쳤을 때 — 카운터 직원에게 왜 늦었는지부터 말한다.",
+        "drills": [
+          {
+            "en": "My flight was delayed.",
+            "ko": "제 비행기가 지연됐어요.",
+            "kr": "마이 f라잇 워z 딜레이드"
+          },
+          {
+            "en": "Is your flight delayed too?",
+            "ko": "네 비행기도 지연됐어?",
+            "kr": "이z 유어r f라잇 딜레이드 투우"
+          },
+          {
+            "en": "Our flight was delayed by two hours.",
+            "ko": "우리 비행기가 두 시간 지연됐어.",
+            "kr": "아워r f라잇 워z 딜레이드 바이 투우 아워r즈"
+          },
+          {
+            "en": "My wife's flight was delayed last night.",
+            "ko": "어젯밤에 아내 비행기가 지연됐어.",
+            "kr": "마이 와이f스 f라잇 워z 딜레이드 라스 나잇"
+          },
+          {
+            "en": "I missed my connection because of the delay.",
+            "ko": "지연 때문에 연결편을 놓쳤어요.",
+            "kr": "아이 미스트 마이 커넥션 비커저v 더 딜레이"
+          },
+          {
+            "en": "The train was delayed, so we took a taxi.",
+            "ko": "기차가 지연돼서 우리는 택시를 탔어.",
+            "kr": "더 트레인 워z 딜레이드 쏘 위 투커 택씨"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + was delayed, so + 결과",
+            "body": "'지연되다'는 delay 를 수동으로 써서 was delayed 라고 한다. 비행기가 스스로 늦춘 게 아니라 늦춰진 쪽이라 be + 과거분사다. 한국어 '지연돼서'의 '~서'는 영어에서 뒤 문장 앞의 so 자리로 간다."
+          }
+        ],
+        "chunks": [
+          [
+            "My flight was delayed,",
+            "마이 f라잇 워z 딜레이드",
+            "비행기가 지연돼서,"
+          ],
+          [
+            "so I missed",
+            "쏘 아이 미스트",
+            "그래서 놓쳤어요"
+          ],
+          [
+            "my connection.",
+            "마이 커넥션",
+            "연결편을."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ flight",
+            "flight 의 f 는 윗니로 아랫입술을 스쳐 — '프라잇'(X) 'f라잇'(O)"
+          ],
+          [
+            "/ɪ/ missed",
+            "missed 의 i 는 짧은 '이' — '미이스트'로 늘이지 않는다"
+          ]
+        ],
+        "mistake": "'비행기가 지연됐다'를 My flight delayed 로 말하기 쉽다. 비행기는 지연을 당한 쪽이라 was delayed 가 맞다. '연결편'은 공항에서 connection 한 단어로 말한다.",
+        "similar": "My flight got delayed. / I missed my connecting flight.",
+        "category": "여행/공항",
+        "frequency": 8,
+        "chain": {
+          "target": "My flight was delayed, so I missed my connection, and the next one isn't until tomorrow morning.",
+          "chunks": [
+            "My flight was delayed, so I missed my connection,",
+            "and the next one",
+            "isn't until",
+            "tomorrow morning."
+          ],
+          "ko": "비행기가 지연돼서 연결편을 놓쳤고, 다음 편은 내일 아침에나 있어요."
+        },
+        "anchor": "비행기가 지연돼서"
+      }
+    },
+    {
+      "id": "en-core100-058-hasnt-arrived-yet",
+      "sentence": "My luggage hasn't arrived yet, so what should I do?",
+      "meaning": "제 짐이 아직 안 왔는데 어떻게 해야 하나요?",
+      "reading": null,
+      "phonetic_kr": "마이 러기지 해즌 터라이v드 옛 쏘 왓 슈다이 두",
+      "order_index": 2,
+      "explanation": {
+        "key": "hasn't arrived yet = 아직 안 왔다. 와 있어야 할 것이 지금도 도착하지 않았을 때 쓰는 말.",
+        "situation": "수하물 벨트가 멈췄는데 내 가방만 안 나올 때 — 상황을 말하고 다음에 뭘 해야 하는지 묻는다.",
+        "drills": [
+          {
+            "en": "My bag hasn't arrived yet.",
+            "ko": "제 가방이 아직 안 왔어요.",
+            "kr": "마이 백 해즌 터라이v드 옛"
+          },
+          {
+            "en": "Has my bag arrived yet?",
+            "ko": "제 가방 벌써 나왔나요?",
+            "kr": "해즈 마이 배거라이v드 옛"
+          },
+          {
+            "en": "I'm still waiting for my luggage.",
+            "ko": "아직 짐을 기다리고 있어요.",
+            "kr": "아임 스틸 웨이링 f포어r 마이 러기지"
+          },
+          {
+            "en": "The next train hasn't arrived yet.",
+            "ko": "다음 열차가 아직 안 왔어.",
+            "kr": "더 넥스트 트레인 해즌 터라이v드 옛"
+          },
+          {
+            "en": "My wife's bag came out first.",
+            "ko": "아내 가방이 먼저 나왔어.",
+            "kr": "마이 와이f스 백 케이마웃 f퍼r스트"
+          },
+          {
+            "en": "What should I do if it doesn't arrive?",
+            "ko": "그게 안 오면 어떻게 해야 하나요?",
+            "kr": "왓 슈다이 두 이f 잇 더즌 터라이v"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + hasn't + 과거분사 + yet",
+            "body": "'아직 안 왔다'는 현재완료 부정 hasn't arrived 에 yet 을 붙인다. 과거형 didn't arrive 는 '그때 안 왔다'로 끝난 일이지만, hasn't arrived yet 은 지금도 안 온 상태를 말한다. yet 은 문장 끝에 온다."
+          },
+          {
+            "struct": "…, so what should I do?",
+            "body": "상황을 먼저 말하고 so 로 '그래서 어떻게 하죠?'를 잇는다. what should I do 는 통째로 굳은 표현이라 what do I should 처럼 순서를 바꾸지 않는다."
+          }
+        ],
+        "chunks": [
+          [
+            "My luggage",
+            "마이 러기지",
+            "제 짐이"
+          ],
+          [
+            "hasn't arrived yet,",
+            "해즌 터라이v드 옛",
+            "아직 안 왔는데,"
+          ],
+          [
+            "so what should I do?",
+            "쏘 왓 슈다이 두",
+            "어떻게 해야 하나요?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/z/ hasn't",
+            "hasn't 의 s 는 /z/ — '해슨트'(X) '해즌'(O)"
+          ],
+          [
+            "hasn't arrived → 연음",
+            "'해즌트 어라이브드'처럼 끊지 않고 '해즌 터라이v드' — 끝 t 가 다음 모음에 붙는다"
+          ],
+          [
+            "/ʌ/ luggage",
+            "luggage 의 첫 모음은 '루'가 아니라 짧은 '러' — '러기지'"
+          ]
+        ],
+        "mistake": "'아직 안 왔다'를 didn't come yet 으로 말하기 쉽다. 지금까지 이어지는 상태는 hasn't arrived yet 이다. luggage 는 셀 수 없는 명사라 luggages 로 쓰지 않는다.",
+        "similar": "My bag didn't come out. / I think my luggage is missing.",
+        "category": "여행/수하물",
+        "frequency": 8,
+        "chain": {
+          "target": "My luggage hasn't arrived yet, so what should I do? I have a flight in an hour.",
+          "chunks": [
+            "My luggage hasn't arrived yet, so what should I do?",
+            "I have a flight",
+            "in an hour."
+          ],
+          "ko": "제 짐이 아직 안 왔는데 어떻게 해야 하나요? 한 시간 뒤에 비행기를 타야 해요."
+        },
+        "anchor": "아직 안 왔는데"
+      }
+    },
+    {
+      "id": "en-core100-059-i-think-i-left",
+      "sentence": "I think I left my passport in the taxi.",
+      "meaning": "여권을 택시에 두고 내린 것 같아요.",
+      "reading": null,
+      "phonetic_kr": "아이 씽크 아이 레f트 마이 패스포어r트 인 더 택씨",
+      "order_index": 3,
+      "explanation": {
+        "key": "I think I left ~ = ~를 두고 내린 것 같아요. 물건을 어디에 놓고 왔는지 조심스럽게 말할 때.",
+        "situation": "택시에서 내린 뒤 주머니가 허전할 때 — 호텔 프런트나 경찰서에서 이 문장으로 상황을 연다.",
+        "drills": [
+          {
+            "en": "Where did I leave my keys?",
+            "ko": "열쇠를 어디에 뒀지?",
+            "kr": "웨어r 디라이 리이v 마이 키이z"
+          },
+          {
+            "en": "I left my phone in the car.",
+            "ko": "차에 휴대폰을 두고 내렸어.",
+            "kr": "아이 레f트 마이 f오우닌 더 카r"
+          },
+          {
+            "en": "I think I left my umbrella there.",
+            "ko": "우산을 거기 두고 온 것 같아.",
+            "kr": "아이 씽크 아이 레f트 마이 엄브렐라 데어r"
+          },
+          {
+            "en": "Did you leave your bag in the room?",
+            "ko": "가방을 방에 두고 왔어?",
+            "kr": "디쥬 리이v 유어r 배긴 더 루움"
+          },
+          {
+            "en": "My wife left her jacket on the plane.",
+            "ko": "아내가 비행기에 재킷을 두고 내렸어.",
+            "kr": "마이 와이f 레f트 허r 재커론 더 플레인"
+          },
+          {
+            "en": "I think I left my passport somewhere in the airport.",
+            "ko": "공항 어딘가에 여권을 두고 온 것 같아요.",
+            "kr": "아이 씽크 아이 레f트 마이 패스포어r트 썸웨어r 인 디 에어r포어r트"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I think + 문장 (I left …)",
+            "body": "'~인 것 같아요'는 문장 앞에 I think 를 붙여 만든다. 한국어는 '~것 같아요'가 문장 끝에 오지만 영어는 맨 앞이다. 뒤에는 완전한 문장이 그대로 오고, I think that … 의 that 은 회화에서 보통 생략한다."
+          }
+        ],
+        "chunks": [
+          [
+            "I think",
+            "아이 씽크",
+            "~인 것 같아요"
+          ],
+          [
+            "I left my passport",
+            "아이 레f트 마이 패스포어r트",
+            "여권을 두고 내렸어요"
+          ],
+          [
+            "in the taxi.",
+            "인 더 택씨",
+            "택시 안에."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ think",
+            "think 는 혀끝을 이 사이에 살짝 — '싱크'(X) '씽크'(O)"
+          ],
+          [
+            "/f/ left",
+            "left 의 f 는 윗니로 아랫입술 — '레프트'(X) '레f트'(O), 끝 t 는 짧게"
+          ],
+          [
+            "/æ/ taxi",
+            "taxi 의 a 는 입을 옆으로 벌린 '애' — '택씨'"
+          ]
+        ],
+        "mistake": "'두고 내렸다'를 forget 으로 말하기 쉽다. 장소를 함께 말할 때는 leave 를 쓴다 — I forgot my passport in the taxi 는 어색하고 I left my passport in the taxi 가 맞다.",
+        "similar": "I must have left it in the taxi. / I can't find my passport.",
+        "category": "여행/분실",
+        "frequency": 8,
+        "chain": {
+          "target": "I think I left my passport in the taxi, and I don't remember the driver's name.",
+          "chunks": [
+            "I think I left my passport in the taxi,",
+            "and I don't",
+            "remember",
+            "the driver's name."
+          ],
+          "ko": "여권을 택시에 두고 내린 것 같은데, 기사님 이름도 기억이 안 나요."
+        },
+        "anchor": "두고 내린 것 같아요"
+      }
+    },
+    {
+      "id": "en-core100-060-id-like-to-change",
+      "sentence": "I'd like to change my flight to tomorrow, if possible.",
+      "meaning": "가능하면 내일 비행기로 변경하고 싶어요.",
+      "reading": null,
+      "phonetic_kr": "아이드 라이크 투 체인지 마이 f라잇 투 터마로우 이f 파써블",
+      "order_index": 4,
+      "explanation": {
+        "key": "I'd like to change = 바꾸고 싶어요. 예약을 정중하게 바꿔 달라고 할 때 쓰는 말.",
+        "situation": "항공사 카운터나 전화로 일정을 바꿀 때 — 아내 일정이 밀려 하루 늦게 돌아가야 할 때.",
+        "drills": [
+          {
+            "en": "I'd like to change my seat.",
+            "ko": "자리를 바꾸고 싶어요.",
+            "kr": "아이드 라이크 투 체인지 마이 씨이트"
+          },
+          {
+            "en": "We'd like to change the date.",
+            "ko": "날짜를 바꾸고 싶어요.",
+            "kr": "위드 라이크 투 체인지 더 데이트"
+          },
+          {
+            "en": "Can I change my flight to Friday?",
+            "ko": "비행기를 금요일로 바꿀 수 있나요?",
+            "kr": "캔 아이 체인지 마이 f라잇 투 f프라이데이"
+          },
+          {
+            "en": "Is it possible to change my flight?",
+            "ko": "비행기를 변경하는 게 가능한가요?",
+            "kr": "이짓 파써블 투 체인지 마이 f라잇"
+          },
+          {
+            "en": "My wife wants to change her flight too.",
+            "ko": "아내도 비행기를 바꾸고 싶어 해.",
+            "kr": "마이 와이f 원츠 투 체인지 허r f라잇 투우"
+          },
+          {
+            "en": "I'd like to change my flight to an earlier one.",
+            "ko": "더 이른 비행기로 변경하고 싶어요.",
+            "kr": "아이드 라이크 투 체인지 마이 f라잇 투 어너r리어r 원"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'd like to + 동사 (+ if possible)",
+            "body": "I want to 보다 정중한 요청이 I'd like to 다. I would like 의 줄임이라 뒤에는 동사원형이 온다. '가능하면'에 해당하는 if possible 은 한국어와 달리 문장 끝에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'd like to change",
+            "아이드 라이크 투 체인지",
+            "변경하고 싶어요"
+          ],
+          [
+            "my flight to tomorrow,",
+            "마이 f라잇 투 터마로우",
+            "제 비행기를 내일로,"
+          ],
+          [
+            "if possible.",
+            "이f 파써블",
+            "가능하면."
+          ]
+        ],
+        "phonemes": [
+          [
+            "I'd like → 연결",
+            "I'd 의 d 와 like 의 l 을 붙여 '아이드 라이크' — d 를 '으드'로 늘리지 않는다"
+          ],
+          [
+            "/eɪ/ change",
+            "change 의 a 는 '에이' — '챈지'(X) '체인지'(O)"
+          ]
+        ],
+        "mistake": "'변경하고 싶어요'를 I want to change 로 말하면 요구처럼 들린다. 카운터에서는 I'd like to change 가 자연스럽다. '내일로'는 to tomorrow 이지 until tomorrow 가 아니다.",
+        "similar": "Can I change my flight? / Is it possible to move my flight to tomorrow?",
+        "category": "여행/예약",
+        "frequency": 8,
+        "chain": {
+          "target": "I'd like to change my flight to tomorrow, if possible, and I can pay the difference.",
+          "chunks": [
+            "I'd like to change my flight to tomorrow, if possible,",
+            "and I can",
+            "pay the difference."
+          ],
+          "ko": "가능하면 내일 비행기로 변경하고 싶고, 차액은 제가 낼게요."
+        },
+        "anchor": "변경하고 싶어요"
+      }
+    },
+    {
+      "id": "en-core100-061-can-i-use-this",
+      "sentence": "Can I use this ticket on the next train?",
+      "meaning": "이 표를 다음 열차에서도 쓸 수 있나요?",
+      "reading": null,
+      "phonetic_kr": "캔 아이 유즈 디스 티킷 온 더 넥스트 트레인",
+      "order_index": 5,
+      "explanation": {
+        "key": "Can I use this = 이걸 써도 되나요. 표·쿠폰·카드가 여기서 통하는지 물을 때.",
+        "situation": "앞 열차를 놓쳤을 때 — 손에 든 표가 다음 열차에도 유효한지 역무원에게 확인한다.",
+        "drills": [
+          {
+            "en": "Can I use this ticket tomorrow?",
+            "ko": "이 표를 내일 써도 되나요?",
+            "kr": "캔 아이 유즈 디스 티킷 터마로우"
+          },
+          {
+            "en": "Can I use this card here?",
+            "ko": "여기서 이 카드 써도 되나요?",
+            "kr": "캔 아이 유즈 디스 카r드 히어r"
+          },
+          {
+            "en": "You can't use this ticket today.",
+            "ko": "이 표는 오늘 못 씁니다.",
+            "kr": "유 캔트 유즈 디스 티킷 터데이"
+          },
+          {
+            "en": "Is this ticket good for the next train?",
+            "ko": "이 표가 다음 열차에도 되나요?",
+            "kr": "이z 디스 티킷 굿 f포어r 더 넥스트 트레인"
+          },
+          {
+            "en": "You can use this pass for three days.",
+            "ko": "이 패스는 사흘 동안 쓸 수 있어요.",
+            "kr": "유 캔 유즈 디스 패스 f포어r 쓰리이 데이z"
+          },
+          {
+            "en": "My wife used the same ticket on the way back.",
+            "ko": "아내는 돌아올 때 같은 표를 썼어.",
+            "kr": "마이 와이f 유즈드 더 쎄임 티커론 더 웨이 백"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Can I use + 대상 + on + 교통수단?",
+            "body": "'써도 되나요'는 Can I use ~ 로 묻는다. 표가 통하는 대상은 on the next train 처럼 on 으로 붙인다 — 열차·버스·비행기는 안에 타도 in 이 아니라 on 이다."
+          }
+        ],
+        "chunks": [
+          [
+            "Can I use",
+            "캔 아이 유즈",
+            "써도 되나요"
+          ],
+          [
+            "this ticket",
+            "디스 티킷",
+            "이 표를"
+          ],
+          [
+            "on the next train?",
+            "온 더 넥스트 트레인",
+            "다음 열차에서?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/z/ use",
+            "동사 use 의 s 는 /z/ — '유스'(X) '유즈'(O). 명사 use 는 '유스'로 소리가 다르다"
+          ],
+          [
+            "/tr/ train",
+            "train 의 tr 은 '츄레인'에 가깝게 한 덩어리로 — '트-레인'으로 끊지 않는다"
+          ]
+        ],
+        "mistake": "'다음 열차에서'를 in the next train 으로 말하기 쉽다. 열차·버스는 on 이다. '쓸 수 있나요'도 Is it possible to use…? 처럼 길게 돌릴 필요 없이 Can I use ~ 한 문장이면 된다.",
+        "similar": "Is this ticket still good? / Can I get on the next train with this?",
+        "category": "여행/교통",
+        "frequency": 8,
+        "chain": {
+          "target": "Can I use this ticket on the next train, or do I need a new one?",
+          "chunks": [
+            "Can I use this ticket on the next train,",
+            "or do I need",
+            "a new one?"
+          ],
+          "ko": "이 표를 다음 열차에서도 쓸 수 있나요, 아니면 새로 사야 하나요?"
+        },
+        "anchor": "쓸 수 있나요"
+      }
+    },
+    {
+      "id": "en-core100-062-how-to-get-to",
+      "sentence": "Could you tell me how to get to the station?",
+      "meaning": "역까지 어떻게 가는지 알려주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 텔 미 하우 투 겟 투 더 스테이션",
+      "order_index": 6,
+      "explanation": {
+        "key": "how to get to ~ = ~까지 어떻게 가는지. 길을 물을 때 문장 가운데 그대로 끼워 쓰는 덩어리.",
+        "situation": "낯선 도시에서 길을 물을 때 — 지도를 보여 주며 역이나 호텔로 가는 길을 묻는다.",
+        "drills": [
+          {
+            "en": "How do I get there?",
+            "ko": "거기 어떻게 가요?",
+            "kr": "하우 두 아이 겟 데어r"
+          },
+          {
+            "en": "Could you tell me where the bathroom is?",
+            "ko": "화장실이 어디인지 알려주시겠어요?",
+            "kr": "쿠쥬 텔 미 웨어r 더 배쓰루우미z"
+          },
+          {
+            "en": "Do you know how to get to the airport?",
+            "ko": "공항까지 어떻게 가는지 아세요?",
+            "kr": "두 유 노우 하우 투 겟 투 디 에어r포어r트"
+          },
+          {
+            "en": "Could you show me how to get to the subway?",
+            "ko": "지하철까지 어떻게 가는지 알려주시겠어요?",
+            "kr": "쿠쥬 쇼우 미 하우 투 겟 투 더 썹웨이"
+          },
+          {
+            "en": "My wife asked me how to get to the museum.",
+            "ko": "아내가 박물관까지 어떻게 가는지 물어봤어.",
+            "kr": "마이 와이f 애스크트 미 하우 투 겟 투 더 뮤지이엄"
+          },
+          {
+            "en": "I'm not sure how to get to the hotel from here.",
+            "ko": "여기서 호텔까지 어떻게 가는지 모르겠어요.",
+            "kr": "아임 낫 슈어r 하우 투 겟 투 더 호텔 f럼 히어r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could you tell me + 의문사절 (how to get to …)",
+            "body": "Could you tell me 뒤에는 의문문이 아니라 평서 어순의 절이 온다 — where the bathroom is 처럼 주어·동사 순서를 되돌린다. how to get to ~ 는 주어 없이 to 부정사로 줄인 형태라 통째로 외워 쓰면 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could you tell me",
+            "쿠쥬 텔 미",
+            "알려주시겠어요"
+          ],
+          [
+            "how to get to",
+            "하우 투 겟 투",
+            "어떻게 가는지"
+          ],
+          [
+            "the station?",
+            "더 스테이션",
+            "역까지?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "could you → 연음",
+            "'쿠드 유'가 아니라 d 와 y 가 만나 '쿠쥬'"
+          ],
+          [
+            "/e/ get to",
+            "get 의 끝 t 와 to 가 겹쳐 '겟 투'로 짧게 — '게트 투'로 늘리지 않는다"
+          ],
+          [
+            "/eɪ/ station",
+            "station 의 a 는 '에이' — '스타션'(X) '스테이션'(O)"
+          ]
+        ],
+        "mistake": "'역까지 어떻게 가요?'를 How can I go to the station? 으로 말하기 쉽다. 목적지에 닿는 것은 go 보다 get to 를 쓴다. Could you tell me 뒤에 how do I get 처럼 의문 어순을 넣지 않는다.",
+        "similar": "How do I get to the station? / Which way is the station?",
+        "category": "여행/길찾기",
+        "frequency": 9,
+        "chain": {
+          "target": "Could you tell me how to get to the station, or should I just take a taxi?",
+          "chunks": [
+            "Could you tell me how to get to the station,",
+            "or should I",
+            "just take a taxi?"
+          ],
+          "ko": "역까지 어떻게 가는지 알려주시겠어요, 아니면 그냥 택시를 타는 게 나을까요?"
+        },
+        "anchor": "어떻게 가는지"
+      }
+    }
+  ]
+}

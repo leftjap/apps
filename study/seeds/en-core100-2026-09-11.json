@@ -1,0 +1,556 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "51-80 여행영어",
+  "date": "2026-09-11",
+  "_note": "코어 100문장 커리큘럼 51~56번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. 입국심사 질문·답 짝 구성 (51↔52, 53↔54, 55↔56).",
+  "cards": [
+    {
+      "id": "en-core100-051-whats-the-purpose-of",
+      "sentence": "What's the purpose of your visit?",
+      "meaning": "방문 목적이 무엇인가요?",
+      "reading": null,
+      "phonetic_kr": "왓츠 더 퍼r퍼스 어v 유어r v이짓",
+      "order_index": 1,
+      "explanation": {
+        "key": "What's the purpose of ~ = ~의 목적이 무엇인가요. 입국 심사관이 여권을 받자마자 던지는 질문.",
+        "situation": "입국 심사대에서 심사관이 가장 먼저 묻는 말 — 여권을 건네면 이 문장이 그대로 날아온다고 생각하고 들어 둔다.",
+        "drills": [
+          {
+            "en": "Is this your first visit?",
+            "ko": "이번이 첫 방문인가요?",
+            "kr": "이z 디스 유어r f퍼r스트 v이짓"
+          },
+          {
+            "en": "What's the purpose of your stay?",
+            "ko": "체류 목적이 무엇인가요?",
+            "kr": "왓츠 더 퍼r퍼서v 유어r 스테이"
+          },
+          {
+            "en": "What's the purpose of this meeting?",
+            "ko": "이 회의는 무슨 목적이야?",
+            "kr": "왓츠 더 퍼r퍼서v 디스 미이팅"
+          },
+          {
+            "en": "Are you here for business or pleasure?",
+            "ko": "일로 오셨어요, 놀러 오셨어요?",
+            "kr": "아r 유 히어r f포어r 비z니서r 플레저r"
+          },
+          {
+            "en": "My wife and I are here for a wedding.",
+            "ko": "아내와 저는 결혼식 때문에 왔어요.",
+            "kr": "마이 와이f 앤다이 아r 히어r f포어r 어 웨딩"
+          },
+          {
+            "en": "The officer asked me the purpose of my visit.",
+            "ko": "심사관이 제 방문 목적을 물었어요.",
+            "kr": "디 오f피써r 애스크트 미 더 퍼r퍼서v 마이 v이짓"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What's the purpose of + 명사(구)?",
+            "body": "한국어 '방문 목적'은 명사 둘을 그냥 붙이지만 영어는 the purpose 를 먼저 말하고 무엇의 목적인지를 of 로 뒤에 잇는다. 그래서 visit purpose 가 아니라 the purpose of your visit 이다."
+          }
+        ],
+        "chunks": [
+          [
+            "What's the purpose",
+            "왓츠 더 퍼r퍼스",
+            "목적이 무엇인가요"
+          ],
+          [
+            "of your visit?",
+            "어v 유어r v이짓",
+            "이번 방문의?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ɜːr/ purpose",
+            "purpose 의 첫 모음은 혀를 말아 '퍼r' — '푸어포즈'처럼 입을 오므리지 않는다"
+          ],
+          [
+            "/v z/ visit",
+            "visit 는 v 로 시작하고 가운데 s 는 /z/ — '비지트'(X) 'v이짓'(O)"
+          ]
+        ],
+        "mistake": "'방문 목적'을 visit purpose 처럼 명사 둘로 붙이면 안 된다. the purpose of your visit 처럼 of 로 잇는다. 답할 때도 Sightseeing. 한 단어만 던지면 되묻는 질문이 늘어난다.",
+        "similar": "Why are you visiting? / What brings you here?",
+        "category": "여행/입국",
+        "frequency": 9,
+        "chain": {
+          "target": "What's the purpose of your visit, and how long are you planning to stay?",
+          "chunks": [
+            "What's the purpose of your visit,",
+            "and how long",
+            "are you planning",
+            "to stay?"
+          ],
+          "ko": "방문 목적이 무엇인가요, 그리고 얼마나 머무를 계획인가요?"
+        },
+        "anchor": "방문 목적"
+      }
+    },
+    {
+      "id": "en-core100-052-im-here-on",
+      "sentence": "I'm here on vacation, and I'll be staying for a week.",
+      "meaning": "휴가로 왔고 일주일 머물 예정입니다.",
+      "reading": null,
+      "phonetic_kr": "아임 히어r 온 v에이케이션 앤다일 비 스테잉 f포어r 어 위이크",
+      "order_index": 2,
+      "explanation": {
+        "key": "I'm here on ~ = ~로 왔어요. 방문 목적을 한 덩어리로 답하는 틀.",
+        "situation": "심사관이 방문 목적을 물었을 때 — 아내와 휴가로 왔다면 목적과 머무는 기간을 한 문장에 담아 답한다.",
+        "drills": [
+          {
+            "en": "I'm here on business.",
+            "ko": "출장으로 왔어요.",
+            "kr": "아임 히어r 온 비z니스"
+          },
+          {
+            "en": "Are you here on vacation?",
+            "ko": "휴가로 오셨어요?",
+            "kr": "아r 유 히어r 온 v에이케이션"
+          },
+          {
+            "en": "I'm here on a short trip.",
+            "ko": "짧은 여행으로 왔어요.",
+            "kr": "아임 히어r 오너 쇼어r트 트립"
+          },
+          {
+            "en": "We'll be staying for about ten days.",
+            "ko": "열흘쯤 머물 거예요.",
+            "kr": "위일 비 스테잉 f포어r 어바웃 텐 데이z"
+          },
+          {
+            "en": "My wife is here on business this week.",
+            "ko": "아내는 이번 주에 출장으로 와 있어요.",
+            "kr": "마이 와이f 이z 히어r 온 비z니스 디스 위이크"
+          },
+          {
+            "en": "I'm here on vacation, so I'm not working this week.",
+            "ko": "휴가로 온 거라 이번 주에는 일 안 해요.",
+            "kr": "아임 히어r 온 v에이케이션 쏘 아임 낫 워r킹 디스 위이크"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm here on + 명사 (+ and I'll be staying for + 기간)",
+            "body": "'휴가로 왔다'의 '~로'가 영어에서는 on 이다 — on vacation · on business. 머무는 기간은 for + 기간으로 뒤에 붙이고, 아직 끝나지 않은 체류라 I'll be staying 처럼 미래 진행으로 말한다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm here on vacation,",
+            "아임 히어r 온 v에이케이션",
+            "휴가로 왔어요,"
+          ],
+          [
+            "and I'll be staying",
+            "앤다일 비 스테잉",
+            "그리고 머물 예정이에요"
+          ],
+          [
+            "for a week.",
+            "f포어r 어 위이크",
+            "일주일 동안."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/v/ vacation",
+            "vacation 의 v — '베이케이션'(X), 아랫입술을 물고 'v에이케이션'"
+          ],
+          [
+            "/iː/ week",
+            "week 의 모음은 길게 '위이크' — 짧게 '윅'이면 wick 으로 들린다"
+          ],
+          [
+            "and I → 연음",
+            "'앤드 아일'로 끊지 않고 '앤다일' — d 가 다음 모음에 붙는다"
+          ]
+        ],
+        "mistake": "'휴가로 왔어요'를 I came for vacation 으로 말하면 도착한 순간만 가리킨다. 지금 여기 있는 상태는 I'm here on vacation 이다. vacation 앞 전치사는 for 가 아니라 on 이다.",
+        "similar": "I'm just here as a tourist. / I'm on holiday.",
+        "category": "여행/입국",
+        "frequency": 9,
+        "chain": {
+          "target": "I'm here on vacation, and I'll be staying for a week at a hotel downtown.",
+          "chunks": [
+            "I'm here on vacation, and I'll be staying for a week",
+            "at a hotel",
+            "downtown."
+          ],
+          "ko": "휴가로 왔고, 시내 호텔에서 일주일 머물 예정입니다."
+        },
+        "anchor": "휴가로 왔고"
+      }
+    },
+    {
+      "id": "en-core100-053-how-long-will-you",
+      "sentence": "How long will you be staying in the country?",
+      "meaning": "이 나라에 얼마나 머무르실 건가요?",
+      "reading": null,
+      "phonetic_kr": "하우 롱 윌 유 비 스테잉 인 더 컨트리",
+      "order_index": 3,
+      "explanation": {
+        "key": "How long will you ~ = 얼마나 ~하실 건가요. 체류 기간을 묻는 질문 틀.",
+        "situation": "심사관이 체류 기간을 확인할 때 — 방문 목적을 답하고 나면 거의 반드시 이어서 나오는 말이다.",
+        "drills": [
+          {
+            "en": "Are you staying long?",
+            "ko": "오래 계실 거예요?",
+            "kr": "아r 유 스테잉 롱"
+          },
+          {
+            "en": "How long will you be here?",
+            "ko": "여기 얼마나 계실 거예요?",
+            "kr": "하우 롱 윌 유 비 히어r"
+          },
+          {
+            "en": "We're only staying for three days.",
+            "ko": "저희는 사흘만 머물러요.",
+            "kr": "위어r 오운리 스테잉 f포어r 쓰리 데이z"
+          },
+          {
+            "en": "How long will you be staying with us?",
+            "ko": "저희 집에 얼마나 계실 거예요?",
+            "kr": "하우 롱 윌 유 비 스테잉 위드 어스"
+          },
+          {
+            "en": "My wife asked how long the flight takes.",
+            "ko": "아내가 비행이 얼마나 걸리냐고 물었어요.",
+            "kr": "마이 와이f 애스크트 하우 롱 더 f라잇 테익스"
+          },
+          {
+            "en": "How long does it take to get through customs?",
+            "ko": "세관 통과하는 데 얼마나 걸려요?",
+            "kr": "하우 롱 더짓 테익 투 겟 쓰루 커스텀z"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "How long will you be + 동사-ing?",
+            "body": "이번 체류처럼 앞으로 이어질 일은 will be staying 으로 묻는다. 한국어도 '얼마나'가 앞에 오고 영어도 How long 이 문장 맨 앞이라 순서가 같다. 장소는 in the country 처럼 문장 끝에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "How long",
+            "하우 롱",
+            "얼마나 오래"
+          ],
+          [
+            "will you be staying",
+            "윌 유 비 스테잉",
+            "머무르실 건가요"
+          ],
+          [
+            "in the country?",
+            "인 더 컨트리",
+            "이 나라에?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ɪ/ will",
+            "will 은 짧게 '윌' — '위일'로 늘이면 wheel 로 들린다"
+          ],
+          [
+            "/ŋ/ staying",
+            "staying 끝의 -ing 은 혀끝을 대지 않고 콧소리로 닫는다 — '스테잉그'(X)"
+          ]
+        ],
+        "mistake": "How long do you stay? 처럼 현재형으로 물으면 평소 습관을 묻는 말이 된다. 이번 체류를 묻는 자리는 will you be staying 이다. 답할 때도 A week. 보다 For a week. 처럼 for 를 붙인다.",
+        "similar": "How long are you here for? / How many days will you be here?",
+        "category": "여행/입국",
+        "frequency": 9,
+        "chain": {
+          "target": "How long will you be staying in the country, and do you have a return ticket?",
+          "chunks": [
+            "How long will you be staying in the country,",
+            "and do you have",
+            "a return ticket?"
+          ],
+          "ko": "이 나라에 얼마나 머무르실 건가요, 그리고 돌아가는 항공권은 갖고 계신가요?"
+        },
+        "anchor": "얼마나 머무르실"
+      }
+    },
+    {
+      "id": "en-core100-054-im-staying-at",
+      "sentence": "I'm staying at this hotel for five nights.",
+      "meaning": "이 호텔에서 5박 할 예정입니다.",
+      "reading": null,
+      "phonetic_kr": "아임 스테잉 앳 디스 호텔 f포어r f파이v 나이츠",
+      "order_index": 4,
+      "explanation": {
+        "key": "I'm staying at ~ = ~에 묵어요. 숙소를 대는 답의 틀.",
+        "situation": "체류 기간과 숙소를 답할 때 — 호텔 예약 확인서를 보여 주며 이 문장으로 말하면 추가 질문이 줄어든다.",
+        "drills": [
+          {
+            "en": "Where are you staying?",
+            "ko": "어디에 묵으세요?",
+            "kr": "웨어r 아r 유 스테잉"
+          },
+          {
+            "en": "We're staying with a friend.",
+            "ko": "저희는 친구 집에 묵어요.",
+            "kr": "위어r 스테잉 위드 어 f프렌드"
+          },
+          {
+            "en": "I'm staying at a small hotel.",
+            "ko": "작은 호텔에 묵고 있어요.",
+            "kr": "아임 스테잉 애러 스몰 호텔"
+          },
+          {
+            "en": "My wife booked three nights for us.",
+            "ko": "아내가 3박을 예약해 뒀어요.",
+            "kr": "마이 와이f 북트 쓰리 나이츠 f포어r 어스"
+          },
+          {
+            "en": "I stayed at this hotel last year, too.",
+            "ko": "작년에도 이 호텔에 묵었어요.",
+            "kr": "아이 스테이드 앳 디스 호텔 라스트 이어r 투우"
+          },
+          {
+            "en": "I'm staying at a hotel near the airport.",
+            "ko": "공항 근처 호텔에 묵어요.",
+            "kr": "아임 스테잉 애러 호텔 니어r 디 에어r포어r트"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'm staying at + 장소 + for + 기간",
+            "body": "한국어는 '이 호텔에서 5박'처럼 장소와 기간이 동사 앞에 오지만 영어는 동사 뒤에 장소(at this hotel), 그 뒤에 기간(for five nights) 순서다. 숙박 일수는 days 가 아니라 nights 로 센다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'm staying",
+            "아임 스테잉",
+            "묵을 예정이에요"
+          ],
+          [
+            "at this hotel",
+            "앳 디스 호텔",
+            "이 호텔에서"
+          ],
+          [
+            "for five nights.",
+            "f포어r f파이v 나이츠",
+            "5박 동안."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/eɪ/ staying",
+            "stay 의 모음은 '스테이' 한 덩어리 — '스타잉'(X)"
+          ],
+          [
+            "/f v/ five",
+            "five 는 f 로 시작해 v 로 끝난다 — '파이브'(X) 'f파이v'(O)"
+          ],
+          [
+            "staying at → 연음",
+            "'스테잉 앳'을 뚝 끊지 말고 ŋ 소리를 at 에 걸쳐 이어 낸다"
+          ]
+        ],
+        "mistake": "5박을 five days 로 말하면 하루가 어긋난다. 숙박은 nights 로 센다. 호텔 앞 전치사도 in 이 아니라 at 이다.",
+        "similar": "I'll be at this hotel for five nights. / I've got five nights booked here.",
+        "category": "여행/숙소",
+        "frequency": 8,
+        "chain": {
+          "target": "I'm staying at this hotel for five nights, and then I'm flying home on Sunday.",
+          "chunks": [
+            "I'm staying at this hotel for five nights,",
+            "and then",
+            "I'm flying home",
+            "on Sunday."
+          ],
+          "ko": "이 호텔에서 5박 하고, 그다음 일요일에 비행기로 집에 갑니다."
+        },
+        "anchor": "이 호텔에서"
+      }
+    },
+    {
+      "id": "en-core100-055-have-anything-to-declare",
+      "sentence": "Do you have anything to declare?",
+      "meaning": "신고할 물건이 있나요?",
+      "reading": null,
+      "phonetic_kr": "두 유 해v 애니씽 투 디클레어r",
+      "order_index": 5,
+      "explanation": {
+        "key": "have anything to declare = 신고할 물건이 있다. 세관에서 반드시 듣게 되는 질문의 핵심.",
+        "situation": "세관 통로에서 직원이 가방을 보며 묻는 말 — 짧고 빠르게 지나가니 통째로 귀에 익혀 둔다.",
+        "drills": [
+          {
+            "en": "Anything to declare?",
+            "ko": "신고할 물건 있나요?",
+            "kr": "애니씽 투 디클레어r"
+          },
+          {
+            "en": "No, nothing to declare.",
+            "ko": "아니요, 신고할 건 없습니다.",
+            "kr": "노우 낫씽 투 디클레어r"
+          },
+          {
+            "en": "I have something to declare.",
+            "ko": "신고할 물건이 하나 있어요.",
+            "kr": "아이 해v 썸씽 투 디클레어r"
+          },
+          {
+            "en": "Do I have to declare this camera?",
+            "ko": "이 카메라는 신고해야 하나요?",
+            "kr": "두 아이 해v 투 디클레어r 디스 캐머러"
+          },
+          {
+            "en": "Does your wife have anything to declare?",
+            "ko": "아내분은 신고할 물건이 있나요?",
+            "kr": "더z 유어r 와이f 해v 애니씽 투 디클레어r"
+          },
+          {
+            "en": "We didn't have anything to declare at customs.",
+            "ko": "우리는 세관에서 신고할 게 없었어요.",
+            "kr": "위 디든 해v 애니씽 투 디클레어r 앳 커스텀z"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Do you have anything to + 동사원형?",
+            "body": "한국어 '신고할 물건'은 꾸미는 말이 앞에 오지만 영어는 anything 을 먼저 말하고 to declare 를 뒤에 붙인다. 그래서 declare anything 이 아니라 anything to declare 다."
+          }
+        ],
+        "chunks": [
+          [
+            "Do you have",
+            "두 유 해v",
+            "가지고 있나요"
+          ],
+          [
+            "anything to declare?",
+            "애니씽 투 디클레어r",
+            "신고할 물건을?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ anything",
+            "anything 의 th 는 혀끝을 이 사이에 — '애니띵'(X) '애니씽'(O)"
+          ],
+          [
+            "/v/ have",
+            "have 의 v 를 흘리면 has 처럼 들린다 — '해브'가 아니라 '해v'"
+          ],
+          [
+            "/eər/ declare",
+            "declare 끝은 입을 벌린 '레어r' — r 을 빼고 '디클레어'로 끝내지 않는다"
+          ]
+        ],
+        "mistake": "declare 를 '선언하다'로만 알면 이 질문이 안 들린다. 세관에서는 '신고하다'다. 없을 때는 No 한 마디보다 No, nothing to declare. 가 자연스럽다.",
+        "similar": "Anything to declare? / Do you have any goods to declare?",
+        "category": "여행/세관",
+        "frequency": 8,
+        "chain": {
+          "target": "Do you have anything to declare, or are you just bringing back gifts?",
+          "chunks": [
+            "Do you have anything to declare,",
+            "or are you",
+            "just bringing back",
+            "gifts?"
+          ],
+          "ko": "신고할 물건이 있나요, 아니면 선물만 가지고 오시는 건가요?"
+        },
+        "anchor": "신고할 물건이 있나요"
+      }
+    },
+    {
+      "id": "en-core100-056-dont-have-anything-to-declare",
+      "sentence": "I don't have anything to declare.",
+      "meaning": "신고할 물건은 없습니다.",
+      "reading": null,
+      "phonetic_kr": "아이 돈 해v 애니씽 투 디클레어r",
+      "order_index": 6,
+      "explanation": {
+        "key": "don't have anything to declare = 신고할 물건이 없다. 세관 질문에 없다고 답하는 부정 틀.",
+        "situation": "신고할 것이 없을 때 — 아내와 산 선물 정도라면 이 한 문장으로 통과된다.",
+        "drills": [
+          {
+            "en": "I have nothing to declare.",
+            "ko": "신고할 물건이 없습니다.",
+            "kr": "아이 해v 낫씽 투 디클레어r"
+          },
+          {
+            "en": "Should I declare these gifts?",
+            "ko": "이 선물들은 신고해야 하나요?",
+            "kr": "슈드 아이 디클레어r 디이z 기f츠"
+          },
+          {
+            "en": "We don't have anything to declare.",
+            "ko": "저희는 신고할 물건이 없습니다.",
+            "kr": "위 돈 해v 애니씽 투 디클레어r"
+          },
+          {
+            "en": "I really don't have anything to declare.",
+            "ko": "정말로 신고할 물건이 없어요.",
+            "kr": "아이 리얼리 돈 해v 애니씽 투 디클레어r"
+          },
+          {
+            "en": "I didn't have anything to declare last time.",
+            "ko": "지난번에는 신고할 게 없었어요.",
+            "kr": "아이 디든 해v 애니씽 투 디클레어r 라스트 타임"
+          },
+          {
+            "en": "My wife doesn't have anything to declare either.",
+            "ko": "아내도 신고할 물건이 없어요.",
+            "kr": "마이 와이f 더즌 해v 애니씽 투 디클레어r 이이더r"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I don't have anything to + 동사원형",
+            "body": "한국어 '없습니다' 한 마디가 영어에서는 '가지고 있지 않다(don't have) + 아무것도(anything)'로 벌어진다. don't 로 이미 부정했으니 뒤에는 nothing 이 아니라 anything 을 쓴다."
+          }
+        ],
+        "chunks": [
+          [
+            "I don't have",
+            "아이 돈 해v",
+            "저는 없어요"
+          ],
+          [
+            "anything to declare.",
+            "애니씽 투 디클레어r",
+            "신고할 물건은."
+          ]
+        ],
+        "phonemes": [
+          [
+            "don't have → t 흘림",
+            "'돈트 해v'로 t 를 세우지 않는다 — 뒤가 자음이라 '돈 해v'로 흘린다"
+          ],
+          [
+            "/æ/ anything",
+            "anything 의 첫 모음은 입을 옆으로 벌린 '애' — '에니씽'(X) '애니씽'(O)"
+          ]
+        ],
+        "mistake": "'없습니다'를 No have 나 I don't have nothing 으로 말하기 쉽다. 부정은 don't 한 번만 쓰고 뒤에 anything 을 둔다. 짧게 답하려면 Nothing to declare. 가 안전하다.",
+        "similar": "Nothing to declare. / No, I have nothing to declare.",
+        "category": "여행/세관",
+        "frequency": 8,
+        "chain": {
+          "target": "I don't have anything to declare, just some clothes and a few gifts for my wife.",
+          "chunks": [
+            "I don't have anything to declare,",
+            "just some clothes",
+            "and a few gifts",
+            "for my wife."
+          ],
+          "ko": "신고할 물건은 없습니다, 옷 몇 벌하고 아내에게 줄 선물 몇 개뿐이에요."
+        },
+        "anchor": "신고할 물건은 없습니다"
+      }
+    }
+  ]
+}

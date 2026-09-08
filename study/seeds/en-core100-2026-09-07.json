@@ -1,0 +1,587 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "1-30 말문 트기와 대화 운영",
+  "date": "2026-09-07",
+  "_note": "코어 100문장 커리큘럼 25~30번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-025-supposed-to-do",
+      "sentence": "I don't know what I'm supposed to do.",
+      "meaning": "내가 뭘 해야 하는 건지 모르겠어.",
+      "reading": null,
+      "phonetic_kr": "아이 돈 노우 와라임 써포우즈드 투 두",
+      "order_index": 1,
+      "explanation": {
+        "key": "I'm supposed to do = 내가 하기로 되어 있다. 규칙이나 약속이 정해 놓은 일을 가리키는 말.",
+        "situation": "무엇부터 손을 대야 할지 몰라 막힐 때 — 처음 가 본 공항 카운터나 관공서에서 그대로 쓴다.",
+        "drills": [
+          {
+            "en": "What am I supposed to do?",
+            "ko": "내가 어떻게 해야 하지?",
+            "kr": "와래마이 써포우즈드 투 두"
+          },
+          {
+            "en": "You're not supposed to do that.",
+            "ko": "그렇게 하면 안 돼.",
+            "kr": "유어r 낫 써포우즈드 투 두 댓"
+          },
+          {
+            "en": "Am I supposed to wait here?",
+            "ko": "내가 여기서 기다려야 하나요?",
+            "kr": "애마이 써포우즈드 투 웨잇 히어r"
+          },
+          {
+            "en": "My wife knows what she's supposed to do.",
+            "ko": "아내는 자기가 뭘 해야 하는지 알아.",
+            "kr": "마이 와이f 노우z 왓 쉬즈 써포우즈드 투 두"
+          },
+          {
+            "en": "Do you know what I'm supposed to do?",
+            "ko": "내가 뭘 해야 하는지 알아?",
+            "kr": "두 유 노우 와라임 써포우즈드 투 두"
+          },
+          {
+            "en": "I already know what I'm supposed to do.",
+            "ko": "내가 뭘 해야 하는지는 이미 알아.",
+            "kr": "아이 올레디 노우 와라임 써포우즈드 투 두"
+          },
+          {
+            "en": "We were supposed to meet at the station.",
+            "ko": "우리 역에서 만나기로 했었잖아.",
+            "kr": "위 워r 써포우즈드 투 미이랫 더 스테이션"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I don't know + what + 주어 + be supposed to + 동사",
+            "body": "'뭘 해야 하는 건지'가 what 절 하나로 들어간다. 의문사절이라 what 뒤에 주어(I'm)가 먼저 오고 동사가 뒤에 온다 — What am I 처럼 뒤집지 않는다. be supposed to 는 규칙·약속이 정해 놓은 일을 가리킨다."
+          }
+        ],
+        "chunks": [
+          [
+            "I don't know",
+            "아이 돈 노우",
+            "모르겠어"
+          ],
+          [
+            "what I'm supposed to do.",
+            "와라임 써포우즈드 투 두",
+            "내가 뭘 해야 하는 건지."
+          ]
+        ],
+        "phonemes": [
+          [
+            "what I'm → 연음",
+            "'왓 아임'처럼 끊지 않고 '와라임' — t 가 모음 사이에서 부드러운 flap"
+          ],
+          [
+            "/oʊ/ supposed",
+            "supposed 의 o 는 '오'가 아니라 '오우' — '써포즈드'(X) '써포우즈드'(O)"
+          ]
+        ],
+        "mistake": "'뭘 해야 하지'를 what I have to do 로만 옮기기 쉽다. have to 는 내가 지는 의무이고, 규칙이나 약속이 정해 놓은 일은 be supposed to 로 말한다.",
+        "similar": "I'm not sure what to do. / What am I supposed to do here?",
+        "category": "말문/난감",
+        "frequency": 9,
+        "chain": {
+          "target": "I don't know what I'm supposed to do, so could you tell me where to start?",
+          "chunks": [
+            "I don't know what I'm supposed to do,",
+            "so could you",
+            "tell me",
+            "where to start?"
+          ],
+          "ko": "내가 뭘 해야 하는 건지 모르겠어, 그러니까 어디서부터 시작할지 알려 줄래?"
+        },
+        "anchor": "해야 하는 건지"
+      }
+    },
+    {
+      "id": "en-core100-026-see-what-i-can-do",
+      "sentence": "I'll see what I can do about it.",
+      "meaning": "내가 뭘 할 수 있는지 알아볼게.",
+      "reading": null,
+      "phonetic_kr": "아일 씨이 와라이 캔 두 어바우릿",
+      "order_index": 2,
+      "explanation": {
+        "key": "see what I can do = 뭘 할 수 있는지 알아보다. 확답 대신 손을 써 보겠다고 답하는 말.",
+        "situation": "부탁을 받았는데 되겠다고 못 박긴 어려울 때 — 아내가 표를 구해 달라고 하거나 호텔에 요청을 넣을 때.",
+        "drills": [
+          {
+            "en": "I'll see what I can do.",
+            "ko": "내가 뭘 할 수 있는지 알아볼게.",
+            "kr": "아일 씨이 와라이 캔 두"
+          },
+          {
+            "en": "Let me see what I can do.",
+            "ko": "내가 뭘 할 수 있는지 좀 볼게.",
+            "kr": "렛 미 씨이 와라이 캔 두"
+          },
+          {
+            "en": "There's nothing we can do about it.",
+            "ko": "그건 우리가 어떻게 할 수가 없어.",
+            "kr": "데어r즈 낫씽 위 캔 두 어바우릿"
+          },
+          {
+            "en": "Could you see what you can do for me?",
+            "ko": "뭘 해 줄 수 있는지 좀 봐 주시겠어요?",
+            "kr": "쿠쥬 씨이 왓 유 캔 두 f포어r 미"
+          },
+          {
+            "en": "My wife said she'd see what she can do.",
+            "ko": "아내가 뭘 할 수 있는지 알아본다고 했어.",
+            "kr": "마이 와이f 쎄드 쉬드 씨이 왓 쉬 캔 두"
+          },
+          {
+            "en": "I'll see what I can do about the tickets.",
+            "ko": "표는 내가 어떻게 해 볼 수 있는지 알아볼게.",
+            "kr": "아일 씨이 와라이 캔 두 어바웃 더 티킷츠"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'll see + what + 주어 + can + 동사 + about it",
+            "body": "여기서 see 는 '보다'가 아니라 '알아보다'. what I can do 라는 의문사절이 통째로 see 의 목적어다. 한국어는 '알아볼게'가 맨 뒤에 오지만 영어는 I'll see 를 먼저 말하고, 무엇에 대한 일인지는 about it 으로 맨 끝에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'll see",
+            "아일 씨이",
+            "알아볼게"
+          ],
+          [
+            "what I can do",
+            "와라이 캔 두",
+            "내가 뭘 할 수 있는지"
+          ],
+          [
+            "about it.",
+            "어바우릿",
+            "그 일에 대해."
+          ]
+        ],
+        "phonemes": [
+          [
+            "what I → 연음",
+            "'왓 아이'처럼 끊지 않고 '와라이' — t 가 모음 사이에서 부드러운 flap"
+          ],
+          [
+            "/iː/ see",
+            "see 의 모음은 길게 '씨이' — 짧은 '시'로 끝내면 다른 단어로 들린다"
+          ],
+          [
+            "about it → 연음",
+            "'어바웃 잇'(X) '어바우릿'(O) — t 가 it 에 붙는다"
+          ]
+        ],
+        "mistake": "'알아볼게'를 I'll find out 으로만 옮기면 정보를 찾아보겠다는 뜻이 된다. 손을 써서 해결해 보겠다는 결은 see what I can do 다.",
+        "similar": "I'll do what I can. / Let me look into it.",
+        "category": "말문/응대",
+        "frequency": 9,
+        "chain": {
+          "target": "I'll see what I can do about it, but I can't promise anything.",
+          "chunks": [
+            "I'll see what I can do about it,",
+            "but I can't",
+            "promise anything."
+          ],
+          "ko": "내가 뭘 할 수 있는지 알아볼게, 근데 뭘 약속할 수는 없어."
+        },
+        "anchor": "뭘 할 수 있는지 알아볼게"
+      }
+    },
+    {
+      "id": "en-core100-027-if-i-were-you",
+      "sentence": "If I were you, I'd wait until tomorrow.",
+      "meaning": "내가 너라면 내일까지 기다리겠어.",
+      "reading": null,
+      "phonetic_kr": "이f 아이 워r 유 아이드 웨잇 언틸 터마로우",
+      "order_index": 3,
+      "explanation": {
+        "key": "If I were you = 내가 너라면. 사실이 아닌 가정을 세워 조언을 건네는 말.",
+        "situation": "상대가 지금 결정할지 망설일 때 — 아내가 예약을 오늘 할지 물으면 이 문장으로 답한다.",
+        "drills": [
+          {
+            "en": "I'd wait until tomorrow.",
+            "ko": "나라면 내일까지 기다리겠어.",
+            "kr": "아이드 웨이런틸 터마로우"
+          },
+          {
+            "en": "Would you wait until tomorrow?",
+            "ko": "내일까지 기다릴래?",
+            "kr": "우쥬 웨이런틸 터마로우"
+          },
+          {
+            "en": "If I were you, I'd ask first.",
+            "ko": "내가 너라면 먼저 물어보겠어.",
+            "kr": "이f 아이 워r 유 아이드 애스크 f퍼r스트"
+          },
+          {
+            "en": "If I were her, I'd say something.",
+            "ko": "내가 걔라면 뭐라도 말하겠어.",
+            "kr": "이f 아이 워r 허r 아이드 쎄이 썸씽"
+          },
+          {
+            "en": "My wife said she'd wait until tomorrow.",
+            "ko": "아내는 내일까지 기다리겠다고 했어.",
+            "kr": "마이 와이f 쎄드 쉬드 웨이런틸 터마로우"
+          },
+          {
+            "en": "If I were you, I'd take the train.",
+            "ko": "내가 너라면 기차를 타겠어.",
+            "kr": "이f 아이 워r 유 아이드 테이크 더 트레인"
+          },
+          {
+            "en": "If I were you, I wouldn't worry about it.",
+            "ko": "내가 너라면 그건 걱정 안 하겠어.",
+            "kr": "이f 아이 워r 유 아이 우든 워리 어바우릿"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "If I were you, I'd + 동사원형",
+            "body": "실제가 아닌 가정이라 be 동사는 was 가 아니라 were 를 쓴다. 뒤 절도 will 이 아니라 would(I'd)다. 한국어 '내가 너라면 ~하겠어'와 앞뒤 순서가 같아서 그대로 옮기면 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "If I were you,",
+            "이f 아이 워r 유",
+            "내가 너라면,"
+          ],
+          [
+            "I'd wait",
+            "아이드 웨잇",
+            "나는 기다리겠어"
+          ],
+          [
+            "until tomorrow.",
+            "언틸 터마로우",
+            "내일까지."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ɜːr/ were",
+            "were 는 혀를 말아 짧게 '워r' — '웨어'(X). where 와 헷갈리지 않게"
+          ],
+          [
+            "wait until → 연음",
+            "한 호흡으로 이어 말할 때는 '웨잇 언틸'이 아니라 '웨이런틸' — t 가 모음 사이에서 flap"
+          ],
+          [
+            "/f/ if",
+            "if 의 f 는 윗니로 아랫입술 — '이프'(X) '이f'(O)"
+          ]
+        ],
+        "mistake": "'내가 너라면'을 If I am you 로 옮기기 쉽다. 사실이 아닌 가정이라 were 를 쓰고, 뒤 절도 I will 이 아니라 I'd(I would)다.",
+        "similar": "If I were in your shoes, … / You might want to wait.",
+        "category": "말문/조언",
+        "frequency": 9,
+        "chain": {
+          "target": "If I were you, I'd wait until tomorrow and see how the weather looks.",
+          "chunks": [
+            "If I were you, I'd wait until tomorrow",
+            "and see",
+            "how the weather looks."
+          ],
+          "ko": "내가 너라면 내일까지 기다렸다가 날씨가 어떤지 보겠어."
+        },
+        "anchor": "내가 너라면"
+      }
+    },
+    {
+      "id": "en-core100-028-what-would-you-do",
+      "sentence": "What would you do if you were me?",
+      "meaning": "네가 나라면 어떻게 하겠어?",
+      "reading": null,
+      "phonetic_kr": "왓 우쥬 두 이f 유 워r 미",
+      "order_index": 4,
+      "explanation": {
+        "key": "What would you do = 너라면 어떻게 하겠어. 결정을 앞두고 상대의 판단을 물을 때 쓰는 말.",
+        "situation": "혼자 못 정하겠어서 조언을 구할 때 — 여행 일정이나 집안일을 두고 아내에게 묻는다.",
+        "drills": [
+          {
+            "en": "What would you do?",
+            "ko": "너라면 어떻게 하겠어?",
+            "kr": "왓 우쥬 두"
+          },
+          {
+            "en": "My wife asked what she should do.",
+            "ko": "아내가 어떻게 해야 하냐고 물었어.",
+            "kr": "마이 와이f 애스크트 왓 쉬 슈드 두"
+          },
+          {
+            "en": "What would you do in my place?",
+            "ko": "내 입장이라면 어떻게 하겠어?",
+            "kr": "왓 우쥬 두 인 마이 플레이스"
+          },
+          {
+            "en": "If you were me, would you wait?",
+            "ko": "네가 나라면 기다리겠어?",
+            "kr": "이f 유 워r 미 우쥬 웨잇"
+          },
+          {
+            "en": "What would you say if you were me?",
+            "ko": "네가 나라면 뭐라고 하겠어?",
+            "kr": "왓 우쥬 쎄이 이f 유 워r 미"
+          },
+          {
+            "en": "What would you do if you lost your passport?",
+            "ko": "여권을 잃어버리면 어떻게 하겠어?",
+            "kr": "왓 우쥬 두 이f 유 로스트 유어r 패스포어r트"
+          },
+          {
+            "en": "What would you do with the cat while we travel?",
+            "ko": "우리 여행 가는 동안 고양이는 어떻게 하겠어?",
+            "kr": "왓 우쥬 두 위드 더 캣 와일 위 트래v블"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "What would you do + if + 주어 + were + 보어?",
+            "body": "가정을 묻는 질문이라 do 앞에 would 가 온다. if 절의 be 동사도 was 가 아니라 were 다. 한국어는 '네가 나라면'이 앞에 오지만 영어는 묻는 말을 먼저 던지고 조건을 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "What would you do",
+            "왓 우쥬 두",
+            "어떻게 하겠어"
+          ],
+          [
+            "if you were me?",
+            "이f 유 워r 미",
+            "네가 나라면?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "would you → 연음",
+            "'우드 유'가 아니라 d 와 y 가 붙어 '우쥬' — could you 가 '쿠쥬'인 것과 같다"
+          ],
+          [
+            "/ɜːr/ were",
+            "were 는 혀를 말아 짧게 '워r' — we're(위어r)와 헷갈리지 않게"
+          ]
+        ],
+        "mistake": "'네가 나라면'을 if you are me 로 옮기기 쉽다. 사실이 아닌 가정이라 were 를 쓴다. 앞 절도 What do you do 가 아니라 What would you do 다 — would 가 빠지면 평소에 뭘 하냐는 질문이 된다.",
+        "similar": "What would you do in my place? / What would you do in my shoes?",
+        "category": "말문/의견묻기",
+        "frequency": 8,
+        "chain": {
+          "target": "What would you do if you were me? I really can't decide.",
+          "chunks": [
+            "What would you do if you were me?",
+            "I really can't",
+            "decide."
+          ],
+          "ko": "네가 나라면 어떻게 하겠어? 난 정말 못 정하겠어."
+        },
+        "anchor": "어떻게 하겠어"
+      }
+    },
+    {
+      "id": "en-core100-029-i-wish-i-could",
+      "sentence": "I wish I could, but it's not possible right now.",
+      "meaning": "그러고 싶지만 지금은 불가능해.",
+      "reading": null,
+      "phonetic_kr": "아이 위쉬 아이 쿠드 버릿츠 낫 파써블 라잇 나우",
+      "order_index": 5,
+      "explanation": {
+        "key": "I wish I could = 그럴 수 있으면 좋겠는데. 마음은 있지만 못 한다고 부드럽게 거절하는 말.",
+        "situation": "초대나 부탁을 거절하면서 마음은 있다는 걸 보일 때 — 동료의 저녁 제안이나 아내의 주말 계획에.",
+        "drills": [
+          {
+            "en": "I wish I could.",
+            "ko": "그럴 수 있으면 좋겠는데.",
+            "kr": "아이 위쉬 아이 쿠드"
+          },
+          {
+            "en": "I wish I could help.",
+            "ko": "도와줄 수 있으면 좋겠는데.",
+            "kr": "아이 위쉬 아이 쿠드 헬프"
+          },
+          {
+            "en": "It's not possible right now.",
+            "ko": "지금은 안 되겠어.",
+            "kr": "잇츠 낫 파써블 라잇 나우"
+          },
+          {
+            "en": "My wife wishes she could join us.",
+            "ko": "아내도 같이 할 수 있으면 좋겠대.",
+            "kr": "마이 와이f 위쉬즈 쉬 쿠드 조이너스"
+          },
+          {
+            "en": "I wish I could go with you.",
+            "ko": "너랑 같이 갈 수 있으면 좋겠는데.",
+            "kr": "아이 위쉬 아이 쿠드 고우 위드 유"
+          },
+          {
+            "en": "I wish I could take the cat with us.",
+            "ko": "고양이를 데려갈 수 있으면 좋겠는데.",
+            "kr": "아이 위쉬 아이 쿠드 테이크 더 캣 위더스"
+          },
+          {
+            "en": "I wish I could stay longer, but I have to go.",
+            "ko": "더 있고 싶은데 가야 해.",
+            "kr": "아이 위쉬 아이 쿠드 스테이 롱거r 버라이 해v 투 고우"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I wish I could, but + 이유",
+            "body": "I wish 뒤에는 현실과 다른 일이 오므로 can 이 아니라 could 를 쓴다. 무엇을 할 수 있으면 좋겠는지는 앞에서 이미 나왔으니 could 뒤를 비운다. 한국어 '그러고 싶지만'의 '~지만'이 but 자리다."
+          }
+        ],
+        "chunks": [
+          [
+            "I wish I could,",
+            "아이 위쉬 아이 쿠드",
+            "그러고 싶지만,"
+          ],
+          [
+            "but it's not possible",
+            "버릿츠 낫 파써블",
+            "하지만 불가능해"
+          ],
+          [
+            "right now.",
+            "라잇 나우",
+            "지금은."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ʃ/ wish",
+            "wish 끝은 '위시'가 아니라 짧은 '위쉬' — 끝을 길게 끌지 않는다"
+          ],
+          [
+            "but it's → 연음",
+            "'벗 잇츠'처럼 끊지 않고 '버릿츠' — t 가 모음 사이에서 부드러운 flap"
+          ],
+          [
+            "/ʊ/ could",
+            "could 의 모음은 짧은 '우' — '쿠울드'(X) '쿠드'(O), l 은 거의 안 들린다"
+          ]
+        ],
+        "mistake": "I wish I can 은 틀린다. wish 뒤에는 현실과 다른 일이 오므로 could 를 쓴다. 거절만 남기지 말고 I wish 로 마음을 먼저 보이는 것이 이 문장의 요령이다.",
+        "similar": "I'd love to, but I can't. / Maybe another time.",
+        "category": "말문/거절",
+        "frequency": 9,
+        "chain": {
+          "target": "I wish I could, but it's not possible right now, maybe some other time.",
+          "chunks": [
+            "I wish I could, but it's not possible right now,",
+            "maybe",
+            "some other time."
+          ],
+          "ko": "그러고 싶지만 지금은 불가능해, 다음에 다른 때 하면 어떨까."
+        },
+        "anchor": "그러고 싶지만"
+      }
+    },
+    {
+      "id": "en-core100-030-help-me-figure-out",
+      "sentence": "Could you help me figure out what went wrong?",
+      "meaning": "뭐가 잘못됐는지 알아내는 걸 도와줄래?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 헬프 미 f피겨라웃 왓 웬 롱",
+      "order_index": 6,
+      "explanation": {
+        "key": "help me figure out = 알아내는 걸 도와주다. 원인이나 방법을 혼자 못 찾을 때 도움을 청하는 말.",
+        "situation": "뭐가 어긋났는지 나 혼자로는 안 잡힐 때 — 예약이 꼬였거나 집에서 기계가 안 될 때.",
+        "drills": [
+          {
+            "en": "What went wrong?",
+            "ko": "뭐가 잘못된 거야?",
+            "kr": "왓 웬 롱"
+          },
+          {
+            "en": "Let me figure it out.",
+            "ko": "내가 알아볼게.",
+            "kr": "렛 미 f피겨리라웃"
+          },
+          {
+            "en": "I can't figure out what went wrong.",
+            "ko": "뭐가 잘못됐는지 못 알아내겠어.",
+            "kr": "아이 캔트 f피겨라웃 왓 웬 롱"
+          },
+          {
+            "en": "Can you help me figure out the schedule?",
+            "ko": "일정 좀 같이 알아봐 줄래?",
+            "kr": "캔 유 헬프 미 f피겨라웃 더 스케쥴"
+          },
+          {
+            "en": "My wife helped me figure out the map.",
+            "ko": "아내가 지도 보는 걸 도와줬어.",
+            "kr": "마이 와이f 헬프트 미 f피겨라웃 더 맵"
+          },
+          {
+            "en": "Could you help me figure out how to get there?",
+            "ko": "거기 어떻게 가는지 알아내는 걸 도와줄래?",
+            "kr": "쿠쥬 헬프 미 f피겨라웃 하우 투 겟 데어r"
+          },
+          {
+            "en": "Let's figure out what went wrong before we call them.",
+            "ko": "전화하기 전에 뭐가 잘못됐는지 알아보자.",
+            "kr": "렛츠 f피겨라웃 왓 웬 롱 비f포어r 위 콜 뎀"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could you help me + 동사원형 + 의문사절?",
+            "body": "help 뒤에는 to 없이 동사원형이 바로 온다. figure out 은 '알아내다'라는 두 단어 동사라 목적어가 대명사면 사이에 넣는다(figure it out). 무엇을 알아내는지는 what 절로 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could you help me",
+            "쿠쥬 헬프 미",
+            "도와줄래"
+          ],
+          [
+            "figure out",
+            "f피겨라웃",
+            "알아내는 걸"
+          ],
+          [
+            "what went wrong?",
+            "왓 웬 롱",
+            "뭐가 잘못됐는지?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "could you → 연음",
+            "'쿠드 유'가 아니라 d 와 y 가 붙어 '쿠쥬'"
+          ],
+          [
+            "/f/ figure",
+            "figure 의 f 는 윗니로 아랫입술 — '피겨'(X) 'f피겨r'(O)"
+          ],
+          [
+            "figure out → 연음",
+            "'f피겨r 아웃'처럼 끊지 않고 'f피겨라웃' — r 이 out 에 붙는다"
+          ]
+        ],
+        "mistake": "figure out 을 '계산하다'로만 알기 쉬운데 일상에서는 '원인을 알아내다'다. help 뒤에 to 를 넣어 help me to figure out 이라고 하지 않는다.",
+        "similar": "Can you help me work out what happened? / Could you help me find out what went wrong?",
+        "category": "말문/요청",
+        "frequency": 9,
+        "chain": {
+          "target": "Could you help me figure out what went wrong? I've already tried everything.",
+          "chunks": [
+            "Could you help me figure out what went wrong?",
+            "I've already",
+            "tried everything."
+          ],
+          "ko": "뭐가 잘못됐는지 알아내는 걸 도와줄래? 나는 이미 다 해 봤거든."
+        },
+        "anchor": "알아내는 걸 도와줄래"
+      }
+    }
+  ]
+}

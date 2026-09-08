@@ -1,0 +1,576 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "81-100 미드 듣기와 구어 문형",
+  "date": "2026-09-18",
+  "_note": "코어 100문장 커리큘럼 95~100번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-095-drop-me-off",
+      "sentence": "Can you drop me off near the station?",
+      "meaning": "역 근처에 내려줄래?",
+      "reading": null,
+      "phonetic_kr": "캔 유 드랍 미 오f 니어r 더 스테이션",
+      "order_index": 1,
+      "explanation": {
+        "key": "drop me off = (차로 데려다주고) 나를 내려 주다. 목적지 근처에서 차를 세워 달라고 할 때 쓴다.",
+        "situation": "아내 차나 택시로 가다가 문 앞이 아니라 근처에서 내리고 싶을 때 — 역·공항·호텔 앞에서 그대로 쓴다.",
+        "drills": [
+          {
+            "en": "Just drop me off here.",
+            "ko": "그냥 여기서 내려 줘.",
+            "kr": "저스 드랍 미 오f 히어r"
+          },
+          {
+            "en": "Can you drop me off at the airport?",
+            "ko": "공항에 내려 줄 수 있어?",
+            "kr": "캔 유 드랍 미 오f 앳 디 에어r포어r트"
+          },
+          {
+            "en": "My wife dropped me off at the station.",
+            "ko": "아내가 나를 역에 내려 줬어.",
+            "kr": "마이 와이f 드랍트 미 오f 앳 더 스테이션"
+          },
+          {
+            "en": "Where do you want me to drop you off?",
+            "ko": "어디에 내려 줄까?",
+            "kr": "웨어r 두 유 원트 미 투 드랍 유 오f"
+          },
+          {
+            "en": "I'll drop my wife off at work on my way.",
+            "ko": "가는 길에 아내를 직장에 내려 줄게.",
+            "kr": "아일 드랍 마이 와이f 오f 앳 워r크 온 마이 웨이"
+          },
+          {
+            "en": "Could you drop us off in front of the hotel?",
+            "ko": "호텔 앞에 내려 주실 수 있어요?",
+            "kr": "쿠쥬 드라퍼스 오f 인 f런트 어v 더 호텔"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "drop + 사람 + off + 장소",
+            "body": "drop 과 off 사이에 내려 줄 사람이 들어간다 — drop off me 처럼 붙여 말하지 않는다. 대명사는 반드시 가운데 자리다. 장소는 near·at·in front of 로 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "Can you drop me off",
+            "캔 유 드랍 미 오f",
+            "나를 내려 줄래"
+          ],
+          [
+            "near the station?",
+            "니어r 더 스테이션",
+            "역 근처에?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ off",
+            "off 의 f 는 윗니로 아랫입술 — '오프'(X) '오f'(O), 끝에 '으'를 붙이지 않는다"
+          ],
+          [
+            "/ɪər/ near",
+            "near 는 혀를 말아 '니어r' 로 끝낸다 — '니아'(X)"
+          ]
+        ],
+        "mistake": "'내려 줘'를 get off 로 옮기면 내가 내리는 동작이 된다. 남이 나를 차에서 내려 주는 건 drop me off 다. drop off me 처럼 붙여 쓰지 않는다.",
+        "similar": "Can you let me out near the station? / Can you pull over near the station?",
+        "category": "구어/부탁",
+        "frequency": 8,
+        "chain": {
+          "target": "Can you drop me off near the station? I can walk the rest of the way.",
+          "chunks": [
+            "Can you drop me off near the station?",
+            "I can walk",
+            "the rest",
+            "of the way."
+          ],
+          "ko": "역 근처에 내려 줄래? 나머지는 걸어가면 돼."
+        },
+        "anchor": "내려줄래"
+      }
+    },
+    {
+      "id": "en-core100-096-ran-into",
+      "sentence": "I ran into an old friend on my way home.",
+      "meaning": "집에 오는 길에 옛 친구를 우연히 만났어.",
+      "reading": null,
+      "phonetic_kr": "아이 래닌투 어노울드 f렌드 온 마이 웨이 호움",
+      "order_index": 2,
+      "explanation": {
+        "key": "ran into = 우연히 마주쳤다. run into 는 '뛰어들다'가 아니라 약속 없이 딱 만나는 것.",
+        "situation": "퇴근길이나 장 보러 나갔다가 아는 사람을 만났을 때 — 그날 있었던 일을 아내에게 전하는 자리.",
+        "drills": [
+          {
+            "en": "Guess who I ran into today?",
+            "ko": "오늘 누구 만났게?",
+            "kr": "게스 후 아이 래닌투 터데이"
+          },
+          {
+            "en": "I ran into my old boss today.",
+            "ko": "오늘 옛 상사를 우연히 만났어.",
+            "kr": "아이 래닌투 마이 오울드 보스 터데이"
+          },
+          {
+            "en": "You might run into some traffic tonight.",
+            "ko": "오늘 밤엔 차가 좀 막힐 수도 있어.",
+            "kr": "유 마잇 러닌투 썸 트래f픽 터나잇"
+          },
+          {
+            "en": "We ran into each other at the airport.",
+            "ko": "우리 공항에서 우연히 마주쳤어.",
+            "kr": "위 래닌투 이이처더r 앳 디 에어r포어r트"
+          },
+          {
+            "en": "Do you ever run into your old classmates?",
+            "ko": "옛 동창들 가끔 마주치기도 해?",
+            "kr": "두 유 에v버r 러닌투 유어r 오울드 클래스메이츠"
+          },
+          {
+            "en": "My wife ran into a neighbor on her way to work.",
+            "ko": "아내가 출근길에 이웃을 우연히 만났어.",
+            "kr": "마이 와이f 래닌투 어 네이버r 온 허r 웨이 투 워r크"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "ran into + 만난 사람/상황",
+            "body": "run into 는 만난 대상을 바로 뒤에 붙이는 한 덩어리다 — run him into 처럼 사이를 벌리지 않는다. 한국어는 '집에 오는 길에'가 앞에 오지만 영어는 on my way home 이 문장 끝에 붙는다."
+          }
+        ],
+        "chunks": [
+          [
+            "I ran into",
+            "아이 래닌투",
+            "우연히 만났어"
+          ],
+          [
+            "an old friend",
+            "어노울드 f렌드",
+            "옛 친구를"
+          ],
+          [
+            "on my way home.",
+            "온 마이 웨이 호움",
+            "집에 오는 길에."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/æ/ ran",
+            "ran 의 a 는 입을 옆으로 벌린 '애' — '런'(run)과 소리가 갈린다"
+          ],
+          [
+            "ran into → 연음",
+            "'랜 인투'로 끊지 않고 '래닌투' — n 이 into 에 붙는다"
+          ]
+        ],
+        "mistake": "run into 를 '뛰어들다'로 읽으면 뜻이 안 통한다. 약속 없이 마주친 것이고, 미리 만나기로 했다면 met 이나 saw 를 쓴다.",
+        "similar": "I bumped into an old friend. / I happened to see an old friend.",
+        "category": "구어/서사",
+        "frequency": 8,
+        "chain": {
+          "target": "I ran into an old friend on my way home, and we talked for almost an hour.",
+          "chunks": [
+            "I ran into an old friend on my way home,",
+            "and we talked",
+            "for almost",
+            "an hour."
+          ],
+          "ko": "집에 오는 길에 옛 친구를 우연히 만났는데, 거의 한 시간을 얘기했어."
+        },
+        "anchor": "우연히 만났어"
+      }
+    },
+    {
+      "id": "en-core100-097-go-over",
+      "sentence": "Let's go over everything one more time.",
+      "meaning": "전부 한 번 더 검토해 보자.",
+      "reading": null,
+      "phonetic_kr": "렛츠 고우 오우버r 에v리씽 원 모어r 타임",
+      "order_index": 3,
+      "explanation": {
+        "key": "go over = 처음부터 하나씩 짚어 보다. 서류나 계획을 훑으며 빠진 게 없는지 확인할 때.",
+        "situation": "여행 전날 밤 예약과 짐을 아내와 같이 확인할 때 — 회의 자료를 다시 훑을 때도 같은 말이다.",
+        "drills": [
+          {
+            "en": "Let's go over it together.",
+            "ko": "같이 한번 짚어 보자.",
+            "kr": "렛츠 고우 오우버릿 투게더r"
+          },
+          {
+            "en": "I went over the list twice.",
+            "ko": "목록을 두 번 확인했어.",
+            "kr": "아이 웬토우버r 더 리스트 트와이스"
+          },
+          {
+            "en": "Can we go over the plan again?",
+            "ko": "계획을 다시 짚어 볼 수 있을까?",
+            "kr": "캔 위 고우 오우버r 더 플래너겐"
+          },
+          {
+            "en": "We should go over the schedule before we leave.",
+            "ko": "떠나기 전에 일정을 한번 짚어 보자.",
+            "kr": "위 슈드 고우 오우버r 더 스케쥴 비f포어r 위 리이v"
+          },
+          {
+            "en": "Did you go over the receipt one more time?",
+            "ko": "영수증 한 번 더 확인했어?",
+            "kr": "디쥬 고우 오우버r 더 리씨이트 원 모어r 타임"
+          },
+          {
+            "en": "My wife went over the hotel booking with me.",
+            "ko": "아내가 나랑 호텔 예약을 같이 확인했어.",
+            "kr": "마이 와이f 웬토우버r 더 호텔 부킹 위드 미"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Let's go over + 대상 (+ one more time)",
+            "body": "go over 는 '넘어가다'가 아니라 '처음부터 하나씩 짚다'라는 한 덩어리다. 짚을 대상은 over 뒤에 바로 온다. '한 번 더'는 one more time 으로 문장 끝에 붙는다 — 한국어는 '한 번 더 검토해'처럼 앞에 오지만 영어는 뒤다."
+          }
+        ],
+        "chunks": [
+          [
+            "Let's go over",
+            "렛츠 고우 오우버r",
+            "짚어 보자"
+          ],
+          [
+            "everything",
+            "에v리씽",
+            "전부를"
+          ],
+          [
+            "one more time.",
+            "원 모어r 타임",
+            "한 번 더."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/oʊ/ go over",
+            "go 와 over 둘 다 '오'가 아니라 '오우' — '고 오버'(X) '고우 오우버r'(O)"
+          ],
+          [
+            "/v/ everything",
+            "everything 의 v 는 아랫입술을 물고 — '에브리씽'(X) '에v리씽'(O)"
+          ]
+        ],
+        "mistake": "'검토하다'를 check 로만 말하기 쉽다. check 는 맞는지 한 번 확인하는 것이고, 처음부터 끝까지 훑는 것은 go over 다. go over 뒤에 for 나 about 을 붙이지 않는다.",
+        "similar": "Let's run through it one more time. / Let's double-check everything.",
+        "category": "구어/점검",
+        "frequency": 8,
+        "chain": {
+          "target": "Let's go over everything one more time, so we don't forget anything at the airport.",
+          "chunks": [
+            "Let's go over everything one more time,",
+            "so we don't",
+            "forget anything",
+            "at the airport."
+          ],
+          "ko": "전부 한 번 더 검토해 보자, 공항에서 빠뜨리는 게 없게."
+        },
+        "anchor": "한 번 더 검토해"
+      }
+    },
+    {
+      "id": "en-core100-098-show-up",
+      "sentence": "He showed up without telling anyone he was coming.",
+      "meaning": "걔는 온다는 말도 없이 나타났어.",
+      "reading": null,
+      "phonetic_kr": "히 쇼우덥 위다웃 텔링 애니원 히 워z 커밍",
+      "order_index": 4,
+      "explanation": {
+        "key": "show up = (예고 없이) 나타나다. 오기로 한 자리에 실제로 모습을 보이는 것도 show up 이다.",
+        "situation": "부르지도 않은 사람이 갑자기 온 이야기를 전할 때 — 약속 자리에 누가 왔는지 안 왔는지 말할 때도 같은 표현.",
+        "drills": [
+          {
+            "en": "He didn't show up.",
+            "ko": "걔 안 왔어.",
+            "kr": "히 디든 쇼우 업"
+          },
+          {
+            "en": "She showed up two hours late.",
+            "ko": "걔는 두 시간이나 늦게 나타났어.",
+            "kr": "쉬 쇼우덥 투우 아워r즈 레잇"
+          },
+          {
+            "en": "Did anyone show up last night?",
+            "ko": "어젯밤에 누구라도 왔어?",
+            "kr": "디대니원 쇼우 업 라스 나잇"
+          },
+          {
+            "en": "Only three people showed up for the meeting.",
+            "ko": "회의에 세 명만 왔어.",
+            "kr": "오운리 쓰리이 피이플 쇼우덥 f포어r 더 미이팅"
+          },
+          {
+            "en": "My wife showed up at the station before me.",
+            "ko": "아내가 나보다 먼저 역에 와 있었어.",
+            "kr": "마이 와이f 쇼우더팻 더 스테이션 비f포어r 미"
+          },
+          {
+            "en": "The cat showed up at the door without a sound.",
+            "ko": "고양이가 소리도 없이 문 앞에 나타났어.",
+            "kr": "더 캣 쇼우더팻 더 도어r 위다우러 사운드"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + showed up + without + 동사ing",
+            "body": "show up 은 뒤에 목적어를 받지 않는 한 덩어리다 — show up the party(X), show up at the party(O). '온다는 말도 없이'는 without telling anyone 처럼 without + 동사ing 로 붙는데, 한국어는 이 부분이 앞에 오지만 영어는 나타났다는 말을 먼저 하고 뒤에 단다."
+          },
+          {
+            "struct": "tell + 사람 + (that) 문장",
+            "body": "telling anyone he was coming 은 tell 뒤에 듣는 사람(anyone)이 먼저 오고 전할 내용(he was coming)이 문장째로 온다. 앞 동사가 과거(showed up)라 안쪽 시제도 is 에서 was 로 물러난다."
+          }
+        ],
+        "chunks": [
+          [
+            "He showed up",
+            "히 쇼우덥",
+            "걔는 나타났어"
+          ],
+          [
+            "without telling anyone",
+            "위다웃 텔링 애니원",
+            "아무한테도 말하지 않고"
+          ],
+          [
+            "he was coming.",
+            "히 워z 커밍",
+            "자기가 온다고."
+          ]
+        ],
+        "phonemes": [
+          [
+            "showed up → 연음",
+            "'쇼우드 업'으로 끊지 않고 '쇼우덥' — d 가 up 에 붙는다"
+          ],
+          [
+            "/ð/ without",
+            "without 의 th 는 혀끝을 이 사이에 넣고 울려 '위다웃' — '위싸웃'(X)"
+          ]
+        ],
+        "mistake": "'나타났다'를 appeared 로 옮기면 글말이 된다. 일상 대화에선 show up 이다. 뒤에 장소를 붙일 때는 at 이 필요하다 — show up the party(X).",
+        "similar": "He just turned up out of nowhere. / He came without saying anything.",
+        "category": "구어/서사",
+        "frequency": 8,
+        "chain": {
+          "target": "He showed up without telling anyone he was coming, so we had to change our plans.",
+          "chunks": [
+            "He showed up without telling anyone he was coming,",
+            "so we had",
+            "to change",
+            "our plans."
+          ],
+          "ko": "걔는 온다는 말도 없이 나타나서, 우리는 계획을 바꿔야 했어."
+        },
+        "anchor": "나타났어"
+      }
+    },
+    {
+      "id": "en-core100-099-work-out",
+      "sentence": "I thought things would work out in the end.",
+      "meaning": "결국에는 일이 잘 풀릴 줄 알았어.",
+      "reading": null,
+      "phonetic_kr": "아이 쏘옷 씽z 우드 워r카웃 인 디 엔드",
+      "order_index": 5,
+      "explanation": {
+        "key": "work out = (일이) 잘 풀리다. 운동한다는 뜻이 아니라 상황이 결국 괜찮아진다는 말.",
+        "situation": "걱정하던 일이 어떻게 됐는지 이야기할 때 — 여행 중 문제가 생겼다가 결국 해결됐을 때.",
+        "drills": [
+          {
+            "en": "It'll work out.",
+            "ko": "잘 될 거야.",
+            "kr": "이를 워r카웃"
+          },
+          {
+            "en": "Everything worked out fine.",
+            "ko": "다 잘 풀렸어.",
+            "kr": "에v리씽 워r크타웃 f파인"
+          },
+          {
+            "en": "I hope it works out for you.",
+            "ko": "너는 잘 되길 바라.",
+            "kr": "아이 호우핏 워r크사웃 f포어r 유"
+          },
+          {
+            "en": "Things didn't work out the way we planned.",
+            "ko": "일이 계획대로 되지는 않았어.",
+            "kr": "씽z 디든 워r카웃 더 웨이 위 플랜드"
+          },
+          {
+            "en": "Our trip worked out better than we expected.",
+            "ko": "여행이 생각보다 잘 풀렸어.",
+            "kr": "아워r 트립 워r크타웃 베터r 댄 위 익스펙티드"
+          },
+          {
+            "en": "My wife always says these things work out in the end.",
+            "ko": "아내는 이런 일은 결국 잘 풀린다고 늘 말해.",
+            "kr": "마이 와이f 올웨이z 쎄z 디이z 씽z 워r카우린 디 엔드"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "things + work out (목적어 없음)",
+            "body": "work out 은 뒤에 목적어를 받지 않는다. 주어 자리에 things·everything·it 처럼 '일·상황'이 오고, 사람이 주어면 뜻이 운동으로 바뀐다(I work out = 운동한다)."
+          },
+          {
+            "struct": "I thought + 주어 + would + 동사",
+            "body": "'~할 줄 알았어'는 I thought 뒤에 문장을 통째로 넣고 will 을 would 로 물린다. 한국어는 '풀릴 줄 알았어'처럼 '알았어'가 끝에 오지만 영어는 I thought 가 앞이다."
+          }
+        ],
+        "chunks": [
+          [
+            "I thought things",
+            "아이 쏘옷 씽z",
+            "나는 일이"
+          ],
+          [
+            "would work out",
+            "우드 워r카웃",
+            "잘 풀릴 거라고 생각했어"
+          ],
+          [
+            "in the end.",
+            "인 디 엔드",
+            "결국에는."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ thought·things",
+            "th 는 혀끝을 이 사이에 물고 — '쏘옷'·'씽z' 이고 '소트'·'띵스'(X)"
+          ],
+          [
+            "work out → 연음",
+            "'워r크 아웃'으로 끊지 않고 '워r카웃' — k 가 out 에 붙는다"
+          ],
+          [
+            "/ɜːr/ work",
+            "work 의 or 은 입을 작게 오므린 '워r' — '월크'(X)"
+          ]
+        ],
+        "mistake": "work out 을 '운동하다'로만 알기 쉽다. 주어가 사람이면 운동이고, 주어가 일·상황이면 '잘 풀리다'다. went well 로 바꾸면 '결국 해결됐다'는 결이 약해진다.",
+        "similar": "I thought it would turn out fine. / I thought it would all be okay.",
+        "category": "구어/기대",
+        "frequency": 8,
+        "chain": {
+          "target": "I thought things would work out in the end, and they did, but it took a while.",
+          "chunks": [
+            "I thought things would work out in the end,",
+            "and they did,",
+            "but it took",
+            "a while."
+          ],
+          "ko": "결국에는 일이 잘 풀릴 줄 알았고 실제로 그랬어, 다만 시간이 좀 걸렸지."
+        },
+        "anchor": "잘 풀릴"
+      }
+    },
+    {
+      "id": "en-core100-100-put-up-with",
+      "sentence": "I can't put up with this much longer.",
+      "meaning": "이걸 더는 못 참겠어.",
+      "reading": null,
+      "phonetic_kr": "아이 캔트 푸럽 위드 디스 머치 롱거r",
+      "order_index": 6,
+      "explanation": {
+        "key": "put up with = 참고 견디다. 싫은데 어쩔 수 없이 버틴다는 뜻.",
+        "situation": "층간 소음이나 계속되는 불편을 더 못 견디겠다고 말할 때 — 아내에게 하소연하거나 호텔에 항의하기 직전.",
+        "drills": [
+          {
+            "en": "How do you put up with him?",
+            "ko": "걔를 어떻게 참아?",
+            "kr": "하우 두 유 푸럽 위드 힘"
+          },
+          {
+            "en": "I can't put up with the smell.",
+            "ko": "그 냄새는 못 참겠어.",
+            "kr": "아이 캔트 푸럽 위드 더 스멜"
+          },
+          {
+            "en": "Nobody should have to put up with this.",
+            "ko": "아무도 이런 걸 참을 필요는 없어.",
+            "kr": "노우바디 슈드 해v 투 푸럽 위드 디스"
+          },
+          {
+            "en": "My wife puts up with a lot from me.",
+            "ko": "아내는 나 때문에 참는 게 많아.",
+            "kr": "마이 와이f 푸츠 업 위더 랏 f럼 미"
+          },
+          {
+            "en": "We had to put up with the noise all night.",
+            "ko": "밤새 소음을 참아야 했어.",
+            "kr": "위 해투 푸럽 위드 더 노이z 올 나잇"
+          },
+          {
+            "en": "She puts up with the cat better than I do.",
+            "ko": "아내는 나보다 고양이를 잘 참아 줘.",
+            "kr": "쉬 푸츠 업 위드 더 캣 베터r 대나이 두"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "can't put up with + 참는 대상",
+            "body": "put up with 는 세 단어가 한 덩어리라 순서를 바꾸거나 사이를 벌리지 않는다 — put it up with(X). 참는 대상은 with 뒤에 온다."
+          },
+          {
+            "struct": "can't + 동사 + much longer",
+            "body": "'더는 못 ~하겠다'는 can't 에 much longer(더 오래)를 붙여 만든다. 한국어는 '더는'이 앞에 오지만 영어는 문장 끝이다. any longer 도 같은 자리에 온다."
+          }
+        ],
+        "chunks": [
+          [
+            "I can't put up with",
+            "아이 캔트 푸럽 위드",
+            "나는 못 참겠어"
+          ],
+          [
+            "this",
+            "디스",
+            "이걸"
+          ],
+          [
+            "much longer.",
+            "머치 롱거r",
+            "더는."
+          ]
+        ],
+        "phonemes": [
+          [
+            "put up → 연음",
+            "'풋 업'으로 끊지 않고 '푸럽' — t 가 모음 사이에서 부드러운 flap 이 된다"
+          ],
+          [
+            "/ð/ with·this",
+            "with 와 this 의 th 는 혀끝을 이 사이에 넣고 울린다 — '위스 디스'(X)"
+          ],
+          [
+            "/ʌ/ up",
+            "up 의 u 는 '어'에 가깝다 — '웁'(X) '업'(O)"
+          ]
+        ],
+        "mistake": "'참다'를 endure 로 떠올리기 쉬운데 그건 글말이다. 일상 대화에선 put up with 다. with 를 빼고 put up 만 쓰면 '설치하다·재워 주다'가 되어 뜻이 달라진다.",
+        "similar": "I can't take this anymore. / I can't stand this any longer.",
+        "category": "구어/불평",
+        "frequency": 8,
+        "chain": {
+          "target": "I can't put up with this much longer, so I'm going to talk to the manager.",
+          "chunks": [
+            "I can't put up with this much longer,",
+            "so I'm going",
+            "to talk",
+            "to the manager."
+          ],
+          "ko": "이걸 더는 못 참겠어, 그래서 매니저한테 얘기하려고."
+        },
+        "anchor": "더는 못 참겠어"
+      }
+    }
+  ]
+}

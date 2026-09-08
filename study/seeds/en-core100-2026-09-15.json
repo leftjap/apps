@@ -1,0 +1,576 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "51-80 여행영어",
+  "date": "2026-09-15",
+  "_note": "코어 100문장 커리큘럼 75~80번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-075-get-the-check",
+      "sentence": "Could we get the check when you have a minute?",
+      "meaning": "시간 되실 때 계산서 좀 주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠드 위 겟 더 체크 웬 유 해v 어 미닛",
+      "order_index": 1,
+      "explanation": {
+        "key": "get the check = 계산서를 받다. 식당에서 다 먹고 계산을 청할 때 쓰는 말.",
+        "situation": "식당에서 식사를 마쳤을 때 — 종업원이 바빠 보이면 when you have a minute 을 붙여 재촉으로 들리지 않게 한다.",
+        "drills": [
+          {
+            "en": "Can we get the check?",
+            "ko": "계산서 좀 주시겠어요?",
+            "kr": "캔 위 겟 더 체크"
+          },
+          {
+            "en": "Could I get the check, please?",
+            "ko": "계산서 좀 부탁드려요.",
+            "kr": "쿠다이 겟 더 체크 플리이z"
+          },
+          {
+            "en": "I'll get the check this time.",
+            "ko": "이번엔 내가 계산할게.",
+            "kr": "아일 겟 더 체크 디스 타임"
+          },
+          {
+            "en": "My wife got the check last night.",
+            "ko": "어젯밤엔 아내가 계산했어.",
+            "kr": "마이 와이f 갓 더 체크 라스 나잇"
+          },
+          {
+            "en": "Could you bring the check to our table?",
+            "ko": "계산서를 자리로 가져다주시겠어요?",
+            "kr": "쿠쥬 브링 더 체크 투 아워r 테이블"
+          },
+          {
+            "en": "Let's get the check and head back to the hotel.",
+            "ko": "계산하고 호텔로 돌아가자.",
+            "kr": "렛츠 겟 더 체크 앤 헤드 백 투 더 호텔"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could we get + 명사?",
+            "body": "get 은 '가지다'만이 아니라 '받아 오다'로도 쓴다. 계산서를 달라는 말도 give 가 아니라 get 이고, Could we 로 시작하면 요청이 부드러워진다."
+          },
+          {
+            "struct": "요청 + when you have a minute (시점을 뒤에)",
+            "body": "한국어는 '시간 되실 때'가 앞에 오지만 영어는 요청을 먼저 말하고 시점을 뒤에 붙인다. 바쁜 상대를 재촉하지 않게 완충해 주는 자리다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could we get",
+            "쿠드 위 겟",
+            "받을 수 있을까요"
+          ],
+          [
+            "the check",
+            "더 체크",
+            "계산서를"
+          ],
+          [
+            "when you have a minute?",
+            "웬 유 해v 어 미닛",
+            "시간 되실 때?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/tʃ/ check",
+            "check 는 짧게 '체크' — 끝의 k 를 '크'로 길게 늘이지 않는다"
+          ],
+          [
+            "/v/ have",
+            "have 의 v 는 아랫입술을 윗니에 대고 '해v' — '해브'처럼 ㅡ 를 넣지 않는다"
+          ]
+        ],
+        "mistake": "'계산서'를 bill 로만 아는 경우가 많은데 미국 식당에서는 check 가 더 흔하다. Give me the check 는 명령조로 들리니 Could we get ~ 으로 청한다.",
+        "similar": "Could we get the bill, please? / Check, please.",
+        "category": "여행/식당",
+        "frequency": 9,
+        "chain": {
+          "target": "Could we get the check when you have a minute? We're trying to catch the last train.",
+          "chunks": [
+            "Could we get the check when you have a minute?",
+            "We're trying",
+            "to catch",
+            "the last train."
+          ],
+          "ko": "시간 되실 때 계산서 좀 주시겠어요? 저희가 막차를 타야 해서요."
+        },
+        "anchor": "계산서 좀 주시겠어요"
+      }
+    },
+    {
+      "id": "en-core100-076-to-go",
+      "sentence": "Could I get this to go, please?",
+      "meaning": "이거 포장해 주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠다이 겟 디스 투 고우 플리이z",
+      "order_index": 2,
+      "explanation": {
+        "key": "to go = 포장해서 (가져갈 것으로). 매장에서 먹지 않고 들고 나갈 때 음식 뒤에 붙이는 말.",
+        "situation": "카페나 식당에서 자리에 앉지 않고 들고 나갈 때 — 다 못 먹은 음식을 싸 달라고 할 때도 같은 말을 쓴다.",
+        "drills": [
+          {
+            "en": "Two coffees to go, please.",
+            "ko": "커피 두 잔 포장해 주세요.",
+            "kr": "투우 커피z 투 고우 플리이z"
+          },
+          {
+            "en": "Can I get this to go?",
+            "ko": "이거 포장해 가도 될까요?",
+            "kr": "캔 아이 겟 디스 투 고우"
+          },
+          {
+            "en": "We got our coffee to go.",
+            "ko": "우리는 커피를 포장해서 들고 나왔어.",
+            "kr": "위 가라워r 커피 투 고우"
+          },
+          {
+            "en": "My wife ordered her coffee to go.",
+            "ko": "아내는 커피를 포장으로 주문했어.",
+            "kr": "마이 와이f 오r더r드 허r 커피 투 고우"
+          },
+          {
+            "en": "Is that for here or to go?",
+            "ko": "여기서 드세요, 아니면 포장이세요?",
+            "kr": "이z 댓 f포어r 히어r 오어r 투 고우"
+          },
+          {
+            "en": "I'd like to get the rest to go.",
+            "ko": "남은 건 포장하고 싶어요.",
+            "kr": "아이드 라이크 투 겟 더 레스트 투 고우"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "음식 + to go (포장으로)",
+            "body": "to go 는 '가져갈 것으로'라는 뜻의 굳은 표현이다. 동사 뒤가 아니라 음식 이름 뒤에 그대로 붙는다 — two coffees to go."
+          },
+          {
+            "struct": "Could I get ~, please?",
+            "body": "가게에서 주문하거나 요청할 때 동사는 get 이다. Could I get 은 I want 보다 부드럽고, please 는 문장 맨 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could I get this",
+            "쿠다이 겟 디스",
+            "이거 주실 수 있을까요"
+          ],
+          [
+            "to go, please?",
+            "투 고우 플리이z",
+            "포장해서요?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "could I → 연음",
+            "'쿠드 아이'로 끊지 않고 d 를 다음 모음에 붙여 '쿠다이'"
+          ],
+          [
+            "/oʊ/ go",
+            "go 의 모음은 '고'가 아니라 '고우' — 입을 오므리며 우 로 미끄러진다"
+          ]
+        ],
+        "mistake": "'포장'을 packing 이나 take out 으로 옮기기 쉽다. 미국 매장에서는 to go 가 기본이고(영국은 takeaway), 포장 용기를 뜻하는 packing 은 통하지 않는다.",
+        "similar": "Can I get this to go? / To go, please.",
+        "category": "여행/식당",
+        "frequency": 9,
+        "chain": {
+          "target": "Could I get this to go, please? I'm running late for my train.",
+          "chunks": [
+            "Could I get this to go, please?",
+            "I'm running late",
+            "for my train."
+          ],
+          "ko": "이거 포장해 주시겠어요? 기차 시간이 늦어서요."
+        },
+        "anchor": "포장해"
+      }
+    },
+    {
+      "id": "en-core100-077-id-like-to-return-this",
+      "sentence": "I'd like to return this because it doesn't fit.",
+      "meaning": "사이즈가 안 맞아서 반품하고 싶어요.",
+      "reading": null,
+      "phonetic_kr": "아이드 라이크 투 리터r언 디스 비커z 잇 더즌 f핏",
+      "order_index": 3,
+      "explanation": {
+        "key": "I'd like to return this = 이거 반품하고 싶어요. 산 물건을 무르러 가서 첫마디로 꺼내는 말.",
+        "situation": "여행 중 산 옷이나 신발이 안 맞아 가게에 다시 갔을 때 — 영수증을 내밀며 이 문장으로 시작한다.",
+        "drills": [
+          {
+            "en": "It doesn't fit me.",
+            "ko": "저한테 안 맞아요.",
+            "kr": "잇 더즌 f핏 미"
+          },
+          {
+            "en": "Can I return this?",
+            "ko": "이거 반품할 수 있나요?",
+            "kr": "캔 아이 리터r언 디스"
+          },
+          {
+            "en": "I'd like to return this jacket.",
+            "ko": "이 재킷을 반품하고 싶어요.",
+            "kr": "아이드 라이크 투 리터r언 디스 재킷"
+          },
+          {
+            "en": "Could I return this with the receipt?",
+            "ko": "영수증을 가져오면 반품할 수 있을까요?",
+            "kr": "쿠다이 리터r언 디스 위드 더 리씨잇"
+          },
+          {
+            "en": "The shoes didn't fit, so I returned them.",
+            "ko": "신발이 안 맞아서 반품했어요.",
+            "kr": "더 슈우z 디든 f핏 쏘 아이 리터r언드 뎀"
+          },
+          {
+            "en": "My wife wants to return the bag she bought.",
+            "ko": "아내가 산 가방을 반품하고 싶어 해요.",
+            "kr": "마이 와이f 원츠 투 리터r언 더 백 쉬 밧"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'd like to + 동사원형",
+            "body": "'~하고 싶어요'를 정중하게 말하는 기본형이다. I want to 보다 부드러워서 가게·창구에서 용건을 꺼낼 때 그대로 쓴다."
+          },
+          {
+            "struct": "용건 + because + 이유 문장",
+            "body": "한국어는 '사이즈가 안 맞아서 반품하고 싶어요'처럼 이유가 앞에 오지만, 영어는 용건을 먼저 말하고 이유를 because 로 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'd like to return this",
+            "아이드 라이크 투 리터r언 디스",
+            "이거 반품하고 싶어요"
+          ],
+          [
+            "because it doesn't fit.",
+            "비커z 잇 더즌 f핏",
+            "사이즈가 안 맞아서."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ fit",
+            "fit 의 f 는 윗니로 아랫입술을 스쳐 'f핏' — 'ㅎ'으로 시작하지 않는다"
+          ],
+          [
+            "/ɪ/ fit",
+            "fit 의 모음은 짧은 '이' — 길게 늘이면 feet(f피이트)로 들린다"
+          ]
+        ],
+        "mistake": "'반품'을 refund 로 말하면 '환불'만 가리킨다. 물건을 돌려주는 행위는 return, 돈을 돌려받는 건 refund 다. '사이즈가 안 맞다'도 the size is not correct 가 아니라 it doesn't fit 이다.",
+        "similar": "Can I return this? / I need to exchange this for a bigger size.",
+        "category": "여행/쇼핑",
+        "frequency": 8,
+        "chain": {
+          "target": "I'd like to return this because it doesn't fit, and here's the receipt.",
+          "chunks": [
+            "I'd like to return this because it doesn't fit,",
+            "and here's",
+            "the receipt."
+          ],
+          "ko": "사이즈가 안 맞아서 반품하고 싶어요, 영수증은 여기 있습니다."
+        },
+        "anchor": "반품하고 싶어요"
+      }
+    },
+    {
+      "id": "en-core100-078-have-anything-for",
+      "sentence": "Do you have anything for a headache?",
+      "meaning": "두통에 먹을 약이 있나요?",
+      "reading": null,
+      "phonetic_kr": "두 유 해v 애니씽 f포어r 어 헤데익",
+      "order_index": 4,
+      "explanation": {
+        "key": "have anything for = ~에 듣는 게 있나요. 약국이나 가게에서 증상·용도만 대고 물건을 찾을 때 쓰는 말.",
+        "situation": "여행 중 머리가 아파 약국에 들렀을 때 — 약 이름을 몰라도 증상만 대면 통한다.",
+        "drills": [
+          {
+            "en": "I have a bad headache.",
+            "ko": "머리가 너무 아파요.",
+            "kr": "아이 해v 어 배드 헤데익"
+          },
+          {
+            "en": "Do you have anything for kids?",
+            "ko": "아이들이 먹을 만한 게 있나요?",
+            "kr": "두 유 해v 애니씽 f포어r 키즈"
+          },
+          {
+            "en": "Is there anything for a sore throat?",
+            "ko": "목이 아픈 데 쓸 게 있나요?",
+            "kr": "이z 데어r 애니씽 f포어r 어 쏘어r 쓰로웃"
+          },
+          {
+            "en": "Do you have anything for a cold?",
+            "ko": "감기에 먹을 약이 있나요?",
+            "kr": "두 유 해v 애니씽 f포어r 어 코울드"
+          },
+          {
+            "en": "My wife needs something for her allergies.",
+            "ko": "아내가 알레르기 약이 필요해요.",
+            "kr": "마이 와이f 니이z 썸씽 f포어r 허r 앨러r지z"
+          },
+          {
+            "en": "I took something for my headache this morning.",
+            "ko": "오늘 아침에 두통약을 먹었어요.",
+            "kr": "아이 툭 썸씽 f포어r 마이 헤데익 디스 모어r닝"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Do you have anything for + 증상/용도?",
+            "body": "약 이름을 모를 때는 for 뒤에 증상을 대면 된다. anything 은 '아무거나 있으면'이라는 뜻이라 종류를 특정하지 않고 묻는 자리에 쓴다."
+          },
+          {
+            "struct": "anything(의문·부정) ↔ something(긍정)",
+            "body": "상대에게 물을 때는 anything, 내가 필요하다고 말할 때는 something 이다 — I need something for a headache."
+          }
+        ],
+        "chunks": [
+          [
+            "Do you have",
+            "두 유 해v",
+            "있나요"
+          ],
+          [
+            "anything",
+            "애니씽",
+            "뭐라도"
+          ],
+          [
+            "for a headache?",
+            "f포어r 어 헤데익",
+            "두통에 쓸?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/eɪ/ headache",
+            "'헤드에익'을 이어 '헤데익' — 뒤 ache 의 모음은 '에익'으로 미끄러진다"
+          ],
+          [
+            "/æ/ anything",
+            "anything 의 a 는 입을 옆으로 벌린 '애' — '에니씽'보다 '애니씽'에 가깝다"
+          ]
+        ],
+        "mistake": "'약'을 medicine 으로만 떠올려 Do you have medicine for a headache? 라고 하기 쉽다. 틀린 말은 아니지만 약국에서는 anything for ~ 로 증상만 대는 쪽이 훨씬 자연스럽다.",
+        "similar": "Do you have something for a headache? / What do you have for a headache?",
+        "category": "여행/약국",
+        "frequency": 8,
+        "chain": {
+          "target": "Do you have anything for a headache? I've had one since this morning.",
+          "chunks": [
+            "Do you have anything for a headache?",
+            "I've had one",
+            "since this morning."
+          ],
+          "ko": "두통에 먹을 약이 있나요? 오늘 아침부터 계속 아파서요."
+        },
+        "anchor": "약이 있나요"
+      }
+    },
+    {
+      "id": "en-core100-079-take-a-picture",
+      "sentence": "Could you take a picture of us, please?",
+      "meaning": "저희 사진 좀 찍어 주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 테이커 픽처r 어v 어스 플리이z",
+      "order_index": 5,
+      "explanation": {
+        "key": "take a picture = 사진을 찍다. 지나가는 사람에게 사진을 부탁하거나 내가 찍어 준다고 할 때 쓰는 말.",
+        "situation": "여행지에서 둘이 같이 나온 사진이 필요할 때 — 지나가는 사람에게 카메라를 건네며 부탁한다.",
+        "drills": [
+          {
+            "en": "Can you take a picture?",
+            "ko": "사진 좀 찍어 줄래요?",
+            "kr": "캔 유 테이커 픽처r"
+          },
+          {
+            "en": "Could you take another one?",
+            "ko": "한 장만 더 찍어 주시겠어요?",
+            "kr": "쿠쥬 테이커나더r 원"
+          },
+          {
+            "en": "I'll take a picture of you two.",
+            "ko": "제가 두 분 사진 찍어 드릴게요.",
+            "kr": "아일 테이커 픽처r 어v 유 투우"
+          },
+          {
+            "en": "My wife took a picture of the cat.",
+            "ko": "아내가 고양이 사진을 찍었어.",
+            "kr": "마이 와이f 투커 픽처r 어v 더 캣"
+          },
+          {
+            "en": "Do you mind taking a picture of us?",
+            "ko": "저희 사진 좀 찍어 주실 수 있을까요?",
+            "kr": "두 유 마인드 테이킹어 픽처r 어v 어스"
+          },
+          {
+            "en": "Could you take a picture with the tower behind us?",
+            "ko": "뒤에 탑이 나오게 사진 좀 찍어 주시겠어요?",
+            "kr": "쿠쥬 테이커 픽처r 위드 더 타워r 비하인더스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "take a picture of + 대상",
+            "body": "'사진을 찍다'의 동사는 shoot 이 아니라 take 다. '우리 사진'도 our picture 가 아니라 a picture of us 로, 누구를 찍는지는 of 로 뒤에 붙인다."
+          },
+          {
+            "struct": "Could you + 동사원형 …, please?",
+            "body": "모르는 사람에게 부탁할 때 가장 무난한 틀이다. please 는 문장 끝에 붙여 쉼표로 떼어 준다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could you take a picture",
+            "쿠쥬 테이커 픽처r",
+            "사진 좀 찍어 주시겠어요"
+          ],
+          [
+            "of us,",
+            "어v 어스",
+            "저희를,"
+          ],
+          [
+            "please?",
+            "플리이z",
+            "부탁드려요?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "take a → 연음",
+            "'테이크 어'로 끊지 않고 k 를 다음 모음에 붙여 '테이커'"
+          ],
+          [
+            "/tʃ/ picture",
+            "picture 는 '픽쳐'가 아니라 '픽처r' — 끝에서 혀를 살짝 말아 r 를 남긴다"
+          ]
+        ],
+        "mistake": "'사진 찍어 주세요'를 shoot 으로 옮기면 뜻이 완전히 달라진다. take a picture 가 정해진 말이고, '우리 사진'은 of us 를 뒤에 붙여 말한다.",
+        "similar": "Would you mind taking a picture of us? / Can you take our picture?",
+        "category": "여행/관광",
+        "frequency": 9,
+        "chain": {
+          "target": "Could you take a picture of us, please? Just press the round button.",
+          "chunks": [
+            "Could you take a picture of us, please?",
+            "Just press",
+            "the round button."
+          ],
+          "ko": "저희 사진 좀 찍어 주시겠어요? 동그란 버튼만 누르시면 돼요."
+        },
+        "anchor": "사진 좀 찍어 주시겠어요"
+      }
+    },
+    {
+      "id": "en-core100-080-within-walking-distance",
+      "sentence": "Is there a pharmacy within walking distance?",
+      "meaning": "걸어갈 만한 거리에 약국이 있나요?",
+      "reading": null,
+      "phonetic_kr": "이z 데어r 어 f파r머씨 위딘 워킹 디스턴스",
+      "order_index": 6,
+      "explanation": {
+        "key": "within walking distance = 걸어갈 만한 거리에. 걸어갈지 차를 탈지 가늠할 때 쓰는 한 덩어리 표현.",
+        "situation": "낯선 동네에서 약국이나 가게를 찾을 때 — 호텔 프런트에 이렇게 물으면 걸어갈지 택시를 탈지 바로 정할 수 있다.",
+        "drills": [
+          {
+            "en": "Is it within walking distance?",
+            "ko": "걸어갈 만한 거리인가요?",
+            "kr": "이z 잇 위딘 워킹 디스턴스"
+          },
+          {
+            "en": "Is there a pharmacy near here?",
+            "ko": "이 근처에 약국이 있나요?",
+            "kr": "이z 데어r 어 f파r머씨 니어r 히어r"
+          },
+          {
+            "en": "The station is within walking distance.",
+            "ko": "역은 걸어갈 만한 거리예요.",
+            "kr": "더 스테이셔니z 위딘 워킹 디스턴스"
+          },
+          {
+            "en": "Our hotel isn't within walking distance.",
+            "ko": "우리 호텔은 걸어갈 만한 거리가 아니에요.",
+            "kr": "아워r 호테리즌 위딘 워킹 디스턴스"
+          },
+          {
+            "en": "How far is the pharmacy from here?",
+            "ko": "약국이 여기서 얼마나 먼가요?",
+            "kr": "하우 f파r 이z 더 f파r머씨 f럼 히어r"
+          },
+          {
+            "en": "My wife says the market is within walking distance.",
+            "ko": "아내 말로는 시장이 걸어갈 만한 거리래.",
+            "kr": "마이 와이f 쎄z 더 마r키리z 위딘 워킹 디스턴스"
+          },
+          {
+            "en": "Is the subway station within walking distance of the hotel?",
+            "ko": "지하철역이 호텔에서 걸어갈 만한 거리인가요?",
+            "kr": "이z 더 썹웨이 스테이션 위딘 워킹 디스턴서v 더 호텔"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Is there + 명사 + 거리·장소 표현?",
+            "body": "'~가 있나요'는 Is there 로 시작한다. 어디에 있는지는 뒤에 붙이는데, within walking distance 같은 거리 표현이 통째로 그 자리에 온다."
+          },
+          {
+            "struct": "within walking distance (of + 기준점)",
+            "body": "관사 없이 세 단어를 한 덩어리로 외운다. 어디를 기준으로 한 거리인지 밝히려면 of the hotel 처럼 of 로 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "Is there",
+            "이z 데어r",
+            "있나요"
+          ],
+          [
+            "a pharmacy",
+            "어 f파r머씨",
+            "약국이"
+          ],
+          [
+            "within walking distance?",
+            "위딘 워킹 디스턴스",
+            "걸어갈 만한 거리에?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/f/ pharmacy",
+            "ph 는 f 소리 — '파r머씨'가 아니라 윗니로 아랫입술을 스친 'f파r머씨'"
+          ],
+          [
+            "/ð/ within",
+            "within 의 th 는 혀끝을 이 사이에 넣고 울리는 소리 — '위신'(X) '위딘'(O)"
+          ]
+        ],
+        "mistake": "'걸어갈 만한 거리'를 walkable distance 로 지어내기 쉽다. within walking distance 가 굳은 표현이고, distance 앞에 a 를 붙이지 않는다.",
+        "similar": "Can I walk there from here? / Is it far to walk?",
+        "category": "여행/길찾기",
+        "frequency": 8,
+        "chain": {
+          "target": "Is there a pharmacy within walking distance? My wife needs something for a headache.",
+          "chunks": [
+            "Is there a pharmacy within walking distance?",
+            "My wife needs",
+            "something",
+            "for a headache."
+          ],
+          "ko": "걸어갈 만한 거리에 약국이 있나요? 아내가 두통약이 필요해서요."
+        },
+        "anchor": "걸어갈 만한 거리에"
+      }
+    }
+  ]
+}

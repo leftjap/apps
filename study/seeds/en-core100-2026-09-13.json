@@ -1,0 +1,548 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "51-80 여행영어",
+  "date": "2026-09-13",
+  "_note": "코어 100문장 커리큘럼 63~68번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-063-right-direction",
+      "sentence": "Is this train going in the right direction?",
+      "meaning": "이 열차가 맞는 방향으로 가나요?",
+      "reading": null,
+      "phonetic_kr": "이z 디스 트레인 고잉 인 더 라잇 디렉션",
+      "order_index": 1,
+      "explanation": {
+        "key": "going in the right direction = 맞는 방향으로 가고 있다. 탄 차편이나 걷는 길이 맞는지 확인할 때 쓰는 덩어리.",
+        "situation": "지하철이나 기차를 탔는데 방향이 맞는지 불안할 때 — 옆자리 승객이나 역무원에게 확인한다.",
+        "drills": [
+          {
+            "en": "Are we going in the right direction?",
+            "ko": "우리 맞는 방향으로 가고 있는 거 맞아?",
+            "kr": "아r 위 고잉 인 더 라잇 디렉션"
+          },
+          {
+            "en": "Does this train go to the airport?",
+            "ko": "이 열차가 공항까지 가나요?",
+            "kr": "더즈 디스 트레인 고우 투 디 에어r포어r트"
+          },
+          {
+            "en": "I think we're going the wrong way.",
+            "ko": "우리 잘못된 길로 가고 있는 것 같아.",
+            "kr": "아이 씽크 위어r 고잉 더 롱 웨이"
+          },
+          {
+            "en": "Is this the right way to the station?",
+            "ko": "역까지 가는 길이 이쪽 맞아요?",
+            "kr": "이z 디스 더 라잇 웨이 투 더 스테이션"
+          },
+          {
+            "en": "My wife thinks we're on the wrong train.",
+            "ko": "아내는 우리가 열차를 잘못 탄 것 같대.",
+            "kr": "마이 와이f 씽크스 위어r 온 더 롱 트레인"
+          },
+          {
+            "en": "I'm not sure we're going in the right direction.",
+            "ko": "우리가 맞는 방향으로 가고 있는지 잘 모르겠어.",
+            "kr": "아임 낫 슈어r 위어r 고잉 인 더 라잇 디렉션"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Is this + 명사 + -ing + in the right direction?",
+            "body": "'가나요?'는 be 동사 Is 를 앞으로 빼서 묻는다. 지금 가고 있는 중이라 go 가 아니라 going 이다. 방향에 붙는 전치사는 to 가 아니라 in 이어서 in the right direction 으로 굳어져 있다."
+          }
+        ],
+        "chunks": [
+          [
+            "Is this train going",
+            "이z 디스 트레인 고잉",
+            "이 열차가 가고 있나요"
+          ],
+          [
+            "in the right direction?",
+            "인 더 라잇 디렉션",
+            "맞는 방향으로?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "/tr/ train",
+            "tr 은 '츄레인'에 가깝게 한 덩어리로 — '트-레-인' 세 음절로 끊지 않는다"
+          ],
+          [
+            "/ɹ/ right",
+            "right 의 r 은 혀끝을 어디에도 대지 않고 말아 올린다 — 'ㄹ'로 튕기면 light 로 들린다"
+          ]
+        ],
+        "mistake": "'맞는 방향'을 correct direction 으로 옮기기 쉽다. 길·방향은 right 를 쓴다. 전치사도 to the right direction 이 아니라 in the right direction 이다.",
+        "similar": "Am I on the right train? / Is this the right way?",
+        "category": "여행/이동",
+        "frequency": 8,
+        "chain": {
+          "target": "Is this train going in the right direction, or should I get off at the next stop?",
+          "chunks": [
+            "Is this train going in the right direction,",
+            "or",
+            "should I get off",
+            "at the next stop?"
+          ],
+          "ko": "이 열차가 맞는 방향으로 가나요, 아니면 다음 역에서 내려야 하나요?"
+        },
+        "anchor": "맞는 방향으로 가나요"
+      }
+    },
+    {
+      "id": "en-core100-064-how-long-does-it-take",
+      "sentence": "How long does it take to get there by subway?",
+      "meaning": "지하철로 거기까지 얼마나 걸려요?",
+      "reading": null,
+      "phonetic_kr": "하우 롱 더짓 테익 투 겟 데어r 바이 써브웨이",
+      "order_index": 2,
+      "explanation": {
+        "key": "How long does it take = 얼마나 걸려요. 시간이 얼마나 드는지 묻는 정해진 틀.",
+        "situation": "역에서 노선을 고를 때 — 지하철로 갈지 택시로 갈지 정하려고 소요 시간을 먼저 묻는다.",
+        "drills": [
+          {
+            "en": "How long does it take?",
+            "ko": "얼마나 걸려요?",
+            "kr": "하우 롱 더짓 테익"
+          },
+          {
+            "en": "It takes about twenty minutes.",
+            "ko": "20분쯤 걸려요.",
+            "kr": "잇 테익스 어바웃 트웬티 미니츠"
+          },
+          {
+            "en": "How long does it take by taxi?",
+            "ko": "택시로는 얼마나 걸려요?",
+            "kr": "하우 롱 더짓 테익 바이 택씨"
+          },
+          {
+            "en": "Does it take long to get to the hotel?",
+            "ko": "호텔까지 가는 데 오래 걸려요?",
+            "kr": "더짓 테익 롱 투 겟 투 더 호텔"
+          },
+          {
+            "en": "My wife wants to know how long the trip takes.",
+            "ko": "아내가 그 길이 얼마나 걸리는지 알고 싶어 해.",
+            "kr": "마이 와이f 원츠 투 노우 하우 롱 더 트립 테익스"
+          },
+          {
+            "en": "It took us an hour to get there by bus.",
+            "ko": "버스로 거기까지 한 시간 걸렸어.",
+            "kr": "잇 투커스 어나워r 투 겟 데어r 바이 버스"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "How long does it take + to 동사 + by 교통수단?",
+            "body": "시간이 걸리는 주체가 따로 없어서 뜻 없는 it 을 주어로 세운다. '거기까지 가는 데'는 to get there 로 뒤에 붙이고, 교통수단은 관사 없이 by subway 처럼 말한다."
+          }
+        ],
+        "chunks": [
+          [
+            "How long does it take",
+            "하우 롱 더짓 테익",
+            "얼마나 걸려요"
+          ],
+          [
+            "to get there",
+            "투 겟 데어r",
+            "거기 가는 데"
+          ],
+          [
+            "by subway?",
+            "바이 써브웨이",
+            "지하철로?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "does it → 연음",
+            "'더즈 잇'처럼 끊지 않고 '더짓' — z 가 it 에 붙는다"
+          ],
+          [
+            "/ð/ there",
+            "there 의 th 는 혀끝을 이 사이에 물고 '데어r' — 'ㄷ'로만 내면 dare 로 들린다"
+          ],
+          [
+            "/s/ subway",
+            "subway 의 s 는 세게 '써브웨이' — '서브웨이'로 흐리지 않는다"
+          ]
+        ],
+        "mistake": "'얼마나 걸려요'를 How much time do you spend 처럼 길게 옮기기 쉽다. 시간은 It takes 로 말하는 틀이 정해져 있어 How long does it take 를 통으로 외우는 편이 빠르다. 수단도 with the subway 가 아니라 by subway 다.",
+        "similar": "How long is the ride? / How many stops is it?",
+        "category": "여행/이동",
+        "frequency": 10,
+        "chain": {
+          "target": "How long does it take to get there by subway, and is it faster than the bus?",
+          "chunks": [
+            "How long does it take to get there by subway,",
+            "and",
+            "is it faster",
+            "than the bus?"
+          ],
+          "ko": "지하철로 거기까지 얼마나 걸려요, 그리고 버스보다 빠른가요?"
+        },
+        "anchor": "얼마나 걸려요"
+      }
+    },
+    {
+      "id": "en-core100-065-let-me-know-when",
+      "sentence": "Could you let me know when we get there?",
+      "meaning": "도착하면 알려주시겠어요?",
+      "reading": null,
+      "phonetic_kr": "쿠쥬 렛 미 노우 웬 위 겟 데어r",
+      "order_index": 3,
+      "explanation": {
+        "key": "let me know when = ~하면 알려 줘. 지금 말고 나중에 때가 되면 말해 달라고 미리 부탁하는 말.",
+        "situation": "내릴 역을 모른 채 버스나 기차를 탔을 때 — 기사나 옆 사람에게 미리 부탁해 둔다.",
+        "drills": [
+          {
+            "en": "Let me know when you're ready.",
+            "ko": "준비되면 알려 줘.",
+            "kr": "렛 미 노우 웬 유어r 레디"
+          },
+          {
+            "en": "Let me know when the train leaves.",
+            "ko": "열차가 출발하면 알려 줘.",
+            "kr": "렛 미 노우 웬 더 트레인 리이v즈"
+          },
+          {
+            "en": "I'll let you know when we get there.",
+            "ko": "도착하면 내가 알려 줄게.",
+            "kr": "아일 렛 유 노우 웬 위 겟 데어r"
+          },
+          {
+            "en": "Please let me know when it's my stop.",
+            "ko": "제가 내릴 역이 되면 알려 주세요.",
+            "kr": "플리이z 렛 미 노우 웨닛츠 마이 스탑"
+          },
+          {
+            "en": "My wife let me know when she got home.",
+            "ko": "아내가 집에 도착하고 나서 알려 줬어.",
+            "kr": "마이 와이f 렛 미 노우 웬 쉬 갓 호움"
+          },
+          {
+            "en": "Can you let me know if there's a delay?",
+            "ko": "지연되면 알려 줄 수 있어요?",
+            "kr": "캔 유 렛 미 노우 이f 데어r즈 어 딜레이"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could you let me know + when + 주어 + 동사?",
+            "body": "let me know 가 '알려 줘'라는 한 덩어리다. 알려 줄 시점은 when 절로 뒤에 붙이는데, 앞으로 있을 일이라도 when 뒤에는 will 없이 현재형(get)을 쓴다. 한국어 '도착하면'의 '-면'이 여기서 when 이다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could you let me know",
+            "쿠쥬 렛 미 노우",
+            "알려주시겠어요"
+          ],
+          [
+            "when we get there?",
+            "웬 위 겟 데어r",
+            "우리가 도착하면?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "could you → 연음",
+            "'쿠드 유'가 아니라 d 와 y 가 붙어 '쿠쥬'"
+          ],
+          [
+            "/ð/ there",
+            "there 의 th 는 혀끝을 이 사이에 물고 낸다 — 'ㄷ'만으로는 dare 에 가까워진다"
+          ]
+        ],
+        "mistake": "'도착하면'을 if we get there 로 옮기면 도착할지 안 할지 모른다는 뜻이 된다. 반드시 오는 시점은 when 이다. when 절에 will 을 넣어 when we will get there 라고도 하지 않는다.",
+        "similar": "Could you tell me when we get there? / Please let me know when we arrive.",
+        "category": "여행/부탁",
+        "frequency": 9,
+        "chain": {
+          "target": "Could you let me know when we get there? I'm not sure where to get off.",
+          "chunks": [
+            "Could you let me know when we get there?",
+            "I'm not sure",
+            "where to get off."
+          ],
+          "ko": "도착하면 알려주시겠어요? 어디서 내려야 할지 잘 모르겠어요."
+        },
+        "anchor": "알려주시겠어요"
+      }
+    },
+    {
+      "id": "en-core100-066-have-a-reservation",
+      "sentence": "I have a reservation under the name Kim.",
+      "meaning": "김이라는 이름으로 예약했습니다.",
+      "reading": null,
+      "phonetic_kr": "아이 해v 어 레저r베이션 언더r 더 네임 킴",
+      "order_index": 4,
+      "explanation": {
+        "key": "have a reservation = 예약이 되어 있다. 호텔·식당 카운터에서 내 예약을 확인시키는 첫마디.",
+        "situation": "호텔 프런트에 서서 이름을 대는 순간 — 예약자 이름이 아내 이름일 때도 같은 틀로 말한다.",
+        "drills": [
+          {
+            "en": "Do you have a reservation?",
+            "ko": "예약하셨어요?",
+            "kr": "두 유 해v 어 레저r베이션"
+          },
+          {
+            "en": "We don't have a reservation.",
+            "ko": "저희는 예약을 안 했어요.",
+            "kr": "위 돈 해v 어 레저r베이션"
+          },
+          {
+            "en": "The room is under my wife's name.",
+            "ko": "방은 제 아내 이름으로 되어 있어요.",
+            "kr": "더 루우미z 언더r 마이 와이f스 네임"
+          },
+          {
+            "en": "I have a reservation for two nights.",
+            "ko": "2박으로 예약했어요.",
+            "kr": "아이 해v 어 레저r베이션 f포어r 투 나이츠"
+          },
+          {
+            "en": "My wife made the reservation last night.",
+            "ko": "아내가 어젯밤에 예약했어.",
+            "kr": "마이 와이f 메이드 더 레저r베이션 라스트 나잇"
+          },
+          {
+            "en": "Could you check if I have a reservation?",
+            "ko": "제 예약이 있는지 확인해 주시겠어요?",
+            "kr": "쿠쥬 체크 이f 아이 해v 어 레저r베이션"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I have a reservation + under the name + 이름",
+            "body": "예약은 '했다'(과거)가 아니라 지금 '가지고 있다'(have)로 말한다. 이름은 under the name 뒤에 그대로 붙이는데, 한국어 '~라는 이름으로'의 '으로'가 with 가 아니라 under 다."
+          }
+        ],
+        "chunks": [
+          [
+            "I have a reservation",
+            "아이 해v 어 레저r베이션",
+            "예약이 되어 있어요"
+          ],
+          [
+            "under the name Kim.",
+            "언더r 더 네임 킴",
+            "김이라는 이름으로."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/v/ have",
+            "have 의 v 는 아랫입술을 물고 — '해브'(X) '해v'(O)"
+          ],
+          [
+            "/z/ reservation",
+            "reservation 의 s 는 /z/ — '레서베이션'(X), 혀를 울려 '레저r베이션'(O)"
+          ],
+          [
+            "/ʌ/ under",
+            "under 의 u 는 입을 살짝 벌린 '어' — '운더'(X) '언더r'(O)"
+          ]
+        ],
+        "mistake": "'예약했습니다'를 I reserved 로 말하면 딱딱하고, 카운터에서는 지금 예약이 있다는 뜻의 I have a reservation 이 기본이다. 이름 앞도 with the name 이 아니라 under the name 이다.",
+        "similar": "The reservation is under Kim. / I booked a room under Kim.",
+        "category": "여행/숙소",
+        "frequency": 9,
+        "chain": {
+          "target": "I have a reservation under the name Kim, and I booked it for three nights.",
+          "chunks": [
+            "I have a reservation under the name Kim,",
+            "and I booked it",
+            "for three nights."
+          ],
+          "ko": "김이라는 이름으로 예약했고, 3박으로 잡았어요."
+        },
+        "anchor": "예약했습니다"
+      }
+    },
+    {
+      "id": "en-core100-067-id-like-to-check-in",
+      "sentence": "I'd like to check in, but I arrived early.",
+      "meaning": "체크인하고 싶은데 일찍 도착했어요.",
+      "reading": null,
+      "phonetic_kr": "아이드 라이크 투 체킨 버라이 어라이v드 어r리",
+      "order_index": 5,
+      "explanation": {
+        "key": "I'd like to check in = 체크인하고 싶어요. 호텔 카운터에서 용건을 꺼내는 정중한 첫마디.",
+        "situation": "비행기가 아침에 닿아 호텔에 일찍 도착했을 때 — 방이 준비됐는지 물어보기 전에 용건부터 말한다.",
+        "drills": [
+          {
+            "en": "What time is check-in?",
+            "ko": "체크인이 몇 시예요?",
+            "kr": "왓 타이미z 체킨"
+          },
+          {
+            "en": "Can I check in now?",
+            "ko": "지금 체크인할 수 있어요?",
+            "kr": "캔 아이 체킨 나우"
+          },
+          {
+            "en": "I'd like to check in, please.",
+            "ko": "체크인하고 싶은데요.",
+            "kr": "아이드 라이크 투 체킨 플리이z"
+          },
+          {
+            "en": "I'd like to check in before lunch.",
+            "ko": "점심 전에 체크인하고 싶어요.",
+            "kr": "아이드 라이크 투 체킨 비f포어r 런치"
+          },
+          {
+            "en": "My wife would like to check in first.",
+            "ko": "아내가 먼저 체크인하고 싶어 해.",
+            "kr": "마이 와이f 우드 라이크 투 체킨 f퍼r스트"
+          },
+          {
+            "en": "We arrived early, so we walked around the block.",
+            "ko": "일찍 도착해서 근처를 좀 걸었어.",
+            "kr": "위 어라이v드 어r리 쏘 위 워크트 어라운드 더 블락"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I'd like to + 동사원형, but + 사정",
+            "body": "I'd like to 는 I want to 의 정중한 형태이고 뒤에는 동사원형이 온다. '체크인하다'는 두 단어 동사 check in 이고, 명사(체크인 시각)로 쓸 때만 check-in 으로 붙인다. 사정을 덧붙이는 '~인데'는 but 절이다."
+          }
+        ],
+        "chunks": [
+          [
+            "I'd like to check in,",
+            "아이드 라이크 투 체킨",
+            "체크인하고 싶은데,"
+          ],
+          [
+            "but I arrived early.",
+            "버라이 어라이v드 어r리",
+            "일찍 도착했어요."
+          ]
+        ],
+        "phonemes": [
+          [
+            "check in → 연음",
+            "'체크 인'처럼 끊지 않고 '체킨' — k 가 in 에 붙는다"
+          ],
+          [
+            "/aɪ/ arrived",
+            "arrived 의 i 는 '아이' — '어리브드'(X) '어라이v드'(O), 끝 -ed 는 /d/ 한 번"
+          ],
+          [
+            "/ɜːr/ early",
+            "early 는 혀를 말아 '어r리' — 'ㄹ' 받침으로 '얼리'처럼 끊지 않는다"
+          ]
+        ],
+        "mistake": "'체크인하고 싶은데'를 I want to check in 으로만 말하면 카운터에서는 직설적으로 들린다. I'd like to 가 기본이다. '~인데'도 and 가 아니라 but 이다.",
+        "similar": "Can I check in now? / I'm here to check in.",
+        "category": "여행/숙소",
+        "frequency": 9,
+        "chain": {
+          "target": "I'd like to check in, but I arrived early. Is my room ready yet?",
+          "chunks": [
+            "I'd like to check in, but I arrived early.",
+            "Is my room ready",
+            "yet?"
+          ],
+          "ko": "체크인하고 싶은데 일찍 도착했어요. 방이 벌써 준비됐을까요?"
+        },
+        "anchor": "체크인하고 싶은데"
+      }
+    },
+    {
+      "id": "en-core100-068-leave-my-luggage",
+      "sentence": "Could I leave my luggage here until check-in?",
+      "meaning": "체크인할 때까지 짐을 맡겨도 될까요?",
+      "reading": null,
+      "phonetic_kr": "쿠라이 리이v 마이 러기지 히어r 언틸 체킨",
+      "order_index": 6,
+      "explanation": {
+        "key": "leave my luggage here = 짐을 여기 맡겨 두다. 방에 아직 못 들어갈 때 가방만 두고 나가려고 쓰는 말.",
+        "situation": "체크인 시간까지 몇 시간이 남았을 때 — 프런트에 가방을 맡기고 가볍게 나가서 돌아다닌다.",
+        "drills": [
+          {
+            "en": "Can I leave my luggage here?",
+            "ko": "여기에 짐을 맡겨도 될까요?",
+            "kr": "캔 아이 리이v 마이 러기지 히어r"
+          },
+          {
+            "en": "Where can I leave my bags?",
+            "ko": "가방은 어디에 맡기면 되나요?",
+            "kr": "웨어r 캔 아이 리이v 마이 백z"
+          },
+          {
+            "en": "I left my umbrella on the train.",
+            "ko": "우산을 열차에 두고 내렸어요.",
+            "kr": "아이 레f트 마이 엄브렐라 온 더 트레인"
+          },
+          {
+            "en": "Could we leave our bags here until three?",
+            "ko": "3시까지 여기 가방을 맡겨도 될까요?",
+            "kr": "쿠드 위 리이v 아워r 백z 히어r 언틸 쓰리이"
+          },
+          {
+            "en": "I'd like to leave my luggage here until this afternoon.",
+            "ko": "오늘 오후까지 여기 짐을 맡기고 싶어요.",
+            "kr": "아이드 라이크 투 리이v 마이 러기지 히어r 언틸 디스 애f터r누운"
+          },
+          {
+            "en": "My wife wants to leave her bag with the front desk.",
+            "ko": "아내는 가방을 프런트에 맡기고 싶어 해.",
+            "kr": "마이 와이f 원츠 투 리이v 허r 백 위드 더 f런트 데스크"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "Could I + 동사원형 + 목적어 + 장소 + until + 시점?",
+            "body": "Could I 는 '~해도 될까요'라는 허락 요청이다. 짐을 두는 장소(here)를 먼저 말하고 언제까지인지는 until 로 뒤에 붙인다. 한국어 '체크인할 때까지'가 통째로 until check-in 자리다."
+          }
+        ],
+        "chunks": [
+          [
+            "Could I leave my luggage here",
+            "쿠라이 리이v 마이 러기지 히어r",
+            "짐을 여기 맡겨도 될까요"
+          ],
+          [
+            "until check-in?",
+            "언틸 체킨",
+            "체크인할 때까지?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "could I → 연음",
+            "'쿠드 아이'가 아니라 d 가 부드러운 flap 이 되어 '쿠라이'"
+          ],
+          [
+            "/iː/ leave",
+            "leave 의 ea 는 길게 '리이v' — 짧게 '리브'로 내면 live 로 들린다"
+          ],
+          [
+            "/ʌ/ luggage",
+            "luggage 의 u 는 '어' — '루기지'(X) '러기지'(O)"
+          ]
+        ],
+        "mistake": "luggage 는 셀 수 없는 명사라 luggages 로 쓰지 않는다. '맡기다'도 keep 이 아니라 leave 를 쓴다 — keep my luggage 라고 하면 보관 서비스를 요구하는 말처럼 들린다.",
+        "similar": "Can I store my bags here? / Do you have luggage storage?",
+        "category": "여행/숙소",
+        "frequency": 8,
+        "chain": {
+          "target": "Could I leave my luggage here until check-in, and pick it up around three?",
+          "chunks": [
+            "Could I leave my luggage here until check-in,",
+            "and pick it up",
+            "around three?"
+          ],
+          "ko": "체크인할 때까지 짐을 여기 맡겨 두고, 3시쯤 찾아가도 될까요?"
+        },
+        "anchor": "짐을 맡겨도 될까요"
+      }
+    }
+  ]
+}

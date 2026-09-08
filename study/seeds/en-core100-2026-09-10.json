@@ -1,0 +1,569 @@
+{
+  "lang": "en",
+  "track": "core100",
+  "block": "31-50 일상 설명과 이야기하기",
+  "date": "2026-09-10",
+  "_note": "코어 100문장 커리큘럼 45~50번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "cards": [
+    {
+      "id": "en-core100-045-thats-not-what",
+      "sentence": "That's not what I was trying to say.",
+      "meaning": "내가 하려던 말은 그게 아니야.",
+      "reading": null,
+      "phonetic_kr": "댓츠 낫 왓 아이 워z 트라잉 투 쎄이",
+      "order_index": 1,
+      "explanation": {
+        "key": "That's not what = 그게 ~한 게 아니야. 상대가 내 말을 다르게 알아들었을 때 오해를 바로잡는 말.",
+        "situation": "내 말이 다르게 전해졌을 때 — 아내가 내 말을 오해해서 표정이 굳었을 때 바로 이 문장으로 되돌린다.",
+        "drills": [
+          {
+            "en": "That's not what I meant.",
+            "ko": "그런 뜻으로 한 말이 아니야.",
+            "kr": "댓츠 낫 와라이 멘트"
+          },
+          {
+            "en": "That's not what I ordered.",
+            "ko": "제가 주문한 건 이게 아닌데요.",
+            "kr": "댓츠 낫 와라이 오r더r드"
+          },
+          {
+            "en": "No, that's not what she said.",
+            "ko": "아니, 걔가 그렇게 말한 게 아니야.",
+            "kr": "노우 댓츠 낫 왓 쉬 쎄드"
+          },
+          {
+            "en": "Is that what you were trying to say?",
+            "ko": "네가 하려던 말이 그거야?",
+            "kr": "이z 댓 왓 유 워r 트라잉 투 쎄이"
+          },
+          {
+            "en": "My wife said that's not what she meant.",
+            "ko": "아내는 그런 뜻이 아니었다고 했어.",
+            "kr": "마이 와이f 쎄드 댓츠 낫 왓 쉬 멘트"
+          },
+          {
+            "en": "I was trying to say we should leave early.",
+            "ko": "내가 하려던 말은 일찍 나가자는 거였어.",
+            "kr": "아이 워z 트라잉 투 쎄이 위 슈드 리이v 어r리"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "That's not what + 주어 + 동사",
+            "body": "한국어는 '내가 하려던 말은'을 먼저 말하고 '그게 아니야'로 끝내지만, 영어는 That's not what 을 먼저 던지고 내용을 뒤에 붙인다. what 은 '~하는 것'이라는 뜻으로 뒤 절을 통째로 명사로 만든다."
+          }
+        ],
+        "chunks": [
+          [
+            "That's not what",
+            "댓츠 낫 왓",
+            "그건 ~가 아니야"
+          ],
+          [
+            "I was trying to say.",
+            "아이 워z 트라잉 투 쎄이",
+            "내가 말하려던 것."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ð/ that",
+            "that's 의 th 는 혀끝을 이 사이에 대고 내는 유성음 — '탯츠'(X) '댓츠'(O)"
+          ],
+          [
+            "what I → 연음",
+            "'왓 아이'로 끊지 말고 '와라이' — t 가 모음 사이에서 부드러운 flap 이 된다"
+          ]
+        ],
+        "mistake": "'내 말은 그게 아니야'를 My words are not that 처럼 직역하기 쉽다. 영어는 That's not what 뒤에 '내가 하려던 말'을 절로 붙여 말한다.",
+        "similar": "That's not what I meant. / I didn't mean it that way.",
+        "category": "일상/정정",
+        "frequency": 9,
+        "chain": {
+          "target": "That's not what I was trying to say, let me put it another way.",
+          "chunks": [
+            "That's not what I was trying to say,",
+            "let me",
+            "put it",
+            "another way."
+          ],
+          "ko": "내가 하려던 말은 그게 아니야, 다르게 말해 볼게."
+        },
+        "anchor": "그게 아니야"
+      }
+    },
+    {
+      "id": "en-core100-046-i-dont-think",
+      "sentence": "I don't think that's what she meant.",
+      "meaning": "걔가 그런 뜻으로 말한 건 아닌 것 같아.",
+      "reading": null,
+      "phonetic_kr": "아이 돈 씽크 댓츠 왓 쉬 멘트",
+      "order_index": 2,
+      "explanation": {
+        "key": "I don't think = ~인 것 같지 않아. 한국어는 뒤 절에 '아니'를 붙이지만 영어는 not 을 맨 앞으로 빼는 부드러운 부정.",
+        "situation": "다른 사람 말을 두고 아내와 해석이 갈릴 때 — 단정하지 않고 내 생각을 얹어 말한다.",
+        "drills": [
+          {
+            "en": "I don't think so.",
+            "ko": "그건 아닌 것 같아.",
+            "kr": "아이 돈 씽크 쏘"
+          },
+          {
+            "en": "I don't think that's right.",
+            "ko": "그건 맞는 것 같지 않아.",
+            "kr": "아이 돈 씽크 댓츠 라잇"
+          },
+          {
+            "en": "Do you think she meant that?",
+            "ko": "걔가 그런 뜻으로 말한 것 같아?",
+            "kr": "두 유 씽크 쉬 멘트 댓"
+          },
+          {
+            "en": "I didn't think you meant that.",
+            "ko": "네가 그런 뜻인 줄은 몰랐어.",
+            "kr": "아이 디든 씽크 유 멘트 댓"
+          },
+          {
+            "en": "I don't think we have time for that.",
+            "ko": "그럴 시간은 없을 것 같아.",
+            "kr": "아이 돈 씽크 위 해v 타임 f포어r 댓"
+          },
+          {
+            "en": "My wife doesn't think that's what he said.",
+            "ko": "아내는 그 사람이 그렇게 말한 게 아니라고 봐.",
+            "kr": "마이 와이f 더즌 씽크 댓츠 왓 히 쎄드"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "I don't think + 문장",
+            "body": "한국어는 '~한 건 아닌 것 같아'처럼 뒤쪽에서 부정하지만, 영어는 부정을 앞으로 올려 I don't think 로 시작한다. I think she didn't mean that 도 문법은 맞지만 실제 회화에서는 거의 이렇게 말하지 않는다."
+          },
+          {
+            "struct": "that's what + 주어 + 동사",
+            "body": "'그게 걔가 말한 뜻이다'는 that's what she meant 로 말한다. what 절이 통째로 보어 자리에 오고, 그 앞에 I don't think 를 얹으면 두 겹 문장이 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "I don't think",
+            "아이 돈 씽크",
+            "난 ~인 것 같지 않아"
+          ],
+          [
+            "that's what",
+            "댓츠 왓",
+            "그게 ~한 것이라고"
+          ],
+          [
+            "she meant.",
+            "쉬 멘트",
+            "걔가 뜻한."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/θ/ think",
+            "think 의 th 는 혀끝을 이 사이에 — '띵크'(X) '씽크'(O, 혀를 물듯이)"
+          ],
+          [
+            "/e/ meant",
+            "meant 는 mean(미인)과 달리 모음이 짧다 — '미인트'(X) '멘트'(O)"
+          ]
+        ],
+        "mistake": "'아닌 것 같아'를 I think that's not what she meant 로 옮기기 쉽다. 영어는 부정을 앞으로 빼서 I don't think ~ 로 말한다. meant 는 mean 의 과거형이라 발음도 '멘트'다.",
+        "similar": "I don't think she meant it that way. / That's not what she meant.",
+        "category": "일상/해석",
+        "frequency": 9,
+        "chain": {
+          "target": "I don't think that's what she meant, she was probably just tired.",
+          "chunks": [
+            "I don't think that's what she meant,",
+            "she was",
+            "probably just",
+            "tired."
+          ],
+          "ko": "걔가 그런 뜻으로 말한 건 아닌 것 같아, 아마 그냥 피곤했을 거야."
+        },
+        "anchor": "아닌 것 같아"
+      }
+    },
+    {
+      "id": "en-core100-047-want-me-to",
+      "sentence": "What do you want me to do about it?",
+      "meaning": "내가 이걸 어떻게 하길 바라는데?",
+      "reading": null,
+      "phonetic_kr": "왓 두 유 원트 미 투 두 어바우릿",
+      "order_index": 3,
+      "explanation": {
+        "key": "want me to = 내가 ~하길 바라다. 상대가 나한테 뭘 원하는지 되물을 때 쓰는 덩어리.",
+        "situation": "상대가 문제만 이야기하고 무엇을 원하는지는 말하지 않을 때 — 아내가 곤란한 일을 털어놓으면 내가 뭘 해 주면 되는지 묻는다.",
+        "drills": [
+          {
+            "en": "What do you want me to do?",
+            "ko": "내가 어떻게 하면 좋겠어?",
+            "kr": "왓 두 유 원트 미 투 두"
+          },
+          {
+            "en": "What do you want me to say?",
+            "ko": "내가 무슨 말을 하길 바라는데?",
+            "kr": "왓 두 유 원트 미 투 쎄이"
+          },
+          {
+            "en": "Do you want me to call her?",
+            "ko": "내가 걔한테 전화할까?",
+            "kr": "두 유 원트 미 투 콜 허r"
+          },
+          {
+            "en": "Do you want me to book the hotel?",
+            "ko": "내가 호텔을 예약할까?",
+            "kr": "두 유 원트 미 투 북 더 호텔"
+          },
+          {
+            "en": "My wife wants me to feed the cat first.",
+            "ko": "아내는 내가 고양이 밥부터 주길 바라.",
+            "kr": "마이 와이f 원츠 미 투 f피이드 더 캣 f퍼r스트"
+          },
+          {
+            "en": "I don't want you to worry about it.",
+            "ko": "네가 그것 때문에 걱정하지 않았으면 해.",
+            "kr": "아이 돈 원트 유 투 워리 어바우릿"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "want + 사람 + to + 동사원형",
+            "body": "'내가 ~하길 바란다'는 want 뒤에 사람(me)을 놓고 to 부정사를 잇는다. 한국어는 '내가 하길'처럼 사람과 동사가 붙어 있지만 영어는 want me / to do 로 나뉜다. want that I do 라고는 하지 않는다."
+          },
+          {
+            "struct": "do about + 대상",
+            "body": "'이걸 어떻게 하다'는 do about it 이다. 문제에 대해 손을 쓴다는 뜻이라, 그 일을 실행한다는 do it 과는 다르다."
+          }
+        ],
+        "chunks": [
+          [
+            "What do you want",
+            "왓 두 유 원트",
+            "네가 뭘 원해"
+          ],
+          [
+            "me to do",
+            "미 투 두",
+            "내가 하기를"
+          ],
+          [
+            "about it?",
+            "어바우릿",
+            "그 일에 대해?"
+          ]
+        ],
+        "phonemes": [
+          [
+            "about it → 연음",
+            "'어바웃 잇'처럼 끊지 않고 '어바우릿' — t 가 모음 사이에서 부드러운 flap"
+          ],
+          [
+            "/ɑ/ want",
+            "want 는 입술을 둥글게 모아 '원트' — '완트'(X). 끝 t 를 살려야 won't(오운트)와 갈린다"
+          ]
+        ],
+        "mistake": "'내가 어떻게 하길 바라?'를 What do you want I do? 로 옮기기 쉽다. want 뒤에는 절이 아니라 me to do 가 온다. 또 이 문장은 말투에 따라 따지는 느낌이 되니, 부드럽게 물을 땐 What would you like me to do? 를 쓴다.",
+        "similar": "What would you like me to do? / What should I do about it?",
+        "category": "일상/요청",
+        "frequency": 8,
+        "chain": {
+          "target": "What do you want me to do about it? I can call them if you want.",
+          "chunks": [
+            "What do you want me to do about it?",
+            "I can call them",
+            "if you want."
+          ],
+          "ko": "내가 이걸 어떻게 하길 바라는데? 원하면 내가 전화해 볼게."
+        },
+        "anchor": "하길 바라는데"
+      }
+    },
+    {
+      "id": "en-core100-048-theres-no-way",
+      "sentence": "There's no way I'm going to do that.",
+      "meaning": "내가 그걸 할 리가 없어.",
+      "reading": null,
+      "phonetic_kr": "데어r즈 노우 웨이 아임 고잉 투 두 댓",
+      "order_index": 4,
+      "explanation": {
+        "key": "There's no way = 그럴 일은 없다. 가능성을 아예 잘라내며 강하게 거절하거나 부정하는 덩어리.",
+        "situation": "말도 안 되는 제안을 받았을 때 — 고양이를 데리고 열두 시간 비행기를 타자는 말에 단호하게 답한다.",
+        "drills": [
+          {
+            "en": "There's no way.",
+            "ko": "그럴 일은 없어.",
+            "kr": "데어r즈 노우 웨이"
+          },
+          {
+            "en": "There's no way she said that.",
+            "ko": "걔가 그렇게 말했을 리가 없어.",
+            "kr": "데어r즈 노우 웨이 쉬 쎄드 댓"
+          },
+          {
+            "en": "Is there any way to change the date?",
+            "ko": "날짜를 바꿀 방법이 있을까요?",
+            "kr": "이z 데어r 애니 웨이 투 체인지 더 데이트"
+          },
+          {
+            "en": "There's no way we'll get there by six.",
+            "ko": "6시까지 거기 도착할 리가 없어.",
+            "kr": "데어r즈 노우 웨이 위일 겟 데어r 바이 씩스"
+          },
+          {
+            "en": "My wife says there's no way we can go.",
+            "ko": "아내는 우리가 갈 방법이 없다고 해.",
+            "kr": "마이 와이f 쎄즈 데어r즈 노우 웨이 위 캔 고우"
+          },
+          {
+            "en": "There's no way I'm taking the cat on the plane.",
+            "ko": "내가 고양이를 비행기에 태울 일은 없어.",
+            "kr": "데어r즈 노우 웨이 아임 테이킹 더 캐론 더 플레인"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "There's no way + 주어 + 동사",
+            "body": "'~할 리가 없다'는 There's no way 를 먼저 말하고 그 뒤에 문장을 통째로 붙인다. 한국어는 '할 리가 없어'가 문장 끝에 오지만 영어는 앞에서 가능성을 먼저 잘라낸다. way 뒤에 that 을 넣어도 되지만 회화에서는 대개 생략한다."
+          },
+          {
+            "struct": "I'm going to + 동사원형",
+            "body": "여기서 be going to 는 '가는 중'이 아니라 앞으로 그렇게 할 작정이라는 뜻이다. There's no way 와 합쳐지면 '그럴 작정은 전혀 없다'는 강한 거절이 된다."
+          }
+        ],
+        "chunks": [
+          [
+            "There's no way",
+            "데어r즈 노우 웨이",
+            "그럴 일은 없어"
+          ],
+          [
+            "I'm going to do that.",
+            "아임 고잉 투 두 댓",
+            "내가 그걸 할."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ð/ There",
+            "There 의 th 는 유성음 — 혀끝을 이 사이에 대고 '데어r'. '테어r'(X)"
+          ],
+          [
+            "going to → 고잉 투",
+            "빠른 말에서는 'gonna(거나)'로도 들리지만, 원문이 going to 면 음절을 지켜 '고잉 투'로 읽는 편이 발음 채점에 유리하다"
+          ]
+        ],
+        "mistake": "'할 리가 없어'를 I can't do that 으로 옮기면 능력이 안 된다는 말이 된다. There's no way 는 할 마음이 없다는 강한 거절이다. way 앞에 a 를 넣어 There's no a way 라고 하지 않는다.",
+        "similar": "No way. / I'm definitely not doing that.",
+        "category": "일상/거절",
+        "frequency": 8,
+        "chain": {
+          "target": "There's no way I'm going to do that, so please don't ask me again.",
+          "chunks": [
+            "There's no way I'm going to do that,",
+            "so please",
+            "don't ask me",
+            "again."
+          ],
+          "ko": "내가 그걸 할 리가 없어, 그러니까 다시 묻지 말아 줘."
+        },
+        "anchor": "할 리가 없어"
+      }
+    },
+    {
+      "id": "en-core100-049-it-looks-like",
+      "sentence": "It looks like we're going to be late.",
+      "meaning": "우리 늦을 것 같아.",
+      "reading": null,
+      "phonetic_kr": "잇 룩스 라이크 위어r 고잉 투 비 레잇",
+      "order_index": 5,
+      "explanation": {
+        "key": "It looks like = ~할 것 같다. 눈앞의 상황을 근거로 앞일을 짐작해서 말할 때 쓴다.",
+        "situation": "약속 시간이 빠듯할 때 — 길이 막히거나 기차를 놓쳐서 기다리는 사람에게 미리 알린다.",
+        "drills": [
+          {
+            "en": "It looks like rain.",
+            "ko": "비가 올 것 같아.",
+            "kr": "잇 룩스 라이크 레인"
+          },
+          {
+            "en": "It doesn't look like she's coming.",
+            "ko": "걔는 안 오는 것 같아.",
+            "kr": "잇 더즌 룩 라이크 쉬즈 커밍"
+          },
+          {
+            "en": "Sorry, I'm going to be late.",
+            "ko": "미안, 나 늦을 것 같아.",
+            "kr": "쏘리 아임 고잉 투 비 레잇"
+          },
+          {
+            "en": "It looks like the train is delayed.",
+            "ko": "기차가 지연된 것 같아.",
+            "kr": "잇 룩스 라이크 더 트레이니z 딜레이드"
+          },
+          {
+            "en": "My wife thinks we're going to be late.",
+            "ko": "아내는 우리가 늦을 거라고 생각해.",
+            "kr": "마이 와이f 씽크스 위어r 고잉 투 비 레잇"
+          },
+          {
+            "en": "It looks like we're going to miss the train.",
+            "ko": "우리 기차를 놓칠 것 같아.",
+            "kr": "잇 룩스 라이크 위어r 고잉 투 미스 더 트레인"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "It looks like + 문장",
+            "body": "'~할 것 같다'는 It looks like 뒤에 문장을 통째로 붙인다. 앞의 It 은 뜻이 없는 자리 채우기라 한국어로 옮기지 않는다. like 뒤에는 명사(rain)도 오고 절(we're going to be late)도 온다."
+          },
+          {
+            "struct": "be going to be + 형용사/상태",
+            "body": "going to 뒤에 오는 동사가 be 라서 be 가 두 번 나오는 것처럼 보이지만 정상이다. 앞의 going to 는 앞으로 그렇게 될 거라는 예정이고, 뒤의 be 가 늦은 상태라는 본동사다."
+          }
+        ],
+        "chunks": [
+          [
+            "It looks like",
+            "잇 룩스 라이크",
+            "~할 것 같아"
+          ],
+          [
+            "we're going to be",
+            "위어r 고잉 투 비",
+            "우리가 ~하게 될"
+          ],
+          [
+            "late.",
+            "레잇",
+            "늦게."
+          ]
+        ],
+        "phonemes": [
+          [
+            "/ʊ/ looks",
+            "looks 의 oo 는 짧은 '우' — '루욱스'처럼 늘이지 않는다"
+          ],
+          [
+            "/eɪt/ late",
+            "late 는 '레이트'가 아니라 '레잇' — 끝 t 를 짧게 닫는다"
+          ]
+        ],
+        "mistake": "'늦을 것 같아'를 I think we are late 로 옮기면 이미 늦었다는 말이 된다. 아직 늦지 않았고 그렇게 될 것 같다는 뜻이라 going to be late 로 말한다. looks like 뒤에 to 부정사를 붙이지 않는다.",
+        "similar": "I think we're going to be late. / We're not going to make it on time.",
+        "category": "일상/추측",
+        "frequency": 9,
+        "chain": {
+          "target": "It looks like we're going to be late, so let's text them from the car.",
+          "chunks": [
+            "It looks like we're going to be late,",
+            "so let's",
+            "text them",
+            "from the car."
+          ],
+          "ko": "우리 늦을 것 같아, 그러니까 차에서 문자 보내자."
+        },
+        "anchor": "늦을 것 같아"
+      }
+    },
+    {
+      "id": "en-core100-050-just-have-to",
+      "sentence": "I guess we'll just have to wait and see.",
+      "meaning": "그냥 기다려 보는 수밖에 없을 것 같아.",
+      "reading": null,
+      "phonetic_kr": "아이 게스 위일 저스 해v 투 웨이랜 씨이",
+      "order_index": 6,
+      "explanation": {
+        "key": "just have to = ~하는 수밖에 없다. 달리 손쓸 방법이 없을 때 체념하듯 말하는 덩어리.",
+        "situation": "결과를 기다리는 것 말고 할 수 있는 게 없을 때 — 비행기 지연 안내나 고양이 검사 결과를 기다릴 때.",
+        "drills": [
+          {
+            "en": "We'll just have to wait.",
+            "ko": "기다리는 수밖에 없어.",
+            "kr": "위일 저스 해v 투 웨이트"
+          },
+          {
+            "en": "Let's wait and see what happens.",
+            "ko": "어떻게 되는지 두고 보자.",
+            "kr": "렛츠 웨이랜 씨이 왓 해픈즈"
+          },
+          {
+            "en": "You'll just have to be patient.",
+            "ko": "너는 참는 수밖에 없어.",
+            "kr": "유일 저스 해v 투 비 페이션트"
+          },
+          {
+            "en": "There's nothing we can do but wait.",
+            "ko": "우리가 할 수 있는 건 기다리는 것뿐이야.",
+            "kr": "데어r즈 낫씽 위 캔 두 벗 웨이트"
+          },
+          {
+            "en": "We'll just have to feed the cat later.",
+            "ko": "고양이 밥은 나중에 주는 수밖에 없어.",
+            "kr": "위일 저스 해v 투 f피이드 더 캣 레이러r"
+          },
+          {
+            "en": "I guess I'll just have to ask her myself.",
+            "ko": "내가 직접 물어보는 수밖에 없을 것 같아.",
+            "kr": "아이 게스 아일 저스 해v 투 애스커r 마이셀f"
+          }
+        ],
+        "grammar": [
+          {
+            "struct": "주어 + will just have to + 동사원형",
+            "body": "'~하는 수밖에 없다'는 '해야 한다'인 have to 에 just 를 넣어 그것 말고는 방법이 없다는 뜻을 만든다. 한국어는 '수밖에 없다'가 문장 끝에 오지만 영어는 동사 앞에 붙는다."
+          },
+          {
+            "struct": "I guess + 문장",
+            "body": "I guess 는 추측한다기보다 '~인 것 같아' 정도로 단정을 눅이는 말이다. 문장 맨 앞에 놓고 하고 싶은 말을 그대로 뒤에 붙인다."
+          }
+        ],
+        "chunks": [
+          [
+            "I guess",
+            "아이 게스",
+            "~인 것 같아"
+          ],
+          [
+            "we'll just have to",
+            "위일 저스 해v 투",
+            "우리는 ~하는 수밖에 없어"
+          ],
+          [
+            "wait and see.",
+            "웨이랜 씨이",
+            "기다려 보는 것."
+          ]
+        ],
+        "phonemes": [
+          [
+            "wait and → 연음",
+            "'웨이트 앤'처럼 끊지 말고 '웨이랜' — t 가 모음 사이에서 부드러운 flap 이 된다"
+          ],
+          [
+            "/iː/ see",
+            "see 의 모음은 길게 '씨이' — 짧게 '시'로 끊으면 다른 단어로 들린다"
+          ]
+        ],
+        "mistake": "'수밖에 없다'를 I have no choice but to wait 처럼 길게 옮기기 쉽다. 회화에서는 we'll just have to ~ 한 덩어리로 말한다. wait and see 는 순서가 굳은 짝 표현이라 see and wait 로 뒤집지 않는다.",
+        "similar": "We'll just have to see. / Nothing we can do but wait.",
+        "category": "일상/체념",
+        "frequency": 8,
+        "chain": {
+          "target": "I guess we'll just have to wait and see how it goes tomorrow.",
+          "chunks": [
+            "I guess we'll just have to wait and see",
+            "how it goes",
+            "tomorrow."
+          ],
+          "ko": "내일 일이 어떻게 되는지 그냥 기다려 보는 수밖에 없을 것 같아."
+        },
+        "anchor": "수밖에 없을"
+      }
+    }
+  ]
+}
