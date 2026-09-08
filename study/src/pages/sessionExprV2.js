@@ -546,15 +546,12 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
  * 넣지 않는다(정답 유출). 필드가 없으면 null(과거 카드 호환). 두 화자 음성 고정(A 여성·B 남성). demo 는 마이크 없이 시뮬. */
 const MINI_VOICES = { A: 'en-US-AvaMultilingualNeural', B: 'en-US-AndrewMultilingualNeural' };
 const MINI_CSS = `
-.vs-mini{margin:14px 0 0;padding:14px 16px;border-radius:16px;background:var(--card);border:1px solid var(--line)}
-.vs-mini .vs-labrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.vs-mini-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12.5px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer}
-.vs-mini-line{display:grid;grid-template-columns:22px 1fr auto 34px 34px;gap:8px;align-items:center;padding:8px 6px;border-radius:12px}
-.vs-mini-line .sp{font-family:Outfit,sans-serif;font-size:11px;font-weight:700;color:var(--faint);text-align:center}
-.vs-mini-line .en{font-size:15.5px;font-weight:600;line-height:1.35}
-.vs-mini-line .ko{font-size:12px;color:var(--mut);margin-top:2px}
-.vs-mini-line.tgt{background:var(--teal-soft)}
-.vs-mini-line.tgt .en{font-weight:800;color:var(--teal-deep)}`;
+.vs-mini-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.vs-mini-line{position:relative;isolation:isolate}
+.vs-mini-line.tgt{border-bottom-color:transparent}
+.vs-mini-line.tgt::before{content:"";position:absolute;inset:2px -10px;background:var(--teal-soft);border-radius:12px;z-index:-1}
+.vs-mini-line.tgt .en,.vs-mini-line.tgt .ix{color:var(--teal-deep)}
+.vs-mini-line.tgt .en{font-weight:800}`;
 export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved } = {}) {
   const lines = miniLinesOf(md);
   if (!lines.length) return null;
@@ -570,10 +567,11 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
     const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     play.addEventListener('click', () => speakWithFeedback(play, l.en, { lang: ttsLang, voice: voiceOf(l.speaker), rate: 1.0 }));
     const rec = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
-    const row = h('div', { class: 'vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
-      h('span', { class: 'sp' }, String(l.speaker ?? '')),
-      h('div', {}, h('div', { class: 'en' }, isT ? hlNode(l.en, expr) : l.en), l.ko ? h('div', { class: 'ko' }, l.ko) : null),
-      scoreEl, play, rec);
+    // 응용 행(.vs-drow)과 같은 구조·클래스 — 버튼 열이 응용 연습과 정확히 같은 자리에 온다 (2026-09-08 사용자 지적 "버튼 정렬").
+    const row = h('div', { class: 'vs-drow vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
+      h('span', { class: 'ix' }, String(l.speaker ?? '')),
+      h('div', {}, h('div', { class: 'en' }, isT ? hlNode(l.en, expr) : l.en), l.ko ? h('div', { class: 'sub ko' }, l.ko) : null),
+      h('span', { class: 'grow' }), scoreEl, play, rec);
     const pushScore = (raw) => {
       hist.push(Math.round(Number(raw) || 0));
       const shown = hist.slice(-DRILL_DOTS_MAX);
@@ -623,9 +621,10 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
     };
     playAt(0);
   });
+  // 카드 테두리 없이 응용 연습과 같은 평면 섹션 (라벨 행 + 행 목록) — 좌우 기준선이 같아진다.
   return h('div', { class: 'vs-mini' }, v2Style(MINI_CSS),
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '이런 대화에서'), allBtn),
-    rows.map((r) => r.el));
+    h('div', { style: 'margin-top:4px;' }, rows.map((r) => r.el)));
 }
 
 /* 생산 연습(한→영) — 방금 연습한 드릴 중 3개를 한글만 보고 영어로 재현 (2026-07-22 사용자 결정).
