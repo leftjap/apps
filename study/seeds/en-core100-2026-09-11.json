@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "51-80 여행영어",
   "date": "2026-09-11",
-  "_note": "코어 100문장 커리큘럼 51~56번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. 입국심사 질문·답 짝 구성 (51↔52, 53↔54, 55↔56).",
+  "_note": "코어 100문장 커리큘럼 51~56번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. 입국심사 질문·답 짝 구성 (51↔52, 53↔54, 55↔56). | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-051-whats-the-purpose-of",
@@ -15,6 +15,28 @@
       "explanation": {
         "key": "What's the purpose of ~ = ~의 목적이 무엇인가요. 입국 심사관이 여권을 받자마자 던지는 질문.",
         "situation": "입국 심사대에서 심사관이 가장 먼저 묻는 말 — 여권을 건네면 이 문장이 그대로 날아온다고 생각하고 들어 둔다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Good morning. Passport, please.",
+            "ko": "안녕하세요. 여권 주세요."
+          },
+          {
+            "speaker": "B",
+            "en": "Here you go.",
+            "ko": "여기요."
+          },
+          {
+            "speaker": "A",
+            "en": "What's the purpose of your visit?",
+            "ko": "방문 목적이 무엇인가요?"
+          },
+          {
+            "speaker": "B",
+            "en": "Vacation, for a week.",
+            "ko": "휴가요, 일주일이요."
+          }
+        ],
         "drills": [
           {
             "en": "Is this your first visit?",
@@ -102,6 +124,23 @@
       "explanation": {
         "key": "I'm here on ~ = ~로 왔어요. 방문 목적을 한 덩어리로 답하는 틀.",
         "situation": "심사관이 방문 목적을 물었을 때 — 아내와 휴가로 왔다면 목적과 머무는 기간을 한 문장에 담아 답한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "What brings you to Canada?",
+            "ko": "캐나다에는 무슨 일로 오셨어요?"
+          },
+          {
+            "speaker": "B",
+            "en": "I'm here on vacation, and I'll be staying for a week.",
+            "ko": "휴가로 왔고 일주일 머물 예정입니다."
+          },
+          {
+            "speaker": "A",
+            "en": "Enjoy your stay.",
+            "ko": "즐거운 여행 되세요."
+          }
+        ],
         "drills": [
           {
             "en": "I'm here on business.",
@@ -197,6 +236,18 @@
       "explanation": {
         "key": "How long will you ~ = 얼마나 ~하실 건가요. 체류 기간을 묻는 질문 틀.",
         "situation": "심사관이 체류 기간을 확인할 때 — 방문 목적을 답하고 나면 거의 반드시 이어서 나오는 말이다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "How long will you be staying in the country?",
+            "ko": "이 나라에 얼마나 머무르실 건가요?"
+          },
+          {
+            "speaker": "B",
+            "en": "Ten days. We leave on the twelfth.",
+            "ko": "열흘이요. 12일에 떠나요."
+          }
+        ],
         "drills": [
           {
             "en": "Are you staying long?",
@@ -288,6 +339,23 @@
       "explanation": {
         "key": "I'm staying at ~ = ~에 묵어요. 숙소를 대는 답의 틀.",
         "situation": "체류 기간과 숙소를 답할 때 — 호텔 예약 확인서를 보여 주며 이 문장으로 말하면 추가 질문이 줄어든다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Where are you staying?",
+            "ko": "어디에 묵으세요?"
+          },
+          {
+            "speaker": "B",
+            "en": "I'm staying at this hotel for five nights.",
+            "ko": "이 호텔에서 5박 할 예정입니다."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay. Have a good trip.",
+            "ko": "네. 좋은 여행 되세요."
+          }
+        ],
         "drills": [
           {
             "en": "Where are you staying?",
@@ -384,6 +452,18 @@
       "explanation": {
         "key": "have anything to declare = 신고할 물건이 있다. 세관에서 반드시 듣게 되는 질문의 핵심.",
         "situation": "세관 통로에서 직원이 가방을 보며 묻는 말 — 짧고 빠르게 지나가니 통째로 귀에 익혀 둔다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Do you have anything to declare?",
+            "ko": "신고할 물건이 있나요?"
+          },
+          {
+            "speaker": "B",
+            "en": "No, just some gifts.",
+            "ko": "아니요, 선물 몇 개뿐이에요."
+          }
+        ],
         "drills": [
           {
             "en": "Anything to declare?",
@@ -475,6 +555,23 @@
       "explanation": {
         "key": "don't have anything to declare = 신고할 물건이 없다. 세관 질문에 없다고 답하는 부정 틀.",
         "situation": "신고할 것이 없을 때 — 아내와 산 선물 정도라면 이 한 문장으로 통과된다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Anything to declare, sir?",
+            "ko": "신고할 물건 있으세요?"
+          },
+          {
+            "speaker": "B",
+            "en": "I don't have anything to declare.",
+            "ko": "신고할 물건은 없습니다."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay. Go ahead.",
+            "ko": "네. 지나가세요."
+          }
+        ],
         "drills": [
           {
             "en": "I have nothing to declare.",

@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "31-50 일상 설명과 이야기하기",
   "date": "2026-09-10",
-  "_note": "코어 100문장 커리큘럼 45~50번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 45~50번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-045-thats-not-what",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "That's not what = 그게 ~한 게 아니야. 상대가 내 말을 다르게 알아들었을 때 오해를 바로잡는 말.",
         "situation": "내 말이 다르게 전해졌을 때 — 아내가 내 말을 오해해서 표정이 굳었을 때 바로 이 문장으로 되돌린다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "So you think my cooking is bad?",
+            "ko": "그러니까 내 요리가 별로라는 거야?"
+          },
+          {
+            "speaker": "B",
+            "en": "That's not what I was trying to say.",
+            "ko": "내가 하려던 말은 그게 아니야."
+          },
+          {
+            "speaker": "A",
+            "en": "Then say it again, slowly.",
+            "ko": "그럼 다시 말해 봐, 천천히."
+          }
+        ],
         "drills": [
           {
             "en": "That's not what I meant.",
@@ -102,6 +119,28 @@
       "explanation": {
         "key": "I don't think = ~인 것 같지 않아. 한국어는 뒤 절에 '아니'를 붙이지만 영어는 not 을 맨 앞으로 빼는 부드러운 부정.",
         "situation": "다른 사람 말을 두고 아내와 해석이 갈릴 때 — 단정하지 않고 내 생각을 얹어 말한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Mom said we should visit more. She's angry.",
+            "ko": "엄마가 더 자주 오라고 했어. 화나셨나 봐."
+          },
+          {
+            "speaker": "B",
+            "en": "I don't think that's what she meant.",
+            "ko": "걔가 그런 뜻으로 말한 건 아닌 것 같아."
+          },
+          {
+            "speaker": "A",
+            "en": "Then what did she mean?",
+            "ko": "그럼 무슨 뜻이었는데?"
+          },
+          {
+            "speaker": "B",
+            "en": "She just misses us.",
+            "ko": "그냥 우리가 보고 싶으신 거야."
+          }
+        ],
         "drills": [
           {
             "en": "I don't think so.",
@@ -198,6 +237,23 @@
       "explanation": {
         "key": "want me to = 내가 ~하길 바라다. 상대가 나한테 뭘 원하는지 되물을 때 쓰는 덩어리.",
         "situation": "상대가 문제만 이야기하고 무엇을 원하는지는 말하지 않을 때 — 아내가 곤란한 일을 털어놓으면 내가 뭘 해 주면 되는지 묻는다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The neighbors are loud again.",
+            "ko": "이웃집이 또 시끄러워."
+          },
+          {
+            "speaker": "B",
+            "en": "What do you want me to do about it?",
+            "ko": "내가 이걸 어떻게 하길 바라는데?"
+          },
+          {
+            "speaker": "A",
+            "en": "Maybe just talk to them?",
+            "ko": "그냥 가서 얘기해 볼까?"
+          }
+        ],
         "drills": [
           {
             "en": "What do you want me to do?",
@@ -293,6 +349,23 @@
       "explanation": {
         "key": "There's no way = 그럴 일은 없다. 가능성을 아예 잘라내며 강하게 거절하거나 부정하는 덩어리.",
         "situation": "말도 안 되는 제안을 받았을 때 — 고양이를 데리고 열두 시간 비행기를 타자는 말에 단호하게 답한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Let's take the cat on the plane with us.",
+            "ko": "고양이를 비행기에 같이 데려가자."
+          },
+          {
+            "speaker": "B",
+            "en": "There's no way I'm going to do that.",
+            "ko": "내가 그걸 할 리가 없어."
+          },
+          {
+            "speaker": "A",
+            "en": "Come on, it's only twelve hours.",
+            "ko": "왜, 겨우 열두 시간인데."
+          }
+        ],
         "drills": [
           {
             "en": "There's no way.",
@@ -384,6 +457,23 @@
       "explanation": {
         "key": "It looks like = ~할 것 같다. 눈앞의 상황을 근거로 앞일을 짐작해서 말할 때 쓴다.",
         "situation": "약속 시간이 빠듯할 때 — 길이 막히거나 기차를 놓쳐서 기다리는 사람에게 미리 알린다.",
+        "miniDialogue": [
+          {
+            "speaker": "B",
+            "en": "It looks like we're going to be late.",
+            "ko": "우리 늦을 것 같아."
+          },
+          {
+            "speaker": "A",
+            "en": "How late?",
+            "ko": "얼마나 늦어?"
+          },
+          {
+            "speaker": "B",
+            "en": "Maybe twenty minutes. The traffic is bad.",
+            "ko": "한 20분쯤. 길이 많이 막혀."
+          }
+        ],
         "drills": [
           {
             "en": "It looks like rain.",
@@ -480,6 +570,23 @@
       "explanation": {
         "key": "just have to = ~하는 수밖에 없다. 달리 손쓸 방법이 없을 때 체념하듯 말하는 덩어리.",
         "situation": "결과를 기다리는 것 말고 할 수 있는 게 없을 때 — 비행기 지연 안내나 고양이 검사 결과를 기다릴 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The vet said the results come tomorrow.",
+            "ko": "수의사가 결과는 내일 나온대."
+          },
+          {
+            "speaker": "B",
+            "en": "I guess we'll just have to wait and see.",
+            "ko": "그냥 기다려 보는 수밖에 없을 것 같아."
+          },
+          {
+            "speaker": "A",
+            "en": "Yeah. Try not to worry.",
+            "ko": "그래. 너무 걱정하지 마."
+          }
+        ],
         "drills": [
           {
             "en": "We'll just have to wait.",

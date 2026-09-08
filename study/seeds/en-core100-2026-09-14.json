@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "51-80 여행영어",
   "date": "2026-09-14",
-  "_note": "코어 100문장 커리큘럼 69~74번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 69~74번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-069-theres-been-a-mistake",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "there's been a mistake = 착오가 있었다. 누가 잘못했는지 말하지 않고 문제만 짚는 말.",
         "situation": "호텔 프런트에서 예약이 안 잡혀 있을 때 — 따지지 않고 확인부터 부탁하며 꺼내는 첫 문장.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Sorry, I don't see your name here.",
+            "ko": "죄송한데, 여기 성함이 안 보이네요."
+          },
+          {
+            "speaker": "B",
+            "en": "I think there's been a mistake with my reservation.",
+            "ko": "제 예약에 문제가 생긴 것 같아요."
+          },
+          {
+            "speaker": "A",
+            "en": "Let me check again. What's the email?",
+            "ko": "다시 확인해 볼게요. 이메일이 뭐죠?"
+          }
+        ],
         "drills": [
           {
             "en": "There's been a mistake.",
@@ -110,6 +127,23 @@
       "explanation": {
         "key": "Is ~ included = ~가 포함인가요. 값에 무엇이 들어 있는지 확인할 때 쓰는 질문.",
         "situation": "체크인할 때 조식·와이파이·세금이 방값에 들어 있는지 물을 때 — 나중에 계산에서 놀라지 않으려고 미리 확인한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Here's your key. Room 412.",
+            "ko": "키 여기 있습니다. 412호예요."
+          },
+          {
+            "speaker": "B",
+            "en": "Is breakfast included, or do I need to pay extra?",
+            "ko": "조식이 포함인가요, 아니면 추가 요금을 내야 하나요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Included, from seven to ten.",
+            "ko": "포함이에요. 일곱 시부터 열 시까지요."
+          }
+        ],
         "drills": [
           {
             "en": "Is breakfast included?",
@@ -205,6 +239,23 @@
       "explanation": {
         "key": "isn't working = 작동하지 않는다. 부서진 게 아니라 켜도 안 되는 상태를 알릴 때.",
         "situation": "호텔 방에서 에어컨·온수·카드키가 안 될 때 — 프런트에 전화해 무엇이 안 되는지 먼저 말한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Front desk. How can I help?",
+            "ko": "프런트입니다. 무엇을 도와드릴까요?"
+          },
+          {
+            "speaker": "B",
+            "en": "The air conditioner isn't working in my room.",
+            "ko": "방 에어컨이 작동하지 않아요."
+          },
+          {
+            "speaker": "A",
+            "en": "Sorry about that. Someone will come up now.",
+            "ko": "죄송합니다. 지금 사람을 올려 보낼게요."
+          }
+        ],
         "drills": [
           {
             "en": "The shower isn't working.",
@@ -300,6 +351,23 @@
       "explanation": {
         "key": "Could you recommend something = 뭐 하나 추천해 주시겠어요. 골라 달라고 부탁하는 말.",
         "situation": "메뉴를 못 읽겠는 식당에서 — 조건을 하나 달아 직원에게 고르게 맡긴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Are you ready to order?",
+            "ko": "주문하시겠어요?"
+          },
+          {
+            "speaker": "B",
+            "en": "Could you recommend something that isn't too spicy?",
+            "ko": "너무 맵지 않은 메뉴를 추천해 주시겠어요?"
+          },
+          {
+            "speaker": "A",
+            "en": "The chicken curry is mild. Very popular.",
+            "ko": "치킨 커리가 순해요. 인기도 많고요."
+          }
+        ],
         "drills": [
           {
             "en": "Could you recommend something?",
@@ -396,6 +464,23 @@
       "explanation": {
         "key": "I'm allergic to ~ = ~ 알레르기가 있어요. 못 먹는 것을 주문 전에 미리 알리는 말.",
         "situation": "주문하면서 재료를 확인할 때 — 이유를 먼저 말하고 바로 질문까지 붙여야 직원이 주방에 물어봐 준다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The pad thai is our best dish.",
+            "ko": "팟타이가 저희 대표 메뉴예요."
+          },
+          {
+            "speaker": "B",
+            "en": "I'm allergic to nuts, so does this have any?",
+            "ko": "견과류 알레르기가 있는데, 이거 들어갔나요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Let me ask the kitchen.",
+            "ko": "주방에 물어볼게요."
+          }
+        ],
         "drills": [
           {
             "en": "I'm allergic to nuts.",
@@ -491,6 +576,23 @@
       "explanation": {
         "key": "this isn't what I ordered = 이건 제가 주문한 게 아니에요. 잘못 나온 것을 부드럽게 짚는 말.",
         "situation": "식당에서 다른 음식이 나왔을 때 — 화내지 않고 I'm sorry 로 열어 바로잡아 달라고 한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Here you go. Enjoy!",
+            "ko": "여기 있습니다. 맛있게 드세요!"
+          },
+          {
+            "speaker": "B",
+            "en": "I'm sorry, but this isn't what I ordered.",
+            "ko": "죄송한데, 제가 주문한 게 아니에요."
+          },
+          {
+            "speaker": "A",
+            "en": "Oh, sorry! I'll fix that right away.",
+            "ko": "아, 죄송해요! 바로 바꿔 드릴게요."
+          }
+        ],
         "drills": [
           {
             "en": "That's not what I ordered.",

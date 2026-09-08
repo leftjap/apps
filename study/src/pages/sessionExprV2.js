@@ -10,7 +10,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   V_DOT_CSS, V_MINICAL_CSS, scoreDot, passDot, emptyDot, miniCalGrid, makeMiniTier, isoShift, mondayOf, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog, drillLogId, chainLogId, prodLogId, miniLogId, miniLinesOf } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId, chainLogId, prodLogId } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
@@ -540,10 +540,10 @@ export function chainBlockEl(chain, lang, card, demo, onUtterance, { saved, onSa
 }
 
 /* 미니대화 (2026-09-08 작업지시서 §1~§4) — 타깃 표현이 어떤 상대 발화·상황 뒤에 나오는지 듣게 하는 contextual input.
- * 위치는 문장 카드 **아래** (2026-09-08 사용자 결정 "기존처럼 기본 문장 먼저, 그다음 미니대화").
- * 학습 게이트가 아니다: 암기·통과 판정·다음 잠금·SRS 없음. 줄마다 듣기와 **선택 녹음**(2026-09-08 "녹음버튼도 추가") —
- * 녹음은 응용 행과 같은 채점·점수 배지·세션 집계(onScore)이고 진행 조건이 아니다. 복습 렌더러·공유 해설 패널에는
- * 넣지 않는다(정답 유출). 필드가 없으면 null(과거 카드 호환). 두 화자 음성 고정(A 여성·B 남성). demo 는 마이크 없이 시뮬. */
+ * 위치는 문장 카드 **아래**, **듣기 전용** (2026-09-08 사용자 최종 결정 "듣기 버튼만 두고 위치는 지금 위치로").
+ * 학습 게이트가 아니다: 녹음·암기·통과 판정·다음 잠금·SRS 없음. 타깃 문장 녹음은 카드의 '따라 말하기'가 맡는다.
+ * 신규 세션은 카드 아래에 바로, 복습 세션(sessionReviewV2)은 정답 공개 뒤에만 쓴다(타깃 줄이 정답을 품는다).
+ * 행 구조는 응용 행(.vs-drow)과 같아 버튼 열이 같은 자리에 온다. 필드가 없으면 null. 두 화자 음성 고정(A 여성·B 남성). */
 const MINI_VOICES = { A: 'en-US-AvaMultilingualNeural', B: 'en-US-AndrewMultilingualNeural' };
 const MINI_CSS = `
 .vs-mini-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:0;border-radius:999px;padding:6px 12px;cursor:pointer;white-space:nowrap}
@@ -552,65 +552,23 @@ const MINI_CSS = `
 .vs-mini-line.tgt::before{content:"";position:absolute;inset:2px -10px;background:var(--teal-soft);border-radius:12px;z-index:-1}
 .vs-mini-line.tgt .en,.vs-mini-line.tgt .ix{color:var(--teal-deep)}
 .vs-mini-line.tgt .en{font-weight:800}`;
-export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved } = {}) {
+/** en 이 비거나 문자열이 아닌 줄은 뺀다. */
+const miniLinesOf = (md) => (Array.isArray(md) ? md : []).filter((l) => l && typeof l.en === 'string' && l.en.trim());
+export function miniDialogueEl(md, s, lang, expr) {
   const lines = miniLinesOf(md);
   if (!lines.length) return null;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const target = String(s?.sentence ?? '').trim();
   const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
-  let recCtrl = null, recRow = null;
-  const rows = lines.map((l, i) => {
+  const rows = lines.map((l) => {
     const isT = l.en.trim() === target;
-    const hist = normScores(saved?.[i]);
-    const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
-      hist.slice(-DRILL_DOTS_MAX).map((v) => scoreDot(v, { size: 26, fresh: false })));
     const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
     play.addEventListener('click', () => speakWithFeedback(play, l.en, { lang: ttsLang, voice: voiceOf(l.speaker), rate: 1.0 }));
-    const rec = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
-    // 응용 행(.vs-drow)과 같은 구조·클래스 — 버튼 열이 응용 연습과 정확히 같은 자리에 온다 (2026-09-08 사용자 지적 "버튼 정렬").
-    const row = h('div', { class: 'vs-drow vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
+    const el = h('div', { class: 'vs-drow vs-mini-line' + (isT ? ' tgt' : ''), 'data-speaker': String(l.speaker ?? '') },
       h('span', { class: 'ix' }, String(l.speaker ?? '')),
       h('div', {}, h('div', { class: 'en' }, isT ? hlNode(l.en, expr) : l.en), l.ko ? h('div', { class: 'sub ko' }, l.ko) : null),
-      h('span', { class: 'grow' }), scoreEl, play, rec);
-    const pushScore = (raw) => {
-      hist.push(Math.round(Number(raw) || 0));
-      const shown = hist.slice(-DRILL_DOTS_MAX);
-      scoreEl.replaceChildren(...shown.map((v, k) => scoreDot(v, { size: 26, fresh: k === shown.length - 1 })));
-      scoreEl.style.display = '';
-      popScore(scoreEl);
-    };
-    // 녹음 종료·채점 — 수동 멈추기와 무음 자동종료 공유 (응용 행과 같은 계약). recRow 가드로 오행 방지.
-    async function finishRec() {
-      if (!(recCtrl && recRow === row)) return;
-      const ctrl = recCtrl; recCtrl = null; recRow = null;
-      row.classList.remove('recing'); rec.classList.remove('recing');
-      const result = await stopAndAnalyze(ctrl, l.en, { lang }, { enableMiscue: true });
-      if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
-      const judged = judgeRecording(result, l.en);
-      if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
-      const scored = scoreForDisplay(result, l.en, lang);
-      pushScore(scored.score);
-      onScore?.(i, scored);
-    }
-    rec.addEventListener('click', async () => {
-      if (demo) {
-        if (row.classList.contains('recing')) return;
-        row.classList.add('recing'); rec.classList.add('recing');
-        setTimeout(() => {
-          row.classList.remove('recing'); rec.classList.remove('recing');
-          const result = { score: Math.min(84 + i * 4, 99), weakPhonemes: ['ð'] };
-          pushScore(result.score);
-          onScore?.(i, result);
-        }, 800);
-        return;
-      }
-      if (recCtrl && recRow === row) { finishRec(); return; }
-      const r = await startMicRecording({ autoStopSilenceMs: 1400, speculate: { expected: l.en, card: { lang } }, onAutoStop: () => finishRec() });
-      if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
-      recCtrl = r.controller; recRow = row;
-      row.classList.add('recing'); rec.classList.add('recing');
-    });
-    return { l, play, el: row };
+      h('span', { class: 'grow' }), play);
+    return { l, play, el };
   });
   const allBtn = h('button', { class: 'vs-mini-all', type: 'button', 'data-role': 'mini-all' }, vIcon(VI.PLAY, { size: 11, fill: true }), '전체 듣기');
   allBtn.addEventListener('click', () => {
@@ -621,7 +579,6 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
     };
     playAt(0);
   });
-  // 카드 테두리 없이 응용 연습과 같은 평면 섹션 (라벨 행 + 행 목록) — 좌우 기준선이 같아진다.
   return h('div', { class: 'vs-mini' }, v2Style(MINI_CSS),
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '이런 대화에서'), allBtn),
     h('div', { style: 'margin-top:4px;' }, rows.map((r) => r.el)));
@@ -1165,27 +1122,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     h('div', { class: 'vs-ko' }, s?.ko || ''),
     s?.pron ? h('div', { class: 'vs-pron' }, s.pron) : null,
     ctrl, meta);
-  // 미니대화 줄 녹음 점수 (2026-09-08) — 응용 행(onDrillScore)과 같은 집계·스냅샷·영속. 진행 조건은 아니다.
-  const miniLines = miniLinesOf(ex?.miniDialogue);
-  const onMiniScore = (i, result) => {
-    const score = Math.round(Number(result?.score) || 0);
-    state.tried = (state.tried || 0) + 1;
-    if (score >= PASS_THRESHOLD) state.passed = (state.passed || 0) + 1;
-    if (!Array.isArray(state.pronScores)) state.pronScores = [];
-    state.pronScores.push(score);
-    if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
-    bumpRecLog(state, s?.id, score);
-    const rows = ((cardEx.mini ??= {}));
-    rows[i] = [...normScores(rows[i]), score];
-    if (!state.demo) {
-      savePronunciationLog(window.studyDB, { result, sentenceId: miniLogId(s?.id, miniLines[i]?.en || ''), lang, date: getTodayISO() })
-        .catch((e) => console.error('[sessionExprV2] mini pron persist', e));
-    }
-    refreshDots();
-    refreshRecWidget();
-    handlers.saveSnapshot?.();
-  };
-  const miniEl = miniDialogueEl(ex?.miniDialogue, s, lang, expr, { demo: state.demo, onScore: onMiniScore, saved: cardEx.mini }); // 카드 아래 (2026-09-08 사용자 결정)
+  const miniEl = miniDialogueEl(ex?.miniDialogue, s, lang, expr); // 카드 아래, 듣기 전용 (2026-09-08 사용자 결정)
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {

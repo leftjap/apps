@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "51-80 여행영어",
   "date": "2026-09-15",
-  "_note": "코어 100문장 커리큘럼 75~80번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 75~80번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-075-get-the-check",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "get the check = 계산서를 받다. 식당에서 다 먹고 계산을 청할 때 쓰는 말.",
         "situation": "식당에서 식사를 마쳤을 때 — 종업원이 바빠 보이면 when you have a minute 을 붙여 재촉으로 들리지 않게 한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Was everything okay with your meal?",
+            "ko": "식사는 괜찮으셨어요?"
+          },
+          {
+            "speaker": "B",
+            "en": "Could we get the check when you have a minute?",
+            "ko": "시간 되실 때 계산서 좀 주시겠어요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Of course. Be right back.",
+            "ko": "물론이죠. 금방 올게요."
+          }
+        ],
         "drills": [
           {
             "en": "Can we get the check?",
@@ -111,6 +128,23 @@
       "explanation": {
         "key": "to go = 포장해서 (가져갈 것으로). 매장에서 먹지 않고 들고 나갈 때 음식 뒤에 붙이는 말.",
         "situation": "카페나 식당에서 자리에 앉지 않고 들고 나갈 때 — 다 못 먹은 음식을 싸 달라고 할 때도 같은 말을 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Are you finished, or still working on it?",
+            "ko": "다 드셨어요, 아니면 아직 드시는 중이세요?"
+          },
+          {
+            "speaker": "B",
+            "en": "Could I get this to go, please?",
+            "ko": "이거 포장해 주시겠어요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Sure. I'll bring a box.",
+            "ko": "네. 상자 가져다드릴게요."
+          }
+        ],
         "drills": [
           {
             "en": "Two coffees to go, please.",
@@ -201,6 +235,23 @@
       "explanation": {
         "key": "I'd like to return this = 이거 반품하고 싶어요. 산 물건을 무르러 가서 첫마디로 꺼내는 말.",
         "situation": "여행 중 산 옷이나 신발이 안 맞아 가게에 다시 갔을 때 — 영수증을 내밀며 이 문장으로 시작한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Hi there. What can I do for you?",
+            "ko": "안녕하세요. 무엇을 도와드릴까요?"
+          },
+          {
+            "speaker": "B",
+            "en": "I'd like to return this because it doesn't fit.",
+            "ko": "사이즈가 안 맞아서 반품하고 싶어요."
+          },
+          {
+            "speaker": "A",
+            "en": "No problem. Do you have the receipt?",
+            "ko": "괜찮아요. 영수증 있으세요?"
+          }
+        ],
         "drills": [
           {
             "en": "It doesn't fit me.",
@@ -291,6 +342,23 @@
       "explanation": {
         "key": "have anything for = ~에 듣는 게 있나요. 약국이나 가게에서 증상·용도만 대고 물건을 찾을 때 쓰는 말.",
         "situation": "여행 중 머리가 아파 약국에 들렀을 때 — 약 이름을 몰라도 증상만 대면 통한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Hello, can I help you?",
+            "ko": "안녕하세요, 도와드릴까요?"
+          },
+          {
+            "speaker": "B",
+            "en": "Do you have anything for a headache?",
+            "ko": "두통에 먹을 약이 있나요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Yes. These are gentle, one every six hours.",
+            "ko": "네. 이건 순한 약이에요. 여섯 시간마다 한 알이요."
+          }
+        ],
         "drills": [
           {
             "en": "I have a bad headache.",
@@ -386,6 +454,23 @@
       "explanation": {
         "key": "take a picture = 사진을 찍다. 지나가는 사람에게 사진을 부탁하거나 내가 찍어 준다고 할 때 쓰는 말.",
         "situation": "여행지에서 둘이 같이 나온 사진이 필요할 때 — 지나가는 사람에게 카메라를 건네며 부탁한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Beautiful view, isn't it?",
+            "ko": "경치 참 좋죠?"
+          },
+          {
+            "speaker": "B",
+            "en": "Could you take a picture of us, please?",
+            "ko": "저희 사진 좀 찍어 주시겠어요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Sure! Say cheese.",
+            "ko": "그럼요! 치즈 하세요."
+          }
+        ],
         "drills": [
           {
             "en": "Can you take a picture?",
@@ -481,6 +566,23 @@
       "explanation": {
         "key": "within walking distance = 걸어갈 만한 거리에. 걸어갈지 차를 탈지 가늠할 때 쓰는 한 덩어리 표현.",
         "situation": "낯선 동네에서 약국이나 가게를 찾을 때 — 호텔 프런트에 이렇게 물으면 걸어갈지 택시를 탈지 바로 정할 수 있다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Front desk, good morning.",
+            "ko": "프런트입니다, 안녕하세요."
+          },
+          {
+            "speaker": "B",
+            "en": "Is there a pharmacy within walking distance?",
+            "ko": "걸어갈 만한 거리에 약국이 있나요?"
+          },
+          {
+            "speaker": "A",
+            "en": "Yes, five minutes. Turn right outside.",
+            "ko": "네, 5분 거리예요. 나가서 오른쪽이요."
+          }
+        ],
         "drills": [
           {
             "en": "Is it within walking distance?",

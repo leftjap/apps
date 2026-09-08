@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "81-100 미드 듣기와 구어 문형",
   "date": "2026-09-18",
-  "_note": "코어 100문장 커리큘럼 95~100번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 95~100번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-095-drop-me-off",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "drop me off = (차로 데려다주고) 나를 내려 주다. 목적지 근처에서 차를 세워 달라고 할 때 쓴다.",
         "situation": "아내 차나 택시로 가다가 문 앞이 아니라 근처에서 내리고 싶을 때 — 역·공항·호텔 앞에서 그대로 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "I'm driving to the office. Need a ride?",
+            "ko": "나 사무실까지 운전해 가. 태워 줄까?"
+          },
+          {
+            "speaker": "B",
+            "en": "Can you drop me off near the station?",
+            "ko": "역 근처에 내려줄래?"
+          },
+          {
+            "speaker": "A",
+            "en": "Sure. The north side okay?",
+            "ko": "그래. 북쪽 출구 쪽 괜찮아?"
+          }
+        ],
         "drills": [
           {
             "en": "Just drop me off here.",
@@ -102,6 +119,28 @@
       "explanation": {
         "key": "ran into = 우연히 마주쳤다. run into 는 '뛰어들다'가 아니라 약속 없이 딱 만나는 것.",
         "situation": "퇴근길이나 장 보러 나갔다가 아는 사람을 만났을 때 — 그날 있었던 일을 아내에게 전하는 자리.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "You're late. Everything okay?",
+            "ko": "늦었네. 별일 없어?"
+          },
+          {
+            "speaker": "B",
+            "en": "I ran into an old friend on my way home.",
+            "ko": "집에 오는 길에 옛 친구를 우연히 만났어."
+          },
+          {
+            "speaker": "A",
+            "en": "Really? Who?",
+            "ko": "정말? 누구?"
+          },
+          {
+            "speaker": "B",
+            "en": "Minsu, from high school.",
+            "ko": "고등학교 때 민수."
+          }
+        ],
         "drills": [
           {
             "en": "Guess who I ran into today?",
@@ -194,6 +233,23 @@
       "explanation": {
         "key": "go over = 처음부터 하나씩 짚어 보다. 서류나 계획을 훑으며 빠진 게 없는지 확인할 때.",
         "situation": "여행 전날 밤 예약과 짐을 아내와 같이 확인할 때 — 회의 자료를 다시 훑을 때도 같은 말이다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Passports, tickets, chargers. I think that's all.",
+            "ko": "여권, 표, 충전기. 그게 다인 것 같아."
+          },
+          {
+            "speaker": "B",
+            "en": "Let's go over everything one more time.",
+            "ko": "전부 한 번 더 검토해 보자."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay. Passports first.",
+            "ko": "알았어. 여권부터."
+          }
+        ],
         "drills": [
           {
             "en": "Let's go over it together.",
@@ -286,6 +342,23 @@
       "explanation": {
         "key": "show up = (예고 없이) 나타나다. 오기로 한 자리에 실제로 모습을 보이는 것도 show up 이다.",
         "situation": "부르지도 않은 사람이 갑자기 온 이야기를 전할 때 — 약속 자리에 누가 왔는지 안 왔는지 말할 때도 같은 표현.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Was your brother at the party?",
+            "ko": "네 동생 파티에 왔었어?"
+          },
+          {
+            "speaker": "B",
+            "en": "He showed up without telling anyone he was coming.",
+            "ko": "걔는 온다는 말도 없이 나타났어."
+          },
+          {
+            "speaker": "A",
+            "en": "That sounds like him.",
+            "ko": "걔답네."
+          }
+        ],
         "drills": [
           {
             "en": "He didn't show up.",
@@ -382,6 +455,23 @@
       "explanation": {
         "key": "work out = (일이) 잘 풀리다. 운동한다는 뜻이 아니라 상황이 결국 괜찮아진다는 말.",
         "situation": "걱정하던 일이 어떻게 됐는지 이야기할 때 — 여행 중 문제가 생겼다가 결국 해결됐을 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "So the hotel found your booking?",
+            "ko": "그래서 호텔이 예약을 찾았어?"
+          },
+          {
+            "speaker": "B",
+            "en": "I thought things would work out in the end.",
+            "ko": "결국에는 일이 잘 풀릴 줄 알았어."
+          },
+          {
+            "speaker": "A",
+            "en": "See? No need to worry.",
+            "ko": "거봐. 걱정할 필요 없었잖아."
+          }
+        ],
         "drills": [
           {
             "en": "It'll work out.",
@@ -482,6 +572,23 @@
       "explanation": {
         "key": "put up with = 참고 견디다. 싫은데 어쩔 수 없이 버틴다는 뜻.",
         "situation": "층간 소음이나 계속되는 불편을 더 못 견디겠다고 말할 때 — 아내에게 하소연하거나 호텔에 항의하기 직전.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The music upstairs is still going.",
+            "ko": "위층 음악이 아직도 안 끝났어."
+          },
+          {
+            "speaker": "B",
+            "en": "I can't put up with this much longer.",
+            "ko": "이걸 더는 못 참겠어."
+          },
+          {
+            "speaker": "A",
+            "en": "Let's call the front desk.",
+            "ko": "프런트에 전화하자."
+          }
+        ],
         "drills": [
           {
             "en": "How do you put up with him?",

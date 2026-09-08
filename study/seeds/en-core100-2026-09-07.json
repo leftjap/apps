@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "1-30 말문 트기와 대화 운영",
   "date": "2026-09-07",
-  "_note": "코어 100문장 커리큘럼 25~30번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 25~30번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-025-supposed-to-do",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "I'm supposed to do = 내가 하기로 되어 있다. 규칙이나 약속이 정해 놓은 일을 가리키는 말.",
         "situation": "무엇부터 손을 대야 할지 몰라 막힐 때 — 처음 가 본 공항 카운터나 관공서에서 그대로 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Your bag is over the limit, sir.",
+            "ko": "손님, 가방이 무게 제한을 넘었어요."
+          },
+          {
+            "speaker": "B",
+            "en": "I don't know what I'm supposed to do.",
+            "ko": "내가 뭘 해야 하는 건지 모르겠어."
+          },
+          {
+            "speaker": "A",
+            "en": "You can pay here, or move some things.",
+            "ko": "여기서 추가 요금을 내거나, 짐을 좀 옮기시면 돼요."
+          }
+        ],
         "drills": [
           {
             "en": "What am I supposed to do?",
@@ -107,6 +124,23 @@
       "explanation": {
         "key": "see what I can do = 뭘 할 수 있는지 알아보다. 확답 대신 손을 써 보겠다고 답하는 말.",
         "situation": "부탁을 받았는데 되겠다고 못 박긴 어려울 때 — 아내가 표를 구해 달라고 하거나 호텔에 요청을 넣을 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Can you get us a table by the window?",
+            "ko": "창가 자리로 잡아 줄 수 있어?"
+          },
+          {
+            "speaker": "B",
+            "en": "I'll see what I can do about it.",
+            "ko": "내가 뭘 할 수 있는지 알아볼게."
+          },
+          {
+            "speaker": "A",
+            "en": "Thanks. No pressure.",
+            "ko": "고마워. 부담 갖지 말고."
+          }
+        ],
         "drills": [
           {
             "en": "I'll see what I can do.",
@@ -202,6 +236,23 @@
       "explanation": {
         "key": "If I were you = 내가 너라면. 사실이 아닌 가정을 세워 조언을 건네는 말.",
         "situation": "상대가 지금 결정할지 망설일 때 — 아내가 예약을 오늘 할지 물으면 이 문장으로 답한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Should I book the hotel now or wait?",
+            "ko": "호텔 지금 예약할까, 기다릴까?"
+          },
+          {
+            "speaker": "B",
+            "en": "If I were you, I'd wait until tomorrow.",
+            "ko": "내가 너라면 내일까지 기다리겠어."
+          },
+          {
+            "speaker": "A",
+            "en": "Why? Do you think it gets cheaper?",
+            "ko": "왜? 더 싸질 것 같아?"
+          }
+        ],
         "drills": [
           {
             "en": "I'd wait until tomorrow.",
@@ -302,6 +353,23 @@
       "explanation": {
         "key": "What would you do = 너라면 어떻게 하겠어. 결정을 앞두고 상대의 판단을 물을 때 쓰는 말.",
         "situation": "혼자 못 정하겠어서 조언을 구할 때 — 여행 일정이나 집안일을 두고 아내에게 묻는다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "So, are you taking the new job?",
+            "ko": "그래서, 새 일자리 갈 거야?"
+          },
+          {
+            "speaker": "B",
+            "en": "What would you do if you were me?",
+            "ko": "네가 나라면 어떻게 하겠어?"
+          },
+          {
+            "speaker": "A",
+            "en": "Honestly? I'd take it.",
+            "ko": "솔직히? 나라면 갈 거야."
+          }
+        ],
         "drills": [
           {
             "en": "What would you do?",
@@ -393,6 +461,23 @@
       "explanation": {
         "key": "I wish I could = 그럴 수 있으면 좋겠는데. 마음은 있지만 못 한다고 부드럽게 거절하는 말.",
         "situation": "초대나 부탁을 거절하면서 마음은 있다는 걸 보일 때 — 동료의 저녁 제안이나 아내의 주말 계획에.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Come to the concert with us on Saturday!",
+            "ko": "토요일에 우리랑 콘서트 가자!"
+          },
+          {
+            "speaker": "B",
+            "en": "I wish I could, but it's not possible right now.",
+            "ko": "그러고 싶지만 지금은 불가능해."
+          },
+          {
+            "speaker": "A",
+            "en": "Too bad. Next time for sure.",
+            "ko": "아쉽다. 다음엔 꼭이야."
+          }
+        ],
         "drills": [
           {
             "en": "I wish I could.",
@@ -493,6 +578,23 @@
       "explanation": {
         "key": "help me figure out = 알아내는 걸 도와주다. 원인이나 방법을 혼자 못 찾을 때 도움을 청하는 말.",
         "situation": "뭐가 어긋났는지 나 혼자로는 안 잡힐 때 — 예약이 꼬였거나 집에서 기계가 안 될 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Your booking says tomorrow, not today.",
+            "ko": "예약이 오늘이 아니라 내일로 되어 있어요."
+          },
+          {
+            "speaker": "B",
+            "en": "Could you help me figure out what went wrong?",
+            "ko": "뭐가 잘못됐는지 알아내는 걸 도와줄래?"
+          },
+          {
+            "speaker": "A",
+            "en": "Sure. Let's look at your email.",
+            "ko": "그럼요. 이메일을 같이 봅시다."
+          }
+        ],
         "drills": [
           {
             "en": "What went wrong?",

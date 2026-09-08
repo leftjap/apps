@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "81-100 미드 듣기와 구어 문형",
   "date": "2026-09-16",
-  "_note": "코어 100문장 커리큘럼 81~87번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. 이 구간의 gonna·wanna·gotta·lemme·kinda 는 정식 표기가 아니라 커리큘럼이 지정한 실제 발음 표기라 sentence·chunks 에 그대로 두고 음차도 실제 소리(거나·워나·가라·레미·카인다)로 적었다 — 정식 표기(going to·want to·have got to·let me·kind of)는 grammar·mistake 에서 한 번씩 알린다.",
+  "_note": "코어 100문장 커리큘럼 81~87번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. 이 구간의 gonna·wanna·gotta·lemme·kinda 는 정식 표기가 아니라 커리큘럼이 지정한 실제 발음 표기라 sentence·chunks 에 그대로 두고 음차도 실제 소리(거나·워나·가라·레미·카인다)로 적었다 — 정식 표기(going to·want to·have got to·let me·kind of)는 grammar·mistake 에서 한 번씩 알린다. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-081-what-are-you-gonna-do",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "What are you gonna do = 어떻게 할 거야. going to 를 소리 나는 대로 적은 gonna 로 상대의 대응을 묻는 말.",
         "situation": "상대가 문제를 만들어 놓고 가만히 있을 때 — 미드에서 다투는 장면에 자주 나오고, 여행 계획이 틀어졌을 때도 그대로 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "I forgot to book the tickets.",
+            "ko": "표 예약하는 걸 잊었어."
+          },
+          {
+            "speaker": "B",
+            "en": "What are you gonna do about it?",
+            "ko": "이걸 어떻게 할 건데?"
+          },
+          {
+            "speaker": "A",
+            "en": "I'll call them first thing tomorrow.",
+            "ko": "내일 아침에 제일 먼저 전화할게."
+          }
+        ],
         "drills": [
           {
             "en": "What are you gonna do?",
@@ -112,6 +129,23 @@
       "explanation": {
         "key": "not gonna let that happen = 그런 일이 생기게 두지 않겠다. 같은 일을 되풀이하지 않겠다고 다짐하는 말.",
         "situation": "같은 실수가 반복됐을 때 다짐하듯 말한다 — 여행에서 기차를 놓친 뒤 아내에게, 또는 고양이가 또 밖으로 나갔을 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The cat got out again last night.",
+            "ko": "어젯밤에 고양이가 또 나갔어."
+          },
+          {
+            "speaker": "B",
+            "en": "I'm not gonna let that happen again.",
+            "ko": "그런 일이 다시 생기게 두진 않을 거야."
+          },
+          {
+            "speaker": "A",
+            "en": "Good. Check the window this time.",
+            "ko": "좋아. 이번엔 창문 확인해."
+          }
+        ],
         "drills": [
           {
             "en": "That's not gonna happen.",
@@ -203,6 +237,23 @@
       "explanation": {
         "key": "Do you wanna come over = 우리 집에 올래. want to 를 소리대로 적은 wanna 로 가볍게 초대하는 말.",
         "situation": "집으로 초대할 때 — 아내와 저녁 약속을 잡거나 친구를 부를 때 이 한 문장이면 된다.",
+        "miniDialogue": [
+          {
+            "speaker": "B",
+            "en": "Do you wanna come over for dinner tonight?",
+            "ko": "오늘 저녁 먹으러 우리 집에 올래?"
+          },
+          {
+            "speaker": "A",
+            "en": "Sure! What time?",
+            "ko": "좋지! 몇 시에?"
+          },
+          {
+            "speaker": "B",
+            "en": "Around seven. I'm making pasta.",
+            "ko": "일곱 시쯤. 파스타 만들 거야."
+          }
+        ],
         "drills": [
           {
             "en": "Do you wanna come over?",
@@ -304,6 +355,23 @@
       "explanation": {
         "key": "gotta get back to work = 다시 일하러 가야 한다. have got to 를 줄인 gotta 로 급한 볼일을 말하는 표현.",
         "situation": "쉬는 시간이나 통화가 길어져 하던 일로 돌아가야 할 때 — 자리를 뜨는 이유를 짧게 말하고 나온다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "One more coffee?",
+            "ko": "커피 한 잔 더?"
+          },
+          {
+            "speaker": "B",
+            "en": "I gotta get back to work before it gets late.",
+            "ko": "늦기 전에 다시 일하러 가야 해."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay. See you tomorrow.",
+            "ko": "알았어. 내일 봐."
+          }
+        ],
         "drills": [
           {
             "en": "I gotta go.",
@@ -401,6 +469,23 @@
       "explanation": {
         "key": "Lemme see if = ~인지 볼게. let me 를 소리대로 적은 lemme 로 바로 답하지 않고 확인해 보겠다는 말.",
         "situation": "바로 답할 수 없어 확인해 보겠다고 할 때 — 길이 막혔거나 예약이 안 될 때 대안을 찾아보겠다는 말.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The road is closed. We're stuck.",
+            "ko": "길이 막혔어. 꼼짝 못 하겠네."
+          },
+          {
+            "speaker": "B",
+            "en": "Lemme see if I can find another way.",
+            "ko": "다른 방법을 찾을 수 있는지 볼게."
+          },
+          {
+            "speaker": "A",
+            "en": "Please. We have thirty minutes.",
+            "ko": "부탁해. 30분 남았어."
+          }
+        ],
         "drills": [
           {
             "en": "Lemme see.",
@@ -498,6 +583,23 @@
       "explanation": {
         "key": "I was kinda hoping = 좀 기대했어. kind of 를 줄인 kinda 로 바람을 세지 않게 드러내는 말.",
         "situation": "부탁이나 제안을 했는데 상대가 망설일 때 — 실망을 세게 드러내지 않고 아쉬움만 비친다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Dinner Friday? Hmm, I'm not sure.",
+            "ko": "금요일 저녁? 음, 잘 모르겠어."
+          },
+          {
+            "speaker": "B",
+            "en": "I was kinda hoping you'd say yes.",
+            "ko": "네가 좋다고 해주길 좀 기대했어."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay, okay. Yes. Friday works.",
+            "ko": "알았어, 알았어. 좋아. 금요일 괜찮아."
+          }
+        ],
         "drills": [
           {
             "en": "It's kinda late.",
@@ -593,6 +695,23 @@
       "explanation": {
         "key": "you might be right = 네 말이 맞을지도 모른다. might 를 넣어 동의를 단정하지 않고 부드럽게 하는 말.",
         "situation": "상대 말이 맞는 것 같지만 단정하기는 조심스러울 때 — 아내와 의견이 갈렸다가 인정할 때 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "We should leave earlier. The traffic will be bad.",
+            "ko": "더 일찍 나가야 해. 길이 많이 막힐 거야."
+          },
+          {
+            "speaker": "B",
+            "en": "I think you might be right about that.",
+            "ko": "그건 네 말이 맞는 것 같아."
+          },
+          {
+            "speaker": "A",
+            "en": "Great. Let's leave at six, then.",
+            "ko": "좋아. 그럼 여섯 시에 나가자."
+          }
+        ],
         "drills": [
           {
             "en": "You might be right.",

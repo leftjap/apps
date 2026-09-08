@@ -1668,41 +1668,20 @@ describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
     expect(speak.mock.calls.map((c) => c[0])).toEqual(["I'll finish it by Friday.", 'Is that a promise?', 'It is. You can count on it.']);
   });
 
-  /* 녹음 (2026-09-08 사용자 지시 "녹음버튼도 추가") — 줄마다 선택 녹음. 응용 행과 같은 채점·배지·집계이고
-   * 진행 조건(게이트·판정·잠금)은 없다. 대화문은 암기 대상이 아니므로 통과 기준·완료 표시도 두지 않는다. */
-  it('줄마다 녹음 버튼 — 녹음 1회 → tried/passed/pronScores 반영 · 줄 점수 배지 · #mini# 로그 저장, 판정·잠금 없음', async () => {
+  /* 듣기 전용 (2026-09-08 사용자 최종 결정 "듣기 버튼만") — 대화문은 암기·평가 대상이 아니므로 녹음·판정·잠금이 없다.
+   * 타깃 문장 녹음은 바로 위 카드의 '따라 말하기'가 맡는다. */
+  it('줄마다 듣기 버튼만 — 녹음 버튼·판정 없음', () => {
     const host = mount(mdState());
-    const state = host._state;
     const mini = host.querySelector('.vs-mini');
-    const recs = [...mini.querySelectorAll('button[aria-label="녹음"]')];
-    expect(recs).toHaveLength(3);
-    recs[1].click(); await tick();                 // 타깃 줄 녹음 시작
-    recs[1].click(); await tick(); await tick();   // 멈춤 + 채점 (mock: 완전 발화 → 100)
-    expect(state.tried).toBe(1);
-    expect(state.passed).toBe(1);
-    expect(state.pronScores).toEqual([100]);
-    expect(savePronunciationLog).toHaveBeenCalledTimes(1);
-    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('e1#mini#Is that a promise?');
-    const badge = recs[1].closest('.vs-mini-line').querySelector('.vs-gscore');
-    expect(badge.textContent).toContain('100');
+    expect(mini.querySelectorAll('button[aria-label="듣기"]')).toHaveLength(3);
+    expect(mini.querySelector('button[aria-label="녹음"]')).toBeNull();
     expect(mini.querySelector('.judge-btn')).toBeNull();
   });
 
-  it('스냅샷에 남은 줄 점수(exLog.mini)를 재렌더 때 배지로 복원한다', () => {
-    const st = mdState();
-    st.exLog = { e1: { mini: { 0: [77] } } };
-    const host = mount(st);
-    const lines = host.querySelectorAll('.vs-mini-line');
-    expect(lines[0].querySelector('.vs-gscore').textContent).toContain('77');
-    expect(lines[1].querySelector('.vs-gscore').textContent).toBe('');
-  });
-
-  it('데모(마이크 없음)에서는 녹음 클릭 → 시뮬 점수 배지', async () => {
-    const st = mdState(); st.demo = true;
-    const host = mount(st);
-    const rec = host.querySelector('.vs-mini button[aria-label="녹음"]');
-    rec.click();
-    await new Promise((r) => setTimeout(r, 900));
-    expect(host.querySelector('.vs-mini-line .vs-gscore').textContent).not.toBe('');
+  it('응용 행과 같은 행 구조(.vs-drow)라 버튼 열이 같은 자리에 온다', () => {
+    const host = mount(mdState());
+    const lines = host.querySelectorAll('.vs-mini .vs-drow');
+    expect(lines).toHaveLength(3);
+    expect(lines[1].querySelector('.ix').textContent).toBe('B');
   });
 });

@@ -30,6 +30,12 @@ export function demoReviewCards() {
       id: 'demo-r2', lang: 'en', interval: 7, sentence: 'Is that a promise?', meaning: '약속하는 거예요?', phonetic_kr: '이즈 대러 프라미스', speaker: 'A',
       reviewCount: 2, lastScore: 78, nextReviewLabel: '6월 19일', history: [71, 78],
       explanation: {
+        // 미니대화 데모 (2026-09-08) — 공개 뒤에만 보이는지 시각 검증용
+        miniDialogue: [
+          { speaker: 'A', en: "I'll finish it by Friday.", ko: '금요일까지 끝낼게.' },
+          { speaker: 'B', en: 'Is that a promise?', ko: '약속하는 거예요?' },
+          { speaker: 'A', en: 'It is. You can count on it.', ko: '그럼. 믿어도 돼.' },
+        ],
         key: 'Is that a promise? = 약속하는 거예요? 상대의 말을 못박아 확인하는 되묻기.',
         situation: '상대가 한 말을 그대로 믿기 어려울 때 가볍게 다짐을 받아내요.',
         chunks: [['Is that', '이즈 댓'], ['a promise', '어 프라미스']],

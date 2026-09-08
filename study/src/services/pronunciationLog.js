@@ -85,14 +85,6 @@ export function chainLogId(cardId, stepText) {
 export function prodLogId(cardId, target) {
   return `${cardId}#prod#${String(target ?? '').trim()}`;
 }
-/* 미니대화 줄 녹음 (2026-09-08 사용자 지시) — 진행 조건은 아니지만 발화 점수는 남긴다(2026-09-03 계약). */
-export function miniLogId(cardId, lineEn) {
-  return `${cardId}#mini#${String(lineEn ?? '').trim()}`;
-}
-/** 렌더·수화가 같은 줄 순서를 쓰도록 하나로 — en 이 비거나 문자열이 아닌 줄은 뺀다. */
-export function miniLinesOf(md) {
-  return (Array.isArray(md) ? md : []).filter((l) => l && typeof l.en === 'string' && l.en.trim());
-}
 
 /* 과거 발화 점수 수화 (2026-08-31 사용자 결정 — "다시 듣기·복습에서 과거 점수 기록이 학습에
  * 도움") — 발화는 이 로그에 전부 있으므로, 진입 시 전체 이력으로 화면 상태(메인 점수 원 utter ·
@@ -129,20 +121,13 @@ export async function loadScoreHistoryState(db, cards, lang, filterDrills) {
         const ps = rows.filter((r) => r.sentenceId === prodLogId(c.id, t)).map((r) => Math.round(Number(r.overallScore) || 0));
         if (ps.length) prodScores[t] = ps;
       });
-      // 미니대화 줄 이력 (2026-09-08) — 줄 순서(index)로 담는다. 렌더(miniDialogueEl)와 같은 필터.
-      const mini = {};
-      miniLinesOf(c.explanation?.miniDialogue).forEach((l, i) => {
-        const ms = rows.filter((r) => r.sentenceId === miniLogId(c.id, l.en)).map((r) => Math.round(Number(r.overallScore) || 0));
-        if (ms.length) mini[i] = ms;
-      });
-      const all = [...main, ...Object.values(dScores).flat(), ...Object.values(chainScores).flat(), ...Object.values(prodScores).flat(), ...Object.values(mini).flat()];
+      const all = [...main, ...Object.values(dScores).flat(), ...Object.values(chainScores).flat(), ...Object.values(prodScores).flat()];
       if (!all.length) continue;
       exLog[c.id] = {
         ...(main.length ? { utter: main } : {}),
         ...(Object.keys(dScores).length ? { drills: dScores } : {}),
         ...(Object.keys(chainScores).length ? { chainScores } : {}),
         ...(Object.keys(prodScores).length ? { prodScores } : {}),
-        ...(Object.keys(mini).length ? { mini } : {}),
       };
       recLog[c.id] = { count: all.length, best: Math.max(...all) };
     }

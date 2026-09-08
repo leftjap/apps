@@ -26,7 +26,7 @@ import { judgeRecording } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl } from './sessionExprV2.js';
 import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
@@ -375,6 +375,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     listenPill.disabled = false;
     if (drillsBlock) drillsBlock.style.display = '';   // 응용·체이닝도 정답을 품으므로 함께 공개
     if (chainBlock) chainBlock.style.display = '';
+    mountMini();                                    // 미니대화도 타깃 줄이 정답이라 공개 뒤에만 (2026-09-08)
     openFold();  // 평가는 해설 안에 있다 — 정답을 공개했으면 평가에도 닿아야 한다
     refreshJudge();
   }
@@ -645,6 +646,15 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
     lastScoreEl ? h('span', {}, '지난 점수 ', lastScoreEl) : null);
   const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, pronEl, srsRow, ctrl, meta);
+  // 미니대화 (2026-09-08 사용자 결정 "복습 세션에도") — 카드 아래, 듣기 전용. 타깃 줄이 정답을 품으므로
+  // 공개 전에는 DOM 에도 두지 않는다(숨김이 아니라 미생성 — 텍스트 유출 방지). 공개 시 슬롯에 붙인다.
+  const miniSlot = h('div', { class: 'vr-mini-slot' });
+  const mountMini = () => {
+    if (miniSlot.childElementCount) return;
+    const el = miniDialogueEl(ex?.miniDialogue, s, lang, expr);
+    if (el) miniSlot.appendChild(el);
+  };
+  if (revealed) mountMini();
 
 
   let root, timeUpdate;
@@ -663,7 +673,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
       h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
     root = h('div', { class: 'vr' }, v2Style(VRM_CSS), v2Style(VSM_CSS),
       mTopb, mSteps,
-      h('div', { class: 'm-pad' }, cardEl, recWidget, sentCal.el, drillsBlock, chainBlock, fold));
+      h('div', { class: 'm-pad' }, cardEl, miniSlot, recWidget, sentCal.el, drillsBlock, chainBlock, fold));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
@@ -673,7 +683,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     const main = h('div', { class: 'vr-main' },
       h('div', { class: 'vr-crumb' }, h('span', { class: 'vr-scene' }, '복습 · ' + subjLabel),
         h('div', { class: 'vr-prog' }, progBars), h('span', { class: 'vr-prog-t' }, `${idx} / ${total}`)),
-      cardEl, drillsBlock, chainBlock);
+      cardEl, miniSlot, drillsBlock, chainBlock);
     const side = h('aside', { class: 'vr-side' }, recWidget, sentCal.el, fold);
     root = h('div', { class: 'vr' }, v2Style(VR_CSS), v2Style(VS_CSS), rail, h('div', { class: 'vr-mainwrap' }, main, side));
     timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };

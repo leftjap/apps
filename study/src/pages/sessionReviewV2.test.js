@@ -876,3 +876,48 @@ describe('sessionReviewV2 — 드릴 점수는 배열로 누적된다 (이력 �
     expect(exLog.c1.drills[0]).toEqual([70, 100]);   // 배열 누적 (엔진 100 = 에코 mock)
   });
 });
+
+
+/* 미니대화 — 복습에도 (2026-09-08 사용자 결정 "복습 세션에도 넣자"). 복습은 영어를 숨기는 화면이라 타깃 줄이 든
+ * 대화는 **정답 공개 뒤**에만 카드 아래에 나온다(공개 전에 보이면 정답 유출). 듣기 전용. */
+describe('renderSessionReviewV2 — 미니대화 블록은 정답 공개 뒤에만', () => {
+  const MD = [
+    { speaker: 'A', en: 'Thanks for having me tonight.', ko: '오늘 초대해 줘서 고마워.' },
+    { speaker: 'B', en: EN, ko: KO },
+  ];
+  function mountMd(over = {}) {
+    document.body.innerHTML = '<div id="root"></div>';
+    const host = document.getElementById('root');
+    const explanation = { key: `${EN} = ${KO}`, chunks: CHUNKS, miniDialogue: MD };
+    const s = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation };
+    const card = { id: 'c1', lang: 'en', sentence: EN, meaning: KO, interval: 1, explanation };
+    renderSessionReviewV2(host, { cards: [card], total: 1, step: 1, size: 'desktop', sentence: s, time: '00:00', recLog: {}, tried: 0, demo: true, micBlocked: false, ...over }, {});
+    return host;
+  }
+  const visible = (el) => !!el && el.style.display !== 'none';
+
+  it('공개 전에는 보이지 않는다 (타깃 줄이 정답을 품는다)', () => {
+    const host = mountMd();
+    expect(visible(host.querySelector('.vs-mini'))).toBe(false);
+    expect(host.textContent).not.toContain('Thanks for having me tonight.');
+  });
+
+  it('녹음(데모) 후 공개되면 카드 아래에 나타난다 — 듣기만', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountMd();
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      const mini = host.querySelector('.vs-mini');
+      expect(visible(mini)).toBe(true);
+      expect(host.querySelector('.vr-card').compareDocumentPosition(mini) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(mini.querySelectorAll('button[aria-label="듣기"]')).toHaveLength(2);
+      expect(mini.querySelector('button[aria-label="녹음"]')).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+
+  it('필드가 없으면 블록 자체가 없다', () => {
+    const host = mountCard({ interval: 1, demo: true });
+    expect(host.querySelector('.vs-mini')).toBeNull();
+  });
+});

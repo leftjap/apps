@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "1-30 말문 트기와 대화 운영",
   "date": "2026-09-04",
-  "_note": "코어 100문장 커리큘럼 7~12번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 1~6번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식). 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영.",
+  "_note": "코어 100문장 커리큘럼 7~12번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 1~6번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식). 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-007-give-me-an-example",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "give me an example = 예를 하나 들어 줘. 뜬구름 같은 말을 구체적으로 바꿔 달라고 할 때 쓰는 문장.",
         "situation": "상대 설명이 추상적일 때 — 여행지에서 \"이런 식으로 하면 된다\" 같은 말을 들었을 때 예를 청한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Just keep it casual with the neighbors.",
+            "ko": "이웃들한테는 그냥 편하게 대해."
+          },
+          {
+            "speaker": "B",
+            "en": "Could you give me an example of what you mean?",
+            "ko": "무슨 뜻인지 예를 하나 들어줄래?"
+          },
+          {
+            "speaker": "A",
+            "en": "Like saying hi in the elevator. That's enough.",
+            "ko": "엘리베이터에서 인사하는 정도. 그거면 충분해."
+          }
+        ],
         "drills": [
           {
             "en": "Give me an example.",
@@ -112,6 +129,23 @@
       "explanation": {
         "key": "didn't catch = 못 알아들었다. 여기서 catch 는 '잡다'가 아니라 '듣고 잡아내다'. 말이 빨라 놓쳤을 때 쓴다.",
         "situation": "상대가 말을 끝냈는데 뒷부분이 안 들렸을 때 — 전화나 공항 안내 방송 뒤에 그대로 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Third floor, and breakfast starts at seven.",
+            "ko": "3층이고요, 아침 식사는 일곱 시에 시작해요."
+          },
+          {
+            "speaker": "B",
+            "en": "I didn't catch the last part of what you said.",
+            "ko": "네가 말한 마지막 부분을 못 알아들었어."
+          },
+          {
+            "speaker": "A",
+            "en": "Breakfast starts at seven. In the lobby.",
+            "ko": "아침 식사는 일곱 시에요. 로비에서요."
+          }
+        ],
         "drills": [
           {
             "en": "I didn't catch your name.",
@@ -213,6 +247,23 @@
       "explanation": {
         "key": "How do you say ~ = ~를 어떻게 말해요. 단어가 안 떠오를 때 물건이나 한국어를 가리키며 묻는 문장.",
         "situation": "메뉴판이나 물건을 가리키며 이름을 물을 때 — 상대가 알려 준 말을 바로 따라 하면 대화가 이어진다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Ready to order?",
+            "ko": "주문하시겠어요?"
+          },
+          {
+            "speaker": "B",
+            "en": "How do you say this in English?",
+            "ko": "이걸 영어로 어떻게 말해요?"
+          },
+          {
+            "speaker": "A",
+            "en": "That one? It's a rice cake.",
+            "ko": "그거요? 떡이에요."
+          }
+        ],
         "drills": [
           {
             "en": "How do you say it?",
@@ -305,6 +356,23 @@
       "explanation": {
         "key": "What I'm trying to say = 내가 하려는 말은. 말이 꼬였을 때 요점을 다시 잡는 문장. 뒤에 is that 을 붙여 요점을 잇는다.",
         "situation": "설명이 길어져 상대가 헷갈려할 때 — 반대 의견을 부드럽게 꺼낼 때도 이 문장으로 시작한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "So you agree we should move next year?",
+            "ko": "그러니까 내년에 이사하자는 데 동의한다는 거지?"
+          },
+          {
+            "speaker": "B",
+            "en": "What I'm trying to say is that I disagree.",
+            "ko": "내가 하려는 말은, 나는 동의하지 않는다는 거야."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay. Tell me why.",
+            "ko": "알았어. 이유를 말해 봐."
+          }
+        ],
         "drills": [
           {
             "en": "I disagree with that.",
@@ -402,6 +470,28 @@
       "explanation": {
         "key": "That makes sense = 말이 되네, 이해돼. 상대 설명을 받아들이면서 다음 말을 이어 가는 문장.",
         "situation": "설명을 듣고 납득했을 때 — 그 뒤에 but 을 붙이면 질문이나 반대를 부드럽게 꺼낼 수 있다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "We take the early train, so we skip the traffic.",
+            "ko": "일찍 출발하는 기차를 타면 차 막히는 걸 피할 수 있어."
+          },
+          {
+            "speaker": "B",
+            "en": "That makes sense, but I still have a question.",
+            "ko": "말은 되는데, 아직 질문이 하나 있어."
+          },
+          {
+            "speaker": "A",
+            "en": "Go ahead.",
+            "ko": "말해 봐."
+          },
+          {
+            "speaker": "B",
+            "en": "What if the train is late?",
+            "ko": "기차가 늦으면 어떡해?"
+          }
+        ],
         "drills": [
           {
             "en": "Makes sense.",
@@ -504,6 +594,23 @@
       "explanation": {
         "key": "I see your point = 무슨 말인지 알겠다. 상대 의견을 인정한 뒤 but 으로 내 의견을 붙이는 문장.",
         "situation": "상대 주장이 일리는 있는데 다 받아들이긴 어려울 때 — 여행 계획을 두고 아내와 의견이 갈릴 때 쓴다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Two cities in three days is too much.",
+            "ko": "사흘에 도시 두 곳은 너무 많아."
+          },
+          {
+            "speaker": "B",
+            "en": "I see your point, but I don't completely agree.",
+            "ko": "무슨 말인지는 알겠지만 완전히 동의하진 않아."
+          },
+          {
+            "speaker": "A",
+            "en": "Fine. Let's hear your version.",
+            "ko": "좋아. 네 안을 들어 보자."
+          }
+        ],
         "drills": [
           {
             "en": "I see your point.",

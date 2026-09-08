@@ -3,7 +3,7 @@
   "track": "core100",
   "block": "81-100 미드 듣기와 구어 문형",
   "date": "2026-09-17",
-  "_note": "코어 100문장 커리큘럼 88~94번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용.",
+  "_note": "코어 100문장 커리큘럼 88~94번 (docs/core100-curriculum.md). scene 없는 표현 전용 세션 — 7~18번과 같은 형식. date 는 달력이 아니라 세션 순서(§3 적재 방식) — 직전 묶음 다음. 문장은 커리큘럼 정본 그대로, drills 는 §6.3 개인화(아내·고양이·여행·일상) 변형. 음차는 guide-en §7 2026-08-31 실측에 따라 강한 축약을 적지 않고 재음절화 연음만 반영. chunks[i][2] 조각 뜻·anchor 는 문장 모아보기 v12 용. | 2026-09-08 miniDialogue 추가(2~4턴 contextual input, 듣기 전용).",
   "cards": [
     {
       "id": "en-core100-088-supposed-to",
@@ -15,6 +15,23 @@
       "explanation": {
         "key": "supposed to = ~하기로 되어 있다. 원래 그래야 하는 일을 가리키고, 과거형이면 '그랬어야 했는데 못 했다'는 뉘앙스가 된다.",
         "situation": "이미 벌어진 일을 두고 상대가 나무랄 때 — 아내가 \"왜 그렇게 했어?\" 하고 물으면 달리 방법이 없었다는 뜻으로 되받는다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "You paid for everyone? That's a lot.",
+            "ko": "네가 다 냈어? 큰돈인데."
+          },
+          {
+            "speaker": "B",
+            "en": "What else was I supposed to do?",
+            "ko": "그럼 내가 뭘 어떻게 했어야 하는데?"
+          },
+          {
+            "speaker": "A",
+            "en": "You could have split it.",
+            "ko": "나눠서 낼 수도 있었잖아."
+          }
+        ],
         "drills": [
           {
             "en": "You were supposed to call me.",
@@ -111,6 +128,23 @@
       "explanation": {
         "key": "I knew ~ would happen = ~할 줄 알았어. 안 좋은 예감이 그대로 맞았을 때 쓰는 말.",
         "situation": "나쁜 예감이 맞아떨어졌을 때 — 고양이가 화분을 엎었거나 예약이 꼬였을 때 한숨과 함께 꺼낸다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The hotel says our booking was cancelled.",
+            "ko": "호텔이 우리 예약이 취소됐대."
+          },
+          {
+            "speaker": "B",
+            "en": "I knew something like this would happen.",
+            "ko": "이런 일이 생길 줄 알았어."
+          },
+          {
+            "speaker": "A",
+            "en": "Okay, let's not panic. Call them.",
+            "ko": "알았어, 당황하지 말자. 전화해 봐."
+          }
+        ],
         "drills": [
           {
             "en": "I knew it.",
@@ -211,6 +245,23 @@
       "explanation": {
         "key": "really appreciate = 정말 고맙게 생각하다. thank you 한마디보다 무겁게, 받은 도움 전체를 두고 하는 인사.",
         "situation": "오래 신세 진 사람과 헤어질 때 — 여행에서 며칠 도와준 사람이나 아내에게 고마움을 제대로 전할 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Well, this is your gate. Safe flight!",
+            "ko": "자, 여기가 네 게이트야. 잘 가!"
+          },
+          {
+            "speaker": "B",
+            "en": "I really appreciate everything you've done for me.",
+            "ko": "네가 해준 거 정말 고맙게 생각해."
+          },
+          {
+            "speaker": "A",
+            "en": "It was my pleasure. Come back soon.",
+            "ko": "내가 좋아서 한 거야. 또 와."
+          }
+        ],
         "drills": [
           {
             "en": "I really appreciate it.",
@@ -306,6 +357,23 @@
       "explanation": {
         "key": "could've told me = 말해줄 수도 있었잖아. 미리 안 알려준 상대에게 서운함을 가볍게 내비치는 말.",
         "situation": "미리 알았으면 좋았을 일을 뒤늦게 알았을 때 — 아내가 말 없이 손님을 데려왔거나 친구가 갑자기 집 앞에 왔을 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Surprise! We were in the neighborhood.",
+            "ko": "서프라이즈! 근처에 왔었거든."
+          },
+          {
+            "speaker": "B",
+            "en": "You could've told me you were coming.",
+            "ko": "네가 온다고 말해줄 수도 있었잖아."
+          },
+          {
+            "speaker": "A",
+            "en": "Sorry! We wanted to surprise you.",
+            "ko": "미안! 놀라게 해 주고 싶었어."
+          }
+        ],
         "drills": [
           {
             "en": "You could've told me.",
@@ -398,6 +466,23 @@
       "explanation": {
         "key": "figure out = (따져 보고) 알아내다, 이해가 되다. 생각해 봐도 답이 안 나올 때 can't figure out 으로 자주 쓴다.",
         "situation": "아무리 생각해도 이유를 모르겠을 때 — 모임에서 먼저 자리를 뜬 사람을 두고 아내와 이야기한다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "Did you see Anna leave the party?",
+            "ko": "안나가 파티에서 나가는 거 봤어?"
+          },
+          {
+            "speaker": "B",
+            "en": "I can't figure out why she left so early.",
+            "ko": "걔가 왜 그렇게 일찍 갔는지 모르겠어."
+          },
+          {
+            "speaker": "A",
+            "en": "Maybe she had an early morning.",
+            "ko": "아침 일찍 일이 있었나 보지."
+          }
+        ],
         "drills": [
           {
             "en": "I can't figure it out.",
@@ -489,6 +574,23 @@
       "explanation": {
         "key": "find out = (알아보고) 알아내다, 알게 되다. 몰랐던 사실을 확인해 손에 넣는 것.",
         "situation": "무슨 일인지 확인하고 넘어가야 할 때 — 여행 중 예약이 꼬였거나 요금이 이상하게 나왔을 때.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "The bill is double what they said.",
+            "ko": "청구서가 말한 금액의 두 배야."
+          },
+          {
+            "speaker": "B",
+            "en": "We need to find out what really happened.",
+            "ko": "실제로 무슨 일이 있었는지 알아내야 해."
+          },
+          {
+            "speaker": "A",
+            "en": "Let's go to the front desk now.",
+            "ko": "지금 프런트로 가자."
+          }
+        ],
         "drills": [
           {
             "en": "Let's find out.",
@@ -584,6 +686,23 @@
       "explanation": {
         "key": "pick ~ up = 차로 데리러 가다. 사람을 태우러 간다는 뜻으로 매일 쓰는 표현.",
         "situation": "마중 약속을 잡을 때 — 아내가 늦게까지 일하는 날 회사나 역 앞으로 데리러 간다.",
+        "miniDialogue": [
+          {
+            "speaker": "A",
+            "en": "My meeting ends late tonight.",
+            "ko": "오늘 회의가 늦게 끝나."
+          },
+          {
+            "speaker": "B",
+            "en": "I'll pick you up when I get off work.",
+            "ko": "내가 퇴근하면 데리러 갈게."
+          },
+          {
+            "speaker": "A",
+            "en": "Thanks. Text me when you leave.",
+            "ko": "고마워. 나올 때 문자해."
+          }
+        ],
         "drills": [
           {
             "en": "Can you pick me up?",
