@@ -18,6 +18,7 @@ import {
   epFileStem,
   showOfEpisode,
   quotedClipDrill,
+  loadCore100Keys,
 } from './validate-seed.mjs';
 
 /* 게이트 보강(2026-07-22: 첫단어 다양성·인용형 차단) 이후의 기준선 픽스처 —
@@ -1056,5 +1057,75 @@ describe('validateSeedContent — 문장 모아보기 선택 필드 (chunks[i][2
     const w = r.warnings.filter((x) => x.includes('meaning 에 없음')); // '(학습 anchor)' 문구의 다른 경고와 구분
     expect(w.length).toBe(1);
     expect(w[0]).toContain('en-parks-s1e1-test-a');
+  });
+});
+
+
+/* 미니대화 miniDialogue (2026-09-08 작업지시서 §1~§4) — 맥락 입력 전용 optional 필드. 시드 형식 검사이지 학습 게이트가 아니다.
+ * 등급(사용자 확정): 차단 = 턴 2~4 밖·타깃 불일치/1회 아님·안 배운 뒤쪽 묶음 표현·타깃 외 줄 13단어+ / 경고 = 11~12단어·이미 배운 표현. */
+describe('validateSeedContent — miniDialogue (core100)', () => {
+  const coreCard = (num, sentence, chunks, extra = {}) => ({
+    id: `en-core100-${String(num).padStart(3, '0')}-x`, sentence, meaning: '뜻', reading: null,
+    phonetic_kr: chunks.map((c) => c[1]).join(' '), order_index: 1,
+    explanation: {
+      key: `${sentence.replace(/[.?!]$/, '')} = 뜻.`, situation: '상황', drills: poolDrills(5),
+      grammar: [{ struct: '구조', body: '설명' }], chunks, phonemes: [['/ð/', 'that']],
+      mistake: '함정', similar: '대체', category: 'chunk/test', frequency: 7,
+      chain: { target: `${sentence.replace(/[.?!]$/, '')} for now, I think`, chunks: [sentence.replace(/[.?!]$/, ''), 'for now,', 'I think'], ko: '지금은' },
+      ...extra,
+    },
+  });
+  const S = 'It is no big deal.';
+  const CH = [['It is no', '잇츠 노우'], ['big deal.', '빅 디일.']];
+  const payload = (md) => ({ track: 'core100', lang: 'en', date: '2026-09-06', cards: [coreCard(19, S, CH, { miniDialogue: md })] });
+  const keys = [{ num: 12, id: 'en-core100-012', expr: 'I see your point' }, { num: 31, id: 'en-core100-031', expr: "I've been meaning to ask" }];
+  const opts = { ...okOpts, core100Keys: keys };
+  const line = (speaker, en) => ({ speaker, en, ko: '뜻' });
+  const okMd = [line('A', 'Sorry, I broke your cup.'), line('B', S), line('A', 'Thanks. I will buy a new one.')];
+
+  it('2~4턴, 타깃 줄이 sentence 와 일치하고 1회 → 통과', () => {
+    const r = validateSeedContent(payload(okMd), opts);
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('5턴 → 차단', () => {
+    const r = validateSeedContent(payload([...okMd, line('B', 'Okay.'), line('A', 'Sure.')]), opts);
+    expect(r.errors.join(' ')).toContain('2~4턴');
+  });
+
+  it('타깃 줄이 sentence 와 다르면(1회 아님) 차단', () => {
+    const r = validateSeedContent(payload([line('A', 'Sorry.'), line('B', 'It is no big deal'), line('A', 'Thanks.')]), opts);
+    expect(r.errors.join(' ')).toContain('정확히 1개');
+    const r2 = validateSeedContent(payload([line('A', 'Sorry.'), line('B', S), line('A', S)]), opts);
+    expect(r2.errors.join(' ')).toContain('정확히 1개');
+  });
+
+  it('타깃 외 줄 13단어 → 차단, 11단어 → 경고만', () => {
+    const w13 = 'I am so sorry that I broke your favorite blue cup this morning again.';
+    const w11 = 'I am so sorry that I broke your favorite blue cup.';
+    expect(validateSeedContent(payload([line('A', w13), line('B', S)]), opts).errors.join(' ')).toContain('12단어 초과');
+    const r = validateSeedContent(payload([line('A', w11), line('B', S)]), opts);
+    expect(r.errors).toEqual([]);
+    expect(r.warnings.join(' ')).toContain('10단어 이하 권장');
+  });
+
+  it('아직 안 배운 뒤쪽 묶음(#31) 표현이 다른 줄에 들어가면 차단, 이미 배운(#12) 표현은 경고만', () => {
+    const later = validateSeedContent(payload([line('A', "I've been meaning to ask you this."), line('B', S)]), opts);
+    expect(later.errors.join(' ')).toContain('#31');
+    const earlier = validateSeedContent(payload([line('A', 'I see your point, but still.'), line('B', S)]), opts);
+    expect(earlier.errors).toEqual([]);
+    expect(earlier.warnings.join(' ')).toContain('#12');
+  });
+
+  it('타깃 표현이 다른 줄에도 나오면 차단 (타깃은 1회만)', () => {
+    const r = validateSeedContent(payload([line('A', 'You always say it is no big deal to me.'), line('B', S)]), opts);
+    expect(r.errors.join(' ')).toContain('1회만');
+  });
+
+  it('loadCore100Keys — 시드 폴더의 코어100 100장에서 번호·핵심 표현을 모은다', () => {
+    const ks = loadCore100Keys(seedsDir);
+    expect(ks.length).toBe(100);
+    expect(ks.find((k) => k.num === 19)?.expr).toBe('trying to reach');
   });
 });
