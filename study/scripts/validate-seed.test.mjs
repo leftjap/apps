@@ -270,52 +270,13 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('en-moduyeongeo-ep1-b');
   });
 
-  /* 음차 연음 재분절 (guide-en §7, 2026-07-22 사용자 지시 — "캔 유 → 캐뉴", "왓 이즈 → 워리즈").
-   * 의무인데 게이트가 검사하지 않아 코퍼스 40%(드릴 866개 중 343개)가 단어별 표기로 남아 있었다.
-   * 판정: 받침 있는 음절 + 공백 + ㅇ으로 시작하는 음절 = 이어 적어야 할 경계. 차단이 아니라 경고 —
-   * 기존 시드 다수가 걸리고, 실제 발화가 끊기는 자리(강세·휴지)도 있어 저작자 판단이 필요하다. */
-  it('음차가 연음 경계를 안 이으면 경고한다 (캔 유 → 캐뉴)', () => {
+  /* 음차 연음 게이트 폐기 (2026-09-08) — 한글 철자 패턴으로 음성 현상을 판정하던 경고를 없앴다.
+   * 근거는 validate-seed.mjs 의 주석. 아래는 그 게이트가 되살아나지 않는지 지키는 테스트다. */
+  it('연음 경고를 내지 않는다 — 단어별 표기도 통과 (게이트 폐기)', () => {
     const p = makeModu({ track: 'core100' });
-    p.cards[0].explanation.drills[0].kr = '캔 유 두 잇';
-    const r = validateSeedContent(p, okOpts);
-    expect(r.warnings.join(' ')).toContain('연음');
-    expect(r.ok).toBe(true); // 경고일 뿐 차단 아님
-  });
-
-  it('이어 적었으면 경고하지 않는다', () => {
-    const p = makeModu({ track: 'core100' });
-    p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = '캐뉴 두 잇'; }));
-    const r = validateSeedContent(p, okOpts);
-    expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
-  });
-
-  it('받침이 없거나 다음이 자음이면 대상이 아니다', () => {
-    const p = makeModu({ track: 'core100' });
-    p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = '쏘리 아이 디든 캐치'; }));
-    const r = validateSeedContent(p, okOpts);
-    expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
-  });
-
-  /* 오탐 제거 (2026-08-31) — 한글 초성 ㅇ 은 음가가 없어 '받침+ㅇ초성'만 보면 영어에서 이어지지
-   * 않는 자리까지 잡힌다. 뒤 음절이 이중모음으로 시작하면 원음이 활음 /j/·/w/ 라 앞 받침이 넘어갈
-   * 자리가 아니다. 대가로 can you→캐뉴 같은 자리는 놓치지만, 경고의 신뢰도가 먼저다. */
-  it('뒤 음절이 활음(이중모음)으로 시작하면 연음 대상이 아니다', () => {
-    for (const kr of ['미인 위', '씽 워r크스', 'f럼 예스터r데이', '낫 유어r 잘못']) {
-      const p = makeModu({ track: 'core100' });
-      p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = kr; }));
-      const r = validateSeedContent(p, okOpts);
-      expect(r.warnings.filter((w) => w.includes('연음')), kr).toEqual([]);
-    }
-  });
-
-  /* chunks 경계 = 저작자가 지정한 호흡 자리 — 그 자리를 넘어 이어 읽지 않는다. phonetic_kr 을
-   * 통째로 검사하면 청크와 청크 사이가 전부 미적용으로 잡힌다(오탐). 청크 안에서만 본다. */
-  it('청크 경계는 연음 대상이 아니다', () => {
-    const p = makeModu({ track: 'core100' });
-    p.cards.forEach((c) => c.explanation.drills.forEach((d) => { d.kr = '쏘리 아이 디든 캐치'; }));
-    p.cards[0].explanation.chunks = [['How to explain it', '하우 투 익스플레이닛'], ['in English.', '이닝글리쉬']];
-    p.cards[0].phonetic_kr = '하우 투 익스플레이닛 이닝글리쉬';
-    p.cards[0].sentence = 'How to explain it in English.';
+    p.cards[0].phonetic_kr = '캔 유 왓 이즈 댓 어겐 겟 어';
+    p.cards[0].explanation.chunks = [['Can you', '캔 유', '해줄래']];
+    for (const d of p.cards[0].explanation.drills) d.kr = '왓 이즈 잇';
     const r = validateSeedContent(p, okOpts);
     expect(r.warnings.filter((w) => w.includes('연음'))).toEqual([]);
   });
