@@ -10,7 +10,7 @@
       "sentence": "What else was I supposed to do?",
       "meaning": "그럼 내가 뭘 어떻게 했어야 하는데?",
       "reading": null,
-      "phonetic_kr": "와렐스 워자이 써포우즈드 투 두",
+      "phonetic_kr": "와렐스 워자이 써포우스터 두",
       "order_index": 1,
       "explanation": {
         "key": "supposed to = ~하기로 되어 있다. 원래 그래야 하는 일을 가리키고, 과거형이면 '그랬어야 했는데 못 했다'는 뉘앙스가 된다.",
@@ -83,7 +83,7 @@
           ],
           [
             "was I supposed to do?",
-            "워자이 써포우즈드 투 두",
+            "워자이 써포우스터 두",
             "내가 했어야 했지?"
           ]
         ],
@@ -123,7 +123,7 @@
       "sentence": "I knew something like this would happen.",
       "meaning": "이런 일이 생길 줄 알았어.",
       "reading": null,
-      "phonetic_kr": "아이 뉴 썸씽 라이크 디스 우드 해픈",
+      "phonetic_kr": "아이 뉴 썸씽 라이크 디스 워드 해픈",
       "order_index": 2,
       "explanation": {
         "key": "I knew ~ would happen = ~할 줄 알았어. 안 좋은 예감이 그대로 맞았을 때 쓰는 말.",
@@ -200,7 +200,7 @@
           ],
           [
             "would happen.",
-            "우드 해픈",
+            "워드 해픈",
             "생길 거라고."
           ]
         ],
@@ -240,7 +240,7 @@
       "sentence": "I really appreciate everything you've done for me.",
       "meaning": "네가 해준 거 정말 고맙게 생각해.",
       "reading": null,
-      "phonetic_kr": "아이 리얼리 어프리이시에잇 에v리씽 유v 던 f포어r 미",
+      "phonetic_kr": "아이 리얼리 어프리이시에이레v리씽 유v 던 f퍼r 미",
       "order_index": 3,
       "explanation": {
         "key": "really appreciate = 정말 고맙게 생각하다. thank you 한마디보다 무겁게, 받은 도움 전체를 두고 하는 인사.",
@@ -303,17 +303,17 @@
         "chunks": [
           [
             "I really appreciate",
-            "아이 리얼리 어프리이시에잇",
+            "아이 리얼리 어프리이시에이레v리씽",
             "정말 고맙게 생각해"
           ],
           [
             "everything you've done",
-            "에v리씽 유v 던",
+            "유v 던",
             "네가 해준 모든 것을"
           ],
           [
             "for me.",
-            "f포어r 미",
+            "f퍼r 미",
             "나를 위해."
           ]
         ],
@@ -352,7 +352,7 @@
       "sentence": "You could've told me you were coming.",
       "meaning": "네가 온다고 말해줄 수도 있었잖아.",
       "reading": null,
-      "phonetic_kr": "유 쿠드v 톨드 미 유 워r 커밍",
+      "phonetic_kr": "유 쿠더v 톨 미 여 워r 커밍",
       "order_index": 4,
       "explanation": {
         "key": "could've told me = 말해줄 수도 있었잖아. 미리 안 알려준 상대에게 서운함을 가볍게 내비치는 말.",
@@ -415,17 +415,17 @@
         "chunks": [
           [
             "You could've",
-            "유 쿠드v",
+            "유 쿠더v",
             "너는 ~할 수도 있었잖아"
           ],
           [
             "told me",
-            "톨드 미",
+            "톨 미",
             "나한테 말해 줄"
           ],
           [
             "you were coming.",
-            "유 워r 커밍",
+            "여 워r 커밍",
             "네가 온다고."
           ]
         ],
@@ -461,7 +461,7 @@
       "sentence": "I can't figure out why she left so early.",
       "meaning": "걔가 왜 그렇게 일찍 갔는지 모르겠어.",
       "reading": null,
-      "phonetic_kr": "아이 캔트 f피겨r 아웃 와이 쉬 레f트 쏘 어r리",
+      "phonetic_kr": "아이 캔트 f피겨라웃 와이 쉬 레f 쏘 어r리",
       "order_index": 5,
       "explanation": {
         "key": "figure out = (따져 보고) 알아내다, 이해가 되다. 생각해 봐도 답이 안 나올 때 can't figure out 으로 자주 쓴다.",
@@ -524,12 +524,12 @@
         "chunks": [
           [
             "I can't figure out",
-            "아이 캔트 f피겨r 아웃",
+            "아이 캔트 f피겨라웃",
             "모르겠어"
           ],
           [
             "why she left",
-            "와이 쉬 레f트",
+            "와이 쉬 레f",
             "걔가 왜 갔는지"
           ],
           [
@@ -569,7 +569,7 @@
       "sentence": "We need to find out what really happened.",
       "meaning": "실제로 무슨 일이 있었는지 알아내야 해.",
       "reading": null,
-      "phonetic_kr": "위 니이드 투 f파인다웃 왓 리얼리 해픈드",
+      "phonetic_kr": "위 니이러 f파인다웃 왓 리얼리 해픈드",
       "order_index": 6,
       "explanation": {
         "key": "find out = (알아보고) 알아내다, 알게 되다. 몰랐던 사실을 확인해 손에 넣는 것.",
@@ -632,7 +632,7 @@
         "chunks": [
           [
             "We need to",
-            "위 니이드 투",
+            "위 니이러",
             "우리는 ~해야 해"
           ],
           [
@@ -681,7 +681,7 @@
       "sentence": "I'll pick you up when I get off work.",
       "meaning": "내가 퇴근하면 데리러 갈게.",
       "reading": null,
-      "phonetic_kr": "아일 픽 유 업 웨나이 게로f 워r크",
+      "phonetic_kr": "아일 피켜 업 웨나이 게로f 워r크",
       "order_index": 7,
       "explanation": {
         "key": "pick ~ up = 차로 데리러 가다. 사람을 태우러 간다는 뜻으로 매일 쓰는 표현.",
@@ -744,7 +744,7 @@
         "chunks": [
           [
             "I'll pick you up",
-            "아일 픽 유 업",
+            "아일 피켜 업",
             "데리러 갈게"
           ],
           [

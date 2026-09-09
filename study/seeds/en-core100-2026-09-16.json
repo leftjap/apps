@@ -10,7 +10,7 @@
       "sentence": "What are you gonna do about it?",
       "meaning": "이걸 어떻게 할 건데?",
       "reading": null,
-      "phonetic_kr": "왓 아r 유 거나 두 어바우릿",
+      "phonetic_kr": "워러r여 거너 두 어바우릿",
       "order_index": 1,
       "explanation": {
         "key": "What are you gonna do = 어떻게 할 거야. going to 를 소리 나는 대로 적은 gonna 로 상대의 대응을 묻는 말.",
@@ -78,12 +78,12 @@
         "chunks": [
           [
             "What are you",
-            "왓 아r 유",
+            "워러r여",
             "너는 뭘"
           ],
           [
             "gonna do",
-            "거나 두",
+            "거너 두",
             "할 거야"
           ],
           [
@@ -124,7 +124,7 @@
       "sentence": "I'm not gonna let that happen again.",
       "meaning": "그런 일이 다시 생기게 두진 않을 거야.",
       "reading": null,
-      "phonetic_kr": "아임 낫 거나 렛 댓 해프너겐",
+      "phonetic_kr": "아임 낫 거너 렛 댓 해프너겐",
       "order_index": 2,
       "explanation": {
         "key": "not gonna let that happen = 그런 일이 생기게 두지 않겠다. 같은 일을 되풀이하지 않겠다고 다짐하는 말.",
@@ -187,7 +187,7 @@
         "chunks": [
           [
             "I'm not gonna let",
-            "아임 낫 거나 렛",
+            "아임 낫 거너 렛",
             "난 두지 않을 거야"
           ],
           [
@@ -232,7 +232,7 @@
       "sentence": "Do you wanna come over for dinner tonight?",
       "meaning": "오늘 저녁 먹으러 우리 집에 올래?",
       "reading": null,
-      "phonetic_kr": "두 유 워나 커모우버r f포어r 디너r 터나잇",
+      "phonetic_kr": "더여 워너 커모우버r f퍼r 디너r 터나잇",
       "order_index": 3,
       "explanation": {
         "key": "Do you wanna come over = 우리 집에 올래. want to 를 소리대로 적은 wanna 로 가볍게 초대하는 말.",
@@ -300,7 +300,7 @@
         "chunks": [
           [
             "Do you wanna",
-            "두 유 워나",
+            "더여 워너",
             "~할래"
           ],
           [
@@ -310,7 +310,7 @@
           ],
           [
             "for dinner tonight?",
-            "f포어r 디너r 터나잇",
+            "f퍼r 디너r 터나잇",
             "오늘 저녁 먹으러?"
           ]
         ],
@@ -350,7 +350,7 @@
       "sentence": "I gotta get back to work before it gets late.",
       "meaning": "늦기 전에 다시 일하러 가야 해.",
       "reading": null,
-      "phonetic_kr": "아이 가라 겟 백 투 워r크 비f포어r 잇 겟츠 레잇",
+      "phonetic_kr": "아이 가러 겟 백 터 워r크 비f포어r 잇 겟츠 레잇",
       "order_index": 4,
       "explanation": {
         "key": "gotta get back to work = 다시 일하러 가야 한다. have got to 를 줄인 gotta 로 급한 볼일을 말하는 표현.",
@@ -418,12 +418,12 @@
         "chunks": [
           [
             "I gotta get back",
-            "아이 가라 겟 백",
+            "아이 가러 겟 백",
             "난 돌아가야 해"
           ],
           [
             "to work",
-            "투 워r크",
+            "터 워r크",
             "일하러"
           ],
           [
@@ -464,7 +464,7 @@
       "sentence": "Lemme see if I can find another way.",
       "meaning": "다른 방법을 찾을 수 있는지 볼게.",
       "reading": null,
-      "phonetic_kr": "레미 씨이 이f 아이 캔 f아인드 어나더r 웨이",
+      "phonetic_kr": "레미 씨이 이f 아이 컨 f아인더나더r 웨이",
       "order_index": 5,
       "explanation": {
         "key": "Lemme see if = ~인지 볼게. let me 를 소리대로 적은 lemme 로 바로 답하지 않고 확인해 보겠다는 말.",
@@ -537,12 +537,12 @@
           ],
           [
             "I can find",
-            "아이 캔 f아인드",
+            "아이 컨 f아인더나더r",
             "내가 찾을 수 있는지"
           ],
           [
             "another way.",
-            "어나더r 웨이",
+            "웨이",
             "다른 방법을."
           ]
         ],
@@ -578,7 +578,7 @@
       "sentence": "I was kinda hoping you'd say yes.",
       "meaning": "네가 좋다고 해주길 좀 기대했어.",
       "reading": null,
-      "phonetic_kr": "아이 워z 카인다 호우핑 유드 쎄이 예스",
+      "phonetic_kr": "아이 워z 카인더 호우핑 유드 쎄이 예스",
       "order_index": 6,
       "explanation": {
         "key": "I was kinda hoping = 좀 기대했어. kind of 를 줄인 kinda 로 바람을 세지 않게 드러내는 말.",
@@ -646,7 +646,7 @@
         "chunks": [
           [
             "I was kinda hoping",
-            "아이 워z 카인다 호우핑",
+            "아이 워z 카인더 호우핑",
             "난 좀 기대했어"
           ],
           [
@@ -690,7 +690,7 @@
       "sentence": "I think you might be right about that.",
       "meaning": "그건 네 말이 맞는 것 같아.",
       "reading": null,
-      "phonetic_kr": "아이 씽크 유 마잇 비 라이러바웃 댓",
+      "phonetic_kr": "아이 씽켜 마잇 비 라이러바웃 댓",
       "order_index": 7,
       "explanation": {
         "key": "you might be right = 네 말이 맞을지도 모른다. might 를 넣어 동의를 단정하지 않고 부드럽게 하는 말.",
@@ -758,12 +758,12 @@
         "chunks": [
           [
             "I think",
-            "아이 씽크",
+            "아이 씽켜",
             "내 생각엔"
           ],
           [
             "you might be",
-            "유 마잇 비",
+            "마잇 비",
             "네가 ~인 것 같아"
           ],
           [

@@ -122,7 +122,7 @@
       "sentence": "Is breakfast included, or do I need to pay extra?",
       "meaning": "조식이 포함인가요, 아니면 추가 요금을 내야 하나요?",
       "reading": null,
-      "phonetic_kr": "이z 브렉f퍼스트 인클루우디드 오어r 두 아이 니이드 투 페이 엑스트라",
+      "phonetic_kr": "이z 브렉f퍼스트 인클루우디드 어r 두 아이 니이러 페이 엑스트라",
       "order_index": 2,
       "explanation": {
         "key": "Is ~ included = ~가 포함인가요. 값에 무엇이 들어 있는지 확인할 때 쓰는 질문.",
@@ -190,12 +190,12 @@
           ],
           [
             "or do I need",
-            "오어r 두 아이 니이드",
+            "어r 두 아이 니이러",
             "아니면 제가 해야 하나요"
           ],
           [
             "to pay extra?",
-            "투 페이 엑스트라",
+            "페이 엑스트라",
             "추가 요금을 내는 걸?"
           ]
         ],
@@ -346,7 +346,7 @@
       "sentence": "Could you recommend something that isn't too spicy?",
       "meaning": "너무 맵지 않은 메뉴를 추천해 주시겠어요?",
       "reading": null,
-      "phonetic_kr": "쿠쥬 레커멘드 썸씽 대리즌 투우 스파이씨",
+      "phonetic_kr": "커저 레커멘드 썸씽 더리즌 투우 스파이씨",
       "order_index": 4,
       "explanation": {
         "key": "Could you recommend something = 뭐 하나 추천해 주시겠어요. 골라 달라고 부탁하는 말.",
@@ -409,7 +409,7 @@
         "chunks": [
           [
             "Could you recommend",
-            "쿠쥬 레커멘드",
+            "커저 레커멘드",
             "추천해 주시겠어요"
           ],
           [
@@ -419,7 +419,7 @@
           ],
           [
             "that isn't too spicy?",
-            "대리즌 투우 스파이씨",
+            "더리즌 투우 스파이씨",
             "너무 맵지 않은?"
           ]
         ],
@@ -459,7 +459,7 @@
       "sentence": "I'm allergic to nuts, so does this have any?",
       "meaning": "견과류 알레르기가 있는데, 이거 들어갔나요?",
       "reading": null,
-      "phonetic_kr": "아이멀러r직 투 넛츠 쏘 더즈 디스 해v 애니",
+      "phonetic_kr": "아이멀러r직 터 넛츠 쏘 더즈 디스 해v 애니",
       "order_index": 5,
       "explanation": {
         "key": "I'm allergic to ~ = ~ 알레르기가 있어요. 못 먹는 것을 주문 전에 미리 알리는 말.",
@@ -522,7 +522,7 @@
         "chunks": [
           [
             "I'm allergic to nuts,",
-            "아이멀러r직 투 넛츠",
+            "아이멀러r직 터 넛츠",
             "견과류 알레르기가 있어요,"
           ],
           [

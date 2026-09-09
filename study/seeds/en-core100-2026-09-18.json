@@ -10,7 +10,7 @@
       "sentence": "Can you drop me off near the station?",
       "meaning": "역 근처에 내려줄래?",
       "reading": null,
-      "phonetic_kr": "캔 유 드랍 미 오f 니어r 더 스테이션",
+      "phonetic_kr": "컨 여 드랍 미 오f 니어r 더 스테이션",
       "order_index": 1,
       "explanation": {
         "key": "drop me off = (차로 데려다주고) 나를 내려 주다. 목적지 근처에서 차를 세워 달라고 할 때 쓴다.",
@@ -73,7 +73,7 @@
         "chunks": [
           [
             "Can you drop me off",
-            "캔 유 드랍 미 오f",
+            "컨 여 드랍 미 오f",
             "나를 내려 줄래"
           ],
           [
@@ -114,7 +114,7 @@
       "sentence": "I ran into an old friend on my way home.",
       "meaning": "집에 오는 길에 옛 친구를 우연히 만났어.",
       "reading": null,
-      "phonetic_kr": "아이 래닌투 어노울드 f렌드 온 마이 웨이 호움",
+      "phonetic_kr": "아이 래닌투 어노울드 f렌던 마이 웨이 호움",
       "order_index": 2,
       "explanation": {
         "key": "ran into = 우연히 마주쳤다. run into 는 '뛰어들다'가 아니라 약속 없이 딱 만나는 것.",
@@ -187,12 +187,12 @@
           ],
           [
             "an old friend",
-            "어노울드 f렌드",
+            "어노울드 f렌던",
             "옛 친구를"
           ],
           [
             "on my way home.",
-            "온 마이 웨이 호움",
+            "마이 웨이 호움",
             "집에 오는 길에."
           ]
         ],
@@ -450,7 +450,7 @@
       "sentence": "I thought things would work out in the end.",
       "meaning": "결국에는 일이 잘 풀릴 줄 알았어.",
       "reading": null,
-      "phonetic_kr": "아이 쏘옷 씽z 우드 워r카웃 인 디 엔드",
+      "phonetic_kr": "아이 쏘옷 씽z 워드 워r카우린 디 엔드",
       "order_index": 5,
       "explanation": {
         "key": "work out = (일이) 잘 풀리다. 운동한다는 뜻이 아니라 상황이 결국 괜찮아진다는 말.",
@@ -522,12 +522,12 @@
           ],
           [
             "would work out",
-            "우드 워r카웃",
+            "워드 워r카우린",
             "잘 풀릴 거라고 생각했어"
           ],
           [
             "in the end.",
-            "인 디 엔드",
+            "디 엔드",
             "결국에는."
           ]
         ],

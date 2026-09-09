@@ -1,0 +1,1012 @@
+{
+ "meta": {
+  "source": "study/docs/core100-gold.md (4차안 확정, 사용자 승인 2026-09-09)",
+  "hold_rule": "I'll·called 의 어두운 L 은 보류 — 해당 자리만 현행 표기(아일·콜드 유) 유지",
+  "counts": {
+   "changed": 80,
+   "hold": 5
+  }
+ },
+ "sentences": [
+  {
+   "n": 1,
+   "id": "en-core100-001-say-again-slowly",
+   "en": "Sorry, could you say that again more slowly?",
+   "phonetic_kr": "쏘리 커저 쎄이 대러겐 모어r 슬로울리",
+   "gold_default": "쏘리 커저 쎄이 대러겐 모어r 슬로울리",
+   "hold": false,
+   "changed": true,
+   "current_before": "쏘리 쿠쥬 쎄이 댓 어겐 모어r 슬로울리"
+  },
+  {
+   "n": 2,
+   "id": "en-core100-002-what-do-you-mean",
+   "en": "What do you mean by that exactly?",
+   "phonetic_kr": "왓 더여 미인 바이 대리그잭틀리",
+   "gold_default": "왓 더여 미인 바이 대리그잭틀리",
+   "hold": false,
+   "changed": true,
+   "current_before": "왓 두 유 미인 바이 댓 이그잭틀리"
+  },
+  {
+   "n": 3,
+   "id": "en-core100-003-not-sure-how-to-explain",
+   "en": "I'm not sure how to explain it in English.",
+   "phonetic_kr": "아임 낫 슈어r 하우 터 익스플레이니린 잉글리쉬",
+   "gold_default": "아임 낫 슈어r 하우 터 익스플레이니린 잉글리쉬",
+   "hold": false,
+   "changed": true,
+   "current_before": "암 낫 슈어r 하우 투 익스플레인 잇 인 잉글리쉬"
+  },
+  {
+   "n": 4,
+   "id": "en-core100-004-give-me-a-second",
+   "en": "Give me a second to think about it.",
+   "phonetic_kr": "기미 어 쎄컨 터 씽크 어바우릿",
+   "gold_default": "기미 어 쎄컨 터 씽크 어바우릿",
+   "hold": false,
+   "changed": true,
+   "current_before": "기v 미 어 쎄컨 투 씽크 어바우릿"
+  },
+  {
+   "n": 5,
+   "id": "en-core100-005-cant-put-it-into-words",
+   "en": "I know what I mean, but I can't put it into words.",
+   "phonetic_kr": "아이 노우 와라이 미인 버라이 캔트 푸리린투 워r즈",
+   "gold_default": "아이 노우 와라이 미인 버라이 캔트 푸리린투 워r즈",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 노우 왓 아이 미인 벗 아이 캔트 푸릿 인투 워r즈"
+  },
+  {
+   "n": 6,
+   "id": "en-core100-006-understood-you-correctly",
+   "en": "Let me see if I understood you correctly.",
+   "phonetic_kr": "레미 씨이 이f 아이 언더r스투저 커r렉틀리",
+   "gold_default": "레미 씨이 이f 아이 언더r스투저 커r렉틀리",
+   "hold": false,
+   "changed": true,
+   "current_before": "렛 미 씨 이f 아이 언더r스투쥬 커r렉틀리"
+  },
+  {
+   "n": 7,
+   "id": "en-core100-007-give-me-an-example",
+   "en": "Could you give me an example of what you mean?",
+   "phonetic_kr": "커저 기미 어니그잼플 어v 왓처 미인",
+   "gold_default": "커저 기미 어니그잼플 어v 왓처 미인",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠쥬 기v 미 어니그잼플 어v 왓 유 미인"
+  },
+  {
+   "n": 8,
+   "id": "en-core100-008-didnt-catch-last-part",
+   "en": "I didn't catch the last part of what you said.",
+   "phonetic_kr": "아이 디든 캐치 더 라스 파r러v 왓처 쎄드",
+   "gold_default": "아이 디든 캐치 더 라스 파r러v 왓처 쎄드",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 디든 캐치 더 라스 파r트 어v 왓 유 쎄드"
+  },
+  {
+   "n": 9,
+   "id": "en-core100-009-how-do-you-say",
+   "en": "How do you say this in English?",
+   "phonetic_kr": "하우 더여 쎄이 디스 인 잉글리쉬",
+   "gold_default": "하우 더여 쎄이 디스 인 잉글리쉬",
+   "hold": false,
+   "changed": true,
+   "current_before": "하우 두 유 쎄이 디스 인 잉글리쉬"
+  },
+  {
+   "n": 10,
+   "id": "en-core100-010-what-im-trying-to-say",
+   "en": "What I'm trying to say is that I disagree.",
+   "phonetic_kr": "와라임 트라잉 터 쎄이 이z 더라이 디써그리이",
+   "gold_default": "와라임 트라잉 터 쎄이 이z 더라이 디써그리이",
+   "hold": false,
+   "changed": true,
+   "current_before": "와라임 트라잉 투 쎄이 이z 댓 아이 디써그리이"
+  },
+  {
+   "n": 11,
+   "id": "en-core100-011-that-makes-sense",
+   "en": "That makes sense, but I still have a question.",
+   "phonetic_kr": "댓 메익스 쎈스 버라이 스틸 해v 어 퀘스천",
+   "gold_default": "댓 메익스 쎈스 버라이 스틸 해v 어 퀘스천",
+   "hold": false,
+   "changed": false,
+   "current_before": "댓 메익스 쎈스 버라이 스틸 해v 어 퀘스천"
+  },
+  {
+   "n": 12,
+   "id": "en-core100-012-i-see-your-point",
+   "en": "I see your point, but I don't completely agree.",
+   "phonetic_kr": "아이 씨이 여r 포인트 버라이 돈 컴플리이틀리 어그리이",
+   "gold_default": "아이 씨이 여r 포인트 버라이 돈 컴플리이틀리 어그리이",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 씨이 유어r 포인트 버라이 돈 컴플리이틀리 어그리이"
+  },
+  {
+   "n": 13,
+   "id": "en-core100-013-it-depends-on",
+   "en": "It depends on what you want to do.",
+   "phonetic_kr": "잇 디펜존 왓처 워너 두",
+   "gold_default": "잇 디펜존 왓처 워너 두",
+   "hold": false,
+   "changed": true,
+   "current_before": "잇 디펜존 왓 유 원트 투 두"
+  },
+  {
+   "n": 14,
+   "id": "en-core100-014-think-about-it",
+   "en": "I'll think about it before I decide.",
+   "phonetic_kr": "아일 씽크 어바우릿 비f포어r 아이 디싸이드",
+   "gold_default": "{I'll} 씽크 어바우릿 비f포어r 아이 디싸이드",
+   "hold": true,
+   "changed": false,
+   "current_before": "아일 씽크 어바우릿 비f포어r 아이 디싸이드"
+  },
+  {
+   "n": 15,
+   "id": "en-core100-015-sounds-like-a-good-idea",
+   "en": "That sounds like a good idea to me.",
+   "phonetic_kr": "댓 사운즈 라이커 구다이디어 터 미",
+   "gold_default": "댓 사운즈 라이커 구다이디어 터 미",
+   "hold": false,
+   "changed": true,
+   "current_before": "댓 사운즈 라이크 어 구다이디어 투 미"
+  },
+  {
+   "n": 16,
+   "id": "en-core100-016-id-love-to-but",
+   "en": "I'd love to, but I already have plans.",
+   "phonetic_kr": "아이드 러v 투 버라이 올레디 해v 플랜즈",
+   "gold_default": "아이드 러v 투 버라이 올레디 해v 플랜즈",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이드 러v 투 벗 아이 올레디 해v 플랜즈"
+  },
+  {
+   "n": 17,
+   "id": "en-core100-017-cant-make-it",
+   "en": "I can't make it tonight, but how about tomorrow?",
+   "phonetic_kr": "아이 캔트 메이킷 터나잇 벗 하우 어바웃 터마로우",
+   "gold_default": "아이 캔트 메이킷 터나잇 벗 하우 어바웃 터마로우",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 캔트 메이킷 터나잇 벗 하우 어바웃 터마로우"
+  },
+  {
+   "n": 18,
+   "id": "en-core100-018-works-best-for-you",
+   "en": "Let me know what time works best for you.",
+   "phonetic_kr": "레미 노우 왓 타임 워r크스 베스 f퍼r 유",
+   "gold_default": "레미 노우 왓 타임 워r크스 베스 f퍼r 유",
+   "hold": false,
+   "changed": true,
+   "current_before": "렛 미 노우 왓 타임 워r크스 베스트 f포어r 유"
+  },
+  {
+   "n": 19,
+   "id": "en-core100-019-trying-to-reach",
+   "en": "I've been trying to reach you all morning.",
+   "phonetic_kr": "아이v 빈 트라잉 터 리이처 올 모어r닝",
+   "gold_default": "아이v 빈 트라잉 터 리이처 올 모어r닝",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이v 빈 트라잉 투 리이치 유 올 모어r닝"
+  },
+  {
+   "n": 20,
+   "id": "en-core100-020-something-came-up",
+   "en": "Something came up, so I may be a little late.",
+   "phonetic_kr": "썸씽 케이멉 쏘 아이 메이 비 어 리를 레잇",
+   "gold_default": "썸씽 케이멉 쏘 아이 메이 비 어 리를 레잇",
+   "hold": false,
+   "changed": false,
+   "current_before": "썸씽 케이멉 쏘 아이 메이 비 어 리를 레잇"
+  },
+  {
+   "n": 21,
+   "id": "en-core100-021-push-it-back",
+   "en": "Can we push it back an hour or so?",
+   "phonetic_kr": "컨 위 푸쉿 백 어나워r 어r 쏘우",
+   "gold_default": "컨 위 푸쉿 백 어나워r 어r 쏘우",
+   "hold": false,
+   "changed": true,
+   "current_before": "캔 위 푸쉬 잇 백 어나워r 오어r 쏘우"
+  },
+  {
+   "n": 22,
+   "id": "en-core100-022-didnt-mean-to",
+   "en": "I didn't mean to make you feel bad.",
+   "phonetic_kr": "아이 디든 미인 터 메이켜 f피일 배드",
+   "gold_default": "아이 디든 미인 터 메이켜 f피일 배드",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 디든 미인 투 메익 유 f피일 배드"
+  },
+  {
+   "n": 23,
+   "id": "en-core100-023-i-thought-you-said",
+   "en": "I thought you said you were busy today.",
+   "phonetic_kr": "아이 쏘처 쎄저 워r 비지 터데이",
+   "gold_default": "아이 쏘처 쎄저 워r 비지 터데이",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 쏘츄 쎄드 유 워r 비지 투데이"
+  },
+  {
+   "n": 24,
+   "id": "en-core100-024-have-no-idea",
+   "en": "I have no idea what you're talking about.",
+   "phonetic_kr": "아이 해v 노우 아이디어 왓처r 토킹 어바웃",
+   "gold_default": "아이 해v 노우 아이디어 왓처r 토킹 어바웃",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 해v 노우 아이디어 왓 유어r 토킹 어바웃"
+  },
+  {
+   "n": 25,
+   "id": "en-core100-025-supposed-to-do",
+   "en": "I don't know what I'm supposed to do.",
+   "phonetic_kr": "아이 돈 노우 와라임 써포우스터 두",
+   "gold_default": "아이 돈 노우 와라임 써포우스터 두",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 돈 노우 와라임 써포우즈드 투 두"
+  },
+  {
+   "n": 26,
+   "id": "en-core100-026-see-what-i-can-do",
+   "en": "I'll see what I can do about it.",
+   "phonetic_kr": "아일 씨이 와라이 컨 두 어바우릿",
+   "gold_default": "{I'll} 씨이 와라이 컨 두 어바우릿",
+   "hold": true,
+   "changed": true,
+   "current_before": "아일 씨이 와라이 캔 두 어바우릿"
+  },
+  {
+   "n": 27,
+   "id": "en-core100-027-if-i-were-you",
+   "en": "If I were you, I'd wait until tomorrow.",
+   "phonetic_kr": "이f 아이 워r 유 아이드 웨이런틸 터마로우",
+   "gold_default": "이f 아이 워r 유 아이드 웨이런틸 터마로우",
+   "hold": false,
+   "changed": true,
+   "current_before": "이f 아이 워r 유 아이드 웨잇 언틸 터마로우"
+  },
+  {
+   "n": 28,
+   "id": "en-core100-028-what-would-you-do",
+   "en": "What would you do if you were me?",
+   "phonetic_kr": "왓 워저 두 이f 여 워r 미",
+   "gold_default": "왓 워저 두 이f 여 워r 미",
+   "hold": false,
+   "changed": true,
+   "current_before": "왓 우쥬 두 이f 유 워r 미"
+  },
+  {
+   "n": 29,
+   "id": "en-core100-029-i-wish-i-could",
+   "en": "I wish I could, but it's not possible right now.",
+   "phonetic_kr": "아이 위쉬 아이 쿠드 버릿츠 낫 파써블 라잇 나우",
+   "gold_default": "아이 위쉬 아이 쿠드 버릿츠 낫 파써블 라잇 나우",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 위쉬 아이 쿠드 버릿츠 낫 파써블 라잇 나우"
+  },
+  {
+   "n": 30,
+   "id": "en-core100-030-help-me-figure-out",
+   "en": "Could you help me figure out what went wrong?",
+   "phonetic_kr": "커저 헬프 미 f피겨라웃 왓 웬 롱",
+   "gold_default": "커저 헬프 미 f피겨라웃 왓 웬 롱",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠쥬 헬프 미 f피겨라웃 왓 웬 롱"
+  },
+  {
+   "n": 31,
+   "id": "en-core100-031-ive-been-meaning-to-ask",
+   "en": "I've been meaning to ask you something.",
+   "phonetic_kr": "아이v 빈 미이닝 터 애스켜 썸씽",
+   "gold_default": "아이v 빈 미이닝 터 애스켜 썸씽",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이v 빈 미이닝 투 애스크 유 썸씽"
+  },
+  {
+   "n": 32,
+   "id": "en-core100-032-thought-about-it-that-way",
+   "en": "I've never thought about it that way before.",
+   "phonetic_kr": "아이v 네버r 쏘러바우릿 댓 웨이 비f포어r",
+   "gold_default": "아이v 네버r 쏘러바우릿 댓 웨이 비f포어r",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이v 네버r 쏫 어바우릿 댓 웨이 비f포어r"
+  },
+  {
+   "n": 33,
+   "id": "en-core100-033-it-turns-out",
+   "en": "It turns out we were both wrong.",
+   "phonetic_kr": "잇 터r언자웃 위 워r 보우쓰 롱",
+   "gold_default": "잇 터r언자웃 위 워r 보우쓰 롱",
+   "hold": false,
+   "changed": false,
+   "current_before": "잇 터r언자웃 위 워r 보우쓰 롱"
+  },
+  {
+   "n": 34,
+   "id": "en-core100-034-ended-up",
+   "en": "I ended up staying home all weekend.",
+   "phonetic_kr": "아이 엔디덥 스테잉 호움 올 위켄드",
+   "gold_default": "아이 엔디덥 스테잉 호움 올 위켄드",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 엔디덥 스테잉 호움 올 위켄드"
+  },
+  {
+   "n": 35,
+   "id": "en-core100-035-used-to",
+   "en": "I used to do that all the time.",
+   "phonetic_kr": "아이 유우스터 두 대롤 더 타임",
+   "gold_default": "아이 유우스터 두 대롤 더 타임",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 유우스 투 두 댓 올 더 타임"
+  },
+  {
+   "n": 36,
+   "id": "en-core100-036-not-used-to",
+   "en": "I'm not used to getting up this early.",
+   "phonetic_kr": "아임 낫 유우스터 게링 업 디스 어r리",
+   "gold_default": "아임 낫 유우스터 게링 업 디스 어r리",
+   "hold": false,
+   "changed": true,
+   "current_before": "아임 낫 유우스 투 게링 업 디스 어r리"
+  },
+  {
+   "n": 37,
+   "id": "en-core100-037-im-thinking-about",
+   "en": "I'm thinking about taking a few days off.",
+   "phonetic_kr": "아임 씽킹 어바웃 테이킹 어 f퓨 데이z 어f",
+   "gold_default": "아임 씽킹 어바웃 테이킹 어 f퓨 데이z 어f",
+   "hold": false,
+   "changed": false,
+   "current_before": "아임 씽킹 어바웃 테이킹 어 f퓨 데이z 어f"
+  },
+  {
+   "n": 38,
+   "id": "en-core100-038-feel-like",
+   "en": "I feel like staying home and doing nothing.",
+   "phonetic_kr": "아이 f피일 라이크 스테잉 호움 언 두잉 낫씽",
+   "gold_default": "아이 f피일 라이크 스테잉 호움 언 두잉 낫씽",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 f필 라이크 스테잉 호움 앤 두잉 낫씽"
+  },
+  {
+   "n": 39,
+   "id": "en-core100-039-supposed-to",
+   "en": "I'm supposed to meet her after work.",
+   "phonetic_kr": "아임 써포우스터 미이러r 애f터r 워r크",
+   "gold_default": "아임 써포우스터 미이러r 애f터r 워r크",
+   "hold": false,
+   "changed": true,
+   "current_before": "아임 써포우즈드 투 미잇 허r 애f터r 워r크"
+  },
+  {
+   "n": 40,
+   "id": "en-core100-040-made-it-worse",
+   "en": "I was trying to help, but I made it worse.",
+   "phonetic_kr": "아이 워z 트라잉 터 헬프 버라이 메이딧 워r스",
+   "gold_default": "아이 워z 트라잉 터 헬프 버라이 메이딧 워r스",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 워z 트라잉 투 헬프 버라이 메이딧 워r스"
+  },
+  {
+   "n": 41,
+   "id": "en-core100-041-shouldve-told-you",
+   "en": "I should've told you about it sooner.",
+   "phonetic_kr": "아이 슈더v 톨저 어바우릿 쑤우너r",
+   "gold_default": "아이 슈더v 톨저 어바우릿 쑤우너r",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 슈더v 톨드 유 어바우릿 쑤우너r"
+  },
+  {
+   "n": 42,
+   "id": "en-core100-042-wouldve-called-you",
+   "en": "I would've called you if I'd known.",
+   "phonetic_kr": "아이 우더v 콜드 유 이f 아이드 노운",
+   "gold_default": "아이 우더v {called you} 이f 아이드 노운",
+   "hold": true,
+   "changed": false,
+   "current_before": "아이 우더v 콜드 유 이f 아이드 노운"
+  },
+  {
+   "n": 43,
+   "id": "en-core100-043-dont-have-to",
+   "en": "You don't have to explain everything right now.",
+   "phonetic_kr": "유 돈 해프터 익스플레인 에v리씽 라잇 나우",
+   "gold_default": "유 돈 해프터 익스플레인 에v리씽 라잇 나우",
+   "hold": false,
+   "changed": true,
+   "current_before": "유 돈 해v 투 익스플레인 에v리씽 라잇 나우"
+  },
+  {
+   "n": 44,
+   "id": "en-core100-044-went-through-with-it",
+   "en": "I can't believe you actually went through with it.",
+   "phonetic_kr": "아이 캔트 빌리이v 여 액츄얼리 웬 쓰루우 위딧",
+   "gold_default": "아이 캔트 빌리이v 여 액츄얼리 웬 쓰루우 위딧",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 캔트 빌리이v 유 액츄얼리 웬트 쓰루우 위딧"
+  },
+  {
+   "n": 45,
+   "id": "en-core100-045-thats-not-what",
+   "en": "That's not what I was trying to say.",
+   "phonetic_kr": "댓츠 낫 와라이 워z 트라잉 터 쎄이",
+   "gold_default": "댓츠 낫 와라이 워z 트라잉 터 쎄이",
+   "hold": false,
+   "changed": true,
+   "current_before": "댓츠 낫 왓 아이 워z 트라잉 투 쎄이"
+  },
+  {
+   "n": 46,
+   "id": "en-core100-046-i-dont-think",
+   "en": "I don't think that's what she meant.",
+   "phonetic_kr": "아이 돈 씽크 댓츠 왓 쉬 멘트",
+   "gold_default": "아이 돈 씽크 댓츠 왓 쉬 멘트",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 돈 씽크 댓츠 왓 쉬 멘트"
+  },
+  {
+   "n": 47,
+   "id": "en-core100-047-want-me-to",
+   "en": "What do you want me to do about it?",
+   "phonetic_kr": "왓 더여 원 미러 두 어바우릿",
+   "gold_default": "왓 더여 원 미러 두 어바우릿",
+   "hold": false,
+   "changed": true,
+   "current_before": "왓 두 유 원트 미 투 두 어바우릿"
+  },
+  {
+   "n": 48,
+   "id": "en-core100-048-theres-no-way",
+   "en": "There's no way I'm going to do that.",
+   "phonetic_kr": "데어r즈 노우 웨이 아임 거너 두 댓",
+   "gold_default": "데어r즈 노우 웨이 아임 거너 두 댓",
+   "hold": false,
+   "changed": true,
+   "current_before": "데어r즈 노우 웨이 아임 고잉 투 두 댓"
+  },
+  {
+   "n": 49,
+   "id": "en-core100-049-it-looks-like",
+   "en": "It looks like we're going to be late.",
+   "phonetic_kr": "잇 룩스 라이크 위어r 거너 비 레잇",
+   "gold_default": "잇 룩스 라이크 위어r 거너 비 레잇",
+   "hold": false,
+   "changed": true,
+   "current_before": "잇 룩스 라이크 위어r 고잉 투 비 레잇"
+  },
+  {
+   "n": 50,
+   "id": "en-core100-050-just-have-to",
+   "en": "I guess we'll just have to wait and see.",
+   "phonetic_kr": "아이 게스 위일 저스 해프터 웨이런 씨이",
+   "gold_default": "아이 게스 위일 저스 해프터 웨이런 씨이",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 게스 위일 저스 해v 투 웨이랜 씨이"
+  },
+  {
+   "n": 51,
+   "id": "en-core100-051-whats-the-purpose-of",
+   "en": "What's the purpose of your visit?",
+   "phonetic_kr": "왓츠 더 퍼r퍼서v 여r v이짓",
+   "gold_default": "왓츠 더 퍼r퍼서v 여r v이짓",
+   "hold": false,
+   "changed": true,
+   "current_before": "왓츠 더 퍼r퍼스 어v 유어r v이짓"
+  },
+  {
+   "n": 52,
+   "id": "en-core100-052-im-here-on",
+   "en": "I'm here on vacation, and I'll be staying for a week.",
+   "phonetic_kr": "아임 히어r 온 v에이케이션 언 아일 비 스테잉 f퍼r 어 위이크",
+   "gold_default": "아임 히어r 온 v에이케이션 언 {I'll} 비 스테잉 f퍼r 어 위이크",
+   "hold": true,
+   "changed": true,
+   "current_before": "아임 히어r 온 v에이케이션 앤다일 비 스테잉 f포어r 어 위이크"
+  },
+  {
+   "n": 53,
+   "id": "en-core100-053-how-long-will-you",
+   "en": "How long will you be staying in the country?",
+   "phonetic_kr": "하우 롱 윌 여 비 스테잉 인 더 컨트리",
+   "gold_default": "하우 롱 윌 여 비 스테잉 인 더 컨트리",
+   "hold": false,
+   "changed": true,
+   "current_before": "하우 롱 윌 유 비 스테잉 인 더 컨트리"
+  },
+  {
+   "n": 54,
+   "id": "en-core100-054-im-staying-at",
+   "en": "I'm staying at this hotel for five nights.",
+   "phonetic_kr": "아임 스테잉 엇 디스 호텔 f퍼r f파이v 나이츠",
+   "gold_default": "아임 스테잉 엇 디스 호텔 f퍼r f파이v 나이츠",
+   "hold": false,
+   "changed": true,
+   "current_before": "아임 스테잉 앳 디스 호텔 f포어r f파이v 나이츠"
+  },
+  {
+   "n": 55,
+   "id": "en-core100-055-have-anything-to-declare",
+   "en": "Do you have anything to declare?",
+   "phonetic_kr": "더여 해v 애니씽 터 디클레어r",
+   "gold_default": "더여 해v 애니씽 터 디클레어r",
+   "hold": false,
+   "changed": true,
+   "current_before": "두 유 해v 애니씽 투 디클레어r"
+  },
+  {
+   "n": 56,
+   "id": "en-core100-056-dont-have-anything-to-declare",
+   "en": "I don't have anything to declare.",
+   "phonetic_kr": "아이 돈 해v 애니씽 터 디클레어r",
+   "gold_default": "아이 돈 해v 애니씽 터 디클레어r",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 돈 해v 애니씽 투 디클레어r"
+  },
+  {
+   "n": 57,
+   "id": "en-core100-057-flight-was-delayed",
+   "en": "My flight was delayed, so I missed my connection.",
+   "phonetic_kr": "마이 f라잇 워z 딜레이드 쏘 아이 미스트 마이 커넥션",
+   "gold_default": "마이 f라잇 워z 딜레이드 쏘 아이 미스트 마이 커넥션",
+   "hold": false,
+   "changed": false,
+   "current_before": "마이 f라잇 워z 딜레이드 쏘 아이 미스트 마이 커넥션"
+  },
+  {
+   "n": 58,
+   "id": "en-core100-058-hasnt-arrived-yet",
+   "en": "My luggage hasn't arrived yet, so what should I do?",
+   "phonetic_kr": "마이 러기지 해즌 터라이v드 옛 쏘 왓 셔라이 두",
+   "gold_default": "마이 러기지 해즌 터라이v드 옛 쏘 왓 셔라이 두",
+   "hold": false,
+   "changed": true,
+   "current_before": "마이 러기지 해즌 터라이v드 옛 쏘 왓 슈다이 두"
+  },
+  {
+   "n": 59,
+   "id": "en-core100-059-i-think-i-left",
+   "en": "I think I left my passport in the taxi.",
+   "phonetic_kr": "아이 씽크 아이 레f 마이 패스포어r린 더 택씨",
+   "gold_default": "아이 씽크 아이 레f 마이 패스포어r린 더 택씨",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 씽크 아이 레f트 마이 패스포어r트 인 더 택씨"
+  },
+  {
+   "n": 60,
+   "id": "en-core100-060-id-like-to-change",
+   "en": "I'd like to change my flight to tomorrow, if possible.",
+   "phonetic_kr": "아이드 라이크 터 체인지 마이 f라잇 터 터마로우 이f 파써블",
+   "gold_default": "아이드 라이크 터 체인지 마이 f라잇 터 터마로우 이f 파써블",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이드 라이크 투 체인지 마이 f라잇 투 터마로우 이f 파써블"
+  },
+  {
+   "n": 61,
+   "id": "en-core100-061-can-i-use-this",
+   "en": "Can I use this ticket on the next train?",
+   "phonetic_kr": "커나이 유즈 디스 티키론 더 넥스 트레인",
+   "gold_default": "커나이 유즈 디스 티키론 더 넥스 트레인",
+   "hold": false,
+   "changed": true,
+   "current_before": "캔 아이 유즈 디스 티킷 온 더 넥스트 트레인"
+  },
+  {
+   "n": 62,
+   "id": "en-core100-062-how-to-get-to",
+   "en": "Could you tell me how to get to the station?",
+   "phonetic_kr": "커저 텔 미 하우러 겟 터 더 스테이션",
+   "gold_default": "커저 텔 미 하우러 겟 터 더 스테이션",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠쥬 텔 미 하우 투 겟 투 더 스테이션"
+  },
+  {
+   "n": 63,
+   "id": "en-core100-063-right-direction",
+   "en": "Is this train going in the right direction?",
+   "phonetic_kr": "이z 디스 트레인 고잉 인 더 라잇 디렉션",
+   "gold_default": "이z 디스 트레인 고잉 인 더 라잇 디렉션",
+   "hold": false,
+   "changed": false,
+   "current_before": "이z 디스 트레인 고잉 인 더 라잇 디렉션"
+  },
+  {
+   "n": 64,
+   "id": "en-core100-064-how-long-does-it-take",
+   "en": "How long does it take to get there by subway?",
+   "phonetic_kr": "하우 롱 더짓 테익 터 겟 데어r 바이 써브웨이",
+   "gold_default": "하우 롱 더짓 테익 터 겟 데어r 바이 써브웨이",
+   "hold": false,
+   "changed": true,
+   "current_before": "하우 롱 더짓 테익 투 겟 데어r 바이 써브웨이"
+  },
+  {
+   "n": 65,
+   "id": "en-core100-065-let-me-know-when",
+   "en": "Could you let me know when we get there?",
+   "phonetic_kr": "커저 레미 노우 웬 위 겟 데어r",
+   "gold_default": "커저 레미 노우 웬 위 겟 데어r",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠쥬 렛 미 노우 웬 위 겟 데어r"
+  },
+  {
+   "n": 66,
+   "id": "en-core100-066-have-a-reservation",
+   "en": "I have a reservation under the name Kim.",
+   "phonetic_kr": "아이 해v 어 레저r베이션 언더r 더 네임 킴",
+   "gold_default": "아이 해v 어 레저r베이션 언더r 더 네임 킴",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 해v 어 레저r베이션 언더r 더 네임 킴"
+  },
+  {
+   "n": 67,
+   "id": "en-core100-067-id-like-to-check-in",
+   "en": "I'd like to check in, but I arrived early.",
+   "phonetic_kr": "아이드 라이크 터 체킨 버라이 어라이v더r리",
+   "gold_default": "아이드 라이크 터 체킨 버라이 어라이v더r리",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이드 라이크 투 체킨 버라이 어라이v드 어r리"
+  },
+  {
+   "n": 68,
+   "id": "en-core100-068-leave-my-luggage",
+   "en": "Could I leave my luggage here until check-in?",
+   "phonetic_kr": "커라이 리이v 마이 러기지 히어r 언틸 체킨",
+   "gold_default": "커라이 리이v 마이 러기지 히어r 언틸 체킨",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠라이 리이v 마이 러기지 히어r 언틸 체킨"
+  },
+  {
+   "n": 69,
+   "id": "en-core100-069-theres-been-a-mistake",
+   "en": "I think there's been a mistake with my reservation.",
+   "phonetic_kr": "아이 씽크 데어r즈 비너 미스테익 위드 마이 레저r베이션",
+   "gold_default": "아이 씽크 데어r즈 비너 미스테익 위드 마이 레저r베이션",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 씽크 데어r즈 비너 미스테익 위드 마이 레저r베이션"
+  },
+  {
+   "n": 70,
+   "id": "en-core100-070-is-breakfast-included",
+   "en": "Is breakfast included, or do I need to pay extra?",
+   "phonetic_kr": "이z 브렉f퍼스트 인클루우디드 어r 두 아이 니이러 페이 엑스트라",
+   "gold_default": "이z 브렉f퍼스트 인클루우디드 어r 두 아이 니이러 페이 엑스트라",
+   "hold": false,
+   "changed": true,
+   "current_before": "이z 브렉f퍼스트 인클루우디드 오어r 두 아이 니이드 투 페이 엑스트라"
+  },
+  {
+   "n": 71,
+   "id": "en-core100-071-isnt-working",
+   "en": "The air conditioner isn't working in my room.",
+   "phonetic_kr": "디 에어r 컨디셔너r 이즌 워r킹 인 마이 루움",
+   "gold_default": "디 에어r 컨디셔너r 이즌 워r킹 인 마이 루움",
+   "hold": false,
+   "changed": false,
+   "current_before": "디 에어r 컨디셔너r 이즌 워r킹 인 마이 루움"
+  },
+  {
+   "n": 72,
+   "id": "en-core100-072-could-you-recommend-something",
+   "en": "Could you recommend something that isn't too spicy?",
+   "phonetic_kr": "커저 레커멘드 썸씽 더리즌 투우 스파이씨",
+   "gold_default": "커저 레커멘드 썸씽 더리즌 투우 스파이씨",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠쥬 레커멘드 썸씽 대리즌 투우 스파이씨"
+  },
+  {
+   "n": 73,
+   "id": "en-core100-073-im-allergic-to",
+   "en": "I'm allergic to nuts, so does this have any?",
+   "phonetic_kr": "아이멀러r직 터 넛츠 쏘 더즈 디스 해v 애니",
+   "gold_default": "아이멀러r직 터 넛츠 쏘 더즈 디스 해v 애니",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이멀러r직 투 넛츠 쏘 더즈 디스 해v 애니"
+  },
+  {
+   "n": 74,
+   "id": "en-core100-074-isnt-what-i-ordered",
+   "en": "I'm sorry, but this isn't what I ordered.",
+   "phonetic_kr": "아임 쏘리 벗 디스 이즌 와라이 오어r더r드",
+   "gold_default": "아임 쏘리 벗 디스 이즌 와라이 오어r더r드",
+   "hold": false,
+   "changed": false,
+   "current_before": "아임 쏘리 벗 디스 이즌 와라이 오어r더r드"
+  },
+  {
+   "n": 75,
+   "id": "en-core100-075-get-the-check",
+   "en": "Could we get the check when you have a minute?",
+   "phonetic_kr": "커드 위 겟 더 체크 웬 여 해v 어 미닛",
+   "gold_default": "커드 위 겟 더 체크 웬 여 해v 어 미닛",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠드 위 겟 더 체크 웬 유 해v 어 미닛"
+  },
+  {
+   "n": 76,
+   "id": "en-core100-076-to-go",
+   "en": "Could I get this to go, please?",
+   "phonetic_kr": "커라이 겟 디스 터 고우 플리이z",
+   "gold_default": "커라이 겟 디스 터 고우 플리이z",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠다이 겟 디스 투 고우 플리이z"
+  },
+  {
+   "n": 77,
+   "id": "en-core100-077-id-like-to-return-this",
+   "en": "I'd like to return this because it doesn't fit.",
+   "phonetic_kr": "아이드 라이크 터 리터r언 디스 비커z 잇 더즌 f핏",
+   "gold_default": "아이드 라이크 터 리터r언 디스 비커z 잇 더즌 f핏",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이드 라이크 투 리터r언 디스 비커z 잇 더즌 f핏"
+  },
+  {
+   "n": 78,
+   "id": "en-core100-078-have-anything-for",
+   "en": "Do you have anything for a headache?",
+   "phonetic_kr": "더여 해v 애니씽 f퍼r 어 헤데익",
+   "gold_default": "더여 해v 애니씽 f퍼r 어 헤데익",
+   "hold": false,
+   "changed": true,
+   "current_before": "두 유 해v 애니씽 f포어r 어 헤데익"
+  },
+  {
+   "n": 79,
+   "id": "en-core100-079-take-a-picture",
+   "en": "Could you take a picture of us, please?",
+   "phonetic_kr": "커저 테이커 픽처r 어v 어스 플리이z",
+   "gold_default": "커저 테이커 픽처r 어v 어스 플리이z",
+   "hold": false,
+   "changed": true,
+   "current_before": "쿠쥬 테이커 픽처r 어v 어스 플리이z"
+  },
+  {
+   "n": 80,
+   "id": "en-core100-080-within-walking-distance",
+   "en": "Is there a pharmacy within walking distance?",
+   "phonetic_kr": "이z 데어r 어 f파r머씨 위딘 워킹 디스턴스",
+   "gold_default": "이z 데어r 어 f파r머씨 위딘 워킹 디스턴스",
+   "hold": false,
+   "changed": false,
+   "current_before": "이z 데어r 어 f파r머씨 위딘 워킹 디스턴스"
+  },
+  {
+   "n": 81,
+   "id": "en-core100-081-what-are-you-gonna-do",
+   "en": "What are you gonna do about it?",
+   "phonetic_kr": "워러r여 거너 두 어바우릿",
+   "gold_default": "워러r여 거너 두 어바우릿",
+   "hold": false,
+   "changed": true,
+   "current_before": "왓 아r 유 거나 두 어바우릿"
+  },
+  {
+   "n": 82,
+   "id": "en-core100-082-not-gonna-let-that-happen",
+   "en": "I'm not gonna let that happen again.",
+   "phonetic_kr": "아임 낫 거너 렛 댓 해프너겐",
+   "gold_default": "아임 낫 거너 렛 댓 해프너겐",
+   "hold": false,
+   "changed": true,
+   "current_before": "아임 낫 거나 렛 댓 해프너겐"
+  },
+  {
+   "n": 83,
+   "id": "en-core100-083-do-you-wanna-come-over",
+   "en": "Do you wanna come over for dinner tonight?",
+   "phonetic_kr": "더여 워너 커모우버r f퍼r 디너r 터나잇",
+   "gold_default": "더여 워너 커모우버r f퍼r 디너r 터나잇",
+   "hold": false,
+   "changed": true,
+   "current_before": "두 유 워나 커모우버r f포어r 디너r 터나잇"
+  },
+  {
+   "n": 84,
+   "id": "en-core100-084-gotta-get-back-to-work",
+   "en": "I gotta get back to work before it gets late.",
+   "phonetic_kr": "아이 가러 겟 백 터 워r크 비f포어r 잇 겟츠 레잇",
+   "gold_default": "아이 가러 겟 백 터 워r크 비f포어r 잇 겟츠 레잇",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 가라 겟 백 투 워r크 비f포어r 잇 겟츠 레잇"
+  },
+  {
+   "n": 85,
+   "id": "en-core100-085-lemme-see-if",
+   "en": "Lemme see if I can find another way.",
+   "phonetic_kr": "레미 씨이 이f 아이 컨 f아인더나더r 웨이",
+   "gold_default": "레미 씨이 이f 아이 컨 f아인더나더r 웨이",
+   "hold": false,
+   "changed": true,
+   "current_before": "레미 씨이 이f 아이 캔 f아인드 어나더r 웨이"
+  },
+  {
+   "n": 86,
+   "id": "en-core100-086-i-was-kinda-hoping",
+   "en": "I was kinda hoping you'd say yes.",
+   "phonetic_kr": "아이 워z 카인더 호우핑 유드 쎄이 예스",
+   "gold_default": "아이 워z 카인더 호우핑 유드 쎄이 예스",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 워z 카인다 호우핑 유드 쎄이 예스"
+  },
+  {
+   "n": 87,
+   "id": "en-core100-087-you-might-be-right",
+   "en": "I think you might be right about that.",
+   "phonetic_kr": "아이 씽켜 마잇 비 라이러바웃 댓",
+   "gold_default": "아이 씽켜 마잇 비 라이러바웃 댓",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 씽크 유 마잇 비 라이러바웃 댓"
+  },
+  {
+   "n": 88,
+   "id": "en-core100-088-supposed-to",
+   "en": "What else was I supposed to do?",
+   "phonetic_kr": "와렐스 워자이 써포우스터 두",
+   "gold_default": "와렐스 워자이 써포우스터 두",
+   "hold": false,
+   "changed": true,
+   "current_before": "와렐스 워자이 써포우즈드 투 두"
+  },
+  {
+   "n": 89,
+   "id": "en-core100-089-i-knew-would-happen",
+   "en": "I knew something like this would happen.",
+   "phonetic_kr": "아이 뉴 썸씽 라이크 디스 워드 해픈",
+   "gold_default": "아이 뉴 썸씽 라이크 디스 워드 해픈",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 뉴 썸씽 라이크 디스 우드 해픈"
+  },
+  {
+   "n": 90,
+   "id": "en-core100-090-really-appreciate",
+   "en": "I really appreciate everything you've done for me.",
+   "phonetic_kr": "아이 리얼리 어프리이시에이레v리씽 유v 던 f퍼r 미",
+   "gold_default": "아이 리얼리 어프리이시에이레v리씽 유v 던 f퍼r 미",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 리얼리 어프리이시에잇 에v리씽 유v 던 f포어r 미"
+  },
+  {
+   "n": 91,
+   "id": "en-core100-091-couldve-told-me",
+   "en": "You could've told me you were coming.",
+   "phonetic_kr": "유 쿠더v 톨 미 여 워r 커밍",
+   "gold_default": "유 쿠더v 톨 미 여 워r 커밍",
+   "hold": false,
+   "changed": true,
+   "current_before": "유 쿠드v 톨드 미 유 워r 커밍"
+  },
+  {
+   "n": 92,
+   "id": "en-core100-092-figure-out",
+   "en": "I can't figure out why she left so early.",
+   "phonetic_kr": "아이 캔트 f피겨라웃 와이 쉬 레f 쏘 어r리",
+   "gold_default": "아이 캔트 f피겨라웃 와이 쉬 레f 쏘 어r리",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 캔트 f피겨r 아웃 와이 쉬 레f트 쏘 어r리"
+  },
+  {
+   "n": 93,
+   "id": "en-core100-093-find-out",
+   "en": "We need to find out what really happened.",
+   "phonetic_kr": "위 니이러 f파인다웃 왓 리얼리 해픈드",
+   "gold_default": "위 니이러 f파인다웃 왓 리얼리 해픈드",
+   "hold": false,
+   "changed": true,
+   "current_before": "위 니이드 투 f파인다웃 왓 리얼리 해픈드"
+  },
+  {
+   "n": 94,
+   "id": "en-core100-094-pick-you-up",
+   "en": "I'll pick you up when I get off work.",
+   "phonetic_kr": "아일 피켜 업 웨나이 게로f 워r크",
+   "gold_default": "{I'll} 피켜 업 웨나이 게로f 워r크",
+   "hold": true,
+   "changed": true,
+   "current_before": "아일 픽 유 업 웨나이 게로f 워r크"
+  },
+  {
+   "n": 95,
+   "id": "en-core100-095-drop-me-off",
+   "en": "Can you drop me off near the station?",
+   "phonetic_kr": "컨 여 드랍 미 오f 니어r 더 스테이션",
+   "gold_default": "컨 여 드랍 미 오f 니어r 더 스테이션",
+   "hold": false,
+   "changed": true,
+   "current_before": "캔 유 드랍 미 오f 니어r 더 스테이션"
+  },
+  {
+   "n": 96,
+   "id": "en-core100-096-ran-into",
+   "en": "I ran into an old friend on my way home.",
+   "phonetic_kr": "아이 래닌투 어노울드 f렌던 마이 웨이 호움",
+   "gold_default": "아이 래닌투 어노울드 f렌던 마이 웨이 호움",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 래닌투 어노울드 f렌드 온 마이 웨이 호움"
+  },
+  {
+   "n": 97,
+   "id": "en-core100-097-go-over",
+   "en": "Let's go over everything one more time.",
+   "phonetic_kr": "렛츠 고우 오우버r 에v리씽 원 모어r 타임",
+   "gold_default": "렛츠 고우 오우버r 에v리씽 원 모어r 타임",
+   "hold": false,
+   "changed": false,
+   "current_before": "렛츠 고우 오우버r 에v리씽 원 모어r 타임"
+  },
+  {
+   "n": 98,
+   "id": "en-core100-098-show-up",
+   "en": "He showed up without telling anyone he was coming.",
+   "phonetic_kr": "히 쇼우덥 위다웃 텔링 애니원 히 워z 커밍",
+   "gold_default": "히 쇼우덥 위다웃 텔링 애니원 히 워z 커밍",
+   "hold": false,
+   "changed": false,
+   "current_before": "히 쇼우덥 위다웃 텔링 애니원 히 워z 커밍"
+  },
+  {
+   "n": 99,
+   "id": "en-core100-099-work-out",
+   "en": "I thought things would work out in the end.",
+   "phonetic_kr": "아이 쏘옷 씽z 워드 워r카우린 디 엔드",
+   "gold_default": "아이 쏘옷 씽z 워드 워r카우린 디 엔드",
+   "hold": false,
+   "changed": true,
+   "current_before": "아이 쏘옷 씽z 우드 워r카웃 인 디 엔드"
+  },
+  {
+   "n": 100,
+   "id": "en-core100-100-put-up-with",
+   "en": "I can't put up with this much longer.",
+   "phonetic_kr": "아이 캔트 푸럽 위드 디스 머치 롱거r",
+   "gold_default": "아이 캔트 푸럽 위드 디스 머치 롱거r",
+   "hold": false,
+   "changed": false,
+   "current_before": "아이 캔트 푸럽 위드 디스 머치 롱거r"
+  }
+ ]
+}

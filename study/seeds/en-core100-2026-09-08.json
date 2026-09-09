@@ -10,7 +10,7 @@
       "sentence": "I've been meaning to ask you something.",
       "meaning": "전부터 너한테 물어보고 싶던 게 있어.",
       "reading": null,
-      "phonetic_kr": "아이v 빈 미이닝 투 애스크 유 썸씽",
+      "phonetic_kr": "아이v 빈 미이닝 터 애스켜 썸씽",
       "order_index": 1,
       "explanation": {
         "key": "I've been meaning to ask = 전부터 물어보려고 했다. 마음에 담아 두고 미뤄 온 질문을 꺼낼 때 쓰는 말.",
@@ -83,7 +83,7 @@
           ],
           [
             "to ask you",
-            "투 애스크 유",
+            "터 애스켜",
             "너한테 물어보려고"
           ],
           [
@@ -124,7 +124,7 @@
       "sentence": "I've never thought about it that way before.",
       "meaning": "그런 식으로는 전혀 생각해 본 적 없어.",
       "reading": null,
-      "phonetic_kr": "아이v 네버r 쏫 어바우릿 댓 웨이 비f포어r",
+      "phonetic_kr": "아이v 네버r 쏘러바우릿 댓 웨이 비f포어r",
       "order_index": 2,
       "explanation": {
         "key": "thought about it that way = 그런 식으로 생각해 봤다. 앞에 never 를 붙여 상대 말에 새 관점을 얻었다고 인정할 때 쓰는 말.",
@@ -182,12 +182,12 @@
         "chunks": [
           [
             "I've never thought",
-            "아이v 네버r 쏫",
+            "아이v 네버r 쏘러바우릿",
             "한 번도 생각해 본 적 없어"
           ],
           [
             "about it that way",
-            "어바우릿 댓 웨이",
+            "댓 웨이",
             "그걸 그런 식으로는"
           ],
           [
@@ -455,7 +455,7 @@
       "sentence": "I used to do that all the time.",
       "meaning": "예전에는 늘 그렇게 했어.",
       "reading": null,
-      "phonetic_kr": "아이 유우스 투 두 댓 올 더 타임",
+      "phonetic_kr": "아이 유우스터 두 대롤 더 타임",
       "order_index": 5,
       "explanation": {
         "key": "used to = 예전에는 ~했다. 지금은 안 하는 과거의 습관을 말하는 말.",
@@ -528,17 +528,17 @@
         "chunks": [
           [
             "I used to",
-            "아이 유우스 투",
+            "아이 유우스터",
             "예전에는 ~했어"
           ],
           [
             "do that",
-            "두 댓",
+            "두 대롤",
             "그렇게"
           ],
           [
             "all the time.",
-            "올 더 타임",
+            "더 타임",
             "늘."
           ]
         ],
@@ -574,7 +574,7 @@
       "sentence": "I'm not used to getting up this early.",
       "meaning": "이렇게 일찍 일어나는 게 익숙하지 않아.",
       "reading": null,
-      "phonetic_kr": "아임 낫 유우스 투 게링 업 디스 어r리",
+      "phonetic_kr": "아임 낫 유우스터 게링 업 디스 어r리",
       "order_index": 6,
       "explanation": {
         "key": "not used to = ~이 익숙하지 않다. 아직 몸에 배지 않은 일을 말할 때 쓰고 뒤에 명사나 동사-ing 가 온다.",
@@ -637,7 +637,7 @@
         "chunks": [
           [
             "I'm not used to",
-            "아임 낫 유우스 투",
+            "아임 낫 유우스터",
             "~이 익숙하지 않아"
           ],
           [

@@ -10,7 +10,7 @@
       "sentence": "Sorry, could you say that again more slowly?",
       "meaning": "미안한데, 그 말을 좀 더 천천히 다시 해줄래요?",
       "reading": null,
-      "phonetic_kr": "쏘리 쿠쥬 쎄이 댓 어겐 모어r 슬로울리",
+      "phonetic_kr": "쏘리 커저 쎄이 대러겐 모어r 슬로울리",
       "order_index": 1,
       "explanation": {
         "key": "could you say that again = 다시 말해 줄래요. 못 알아들었을 때 대화를 살리는 1순위 문장.",
@@ -89,12 +89,12 @@
           ],
           [
             "could you say",
-            "쿠쥬 쎄이",
+            "커저 쎄이",
             "말해 줄래요"
           ],
           [
             "that again",
-            "댓 어겐",
+            "대러겐",
             "그 말을 다시"
           ],
           [
@@ -133,7 +133,7 @@
       "sentence": "What do you mean by that exactly?",
       "meaning": "그 말이 정확히 무슨 뜻이야?",
       "reading": null,
-      "phonetic_kr": "왓 두 유 미인 바이 댓 이그잭틀리",
+      "phonetic_kr": "왓 더여 미인 바이 대리그잭틀리",
       "order_index": 2,
       "explanation": {
         "key": "What do you mean = 무슨 뜻이야. 못 알아들은 게 아니라 의도를 확인할 때. by that 을 붙이면 '그 말이'.",
@@ -207,17 +207,17 @@
         "chunks": [
           [
             "What do you mean",
-            "왓 두 유 미인",
+            "왓 더여 미인",
             "무슨 뜻이야"
           ],
           [
             "by that",
-            "바이 댓",
+            "바이",
             "그 말이"
           ],
           [
             "exactly?",
-            "이그잭틀리",
+            "대리그잭틀리",
             "정확히?"
           ]
         ],
@@ -252,7 +252,7 @@
       "sentence": "I'm not sure how to explain it in English.",
       "meaning": "영어로 어떻게 설명해야 할지 잘 모르겠어요.",
       "reading": null,
-      "phonetic_kr": "암 낫 슈어r 하우 투 익스플레인 잇 인 잉글리쉬",
+      "phonetic_kr": "아임 낫 슈어r 하우 터 익스플레이니린 잉글리쉬",
       "order_index": 3,
       "explanation": {
         "key": "not sure how to = 어떻게 ~해야 할지 모르겠다. 말문이 막힌 상태 자체를 말로 넘기는 표현.",
@@ -321,17 +321,17 @@
         "chunks": [
           [
             "I'm not sure",
-            "암 낫 슈어r",
+            "아임 낫 슈어r",
             "잘 모르겠어요"
           ],
           [
             "how to explain it",
-            "하우 투 익스플레인 잇",
+            "하우 터 익스플레이니린",
             "그걸 어떻게 설명해야 할지"
           ],
           [
             "in English.",
-            "인 잉글리쉬",
+            "잉글리쉬",
             "영어로."
           ]
         ],
@@ -366,7 +366,7 @@
       "sentence": "Give me a second to think about it.",
       "meaning": "잠깐 생각할 시간을 줘.",
       "reading": null,
-      "phonetic_kr": "기v 미 어 쎄컨 투 씽크 어바우릿",
+      "phonetic_kr": "기미 어 쎄컨 터 씽크 어바우릿",
       "order_index": 4,
       "explanation": {
         "key": "Give me a second = 잠깐 시간을 줘. 침묵을 메우고 생각할 시간을 버는 표현.",
@@ -435,12 +435,12 @@
         "chunks": [
           [
             "Give me a second",
-            "기v 미 어 쎄컨",
+            "기미 어 쎄컨",
             "잠깐 시간을 줘"
           ],
           [
             "to think",
-            "투 씽크",
+            "터 씽크",
             "생각할"
           ],
           [
@@ -480,7 +480,7 @@
       "sentence": "I know what I mean, but I can't put it into words.",
       "meaning": "무슨 뜻인지는 아는데 말로 표현이 안 돼.",
       "reading": null,
-      "phonetic_kr": "아이 노우 왓 아이 미인 벗 아이 캔트 푸릿 인투 워r즈",
+      "phonetic_kr": "아이 노우 와라이 미인 버라이 캔트 푸리린투 워r즈",
       "order_index": 5,
       "explanation": {
         "key": "put it into words = 말로 표현하다. 머릿속엔 있는데 입으로 안 나오는 상태를 정확히 설명하는 문장.",
@@ -539,17 +539,17 @@
         "chunks": [
           [
             "I know what I mean,",
-            "아이 노우 왓 아이 미인",
+            "아이 노우 와라이 미인",
             "무슨 뜻인지는 아는데,"
           ],
           [
             "but I can't",
-            "벗 아이 캔트",
+            "버라이 캔트",
             "하지만 못 해"
           ],
           [
             "put it into words.",
-            "푸릿 인투 워r즈",
+            "푸리린투 워r즈",
             "말로 표현하는 걸."
           ]
         ],
@@ -583,7 +583,7 @@
       "sentence": "Let me see if I understood you correctly.",
       "meaning": "내가 제대로 이해했는지 확인해 볼게.",
       "reading": null,
-      "phonetic_kr": "렛 미 씨 이f 아이 언더r스투쥬 커r렉틀리",
+      "phonetic_kr": "레미 씨이 이f 아이 언더r스투저 커r렉틀리",
       "order_index": 6,
       "explanation": {
         "key": "Let me see if ~ = ~인지 확인해 볼게. 오해를 막고 대화를 되짚는 문장.",
@@ -657,12 +657,12 @@
         "chunks": [
           [
             "Let me see",
-            "렛 미 씨",
+            "레미 씨이",
             "확인해 볼게"
           ],
           [
             "if I understood you",
-            "이f 아이 언더r스투쥬",
+            "이f 아이 언더r스투저",
             "내가 너를 이해했는지"
           ],
           [

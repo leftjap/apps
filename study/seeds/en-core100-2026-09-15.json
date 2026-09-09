@@ -10,7 +10,7 @@
       "sentence": "Could we get the check when you have a minute?",
       "meaning": "시간 되실 때 계산서 좀 주시겠어요?",
       "reading": null,
-      "phonetic_kr": "쿠드 위 겟 더 체크 웬 유 해v 어 미닛",
+      "phonetic_kr": "커드 위 겟 더 체크 웬 여 해v 어 미닛",
       "order_index": 1,
       "explanation": {
         "key": "get the check = 계산서를 받다. 식당에서 다 먹고 계산을 청할 때 쓰는 말.",
@@ -77,7 +77,7 @@
         "chunks": [
           [
             "Could we get",
-            "쿠드 위 겟",
+            "커드 위 겟",
             "받을 수 있을까요"
           ],
           [
@@ -87,7 +87,7 @@
           ],
           [
             "when you have a minute?",
-            "웬 유 해v 어 미닛",
+            "웬 여 해v 어 미닛",
             "시간 되실 때?"
           ]
         ],
@@ -123,7 +123,7 @@
       "sentence": "Could I get this to go, please?",
       "meaning": "이거 포장해 주시겠어요?",
       "reading": null,
-      "phonetic_kr": "쿠다이 겟 디스 투 고우 플리이z",
+      "phonetic_kr": "커라이 겟 디스 터 고우 플리이z",
       "order_index": 2,
       "explanation": {
         "key": "to go = 포장해서 (가져갈 것으로). 매장에서 먹지 않고 들고 나갈 때 음식 뒤에 붙이는 말.",
@@ -190,12 +190,12 @@
         "chunks": [
           [
             "Could I get this",
-            "쿠다이 겟 디스",
+            "커라이 겟 디스",
             "이거 주실 수 있을까요"
           ],
           [
             "to go, please?",
-            "투 고우 플리이z",
+            "터 고우 플리이z",
             "포장해서요?"
           ]
         ],
@@ -230,7 +230,7 @@
       "sentence": "I'd like to return this because it doesn't fit.",
       "meaning": "사이즈가 안 맞아서 반품하고 싶어요.",
       "reading": null,
-      "phonetic_kr": "아이드 라이크 투 리터r언 디스 비커z 잇 더즌 f핏",
+      "phonetic_kr": "아이드 라이크 터 리터r언 디스 비커z 잇 더즌 f핏",
       "order_index": 3,
       "explanation": {
         "key": "I'd like to return this = 이거 반품하고 싶어요. 산 물건을 무르러 가서 첫마디로 꺼내는 말.",
@@ -297,7 +297,7 @@
         "chunks": [
           [
             "I'd like to return this",
-            "아이드 라이크 투 리터r언 디스",
+            "아이드 라이크 터 리터r언 디스",
             "이거 반품하고 싶어요"
           ],
           [
@@ -337,7 +337,7 @@
       "sentence": "Do you have anything for a headache?",
       "meaning": "두통에 먹을 약이 있나요?",
       "reading": null,
-      "phonetic_kr": "두 유 해v 애니씽 f포어r 어 헤데익",
+      "phonetic_kr": "더여 해v 애니씽 f퍼r 어 헤데익",
       "order_index": 4,
       "explanation": {
         "key": "have anything for = ~에 듣는 게 있나요. 약국이나 가게에서 증상·용도만 대고 물건을 찾을 때 쓰는 말.",
@@ -404,7 +404,7 @@
         "chunks": [
           [
             "Do you have",
-            "두 유 해v",
+            "더여 해v",
             "있나요"
           ],
           [
@@ -414,7 +414,7 @@
           ],
           [
             "for a headache?",
-            "f포어r 어 헤데익",
+            "f퍼r 어 헤데익",
             "두통에 쓸?"
           ]
         ],
@@ -449,7 +449,7 @@
       "sentence": "Could you take a picture of us, please?",
       "meaning": "저희 사진 좀 찍어 주시겠어요?",
       "reading": null,
-      "phonetic_kr": "쿠쥬 테이커 픽처r 어v 어스 플리이z",
+      "phonetic_kr": "커저 테이커 픽처r 어v 어스 플리이z",
       "order_index": 5,
       "explanation": {
         "key": "take a picture = 사진을 찍다. 지나가는 사람에게 사진을 부탁하거나 내가 찍어 준다고 할 때 쓰는 말.",
@@ -516,7 +516,7 @@
         "chunks": [
           [
             "Could you take a picture",
-            "쿠쥬 테이커 픽처r",
+            "커저 테이커 픽처r",
             "사진 좀 찍어 주시겠어요"
           ],
           [

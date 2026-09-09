@@ -10,7 +10,7 @@
       "sentence": "That's not what I was trying to say.",
       "meaning": "내가 하려던 말은 그게 아니야.",
       "reading": null,
-      "phonetic_kr": "댓츠 낫 왓 아이 워z 트라잉 투 쎄이",
+      "phonetic_kr": "댓츠 낫 와라이 워z 트라잉 터 쎄이",
       "order_index": 1,
       "explanation": {
         "key": "That's not what = 그게 ~한 게 아니야. 상대가 내 말을 다르게 알아들었을 때 오해를 바로잡는 말.",
@@ -73,12 +73,12 @@
         "chunks": [
           [
             "That's not what",
-            "댓츠 낫 왓",
+            "댓츠 낫 와라이",
             "그건 ~가 아니야"
           ],
           [
             "I was trying to say.",
-            "아이 워z 트라잉 투 쎄이",
+            "워z 트라잉 터 쎄이",
             "내가 말하려던 것."
           ]
         ],
@@ -232,7 +232,7 @@
       "sentence": "What do you want me to do about it?",
       "meaning": "내가 이걸 어떻게 하길 바라는데?",
       "reading": null,
-      "phonetic_kr": "왓 두 유 원트 미 투 두 어바우릿",
+      "phonetic_kr": "왓 더여 원 미러 두 어바우릿",
       "order_index": 3,
       "explanation": {
         "key": "want me to = 내가 ~하길 바라다. 상대가 나한테 뭘 원하는지 되물을 때 쓰는 덩어리.",
@@ -299,12 +299,12 @@
         "chunks": [
           [
             "What do you want",
-            "왓 두 유 원트",
+            "왓 더여 원",
             "네가 뭘 원해"
           ],
           [
             "me to do",
-            "미 투 두",
+            "미러 두",
             "내가 하기를"
           ],
           [
@@ -344,7 +344,7 @@
       "sentence": "There's no way I'm going to do that.",
       "meaning": "내가 그걸 할 리가 없어.",
       "reading": null,
-      "phonetic_kr": "데어r즈 노우 웨이 아임 고잉 투 두 댓",
+      "phonetic_kr": "데어r즈 노우 웨이 아임 거너 두 댓",
       "order_index": 4,
       "explanation": {
         "key": "There's no way = 그럴 일은 없다. 가능성을 아예 잘라내며 강하게 거절하거나 부정하는 덩어리.",
@@ -416,7 +416,7 @@
           ],
           [
             "I'm going to do that.",
-            "아임 고잉 투 두 댓",
+            "아임 거너 두 댓",
             "내가 그걸 할."
           ]
         ],
@@ -452,7 +452,7 @@
       "sentence": "It looks like we're going to be late.",
       "meaning": "우리 늦을 것 같아.",
       "reading": null,
-      "phonetic_kr": "잇 룩스 라이크 위어r 고잉 투 비 레잇",
+      "phonetic_kr": "잇 룩스 라이크 위어r 거너 비 레잇",
       "order_index": 5,
       "explanation": {
         "key": "It looks like = ~할 것 같다. 눈앞의 상황을 근거로 앞일을 짐작해서 말할 때 쓴다.",
@@ -524,7 +524,7 @@
           ],
           [
             "we're going to be",
-            "위어r 고잉 투 비",
+            "위어r 거너 비",
             "우리가 ~하게 될"
           ],
           [
@@ -565,7 +565,7 @@
       "sentence": "I guess we'll just have to wait and see.",
       "meaning": "그냥 기다려 보는 수밖에 없을 것 같아.",
       "reading": null,
-      "phonetic_kr": "아이 게스 위일 저스 해v 투 웨이랜 씨이",
+      "phonetic_kr": "아이 게스 위일 저스 해프터 웨이런 씨이",
       "order_index": 6,
       "explanation": {
         "key": "just have to = ~하는 수밖에 없다. 달리 손쓸 방법이 없을 때 체념하듯 말하는 덩어리.",
@@ -637,12 +637,12 @@
           ],
           [
             "we'll just have to",
-            "위일 저스 해v 투",
+            "위일 저스 해프터",
             "우리는 ~하는 수밖에 없어"
           ],
           [
             "wait and see.",
-            "웨이랜 씨이",
+            "웨이런 씨이",
             "기다려 보는 것."
           ]
         ],

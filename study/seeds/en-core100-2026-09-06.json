@@ -10,7 +10,7 @@
       "sentence": "I've been trying to reach you all morning.",
       "meaning": "아침 내내 너한테 연락하려고 했어.",
       "reading": null,
-      "phonetic_kr": "아이v 빈 트라잉 투 리이치 유 올 모어r닝",
+      "phonetic_kr": "아이v 빈 트라잉 터 리이처 올 모어r닝",
       "order_index": 1,
       "explanation": {
         "key": "trying to reach = 연락이 닿으려고 애쓰다. 전화·문자를 여러 번 했는데 안 닿았다고 말할 때.",
@@ -78,7 +78,7 @@
           ],
           [
             "to reach you",
-            "투 리이치 유",
+            "터 리이처",
             "너한테 연락하려고"
           ],
           [
@@ -232,7 +232,7 @@
       "sentence": "Can we push it back an hour or so?",
       "meaning": "한 시간쯤 미룰 수 있을까?",
       "reading": null,
-      "phonetic_kr": "캔 위 푸쉬 잇 백 어나워r 오어r 쏘우",
+      "phonetic_kr": "컨 위 푸쉿 백 어나워r 어r 쏘우",
       "order_index": 3,
       "explanation": {
         "key": "push it back = (일정을) 뒤로 미루다. 정해 둔 시간을 좀 늦추자고 제안할 때.",
@@ -299,7 +299,7 @@
         "chunks": [
           [
             "Can we push it back",
-            "캔 위 푸쉬 잇 백",
+            "컨 위 푸쉿 백",
             "우리 뒤로 미룰 수 있을까"
           ],
           [
@@ -309,7 +309,7 @@
           ],
           [
             "or so?",
-            "오어r 쏘우",
+            "어r 쏘우",
             "정도?"
           ]
         ],
@@ -349,7 +349,7 @@
       "sentence": "I didn't mean to make you feel bad.",
       "meaning": "네 기분 상하게 하려던 건 아니었어.",
       "reading": null,
-      "phonetic_kr": "아이 디든 미인 투 메익 유 f피일 배드",
+      "phonetic_kr": "아이 디든 미인 터 메이켜 f피일 배드",
       "order_index": 4,
       "explanation": {
         "key": "didn't mean to = 그러려던 건 아니었어. 결과는 인정하면서 의도는 아니었다고 해명할 때.",
@@ -421,12 +421,12 @@
         "chunks": [
           [
             "I didn't mean to",
-            "아이 디든 미인 투",
+            "아이 디든 미인 터",
             "~하려던 건 아니었어"
           ],
           [
             "make you",
-            "메익 유",
+            "메이켜",
             "너를 ~하게"
           ],
           [
@@ -467,7 +467,7 @@
       "sentence": "I thought you said you were busy today.",
       "meaning": "네가 오늘 바쁘다고 한 줄 알았어.",
       "reading": null,
-      "phonetic_kr": "아이 쏘츄 쎄드 유 워r 비지 투데이",
+      "phonetic_kr": "아이 쏘처 쎄저 워r 비지 터데이",
       "order_index": 5,
       "explanation": {
         "key": "I thought you said = 네가 ~라고 한 줄 알았어. 들은 말과 지금 상황이 어긋날 때 부드럽게 짚는 말.",
@@ -534,17 +534,17 @@
         "chunks": [
           [
             "I thought you said",
-            "아이 쏘츄 쎄드",
+            "아이 쏘처 쎄저",
             "네가 말한 줄 알았어"
           ],
           [
             "you were busy",
-            "유 워r 비지",
+            "워r 비지",
             "네가 바쁘다고"
           ],
           [
             "today.",
-            "투데이",
+            "터데이",
             "오늘."
           ]
         ],
@@ -580,7 +580,7 @@
       "sentence": "I have no idea what you're talking about.",
       "meaning": "네가 무슨 말 하는지 전혀 모르겠어.",
       "reading": null,
-      "phonetic_kr": "아이 해v 노우 아이디어 왓 유어r 토킹 어바웃",
+      "phonetic_kr": "아이 해v 노우 아이디어 왓처r 토킹 어바웃",
       "order_index": 6,
       "explanation": {
         "key": "have no idea = 전혀 모르겠다. don't know 보다 강한, 짐작조차 안 된다는 말.",
@@ -647,7 +647,7 @@
           ],
           [
             "what you're talking about.",
-            "왓 유어r 토킹 어바웃",
+            "왓처r 토킹 어바웃",
             "네가 무슨 말 하는지."
           ]
         ],

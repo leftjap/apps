@@ -10,7 +10,7 @@
       "sentence": "I feel like staying home and doing nothing.",
       "meaning": "집에서 아무것도 안 하고 있고 싶어.",
       "reading": null,
-      "phonetic_kr": "아이 f필 라이크 스테잉 호움 앤 두잉 낫씽",
+      "phonetic_kr": "아이 f피일 라이크 스테잉 호움 언 두잉 낫씽",
       "order_index": 1,
       "explanation": {
         "key": "feel like ~ = ~하고 싶다. 지금 기분에 끌리는 일을 말할 때 쓴다. 뒤에는 동사에 -ing 를 붙인다.",
@@ -82,7 +82,7 @@
         "chunks": [
           [
             "I feel like",
-            "아이 f필 라이크",
+            "아이 f피일 라이크",
             "~하고 싶어"
           ],
           [
@@ -92,7 +92,7 @@
           ],
           [
             "and doing nothing.",
-            "앤 두잉 낫씽",
+            "언 두잉 낫씽",
             "아무것도 안 하고."
           ]
         ],
@@ -128,7 +128,7 @@
       "sentence": "I'm supposed to meet her after work.",
       "meaning": "퇴근 후에 그녀를 만나기로 되어 있어.",
       "reading": null,
-      "phonetic_kr": "아임 써포우즈드 투 미잇 허r 애f터r 워r크",
+      "phonetic_kr": "아임 써포우스터 미이러r 애f터r 워r크",
       "order_index": 2,
       "explanation": {
         "key": "supposed to = ~하기로 되어 있다. 약속·예정·규칙으로 이미 정해져 있는 일을 말할 때 쓴다.",
@@ -200,12 +200,12 @@
         "chunks": [
           [
             "I'm supposed to",
-            "아임 써포우즈드 투",
+            "아임 써포우스터",
             "~하기로 되어 있어"
           ],
           [
             "meet her",
-            "미잇 허r",
+            "미이러r",
             "그녀를 만나기로"
           ],
           [
@@ -249,7 +249,7 @@
       "sentence": "I was trying to help, but I made it worse.",
       "meaning": "도우려 했는데 오히려 일을 망쳤어.",
       "reading": null,
-      "phonetic_kr": "아이 워z 트라잉 투 헬프 버라이 메이딧 워r스",
+      "phonetic_kr": "아이 워z 트라잉 터 헬프 버라이 메이딧 워r스",
       "order_index": 3,
       "explanation": {
         "key": "made it worse = 오히려 더 나쁘게 만들었다. 좋게 하려다 상황을 악화시켰을 때 쓴다.",
@@ -321,7 +321,7 @@
         "chunks": [
           [
             "I was trying to help,",
-            "아이 워z 트라잉 투 헬프",
+            "아이 워z 트라잉 터 헬프",
             "도우려던 참이었어,"
           ],
           [
@@ -361,7 +361,7 @@
       "sentence": "I should've told you about it sooner.",
       "meaning": "그 얘기를 더 일찍 했어야 했는데.",
       "reading": null,
-      "phonetic_kr": "아이 슈더v 톨드 유 어바우릿 쑤우너r",
+      "phonetic_kr": "아이 슈더v 톨저 어바우릿 쑤우너r",
       "order_index": 4,
       "explanation": {
         "key": "should've told you = 너한테 말했어야 했는데. 하지 않은 일을 뒤늦게 후회하며 사과할 때 쓴다.",
@@ -438,7 +438,7 @@
         "chunks": [
           [
             "I should've told you",
-            "아이 슈더v 톨드 유",
+            "아이 슈더v 톨저",
             "너한테 말했어야 했는데"
           ],
           [
@@ -596,7 +596,7 @@
       "sentence": "You don't have to explain everything right now.",
       "meaning": "지금 당장 다 설명할 필요는 없어.",
       "reading": null,
-      "phonetic_kr": "유 돈 해v 투 익스플레인 에v리씽 라잇 나우",
+      "phonetic_kr": "유 돈 해프터 익스플레인 에v리씽 라잇 나우",
       "order_index": 6,
       "explanation": {
         "key": "don't have to = ~할 필요 없다. 안 해도 된다고 상대의 부담을 덜어 줄 때 쓴다.",
@@ -668,7 +668,7 @@
         "chunks": [
           [
             "You don't have to explain",
-            "유 돈 해v 투 익스플레인",
+            "유 돈 해프터 익스플레인",
             "설명할 필요는 없어"
           ],
           [
@@ -713,7 +713,7 @@
       "sentence": "I can't believe you actually went through with it.",
       "meaning": "네가 정말 그 일을 끝까지 해냈다니 믿기지 않아.",
       "reading": null,
-      "phonetic_kr": "아이 캔트 빌리이v 유 액츄얼리 웬트 쓰루우 위딧",
+      "phonetic_kr": "아이 캔트 빌리이v 여 액츄얼리 웬 쓰루우 위딧",
       "order_index": 7,
       "explanation": {
         "key": "went through with it = 그 일을 끝까지 해냈다. 망설이거나 미루던 일을 결국 실행에 옮겼을 때 쓴다.",
@@ -790,12 +790,12 @@
           ],
           [
             "you actually",
-            "유 액츄얼리",
+            "여 액츄얼리",
             "네가 정말"
           ],
           [
             "went through with it.",
-            "웬트 쓰루우 위딧",
+            "웬 쓰루우 위딧",
             "그 일을 끝까지 해냈다니."
           ]
         ],

@@ -10,7 +10,7 @@
       "sentence": "I don't know what I'm supposed to do.",
       "meaning": "내가 뭘 해야 하는 건지 모르겠어.",
       "reading": null,
-      "phonetic_kr": "아이 돈 노우 와라임 써포우즈드 투 두",
+      "phonetic_kr": "아이 돈 노우 와라임 써포우스터 두",
       "order_index": 1,
       "explanation": {
         "key": "I'm supposed to do = 내가 하기로 되어 있다. 규칙이나 약속이 정해 놓은 일을 가리키는 말.",
@@ -83,7 +83,7 @@
           ],
           [
             "what I'm supposed to do.",
-            "와라임 써포우즈드 투 두",
+            "와라임 써포우스터 두",
             "내가 뭘 해야 하는 건지."
           ]
         ],
@@ -119,7 +119,7 @@
       "sentence": "I'll see what I can do about it.",
       "meaning": "내가 뭘 할 수 있는지 알아볼게.",
       "reading": null,
-      "phonetic_kr": "아일 씨이 와라이 캔 두 어바우릿",
+      "phonetic_kr": "아일 씨이 와라이 컨 두 어바우릿",
       "order_index": 2,
       "explanation": {
         "key": "see what I can do = 뭘 할 수 있는지 알아보다. 확답 대신 손을 써 보겠다고 답하는 말.",
@@ -187,7 +187,7 @@
           ],
           [
             "what I can do",
-            "와라이 캔 두",
+            "와라이 컨 두",
             "내가 뭘 할 수 있는지"
           ],
           [
@@ -231,7 +231,7 @@
       "sentence": "If I were you, I'd wait until tomorrow.",
       "meaning": "내가 너라면 내일까지 기다리겠어.",
       "reading": null,
-      "phonetic_kr": "이f 아이 워r 유 아이드 웨잇 언틸 터마로우",
+      "phonetic_kr": "이f 아이 워r 유 아이드 웨이런틸 터마로우",
       "order_index": 3,
       "explanation": {
         "key": "If I were you = 내가 너라면. 사실이 아닌 가정을 세워 조언을 건네는 말.",
@@ -304,12 +304,12 @@
           ],
           [
             "I'd wait",
-            "아이드 웨잇",
+            "아이드 웨이런틸",
             "나는 기다리겠어"
           ],
           [
             "until tomorrow.",
-            "언틸 터마로우",
+            "터마로우",
             "내일까지."
           ]
         ],
@@ -348,7 +348,7 @@
       "sentence": "What would you do if you were me?",
       "meaning": "네가 나라면 어떻게 하겠어?",
       "reading": null,
-      "phonetic_kr": "왓 우쥬 두 이f 유 워r 미",
+      "phonetic_kr": "왓 워저 두 이f 여 워r 미",
       "order_index": 4,
       "explanation": {
         "key": "What would you do = 너라면 어떻게 하겠어. 결정을 앞두고 상대의 판단을 물을 때 쓰는 말.",
@@ -416,12 +416,12 @@
         "chunks": [
           [
             "What would you do",
-            "왓 우쥬 두",
+            "왓 워저 두",
             "어떻게 하겠어"
           ],
           [
             "if you were me?",
-            "이f 유 워r 미",
+            "이f 여 워r 미",
             "네가 나라면?"
           ]
         ],
@@ -573,7 +573,7 @@
       "sentence": "Could you help me figure out what went wrong?",
       "meaning": "뭐가 잘못됐는지 알아내는 걸 도와줄래?",
       "reading": null,
-      "phonetic_kr": "쿠쥬 헬프 미 f피겨라웃 왓 웬 롱",
+      "phonetic_kr": "커저 헬프 미 f피겨라웃 왓 웬 롱",
       "order_index": 6,
       "explanation": {
         "key": "help me figure out = 알아내는 걸 도와주다. 원인이나 방법을 혼자 못 찾을 때 도움을 청하는 말.",
@@ -641,7 +641,7 @@
         "chunks": [
           [
             "Could you help me",
-            "쿠쥬 헬프 미",
+            "커저 헬프 미",
             "도와줄래"
           ],
           [

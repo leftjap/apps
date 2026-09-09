@@ -119,7 +119,7 @@
       "sentence": "My luggage hasn't arrived yet, so what should I do?",
       "meaning": "제 짐이 아직 안 왔는데 어떻게 해야 하나요?",
       "reading": null,
-      "phonetic_kr": "마이 러기지 해즌 터라이v드 옛 쏘 왓 슈다이 두",
+      "phonetic_kr": "마이 러기지 해즌 터라이v드 옛 쏘 왓 셔라이 두",
       "order_index": 2,
       "explanation": {
         "key": "hasn't arrived yet = 아직 안 왔다. 와 있어야 할 것이 지금도 도착하지 않았을 때 쓰는 말.",
@@ -196,7 +196,7 @@
           ],
           [
             "so what should I do?",
-            "쏘 왓 슈다이 두",
+            "쏘 왓 셔라이 두",
             "어떻게 해야 하나요?"
           ]
         ],
@@ -235,7 +235,7 @@
       "sentence": "I think I left my passport in the taxi.",
       "meaning": "여권을 택시에 두고 내린 것 같아요.",
       "reading": null,
-      "phonetic_kr": "아이 씽크 아이 레f트 마이 패스포어r트 인 더 택씨",
+      "phonetic_kr": "아이 씽크 아이 레f 마이 패스포어r린 더 택씨",
       "order_index": 3,
       "explanation": {
         "key": "I think I left ~ = ~를 두고 내린 것 같아요. 물건을 어디에 놓고 왔는지 조심스럽게 말할 때.",
@@ -303,12 +303,12 @@
           ],
           [
             "I left my passport",
-            "아이 레f트 마이 패스포어r트",
+            "아이 레f 마이 패스포어r린",
             "여권을 두고 내렸어요"
           ],
           [
             "in the taxi.",
-            "인 더 택씨",
+            "더 택씨",
             "택시 안에."
           ]
         ],
@@ -348,7 +348,7 @@
       "sentence": "I'd like to change my flight to tomorrow, if possible.",
       "meaning": "가능하면 내일 비행기로 변경하고 싶어요.",
       "reading": null,
-      "phonetic_kr": "아이드 라이크 투 체인지 마이 f라잇 투 터마로우 이f 파써블",
+      "phonetic_kr": "아이드 라이크 터 체인지 마이 f라잇 터 터마로우 이f 파써블",
       "order_index": 4,
       "explanation": {
         "key": "I'd like to change = 바꾸고 싶어요. 예약을 정중하게 바꿔 달라고 할 때 쓰는 말.",
@@ -411,12 +411,12 @@
         "chunks": [
           [
             "I'd like to change",
-            "아이드 라이크 투 체인지",
+            "아이드 라이크 터 체인지",
             "변경하고 싶어요"
           ],
           [
             "my flight to tomorrow,",
-            "마이 f라잇 투 터마로우",
+            "마이 f라잇 터 터마로우",
             "제 비행기를 내일로,"
           ],
           [
@@ -456,7 +456,7 @@
       "sentence": "Can I use this ticket on the next train?",
       "meaning": "이 표를 다음 열차에서도 쓸 수 있나요?",
       "reading": null,
-      "phonetic_kr": "캔 아이 유즈 디스 티킷 온 더 넥스트 트레인",
+      "phonetic_kr": "커나이 유즈 디스 티키론 더 넥스 트레인",
       "order_index": 5,
       "explanation": {
         "key": "Can I use this = 이걸 써도 되나요. 표·쿠폰·카드가 여기서 통하는지 물을 때.",
@@ -519,17 +519,17 @@
         "chunks": [
           [
             "Can I use",
-            "캔 아이 유즈",
+            "커나이 유즈",
             "써도 되나요"
           ],
           [
             "this ticket",
-            "디스 티킷",
+            "디스 티키론",
             "이 표를"
           ],
           [
             "on the next train?",
-            "온 더 넥스트 트레인",
+            "더 넥스 트레인",
             "다음 열차에서?"
           ]
         ],
@@ -564,7 +564,7 @@
       "sentence": "Could you tell me how to get to the station?",
       "meaning": "역까지 어떻게 가는지 알려주시겠어요?",
       "reading": null,
-      "phonetic_kr": "쿠쥬 텔 미 하우 투 겟 투 더 스테이션",
+      "phonetic_kr": "커저 텔 미 하우러 겟 터 더 스테이션",
       "order_index": 6,
       "explanation": {
         "key": "how to get to ~ = ~까지 어떻게 가는지. 길을 물을 때 문장 가운데 그대로 끼워 쓰는 덩어리.",
@@ -627,12 +627,12 @@
         "chunks": [
           [
             "Could you tell me",
-            "쿠쥬 텔 미",
+            "커저 텔 미",
             "알려주시겠어요"
           ],
           [
             "how to get to",
-            "하우 투 겟 투",
+            "하우러 겟 터",
             "어떻게 가는지"
           ],
           [
