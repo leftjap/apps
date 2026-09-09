@@ -1,6 +1,6 @@
 # 코어100 phonetic_kr gold (확정)
 
-> **2026-09-09 사용자 승인.** 제안서 4차(3차안 + 전수 감사 27건 + 2차 판정 4건 + 최종 정리 4건)를 그대로 확정 gold 로 삼는다. 이 문서가 코어100 100문장 `phonetic_kr` 의 정본이다. **시드 반영(2026-09-09)**: `seeds/en-core100-*.json` 의 `phonetic_kr` 80장과 `explanation.chunks[].kr` 을 이 문서대로 갱신했고, `scripts/core100-gold.test.mjs` 가 `docs/core100-gold.json`(이 문서의 기계 판)과 시드를 대조한다. 드릴 `drills[].kr` 1,411건과 Supabase 반영(수동 워크플로)은 남아 있다. 보류 5문장(14·26·42·52·94, I'll·called 의 어두운 L)은 확정하지 않는다. 저작 데이터·렌더러는 `~/.local/state/study-probe/phonetic-kr-20260908/gold/`(v3.py·v4.py·render_v4.py), 감사 원문은 `~/apps/tmp/core100-gold-v3-chatgpt-audit.md`, 작업 원칙은 `2026-09-08-phonetic-kr-work-order.md`.
+> **2026-09-09 사용자 승인.** 제안서 4차(3차안 + 전수 감사 27건 + 2차 판정 4건 + 최종 정리 4건)를 그대로 확정 gold 로 삼는다. 이 문서가 코어100 100문장 `phonetic_kr` 의 정본이다. **시드 반영(2026-09-09)**: `seeds/en-core100-*.json` 의 `phonetic_kr` 80장과 `explanation.chunks[].kr` 을 이 문서대로 갱신했고, `scripts/core100-gold.test.mjs` 가 `docs/core100-gold.json`(이 문서의 기계 판)과 시드를 대조한다. Supabase 의 사용자 행 100장도 같은 날 `phonetic_kr`·`explanation` 만 PATCH 로 갱신했다(진행 열 불변, 봇 계정 화면 검증 완료). 드릴 `drills[].kr` 1,411건과 `phonemes` 팁의 옛 표기(43장)는 남아 있다. 보류 5문장(14·26·42·52·94, I'll·called 의 어두운 L)은 확정하지 않는다. 저작 데이터·렌더러는 `~/.local/state/study-probe/phonetic-kr-20260908/gold/`(v3.py·v4.py·render_v4.py), 감사 원문은 `~/apps/tmp/core100-gold-v3-chatgpt-audit.md`, 작업 원칙은 `2026-09-08-phonetic-kr-work-order.md`.
 
 기본형 변경 **82문장** · 현행 유지 18문장 · 보류(I'll·called) 5문장 — 2026-09-08 밤, 3차안에 사용자 전수 감사를 반영한 판. 확신도 HIGH 40 · MEDIUM 55 · LOW 5
 

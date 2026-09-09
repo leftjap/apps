@@ -671,7 +671,7 @@ spec §5-0 단계 3-4 가 조회하는 학습자 컨텍스트를 장면 선정�
 > (3차안 → 사용자 전수 감사 27건 → 2차 판정 4건 → 최종 정리 4건을 거쳐 승인). 위 정의를 문장 단위로 적용한 결과이며,
 > 단어 경계 flap · 비강세 조동사 약형(커저·워저·셔라이·더여) · 구개음화+약형 you 의 ㅓ 통일 등 판정 원칙은 그 문서
 > 머리말에 있다. **시드 반영 완료(2026-09-09)**: `seeds/en-core100-*.json` 의 `phonetic_kr`·`chunks[].kr` 이 gold 와 같다(`scripts/core100-gold.test.mjs` 가
-> `docs/core100-gold.json` 과 대조). 드릴 `drills[].kr` 과 Supabase 업로드(수동 워크플로)는 남음 — 순서는
+> `docs/core100-gold.json` 과 대조). Supabase 사용자 행도 PATCH 로 반영·화면 검증 완료(2026-09-09). 드릴 `drills[].kr` 과 `phonemes` 팁의 옛 표기는 남음 — 순서는
 > [2026-09-08-phonetic-kr-work-order.md §5](./2026-09-08-phonetic-kr-work-order.md). I'll·called 의 어두운 L 5문장은 보류(해당 자리만 현행 유지).
 
 > **결정 대기 (2026-09-08)**
