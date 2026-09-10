@@ -141,3 +141,17 @@ PWA(`gym/mocks/*.html`)는 시안을 직접 소비하지만, 네이티브는 값
 - **PWA 가 시안과 일치한다고 가정하지 말 것.** PWA 도 시안과 어긋난 지점이 여럿이다
   (barPulse 4px/0.16, `.exring-pct` 14px, 유산소 델타 ink-3, 세션 링 50px).
 - 대책: `gym/scripts/spec-probe/` — 시안/PWA 정본값을 선언하고 시뮬 스크린샷 픽셀로 대조.
+
+## 5. UserDefaults 실데이터 주입 — `simctl spawn defaults write` 는 앱이 못 본다 (gym, 2026-09-10 실측)
+서버 실데이터를 시뮬 앱에 넣어 화면을 검증할 때, `xcrun simctl spawn <UD> defaults write <bundleid> <key> -data <hex>`
+는 **앱을 한 번이라도 실행한 뒤로는 앱이 읽지 않는다**. 앱은 샌드박스
+`.../Containers/Data/Application/<UUID>/Library/Preferences/<bundleid>.plist` 를 읽는데,
+`defaults` 는 시뮬 시스템 도메인(`data/Library/Preferences/`)에 쓰기 때문이다.
+- **증상**: `defaults export` 로는 값이 보이는데 화면엔 반영이 없다. 앱 첫 설치 직후 한 번은
+  통해서 "시드가 된다"고 오판하기 쉽다. 그 뒤 `--reset` 한 번이면 영영 안 통한다.
+- **해법**: `simctl get_app_container <UD> <bundleid> data` 로 경로를 얻어 그 plist 를 직접 쓴다.
+  값은 `plistlib` 로 `bytes`(= UserDefaults 의 Data) 로 넣는다 — 앱이 JSONDecoder 로 읽는 형식 그대로.
+- **부팅 중이면 cfprefsd 가 되덮는다**: 시뮬이 켜진 채로 쓰면 앱 실행 시 전부 빈 값이 된다
+  (`killall cfprefsd` 로도 부족했다). **`simctl shutdown` → plist 쓰기 → `boot`** 순서가 유일하게 확실했다.
+- 진행 세션(`gym.session.v1`)까지 넣으면 `--route session` 으로 특정 화면을 탭 없이 띄울 수 있다.
+
