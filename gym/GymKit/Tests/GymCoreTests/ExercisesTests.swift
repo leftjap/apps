@@ -50,4 +50,22 @@ import Testing
         #expect(GymExercises.resolvePart("cust_1", custom: [c]) == "arms")
         #expect(GymExercises.increment(forExercise: "cust_1", custom: [c]) == 5)  // cable=5
     }
+
+    // 커스텀 운동도 장비가 bodyweight 면 빌트인 맨몸 운동과 같은 취급이어야 한다 — 카드 종류와
+    // 프리셋 세트 둘 다. 커스텀은 추가 시 장비를 고를 수 없어 전부 barbell 로 저장되는데
+    // (createCustomExercise), 그 상태로는 코어 운동이 "0kg × 10회" 로 떴다 (사용자 2026-09-10).
+    @Test func customBodyweightExerciseIsRepsOnly() {
+        let c = GymCustomExercise(id: "cust_x", name: "디클라인 레그업", part: "core",
+                                  equipment: "bodyweight", defaultSets: 3, defaultReps: 10,
+                                  defaultWeight: 0)
+        let def = GymExercises.def("cust_x", custom: [c])
+        #expect(def?.equipment == "bodyweight")
+        #expect(GymCardKind.from(equipment: def!.equipment) == .bodyweight)
+        #expect(GymExercises.increment(forExercise: "cust_x", custom: [c]) == 0)
+
+        // 프리셋에 중량이 실리면 안 된다 — weight 0 이 기록에 남아 볼륨·표기가 중량 운동처럼 된다.
+        let sets = GymSessionLogic.buildPresetSets(def)
+        #expect(sets.count == 3)
+        #expect(sets.allSatisfy { $0.weight == nil && $0.reps == 10 })
+    }
 }

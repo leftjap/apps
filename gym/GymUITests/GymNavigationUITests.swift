@@ -273,6 +273,13 @@ final class GymNavigationUITests: XCTestCase {
         dot.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.88)).tap()
         XCTAssertEqual(app.staticTexts["keypad-value"].label, "0.5",
                        "점은 이미 있으므로 중복 입력되지 않는다 (탭 자체는 먹혀야 한다)")
+
+        // 지우기(⌫)도 배경이 투명한 같은 부류다 — 셀 가장자리로도 눌려야 한다
+        let del = app.buttons["keypad-key-del"]
+        XCTAssertEqual(del.frame.height, 50, accuracy: 1, "지우기 셀 높이도 50pt")
+        del.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertEqual(app.staticTexts["keypad-value"].label, "0.",
+                       "셀 위쪽 탭도 한 자리 삭제여야 한다")
     }
 
     // 새 세션 운동추가 시트 — 부위 칩 7개가 가로 스크롤 없이 다 보여야 한다
@@ -292,6 +299,27 @@ final class GymNavigationUITests: XCTestCase {
         let cardio = app.buttons["유산소"]
         XCTAssertLessThanOrEqual(cardio.frame.maxX, screenW - 12,
                                  "유산소 칩이 오른쪽 여백까지 화면 안에 들어와야 한다")
+    }
+
+    // [임시 검증] 실데이터의 커스텀 코어 운동(디클라인 레그업)이 실제 세션에서 횟수 전용 카드인지
+    func testTempCustomBodyweightCardIsRepsOnly() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--fake-signin", "--empty-session"]   // --reset 없음: 시드 실데이터
+        app.launch()
+        XCTAssertTrue(app.staticTexts["NEW SESSION"].waitForExistence(timeout: 15))
+        app.buttons["코어"].tap()
+        let row = app.buttons["addex-cust_4d4fd9aa"]
+        XCTAssertTrue(row.waitForExistence(timeout: 5), "디클라인 레그업 행 (실측 label='\(row.label)')")
+        print("ROWLABEL=\(row.label)")
+        row.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        Thread.sleep(forTimeInterval: 1.2)
+        let reps = app.staticTexts["hero-reps"]
+        let weight = app.staticTexts["hero-weight"]
+        print("HERO reps.exists=\(reps.exists) label=\(reps.exists ? reps.label : "-") / weight.exists=\(weight.exists) label=\(weight.exists ? weight.label : "-")")
+        XCTAssertTrue(reps.waitForExistence(timeout: 5), "맨몸 카드는 횟수 히어로")
+        XCTAssertFalse(weight.exists, "맨몸 카드에 중량 히어로가 있으면 안 된다")
     }
 
     // 실계정 세션 주입 → 실서버 5테이블 pull 반영 (E2E — 실기기 검증용).

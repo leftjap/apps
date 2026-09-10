@@ -161,5 +161,16 @@ final class GymCardioUITests: XCTestCase {
         XCTAssertEqual(heroValue(app).label, "15", "직전 러닝이 고스트로 보인다")
         XCTAssertTrue(cardioLabel(app, startsWith: "시간").contains("직전"),
                       "고스트는 직전 기록임이 라벨에 드러나야 (실측 '\(cardioLabel(app, startsWith: "시간"))')")
+
+        // ④ 지표를 넘겨도 라벨이 값의 출처를 밝힌다. 직전 세션은 시간만 넣었으므로
+        //    거리·칼로리는 직전 기록이 없어 "미입력" 이어야 한다 (고스트와 구별되는 증거).
+        let card = app.otherElements["cardio-card"].firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5))
+        card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertTrue(cardioLabel(app, startsWith: "거리").contains("미입력"),
+                      "직전 거리 기록이 없으면 미입력 (실측 '\(cardioLabel(app, startsWith: "거리"))')")
+        card.swipeLeft(); Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertTrue(cardioLabel(app, startsWith: "칼로리").contains("미입력"),
+                      "직전 칼로리 기록이 없으면 미입력 (실측 '\(cardioLabel(app, startsWith: "칼로리"))')")
     }
 }
