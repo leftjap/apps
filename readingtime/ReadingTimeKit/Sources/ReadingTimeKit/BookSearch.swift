@@ -100,21 +100,36 @@ public enum Aladin {
     }
 }
 
-public enum AladinError: Error, Equatable {
+public enum AladinError: Error, Equatable, LocalizedError {
     case badStatus(Int)
     case api(String)
+
+    // 화면 안내용 한 문장 — 프록시는 상류(알라딘) 상태를 그대로 전달하므로 5xx 는 알라딘 쪽 장애다
+    public var errorDescription: String? {
+        switch self {
+        case .badStatus(let code): return "알라딘 서버 오류 (\(code))"
+        case .api(let message): return "알라딘 오류: \(message)"
+        }
+    }
 }
 
 public struct AladinClient {
     public let baseURL: URL
     public let origin: String
+    /// 요청 시간 제한(초). 프록시 상류(알라딘)가 응답을 안 주는 장애가 실측됐다 (2026-09-10, 실기기 보고
+    /// "서성이다 검색 안 됨": Edge 런타임 자체는 0.6초에 응답하나 ItemSearch 는 12회 중 1회만 성공, 나머지는
+    /// 40~90초 무응답 또는 17초 뒤 503). URLSession 기본 60초를 기다리면 사용자는 검색이 안 되는 것으로
+    /// 보므로 짧게 끊고 화면에 사유를 보인다. 정상 시 응답은 수 초.
+    public let timeout: TimeInterval
     private let session: URLSession
 
     public init(baseURL: URL = URL(string: "https://tcbooffrdacfatywdzcm.supabase.co")!,
                 origin: String = "https://leftjap.github.io",
+                timeout: TimeInterval = 20,
                 session: URLSession = .shared) {
         self.baseURL = baseURL
         self.origin = origin
+        self.timeout = timeout
         self.session = session
     }
 
@@ -159,6 +174,7 @@ public struct AladinClient {
         )!
         comps.queryItems = params + Self.common
         var req = URLRequest(url: comps.url!)
+        req.timeoutInterval = timeout
         req.setValue(origin, forHTTPHeaderField: "Origin")
         return req
     }

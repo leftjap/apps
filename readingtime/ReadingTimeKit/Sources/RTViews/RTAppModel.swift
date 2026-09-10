@@ -834,6 +834,15 @@ public final class RTAppModel: ObservableObject {
     }
     @Published public var searchQuery = ""
     @Published public var searchResults: [RTBookHit]?
+    /// 검색 진행 중 — 시트 13 이 "검색 중…" 을 보인다. 프록시 상류가 느릴 때 아무 표시가 없으면
+    /// 사용자는 검색 자체가 안 되는 것으로 본다 (실기기 보고 2026-09-10: "서성이다" 무반응).
+    @Published public var searching = false
+    /// 마지막 검색 실패 사유(사용자 문구). nil = 실패 없음. 새 검색 시작·시트 열기 시 지운다.
+    @Published public var searchError: String?
+    /// 마지막으로 provider 에 보낸 쿼리 — "다시 시도" 가 재사용.
+    public private(set) var lastSearchQuery: String?
+    /// 검색 세대 — 늦게 도착한 이전 검색의 결과·실패가 최신 검색을 덮어쓰지 않도록 판별.
+    private var searchGeneration = 0
 
     private let tapScheduler: RTTapScheduler
     private var cancelPendingTap: (() -> Void)?
@@ -847,9 +856,48 @@ public final class RTAppModel: ObservableObject {
         // 공란/공백 쿼리는 provider 미호출 — 최신 검색 결과를 지우지 않고 그대로 노출(§ "공란=최신 검색")
         let trimmed = q.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let searchProvider else { return }
-        if let hits = try? await searchProvider(trimmed) {
-            searchResults = hits
+        searchGeneration += 1
+        let generation = searchGeneration
+        lastSearchQuery = trimmed
+        searching = true
+        searchError = nil
+        do {
+            let hits = try await searchProvider(trimmed)
+            guard generation == searchGeneration else { return }   // 더 새 검색이 시작됨 — 늦은 결과 폐기
+            searchResults = hits                                    // 0건도 [] 로 반영 (nil = 이력 없음과 구분)
+        } catch {
+            guard generation == searchGeneration else { return }
+            // 실패를 삼키지 않는다 — try? 로 삼키던 시절엔 상류 무응답이 "검색이 안 됨" 으로 보였다
+            searchError = Self.searchErrorMessage(error)
         }
+        searching = false
+    }
+
+    /// 실패한 마지막 검색을 같은 쿼리로 다시 시도 (시트 13 "다시 시도").
+    public func retrySearch() async {
+        guard let q = lastSearchQuery else { return }
+        await search(q)
+    }
+
+    /// 실패 사유 → 사용자 문구. 가장 흔한 실패는 프록시 상류(알라딘) 무응답 → 시간 초과라 따로 안내한다.
+    /// RTViews 는 ReadingTimeKit 을 모르므로(AladinError 참조 불가) 5xx 등은 LocalizedError 문장으로 받는다.
+    static func searchErrorMessage(_ error: Error) -> String {
+        let generic = "검색에 실패했어요. 다시 시도해 주세요."
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .timedOut:
+                return "알라딘이 응답하지 않아요. 잠시 후 다시 시도해 주세요."
+            case .notConnectedToInternet, .networkConnectionLost, .dnsLookupFailed,
+                 .cannotFindHost, .cannotConnectToHost:
+                return "인터넷 연결을 확인해 주세요."
+            default:
+                return generic
+            }
+        }
+        if let described = (error as? LocalizedError)?.errorDescription, !described.isEmpty {
+            return "\(described). 다시 시도해 주세요."
+        }
+        return generic
     }
 
     /// 상세(08) 뒤로가기 목적지 — 진입 시점의 출처로 자동 유도 (홈 '마지막 기록' 진입이 생기며
@@ -888,7 +936,8 @@ public final class RTAppModel: ObservableObject {
         // 재완독: 기존 별점을 프리셋 (직전 다른 책 평가 잔존값 방지 겸)
         if s == .finish, let r = selectedBook?.rating { rating = r }
         // 책 추가: 검색창은 열 때마다 공란. 결과(searchResults)는 유지 = "공란이면 최신 검색 표시".
-        if s == .addbook { searchQuery = "" }
+        // 실패 안내는 결과가 아니므로 지운다 (다시 열면 최신 결과부터).
+        if s == .addbook { searchQuery = ""; searchError = nil }
         sheet = s
     }
     public func closeSheet() { sheet = nil }
@@ -1240,6 +1289,7 @@ public final class RTAppModel: ObservableObject {
         case "nav": navScreenID(arg)
         case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
         case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
+        case "query": searchQuery = arg              // 검색창 프리필(검증 — sheet:addbook 뒤에 둘 것: 열 때 비움)
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
         case "sel": selectedISBN = arg                           // 상세 대상 지정(검증 — nav:08 과 조합)
         case "reread": rereadBook()                              // 다시 읽기(검증 — 밀리 미완독 상태 재현)

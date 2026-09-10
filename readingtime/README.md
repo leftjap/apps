@@ -5,7 +5,7 @@
 ## 무엇
 - **엎어놓기(flip) 자동 감지**: 폰을 face-down으로 두면 타이머 시작, 집으면 정지. 잠금 상태에서도 유지(목표).
 - **수동 버튼**: 지하철·버스·기차·기내 등 엎을 수 없을 때 버튼으로 시작/정지.
-- **책 검색·등록**: 알라딘 API — Book 앱 Edge Function 프록시 재사용(`ReadingTimeKit/BookSearch.swift`, 테스트 9건 통과).
+- **책 검색·등록**: 알라딘 API — Book 앱 Edge Function 프록시 재사용(`ReadingTimeKit/BookSearch.swift`). 요청 20초 제한 + 시트 13 에 검색 중·실패(다시 시도)·0건 표시 — 2026-09-10 상류(알라딘) 무응답 장애를 앱이 `try?` 로 삼켜 "검색 자체가 안 됨"으로 보였다(`~/apps/lessons/aladin-proxy-upstream-hang.md`).
 - **통합 기록**: 밀리의서재(PC) 독서 시간은 Book/Cue가 이미 수집 중 → 이 앱 기록과 통합(방식 조사·계획 중).
 
 ## 상태 (3단계: iOS 앱)
@@ -28,6 +28,7 @@
 | ├ `rtshot` | 헤드리스 렌더 CLI — `rtshot <NN> out.png` / `rtshot --app <NN>`(라우팅 오라클) / `rtshot --seq <액션들>` |
 | └ `rtapp` | macOS 데모 셸(390×844 창, 모션 on, 알라딘 라이브 검색) — `rtapp --verify-search <q>` |
 | `SETUP.md` | 실기기 배포·검증 절차 |
+| `../.github/workflows/readingtime-ios.yml` | **CI 검증**(macOS 러너): `swift test` + iPhone 시뮬레이터 XCUITest(책 추가 검색 상태). 클라우드 Claude 세션(리눅스)의 시뮬레이터 대체 경로 — 스크린샷은 아티팩트 + 로그 base64 |
 | `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. launchd `com.leftjap.readingtime.resign` 매일 21:30. 잔여 <4일 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급**(자유팀은 만료 전엔 갱신 안 됨) → **embedded 만료일 사후 검증**(조용한 실패 방지) → 두 기기(지오 11 Pro·소연 XR) 설치. 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
 
 ## 기록 화면 (주 · 월 · 지도)
@@ -61,6 +62,27 @@
 - **스크린타임은 양방향으로 틀린다**: 안 읽은 시간을 넣기도 하고(08-21), 읽은 시간을 빼기도 한다 — 08-25 에 독서 이벤트 6건이 밀리 세션 밖에 있었고 그때 frontmost 는 Obsidian·Chrome 이었다(퍼센트가 18→20% 실제 전진).
 
 - **못 고치는 것**: `history_drift` 는 책당 1행(PK `book_id`)이라 과거 이력 소급 불가 — 데몬이 15분마다 스냅샷을 쌓아 앞으로만 누적된다. 밀리를 열었지만 페이지를 안 넘긴 날은 원천에 기록이 없어 "밀리의서재"로 남는다.
+
+## 알라딘 장애 대처 (2026-09-10 결정)
+현상: 2026-09-10 aladin.co.kr 자체가 504 Gateway Time-out(브라우저 실측) → 프록시 ItemSearch 13회 중 1회 성공, 2회 503, 10회 40~90초 무응답.
+앱은 실패를 삼켜 무반응이었다(→ 수정: 20초 안에 실패 안내 + 다시 시도, `lessons/aladin-proxy-upstream-hang.md`).
+**검색 소스가 하나뿐이라 장애 중엔 어떤 앱도 결과를 못 낸다.** 3단 대처, 우선순위 ① → ③ → ②.
+
+① **프록시 페일오버** — Book·Pick·리딩타임 공통, 클라이언트 3곳 무수정 (`pick/supabase/functions/aladin/index.ts`)
+- 상류 `fetch(target)` 에 `AbortSignal.timeout(8_000)`. 시간 초과·5xx·JSON 아님 → **카카오 책 검색 API** 로 재조회, 알라딘 응답 모양으로 정규화해 반환(`source:"kakao"` 필드만 추가).
+  - `GET https://dapi.kakao.com/v3/search/book?query=&size=&target=title|isbn` 헤더 `Authorization: KakaoAK <REST 키>`. 무료 일 30,000건. 키 = Supabase secret `KAKAO_REST_API_KEY` — 없으면 페일오버 생략(지금처럼 상류 상태 전달).
+  - 매핑: `title→title`, `authors.join(", ")→author`(클라이언트 cleanAuthor 가 첫 이름만 씀), `publisher→publisher`, `datetime[0..<10]→pubDate`, `thumbnail→cover`, `isbn "10 13"` 공백 분리→`isbn`/`isbn13`, `itemId` 생략(정규화가 isbn13 폴백), `categoryName ""`, `subInfo.subTitle ""`.
+  - `ItemLookUp.aspx?ItemId=<isbn13>` → `target=isbn&query=<isbn13>` 같은 매핑. 밀리 편입 ISBN 매칭(`matchAdoptedMillieBook`)도 자동으로 혜택.
+- 둘 다 죽으면 `504 {"error":"upstream unavailable"}` JSON → 앱이 "알라딘 서버 오류 (504)" 안내.
+- 검증: 알라딘 URL 을 일부러 깨뜨린 상태에서 "서성이다" → isbn13 `9791167903792`·장강명·현대문학이 카카오 경유로 나와야 한다. 정상 시엔 응답이 기존과 동일(`source` 외).
+- 키 없이 되는 Google Books 는 공용 발신 IP 에서 429 가 나와(실측) 채택하지 않는다.
+
+② **앱 직접 입력** — 검색이 완전히 죽어도 타이머는 돌아야 한다 (리딩타임)
+- 실패 안내 아래 "직접 입력해서 추가": 제목·저자·출판사 → `manual:<hash(제목|저자)>` 키로 서재 등록. 표지는 기존 디자인 대체 표지(`RTComponents`).
+- 검색이 살아나면 자동 승격: 밀리 편입과 같은 파이프라인(`matchAdoptedMillieBook` → `upgradeMillieBook`)을 `manual:` 키에도 적용 — 앱 시작·시트 열기 시 미승격 키 재매칭, 같은 ISBN 이 이미 있으면 포기(기존 규칙).
+- 시트 13 은 픽셀 정본(`prototype/app.js`·design-ref v8)이라 폼 UI 는 **시안 추가가 먼저**.
+
+③ **감시** — `.github/workflows/data-sentinel.yml` 에 프록시 헬스 게이트: ItemSearch 가 20초 안에 200+JSON 이 아니면 FAIL → GitHub 알림. 장애를 앱에서가 아니라 아침에 안다. 페일오버 뒤엔 `source` 필드로 "알라딘 죽고 카카오로 버티는 중"까지 구분.
 
 ## 로드맵
 1. 타이머 코어 = **✅ FlipEngine 재작성**(v8 UX: 들면 일시정지·CTA 종료, wall-clock 누적 — iOS 컴파일 통과, 실기기 검증 대기)

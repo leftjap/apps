@@ -316,6 +316,10 @@ public struct Sheet13AddBook: View {
     var model: RTAppModel?
     private let added: Set<String>
     private let results: [RTBookHit]?
+    // 검색 진행·실패도 init 스냅샷 — 참조만 들면 @Published 변경에 body 재평가를 건너뛴다
+    // (lessons/swiftui-observableobject-child-skip.md)
+    private let searching: Bool
+    private let searchError: String?
     /// 라이브(실 검색 배선) vs 데모(rtshot 오라클). 데모만 시안 정적 렌더(몰입/32건/5권).
     let isLive: Bool
 
@@ -323,13 +327,33 @@ public struct Sheet13AddBook: View {
         self.model = model
         self.added = model?.added ?? ["flow"]
         self.results = model?.searchResults
+        self.searching = model?.searching ?? false
+        self.searchError = model?.searchError
         self.isLive = model?.searchProvider != nil
     }
 
-    /// "검색 결과 · N건" 라벨 (nil = 숨김). 라이브+이력없음이면 숨김, 라이브+결과면 실제 개수, 데모는 시안 32.
+    /// 검색 진행 중 표시 (라이브 한정 — 데모 오라클 불변).
+    var isSearching: Bool { isLive && searching }
+
+    /// "검색 결과 · N건" 라벨 (nil = 숨김). 라이브: 검색 중 "검색 중…" / 이력없음 숨김 / 결과 실제 개수. 데모는 시안 32.
     var countLabel: String? {
-        if isLive { return results.map { "검색 결과 · \($0.count)건" } }
+        if isLive {
+            if searching { return "검색 중…" }
+            return results.map { "검색 결과 · \($0.count)건" }
+        }
         return "검색 결과 · 32건"
+    }
+
+    /// 실패 안내 (라이브 한정, 검색 중이 아닐 때). 결과 영역에 "다시 시도" 와 함께 표시.
+    var errorLabel: String? {
+        guard isLive, !searching else { return nil }
+        return searchError
+    }
+
+    /// 0건 안내 (라이브 한정 — 검색이 정상 완료됐는데 비었을 때만. nil 이력없음과 구분).
+    var emptyLabel: String? {
+        guard isLive, !searching, searchError == nil, let results, results.isEmpty else { return nil }
+        return "검색 결과가 없어요"
     }
 
     /// 렌더되는 행 제목 — 라이브는 실 결과(없으면 공란), 데모는 시안 5권.
@@ -375,6 +399,9 @@ public struct Sheet13AddBook: View {
                         RTIcon(["M20 20l-3.6-3.6"], size: 18, stroke: RT.muted, lineWidth: 2)
                             .overlay(Circle().stroke(RT.muted, lineWidth: 2 * 18 / 24)
                                 .frame(width: 14 * 18 / 24, height: 14 * 18 / 24).offset(x: -18 / 24, y: -18 / 24))
+                            .contentShape(Rectangle())
+                            // 돋보기 탭 = 검색 (키보드 리턴과 동일 — 키보드를 내린 뒤에도 트리거 가능)
+                            .onTapGesture { if let model { Task { await model.search(model.searchQuery) } } }
                         if isLive, let model {
                             // 라이브 검색 (실기기·rtapp — 알라딘 프록시). 기본 공란(placeholder).
                             TextField("책 · 저자 검색", text: Binding(
@@ -382,7 +409,9 @@ public struct Sheet13AddBook: View {
                                 set: { model.searchQuery = $0 }))
                                 .textFieldStyle(.plain)
                                 .font(.sans(15, 500)).foregroundColor(RT.ink)
+                                .submitLabel(.search)   // 키보드 리턴 키 = "검색" (제출이 트리거임을 드러냄)
                                 .onSubmit { Task { await model.search(model.searchQuery) } }
+                                .accessibilityIdentifier("addbook.search")
                         } else {
                             // 데모(rtshot 오라클) — 시안 "몰입" 프리필 + 커서
                             Text("몰입").font(.sans(15, 500)).foregroundColor(RT.ink)
@@ -397,18 +426,28 @@ public struct Sheet13AddBook: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(RT.green, lineWidth: 1.5))
                     .shadow(color: Color(hex: 0x16140F, alpha: 0.05), radius: 3, x: 0, y: 2)
-                    // 카운트 — 라이브+이력없음이면 숨김(공란), 그 외 실제 개수/시안 32
+                    // 카운트 — 라이브+이력없음이면 숨김(공란), 검색 중이면 스피너+"검색 중…", 그 외 실제 개수/시안 32
                     if let countLabel {
-                        Text(countLabel)
-                            .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
-                            .foregroundColor(RT.faint)
+                        HStack(spacing: 6) {
+                            if isSearching {
+                                ProgressView().controlSize(.small)
+                            }
+                            Text(countLabel)
+                                .font(.mono(10.5, 500)).tracking(10.5 * 0.06)
+                                .foregroundColor(RT.faint)
+                                .accessibilityIdentifier("addbook.count")
+                        }
                     }
                 }
                 .padding(EdgeInsets(top: 0, leading: 24, bottom: 12, trailing: 24))
                 Group {
                     if isLive {
-                        // 라이브: 실 결과만. 이력 없으면(nil) 공란.
-                        if let results {
+                        // 라이브: 실패 안내(+다시 시도) > 0건 안내 > 실 결과. 이력 없으면(nil) 공란.
+                        if let errorLabel {
+                            statusBlock(errorLabel, retry: true)
+                        } else if let emptyLabel {
+                            statusBlock(emptyLabel, retry: false)
+                        } else if let results {
                             ScrollView(showsIndicators: false) {
                                 VStack(spacing: 0) {
                                     ForEach(results, id: \.isbn) { hit in
@@ -442,6 +481,32 @@ public struct Sheet13AddBook: View {
                     .shadow(color: Color.black.opacity(0.28), radius: 23, x: 0, y: -14)
             )
         }
+    }
+
+    // 검색 실패·0건 안내 — 결과 영역 상단. 실패면 "다시 시도" (마지막 쿼리 재검색).
+    // 식별자는 말단 요소에만 (lessons/swiftui-accessibility-identifier-container.md)
+    func statusBlock(_ message: String, retry: Bool) -> some View {
+        VStack(spacing: 12) {
+            Text(message)
+                .font(.sans(13.5, 500)).foregroundColor(RT.muted)
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier(retry ? "addbook.error" : "addbook.empty")
+            if retry {
+                Button {
+                    if let model { Task { await model.retrySearch() } }
+                } label: {
+                    Text("다시 시도")
+                        .font(.sans(13, 700)).foregroundColor(RT.ctaText)
+                        .padding(.horizontal, 16)
+                        .frame(height: 34)
+                        .background(Capsule().fill(RT.green))
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("addbook.retry")
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 28)
     }
 
     // 라이브 검색 표지 — 알라딘 커버 URL (실패 시 크라프트 그라데이션)
