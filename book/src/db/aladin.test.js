@@ -1,5 +1,5 @@
-// 알라딘 클라이언트 오류 문구 — 프록시(pick/supabase/functions/aladin/index.ts)가 상류 무응답을 15초에
-// 504(시간 초과)·502(연결 실패) JSON 으로 끊는 계약(2026-09-10). add-edit.js 가 e.message 를 그대로 화면에 보인다.
+// 알라딘 클라이언트 오류 문구 — 프록시(pick/supabase/functions/aladin/index.ts)가 상류(알라딘)를 8초에 끊고 카카오 페일오버도
+// 실패하면 504·502 JSON 을 주는 계약(2026-09-11). add-edit.js 가 e.message 를 그대로 화면에 보인다.
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import { searchBooks, lookupByIsbn } from './aladin.js';
 

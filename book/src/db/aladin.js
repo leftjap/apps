@@ -41,7 +41,7 @@ function normalize(item) {
 async function call(path, params) {
   const qs = new URLSearchParams(params).toString();
   const res = await fetch(`${BASE}/${path}?${qs}&${COMMON}`);
-  // 504·502 는 프록시가 상류(알라딘) 무응답을 15초에 끊은 것 (pick/supabase/functions/aladin/index.ts, 2026-09-10)
+  // 504·502 는 프록시가 상류(알라딘)를 8초에 끊고 카카오 페일오버도 실패한 것 (pick/supabase/functions/aladin/index.ts, 2026-09-11)
   if (res.status === 504 || res.status === 502) throw new Error(`알라딘 응답 없음 (${res.status}): 잠시 후 다시 시도해 주세요`);
   if (!res.ok) throw new Error(`알라딘 API 응답 ${res.status} (배포 환경이면 프록시 미설정일 수 있음)`);
   const data = await res.json();
