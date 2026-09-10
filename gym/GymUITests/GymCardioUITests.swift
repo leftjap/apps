@@ -18,6 +18,32 @@ final class GymCardioUITests: XCTestCase {
         app.buttons["keypad-done"].tap()
         Thread.sleep(forTimeInterval: 0.5)
     }
+    /// 카드 전체에 `cardio-card` 가 걸려 자식 식별자가 전부 덮인다 (GymCardioStepUITests 와 같은 실측).
+    /// 히어로 숫자는 가장 큰 Text, 라벨은 접두사로 찾는다.
+    private func heroValue(_ app: XCUIApplication) -> (label: String, frame: CGRect) {
+        var best = (label: "(none)", frame: CGRect.zero)
+        for e in app.staticTexts.allElementsBoundByIndex where e.identifier == "cardio-card" {
+            if e.frame.height > best.frame.height { best = (e.label, e.frame) }
+        }
+        return best
+    }
+    private func cardioLabel(_ app: XCUIApplication, startsWith prefix: String) -> String {
+        for e in app.staticTexts.allElementsBoundByIndex
+        where e.identifier == "cardio-card" && e.label.hasPrefix(prefix) && e.frame.height < 40 {
+            return e.label
+        }
+        return "(none)"
+    }
+    private func enterHero(_ app: XCUIApplication, keys: [String]) {
+        let h = heroValue(app)
+        let sz = app.windows.firstMatch.frame
+        app.coordinate(withNormalizedOffset: CGVector(dx: h.frame.midX / sz.width,
+                                                      dy: h.frame.midY / sz.height)).tap()
+        XCTAssertTrue(app.buttons["keypad-done"].waitForExistence(timeout: 5), "히어로 탭이 키패드를 열어야")
+        for k in keys { app.buttons["keypad-key-\(k)"].tap() }
+        app.buttons["keypad-done"].tap()
+        Thread.sleep(forTimeInterval: 0.6)
+    }
     private func label(_ app: XCUIApplication, _ id: String) -> String {
         let e = app.staticTexts[id]
         return e.exists ? e.label : "(none)"
@@ -35,8 +61,8 @@ final class GymCardioUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 0.8)
         app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
         Thread.sleep(forTimeInterval: 1.0)
-        XCTAssertTrue(app.staticTexts["cardio-duration"].waitForExistence(timeout: 5),
-                      "유산소 5필드 패널이 표시돼야")
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "cardio-card")
+                        .firstMatch.waitForExistence(timeout: 5), "유산소 카드가 표시돼야")
     }
 
     func testCardioFiveFieldEntrySurvivesFinishSummaryAndHome() {
@@ -99,5 +125,41 @@ final class GymCardioUITests: XCTestCase {
         XCTAssertEqual(label(app, "cardio-duration"), "25", "직전 러닝 시간이 고스트로 프리필돼야")
         XCTAssertEqual(label(app, "cardio-incline"), "3.4", "직전 경사가 고스트로 프리필돼야")
         let g = XCTAttachment(screenshot: app.screenshot()); g.name = "C4-ghost"; g.lifetime = .keepAlways; add(g)
+    }
+
+    // 유산소 히어로가 직전 기록을 회색 숫자로 보여줄 때, 그 값이 이번 기록으로 오인되면
+    // 시간을 안 넣고 넘어가 기록이 0분이 된다 (2026-09-10 실데이터: 8/21·9/8 두 번).
+    // 라벨이 고스트임을 밝혀야 하고, 값을 넣으면 그 표시는 사라져야 한다.
+    func testCardioGhostHeroIsLabeledNotRecorded() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--fake-signin", "--empty-session"]
+        app.launch()
+        openFreshTreadmillSession(app)
+
+        // ① 직전 기록이 없는 첫 세션 — "미입력"
+        XCTAssertTrue(cardioLabel(app, startsWith: "시간").contains("미입력"),
+                      "직전 기록도 입력도 없으면 미입력 (실측 '\(cardioLabel(app, startsWith: "시간"))')")
+
+        // ② 15분 입력 → 라벨에서 미입력 표시가 사라진다
+        enterHero(app, keys: ["1", "5"])
+        XCTAssertEqual(heroValue(app).label, "15", "히어로에 입력값이 떠야")
+        XCTAssertEqual(cardioLabel(app, startsWith: "시간"), "시간",
+                       "입력값은 고스트가 아니다 (실측 '\(cardioLabel(app, startsWith: "시간"))')")
+
+        // ③ 세션 종료 → 새 세션 — 직전 기록 고스트임이 라벨에 드러나야
+        app.staticTexts["session-end"].tap()
+        XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5))
+        app.buttons["action-finish"].tap()
+        XCTAssertTrue(app.staticTexts["TOTAL"].waitForExistence(timeout: 5))
+        app.buttons["summary-home"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["home-cta"].waitForExistence(timeout: 8))
+
+        app.terminate()
+        app.launchArguments = ["--fake-signin", "--empty-session"]   // 이력 보존
+        app.launch()
+        openFreshTreadmillSession(app)
+        XCTAssertEqual(heroValue(app).label, "15", "직전 러닝이 고스트로 보인다")
+        XCTAssertTrue(cardioLabel(app, startsWith: "시간").contains("직전"),
+                      "고스트는 직전 기록임이 라벨에 드러나야 (실측 '\(cardioLabel(app, startsWith: "시간"))')")
     }
 }

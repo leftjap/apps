@@ -18,7 +18,8 @@ public struct GymRootView: View {
                 }
             case .home:
                 HomeScreenView(model: model, onStart: { model.startSession() },
-                               onStats: { model.openStats() }, onAdmin: { model.openAdmin() })
+                               onStats: { model.openStats() }, onAdmin: { model.openAdmin() },
+                               onWeight: { model.openAdmin(tab: .weight) })
             case .session:
                 SessionScreenView(model: model, onHome: { model.goHome() })
             case .stats:

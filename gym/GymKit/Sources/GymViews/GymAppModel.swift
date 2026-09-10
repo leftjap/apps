@@ -573,7 +573,10 @@ public final class GymAppModel: ObservableObject {
     }
     public func goHome() { route = .home }
     public func openStats() { route = .stats }
-    public func openAdmin() { route = .admin }
+    public func openAdmin(tab: AdminScreenView.Tab = .ex) {
+        adminInitialTab = tab
+        route = .admin
+    }
 
     // MARK: - 세션 상태머신 (session.js 이식)
 

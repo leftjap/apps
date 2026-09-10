@@ -181,7 +181,9 @@ struct CardioPanel: View {
         }
         .frame(width: W * CGFloat(metrics.count), alignment: .leading)
         .offset(x: L.trackOffset(index: idx) + dragDX)
-        .frame(width: W, height: 128, alignment: .leading)
+        // 156 = 라벨 14.3 + 간격 12 + mono 100 숫자 127.7 (실측). 128 이던 동안 위아래가 13pt 씩
+        // 잘려 시안 §46 의 "활성 지표 라벨"이 화면에서 사라져 있었다 (2026-09-10 스크린샷 실측).
+        .frame(width: W, height: 156, alignment: .leading)
         .clipped()
     }
 
@@ -189,8 +191,9 @@ struct CardioPanel: View {
         let d = display(m)
         let size = heroFontSize(d.text, unit: m.unit, W: W)
         return VStack(spacing: 0) {
-            Text(m.label).font(.sans(12, 600)).tracking(1.2)
+            Text(Self.heroLabel(m, source: d.source)).font(.sans(12, 600)).tracking(1.2)
                 .foregroundStyle(Color(oklch: 0.70, 0.006, 60))
+                .lineLimit(1)
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Text(d.text).font(.mono(size, 300)).tracking(-0.05 * size)
                     .foregroundStyle(d.color)
@@ -266,10 +269,23 @@ struct CardioPanel: View {
         case .calories: return p.kcal
         }
     }
+    /// 히어로 숫자의 출처 — 라벨이 이걸 밝혀 고스트를 이번 기록으로 오인하는 것을 막는다.
+    enum HeroSource { case entered, ghost, empty }
+
     /// 입력값(잉크) > 직전 러닝 고스트(ink4) > "0" 고스트 — 오늘 원의 참조값과 같은 원천이다 (§8-2).
-    private func display(_ m: GymCardioMetric) -> (text: String, color: Color) {
-        if let v = currentValue(m) { return (m.format(v), locked ? GY.ink4 : GY.ink1) }
-        if let r = refValue(m) { return (m.format(r), GY.ink4) }
-        return (m.format(0), GY.ink4)
+    private func display(_ m: GymCardioMetric) -> (text: String, color: Color, source: HeroSource) {
+        if let v = currentValue(m) { return (m.format(v), locked ? GY.ink4 : GY.ink1, .entered) }
+        if let r = refValue(m) { return (m.format(r), GY.ink4, .ghost) }
+        return (m.format(0), GY.ink4, .empty)
+    }
+
+    /// 고스트 숫자는 회색이라는 것만으로는 이번 기록과 구별되지 않는다 — 값을 넣지 않고 넘어가
+    /// 시간이 0분으로 남은 사고가 두 번 있었다 (2026-09-10 실데이터 8/21·9/8). 라벨로 밝힌다.
+    static func heroLabel(_ m: GymCardioMetric, source: HeroSource) -> String {
+        switch source {
+        case .entered: m.label
+        case .ghost:   "\(m.label) · 직전 기록"
+        case .empty:   "\(m.label) · 미입력"
+        }
     }
 }

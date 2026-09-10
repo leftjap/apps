@@ -17,13 +17,17 @@ public struct HomeScreenView: View {
     var onStart: () -> Void
     var onStats: () -> Void
     var onAdmin: () -> Void
+    var onWeight: () -> Void      // 체중 카드 탭 → 관리 체중 탭 (§9)
     public init(model: GymAppModel, onStart: @escaping () -> Void = {},
-                onStats: @escaping () -> Void = {}, onAdmin: @escaping () -> Void = {}) {
+                onStats: @escaping () -> Void = {}, onAdmin: @escaping () -> Void = {},
+                onWeight: @escaping () -> Void = {}) {
         self.model = model; self.onStart = onStart; self.onStats = onStats; self.onAdmin = onAdmin
+        self.onWeight = onWeight
     }
     // 데모/스냅샷 편의 init.
     public init(onStart: @escaping () -> Void = {}, onStats: @escaping () -> Void = {}) {
         self.model = GymAppModel(); self.onStart = onStart; self.onStats = onStats; self.onAdmin = {}
+        self.onWeight = {}
     }
 
     // 진행 중 세션 존재 → HomeC(이어하기), 아니면 HomeA(idle) — mocks home.html 이중 분기 (spec §5-5).
@@ -573,8 +577,8 @@ public struct HomeScreenView: View {
         // 전체 이력에 sma7 → 최근 30일 절단 (창 안에서만 평균 내면 첫 점이 실측값이 된다)
         let rows = model.weights.reversed().map { (date: $0.date, kg: $0.kg) }
         let pts = GymWeightLogic.sparklinePoints(
-            values: GymWeightLogic.recentSma(rows: rows, days: 30, now: ref),
-            width: 132, height: 38)
+            samples: GymWeightLogic.recentSma(rows: rows, days: 30, now: ref),
+            windowDays: 30, width: 132, height: 38)
 
         return VStack(spacing: 0) {
             HStack {
@@ -615,10 +619,16 @@ public struct HomeScreenView: View {
                 }
             }
             .padding(.top, 9)
+            .accessibilityIdentifier("home-weight-graph")
         }
         .padding(.horizontal, 18).padding(.vertical, 13)
         .background(GY.card, in: RoundedRectangle(cornerRadius: GY.rLg))
         .shadow(color: Color(hex: 0x14120E).opacity(0.10), radius: 12, y: 6)
+        // 카드(그래프 포함) 탭 → 관리 체중 탭. 안의 "기록하기" 버튼은 제 동작을 유지한다.
+        // 식별자는 카드가 아니라 아래 숫자·그래프 행에만 둔다 — 컨테이너에 붙이면 자식이 전부
+        // 그 식별자를 물려받아 home-weight-input 이 사라진다 (2026-09-10 접근성 트리 실측).
+        .contentShape(RoundedRectangle(cornerRadius: GY.rLg))
+        .onTapGesture { onWeight() }
         .padding(.horizontal, 24).padding(.top, 12)
     }
 

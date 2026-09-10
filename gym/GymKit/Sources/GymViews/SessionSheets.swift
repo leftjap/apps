@@ -22,8 +22,10 @@ struct AddExerciseSheet: View {
         }
     }
 
+    // 부위 7개(…·유산소)가 375pt 폭에 가로 스크롤 없이 들어가야 한다 — 간격 8·좌우 15 였을 때
+    // 총 452pt 로 유산소가 화면 밖이었다 (2026-09-10 실측). 간격만 줄여선 모자라 칩 여백도 줄인다.
     var chipsRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 5) {
             ForEach(GymExercises.partOrder, id: \.self) { pid in
                 let active = pid == part
                 Button { part = pid } label: {
@@ -31,7 +33,7 @@ struct AddExerciseSheet: View {
                         .font(.sans(14, active ? 600 : 500))
                         .lineLimit(1).fixedSize()
                         .foregroundStyle(active ? GY.ink1 : GY.ink3)
-                        .padding(.horizontal, 15).padding(.vertical, 8)
+                        .padding(.horizontal, 10).padding(.vertical, 8)
                         .background(active ? GY.crailSoft : GY.card, in: Capsule())
                         .overlay(Capsule().strokeBorder(active ? GY.crailBase : GY.line, lineWidth: 1))
                 }.buttonStyle(.plain)

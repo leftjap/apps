@@ -225,6 +225,75 @@ final class GymNavigationUITests: XCTestCase {
                       "홈 버튼 탭 후 이어하기 카드(HomeC)로 돌아와야 한다")
     }
 
+    // 홈 체중 카드(그래프 포함) 탭 → 관리 체중 탭 (사용자 2026-09-10). 카드 안 "기록하기" 는
+    // 제 동작(키패드)을 유지해야 하므로 둘을 함께 확인한다.
+    func testWeightCardTapOpensAdminWeightTab() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset"]
+        app.launch()
+
+        // 카드 안 "기록하기" 는 제 동작(키패드) 유지 — 카드 탭에 먹히면 안 된다
+        let rec = app.buttons["home-weight-input"]
+        XCTAssertTrue(rec.waitForExistence(timeout: 10), "홈에 기록하기 버튼이 있어야 한다")
+        rec.tap()
+        XCTAssertTrue(app.buttons["keypad-done"].waitForExistence(timeout: 5),
+                      "기록하기는 체중 키패드를 열어야 한다")
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08)).tap()   // 배경 탭 → 닫기
+        XCTAssertTrue(app.buttons["keypad-done"].waitForNonExistence(timeout: 5), "키패드가 닫혀야 한다")
+
+        let card = app.descendants(matching: .any)
+            .matching(identifier: "home-weight-graph").firstMatch
+        XCTAssertTrue(card.waitForExistence(timeout: 5), "홈에 체중 카드가 있어야 한다")
+        card.tap()
+        XCTAssertTrue(app.staticTexts["weight-hero-num"].waitForExistence(timeout: 5),
+                      "체중 카드 탭이 관리 체중 탭을 열어야 한다")
+    }
+
+    // 소수점 키가 셀 전체로 눌려야 한다 (사용자 2026-09-10 "점이 잘 눌리지 않음").
+    // 숫자 키는 배경색이 칠해져 셀 전체가 탭되지만, 배경이 투명한 "." 은 글자 영역만 탭돼
+    // 실제 유효 타깃이 점 하나 크기였다.
+    func testDecimalKeyIsTappableAcrossWholeCell() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset"]
+        app.launch()
+
+        let rec = app.buttons["home-weight-input"]
+        XCTAssertTrue(rec.waitForExistence(timeout: 10), "홈 기록하기 버튼")
+        rec.tap()
+        let dot = app.buttons["keypad-key-."]
+        XCTAssertTrue(dot.waitForExistence(timeout: 5), "소수점 키가 있어야 한다")
+        XCTAssertEqual(dot.frame.height, 50, accuracy: 1, "키 셀 높이는 50pt")
+
+        // 셀 위쪽(글자 밖)을 탭해도 입력돼야 한다
+        dot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.12)).tap()
+        XCTAssertEqual(app.staticTexts["keypad-value"].label, "0.",
+                       "셀 위쪽 탭도 소수점 입력이어야 한다")
+        // 셀 아래쪽도 마찬가지
+        app.buttons["keypad-key-5"].tap()
+        dot.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.88)).tap()
+        XCTAssertEqual(app.staticTexts["keypad-value"].label, "0.5",
+                       "점은 이미 있으므로 중복 입력되지 않는다 (탭 자체는 먹혀야 한다)")
+    }
+
+    // 새 세션 운동추가 시트 — 부위 칩 7개가 가로 스크롤 없이 다 보여야 한다
+    // (사용자 2026-09-10: "유산소가 스크롤해야 보인다").
+    func testAddexPartChipsFitWithoutHorizontalScroll() {
+        let app = XCUIApplication()
+        app.launchArguments = ["--reset", "--route", "session", "--empty-session"]
+        app.launch()
+        XCTAssertTrue(app.staticTexts["NEW SESSION"].waitForExistence(timeout: 15), "빈 세션")
+
+        let screenW = app.windows.firstMatch.frame.width
+        for name in ["등", "가슴", "어깨", "하체", "팔", "코어", "유산소"] {
+            let chip = app.buttons[name]
+            XCTAssertTrue(chip.waitForExistence(timeout: 5), "\(name) 칩이 있어야 한다")
+            print("CHIP \(name) x=\(chip.frame.minX) w=\(chip.frame.width) maxX=\(chip.frame.maxX) screenW=\(screenW)")
+        }
+        let cardio = app.buttons["유산소"]
+        XCTAssertLessThanOrEqual(cardio.frame.maxX, screenW - 12,
+                                 "유산소 칩이 오른쪽 여백까지 화면 안에 들어와야 한다")
+    }
+
     // 실계정 세션 주입 → 실서버 5테이블 pull 반영 (E2E — 실기기 검증용).
     // 토큰은 TEST_RUNNER_GYM_AT / TEST_RUNNER_GYM_RT 환경변수로 전달 (없으면 skip — 평시 스위트 무영향).
     // 마커는 홈 상태·날짜 무관: 프로필 동기화 카드 실계정 이메일 + 체중 탭 실측치.

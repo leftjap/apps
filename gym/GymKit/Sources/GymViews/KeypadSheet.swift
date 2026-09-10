@@ -118,6 +118,9 @@ struct KeypadSheet: View {
                                     .frame(maxWidth: .infinity).frame(height: 50)
                                     .background(fn ? .clear : GY.sunken,
                                                 in: RoundedRectangle(cornerRadius: GY.rMd))
+                                    // 배경이 투명한 키(. / ⌫)는 이게 없으면 글자 박스만 탭된다 —
+                                    // "." 은 유효 타깃이 점 하나 크기였다 (2026-09-10 실측 25.7pt).
+                                    .contentShape(Rectangle())
                             }
                             .buttonStyle(.plain)
                             .accessibilityIdentifier("keypad-key-\(k)")

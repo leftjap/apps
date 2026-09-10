@@ -26,30 +26,51 @@ public enum GymWeightLogic {
 
     // MARK: - 홈 체중 카드 스파크라인 (홈 재설계 2026-08-17 §9 — 선 1개, 7일 이동평균만)
 
-    /// 최근 `days` 일 이동평균 시리즈. **전체 이력에 sma7 을 먼저 적용한 뒤 창을 절단한다** —
-    /// 창 안에서만 평균 내면 첫 점이 이동평균이 아니라 그날 실측값이 되어 선 앞머리가 튄다.
-    /// `rows` 는 날짜 오름차순.
-    public static func recentSma(rows: [(date: String, kg: Double)], days: Int = 30,
-                                 now: Date) -> [Double] {
-        guard !rows.isEmpty else { return [] }
-        let smas = sma7(rows)
-        guard let from = kst.date(byAdding: .day, value: -(days - 1), to: kst.startOfDay(for: now))
-        else { return smas.map(\.sma) }
-        let fromStr = isoFmt.string(from: from)
-        return smas.filter { $0.date >= fromStr }.map(\.sma)
+    /// 스파크라인 한 점 — `dayOffset` 은 창 시작(오늘 − (days−1))부터 센 경과 일수.
+    public struct WeightSparkSample: Equatable, Sendable {
+        public let dayOffset: Int
+        public let sma: Double
+        public init(dayOffset: Int, sma: Double) { self.dayOffset = dayOffset; self.sma = sma }
     }
 
-    /// 스파크라인 좌표 — x 균등 분할, y 는 시리즈 min~max 를 상하 `pad` 안쪽에 매핑(위 = 무거움).
-    /// 격자·축 없음. 점이 2개 미만이면 선을 못 그리므로 빈 배열(뷰가 숨김).
-    public static func sparklinePoints(values: [Double], width: CGFloat, height: CGFloat,
+    /// 최근 `days` 일 이동평균 시리즈. 두 가지를 **날짜 기준**으로 센다:
+    ///  · 이동평균 창 = 그날부터 거슬러 7일치 기록(기록 7개가 아니다). 기록이 뜸한 구간에서
+    ///    개수로 세면 몇 주 전 체중이 오늘 평균에 섞인다.
+    ///  · `dayOffset` = 창 시작으로부터 경과 일수. 가로 위치를 기록 순번이 아니라 날짜로 잡는다.
+    /// 창 절단은 평균을 낸 다음이다 — 먼저 자르면 창 첫 점이 이동평균이 아니라 그날 실측값이 된다.
+    /// `rows` 는 날짜 오름차순.
+    public static func recentSma(rows: [(date: String, kg: Double)], days: Int = 30,
+                                 now: Date) -> [WeightSparkSample] {
+        guard !rows.isEmpty, days >= 1 else { return [] }
+        let today = kst.startOfDay(for: now)
+        guard let from = kst.date(byAdding: .day, value: -(days - 1), to: today) else { return [] }
+        let dated = rows.compactMap { r in isoFmt.date(from: r.date).map { (day: $0, kg: r.kg) } }
+        return dated.compactMap { r in
+            guard r.day >= from,
+                  let lo = kst.date(byAdding: .day, value: -6, to: r.day),
+                  let off = kst.dateComponents([.day], from: from, to: r.day).day
+            else { return nil }
+            let win = dated.filter { $0.day >= lo && $0.day <= r.day }
+            guard !win.isEmpty else { return nil }
+            return WeightSparkSample(dayOffset: off,
+                                     sma: win.reduce(0) { $0 + $1.kg } / Double(win.count))
+        }
+    }
+
+    /// 스파크라인 좌표 — x 는 창 전체(`windowDays`)에 대한 날짜 비례, y 는 시리즈 min~max 를
+    /// 상하 `pad` 안쪽에 매핑(위 = 무거움). 격자·축 없음.
+    /// 점이 2개 미만이면 선을 못 그리므로 빈 배열(뷰가 숨김).
+    public static func sparklinePoints(samples: [WeightSparkSample], windowDays: Int = 30,
+                                       width: CGFloat, height: CGFloat,
                                        pad: CGFloat = 3) -> [CGPoint] {
-        guard values.count >= 2 else { return [] }
+        guard samples.count >= 2, windowDays >= 2 else { return [] }
+        let values = samples.map(\.sma)
         let mn = values.min()!, mx = values.max()!
         let top = pad, bottom = height - pad
         let span = mx - mn
-        return values.indices.map { i in
-            let x = CGFloat(i) / CGFloat(values.count - 1) * width
-            let y = span == 0 ? height / 2 : bottom - CGFloat((values[i] - mn) / span) * (bottom - top)
+        return samples.map { s in
+            let x = CGFloat(s.dayOffset) / CGFloat(windowDays - 1) * width
+            let y = span == 0 ? height / 2 : bottom - CGFloat((s.sma - mn) / span) * (bottom - top)
             return CGPoint(x: x, y: y)
         }
     }
