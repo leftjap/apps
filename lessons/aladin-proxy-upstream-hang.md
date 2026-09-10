@@ -10,6 +10,9 @@
   "서성이다" totalResults 19, 1위가 해당 책·isbn13 9791167903792 → 검색어·데이터 문제 아님),
   2회 503(본문 `서비스를 사용할 수 없습니다.` = 알라딘 자체 응답, 프록시는 상류 상태를 그대로 전달),
   10회 40~90초 무응답(0 bytes).
+- **알라딘 사이트 자체 장애**였다: 사용자 브라우저에서 aladin.co.kr 이 `504 Gateway Time-out`(스크린샷). 프록시는 200 → 무응답 → 503 →
+  복구 순으로 상류를 그대로 비췄다. 복구 확인 2026-09-10 15:06 UTC(00:06 KST) — 3회 연속 1초 응답, "서성이다" 1위. 장애 창은
+  적어도 11:26 KST(보고) ~ 00:06 KST.
 - 앱은 `try? await searchProvider(...)` 로 실패를 삼켰고 로딩·에러 표시가 없었다 → URLSession 기본 60초를
   기다린 뒤 조용히 끝남. 사용자 눈엔 "리턴을 눌러도 아무 일도 없음".
 - 이 프록시(`pick/supabase/functions/aladin/index.ts`)는 Book·Pick PWA 도 같이 쓴다 → 같은 시간대엔 그쪽 검색도 같이 죽는다.
@@ -35,6 +38,10 @@ curl -sS -m 10 -o /dev/null -w "%{http_code} %{time_total}s\n" \
 - 러너 아티팩트·잡 로그 zip 은 이 샌드박스에서 **받을 수 없다**(리다이렉트 호스트가 프록시에 막혀 CONNECT 403).
   그래서 워크플로가 축소 PNG 를 base64 로 로그에 남기고, 세션은 GitHub MCP `get_job_logs`(서버측 fetch) 로 받아
   `RTSHOT-BEGIN/END` 블록을 복원해 Read 로 본다. 런 폴링·잡 상태는 `GITHUB_TOKEN` + `api.github.com` 직접 호출이 된다.
+
+## 대처 방안 (결정)
+검색 소스가 알라딘 하나라 장애 중엔 어떤 앱도 결과를 못 낸다 → `readingtime/README.md` "알라딘 장애 대처": ① 프록시 페일오버(카카오 책 검색,
+알라딘 응답 모양으로 정규화, 클라이언트 무수정) ② 리딩타임 직접 입력 + 나중 자동 승격(밀리 편입 파이프라인 재사용) ③ 센티널 헬스 게이트.
 
 ## 회피
 - **클라이언트**: 요청 시간 제한 20초(`AladinClient.timeout`) + 진행·실패·0건 상태를 화면에(`RTAppModel.searching/searchError`,

@@ -63,6 +63,27 @@
 
 - **못 고치는 것**: `history_drift` 는 책당 1행(PK `book_id`)이라 과거 이력 소급 불가 — 데몬이 15분마다 스냅샷을 쌓아 앞으로만 누적된다. 밀리를 열었지만 페이지를 안 넘긴 날은 원천에 기록이 없어 "밀리의서재"로 남는다.
 
+## 알라딘 장애 대처 (2026-09-10 결정)
+현상: 2026-09-10 aladin.co.kr 자체가 504 Gateway Time-out(브라우저 실측) → 프록시 ItemSearch 13회 중 1회 성공, 2회 503, 10회 40~90초 무응답.
+앱은 실패를 삼켜 무반응이었다(→ 수정: 20초 안에 실패 안내 + 다시 시도, `lessons/aladin-proxy-upstream-hang.md`).
+**검색 소스가 하나뿐이라 장애 중엔 어떤 앱도 결과를 못 낸다.** 3단 대처, 우선순위 ① → ③ → ②.
+
+① **프록시 페일오버** — Book·Pick·리딩타임 공통, 클라이언트 3곳 무수정 (`pick/supabase/functions/aladin/index.ts`)
+- 상류 `fetch(target)` 에 `AbortSignal.timeout(8_000)`. 시간 초과·5xx·JSON 아님 → **카카오 책 검색 API** 로 재조회, 알라딘 응답 모양으로 정규화해 반환(`source:"kakao"` 필드만 추가).
+  - `GET https://dapi.kakao.com/v3/search/book?query=&size=&target=title|isbn` 헤더 `Authorization: KakaoAK <REST 키>`. 무료 일 30,000건. 키 = Supabase secret `KAKAO_REST_API_KEY` — 없으면 페일오버 생략(지금처럼 상류 상태 전달).
+  - 매핑: `title→title`, `authors.join(", ")→author`(클라이언트 cleanAuthor 가 첫 이름만 씀), `publisher→publisher`, `datetime[0..<10]→pubDate`, `thumbnail→cover`, `isbn "10 13"` 공백 분리→`isbn`/`isbn13`, `itemId` 생략(정규화가 isbn13 폴백), `categoryName ""`, `subInfo.subTitle ""`.
+  - `ItemLookUp.aspx?ItemId=<isbn13>` → `target=isbn&query=<isbn13>` 같은 매핑. 밀리 편입 ISBN 매칭(`matchAdoptedMillieBook`)도 자동으로 혜택.
+- 둘 다 죽으면 `504 {"error":"upstream unavailable"}` JSON → 앱이 "알라딘 서버 오류 (504)" 안내.
+- 검증: 알라딘 URL 을 일부러 깨뜨린 상태에서 "서성이다" → isbn13 `9791167903792`·장강명·현대문학이 카카오 경유로 나와야 한다. 정상 시엔 응답이 기존과 동일(`source` 외).
+- 키 없이 되는 Google Books 는 공용 발신 IP 에서 429 가 나와(실측) 채택하지 않는다.
+
+② **앱 직접 입력** — 검색이 완전히 죽어도 타이머는 돌아야 한다 (리딩타임)
+- 실패 안내 아래 "직접 입력해서 추가": 제목·저자·출판사 → `manual:<hash(제목|저자)>` 키로 서재 등록. 표지는 기존 디자인 대체 표지(`RTComponents`).
+- 검색이 살아나면 자동 승격: 밀리 편입과 같은 파이프라인(`matchAdoptedMillieBook` → `upgradeMillieBook`)을 `manual:` 키에도 적용 — 앱 시작·시트 열기 시 미승격 키 재매칭, 같은 ISBN 이 이미 있으면 포기(기존 규칙).
+- 시트 13 은 픽셀 정본(`prototype/app.js`·design-ref v8)이라 폼 UI 는 **시안 추가가 먼저**.
+
+③ **감시** — `.github/workflows/data-sentinel.yml` 에 프록시 헬스 게이트: ItemSearch 가 20초 안에 200+JSON 이 아니면 FAIL → GitHub 알림. 장애를 앱에서가 아니라 아침에 안다. 페일오버 뒤엔 `source` 필드로 "알라딘 죽고 카카오로 버티는 중"까지 구분.
+
 ## 로드맵
 1. 타이머 코어 = **✅ FlipEngine 재작성**(v8 UX: 들면 일시정지·CTA 종료, wall-clock 누적 — iOS 컴파일 통과, 실기기 검증 대기)
 2. 앱 Supabase 배선 = **ReadingTimeKit 이관·컴파일 검증**(OAuth·upsert 실동작은 실기기) · `readingtime_daily` 마이그 = **✅ 적용 완료**(2026-07-01, CLI)
