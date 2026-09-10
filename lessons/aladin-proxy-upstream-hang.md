@@ -46,6 +46,7 @@ curl -sS -m 10 -o /dev/null -w "%{http_code} %{time_total}s\n" \
 ## 회피
 - **클라이언트**: 요청 시간 제한 20초(`AladinClient.timeout`) + 진행·실패·0건 상태를 화면에(`RTAppModel.searching/searchError`,
   시트 13 `statusBlock`) + "다시 시도"(`retrySearch`). 늦게 온 이전 검색은 세대 카운터로 폐기.
-- **프록시**: 상류 `fetch(target)` 에 시간 제한이 없다 — `AbortSignal.timeout(15_000)` + 504 JSON 으로 끊으면
-  세 앱 모두 60초 대신 15초에 실패를 안다. 배포(`supabase functions deploy aladin`)는 맥에서.
+- **프록시**: 상류 `fetch(target)` 에 시간 제한이 없었다 → 2026-09-10 15초 제한(v10) → 2026-09-11 8초 제한 + 카카오 페일오버(v11,
+  `readingtime/README.md` "알라딘 장애 대처" ①). 이제 세 앱은 60초 대신 늦어도 16초 안에 답(카카오 결과 또는 504)을 받는다.
+  배포(`supabase functions deploy aladin --use-api`)는 맥에서.
 - 네트워크 경로의 `try?` 는 금지에 가깝다: 실패를 삼키면 인프라 장애가 UI 버그로 보고된다.

@@ -75,6 +75,7 @@
   - `ItemLookUp.aspx?ItemId=<isbn13>` → `target=isbn&query=<isbn13>` 같은 매핑. 밀리 편입 ISBN 매칭(`matchAdoptedMillieBook`)도 자동으로 혜택.
 - 둘 다 죽으면 `504 {"error":"upstream unavailable"}` JSON → 앱이 "알라딘 서버 오류 (504)" 안내.
 - 검증: 알라딘 URL 을 일부러 깨뜨린 상태에서 "서성이다" → isbn13 `9791167903792`·장강명·현대문학이 카카오 경유로 나와야 한다. 정상 시엔 응답이 기존과 동일(`source` 외).
+- ✅ 완료(2026-09-11, v11 배포): 상류 8초 제한 + 카카오 페일오버. `ALADIN_FORCE_FAIL=1` 시크릿으로 상류를 건너뛴 상태에서 curl·Book·Pick·리딩타임(`rtapp --verify-search 서성이다`) 모두 카카오 경유로 "서성이다"(장강명·현대문학·9791167903792)를 냈고, 해제 후 알라딘 응답으로 복귀. 카카오 앱 ID 1573685(카카오디벨로퍼스 "앱 > 플랫폼 키" 페이지), 키는 Supabase secret `KAKAO_REST_API_KEY`(repo 기록 금지). 단위 테스트 `deno test --allow-env pick/supabase/functions/aladin/index_test.ts`(저장소 루트에서).
 - 키 없이 되는 Google Books 는 공용 발신 IP 에서 429 가 나와(실측) 채택하지 않는다.
 
 ② **앱 직접 입력** — 검색이 완전히 죽어도 타이머는 돌아야 한다 (리딩타임)
@@ -82,7 +83,7 @@
 - 검색이 살아나면 자동 승격: 밀리 편입과 같은 파이프라인(`matchAdoptedMillieBook` → `upgradeMillieBook`)을 `manual:` 키에도 적용 — 앱 시작·시트 열기 시 미승격 키 재매칭, 같은 ISBN 이 이미 있으면 포기(기존 규칙).
 - 시트 13 은 픽셀 정본(`prototype/app.js`·design-ref v8)이라 폼 UI 는 **시안 추가가 먼저**.
 
-③ **감시** — `.github/workflows/data-sentinel.yml` 에 프록시 헬스 게이트: ItemSearch 가 20초 안에 200+JSON 이 아니면 FAIL → GitHub 알림. 장애를 앱에서가 아니라 아침에 안다. 페일오버 뒤엔 `source` 필드로 "알라딘 죽고 카카오로 버티는 중"까지 구분.
+③ **감시** — `.github/workflows/data-sentinel.yml` 에 프록시 헬스 게이트: ItemSearch 가 20초 안에 200+JSON 이 아니면 FAIL → GitHub 알림. 장애를 앱에서가 아니라 아침에 안다. 페일오버 뒤엔 `source` 필드로 "알라딘 죽고 카카오로 버티는 중"까지 구분. — ✅ 완료(2026-09-11): `aladin-proxy` 잡 신설, 20초 안에 200 + `item` 배열이 아니면 FAIL, `source:"kakao"` 면 "알라딘 장애, 카카오로 운영 중" 경고만. 브랜치 실행과 강제 실패 상태 로컬 실행 모두 통과.
 
 ## 로드맵
 1. 타이머 코어 = **✅ FlipEngine 재작성**(v8 UX: 들면 일시정지·CTA 종료, wall-clock 누적 — iOS 컴파일 통과, 실기기 검증 대기)
