@@ -1289,6 +1289,7 @@ public final class RTAppModel: ObservableObject {
         case "nav": navScreenID(arg)
         case "sheet": RTSheet(rawValue: arg).map { openSheet($0) }
         case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
+        case "query": searchQuery = arg              // 검색창 프리필(검증 — sheet:addbook 뒤에 둘 것: 열 때 비움)
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
         case "sel": selectedISBN = arg                           // 상세 대상 지정(검증 — nav:08 과 조합)
         case "reread": rereadBook()                              // 다시 읽기(검증 — 밀리 미완독 상태 재현)

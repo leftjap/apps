@@ -203,6 +203,11 @@ struct ReadingTimeApp: App {
                           publisher: $0.publisher, isbn: $0.isbn, coverUrl: $0.coverUrl)
             }
         }
+        // --stub-search <ok|empty|timeout|flaky>: 시뮬레이터 UI 검증용 검색 스텁 (XCUITest 전용 —
+        // 실기기 실행엔 이 인자가 없어 항상 라이브 프록시). flaky = 첫 호출 시간 초과 → "다시 시도" 성공.
+        if let i = launchArgs.firstIndex(of: "--stub-search"), launchArgs.count > i + 1 {
+            model.searchProvider = Self.stubSearch(mode: launchArgs[i + 1])
+        }
         if !sequenceLaunch {
             model.onSessionSaved = { mode, seconds in
                 Task {
@@ -286,6 +291,28 @@ struct ReadingTimeApp: App {
         model?.partnerData = pdata
         let since = ud.object(forKey: "rt.partnerReadingSince") as? Date
         model?.partnerReadingNow = since.map { Date().timeIntervalSince($0) < 12 * 3600 } ?? false
+    }
+
+    /// 시뮬레이터 검증용 검색 스텁 (--stub-search). 응답은 2026-09-10 배포 프록시 실응답("서성이다" 1위) 그대로.
+    /// 1.5초 지연 = "검색 중…" 이 실제로 그려지는지 볼 시간. 실패는 URLError.timedOut(상류 무응답과 같은 경로).
+    private static func stubSearch(mode: String) -> (String) async throws -> [RTBookHit] {
+        final class Calls { var n = 0 }
+        let calls = Calls()
+        let hit = RTBookHit(title: "서성이다", author: "장강명", publisher: "현대문학", isbn: "9791167903792",
+                            coverUrl: "https://image.aladin.co.kr/product/39984/93/cover200/k362130735_1.jpg")
+        return { _ in
+            calls.n += 1
+            try await Task.sleep(nanoseconds: 1_500_000_000)
+            switch mode {
+            case "ok": return [hit]
+            case "empty": return []
+            case "timeout": throw URLError(.timedOut)
+            case "flaky":
+                if calls.n == 1 { throw URLError(.timedOut) }
+                return [hit]
+            default: throw URLError(.badServerResponse)
+            }
+        }
     }
 
     /// 현재 렌더된 윈도우를 Documents/rtscreen.png 로 저장 (--capture 전용, 실기기 화면 검증).
