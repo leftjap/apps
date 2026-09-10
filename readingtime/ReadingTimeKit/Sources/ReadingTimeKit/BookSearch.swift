@@ -7,8 +7,8 @@ import FoundationNetworking
 // 정본: book/src/db/aladin.js (정규화) + pick/supabase/functions/aladin/index.ts (배포본 계약).
 // 배포본 계약(2026-07-02 실측): Origin=https://leftjap.github.io 필수(없으면 403),
 // 하위 경로 ItemSearch.aspx|ItemLookUp.aspx 필수(없으면 404), 무인증(verify_jwt=false).
-// 상류(알라딘) 무응답이면 프록시가 15초에 504 {"error":"aladin upstream timeout"}, 연결 실패면 502 로 끊는다(2026-09-10).
-// 알라딘이 준 503 등은 그대로 전달되므로 5xx 는 모두 알라딘 쪽 장애다.
+// 상류(알라딘)가 8초 안에 JSON 을 못 주면(시간 초과·연결 실패·5xx) 프록시가 카카오 책 검색으로 재조회해 같은 모양(+source:"kakao")으로
+// 200 을 준다(2026-09-11). 카카오까지 실패하면 504 {"error":"upstream unavailable"} → 5xx 는 두 상류가 모두 죽은 상태다.
 // 네이티브 URLSession 은 Origin 을 자동 부착하지 않으므로 명시 부착한다
 // (프록시 주석: 헤더 위조 직접 호출은 저위험 수용).
 public enum Aladin {

@@ -1,9 +1,11 @@
 # 데이터 무결성 센티널 — cue 대시보드가 읽는 실데이터의 오염 재발 감지 (2026-07-04 신설).
 # 배경: 화면시간(잠금화면 계상)·어학(study_time 폭주) 오염이 수동 감사로만 잡히던 구조 →
-# 매일 아침 CI 가 세 게이트를 돌리고, FAIL 이면 워크플로 실패로 GitHub 알림 발송.
+# 매일 아침 CI 가 네 게이트를 돌리고, FAIL 이면 워크플로 실패로 GitHub 알림 발송.
 #   ① audit-screentime  — 화면시간 충실성 + DB 위생(데니리스트 행 존재 시 FAIL)
 #   ② audit-faithfulness — 4활동 adapter vs raw 1:1 (어학 실학습 신호 게이트 정합)
 #   ③ audit-study-hygiene — study_daily_stats 팬텀·폭주·증거결핍 행 감지
+#   ④ aladin-proxy        — 알라딘 프록시 헬스: ItemSearch 가 20초 안에 200 + JSON(item 배열)이 아니면 FAIL (2026-09-11 신설,
+#                            readingtime/README.md "알라딘 장애 대처" ③). 별도 잡이라 ①~③ 결과와 무관하게 돈다.
 name: Data integrity sentinel
 
 on:
@@ -44,3 +46,27 @@ jobs:
           node scripts/audit-study-hygiene.mjs
           node scripts/audit-screentime.mjs
           node scripts/audit-faithfulness.mjs
+
+  # 알라딘 프록시(pick/supabase/functions/aladin) 헬스 게이트 — Book·Pick·리딩타임이 같이 쓰는 검색 경로.
+  # 2026-09-10 알라딘 자체 장애 때 세 앱 검색이 모두 죽었는데 앱에서만 알 수 있었다 → 아침에 CI 가 먼저 안다.
+  # 프록시는 알라딘이 죽으면 카카오로 페일오버해 source:"kakao" 를 붙인다 → 결과는 나오므로 FAIL 이 아니라 경고만.
+  aladin-proxy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Aladin proxy health (ItemSearch "서성이다", 20s)
+        run: |
+          url='https://tcbooffrdacfatywdzcm.supabase.co/functions/v1/aladin/ItemSearch.aspx?Query=%EC%84%9C%EC%84%B1%EC%9D%B4%EB%8B%A4&QueryType=Keyword&MaxResults=3&start=1&SearchTarget=Book&output=js&Version=20131101&Cover=Big'
+          code=$(curl -sS -m 20 -o resp.json -w '%{http_code}' -H 'Origin: https://leftjap.github.io' "$url") \
+            || { echo "::error::알라딘 프록시 20초 무응답 또는 연결 실패"; exit 1; }
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::알라딘 프록시 응답 $code (알라딘·카카오 모두 실패 = 504)"; head -c 300 resp.json; echo; exit 1
+          fi
+          if ! jq -e '.item | type == "array"' resp.json >/dev/null; then
+            echo "::error::알라딘 프록시 응답이 item 배열 JSON 이 아님"; head -c 300 resp.json; echo; exit 1
+          fi
+          if [ "$(jq -r '.source // empty' resp.json)" = "kakao" ]; then
+            echo "::warning::알라딘 장애, 카카오로 운영 중 (프록시 페일오버, $(jq '.item | length' resp.json)건)"
+          else
+            echo "알라딘 정상 ($(jq '.item | length' resp.json)건)"
+          fi
