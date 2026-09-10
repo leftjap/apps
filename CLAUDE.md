@@ -16,6 +16,7 @@
 - 절차 (5+ 단계) → `~/.claude/skills/<name>/SKILL.md`
 - 환경 함정 → `~/apps/lessons/<topic>.md` (`@import` 금지, 텍스트 경로 인용만)
 - 앱 spec → `~/apps/<app>/specs/<app>-app-spec.md`
+- 대화 정리·에세이 (앱 무관 사유·토론 기록) → `~/apps/notes/YYYY-MM-DD-<slug>.md` (공개 repo — 개인정보 금지. 규칙은 `~/apps/notes/README.md`)
 - 세션 간 연속성 → auto memory (`~/.claude/projects/<project>/memory/`). handoff 디렉터리 운영은 2026-08-30 폐기 (기존 파일은 `**/handoff/` gitignore 로 남겨 둠, 신규 작성 금지).
 
 ---
