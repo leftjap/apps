@@ -1,0 +1,519 @@
+{
+ "lang": "en",
+ "track": "mylife",
+ "day": 3,
+ "block": "3일차 늦을 때·연락하기 (모두영어 복습)",
+ "canDo": "늦는다고 알리고, 도착 연락을 약속하고, 친구를 집에 부를 수 있다",
+ "chatTopic": "Role-play: you are late for dinner and calling your wife; then invite a friend over.",
+ "date": "2026-08-29",
+ "_note": "내 이야기 트랙(mylife) 3일차 「늦을 때·연락하기 (모두영어 복습)」 — docs/mylife-curriculum.md. scene 없는 표현 전용 세션(코어100 과 같은 형식, track=mylife). date 는 달력이 아니라 세션 순서: 남은 코어100 묶음(09-04~)보다 앞 날짜라 로더가 이 묶음을 먼저 연다(2026-08-27~30·09-02, 08-31·09-01 은 모두영어 ep14·15 정리 잔재 회피). 설계: 즉석 생산 A1 학습자용 — 문장 3~7단어·기본동사 머리·내 상황(아내·고양이·일상·여행)·한글 프롬프트 수렴형(복습 회상용)·모두영어 8~13편 문장 재활용(미니대화·드릴·3일차 본문). 할 수 있는 것: 늦는다고 알리고, 도착 연락을 약속하고, 친구를 집에 부를 수 있다. ChatGPT 대화 주제: Role-play: you are late for dinner and calling your wife; then invite a friend over.",
+ "cards": [
+  {
+   "id": "en-mylife-d3-01-running-late",
+   "sentence": "I'm running late.",
+   "meaning": "나 늦어지고 있어.",
+   "reading": null,
+   "phonetic_kr": "아임 러닝 레잇",
+   "order_index": 1,
+   "explanation": {
+    "key": "be running late = 늦어지고 있다. 예정보다 시간이 밀리는 중일 때.",
+    "situation": "아내와 저녁 약속인데 퇴근이 늦어질 때 — 문자로도 전화로도 첫 마디. 모두영어 10편에서 배운 문장.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Where are you? Dinner's ready.",
+      "ko": "어디야? 저녁 다 됐어."
+     },
+     {
+      "speaker": "B",
+      "en": "I'm running late.",
+      "ko": "나 늦어지고 있어."
+     },
+     {
+      "speaker": "A",
+      "en": "Again? Okay, hurry.",
+      "ko": "또? 알았어, 서둘러."
+     }
+    ],
+    "drills": [
+     {
+      "en": "She's running late again.",
+      "ko": "그녀가 또 늦네.",
+      "kr": "쉬z 러닝 레잇 어겐"
+     },
+     {
+      "en": "Sorry, I'm running a little late.",
+      "ko": "미안, 나 조금 늦어.",
+      "kr": "쏘리 아임 러닝 어 리를 레잇"
+     },
+     {
+      "en": "Are you running late?",
+      "ko": "너 늦어지고 있어?",
+      "kr": "아r 여 러닝 레잇"
+     },
+     {
+      "en": "The bus is running late today.",
+      "ko": "버스가 오늘 늦네.",
+      "kr": "더 버스 이z 러닝 레잇 터데이"
+     },
+     {
+      "en": "We're running late for the movie.",
+      "ko": "우리 영화 시간에 늦고 있어.",
+      "kr": "위어r 러닝 레잇 f퍼r 더 무v이"
+     },
+     {
+      "en": "I'll be running late tonight.",
+      "ko": "오늘 밤엔 좀 늦을 거야.",
+      "kr": "아일 비 러닝 레잇 터나잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "be running late",
+      "body": "late 앞에 running 을 붙이면 '지금 밀리고 있다'는 진행의 느낌. I'm late 는 이미 늦은 결과, I'm running late 는 가는 중에 미리 알리는 말."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm running",
+      "아임 러닝",
+      "나는 ~해지고 있어"
+     ],
+     [
+      "late.",
+      "레잇",
+      "늦게."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/r/ running",
+      "running 의 r 은 혀를 말고 — '런닝'(X) '러닝'(O)"
+     ],
+     [
+      "/eɪ/ late",
+      "late 는 '레잇' 이중모음, 끝 t 는 살짝만"
+     ]
+    ],
+    "mistake": "'늦을 것 같아'를 I will late 처럼 be 를 빼고 말하기 쉽다. I'm running late 한 덩어리로 외운다.",
+    "similar": "I'm going to be late. / I'll be a little late.",
+    "category": "연락/약속",
+    "frequency": 10,
+    "chain": {
+     "target": "I'm running late, but I'll be home by eight.",
+     "chunks": [
+      "I'm running late,",
+      "but I'll",
+      "be home by eight."
+     ],
+     "ko": "좀 늦어지고 있는데, 8시까지는 집에 갈게."
+    },
+    "anchor": "늦어지고 있어"
+   }
+  },
+  {
+   "id": "en-mylife-d3-02-stuck-in-traffic",
+   "sentence": "I'm stuck in traffic.",
+   "meaning": "길이 막혀서 꼼짝 못 하고 있어.",
+   "reading": null,
+   "phonetic_kr": "아임 스턱 인 트래f픽",
+   "order_index": 2,
+   "explanation": {
+    "key": "be stuck in traffic = 차가 막혀 갇히다. stuck = 꼼짝 못 하는.",
+    "situation": "늦는 이유를 말할 때 — '왜 늦어?' 에 대한 가장 흔한 답. 모두영어 10편.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What's going on?",
+      "ko": "무슨 일이야?"
+     },
+     {
+      "speaker": "B",
+      "en": "I'm stuck in traffic.",
+      "ko": "길이 막혀서 꼼짝 못 하고 있어."
+     },
+     {
+      "speaker": "A",
+      "en": "Okay. Drive safe.",
+      "ko": "알았어. 조심히 와."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Are you stuck in traffic?",
+      "ko": "너 길 막혀?",
+      "kr": "아r 여 스턱 인 트래f픽"
+     },
+     {
+      "en": "I was stuck in traffic for an hour.",
+      "ko": "한 시간이나 길이 막혔어.",
+      "kr": "아이 워z 스턱 인 트래f픽 f퍼r 언 아워r"
+     },
+     {
+      "en": "I got stuck at work.",
+      "ko": "회사에 잡혀 있었어.",
+      "kr": "아이 갓 스터캣 워r크"
+     },
+     {
+      "en": "My wife is stuck in a meeting.",
+      "ko": "아내가 회의에 잡혀 있어.",
+      "kr": "마이 와이f 이z 스턱 이너 미링"
+     },
+     {
+      "en": "We got stuck in the rain.",
+      "ko": "우리는 비에 발이 묶였어.",
+      "kr": "위 갓 스턱 인 더 레인"
+     },
+     {
+      "en": "You'll be stuck in traffic at five.",
+      "ko": "5시엔 길이 막힐 거야.",
+      "kr": "유을 비 스턱 인 트래f픽 앳 f아이v"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "be/get stuck in + 상황",
+      "body": "stuck 은 '박혀서 못 움직이는'. 상태는 be stuck, 그렇게 된 순간은 get stuck. 교통은 in traffic, 회사는 at work."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm stuck",
+      "아임 스턱",
+      "나는 갇혀 있어"
+     ],
+     [
+      "in traffic.",
+      "인 트래f픽",
+      "차 막힘에."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʌ/ stuck",
+      "stuck 은 '스턱' — '스탁'(stock)이 되지 않게"
+     ],
+     [
+      "/f/ traffic",
+      "traffic 의 f — '트래픽'(X) '트래f픽'(O)"
+     ]
+    ],
+    "mistake": "'길이 막혀'를 The road is blocked 로 옮기기 쉽다. 차 안에서 못 움직이는 건 I'm stuck in traffic.",
+    "similar": "Traffic is terrible. / I'm caught in traffic.",
+    "category": "연락/약속",
+    "frequency": 9,
+    "chain": {
+     "target": "I'm stuck in traffic, and I can't move at all.",
+     "chunks": [
+      "I'm stuck in traffic,",
+      "and I can't",
+      "move at all."
+     ],
+     "ko": "차가 막혀서 꼼짝도 못 하고 있어."
+    },
+    "anchor": "꼼짝 못 하고 있어"
+   }
+  },
+  {
+   "id": "en-mylife-d3-03-on-my-way",
+   "sentence": "I'm on my way.",
+   "meaning": "지금 가는 중이야.",
+   "reading": null,
+   "phonetic_kr": "아임 온 마이 웨이",
+   "order_index": 3,
+   "explanation": {
+    "key": "on my way = 가는 중. 출발했다고 알릴 때.",
+    "situation": "아내가 '어디야?' 하고 물을 때 — 출발했다는 한마디. 모두영어에서 배웠지만 복습에서 못 떠올린 문장이라 다시.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Are you on your way?",
+      "ko": "너 오는 중이야?"
+     },
+     {
+      "speaker": "B",
+      "en": "I'm on my way.",
+      "ko": "지금 가는 중이야."
+     },
+     {
+      "speaker": "A",
+      "en": "Okay. I'll be waiting.",
+      "ko": "알았어. 기다리고 있을게."
+     }
+    ],
+    "drills": [
+     {
+      "en": "She's on her way home.",
+      "ko": "그녀는 집에 가는 중이야.",
+      "kr": "쉬z 온 허r 웨이 호움"
+     },
+     {
+      "en": "We're on our way to the vet.",
+      "ko": "우리는 동물병원 가는 길이야.",
+      "kr": "위어r 온 아워r 웨이 터 더 v엣"
+     },
+     {
+      "en": "Are you on your way home?",
+      "ko": "집에 오는 중이야?",
+      "kr": "아r 여 온 유어r 웨이 호움"
+     },
+     {
+      "en": "I was already on my way.",
+      "ko": "나 이미 가는 중이었어.",
+      "kr": "아이 워z 올레디 온 마이 웨이"
+     },
+     {
+      "en": "Dinner is on its way.",
+      "ko": "저녁 배달 오는 중이야.",
+      "kr": "디너r 이z 오니츠 웨이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "be on + 소유격 + way",
+      "body": "'가는 중'은 주어에 맞춰 소유격이 바뀐다 — I'm on my way, she's on her way. 목적지는 to 로 붙이고 home 은 to 없이."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm on",
+      "아임 온",
+      "나는 ~에 있어"
+     ],
+     [
+      "my way.",
+      "마이 웨이",
+      "가는 길에."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/eɪ/ way",
+      "way 는 '웨이' — '웨'로 짧게 끊지 않는다"
+     ],
+     [
+      "/m/ I'm on",
+      "I'm 의 m 이 on 과 이어져 '아이몬'처럼 들려도 된다"
+     ]
+    ],
+    "mistake": "'지금 갈게'를 I go now 로 조립하기 쉽다. 출발했다는 뜻은 I'm on my way 한 덩어리.",
+    "similar": "I'm coming. / I'm leaving now.",
+    "category": "연락/약속",
+    "frequency": 10,
+    "chain": {
+     "target": "I'm on my way, so don't start dinner without me.",
+     "chunks": [
+      "I'm on my way,",
+      "so don't start",
+      "dinner",
+      "without me."
+     ],
+     "ko": "지금 가는 중이니까, 나 없이 저녁 시작하지 마."
+    },
+    "anchor": "가는 중이야"
+   }
+  },
+  {
+   "id": "en-mylife-d3-04-call-you-when",
+   "sentence": "I'll call you when I get there.",
+   "meaning": "거기 도착하면 전화할게.",
+   "reading": null,
+   "phonetic_kr": "아일 콜 여 웨나이 겟 데어r",
+   "order_index": 4,
+   "explanation": {
+    "key": "when I get there = 거기 도착하면. when 절은 미래 일도 현재형으로 말한다.",
+    "situation": "여행 출발할 때, 아내나 부모님께 — 도착 보고를 약속하는 말. 모두영어 9편.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Call me when you land, okay?",
+      "ko": "착륙하면 전화해, 알았지?"
+     },
+     {
+      "speaker": "B",
+      "en": "I'll call you when I get there.",
+      "ko": "거기 도착하면 전화할게."
+     },
+     {
+      "speaker": "A",
+      "en": "Good. Safe trip.",
+      "ko": "좋아. 잘 다녀와."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'll text you when I get there.",
+      "ko": "도착하면 문자할게.",
+      "kr": "아일 텍스 여 웨나이 겟 데어r"
+     },
+     {
+      "en": "Call me when you get home.",
+      "ko": "집에 도착하면 전화해.",
+      "kr": "콜 미 웬 여 겟 호움"
+     },
+     {
+      "en": "My wife called me when she got there.",
+      "ko": "아내가 도착해서 전화했어.",
+      "kr": "마이 와이f 콜드 미 웬 쉬 갓 데어r"
+     },
+     {
+      "en": "I'll call you when I get to the hotel.",
+      "ko": "호텔에 도착하면 전화할게.",
+      "kr": "아일 콜 여 웨나이 겟 터 더 호텔"
+     },
+     {
+      "en": "Did you call your mom when you got there?",
+      "ko": "도착해서 어머니께 전화했어?",
+      "kr": "디저 콜 유어r 맘 웬 여 갓 데어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I'll + 동사 + when I get there",
+      "body": "'도착하면'은 미래 일이지만 when 절 안에서는 will 없이 현재형 get. I'll call you when I will get there(X)."
+     }
+    ],
+    "chunks": [
+     [
+      "I'll call you",
+      "아일 콜 여",
+      "나는 너한테 전화할게"
+     ],
+     [
+      "when I get there.",
+      "웨나이 겟 데어r",
+      "거기 도착하면."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/l/ call",
+      "call 의 l 은 혀끝을 윗잇몸에 — '커'로 끝내지 말고 '콜'"
+     ],
+     [
+      "/n/ when I",
+      "when 의 n 이 I 와 붙어 '웨나이' — '웬 아이'로 끊지 않는다"
+     ]
+    ],
+    "mistake": "when 뒤에 will 을 넣어 when I will get there 라고 하기 쉽다. 시간 절은 현재형이다.",
+    "similar": "I'll let you know when I arrive. / I'll text you when I'm there.",
+    "category": "연락/약속",
+    "frequency": 10,
+    "chain": {
+     "target": "I'll call you when I get there, so keep your phone on.",
+     "chunks": [
+      "I'll call you when I get there,",
+      "so keep",
+      "your phone on."
+     ],
+     "ko": "도착하면 전화할 테니까, 폰 켜 놔."
+    },
+    "anchor": "도착하면 전화할게"
+   }
+  },
+  {
+   "id": "en-mylife-d3-05-come-over",
+   "sentence": "Can you come over?",
+   "meaning": "우리 집에 올 수 있어?",
+   "reading": null,
+   "phonetic_kr": "컨 여 커모우버r",
+   "order_index": 5,
+   "explanation": {
+    "key": "come over = (우리 집·이쪽으로) 오다. 친구를 집으로 부를 때.",
+    "situation": "친구를 집에 부를 때. 모두영어 9편에서 배웠지만 복습에서 못 떠올린 문장 — 이번엔 내 상황으로.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What's up?",
+      "ko": "무슨 일이야?"
+     },
+     {
+      "speaker": "B",
+      "en": "Can you come over?",
+      "ko": "우리 집에 올 수 있어?"
+     },
+     {
+      "speaker": "A",
+      "en": "Sure. What's going on?",
+      "ko": "그럼. 무슨 일인데?"
+     },
+     {
+      "speaker": "B",
+      "en": "I need your help with something.",
+      "ko": "네가 좀 도와줄 일이 있어."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Come over for dinner tonight.",
+      "ko": "오늘 저녁 먹으러 와.",
+      "kr": "커모우버r f퍼r 디너r 터나잇"
+     },
+     {
+      "en": "Do you want to come over?",
+      "ko": "우리 집에 올래?",
+      "kr": "더여 원 터 커모우버r"
+     },
+     {
+      "en": "My friend came over last weekend.",
+      "ko": "지난 주말에 친구가 집에 왔어.",
+      "kr": "마이 f렌드 케이모우버r 라스 위켄드"
+     },
+     {
+      "en": "I'll come over after work.",
+      "ko": "퇴근하고 갈게.",
+      "kr": "아일 커모우버r 애f터r 워r크"
+     },
+     {
+      "en": "The cat won't come over when I call.",
+      "ko": "고양이가 불러도 안 와.",
+      "kr": "더 캣 원트 커모우버r 웨나이 콜"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "come over (+ to + 장소 생략)",
+      "body": "over 가 '이쪽으로'를 담아서 to my house 를 붙이지 않아도 된다. 상대 집으로 갈 때는 I'll come over."
+     }
+    ],
+    "chunks": [
+     [
+      "Can you",
+      "컨 여",
+      "너 ~할 수 있어?"
+     ],
+     [
+      "come over?",
+      "커모우버r",
+      "우리 집에 오다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/oʊ/ over",
+      "over 는 '오우v어r' — come 과 붙어 '커모우버r'"
+     ],
+     [
+      "/k/ can you",
+      "can 이 약해져 '컨 여' — '캔 유'로 또박또박(X)"
+     ]
+    ],
+    "mistake": "'우리 집에 와'를 come to my house 로만 만들기 쉽다. 틀리진 않지만 come over 가 훨씬 흔하다.",
+    "similar": "Do you want to come by? / Come on over.",
+    "category": "연락/약속",
+    "frequency": 9,
+    "chain": {
+     "target": "Can you come over tonight and help me with the cat?",
+     "chunks": [
+      "Can you come over",
+      "tonight",
+      "and help me",
+      "with the cat?"
+     ],
+     "ko": "오늘 밤 우리 집에 와서 고양이 일 좀 도와줄 수 있어?"
+    },
+    "anchor": "올 수 있어"
+   }
+  }
+ ]
+}

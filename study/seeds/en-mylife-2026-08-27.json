@@ -1,0 +1,536 @@
+{
+ "lang": "en",
+ "track": "mylife",
+ "day": 1,
+ "block": "1일차 우리 집 식구 소개",
+ "canDo": "나·아내·고양이를 한 문장씩 소개할 수 있다",
+ "chatTopic": "Tell me about your family and your cat.",
+ "date": "2026-08-27",
+ "_note": "내 이야기 트랙(mylife) 1일차 「우리 집 식구 소개」 — docs/mylife-curriculum.md. scene 없는 표현 전용 세션(코어100 과 같은 형식, track=mylife). date 는 달력이 아니라 세션 순서: 남은 코어100 묶음(09-04~)보다 앞 날짜라 로더가 이 묶음을 먼저 연다(2026-08-27~30·09-02, 08-31·09-01 은 모두영어 ep14·15 정리 잔재 회피). 설계: 즉석 생산 A1 학습자용 — 문장 3~7단어·기본동사 머리·내 상황(아내·고양이·일상·여행)·한글 프롬프트 수렴형(복습 회상용)·모두영어 8~13편 문장 재활용(미니대화·드릴·3일차 본문). 할 수 있는 것: 나·아내·고양이를 한 문장씩 소개할 수 있다. ChatGPT 대화 주제: Tell me about your family and your cat.",
+ "cards": [
+  {
+   "id": "en-mylife-d1-01-have-a-cat",
+   "sentence": "I have a cat.",
+   "meaning": "저는 고양이를 한 마리 키워요.",
+   "reading": null,
+   "phonetic_kr": "아이 해v 어 캣",
+   "order_index": 1,
+   "explanation": {
+    "key": "have a cat = 고양이를 키우다. 반려동물·가족·물건이 '있다'는 전부 have 로 말한다.",
+    "situation": "처음 만난 사람이나 ChatGPT 가 '반려동물 있어요?' 하고 물을 때 — 우리 집 소개의 첫 문장.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Do you have any pets?",
+      "ko": "반려동물 있어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I have a cat.",
+      "ko": "저는 고양이를 한 마리 키워요."
+     },
+     {
+      "speaker": "A",
+      "en": "Oh, nice. I love cats.",
+      "ko": "오, 좋네요. 저 고양이 좋아해요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Do you have a cat?",
+      "ko": "고양이 키워요?",
+      "kr": "더여 해v 어 캣"
+     },
+     {
+      "en": "We have a cat at home.",
+      "ko": "우리 집에는 고양이가 한 마리 있어요.",
+      "kr": "위 해v 어 캣 앳 호움"
+     },
+     {
+      "en": "I don't have a dog.",
+      "ko": "개는 안 키워요.",
+      "kr": "아이 돈 해v 어 도그"
+     },
+     {
+      "en": "My friend has two cats.",
+      "ko": "내 친구는 고양이 두 마리를 키워요.",
+      "kr": "마이 f렌드 해z 투우 캣츠"
+     },
+     {
+      "en": "I had a dog as a kid.",
+      "ko": "어릴 때는 개를 키웠어요.",
+      "kr": "아이 해러 도그 애저 키드"
+     },
+     {
+      "en": "Do you have kids?",
+      "ko": "아이는 있어요?",
+      "kr": "더여 해v 키즈"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "I have a + 명사",
+      "body": "'키운다·있다·가지고 있다'가 전부 have 하나다. '고양이가 있어요'를 There is 로 옮기지 말고 주어를 I 로 세운다. a 는 빼지 않는다."
+     }
+    ],
+    "chunks": [
+     [
+      "I have",
+      "아이 해v",
+      "나는 키워요"
+     ],
+     [
+      "a cat.",
+      "어 캣",
+      "고양이 한 마리를."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ have",
+      "have 의 v 는 아랫입술을 살짝 물고 — '해브'(X) '해v'(O)"
+     ],
+     [
+      "/æ/ cat",
+      "cat 은 입을 옆으로 벌려 '캣' — '컷'(cut)이 되지 않게"
+     ]
+    ],
+    "mistake": "'고양이를 키워요'를 raise a cat 이나 There is a cat 으로 옮기기 쉽다. 반려동물은 그냥 have 다.",
+    "similar": "I've got a cat. / We have a cat.",
+    "category": "우리 집/소개",
+    "frequency": 9,
+    "chain": {
+     "target": "I have a cat, and she sleeps on my bed every night.",
+     "chunks": [
+      "I have a cat,",
+      "and she sleeps",
+      "on my bed",
+      "every night."
+     ],
+     "ko": "고양이 한 마리를 키우는데, 매일 밤 내 침대에서 자요."
+    },
+    "anchor": "키워요"
+   }
+  },
+  {
+   "id": "en-mylife-d1-02-live-with",
+   "sentence": "I live with my wife.",
+   "meaning": "저는 아내와 같이 살아요.",
+   "reading": null,
+   "phonetic_kr": "아이 리v 위드 마이 와이f",
+   "order_index": 2,
+   "explanation": {
+    "key": "live with = ~와 같이 살다. together 없이 with 로 끝난다.",
+    "situation": "가족 얘기가 나올 때 — '결혼했어요? 누구랑 살아요?' 에 대한 내 대답.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Do you live alone?",
+      "ko": "혼자 살아요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I live with my wife.",
+      "ko": "저는 아내와 같이 살아요."
+     },
+     {
+      "speaker": "A",
+      "en": "Just the two of you?",
+      "ko": "둘이서만요?"
+     },
+     {
+      "speaker": "B",
+      "en": "And a cat.",
+      "ko": "그리고 고양이 한 마리요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Do you live with your family?",
+      "ko": "가족과 같이 살아요?",
+      "kr": "더여 리v 위드 유어r f애믈리"
+     },
+     {
+      "en": "The cat lives with us.",
+      "ko": "고양이도 우리랑 같이 살아요.",
+      "kr": "더 캣 리v즈 위더스"
+     },
+     {
+      "en": "Who do you live with?",
+      "ko": "누구랑 같이 살아요?",
+      "kr": "후 더여 리v 위드"
+     },
+     {
+      "en": "I lived alone before.",
+      "ko": "전에는 혼자 살았어요.",
+      "kr": "아이 리v드 얼로운 비f포어r"
+     },
+     {
+      "en": "I don't live with my parents.",
+      "ko": "부모님이랑은 같이 안 살아요.",
+      "kr": "아이 돈 리v 위드 마이 페어r런츠"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "live with + 사람",
+      "body": "'~와 같이 산다'는 live with 로 끝난다. live with my wife together 처럼 together 를 겹치지 않는다. 혼자 살면 live alone."
+     }
+    ],
+    "chunks": [
+     [
+      "I live",
+      "아이 리v",
+      "나는 살아요"
+     ],
+     [
+      "with my wife.",
+      "위드 마이 와이f",
+      "아내와 같이."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/v/ live",
+      "live 의 끝 v 는 짧게 — '리브'(X) '리v'(O)"
+     ],
+     [
+      "/f/ wife",
+      "wife 의 f 는 윗니로 아랫입술 — '와이프'(X) '와이f'(O)"
+     ]
+    ],
+    "mistake": "live 를 '살다'로만 알면 with 를 빼먹고 live my wife 가 나온다. live with 가 한 덩어리다.",
+    "similar": "My wife and I live together. / It's just me and my wife.",
+    "category": "우리 집/소개",
+    "frequency": 9,
+    "chain": {
+     "target": "I live with my wife and our cat, and the cat runs the house.",
+     "chunks": [
+      "I live with my wife",
+      "and our cat,",
+      "and the cat",
+      "runs the house."
+     ],
+     "ko": "아내랑 고양이랑 같이 사는데, 집 주인은 고양이예요."
+    },
+    "anchor": "같이 살아요"
+   }
+  },
+  {
+   "id": "en-mylife-d1-03-at-work",
+   "sentence": "My wife is at work.",
+   "meaning": "아내는 지금 직장에 있어요.",
+   "reading": null,
+   "phonetic_kr": "마이 와이f 이z 앳 워r크",
+   "order_index": 3,
+   "explanation": {
+    "key": "be at work = 직장에 있다, 일하는 중이다. is working 대신 상태로 말한다.",
+    "situation": "저녁이나 주말에 '아내는 뭐 해요?' 하고 물을 때 — 직장에 있다고 답하는 문장.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Is your wife home now?",
+      "ko": "아내분 지금 집에 있어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "My wife is at work.",
+      "ko": "아내는 지금 직장에 있어요."
+     },
+     {
+      "speaker": "A",
+      "en": "On a Saturday? Wow.",
+      "ko": "토요일에요? 와."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm at work now.",
+      "ko": "나 지금 회사야.",
+      "kr": "아임 앳 워r크 나우"
+     },
+     {
+      "en": "Are you at work?",
+      "ko": "너 지금 회사야?",
+      "kr": "아r 여 앳 워r크"
+     },
+     {
+      "en": "She's still at work.",
+      "ko": "그녀는 아직 직장에 있어.",
+      "kr": "쉬z 스틸 앳 워r크"
+     },
+     {
+      "en": "My wife isn't at work today.",
+      "ko": "아내는 오늘 직장에 안 갔어요.",
+      "kr": "마이 와이f 이즌 앳 워r크 터데이"
+     },
+     {
+      "en": "I'm stuck at work.",
+      "ko": "나 회사에 묶여 있어.",
+      "kr": "아임 스터캣 워r크"
+     },
+     {
+      "en": "We were at work all day.",
+      "ko": "우리는 하루 종일 직장에 있었어.",
+      "kr": "위 워r 앳 워r크 올 데이"
+     },
+     {
+      "en": "I'll be at work until six.",
+      "ko": "6시까지 회사에 있을 거야.",
+      "kr": "아일 비 앳 워r크 언틸 씩스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "be동사 + at work",
+      "body": "'일하고 있다'를 매번 is working 으로 만들 필요가 없다. 직장에 있는 상태는 be at work 한 덩어리. at home·at school 도 같은 틀이고 the 를 넣지 않는다."
+     }
+    ],
+    "chunks": [
+     [
+      "My wife",
+      "마이 와이f",
+      "아내는"
+     ],
+     [
+      "is at work.",
+      "이z 앳 워r크",
+      "직장에 있어요."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ɜːr/ work",
+      "work 는 혀를 말아 '워r크' — 받침 ㄹ 로 '월크'(X)"
+     ],
+     [
+      "/z/ is",
+      "is 는 '이z' 로 울린다 — '이스'(X)"
+     ]
+    ],
+    "mistake": "'직장에 있어요'를 in the company 나 in her office 로 길게 만들기 쉽다. 그냥 at work.",
+    "similar": "She's working now. / She's still at the office.",
+    "category": "우리 집/소개",
+    "frequency": 9,
+    "chain": {
+     "target": "My wife is at work, so I'm home alone with the cat.",
+     "chunks": [
+      "My wife is at work,",
+      "so I'm home",
+      "alone",
+      "with the cat."
+     ],
+     "ko": "아내는 직장에 있어서, 저는 고양이랑 집에 혼자 있어요."
+    },
+    "anchor": "직장에 있어요"
+   }
+  },
+  {
+   "id": "en-mylife-d1-04-sleeps-all-day",
+   "sentence": "Our cat sleeps all day.",
+   "meaning": "우리 고양이는 하루 종일 자요.",
+   "reading": null,
+   "phonetic_kr": "아워r 캣 슬립솔 데이",
+   "order_index": 4,
+   "explanation": {
+    "key": "sleep all day = 하루 종일 자다. all day 는 두 단어 그대로 부사다.",
+    "situation": "고양이 얘기가 나오면 꼭 나오는 말 — '고양이는 뭐 해요?' 에 대한 답.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What does your cat do all day?",
+      "ko": "고양이는 하루 종일 뭐 해요?"
+     },
+     {
+      "speaker": "B",
+      "en": "Our cat sleeps all day.",
+      "ko": "우리 고양이는 하루 종일 자요."
+     },
+     {
+      "speaker": "A",
+      "en": "Same as my dog.",
+      "ko": "우리 개랑 똑같네요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Cats sleep all day.",
+      "ko": "고양이는 하루 종일 자요.",
+      "kr": "캣츠 슬립 올 데이"
+     },
+     {
+      "en": "I want to sleep all day.",
+      "ko": "하루 종일 자고 싶어요.",
+      "kr": "아이 원 터 슬립 올 데이"
+     },
+     {
+      "en": "Did you sleep well?",
+      "ko": "잘 잤어요?",
+      "kr": "디저 슬립 웰"
+     },
+     {
+      "en": "I slept all day on Sunday.",
+      "ko": "일요일에 하루 종일 잤어요.",
+      "kr": "아이 슬렙톨 데이 언 썬데이"
+     },
+     {
+      "en": "The cat sleeps on my bed.",
+      "ko": "고양이는 내 침대에서 자요.",
+      "kr": "더 캣 슬립스 언 마이 베드"
+     },
+     {
+      "en": "I can't sleep.",
+      "ko": "잠이 안 와요.",
+      "kr": "아이 캔트 슬립"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "주어 + 동사s + all day",
+      "body": "3인칭 단수 현재는 동사에 s — Our cat sleep(X) sleeps(O). '하루 종일'은 all day 두 단어, for 나 the 를 붙이지 않는다."
+     }
+    ],
+    "chunks": [
+     [
+      "Our cat",
+      "아워r 캣",
+      "우리 고양이는"
+     ],
+     [
+      "sleeps all day.",
+      "슬립솔 데이",
+      "하루 종일 자요."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/sl/ sleeps",
+      "sleeps 는 '슬립스' — ㄹ 을 빼고 '스립스'(X)"
+     ],
+     [
+      "/ɔː/ all",
+      "all 은 입을 둥글게 '올' — '얼'(X)"
+     ]
+    ],
+    "mistake": "all day 앞에 for the 를 붙여 for all the day 라고 하기 쉽다. all day 는 그대로 쓴다.",
+    "similar": "The cat does nothing but sleep. / She's asleep all day.",
+    "category": "우리 집/소개",
+    "frequency": 8,
+    "chain": {
+     "target": "Our cat sleeps all day and runs around the house at night.",
+     "chunks": [
+      "Our cat sleeps all day",
+      "and runs around",
+      "the house",
+      "at night."
+     ],
+     "ko": "우리 고양이는 하루 종일 자고, 밤에는 집 안을 뛰어다녀요."
+    },
+    "anchor": "하루 종일 자요"
+   }
+  },
+  {
+   "id": "en-mylife-d1-05-want-to-speak",
+   "sentence": "I want to speak English.",
+   "meaning": "저는 영어로 말하고 싶어요.",
+   "reading": null,
+   "phonetic_kr": "아이 원 터 스피익 잉글리쉬",
+   "order_index": 5,
+   "explanation": {
+    "key": "want to = ~하고 싶다. 뒤에 동사원형이 온다.",
+    "situation": "'영어는 왜 배워요?' 라는 질문에 하는 첫 대답 — 목표를 한 문장으로.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Why are you studying English?",
+      "ko": "영어는 왜 공부해요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I want to speak English.",
+      "ko": "저는 영어로 말하고 싶어요."
+     },
+     {
+      "speaker": "A",
+      "en": "You're doing it right now!",
+      "ko": "지금 하고 있잖아요!"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I want to travel more.",
+      "ko": "여행을 더 하고 싶어요.",
+      "kr": "아이 원 터 트래v을 모어r"
+     },
+     {
+      "en": "My wife wants to learn English too.",
+      "ko": "아내도 영어를 배우고 싶어 해요.",
+      "kr": "마이 와이f 원츠 터 러r니 잉글리쉬 투우"
+     },
+     {
+      "en": "I don't want to go to work.",
+      "ko": "출근하기 싫어요.",
+      "kr": "아이 돈 원 터 고우 터 워r크"
+     },
+     {
+      "en": "What do you want to do today?",
+      "ko": "오늘 뭐 하고 싶어요?",
+      "kr": "왓 더여 원 터 두 터데이"
+     },
+     {
+      "en": "The cat wants to go out.",
+      "ko": "고양이가 나가고 싶어 해요.",
+      "kr": "더 캣 원츠 터 고우 아웃"
+     },
+     {
+      "en": "Do you want something to eat?",
+      "ko": "뭐 좀 먹을래?",
+      "kr": "더여 원 썸씽 터 이잇"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "want to + 동사원형",
+      "body": "'~하고 싶다'는 want to 다음 동사원형 — want speaking(X). 명사를 원하면 to 없이 want + 명사(want some coffee)."
+     }
+    ],
+    "chunks": [
+     [
+      "I want to",
+      "아이 원 터",
+      "나는 하고 싶어요"
+     ],
+     [
+      "speak English.",
+      "스피익 잉글리쉬",
+      "영어로 말하는 것을."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ want to",
+      "want to 는 t 가 하나로 합쳐져 '원 터' — '원트 투'로 끊지 않는다"
+     ],
+     [
+      "/ŋ/ English",
+      "English 의 ng 는 콧소리 '잉' — '인글리쉬'(X)"
+     ]
+    ],
+    "mistake": "'영어를 잘하고 싶다'에서 speak 를 빼고 want to English 라고 하기 쉽다. 동사가 꼭 있어야 한다.",
+    "similar": "I'd like to speak English. / I'm learning to speak English.",
+    "category": "우리 집/소개",
+    "frequency": 10,
+    "chain": {
+     "target": "I want to speak English on our next trip without my phone.",
+     "chunks": [
+      "I want to speak English",
+      "on our next trip",
+      "without my phone."
+     ],
+     "ko": "다음 여행에서는 폰 없이 영어로 말하고 싶어요."
+    },
+    "anchor": "하고 싶어요"
+   }
+  }
+ ]
+}

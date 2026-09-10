@@ -1,0 +1,519 @@
+{
+ "lang": "en",
+ "track": "mylife",
+ "day": 2,
+ "block": "2일차 나의 하루",
+ "canDo": "아침부터 밤까지 내 하루를 다섯 문장으로 말할 수 있다",
+ "chatTopic": "What's your typical day like?",
+ "date": "2026-08-28",
+ "_note": "내 이야기 트랙(mylife) 2일차 「나의 하루」 — docs/mylife-curriculum.md. scene 없는 표현 전용 세션(코어100 과 같은 형식, track=mylife). date 는 달력이 아니라 세션 순서: 남은 코어100 묶음(09-04~)보다 앞 날짜라 로더가 이 묶음을 먼저 연다(2026-08-27~30·09-02, 08-31·09-01 은 모두영어 ep14·15 정리 잔재 회피). 설계: 즉석 생산 A1 학습자용 — 문장 3~7단어·기본동사 머리·내 상황(아내·고양이·일상·여행)·한글 프롬프트 수렴형(복습 회상용)·모두영어 8~13편 문장 재활용(미니대화·드릴·3일차 본문). 할 수 있는 것: 아침부터 밤까지 내 하루를 다섯 문장으로 말할 수 있다. ChatGPT 대화 주제: What's your typical day like?",
+ "cards": [
+  {
+   "id": "en-mylife-d2-01-get-up",
+   "sentence": "I get up at seven.",
+   "meaning": "저는 7시에 일어나요.",
+   "reading": null,
+   "phonetic_kr": "아이 게럽 앳 쎄v은",
+   "order_index": 1,
+   "explanation": {
+    "key": "get up = (잠자리에서) 일어나다. 시각 앞은 at.",
+    "situation": "'아침형이에요?' '몇 시에 일어나요?' — 하루 일과의 첫 문장.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Are you a morning person?",
+      "ko": "아침형 인간이에요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I get up at seven.",
+      "ko": "저는 7시에 일어나요."
+     },
+     {
+      "speaker": "A",
+      "en": "That's early for a Sunday.",
+      "ko": "일요일치고는 이르네요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "The cat gets up at five.",
+      "ko": "고양이는 5시에 일어나요.",
+      "kr": "더 캣 게츠 업 앳 f아이v"
+     },
+     {
+      "en": "I got up late today.",
+      "ko": "오늘은 늦게 일어났어요.",
+      "kr": "아이 가럽 레잇 터데이"
+     },
+     {
+      "en": "Get up! We're late.",
+      "ko": "일어나! 우리 늦었어.",
+      "kr": "게럽 위어r 레잇"
+     },
+     {
+      "en": "My wife gets up before me.",
+      "ko": "아내가 저보다 먼저 일어나요.",
+      "kr": "마이 와이f 게츠 업 비f포어r 미"
+     },
+     {
+      "en": "I can't get up in the morning.",
+      "ko": "아침에 못 일어나겠어요.",
+      "kr": "아이 캔트 게럽 인 더 모어r닝"
+     },
+     {
+      "en": "What time did you get up?",
+      "ko": "몇 시에 일어났어요?",
+      "kr": "왓 타임 디저 게럽"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "get up at + 시각",
+      "body": "wake up 은 잠이 깨는 것, get up 은 자리에서 일어나는 것. 하루 일과는 get up 으로 말한다. 시각 앞은 at 하나."
+     }
+    ],
+    "chunks": [
+     [
+      "I get up",
+      "아이 게럽",
+      "나는 일어나요"
+     ],
+     [
+      "at seven.",
+      "앳 쎄v은",
+      "7시에."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/t/ get up",
+      "get 의 t 가 up 과 이어져 굴러간다 — '겟 업'(X) '게럽'(O)"
+     ],
+     [
+      "/v/ seven",
+      "seven 의 v — '세븐'(X) '쎄v은'(O)"
+     ]
+    ],
+    "mistake": "'일어나다'를 stand up 으로 옮기면 의자에서 일어나는 뜻이 된다. 아침에 일어나는 건 get up.",
+    "similar": "I wake up at seven. / I'm up at seven.",
+    "category": "하루 일과",
+    "frequency": 10,
+    "chain": {
+     "target": "I get up at seven, feed the cat, and make coffee.",
+     "chunks": [
+      "I get up at seven,",
+      "feed the cat,",
+      "and make coffee."
+     ],
+     "ko": "7시에 일어나서 고양이 밥을 주고 커피를 내려요."
+    },
+    "anchor": "일어나요"
+   }
+  },
+  {
+   "id": "en-mylife-d2-02-go-to-work",
+   "sentence": "I go to work at nine.",
+   "meaning": "저는 9시에 출근해요.",
+   "reading": null,
+   "phonetic_kr": "아이 고우 터 워r크 앳 나인",
+   "order_index": 2,
+   "explanation": {
+    "key": "go to work = 출근하다. work 앞에 the·my 를 넣지 않는다.",
+    "situation": "'몇 시에 일 시작해요?' — 출근 시간을 말할 때.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Do you start early?",
+      "ko": "일찍 시작해요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I go to work at nine.",
+      "ko": "저는 9시에 출근해요."
+     },
+     {
+      "speaker": "A",
+      "en": "Nine is not bad.",
+      "ko": "9시면 괜찮네요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "My wife goes to work early.",
+      "ko": "아내는 일찍 출근해요.",
+      "kr": "마이 와이f 고우z 터 워r크 어r리"
+     },
+     {
+      "en": "I didn't go to work today.",
+      "ko": "오늘은 출근 안 했어요.",
+      "kr": "아이 디든 고우 터 워r크 터데이"
+     },
+     {
+      "en": "Do you go to work by car?",
+      "ko": "차로 출근해요?",
+      "kr": "더여 고우 터 워r크 바이 카r"
+     },
+     {
+      "en": "I have to go to work.",
+      "ko": "출근해야 해요.",
+      "kr": "아이 해f 터 고우 터 워r크"
+     },
+     {
+      "en": "I'm going to work now.",
+      "ko": "지금 출근해요.",
+      "kr": "아임 고우잉 터 워r크 나우"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "go to work at + 시각",
+      "body": "'출근하다'는 동사 하나가 아니라 go to work 세 단어. go to the work(X). 시각은 at, 요일은 on."
+     }
+    ],
+    "chunks": [
+     [
+      "I go to work",
+      "아이 고우 터 워r크",
+      "나는 출근해요"
+     ],
+     [
+      "at nine.",
+      "앳 나인",
+      "9시에."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/oʊ/ go",
+      "go 는 '고우' 이중모음 — 짧게 '고'(X)"
+     ],
+     [
+      "/ɜːr/ work",
+      "혀를 말아 '워r크'"
+     ]
+    ],
+    "mistake": "'출근하다'를 commute 나 attend work 로 찾기 쉽다. 일상은 go to work, 퇴근은 get off work.",
+    "similar": "I start work at nine. / I get to work at nine.",
+    "category": "하루 일과",
+    "frequency": 10,
+    "chain": {
+     "target": "I go to work at nine, and my wife leaves before me.",
+     "chunks": [
+      "I go to work at nine,",
+      "and my wife",
+      "leaves before me."
+     ],
+     "ko": "저는 9시에 출근하고, 아내는 저보다 먼저 나가요."
+    },
+    "anchor": "출근해요"
+   }
+  },
+  {
+   "id": "en-mylife-d2-03-get-home",
+   "sentence": "I get home around seven.",
+   "meaning": "저는 7시쯤 집에 도착해요.",
+   "reading": null,
+   "phonetic_kr": "아이 겟 호움 어라운 쎄v은",
+   "order_index": 3,
+   "explanation": {
+    "key": "get home = 집에 도착하다. home 앞에 to 를 넣지 않는다.",
+    "situation": "'몇 시에 집에 와요?' — 저녁 약속이나 통화 시간을 정할 때.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "When can we talk today?",
+      "ko": "오늘 언제 통화할 수 있어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I get home around seven.",
+      "ko": "저는 7시쯤 집에 도착해요."
+     },
+     {
+      "speaker": "A",
+      "en": "Okay. I'll call you then.",
+      "ko": "알았어요. 그때 전화할게요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "What time do you get home?",
+      "ko": "몇 시에 집에 와요?",
+      "kr": "왓 타임 더여 겟 호움"
+     },
+     {
+      "en": "My wife gets home late.",
+      "ko": "아내는 집에 늦게 와요.",
+      "kr": "마이 와이f 게츠 호움 레잇"
+     },
+     {
+      "en": "I got home at ten last night.",
+      "ko": "어젯밤에는 10시에 집에 왔어요.",
+      "kr": "아이 갓 호움 앳 텐 라스 나잇"
+     },
+     {
+      "en": "I'll call you when I get home.",
+      "ko": "집에 도착하면 전화할게.",
+      "kr": "아일 콜 여 웨나이 겟 호움"
+     },
+     {
+      "en": "I'm almost home.",
+      "ko": "거의 다 왔어.",
+      "kr": "아임 올모스트 호움"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "get home + 시간",
+      "body": "come home 도 되지만 '도착'의 느낌은 get home. get to home(X). '~쯤'은 around, 정각은 at."
+     }
+    ],
+    "chunks": [
+     [
+      "I get home",
+      "아이 겟 호움",
+      "나는 집에 도착해요"
+     ],
+     [
+      "around seven.",
+      "어라운 쎄v은",
+      "7시쯤."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/oʊ/ home",
+      "home 은 '호움' — '홈'(X)"
+     ],
+     [
+      "/d/ around",
+      "around 의 d 는 뒤 seven 앞에서 거의 안 들린다 — '어라운 쎄v은'"
+     ]
+    ],
+    "mistake": "'집에 도착하다'를 arrive home 으로 만들기 쉽다. 틀리진 않지만 일상은 get home.",
+    "similar": "I come home around seven. / I'm home by seven.",
+    "category": "하루 일과",
+    "frequency": 10,
+    "chain": {
+     "target": "I get home around seven, and the cat is waiting at the door.",
+     "chunks": [
+      "I get home around seven,",
+      "and the cat",
+      "is waiting",
+      "at the door."
+     ],
+     "ko": "7시쯤 집에 도착하면, 고양이가 문 앞에서 기다리고 있어요."
+    },
+    "anchor": "집에 도착해요"
+   }
+  },
+  {
+   "id": "en-mylife-d2-04-have-dinner",
+   "sentence": "I have dinner with my wife.",
+   "meaning": "저는 아내와 같이 저녁을 먹어요.",
+   "reading": null,
+   "phonetic_kr": "아이 해v 디너r 위드 마이 와이f",
+   "order_index": 4,
+   "explanation": {
+    "key": "have dinner = 저녁을 먹다. 식사는 eat 보다 have 가 기본.",
+    "situation": "'퇴근하고 뭐 해요?' — 저녁 시간을 말할 때. 요리는 누가 하는지로 대화가 이어진다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What do you do after work?",
+      "ko": "퇴근하고 뭐 해요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I have dinner with my wife.",
+      "ko": "저는 아내와 같이 저녁을 먹어요."
+     },
+     {
+      "speaker": "A",
+      "en": "Nice. Who cooks?",
+      "ko": "좋네요. 요리는 누가 해요?"
+     },
+     {
+      "speaker": "B",
+      "en": "Mostly my wife.",
+      "ko": "거의 아내가요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let's have dinner together.",
+      "ko": "같이 저녁 먹자.",
+      "kr": "레츠 해v 디너r 터게더r"
+     },
+     {
+      "en": "Did you have lunch?",
+      "ko": "점심 먹었어요?",
+      "kr": "디저 해v 런치"
+     },
+     {
+      "en": "We had dinner at home.",
+      "ko": "우리는 집에서 저녁을 먹었어요.",
+      "kr": "위 해드 디너r 앳 호움"
+     },
+     {
+      "en": "I usually have breakfast at seven.",
+      "ko": "보통 7시에 아침을 먹어요.",
+      "kr": "아이 유주얼리 해v 브렉f퍼스트 앳 쎄v은"
+     },
+     {
+      "en": "What did you have for dinner?",
+      "ko": "저녁으로 뭐 먹었어요?",
+      "kr": "왓 디저 해v f퍼r 디너r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "have + 식사",
+      "body": "breakfast·lunch·dinner 는 have 와 짝이다. dinner 앞에 a·the 를 붙이지 않는다. '같이'는 with + 사람."
+     }
+    ],
+    "chunks": [
+     [
+      "I have dinner",
+      "아이 해v 디너r",
+      "나는 저녁을 먹어요"
+     ],
+     [
+      "with my wife.",
+      "위드 마이 와이f",
+      "아내와 같이."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ð/ with",
+      "with 의 th 는 혀끝을 이 사이에 — '윗'(X) '위드'(O)"
+     ],
+     [
+      "/ɪ/ dinner",
+      "dinner 는 짧은 i 로 '디너r' — '디이너'(X)"
+     ]
+    ],
+    "mistake": "'저녁을 먹다'를 eat dinner 로만 하면 틀리진 않지만, have dinner 가 훨씬 자연스럽고 '함께하는 시간'의 뜻이 담긴다.",
+    "similar": "We eat dinner together. / Dinner is with my wife.",
+    "category": "하루 일과",
+    "frequency": 10,
+    "chain": {
+     "target": "I have dinner with my wife, and then we watch something together.",
+     "chunks": [
+      "I have dinner with my wife,",
+      "and then",
+      "we watch something",
+      "together."
+     ],
+     "ko": "아내와 저녁을 먹고, 그다음엔 같이 뭔가를 봐요."
+    },
+    "anchor": "저녁을 먹어요"
+   }
+  },
+  {
+   "id": "en-mylife-d2-05-watch-netflix",
+   "sentence": "I watch Netflix before bed.",
+   "meaning": "자기 전에 넷플릭스를 봐요.",
+   "reading": null,
+   "phonetic_kr": "아이 와치 넷f릭스 비f포어r 베드",
+   "order_index": 5,
+   "explanation": {
+    "key": "watch Netflix = 넷플릭스를 보다. 화면을 보는 건 see 가 아니라 watch.",
+    "situation": "'밤에는 뭐 해요?' — 취미이자 영어 목표(자막 없이 보기)로 대화가 이어진다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "How do you relax at night?",
+      "ko": "밤에는 어떻게 쉬어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I watch Netflix before bed.",
+      "ko": "자기 전에 넷플릭스를 봐요."
+     },
+     {
+      "speaker": "A",
+      "en": "With subtitles?",
+      "ko": "자막 켜고요?"
+     },
+     {
+      "speaker": "B",
+      "en": "Korean ones, for now.",
+      "ko": "아직은 한국어 자막으로요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "We watched a movie last night.",
+      "ko": "어젯밤에 영화를 봤어요.",
+      "kr": "위 와치터 무v이 라스 나잇"
+     },
+     {
+      "en": "What are you watching?",
+      "ko": "뭐 보고 있어요?",
+      "kr": "워러r여 와칭"
+     },
+     {
+      "en": "Let's watch Netflix tonight.",
+      "ko": "오늘 밤에 넷플릭스 보자.",
+      "kr": "레츠 와치 넷f릭스 터나잇"
+     },
+     {
+      "en": "I want to watch it without subtitles.",
+      "ko": "자막 없이 보고 싶어요.",
+      "kr": "아이 원 터 와치 잇 위다웃 썹타이틀즈"
+     },
+     {
+      "en": "Do you watch Netflix?",
+      "ko": "넷플릭스 봐요?",
+      "kr": "더여 와치 넷f릭스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "watch + 영상 / before + 명사",
+      "body": "TV·영화·넷플릭스는 watch. '자기 전에'는 before bed 두 단어로 끝난다 — before going to bed 보다 짧고 흔하다."
+     }
+    ],
+    "chunks": [
+     [
+      "I watch Netflix",
+      "아이 와치 넷f릭스",
+      "나는 넷플릭스를 봐요"
+     ],
+     [
+      "before bed.",
+      "비f포어r 베드",
+      "자기 전에."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tʃ/ watch",
+      "watch 는 '와치' — 끝을 '와취'로 늘이지 않는다"
+     ],
+     [
+      "/f/ Netflix",
+      "Netflix 의 f — '넷플릭스'(X) '넷f릭스'(O)"
+     ]
+    ],
+    "mistake": "'넷플릭스를 본다'를 see Netflix 로 하기 쉽다. 화면·영상은 watch, 영화관에서 '봤다'는 saw 도 쓴다.",
+    "similar": "I watch a show before bed. / I watch something on Netflix at night.",
+    "category": "하루 일과",
+    "frequency": 9,
+    "chain": {
+     "target": "I watch Netflix before bed, but I still need the subtitles.",
+     "chunks": [
+      "I watch Netflix before bed,",
+      "but I still need",
+      "the subtitles."
+     ],
+     "ko": "자기 전에 넷플릭스를 보는데, 아직은 자막이 필요해요."
+    },
+    "anchor": "넷플릭스를 봐요"
+   }
+  }
+ ]
+}

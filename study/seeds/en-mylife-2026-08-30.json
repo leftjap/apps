@@ -1,0 +1,521 @@
+{
+ "lang": "en",
+ "track": "mylife",
+ "day": 4,
+ "block": "4일차 주말과 좋아하는 것",
+ "canDo": "주말에 뭘 하는지 말하고, 상대에게도 물을 수 있다",
+ "chatTopic": "What do you like to do on weekends?",
+ "date": "2026-08-30",
+ "_note": "내 이야기 트랙(mylife) 4일차 「주말과 좋아하는 것」 — docs/mylife-curriculum.md. scene 없는 표현 전용 세션(코어100 과 같은 형식, track=mylife). date 는 달력이 아니라 세션 순서: 남은 코어100 묶음(09-04~)보다 앞 날짜라 로더가 이 묶음을 먼저 연다(2026-08-27~30·09-02, 08-31·09-01 은 모두영어 ep14·15 정리 잔재 회피). 설계: 즉석 생산 A1 학습자용 — 문장 3~7단어·기본동사 머리·내 상황(아내·고양이·일상·여행)·한글 프롬프트 수렴형(복습 회상용)·모두영어 8~13편 문장 재활용(미니대화·드릴·3일차 본문). 할 수 있는 것: 주말에 뭘 하는지 말하고, 상대에게도 물을 수 있다. ChatGPT 대화 주제: What do you like to do on weekends?",
+ "cards": [
+  {
+   "id": "en-mylife-d4-01-on-weekends",
+   "sentence": "What do you do on weekends?",
+   "meaning": "주말에는 뭐 해요?",
+   "reading": null,
+   "phonetic_kr": "왓 더여 두 언 위켄즈",
+   "order_index": 1,
+   "explanation": {
+    "key": "do on weekends = 주말에 (무엇을) 하다. 상대에게 되묻는 질문.",
+    "situation": "ChatGPT 나 상대에게 내가 먼저 던지는 질문 — 대화를 내 쪽에서 끌어갈 때.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "I'm so tired this week.",
+      "ko": "이번 주 너무 피곤해요."
+     },
+     {
+      "speaker": "B",
+      "en": "What do you do on weekends?",
+      "ko": "주말에는 뭐 해요?"
+     },
+     {
+      "speaker": "A",
+      "en": "I mostly sleep and cook.",
+      "ko": "거의 자고 요리해요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "What do you do after work?",
+      "ko": "퇴근하고 뭐 해요?",
+      "kr": "왓 더여 두 애f터r 워r크"
+     },
+     {
+      "en": "I don't do much on weekends.",
+      "ko": "주말엔 별로 하는 게 없어요.",
+      "kr": "아이 돈 두 머치 언 위켄즈"
+     },
+     {
+      "en": "What does your wife do?",
+      "ko": "아내분은 무슨 일 해요?",
+      "kr": "왓 더z 유어r 와이f 두"
+     },
+     {
+      "en": "We do nothing on Sundays.",
+      "ko": "일요일엔 아무것도 안 해요.",
+      "kr": "위 두 낫씽 언 썬데이z"
+     },
+     {
+      "en": "What did you do last weekend?",
+      "ko": "지난 주말에 뭐 했어요?",
+      "kr": "왓 디저 두 라스 위켄드"
+     },
+     {
+      "en": "What do you usually do on weekends?",
+      "ko": "주말에는 보통 뭐 해요?",
+      "kr": "왓 더여 유주얼리 두 언 위켄즈"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "What do you do + 시간",
+      "body": "'뭐 해요?' 는 do 가 두 번 — 앞 do 는 질문 만드는 조동사, 뒤 do 는 '하다'. 주말·요일 앞은 on."
+     }
+    ],
+    "chunks": [
+     [
+      "What do you do",
+      "왓 더여 두",
+      "당신은 뭐 해요"
+     ],
+     [
+      "on weekends?",
+      "언 위켄즈",
+      "주말에?"
+     ]
+    ],
+    "phonemes": [
+     [
+      "/d/ do you",
+      "do you 는 약해져 '더여' — '두 유'(X)"
+     ],
+     [
+      "/z/ weekends",
+      "weekends 끝은 '즈' 로 울린다 — '위켄스'(X)"
+     ]
+    ],
+    "mistake": "'주말에'를 in weekends 나 at weekends 로 쓰기 쉽다. 미국식은 on weekends.",
+    "similar": "What are your weekends like? / Any plans for the weekend?",
+    "category": "주말/취미",
+    "frequency": 10,
+    "chain": {
+     "target": "What do you do on weekends when the weather is nice?",
+     "chunks": [
+      "What do you do on weekends",
+      "when the weather",
+      "is nice?"
+     ],
+     "ko": "날씨 좋은 주말에는 뭐 해요?"
+    },
+    "anchor": "뭐 해요"
+   }
+  },
+  {
+   "id": "en-mylife-d4-02-like-to-stay",
+   "sentence": "I like to stay home.",
+   "meaning": "저는 집에 있는 걸 좋아해요.",
+   "reading": null,
+   "phonetic_kr": "아이 라이크 터 스테이 호움",
+   "order_index": 2,
+   "explanation": {
+    "key": "like to = ~하는 걸 좋아하다. 뒤에 동사원형.",
+    "situation": "'주말에 뭐 해요?' 에 대한 솔직한 답 — 그리고 고양이가 이유가 된다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Do you go out on weekends?",
+      "ko": "주말에 밖에 나가요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I like to stay home.",
+      "ko": "저는 집에 있는 걸 좋아해요."
+     },
+     {
+      "speaker": "A",
+      "en": "Same here. Home is the best.",
+      "ko": "저도요. 집이 최고죠."
+     }
+    ],
+    "drills": [
+     {
+      "en": "My wife likes to go out.",
+      "ko": "아내는 나가는 걸 좋아해요.",
+      "kr": "마이 와이f 라익스 터 고우 아웃"
+     },
+     {
+      "en": "I like to sleep late on Sundays.",
+      "ko": "일요일엔 늦잠 자는 걸 좋아해요.",
+      "kr": "아이 라이크 터 슬립 레잇 언 썬데이z"
+     },
+     {
+      "en": "Do you like to travel?",
+      "ko": "여행하는 거 좋아해요?",
+      "kr": "더여 라이크 터 트래v을"
+     },
+     {
+      "en": "The cat likes to sit by the window.",
+      "ko": "고양이는 창가에 앉아 있는 걸 좋아해요.",
+      "kr": "더 캣 라익스 터 씻 바이 더 윈도우"
+     },
+     {
+      "en": "I don't like to wake up early.",
+      "ko": "일찍 일어나는 건 안 좋아해요.",
+      "kr": "아이 돈 라이크 터 웨이컵 어r리"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "like to + 동사원형",
+      "body": "'~하는 걸 좋아한다'는 like to + 동사원형. like -ing 도 같은 뜻이라 둘 다 된다. 명사는 like + 명사(like coffee)."
+     }
+    ],
+    "chunks": [
+     [
+      "I like to",
+      "아이 라이크 터",
+      "나는 ~하는 걸 좋아해요"
+     ],
+     [
+      "stay home.",
+      "스테이 호움",
+      "집에 있기."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/eɪ/ stay",
+      "stay 는 '스테이' — '스태이'(X)"
+     ],
+     [
+      "/k/ like to",
+      "like 의 k 뒤에 to 가 약하게 '라이크 터'"
+     ]
+    ],
+    "mistake": "'집에 있다'를 stay in home 이나 stay at home 으로 길게 만들기 쉽다. stay home 두 단어면 된다.",
+    "similar": "I'm a homebody. / I'd rather stay in.",
+    "category": "주말/취미",
+    "frequency": 9,
+    "chain": {
+     "target": "I like to stay home on weekends and play with the cat.",
+     "chunks": [
+      "I like to stay home",
+      "on weekends",
+      "and play",
+      "with the cat."
+     ],
+     "ko": "주말에는 집에서 고양이랑 노는 걸 좋아해요."
+    },
+    "anchor": "좋아해요"
+   }
+  },
+  {
+   "id": "en-mylife-d4-03-go-for-a-walk",
+   "sentence": "We go for a walk.",
+   "meaning": "우리는 산책하러 나가요.",
+   "reading": null,
+   "phonetic_kr": "위 고우 f퍼r 어 워크",
+   "order_index": 3,
+   "explanation": {
+    "key": "go for a walk = 산책하러 가다. walk 앞에 a 가 꼭 붙는다.",
+    "situation": "저녁 먹고 또는 주말 오후, 아내와 하는 일 — '운동해요?' 에 대한 답으로도 쓴다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What do you two do after dinner?",
+      "ko": "두 분은 저녁 먹고 뭐 해요?"
+     },
+     {
+      "speaker": "B",
+      "en": "We go for a walk.",
+      "ko": "우리는 산책하러 나가요."
+     },
+     {
+      "speaker": "A",
+      "en": "Every day? That's nice.",
+      "ko": "매일요? 좋네요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let's go for a walk.",
+      "ko": "산책 가자.",
+      "kr": "레츠 고우 f퍼r 어 워크"
+     },
+     {
+      "en": "I went for a walk this morning.",
+      "ko": "오늘 아침에 산책했어요.",
+      "kr": "아이 웬트 f퍼r 어 워크 디스 모어r닝"
+     },
+     {
+      "en": "Do you want to go for a walk?",
+      "ko": "산책 갈래요?",
+      "kr": "더여 원 터 고우 f퍼r 어 워크"
+     },
+     {
+      "en": "My wife goes for a walk after lunch.",
+      "ko": "아내는 점심 먹고 산책해요.",
+      "kr": "마이 와이f 고우z f퍼r 어 워크 애f터r 런치"
+     },
+     {
+      "en": "It's too hot for a walk.",
+      "ko": "산책하기엔 너무 더워요.",
+      "kr": "잇츠 투우 핫 f퍼r 어 워크"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "go for a + 명사",
+      "body": "'~하러 가다'의 go for a walk / go for a drive / go for a coffee. walk 를 동사로 쓰면 We walk 로도 되지만 '산책'이라는 활동은 go for a walk."
+     }
+    ],
+    "chunks": [
+     [
+      "We go",
+      "위 고우",
+      "우리는 가요"
+     ],
+     [
+      "for a walk.",
+      "f퍼r 어 워크",
+      "산책하러."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ɔː/ walk",
+      "walk 의 l 은 소리 나지 않는다 — '월크'(X) '워크'(O)"
+     ],
+     [
+      "/f/ for a",
+      "for a 는 약해져 '(f)퍼r 어' — '포 어'(X)"
+     ]
+    ],
+    "mistake": "'산책하다'를 take a walk 와 헷갈려 go a walk 처럼 for 를 빼기 쉽다. go for a walk 또는 take a walk.",
+    "similar": "We take a walk. / We walk around the neighborhood.",
+    "category": "주말/취미",
+    "frequency": 9,
+    "chain": {
+     "target": "We go for a walk after dinner, and the cat waits at home.",
+     "chunks": [
+      "We go for a walk",
+      "after dinner,",
+      "and the cat",
+      "waits at home."
+     ],
+     "ko": "저녁 먹고 산책을 나가면, 고양이는 집에서 기다려요."
+    },
+    "anchor": "산책하러 나가요"
+   }
+  },
+  {
+   "id": "en-mylife-d4-04-likes-cafes",
+   "sentence": "My wife likes cafes.",
+   "meaning": "아내는 카페를 좋아해요.",
+   "reading": null,
+   "phonetic_kr": "마이 와이f 라익스 캐f에이z",
+   "order_index": 4,
+   "explanation": {
+    "key": "like ~ = ~을 좋아하다. like 다음에 바로 명사, 3인칭 단수는 likes.",
+    "situation": "주말 얘기에서 아내 취향을 말할 때 — '그래서 우리는 카페에 가요' 로 이어진다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Where do you go on weekends?",
+      "ko": "주말에는 어디 가요?"
+     },
+     {
+      "speaker": "B",
+      "en": "My wife likes cafes.",
+      "ko": "아내는 카페를 좋아해요."
+     },
+     {
+      "speaker": "A",
+      "en": "So, a new cafe every week?",
+      "ko": "그럼 매주 새 카페예요?"
+     },
+     {
+      "speaker": "B",
+      "en": "Almost.",
+      "ko": "거의요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I like coffee more than tea.",
+      "ko": "저는 차보다 커피를 좋아해요.",
+      "kr": "아이 라이크 커f피 모어r 댄 티이"
+     },
+     {
+      "en": "Do you like cats?",
+      "ko": "고양이 좋아해요?",
+      "kr": "더여 라이크 캣츠"
+     },
+     {
+      "en": "The cat likes tuna.",
+      "ko": "고양이는 참치를 좋아해요.",
+      "kr": "더 캣 라익스 튜나"
+     },
+     {
+      "en": "We like quiet places.",
+      "ko": "우리는 조용한 곳을 좋아해요.",
+      "kr": "위 라이크 콰이엇 플레이시z"
+     },
+     {
+      "en": "She doesn't like crowds.",
+      "ko": "그녀는 사람 많은 곳을 안 좋아해요.",
+      "kr": "쉬 더즌 라이크 크라우즈"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "주어 + like(s) + 명사",
+      "body": "'좋아하다'는 like 다음에 바로 명사. like to + 동사와 구별. 3인칭 단수 현재는 likes."
+     }
+    ],
+    "chunks": [
+     [
+      "My wife likes",
+      "마이 와이f 라익스",
+      "아내는 좋아해요"
+     ],
+     [
+      "cafes.",
+      "캐f에이z",
+      "카페를."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ks/ likes",
+      "likes 는 '라익스' — '라이크스'로 늘이지 않는다"
+     ],
+     [
+      "/eɪ/ cafes",
+      "cafe 는 뒤에 강세 '캐f에이', 복수는 '캐f에이z'"
+     ]
+    ],
+    "mistake": "'아내는 카페를 좋아한다'를 My wife like cafe 로 s 를 둘 다 빼기 쉽다. likes cafes.",
+    "similar": "My wife loves cafes. / My wife is into cafes.",
+    "category": "주말/취미",
+    "frequency": 9,
+    "chain": {
+     "target": "My wife likes cafes, so we try a new one every weekend.",
+     "chunks": [
+      "My wife likes cafes,",
+      "so we try",
+      "a new one",
+      "every weekend."
+     ],
+     "ko": "아내가 카페를 좋아해서, 우리는 주말마다 새 카페에 가 봐요."
+    },
+    "anchor": "좋아해요"
+   }
+  },
+  {
+   "id": "en-mylife-d4-05-take-pictures",
+   "sentence": "I take pictures of the cat.",
+   "meaning": "저는 고양이 사진을 찍어요.",
+   "reading": null,
+   "phonetic_kr": "아이 테익 픽처r즈 어v 더 캣",
+   "order_index": 5,
+   "explanation": {
+    "key": "take pictures of = ~의 사진을 찍다. 사진은 take 와 짝.",
+    "situation": "취미를 말할 때 — 폰에 고양이 사진이 몇천 장인 사람의 대답.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Do you have a hobby?",
+      "ko": "취미 있어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I take pictures of the cat.",
+      "ko": "저는 고양이 사진을 찍어요."
+     },
+     {
+      "speaker": "A",
+      "en": "Show me one!",
+      "ko": "하나 보여 줘요!"
+     }
+    ],
+    "drills": [
+     {
+      "en": "Can you take a picture of us?",
+      "ko": "저희 사진 좀 찍어 주실래요?",
+      "kr": "컨 여 테이커 픽처r 어v 어스"
+     },
+     {
+      "en": "I took a lot of pictures on the trip.",
+      "ko": "여행에서 사진을 많이 찍었어요.",
+      "kr": "아이 투커 라러v 픽처r즈 언 더 트립"
+     },
+     {
+      "en": "My wife takes better pictures than me.",
+      "ko": "아내가 저보다 사진을 잘 찍어요.",
+      "kr": "마이 와이f 테익스 베러r 픽처r즈 댄 미"
+     },
+     {
+      "en": "Don't take pictures here.",
+      "ko": "여기서 사진 찍지 마세요.",
+      "kr": "돈 테익 픽처r즈 히어r"
+     },
+     {
+      "en": "We took pictures of the food.",
+      "ko": "우리는 음식 사진을 찍었어요.",
+      "kr": "위 툭 픽처r즈 어v 더 f우드"
+     },
+     {
+      "en": "Let's take pictures of the sunset.",
+      "ko": "노을 사진 찍자.",
+      "kr": "레츠 테익 픽처r즈 어v 더 썬셋"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "take pictures of + 대상",
+      "body": "사진은 make 가 아니라 take. 한 장은 take a picture, 여러 장은 take pictures. 대상은 of."
+     }
+    ],
+    "chunks": [
+     [
+      "I take pictures",
+      "아이 테익 픽처r즈",
+      "나는 사진을 찍어요"
+     ],
+     [
+      "of the cat.",
+      "어v 더 캣",
+      "고양이의."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/p/ pictures",
+      "pictures 는 '픽처r즈' — '픽쳐스'(X)"
+     ],
+     [
+      "/v/ of the",
+      "of 는 약하게 '어v' — '오브'(X)"
+     ]
+    ],
+    "mistake": "'사진을 찍다'를 make a photo 로 옮기기 쉽다. take 다. picture 와 photo 둘 다 된다.",
+    "similar": "I photograph the cat. / I'm always snapping pictures of the cat.",
+    "category": "주말/취미",
+    "frequency": 8,
+    "chain": {
+     "target": "I take pictures of the cat, and my wife says I have too many.",
+     "chunks": [
+      "I take pictures of the cat,",
+      "and my wife says",
+      "I have",
+      "too many."
+     ],
+     "ko": "고양이 사진을 찍는데, 아내는 너무 많다고 해요."
+    },
+    "anchor": "사진을 찍어요"
+   }
+  }
+ ]
+}

@@ -1,0 +1,526 @@
+{
+ "lang": "en",
+ "track": "mylife",
+ "day": 5,
+ "block": "5일차 여행 준비",
+ "canDo": "다음 여행 계획(언제·숙소·표·먹을 것·교통)을 말할 수 있다",
+ "chatTopic": "Tell me about your next trip.",
+ "date": "2026-09-02",
+ "_note": "내 이야기 트랙(mylife) 5일차 「여행 준비」 — docs/mylife-curriculum.md. scene 없는 표현 전용 세션(코어100 과 같은 형식, track=mylife). date 는 달력이 아니라 세션 순서: 남은 코어100 묶음(09-04~)보다 앞 날짜라 로더가 이 묶음을 먼저 연다(2026-08-27~30·09-02, 08-31·09-01 은 모두영어 ep14·15 정리 잔재 회피). 설계: 즉석 생산 A1 학습자용 — 문장 3~7단어·기본동사 머리·내 상황(아내·고양이·일상·여행)·한글 프롬프트 수렴형(복습 회상용)·모두영어 8~13편 문장 재활용(미니대화·드릴·3일차 본문). 할 수 있는 것: 다음 여행 계획(언제·숙소·표·먹을 것·교통)을 말할 수 있다. ChatGPT 대화 주제: Tell me about your next trip.",
+ "cards": [
+  {
+   "id": "en-mylife-d5-01-going-on-a-trip",
+   "sentence": "We're going on a trip soon.",
+   "meaning": "우리는 곧 여행을 가요.",
+   "reading": null,
+   "phonetic_kr": "위어r 고우잉 어너 트립 쑤운",
+   "order_index": 1,
+   "explanation": {
+    "key": "go on a trip = 여행을 가다. trip 은 '여행 한 번'이라 a 가 붙는다.",
+    "situation": "'요즘 계획 있어요?' — 여행 얘기의 시작. ChatGPT 가 어디로·언제·얼마나 를 물어 온다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Any plans for next month?",
+      "ko": "다음 달에 계획 있어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "We're going on a trip soon.",
+      "ko": "우리는 곧 여행을 가요."
+     },
+     {
+      "speaker": "A",
+      "en": "Nice! Where to?",
+      "ko": "좋네요! 어디로요?"
+     },
+     {
+      "speaker": "B",
+      "en": "We haven't decided yet.",
+      "ko": "아직 못 정했어요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I want to go on a trip.",
+      "ko": "여행 가고 싶어요.",
+      "kr": "아이 원 터 고우 어너 트립"
+     },
+     {
+      "en": "We went on a trip last spring.",
+      "ko": "지난봄에 여행을 갔어요.",
+      "kr": "위 웬터너 트립 라스 스프링"
+     },
+     {
+      "en": "My wife is going on a business trip.",
+      "ko": "아내가 출장을 가요.",
+      "kr": "마이 와이f 이z 고우잉 어너 비즈니스 트립"
+     },
+     {
+      "en": "Are you going on a trip this summer?",
+      "ko": "이번 여름에 여행 가요?",
+      "kr": "아r 여 고우잉 어너 트립 디스 써머r"
+     },
+     {
+      "en": "The cat can't go on the trip.",
+      "ko": "고양이는 여행에 못 가요.",
+      "kr": "더 캣 캔트 고우 언 더 트립"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "be going on a trip + 시간",
+      "body": "'곧 갈 예정'은 현재진행형 We're going 으로 말한다 — 이미 정해진 계획. trip 앞의 a 는 빼지 않는다."
+     }
+    ],
+    "chunks": [
+     [
+      "We're going",
+      "위어r 고우잉",
+      "우리는 가요"
+     ],
+     [
+      "on a trip",
+      "어너 트립",
+      "여행을"
+     ],
+     [
+      "soon.",
+      "쑤운",
+      "곧."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ŋ/ going on",
+      "going 의 ng 뒤에 on 이 이어져 '고우잉 어너' — 끊어서 '고잉 온 어'(X)"
+     ],
+     [
+      "/uː/ soon",
+      "soon 은 길게 '쑤운'"
+     ]
+    ],
+    "mistake": "'여행 가다'를 go to trip 이나 go travel 로 조립하기 쉽다. go on a trip 또는 take a trip.",
+    "similar": "We're taking a trip soon. / We're traveling soon.",
+    "category": "여행 준비",
+    "frequency": 9,
+    "chain": {
+     "target": "We're going on a trip soon, so I'm practicing English every day.",
+     "chunks": [
+      "We're going on a trip soon,",
+      "so I'm practicing",
+      "English",
+      "every day."
+     ],
+     "ko": "곧 여행을 가서, 매일 영어를 연습하고 있어요."
+    },
+    "anchor": "여행을 가요"
+   }
+  },
+  {
+   "id": "en-mylife-d5-02-looking-for",
+   "sentence": "We're looking for a hotel.",
+   "meaning": "우리는 호텔을 찾고 있어요.",
+   "reading": null,
+   "phonetic_kr": "위어r 루킹 f퍼r 어 호텔",
+   "order_index": 2,
+   "explanation": {
+    "key": "look for = ~을 찾다. 찾는 중이면 be looking for.",
+    "situation": "여행 준비 중 — 호텔·식당·표를 아직 못 정했을 때 하는 말. 여행지에서 길 잃었을 때도 같은 틀.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Is everything booked?",
+      "ko": "예약은 다 됐어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "We're looking for a hotel.",
+      "ko": "우리는 호텔을 찾고 있어요."
+     },
+     {
+      "speaker": "A",
+      "en": "Near the station is best.",
+      "ko": "역 근처가 제일 좋아요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm looking for the station.",
+      "ko": "역을 찾고 있어요.",
+      "kr": "아임 루킹 f퍼r 더 스테이션"
+     },
+     {
+      "en": "What are you looking for?",
+      "ko": "뭘 찾고 있어요?",
+      "kr": "워러r여 루킹 f퍼r"
+     },
+     {
+      "en": "My wife is looking for a cafe.",
+      "ko": "아내는 카페를 찾고 있어요.",
+      "kr": "마이 와이f 이z 루킹 f퍼r 어 캐f에이"
+     },
+     {
+      "en": "We looked for the cat all night.",
+      "ko": "우리는 밤새 고양이를 찾았어요.",
+      "kr": "위 룩트 f퍼r 더 캣 올 나잇"
+     },
+     {
+      "en": "Are you looking for something?",
+      "ko": "뭐 찾으세요?",
+      "kr": "아r 여 루킹 f퍼r 썸씽"
+     },
+     {
+      "en": "Let's look for a cheaper one.",
+      "ko": "더 싼 걸 찾아보자.",
+      "kr": "레츠 룩 f퍼r 어 치퍼r 원"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "be looking for + 명사",
+      "body": "'찾다'는 find(찾아내다)와 look for(찾는 중)가 다르다. 아직 못 찾았으면 look for. 진행형이 자연스럽다."
+     }
+    ],
+    "chunks": [
+     [
+      "We're looking",
+      "위어r 루킹",
+      "우리는 찾고 있어요"
+     ],
+     [
+      "for a hotel.",
+      "f퍼r 어 호텔",
+      "호텔을."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ʊ/ looking",
+      "looking 은 짧게 '루킹' — '루우킹'(X)"
+     ],
+     [
+      "/f/ for a",
+      "for a 는 약하게 '(f)퍼r 어'"
+     ]
+    ],
+    "mistake": "'호텔을 찾고 있어요'를 finding a hotel 로 하기 쉽다. find 는 찾아낸 결과, 찾는 중은 look for.",
+    "similar": "We're searching for a hotel. / We still need a hotel.",
+    "category": "여행 준비",
+    "frequency": 9,
+    "chain": {
+     "target": "We're looking for a hotel near the station, but everything is expensive.",
+     "chunks": [
+      "We're looking for a hotel",
+      "near the station,",
+      "but everything",
+      "is expensive."
+     ],
+     "ko": "역 근처 호텔을 찾고 있는데, 전부 비싸요."
+    },
+    "anchor": "찾고 있어요"
+   }
+  },
+  {
+   "id": "en-mylife-d5-03-got-the-tickets",
+   "sentence": "I got the tickets online.",
+   "meaning": "표는 인터넷에서 구했어요.",
+   "reading": null,
+   "phonetic_kr": "아이 갓 더 티킷츠 온라인",
+   "order_index": 3,
+   "explanation": {
+    "key": "get the tickets = 표를 구하다·사다. buy 보다 get 이 흔하다.",
+    "situation": "'표는 어떻게 샀어요?' — 여행 준비 상황 설명. 구하다·사다·받다가 전부 get.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Are the tickets ready?",
+      "ko": "표는 준비됐어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I got the tickets online.",
+      "ko": "표는 인터넷에서 구했어요."
+     },
+     {
+      "speaker": "A",
+      "en": "Smart. Cheaper that way.",
+      "ko": "똑똑하네요. 그게 더 싸죠."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Did you get the tickets?",
+      "ko": "표 구했어요?",
+      "kr": "디저 겟 더 티킷츠"
+     },
+     {
+      "en": "We got a good deal.",
+      "ko": "우리 싸게 잘 샀어요.",
+      "kr": "위 가러 굿 디일"
+     },
+     {
+      "en": "I'll get the tickets tomorrow.",
+      "ko": "표는 내일 구할게요.",
+      "kr": "아일 겟 더 티킷츠 터마로우"
+     },
+     {
+      "en": "Where did you get that?",
+      "ko": "그거 어디서 샀어요?",
+      "kr": "웨어r 디저 겟 댓"
+     },
+     {
+      "en": "My wife got us the tickets.",
+      "ko": "아내가 표를 구해 줬어요.",
+      "kr": "마이 와이f 가러스 더 티킷츠"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "get + 물건 + (방법)",
+      "body": "get 은 사다·구하다·받다를 다 덮는다. 과거는 got. 방법은 online·at the station 처럼 뒤에 붙인다."
+     }
+    ],
+    "chunks": [
+     [
+      "I got the tickets",
+      "아이 갓 더 티킷츠",
+      "나는 표를 구했어요"
+     ],
+     [
+      "online.",
+      "온라인",
+      "인터넷에서."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/ɑ/ got",
+      "got 은 입을 크게 '갓' — '곳'(X)"
+     ],
+     [
+      "/ts/ tickets",
+      "tickets 끝은 '츠' — '티켓스'(X)"
+     ]
+    ],
+    "mistake": "'표를 샀다'를 buy 로만 떠올리면 문장이 안 나온다. got the tickets 가 더 흔하고 짧다.",
+    "similar": "I bought the tickets online. / I booked the tickets online.",
+    "category": "여행 준비",
+    "frequency": 9,
+    "chain": {
+     "target": "I got the tickets online, and my wife found the hotel.",
+     "chunks": [
+      "I got the tickets online,",
+      "and my wife",
+      "found the hotel."
+     ],
+     "ko": "표는 인터넷에서 구했고, 호텔은 아내가 찾았어요."
+    },
+    "anchor": "구했어요"
+   }
+  },
+  {
+   "id": "en-mylife-d5-04-try-local-food",
+   "sentence": "I want to try local food.",
+   "meaning": "현지 음식을 먹어 보고 싶어요.",
+   "reading": null,
+   "phonetic_kr": "아이 원 터 트라이 로우컬 f우드",
+   "order_index": 4,
+   "explanation": {
+    "key": "try local food = 현지 음식을 먹어 보다. 처음 먹는 건 eat 이 아니라 try.",
+    "situation": "'여행 가서 뭐 하고 싶어요?' — 먹는 얘기가 제일 쉽고 길게 간다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What do you want to do there?",
+      "ko": "거기서 뭐 하고 싶어요?"
+     },
+     {
+      "speaker": "B",
+      "en": "I want to try local food.",
+      "ko": "현지 음식을 먹어 보고 싶어요."
+     },
+     {
+      "speaker": "A",
+      "en": "Anything spicy?",
+      "ko": "매운 것도요?"
+     },
+     {
+      "speaker": "B",
+      "en": "Everything.",
+      "ko": "전부 다요."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let's try local food tonight.",
+      "ko": "오늘 밤엔 현지 음식 먹어 보자.",
+      "kr": "레츠 트라이 로우컬 f우드 터나잇"
+     },
+     {
+      "en": "Did you try the fish?",
+      "ko": "생선 먹어 봤어요?",
+      "kr": "디저 트라이 더 f피쉬"
+     },
+     {
+      "en": "My wife wants to try everything.",
+      "ko": "아내는 다 먹어 보고 싶어 해요.",
+      "kr": "마이 와이f 원츠 터 트라이 에v리씽"
+     },
+     {
+      "en": "I tried it once.",
+      "ko": "한 번 먹어 봤어요.",
+      "kr": "아이 트라이딧 원스"
+     },
+     {
+      "en": "You should try this.",
+      "ko": "이거 한번 먹어 봐요.",
+      "kr": "여 슈드 트라이 디스"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "want to try + 명사",
+      "body": "try 는 '해 보다·먹어 보다'. 음식·옷·방법 전부 try. 처음 하는 일이면 eat 보다 try 가 자연스럽다."
+     }
+    ],
+    "chunks": [
+     [
+      "I want to try",
+      "아이 원 터 트라이",
+      "나는 먹어 보고 싶어요"
+     ],
+     [
+      "local food.",
+      "로우컬 f우드",
+      "현지 음식을."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tr/ try",
+      "try 는 '트라이' 한 덩어리 — '츄라이'도 흔하다"
+     ],
+     [
+      "/oʊ/ local",
+      "local 은 '로우컬' — '로칼'(X)"
+     ]
+    ],
+    "mistake": "'먹어 보다'를 eat 으로 하면 '먹다'만 남는다. 처음 시도하는 뜻은 try.",
+    "similar": "I want to eat like a local. / I want to taste the local food.",
+    "category": "여행 준비",
+    "frequency": 8,
+    "chain": {
+     "target": "I want to try local food, but nothing too spicy for my wife.",
+     "chunks": [
+      "I want to try local food,",
+      "but nothing",
+      "too spicy",
+      "for my wife."
+     ],
+     "ko": "현지 음식을 먹어 보고 싶은데, 아내 때문에 너무 매운 건 빼고요."
+    },
+    "anchor": "먹어 보고 싶어요"
+   }
+  },
+  {
+   "id": "en-mylife-d5-05-take-the-train",
+   "sentence": "We'll take the train.",
+   "meaning": "우리는 기차를 탈 거예요.",
+   "reading": null,
+   "phonetic_kr": "위일 테익 더 트레인",
+   "order_index": 5,
+   "explanation": {
+    "key": "take the train = 기차를 타다. 교통수단은 ride 보다 take.",
+    "situation": "'거긴 어떻게 가요?' — 교통수단을 말할 때. 택시·버스·지하철 전부 같은 틀.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "How will you get there?",
+      "ko": "거기까지 어떻게 가요?"
+     },
+     {
+      "speaker": "B",
+      "en": "We'll take the train.",
+      "ko": "우리는 기차를 탈 거예요."
+     },
+     {
+      "speaker": "A",
+      "en": "Good. Driving is stressful.",
+      "ko": "잘했어요. 운전은 피곤하죠."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Let's take a taxi.",
+      "ko": "택시 타자.",
+      "kr": "레츠 테이커 택시"
+     },
+     {
+      "en": "Do you take the bus?",
+      "ko": "버스 타요?",
+      "kr": "더여 테익 더 버스"
+     },
+     {
+      "en": "We took the train to the airport.",
+      "ko": "우리는 공항까지 기차를 탔어요.",
+      "kr": "위 툭 더 트레인 터 디 에어r포어r트"
+     },
+     {
+      "en": "My wife takes a taxi when it rains.",
+      "ko": "아내는 비 오면 택시를 타요.",
+      "kr": "마이 와이f 테익스 어 택시 웨닛 레인즈"
+     },
+     {
+      "en": "You can take the train from here.",
+      "ko": "여기서 기차를 타면 돼요.",
+      "kr": "여 컨 테익 더 트레인 f럼 히어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "take + the/a + 교통수단",
+      "body": "'타다'는 ride 가 아니라 take. take the train·take a taxi·take the subway. 목적지는 to."
+     }
+    ],
+    "chunks": [
+     [
+      "We'll take",
+      "위일 테익",
+      "우리는 탈 거예요"
+     ],
+     [
+      "the train.",
+      "더 트레인",
+      "기차를."
+     ]
+    ],
+    "phonemes": [
+     [
+      "/tr/ train",
+      "train 은 '트레인' — '츄레인'도 흔하다"
+     ],
+     [
+      "/l/ we'll",
+      "we'll 의 끝 l 은 어둡게 '위일' — '윌'(will)과 구별"
+     ]
+    ],
+    "mistake": "'기차를 타다'를 ride the train 으로 하면 틀리진 않지만 딱딱하다. 일상은 take the train.",
+    "similar": "We're taking the train. / We'll go by train.",
+    "category": "여행 준비",
+    "frequency": 9,
+    "chain": {
+     "target": "We'll take the train, because my wife doesn't like long drives.",
+     "chunks": [
+      "We'll take the train,",
+      "because my wife",
+      "doesn't like",
+      "long drives."
+     ],
+     "ko": "기차를 탈 거예요, 아내가 장거리 운전을 안 좋아해서요."
+    },
+    "anchor": "기차를 탈 거예요"
+   }
+  }
+ ]
+}

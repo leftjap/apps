@@ -172,7 +172,9 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   // docs/core100-curriculum.md). 표현카드 품질검사(8필드·발음정합·drills·기본동사 비중 경고)는 유지하되
   // scene/dialogue/충실성/_source 게이트 + 비기본동사 구동사 하드 차단(고정 커리큘럼 표현이라 '다른 구간
   // 선택' 불가)만 면제. 예외는 해당 track payload 에만 발동 → 정상 en 시드(track 필드 없음)는 불변.
-  const isScenelessTrack = payload?.track === 'moduyeongeo' || payload?.track === 'core100';
+  // mylife (2026-09-10): 내 이야기 트랙 — 즉석 생산 A1 학습자용 기본동사·내 상황 문장(docs/mylife-curriculum.md). core100 과 같은 형식.
+  const SCENELESS_TRACKS = ['moduyeongeo', 'core100', 'mylife'];
+  const isScenelessTrack = SCENELESS_TRACKS.includes(payload?.track);
 
   // ── 구조: scene 1장 (oi 0) + 표현 1~2장 (PPP 집중 추출 — 최소 1장 차단 / 3장 초과 경고) ──
   const scenes = sorted.filter(isSceneCard);

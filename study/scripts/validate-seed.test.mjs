@@ -250,11 +250,22 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('phonetic_kr');
   });
 
+  // mylife (2026-09-10) — 내 이야기 트랙(즉석 생산 A1·기본동사·내 상황)도 scene 없는 표현 전용 세션.
+  it('mylife 트랙도 scene·_source 예외, 품질검사는 유지', () => {
+    const ok = validateSeedContent(makeModu({ track: 'mylife' }), okOpts);
+    expect(ok.errors).toEqual([]);
+    const p = makeModu({ track: 'mylife' });
+    p.cards[0].phonetic_kr = '틀린 발음';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
   /* 2026-08-28 — core100 전환(8447946)이 chain 없는 시드를 게이트 경고 0 으로 통과시켰다.
    * 결과: 세션에서 체이닝 블록이 통째로 사라지고(buildChainSteps 가 빈 배열) 연습 문장이 11→8 로 줄었다.
    * chain 은 선택 필드였다 — scene 이 없는 트랙에서는 체이닝이 유일한 청각 확장 축이므로 의무로 승격한다. */
   it('sceneless 트랙에서 chain 이 없으면 차단한다 (core100 전환 회귀 재발 방지)', () => {
-    for (const track of ['moduyeongeo', 'core100']) {
+    for (const track of ['moduyeongeo', 'core100', 'mylife']) {
       const p = makeModu({ track });
       p.cards.forEach((c) => { delete c.explanation.chain; });
       const r = validateSeedContent(p, okOpts);
