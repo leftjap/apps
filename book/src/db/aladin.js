@@ -9,6 +9,7 @@
 
 const SUPA = (import.meta.env && import.meta.env.VITE_SUPABASE_URL) || '';
 // dev: vite proxy(/api/aladin)가 ttbkey 주입. prod(정적 배포): Supabase Edge Function(aladin) 경유.
+// 함수 소스 정본: pick/supabase/functions/aladin/index.ts (book 엔 사본 없음. deploy 도 pick 에서만).
 const BASE = (import.meta.env && import.meta.env.DEV) ? '/api/aladin' : `${SUPA}/functions/v1/aladin`;
 const COMMON = 'output=js&Version=20131101&Cover=Big';
 

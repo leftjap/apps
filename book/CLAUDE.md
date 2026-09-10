@@ -20,6 +20,7 @@
 
 - 공유 geo-apps Supabase, 테이블 prefix `book_*` (`supabase/migrations/0001~0004`: init·realtime·reading·quote_highlights)
 - 알라딘 책 메타: `src/db/aladin.js`. 인증: `src/services/auth.js` (ALLOWED_EMAILS + Supabase Google OAuth)
+- 알라딘 프록시 Edge Function `aladin` 소스 정본: `pick/supabase/functions/aladin/index.ts` (Book·Pick·Readingtime 공용, 단일 슬러그). book 엔 사본 없음. deploy 는 pick 에서만.
 
 ## 관련 스킬
 
