@@ -27,6 +27,15 @@ curl -sS -m 10 -o /dev/null -w "%{http_code} %{time_total}s\n" \
   Supabase 발신 IP 한정인지 못 가른다**. 맥에서 ttbkey 로 직접 호출해 비교해야 한다.
 - 실기기에서는 `rtapp --verify-search 서성이다` (맥 데모 셸) 가 이제 실패 사유(시간 초과/503)를 stderr 로 낸다.
 
+## 검증 경로 (클라우드 세션 — 리눅스, Xcode·시뮬레이터 없음)
+- claude.ai/code 세션은 리눅스 컨테이너다. `uname`/`which swift xcodebuild`/`ls /Applications` 로 확인 뒤(부정 전 확인 의무)
+  **GitHub 호스트 macOS 러너**로 옮겼다: `.github/workflows/readingtime-ios.yml` — `swift test`(macOS) + iPhone 시뮬레이터
+  XCUITest(`ReadingTimeUITests/AddBookSearchUITests.swift`, 앱 `--stub-search`·`--seq query:` 사용). 2026-09-10 실측:
+  Xcode 26.3 / iPhone 16 Pro, 유닛 300건·UI 3건 통과, 라이브 케이스는 "알라딘 서버 오류 (503)" 안내로 종료(22초).
+- 러너 아티팩트·잡 로그 zip 은 이 샌드박스에서 **받을 수 없다**(리다이렉트 호스트가 프록시에 막혀 CONNECT 403).
+  그래서 워크플로가 축소 PNG 를 base64 로 로그에 남기고, 세션은 GitHub MCP `get_job_logs`(서버측 fetch) 로 받아
+  `RTSHOT-BEGIN/END` 블록을 복원해 Read 로 본다. 런 폴링·잡 상태는 `GITHUB_TOKEN` + `api.github.com` 직접 호출이 된다.
+
 ## 회피
 - **클라이언트**: 요청 시간 제한 20초(`AladinClient.timeout`) + 진행·실패·0건 상태를 화면에(`RTAppModel.searching/searchError`,
   시트 13 `statusBlock`) + "다시 시도"(`retrySearch`). 늦게 온 이전 검색은 세대 카운터로 폐기.

@@ -28,6 +28,7 @@
 | ├ `rtshot` | 헤드리스 렌더 CLI — `rtshot <NN> out.png` / `rtshot --app <NN>`(라우팅 오라클) / `rtshot --seq <액션들>` |
 | └ `rtapp` | macOS 데모 셸(390×844 창, 모션 on, 알라딘 라이브 검색) — `rtapp --verify-search <q>` |
 | `SETUP.md` | 실기기 배포·검증 절차 |
+| `../.github/workflows/readingtime-ios.yml` | **CI 검증**(macOS 러너): `swift test` + iPhone 시뮬레이터 XCUITest(책 추가 검색 상태). 클라우드 Claude 세션(리눅스)의 시뮬레이터 대체 경로 — 스크린샷은 아티팩트 + 로그 base64 |
 | `scripts/resign-reinstall.sh` | 무료팀 7일 재서명·재설치 — 공용 코어 `~/apps/scripts/resign-verify.sh` 위임. launchd `com.leftjap.readingtime.resign` 매일 21:30. 잔여 <4일 시 **캐시 프로파일 purge + clean 재빌드로 새 프로파일 강제 발급**(자유팀은 만료 전엔 갱신 안 됨) → **embedded 만료일 사후 검증**(조용한 실패 방지) → 두 기기(지오 11 Pro·소연 XR) 설치. 갱신 실패 시 macOS 알림. 로그 `~/Library/Logs/readingtime-resign.log` |
 
 ## 기록 화면 (주 · 월 · 지도)
