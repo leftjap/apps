@@ -14,17 +14,26 @@ describe('buildSummaryData', () => {
     });
   });
 
-  it('exprs — state.cards 의 표현(scene 제외) key 청크 추출 (음성복습 프롬프트용)', () => {
+  it('exprs — state.cards 를 (scene 제외) 문장·뜻·미니대화·드릴이 든 speak 항목으로 넘긴다 (음성복습 프롬프트용)', () => {
     const out = buildSummaryData({
       mode: 'new',
       state: { cards: [
         { id: 's', explanation: { dialogue: [{}] } },
-        { id: 'a', sentence: 'My house is really close by.', explanation: { key: 'close by = 가까이.' } },
+        { id: 'a', sentence: 'My house is really close by.', meaning: '우리 집은 가까워.', explanation: {
+          key: 'close by = 가까이.', situation: '집 위치',
+          miniDialogue: [{ speaker: 'A', en: 'Where do you live?' }, { speaker: 'B', en: 'My house is really close by.' }],
+          drills: [{ en: 'Is it close by?', ko: '가까워?' }],
+        } },
         { id: 'b', sentence: 'X', explanation: { key: 'take a break = 쉬다.' } },
       ], pronScores: [] },
       durationSec: 10, completedNewCount: 2,
     });
-    expect(out.exprs).toEqual(['close by', 'take a break']);
+    expect(out.exprs).toEqual([
+      { id: 'a', expr: 'close by', sentence: 'My house is really close by.', situation: '집 위치', ko: '우리 집은 가까워.',
+        miniDialogue: [{ speaker: 'A', en: 'Where do you live?' }, { speaker: 'B', en: 'My house is really close by.' }],
+        drills: [{ en: 'Is it close by?', ko: '가까워?' }] },
+      { id: 'b', expr: 'take a break', sentence: 'X', situation: '', ko: '', miniDialogue: [], drills: [] },
+    ]);
   });
 
   it('exprs — cards 없으면 빈 배열', () => {

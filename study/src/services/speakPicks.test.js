@@ -8,9 +8,14 @@ const card = (id, over = {}) => ({
 });
 
 describe('toSpeakItem', () => {
-  it('key 의 = 앞이 표현, 없으면 문장', () => {
-    expect(toSpeakItem(card('a'))).toEqual({ id: 'a', expr: 'a key', sentence: 'a sentence.', situation: 'a 상황', ko: 'a 뜻' });
+  it('key 의 = 앞이 표현, 없으면 문장. 미니대화·드릴은 그대로 싣고 없으면 빈 배열', () => {
+    expect(toSpeakItem(card('a'))).toEqual({ id: 'a', expr: 'a key', sentence: 'a sentence.', situation: 'a 상황', ko: 'a 뜻', miniDialogue: [], drills: [] });
     expect(toSpeakItem({ id: 'b', sentence: 'Hi.', meaning: '안녕' }).expr).toBe('Hi.');
+    const md = [{ speaker: 'A', en: 'Hi?' }, { speaker: 'B', en: 'a sentence.' }];
+    const dr = [{ en: 'a drill.', ko: '드릴' }];
+    const it2 = toSpeakItem(card('c', { explanation: { key: 'c key = 뜻', miniDialogue: md, drills: dr } }));
+    expect(it2.miniDialogue).toEqual(md);
+    expect(it2.drills).toEqual(dr);
   });
 });
 

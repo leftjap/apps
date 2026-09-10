@@ -4,6 +4,7 @@
  * Wave A.8.2 — session-new / session-review 의 endSession 이 사용.
  * 순수 함수 — DOM/IO 무관, state snapshot 만 입력.
  */
+import { toSpeakItem } from './speakPicks.js';
 
 export function buildSummaryData({ mode, state, durationSec, completedNewCount, completedReviewCount, returnTo = 'home' } = {}) {
   const tryCount = Number(state?.tried) || 0;
@@ -27,15 +28,13 @@ export function buildSummaryData({ mode, state, durationSec, completedNewCount, 
     .slice(0, 3)
     .map(([sym]) => sym);
 
-  // 음성복습 프롬프트용 타깃 표현 — scene 제외, explanation.key 의 '=' 앞 청크(없으면 sentence).
+  // 음성복습 프롬프트용 — scene 카드 제외, 문장·뜻·미니대화·드릴을 speak 항목 모양으로 (voicePrompt 가 읽는다).
   const cards = Array.isArray(state?.cards) ? state.cards : [];
-  const exprs = [...new Set(cards
+  const seen = new Set();
+  const exprs = cards
     .filter((c) => c && !(c.explanation && Array.isArray(c.explanation.dialogue)))
-    .map((c) => {
-      const left = String(c.explanation?.key ?? '').split('=')[0].trim();
-      return left || c.sentence || '';
-    })
-    .filter(Boolean))];
+    .map((c) => toSpeakItem(c))
+    .filter((it) => it.expr && !seen.has(it.expr) && seen.add(it.expr));
 
   return { mode, durationSec: Number(durationSec) || 0, newCount, judged, tryCount, passCount, total, pronAvg, weakTop3, exprs, returnTo };
 }

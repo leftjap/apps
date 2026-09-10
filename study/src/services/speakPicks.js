@@ -27,6 +27,8 @@ export function toSpeakItem(card) {
     sentence: str(card?.sentence).trim(),
     situation: str(card?.explanation?.situation).trim(),
     ko: str(card?.meaning ?? card?.ko).trim(),
+    miniDialogue: Array.isArray(card?.explanation?.miniDialogue) ? card.explanation.miniDialogue : [],
+    drills: Array.isArray(card?.explanation?.drills) ? card.explanation.drills : [],
   };
 }
 
