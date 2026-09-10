@@ -37,7 +37,9 @@ if let i = arguments.firstIndex(of: "--verify-search") {
         let model = RTAppWiring.makeModel(cloud: CloudStore())
         await model.search(query)
         guard let hits = model.searchResults, !hits.isEmpty else {
-            FileHandle.standardError.write("검색 결과 없음 — 배선 실패\n".data(using: .utf8)!)
+            // 실패 사유(시간 초과 등)가 있으면 그대로 — 배선 실패와 상류 무응답을 구분
+            let why = model.searchError.map { " — \($0)" } ?? " — 배선 실패"
+            FileHandle.standardError.write("검색 결과 없음\(why)\n".data(using: .utf8)!)
             exit(1)
         }
         for h in hits {

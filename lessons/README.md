@@ -12,6 +12,7 @@
 - `chrome-devtools-mcp-autoconnect.md` — chrome-devtools MCP 의 Chrome 146+ autoConnect 모드. 별 chrome 인스턴스 대신 사용자 chrome (또는 별 profile) 에 attach → OAuth 세션 공유 → PWA 통합 검증 자동화. 셋업 + 보안 + 격리 권장
 - `regex-hook-shell-limits.md` — PreToolUse Bash hook 의 substring 매칭 한계. 백틱·`bash -c`·`$()` 우회 / grep·sed pattern 안 차단 키워드 false positive / 회피 패턴 (키워드 분리·인용부호 분할)
 - `ios-simulator-web-audio-lock-verification.md` — iOS 시뮬레이터에서 웹·PWA 잠금 중 오디오 재생 정량 검증 절차 (DEVELOPER_DIR 우회·System Events 메뉴·CGEvent 탭·페이지 beacon 로그). 2026-09-06 실측: Safari 탭·홈 화면 앱 모두 잠금 중 반복 재생 유지, 잠금화면 패널 표시. #D 재발 사례
+- `aladin-proxy-upstream-hang.md` — 알라딘 Edge 프록시의 상류(www.aladin.co.kr) 무응답·503 장애를 앱이 `try?` 로 삼켜 "검색 자체가 안 됨"으로 보고된 사례 (readingtime 2026-09-10). 런타임 vs 상류 분리 판정 curl + 클라이언트 시간제한·상태표시 회피
 - `verification-layer-mismatch.md` — 단일 layer 검증으로 다른 layer "정합/해소/동작/사용자 입장 검증" 단정 = 거짓. 사례 분류 (preview .click() / Bash head 잘림 / Edit 후 라인 추정 / OAuth 세션 미공유 / 테스트 통과 = spec 정합 단정 / **#C gym 웹 검증 = 네이티브 실기 단정** / **#D 도구 능력 오단정 — Xcode 없음·무선설치 위임**). 글로벌 `~/.claude/CLAUDE.md` axis I 본문
 
 ## 작성 규칙

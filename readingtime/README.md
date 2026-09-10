@@ -5,7 +5,7 @@
 ## 무엇
 - **엎어놓기(flip) 자동 감지**: 폰을 face-down으로 두면 타이머 시작, 집으면 정지. 잠금 상태에서도 유지(목표).
 - **수동 버튼**: 지하철·버스·기차·기내 등 엎을 수 없을 때 버튼으로 시작/정지.
-- **책 검색·등록**: 알라딘 API — Book 앱 Edge Function 프록시 재사용(`ReadingTimeKit/BookSearch.swift`, 테스트 9건 통과).
+- **책 검색·등록**: 알라딘 API — Book 앱 Edge Function 프록시 재사용(`ReadingTimeKit/BookSearch.swift`). 요청 20초 제한 + 시트 13 에 검색 중·실패(다시 시도)·0건 표시 — 2026-09-10 상류(알라딘) 무응답 장애를 앱이 `try?` 로 삼켜 "검색 자체가 안 됨"으로 보였다(`~/apps/lessons/aladin-proxy-upstream-hang.md`).
 - **통합 기록**: 밀리의서재(PC) 독서 시간은 Book/Cue가 이미 수집 중 → 이 앱 기록과 통합(방식 조사·계획 중).
 
 ## 상태 (3단계: iOS 앱)

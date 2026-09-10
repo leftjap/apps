@@ -106,6 +106,19 @@ import Testing
         #expect(req.value(forHTTPHeaderField: "Origin") == "https://leftjap.github.io")
     }
 
+    // MARK: 시간 제한 — 상류(알라딘) 무응답 시 URLSession 기본 60초 대신 짧게 끊어 화면에 알린다 (2026-09-10 실측)
+
+    @Test func requestTimeoutContract() throws {
+        #expect(try AladinClient().searchRequest(query: "서성이다").timeoutInterval == 20)
+        #expect(try AladinClient(timeout: 5).lookupRequest(isbn13: "9791167903792").timeoutInterval == 5)
+    }
+
+    // 프록시가 상류 상태를 그대로 전달하는 5xx·알라딘 errorCode 는 화면 안내 문장을 가진다
+    @Test func errorDescriptions() {
+        #expect(AladinError.badStatus(503).errorDescription == "알라딘 서버 오류 (503)")
+        #expect(AladinError.api("일일 쿼터 초과").errorDescription == "알라딘 오류: 일일 쿼터 초과")
+    }
+
     // MARK: 라이브 통합 (옵트인: RT_LIVE=1 — 네트워크 의존)
 
     @Test(.enabled(if: ProcessInfo.processInfo.environment["RT_LIVE"] == "1"))
