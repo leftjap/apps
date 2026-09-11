@@ -250,11 +250,32 @@ describe('validateSeedContent — moduyeongeo 한시 트랙 (scene·_source 예�
     expect(r.errors.join(' ')).toContain('phonetic_kr');
   });
 
+  // daily (2026-09-11) — 개인 사실 기반 트랙. docs/daily-track-design.md
+  it('daily 트랙도 scene·_source 예외', () => {
+    const r = validateSeedContent(makeModu({ track: 'daily' }), okOpts);
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('daily 도 표현카드 품질검사는 유지', () => {
+    const p = makeModu({ track: 'daily' });
+    p.cards[0].phonetic_kr = '틀린 발음';
+    const r = validateSeedContent(p, okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('phonetic_kr');
+  });
+
+  it('등록되지 않은 track 은 sceneless 예외를 받지 못한다 (scene 의무)', () => {
+    const r = validateSeedContent(makeModu({ track: 'made-up-track' }), okOpts);
+    expect(r.ok).toBe(false);
+    expect(r.errors.join(' ')).toContain('scene 카드는 정확히 1장');
+  });
+
   /* 2026-08-28 — core100 전환(8447946)이 chain 없는 시드를 게이트 경고 0 으로 통과시켰다.
    * 결과: 세션에서 체이닝 블록이 통째로 사라지고(buildChainSteps 가 빈 배열) 연습 문장이 11→8 로 줄었다.
    * chain 은 선택 필드였다 — scene 이 없는 트랙에서는 체이닝이 유일한 청각 확장 축이므로 의무로 승격한다. */
   it('sceneless 트랙에서 chain 이 없으면 차단한다 (core100 전환 회귀 재발 방지)', () => {
-    for (const track of ['moduyeongeo', 'core100']) {
+    for (const track of ['moduyeongeo', 'core100', 'daily']) {
       const p = makeModu({ track });
       p.cards.forEach((c) => { delete c.explanation.chain; });
       const r = validateSeedContent(p, okOpts);

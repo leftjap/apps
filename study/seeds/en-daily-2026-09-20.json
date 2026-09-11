@@ -1,0 +1,440 @@
+{
+ "lang": "en",
+ "track": "daily",
+ "session": 2,
+ "date": "2026-09-20",
+ "title": "내 얘기에서 아내 얘기로 넘어가기",
+ "new_skeleton": "My wife ~s (3인칭 -s)",
+ "_note": "daily 트랙 파일럿. 설계 정본 docs/daily-track-design.md, 근거 docs/speaking-baseline.md. 문장은 3~6단어 산출 밴드, 세션당 신규 골격 1개, 나머지는 기보유·기도입 골격 재사용. 개인 사실은 설계문서 §4 출처 대장 등재분만 사용(카드 본문은 1차 출처만, 2차 출처 F12 고양이는 드릴 한정). date 는 임시 — 코어100 존속 판단 후 재배정. 판단 전 Supabase 적재 금지. explanation._skeleton/_fact 는 검증용 메타(앱 렌더 대상 아님).",
+ "cards": [
+  {
+   "id": "en-daily-005-wife-goes-to-work",
+   "sentence": "My wife goes to work.",
+   "meaning": "아내는 출근해.",
+   "reading": null,
+   "phonetic_kr": "마이 와이f 고우z 투 워r크",
+   "order_index": 1,
+   "explanation": {
+    "key": "goes to ~ = (그 사람이) ~에 간다. 주어가 he/she 면 동사 끝에 -s 가 붙는다.",
+    "situation": "내 얘기만 하다가 아내·가족 얘기로 넘어갈 때. 늘 그런 일(습관)을 말하므로 현재형을 쓴다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Is your wife home?",
+      "ko": "아내분 집에 계셔?"
+     },
+     {
+      "speaker": "B",
+      "en": "My wife goes to work.",
+      "ko": "아내는 출근해."
+     },
+     {
+      "speaker": "A",
+      "en": "Oh, so you're both busy.",
+      "ko": "아, 그럼 둘 다 바쁘시겠네."
+     }
+    ],
+    "drills": [
+     {
+      "en": "She goes to work early.",
+      "ko": "그녀는 일찍 출근해.",
+      "kr": "쉬 고우z 투 워r크 어r을리"
+     },
+     {
+      "en": "My wife works today.",
+      "ko": "아내는 오늘 일해.",
+      "kr": "마이 와이f 워r크s 투데이"
+     },
+     {
+      "en": "He goes to the gym.",
+      "ko": "그는 헬스장에 다녀.",
+      "kr": "히 고우z 투 더 짐"
+     },
+     {
+      "en": "The cat sleeps all day.",
+      "ko": "고양이는 하루 종일 자.",
+      "kr": "더 캣 슬리p s 올 데이"
+     },
+     {
+      "en": "I go to work too.",
+      "ko": "나도 출근해.",
+      "kr": "아이 고우 투 워r크 투"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "he/she/my wife + 동사-s",
+      "body": "주어가 나·너·우리가 아니면 현재형 동사 끝에 -s 가 붙는다. go→goes, work→works, sleep→sleeps. 이 -s 하나가 빠지면 문장이 무너진다."
+     },
+     {
+      "struct": "동사가 두 개 이어질 때",
+      "body": "'아내가 출근해서 나도 나갔어' 처럼 두 문장을 한 번에 잇지 말고, 먼저 My wife goes to work. 로 끊어 말한다. 이어 붙이기는 다음 단계다."
+     }
+    ],
+    "chunks": [
+     [
+      "My wife",
+      "마이 와이f",
+      "내 아내는"
+     ],
+     [
+      "goes to",
+      "고우z 투",
+      "~에 간다"
+     ],
+     [
+      "work",
+      "워r크",
+      "회사에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "goes",
+      "'고즈'(X) — '고우z', 끝은 z 소리"
+     ],
+     [
+      "works",
+      "끝이 '워r크스'(X) — s 만 붙여 '워r크s'"
+     ]
+    ],
+    "mistake": "My wife go to work(X) — 3인칭 현재엔 -s 가 필수다. 이 -s 를 빼먹는 것이 지금 가장 잦은 실수다.",
+    "similar": "My wife has a job. / My wife is at work.",
+    "category": "일상/가족",
+    "frequency": 9,
+    "chain": {
+     "target": "My wife goes to work, and I go to work too.",
+     "chunks": [
+      "My wife goes to work,",
+      "and",
+      "I go",
+      "to work too."
+     ],
+     "ko": "아내는 출근하고, 나도 출근해."
+    },
+    "anchor": "아내는 출근해",
+    "_skeleton": "NEW:My wife ~s (3인칭 -s)",
+    "_fact": "F1"
+   }
+  },
+  {
+   "id": "en-daily-006-went-to-work",
+   "sentence": "I went to work.",
+   "meaning": "나 회사 갔어.",
+   "reading": null,
+   "phonetic_kr": "아이 웬투 워r크",
+   "order_index": 2,
+   "explanation": {
+    "key": "went to work = 회사에 갔다(출근했다). work 앞엔 the 가 없다.",
+    "situation": "오늘 한 일을 말할 때. 특별한 일이 없던 날의 기본 답이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What did you do today?",
+      "ko": "오늘 뭐 했어?"
+     },
+     {
+      "speaker": "B",
+      "en": "I went to work.",
+      "ko": "나 회사 갔어."
+     },
+     {
+      "speaker": "A",
+      "en": "Same here.",
+      "ko": "나도."
+     },
+     {
+      "speaker": "B",
+      "en": "It was a long day.",
+      "ko": "하루가 길었어."
+     }
+    ],
+    "drills": [
+     {
+      "en": "Did you go to work?",
+      "ko": "너 출근했어?",
+      "kr": "디쥬 고우 투 워r크"
+     },
+     {
+      "en": "My wife went to work too.",
+      "ko": "아내도 출근했어.",
+      "kr": "마이 와이f 웬투 워r크 투"
+     },
+     {
+      "en": "We went to work together.",
+      "ko": "우리 같이 출근했어.",
+      "kr": "위 웬투 워r크 터게더r"
+     },
+     {
+      "en": "She went to work late.",
+      "ko": "그녀는 늦게 출근했어.",
+      "kr": "쉬 웬투 워r크 레잇"
+     },
+     {
+      "en": "I didn't go to work.",
+      "ko": "나 출근 안 했어.",
+      "kr": "아이 디든 고우 투 워r크"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "go to work / go to the office",
+      "body": "work 는 '일하는 곳' 이라는 뜻이라 the 를 붙이지 않는다. 건물을 가리킬 때만 the office 를 쓴다."
+     }
+    ],
+    "chunks": [
+     [
+      "I",
+      "아이",
+      "나는"
+     ],
+     [
+      "went to",
+      "웬투",
+      "~에 갔다"
+     ],
+     [
+      "work",
+      "워r크",
+      "회사에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "went to",
+      "t 하나만 남겨 '웬투'"
+     ],
+     [
+      "work",
+      "/w/ 로 입술을 둥글게 시작하고 끝 r 은 혀만 만다 — '월크'(X)"
+     ]
+    ],
+    "mistake": "I went to the work(X) / I went to office(X) — work 엔 the 없음, office 엔 the 있음.",
+    "similar": "I was at work. / I had to work today.",
+    "category": "일상/하루",
+    "frequency": 10,
+    "chain": {
+     "target": "I went to work, and then I had lunch with my wife.",
+     "chunks": [
+      "I went to work,",
+      "and then",
+      "I had lunch",
+      "with my wife."
+     ],
+     "ko": "나 회사 갔고, 그다음에 아내랑 점심 먹었어."
+    },
+    "anchor": "회사 갔어",
+    "_skeleton": "OWNED:I went to +장소",
+    "_fact": "F2"
+   }
+  },
+  {
+   "id": "en-daily-007-had-coffee",
+   "sentence": "I had coffee.",
+   "meaning": "나 커피 마셨어.",
+   "reading": null,
+   "phonetic_kr": "아이 해d 커f이",
+   "order_index": 3,
+   "explanation": {
+    "key": "had ~ = ~를 먹었다/마셨다. drink·eat 을 안 써도 된다.",
+    "situation": "오늘 먹고 마신 것을 말할 때. 아침·점심·커피·맥주 전부 had 하나로 해결된다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Did you eat something?",
+      "ko": "뭐 좀 먹었어?"
+     },
+     {
+      "speaker": "B",
+      "en": "I had coffee.",
+      "ko": "나 커피 마셨어."
+     },
+     {
+      "speaker": "A",
+      "en": "Just coffee?",
+      "ko": "커피만?"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I had lunch.",
+      "ko": "나 점심 먹었어.",
+      "kr": "아이 해d 런치"
+     },
+     {
+      "en": "We had coffee together.",
+      "ko": "우리 같이 커피 마셨어.",
+      "kr": "위 해d 커f이 터게더r"
+     },
+     {
+      "en": "My wife had coffee too.",
+      "ko": "아내도 커피 마셨어.",
+      "kr": "마이 와이f 해d 커f이 투"
+     },
+     {
+      "en": "She had a beer.",
+      "ko": "그녀는 맥주 한잔했어.",
+      "kr": "쉬 해d 어 비어r"
+     },
+     {
+      "en": "I had two coffees today.",
+      "ko": "나 오늘 커피 두 잔 마셨어.",
+      "kr": "아이 해d 투 커f이z 투데이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "had + 명사",
+      "body": "have 의 과거 had 는 '먹다·마시다'까지 덮는다. I drank coffee 도 맞지만 실제 대화에선 had 가 압도적으로 자주 쓰인다. 음료·식사 앞엔 보통 관사를 안 붙인다(coffee, lunch)."
+     }
+    ],
+    "chunks": [
+     [
+      "I had",
+      "아이 해d",
+      "나는 ~했다"
+     ],
+     [
+      "coffee",
+      "커f이",
+      "커피를"
+     ]
+    ],
+    "phonemes": [
+     [
+      "had",
+      "끝 d 를 '해드'로 늘이지 않고 '해d' 에서 멈춘다"
+     ],
+     [
+      "coffee",
+      "/f/ 는 윗니로 아랫입술 — '커피'(X) '커f이'(O)"
+     ]
+    ],
+    "mistake": "I drank a coffee(어색) — 셀 수 없는 음료엔 a 를 안 붙인다. 잔 수를 셀 땐 two coffees 처럼 쓴다.",
+    "similar": "I grabbed a coffee. / I got some coffee.",
+    "category": "일상/먹고마시기",
+    "frequency": 10,
+    "chain": {
+     "target": "I had coffee, and then I went to work.",
+     "chunks": [
+      "I had coffee,",
+      "and then",
+      "I went",
+      "to work."
+     ],
+     "ko": "커피 마시고, 그다음에 회사 갔어."
+    },
+    "anchor": "커피 마셨어",
+    "_skeleton": "OWNED:I had +명사",
+    "_fact": "F5"
+   }
+  },
+  {
+   "id": "en-daily-008-was-a-long-day",
+   "sentence": "It was a long day.",
+   "meaning": "하루가 길었어.",
+   "reading": null,
+   "phonetic_kr": "잇 워z 어 롱 데이",
+   "order_index": 4,
+   "explanation": {
+    "key": "It was a long ~ = ~가 길었어. 힘들었다는 말을 돌려서 하는 관용 표현.",
+    "situation": "퇴근하고 오늘이 어땠는지 한마디로 정리할 때. tired 를 쓰지 않고도 피곤함이 전달된다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "How was work?",
+      "ko": "회사 어땠어?"
+     },
+     {
+      "speaker": "B",
+      "en": "It was a long day.",
+      "ko": "하루가 길었어."
+     },
+     {
+      "speaker": "A",
+      "en": "You should rest.",
+      "ko": "좀 쉬어야겠네."
+     }
+    ],
+    "drills": [
+     {
+      "en": "It was a long week.",
+      "ko": "한 주가 길었어.",
+      "kr": "잇 워z 어 롱 위크"
+     },
+     {
+      "en": "Today was a long day.",
+      "ko": "오늘 하루가 길었어.",
+      "kr": "투데이 워z 어 롱 데이"
+     },
+     {
+      "en": "My wife had a long day.",
+      "ko": "아내도 하루가 길었어.",
+      "kr": "마이 와이f 해d 어 롱 데이"
+     },
+     {
+      "en": "It was a good day.",
+      "ko": "좋은 하루였어.",
+      "kr": "잇 워z 어 굿 데이"
+     },
+     {
+      "en": "We had a long day.",
+      "ko": "우리 하루가 길었어.",
+      "kr": "위 해d 어 롱 데이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It was a + 형용사 + 명사",
+      "body": "앞에서 It was good. 을 배웠다. 형용사 뒤에 명사를 붙이면 a 가 필요하다 — good → a good day. 형용사만 쓸 땐 a 가 없다."
+     }
+    ],
+    "chunks": [
+     [
+      "It was",
+      "잇 워z",
+      "그건 ~였어"
+     ],
+     [
+      "a long",
+      "어 롱",
+      "긴"
+     ],
+     [
+      "day",
+      "데이",
+      "하루"
+     ]
+    ],
+    "phonemes": [
+     [
+      "It was a",
+      "세 단어가 한 덩어리로 '이워저' 에 가깝게 흐른다"
+     ],
+     [
+      "long",
+      "/ŋ/ 으로 코에서 끝낸다 — '롱그'(X)"
+     ]
+    ],
+    "mistake": "It was long day(X) — 명사 day 앞에 a 가 빠졌다. It was long. 처럼 형용사로 끝내거나 It was a long day. 로 쓴다.",
+    "similar": "It was a rough day. / Today was tough.",
+    "category": "일상/평가",
+    "frequency": 8,
+    "chain": {
+     "target": "It was a long day, so I'm gonna go to bed early.",
+     "chunks": [
+      "It was a long day,",
+      "so",
+      "I'm gonna",
+      "go to bed",
+      "early."
+     ],
+     "ko": "하루가 길었어서, 일찍 자려고."
+    },
+    "anchor": "하루가 길었어",
+    "_skeleton": "REUSE:It was ~ (S1 도입)",
+    "_fact": "F2"
+   }
+  }
+ ]
+}

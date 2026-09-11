@@ -1,0 +1,421 @@
+{
+ "lang": "en",
+ "track": "daily",
+ "session": 4,
+ "date": "2026-09-22",
+ "title": "안 한 일 말하기",
+ "new_skeleton": "I didn't ~",
+ "_note": "daily 트랙 파일럿. 설계 정본 docs/daily-track-design.md, 근거 docs/speaking-baseline.md. 문장은 3~6단어 산출 밴드, 세션당 신규 골격 1개, 나머지는 기보유·기도입 골격 재사용. 개인 사실은 설계문서 §4 출처 대장 등재분만 사용(카드 본문은 1차 출처만, 2차 출처 F12 고양이는 드릴 한정). date 는 임시 — 코어100 존속 판단 후 재배정. 판단 전 Supabase 적재 금지. explanation._skeleton/_fact 는 검증용 메타(앱 렌더 대상 아님).",
+ "cards": [
+  {
+   "id": "en-daily-013-didnt-go-to-the-gym",
+   "sentence": "I didn't go to the gym.",
+   "meaning": "나 헬스장 안 갔어.",
+   "reading": null,
+   "phonetic_kr": "아이 디든 고우 투 더 짐",
+   "order_index": 1,
+   "explanation": {
+    "key": "didn't ~ = ~하지 않았다. 과거 부정은 동사를 원형으로 되돌린다.",
+    "situation": "안 한 일을 말할 때. 못 한 이유를 붙이지 않고 사실만 먼저 말하는 연습이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Did you go to the gym?",
+      "ko": "헬스장 갔어?"
+     },
+     {
+      "speaker": "B",
+      "en": "I didn't go to the gym.",
+      "ko": "나 헬스장 안 갔어."
+     },
+     {
+      "speaker": "A",
+      "en": "Too busy?",
+      "ko": "너무 바빴어?"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I didn't go to work.",
+      "ko": "나 출근 안 했어.",
+      "kr": "아이 디든 고우 투 워r크"
+     },
+     {
+      "en": "She didn't go to the gym.",
+      "ko": "그녀는 헬스장 안 갔어.",
+      "kr": "쉬 디든 고우 투 더 짐"
+     },
+     {
+      "en": "We didn't have lunch.",
+      "ko": "우리 점심 안 먹었어.",
+      "kr": "위 디든 해v 런치"
+     },
+     {
+      "en": "My wife didn't work today.",
+      "ko": "아내는 오늘 일 안 했어.",
+      "kr": "마이 와이f 디든 워r크 투데이"
+     },
+     {
+      "en": "I didn't have a beer.",
+      "ko": "나 맥주 안 마셨어.",
+      "kr": "아이 디든 해v 어 비어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "didn't + 동사원형",
+      "body": "과거 부정은 didn't 가 과거를 맡고 뒤 동사는 원형으로 돌아간다. went → didn't go, had → didn't have. 여기서 과거형을 그대로 쓰는 것이 가장 잦은 실수다."
+     }
+    ],
+    "chunks": [
+     [
+      "I didn't",
+      "아이 디든",
+      "나는 ~하지 않았다"
+     ],
+     [
+      "go to",
+      "고우 투",
+      "가다"
+     ],
+     [
+      "the gym",
+      "더 짐",
+      "헬스장에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "didn't",
+      "끝 t 를 거의 삼켜 '디든'. '디든트'(X)"
+     ],
+     [
+      "go to",
+      "'고우 투' 가 이어져 '고우루'에 가깝다"
+     ]
+    ],
+    "mistake": "I didn't went(X) — didn't 가 이미 과거라 뒤는 go 원형이다. I don't went(X) 도 같은 오류.",
+    "similar": "I skipped the gym. / I stayed home instead.",
+    "category": "일상/부정",
+    "frequency": 10,
+    "chain": {
+     "target": "I didn't go to the gym, because I was a little busy.",
+     "chunks": [
+      "I didn't go to the gym,",
+      "because",
+      "I was",
+      "a little busy."
+     ],
+     "ko": "나 헬스장 안 갔어, 좀 바빴거든."
+    },
+    "anchor": "헬스장 안 갔어",
+    "_skeleton": "NEW:I didn't ~",
+    "_fact": "F3"
+   }
+  },
+  {
+   "id": "en-daily-014-had-a-beer",
+   "sentence": "I had a beer.",
+   "meaning": "나 맥주 한잔했어.",
+   "reading": null,
+   "phonetic_kr": "아이 해d 어 비어r",
+   "order_index": 2,
+   "explanation": {
+    "key": "had a beer = 맥주 한 잔 했다. 잔으로 세는 술엔 a 가 붙는다.",
+    "situation": "퇴근 뒤 뭐 했냐는 질문의 답. 한 잔이면 a beer, 여러 잔이면 beers.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What did you do after work?",
+      "ko": "퇴근하고 뭐 했어?"
+     },
+     {
+      "speaker": "B",
+      "en": "I had a beer.",
+      "ko": "나 맥주 한잔했어."
+     },
+     {
+      "speaker": "A",
+      "en": "Just one?",
+      "ko": "한 잔만?"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I had two beers.",
+      "ko": "나 맥주 두 잔 마셨어.",
+      "kr": "아이 해d 투 비어r z"
+     },
+     {
+      "en": "We had a beer together.",
+      "ko": "우리 같이 맥주 한잔했어.",
+      "kr": "위 해d 어 비어r 터게더r"
+     },
+     {
+      "en": "My wife had a glass of wine.",
+      "ko": "아내는 와인 한 잔 마셨어.",
+      "kr": "마이 와이f 해d 어 글래s 어v 와인"
+     },
+     {
+      "en": "Did you have a beer?",
+      "ko": "맥주 마셨어?",
+      "kr": "디쥬 해v 어 비어r"
+     },
+     {
+      "en": "She didn't have a beer.",
+      "ko": "그녀는 맥주 안 마셨어.",
+      "kr": "쉬 디든 해v 어 비어r"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "a + 잔으로 세는 음료",
+      "body": "coffee·water 는 그냥 쓰지만 beer 는 잔·병 단위로 세어 a beer, two beers 가 된다. 술 종류 전체를 말할 땐 I like beer 처럼 a 를 뺀다."
+     }
+    ],
+    "chunks": [
+     [
+      "I had",
+      "아이 해d",
+      "나는 ~했다"
+     ],
+     [
+      "a beer",
+      "어 비어r",
+      "맥주 한 잔을"
+     ]
+    ],
+    "phonemes": [
+     [
+      "beer",
+      "/ɪər/ 로 '비어r'. '비얼'(X)"
+     ],
+     [
+      "had a",
+      "붙여서 '해더' 에 가깝게 흐른다"
+     ]
+    ],
+    "mistake": "I had a beers(X) / I drank beer one glass(X) — 수는 a beer, two beers 로만 조절한다.",
+    "similar": "I grabbed a beer. / I had one drink.",
+    "category": "일상/먹고마시기",
+    "frequency": 9,
+    "chain": {
+     "target": "I had a beer, and then I went to bed early.",
+     "chunks": [
+      "I had a beer,",
+      "and then",
+      "I went",
+      "to bed early."
+     ],
+     "ko": "맥주 한잔하고, 그다음에 일찍 잤어."
+    },
+    "anchor": "맥주 한잔했어",
+    "_skeleton": "OWNED:I had +명사",
+    "_fact": "F4"
+   }
+  },
+  {
+   "id": "en-daily-015-it-was-okay",
+   "sentence": "It was okay.",
+   "meaning": "그냥 괜찮았어.",
+   "reading": null,
+   "phonetic_kr": "잇 워z 오케이",
+   "order_index": 3,
+   "explanation": {
+    "key": "was okay = 그냥 괜찮았어. 좋지도 나쁘지도 않을 때의 표준 답.",
+    "situation": "How was ~? 질문을 받았는데 딱히 할 말이 없을 때. 침묵 대신 이 한마디로 턴을 넘긴다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "How was your day?",
+      "ko": "오늘 하루 어땠어?"
+     },
+     {
+      "speaker": "B",
+      "en": "It was okay.",
+      "ko": "그냥 괜찮았어."
+     },
+     {
+      "speaker": "A",
+      "en": "Just okay?",
+      "ko": "그냥 괜찮기만?"
+     }
+    ],
+    "drills": [
+     {
+      "en": "It was fine.",
+      "ko": "괜찮았어.",
+      "kr": "잇 워z f아인"
+     },
+     {
+      "en": "Work was okay.",
+      "ko": "일은 괜찮았어.",
+      "kr": "워r크 워z 오케이"
+     },
+     {
+      "en": "The gym was okay.",
+      "ko": "헬스장은 그냥 그랬어.",
+      "kr": "더 짐 워z 오케이"
+     },
+     {
+      "en": "My day was okay.",
+      "ko": "오늘 하루는 괜찮았어.",
+      "kr": "마이 데이 워z 오케이"
+     },
+     {
+      "en": "Everything was okay.",
+      "ko": "다 괜찮았어.",
+      "kr": "에v리th잉 워z 오케이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It was okay 의 쓰임",
+      "body": "형용사 okay 는 '훌륭하다'가 아니라 '문제 없었다'에 가깝다. 좋았으면 It was good, 힘들었으면 It was hard 로 갈라 쓴다."
+     }
+    ],
+    "chunks": [
+     [
+      "It was",
+      "잇 워z",
+      "그건 ~였어"
+     ],
+     [
+      "okay",
+      "오케이",
+      "괜찮은"
+     ]
+    ],
+    "phonemes": [
+     [
+      "okay",
+      "앞 음절을 약하게, 뒤에 힘을 줘 '오케이'"
+     ],
+     [
+      "It was",
+      "이어서 '이워z'"
+     ]
+    ],
+    "mistake": "It was so so(X) — 실제로는 거의 쓰지 않는다. It was okay 또는 It was fine 으로 말한다.",
+    "similar": "It was fine. / Nothing special.",
+    "category": "일상/평가",
+    "frequency": 9,
+    "chain": {
+     "target": "It was okay, but I didn't go to the gym.",
+     "chunks": [
+      "It was okay,",
+      "but",
+      "I didn't go",
+      "to the gym."
+     ],
+     "ko": "괜찮았어, 근데 헬스장은 못 갔어."
+    },
+    "anchor": "괜찮았어",
+    "_skeleton": "REUSE:It was ~ (S1 도입)",
+    "_fact": "—"
+   }
+  },
+  {
+   "id": "en-daily-016-going-to-rest",
+   "sentence": "I'm going to rest.",
+   "meaning": "나 쉴 거야.",
+   "reading": null,
+   "phonetic_kr": "아임 고잉 투 레스트",
+   "order_index": 4,
+   "explanation": {
+    "key": "going to ~ = ~할 거야. gonna 의 또박또박 형태로 뜻은 같다.",
+    "situation": "오늘은 아무것도 안 하겠다고 말할 때. 계획을 묻는 질문의 가장 짧은 답이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "Are you working out tonight?",
+      "ko": "오늘 밤 운동해?"
+     },
+     {
+      "speaker": "B",
+      "en": "I'm going to rest.",
+      "ko": "나 쉴 거야."
+     },
+     {
+      "speaker": "A",
+      "en": "Good idea.",
+      "ko": "잘 생각했어."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm going to stay home.",
+      "ko": "나 집에 있을 거야.",
+      "kr": "아임 고잉 투 스테이 호움"
+     },
+     {
+      "en": "My wife is going to rest.",
+      "ko": "아내는 쉴 거야.",
+      "kr": "마이 와이f 이z 고잉 투 레스트"
+     },
+     {
+      "en": "We're going to rest today.",
+      "ko": "우리 오늘 쉴 거야.",
+      "kr": "위어r 고잉 투 레스트 투데이"
+     },
+     {
+      "en": "She's going to work out.",
+      "ko": "그녀는 운동할 거야.",
+      "kr": "쉬z 고잉 투 워r카웃"
+     },
+     {
+      "en": "I need to rest.",
+      "ko": "나 좀 쉬어야겠어.",
+      "kr": "아이 니투 레스트"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "going to 와 gonna",
+      "body": "둘은 같은 말이다. 편하게 말할 땐 gonna, 또박또박 말하거나 글로 쓸 땐 going to. 뒤엔 언제나 동사원형이 온다."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm going to",
+      "아임 고잉 투",
+      "나 ~할 거야"
+     ],
+     [
+      "rest",
+      "레스트",
+      "쉬다"
+     ]
+    ],
+    "phonemes": [
+     [
+      "going to",
+      "'고잉 투' 가 빨라지면 '거나'(gonna) 가 된다"
+     ],
+     [
+      "rest",
+      "끝 t 를 살짝만 — '레스트'의 '트'를 길게 늘이지 않는다"
+     ]
+    ],
+    "mistake": "I'm going to rest my body(어색) — rest 만으로 충분하다. I'm going to take a rest 도 쓰지만 I'm going to rest 가 더 흔하다.",
+    "similar": "I'm gonna take it easy. / I'm just gonna relax.",
+    "category": "일상/계획",
+    "frequency": 9,
+    "chain": {
+     "target": "I'm going to rest, and I'm gonna go to the gym tomorrow.",
+     "chunks": [
+      "I'm going to rest,",
+      "and",
+      "I'm gonna go",
+      "to the gym",
+      "tomorrow."
+     ],
+     "ko": "오늘은 쉬고, 내일 헬스장 갈 거야."
+    },
+    "anchor": "쉴 거야",
+    "_skeleton": "OWNED:I'm gonna/going to +동사원형",
+    "_fact": "F9"
+   }
+  }
+ ]
+}

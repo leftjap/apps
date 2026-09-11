@@ -1,0 +1,433 @@
+{
+ "lang": "en",
+ "track": "daily",
+ "session": 1,
+ "date": "2026-09-19",
+ "title": "오늘 한 일에 평가 한마디 붙이기",
+ "new_skeleton": "It was ~",
+ "_note": "daily 트랙 파일럿. 설계 정본 docs/daily-track-design.md, 근거 docs/speaking-baseline.md. 문장은 3~6단어 산출 밴드, 세션당 신규 골격 1개, 나머지는 기보유·기도입 골격 재사용. 개인 사실은 설계문서 §4 출처 대장 등재분만 사용(카드 본문은 1차 출처만, 2차 출처 F12 고양이는 드릴 한정). date 는 임시 — 코어100 존속 판단 후 재배정. 판단 전 Supabase 적재 금지. explanation._skeleton/_fact 는 검증용 메타(앱 렌더 대상 아님).",
+ "cards": [
+  {
+   "id": "en-daily-001-went-to-the-gym",
+   "sentence": "I went to the gym.",
+   "meaning": "나 헬스장에 갔어.",
+   "reading": null,
+   "phonetic_kr": "아이 웬투 더 짐",
+   "order_index": 1,
+   "explanation": {
+    "key": "went to ~ = ~에 갔다. 오늘 간 장소를 말하는 가장 기본 문형.",
+    "situation": "하루를 묻는 질문에 '어디 갔다'로 답할 때. 오늘 한 일을 꺼내는 첫 문장이다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What did you do today?",
+      "ko": "오늘 뭐 했어?"
+     },
+     {
+      "speaker": "B",
+      "en": "I went to the gym.",
+      "ko": "나 헬스장에 갔어."
+     },
+     {
+      "speaker": "A",
+      "en": "Oh, nice.",
+      "ko": "오, 좋네."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I went to work.",
+      "ko": "나 회사 갔어.",
+      "kr": "아이 웬투 워r크"
+     },
+     {
+      "en": "My wife went to work.",
+      "ko": "아내는 회사 갔어.",
+      "kr": "마이 와이f 웬투 워r크"
+     },
+     {
+      "en": "We went to the gym.",
+      "ko": "우리 헬스장 갔어.",
+      "kr": "위 웬투 더 짐"
+     },
+     {
+      "en": "She went to bed early.",
+      "ko": "그녀는 일찍 잤어.",
+      "kr": "쉬 웬투 베d 어r을리"
+     },
+     {
+      "en": "The cat went to the vet.",
+      "ko": "고양이 병원 갔어.",
+      "kr": "더 캣 웬투 더 벳"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "주어 + went to + 장소",
+      "body": "go 의 과거는 went. '~에 갔다'는 went to + 장소가 통째로 한 덩어리다. gym·office 처럼 정해진 곳엔 the 가 붙고 work·home·bed 엔 안 붙는다."
+     }
+    ],
+    "chunks": [
+     [
+      "I",
+      "아이",
+      "나는"
+     ],
+     [
+      "went to",
+      "웬투",
+      "~에 갔다"
+     ],
+     [
+      "the gym",
+      "더 짐",
+      "헬스장에"
+     ]
+    ],
+    "phonemes": [
+     [
+      "went to",
+      "'웬트 투'(X) — t 를 하나만 남겨 '웬투'"
+     ],
+     [
+      "gym",
+      "/dʒ/ 는 입술을 모아 울리는 소리. '김'(X) '짐'(O)"
+     ]
+    ],
+    "mistake": "went to the work(X) — work·home·bed 앞엔 the 를 붙이지 않는다. I went to home(X) → I went home.",
+    "similar": "I was at the gym. / I hit the gym.",
+    "category": "일상/하루",
+    "frequency": 10,
+    "chain": {
+     "target": "I went to the gym, and then I had a beer.",
+     "chunks": [
+      "I went to the gym,",
+      "and then",
+      "I had",
+      "a beer."
+     ],
+     "ko": "나 헬스장 갔고, 그다음에 맥주 한잔했어."
+    },
+    "anchor": "헬스장에 갔어",
+    "_skeleton": "OWNED:I went to +장소",
+    "_fact": "F3"
+   }
+  },
+  {
+   "id": "en-daily-002-it-was-good",
+   "sentence": "It was good.",
+   "meaning": "좋았어.",
+   "reading": null,
+   "phonetic_kr": "잇 워z 굿",
+   "order_index": 2,
+   "explanation": {
+    "key": "It was ~ = ~였어. 방금 한 일이 어땠는지 한마디로 붙이는 평가.",
+    "situation": "'뭐 했어' 에 답한 바로 다음. 사건만 말하고 끊지 않고 좋았는지 한마디를 붙일 때.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "How was it?",
+      "ko": "어땠어?"
+     },
+     {
+      "speaker": "B",
+      "en": "It was good.",
+      "ko": "좋았어."
+     },
+     {
+      "speaker": "A",
+      "en": "Good. You look tired, though.",
+      "ko": "다행이네. 근데 좀 피곤해 보여."
+     }
+    ],
+    "drills": [
+     {
+      "en": "It was hard.",
+      "ko": "힘들었어.",
+      "kr": "잇 워z 하r드"
+     },
+     {
+      "en": "The gym was good.",
+      "ko": "헬스장 좋았어.",
+      "kr": "더 짐 워z 굿"
+     },
+     {
+      "en": "My day was long.",
+      "ko": "오늘 하루 길었어.",
+      "kr": "마이 데이 워z 롱"
+     },
+     {
+      "en": "Work was busy today.",
+      "ko": "오늘 일이 바빴어.",
+      "kr": "워r크 워z 비지 투데이"
+     },
+     {
+      "en": "It was okay.",
+      "ko": "그냥 괜찮았어.",
+      "kr": "잇 워z 오케이"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "It + was + 형용사",
+      "body": "It 은 방금 말한 그 일을 가리킨다. 앞에서 말했으면 주어를 다시 넣지 않고 It 으로 받는 게 자연스럽다. was 는 is 의 과거."
+     }
+    ],
+    "chunks": [
+     [
+      "It was",
+      "잇 워z",
+      "그건 ~였어"
+     ],
+     [
+      "good",
+      "굿",
+      "좋은"
+     ]
+    ],
+    "phonemes": [
+     [
+      "It was",
+      "'잇 워즈'(X) — 이어서 '이워z', 끝은 z 소리"
+     ],
+     [
+      "good",
+      "끝 d 를 '드'로 늘이지 않고 '굿'에서 멈춘다"
+     ]
+    ],
+    "mistake": "It was so-so(어색) — '그저 그랬어'를 so-so 로 옮기는 건 교과서 표현이다. It was okay 가 실제로 쓰인다.",
+    "similar": "It went well. / That was fun.",
+    "category": "일상/평가",
+    "frequency": 10,
+    "chain": {
+     "target": "It was good, but I'm a little tired now.",
+     "chunks": [
+      "It was good,",
+      "but",
+      "I'm",
+      "a little tired",
+      "now."
+     ],
+     "ko": "좋았어, 근데 지금은 좀 피곤해."
+    },
+    "anchor": "좋았어",
+    "_skeleton": "NEW:It was ~",
+    "_fact": "—"
+   }
+  },
+  {
+   "id": "en-daily-003-a-little-tired",
+   "sentence": "I'm a little tired.",
+   "meaning": "나 좀 피곤해.",
+   "reading": null,
+   "phonetic_kr": "아임 어 리를 타이어rd",
+   "order_index": 3,
+   "explanation": {
+    "key": "a little ~ = 좀 ~해. 상태를 과장 없이 말하는 완충 표현.",
+    "situation": "피곤·바쁨·배고픔을 말할 때. 그냥 tired 라고 하면 세게 들려서 a little 로 눌러 준다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "You look tired.",
+      "ko": "피곤해 보여."
+     },
+     {
+      "speaker": "B",
+      "en": "I'm a little tired.",
+      "ko": "나 좀 피곤해."
+     },
+     {
+      "speaker": "A",
+      "en": "Get some rest.",
+      "ko": "좀 쉬어."
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm a little busy.",
+      "ko": "나 좀 바빠.",
+      "kr": "아임 어 리를 비지"
+     },
+     {
+      "en": "My wife is a little tired.",
+      "ko": "아내가 좀 피곤해해.",
+      "kr": "마이 와이f 이z 어 리를 타이어rd"
+     },
+     {
+      "en": "The cat is a little hungry.",
+      "ko": "고양이가 좀 배고픈가 봐.",
+      "kr": "더 캣 이z 어 리를 헝그리"
+     },
+     {
+      "en": "We're a little busy today.",
+      "ko": "우리 오늘 좀 바빠.",
+      "kr": "위어r 어 리를 비지 투데이"
+     },
+     {
+      "en": "I was a little tired.",
+      "ko": "나 좀 피곤했었어.",
+      "kr": "아이 워z 어 리를 타이어rd"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "주어 + be + a little + 형용사",
+      "body": "a little 은 형용사 앞에서 '조금'. 명사 앞의 a little(a little water)과 자리만 다르다. tired·busy·hungry 처럼 부정적인 형용사에 특히 자주 붙는다."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm",
+      "아임",
+      "나는"
+     ],
+     [
+      "a little",
+      "어 리를",
+      "조금"
+     ],
+     [
+      "tired",
+      "타이어rd",
+      "피곤한"
+     ]
+    ],
+    "phonemes": [
+     [
+      "a little",
+      "t 두 개가 ㄹ 로 바뀌어 '리를'. '리틀'(X)"
+     ],
+     [
+      "tired",
+      "/aɪər/ 를 한 덩어리로 '타이어rd'. 끝 r 은 혀만 말고 소리내지 않는다"
+     ]
+    ],
+    "mistake": "I'm little tired(X) — a 가 빠지면 '작게 피곤하다'가 된다. a little 이 한 덩어리.",
+    "similar": "I'm kind of tired. / I'm a bit tired.",
+    "category": "일상/상태",
+    "frequency": 10,
+    "chain": {
+     "target": "I'm a little tired, so I'm gonna go to bed early.",
+     "chunks": [
+      "I'm a little tired,",
+      "so",
+      "I'm gonna",
+      "go to bed",
+      "early."
+     ],
+     "ko": "좀 피곤해서, 일찍 자려고."
+    },
+    "anchor": "좀 피곤해",
+    "_skeleton": "OWNED:I'm (a little) +형용사",
+    "_fact": "F11"
+   }
+  },
+  {
+   "id": "en-daily-004-gonna-go-to-bed",
+   "sentence": "I'm gonna go to bed.",
+   "meaning": "나 자러 갈 거야.",
+   "reading": null,
+   "phonetic_kr": "아임 거나 고우 투 베d",
+   "order_index": 4,
+   "explanation": {
+    "key": "gonna ~ = ~할 거야. going to 의 말할 때 형태.",
+    "situation": "대화 끝에 오늘 남은 계획을 말할 때. going to 를 또박또박 말하면 오히려 어색하다.",
+    "miniDialogue": [
+     {
+      "speaker": "A",
+      "en": "What are you doing tonight?",
+      "ko": "오늘 밤엔 뭐 해?"
+     },
+     {
+      "speaker": "B",
+      "en": "I'm gonna go to bed.",
+      "ko": "나 자러 갈 거야."
+     },
+     {
+      "speaker": "A",
+      "en": "Already?",
+      "ko": "벌써?"
+     }
+    ],
+    "drills": [
+     {
+      "en": "I'm gonna stay home.",
+      "ko": "나 집에 있을 거야.",
+      "kr": "아임 거나 스테이 호움"
+     },
+     {
+      "en": "We're gonna have a drink.",
+      "ko": "우리 한잔할 거야.",
+      "kr": "위어r 거나 해v 어 드링크"
+     },
+     {
+      "en": "My wife is gonna rest.",
+      "ko": "아내는 쉴 거야.",
+      "kr": "마이 와이f 이z 거나 레스트"
+     },
+     {
+      "en": "She's gonna work out.",
+      "ko": "그녀는 운동할 거야.",
+      "kr": "쉬z 거나 워r카웃"
+     },
+     {
+      "en": "I'm gonna go to work.",
+      "ko": "나 출근할 거야.",
+      "kr": "아임 거나 고우 투 워r크"
+     }
+    ],
+    "grammar": [
+     {
+      "struct": "주어 + be + gonna + 동사원형",
+      "body": "gonna 는 going to 를 말할 때 줄인 것. 뒤엔 반드시 동사원형이 온다. 글로 쓸 땐 going to 로 쓴다."
+     }
+    ],
+    "chunks": [
+     [
+      "I'm gonna",
+      "아임 거나",
+      "나 ~할 거야"
+     ],
+     [
+      "go to",
+      "고우 투",
+      "가다"
+     ],
+     [
+      "bed",
+      "베d",
+      "침대로"
+     ]
+    ],
+    "phonemes": [
+     [
+      "gonna",
+      "'고나'(X) — 앞 모음을 약하게 '거나'"
+     ],
+     [
+      "go to",
+      "두 번째 t 를 흘려 '고우 투' 가 '고우루'에 가깝게 들린다"
+     ]
+    ],
+    "mistake": "I'm gonna to bed(X) — gonna 뒤는 동사원형이라 go 가 빠지면 안 된다. I'm gonna go to bed.",
+    "similar": "I'm heading to bed. / I'll go to bed.",
+    "category": "일상/계획",
+    "frequency": 10,
+    "chain": {
+     "target": "I'm gonna go to bed, and I'm gonna work out tomorrow.",
+     "chunks": [
+      "I'm gonna go to bed,",
+      "and",
+      "I'm gonna",
+      "work out",
+      "tomorrow."
+     ],
+     "ko": "나 자러 갈 거고, 내일 운동할 거야."
+    },
+    "anchor": "자러 갈 거야",
+    "_skeleton": "OWNED:I'm gonna +동사원형",
+    "_fact": "F8"
+   }
+  }
+ ]
+}

@@ -169,10 +169,12 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   const isRealClass = payload?.lang === 'en';
   if (!isRealClass) return { ok: errors.length === 0, errors, warnings };
   // scene 없는 표현 전용 트랙: 모두영어 유튜브 발췌(한시) + core100 코어 100문장 커리큘럼(2026-08-26,
-  // docs/core100-curriculum.md). 표현카드 품질검사(8필드·발음정합·drills·기본동사 비중 경고)는 유지하되
+  // docs/core100-curriculum.md) + daily 개인 사실 기반 트랙(2026-09-11, docs/daily-track-design.md).
+  // 표현카드 품질검사(8필드·발음정합·drills·기본동사 비중 경고)는 유지하되
   // scene/dialogue/충실성/_source 게이트 + 비기본동사 구동사 하드 차단(고정 커리큘럼 표현이라 '다른 구간
   // 선택' 불가)만 면제. 예외는 해당 track payload 에만 발동 → 정상 en 시드(track 필드 없음)는 불변.
-  const isScenelessTrack = payload?.track === 'moduyeongeo' || payload?.track === 'core100';
+  const SCENELESS_TRACKS = new Set(['moduyeongeo', 'core100', 'daily']);
+  const isScenelessTrack = SCENELESS_TRACKS.has(payload?.track);
 
   // ── 구조: scene 1장 (oi 0) + 표현 1~2장 (PPP 집중 추출 — 최소 1장 차단 / 3장 초과 경고) ──
   const scenes = sorted.filter(isSceneCard);
