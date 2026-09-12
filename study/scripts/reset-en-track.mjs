@@ -6,6 +6,9 @@
  * 2) review tombstone: study_review_queue 의 해당 행 explanation 에 _deleted=true 를 합쳐 PATCH. 행 삭제는 금지 —
  *    push 가 upsert-only 이고 reconcileTable 이 '서버에 없는 로컬 행'을 되살리므로 2026-07-22 규약대로 tombstone 이 정본이다.
  * 3) lessons 삭제: study_today_lessons 의 해당 행 DELETE (serverOwned — pull 의 staleIdsToDelete 가 기기에서 지운다).
+ *    단, pullTable 은 사용자의 study_today_lessons 가 전 언어 통틀어 0행이면 status 'empty' 로 조기 반환해 삭제 전파를
+ *    건너뛴다(sync.js 533~535행). 그 경우 기기의 옛 레슨이 남으므로 아래 경고를 보고 바로 새 세션을 적재하거나 기기
+ *    Dexie 를 따로 지운다.
  * 발음 이력·세션 로그·일별 통계·다른 언어는 건드리지 않는다. 사용자가 앱을 열지 않은 상태에서 돌린다.
  *
  * 사용: node scripts/reset-en-track.mjs --user-id <uuid> [--lang en] [--backup <path>] [--dry-run]
@@ -28,6 +31,14 @@ export function splitTargets(rows, lang) {
 export function verifyCounts(left, leftRv, lang) {
   if (!Array.isArray(left) || !Array.isArray(leftRv)) throw new Error('verifyCounts: 배열이 아님 — 확인 조회 실패');
   return { lessons: left.length, activeReviews: splitTargets(leftRv, lang).length };
+}
+
+// 삭제 후 전체(언어 무관) 행 수 — pullTable 조기 반환(sync.js 533~535행) 경고용 순수 헬퍼. 0행이면 경고 문자열, 1행 이상이면 null.
+export function warnIfDeviceOrphans(totalRows) {
+  if (totalRows === 0) {
+    return '[reset] 경고: 이 사용자의 study_today_lessons 가 전 언어 0행 — pull 조기 반환으로 기기 로컬 레슨이 자동 삭제되지 않는다. 즉시 새 세션을 적재하거나 기기에서 지울 것';
+  }
+  return null;
 }
 
 function parseArgs(a) {
@@ -74,6 +85,10 @@ if (isMain) {
 
   const del = await fetch(q('study_today_lessons'), { method: 'DELETE', headers: { ...H, Prefer: 'return=minimal' } });
   if (!del.ok) { console.error(`[reset] lessons 삭제 실패 ${del.status} ${await del.text()}`); exit(1); }
+  const totalRes = await fetch(`${base}/study_today_lessons?user_id=eq.${args.userId}&select=id`, { headers: H });
+  if (!totalRes.ok) { console.error(`[reset] 전체 행 수 조회 실패 ${totalRes.status} ${await totalRes.text()}`); exit(1); }
+  const orphanWarning = warnIfDeviceOrphans((await totalRes.json()).length);
+  if (orphanWarning) console.warn(orphanWarning);
   const leftRes = await fetch(q('study_today_lessons', '&select=id'), { headers: H });
   if (!leftRes.ok) { console.error(`[reset] 확인 조회 실패 ${leftRes.status} ${await leftRes.text()}`); exit(1); }
   const leftRvRes = await fetch(q('study_review_queue', '&select=id,lang,explanation'), { headers: H });

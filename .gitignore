@@ -77,3 +77,6 @@ readingtime/ReadingTimeKit/Sources/RTViews/Fonts/
 
 # 모두영어 유튜브 자막 원문 — 로컬 전용 (개인 학습용 수집. 제3자 저작물 공개 repo 커밋 금지)
 modu_subs/
+
+# 세션 임시 산출물·백업(개인 데이터 포함, 예: study 리셋 백업) — 공개 저장소에 올리지 않는다 (2026-09-13)
+tmp/

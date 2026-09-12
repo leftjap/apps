@@ -20,6 +20,7 @@ import { showRecordToast } from '../components/session/recordToast.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { SESSION_BLOCKS } from './sessionExprV2.js';
 
+// 2026-09-12: 체이닝 블록은 화면에서 숨김이 기본값. 아래 기존 테스트들은 블록 계약을 계속 검증하므로 켜고 돈다.
 beforeEach(() => { SESSION_BLOCKS.chainProd = true; });
 
 const tick = () => new Promise((r) => setTimeout(r, 0));

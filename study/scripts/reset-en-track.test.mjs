@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { withTombstone, splitTargets, verifyCounts } from './reset-en-track.mjs';
+import { withTombstone, splitTargets, verifyCounts, warnIfDeviceOrphans } from './reset-en-track.mjs';
 
 /* 영어 트랙 리셋 (2026-09-13 사용자 지시). review 는 행 삭제가 아니라 tombstone(explanation._deleted) — 2026-07-22 규약. */
 describe('reset-en-track — 순수 헬퍼', () => {
@@ -27,5 +27,12 @@ describe('reset-en-track — 순수 헬퍼', () => {
   it('verifyCounts: 배열이 아니면 던진다 (확인 조회 실패를 성공으로 오인 방지)', () => {
     expect(() => verifyCounts({ message: 'error' }, [], 'en')).toThrow();
     expect(() => verifyCounts([], { message: 'error' }, 'en')).toThrow();
+  });
+  it('warnIfDeviceOrphans: 전체 행이 0이면 경고 문자열을 반환한다', () => {
+    expect(warnIfDeviceOrphans(0)).toBe('[reset] 경고: 이 사용자의 study_today_lessons 가 전 언어 0행 — pull 조기 반환으로 기기 로컬 레슨이 자동 삭제되지 않는다. 즉시 새 세션을 적재하거나 기기에서 지울 것');
+  });
+  it('warnIfDeviceOrphans: 전체 행이 1 이상이면 null 을 반환한다', () => {
+    expect(warnIfDeviceOrphans(1)).toBeNull();
+    expect(warnIfDeviceOrphans(5)).toBeNull();
   });
 });
