@@ -184,3 +184,12 @@ export function pickPracticeVoice(i, lengthUnit, lang) {
     : (len <= 6 ? 1.15 : len <= 9 ? 1.05 : 1.0);
   return { voice: pool[k], rate: Math.round((base + PRACTICE_JITTER[k]) * 100) / 100 };
 }
+
+/* 복습 단서 (2026-09-12 사용자 결정) — 미니대화에서 타깃 줄 직전의 상대 발화. 정답(타깃) 자체는 담지 않는다.
+ * 타깃이 첫 줄이거나 miniDialogue 가 없으면 null. 줄 필터는 pronunciationLog.miniLinesOf 와 같다. */
+export function miniCueLine(md, sentence) {
+  const lines = (Array.isArray(md) ? md : []).filter((l) => l && typeof l.en === 'string' && l.en.trim());
+  const target = String(sentence ?? '').trim();
+  const t = lines.findIndex((l) => l.en.trim() === target);
+  return t > 0 ? lines[t - 1] : null;
+}

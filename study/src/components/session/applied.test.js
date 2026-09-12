@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES } from './applied.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES, miniCueLine } from './applied.js';
 
 const CHAIN = {
   target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -259,5 +259,24 @@ describe('pickPracticeVoice — 일본어 화자 순환', () => {
 
   it('lang 미지정은 기존 영어 동작 (회귀 방지)', () => {
     expect(pickPracticeVoice(0, 4).voice).toBe(PRACTICE_VOICES[0]);
+  });
+});
+
+/* 복습 단서 (2026-09-12 사용자 결정) — 타깃 직전 상대 줄. 답을 좁히는 힌트(단어 수·첫 글자)가 아니라 그 문장을 말하게 만드는
+ * 상황이다(음성교사 작업지시서 "질문·대답 짝"). 정답 텍스트는 담지 않는다. */
+describe('miniCueLine — 복습 단서: 타깃 직전 상대 줄', () => {
+  const md = [{ speaker: 'A', en: 'Did you sleep?' }, { speaker: 'B', en: "I didn't sleep at all." }, { speaker: 'A', en: 'You must be tired.' }];
+  it('타깃 직전 줄을 돌려준다', () => {
+    expect(miniCueLine(md, "I didn't sleep at all.")).toEqual(md[0]);
+  });
+  it('타깃이 첫 줄이면 null', () => {
+    expect(miniCueLine(md, 'Did you sleep?')).toBeNull();
+  });
+  it('타깃이 없거나 miniDialogue 가 없으면 null', () => {
+    expect(miniCueLine(md, 'Hello.')).toBeNull();
+    expect(miniCueLine(undefined, 'Did you sleep?')).toBeNull();
+  });
+  it('en 이 비거나 문자열이 아닌 줄은 건너뛴다', () => {
+    expect(miniCueLine([{ speaker: 'A', en: '' }, { speaker: 'A', en: 'Hi.' }, { speaker: 'B', en: 'Hey.' }], 'Hey.')).toEqual({ speaker: 'A', en: 'Hi.' });
   });
 });

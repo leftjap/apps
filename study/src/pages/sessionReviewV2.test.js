@@ -67,7 +67,8 @@ function mountCard({ interval, lang = 'en', sentence = EN, ko = KO, chunks = CHU
  *       (b) 1단계는 영어를 보여준 채 "떠올려 보세요"라 인출이 아니라 낭독이었으며,
  *       (c) 그 낭독 발음 점수가 SRS 간격을 정하고 있었다.
  * 힌트는 두지 않는다 — 미리 주는 단서는 인출을 쉽게 만들어 이득의 근거가 없다
- * (Pyc & Rawson 2009 / Smith et al. 2016). 실패는 그대로 두고 정답을 공개한다 (Kornell et al. 2009). */
+ * (Pyc & Rawson 2009 / Smith et al. 2016). 실패는 그대로 두고 정답을 공개한다 (Kornell et al. 2009).
+ * 2026-09-12: 상대 줄 단서(.vr-cue)는 이 '힌트' 에 해당하지 않는다 — 답이 아니라 상황을 준다(아래 describe 참조). */
 describe('isRecallMode — 영어는 항상 회상, 일본어는 익은 뒤부터 회상', () => {
   it('영어는 회상 모드 (interval 무관)', () => {
     expect(isRecallMode('en')).toBe(true);
@@ -903,7 +904,11 @@ describe('renderSessionReviewV2 — 미니대화 블록은 정답 공개 뒤에�
   it('공개 전에는 보이지 않는다 (타깃 줄이 정답을 품는다)', () => {
     const host = mountMd();
     expect(visible(host.querySelector('.vs-mini'))).toBe(false);
-    expect(host.textContent).not.toContain('Thanks for having me tonight.');
+    // 2026-09-12 상대 줄 단서(.vr-cue) 도입 이후 타깃 직전 줄('Thanks for having me tonight.')은
+    // 의도적으로 공개 전에도 카드 위에 보인다 — 유출 금지 대상은 대화 블록 전체가 아니라 정답(EN) 자체다.
+    // .vr-card 로 범위를 좁힌다: 해설 fold(.vs-kbox) 는 CSS 로만 숨겨 ex.key(EN 포함)를 이미 DOM 에
+    // 담고 있고, 펼치는 순간 자체가 reveal() 이므로 이 테스트가 볼 leak 이 아니다.
+    expect(host.querySelector('.vr-card').textContent).not.toContain(EN);
   });
 
   it('녹음(데모) 후 공개되면 카드 아래에 나타난다 — 듣기 + 녹음 (2026-09-12 복원)', () => {
@@ -964,5 +969,33 @@ describe('renderSessionReviewV2 — 미니대화 녹음 (2026-09-12)', () => {
       vi.advanceTimersByTime(900);
       expect(host.querySelector('.vs-mini-line .vs-gscore').textContent).not.toBe('');
     } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('renderSessionReviewV2 — 상대 줄 단서 (2026-09-12)', () => {
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'Did you sleep?', ko: '잠은 잤어?' },
+    { speaker: 'B', en: EN, ko: KO },
+  ];
+  const withMd = (md) => ({ id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: `${EN} = ${KO}`, chunks: CHUNKS, miniDialogue: md } });
+
+  it('회상 모드에서 정답 공개 전에 타깃 직전 상대 줄을 보여준다 — 정답 텍스트는 없다', () => {
+    const host = mountCard({ interval: 1, state: { sentence: withMd(MD) } });
+    const cue = host.querySelector('.vr-cue');
+    expect(cue).not.toBeNull();
+    expect(cue.textContent).toContain('Did you sleep?');
+    expect(cue.textContent).toContain('소연');
+    expect(host.querySelector('.vr-card').textContent).not.toContain(EN);
+    expect(host.querySelector('.vs-mini')).toBeNull();   // 대화 블록 자체는 공개 뒤에만
+  });
+
+  it('miniDialogue 가 없거나 타깃이 첫 줄이면 단서가 없다', () => {
+    expect(mountCard({ interval: 1 }).querySelector('.vr-cue')).toBeNull();
+    expect(mountCard({ interval: 1, state: { sentence: withMd([MD[1], MD[0]]) } }).querySelector('.vr-cue')).toBeNull();
+  });
+
+  it('단서 듣기 버튼은 공개 전에도 눌린다 (정답 오디오가 아니다)', () => {
+    const host = mountCard({ interval: 1, state: { sentence: withMd(MD) } });
+    expect(host.querySelector('.vr-cue button').disabled).toBe(false);
   });
 });

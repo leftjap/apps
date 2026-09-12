@@ -18,15 +18,15 @@ import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js
 import { savePronunciationLog, drillLogId, chainLogId, miniLogId, miniLinesOf } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
-import { createJudgeRow } from '../components/session/atoms.js';
-import { filterNearDupDrills } from '../components/session/applied.js';
+import { createJudgeRow, speakWithFeedback } from '../components/session/atoms.js';
+import { filterNearDupDrills, miniCueLine } from '../components/session/applied.js';
 import { localISODate } from '../utils/today.js';
 import { nextSrsState } from '../services/srs.js';
 import { judgeRecording } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl, SESSION_BLOCKS } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl, SESSION_BLOCKS, MINI_VOICES } from './sessionExprV2.js';
 import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
@@ -645,7 +645,27 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
 
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
     lastScoreEl ? h('span', {}, '지난 점수 ', lastScoreEl) : null);
-  const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, pronEl, srsRow, ctrl, meta);
+  // 상대 줄 단서 (2026-09-12 사용자 결정) — 회상 모드에서 정답 공개 전부터 타깃 직전 상대 발화를 보여주고 들려준다.
+  // 인출을 일으키는 것은 상대의 말이라는 설계(음성교사 작업지시서 "질문·대답 짝"). 2026-07-10 '힌트 없음' 과의 관계:
+  // 단어 수·첫 글자처럼 답을 좁히는 힌트가 아니라 그 문장이 쓰이는 상황이다. 정답 텍스트는 담지 않는다(miniCueLine).
+  const CUE_CSS = `
+.vr-cue{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:14px;border-radius:12px;background:var(--teal-soft)}
+.vr-cue-who{font-family:Outfit;font-size:11px;color:var(--teal-deep);flex:0 0 auto;max-width:48px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vr-cue-body{flex:1;min-width:0}
+.vr-cue .en{font-size:14px;font-weight:700;letter-spacing:-.01em}
+.vr-cue .sub{font-size:11.5px;color:var(--faint);margin-top:2px}`;
+  const cue = recallMode ? miniCueLine(ex?.miniDialogue, s?.sentence) : null;
+  let cueEl = null;
+  if (cue) {
+    const cuePlay = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '상대 줄 듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
+    const cueVoice = MINI_VOICES[String(cue.speaker ?? '').trim().toUpperCase()] || MINI_VOICES.A;
+    cuePlay.addEventListener('click', () => speakWithFeedback(cuePlay, cue.en, { lang: ttsLang, voice: cueVoice, rate: 1.0 }));
+    cueEl = h('div', { class: 'vr-cue' }, v2Style(CUE_CSS),
+      h('span', { class: 'vr-cue-who' }, String(cue.name || cue.speaker || '')),
+      h('div', { class: 'vr-cue-body' }, h('div', { class: 'en' }, cue.en), cue.ko ? h('div', { class: 'sub' }, cue.ko) : null),
+      cuePlay);
+  }
+  const cardEl = h('div', { class: 'vr-card' }, cueEl, h1El, koEl, pronEl, srsRow, ctrl, meta);
   // 미니대화 (2026-09-08 "복습 세션에도", 2026-09-12 줄 녹음) — 카드 아래. 타깃 줄이 정답을 품으므로 공개 전에는 DOM 에도
   // 두지 않는다(숨김이 아니라 미생성 — 텍스트 유출 방지). 녹음은 신규 세션과 같은 집계·이력(#mini#), 진행 조건·SRS 영향 없음.
   const miniSlot = h('div', { class: 'vr-mini-slot' });
