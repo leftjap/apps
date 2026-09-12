@@ -74,3 +74,6 @@ readingtime/ReadingTimeKit/Sources/RTViews/Fonts/
 # Xcode 개인 상태
 **/xcuserdata/
 **/.swiftpm/
+
+# 모두영어 유튜브 자막 원문 — 로컬 전용 (개인 학습용 수집. 제3자 저작물 공개 repo 커밋 금지)
+modu_subs/
