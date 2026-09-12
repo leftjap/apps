@@ -24,6 +24,12 @@ export function splitTargets(rows, lang) {
   return (Array.isArray(rows) ? rows : []).filter((r) => r && r.lang === lang && !(r.explanation && r.explanation._deleted === true));
 }
 
+// 확인(verify) 단계 집계 — 배열이 아니면(조회 실패 등) 던진다. 성공으로 오인해 exit 0 되는 것을 막는다 (리뷰 지적).
+export function verifyCounts(left, leftRv, lang) {
+  if (!Array.isArray(left) || !Array.isArray(leftRv)) throw new Error('verifyCounts: 배열이 아님 — 확인 조회 실패');
+  return { lessons: left.length, activeReviews: splitTargets(leftRv, lang).length };
+}
+
 function parseArgs(a) {
   const o = { lang: 'en', dryRun: false, backup: null };
   for (let i = 0; i < a.length; i++) {
@@ -68,7 +74,10 @@ if (isMain) {
 
   const del = await fetch(q('study_today_lessons'), { method: 'DELETE', headers: { ...H, Prefer: 'return=minimal' } });
   if (!del.ok) { console.error(`[reset] lessons 삭제 실패 ${del.status} ${await del.text()}`); exit(1); }
-  const left = await (await fetch(q('study_today_lessons', '&select=id'), { headers: H })).json();
-  const leftRv = await (await fetch(q('study_review_queue', '&select=id,lang,explanation'), { headers: H })).json();
-  console.log(`[reset] 확인: lessons 남은 행 ${Array.isArray(left) ? left.length : '?'} · review 미tombstone ${splitTargets(leftRv, args.lang).length}`);
+  const leftRes = await fetch(q('study_today_lessons', '&select=id'), { headers: H });
+  if (!leftRes.ok) { console.error(`[reset] 확인 조회 실패 ${leftRes.status} ${await leftRes.text()}`); exit(1); }
+  const leftRvRes = await fetch(q('study_review_queue', '&select=id,lang,explanation'), { headers: H });
+  if (!leftRvRes.ok) { console.error(`[reset] 확인 조회 실패 ${leftRvRes.status} ${await leftRvRes.text()}`); exit(1); }
+  const counts = verifyCounts(await leftRes.json(), await leftRvRes.json(), args.lang);
+  console.log(`[reset] 확인: lessons 남은 행 ${counts.lessons} · review 미tombstone ${counts.activeReviews}`);
 }
