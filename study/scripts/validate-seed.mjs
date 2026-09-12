@@ -172,7 +172,12 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   // docs/core100-curriculum.md). 표현카드 품질검사(8필드·발음정합·drills·기본동사 비중 경고)는 유지하되
   // scene/dialogue/충실성/_source 게이트 + 비기본동사 구동사 하드 차단(고정 커리큘럼 표현이라 '다른 구간
   // 선택' 불가)만 면제. 예외는 해당 track payload 에만 발동 → 정상 en 시드(track 필드 없음)는 불변.
-  const isScenelessTrack = payload?.track === 'moduyeongeo' || payload?.track === 'core100';
+  // personal (2026-09-12): 일기 소재 개인화 트랙. 화면에서 체이닝·생산 블록을 숨겼으므로(sessionExprV2 SESSION_BLOCKS)
+  // chain 은 비의무. sceneless 면제 경로는 moduyeongeo/core100 과 같다.
+  const SCENELESS_TRACKS = ['moduyeongeo', 'core100', 'personal'];
+  const CHAIN_REQUIRED_TRACKS = ['moduyeongeo', 'core100'];
+  const isScenelessTrack = SCENELESS_TRACKS.includes(payload?.track);
+  const chainRequired = CHAIN_REQUIRED_TRACKS.includes(payload?.track);
 
   // ── 구조: scene 1장 (oi 0) + 표현 1~2장 (PPP 집중 추출 — 최소 1장 차단 / 3장 초과 경고) ──
   const scenes = sorted.filter(isSceneCard);
@@ -370,7 +375,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       /* scene 이 없는 트랙에서는 체이닝이 유일한 청각 확장 축이다 — 빠지면 세션 화면에서 블록이
        * 통째로 사라진다(buildChainSteps 가 빈 배열 → chainBlockEl null). 2026-08-26 core100 전환이
        * chain 없는 시드를 경고 0 으로 통과시켜 연습 문장이 11→8 로 줄었다. 선택 → 의무로 승격. */
-      if (isScenelessTrack) {
+      if (chainRequired) {
         errors.push(`${c.id}: chain 누락 — sceneless 트랙(${payload.track})은 chain{target,chunks,ko} 의무 (없으면 세션에서 체이닝 블록이 사라짐)`);
       }
       continue;
@@ -544,16 +549,19 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
 
   // ── (선택) 미니대화 miniDialogue (2026-09-08 작업지시서 §1~§4) — 타깃 표현의 사용 맥락을 주는 contextual input.
   // 학습 게이트가 아니라 **시드 형식 검사**다(학습자 화면에 진행 조건 없음). 등급(사용자 확정 2026-09-08):
-  //   차단 = 턴 2~4 밖 · 타깃 줄(en === sentence) 정확히 1개 아님 · 타깃 표현이 다른 줄에도 나옴 · 타깃 외 줄 13단어+ ·
+  //   차단 = 턴 2~8 밖 (2026-09-12: 대화 단위 세션으로 4→8) · 타깃 줄(en === sentence) 정확히 1개 아님 · 타깃 표현이 다른 줄에도 나옴 · 타깃 외 줄 13단어+ ·
   //          아직 안 배운 뒤쪽 묶음의 코어100 핵심 표현 삽입(새 학습 부담)
   //   경고 = 타깃 외 줄 11~12단어 (10단어 이하 권장이지만 자연스러움을 위해 하드 조건은 아님) · 이미 배운 앞쪽 표현 등장(복습 효과)
   //   사람 검수 = 대화 난도가 타깃보다 높은지, 상대 발화가 타깃을 유발하는지.
   const wc = (str) => norm(str).split(' ').filter(Boolean).length;
+  // 코어100 순서 검사(안 배운 뒤쪽 묶음 표현 삽입 차단)는 core100 트랙 전용 (2026-09-12) — personal 카드는 번호가
+  // 없어 NaN 비교가 전부 '이미 배운' 경고로 새는 것을 막는다.
+  const orderKeys = payload?.track === 'core100' ? core100Keys : [];
   for (const c of exprs) {
     const md = c.explanation?.miniDialogue;
     if (md === undefined) continue;
-    if (!Array.isArray(md) || md.length < 2 || md.length > 4) {
-      errors.push(`${c.id}: miniDialogue 는 2~4턴 배열 (현재 ${Array.isArray(md) ? `${md.length}턴` : typeof md})`);
+    if (!Array.isArray(md) || md.length < 2 || md.length > 8) {
+      errors.push(`${c.id}: miniDialogue 는 2~8턴 배열 (현재 ${Array.isArray(md) ? `${md.length}턴` : typeof md})`);
       continue;
     }
     let broken = false;
@@ -563,6 +571,13 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       }
     });
     if (broken) continue;
+    // personal 트랙 (2026-09-13): 줄마다 영문·한글 뜻·한글 발음이 응용 행과 같은 의무 — 화면 줄 구성이 응용 행과 동일하다.
+    if (payload?.track === 'personal') {
+      md.forEach((l, i) => {
+        if (typeof l.ko !== 'string' || !l.ko.trim()) errors.push(`${c.id}: miniDialogue ${i + 1}줄 ko(한글 뜻) 누락 — personal 트랙은 줄마다 en/ko/kr 의무`);
+        if (typeof l.kr !== 'string' || !l.kr.trim()) errors.push(`${c.id}: miniDialogue ${i + 1}줄 kr(한글 발음) 누락 — personal 트랙은 줄마다 en/ko/kr 의무`);
+      });
+    }
     const target = String(c.sentence ?? '').trim();
     const hits = md.filter((l) => l.en.trim() === target).length;
     if (hits !== 1) errors.push(`${c.id}: miniDialogue 타깃 줄(en 이 sentence 와 완전 일치)은 정확히 1개여야 함 (현재 ${hits})`);
@@ -574,7 +589,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       else if (n > 10) warnings.push(`${c.id}: miniDialogue 타깃 외 줄 ${n}단어 — 10단어 이하 권장: "${l.en}"`);
       const nl = ` ${norm(l.en)} `;
       if (ownExpr && nl.includes(` ${ownExpr} `)) errors.push(`${c.id}: miniDialogue 타깃 표현이 다른 줄에도 나옴 — 타깃은 1회만: "${l.en}"`);
-      for (const k of core100Keys) {
+      for (const k of orderKeys) {
         if (!k?.expr || k.num === cardNum) continue;
         const ke = norm(k.expr);
         if (!ke || !nl.includes(` ${ke} `)) continue;

@@ -1089,9 +1089,9 @@ describe('validateSeedContent — miniDialogue (core100)', () => {
     expect(r.ok).toBe(true);
   });
 
-  it('5턴 → 차단', () => {
-    const r = validateSeedContent(payload([...okMd, line('B', 'Okay.'), line('A', 'Sure.')]), opts);
-    expect(r.errors.join(' ')).toContain('2~4턴');
+  it('9턴 → 차단', () => {
+    const r = validateSeedContent(payload([...okMd, line('B', 'Okay.'), line('A', 'Sure.'), line('B', 'Right.'), line('A', 'Yes.'), line('B', 'Okay.'), line('A', 'Bye.')]), opts);
+    expect(r.errors.join(' ')).toContain('2~8턴');
   });
 
   it('타깃 줄이 sentence 와 다르면(1회 아님) 차단', () => {
@@ -1127,5 +1127,59 @@ describe('validateSeedContent — miniDialogue (core100)', () => {
     const ks = loadCore100Keys(seedsDir);
     expect(ks.length).toBe(100);
     expect(ks.find((k) => k.num === 19)?.expr).toBe('trying to reach');
+  });
+});
+
+/* personal 트랙 (2026-09-12 사용자 결정) — 일기 소재 개인화 세션. sceneless 면제 + chain 비의무(화면에서 체이닝을 숨겼다),
+ * miniDialogue 는 전 트랙 2~8턴, 코어100 순서 검사는 core100 트랙에만. */
+describe('validateSeedContent — personal 트랙 (2026-09-12)', () => {
+  const S = "I'm on my way.";
+  const CH = [["I'm", '아임', '나는'], ['on my way.', '온 마이 웨이', '가는 중']];
+  const line = (speaker, en) => ({ speaker, en, ko: '뜻', kr: '음차' });
+  const md8 = [
+    line('A', "We landed early. It's 4:20."), line('B', S), line('A', "Take your time. It's freezing outside."),
+    line('B', "I'll be there in forty minutes."), line('A', 'Did you sleep?'), line('B', "I didn't sleep at all."),
+    line('A', 'You must be tired.'), line('B', "I'm almost there."),
+  ];
+  const card = (extra = {}) => ({
+    id: 'en-personal-airport-01', sentence: S, meaning: '가는 중이야.', reading: null,
+    phonetic_kr: CH.map((c) => c[1]).join(' '), order_index: 1,
+    explanation: {
+      key: "I'm on my way = 가는 중이야.", situation: '새벽 공항 픽업', drills: poolDrills(5),
+      grammar: [{ struct: '구조', body: '설명' }], chunks: CH, phonemes: [['/w/', 'way']],
+      mistake: '함정', similar: '대체', category: 'chunk/test', frequency: 8,
+      miniDialogue: md8, ...extra,
+    },
+  });
+  const payload = (c, track = 'personal') => ({ track, lang: 'en', date: '2026-09-14', cards: [c] });
+  // 'You must be tired' 는 7번째 줄에 있다 — core100 검사가 personal 에도 돌면 '이미 배운/안 배운' 메시지가 샌다.
+  const keys = [{ num: 99, id: 'en-core100-099', expr: 'you must be tired' }];
+
+  it('personal: chain 없이 8턴 미니대화 → 통과', () => {
+    const r = validateSeedContent(payload(card()), { ...okOpts, core100Keys: keys });
+    expect(r.errors).toEqual([]);
+    expect(r.ok).toBe(true);
+  });
+
+  it('9턴 → 차단 (2~8턴)', () => {
+    const r = validateSeedContent(payload(card({ miniDialogue: [...md8, line('A', 'Okay.')] })), okOpts);
+    expect(r.errors.some((e) => e.includes('2~8턴'))).toBe(true);
+  });
+
+  it('personal 줄에 ko 또는 kr 이 없으면 차단 (응용 행과 같은 en/ko/kr 의무)', () => {
+    const noKr = md8.map((l, i) => (i === 2 ? { speaker: l.speaker, en: l.en, ko: l.ko } : l));
+    const r = validateSeedContent(payload(card({ miniDialogue: noKr })), okOpts);
+    expect(r.errors.some((e) => e.includes('miniDialogue 3줄 kr'))).toBe(true);
+  });
+
+  it('personal 카드에는 코어100 순서 검사를 하지 않는다 (경고·차단 없음)', () => {
+    const r = validateSeedContent(payload(card()), { ...okOpts, core100Keys: keys });
+    expect([...r.errors, ...r.warnings].some((m) => m.includes('코어100'))).toBe(false);
+  });
+
+  it('core100 트랙은 여전히 chain 의무', () => {
+    const c = card(); c.id = 'en-core100-101-x';
+    const r = validateSeedContent(payload(c, 'core100'), okOpts);
+    expect(r.errors.some((e) => e.includes('chain 누락'))).toBe(true);
   });
 });
