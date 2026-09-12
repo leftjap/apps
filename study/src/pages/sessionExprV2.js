@@ -21,6 +21,9 @@ import { localISODate } from '../utils/today.js';
 
 const PASS_THRESHOLD = 80;
 const DRILL_DOTS_MAX = 8; // 드릴 행 점수 원 렌더 상한 (2026-08-31) — 26px 원 8개가 행 폭 한계. 데이터는 전체 보존
+/* 블록 표시 스위치 (2026-09-12 사용자 결정) — 체이닝·생산 연습은 화면에서 숨긴다. 코드·시드 필드·게이트·이력 키(#chain#·#prod#)는
+ * 유지하고, 되살릴지 없앨지는 추후 결정. 테스트는 이 값을 켜서 두 블록의 계약을 계속 검증한다. */
+export const SESSION_BLOCKS = { chainProd: false };
 const MAIN_DOTS_MAX = 10; // 메인 문장 점수 원 상한 (2026-09-03, 5→10) — 7회째부터 2개가 숨어 '누락'으로 보였다. 지시는 "일정 숫자가 넘어가면 최신순"
 /* 채점을 되돌릴 때의 안내 (2026-08-29) — 되돌린 이유가 셋이라 문구를 나눈다.
  * unclear = 음소 원시 점수만 바닥 (judgeRecording 경로 — 메인·응용 드릴 — 에선 내용 판정이 misread
@@ -1101,19 +1104,19 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
-  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onChainScore, {
+  const chainBlock = SESSION_BLOCKS.chainProd ? chainBlockEl(ex.chain, lang, s, state.demo, onChainScore, {
     saved: cardEx.chain,
     scores: cardEx.chainScores,
     onSave: (v) => { cardEx.chain = v; handlers.saveSnapshot?.(); },
-  });
+  }) : null;
 
-  // 생산 연습(한→영) — 응용 아래·체이닝 위. 발화 집계는 체이닝과 동일 경로(onChainScore) 재사용.
-  const prodBlock = productionBlockEl(drills, lang, s, state.demo, onChainScore, {
+  // 생산 연습(한→영) — 응용 아래·체이닝 위. 발화 집계는 체이닝과 동일 경로(onChainScore) 재사용. 2026-09-12 숨김(SESSION_BLOCKS).
+  const prodBlock = SESSION_BLOCKS.chainProd ? productionBlockEl(drills, lang, s, state.demo, onChainScore, {
     onStart: collapseDrills,
     saved: cardEx.prod,
     scores: cardEx.prodScores,
     onSave: (v) => { cardEx.prod = v; handlers.saveSnapshot?.(); },
-  });
+  }) : null;
 
   const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
 

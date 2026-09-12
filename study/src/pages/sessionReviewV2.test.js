@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // 체이닝 실경로(비-demo) 검증용 — 데모 경로 테스트들은 services 를 타지 않으므로 영향 없음.
 vi.mock('../services/sessionAnalyze.js', () => ({
@@ -18,6 +18,9 @@ import { renderSessionReviewV2, isRecallMode, recallHint } from './sessionReview
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
+import { SESSION_BLOCKS } from './sessionExprV2.js';
+
+beforeEach(() => { SESSION_BLOCKS.chainProd = true; });
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -919,5 +922,22 @@ describe('renderSessionReviewV2 — 미니대화 블록은 정답 공개 뒤에�
   it('필드가 없으면 블록 자체가 없다', () => {
     const host = mountCard({ interval: 1, demo: true });
     expect(host.querySelector('.vs-mini')).toBeNull();
+  });
+});
+
+describe('renderSessionReviewV2 — 체이닝 숨김 (2026-09-12 기본값 chainProd=false)', () => {
+  beforeEach(() => { SESSION_BLOCKS.chainProd = false; });
+  afterEach(() => { SESSION_BLOCKS.chainProd = true; });
+  it('chain 이 있어도 .vs-chain 을 만들지 않는다 (공개 전·후 모두 DOM 에 없음)', () => {
+    vi.useFakeTimers();
+    try {
+      const chain = { target: `${EN} I mean it.`, chunks: [EN, 'I mean it.'], ko: '진심이야' };
+      const sentence = { id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: `${EN} = ${KO}`, chunks: CHUNKS, chain } };
+      const host = mountCard({ interval: 1, demo: true, state: { sentence } });
+      expect(host.querySelector('.vs-chain')).toBeNull();
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      expect(host.querySelector('.vs-chain')).toBeNull();
+    } finally { vi.useRealTimers(); }
   });
 });

@@ -36,6 +36,10 @@ import { mountSessionReview } from './session-review.js';
 import { loadReviewCards } from './cardLoader.js';
 import { finishSession, flushLiveStats } from '../services/sessionFinish.js';
 import { localISODate } from '../utils/today.js';
+import { SESSION_BLOCKS } from './sessionExprV2.js';
+
+// 2026-09-12: 체이닝·생산 블록은 화면에서 숨김이 기본값. 아래 기존 테스트들은 두 블록의 계약을 계속 검증하므로 켜고 돈다.
+beforeEach(() => { SESSION_BLOCKS.chainProd = true; });
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 const settle = async (n = 8) => { for (let i = 0; i < n; i += 1) await tick(); };

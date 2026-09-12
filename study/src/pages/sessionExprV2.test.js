@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 // 녹음 성공 경로 통합 검증 — 마이크 없이 services 를 mock 해 record→채점→savePronunciationLog→state 를 결정적으로 확인.
 // (라이브 브라우저는 마이크 장치 부재로 성공 경로 미실행 — 이 테스트가 그 갭을 메움.)
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 vi.mock('../services/sessionAnalyze.js', () => ({
   startMicRecording: vi.fn(async () => ({ controller: { stop() {} } })),
@@ -16,10 +16,13 @@ vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), s
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl, SESSION_BLOCKS } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
+
+// 2026-09-12: 체이닝·생산 블록은 화면에서 숨김이 기본값. 아래 기존 테스트들은 두 블록의 계약을 계속 검증하므로 켜고 돈다.
+beforeEach(() => { SESSION_BLOCKS.chainProd = true; });
 
 const tick = () => new Promise((r) => setTimeout(r, 0));
 
@@ -1683,5 +1686,32 @@ describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
     const lines = host.querySelectorAll('.vs-mini .vs-drow');
     expect(lines).toHaveLength(3);
     expect(lines[1].querySelector('.ix').textContent).toBe('B');
+  });
+});
+
+describe('sessionExprV2 — 체이닝·생산 블록 숨김 (2026-09-12 사용자 결정, 기본값 chainProd=false)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  afterEach(() => { SESSION_BLOCKS.chainProd = true; });
+  const CHAIN = { target: 'Is that a promise? I need to know.', chunks: ['Is that a promise?', 'I need to know.'], ko: '약속이야? 알아야겠어.' };
+  const mountWithChain = () => {
+    const st = makeStateWithDrills();
+    st.sentence.explanation.chain = CHAIN;
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, st, {});
+    return host;
+  };
+
+  it('chain·drills 가 있어도 .vs-chain·.vs-prodblock 은 렌더되지 않고 응용 목록은 남는다', () => {
+    const host = mountWithChain();
+    expect(host.querySelector('.vs-chain')).toBeNull();
+    expect(host.querySelector('.vs-prodblock')).toBeNull();
+    expect(host.querySelector('.vs-drills-list')).not.toBeNull();
+  });
+
+  it('플래그를 켜면 두 블록이 다시 렌더된다 (코드 유지 계약)', () => {
+    SESSION_BLOCKS.chainProd = true;
+    const host = mountWithChain();
+    expect(host.querySelector('.vs-chain')).not.toBeNull();
+    expect(host.querySelector('.vs-prodblock')).not.toBeNull();
   });
 });

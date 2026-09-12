@@ -26,7 +26,7 @@ import { judgeRecording } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 // 해설·응용문장·체이닝은 신규 세션과 **같은 컴포넌트**를 쓴다 (2026-07-10 사용자 지시).
 // 복습 전용 체이닝('전체 재현 → 단계 폴백')은 폐기 — 두 화면이 달라지지 않게.
-import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl } from './sessionExprV2.js';
+import { explainPanel, drillRows, chainBlockEl, utterRingCard, hlNode, VS_CSS, VSM_CSS, recordGateMessage, normScores, miniDialogueEl, SESSION_BLOCKS } from './sessionExprV2.js';
 import { PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
 
 const PASS_THRESHOLD = 80;
@@ -501,12 +501,12 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
     }, state.demo, { saved: savedDrills, history: state.drillLog?.[s?.id] })),
   ) : null;
 
-  // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적).
-  const chainBlock = chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore, {
+  // 체이닝 — 신규 세션과 동일 컴포넌트 (무자막, 단계 누적). 2026-09-12 화면에서 숨김(SESSION_BLOCKS, 코드 유지).
+  const chainBlock = SESSION_BLOCKS.chainProd ? chainBlockEl(ex.chain, lang, s, state.demo, onAppliedScore, {
     saved: cardEx.chain,
     scores: cardEx.chainScores,
     onSave: (v) => { cardEx.chain = v; handlers.saveSnapshot?.(); },
-  });
+  }) : null;
 
   // 응용·체이닝은 신규와 같은 자리(메인 칼럼)에 두되, 정답을 품으므로 공개 전에는 감춘다.
   if (!revealed) {
