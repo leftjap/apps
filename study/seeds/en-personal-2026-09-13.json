@@ -1,0 +1,168 @@
+{
+  "lang": "en",
+  "track": "personal",
+  "date": "2026-09-13",
+  "_note": "personal 트랙 파일럿 (2026-09-12 시안 2 '가는 중이야', docs/2026-09-12-dialogue-session-plan.md). 일기 2026-01-02: 라스베가스 비행이 한 시간 일찍 4시 20분 착륙, 지오는 못 일어날까 봐 한숨도 못 잠, 한파주의보. miniDialogue 는 8턴, 줄마다 en/ko/kr(응용 행과 같은 구성). date 는 적재일.",
+  "cards": [
+    {
+      "id": "en-personal-airport-01-on-my-way",
+      "sentence": "I'm on my way.",
+      "meaning": "가는 중이야.",
+      "reading": null,
+      "phonetic_kr": "아임 온 마이 웨이",
+      "order_index": 1,
+      "explanation": {
+        "key": "I'm on my way = 가는 중이야. 출발했다고 알리는 첫마디.",
+        "anchor": "가는 중",
+        "situation": "1월 2일 새벽. 라스베가스에서 오는 대한항공 비행이 예정보다 한 시간 빠른 4시 20분에 내렸다. 지오는 못 일어날까 봐 한숨도 못 잤다. 한파주의보. (문자 대화)",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
+          { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
+          { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
+          { "speaker": "A", "name": "소연", "en": "You must be tired.", "ko": "피곤하겠다.", "kr": "유 머스 비 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I'm almost there.", "ko": "거의 다 왔어.", "kr": "아임 올모우스 데어r" }
+        ],
+        "drills": [
+          { "en": "Soyeon knows I'm on my way.", "ko": "소연은 내가 가는 중인 거 알아.", "kr": "소연 노우z 아임 온 마이 웨이" },
+          { "en": "Are you on your way?", "ko": "오는 중이야?", "kr": "아r 여 온 여r 웨이" },
+          { "en": "Soyeon is on her way home from the airport.", "ko": "소연은 공항에서 집으로 오는 중이야.", "kr": "소연 이z 온 허r 웨이 호움 f럼 디 에어r포어r트" },
+          { "en": "I'm not on my way yet. I'm still at home.", "ko": "아직 출발 안 했어. 아직 집이야.", "kr": "아임 낫 온 마이 웨이 옛 아임 스틸 엇 호움" },
+          { "en": "Nani is on her way to the kitchen.", "ko": "나니가 주방으로 가는 중이야.", "kr": "나니 이z 온 허r 웨이 터 더 키친" },
+          { "en": "We're on our way to pick you up.", "ko": "우리가 너 데리러 가는 중이야.", "kr": "위아r 온 아워r 웨이 터 피켜 업" }
+        ],
+        "grammar": [
+          { "struct": "be on one's way (to + 장소)", "body": "지금 이동 중이라는 뜻. to 뒤에 목적지가 오고 집은 home 만 쓴다(to home 아님). 동사는 be 라서 I'm / Are you / Soyeon is 로 주어만 바꾸면 된다." }
+        ],
+        "chunks": [["I'm", "아임", "나는"], ["on my way.", "온 마이 웨이", "가는 중"]],
+        "phonemes": [["/w/ way", "way 의 w 는 입술을 둥글게 내밀며 '웨이' — '우에이' 로 늘이지 않는다"]],
+        "mistake": "'가는 중' 을 I'm going 이라고만 하면 '갈 거야' 로 들린다. 이미 출발했다는 뜻은 I'm on my way.",
+        "similar": "I'm coming. / I'm heading there now.",
+        "category": "일상/이동",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-airport-02-forty-minutes",
+      "sentence": "I'll be there in forty minutes.",
+      "meaning": "40분이면 가.",
+      "reading": null,
+      "phonetic_kr": "아일 비 데어r 인 f포어r리 미닛츠",
+      "order_index": 2,
+      "explanation": {
+        "key": "I'll be there in forty minutes = 40분이면 가. in + 시간 = 그만큼 뒤에.",
+        "anchor": "40분이면",
+        "situation": "소연이 안에서 기다리겠다고 한다. 지오가 도착 시간을 알린다. 서둘러도 줄어드는 건 1~2분뿐이라 넉넉히 말한다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
+          { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
+          { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
+          { "speaker": "A", "name": "소연", "en": "You must be tired.", "ko": "피곤하겠다.", "kr": "유 머스 비 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I'm almost there.", "ko": "거의 다 왔어.", "kr": "아임 올모우스 데어r" }
+        ],
+        "drills": [
+          { "en": "I'll be there in a minute.", "ko": "금방 갈게.", "kr": "아일 비 데어r 이너 미닛" },
+          { "en": "I'll be there in ten minutes.", "ko": "10분이면 가.", "kr": "아일 비 데어r 인 텐 미닛츠" },
+          { "en": "Bongsu will be there at five.", "ko": "봉수는 5시에 올 거야.", "kr": "봉수 윌 비 데어r 엇 f파이v" },
+          { "en": "When will you be there?", "ko": "언제 도착해?", "kr": "웬 윌 여 비 데어r" },
+          { "en": "I promise I'll be there in forty minutes.", "ko": "40분이면 간다고 약속해.", "kr": "아이 프라미스 아일 비 데어r 인 f포어r리 미닛츠" },
+          { "en": "I won't be there before five.", "ko": "5시 전엔 못 가.", "kr": "아이 워운 비 데어r 비f포어r f파이v" }
+        ],
+        "grammar": [
+          { "struct": "I'll be there in + 시간", "body": "in 은 '~안에' 가 아니라 '~뒤에'. in forty minutes = 40분 뒤에. 시각은 at(at five), 걸리는 시간은 in." }
+        ],
+        "chunks": [["I'll be there", "아일 비 데어r", "거기 갈게"], ["in forty minutes.", "인 f포어r리 미닛츠", "40분 뒤에"]],
+        "phonemes": [["/t/ forty → 포어r리", "forty 의 t 는 모음 사이라 굴러서 ㄹ — '포r티'(X)"], ["I'll → 아일", "어두운 L: 혀끝을 윗잇몸에 대고 끝낸다 (gold 보류 항목, 임시 표기)"]],
+        "mistake": "'40분 안에' 로 생각해 within 을 쓰지 않는다. 도착 예고는 in.",
+        "similar": "I'll be there soon. / Give me forty minutes.",
+        "category": "약속/시간",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-airport-03-no-sleep",
+      "sentence": "I didn't sleep at all.",
+      "meaning": "한숨도 못 잤어.",
+      "reading": null,
+      "phonetic_kr": "아이 디든 슬리입 어롤",
+      "order_index": 3,
+      "explanation": {
+        "key": "I didn't sleep at all = 한숨도 못 잤어. not ... at all = 전혀.",
+        "anchor": "한숨도",
+        "situation": "소연이 잠은 잤냐고 묻는다. 지오는 못 일어날까 봐 한숨도 못 잤다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
+          { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
+          { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
+          { "speaker": "A", "name": "소연", "en": "You must be tired.", "ko": "피곤하겠다.", "kr": "유 머스 비 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I'm almost there.", "ko": "거의 다 왔어.", "kr": "아임 올모우스 데어r" }
+        ],
+        "drills": [
+          { "en": "I didn't eat at all.", "ko": "아무것도 안 먹었어.", "kr": "아이 디든 이잇 어롤" },
+          { "en": "Did you sleep at all?", "ko": "잠은 좀 잤어?", "kr": "디저 슬리입 어롤" },
+          { "en": "Nani didn't sleep at all last night.", "ko": "나니가 어젯밤 한숨도 안 잤어.", "kr": "나니 디든 슬리입 어롤 라스 나잇" },
+          { "en": "I slept for two hours.", "ko": "두 시간 잤어.", "kr": "아이 슬렙트 f퍼r 투우 아워r즈" },
+          { "en": "I was afraid I'd oversleep.", "ko": "늦잠 잘까 봐 겁났어.", "kr": "아이 워z 어f레이다이드 오우버r슬리입" },
+          { "en": "Soyeon didn't sleep at all on the plane.", "ko": "소연은 비행기에서 한숨도 못 잤어.", "kr": "소연 디든 슬리입 어롤 온 더 플레인" }
+        ],
+        "grammar": [
+          { "struct": "didn't + 동사원형 + at all", "body": "과거 부정은 didn't 뒤에 원형(sleep, slept 아님). at all 은 부정문 끝에 붙어 '전혀'." }
+        ],
+        "chunks": [["I didn't sleep", "아이 디든 슬리입", "안 잤어"], ["at all.", "어롤", "전혀"]],
+        "phonemes": [["at all → 어롤", "at 의 t 가 all 로 굴러 이어진다 — '앳 올'(X)"], ["didn't → 디든", "끝 t 는 거의 안 들린다"]],
+        "mistake": "I didn't slept (X). didn't 뒤는 원형.",
+        "similar": "I got no sleep. / I was up all night.",
+        "category": "건강/수면",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-airport-04-almost-there",
+      "sentence": "I'm almost there.",
+      "meaning": "거의 다 왔어.",
+      "reading": null,
+      "phonetic_kr": "아임 올모우스 데어r",
+      "order_index": 4,
+      "explanation": {
+        "key": "I'm almost there = 거의 다 왔어. 도착 직전에.",
+        "anchor": "거의",
+        "situation": "공항 진입로. 지오가 소연에게 거의 다 왔다고 알린다. 차는 따뜻하게 데워 놨다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
+          { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
+          { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
+          { "speaker": "A", "name": "소연", "en": "You must be tired.", "ko": "피곤하겠다.", "kr": "유 머스 비 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I'm almost there.", "ko": "거의 다 왔어.", "kr": "아임 올모우스 데어r" }
+        ],
+        "drills": [
+          { "en": "We're almost there.", "ko": "거의 다 왔어.", "kr": "위어r 올모우스 데어r" },
+          { "en": "Are you almost there?", "ko": "거의 다 왔어?", "kr": "아r 여 올모우스 데어r" },
+          { "en": "I'm almost done.", "ko": "거의 다 했어.", "kr": "아임 올모우스 던" },
+          { "en": "Soyeon is almost home.", "ko": "소연은 거의 집에 다 왔어.", "kr": "소연 이z 올모우스 호움" },
+          { "en": "I'm almost at the Terminal 2 exit.", "ko": "2터미널 출구에 거의 다 왔어.", "kr": "아임 올모우스 엇 더 터r미널 투우 엑씻" },
+          { "en": "It's almost five.", "ko": "거의 5시야.", "kr": "잇츠 올모우스 f파이v" }
+        ],
+        "grammar": [
+          { "struct": "be almost + 장소/상태", "body": "almost 는 be 동사 뒤. there(거기), home(집), done(끝) 처럼 짧은 말이 온다." }
+        ],
+        "chunks": [["I'm almost", "아임 올모우스", "거의"], ["there.", "데어r", "거기"]],
+        "phonemes": [["almost → 올모우스", "끝 t 가 there 앞에서 빠진다 — '올모스트'(X)"]],
+        "mistake": "'거의 다 왔어' 를 I almost arrived 로 하지 않는다. 회화는 I'm almost there.",
+        "similar": "I'm nearly there. / Two minutes away.",
+        "category": "일상/이동",
+        "frequency": 9
+      }
+    }
+  ]
+}
