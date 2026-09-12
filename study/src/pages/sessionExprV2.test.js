@@ -16,7 +16,7 @@ vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), s
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl, SESSION_BLOCKS } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl, MINI_VOICES, SESSION_BLOCKS } from './sessionExprV2.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
 import { stopAndAnalyze } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
@@ -1671,14 +1671,67 @@ describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
     expect(speak.mock.calls.map((c) => c[0])).toEqual(["I'll finish it by Friday.", 'Is that a promise?', 'It is. You can count on it.']);
   });
 
-  /* 듣기 전용 (2026-09-08 사용자 최종 결정 "듣기 버튼만") — 대화문은 암기·평가 대상이 아니므로 녹음·판정·잠금이 없다.
-   * 타깃 문장 녹음은 바로 위 카드의 '따라 말하기'가 맡는다. */
-  it('줄마다 듣기 버튼만 — 녹음 버튼·판정 없음', () => {
+  /* 녹음 (2026-09-12 사용자 결정 "미니대화에도 녹음 버튼" — 2026-09-08 '듣기 전용' 결정을 뒤집음) — 줄마다 선택 녹음.
+   * 응용 행과 같은 채점·배지·집계이고 진행 조건(게이트·판정·잠금)은 없다. */
+  it('줄마다 녹음 버튼 — 녹음 1회 → tried/passed/pronScores 반영 · 줄 점수 배지 · #mini# 로그 저장', async () => {
     const host = mount(mdState());
+    const state = host._state;
     const mini = host.querySelector('.vs-mini');
-    expect(mini.querySelectorAll('button[aria-label="듣기"]')).toHaveLength(3);
-    expect(mini.querySelector('button[aria-label="녹음"]')).toBeNull();
-    expect(mini.querySelector('.judge-btn')).toBeNull();
+    const recs = [...mini.querySelectorAll('button[aria-label="녹음"]')];
+    expect(recs).toHaveLength(3);
+    recs[1].click(); await tick();                 // 타깃 줄 녹음 시작
+    recs[1].click(); await tick(); await tick();   // 멈춤 + 채점 (mock: 완전 발화 → 100)
+    expect(state.tried).toBe(1);
+    expect(state.passed).toBe(1);
+    expect(state.pronScores).toEqual([100]);
+    expect(savePronunciationLog).toHaveBeenCalledTimes(1);
+    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('e1#mini#Is that a promise?');
+    const badge = recs[1].closest('.vs-mini-line').querySelector('.vs-gscore');
+    expect(badge.textContent).toContain('100');
+  });
+
+  it('스냅샷에 남은 줄 점수(exLog.mini)를 재렌더 때 배지로 복원한다', () => {
+    const st = mdState();
+    st.exLog = { e1: { mini: { 0: [77] } } };
+    const host = mount(st);
+    const lines = host.querySelectorAll('.vs-mini-line');
+    expect(lines[0].querySelector('.vs-gscore').textContent).toContain('77');
+    expect(lines[1].querySelector('.vs-gscore').textContent).toBe('');
+  });
+
+  it('데모(마이크 없음)에서는 녹음 클릭 → 시뮬 점수 배지', async () => {
+    const st = mdState(); st.demo = true;
+    const host = mount(st);
+    const rec = host.querySelector('.vs-mini button[aria-label="녹음"]');
+    rec.click();
+    await new Promise((r) => setTimeout(r, 900));
+    expect(host.querySelector('.vs-mini-line .vs-gscore').textContent).not.toBe('');
+  });
+
+  it('줄의 name 이 있으면 화자 칸에 이름을, 없으면 speaker 글자를 보여준다 (2026-09-12)', () => {
+    const st = mdState();
+    st.sentence.explanation.miniDialogue = [{ ...MD[0], name: '소연' }, MD[1], MD[2]];
+    const host = mount(st);
+    const ix = [...host.querySelectorAll('.vs-mini-line .ix')].map((e) => e.textContent);
+    expect(ix).toEqual(['소연', 'B', 'A']);
+  });
+
+  it('explanation.situation 이 있으면 라벨 아래 장면 한 줄(.vs-mini-scene)을 보여준다', () => {
+    const st = mdState();
+    st.sentence.explanation.situation = '새벽 4시, 공항 픽업';
+    const host = mount(st);
+    expect(host.querySelector('.vs-mini .vs-mini-scene').textContent).toBe('새벽 4시, 공항 픽업');
+  });
+
+  it('줄 부제는 응용 행과 같이 한글 발음(kr) · 뜻(ko) — kr 이 없으면 뜻만 (2026-09-13)', () => {
+    const st = mdState();
+    st.sentence.explanation.miniDialogue = [{ ...MD[0], kr: '아일 f피니쉬 잇 바이 f라이데이' }, MD[1], MD[2]];
+    const host = mount(st);
+    const subs = [...host.querySelectorAll('.vs-mini-line .sub')].map((e) => e.textContent);
+    expect(subs[0]).toBe('아일 f피니쉬 잇 바이 f라이데이 · 금요일까지 끝낼게.');
+    expect(subs[1]).toBe('약속하는 거예요?');
+    expect(MINI_VOICES.A).toMatch(/Neural$/);
+    expect(MINI_VOICES.B).toMatch(/Neural$/);
   });
 
   it('응용 행과 같은 행 구조(.vs-drow)라 버튼 열이 같은 자리에 온다', () => {

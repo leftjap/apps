@@ -15,7 +15,7 @@ import { V_VARS, VI, vIcon, vCheck, v2Style, ensureV2Fonts,
   scoreDot, emptyDot, miniCalGrid, isoShift, DOW_KO } from '../components/v2/atoms.js';
 import { exprOf, bumpRecLog } from '../components/d1/sessionShell.js';
 import { startMicRecording, stopAndAnalyze } from '../services/sessionAnalyze.js';
-import { savePronunciationLog, drillLogId, chainLogId } from '../services/pronunciationLog.js';
+import { savePronunciationLog, drillLogId, chainLogId, miniLogId, miniLinesOf } from '../services/pronunciationLog.js';
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { createJudgeRow } from '../components/session/atoms.js';
@@ -646,12 +646,22 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   const srsRow = h('div', { class: 'vr-srs' }, h('span', {}, h('b', {}, `${reviewNo}번째`), ' 복습'),
     lastScoreEl ? h('span', {}, '지난 점수 ', lastScoreEl) : null);
   const cardEl = h('div', { class: 'vr-card' }, h1El, koEl, pronEl, srsRow, ctrl, meta);
-  // 미니대화 (2026-09-08 사용자 결정 "복습 세션에도") — 카드 아래, 듣기 전용. 타깃 줄이 정답을 품으므로
-  // 공개 전에는 DOM 에도 두지 않는다(숨김이 아니라 미생성 — 텍스트 유출 방지). 공개 시 슬롯에 붙인다.
+  // 미니대화 (2026-09-08 "복습 세션에도", 2026-09-12 줄 녹음) — 카드 아래. 타깃 줄이 정답을 품으므로 공개 전에는 DOM 에도
+  // 두지 않는다(숨김이 아니라 미생성 — 텍스트 유출 방지). 녹음은 신규 세션과 같은 집계·이력(#mini#), 진행 조건·SRS 영향 없음.
   const miniSlot = h('div', { class: 'vr-mini-slot' });
+  const miniLines = miniLinesOf(ex?.miniDialogue);
+  const onMiniScore = (i, result) => {
+    const store = (cardEx.mini ??= {});
+    store[i] = [...normScores(store[i]), Math.round(Number(result?.score) || 0)];
+    if (!state.demo) {
+      savePronunciationLog(window.studyDB, { result, sentenceId: miniLogId(s?.id, miniLines[i]?.en || ''), lang, date: getTodayISO() })
+        .catch((e) => console.error('[sessionReviewV2] mini pron persist', e));
+    }
+    onAppliedScore(result);
+  };
   const mountMini = () => {
     if (miniSlot.childElementCount) return;
-    const el = miniDialogueEl(ex?.miniDialogue, s, lang, expr);
+    const el = miniDialogueEl(ex?.miniDialogue, s, lang, expr, { demo: state.demo, onScore: onMiniScore, saved: cardEx.mini, scene: ex?.situation });
     if (el) miniSlot.appendChild(el);
   };
   if (revealed) mountMini();

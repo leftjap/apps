@@ -882,7 +882,8 @@ describe('sessionReviewV2 — 드릴 점수는 배열로 누적된다 (이력 �
 
 
 /* 미니대화 — 복습에도 (2026-09-08 사용자 결정 "복습 세션에도 넣자"). 복습은 영어를 숨기는 화면이라 타깃 줄이 든
- * 대화는 **정답 공개 뒤**에만 카드 아래에 나온다(공개 전에 보이면 정답 유출). 듣기 전용. */
+ * 대화는 **정답 공개 뒤**에만 카드 아래에 나온다(공개 전에 보이면 정답 유출). 2026-09-12: 줄 녹음 복원(신규 세션과 동일 — 컨트롤러 확인,
+ * 아래 '듣기만' 테스트는 이 결정으로 대체돼 녹음 버튼 존재를 검증하도록 갱신). */
 describe('renderSessionReviewV2 — 미니대화 블록은 정답 공개 뒤에만', () => {
   const MD = [
     { speaker: 'A', en: 'Thanks for having me tonight.', ko: '오늘 초대해 줘서 고마워.' },
@@ -905,7 +906,7 @@ describe('renderSessionReviewV2 — 미니대화 블록은 정답 공개 뒤에�
     expect(host.textContent).not.toContain('Thanks for having me tonight.');
   });
 
-  it('녹음(데모) 후 공개되면 카드 아래에 나타난다 — 듣기만', () => {
+  it('녹음(데모) 후 공개되면 카드 아래에 나타난다 — 듣기 + 녹음 (2026-09-12 복원)', () => {
     vi.useFakeTimers();
     try {
       const host = mountMd();
@@ -915,7 +916,7 @@ describe('renderSessionReviewV2 — 미니대화 블록은 정답 공개 뒤에�
       expect(visible(mini)).toBe(true);
       expect(host.querySelector('.vr-card').compareDocumentPosition(mini) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(mini.querySelectorAll('button[aria-label="듣기"]')).toHaveLength(2);
-      expect(mini.querySelector('button[aria-label="녹음"]')).toBeNull();
+      expect(mini.querySelectorAll('button[aria-label="녹음"]')).toHaveLength(2);
     } finally { vi.useRealTimers(); }
   });
 
@@ -938,6 +939,30 @@ describe('renderSessionReviewV2 — 체이닝 숨김 (2026-09-12 기본값 chain
       host.querySelector('.vr-pill.pri').click();
       vi.advanceTimersByTime(1100);
       expect(host.querySelector('.vs-chain')).toBeNull();
+    } finally { vi.useRealTimers(); }
+  });
+});
+
+describe('renderSessionReviewV2 — 미니대화 녹음 (2026-09-12)', () => {
+  const MD = [
+    { speaker: 'A', en: 'Did you sleep?', ko: '잠은 잤어?' },
+    { speaker: 'B', en: EN, ko: KO },
+    { speaker: 'A', en: 'Good.', ko: '다행이다.' },
+  ];
+  const sentenceWithMd = () => ({ id: 'c1', lang: 'en', sentence: EN, ko: KO, explanation: { key: `${EN} = ${KO}`, chunks: CHUNKS, miniDialogue: MD } });
+
+  it('정답 공개 뒤 미니대화 줄마다 녹음 버튼 — 데모 녹음이면 점수 배지가 붙는다', () => {
+    vi.useFakeTimers();
+    try {
+      const host = mountCard({ interval: 1, demo: true, state: { sentence: sentenceWithMd() } });
+      expect(host.querySelector('.vs-mini')).toBeNull();      // 공개 전 미생성(정답 유출 방지)
+      host.querySelector('.vr-pill.pri').click();
+      vi.advanceTimersByTime(1100);
+      const recs = [...host.querySelectorAll('.vs-mini button[aria-label="녹음"]')];
+      expect(recs).toHaveLength(3);
+      recs[0].click();
+      vi.advanceTimersByTime(900);
+      expect(host.querySelector('.vs-mini-line .vs-gscore').textContent).not.toBe('');
     } finally { vi.useRealTimers(); }
   });
 });
