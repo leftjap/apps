@@ -54,28 +54,7 @@ function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 export const VS_CSS = `
 .vs{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
 .vs *{box-sizing:border-box;margin:0}
-.vs-rail{width:88px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:8px;flex:0 0 auto}
-.vs-rail .hm{color:var(--faint);margin-bottom:16px;background:none;border:0;cursor:pointer;display:inline-flex}
-.vs-rstep{width:38px;height:38px;border-radius:13px;display:grid;place-items:center;font-family:Outfit;font-size:13.5px;font-weight:700;color:var(--faint);cursor:pointer;background:none;border:0}
-.vs-rstep.on{background:var(--teal-soft);color:var(--teal-deep);animation:v-haloT 2.4s ease-in-out infinite}
-.vs-rstep.done{color:var(--teal-deep)}
-.vs-rail .sp{flex:1}
-.vs-rail .tm{font-family:Outfit;font-size:11px;color:var(--faint);letter-spacing:.08em;white-space:nowrap}
 .vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}
-.vs-main{width:760px;max-width:100%}
-.vs-crumb{display:flex;align-items:center;gap:14px}
-.vs-scene{display:inline-block;max-width:300px;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:6px 13px;white-space:nowrap}
-.vs-prog{flex:1;display:flex;gap:5px}
-.vs-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
-.vs-prog i.f{background:var(--teal)}
-.vs-prog-t{font-family:Outfit;font-size:12px;color:var(--faint);font-weight:600;white-space:nowrap}
-.vs-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:28px 40px 30px;margin-top:18px;
-  box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
-.vs-h1{font-family:Outfit;font-size:42px;font-weight:700;letter-spacing:-0.03em;line-height:1.12}
-/* 밑줄은 그라디언트 언더레이 — text-decoration 은 단어 사이가 끊긴다 (§4.4). */
-.vs-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 5px no-repeat;padding-bottom:6px}
-.vs-ko{font-size:17px;color:var(--mut);margin-top:12px}
-.vs-pron{font-size:13px;color:var(--faint);margin-top:5px}
 .vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:24px;min-height:56px;flex-wrap:wrap}
 .vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
 .vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
@@ -1019,24 +998,9 @@ export const VSM_CSS = `
 .m-home{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--mut)}
 .m-topb-meta{font-family:Outfit,sans-serif;font-size:12px;color:var(--faint);letter-spacing:.04em;white-space:nowrap}
 .m-topb-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint)}
-.m-prog{display:flex;gap:4px;margin-top:9px}
-.m-prog i{flex:1;height:4px;border-radius:2px;background:#e7e3d4}
-.m-prog i.f{background:var(--teal)}
-.m-steps{display:flex;align-items:center;gap:7px;padding:11px 20px 3px;flex:0 0 auto;overflow-x:auto}
-.m-rstep{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;font-family:Outfit;font-size:12.5px;font-weight:700;color:var(--faint);flex:0 0 auto}
-.m-rstep.on{background:var(--teal-soft);color:var(--teal-deep);animation:v-haloT 2.4s ease-in-out infinite}
-.m-rstep.done{color:var(--teal-deep)}
-.m-steps .sp{flex:1}
-.m-steps .pt{font-family:Outfit;font-size:12px;font-weight:600;color:var(--faint);white-space:nowrap}
 .m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
 .m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
 .m-cta .vs-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:var(--teal);border:1.5px solid var(--teal);color:#fff}
-.scene-chip{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border-radius:999px;padding:5px 11px;letter-spacing:.02em;white-space:nowrap}
-.vs-card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 22px;margin-top:14px;box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.14)}
-.vs-h1{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1.15}
-.vs-h1 b{font-weight:700;background:linear-gradient(oklch(44% .062 192/.35),oklch(44% .062 192/.35)) 0 100%/100% 4px no-repeat;padding-bottom:4px}
-.vs-ko{font-size:16px;color:var(--mut);margin-top:11px}
-.vs-pron{font-size:12.5px;color:var(--faint);margin-top:5px}
 .vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;min-height:54px;flex-wrap:wrap}
 /* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vs button' 리셋과 동률로 올린다 — 안 그러면
    '.vs button' 의 padding:0 (0,0,1,1)이 '.vs-pill'(0,0,1,0)을 이겨 패딩이 0 이 되고, 타원 버튼
@@ -1182,7 +1146,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const exprCards = state.cards.slice(offset);
   const total = exprCards.length;
   const idx = Math.max(1, state.step - offset);
-  const sceneTitle = hasScene ? (state.cards[0].explanation.sceneTitle || '') : '';
   const expr = exprOf(s || {});
   // 오늘 발화의 분모 = 직전 학습일 발화 수 (§1-1). 0 = 직전 학습일 없음 → 비교 UI 미표시.
   const prevDay = Number(state.prevDayUtter) || 0;
@@ -1617,9 +1580,3 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   return { cleanup: () => { try { window.studySpeech?.cancel?.(); if (recCtrl?.stop) recCtrl.stop(); } catch { /* noop */ } host.innerHTML = ''; }, layout };
 }
 
-// 표현 키가 없을 때 밑줄 대상 — 마지막 단어(대략) 강조.
-function pickUnderline(sentence) {
-  if (!sentence) return null;
-  const words = String(sentence).replace(/[?.!,]/g, '').split(' ').filter(Boolean);
-  return words.length ? words[words.length - 1] : null;
-}

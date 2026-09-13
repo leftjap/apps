@@ -305,48 +305,8 @@ function makeStateWithDrills(over = {}) {
   };
 }
 
-/* 장면 칩 = <맥락> · <과목> 고정 (클로드디자인 2026-08-27).
- * 맥락은 sceneTitle 이 있으면 그 값, 없으면 '신규' — '신규 학습' 은 화면 종류를 말할 뿐이고
- * 진행바·레일이 이미 그걸 말한다. 과목은 홈에 과목 전환이 있어 세션 안에서도 남긴다. */
-describe('sessionExprV2 — 장면 칩', () => {
-  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
-
-  const chipText = (host) => (host.querySelector('.vs-scene') || host.querySelector('.scene-chip')).textContent;
-
-  it('장면이 없으면 `신규 · 영어`', () => {
-    const host = document.createElement('div'); document.body.appendChild(host);
-    const st = makeStateWithDrills();
-    st.cards = [st.cards[1]]; // scene 카드 제거 → sceneTitle 없음
-    renderSessionExprV2(host, st, {});
-    expect(chipText(host)).toBe('신규 · 영어');
-    expect(host.textContent).not.toContain('신규 학습');
-  });
-
-  it('장면이 있으면 `<장면명> · 영어`', () => {
-    const host = document.createElement('div'); document.body.appendChild(host);
-    renderSessionExprV2(host, makeStateWithDrills(), {});
-    expect(chipText(host)).toBe('데모 · 영어');
-  });
-
-  it('모바일도 같은 규칙을 쓴다', () => {
-    const host = document.createElement('div'); document.body.appendChild(host);
-    renderSessionExprV2(host, makeStateWithDrills({ size: 'phone' }), {});
-    expect(chipText(host)).toBe('데모 · 영어');
-  });
-
-  /* 긴 장면명이 진행바를 밀어내지 않게 — 클래스가 데스크톱/모바일로 갈려 한 곳만 고치면 남는다. */
-  it('데스크톱·모바일 칩 모두 말줄임 처리가 있다', () => {
-    for (const size of ['desktop', 'phone']) {
-      const host = document.createElement('div'); document.body.appendChild(host);
-      renderSessionExprV2(host, makeStateWithDrills({ size }), {});
-      const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
-      const sel = size === 'desktop' ? /\.vs-scene\{[^}]*\}/ : /\.scene-chip\{[^}]*\}/;
-      const block = css.match(sel)[0];
-      expect(block).toContain('text-overflow:ellipsis');
-      expect(block).toContain('max-width');
-    }
-  });
-});
+/* 장면 칩(2026-08-27)은 2026-09-14 대화 스테이지 전환에서 폐기됐다 — 맥락은 대화 자체가 말하고,
+ * 과목·진행은 좌측 사이드바 라벨(데스크톱)과 상단 바(폰)가 말한다. 그 계약은 아래 조립 describe 가 잡는다. */
 
 describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
@@ -546,7 +506,7 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, makeStateWithDrills({ size: 'phone' }), {});
     const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
-    const blocks = [...css.matchAll(/\.vs-ctrl\{[^}]*\}/g)].map((m) => m[0]);
+    const blocks = [...css.matchAll(/(?:^|\n)\.vs-ctrl\{[^}]*\}/g)].map((m) => m[0]);
     expect(blocks.length).toBeGreaterThan(0);
     expect(blocks.every((b) => b.includes('min-height'))).toBe(true);
   });
@@ -860,12 +820,14 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     return st;
   };
 
-  it('사이드바가 링 / 공부 이력 / 해설 / 다음 표현 4카드로 분리된다', () => {
+  /* 2026-09-14 — 위젯(링·캘린더)이 좌측 사이드바로, 해설·다음 표현이 우측 패널로 갈렸다. */
+  it('좌측은 목록 · 링 · 캘린더, 우측은 해설 · 다음 표현이다', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, withEx(), {});
-    const side = host.querySelector('.vs-side');
-    expect([...side.children].map((n) => n.className.split(' ')[0]))
-      .toEqual(['vs-rec', 'vs-hist', 'vs-panel', 'vs-next']);
+    expect([...host.querySelector('.vs-lside').children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['hmrow', '', 'vs-nav', 'sp', 'vs-rec', 'vs-hist']);
+    expect([...host.querySelector('.vs-side').children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['vs-panel', 'vs-next']);
   });
 
   it('해설은 접힌 채 시작하고(정의 박스만), 펼치면 상황 → 실수 순서로 나온다', () => {
@@ -912,7 +874,8 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     st.sentence.explanation.chain = { target: 'a b c d e f', chunks: ['a b', 'c d', 'e f'], ko: '가나다' };
     renderSessionExprV2(host, st, {});
     // 시안 4a 순서 — 응용 → 체이닝 → 생산 (2026-08-27 시안 대조에서 순서가 뒤바뀐 걸 발견)
-    expect([...host.querySelectorAll('.vs-main .vs-lab')].map((n) => n.textContent))
+    // 2026-09-14 — 세 블록은 우측 패널(.vs-side)로 옮겼다. 스테이지·좌측 라벨은 여기 섞이지 않는다.
+    expect([...host.querySelectorAll('.vs-side .vs-lab')].map((n) => n.textContent))
       .toEqual(['응용 연습', '체이닝', '생산 연습']);
     expect(host.textContent).not.toContain('듣고, 따라 말하고');
     expect(host.textContent).not.toContain('자막 없이');
@@ -955,7 +918,9 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, makeState(), {});
     const css = host.querySelector('style').textContent;
-    expect(css).toContain('.vs-h1 b{font-weight:700;background:linear-gradient(');
+    // 2026-09-14 — 문장 카드(.vs-h1)가 대화 줄(.vs-ln-en)로 바뀌었다. 밑줄 규약은 그대로.
+    expect(css).toContain('.vs-ln-en b{font-weight:800;background:linear-gradient(');
+    expect(css).toContain('.vs-drow .en b{font-weight:800;background:linear-gradient(');
     expect(css).not.toContain('text-decoration:underline');
   });
 });
@@ -979,12 +944,15 @@ describe('sessionExprV2 — §11/§6.5 누락분', () => {
   it('공부 이력 캘린더가 개인기록 달성일을 코랄 칸으로 칠한다 (§6.6②)', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const st = makeState();
-    st.dayMap = { '2026-08-20': 31, '2026-08-22': 47 };
-    st.prDays = ['2026-08-22'];
+    // 고정 날짜는 4주 창(월요일 기준 -21일)이 지나가면 창 밖으로 밀린다 — 오늘에서 역산한다.
+    const iso = (d) => { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString().slice(0, 10); };
+    const [d5, d3] = [iso(5), iso(3)];
+    st.dayMap = { [d5]: 31, [d3]: 47 };
+    st.prDays = [d3];
     renderSessionExprV2(host, st, {});
     const pr = host.querySelectorAll('.vs-hist .v-cal .cd.pr');
     expect(pr).toHaveLength(1);
-    expect(pr[0].textContent).toBe('22');
+    expect(pr[0].textContent).toBe(String(+d3.slice(8, 10)));
   });
 
   it('체이닝의 현재 단계 녹음 원에만 다음-차례 표시가 붙는다 (§6.5)', () => {
@@ -1610,54 +1578,43 @@ describe('sessionExprV2 — 체이닝·생산 점수 원 + 저장', () => {
 
 /* 미니대화 (2026-09-08 작업지시서 §1~§4) — 타깃 표현의 사용 맥락을 주는 contextual input. 평가·암기 대상이 아니므로
  * 블록에는 녹음·통과 판정·다음 잠금이 없고, 전체 듣기·한 줄 듣기·타깃 줄 강조만 있다. */
-describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
+/* 미니대화 블록(miniDialogueEl) — 2026-09-14 부터 **복습 세션 전용**이다.
+ * 신규 세션은 대화 스테이지(dialogueStageEl)가 대신하므로 여기서는 컴포넌트를 직접 만들어 계약을 지킨다
+ * (복습 sessionReviewV2 가 정답 공개 뒤 mountMini 로 같은 함수를 부른다). */
+describe('miniDialogueEl — 복습이 쓰는 미니대화 블록', () => {
   beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
   const MD = [
     { speaker: 'A', en: "I'll finish it by Friday.", ko: '금요일까지 끝낼게.' },
     { speaker: 'B', en: 'Is that a promise?', ko: '약속하는 거예요?' },
     { speaker: 'A', en: 'It is. You can count on it.', ko: '그럼. 믿어도 돼.' },
   ];
-  function mdState(size = 'desktop') {
-    const s = makeState();
-    s.size = size;
-    s.sentence.explanation.miniDialogue = MD;
-    return s;
-  }
-  const mount = (state) => { const host = document.createElement('div'); document.body.appendChild(host); renderSessionExprV2(host, state, {}); host._state = state; return host; };
+  const CARD = { id: 'e1', lang: 'en', sentence: 'Is that a promise?' };
+  const mk = (md = MD, opts = {}) => {
+    const el = miniDialogueEl(md, CARD, 'en', 'Is that a promise?', opts);
+    document.body.appendChild(el);
+    return el;
+  };
 
-  it('필드가 있으면 카드 아래에 블록 — 줄 3개, 화자 표시, 타깃 줄만 강조, 한글 병기', () => {
-    const host = mount(mdState());
-    const mini = host.querySelector('.vs-mini');
-    expect(mini).not.toBeNull();
+  it('줄 3개, 화자 표시, 타깃 줄만 강조, 한글 병기', () => {
+    const mini = mk();
     const lines = [...mini.querySelectorAll('.vs-mini-line')];
     expect(lines).toHaveLength(3);
     expect(lines.map((l) => l.getAttribute('data-speaker'))).toEqual(['A', 'B', 'A']);
     expect(lines.map((l) => l.classList.contains('tgt'))).toEqual([false, true, false]);
     expect(lines[1].querySelector('.en').textContent).toBe('Is that a promise?');
     expect(lines[1].querySelector('.ko').textContent).toBe('약속하는 거예요?');
-    // 순서 (2026-09-08 사용자 결정 "기존처럼 기본 문장 먼저, 그다음 미니대화") — 블록은 카드 **아래**.
-    const card = host.querySelector('.vs-card');
-    expect(card.compareDocumentPosition(mini) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  });
-
-  it('모바일 레이아웃에서도 카드 아래에 블록', () => {
-    const host = mount(mdState('phone'));
-    const mini = host.querySelector('.vs-mini');
-    expect(mini).not.toBeNull();
-    expect(host.querySelector('.vs-card').compareDocumentPosition(mini) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('필드가 없으면 블록 없음 (기존 카드 호환)', () => {
-    const host = mount(makeState());
-    expect(host.querySelector('.vs-mini')).toBeNull();
     expect(miniDialogueEl(undefined, { sentence: 'x' }, 'en', 'x')).toBeNull();
+    expect(miniDialogueEl([], { sentence: 'x' }, 'en', 'x')).toBeNull();
   });
 
   it('한 줄 듣기 → 그 줄만, 화자별 목소리(A 여성·B 남성)', () => {
     const speak = vi.fn();
     window.studySpeech = { speak };
-    const host = mount(mdState());
-    const plays = [...host.querySelectorAll('.vs-mini button[aria-label="듣기"]')];
+    const mini = mk();
+    const plays = [...mini.querySelectorAll('button[aria-label="듣기"]')];
     expect(plays).toHaveLength(3);
     plays[1].click();
     expect(speak).toHaveBeenCalledTimes(1);
@@ -1670,68 +1627,53 @@ describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
   it('전체 듣기 → 끝나면 다음 줄, 순서대로 3줄', () => {
     const speak = vi.fn((_text, opts) => { opts?.onEnd?.(); });
     window.studySpeech = { speak };
-    const host = mount(mdState());
-    host.querySelector('[data-role="mini-all"]').click();
+    const mini = mk();
+    mini.querySelector('[data-role="mini-all"]').click();
     expect(speak.mock.calls.map((c) => c[0])).toEqual(["I'll finish it by Friday.", 'Is that a promise?', 'It is. You can count on it.']);
   });
 
-  /* 녹음 (2026-09-12 사용자 결정 "미니대화에도 녹음 버튼" — 2026-09-08 '듣기 전용' 결정을 뒤집음) — 줄마다 선택 녹음.
-   * 응용 행과 같은 채점·배지·집계이고 진행 조건(게이트·판정·잠금)은 없다. */
-  it('줄마다 녹음 버튼 — 녹음 1회 → tried/passed/pronScores 반영 · 줄 점수 배지 · #mini# 로그 저장', async () => {
-    const host = mount(mdState());
-    const state = host._state;
-    const mini = host.querySelector('.vs-mini');
+  /* 녹음 (2026-09-12 사용자 결정 "미니대화에도 녹음 버튼") — 줄마다 선택 녹음.
+   * 응용 행과 같은 채점·배지이고 진행 조건(게이트·판정·잠금)은 없다. 집계·영속은 호출부(onScore) 책임. */
+  it('줄마다 녹음 버튼 — 녹음 1회 → onScore(줄 index, 점수) + 줄 점수 배지', async () => {
+    const onScore = vi.fn();
+    const mini = mk(MD, { onScore });
     const recs = [...mini.querySelectorAll('button[aria-label="녹음"]')];
     expect(recs).toHaveLength(3);
-    recs[1].click(); await tick();                 // 타깃 줄 녹음 시작
-    recs[1].click(); await tick(); await tick();   // 멈춤 + 채점 (mock: 완전 발화 → 100)
-    expect(state.tried).toBe(1);
-    expect(state.passed).toBe(1);
-    expect(state.pronScores).toEqual([100]);
-    expect(savePronunciationLog).toHaveBeenCalledTimes(1);
-    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('e1#mini#Is that a promise?');
-    const badge = recs[1].closest('.vs-mini-line').querySelector('.vs-gscore');
-    expect(badge.textContent).toContain('100');
+    recs[1].click(); await tick();
+    recs[1].click(); await tick(); await tick();
+    expect(onScore).toHaveBeenCalledTimes(1);
+    expect(onScore.mock.calls[0][0]).toBe(1);
+    expect(onScore.mock.calls[0][1].score).toBe(100); // mock: 완전 발화
+    expect(recs[1].closest('.vs-mini-line').querySelector('.vs-gscore').textContent).toContain('100');
   });
 
-  it('스냅샷에 남은 줄 점수(exLog.mini)를 재렌더 때 배지로 복원한다', () => {
-    const st = mdState();
-    st.exLog = { e1: { mini: { 0: [77] } } };
-    const host = mount(st);
-    const lines = host.querySelectorAll('.vs-mini-line');
+  it('저장된 줄 점수(exLog.mini)를 배지로 복원한다', () => {
+    const mini = mk(MD, { saved: { 0: [77] } });
+    const lines = mini.querySelectorAll('.vs-mini-line');
     expect(lines[0].querySelector('.vs-gscore').textContent).toContain('77');
     expect(lines[1].querySelector('.vs-gscore').textContent).toBe('');
   });
 
   it('데모(마이크 없음)에서는 녹음 클릭 → 시뮬 점수 배지', async () => {
-    const st = mdState(); st.demo = true;
-    const host = mount(st);
-    const rec = host.querySelector('.vs-mini button[aria-label="녹음"]');
-    rec.click();
+    const mini = mk(MD, { demo: true, onScore: vi.fn() });
+    mini.querySelector('button[aria-label="녹음"]').click();
     await new Promise((r) => setTimeout(r, 900));
-    expect(host.querySelector('.vs-mini-line .vs-gscore').textContent).not.toBe('');
+    expect(mini.querySelector('.vs-mini-line .vs-gscore').textContent).not.toBe('');
   });
 
   it('줄의 name 이 있으면 화자 칸에 이름을, 없으면 speaker 글자를 보여준다 (2026-09-12)', () => {
-    const st = mdState();
-    st.sentence.explanation.miniDialogue = [{ ...MD[0], name: '소연' }, MD[1], MD[2]];
-    const host = mount(st);
-    const ix = [...host.querySelectorAll('.vs-mini-line .ix')].map((e) => e.textContent);
-    expect(ix).toEqual(['소연', 'B', 'A']);
+    const mini = mk([{ ...MD[0], name: '소연' }, MD[1], MD[2]]);
+    expect([...mini.querySelectorAll('.vs-mini-line .ix')].map((e) => e.textContent)).toEqual(['소연', 'B', 'A']);
   });
 
-  it('explanation.situation 이 있으면 라벨 아래 장면 한 줄(.vs-mini-scene)을 보여준다', () => {
-    const st = mdState();
-    st.sentence.explanation.situation = '새벽 4시, 공항 픽업';
-    const host = mount(st);
-    expect(host.querySelector('.vs-mini .vs-mini-scene').textContent).toBe('새벽 4시, 공항 픽업');
+  it('scene 을 주면 라벨 아래 장면 한 줄(.vs-mini-scene)을 보여준다', () => {
+    const mini = mk(MD, { scene: '새벽 4시, 공항 픽업' });
+    expect(mini.querySelector('.vs-mini-scene').textContent).toBe('새벽 4시, 공항 픽업');
   });
 
   it('줄 부제는 응용 행과 같이 한글 발음(kr) · 뜻(ko) — kr 이 없으면 뜻만 (2026-09-13)', () => {
-    const st = mdState();
-    st.sentence.explanation.miniDialogue = [{ ...MD[0], kr: '아일 f피니쉬 잇 바이 f라이데이' }, MD[1], MD[2]];
-    const host = mount(st);
-    const subs = [...host.querySelectorAll('.vs-mini-line .sub')].map((e) => e.textContent);
+    const mini = mk([{ ...MD[0], kr: '아일 f피니쉬 잇 바이 f라이데이' }, MD[1], MD[2]]);
+    const subs = [...mini.querySelectorAll('.vs-mini-line .sub')].map((e) => e.textContent);
     expect(subs[0]).toBe('아일 f피니쉬 잇 바이 f라이데이 · 금요일까지 끝낼게.');
     expect(subs[1]).toBe('약속하는 거예요?');
     expect(MINI_VOICES.A).toMatch(/Neural$/);
@@ -1739,10 +1681,22 @@ describe('sessionExprV2 — 미니대화(miniDialogue) 블록', () => {
   });
 
   it('응용 행과 같은 행 구조(.vs-drow)라 버튼 열이 같은 자리에 온다', () => {
-    const host = mount(mdState());
-    const lines = host.querySelectorAll('.vs-mini .vs-drow');
+    const mini = mk();
+    const lines = [...mini.querySelectorAll('.vs-drow')];
     expect(lines).toHaveLength(3);
-    expect(lines[1].querySelector('.ix').textContent).toBe('B');
+    for (const l of lines) {
+      const kids = [...l.children].map((n) => n.className.split(' ')[0]);
+      expect(kids.slice(-4)).toEqual(['grow', 'vs-gscore', 'vs-cir', 'vs-cir']);
+    }
+  });
+
+  it('신규 세션은 더 이상 이 블록을 쓰지 않는다 (대화 스테이지가 대신한다)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState();
+    st.sentence.explanation.miniDialogue = MD;
+    renderSessionExprV2(host, st, {});
+    expect(host.querySelector('.vs-mini')).toBeNull();
+    expect(host.querySelector('.vs-stage')).not.toBeNull();
   });
 });
 
