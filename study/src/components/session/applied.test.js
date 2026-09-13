@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES, miniCueLine, isPersonalCard } from './applied.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES, miniCueLine, isPersonalCard, buildDialogueGroups } from './applied.js';
 
 const CHAIN = {
   target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -305,5 +305,76 @@ describe('personal 트랙 꼬리확장 허용 — keepTail (2026-09-13)', () => 
     expect(isPersonalCard('en-personal-airport-01-on-my-way')).toBe(true);
     expect(isPersonalCard('en-core100-001-say-again-slowly')).toBe(false);
     expect(isPersonalCard(undefined)).toBe(false);
+  });
+});
+
+describe('buildDialogueGroups — 대화 묶음 (2026-09-14 클로드 디자인 결정 §0-2)', () => {
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+    { speaker: 'B', name: '지오', en: "I'm almost there.", ko: '거의 다 왔어.', kr: '아이몰모우스 데어r' },
+  ];
+  const card = (id, sentence) => ({
+    id, sentence, ko: '뜻', pron: '발음',
+    explanation: { situation: '장면 ' + id, miniDialogue: MD },
+  });
+
+  it('같은 대화를 쓰는 카드는 한 묶음 — 줄 index 로 카드를 찾는다', () => {
+    const gs = buildDialogueGroups([card('c1', "I'm on my way."), card('c2', "I'm almost there.")]);
+    expect(gs).toHaveLength(1);
+    expect(gs[0].hasDialogue).toBe(true);
+    expect(gs[0].lines).toHaveLength(4);
+    expect(gs[0].situation).toBe('장면 c1');
+    expect(gs[0].cardAt[1].card.id).toBe('c1');
+    expect(gs[0].cardAt[1].num).toBe(1);
+    expect(gs[0].cardAt[3].card.id).toBe('c2');
+    expect(gs[0].cardAt[3].num).toBe(2);
+    expect(gs[0].cardAt[0]).toBeUndefined();
+  });
+
+  it('대화가 다르면 묶음이 갈리고, 번호는 세션 전체 순번으로 이어진다', () => {
+    const MD2 = [{ speaker: 'A', name: '봉수', en: 'Are you there?', ko: '있어?', kr: '아r 여 데어r' }];
+    const c3 = { id: 'c3', sentence: 'Are you there?', ko: '뜻', pron: '발음',
+      explanation: { situation: '장면 c3', miniDialogue: MD2 } };
+    const gs = buildDialogueGroups([card('c1', "I'm on my way."), c3]);
+    expect(gs).toHaveLength(2);
+    expect(gs[0].cardAt[1].num).toBe(1);
+    expect(gs[1].cardAt[0].num).toBe(2);
+    expect(gs[1].situation).toBe('장면 c3');
+  });
+
+  it('대화가 없는 카드는 자기 혼자 한 줄 묶음 — 줄은 카드에서 만든다', () => {
+    const solo = { id: 's1', sentence: 'Is that a promise?', ko: '약속하는 거예요?', pron: '이즈 대러 프라미스',
+      explanation: { situation: '장면 s1' } };
+    const gs = buildDialogueGroups([solo]);
+    expect(gs).toHaveLength(1);
+    expect(gs[0].hasDialogue).toBe(false);
+    expect(gs[0].key).toBe('solo:s1');
+    expect(gs[0].lines).toEqual([{ speaker: '', name: '', en: 'Is that a promise?', ko: '약속하는 거예요?', kr: '이즈 대러 프라미스' }]);
+    expect(gs[0].cardAt[0].num).toBe(1);
+  });
+
+  it('혼합 세션도 같은 규칙 — 대화 묶음과 단독 묶음이 순서대로 섞인다', () => {
+    const solo = { id: 's1', sentence: 'from scratch', ko: '처음부터', pron: '프럼 스크래치', explanation: {} };
+    const gs = buildDialogueGroups([card('c1', "I'm on my way."), solo, card('c2', "I'm almost there.")]);
+    expect(gs.map((g) => g.hasDialogue)).toEqual([true, false]);
+    expect(gs[0].cardAt[1].num).toBe(1);
+    expect(gs[0].cardAt[3].num).toBe(3);
+    expect(gs[1].cardAt[0].num).toBe(2);
+  });
+
+  it('대화에 없는 문장을 가진 카드는 대화 묶음에 끼지 않고 단독 묶음이 된다', () => {
+    const odd = { id: 'x1', sentence: 'Nothing matches.', ko: '뜻', pron: '발음',
+      explanation: { situation: '장면', miniDialogue: MD } };
+    const gs = buildDialogueGroups([odd]);
+    expect(gs).toHaveLength(1);
+    expect(gs[0].hasDialogue).toBe(false);
+    expect(gs[0].lines[0].en).toBe('Nothing matches.');
+  });
+
+  it('카드가 없으면 빈 배열', () => {
+    expect(buildDialogueGroups([])).toEqual([]);
+    expect(buildDialogueGroups(null)).toEqual([]);
   });
 });

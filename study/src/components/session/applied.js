@@ -196,3 +196,45 @@ export function miniCueLine(md, sentence) {
   const t = lines.findIndex((l) => l.en.trim() === target);
   return t > 0 ? lines[t - 1] : null;
 }
+
+/* 대화 묶음 (2026-09-14 클로드 디자인 결정) — 신규 세션 화면은 카드 목록이 아니라 대화 목록을 그린다.
+ * 같은 대화를 쓰는 카드끼리 한 묶음(기준 = 줄 en 을 join 한 문자열). 대화가 없거나 카드 문장이
+ * 그 대화에 없으면 카드 문장 한 줄짜리 단독 묶음이 된다 — 화면 어휘를 하나로 두기 위해서다
+ * (옛 문장 카드로 돌아가지 않는다). 번호는 묶음과 무관하게 세션 전체 순번.
+ * 줄 필터는 pronunciationLog.miniLinesOf 와 같은 규칙이지만 여기서 다시 쓴다 — 그쪽을 import 하면
+ * services → components 순환이 생긴다. */
+function dialogueLinesOf(md) {
+  return (Array.isArray(md) ? md : []).filter((l) => l && typeof l.en === 'string' && l.en.trim());
+}
+
+export function buildDialogueGroups(cards) {
+  const list = Array.isArray(cards) ? cards : [];
+  const groups = [];
+  const byKey = new Map();
+  list.forEach((card, i) => {
+    const num = i + 1;
+    const lines = dialogueLinesOf(card?.explanation?.miniDialogue);
+    const target = String(card?.sentence ?? '').trim();
+    const at = lines.findIndex((l) => l.en.trim() === target);
+    if (at < 0) {
+      // 단독 묶음 — 카드에서 줄 하나를 만든다. 화자가 없으므로 speaker·name 은 빈 문자열.
+      groups.push({
+        key: 'solo:' + card?.id,
+        hasDialogue: false,
+        situation: String(card?.explanation?.situation ?? ''),
+        lines: [{ speaker: '', name: '', en: target, ko: String(card?.ko ?? ''), kr: String(card?.pron ?? '') }],
+        cardAt: { 0: { card, num } },
+      });
+      return;
+    }
+    const key = lines.map((l) => l.en.trim()).join('␟');
+    let g = byKey.get(key);
+    if (!g) {
+      g = { key, hasDialogue: true, situation: String(card?.explanation?.situation ?? ''), lines, cardAt: {} };
+      byKey.set(key, g);
+      groups.push(g);
+    }
+    g.cardAt[at] = { card, num };
+  });
+  return groups;
+}
