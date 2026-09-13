@@ -17,7 +17,7 @@ vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(a
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
 import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl, MINI_VOICES, SESSION_BLOCKS,
-  dialogueStageEl, progressSegEl, sentenceNavEl, scrollSelectedIntoView } from './sessionExprV2.js';
+  dialogueStageEl, progressSegEl, sentenceNavEl, scrollSelectedIntoView, utterRingCard } from './sessionExprV2.js';
 import { buildDialogueGroups } from '../components/session/applied.js';
 import { h } from '../components/d1/dom.js';
 import { vIcon, VI } from '../components/v2/atoms.js';
@@ -666,7 +666,7 @@ describe('sessionExprV2 — 오늘 발화 링 (직전 학습일 분모)', () => 
     st.tried = 4;
     renderSessionExprV2(host, st, {});
     const rec = host.querySelector('.vs-rec');
-    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('');
+    expect(rec.querySelector('.hd .pv').textContent).toBe(''); // prevTop — 직전 기록은 카드 윗줄
     expect(rec.querySelector('.msg').textContent).toBe('');
     expect(rec.querySelector('.vs-uring .n').textContent).toBe('4');
   });
@@ -679,21 +679,22 @@ describe('sessionExprV2 — 오늘 발화 링 (직전 학습일 분모)', () => 
     st.tried = 4;
     renderSessionExprV2(host, st, {});
     const rec = host.querySelector('.vs-rec');
-    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('직전 12회');
+    // 2026-09-14 시안 12a — 직전 기록은 카드 윗줄(prevTop). 넘기기 전에는 틸.
+    expect(rec.querySelector('.hd .pv').textContent).toBe('직전 12회');
+    expect(rec.querySelector('.hd .pv').classList.contains('over')).toBe(false);
     expect(rec.querySelector('.msg').textContent).toMatch(/8회/); // 12 - 4
-    expect(rec.querySelector('.vs-newrec').style.display).toBe('none');
   });
 
-  it('직전 학습일을 넘기면 코랄 링 + 기록 갱신 칩 + 초과분(+N) (§6.8)', () => {
+  it('직전 학습일을 넘기면 코랄 링 + 윗줄 넘김 표기 + 초과분(+N) (§6.8 · 2026-09-14 시안 12a)', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     const st = makeState();
     st.prevDayUtter = 34; st.tried = 41;
     renderSessionExprV2(host, st, {});
     const rec = host.querySelector('.vs-rec');
-    expect(rec.querySelector('.vs-newrec').style.display).toBe('');
+    expect(rec.querySelector('.hd .pv').classList.contains('over')).toBe(true);
     expect(rec.querySelector('.vs-uring .n').textContent).toBe('41+7');
-    expect(rec.querySelector('.vs-uring .pv').textContent).toBe('직전 34 넘김');
+    expect(rec.querySelector('.hd .pv').textContent).toBe('직전 34 넘김');
     expect(rec.querySelector('.vs-uring .pl').style.display).toBe(''); // 확산 펄스
     expect(rec.querySelector('.msg').textContent).toBe('');            // 이미 넘겼으면 재촉 안 함
   });
@@ -985,11 +986,11 @@ describe('sessionExprV2 — §11/§6.5 누락분', () => {
 
 /* 시안(4a) 프레임 수치 — 2026-08-27 시안 대조. 본문 패딩이 기존값(38/46)으로 남아 있었다. */
 describe('sessionExprV2 — 시안 프레임 수치', () => {
-  it('본문 패딩이 34px 34px 40px 다 (§6.2)', () => {
+  it('본문 패딩이 28px 28px 32px 다 (2026-09-14 시안 12a 실측)', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, makeState(), {});
     const css = host.querySelector('style').textContent;
-    expect(css).toContain('.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}');
+    expect(css).toContain('.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:24px;padding:28px 28px 32px}');
   });
 
   it('표현 해설 카드 실효 패딩이 좌우 20px 다 (§6.6③)', () => {
@@ -1814,6 +1815,16 @@ describe('sessionExprV2 — 대화 스테이지', () => {
     expect(c.onSelect).toHaveBeenCalledTimes(1);
   });
 
+  it('선택 줄 안의 클릭은 onSelect 로 새지 않는다 (필·버튼이 재렌더를 부르면 녹음이 끊긴다)', () => {
+    const c = ctx();
+    const slot = h('button', { class: 'vs-pill probe', type: 'button' }, '따라 말하기');
+    const { el } = dialogueStageEl(group(), ctx({ ...c, selectedSlot: [slot] }));
+    el.querySelector('.probe').click();
+    expect(c.onSelect).not.toHaveBeenCalled();
+    el.querySelector('.vs-ln.sel').click();
+    expect(c.onSelect).not.toHaveBeenCalled();
+  });
+
   it('접힌 카드 줄 녹음 원 → onCardRec, 상대 줄 녹음 원 → onMiniRec (클릭이 줄 선택으로 새지 않는다)', () => {
     const c = ctx();
     const { el } = dialogueStageEl(group(), c);
@@ -2292,5 +2303,82 @@ describe('drillRows — 세 줄 옵션', () => {
     SESSION_BLOCKS.chainProd = false;
     renderSessionExprV2(host, st, {});
     expect(host.querySelector('.vs-drills .vs-drow .vs-ln-kr').textContent).toBe('[아r 여 온 여r 웨이]');
+  });
+});
+
+/* 시안 12a 실측 대조 (2026-09-14) — 1280 캔버스에서 잰 값.
+ * 좌측 250 / 대화 548 / 우측 400, 메인 padding 28 28 32 · gap 24, 응용 행 padding 10 2 · gap 11 · 번호 12px.
+ * 넓은 화면에서 대화 폭이 무한정 늘어나면 시안 비율이 깨진다 — 548 을 상한으로 두고 가운데 정렬(기존 .vs-mainwrap 관례). */
+describe('sessionExprV2 — 시안 12a 프레임 실측', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+
+  const cssOf = (size) => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState(); st.size = size;
+    renderSessionExprV2(host, st, {});
+    return [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+  };
+
+  it('데스크톱 3칼럼 — 좌측 250 · 대화 548 상한 · 우측 400, 본문 padding 28 28 32 · gap 24', () => {
+    const css = cssOf('desktop');
+    expect(css).toContain('.vs-lside{width:250px');
+    expect(css).toContain('.vs-side{width:400px');
+    expect(css).toContain('.vs-stagewrap{flex:0 1 548px');
+    expect(css).toMatch(/\.vs-mainwrap\{[^}]*padding:28px 28px 32px/);
+    expect(css).toMatch(/\.vs-mainwrap\{[^}]*gap:24px/);
+    expect(css).toMatch(/\.vs-mainwrap\{[^}]*justify-content:center/); // 넓은 화면에서 가운데
+  });
+
+  it('응용 행(세 줄) — padding 10px 2px · gap 11px · 번호 칸 12px', () => {
+    const css = cssOf('desktop');
+    expect(css).toMatch(/\.vs-drow3\{[^}]*padding:10px 2px/);
+    expect(css).toMatch(/\.vs-drow3\{[^}]*gap:11px/);
+    expect(css).toContain('.vs-drow3 .ix{width:12px}');
+  });
+});
+
+/* 카드 목록은 Dexie 원본 행이다 (state.cards) — 뜻은 ko 가 아니라 meaning, 발음은 phonetic_kr.
+ * pickCardFields 는 state.sentence 에만 적용되므로 목록·단독 줄은 직접 폴백해야 한다
+ * (2026-09-14 배포 화면에서 좌측 목록의 뜻이 비어 있었다). */
+describe('원본 카드 행 폴백 — meaning · phonetic_kr', () => {
+  it('sentenceNavEl 은 meaning 을 뜻으로 읽는다', () => {
+    const el = sentenceNavEl([{ id: 'c1', sentence: "I'm on my way.", meaning: '가는 중이야.' }],
+      { selCardId: 'x', utterOf: () => [], drillProgOf: () => '', onSelect: () => {} });
+    expect(el.querySelector('.vs-nav-ko').textContent).toBe('가는 중이야.');
+  });
+
+  it('buildDialogueGroups 단독 묶음도 meaning · phonetic_kr 을 읽는다', () => {
+    const g = buildDialogueGroups([{ id: 's1', sentence: 'from scratch', meaning: '처음부터', phonetic_kr: '프럼 스크래치', explanation: {} }])[0];
+    expect(g.lines[0]).toEqual({ speaker: '', name: '', en: 'from scratch', ko: '처음부터', kr: '프럼 스크래치' });
+  });
+});
+
+/* 오늘 발화 카드 (WORK-ORDER §2-2 5번) — 윗줄에 라벨 + 직전 기록, 링은 가운데, 안내문은 아래.
+ * 기본값(복습이 쓰는 형태)은 직전 기록이 링 안에 있는 종전 구성 그대로다. */
+describe('utterRingCard — prevTop 옵션', () => {
+  it('prevTop 이면 직전 기록이 카드 윗줄로 올라가고 링 안에는 숫자만 남는다', () => {
+    const { el, update } = utterRingCard({ size: 96, prevTop: true });
+    update(9, 18);
+    expect(el.classList.contains('prevtop')).toBe(true);
+    expect(el.querySelector('.hd .pv').textContent).toBe('직전 18회');
+    expect(el.querySelector('.vs-uring .pv')).toBeNull();
+    expect(el.querySelector('.vs-uring .cn').textContent).toBe('9');
+    expect(el.querySelector('.vs-uring .n').style.fontSize).toBe('24px');
+  });
+
+  it('기본값은 종전 그대로 — 직전 기록이 링 안, 기록 갱신 칩은 윗줄 (복습 회귀 방지)', () => {
+    const { el, update } = utterRingCard({ size: 140 });
+    update(20, 18);
+    expect(el.classList.contains('prevtop')).toBe(false);
+    expect(el.querySelector('.hd .vs-newrec')).not.toBeNull();
+    expect(el.querySelector('.vs-uring .pv').textContent).toBe('직전 18 넘김');
+    expect(el.querySelector('.vs-uring .n').style.fontSize).toBe('');
+  });
+
+  it('신규 세션 좌측 사이드바는 prevTop 카드를 쓴다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState(); st.prevDayUtter = 18; st.todayUtterBase = 9;
+    renderSessionExprV2(host, st, {});
+    expect(host.querySelector('.vs-lside .vs-rec.prevtop .hd .pv').textContent).toBe('직전 18회');
   });
 });

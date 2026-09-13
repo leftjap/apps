@@ -222,7 +222,8 @@ export function buildDialogueGroups(cards) {
         key: 'solo:' + card?.id,
         hasDialogue: false,
         situation: String(card?.explanation?.situation ?? ''),
-        lines: [{ speaker: '', name: '', en: target, ko: String(card?.ko ?? ''), kr: String(card?.pron ?? '') }],
+        // state.cards 는 Dexie 원본 행이라 뜻·발음이 meaning · phonetic_kr 이다 (pickCardFields 는 state.sentence 전용)
+        lines: [{ speaker: '', name: '', en: target, ko: String(card?.ko ?? card?.meaning ?? ''), kr: String(card?.pron ?? card?.phonetic_kr ?? '') }],
         cardAt: { 0: { card, num } },
       });
       return;

@@ -54,7 +54,9 @@ function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 export const VS_CSS = `
 .vs{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
 .vs *{box-sizing:border-box;margin:0}
-.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:26px;padding:34px 34px 40px}
+/* 시안 12a 1280 실측 — 대화 548 · 우측 400 · padding 28 28 32 · gap 24. 넓은 화면에서는 가운데 정렬로
+   시안 비율을 지킨다(대화 폭이 화면만큼 늘어나면 줄과 버튼이 멀어져 비율이 무너진다). */
+.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:24px;padding:28px 28px 32px}
 .vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:24px;min-height:56px;flex-wrap:wrap}
 .vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
 .vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
@@ -94,7 +96,7 @@ export const VS_CSS = `
 .vs-prod-give{display:inline-flex;align-items:center;gap:4px;margin-top:4px;padding:0 0 1px;font:inherit;font-family:Pretendard,sans-serif;font-size:12px;font-weight:700;color:var(--teal-deep);background:none;border:0;border-bottom:1px solid oklch(44% .062 192/.3);cursor:pointer}
 .vs-gscore{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
 .vs-gdots{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
-.vs-side{width:324px;flex:0 0 auto}
+.vs-side{width:400px;flex:0 0 auto;display:flex;flex-direction:column;gap:14px}
 .vs-rec{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
 .vs-rec .hd{display:flex;justify-content:space-between;align-items:center;min-height:21px}
 .vs-rec .lb{font-family:Outfit;font-size:10px;letter-spacing:.16em;font-weight:600;color:var(--faint);text-transform:uppercase;white-space:nowrap}
@@ -133,7 +135,7 @@ export const VS_CSS = `
 .vs-next{width:100%;margin-top:13px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--teal);background:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
 /* ── 대화 스테이지 (2026-09-14 시안 12a) — 대화가 곧 연습 화면. 줄 하나가 열려 문장 카드를 대신한다. ── */
-.vs-stagewrap{flex:1 1 auto;min-width:0}
+.vs-stagewrap{flex:0 1 548px;min-width:0}
 .vs-stage + .vs-stage{margin-top:26px}
 .vs-stage.solo + .vs-stage.solo{margin-top:0}
 .vs-stage-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
@@ -198,12 +200,23 @@ export const VS_CSS = `
 .vs-drills{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
 .vs-drills .vs-labrow{margin-top:0}
 .vs-drills-expr{font-size:14.5px;font-weight:700;letter-spacing:-.01em;color:var(--teal-deep);margin-top:8px;line-height:1.35}
-.vs-drow3{padding:10px 2px}
+.vs-drow3{padding:10px 2px;gap:11px}
+.vs-drow3 .ix{width:12px}
+.vs-rec.prevtop .hd .pv{font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);white-space:nowrap;margin:0}
+.vs-rec.prevtop .hd .pv.over{color:var(--coral-deep)}
+.vs-rec.prevtop{padding:14px 16px 12px}
+.vs-rec.prevtop .vs-uring{margin:10px auto 0}
+.vs-rec.prevtop .msg{font-size:11px;margin-top:8px;text-wrap:pretty}
+.vs-rec.prevtop .hd .pv{font-family:Outfit;font-size:11px;font-weight:700;color:var(--teal-deep);white-space:nowrap;margin:0}
+.vs-rec.prevtop .hd .pv.over{color:var(--coral-deep)}
+.vs-rec.prevtop{padding:14px 16px 12px}
+.vs-rec.prevtop .vs-uring{margin:10px auto 0}
+.vs-rec.prevtop .msg{font-size:11px;margin-top:8px;text-wrap:pretty}
 .vs-drow3 > div{min-width:0;flex:1 1 auto}
 .vs-drow3 .en{font-size:14px}
 .vs-drow3 .vs-ln-kr{font-size:11px}
 .vs-drow3 .vs-ln-ko{font-size:12.5px}
-@media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-side{width:760px;max-width:100%}}
+@media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-stagewrap{flex:0 1 auto;width:100%;max-width:548px}.vs-side{width:100%;max-width:548px}}
 ${V_DOT_CSS}${V_MINICAL_CSS}
 `;
 
@@ -228,7 +241,9 @@ function ringEl(score) {
  * 분모는 '직전 학습일 발화 수'. 넘어서면 링이 코랄로 바뀌고 안쪽 확산 펄스(§3.3 (A) — 기존 v-pulse 재사용)가 돈다.
  * 잔여 계산 헬퍼는 pr.js 에 없다 — 여기서 (직전 − 오늘) 로 구한다.
  */
-export function utterRingCard({ size = 140, caption = true } = {}) {
+/* prevTop (2026-09-14 시안 12a §2-2 5번) — 직전 기록을 카드 윗줄 오른쪽으로 올리고 링 안에는 숫자만 둔다.
+ * 기본값은 종전 구성(링 안 pv + 윗줄 기록 갱신 칩) 그대로라 복습(utterRingCard({size:140,caption:false}))은 무영향. */
+export function utterRingCard({ size = 140, caption = true, prevTop = false } = {}) {
   const r = size === 140 ? 59 : Math.round((size - 22) / 2);
   const circ = Math.round(2 * Math.PI * r * 10) / 10;
   const svg = document.createElementNS(SVG_NS, 'svg');
@@ -248,15 +263,15 @@ export function utterRingCard({ size = 140, caption = true } = {}) {
   arc.setAttribute('stroke-dasharray', String(circ));
   arc.setAttribute('stroke-dashoffset', String(circ));
 
-  const nEl = h('span', { class: 'n' }, '0');
+  const nEl = h('span', { class: 'n', style: prevTop ? 'font-size:24px' : '' }, '0');
   const pvEl = h('span', { class: 'pv' }, '');
   const pulse = h('i', { class: 'pl', style: 'display:none;' });
   const ring = h('div', { class: 'vs-uring', style: `width:${size}px;height:${size}px` },
-    svg, pulse, h('span', { class: 'cn' }, nEl, pvEl));
+    svg, pulse, h('span', { class: 'cn' }, nEl, prevTop ? null : pvEl));
   const chip = h('span', { class: 'vs-newrec', style: 'display:none;' }, vIcon(VI.ZAP, { size: 10, fill: true }), '기록 갱신!');
   const msg = h('div', { class: 'msg' }, '');
-  const el = h('div', { class: 'vs-rec' },
-    h('div', { class: 'hd' }, h('span', { class: 'lb' }, '오늘 발화'), chip),
+  const el = h('div', { class: 'vs-rec' + (prevTop ? ' prevtop' : '') },
+    h('div', { class: 'hd' }, h('span', { class: 'lb' }, '오늘 발화'), prevTop ? pvEl : chip),
     ring, caption ? msg : null);
 
   function update(today, prev) {
@@ -270,7 +285,7 @@ export function utterRingCard({ size = 140, caption = true } = {}) {
     const ratio = p > 0 ? Math.min(t / p, 1) : 0;
     arc.setAttribute('stroke-dashoffset', String(Math.round(circ * (1 - ratio) * 10) / 10));
     pulse.style.display = over ? '' : 'none';
-    chip.style.display = over ? '' : 'none';
+    if (!prevTop) chip.style.display = over ? '' : 'none';
     pvEl.className = 'pv' + (over ? ' over' : '');
     pvEl.textContent = p > 0 ? (over ? `직전 ${p} 넘김` : `직전 ${p}회`) : '';
     if (!caption) return;
@@ -776,7 +791,8 @@ export function dialogueStageEl(group, ctx = {}) {
       row.appendChild(h('div', { class: 'vs-ln-slot' }, ctx.selectedSlot || null));
       rows.push({ i, line: ln, btn: null });
     }
-    if (card) row.addEventListener('click', () => ctx.onSelect?.(card.id));
+    // 선택 줄에는 붙이지 않는다 — 안에 든 필·버튼 클릭이 버블링돼 이동(재렌더)을 불러 녹음이 끊긴다.
+    if (card && !selected) row.addEventListener('click', () => ctx.onSelect?.(card.id));
     body.appendChild(row);
   });
 
@@ -852,7 +868,8 @@ export function sentenceNavEl(cards, { selCardId, utterOf, drillProgOf, onSelect
       done ? vCheck({ size: 11, sw: 3 }) : String(i + 1)),
     h('span', { class: 'vs-nav-tx' },
       h('span', { class: 'vs-nav-en' }, c.sentence || ''),
-      h('span', { class: 'vs-nav-ko' }, c.ko || ''),
+      // state.cards 는 Dexie 원본 행이라 뜻이 meaning 이다 (pickCardFields 는 state.sentence 에만 적용된다)
+      h('span', { class: 'vs-nav-ko' }, c.ko || c.meaning || ''),
       prog ? h('span', { class: 'vs-nav-prog' }, prog) : null),
     last == null ? null : scoreDot(last, { size: 24, fresh: false }));
   }));
@@ -1149,6 +1166,9 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .m-topb .vs-seg i{width:100%;height:4px;border-radius:2px;background:#e7e3d4}
 .m-topb .vs-seg i.f{background:var(--teal)}
 .vs-drills{margin-top:18px}
+.vs-drow3{padding:10px 2px;gap:11px}
+.vs-drow3 .ix{width:12px}
+.vs-drow3 > div{min-width:0;flex:1 1 auto}
 .vs-drills .vs-labrow{margin-top:0}
 .vs-drills-expr{font-size:14.5px;font-weight:700;letter-spacing:-.01em;color:var(--teal-deep);margin-top:8px;line-height:1.35}
 .vs-drow3{padding:10px 2px}
@@ -1248,7 +1268,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   // 우측 ① 오늘 발화 링 (분모 = 직전 학습일 발화) · ② 공부 이력 4주 캘린더
   // 시안 12a — 좌측 사이드바 · 폰 하단 모두 96px (WORK-ORDER §1)
-  const ringCard = utterRingCard({ size: 96 });
+  const ringCard = utterRingCard({ size: 96, prevTop: true });
   const recWidget = ringCard.el;
   const todayUtter = () => (Number(state.todayUtterBase) || 0) + (Number(state.tried) || 0);
   const histCard = historyCalCard(todayISO, state.dayMap, todayUtter, state.prDays);
