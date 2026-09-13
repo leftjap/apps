@@ -225,6 +225,8 @@ export function mountSessionNew(host) {
     },
     onEnd: () => showEndConfirm({ onConfirm: () => endSession(false) }),
     saveSnapshot,
+    // 대화 스테이지(2026-09-14) — 대화 접기·상대 줄 녹음은 화면을 다시 그려야 반영된다.
+    rerender: () => rerender(),
     // 씬 쉐도잉 한 줄 진행 시 durable 저장 (다음날 재진입에도 '따라 말한 줄' 유지)
     saveSceneShadow: (count) => {
       const scene = state.cards.find((c) => Array.isArray(c.explanation?.dialogue));

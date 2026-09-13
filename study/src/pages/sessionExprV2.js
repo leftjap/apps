@@ -135,6 +135,7 @@ export const VS_CSS = `
 /* ── 대화 스테이지 (2026-09-14 시안 12a) — 대화가 곧 연습 화면. 줄 하나가 열려 문장 카드를 대신한다. ── */
 .vs-stagewrap{flex:1 1 auto;min-width:0}
 .vs-stage + .vs-stage{margin-top:26px}
+.vs-stage.solo + .vs-stage.solo{margin-top:0}
 .vs-stage-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
 .vs-stage-scene{font-size:13px;line-height:1.55;color:#4a5450;margin-top:6px;text-wrap:pretty}
 .vs-stage-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:1.5px solid transparent;border-radius:999px;padding:7px 14px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
@@ -197,6 +198,11 @@ export const VS_CSS = `
 .vs-drills{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
 .vs-drills .vs-labrow{margin-top:0}
 .vs-drills-expr{font-size:14.5px;font-weight:700;letter-spacing:-.01em;color:var(--teal-deep);margin-top:8px;line-height:1.35}
+.vs-drow3{padding:10px 2px}
+.vs-drow3 > div{min-width:0;flex:1 1 auto}
+.vs-drow3 .en{font-size:14px}
+.vs-drow3 .vs-ln-kr{font-size:11px}
+.vs-drow3 .vs-ln-ko{font-size:12.5px}
 @media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-side{width:760px;max-width:100%}}
 ${V_DOT_CSS}${V_MINICAL_CSS}
 `;
@@ -366,7 +372,10 @@ function histSub(h0) {
   return Number.isFinite(h0?.avg) ? `이전 ${count}회 평균 ${h0.avg}` : `이전 ${count}회`;
 }
 
-export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history } = {}) {
+/* threeLine (2026-09-14 시안 12a) — 우측 패널·폰에서 응용 행을 대화 줄과 같은 세 줄(영문 / [발음] / 뜻)로
+ * 그리고 점수는 문장 아래 흔적 줄로 내린다. 점수 원을 버튼 옆 가로에 두면 원 6개에서 문장이 세로로 눌린다.
+ * 복습(sessionReviewV2)이 같은 함수를 쓰므로 기본값은 종전 한 줄 부제 + 버튼 옆 점수다. */
+export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history, threeLine = false } = {}) {
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   let recCtrl = null, recRow = null, plays = 0;
   return (Array.isArray(drills) ? drills : []).map((d, i) => {
@@ -374,8 +383,10 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
     // 구 스냅샷은 숫자 1개로 저장돼 있다 (2026-08-21 형식) — 배열로 정규화해 읽는다.
     // 렌더는 최근 DRILL_DOTS_MAX 개만 — 이력이 길어져도 행 폭을 지킨다 (2026-08-31, 데이터는 전체 보존)
     const hist = normScores(saved?.[i]);
-    const scoreEl = h('span', { class: 'vs-gscore', style: hist.length ? '' : 'display:none;' },
-      hist.slice(-DRILL_DOTS_MAX).map((v, k) => scoreDot(v, { size: 26, fresh: false })));
+    const moreEl = threeLine ? h('span', { class: 'more' }) : null;
+    const scoreEl = h('span', { class: threeLine ? 'vs-ln-trace' : 'vs-gscore', style: hist.length ? '' : 'display:none;' },
+      hist.slice(-DRILL_DOTS_MAX).map((v) => scoreDot(v, { size: 26, fresh: false })), moreEl);
+    if (moreEl) moreEl.textContent = hist.length > DRILL_DOTS_MAX ? `+${hist.length - DRILL_DOTS_MAX}` : '';
     /* ja 드릴은 본문이 d.ja 다 (en 은 d.en). d.en 만 읽던 탓에 일본어 드릴이 본문 없이
      * 음차·뜻만 뜨고 TTS·채점 대상도 빈 문자열이었다 (2026-08-28 수정). */
     const target = d.ja || d.en || '';
@@ -391,17 +402,24 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       speakWithFeedback(playBtn, target, { lang: ttsLang, voice: v.voice, rate: v.rate });
     });
     const recBtn = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
-    const row = h('div', { class: 'vs-drow' },
-      h('span', { class: 'ix' }, String(i + 1)),
-      h('div', {},
+    /* ja 는 가나 읽기를 함께 — 학습자가 한자를 거의 못 읽는다. 한자 0개라 가나가
+     * 본문과 같으면 같은 줄이 두 번 나오므로 생략한다 (구두점 차이는 무시).
+     * 이전 발화 이력 (2026-08-29 사용자 요구 "몇 번 발화했고 보통 몇 점인지") — 오늘 시도는
+     * 행의 점수 원이 이미 보여주므로 오늘 이전만 센다 (pronunciationLog.summarizeDrillLog). */
+    const hs = histSub(history?.[String(target).trim()]);
+    const textBlock = threeLine
+      ? h('div', {},
         h('div', { class: 'en' }, hlNode(target, hlTerm)),
-        /* ja 는 가나 읽기를 함께 — 학습자가 한자를 거의 못 읽는다. 한자 0개라 가나가
-         * 본문과 같으면 같은 줄이 두 번 나오므로 생략한다 (구두점 차이는 무시). */
-        /* 이전 발화 이력 (2026-08-29 사용자 요구 "몇 번 발화했고 보통 몇 점인지") — 오늘 시도는
-         * 행의 점수 원이 이미 보여주므로 오늘 이전만 센다 (pronunciationLog.summarizeDrillLog). */
-        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko, histSub(history?.[String(target).trim()])].filter(Boolean).join(' · '))),
-      h('span', { class: 'grow' }), scoreEl, playBtn, recBtn,
-    );
+        d.kr ? h('div', { class: 'vs-ln-kr' }, h('i', {}, '['), d.kr, h('i', {}, ']')) : null,
+        h('div', { class: 'vs-ln-ko' }, [kanaSub(d.kana, target), d.ko, hs].filter(Boolean).join(' · ')),
+        scoreEl)
+      : h('div', {},
+        h('div', { class: 'en' }, hlNode(target, hlTerm)),
+        h('div', { class: 'sub' }, [kanaSub(d.kana, target), d.kr, d.ko, hs].filter(Boolean).join(' · ')));
+    const row = threeLine
+      ? h('div', { class: 'vs-drow vs-drow3' }, h('span', { class: 'ix' }, String(i + 1)), textBlock, playBtn, recBtn)
+      : h('div', { class: 'vs-drow' }, h('span', { class: 'ix' }, String(i + 1)), textBlock,
+        h('span', { class: 'grow' }), scoreEl, playBtn, recBtn);
     recBtn.addEventListener('click', async () => {
       if (demo) {
         // 데모 — 마이크 없이 시뮬 채점 (화면 검증). 행 단위 진행 표시.
@@ -450,6 +468,10 @@ export function drillRows(drills, hlTerm, lang, onScore, demo, { saved, history 
       hist.push(Math.round(Number(raw) || 0));
       const shown = hist.slice(-DRILL_DOTS_MAX);
       scoreEl.replaceChildren(...shown.map((v, k) => scoreDot(v, { size: 26, fresh: k === shown.length - 1 })));
+      if (moreEl) {
+        moreEl.textContent = hist.length > DRILL_DOTS_MAX ? `+${hist.length - DRILL_DOTS_MAX}` : '';
+        scoreEl.appendChild(moreEl);
+      }
       scoreEl.style.display = '';
       popScore(scoreEl);
     }
@@ -697,7 +719,7 @@ function traceRow(scores) {
 }
 
 export function dialogueStageEl(group, ctx = {}) {
-  const { lang = 'en', selCardId, expr, cueIndex = -1, phone = false } = ctx;
+  const { lang = 'en', selCardId, expr, cueIndex = -1, phone = false, leadSep = false } = ctx;
   const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
   const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
   const lines = group.lines;
@@ -714,14 +736,16 @@ export function dialogueStageEl(group, ctx = {}) {
     const done = !!card && !selected && utter.length > 0;
     const prog = card && !selected ? String(ctx.drillProgOf?.(card.id) || '') : '';
 
-    // 헤어라인 — 첫 줄 위 · 선택 줄 위 · 선택 줄 바로 다음 줄 위에는 없다(카드 테두리가 경계).
-    const sepOn = !(i === 0 || selected || i - 1 === selLineIdx);
+    /* 헤어라인 — 선택 줄 위 · 선택 줄 바로 다음 줄 위에는 없다(카드 테두리가 경계).
+     * 첫 줄 위도 없지만, 앞 묶음이 이어지는 단독 줄이면(leadSep) 같은 열로 잇는다. */
+    const sepOn = i === 0 ? (leadSep && !selected) : !(selected || i - 1 === selLineIdx);
     body.appendChild(h('div', { class: 'vs-ln-sep' + (sepOn ? ' on' : '') }));
 
     const num = h('span', { class: 'vs-ln-num' + (selected ? ' on' : done ? ' done' : card ? ' card' : '') },
       done ? vCheck({ size: 11, sw: 3 }) : (card ? String(hit.num) : ''));
     const gio = String(ln.speaker ?? '').trim().toUpperCase() === 'B';
-    const name = h('span', { class: 'vs-ln-name' + (gio ? ' me' : '') }, String(ln.name || ''));
+    // name 이 없으면 speaker 글자 (miniDialogueEl 과 같은 계약 — 옛 시드·데모 픽스처는 name 이 없다)
+    const name = h('span', { class: 'vs-ln-name' + (gio ? ' me' : '') }, String(ln.name || ln.speaker || ''));
     const enEl = h('div', { class: 'vs-ln-en' }, selected ? hlNode(ln.en, expr) : document.createTextNode(ln.en));
     const textBlock = h('div', { class: 'vs-ln-body' },
       phone ? name : null,
@@ -756,7 +780,7 @@ export function dialogueStageEl(group, ctx = {}) {
     body.appendChild(row);
   });
 
-  const el = h('div', { class: 'vs-stage' });
+  const el = h('div', { class: 'vs-stage' + (group.hasDialogue ? '' : ' solo') });
   if (group.hasDialogue) {
     const allBtn = h('button', { class: 'vs-stage-all', type: 'button', 'data-role': 'stage-all' },
       vIcon(VI.PLAY, { size: 11, fill: true }), '전체 듣기');
@@ -1081,6 +1105,7 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 /* 대화 스테이지 — 폰 (2026-09-14 시안 12a 폰 390) */
 .vs-stagewrap{width:100%}
 .vs-stage + .vs-stage{margin-top:20px}
+.vs-stage.solo + .vs-stage.solo{margin-top:0}
 .vs-stage-hd{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:10px}
 .vs-stage-hdr{display:flex;align-items:center;gap:8px}
 .vs-stage-scene{font-size:12.5px;line-height:1.55;color:#4a5450;margin:6px 2px 0;text-wrap:pretty}
@@ -1126,6 +1151,11 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-drills{margin-top:18px}
 .vs-drills .vs-labrow{margin-top:0}
 .vs-drills-expr{font-size:14.5px;font-weight:700;letter-spacing:-.01em;color:var(--teal-deep);margin-top:8px;line-height:1.35}
+.vs-drow3{padding:10px 2px}
+.vs-drow3 > div{min-width:0;flex:1 1 auto}
+.vs-drow3 .en{font-size:14px}
+.vs-drow3 .vs-ln-kr{font-size:11px}
+.vs-drow3 .vs-ln-ko{font-size:12.5px}
 ${V_DOT_CSS}${V_MINICAL_CSS}
 `;
 
@@ -1214,7 +1244,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const pushUtter = (score) => { (cardEx.utter ??= []).push(Math.round(Number(score) || 0)); };
   const dotsEl = h('span', { class: 'v-dots' });
   const totEl = h('span', { class: 'tot' }, '총 ', h('b', {}, '0'), '회');
-  const meta = h('div', { class: 'vs-meta' }, vIcon(VI.MIC, { size: 14, sw: 2 }), dotsEl, totEl);
+  const meta = h('div', { class: 'vs-meta', style: 'display:none;' }, vIcon(VI.MIC, { size: 14, sw: 2 }), dotsEl, totEl);
 
   // 우측 ① 오늘 발화 링 (분모 = 직전 학습일 발화) · ② 공부 이력 4주 캘린더
   // 시안 12a — 좌측 사이드바 · 폰 하단 모두 96px (WORK-ORDER §1)
@@ -1228,6 +1258,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const shown = all.slice(-MAIN_DOTS_MAX);
     dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
     totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 버튼 라벨용 recCount 와 별개
+    meta.style.display = all.length ? '' : 'none'; // 결과가 없으면 결과 자리도 없다 (시안 12a §2-2)
   };
   const refreshRecWidget = () => {
     ringCard.update(todayUtter(), prevDay);
@@ -1346,7 +1377,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     handlers.saveSnapshot?.();
   };
   // 생산 연습 시작 시 자동 접힘(답 훔쳐보기 방지) — 펼치기는 자유 (2026-07-22).
-  const drillList = h('div', { class: 'vs-drills-list', style: 'margin-top:4px;' }, drillRows(drills, expr, lang, onDrillScore, state.demo, { saved: savedDrills }));
+  const drillList = h('div', { class: 'vs-drills-list', style: 'margin-top:4px;' }, drillRows(drills, expr, lang, onDrillScore, state.demo, { saved: savedDrills, threeLine: true }));
   // 데스크톱 VS_CSS 엔 '.vs button' 리셋이 없으므로 (L483 주석) 네이티브 버튼 크롬을 인라인으로 제거.
   const unfoldBtn = h('button', { class: 'vs-drills-unfold', type: 'button', style: 'display:none;text-align:left;padding:6px 0;font:inherit;font-size:12.5px;font-weight:600;color:var(--faint);background:none;border:0;cursor:pointer;' }, '응용 목록 펼치기 ▾');
   unfoldBtn.addEventListener('click', () => { drillList.style.display = ''; unfoldBtn.style.display = 'none'; });
@@ -1495,6 +1526,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
 
   const stages = viewGroups.map((g, gi) => dialogueStageEl(g, {
     lang, selCardId: s?.id, expr, phone: state.size !== 'desktop',
+    // 단독 줄이 연달아 오면 한 열로 잇는다 — 대화 묶음 뒤에서는 묶음 경계라 잇지 않는다.
+    leadSep: !g.hasDialogue && gi > 0 && !viewGroups[gi - 1].hasDialogue,
     cueIndex: gi === viewSelIdx ? (collapsed ? 0 : selLineIdx - 1) : -1,
     utterOf, drillProgOf,
     miniScoresOf: (i) => (gi === viewSelIdx ? normScores(cardEx.mini?.[srcIdx(i)]) : []),

@@ -334,7 +334,7 @@ describe('sessionExprV2 — 응용 연습(drill) 녹음 카운트', () => {
     expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('1');
 
     // 행 점수 배지 + 등장 애니
-    const drillScoreEl = drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-gscore');
+    const drillScoreEl = drillRecBtns(host)[0].closest('.vs-drow').querySelector('.vs-ln-trace'); // 세 줄 행 — 흔적 줄
     expect(drillScoreEl.textContent).toContain('100');
     expect(drillScoreEl.classList.contains('score-pop')).toBe(true);
   });
@@ -752,7 +752,7 @@ describe('sessionExprV2 — 연습 진행 영속화 (state.exLog)', () => {
     const state = stateWith(5, { exLog: { e1: { drills: { 0: 88, 3: 61 } } } });
     renderSessionExprV2(host, state, {});
     const scores = [...host.querySelectorAll('.vs-drills-list .vs-drow')]
-      .map((r) => r.querySelector('.vs-gscore'));
+      .map((r) => r.querySelector('.vs-ln-trace')); // 세 줄 행 — 점수는 문장 아래 흔적 줄
     expect(scores[0].textContent).toContain('88');
     expect(scores[0].style.display).not.toBe('none');
     expect(scores[3].textContent).toContain('61');
@@ -909,9 +909,9 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     const row = host.querySelector('.vs-drills-list .vs-drow');
     const rec = row.querySelector('button[aria-label="녹음"]');
     rec.click(); await tick(); rec.click(); await tick(); await tick();
-    expect(row.querySelectorAll('.vs-gscore .v-dot')).toHaveLength(1);
+    expect(row.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(1);
     rec.click(); await tick(); rec.click(); await tick(); await tick();
-    expect(row.querySelectorAll('.vs-gscore .v-dot')).toHaveLength(2);
+    expect(row.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(2);
   });
 
   it('밑줄은 그라디언트 언더레이 — text-decoration 을 쓰지 않는다 (구절이 끊긴다)', () => {
@@ -1176,7 +1176,7 @@ describe('sessionExprV2 — 오발화 게이트 (응용 드릴)', () => {
     b.click(); await tick(); b.click(); await tick(); await tick();
     expect(state.tried).toBe(0);
     expect(state.pronScores).toEqual([]);
-    expect(b.closest('.vs-drow').querySelector('.vs-gscore').style.display).toBe('none');
+    expect(b.closest('.vs-drow').querySelector('.vs-ln-trace').style.display).toBe('none');
     expect(host.querySelector('.vs-labrow .ct b').textContent).toBe('0');
     expect(showRecordToast).toHaveBeenCalledTimes(1);
   });
@@ -1843,6 +1843,23 @@ describe('sessionExprV2 — 대화 스테이지', () => {
     expect(rows[0].querySelector('.vs-ln-name').textContent).toBe('');
   });
 
+  it('화자 칸은 name 이 없으면 speaker 글자로 떨어진다 (miniDialogueEl 과 같은 계약)', () => {
+    const md = [
+      { speaker: 'A', en: 'We landed early.', ko: '일찍 내렸어.' },
+      { speaker: 'B', en: "I'm on my way.", ko: '가는 중이야.' },
+    ];
+    const g = buildDialogueGroups([{ id: 'c1', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '발음',
+      explanation: { miniDialogue: md } }])[0];
+    const { el } = dialogueStageEl(g, ctx({ selCardId: 'c1' }));
+    expect([...el.querySelectorAll('.vs-ln-name')].map((n) => n.textContent)).toEqual(['A', 'B']);
+  });
+
+  it('지오(B)는 틸, 상대(A)는 무채색 — 코랄은 녹음 색이라 화자에 쓰지 않는다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    const names = [...el.querySelectorAll('.vs-ln-name')];
+    expect(names.map((n) => n.classList.contains('me'))).toEqual([false, true, false, true]);
+  });
+
   it('전체 듣기 — 줄 순서대로, 화자 성별 목소리 · rate 1.0, 선택 줄은 듣기 필이 재생 표시를 받는다', () => {
     const speak = vi.fn((_t, o) => o?.onEnd?.());
     window.studySpeech = { speak, cancel: vi.fn() };
@@ -2033,6 +2050,40 @@ describe('sessionExprV2 — 데스크톱 3칼럼 조립 (2026-09-14 시안 12a)'
     expect(speak.mock.calls[0][1].voice).toBe('en-US-AvaMultilingualNeural');
   });
 
+  it('본 점수 열은 이력이 있을 때만 그린다 (WORK-ORDER §2-2)', async () => {
+    const host = mount(st());
+    expect(host.querySelector('.vs-ln.sel .vs-meta').style.display).toBe('none');
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    expect(host.querySelector('.vs-ln.sel .vs-meta').style.display).toBe('');
+  });
+
+  it('연속한 단독 묶음은 헤어라인으로 이어 붙는다 (같은 열)', () => {
+    const s = st();
+    s.cards = [
+      { id: 'a1', lang: 'en', sentence: 'fill in', ko: '알려주다', pron: '필 인', explanation: { key: 'fill in = 알려주다' } },
+      { id: 'a2', lang: 'en', sentence: 'handle', ko: '처리하다', pron: '핸들', explanation: { key: 'handle = 처리하다' } },
+      { id: 'a3', lang: 'en', sentence: 'from scratch', ko: '처음부터', pron: '프럼 스크래치', explanation: { key: 'from scratch = 처음부터' } },
+    ];
+    s.sentence = s.cards[0];
+    const host = mount(s);
+    const stages = [...host.querySelectorAll('.vs-stage')];
+    expect(stages).toHaveLength(3);
+    expect(stages.map((n) => n.classList.contains('solo'))).toEqual([true, true, true]);
+    // 첫 묶음 위에는 선이 없고, 뒤이은 단독 묶음 위에는 선이 있다
+    expect(stages.map((n) => n.querySelector('.vs-ln-sep').classList.contains('on')))
+      .toEqual([false, true, true]);
+  });
+
+  it('대화 묶음 다음에 오는 단독 묶음 위에는 선을 긋지 않는다 (묶음 경계)', () => {
+    const s = st();
+    s.cards.push({ id: 'solo', lang: 'en', sentence: 'from scratch', ko: '처음부터', pron: '프럼 스크래치', explanation: { key: 'from scratch = 처음부터' } });
+    const host = mount(s);
+    const stages = [...host.querySelectorAll('.vs-stage')];
+    expect(stages.map((n) => n.classList.contains('solo'))).toEqual([false, true]);
+    expect(stages[1].querySelector('.vs-ln-sep').classList.contains('on')).toBe(false);
+  });
+
   it('접힌 카드 줄 녹음 원 → 그 카드로 이동하고 재렌더 뒤 본 녹음이 자동으로 시작된다', async () => {
     const s = st();
     s.cards.push({ id: 'c2', lang: 'en', sentence: "I'm almost there.", ko: '거의 다 왔어.', pron: '아이몰모우스 데어r',
@@ -2179,5 +2230,67 @@ describe('scrollSelectedIntoView — 열린 줄을 화면 안으로 (2026-09-14)
   it('스크롤할 수 없는 환경에서는 조용히 넘어간다', () => {
     expect(() => scrollSelectedIntoView(null, {}, 0)).not.toThrow();
     expect(() => scrollSelectedIntoView({ getBoundingClientRect: () => ({ top: 0, bottom: 0 }) }, {}, 0)).not.toThrow();
+  });
+});
+
+/* 응용 행 세 줄 (2026-09-14 시안 12a §2-2 우측 패널) — 영문 / [발음] / 뜻 + 문장 아래 흔적 줄.
+ * 점수 원을 버튼 옆 가로에 두지 않는다(원 6개면 400px 패널·폰에서 문장이 세로로 눌린다).
+ * 복습(sessionReviewV2)이 같은 함수를 쓰므로 옵션 기본값은 기존 한 줄 부제 그대로다. */
+describe('drillRows — 세 줄 옵션', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const D = [{ en: 'Are you on your way?', ko: '오는 중이야?', kr: '아r 여 온 여r 웨이' }];
+
+  it('옵션이 없으면 종전대로 한 줄 부제 · 점수는 버튼 옆 (복습 회귀 방지)', () => {
+    const [row] = drillRows(D, "I'm on my way", 'en', () => {}, true, { saved: { 0: [88] } });
+    expect(row.querySelector('.sub').textContent).toBe('아r 여 온 여r 웨이 · 오는 중이야?');
+    expect(row.querySelector('.vs-ln-kr')).toBeNull();
+    const kids = [...row.children].map((n) => n.className.split(' ')[0]);
+    expect(kids).toEqual(['ix', '', 'grow', 'vs-gscore', 'vs-cir', 'vs-cir']);
+  });
+
+  it('threeLine 이면 영문 / [발음] / 뜻 세 줄이고 점수는 문장 아래 흔적 줄로 간다', () => {
+    const [row] = drillRows(D, "I'm on my way", 'en', () => {}, true, { saved: { 0: [88, 92] }, threeLine: true });
+    expect(row.querySelector('.en').textContent).toBe('Are you on your way?');
+    expect(row.querySelector('.vs-ln-kr').textContent).toBe('[아r 여 온 여r 웨이]');
+    expect(row.querySelector('.vs-ln-ko').textContent).toBe('오는 중이야?');
+    expect(row.querySelector('.sub')).toBeNull();
+    const kids = [...row.children].map((n) => n.className.split(' ')[0]);
+    expect(kids).toEqual(['ix', '', 'vs-cir', 'vs-cir']); // 버튼 열에 점수 없음
+    expect(row.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(2);
+  });
+
+  it('흔적 줄도 최근 8개 + +N (대화 줄과 같은 규칙)', () => {
+    const saved = { 0: Array.from({ length: 11 }, (_, i) => 80 + i) };
+    const [row] = drillRows(D, '', 'en', () => {}, true, { saved, threeLine: true });
+    expect(row.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(8);
+    expect(row.querySelector('.vs-ln-trace .more').textContent).toBe('+3');
+  });
+
+  it('녹음하면 흔적 줄에 원이 하나 늘고 +N 이 갱신된다', async () => {
+    const saved = { 0: Array.from({ length: 8 }, (_, i) => 80 + i) };
+    const [row] = drillRows(D, '', 'en', () => {}, true, { saved, threeLine: true });
+    document.body.appendChild(row);
+    row.querySelector('button[aria-label="녹음"]').click();
+    await new Promise((r) => setTimeout(r, 900));
+    expect(row.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(8);
+    expect(row.querySelector('.vs-ln-trace .more').textContent).toBe('+1');
+  });
+
+  it('발음이 없으면 발음 줄을 만들지 않는다', () => {
+    const [row] = drillRows([{ en: 'x', ko: '뜻' }], '', 'en', () => {}, true, { threeLine: true });
+    expect(row.querySelector('.vs-ln-kr')).toBeNull();
+    expect(row.querySelector('.vs-ln-ko').textContent).toBe('뜻');
+  });
+
+  it('신규 세션 우측 패널은 세 줄로 그린다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState();
+    st.cards = [{ id: 'c1', lang: 'en', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '아이몬 마이 웨이',
+      explanation: { key: "I'm on my way = 가는 중이야.", drills: D } }];
+    st.sentence = st.cards[0];
+    st.step = 1;
+    SESSION_BLOCKS.chainProd = false;
+    renderSessionExprV2(host, st, {});
+    expect(host.querySelector('.vs-drills .vs-drow .vs-ln-kr').textContent).toBe('[아r 여 온 여r 웨이]');
   });
 });

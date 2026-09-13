@@ -390,3 +390,30 @@ describe('session-new — 초기 동기화 대기', () => {
     cleanup(); delete window.__syncReady;
   });
 });
+
+/* 대화 접기·상대 줄 녹음은 화면을 다시 그려야 반영된다 (2026-09-14 대화 스테이지).
+ * 렌더러는 handlers.rerender 로 그 요청을 올린다 — 배선이 빠지면 상태만 바뀌고 화면이 멈춘다. */
+describe('session-new — rerender 배선 (대화 스테이지)', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); SESSION_BLOCKS.chainProd = false; });
+
+  it('폰에서 대화 접기를 누르면 줄이 접힌 화면으로 다시 그려진다', async () => {
+    const MD = [
+      { speaker: 'A', name: '소연', en: 'One two.', ko: '뜻하나', kr: '원 투' },
+      { speaker: 'B', name: '지오', en: 'Three four.', ko: '뜻둘', kr: '쓰리 f포' },
+      { speaker: 'A', name: '소연', en: 'Five six.', ko: '뜻셋', kr: 'f파이v 씩스' },
+    ];
+    const cards = NCARDS.map((c) => ({ ...c, explanation: { ...c.explanation, miniDialogue: MD, situation: '장면' } }));
+    window.innerWidth = 390; // phone
+    window.studyDB = fakeDB2();
+    loadNewCards.mockResolvedValueOnce(cards);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+    expect(document.querySelectorAll('.vs-ln')).toHaveLength(3);
+    document.querySelector('.vs-stage-fold').click();
+    await settle2();
+    expect(document.querySelectorAll('.vs-ln')).toHaveLength(1); // 첫 카드라 직전 상대 줄이 없다
+    expect(document.querySelector('.vs-stage-fold').textContent).toBe('대화 펼치기 ▾');
+    cleanup();
+  });
+});
