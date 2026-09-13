@@ -16,9 +16,9 @@
         "anchor": "가는 중",
         "situation": "1월 2일 새벽. 라스베가스에서 오는 대한항공 비행이 예정보다 한 시간 빠른 4시 20분에 내렸다. 지오는 못 일어날까 봐 한숨도 못 잤다. 한파주의보. (문자 대화)",
         "miniDialogue": [
-          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디더r리 잇츠 f포어r 트웨니" },
           { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
-          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테이켜r 타임 잇츠 f리이징 아웃싸이드" },
           { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
           { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
           { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
@@ -29,9 +29,9 @@
           { "en": "Soyeon knows I'm on my way.", "ko": "소연은 내가 가는 중인 거 알아.", "kr": "소연 노우z 아임 온 마이 웨이" },
           { "en": "Are you on your way?", "ko": "오는 중이야?", "kr": "아r 여 온 여r 웨이" },
           { "en": "Soyeon is on her way home from the airport.", "ko": "소연은 공항에서 집으로 오는 중이야.", "kr": "소연 이z 온 허r 웨이 호움 f럼 디 에어r포어r트" },
-          { "en": "I'm not on my way yet. I'm still at home.", "ko": "아직 출발 안 했어. 아직 집이야.", "kr": "아임 낫 온 마이 웨이 옛 아임 스틸 엇 호움" },
+          { "en": "I'm not on my way yet. I'm still at home.", "ko": "아직 출발 안 했어. 아직 집이야.", "kr": "아임 나론 마이 웨이 옛 아임 스틸 엇 호움" },
           { "en": "Nani is on her way to the kitchen.", "ko": "나니가 주방으로 가는 중이야.", "kr": "나니 이z 온 허r 웨이 터 더 키친" },
-          { "en": "We're on our way to pick you up.", "ko": "우리가 너 데리러 가는 중이야.", "kr": "위아r 온 아워r 웨이 터 피켜 업" }
+          { "en": "We're on our way to pick you up.", "ko": "우리가 너 데리러 가는 중이야.", "kr": "위어r 온 아워r 웨이 터 피켜 업" }
         ],
         "grammar": [
           { "struct": "be on one's way (to + 장소)", "body": "지금 이동 중이라는 뜻. to 뒤에 목적지가 오고 집은 home 만 쓴다(to home 아님). 동사는 be 라서 I'm / Are you / Soyeon is 로 주어만 바꾸면 된다." }
@@ -56,9 +56,9 @@
         "anchor": "40분이면",
         "situation": "소연이 안에서 기다리겠다고 한다. 지오가 도착 시간을 알린다. 서둘러도 줄어드는 건 1~2분뿐이라 넉넉히 말한다.",
         "miniDialogue": [
-          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디더r리 잇츠 f포어r 트웨니" },
           { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
-          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테이켜r 타임 잇츠 f리이징 아웃싸이드" },
           { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
           { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
           { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
@@ -77,7 +77,7 @@
           { "struct": "I'll be there in + 시간", "body": "in 은 '~안에' 가 아니라 '~뒤에'. in forty minutes = 40분 뒤에. 시각은 at(at five), 걸리는 시간은 in." }
         ],
         "chunks": [["I'll be there", "아일 비 데어r", "거기 갈게"], ["in forty minutes.", "인 f포어r리 미닛츠", "40분 뒤에"]],
-        "phonemes": [["/t/ forty → 포어r리", "forty 의 t 는 모음 사이라 굴러서 ㄹ — '포r티'(X)"], ["I'll → 아일", "어두운 L: 혀끝을 윗잇몸에 대고 끝낸다 (gold 보류 항목, 임시 표기)"]],
+        "phonemes": [["/t/ forty → f포어r리", "forty 의 t 는 모음 사이라 굴러서 ㄹ — 'f포r티'(X)"], ["I'll → 아일", "어두운 L: 혀끝을 윗잇몸에 대고 끝낸다 (gold 보류 항목, 임시 표기)"]],
         "mistake": "'40분 안에' 로 생각해 within 을 쓰지 않는다. 도착 예고는 in.",
         "similar": "I'll be there soon. / Give me forty minutes.",
         "category": "약속/시간",
@@ -96,9 +96,9 @@
         "anchor": "한숨도",
         "situation": "소연이 잠은 잤냐고 묻는다. 지오는 못 일어날까 봐 한숨도 못 잤다.",
         "miniDialogue": [
-          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디더r리 잇츠 f포어r 트웨니" },
           { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
-          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테이켜r 타임 잇츠 f리이징 아웃싸이드" },
           { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
           { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
           { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
@@ -106,7 +106,7 @@
           { "speaker": "B", "name": "지오", "en": "I'm almost there.", "ko": "거의 다 왔어.", "kr": "아임 올모우스 데어r" }
         ],
         "drills": [
-          { "en": "I didn't eat at all.", "ko": "아무것도 안 먹었어.", "kr": "아이 디든 이잇 어롤" },
+          { "en": "I didn't eat at all.", "ko": "아무것도 안 먹었어.", "kr": "아이 디든 이이러롤" },
           { "en": "Did you sleep at all?", "ko": "잠은 좀 잤어?", "kr": "디저 슬리입 어롤" },
           { "en": "Nani didn't sleep at all last night.", "ko": "나니가 어젯밤 한숨도 안 잤어.", "kr": "나니 디든 슬리입 어롤 라스 나잇" },
           { "en": "I slept for two hours.", "ko": "두 시간 잤어.", "kr": "아이 슬렙트 f퍼r 투우 아워r즈" },
@@ -136,9 +136,9 @@
         "anchor": "거의",
         "situation": "공항 진입로. 지오가 소연에게 거의 다 왔다고 알린다. 차는 따뜻하게 데워 놨다.",
         "miniDialogue": [
-          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디드 어r리 잇츠 f포어r 트웨니" },
+          { "speaker": "A", "name": "소연", "en": "We landed early. It's 4:20.", "ko": "일찍 내렸어. 4시 20분이야.", "kr": "위 랜디더r리 잇츠 f포어r 트웨니" },
           { "speaker": "B", "name": "지오", "en": "I'm on my way.", "ko": "가는 중이야.", "kr": "아임 온 마이 웨이" },
-          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테익 여r 타임 잇츠 f리이징 아웃싸이드" },
+          { "speaker": "A", "name": "소연", "en": "Take your time. It's freezing outside.", "ko": "천천히 와. 밖에 엄청 추워.", "kr": "테이켜r 타임 잇츠 f리이징 아웃싸이드" },
           { "speaker": "B", "name": "지오", "en": "I'll be there in forty minutes.", "ko": "40분이면 가.", "kr": "아일 비 데어r 인 f포어r리 미닛츠" },
           { "speaker": "A", "name": "소연", "en": "Did you sleep?", "ko": "잠은 잤어?", "kr": "디저 슬리입" },
           { "speaker": "B", "name": "지오", "en": "I didn't sleep at all.", "ko": "한숨도 못 잤어.", "kr": "아이 디든 슬리입 어롤" },
