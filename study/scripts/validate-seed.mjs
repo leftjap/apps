@@ -68,6 +68,78 @@ export function linkingCandidates(kr) {
   return out;
 }
 
+/* 표기 규칙 검사 (2026-09-13). 새 세션 시뮬레이션에서 확인한 빈틈 보강 — gold 머리말 규약 2·3·6 과 가이드 §7 의 결정적
+ * 규칙만 기계화한다. error = gold 에 정당한 용례가 없는 옛 표기(구개음화 ㅠ·확정 조합 불일치·비강세 at 강형·단어 안 flap 옛 표기).
+ * warn = 문맥 판단이 필요한 것(비강세 you·라틴 병기·장모음·I'll·단어 경계·자음군 t). 전역 치환은 하지 않는다(gold §1.5-①). */
+const KR_BIGRAM_ERROR = [['do you', '더여'], ['did you', '디저'], ['could you', '커저'], ['would you', '워저'], ['should you', '셔저'],
+  ['what you', '왓처'], ['make you', '메이켜'], ['pick you', '피켜'], ['ask you', '애스켜'], ['think you', '씽켜'], ['told you', '톨저'],
+  ['take your', '테이켜r']]; // gold #1·#2·#22·#28·#31·#41·#58·#87·#94 + personal 테이켜r
+const KR_BIGRAM_WARN = [['meet you', '미이처'], ['let you', '레처'], ['get you', '게처'], ['got you', '가처'], ['put you', '푸처'],
+  ['want you', '원처'], ['need you', '니이저']]; // 왓처·톨저 유추 — gold 에 직접 예가 없어 경고
+const KR_LONG = { sleep: '슬리이', eat: '이이', see: '씨이', mean: '미이', need: '니이', keep: '키이', please: '플리이', two: '투우', too: '투우',
+  feel: 'f피이', week: '위이', leave: '리이', reach: '리이', meet: '미이', three: '쓰리이', free: 'f리이', deal: '디이', seem: '씨이',
+  believe: '빌리이', soon: '쑤우', room: '루우', school: '스쿠우', cool: '쿠우', shoes: '슈우', choose: '추우', lose: '루우', move: '무우',
+  through: '쓰루우', true: '트루우', speak: '스피이', cheap: '치이', teach: '티이', read: '리이', machine: '머쉬이', food: 'f푸우' }; // 겹모음 어간 — 받침이 뒤 어절로 옮겨가도 남는 부분(guide §7 규약)
+const KR_FLAP_OLD = { water: '워터', better: '베터', little: '리틀', pretty: '프리티', forty: '포r티', city: '씨티', party: '파r티', later: '레이터',
+  matter: '매터', getting: '게팅', sitting: '씨팅', letter: '레터', meeting: '미이팅', waiting: '웨이팅', eating: '이이팅', writing: '라이팅' }; // 단어 안 flap(guide §7 표·gold #20 리를·#35 게링)
+const KR_Z_WORDS = new Set(['is', 'was', 'has', 'does', 'knows', 'goes', 'because', 'his', 'these', 'those', 'as', 'days', 'ways', 'words', 'hours', 'things', 'plans', 'says', 'use']);
+const krJamo = (str) => [...String(str).replace(/[a-z]/g, '')].map((ch) => { const o = ch.charCodeAt(0) - 0xac00; return o < 0 || o > 11171 ? null : [Math.floor(o / 588), Math.floor((o % 588) / 28)]; }).filter(Boolean);
+// 받침을 무시한 (초성,중성) 열 비교 — 겹모음 어간이 받침(슬리입)이나 앞 어절 연결(디드니이러롤)로 모양이 바뀌어도 잡는다.
+function hasKrStem(kr, stem) {
+  const S = krJamo(stem); const K = krJamo(kr);
+  outer: for (let i = 0; i + S.length <= K.length; i++) {
+    for (let j = 0; j < S.length; j++) {
+      if (S[j][1] !== K[i + j][1]) continue outer;
+      if (S[j][0] !== K[i + j][0] && !(j === 0 && S[j][0] === 11)) continue outer; // 모음 시작 어간의 첫 초성은 앞 어절에서 넘어온 자음일 수 있다
+    }
+    return true;
+  }
+  return false;
+}
+const enWordsOf = (en) => String(en ?? '').toLowerCase().replace(/[^a-z' ]/g, ' ').split(/\s+/).filter(Boolean);
+export function krRuleFindings(en, kr) {
+  const out = []; const push = (rule, level, msg) => out.push({ rule, level, msg });
+  const K = String(kr ?? ''); if (!K.trim()) return out;
+  const w = enWordsOf(en); const j = ` ${w.join(' ')} `; const toks = K.split(/\s+/).filter(Boolean);
+  const raw = String(en ?? '').split(/\s+/).filter(Boolean).map((t) => t.toLowerCase()); const core = (t) => t.replace(/[^a-z']/g, '');
+  // R1 구개음화 — 옛 ㅠ 표기(토큰 끝 쥬·츄·큐, you/your 문맥) + gold 확정 조합
+  if (/ your? /.test(j) && /(쥬|츄|큐)(\s|$)/.test(K)) push('R1', 'error', '구개음화 ㅠ 표기 — gold 규약 2: ㅓ 계열(커저·왓처·메이켜)');
+  for (const [bg, ok] of KR_BIGRAM_ERROR) if (j.includes(` ${bg} `) && !K.includes(ok)) push('R1', 'error', `"${bg}" 는 gold 확정 ${ok}`);
+  for (const [bg, ok] of KR_BIGRAM_WARN) if (j.includes(` ${bg} `) && !K.includes(ok)) push('R1', 'warn', `"${bg}" 는 구개음화 ${ok} 권장(왓처 유추)`);
+  // R2 비강세 you = 여 (gold 규약 3: 문두 주어·문말·쉼표 앞은 유)
+  const unstressedYou = raw.filter((t, i) => core(t) === 'you' && i !== 0 && i !== raw.length - 1 && !/[,.?!;:]$/.test(t)).length;
+  if (unstressedYou && toks.slice(1, -1).includes('유')) push('R2', 'warn', "비강세 you 가 '유' — gold 규약 3: 여(문두 주어·문말·쉼표 앞만 유)");
+  if (core(raw[0] ?? '') === 'you' && toks[0] === '여') push('R2', 'warn', "문두 주어 You 는 '유'(gold 규약 3)");
+  if (j.includes(' your ') && /유어r|유얼/.test(K)) push('R2', 'warn', "your 약형은 '여r'(gold #50)");
+  // R3 비강세 at = 엇 (gold #52) — 앳/엣 은 강형
+  const atUnstressed = raw.some((t, i) => core(t) === 'at' && i !== raw.length - 1 && core(raw[i + 1] ?? '') !== 'all');
+  if (atUnstressed && /(^|\s)(앳|엣)(\s|$)/.test(K)) push('R3', 'error', "at 강형 '앳/엣' — gold: 약형 엇(#52) 또는 연결형(어롤)");
+  // R4 라틴 병기 f v z r (guide §7 규약)
+  if (w.some((t) => /^f(?!h)/.test(t)) && !K.includes('f')) push('R4', 'warn', 'f 병기 누락');
+  if (w.some((t) => /^v/.test(t)) && !K.includes('v')) push('R4', 'warn', 'v 병기 누락');
+  if (w.some((t) => KR_Z_WORDS.has(t)) && !/z|즈/.test(K)) push('R4', 'warn', 'z 병기 누락');
+  if (w.some((t) => /[aeiou]r($|[^aeiouyr])/.test(t)) && !K.includes('r')) push('R4', 'warn', 'r 병기 누락');
+  // R5 장모음 겹모음
+  for (const t of w) if (KR_LONG[t] && !hasKrStem(K, KR_LONG[t])) push('R5', 'warn', `${t} 는 장모음 겹모음(${KR_LONG[t]}…)`);
+  // R6 단어 안 flap 옛 표기
+  for (const t of w) if (KR_FLAP_OLD[t] && K.includes(KR_FLAP_OLD[t])) push('R6', 'error', `${t} 옛 표기 '${KR_FLAP_OLD[t]}' — 단어 안 t 는 flap ㄹ(guide §7)`);
+  // R7 I'll 임시 표기 아일 (gold 보류) — 앞 어절과 붙은 X아일(프라미사일)도 허용
+  if (/\bi'll\b/.test(String(en ?? '').toLowerCase()) && !/(^|\s)아일(\s|$)|[가-힣]일(\s|$)/.test(K)) push('R7', 'warn', "I'll 은 임시 표기 '아일'(gold 보류)");
+  // R8 단어 경계 붙여 적기 후보 (경고 — 문장 경계·pause·한글 이름은 사람이 판단)
+  const cands = linkingCandidates(K);
+  if (cands.length) {
+    const boundary = /[.!?,;:]\s+\S/.test(String(en ?? '')) ? ' (en 에 문장 경계 있음 — 그 자리면 정상)' : '';
+    push('R8', 'warn', `붙여 적기 후보 ${cands.map((x) => `"${x}"`).join(' ')} — 파열음·비음·s 뒤 모음은 합쳐 적는다(guide §7). pause·한글 이름이면 그대로${boundary}`);
+  }
+  // R9 자음군 t 탈락 관례 — st 뒤에 자음이 오면 t 가 빠진다(gold #8 라스 파r러v·#18 베스 f퍼r·#61 넥스 트레인)
+  for (let i = 0; i < toks.length - 1; i++) {
+    const a = toks[i]; const b = toks[i + 1]; const o = b.charCodeAt(0) - 0xac00;
+    const consonantStart = /^[fv]/.test(b) || (o >= 0 && o <= 11171 && Math.floor(o / 588) !== 11);
+    if (a.endsWith('스트') && consonantStart) push('R9', 'warn', `"${a} ${b}" — 자음 앞 st 의 t 는 빠진다(베스 f퍼r·넥스 트레인)`);
+  }
+  return out;
+}
+
 const isSceneCard = (c) => Array.isArray(c?.explanation?.dialogue);
 
 /** speech.js 소스에서 SPEAKER_VOICES 의 'en-US' 블록 화자 키 추출. */
@@ -272,17 +344,16 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       const noKo = ex.chunks.filter((x) => !String(x?.[2] ?? '').trim()).length;
       if (noKo) warnings.push(`${c.id}: chunks ${noKo}개에 조각 뜻(chunks[i][2])이 없음 — 문장 모아보기 어순 힌트·조각 정렬 뜻이 생략됨`);
     }
-    // 단어 경계 붙여 적기 후보 (guide §7 규약, 2026-09-13) — 경고만. 문장 경계·pause·한글 고유명사는 사람이 판단한다.
+    // 표기 규칙 검사 (guide §7, 2026-09-13) — phonetic_kr·drills·miniDialogue 의 kr. 에러 규칙은 차단, 경고 규칙은 사람이 본다.
     const krSites = [
       ['phonetic_kr', c.sentence, c.phonetic_kr],
       ...(Array.isArray(ex.drills) ? ex.drills.map((d, i) => [`drills[${i}]`, d?.en, d?.kr]) : []),
       ...(Array.isArray(ex.miniDialogue) ? ex.miniDialogue.map((l, i) => [`miniDialogue[${i}]`, l?.en, l?.kr]) : []),
     ];
+    // gold 는 코어100(2026-09-09)·personal(2026-09-13) 트랙에서 확정됐다. 그 이전 RealClass 장면 시드(track 없음)는 grandfather — 경고로만 낸다.
+    const krStrict = ['core100', 'personal'].includes(payload?.track);
     for (const [where, en, kr] of krSites) {
-      const cands = linkingCandidates(kr);
-      if (!cands.length) continue;
-      const boundary = /[.!?,;:]\s+\S/.test(String(en ?? '')) ? ' (en 에 문장 경계 있음 — 그 자리면 정상)' : '';
-      warnings.push(`${c.id}: ${where} 붙여 적기 후보 ${cands.map((x) => `"${x}"`).join(' ')} — 파열음·비음·s 뒤 모음은 합쳐 적는다(guide §7). pause·한글 이름이면 그대로${boundary}`);
+      for (const fnd of krRuleFindings(en, kr)) (fnd.level === 'error' && krStrict ? errors : warnings).push(`${c.id}: ${where} ${fnd.msg}`);
     }
     // 문장 모아보기 v12 — anchor(meaning 안의 핵심 표현 부분 문자열, 프롬프트 밑줄). 선택 필드, 경고만.
     if (ex.anchor != null && !String(c.meaning ?? '').includes(String(ex.anchor))) {

@@ -20,6 +20,7 @@ import {
   quotedClipDrill,
   loadCore100Keys,
   linkingCandidates,
+  krRuleFindings,
 } from './validate-seed.mjs';
 
 /* 게이트 보강(2026-07-22: 첫단어 다양성·인용형 차단) 이후의 기준선 픽스처 —
@@ -1136,10 +1137,10 @@ describe('validateSeedContent — miniDialogue (core100)', () => {
 describe('validateSeedContent — personal 트랙 (2026-09-12)', () => {
   const S = "I'm on my way.";
   const CH = [["I'm", '아임', '나는'], ['on my way.', '온 마이 웨이', '가는 중']];
-  const line = (speaker, en) => ({ speaker, en, ko: '뜻', kr: '음차' });
+  const line = (speaker, en, kr = '음차') => ({ speaker, en, ko: '뜻', kr }); // 확정 조합(take your·did you)이 있는 줄은 실제 표기 — 자리표시는 R1 에러에 걸린다
   const md8 = [
-    line('A', "We landed early. It's 4:20."), line('B', S), line('A', "Take your time. It's freezing outside."),
-    line('B', "I'll be there in forty minutes."), line('A', 'Did you sleep?'), line('B', "I didn't sleep at all."),
+    line('A', "We landed early. It's 4:20."), line('B', S), line('A', "Take your time. It's freezing outside.", '테이켜r 타임 잇츠 f리이징 아웃싸이드'),
+    line('B', "I'll be there in forty minutes."), line('A', 'Did you sleep?', '디저 슬리입'), line('B', "I didn't sleep at all."),
     line('A', 'You must be tired.'), line('B', "I'm almost there."),
   ];
   const card = (extra = {}) => ({
@@ -1240,5 +1241,65 @@ describe('linkingCandidates — 단어 경계 붙여 적기 후보 (guide §7, 2
     const r = validateSeedContent(seed, { ...okOpts, core100Keys: [] });
     const cands = new Set(r.warnings.filter((w) => w.includes('붙여 적기 후보')).flatMap((w) => [...w.matchAll(/"([^"]+)"/g)].map((m) => m[1])));
     expect([...cands].sort()).toEqual(['소연 이z', '옛 아임', '타임 잇츠']);
+  });
+});
+
+/* 표기 규칙 검사 7종 (2026-09-13, 새 세션 시뮬레이션으로 확인한 빈틈 보강). gold 에 정당한 용례가 없는 옛 표기는 에러,
+ * 문맥 판단이 필요한 것은 경고. 근거는 gold 머리말 규약 2·3·6 과 가이드 §7. */
+describe('krRuleFindings — gold 표기 규칙 검사 (2026-09-13)', () => {
+  const rules = (en, kr) => krRuleFindings(en, kr).map((f) => `${f.rule}:${f.level}`);
+  it('R1 구개음화 ㅠ 표기·확정 조합 불일치는 에러 (쿠쥬→커저, 두 유→더여)', () => {
+    expect(rules('Could you speak a little more slowly?', '쿠쥬 스픽 어 리를 모어r 슬로울리')).toContain('R1:error');
+    expect(rules('Do you want to grab a drink?', '두 유 워너 그래버 드링크')).toContain('R1:error');
+    expect(rules('Do you want to grab a drink?', '더여 워너 그래버 드링크')).not.toContain('R1:error');
+    expect(rules('Take your time.', '테익 여r 타임')).toContain('R1:error');
+    expect(rules("I can't believe you actually went through with it.", '아이 캔트 빌리이v 여 액츄얼리 웬 쓰루우 위딧')).not.toContain('R1:error'); // actually 의 츄 는 정상(gold #44)
+  });
+  it('R2 비강세 you 의 유·문두 You 의 여·your 의 유어r 는 경고', () => {
+    expect(rules('Can I get you a drink?', '커나이 겟 유 어 드링크')).toContain('R2:warn');
+    expect(rules('You must be tired.', '여 머스 비 타이어r드')).toContain('R2:warn');
+    expect(rules("What's the purpose of your visit?", '왓츠 더 퍼r퍼서v 유어r v이짓')).toContain('R2:warn');
+    expect(rules('You must be tired.', '유 머스 비 타이어r드')).toEqual([]);
+    expect(rules('If I were you, I would wait.', '이f 아이 워r 유 아이 워드 웨잇')).not.toContain('R2:warn'); // 쉼표 앞 you 는 유
+  });
+  it('R3 비강세 at 의 앳/엣 은 에러, 엇·연결형은 통과', () => {
+    expect(rules('It was love at first sight.', '잇 워z 러v 엣 f퍼r스 싸잇')).toContain('R3:error');
+    expect(rules("I'm still at home.", '아임 스틸 엇 호움')).toEqual([]);
+    expect(rules("I didn't sleep at all.", '아이 디든 슬리이퍼롤')).toEqual([]);
+  });
+  it('R4 라틴 병기 누락·R5 장모음·R7 I\'ll 은 경고 (받침 이동·연결형은 통과)', () => {
+    expect(rules('Meat first?', '미잇 퍼r스트')).toContain('R4:warn');
+    expect(rules('Did you sleep?', '디저 슬립')).toContain('R5:warn');
+    expect(rules('Did you sleep?', '디저 슬리입')).toEqual([]);
+    expect(rules("I didn't eat at all.", '아이 디드니이러롤')).toEqual([]);
+    expect(rules("I'll be there.", '아을 비 데어r')).toContain('R7:warn');
+    expect(rules("I promise I'll be there.", '아이 프라미사일 비 데어r')).toEqual([]);
+    expect(rules('How about tomorrow?', '하우 어바웃 터마로우')).toEqual([]); // rr 은 초성 ㄹ, r 병기 대상 아님
+  });
+  it('R6 단어 안 flap 옛 표기(워터·포r티)는 에러', () => {
+    expect(rules('I want some water.', '아이 원 썸 워터')).toContain('R6:error');
+    expect(rules("I'll be there in forty minutes.", '아일 비 데어r 인 포r티 미닛츠')).toContain('R6:error');
+    expect(rules("I'll be there in forty minutes.", '아일 비 데어r 인 f포어r리 미닛츠')).toEqual([]);
+  });
+  it('R8 단어 경계·R9 자음군 t 탈락 관례는 경고', () => {
+    expect(rules("I'm on my way.", '아임 온 마이 웨이')).toContain('R8:warn');
+    expect(rules('How about next Friday?', '하우 어바웃 넥스트 f라이데이')).toContain('R9:warn');
+    expect(rules('How about next Friday?', '하우 어바웃 넥스 f라이데이')).toEqual([]);
+    expect(rules('Is this the next train?', '이z 디스 더 넥스 트레인')).toEqual([]);
+  });
+  it('validateSeedContent: 에러 규칙은 차단, 경고 규칙은 통과 — 파일럿·시뮬 시드는 에러 0', () => {
+    const base = JSON.parse(readFileSync(join(__dir, '../seeds/en-personal-2026-09-13.json'), 'utf8'));
+    const r0 = validateSeedContent(base, { ...okOpts, core100Keys: [] });
+    expect(r0.errors).toEqual([]);
+    const bad = JSON.parse(JSON.stringify(base));
+    bad.cards[0].explanation.drills[0].kr = '소연 노우z 아임 온 마이 웨이 앳 f파이v';
+    bad.cards[0].explanation.drills[0].en = "Soyeon knows I'm on my way at five.";
+    const r1 = validateSeedContent(bad, { ...okOpts, core100Keys: [] });
+    expect(r1.errors.some((e) => e.includes('drills[0]') && e.includes('앳/엣'))).toBe(true);
+  });
+  it('옛 코어100 시드(2026-08-26)의 드릴 옛 표기(쿠쥬)는 이제 에러로 잡힌다', () => {
+    const old = JSON.parse(readFileSync(join(__dir, '../seeds/en-core100-2026-08-26.json'), 'utf8'));
+    const r = validateSeedContent(old, { ...okOpts, core100Keys: [] });
+    expect(r.errors.some((e) => e.includes('구개음화 ㅠ') || e.includes('gold 확정'))).toBe(true);
   });
 });
