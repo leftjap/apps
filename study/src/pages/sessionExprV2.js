@@ -14,7 +14,7 @@ import { savePronunciationLog, drillLogId, chainLogId, prodLogId, miniLogId, min
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
-import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES, isPersonalCard } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES, isPersonalCard, buildDialogueGroups } from '../components/session/applied.js';
 import { judgeCoverageOf, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 import { localISODate } from '../utils/today.js';
@@ -1188,17 +1188,6 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const prevDay = Number(state.prevDayUtter) || 0;
   const todayISO = getTodayISO();
 
-  // 좌측 레일 — 표현 스텝
-  const rail = h('div', { class: 'vs-rail' },
-    h('button', { class: 'hm', type: 'button', 'aria-label': '홈', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 17 })),
-    Array.from({ length: total }, (_, i) => h('button', {
-      class: 'vs-rstep' + (i + 1 === idx ? ' on' : i + 1 < idx ? ' done' : ''), type: 'button',
-      onClick: () => handlers.onJump?.(i + 1 + offset),
-    }, String(i + 1))),
-    h('span', { class: 'sp' }),
-    h('span', { class: 'tm' }, state.time || '00:00'),
-  );
-
   // ── 카드 컨트롤 (듣기 / 따라 말하기 / 점수 링) ──
   let playing = false, recCtrl = null;
   const listenPill = h('button', { class: 'vs-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
@@ -1238,7 +1227,12 @@ export function renderSessionExprV2(host, state, handlers = {}) {
      * ja 도 2026-08-28 부터 순환한다 (JA_PRACTICE_VOICES 신설 전에는 AoiNeural 한 목소리뿐이었다).
      * 시드에 speaker 가 지정된 카드(구 콩트 트랙)는 그 화자를 존중해 순환에서 제외한다. */
     const pool = lang === 'ja' ? JA_PRACTICE_VOICES : PRACTICE_VOICES;
-    if (lang === 'ja' && s?.speaker) {
+    /* 대화 줄이 된 선택 줄은 대화 규칙으로 읽는다 — 화자 성별 고정 · rate 1.0 (2026-09-14 클로드 디자인 결정 §0-5).
+     * 대화가 없는 카드의 단독 줄은 화자가 없으므로 기존 문장 카드 규칙(화자 순환 · 기본 속도)을 유지한다. */
+    if (!isSoloCard && selLine) {
+      const voice = MINI_VOICES[String(selLine.speaker ?? '').trim().toUpperCase()] || MINI_VOICES.A;
+      window.studySpeech.speak(s.sentence, { lang: ttsLang, voice, rate: 1.0, onEnd: stopPlaying });
+    } else if (lang === 'ja' && s?.speaker) {
       window.studySpeech.speak(s.sentence, { lang: ttsLang, speaker: s.speaker, onEnd: stopPlaying });
     } else {
       const voice = pool[mainPlays % pool.length];
@@ -1260,8 +1254,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const meta = h('div', { class: 'vs-meta' }, vIcon(VI.MIC, { size: 14, sw: 2 }), dotsEl, totEl);
 
   // 우측 ① 오늘 발화 링 (분모 = 직전 학습일 발화) · ② 공부 이력 4주 캘린더
-  const ring140 = utterRingCard({ size: 140 });
-  const recWidget = ring140.el;
+  // 시안 12a — 좌측 사이드바 · 폰 하단 모두 96px (WORK-ORDER §1)
+  const ringCard = utterRingCard({ size: 96 });
+  const recWidget = ringCard.el;
   const todayUtter = () => (Number(state.todayUtterBase) || 0) + (Number(state.tried) || 0);
   const histCard = historyCalCard(todayISO, state.dayMap, todayUtter, state.prDays);
 
@@ -1272,7 +1267,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 버튼 라벨용 recCount 와 별개
   };
   const refreshRecWidget = () => {
-    ring140.update(todayUtter(), prevDay);
+    ringCard.update(todayUtter(), prevDay);
     histCard.update();
   };
 
@@ -1396,8 +1391,10 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     if (!drills.length || drillList.style.display === 'none') return;
     drillList.style.display = 'none'; unfoldBtn.style.display = '';
   };
-  const drillsBlock = drills.length ? h('div', {},
+  // 응용 패널 제목은 번호가 아니라 표현 자체 (시안 12a — 라벨 줄 아래 제 줄로, 잘림 금지)
+  const drillsBlock = drills.length ? h('div', { class: 'vs-drills' },
     h('div', { class: 'vs-labrow' }, h('span', { class: 'vs-lab' }, '응용 연습'), h('span', { class: 'ct' }, '녹음 ', drillCountEl, ' / ' + drills.length)),
+    expr ? h('div', { class: 'vs-drills-expr' }, expr) : null,
     drillList, unfoldBtn,
   ) : null;
 
@@ -1443,15 +1440,30 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     onSave: (v) => { cardEx.prod = v; handlers.saveSnapshot?.(); },
   }) : null;
 
-  const progBars = Array.from({ length: total }, (_, i) => h('i', { class: i < idx ? 'f' : '' }));
-
-  const cardEl = h('div', { class: 'vs-card' },
-    h('h1', { class: 'vs-h1' }, hlNode(s?.sentence || '', expr || pickUnderline(s?.sentence))),
-    h('div', { class: 'vs-ko' }, s?.ko || ''),
-    s?.pron ? h('div', { class: 'vs-pron' }, s.pron) : null,
-    ctrl, meta);
+  /* ── 대화 묶음 (2026-09-14 시안 12a) — 카드 목록을 대화 단위로 접는다. 문장 카드(.vs-card)는 없다.
+   * 대화가 없거나 카드 문장이 그 대화에 없으면 카드 문장 한 줄짜리 단독 묶음이 된다(화면 어휘는 하나). */
+  const groups = buildDialogueGroups(exprCards);
+  const utterOf = (cardId) => normScores(state.exLog?.[cardId]?.utter);
+  const drillProgOf = (cardId) => {
+    const card = exprCards.find((c) => c.id === cardId);
+    const ds = filterNearDupDrills(card?.sentence, card?.explanation?.drills, { keepTail: isPersonalCard(cardId) });
+    if (!ds.length) return '';
+    const done = Object.keys(state.exLog?.[cardId]?.drills || {}).length;
+    return done ? `응용 ${Math.min(done, ds.length)}/${ds.length}` : '';
+  };
+  const selGroupIdx = groups.findIndex((g) => Object.values(g.cardAt).some((x) => x.card?.id === s?.id));
+  const selGroup = groups[selGroupIdx] || null;
+  const selLineIdx = selGroup
+    ? Number(Object.keys(selGroup.cardAt).find((k) => selGroup.cardAt[k].card?.id === s?.id))
+    : -1;
+  const isSoloCard = !selGroup?.hasDialogue;
+  const selLine = selGroup?.lines?.[selLineIdx] || null;
+  const jumpToCard = (cardId) => {
+    const i = state.cards.findIndex((c) => c.id === cardId);
+    if (i >= 0) handlers.onJump?.(i + 1);
+  };
   // 미니대화 줄 녹음 점수 (2026-09-12 복원) — 응용 행(onDrillScore)과 같은 집계·스냅샷·영속. 진행 조건은 아니다.
-  const miniLines = miniLinesOf(ex?.miniDialogue);
+  const miniLines = selGroup?.hasDialogue ? selGroup.lines : [];
   const onMiniScore = (i, result) => {
     const score = Math.round(Number(result?.score) || 0);
     state.tried = (state.tried || 0) + 1;
@@ -1470,31 +1482,91 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     refreshRecWidget();
     handlers.saveSnapshot?.();
   };
-  const miniEl = miniDialogueEl(ex?.miniDialogue, s, lang, expr, { demo: state.demo, onScore: onMiniScore, saved: cardEx.mini, scene: ex?.situation });
+  /* 상대 줄 녹음 — 기존 miniDialogueEl 의 경로(#mini#, cardEx.mini)를 그대로 쓴다. 미니대화 블록 자체는
+   * 복습(sessionReviewV2)이 계속 쓰므로 컴포넌트를 남겨 두고, 신규 화면에서는 대화 스테이지가 부른다. */
+  let miniCtrl = null, miniRow = null;
+  async function finishMini(i, row, btn) {
+    if (!(miniCtrl && miniRow === row)) return;
+    const ctrlM = miniCtrl; miniCtrl = null; miniRow = null;
+    row.classList.remove('recing'); btn.classList.remove('recing');
+    const target = miniLines[i]?.en || '';
+    const result = await stopAndAnalyze(ctrlM, target, { lang }, { enableMiscue: true });
+    if (result?.mockFallback) { showRecordToast(recordErrorMessage(result.fallbackReason)); return; }
+    const judged = judgeRecording(result, target);
+    if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
+    onMiniScore(i, scoreForDisplay(result, target, lang));
+    handlers.rerender?.();
+  }
+  async function miniRec(i, row, btn) {
+    if (state.demo) {
+      if (row.classList.contains('recing')) return;
+      row.classList.add('recing'); btn.classList.add('recing');
+      setTimeout(() => {
+        row.classList.remove('recing'); btn.classList.remove('recing');
+        onMiniScore(i, { score: Math.min(84 + i * 4, 99), weakPhonemes: ['ð'] });
+        handlers.rerender?.();
+      }, 800);
+      return;
+    }
+    if (miniCtrl && miniRow === row) { finishMini(i, row, btn); return; }
+    const target = miniLines[i]?.en || '';
+    const r = await startMicRecording({ autoStopSilenceMs: 1400, speculate: { expected: target, card: { lang } }, onAutoStop: () => finishMini(i, row, btn) });
+    if (r.error) { showRecordToast(recordErrorMessage(r.error)); return; }
+    miniCtrl = r.controller; miniRow = row;
+    row.classList.add('recing'); btn.classList.add('recing');
+  }
+
+  /* 폰 대화 접기 (시안 12a) — 질문→대답 짝만 남긴다(직전 상대 줄 + 선택 줄). 상태는 세션 state 에
+   * 둔다 — 카드 이동은 전체 재렌더라 지역 변수로는 유지되지 않는다. */
+  const collapsed = state.size !== 'desktop' && !!state.dlgCollapsed && !!selGroup?.hasDialogue;
+  const keepIdx = collapsed ? [selLineIdx - 1, selLineIdx].filter((k) => k >= 0) : null;
+  const viewGroups = !collapsed ? groups : groups.map((g, gi) => {
+    if (gi !== selGroupIdx) return null;
+    const cardAt = {};
+    keepIdx.forEach((k, j) => { if (g.cardAt[k]) cardAt[j] = g.cardAt[k]; });
+    return { ...g, lines: keepIdx.map((k) => g.lines[k]), cardAt };
+  }).filter(Boolean);
+  const viewSelIdx = collapsed ? 0 : selGroupIdx;
+  // 접힘이면 줄 index 가 재색인된다 — 미니 점수·녹음은 원래 index 로 되돌려 읽고 쓴다.
+  const srcIdx = (i) => (collapsed ? keepIdx[i] : i);
+
+  const stages = viewGroups.map((g, gi) => dialogueStageEl(g, {
+    lang, selCardId: s?.id, expr, phone: state.size !== 'desktop',
+    cueIndex: gi === viewSelIdx ? (collapsed ? 0 : selLineIdx - 1) : -1,
+    utterOf, drillProgOf,
+    miniScoresOf: (i) => (gi === viewSelIdx ? normScores(cardEx.mini?.[srcIdx(i)]) : []),
+    onSelect: jumpToCard,
+    onCardRec: (cardId) => { state.autoRec = cardId; jumpToCard(cardId); },
+    onMiniRec: (i, row, btn) => miniRec(srcIdx(i), row, btn),
+    selectedSlot: gi === viewSelIdx ? [ctrl, meta] : null,
+    selectedPlayBtn: gi === viewSelIdx ? listenPill : null,
+  }));
+  const stageWrap = h('div', { class: 'vs-stagewrap' }, stages.map((x) => x.el));
+  const selectedRow = stages[viewSelIdx]?.selectedRow || null;
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {
-    // ── 모바일 단일 칼럼 ──
+    // ── 폰 단일 칼럼 (2026-09-14 시안 12a) — 스텝 줄·장면 칩 폐기, 상단 바에 진행 + 클릭 세그먼트 ──
     const mTime = h('span', { class: 'm-topb-time' }, state.time || '00:00');
     const mTopb = h('div', { class: 'm-topb' },
       h('div', { class: 'm-topb-row' },
         h('button', { class: 'm-home', type: 'button', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
-        h('span', { class: 'm-topb-meta' }, '신규 학습 · ' + subjLabel),
+        h('span', { class: 'm-topb-meta' }, `신규 학습 · ${subjLabel} · ${idx}/${total}`),
         mTime),
-      h('div', { class: 'm-prog' }, progBars));
-    const mSteps = h('div', { class: 'm-steps' },
-      Array.from({ length: total }, (_, i) => h('button', { class: 'm-rstep' + (i + 1 === idx ? ' on' : i + 1 < idx ? ' done' : ''), type: 'button', onClick: () => handlers.onJump?.(i + 1 + offset) }, String(i + 1))),
-      h('span', { class: 'sp' }), h('span', { class: 'pt' }, `${idx} / ${total}`));
+      progressSegEl(total, idx, (n) => handlers.onJump?.(n + offset)));
     const foldBd = h('div', { class: 'fbd', style: 'display:none;' }, explainPanel(ex));
     const fhd = h('div', { class: 'fhd' }, h('span', { class: 'ft' }, '표현 해설'), h('span', { class: 'chev' }, vIcon(VI.CHEV_DOWN, { size: 13, sw: 2 })));
     const fold = h('div', { class: 'vs-fold' }, fhd, foldBd);
     fhd.addEventListener('click', () => { const open = fold.classList.toggle('open'); foldBd.style.display = open ? '' : 'none'; });
-    const sceneChip = `${sceneTitle || '신규'} · ${subjLabel}`; // <맥락> · <과목> 고정
+    // 대화 접기 토글 — 대화가 있는 묶음의 헤더에만 붙는다.
+    if (selGroup?.hasDialogue) {
+      const foldBtn = h('button', { class: 'vs-stage-fold', type: 'button' }, collapsed ? '대화 펼치기 ▾' : '대화 접기 ▴');
+      foldBtn.addEventListener('click', () => { state.dlgCollapsed = !collapsed; handlers.rerender?.(); });
+      stageWrap.querySelector('.vs-stage-hdr')?.appendChild(foldBtn);
+    }
     root = h('div', { class: 'vs' }, v2Style(VSM_CSS),
-      mTopb, mSteps,
-      h('div', { class: 'm-pad' },
-        h('div', { style: 'margin-top:8px;' }, h('span', { class: 'scene-chip' }, sceneChip)),
-        cardEl, miniEl, recWidget, histCard.el, drillsBlock, chainBlock, prodBlock, fold),
+      mTopb,
+      h('div', { class: 'm-pad' }, stageWrap, drillsBlock, chainBlock, prodBlock, fold, recWidget, histCard.el),
       h('div', { class: 'm-cta' }, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
@@ -1511,18 +1583,35 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       const open = foldPanel.classList.toggle('open');
       secBody.style.display = open ? '' : 'none';
     });
-    const main = h('div', { class: 'vs-main' },
-      h('div', { class: 'vs-crumb' },
-        h('span', { class: 'vs-scene' }, `${sceneTitle || '신규'} · ${subjLabel}`),
-        h('div', { class: 'vs-prog' }, progBars),
-        h('span', { class: 'vs-prog-t' }, `${idx} / ${total}`)),
-      cardEl, miniEl, drillsBlock, chainBlock, prodBlock);
-    const side = h('aside', { class: 'vs-side' }, recWidget, histCard.el, foldPanel, nextBtn);
-    root = h('div', { class: 'vs' }, v2Style(VS_CSS), rail, h('div', { class: 'vs-mainwrap' }, main, side));
-    timeUpdate = (t) => { const el = rail.querySelector('.tm'); if (el) el.textContent = t; };
+    // 좌측 사이드바 250 — 홈·타이머 / 진행·세그먼트 / 문장 목록 / 오늘 발화 / 공부 이력 / 세션 종료
+    const lside = h('aside', { class: 'vs-lside' },
+      h('div', { class: 'hmrow' },
+        h('button', { class: 'hm', type: 'button', onClick: handlers.onHome || (() => { window.location.hash = '#/home'; }) }, vIcon(VI.HOME, { size: 14 }), '홈으로'),
+        h('span', { class: 'tm' }, state.time || '00:00')),
+      h('div', {},
+        h('span', { class: 'vs-lab' }, `신규 학습 · ${subjLabel}`),
+        h('div', { class: 'cnt' }, String(idx), h('em', {}, '/' + total)),
+        progressSegEl(total, idx, (n) => handlers.onJump?.(n + offset))),
+      sentenceNavEl(exprCards, { selCardId: s?.id, utterOf, drillProgOf, onSelect: jumpToCard }),
+      h('span', { class: 'sp' }),
+      recWidget, histCard.el,
+      handlers.onEnd ? h('button', { class: 'endbtn', type: 'button', onClick: handlers.onEnd }, '세션 종료') : null);
+    const side = h('aside', { class: 'vs-side' }, drillsBlock, chainBlock, prodBlock, foldPanel, nextBtn);
+    root = h('div', { class: 'vs' }, v2Style(VS_CSS), lside, h('div', { class: 'vs-mainwrap' }, stageWrap, side));
+    timeUpdate = (t) => { const el = lside.querySelector('.tm'); if (el) el.textContent = t; };
   }
   host.appendChild(root);
   refreshDots(); refreshRecWidget();
+  /* 선택 줄을 화면 안으로 + 접힌 카드 줄 녹음에서 넘어온 자동 본 녹음 (2026-09-14).
+   * onJump 는 전체 재렌더라 녹음 시작은 렌더 직후 이 자리에서 이어 붙인다. */
+  if (selectedRow) {
+    const stickyTop = state.size !== 'desktop' ? (root.querySelector('.m-topb')?.offsetHeight || 0) : 0;
+    scrollSelectedIntoView(selectedRow, window, stickyTop);
+  }
+  if (state.autoRec && state.autoRec === s?.id) {
+    delete state.autoRec;
+    recPill.click();
+  }
 
   const layout = { update(st) { if (st && 'time' in st) timeUpdate(st.time); } };
   return { cleanup: () => { try { window.studySpeech?.cancel?.(); if (recCtrl?.stop) recCtrl.stop(); } catch { /* noop */ } host.innerHTML = ''; }, layout };

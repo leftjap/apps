@@ -1937,3 +1937,293 @@ describe('sessionExprV2 — 대화 스테이지', () => {
     expect(el.querySelector('[data-role="stage-all"]')).not.toBeNull();
   });
 });
+
+describe('sessionExprV2 — 좌측 문장 목록 · 클릭 세그먼트 (2026-09-14 시안 12a)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+
+  it('세그먼트바 — 칸 수는 카드 수, 현재까지 채움, 클릭하면 그 번호로 이동', () => {
+    const onJump = vi.fn();
+    const el = progressSegEl(4, 2, onJump);
+    const bars = [...el.children];
+    expect(bars).toHaveLength(4);
+    expect(bars.map((b) => b.querySelector('i').classList.contains('f'))).toEqual([true, true, false, false]);
+    expect(bars[3].getAttribute('title')).toBe('4번 표현으로 이동');
+    bars[3].click();
+    expect(onJump).toHaveBeenCalledWith(4);
+  });
+
+  it('문장 목록 — 현재 항목은 번호 채움, 말한 항목은 체크 + 진행 + 마지막 점수 원', () => {
+    const cards = [
+      { id: 'c1', sentence: "I'm on my way.", ko: '가는 중이야.' },
+      { id: 'c2', sentence: "I'm almost there.", ko: '거의 다 왔어.' },
+    ];
+    const onSelect = vi.fn();
+    const el = sentenceNavEl(cards, {
+      selCardId: 'c2',
+      utterOf: (id) => (id === 'c1' ? [88, 92] : []),
+      drillProgOf: (id) => (id === 'c1' ? '응용 2/6' : ''),
+      onSelect,
+    });
+    const items = [...el.querySelectorAll('.vs-nav-it')];
+    expect(items).toHaveLength(2);
+    expect(items[0].querySelector('.vs-nav-num svg')).not.toBeNull();
+    expect(items[0].querySelector('.vs-nav-prog').textContent).toBe('말하기 2회 · 응용 2/6');
+    expect(items[0].querySelector('.v-dot').textContent).toBe('92');
+    expect(items[1].classList.contains('on')).toBe(true);
+    expect(items[1].querySelector('.vs-nav-num').textContent).toBe('2');
+    expect(items[1].querySelector('.vs-nav-prog')).toBeNull();
+    items[0].click();
+    expect(onSelect).toHaveBeenCalledWith('c1');
+  });
+
+  it('목록 배지에는 헤일로 애니를 붙이지 않는다 (움직이는 표식은 대화 줄 배지 하나)', () => {
+    const el = sentenceNavEl([{ id: 'c1', sentence: 'x', ko: '뜻' }],
+      { selCardId: 'c1', utterOf: () => [], drillProgOf: () => '', onSelect: () => {} });
+    expect(el.querySelector('.vs-nav-num').className).not.toContain('halo');
+  });
+});
+
+describe('sessionExprV2 — 데스크톱 3칼럼 조립 (2026-09-14 시안 12a)', () => {
+  // 체이닝·생산은 기본값(숨김)으로 둔다 — 파일 위 beforeEach 가 켜 두므로 여기서 되돌린다.
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+  ];
+  const MD2 = [{ speaker: 'B', name: '지오', en: "I'm almost there.", ko: '거의 다 왔어.', kr: '아이몰모우스 데어r' }];
+  function st() {
+    const s = makeState();
+    s.cards = [
+      { id: 'c1', lang: 'en', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '아이몬 마이 웨이',
+        explanation: { key: "I'm on my way = 가는 중이야.", situation: '새벽 공항', miniDialogue: MD, drills: [] } },
+    ];
+    s.sentence = s.cards[0];
+    s.step = 1;
+    return s;
+  }
+  const mount = (state, handlers = {}) => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, handlers); return host;
+  };
+
+  it('문장 카드와 좌측 레일이 사라지고 3칼럼이 된다', () => {
+    const host = mount(st());
+    expect(host.querySelector('.vs-card')).toBeNull();
+    expect(host.querySelector('.vs-rail')).toBeNull();
+    expect(host.querySelector('.vs-lside')).not.toBeNull();
+    expect(host.querySelector('.vs-stage')).not.toBeNull();
+    expect(host.querySelector('.vs-side')).not.toBeNull();
+  });
+
+  it('듣기 · 따라 말하기 필과 본 점수 열이 선택 줄 안에 있다', () => {
+    const host = mount(st());
+    const sel = host.querySelector('.vs-ln.sel');
+    expect(sel.querySelectorAll('.vs-pill')).toHaveLength(2);
+    expect(sel.querySelector('.vs-meta')).not.toBeNull();
+    expect(host.querySelectorAll('.vs-pill')).toHaveLength(2);
+  });
+
+  it('좌측에 진행 N/총 · 세그먼트 · 문장 목록 · 오늘 발화(96) · 공부 이력 · 세션 종료가 있다', () => {
+    const onEnd = vi.fn();
+    const host = mount(st(), { onEnd });
+    const side = host.querySelector('.vs-lside');
+    expect(side.querySelector('.cnt').textContent).toBe('1/1');
+    expect(side.querySelector('.vs-seg')).not.toBeNull();
+    expect(side.querySelector('.vs-nav')).not.toBeNull();
+    expect(side.querySelector('.vs-uring').style.width).toBe('96px');
+    expect(side.querySelector('.vs-hist')).not.toBeNull();
+    side.querySelector('.endbtn').click();
+    expect(onEnd).toHaveBeenCalled();
+  });
+
+  it('우측 패널은 응용 · 해설 · 다음 표현 순서이고 응용 라벨 아래 표현이 온다', () => {
+    const s = st();
+    // 꼬리확장(tail)은 personal 카드가 아니면 filterNearDupDrills 가 걸러낸다 — 주어 변주로 둔다.
+    s.cards[0].explanation.drills = [{ en: 'Are you on your way?', ko: '오는 중이야?', kr: '아r 여 온 여r 웨이' }];
+    s.sentence = s.cards[0];
+    const host = mount(s);
+    const right = host.querySelector('.vs-side');
+    expect([...right.children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['vs-drills', 'vs-panel', 'vs-next']);
+    expect(right.querySelector('.vs-drills-expr').textContent).toBe("I'm on my way");
+  });
+
+  it('본 점수 열은 최근 10개까지 (흔적 줄 8개와 다르다)', () => {
+    const s = st();
+    s.exLog = { c1: { utter: Array.from({ length: 12 }, (_, i) => 80 + i) } };
+    const host = mount(s);
+    expect(host.querySelectorAll('.vs-meta .v-dot')).toHaveLength(10);
+  });
+
+  it('선택 줄 듣기 필은 화자 목소리 · rate 1.0 으로 읽는다', () => {
+    const speak = vi.fn();
+    window.studySpeech = { speak, cancel: vi.fn() };
+    const host = mount(st());
+    host.querySelector('.vs-ln.sel .vs-pill').click();
+    expect(speak).toHaveBeenCalledTimes(1);
+    expect(speak.mock.calls[0][1].voice).toBe(MINI_VOICES.B);
+    expect(speak.mock.calls[0][1].rate).toBe(1.0);
+  });
+
+  it('대화 없는 카드는 단독 줄이 열리고 듣기 필이 기존 화자 순환 규칙을 쓴다', () => {
+    const speak = vi.fn();
+    window.studySpeech = { speak, cancel: vi.fn() };
+    const s = st();
+    delete s.cards[0].explanation.miniDialogue;
+    s.sentence = s.cards[0];
+    const host = mount(s);
+    expect(host.querySelector('.vs-stage-hd')).toBeNull();
+    expect(host.querySelectorAll('.vs-ln')).toHaveLength(1);
+    host.querySelector('.vs-ln.sel .vs-pill').click();
+    expect(speak.mock.calls[0][1].rate).toBeUndefined();
+    expect(speak.mock.calls[0][1].voice).toBe('en-US-AvaMultilingualNeural');
+  });
+
+  it('접힌 카드 줄 녹음 원 → 그 카드로 이동하고 재렌더 뒤 본 녹음이 자동으로 시작된다', async () => {
+    const s = st();
+    s.cards.push({ id: 'c2', lang: 'en', sentence: "I'm almost there.", ko: '거의 다 왔어.', pron: '아이몰모우스 데어r',
+      explanation: { key: "I'm almost there = 거의 다 왔어.", situation: '진입로', miniDialogue: MD2, drills: [] } });
+    const onJump = vi.fn();
+    const host = mount(s, { onJump });
+    const recBtns = [...host.querySelectorAll('.vs-ln:not(.sel) button[aria-label="녹음"]')];
+    recBtns[recBtns.length - 1].click();
+    expect(s.autoRec).toBe('c2');
+    expect(onJump).toHaveBeenCalledWith(2);
+
+    document.body.innerHTML = '';
+    s.step = 2; s.sentence = s.cards[1];
+    const host2 = mount(s, { onJump });
+    await tick();
+    expect(startMicRecording).toHaveBeenCalled();
+    expect(s.autoRec).toBeUndefined();
+    expect(host2.querySelector('.vs-ln.sel .vs-pill.recing')).not.toBeNull();
+  });
+
+  it('상대 줄 녹음 → #mini# 경로로 저장된다', async () => {
+    const host = mount(st());
+    const rec = host.querySelectorAll('.vs-ln')[0].querySelector('button[aria-label="녹음"]');
+    rec.click();
+    await tick();
+    rec.click();
+    await tick(); await tick();
+    expect(savePronunciationLog).toHaveBeenCalled();
+    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('c1#mini#We landed early.');
+  });
+});
+
+describe('sessionExprV2 — 폰 단일 칼럼 (2026-09-14 시안 12a 폰 390)', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+    { speaker: 'B', name: '지오', en: "I'm almost there.", ko: '거의 다 왔어.', kr: '아이몰모우스 데어r' },
+  ];
+  function st(over = {}) {
+    const s = makeState();
+    s.size = 'phone';
+    s.cards = [
+      { id: 'c1', lang: 'en', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '아이몬 마이 웨이',
+        explanation: { key: "I'm on my way = 가는 중이야.", situation: '새벽 공항', miniDialogue: MD, drills: [] } },
+      { id: 'c2', lang: 'en', sentence: "I'm almost there.", ko: '거의 다 왔어.', pron: '아이몰모우스 데어r',
+        explanation: { key: "I'm almost there = 거의 다 왔어.", situation: '진입로', miniDialogue: MD, drills: [] } },
+    ];
+    s.sentence = s.cards[0];
+    s.step = 1;
+    return Object.assign(s, over);
+  }
+  const mount = (state, handlers = {}) => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, handlers); return host;
+  };
+
+  it('상단 바에 진행이 들어가고 스텝 줄과 장면 칩은 없다', () => {
+    const host = mount(st());
+    expect(host.querySelector('.m-topb-meta').textContent).toBe('신규 학습 · 영어 · 1/2');
+    expect(host.querySelector('.m-steps')).toBeNull();
+    expect(host.querySelector('.scene-chip')).toBeNull();
+    expect(host.querySelector('.m-topb .vs-seg')).not.toBeNull();
+  });
+
+  it('본문 순서 — 대화 · 응용 · 해설 · 오늘 발화 · 공부 이력', () => {
+    const s = st();
+    s.cards[0].explanation.drills = [{ en: 'Are you on your way?', ko: '오는 중이야?', kr: '아r 여 온 여r 웨이' }];
+    s.sentence = s.cards[0];
+    const host = mount(s);
+    expect([...host.querySelector('.m-pad').children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['vs-stagewrap', 'vs-drills', 'vs-fold', 'vs-rec', 'vs-hist']);
+  });
+
+  it('대화 접기 — 직전 상대 줄과 선택 줄만 남는다', () => {
+    const host = mount(st({ dlgCollapsed: true }));
+    const rows = [...host.querySelectorAll('.vs-ln')];
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelector('.vs-ln-en').textContent).toBe('We landed early.');
+    expect(rows[1].classList.contains('sel')).toBe(true);
+    expect(host.querySelector('.vs-stage-fold').textContent).toBe('대화 펼치기 ▾');
+  });
+
+  it('접기 토글은 세션 state 에 남아 카드 이동에도 유지된다', () => {
+    const s = st();
+    const rerender = vi.fn();
+    const host = mount(s, { rerender });
+    expect(host.querySelector('.vs-stage-fold').textContent).toBe('대화 접기 ▴');
+    host.querySelector('.vs-stage-fold').click();
+    expect(s.dlgCollapsed).toBe(true);
+    expect(rerender).toHaveBeenCalled();
+  });
+
+  it('접힌 상태의 상대 줄 녹음도 원래 줄 index 로 기록된다', async () => {
+    const s = st({ dlgCollapsed: true });
+    const host = mount(s);
+    const rec = host.querySelectorAll('.vs-ln')[0].querySelector('button[aria-label="녹음"]');
+    rec.click(); await tick();
+    rec.click(); await tick(); await tick();
+    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('c1#mini#We landed early.');
+    expect(Object.keys(s.exLog.c1.mini)).toEqual(['0']);
+  });
+
+  it('폰은 화자 이름이 문장 위 라벨이다', () => {
+    const host = mount(st());
+    const row = host.querySelectorAll('.vs-ln')[0];
+    const kids = [...row.querySelector('.vs-ln-body').children].map((n) => n.className);
+    expect(kids[0]).toBe('vs-ln-name');
+    expect(kids[1]).toBe('vs-ln-en');
+  });
+
+  it('하단 CTA 는 마지막 카드에서 학습 완료가 된다', () => {
+    const s = st();
+    s.step = 2; s.sentence = s.cards[1];
+    const host = mount(s);
+    expect(host.querySelector('.m-cta .vs-next').textContent).toBe('학습 완료 →');
+  });
+});
+
+describe('scrollSelectedIntoView — 열린 줄을 화면 안으로 (2026-09-14)', () => {
+  it('sticky 상단 바 높이만큼 띄워 올린다', () => {
+    const calls = [];
+    const row = { getBoundingClientRect: () => ({ top: 900, bottom: 1100 }) };
+    scrollSelectedIntoView(row, { innerHeight: 800, scrollY: 0, scrollTo: (o) => calls.push(o) }, 64);
+    expect(calls).toHaveLength(1);
+    expect(calls[0].top).toBe(900 - 64 - 24);
+  });
+
+  it('이미 보이면 스크롤하지 않는다', () => {
+    const calls = [];
+    const row = { getBoundingClientRect: () => ({ top: 200, bottom: 400 }) };
+    scrollSelectedIntoView(row, { innerHeight: 800, scrollY: 0, scrollTo: (o) => calls.push(o) }, 64);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('위로 잘린 줄도 올린다 (음수 top)', () => {
+    const calls = [];
+    const row = { getBoundingClientRect: () => ({ top: -50, bottom: 150 }) };
+    scrollSelectedIntoView(row, { innerHeight: 800, scrollY: 400, scrollTo: (o) => calls.push(o) }, 64);
+    expect(calls[0].top).toBe(400 - 50 - 64 - 24);
+  });
+
+  it('스크롤할 수 없는 환경에서는 조용히 넘어간다', () => {
+    expect(() => scrollSelectedIntoView(null, {}, 0)).not.toThrow();
+    expect(() => scrollSelectedIntoView({ getBoundingClientRect: () => ({ top: 0, bottom: 0 }) }, {}, 0)).not.toThrow();
+  });
+});
