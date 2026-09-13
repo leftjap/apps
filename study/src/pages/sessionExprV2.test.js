@@ -16,9 +16,13 @@ vi.mock('../services/pronunciationLog.js', async (orig) => ({ ...await orig(), s
 vi.mock('../services/weakPhonemes.js', () => ({ applyWeakPhonemesUpdate: vi.fn(async () => null) }));
 vi.mock('../components/session/recordToast.js', () => ({ showRecordToast: vi.fn(), recordErrorMessage: vi.fn(() => '에러') }));
 
-import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl, MINI_VOICES, SESSION_BLOCKS } from './sessionExprV2.js';
+import { renderSessionExprV2, hlNode, drillRows, recordGateMessage, miniDialogueEl, MINI_VOICES, SESSION_BLOCKS,
+  dialogueStageEl, progressSegEl, sentenceNavEl, scrollSelectedIntoView } from './sessionExprV2.js';
+import { buildDialogueGroups } from '../components/session/applied.js';
+import { h } from '../components/d1/dom.js';
+import { vIcon, VI } from '../components/v2/atoms.js';
 import { savePronunciationLog } from '../services/pronunciationLog.js';
-import { stopAndAnalyze } from '../services/sessionAnalyze.js';
+import { stopAndAnalyze, startMicRecording } from '../services/sessionAnalyze.js';
 import { showRecordToast } from '../components/session/recordToast.js';
 
 // 2026-09-12: 체이닝·생산 블록은 화면에서 숨김이 기본값. 아래 기존 테스트들은 두 블록의 계약을 계속 검증하므로 켜고 돈다.
@@ -1766,5 +1770,170 @@ describe('sessionExprV2 — 체이닝·생산 블록 숨김 (2026-09-12 사용�
     const host = mountWithChain();
     expect(host.querySelector('.vs-chain')).not.toBeNull();
     expect(host.querySelector('.vs-prodblock')).not.toBeNull();
+  });
+});
+
+/* ── 대화 스테이지 (2026-09-14 시안 12a) ─────────────────────────────────
+ * 신규 세션 화면이 "카드 1장 = 화면 1장" 에서 "대화 1편 고정 + 선택 줄이 열려 연습 화면" 으로 바뀐다.
+ * 여기부터는 새 구조의 계약. 미니대화 블록(miniDialogueEl)은 복습 전용으로 남는다. */
+describe('sessionExprV2 — 대화 스테이지', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+    { speaker: 'B', name: '지오', en: "I'm almost there.", ko: '거의 다 왔어.', kr: '아이몰모우스 데어r' },
+  ];
+  const mkCard = (id, sentence) => ({ id, sentence, ko: '뜻', pron: '발음',
+    explanation: { situation: '새벽 공항', miniDialogue: MD, key: `${sentence} = 뜻` } });
+  const group = () => buildDialogueGroups([mkCard('c1', "I'm on my way."), mkCard('c2', "I'm almost there.")])[0];
+  const ctx = (over = {}) => ({
+    lang: 'en', selCardId: 'c1', expr: "I'm on my way", cueIndex: 0,
+    utterOf: () => [], drillProgOf: () => '', miniScoresOf: () => [],
+    onSelect: vi.fn(), onCardRec: vi.fn(), onMiniRec: vi.fn(),
+    selectedSlot: [document.createElement('div')], phone: false, ...over,
+  });
+
+  it('줄 4개 · 카드 줄에만 번호 · 선택 줄은 열려 있고 원 버튼이 없다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    const rows = [...el.querySelectorAll('.vs-ln')];
+    expect(rows).toHaveLength(4);
+    expect(rows.map((r) => r.querySelector('.vs-ln-num').textContent)).toEqual(['', '1', '', '2']);
+    expect(rows[1].classList.contains('sel')).toBe(true);
+    expect(rows[1].querySelectorAll('.vs-cir')).toHaveLength(0);
+    expect(rows[0].querySelectorAll('.vs-cir')).toHaveLength(2);
+  });
+
+  it('세 줄 텍스트 — 영문 · [발음] · 뜻', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    const row = el.querySelectorAll('.vs-ln')[0];
+    expect(row.querySelector('.vs-ln-en').textContent).toBe('We landed early.');
+    expect(row.querySelector('.vs-ln-kr').textContent).toBe('[위 랜디더r리]');
+    expect(row.querySelector('.vs-ln-ko').textContent).toBe('일찍 내렸어.');
+  });
+
+  it('선택 줄에만 핵심 표현 밑줄이 붙는다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    const rows = [...el.querySelectorAll('.vs-ln')];
+    expect(rows[1].querySelector('.vs-ln-en b').textContent).toBe("I'm on my way");
+    expect(rows[3].querySelector('.vs-ln-en b')).toBeNull();
+  });
+
+  it('선택 줄 안에 selectedSlot 이 들어간다', () => {
+    const slot = document.createElement('div');
+    slot.className = 'probe';
+    const { el, selectedRow } = dialogueStageEl(group(), ctx({ selectedSlot: [slot] }));
+    expect(selectedRow.querySelector('.probe')).toBe(slot);
+    expect(el.querySelectorAll('.probe')).toHaveLength(1);
+  });
+
+  it('접힌 카드 줄: 말한 이력이 있으면 배지가 체크, 흔적 원 8개 + +N, 뜻 끝에 응용 진행', () => {
+    const utter = Array.from({ length: 11 }, (_, i) => 80 + i);
+    const { el } = dialogueStageEl(group(), ctx({
+      utterOf: (id) => (id === 'c2' ? utter : []), drillProgOf: (id) => (id === 'c2' ? '응용 2/6' : ''),
+    }));
+    const row = el.querySelectorAll('.vs-ln')[3];
+    expect(row.querySelector('.vs-ln-num svg')).not.toBeNull();
+    expect(row.querySelectorAll('.vs-ln-trace .v-dot')).toHaveLength(8);
+    expect(row.querySelector('.vs-ln-trace .more').textContent).toBe('+3');
+    expect(row.querySelector('.vs-ln-ko').textContent).toBe('거의 다 왔어. · 응용 2/6');
+  });
+
+  it('선택 줄에는 흔적 줄을 그리지 않는다 (본 점수 열이 대신한다)', () => {
+    const { el } = dialogueStageEl(group(), ctx({ utterOf: () => [88, 92] }));
+    expect(el.querySelectorAll('.vs-ln')[1].querySelector('.vs-ln-trace')).toBeNull();
+  });
+
+  it('상대 줄 흔적은 미니 점수다', () => {
+    const { el } = dialogueStageEl(group(), ctx({ miniScoresOf: (i) => (i === 2 ? [77] : []) }));
+    const dots = el.querySelectorAll('.vs-ln')[2].querySelectorAll('.vs-ln-trace .v-dot');
+    expect(dots).toHaveLength(1);
+    expect(dots[0].textContent).toBe('77');
+  });
+
+  it('카드 줄 클릭 → onSelect, 상대 줄 클릭 → 아무 일 없음', () => {
+    const c = ctx();
+    const { el } = dialogueStageEl(group(), c);
+    el.querySelectorAll('.vs-ln')[3].click();
+    expect(c.onSelect).toHaveBeenCalledWith('c2');
+    el.querySelectorAll('.vs-ln')[0].click();
+    expect(c.onSelect).toHaveBeenCalledTimes(1);
+  });
+
+  it('접힌 카드 줄 녹음 원 → onCardRec, 상대 줄 녹음 원 → onMiniRec (클릭이 줄 선택으로 새지 않는다)', () => {
+    const c = ctx();
+    const { el } = dialogueStageEl(group(), c);
+    el.querySelectorAll('.vs-ln')[3].querySelector('button[aria-label="녹음"]').click();
+    expect(c.onCardRec).toHaveBeenCalledWith('c2');
+    expect(c.onSelect).not.toHaveBeenCalled();
+    el.querySelectorAll('.vs-ln')[0].querySelector('button[aria-label="녹음"]').click();
+    expect(c.onMiniRec).toHaveBeenCalled();
+    expect(c.onMiniRec.mock.calls[0][0]).toBe(0);
+  });
+
+  it('헤어라인 — 첫 줄 위 · 선택 줄 위아래에는 없다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    const seps = [...el.querySelectorAll('.vs-ln-sep')].map((s) => s.classList.contains('on'));
+    expect(seps).toEqual([false, false, false, true]);
+  });
+
+  it('대화 없는 묶음 — 라벨 · 장면 · 전체 듣기가 없고 줄 하나가 열려 있다', () => {
+    const solo = { id: 's1', sentence: 'from scratch', ko: '처음부터', pron: '프럼 스크래치', explanation: {} };
+    const g = buildDialogueGroups([solo])[0];
+    const { el } = dialogueStageEl(g, ctx({ selCardId: 's1', expr: 'from scratch', cueIndex: -1 }));
+    expect(el.querySelector('.vs-stage-hd')).toBeNull();
+    expect(el.querySelector('[data-role="stage-all"]')).toBeNull();
+    const rows = [...el.querySelectorAll('.vs-ln')];
+    expect(rows).toHaveLength(1);
+    expect(rows[0].classList.contains('sel')).toBe(true);
+    expect(rows[0].querySelector('.vs-ln-name').textContent).toBe('');
+  });
+
+  it('전체 듣기 — 줄 순서대로, 화자 성별 목소리 · rate 1.0, 선택 줄은 듣기 필이 재생 표시를 받는다', () => {
+    const speak = vi.fn((_t, o) => o?.onEnd?.());
+    window.studySpeech = { speak, cancel: vi.fn() };
+    const pill = h('button', { class: 'vs-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
+    const { el } = dialogueStageEl(group(), ctx({ selectedPlayBtn: pill }));
+    el.querySelector('[data-role="stage-all"]').click();
+    expect(speak).toHaveBeenCalledTimes(4);
+    expect(speak.mock.calls.map((c) => c[0])).toEqual(
+      ['We landed early.', "I'm on my way.", 'Take your time.', "I'm almost there."]);
+    expect(speak.mock.calls.map((c) => c[1].voice)).toEqual(
+      [MINI_VOICES.A, MINI_VOICES.B, MINI_VOICES.A, MINI_VOICES.B]);
+    expect(speak.mock.calls.every((c) => c[1].rate === 1.0)).toBe(true);
+    expect(pill.classList.contains('playing')).toBe(false); // 재생이 끝나면 원상 복구
+  });
+
+  it('전체 듣기 중 다시 누르면 중단한다', () => {
+    const cancel = vi.fn();
+    window.studySpeech = { speak: vi.fn(), cancel }; // onEnd 를 안 부르므로 재생 중에 머문다
+    const { el } = dialogueStageEl(group(), ctx());
+    const btn = el.querySelector('[data-role="stage-all"]');
+    btn.click();
+    expect(btn.classList.contains('playing')).toBe(true);
+    expect(btn.textContent).toBe('재생 중');
+    btn.click();
+    expect(cancel).toHaveBeenCalled();
+    expect(btn.classList.contains('playing')).toBe(false);
+    expect(btn.textContent).toBe('전체 듣기');
+  });
+
+  it('재생 중인 줄에 블루 배경이 붙고 다음 줄로 넘어가면 빠진다', () => {
+    let chain = null;
+    window.studySpeech = { speak: vi.fn((_t, o) => { chain = o?.onEnd; }), cancel: vi.fn() };
+    const { el } = dialogueStageEl(group(), ctx());
+    el.querySelector('[data-role="stage-all"]').click();
+    const rows = [...el.querySelectorAll('.vs-ln')];
+    expect(rows[0].classList.contains('playing')).toBe(true);
+    chain();
+    expect(rows[0].classList.contains('playing')).toBe(false);
+    expect(rows[1].classList.contains('playing')).toBe(true);
+  });
+
+  it('대화 있는 묶음은 라벨 · 장면 · 전체 듣기를 갖는다', () => {
+    const { el } = dialogueStageEl(group(), ctx());
+    expect(el.querySelector('.vs-stage-hd .vs-lab').textContent).toBe('오늘의 대화');
+    expect(el.querySelector('.vs-stage-scene').textContent).toBe('새벽 공항');
+    expect(el.querySelector('[data-role="stage-all"]')).not.toBeNull();
   });
 });

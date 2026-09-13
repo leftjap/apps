@@ -153,6 +153,71 @@ export const VS_CSS = `
 .vs-chip{font-size:11.5px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:5px 11px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
 .vs-next{width:100%;margin-top:13px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--teal);background:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
+/* ── 대화 스테이지 (2026-09-14 시안 12a) — 대화가 곧 연습 화면. 줄 하나가 열려 문장 카드를 대신한다. ── */
+.vs-stagewrap{flex:1 1 auto;min-width:0}
+.vs-stage + .vs-stage{margin-top:26px}
+.vs-stage-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.vs-stage-scene{font-size:13px;line-height:1.55;color:#4a5450;margin-top:6px;text-wrap:pretty}
+.vs-stage-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:1.5px solid transparent;border-radius:999px;padding:7px 14px;cursor:pointer;white-space:nowrap;flex:0 0 auto}
+.vs-stage-all.playing{color:var(--blue-deep);background:var(--blue-soft);border-color:var(--blue-line)}
+.vs-stage-lines{margin-top:16px;display:flex;flex-direction:column}
+.vs-ln-sep{height:1px;background:transparent;margin:0 14px}
+.vs-ln-sep.on{background:var(--line)}
+.vs-ln{display:flex;flex-direction:column;border-radius:16px;border:1px solid transparent;padding:9px 14px}
+.vs-ln.card{cursor:pointer}
+.vs-ln.playing{background:var(--blue-soft)}
+.vs-ln.recing{background:var(--coral-soft)}
+.vs-ln.sel{background:var(--card);border-color:var(--line);box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.18);animation:v-settle .5s both}
+.vs-ln-top{display:flex;align-items:center;gap:12px}
+.vs-ln-num{width:20px;height:20px;border-radius:50%;border:1.5px solid transparent;font-family:Outfit;font-size:10.5px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;color:transparent}
+.vs-ln-num.card{border-color:var(--teal-line);color:var(--teal-deep)}
+.vs-ln-num.done{border-color:var(--teal-soft);background:var(--teal-soft);color:var(--teal-deep)}
+.vs-ln-num.on{border-color:var(--teal);background:var(--teal);color:#fff;animation:v-haloT 2.4s ease-in-out infinite}
+.vs-ln-name{font-family:Outfit;font-size:12px;font-weight:700;width:34px;flex:0 0 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--mut)}
+.vs-ln-name.me{color:var(--teal-deep)}
+.vs-ln-body{min-width:0;flex:1 1 auto}
+.vs-ln-en{font-size:17px;font-weight:600;color:#4a5450;letter-spacing:-.005em;line-height:1.4}
+.vs-ln-en b{font-weight:800;background:linear-gradient(oklch(44% .062 192/.3),oklch(44% .062 192/.3)) 0 100%/100% 2.5px no-repeat;padding-bottom:2px}
+.vs-ln.card .vs-ln-en,.vs-ln.cue .vs-ln-en{color:var(--ink)}
+.vs-ln.card .vs-ln-en{font-weight:700}
+.vs-ln.sel .vs-ln-en{font-size:20px;font-weight:800;color:var(--teal-deep)}
+.vs-ln-kr{font-size:11.5px;font-weight:500;line-height:1.45;color:var(--teal-deep);margin-top:3px;letter-spacing:.01em}
+.vs-ln-kr i{font-style:normal;color:var(--faint);font-weight:400}
+.vs-ln-ko{font-size:13px;color:#4a5450;margin-top:4px;line-height:1.45}
+.vs-ln-ko em{font-style:normal;color:var(--faint)}
+.vs-ln-trace{display:flex;align-items:center;gap:5px;margin-top:7px;flex-wrap:wrap}
+.vs-ln-trace .more{font-family:Outfit;font-size:11px;font-weight:600;color:var(--faint)}
+.vs-ln-slot{padding-left:66px}
+.vs-ln-slot .vs-ctrl{margin-top:14px}
+.vs-ln-slot .vs-meta{margin-top:12px}
+/* 좌측 사이드바 — 문장 목록 · 세그먼트바 (시안 12a) */
+.vs-lside{width:250px;box-sizing:border-box;flex:0 0 auto;border-right:1px solid var(--line);padding:22px 18px 20px;display:flex;flex-direction:column;gap:18px}
+.vs-lside .hmrow{display:flex;align-items:center;justify-content:space-between}
+.vs-lside .hm{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:13px;font-weight:600;color:var(--mut);background:none;border:0;padding:0;cursor:pointer}
+.vs-lside .tm{font-family:Outfit;font-size:11px;color:var(--faint);letter-spacing:.08em;white-space:nowrap}
+.vs-lside .cnt{font-family:Outfit;font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--teal-deep);margin-top:8px}
+.vs-lside .cnt em{font-style:normal;color:var(--faint);font-weight:400}
+.vs-lside .sp{flex:1}
+.vs-lside .endbtn{font:inherit;font-size:12px;color:var(--faint);background:none;border:0;padding:0;cursor:pointer;align-self:flex-start;white-space:nowrap}
+.vs-seg{display:flex;gap:5px;margin-top:12px}
+.vs-seg > span{flex:1;display:flex;align-items:center;padding:6px 0;margin:-6px 0;cursor:pointer}
+.vs-seg i{width:100%;height:4px;border-radius:2px;background:#e7e3d4;transition:background .2s}
+.vs-seg i.f{background:var(--teal)}
+.vs-nav{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
+.vs-nav-it{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:10px;border-radius:12px;background:transparent;border:0;width:100%;cursor:pointer;color:inherit;font:inherit}
+.vs-nav-it.on{background:var(--teal-soft)}
+.vs-nav-num{width:20px;height:20px;border-radius:50%;border:1.5px solid #d5d1c2;font-family:Outfit;font-size:10.5px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;margin-top:1px;color:var(--faint)}
+.vs-nav-num.done{border-color:var(--teal-soft);background:var(--teal-soft);color:var(--teal-deep)}
+.vs-nav-num.on{border-color:var(--teal);background:var(--teal);color:#fff}
+.vs-nav-tx{min-width:0;flex:1 1 auto}
+.vs-nav-en{display:block;font-size:13.5px;font-weight:700;letter-spacing:-.01em;line-height:1.35;color:var(--ink)}
+.vs-nav-it.on .vs-nav-en{color:var(--teal-deep)}
+.vs-nav-it.done .vs-nav-en{color:var(--mut)}
+.vs-nav-ko{display:block;font-size:11.5px;color:var(--faint);margin-top:2px}
+.vs-nav-prog{display:block;font-family:Outfit;font-size:10.5px;font-weight:600;color:var(--teal-deep);margin-top:4px}
+.vs-drills{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px 16px}
+.vs-drills .vs-labrow{margin-top:0}
+.vs-drills-expr{font-size:14.5px;font-weight:700;letter-spacing:-.01em;color:var(--teal-deep);margin-top:8px;line-height:1.35}
 @media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-side{width:760px;max-width:100%}}
 ${V_DOT_CSS}${V_MINICAL_CSS}
 `;
@@ -637,6 +702,168 @@ export function miniDialogueEl(md, s, lang, expr, { demo = false, onScore, saved
     h('div', { style: 'margin-top:4px;' }, rows.map((r) => r.el)));
 }
 
+/* ── 대화 스테이지 (2026-09-14 시안 12a) ──
+ * 묶음 하나(대화 1편 또는 단독 카드 1줄)를 그린다. 선택 줄은 그 자리에서 열려 조립부가 만든
+ * 컨트롤(듣기·따라 말하기 필 · 링 · 본 점수 열)을 selectedSlot 으로 받는다 — 녹음·채점 배선은
+ * 종전 그대로 조립부에 남는다(외과적 변경).
+ * 흔적 줄: 시도마다 26px 원 하나, 최근 8개 + 넘치면 +N. 선택 줄에는 그리지 않는다(.vs-meta 가 대신).
+ */
+function traceRow(scores) {
+  const all = normScores(scores);
+  if (!all.length) return null;
+  const shown = all.slice(-DRILL_DOTS_MAX);
+  const row = h('div', { class: 'vs-ln-trace' }, shown.map((v) => scoreDot(v, { size: 26, fresh: false })));
+  if (all.length > DRILL_DOTS_MAX) row.appendChild(h('span', { class: 'more' }, `+${all.length - DRILL_DOTS_MAX}`));
+  return row;
+}
+
+export function dialogueStageEl(group, ctx = {}) {
+  const { lang = 'en', selCardId, expr, cueIndex = -1, phone = false } = ctx;
+  const ttsLang = lang === 'ja' ? 'ja-JP' : 'en-US';
+  const voiceOf = (sp) => MINI_VOICES[String(sp ?? '').trim().toUpperCase()] || MINI_VOICES.A;
+  const lines = group.lines;
+  const selLineIdx = lines.findIndex((_, i) => group.cardAt[i]?.card?.id === selCardId);
+  const rows = [];
+  let selectedRow = null;
+
+  const body = h('div', { class: 'vs-stage-lines' });
+  lines.forEach((ln, i) => {
+    const hit = group.cardAt[i];
+    const card = hit?.card || null;
+    const selected = !!card && card.id === selCardId;
+    const utter = card ? normScores(ctx.utterOf?.(card.id)) : [];
+    const done = !!card && !selected && utter.length > 0;
+    const prog = card && !selected ? String(ctx.drillProgOf?.(card.id) || '') : '';
+
+    // 헤어라인 — 첫 줄 위 · 선택 줄 위 · 선택 줄 바로 다음 줄 위에는 없다(카드 테두리가 경계).
+    const sepOn = !(i === 0 || selected || i - 1 === selLineIdx);
+    body.appendChild(h('div', { class: 'vs-ln-sep' + (sepOn ? ' on' : '') }));
+
+    const num = h('span', { class: 'vs-ln-num' + (selected ? ' on' : done ? ' done' : card ? ' card' : '') },
+      done ? vCheck({ size: 11, sw: 3 }) : (card ? String(hit.num) : ''));
+    const gio = String(ln.speaker ?? '').trim().toUpperCase() === 'B';
+    const name = h('span', { class: 'vs-ln-name' + (gio ? ' me' : '') }, String(ln.name || ''));
+    const enEl = h('div', { class: 'vs-ln-en' }, selected ? hlNode(ln.en, expr) : document.createTextNode(ln.en));
+    const textBlock = h('div', { class: 'vs-ln-body' },
+      phone ? name : null,
+      enEl,
+      ln.kr ? h('div', { class: 'vs-ln-kr' }, h('i', {}, '['), ln.kr, h('i', {}, ']')) : null,
+      h('div', { class: 'vs-ln-ko' }, ln.ko || '', prog ? h('em', {}, ' · ' + prog) : null),
+      selected ? null : traceRow(card ? utter : ctx.miniScoresOf?.(i)));
+
+    const top = h('div', { class: 'vs-ln-top' }, num, phone ? null : name, textBlock);
+    const row = h('div', { class: 'vs-ln' + (selected ? ' sel' : card ? ' card' : '') + (i === cueIndex ? ' cue' : '') }, top);
+
+    if (!selected) {
+      const play = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '듣기' }, vIcon(VI.PLAY, { size: 11, fill: true }));
+      play.addEventListener('click', (e) => {
+        e.stopPropagation();
+        speakWithFeedback(play, ln.en, { lang: ttsLang, voice: voiceOf(ln.speaker), rate: 1.0 });
+      });
+      const rec = h('button', { class: 'vs-cir', type: 'button', 'aria-label': '녹음' }, vIcon(VI.MIC, { size: 13, sw: 2 }));
+      rec.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (card) ctx.onCardRec?.(card.id);
+        else ctx.onMiniRec?.(i, row, rec);
+      });
+      top.append(play, rec);
+      rows.push({ i, line: ln, btn: play });
+    } else {
+      selectedRow = row;
+      row.appendChild(h('div', { class: 'vs-ln-slot' }, ctx.selectedSlot || null));
+      rows.push({ i, line: ln, btn: null });
+    }
+    if (card) row.addEventListener('click', () => ctx.onSelect?.(card.id));
+    body.appendChild(row);
+  });
+
+  const el = h('div', { class: 'vs-stage' });
+  if (group.hasDialogue) {
+    const allBtn = h('button', { class: 'vs-stage-all', type: 'button', 'data-role': 'stage-all' },
+      vIcon(VI.PLAY, { size: 11, fill: true }), '전체 듣기');
+    /* 전체 듣기 — 줄마다 onEnd 체인. 재생 중인 줄은 블루 소프트(dialogueV2 .vd-line.playing 어휘).
+     * 선택 줄에는 원 버튼이 없으므로 조립부가 넘긴 듣기 필(selectedPlayBtn)이 재생 표시를 받는다
+     * (2026-09-14 클로드 디자인 결정 §0-4). speakWithFeedback 은 버튼이 없으면 재생 자체를 건너뛴다. */
+    let playing = -1;
+    const paintPlaying = (k) => {
+      const prev = body.querySelector('.vs-ln.playing');
+      if (prev) prev.classList.remove('playing');
+      const next = k >= 0 ? body.querySelectorAll('.vs-ln')[k] : null;
+      if (next) next.classList.add('playing');
+    };
+    const stopAll = () => {
+      playing = -1;
+      paintPlaying(-1);
+      allBtn.classList.remove('playing');
+      allBtn.lastChild.textContent = '전체 듣기';
+    };
+    allBtn.addEventListener('click', () => {
+      if (playing >= 0) { try { window.studySpeech?.cancel?.(); } catch { /* noop */ } stopAll(); return; }
+      allBtn.classList.add('playing');
+      allBtn.lastChild.textContent = '재생 중';
+      const step = (k) => {
+        if (playing < 0) return; // 중단됨
+        if (k >= rows.length) { stopAll(); return; }
+        playing = k;
+        paintPlaying(k);
+        const r = rows[k];
+        speakWithFeedback(r.btn || ctx.selectedPlayBtn, r.line.en, {
+          lang: ttsLang, voice: voiceOf(r.line.speaker), rate: 1.0, onEnd: () => step(k + 1),
+        });
+      };
+      playing = 0;
+      step(0);
+    });
+    el.appendChild(h('div', { class: 'vs-stage-hd' },
+      phone
+        ? h('span', { class: 'vs-lab' }, '오늘의 대화')
+        : h('div', {}, h('span', { class: 'vs-lab' }, '오늘의 대화'),
+          group.situation ? h('div', { class: 'vs-stage-scene' }, group.situation) : null),
+      phone ? h('div', { class: 'vs-stage-hdr' }, allBtn) : allBtn));
+    if (phone && group.situation) el.appendChild(h('div', { class: 'vs-stage-scene' }, group.situation));
+  }
+  el.appendChild(body);
+  return { el, selectedRow, rows };
+}
+
+/* 진행 세그먼트바 — 클릭으로 카드 이동 (사용자 2026-09-13 요구, 구 makeProgress onStepClick 과 같은 계약). */
+export function progressSegEl(total, idx, onJump) {
+  return h('div', { class: 'vs-seg' }, Array.from({ length: total }, (_, i) => h('span', {
+    role: 'button', title: `${i + 1}번 표현으로 이동`, onClick: () => onJump?.(i + 1),
+  }, h('i', { class: i < idx ? 'f' : '' }))));
+}
+
+/* 좌측 문장 목록 — 카드마다 영문·뜻·진행·마지막 점수. 헤일로는 붙이지 않는다(움직이는 표식은 대화 줄 배지 하나). */
+export function sentenceNavEl(cards, { selCardId, utterOf, drillProgOf, onSelect } = {}) {
+  return h('div', { class: 'vs-nav' }, (cards || []).map((c, i) => {
+    const utter = normScores(utterOf?.(c.id));
+    const cur = c.id === selCardId;
+    const done = !cur && utter.length > 0;
+    const prog = cur ? '' : [utter.length ? `말하기 ${utter.length}회` : '', String(drillProgOf?.(c.id) || '')]
+      .filter(Boolean).join(' · ');
+    const last = utter.length ? utter[utter.length - 1] : null;
+    return h('button', {
+      class: 'vs-nav-it' + (cur ? ' on' : done ? ' done' : ''), type: 'button', onClick: () => onSelect?.(c.id),
+    },
+    h('span', { class: 'vs-nav-num' + (cur ? ' on' : done ? ' done' : '') },
+      done ? vCheck({ size: 11, sw: 3 }) : String(i + 1)),
+    h('span', { class: 'vs-nav-tx' },
+      h('span', { class: 'vs-nav-en' }, c.sentence || ''),
+      h('span', { class: 'vs-nav-ko' }, c.ko || ''),
+      prog ? h('span', { class: 'vs-nav-prog' }, prog) : null),
+    last == null ? null : scoreDot(last, { size: 24, fresh: false }));
+  }));
+}
+
+/* 선택 줄을 화면 안으로 (2026-09-14 시안 12a 구현 메모) — scrollIntoView 는 sticky 상단 바 아래로
+ * 줄을 밀어 넣어 가려지므로 좌표를 직접 계산한다. 이미 보이면 움직이지 않는다. */
+export function scrollSelectedIntoView(row, win = window, stickyTop = 0) {
+  if (!row?.getBoundingClientRect || typeof win?.scrollTo !== 'function') return;
+  const r = row.getBoundingClientRect();
+  if (r.top >= stickyTop && r.bottom <= win.innerHeight) return;
+  win.scrollTo({ top: win.scrollY + r.top - stickyTop - 24, behavior: 'smooth' });
+}
+
 /* 생산 연습(한→영) — 방금 연습한 드릴 중 3개를 한글만 보고 영어로 재현 (2026-07-22 사용자 결정).
  * 자유 작문이 아니라 직전 연습 문장의 인출 재현 — 대안 표현은 오답 처리된다(의도).
  * 통과 판정은 체이닝과 동일(전사 비교 judgeCoverage). 실패 2회 → 첫 단어 힌트, 3회 → 정답 공개 후 완료.
@@ -887,6 +1114,54 @@ button.vs-pill{position:relative;display:inline-flex;align-items:center;gap:8px;
 .vs-ex .k{color:var(--mut)}
 .vs-chips{display:flex;gap:6px;margin-top:7px;flex-wrap:wrap;max-width:100%}
 .vs-chip{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:12px;padding:4px 10px;background:#fbf9f2;max-width:100%;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5}
+/* 대화 스테이지 — 폰 (2026-09-14 시안 12a 폰 390) */
+.vs-stagewrap{width:100%}
+.vs-stage + .vs-stage{margin-top:20px}
+.vs-stage-hd{display:flex;align-items:center;justify-content:space-between;margin-top:18px;gap:10px}
+.vs-stage-hdr{display:flex;align-items:center;gap:8px}
+.vs-stage-scene{font-size:12.5px;line-height:1.55;color:#4a5450;margin:6px 2px 0;text-wrap:pretty}
+.vs-stage-fold{font:inherit;font-size:12px;font-weight:600;color:var(--faint);background:none;border:0;padding:6px 2px;cursor:pointer;white-space:nowrap}
+.vs-stage-all{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:12px;font-weight:700;color:var(--teal-deep);background:var(--teal-soft);border:1.5px solid transparent;border-radius:999px;padding:5px 12px;cursor:pointer;white-space:nowrap}
+.vs-stage-all.playing{color:var(--blue-deep);background:var(--blue-soft);border-color:var(--blue-line)}
+.vs-stage-lines{margin-top:10px;display:flex;flex-direction:column}
+.vs-ln-sep{height:1px;background:transparent;margin:0 4px}
+.vs-ln-sep.on{background:var(--line)}
+.vs-ln{display:flex;flex-direction:column;border-radius:14px;border:1px solid transparent;padding:9px 10px;margin:0 -6px}
+.vs-ln.card{cursor:pointer}
+.vs-ln.playing{background:var(--blue-soft)}
+.vs-ln.recing{background:var(--coral-soft)}
+.vs-ln.sel{background:var(--card);border-color:var(--line);box-shadow:0 1px 0 rgba(25,35,32,.02),0 12px 26px -20px rgba(25,35,32,.18);animation:v-settle .5s both}
+.vs-ln-top{display:flex;align-items:center;gap:9px}
+.vs-ln-num{width:20px;height:20px;border-radius:50%;border:1.5px solid transparent;font-family:Outfit;font-size:10.5px;font-weight:800;display:grid;place-items:center;flex:0 0 auto;color:transparent}
+.vs-ln-num.card{border-color:var(--teal-line);color:var(--teal-deep)}
+.vs-ln-num.done{border-color:var(--teal-soft);background:var(--teal-soft);color:var(--teal-deep)}
+.vs-ln-num.on{border-color:var(--teal);background:var(--teal);color:#fff;animation:v-haloT 2.4s ease-in-out infinite}
+.vs-ln-body{min-width:0;flex:1 1 auto}
+.vs-ln-name{font-family:Outfit;font-size:10.5px;font-weight:700;letter-spacing:.04em;color:var(--mut);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vs-ln-name.me{color:var(--teal-deep)}
+.vs-ln-name:empty{display:none}
+.vs-ln-en{font-size:15px;font-weight:600;color:#4a5450;letter-spacing:-.005em;line-height:1.35}
+.vs-ln-en b{font-weight:800;background:linear-gradient(oklch(44% .062 192/.3),oklch(44% .062 192/.3)) 0 100%/100% 2px no-repeat;padding-bottom:2px}
+.vs-ln.card .vs-ln-en,.vs-ln.cue .vs-ln-en{color:var(--ink)}
+.vs-ln.card .vs-ln-en{font-weight:700}
+.vs-ln.sel .vs-ln-en{font-size:17px;font-weight:800;color:var(--teal-deep)}
+.vs-ln-kr{font-size:11px;font-weight:500;line-height:1.45;color:var(--teal-deep);margin-top:3px;letter-spacing:.01em}
+.vs-ln-kr i{font-style:normal;color:var(--faint);font-weight:400}
+.vs-ln-ko{font-size:12.5px;color:#4a5450;margin-top:4px;line-height:1.45}
+.vs-ln-ko em{font-style:normal;color:var(--faint)}
+.vs-ln-trace{display:flex;align-items:center;gap:5px;margin-top:7px;flex-wrap:wrap}
+.vs-ln-trace .more{font-family:Outfit;font-size:11px;font-weight:600;color:var(--faint)}
+.vs-ln-slot{padding-left:0}
+.vs-ln-slot .vs-ctrl{margin-top:12px}
+.vs-ln-slot .vs-meta{margin-top:10px}
+.vs-ln .vs-cir{width:32px;height:32px}
+.m-topb .vs-seg{display:flex;gap:4px;margin-top:9px}
+.m-topb .vs-seg > span{flex:1;display:flex;align-items:center;padding:6px 0;margin:-6px 0;cursor:pointer}
+.m-topb .vs-seg i{width:100%;height:4px;border-radius:2px;background:#e7e3d4}
+.m-topb .vs-seg i.f{background:var(--teal)}
+.vs-drills{margin-top:18px}
+.vs-drills .vs-labrow{margin-top:0}
+.vs-drills-expr{font-size:14.5px;font-weight:700;letter-spacing:-.01em;color:var(--teal-deep);margin-top:8px;line-height:1.35}
 ${V_DOT_CSS}${V_MINICAL_CSS}
 `;
 
