@@ -1,0 +1,168 @@
+{
+  "lang": "en",
+  "track": "personal",
+  "date": "2026-09-15",
+  "_note": "personal 트랙 3번째 세션 (2026-09-12 시안 3 '병원 어땠어?', ~/apps/tmp/2026-09-12-study-personalized-draft-v2.md). 소재: 2026-09-02·05 소연 여의도 성모병원 안과 정밀검사(동네 병원이 실핏줄 원인을 몰라 녹내장 검사까지, 오른쪽 시신경 약함·매년 검진·화 안 내면 됨), 여의도 성모 주차 최악, 지오 세브란스 초음파('1년 뒤 산책 겸'). 지오 대사 4줄 = 카드 4장(How did it go / What did the doctor say / That's a relief / I have to ~). 확장 드릴은 카드마다 1개(personal 꼬리확장 허용 2026-09-13). 발음은 가이드 §7 규칙(붙여 적기 포함). date 는 세션 순서.",
+  "cards": [
+    {
+      "id": "en-personal-hospital-01-how-did-it-go",
+      "sentence": "How did it go?",
+      "meaning": "어땠어?",
+      "reading": null,
+      "phonetic_kr": "하우 디릿 고우",
+      "order_index": 1,
+      "explanation": {
+        "key": "How did it go = 어땠어? 검사·면접·비행처럼 '치른 일'의 결과를 묻는 첫마디.",
+        "anchor": "어땠",
+        "situation": "9월 2일 저녁. 소연이 여의도 성모병원 안과 정밀검사에서 돌아왔다. 동네 병원이 실핏줄 원인을 모른다고 해서 녹내장 검사까지 받은 날이다. 지오가 현관에서 묻는다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "How did it go?", "ko": "어땠어?", "kr": "하우 디릿 고우" },
+          { "speaker": "A", "name": "소연", "en": "It went well. Nothing serious.", "ko": "괜찮았어. 큰 문제 없대.", "kr": "잇 웬 웰 낫씽 씨리어스" },
+          { "speaker": "B", "name": "지오", "en": "What did the doctor say?", "ko": "의사가 뭐래?", "kr": "왓 디드 더 닥터r 쎄이" },
+          { "speaker": "A", "name": "소연", "en": "My optic nerve is a little weak. That's all.", "ko": "시신경이 좀 약하대. 그게 다야.", "kr": "마이 압틱 너rv 이z 어 리를 위익 댓촐" },
+          { "speaker": "B", "name": "지오", "en": "That's a relief.", "ko": "다행이다.", "kr": "댓처 릴리이f" },
+          { "speaker": "A", "name": "소연", "en": "But I need a check-up every year.", "ko": "대신 매년 검진받아야 해.", "kr": "버라이 니이더 체커베v리 이어r" },
+          { "speaker": "B", "name": "지오", "en": "I have to go with you next time.", "ko": "다음엔 나도 같이 가야겠다.", "kr": "아이 해프터 고우 위드 여 넥스 타임" },
+          { "speaker": "A", "name": "소연", "en": "Parking was terrible, as always.", "ko": "주차는 최악이었어, 늘 그렇듯.", "kr": "파r킹 워z 테러블 애z 올웨이z" }
+        ],
+        "drills": [
+          { "en": "How did the check-up go?", "ko": "검진 어땠어?", "kr": "하우 디드 더 체컵 고우" },
+          { "en": "How did the flight go?", "ko": "비행 어땠어?", "kr": "하우 디드 더 f라잇 고우" },
+          { "en": "How did it go at the hospital this morning?", "ko": "오늘 아침 병원은 어땠어?", "kr": "하우 디릿 고우 엇 더 하스피럴 디스 모어r닝" },
+          { "en": "It didn't go well.", "ko": "잘 안 됐어.", "kr": "잇 디든 고우 웰" },
+          { "en": "It went better than I expected.", "ko": "생각보다 잘 됐어.", "kr": "잇 웬 베러r 대나이 익스펙티드" },
+          { "en": "Soyeon asked how the ultrasound went.", "ko": "소연이 초음파 어땠냐고 물었어.", "kr": "소연 애스크트 하우 디 얼트러싸운드 웬트" }
+        ],
+        "grammar": [
+          { "struct": "How did + 주어 + go?", "body": "결과를 묻는 틀. it 자리에 the check-up·the flight 처럼 '치른 일'을 넣는다. 답은 It went well / It didn't go well." }
+        ],
+        "chunks": [["How did it", "하우 디릿", "어떻게 됐"], ["go?", "고우", "어때"]],
+        "phonemes": [["did it → 디릿", "d 와 t 가 모음 사이에서 굴러 한 덩어리 — '디드 잇'(X)"], ["go → 고우", "이중모음이라 끝을 '우'로 닫는다 — '고'(X)"]],
+        "mistake": "How was it? 도 되지만, 검사·면접처럼 '진행된 일'은 How did it go? 가 자연스럽다.",
+        "similar": "How was it? / How'd it go?",
+        "category": "안부/결과",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-hospital-02-what-did-doctor-say",
+      "sentence": "What did the doctor say?",
+      "meaning": "의사가 뭐래?",
+      "reading": null,
+      "phonetic_kr": "왓 디드 더 닥터r 쎄이",
+      "order_index": 2,
+      "explanation": {
+        "key": "What did the doctor say = 의사가 뭐래? 결과를 들은 뒤 내용을 캐묻는 말.",
+        "anchor": "뭐래",
+        "situation": "큰 문제는 없다는데, 지오는 실핏줄 얘기가 마음에 걸린다. 의사가 정확히 뭐라고 했는지 묻는다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "How did it go?", "ko": "어땠어?", "kr": "하우 디릿 고우" },
+          { "speaker": "A", "name": "소연", "en": "It went well. Nothing serious.", "ko": "괜찮았어. 큰 문제 없대.", "kr": "잇 웬 웰 낫씽 씨리어스" },
+          { "speaker": "B", "name": "지오", "en": "What did the doctor say?", "ko": "의사가 뭐래?", "kr": "왓 디드 더 닥터r 쎄이" },
+          { "speaker": "A", "name": "소연", "en": "My optic nerve is a little weak. That's all.", "ko": "시신경이 좀 약하대. 그게 다야.", "kr": "마이 압틱 너rv 이z 어 리를 위익 댓촐" },
+          { "speaker": "B", "name": "지오", "en": "That's a relief.", "ko": "다행이다.", "kr": "댓처 릴리이f" },
+          { "speaker": "A", "name": "소연", "en": "But I need a check-up every year.", "ko": "대신 매년 검진받아야 해.", "kr": "버라이 니이더 체커베v리 이어r" },
+          { "speaker": "B", "name": "지오", "en": "I have to go with you next time.", "ko": "다음엔 나도 같이 가야겠다.", "kr": "아이 해프터 고우 위드 여 넥스 타임" },
+          { "speaker": "A", "name": "소연", "en": "Parking was terrible, as always.", "ko": "주차는 최악이었어, 늘 그렇듯.", "kr": "파r킹 워z 테러블 애z 올웨이z" }
+        ],
+        "drills": [
+          { "en": "What did the eye doctor say?", "ko": "안과 의사가 뭐래?", "kr": "왓 디드 디 아이 닥터r 쎄이" },
+          { "en": "What did Soyeon say?", "ko": "소연이 뭐래?", "kr": "왓 디드 소연 쎄이" },
+          { "en": "What did the doctor say about the red spot?", "ko": "실핏줄에 대해서는 의사가 뭐래?", "kr": "왓 디드 더 닥터r 쎄이 어바웃 더 레드 스팟" },
+          { "en": "The doctor said it's not related.", "ko": "의사가 상관없대.", "kr": "더 닥터r 쎄딧츠 낫 릴레이리드" },
+          { "en": "He said I shouldn't get angry.", "ko": "화내지 말래.", "kr": "히 쎄다이 슈든 게랭그리" },
+          { "en": "Did the doctor say anything about parking?", "ko": "의사가 주차 얘기도 했어?", "kr": "디드 더 닥터r 쎄이 애니씽 어바웃 파r킹" }
+        ],
+        "grammar": [
+          { "struct": "What did + 주어 + say?", "body": "과거 질문은 did 뒤에 원형(say, said 아님). 답은 He said (that) + 절." }
+        ],
+        "chunks": [["What did", "왓 디드", "뭐라고 했"], ["the doctor", "더 닥터r", "의사가"], ["say?", "쎄이", "말하다"]],
+        "phonemes": [["doctor → 닥터r", "끝 r 은 혀를 말아 둔다 — '닥터'(X)"], ["say → 쎄이", "s 는 세게, 이중모음 — '세이'(X)"]],
+        "mistake": "What did the doctor said? (X) — did 뒤는 원형.",
+        "similar": "What did he tell you? / What was the verdict?",
+        "category": "병원/대화",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-hospital-03-thats-a-relief",
+      "sentence": "That's a relief.",
+      "meaning": "다행이다.",
+      "reading": null,
+      "phonetic_kr": "댓처 릴리이f",
+      "order_index": 3,
+      "explanation": {
+        "key": "That's a relief = 다행이다. 걱정하던 일이 별것 아니라고 들었을 때.",
+        "anchor": "다행",
+        "situation": "시신경이 조금 약하다는 말이지만 큰 병은 아니다. 지오가 마음을 놓는다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "How did it go?", "ko": "어땠어?", "kr": "하우 디릿 고우" },
+          { "speaker": "A", "name": "소연", "en": "It went well. Nothing serious.", "ko": "괜찮았어. 큰 문제 없대.", "kr": "잇 웬 웰 낫씽 씨리어스" },
+          { "speaker": "B", "name": "지오", "en": "What did the doctor say?", "ko": "의사가 뭐래?", "kr": "왓 디드 더 닥터r 쎄이" },
+          { "speaker": "A", "name": "소연", "en": "My optic nerve is a little weak. That's all.", "ko": "시신경이 좀 약하대. 그게 다야.", "kr": "마이 압틱 너rv 이z 어 리를 위익 댓촐" },
+          { "speaker": "B", "name": "지오", "en": "That's a relief.", "ko": "다행이다.", "kr": "댓처 릴리이f" },
+          { "speaker": "A", "name": "소연", "en": "But I need a check-up every year.", "ko": "대신 매년 검진받아야 해.", "kr": "버라이 니이더 체커베v리 이어r" },
+          { "speaker": "B", "name": "지오", "en": "I have to go with you next time.", "ko": "다음엔 나도 같이 가야겠다.", "kr": "아이 해프터 고우 위드 여 넥스 타임" },
+          { "speaker": "A", "name": "소연", "en": "Parking was terrible, as always.", "ko": "주차는 최악이었어, 늘 그렇듯.", "kr": "파r킹 워z 테러블 애z 올웨이z" }
+        ],
+        "drills": [
+          { "en": "What a relief.", "ko": "휴, 다행이다.", "kr": "와러 릴리이f" },
+          { "en": "That's a relief to hear.", "ko": "그 말 들으니 다행이다.", "kr": "댓처 릴리이f 터 히어r" },
+          { "en": "I'm relieved.", "ko": "마음이 놓인다.", "kr": "아임 릴리이v드" },
+          { "en": "That's good news.", "ko": "좋은 소식이네.", "kr": "댓츠 굿 뉴z" },
+          { "en": "Soyeon was relieved after the check-up.", "ko": "소연은 검진 뒤에 마음을 놓았어.", "kr": "소연 워z 릴리이v대f터r 더 체컵" },
+          { "en": "It's a relief that nothing is serious.", "ko": "심각한 게 없어서 다행이야.", "kr": "잇처 릴리이f 댓 낫씽 이z 씨리어스" }
+        ],
+        "grammar": [
+          { "struct": "That's a relief. / What a relief.", "body": "걱정이 풀렸을 때. relief 는 명사, relieved 는 '마음이 놓인'(I'm relieved)." }
+        ],
+        "chunks": [["That's a", "댓처", "그건"], ["relief.", "릴리이f", "다행"]],
+        "phonemes": [["relief → 릴리이f", "장모음 뒤 끝 f 는 윗니로 아랫입술 — '릴리프'(X)"], ["that's a → 댓처", "ts 가 a 로 넘어가 한 덩어리 — '댓츠 어'(X)"]],
+        "mistake": "I'm relief (X). 사람이 주어면 relieved.",
+        "similar": "Phew. / Good to hear.",
+        "category": "감정/안도",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-hospital-04-have-to-go-with-you",
+      "sentence": "I have to go with you next time.",
+      "meaning": "다음엔 나도 같이 가야겠다.",
+      "reading": null,
+      "phonetic_kr": "아이 해프터 고우 위드 여 넥스 타임",
+      "order_index": 4,
+      "explanation": {
+        "key": "I have to ~ = ~해야 해. 의무·필요를 말하는 기본 틀.",
+        "anchor": "가야",
+        "situation": "여의도 성모병원은 주차가 늘 최악이다. 매년 검진을 받아야 한다니, 지오가 다음엔 같이 가서 주차를 맡겠다고 한다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "How did it go?", "ko": "어땠어?", "kr": "하우 디릿 고우" },
+          { "speaker": "A", "name": "소연", "en": "It went well. Nothing serious.", "ko": "괜찮았어. 큰 문제 없대.", "kr": "잇 웬 웰 낫씽 씨리어스" },
+          { "speaker": "B", "name": "지오", "en": "What did the doctor say?", "ko": "의사가 뭐래?", "kr": "왓 디드 더 닥터r 쎄이" },
+          { "speaker": "A", "name": "소연", "en": "My optic nerve is a little weak. That's all.", "ko": "시신경이 좀 약하대. 그게 다야.", "kr": "마이 압틱 너rv 이z 어 리를 위익 댓촐" },
+          { "speaker": "B", "name": "지오", "en": "That's a relief.", "ko": "다행이다.", "kr": "댓처 릴리이f" },
+          { "speaker": "A", "name": "소연", "en": "But I need a check-up every year.", "ko": "대신 매년 검진받아야 해.", "kr": "버라이 니이더 체커베v리 이어r" },
+          { "speaker": "B", "name": "지오", "en": "I have to go with you next time.", "ko": "다음엔 나도 같이 가야겠다.", "kr": "아이 해프터 고우 위드 여 넥스 타임" },
+          { "speaker": "A", "name": "소연", "en": "Parking was terrible, as always.", "ko": "주차는 최악이었어, 늘 그렇듯.", "kr": "파r킹 워z 테러블 애z 올웨이z" }
+        ],
+        "drills": [
+          { "en": "I have to go back for a check-up every year.", "ko": "매년 검진받으러 가야 해.", "kr": "아이 해프터 고우 백 f퍼r 어 체커베v리 이어r" },
+          { "en": "Soyeon has to go to the eye doctor again.", "ko": "소연은 안과에 또 가야 해.", "kr": "소연 해스터 고우 터 디 아이 닥터r 어겐" },
+          { "en": "I have to go with you next time to find parking.", "ko": "다음엔 주차 자리 찾으러 같이 가야겠다.", "kr": "아이 해프터 고우 위드 여 넥스 타임 터 f파인드 파r킹" },
+          { "en": "Do I have to go too?", "ko": "나도 가야 해?", "kr": "두 아이 해프터 고우 투우" },
+          { "en": "You don't have to come.", "ko": "안 와도 돼.", "kr": "유 돈 해프터 컴" },
+          { "en": "I had to park far away last time.", "ko": "지난번엔 멀리 주차해야 했어.", "kr": "아이 해드 터 파r크 f파r 어웨이 라스 타임" }
+        ],
+        "grammar": [
+          { "struct": "have to + 동사원형", "body": "의무·필요. 3인칭은 has to, 과거는 had to. 부정 don't have to 는 '안 해도 된다'(금지 아님)." }
+        ],
+        "chunks": [["I have to go", "아이 해프터 고우", "나도 가야 해"], ["with you", "위드 여", "너랑"], ["next time.", "넥스 타임", "다음엔"]],
+        "phonemes": [["have to → 해프터", "v 가 t 앞에서 f 소리로 — '해브 투'(X)"], ["next time → 넥스 타임", "st 뒤에 자음이 오면 t 가 빠진다 — '넥스트 타임'(X)"]],
+        "mistake": "must 로 바꾸면 '반드시'가 되어 어감이 세다. 일상의 의무는 have to.",
+        "similar": "I need to go with you. / I should come along.",
+        "category": "의무/병원",
+        "frequency": 9
+      }
+    }
+  ]
+}

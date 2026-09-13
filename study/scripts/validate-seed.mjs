@@ -19,7 +19,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, basename } from 'node:path';
 import { argv, exit } from 'node:process';
-import { nearDupDrills, exprMatch } from '../src/components/session/applied.js';
+import { nearDupDrills, exprMatch, isPersonalCard } from '../src/components/session/applied.js';
 
 // session-new.js deriveDialogue 와 동일 정규화 (매칭 계약 시뮬레이션용 — 로직 변경 시 양쪽 동기화)
 // ⚠️ 근접중복 판정엔 쓰지 말 것 — 아포스트로피를 지워 `it's` 를 2단어로 세므로 렌더(applied.js)와 결과가 갈린다.
@@ -321,6 +321,7 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   let allDrillsAtFloor = exprs.length > 0;
   for (const c of exprs) {
     const ex = c.explanation || {};
+    if (payload?.track === 'personal' && !isPersonalCard(c.id)) errors.push(`${c.id}: personal 트랙 카드 id 는 'en-personal-' 로 시작해야 함 — 렌더의 꼬리확장 면제 판정(applied.js isPersonalCard)이 id 접두를 본다`);
     for (const f of EXPL_REQUIRED) {
       if (ex[f] === undefined || ex[f] === null || ex[f] === '') errors.push(`${c.id}: explanation.${f} 누락 (8필드 의무)`);
     }
@@ -569,7 +570,8 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
   //   ※ 새 세션(방출 payload)에만 적용. 렌더 필터 filterNearDupDrills 는 exact 1개를 남겨
   //     이미 시드된 ep1-3 등 기존 데이터는 base 가 그대로 보인다 — 의도된 divergence.
   for (const c of exprs) {
-    const { exact, added } = nearDupDrills(c.sentence, c.explanation?.drills);
+    // personal 트랙은 꼬리확장(시간→장소→사람 덧붙이기)이 학습 목표라 tail 만 허용 (2026-09-13, 작업지시서 §4-1 권장안 채택)
+    const { exact, added } = nearDupDrills(c.sentence, c.explanation?.drills, { keepTail: isPersonalCard(c.id) });
     if (added > 0) {
       errors.push(`${c.id}: 근접중복 드릴 ${added}개 — base 를 그대로 둔 채 호칭·감탄사(", honey")를 붙이거나 뒤에 말만 덧붙인 꼬리확장("Is there a problem here?"). 주어·시제·극성·문형·목적어 중 하나를 바꾼 변주로 교체할 것.`);
     }

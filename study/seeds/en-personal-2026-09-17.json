@@ -1,0 +1,168 @@
+{
+  "lang": "en",
+  "track": "personal",
+  "date": "2026-09-17",
+  "_note": "personal 트랙 5번째 세션 (2026-09-12 시안 5 '요즘 잠을 못 자', ~/apps/tmp/2026-09-12-study-personalized-draft-v2.md). 소재: 2026-08-18(소연 연달아 새벽 4~5시 출근, 지오는 소연이 나가야 한다는 생각에 못 자다가 나간 뒤 곯아떨어짐, 나니는 늘 지오 옆에서 잠), 2026-04-21(정오 기상, 나니 안약). 지오 대사 4줄 = 카드 4장(I haven't been ~ / I keep ~ / sleep till ~ / Don't forget to ~). 확장 드릴 카드마다 1개. 발음은 가이드 §7 규칙. date 는 세션 순서.",
+  "cards": [
+    {
+      "id": "en-personal-sleep-01-havent-been-sleeping",
+      "sentence": "I haven't been sleeping.",
+      "meaning": "요즘 잠을 못 자.",
+      "reading": null,
+      "phonetic_kr": "아이 해븐 빈 슬리이핑",
+      "order_index": 1,
+      "explanation": {
+        "key": "I haven't been ~ = 요즘 ~을 못 하고 있어. 최근까지 이어진 상태를 말하는 틀.",
+        "anchor": "잠",
+        "situation": "8월 셋째 주 새벽. 소연이 연달아 새벽 4~5시에 출근한다. 지오는 소연이 나가야 한다는 생각에 잠을 못 자다가 소연이 나간 뒤에야 곯아떨어진다. 나니는 늘 지오 옆에서 잔다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "You look tired.", "ko": "피곤해 보여.", "kr": "유 룩 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I haven't been sleeping.", "ko": "요즘 잠을 못 자.", "kr": "아이 해븐 빈 슬리이핑" },
+          { "speaker": "A", "name": "소연", "en": "Because I leave at four?", "ko": "내가 4시에 나가서?", "kr": "비커z 아이 리이v 엇 f포어r" },
+          { "speaker": "B", "name": "지오", "en": "I keep waking up before you do.", "ko": "네가 일어나기 전에 자꾸 깨.", "kr": "아이 키입 웨이킹 업 비f포어r 여 두" },
+          { "speaker": "A", "name": "소연", "en": "Go back to sleep after I leave.", "ko": "내가 나가면 다시 자.", "kr": "고우 백 터 슬리이패f터r 아이 리이v" },
+          { "speaker": "B", "name": "지오", "en": "Nani and I sleep till noon.", "ko": "나니랑 12시까지 자.", "kr": "나니 어나이 슬리입 틸 누운" },
+          { "speaker": "A", "name": "소연", "en": "Good. Don't forget her eye drops.", "ko": "잘했어. 나니 안약 잊지 마.", "kr": "굿 돈 f퍼r겟 허r 아이 드랍스" },
+          { "speaker": "B", "name": "지오", "en": "Don't forget to text me when you land.", "ko": "착륙하면 문자하는 거 잊지 마.", "kr": "돈 f퍼r겟 터 텍스 미 웬 여 랜드" }
+        ],
+        "drills": [
+          { "en": "I haven't been sleeping well since last week.", "ko": "지난주부터 잠을 잘 못 자.", "kr": "아이 해븐 빈 슬리이핑 웰 씬스 라스 위익" },
+          { "en": "I haven't been eating well.", "ko": "잘 못 먹고 있어.", "kr": "아이 해븐 비니이링 웰" },
+          { "en": "I haven't been working out lately.", "ko": "요즘 운동을 못 했어.", "kr": "아이 해븐 빈 워r킹 아웃 레잇리" },
+          { "en": "Have you been sleeping?", "ko": "잠은 자?", "kr": "해v 여 빈 슬리이핑" },
+          { "en": "Soyeon hasn't been sleeping either.", "ko": "소연도 잠을 못 자.", "kr": "소연 해즌 빈 슬리이핑 이이더r" },
+          { "en": "I've been sleeping badly since last week.", "ko": "지난주부터 잠을 설쳐.", "kr": "아이v 빈 슬리이핑 배들리 씬스 라스 위익" }
+        ],
+        "grammar": [
+          { "struct": "I haven't been + -ing", "body": "최근까지 계속 못 하고 있는 일. 기간은 since·for·lately 로 붙인다." }
+        ],
+        "chunks": [["I haven't been", "아이 해븐 빈", "~못 하고 있어"], ["sleeping.", "슬리이핑", "잠을"]],
+        "phonemes": [["haven't been → 해븐 빈", "t 는 거의 안 들리고 v 는 약하게 — '해븐트 빈'(X)"], ["sleeping → 슬리이핑", "장모음 — '슬리핑'(X)"]],
+        "mistake": "I don't sleep these days 는 습관을 말한다. '요즘 계속 못 잔다'는 I haven't been sleeping.",
+        "similar": "I've been sleeping badly. / I can't sleep lately.",
+        "category": "건강/수면",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-sleep-02-keep-waking-up",
+      "sentence": "I keep waking up before you do.",
+      "meaning": "네가 일어나기 전에 자꾸 깨.",
+      "reading": null,
+      "phonetic_kr": "아이 키입 웨이킹 업 비f포어r 여 두",
+      "order_index": 2,
+      "explanation": {
+        "key": "I keep ~ = 자꾸 ~해. 원치 않는데 반복되는 일.",
+        "anchor": "자꾸",
+        "situation": "소연이 자기가 4시에 나가서 그러냐고 묻는다. 지오는 소연이 일어나기도 전에 먼저 깬다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "You look tired.", "ko": "피곤해 보여.", "kr": "유 룩 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I haven't been sleeping.", "ko": "요즘 잠을 못 자.", "kr": "아이 해븐 빈 슬리이핑" },
+          { "speaker": "A", "name": "소연", "en": "Because I leave at four?", "ko": "내가 4시에 나가서?", "kr": "비커z 아이 리이v 엇 f포어r" },
+          { "speaker": "B", "name": "지오", "en": "I keep waking up before you do.", "ko": "네가 일어나기 전에 자꾸 깨.", "kr": "아이 키입 웨이킹 업 비f포어r 여 두" },
+          { "speaker": "A", "name": "소연", "en": "Go back to sleep after I leave.", "ko": "내가 나가면 다시 자.", "kr": "고우 백 터 슬리이패f터r 아이 리이v" },
+          { "speaker": "B", "name": "지오", "en": "Nani and I sleep till noon.", "ko": "나니랑 12시까지 자.", "kr": "나니 어나이 슬리입 틸 누운" },
+          { "speaker": "A", "name": "소연", "en": "Good. Don't forget her eye drops.", "ko": "잘했어. 나니 안약 잊지 마.", "kr": "굿 돈 f퍼r겟 허r 아이 드랍스" },
+          { "speaker": "B", "name": "지오", "en": "Don't forget to text me when you land.", "ko": "착륙하면 문자하는 거 잊지 마.", "kr": "돈 f퍼r겟 터 텍스 미 웬 여 랜드" }
+        ],
+        "drills": [
+          { "en": "I keep waking up at four.", "ko": "자꾸 4시에 깨.", "kr": "아이 키입 웨이킹 어펏 f포어r" },
+          { "en": "I keep waking up before you do, every single day.", "ko": "매일 네가 일어나기 전에 자꾸 깨.", "kr": "아이 키입 웨이킹 업 비f포어r 여 두 에v리 씽글 데이" },
+          { "en": "Nani keeps waking me up.", "ko": "나니가 자꾸 나를 깨워.", "kr": "나니 키입스 웨이킹 미 업" },
+          { "en": "I keep forgetting her eye drops.", "ko": "나니 안약을 자꾸 까먹어.", "kr": "아이 키입 f퍼r게링 허r 아이 드랍스" },
+          { "en": "Do you keep waking up too?", "ko": "너도 자꾸 깨?", "kr": "더여 키입 웨이킹 업 투우" },
+          { "en": "I fall asleep right after you leave.", "ko": "너 나가자마자 잠들어.", "kr": "아이 f폴 어슬리입 라이래f터r 여 리이v" }
+        ],
+        "grammar": [
+          { "struct": "keep + -ing", "body": "'자꾸 ~한다'. 뒤에 before you do 처럼 절을 붙여 시점을 댄다. do 는 wake up 을 받는 대동사." }
+        ],
+        "chunks": [["I keep waking up", "아이 키입 웨이킹 업", "자꾸 깨"], ["before you do.", "비f포어r 여 두", "네가 일어나기 전에"]],
+        "phonemes": [["keep → 키입", "장모음 — '킵'(X)"], ["before → 비f포어r", "f 는 윗니로 아랫입술, 끝 r 은 혀를 말아 둔다"]],
+        "mistake": "I keep to wake up (X). keep 뒤는 -ing.",
+        "similar": "I wake up every time you get up. / I can't stay asleep.",
+        "category": "건강/수면",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-sleep-03-sleep-till-noon",
+      "sentence": "Nani and I sleep till noon.",
+      "meaning": "나니랑 12시까지 자.",
+      "reading": null,
+      "phonetic_kr": "나니 어나이 슬리입 틸 누운",
+      "order_index": 3,
+      "explanation": {
+        "key": "sleep till ~ = ~까지 자다. till 은 until 의 구어형.",
+        "anchor": "12시",
+        "situation": "소연이 나가면 다시 자라고 한다. 지오는 실제로 나니와 정오까지 잔다. 나니는 늘 지오 옆에서 잔다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "You look tired.", "ko": "피곤해 보여.", "kr": "유 룩 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I haven't been sleeping.", "ko": "요즘 잠을 못 자.", "kr": "아이 해븐 빈 슬리이핑" },
+          { "speaker": "A", "name": "소연", "en": "Because I leave at four?", "ko": "내가 4시에 나가서?", "kr": "비커z 아이 리이v 엇 f포어r" },
+          { "speaker": "B", "name": "지오", "en": "I keep waking up before you do.", "ko": "네가 일어나기 전에 자꾸 깨.", "kr": "아이 키입 웨이킹 업 비f포어r 여 두" },
+          { "speaker": "A", "name": "소연", "en": "Go back to sleep after I leave.", "ko": "내가 나가면 다시 자.", "kr": "고우 백 터 슬리이패f터r 아이 리이v" },
+          { "speaker": "B", "name": "지오", "en": "Nani and I sleep till noon.", "ko": "나니랑 12시까지 자.", "kr": "나니 어나이 슬리입 틸 누운" },
+          { "speaker": "A", "name": "소연", "en": "Good. Don't forget her eye drops.", "ko": "잘했어. 나니 안약 잊지 마.", "kr": "굿 돈 f퍼r겟 허r 아이 드랍스" },
+          { "speaker": "B", "name": "지오", "en": "Don't forget to text me when you land.", "ko": "착륙하면 문자하는 거 잊지 마.", "kr": "돈 f퍼r겟 터 텍스 미 웬 여 랜드" }
+        ],
+        "drills": [
+          { "en": "Nani and I sleep till noon after you leave.", "ko": "너 나가면 나니랑 12시까지 자.", "kr": "나니 어나이 슬리입 틸 누우내f터r 여 리이v" },
+          { "en": "Nani sleeps next to me every night.", "ko": "나니는 매일 밤 내 옆에서 자.", "kr": "나니 슬리입스 넥스 터 미 에v리 나잇" },
+          { "en": "I slept till noon today.", "ko": "오늘 12시까지 잤어.", "kr": "아이 슬렙 틸 누운 터데이" },
+          { "en": "We usually get up around noon.", "ko": "우리는 보통 12시쯤 일어나.", "kr": "위 유우절리 게러버라운드 누운" },
+          { "en": "We sleep late on weekends.", "ko": "주말엔 늦게까지 자.", "kr": "위 슬리입 레이론 위이켄즈" },
+          { "en": "I put in Nani's eye drops at noon.", "ko": "12시에 나니 안약 넣어.", "kr": "아이 푸린 나니z 아이 드랍섯 누운" }
+        ],
+        "grammar": [
+          { "struct": "주어 + sleep till + 시각", "body": "till = until. 남과 나를 묶을 땐 Nani and I 처럼 I 를 뒤에 둔다." }
+        ],
+        "chunks": [["Nani and I", "나니 어나이", "나니랑 나는"], ["sleep till noon.", "슬리입 틸 누운", "12시까지 자"]],
+        "phonemes": [["and I → 어나이", "and 가 약해지고 n 이 I 로 넘어간다 — '앤드 아이'(X)"], ["noon → 누운", "장모음 — '눈'(X)"]],
+        "mistake": "Me and Nani sleep (X, 구어체). 문장 주어는 Nani and I.",
+        "similar": "We sleep in till noon. / I sleep late.",
+        "category": "일상/수면",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-sleep-04-dont-forget-to-text",
+      "sentence": "Don't forget to text me when you land.",
+      "meaning": "착륙하면 문자하는 거 잊지 마.",
+      "reading": null,
+      "phonetic_kr": "돈 f퍼r겟 터 텍스 미 웬 여 랜드",
+      "order_index": 4,
+      "explanation": {
+        "key": "Don't forget to ~ = ~하는 거 잊지 마. 부탁과 당부의 틀.",
+        "anchor": "잊지",
+        "situation": "소연이 나니 안약을 당부한다. 지오는 착륙하면 문자하라는 당부로 받는다. 소연은 새벽 비행을 나가는 길이다.",
+        "miniDialogue": [
+          { "speaker": "A", "name": "소연", "en": "You look tired.", "ko": "피곤해 보여.", "kr": "유 룩 타이어r드" },
+          { "speaker": "B", "name": "지오", "en": "I haven't been sleeping.", "ko": "요즘 잠을 못 자.", "kr": "아이 해븐 빈 슬리이핑" },
+          { "speaker": "A", "name": "소연", "en": "Because I leave at four?", "ko": "내가 4시에 나가서?", "kr": "비커z 아이 리이v 엇 f포어r" },
+          { "speaker": "B", "name": "지오", "en": "I keep waking up before you do.", "ko": "네가 일어나기 전에 자꾸 깨.", "kr": "아이 키입 웨이킹 업 비f포어r 여 두" },
+          { "speaker": "A", "name": "소연", "en": "Go back to sleep after I leave.", "ko": "내가 나가면 다시 자.", "kr": "고우 백 터 슬리이패f터r 아이 리이v" },
+          { "speaker": "B", "name": "지오", "en": "Nani and I sleep till noon.", "ko": "나니랑 12시까지 자.", "kr": "나니 어나이 슬리입 틸 누운" },
+          { "speaker": "A", "name": "소연", "en": "Good. Don't forget her eye drops.", "ko": "잘했어. 나니 안약 잊지 마.", "kr": "굿 돈 f퍼r겟 허r 아이 드랍스" },
+          { "speaker": "B", "name": "지오", "en": "Don't forget to text me when you land.", "ko": "착륙하면 문자하는 거 잊지 마.", "kr": "돈 f퍼r겟 터 텍스 미 웬 여 랜드" }
+        ],
+        "drills": [
+          { "en": "Don't forget your passport.", "ko": "여권 잊지 마.", "kr": "돈 f퍼r겟 여r 패스포어r트" },
+          { "en": "Don't forget to feed Nani.", "ko": "나니 밥 주는 거 잊지 마.", "kr": "돈 f퍼r겟 터 f피이드 나니" },
+          { "en": "Don't forget to text me when you land tonight.", "ko": "오늘 밤 착륙하면 문자하는 거 잊지 마.", "kr": "돈 f퍼r겟 터 텍스 미 웬 여 랜드 터나잇" },
+          { "en": "I forgot to text you yesterday.", "ko": "어제 문자하는 걸 깜빡했어.", "kr": "아이 f퍼r갓 터 텍스처 예스터r데이" },
+          { "en": "Did you remember her eye drops?", "ko": "나니 안약 기억했어?", "kr": "디저 리멤버r 허r 아이 드랍스" },
+          { "en": "Text me when you get home.", "ko": "집에 도착하면 문자해.", "kr": "텍스 미 웬 여 겟 호움" }
+        ],
+        "grammar": [
+          { "struct": "Don't forget to + 동사원형", "body": "부탁·당부. 명사가 오면 Don't forget + 명사(her eye drops)." }
+        ],
+        "chunks": [["Don't forget to", "돈 f퍼r겟 터", "잊지 말고 ~해"], ["text me", "텍스 미", "문자해"], ["when you land.", "웬 여 랜드", "착륙하면"]],
+        "phonemes": [["forget → f퍼r겟", "첫 음절은 약하게 '퍼', 힘은 '겟'에"], ["text me → 텍스 미", "st 뒤에 자음이 오면 t 가 빠진다 — '텍스트 미'(X)"]],
+        "mistake": "Don't forget texting me (X). forget to 는 '해야 할 일', forget -ing 는 '이미 한 일'.",
+        "similar": "Remember to text me. / Let me know when you land.",
+        "category": "부탁/연락",
+        "frequency": 9
+      }
+    }
+  ]
+}

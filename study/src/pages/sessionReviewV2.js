@@ -19,7 +19,7 @@ import { savePronunciationLog, drillLogId, chainLogId, miniLogId, miniLinesOf } 
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { createJudgeRow, speakWithFeedback } from '../components/session/atoms.js';
-import { filterNearDupDrills, miniCueLine } from '../components/session/applied.js';
+import { filterNearDupDrills, miniCueLine, isPersonalCard } from '../components/session/applied.js';
 import { localISODate } from '../utils/today.js';
 import { nextSrsState } from '../services/srs.js';
 import { judgeRecording } from '../services/coverageJudge.js';
@@ -478,7 +478,7 @@ export function renderSessionReviewV2(host, state, handlers = {}) {
   };
 
   // 응용 연습 — 신규 세션과 동일 (근접중복은 렌더에서 제외).
-  const drills = filterNearDupDrills(s?.sentence, ex.drills);
+  const drills = filterNearDupDrills(s?.sentence, ex.drills, { keepTail: isPersonalCard(s?.id) });
   const savedDrills = cardEx.drills || {};
   const recordedDrills = new Set(Object.keys(savedDrills).map(Number));
   const drillCountEl = h('b', {}, String(Math.min(recordedDrills.size, drills.length)));

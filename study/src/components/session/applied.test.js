@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES, miniCueLine } from './applied.js';
+import { buildChainSteps, hintLevelFor, firstWordsHint, filterNearDupDrills, nearDupDrills, chainHint, pickPracticeVoice, PRACTICE_VOICES, JA_PRACTICE_VOICES, miniCueLine, isPersonalCard } from './applied.js';
 
 const CHAIN = {
   target: "It's been a while since we caught up. We should grab dinner sometime.",
@@ -278,5 +278,32 @@ describe('miniCueLine — 복습 단서: 타깃 직전 상대 줄', () => {
   });
   it('en 이 비거나 문자열이 아닌 줄은 건너뛴다', () => {
     expect(miniCueLine([{ speaker: 'A', en: '' }, { speaker: 'A', en: 'Hi.' }, { speaker: 'B', en: 'Hey.' }], 'Hey.')).toEqual({ speaker: 'A', en: 'Hi.' });
+  });
+});
+
+/* personal 트랙 꼬리확장 허용 (2026-09-13 결정 — 작업지시서 §4-1 권장안 채택): 일기 소재 세션은 시간→장소→사람을 덧붙이는
+ * 확장 사슬이 학습 목표라서, 게이트·렌더 모두 tail 만 예외로 둔다. 호칭류(vocative)와 base 반복(exact)은 그대로 막는다. */
+describe('personal 트랙 꼬리확장 허용 — keepTail (2026-09-13)', () => {
+  const base = "I'm on my way.";
+  const drills = [
+    { en: "I'm on my way to the airport." },                 // tail
+    { en: "I'm on my way, honey." },                          // vocative
+    { en: "I'm on my way." },                                 // exact
+    { en: 'Are you on your way?' },                           // variation
+  ];
+  it('nearDupDrills: keepTail 이면 tail 은 added 에서 빠지고 vocative·exact 는 그대로', () => {
+    expect(nearDupDrills(base, drills)).toEqual({ exact: 1, added: 2 });
+    expect(nearDupDrills(base, drills, { keepTail: true })).toEqual({ exact: 1, added: 1 });
+  });
+  it('filterNearDupDrills: keepTail 이면 tail 을 남기고 vocative 는 걷어낸다 (exact 는 1개)', () => {
+    expect(filterNearDupDrills(base, drills, { keepTail: true }).map((d) => d.en)).toEqual([
+      "I'm on my way to the airport.", "I'm on my way.", 'Are you on your way?',
+    ]);
+    expect(filterNearDupDrills(base, drills).map((d) => d.en)).toEqual(["I'm on my way.", 'Are you on your way?']);
+  });
+  it('isPersonalCard: id 접두 en-personal- 로 판정 (렌더는 track 필드가 없다)', () => {
+    expect(isPersonalCard('en-personal-airport-01-on-my-way')).toBe(true);
+    expect(isPersonalCard('en-core100-001-say-again-slowly')).toBe(false);
+    expect(isPersonalCard(undefined)).toBe(false);
   });
 });

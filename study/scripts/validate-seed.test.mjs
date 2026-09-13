@@ -1303,3 +1303,43 @@ describe('krRuleFindings — gold 표기 규칙 검사 (2026-09-13)', () => {
     expect(r.errors.some((e) => e.includes('구개음화 ㅠ') || e.includes('gold 확정'))).toBe(true);
   });
 });
+
+/* personal 트랙 꼬리확장 허용 (2026-09-13, 작업지시서 §4-1 권장안 채택). 판정은 applied.js 와 같은 id 접두 규칙. */
+describe('validateSeedContent — personal 꼬리확장 허용 (2026-09-13)', () => {
+  const S = "I'm on my way.";
+  const mk = (id, track, drills) => ({ track, lang: 'en', date: '2026-09-14', cards: [{
+    id, sentence: S, meaning: '가는 중이야.', reading: null, phonetic_kr: '아이몬 마이 웨이', order_index: 1,
+    explanation: {
+      key: "I'm on my way = 가는 중이야.", situation: '장면', grammar: [{ struct: '구조', body: '설명' }],
+      chunks: [["I'm on", '아이몬', '나는 ~중'], ['my way.', '마이 웨이', '가는 길']], phonemes: [['/w/', 'way']],
+      mistake: '함정', similar: '대체', category: 'chunk/test', frequency: 8, drills,
+      miniDialogue: [
+        { speaker: 'A', name: '소연', en: 'Did you sleep?', ko: '뜻', kr: '디저 슬리입' },
+        { speaker: 'B', name: '지오', en: S, ko: '뜻', kr: '아이몬 마이 웨이' },
+      ],
+    },
+  }] });
+  const tailDrills = [
+    { en: "I'm on my way to the airport.", ko: '뜻', kr: '아이몬 마이 웨이 터 디 에어r포어r트' },
+    { en: 'Are you on your way?', ko: '뜻', kr: '아r 여 온 여r 웨이' },
+    { en: 'Nani is on her way to the kitchen.', ko: '뜻', kr: '나니 이z 온 허r 웨이 터 더 키친' },
+    { en: "I'm not on my way yet.", ko: '뜻', kr: '아임 나론 마이 웨이 옛' },
+  ];
+  it('personal 카드의 꼬리확장 드릴은 통과', () => {
+    const r = validateSeedContent(mk('en-personal-x-01', 'personal', tailDrills), { ...okOpts, core100Keys: [] });
+    expect(r.errors.filter((e) => e.includes('근접중복'))).toEqual([]);
+  });
+  it('core100 카드의 꼬리확장은 여전히 차단', () => {
+    const r = validateSeedContent(mk('en-core100-101-x', 'core100', tailDrills), { ...okOpts, core100Keys: [] });
+    expect(r.errors.some((e) => e.includes('근접중복'))).toBe(true);
+  });
+  it('personal 카드도 호칭류는 차단', () => {
+    const d = [...tailDrills]; d[1] = { en: "I'm on my way, honey.", ko: '뜻', kr: '아이몬 마이 웨이 허니' };
+    const r = validateSeedContent(mk('en-personal-x-01', 'personal', d), { ...okOpts, core100Keys: [] });
+    expect(r.errors.some((e) => e.includes('근접중복'))).toBe(true);
+  });
+  it('personal 트랙인데 id 가 en-personal- 로 시작하지 않으면 차단 (렌더 면제 판정과 어긋난다)', () => {
+    const r = validateSeedContent(mk('en-airport-01', 'personal', tailDrills), { ...okOpts, core100Keys: [] });
+    expect(r.errors.some((e) => e.includes('en-personal-'))).toBe(true);
+  });
+});

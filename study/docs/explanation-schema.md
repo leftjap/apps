@@ -119,6 +119,7 @@ drift fix 는 multi-wave 진행 필요 (en/ja 가이드 §11~12 의 spec 영향 
   1. **호칭류** — 쉼표로 호칭·감탄사·담화표지·문미태그만 덧붙인 것
      ❌ `It's been a while, honey.` · `Seems like yesterday, doesn't it?` · `Sir, is there a problem?`
   2. **꼬리확장** — base 를 통째로 앞에 두고 **뒤에 말만 덧붙인 것** (2026-07-10 사용자 지적)
+     ※ **personal 트랙 예외(2026-09-13)**: id 가 `en-personal-` 로 시작하는 카드는 꼬리확장이 학습 목표(시간→장소→사람 확장 사슬)라 게이트·렌더 모두 tail 을 허용한다(`nearDupDrills`/`filterNearDupDrills` 의 `keepTail`). 호칭류와 base 반복은 personal 도 차단.
      ❌ `Is there a problem?` → `Is there a problem here?` · `Is there a problem with that?`
      ❌ `I have no appetite.` → `I have no appetite these days.` · `It's your turn.` → `It's your turn now.`
      → 주어·시제·극성·문형·목적어가 **하나도 안 바뀐다.**

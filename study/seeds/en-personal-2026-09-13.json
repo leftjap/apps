@@ -26,12 +26,12 @@
           { "speaker": "B", "name": "지오", "en": "I'm almost there.", "ko": "거의 다 왔어.", "kr": "아이몰모우스 데어r" }
         ],
         "drills": [
-          { "en": "Soyeon knows I'm on my way.", "ko": "소연은 내가 가는 중인 거 알아.", "kr": "소연 노우z 아이몬 마이 웨이" },
+          { "en": "I'm on my way to the airport.", "ko": "공항 가는 중이야.", "kr": "아이몬 마이 웨이 터 디 에어r포어r트" },
           { "en": "Are you on your way?", "ko": "오는 중이야?", "kr": "아r 여 온 여r 웨이" },
           { "en": "Soyeon is on her way home from the airport.", "ko": "소연은 공항에서 집으로 오는 중이야.", "kr": "소연 이z 온 허r 웨이 호움 f럼 디 에어r포어r트" },
           { "en": "I'm not on my way yet. I'm still at home.", "ko": "아직 출발 안 했어. 아직 집이야.", "kr": "아임 나론 마이 웨이 옛 아임 스틸 엇 호움" },
           { "en": "Nani is on her way to the kitchen.", "ko": "나니가 주방으로 가는 중이야.", "kr": "나니 이z 온 허r 웨이 터 더 키친" },
-          { "en": "We're on our way to pick you up.", "ko": "우리가 너 데리러 가는 중이야.", "kr": "위어r 오나워r 웨이 터 피켜 업" }
+          { "en": "I'm on my way to the airport to pick you up in this cold.", "ko": "이 추위에 너 데리러 공항 가는 중이야.", "kr": "아이몬 마이 웨이 터 디 에어r포어r트 터 피켜 어핀 디스 코울드" }
         ],
         "grammar": [
           { "struct": "be on one's way (to + 장소)", "body": "지금 이동 중이라는 뜻. to 뒤에 목적지가 오고 집은 home 만 쓴다(to home 아님). 동사는 be 라서 I'm / Are you / Soyeon is 로 주어만 바꾸면 된다." }
@@ -70,7 +70,7 @@
           { "en": "I'll be there in ten minutes.", "ko": "10분이면 가.", "kr": "아일 비 데어r 인 텐 미닛츠" },
           { "en": "Bongsu will be there at five.", "ko": "봉수는 5시에 올 거야.", "kr": "봉수 윌 비 데어r 엇 f파이v" },
           { "en": "When will you be there?", "ko": "언제 도착해?", "kr": "웬 윌 여 비 데어r" },
-          { "en": "I promise I'll be there in forty minutes.", "ko": "40분이면 간다고 약속해.", "kr": "아이 프라미사일 비 데어r 인 f포어r리 미닛츠" },
+          { "en": "I'll be there in forty minutes with a warm car.", "ko": "40분 뒤에 따뜻한 차 가지고 갈게.", "kr": "아일 비 데어r 인 f포어r리 미닛츠 위더 워r엄 카r" },
           { "en": "I won't be there before five.", "ko": "5시 전엔 못 가.", "kr": "아이 워운 비 데어r 비f포어r f파이v" }
         ],
         "grammar": [

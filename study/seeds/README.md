@@ -26,7 +26,7 @@
 `explanation` 스키마:
 - ja: 4필드 (whenToUse/grammar/pronPoints/similar) + 메타 5필드 (stage/newElements/knownElements/frequency/category) — 콩트 단위
 - en (⭐ RealClass-mining): **규칙 정본 = [가이드 §6.3](../docs/lesson-explanation-guide-en.md) 단일** (1세션=1장면 · scene+표현 카드 · 8필드 · `_source` 의무 — 여기 재서술 금지, SSOT 2026-06-10). 형식 예시 = [en-2026-06-10-2.json](./en-2026-06-10-2.json). 기계 게이트 = `scripts/validate-seed.mjs` (INSERT 전 자동). 콩트 형식 (skit 메타) 은 5/29 이전 시드 잔존분 — 신규 사용 금지
-- en `track: "personal"` (2026-09-12): 일기 소재 개인화 세션(`docs/2026-09-12-dialogue-session-plan.md`). sceneless 면제·chain 비의무·miniDialogue 2~8턴, 줄마다 `en/ko/kr` 의무(응용 행과 같은 구성)·`name` 선택. 다른 시드처럼 커밋하고 로컬 `scripts/seed-supabase.mjs` 로 적재한다.
+- en `track: "personal"` (2026-09-12): 일기 소재 개인화 세션(`docs/2026-09-12-dialogue-session-plan.md`). sceneless 면제·chain 비의무·miniDialogue 2~8턴, 줄마다 `en/ko/kr` 의무(응용 행과 같은 구성)·`name` 선택. 다른 시드처럼 커밋하고 로컬 `scripts/seed-supabase.mjs` 로 적재한다. **id 는 `en-personal-` 로 시작해야 한다**(게이트가 강제, 렌더의 꼬리확장 면제 판정이 접두를 본다). personal 은 드릴의 꼬리확장(base 뒤에 시간·장소·사람 덧붙이기)을 허용한다(2026-09-13, 호칭류·base 반복은 그대로 차단). `kr` 은 가이드 §7 표기 규칙을 따르고 `validate-seed` 가 옛 표기를 차단한다. 적재된 세션: 2026-09-13(파일럿)·14·15·16·17 (`date` 는 세션 순서).
 
 정본: `~/apps/study/docs/lesson-explanation-guide-{ja,en}.md` (en 활성 = §6.3) + `explanation-schema.md`
 

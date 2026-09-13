@@ -14,7 +14,7 @@ import { savePronunciationLog, drillLogId, chainLogId, prodLogId, miniLogId, min
 import { applyWeakPhonemesUpdate } from '../services/weakPhonemes.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
 import { speakWithFeedback } from '../components/session/atoms.js';
-import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES } from '../components/session/applied.js';
+import { buildChainSteps, chainHint, filterNearDupDrills, pickPracticeVoice, firstWordsHint, exprMatch, PRACTICE_VOICES, JA_PRACTICE_VOICES, isPersonalCard } from '../components/session/applied.js';
 import { judgeCoverageOf, judgeProduction, judgeRecording, isTooUnclear } from '../services/coverageJudge.js';
 import { scoreForDisplay } from '../services/deductionScore.js';
 import { localISODate } from '../utils/today.js';
@@ -1083,7 +1083,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   // + 다음-표현 게이트(recLog count)에도 포함 (2026-07-01 사용자 지시 — 응용 발화도 3회 게이트에 셈).
   // 단 콤보·PASS 칩(연속 PASS 게이미피케이션)은 메인 표현 전용 — drill 미반영 유지.
   // 근접중복(호칭·감탄사만 덧붙인 드릴)은 렌더에서 제외 — 원본 데이터는 손대지 않음(사용자 결정 2026-07-09).
-  const drills = filterNearDupDrills(s?.sentence, ex.drills);
+  const drills = filterNearDupDrills(s?.sentence, ex.drills, { keepTail: isPersonalCard(s?.id) });
   const savedDrills = cardEx.drills || {};
   const recordedDrills = new Set(Object.keys(savedDrills).map(Number));
   const drillCountEl = h('b', {}, String(Math.min(recordedDrills.size, drills.length)));

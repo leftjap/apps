@@ -125,7 +125,10 @@ export function exprMatch(text, term) {
 
 /** 근접중복을 둘로 나눠 센다 — exact(1개 허용) · added(호칭류 + 꼬리확장, 0개).
  * 게이트(scripts/validate-seed.mjs)와 렌더가 이 함수를 공유해야 판정이 갈리지 않는다. */
-export function nearDupDrills(sentence, drills) {
+/** personal 트랙 판정 — 렌더는 track 필드가 없어 id 접두로 본다 (게이트 validate-seed 와 단일 출처, 2026-09-13). */
+export const isPersonalCard = (id) => /^en-personal-/.test(String(id ?? ''));
+
+export function nearDupDrills(sentence, drills, { keepTail = false } = {}) {
   const base = norm(sentence);
   if (!base) return { exact: 0, added: 0 };
   const bw = wordCount(sentence);
@@ -134,7 +137,7 @@ export function nearDupDrills(sentence, drills) {
   for (const d of drills ?? []) {
     const kind = classifyDrill(sentence, base, bw, d?.en);
     if (kind === 'exact') exact += 1;
-    else if (kind === 'vocative' || kind === 'tail') added += 1;
+    else if (kind === 'vocative' || (kind === 'tail' && !keepTail)) added += 1; // personal 은 꼬리확장이 학습 목표(2026-09-13)
   }
   return { exact, added };
 }
@@ -143,7 +146,7 @@ export function nearDupDrills(sentence, drills) {
  * ※ 2026-07-11 divergence: 게이트(validate-seed)는 신규 payload 에서 exact 를 **0개**로 차단한다.
  *   여기 렌더는 exact 1개를 남겨 **이미 시드된 기존 데이터(ep1-3 등)는 base 가 그대로 보인다** — 사용자 결정
  *   ("기존은 두고 새 세션만 적용"). 새 세션은 payload 에 base 가 없어 이 안전망이 걸릴 일이 없다. */
-export function filterNearDupDrills(sentence, drills) {
+export function filterNearDupDrills(sentence, drills, { keepTail = false } = {}) {
   const base = norm(sentence);
   const list = Array.isArray(drills) ? drills : [];
   if (!base) return list;
@@ -151,7 +154,7 @@ export function filterNearDupDrills(sentence, drills) {
   let keptExact = 0;
   return list.filter((d) => {
     const kind = classifyDrill(sentence, base, bw, d?.en);
-    if (kind === 'vocative' || kind === 'tail') return false;
+    if (kind === 'vocative' || (kind === 'tail' && !keepTail)) return false;
     if (kind !== 'exact') return true;
     keptExact += 1;
     return keptExact === 1;

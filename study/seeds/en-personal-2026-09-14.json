@@ -1,0 +1,170 @@
+{
+  "lang": "en",
+  "track": "personal",
+  "date": "2026-09-14",
+  "_note": "personal 트랙 2번째 세션 (2026-09-12 시안 1 '술 한잔 할래?', ~/apps/tmp/2026-09-12-study-personalized-draft-v2.md). 일기 재독: 2026-08-02(야키토리 묵 → 현대음률 2차), 2026-08-27(결혼기념일 전야 갈비 → 현대음률 와인), 2026-09-01(현대음률 화요일 휴무 → 오향만두 → 곱창전골), 2026-06-24(고릴라 → 시청까지 도보 → 서촌 계단집), 2025-09-14(망원 청기와 갈비 첫 방문). 4장 다 제안 패턴(Do you want to ~ / How about ~ / Let's ~ / Should we ~)이라 게이트의 '기본동사 비중' 경고가 붙는다 — 기능어 패턴 세션이라 의도된 것. 확장 사슬 2개(카드1·3)는 2026-09-13 personal 꼬리확장 허용 결정으로 넣었다. 저작은 새 세션 시뮬레이션(서브에이전트)이 했고 검토·수정 2건(넥스 f라이데이·택씨)은 본 세션. miniDialogue 는 8턴 공유, 줄마다 en/ko/kr. date 는 적재일.",
+  "cards": [
+    {
+      "id": "en-personal-drink-01-want-to-grab",
+      "sentence": "Do you want to grab a drink tonight?",
+      "meaning": "오늘 밤 술 한잔 할래?",
+      "reading": null,
+      "phonetic_kr": "더여 워너 그래버 드링크 터나잇",
+      "order_index": 1,
+      "explanation": {
+        "key": "Do you want to ~ = ~할래? 술·밥·커피를 권할 때 가장 먼저 나오는 한마디.",
+        "anchor": "할래",
+        "situation": "금요일 저녁. 소연이 런던 비행에서 돌아온 다음 날. 이 집 술자리는 보통 1차 고기, 2차 현대음률이다. 지오가 먼저 말을 꺼낸다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "Do you want to grab a drink tonight?", "ko": "오늘 밤 술 한잔 할래?", "kr": "더여 워너 그래버 드링크 터나잇" },
+          { "speaker": "A", "name": "소연", "en": "Sure. Meat first?", "ko": "좋지. 고기 먼저?", "kr": "슈어r 미잇 f퍼r스트" },
+          { "speaker": "B", "name": "지오", "en": "How about Cheonggiwa? The galbi is amazing.", "ko": "청기와 어때? 거기 갈비 진짜 맛있어.", "kr": "하우 어바웃 청기와 더 갈비 이z 어메이징" },
+          { "speaker": "A", "name": "소연", "en": "Sounds good. Should I book a table?", "ko": "좋아. 내가 자리 예약할까?", "kr": "사운즈 굿 셔라이 부커 테이블" },
+          { "speaker": "B", "name": "지오", "en": "No. Let's just go early.", "ko": "아니. 그냥 일찍 가자.", "kr": "노우 렛츠 저스 고우 어r리" },
+          { "speaker": "A", "name": "소연", "en": "Okay. And then Hyundae-eumryul?", "ko": "좋아. 그다음엔 현대음률?", "kr": "오우케이 언 덴 현대음률" },
+          { "speaker": "B", "name": "지오", "en": "Of course. Should we leave at six?", "ko": "당연하지. 6시에 나갈까?", "kr": "어v 코어r스 셔드 위 리이v 엇 씩스" },
+          { "speaker": "A", "name": "소연", "en": "Sure. I'll be ready by then.", "ko": "좋아. 그때까지 준비할게.", "kr": "슈어r 아일 비 레디 바이 덴" }
+        ],
+        "drills": [
+          { "en": "Do you want to grab a coffee?", "ko": "커피 한잔 할래?", "kr": "더여 워너 그래버 커f피" },
+          { "en": "Do you want to grab a drink tonight at Hyundae-eumryul after galbi at Cheonggiwa?", "ko": "청기와에서 갈비 먹고 현대음률에서 한잔 할래?", "kr": "더여 워너 그래버 드링크 터나이렛 현대음률 애f터r 갈비 엇 청기와" },
+          { "en": "Don't you want to grab a drink?", "ko": "술 한잔 하고 싶지 않아?", "kr": "돈처 워너 그래버 드링크" },
+          { "en": "Bongsu wants to grab a drink tonight.", "ko": "봉수가 오늘 밤 한잔하고 싶어 해.", "kr": "봉수 원츠 터 그래버 드링크 터나잇" },
+          { "en": "Soyeon wants to go to Hyundae-eumryul.", "ko": "소연은 현대음률에 가고 싶어 해.", "kr": "소연 원츠 터 고우 터 현대음률" },
+          { "en": "I don't want to drink tonight. I have the gym tomorrow.", "ko": "오늘은 안 마실래. 내일 운동 가야 해.", "kr": "아이 돈 워너 드링크 터나잇 아이 해v 더 짐 터마로우" }
+        ],
+        "grammar": [
+          { "struct": "Do you want to + 동사원형?", "body": "'~하고 싶니' 를 묻는 말이지만 실제로는 권유다. 뒤에는 언제나 동사원형(grab, try, go)이 온다. 주어를 바꾸면 Bongsu wants to ~ 처럼 wants 로만 바뀐다." }
+        ],
+        "chunks": [["Do you want to", "더여 워너", "~할래"], ["grab a drink", "그래버 드링크", "한잔 하다"], ["tonight?", "터나잇", "오늘 밤"]],
+        "phonemes": [["do you → 더여", "do 와 you 가 붙어 둘 다 약해진다 — '두 유'(X)"], ["want to → 워너", "t 가 사라지고 wanna 한 덩어리 — '원트 투'(X)"], ["grab a → 그래버", "grab 의 b 가 뒤 모음으로 넘어간다 — '그랩 어'(X)"]],
+        "mistake": "Do you want to drink? 라고 하면 '술 마시고 싶어?' 라는 직설이 된다. 가볍게 권할 때는 grab a drink.",
+        "similar": "Want to grab a drink? / Feel like a drink tonight?",
+        "category": "일상/약속",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-drink-02-how-about",
+      "sentence": "How about Cheonggiwa? The galbi is amazing.",
+      "meaning": "청기와 어때? 거기 갈비 진짜 맛있어.",
+      "reading": null,
+      "phonetic_kr": "하우 어바웃 청기와 더 갈비 이z 어메이징",
+      "order_index": 2,
+      "explanation": {
+        "key": "How about ~ = ~는 어때? 가게·날짜·메뉴를 하나 딱 집어 제안할 때.",
+        "anchor": "어때",
+        "situation": "고기를 먼저 먹기로 했다. 지오가 망원 청기와숯불갈비를 댄다. 2025년 9월에 처음 가서 고기도 밑반찬도 흠잡을 데 없었던 집이다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "Do you want to grab a drink tonight?", "ko": "오늘 밤 술 한잔 할래?", "kr": "더여 워너 그래버 드링크 터나잇" },
+          { "speaker": "A", "name": "소연", "en": "Sure. Meat first?", "ko": "좋지. 고기 먼저?", "kr": "슈어r 미잇 f퍼r스트" },
+          { "speaker": "B", "name": "지오", "en": "How about Cheonggiwa? The galbi is amazing.", "ko": "청기와 어때? 거기 갈비 진짜 맛있어.", "kr": "하우 어바웃 청기와 더 갈비 이z 어메이징" },
+          { "speaker": "A", "name": "소연", "en": "Sounds good. Should I book a table?", "ko": "좋아. 내가 자리 예약할까?", "kr": "사운즈 굿 셔라이 부커 테이블" },
+          { "speaker": "B", "name": "지오", "en": "No. Let's just go early.", "ko": "아니. 그냥 일찍 가자.", "kr": "노우 렛츠 저스 고우 어r리" },
+          { "speaker": "A", "name": "소연", "en": "Okay. And then Hyundae-eumryul?", "ko": "좋아. 그다음엔 현대음률?", "kr": "오우케이 언 덴 현대음률" },
+          { "speaker": "B", "name": "지오", "en": "Of course. Should we leave at six?", "ko": "당연하지. 6시에 나갈까?", "kr": "어v 코어r스 셔드 위 리이v 엇 씩스" },
+          { "speaker": "A", "name": "소연", "en": "Sure. I'll be ready by then.", "ko": "좋아. 그때까지 준비할게.", "kr": "슈어r 아일 비 레디 바이 덴" }
+        ],
+        "drills": [
+          { "en": "How about Gorilla?", "ko": "고릴라 어때?", "kr": "하우 어바웃 고릴라" },
+          { "en": "How about next Friday?", "ko": "다음 주 금요일은 어때?", "kr": "하우 어바웃 넥스 f라이데이" },
+          { "en": "What about the gopchang place?", "ko": "곱창집은 어때?", "kr": "와러바웃 더 곱창 플레이스" },
+          { "en": "How about Hyundae-eumryul after dinner?", "ko": "저녁 먹고 현대음률 어때?", "kr": "하우 어바웃 현대음률 애f터r 디너r" },
+          { "en": "Soyeon likes the wine there.", "ko": "소연은 거기 와인을 좋아해.", "kr": "소연 라익스 더 와인 데어r" },
+          { "en": "The galbi at Cheonggiwa is amazing.", "ko": "청기와 갈비가 진짜 맛있어.", "kr": "더 갈비 엇 청기와 이z 어메이징" }
+        ],
+        "grammar": [
+          { "struct": "How about + 명사 / 동명사 / 절?", "body": "뒤에 명사(Gorilla), -ing(going early), 절(we go early)이 다 올 수 있다. 동사원형은 오지 않는다. What about ~ 도 거의 같은 뜻인데, 이미 나온 얘기를 되받을 때 더 자주 쓴다." },
+          { "struct": "amazing = 대단히 좋다", "body": "맛·경치·공연에 두루 쓰는 큰 칭찬. good 보다 훨씬 세다. 사람 솜씨에도 쓴다 — She's amazing." }
+        ],
+        "chunks": [["How about Cheonggiwa?", "하우 어바웃 청기와", "청기와 어때"], ["The galbi", "더 갈비", "그 갈비가"], ["is amazing.", "이z 어메이징", "진짜 맛있다"]],
+        "phonemes": [["about → 어바웃", "강세가 뒤에 있어 첫 a 는 거의 '어' — '아바웃'(X)"], ["is amazing → 이z 어메이징", "is 의 s 는 /z/ 로 울린다. 라틴 z 자리는 목을 울리며 다음 말로 넘어간다"]],
+        "mistake": "How about go early? (X). How about 뒤에는 동사원형이 못 온다 — going early 나 we go early 로 바꾼다.",
+        "similar": "What about Cheonggiwa? / Why not Cheonggiwa?",
+        "category": "제안/식당",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-drink-03-lets-just",
+      "sentence": "No. Let's just go early.",
+      "meaning": "아니. 그냥 일찍 가자.",
+      "reading": null,
+      "phonetic_kr": "노우 렛츠 저스 고우 어r리",
+      "order_index": 3,
+      "explanation": {
+        "key": "Let's ~ = ~하자. 고민을 끝내고 결정할 때. just 를 넣으면 '그냥'.",
+        "anchor": "가자",
+        "situation": "소연이 자리를 예약할지 묻는다. 이 집 술자리는 1차도 2차도 예약하지 않는다. 대신 문 여는 시간에 맞춰 일찍 간다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "Do you want to grab a drink tonight?", "ko": "오늘 밤 술 한잔 할래?", "kr": "더여 워너 그래버 드링크 터나잇" },
+          { "speaker": "A", "name": "소연", "en": "Sure. Meat first?", "ko": "좋지. 고기 먼저?", "kr": "슈어r 미잇 f퍼r스트" },
+          { "speaker": "B", "name": "지오", "en": "How about Cheonggiwa? The galbi is amazing.", "ko": "청기와 어때? 거기 갈비 진짜 맛있어.", "kr": "하우 어바웃 청기와 더 갈비 이z 어메이징" },
+          { "speaker": "A", "name": "소연", "en": "Sounds good. Should I book a table?", "ko": "좋아. 내가 자리 예약할까?", "kr": "사운즈 굿 셔라이 부커 테이블" },
+          { "speaker": "B", "name": "지오", "en": "No. Let's just go early.", "ko": "아니. 그냥 일찍 가자.", "kr": "노우 렛츠 저스 고우 어r리" },
+          { "speaker": "A", "name": "소연", "en": "Okay. And then Hyundae-eumryul?", "ko": "좋아. 그다음엔 현대음률?", "kr": "오우케이 언 덴 현대음률" },
+          { "speaker": "B", "name": "지오", "en": "Of course. Should we leave at six?", "ko": "당연하지. 6시에 나갈까?", "kr": "어v 코어r스 셔드 위 리이v 엇 씩스" },
+          { "speaker": "A", "name": "소연", "en": "Sure. I'll be ready by then.", "ko": "좋아. 그때까지 준비할게.", "kr": "슈어r 아일 비 레디 바이 덴" }
+        ],
+        "drills": [
+          { "en": "Let's get meat first at Gorilla, then walk to City Hall and grab a drink in Seochon.", "ko": "고릴라에서 고기 먹고 시청까지 걸어서 서촌에서 한잔하자.", "kr": "렛츠 겟 미잇 f퍼r스텃 고릴라 덴 워크 터 씨리 홀 언 그래버 드링킨 서촌" },
+          { "en": "Let's not book.", "ko": "예약하지 말자.", "kr": "렛츠 낫 북" },
+          { "en": "Let's take a taxi.", "ko": "택시 타자.", "kr": "렛츠 테이커 택씨" },
+          { "en": "Why don't we go early?", "ko": "일찍 가는 게 어때?", "kr": "와이 돈 위 고우 어r리" },
+          { "en": "Let's meet Bongsu at six.", "ko": "6시에 봉수 만나자.", "kr": "렛츠 미잇 봉수 엇 씩스" },
+          { "en": "Soyeon wants to leave at six.", "ko": "소연은 6시에 나가고 싶어 해.", "kr": "소연 원츠 터 리이v 엇 씩스" }
+        ],
+        "grammar": [
+          { "struct": "Let's (just) + 동사원형", "body": "Let us 의 줄임이라 '나와 너' 를 함께 묶는다. 부정은 Let's not + 동사원형(Let's don't 아님). just 는 '더 따지지 말고 그냥' 이라는 뜻으로 결정을 가볍게 만든다." }
+        ],
+        "chunks": [["No.", "노우", "아니"], ["Let's just", "렛츠 저스", "그냥 ~하자"], ["go early.", "고우 어r리", "일찍 가다"]],
+        "phonemes": [["just go → 저스 고우", "just 의 t 는 자음 앞에서 사라진다 — '저스트 고우'(X)"], ["early → 어r리", "ear 는 혀를 말아 목 안쪽에서 낸다 — '얼리'(X)"]],
+        "mistake": "Let's go to early (X). early 는 부사라 to 가 붙지 않는다. Let's go early.",
+        "similar": "We can just go early. / Let's skip the reservation.",
+        "category": "제안/결정",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-drink-04-should-we",
+      "sentence": "Of course. Should we leave at six?",
+      "meaning": "당연하지. 6시에 나갈까?",
+      "reading": null,
+      "phonetic_kr": "어v 코어r스 셔드 위 리이v 엇 씩스",
+      "order_index": 4,
+      "explanation": {
+        "key": "Should we ~ = ~할까? 상대 의견을 물어 같이 정할 때.",
+        "anchor": "나갈까",
+        "situation": "2차는 늘 현대음률이다. 갈 곳이 정해졌으니 지오가 집에서 나갈 시간을 묻는다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "Do you want to grab a drink tonight?", "ko": "오늘 밤 술 한잔 할래?", "kr": "더여 워너 그래버 드링크 터나잇" },
+          { "speaker": "A", "name": "소연", "en": "Sure. Meat first?", "ko": "좋지. 고기 먼저?", "kr": "슈어r 미잇 f퍼r스트" },
+          { "speaker": "B", "name": "지오", "en": "How about Cheonggiwa? The galbi is amazing.", "ko": "청기와 어때? 거기 갈비 진짜 맛있어.", "kr": "하우 어바웃 청기와 더 갈비 이z 어메이징" },
+          { "speaker": "A", "name": "소연", "en": "Sounds good. Should I book a table?", "ko": "좋아. 내가 자리 예약할까?", "kr": "사운즈 굿 셔라이 부커 테이블" },
+          { "speaker": "B", "name": "지오", "en": "No. Let's just go early.", "ko": "아니. 그냥 일찍 가자.", "kr": "노우 렛츠 저스 고우 어r리" },
+          { "speaker": "A", "name": "소연", "en": "Okay. And then Hyundae-eumryul?", "ko": "좋아. 그다음엔 현대음률?", "kr": "오우케이 언 덴 현대음률" },
+          { "speaker": "B", "name": "지오", "en": "Of course. Should we leave at six?", "ko": "당연하지. 6시에 나갈까?", "kr": "어v 코어r스 셔드 위 리이v 엇 씩스" },
+          { "speaker": "A", "name": "소연", "en": "Sure. I'll be ready by then.", "ko": "좋아. 그때까지 준비할게.", "kr": "슈어r 아일 비 레디 바이 덴" }
+        ],
+        "drills": [
+          { "en": "Should we book?", "ko": "예약할까?", "kr": "셔드 위 북" },
+          { "en": "Should we walk there?", "ko": "거기까지 걸어갈까?", "kr": "셔드 위 워크 데어r" },
+          { "en": "Should we call Sanggu?", "ko": "상구한테 전화할까?", "kr": "셔드 위 콜 상구" },
+          { "en": "Should we get the check?", "ko": "계산할까?", "kr": "셔드 위 겟 더 체크" },
+          { "en": "Maybe we should leave earlier.", "ko": "좀 더 일찍 나가는 게 낫겠다.", "kr": "메이비 위 셔드 리이v 어r리어r" },
+          { "en": "We shouldn't drink too much tonight.", "ko": "오늘은 너무 많이 마시지 말자.", "kr": "위 슈든 드링크 투우 머치 터나잇" }
+        ],
+        "grammar": [
+          { "struct": "Should we + 동사원형?", "body": "'~하는 게 좋을까' 하고 상대에게 결정을 같이 하자는 물음. Let's 가 이미 정한 말이라면 Should we 는 아직 묻는 말이다. 혼자 할 일이면 Should I ~? 로 바꾼다." },
+          { "struct": "at + 시각", "body": "시각 앞에는 at(at six). 걸리는 시간은 in(in ten minutes), 날짜는 on(on Friday)." }
+        ],
+        "chunks": [["Of course.", "어v 코어r스", "당연하지"], ["Should we leave", "셔드 위 리이v", "나갈까"], ["at six?", "엇 씩스", "6시에"]],
+        "phonemes": [["Should we → 셔드 위", "should 는 강세가 없어 '슈드' 보다 '셔드' 에 가깝다"], ["leave → 리이v", "장모음이라 '리브'(X). 끝은 윗니로 아랫입술을 눌러 울린다"], ["of course → 어v 코어r스", "of 의 f 는 /v/ 로 울리고 약해진다 — '오브 코스'(X)"]],
+        "mistake": "Should we to leave? (X). 조동사 뒤에는 to 없이 동사원형.",
+        "similar": "Do you want to leave at six? / Want to head out at six?",
+        "category": "제안/시간",
+        "frequency": 8
+      }
+    }
+  ]
+}

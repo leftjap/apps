@@ -1,0 +1,168 @@
+{
+  "lang": "en",
+  "track": "personal",
+  "date": "2026-09-16",
+  "_note": "personal 트랙 4번째 세션 (2026-09-12 시안 4 '오랜만이다', ~/apps/tmp/2026-09-12-study-personalized-draft-v2.md). 소재: 2026-09-09 용구 통화(딸 안부, 서로 사과, 회사 그만둔 게 많이 바뀐 계기), 당구장 약속. 상대가 남성(용구)이라 두 화자 모두 B(남성 음성) — 사용자 결정(2026-09-13)대로 음성은 성별로만 나눈다. 지오 대사 4줄 = 카드 4장(It's been a while / I've been ~ / How's ~ / Let's ~). 확장 드릴 카드마다 1개. 발음은 가이드 §7 규칙. date 는 세션 순서.",
+  "cards": [
+    {
+      "id": "en-personal-yonggu-01-been-a-while",
+      "sentence": "It's been a while.",
+      "meaning": "오랜만이다.",
+      "reading": null,
+      "phonetic_kr": "잇츠 비너 와일",
+      "order_index": 1,
+      "explanation": {
+        "key": "It's been a while = 오랜만이다. 오래 연락 못 한 사람에게 첫마디.",
+        "anchor": "오랜만",
+        "situation": "9월 9일 오후. 지오가 생각난 김에 용구에게 전화를 건다. 지난달로 오래된 약속을 다 지킨 참이다. 전화가 연결되자마자.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "It's been a while.", "ko": "오랜만이다.", "kr": "잇츠 비너 와일" },
+          { "speaker": "B", "name": "용구", "en": "It has. How have you been?", "ko": "그러네. 어떻게 지냈어?", "kr": "잇 해z 하우 해v 여 빈" },
+          { "speaker": "B", "name": "지오", "en": "I've been busy with my apps.", "ko": "앱 만드느라 바빴어.", "kr": "아이v 빈 비지 위드 마이 앱스" },
+          { "speaker": "B", "name": "용구", "en": "Apps? That sounds fun.", "ko": "앱? 재밌겠다.", "kr": "앱스 댓 사운즈 f펀" },
+          { "speaker": "B", "name": "지오", "en": "How's your daughter?", "ko": "딸은 잘 지내?", "kr": "하우z 여r 도러r" },
+          { "speaker": "B", "name": "용구", "en": "She's growing so fast.", "ko": "엄청 빨리 커.", "kr": "쉬z 그로우잉 쏘우 f패스트" },
+          { "speaker": "B", "name": "지오", "en": "Let's keep in touch.", "ko": "연락하고 지내자.", "kr": "렛츠 키이핀 터치" },
+          { "speaker": "B", "name": "용구", "en": "Let's play pool sometime.", "ko": "언제 당구 치자.", "kr": "렛츠 플레이 푸울 썸타임" }
+        ],
+        "drills": [
+          { "en": "It's been a while since we talked.", "ko": "얘기한 지 오래됐네.", "kr": "잇츠 비너 와일 씬스 위 톡트" },
+          { "en": "It's been ages.", "ko": "진짜 오랜만이다.", "kr": "잇츠 비네이지z" },
+          { "en": "It's been a year since I saw Bongsu.", "ko": "봉수 본 지 1년 됐어.", "kr": "잇츠 비너 이어r 씬사이 쏘 봉수" },
+          { "en": "Has it been that long?", "ko": "그렇게 오래됐어?", "kr": "해짓 빈 댓 롱" },
+          { "en": "It hasn't been that long.", "ko": "그렇게 오래되진 않았어.", "kr": "잇 해즌 빈 댓 롱" },
+          { "en": "Yonggu and I hadn't talked in years.", "ko": "용구랑 나는 몇 년 동안 얘기를 안 했어.", "kr": "용구 어나이 해든 톡티니어r즈" }
+        ],
+        "grammar": [
+          { "struct": "It's been + a while / ages / 기간", "body": "It has been 의 축약. 뒤에 since + 과거절을 붙이면 기준 시점이 된다(since we talked)." }
+        ],
+        "chunks": [["It's been a", "잇츠 비너", "~된 지"], ["while.", "와일", "한참"]],
+        "phonemes": [["been a → 비너", "n 이 a 로 넘어가 한 덩어리 — '빈 어'(X)"], ["while → 와일", "w 는 입술을 둥글게 — '화일'(X)"]],
+        "mistake": "It's a while (X). been 이 있어야 '~된 지 오래'가 된다.",
+        "similar": "Long time no see. / It's been ages.",
+        "category": "안부/인사",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-yonggu-02-ive-been-busy",
+      "sentence": "I've been busy with my apps.",
+      "meaning": "앱 만드느라 바빴어.",
+      "reading": null,
+      "phonetic_kr": "아이v 빈 비지 위드 마이 앱스",
+      "order_index": 2,
+      "explanation": {
+        "key": "I've been ~ = (지금까지) ~해 왔어. 근황을 한 문장으로 말하는 틀.",
+        "anchor": "바빴",
+        "situation": "용구가 어떻게 지냈냐고 묻는다. 지오는 3월부터 앱을 만들고 있다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "It's been a while.", "ko": "오랜만이다.", "kr": "잇츠 비너 와일" },
+          { "speaker": "B", "name": "용구", "en": "It has. How have you been?", "ko": "그러네. 어떻게 지냈어?", "kr": "잇 해z 하우 해v 여 빈" },
+          { "speaker": "B", "name": "지오", "en": "I've been busy with my apps.", "ko": "앱 만드느라 바빴어.", "kr": "아이v 빈 비지 위드 마이 앱스" },
+          { "speaker": "B", "name": "용구", "en": "Apps? That sounds fun.", "ko": "앱? 재밌겠다.", "kr": "앱스 댓 사운즈 f펀" },
+          { "speaker": "B", "name": "지오", "en": "How's your daughter?", "ko": "딸은 잘 지내?", "kr": "하우z 여r 도러r" },
+          { "speaker": "B", "name": "용구", "en": "She's growing so fast.", "ko": "엄청 빨리 커.", "kr": "쉬z 그로우잉 쏘우 f패스트" },
+          { "speaker": "B", "name": "지오", "en": "Let's keep in touch.", "ko": "연락하고 지내자.", "kr": "렛츠 키이핀 터치" },
+          { "speaker": "B", "name": "용구", "en": "Let's play pool sometime.", "ko": "언제 당구 치자.", "kr": "렛츠 플레이 푸울 썸타임" }
+        ],
+        "drills": [
+          { "en": "I've been busy with my apps since March.", "ko": "3월부터 앱 만드느라 바빴어.", "kr": "아이v 빈 비지 위드 마이 앱스 씬스 마r치" },
+          { "en": "I've been working out every day.", "ko": "매일 운동하고 있어.", "kr": "아이v 빈 워r킹 아우레v리 데이" },
+          { "en": "I've been okay.", "ko": "그럭저럭 지냈어.", "kr": "아이v 비노우케이" },
+          { "en": "Soyeon has been flying a lot.", "ko": "소연은 비행이 많았어.", "kr": "소연 해z 빈 f라잉 얼랏" },
+          { "en": "Have you been busy?", "ko": "바빴어?", "kr": "해v 여 빈 비지" },
+          { "en": "I haven't been to the gym lately.", "ko": "요즘 헬스장에 못 갔어.", "kr": "아이 해븐 빈 터 더 짐 레잇리" }
+        ],
+        "grammar": [
+          { "struct": "I've been + 형용사 / -ing", "body": "지금까지 이어진 상태. 기간은 since(시점)·for(길이)로 붙인다." }
+        ],
+        "chunks": [["I've been busy", "아이v 빈 비지", "바빴어"], ["with my apps.", "위드 마이 앱스", "앱 만드느라"]],
+        "phonemes": [["I've been → 아이v 빈", "v 는 약하게 울리고 been 은 짧게 '빈' — '비인'(X)"], ["busy → 비지", "s 는 /z/ 소리 — '비시'(X)"]],
+        "mistake": "I'm busy since March (X). 기간이 붙으면 I've been busy.",
+        "similar": "I've had my hands full. / Work's been crazy.",
+        "category": "근황",
+        "frequency": 9
+      }
+    },
+    {
+      "id": "en-personal-yonggu-03-hows-your-daughter",
+      "sentence": "How's your daughter?",
+      "meaning": "딸은 잘 지내?",
+      "reading": null,
+      "phonetic_kr": "하우z 여r 도러r",
+      "order_index": 3,
+      "explanation": {
+        "key": "How's ~ = ~는 어때? 사람·일·몸의 안부를 짧게 묻는 틀.",
+        "anchor": "딸",
+        "situation": "용구에게는 어린 딸이 있다. 지오가 딸 안부를 묻는다. 엊그제 같은데 벌써 많이 컸다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "It's been a while.", "ko": "오랜만이다.", "kr": "잇츠 비너 와일" },
+          { "speaker": "B", "name": "용구", "en": "It has. How have you been?", "ko": "그러네. 어떻게 지냈어?", "kr": "잇 해z 하우 해v 여 빈" },
+          { "speaker": "B", "name": "지오", "en": "I've been busy with my apps.", "ko": "앱 만드느라 바빴어.", "kr": "아이v 빈 비지 위드 마이 앱스" },
+          { "speaker": "B", "name": "용구", "en": "Apps? That sounds fun.", "ko": "앱? 재밌겠다.", "kr": "앱스 댓 사운즈 f펀" },
+          { "speaker": "B", "name": "지오", "en": "How's your daughter?", "ko": "딸은 잘 지내?", "kr": "하우z 여r 도러r" },
+          { "speaker": "B", "name": "용구", "en": "She's growing so fast.", "ko": "엄청 빨리 커.", "kr": "쉬z 그로우잉 쏘우 f패스트" },
+          { "speaker": "B", "name": "지오", "en": "Let's keep in touch.", "ko": "연락하고 지내자.", "kr": "렛츠 키이핀 터치" },
+          { "speaker": "B", "name": "용구", "en": "Let's play pool sometime.", "ko": "언제 당구 치자.", "kr": "렛츠 플레이 푸울 썸타임" }
+        ],
+        "drills": [
+          { "en": "How's your daughter been?", "ko": "딸은 어떻게 지내?", "kr": "하우z 여r 도러r 빈" },
+          { "en": "How's work?", "ko": "일은 어때?", "kr": "하우z 워r크" },
+          { "en": "How's your back?", "ko": "허리는 어때?", "kr": "하우z 여r 백" },
+          { "en": "How are the kids?", "ko": "애들은 잘 지내?", "kr": "하우 아r 더 키즈" },
+          { "en": "Soyeon asked how your daughter is.", "ko": "소연이 네 딸 안부를 물었어.", "kr": "소연 애스크트 하우 여r 도러r 이z" },
+          { "en": "Your daughter must be big now.", "ko": "딸 이제 많이 컸겠다.", "kr": "여r 도러r 머스 비 빅 나우" }
+        ],
+        "grammar": [
+          { "struct": "How's + 명사?", "body": "How is 의 축약. 사람(your daughter)·일(work)·몸(your back) 어디든 안부를 묻는다." }
+        ],
+        "chunks": [["How's", "하우z", "어때"], ["your daughter?", "여r 도러r", "네 딸은"]],
+        "phonemes": [["daughter → 도러r", "gh 는 소리 없음, t 는 굴러서 ㄹ — '도터'(X)"], ["How's → 하우z", "s 는 /z/ 로 울린다"]],
+        "mistake": "How is your daughter doing? 도 되지만, 안부는 짧게 How's your daughter?",
+        "similar": "How's she doing? / Is she doing well?",
+        "category": "안부/가족",
+        "frequency": 8
+      }
+    },
+    {
+      "id": "en-personal-yonggu-04-keep-in-touch",
+      "sentence": "Let's keep in touch.",
+      "meaning": "연락하고 지내자.",
+      "reading": null,
+      "phonetic_kr": "렛츠 키이핀 터치",
+      "order_index": 4,
+      "explanation": {
+        "key": "Let's keep in touch = 연락하고 지내자. Let's ~ 는 '~하자'. 통화를 마무리하며 다음을 약속하는 말.",
+        "anchor": "연락",
+        "situation": "서로 미안했던 얘기를 하고 나서, 지오가 연락하고 지내자고 한다. 용구는 당구 약속으로 받는다.",
+        "miniDialogue": [
+          { "speaker": "B", "name": "지오", "en": "It's been a while.", "ko": "오랜만이다.", "kr": "잇츠 비너 와일" },
+          { "speaker": "B", "name": "용구", "en": "It has. How have you been?", "ko": "그러네. 어떻게 지냈어?", "kr": "잇 해z 하우 해v 여 빈" },
+          { "speaker": "B", "name": "지오", "en": "I've been busy with my apps.", "ko": "앱 만드느라 바빴어.", "kr": "아이v 빈 비지 위드 마이 앱스" },
+          { "speaker": "B", "name": "용구", "en": "Apps? That sounds fun.", "ko": "앱? 재밌겠다.", "kr": "앱스 댓 사운즈 f펀" },
+          { "speaker": "B", "name": "지오", "en": "How's your daughter?", "ko": "딸은 잘 지내?", "kr": "하우z 여r 도러r" },
+          { "speaker": "B", "name": "용구", "en": "She's growing so fast.", "ko": "엄청 빨리 커.", "kr": "쉬z 그로우잉 쏘우 f패스트" },
+          { "speaker": "B", "name": "지오", "en": "Let's keep in touch.", "ko": "연락하고 지내자.", "kr": "렛츠 키이핀 터치" },
+          { "speaker": "B", "name": "용구", "en": "Let's play pool sometime.", "ko": "언제 당구 치자.", "kr": "렛츠 플레이 푸울 썸타임" }
+        ],
+        "drills": [
+          { "en": "Let's keep in touch this time.", "ko": "이번엔 진짜 연락하고 지내자.", "kr": "렛츠 키이핀 터치 디스 타임" },
+          { "en": "Let's play pool on Friday.", "ko": "금요일에 당구 치자.", "kr": "렛츠 플레이 푸울 온 f라이데이" },
+          { "en": "Let's grab a drink soon.", "ko": "조만간 한잔하자.", "kr": "렛츠 그래버 드링크 쑤운" },
+          { "en": "Keep in touch, Yonggu.", "ko": "연락해, 용구야.", "kr": "키이핀 터치 용구" },
+          { "en": "I'll call you next month.", "ko": "다음 달에 전화할게.", "kr": "아일 콜 여 넥스 먼쓰" },
+          { "en": "We should meet up sometime.", "ko": "언제 한번 보자.", "kr": "위 셔드 미이럽 썸타임" }
+        ],
+        "grammar": [
+          { "struct": "Let's + 동사원형", "body": "같이 하자는 제안. keep in touch 는 '연락을 이어 가다'. 부정은 Let's not." }
+        ],
+        "chunks": [["Let's", "렛츠", "~하자"], ["keep in touch.", "키이핀 터치", "연락하고 지내"]],
+        "phonemes": [["keep in → 키이핀", "p 가 in 으로 넘어가 한 덩어리 — '킵 인'(X)"], ["touch → 터치", "u 는 짧은 '어' — '타치'(X)"]],
+        "mistake": "Let's keeping in touch (X). Let's 뒤는 원형.",
+        "similar": "Stay in touch. / Don't be a stranger.",
+        "category": "약속/연락",
+        "frequency": 9
+      }
+    }
+  ]
+}

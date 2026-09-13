@@ -35,7 +35,7 @@ import { buildScenePage } from '../components/session/scenePage.js';
 import { wrapWords, applyWordHighlight } from '../components/session/wordHighlight.js';
 import { showWordSheet } from '../components/session/wordSheet.js';
 import { recordErrorMessage, showRecordToast } from '../components/session/recordToast.js';
-import { filterNearDupDrills } from '../components/session/applied.js';
+import { filterNearDupDrills, isPersonalCard } from '../components/session/applied.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { hiFragment } from '../components/d1/shared.js';
@@ -315,7 +315,7 @@ export function mountSessionNew(host) {
       async function hydrateScores(list, { withRecLog = false } = {}) {
         try {
           const hyd = await loadScoreHistoryState(window.studyDB, list, getStoredLang(),
-            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills));
+            (c) => filterNearDupDrills(c.sentence, c.explanation?.drills, { keepTail: isPersonalCard(c.id) }));
           if (!hyd) return;
           /* 카드 안 필드 단위 병합 (2026-09-03) — 항목을 통째로 갈아끼우면 스냅샷에만 사는 진행
            * (체이닝 chain.cur · 생산 prod.picks/rows)이 이력 있는 카드마다 재진입 때 사라졌다.
