@@ -1,0 +1,66 @@
+# 작업지시서 — 대화 단위 개인화 세션 (2026-09-13, 세션 인계)
+
+> 새 세션은 이 파일부터 읽는다. 그다음 계획서 [2026-09-12-dialogue-session-plan.md](./2026-09-12-dialogue-session-plan.md) §0 으로 결정 사항을 잡고, 나머지 파일은 필요할 때 연다. 사용자는 비개발자이고 한국어 문체 규칙(`~/.claude/rules/korean-response-style.md`)을 따른다.
+
+## 1. 한 문단 요약
+
+영어 학습 방향을 "코어100 문장 암기" 에서 "기본 회화 패턴 + 사용자 일기 소재로 만든 짧은 대화" 로 바꿨다. 2026-09-11~13 에 (1) 사용자 일기 1년치를 정독해 소재를 정리하고, (2) 233 패턴과 모두영어 529문장을 검토하고, (3) 시안 5개를 두 판 만들고, (4) 앱을 대화 단위 세션에 맞게 고쳐 배포했으며, (5) 사용자 계정의 영어 세션·복습을 전부 지우고 파일럿 세션(공항 픽업 대화, 카드 4장)을 적재했다. 사용자가 휴대폰에서 첫 세션을 써 본 뒤 피드백을 주면, 미결 설계 결정(근접중복 규칙 vs 확장 응용)을 정하고 나머지 시안 4개를 시드로 만든다.
+
+## 2. 파일 위치
+
+| 무엇 | 경로 | 비고 |
+|---|---|---|
+| 구현 계획(결정 §0·작업 6개) | `study/docs/2026-09-12-dialogue-session-plan.md` | 커밋됨. 실행 완료 |
+| 파일럿 시드(카드 4장, 8턴 대화) | `study/seeds/en-personal-2026-09-13.json` | 커밋·사용자 계정 적재 완료. 다음 시드의 본보기 |
+| 영어 트랙 리셋 스크립트 | `study/scripts/reset-en-track.mjs` (+ `.test.mjs`) | `--dry-run` 먼저. 백업 `~/apps/tmp/reset-backup-en-20260912.json`(198 lessons·132 reviews) |
+| 시안 2판(5개, 일기 디테일 반영) | `~/apps/tmp/2026-09-12-study-personalized-draft-v2.md` | 미추적. 시드 저작의 원본 |
+| 233 패턴 검토(유지 93·통합 44·보류 51·제외 45·추가 59) | `~/apps/tmp/2026-09-11-pattern233-review.md` | 미추적 |
+| 모두영어 기본문장 529개(화면 캡처 표기 포함) | `~/apps/tmp/modu_subs/modu_sentences_user_2026-09-12.md` | 미추적. 표기는 gold 와 같은 계열(차이: at 강형, 목적어 you 유, I'll 아일) |
+| 모두영어 자막(79/156편, 중단) | `~/apps/tmp/modu_subs/vtt/` + `vtt2txt.py` | 사용자가 문장을 직접 추출했으므로 재개 필요성 낮음 |
+| 일기 볼트 | `~/cowork/navi/2025~2026/` | 읽기만. 소재 원문 재독은 여기서 |
+| 검증 스크린샷·실행 장부 | `~/apps/tmp/dialogue-session-2026-09-13/` | progress.md 에 판정(Ruling) 전부 |
+| 메모리 | `~/.claude/projects/-Users-gio-c-apps/memory/study-modu-pattern-source-2026-09.md`, `study-diary-content-source-2026-09.md`, `feedback-study-mixed-difficulty.md` | 요약과 사용자 피드백 |
+| 발음 표기 정본 | `study/docs/core100-gold.md` (+ `2026-09-08-phonetic-kr-work-order.md`) | 미니대화 `kr`·드릴 `kr` 도 이 규칙 |
+
+## 3. 확정된 결정 (사용자)
+
+- 콘텐츠: 기본 패턴(233 + 모두영어) 을 뼈대로 하고 예문·대화는 사용자 일기 소재로 개인화한다. 실명 그대로(소연·나니·봉수·상구·정경섭·용구·승희·윤호), 본인은 **지오**(본명 세진은 쓰지 않음, 일기 속 "지오" 는 죽은 고양이 이름이니 혼동 금지). 투자 얘기 제외, 건강·병원 포함. 소재 우선순위: 나니, 소연, 대한항공, 여행, 소연 친구, 내 친구, 소연과의 외식. 개인 정보 공개는 걱정 안 함(시드를 공개 저장소에 커밋해도 됨).
+- 난이도: A1 기준으로 거르지 않는다. 문제는 이해가 아니라 인출. 난이도는 한 세션 안에 섞는다(인출 부담으로 조절). 응용은 양을 제한하지 않고, 학습자가 유용한 것만 골라 학습한다.
+- 단위: SRS·채점·이력 단위는 문장(카드), 제시·연습·단서 단위는 대화(miniDialogue). 대화의 지오 대사는 가능하면 전부 모두영어 문장으로 짜서 대화 한 편 = 카드 3~4장.
+- 화면: 미니대화는 8턴까지, 줄마다 영문·발음(kr)·뜻·듣기·녹음(응용 행과 동일 구성), TTS 는 화자 성별(A 여성·B 남성)로만 구분, 화자 칸에 이름, 대화 위에 장면 한 줄(`situation`). 체이닝·생산 연습은 숨김(`SESSION_BLOCKS.chainProd=false`, 코드는 유지, 되살릴지는 추후). 응용은 복습에 넣지 않는다. 복습 회상 모드는 정답 공개 전에 상대의 직전 대사를 단서로 보여준다.
+- 데이터: 기존 영어 세션·복습 전부 삭제 완료(2026-09-13). 복습은 새 세션 완료분부터 시작.
+- 발음 표기: gold 규칙(목적어 you → 여, at → 엇, do you → 더여, 구개음화 ㅓ, flap ㄹ, 장모음 겹모음, 라틴 f v z r). I'll 은 임시로 아일.
+
+## 4. 미결 결정 (사용자에게 물을 것)
+
+1. **근접중복 규칙 vs 확장 응용.** 시드 게이트와 화면 필터(`nearDupDrills`/`filterNearDupDrills`, `src/components/session/applied.js`)가 "base + 꼬리 확장"(예: I'm on my way to the airport to pick you up in this cold.)을 변주로 인정하지 않는다. 사용자가 원한 확장 사슬(시간→장소→사람 덧붙이기)과 정면 충돌해 파일럿에서 확장 드릴 3개가 주어 변주로 교체됐고, 카드 4는 "핵심 표현을 담은 드릴 없음" 경고를 안고 있다. **권장**: personal 트랙만 게이트·렌더 필터에서 면제(대안: `explanation.expansions` 별도 필드 + 전용 행). 결정 전에는 확장 드릴을 시드에 넣지 못한다.
+2. 복습에서 정답 공개 뒤 상대 대사가 단서(`.vr-cue`)와 대화 블록 첫 줄에 두 번 보인다. 거슬리면 `reveal()` 에서 `cueEl.remove()` 한 줄. 사용자가 써 보고 결정.
+3. 인출 질문·역할 바꾸기(시안의 응용 항목)는 앱 데이터 모델에 없다. 인출 질문은 복습의 한국어 단서가 이미 그 역할이라 시드에 따로 넣지 않는 쪽을 **권장**. 역할 바꾸기는 ChatGPT 음성 수업(`docs/voice-teacher/2026-09-10-work-order.md`)에서.
+4. 233 패턴 번호를 카드에 붙일지(`category` 로 대체 가능). 지금은 안 붙였다.
+
+## 5. 다음 할 일 (순서)
+
+1. **사용자 피드백 대기.** 휴대폰에서 앱을 완전히 닫았다 열어(구 서비스워커 캐시) 파일럿 세션을 해 본 소감. 특히 8줄 대화 녹음, `kr · ko` 부제, 장면 줄, 복습 단서.
+2. §4-1 결정 반영. 면제 안이면 `scripts/validate-seed.mjs` 의 근접중복 검사와 `applied.js` 의 `filterNearDupDrills` 에 `track === 'personal'` 분기 + 테스트. 그 뒤 파일럿 시드의 드릴을 계획서 원안(확장 3개)으로 되돌린다.
+3. **시안 1·3·4·5 를 시드로.** 파일럿 시드를 본보기로 대화 8줄(지오 대사 = 카드 sentence, 정확히 1회 일치), 카드마다 10필드(key·situation·drills≥4·grammar·chunks·phonemes·mistake·similar·category·frequency)와 `anchor`, 줄마다 `en/ko/kr/name`. 저작 순서: 시안 2판 → 해당 일기 원문 재독 → 대화 → 카드 → `node scripts/validate-seed.mjs --payload …`(경고는 허용, 에러 0) → 봇 계정으로 화면 확인(선택) → `node scripts/seed-supabase.mjs --payload … --user-id 7bae5645-61c6-4476-9ff2-4c30a72812ff`. `date` 는 적재일이고, 같은 (lang, date) 에 다른 묶음이 있으면 서버 가드가 막으니 하루에 한 묶음.
+4. 세션 생성 절차를 스킬로 박제할지 검토(5단계 이상이면 `~/.claude/skills/`).
+5. 남은 사소한 것: 녹음 흐름이 `drillRows`/`miniDialogueEl` 에 중복(세 번째 사용처가 생기면 헬퍼로), `miniLinesOf` 필터 두 벌(`applied.js` 로 이동 권장), 같은 대화에 동일 `en` 줄이 둘이면 `#mini#` 이력이 겹침(게이트 검사 추가 권장), 복습 `#mini#` 영속 테스트 없음, 리셋 스크립트 백업 파일명이 UTC 날짜.
+
+## 6. 실패 이력·주의 (반복 금지)
+
+- 배포 직후 PWA 가 옛 번들을 한 번 더 보여준다(서비스워커 정상 동작). 검증 브라우저에서는 `navigator.serviceWorker.getRegistrations()` → `unregister()` 뒤 새로고침.
+- 게이트 근접중복 규칙에 확장 드릴이 걸린다(§4-1). 시드 저작 전에 결정할 것.
+- 계획 없이 코드를 고치지 않는다(사용자 규칙). 테스트 먼저. `pnpm exec vitest run <파일>`, 전체 `pnpm test`. `pnpm vitest` 단독 호출은 watch 로 멈춘다.
+- Stop 훅이 추적 파일 편집분을 `WIP(claude-snapshot)` 으로 선점 커밋한다 → `git reset --soft HEAD~1` 로 합친다. `--hard`·`rm -rf` 는 훅이 막는다.
+- 서브에이전트가 커밋 서명을 다른 모델명으로 적는 경우가 있었다. 서명은 세션 규약대로.
+- 리셋 스크립트: 사용자의 `study_today_lessons` 가 전 언어 0행이 되면 pull 이 조기 반환해 기기 로컬 레슨이 안 지워진다(스크립트가 경고). 리셋 뒤 바로 새 세션을 적재할 것.
+- 봇 계정(`claude-bot@today.local`, `f74a3d8a-f449-4c25-82d1-509dc70a9988`) 화면 검증 절차는 `~/.claude/skills/study-fake-mic-e2e/SKILL.md` §2·§4·§5. 배포 번들은 봇을 거부하므로 개발 서버(`preview_start` `study-dev`).
+- 일기 정독 결과: 사색 7할이라 행동 문장은 편당 1개 미만. 개인화는 문장 번역이 아니라 인물·장소·루틴·사건으로 패턴의 빈칸을 채우는 방식. 정경섭(생존, 통화 상대)과 2026-03 사망한 "정섭이" 는 다른 사람.
+- 모두영어 화면 표기 체계는 gold 와 거의 같다. 들여올 때 at·목적어 you 두 규칙만 손본다.
+
+## 7. 작업 규칙
+
+- 사용자가 붙여 넣는 ChatGPT 의견은 검토 후 판단. 맞는 것은 받고 틀린 것은 근거와 함께 반박.
+- 검증 안 한 것은 "검증 안 함" 으로. 화면 단정은 스크린샷·DOM 카운트 동반.
+- 옵션을 나열할 때는 하나에 **권장** 라벨.
+- 커밋은 본 세션이 만든 파일만, Conventional Commits, 검증 통과 뒤 자동 push(apps CLAUDE.md). destructive 는 사전 확인.
