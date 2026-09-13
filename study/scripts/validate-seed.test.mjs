@@ -19,6 +19,7 @@ import {
   showOfEpisode,
   quotedClipDrill,
   loadCore100Keys,
+  linkingCandidates,
 } from './validate-seed.mjs';
 
 /* 게이트 보강(2026-07-22: 첫단어 다양성·인용형 차단) 이후의 기준선 픽스처 —
@@ -1181,5 +1182,63 @@ describe('validateSeedContent — personal 트랙 (2026-09-12)', () => {
     const c = card(); c.id = 'en-core100-101-x';
     const r = validateSeedContent(payload(c, 'core100'), okOpts);
     expect(r.errors.some((e) => e.includes('chain 누락'))).toBe(true);
+  });
+});
+
+/* 단어 경계 붙여 적기 후보 (2026-09-13, gold 머리말 규약 1 → guide §7 승격). 앞 어절이 파열음·비음·s 로 끝나고
+ * 뒤 어절이 참모음으로 시작하는데 띄어 적힌 자리를 사람이 볼 목록으로 낸다 — 경고만(전역 치환 금지, gold §1.5-①).
+ * 계기: personal 파일럿 시드가 교재 표기·세 항목 요약만 보고 저작돼 `테익 여r`·`낫 온` 류가 검사 없이 통과했다. */
+describe('linkingCandidates — 단어 경계 붙여 적기 후보 (guide §7, 2026-09-13)', () => {
+  it('파열음·비음·s 끝 + 참모음 시작이 띄어 있으면 후보', () => {
+    expect(linkingCandidates('아임 낫 온 마이 웨이')).toEqual(['낫 온']);
+    expect(linkingCandidates('아임 온 마이 웨이')).toEqual(['아임 온']);
+    expect(linkingCandidates('디스 인 잉글리쉬')).toEqual(['디스 인', '인 잉글리쉬']); // in English 도 ㄴ+모음
+    expect(linkingCandidates('브렉f퍼스트 인클루우디드')).toEqual(['브렉f퍼스트 인클루우디드']);
+    expect(linkingCandidates('아이 디든 슬리입 어롤')).toEqual(['슬리입 어롤']);
+  });
+  it('합쳐 적힌 자리·제외 환경(라틴 글자 끝·ㄹ 받침·ㅇ 받침·뒤가 반자음)은 후보 아님', () => {
+    expect(linkingCandidates('아임 나론 마이 웨이 아이몬')).toEqual([]);
+    expect(linkingCandidates('아임 스틸 엇 슬리이퍼롤 온 더 플레인')).toEqual([]);
+    expect(linkingCandidates('게링 업 f리이징 아웃싸이드')).toEqual([]);
+    expect(linkingCandidates('데어r 인 노우z 아이 이z 올모우스')).toEqual([]);
+    expect(linkingCandidates('웬 여 컨 위 윌 여 왓 웬')).toEqual([]);
+    expect(linkingCandidates('')).toEqual([]);
+  });
+  it('validateSeedContent 는 phonetic_kr·drills·miniDialogue 의 후보를 경고로 내고 en 에 문장 경계가 있으면 표시한다', () => {
+    const c = {
+      id: 'en-personal-x-01', sentence: "I'm on my way.", meaning: '가는 중이야.', reading: null,
+      phonetic_kr: '아임 온 마이 웨이', order_index: 1,
+      explanation: {
+        key: "I'm on my way = 가는 중이야.", situation: '장면', grammar: [{ struct: '구조', body: '설명' }],
+        chunks: [["I'm", '아임', '나는'], ['on my way.', '온 마이 웨이', '가는 중']], phonemes: [['/w/', 'way']],
+        mistake: '함정', similar: '대체', category: 'chunk/test', frequency: 8,
+        drills: [
+          { en: "I'm not on my way yet. I'm still at home.", ko: '뜻', kr: '아임 나론 마이 웨이 옛 아임 스틸 엇 호움' },
+          { en: 'Are you on your way?', ko: '뜻', kr: '아r 여 온 여r 웨이' },
+          { en: 'We are almost there.', ko: '뜻', kr: '위 아r 올모우스 데어r' },
+          { en: 'She is on her way home.', ko: '뜻', kr: '쉬 이z 온 허r 웨이 호움' },
+          { en: 'When will you be there?', ko: '뜻', kr: '웬 윌 여 비 데어r' },
+        ],
+        miniDialogue: [
+          { speaker: 'A', en: 'Did you sleep?', ko: '뜻', kr: '디저 슬리입' },
+          { speaker: 'B', en: "I'm on my way.", ko: '뜻', kr: '아임 온 마이 웨이' },
+        ],
+      },
+    };
+    const r = validateSeedContent({ track: 'personal', lang: 'en', date: '2026-09-14', cards: [c] }, okOpts);
+    const link = r.warnings.filter((w) => w.includes('붙여 적기 후보'));
+    expect(link.some((w) => w.includes('phonetic_kr') && w.includes('"아임 온"'))).toBe(true);
+    expect(link.some((w) => w.includes('miniDialogue[1]') && w.includes('"아임 온"'))).toBe(true);
+    const yet = link.find((w) => w.includes('drills[0]'));
+    expect(yet).toContain('"옛 아임"');
+    expect(yet).toContain('문장 경계');
+    expect(link.some((w) => w.includes('drills[1]') || w.includes('drills[2]') || w.includes('drills[3]') || w.includes('drills[4]'))).toBe(false);
+    expect(r.ok).toBe(true); // 경고만, 차단 아님
+  });
+  it('파일럿 시드(seeds/en-personal-2026-09-13.json)의 후보는 문장 경계 두 곳과 한글 이름 뒤뿐', () => {
+    const seed = JSON.parse(readFileSync(join(__dir, '../seeds/en-personal-2026-09-13.json'), 'utf8'));
+    const r = validateSeedContent(seed, { ...okOpts, core100Keys: [] });
+    const cands = new Set(r.warnings.filter((w) => w.includes('붙여 적기 후보')).flatMap((w) => [...w.matchAll(/"([^"]+)"/g)].map((m) => m[1])));
+    expect([...cands].sort()).toEqual(['소연 이z', '옛 아임', '타임 잇츠']);
   });
 });

@@ -41,6 +41,33 @@ export function quotedClipDrill(baseSentence, en) {
   return parts.length >= 2 && parts.some((p) => p === base);
 }
 
+/* 단어 경계 붙여 적기 후보 (2026-09-13, gold 머리말 규약 1 → guide §7 승격). 앞 어절이 파열음·비음·s 로 끝나고
+ * 뒤 어절이 참모음으로 시작하면 합쳐 적는 규약인데, 띄어 적힌 자리를 사람이 볼 목록으로 낸다. 판정은 문장별
+ * (pause·phrase boundary·한글 고유명사면 띄운다) — 전역 치환 금지(gold §1.5-①)라 경고만 낸다.
+ * 제외: 라틴 글자(f v z r) 끝, ㄹ 받침(규약 밖), ㅇ 받침(옮길 초성이 없다), 뒤가 반자음(웬 여·컨 위·왓 웬). */
+const JONG_TABLE = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const JONG_MOVABLE = new Set(['ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ']);
+const EPENTHETIC_TAIL = new Set(['스', '쓰', '즈', '트', '츠', '드', '브', '프', '크', '그']); // 자음+ㅡ (디스·라이크·브렉f퍼스트)
+const TRUE_VOWEL = new Set([0, 1, 4, 5, 8, 13, 18, 20]); // ㅏ ㅐ ㅓ ㅔ ㅗ ㅜ ㅡ ㅣ — ㅑㅕㅛㅠㅘㅝㅟ 등 반자음 시작은 제외
+const decomposeHangul = (ch) => {
+  const o = String(ch).charCodeAt(0) - 0xac00;
+  return o < 0 || o > 11171 ? null : { cho: Math.floor(o / 588), jung: Math.floor((o % 588) / 28), jong: o % 28 };
+};
+export function linkingCandidates(kr) {
+  const t = String(kr ?? '').split(/\s+/).filter(Boolean);
+  const out = [];
+  for (let i = 0; i < t.length - 1; i++) {
+    const a = t[i]; const b = t[i + 1];
+    const head = decomposeHangul(b[0]);
+    if (!head || head.cho !== 11 || !TRUE_VOWEL.has(head.jung)) continue; // 뒤 어절이 참모음으로 시작할 때만
+    const tail = decomposeHangul(a[a.length - 1]);
+    if (!tail) continue; // 라틴 글자 끝(f v z r)은 규약상 띄운다
+    const movable = tail.jong ? JONG_MOVABLE.has(JONG_TABLE[tail.jong]) : EPENTHETIC_TAIL.has(a[a.length - 1]);
+    if (movable) out.push(`${a} ${b}`);
+  }
+  return out;
+}
+
 const isSceneCard = (c) => Array.isArray(c?.explanation?.dialogue);
 
 /** speech.js 소스에서 SPEAKER_VOICES 의 'en-US' 블록 화자 키 추출. */
@@ -244,6 +271,18 @@ export function validateSeedContent(payload, { existingSeeds = [], speakerNames 
       // 문장 모아보기 v12 (2026-09-03) — 조각 뜻 chunks[i][2] 는 선택 필드. 없으면 어순 힌트가 꺼진다 (경고만).
       const noKo = ex.chunks.filter((x) => !String(x?.[2] ?? '').trim()).length;
       if (noKo) warnings.push(`${c.id}: chunks ${noKo}개에 조각 뜻(chunks[i][2])이 없음 — 문장 모아보기 어순 힌트·조각 정렬 뜻이 생략됨`);
+    }
+    // 단어 경계 붙여 적기 후보 (guide §7 규약, 2026-09-13) — 경고만. 문장 경계·pause·한글 고유명사는 사람이 판단한다.
+    const krSites = [
+      ['phonetic_kr', c.sentence, c.phonetic_kr],
+      ...(Array.isArray(ex.drills) ? ex.drills.map((d, i) => [`drills[${i}]`, d?.en, d?.kr]) : []),
+      ...(Array.isArray(ex.miniDialogue) ? ex.miniDialogue.map((l, i) => [`miniDialogue[${i}]`, l?.en, l?.kr]) : []),
+    ];
+    for (const [where, en, kr] of krSites) {
+      const cands = linkingCandidates(kr);
+      if (!cands.length) continue;
+      const boundary = /[.!?,;:]\s+\S/.test(String(en ?? '')) ? ' (en 에 문장 경계 있음 — 그 자리면 정상)' : '';
+      warnings.push(`${c.id}: ${where} 붙여 적기 후보 ${cands.map((x) => `"${x}"`).join(' ')} — 파열음·비음·s 뒤 모음은 합쳐 적는다(guide §7). pause·한글 이름이면 그대로${boundary}`);
     }
     // 문장 모아보기 v12 — anchor(meaning 안의 핵심 표현 부분 문자열, 프롬프트 밑줄). 선택 필드, 경고만.
     if (ex.anchor != null && !String(c.meaning ?? '').includes(String(ex.anchor))) {
