@@ -340,3 +340,23 @@ describe('restoreFromSnapshot — 내용 필드는 현재 카드로 갱신', () 
     expect(snapCards[0].explanation.miniDialogue).toBeUndefined();
   });
 });
+
+/* mainRecLog — 따라 말하기 필 라벨 전용(본 녹음만) 카운터. 저장만 하고 복원을 빠뜨리면
+ * 새로고침 때 라벨이 '따라 말하기' 로 되돌아간다 (2026-09-14). */
+describe('restoreFromSnapshot — mainRecLog 복원', () => {
+  const base = {
+    mode: 'new', lang: 'en', cardIds: ['a'], step: 1,
+    cards: [{ id: 'a', sentence: 'A.', explanation: {} }],
+  };
+  const cards = [{ id: 'a', sentence: 'A.', explanation: {} }];
+
+  it('스냅샷의 mainRecLog 를 그대로 되돌린다', () => {
+    const r = restoreFromSnapshot({ ...base, mainRecLog: { a: 3 } }, cards, 'new', 'en');
+    expect(r.mainRecLog).toEqual({ a: 3 });
+  });
+
+  it('없거나 형식이 다르면 빈 객체 (구 스냅샷 호환)', () => {
+    expect(restoreFromSnapshot({ ...base }, cards, 'new', 'en').mainRecLog).toEqual({});
+    expect(restoreFromSnapshot({ ...base, mainRecLog: 7 }, cards, 'new', 'en').mainRecLog).toEqual({});
+  });
+});

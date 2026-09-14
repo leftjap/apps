@@ -3,7 +3,7 @@
  *
  * Dexie meta key: 'activeSession'
  * value 구조: { mode, lang, todayISO, startTime, step, tried, passed, lastScore,
- *              pronScores, weakInSession, recLog, exLog, judged, cardIds, savedAt }
+ *              pronScores, weakInSession, recLog, mainRecLog, exLog, judged, cardIds, savedAt }
  *
  * 만료 1시간 초과 시 자동 finalize (= finishSession 호출) 후 clear.
  * 종료 버튼 미누름 + 1시간 이탈 시에도 학습 기록 (sessionLog + reviewQueue) 보존.
@@ -189,8 +189,10 @@ export function restoreFromSnapshot(snapshot, cards, mode, lang) {
     lastScore: snapshot.lastScore ?? null,
     pronScores: Array.isArray(snapshot.pronScores) ? [...snapshot.pronScores] : [],
     weakInSession: (snapshot.weakInSession && typeof snapshot.weakInSession === 'object') ? { ...snapshot.weakInSession } : {},
-    // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착 복원 (2026-06-10)
+    // 카드별 녹음 진행 (count/best) — 세션 발화 집계 복원 (2026-06-10)
     recLog: (snapshot.recLog && typeof snapshot.recLog === 'object') ? { ...snapshot.recLog } : {},
+    // 카드별 **본 녹음** 횟수 — 따라 말하기 필 라벨 전용 (2026-09-14). recLog 에는 응용·상대 줄이 섞여 있다.
+    mainRecLog: (snapshot.mainRecLog && typeof snapshot.mainRecLog === 'object') ? { ...snapshot.mainRecLog } : {},
     // 카드별 연습 진행 (응용 행 점수 / 생산 연습 출제·통과 / 체이닝 단계) — 종전엔 DOM 로컬이라
     // 재마운트·새로고침이면 통째로 소실됐다 (2026-08-21)
     exLog: (snapshot.exLog && typeof snapshot.exLog === 'object') ? { ...snapshot.exLog } : {},
