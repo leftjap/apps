@@ -131,10 +131,14 @@ export async function loadScoreHistoryState(db, cards, lang, filterDrills) {
         const ps = rows.filter((r) => r.sentenceId === prodLogId(c.id, t)).map((r) => Math.round(Number(r.overallScore) || 0));
         if (ps.length) prodScores[t] = ps;
       });
-      // 미니대화 줄 이력 (2026-09-12 복원) — 줄 순서(index)로 담는다. 렌더(miniDialogueEl)와 같은 필터(miniLinesOf).
+      /* 미니대화 줄 이력 (2026-09-12 복원) — 줄 순서(index)로 담는다. 렌더와 같은 필터(miniLinesOf).
+       * 카드 id 는 보지 않고 **줄 텍스트**로 모은다 (2026-09-14): 대화 줄은 카드가 아니라 대화에 속하고,
+       * 신규 세션은 묶음 대표 카드 하나로 저장한다. 카드 id 로만 찾으면 복습에서 다른 카드를 볼 때
+       * 그 줄 점수가 사라지고, 2026-09-14 이전에 카드별로 흩어져 저장된 기록도 갈린 채로 남는다. */
       const mini = {};
       miniLinesOf(c.explanation?.miniDialogue).forEach((l, i) => {
-        const ms = rows.filter((r) => r.sentenceId === miniLogId(c.id, l.en)).map((r) => Math.round(Number(r.overallScore) || 0));
+        const suffix = `#mini#${String(l.en ?? '').trim()}`;
+        const ms = rows.filter((r) => String(r.sentenceId ?? '').endsWith(suffix)).map((r) => Math.round(Number(r.overallScore) || 0));
         if (ms.length) mini[i] = ms;
       });
       const all = [...main, ...Object.values(dScores).flat(), ...Object.values(chainScores).flat(), ...Object.values(prodScores).flat(), ...Object.values(mini).flat()];

@@ -260,3 +260,45 @@ describe('miniLogId + loadScoreHistoryState — 미니대화 줄 이력', () => 
     expect(out.recLog.c1).toEqual({ count: 2, best: 90 });
   });
 });
+
+/* 대화 줄(#mini#) 이력은 카드가 아니라 '줄' 에 속한다 (2026-09-14).
+ * 신규 세션이 묶음 대표 카드 하나로 저장하도록 바뀌면서, 카드 id 로만 찾으면 복습에서 다른 카드를
+ * 볼 때 그 줄 점수가 사라진다. 옛 데이터도 카드별로 흩어져 있다. 줄 텍스트로 모은다. */
+describe('loadScoreHistoryState — #mini# 는 줄 텍스트로 모은다', () => {
+  const MD = [
+    { speaker: 'A', en: 'We landed early.', ko: '일찍 내렸어.' },
+    { speaker: 'B', en: "I'm on my way.", ko: '가는 중이야.' },
+  ];
+  const cards = [
+    { id: 'c1', sentence: "I'm on my way.", explanation: { miniDialogue: MD, drills: [] } },
+    { id: 'c2', sentence: "I'm almost there.", explanation: { miniDialogue: MD, drills: [] } },
+  ];
+  const db = (rows) => ({ pronunciationLog: { where: () => ({ equals: () => ({ toArray: async () => rows }) }) } });
+
+  it('다른 카드 id 로 저장된 줄 점수도 같은 줄에 모인다', async () => {
+    const r = await loadScoreHistoryState(db([
+      { sentenceId: 'c1#mini#We landed early.', lang: 'en', overallScore: 70, createdAt: '2026-09-14T01:00:00Z' },
+      { sentenceId: 'c2#mini#We landed early.', lang: 'en', overallScore: 73, createdAt: '2026-09-14T01:01:00Z' },
+    ]), cards, 'en', () => []);
+    expect(r.exLog.c1.mini[0]).toEqual([70, 73]);
+    expect(r.exLog.c2.mini[0]).toEqual([70, 73]); // 복습에서 어느 카드를 봐도 같은 줄 기록
+  });
+
+  it('줄이 다르면 섞이지 않는다', async () => {
+    const r = await loadScoreHistoryState(db([
+      { sentenceId: 'c1#mini#We landed early.', lang: 'en', overallScore: 70, createdAt: '2026-09-14T01:00:00Z' },
+      { sentenceId: 'c1#mini#I\'m on my way.', lang: 'en', overallScore: 88, createdAt: '2026-09-14T01:01:00Z' },
+    ]), cards, 'en', () => []);
+    expect(r.exLog.c1.mini[0]).toEqual([70]);
+    expect(r.exLog.c1.mini[1]).toEqual([88]);
+  });
+
+  it('본 점수(카드 id 정확 일치)와 드릴(#drill#)은 종전대로 카드별이다', async () => {
+    const r = await loadScoreHistoryState(db([
+      { sentenceId: 'c1', lang: 'en', overallScore: 91, createdAt: '2026-09-14T01:00:00Z' },
+      { sentenceId: 'c2', lang: 'en', overallScore: 95, createdAt: '2026-09-14T01:01:00Z' },
+    ]), cards, 'en', () => []);
+    expect(r.exLog.c1.utter).toEqual([91]);
+    expect(r.exLog.c2.utter).toEqual([95]);
+  });
+});
