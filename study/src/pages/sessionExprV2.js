@@ -52,11 +52,13 @@ function popScore(el) {
 function getTodayISO() { return window.studyDay?.TODAY_ISO || localISODate(); }
 
 export const VS_CSS = `
-.vs{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;word-break:keep-all;${V_VARS}}
+.vs{width:100%;min-height:100vh;min-height:100dvh;background:var(--bg);color:var(--ink);font-family:Pretendard,sans-serif;display:flex;justify-content:center;word-break:keep-all;${V_VARS}}
 .vs *{box-sizing:border-box;margin:0}
-/* 시안 12a 1280 실측 — 대화 548 · 우측 400 · padding 28 28 32 · gap 24. 넓은 화면에서는 가운데 정렬로
-   시안 비율을 지킨다(대화 폭이 화면만큼 늘어나면 줄과 버튼이 멀어져 비율이 무너진다). */
-.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:24px;padding:28px 28px 32px}
+/* 시안 12a 는 1280 컨테이너 하나가 화면이다 — 사이드바 250 + 본문 1028(대화 548 · 우측 400 · padding 28 28 32 · gap 24).
+   넓은 화면에서는 사이드바까지 한 프레임으로 묶어 가운데 둔다. 사이드바만 화면 끝에 남기면 대화와 300px 넘게
+   벌어지고, 프레임 없이 대화만 늘리면 1280 기준 비율이 깨진다. 프레임 안에서는 시안 그대로 대화가 남는 폭을 먹는다. */
+.vs-frame{display:flex;flex:1 1 auto;max-width:1278px;min-width:0}
+.vs-mainwrap{flex:1 1 0%;display:flex;gap:24px;padding:28px 28px 32px;min-width:0}
 .vs-ctrl{display:flex;align-items:center;gap:12px;margin-top:24px;min-height:56px;flex-wrap:wrap}
 .vs-pill{position:relative;display:inline-flex;align-items:center;gap:9px;border-radius:999px;padding:13px 23px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;border:1.5px solid var(--line);background:#fff;color:var(--ink);white-space:nowrap}
 .vs-pill.playing{border-color:var(--blue-line);color:var(--blue-deep);background:var(--blue-soft)}
@@ -135,7 +137,7 @@ export const VS_CSS = `
 .vs-next{width:100%;margin-top:13px;font:inherit;font-size:14.5px;font-weight:700;border-radius:13px;padding:15px 0;cursor:pointer;border:1.5px solid var(--teal);background:var(--teal);color:#fff;box-shadow:0 8px 16px -11px oklch(44% .062 192/.7)}
 .vs-gate{font-size:11.5px;color:var(--faint);text-align:center;margin-top:9px;white-space:nowrap}
 /* ── 대화 스테이지 (2026-09-14 시안 12a) — 대화가 곧 연습 화면. 줄 하나가 열려 문장 카드를 대신한다. ── */
-.vs-stagewrap{flex:0 1 548px;min-width:0}
+.vs-stagewrap{flex:1 1 auto;min-width:0}
 .vs-stage + .vs-stage{margin-top:26px}
 .vs-stage.solo + .vs-stage.solo{margin-top:0}
 .vs-stage-hd{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
@@ -216,7 +218,9 @@ export const VS_CSS = `
 .vs-drow3 .en{font-size:14px}
 .vs-drow3 .vs-ln-kr{font-size:11px}
 .vs-drow3 .vs-ln-ko{font-size:12.5px}
-@media (max-width:1100px){.vs-mainwrap{flex-direction:column;align-items:center}.vs-stagewrap{flex:0 1 auto;width:100%;max-width:548px}.vs-side{width:100%;max-width:548px}}
+/* 좁은 데스크톱(1024~1100) — 대화 옆에 400 패널이 같이 서면 대화가 355 까지 눌린다. 세로로 쌓되
+   본문이 사이드바 옆 남는 폭을 그대로 채운다(가운데로 모으면 사이드바 옆이 100px 넘게 빈다). */
+@media (max-width:1100px){.vs-mainwrap{flex-direction:column}.vs-stagewrap{flex:0 1 auto;width:100%;max-width:none}.vs-side{width:100%;max-width:none}}
 ${V_DOT_CSS}${V_MINICAL_CSS}
 `;
 
@@ -1041,6 +1045,8 @@ export const VSM_CSS = `
 .m-topb-time{font-family:Outfit,sans-serif;font-size:12px;font-weight:600;color:var(--faint)}
 .m-pad{padding:0 20px 24px;max-width:560px;margin:0 auto;width:100%}
 .m-cta{flex:0 0 auto;background:oklch(97.5% .009 95/.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom))}
+/* 신규 세션 전용 — 하단 CTA 를 화면에 고정(작업지시서 §2-3). 복습·수학·요약이 쓰는 기본 .m-cta 는 그대로 둔다. */
+.m-cta-fixed{position:sticky;bottom:0;z-index:6}
 .m-cta .vs-next{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-size:15px;font-weight:700;white-space:nowrap;background:var(--teal);border:1.5px solid var(--teal);color:#fff}
 .vs-ctrl{display:flex;align-items:center;gap:10px;margin-top:20px;min-height:54px;flex-wrap:wrap}
 /* 셀렉터에 button 을 붙여 명시도(0,0,1,1)를 위 '.vs button' 리셋과 동률로 올린다 — 안 그러면
@@ -1583,7 +1589,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     root = h('div', { class: 'vs' }, v2Style(VSM_CSS),
       mTopb,
       h('div', { class: 'm-pad' }, stageWrap, drillsBlock, chainBlock, prodBlock, fold, recWidget, histCard.el),
-      h('div', { class: 'm-cta' }, nextBtn));
+      h('div', { class: 'm-cta m-cta-fixed' }, nextBtn));
     timeUpdate = (t) => { mTime.textContent = t; };
   } else {
     // ── 데스크톱 3칼럼 ──
@@ -1613,7 +1619,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       recWidget, histCard.el,
       handlers.onEnd ? h('button', { class: 'endbtn', type: 'button', onClick: handlers.onEnd }, '세션 종료') : null);
     const side = h('aside', { class: 'vs-side' }, drillsBlock, chainBlock, prodBlock, foldPanel, nextBtn);
-    root = h('div', { class: 'vs' }, v2Style(VS_CSS), lside, h('div', { class: 'vs-mainwrap' }, stageWrap, side));
+    root = h('div', { class: 'vs' }, v2Style(VS_CSS),
+      h('div', { class: 'vs-frame' }, lside, h('div', { class: 'vs-mainwrap' }, stageWrap, side)));
     timeUpdate = (t) => { const el = lside.querySelector('.tm'); if (el) el.textContent = t; };
   }
   host.appendChild(root);

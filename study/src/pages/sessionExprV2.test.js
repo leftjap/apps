@@ -990,7 +990,7 @@ describe('sessionExprV2 — 시안 프레임 수치', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, makeState(), {});
     const css = host.querySelector('style').textContent;
-    expect(css).toContain('.vs-mainwrap{flex:1;display:flex;justify-content:center;gap:24px;padding:28px 28px 32px}');
+    expect(css).toContain('.vs-mainwrap{flex:1 1 0%;display:flex;gap:24px;padding:28px 28px 32px;min-width:0}');
   });
 
   it('표현 해설 카드 실효 패딩이 좌우 20px 다 (§6.6③)', () => {
@@ -2207,6 +2207,18 @@ describe('sessionExprV2 — 폰 단일 칼럼 (2026-09-14 시안 12a 폰 390)', 
     expect(kids[1]).toBe('vs-ln-en');
   });
 
+  it('하단 CTA 가 화면에 고정된다 (작업지시서 §2-3 "sticky" · 시안 설명 "실제 앱에서 화면에 고정")', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const st = makeState(); st.size = 'phone';
+    renderSessionExprV2(host, st, {});
+    expect(host.querySelector('.m-cta').className).toContain('m-cta-fixed');
+    const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+    expect(css).toContain('.m-cta-fixed{position:sticky;bottom:0;z-index:6}');
+    // 복습·수학·요약이 쓰는 기본 .m-cta 는 건드리지 않는다
+    expect(css).toMatch(/\.m-cta\{flex:0 0 auto;background:/);
+    expect(css).not.toMatch(/\.m-cta\{[^}]*position:sticky/);
+  });
+
   it('하단 CTA 는 마지막 카드에서 학습 완료가 된다', () => {
     const s = st();
     s.step = 2; s.sentence = s.cards[1];
@@ -2323,10 +2335,44 @@ describe('sessionExprV2 — 시안 12a 프레임 실측', () => {
     const css = cssOf('desktop');
     expect(css).toContain('.vs-lside{width:250px');
     expect(css).toContain('.vs-side{width:400px');
-    expect(css).toContain('.vs-stagewrap{flex:0 1 548px');
+    expect(css).toContain('.vs-frame{display:flex;flex:1 1 auto;max-width:1278px');
     expect(css).toMatch(/\.vs-mainwrap\{[^}]*padding:28px 28px 32px/);
     expect(css).toMatch(/\.vs-mainwrap\{[^}]*gap:24px/);
-    expect(css).toMatch(/\.vs-mainwrap\{[^}]*justify-content:center/); // 넓은 화면에서 가운데
+    expect(css).toMatch(/\.vs\{[^}]*justify-content:center/); // 넓은 화면에서 프레임째 가운데
+  });
+
+  it('데스크톱은 사이드바까지 한 프레임(1278 = 250 + 1028)으로 묶여 가운데 정렬된다', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    const vs = host.querySelector('.vs');
+    // 시안 12a 는 1280 컨테이너 하나가 화면이다 — 사이드바만 화면 끝에 남으면 대화와 341px 벌어진다.
+    expect([...vs.children].map((n) => n.className || n.tagName))
+      .toEqual(['STYLE', 'vs-frame']);
+    const frame = vs.querySelector('.vs-frame');
+    expect([...frame.children].map((n) => n.className.split(' ')[0]))
+      .toEqual(['vs-lside', 'vs-mainwrap']);
+    const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+    expect(css).toContain('.vs-frame{display:flex;flex:1 1 auto;max-width:1278px;min-width:0}');
+    expect(css).toMatch(/\.vs\{[^}]*justify-content:center/);
+  });
+
+  it('대화는 프레임 안에서 남는 폭을 먹는다 (시안 stage flex:1 1 auto)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+    expect(css).toContain('.vs-stagewrap{flex:1 1 auto;min-width:0}');
+    expect(css).not.toMatch(/\.vs-mainwrap\{[^}]*justify-content:center/); // 프레임이 가운데를 맡는다
+  });
+
+  it('1100 이하 세로 적층에서는 본문이 남는 폭을 채운다 (사이드바 옆이 비지 않게)', () => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, makeState(), {});
+    const css = [...host.querySelectorAll('style')].map((n) => n.textContent).join('');
+    const mq = css.match(/@media \(max-width:1100px\)\{[^@]*?\}\}/)[0];
+    expect(mq).toContain('flex-direction:column');
+    expect(mq).toContain('.vs-stagewrap{flex:0 1 auto;width:100%;max-width:none}');
+    expect(mq).toContain('.vs-side{width:100%;max-width:none}');
+    expect(mq).not.toContain('align-items:center'); // 가운데로 모으면 사이드바 옆이 빈다
   });
 
   it('응용 행(세 줄) — padding 10px 2px · gap 11px · 번호 칸 12px', () => {
