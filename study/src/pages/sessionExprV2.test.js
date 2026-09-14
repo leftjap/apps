@@ -2576,6 +2576,18 @@ describe('sessionExprV2 — 따라 말하기 라벨은 본 녹음 이력만 본�
     expect(document.querySelector('.vs-cap').textContent).toBe('지난 점수');
   });
 
+  it('응용을 녹음하면 링 캡션도 화면에서 바로 "지난 점수" 가 된다', async () => {
+    const state = st();
+    const host = mount(state);
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    expect(host.querySelector('.vs-cap').textContent).toBe('방금 점수');
+    const d = host.querySelector('.vs-drills-list button[aria-label="녹음"]');
+    d.click(); await tick();
+    d.click(); await tick(); await tick();
+    expect(host.querySelector('.vs-cap').textContent).toBe('지난 점수');
+  });
+
   it('응용만 녹음해도 라벨은 그대로다', async () => {
     const state = st();
     const host = mount(state);

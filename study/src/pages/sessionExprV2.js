@@ -1301,6 +1301,9 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
     totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 버튼 라벨용 recCount 와 별개
     meta.style.display = all.length ? '' : 'none'; // 결과가 없으면 결과 자리도 없다 (시안 12a §2-2)
+    // 캡션은 링을 다시 그리지 않고 글자만 맞춘다 — 응용·상대 줄 채점이 끼어들면 '지난 점수' 로 내려간다.
+    const cap = ringHost.querySelector('.vs-cap');
+    if (cap) cap.textContent = state.lastScoreLive ? '방금 점수' : '지난 점수';
     refreshNav();
   };
   const refreshRecWidget = () => {
