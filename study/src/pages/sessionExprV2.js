@@ -187,6 +187,7 @@ export const VS_CSS = `
 .vs-seg > span{flex:1;display:flex;align-items:center;padding:6px 0;margin:-6px 0;cursor:pointer}
 .vs-seg i{width:100%;height:4px;border-radius:2px;background:#e7e3d4;transition:background .2s}
 .vs-seg i.f{background:var(--teal)}
+.vs-navhost{display:contents}
 .vs-nav{display:flex;flex-direction:column;gap:2px;margin:0 -8px}
 .vs-nav-it{display:flex;gap:10px;align-items:flex-start;text-align:left;padding:10px;border-radius:12px;background:transparent;border:0;width:100%;cursor:pointer;color:inherit;font:inherit}
 .vs-nav-it.on{background:var(--teal-soft)}
@@ -862,7 +863,8 @@ export function sentenceNavEl(cards, { selCardId, utterOf, drillProgOf, onSelect
     const utter = normScores(utterOf?.(c.id));
     const cur = c.id === selCardId;
     const done = !cur && utter.length > 0;
-    const prog = cur ? '' : [utter.length ? `말하기 ${utter.length}회` : '', String(drillProgOf?.(c.id) || '')]
+    // 현재 선택된 카드도 진행을 보여준다 — 시안 12a 의 sel 항목에 '말하기 2회' 가 있다(실측 2026-09-14).
+    const prog = [utter.length ? `말하기 ${utter.length}회` : '', String(drillProgOf?.(c.id) || '')]
       .filter(Boolean).join(' · ');
     const last = utter.length ? utter[utter.length - 1] : null;
     return h('button', {
@@ -1285,12 +1287,21 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const todayUtter = () => (Number(state.todayUtterBase) || 0) + (Number(state.tried) || 0);
   const histCard = historyCalCard(todayISO, state.dayMap, todayUtter, state.prDays);
 
+  /* 좌측 문장 목록 — 녹음할 때마다 다시 그린다. 진행('말하기 N회 · 응용 d/총')과 마지막 점수 원이
+   * 카드를 옮겨야 반영되던 문제(2026-09-14). 목록은 작고 상태를 갖지 않아 통째 교체가 안전하다. */
+  const navHost = h('div', { class: 'vs-navhost' });
+  const refreshNav = () => {
+    if (state.size !== 'desktop') return;
+    navHost.replaceChildren(sentenceNavEl(exprCards, { selCardId: s?.id, utterOf, drillProgOf, onSelect: jumpToCard }));
+  };
+
   const refreshDots = () => {
     const all = utterScores();
     const shown = all.slice(-MAIN_DOTS_MAX);
     dotsEl.replaceChildren(...shown.map((v, i) => scoreDot(v, { size: 30, fresh: i === shown.length - 1 && all.length > 0 })));
     totEl.querySelector('b').textContent = String(all.length); // 점수 원과 같은 계열 — 버튼 라벨용 recCount 와 별개
     meta.style.display = all.length ? '' : 'none'; // 결과가 없으면 결과 자리도 없다 (시안 12a §2-2)
+    refreshNav();
   };
   const refreshRecWidget = () => {
     ringCard.update(todayUtter(), prevDay);
@@ -1392,7 +1403,8 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     if (!recordedDrills.has(i)) { recordedDrills.add(i); drillCountEl.textContent = String(Math.min(recordedDrills.size, drills.length)); }
-    bumpRecLog(state, s?.id, score);  // 응용 발화도 '다음 표현' 3회 게이트에 카운트
+    bumpRecLog(state, s?.id, score);  // 응용 발화도 세션 집계에 카운트
+    state.lastScoreLive = false; // 방금 한 건 이 응용 행이다 (링 캡션 계약)
     // 행 점수 영속화 (재렌더 복원) — 시도마다 누적해 점수 원이 늘어난다.
     const rows = ((cardEx.drills ??= {}));
     rows[i] = [...normScores(rows[i]), score];
@@ -1510,6 +1522,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
+    state.lastScoreLive = false; // 방금 한 건 이 줄이다 — 링의 본 점수는 '지난 점수' 로 내려간다
     // 대화 줄 점수의 소유자는 묶음 대표 카드 — 선택 카드가 바뀌어도 같은 줄이면 같은 기록.
     const rows = ((dlgEx.mini ??= {}));
     rows[i] = [...normScores(rows[i]), score];
@@ -1633,7 +1646,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
         h('span', { class: 'vs-lab' }, `신규 학습 · ${subjLabel}`),
         h('div', { class: 'cnt' }, String(idx), h('em', {}, '/' + total)),
         progressSegEl(total, idx, (n) => handlers.onJump?.(n + offset))),
-      sentenceNavEl(exprCards, { selCardId: s?.id, utterOf, drillProgOf, onSelect: jumpToCard }),
+      navHost,
       h('span', { class: 'sp' }),
       recWidget, histCard.el,
       handlers.onEnd ? h('button', { class: 'endbtn', type: 'button', onClick: handlers.onEnd }, '세션 종료') : null);

@@ -826,7 +826,8 @@ describe('sessionExprV2 — 사이드바 4단 · 점수 원 · 라벨 축약', (
     const host = document.createElement('div'); document.body.appendChild(host);
     renderSessionExprV2(host, withEx(), {});
     expect([...host.querySelector('.vs-lside').children].map((n) => n.className.split(' ')[0]))
-      .toEqual(['hmrow', '', 'vs-nav', 'sp', 'vs-rec', 'vs-hist']);
+      .toEqual(['hmrow', '', 'vs-navhost', 'sp', 'vs-rec', 'vs-hist']); // 목록은 갱신용 호스트 안에 산다
+    expect(host.querySelector('.vs-navhost .vs-nav')).not.toBeNull();
     expect([...host.querySelector('.vs-side').children].map((n) => n.className.split(' ')[0]))
       .toEqual(['vs-panel', 'vs-next']);
   });
@@ -2591,5 +2592,53 @@ describe('sessionExprV2 — 따라 말하기 라벨은 본 녹음 이력만 본�
     expect(host.querySelector('.vs-pill.pri').textContent).toBe('다시 말하기');
     const host2 = mount(state); // 재렌더 — exLog.utter 로 복원
     expect(host2.querySelector('.vs-pill.pri').textContent).toBe('다시 말하기');
+  });
+});
+
+/* 좌측 문장 목록은 녹음 즉시 갱신돼야 한다 (2026-09-14) — 종전엔 카드를 옮겨야 반영됐다.
+ * 본 녹음·응용·상대 줄 모두 refreshDots 를 거치므로 거기서 목록을 다시 그린다. */
+describe('sessionExprV2 — 좌측 목록 즉시 갱신', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  function st() {
+    const s = makeState();
+    s.cards = [{ id: 'c1', lang: 'en', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '아이몬 마이 웨이',
+      explanation: { key: "I'm on my way = 가는 중이야.",
+        drills: [{ en: 'Are you on your way?', ko: '오는 중이야?', kr: '아r 여 온 여r 웨이' }] } }];
+    s.step = 1; s.sentence = s.cards[0];
+    return s;
+  }
+  const mount = (state) => {
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, {});
+    return host;
+  };
+
+  it('본 녹음 직후 목록에 "말하기 1회" 가 뜬다', async () => {
+    const host = mount(st());
+    expect(host.querySelector('.vs-nav-prog')).toBeNull();
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    expect(host.querySelector('.vs-nav-prog').textContent).toBe('말하기 1회');
+  });
+
+  it('응용 녹음 직후 목록에 "응용 1/1" 이 뜬다', async () => {
+    const host = mount(st());
+    const btn = host.querySelector('.vs-drills-list button[aria-label="녹음"]');
+    btn.click(); await tick();          // 시작
+    btn.click(); await tick(); await tick(); // 멈춤 + 채점
+    expect(host.querySelector('.vs-nav-prog').textContent).toBe('응용 1/1');
+  });
+
+  it('목록을 다시 그려도 클릭이 살아 있다', async () => {
+    const state = st();
+    state.cards.push({ id: 'c2', lang: 'en', sentence: "I'm almost there.", ko: '거의 다 왔어.', pron: '발음',
+      explanation: { key: "I'm almost there = 거의 다 왔어.", drills: [] } });
+    const onJump = vi.fn();
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, { onJump });
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    [...host.querySelectorAll('.vs-nav-it')][1].click();
+    expect(onJump).toHaveBeenCalledWith(2);
   });
 });
