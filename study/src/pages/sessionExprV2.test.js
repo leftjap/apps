@@ -1954,9 +1954,22 @@ describe('sessionExprV2 — 좌측 문장 목록 · 클릭 세그먼트 (2026-09
     expect(items[0].querySelector('.v-dot').textContent).toBe('92');
     expect(items[1].classList.contains('on')).toBe(true);
     expect(items[1].querySelector('.vs-nav-num').textContent).toBe('2');
-    expect(items[1].querySelector('.vs-nav-prog')).toBeNull();
     items[0].click();
     expect(onSelect).toHaveBeenCalledWith('c1');
+  });
+
+  it('현재 선택된 카드도 진행을 보여준다 (시안 12a 실측: sel 항목에 "말하기 2회")', () => {
+    const el = sentenceNavEl([{ id: 'c1', sentence: "I'm on my way.", ko: '가는 중이야.' }], {
+      selCardId: 'c1', utterOf: () => [88, 92], drillProgOf: () => '응용 2/6', onSelect: () => {},
+    });
+    expect(el.querySelector('.vs-nav-prog').textContent).toBe('말하기 2회 · 응용 2/6');
+  });
+
+  it('응용만 녹음해도 목록에 응용 진행이 뜬다', () => {
+    const el = sentenceNavEl([{ id: 'c1', sentence: 'x', ko: '뜻' }], {
+      selCardId: 'c1', utterOf: () => [], drillProgOf: () => '응용 1/6', onSelect: () => {},
+    });
+    expect(el.querySelector('.vs-nav-prog').textContent).toBe('응용 1/6');
   });
 
   it('목록 배지에는 헤일로 애니를 붙이지 않는다 (움직이는 표식은 대화 줄 배지 하나)', () => {
@@ -2548,6 +2561,18 @@ describe('sessionExprV2 — 따라 말하기 라벨은 본 녹음 이력만 본�
     expect(document.querySelector('.vs-meta').style.display).toBe('none');
     expect(document.querySelector('.vs-ring')).toBeNull();
     expect(state.recLog.c1.count).toBe(1); // 세션 집계는 종전대로 오른다
+  });
+
+  it('상대 줄·응용을 녹음하면 링 캡션이 "지난 점수" 로 내려간다 (방금 한 건 그 줄이다)', async () => {
+    const state = st();
+    const host = mount(state);
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    expect(document.querySelector('.vs-cap').textContent).toBe('방금 점수');
+    const btn = [...document.querySelectorAll('.vs-ln')][0].querySelector('button[aria-label="녹음"]');
+    btn.click(); await tick();
+    btn.click(); await tick(); await tick();
+    expect(document.querySelector('.vs-cap').textContent).toBe('지난 점수');
   });
 
   it('응용만 녹음해도 라벨은 그대로다', async () => {
