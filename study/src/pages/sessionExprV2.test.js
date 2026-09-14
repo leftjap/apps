@@ -1009,7 +1009,8 @@ describe('sessionExprV2 — 시안 줄 대조 누락분', () => {
   it('녹음 알약 초기 라벨이 이력을 반영한다 (재렌더·복원 시 "다시 말하기")', () => {
     const host = document.createElement('div'); document.body.appendChild(host);
     const st = makeState();
-    st.recLog = { e1: { count: 7, best: 90 } };
+    // 2026-09-14 — 라벨 출처가 recLog(응용·상대 줄 섞임)에서 본 녹음 전용 카운터로 바뀌었다.
+    st.mainRecLog = { e1: 7 };
     renderSessionExprV2(host, st, {});
     expect(host.querySelector('.vs-pill.pri').textContent).toContain('다시 말하기');
   });
@@ -2509,5 +2510,61 @@ describe('sessionExprV2 — 상대 줄 점수는 선택 카드를 따라가지 �
     host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
     expect(state.exLog.c1.utter).toEqual([100]);
     expect(state.exLog.c2?.utter).toBeUndefined();
+  });
+});
+
+/* 따라 말하기 필의 3상태는 '이 문장을 말한 이력'을 따라야 한다 (2026-09-14).
+ * recLog 는 본 녹음·응용·상대 줄·체이닝이 섞인 세션 집계라, 상대 줄만 녹음해도 라벨이 '다시 말하기' 로
+ * 바뀌어 링·점수 열(둘 다 cardEx.utter 출처)과 어긋났다. 대화 화면은 상대 줄이 늘 보여 더 자주 드러난다. */
+describe('sessionExprV2 — 따라 말하기 라벨은 본 녹음 이력만 본다', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+  ];
+  function st() {
+    const s = makeState();
+    s.cards = [{ id: 'c1', lang: 'en', sentence: "I'm on my way.", ko: '가는 중이야.', pron: '아이몬 마이 웨이',
+      explanation: { key: "I'm on my way = 가는 중이야.", miniDialogue: MD,
+        drills: [{ en: 'Are you on your way?', ko: '오는 중이야?', kr: '아r 여 온 여r 웨이' }] } }];
+    s.step = 1; s.sentence = s.cards[0];
+    return s;
+  }
+  const mount = (state) => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, { rerender: () => mount(state) });
+    return host;
+  };
+
+  it('상대 줄만 녹음하면 라벨이 "따라 말하기" 그대로다 (링·점수 열과 같은 출처)', async () => {
+    const state = st();
+    const host = mount(state);
+    expect(host.querySelector('.vs-pill.pri').textContent).toBe('따라 말하기');
+    const btn = [...document.querySelectorAll('.vs-ln')][0].querySelector('button[aria-label="녹음"]');
+    btn.click(); await tick();
+    btn.click(); await tick(); await tick();
+    expect(document.querySelector('.vs-pill.pri').textContent).toBe('따라 말하기');
+    expect(document.querySelector('.vs-meta').style.display).toBe('none');
+    expect(document.querySelector('.vs-ring')).toBeNull();
+    expect(state.recLog.c1.count).toBe(1); // 세션 집계는 종전대로 오른다
+  });
+
+  it('응용만 녹음해도 라벨은 그대로다', async () => {
+    const state = st();
+    const host = mount(state);
+    host.querySelector('.vs-drills-list button[aria-label="녹음"]').click();
+    await tick(); await tick(); await tick();
+    expect(host.querySelector('.vs-pill.pri').textContent).toBe('따라 말하기');
+  });
+
+  it('본 녹음을 하면 "다시 말하기" 가 되고, 재렌더·복원에도 유지된다', async () => {
+    const state = st();
+    const host = mount(state);
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    expect(host.querySelector('.vs-pill.pri').textContent).toBe('다시 말하기');
+    const host2 = mount(state); // 재렌더 — exLog.utter 로 복원
+    expect(host2.querySelector('.vs-pill.pri').textContent).toBe('다시 말하기');
   });
 });

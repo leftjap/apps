@@ -1211,7 +1211,13 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   let playing = false, recCtrl = null;
   const listenPill = h('button', { class: 'vs-pill', type: 'button' }, vIcon(VI.PLAY, { size: 12, fill: true }), '듣기');
   const recPill = h('button', { class: 'vs-pill pri', type: 'button' }, vIcon(VI.MIC, { size: 14, sw: 2 }), '따라 말하기');
-  const recCount = () => state.recLog?.[s?.id]?.count ?? 0;
+  /* 필 3상태 = '오늘 이 문장을 **본 녹음**한 횟수' (2026-09-14).
+   * 종전엔 recLog[id].count 를 봤는데 그 값에는 응용·상대 줄·체이닝 발화가 함께 들어간다. 대화 화면은
+   * 상대 줄이 늘 보여서, 상대 줄만 녹음해도 라벨이 '다시 말하기' 로 바뀌어 비어 있는 링·점수 열과 어긋났다.
+   * exLog.utter 는 수화로 어제 점수까지 담기므로 쓸 수 없다 — 라벨은 오늘 행동만 본다
+   * (session-new '스냅샷 없이 진입해도 …' 테스트가 못박은 계약). 그래서 본 녹음 전용 카운터를 따로 센다. */
+  if (!state.mainRecLog || typeof state.mainRecLog !== 'object') state.mainRecLog = {};
+  const recCount = () => Number(state.mainRecLog[s?.id]) || 0;
   // 재렌더·복원 시에도 3상태가 맞도록 초기 라벨을 이력에서 정한다 (종전엔 '따라 말하기' 로 굳었다).
   if (recCount() > 0) recPill.lastChild.textContent = '다시 말하기';
   /* 링은 '방금 받은 점수' 하나를 담는 슬롯이다 — 보여줄 점수가 없으면 슬롯 자체를 그리지 않는다.
@@ -1300,6 +1306,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
+    if (s?.id) state.mainRecLog[s.id] = (Number(state.mainRecLog[s.id]) || 0) + 1; // 필 라벨 전용(본 녹음만)
     pushUtter(score); // 카드 이동 후 링 복원도 이 배열의 마지막 값을 쓴다 (session-new restoreCardScore)
     popScore(paintRing()); // 첫 점수면 링이 v-settle 로 등장, 이후엔 값만 갱신
     refreshDots(); refreshRecWidget();

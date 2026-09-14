@@ -110,7 +110,8 @@ export function mountSessionNew(host) {
     recCtrl: null,
     pronScores: [],
     weakInSession: {},
-    recLog: {}, // 카드별 녹음 진행 (count/best) — 버튼 상태·점수 안착·진행 게이트 (2026-06-10)
+    recLog: {}, // 카드별 녹음 진행 (count/best) — 세션 발화 집계 (2026-06-10)
+    mainRecLog: {}, // 카드별 **본 녹음** 횟수 — 따라 말하기 필 라벨 전용 (2026-09-14, 응용·상대 줄 섞임 방지)
     exLog: {}, // 카드별 연습 진행 (응용 행 점수/생산 연습/체이닝) — 재마운트·새로고침 복원 (2026-08-21)
     ended: false,
     base: null, // 세션 시작 시 캡처한 그날 dailyStats — 진행 중 라이브 반영 기준점(이중집계 방지)
@@ -133,6 +134,7 @@ export function mountSessionNew(host) {
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       recLog: { ...state.recLog },
+      mainRecLog: { ...state.mainRecLog }, // 따라 말하기 라벨 전용(본 녹음만) — 2026-09-14
       exLog: { ...state.exLog },
       cardIds: state.cards.map((c) => c.id),
       // 카드 실물 — 복원의 정본 (2026-08-29 오후). 로더 결과가 새로고침 사이에 달라져도
