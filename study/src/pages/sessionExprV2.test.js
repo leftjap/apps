@@ -2428,3 +2428,86 @@ describe('utterRingCard — prevTop 옵션', () => {
     expect(host.querySelector('.vs-lside .vs-rec.prevtop .hd .pv').textContent).toBe('직전 18회');
   });
 });
+
+/* 상대 줄 점수는 카드가 아니라 '대화'에 속한다 (2026-09-14 사용자 보고).
+ * 종전엔 onMiniScore 가 state.exLog[현재 카드].mini[줄] 에 써서, 같은 줄인데 1번 카드에서 녹음하면
+ * 70, 2번 카드에서 녹음하면 73·75 로 갈려 보였다. 대화는 세션에 하나뿐이므로 묶음 대표 카드 하나로 모은다. */
+describe('sessionExprV2 — 상대 줄 점수는 선택 카드를 따라가지 않는다', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+    { speaker: 'B', name: '지오', en: "I'm almost there.", ko: '거의 다 왔어.', kr: '아이몰모우스 데어r' },
+  ];
+  const card = (id, sentence, ko) => ({ id, lang: 'en', sentence, ko, pron: '발음',
+    explanation: { key: `${sentence} = ${ko}`, situation: '공항', miniDialogue: MD, drills: [] } });
+  function st(step = 1) {
+    const s = makeState();
+    s.cards = [card('c1', "I'm on my way.", '가는 중이야.'), card('c2', "I'm almost there.", '거의 다 왔어.')];
+    s.step = step; s.sentence = s.cards[step - 1];
+    return s;
+  }
+  // 실제 앱과 같은 계약 — 상대 줄 녹음이 끝나면 session-new 가 handlers.rerender 로 다시 그린다.
+  const mount = (state) => {
+    document.body.innerHTML = '';
+    const host = document.createElement('div'); document.body.appendChild(host);
+    renderSessionExprV2(host, state, { rerender: () => mount(state) });
+    return host;
+  };
+  const miniRec = async (rowIdx) => {
+    const btn = [...document.querySelectorAll('.vs-ln')][rowIdx].querySelector('button[aria-label="녹음"]');
+    btn.click(); await tick();
+    btn.click(); await tick(); await tick();
+  };
+  const traceAt = (rowIdx) => [...[...document.querySelectorAll('.vs-ln')][rowIdx].querySelectorAll('.vs-ln-trace .v-dot')].map((n) => n.textContent);
+
+  it('1번 카드에서 녹음한 상대 줄 점수가 2번 카드로 옮겨도 그대로 보인다', async () => {
+    const state = st(1);
+    mount(state);
+    await miniRec(0);
+    expect(traceAt(0)).toEqual(['100']);
+
+    state.step = 2; state.sentence = state.cards[1];
+    mount(state);
+    expect(traceAt(0)).toEqual(['100']);
+  });
+
+  it('서로 다른 카드에서 녹음해도 같은 줄이면 한 줄에 쌓인다', async () => {
+    const state = st(1);
+    mount(state);
+    await miniRec(0);
+    state.step = 2; state.sentence = state.cards[1];
+    mount(state);
+    await miniRec(0);
+    expect(traceAt(0)).toHaveLength(2);
+    state.step = 1; state.sentence = state.cards[0];
+    mount(state);
+    expect(traceAt(0)).toHaveLength(2);
+  });
+
+  it('저장은 묶음 대표 카드 하나로 모인다 — exLog 와 #mini# 로그 모두', async () => {
+    const state = st(2); // 2번 카드를 선택한 채 녹음해도 대표(c1) 아래에 쌓인다
+    mount(state);
+    await miniRec(0);
+    expect(state.exLog.c1?.mini).toEqual({ 0: [100] });
+    expect(state.exLog.c2?.mini).toBeUndefined();
+    expect(savePronunciationLog.mock.calls[0][1].sentenceId).toBe('c1#mini#We landed early.');
+  });
+
+  it('카드별로 흩어져 저장된 옛 기록도 한 줄에 합쳐 읽는다 (2026-09-14 이전 데이터)', () => {
+    const state = st(1);
+    state.exLog = { c1: { mini: { 0: [70] } }, c2: { mini: { 0: [73, 75] } } };
+    mount(state);
+    expect(traceAt(0)).toEqual(['70', '73', '75']);
+  });
+
+  it('본 점수·응용 점수는 종전대로 카드별이다 (회귀 방지)', async () => {
+    const state = st(1);
+    const host = mount(state);
+    host.querySelector('.vs-pill.pri').click(); await tick();
+    host.querySelector('.vs-pill.recing').click(); await tick(); await tick();
+    expect(state.exLog.c1.utter).toEqual([100]);
+    expect(state.exLog.c2?.utter).toBeUndefined();
+  });
+});

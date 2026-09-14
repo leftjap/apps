@@ -1478,6 +1478,17 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     : -1;
   const isSoloCard = !selGroup?.hasDialogue;
   const selLine = selGroup?.lines?.[selLineIdx] || null;
+  /* 상대 줄 점수는 카드가 아니라 '대화'에 속한다 (2026-09-14 사용자 보고) — 종전엔 선택 카드 아래에 써서
+   * 같은 줄인데 1번 카드에서 녹음하면 70, 2번에서 녹음하면 73·75 로 갈려 보였다. 묶음의 첫 카드를 소유자로
+   * 고정해 한 곳에 모으고, 읽을 때는 카드별로 흩어진 옛 기록도 함께 합친다. */
+  const groupCards = selGroup ? Object.values(selGroup.cardAt).sort((a, b) => a.num - b.num).map((x) => x.card) : [];
+  const dlgOwnerId = groupCards[0]?.id || s?.id;
+  const dlgEx = dlgOwnerId ? (state.exLog[dlgOwnerId] ??= {}) : {};
+  const miniScoresAt = (i) => {
+    const out = [];
+    for (const c of groupCards) out.push(...normScores(state.exLog?.[c.id]?.mini?.[i]));
+    return out;
+  };
   const jumpToCard = (cardId) => {
     const i = state.cards.findIndex((c) => c.id === cardId);
     if (i >= 0) handlers.onJump?.(i + 1);
@@ -1492,10 +1503,11 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     state.pronScores.push(score);
     if (Array.isArray(result?.weakPhonemes)) { if (!state.weakInSession) state.weakInSession = {}; for (const ph of result.weakPhonemes) if (ph) state.weakInSession[ph] = (state.weakInSession[ph] || 0) + 1; }
     bumpRecLog(state, s?.id, score);
-    const rows = ((cardEx.mini ??= {}));
+    // 대화 줄 점수의 소유자는 묶음 대표 카드 — 선택 카드가 바뀌어도 같은 줄이면 같은 기록.
+    const rows = ((dlgEx.mini ??= {}));
     rows[i] = [...normScores(rows[i]), score];
     if (!state.demo) {
-      savePronunciationLog(window.studyDB, { result, sentenceId: miniLogId(s?.id, miniLines[i]?.en || ''), lang, date: getTodayISO() })
+      savePronunciationLog(window.studyDB, { result, sentenceId: miniLogId(dlgOwnerId, miniLines[i]?.en || ''), lang, date: getTodayISO() })
         .catch((e) => console.error('[sessionExprV2] mini pron persist', e));
     }
     refreshDots();
@@ -1556,7 +1568,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     leadSep: !g.hasDialogue && gi > 0 && !viewGroups[gi - 1].hasDialogue,
     cueIndex: gi === viewSelIdx ? (collapsed ? 0 : selLineIdx - 1) : -1,
     utterOf, drillProgOf,
-    miniScoresOf: (i) => (gi === viewSelIdx ? normScores(cardEx.mini?.[srcIdx(i)]) : []),
+    miniScoresOf: (i) => (gi === viewSelIdx ? miniScoresAt(srcIdx(i)) : []),
     onSelect: jumpToCard,
     onCardRec: (cardId) => { state.autoRec = cardId; jumpToCard(cardId); },
     onMiniRec: (i, row, btn) => miniRec(srcIdx(i), row, btn),
