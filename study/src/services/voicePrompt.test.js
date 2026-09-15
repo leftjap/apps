@@ -49,7 +49,7 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
 
   it('문장마다 들려주고 강세 짚고 한국어 뜻으로 따라 하게 하는 단계가 앞에 온다', () => {
     const s = stepsOf(buildVoicePrompt([card1, card2]));
-    expect(s[0]).toBe('1. Say "I\'m on my way." Point out one stress or linked sound. Then in Korean: 가는 중이야. 따라 해 보세요.');
+    expect(s[0]).toBe('1. Say "I\'m on my way." In Korean, point out one stress or linked sound, then say: 가는 중이야. 따라 해 보세요.');
     expect(s[1]).toContain('Say "I\'m almost there."');
     expect(s[1]).toContain('거의 다 왔어. 따라 해 보세요.');
   });
@@ -101,6 +101,7 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
   it('마지막 단계는 한국어로 혼자 말한 문장과 도움받은 문장을 알려주는 것이다', () => {
     const s = stepsOf(buildVoicePrompt([card1, card2]));
     expect(s[s.length - 1]).toContain('In Korean, tell me which of the sentences above I said on my own and which needed help.');
+    expect(s[s.length - 1]).toMatch(/only if I said it in a dialogue step or a Korean-to-English step with no hint/i);
   });
 
   it('한 턴에 한 단계, 합치지 말고, 기다리라는 규칙을 맨 앞에 둔다', () => {
@@ -126,6 +127,44 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
     expect(p).toMatch(/never reply with only/i);
   });
 
+  it('힌트·교정 턴은 단계로 세지 않는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/a hint or a correction is not a step/i);
+    expect(p).toMatch(/stay on the same step/i);
+  });
+
+  it('따라 하기 단계에서 내 영어를 그대로 반복하는 것은 정답이라고 못박는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/따라 해 보세요.*repeating your English line is exactly what I should do/i);
+  });
+
+  it('부분 답에는 멈춘 자리부터 이어지는 다음 단어를 준다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/if I stop partway/i);
+    expect(p).toMatch(/next one or two words from where I stopped/i);
+    expect(p).toMatch(/if that would finish my line, say the Korean meaning instead/i);
+  });
+
+  it('오늘 다른 문장으로 답하면 어느 문장인지 한국어로 알려 준다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/if I answer with a different sentence from today/i);
+  });
+
+  it('맞게 말하면 아무 말 없이 다음 단계로 간다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/when I get it right, say nothing about it and do the next step/i);
+  });
+
+  it('단계는 여러 부분으로 되어 있을 수 있고 한 턴에 전부 한다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/a step can have several parts: do all of its parts in that one turn/i);
+  });
+
+  it('질문 단계는 새 영어를 만들어도 되는 예외로 적는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/the questions in the last steps are yours to write/i);
+  });
+
   it('괄호와 단계 번호는 소리 내지 않고, 칭찬·확인 질문은 하지 않는다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/never say it out loud/i);
@@ -134,19 +173,20 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
     expect(p).toMatch(/do not ask me whether I am ready/i);
   });
 
-  it('통제어를 받는다 (다시·천천히·뜻·다음)', () => {
+  it('통제어는 무엇을 대상으로 하는지까지 적는다 (다시·천천히·뜻·다음·그만)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toContain('다시');
-    expect(p).toContain('천천히');
-    expect(p).toContain('뜻');
-    expect(p).toContain('다음');
+    expect(p).toContain('다시 = say this whole step again');
+    expect(p).toContain('천천히 = say the English of this step again, slowly');
+    expect(p).toContain('뜻 = give the Korean meaning of the English you just said');
+    expect(p).toContain('다음 = leave this step and do the next one');
+    expect(p).toContain('그만 = skip to the last step');
   });
 
   it('학습자를 초급으로 두고 새 문장·새 문법을 막는다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/beginner/i);
     expect(p).toMatch(/only one word comes out/i);
-    expect(p).toMatch(/no new sentences, no new grammar/i);
+    expect(p).toMatch(/no new practice sentences, no new grammar/i);
     expect(p).not.toMatch(/A2|B1|low-intermediate/);
   });
 

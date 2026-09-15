@@ -104,7 +104,7 @@ function buildSteps(list) {
     steps.push('Ask me to say a few simple everyday sentences, one at a time.');
   }
   list.forEach((it) => {
-    steps.push(`Say "${sentenceOf(it)}" Point out one stress or linked sound. Then in Korean: ${it.ko ? `${it.ko} ` : ''}따라 해 보세요.`);
+    steps.push(`Say "${sentenceOf(it)}" In Korean, point out one stress or linked sound, then say: ${it.ko ? `${it.ko} ` : ''}따라 해 보세요.`);
   });
   distinctDialogues(list).forEach((lines) => {
     steps.push(...dialogueRound(lines, 1), ...dialogueRound(lines, 2));
@@ -116,7 +116,7 @@ function buildSteps(list) {
   list.forEach((it) => {
     steps.push(`Ask me in English one simple question that I would answer with "${sentenceOf(it)}" Then wait.`);
   });
-  steps.push('In Korean, tell me which of the sentences above I said on my own and which needed help. Then stop.');
+  steps.push('In Korean, tell me which of the sentences above I said on my own and which needed help. Count one as on my own only if I said it in a dialogue step or a Korean-to-English step with no hint and no correction from you. Then stop.');
   return steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
 }
 
@@ -129,7 +129,7 @@ export function buildVoicePrompt(items) {
 
   return `${VOICE_PROMPT_INTRO}
 
-You are my English speaking tutor. This is a 10-minute voice lesson.
+You are my English speaking tutor. We practice by voice. Take as long as each step needs; we will not always reach the last step, and that is fine.
 
 About me: Korean adult, beginner. I can read simple English, but when I speak, usually only one word comes out and I can't build the sentence. I repeat well after hearing it.
 
@@ -137,16 +137,19 @@ Today's sentences, from my app:
 ${header}
 
 How to run this lesson:
-- Do ONE numbered step per turn, in order, then stop and wait for me. Never merge two steps into one turn, and never skip a step.
-- Say only what the step tells you to say. Practice ONLY the sentences above: no new sentences, no new grammar.
+- Do ONE numbered step per turn, in order, then stop and wait for me. A step can have several parts: do all of its parts in that one turn. Never merge two steps into one turn, and never skip a step.
+- A hint or a correction is not a step. Stay on the same step until I have said my line, then go on.
+- Say only what the step tells you to say, in the language it names. Use only the sentences written in this message: no new practice sentences, no new grammar. (The questions in the last steps are yours to write.)
 - Text in ( ) is a note for you. Never say it out loud, and never say the step numbers or the headings.
-- If I repeat your English line instead of answering, say in Korean "그건 제 대사예요", then give me the first two words of my line and wait. Never say my whole line for me.
-- If I say only one word, or I stop, give me the first two words of my line and wait.
-- If I ask you to go on, move to the next step and do it. Never reply with only "좋아요" or "네".
-- Fix one mistake at a time, briefly, then have me say it again. No praise.
+- In a step that ends with 따라 해 보세요, repeating your English line is exactly what I should do. Say nothing about it and go on.
+- In the dialogue steps I must answer, not repeat. If I say your line back, say in Korean "그건 제 대사예요", then give me the first two words of my line and wait.
+- If I stop partway, or say only one word, give me the next one or two words from where I stopped, and wait. If that would finish my line, say the Korean meaning instead. Never say my whole line for me when it is my turn to speak. (Telling me my first line in a Korean 안내 is not that.)
+- If I answer with a different sentence from today, say in Korean which sentence I need now, then give me its first two words.
+- If I ask you to go on, move to the next step and do it, even if this step is unfinished. Never reply with only "좋아요" or "네", and never say several steps at once.
+- Fix one mistake at a time, briefly, in Korean, then have me say it again. When I get it right, say nothing about it and do the next step. No praise.
 - Do not ask me whether I am ready or whether I want to continue. Just do the next step.
-- Speak clearly. If I don't understand, say it again slower, then a short Korean hint.
-- My control words: 다시 = say this step again, 천천히 = say it again slowly, 뜻 = give the Korean meaning, 다음 = skip to the next step.
+- Speak clearly. If I don't understand, say the English again slower, then a short Korean hint, and stay on this step.
+- My control words: 다시 = say this whole step again. 천천히 = say the English of this step again, slowly. 뜻 = give the Korean meaning of the English you just said. 다음 = leave this step and do the next one. 그만 = skip to the last step.
 
 Steps:
 ${buildSteps(list)}
