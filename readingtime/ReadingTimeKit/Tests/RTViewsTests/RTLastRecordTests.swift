@@ -67,6 +67,33 @@ private func at(_ s: String) -> Date {
         #expect(m.lastRecord?.at == at("2026-09-11 13:06"))
     }
 
+    @Test func tappingRecordOpensTheBookItNames() {
+        // 표시한 책과 탭했을 때 열리는 책이 달라선 안 된다.
+        let m = model()
+        m.userData?.sessions = [.init(isbn: "9791167903792", mode: "tap", seconds: 5352,
+                                      endedAt: at("2026-09-15 21:31"), pauseCount: 2)]
+        m.openRecentDetail()
+        #expect(m.selectedISBN == "9791167903792")
+        #expect(m.route == .detail)
+    }
+
+    @Test func tappingMillieRecordDoesNotOpenAPaperBook() {
+        // 밀리 책이 표시된 행을 탭하면 종이책 상세로 새면 안 된다 — 밀리는 08 상세가 없으므로
+        // 이동하지 않는다. (기록엔 "왕초보"가 떴는데 열리는 건 서성이다이던 문제)
+        let m = model()
+        m.userData?.sessions = [.init(isbn: "9791167903792", mode: "tap", seconds: 1412,
+                                      endedAt: at("2026-09-11 00:34"), pauseCount: 0)]
+        m.ebookReadAt = ["만만하게 시작하는 왕초보 영어패턴_회화편": at("2026-09-11 13:06")]
+        m.ebookDaily = ["2026-09-11": 245]
+        m.ebookBooks = ["2026-09-11": ["만만하게 시작하는 왕초보 영어패턴_회화편"]]
+        #expect(m.lastRecord?.title == "만만하게 시작하는 왕초보 영어패턴_회화편")
+
+        let before = m.route
+        m.openRecentDetail()
+        #expect(m.route == before)          // 이동하지 않는다
+        #expect(m.selectedISBN == nil)
+    }
+
     @Test func noRecordsYieldsNil() {
         #expect(model().lastRecord == nil)
     }

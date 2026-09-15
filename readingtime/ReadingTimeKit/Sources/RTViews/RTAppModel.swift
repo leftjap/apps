@@ -729,7 +729,7 @@ public final class RTAppModel: ObservableObject {
     /// 홈 '마지막 기록' 행 — 종이 세션과 밀리 기록 중 더 최근 것.
     /// 책이 안 붙은 종이 기록은 제목을 "기록" 으로 둔다. 다른 카드에서 이름을 빌려오면
     /// 읽지도 않은 책이 기록으로 보인다(실사고 2026-09-15).
-    public var lastRecord: (title: String, minutes: Int, at: Date)? {
+    public var lastRecord: (title: String, minutes: Int, at: Date, isEbook: Bool)? {
         guard userData != nil else { return nil }
         let paper = recentRecords(1).first
         let ebook = ebookReadAt.max { $0.value < $1.value }
@@ -737,16 +737,18 @@ public final class RTAppModel: ObservableObject {
 
         if ebookIsLatest, let e = ebook {
             let min = ebookBreakdown(on: e.value).first { $0.title == e.key }.map { $0.seconds / 60 } ?? 0
-            return (e.key, min, e.value)
+            return (e.key, min, e.value, true)
         }
         guard let p = paper else { return nil }
         let title = p.isbn.flatMap { isbn in userData?.books.first { $0.isbn == isbn }?.title }
-        return (title ?? "기록", p.seconds / 60, p.endedAt)
+        return (title ?? "기록", p.seconds / 60, p.endedAt, false)
     }
 
-    /// 홈 '마지막 기록' 행 탭 — 그 기록의 책 상세(08).
-    /// 기록 isbn 없음(수동 세션)·기록 없음이면 selectedISBN=nil → selectedBook 이 읽는 중 책 폴백.
+    /// 홈 '마지막 기록' 행 탭 — 그 행이 이름을 댄 책의 상세(08).
+    /// 행에 뜬 책과 열리는 책이 달라선 안 된다. 밀리 기록이 최신이면(밀리는 08 상세가 없다)
+    /// 이동하지 않는다 — 종이책 상세로 새면 읽지도 않은 책을 연 것처럼 보인다.
     public func openRecentDetail() {
+        if lastRecord?.isEbook == true { return }
         selectedISBN = recentRecords(1).first?.isbn
         nav(.detail)
     }
