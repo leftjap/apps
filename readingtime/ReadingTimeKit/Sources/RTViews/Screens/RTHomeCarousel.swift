@@ -144,6 +144,16 @@ struct RTHomeCarousel: View {
                     .padding(.top, 18).padding(.bottom, 16)
             }
         }
+        // 삭제 확인은 캐러셀에 하나만 — 카드마다 붙이면 같은 바인딩을 공유한 시트가 겹쳐
+        // 취소 버튼이 시트 밖으로 밀린다(XCUITest 실측: 삭제만 눌리고 취소는 렌더 안 됨).
+        .alert("'\(current.title)' 을(를) 지울까요?", isPresented: $confirmDelete) {
+            Button("삭제", role: .destructive) {
+                withAnimation(.easeOut(duration: 0.2)) { model.deleteSelectedCard() }
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("홈과 기록에서 빠집니다. 밀리에서 다시 읽어도 올라오지 않아요.")
+        }
     }
 
     // 좌우 스와이프 — 40pt 넘기면 페이지 전환 (스크린 스와이프백과 충돌 없게 수평 우세 판정)
@@ -228,15 +238,6 @@ struct RTHomeCarousel: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("home.card.delete")
-        .confirmationDialog("'\(current.title)' 을(를) 지울까요?",
-                            isPresented: $confirmDelete, titleVisibility: .visible) {
-            Button("삭제", role: .destructive) {
-                withAnimation(.easeOut(duration: 0.2)) { model.deleteSelectedCard() }
-            }
-            Button("취소", role: .cancel) {}
-        } message: {
-            Text("홈과 기록에서 빠집니다. 밀리에서 다시 읽어도 올라오지 않아요.")
-        }
     }
 }
 
