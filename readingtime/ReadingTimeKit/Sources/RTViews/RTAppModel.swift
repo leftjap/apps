@@ -1378,21 +1378,6 @@ public final class RTAppModel: ObservableObject {
         session = s
     }
 
-    /// 홈 캐러셀 렌더 검증용 상태 (rtshot --seq seedCards) — 종이책 1권 + 밀리 2권.
-    /// 실기기 검증이 클라우드 로그인을 요구해 헤드리스로는 이 경로로만 캐러셀을 그릴 수 있다.
-    private func seedHomeCards() {
-        let day = Date(timeIntervalSinceReferenceDate: 800_000_000)
-        userData = RTUserData(
-            books: [RTBook(isbn: "9791167903792", title: "서성이다", author: "장강명",
-                           publisher: "현대문학", coverUrl: "", addedAt: day)],
-            sessions: [RTSessionRecord(isbn: "9791167903792", mode: "tap", seconds: 1412,
-                                       endedAt: day, pauseCount: 0)])
-        ebookReadAt = ["왕초보 영어패턴": day.addingTimeInterval(3600),
-                       "최소한의 한국사": day.addingTimeInterval(-86_400)]
-        ebookDaily = [dayFormatter.string(from: day.addingTimeInterval(3600)): 245]
-        ebookBooks = [dayFormatter.string(from: day.addingTimeInterval(3600)): ["왕초보 영어패턴"]]
-    }
-
     // ── 액션 문자열 적용 (rtshot --seq 상태 파라미터 렌더용) ──
     public func apply(_ action: String) {
         let parts = action.split(separator: ":", maxSplits: 1).map(String.init)
@@ -1404,7 +1389,6 @@ public final class RTAppModel: ObservableObject {
         case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
         case "query": searchQuery = arg              // 검색창 프리필(검증 — sheet:addbook 뒤에 둘 것: 열 때 비움)
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
-        case "seedCards": seedHomeCards()                        // 종이+밀리 카드 상태(검증 — 캐러셀 렌더)
         case "sel": selectedISBN = arg                           // 상세 대상 지정(검증 — nav:08 과 조합)
         case "reread": rereadBook()                              // 다시 읽기(검증 — 밀리 미완독 상태 재현)
         case "statsPrev": statsPrev()                            // 기록 원페이지 (검증)
