@@ -108,7 +108,8 @@ public struct Screen06Done: View {
                     .padding(.top, 12)
                     .contentShape(Rectangle())
                     .onTapGesture { confirmDelete = true }
-                    .confirmationDialog("이 기록을 삭제할까요?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                    // alert(중앙 배치)이어야 취소가 렌더된다 — lessons/swiftui-confirmation-dialog-scaled-shell.md
+                    .alert("이 기록을 삭제할까요?", isPresented: $confirmDelete) {
                         Button("삭제", role: .destructive) { model?.deleteSession() }
                         Button("취소", role: .cancel) {}
                     } message: {

@@ -83,7 +83,7 @@
 밀리 카드를 홈에서 뺄 방법이 완독 처리뿐이었는데, 완독은 서재에 편입시키는 반대 동작이다.
 - 카드에 "지우기" 추가(`deleteEbook`/`deleteSelectedCard`, 확인 대화상자). 완독과 달리 **더 최신 밀리 기록이 와도 되살아나지 않고 기록에서도 빠진다** — 그날 남은 책이 없으면 그날 시간을 시간·연속·읽은 날·랭킹에서 제외한다(`visibleEbookDaily`). 그날 다른 책이 있으면 시간은 남은 책 몫으로 둔다(원천이 날짜 총합이라 책별로 안 나뉜다).
 - 영속은 `rt.hiddenEbooks`(UserDefaults). 종이책은 기존대로 서재 ⋯ 메뉴의 책 삭제를 쓴다.
-- **확인 대화상자는 `alert` 이어야 한다.** 이 앱은 `RTRootView` 를 390×844 고정 프레임에 `scaleEffect` 로 넣는데, 하단에 붙는 액션시트(`confirmationDialog`)는 그 안에서 취소 버튼 자리를 잃어 **'삭제'만 렌더됐다** — 되돌릴 수 없는 동작인데 물러설 길이 없었다. 기존 코드인 서재 ⋯ 책 삭제도 같은 상태였고 함께 고쳤다(`lessons/swiftui-confirmation-dialog-scaled-shell.md`). 검증: `ReadingTimeUITests/MillieCardDeleteUITests.swift` · `ConfirmDialogUITests.swift`.
+- **확인 대화상자는 `alert` 이어야 한다.** 이 앱은 `RTRootView` 를 390×844 고정 프레임에 `scaleEffect` 로 넣는데, 하단에 붙는 액션시트(`confirmationDialog`)는 그 안에서 취소 버튼 자리를 잃어 **'삭제'만 렌더됐다** — 되돌릴 수 없는 동작인데 물러설 길이 없었다. 앱 안의 확인 대화상자 **네 곳 전부** 같은 상태였다: 홈 밀리 카드 삭제(신규)·서재 ⋯ 책 삭제·완료(06) '이 기록 삭제'·설정 로그아웃. 전부 `alert` 으로 바꿨고 소스에 `confirmationDialog` 는 남지 않았다(`lessons/swiftui-confirmation-dialog-scaled-shell.md`). 검증: `ReadingTimeUITests/ConfirmDialogUITests.swift`(서재·기록·로그아웃) · `MillieCardDeleteUITests.swift`(홈 카드).
 - **'마지막 기록' 행 탭**: 행에 뜬 책과 열리는 책이 같아야 한다. 밀리 기록이 최신이면(밀리는 08 상세가 없다) 이동하지 않는다 — 종이책 상세로 새면 읽지도 않은 책을 연 것처럼 보인다. 책 미상(수동 세션)·기록 없음의 읽는 중 책 폴백은 기존대로 유지.
 
 ## 알라딘 장애 대처 (2026-09-10 결정)

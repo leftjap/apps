@@ -44,7 +44,8 @@ public struct SheetSettings: View {
                     .padding(.top, 20)
                     .contentShape(Rectangle())
                     .onTapGesture { confirmLogout = true }
-                    .confirmationDialog("로그아웃할까요?", isPresented: $confirmLogout, titleVisibility: .visible) {
+                    // alert(중앙 배치)이어야 취소가 렌더된다 — lessons/swiftui-confirmation-dialog-scaled-shell.md
+                    .alert("로그아웃할까요?", isPresented: $confirmLogout) {
                         Button("로그아웃", role: .destructive) { model?.logout() }
                         Button("취소", role: .cancel) {}
                     }
