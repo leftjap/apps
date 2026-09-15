@@ -2517,6 +2517,24 @@ describe('sessionExprV2 — 상대 줄 점수는 선택 카드를 따라가지 �
     expect(traceAt(0)).toEqual(['70', '73', '75']);
   });
 
+  /* 수화(loadScoreHistoryState)는 2026-09-14 부터 줄 **텍스트**로 이력을 모은다 — 같은 대화를 공유하는
+   * 카드 전부에 같은 배열이 들어간다. 읽을 때 그대로 이어 붙이면 한 번 녹음한 점수가 카드 수만큼
+   * 겹쳐 보인다 (2026-09-15 실측: 로컬 로그 1건인데 화면에 원 4개). */
+  it('묶음의 카드마다 같은 이력이 들어와도 원은 한 번만 (겹침 방지)', () => {
+    const state = st(1);
+    state.exLog = { c1: { mini: { 0: [97] } }, c2: { mini: { 0: [97] } } };
+    mount(state);
+    expect(traceAt(0)).toEqual(['97']);
+  });
+
+  it('겹친 이력 위에 새로 녹음하면 그 한 건만 늘어난다', async () => {
+    const state = st(1);
+    state.exLog = { c1: { mini: { 0: [97] } }, c2: { mini: { 0: [97] } } };
+    mount(state);
+    await miniRec(0);
+    expect(traceAt(0)).toEqual(['97', '100']);
+  });
+
   it('본 점수·응용 점수는 종전대로 카드별이다 (회귀 방지)', async () => {
     const state = st(1);
     const host = mount(state);

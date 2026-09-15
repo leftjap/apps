@@ -1520,10 +1520,19 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   const groupCards = selGroup ? Object.values(selGroup.cardAt).sort((a, b) => a.num - b.num).map((x) => x.card) : [];
   const dlgOwnerId = groupCards[0]?.id || s?.id;
   const dlgEx = dlgOwnerId ? (state.exLog[dlgOwnerId] ??= {}) : {};
+  /* 한 줄의 점수 이력 — 묶음의 카드들에 흩어진 기록을 모은다.
+   * 수화(loadScoreHistoryState)는 2026-09-14 부터 줄 **텍스트**로 모으므로 같은 대화를 공유하는
+   * 카드 전부에 **같은 배열**이 들어온다. 그대로 이어 붙이면 한 번 녹음한 점수가 카드 수만큼 겹친다
+   * (2026-09-15 실측: 로컬 로그 1건인데 화면에 원 4개). 가장 긴 이력 하나를 정본으로 삼고, 그 앞부분이
+   * 아닌 배열(2026-09-14 이전에 카드별로 갈려 저장된 옛 기록)만 앞에 이어 붙인다. */
   const miniScoresAt = (i) => {
+    const runs = groupCards.map((c) => normScores(state.exLog?.[c.id]?.mini?.[i])).filter((r) => r.length);
+    if (!runs.length) return [];
+    const base = runs.reduce((a, b) => (b.length > a.length ? b : a));
+    const isPrefixOfBase = (r) => r.every((v, k) => base[k] === v);
     const out = [];
-    for (const c of groupCards) out.push(...normScores(state.exLog?.[c.id]?.mini?.[i]));
-    return out;
+    for (const r of runs) { if (r !== base && !isPrefixOfBase(r)) out.push(...r); }
+    return [...out, ...base];
   };
   const jumpToCard = (cardId) => {
     const i = state.cards.findIndex((c) => c.id === cardId);
