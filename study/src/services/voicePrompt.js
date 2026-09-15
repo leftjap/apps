@@ -4,20 +4,26 @@
  * 세션 요약(summaryV2)과 말하기 연습 화면(#/speak)이 같이 쓴다. 표현은 문자열 또는
  * { expr, sentence, ko, situation, miniDialogue, drills } (speakPicks.toSpeakItem 모양).
  *
- * 2026-09-11 재설계 근거 — 2026-09-10 하루 동안 실제 ChatGPT 음성으로 여섯 번 돌린 결과:
+ * 2026-09-11 재설계 근거 — 실제 ChatGPT 음성 여섯 번:
  * · 타깃을 숨기고 상황으로 유도하는 옛 방식은 초급(단어 하나만 나옴)에게 시험이 된다. 문장을 먼저 들려주고 쓰게 한다.
- * · 절차를 길게 적으면 모델이 계획을 버리고 질문 기계로 돌아간다. 공개된 튜터 프롬프트들처럼 짧게, 역할극 대사와
- *   한글→영어 목록 같은 모델이 실제로 따르는 형태로만 쓴다.
- * · 한 턴에 여러 지시를 몰면 대본 읽는 소리가 된다(모델 자체 시스템 프롬프트가 "한두 문장" 이다). 한 턴 한 가지.
  * · 막혔을 때 정답을 통째로 주면 따라 말하기만 남는다. 첫 두 단어만 준다 (자가수정 유도 우선 — Ammar & Spada 2006).
  * · 붙여 넣은 직후 음성을 켜면 지시가 반영되지 않았다. 텍스트 답장을 받은 뒤 음성으로.
- * 세션 콘텐츠 중 미니대화(앱에선 듣기·녹음, 2026-09-12)와 드릴 앞 세 개를 실어, 앱에서 배운 것만으로 역할극·응용을 한다.
+ *
+ * 2026-09-15 재설계 근거 — 2026-09-14 실기 세션(사용자 기록) + 같은 프롬프트 재현(ChatGPT 웹):
+ * · 산문 절차("Do the dialogue with me. You say A's lines…")는 모델에게만 하는 말이라, 학습자는 직전 지시인
+ *   "따라 해 보세요" 를 계속 따랐고 대화가 통째로 따라 말하기가 됐다. 역할 전환을 교사 대사로 직접 말하게 한다.
+ * · 학습자가 상대 대사를 따라 말해도 모델이 발음 교정으로 처리했다. 역할 이탈 교정 규칙을 따로 적는다.
+ * · 카드 4장이 같은 미니대화를 공유하는데(seeds/en-personal-2026-09-13.json) 카드마다 실려 같은 대화가 4번
+ *   찍혔고 "Do it twice" 까지 붙어 8회전이 됐다. 대화는 중복을 걷어 한 번만, 두 회전으로.
+ * · 재현에서 모델이 A 첫 대사를 건너뛰고, "계속하자" 에 "좋아요, 바로 이어갈게요." 로 빈 턴을 썼다.
+ *   절차를 단계 번호로 적고(작업지시서 2026-09-10 §4 교훈), 한 턴 한 단계·빈 대답 금지를 규칙으로 못박는다.
  */
 export const VOICE_PROMPT_INTRO = '[아래를 ChatGPT 새 대화에 붙여 넣고, 텍스트 답장이 온 뒤에 같은 대화에서 음성 모드를 켜세요]';
 
 const DRILL_MAX = 3;
 const str = (v) => String(v ?? '').trim();
 const linesOf = (arr) => (Array.isArray(arr) ? arr : []).filter((x) => x && str(x.en));
+const isB = (l) => str(l.speaker).toUpperCase() === 'B';
 
 /** 문자열·객체 혼합 배열 → 정규화 배열. expr 이 비면 뺀다. 미니대화·드릴은 en 이 있는 항목만 남긴다. */
 export function normalizeVoiceItems(items) {
@@ -34,52 +40,116 @@ export function normalizeVoiceItems(items) {
     }));
 }
 
-function itemBlock(it, n) {
-  const key = it.sentence && it.expr && it.expr !== it.sentence ? `  [key: ${it.expr}]` : '';
-  const out = [`${n}. "${it.sentence || it.expr}"${it.ko ? `  — ${it.ko}` : ''}${key}`];
-  if (it.miniDialogue.length) {
-    out.push('Dialogue (you are A, I am B):');
-    it.miniDialogue.forEach((l) => out.push(`  ${l.speaker}: ${l.en}`));
-  } else if (it.situation) {
-    out.push(`  (${it.situation})`);
+const sentenceOf = (it) => it.sentence || it.expr;
+
+/** 오늘 문장 목록 한 줄 — 뜻·핵심 표현·상황은 소리 내지 않는 참고란이다. */
+function headerLine(it, n) {
+  const key = it.sentence && it.expr && it.expr !== it.sentence ? `  (key: ${it.expr})` : '';
+  const sit = it.situation && !it.miniDialogue.length ? `  (${it.situation})` : ''; // 대화가 있으면 상황은 대화가 대신한다
+  return `S${n} "${sentenceOf(it)}"${it.ko ? ` = ${it.ko}` : ''}${key}${sit}`;
+}
+
+/* 안내를 한 단계로 따로 두면 학습자가 답할 것이 없는데도 모델이 기다려 턴이 빈다.
+ * 안내는 그 회전의 첫 단계 앞에 붙여, 말할 차례가 있는 단계에만 실린다. */
+function withGuide(steps, guide) {
+  const head = steps[0];
+  if (!head) return steps;
+  const merged = head.startsWith('In Korean: ')
+    ? `In Korean: ${guide} ${head.slice('In Korean: '.length)}`
+    : `In Korean: ${guide} Then ${head[0].toLowerCase()}${head.slice(1)}`;
+  return [merged, ...steps.slice(1)];
+}
+
+/** 미니대화 한 회전 → 단계 문자열 배열. A 대사마다 바로 뒤 B 대사를 기대 답으로 단다. */
+function dialogueRound(lines, round) {
+  const firstB = lines.find(isB);
+  const guide =
+    round === 1
+      ? `이제 대화 연습입니다. 따라 말하지 말고 제 말에 영어로 답하세요.${firstB ? ` 첫 대사는 "${firstB.en}" 입니다.` : ''}`
+      : '같은 대화를 한 번 더 합니다. 이번에도 제 말에 답하세요.';
+  const out = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (isB(lines[i])) {
+      out.push(`In Korean: 먼저 말하세요.  (I answer: ${lines[i].en})`);
+      continue;
+    }
+    const next = lines[i + 1];
+    if (next && isB(next)) {
+      out.push(`Say "${lines[i].en}"  (I answer: ${next.en})`);
+      i += 1;
+    } else {
+      out.push(`Say "${lines[i].en}"`);
+    }
   }
-  if (it.drills.length) {
-    out.push('Practice lines (Korean → English):');
-    it.drills.slice(0, DRILL_MAX).forEach((d) => out.push(d.ko ? `  ${d.ko}  → ${d.en}` : `  ${d.en}`));
+  return withGuide(out, guide);
+}
+
+/** 같은 미니대화를 쓰는 카드가 여럿이어도 대화는 한 번만 태운다 (첫 등장 순서 유지). */
+function distinctDialogues(list) {
+  const seen = new Set();
+  const out = [];
+  list.forEach((it) => {
+    if (!it.miniDialogue.length) return;
+    const k = it.miniDialogue.map((l) => `${l.speaker}|${l.en}`).join('\n');
+    if (seen.has(k)) return;
+    seen.add(k);
+    out.push(it.miniDialogue);
+  });
+  return out;
+}
+
+function buildSteps(list) {
+  const steps = [];
+  if (!list.length) {
+    steps.push('Ask me to say a few simple everyday sentences, one at a time.');
   }
-  return out.join('\n');
+  list.forEach((it) => {
+    steps.push(`Say "${sentenceOf(it)}" Point out one stress or linked sound. Then in Korean: ${it.ko ? `${it.ko} ` : ''}따라 해 보세요.`);
+  });
+  distinctDialogues(list).forEach((lines) => {
+    steps.push(...dialogueRound(lines, 1), ...dialogueRound(lines, 2));
+  });
+  const drillSteps = list.flatMap((it) =>
+    it.drills.slice(0, DRILL_MAX).map((d) => (d.ko ? `Say in Korean: ${d.ko}  (I answer: ${d.en})` : `Ask me to say "${d.en}"`)),
+  );
+  steps.push(...withGuide(drillSteps, '이제 한국어를 듣고 영어로 말하세요.'));
+  list.forEach((it) => {
+    steps.push(`Ask me in English one simple question that I would answer with "${sentenceOf(it)}" Then wait.`);
+  });
+  steps.push('In Korean, tell me which of the sentences above I said on my own and which needed help. Then stop.');
+  return steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
 }
 
 /** items → ChatGPT 붙여넣기용 프롬프트 문자열. */
 export function buildVoicePrompt(items) {
   const list = normalizeVoiceItems(items);
-  const content = list.length
-    ? list.map((it, i) => itemBlock(it, i + 1)).join('\n\n')
-    : '1. (use a few simple everyday sentences)';
+  const header = list.length
+    ? list.map((it, i) => headerLine(it, i + 1)).join('\n')
+    : 'S1 (use a few simple everyday sentences)';
 
   return `${VOICE_PROMPT_INTRO}
 
-You are my English speaking tutor. We practice by voice for about 10 minutes.
+You are my English speaking tutor. This is a 10-minute voice lesson.
 
 About me: Korean adult, beginner. I can read simple English, but when I speak, usually only one word comes out and I can't build the sentence. I repeat well after hearing it.
 
-Today I studied the sentences below in my app. Practice ONLY what is listed here. No new sentences, no new grammar.
+Today's sentences, from my app:
+${header}
 
-${content}
+How to run this lesson:
+- Do ONE numbered step per turn, in order, then stop and wait for me. Never merge two steps into one turn, and never skip a step.
+- Say only what the step tells you to say. Practice ONLY the sentences above: no new sentences, no new grammar.
+- Text in ( ) is a note for you. Never say it out loud, and never say the step numbers or the headings.
+- If I repeat your English line instead of answering, say in Korean "그건 제 대사예요", then give me the first two words of my line and wait. Never say my whole line for me.
+- If I say only one word, or I stop, give me the first two words of my line and wait.
+- If I ask you to go on, move to the next step and do it. Never reply with only "좋아요" or "네".
+- Fix one mistake at a time, briefly, then have me say it again. No praise.
+- Do not ask me whether I am ready or whether I want to continue. Just do the next step.
+- Speak clearly. If I don't understand, say it again slower, then a short Korean hint.
+- My control words: 다시 = say this step again, 천천히 = say it again slowly, 뜻 = give the Korean meaning, 다음 = skip to the next step.
 
-For each sentence, in this order:
-- Say the sentence once, naturally, and point out one stress or linked sound. Then the Korean meaning. Ask me to repeat it.
-- Do the dialogue with me. You say A's lines; I say B's. Wait for me after each of your lines. If B speaks first, tell me to start. Do it twice.
-- Practice lines: say the Korean, and I say the English. One at a time.
-- Ask me one simple question where I would use the sentence myself.
+Steps:
+${buildSteps(list)}
 
-If I only say a word or stop, don't say the whole sentence — give me the first two words and wait.
-Every turn: two short sentences at most, one thing to do, then wait for me.
-Fix one mistake at a time, briefly, and have me say it again. Skip the praise — just correct or move on.
-Speak clearly; if I don't understand, say it slower, then a short Korean hint.
-Don't read the numbers or headings aloud.
-
-At the end, tell me in Korean which sentences I said on my own and which needed help.
-
-Start with sentence 1.`;
+Start now. Say only step 1, then wait.`;
 }

@@ -1,118 +1,186 @@
 import { describe, it, expect } from 'vitest';
 import { buildVoicePrompt, normalizeVoiceItems } from './voicePrompt.js';
 
-const card = {
-  expr: 'trying to reach',
-  sentence: "I've been trying to reach you all morning.",
-  ko: '아침 내내 너한테 연락하려고 했어.',
-  situation: '급한 일로 계속 전화했는데 안 받았을 때',
-  miniDialogue: [
-    { speaker: 'A', en: 'Oh, hi! Did you need something?', ko: '어, 안녕! 무슨 일 있었어?' },
-    { speaker: 'B', en: "I've been trying to reach you all morning.", ko: '아침 내내 너한테 연락하려고 했어.' },
-    { speaker: 'A', en: "Sorry, my phone was on silent. What's up?", ko: '미안, 폰이 무음이었어.' },
-  ],
+/* 2026-09-15 재설계 — 2026-09-14 실기 세션이 대화 구간에서 통째로 무너졌다(따라 말하기만 남고 드릴·질문·마무리 미도달).
+ * 산문 규칙 대신 교사 대사를 단계로 적고, 같은 미니대화를 카드마다 반복하지 않는다. */
+
+const dialogue = [
+  { speaker: 'A', en: 'We landed early. It’s 4:20.', ko: '일찍 내렸어. 4시 20분이야.' },
+  { speaker: 'B', en: "I'm on my way.", ko: '가는 중이야.' },
+  { speaker: 'A', en: 'Take your time.', ko: '천천히 와.' },
+  { speaker: 'B', en: "I'm almost there.", ko: '거의 다 왔어.' },
+];
+
+const card1 = {
+  expr: 'on my way',
+  sentence: "I'm on my way.",
+  ko: '가는 중이야.',
+  miniDialogue: dialogue,
   drills: [
-    { en: "I couldn't reach you.", ko: '너한테 연락이 안 됐어.' },
-    { en: 'Who are you trying to reach?', ko: '누구한테 연락하려는 거야?' },
-    { en: 'Did you get my message this morning?', ko: '오늘 아침에 내 메시지 받았어?' },
-    { en: 'My wife has been trying to reach you.', ko: '아내가 너한테 계속 연락하려고 했어.' },
+    { en: "I'm on my way to the airport.", ko: '공항 가는 중이야.' },
+    { en: 'Are you on your way?', ko: '오는 중이야?' },
+    { en: 'She is on her way home.', ko: '그 사람은 집에 오는 중이야.' },
+    { en: 'My wife is on her way.', ko: '아내가 오는 중이야.' },
   ],
 };
 
-describe('buildVoicePrompt — 세션에서 배운 내용을 ChatGPT 음성으로 연습 (2026-09-11 실기 근거로 재설계)', () => {
-  it('오늘 배운 문장과 뜻을 번호 붙여 넣는다', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).toContain('1. "I\'ve been trying to reach you all morning."');
-    expect(p).toContain('아침 내내 너한테 연락하려고 했어.');
-    expect(p).toContain('[key: trying to reach]'); // 앱이 강조하는 핵심 표현
+const card2 = {
+  expr: 'almost there',
+  sentence: "I'm almost there.",
+  ko: '거의 다 왔어.',
+  miniDialogue: dialogue, // 같은 대화 세션의 카드는 미니대화가 동일하다 (seeds/en-personal-2026-09-13.json)
+  drills: [{ en: "We're almost there.", ko: '거의 다 왔어.' }],
+};
+
+const stepsOf = (p) => p.split('\n').filter((l) => /^\d+\. /.test(l));
+
+describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
+  it('오늘 문장을 S번호·뜻·핵심 표현으로 먼저 적는다', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toContain('S1 "I\'m on my way." = 가는 중이야.  (key: on my way)');
+    expect(p).toContain('S2 "I\'m almost there." = 거의 다 왔어.  (key: almost there)');
   });
 
-  it('미니대화를 A/B 줄로 넣고 역할을 정한다 (ChatGPT=A, 나=B)', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).toContain('A: Oh, hi! Did you need something?');
-    expect(p).toContain("B: I've been trying to reach you all morning.");
-    expect(p).toMatch(/you are A, I am B/i);
+  it('단계 번호가 1부터 빠짐없이 이어진다', () => {
+    const nums = stepsOf(buildVoicePrompt([card1, card2])).map((l) => Number(l.split('.')[0]));
+    expect(nums.length).toBeGreaterThan(10);
+    expect(nums).toEqual(nums.map((_, i) => i + 1));
   });
 
-  it('드릴은 앞 세 개만 한국어 → 영어 형식으로 넣는다', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).toContain("너한테 연락이 안 됐어.  → I couldn't reach you.");
-    expect(p).toContain('오늘 아침에 내 메시지 받았어?  → Did you get my message this morning?');
-    expect(p).not.toContain('My wife has been trying to reach you.');
+  it('문장마다 들려주고 강세 짚고 한국어 뜻으로 따라 하게 하는 단계가 앞에 온다', () => {
+    const s = stepsOf(buildVoicePrompt([card1, card2]));
+    expect(s[0]).toBe('1. Say "I\'m on my way." Point out one stress or linked sound. Then in Korean: 가는 중이야. 따라 해 보세요.');
+    expect(s[1]).toContain('Say "I\'m almost there."');
+    expect(s[1]).toContain('거의 다 왔어. 따라 해 보세요.');
   });
 
-  it('미니대화가 없는 카드는 상황 설명으로 대신한다', () => {
-    const p = buildVoicePrompt([{ expr: 'x', sentence: 'X.', ko: '엑스.', situation: '이럴 때' }]);
-    expect(p).toContain('1. "X."');
-    expect(p).toContain('이럴 때');
-    expect(p).not.toMatch(/Dialogue \(you are A/);
+  it('대화 시작 안내는 첫 A 대사와 한 단계로 붙인다 (안내만 하고 기다리는 빈 턴 금지)', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    expect(p).toContain('In Korean: 이제 대화 연습입니다. 따라 말하지 말고 제 말에 영어로 답하세요. 첫 대사는 "I\'m on my way." 입니다. Then say "We landed early. It’s 4:20."  (I answer: I\'m on my way.)');
+  });
+
+  it('안내를 담은 단계에도 내가 말할 차례가 붙어 있다', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    const guides = p.split('\n').filter((l) => /이제 대화 연습입니다|한 번 더 합니다|이제 한국어를 듣고/.test(l));
+    expect(guides).toHaveLength(3);
+    guides.forEach((l) => expect(l).toContain('(I answer:'));
+  });
+
+  it('A 대사마다 내가 답할 B 대사를 괄호로 달아 둔다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/say "We landed early\. It’s 4:20\."  \(I answer: I'm on my way\.\)/i); // 첫 단계는 안내가 붙어 소문자 then say
+    expect(p).toContain('Say "Take your time."  (I answer: I\'m almost there.)');
+  });
+
+  it('같은 미니대화는 카드 수와 무관하게 한 번만, 두 번 반복으로 넣는다', () => {
+    const p = buildVoicePrompt([card1, card2]);
+    const runs = (p.match(/say "We landed early\. It’s 4:20\."/gi) || []).length;
+    expect(runs).toBe(2); // 카드 2장이어도 4번이 아니라 2회전
+    expect(p).toContain('In Korean: 같은 대화를 한 번 더 합니다. 이번에도 제 말에 답하세요. Then say "We landed early. It’s 4:20."');
+  });
+
+  it('B 가 먼저 말하는 대화면 나에게 먼저 말하라고 한다', () => {
+    const p = buildVoicePrompt([{ ...card1, miniDialogue: [{ speaker: 'B', en: 'Hi.' }, { speaker: 'A', en: 'Hello.' }] }]);
+    expect(p).toContain('첫 대사는 "Hi." 입니다. 먼저 말하세요.  (I answer: Hi.)');
+  });
+
+  it('드릴은 앞 세 개만, 한국어를 말하고 내가 영어로 답하는 단계로 넣는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toContain('In Korean: 이제 한국어를 듣고 영어로 말하세요. Then say in Korean: 공항 가는 중이야.  (I answer: I\'m on my way to the airport.)');
+    expect(p).toContain('Say in Korean: 오는 중이야?  (I answer: Are you on your way?)');
+    expect(p).not.toContain('My wife is on her way.');
+  });
+
+  it('문장마다 내가 그 문장으로 답할 질문을 하나 묻는 단계가 드릴 뒤에 온다', () => {
+    const p = buildVoicePrompt([card1]);
+    const i3 = p.indexOf('Say in Korean: 공항 가는 중이야.');
+    const iq = p.indexOf('Ask me in English one simple question that I would answer with "I\'m on my way."');
+    expect(iq).toBeGreaterThan(i3);
+  });
+
+  it('마지막 단계는 한국어로 혼자 말한 문장과 도움받은 문장을 알려주는 것이다', () => {
+    const s = stepsOf(buildVoicePrompt([card1, card2]));
+    expect(s[s.length - 1]).toContain('In Korean, tell me which of the sentences above I said on my own and which needed help.');
+  });
+
+  it('한 턴에 한 단계, 합치지 말고, 기다리라는 규칙을 맨 앞에 둔다', () => {
+    const p = buildVoicePrompt([card1]);
+    const iRule = p.search(/Do ONE numbered step per turn/);
+    const iStep1 = p.indexOf('1. Say');
+    expect(iRule).toBeGreaterThan(-1);
+    expect(iRule).toBeLessThan(iStep1);
+    expect(p).toMatch(/never merge two steps/i);
+    expect(p).toMatch(/then stop and wait for me/i);
+  });
+
+  it('내가 상대 대사를 따라 말하면 역할을 한국어로 교정하고 첫 두 단어만 준다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toContain('그건 제 대사예요');
+    expect(p).toMatch(/first two words of my line/i);
+    expect(p).toMatch(/never say my whole line for me/i);
+  });
+
+  it('계속하라고 하면 빈 대답 말고 다음 단계로 간다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/move to the next step/i);
+    expect(p).toMatch(/never reply with only/i);
+  });
+
+  it('괄호와 단계 번호는 소리 내지 않고, 칭찬·확인 질문은 하지 않는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/never say it out loud/i);
+    expect(p).toMatch(/never say the step numbers/i);
+    expect(p).toMatch(/no praise/i);
+    expect(p).toMatch(/do not ask me whether I am ready/i);
+  });
+
+  it('통제어를 받는다 (다시·천천히·뜻·다음)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toContain('다시');
+    expect(p).toContain('천천히');
+    expect(p).toContain('뜻');
+    expect(p).toContain('다음');
   });
 
   it('학습자를 초급으로 두고 새 문장·새 문법을 막는다', () => {
-    const p = buildVoicePrompt([card]);
+    const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/beginner/i);
     expect(p).toMatch(/only one word comes out/i);
     expect(p).toMatch(/no new sentences, no new grammar/i);
     expect(p).not.toMatch(/A2|B1|low-intermediate/);
   });
 
-  it('먼저 들려주고 강세·연음 하나 짚고 따라 하게 한 뒤 → 역할극 → 드릴 → 질문 순서', () => {
-    const p = buildVoicePrompt([card]);
-    const i1 = p.search(/say the sentence once/i);
-    const i2 = p.search(/do the dialogue with me/i);
-    const i3 = p.search(/practice lines: say the korean/i);
-    const i4 = p.search(/ask me one simple question/i);
-    expect(i1).toBeGreaterThan(-1);
-    expect(i1).toBeLessThan(i2);
-    expect(i2).toBeLessThan(i3);
-    expect(i3).toBeLessThan(i4);
-    expect(p).toMatch(/stress or linked sound/i);
-    expect(p).toMatch(/repeat/i);
+  it('옛 산문 절차를 남기지 않는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).not.toMatch(/Do the dialogue with me|You say A's lines|Do it twice|For each sentence, in this order/i);
   });
 
-  it('막히면 정답 대신 첫 두 단어, 한 턴 두 문장, 기다리기, 교정은 하나씩 다시 말하게', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).toMatch(/don't say the whole sentence/i);
-    expect(p).toMatch(/first two words/i);
-    expect(p).toMatch(/two short sentences at most/i);
-    expect(p).toMatch(/then wait for me/i);
-    expect(p).toMatch(/one mistake at a time/i);
-    expect(p).toMatch(/have me say it again/i);
-  });
-
-  it('한국어 뜻과 힌트를 허용하고, 칭찬은 생략, 번호는 소리 내지 않는다', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).toMatch(/Korean meaning/i);
-    expect(p).toMatch(/short Korean hint/i);
-    expect(p).toMatch(/skip the praise/i);
-    expect(p).toMatch(/don't read the numbers/i);
-    expect(p).not.toMatch(/ENGLISH ONLY|emergency only/i);
-  });
-
-  it('옛 설계(타깃 숨기기·유도·퀴즈 금지·장면 지정)를 남기지 않는다', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).not.toMatch(/before I do|not a quiz|do NOT read this list|hotel check-in/i);
-  });
-
-  it('마무리는 한국어로 혼자 말한 것과 도움 받은 것', () => {
-    const p = buildVoicePrompt([card]);
-    expect(p).toMatch(/tell me in Korean which sentences I said on my own/i);
-    expect(p.trim()).toMatch(/Start with sentence 1\.$/);
+  it('미니대화가 없는 카드는 상황을 S줄에 적고 대화 단계를 만들지 않는다', () => {
+    const p = buildVoicePrompt([{ expr: 'x', sentence: 'X.', ko: '엑스.', situation: '이럴 때' }]);
+    expect(p).toContain('S1 "X." = 엑스.');
+    expect(p).toContain('  (이럴 때)');
+    expect(p).not.toMatch(/이제 대화 연습입니다/);
+    expect(stepsOf(p).length).toBeGreaterThan(1);
   });
 
   it('첫 줄이 ChatGPT 안내이고 텍스트 답장 뒤 음성이라고 말한다', () => {
-    const p = buildVoicePrompt([card]);
+    const p = buildVoicePrompt([card1]);
     const first = p.split('\n')[0];
     expect(first).toContain('ChatGPT');
     expect(first).toContain('텍스트 답장');
     expect(p).not.toMatch(/클로드|Claude|Haiku/i);
   });
 
+  it('마지막 줄은 1단계만 말하고 시작하라는 지시다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p.trim()).toMatch(/Start now\. Say only step 1, then wait\.$/);
+  });
+
   it('문자열만 준 옛 호출도 안전 (문장 자리에 표현)', () => {
     const p = buildVoicePrompt(['close by', 'take a break']);
-    expect(p).toContain('1. "close by"');
-    expect(p).toContain('2. "take a break"');
-    expect(p).not.toContain('[key:'); // 문장이 없으면 표현이 곧 문장이라 key 줄을 안 붙인다
+    expect(p).toContain('S1 "close by"');
+    expect(p).toContain('S2 "take a break"');
+    expect(p).not.toContain('(key:'); // 문장이 없으면 표현이 곧 문장이라 key 를 안 붙인다
   });
 
   it('표현 비어도, 비배열이어도 안전한 문자열 반환', () => {
@@ -126,8 +194,8 @@ describe('buildVoicePrompt — 세션에서 배운 내용을 ChatGPT 음성으�
       { expr: 'a', situation: '', sentence: '', ko: '', miniDialogue: [], drills: [] },
       { expr: 'b', situation: 's', sentence: '', ko: '뜻', miniDialogue: [], drills: [] },
     ]);
-    const [n] = normalizeVoiceItems([card]);
-    expect(n.miniDialogue).toHaveLength(3);
+    const [n] = normalizeVoiceItems([card1]);
+    expect(n.miniDialogue).toHaveLength(4);
     expect(n.drills).toHaveLength(4);
   });
 });
