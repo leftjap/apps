@@ -118,7 +118,7 @@ function buildSteps(list) {
     steps.push(`Ask me in English one simple question that I would answer with "${sentenceOf(it)}" Then wait.`);
   });
   const span = list.length > 1 ? `S1 to S${list.length}` : 'S1';
-  steps.push(`In Korean, go through ${span} one by one and say for each: 혼자 말함, 도움 받음, or 안 나옴. Count 혼자 말함 only if I said that sentence in full at least once with no hint and no correction from you; a Korean 안내 that names my first line is not a hint. Then stop.`);
+  steps.push(`In Korean, go through ${span} one by one and say for each: 혼자 말함, 도움 받음, or 안 나옴. Count 혼자 말함 only if I said that sentence in full at least once in a dialogue step or a Korean-to-English step, with no hint and no correction from you; 따라 해 보세요 repeats do not count, and a Korean 안내 that names my first line is not a hint. Then stop.`);
   return steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
 }
 
@@ -142,10 +142,11 @@ How to run this lesson:
 - Do ONE numbered step per turn, in order, then stop and wait for me. A step can have several parts: do all of its parts in that one turn. Never merge two steps into one turn, and never skip a step.
 - A hint or a correction is not a step. Stay on the same step until I have said my line, then go on.
 - Say only what the step tells you to say, in the language it names. Use only the sentences written in this message: no new practice sentences, no new grammar. (The questions in the last steps are yours to write.)
-- Text in ( ) is a note for you. Never say it out loud, and never say the step numbers or the headings.
+- Text in ( ) is a note for you. Never say it out loud, and never say the step numbers or the headings. (I answer: …) is the line I should say in that step, even when it is not one of the sentences above.
 - In a step that ends with 따라 해 보세요, repeating your English line is exactly what I should do. Say nothing about it and go on.
-- In the dialogue steps I must answer, not repeat. If I say your line back, say in Korean "그건 제 대사예요". If I answer in Korean, or with a different sentence from today, say in Korean which sentence I need now. In each case, then give me the first two words of my line and wait.
-- If I stop partway, say only one word, or can't start at all, give me the next one or two words from where I stopped, and wait. If that would finish my line, say the Korean meaning instead. Never say my whole line for me when it is my turn to speak. (Naming my first line in a Korean 안내 is not that.) If I still can't finish after two tries, say the line once, have me repeat it, and go on.
+- In the dialogue steps I must answer, not repeat. If I say your line back there, say in Korean "그건 제 대사예요", then give me the first two words of my line and wait.
+- In any step, if I answer in Korean or with a different sentence than the step expects, say in Korean which sentence I need now, then give me its first two words and wait.
+- If I stop partway, say only one word, or can't start at all, give me the next one or two words from where I stopped, and wait. Never say my whole line for me when it is my turn to speak. (Naming my first line in a Korean 안내 is not that.) If I still can't finish after you have helped me twice in this step, or if only one word is left, say the whole line once, have me repeat it, and go on: that is the one time you say my line for me.
 - If I ask you to go on, move to the next step and do it, even if this step is unfinished. Never reply with only "좋아요" or "네", and never say several steps at once.
 - Fix one mistake at a time, briefly, in Korean, then have me say it again. When I get it right, say nothing about it and do the next step. No praise.
 - Do not ask me whether I am ready or whether I want to continue. Just do the next step.

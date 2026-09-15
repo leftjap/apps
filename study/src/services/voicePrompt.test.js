@@ -103,7 +103,8 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
     const s = stepsOf(buildVoicePrompt([card1, card2]));
     const last = s[s.length - 1];
     expect(last).toContain('In Korean, go through S1 to S2 one by one and say for each: 혼자 말함, 도움 받음, or 안 나옴.');
-    expect(last).toMatch(/in full at least once with no hint and no correction from you/i);
+    expect(last).toMatch(/in full at least once in a dialogue step or a Korean-to-English step, with no hint and no correction from you/i);
+    expect(last).toMatch(/따라 해 보세요 repeats do not count/i); // 따라 하기만으로 전부 혼자 말함이 되던 문제
     expect(last).toMatch(/a Korean 안내 that names my first line is not a hint/i);
   });
 
@@ -145,19 +146,23 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/if I stop partway/i);
     expect(p).toMatch(/next one or two words from where I stopped/i);
-    expect(p).toMatch(/if that would finish my line, say the Korean meaning instead/i);
   });
 
-  it('한국어로 답하거나 다른 문장을 말해도 같은 줄에서 처리한다', () => {
+  it('한국어로 답하거나 다른 문장을 말하는 것은 따라 하기 단계에서도 일어나므로 단계를 가리지 않는다', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/if I answer in Korean, or with a different sentence from today/i);
+    expect(p).toMatch(/in any step, if I answer in Korean or with a different sentence than the step expects/i);
     expect(p).toMatch(/say in Korean which sentence I need now/i);
+    // 역할 이탈 교정만 대화 단계 한정
+    expect(p).toMatch(/in the dialogue steps I must answer, not repeat\. If I say your line back there/i);
   });
 
-  it('두 번 도와도 못 끝내면 한 번 들려주고 따라 하게 한 뒤 넘어간다 (막힘 탈출)', () => {
+  it('두 번 도왔거나 한 단어만 남으면 들려주고 따라 하게 한 뒤 넘어간다 (막힘 탈출)', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/if I still can't finish after two tries/i);
-    expect(p).toMatch(/say the line once, have me repeat it, and go on/i);
+    expect(p).toMatch(/after you have helped me twice in this step/i); // 회수 기준점 명시
+    expect(p).toMatch(/or if only one word is left/i); // 뜻만 말하고 끝나는 빈 턴 제거
+    expect(p).toMatch(/say the whole line once, have me repeat it, and go on/i);
+    expect(p).toMatch(/that is the one time you say my line for me/i); // 금지 규칙과의 충돌 해소
+    expect(p).not.toMatch(/say the Korean meaning instead/i);
   });
 
   it('시작조차 못 한 경우도 같은 힌트 규칙으로 받는다', () => {
@@ -188,6 +193,7 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
   it('괄호와 단계 번호는 소리 내지 않고, 칭찬·확인 질문은 하지 않는다', () => {
     const p = buildVoicePrompt([card1]);
     expect(p).toMatch(/never say it out loud/i);
+    expect(p).toMatch(/\(I answer: …\) is the line I should say in that step/); // 기대 답이 오늘 문장 목록에 없어도 내 대사다
     expect(p).toMatch(/never say the step numbers/i);
     expect(p).toMatch(/no praise/i);
     expect(p).toMatch(/do not ask me whether I am ready/i);
