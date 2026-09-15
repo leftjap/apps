@@ -85,6 +85,24 @@ struct ReadingTimeApp: App {
             }
         }
 
+        // 홈에서 지운 밀리 책 (사용자 결정 2026-09-15) — 완독과 달리 다시 올라오지 않는다.
+        if !sequenceLaunch,
+           let raw = UserDefaults.standard.data(forKey: "rt.hiddenEbooks"),
+           let saved = try? dec.decode(Set<String>.self, from: raw) {
+            model.hiddenEbooks = saved
+        }
+        if !sequenceLaunch {
+            model.onHiddenEbooksChange = { set in
+                if let raw = try? JSONEncoder().encode(set) {
+                    UserDefaults.standard.set(raw, forKey: "rt.hiddenEbooks")
+                }
+            }
+        }
+
+        // 책 없이 저장된 과거 기록 복구 — 2026-09-15 에 89분 탭 세션이 isbn:null 로 남았다.
+        // 재발은 startSession 의 currentBook 폴백이 막고, 여기선 기존 기록만 되살린다.
+        if !sequenceLaunch { model.repairUnattributedSessions() }
+
         // 개인 앱: 로그인 1회 유지 (로그아웃 시까지) — UserDefaults 영속
         if !sequenceLaunch {
             model.onAuthChange = { [weak model] loggedIn in

@@ -46,17 +46,7 @@ public struct Screen02Home: View {
         _menuOpen = State(initialValue: menuOpen)
         if let m = model, m.userData != nil, let card = m.homeCards.first {
             let book = card.isbn.flatMap { isbn in m.userData?.books.first { $0.isbn == isbn } }
-            let paperLast = m.recentRecords(1).first
-            let ebookLast = m.ebookReadAt.max { $0.value < $1.value }
-            let ebookIsLatest = ebookLast.map { ebook in
-                paperLast.map { ebook.value > $0.endedAt } ?? true
-            } ?? false
-            let paperLastTitle = paperLast.flatMap { record in
-                m.userData?.books.first { $0.isbn == record.isbn }?.title
-            }
-            let ebookLastMinutes = ebookLast.flatMap { ebook in
-                m.ebookBreakdown(on: ebook.value).first { $0.title == ebook.key }.map { $0.seconds / 60 }
-            }
+            let last = m.lastRecord
             self.live = Live(
                 title: book?.title ?? card.title,
                 author: book?.author ?? card.author ?? "밀리의서재",
@@ -70,11 +60,9 @@ public struct Screen02Home: View {
                 bestStreak: m.bestStreak.days,
                 bestStreakMonth: m.bestStreak.monthLabel,
                 cal14: m.calendarWindow14,
-                lastBook: ebookIsLatest ? ebookLast?.key : (paperLastTitle ?? card.title),
-                lastMin: ebookIsLatest ? (ebookLastMinutes ?? 0) : paperLast.map { $0.seconds / 60 },
-                lastWhen: ebookIsLatest
-                    ? ebookLast.map { RTAppModel.recentWhen($0.value, now: m.now()) }
-                    : paperLast.map { RTAppModel.recentWhen($0.endedAt, now: m.now()) })
+                lastBook: last?.title,
+                lastMin: last?.minutes,
+                lastWhen: last.map { RTAppModel.recentWhen($0.at, now: m.now()) })
         } else {
             self.live = nil
         }

@@ -112,6 +112,7 @@ struct RTHomeCarousel: View {
     // 시안 스테이지 폭 = 390 - 26*2
     private static let pageW: CGFloat = 390 - 26 * 2
     @State private var drag: CGFloat = 0
+    @State private var confirmDelete = false
 
     private var index: Int { min(max(0, model.homeCardIndex), cards.count - 1) }
 
@@ -189,8 +190,11 @@ struct RTHomeCarousel: View {
                      spineTitle: card.title)
         } trailing: {
             if card.isEbook {
-                // 완독 처리 진입점만 (밀리는 08 상세가 없다).
-                finishButton
+                // 밀리는 08 상세가 없다 → 완독·삭제 진입점을 여기에 둔다.
+                HStack(spacing: 6) {
+                    finishButton
+                    deleteButton
+                }
             } else if let isbn = card.isbn {
                 RTHomeAccum(text: RTAppModel.hmString(model.totalSeconds(isbn: isbn)))
             }
@@ -211,6 +215,28 @@ struct RTHomeCarousel: View {
             .background(Capsule().fill(RT.greenTint))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("home.card.finish")
+    }
+
+    // 밀리 카드 삭제 (사용자 결정 2026-09-15) — 밀리에서 눌러보기만 한 책이 카드로 쌓이는데
+    // 지울 방법이 완독뿐이었다(완독은 서재에 편입시키는 반대 동작). 되돌릴 수 없어 확인을 둔다.
+    private var deleteButton: some View {
+        Button { confirmDelete = true } label: {
+            Text("지우기").font(.sans(11.5, 600)).foregroundColor(Color(hex: 0xB56A55))
+                .padding(EdgeInsets(top: 6, leading: 12, bottom: 6, trailing: 12))
+                .background(Capsule().fill(Color(hex: 0xB56A55, alpha: 0.10)))
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("home.card.delete")
+        .confirmationDialog("'\(current.title)' 을(를) 지울까요?",
+                            isPresented: $confirmDelete, titleVisibility: .visible) {
+            Button("삭제", role: .destructive) {
+                withAnimation(.easeOut(duration: 0.2)) { model.deleteSelectedCard() }
+            }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text("홈과 기록에서 빠집니다. 밀리에서 다시 읽어도 올라오지 않아요.")
+        }
     }
 }
 

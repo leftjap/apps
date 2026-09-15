@@ -155,6 +155,8 @@ public struct RTHomeCard: Identifiable, Equatable, Sendable {
     public var recordable: Bool { !isEbook && isbn != nil }
     /// 홈에서 바로 완독 처리할 수 있는가 — 밀리 전용. 종이책은 08 상세의 '완독' CTA 를 쓴다.
     public var finishable: Bool { isEbook }
+    /// 홈 카드에서 지울 수 있는가 — 밀리 전용. 종이책은 서재 ⋯ 메뉴의 책 삭제를 쓴다.
+    public var deletable: Bool { isEbook }
 
     public init(title: String, author: String?, coverUrl: String,
                 isbn: String?, isEbook: Bool, lastReadAt: Date) {
@@ -404,8 +406,24 @@ public final class RTAppModel: ObservableObject {
     /// 앱에서 완독 처리한 밀리 책 (제목 → 완독 처리 시각). 그 시각보다 최신 기록이 들어오면
     /// 다시 읽는 것으로 보고 카드가 되살아난다 (종이책 rereadBook 과 대칭).
     @Published public var finishedEbooks: [String: Date] = [:]
-    /// 홈 캐러셀에서 현재 보고 있는 카드 인덱스
-    @Published public var homeCardIndex = 0
+    /// 홈 캐러셀에서 고른 카드의 안정 식별자. 인덱스를 들고 있으면 카드 배열이 재정렬될 때
+    /// 같은 번호가 다른 책을 가리킨다 — loadEbook 이 포그라운드 복귀마다 밀리 기록을 다시
+    /// 주입하므로 실제로 일어난다(실사고 2026-09-15: 고른 책은 서성이다인데 0번이 밀리 책이
+    /// 되어 89분 세션이 isbn:null 로 저장됨).
+    @Published private var selectedCardID: String?
+
+    /// 홈 캐러셀에서 현재 보고 있는 카드 인덱스 — 저장은 카드 ID 로 하고 인덱스는 그때 계산한다.
+    public var homeCardIndex: Int {
+        get {
+            guard let id = selectedCardID,
+                  let i = homeCards.firstIndex(where: { $0.id == id }) else { return 0 }
+            return i
+        }
+        set {
+            let cards = homeCards
+            selectedCardID = cards.indices.contains(newValue) ? cards[newValue].id : nil
+        }
+    }
 
     /// 홈 표지 카드 — 읽는 중 종이책 + 최근 밀리 책을 '최근 읽은 순'으로.
     /// 데모(userData nil)는 빈 배열 → 홈은 기존 시안 히어로를 그린다 (rtshot 오라클 불변).
@@ -425,6 +443,7 @@ public final class RTAppModel: ObservableObject {
         }
         // 밀리: 완독 처리 이후 더 최신 기록이 없으면 제외
         let ebook = ebookReadAt.compactMap { (title, readAt) -> RTHomeCard? in
+            if hiddenEbooks.contains(title) { return nil }
             if let finishedAt = finishedEbooks[title], readAt <= finishedAt { return nil }
             return RTHomeCard(title: title, author: nil, coverUrl: ebookCovers[title] ?? "",
                               isbn: nil, isEbook: true, lastReadAt: readAt)
@@ -468,6 +487,38 @@ public final class RTAppModel: ObservableObject {
     }
     /// 완독 처리 영속 훅 (앱: UserDefaults JSON)
     public var onFinishedEbooksChange: (([String: Date]) -> Void)?
+
+    /// 홈에서 지운 밀리 책 (사용자 결정 2026-09-15) — 밀리에서 눌러보기만 한 책이 카드로
+    /// 쌓이는데 지울 방법이 완독 처리뿐이었다(그건 서재에 편입시키는 반대 동작).
+    /// 완독과 달리 더 최신 밀리 기록이 와도 되살아나지 않고, 기록에서도 빠진다.
+    @Published public var hiddenEbooks: Set<String> = [] { didSet { statsStamp += 1 } }
+    /// 삭제 영속 훅 (앱: UserDefaults JSON)
+    public var onHiddenEbooksChange: ((Set<String>) -> Void)?
+
+    public func deleteEbook(_ title: String) {
+        hiddenEbooks.insert(title)
+        onHiddenEbooksChange?(hiddenEbooks)
+    }
+
+    /// 홈에서 현재 카드를 삭제 (밀리 전용 — UI 진입점). 인덱스가 배열 밖으로 나가지 않게 보정.
+    public func deleteSelectedCard() {
+        let cards = homeCards
+        let i = homeCardIndex
+        guard cards.indices.contains(i), cards[i].deletable else { return }
+        deleteEbook(cards[i].title)
+        homeCardIndex = min(i, max(0, homeCards.count - 1))
+    }
+
+    /// 삭제한 책만 있는 날을 뺀 밀리 일별 초 — 시간·연속·합계의 공통 정본.
+    /// 그날 시간(book_reading_seconds)은 날짜 총합이라 책별로 안 나뉜다 → 남은 책이 있으면
+    /// 그 시간은 남은 책 몫으로 둔다. 어느 책이 그날 읽혔는지 모르는 날(ebookBooks 없음)도 유지.
+    private var visibleEbookDaily: [String: Int] {
+        guard !hiddenEbooks.isEmpty else { return ebookDaily }
+        return ebookDaily.filter { day, _ in
+            guard let titles = ebookBooks[day], !titles.isEmpty else { return true }
+            return !titles.allSatisfy { hiddenEbooks.contains($0) }
+        }
+    }
 
     // ── 밀리 서재 편입 (사용자 결정 2026-09-01) ────────────────────────────
 
@@ -580,9 +631,9 @@ public final class RTAppModel: ObservableObject {
     public func ebookBreakdown(on date: Date) -> [(title: String, seconds: Int)] {
         let total = ebookSeconds(on: date)
         guard total > 0 else { return [] }
-        if let titles = ebookBooks[dayFormatter.string(from: date)], titles.count == 1 {
-            return [(titles[0], total)]
-        }
+        let titles = (ebookBooks[dayFormatter.string(from: date)] ?? [])
+            .filter { !hiddenEbooks.contains($0) }
+        if titles.count == 1 { return [(titles[0], total)] }
         return [("밀리의서재", total)]
     }
 
@@ -601,23 +652,23 @@ public final class RTAppModel: ObservableObject {
 
     public func ebookSeconds(on date: Date) -> Int {
         guard userData != nil else { return 0 }
-        let sec = ebookDaily[dayFormatter.string(from: date)] ?? 0
+        let sec = visibleEbookDaily[dayFormatter.string(from: date)] ?? 0
         return sec >= Self.ebookMinSeconds ? sec : 0
     }
     /// 기록으로 인정된 밀리 총 시간(초) — 1분 미만 날 제외
     public var countedEbookTotalSeconds: Int {
-        userData == nil ? 0 : ebookDaily.values.filter { $0 >= Self.ebookMinSeconds }.reduce(0, +)
+        userData == nil ? 0 : visibleEbookDaily.values.filter { $0 >= Self.ebookMinSeconds }.reduce(0, +)
     }
     /// 기록으로 인정된 밀리 날수 — 1분 미만 날 제외 (홈 밀리 카드 '횟수')
     public var countedEbookDayCount: Int {
-        userData == nil ? 0 : ebookDaily.values.filter { $0 >= Self.ebookMinSeconds }.count
+        userData == nil ? 0 : visibleEbookDaily.values.filter { $0 >= Self.ebookMinSeconds }.count
     }
     /// 기록 있는 날(startOfDay) — 종이 세션 ∪ 밀리(>0초). 연속·체인 판정 정본.
     private var readDays: Set<Date> {
         guard let d = userData else { return [] }
         var days = Set(d.sessions.map { cal.startOfDay(for: $0.endedAt) })
         let f = dayFormatter
-        for (k, sec) in ebookDaily where sec >= Self.ebookMinSeconds {
+        for (k, sec) in visibleEbookDaily where sec >= Self.ebookMinSeconds {
             if let dt = f.date(from: k) { days.insert(cal.startOfDay(for: dt)) }
         }
         return days
@@ -673,6 +724,24 @@ public final class RTAppModel: ObservableObject {
     /// 최신순 세션 기록
     public func recentRecords(_ limit: Int) -> [RTSessionRecord] {
         Array((userData?.sessions ?? []).sorted { $0.endedAt > $1.endedAt }.prefix(limit))
+    }
+
+    /// 홈 '마지막 기록' 행 — 종이 세션과 밀리 기록 중 더 최근 것.
+    /// 책이 안 붙은 종이 기록은 제목을 "기록" 으로 둔다. 다른 카드에서 이름을 빌려오면
+    /// 읽지도 않은 책이 기록으로 보인다(실사고 2026-09-15).
+    public var lastRecord: (title: String, minutes: Int, at: Date)? {
+        guard userData != nil else { return nil }
+        let paper = recentRecords(1).first
+        let ebook = ebookReadAt.max { $0.value < $1.value }
+        let ebookIsLatest = ebook.map { e in paper.map { e.value > $0.endedAt } ?? true } ?? false
+
+        if ebookIsLatest, let e = ebook {
+            let min = ebookBreakdown(on: e.value).first { $0.title == e.key }.map { $0.seconds / 60 } ?? 0
+            return (e.key, min, e.value)
+        }
+        guard let p = paper else { return nil }
+        let title = p.isbn.flatMap { isbn in userData?.books.first { $0.isbn == isbn }?.title }
+        return (title ?? "기록", p.seconds / 60, p.endedAt)
     }
 
     /// 홈 '마지막 기록' 행 탭 — 그 기록의 책 상세(08).
@@ -1015,6 +1084,30 @@ public final class RTAppModel: ObservableObject {
 
     public func deleteSession() { session = nil; nav(.home) }
 
+    /// 책 없이 저장된 과거 세션 복구 — 그 기록이 끝난 시점에 읽는 중이던 종이책에 붙인다
+    /// (currentBook 과 같은 규칙을 그 시각 기준으로 적용). 붙일 책이 없으면 그대로 둔다.
+    /// 재발은 startSession 의 currentBook 폴백이 막으므로, 이 복구는 기존 기록용이다.
+    public func repairUnattributedSessions() {
+        guard let d = userData, d.sessions.contains(where: { $0.isbn == nil }) else { return }
+        mutateUserData { data in
+            for i in data.sessions.indices where data.sessions[i].isbn == nil {
+                let when = data.sessions[i].endedAt
+                var lastRead = [String: Date]()
+                for s in data.sessions {
+                    guard let key = s.isbn, s.endedAt <= when else { continue }
+                    if s.endedAt > (lastRead[key] ?? .distantPast) { lastRead[key] = s.endedAt }
+                }
+                let candidates = data.books.filter {
+                    !$0.finished && $0.millieBookId == nil && $0.addedAt <= when
+                }
+                data.sessions[i].isbn = candidates.max {
+                    max($0.addedAt, lastRead[$0.isbn] ?? .distantPast)
+                        < max($1.addedAt, lastRead[$1.isbn] ?? .distantPast)
+                }?.isbn
+            }
+        }
+    }
+
     public func continueReading() { start(isbn: selectedBook?.isbn) }
 
     /// 완독 책 다시 읽기 — 완독만 해제(별점·완독일 보존)하고 그 책으로 세션 시작.
@@ -1266,9 +1359,12 @@ public final class RTAppModel: ObservableObject {
     public func startSession(_ mode: RTMode) {
         // 세션 대상: start(isbn:) 이 보류한 책 > 홈 카드에서 고른 책 (캐러셀 도입 2026-08-25).
         // flipTargetISBN 은 카드 범위 밖이면 currentBook 으로 폴백한다.
+        // 마지막 폴백은 읽는 중 책 — 대상이 비어도 기록이 어느 책에도 안 붙는 일은 없어야 한다
+        // (실사고 2026-09-15: 89분이 isbn:null 로 저장돼 통계·마지막 기록에서 사라짐).
+        // flipTargetISBN 자체엔 폴백을 두지 않는다 — FlipEngine 의 밀리 카드 엎기 차단 기준이다.
         session = RTSession(mode: mode, status: .recording,
                             elapsed: sessionSeed, pauseCount: 0, startedAt: now(),
-                            isbn: nextSessionISBN ?? flipTargetISBN)
+                            isbn: nextSessionISBN ?? flipTargetISBN ?? currentBook?.isbn)
         nextSessionISBN = nil
         emitPresence()
     }
@@ -1278,6 +1374,21 @@ public final class RTAppModel: ObservableObject {
         guard var s = session else { return }
         s.elapsed = seconds
         session = s
+    }
+
+    /// 홈 캐러셀 렌더 검증용 상태 (rtshot --seq seedCards) — 종이책 1권 + 밀리 2권.
+    /// 실기기 검증이 클라우드 로그인을 요구해 헤드리스로는 이 경로로만 캐러셀을 그릴 수 있다.
+    private func seedHomeCards() {
+        let day = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        userData = RTUserData(
+            books: [RTBook(isbn: "9791167903792", title: "서성이다", author: "장강명",
+                           publisher: "현대문학", coverUrl: "", addedAt: day)],
+            sessions: [RTSessionRecord(isbn: "9791167903792", mode: "tap", seconds: 1412,
+                                       endedAt: day, pauseCount: 0)])
+        ebookReadAt = ["왕초보 영어패턴": day.addingTimeInterval(3600),
+                       "최소한의 한국사": day.addingTimeInterval(-86_400)]
+        ebookDaily = [dayFormatter.string(from: day.addingTimeInterval(3600)): 245]
+        ebookBooks = [dayFormatter.string(from: day.addingTimeInterval(3600)): ["왕초보 영어패턴"]]
     }
 
     // ── 액션 문자열 적용 (rtshot --seq 상태 파라미터 렌더용) ──
@@ -1291,6 +1402,7 @@ public final class RTAppModel: ObservableObject {
         case "search": Task { await search(arg) }   // 라이브 검색 트리거(검증 — provider 배선 시)
         case "query": searchQuery = arg              // 검색창 프리필(검증 — sheet:addbook 뒤에 둘 것: 열 때 비움)
         case "card": Int(arg).map { homeCardIndex = $0 }        // 홈 캐러셀 카드 선택(검증)
+        case "seedCards": seedHomeCards()                        // 종이+밀리 카드 상태(검증 — 캐러셀 렌더)
         case "sel": selectedISBN = arg                           // 상세 대상 지정(검증 — nav:08 과 조합)
         case "reread": rereadBook()                              // 다시 읽기(검증 — 밀리 미완독 상태 재현)
         case "statsPrev": statsPrev()                            // 기록 원페이지 (검증)
