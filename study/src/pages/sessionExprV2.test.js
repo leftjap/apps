@@ -2726,3 +2726,46 @@ describe('sessionExprV2 — 상대 줄 채점이 기본 문장을 다시 그리�
     } finally { vi.useRealTimers(); }
   });
 });
+
+/* 폰 대화 접기에서는 줄 index 가 재색인된다(keepIdx). 상대 줄 채점 뒤 흔적을 제자리에서 고칠 때
+ * 원래 index 를 화면 index 로 되돌리지 않으면 엉뚱한 줄이 갱신된다 (2026-09-15). */
+describe('sessionExprV2 — 대화 접기 상태에서도 그 줄의 흔적만 제자리 갱신', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+    { speaker: 'B', name: '지오', en: "I'm almost there.", ko: '거의 다 왔어.', kr: '아이몰모우스 데어r' },
+  ];
+  const card = (id, sentence, ko) => ({ id, lang: 'en', sentence, ko, pron: '발음',
+    explanation: { key: `${sentence} = ${ko}`, situation: '공항', miniDialogue: MD, drills: [] } });
+
+  it('접힌 화면의 상대 줄을 녹음하면 원래 줄(2번)에 쌓이고 화면도 그 줄만 바뀐다', async () => {
+    const state = makeState();
+    state.size = 'phone';
+    state.dlgCollapsed = true;
+    state.cards = [card('c1', "I'm on my way.", '가는 중이야.'), card('c2', "I'm almost there.", '거의 다 왔어.')];
+    state.step = 2; state.sentence = state.cards[1]; // 대화 3번째 줄(index 3)이 선택 → keepIdx = [2, 3]
+    let rerenders = 0;
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const draw = () => renderSessionExprV2(host, state, { rerender: () => { rerenders += 1; host.innerHTML = ''; draw(); } });
+    draw();
+
+    const rows = [...host.querySelectorAll('.vs-ln')];
+    expect(rows).toHaveLength(2);
+    expect(rows[0].querySelector('.vs-ln-en').textContent).toBe('Take your time.'); // 원래 index 2
+    const selBefore = host.querySelector('.vs-ln.sel');
+
+    const btn = rows[0].querySelector('button[aria-label="녹음"]');
+    btn.click(); await tick();
+    btn.click(); await tick(); await tick();
+
+    expect(rerenders).toBe(0);
+    expect(host.querySelector('.vs-ln.sel')).toBe(selBefore);
+    // 저장은 원래 index(2) 로, 소유자는 묶음 대표 카드(c1)
+    expect(state.exLog.c1.mini).toEqual({ 2: [100] });
+    // 화면 흔적은 접힌 화면의 0번 줄에 붙는다
+    expect([...rows[0].querySelectorAll('.vs-ln-trace .v-dot')].map((n) => n.textContent)).toEqual(['100']);
+    expect(rows[1].querySelector('.vs-ln-trace')).toBeNull(); // 선택 줄에는 흔적을 그리지 않는다
+  });
+});
