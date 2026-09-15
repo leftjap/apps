@@ -732,7 +732,7 @@ public final class RTAppModel: ObservableObject {
     public var lastRecord: (title: String, minutes: Int, at: Date, isEbook: Bool)? {
         guard userData != nil else { return nil }
         let paper = recentRecords(1).first
-        let ebook = ebookReadAt.max { $0.value < $1.value }
+        let ebook = ebookReadAt.filter { !hiddenEbooks.contains($0.key) }.max { $0.value < $1.value }
         let ebookIsLatest = ebook.map { e in paper.map { e.value > $0.endedAt } ?? true } ?? false
 
         if ebookIsLatest, let e = ebook {

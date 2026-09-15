@@ -106,6 +106,22 @@ private func at(_ s: String) -> Date {
         #expect(m.homeCards.first { $0.isEbook }?.deletable == true)
     }
 
+    @Test func deletedEbookLeavesTheLastRecordRow() {
+        // 지운 책이 '마지막 기록' 에 계속 뜨면 지운 것이 아니다.
+        let m = model()
+        m.userData = RTUserData(
+            books: [RTBook(isbn: "A", title: "몰입", author: "저", publisher: "출",
+                           coverUrl: "", addedAt: at("2026-09-01"))],
+            sessions: [.init(isbn: "A", mode: "tap", seconds: 600,
+                             endedAt: at("2026-09-09 10:00"), pauseCount: 0)])
+        #expect(m.lastRecord?.title == "살찌지 않는 몸")
+
+        m.deleteEbook("살찌지 않는 몸")
+        // 남은 것 중 최신 = 종이 09-09 (밀리 최소한의 한국사는 09-06 이라 더 옛것)
+        #expect(m.lastRecord?.title == "몰입")
+        #expect(m.lastRecord?.isEbook == false)
+    }
+
     @Test func deletedEbookLeavesStatsRanking() {
         let m = model()
         #expect(m.statsDataset.books.contains { $0.title == "살찌지 않는 몸" })
