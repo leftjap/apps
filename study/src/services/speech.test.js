@@ -1546,6 +1546,25 @@ describe('speak — non-MSE 경로(iPhone) 재생 트리거', () => {
     expect(p.playCalls).toBeGreaterThanOrEqual(1);   // 실제 재생(play) 발생 = 소리 남
     expect(p.pauseCalls).toBe(0);                    // 재생 트리거 시점엔 pause 안 함 (pause 먼저면 무음)
   });
+
+  /* 2026-09-15 — 이 경로의 종료도 타이머가 아니라 오디오가 알린다. iPhone 은 blob 을 통째로 받아
+   * 재생하므로 audioDuration 이 지나도 재생이 남아 있을 수 있다(디코드·시작 지연). 종전 코드는
+   * privAudio 에 'ended' 리스너를 직접 달았는데, 지금은 SDK 의 onAudioEnd 하나로 두 경로를 함께 받는다. */
+  it('audioDuration 이 지나도 onAudioEnd 전에는 끄지 않는다 (iPhone 도 꼬리 보존)', async () => {
+    const m = setupNonMSE();
+    const { Speech } = await import('./speech.js');
+    const ended = [];
+    Speech.speak('iphone tail', { lang: 'en-US', onEnd: () => ended.push(1) });
+    await new Promise((r) => setTimeout(r, 400)); // audioMs(100ms) 를 한참 넘긴 시점
+    const p = m.players.find((x) => x.privIsClosed);
+    expect(p.pauseCalls).toBe(0);                    // 종전 구현은 여기서 이미 정리됐다
+    expect(ended).toHaveLength(0);
+    expect(typeof p.onAudioEnd).toBe('function');    // SDK 가 부를 종료 통보자가 걸려 있다
+
+    p.onAudioEnd(p);                                 // 실제 재생 종료
+    expect(ended).toHaveLength(1);
+    expect(p.pauseCalls).toBe(1);
+  });
 });
 
 /* 429 백오프 (2026-07-22 실측: F0 429 는 1.4초 내 3연속 재시도로 안 풀리고 60초+ 지속) —
