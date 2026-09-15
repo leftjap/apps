@@ -1740,11 +1740,15 @@ describe('speech — cancel() 이 재생 종료를 통보한다', () => {
  * (recordWav worklet 이 _ttsPlaying>0 이면 폐기). 녹음 중 드릴 행1 재생 → 행2 재생(선점) 순서로 재현. */
 describe('speak — 선점 시 이전 재생의 종료 통보 (카운터 누수 방지)', () => {
   function setupSDK() {
-    class FakePlayer { constructor() { this.privIsPaused = false; } notifyPlayback() {} pause() {} close() {} }
+    class FakePlayer { constructor() { this.privIsPaused = false; this.onAudioEnd = null; } notifyPlayback() {} pause() {} close() {} }
     class FakeSynth {
       constructor(_c, audioConfig) { this.player = audioConfig?.player; }
-      speakSsmlAsync(_ssml, ok) { ok({ audioDuration: 1e7 }); } // 1초 재생
-      close() {}
+      speakSsmlAsync(_ssml, ok) {
+        ok({ audioDuration: 1e7 }); // 1초 재생
+        // 실 SDK: 재생이 실제로 끝나면 privAudio.onended → onAudioEnd(player)
+        this.endTimer = setTimeout(() => this.player?.onAudioEnd?.(this.player), 1000);
+      }
+      close() { clearTimeout(this.endTimer); }
     }
     vi.stubGlobal('window', {
       SpeechSDK: {
@@ -2294,5 +2298,193 @@ describe('speech — analyzeWavRest 가 NBest[0].Lexical 을 recognizedLexical �
     Speech.clearAzureTokenCache();
     const r = await Speech.analyzeWavRest(blob(), 'hi', { lang: 'en-US' });
     expect(r.recognizedLexical).toBeNull();
+  });
+});
+
+/* ── 한국어 고유명사 낭독 (2026-09-15 사용자 보고 ③) ──────────────────────────
+ * 로마자로 적힌 한국어 고유명사를 영어 음성이 영어 철자로 읽었다. 그렇다고 한 문장 안에 한글을 섞으면
+ * 문장 전체가 한국어 음운으로 넘어간다(사용자 청취 보고). 그래서 한국어 구간을 **제 voice 블록**으로
+ * 떼어 합성한다 — 같은 음성이라 음색은 그대로고, 블록이 나뉘어 언어가 서로 번지지 않는다. */
+describe('buildAzureSSML — 한국어 고유명사는 제 블록에서 읽는다', () => {
+  const V = 'en-US-AvaMultilingualNeural';
+  it('고유명사가 없으면 종전 그대로 블록 하나 (회귀 방지)', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('I have to go with you next time.', 'en-US', 1, V, null);
+    expect(ssml.match(/<voice /g)).toHaveLength(1);
+    expect(ssml).not.toContain('mstts');
+    expect(ssml).toContain('I have to go with you next time.');
+  });
+
+  it('영어 구간과 한국어 구간이 각각 제 voice 블록이 된다 — 음성 이름은 같다', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('Okay. And then Hyundae-eumryul?', 'en-US', 1, V, null);
+    expect(ssml.match(/<voice /g)).toHaveLength(2);
+    expect(ssml.match(new RegExp(`name="${V}"`, 'g'))).toHaveLength(2); // 음색 유지
+    expect(ssml).toContain('>Okay. And then <');            // 영어는 영어 블록에 그대로
+    expect(ssml).toContain('<lang xml:lang="ko-KR">현대음률?</lang>'); // 물음표는 이름에 붙는다
+    expect(ssml).not.toContain('Hyundae-eumryul');
+  });
+
+  it('블록 사이 무음을 0 으로 지정한다 (문장이 끊겨 들리지 않게)', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('How about Cheonggiwa? The galbi is amazing.', 'en-US', 1, V, null);
+    expect(ssml).toContain('xmlns:mstts');
+    expect(ssml.match(/Leading-exact/g)).toHaveLength(5); // 영3 + 한2 블록
+    expect(ssml.match(/Tailing-exact/g)).toHaveLength(5);
+    expect(ssml.match(/<lang xml:lang="ko-KR">/g)).toHaveLength(2);
+  });
+
+  /* 나눌 음성 이름이 없으면 로마자를 그대로 둔다 — 한 블록 안에서 <lang> 만 두르면 문장 전체가
+   * 한국어 음운으로 넘어가(실측) 영어가 더 나빠진다. 실경로에서는 voiceForText 가 늘 이름을 준다. */
+  it('음성 이름이 없으면 나누지 않고 로마자를 그대로 둔다', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('Okay. And then Hyundae-eumryul?', 'en-US', 1, null, null);
+    expect(ssml).not.toContain('<voice');
+    expect(ssml).not.toContain('lang xml:lang="ko-KR"');
+    expect(ssml).toContain('Hyundae-eumryul');
+  });
+
+  it('ja 문장은 가르지 않는다', async () => {
+    const { buildAzureSSML } = await import('./speech.js');
+    const ssml = buildAzureSSML('Soyeon', 'ja-JP', 1, 'ja-JP-AoiNeural', null);
+    expect(ssml.match(/<voice /g)).toHaveLength(1);
+    expect(ssml).toContain('Soyeon');
+  });
+});
+
+describe('speak — 한국어 고유명사가 있으면 Multilingual 음성으로 읽는다', () => {
+  function setupSDK() {
+    const state = { ssml: [] };
+    class FakePlayer { constructor() { this.privIsPaused = false; } pause() { this.privIsPaused = true; } close() {} }
+    class FakeSynth {
+      constructor(_c, ac) { this.player = ac?.player; }
+      speakSsmlAsync(ssml, ok) { state.ssml.push(ssml); ok({ audioDuration: 1e6 }); }
+      close() {}
+    }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FakeSynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakePlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
+      },
+    });
+    return state;
+  }
+
+  it('한글을 못 읽는 음성은 같은 성별 Multilingual 로 바꾼다', async () => {
+    const m = setupSDK();
+    const { Speech } = await import('./speech.js');
+    const shown = 'Soyeon wants to go to Hyundae-eumryul.';
+    Speech.speak(shown, { lang: 'en-US', voice: 'en-US-GuyNeural' });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(m.ssml[0]).toContain('en-US-AndrewMultilingualNeural');
+    expect(m.ssml[0]).not.toContain('en-US-GuyNeural');
+    expect(m.ssml[0]).toContain('<lang xml:lang="ko-KR">소연</lang>');
+    expect(m.ssml[0]).toContain('> wants to go to <'); // 영어 구간은 영어 그대로
+    expect(shown).toBe('Soyeon wants to go to Hyundae-eumryul.'); // 입력 문자열 불변
+  });
+
+  it('고유명사가 없으면 음성을 바꾸지 않는다 (회귀 방지)', async () => {
+    const m = setupSDK();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('I have to go with you next time.', { lang: 'en-US', voice: 'en-US-GuyNeural' });
+    await new Promise((r) => setTimeout(r, 30));
+    expect(m.ssml[0]).toContain('en-US-GuyNeural');
+  });
+});
+
+describe('voiceForText — 한국어 고유명사를 읽을 수 있는 음성 고르기', () => {
+  it('고유명사가 있고 음성이 비-Multilingual 이면 같은 성별 Multilingual', async () => {
+    const { voiceForText } = await import('./speech.js');
+    expect(voiceForText('en-US-AriaNeural', 'And then Hyundae-eumryul?', 'en-US')).toBe('en-US-AvaMultilingualNeural');
+    expect(voiceForText('en-US-EricNeural', 'And then Hyundae-eumryul?', 'en-US')).toBe('en-US-AndrewMultilingualNeural');
+    expect(voiceForText(null, 'And then Hyundae-eumryul?', 'en-US')).toBe('en-US-AvaMultilingualNeural');
+  });
+  it('이미 Multilingual 이거나 고유명사가 없으면 그대로', async () => {
+    const { voiceForText } = await import('./speech.js');
+    expect(voiceForText('en-US-AvaMultilingualNeural', 'Hyundae-eumryul', 'en-US')).toBe('en-US-AvaMultilingualNeural');
+    expect(voiceForText('en-US-GuyNeural', 'plain english', 'en-US')).toBe('en-US-GuyNeural');
+    expect(voiceForText('ja-JP-AoiNeural', 'Soyeon', 'ja-JP')).toBe('ja-JP-AoiNeural');
+  });
+});
+
+/* ── 재생 종료 판정 (2026-09-15 사용자 보고 ②) ────────────────────────────────
+ * 종전엔 '합성 완료 시각 + audioDuration' 에 player.pause() 를 걸었다. 재생은 합성이 끝난 뒤에
+ * 시작되고 중간에 버퍼 대기도 생기므로 늘 그만큼 일찍 꺼졌다 (크롬 실측: 1.97초 오디오가 1.70초에
+ * 잘림). 문장이 둘로 나뉜 줄에서는 뒤 문장이 통째로 날아간다. */
+describe('speak — 재생 종료는 오디오가 알린다 (꼬리 잘림 방지)', () => {
+  function setupMSE() {
+    const state = { players: [] };
+    class FakePlayer {
+      constructor() {
+        this.privPlaybackStarted = false; this.privIsPaused = false; this.privIsClosed = false;
+        this.playCalls = 0; this.pauseCalls = 0; this.closeCalls = 0;
+        this.onAudioEnd = null; // 실 SDK: privAudio.onended → onAudioEnd(this)
+        state.players.push(this);
+      }
+      notifyPlayback() { if (!this.privPlaybackStarted) { this.privPlaybackStarted = true; if (!this.privIsPaused) this.playCalls += 1; } }
+      pause() { if (!this.privIsPaused) { this.privIsPaused = true; this.pauseCalls += 1; } }
+      // 실 SDK MSE close(): MediaSource.endOfStream() — 재생은 멈추지 않는다
+      close() { this.privIsClosed = true; this.closeCalls += 1; }
+    }
+    class FakeSynth {
+      constructor(_c, ac) { this.player = ac?.player; }
+      speakSsmlAsync(_ssml, ok) { this.player?.notifyPlayback(); ok({ audioDuration: 1e7 }); } // 1초
+      close() {}
+    }
+    vi.stubGlobal('window', {
+      SpeechSDK: {
+        SpeechConfig: { fromAuthorizationToken: () => ({}) },
+        SpeechSynthesizer: FakeSynth,
+        Connection: { fromSynthesizer: () => ({ openConnection: () => {} }) },
+        SpeakerAudioDestination: FakePlayer,
+        AudioConfig: { fromSpeakerOutput: (p) => ({ player: p }) },
+      },
+    });
+    return state;
+  }
+
+  it('audioDuration 이 지나도 재생이 안 끝났으면 멈추지 않는다', async () => {
+    const m = setupMSE();
+    const { Speech } = await import('./speech.js');
+    const ended = [];
+    Speech.speak("No. Let's just go early.", { lang: 'en-US', onEnd: () => ended.push(1) });
+    await new Promise((r) => setTimeout(r, 30));
+    const p = m.players.find((x) => x.privPlaybackStarted);
+    expect(p).toBeTruthy();
+    await new Promise((r) => setTimeout(r, 1300)); // audioDuration(1초) 초과
+    expect(p.pauseCalls).toBe(0);                  // 종전 구현은 여기서 1 (= 꼬리 잘림)
+    expect(ended).toHaveLength(0);
+
+    p.onAudioEnd(p);                               // 실제 재생 종료 통보
+    expect(ended).toHaveLength(1);
+    expect(p.pauseCalls).toBe(1);
+  });
+
+  /* MSE 경로는 스트림을 닫아야 MediaSource.endOfStream() 이 불려 duration 이 확정되고 onended 가 온다.
+   * SDK 는 synth 를 dispose 할 때만 닫으므로(SynthesisAdapterBase.dispose) 합성 완료 시 우리가 닫는다. */
+  it('합성이 끝나면 오디오 스트림을 닫는다 — 재생은 멈추지 않는다', async () => {
+    const m = setupMSE();
+    const { Speech } = await import('./speech.js');
+    Speech.speak('close the stream', { lang: 'en-US' });
+    await new Promise((r) => setTimeout(r, 30));
+    const p = m.players.find((x) => x.privPlaybackStarted);
+    expect(p.closeCalls).toBe(1);
+    expect(p.pauseCalls).toBe(0);
+  });
+
+  it('종료 통보는 한 번만 전달된다 (안전망 타이머와 겹쳐도)', async () => {
+    const m = setupMSE();
+    const { Speech } = await import('./speech.js');
+    const ended = [];
+    Speech.speak('once only', { lang: 'en-US', onEnd: () => ended.push(1) });
+    await new Promise((r) => setTimeout(r, 30));
+    const p = m.players.find((x) => x.privPlaybackStarted);
+    p.onAudioEnd(p);
+    p.onAudioEnd(p);
+    await new Promise((r) => setTimeout(r, 60));
+    expect(ended).toHaveLength(1);
   });
 });

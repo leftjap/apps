@@ -2654,3 +2654,75 @@ describe('sessionExprV2 — 좌측 목록 즉시 갱신', () => {
     expect(onJump).toHaveBeenCalledWith(2);
   });
 });
+
+/* 상대 줄 녹음의 채점이 끝나면 종전엔 화면을 통째로 다시 그렸다(handlers.rerender). 선택 줄 카드에는
+ * .vs-ln.sel { animation: v-settle } 이 걸려 있어 다시 그릴 때마다 기본 문장이 한 번 깜빡였다
+ * (2026-09-15 사용자 보고 ①). 갱신이 필요한 것은 그 줄의 점수 흔적 하나뿐이다. */
+describe('sessionExprV2 — 상대 줄 채점이 기본 문장을 다시 그리지 않는다', () => {
+  beforeEach(() => { document.body.innerHTML = ''; vi.clearAllMocks(); SESSION_BLOCKS.chainProd = false; });
+  const MD = [
+    { speaker: 'A', name: '소연', en: 'We landed early.', ko: '일찍 내렸어.', kr: '위 랜디더r리' },
+    { speaker: 'B', name: '지오', en: "I'm on my way.", ko: '가는 중이야.', kr: '아이몬 마이 웨이' },
+    { speaker: 'A', name: '소연', en: 'Take your time.', ko: '천천히 와.', kr: '테이켜r 타임' },
+  ];
+  const card = (id, sentence, ko) => ({ id, lang: 'en', sentence, ko, pron: '발음',
+    explanation: { key: `${sentence} = ${ko}`, situation: '공항', miniDialogue: MD, drills: [] } });
+  let rerenders = 0;
+  function mount(demo = false) {
+    rerenders = 0;
+    const state = makeState();
+    state.demo = demo;
+    state.cards = [card('c1', "I'm on my way.", '가는 중이야.')];
+    state.step = 1; state.sentence = state.cards[0];
+    const host = document.createElement('div'); document.body.appendChild(host);
+    const draw = () => renderSessionExprV2(host, state, { rerender: () => { rerenders += 1; host.innerHTML = ''; draw(); } });
+    draw();
+    return { host, state };
+  }
+  const recLine = async (rowIdx) => {
+    const btn = [...document.querySelectorAll('.vs-ln')][rowIdx].querySelector('button[aria-label="녹음"]');
+    btn.click(); await tick();
+    btn.click(); await tick(); await tick();
+  };
+  const traceAt = (rowIdx) => [...[...document.querySelectorAll('.vs-ln')][rowIdx].querySelectorAll('.vs-ln-trace .v-dot')].map((n) => n.textContent);
+
+  it('상대 줄 녹음 뒤에도 선택 줄 DOM 이 그대로다 (다시 그리지 않는다)', async () => {
+    const { host } = mount();
+    const selBefore = host.querySelector('.vs-ln.sel');
+    const enBefore = host.querySelector('.vs-ln.sel .vs-ln-en');
+    await recLine(0);
+    expect(rerenders).toBe(0);
+    expect(host.querySelector('.vs-ln.sel')).toBe(selBefore);
+    expect(host.querySelector('.vs-ln.sel .vs-ln-en')).toBe(enBefore);
+  });
+
+  it('그래도 그 줄의 점수 흔적은 바로 나타난다', async () => {
+    mount();
+    expect(traceAt(0)).toEqual([]);
+    await recLine(0);
+    expect(traceAt(0)).toEqual(['100']);
+    await recLine(0);
+    expect(traceAt(0)).toEqual(['100', '100']);
+  });
+
+  it('다른 줄의 흔적은 건드리지 않는다', async () => {
+    mount();
+    await recLine(2);
+    expect(traceAt(2)).toEqual(['100']);
+    expect(traceAt(0)).toEqual([]);
+  });
+
+  it('데모 시뮬 녹음도 다시 그리지 않는다', async () => {
+    vi.useFakeTimers();
+    try {
+      const { host } = mount(true);
+      const selBefore = host.querySelector('.vs-ln.sel');
+      const btn = [...document.querySelectorAll('.vs-ln')][0].querySelector('button[aria-label="녹음"]');
+      btn.click();
+      await vi.advanceTimersByTimeAsync(900);
+      expect(rerenders).toBe(0);
+      expect(host.querySelector('.vs-ln.sel')).toBe(selBefore);
+      expect(traceAt(0)).toHaveLength(1);
+    } finally { vi.useRealTimers(); }
+  });
+});

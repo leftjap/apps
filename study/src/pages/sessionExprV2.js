@@ -745,6 +745,7 @@ export function dialogueStageEl(group, ctx = {}) {
   const lines = group.lines;
   const selLineIdx = lines.findIndex((_, i) => group.cardAt[i]?.card?.id === selCardId);
   const rows = [];
+  const traceHosts = {}; // 줄 index → { block, node, card } — 점수 흔적만 제자리 갱신하기 위한 자리표
   let selectedRow = null;
 
   const body = h('div', { class: 'vs-stage-lines' });
@@ -767,12 +768,14 @@ export function dialogueStageEl(group, ctx = {}) {
     // name 이 없으면 speaker 글자 (miniDialogueEl 과 같은 계약 — 옛 시드·데모 픽스처는 name 이 없다)
     const name = h('span', { class: 'vs-ln-name' + (gio ? ' me' : '') }, String(ln.name || ln.speaker || ''));
     const enEl = h('div', { class: 'vs-ln-en' }, selected ? hlNode(ln.en, expr) : document.createTextNode(ln.en));
+    const trace = selected ? null : traceRow(card ? utter : ctx.miniScoresOf?.(i));
     const textBlock = h('div', { class: 'vs-ln-body' },
       phone ? name : null,
       enEl,
       ln.kr ? h('div', { class: 'vs-ln-kr' }, h('i', {}, '['), ln.kr, h('i', {}, ']')) : null,
       h('div', { class: 'vs-ln-ko' }, ln.ko || '', prog ? h('em', {}, ' · ' + prog) : null),
-      selected ? null : traceRow(card ? utter : ctx.miniScoresOf?.(i)));
+      trace);
+    if (!selected) traceHosts[i] = { block: textBlock, node: trace, card };
 
     const top = h('div', { class: 'vs-ln-top' }, num, phone ? null : name, textBlock);
     const row = h('div', { class: 'vs-ln' + (selected ? ' sel' : card ? ' card' : '') + (i === cueIndex ? ' cue' : '') }, top);
@@ -800,6 +803,17 @@ export function dialogueStageEl(group, ctx = {}) {
     if (card && !selected) row.addEventListener('click', () => ctx.onSelect?.(card.id));
     body.appendChild(row);
   });
+
+  /* 한 줄의 점수 흔적만 그 자리에서 갱신 (2026-09-15) — 상대 줄을 채점한 뒤 화면을 통째로 다시 그리면
+   * 선택 줄 카드(.vs-ln.sel)가 v-settle 로 다시 등장해 기본 문장이 한 번 깜빡인다. */
+  const refreshTrace = (i) => {
+    const t = traceHosts[i];
+    if (!t) return;
+    const next = traceRow(t.card ? ctx.utterOf?.(t.card.id) : ctx.miniScoresOf?.(i));
+    if (t.node) t.node.remove();
+    t.node = next;
+    if (next) t.block.appendChild(next);
+  };
 
   const el = h('div', { class: 'vs-stage' + (group.hasDialogue ? '' : ' solo') });
   if (group.hasDialogue) {
@@ -847,7 +861,7 @@ export function dialogueStageEl(group, ctx = {}) {
     if (phone && group.situation) el.appendChild(h('div', { class: 'vs-stage-scene' }, group.situation));
   }
   el.appendChild(body);
-  return { el, selectedRow, rows };
+  return { el, selectedRow, rows, refreshTrace };
 }
 
 /* 진행 세그먼트바 — 클릭으로 카드 이동 (사용자 2026-09-13 요구, 구 makeProgress onStepClick 과 같은 계약). */
@@ -1550,7 +1564,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
     const judged = judgeRecording(result, target);
     if (!judged.record) { showRecordToast(recordGateMessage(judged.reason)); return; }
     onMiniScore(i, scoreForDisplay(result, target, lang));
-    handlers.rerender?.();
+    refreshMiniTrace(i);
   }
   async function miniRec(i, row, btn) {
     if (state.demo) {
@@ -1559,7 +1573,7 @@ export function renderSessionExprV2(host, state, handlers = {}) {
       setTimeout(() => {
         row.classList.remove('recing'); btn.classList.remove('recing');
         onMiniScore(i, { score: Math.min(84 + i * 4, 99), weakPhonemes: ['ð'] });
-        handlers.rerender?.();
+        refreshMiniTrace(i);
       }, 800);
       return;
     }
@@ -1600,6 +1614,13 @@ export function renderSessionExprV2(host, state, handlers = {}) {
   }));
   const stageWrap = h('div', { class: 'vs-stagewrap' }, stages.map((x) => x.el));
   const selectedRow = stages[viewSelIdx]?.selectedRow || null;
+  /* 상대 줄 채점 뒤 갱신은 그 줄의 점수 흔적 하나뿐이다 (2026-09-15) — 나머지(링 캡션·좌측 목록·오늘 발화)는
+   * onMiniScore 의 refreshDots·refreshRecWidget 이 이미 제자리에서 고친다. 접힘 화면은 줄 index 가
+   * 재색인되므로 원래 index 를 화면 index 로 되돌려 넘긴다. */
+  const refreshMiniTrace = (srcI) => {
+    const k = collapsed ? keepIdx.indexOf(srcI) : srcI;
+    if (k >= 0) stages[viewSelIdx]?.refreshTrace(k);
+  };
 
   let root, timeUpdate;
   if (state.size !== 'desktop') {

@@ -20,6 +20,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from './supabase.js';
+import { splitKoreanTerms } from './koreanTerms.js';
 
 // ============================================================
 // 백엔드 선택
@@ -398,18 +399,52 @@ export const SPEAKER_VOICES = {
   },
 };
 
-/** Azure SSML 생성 — style 있으면 mstts namespace 추가 + express-as 래핑. */
+/* 한국어 고유명사가 든 문장은 Multilingual 계열만 읽는다 (2026-09-15 Azure 실측) — Aria·Guy·Eric 은
+ * 한글 구간을 통째로 건너뛰어 "OK. And then ?" 이 된다 (<lang xml:lang="ko-KR"> 를 둘러도 같다).
+ * 그래서 화자는 성별을 지키며 Multilingual 로 바꾼다 (en-US 전용 — ja 문장엔 이 고유명사가 없다). */
+export const KOREAN_CAPABLE_VOICE = {
+  'en-US-AriaNeural': 'en-US-AvaMultilingualNeural',
+  'en-US-JaneNeural': 'en-US-AvaMultilingualNeural',
+  'en-US-GuyNeural': 'en-US-AndrewMultilingualNeural',
+  'en-US-EricNeural': 'en-US-AndrewMultilingualNeural',
+  'en-US-DavisNeural': 'en-US-AndrewMultilingualNeural',
+  'en-US-RogerNeural': 'en-US-AndrewMultilingualNeural',
+  'en-US-ChristopherNeural': 'en-US-AndrewMultilingualNeural',
+  'en-US-TonyNeural': 'en-US-AndrewMultilingualNeural',
+};
+
+/** 이 문장을 읽을 수 있는 voice. 한국어 고유명사가 없거나 이미 Multilingual 이면 그대로 둔다. */
+export function voiceForText(voiceName, text, lang) {
+  if (lang !== 'en-US' || splitKoreanTerms(text, lang).length < 2) return voiceName;
+  if (voiceName && /Multilingual/i.test(voiceName)) return voiceName;
+  return KOREAN_CAPABLE_VOICE[voiceName] || 'en-US-AvaMultilingualNeural';
+}
+
+/* 블록 경계의 기본 묵음 제거 — 이걸 안 주면 voice 를 나눌 때마다 앞뒤로 쉼이 붙어 한 문장이
+ * 토막토막 들린다 (실측: 3.5초 문장이 6.8초로 늘었다 → 0ms 지정 후 3.5초 유지). */
+const SILENCE_0 = '<mstts:silence type="Leading-exact" value="0ms"/><mstts:silence type="Tailing-exact" value="0ms"/>';
+
+/** Azure SSML 생성 — style 있으면 express-as 래핑. 한국어 고유명사는 제 voice 블록으로 떼어 낸다. */
 export function buildAzureSSML(text, lang, rate, voiceName, style) {
-  const escaped = escapeXml(text);
-  const prosody = `<prosody rate="${rate}">${escaped}</prosody>`;
-  const inner = style
-    ? `<mstts:express-as style="${style}">${prosody}</mstts:express-as>`
-    : prosody;
+  const ns = 'xmlns="http://www.w3.org/2001/10/synthesis"';
+  const nsM = `${ns} xmlns:mstts="https://www.w3.org/2001/mstts"`;
+  const wrap = (inner) => (style ? `<mstts:express-as style="${style}">${inner}</mstts:express-as>` : inner);
+  /* 한 문장 안에 한글을 섞으면 문장 전체가 한국어 음운으로 넘어간다 (2026-09-15 사용자 청취 보고 +
+   * 실측). voice 블록을 나누면 언어가 서로 번지지 않는다 — 같은 음성이라 음색은 그대로다.
+   * 블록에 붙일 음성 이름이 없으면 나누지 못하므로 로마자를 그대로 둔다 — 한 블록 안의 <lang> 은
+   * 영어까지 한국어 말투로 만들어 오히려 나쁘다. 실경로에서는 voiceForText 가 늘 이름을 준다. */
+  const segs = voiceName ? splitKoreanTerms(text, lang) : [{ ko: false, text }];
+  if (segs.length > 1) {
+    const body = segs.map((sg) => {
+      const t = escapeXml(sg.text);
+      const spoken = sg.ko ? `<lang xml:lang="ko-KR">${t}</lang>` : t;
+      return `<voice name="${voiceName}">${SILENCE_0}${wrap(`<prosody rate="${rate}">${spoken}</prosody>`)}</voice>`;
+    }).join('');
+    return `<speak version="1.0" ${nsM} xml:lang="${lang}">${body}</speak>`;
+  }
+  const inner = wrap(`<prosody rate="${rate}">${escapeXml(text)}</prosody>`);
   const voiceTag = voiceName ? `<voice name="${voiceName}">${inner}</voice>` : inner;
-  const ns = style
-    ? 'xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts"'
-    : 'xmlns="http://www.w3.org/2001/10/synthesis"';
-  return `<speak version="1.0" ${ns} xml:lang="${lang}">${voiceTag}</speak>`;
+  return `<speak version="1.0" ${style ? nsM : ns} xml:lang="${lang}">${voiceTag}</speak>`;
 }
 
 // Wave 11.36 — SpeechSynthesizer lang 별 캐시 + pre-connect.
@@ -510,6 +545,9 @@ let _activeSpeak = null; // { lang, entry, playbackTimer, onEnd, cancelled }
 // 대기 중(~1s)의 첫 클릭을 두 번째 클릭이 취소하지 못해 같은 synth 큐에 2건 → 2연속 재생(실사용 보고).
 // 세대가 바뀌면 대기 중이던 호출은 synth 확보 직후 스스로 포기한다 (마지막 클릭만 재생).
 let _speakGen = 0;
+/* onAudioEnd 가 끝내 안 오는 경우(스트림이 endOfStream 에 못 닿는 등)의 안전망 여유. 정상 재생에서는
+ * 늘 onAudioEnd 가 먼저 와서 이 타이머는 취소된다 — 도달하면 그 자체가 비정상이다. */
+const PLAYBACK_GRACE_MS = 3000;
 
 async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, onEnd } = {}) {
   const t0 = Date.now();
@@ -544,8 +582,11 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     _dbg('speak synthesizer 준비', { elapsedMs: Date.now() - t0 });
     const cfg = VOICE_DEFAULTS[lang] || {};
     const speakerCfg = (speaker && SPEAKER_VOICES[lang]) ? SPEAKER_VOICES[lang][speaker] : null;
-    const voiceName = voice ?? speakerCfg?.voice ?? cfg.voice ?? null;
-    const styleName = style !== undefined ? style : (speakerCfg?.style ?? cfg.style ?? null);
+    const askedVoice = voice ?? speakerCfg?.voice ?? cfg.voice ?? null;
+    const voiceName = voiceForText(askedVoice, text, lang);
+    // 화자를 바꿨으면 style 은 버린다 — 원 화자용 style 은 새 voice 가 지원하지 않는 경우가 많다.
+    const styleName = voiceName !== askedVoice ? null
+      : (style !== undefined ? style : (speakerCfg?.style ?? cfg.style ?? null));
     const effRate = rate ?? speakerCfg?.rate ?? 0.85;
     _dbg('speak 매핑 결과', { speaker, voiceName, styleName, effRate });
     const ssml = buildAzureSSML(text, lang, effRate, voiceName, styleName);
@@ -554,40 +595,43 @@ async function speakAzure(text, { lang = 'en-US', rate, voice, style, speaker, o
     const session = { lang, entry, playbackTimer: null, onEnd, cancelled: false };
     _activeSpeak = session;
 
+    const finish = () => {
+      if (session.finished) return; session.finished = true;
+      _dbg('speak playback 완료', { totalMs: Date.now() - t0, cancelled: session.cancelled });
+      if (session.playbackTimer) clearTimeout(session.playbackTimer);
+      if (_activeSpeak === session) _activeSpeak = null;
+      disposeSynth(entry); // 다 쓴 synth 폐기 — 다음 클릭은 pristine spare 를 받는다
+      if (!session.cancelled) onEnd?.();
+    };
+    /* 종료 판정은 오디오가 준다 (2026-09-15 — 사용자 보고 "문장이 둘로 나뉜 줄은 종종 앞 문장만 들린다").
+     * 종전엔 '합성 완료 시각 + audioDuration' 에 타이머를 걸어 그 자리에서 player.pause() 를 했다. 재생은
+     * 합성이 끝난 뒤에야 시작되고 중간에 버퍼 대기(waiting)도 생겨 실제 종료는 늘 그보다 늦다.
+     * 크롬 실측(2026-09-15): 1.97초짜리 "No. Let's just go early." 가 1.70초에서 잘렸다. 대기가 길수록
+     * 잘리는 양도 커져 뒤 문장이 통째로 날아간다. SpeakerAudioDestination 은 재생이 실제로 끝나면
+     * onAudioEnd 를 부른다(privAudio.onended). 타이머는 안전망으로만 남긴다. */
+    if (entry.player) entry.player.onAudioEnd = finish;
+
     synth.speakSsmlAsync(
       ssml,
       (result) => {
         // Wave 11.39 — success 콜백 = synthesis 완료 (≠ playback 완료).
         // audioDuration 단위 = 100ns ticks. ms 변환: / 10000.
-        // 합성 완료 시점부터 audioDuration 만큼 기다려야 실제 audio 재생 종료.
         const audioMs = result?.audioDuration ? result.audioDuration / 10000 : 0;
         const synthMs = Date.now() - t0;
         _dbg('speak synthesis 완료, playback 대기', { synthMs, audioMs });
         if (session.cancelled) { _dbg('speak cancelled before playback', {}); onEnd?.(); return; }
-        const finish = () => {
-          if (session.finished) return; session.finished = true;
-          _dbg('speak playback 완료', { totalMs: Date.now() - t0, audioMs, cancelled: session.cancelled });
-          if (session.playbackTimer) clearTimeout(session.playbackTimer);
-          if (_activeSpeak === session) _activeSpeak = null;
-          disposeSynth(entry); // 다 쓴 synth 폐기 — 다음 클릭은 pristine spare 를 받는다
-          if (!session.cancelled) onEnd?.();
-        };
-        // 2026-07-18 — non-MSE 경로(iPhone Safari: audio/mpeg MSE 미지원) 재생 트리거.
-        //   이 경로의 SpeakerAudioDestination 은 write() 로 버퍼링만 하고 close() 안에서만 재생한다.
-        //   speech.js 의 정상 teardown(disposeSynth)은 player.pause() 를 먼저 호출해 privIsPaused=true →
-        //   close 의 notifyPlayback 이 play() 를 스킵 → 무음(실 브라우저 MediaSource 가림 실측).
-        //   여기서 player.close() 를 직접(pause 없이) 호출해 blob 재생을 트리거하고, 종료는 audio 'ended'
-        //   로 받는다(audioMs+여유는 안전망). 데스크톱 MSE 는 privAudioOutputStream 이 없어 이 분기를 타지
-        //   않고, 기존처럼 write() 중 스트리밍 재생 → audioMs 뒤 정리한다(회귀 없음).
+        /* 합성이 끝나면 오디오 스트림을 닫는다 — 두 경로 모두 여기서 닫아야 끝이 온다.
+         *  · MSE(데스크톱): close() 가 MediaSource.endOfStream() 을 불러 duration 이 확정되고, 재생이
+         *    끝까지 간 뒤 onended → onAudioEnd 가 온다. 닫지 않으면 스트림이 열린 채 남아 재생이 끝에서
+         *    멈추기만 하고 끝 신호가 영영 안 온다 (SDK 는 synth 를 dispose 할 때만 닫는다 —
+         *    SynthesisAdapterBase.dispose 가 유일한 close 지점. 2026-09-15 실측).
+         *  · non-MSE(iPhone Safari: audio/mpeg MSE 미지원): write() 로 버퍼링만 하고 close() 안에서
+         *    비로소 재생한다. 그래서 close() 자체가 재생 트리거다 (2026-07-18).
+         * 어느 쪽이든 close() 는 재생을 멈추지 않는다. 멈추는 것은 pause() 뿐이라 여기서 부르지 않는다
+         * (non-MSE 는 pause 가 먼저면 close 의 notifyPlayback 이 play 를 건너뛰어 무음이 된다). */
         const player = entry.player;
-        if (player && player.privAudioOutputStream !== undefined) {
-          _dbg('speak non-MSE 재생 트리거 (iPhone 경로)', {});
-          try { if (!player.privIsClosed) player.close(); } catch (_) { /* noop */ }
-          try { player.privAudio?.addEventListener?.('ended', finish, { once: true }); } catch (_) { /* noop */ }
-          session.playbackTimer = setTimeout(finish, Math.max(0, audioMs) + 3000); // ended 미발생 안전망
-          return;
-        }
-        session.playbackTimer = setTimeout(finish, Math.max(0, audioMs));
+        try { if (player && !player.privIsClosed) player.close(); } catch (_) { /* noop */ }
+        session.playbackTimer = setTimeout(finish, Math.max(0, audioMs) + PLAYBACK_GRACE_MS); // onAudioEnd 미발생 안전망
       },
       (err) => {
         _dbg('speak 실패', { elapsedMs: Date.now() - t0, err });
