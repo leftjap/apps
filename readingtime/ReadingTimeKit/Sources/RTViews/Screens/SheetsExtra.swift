@@ -159,7 +159,10 @@ public struct SheetBookMenu: View {
                     .padding(.top, 20)
                     .contentShape(Rectangle())
                     .onTapGesture { confirmDelete = true }
-                    .confirmationDialog("'\(title)' 을(를) 삭제할까요?", isPresented: $confirmDelete, titleVisibility: .visible) {
+                    // alert(중앙 배치)이어야 한다 — 이 앱은 RTRootView 를 390×844 고정 프레임에
+                    // scaleEffect 로 넣는데, 하단에 붙는 액션시트(confirmationDialog)는 그 안에서
+                    // 취소 버튼 자리를 잃는다(XCUITest 실측 2026-09-15: 삭제만 렌더, 취소 없음).
+                    .alert("'\(title)' 을(를) 삭제할까요?", isPresented: $confirmDelete) {
                         Button("삭제", role: .destructive) { model?.deleteBook() }
                         Button("취소", role: .cancel) {}
                     } message: {
