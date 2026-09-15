@@ -104,7 +104,8 @@ function buildSteps(list) {
     steps.push('Ask me to say a few simple everyday sentences, one at a time.');
   }
   list.forEach((it) => {
-    steps.push(`Say "${sentenceOf(it)}" In Korean, point out one stress or linked sound, then say: ${it.ko ? `${it.ko} ` : ''}따라 해 보세요.`);
+    const q = `"${sentenceOf(it)}"`;
+    steps.push(`Say ${q} In Korean, point out one stress or linked sound, then the meaning: ${it.ko ? `${it.ko} ` : ''}Then say ${q} again and in Korean: 따라 해 보세요.`);
   });
   distinctDialogues(list).forEach((lines) => {
     steps.push(...dialogueRound(lines, 1), ...dialogueRound(lines, 2));
@@ -116,7 +117,8 @@ function buildSteps(list) {
   list.forEach((it) => {
     steps.push(`Ask me in English one simple question that I would answer with "${sentenceOf(it)}" Then wait.`);
   });
-  steps.push('In Korean, tell me which of the sentences above I said on my own and which needed help. Count one as on my own only if I said it in a dialogue step or a Korean-to-English step with no hint and no correction from you. Then stop.');
+  const span = list.length > 1 ? `S1 to S${list.length}` : 'S1';
+  steps.push(`In Korean, go through ${span} one by one and say for each: 혼자 말함, 도움 받음, or 안 나옴. Count 혼자 말함 only if I said that sentence in full at least once with no hint and no correction from you; a Korean 안내 that names my first line is not a hint. Then stop.`);
   return steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
 }
 
@@ -142,14 +144,13 @@ How to run this lesson:
 - Say only what the step tells you to say, in the language it names. Use only the sentences written in this message: no new practice sentences, no new grammar. (The questions in the last steps are yours to write.)
 - Text in ( ) is a note for you. Never say it out loud, and never say the step numbers or the headings.
 - In a step that ends with 따라 해 보세요, repeating your English line is exactly what I should do. Say nothing about it and go on.
-- In the dialogue steps I must answer, not repeat. If I say your line back, say in Korean "그건 제 대사예요", then give me the first two words of my line and wait.
-- If I stop partway, or say only one word, give me the next one or two words from where I stopped, and wait. If that would finish my line, say the Korean meaning instead. Never say my whole line for me when it is my turn to speak. (Telling me my first line in a Korean 안내 is not that.)
-- If I answer with a different sentence from today, say in Korean which sentence I need now, then give me its first two words.
+- In the dialogue steps I must answer, not repeat. If I say your line back, say in Korean "그건 제 대사예요". If I answer in Korean, or with a different sentence from today, say in Korean which sentence I need now. In each case, then give me the first two words of my line and wait.
+- If I stop partway, say only one word, or can't start at all, give me the next one or two words from where I stopped, and wait. If that would finish my line, say the Korean meaning instead. Never say my whole line for me when it is my turn to speak. (Naming my first line in a Korean 안내 is not that.) If I still can't finish after two tries, say the line once, have me repeat it, and go on.
 - If I ask you to go on, move to the next step and do it, even if this step is unfinished. Never reply with only "좋아요" or "네", and never say several steps at once.
 - Fix one mistake at a time, briefly, in Korean, then have me say it again. When I get it right, say nothing about it and do the next step. No praise.
 - Do not ask me whether I am ready or whether I want to continue. Just do the next step.
 - Speak clearly. If I don't understand, say the English again slower, then a short Korean hint, and stay on this step.
-- My control words: 다시 = say this whole step again. 천천히 = say the English of this step again, slowly. 뜻 = give the Korean meaning of the English you just said. 다음 = leave this step and do the next one. 그만 = skip to the last step.
+- My control words: 다시 = say this whole step again. 천천히 = say the English of this step again, slowly. 뜻 = give the Korean meaning of the English you just said. 다음 = leave this step and do the next one. 그만 = skip to the last step. After 다시, 천천히 or 뜻, end your turn with the English I need to answer.
 
 Steps:
 ${buildSteps(list)}

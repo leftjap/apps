@@ -49,9 +49,10 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
 
   it('문장마다 들려주고 강세 짚고 한국어 뜻으로 따라 하게 하는 단계가 앞에 온다', () => {
     const s = stepsOf(buildVoicePrompt([card1, card2]));
-    expect(s[0]).toBe('1. Say "I\'m on my way." In Korean, point out one stress or linked sound, then say: 가는 중이야. 따라 해 보세요.');
+    expect(s[0]).toBe('1. Say "I\'m on my way." In Korean, point out one stress or linked sound, then the meaning: 가는 중이야. Then say "I\'m on my way." again and in Korean: 따라 해 보세요.');
     expect(s[1]).toContain('Say "I\'m almost there."');
-    expect(s[1]).toContain('거의 다 왔어. 따라 해 보세요.');
+    expect(s[1]).toContain('the meaning: 거의 다 왔어.');
+    expect(s[1]).toContain('again and in Korean: 따라 해 보세요.');
   });
 
   it('대화 시작 안내는 첫 A 대사와 한 단계로 붙인다 (안내만 하고 기다리는 빈 턴 금지)', () => {
@@ -100,8 +101,10 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
 
   it('마지막 단계는 한국어로 혼자 말한 문장과 도움받은 문장을 알려주는 것이다', () => {
     const s = stepsOf(buildVoicePrompt([card1, card2]));
-    expect(s[s.length - 1]).toContain('In Korean, tell me which of the sentences above I said on my own and which needed help.');
-    expect(s[s.length - 1]).toMatch(/only if I said it in a dialogue step or a Korean-to-English step with no hint/i);
+    const last = s[s.length - 1];
+    expect(last).toContain('In Korean, go through S1 to S2 one by one and say for each: 혼자 말함, 도움 받음, or 안 나옴.');
+    expect(last).toMatch(/in full at least once with no hint and no correction from you/i);
+    expect(last).toMatch(/a Korean 안내 that names my first line is not a hint/i);
   });
 
   it('한 턴에 한 단계, 합치지 말고, 기다리라는 규칙을 맨 앞에 둔다', () => {
@@ -145,9 +148,26 @@ describe('buildVoicePrompt — 단계 대본 (2026-09-15 재설계)', () => {
     expect(p).toMatch(/if that would finish my line, say the Korean meaning instead/i);
   });
 
-  it('오늘 다른 문장으로 답하면 어느 문장인지 한국어로 알려 준다', () => {
+  it('한국어로 답하거나 다른 문장을 말해도 같은 줄에서 처리한다', () => {
     const p = buildVoicePrompt([card1]);
-    expect(p).toMatch(/if I answer with a different sentence from today/i);
+    expect(p).toMatch(/if I answer in Korean, or with a different sentence from today/i);
+    expect(p).toMatch(/say in Korean which sentence I need now/i);
+  });
+
+  it('두 번 도와도 못 끝내면 한 번 들려주고 따라 하게 한 뒤 넘어간다 (막힘 탈출)', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/if I still can't finish after two tries/i);
+    expect(p).toMatch(/say the line once, have me repeat it, and go on/i);
+  });
+
+  it('시작조차 못 한 경우도 같은 힌트 규칙으로 받는다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/or can't start at all/i);
+  });
+
+  it('다시·천천히·뜻 뒤에는 내가 답할 영어로 턴을 끝낸다', () => {
+    const p = buildVoicePrompt([card1]);
+    expect(p).toMatch(/after 다시, 천천히 or 뜻, end your turn with the English I need to answer/i);
   });
 
   it('맞게 말하면 아무 말 없이 다음 단계로 간다', () => {
