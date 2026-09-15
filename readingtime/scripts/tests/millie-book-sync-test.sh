@@ -44,6 +44,14 @@ print -r -- '200'
 SH
 chmod +x "$BIN/curl"
 
+# 독서 판정(진도 증가)은 millie-reading-judgement-test 가 덮는다. 여기 관심사는 맥 세션
+# 겹침뿐이므로 두 책 모두 직전 관측을 깔아 판정을 통과시킨다.
+sqlite3 "$TMPDIR/catalog.db" <<'SQL'
+CREATE TABLE IF NOT EXISTS progress_snapshots(book_id TEXT NOT NULL, ts INTEGER NOT NULL, percent REAL, PRIMARY KEY(book_id, ts));
+INSERT INTO progress_snapshots VALUES ('mac',   strftime('%s','now','start of day')+10, 1.0);
+INSERT INTO progress_snapshots VALUES ('phone', strftime('%s','now','start of day')+10, 1.0);
+SQL
+
 PATH="$BIN:/usr/bin:/bin" \
 MILLIE_ENV_FILE=/dev/null \
 MILLIE_DB="$MDB" \

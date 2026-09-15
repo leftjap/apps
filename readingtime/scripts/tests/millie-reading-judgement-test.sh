@@ -6,6 +6,12 @@ set -eu
 #   · 사피엔스 09-06 15:02:41  location_percent NULL (뷰어 로그에도 0%)
 #   · 살찌지 않는 몸 09-10 23:44:51  location_percent NULL
 #   · 만만하게 시작하는 왕초보 영어패턴 09-11 13:06:34  4% — 13:06:15 에 열어 2페이지
+#
+# 처음 열어보는 책은 비교할 직전 관측이 없다. 그때 '판정 불가 → 인정' 으로 두면 검색해서
+# 눌러본 책이 그대로 올라온다(사용자 지적 2026-09-15). 최근 30일 밀리 앱 세션 62개 중
+# 38개가 1분 미만인 만큼 이 경우가 대부분이다. 그래서 첫 관측은 올리지 않고 진도가 실제로
+# 늘어나는 것을 한 번은 봐야 인정한다. 짧은 독서를 놓치지 않도록 데몬 주기를 15분에서
+# 3분으로 줄였다(launchd StartInterval 180).
 # 이것들이 "읽고 있는 책"으로 홈 캐러셀에 올라왔다.
 #
 # 반대로 실제로 읽은 책이 탈락했다 — 스크린타임 세션은 사용 구간을 조각조각 남긴다.
@@ -32,6 +38,7 @@ INSERT INTO book VALUES ('opened','열어만 본 책','작가','출판','2020-01
 INSERT INTO book VALUES ('skimmed','진도 그대로인 책','작가','출판','2020-01-01',4,'c2',NULL);
 INSERT INTO book VALUES ('read','실제로 읽은 책','작가','출판','2020-01-01',18,'c3',NULL);
 INSERT INTO book VALUES ('gap','조각 사이에 읽은 책','작가','출판','2020-01-01',30,'c4',NULL);
+INSERT INTO book VALUES ('newbook','처음 열어본 책','작가','출판','2020-01-01',4,'c6',NULL);
 INSERT INTO book VALUES ('phone','폰에서 읽은 책','작가','출판','2020-01-01',50,'c5',NULL);
 
 -- 오늘 09:00 기준 상대 배치 (start of day + 초)
@@ -39,6 +46,7 @@ INSERT INTO history_drift VALUES ('opened',  strftime('%s','now','start of day')
 INSERT INTO history_drift VALUES ('skimmed', strftime('%s','now','start of day')+32510, 4.0,  0);
 INSERT INTO history_drift VALUES ('read',    strftime('%s','now','start of day')+32520, 18.0, 0);
 INSERT INTO history_drift VALUES ('gap',     strftime('%s','now','start of day')+32700, 30.0, 0);
+INSERT INTO history_drift VALUES ('newbook', strftime('%s','now','start of day')+32530, 4.0,  0);
 INSERT INTO history_drift VALUES ('phone',   strftime('%s','now','start of day')+70000, 50.0, 0);
 SQL
 
@@ -53,11 +61,13 @@ INSERT INTO ZOBJECT VALUES ('/app/usage','kr.co.millie.MillieShelf',
   strftime('%s','now','start of day')-978307200+32800, strftime('%s','now','start of day')-978307200+33000);
 SQL
 
-# 직전 관측 진도 — 'skimmed' 는 그대로(4%), 'read' 는 늘었다(10 → 18).
+# 직전 관측 진도 — 'skimmed' 는 그대로(4%), 'read'(10→18)·'gap'(20→30) 은 늘었다.
+# 'newbook' 은 직전 관측이 없다 = 처음 열어본 책.
 sqlite3 "$CAT" <<'SQL'
 CREATE TABLE IF NOT EXISTS progress_snapshots(book_id TEXT NOT NULL, ts INTEGER NOT NULL, percent REAL, PRIMARY KEY(book_id, ts));
 INSERT INTO progress_snapshots VALUES ('skimmed', strftime('%s','now','start of day')+3000, 4.0);
 INSERT INTO progress_snapshots VALUES ('read',    strftime('%s','now','start of day')+3000, 10.0);
+INSERT INTO progress_snapshots VALUES ('gap',     strftime('%s','now','start of day')+3000, 20.0);
 SQL
 
 cat > "$BIN/curl" <<'SH'
@@ -102,6 +112,9 @@ grep -q '실제로 읽은 책' <<< "$READS" || fail "진도가 늘어난 책이 
 
 # ④ 스크린타임 조각 사이 틈에 갱신돼도 그날 사용 구간 안이면 독서
 grep -q '조각 사이에 읽은 책' <<< "$READS" || fail "세션 조각 사이 틈의 독서가 탈락함"
+
+# ④-2 처음 열어본 책은 진도가 늘어나는 것을 볼 때까지 올리지 않는다
+! grep -q '처음 열어본 책' <<< "$READS" || fail "처음 열어본 책(직전 관측 없음)을 독서로 저장함"
 
 # ⑤ 그날 맥 사용 구간 밖은 여전히 제외 (폰 독서 혼입 차단 — 기존 보장)
 ! grep -q '폰에서 읽은 책' <<< "$READS" || fail "맥 사용 구간 밖의 갱신을 저장함"
