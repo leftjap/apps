@@ -2,7 +2,7 @@ import './styles/tokens.css';
 import './styles/session.css';
 import './styles/d1.css';
 import './db/schema.js';
-import { TODAY_ISO, todayDayNumber } from './utils/today.js';
+import { todayISO, todayDayNumber } from './utils/today.js';
 import './services/speech.js'; // window.studySpeech 등록 (Wave 11.11)
 import { Auth } from './services/auth.js'; // window.studyAuth 등록 (Wave 11.12)
 import { Sync } from './db/sync.js'; // window.studySync 등록 (Wave 11.13.1)
@@ -24,7 +24,13 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 // mocks 의 IIFE 스크립트가 참조할 수 있도록 window 에 노출 (Wave 11.6A).
 // iframe 허브는 main.js 미경유 → window.studyDay 없음 → mocks 에서 fallback '2026-04-15'.
 if (typeof window !== 'undefined') {
-  window.studyDay = { TODAY_ISO, todayDayNumber, fetchDayLessonsForDay };
+  // TODAY_ISO 는 getter — 값으로 박으면 탭을 며칠 열어둔 앱의 '오늘'이 첫 로드 날짜에 묶인다
+  // (2026-09-17 실사고: 9/15 학습이 9/14 로 저장되고 캘린더가 그 뒤를 미래 칸으로 비웠다).
+  window.studyDay = {
+    get TODAY_ISO() { return todayISO(); },
+    todayDayNumber,
+    fetchDayLessonsForDay,
+  };
 }
 
 // 홈 화면 설치/PWA 저장소 영속성 요청 (spec §4 주석)

@@ -20,7 +20,7 @@ import { syncStatus } from '../services/syncHealth.js';
 import { h } from '../components/d1/dom.js';
 import { d1Icon } from '../components/d1/icons.js';
 import { renderHomeDesktopV2, renderHomeMobileV2 } from './homeDesktopV2.js';
-import { localISODate } from '../utils/today.js';
+import { localISODate, watchDayChange } from '../utils/today.js';
 import { loadMathSrs, migrateLegacySrs } from '../services/mathQueue.js';
 import { fetchPRDays, fetchWeeklyPR } from '../services/sessionStats.js';
 import { PASS_THRESHOLD } from '../services/userMeta.js';
@@ -266,6 +266,14 @@ export function mountHome(host) {
 
   refreshStats();
 
+  // 홈을 띄워 둔 채 날짜가 넘어가면 화면도 따라가야 한다 — 그러지 않으면 캘린더의 '오늘'이
+  // 어제 칸에 머물고 그 뒤가 미래로 비워진다 (2026-09-17 실사고).
+  const stopDayWatch = watchDayChange((iso) => {
+    state.todayISO = iso;
+    rerender();     // 그려 둔 캘린더의 '오늘' 칸을 먼저 옮기고
+    refreshStats(); // 오늘 발화·신규 묶음을 새 날짜로 다시 센다
+  });
+
   // sync 완료 후 한 번 더 갱신 (mount 시점에 sync 진행 중이었던 경우)
   if (typeof window !== 'undefined' && window.__syncReady) {
     window.__syncReady
@@ -283,7 +291,7 @@ export function mountHome(host) {
     }).catch((e) => console.error('[home] loadActiveSession', e));
   }
 
-  return () => { cleanup(); stop(); };
+  return () => { cleanup(); stop(); stopDayWatch(); };
 }
 
 function getStoredLang() {

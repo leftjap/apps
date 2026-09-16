@@ -1,4 +1,4 @@
-import { TODAY_ISO as APP_TODAY_ISO } from '../utils/today.js';
+import { todayISO } from '../utils/today.js';
 
 /**
  * 개발용 seed 데이터 (Wave 11.73 — 콘텐츠 전면 갈아엎기 v11).
@@ -28,7 +28,8 @@ import { TODAY_ISO as APP_TODAY_ISO } from '../utils/today.js';
  *  - OBSOLETE_*_IDS 는 v8 이전 (r1~r5, s04~s13, jr1~jr5, n1~n3, jn1~jn2) 잔존분 정리 용도 그대로 유지.
  */
 
-const TODAY_ISO = APP_TODAY_ISO;
+// seed 는 DB 생성 직후 1회만 도는 픽스처라 이 시점 날짜로 충분하다 (앱 전역 '오늘'은 todayISO()).
+const TODAY_ISO = todayISO();
 
 // v8 이전 ID 잔존 시 명시적 delete (v8/v10 마이그레이션 시 도입). v11 도 동일 OBSOLETE 유지.
 const OBSOLETE_REVIEW_IDS = [
