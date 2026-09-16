@@ -107,6 +107,38 @@ private func at(_ s: String) -> Date {
         #expect(m.partnerSummary == nil)
     }
 
+    // ── "지금 읽는 중" 판정 ──
+
+    @Test func readingEndsWhenASessionClosedAfterThatMoment() {
+        // reading_since 이후에 끝난 세션이 있으면 그 독서는 이미 끝났다.
+        // 실데이터가 그 모양이었다 — 지오 reading_since 09-15 11:46, 마지막 세션 종료 12:31.
+        let since = at("2026-09-15 20:46")
+        let ended = at("2026-09-15 21:31")
+        #expect(RTAppModel.partnerIsReading(since: since, lastSessionEnd: ended,
+                                            now: at("2026-09-15 21:40")) == false)
+    }
+
+    @Test func stillReadingWhileNoSessionHasClosedSince() {
+        let since = at("2026-09-15 21:20")
+        let ended = at("2026-09-15 18:00")      // 그 전에 끝난 세션
+        #expect(RTAppModel.partnerIsReading(since: since, lastSessionEnd: ended,
+                                            now: at("2026-09-15 21:40")) == true)
+    }
+
+    @Test func staleReadingSinceExpiresAfterTwelveHours() {
+        // 앱이 죽어 해제가 못 나간 경우의 안전장치 — 세션 기록이 없어도 12시간이면 끊는다
+        let since = at("2026-09-15 06:00")
+        #expect(RTAppModel.partnerIsReading(since: since, lastSessionEnd: nil,
+                                            now: at("2026-09-15 21:40")) == false)
+        #expect(RTAppModel.partnerIsReading(since: at("2026-09-15 20:00"), lastSessionEnd: nil,
+                                            now: at("2026-09-15 21:40")) == true)
+    }
+
+    @Test func noPresenceMeansNotReading() {
+        #expect(RTAppModel.partnerIsReading(since: nil, lastSessionEnd: at("2026-09-15 21:31"),
+                                            now: at("2026-09-15 21:40")) == false)
+    }
+
     // ── 탭하면 기록이 있는 달이 열려야 한다 ──
 
     @Test func openingPartnerStatsLandsOnTheirLastRecordedMonth() {

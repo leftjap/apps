@@ -293,7 +293,12 @@ struct ReadingTimeApp: App {
         guard let raw = snap.data.data(using: .utf8),
               let pdata = try? dec.decode(RTUserData.self, from: raw) else { return }
         model?.partnerData = pdata
-        model?.partnerReadingNow = snap.readingSince.map { Date().timeIntervalSince($0) < 12 * 3600 } ?? false
+        // reading_since 뒤에 끝난 세션이 있으면 그 독서는 이미 끝났다 — 시각만 보면
+        // 세션이 끝난 뒤에도 최대 12시간 "지금 읽는 중"이 뜬다(실측 2026-09-16).
+        model?.partnerReadingNow = RTAppModel.partnerIsReading(
+            since: snap.readingSince,
+            lastSessionEnd: pdata.sessions.max { $0.endedAt < $1.endedAt }?.endedAt,
+            now: Date())
         // 캐시 — 다음 콜드스타트에 즉시 표시(네트워크 지연 팝인 제거, stale-while-revalidate)
         UserDefaults.standard.set(raw, forKey: "rt.partnerData")
         UserDefaults.standard.set(snap.readingSince, forKey: "rt.partnerReadingSince")
@@ -308,7 +313,10 @@ struct ReadingTimeApp: App {
         guard let pdata = try? dec.decode(RTUserData.self, from: raw) else { return }
         model?.partnerData = pdata
         let since = ud.object(forKey: "rt.partnerReadingSince") as? Date
-        model?.partnerReadingNow = since.map { Date().timeIntervalSince($0) < 12 * 3600 } ?? false
+        model?.partnerReadingNow = RTAppModel.partnerIsReading(
+            since: since,
+            lastSessionEnd: pdata.sessions.max { $0.endedAt < $1.endedAt }?.endedAt,
+            now: Date())
     }
 
     /// 시뮬레이터 검증용 검색 스텁 (--stub-search). 응답은 2026-09-10 배포 프록시 실응답("서성이다" 1위) 그대로.

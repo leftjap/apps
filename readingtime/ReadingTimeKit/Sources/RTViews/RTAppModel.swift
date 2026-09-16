@@ -828,6 +828,16 @@ public final class RTAppModel: ObservableObject {
         return "\(c.component(.month, from: date)).\(c.component(.day, from: date))"
     }
 
+    /// 파트너가 지금 읽는 중인가 — reading_since 만 보면 안 된다.
+    /// 그 시각 뒤에 끝난 세션이 있으면 그 독서는 이미 끝났다(실데이터가 그 모양이었다:
+    /// reading_since 09-15 11:46 · 마지막 세션 종료 12:31). 세션 기록이 아직 안 올라온
+    /// 경우를 위해 12시간 상한도 남긴다 — 앱이 죽어 해제가 못 나갔을 때의 안전장치.
+    public static func partnerIsReading(since: Date?, lastSessionEnd: Date?, now: Date) -> Bool {
+        guard let since else { return false }
+        if let end = lastSessionEnd, end >= since { return false }
+        return now.timeIntervalSince(since) < 12 * 3600
+    }
+
     /// 짧은 날짜 라벨 "오늘 / 어제 / M.d" — 파트너 행 우측처럼 폭이 좁은 자리용
     public static func shortDay(_ date: Date, now: Date) -> String {
         let c = Calendar(identifier: .gregorian)
