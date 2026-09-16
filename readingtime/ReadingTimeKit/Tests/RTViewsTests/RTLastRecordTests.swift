@@ -94,6 +94,32 @@ private func at(_ s: String) -> Date {
         #expect(m.selectedISBN == nil)
     }
 
+    @Test func millieDayBelowMinimumIsNotTheLastRecord() {
+        // 1분 미만인 밀리 날은 앱이 시간·연속·읽은 날에서 빼는데(ebookMinSeconds),
+        // '마지막 기록' 에만 "0분 읽음" 으로 떴다. 기록에서 뺀 날을 대표로 내세우면 안 된다.
+        let m = model()
+        m.userData?.sessions = [.init(isbn: "9791167903792", mode: "tap", seconds: 600,
+                                      endedAt: at("2026-09-09 10:00"), pauseCount: 0)]
+        m.ebookReadAt = ["잠깐 연 책": at("2026-09-14 20:00")]     // 종이보다 최신
+        m.ebookDaily = ["2026-09-14": 30]                          // 30초 = 인정 안 되는 날
+        m.ebookBooks = ["2026-09-14": ["잠깐 연 책"]]
+
+        #expect(m.lastRecord?.title == "서성이다")
+        #expect(m.lastRecord?.isEbook == false)
+    }
+
+    @Test func millieDayAtOrAboveMinimumStaysTheLastRecord() {
+        let m = model()
+        m.userData?.sessions = [.init(isbn: "9791167903792", mode: "tap", seconds: 600,
+                                      endedAt: at("2026-09-09 10:00"), pauseCount: 0)]
+        m.ebookReadAt = ["제대로 읽은 책": at("2026-09-14 20:00")]
+        m.ebookDaily = ["2026-09-14": 245]
+        m.ebookBooks = ["2026-09-14": ["제대로 읽은 책"]]
+
+        #expect(m.lastRecord?.title == "제대로 읽은 책")
+        #expect(m.lastRecord?.minutes == 4)
+    }
+
     @Test func noRecordsYieldsNil() {
         #expect(model().lastRecord == nil)
     }

@@ -761,7 +761,11 @@ public final class RTAppModel: ObservableObject {
     public var lastRecord: (title: String, minutes: Int, at: Date, isEbook: Bool)? {
         guard userData != nil else { return nil }
         let paper = recentRecords(1).first
-        let ebook = ebookReadAt.filter { !hiddenEbooks.contains($0.key) }.max { $0.value < $1.value }
+        // 기록에서 뺀 날(1분 미만·지운 책)은 대표로 내세우지 않는다 — 통계에선 빼면서
+        // 이 행에만 "0분 읽음" 으로 뜨던 불일치(2026-09-16).
+        let ebook = ebookReadAt
+            .filter { !hiddenEbooks.contains($0.key) && ebookSeconds(on: $0.value) > 0 }
+            .max { $0.value < $1.value }
         let ebookIsLatest = ebook.map { e in paper.map { e.value > $0.endedAt } ?? true } ?? false
 
         if ebookIsLatest, let e = ebook {
