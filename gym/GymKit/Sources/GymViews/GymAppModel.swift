@@ -550,6 +550,44 @@ public final class GymAppModel: ObservableObject {
         #endif
     }
 
+    // 검증 훅(시뮬 전용) — 근력 주간 스트립 시안 검증 (2026-09-17).
+    // demo-session 은 history 가 비어 스트립이 오늘 한 칸만 차서 규격을 못 본다. 이번 주·지난주
+    // 기록을 함께 심어 실제 밀도(실기기 실측 주 2~3회)로 띄운다.
+    public func loadWeekStripDemoForVerification() {
+        #if targetEnvironment(simulator)
+        let cal = GymAppModel.kst
+        let now = Date()
+        func iso(_ off: Int) -> String {
+            Self.dayFmt.string(from: cal.date(byAdding: .day, value: off, to: now) ?? now)
+        }
+        func lift(_ off: Int, _ sets: [(Double, Int)]) -> GymSession {
+            var s = GymSession(id: "wk\(off)", date: iso(off),
+                               startTime: Int64(now.timeIntervalSince1970 * 1000) + Int64(off) * 86_400_000,
+                               blocks: [GymBlock(exerciseId: "lat_pulldown",
+                                                 sets: sets.map { GymSet(weight: $0.0, reps: $0.1, done: true) })],
+                               tags: ["back"], status: .completed)
+            s.totalVolume = sets.reduce(0.0) { $0 + $1.0 * Double($1.1) }
+            return s
+        }
+        let weekday = (cal.component(.weekday, from: now) + 5) % 7   // 월=0 (GymHomeLogic.mondayIndex 와 같은 식)
+        history = [lift(-weekday, [(45, 12), (45, 11), (45, 10), (45, 9), (45, 10)]),   // 이번 주 월
+                   lift(-weekday - 3, [(45, 10), (45, 10)]),                            // 지난주 금
+                   lift(-weekday - 6, [(45, 11), (45, 11), (45, 11)])]                  // 지난주 화
+        prs = [GymPR(exerciseId: "lat_pulldown", weight: 50, reps: 8, e1rm: 63.3, date: iso(-14))]
+        session = GymSession(id: "wk-today", date: Self.dayFmt.string(from: now),
+                             startTime: Int64(now.timeIntervalSince1970 * 1000) - 22 * 60 * 1000,
+                             blocks: [GymBlock(exerciseId: "lat_pulldown", sets: [
+                                 GymSet(weight: 45, reps: 11, done: true),
+                                 GymSet(weight: 45, reps: 10, done: true),
+                                 GymSet(weight: 45, reps: 10, preset: true),
+                                 GymSet(weight: 45, reps: 9, preset: true),
+                                 GymSet(weight: 40, reps: 12, preset: true)])],
+                             tags: ["back"], status: .active)
+        selectedBlockIdx = nil
+        route = .session
+        #endif
+    }
+
     // 검증 훅(시뮬 전용) — 빈 활성 세션으로 세션 화면 시작 (§6-1 인라인 운동추가 시트 검증용).
     public func loadEmptySessionForVerification() {
         #if targetEnvironment(simulator)

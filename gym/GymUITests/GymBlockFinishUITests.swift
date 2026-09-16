@@ -19,7 +19,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         chip(app, "current", "벤치프레스").press(forDuration: 0.8)
         XCTAssertTrue(app.buttons["action-finish"].waitForExistence(timeout: 5), "현재 종목 → 완료")
@@ -34,7 +34,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         // 데모 세션: 인클라인(완료) · 벤치프레스(현재) · 덤벨 플라이 · 케이블 크로스오버
         for name in ["벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
@@ -68,7 +68,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         func assertLeftBiased(_ name: String, _ tag: String) {
             let cur = chip(app, "current", name)
@@ -106,7 +106,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         // 데모 4종목 — 앞 둘을 완료하면 케이블 크로스오버가 '완료 3개 뒤의 마지막 종목' 이 된다
         for name in ["벤치프레스", "덤벨 플라이"] {
@@ -140,7 +140,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         for name in ["벤치프레스", "덤벨 플라이"] {   // 케이블 크로스오버 = 마지막 종목 → 스페이서 상태
             let cur = chip(app, "current", name)
@@ -174,7 +174,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         // 데모: 벤치프레스(현재) 진행 중 → 예정 칩 '덤벨 플라이' 탭 = 로테이션 전환
         chip(app, "upcoming", "덤벨 플라이").tap()
@@ -213,7 +213,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         // 데모: 인클라인(완료) · 벤치프레스(현재) · 덤벨 플라이 · 케이블 크로스오버
         // 3번째(덤벨)로 전환해 그것만 완료 → 벤치는 아직 미완료로 남는다
@@ -268,7 +268,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         // + → 시트. 기본 부위가 등이면 등 종목(랫 풀다운)이 보인다.
         // + → 시트 열림
@@ -301,7 +301,7 @@ final class GymBlockFinishUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         for name in ["벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
             let cur = chip(app, "current", name)

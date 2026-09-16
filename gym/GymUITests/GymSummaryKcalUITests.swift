@@ -10,7 +10,7 @@ final class GymSummaryKcalUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 10))
         app.staticTexts["session-end"].tap()
         let finish = app.buttons["action-finish"]
         XCTAssertTrue(finish.waitForExistence(timeout: 5))

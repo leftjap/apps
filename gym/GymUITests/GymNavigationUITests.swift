@@ -15,7 +15,7 @@ final class GymNavigationUITests: XCTestCase {
         let resume = app.buttons["home-resume"]
         XCTAssertTrue(resume.waitForExistence(timeout: 10), "리셋 직후 홈은 이어하기 카드(HomeC)여야 한다")
         resume.tap()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 5),
                       "이어하기 탭 후 세션 화면이 떠야 한다")
 
         // 꾹누르기 종료 → 세션 삭제(danger 2단계 확인) → 빈 세션으로 홈 복귀 = HomeA (§6-9)
@@ -55,7 +55,7 @@ final class GymNavigationUITests: XCTestCase {
                              "이어하기 카드는 밸런스 아래에 있어야 한다")
         // 이어하기 탭 → 세션 복귀
         resume.tap()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 5),
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 5),
                       "이어하기 탭 후 세션 화면이 떠야 한다")
     }
 
@@ -103,7 +103,7 @@ final class GymNavigationUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
 
         // 데모 3종목을 순서대로 완료 → 전 종목 완료(히어로 read-only)
         for name in ["벤치프레스", "덤벨 플라이", "케이블 크로스오버"] {
@@ -181,7 +181,7 @@ final class GymNavigationUITests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 10))
         app.staticTexts["session-end"].tap()   // 탭으로 열려야 한다 (longpress 도 동일 메뉴)
         let finish = app.buttons["action-finish"]
         XCTAssertTrue(finish.waitForExistence(timeout: 5), "종료 탭으로 액션시트가 떠야 한다")
@@ -215,7 +215,7 @@ final class GymNavigationUITests: XCTestCase {
         app.launchArguments = ["--route", "session", "--reset"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 10),
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 10),
                       "세션 화면으로 시작해야 한다")
         // 툴바 홈 버튼 탭
         let homeBtn = app.buttons["session-home"]

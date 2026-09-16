@@ -98,10 +98,11 @@ struct PrevRecordBars: View {
         .padding(.horizontal, 24).padding(.top, showHeader ? 10 : 2)
         // 헤더 줄을 끈 화면에서도 막대 높이 범례는 남긴다 — 줄을 새로 만들지 않도록 오버레이로,
         // 세트바 블록 안쪽(구분선 아래)에 둬야 스트립 소속으로 오해되지 않는다.
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .topLeading) {
+            // 좌측 상단(첫 막대 위 빈 줄)에 둔다 — 우측은 '▲최고' 슬롯 라벨이 쓴다.
             if !showHeader && encodeHeight {
                 Text("높이 = 볼륨").font(.sans(9, 500)).tracking(0.18).foregroundStyle(GY.ink4)
-                    .padding(.trailing, 24).padding(.top, 2)
+                    .padding(.leading, 24).padding(.top, 2)
             }
         }
     }

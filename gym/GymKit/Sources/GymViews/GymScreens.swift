@@ -186,6 +186,36 @@ public enum GymScreens {
         healthySync(m); return m
     }
 
+    // 실데이터에서 가장 흔한 밀도 — 주 1~2회 (실기기 272주-종목 중 1칸 119·2칸 97).
+    // 시안이 촘촘한 예시에서만 좋아 보이지 않는지 보려고 둔다. 오늘(수) 진행 중 + 지난주 화·금.
+    @MainActor static func demoLiftWeekSparseModel() -> GymAppModel {
+        func lift(_ date: String, _ sets: [(Double, Int)]) -> GymSession {
+            var s = GymSession(id: "sp-\(date)", date: date, startTime: 1_757_000_000_000,
+                               blocks: [GymBlock(exerciseId: "shoulder_press",
+                                                 sets: sets.map { GymSet(weight: $0.0, reps: $0.1, done: true) })],
+                               tags: ["shoulder"], status: .completed)
+            s.totalVolume = sets.reduce(0.0) { $0 + $1.0 * Double($1.1) }
+            return s
+        }
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let today = GymSession(id: "sparse", date: "2026-09-16", startTime: now - 12 * 60 * 1000,
+                               blocks: [GymBlock(exerciseId: "shoulder_press", sets: [
+                                   GymSet(weight: 25, reps: 12, done: true),
+                                   GymSet(weight: 25, reps: 11, preset: true),
+                                   GymSet(weight: 25, reps: 10, preset: true),
+                                   GymSet(weight: 25, reps: 10, preset: true),
+                                   GymSet(weight: 20, reps: 12, preset: true),
+                                   GymSet(weight: 20, reps: 12, preset: true)])],
+                               tags: ["shoulder"], status: .active)
+        let m = GymAppModel(snapshotSession: today)
+        if let d = GymAppModel.dayFmt.date(from: "2026-09-16") { m.referenceToday = d }
+        // 이번 주는 오늘이 처음 — 실측에서 가장 흔한 '1칸' 주.
+        m.history = [lift("2026-09-11", [(25, 12), (25, 12), (25, 11), (25, 10), (20, 12), (20, 12)]),
+                     lift("2026-09-08", [(25, 12), (25, 11), (25, 11), (25, 10), (20, 12), (20, 11)])]
+        m.prs = [GymPR(exerciseId: "shoulder_press", weight: 27.5, reps: 8, e1rm: 34.8, date: "2026-08-20")]
+        healthySync(m); return m
+    }
+
     // 맨몸 종목 스트립 — 볼륨이 0 이라 횟수로 바뀌는 분기 (실데이터 decline_situp 전량 0kg).
     @MainActor static func demoLiftWeekBodyModel() -> GymAppModel {
         func situp(_ date: String, _ reps: [Int]) -> GymSession {
@@ -308,6 +338,7 @@ public enum GymScreens {
         case "week-tight":   return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .tight).frame(width: 375, height: 812))
         case "week-body":    return AnyView(SessionScreenView(model: demoLiftWeekBodyModel(), weekVariant: .compact).frame(width: 375, height: 812))
         case "week-none":    return AnyView(SessionScreenView(model: demoLiftWeekModel()).frame(width: 375, height: 812))
+        case "week-sparse":  return AnyView(SessionScreenView(model: demoLiftWeekSparseModel(), weekVariant: .compact).frame(width: 375, height: 812))
         case "week-se":      return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 375, height: 667))
         case "week-se-base": return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .hidden).frame(width: 375, height: 667))
         case "week-base":    return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .hidden).frame(width: 375, height: 812))

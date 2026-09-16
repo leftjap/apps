@@ -16,7 +16,7 @@ final class GymSwipeFrameUITests: XCTestCase {
         app.launchArguments = ["--reset", "--route", "session"]
         app.launch()
 
-        XCTAssertTrue(app.staticTexts["직전 세션 기록"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["session-exname"].waitForExistence(timeout: 15))
         shot(app, "10-before")   // 완료 전: 현재 세트 = crail 막대 + crail-deep 숫자
 
         // 좌스와이프 = 세트 완료. 스와이프 직후 연속 캡처로 스왑/큐 프레임 확보.
