@@ -200,7 +200,19 @@ private struct PaperDailyRow: Encodable {
 }
 private struct SecondsRow: Decodable { let seconds: Int }
 private struct UserDataUpsert: Encodable { let owner_id: String; let data: String; let updated_at: String }
-private struct ReadingSincePatch: Encodable { let reading_since: String? }
+// nil 을 **null 로** 보내야 한다. Swift 가 만들어 주는 Encodable 은 옵셔널이 nil 이면 키를
+// 통째로 빼버려서 PATCH 본문이 `{}` 가 되고, PostgREST 는 아무것도 바꾸지 않는다 — 세션이
+// 끝나도 reading_since 가 서버에 남아 최대 12시간 "지금 읽는 중"이 거짓으로 떴다
+// (실측 2026-09-16: 지오·소연 둘 다 매달린 값 보유). 그래서 encode 를 직접 쓴다.
+struct ReadingSincePatch: Encodable {
+    let reading_since: String?
+    enum CodingKeys: String, CodingKey { case reading_since }
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        if let v = reading_since { try c.encode(v, forKey: .reading_since) }
+        else { try c.encodeNil(forKey: .reading_since) }
+    }
+}
 private struct PartnerSnapshotRow: Decodable { let data: String; let reading_since: String? }
 public struct DailyRow: Decodable, Sendable {
     public let day: String

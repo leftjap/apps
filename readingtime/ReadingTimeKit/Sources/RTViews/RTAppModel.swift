@@ -238,9 +238,35 @@ public final class RTAppModel: ObservableObject {
     @Published public var partnerReadingNow = false
 
     /// 홈 파트너 행 탭 → 파트너 통계(주간)
+    /// 홈 파트너 행 요약 — 행이 답해야 하는 것은 "오늘 몇 분"이 아니라 **마지막으로 읽은 때와
+    /// 그때 읽던 책**이다(사용자 보고 2026-09-16: 28일째 안 읽었는데 늘 "0분 오늘"이 떴다).
+    /// 책은 서재 배열 순서가 아니라 마지막 세션의 책 — 미완독이 여러 권이면 둘이 갈린다.
+    public var partnerSummary: (lastAt: Date?, lastBook: String?, readToday: Bool,
+                                todayMinutes: Int, lastDayMinutes: Int)? {
+        guard let d = partnerData else { return nil }
+        let last = d.sessions.max { $0.endedAt < $1.endedAt }
+        let title = last?.isbn.flatMap { isbn in d.books.first { $0.isbn == isbn }?.title }
+        let todaySec = d.sessions.filter { cal.isDate($0.endedAt, inSameDayAs: now()) }
+            .reduce(0) { $0 + $1.seconds }
+        let readToday = last.map { cal.isDate($0.endedAt, inSameDayAs: now()) } ?? false
+        // 마지막으로 읽은 '그날' 의 총 시간 — 오늘 안 읽었을 때 우측에 이 값을 보여준다
+        let lastDaySec = last.map { l in
+            d.sessions.filter { cal.isDate($0.endedAt, inSameDayAs: l.endedAt) }
+                .reduce(0) { $0 + $1.seconds }
+        } ?? 0
+        return (last?.endedAt, title, readToday, todaySec / 60, lastDaySec / 60)
+    }
+
     public func openPartnerStats() {
         statsSubject = .partner
         nav(.stats)
+        // 현재 달에 파트너 기록이 없으면 빈 화면이 뜬다 — 마지막으로 읽은 달을 연다
+        // (사용자 보고 2026-09-16: 행을 탭했더니 최근 기록이 없었다. 소연 기록은 8월까지).
+        // nav(.stats) 가 statsMonth 를 nil(현재 달)로 초기화하므로 그 뒤에 지정한다.
+        guard let last = partnerData?.sessions.max(by: { $0.endedAt < $1.endedAt })?.endedAt else { return }
+        let ym = RTStatsYM(year: cal.component(.year, from: last), month: cal.component(.month, from: last))
+        let today = RTStatsYM(year: cal.component(.year, from: now()), month: cal.component(.month, from: now()))
+        statsMonth = ym == today ? nil : ym
     }
     /// 내 통계 진입 (홈 메뉴) — 주체 .me 리셋
     public func openMyStats() {
@@ -250,9 +276,12 @@ public final class RTAppModel: ObservableObject {
 
     /// 데모 파트너 주입 (검증·기기 데모용 — 백엔드 배선 전) — 시안값(소연·작별하지 않는다·오늘 24분)
     /// reading=false 면 idle(3시간 전) — 마지막 세션 3시간 전, 링/헤일로 없음.
-    public func loadDemoPartner(reading: Bool = true) {
+    /// daysAgo > 0 이면 '한참 전에 읽고 그만둔' 상태 — 행 우측이 오늘치가 아니라 마지막으로
+    /// 읽은 날을 대야 한다(사용자 보고 2026-09-16: 28일째 안 읽었는데 "0분 오늘"이 떴다).
+    public func loadDemoPartner(reading: Bool = true, daysAgo: Int = 0) {
         let t = now()
-        let ended = reading ? t : t.addingTimeInterval(-3 * 3600)
+        let ended = daysAgo > 0 ? t.addingTimeInterval(-Double(daysAgo) * 86_400)
+                                : (reading ? t : t.addingTimeInterval(-3 * 3600))
         // 실 표지 URL(알라딘) — 파트너 통계 표지 로딩 검증용 실데이터
         let book = RTBook(isbn: "9788937489341", title: "차남들의 세계사", author: "이기호",
                           publisher: "민음사",
@@ -260,7 +289,7 @@ public final class RTAppModel: ObservableObject {
                           addedAt: t)
         partnerData = RTUserData(books: [book],
             sessions: [RTSessionRecord(isbn: book.isbn, mode: "flip", seconds: 24 * 60, endedAt: ended, pauseCount: 0)])
-        partnerReadingNow = reading
+        partnerReadingNow = reading && daysAgo == 0
     }
 
     /// 사진 선택 저장 시 (설정 시트) — 앱 셸이 배선: Documents 파일 영속
@@ -792,6 +821,14 @@ public final class RTAppModel: ObservableObject {
         if let y = c.date(byAdding: .day, value: -1, to: now), c.isDate(date, inSameDayAs: y) {
             return "어제 " + hhmm()
         }
+        return "\(c.component(.month, from: date)).\(c.component(.day, from: date))"
+    }
+
+    /// 짧은 날짜 라벨 "오늘 / 어제 / M.d" — 파트너 행 우측처럼 폭이 좁은 자리용
+    public static func shortDay(_ date: Date, now: Date) -> String {
+        let c = Calendar(identifier: .gregorian)
+        if c.isDate(date, inSameDayAs: now) { return "오늘" }
+        if let y = c.date(byAdding: .day, value: -1, to: now), c.isDate(date, inSameDayAs: y) { return "어제" }
         return "\(c.component(.month, from: date)).\(c.component(.day, from: date))"
     }
 
@@ -1521,6 +1558,7 @@ public final class RTAppModel: ObservableObject {
         case "partnerStats": openPartnerStats()   // 파트너 통계 진입(검증·데모)
         case "demoPartner": loadDemoPartner()      // 데모 파트너 주입(검증·기기 데모)
         case "demoPartnerIdle": loadDemoPartner(reading: false)   // idle 상태 검증
+        case "demoPartnerStale": loadDemoPartner(reading: false, daysAgo: 28)  // 오래 안 읽은 상태 검증
         case "clearAvatar": avatarImage = nil       // UI 테스트 시작 상태 격리(저장 파일 잔존 무시)
         case "demoEbook":   // 밀리 일별 시드(오늘 29분·어제 10분·그제 20분) — 통계 합산 검증
             let t = now()

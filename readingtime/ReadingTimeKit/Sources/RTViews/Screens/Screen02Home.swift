@@ -30,8 +30,11 @@ public struct Screen02Home: View {
         let avatar: CGImage?
         let reading: Bool          // 지금 읽는 중 = 회전 링+헤일로+"지금 읽는 중"
         let idleText: String       // idle 배지 "N시간 전"
-        let book: String?          // 현재 읽는 책 (없으면 2행 생략)
-        let todayMin: Int
+        let book: String?          // 마지막으로 읽던 책 (없으면 2행 생략)
+        // 우측 시간 — 오늘 읽었으면 오늘치("오늘"), 아니면 마지막으로 읽은 날의 총량과 그 날짜.
+        // 28일째 안 읽었는데 "0분 오늘"이 뜨던 것을 고쳤다(사용자 보고 2026-09-16).
+        let minutes: Int
+        let minutesLabel: String
     }
 
     var model: RTAppModel?
@@ -68,23 +71,21 @@ public struct Screen02Home: View {
         }
         // 파트너 행: 실데이터(partnerData) 있으면 그걸로, 없으면(데모/시안 픽셀 경로) 시안 데모값.
         // partnerData 미로드 + 라이브(내 실데이터)면 nil → 행 숨김(백엔드 배선 전, README AC #6).
-        if let m = model, let pdata = m.partnerData {
-            let cal = Calendar(identifier: .gregorian)
-            let last = pdata.sessions.max { $0.endedAt < $1.endedAt }
-            let todaySec = pdata.sessions.filter { cal.isDate($0.endedAt, inSameDayAs: m.now()) }
-                .reduce(0) { $0 + $1.seconds }
+        if let m = model, let p = m.partnerSummary {
             self.partner = Partner(
                 name: m.partnerName, initial: m.partnerInitial, avatar: m.partnerAvatar,
                 reading: m.partnerReadingNow,
-                idleText: last.map { RTAppModel.agoText($0.endedAt, now: m.now()) } ?? "기록 없음",
-                book: pdata.books.last { !$0.finished }?.title,
-                todayMin: todaySec / 60)
+                idleText: p.lastAt.map { RTAppModel.agoText($0, now: m.now()) } ?? "기록 없음",
+                book: p.lastBook,
+                minutes: p.readToday ? p.todayMinutes : p.lastDayMinutes,
+                minutesLabel: p.readToday ? "오늘"
+                    : (p.lastAt.map { RTAppModel.shortDay($0, now: m.now()) } ?? "—"))
         } else if model?.userData == nil {
             // 데모/시안 픽셀 경로 — README 데모값 (소연 · 지금 읽는 중 · 작별하지 않는다 · 24분)
             self.partner = Partner(
                 name: model?.partnerName ?? "소연", initial: model?.partnerInitial ?? "소",
                 avatar: nil, reading: true, idleText: "3시간 전",
-                book: "작별하지 않는다", todayMin: 24)
+                book: "작별하지 않는다", minutes: 24, minutesLabel: "오늘")
         } else {
             self.partner = nil
         }
@@ -527,10 +528,10 @@ public struct Screen02Home: View {
             // 우측 오늘 시간
             VStack(alignment: .trailing, spacing: 1) {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
-                    Text("\(p.todayMin)").font(.mono(13, 700)).foregroundColor(RT.ink)
+                    Text("\(p.minutes)").font(.mono(13, 700)).foregroundColor(RT.ink)
                     Text("분").font(.sans(10, 600)).foregroundColor(RT.muted)
                 }
-                Text("오늘").font(.sans(9.5, 500)).foregroundColor(RT.faint)
+                Text(p.minutesLabel).font(.sans(9.5, 500)).foregroundColor(RT.faint)
             }
         }
         .padding(EdgeInsets(top: 9, leading: 4, bottom: 9, trailing: 4))
