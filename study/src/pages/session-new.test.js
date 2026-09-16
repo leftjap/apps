@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { restoreCardScore } from './session-new.js';
 
 /* 카드 이동 시 점수링 복원 — 종전엔 recLog[id].best(최고)를 썼다. 캡션이 '방금 점수' 인데 값이
@@ -415,5 +415,29 @@ describe('session-new — rerender 배선 (대화 스테이지)', () => {
     expect(document.querySelectorAll('.vs-ln')).toHaveLength(1); // 첫 카드라 직전 상대 줄이 없다
     expect(document.querySelector('.vs-stage-fold').textContent).toBe('대화 펼치기 ▾');
     cleanup();
+  });
+});
+
+/* 2026-09-17 — 앱의 '오늘'을 호출 시점 계산으로 되돌리면서, 세션 도중 자정을 넘기는 경로가
+ * 처음으로 살아났다. 세션은 시작한 날에 귀속해야 한다: base(시작 시 캡처한 그날 dailyStats 행)와
+ * 다른 날짜로 쓰면 라이브 반영분이 어제 행에 유령으로 남고 sessionLogs 와 dailyStats 가 하루 갈린다. */
+describe('session-new — 진행 중 자정을 넘긴 세션은 시작한 날에 귀속한다', () => {
+  beforeEach(() => { vi.clearAllMocks(); sessionStorage.clear(); });
+  afterEach(() => { vi.useRealTimers(); });
+
+  it('자정을 넘긴 뒤 저장된 스냅샷도 세션 시작 날짜를 쓴다', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-09-17T23:50:00+09:00'));
+    window.studyDB = fakeDB2({});
+    loadNewCards.mockResolvedValueOnce(NCARDS);
+    document.body.innerHTML = '<div id="root"></div>';
+    const cleanup = mountSessionNew(document.getElementById('root'));
+    await settle2();
+
+    vi.setSystemTime(new Date('2026-09-18T00:05:00+09:00')); // 세션 도중 자정을 넘김
+    cleanup();
+    await settle2(2);
+
+    expect(window.studyDB._meta.get('activeSession')?.value?.todayISO).toBe('2026-09-17');
   });
 });

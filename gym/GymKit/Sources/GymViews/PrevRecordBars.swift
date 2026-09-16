@@ -21,6 +21,9 @@ struct PrevRecordBars: View {
     var encodeHeight: Bool = true          // 볼륨 → 높이 인코딩 (무게 종목만)
     var dragP: CGFloat = 0                 // 좌드래그 진행도 — now 세그 미세 부풀림 scaleY(1+p·0.28)
     var onLongPressSlot: ((Int) -> Void)? = nil   // 세트 행 꾹누르기 → 수정/삭제 (§6-9)
+    // 헤더 줄("직전 세션 기록" · "높이 = 볼륨") 표시 여부. 주간 스트립이 바로 위에 붙는 화면에서는
+    // 스트립이 그 자리와 범례를 겸해 끈다 (시안 2026-09-17 — 세로 예산 회수).
+    var showHeader: Bool = true
 
     static let workHi: CGFloat = 20   // SET_BAR_WORK_HI
     static let bestH: CGFloat = 24    // SET_BAR_BEST_H
@@ -33,12 +36,14 @@ struct PrevRecordBars: View {
 
     var body: some View {
         let maxVol = slots.map(\.volume).max() ?? 0
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text("직전 세션 기록").font(.sans(11, 600)).tracking(0.44).foregroundStyle(GY.ink4)
-                Spacer()
-                if encodeHeight {
-                    Text("높이 = 볼륨").font(.sans(10, 500)).tracking(0.2).foregroundStyle(GY.ink4)
+        VStack(alignment: .leading, spacing: 8) {
+            if showHeader {
+                HStack {
+                    Text("직전 세션 기록").font(.sans(11, 600)).tracking(0.44).foregroundStyle(GY.ink4)
+                    Spacer()
+                    if encodeHeight {
+                        Text("높이 = 볼륨").font(.sans(10, 500)).tracking(0.2).foregroundStyle(GY.ink4)
+                    }
                 }
             }
             HStack(alignment: .bottom, spacing: 7) {
@@ -90,6 +95,14 @@ struct PrevRecordBars: View {
                 }
             }
         }
-        .padding(.horizontal, 24).padding(.top, 16)
+        .padding(.horizontal, 24).padding(.top, showHeader ? 10 : 2)
+        // 헤더 줄을 끈 화면에서도 막대 높이 범례는 남긴다 — 줄을 새로 만들지 않도록 오버레이로,
+        // 세트바 블록 안쪽(구분선 아래)에 둬야 스트립 소속으로 오해되지 않는다.
+        .overlay(alignment: .topTrailing) {
+            if !showHeader && encodeHeight {
+                Text("높이 = 볼륨").font(.sans(9, 500)).tracking(0.18).foregroundStyle(GY.ink4)
+                    .padding(.trailing, 24).padding(.top, 2)
+            }
+        }
     }
 }

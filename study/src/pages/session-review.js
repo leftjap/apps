@@ -88,6 +88,9 @@ export async function loadSentenceLog(db, lang, cards) {
 }
 
 export function mountSessionReview(host) {
+  // 세션은 시작한 날에 귀속한다 — 진행 중 자정을 넘겨도 base(시작 시 캡처한 그날 dailyStats)와
+  // 같은 행에 쌓여야 라이브 반영분이 어제 행에 유령으로 남지 않는다 (2026-09-17).
+  const sessionDate = getTodayISO();
   // Wave A.14 — '?mode=free' 인 경우 자유 복습 (spec §8-4). reviewQueue 전체 (due 무관) 최대 20장.
   const sessionMode = window.studyRoute?.params?.mode === 'free' ? 'free' : 'review';
   const state = {
@@ -119,7 +122,7 @@ export function mountSessionReview(host) {
     // loadFailed — 로드가 죽은 채의 빈 state 로 스냅샷·통계를 덮어쓰지 않는다 (아래 .catch 주석).
     if (isDemoMode() || state.ended || state.loadFailed || !window.studyDB || !state.loaded) return; // 데모 격리
     const snap = {
-      mode: sessionMode, lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
+      mode: sessionMode, lang: getStoredLang(), todayISO: sessionDate, startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       // recLog — 녹음 버튼 라벨·카운트의 원천인데 복습 스냅샷에만 빠져 있었다 (2026-08-29 오후 조사).
@@ -158,7 +161,7 @@ export function mountSessionReview(host) {
       await finishSession(window.studyDB, {
         mode: sessionMode,
         lang: getStoredLang(),
-        date: getTodayISO(),
+        date: sessionDate,
         durationSec,
         tried: state.tried,
         passed: state.passed,
@@ -187,7 +190,7 @@ export function mountSessionReview(host) {
       if (kind === 'got' || kind === 'hmm' || kind === 'no') state.judged[kind] += 1;
       if (!isDemoMode()) { // 데모 — SRS DB write 차단
         try {
-          await applySrsUpdate(window.studyDB, currentCard, kind, getTodayISO());
+          await applySrsUpdate(window.studyDB, currentCard, kind, sessionDate);
         } catch (e) {
           console.error('[session-review] applySrsUpdate', e);
         }
@@ -273,7 +276,7 @@ export function mountSessionReview(host) {
       }
       return sessionMode === 'free'
         ? loadFreeReviewCards(window.studyDB, getStoredLang(), 20)
-        : loadReviewCards(window.studyDB, getStoredLang(), getTodayISO());
+        : loadReviewCards(window.studyDB, getStoredLang(), sessionDate);
     })(),
     loadActiveSession(window.studyDB),
     fetchDayUtterMap(window.studyDB, getStoredLang()),
@@ -281,8 +284,8 @@ export function mountSessionReview(host) {
     .then(async ([cards, snapshot, dayMap]) => {
       // '오늘 발화' 링의 분모 = 직전 학습일 발화 수 (기록/갱신 §1-1). 이번 세션 로그는 finish() 후에 쌓인다.
       state.dayMap = dayMap;
-      state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
-      state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
+      state.todayUtterBase = Number(dayMap[sessionDate]) || 0;
+      state.prevDayUtter = prevStudyDayUtterance(dayMap, sessionDate);
       state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸 (내부 전량 try/catch — reject 없음)
       state.cards = cards;
       state.total = cards.length;
@@ -290,7 +293,7 @@ export function mountSessionReview(host) {
        * 정식 마감한다. 복원하면 base 가 어제 dailyStats 행이라 오늘 학습이 어제 행에 계상된다(재현).
        * 진행(step·점수)은 재시작되지만 기록은 어제 몫·오늘 몫이 각자의 행에 남아 정합하다. */
       let snap = snapshot;
-      if (snap && snap.todayISO && snap.todayISO !== getTodayISO()) {
+      if (snap && snap.todayISO && snap.todayISO !== sessionDate) {
         try { await finalizeStaleSnapshot(window.studyDB, snap); }
         catch (e) { console.error('[session-review] 자정 경계 finalize', e); }
         clearActiveSession(window.studyDB).catch(() => {});
@@ -309,7 +312,7 @@ export function mountSessionReview(host) {
         state.sentence = pickCardFields(cards[0]) || EMPTY_SENTENCE;
         if (snapshot && snapshot.mode === sessionMode) clearActiveSession(window.studyDB).catch(() => {});
         // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
-        try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
+        try { state.base = (await window.studyDB.dailyStats.get(sessionDate)) ?? null; }
         catch { state.base = null; }
       }
       /* 분기 공통 수화 (2026-08-31 사용자 결정, 2026-09-01 복원 분기까지 확장) — 드릴 행 점수 원을
@@ -333,7 +336,7 @@ export function mountSessionReview(host) {
       // state.cards 기준 — 복원 시 스냅샷 cards 가 목록 정본이라 로더 결과(cards)와 다를 수 있다.
       state.sentLog = await loadSentenceLog(window.studyDB, getStoredLang(), state.cards);
       // 응용연습 행의 '이전 N회 평균 M' (2026-08-29 사용자 요구) — 오늘 시도는 행의 점수 원이 보여주므로 오늘은 뺀다.
-      state.drillLog = await loadDrillLog(window.studyDB, getStoredLang(), state.cards, getTodayISO());
+      state.drillLog = await loadDrillLog(window.studyDB, getStoredLang(), state.cards, sessionDate);
       state.loaded = true;
       rerender();
     })

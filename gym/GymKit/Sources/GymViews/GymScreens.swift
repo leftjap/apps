@@ -156,6 +156,57 @@ public enum GymScreens {
         healthySync(m); return m
     }
 
+    // 근력 주간 스트립 시안 (2026-09-17) — 값·빈도는 실기기 실측 분포를 따른다
+    // (완료 84세션 2026-05~09: 종목별 주 1.3~2.4회, lat_pulldown 볼륨 1,665~2,590).
+    // 오늘 = 2026-09-16(수). 이번 주 월 2,340 · 오늘 진행 중 / 지난주 화·금 → 금요일이 미래 참조로 뜬다.
+    @MainActor static func demoLiftWeekModel() -> GymAppModel {
+        func lift(_ date: String, _ sets: [(Double, Int)]) -> GymSession {
+            var s = GymSession(id: "lw-\(date)", date: date, startTime: 1_757_000_000_000,
+                               blocks: [GymBlock(exerciseId: "lat_pulldown",
+                                                 sets: sets.map { GymSet(weight: $0.0, reps: $0.1, done: true) })],
+                               tags: ["back"], status: .completed)
+            s.totalVolume = sets.reduce(0.0) { $0 + $1.0 * Double($1.1) }
+            return s
+        }
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let today = GymSession(id: "lift-week", date: "2026-09-16", startTime: now - 22 * 60 * 1000,
+                               blocks: [GymBlock(exerciseId: "lat_pulldown", sets: [
+                                   GymSet(weight: 45, reps: 11, done: true),
+                                   GymSet(weight: 45, reps: 10, done: true),
+                                   GymSet(weight: 45, reps: 10, preset: true),
+                                   GymSet(weight: 45, reps: 9, preset: true),
+                                   GymSet(weight: 40, reps: 12, preset: true)])],
+                               tags: ["back"], status: .active)
+        let m = GymAppModel(snapshotSession: today)
+        if let d = GymAppModel.dayFmt.date(from: "2026-09-16") { m.referenceToday = d }
+        m.history = [lift("2026-09-14", [(45, 12), (45, 11), (45, 10), (45, 9), (45, 10)]),   // 이번 주 월 2,340
+                     lift("2026-09-11", [(45, 10), (45, 10)]),                                 // 지난주 금 900
+                     lift("2026-09-08", [(45, 11), (45, 11), (45, 11)])]                       // 지난주 화 1,485
+        m.prs = [GymPR(exerciseId: "lat_pulldown", weight: 50, reps: 8, e1rm: 63.3, date: "2026-08-17")]
+        healthySync(m); return m
+    }
+
+    // 맨몸 종목 스트립 — 볼륨이 0 이라 횟수로 바뀌는 분기 (실데이터 decline_situp 전량 0kg).
+    @MainActor static func demoLiftWeekBodyModel() -> GymAppModel {
+        func situp(_ date: String, _ reps: [Int]) -> GymSession {
+            GymSession(id: "bw-\(date)", date: date, startTime: 1_757_000_000_000,
+                       blocks: [GymBlock(exerciseId: "decline_situp",
+                                         sets: reps.map { GymSet(reps: $0, done: true) })],
+                       tags: ["core"], status: .completed)
+        }
+        let now = Int64(Date().timeIntervalSince1970 * 1000)
+        let today = GymSession(id: "bw-week", date: "2026-09-16", startTime: now - 15 * 60 * 1000,
+                               blocks: [GymBlock(exerciseId: "decline_situp", sets: [
+                                   GymSet(reps: 14, done: true), GymSet(reps: 13, preset: true),
+                                   GymSet(reps: 12, preset: true)])],
+                               tags: ["core"], status: .active)
+        let m = GymAppModel(snapshotSession: today)
+        if let d = GymAppModel.dayFmt.date(from: "2026-09-16") { m.referenceToday = d }
+        m.history = [situp("2026-09-14", [12, 11, 10]), situp("2026-09-10", [13, 12, 11]),
+                     situp("2026-09-08", [13, 12])]
+        healthySync(m); return m
+    }
+
     // 시안 20a 픽셀 대조용 홈 — `specs/2026-08-17-home-redesign-20a.md` 의 예시 데이터를 그대로 재현한다.
     // 오늘 = 2026-08-11(화). 그 주 월요일이 10일이라 캘린더가 시안(1주차 3~9 / 2주차 10~16)과 일치.
     //   근력 3·5·7·8·10·11, 유산소 5·7·8·10·11 (§5 샘플)
@@ -251,6 +302,19 @@ public enum GymScreens {
         case "cardio-7a-max": return AnyView(SessionScreenView(model: demoCardio7aModel()).frame(width: 430, height: 932))
         case "cardio-7a-kcal": return AnyView(SessionScreenView(model: demoCardio7aModel(), initialCardioMetric: .calories).frame(width: 375, height: 812))
         case "session-bodyweight": return AnyView(SessionScreenView(model: demoBodyweightModel()).frame(width: 390, height: 844))
+        // 근력 주간 스트립 시안 3규격 (2026-09-17) — 375×812(11 Pro) 기준으로 비교한다.
+        case "week-full":    return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .full).frame(width: 375, height: 812))
+        case "week-compact": return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 375, height: 812))
+        case "week-tight":   return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .tight).frame(width: 375, height: 812))
+        case "week-body":    return AnyView(SessionScreenView(model: demoLiftWeekBodyModel(), weekVariant: .compact).frame(width: 375, height: 812))
+        case "week-none":    return AnyView(SessionScreenView(model: demoLiftWeekModel()).frame(width: 375, height: 812))
+        case "week-se":      return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 375, height: 667))
+        case "week-se-base": return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .hidden).frame(width: 375, height: 667))
+        case "week-base":    return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .hidden).frame(width: 375, height: 812))
+        case "week-max":     return AnyView(SessionScreenView(model: demoLiftWeekModel(), weekVariant: .compact).frame(width: 430, height: 932))
+        case "week-8sets":   return AnyView(SessionScreenView(model: demoRecordModel(), weekVariant: .compact).frame(width: 375, height: 812))
+        case "week-8sets-base": return AnyView(SessionScreenView(model: demoRecordModel(), weekVariant: .hidden).frame(width: 375, height: 812))
+        case "week-cardio":  return AnyView(SessionScreenView(model: demoCardio7aModel(), weekVariant: .compact).frame(width: 375, height: 812))
         case "summary":      return AnyView(SummaryScreenView(session: demoCompletedSession(), sessionNo: 42, totalCount: 42).frame(width: 390, height: 844))
         case "stats":        return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false).frame(width: 390, height: 844))
         case "stats-day":    return AnyView(StatsScreenView(model: demoModel(), initialTab: .cal, embedScroll: false, initialDetailISO: "2026-05-05").frame(width: 390, height: 844))

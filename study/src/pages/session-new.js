@@ -95,6 +95,9 @@ export function restoreCardScore(exLog, cardId) {
 }
 
 export function mountSessionNew(host) {
+  // 세션은 시작한 날에 귀속한다 — 진행 중 자정을 넘겨도 base(시작 시 캡처한 그날 dailyStats)와
+  // 같은 행에 쌓여야 라이브 반영분이 어제 행에 유령으로 남지 않는다 (2026-09-17).
+  const sessionDate = getTodayISO();
   const state = {
     size: pickSize(),
     recording: false, // Wave A.7.1 — idle 초기 상태. 클릭 → mic 시작
@@ -130,7 +133,7 @@ export function mountSessionNew(host) {
     // home '이어서 하기'(new|review 한정)에도 안 뜬다. 아래 flushLiveStats 스킵으로 통계도 불변.
     if (isDemoMode() || state.ended || state.loadFailed || !window.studyDB || !state.loaded) return;
     const snap = {
-      mode: state.replay ? 'replay' : 'new', lang: getStoredLang(), todayISO: getTodayISO(), startTime, activeSec: activeTimer.seconds(), base: state.base,
+      mode: state.replay ? 'replay' : 'new', lang: getStoredLang(), todayISO: sessionDate, startTime, activeSec: activeTimer.seconds(), base: state.base,
       step: state.step, tried: state.tried, passed: state.passed, lastScore: state.lastScore,
       pronScores: [...state.pronScores], weakInSession: { ...state.weakInSession },
       recLog: { ...state.recLog },
@@ -174,7 +177,7 @@ export function mountSessionNew(host) {
       await finishSession(window.studyDB, {
         mode: 'new',
         lang: getStoredLang(),
-        date: getTodayISO(),
+        date: sessionDate,
         durationSec,
         tried: state.tried,
         passed: state.passed,
@@ -283,7 +286,7 @@ export function mountSessionNew(host) {
   }
 
   awaitInitialSync().then(() => Promise.all([
-    loadNewCards(window.studyDB, getStoredLang(), getTodayISO()),
+    loadNewCards(window.studyDB, getStoredLang(), sessionDate),
     loadActiveSession(window.studyDB),
     fetchDayUtterMap(window.studyDB, getStoredLang()),
   ]))
@@ -292,14 +295,14 @@ export function mountSessionNew(host) {
       // dayMap 은 공부 이력 4주 캘린더도 함께 쓴다. 이번 세션 로그는 finish() 후에 쌓이므로
       // todayUtterBase 는 '이번 세션 이전' 오늘 누적이다.
       state.dayMap = dayMap;
-      state.todayUtterBase = Number(dayMap[getTodayISO()]) || 0;
-      state.prevDayUtter = prevStudyDayUtterance(dayMap, getTodayISO());
+      state.todayUtterBase = Number(dayMap[sessionDate]) || 0;
+      state.prevDayUtter = prevStudyDayUtterance(dayMap, sessionDate);
       state.prDays = await fetchPRDays(window.studyDB, getStoredLang()); // 공부 이력 캘린더의 코랄 칸 (내부 전량 try/catch — reject 없음)
       /* 자정 경계 (2026-08-29 오후 2차 감사) — 어제 시작한 스냅샷은 복원하지 않고 **어제 날짜로**
        * 정식 마감한다. 복원하면 base 가 어제 dailyStats 행이라 오늘 학습이 어제 행에 계상된다(재현).
        * 진행(step·점수)은 재시작되지만 기록은 어제 몫·오늘 몫이 각자의 행에 남아 정합하다. */
       let snap = snapshot;
-      if (snap && snap.todayISO && snap.todayISO !== getTodayISO()) {
+      if (snap && snap.todayISO && snap.todayISO !== sessionDate) {
         try { await finalizeStaleSnapshot(window.studyDB, snap); }
         catch (e) { console.error('[session-new] 자정 경계 finalize', e); }
         clearActiveSession(window.studyDB).catch(() => {});
@@ -379,7 +382,7 @@ export function mountSessionNew(host) {
         // mode 일치하나 cardIds 불일치 → 스테일 snapshot 정리
         if (snapshot && snapshot.mode === 'new') clearActiveSession(window.studyDB).catch(() => {});
         // 새 세션 — 오늘 dailyStats 를 base 로 캡처 (라이브 반영이 이 위에 더함)
-        try { state.base = (await window.studyDB.dailyStats.get(getTodayISO())) ?? null; }
+        try { state.base = (await window.studyDB.dailyStats.get(sessionDate)) ?? null; }
         catch { state.base = null; }
       }
       // 분기 공통 수화 (위 hydrateScores 주석 — 복원·신규 어느 쪽이든 이력이 화면 점수의 정본)

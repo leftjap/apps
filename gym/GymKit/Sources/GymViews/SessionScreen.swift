@@ -204,12 +204,15 @@ public struct SessionScreenView: View {
     }
 
     let initialCardioMetric: GymCardioMetric   // 스냅샷 검증 훅 (실앱은 항상 .duration)
+    let weekVariant: ExerciseWeekStrip.Variant  // 주간 스트립 규격 — 시안 비교용 렌더 훅
     public init(model: GymAppModel, onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration) {
+                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration,
+                weekVariant: ExerciseWeekStrip.Variant = .compact) {
         self.model = model; self.onHome = onHome
         self.initialCardioMetric = initialCardioMetric
+        self.weekVariant = weekVariant
         _prPopVisible = State(initialValue: initialPRPop)
         _addexOpen = State(initialValue: initialAddex)
         _heroDragX = State(initialValue: initialDragX)
@@ -236,11 +239,13 @@ public struct SessionScreenView: View {
     public init(onHome: @escaping () -> Void = {},
                 initialKeypadField: GymAppModel.KeypadField? = nil, initialPRPop: Bool = false,
                 initialAddex: Bool = false, initialAction: Bool = false,
-                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration) {
+                initialDragX: CGFloat = 0, initialCardioMetric: GymCardioMetric = .duration,
+                weekVariant: ExerciseWeekStrip.Variant = .compact) {
         self.init(model: GymAppModel(), onHome: onHome,
                   initialKeypadField: initialKeypadField, initialPRPop: initialPRPop,
                   initialAddex: initialAddex, initialAction: initialAction,
-                  initialDragX: initialDragX, initialCardioMetric: initialCardioMetric)
+                  initialDragX: initialDragX, initialCardioMetric: initialCardioMetric,
+                  weekVariant: weekVariant)
     }
 
     static let nf: NumberFormatter = { let f = NumberFormatter(); f.numberStyle = .decimal; f.maximumFractionDigits = 0; return f }()
@@ -380,10 +385,26 @@ public struct SessionScreenView: View {
                           recordAmt: Int((model.sessionDoneVolume - prevTotal).rounded()),
                           pulseMoment: headerPulseMoment, exSwapMoment: exSwapMoment)
             let revealP = GymSwipeMath.revealProgress(Double(heroDragX))
+            if kind != .cardio && weekVariant != .hidden {
+                // 이 종목 주간 스트립 (시안 2026-09-17) — 유산소 카드의 주간 모듈과 같은 자리·형태.
+                ExerciseWeekStrip(
+                    week: GymSessionLogic.liftMetricWeek(
+                        history: model.history, todaySets: sets, exerciseId: exId,
+                        kind: kind, now: model.referenceToday),
+                    variant: weekVariant)
+                    .padding(.horizontal, 22).padding(.top, 10).padding(.bottom, 6)
+                    .modifier(ExSwitchDip(trigger: exSwapMoment))
+                // 원(요일 7개)과 세트 막대가 맞붙으면 세로로 대응하는 표처럼 읽힌다 — 둘은 무관하므로
+                // 1pt 선으로만 끊는다 (여백으로 끊으면 세로 예산이 다시 모자란다).
+                if !slots.isEmpty {
+                    Rectangle().fill(GY.lineSoft).frame(height: 1).padding(.horizontal, 24)
+                }
+            }
             if !slots.isEmpty && kind != .cardio {
                 PrevRecordBars(slots: slots, best: best, encodeHeight: kind == .weight,
                                dragP: CGFloat(revealP),
-                               onLongPressSlot: { i in actionTarget = .setRow(i) })
+                               onLongPressSlot: { i in actionTarget = .setRow(i) },
+                               showHeader: weekVariant == .hidden)
                     .modifier(ExSwitchDip(trigger: exSwapMoment))
             }
             if kind != .cardio { Spacer() }
