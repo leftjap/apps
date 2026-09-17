@@ -29,6 +29,10 @@
 - `.build/debug/gymshot <id> out.png`: 헤드리스 화면 렌더. id: `rail`·`rail-single`·`session-record`·`session` 등 (`GymScreens.snapshotView`)
 - `gymshot flow <outdir>`: 전 여정 구동 + 단언 + 단계별 렌더
 - `gymshot` 은 ImageRenderer 라 **ScrollView 오프셋을 못 잡는다**: 레일 정렬·스크롤 검증은 시뮬 실앱으로.
+- `gymshot` 에는 **세이프에어리어가 없다.** 375×812 프레임을 통째로 쓰므로 실기기(11 Pro — 노치 44 +
+  홈 인디케이터 34)보다 세로가 78pt 넉넉하고, 히어로 위아래 여백이 각 28pt 쯤 후하게 나온다.
+  **세로 예산 판단은 반드시 시뮬 실앱 스크린샷으로** (2026-09-17 히스토리 카드에서 이 차이로
+  "여유 있다" 고 오판했다. `xcrun simctl io <DEV> screenshot` 은 3x 라 pt 로 환산할 때 3 으로 나눈다).
 - **Xcode 는 설치돼 있다** (`Xcode.app`, 2026-07 기준 26.6). `xcode-select` 가 CommandLineTools 를
   가리켜 `xcodebuild` 가 처음엔 실패해 보여도 **"Xcode 없음" 으로 단정 말 것**: `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`
   를 앞에 붙이면 `xcodebuild`·`xcrun simctl`·`xcrun devicectl` 전부 동작 (2026-07-18 "Xcode 없음" 오단정 재발 방지).
